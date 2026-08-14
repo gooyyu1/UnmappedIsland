@@ -4,6 +4,8 @@
 # 動物はitemタグを持ち、土地のitemsスロットへ普通のカードとして並ぶ（HuntingSystem.md 1.1節）。
 # 専用のレーンも専用の画面も持たない。狩猟専用の数値（体力・命中率）も作らず、攻撃は怪我
 # （injuries.yaml）を1つ足すことで表す（同3節）。
+#
+# 死体と、それを解体して得られる素材（同1.5節）も、獲物から続く一続きの連鎖なのでこのファイルが持つ。
 
 object_defs:
   # サル。物を持ち去る中型（Animals.md 4.1節）。危険は低いが、放っておくと足元の物を持っていく。
@@ -182,9 +184,55 @@ object_defs:
   # サルの死体。仕留めた個体が、その枠のまま置き換わる（destroyがspawnより先に走る、9.4節）。
   # 刺さっていた傷は持ち主から離れられないので道連れに消え、当てていた治療具だけが地面へ落ちる。
   #
-  # 解体（肉へ変える工程）と腐敗はまだ無いので、今は重い塊が1枚残るだけ（HuntingSystem.md 8節）。
+  # 腐敗はまだ無いので、置いたままでも傷まない（HuntingSystem.md 8節）。
   monkey_carcass:
     tags: [item]
     props:
       weight: {value: 5000}
       volume: {value: 12000}
+    combinations:
+      # 刃物を重ねて解体する（HuntingSystem.md 1.5節）。
+      #
+      # 5000gの内訳: 生肉500g×4 + 獣骨500g + 生皮600g = 3100g。残る1900gは血と内臓・頭で、
+      # 使い道が無いのでカードにしない。値を変えるときはこの内訳を崩さないこと。
+      butcher:
+        with: cutting_tool
+        duration: 60
+        destroy: self
+        spawn:
+          - {object: raw_meat, count: 4}
+          - {object: animal_bone}
+          - {object: rawhide}
+
+  # 解体して得られる素材。獲物の種類によらず同じ物が出て、獲物の大きさは個数で表す
+  # （HuntingSystem.md 1.5節）。骨と皮の使い道は docs/world/SurvivalItems.md 参照。
+
+  # 生肉。火も燻製もまだ無いので、生のまま食べるしかない。1切れで4時間の腹持ちと、ヤシガニ1匹分の
+  # 肉の栄養——ヤシガニ2kgのうち食べられるのがおよそこの1切れぶん、という対応で揃えている。
+  raw_meat:
+    tags: [item, food]
+    props:
+      weight: {value: 500}
+      volume: {value: 500}
+    actions:
+      eat:
+        add:
+          actor:
+            satiety: 16
+            meat_nutrition: 200
+        destroy: self
+
+  # 獣骨。1頭ぶんの骨をまとめた1枚。
+  animal_bone:
+    tags: [item]
+    props:
+      weight: {value: 500}
+      # 形の揃わない骨の束なので、詰めても縮まない嵩で見る（ヤシの実の皮と同じ扱い）。
+      volume: {value: 700}
+
+  # 生皮。剥いだままの皮で、なめす工程はまだ無い。
+  rawhide:
+    tags: [item]
+    props:
+      weight: {value: 600}
+      volume: {value: 1500}

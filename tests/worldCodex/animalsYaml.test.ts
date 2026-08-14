@@ -326,6 +326,84 @@ describe('animals.yamlの動物', () => {
     expect(itemsInJungle()).toEqual(['monkey_carcass']);
   });
 
+  describe('死体の解体', () => {
+    /** 気を失わせてから仕留めて、その場に残った死体を返す。 */
+    function kill(): WorldObject {
+      open(KILLS_IF_HELPLESS);
+      strikeWithSharpStone();
+      strikeWithSharpStone();
+      return jungle.tryGetSlot(codex.slotNames.getId('items'))!.contents[0];
+    }
+
+    /** 刃物を手に取り、死体へ重ねて解体する。 */
+    function butcher(carcass: WorldObject): WorldObject {
+      const knife = spawnInto('sharp_stone', player, 'hand');
+      expect(carcass.tryExecuteCombination(knife, player, 'butcher', session)).toBe(true);
+      return knife;
+    }
+
+    /** 今この土地のアイテムスロットに並ぶ物の重さ（g）。 */
+    function weightsInJungle(): number[] {
+      const weightId = codex.propertyNames.getId('weight');
+      return jungle
+        .tryGetSlot(codex.slotNames.getId('items'))!
+        .contents.map((object) => object.getNumber(weightId));
+    }
+
+    it('刃物を死体へ重ねると、肉・骨・生皮に分かれる', () => {
+      const carcass = kill();
+
+      const knife = butcher(carcass);
+
+      expect(itemsInJungle(), '死体が居た場所へ宣言順に並んで置き換わる').toEqual([
+        'raw_meat',
+        'raw_meat',
+        'raw_meat',
+        'raw_meat',
+        'animal_bone',
+        'rawhide',
+      ]);
+      expect(carcass.parent, '死体は世界から出る').toBeUndefined();
+      expect(knife.parent, '刃物は手元に残る').toBe(player);
+      expect(session.world!.totalMinutes - 30, 'durationの60分が経つ（殴った2回で30分）').toBe(60);
+    });
+
+    it('取り分の重さの合計は、死体より軽くなる', () => {
+      // 血と内臓はカードにしない（animals.yamlの内訳、HuntingSystem.md 1.5節）ので、ヤシの実の連鎖と
+      // 違って重さは保存しない。
+      const carcass = kill();
+
+      butcher(carcass);
+
+      expect(weightsInJungle()).toEqual([500, 500, 500, 500, 500, 600]);
+      expect(
+        weightsInJungle().reduce((total, weight) => total + weight),
+        '5000gのうち3100g',
+      ).toBe(3100);
+    });
+
+    it('刃物でない物を重ねても解体できない', () => {
+      const carcass = kill();
+      const stone = spawnInto('stone', player, 'hand');
+
+      expect(carcass.findMatchingCombinations(stone), '素手の石はcutting_toolタグを持たない').toEqual([]);
+    });
+
+    it('生肉は食べられる', () => {
+      // 狩りが栄養に届く終端（docs/world/Animals.md 2節の肉の基準）。火がまだ無いので生のまま口へ入る。
+      const carcass = kill();
+      butcher(carcass);
+      const meat = jungle.tryGetSlot(codex.slotNames.getId('items'))!.contents[0];
+      const satietyId = codex.propertyNames.getId('satiety');
+      const before = player.getNumber(satietyId);
+
+      expect(meat.tryExecuteAction('eat', player, session)).toBe(true);
+
+      expect(player.getNumber(satietyId) - before, '1切れで4時間の腹持ち').toBe(16);
+      expect(meat.parent, '食べた肉は無くなる').toBeUndefined();
+    });
+  });
+
   it('殴られ続ければ危険域まで気が立つ', () => {
     // 段はワールド側の宣言なので、しきい値を刻み直したらここで落ちる。**外した回で確かめる**——
     // 当たると気を失い、その間は警戒が打ち消される（次のテスト）ため。
