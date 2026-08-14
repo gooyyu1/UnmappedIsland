@@ -72,11 +72,11 @@ object_defs:
 
   # ------------------------------------------------------------------
   # 探索で見つかる発見物（アイテム）。itemタグによって土地のitemsスロットへ振り分けられる。
-  # thick_branch/stone/branchは工作・燃料などの素材の想定（レシピは今後の課題）。
+  # thick_branch/stone/twigは工作・燃料などの素材の想定（レシピは今後の課題）。
   # exploreが湧かせるヤシの実（coconut）はcoconut.yamlが定義する。
   # ------------------------------------------------------------------
 
-  # 太い枝。腕ほどの太さで70cmほど、削れば道具の柄になる大きさ（細い枝は柄にすると折れる）。
+  # 太い枝。腕ほどの太さで70cmほど、削れば道具の柄になる大きさ（小枝は柄にすると折れる）。
   # 建材の丸太はこれとは別の物として後から入るので、ここを丸太まで大きくしない。
   thick_branch:
     tags: [item]
@@ -98,10 +98,10 @@ object_defs:
         destroy: self
         spawn: {object: sharp_stone}
 
-  # 細い枝。60cmほどで指の太さ。柄には細すぎて折れるので、火口や結びに使う想定。
+  # 小枝。指の太さの細い枝を拾い集めたもので、火口・焚き付け・結びに使う想定。柄にすると折れる。
   # 槍や銛の柄になる2mほどの長い棒は、拾う物ではなく若木を刃物で切って採る別の物として後から入る
   # （docs/world/SurvivalItems.md 0節）。ここを長くして兼ねさせない。
-  branch:
+  twig:
     tags: [item]
     props:
       weight: {value: 300}
@@ -338,7 +338,7 @@ object_defs:
               - {object: taro, count: 2, into: self}
               - {object: water_spinach, into: self}
 
-  # 森林。木々に囲まれ、枝・木の実・水場が見つかる。
+  # 森林。木々に囲まれ、小枝・木の実・水場が見つかる。
   forest:
     traits: [location, explorable]
     props:
@@ -366,31 +366,31 @@ object_defs:
           # 2個
           - weight: 20
             add: {self: {exploration_progress: 1}}
-            spawn: {object: branch, count: 2, into: self}
+            spawn: {object: twig, count: 2, into: self}
           - weight: 15
             add: {self: {exploration_progress: 1}}
             spawn:
-              - {object: branch, into: self}
+              - {object: twig, into: self}
               - {object: taro, into: self}
           - weight: 10
             add: {self: {exploration_progress: 1}}
             spawn:
-              - {object: branch, into: self}
+              - {object: twig, into: self}
               - {object: berry_bush, into: self}
           - weight: 12
             add: {self: {exploration_progress: 1}}
             spawn:
               - {object: banana_plant, into: self}
-              - {object: branch, into: self}
+              - {object: twig, into: self}
           # 3個
           - weight: 18
             add: {self: {exploration_progress: 1}}
             spawn:
-              - {object: branch, count: 2, into: self}
+              - {object: twig, count: 2, into: self}
               - {object: taro, into: self}
           - weight: 12
             add: {self: {exploration_progress: 1}}
-            spawn: {object: branch, count: 3, into: self}
+            spawn: {object: twig, count: 3, into: self}
 
   # 密林。湿って鬱蒼としており、探索し切るまでが最も長いが、食料は最も豊か。
   jungle:
@@ -421,7 +421,7 @@ object_defs:
           - weight: 17
             add: {self: {exploration_progress: 1}}
             spawn:
-              - {object: branch, into: self}
+              - {object: twig, into: self}
               - {object: coconut, into: self}
           - weight: 15
             add: {self: {exploration_progress: 1}}
@@ -429,23 +429,23 @@ object_defs:
           - weight: 13
             add: {self: {exploration_progress: 1}}
             spawn:
-              - {object: branch, into: self}
+              - {object: twig, into: self}
               - {object: water_spinach, into: self}
           - weight: 12
             add: {self: {exploration_progress: 1}}
             spawn:
               - {object: abaca, into: self}
-              - {object: branch, into: self}
+              - {object: twig, into: self}
           - weight: 10
             add: {self: {exploration_progress: 1}}
             spawn:
               - {object: banana_plant, into: self}
-              - {object: branch, into: self}
+              - {object: twig, into: self}
           # 3個
           - weight: 18
             add: {self: {exploration_progress: 1}}
             spawn:
-              - {object: branch, into: self}
+              - {object: twig, into: self}
               - {object: coconut, into: self}
               - {object: water_spinach, into: self}
           - weight: 12
@@ -475,7 +475,7 @@ object_defs:
             spawn: {object: cave_entrance, into: self}
           - weight: 7
             add: {self: {exploration_progress: 1}}
-            spawn: {object: branch, into: self}
+            spawn: {object: twig, into: self}
           # 2個
           - weight: 22
             add: {self: {exploration_progress: 1}}
@@ -484,16 +484,16 @@ object_defs:
             add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, into: self}
-              - {object: branch, into: self}
+              - {object: twig, into: self}
           - weight: 8
             add: {self: {exploration_progress: 1}}
-            spawn: {object: branch, count: 2, into: self}
+            spawn: {object: twig, count: 2, into: self}
           # 3個
           - weight: 20
             add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, count: 2, into: self}
-              - {object: branch, into: self}
+              - {object: twig, into: self}
           - weight: 10
             add: {self: {exploration_progress: 1}}
             spawn: {object: stone, count: 3, into: self}
@@ -508,7 +508,7 @@ object_defs:
       # 石が1つだけ見つかる候補の重み。
       stone_find:
         value: 30
-      # 枝が1本だけ見つかる候補の重み。
+      # 小枝が1つだけ見つかる候補の重み。
       wood_find:
         value: 20
     actions:
@@ -522,7 +522,7 @@ object_defs:
             spawn: {object: stone, into: self}
           - weight: {prop: wood_find}
             add: {self: {exploration_progress: 1}}
-            spawn: {object: branch, into: self}
+            spawn: {object: twig, into: self}
           # 2個
           - weight: 25
             add: {self: {exploration_progress: 1}}
@@ -531,15 +531,15 @@ object_defs:
             add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, into: self}
-              - {object: branch, into: self}
+              - {object: twig, into: self}
           # 3個
           - weight: 8
             add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, count: 2, into: self}
-              - {object: branch, into: self}
+              - {object: twig, into: self}
 
-  # 山腹。山の中腹の斜面。石と枝のほか、洞窟の入口が見つかりやすい。
+  # 山腹。山の中腹の斜面。石と小枝のほか、洞窟の入口が見つかりやすい。
   mountainside:
     traits: [location, explorable]
     props:
@@ -572,21 +572,21 @@ object_defs:
             add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, into: self}
-              - {object: branch, into: self}
+              - {object: twig, into: self}
           - weight: 10
             add: {self: {exploration_progress: 1}}
-            spawn: {object: branch, count: 2, into: self}
+            spawn: {object: twig, count: 2, into: self}
           # 3個
           - weight: 18
             add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, count: 2, into: self}
-              - {object: branch, into: self}
+              - {object: twig, into: self}
           - weight: 12
             add: {self: {exploration_progress: 1}}
             spawn:
               - {object: stone, into: self}
-              - {object: branch, into: self}
+              - {object: twig, into: self}
               - {object: berry_bush, into: self}
 
   # 山頂。島で最も高い場所。風が強く得られるものは少ない（島を見渡す効果は今後の課題）。

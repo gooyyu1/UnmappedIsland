@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "src/assets/objects/twig.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "焚き付けにする小枝をひとまとめにした1枚。柄材になる長い棒ではないので、長さは見せ場ではない",
+    "（docs/world/SurvivalItems.md 0節）。段は320で、太い枝（400）より小さく載る。",
+    "",
+    "**diagonalは付けない。** 対角線へ倒して√2倍まで伸ばすのは長い向きが見せ場の物のためで",
+    "（card_art.py の align_to_diagonal）、束には長い向きが無い。",
+    "",
+    "太い枝（thick_branch）ほど色は薄くない（彩度33.5、太い枝は20.3）ので、saturationは控えめ。",
+    "",
+    "seedはこの文面で選び直す（入っている値はこの文面で確かめていない）。"
+  ],
+  "output": "src/assets/objects/twig.png",
+  "prompts": "objects.json",
+  "prompt": "twig",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 33030,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "320",
+    "mode": "background",
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24,
+    "saturation": 2.5,
+    "gamma": 1.15
+  }
+}

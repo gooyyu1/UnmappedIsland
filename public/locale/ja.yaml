@@ -245,9 +245,9 @@ object_texts:
   stone:
     display_name: 石
     description: 手のひらに収まる硬い石。同じ石で打ち合わせると割れて、鋭い縁ができる。
-  branch:
-    display_name: 枝
-    description: 木から落ちた枝。細く、まだ加工されていない。
+  twig:
+    display_name: 小枝
+    description: 地面から拾い集めた細い枝。よく乾いていて、焚き付けにちょうどよい。
   water_spinach:
     display_name: 空心菜
     description: 水辺に生える葉野菜。茎は空洞で、そのまま食べられる。
