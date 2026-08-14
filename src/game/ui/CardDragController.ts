@@ -10,13 +10,8 @@ import { Tooltip } from './Tooltip';
 import { drawBox } from './shapes';
 import { COLOR, SIZE } from './theme';
 
-/** その場で押し続けたらドラッグとみなすまでの時間（ミリ秒）と、その間に許す指のぶれ（u単位）。 */
-const LONG_PRESS_MS = 300;
-const LONG_PRESS_SLOP = 12;
-
-/** 方向で判断を始めるまでの移動距離（u単位）と、「明らかに縦」とみなす縦横比。 */
-const DIRECTION_THRESHOLD = 20;
-const VERTICAL_RATIO = 1.5;
+/** タップの指のぶれと見分けて、動かす操作が始まったとみなす移動距離（u単位）。 */
+const MOVE_THRESHOLD = 20;
 
 /**
  * 「落とし先の上で指を止めたまま待つ」の、止まっているとみなす揺れの上限（u単位）。これを超えて
@@ -86,7 +81,6 @@ interface Gesture {
   readonly startX: number;
   readonly startY: number;
   kind: 'pending' | 'scrolling' | 'dragging';
-  longPress: Phaser.Time.TimerEvent | undefined;
   /** 指が運んでいる札（分身・ついてくる札・元の束の見え方はすべてこれが持つ）。 */
   carried: CarriedCards | undefined;
   indicator: Phaser.GameObjects.Graphics | undefined;
@@ -107,8 +101,9 @@ interface Gesture {
  * レーンをまたぐカードのドラッグ＆ドロップ（CardInteraction.md 2節 カードのドラッグ＆ドロップ）。
  *
  * レーン自体も横ドラッグでスクロールするため、カードの上から始まったドラッグがどちらの操作なのかを
- * 押した後に見分ける: その場でのロングプレス、または明らかに縦方向の動きならカードを掴んだとみなし、
- * それ以外の横方向の動きはレーンのスクロールへ回す。
+ * **押し始めた位置**で見分ける: カードの本体から始まればカードを掴んだとみなし、左右の端から始まった
+ * ものはレーンのスクロールへ回す（CardLane.isCardBody）。どちらになるかは押した時点で決まっているので、
+ * 掴むのに待ち時間は要らない。
  *
  * ドラッグ中の表示は元のカードではなく、シーン直下に作る分身で行う。レーンからはみ出したカードは
  * 隣接エリアの背景板に隠れてしまう（CardLane参照）ため、レーンの外へは持ち出せないため。
@@ -160,8 +155,9 @@ export class CardDragController {
   }
 
   /**
-   * Phaserはしきい値なしでポインタを押した時点でdragstartを出すため、ここではまだどちらの操作かを
-   * 決めず、ロングプレスの計測だけを始める（レーン側もスクロールの基準を控えておく）。
+   * Phaserはしきい値なしでポインタを押した時点でdragstartを出すため、ここではまだ何も始めない
+   * ——押しただけならタップなので、押し始めた場所だけ控えて動き出すのを待つ（レーン側も
+   * スクロールの基準を控えておく）。
    */
   private begin(object: Phaser.GameObjects.GameObject, pointer: Phaser.Input.Pointer): void {
     this.cancel();
@@ -179,7 +175,6 @@ export class CardDragController {
       startX: pointer.x,
       startY: pointer.y,
       kind: 'pending',
-      longPress: undefined,
       carried: undefined,
       indicator: undefined,
       glow: undefined,
@@ -191,13 +186,6 @@ export class CardDragController {
       carryAnchor: undefined,
     };
     this.gesture = gesture;
-
-    const slop = this.metrics().px(LONG_PRESS_SLOP);
-    gesture.longPress = this.scene.time.delayedCall(LONG_PRESS_MS, () => {
-      if (this.gesture !== gesture || gesture.kind !== 'pending') return;
-      if (Math.hypot(pointer.x - gesture.startX, pointer.y - gesture.startY) > slop) return;
-      this.startDragging(pointer);
-    });
   }
 
   private update(pointer: Phaser.Input.Pointer): void {
@@ -209,13 +197,16 @@ export class CardDragController {
     else if (gesture.kind === 'dragging') this.follow(pointer);
   }
 
-  /** 動きが十分に大きくなったら、その向きでカードのドラッグかレーンのスクロールかを決める。 */
+  /**
+   * タップと見分けられるだけ動いたら、**押し始めた位置**でカードのドラッグかレーンのスクロールかを
+   * 決める。向きは見ない——どちらの操作かは押した時点で決まっており、動きはその始まりを知らせるだけ。
+   */
   private decide(gesture: Gesture, pointer: Phaser.Input.Pointer): void {
     const dx = pointer.x - gesture.startX;
     const dy = pointer.y - gesture.startY;
-    if (Math.hypot(dx, dy) < this.metrics().px(DIRECTION_THRESHOLD)) return;
+    if (Math.hypot(dx, dy) < this.metrics().px(MOVE_THRESHOLD)) return;
 
-    if (Math.abs(dy) > Math.abs(dx) * VERTICAL_RATIO) {
+    if (gesture.lane.isCardBody(gesture.startX, gesture.startY, gesture.index)) {
       this.startDragging(pointer);
       return;
     }
@@ -400,7 +391,6 @@ export class CardDragController {
     const gesture = this.gesture;
     if (gesture === undefined) return;
 
-    gesture.longPress?.remove();
     gesture.carryHold?.stop();
     gesture.carried?.dissolve();
     gesture.indicator?.destroy();
