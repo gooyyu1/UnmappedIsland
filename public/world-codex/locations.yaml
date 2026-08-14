@@ -159,6 +159,9 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
+      # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
+      # 罠の候補に載る。
+      rat_catch: {value: 4}
       # ヤシの木が1本だけ見つかる候補の重み。亜種が上書きする（terrain_generation.yaml）。
       palm_find:
         value: 13
@@ -216,6 +219,9 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 12}
+      # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
+      # 罠の候補に載る。
+      rat_catch: {value: 4}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 13
@@ -267,6 +273,9 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
+      # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
+      # 罠の候補に載る。
+      rat_catch: {value: 4}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 20
@@ -305,6 +314,10 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 12}
+      # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
+      # 罠の候補に載る。
+      rat_catch: {value: 6}
+      junglefowl_catch: {value: 10}
       # 木苺の茂みが見つかる候補の重み。
       berry_find:
         value: 15
@@ -359,6 +372,9 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 15}
+      # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
+      # 罠の候補に載る。
+      rat_catch: {value: 6}
       # 木苺の茂みが見つかる候補の重み。
       berry_find:
         value: 15
@@ -413,6 +429,10 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 18}
+      # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
+      # 罠の候補に載る。
+      rat_catch: {value: 6}
+      junglefowl_catch: {value: 8}
       # ヤシの木が1本だけ見つかる候補の重み。
       palm_find:
         value: 15
@@ -475,6 +495,9 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 12}
+      # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
+      # 罠の候補に載る。
+      rat_catch: {value: 4}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 18
@@ -519,6 +542,9 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
+      # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
+      # 罠の候補に載る。
+      rat_catch: {value: 4}
       # 石が1つだけ見つかる候補の重み。
       stone_find:
         value: 30
@@ -565,6 +591,9 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 15}
+      # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
+      # 罠の候補に載る。
+      rat_catch: {value: 4}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 15
@@ -615,6 +644,9 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
+      # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
+      # 罠の候補に載る。
+      rat_catch: {value: 4}
     actions:
       explore:
         showMenu: always

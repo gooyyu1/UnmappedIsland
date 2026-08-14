@@ -9,9 +9,11 @@
 object_defs:
   # 空心菜（クウシンサイ）。熱帯の水辺に自生する、採取しやすい葉物野菜。
   water_spinach:
-    tags: [item, food]
+    tags: [item, food, plant_bait]
     props:
       weight: {value: 150}
+      # 罠へ仕掛けると草食の卓が引かれやすくなる（docs/engine/TrapSystem.md 4節）。
+      plant_bait: {value: 8}
       # 葉物の束も詰めて縮まないので、嵩そのままで見る。
       volume: {value: 3000}
     actions:
@@ -24,9 +26,10 @@ object_defs:
 
   # ヤシガニ。狩猟の道具がなくても「見つけて捕まえる」だけで採取できる大型の甲殻類。
   coconut_crab:
-    tags: [item, food]
+    tags: [item, food, meat_bait]
     props:
       weight: {value: 2000}
+      meat_bait: {value: 12}
       volume: {value: 1900}
     actions:
       eat:
@@ -38,9 +41,10 @@ object_defs:
 
   # タロイモ。東南アジア島嶼が原産の塊茎作物（docs/world/Animals.md 概要節）。野生形が自生している。
   taro:
-    tags: [item, food]
+    tags: [item, food, plant_bait]
     props:
       weight: {value: 800}
+      plant_bait: {value: 12}
       volume: {value: 800}
     actions:
       eat:

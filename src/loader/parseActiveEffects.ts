@@ -435,9 +435,11 @@ function parseSpawnTargetRoot(context: string, raw: string | undefined): SpawnTa
       return 'self';
     case 'actor':
       return 'actor';
+    case 'child':
+      return 'child';
     default:
       throw new YamlLoadError(
-        `${context}: spawn.intoは 'same_slot'/'self'/'actor' のいずれかである必要があります（値: '${raw}'）。`,
+        `${context}: spawn.intoは 'same_slot'/'self'/'actor'/'child' のいずれかである必要があります（値: '${raw}'）。`,
       );
   }
 }

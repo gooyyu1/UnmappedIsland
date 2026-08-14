@@ -1,0 +1,201 @@
+# 罠の定義。仕組みは docs/engine/TrapSystem.md、掛かる動物は animals.yaml、刺さる怪我は
+# injuries.yaml（snare_laceration）が持つ。
+#
+# 罠は「時間と運を払って、危険を払わずに獲物を得る」道で、直接戦う狩猟（HuntingSystem.md）との
+# 非対称が設計の芯（TrapSystem.md 7節）。
+#
+# 今あるのはくくり罠1つだけ。サイズと生死の2軸（同1.2節）のうち「小型・殺す」の1マスで、
+# 残りのマス（かご罠・落とし穴・檻）はまだ無い。
+
+object_defs:
+  # くくり罠。繊維だけで作れる最初の罠（docs/world/SurvivalItems.md 1.2節）。
+  #
+  # 「仕掛けた罠」と「持ち歩く罠」を型で分けない（TrapSystem.md 1節）。作動しているかどうかは、
+  # 今どのスロットに入っているかが決める——土地のitemsスロットが「地面」で、手持ちはhand、
+  # かごの中はcontentsと名前が違うので、条件1つで書ける。
+  snare:
+    tags: [item, trap]
+    # 押すと掛かった獲物が並ぶ（7.8節）。レーンの上では空の罠と獲物入りの罠が見分けられない
+    # ——開けてみるまで分からない、が隠す処理を1つも書かずに成立する（TrapSystem.md 5節）。
+    main_item_slot: catch
+    # 中身が個体ごとに違うので束ねない。束ねると代表の状態しか映さず、空の罠と獲物の入った罠が
+    # 1枚に重なる（SlotSystem.md 4節・TrapSystem.md 1.1節）。
+    stackable: false
+    slots:
+      # 掛かったもの。**capacityは宣言しない**——上限を宣言すると容量のバーが出て（CardView.md 8節）、
+      # 比例するバーの長さが中身の体積＝ほぼ種類を、開ける前に漏らす（TrapSystem.md 1.1節）。
+      # サイズの上限はcatch_remainingのpickに並べた候補が持つ。
+      catch:
+        cell_count: 1
+        # quarryは生きた獲物と死体の両方が持つ（animals.yaml）。**animalで受けると、掛かった獲物が
+        # その場で死んだ瞬間に死体が枠から弾かれ、地面へ落ちる**——置き換えの配置も枠の要件を通る。
+        cell: {accept: {tag: quarry}}
+    props:
+      weight: {value: 300}
+      volume: {value: 1200}
+      # 次の判定までの残り（TrapSystem.md 2節）。**見えないタイマー**で、カードの状態バーは
+      # 名前で決まった量だけを映す（CardView.md 8節）ので隠す仕掛けは要らない。
+      #
+      # 初期値の幅は待ち時間ではなく**位相**（同2.1節）。複数の罠が同じtickに一斉に判定するのを
+      # 防ぐためだけのもので、待たされる長さは「当たるまでの回数」が作る。
+      catch_remaining:
+        value: {min: 1, max: 16}
+        # 0に達した瞬間にon_shortfallを発火させるため、下限は0ではなく1（6.3節）。
+        range: {min: 1, max: 16}
+        passives:
+          - conditions:
+              # 地面に置かれている間だけ（1節）。
+              - {in_slot: items}
+              # 空いている間だけ（6節）。獲物も死体もquarryなので、両方をこれ1つで拾う。
+              - not: {slot: catch, tag: quarry}
+            accumulate:
+              self:
+                catch_remaining: -1
+        # 外側は食性の卓を選び（餌が決める、4節）、内側はその卓で掛かるかどうかと種を選ぶ
+        # （土地が決める、3節）。周期の置き直しはaddとpickが排他な兄弟キーのため、葉にあたる
+        # 内側の候補すべてに複製する（10節。explore（locations.yaml）と同じ形）。
+        on_shortfall:
+          pick:
+            # 何も寄って来なかった回。先頭に置く（3節）。
+            - weight: {prop: miss_weight}
+              add: {self: {catch_remaining: 16}}
+            - weight: {prop: herbivore_weight}
+              pick:
+                # 寄ってはきたが掛からなかった回。その食性の相手が1種も居ない土地では、必ずここへ
+                # 落ちる（全候補0だと先頭が選ばれるため、先頭に置く）。
+                - weight: 8
+                  add: {self: {catch_remaining: 16}}
+                - weight: {prop: junglefowl_catch}
+                  add: {self: {catch_remaining: 16}}
+                  spawn:
+                    - {object: junglefowl, into: self}
+                    # 直前に生んだ獲物のinjuriesスロットへ（into: child、9.4節・TrapSystem.md 5.3節）。
+                    - {object: snare_laceration, into: child}
+                - weight: {prop: rat_catch}
+                  add: {self: {catch_remaining: 16}}
+                  spawn:
+                    - {object: rat, into: self}
+                    - {object: snare_laceration, into: child}
+            - weight: {prop: carnivore_weight}
+              pick:
+                - weight: 8
+                  add: {self: {catch_remaining: 16}}
+                # ネズミは雑食なので、同じつまみで両方の卓に載る（4.1節）。
+                - weight: {prop: rat_catch}
+                  add: {self: {catch_remaining: 16}}
+                  spawn:
+                    - {object: rat, into: self}
+                    - {object: snare_laceration, into: child}
+      # その土地でその動物が掛かる重み。素の値は0で、祖先（＝置かれている土地、locations.yaml）が
+      # 宣言していればその実効値が加わる（inherit、6.5節）。**宣言していない土地ではその候補が
+      # 抽選から外れる**ので、罠の側は1行も書き換えずに「岩礁海岸にヤケイは掛からない」が決まる。
+      junglefowl_catch: {value: 0, inherit: true}
+      rat_catch: {value: 0, inherit: true}
+      # 食性の卓の重み。素は互角で、餌が片方を押し上げる（4節）。
+      herbivore_weight: {value: 10, range: {min: 0, max: 35}}
+      carnivore_weight: {value: 10, range: {min: 0, max: 35}}
+      # 何も寄って来なかった回の重み。どちらの餌でも下がるが、range.minが5で止めるので必中には
+      # ならない（8.3節。合成結果の下限はプロパティ側のrangeが持つ）。
+      miss_weight: {value: 40, range: {min: 5, max: 40}}
+      # 仕掛けた餌。餌の側では「仕掛けると増える量」（4節）。仕掛けている間だけ減るので、
+      # 24 tick（6時間）で切れる——罠を放置しても餌は待っていてくれない。
+      plant_bait:
+        value: 0
+        range: {min: 0, max: 24}
+        passives:
+          - conditions:
+              - {in_slot: items}
+            accumulate:
+              self:
+                plant_bait: -1
+      meat_bait:
+        value: 0
+        range: {min: 0, max: 24}
+        passives:
+          - conditions:
+              - {in_slot: items}
+            accumulate:
+              self:
+                meat_bait: -1
+      # 繊維の罠は短命な素材（DurabilitySystem.md 2節の-1/tick＝10日）。獲物が入っている間は
+      # もがかれるので桁違いに速く傷み、0で自壊する（TrapSystem.md 6.1節）。
+      #
+      # 壊れた罠の中身は道連れにならず土地へこぼれる（9.3節）。拘束のmodifyが消えて警戒が戻るので、
+      # **放置した罠の跡には暴れる獲物が立っている**。
+      durability:
+        value: 960
+        range: {min: 1, max: 960}
+        passives:
+          - conditions:
+              - {in_slot: items}
+            accumulate:
+              self:
+                durability: -1
+          - conditions:
+              - {slot: catch, tag: quarry}
+            accumulate:
+              self:
+                durability: -10
+        on_shortfall:
+          destroy: self
+    passives:
+      # 掛かった獲物の拘束（TrapSystem.md 5節）。気を失った動物への宣言（animals.yamlの
+      # consciousnessのunconscious段）とまったく同じ内容で、罠は「もがけない状態」を外から与える
+      # 2つ目の道になる。
+      #
+      # これ1つで3つ決まる: resistsが成立しないので飛び出さない・仕留めの重みが跳ね上がるので
+      # その場で仕留められる・罠から出せば寄与が消えて暴れる。
+      - modify:
+          child:
+            wariness: -100
+            vulnerability: 200
+      # 餌は「その食性の卓が引かれやすくなる」と「何も寄って来ない回が減る」を同時に言う。
+      # 動物ごとの重みには触れない——触れると宣言していない土地でも重みが立ち、そうさせない条件は
+      # 自分の実効値を見ることになって循環する（14.1節・同3節）。
+      - conditions:
+          - {prop: plant_bait, gte: 1}
+        modify:
+          self:
+            herbivore_weight: 25
+            miss_weight: -25
+      - conditions:
+          - {prop: meat_bait, gte: 1}
+        modify:
+          self:
+            carnivore_weight: 25
+            miss_weight: -25
+    combinations:
+      # 餌を仕掛ける（TrapSystem.md 4節）。炉へ薪をくべるのとまったく同じ形（FireSystem.md 2節）で、
+      # 移る量は餌の側が1箇所で持つ。草の餌と肉の餌で1つずつ。
+      add_plant_bait:
+        with: plant_bait
+        duration: 1
+        conditions:
+          - {reason: trap_baited, prop: plant_bait, lt: 24}
+        transfer:
+          amount: 999
+          from_object: dragged
+          from_prop: plant_bait
+          to_prop: plant_bait
+        # 中途半端に残った餌を作らない。入りきらなかった分は失われるが、満杯を拒む条件があるので
+        # 失うのは高々1個ぶん。
+        destroy: dragged
+      add_meat_bait:
+        with: meat_bait
+        duration: 1
+        conditions:
+          - {reason: trap_baited, prop: meat_bait, lt: 24}
+        transfer:
+          amount: 999
+          from_object: dragged
+          from_prop: meat_bait
+          to_prop: meat_bait
+        destroy: dragged
+    # 解放条件（conditions、13.3節）はまだ置かない。狩猟スキルのプロパティと、それを伸ばす経路が
+    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
+    recipes:
+      knotted:
+        steps:
+          - requires:
+              - {object: plant_fiber, count: 2, consume: true}
+            duration: 30

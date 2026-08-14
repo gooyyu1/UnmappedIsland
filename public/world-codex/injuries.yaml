@@ -109,3 +109,48 @@ object_defs:
         accumulate:
           parent:
             blood: -15
+
+  # くくり罠の傷（docs/engine/TrapSystem.md 5.1節）。縄が食い込んで裂ける傷で、鈍器で裂かれる
+  # laceration より浅い。
+  #
+  # **掛かり方の深さを生成時に1回だけロールする**（6.2節）。同じ罠でも、浅く掛かれば生き延び、
+  # 深く食い込めば死ぬ——1kgのヤケイ（血80mL）がちょうど分かれ目になる。
+  snare_laceration:
+    tags: [injury]
+    traits: [treatable]
+    bound_to_owner: true
+    stackable: false
+    props:
+      # 自然に治るまで240〜480 tick（2.5〜5日）。深く食い込んだ個体ほど長く残る。
+      severity:
+        value: {min: 240, max: 480}
+        range: {min: 1, max: 480}
+        stages:
+          - {name: mending}
+          - {name: sore, min: 160, alert: watch}
+          - {name: acute, min: 320, alert: caution}
+        passives:
+          - accumulate:
+              self:
+                severity: -1
+        on_shortfall:
+          destroy: self
+      # 2〜4 tickで固まり、その間に30〜60mLを奪う。レートは laceration と同じ-15/tickで、
+      # 変わるのは初期値の幅だけ——罠は傷の勢いではなく、掛かりの深さでばらつく。
+      bleeding:
+        value: {min: 40, max: 100}
+        range: {min: 0, max: 100}
+        passives:
+          - accumulate:
+              self:
+                bleeding: -25
+    passives:
+      - modify:
+          parent:
+            pain: 50
+      - conditions:
+          - {prop: bleeding, gte: 1}
+          - not: {slot: treatment, tag: hemostatic}
+        accumulate:
+          parent:
+            blood: -15

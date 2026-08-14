@@ -252,7 +252,13 @@ export type SpawnTargetRoot =
   /** self が持つスロットを宣言順に走査する。 */
   | 'self'
   /** actor が持つスロットを宣言順に走査する。 */
-  | 'actor';
+  | 'actor'
+  /**
+   * selfの子を順に走査し、最初に受け取れた子のスロットへ入れる。intoが既に持つ「宣言順に走査して最初に
+   * 配置できた所へ」という決め方が、1階層下へ伸びるだけ（docs/engine/TrapSystem.md 5.3節）。
+   * 罠が自分の生んだ獲物へ怪我を渡す経路で、actorを持たないon_shortfallからは他に手段が無い。
+   */
+  | 'child';
 
 /**
  * spawn（9.4節）の1命令。Into への配置に失敗した場合は必ず起点の親へ伝播し、枠の要件・capacityを無視して
