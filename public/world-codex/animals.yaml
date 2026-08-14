@@ -78,11 +78,16 @@ traits:
           # 気を失っている間はカードに覆いが出て（CardView.md 9.1節）、絵も倒れた姿へ差し替わる
           # （art_by_stage、beast trait・GameElementDefinition.md 6.4節）。
           #
+          # **接尾辞が`carcass`なのは、死体の絵をそのまま借りるため。** 倒れた個体と死にたての死体は
+          # 同じ姿なので、絵を1枚に共有する（CardView.md 5.1節）。この型の死体は`<この型>_carcass`と
+          # 名付ける規約なので、接尾辞を足した名前がちょうどその絵を指す——規約が崩れると絵は黙って
+          # 生きた姿のままになるため、tests/game/objectArt.test.tsで検査する。
+          #
           # 警戒はここで打ち消す。気を失った動物は警戒しておらず、放っておいてよい相手なので、
           # 縁の明滅（CardView.md 3節）も止まる。実効値への寄与なので、目覚めれば元の警戒へ戻る。
           - name: unconscious
             alert: danger
-            art: unconscious
+            art: carcass
             passives:
               # 気を失った相手は狙って急所を打てる。仕留めの重みが跳ね上がり、警戒は消える。
               - modify: {self: {wariness: -100, vulnerability: 200}}
