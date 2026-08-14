@@ -240,8 +240,11 @@ export interface CardContent {
    */
   readonly road?: boolean;
 
-  /** 耐久度（0〜1）。耐久度を持たないカードはundefined（バーそのものを出さない）。 */
-  readonly durability?: number;
+  /**
+   * カード下端の値バー（0〜1、耐久度・炉の残り薪など。`gauge`プロパティタグ、CardView.md 8節）。
+   * 持たないカードはundefined（バーそのものを出さない）。
+   */
+  readonly gauge?: number;
 
   /** 中身の割合（液体容器のカードだけが持つ）。 */
   readonly fill?: CardFill;
@@ -304,8 +307,7 @@ export interface CardContent {
  * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background, kind, alert, road, durability, fill, severity, mark, overlay } =
-    content;
+  const { icon, name, art, background, kind, alert, road, gauge, fill, severity, mark, overlay } = content;
   const { capacityRatio, materialRatio, stepRatio, inProgress } = content;
   return {
     icon,
@@ -315,7 +317,7 @@ export function cardFace(content: CardContent): CardContent {
     kind,
     alert,
     road,
-    durability,
+    gauge,
     fill,
     capacityRatio,
     severity,
@@ -396,7 +398,7 @@ export class Card extends Phaser.GameObjects.Container {
    * 状態を表すバー。値を持たない間は隠すだけで、作り直さない——作り直すと、変わった分を遅れて
    * 追いつかせる動き（ProgressBar.setRatio）が途中で消えるため。
    */
-  private readonly durabilityBar: ProgressBar;
+  private readonly gaugeBar: ProgressBar;
   private readonly fillBar: ProgressBar;
   private readonly capacityBar: ProgressBar;
   private readonly severityBar: ProgressBar;
@@ -461,7 +463,8 @@ export class Card extends Phaser.GameObjects.Container {
     ]);
 
     // 状態のバーは枠より後に足して、桟の上へ重ねる。
-    this.durabilityBar = this.addRailBar(scene, metrics, { fillColor: durabilityColorFor });
+    // 満ちるほど緑・尽きるほど赤（durabilityColorFor）。gaugeタグが付いた物が何であれ同じ色域を使う。
+    this.gaugeBar = this.addRailBar(scene, metrics, { fillColor: durabilityColorFor });
     this.fillBar = this.addRailBar(scene, metrics, {
       // 中身は入れ替わる（飲み干した水筒へ茶を注ぐ）ので、色は今の中身のものを引き直す。
       fillColor: () => this._content.fill?.color ?? COLOR.cardFillUnknown,
@@ -688,7 +691,7 @@ export class Card extends Phaser.GameObjects.Container {
       // 決めている（材料が上、工程が下。CardView.md 10節 製作中オブジェクトのカード）。
       { bar: this.materialBar, ratio: content.materialRatio },
       { bar: this.stepBar, ratio: content.stepRatio },
-      { bar: this.durabilityBar, ratio: content.durability },
+      { bar: this.gaugeBar, ratio: content.gauge },
       { bar: this.fillBar, ratio: content.fill?.ratio },
       { bar: this.capacityBar, ratio: content.capacityRatio },
       { bar: this.severityBar, ratio: content.severity?.ratio },

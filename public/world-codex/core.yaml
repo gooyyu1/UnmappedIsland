@@ -10,6 +10,9 @@ property_tags:
   status:
   health:
   nutrition:
+  # カードの下端に、緑から赤へ寄る値バーとして出すもの（耐久度・炉の残り薪など。CardView.md 8節）。
+  # statusと同じく、どのカテゴリかではなく「カードにバーで出すか」だけを表す。
+  gauge:
 
 traits:
   # あらゆる「場所」が探索の可否によらず共通して持つ構造（ExplorationSystem.md参照）。

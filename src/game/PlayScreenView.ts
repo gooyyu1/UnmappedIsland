@@ -336,12 +336,20 @@ const UNNAMED_LOCATION = '名もなき土地';
 const STATUS_TAG = 'status';
 
 /**
+ * カードの下端に汎用の値バー（緑から赤へ寄る、CardView.md 8.1節）として出すプロパティに付けるタグ
+ * （GameElementDefinition.md 6.7節）。耐久度・炉の残り薪など、意味は物ごとに違うが見せ方は同じ量に付ける。
+ *
+ * UI側は「gaugeタグを持つ物がこのバーを出す」とだけ知っていて、どの名前のプロパティかは知らない。
+ * 後から足された物も、既存のプロパティ（例えば独自の耐久度）にこのタグを付けるだけで同じバーに出せる。
+ */
+const GAUGE_TAG = 'gauge';
+
+/**
  * カードの状態バーが映すプロパティの名前（CardView.md 8節 カードの状態バー）。
  * いずれもGameElementDefinition.md・LiquidContainerSystem.mdが名前ごと決めている語彙で、UI側は
  * 「その名前を持つ物が状態バーを出す」「バーの色はその名前のプロパティが決める」とだけ知っている。
  * 後から足された物——MODの液体——も、同じ名前で宣言するだけで同じように出る。
  */
-const DURABILITY_PROPERTY = 'durability';
 const SEVERITY_PROPERTY = 'severity';
 const CONSCIOUSNESS_PROPERTY = 'consciousness';
 const COLOR_PROPERTY = 'color';
@@ -446,13 +454,17 @@ export function fromGameSession(
       });
   }
 
-  const durabilityPropertyId = codex.propertyNames.tryGetId(DURABILITY_PROPERTY);
+  const gaugeTagId = codex.propertyTagNames.tryGetId(GAUGE_TAG);
   /**
-   * カードの下端に出す耐久度（0〜1）。durabilityを持たない物と、持っていても上下限（range）が無く
-   * 割合を定義できない物はundefined。
+   * カードの下端に出す値バー（0〜1、耐久度・炉の残り薪など）。gaugeタグを持つプロパティが無い物、
+   * 持っていても上下限（range）が無く割合を定義できない物はundefined。
+   *
+   * 複数付いていれば、propsの宣言順で最初の1つ（WorldObject.exhaustedStageと同じ規約）。
+   * 1つの物には1つしか付けない前提で、2つ以上付くと片方が静かに出なくなる
+   * （`tests/worldCodex/gaugeYaml.test.ts` がこの前提を検査する）。
    */
-  const durabilityOf = (object: WorldObject): number | undefined =>
-    durabilityPropertyId === undefined ? undefined : object.readProperty(durabilityPropertyId)?.ratio;
+  const gaugeOf = (object: WorldObject): number | undefined =>
+    gaugeTagId === undefined ? undefined : object.readPropertiesWithTag(gaugeTagId).at(0)?.ratio;
 
   const severityPropertyId = codex.propertyNames.tryGetId(SEVERITY_PROPERTY);
   /** 怪我のカードに出す、残っている傷（docs/engine/InjurySystem.md）。severityを持たない物はundefined。 */
@@ -703,7 +715,7 @@ export function fromGameSession(
     background: slotOfObject(instances[0]),
     // 状態のバーは代表のものを出す。個体ごとに違い得る値だが、名前も絵も操作も代表のものなので、
     // 1枚に束ねたカードが映すのは代表の状態で揃える。
-    durability: durabilityOf(instances[0]),
+    gauge: gaugeOf(instances[0]),
     fill: fillOf(instances[0]),
     capacityRatio: capacityRatioOf(instances[0]),
     severity: severityOf(instances[0]),

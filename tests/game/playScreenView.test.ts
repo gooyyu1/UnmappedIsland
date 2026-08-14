@@ -288,7 +288,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     );
   });
 
-  it('耐久度を持つカードだけが、その残りの割合を持つ', () => {
+  it('gaugeタグの付いたプロパティを持つカードだけが、その残りの割合を持つ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const handSlotId = codex.slotNames.getId('hand');
     const durabilityId = codex.propertyNames.getId('durability');
@@ -298,21 +298,39 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       expect(item.moveToSlot(game.player.instance, handSlotId)).toBeUndefined();
     }
 
-    expect(fromGameSession(game, codex, locale).hand[0]?.durability, '作りたては満タン').toBe(1);
-    expect(fromGameSession(game, codex, locale).hand[1]?.durability, '石は耐久度を持たない').toBeUndefined();
+    expect(fromGameSession(game, codex, locale).hand[0]?.gauge, '作りたては満タン').toBe(1);
+    expect(fromGameSession(game, codex, locale).hand[1]?.gauge, '石は耐久度を持たない').toBeUndefined();
 
     sharpStone.addNumber(durabilityId, -sharpStone.getNumber(durabilityId) / 4, game.session);
 
-    expect(fromGameSession(game, codex, locale).hand[0]?.durability, '減った分だけ割合が下がる').toBe(0.75);
+    expect(fromGameSession(game, codex, locale).hand[0]?.gauge, '減った分だけ割合が下がる').toBe(0.75);
   });
 
-  it('怪我のカードは耐久度ではなく、残っている傷とその域を持つ', () => {
-    // 耐久度バーは道具の控えめな細線で、あとどれだけで治るかはそれとは別の見せ方をする
+  it('竈は残っている薪の割合を値バーとして持つ', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const fuelId = codex.propertyNames.getId('fuel');
+    const campfire = game.session.spawn(codex.objectNames.getId('campfire'));
+    expect(
+      campfire.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures')),
+    ).toBeUndefined();
+
+    expect(fromGameSession(game, codex, locale).fixtures[0]?.gauge, '薪が無ければ0').toBe(0);
+
+    campfire.setNumber(fuelId, campfire.getNumber(fuelId) + 15, game.session);
+
+    expect(fromGameSession(game, codex, locale).fixtures[0]?.gauge, 'くべた分だけ割合が上がる').toBeCloseTo(
+      0.5,
+      2,
+    );
+  });
+
+  it('怪我のカードは値バーではなく、残っている傷とその域を持つ', () => {
+    // 値バーは道具の控えめな細線で、あとどれだけで治るかはそれとは別の見せ方をする
     // （CardView.md 8節 カードの状態バー）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const injury = injure(game);
 
-    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].durability).toBeUndefined();
+    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].gauge).toBeUndefined();
     expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].severity).toEqual({
       ratio: 1,
       alert: 'caution',
