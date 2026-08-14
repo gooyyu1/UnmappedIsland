@@ -251,7 +251,11 @@
       "髑髏が入ると素材ではなく戦利品に見える。",
       "",
       "**「1つの物」を強いる否定語は外してある**（pile / stack / two objects など）。この物は",
-      "束そのものなので、それらを否定すると骨1本になる。散らばりだけを scattered で止める。"
+      "束そのものなので、それらを否定すると骨1本になる。散らばりだけを scattered で止める。",
+      "",
+      "**骨を交差させるのは生成では無理。** crossing over each other in an X と本文で頼み、",
+      "parallel / lined up in a row を否定しても、8枚とも平行に並べてくる。交差は編集の側で作る",
+      "（recipes/animal_bone.json）。"
     ],
     "positive": "exactly one small bundle of clean animal bones alone on an empty white page, a few dry long leg bones with knobbly ends and two curved rib bones laid together in a neat bundle, pale ivory and bone white with faint brown staining, dry matte porous surface, no skull and no teeth, the bundle is small and lies in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "skull, cranium, skeleton, whole skeleton, spine, vertebrae, jaw, teeth, horns, antlers, tusks, ribcage, animal, dog, live animal, meat on the bone, flesh, blood, fossil, dinosaur bone, bone weapon, carved bone, driftwood, branch, stick, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"

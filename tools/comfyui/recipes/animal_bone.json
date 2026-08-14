@@ -5,10 +5,17 @@
     "",
     "**2段構え**（recipes/woven_basket.json と同じ）。",
     "",
-    "**toleranceを16まで下げる。** 骨は生成りで、紙との明度差が中央値で32しかない。既定の60でも",
-    "40でも芯に入らず、骨の大半が透けて消える（実測）。背景は無地なので下げても紙のムラは拾わない。",
+    "**並べ直すのは編集の側。** 生成は太い骨を平行に並べることしかせず、交差を本文で頼んでも",
+    "並びを否定しても8枚とも平行だった（prompts/objects.json 参照）。平行な2本の束は札の上で",
+    "釣り合いが悪いので、Qwen に積み直させる。",
     "",
-    "段は320。細長い骨を束ねた1枚なので、長辺で見ると石より大きい。"
+    "**交差させ「すぎ」てもいけない。** 2本をXに組ませると左右対称の紋章になり、海賊旗の記号に",
+    "見えた。落とした先で重なったように——角度も端の高さも揃えずに——積ませる。",
+    "",
+    "**toleranceを16まで下げる。** 骨は生成りで、紙との明度差が中央値で45しかない。既定の60では",
+    "芯に入らず、骨が透けて消える。背景は無地なので下げても紙のムラは拾わない。",
+    "",
+    "段は320。細長い骨を積んだ1枚なので、長辺で見ると石より大きい。"
   ],
   "output": "src/assets/objects/animal_bone.png",
   "prompts": "objects.json",
@@ -18,10 +25,10 @@
   "noTrigger": true,
   "width": 832,
   "height": 1280,
-  "seed": 9201,
+  "seed": 9203,
   "edit": {
-    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the bones exactly as they are in shape and layout, but paint them with soft brush strokes and gentle natural shading instead of photographic detail, and calm the colour down to a warm pale ivory with faint brown staining. Remove the background completely and replace it with a plain empty white page, leaving the bones alone in the middle with a wide white margin all around them and a soft grey shadow directly beneath them. Dry matte surface, flat even lighting. No skull, no text, no letters, no numbers.",
-    "seed": 1
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep these same thick animal leg bones, but lay them down in a loose untidy heap as if they had just been dropped there: one long bone lies almost horizontally, a second long bone rests on top of it at a shallow slanting angle so that they overlap near one end instead of crossing in the middle, and the shorter bone lies apart at yet another angle. Their ends are at different heights and nothing is lined up or symmetrical. Paint them with soft brush strokes and gentle natural shading instead of photographic detail, and calm the colour down to a warm pale ivory with faint brown staining. Remove the background completely and replace it with a plain empty white page, leaving the bones alone in the middle with a wide white margin all around them and a soft grey shadow directly beneath them. Dry matte surface, flat even lighting. No symmetrical cross, no crossbones emblem, no skull, no text, no letters, no numbers.",
+    "seed": 5
   },
   "cardArt": {
     "size": "320",
