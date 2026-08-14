@@ -279,6 +279,52 @@ object_texts:
     display_name: 編んだ葉
     description: ヤシの葉を編んだ平たいパネル。籠にも壁にも屋根にも使える。
 
+  # 繊維を撚る連鎖（fiber.yaml）。
+  abaca:
+    display_name: アバカ
+    description: バナナによく似た草。実は種ばかりで食べられないが、茎から丈夫な繊維が大量に採れる。
+    combinations:
+      fell:
+        display_name: 切り倒す
+        description: 根元を刃物で断ち、運べる長さに切り分ける。株立ちなので何本も採れる。
+  banana_plant:
+    display_name: バナナの株
+    description: 実を付けたバナナ。一度実った茎は二度と実らないので、房を採るには切り倒すことになる。
+    combinations:
+      fell:
+        display_name: 切り倒す
+        description: 根元を刃物で断ち、房を外して茎を切り分ける。
+  banana:
+    display_name: バナナ
+    description: 野生のバナナ。栽培種と違って硬い種が多く、果肉は少ない。
+  banana_stem:
+    display_name: バナナの茎
+    description: 木のように見えて、葉鞘が巻き重なっただけの茎。水を含んで重く、繊維はこの葉鞘にある。
+    combinations:
+      strip:
+        display_name: 繊維を掻き取る
+        description: 葉鞘を1枚ずつ剥ぎ、刃を立てて引き抜いて肉を落とす。髄と水はその場に捨てる。
+  plant_fiber:
+    display_name: 植物繊維
+    description: 掻き取って干した繊維のひと束。細く長いが、1本では何も縛れない。
+    combinations:
+      spin:
+        display_name: 撚る
+        description: 2束を手のひらで転がして1本に撚る。撚りに入りきらない短い屑は落ちる。
+  yarn:
+    display_name: 糸
+    description: 繊維を撚った糸。細いが長く、縫うにも縛るにも使える。
+    combinations:
+      ply:
+        display_name: 撚り合わせる
+        description: 2本を撚りとは逆向きに撚り合わせる。互いの撚りが噛んで解けなくなる。
+  cord:
+    display_name: 紐
+    description: 糸を撚り合わせた太さのあるひも。道具の頭を柄に縛りつけられる。
+  rope:
+    display_name: ロープ
+    description: 紐3本を逆撚りに組んだ縄。太く、体重を預けても切れない。
+
   # 入れ物（containers.yaml）。
   woven_basket:
     display_name: 編み籠
