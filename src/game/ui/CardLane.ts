@@ -23,10 +23,11 @@ export type LaneDropTarget =
   | { readonly kind: 'cell'; readonly index: number };
 
 /**
- * カードの左右のうち、隙間へ落としたものとして扱う幅の比。カード同士の実際の隙間（12u）は狭く、
- * 移したいだけなのにcombinationと判定されやすいため、その手前を隙間側へ寄せる。
+ * カードの左右のうち、カード本体ではなく周り——落とし先としては隙間、ドラッグの始まりとしてはレーン
+ * ——として扱う幅の比。カード同士の実際の隙間（12u）は狭く、そのままでは隙間を狙うのも
+ * レーンを掴むのも難しいため、その手前を周り側へ寄せる。
  */
-const GAP_EDGE_RATIO = 1 / 8;
+const CARD_EDGE_RATIO = 1 / 8;
 
 /** 隙間を示す帯の幅（u単位）。 */
 const INSERT_MARK_WIDTH = 10;
@@ -371,7 +372,7 @@ export class CardLane {
   /**
    * 画面上の1点が指すドロップ先（レーンの外ならundefined）。
    *
-   * カードの中央部分だけを「そのカードに重ねた」とみなし、左右のGAP_EDGE_RATIO分とカード同士の隙間は
+   * カードの中央部分だけを「そのカードに重ねた」とみなし、左右のCARD_EDGE_RATIO分とカード同士の隙間は
    * 「隙間へ落とした」として扱う。空き枠は送り幅いっぱいが「その枠へ落とした」——枠が見えている以上、
    * 狙うのは両隣の隙間ではなく枠そのものになるため。**並びの末尾より右も、末尾が空き枠ならその枠**
    * （受け皿の枠は並びの終わりそのもので、その先に別の落とし先は無い）。
@@ -396,9 +397,19 @@ export class CardLane {
     // カード1枚分の送り幅のうち、カードの右側にはみ出した分がカード同士の実際の隙間。
     const offset = localX - index * this.pitch;
     if (offset >= this.cardWidth) return { kind: 'gap', index: index + 1 };
-    if (offset < this.cardWidth * GAP_EDGE_RATIO) return { kind: 'gap', index };
-    if (offset > this.cardWidth * (1 - GAP_EDGE_RATIO)) return { kind: 'gap', index: index + 1 };
+    if (offset < this.cardWidth * CARD_EDGE_RATIO) return { kind: 'gap', index };
+    if (offset > this.cardWidth * (1 - CARD_EDGE_RATIO)) return { kind: 'gap', index: index + 1 };
     return { kind: 'combine', index };
+  }
+
+  /**
+   * 画面上の1点が、添字のカードの本体を指しているか。カードの上から始まったドラッグが、そのカードを
+   * 掴んだ操作なのかレーンの横スクロールなのかを見分けるのに使う（CardDragController参照）。
+   * 本体とみなす範囲は落とし先の判定と同じで、左右のCARD_EDGE_RATIO分はレーン側に譲る。
+   */
+  isCardBody(x: number, y: number, index: number): boolean {
+    const target = this.dropTargetAt(x, y);
+    return target?.kind === 'combine' && target.index === index;
   }
 
   /** ドロップ先を示す枠の位置（カード・空き枠ならその枠そのもの、隙間なら細い縦帯）。 */
