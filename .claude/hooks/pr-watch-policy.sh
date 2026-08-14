@@ -5,7 +5,7 @@
 # 判定しているため）。フックの permissionDecision は許可判定そのものを置き換えるので、
 # ここで allow を返して確認を止める。
 #
-# 許可と、実際に使うかどうかは別。PRをウォッチしない方針はCLAUDE.md「作業ブランチ・PRの運用」。
+# 許可するだけで、使い方は変えない（ウォッチの運用はCLAUDE.md「作業ブランチ・PRの運用」）。
 set -euo pipefail
 
 tool=$(jq -r '.tool_name // empty')

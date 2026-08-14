@@ -74,11 +74,7 @@ TypeScriptのコーディング規約は [`docs/engine/CodingConventions.md`](do
   始める（過去のセッションでは、これを確認せずに古いブランチへプッシュしようとして
   non-fast-forwardで失敗し、リカバリに手間取ったことが複数回あった）。
 - 変更を加えたあとは、ユーザーに確認を取らずにPR作成まで進めてよい。
-- **作ったPRをウォッチしない。** マージはユーザーが自分で行うので、`subscribe_pr_activity` での購読も、
-  `send_later` / `create_trigger` による自己チェックインの予約もしない。CIの結果やレビューを見るなら、
-  そのセッションの中で見終えて報告する。
-- PR作成時の購読は、こちらが呼ばなくてもハーネスがサーバ側で入れてくる。購読された旨のイベントが
-  来たら `unsubscribe_pr_activity` で解除して、そのままターンを終える。
-- 上記ツールは `.claude/hooks/pr-watch-policy.sh`（PreToolUseフック）が確認を求めずに許可する。
-  `permissions.allow` に並べてもプロンプトが出続けるため、フックの `permissionDecision` で許可している。
-  許可されていることと使ってよいことは別で、使う・使わないは上の2項が決める。
+- PRのウォッチ（購読・自己チェックインの予約）は標準の挙動どおりに行ってよい。使う `send_later` /
+  `*_trigger` / `*subscribe_pr_activity` は `.claude/hooks/pr-watch-policy.sh`（PreToolUseフック）が
+  確認を求めずに許可する。`permissions.allow` に並べてもプロンプトが出続けるため、フックの
+  `permissionDecision` で許可している。
