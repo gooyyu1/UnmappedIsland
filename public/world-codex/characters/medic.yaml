@@ -24,10 +24,14 @@ object_defs:
               self:
                 satiety: -1
       # 満水から3日（288 tick）。
+      # 尽きれば渇きで死ぬ。on_shortfallが既定のクランプを置き換えるので、0を割った値はそのまま残り、
+      # 死因（どの段で尽きたか）を後から読める（VitalsSystem.md 6節）。
       hydration:
         tags: [status, nutrition]
         value: 216
         range: {min: 0, max: 288}
+        on_shortfall:
+          destroy: self
         stages:
           - {name: dehydrated, alert: fatal}
           - {name: parched, min: 24, alert: danger}
@@ -40,10 +44,17 @@ object_defs:
               self:
                 hydration: -1
       # 絶食に耐えられるのは、最大限に肥えた状態から60日（5760 tick）。
+      # 尽きれば飢えで死ぬ（水分と同じ形）。
       body_fat:
         tags: [nutrition]
         value: 1440
         range: {min: 0, max: 5760}
+        on_shortfall:
+          destroy: self
+        stages:
+          # 蓄えが尽きる域。残り1日（96 tick）を割ったらここへ入り、この段の名前が死因になる。
+          - {name: starved, alert: fatal}
+          - {name: nourished, min: 96}
         passives:
           - accumulate:
               self:

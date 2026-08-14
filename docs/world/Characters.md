@@ -47,17 +47,26 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 数値のスケールは [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.0節に従い、
 `range.min` は常に0。1 tick = 15分、1時間 = 4 tick。
 
+**尽きると死ぬのは `hydration` / `body_fat` / `blood` の3つ**（[`VitalsSystem.md`](../engine/VitalsSystem.md) 8 節）。
+いずれも `range.min`（＝0）を割った時点で `on_shortfall` が自分を `destroy` する、同じ形で書く。既定の
+クランプを置き換えるので**尽きた値は範囲の外に残り**、消えたあとでも「何が尽きたか」を段から読める
+（`WorldObject.exhaustedStage`）。**死因の名前になるのは、その値が居る段**（`dehydrated` / `starved` /
+`exsanguinated`）で、画面はその段の文言を出すだけ。
+
 - **`satiety`（満腹度）**: 満腹から空になるまでの時間を `-1/tick` で表す（`max` = tick数）。
   0でも即死せず体調不良につながる想定（未実装。餓死は `body_fat` が受け持つため致命的域は持たない）。
 - **`hydration`（水分）**: `-1/tick` 固定で、`max` が「満水から何 tick 保つか」。**減り方に個体差を
   持たせない**——キャラクタが違っても、飲んだ水1mLの意味が変わってはならないため。持ちの差は
   `max`（＝体が抱える水の量）で表す。液体の mL からの換算は飲用側の宣言が持つ（`transfer` の
   `to_amount`、[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5節）。
-  脱水はそのまま死に至るため、致命的域（`fatal`）を持つ唯一のステータス。
+  脱水はそのまま死に至るため、致命的域（`fatal`）を持つ唯一のステータス。尽きた段の名前は
+  **`dehydrated`**。
   `min: max` の段 **`full`**（満水ちょうど）を持ち、名前を固定する——液体の `drink` がこの名前で
   「もう飲めない」を見る（[`LiquidContainerSystem.md`](../engine/LiquidContainerSystem.md) 5節）。
-- **`body_fat`（体脂肪）**: 尽きると餓死する致死的パラメータ（餓死の実処理は未実装）。`-1/tick` で、
-  `max` は「最大限に肥満した状態」から絶食で保つ tick 数、初期値はその1/4（標準体格）。
+- **`body_fat`（体脂肪）**: 尽きると餓死する。`-1/tick` で、`max` は「最大限に肥満した状態」から絶食で
+  保つ tick 数、初期値はその1/4（標準体格）。段は残り1日（96 tick）で切るだけで、尽きる域の名前が
+  **`starved`**。`status` タグを持たないためステータスエリアには出ない——画面に見える飢えの兆しは
+  満腹度が受け持つ。
 - **`wakefulness`（覚醒度）**: 0で強制的に眠りに入る想定（未実装。致死性は無い）。`-1/tick`。
 - **`stamina`（体力）**: 疲労の逆で、tickでは減らない。
 - **`pain`（痛み）**: 負っている怪我（[`InjurySystem.md`](../engine/InjurySystem.md)）が `modify` で押し上げる値。自分では
@@ -65,8 +74,9 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   身体の仕組みなので、栄養バランスと同じく個体差を持たせず `player_character` trait が配る。
 - **`blood`（血液量、mL）**: `max` が体格そのもの（体重のおよそ1/13）で、満タンから始まる。**唯一、
   自分で戻るステータス**（`+2/tick` ＝ 1日およそ200mL、赤血球が作られる実際の速さ）。削るのは出血する
-  怪我だけなので、**削られるのは一瞬でも戻るのは桁違いに遅い**——失った1,000mLに5日かかる。刻み方は
-  [`VitalsSystem.md`](../engine/VitalsSystem.md) 3 節、これも個体差を持たせず trait が配る。
+  怪我だけなので、**削られるのは一瞬でも戻るのは桁違いに遅い**——失った1,000mLに5日かかる。尽きた段の
+  名前は **`exsanguinated`**。刻み方は [`VitalsSystem.md`](../engine/VitalsSystem.md) 3 節、これも個体差を
+  持たせず trait が配る。
 - **`load`（荷重）**: 持ち物と装備の重さ（g）。自分では動かず、中身から導出される
   （[`ContainerSystem.md`](../engine/ContainerSystem.md) 2節）ので `value` は 0 のまま。`max` が
   「担げる量」そのもので、担ぎ慣れの個人差はここに出る。

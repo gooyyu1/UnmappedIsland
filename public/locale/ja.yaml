@@ -588,9 +588,14 @@ reason_texts:
   not_raining: 雨は降っていない。溜められる雨がない。
 
 # 段（GameElementDefinition.md 6.4節のstages）のうち、UIが名前を読んで画面に出すもの。カードの上へ
-# 覆いとして出る（CardView.md 9.1節）ので、離れて見ても読める短い語にする。
+# 覆いとして出る（CardView.md 9.1節）ほか、死亡ダイアログが死因として出す（VitalsSystem.md 6節）ので、
+# 離れて見ても読める短い語にする。
 stage_texts:
   unconscious: 気絶
+  # 命を絶った値が居る段が、そのまま死因の名前になる（「渇きで死んだ。」）。
+  dehydrated: 渇き
+  starved: 飢え
+  exsanguinated: 失血
 
 # 起きたことを告げる出来事（GameElementDefinition.md 9.8節のsignal）。起きた札の上に一瞬だけ浮かぶ
 # ので、離れて見ても読める短い語にする（CardView.md 14節）。

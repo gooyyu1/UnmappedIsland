@@ -569,6 +569,8 @@ export class PlayScene extends ResponsiveScene {
     // 地図は全画面を覆うので、さらにその上へ開き直す。
     if (wasShowingMap) this.openMapWindow();
     this.coverUntilLocationArtLoaded();
+    // 死は取り消せないので、リサイズで表示物ごと捨てられたダイアログは出し直す（ResponsiveScene）。
+    if (this.gameSession.player.isDead) this.showDeath();
   }
 
   /**
@@ -1368,6 +1370,12 @@ export class PlayScene extends ResponsiveScene {
     recorded: readonly RecordedView[],
     onElapsed: () => void,
   ): void {
+    // 死んだら経過も結果も見せず、画面を死ぬ直前のまま止めてダイアログだけを出す（showDeath）。
+    if (this.gameSession.player.isDead) {
+      this.showDeath();
+      return;
+    }
+
     const minutes = toMinutes - fromMinutes;
     if (minutes <= 0) {
       onElapsed();
@@ -2249,6 +2257,40 @@ export class PlayScene extends ResponsiveScene {
       radius: this.metrics.px(SIZE.radius),
       shadow: this.metrics.px(PAPER_BUTTON_SHADOW),
     };
+  }
+
+  /**
+   * 死んだことを伝えるダイアログ（VitalsSystem.md 6節）。ポートレイトと生存日数と死因だけを出す
+   * ——選択肢は無く、閉じる以外にできることが残っていない。
+   *
+   * **画面はそのままにする。** 死んだキャラクタはもうどの土地にも居ないので、今のワールドを映し直すと
+   * 現在地も足元の物も別のものに入れ替わってしまう（fromGameSession）。
+   */
+  private showDeath(): void {
+    const cause = this.gameSession.player.causeOfDeath;
+    noteOperation(`死んだ: ${cause ?? '不明'}（${this.clockText()}）`);
+
+    new ModalDialog(this, this.metrics, {
+      card: this.portraitCard(),
+      title: `${this.view.characterName}は息絶えた`,
+      // 死因を名乗るのはワールドの側（命を絶った値が居る段）で、画面は文言を引くだけ。
+      body: [
+        `生存 ${this.view.elapsedDays} 日目`,
+        cause === undefined ? '力尽きた。' : `${this.locale.stage(cause)}で死んだ。`,
+        'この島の記録は残らない。',
+      ].join('\n'),
+      actions: [{ label: 'セーブ選択へ', style: 'primary', onTap: () => this.discardSave() }],
+    });
+  }
+
+  /**
+   * 死んだセーブデータを消して、セーブ選択画面へ戻る。**続きから始められる状態は残さない**
+   * ——このゲームにはハードコアモードしか無い（SaveDataManagement.md）。スロットを使わない
+   * シナリオからの起動（slotIndexが-1）では、消すものが無い。
+   */
+  private discardSave(): void {
+    if (this.slotIndex >= 0) new SaveSlots(localStorage).delete(this.slotIndex);
+    this.scene.start('slots');
   }
 
   private confirmReturnToTitle(): void {

@@ -163,6 +163,18 @@ export class PropertyValue {
   }
 
   /**
+   * 値がrangeの下限を割ったまま残っているなら、今居る段（6.4節）の名前。範囲の中にあるか、
+   * 該当する段が無ければundefined。
+   *
+   * 尽きた瞬間に自分を消すプロパティ（on_shortfallのdestroy、6.3節）は既定のクランプを持たないため、
+   * 尽きた値のまま静止する。「何が尽きたのか」はそこから読める。
+   */
+  exhaustedStage(): string | undefined {
+    if (!this.def.isBelowRange(this._number)) return undefined;
+    return this.def.stageNameOf(this.getEffectiveValue());
+  }
+
+  /**
    * 今の値を読み取る。実効値で読むのは、画面に出すのが「今そう見えている値」（modify・inheritを
    * 加味した値）であるため。
    */

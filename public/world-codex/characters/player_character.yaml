@@ -47,6 +47,9 @@ traits:
       # 段は失った割合で刻む（出血性ショックの分類）。2割までが安全域なので、
       # docs/world/Characters.md の「maxの80%で安全域を外れる」とそのまま一致する。
       #
+      # **尽きれば失血死する**（VitalsSystem.md 3節）。on_shortfallが既定のクランプを置き換えるので、
+      # 0を割った値はそのまま残り、死因（どの段で尽きたか）を後から読める（同6節）。
+      #
       # 意識への寄与（VitalsSystem.md 3節）はまだ書かない。キャラクタは consciousness を持たず
       # （同7節）、気を失った手番をどう飛ばすかも決まっていない（同6節）。
       blood:
@@ -59,6 +62,8 @@ traits:
           - {name: bled, min: 3000, alert: caution}
           - {name: low, min: 3500, alert: watch}
           - {name: replete, min: 4000}
+        on_shortfall:
+          destroy: self
         passives:
           - accumulate:
               self:
