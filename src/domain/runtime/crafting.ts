@@ -73,23 +73,6 @@ export function stepIsSupplied(
 }
 
 /**
- * 終えた工程の数 ÷ 全工程数（0〜1）。
- *
- * **1にはならない。** 最後の工程を終えた瞬間に進捗がrangeを超え、製作中オブジェクトは完成品へ
- * 置き換わるため（inProgressObjects.tsのon_overflow）。工程の途中という値も取らない——
- * advanceCraftingが工程まるごとを一度に進めるため、単一工程のレシピではこの値は常に0になる。
- */
-export function finishedStepRatio(recipe: RecipeDef, progress: number): number {
-  let consumed = 0;
-  let finished = 0;
-  for (const step of recipe.steps) {
-    consumed += step.durationMinutes;
-    if (progress >= consumed) finished += 1;
-  }
-  return finished / recipe.steps.length;
-}
-
-/**
  * 工程を1つ進める。その工程の所要時間ぶんゲーム内時間と進捗を進め、素材（`consume: true`）を
  * 要求数だけ消費する。道具（`consume: false`）は減らさない。
  *
@@ -132,6 +115,12 @@ export function advanceCrafting(
   }
 
   inProgress.addNumber(progressGlobalId, step.durationMinutes, session);
+
+  // 工程の進捗バー（CardView.md 10.1節、inProgressObjects.FINISHED_STEPS_PROPERTY）が読む純粋な
+  // 回数。工程が1つのレシピにはそもそも宣言が無いので、addNumberは黙って何もしない
+  // （WorldObject.addNumber参照）。
+  const finishedStepsGlobalId = codex.propertyNames.tryGetId('finished_steps');
+  if (finishedStepsGlobalId !== undefined) inProgress.addNumber(finishedStepsGlobalId, 1, session);
 
   spillUnneeded(inProgress, materialsSlotGlobalId, recipe, codex);
   return true;

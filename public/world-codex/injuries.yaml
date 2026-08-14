@@ -32,6 +32,8 @@ object_defs:
       # 残っている傷の重さ。自然に治る速さを基準レートに置き（-1/tick、6.0節）、maxが「その速さで
       # 何tickぶんか」＝ 960 tick（10日）を表す。
       severity:
+        # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
+        gauge: {min: good, max: bad}
         value: 960
         # 0に達した瞬間にon_shortfallを発火させるため、下限は0ではなく1（6.3節）。
         range: {min: 1, max: 960}
@@ -67,6 +69,8 @@ object_defs:
     props:
       # 自然に治るまで480 tick（5日）。捻挫より浅い傷なので、同じ-1/tickでも早く引く。
       severity:
+        # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
+        gauge: {min: good, max: bad}
         value: 480
         range: {min: 1, max: 480}
         stages:
@@ -123,6 +127,8 @@ object_defs:
     props:
       # 自然に治るまで240〜480 tick（2.5〜5日）。深く食い込んだ個体ほど長く残る。
       severity:
+        # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
+        gauge: {min: good, max: bad}
         value: {min: 240, max: 480}
         range: {min: 1, max: 480}
         stages:

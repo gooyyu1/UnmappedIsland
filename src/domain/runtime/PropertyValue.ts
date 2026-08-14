@@ -1,5 +1,5 @@
 import type { AlertLevel } from '../defs/AlertLevel';
-import type { PropertyDef } from '../defs/PropertyDef';
+import type { GaugeDef, PropertyDef } from '../defs/PropertyDef';
 import { INT32_MAX } from '../../util/int32';
 import { removeWhere } from '../../util/arrays';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
@@ -22,6 +22,12 @@ export interface PropertyReading {
 
   /** 増えるほど悪い値か（PropertyDef.worsensUpward）。バーの向きと増減の記号の色だけがこれを見る。 */
   readonly worsensUpward: boolean;
+
+  /**
+   * カードのゲージとして見せる宣言（6.8節）。持たないプロパティはundefinedで、カードにバーが出ない。
+   * 出すかどうかも両端の色も、この1つが決める（docs/ui/CardView.md 8節）。
+   */
+  readonly gauge: GaugeDef | undefined;
 }
 
 /**
@@ -190,13 +196,20 @@ export class PropertyValue {
       value,
       ratio: this.def.ratioOf(value),
       alert: this.def.alertLevelOf(value),
-      worsensUpward: this.def.worsensUpward,
+      // ゲージを持つプロパティは、帯の向きもゲージの宣言（両端の見せ方）から決まる。
+      worsensUpward: this.def.gauge?.worsensUpward ?? this.def.worsensUpward,
+      gauge: this.def.gauge,
     };
   }
 
   /** タグ（6.7節）が付いていれば今の値を読み取る。付いていなければundefined。 */
   readIfTagged(tagGlobalId: number): PropertyReading | undefined {
     return this.def.hasTag(tagGlobalId) ? this.read() : undefined;
+  }
+
+  /** ゲージとして見せる宣言（6.8節）があれば今の値を読み取る。無ければundefined。 */
+  readIfGauge(): PropertyReading | undefined {
+    return this.def.gauge === undefined ? undefined : this.read();
   }
 
   /** transfer（9.5節）でこのプロパティから出せる量の上限。rangeがあればrange.minを下限とみなし、無ければ現在値そのまま。 */

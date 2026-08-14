@@ -99,8 +99,12 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   /** 今の域。塗りの色と、警戒の枠を出すかどうかの両方がこれで決まる。 */
   private alert: AlertLevel = 'safe';
 
-  /** 増えるほど悪い値か（PropertyDef.worsensUpward）。塗りの色と、帯をどちら向きに出すかが変わる。 */
-  private readonly worsensUpward: boolean;
+  /**
+   * 増えるほど悪い値か（PropertyDef.worsensUpward）。帯をどちら向きに出すかが変わる。
+   * 同じバーの枠（ProgressBar）を差し替えのたびに使い回す側（Card.gaugeBars）は、映すものが
+   * 変わるたびにこれも渡し直す（setWorsensUpward）ため、readonlyにはしない。
+   */
+  private worsensUpward: boolean;
 
   /** 塗りの色の引き方（ProgressBarOptions.fillColor）。 */
   private readonly fillColor: ((ratio: number) => number) | undefined;
@@ -172,6 +176,15 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     if (color === this.borderColor) return;
     this.borderColor = color;
     this.draw();
+  }
+
+  /**
+   * 増えるほど悪い値かを変える。**次に`setRatio`で変化を見せるときの帯の向きにだけ効く**——
+   * 今の見た目（draw）はこれ単独では変わらないので、呼び直しは要らない。同じバーの枠を差し替えの
+   * たびに使い回す側（Card.gaugeBars）が、映すものが変わるたびに渡し直す。
+   */
+  setWorsensUpward(worsensUpward: boolean): void {
+    this.worsensUpward = worsensUpward;
   }
 
   /**

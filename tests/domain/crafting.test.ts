@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   advanceCrafting,
   currentStep,
-  finishedStepRatio,
   stepIsSupplied,
   stepSupplyRatio,
 } from '../../src/domain/runtime/crafting';
@@ -142,17 +141,30 @@ object_defs:
     expect(stepSupplyRatio(raftWip, materialsId(), raft.steps[0]), '1工程目は1つで足りる').toBe(1);
   });
 
-  it('工程の進捗は、終えた工程の数から決まる', () => {
-    expect(finishedStepRatio(recipe, 0)).toBe(0);
-    expect(finishedStepRatio(recipe, 30), '1工程目を終えた').toBe(0.5);
+  it('終えた工程の数はfinished_stepsに現れ、割合は終えた工程の数÷全工程数になる', () => {
+    // CardView.md 10.1節の進捗バー（gauge宣言）が読む値。progressと違い所要時間ではなく
+    // 純粋な回数なので、工程の長さが不揃いでも「2工程中1工程＝0.5」がそのまま割合になる。
+    const finishedStepsId = codex.propertyNames.getId('finished_steps');
+    expect(wip.readProperty(finishedStepsId)?.ratio, '着手前は0').toBe(0);
+
+    put('wood', 2);
+    put('knife', 1);
+    expect(advanceCrafting(wip, recipe, materialsId(), codex, session)).toBe(true);
+
+    expect(wip.getNumber(finishedStepsId), '1工程終えるごとに1増える').toBe(1);
+    expect(wip.readProperty(finishedStepsId)?.ratio, '2工程中1工程＝0.5').toBe(0.5);
   });
 
-  it('工程が1つのレシピでは、生きている間の進捗は0しか取らない', () => {
-    const spear = codex.objects.get(idOf('spear')).recipes[0];
-    // 唯一の工程を終えると進捗がrangeの上限（合計-1）を超え、その場で完成品へ置き換わる。
-    // 1を出す製作中オブジェクトは存在しないので、カードに出る値は0だけになる。
-    expect(finishedStepRatio(spear, 0)).toBe(0);
-    expect(finishedStepRatio(spear, spear.steps[0].durationMinutes)).toBe(1);
+  it('工程が1つのレシピには、進捗バー用のfinished_stepsがそもそも宣言されない', () => {
+    // 唯一の工程を終えると、その場で完成品へ置き換わる。値が動くところを見せる余地が無いので、
+    // UI側が特別扱いしなくて済むよう、宣言そのものを省く（CardView.md 10.1節）。
+    const finishedStepsId = codex.propertyNames.tryGetId('finished_steps');
+    expect(finishedStepsId, '2工程以上のレシピ（axe）があるので識別子自体は存在する').toBeDefined();
+
+    const spearWip = session.spawn(idOf(inProgressObjectName('spear', 'basic')));
+    spearWip.moveToSlot(ground, codex.slotNames.getId('items'));
+
+    expect(spearWip.readProperty(finishedStepsId!)).toBeUndefined();
   });
 
   it('素材が足りなければ進まない', () => {

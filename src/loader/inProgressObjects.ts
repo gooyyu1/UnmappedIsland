@@ -11,6 +11,15 @@ export const IN_PROGRESS_TAG = 'wip';
 /** 進捗を持つプロパティ名。工程の所要時間の合計が上限になる。 */
 export const PROGRESS_PROPERTY = 'progress';
 
+/**
+ * 終えた工程の数を持つプロパティ名（工程が2つ以上のレシピにだけ宣言する）。`progress`が工程の
+ * 所要時間で動くのに対し、こちらは工程を1つ終えるたびに1増える純粋な回数なので、`range`に対する
+ * 割合（`gauge`宣言、CardView.md 10.1節）がそのまま「終えた工程の数 ÷ 全工程数」になる。
+ * `progress`と役割が重なるが、`progress`は所要時間で完成（on_overflow）を起こす側なので、
+ * 表示専用の割合をここへ分ける（時間の不揃いな工程では両者の割合が一致しないため）。
+ */
+export const FINISHED_STEPS_PROPERTY = 'finished_steps';
+
 /** 素材と道具をまとめて入れるスロット名。 */
 export const MATERIALS_SLOT = 'materials';
 
@@ -88,6 +97,22 @@ function inProgressObjectDef(
           spawn: { object: product.name },
         },
       },
+      // 工程が1つのレシピでは、この値が動く前に最初の作業でそのまま完成してカードが入れ替わるので、
+      // そもそも宣言しない（CardView.md 10.1節）。「gaugeを宣言したプロパティが無ければバーも
+      // 出ない」という1つの規約だけで「工程が1つなら出さない」まで決まり、UI側は工程数を意識しない。
+      ...(recipe.steps.length >= 2
+        ? {
+            [FINISHED_STEPS_PROPERTY]: {
+              // 良し悪しではなく「ここまで終えた」量なので、両端とも良し悪しを言わない（1色で塗る）。
+              gauge: { min: 'neutral', max: 'neutral' },
+              value: 0,
+              // 完成した瞬間にこの物自体が消える（progressのon_overflow）ため、rangeの上限
+              // （全工程数）そのものへ到達したあとを気にする必要がない。progressと違い、
+              // 境界を1つ内側へ避ける調整は要らない。
+              range: { min: 0, max: recipe.steps.length },
+            },
+          }
+        : {}),
     },
     slots: {
       // 素材も道具も同じスロットへ入れる。何が何個要るかが、そのまま枠の形になる

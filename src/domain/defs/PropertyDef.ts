@@ -14,6 +14,48 @@ import { propertyTagRef, stageRef, text } from './Description';
  */
 export type AlertDirection = 'up' | 'down' | 'mixed';
 
+/**
+ * ゲージ（6.8節）の端の見せ方。`good`は満ち足りている端、`bad`は尽きている・行き過ぎている端、
+ * `neutral`は良し悪しを言わない端。**色はこの2つの端だけで決まる**ので、UI側は何のプロパティかを
+ * 知らずに塗れる。
+ */
+export type GaugeEnd = 'good' | 'bad' | 'neutral';
+
+export const GAUGE_ENDS: readonly GaugeEnd[] = ['good', 'bad', 'neutral'];
+
+/**
+ * そのプロパティをカードのゲージとして見せる宣言（6.8節、docs/ui/CardView.md 8節）。
+ *
+ * **「ゲージとして出すか」と「両端がどう見えるか」だけを持つ。** 耐久度・炉の残り薪・残っている傷・
+ * 意識・工程の進捗は、いずれも「rangeに対する割合を1本のバーで見せる」点では同じで、違うのは
+ * どちらの端が良いかだけ。それをここで宣言すれば、UI側にプロパティ名の対応表が要らなくなる。
+ */
+export class GaugeDef {
+  /** rangeの下限に居るときの見せ方。 */
+  readonly atMin: GaugeEnd;
+
+  /** rangeの上限に居るときの見せ方。 */
+  readonly atMax: GaugeEnd;
+
+  constructor(atMin: GaugeEnd, atMax: GaugeEnd) {
+    this.atMin = atMin;
+    this.atMax = atMax;
+  }
+
+  /**
+   * 値が増えるほど悪いか（変化の帯をどちら向きに出すか）。**両端の宣言から決まる**ので、
+   * stagesのalertから導く`alertDirection`とは別に書かせない（両者の食い違いはロード時に弾く）。
+   */
+  get worsensUpward(): boolean {
+    return this.atMax === 'bad';
+  }
+
+  /** 良し悪しを言う端を持つか（片方でも good/bad ならtrue）。両端neutralのゲージは向きを持たない。 */
+  get hasDirection(): boolean {
+    return this.atMin !== 'neutral' || this.atMax !== 'neutral';
+  }
+}
+
 /** 6.3節の値域。 */
 export class PropertyRange {
   readonly min: number;
@@ -166,6 +208,12 @@ export class PropertyDef {
    */
   readonly isSymbolic: boolean;
 
+  /**
+   * カードのゲージとして見せる宣言（6.8節）。持たないプロパティはバーにならない——「出すかどうか」は
+   * この宣言の有無だけで決まり、UI側は名前を1つも知らない（docs/ui/CardView.md 8節）。
+   */
+  readonly gauge: GaugeDef | undefined;
+
   constructor(
     globalId: number,
     name: string,
@@ -178,6 +226,7 @@ export class PropertyDef {
     inherit = false,
     tags: readonly number[] = [],
     isSymbolic = false,
+    gauge: GaugeDef | undefined = undefined,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -190,6 +239,7 @@ export class PropertyDef {
     this.inherit = inherit;
     this.tags = tags;
     this.isSymbolic = isSymbolic;
+    this.gauge = gauge;
 
     this.fallbackStage = stages.find((stage) => stage.eq === undefined && stage.min === undefined);
     this.alertDirection = PropertyDef.deriveAlertDirection(stages);
@@ -232,6 +282,8 @@ export class PropertyDef {
     out.write(text('初期値: '), ...this.describeInitialValue(names));
     if (this.range !== undefined) out.write(text(`range: ${this.range.min} 〜 ${this.range.max}`));
     if (this.inherit) out.write(text('inherit: 同名プロパティを持つ最初の祖先の実効値を足す'));
+    if (this.gauge !== undefined)
+      out.write(text(`gauge: min=${this.gauge.atMin} / max=${this.gauge.atMax}（カードにバーで出す）`));
     if (this.tags.length > 0)
       out.write(
         text('tags: '),

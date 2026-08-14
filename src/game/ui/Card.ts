@@ -1,15 +1,7 @@
 import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { CardFrameColors, CardKind } from './theme';
-import {
-  COLOR,
-  FONT_FAMILY,
-  SIZE,
-  capacityColorFor,
-  cardFrameColors,
-  cssColor,
-  durabilityColorFor,
-} from './theme';
+import { COLOR, FONT_FAMILY, SIZE, cardFrameColors, cssColor, gaugeColorFor } from './theme';
 import { drawBox } from './shapes';
 import type { SlotRef } from './backgroundArt';
 import { cardBackgroundTexture } from './backgroundArt';
@@ -17,6 +9,7 @@ import { CARD_ART_WIDTH, objectMultiplyTexture, objectTexture } from './objectAr
 import { ProgressBar, TRACK_BORDER_WIDTH } from './ProgressBar';
 import type { ProgressBarOptions } from './ProgressBar';
 import type { AlertLevel } from '../../domain/defs/AlertLevel';
+import type { GaugeEnd } from '../../domain/defs/PropertyDef';
 import { noteOperation } from '../errorReport';
 import { HoldRepeat } from './holdRepeat';
 import { onPressRelease } from './tap';
@@ -169,28 +162,36 @@ export interface CardEdgeAction {
 }
 
 /**
- * 量として存在する中身が入っているカードが出す、中身のバーの内容
- * （CardView.md 8節 カードの状態バー）。空の容器はバーごと持たない。
+ * 桟へ積むバー1本の内容（CardView.md 8節）。**カードのバーはすべてこの形**——プロパティが
+ * `gauge`として宣言したもの（耐久度・炉の残り薪・残っている傷・意識・工程の進捗）も、入れ物と
+ * 中身の関係から出るもの（中身の残量・詰まり具合・材料の充足）も、違うのは両端の見せ方と鍵だけ。
+ * カード側はどれが何かを知らず、渡された順に積む。
  */
-export interface CardFill {
-  /** 容器の容量に対する中身の割合（0〜1）。 */
-  readonly ratio: number;
+export interface CardGauge {
+  /**
+   * このバーが映しているものの識別子。**同じものを映すバーを差し替えの前後で同一と見なす鍵**で、
+   * これが一致する間はバーを作り直さずに値だけを差し替える（変化の帯が途切れないようにするため）。
+   *
+   * プロパティのゲージはプロパティ名そのもの。入れ物と中身から出るバーは`@`で始まる名前を使う
+   * （YAMLの識別子とは決して衝突しない、PlayScreenViewのBUILTIN_GAUGE_KEYS）。
+   */
+  readonly key: string;
 
-  /** 塗りの色。中身の液体が自分で宣言している色（`color`プロパティ）そのもの。宣言していない液体はundefined。 */
-  readonly color?: number;
-}
-
-/**
- * 域から色を引くバーの内容（CardView.md 8節 カードの状態バー）。**塗りの長さだけでは良し悪しが
- * 読めない量**——残っている傷は減るほど良く、意識は減るほど悪い——は、色を値そのものではなく
- * 域（alert）から引く。
- */
-export interface CardAlertBar {
   /** バーの満たされ具合（0〜1）。 */
   readonly ratio: number;
 
-  /** 今その値が居る域。塗りの色になる。 */
-  readonly alert: AlertLevel;
+  /**
+   * 端から引くのではなくこの色そのもので塗る（中身のバーのように、良し悪しではなく**物の色**を
+   * 映すバーだけが渡す）。省略すると両端の見せ方から引く（gaugeColorFor）。
+   */
+  readonly color?: number;
+
+  /** rangeの下限・上限に居るときの見せ方（GaugeDef）。塗りの色はこの2つだけで決まる。 */
+  readonly atMin: GaugeEnd;
+  readonly atMax: GaugeEnd;
+
+  /** 増えるほど悪い値か（GaugeDef.worsensUpward）。増えた分の帯をどちら向きに出すかが変わる。 */
+  readonly worsensUpward: boolean;
 }
 
 /** カード1枚の表示内容と操作。 */
@@ -240,38 +241,12 @@ export interface CardContent {
    */
   readonly road?: boolean;
 
-  /** 耐久度（0〜1）。耐久度を持たないカードはundefined（バーそのものを出さない）。 */
-  readonly durability?: number;
-
-  /** 中身の割合（液体容器のカードだけが持つ）。 */
-  readonly fill?: CardFill;
-
   /**
-   * 入れ物の詰まり具合（0〜1）。上限（capacity）を持つ入れ物のカードだけが持つ
-   * （CardView.md 8節 カードの状態バー）。
+   * 桟へ積むバー（CardView.md 8節）。**カードのバーはこれが全部**で、上から渡された順に積む。
+   * 何本出るか・どちらの端が良いかを決めるのはすべて渡す側（PlayScreenView）で、カードは
+   * 「並べて色を塗る」だけを引き受ける。1本も無いカードは空配列。
    */
-  readonly capacityRatio?: number;
-
-  /** 残っている傷（怪我のカードだけが持つ）。 */
-  readonly severity?: CardAlertBar;
-
-  /**
-   * 今の意識（意識を持つカード——動物・キャラクタ——だけが持つ）。**あと何手で倒れるかを1本で言う**
-   * 統合指標で、痛み・衝撃がここへ合流する（VitalsSystem.md 9節）。
-   */
-  readonly consciousness?: CardAlertBar;
-
-  /**
-   * 今の工程が要求する素材と道具が、どれだけ揃っているか（0〜1）。製作中オブジェクトだけが持つ。
-   * 満ちた時点で「作業する」が押せるようになる（CardView.md 10節 製作中オブジェクトのカード）。
-   */
-  readonly materialRatio?: number;
-
-  /**
-   * 終えた工程の割合（0〜1）。**工程が2つ以上のレシピの製作中オブジェクトだけが持つ**——工程が
-   * 1つしか無いレシピでは、値が動く前に完成してカードが入れ替わる。
-   */
-  readonly stepRatio?: number;
+  readonly gauges?: readonly CardGauge[];
 
   /**
    * そのカードが映しているものの状態を表す絵文字の印（手当て済みの怪我の🩹など）。紙の左下へ小さく
@@ -304,27 +279,8 @@ export interface CardContent {
  * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background, kind, alert, road, durability, fill, severity, mark, overlay } =
-    content;
-  const { capacityRatio, materialRatio, stepRatio, inProgress } = content;
-  return {
-    icon,
-    name,
-    art,
-    background,
-    kind,
-    alert,
-    road,
-    durability,
-    fill,
-    capacityRatio,
-    severity,
-    materialRatio,
-    stepRatio,
-    mark,
-    overlay,
-    inProgress,
-  };
+  const { icon, name, art, background, kind, alert, road, gauges, mark, overlay, inProgress } = content;
+  return { icon, name, art, background, kind, alert, road, gauges, mark, overlay, inProgress };
 }
 
 /**
@@ -396,13 +352,15 @@ export class Card extends Phaser.GameObjects.Container {
    * 状態を表すバー。値を持たない間は隠すだけで、作り直さない——作り直すと、変わった分を遅れて
    * 追いつかせる動き（ProgressBar.setRatio）が途中で消えるため。
    */
-  private readonly durabilityBar: ProgressBar;
-  private readonly fillBar: ProgressBar;
-  private readonly capacityBar: ProgressBar;
-  private readonly severityBar: ProgressBar;
-  private readonly consciousnessBar: ProgressBar;
-  private readonly materialBar: ProgressBar;
-  private readonly stepBar: ProgressBar;
+  /**
+   * バー（CardContent.gauges）。**本数も両端の見せ方も映すものによって変わる**ので、決め打ちで
+   * 作らず鍵で引く。一度作ったバーは、そのカードが別のものを映すようになっても捨てない——同じものへ
+   * 戻ったときに変化の帯が途切れないようにするため。
+   */
+  private readonly gaugeBars = new Map<string, ProgressBar>();
+
+  /** 今のgaugeBarsが塗りの色を引くための、映しているバーの内容（鍵で引く。gaugeBarFor参照）。 */
+  private shownGauges = new Map<string, CardGauge>();
 
   /** 中身を入れ直すときに要る採寸。 */
   private readonly metrics: ScreenMetrics;
@@ -460,23 +418,7 @@ export class Card extends Phaser.GameObjects.Container {
       this.nameText,
     ]);
 
-    // 状態のバーは枠より後に足して、桟の上へ重ねる。
-    this.durabilityBar = this.addRailBar(scene, metrics, { fillColor: durabilityColorFor });
-    this.fillBar = this.addRailBar(scene, metrics, {
-      // 中身は入れ替わる（飲み干した水筒へ茶を注ぐ）ので、色は今の中身のものを引き直す。
-      fillColor: () => this._content.fill?.color ?? COLOR.cardFillUnknown,
-    });
-    // 満杯へ近づくほど物が入らなくなるので、色は域ではなく値そのものから引く（capacityColorFor）。
-    this.capacityBar = this.addRailBar(scene, metrics, { fillColor: capacityColorFor });
-    // 傷は減るほど良い量なので、増えた分の帯が赤くなるようにする（worsensUpward）。色は域から引く
-    // （fillColorを渡さない）ので、傷が引くほど緑へ寄る。
-    this.severityBar = this.addRailBar(scene, metrics, { worsensUpward: true });
-    // 意識は減るほど悪い（既定のworsensUpward=false）。色は域から引くので塗りの色は渡さない。
-    this.consciousnessBar = this.addRailBar(scene, metrics, {});
-    // 材料の充足は耐久度と同じ色域（満ちるほど緑）。**満ちた＝作業できる**を緑で言い切れる。
-    this.materialBar = this.addRailBar(scene, metrics, { fillColor: durabilityColorFor });
-    // 工程の進捗は良し悪しではなく「ここまで終えた」量なので、値によらず1色。
-    this.stepBar = this.addRailBar(scene, metrics, { fillColor: () => COLOR.statusBarFillSafe });
+    // 状態のバーは映すものが決まってから枠より後に足す（gaugeBarFor）ので、ここでは何も作らない。
     this.edgeLayer = scene.add.container(0, 0);
     this.add(this.edgeLayer);
 
@@ -679,25 +621,42 @@ export class Card extends Phaser.GameObjects.Container {
    * 桟の高さも積む位置も「今いくつ出ているか」だけで決まる。
    */
   private barsFor(content: CardContent): readonly RailBar[] {
-    // 域が色を決めるバーは、割合より先に域を伝える（塗り直しを1回で済ませる）。
-    if (content.severity !== undefined) this.severityBar.setAlert(content.severity.alert);
-    if (content.consciousness !== undefined) this.consciousnessBar.setAlert(content.consciousness.alert);
+    const gauges = content.gauges ?? [];
+    // 塗りの色と帯の向きは映すものが決めるので、割合より先に控えておく（gaugeBarForのfillColorが読む）。
+    this.shownGauges = new Map(gauges.map((gauge) => [gauge.key, gauge]));
 
-    const all = [
-      // 製作中の2本を先に積む。作りかけのカードではこの2本だけが出るので、順は互いの上下だけを
-      // 決めている（材料が上、工程が下。CardView.md 10節 製作中オブジェクトのカード）。
-      { bar: this.materialBar, ratio: content.materialRatio },
-      { bar: this.stepBar, ratio: content.stepRatio },
-      { bar: this.durabilityBar, ratio: content.durability },
-      { bar: this.fillBar, ratio: content.fill?.ratio },
-      { bar: this.capacityBar, ratio: content.capacityRatio },
-      { bar: this.severityBar, ratio: content.severity?.ratio },
-      { bar: this.consciousnessBar, ratio: content.consciousness?.ratio },
-    ];
-    for (const { bar, ratio } of all) {
-      if (ratio === undefined) bar.setVisible(false);
+    // 今映していないバーは隠す（別のものを映すようになったカードに前のバーが残らないように）。
+    for (const [key, bar] of this.gaugeBars) {
+      if (!this.shownGauges.has(key)) bar.setVisible(false);
     }
-    return all.filter((entry): entry is RailBar => entry.ratio !== undefined);
+    return gauges.map((gauge) => ({ bar: this.gaugeBarFor(gauge), ratio: gauge.ratio }));
+  }
+
+  /**
+   * そのバー（無ければ作る）。**鍵で引く**ので、同じものを映している間は差し替えをまたいでも同じ
+   * バーが使われ、変化の帯（ProgressBar.setRatio）が途切れない。
+   *
+   * 塗りの色も増減の向きも、映している内容（`shownGauges`）から毎回引き直す——中身は入れ替わる
+   * （飲み干した水筒へ茶を注ぐ）し、同じプロパティでも向きは定義側の変更で変わりうるため。
+   */
+  private gaugeBarFor(gauge: CardGauge): ProgressBar {
+    const key = gauge.key;
+    let bar = this.gaugeBars.get(key);
+    if (bar === undefined) {
+      bar = this.addRailBar(this.scene, this.metrics, {
+        fillColor: (ratio) => {
+          const shown = this.shownGauges.get(key);
+          if (shown === undefined) return COLOR.cardFillUnknown;
+          return shown.color ?? gaugeColorFor(ratio, shown.atMin, shown.atMax);
+        },
+      });
+      // 後から足したバーは重なりの一番上に付くので、端の操作エリアより下へ戻す。バーは桟の意匠で
+      // あって操作の手前に出るものではない（端のオーバーレイ・スタック数・印より下、addEdge参照）。
+      this.moveBelow(bar, this.edgeLayer);
+      this.gaugeBars.set(key, bar);
+    }
+    bar.setWorsensUpward(gauge.worsensUpward);
+    return bar;
   }
 
   /** 状態のバーを桟へ積む。枠線は札の縁と同じ色にする（種別で変わるので、差し替えのたびに渡す）。 */

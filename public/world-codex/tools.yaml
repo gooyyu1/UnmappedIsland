@@ -19,5 +19,7 @@ object_defs:
       # 刃こぼれするまでの余力。上限は種類によらず960で統一する（DurabilitySystem.md 1節）。
       # 石は屋外に置いても劣化しない扱いなので、減らすのは使ったときだけ（同節の未決事項）。
       durability:
+        # 尽きると使えなくなるので、満タン側がgood（CardView.md 8節）。
+        gauge: {min: bad, max: good}
         value: 960
         range: {min: 0, max: 960}
