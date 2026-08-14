@@ -61,6 +61,18 @@ object_texts:
         description: 今感じている痛みの強さ。負っている怪我が重なるほど強くなり、治れば引く。
       durability:
         display_name: 耐久
+      heavy_blow:
+        display_name: 強打
+        description: この武器で打ちかかったとき、打ち砕く一撃になりやすさ。
+      light_blow:
+        display_name: 浅打
+        description: この武器で打ちかかったとき、浅く当たるだけになりやすさ。
+      thrust:
+        display_name: 刺突
+        description: この武器で打ちかかったとき、深く突き通しやすさ。
+      whiff:
+        display_name: 空振り
+        description: この武器で打ちかかったとき、空を切りやすさ。
       severity:
         display_name: 傷の重さ
         description: 残っている傷。時間とともに引いていき、尽きれば治る。
@@ -157,7 +169,7 @@ object_texts:
         description: 炉のまわりへ石を据える。必要な数が揃うと、炉が組み直される。
       strike:
         display_name: 殴る
-        description: 手にした武器で打ちかかる。当たれば傷を負わせられるが、外しても相手は気を立てる。
+        description: 手にした武器で打ちかかる。一撃がどう入るかは武器の性格が決め、外しても相手は気を立てる。
 
   # プレイヤーキャラクタ（characters/）。プロパティの表示名は全員共通なのでdefaultへ置く。
   # 表示名は肖像の札に載る名前。どういう人物かは説明の頭の肩書きで示す（選択画面の吹き出しに出る）。
@@ -248,6 +260,9 @@ object_texts:
   snare_laceration:
     display_name: 縄の傷
     description: 締まった縄が食い込んで裂けた傷。浅く掛かれば血はすぐ止まり、深ければそうもいかない。
+  puncture_wound:
+    display_name: 刺し傷
+    description: 穂先が深く突き通した傷。開いたままの深部から、裂傷とは桁違いの速さで血が流れる。
 
   # 動物（animals.yaml）。
   monkey:
@@ -266,6 +281,16 @@ object_texts:
   rat:
     display_name: ネズミ
     description: どこにでも湧く小さな齧歯類。貯めた食料を狙って寄ってくる。
+  wild_boar:
+    display_name: イノシシ
+    description: 藪を割って進む大きな獣。生半可な得物では傷を増やすだけで、倒れる気配もない。
+  wild_boar_carcass:
+    display_name: イノシシの死体
+    description: 仕留めたイノシシ。丸ごと運べる重さではないので、その場で解体するしかない。
+    combinations:
+      butcher:
+        display_name: 解体する
+        description: 皮を剥ぎ、肉を外し、骨を落とす。半日仕事だが、取れる量も桁が違う。
   rat_carcass:
     display_name: ネズミの死体
     description: 仕留めたネズミ。肉を外すには小さすぎるので、丸ごと火にかける。
@@ -348,7 +373,13 @@ object_texts:
   # 道具（tools.yaml）。
   sharp_stone:
     display_name: 尖った石
-    description: 石を打ち割って作った刃物。切る作業に使える。
+    description: 石を打ち割って作った刃物。切る作業に使えるが、握って殴るだけでは大きな獲物に届かない。
+  stone_axe:
+    display_name: 石斧
+    description: 石の頭部を枝の柄へ縛りつけた斧。柄が乗せる勢いで、獲物を一撃で打ち倒せる。
+  spear:
+    display_name: 槍
+    description: 長い棒の先に石の穂先を固定した武器。突けば深く刺さるが、外すことも多く、解体には使えない。
 
   # 葉を編む連鎖（weaving.yaml）。
   palm_frond:
@@ -657,8 +688,10 @@ stage_texts:
 # 起きたことを告げる出来事（GameElementDefinition.md 9.8節のsignal）。起きた札の上に一瞬だけ浮かぶ
 # ので、離れて見ても読める短い語にする（CardView.md 14節）。
 signal_texts:
+  grazed: 浅手
   hit: 手応え
   killed: 仕留めた
   lit: 点いた
   missed: 空振り
   not_lit: 点かず
+  pierced: 深手

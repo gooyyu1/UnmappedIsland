@@ -7,19 +7,86 @@
 # 言うタグなので、能力が増えても1つのままになる。付ける相手は、他の物の操作が使う側として指名し、
 # **使っても無くならない**物（CardView.md 2.1節）。注ぎ込む水のように指名されても移ってしまう物は付けない。
 
-object_defs:
-  # 尖った石。石同士を打ち合わせて作る最初の刃物（locations.yamlのstone.combinations.knap）。
-  sharp_stone:
-    # weaponは動物へ重ねて殴れる物のタグ（animals.yamlのstrikeがこれで探す、
-    # docs/engine/HuntingSystem.md 1.2節）。刃物と武器は別のタグで、片方だけを持つ物もありうる。
-    tags: [item, tool, cutting_tool, weapon]
+traits:
+  # 動物へ重ねて殴れる物（animals.yamlのstrikeがweaponタグで探す、docs/engine/HuntingSystem.md 1.2節）。
+  #
+  # **武器が宣言するのは威力ではなく、一撃がどこへ入るかの重み配分。** 殴った結果（衝撃の量・付く傷）は
+  # 動物の側が候補として持ち、武器はそのどれを引きやすいかだけを言う——`add`の量はリテラルしか書けない
+  # （9.2節）ので、威力を武器から読むことはできず、`pick`の重み（10.2節）だけが武器を指せる。
+  # 配分の合計は100に揃える。仕留めの重み（無防備さ）と並ぶ目盛りが武器ごとに変わらないようにするため。
+  #
+  # 4つとも値を持たないので、**宣言し忘れた武器はロードで落ちる**（5節）。0も明示して書く——
+  # 「この武器では起こらない一撃」は、書き忘れと同じ0になるため、並べて読めるようにする。
+  weapon:
+    tags: [weapon]
     props:
-      weight: {value: 400}
-      volume: {value: 300}
+      # 打ち砕く一撃。柄の遠心力が乗る物だけが太い重みを持つ。
+      heavy_blow: {}
+      # 浅く当たる一撃。握って殴るだけの物はここしか持てない。
+      light_blow: {}
+      # 突き通す一撃。衝撃は小さいが、深く刺さって血が速く流れる。
+      thrust: {}
+      # 空を切る。リーチのある物ほど太い。
+      whiff: {}
       # 刃こぼれするまでの余力。上限は種類によらず960で統一する（DurabilitySystem.md 1節）。
-      # 石は屋外に置いても劣化しない扱いなので、減らすのは使ったときだけ（同節の未決事項）。
+      # 減らすのは殴ったときだけで、屋外に置いた劣化はまだ扱わない（同5節の未決事項）。
       durability:
         # 尽きると使えなくなるので、満タン側がgood（CardView.md 8節）。
         gauge: {min: bad, max: good}
         value: 960
         range: {min: 0, max: 960}
+
+object_defs:
+  # 尖った石。石同士を打ち合わせて作る最初の刃物（locations.yamlのstone.combinations.knap）。
+  # 刃物と武器は別のタグで、片方だけを持つ物もありうる。
+  #
+  # **握って殴るだけなので、獲物を沈められない。** 浅く当たる一撃しか持たず、衝撃はネズミ・ヤケイの
+  # 体格を越える程度で止まる。サルには数撃、イノシシには何撃当てても足りない。
+  sharp_stone:
+    traits: [weapon]
+    tags: [item, tool, cutting_tool]
+    props:
+      weight: {value: 400}
+      volume: {value: 300}
+      heavy_blow: {value: 0}
+      light_blow: {value: 70}
+      thrust: {value: 0}
+      whiff: {value: 30}
+
+  # 石斧。石の頭部を太い枝へ紐で縛った物（docs/world/SurvivalItems.md 1節）。
+  #
+  # **柄が乗せる遠心力が、そのまま打ち砕く一撃になる。** サルなら一撃で沈み、イノシシでも数撃で届く。
+  # 頭部は刃なので解体にも使える。
+  #
+  # レシピはまだ無い（同8節）。今は狩りの釣り合いを見るシナリオ（src/scenarios/hunting_ground.yaml）
+  # だけが手元へ置く。
+  stone_axe:
+    traits: [weapon]
+    tags: [item, tool, cutting_tool]
+    props:
+      weight: {value: 1200}
+      volume: {value: 1800}
+      heavy_blow: {value: 60}
+      light_blow: {value: 15}
+      thrust: {value: 0}
+      whiff: {value: 25}
+
+  # 槍。長い棒の先へ石の穂先を固定した物（docs/world/SurvivalItems.md 3節）。
+  #
+  # **突くか、空を切るかの二択。** 浅く当たるということが無い代わりに、当たれば深く刺さって血が速く
+  # 流れる（injuries.yamlのpuncture_wound）。その場で沈めるのではなく、深手を負わせて弱らせる武器。
+  #
+  # **解体には使えない**（cutting_toolを持たない）。穂先は柄の先に固定されていて、皮を剥ぐ手つきには
+  # ならない——狩れても捌けないので、刃物を別に持つ理由が残る。
+  #
+  # 2mの棒なので、重さのわりにかさばる（同0節 長さの違いはかさで効かせる）。
+  spear:
+    traits: [weapon]
+    tags: [item, tool]
+    props:
+      weight: {value: 900}
+      volume: {value: 6000}
+      heavy_blow: {value: 0}
+      light_blow: {value: 0}
+      thrust: {value: 55}
+      whiff: {value: 45}

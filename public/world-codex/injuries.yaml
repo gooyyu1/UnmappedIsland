@@ -114,6 +114,57 @@ object_defs:
           parent:
             blood: -15
 
+  # 刺し傷。**穂先が深く突き通した傷**——槍で突かれたときに負う（tools.yamlのspear、
+  # animals.yamlのstrikeの刺突の候補）。
+  #
+  # **裂傷との違いは血の流れる速さで、桁で書き分ける**（docs/engine/VitalsSystem.md 4節）。潰れた
+  # 血管が縮んで塞がる裂傷（-15/tick）に対し、刺し傷は深部の血管を開いたまま残すので-200/tick。
+  # 固まるまでの4tickで合計800mL——サル（400mL）なら30分で死に、イノシシ（4,600mL）でも数突きで
+  # 危機に届く。**同じ傷が、体格で意味を変える。**
+  #
+  # 衝撃（shock）はほとんど生まれないので、**突かれた獲物はその場では倒れない**。深手を負ったまま
+  # 逃げる相手を追うことになる。
+  puncture_wound:
+    tags: [injury]
+    traits: [treatable]
+    bound_to_owner: true
+    stackable: false
+    props:
+      # 自然に治るまで720 tick（7.5日）。裂傷より深いぶん、捻挫と同じ桁まで長引く。
+      severity:
+        # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
+        gauge: {min: good, max: bad}
+        value: 720
+        range: {min: 1, max: 720}
+        stages:
+          - {name: mending}
+          - {name: sore, min: 240, alert: watch}
+          - {name: acute, min: 480, alert: caution}
+        passives:
+          - add:
+              self:
+                severity: -1
+        on_shortfall:
+          destroy: self
+      # 固まるまでの速さは裂傷と同じ4 tick。変わるのは下の流れる量だけ。
+      bleeding:
+        value: 100
+        range: {min: 0, max: 100}
+        passives:
+          - add:
+              self:
+                bleeding: -25
+    passives:
+      - modify:
+          parent:
+            pain: 60
+      - conditions:
+          - {prop: bleeding, gte: 1}
+          - not: {slot: treatment, tag: hemostatic}
+        add:
+          parent:
+            blood: -200
+
   # くくり罠の傷（docs/engine/TrapSystem.md 5.1節）。縄が食い込んで裂ける傷で、鈍器で裂かれる
   # laceration より浅い。
   #

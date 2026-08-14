@@ -1,0 +1,21 @@
+# 狩り（docs/engine/HuntingSystem.md）の釣り合いを見るための開始状態。密林に4つの体格の獲物が並び、
+# 手元に3つの武器がある。どの武器をどの獲物へ重ねると何撃で決着するかを、その場で比べられる。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 獲物と武器
+
+# 7は島に密林があるシード。サルはジャングル・森・砂浜に居る（docs/world/Animals.md 4節）。
+seed: 7
+
+player:
+  # 武器（weaponタグ）。これを獲物へ重ねるのが攻撃（HuntingSystem.md 1.2節）。一撃がどう入るかの
+  # 配分だけが違う（tools.yaml）ので、同じ相手を3つで殴り比べられる。
+  hand: [sharp_stone, stone_axe, spear]
+
+location:
+  type: jungle
+  # 体格の小さい順に4つ。同じ一撃が体格で意味を変えることが、この並びで読める（animals.yaml）。
+  # 残りはサルが持ち去る候補になるもの（HuntingSystem.md 5.4節）で、狙われやすさはかさで決まるため、
+  # かさの違うものを混ぜてある。
+  items: [rat, junglefowl, monkey, wild_boar, coconut, woven_basket, thick_branch]

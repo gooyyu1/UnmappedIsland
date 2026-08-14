@@ -96,6 +96,68 @@ traits:
           - {name: dazed, min: 25, alert: caution}
           - {name: foggy, min: 60, alert: watch}
           - {name: clear, min: 80}
+    combinations:
+      # 武器を重ねて殴る（HuntingSystem.md 1.2節）。**候補は「一撃がどう入ったか」の型**で、どれを
+      # 引くかは武器が宣言する重み配分（tools.yamlのweapon trait）が決める。動物の側は体格
+      # （shockのmax）だけを持ち、どんな武器が在るかを知らない——武器を足してもここは1行も変わらない。
+      #
+      # **衝撃の量は候補が持つ。** 武器から読むことはできない（addの値はリテラルだけ、9.2節）ので、
+      # 与える量の刻みがそのまま候補の数になる。どの体格が何撃で沈むかはHuntingSystem.md 1.2節。
+      #
+      # 警戒の上がりと刃の摩耗は当たり外れによらず起きるが、pickとaddを併記できないため
+      # 各候補へ複製している（issue #415。動詞を順に並べられるようになったら1箇所へ寄せる）。
+      #
+      # どの回もsignal（9.8節）で結果を告げる。当たった回の傷は押して開くinjuriesスロットへ入り、
+      # 外した回は世界の形が何も変わらないため、どちらもレーンの上では見分けが付かない。
+      #
+      # **打撲の成分はshockが持ち、怪我としては表さない。** 一撃で「裂傷」と「打撲」の2枚を刺すと
+      # 怪我スロットが溢れる。裂けた皮膚が傷（injuries.yaml）、殴られた揺れがshock、という分け方で足りる。
+      strike:
+        with: weapon
+        duration: 15
+        pick:
+          # 打ち砕いた回。柄の遠心力が乗る武器（石斧）だけが引く。当たれば中型はその場で崩れ落ちる
+          # （VitalsSystem.md 5節 決着は死ではなく気絶で付く）。
+          - weight: {object: dragged, prop: heavy_blow}
+            add:
+              self: {wariness: 25, shock: 250}
+              dragged: {durability: -20}
+            spawn: {object: laceration, into: self}
+            signal: hit
+          # 浅く当たった回。皮は裂けるが、体格の大きい相手はほとんど揺れない。
+          - weight: {object: dragged, prop: light_blow}
+            add:
+              self: {wariness: 25, shock: 30}
+              dragged: {durability: -20}
+            spawn: {object: laceration, into: self}
+            signal: grazed
+          # 突き通した回。衝撃はほとんど生まれず、代わりに深く刺さった傷が血を速く流す
+          # （injuries.yamlのpuncture_wound）。その場では倒れないが、放っておけば失血で倒れる。
+          - weight: {object: dragged, prop: thrust}
+            add:
+              self: {wariness: 25, shock: 30}
+              dragged: {durability: -20}
+            spawn: {object: puncture_wound, into: self}
+            signal: pierced
+          # 外した回。傷は付かないが、殴られたこと自体で警戒は上がる。
+          - weight: {object: dragged, prop: whiff}
+            add:
+              self: {wariness: 25}
+              dragged: {durability: -20}
+            signal: missed
+          # 仕留めた回（HuntingSystem.md 1.4節）。急所——首・後頭部——へ入れば、傷が残る間もなく
+          # 死ぬ。**怪我としては表さない**（手当てできず、残らないものだから。InjurySystem.md 4節）。
+          # 重みは無防備さそのものなので、気を失っている相手ではここが最も太くなる。
+          #
+          # **仕留めは血を空にすることで表す。** 死体へ置き換えるのはbloodのon_shortfall（動物ごとの
+          # 宣言）で、**死体の名前を知っているのは動物だけ**になる——この候補は獲物の種類を知らない。
+          # 頸を落とすとは実際に血を失わせることなので、失血死と別の道を用意する必要も無い。
+          - weight: {prop: vulnerability}
+            add:
+              dragged: {durability: -20}
+            set:
+              self: {blood: 0}
+            signal: killed
 
 object_defs:
   # サル。物を持ち去る中型（Animals.md 4.1節）。危険は低いが、放っておくと足元の物を持っていく。
@@ -105,7 +167,10 @@ object_defs:
       weight: {value: 5000}
       volume: {value: 12000}
       # 殴られた衝撃（VitalsSystem.md 2.1節）。攻撃がaddで即座に上げ、自分で引いていく。
-      # maxが体格で、サルは小さいので石1つでも一撃で気を失う。
+      # **maxが体格**（体重の1/50）で、5kgのサルは浅い一撃（30）3つで気を失う。
+      #
+      # 引く速さも体格に比例する（max ÷ 25 ＝ 満タンから6時間で引き切る）。比例させないと、
+      # 大きい相手ほど殴った端から溜まっていき、弱い武器でも殴り続ければ倒せることになる。
       shock:
         value: 0
         range: {min: 0, max: 100}
@@ -151,8 +216,9 @@ object_defs:
               - modify: {self: {consciousness: -30}}
           - {name: low, min: 280, alert: watch}
           - {name: replete, min: 320}
-        # 失血死。仕留めの一撃（HuntingSystem.md 1.4節）と同じく、自分が居た枠がそのまま死体に変わる
-        # （destroyをspawnより先に書く、9.4節）。こちらは**逃げられた個体が後で倒れる道**。
+        # 血が尽きれば、自分が居た枠がそのまま死体に変わる（destroyをspawnより先に書く、9.4節）。
+        # **この型が死体になる唯一の道**で、仕留めの一撃（beast traitのstrike）も、逃げられた個体が
+        # 後で倒れる道も、どちらもここへ合流する——だから死体の名前はここにしか書かれていない。
         on_shortfall:
           destroy: self
           spawn: {object: monkey_carcass}
@@ -160,47 +226,6 @@ object_defs:
           - add:
               self:
                 blood: 0.16
-    combinations:
-      # 武器を重ねて殴る（HuntingSystem.md 1.2節）。当たれば怪我が1つ刺さる。
-      #
-      # 警戒の上がりと刃の摩耗は当たり外れによらず起きるが、pickとaddを併記できないため
-      # 各候補へ複製している（issue #415。動詞を順に並べられるようになったら1箇所へ寄せる）。
-      #
-      # どちらの回もsignal（9.8節）で結果を告げる。当たった回の傷は押して開くinjuriesスロットへ
-      # 入り、外した回は世界の形が何も変わらないため、どちらもレーンの上では見分けが付かない。
-      #
-      # 当たれば衝撃で気を失う（VitalsSystem.md 5節）。狩りの決着は死ではなく気絶で付くので、
-      # 当たった瞬間に効かなければならない——addは実体値への即時の書き込みで、そこから意識への
-      # 寄与（shockの段）が同じ瞬間に立つ。
-      #
-      # **打撲の成分はこのshockが持ち、怪我としては表さない。** 尖った石は切れ味が悪いぶん打撲が
-      # 強く出るが、一撃で「裂傷」と「打撲」の2枚を刺すと怪我スロットが溢れる。裂けた皮膚が
-      # 傷（injuries.yamlのlaceration）、殴られた揺れがshock、という分け方で足りる。
-      strike:
-        with: weapon
-        duration: 15
-        pick:
-          - weight: 70
-            add:
-              self: {wariness: 25, shock: 80}
-              dragged: {durability: -20}
-            spawn: {object: laceration, into: self}
-            signal: hit
-          # 外した回。傷は付かないが、殴られたこと自体で警戒は上がる。
-          - weight: 30
-            add:
-              self: {wariness: 25}
-              dragged: {durability: -20}
-            signal: missed
-          # 仕留めた回（HuntingSystem.md 1.4節）。急所——首・後頭部——へ入れば、傷が残る間もなく
-          # 死ぬ。**怪我としては表さない**（手当てできず、残らないものだから。InjurySystem.md 4節）。
-          # 重みは無防備さそのものなので、気を失っている相手ではここが最も太くなる。
-          - weight: {prop: vulnerability}
-            add:
-              dragged: {durability: -20}
-            destroy: self
-            spawn: {object: monkey_carcass}
-            signal: killed
 
   # サルの死体。仕留めた個体が、その枠のまま置き換わる（destroyをspawnより先に書く、9.4節）。
   # 刺さっていた傷は持ち主から離れられないので道連れに消え、当てていた治療具だけが地面へ落ちる。
@@ -232,7 +257,8 @@ object_defs:
     props:
       weight: {value: 1000}
       volume: {value: 2400}
-      # maxが体格（サル5kgの100に対して1kg）。石1つ（shock 80）で必ず気を失う大きさ。
+      # maxが体格（サル5kgの100に対して1kg）。どんな武器でも一撃で気を失う大きさで、引く速さも
+      # 体格に比例する（max ÷ 25、サルの-4に対して-0.8）。
       shock:
         value: 0
         range: {min: 0, max: 20}
@@ -249,7 +275,7 @@ object_defs:
         passives:
           - add:
               self:
-                shock: -4
+                shock: -0.8
       # maxが体格（体重のおよそ1/13＝80mL）。段のしきい値も戻る速さも、サルと同じ割合で刻む。
       #
       # **くくり罠の傷（injuries.yamlのsnare_laceration）が奪うのは30〜60mL**なので、浅く掛かれば
@@ -281,28 +307,6 @@ object_defs:
           - add:
               self:
                 blood: 0.032
-    combinations:
-      strike:
-        with: weapon
-        duration: 15
-        pick:
-          - weight: 70
-            add:
-              self: {wariness: 25, shock: 80}
-              dragged: {durability: -20}
-            spawn: {object: laceration, into: self}
-            signal: hit
-          - weight: 30
-            add:
-              self: {wariness: 25}
-              dragged: {durability: -20}
-            signal: missed
-          - weight: {prop: vulnerability}
-            add:
-              dragged: {durability: -20}
-            destroy: self
-            spawn: {object: junglefowl_carcass}
-            signal: killed
 
   # ネズミ。罠の最小単位（Animals.md 3節）。何でも齧るので、罠では草食・肉食どちらの卓にも載る
   # （TrapSystem.md 4.1節の雑食）。血が6mLしかないので、罠に掛かればまず死ぬ。
@@ -311,6 +315,7 @@ object_defs:
     props:
       weight: {value: 80}
       volume: {value: 200}
+      # maxが体格（体重の1/50）。引く速さも体格に比例する（max ÷ 25）。
       shock:
         value: 0
         range: {min: 0, max: 2}
@@ -327,7 +332,7 @@ object_defs:
         passives:
           - add:
               self:
-                shock: -4
+                shock: -0.08
       blood:
         value: 6
         range: {min: 1, max: 6}
@@ -355,28 +360,89 @@ object_defs:
           - add:
               self:
                 blood: 0.0024
+
+  # イノシシ。狩猟システムの基準個体（Animals.md 5節）。60kgの大型で、**上位の武器でなければ
+  # 手が出ない**——石斧なら4撃で沈み、槍なら4突きで血を失って倒れるが、尖った石では衝撃が
+  # 溜まる前に引いてしまう（下のshock）。
+  #
+  # 突進・持ち去り（HuntingSystem.md 5節）はまだ無いので、こちらから殴らなければ何もしない。
+  wild_boar:
+    traits: [beast]
+    props:
+      weight: {value: 60000}
+      # 荷重の上限（33kg）を大きく越えるので、倒しても丸ごとは運べない（Animals.md 5節）。
+      volume: {value: 144000}
+      # maxが体格（体重の1/50）。**サルの12倍**なので、打ち砕く一撃（250）でも4撃を要する。
+      # 引く速さも体格に比例する（max ÷ 25）ため、浅い一撃（30）は溜まる前に引いてしまう。
+      shock:
+        value: 0
+        range: {min: 0, max: 1200}
+        stages:
+          - {name: steady}
+          - name: rattled
+            min: 360
+            passives:
+              - modify: {self: {consciousness: -30}}
+          - name: reeling
+            min: 840
+            passives:
+              - modify: {self: {consciousness: -80}}
+        passives:
+          - add:
+              self:
+                shock: -48
+      # maxが体格（体重のおよそ1/13＝4,600mL）。ヒトに近い量なので、**裂傷1つ（60mL）は
+      # ほとんど響かない**——刺し傷（800mL、injuries.yamlのpuncture_wound）だけが釣り合う。
+      # 段のしきい値も戻る速さも、サルと同じ割合で刻む。
+      blood:
+        value: 4600
+        range: {min: 1, max: 4600}
+        stages:
+          - name: exsanguinated
+            alert: fatal
+            passives:
+              - modify: {self: {consciousness: -100}}
+          - name: hemorrhaging
+            min: 1840
+            alert: danger
+            passives:
+              - modify: {self: {consciousness: -70}}
+          - name: bled
+            min: 2760
+            alert: caution
+            passives:
+              - modify: {self: {consciousness: -30}}
+          - {name: low, min: 3220, alert: watch}
+          - {name: replete, min: 3680}
+        on_shortfall:
+          destroy: self
+          spawn: {object: wild_boar_carcass}
+        passives:
+          - add:
+              self:
+                blood: 1.84
+
+  # イノシシの死体。60,000gの内訳: 生肉500g×40 + 獣骨500g×6 + 生皮600g×6 = 26,600g。残る33,400gは
+  # 血と内臓・頭・骨の大半で、使い道が無いのでカードにしない（monkey_carcassと同じ規約）。
+  #
+  # **獲物の大きさは個数が表す**（HuntingSystem.md 1.5節）ので、サルと同じ物が12倍の数だけ出る。
+  # 荷重の上限（33kg）に対して肉だけで20kgあり、一度には持ち帰れない。
+  wild_boar_carcass:
+    tags: [item, quarry]
+    props:
+      weight: {value: 60000}
+      volume: {value: 144000}
     combinations:
-      strike:
-        with: weapon
-        duration: 15
-        pick:
-          - weight: 70
-            add:
-              self: {wariness: 25, shock: 80}
-              dragged: {durability: -20}
-            spawn: {object: laceration, into: self}
-            signal: hit
-          - weight: 30
-            add:
-              self: {wariness: 25}
-              dragged: {durability: -20}
-            signal: missed
-          - weight: {prop: vulnerability}
-            add:
-              dragged: {durability: -20}
-            destroy: self
-            spawn: {object: rat_carcass}
-            signal: killed
+      # 大きいぶん時間がかかるが、1kgあたりで見ればサル（60分/5kg）より速い——同じ手数で
+      # 大きく取れるため。
+      butcher:
+        with: cutting_tool
+        duration: 240
+        destroy: self
+        spawn:
+          - {object: raw_meat, count: 40}
+          - {object: animal_bone, count: 6}
+          - {object: rawhide, count: 6}
 
   # ヤケイの死体。1000gの内訳: 生肉500g + 羽40g + 小さな骨10g = 550g。残る450gは残りの骨と内臓・血で、
   # 使い道が無いのでカードにしない。値を変えるときはこの内訳を崩さないこと（monkey_carcassと同じ規約）。
