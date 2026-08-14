@@ -1,0 +1,39 @@
+{
+  "_comment": [
+    "src/assets/objects/rawhide.png を作り直すためのレシピ。build.py が読む。",
+    "サルの死体を解体して得られる生皮（docs/engine/HuntingSystem.md 1.5節）。",
+    "",
+    "**平らなまま置く。** 折り返させると、内側の面が毛より明るく滑らかなので、革に布を巻き付けた",
+    "ように見えた（帯そのものを描いてしまう）。輪郭が矩形に近いと工業製品に見えるので、**縁の崩れた",
+    "seedを選ぶ**ことで敷物らしさを避ける。",
+    "",
+    "**色は生成でもQwenでも足りない。** greyish brown と頼んでも生成りのままなので、card_art.py の",
+    "--saturation / --gamma で足す（太い枝と同じ扱い）。toleranceを24まで下げるのも同じ理由で、",
+    "淡い毛が芯から外れるため。",
+    "",
+    "段は400。3つの取り分の中でいちばん嵩がある（1500ml）。"
+  ],
+  "output": "src/assets/objects/rawhide.png",
+  "prompts": "objects.json",
+  "prompt": "rawhide",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 832,
+  "height": 1280,
+  "seed": 9213,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same untanned animal hide lying flat exactly as it is in shape and layout, and paint it with soft brush strokes and gentle natural shading instead of photographic detail. Change the fur to a muted greyish brown with darker tips, clearly darker than the white page. Remove the background completely and replace it with a plain empty white page, leaving the hide alone in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. Limp soft and heavy, matte surface, flat even lighting. No strap, no band, no rope, no cloth wrapped around it, no frame, no rack, no text, no letters, no numbers.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24,
+    "saturation": 1.35,
+    "gamma": 1.2
+  }
+}
