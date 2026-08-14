@@ -10,7 +10,8 @@
 （icon_mark.py）、tint があれば陰影を残したまま一部の色を寄せる（skin_tint.py）。
 edit を持つレシピは、生成の代わりに別レシピの生データを
 基準にした Qwen Image Edit で生データを作る（README「既存の絵からの派生」節）。sketch を持つレシピは
-物の配置だけを描いた下絵を出す（layout_sketch.py）。stain を持つレシピは
+物の配置だけを描いた下絵を出す（layout_sketch.py）。crop を持つレシピは、生成した絵の一部だけを
+切り出して次の段へ渡す（crop_patch.py）。stain を持つレシピは
 生成も後処理もせず、乗算で載る染みの層を描くだけ（skin_tint.py --layer）。puff も同じく描くだけで、
 砂埃の粒を1枚出す（dust_puff.py）。
 
@@ -234,7 +235,21 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str) -> 
     raw = raw_dir / f"{recipe['prompt']}_{recipe['seed']}.png"
     if not raw.exists():
         raise SystemExit(f"生成物が見つかりません: {raw}")
-    return raw
+
+    crop = recipe.get("crop")
+    if crop is None:
+        return raw
+    patch = raw_dir / f"{Path(recipe['output']).stem}_patch.png"
+    run(
+        "crop_patch.py",
+        [
+            str(raw),
+            "--out", str(patch),
+            "--box", *map(str, crop["box"]),
+            "--size", *map(str, crop["size"]),
+        ],
+    )
+    return patch
 
 
 def ensure_fresh_process(workflow: str | None, server: str) -> None:
