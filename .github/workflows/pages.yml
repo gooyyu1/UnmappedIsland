@@ -51,11 +51,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Pandoc
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y pandoc
-
       # 系列で指定する理由はtests.ymlのコメントを参照。2つのワークフローで揃えること。
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -99,43 +94,9 @@ jobs:
           EOF
 
       - name: Convert markdown files to HTML
-        run: |
-          PANDOC_OPTS=(
-            --standalone
-            # 見出しのアンカーIDをGitHub互換にする（tests/docs/docReferences.test.tsが検査する
-            # アンカーと、公開サイトのアンカーを一致させる）。
-            --from=markdown+gfm_auto_identifiers
-            --metadata charset=utf-8
-            --css=https://cdn.jsdelivr.net/npm/github-markdown-css@5/github-markdown-dark.min.css
-            --include-in-header=/tmp/docs-header.html
-            --variable=include-before='<article class="markdown-body" style="max-width:900px;margin:2rem auto;padding:1rem 2rem;box-sizing:border-box">'
-            --variable=include-after='</article>'
-          )
-
-          find docs -name '*.md' | while read md_file; do
-            # Derive output path: docs/engine/Foo.md -> site/docs/engine/Foo.html
-            rel="${md_file#docs/}"               # strip leading "docs/"
-            out_dir="site/docs/$(dirname "$rel")"
-            out_file="site/docs/${rel%.md}.html"
-            mkdir -p "$out_dir"
-            pandoc "${PANDOC_OPTS[@]}" \
-              --metadata title="$(basename "${rel%.md}")" \
-              -o "$out_file" \
-              "$md_file"
-            echo "Generated: $out_file"
-          done
-
-      - name: Rewrite internal .md links to .html
-        run: |
-          # Pandoc does not rewrite links between converted documents, so a link that
-          # pointed at another Markdown file (e.g. href="./Design/README.md") is left
-          # untouched even though only Design/README.html exists in the output. Rewrite
-          # every such relative href (anything without a ":" is treated as relative,
-          # so http(s):// and mailto: links are left alone) from .md to .html.
-          find site/docs -name '*.html' | while read -r html_file; do
-            sed -i -E 's/href="([^":]+)\.md(#[^"]*)?"/href="\1.html\2"/g' "$html_file"
-          done
-          echo "Rewrote internal .md links to .html across site/docs/"
+        # 見出しのアンカーIDと、ドキュメント同士のリンクの張り替えはスクリプト側が担う
+        # （アンカーの規則はscripts/githubSlugs.mjsに集約し、テストと同じものを使う）。
+        run: node scripts/buildDocsSite.mjs docs site/docs /tmp/docs-header.html
 
       - name: Copy HTML mocks and assets to site/docs
         run: |
