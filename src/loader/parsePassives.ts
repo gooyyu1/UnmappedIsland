@@ -10,7 +10,7 @@ import { AccumulateEffect, ModifyEffect, PassiveEffectGate } from '../domain/def
 import type { PassiveEffect } from '../domain/defs/PassiveEffect';
 
 /**
- * passivesの1ブロック（"passives:"配列の1要素。conditions/modify/accumulateのみを持つ）を読み、
+ * passivesの1ブロック（"passives:"配列の1要素。conditions/modify/addのみを持つ）を読み、
  * PassiveEffectへ変換してoutputへ追加する。forcedStageProperty（非undefinedならstage内）と
  * "conditions"は独立に併用できる（例:「装備している間、かつ耐久値がintactステージの間だけ」）。
  * conditionsはブロック全体で1つ（対象ごとには持たない。RegisteredPassiveEffect参照）。
@@ -44,12 +44,12 @@ export function parsePassive(
     output,
     context,
     passiveMap,
-    'accumulate',
+    'add',
     (target, propId, amount, g) => new AccumulateEffect(target, propId, amount, g),
     gate,
   );
 
-  const knownKeys = new Set<string>(['conditions', 'modify', 'accumulate']);
+  const knownKeys = new Set<string>(['conditions', 'modify', 'add']);
 
   const unknownKeys = entriesInOrder(passiveMap)
     .map(([key]) => key)
@@ -76,7 +76,7 @@ function buildGate(
 }
 
 /**
- * passiveの1操作(modify/accumulate)を読み、対象(self/parent/child/ancestor、actorは未対応のため
+ * passiveの1操作(modify/add)を読み、対象(self/parent/child/ancestor、actorは未対応のため
  * スキップ)ごとにPassiveEffectへ変換してoutputへ追加する。具象型はmakeEffectファクトリで受け取り、
  * 同じpassiveブロック内のgateを全効果で共有する。
  */

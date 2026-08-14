@@ -38,7 +38,7 @@ function tryParseNumber(raw: string): number | undefined {
   return value;
 }
 
-/** setやmodify/accumulateの量など、mapのキー経由ではなく値ノードから直接取り出す数値リテラル。
+/** setやmodify/addの量など、mapのキー経由ではなく値ノードから直接取り出す数値リテラル。
  * yamlMapping.tsのrequireNumber等はmap+key単位でしか扱えないため、値ノードを直接受け取るここだけの薄いラッパー。 */
 export function parseNumberLiteral(context: string, raw: string): number {
   const value = tryParseNumber(raw);

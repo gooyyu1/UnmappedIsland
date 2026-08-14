@@ -3,7 +3,7 @@ import type { PropertyValue } from './PropertyValue';
 import type { WorldObject } from './WorldObject';
 
 /**
- * 登録済みの効果1件。target(self/parent/child)・kind(modify/accumulate)を問わず同じ形で持つ。
+ * 登録済みの効果1件。target(self/parent/child)・kind(modify/add)を問わず同じ形で持つ。
  *
  * - declarer: この効果を宣言したオブジェクト。WhenOwnStageゲートはこれ自身の該当プロパティを見る
  * - slotBearer: 親子関係で「子」側にあたるオブジェクト。conditionsゲートのselfはこれを指す
@@ -28,7 +28,7 @@ export class RegisteredPassiveEffect {
     this.def = def;
   }
 
-  /** 対象プロパティ値のincoming（modify用/accumulate用）へこの登録を入れる。どちらに入るかはdefが決める。 */
+  /** 対象プロパティ値のincoming（modify用/積分用）へこの登録を入れる。どちらに入るかはdefが決める。 */
   registerInto(target: PropertyValue): void {
     this.def.registerInto(target, this);
   }

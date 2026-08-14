@@ -41,7 +41,7 @@ object_defs:
       tick:
         value: 0
         passives:
-          - accumulate:
+          - add:
               self:
                 tick: 1
       # 1tickに相当するゲーム内時間（分）。ゲーム側（WorldSession）は実行時にこの値を読む。
@@ -118,12 +118,12 @@ object_defs:
         stages:
           - name: storm
             passives:
-              - accumulate:
+              - add:
                   self:
                     atmospheric_moisture: -2
           - name: heavy_rain
             passives:
-              - accumulate:
+              - add:
                   self:
                     atmospheric_moisture: -1.3
           - name: light_rain
@@ -131,7 +131,7 @@ object_defs:
               - modify:
                   self:
                     sunlight: 1
-              - accumulate:
+              - add:
                   self:
                     atmospheric_moisture: -1.1
           - name: cloudy
@@ -195,7 +195,7 @@ object_defs:
               - modify:
                   self:
                     season_is_calm: 1
-              - accumulate:
+              - add:
                   self:
                     atmospheric_moisture: 0.1
                     thermal_level: -1
@@ -205,7 +205,7 @@ object_defs:
               - modify:
                   self:
                     season_is_wet: 1
-              - accumulate:
+              - add:
                   self:
                     atmospheric_moisture: 1
                     thermal_level: -1
@@ -215,7 +215,7 @@ object_defs:
               - modify:
                   self:
                     season_is_dry: 1
-              - accumulate:
+              - add:
                   self:
                     atmospheric_moisture: -0.2
                     thermal_level: 1
@@ -255,7 +255,7 @@ object_defs:
         value: 2880
         range: {min: 1, max: 999999}
         passives:
-          - accumulate:
+          - add:
               self:
                 season_remaining: -1
         on_shortfall:
@@ -385,7 +385,7 @@ object_defs:
         value: 20
         range: {min: 1, max: 999999}
         passives:
-          - accumulate:
+          - add:
               self:
                 weather_remaining: -1
         on_shortfall:
@@ -526,7 +526,7 @@ object_defs:
       early_rain_calibration:
         value: 0
         passives:
-          - accumulate:
+          - add:
               self:
                 early_rain_calibration: 1
         stages:
@@ -534,7 +534,7 @@ object_defs:
           - name: boosting
             min: 96
             passives:
-              - accumulate:
+              - add:
                   self:
                     atmospheric_moisture: 0.6
           - name: done
@@ -545,7 +545,7 @@ object_defs:
       first_dry_rain_calibration:
         value: 0
         passives:
-          - accumulate:
+          - add:
               self:
                 first_dry_rain_calibration: 1
         stages:
@@ -553,7 +553,7 @@ object_defs:
           - name: boosting
             min: 6720
             passives:
-              - accumulate:
+              - add:
                   self:
                     atmospheric_moisture: 2
           - name: done

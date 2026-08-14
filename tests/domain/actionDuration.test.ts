@@ -21,7 +21,7 @@ object_defs:
       tick:
         value: 0
         passives:
-          - accumulate:
+          - add:
               self:
                 tick: 1
       minutes_per_tick:
@@ -181,7 +181,7 @@ object_defs:
       staleness:
         value: 0
         passives:
-          - accumulate:
+          - add:
               self:
                 staleness: 1
   oven:
@@ -219,7 +219,7 @@ object_defs:
         on_shortfall:
           destroy: self
         passives:
-          - accumulate:
+          - add:
               self:
                 durability: -1
     actions:
@@ -254,7 +254,7 @@ object_defs:
         on_shortfall:
           destroy: self
         passives:
-          - accumulate:
+          - add:
               self:
                 durability: -1
   block:

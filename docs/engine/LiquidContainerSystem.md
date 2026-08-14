@@ -149,7 +149,7 @@ traits:
 
 ## 6. 蒸発
 
-`evaporating_liquid` トレイトの `passives`（`accumulate`）で、自分の `volume` を毎 tick 減らします。
+`evaporating_liquid` トレイトの `passives`（`add`）で、自分の `volume` を毎 tick 減らします。
 **日射に依らない基礎の蒸発と、`ancestor.sunlight` のしきい値で決まる上乗せの和**です。
 
 | | 基礎 | +`sunlight` ≧10 | +`sunlight` ≧12 | +`sunlight` ≧15 |
@@ -213,7 +213,7 @@ traits:
 成立させつつ、据え置きの大容量には季節ぶんの時間を要求する配分です。蒸発と同じく、値は容器ごとに独立した
 数値で持ちます（口径の段の倍率ではありません。9 節）。
 
-- **満杯を超えた分はあふれて失われます。** `accumulate` は行き先の `capacity` を知らないため、超過分を
+- **満杯を超えた分はあふれて失われます。** `add` は行き先の `capacity` を知らないため、超過分を
   捨てるのはエンジン側の不変条件です（`GameElementDefinition.md` 7.6 節）。注ぎ移し（4 節）が入りきらない
   分を移し元に残すのと違い、雨には残せる移し元がありません。
 - **密閉容器は `collect_rain` を持ちません。** 蒸発しないのと同じ理由（開いていない）で、ボタン自体が

@@ -39,7 +39,7 @@ object_defs:
           - {name: shallow}
           - {name: deep, min: 1.75}
         passives:
-          - accumulate:
+          - add:
               self:
                 moisture: -0.35
 `;
@@ -335,7 +335,7 @@ object_defs:
       fuel:
         value: 10
         passives:
-          accumulate:
+          add:
             self:
               fuel: -1
 `;
@@ -1098,7 +1098,7 @@ object_defs:
     const session = new WorldSession(codex);
     const instance = new WorldObject(1, clock, session);
     instance.setProperty(codex.propertyNames.getId('minute'), 60); // 手動で溢れさせる
-    instance.tick(session); // accumulate契機は無いが、既に溢れているのでon_overflowだけが発火する
+    instance.tick(session); // passivesのadd契機は無いが、既に溢れているのでon_overflowだけが発火する
 
     expect(instance.getNumber(codex.propertyNames.getId('minute'))).toBe(0);
     expect(instance.getNumber(codex.propertyNames.getId('hour'))).toBe(1);

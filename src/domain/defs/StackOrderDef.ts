@@ -10,7 +10,7 @@ import { propertyRef, text } from './Description';
  * ascending=false を指定する。
  *
  * 新規インスタンスがスタックへ加わる際の並び位置決定にのみ使い、値の変化に追従した再ソートは行わない
- * （8.4節のaccumulateのような一定速度の変化を想定し、同種は同じ速度で変化する前提のため、
+ * （8.4節の積分（passivesのadd）のような一定速度の変化を想定し、同種は同じ速度で変化する前提のため、
  * 挿入時点の相対順序が保たれる）。
  */
 export class StackOrderDef {

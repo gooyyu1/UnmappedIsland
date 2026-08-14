@@ -13,7 +13,7 @@
 [`ContainerSystem.md`](./ContainerSystem.md) 6 節が持ちます。
 
 **新設する文法はありません。** 火は炉のプロパティ（1 節）、くべる操作は `transfer`（2 節）、火の育ちと
-衰え・燃焼・加熱は `accumulate`（2.2 節・7 節）、炉の段上げは `on_overflow`（5 節）で、いずれも
+衰え・燃焼・加熱は `add`（2.2 節・7 節）、炉の段上げは `on_overflow`（5 節）で、いずれも
 [`GameElementDefinition.md`](./GameElementDefinition.md) の既存語彙です。本書が導入するのは語彙の名前
 だけです。
 
@@ -123,7 +123,7 @@ props:
 
 ### 2.2 火力は、薪を食って育ち、薪が尽きると衰える
 
-**炉が持つ数は `fuel`（薪）と `heat`（火力）の 2 つだけで、どちらも `accumulate` で動く実体値です。**
+**炉が持つ数は `fuel`（薪）と `heat`（火力）の 2 つだけで、どちらも `add` で動く実体値です。**
 `modify` は使いません——火は「今の状態から計算される値」ではなく、**育ったり衰えたりする量**だからです
 （[`ClimateSystem.md`](./ClimateSystem.md) 1 節の数値積分と同じ考え方）。
 
@@ -137,7 +137,7 @@ props:
   passives:
     - conditions:
         - {prop: heat, gt: 0}      # 消えている炉は、薪を積んでも育たない
-      accumulate:
+      add:
         self:
           heat: 6
 ```
@@ -147,10 +147,10 @@ props:
 - name: flame
   min: 20
   passives:
-    - accumulate:
+    - add:
         self: {fuel: -1.5}
     - conditions: [{prop: fuel, in_stage: none}]
-      accumulate:
+      add:
         self: {heat: -6}
 ```
 
@@ -161,11 +161,11 @@ props:
 | 10〜39 | `some` | +6/tick |
 | 40〜 | `many` | +16/tick |
 
-**育ちと衰えは同時に効かせません。** `accumulate` は登録順に値を書き換えながら適用されるため、同じ
+**育ちと衰えは同時に効かせません。** `add` は登録順に値を書き換えながら適用されるため、同じ
 tick に正負が混ざると、段の境目で「育って次の段へ入り、その段の冷めを即座に払って戻る」が起きて、
 火がそこから育たなくなります。育ちは薪がある間、衰えは薪が尽きている間だけにして、打ち消しを断ちます。
 この打ち消しは段を細かく刻めば**狙った高さの平衡点**にもできますが、火には平衡が要りません
-（[`DesignNotes.md`](./DesignNotes.md) accumulateの平衡点節）。
+（[`DesignNotes.md`](./DesignNotes.md) tick毎のaddの平衡点節）。
 
 **火の大きさを決めるのは、上限と時間の競争です。** 薪があるかぎり火力はその炉の上限（`heat` の
 `range.max`、6 節）まで上がりますが、**上がるより先に薪が尽きれば、そこまでしか大きくなりません**。
@@ -228,7 +228,7 @@ passives:
   - conditions:
       - {prop: heat, in_stage: ember}
       - {prop: fuel, in_stage: none}   # 薪が載っていれば、火は衰える側ではなく育つ側
-    accumulate:
+    add:
       self: {heat: -2}   # 1〜4を2 tick(30分)で通り抜けて死ぬ。石囲いの炉は-0.125（8時間）
 ```
 
@@ -399,7 +399,7 @@ props:
 ので、炉の段ではなく石と時間だけで成立します。三石のかまどが効くのは土器を得てからで、この順序は
 仕様ではなく「ヤシの殻を直火にかけると焦げる」という事実から出ています。
 
-## 7. 加熱の受け渡しは、子のcooking_progressへのaccumulate
+## 7. 加熱の受け渡しは、子のcooking_progressへのadd
 
 **炉は、火の中にある子の `cooking_progress` を毎 tick 進めます。量は `heat` の段が決めます。**
 料理側が書くのは「未加熱の物が `cooking_progress` を持ち、上限に達したら焼き上がりへ置き換わる」だけで、
@@ -410,7 +410,7 @@ props:
 - name: flame
   min: 20
   passives:
-    - accumulate:
+    - add:
         self:
           fuel: -1.5
         child:
@@ -438,12 +438,12 @@ cooking_progress:
 passives:
   - conditions:
       - {object: ancestor, prop: heat, in_stage: coals}
-    accumulate:
+    add:
       child:
         cooking_progress: 1
   - conditions:
       - {object: ancestor, prop: heat, in_stage: flame}
-    accumulate:
+    add:
       child:
         cooking_progress: 3
 ```
@@ -486,7 +486,7 @@ passives:
 - **生まれた側のプロパティは自分の型の初期値から始まります。** 進行度は引き継がれないので、**焦げるまでの
   猶予は焼けた肉自身の `range.max` が持ちます**。生から焼きより短くすれば、「目を離すと焦げる」が出ます。
 
-**火から出せば進行は止まり、戻りません。** 加熱の `accumulate` が効かなくなるだけなので、半分焼けた肉を
+**火から出せば進行は止まり、戻りません。** 加熱の `add` が効かなくなるだけなので、半分焼けた肉を
 持ち歩き、後で火へ戻せば続きから焼けます。食べ物が冷めて生に戻ることはないので、これが正しい振る舞いです。
 
 **進行度が違っても、同じ型は 1 つのスタックにまとまります**（[`SlotSystem.md`](./SlotSystem.md) 5 節。
@@ -505,7 +505,7 @@ passives:
   - conditions:
       - {object: ancestor, prop: sheltered, eq: 0}
       - {object: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
-    accumulate:
+    add:
       self:
         heat: -4
 ```

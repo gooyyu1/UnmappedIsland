@@ -159,7 +159,7 @@ object_defs:
 });
 
 /**
- * 量を動かす経路（tickのaccumulateと、その場の書き換え）はどれも行き先のスロットの上限も下限も
+ * 量を動かす経路（tick毎のaddと、その場の書き換え）はどれも行き先のスロットの上限も下限も
  * 知らないため、エンジンが不変条件へ戻す（WorldObject.settleVolume）。降雨で増える水・蒸発で
  * 減る水・飲み干した水が実際に頼っているのはこの2つ。
  */
@@ -189,14 +189,14 @@ object_defs:
   rainwater:
     traits: [liquid]
     passives:
-      - accumulate:
+      - add:
           self:
             volume: 30
 
   drying_water:
     traits: [liquid]
     passives:
-      - accumulate:
+      - add:
           self:
             volume: -30
 

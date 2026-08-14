@@ -168,7 +168,7 @@ export class Slot {
   }
 
   /**
-   * 中身の量が上限（capacity）を超えている分。超えていなければ0。中身自身のaccumulateは上限を
+   * 中身の量が上限（capacity）を超えている分。超えていなければ0。中身自身の積分（passivesのadd）は上限を
    * 知らずに量を増やせるため（降雨で溜まる水）、超過分を捨てる側がこの量を問い合わせる。
    */
   overflowingVolume(volumePropertyGlobalId: number): number {

@@ -73,9 +73,13 @@ export class PassiveEffectGate {
 /**
  * 1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.passives の要素。
  *
- * modify（条件が真の間だけ実効値へ寄与＝可逆）とaccumulate（条件が真の間tick毎に実体値へ加減算＝不可逆）は
+ * modify（条件が真の間だけ実効値へ寄与＝可逆）と`add`（条件が真の間tick毎に実体値へ加減算＝不可逆）は
  * 別クラスで表し、判別用のkindは持たない。唯一の差は「PropertyValueのどちらのincomingへ登録されるか」で、
  * registerIntoの実装で表現する。
+ *
+ * **動詞が名乗るのは可逆性だけで、一度きりかtick毎かは置き場所（active／passives）が決める**
+ * （8.4節）。そのため不可逆な加減算はどちらの置き場所でも `add` と書き、クラス名だけが
+ * 「毎tick実体値へ積分する」という中身（AccumulateEffect）を名乗る。
  *
  * 登録先の解決と登録/解除はtargetの種別に応じて自分で行い、呼び出し側（WorldObject）はライフサイクルの
  * 契機で登録/解除を依頼するだけで、どのtargetがどこへ紐付くかは知らない。
@@ -101,11 +105,11 @@ export abstract class PassiveEffect {
     this.gate = gate;
   }
 
-  /** この効果（registration）を、対象プロパティ値（target）のmodify用/accumulate用incomingのうち
+  /** この効果（registration）を、対象プロパティ値（target）のmodify用/積分用incomingのうち
    * 具象クラスに応じた側へ登録する。 */
   abstract registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void;
 
-  /** YAMLでの書き方の名前（modify/accumulate）。describeが対象の前に置く。 */
+  /** YAMLでの書き方の名前（modify/add）。describeが対象の前に置く。 */
   protected abstract get kindLabel(): string;
 
   /**
@@ -133,7 +137,7 @@ export abstract class PassiveEffect {
   }
 
   /** declarer/slotBearerの現在の文脈でゲート（8.2節）が有効ならamountを、無効なら0を返す。
-   * modifyでもaccumulateでも同じ量。 */
+   * modifyでもaddでも同じ量。 */
   activeAmount(declarer: WorldObject, slotBearer: WorldObject): number {
     return this.gate.isSatisfied(declarer, slotBearer) ? this.amount : 0;
   }
@@ -228,8 +232,8 @@ export class ModifyEffect extends PassiveEffect {
 }
 
 /**
- * 条件が真の間、tick毎に実体値そのものへ加減算し続ける持続効果（不可逆、8.4節）。PropertyValueの
- * accumulate用incomingへ登録され、WorldObject.tickが走査する。
+ * 条件が真の間、tick毎に実体値そのものへ加減算し続ける持続効果（YAMLでは `add`、不可逆、8.4節）。
+ * PropertyValueの積分用incomingへ登録され、WorldObject.tickが走査する。
  */
 export class AccumulateEffect extends PassiveEffect {
   constructor(
@@ -242,7 +246,7 @@ export class AccumulateEffect extends PassiveEffect {
   }
 
   protected get kindLabel(): string {
-    return 'accumulate';
+    return 'add';
   }
 
   registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void {

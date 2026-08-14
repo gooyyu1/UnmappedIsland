@@ -359,7 +359,7 @@
       }
     },
     "target_amount_map": {
-      "description": "passiveの1対象に対する、プロパティ名→数値の割り当て（modify/accumulate共通の形）。数値プロパティは32bit整数のみを扱う（6節）。",
+      "description": "passiveの1対象に対する、プロパティ名→数値の割り当て（modify/add共通の形）。数値プロパティは32bit整数のみを扱う（6節）。",
       "type": "object",
       "patternProperties": {
         "^[a-z][a-z0-9_.]*$": {
@@ -369,7 +369,7 @@
       "additionalProperties": false
     },
     "passive_operation_map": {
-      "description": "passiveの1操作(modify/accumulate)が持つ、対象（self/parent/child/ancestor）をキーとする辞書（8.1節・8.6節）。actorは持続的な関係に紐づかないため未対応（ローダーは黙って読み飛ばす）。combinations内のdraggedはactiveのみで意味を持ち、passiveには現れない。",
+      "description": "passiveの1操作(modify/add)が持つ、対象（self/parent/child/ancestor）をキーとする辞書（8.1節・8.6節）。actorは持続的な関係に紐づかないため未対応（ローダーは黙って読み飛ばす）。combinations内のdraggedはactiveのみで意味を持ち、passiveには現れない。",
       "type": "object",
       "properties": {
         "self": {
@@ -392,7 +392,7 @@
       "additionalProperties": false
     },
     "passive_def": {
-      "description": "持続する影響の1ブロック（8節）。文法は「操作(conditions/modify/accumulate)が上位、対象(self/parent/child)が下位」。関係とゲート（常時／conditions／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。conditionsを書かなければ常時（無条件）を意味する。装備状態などによって異なるconditionsで効果を切り替えたい場合、passivesの配列に複数ブロックを並べる（8.5節）。ブロック全体で1つのconditionsを持ち、対象(self/parent/child)ごとには持たない（self/parent対象は常に同じ実体を指すため）。",
+      "description": "持続する影響の1ブロック（8節）。文法は「操作(conditions/modify/add)が上位、対象(self/parent/child)が下位」。関係とゲート（常時／conditions／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。conditionsを書かなければ常時（無条件）を意味する。装備状態などによって異なるconditionsで効果を切り替えたい場合、passivesの配列に複数ブロックを並べる（8.5節）。ブロック全体で1つのconditionsを持ち、対象(self/parent/child)ごとには持たない（self/parent対象は常に同じ実体を指すため）。",
       "type": "object",
       "properties": {
         "conditions": {
@@ -402,8 +402,8 @@
           "description": "可逆的な修飾子。同一プロパティへの複数modifyは単純加算で合成される。",
           "$ref": "#/$defs/passive_operation_map"
         },
-        "accumulate": {
-          "description": "条件が真であるtick毎に、対象プロパティの実体値へ直接・不可逆に加減算する。",
+        "add": {
+          "description": "条件が真であるtick毎に、対象プロパティの実体値へ直接・不可逆に加減算する（activeのaddと同じ動詞。一度きりかtick毎かは置き場所が決める、8.4節）。",
           "$ref": "#/$defs/passive_operation_map"
         }
       },

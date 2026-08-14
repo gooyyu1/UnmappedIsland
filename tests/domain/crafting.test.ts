@@ -42,7 +42,7 @@ object_defs:
         on_shortfall:
           destroy: self
         passives:
-          - accumulate:
+          - add:
               self:
                 durability: -1
   spear:

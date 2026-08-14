@@ -16,7 +16,7 @@
 ## 型と値
 
 - 「値が無い」は `undefined` で表す。`null` は使わない（外部ライブラリが返す場合は境界で変換する）。
-- `enum` は使わず、文字列リテラルユニオンを使う（`type Kind = 'modify' | 'accumulate'`）。
+- `enum` は使わず、文字列リテラルユニオンを使う（`type Kind = 'modify' | 'add'`）。
 - ドメインの数値は32bit整数として扱う。除算・小数→整数変換は `Math.trunc` を明示する
   （JSの `/` は常に浮動小数点になるため）。
 - 公開APIで返すコレクションは `readonly T[]` / `ReadonlyMap` にする。内部の可変リストは配列、

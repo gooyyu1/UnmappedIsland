@@ -123,13 +123,13 @@ traits:
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
-        accumulate:
+        add:
           self:
             volume: -1
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
-        accumulate:
+        add:
           self:
             volume: -2
       # 日射による上乗せ。夜はsunlightが0になる（core.yamlのhour）ため成立せず、雨天のsunlightは
@@ -137,31 +137,31 @@ traits:
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: sunlight, gte: 10}
-        accumulate:
+        add:
           self:
             volume: -2
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: sunlight, gte: 12}
-        accumulate:
+        add:
           self:
             volume: -1
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: sunlight, gte: 12}
-        accumulate:
+        add:
           self:
             volume: -2
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: sunlight, gte: 15}
-        accumulate:
+        add:
           self:
             volume: -1
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: sunlight, gte: 15}
-        accumulate:
+        add:
           self:
             volume: -2
 
@@ -174,37 +174,37 @@ traits:
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: weather, eq: light_rain}
-        accumulate:
+        add:
           self:
             volume: 10
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: weather, eq: heavy_rain}
-        accumulate:
+        add:
           self:
             volume: 20
       - conditions:
           - {object: parent, tag: wide_open_container}
           - {object: ancestor, prop: weather, eq: storm}
-        accumulate:
+        add:
           self:
             volume: 40
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: weather, eq: light_rain}
-        accumulate:
+        add:
           self:
             volume: 20
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: weather, eq: heavy_rain}
-        accumulate:
+        add:
           self:
             volume: 40
       - conditions:
           - {object: parent, tag: narrow_open_container}
           - {object: ancestor, prop: weather, eq: storm}
-        accumulate:
+        add:
           self:
             volume: 80
 
