@@ -22,10 +22,22 @@ export function pngToWebp(): Plugin {
     name: 'png-to-webp',
     apply: 'build',
     async generateBundle(_options, bundle) {
+      const pngs = new Map<string, Buffer>();
+      for (const [fileName, output] of Object.entries(bundle))
+        if (output.type === 'asset' && fileName.endsWith('.png'))
+          pngs.set(fileName, Buffer.from(output.source));
+
+      // 1枚ずつ順に変換すると、127枚でビルド時間の半分以上をここが占める。変換は互いに独立なので
+      // まとめて走らせる。
+      const converted = await Promise.all(
+        [...pngs].map(async ([fileName, png]) => ({
+          fileName,
+          webp: await sharp(png).webp({ quality: WEBP_QUALITY }).toBuffer(),
+        })),
+      );
+
       const renames = new Map<string, string>();
-      for (const [fileName, output] of Object.entries(bundle)) {
-        if (output.type !== 'asset' || !fileName.endsWith('.png')) continue;
-        const webp = await sharp(Buffer.from(output.source)).webp({ quality: WEBP_QUALITY }).toBuffer();
+      for (const { fileName, webp } of converted) {
         delete bundle[fileName];
         const webpName = fileName.replace(/\.png$/, '.webp');
         this.emitFile({ type: 'asset', fileName: webpName, source: webp });
