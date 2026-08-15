@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   advanceCrafting,
   currentStep,
+  spawnInProgressObject,
   stepIsSupplied,
   stepSupplyRatio,
 } from '../../src/domain/runtime/crafting';
@@ -239,5 +240,73 @@ object_defs:
 
     expect(advanceCrafting(wip, recipe, materialsId(), codex, session)).toBe(true);
     expect(onGround().sort()).toEqual(['axe', 'knife']);
+  });
+});
+
+/** レシピ一覧から製作を始める操作（RecipeSystem.md 1節）。 */
+describe('製作を始める', () => {
+  // 土地はアイテムと設置物で置き場所が分かれる（core.yamlのlocation traitと同じ形）。
+  const YAML = `
+object_defs:
+  crafting_ground:
+    tags: [location]
+    slots:
+      items:
+        cell: {accept: {tag: item}}
+      fixtures:
+        cell: {accept: {tag: fixture}}
+  wood:
+    tags: [item]
+  stone:
+    tags: [item]
+  axe:
+    tags: [item]
+    recipes:
+      basic:
+        steps:
+          - requires: [{object: wood, count: 1, consume: true}]
+            duration: 30
+  # 持ち歩けない完成品。製作中も設置物のタグを引き継ぐ（同5節）。
+  campfire:
+    tags: [fixture]
+    recipes:
+      stacked:
+        steps:
+          - requires: [{object: stone, count: 1, consume: true}]
+            duration: 15
+`;
+
+  let codex: WorldCodex;
+  let session: WorldSession;
+  let ground: WorldObject;
+
+  const idOf = (name: string) => codex.objectNames.getId(name);
+  const contentsOf = (slotName: string) =>
+    (ground.tryGetSlot(codex.slotNames.getId(slotName))?.contents ?? []).map((o) => o.def.name);
+
+  beforeEach(() => {
+    const loader = new WorldCodexYamlLoader();
+    loadYamlFile(loader, worldCodexPath('core.yaml'));
+    codex = loader.load('crafting.yaml', YAML).build();
+
+    const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), new WorldSession(codex));
+    session = new WorldSession(codex, new World(worldInstance, codex.propertyNames, codex.symbolNames));
+    ground = new WorldObject(1, codex.objects.get(idOf('crafting_ground')), session);
+    ground.moveToSlot(worldInstance, codex.slotNames.getId('locations'));
+  });
+
+  it('製作中オブジェクトは、完成品のタグが通るスロットへ入る', () => {
+    const axe = spawnInProgressObject(session, ground, idOf(inProgressObjectName('axe', 'basic')));
+    expect(axe.parent, 'アイテムはitemsへ').toBe(ground);
+    expect(contentsOf('items')).toEqual([inProgressObjectName('axe', 'basic')]);
+
+    // itemsはfixtureを受け入れないので、スロット名を決め打ちすると行き先を失う。
+    const campfire = spawnInProgressObject(
+      session,
+      ground,
+      idOf(inProgressObjectName('campfire', 'stacked')),
+    );
+    expect(campfire.parent, '設置物はfixturesへ').toBe(ground);
+    expect(contentsOf('fixtures')).toEqual([inProgressObjectName('campfire', 'stacked')]);
   });
 });
