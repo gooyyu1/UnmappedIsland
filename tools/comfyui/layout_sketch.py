@@ -139,7 +139,77 @@ def draw_snare(draw: ImageDraw.ImageDraw) -> None:
         draw.line([(866, 560 + offset), (940, 580 + offset)], fill=CORD, width=12)
 
 
-LAYS = {"fan": draw_fan, "snare": draw_snare, "three_stone": draw_three_stone}
+def draw_hafted(
+    draw: ImageDraw.ImageDraw,
+    butt: tuple[float, float],
+    head: tuple[float, float],
+    shaft: int,
+    stone: tuple[float, float, float, float],
+    lashing: float,
+    across: bool,
+) -> None:
+    """柄の先へ石を紐で固定した道具。斧と槍はこの1つの形で、石の向きと大きさだけが違う。
+
+    stoneは（柄の先から石を伸ばす長さ、柄の内側へ残す長さ、根元の半幅、先の半幅）。斧は柄と
+    直角へ幅広の刃を出し（across）、槍は柄の延長上へ細い穂先を出す。lashingは紐を巻く範囲の長さ。
+    """
+    (butt_x, butt_y), (head_x, head_y) = butt, head
+    length = ((head_x - butt_x) ** 2 + (head_y - butt_y) ** 2) ** 0.5
+    axis = ((head_x - butt_x) / length, (head_y - butt_y) / length)
+    side = (-axis[1], axis[0])
+    draw.line([butt, head], fill=BARK, width=shaft, joint="curve")
+    draw.line(
+        [(butt_x + side[0] * shaft * 0.22, butt_y + side[1] * shaft * 0.22),
+         (head_x + side[0] * shaft * 0.22, head_y + side[1] * shaft * 0.22)],
+        fill=BARK_DARK,
+        width=shaft // 3,
+    )
+
+    forward, back, root, tip = stone
+    # 石を伸ばす向き。斧は柄と直角（side）、槍は柄の延長（axis）。
+    grow, wide = (side, axis) if across else (axis, side)
+    origin = (head_x, head_y)
+    draw.polygon(
+        [
+            (origin[0] - grow[0] * back + wide[0] * root, origin[1] - grow[1] * back + wide[1] * root),
+            (origin[0] + grow[0] * forward + wide[0] * tip, origin[1] + grow[1] * forward + wide[1] * tip),
+            (origin[0] + grow[0] * forward - wide[0] * tip, origin[1] + grow[1] * forward - wide[1] * tip),
+            (origin[0] - grow[0] * back - wide[0] * root, origin[1] - grow[1] * back - wide[1] * root),
+        ],
+        fill=STONE,
+        outline=OUTLINE,
+        width=4,
+    )
+
+    # 紐。柄と石が重なるところへ何重にも巻く。
+    for step in range(5):
+        at = 1.0 - lashing * step / 4 / length
+        centre = (butt_x + (head_x - butt_x) * at, butt_y + (head_y - butt_y) * at)
+        draw.line(
+            [(centre[0] - side[0] * shaft * 0.8, centre[1] - side[1] * shaft * 0.8),
+             (centre[0] + side[0] * shaft * 0.8, centre[1] + side[1] * shaft * 0.8)],
+            fill=CORD,
+            width=10,
+        )
+
+
+def draw_axe(draw: ImageDraw.ImageDraw) -> None:
+    """石の斧。柄の先へ、刃を外へ向けた楔形の石を横向きに縛る。"""
+    draw_hafted(draw, (880, 780), (350, 300), 44, (170, 55, 46, 74), 150, across=True)
+
+
+def draw_spear(draw: ImageDraw.ImageDraw) -> None:
+    """槍。長い柄の延長上へ、木の葉形の穂先を縛る。長さが見せ場なので対角線いっぱいに置く。"""
+    draw_hafted(draw, (120, 800), (960, 240), 26, (190, 30, 46, 8), 170, across=False)
+
+
+LAYS = {
+    "axe": draw_axe,
+    "fan": draw_fan,
+    "snare": draw_snare,
+    "spear": draw_spear,
+    "three_stone": draw_three_stone,
+}
 
 
 def main() -> None:
