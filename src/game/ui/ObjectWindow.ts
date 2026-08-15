@@ -3,7 +3,7 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { HoldHandlers } from './Button';
 import type { CardContent } from './Card';
-import { Card, cardFace } from './Card';
+import { cardFace } from './Card';
 import { CardLane } from './CardLane';
 import type { LaneCell } from './laneCells';
 import { LANE_CELLS_MAX } from './laneCells';
@@ -59,7 +59,11 @@ export interface ObjectWindowAction {
 
 /** ウィンドウが映しているオブジェクト。 */
 export interface ObjectWindowTarget {
-  /** 左に置くカード。見た目だけを使う（操作は引き継がない）。見出しの名前もここから採る。 */
+  /**
+   * 左に置くカード。**元のレーンから借りてきた1枚そのもの**（Windows.md 1.1節）なので、渡す側は
+   * 束ではなく1個ぶんの内容を渡す。操作は引き継がない（押しても掴んでも何も起きない）が、差し替えで
+   * 同じ札だと分かるよう識別子だけは持つ。見出しの名前もここから採る。
+   */
   readonly card: CardContent;
 
   /** 右の段に出す説明文。スロットを映すウィンドウでは使わない（そちらが右の段を使う）。 */
@@ -113,16 +117,20 @@ export class ObjectWindow {
    */
   readonly lane: CardLane | undefined;
 
+  /**
+   * 左に置く、そのオブジェクトのカードの枠（持たないウィンドウではundefined）。**枠1つのレーン**
+   * なので、他のカードを重ねる操作（combination・中へ入れる）がレーンとまったく同じ仕組みで効く
+   * ——借りてきた札はここに在るので、手持ちからここへ落とせなければ石を打ち割れない。
+   */
+  readonly cardLane: CardLane | undefined;
+
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
 
   /** 最下段のボタン。setActionsで丸ごと作り直すので、他の表示物とは分けて持つ。 */
   private actionObjects: Phaser.GameObjects.GameObject[] = [];
 
-  /**
-   * 左に置く、そのオブジェクトのカード（持たないウィンドウではundefined）。**開いている間に中身が
-   * 変われば書き換わる**（setCard）——材料を入れれば充足のバーがその場で動く。
-   */
-  private card: Card | undefined;
+  /** 借りた札が飛んでくる間は伏せておく（reveal参照）。差し替えでも伏せたままにするために持つ。 */
+  private cardVisible = true;
 
   /** アクションのボタンを長押ししている間だけ出す吹き出し（addActions参照）。 */
   private readonly tooltip: Tooltip;
@@ -147,28 +155,16 @@ export class ObjectWindow {
     const actionHeight = metrics.px(ACTION_HEIGHT);
     const laneHeight = metrics.px(SIZE.laneHeight);
 
-    // 中身を出し入れするウィンドウは、覆いを領域の中だけに敷く。画面全体を覆うと、開いている間も
-    // 操作できるはずの手持ちが覆いに入力を吸われる。読み取り専用なら画面全体でよい。
-    this.objects.push(
-      addPanel(
-        scene,
-        contents === undefined ? { x: 0, y: 0, width: metrics.width, height: metrics.height } : options.area,
-        COLOR.modalOverlay,
-        0.5,
-      ),
-    );
+    // 覆いは領域の中だけに敷く。画面全体を覆うと、開いている間も操作できるはずの手持ちが覆いに
+    // 入力を吸われる——借りた札へ手持ちから物を重ねられる以上、どのウィンドウも読み取り専用ではない。
+    this.objects.push(addPanel(scene, options.area, COLOR.modalOverlay, 0.5));
 
     const windowWidth = this.decideWidth(metrics, options, padding, gap);
     const contentWidth = windowWidth - padding * 2;
-    // 説明文を出すウィンドウは決まった幅なので、狭い画面ではカードと文の取り分の比を保ったまま縮める。
-    // 中身の並びを出すウィンドウは、**等倍のカードが並ぶ幅**で決めてあるので縮めない（レーンの中の
-    // カードは縮まないので、こちらだけ縮めると大きさが揃わない）。
-    const scale =
-      contents !== undefined
-        ? 1
-        : Math.min(1, contentWidth / metrics.px(DESCRIPTION_WIDTH - WINDOW_PADDING * 2));
-    const cardWidth = card === undefined ? 0 : metrics.px(SIZE.cardWidth) * scale;
-    const cardHeight = card === undefined ? 0 : metrics.px(SIZE.cardHeight) * scale;
+    // **カードは縮めない。** ここに在るのはレーンから借りてきた札そのもの（Windows.md 1.1節）なので、
+    // 大きさが変わると別の札に見える。狭い画面でも取り分を削るのは文の側。
+    const cardWidth = card === undefined ? 0 : metrics.px(SIZE.cardWidth);
+    const cardHeight = card === undefined ? 0 : metrics.px(SIZE.cardHeight);
     const columnWidth = card === undefined ? contentWidth : contentWidth - cardWidth - gap;
 
     // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に置く必要がある。
@@ -206,8 +202,14 @@ export class ObjectWindow {
       // レーンはカードを自分の高さの中央へ置く（CardLane）。並べるときは自分のカードも同じだけ
       // 下げて、左右のカードの縦位置を揃える。
       const cardY = middleY + (contents === undefined ? 0 : (laneHeight - cardHeight) / 2);
-      this.card = new Card(scene, metrics, window.x + padding, cardY, cardFace(card)).setScale(scale);
-      this.objects.push(this.card);
+      this.cardLane = new CardLane(
+        scene,
+        metrics,
+        { x: window.x + padding, y: cardY, width: cardWidth, height: cardHeight },
+        COLOR.slotWindowLane,
+        [{ card: borrowedFace(card) }],
+        { bare: true },
+      );
     }
 
     const columnX = window.x + padding + (card === undefined ? 0 : cardWidth + gap);
@@ -245,16 +247,40 @@ export class ObjectWindow {
     this.tooltip = new Tooltip(scene, metrics);
   }
 
+  /** 借りた札の枠（カードを持たないウィンドウではundefined）。運んでくる先・返すときの出発点。 */
+  get cardRect(): Rect | undefined {
+    return this.cardLane?.slotRect(0);
+  }
+
+  /**
+   * 借りた札が着くまで伏せておく（運んでいる間、その1枚は元の枠にもここにも居ない、
+   * CardInteraction.md 6.2節）。運び終えた時点でrevealCardを呼ぶ。
+   */
+  hideCard(): void {
+    this.cardVisible = false;
+    this.showCard();
+  }
+
+  revealCard(): void {
+    this.cardVisible = true;
+    this.showCard();
+  }
+
+  /** 左のカードを、今の中身へ書き換える（カードを持たないウィンドウでは何もしない）。 */
+  setCard(content: CardContent): void {
+    this.cardLane?.setCells([{ card: borrowedFace(content) }]);
+    this.showCard();
+  }
+
+  private showCard(): void {
+    this.cardLane?.cardObjects[0]?.setVisible(this.cardVisible);
+  }
+
   /**
    * 最下段のボタンを差し替える。**ボタンは作った時点の可否で固まっている**ので、中身を出し入れ
    * できるウィンドウでは、並びを差し替えるたびに呼び直す（PlayScene.showView）。素材を入れれば
    * 「作業する」が押せるようになり、抜けば押せなくなる。
    */
-  /** 左のカードを、今の中身へ書き換える（カードを持たないウィンドウでは何もしない）。 */
-  setCard(content: CardContent): void {
-    this.card?.setContent(cardFace(content));
-  }
-
   setActions(actions: readonly ObjectWindowAction[]): void {
     for (const object of this.actionObjects) object.destroy();
     this.actionObjects = [];
@@ -354,11 +380,20 @@ export class ObjectWindow {
 
   close(): void {
     this.lane?.destroy();
+    this.cardLane?.destroy();
     this.tooltip.destroy();
     for (const object of [...this.objects, ...this.actionObjects]) object.destroy();
     this.objects.length = 0;
     this.actionObjects = [];
   }
+}
+
+/**
+ * 借りてきた札の見た目。操作は引き継がないが、**同じ札だと分かる識別子だけは持つ**——差し替えの
+ * たびに作り直すと、飛んでくる途中の札が消えてしまう（CardLane.setCells）。
+ */
+function borrowedFace(content: CardContent): CardContent {
+  return { ...cardFace(content), identity: content.identity };
 }
 
 /**

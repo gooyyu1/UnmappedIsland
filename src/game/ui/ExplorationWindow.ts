@@ -26,6 +26,17 @@ const BAR_HEIGHT = 72;
 /** 発見物の枠の数。1枠はレーンのカードと同じ幅で、ウィンドウの横幅はこの4枠から決まる。 */
 const FOUND_SLOTS = 4;
 
+/** 発見物の枠に出す1枚。 */
+export interface FoundCard {
+  /** 見た目だけのカード（操作は持たない）。見つかった個数は`count`が言う。 */
+  readonly card: CardContent;
+  /**
+   * まだ現在地の札から運んでくる途中か。**運んでいる間その1枚はどこの枠にも居ない**
+   * （CardInteraction.md 6.2節）ので、着くまで伏せておく。
+   */
+  readonly arriving: boolean;
+}
+
 export interface ExplorationWindowOptions {
   /** 探索する土地の名前。 */
   readonly locationName: string;
@@ -39,8 +50,13 @@ export interface ExplorationWindowOptions {
    */
   readonly area: Rect;
 
-  /** 直前の探索で見つかったもの（アイテムと道）。枠に収まらない分は横スクロールで見る。 */
-  readonly found: readonly CardContent[];
+  /**
+   * 直前の探索で見つかったもの（アイテムと道）。枠に収まらない分は横スクロールで見る。
+   *
+   * **ここに在る札は本物**——見つかったものはまずこの枠へ入り、閉じるか次の探索を始めた時点で
+   * 本来の場所へ帰る（Windows.md 5.1節）。そのあいだレーンには並ばない。
+   */
+  readonly found: readonly FoundCard[];
 
   /** 探索中は結果待ちなので、もう一度探索を始めることはできない。 */
   readonly searching: boolean;
@@ -62,6 +78,13 @@ export class ExplorationWindow {
   /** 発見物の並びの切り抜きを解く後始末（送る必要があるときだけ持つ、clip.ts参照）。 */
   private unclip: (() => void) | undefined;
 
+  /** 発見物の枠の並び（左端・上端・送り幅と枠の寸法）と、今の送り量。addFoundが必ず設定する。 */
+  private foundLayout!: { x: number; y: number; pitch: number; width: number; height: number };
+  private foundScrollX = 0;
+
+  /** 発見物の枠に並べた札（空き枠はundefined）。運んでいる途中の1枚を表に出すために持つ。 */
+  private foundCards: (Card | undefined)[] = [];
+
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: ExplorationWindowOptions) {
     const { width, height } = metrics;
     this.objects.push(addPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5));
@@ -72,7 +95,7 @@ export class ExplorationWindow {
     const actionHeight = metrics.px(ACTION_HEIGHT);
 
     // 横幅は発見物の4枠ぶんで決める。領域（横型のフィールドエリア）に合わせて広げると横に間延びし、
-    // 4枠が離れて散らばって見えるため。入りきらない画面ではその範囲まで絞る（枠が縮む、addFound参照）。
+    // 4枠が離れて散らばって見えるため。入りきらない画面ではその範囲まで絞る（枠は縮めず、送る）。
     const foundWidth = metrics.px(SIZE.cardWidth) * FOUND_SLOTS + metrics.px(SIZE.gap) * (FOUND_SLOTS - 1);
     const windowWidth = Math.min(foundWidth + padding * 2, options.area.width, width * 0.92);
     const contentWidth = windowWidth - padding * 2;
@@ -93,8 +116,7 @@ export class ExplorationWindow {
       .setAlign('center');
     note.setWordWrapCallback(wrapByCharacter(contentWidth));
 
-    const slotWidth = (contentWidth - metrics.px(SIZE.gap) * (FOUND_SLOTS - 1)) / FOUND_SLOTS;
-    const foundHeight = (slotWidth * SIZE.cardHeight) / SIZE.cardWidth;
+    const foundHeight = metrics.px(SIZE.cardHeight);
     // カードの下は、レーンのカードの余白と同じだけ空けてスクロールバーの場所にする（ScreenLayout.md 7.4節）。送る必要が無い間は空くが、見つかった件数でウィンドウの高さは変わらない。
     const cardPadding = metrics.px((SIZE.laneHeight - SIZE.cardHeight) / 2);
 
@@ -172,28 +194,41 @@ export class ExplorationWindow {
    * 見つかったものを並べる枠。枠はFOUND_SLOTS個で固定し、収まらない分は横スクロールで送る。
    * 枠からはみ出したカードは、レーンと違って背景板では隠せないのでマスクで切り抜く。
    *
-   * カードはレーンと同じ寸法で描く。ウィンドウの横幅が4枠ぶんに足りない画面でだけ、収まる大きさへ縮める。
+   * **カードはレーンと同じ寸法のまま縮めない。** ここに並ぶのはレーンから来て、レーンへ帰っていく
+   * 札そのもの（Windows.md 5.1節）なので、大きさが変わると別の札に見える。4枠ぶんの幅が無い画面では、
+   * 縮める代わりに横スクロールで送る。
    */
   private addFound(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
-    found: readonly CardContent[],
+    found: readonly FoundCard[],
     viewport: Rect,
   ): void {
     const gap = metrics.px(SIZE.gap);
-    const slotWidth = (viewport.width - gap * (FOUND_SLOTS - 1)) / FOUND_SLOTS;
-    const scale = slotWidth / metrics.px(SIZE.cardWidth);
+    const slotWidth = metrics.px(SIZE.cardWidth);
     const pitch = slotWidth + gap;
+    this.foundLayout = {
+      x: viewport.x,
+      y: viewport.y,
+      pitch,
+      width: slotWidth,
+      height: metrics.px(SIZE.cardHeight),
+    };
 
     const strip = scene.add.container(viewport.x, viewport.y);
     this.objects.push(strip);
+    this.foundCards = [];
     for (let i = 0; i < Math.max(FOUND_SLOTS, found.length); i++) {
-      const content = found[i];
-      const slot =
-        content === undefined
-          ? new EmptyCard(scene, metrics, 0, 0)
-          : new Card(scene, metrics, 0, 0, cardFace(content));
-      strip.add(slot.setPosition(i * pitch, 0).setScale(scale));
+      const entry = found[i];
+      if (entry === undefined) {
+        strip.add(new EmptyCard(scene, metrics, 0, 0).setPosition(i * pitch, 0));
+        this.foundCards.push(undefined);
+        continue;
+      }
+
+      const card = new Card(scene, metrics, 0, 0, { ...cardFace(entry.card), count: entry.card.count });
+      strip.add(card.setPosition(i * pitch, 0).setVisible(!entry.arriving));
+      this.foundCards.push(card);
     }
 
     const contentWidth = Math.max(FOUND_SLOTS, found.length) * pitch - gap;
@@ -216,6 +251,7 @@ export class ExplorationWindow {
     const scrollTo = (scrollX: number): void => {
       const clamped = Phaser.Math.Clamp(scrollX, minScrollX, 0);
       strip.x = viewport.x + clamped;
+      this.foundScrollX = clamped;
       indicator.setScroll(clamped, minScrollX);
     };
     scrollTo(0);
@@ -233,6 +269,25 @@ export class ExplorationWindow {
     surface.on('wheel', (pointer: Phaser.Input.Pointer, deltaX: number, deltaY: number) => {
       scrollTo(strip.x - viewport.x - wheelPixels(pointer, deltaX, deltaY));
     });
+  }
+
+  /**
+   * 発見物の枠（添字の位置）。運んでくる先であり、返すときの出発点でもある。**閉じたあとも答える**
+   * ——閉じた時点で本来の場所へ帰す（Windows.md 5.1節）ので、そこから飛ばす必要がある。
+   */
+  foundRect(index: number): Rect {
+    const layout = this.foundLayout;
+    return {
+      x: layout.x + this.foundScrollX + index * layout.pitch,
+      y: layout.y,
+      width: layout.width,
+      height: layout.height,
+    };
+  }
+
+  /** 運んできた1枚が枠に着いた（伏せていた札を表に出す）。 */
+  showFound(index: number): void {
+    this.foundCards[index]?.setVisible(true);
   }
 
   close(): void {

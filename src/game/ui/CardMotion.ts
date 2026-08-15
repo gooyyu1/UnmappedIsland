@@ -51,6 +51,11 @@ export interface MotionContext {
    */
   readonly vanished?: readonly number[];
   readonly born?: readonly number[];
+  /**
+   * 子ウィンドウが借りている札のインスタンス（Windows.md 1.1節）。**枠には居ないので枚数から
+   * 引く**——借りた側が自分の場所に出しているので、同じ物の札が画面に2枚出ることはない。
+   */
+  readonly borrowed?: readonly number[];
 }
 
 /**
@@ -150,7 +155,7 @@ export class CardMotion {
   }
 
   /** 宙に在った1枚がその枠に着いた（分身が飛び着いた、または置いたままの分身が本体へ返った）。 */
-  private arrive(card: Card): void {
+  arrive(card: Card): void {
     const shown = this.shown.get(card);
     if (shown !== undefined) this.show(card, shown.remaining + 1, shown.emptied);
   }
@@ -198,7 +203,7 @@ export class CardMotion {
       left,
       origins: context.origins,
       released: releasedIdsOf(context.released),
-      heldId,
+      aloft: heldId === undefined ? (context.borrowed ?? []) : [heldId, ...(context.borrowed ?? [])],
       vanished: context.vanished,
       born: context.born,
     });
@@ -220,7 +225,7 @@ export class CardMotion {
     for (const card of plan.fadeIns) this.fadeIn(card);
     for (const card of plan.discards) card.destroy();
 
-    if (landing !== undefined) this.landHeld(landing, plan.landing);
+    if (landing !== undefined) this.landHeld(landing, plan.landings.get(landing.id));
     // 置いている途中でそのカードが失われたら（経過中に壊れた道具等）、立てていた分身も片付ける。
     if (this.held !== undefined && this.held.card.scene === undefined) this.releaseHeld();
   }
@@ -257,6 +262,15 @@ export class CardMotion {
     this.scene.tweens.add({ targets: card, alpha: 1, duration: FADE_MS });
   }
 
+  /**
+   * 札を1枚、fromからtoへ運ぶ（子ウィンドウが借りるとき・返すとき、Windows.md 1.1節）。飛ぶのは
+   * ここでも見た目だけの分身で、**着いた時点でonArriveが呼ばれる**——そこで受け取る側が自分の札を
+   * 表に出す。運んでいる間その1枚はどこの枠にも居ない。
+   */
+  carry(face: CardContent, from: Rect, to: Rect, onArrive: () => void): void {
+    this.fly(this.standAt(face, from), to, onArrive);
+  }
+
   /** 見た目だけの分身を、その場所に作る。 */
   private standAt(content: CardContent, at: Rect): Card {
     return new Card(this.scene, this.metrics, at.x, at.y, cardFace(content));
@@ -271,9 +285,14 @@ export class CardMotion {
    * puffsを立てると、着いた場所で砂埃が立つ（生まれたものを運ぶ便）。
    */
   private send(stand: Card, to: Rect, into: Card, delay = 0, puffs = false): void {
+    this.fly(stand, to, () => this.arrive(into), delay, puffs);
+  }
+
+  /** 1回の飛び。着いた時点で分身を捨て、受け取る側へ知らせる。 */
+  private fly(stand: Card, to: Rect, onArrive: () => void, delay = 0, puffs = false): void {
     this.layer.add(stand);
 
-    const flight: Flight = { stand, into, puffs: puffs ? to : undefined };
+    const flight: Flight = { stand, onArrive, puffs: puffs ? to : undefined };
     this.flights.push(flight);
     this.scene.tweens.add({
       targets: stand,
@@ -294,7 +313,7 @@ export class CardMotion {
     this.flights.splice(index, 1);
     flight.stand.destroy();
     if (flight.puffs !== undefined) this.dust.burst(flight.puffs);
-    this.arrive(flight.into);
+    flight.onArrive();
   }
 
   /** 飛んでいる途中の分身を、その場で着かせる。 */
@@ -306,10 +325,10 @@ export class CardMotion {
   }
 }
 
-/** 飛んでいる分身と、それが運んでいる1枚の行き先の札。 */
+/** 飛んでいる分身と、着いた時点で運んでいた1枚を受け取る側へ知らせる手立て。 */
 interface Flight {
   readonly stand: Card;
-  readonly into: Card;
+  readonly onArrive: () => void;
   /** 着いた時点で砂埃を立てる枠（立てないならundefined）。 */
   readonly puffs: Rect | undefined;
 }

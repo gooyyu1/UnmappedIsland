@@ -164,11 +164,11 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
       input({
         before: [placed('包帯', [1], 0)],
         arriving: [placed('包帯', [1], 500)],
-        heldId: 1,
+        aloft: [1],
       }),
     );
 
-    expect(plan.landing).toEqual({ to: rect(500), into: '包帯' });
+    expect(plan.landings.get(1)).toEqual({ to: rect(500), into: '包帯' });
     expect(plan.flights).toEqual([]);
     // 運んでいるのは置いたままの分身なので、その1枚もまだ枠に居ない（フェードにもしない）。
     expect(plan.shown).toEqual([{ card: '包帯', remaining: 0, emptied: false }]);
@@ -181,12 +181,12 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
         before: [placed('石', [1, 2], 0)],
         arriving: [placed('石', [1, 2], 500)],
         released: { ids: [1, 2], rect: rect(300) },
-        heldId: 1,
+        aloft: [1],
       }),
     );
 
-    // 掴んでいた1つ（heldId）は分身の着地で、ついてきた1つだけが離した場所からの便で動く。
-    expect(plan.landing).toEqual({ to: rect(500), into: '石' });
+    // 掴んでいた1つ（aloft）は分身の着地で、ついてきた1つだけが離した場所からの便で動く。
+    expect(plan.landings.get(1)).toEqual({ to: rect(500), into: '石' });
     expect(plan.flights).toHaveLength(1);
     expect(plan.flights[0].from).toEqual(rect(300));
   });
@@ -196,7 +196,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
       input({
         before: [placed('枯れ草', [1, 2, 3], 0)],
         staying: [placed('枯れ草', [1, 2, 3], 0)],
-        heldId: 1,
+        aloft: [1],
       }),
     );
 
@@ -207,10 +207,39 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
 
   it('1つしか映していないカードを置いたままにすると、枠には帰ってくる場所の印が残る', () => {
     const plan = planMotion(
-      input({ before: [placed('枯れ草', [1], 0)], staying: [placed('枯れ草', [1], 0)], heldId: 1 }),
+      input({ before: [placed('枯れ草', [1], 0)], staying: [placed('枯れ草', [1], 0)], aloft: [1] }),
     );
 
     expect(plan.shown).toEqual([{ card: '枯れ草', remaining: 0, emptied: true }]);
+  });
+
+  it('子ウィンドウへ貸した1枚は束から引かれ、残りはその枠に居たまま（Windows.md 1.1節）', () => {
+    const plan = planMotion(
+      input({ before: [placed('石', [1, 2], 0)], staying: [placed('石', [1, 2], 0)], aloft: [1] }),
+    );
+
+    expect(plan.shown).toEqual([{ card: '石', remaining: 1, emptied: true }]);
+    expect(plan.flights).toEqual([]);
+    // 帰り先はいつでも答える（返すかどうかを決めるのは借りた側）。
+    expect(plan.landings.get(1)).toEqual({ to: rect(0), into: '石' });
+    expect(plan.landings.get(2)).toBeUndefined();
+  });
+
+  it('持ち出されている札が複数あっても、それぞれの帰り先を答える', () => {
+    const plan = planMotion(
+      input({
+        before: [placed('石', [1], 0), placed('枝', [2], 100)],
+        staying: [placed('石', [1], 0), placed('枝', [2], 100)],
+        aloft: [1, 2],
+      }),
+    );
+
+    expect(plan.shown).toEqual([
+      { card: '石', remaining: 0, emptied: true },
+      { card: '枝', remaining: 0, emptied: true },
+    ]);
+    expect(plan.landings.get(1)).toEqual({ to: rect(0), into: '石' });
+    expect(plan.landings.get(2)).toEqual({ to: rect(100), into: '枝' });
   });
 
   it('置いたままの分身のインスタンスが失われていれば、着地先は無い', () => {
@@ -218,10 +247,10 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
       input({
         before: [placed('包帯', [1], 0)],
         left: [{ card: '包帯', ids: [1] }],
-        heldId: 1,
+        aloft: [1],
       }),
     );
-    expect(plan.landing).toBeUndefined();
+    expect(plan.landings.get(1)).toBeUndefined();
     expect(plan.discards).toEqual(['包帯']);
   });
 

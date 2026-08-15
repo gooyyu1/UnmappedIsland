@@ -272,6 +272,13 @@ export interface PlayScreenView {
    */
   readonly cardOfType: (objectGlobalId: number) => CardContent;
 
+  /**
+   * 挙げた個体だけを映すカード。**束は割れる**——子ウィンドウは束のうち1個だけを借りるので
+   * （Windows.md 1.1節）、借りた1個と枠に残る残りが、それぞれ自分の個体だけを動かすカードになる。
+   * 表示も操作も先頭を代表とする点は、スロットの中身から作る束（cardsIn）と同じ。
+   */
+  readonly cardOfObjects: (objects: readonly WorldObject[], place: CardPlace) => ObjectCardStack;
+
   /** 子ウィンドウのタイトルに出す、その場所の名前。 */
   /**
    * その場所を映す子ウィンドウの見出し。**スロットの名前を持ち主込みで言う**（「マルコの装備」
@@ -1116,6 +1123,9 @@ export function fromGameSession(
       return stacks.map((stack) => cardOfStack(stack, place));
     },
     cardOfType,
+    // 道の差し替え（destinationOf）も通す。設置物レーンの束を割ったときに、行き先ではなく道そのものの
+    // 名前が出てしまわないようにするため。
+    cardOfObjects: (objects, place) => ({ ...cardOfStack(objects, place), ...destinationOf(objects[0]) }),
     nameOf: (place) => {
       const slot = slotOf(place);
       if (slot === undefined) return typeof place === 'string' ? place : nameOf(place.container);

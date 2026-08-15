@@ -47,8 +47,12 @@ export interface MotionInput<C> {
    * 居たのだから同じ場所から動き出す。heldIdが混ざっていてもよい——そちらの規則が先に効く。
    */
   readonly released?: { readonly ids: readonly number[]; readonly rect: Rect };
-  /** 置いたままの分身（CardMotion.hold）が運ぶインスタンス。飛ぶのは分身なので、通常の便は立てない。 */
-  readonly heldId?: number;
+  /**
+   * 今その枠から持ち出されているインスタンス——置いたままの分身が運ぶもの（CardMotion.hold）と、
+   * 子ウィンドウが借りている札（Windows.md 1.1節）。**どちらも枠には居ないので数から引き、通常の
+   * 便も立てない**（動かすのは持ち出した側で、いつ返すのかもその側が決める）。
+   */
+  readonly aloft?: readonly number[];
   /**
    * 世界から出たインスタンス（壊れた・使い切った）。**leftでは代われない**——別のレーンへ移った
    * だけのカードもそこに並ぶので、消えたのか運ばれたのかは世界の変化だけが知っている。
@@ -94,8 +98,12 @@ export interface MotionPlan<C> {
   readonly discards: readonly C[];
   /** その場ですぐ砂埃を立てる枠（消えた札の居場所と、飛ばずに現れた札の居場所）。 */
   readonly puffs: readonly Rect[];
-  /** 置いたままの分身が運んでいる1枚の行き先（そのインスタンスが差し替え後も居る場合だけ）。 */
-  readonly landing?: { readonly to: Rect; readonly into: C };
+  /**
+   * 持ち出されているインスタンス（aloft）の帰り先——差し替え後にそのインスタンスを映している枠。
+   * **返すかどうかは持ち出した側が決める**ので、ここは行き先を答えるだけ。世界から出ていれば
+   * 帰り先を持たない。
+   */
+  readonly landings: ReadonlyMap<number, { readonly to: Rect; readonly into: C }>;
 }
 
 export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
@@ -106,7 +114,8 @@ export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
   const shown: ShownCard<C>[] = [];
   const fadeIns: C[] = [];
   const puffs: Rect[] = [];
-  let landing: MotionPlan<C>['landing'];
+  const landings = new Map<number, { to: Rect; into: C }>();
+  const aloft = new Set(input.aloft ?? []);
   // 現れたものは差し替え全体で通し番号を取り、1枚ずつ間を置いて飛び立つ。
   let appeared = 0;
 
@@ -144,19 +153,20 @@ export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
   };
 
   const planArrivalsTo = (to: PlacedCard<C>, arriving: boolean): void => {
-    let held = false;
+    let held = 0;
     // 生まれたのに出どころが分からないもの。飛ぶ便が無いので、着いた先で砂埃だけを立てる。
     let bornInPlace = false;
     const sources: { rect: Rect; appeared: boolean; puffs: boolean }[] = [];
     for (const id of to.ids) {
-      if (id === input.heldId) held = true;
-      else {
+      if (aloft.has(id)) {
+        held += 1;
+        landings.set(id, { to: to.rect, into: to.card });
+      } else {
         const source = resolve(id, to, arriving);
         if (source === undefined) bornInPlace ||= bornIds.has(id);
         else sources.push({ ...source, puffs: bornIds.has(id) });
       }
     }
-    if (held) landing = { to: to.rect, into: to.card };
     if (bornInPlace) puffs.push(to.rect);
 
     // 運ばれている最中の札はまだここに居ない。1枚も居なければ札は出ないが、それは0枚という結果で
@@ -166,12 +176,12 @@ export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
     // いる枠（arriving）は、まだ何も在ったことがない。
     shown.push({
       card: to.card,
-      remaining: to.ids.length - sources.length - (held ? 1 : 0),
+      remaining: to.ids.length - sources.length - held,
       emptied: !arriving,
     });
 
     if (sources.length === 0) {
-      if (arriving && !held) fadeIns.push(to.card);
+      if (arriving && held === 0) fadeIns.push(to.card);
       return;
     }
 
@@ -200,6 +210,6 @@ export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
     // 離したカードが即座に消えるのと食い違って見える）。
     discards: input.left.map(({ card }) => card),
     puffs,
-    landing,
+    landings,
   };
 }
