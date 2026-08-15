@@ -164,10 +164,11 @@ const SKY_TINT_DEPTH = 1.5;
 const GAIN_PARTICLE_DEPTH = 1.75;
 
 /**
- * 満タンぶんの増加を何粒で表すか（CardInteraction.md 10節）。粒数はceilなので、どれだけ小さい
- * 増加でも必ず1粒は出る——安全域で見えないままの変化を知らせるのがこの演出の役目。
+ * 満タンぶんの増加を何粒で表すか（CardInteraction.md 10.2節）。**比例ではなく平方根**なので、
+ * 粒がn個なら満タンのn²パーセントにあたる。粒数はceilなので、どれだけ小さい増加でも必ず1粒は出る
+ * ——安全域で見えないままの変化を知らせるのがこの演出の役目。
  */
-const PARTICLES_PER_FULL = 100;
+const PARTICLES_PER_FULL = 10;
 
 /** 時間を消費しない操作には経過を見せる間が無いので、この短い間に粒を散らす。 */
 const INSTANT_GAIN_SPREAD_MS = 600;
@@ -1541,7 +1542,7 @@ export class PlayScene extends ResponsiveScene {
 
         emitGainParticles(this, this.metrics, {
           icon,
-          count: Math.ceil(PARTICLES_PER_FULL * (gain.amount / (range.max - range.min))),
+          count: Math.ceil(PARTICLES_PER_FULL * Math.sqrt(gain.amount / (range.max - range.min))),
           from,
           to: portrait,
           spreadMs,
