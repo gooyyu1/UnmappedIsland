@@ -2,6 +2,8 @@ import type { WorldCodex } from '../defs/WorldCodex';
 import { randomRng } from './Rng';
 import type { Rng } from './Rng';
 import type { World } from './views/World';
+import type { PropertyDef } from '../defs/PropertyDef';
+import type { InteractionGains, PropertyGain } from './PropertyGain';
 import type { WorldChange, WorldPlace } from './WorldChange';
 import type { WorldSignal } from './WorldSignal';
 import { WorldObject } from './WorldObject';
@@ -32,6 +34,15 @@ export class WorldSession {
 
   /** 形を変えない出来事を流す観測口（observeSignals）。 */
   private signalObserver: ((signal: WorldSignal) => void) | undefined;
+
+  /** 操作そのものが増やした値を流す観測口（observeGains）。 */
+  private gainObserver: ((gains: InteractionGains) => void) | undefined;
+
+  /**
+   * 今、操作の効果を適用している最中か（withInteractionEffect）。ここに居る間の書き込みだけを
+   * 溜める。undefinedなら溜めない＝経過中のtickや、rangeイベントから走る効果は入らない。
+   */
+  private gathered: Map<string, PropertyGain> | undefined;
 
   /** 今どのオブジェクトの効果を適用しているか（withSubject）。記録する変化の主体になる。 */
   private subject: WorldObject | undefined;
@@ -115,6 +126,54 @@ export class WorldSession {
     } finally {
       this.signalObserver = outer;
     }
+  }
+
+  /**
+   * bodyの実行中に操作が直に増やした値を、操作1回ぶんまとめてonGainsへ流す（PropertyGain参照）。
+   * 観測の解除もここで行う（observeChangesと同じく、呼び出し側に外し忘れの余地を残さない）。
+   *
+   * **1件ずつではなく1回ぶんをまとめて流す。** 同じ値へ複数回書く効果があり（胃へ足したぶんが
+   * 溢れて戻る）、途中の書き込みを個別に流すと、受け取る側が足し合わせ直すことになる。
+   */
+  observeGains(onGains: (gains: InteractionGains) => void, body: () => void): void {
+    const outer = this.gainObserver;
+    this.gainObserver = onGains;
+    try {
+      body();
+    } finally {
+      this.gainObserver = outer;
+    }
+  }
+
+  /**
+   * bodyを「sourceが宣言した操作の効果の適用」として囲う（InteractionDefが、時間を進め終えてから
+   * 囲う）。ここに居る間の書き込みだけがobserveGainsへ流れるので、時間経過で回ったtickの分は入らない。
+   *
+   * 溜めたぶんは抜けるときに流す。入れ子にはならない（効果の適用は操作1回につき1度）が、外側で
+   * 溜めていた分を捨てないよう、退避して戻す形は他の観測口と揃える。
+   */
+  withInteractionEffect(source: WorldObject, body: () => void): void {
+    const outer = this.gathered;
+    this.gathered = new Map();
+    try {
+      body();
+    } finally {
+      const gains = [...this.gathered.values()].filter((gain) => gain.amount > 0);
+      this.gathered = outer;
+      if (gains.length > 0) this.gainObserver?.({ source, gains });
+    }
+  }
+
+  /**
+   * 実体値への書き込み1件を溜める（PropertyValue.addからのみ呼ぶ）。操作の効果を適用している間
+   * （withInteractionEffect）でなければ何もしない。
+   */
+  recordGain(object: WorldObject, property: PropertyDef, delta: number): void {
+    if (this.gathered === undefined) return;
+
+    const key = `${object.instanceId}:${property.globalId}`;
+    const found = this.gathered.get(key);
+    this.gathered.set(key, { object, property, amount: (found?.amount ?? 0) + delta });
   }
 
   /**

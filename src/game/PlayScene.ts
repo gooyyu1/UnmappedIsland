@@ -14,6 +14,7 @@ import { SaveSlots } from '../save/SaveSlots';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
 import { Path } from '../domain/runtime/views/Path';
+import type { InteractionGains } from '../domain/runtime/PropertyGain';
 import type { WorldChange } from '../domain/runtime/WorldChange';
 import type { WorldSignal } from '../domain/runtime/WorldSignal';
 import type { WorldObject } from '../domain/runtime/WorldObject';
@@ -67,6 +68,7 @@ import {
   remainingRequirements,
   stepIsSupplied,
 } from '../domain/runtime/crafting';
+import { emitGainParticles } from './ui/GainParticles';
 import { ProgressRing } from './ui/ProgressRing';
 import type { PropertyTab } from './ui/PropertyWindow';
 import { PropertyWindow } from './ui/PropertyWindow';
@@ -158,6 +160,18 @@ const WEATHER_DEPTH = -0.5;
  */
 const SKY_TINT_DEPTH = 1.5;
 
+/** 回復の粒は翳りより手前（同じ明るさで読める）・ドーナツグラフより奥（経過時間を隠さない）。 */
+const GAIN_PARTICLE_DEPTH = 1.75;
+
+/**
+ * 満タンぶんの増加を何粒で表すか（CardInteraction.md 10節）。粒数はceilなので、どれだけ小さい
+ * 増加でも必ず1粒は出る——安全域で見えないままの変化を知らせるのがこの演出の役目。
+ */
+const PARTICLES_PER_FULL = 30;
+
+/** 時間を消費しない操作には経過を見せる間が無いので、この短い間に粒を散らす。 */
+const INSTANT_GAIN_SPREAD_MS = 600;
+
 /** 場面転換の明転にかける時間（ミリ秒）。 */
 const BRIGHTEN_MS = 320;
 
@@ -232,6 +246,8 @@ interface Recording {
    * （ActionSystem.md 2節）ので、**操作が告げる出来事は通常こちらに入る**。
    */
   readonly signals: readonly WorldSignal[];
+  /** 操作そのものが増やしたキャラクタの値（PropertyGain）。粒にして飛ばす（showGains）。 */
+  readonly gains: readonly InteractionGains[];
 }
 
 /** プレイ中の画面を開くときに渡す、対象のセーブデータ。 */
@@ -337,6 +353,9 @@ export class PlayScene extends ResponsiveScene {
    * バー自体は画面の組み立て時に全プロパティ分を作っておく（showStatuses参照）。
    */
   private statusBars: ReadonlyMap<string, StatusBar> = new Map();
+
+  /** ポートレイトカードの枠。キャラクタ自身を映す札なので、回復の粒の行き先になる（showGains）。 */
+  private portraitRect: Rect | undefined;
 
   /** ステータスエリアの1行目の位置・幅と行の間隔（どのバーをどの行へ置くかは行動のたびに引き直す）。 */
   private statusRowsX = 0;
@@ -956,8 +975,9 @@ export class PlayScene extends ResponsiveScene {
   /**
    * そのインスタンスを今映しているカードの枠。どのレーンにも出ていなければundefined。
    *
-   * 現在地だけはレーンに並ぶカードを持たない（設置物レーンのピン留めの枠に居る）ので、そこで答える。
-   * 探索で見つかった物が現在地から飛んでくるのはこの1行による。
+   * 現在地とキャラクタだけはレーンに並ぶカードを持たない（現在地は設置物レーンのピン留めの枠、
+   * キャラクタはキャラクター表示エリアのポートレイト）ので、そこで答える。探索で見つかった物が
+   * 現在地から飛んでくるのも、休息の粒がポートレイトから湧くのも、この2行による。
    */
   private rectOfInstance(instanceId: number): Rect | undefined {
     for (const lane of this.openLanes) {
@@ -966,9 +986,9 @@ export class PlayScene extends ResponsiveScene {
       );
       if (index >= 0) return lane.slotRect(index);
     }
-    return this.gameSession.player.location?.instance.instanceId === instanceId
-      ? this.fixtureLane.pinnedRect
-      : undefined;
+    if (this.gameSession.player.location?.instance.instanceId === instanceId)
+      return this.fixtureLane.pinnedRect;
+    return this.gameSession.player.instance.instanceId === instanceId ? this.portraitRect : undefined;
   }
 
   /**
@@ -1335,7 +1355,7 @@ export class PlayScene extends ResponsiveScene {
     const recorded = this.record(() => this.gameSession.player.explore(this.gameSession.session));
     // 道が見つかっていたら、経過を見せている間に行き先の絵のロードを始める。
     this.requestLocationArt();
-    this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded.ticks, () => {
+    this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
       this.searching = false;
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
       this.noteStatusChanges(statusesBefore, startedAt);
@@ -1371,29 +1391,35 @@ export class PlayScene extends ResponsiveScene {
     const recorded: RecordedView[] = [];
     let changes: WorldChange[] = [];
     let signals: WorldSignal[] = [];
+    const gains: InteractionGains[] = [];
 
-    this.gameSession.session.observeChanges(
-      (worldChange) => changes.push(worldChange),
+    this.gameSession.session.observeGains(
+      (interactionGains) => gains.push(interactionGains),
       () => {
-        this.gameSession.session.observeSignals(
-          (signal) => signals.push(signal),
+        this.gameSession.session.observeChanges(
+          (worldChange) => changes.push(worldChange),
           () => {
-            this.gameSession.session.observeTicks(() => {
-              // 控えたviewをあとから表示するので、呼んだ時点のワールドを読むcardsInは今の答えに固定する。
-              const view = withFrozenCards(
-                fromGameSession(this.gameSession, this.codex, this.locale),
-                this.childWindowPlace,
-              );
-              recorded.push({
-                minutes: this.gameSession.world.totalMinutes,
-                view,
-                statusChanges: statusChangesBetween(statusesBefore, this.allStatuses(view)),
-                changes,
-                signals,
-              });
-              changes = [];
-              signals = [];
-            }, change);
+            this.gameSession.session.observeSignals(
+              (signal) => signals.push(signal),
+              () => {
+                this.gameSession.session.observeTicks(() => {
+                  // 控えたviewをあとから表示するので、呼んだ時点のワールドを読むcardsInは今の答えに固定する。
+                  const view = withFrozenCards(
+                    fromGameSession(this.gameSession, this.codex, this.locale),
+                    this.childWindowPlace,
+                  );
+                  recorded.push({
+                    minutes: this.gameSession.world.totalMinutes,
+                    view,
+                    statusChanges: statusChangesBetween(statusesBefore, this.allStatuses(view)),
+                    changes,
+                    signals,
+                  });
+                  changes = [];
+                  signals = [];
+                }, change);
+              },
+            );
           },
         );
       },
@@ -1405,6 +1431,7 @@ export class PlayScene extends ResponsiveScene {
       ticks: recorded.filter((snapshot) => snapshot.minutes < endedAt),
       changes: [...ended.flatMap((snapshot) => snapshot.changes), ...changes],
       signals: [...ended.flatMap((snapshot) => snapshot.signals), ...signals],
+      gains,
     };
   }
 
@@ -1421,7 +1448,7 @@ export class PlayScene extends ResponsiveScene {
   private passTime(
     fromMinutes: number,
     toMinutes: number,
-    recorded: readonly RecordedView[],
+    recording: Recording,
     onElapsed: () => void,
   ): void {
     // 死んだら経過も結果も見せず、画面を死ぬ直前のまま止めてダイアログだけを出す（showDeath）。
@@ -1431,6 +1458,11 @@ export class PlayScene extends ResponsiveScene {
     }
 
     const minutes = toMinutes - fromMinutes;
+    // 粒は経過を見せている間いっぱいに散らす。効果が適用されるのは経過し切った時点だが、増えた量は
+    // 押した瞬間に決まっている（ワールドは先に進み切っている）ので、待たずに散らし始められる。
+    this.showGains(recording.gains, minutes > 0 ? realMsFor(minutes) : INSTANT_GAIN_SPREAD_MS);
+
+    const recorded = recording.ticks;
     if (minutes <= 0) {
       onElapsed();
       return;
@@ -1468,6 +1500,42 @@ export class PlayScene extends ResponsiveScene {
         onElapsed();
       },
     });
+  }
+
+  /**
+   * 操作そのものが増やしたキャラクタの値を、粒にして飛ばす（CardInteraction.md 10節）。
+   * 発生源はその操作を宣言していた札（InteractionGains.source）で、行き先はポートレイト。
+   *
+   * 絵を持たないプロパティと、rangeを持たず割合を言えないプロパティは出さない——飛ばす絵が無く、
+   * 「満タンのどれだけか」も数えられないため。
+   */
+  private showGains(gains: readonly InteractionGains[], spreadMs: number): void {
+    const portrait = this.portraitRect;
+    if (portrait === undefined) return;
+
+    const character = this.gameSession.player.instance;
+    const texts = this.locale.object(character.def.name);
+    for (const { source, gains: gained } of gains) {
+      const from = this.rectOfInstance(source.instanceId);
+      if (from === undefined) continue;
+
+      for (const gain of gained) {
+        if (gain.object.instanceId !== character.instanceId) continue;
+
+        const icon = texts.prop(gain.property.name).icon;
+        const range = gain.property.range;
+        if (icon === undefined || range === undefined || range.max <= range.min) continue;
+
+        emitGainParticles(this, this.metrics, {
+          icon,
+          count: Math.ceil(PARTICLES_PER_FULL * (gain.amount / (range.max - range.min))),
+          from,
+          to: portrait,
+          spreadMs,
+          depth: GAIN_PARTICLE_DEPTH,
+        });
+      }
+    }
   }
 
   /**
@@ -1580,7 +1648,7 @@ export class PlayScene extends ResponsiveScene {
     // 作り直すのは経過し切ってからなので、暗転はそれまでに終わっていなければならない。
     curtain?.darken(Math.min(DARKEN_MS, elapsedMs));
 
-    this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded.ticks, () => {
+    this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
       // 増減はステータスへ反映する前に控える（showInformationがこれを見て記号を出す）。
       this.noteStatusChanges(statusesBefore, startedAt);
@@ -1785,6 +1853,12 @@ export class PlayScene extends ResponsiveScene {
     const gap = this.metrics.px(SIZE.gap);
     const portraitWidth = this.metrics.px(SIZE.cardWidth);
     const portraitHeight = this.metrics.px(SIZE.cardHeight);
+    this.portraitRect = {
+      x: area.x + padding,
+      y: area.y + padding,
+      width: portraitWidth,
+      height: portraitHeight,
+    };
     new Card(this, this.metrics, area.x + padding, area.y + padding, {
       ...this.portraitCard(),
       onTap: this.whileIdle(() => this.openPropertyWindow()),

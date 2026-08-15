@@ -144,7 +144,9 @@ export abstract class InteractionDef {
 
     if (!spendDuration(this.minutesFor(self, dragged, actor), session, [self, dragged, actor])) return false;
 
-    self.applyActiveEffect(this.effect, session, actor, dragged);
+    // 時間を進め終えてから囲うので、経過中のtickが動かした値は「操作が増やしたもの」に入らない
+    // （PropertyGain参照）。
+    session.withInteractionEffect(self, () => self.applyActiveEffect(this.effect, session, actor, dragged));
     return true;
   }
 }
