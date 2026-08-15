@@ -9,27 +9,27 @@
     "**対角線へ倒す（diagonal）。** 2mの長さが見せ場なので、下絵でも切り出しでも対角線に沿わせて",
     "√2倍まで伸ばす（card_art.py の align_to_diagonal）。",
     "",
-    "**影を描かせない理由は recipes/stone_axe.json と同じ。** 柄が細長いぶん、離れて置かれた影は",
-    "2本目の棒に見える。",
+    "**影は描かせたまま、mode: flood で抜く**（recipes/stone_axe.json と同じ理由）。",
+    "**fgは110では足りない。** 柄の木が淡く（明度の中央175）、前景の種が疎になって輪郭が階段状に",
+    "欠ける。140まで上げると消える。",
     "",
     "段は400。柄が長いので、太い枝と同じ幅まで使う（6000mL）。"
   ],
   "output": "src/assets/objects/spear.png",
   "sketch": "spear",
   "edit": {
-    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: a primitive stone tipped spear lying flat on the ground seen from above, running corner to corner across the page, with the shaft and the stone point in exactly the same places at the same angles and the same lengths. Paint the shaft as one long straight pole of dry wood of even thickness, the bark peeled off, the grain showing and the butt end cut blunt. Paint the point as a leaf shaped piece of dark grey stone chipped to a sharp tip, its faces flaked and its edges straight. Where the point meets the end of the shaft, wrap many tight turns of rough twisted plant fibre cord, warm tan and mid brown with its strands visible, binding the stone to the wood. There is no metal, no steel and no polished blade. Keep the plain empty white page with a wide white margin all around, and paint no shadow at all: the page is empty white everywhere the spear itself does not cover. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
-    "seed": 2
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: a primitive stone tipped spear lying flat on the ground seen from above, running corner to corner across the page, with the shaft and the stone point in exactly the same places at the same angles and the same lengths. Paint the shaft as one long straight pole of dry wood of even thickness, the bark peeled off, the grain showing and the butt end cut blunt. Paint the point as a leaf shaped piece of dark grey stone chipped to a sharp tip, its faces flaked and its edges straight. Where the point meets the end of the shaft, wrap many tight turns of rough twisted plant fibre cord, warm tan and mid brown with its strands visible, binding the stone to the wood. There is no metal, no steel and no polished blade. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow on the ground beneath the spear. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 3
   },
   "cardArt": {
     "size": "400",
-    "mode": "background",
+    "mode": "flood",
     "diagonal": true,
-    "tolerance": 24,
-    "edge": 4,
-    "shadow": 0,
-    "reach": 24,
-    "dropShadow": 0.35,
-    "dropOffset": 10,
-    "dropBlur": 8
+    "fg": 140,
+    "bg": 6,
+    "unshade": true,
+    "edge": 1.5,
+    "shadow": 1,
+    "reach": 24
   }
 }
