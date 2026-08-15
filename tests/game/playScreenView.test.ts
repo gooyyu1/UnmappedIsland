@@ -1149,6 +1149,23 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.statuses.map((status) => status.name)).toEqual(tagged.map((reading) => reading.name));
   });
 
+  it('ステータスの行には、対応表が宣言したアイコンが付く', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    // propsのdefaultエントリは全オブジェクト共通（Localization.md）。
+    const withIcon = parseLocale(
+      'ja.yaml',
+      'object_texts:\n  default:\n    props:\n      hydration:\n        display_name: 水分\n        icon: 💧\n',
+    );
+
+    const { statuses } = fromGameSession(game, codex, withIcon);
+
+    expect(statuses.find((status) => status.key === 'hydration')?.icon).toBe('💧');
+    expect(
+      statuses.find((status) => status.key === 'load')?.icon,
+      '宣言が無ければ絵は無い（行は表示名で代用する）',
+    ).toBeUndefined();
+  });
+
   it('荷が重すぎると移動のアクションが押せなくなり、理由の文言が付く', () => {
     // ContainerSystem.md 5節: 危険域（too_heavy）に入ると道のtravelのconditionsが落ちる。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));

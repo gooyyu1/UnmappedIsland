@@ -460,14 +460,18 @@ export function fromGameSession(
   const entriesWithTag = (tagGlobalId: number | undefined): readonly StatusContent[] =>
     tagGlobalId === undefined
       ? []
-      : game.player.instance.readPropertiesWithTag(tagGlobalId).map((reading) => ({
-          key: reading.name,
-          name: characterTexts.prop(reading.name).displayName,
-          value: reading.value,
-          ratio: reading.ratio,
-          alert: reading.alert,
-          worsensUpward: reading.worsensUpward,
-        }));
+      : game.player.instance.readPropertiesWithTag(tagGlobalId).map((reading) => {
+          const texts = characterTexts.prop(reading.name);
+          return {
+            key: reading.name,
+            name: texts.displayName,
+            icon: texts.icon,
+            value: reading.value,
+            ratio: reading.ratio,
+            alert: reading.alert,
+            worsensUpward: reading.worsensUpward,
+          };
+        });
 
   // タグのIDは宣言順に振られる（WorldCodex.propertyTagNames）ため、昇順に見ればタブの並び順になる。
   const propertyCategories: PropertyTab[] = [];
