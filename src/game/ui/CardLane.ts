@@ -55,6 +55,12 @@ export interface CardLaneOptions {
    * 周りより奥の層を指定する（PlayScene.FIELD_DEPTH）。
    */
   readonly depth?: number;
+  /**
+   * 背景板と左右の余白を持たないレーンか。**矩形がそのまま枠の並びになる**ので、札1枚ぶんの場所
+   * （ポートレイト、子ウィンドウが映すオブジェクトのカード）に置ける。板が無いぶん横ドラッグでの
+   * スクロールはできないが、そもそも送る先が無い場所のためのもの。
+   */
+  readonly bare?: boolean;
 }
 
 /** 掴んで離したカードと、そのインスタンスのID（CardMotion.MotionContext.released）。 */
@@ -174,13 +180,14 @@ export class CardLane {
     options: CardLaneOptions = {},
   ) {
     const { pinned } = options;
-    const margin = metrics.px(SIZE.margin);
+    const bare = options.bare === true;
+    const margin = bare ? 0 : metrics.px(SIZE.margin);
     const gap = metrics.px(SIZE.gap);
     const cardWidth = metrics.px(SIZE.cardWidth);
     const dividerWidth = metrics.px(4);
     const cardY = rect.y + (rect.height - metrics.px(SIZE.cardHeight)) / 2;
 
-    const panel = this.addBackground(scene, rect, background, options.art);
+    const panel = bare ? undefined : this.addBackground(scene, rect, background, options.art);
 
     const pinnedWidth = pinned === undefined ? 0 : cardWidth + gap + dividerWidth + gap;
     const stripX = rect.x + margin + pinnedWidth;
@@ -225,9 +232,11 @@ export class CardLane {
         ? undefined
         : this.addPinnedSlot(scene, metrics, rect, background, options.art, cardY, pinned);
 
-    scene.input.setDraggable(panel);
-    panel.on('dragstart', () => this.beginScroll());
-    panel.on('drag', (pointer: Phaser.Input.Pointer) => this.scrollByDrag(pointer.x - pointer.downX));
+    if (panel !== undefined) {
+      scene.input.setDraggable(panel);
+      panel.on('dragstart', () => this.beginScroll());
+      panel.on('drag', (pointer: Phaser.Input.Pointer) => this.scrollByDrag(pointer.x - pointer.downX));
+    }
 
     // ピン留め部分は背景板が上に重なりレーン本体がホイールを受け取れないので、そちらにも同じ操作を付ける。
     for (const target of [panel, pinnedPanel]) {
