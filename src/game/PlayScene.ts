@@ -66,6 +66,7 @@ import {
   advanceCrafting,
   currentStep,
   remainingRequirements,
+  spawnInProgressObject,
   stepIsSupplied,
 } from '../domain/runtime/crafting';
 import { emitGainParticles } from './ui/GainParticles';
@@ -1379,16 +1380,21 @@ export class PlayScene extends ResponsiveScene {
     });
   }
 
+  /** 現在地のレーンに出ているカード（設置物とアイテム）。 */
+  private get locationCards(): readonly ObjectCardStack[] {
+    return [...this.view.fixtures, ...this.view.items];
+  }
+
   /** 今フィールドとロケーションのレーンに出ているインスタンスのID。 */
   private shownInstanceIds(): ReadonlySet<number> {
-    const shown = [...this.view.fixtures, ...this.view.items];
-    return new Set(shown.flatMap((card) => card.identity ?? []));
+    return new Set(this.locationCards.flatMap((card) => card.identity ?? []));
   }
 
   /** 控えておいた「出ていたもの」に無いカード＝この探索で見つかったもの（アイテムと道）。 */
   private foundSince(shownBefore: ReadonlySet<number>): readonly CardContent[] {
-    const shown = [...this.view.fixtures, ...this.view.items];
-    return shown.filter((card) => card.identity?.some((id) => !shownBefore.has(id)) === true).map(cardFace);
+    return this.locationCards
+      .filter((card) => card.identity?.some((id) => !shownBefore.has(id)) === true)
+      .map(cardFace);
   }
 
   /**
@@ -2236,9 +2242,9 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 製作中オブジェクトを現在地のitemsスロットへ生み、その子ウィンドウを開く。
+   * 製作中オブジェクトを現在地へ生み、その子ウィンドウを開く。
    *
-   * 生んだ直後にすることは素材を入れることしかないので、アイテムレーンから探し直させない。
+   * 生んだ直後にすることは素材を入れることしかないので、レーンから探し直させない。
    *
    * originは一覧で選んだカードの居場所。生まれたカードはそこから飛んでくる——一覧は閉じているので、
    * 選んだ札がそのまま場に出た、という見え方になる。
@@ -2250,13 +2256,12 @@ export class PlayScene extends ResponsiveScene {
     const location = this.gameSession.player.location;
     if (location === undefined) return;
 
-    const spawned = this.gameSession.session.spawn(inProgressDefGlobalId);
-    spawned.moveToSlot(location.instance, this.codex.slotNames.getId('items'));
+    const spawned = spawnInProgressObject(this.gameSession.session, location.instance, inProgressDefGlobalId);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
     this.showView({ origins: new Map([[spawned.instanceId, origin]]), born: [spawned.instanceId] });
 
     // 生まれたものが同じ型の束へ合流していることもあるので、束の中を見て探す。
-    const card = this.view.items.find((stack) =>
+    const card = this.locationCards.find((stack) =>
       stack.objects.some((object) => object.instanceId === spawned.instanceId),
     );
     if (card !== undefined) this.openObjectWindow(card);
