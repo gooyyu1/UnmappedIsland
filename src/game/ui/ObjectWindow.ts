@@ -23,8 +23,14 @@ import { wrapByCharacter } from './textLayout';
 import { Tooltip } from './Tooltip';
 import type { TooltipContent } from './Tooltip';
 
-/** 説明文を出すウィンドウの横幅（プロパティウィンドウと揃える）。狭い画面では中身ごと縮める。 */
-const DESCRIPTION_WIDTH = 760;
+/**
+ * オブジェクトウィンドウの**最低の横幅**（プロパティウィンドウと揃える）。中身の並びを持たない
+ * ——説明文を出す——ウィンドウは、ちょうどこの幅になる。狭い画面では中身ごと縮める。
+ *
+ * **枠の少ないスロットでも、これより狭くしない。** 幅は最下段の操作のボタンの幅でもあるので、
+ * 中身の少なさに合わせて詰めると、映しているものとは関係のない都合でボタンが窮屈になる。
+ */
+const MIN_WIDTH = 760;
 
 /**
  * 4枠に収まらないスロットで、**次の枠の頭を覗かせる幅**（u単位）。ちょうど4枠ぶんで切ると、そこで
@@ -290,11 +296,11 @@ export class ObjectWindow {
   }
 
   /**
-   * ウィンドウの横幅。
+   * ウィンドウの横幅。中身の並びを出すなら、カードの幅＋枠の数から決める。少ないときに間延びせず、
+   * 多いときは領域いっぱいまで広げて見える枚数を増やす（それでも収まらない分は横スクロールで送る）。
    *
-   * - 中身の並びを出すなら、カードの幅＋枠の数から決める。少ないときに間延びせず、多いときは
-   *   領域いっぱいまで広げて見える枚数を増やす（それでも収まらない分は横スクロールで送る）。
-   * - 説明文を出すなら決まった幅（DESCRIPTION_WIDTH）。
+   * **どのウィンドウもMIN_WIDTHより狭くはしない。** 説明文を出すウィンドウはちょうどその幅で、
+   * 枠の少ないスロットもそこまで広げる。
    */
   private decideWidth(
     metrics: ScreenMetrics,
@@ -304,10 +310,9 @@ export class ObjectWindow {
   ): number {
     const limit = Math.min(options.area.width, metrics.width * 0.92);
     const slot = options.slot;
-    if (slot === undefined) return Math.min(metrics.px(DESCRIPTION_WIDTH), limit);
-
-    const own = slot.unbounded ? 0 : metrics.px(SIZE.cardWidth) + gap;
-    return Math.min(own + laneWidthFor(metrics, slot) + padding * 2, limit);
+    const own = slot?.unbounded === true ? 0 : metrics.px(SIZE.cardWidth) + gap;
+    const contents = slot === undefined ? 0 : own + laneWidthFor(metrics, slot) + padding * 2;
+    return Math.min(Math.max(contents, metrics.px(MIN_WIDTH)), limit);
   }
 
   /**
