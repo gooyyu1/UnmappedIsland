@@ -208,8 +208,9 @@ export const COLOR = {
   /**
    * 経過時間の数字。移動の暗転中も輪ごと暗幕の手前に残る（CardInteraction.md 9節）ので、
    * 明るいカードの上でも暗幕の上でも読めるよう、塗りと縁取りの明暗を離す。
+   * 塗りが純白ではなくヘッダと同じ生成りなのは、画面全体が古い紙の色で組まれているため。
    */
-  progressRingElapsed: 0xffffff,
+  progressRingElapsed: 0xf5e9d5,
   progressRingElapsedOutline: 0x1b3a4b,
 
   headerBar: 0xf5e9d5,
