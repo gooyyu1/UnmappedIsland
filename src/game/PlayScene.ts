@@ -2181,6 +2181,8 @@ export class PlayScene extends ResponsiveScene {
     this.statusDetailWindow = new StatusDetailWindow(this, this.metrics, {
       content: this.statusContent(content),
       area: { x: 0, y: 0, width: this.metrics.width, height: this.metrics.height },
+      // 影響の枠から相手の詳細へ渡り歩く。開き直しと同じ経路なので、今の窓は入れ替わる。
+      onOpenStatus: (target) => this.openStatusDetail(target),
       onClose: () => {
         this.statusDetailWindow = undefined;
         this.statusDetailKey = undefined;

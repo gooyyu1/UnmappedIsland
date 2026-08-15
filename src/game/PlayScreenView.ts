@@ -732,9 +732,10 @@ export function fromGameSession(
   /** プロパティを相手として指すときの表示（対応表の表示名と絵文字。プロパティは絵を持たない）。 */
   const propertyLabelOf = (
     propertyGlobalId: number,
-  ): { name: string; icon: string | undefined; art: string | undefined } => {
-    const texts = characterTexts.prop(codex.propertyNames.getName(propertyGlobalId));
-    return { name: texts.displayName, icon: texts.icon, art: undefined };
+  ): { key: string | undefined; name: string; icon: string | undefined; art: string | undefined } => {
+    const name = codex.propertyNames.getName(propertyGlobalId);
+    const texts = characterTexts.prop(name);
+    return { key: name, name: texts.displayName, icon: texts.icon, art: undefined };
   };
 
   /**
@@ -749,6 +750,7 @@ export function fromGameSession(
     const shown =
       counterpart.kind === 'object'
         ? {
+            key: undefined,
             name: nameOf(counterpart.object),
             icon: iconOf(counterpart.object.def),
             art: artOf(counterpart.object.def, counterpart.object),
@@ -756,6 +758,7 @@ export function fromGameSession(
         : propertyLabelOf(counterpart.propertyGlobalId);
 
     return {
+      key: shown.key,
       name: shown.name,
       icon: shown.icon,
       art: shown.art,

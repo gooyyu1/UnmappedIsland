@@ -41,7 +41,13 @@ export type StatusChange = 'increased' | 'decreased';
  * 突き合わせる画面ではない。
  */
 export interface StatusInfluence {
-  /** 相手の表示名。 */
+  /**
+   * 相手がプロパティなら、その識別子（表示名ではない）。枠をタップしたときに開く相手を指す。
+   * 相手がオブジェクトのときはundefinedで、その枠は押しても何も起きない。
+   */
+  readonly key: string | undefined;
+
+  /** 相手の表示名。絵を持たない相手の枠に、絵の代わりとして出す。 */
   readonly name: string;
 
   /** 相手がプロパティなら対応表の絵文字、オブジェクトなら種別の絵文字（絵が無いときの代用）。 */
