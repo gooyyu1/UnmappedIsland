@@ -84,7 +84,7 @@ object_defs:
     recipes:
       woven:
         conditions:
-          - {object: actor, prop: skill_cordage, in_stage: skilled}
+          - {subject: actor, prop: skill_cordage, in_stage: skilled}
         steps:
           - requires: [{object: fiber, count: 4, consume: true}]
             duration: 60
@@ -118,7 +118,7 @@ object_defs:
     recipes:
       woven:
         conditions:
-          - {object: actor, prop: skill_cordage, in_stage: skilled, reason: needs_cordage_skill}
+          - {subject: actor, prop: skill_cordage, in_stage: skilled, reason: needs_cordage_skill}
         steps:
           - requires: [{object: fiber, consume: true}]
             duration: 60
@@ -142,7 +142,7 @@ object_defs:
     recipes:
       woven:
         conditions:
-          - {object: self, prop: quality, gte: 1}
+          - {subject: self, prop: quality, gte: 1}
         steps:
           - requires: [{object: fiber, consume: true}]
             duration: 60

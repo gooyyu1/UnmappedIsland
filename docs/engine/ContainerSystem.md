@@ -134,7 +134,7 @@ character:
           min: 60000
 ```
 
-移動可否は `{object: actor, prop: load, lt: 60000}` のように、道の `travel` アクションの
+移動可否は `{subject: actor, prop: load, lt: 60000}` のように、道の `travel` アクションの
 `conditions` で直接書けます。
 
 ## 5. 負荷が効くのは移動できるかどうか
@@ -150,7 +150,7 @@ actions:
   travel:
     conditions:
       - {in_slot: fixtures}
-      - not: {object: actor, prop: load, in_stage: too_heavy}
+      - not: {subject: actor, prop: load, in_stage: too_heavy}
 ```
 
 閾値ではなく段の名前（`in_stage`）で見るのは、同じ境目を `stages` の `min` と条件の側に二重に書くと、
@@ -169,7 +169,7 @@ actions:
 
 ```yaml
 conditions:
-  - {object: ancestor, prop: sheltered, eq: 0}
+  - {subject: ancestor, prop: sheltered, eq: 0}
 ```
 
 要点は、**守る入れ物だけが `sheltered: 1` を定義し、守らない入れ物は定義しない**ことです（`world` が

@@ -162,7 +162,7 @@ object_defs:
     combinations:
       crack:
         with: {tag: hammer}
-        duration: {object: dragged, prop: swing_minutes}
+        duration: {subject: dragged, prop: swing_minutes}
 `);
     const nut = session.spawn(codex.objectNames.getId('nut'));
     const hammer = session.spawn(codex.objectNames.getId('blunt_hammer'));

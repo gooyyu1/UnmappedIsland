@@ -55,7 +55,7 @@ object_defs:
       eat:
         conditions:
           - reason: too_full
-            not: {object: actor, prop: stomach, in_stage: full}
+            not: {subject: actor, prop: stomach, in_stage: full}
         add:
           actor:
             stomach: 5

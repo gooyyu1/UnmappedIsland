@@ -23,7 +23,7 @@ export type MoveDestination =
 /**
  * move の1命令。既に世界に存在するオブジェクトを、移動先（MoveDestination）の中へ移動する。
  *
- * YAML: `move: {object: actor, to_prop: destination_id}` / `move: {object: dragged, to: self}`
+ * YAML: `move: {subject: actor, to_prop: destination_id}` / `move: {subject: dragged, to: self}`
  * （transfer と同じフラットフィールド規約）。解決できない・どのスロットも受け入れない場合は何もしない
  * （「解決できない適用は無視」の既存規約）。配置は moveIntoFirstAcceptingSlot（spawn の into と同じ
  * 宣言順走査、force なし）。

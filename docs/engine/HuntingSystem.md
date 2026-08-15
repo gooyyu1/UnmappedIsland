@@ -50,7 +50,7 @@ wild_boar:
 「どのカードを重ねるか」に宿るため、画面に何も足さずに判断が残ります。
 
 **候補は「一撃がどう入ったか」の型で、武器はその配分だけを宣言します。** 動物の側（`beast` trait）が
-候補を1組だけ持ち、`weight` が `{object: dragged, prop: ...}` で武器のプロパティを読みます
+候補を1組だけ持ち、`weight` が `{subject: dragged, prop: ...}` で武器のプロパティを読みます
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 10.2 節）。**動物はどんな武器が在るかを知らず、
 武器はどんな獲物が居るかを知りません。**
 
@@ -62,7 +62,7 @@ wild_boar:
 | 外し（`whiff`） | — | — |
 | 仕留め | — | —（1.4 節） |
 
-**威力の側を武器から読むことはできません。** `add` の値はリテラルだけで、`{object, prop}` 参照を持たない
+**威力の側を武器から読むことはできません。** `add` の値はリテラルだけで、`{subject, prop}` 参照を持たない
 （同 9.2 節）ためです。だから武器が動かせるのは重みだけで、**衝撃の量は候補が持ちます**——武器を増やしても
 候補は増えません（棍棒は強打だけ、ナイフは浅打と刺突、のように既存の候補へ配るだけ）。
 
@@ -108,7 +108,7 @@ wild_boar:
 - **だから候補を動物の型から出せます。** 攻撃は `beast` trait が1組だけ持ち、動物ごとに複製しません
   ——獲物を増やしても、書くのは体格と死体の名前だけです
 
-`weight` は `{object, prop}` 参照が実効値を読む（10.2 節）ので、**状態が `modify` で押し上げた分が
+`weight` は `{subject, prop}` 参照が実効値を読む（10.2 節）ので、**状態が `modify` で押し上げた分が
 そのまま確率になります**。気を失っている段が押し上げれば、**気絶させてから仕留める**という手順が
 値の動きだけで立ち上がります——これは人が小動物を仕留める現実の手順（失神させてから頸を落とす）
 そのものです。
@@ -271,7 +271,7 @@ wild_boar:
         - weight: {prop: smashables}
           destroy: {prop: smash_target}
         - weight: {prop: escape_routes}
-          move: {object: self, to_prop: flee_to}
+          move: {subject: self, to_prop: flee_to}
 ```
 
 `spawn` の `into: actor` が成立するのは、動物の1手を実行する側（5.2 節）が同居しているキャラクタを `actor`
@@ -409,7 +409,7 @@ strike:
 | 拡張 | 内容 |
 | --- | --- |
 | `resists`（4 節） | `bound_to_owner` の対称形。条件が成立する間、土地以外の親へ移れない。成立した瞬間に土地へこぼれ出る |
-| `move` の `object: self` | 現在は `actor`/`dragged` のみでロード時エラー（`GameElementDefinition.md` 9.6 節）。`child` と違い `self` は一意なので曖昧さが無い |
+| `move` の `subject: self` | 現在は `actor`/`dragged` のみでロード時エラー（`GameElementDefinition.md` 9.6 節）。`child` と違い `self` は一意なので曖昧さが無い |
 | `destroy: {prop: ...}` | プロパティの実効値をインスタンスIDとして解釈する。`move` の `to_prop` の解決器をそのまま使う |
 | `signal`（6.3 節） | 世界の形を変えず、出来事が起きたことだけを告げる。当たり外れに限らず、出入りを伴わない出来事すべてが使う |
 

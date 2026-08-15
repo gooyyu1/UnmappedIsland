@@ -90,7 +90,7 @@ actions:
     duration: 480
     conditions:
       - not:
-          - {slot: structure, tag: wall}
+          - {slot: structure, matches: {tag: wall}}
 ```
 
 ## 4. 工法ごとの得意分野

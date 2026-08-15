@@ -135,7 +135,7 @@ props:
       - conditions:
           - {in_slot: items}                  # 地面に置かれている間だけ（1節）
           # 空いている間だけ（6節）。獲物も死体もquarryなので、両方をこれ1つで拾う。
-          - not: {slot: catch, tag: quarry}
+          - not: {slot: catch, matches: {tag: quarry}}
         add: {self: {catch_remaining: -1}}
     on_shortfall:
       # 外側は食性の卓を選び（餌が決める、4節）、内側はその卓で掛かるかどうかと種を選ぶ
@@ -251,14 +251,14 @@ combinations:
     duration: 1
     conditions:
       - {reason: trap_baited, prop: plant_bait, lt: 24}
-    transfer: {amount: 999, from_object: dragged, from_prop: plant_bait, to_prop: plant_bait}
+    transfer: {amount: 999, from: dragged, from_prop: plant_bait, to_prop: plant_bait}
     destroy: dragged
   add_meat_bait:
     with: {tag: meat_bait}
     duration: 1
     conditions:
       - {reason: trap_baited, prop: meat_bait, lt: 24}
-    transfer: {amount: 999, from_object: dragged, from_prop: meat_bait, to_prop: meat_bait}
+    transfer: {amount: 999, from: dragged, from_prop: meat_bait, to_prop: meat_bait}
     destroy: dragged
 ```
 
@@ -403,7 +403,7 @@ snare_laceration:
     - modify: {parent: {pain: 50}}
     - conditions:
         - {prop: bleeding, gte: 1}
-        - not: {slot: treatment, tag: hemostatic}
+        - not: {slot: treatment, matches: {tag: hemostatic}}
       add: {parent: {blood: -15}}
 ```
 
@@ -482,7 +482,7 @@ snare_laceration:
 ## 6. 回収するまで、次は掛からない
 
 **タイマーが減る条件には「`catch` が空であること」が入っています**（2 節の
-`not: {slot: catch, tag: quarry}`）。掛かった瞬間に時間は止まり、獲物か死体を出すまで次の抽選は回りません。
+`not: {slot: catch, matches: {tag: quarry}}`）。掛かった瞬間に時間は止まり、獲物か死体を出すまで次の抽選は回りません。
 
 - **見に行く理由が値だけで立ち上がります。** 放置した罠は 1 匹目で止まるので、罠を増やしても
   見回らなければ増えません。「仕掛けて忘れる」が最適にならない、という制約を条件 1 つで書けます。
@@ -507,7 +507,7 @@ props:
     passives:
       - conditions: [{in_slot: items}]
         add: {self: {durability: -1}}       # 屋外での劣化（10日）
-      - conditions: [{slot: catch, tag: quarry}]
+      - conditions: [{slot: catch, matches: {tag: quarry}}]
         add: {self: {durability: -10}}      # もがかれている間（新品でも1日弱）
     on_shortfall:
       destroy: self

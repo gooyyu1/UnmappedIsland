@@ -434,7 +434,8 @@ object_defs:
 ```
 
 - **`object_defs` のタグ（4.1 節）とは別の名前空間**です。枠の`accept`・`combinations.with`・
-  `conditions` の `tag`（14.3・14.4 節）が見るのは 4.1 節のタグだけで、プロパティのタグは参照しません。
+  `conditions` の `matches`（14.3・14.4 節）が `{tag: ...}` で見るのは 4.1 節のタグだけで、プロパティの
+  タグは参照しません。
 - 1 つのプロパティに複数のタグを付けられます（上の例の `satiety` は「常時ステータスエリアに出す」＝
   `status` であり、栄養カテゴリの一員でもあります）。
 - **trait 経由のタグは合成されます**。`props` の他のフィールド（`value`・`range` など）は trait 側の
@@ -846,7 +847,7 @@ object_defs:
 ### 7.10 put_in（入れるのにかかる時間）
 
 **`put_in: {duration: ...}`** を書くと、そのスロットへ物を入れるのにゲーム内時間がかかります（既定は一瞬）。
-`duration` は `combinations` のそれと同じ形（リテラルか `{object, prop}` 参照、10.2 節）で、`self` が枠の
+`duration` は `combinations` のそれと同じ形（リテラルか `{subject, prop}` 参照、10.2 節）で、`self` が枠の
 持ち主、`dragged` が入れる物です。
 
 ```yaml
@@ -907,9 +908,10 @@ object_defs:
   （`modify`/`add` に含まれるすべての対象）に対して、共通の `conditions` を 1 つだけ持ちます。
 - `conditions` を省略すれば「常時（無条件）」を意味します。
 - `self`/`parent` 対象の効果は、どちらも「このブロックを宣言したオブジェクト自身が今どのスロットに入っているか」
-  という同じ実体を指すため、`conditions` の `object` は省略（既定値 `self`）して書くのが自然です（例:
-  `{in_slot: equip}` は「自分自身が親の `equip` スロットに入っている間」）。`child` 対象の効果では、
-  `object: child` で子自身のスロット位置やプロパティを参照できます。
+  という同じ実体を指すため、`conditions` の `subject` は省略（既定値 `self`）して書くのが自然です（例:
+  `{in_slot: equip}` は「自分自身が親の `equip` スロットに入っている間」）。`child` は効果の**対象**
+  （8.1 節）専用で、`subject` には書けません（ロード時エラー）——ゲートは1つの解決先を要求するのに対し、
+  `child` は複数へ配るための対象だからです。
 
 ### 8.3 modify
 
@@ -1022,7 +1024,7 @@ object_defs:
 暖炉自身が `ambient_temperature` を持たない容器の中に置かれていても、その容器を素通りして、実際に定義している
 祖先に効果が届きます。祖先を辿った先が後で移動した場合は再解決され、新しい祖先へ効果が自動的に切り替わります。
 
-`ancestor` は conditions（14 節）の `object` としても、`inherit`（6.5 節）の探索ロジックとしても使われる、
+`ancestor` は conditions（14 節）の `subject` としても、`inherit`（6.5 節）の探索ロジックとしても使われる、
 共通の1つの祖先探索です。
 
 ## 9. active（一時的な命令）
@@ -1064,7 +1066,7 @@ actions:
 続ける意味が無いため）。
 
 `set`/`add` の値は、どちらも**リテラル**（数値・真偽値・シンボル名、6.6 節）だけです。他のプロパティを指す
-`{object, prop}` 参照は使えません（`conditions` の値参照・`weight`・`duration` とはここが異なります）。値の
+`{subject, prop}` 参照は使えません（`conditions` の値参照・`weight`・`duration` とはここが異なります）。値の
 算出を YAML へ持ち込むと定義ファイルがプログラム化していくためです。在庫に応じて動く量が変わる移送は、
 専用の動詞である `transfer`（9.5 節）で表します。
 
@@ -1162,11 +1164,11 @@ actions:
     transfer:
       amount: 2000
       from_prop: volume
-      to_object: actor
+      to: actor
       to_prop: hydration
 ```
 
-- **`from_object`**（省略可、既定値 `self`）・**`to_object`**（省略可、既定値 `self`）: 参照ルート。
+- **`from`**（省略可、既定値 `self`）・**`to`**（省略可、既定値 `self`）: 参照ルート。
   `set`/`add` の対象キー（9.1 節）と同じ許可範囲（`self`/`parent`/`ancestor`/`actor`、`combinations` 内は
   `dragged` も）。
 - **`from_prop`**・**`to_prop`**: それぞれ移送元・移送先のプロパティ名。
@@ -1192,15 +1194,16 @@ actions:
       amount: 250            # 水を250mL出す
       to_amount: 10          # 飲みきると水分が10 tick分回復する
       from_prop: volume
-      to_object: actor
+      to: actor
       to_prop: hydration
       linked_add:
         actor:
           wakefulness: 2     # 実際に出した量に比例: 250 飲めば +2、125 飲めば +1
 ```
 
-`from_object`/`from_prop`/`to_object`/`to_prop` をフラットな4フィールドにしているのは、`conditions`（14.1 節）の
-`object`/`prop` と同じ理由です（`from`・`to` それぞれ参照は常に1組であり、ネストする必要がないため）。
+`from`/`from_prop`/`to`/`to_prop` をフラットな4フィールドにしているのは、`conditions`（14.1 節）の
+`subject`/`prop` と同じ理由です（`from`・`to` それぞれ参照は常に1組であり、ネストする必要がないため）。
+移送の端点は主語ではないので、`subject` ではなく方向を表す `from`/`to` がそのまま名前になります。
 
 ### 9.6 move
 
@@ -1213,11 +1216,11 @@ actions:
 actions:
   travel:
     move:
-      object: actor
+      subject: actor
       to_prop: destination_id
 ```
 
-- **`object`**: 移動させる対象。`actor`（アクション実行者）と `dragged`（`combinations` で組み合わせる
+- **`subject`**: 移動するオブジェクト。`actor`（アクション実行者）と `dragged`（`combinations` で組み合わせる
   相手のカード、12.2 節）のみ対応です（`self`/`parent`/`child` 等は「一度きりの命令に対してどれを動かすか」の
   意味論が未確定のため未対応・ロード時エラー。9.1 節で `active` の対象キー `child` が未対応なのと同じ理由）。
 - **移動先**: `to` と `to_prop` の**どちらか一方**で指します（両方書く・どちらも書かないのはロード時エラー）。
@@ -1243,7 +1246,7 @@ traits:
     combinations:
       pour_in:
         with: {tag: liquid}
-        move: {object: dragged, to: self}
+        move: {subject: dragged, to: self}
 ```
 
 **物を入れ物へしまうだけなら、これを書く必要はありません。** 中身を持つカード（`main_item_slot`、
@@ -1371,7 +1374,7 @@ actions:
 `weight` は、専用の計算式（base値＋条件付き補正）を新設せず、以下のいずれかとして表現します。
 
 - **リテラル定数**: 外部からの干渉を想定しない候補向け。
-- **既存プロパティへの参照**（`{object, prop}`、14 節の条件式の葉と同じ書き方。`object`は省略可で既定値は
+- **既存プロパティへの参照**（`{subject, prop}`、14 節の条件式の葉と同じ書き方。`subject`は省略可で既定値は
   `self`、`ancestor`（8.6 節）も指定できる）: 外部から干渉させたい候補向け。参照先は通常の `props` として
   定義された値です。
 
@@ -1400,7 +1403,7 @@ traits:
       eat:
         showMenu: always
         conditions:
-          - {object: actor, prop: satiety, lt: max}
+          - {subject: actor, prop: satiety, lt: max}
         add:
           actor:
             satiety: 10
@@ -1432,8 +1435,8 @@ actions:
     ...
 ```
 
-値は、`weight`（10.2 節）と同じ**リテラル数値**か**`{object, prop}` 参照**のいずれかで、10.2節と同じ解決規則
-（`object`省略時は`self`、`ancestor`も可）を共有します。
+値は、`weight`（10.2 節）と同じ**リテラル数値**か**`{subject, prop}` 参照**のいずれかで、10.2節と同じ解決規則
+（`subject`省略時は`self`、`ancestor`も可）を共有します。
 
 条件（`conditions`）が不成立で操作自体が実行されなかった場合、`duration`は消費されません。時間の消費は
 **実行結果が適用される前**に行われます（行動してから結果が出る順序であり、作ったもの・見つけたものが
@@ -1466,7 +1469,7 @@ object_defs:
       chop:
         with: {tag: axe_tool}
         conditions:
-          - {object: dragged, prop: durability, gt: 0}
+          - {subject: dragged, prop: durability, gt: 0}
         add:
           dragged:
             durability: -1
@@ -1497,12 +1500,12 @@ combinations:
 含む）と一致します。`{object: ...}` はその型だけと一致し、**相手が 1 種類しか無い組み合わせのために
 単発のタグを新設せずに済みます**。trait 名ではどちらの形でもマッチングしません（4.1 節）。
 
-`combinations` も `duration`（11.3 節）を持てます。`{object, prop}` 参照では `dragged` も指せるため、
+`combinations` も `duration`（11.3 節）を持てます。`{subject, prop}` 参照では `dragged` も指せるため、
 「使う道具側のプロパティが所要時間を決める」（切れ味の悪い刃物ほど時間がかかる、など）も書けます。
 
 ### 12.2 dragged
 
-`set`/`add`/`destroy`/`transfer`（9 節）の対象キー、および `conditions`/`weight` の `object`（14 節・10.2 節）に、
+`set`/`add`/`destroy`/`transfer`（9 節）の対象キー、および `conditions`/`weight` の `subject`（14 節・10.2 節）に、
 `self`/`parent`/`child`/`actor` に加えて **`dragged`**（組み合わせる相手のカード）を使えます。
 `combinations` の中でのみ意味を持つ、専用のキーです。**画面でどちらの札を掴んだかによらず**、
 `self` は宣言している側、`dragged` は相手を指します（12.3 節）。
@@ -1552,7 +1555,7 @@ object_defs:
       basic:
         icon: axe_wip.png
         conditions:
-          - {object: actor, prop: skill_knapping, in_stage: basic}
+          - {subject: actor, prop: skill_knapping, in_stage: basic}
         steps:
           - requires:
               - {object: wood, count: 2, consume: true}
@@ -1585,7 +1588,7 @@ object_defs:
 そのレシピを**知っているか**の条件です（14 節の条件木。設計は [`SkillSystem.md`](./SkillSystem.md) 4 節）。
 省略すれば最初から作れます。素材が揃っているかは 13.1 節の `requires` が見るので、両者は別物です。
 
-**`object` に使えるのは `actor` だけです**（他はロード時エラー）。解放条件を評価する時点では成果物の
+**`subject` に使えるのは `actor` だけです**（他はロード時エラー）。解放条件を評価する時点では成果物の
 インスタンスがまだ存在せず、`self`/`parent`/`ancestor` のいずれも解決先を持たないためです。
 
 `actions`/`combinations` の `conditions` と同じく、要素ごとに `reason`（14.6 節）を書けます。未解放の
@@ -1599,13 +1602,17 @@ object_defs:
 「複合ノード」からなる木構造です。トップレベルの `conditions:` は常に配列で、暗黙の `all`（論理積）として
 扱われます（`passives`/`stages`/`cells`/`pick` と同じ、複数形キーは常に配列という規約、8 節）。
 
-葉はどれも **主語を絞るキー（`object`／`prop`／`slot`）と、演算子キー（値が比較の相手）** でできています。
+葉はどれも **誰を見るかを決めるキー（`subject`）・主語を絞るキー（`prop`／`slot`）と、演算子キー
+（値が比較の相手）** でできています。`subject` は省略でき、既定値は `self` です。
 
 | 主語 | 使える演算子キー | 節 |
 |------|------------------|----|
-| `prop`（プロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage` | 14.1 |
-| `slot`（自分のそのスロットの中身） | `tag` | 14.3 |
-| 無し（オブジェクト自身） | `in_slot`（親の中での位置）／`tag`（自分のタグ） | 14.2・14.4 |
+| `prop`（`subject` のそのプロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage` | 14.1 |
+| `slot`（`subject` のそのスロットの中身） | `matches` | 14.3 |
+| 無し（`subject` 自身） | `in_slot`（親の中での位置）／`matches`（`subject` 自身の型） | 14.2・14.4 |
+
+**同じ `matches` でも、量化は主語が決めます。** `slot` があれば「その中身に当てはまるものが1つでもあるか」、
+無ければ「`subject` 自身が当てはまるか」です（14.3 節・14.4 節）。
 
 **演算子キーは1つの葉に複数書けます。** 同じマップ内の複数キーは配列と同じく暗黙の `all` なので、範囲は
 `{prop: x, gte: 100, lt: 200}` と書けます。同じ `prop` を2度書いて片方だけ直す事故を避けるためで、矛盾した
@@ -1616,11 +1623,11 @@ object_defs:
 
 ```yaml
 conditions:
-  - {object: actor, prop: satiety, lt: 12}
-  - {object: actor, prop: load, in_stage: too_heavy}
+  - {subject: actor, prop: satiety, lt: 12}
+  - {subject: actor, prop: load, in_stage: too_heavy}
 ```
 
-- **`object`**（省略可、既定値 `self`）: 参照ルート。`self`（宣言したオブジェクト自身）・`parent`（その親）・
+- **`subject`**（省略可、既定値 `self`）: 参照ルート。**この葉が誰を見るか**を決めます。`self`（宣言したオブジェクト自身）・`parent`（その親）・
   `ancestor`（selfの直接の親から遡り、`prop`が指すプロパティを定義している最初の祖先。8.6 節と同じ探索
   ロジック）・`actor`（実行しているプレイヤーキャラクター。actions/combinations のみ）・`dragged`
   （`combinations` 内のみ、12.2 節）のいずれか。`world`（15 節のシングルトン）は未対応（ロード時エラー、
@@ -1628,7 +1635,7 @@ conditions:
   `ancestor`で代替できる。
 - **`prop`**: 参照するプロパティ名。
 - **比較演算子のキー**: `lt` / `lte` / `gt` / `gte` / `eq` / `neq` / `in` / `not_in`。値が比較の相手で、
-  **リテラル**（数値・真偽値・シンボル名、6.6 節）か **`{object, prop}` 参照**（`weight` の path 参照、
+  **リテラル**（数値・真偽値・シンボル名、6.6 節）か **`{subject, prop}` 参照**（`weight` の path 参照、
   10.2 節と同じ二択）のいずれか。参照は `lt`/`lte`/`gt`/`gte`/`eq`/`neq` でのみ使えます（`in`/`not_in` は
   複数値との比較のため、単一の参照とは噛み合わずロード時エラーになります。値は配列で書きます）。
 - **`in_stage`**: 値はその `prop` の段（6.4 節）の名前で、実効値が今その段に該当していれば真です。
@@ -1641,50 +1648,51 @@ conditions:
 
 ```yaml
 conditions:
-  - {prop: content, eq: {object: dragged, prop: content}}   # 2つの動的な値同士を比較する
+  - {prop: content, eq: {subject: dragged, prop: content}}   # 2つの動的な値同士を比較する
 ```
 
-`object`/`prop` をフラットな2フィールドにしているのは、対象1つ・プロパティ1つの単純な参照であり、ネストする
-必要が無いためです。
+`subject`/`prop` をフラットな2フィールドにしているのは、対象1つ・プロパティ1つの単純な参照であり、
+ネストする必要が無いためです。
 
 `prop` が参照する値は、実体値（生の値）ではなく**実効値**（8.3 節の `modify` を加味した値）です。これにより、
 `modify` だけで決まる派生プロパティ（例: 天候と時間から決まる日照）も、他の `conditions` から参照できます。
-`value` が `{object, prop}` 参照の場合も同様に実効値を読みます。ただし、あるプロパティの `modify` のゲートが、
+`value` が `{subject, prop}` 参照の場合も同様に実効値を読みます。ただし、あるプロパティの `modify` のゲートが、
 直接・間接を問わず自分自身の実効値に依存する（循環参照）と、実行時に例外を送出します
 （`PropertyValue.GetEffectiveValue` 参照）。この種の循環はエンジン側では防げず、YAML の書き方で避ける必要が
 あります。
 
 ### 14.2 葉: スロット位置判定
 
-`object` が指すオブジェクト自身が、今まさに親のどのスロットに入っているかを判定します（**外側から見た
+`subject` が指すオブジェクトが、今まさに親のどのスロットに入っているかを判定します（**外側から見た
 位置**）。常に等価判定なので、スロット名そのものが値になります（否定したい場合は 14.5 節の `not` で包みます）。
 
 ```yaml
 conditions:
-  - {object: self, in_slot: equip}
+  - {subject: self, in_slot: equip}
 ```
 
-`in_slot` はオブジェクト自身を主語とする演算子キーなので、`prop` を主語にした葉には書けません（ロード時
+`in_slot` は `subject` 自身を主語とする演算子キーなので、`prop` を主語にした葉には書けません（ロード時
 エラー）。プロパティ名とスロット名は別の名前空間であり、同じ識別子でも衝突しません。
 
 `ancestor` は「`prop` が指すプロパティ名で祖先を探す」という仕組みのため、探すプロパティを持たないスロット
-位置判定では `object` に指定できません（ロード時エラー）。
+位置判定では `subject` に指定できません（ロード時エラー）。
 
 ### 14.3 葉: スロット中身判定
 
-`object` が指すオブジェクト自身が持つ**自分のスロット**の中に、指定した `tag`（4.1 節）を持つ子オブジェクトが
-1つでもあるかを判定します（**内側から見た中身**、14.2 節のスロット位置判定とは向きが逆）。常に存在判定です。
+`subject` が持つ**そのスロット**の中に、`matches` に当てはまる子オブジェクトが1つでもあるかを判定します
+（**内側から見た中身**、14.2 節のスロット位置判定とは向きが逆）。常に存在判定です。
 
 ```yaml
 conditions:
-  - {object: self, slot: content, tag: water_liquid}
+  - {subject: self, slot: content, matches: {tag: water_liquid}}
 ```
 
-- **`slot`**: 判定対象の、`object` 自身が持つスロット名。
-- **`tag`**: そのスロットの中身が持つべきタグ。
+- **`slot`**: 判定対象の、`subject` が持つスロット名。
+- **`matches`**: そのスロットの中身に求める型。枠の `accept`（7.2 節）と同じ `{tag: ...}` / `{object: ...}`
+  の二択です（4.1 節）。
 
-`slot` は 14.2 節の `in_slot` とは別フィールドです。`in_slot` は「`object` が親の中でどこにいるか」、`slot` は
-「`object` 自身の中に何が入っているか」という、参照する木構造上の向きが逆であるため、キー名自体を分けて
+`slot` は 14.2 節の `in_slot` とは別フィールドです。`in_slot` は「`subject` が親の中でどこにいるか」、`slot` は
+「`subject` 自身の中に何が入っているか」という、参照する木構造上の向きが逆であるため、キー名自体を分けて
 区別しています。
 
 液体容器のような「中身の種類によって取れる行動が変わる」ケースに使います。中身の種類は、容器の中の専用
@@ -1702,22 +1710,24 @@ object_defs:
     actions:
       pour_out:
         conditions:
-          - {slot: content, tag: water_liquid}
+          - {slot: content, matches: {tag: water_liquid}}
         destroy: self
 ```
 
-### 14.4 葉: タグ判定
+### 14.4 葉: 型判定
 
-`object` が指すオブジェクト自身が、指定した `tag`（4 節）を持つかを判定します。常に存在判定です
-（否定したい場合は 14.5 節の `not` で包みます）。
+`subject` が指すオブジェクト自身が、`matches` に当てはまるかを判定します（否定したい場合は 14.5 節の
+`not` で包みます）。
 
 ```yaml
 conditions:
-  - {object: dragged, tag: liquid}
+  - {subject: dragged, matches: {tag: liquid}}      # draggedがliquidタグを持つ
+  - {subject: dragged, matches: {object: raw_meat}} # draggedが生肉そのもの
 ```
 
-14.3 節のスロット中身判定（`slot`＋`tag`）が「`object` の中に `tag` を持つ**子**がいるか」を見るのに対し、
-こちらは `tag` を単独で書き、「`object` **自身**が `tag` を持つか」を見ます。
+**14.3 節と同じ `matches` で、違うのは主語だけです。** `slot` を書けば「その中に当てはまる**子**がいるか」、
+書かなければ「`subject` **自身**が当てはまるか」になります。量化をキー名にも書くと、同じ指定の形に2つの
+名前が付くことになるため、主語だけに担わせています。
 
 ### 14.5 複合ノード: all / any / not
 
@@ -1744,7 +1754,7 @@ actions:
     conditions:
       - {in_slot: fixtures}
       - reason: too_heavy
-        not: {object: actor, prop: load, in_stage: too_heavy}
+        not: {subject: actor, prop: load, in_stage: too_heavy}
 ```
 
 UI は、実行できないアクションのボタンを押せない見た目にし、宣言順で**最初に満たしていない要素**の文言を
@@ -1786,7 +1796,7 @@ object_defs:
 `tick` も持つ。）
 
 日時・天候はオブジェクトから直接参照されるのではなく、**環境がオブジェクトに影響を与える**という位置づけです
-（例: 明るさによって行動可否が変わる）。直接のプロパティ参照は 14 節の `conditions`（`object: world`）で使います。
+（例: 明るさによって行動可否が変わる）。直接のプロパティ参照は 14 節の `conditions`（`subject: world`）で使います。
 
 ## 16. 本書の対象外
 
@@ -1812,10 +1822,10 @@ object_defs:
 - `pick` の候補から「別のアクションを実行する」ための記法（エフェクトから能動的にアクションを発火する仕組み自体が
   まだない）
 - action / combinations の比較演算子セット（14.1 節）の過不足、`between` 等の追加要否
-- `object`（14.1 節・10.2 節）の参照範囲: 現状の実装は `object` が指すオブジェクト自身が直接持つ
+- `subject`（14.1 節・10.2 節）の参照範囲: 現状の実装は `subject` が指すオブジェクト自身が直接持つ
   プロパティ・スロットのみに対応し、任意の階層数を指定するネストした参照（例: 「親の親」を明示的に指定）は
   未対応。「祖先を遡って該当プロパティを持つ最初のオブジェクトを探す」という用途は `ancestor`（8.6 節・6.5 節）
-  で対応済み。`world` を `object` にした参照（world シングルトンインスタンスの実行時追跡が未実装）も未対応
+  で対応済み。`world` を `subject` にした参照（world シングルトンインスタンスの実行時追跡が未実装）も未対応
   （ロード時エラー）だが、`ancestor` は見つからなければ自然にworldまで遡るため、多くの場合これで代替できる
 - `active`（9 節）の対象キー `child`: 一度きりの命令に対して「どの子か」の意味が確定していないため未対応
   （ロード時エラー）。passives の child 寄与（8 節、関係とゲートに基づく持続的な登録）とは性質が異なる

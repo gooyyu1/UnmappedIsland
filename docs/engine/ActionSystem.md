@@ -78,12 +78,12 @@ actions/combinations の一度きりの判定と、passives（8節）の持続�
 | SlotContent | `{object, slot, tag}` | object 自身のスロットの中に、タグを持つ子が1つでもあるか（内側の中身） |
 | ObjectTag | `{object, tag}` | object 自身がタグを持つか |
 
-`value` はリテラル・配列（`in`/`not_in`）・`{object, prop}` 参照の三択。参照先が解決できない場合
+`value` はリテラル・配列（`in`/`not_in`）・`{subject, prop}` 参照の三択。参照先が解決できない場合
 （親が無い等）、その葉は偽になる。
 
 ## 4. 条件・効果から参照できるオブジェクト
 
-`conditions` の `object`、効果の対象キー、`{object, prop}` 参照はすべて共通の起点
+`conditions` の `subject`、効果の対象キー、`{subject, prop}` 参照はすべて共通の起点
 `Domain.Defs.ReferenceRoot` を使う。`self.prop` のような1階層の参照のみで、パス連結はない。
 
 | 起点 | 解決先 | 使える文脈 |
@@ -110,7 +110,7 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
 
 設計上の要点:
 
-- `set`/`add` の値・`pick` の `weight` は「リテラルか `{object, prop}` 参照か」の二択で統一されている。
+- `set`/`add` の値・`pick` の `weight` は「リテラルか `{subject, prop}` 参照か」の二択で統一されている。
 - `spawn` の配置先は `same_slot`（既定）/ `self` / `actor`。`same_slot` は、適用の入口で捕捉した
   「self が占めていた位置」のスナップショット（`WorldObject.EffectSite`）を使い、destroy で self が
   消えた後でもその位置を引き継げる。配置に失敗した場合は起点の親へ伝播し、accepts/capacity を
@@ -126,7 +126,7 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
 
 ## 6. 時間の経過（duration）
 
-- `actions`/`combinations` の `duration` はゲーム内の**分**。リテラルか `{object, prop}` 参照
+- `actions`/`combinations` の `duration` はゲーム内の**分**。リテラルか `{subject, prop}` 参照
   （`weight` と同じ二択。`combinations` では `dragged` も指せる）で、省略時は時間を消費しない。
 - 時間進行は `InteractionDef` 自身が `WorldSession.AdvanceWorldTime(minutes)` を呼んで完結させる。
   呼び出し側（UI層）が実行後に別途時間を進める必要はない。解決した分数は実行前にも引ける

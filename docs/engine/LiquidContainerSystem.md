@@ -76,7 +76,7 @@ traits:
     combinations:
       pour_in:
         with: {tag: liquid}
-        move: {object: dragged, to: self}
+        move: {subject: dragged, to: self}
 
   # selfが中身入りのとき（代表は中身の液体）
   liquid:
@@ -85,7 +85,7 @@ traits:
     combinations:
       pour_in:
         with: {tag: liquid}
-        move: {object: dragged, to: parent}
+        move: {subject: dragged, to: parent}
 ```
 
 | ドラッグ | ドロップ先 | 発火する宣言 |

@@ -25,8 +25,8 @@
 
 ## 2. スキルはキャラクターのプロパティ
 
-スキルはプレイヤーキャラクターの `props` として持たせます。`conditions` の `object: actor`
-（14.1 節）から直接参照でき、`world` シングルトンを参照する迂回（同節、`object: world` は未対応）が
+スキルはプレイヤーキャラクターの `props` として持たせます。`conditions` の `subject: actor`
+（14.1 節）から直接参照でき、`world` シングルトンを参照する迂回（同節、`subject: world` は未対応）が
 要りません。
 
 ```yaml
@@ -110,14 +110,14 @@ object_defs:
     recipes:
       basic:
         conditions:
-          - {object: actor, prop: skill_cordage, in_stage: skilled}
+          - {subject: actor, prop: skill_cordage, in_stage: skilled}
         steps: ...
 ```
 
 `conditions` は既存の条件木をそのまま使います。`recipes` のエントリがこのキーを持てるようにする追加が、
 本システムが必要とする唯一の文法変更です（13.3 節）。
 
-**`object` に使えるのは `actor` だけです。** 解放条件を評価する時点では成果物のインスタンスがまだ存在せず、
+**`subject` に使えるのは `actor` だけです。** 解放条件を評価する時点では成果物のインスタンスがまだ存在せず、
 `self`/`parent`/`ancestor` は解決先を持ちません。そのため、季節や天候のような世界側の状態を解放条件に
 することは現時点でできません（`ancestor` が `self` から遡る仕組みであるため、迂回もできません）。
 

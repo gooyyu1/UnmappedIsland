@@ -64,10 +64,10 @@ object_defs:
           # 荷が重すぎると動けない。段の名前で見るので、境目はキャラクタのloadのstagesだけが持つ
           # （ContainerSystem.md 5節）。
           - reason: too_heavy
-            not: {object: actor, prop: load, in_stage: too_heavy}
+            not: {subject: actor, prop: load, in_stage: too_heavy}
         duration: {prop: travel_minutes}
         move:
-          object: actor
+          subject: actor
           to_prop: destination_id
 
   # ------------------------------------------------------------------

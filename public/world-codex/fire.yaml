@@ -135,8 +135,8 @@ traits:
       # （docs/engine/ContainerSystem.md 6節）。sheltered未実装の間はancestorが解決せず、
       # 否定形の演算子（neq）で「分からないときは効かせる」側に倒している。
       - conditions:
-          - {object: ancestor, prop: sheltered, neq: 1}
-          - {object: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
+          - {subject: ancestor, prop: sheltered, neq: 1}
+          - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
         add: {self: {heat: -4}}
     combinations:
       # 薪をくべる。燃料が持つfuelを炉のfuelへ移し、燃料そのものは消す（同2節）。
@@ -145,10 +145,10 @@ traits:
         with: {tag: fuel}
         duration: 1
         conditions:
-          - {reason: hearth_full, prop: fuel, lt: {object: self, prop: fuel_capacity}}
+          - {reason: hearth_full, prop: fuel, lt: {subject: self, prop: fuel_capacity}}
         transfer:
           amount: 999
-          from_object: dragged
+          from: dragged
           from_prop: fuel
           to_prop: fuel
         destroy: dragged

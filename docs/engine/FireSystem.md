@@ -87,10 +87,10 @@ combinations:
     duration: 1
     conditions:
       # 満杯の炉はくべさせない（無駄をここで止める）。上限は炉ごとに違うのでプロパティで持つ。
-      - {reason: hearth_full, prop: fuel, lt: {object: self, prop: fuel_capacity}}
+      - {reason: hearth_full, prop: fuel, lt: {subject: self, prop: fuel_capacity}}
     transfer:
       amount: 999            # 入るだけ入れる
-      from_object: dragged
+      from: dragged
       from_prop: fuel
       to_prop: fuel
     destroy: dragged         # 入りきらなかった分は失われる
@@ -448,12 +448,12 @@ cooking_progress:
 # 器の側が宣言する
 passives:
   - conditions:
-      - {object: ancestor, prop: heat, in_stage: coals}
+      - {subject: ancestor, prop: heat, in_stage: coals}
     add:
       child:
         cooking_progress: 1
   - conditions:
-      - {object: ancestor, prop: heat, in_stage: flame}
+      - {subject: ancestor, prop: heat, in_stage: flame}
     add:
       child:
         cooking_progress: 3
@@ -516,8 +516,8 @@ passives:
 # 炉の側が宣言する
 passives:
   - conditions:
-      - {object: ancestor, prop: sheltered, eq: 0}
-      - {object: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
+      - {subject: ancestor, prop: sheltered, eq: 0}
+      - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
     add:
       self:
         heat: -4
@@ -571,7 +571,7 @@ passives:
 - `fuel` のバーと `heat` のシンボルを、カードのどこに出すか（[`CardView.md`](../ui/CardView.md) のバーは
   量的オブジェクトの中身に紐づくため、そのままは使えない）
 - 満杯の炉を拒む条件（2 節）のために、`fuel_capacity` が `fuel` の `range.max` と同じ値を 2 度
-  持つこと。炉ごとに違う値なので trait へは括り出せず、`range` は `{object, prop}` 参照を取れない
+  持つこと。炉ごとに違う値なので trait へは括り出せず、`range` は `{subject, prop}` 参照を取れない
 - 器の枠（1.1 節）に「ここは器を置く枠」と見せるかどうか。空き枠へ受け入れる型を薄く敷く仕組み
   （`EmptyCard`）は既にあるが、枠ごとの受け入れ型を画面へ渡しているのは製作中オブジェクトの材料欄
   だけで、普通の入れ物は `SlotDef` の枠ごとの `accept` を見ていない。受け入れがタグの場合に何の絵を

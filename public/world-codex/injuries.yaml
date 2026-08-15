@@ -109,7 +109,7 @@ object_defs:
       # 代わりに固まるのを早める（treatments.yaml、InjurySystem.md 3.1節）。
       - conditions:
           - {prop: bleeding, gte: 1}
-          - not: {slot: treatment, tag: hemostatic}
+          - not: {slot: treatment, matches: {tag: hemostatic}}
         add:
           parent:
             blood: -15
@@ -160,7 +160,7 @@ object_defs:
             pain: 60
       - conditions:
           - {prop: bleeding, gte: 1}
-          - not: {slot: treatment, tag: hemostatic}
+          - not: {slot: treatment, matches: {tag: hemostatic}}
         add:
           parent:
             blood: -200
@@ -207,7 +207,7 @@ object_defs:
             pain: 50
       - conditions:
           - {prop: bleeding, gte: 1}
-          - not: {slot: treatment, tag: hemostatic}
+          - not: {slot: treatment, matches: {tag: hemostatic}}
         add:
           parent:
             blood: -15

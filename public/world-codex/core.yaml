@@ -510,7 +510,7 @@ object_defs:
                   self:
                     heavy_rain_weight: 15
                 conditions:
-                  - {object: self, prop: atmospheric_moisture, gte: 60}
+                  - {subject: self, prop: atmospheric_moisture, gte: 60}
           - name: peak
             min: 1920
             passives:
@@ -519,7 +519,7 @@ object_defs:
                     heavy_rain_weight: 30
                     storm_weight: 40
                 conditions:
-                  - {object: self, prop: atmospheric_moisture, gte: 45}
+                  - {subject: self, prop: atmospheric_moisture, gte: 45}
       # 難易度の初期補正1: 経過tickを数える専用カウンタで、2日目（tick 96-191）だけ
       # atmospheric_moistureへ追加加算し、高確率で雨を降らせる（ClimateSystem.md 5.1節）。
       # 天気そのものは固定しない（5.3節）ため、晴れる可能性もある。

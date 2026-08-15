@@ -46,7 +46,7 @@ object_defs:
     combinations:
       grab:
         with: {tag: item}
-        move: {object: dragged, to: self}
+        move: {subject: dragged, to: self}
 `;
 
   let codex: WorldCodex;
