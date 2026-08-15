@@ -432,6 +432,9 @@ export class Card extends Phaser.GameObjects.Container {
   /** 今の押下がタップでなくなったか（cancelTap参照）。押し始めるたびに戻す。 */
   private tapCancelled = false;
 
+  /** この枠に今いくつ在ると言われているか（setRemaining）。言われるまでは在るものとして扱う。 */
+  private remaining = 1;
+
   /** 押下中だけ出す黒枠（makeTappable参照）。押せないカードは持たない。 */
   private pressHighlight: Phaser.GameObjects.Graphics | undefined;
 
@@ -590,6 +593,19 @@ export class Card extends Phaser.GameObjects.Container {
     if ((this._content.count ?? 1) !== remaining) this.setContent({ ...this._content, count: remaining });
     this.setVisible(remaining > 0 || emptied);
     this.setAlpha(remaining === 0 ? EMPTIED_ALPHA : 1);
+    this.remaining = remaining;
+  }
+
+  /**
+   * この枠に今その札が在るか。**0枚の枠に在るのは札ではなく、帰ってくる場所を示す印**なので、押しても
+   * 掴んでも何も起きない（CardInteraction.md 6.2節）。帰り着けばまた押せる——**押せるかどうかを決める
+   * のは今の枚数だけ**で、内容の側は操作を持ったまま待つ。
+   *
+   * 入力そのものは切らない。掴んで運んでいる間も元の札は0枚になる（CarriedCards）ので、切ると運んで
+   * いる指の操作まで届かなくなる。
+   */
+  get holdsCard(): boolean {
+    return this.remaining > 0;
   }
 
   /**
@@ -1076,7 +1092,7 @@ export class Card extends Phaser.GameObjects.Container {
       onCancel: () => highlight.setVisible(false),
       onRelease: () => {
         highlight.setVisible(false);
-        if (this.tapCancelled) return;
+        if (this.tapCancelled || !this.holdsCard) return;
 
         noteOperation(`カードを押した: ${this._content.name}`);
         this._content.onTap?.();

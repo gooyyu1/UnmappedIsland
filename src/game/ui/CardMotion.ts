@@ -54,8 +54,11 @@ export interface MotionContext {
   /**
    * 子ウィンドウが借りている札のインスタンス（Windows.md 1.1節）。**枠には居ないので枚数から
    * 引く**——借りた側が自分の場所に出しているので、同じ物の札が画面に2枚出ることはない。
+   *
+   * **控えではなく、借り手が持っている集合そのものを渡すこと。** 差し替えの初めに帰り着く札
+   * （settle）はその時点で借り出しが解けるので、読むのは解けたあとでなければならない。
    */
-  readonly borrowed?: readonly number[];
+  readonly borrowed?: ReadonlySet<number>;
 }
 
 /**
@@ -203,7 +206,8 @@ export class CardMotion {
       left,
       origins: context.origins,
       released: releasedIdsOf(context.released),
-      aloft: heldId === undefined ? (context.borrowed ?? []) : [heldId, ...(context.borrowed ?? [])],
+      // settleで解けた借り出しを含めないよう、集合を並びに直すのはここ（差し替えの計画を立てる時点）。
+      aloft: heldId === undefined ? [...(context.borrowed ?? [])] : [heldId, ...(context.borrowed ?? [])],
       vanished: context.vanished,
       born: context.born,
     });

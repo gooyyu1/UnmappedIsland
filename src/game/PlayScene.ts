@@ -766,9 +766,6 @@ export class PlayScene extends ResponsiveScene {
       if (card === undefined) return undefined;
 
       const rest = this.withoutBorrowed(card);
-      // 束が丸ごと借り出されている枠に残るのは、帰ってくる場所を示す印だけ（CardInteraction.md 6.2節）。
-      // 札ではないので掴めず、押しても開かない。
-      if (rest === undefined) return { ...card };
       return {
         ...rest,
         draggable: true,
@@ -781,19 +778,21 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * その束から、子ウィンドウへ貸している1個を差し引いたもの（貸していなければそのまま、丸ごと
-   * 貸していればundefined）。
+   * その束から、子ウィンドウへ貸している1個を差し引いたもの（貸していなければそのまま）。
    *
    * **識別子は貸した1個も含めたまま**にする——その枠は貸した札が帰ってくる場所で、帰り着いたときに
    * 同じ札として繋がる必要があるため（CardLane.setCells）。動かせるのは残りだけなので、操作
    * （movedIds・moveTo）はビューに引き直させる。
+   *
+   * **丸ごと貸していても内容はそのまま渡す。** 枠に残る薄い印（CardInteraction.md 6.2節）は札では
+   * ないので押せず掴めないが、それを決めるのは枚数を知っているカード自身（Card.setRemaining）で、
+   * 内容から操作を抜くのではない——抜いてしまうと、帰り着いた札が押せないままになる。
    */
-  private withoutBorrowed(stack: ObjectCardStack): ObjectCardStack | undefined {
+  private withoutBorrowed(stack: ObjectCardStack): ObjectCardStack {
     if (this.borrowed.size === 0) return stack;
 
     const rest = stack.objects.filter((object) => !this.borrowed.has(object.instanceId));
-    if (rest.length === stack.objects.length) return stack;
-    if (rest.length === 0) return undefined;
+    if (rest.length === 0 || rest.length === stack.objects.length) return stack;
     return { ...this.view.cardOfObjects(rest, stack.place), identity: stack.identity };
   }
 
@@ -2022,7 +2021,9 @@ export class PlayScene extends ResponsiveScene {
     const place = this.childWindowPlace;
     if (this.childWindow?.lane !== undefined && place !== undefined) cells.push(this.slotCells(place));
 
-    this.motion.update(this.openLanes, cells, { ...context, borrowed: [...this.borrowed] });
+    // 借りている札は**控えではなく集合そのもの**を渡す。差し替えの初めに帰り着く札（CardMotion.settle）
+    // はその場で借り出しが解けるので、控えを渡すと解けたはずの1枚を引き続き枚数から引いてしまう。
+    this.motion.update(this.openLanes, cells, { ...context, borrowed: this.borrowed });
     this.showChildWindowActions();
     this.showSky();
     this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
