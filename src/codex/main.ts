@@ -143,7 +143,6 @@ function wireObjectFilter(): void {
     }
     if (empty !== null) empty.hidden = shown > 0;
   });
-  input.focus();
 }
 
 function updateNamingToggle(): void {
