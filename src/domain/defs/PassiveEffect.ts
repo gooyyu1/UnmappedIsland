@@ -4,6 +4,7 @@ import { RegisteredPassiveEffect } from '../runtime/RegisteredPassiveEffect';
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ConditionNode } from './ConditionNode';
+import type { InfluenceWriter } from '../runtime/PropertyInfluence';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { propertyRef, signedNumber, stageRef, text } from './Description';
 import type { ReferenceRoot } from './ReferenceRoot';
@@ -25,6 +26,14 @@ export class PassiveEffectGate {
     this.conditions = conditions;
     this.propertyGlobalId = propertyGlobalId;
     this.stageName = stageName;
+  }
+
+  /**
+   * このゲートが見ている段（8.2節）のプロパティ。段で縛っていないゲートではundefined。
+   * 「このステータスが何を動かしているか」（PropertyInfluences）は、これを原因として辿る。
+   */
+  get stagePropertyGlobalId(): number | undefined {
+    return this.stageName === undefined ? undefined : this.propertyGlobalId;
   }
 
   isSatisfied(declarer: WorldObject, slotBearer: WorldObject): boolean {
@@ -95,6 +104,12 @@ export abstract class PassiveEffect {
    */
   abstract affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean;
 
+  /**
+   * この効果が持つ影響の辺（InfluenceEdge）を書き出す。declarerは宣言したオブジェクトで、
+   * 対象も原因もそこから辿る。どの一覧へ入るかは書き込み先が決める（PropertyInfluences）。
+   */
+  abstract collectInfluences(declarer: WorldObject, out: InfluenceWriter): void;
+
   /** 関係（self/parent/ancestor）が変わった契機。登録を持たない効果は何もしない。 */
   registerRelation(_owner: WorldObject, _relation: ReferenceRoot, _register: boolean): void {}
 
@@ -147,6 +162,29 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
 
   /** YAMLでの書き方の名前（modify/add）。describeが対象の前に置く。 */
   protected abstract get kindLabel(): string;
+
+  /** 可逆な寄与（modify、8.3節）か。影響の一覧が記号の形をこれで選ぶ（PropertyInfluence）。 */
+  protected abstract get reversible(): boolean;
+
+  /**
+   * 対象へ届く辺を書き出す。**対象がchildのときは今入っている子の数だけ辺を書く**——寄与の登録
+   * （registerChild）が子ごとに1件ずつ作られるのと同じで、「どの子か」は1つに決まらない。
+   */
+  override collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {
+    for (const target of declarer.resolveInfluenceTargets(this.target, this.targetPropertyGlobalId)) {
+      // ゲートのself（＝slotBearer）はエッジの子側（registerResolvedRelationと同じ決まり）。
+      const slotBearer = this.target === 'child' ? target : declarer;
+      out.write({
+        causeObject: declarer,
+        causePropertyGlobalId: this.gate.stagePropertyGlobalId,
+        target,
+        targetPropertyGlobalId: this.targetPropertyGlobalId,
+        reversible: this.reversible,
+        increases: this.amount >= 0,
+        active: this.gate.isSatisfied(declarer, slotBearer),
+      });
+    }
+  }
 
   override affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
     if (this.targetPropertyGlobalId !== propertyGlobalId) return false;
@@ -255,6 +293,10 @@ export class ModifyEffect extends PropertyPassiveEffect {
     return 'modify';
   }
 
+  protected get reversible(): boolean {
+    return true;
+  }
+
   registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void {
     target.registerModify(registration);
   }
@@ -276,6 +318,10 @@ export class AccumulateEffect extends PropertyPassiveEffect {
 
   protected get kindLabel(): string {
     return 'add';
+  }
+
+  protected get reversible(): boolean {
+    return false;
   }
 
   registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void {
@@ -308,6 +354,10 @@ export class TransferPassiveEffect extends PassiveEffect {
   applyTick(owner: WorldObject, session: WorldSession): void {
     if (!this.gate.isSatisfied(owner, owner)) return;
     this.transfer.apply(owner, session, undefined, undefined);
+  }
+
+  override collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {
+    this.transfer.collectInfluences(declarer, this.gate.isSatisfied(declarer, declarer), out);
   }
 
   override describe(names: DefNames, out: DescriptionWriter): void {

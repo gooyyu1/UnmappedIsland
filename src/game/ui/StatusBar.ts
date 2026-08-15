@@ -35,6 +35,58 @@ const MOVE_DURATION_MS = 250;
 /** 直前の行動でその値が増えたか減ったか。変わらなかった項目には記号を出さない。 */
 export type StatusChange = 'increased' | 'decreased';
 
+/**
+ * 影響1件の見せ方（[`Windows.md`](../../../docs/ui/Windows.md) 8節）。相手の絵と名前、影響方法の
+ * 記号だけを出す。量は出さない——プレイヤーが決めるのは「何をすればどれが動くか」で、いくつ動くかを
+ * 突き合わせる画面ではない。
+ */
+export interface StatusInfluence {
+  /** 相手の表示名。 */
+  readonly name: string;
+
+  /** 相手がプロパティなら対応表の絵文字、オブジェクトなら種別の絵文字（絵が無いときの代用）。 */
+  readonly icon: string | undefined;
+
+  /** 相手がオブジェクトなら、その絵の名前（objectArt）。プロパティは絵を持たないのでundefined。 */
+  readonly art: string | undefined;
+
+  /** 可逆な寄与（modify）か。三角と＋−を分ける。 */
+  readonly reversible: boolean;
+
+  /** 相手を増やす向きか。記号の向き（▲▼・＋−）がこれで決まる。 */
+  readonly increases: boolean;
+
+  /**
+   * この記号が表す変化が、それを受けるステータスにとって悪化か。記号の色だけがこれを見る
+   * （増減の記号と同じ規則、[`StatusArea.md`](../../../docs/ui/StatusArea.md) 6節）。
+   *
+   * **受けるのがどちらかは一覧が決まれば決まる**——与えている影響なら相手が、受けている影響なら
+   * 自分が動く側なので、その側にとっての良し悪しになる。
+   */
+  readonly worsens: boolean;
+
+  /** 今その条件が成立しているか。成立していない影響は薄く、記号を出さずに並べる。 */
+  readonly active: boolean;
+}
+
+/** ステータス詳細ウィンドウ（[`Windows.md`](../../../docs/ui/Windows.md) 8節）に出す内容。 */
+export interface StatusDetail {
+  /** そのステータスが何を表すか（対応表の`description`）。まだ書かれていなければundefined。 */
+  readonly description: string | undefined;
+
+  /** 今いる段の表示名。段を宣言していないプロパティはundefined。 */
+  readonly stageName: string | undefined;
+
+  /** バーの上に囲みで出す、今いる段の区間（0〜1）。段を持たないプロパティはundefined。 */
+  readonly stageSpan: { readonly start: number; readonly end: number } | undefined;
+
+  /** このステータスが与えている影響。 */
+  readonly given: readonly StatusInfluence[];
+
+  /** このステータスが受けている影響。 */
+  readonly received: readonly StatusInfluence[];
+}
+
 /** ステータス1件分の表示内容（名前は識別子ではなく表示名）。 */
 export interface StatusContent {
   /** プロパティの識別子（表示名ではない）。増減の対応付けと固定表示の記憶に使う。 */
@@ -77,6 +129,15 @@ export interface StatusContent {
 
   /** 名前をタップしたときの固定表示のトグル。持たない場合、名前はタップに反応しない。 */
   readonly onTogglePin?: () => void;
+
+  /**
+   * ステータス詳細ウィンドウ（Windows.md 8節）に出す内容。バー自身は使わず、開く側へそのまま渡る。
+   * 詳細を持たない行（開けない行）ではundefined。
+   */
+  readonly detail?: StatusDetail;
+
+  /** バーをタップしたときに詳細を開く。持たない場合、バーはタップに反応しない。 */
+  readonly onOpenDetail?: () => void;
 }
 
 /**
@@ -127,6 +188,9 @@ export class StatusBar extends Phaser.GameObjects.Container {
   /** 増えるほど悪い値か。プロパティごとに決まっていて動かないため、作るときに1回だけ受け取る。 */
   private readonly worsensUpward: boolean;
 
+  /** 今映している内容。詳細を開く入口は行動のたびに差し替わるため、押された時点のものを使う。 */
+  private content: StatusContent;
+
   constructor(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
@@ -138,6 +202,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
   ) {
     super(scene, x, y);
     this.worsensUpward = content.worsensUpward === true;
+    this.content = content;
 
     const height = metrics.px(BAR_HEIGHT);
     const pinWidth = metrics.px(PIN_WIDTH);
@@ -186,6 +251,20 @@ export class StatusBar extends Phaser.GameObjects.Container {
         })
         .setOrigin(0, 0.5);
       this.add(this.valueText);
+    }
+
+    // バーの側をタップすると詳細が開く。見出しの側（印・絵・名前）は固定表示の切り替えのままで、
+    // 1本の行の中で「何のステータスか」を押すか「その値」を押すかが2つの操作を分ける。
+    //
+    // 呼ぶのは**今の**内容の入口。行は作り直さず中身だけ差し替わる（setContent）ので、作った時点の
+    // 入口を捕まえると、開いた詳細だけが行動する前の状態のままになる。
+    if (content.onOpenDetail !== undefined) {
+      const barHit = scene.add
+        .zone(barX, 0, Math.max(0, width - barX), height)
+        .setOrigin(0)
+        .setInteractive({ useHandCursor: true });
+      this.add(barHit);
+      onPressRelease(barHit, { onRelease: () => this.content.onOpenDetail?.() });
     }
 
     this.changeMark = scene.add
@@ -281,6 +360,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
   }
 
   private showContent(content: StatusContent): void {
+    this.content = content;
     this.bar?.setAlert(content.alert);
     this.pinMark.setText(content.pinned === true ? PIN_MARK : '');
     this.showChange(content.change);

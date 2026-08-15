@@ -121,6 +121,23 @@ export class PropertyStage {
   }
 }
 
+/** 段（6.4節）がrangeの中で占める区間。両端とも0〜1で、startがminの側。 */
+export interface StageSpan {
+  readonly start: number;
+  readonly end: number;
+}
+
+/**
+ * 今いる段（6.4節）を、表示側が要る形だけ切り出したもの（PropertyDef.stageOf）。
+ * nameは識別子であり表示名ではない（表示名はLocalization.stageが引く）。
+ */
+export interface StageReading {
+  readonly name: string;
+
+  /** rangeの中でこの段が占める区間。rangeを持たないプロパティと、eqで決まる段ではundefined。 */
+  readonly span: StageSpan | undefined;
+}
+
 /**
  * 1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.propertyDefs の1要素として、
  * ローカルIDをそのままindexとする密配列に格納される。同名プロパティでも ObjectDef ごとに
@@ -429,6 +446,38 @@ export class PropertyDef {
   /** 実効値effectiveValueのときに該当する段（6.4節）の名前。該当する段が無ければundefined。 */
   stageNameOf(effectiveValue: number): string | undefined {
     return this.resolveStage(effectiveValue)?.name;
+  }
+
+  /**
+   * 実効値effectiveValueのときに該当する段（6.4節）を、表示側が要る形だけ切り出したもの。
+   * 該当する段が無ければundefined。
+   */
+  stageOf(effectiveValue: number): StageReading | undefined {
+    const stage = this.resolveStage(effectiveValue);
+    if (stage === undefined) return undefined;
+    return { name: stage.name, span: this.spanOf(stage) };
+  }
+
+  /**
+   * 段がrangeの中で占める区間（0〜1）。**下端はその段のmin**（最下段はrangeの下限）、**上端は
+   * それより上で最も近い段のmin**（無ければrangeの上限）で、段の宣言順ではなくminの大小だけで決まる
+   * （resolveStageと同じ見方）。
+   *
+   * 完全一致（eq）で決まる段はシンボル型（6.6節）のもので、値の並びの上に幅を持たないためundefined。
+   */
+  private spanOf(stage: PropertyStage): StageSpan | undefined {
+    if (this.range === undefined || stage.eq !== undefined) return undefined;
+
+    const start = stage.min ?? this.range.min;
+    let end = this.range.max;
+    for (const other of this.stages)
+      if (other.min !== undefined && other.min > start && other.min < end) end = other.min;
+
+    const startRatio = this.ratioOf(start);
+    const endRatio = this.ratioOf(end);
+    return startRatio === undefined || endRatio === undefined
+      ? undefined
+      : { start: startRatio, end: endRatio };
   }
 
   /** 実効値effectiveValueのとき、今いる段が宣言しているart接尾辞（PropertyStage.art、6.4節）。宣言が無ければundefined。 */

@@ -1166,6 +1166,47 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toBeUndefined();
   });
 
+  it('ステータスの詳細には、意味・今いる段・影響の出入りが揃う', () => {
+    // ステータス詳細ウィンドウ（Windows.md 8節）。UIはどのステータスが何に効くかを知らず、
+    // 持続効果の宣言（characters/）から導いたものをそのまま並べる。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+
+    const view = fromGameSession(game, codex, locale);
+    const bodyFat = view.propertyCategories
+      .flatMap((tab) => tab.entries)
+      .find((entry) => entry.key === 'body_fat')?.detail;
+
+    expect(bodyFat?.stageName, '開始直後は標準の段（characters/）').toBe('nourished');
+    // 段はrangeの中の区間で、上端は次の段のmin（nourished 480〜stout 2880、medic）。
+    expect(bodyFat?.stageSpan?.start).toBeCloseTo(480 / 5760);
+    expect(bodyFat?.stageSpan?.end).toBeCloseTo(2880 / 5760);
+    expect(
+      bodyFat?.received.map((influence) => `${influence.name}${influence.increases ? '+' : '-'}`),
+      '3大栄養素が流れ込み、自分の段の基礎代謝が削る',
+    ).toEqual(['carbohydrate+', 'protein+', 'lipid+', 'body_fat-']);
+    expect(
+      bodyFat?.received.every((influence) => !influence.reversible),
+      'transferもaddも不可逆なので、記号は＋−になる',
+    ).toBe(true);
+  });
+
+  it('痛みの詳細には、負っている怪我が影響元として並ぶ', () => {
+    // 痛みはステータスからは一切影響を受けない（injuries.yamlのmodifyだけが押し上げる）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    injure(game);
+
+    const view = fromGameSession(game, codex, locale);
+    const pain = view.statuses.find((status) => status.key === 'pain')?.detail;
+
+    expect(pain?.received).toHaveLength(1);
+    expect(pain?.received[0]?.name, '相手はステータスではなく怪我そのもの').toBe('sprained_ankle');
+    expect(pain?.received[0]?.art, '怪我のカードと同じ絵を出す').toBe('sprained_ankle');
+    expect(pain?.received[0]?.reversible, 'modifyなので三角').toBe(true);
+    expect(pain?.received[0]?.increases).toBe(true);
+    expect(pain?.received[0]?.worsens, '痛みは増えると悪い').toBe(true);
+    expect(pain?.received[0]?.active, '負っている間は効いている').toBe(true);
+  });
+
   it('荷が重すぎると移動のアクションが押せなくなり、理由の文言が付く', () => {
     // ContainerSystem.md 5節: 危険域（too_heavy）に入ると道のtravelのconditionsが落ちる。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));

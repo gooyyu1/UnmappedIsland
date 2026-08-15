@@ -1,3 +1,4 @@
+import type { InfluenceWriter } from '../runtime/PropertyInfluence';
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { DefNames, DescriptionWriter } from './Description';
@@ -41,6 +42,11 @@ export class PassiveEffects {
   /** childがowner（親）に付く/離れる契機を全effectへ伝える（target=childのものだけが反応する）。 */
   registerChild(owner: WorldObject, child: WorldObject, register: boolean): void {
     for (const effect of this.effects) effect.registerChild(owner, child, register);
+  }
+
+  /** すべての効果が持つ影響の辺を書き出す（PassiveEffect.collectInfluences参照）。 */
+  collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {
+    for (const effect of this.effects) effect.collectInfluences(declarer, out);
   }
 
   /** すべての効果を宣言順に書き出す（Description参照）。 */
