@@ -9,6 +9,10 @@
     "**neutralShadowが要る。** この絵の落ち影は紙より40以上暗く、明度だけで芯を決めると肉と地続きの",
     "灰色の塊として残る。彩度で外す（肉は赤いので影と分かれる。card_art.pyのseparate参照）。",
     "",
+    "**tolerance は 16。** 脂身は紙251に対し213〜232で、40（＝211以下だけを芯にする）だと脂身の帯が",
+    "丸ごと紙として抜けていた。影を落とすのは neutralShadow の仕事なので、明度のしきい値は物の",
+    "いちばん明るい面（脂身）が入るところまで下げてよい。",
+    "",
     "段は320。石(256)より大きく、籠(400)より小さい一切れ。"
   ],
   "output": "src/assets/objects/raw_meat.png",
@@ -27,7 +31,7 @@
   "cardArt": {
     "size": "320",
     "mode": "background",
-    "tolerance": 40,
+    "tolerance": 16,
     "neutralShadow": 16,
     "edge": 4,
     "shadow": 1,
