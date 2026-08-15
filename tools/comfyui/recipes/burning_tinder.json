@@ -3,22 +3,30 @@
     "src/assets/objects/burning_tinder.png を作り直すためのレシピ。build.py が読む。",
     "火のついた火口。炉へ運ぶためだけに在る物（public/world-codex/fire.yaml）。",
     "",
-    "**枯れ草（dry_grass）の絵に火を入れて作る。** 同じ草が燻っているものなので、絵も同じ山から",
-    "派生させる。SDXLへ直接頼むと、墨と炎の抽象画になる（8枚で全滅）。",
+    "**何が燃えているかを描かない。** 火口は枯れ草・ヤシの実の皮・植物繊維のどれからでも作れ、",
+    "火がついた後は素材を見ない（docs/engine/FireSystem.md 3.2節）。藁が見える絵は、枯れ草からしか",
+    "作れない物に見える。焦げた塊と、そのわずかな周囲だけを描く。",
     "",
-    "**炎は上げない。** 摩擦で得られるのは米粒ほどの熾（docs/engine/FireSystem.md 3.2節）なので、",
-    "焦げた窪みと熾の赤み、細い煙だけにする。",
+    "**下絵は枯れ草（dry_grass）の絵。** 素材を見せないのに枯れ草から派生させるのは、白い紙・光・影を",
+    "揃えるためだけで、藁は1本も残さない。SDXLへ直接頼むと墨と炎の抽象画になる（燃える葉・花で",
+    "8枚とも全滅。素材を伏せた頼み方でも同じく8枚とも全滅した）。",
     "",
-    "段は320。枯れ草の一部を持ち出したものなので、枯れ草（400）より小さく載る。"
+    "**藁が残るのは「周囲にわずかな焦げた繊維」と頼んだとき。** Qwenはそれを焼け残った藁として",
+    "描く。山ごと燃え尽きたことと、藁を1本も残さないことの両方を本文で言う。",
+    "",
+    "**炎は上げない。** 摩擦で得られるのは米粒ほどの熾（同3.2節）なので、焦げた塊と熾の赤み、",
+    "細い煙だけにする。",
+    "",
+    "段は256。焦げた塊ひとつなので、小石と同じ大きさで載る。"
   ],
   "output": "src/assets/objects/burning_tinder.png",
   "edit": {
     "source": "dry_grass.json",
-    "prompt": "Keep the same heap of dry grass in the same place, painted in the same soft hand painted style on the same plain empty white page, but set its middle smouldering: burn a dark charred hollow into the centre of the heap, blacken the grass around that hollow, and show a few small embers glowing deep orange red deep inside it. Let one faint thin wisp of pale grey smoke curl up from the hollow. There is no open flame. Keep the rest of the heap warm straw yellow, keep the wide white margin all around it and the soft grey shadow beneath it. No text, no letters, no numbers, no signature.",
-    "seed": 1
+    "prompt": "The heap of dry grass has burnt away. Erase every straw and stem completely and leave the plain empty white page where they were. In the middle of the page, where the heap used to be, leave only one small smouldering wad, less than half as wide as the heap was: a low rounded mass of charred black fibre, its blackened surface crumbling and dusted with pale grey ash, with embers glowing deep orange red in the cracks deep inside it. It is burnt past recognition, so it is impossible to tell what it was made of. There is not a single straw, stem, twig or blade of grass left anywhere in the picture. One faint short wisp of pale grey smoke rises just above it and fades. There is no open flame. Keep the same soft hand painted style, the same plain empty white page with a wide white margin all around, the same flat even lighting and one soft grey shadow directly beneath it. No text, no letters, no numbers, no signature.",
+    "seed": 3
   },
   "cardArt": {
-    "size": "320",
+    "size": "256",
     "mode": "background",
     "tolerance": 24,
     "edge": 4,
