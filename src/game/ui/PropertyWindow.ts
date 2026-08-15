@@ -19,8 +19,8 @@ const ROW_GAP = 16;
 const WINDOW_WIDTH = 760;
 
 /**
- * 名前欄の幅。ステータスエリアと違って絵ではなく表示名を出すので（見慣れないプロパティも並ぶため）、
- * 「穀物・イモの栄養」のような長い名前が収まるだけ取る。
+ * 名前欄の幅。ステータスエリアと違って絵に表示名を添えるので（絵と名前の対応をここで覚えられる
+ * ようにするため、Windows.md 6節）、「穀物・イモの栄養」のような長い名前が収まるだけ取る。
  */
 const NAME_WIDTH = 260;
 
@@ -186,7 +186,7 @@ export class PropertyWindow {
           this.rowsY + index * (rowHeight + rowGap),
           this.rowsWidth,
           entry,
-          { label: { kind: 'name', width: NAME_WIDTH } },
+          { label: { kind: 'withName', width: NAME_WIDTH } },
         ),
     );
   }

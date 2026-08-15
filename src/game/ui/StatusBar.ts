@@ -80,17 +80,18 @@ export interface StatusContent {
 }
 
 /**
- * 行の左に出す見出し。ステータスエリアは絵（常に同じ数件が並ぶので、絵で足りるぶんの幅をバーへ回す）、
- * プロパティウィンドウは表示名（見慣れないプロパティも並ぶため、Windows.md 6節）。
+ * 行の左に出す見出し。**どちらも絵を出し**、プロパティウィンドウはその右に表示名も添える
+ * （絵と名前の対応をそこで覚えられるようにするため、Windows.md 6節）。ステータスエリアは絵だけで、
+ * 名前に要る幅をバーへ回す。
  *
- * **何を出すかと欄の幅を1つの宣言にする**のは、幅が要るのが表示名だけだから——別々の選択肢にすると、
- * 呼ぶ側が2つを噛み合わせて渡す決まりを覚えることになる。
+ * **添えるかどうかと名前欄の幅を1つの宣言にする**のは、幅が要るのが表示名だけだから——別々の
+ * 選択肢にすると、呼ぶ側が2つを噛み合わせて渡す決まりを覚えることになる。
  */
-export type StatusLabel = { readonly kind: 'icon' } | { readonly kind: 'name'; readonly width: number };
+export type StatusLabel = { readonly kind: 'icon' } | { readonly kind: 'withName'; readonly width: number };
 
 /** 行の見せ方の選択肢。 */
 export interface StatusBarOptions {
-  /** 行の左に出す見出し。省略すると絵。 */
+  /** 行の左に出す見出し。省略すると絵だけ。 */
   readonly label?: StatusLabel;
 
   /**
@@ -141,7 +142,9 @@ export class StatusBar extends Phaser.GameObjects.Container {
     const height = metrics.px(BAR_HEIGHT);
     const pinWidth = metrics.px(PIN_WIDTH);
     const label = options.label ?? { kind: 'icon' };
-    const labelWidth = metrics.px(label.kind === 'icon' ? ICON_WIDTH : label.width);
+    const iconWidth = metrics.px(ICON_WIDTH);
+    const labelWidth =
+      label.kind === 'icon' ? iconWidth : iconWidth + metrics.px(LABEL_GAP) + metrics.px(label.width);
     const barX = pinWidth + labelWidth + metrics.px(LABEL_GAP);
     const changeWidth = metrics.px(CHANGE_WIDTH);
     const barWidth = Math.max(0, width - barX - changeWidth - metrics.px(CHANGE_GAP));
@@ -154,7 +157,8 @@ export class StatusBar extends Phaser.GameObjects.Container {
       .setOrigin(0.5);
     this.add(this.pinMark);
 
-    this.add(createLabel(scene, metrics, content, label, pinWidth, labelWidth, height));
+    for (const text of createLabel(scene, metrics, content, label, pinWidth, iconWidth, height))
+      this.add(text);
 
     // 見出しは小さすぎてタップしにくいため、印の欄と見出しの欄いっぱいの当たり判定を別に置く。
     const togglePin = content.onTogglePin;
@@ -298,10 +302,10 @@ export class StatusBar extends Phaser.GameObjects.Container {
 }
 
 /**
- * 行の左の見出し。絵は欄の中央へ、表示名は欄の左端へ置く。
+ * 行の左の見出し。絵は絵の欄の中央へ、表示名はその右へ置く。
  *
- * **絵を出す欄でも、絵を持たないプロパティは表示名で代用する**（どのプロパティも固定表示にすれば
- * ステータスエリアへ出るため、絵は揃っているとは限らない）。欄の幅は代用しても変えない——バーの
+ * **名前を添えない欄では、絵を持たないプロパティは表示名が代わりを務める**（どのプロパティも固定表示に
+ * すればステータスエリアへ出るため、絵は揃っているとは限らない）。欄の幅は代用しても変えない——バーの
  * 左端が行ごとにずれると、長さを見比べられなくなる。
  */
 function createLabel(
@@ -310,28 +314,39 @@ function createLabel(
   content: StatusContent,
   label: StatusLabel,
   x: number,
-  width: number,
+  iconWidth: number,
   height: number,
-): Phaser.GameObjects.Text {
-  const icon = label.kind === 'icon' ? content.icon : undefined;
-  const text =
-    icon !== undefined
-      ? scene.add
-          .text(x + width / 2, height / 2, icon, {
-            fontFamily: FONT_FAMILY,
-            fontSize: `${metrics.fontPx(ICON_SIZE)}px`,
-          })
-          .setOrigin(0.5)
-      : scene.add
-          .text(x, height / 2, content.name, {
-            fontFamily: FONT_FAMILY,
-            fontSize: `${metrics.fontPx(30)}px`,
-            fontStyle: 'bold',
-            color: cssColor(COLOR.text),
-          })
-          .setOrigin(0, 0.5);
+): readonly Phaser.GameObjects.Text[] {
+  const texts: Phaser.GameObjects.Text[] = [];
 
-  // 欄に収まらないものは縮めて収める（はみ出すとバーに重なって読めなくなるため）。
+  if (content.icon !== undefined) {
+    const icon = scene.add
+      .text(x + iconWidth / 2, height / 2, content.icon, {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(ICON_SIZE)}px`,
+      })
+      .setOrigin(0.5);
+    texts.push(fitted(icon, iconWidth));
+  }
+
+  const named = label.kind === 'withName';
+  if (named || content.icon === undefined) {
+    const name = scene.add
+      .text(named ? x + iconWidth + metrics.px(LABEL_GAP) : x, height / 2, content.name, {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(30)}px`,
+        fontStyle: 'bold',
+        color: cssColor(COLOR.text),
+      })
+      .setOrigin(0, 0.5);
+    texts.push(fitted(name, label.kind === 'withName' ? metrics.px(label.width) : iconWidth));
+  }
+
+  return texts;
+}
+
+/** 欄に収まらないものは縮めて収める（はみ出すとバーに重なって読めなくなるため）。 */
+function fitted(text: Phaser.GameObjects.Text, width: number): Phaser.GameObjects.Text {
   if (text.width > width) text.setScale(width / text.width);
   return text;
 }
