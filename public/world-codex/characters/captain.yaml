@@ -96,16 +96,16 @@ object_defs:
             min: 3960
             passives:
               - add: {self: {body_fat: -1.6}}
-      # 当直で刻む睡眠に慣れており、眠らずにいられるのは27時間（108 tick）。
+      # 当直で刻む睡眠に慣れており、意識を保っていられるのは54時間（216 tick）。
       wakefulness:
         tags: [status, health]
-        value: 108
-        range: {min: 0, max: 108}
+        value: 216
+        range: {min: 0, max: 216}
         stages:
           - {name: overtired, alert: danger}
           - {name: sleepy, min: 12, alert: caution}
           - {name: yawning, min: 48, alert: watch}
-          - {name: rested, min: 86}
+          - {name: rested, min: 173}
         passives:
           - add:
               self:

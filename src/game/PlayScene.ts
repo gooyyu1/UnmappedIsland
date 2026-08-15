@@ -167,7 +167,7 @@ const GAIN_PARTICLE_DEPTH = 1.75;
  * 満タンぶんの増加を何粒で表すか（CardInteraction.md 10節）。粒数はceilなので、どれだけ小さい
  * 増加でも必ず1粒は出る——安全域で見えないままの変化を知らせるのがこの演出の役目。
  */
-const PARTICLES_PER_FULL = 30;
+const PARTICLES_PER_FULL = 100;
 
 /** 時間を消費しない操作には経過を見せる間が無いので、この短い間に粒を散らす。 */
 const INSTANT_GAIN_SPREAD_MS = 600;
