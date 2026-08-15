@@ -27,7 +27,7 @@ export type LaneDropTarget =
  * ——として扱う幅の比。カード同士の実際の隙間（12u）は狭く、そのままでは隙間を狙うのも
  * レーンを掴むのも難しいため、その手前を周り側へ寄せる。
  */
-const CARD_EDGE_RATIO = 1 / 6;
+const CARD_EDGE_RATIO = 1 / 4;
 
 /** 隙間を示す帯の幅（u単位）。 */
 const INSERT_MARK_WIDTH = 10;
