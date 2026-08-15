@@ -84,7 +84,11 @@ export class PropertyValue {
     if (delta === 0) return;
 
     this._number += delta;
-    if (session !== undefined) this.def.checkRangeEvents(this._number, this.owner, session);
+    if (session === undefined) return;
+
+    // 操作が直に動かした値はここだけを通る（毎tickの積分はtick()が直に足す、PropertyGain参照）。
+    session.recordGain(this.owner, this.def, delta);
+    this.def.checkRangeEvents(this._number, this.owner, session);
   }
 
   /** 絶対値代入（set）。差分をaddへ委譲するため、range判定はadd側に一本化される。 */
