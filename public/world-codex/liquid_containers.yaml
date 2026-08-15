@@ -68,7 +68,6 @@ traits:
         spawn: {object: water_liquid, into: self}
 
   water_liquid:
-    tags: [water_liquid]
     props:
       color: {value: 0x2f86d8}
     actions:
@@ -90,7 +89,6 @@ traits:
           to_prop: hydration
 
   tea_liquid:
-    tags: [tea_liquid]
     props:
       color: {value: 0x6f8f3c}
     actions:
@@ -110,7 +108,6 @@ traits:
 
   # 飲めない液体はdrinkを定義しないだけでよい。
   oil_liquid:
-    tags: [oil_liquid]
     props:
       color: {value: 0xe0b422}
 

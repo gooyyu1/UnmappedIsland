@@ -1684,7 +1684,7 @@ conditions:
 
 ```yaml
 conditions:
-  - {subject: self, slot: content, matches: {tag: water_liquid}}
+  - {subject: self, slot: content, matches: {object: water_liquid}}
 ```
 
 - **`slot`**: 判定対象の、`subject` が持つスロット名。
@@ -1696,8 +1696,9 @@ conditions:
 区別しています。
 
 液体容器のような「中身の種類によって取れる行動が変わる」ケースに使います。中身の種類は、容器の中の専用
-スロットへ、種類ごとのタグを持つ中身のオブジェクトを1つ置くことで表現します
-（[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 参照）。
+スロットへ中身のオブジェクトを1つ置くことで表現します
+（[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 参照）。種類が1つの型で足りるなら
+`{object: ...}`、口の広い容器のように仲間が増える役割なら `{tag: ...}` で書きます（4.1 節）。
 
 ```yaml
 object_defs:
@@ -1710,7 +1711,7 @@ object_defs:
     actions:
       pour_out:
         conditions:
-          - {slot: content, matches: {tag: water_liquid}}
+          - {slot: content, matches: {object: water_liquid}}
         destroy: self
 ```
 
