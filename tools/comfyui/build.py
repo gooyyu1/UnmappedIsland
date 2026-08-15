@@ -231,25 +231,6 @@ def build_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str, store
     return patch
 
 
-def ensure_fresh_process(workflow: str | None, server: str) -> None:
-    """タイリングを使う生成と使わない生成が同じプロセスに混ざらないようにする。
-
-    パディングの差し替えは掛けたぶんを戻しているが、それでも完全には元へ戻らない（実測で、
-    タイリングを挟むと後続の生成が平均1.94ずれる。挟まなければ差は0）。絵としては同じでも
-    レシピから同じPNGが得られなくなるので、種類が変わる境目でプロセスごと作り直す。
-
-    SDXLの生成を含まないレシピ（paintだけを基準にするもの）はパディングに触れないので、
-    種類の判定から外す。
-    """
-    if workflow is None:
-        return
-    kind = "tiling" if "tiling" in workflow else "plain"
-    if STATE.exists() and STATE.read_text("utf-8").strip() == kind:
-        return
-    restart_server(server)
-    STATE.write_text(kind, "utf-8")
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("recipe")
