@@ -32,44 +32,96 @@ describe('foods.yamlの食料定義', () => {
   }
 
   it.each([
-    // stomachは「1食で何tick分の腹持ちか」（6.0節）。胃へ入り、腸を経てから体脂肪になる。
-    ['water_spinach', 'vegetable_nutrition', 4],
-    ['coconut_crab', 'meat_nutrition', 16],
-    ['taro', 'grain_tuber_nutrition', 20],
+    // 食べ物が名乗るのは、かさ（satiety、mL）と中身（栄養素、tick／mg）の2つ。かさと中身は別の数で、
+    // 葉物はかさばる割にほとんど身にならない（DigestionSystem.md 1節）。
+    ['water_spinach', 300, 'carbohydrate', 1, 83],
+    ['coconut_crab', 500, 'protein', 25, 2],
+    ['taro', 600, 'carbohydrate', 40, 36],
   ])(
-    '%sを食べると胃の中身と%sが加算され、食料自身は消滅する',
-    (foodObjectName, nutritionPropertyName, expectedSatietyGain) => {
+    '%sを食べると、かさ・栄養素・ビタミンが加算され、食料自身は消滅する',
+    (foodObjectName, expectedBulk, nutrientName, expectedNutrient, expectedVitamin) => {
       const session = new WorldSession(codex);
       const character = spawn(SAMPLE_CHARACTER, 1);
       const food = spawn(foodObjectName, 2);
 
-      const stomachId = codex.propertyNames.getId('stomach');
-      const nutritionId = codex.propertyNames.getId(nutritionPropertyName);
+      const satietyId = codex.propertyNames.getId('satiety');
+      const nutrientId = codex.propertyNames.getId(nutrientName);
+      const vitaminId = codex.propertyNames.getId('vitamin');
 
-      // 栄養カテゴリはtickごとに減衰する（characters/参照）ため、加算量だけを検証したい。
-      // 一旦0まで下げてから食べさせ、増分だけを見る。
-      character.setProperty(stomachId, 0);
-      character.setProperty(nutritionId, 0);
+      // 在庫は体脂肪へ流れ続ける（characters/参照）ため、加算量だけを見たい。一旦0まで下げる。
+      for (const id of [satietyId, nutrientId, vitaminId]) character.setProperty(id, 0);
 
       expect(food.tryExecuteAction('eat', character, session)).toBe(true);
 
-      expect(character.getNumber(stomachId)).toBe(expectedSatietyGain);
-      expect(character.getNumber(nutritionId)).toBe(200);
+      expect(character.getNumber(satietyId), 'かさ').toBe(expectedBulk);
+      expect(character.getNumber(nutrientId), '栄養素').toBe(expectedNutrient);
+      expect(character.getNumber(vitaminId), 'ビタミン').toBe(expectedVitamin);
     },
   );
 
-  it('characterは3つの栄養カテゴリを持ち、初期値は満タンで1週間かけて減衰する', () => {
+  it('characterはエネルギーの在庫を3本持ち、速さが栄養素ごとに違う', () => {
+    // 速いものから 糖質 → たんぱく質 → 脂質（DigestionSystem.md 3節）。
     const character = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
     const instance = new WorldObject(1, character, new WorldSession(codex));
-    for (const name of ['vegetable_nutrition', 'meat_nutrition', 'grain_tuber_nutrition']) {
+
+    for (const [name, expectedRate] of [
+      ['carbohydrate', 2],
+      ['protein', 1],
+      ['lipid', 0.5],
+    ] as const) {
       const id = codex.propertyNames.getId(name);
-      // 初期値は実行時インスタンスの現在値として観測する（DefaultNumberは非公開）。
-      expect(instance.getNumber(id), `${name}の初期値`).toBe(672);
-      const prop = propOf(character, name);
-      expect(prop.range?.min).toBe(0);
-      expect(prop.range?.max).toBe(672);
+      expect(instance.getNumber(id), `${name}の初期値`).toBeGreaterThan(0);
+      expect(propOf(character, name).range?.max, `${name}のmax`).toBe(120);
+
+      // 体脂肪は基礎代謝でも動くので、在庫があるときと空のときの差を見る。
+      expect(bodyFatGainIn1Tick(name), `${name}が1 tickで身になる量`).toBe(expectedRate);
     }
   });
+
+  it('ビタミンはエネルギーにならず、体脂肪へは流れない', () => {
+    // 葉物はエネルギーをほとんど持たないので、別の物差し（mg）で持つ（DigestionSystem.md 4節）。
+    const character = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
+    const session = new WorldSession(codex);
+    const instance = new WorldObject(1, character, session);
+    const bodyFatId = codex.propertyNames.getId('body_fat');
+    for (const name of ['carbohydrate', 'protein', 'lipid'])
+      instance.setProperty(codex.propertyNames.getId(name), 0);
+    instance.setProperty(codex.propertyNames.getId('vitamin'), 1000);
+    instance.setProperty(bodyFatId, 100);
+
+    instance.tick(session);
+
+    expect(instance.getNumber(bodyFatId), '在庫が空なら基礎代謝で減るだけ').toBeLessThan(100);
+    expect(propOf(character, 'vitamin').range?.max).toBe(1500);
+  });
+
+  /** その栄養素だけを在庫に持つインスタンスが1 tickで体脂肪へ渡す量（基礎代謝ぶんを除く）。 */
+  function bodyFatGainIn1Tick(stocked: string | undefined): number {
+    const def = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
+    const session = new WorldSession(codex);
+    const instance = new WorldObject(1, def, session);
+    const bodyFatId = codex.propertyNames.getId('body_fat');
+    for (const name of ['carbohydrate', 'protein', 'lipid'])
+      instance.setProperty(codex.propertyNames.getId(name), name === stocked ? 100 : 0);
+
+    const before = instance.getNumber(bodyFatId);
+    instance.tick(session);
+    return instance.getNumber(bodyFatId) - before + basalPerTick();
+  }
+
+  /** 在庫が空のときに1 tickで減る体脂肪（＝基礎代謝）。 */
+  function basalPerTick(): number {
+    const def = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
+    const session = new WorldSession(codex);
+    const instance = new WorldObject(1, def, session);
+    const bodyFatId = codex.propertyNames.getId('body_fat');
+    for (const name of ['carbohydrate', 'protein', 'lipid'])
+      instance.setProperty(codex.propertyNames.getId(name), 0);
+
+    const before = instance.getNumber(bodyFatId);
+    instance.tick(session);
+    return before - instance.getNumber(bodyFatId);
+  }
 
   function propOf(def: ObjectDef, propertyName: string): PropertyDef {
     const prop = def.getPropertyDef(codex.propertyNames.getId(propertyName));

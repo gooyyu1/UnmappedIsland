@@ -142,16 +142,15 @@ describe('プレイヤーキャラクタの定義', () => {
       ['pain', ['status', 'health']],
       ['blood', ['status', 'health']],
       ['satiety', ['status', 'nutrition']],
-      ['stomach', ['nutrition']],
-      ['intestine', ['nutrition']],
       ['hydration', ['status', 'nutrition']],
       ['body_fat', ['nutrition']],
       ['wakefulness', ['status', 'health']],
       ['stamina', ['status', 'health']],
       ['load', ['status', 'health']],
-      ['vegetable_nutrition', ['nutrition']],
-      ['meat_nutrition', ['nutrition']],
-      ['grain_tuber_nutrition', ['nutrition']],
+      ['carbohydrate', ['nutrition']],
+      ['protein', ['nutrition']],
+      ['lipid', ['nutrition']],
+      ['vitamin', ['nutrition']],
     ])('%sを持ち、期待されるプロパティタグが付いている', (propertyName, expectedTags) => {
       const tagNames = propOf(def(character), propertyName).tags.map((id) =>
         codex.propertyTagNames.getName(id),
@@ -176,27 +175,18 @@ describe('プレイヤーキャラクタの定義', () => {
       ]);
     });
 
-    it.each([
-      'pain',
-      'blood',
-      'satiety',
-      'stomach',
-      'intestine',
-      'hydration',
-      'body_fat',
-      'wakefulness',
-      'stamina',
-      'load',
-    ])('%sは0を下限とするrangeを持つ', (propertyName) => {
-      expect(propOf(def(character), propertyName).range?.min).toBe(0);
-    });
+    it.each(['pain', 'blood', 'satiety', 'hydration', 'body_fat', 'wakefulness', 'stamina', 'load'])(
+      '%sは0を下限とするrangeを持つ',
+      (propertyName) => {
+        expect(propOf(def(character), propertyName).range?.min).toBe(0);
+      },
+    );
 
     it.each([
       // 時間を数えるクラスは基準レートが1/tickで、maxが「何tick保つか」を直接表す（6.0節）。
       ['wakefulness', 1],
-      ['vegetable_nutrition', 1],
-      ['meat_nutrition', 1],
-      ['grain_tuber_nutrition', 1],
+      ['satiety', 16],
+      ['vitamin', 0.5],
       ['hydration', 1],
       // 体力は行動で減るもので、時間では減らない。
       ['stamina', 0],
@@ -206,9 +196,8 @@ describe('プレイヤーキャラクタの定義', () => {
       ['pain', 0],
       // 血は自分で戻る唯一のステータスだが、満タンで始まるので上限で頭打ちになる（次のテスト）。
       ['blood', 0],
-      // 満腹感は胃と腸が押し上げる実効値なので、自分では動かない（DigestionSystem.md 2節）。
-      // 胃と腸の中身はtickで動くが、減るのではなく輸送で行き来する（tests/worldCodex/digestion.test.ts）。
-      ['satiety', 0],
+      // 満腹感はかさ（mL）なので、1 tickあたり16mLずつ空いていく（DigestionSystem.md 2節）。
+      // ビタミンはmgで、代謝回転が1日48mg（同4節）。栄養素の在庫は減るのではなく体脂肪へ移る。
     ])('%sはtickごとに%iずつ減る', (propertyName, expectedDecay) => {
       expect(decayPerTick(character, propertyName)).toBe(expectedDecay);
     });
@@ -235,7 +224,7 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     // 満腹感はここに含めない。maxが容量ではなく感じ方の頂点で、実際に取る値の分布から刻むため
-    // （DigestionSystem.md 3.3節）。
+    // （DigestionSystem.md 2節）。
     it.each(['hydration', 'wakefulness', 'stamina', 'blood'])(
       '%sは最大値の80%%を下回ると安全域から外れる',
       (propertyName) => {

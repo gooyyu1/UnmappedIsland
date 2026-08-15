@@ -10,7 +10,7 @@ object_defs:
       # 道具を並べて持ち替えるのに慣れており、手持ちが1枠多い。
       hand: {cell_count: 7}
     props:
-      # 胃の中身（docs/engine/DigestionSystem.md 3.1節）。食べた物はまずここへ入り、腸へ送られてから
+      # 胃の中身（docs/engine/DigestionSystem.md 3節）。食べた物はまずここへ入り、腸へ送られてから
       # 体脂肪になる。小食なぶん胃も小さく、8時間ぶん（28）を一度に詰め込める。
       #
       # **溜まっているほど速く出す。** 現実の胃排出が残量におよそ比例するのを段の階段で近似したもので、
@@ -19,32 +19,6 @@ object_defs:
       # 満杯の段fullはmaxちょうどではなく3/4に置く——残りは最後の一口があふれる余地で、
       # eatはこの段の名前で「もう食べられない」を見る（同2節）。初期値は最後の食事から数時間の位置で、
       # 腸（trait側）と合わせて満腹感が留意域から始まる（Characters.md 域の区分節）。
-      stomach:
-        tags: [nutrition]
-        value: 7
-        range: {min: 0, max: 28}
-        stages:
-          - {name: empty}
-          - name: trace
-            min: 1
-            passives:
-              - modify: {self: {satiety: 10}}
-              - transfer: {from_prop: stomach, to_prop: intestine, amount: 1}
-          - name: light
-            min: 4
-            passives:
-              - modify: {self: {satiety: 25}}
-              - transfer: {from_prop: stomach, to_prop: intestine, amount: 2}
-          - name: filled
-            min: 11
-            passives:
-              - modify: {self: {satiety: 45}}
-              - transfer: {from_prop: stomach, to_prop: intestine, amount: 3}
-          - name: full
-            min: 21
-            passives:
-              - modify: {self: {satiety: 60}}
-              - transfer: {from_prop: stomach, to_prop: intestine, amount: 4}
       # 満水から3日（288 tick）。
       # 尽きれば渇きで死ぬ。on_shortfallが既定のクランプを置き換えるので、0を割った値はそのまま残り、
       # 死因（どの段で尽きたか）を後から読める（VitalsSystem.md 6節）。

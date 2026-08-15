@@ -500,11 +500,12 @@ object_defs:
       eat:
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: stomach, in_stage: full}
+            not: {subject: actor, prop: satiety, in_stage: full}
         add:
           actor:
-            stomach: 2
-            meat_nutrition: 25
+            satiety: 60
+            protein: 3
+            lipid: 1
         # 食べ終わって残る骨。actorの手が塞がっていれば足元へ落ちる（9.4節のフォールバック）。
         spawn: {object: small_bone, into: actor}
         destroy: self
@@ -556,11 +557,13 @@ object_defs:
       eat:
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: stomach, in_stage: full}
+            not: {subject: actor, prop: satiety, in_stage: full}
         add:
           actor:
-            stomach: 16
-            meat_nutrition: 200
+            satiety: 500
+            protein: 20
+            lipid: 4
+            vitamin: 2
         destroy: self
 
   # 焼けた肉。生より腹に残り、栄養も出る。焼き上がっても火の中の枠に居続けるので、
@@ -582,11 +585,12 @@ object_defs:
       eat:
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: stomach, in_stage: full}
+            not: {subject: actor, prop: satiety, in_stage: full}
         add:
           actor:
-            stomach: 20
-            meat_nutrition: 260
+            satiety: 450
+            protein: 24
+            lipid: 7
         destroy: self
 
   # 焦げた塊。加熱の進みを持たないので、ここで鎖が終わる。食べられはするが、ほとんど何も残らない。
@@ -602,11 +606,12 @@ object_defs:
       eat:
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: stomach, in_stage: full}
+            not: {subject: actor, prop: satiety, in_stage: full}
         add:
           actor:
-            stomach: 4
-            meat_nutrition: 20
+            satiety: 200
+            protein: 4
+            lipid: 1
         destroy: self
 
   # 獣骨。1頭ぶんの骨をまとめた1枚。

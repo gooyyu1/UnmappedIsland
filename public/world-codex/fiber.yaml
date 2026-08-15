@@ -55,11 +55,12 @@ object_defs:
       eat:
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: stomach, in_stage: full}
+            not: {subject: actor, prop: satiety, in_stage: full}
         add:
           actor:
-            stomach: 5
-            grain_tuber_nutrition: 60
+            satiety: 350
+            carbohydrate: 10
+            vitamin: 35
         destroy: self
 
   # バナナの茎。運べる長さに切った偽茎の一節で、繊維はこれを構成する葉鞘の中にある。

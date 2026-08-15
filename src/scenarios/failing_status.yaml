@@ -10,7 +10,9 @@ seed: 3
 player:
   props:
     hydration: 16
-    stomach: 0
-    intestine: 0
+    satiety: 40
+    carbohydrate: 0
+    protein: 0
+    lipid: 0
     wakefulness: 30
     stamina: 70

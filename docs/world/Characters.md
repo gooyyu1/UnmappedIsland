@@ -30,16 +30,16 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | `singleton` | `true`（同時に存在するプレイヤーキャラクタは1体） |
 | タグ | `character` |
 | スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
-| プロパティ | `pain` / `blood` / `satiety` / `stomach` / `intestine` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` / `vegetable_nutrition` / `meat_nutrition` / `grain_tuber_nutrition` |
+| プロパティ | `pain` / `blood` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` |
 | アクション | 休息の4つ（`wait` / `rest` / `nap` / `sleep`。下の[休息](#休息)節。`player_character` trait が配る） |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterArt.ts`。絵が入るまでの繋ぎ） |
 
 `status` タグが付くのは `pain` / `blood` / `satiety` / `hydration` / `wakefulness` / `stamina` / `load` の7つで、
 宣言順もこの順に揃える（`readPropertiesWithTag` の戻り順がそのままステータスエリアの並びになる、
 [`StatusArea.md`](../ui/StatusArea.md)）。先頭の3つが trait 由来なのは、trait の props がキャラクタ自身の
-props より前に並ぶため（`RawObjectDef.resolve`）。**消化の中身（`stomach` / `intestine`）は `status` を
-持たない**——画面に出るのは合流点の空腹感だけで、配管は開いて見るもの
-（[`DigestionSystem.md`](../engine/DigestionSystem.md) 2 節）。
+props より前に並ぶため（`RawObjectDef.resolve`）。**栄養素の在庫（`carbohydrate` ほか3つ）は `status` を
+持たない**——常に見せるのは腹が満ちているかどうかだけで、在庫は開いて見るもの
+（[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節）。
 
 気絶を決める `consciousness` は、`pain` と同じくキャラクタ間で共通の値としてここへ加わる予定である
 （押し下げる側は [`VitalsSystem.md`](../engine/VitalsSystem.md) 2 節。気を失った手番の飛ばし方が
@@ -56,15 +56,15 @@ props より前に並ぶため（`RawObjectDef.resolve`）。**消化の中身�
 （`WorldObject.exhaustedStage`）。**死因の名前になるのは、その値が居る段**（`dehydrated` / `starved` /
 `exsanguinated`）で、画面はその段の文言を出すだけ。
 
-- **`satiety`（空腹感）**: **自分では動かない実効値**で、胃と腸の段が `modify` で押し上げる
-  （[`DigestionSystem.md`](../engine/DigestionSystem.md) 2 節）。`max` は容量ではなく感じ方の頂点なので、
-  下の「安全域を外れるのは `max` の80%」も「初期値は75%」も当てはまらない。餓死は `body_fat` が
-  受け持つため致命的域は持たない。感じ方に個体差は無く、`player_character` trait が配る。
-- **`stomach`（胃の中身）**: 食べた物が最初に入る量（tick数）。`max` が胃の大きさで、**1日に食べられる
-  量の上限**（3食ぶん）を決める。溜まっているほど速く腸へ送り、`max` の3/4に置いた段 **`full`** を
-  `eat` が読んで「もう食べられない」を見る（同 3.1 節）。
-- **`intestine`（腸の中身）**: 吸収されつつある量（tick数）。胃より遅く出すので、その差が在庫になる。
-  個体差は持たず trait が配る（同 3.2 節）。
+- **`satiety`（満腹感）**: **単位は mL**——胃に入っている物のかさで、エネルギーではない
+  （[`DigestionSystem.md`](../engine/DigestionSystem.md) 2 節）。`max` が胃の容量なので、下の
+  「安全域を外れるのは `max` の80%」も「初期値は75%」も当てはまらない。`max` の6割に置いた段
+  **`full`** を `eat` が読んで「もう食べられない」を見る。餓死は `body_fat` が受け持つため
+  致命的域は持たない。個体差は無く `player_character` trait が配る。
+- **栄養素の在庫**（`carbohydrate` / `protein` / `lipid`）: **単位は tick**（体脂肪と同じ物差し）。
+  在庫がある間は `body_fat` へ流れ続け、速さは栄養素ごとに違う（同 3 節）。個体差は持たず trait が配る。
+- **`vitamin`（ビタミン）**: **単位は mg**（ビタミンC相当）。エネルギーにならないので在庫の3本とは
+  物差しが違う（同 4 節）。同じく trait が配る。
 - **`hydration`（水分）**: `-1/tick` 固定で、`max` が「満水から何 tick 保つか」。**減り方に個体差を
   持たせない**——キャラクタが違っても、飲んだ水1mLの意味が変わってはならないため。持ちの差は
   `max`（＝体が抱える水の量）で表す。液体の mL からの換算は飲用側の宣言が持つ（`transfer` の
@@ -78,7 +78,7 @@ props より前に並ぶため（`RawObjectDef.resolve`）。**消化の中身�
   ほど速い）、これが食べ過ぎても際限なく太らない平衡点になる。尽きる域の名前が **`starved`**。
   1日に要る量の個体差（標準体格で `nourished` 段のレート）はここに出る
   （[`DigestionSystem.md`](../engine/DigestionSystem.md) 4 節）。`status` タグを持たないため
-  ステータスエリアには出ない——画面に見える飢えの兆しは空腹感が受け持つ。
+  ステータスエリアには出ない——画面に見える飢えの兆しは満腹感が受け持つ。
 - **`wakefulness`（覚醒度）**: 0で強制的に眠りに入る想定（未実装。致死性は無い）。`-1/tick`。
   戻すのは眠る休息（仮眠・睡眠）だけ（[休息](#休息)節）。**`max` は「満タンから、意識を保てなくなって
   眠り込むまでの時間」**で、普通の人間の48時間（192 tick）を基準に置く。外から起こし続ける実験の記録
@@ -96,8 +96,7 @@ props より前に並ぶため（`RawObjectDef.resolve`）。**消化の中身�
 - **`load`（荷重）**: 持ち物と装備の重さ（g）。自分では動かず、中身から導出される
   （[`ContainerSystem.md`](../engine/ContainerSystem.md) 2節）ので `value` は 0 のまま。`max` が
   「担げる量」そのもので、担ぎ慣れの個人差はここに出る。
-- **栄養バランス**（`vegetable_nutrition` ほか2つ）: 食の好みではなく身体の仕組みなので個体差を
-  持たせず、`player_character` trait が配る。
+
 
 ### 域の区分（`stages` の不変条件）
 
@@ -107,9 +106,8 @@ props より前に並ぶため（`RawObjectDef.resolve`）。**消化の中身�
 - **安全域から外れるのは `max` の80%**（＝ステータスエリアに出始める位置）。この境界だけは
   全ステータス・全キャラクタで共通でなければ「まだ大丈夫」の感覚が崩れる。端数は丸める——段のしきい値は
   人が読む数字なので、小数が書けても整数に留める。
-- **`hydration` の初期値は `max` の75%**（安全域のやや下）。空腹感は自分では動かないので、同じ狙いを
-  **胃と腸の初期値**で満たす——全キャラクタが留意域（55）から始まる
-  （[`DigestionSystem.md`](../engine/DigestionSystem.md) 3.3 節）。満タンで始めると alert が
+- **`hydration` の初期値は `max` の75%**（安全域のやや下）。満腹感も同じ狙いで留意域（300mL）から
+  始める（[`DigestionSystem.md`](../engine/DigestionSystem.md) 2 節）。満タンで始めると alert が
   `safe` でステータスバーに出ず（[`StatusArea.md`](../ui/StatusArea.md)）、
   飲食の操作も最初は試せないため。tickで減らない `stamina` と、序盤に眠らせたくない `wakefulness` は
   満タンで始める。

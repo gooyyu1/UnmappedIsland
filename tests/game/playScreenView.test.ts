@@ -1009,8 +1009,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const meat = game.session.spawn(codex.objectNames.getId('coconut_meat'));
     expect(meat.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
     // 満腹度は初期値が上限なので、食べた分が乗る余地を空けておく。
-    const stomachId = codex.propertyNames.getId('stomach');
-    game.player.instance.setNumber(stomachId, 0, game.session);
+    const satietyId = codex.propertyNames.getId('satiety');
+    game.player.instance.setNumber(satietyId, 0, game.session);
 
     const card = fromGameSession(game, codex, texts).hand[0];
 
@@ -1019,7 +1019,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     card?.actions[0].execute();
 
-    expect(game.player.instance.getNumber(stomachId), '食べた分だけ胃の中身が増える').toBeGreaterThan(0);
+    expect(game.player.instance.getNumber(satietyId), '食べたかさだけ腹が満ちる').toBeGreaterThan(0);
     expect(game.player.hand[0], '食べた果肉は無くなる').toBeUndefined();
   });
 
@@ -1136,7 +1136,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.statuses).toHaveLength(tagged.length);
     // 水分は開始直後からバーに出るよう安全域のやや下（75%）、満腹感は胃と腸の初期値から決まる55%、
     // 荷重と痛みは0、残りは満タンで始まる（characters/・Characters.md 域の区分節）。
-    const startRatios: Record<string, number> = { satiety: 0.55, hydration: 0.75, load: 0, pain: 0 };
+    const startRatios: Record<string, number> = { satiety: 0.2, hydration: 0.75, load: 0, pain: 0 };
     expect(view.statuses.map((status) => status.ratio)).toEqual(
       tagged.map((reading) => startRatios[reading.name] ?? 1),
     );

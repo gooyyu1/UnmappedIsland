@@ -9,8 +9,10 @@ seed: 3
 
 player:
   props:
-    stomach: 0
-    intestine: 0
+    satiety: 40
+    carbohydrate: 0
+    protein: 0
+    lipid: 0
 
 location:
   items: [taro x3, coconut_crab x2, water_spinach x4]

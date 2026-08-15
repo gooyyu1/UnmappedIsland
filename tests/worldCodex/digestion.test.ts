@@ -9,27 +9,25 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
 /**
  * 胃→腸→蓄えの配管（docs/engine/DigestionSystem.md）を、実ファイルの定義だけで検証する。
  *
- * 見るのは文書が挙げた数値そのもの——胃が空になるまでの時間・1日3食で体脂肪が横ばいになること・
+ * 見るのは文書が挙げた数値そのもの——満腹感が空になるまでの時間・1日3食で体脂肪が横ばいになること・
  * 絶食して死ぬまでの日数。配分を刻み直したら必ずここが落ちる。
  */
-describe('消化（胃→腸→蓄え）', () => {
+describe('消化（かさ・栄養素・蓄え）', () => {
   /** 1日 = 96 tick（1 tick = 15分）。 */
   const DAY = 96;
 
   let codex: WorldCodex;
   let session: WorldSession;
   let player: WorldObject;
-  let stomachId: number;
-  let intestineId: number;
   let satietyId: number;
+  let carbohydrateId: number;
   let bodyFatId: number;
   let hydrationId: number;
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
-    stomachId = codex.propertyNames.getId('stomach');
-    intestineId = codex.propertyNames.getId('intestine');
     satietyId = codex.propertyNames.getId('satiety');
+    carbohydrateId = codex.propertyNames.getId('carbohydrate');
     bodyFatId = codex.propertyNames.getId('body_fat');
     hydrationId = codex.propertyNames.getId('hydration');
   });
@@ -55,11 +53,6 @@ describe('消化（胃→腸→蓄え）', () => {
     return player.getNumber(propertyId);
   }
 
-  /** 満腹感は実効値なので、実体値ではなく寄与を畳んだ値で読む（DigestionSystem.md 2節）。 */
-  function satietyNow(): number {
-    return player.getEffectiveValue(satietyId);
-  }
-
   /**
    * count tickぶん進める。**渇きだけは満たし続ける**——ここで見たいのは消化だけで、水分が尽きると
    * 何日も回す前に渇きで死ぬ（VitalsSystem.md 8節）。
@@ -72,86 +65,77 @@ describe('消化（胃→腸→蓄え）', () => {
     }
   }
 
-  /** 胃へ直接入れる（食べ物を用意せずに量だけを置きたいとき）。 */
-  function fillStomach(amount: number): void {
-    player.setProperty(stomachId, amount);
+  /** 在庫へ直接入れる（食べ物を用意せずに量だけを置きたいとき）。 */
+  function stock(amount: number): void {
+    player.setProperty(carbohydrateId, amount);
+    for (const name of ['protein', 'lipid']) player.setProperty(codex.propertyNames.getId(name), 0);
   }
 
-  it('食べた物は胃から腸を通って、遅れて蓄えになる', () => {
-    const fatBefore = valueOf(bodyFatId);
-    player.setProperty(intestineId, 0);
-    fillStomach(20);
-
-    tick(1);
-    expect(valueOf(stomachId), '胃から3出る（12以上の段）').toBe(17);
-    expect(valueOf(intestineId), 'その3が腸へ届く').toBe(3);
-    expect(valueOf(bodyFatId), '腸に届いた分はこのtickではまだ蓄えにならない').toBe(fatBefore - 1);
-
-    tick(1);
-    expect(valueOf(bodyFatId), '次のtickから吸収が始まる（0.5 - 基礎代謝1）').toBeCloseTo(
-      fatBefore - 1.5,
-      10,
-    );
-  });
-
-  it.each([
-    [4, 3],
-    [8, 5],
-    [16, 8],
-    [20, 10],
-    [32, 13],
-  ])('胃は溜まっているほど速く出し、%d単位なら%d tickで空になる', (meal, expectedTicks) => {
-    fillStomach(meal);
-
-    for (let i = 0; i < expectedTicks - 1; i++) tick(1);
-    expect(valueOf(stomachId), `${expectedTicks - 1} tickではまだ残っている`).toBeGreaterThan(0);
-
-    tick(1);
-    expect(valueOf(stomachId)).toBe(0);
-  });
-
-  it('満腹感は胃と腸の両方が押し上げ、両方が尽きて0になる', () => {
-    player.setProperty(intestineId, 0);
-    fillStomach(0);
-    expect(satietyNow(), '胃も腸も空なら空腹の底').toBe(0);
-    expect(valueOf(satietyId), '実体値は0のまま動かない').toBe(0);
-
-    player.setProperty(intestineId, 16);
-    expect(satietyNow(), '腸だけでも押し上がる（胃が空でもすぐには空腹にならない）').toBe(30);
-
-    fillStomach(24);
-    expect(satietyNow(), '満杯の胃が60を足す').toBe(90);
-  });
-
-  it('胃が満杯だと食べられない', () => {
+  it('食べた物は、かさと栄養素の両方に入る', () => {
     const taro = spawn('taro');
     expect(taro.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
+    player.setProperty(satietyId, 0);
+    stock(0);
 
-    fillStomach(24);
-    expect(taro.tryExecuteAction('eat', player, session), '満杯の段では実行できない').toBe(false);
+    expect(taro.tryExecuteAction('eat', player, session)).toBe(true);
 
-    fillStomach(23);
-    expect(taro.tryExecuteAction('eat', player, session), '1つ下の段なら食べられる').toBe(true);
+    expect(valueOf(satietyId), 'かさはmL').toBe(600);
+    expect(valueOf(carbohydrateId), '中身はtick（かさとは別の数）').toBe(40);
   });
 
-  it('1日3食（胃いっぱい）で体脂肪は横ばいになる', () => {
-    // 3食×32単位 = 96単位が、基礎代謝1/tick × 96 tickとちょうど釣り合う（DigestionSystem.md 3.3節）。
+  it('在庫は時間をかけて蓄えになり、尽きれば蓄えが削られる', () => {
+    player.setProperty(bodyFatId, 1000);
+    stock(4);
+
     const fatBefore = valueOf(bodyFatId);
+    tick(1);
+    expect(valueOf(carbohydrateId), '糖質は2/tickで出る').toBe(2);
+    expect(valueOf(bodyFatId), '出た2が蓄えになり、基礎代謝1が引かれる').toBe(fatBefore + 1);
+
+    tick(2);
+    expect(valueOf(carbohydrateId), '在庫は尽きている').toBe(0);
+    expect(valueOf(bodyFatId), '尽きた後は基礎代謝で減るだけ').toBe(fatBefore + 1);
+  });
+
+  it('満腹感はかさで、1食が8時間もつ', () => {
+    // 512mL（1食）を16mL/tickで空にすると32 tick＝8時間（DigestionSystem.md 2節）。
+    player.setProperty(satietyId, 512);
+
+    tick(31);
+    expect(valueOf(satietyId), '31 tickではまだ残っている').toBeGreaterThan(0);
+
+    tick(1);
+    expect(valueOf(satietyId)).toBe(0);
+  });
+
+  it('腹がいっぱいだと食べられず、直前まで食べても溢れない', () => {
+    const taro = spawn('taro');
+    expect(taro.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
+    const max = 1500;
+
+    player.setProperty(satietyId, 900);
+    expect(taro.tryExecuteAction('eat', player, session), 'full段では実行できない').toBe(false);
+
+    player.setProperty(satietyId, 899);
+    expect(taro.tryExecuteAction('eat', player, session), '1つ下の段なら食べられる').toBe(true);
+    expect(valueOf(satietyId), '最大の食料でも溢れない').toBe(899 + 600);
+    expect(899 + 600).toBeLessThanOrEqual(max);
+  });
+
+  it('1日3食（512mLのイモ）で体脂肪は横ばいになる', () => {
+    // 1食40単位×3 = 120単位が、基礎代謝1/tick × 96 tickをやや上回る（DigestionSystem.md 5節）。
+    const fatBefore = valueOf(bodyFatId);
+    stock(0);
 
     for (let day = 0; day < 5; day++) {
-      for (const [at, until] of [
-        [28, 48],
-        [48, 72],
-        [72, DAY + 28],
-      ]) {
-        fillStomach(32);
-        tick(until - at);
+      for (let meal = 0; meal < 3; meal++) {
+        player.setProperty(carbohydrateId, valueOf(carbohydrateId) + 32);
+        tick(DAY / 3);
       }
     }
 
-    // 5日ぶんの摂取と消費が釣り合っていること（配管に残っている分だけ目減りする）。
-    expect(valueOf(bodyFatId)).toBeGreaterThan(fatBefore - 30);
-    expect(valueOf(bodyFatId)).toBeLessThan(fatBefore + 30);
+    expect(valueOf(bodyFatId)).toBeGreaterThan(fatBefore - 40);
+    expect(valueOf(bodyFatId)).toBeLessThan(fatBefore + 40);
   });
 
   it('食べ続けても際限なく太らない（基礎代謝が体格で上がる）', () => {
@@ -160,8 +144,7 @@ describe('消化（胃→腸→蓄え）', () => {
     // 段が上がるほど速く減る。ここが単調でないと、太るほど痩せやすいという裏返りが起きる。
     const rates = [0, 96, 480, 2880, 4320].map((fat) => {
       player.setProperty(bodyFatId, fat);
-      player.setProperty(stomachId, 0);
-      player.setProperty(intestineId, 0);
+      stock(0);
       const before = valueOf(bodyFatId);
       tick(1);
       return before - valueOf(bodyFatId);
@@ -172,8 +155,7 @@ describe('消化（胃→腸→蓄え）', () => {
   });
 
   it('絶食すると飢えで死に、死因は段starvedになる', () => {
-    player.setProperty(stomachId, 0);
-    player.setProperty(intestineId, 0);
+    stock(0);
 
     // 17.7日（DigestionSystem.md 4節）。基礎代謝が痩せるほど落ちるので、一定1/tickの15日より延びる。
     tick(17 * DAY);

@@ -527,12 +527,12 @@ describe('animals.yamlの動物', () => {
       const carcass = kill();
       butcher(carcass);
       const meat = jungle.tryGetSlot(codex.slotNames.getId('items'))!.contents[0];
-      const stomachId = codex.propertyNames.getId('stomach');
-      const before = player.getNumber(stomachId);
+      const satietyId = codex.propertyNames.getId('satiety');
+      const before = player.getNumber(satietyId);
 
       expect(meat.tryExecuteAction('eat', player, session)).toBe(true);
 
-      expect(player.getNumber(stomachId) - before, '1切れで4時間の腹持ち').toBe(16);
+      expect(player.getNumber(satietyId) - before, '1切れが腹に入るかさ').toBe(500);
       expect(meat.parent, '食べた肉は無くなる').toBeUndefined();
     });
   });

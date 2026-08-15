@@ -73,9 +73,10 @@ object_defs:
         duration: 15
         add:
           actor:
-            stomach: 1
+            satiety: 60
+            carbohydrate: 2
+            vitamin: 5
             hydration: 20
-            vegetable_nutrition: 3
         destroy: self
         spawn: {object: drained_green_coconut}
 
@@ -104,12 +105,14 @@ object_defs:
       eat:
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: stomach, in_stage: full}
+            not: {subject: actor, prop: satiety, in_stage: full}
         add:
           actor:
-            stomach: 2
+            satiety: 150
+            carbohydrate: 4
+            lipid: 1
+            vitamin: 5
             hydration: 5.2
-            vegetable_nutrition: 8
         destroy: self
 
   # 熟したヤシの実。厚い繊維質の皮に覆われていて、このままでは食べられない。
@@ -190,10 +193,13 @@ object_defs:
       eat:
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: stomach, in_stage: full}
+            not: {subject: actor, prop: satiety, in_stage: full}
         add:
           actor:
-            stomach: 6
+            satiety: 200
+            carbohydrate: 4
+            protein: 3
+            lipid: 26
+            vitamin: 7
             hydration: 6
-            vegetable_nutrition: 25
         destroy: self
