@@ -30,9 +30,16 @@ export class Texts {
   readonly displayName: string;
   readonly description: string | undefined;
 
-  constructor(displayName: string, description?: string) {
+  /**
+   * 名前の代わりに置ける絵（Localization.md）。無ければundefinedで、呼び出し側は名前を出す。
+   * 今これを読むのはステータスの行だけ（StatusArea.md 3節）。
+   */
+  readonly icon: string | undefined;
+
+  constructor(displayName: string, description?: string, icon?: string) {
     this.displayName = displayName;
     this.description = description;
+    this.icon = icon;
   }
 }
 
@@ -85,6 +92,7 @@ export class SlotTexts {
 interface DeclaredTexts {
   readonly displayName: string | undefined;
   readonly description: string | undefined;
+  readonly icon: string | undefined;
   readonly displayNameWithContent: string | undefined;
   readonly displayNameWithOwner: string | undefined;
   readonly displayNameInProgress: string | undefined;
@@ -188,7 +196,7 @@ export class ObjectTexts {
 
   private member(category: MemberCategory, name: string): Texts {
     const declared = this.entry?.tryGetMember(category, name) ?? this.defaults?.tryGetMember(category, name);
-    return new Texts(declared?.displayName ?? name, declared?.description);
+    return new Texts(declared?.displayName ?? name, declared?.description, declared?.icon);
   }
 }
 
@@ -501,12 +509,14 @@ function parseEntry(node: YAMLMap, context: string): ObjectTextsEntry {
 function parseTexts(node: YAMLMap, context: string): DeclaredTexts | undefined {
   const displayName = tryGetScalar(node, 'display_name', context);
   const description = tryGetScalar(node, 'description', context);
+  const icon = tryGetScalar(node, 'icon', context);
   const displayNameWithContent = tryGetScalar(node, 'display_name_with_content', context);
   const displayNameWithOwner = tryGetScalar(node, 'display_name_with_owner', context);
   const displayNameInProgress = tryGetScalar(node, 'display_name_in_progress', context);
   if (
     displayName === undefined &&
     description === undefined &&
+    icon === undefined &&
     displayNameWithContent === undefined &&
     displayNameWithOwner === undefined &&
     displayNameInProgress === undefined
@@ -515,6 +525,7 @@ function parseTexts(node: YAMLMap, context: string): DeclaredTexts | undefined {
   return {
     displayName,
     description,
+    icon,
     displayNameWithContent,
     displayNameWithOwner,
     displayNameInProgress,
