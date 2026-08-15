@@ -67,6 +67,7 @@ import {
   advanceCrafting,
   currentStep,
   remainingRequirements,
+  spawnInProgressObject,
   stepIsSupplied,
 } from '../domain/runtime/crafting';
 import { emitGainParticles } from './ui/GainParticles';
@@ -76,6 +77,7 @@ import { PropertyWindow } from './ui/PropertyWindow';
 import { ScreenAlertFrame } from './ui/ScreenAlertFrame';
 import type { StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
+import { StatusDetailWindow } from './ui/StatusDetailWindow';
 import type { IconName } from './ui/iconArt';
 import { iconTexture } from './ui/iconArt';
 import { WeatherPanel } from './ui/WeatherPanel';
@@ -379,6 +381,13 @@ export class PlayScene extends ResponsiveScene {
   private recipeWindow: RecipeWindow | undefined;
 
   /**
+   * 開いているステータス詳細ウィンドウと、それが映しているステータスの識別子。画面の作り直しを
+   * またいで開いたままにするため、どのステータスを映していたかを憶える（値は引き直す）。
+   */
+  private statusDetailWindow: StatusDetailWindow | undefined;
+  private statusDetailKey: string | undefined;
+
+  /**
    * ステータスエリアに出しうるバー（プロパティの識別子で引く）。出す行と並び順は行動のたびに変わるが、
    * バー自体は画面の組み立て時に全プロパティ分を作っておく（showStatuses参照）。
    */
@@ -526,6 +535,8 @@ export class PlayScene extends ResponsiveScene {
     this.borrowedCard = undefined;
     this.propertyWindow = undefined;
     this.mapWindow = undefined;
+    this.statusDetailWindow = undefined;
+    this.statusDetailKey = undefined;
     this.recipeWindow = undefined;
 
     // 見せている最中だった演出は、それを終わらせるtweenごと消えている（終わったものとして始める）。
@@ -591,6 +602,7 @@ export class PlayScene extends ResponsiveScene {
     const openedPlace = this.childWindowPlace;
     const wasShowingProperties = this.propertyWindow !== undefined;
     const wasShowingMap = this.mapWindow !== undefined;
+    const openedStatus = this.statusDetailKey;
     const openedCard = this.childWindowCard;
     // 運んでいる途中だった札は、表示物ごと捨てられている（着いたものとして作り直す）。
     this.foundArriving = new Set();
@@ -600,6 +612,8 @@ export class PlayScene extends ResponsiveScene {
     this.childWindowPlace = undefined;
     this.propertyWindow = undefined;
     this.mapWindow = undefined;
+    this.statusDetailWindow = undefined;
+    this.statusDetailKey = undefined;
 
     // 手前から奥への重なりに合わせて組み立てる。レーンからはみ出したカードは切り抜かず、
     // 後から描く背景板で隠す設計のため、順序そのものに意味がある。
@@ -647,6 +661,8 @@ export class PlayScene extends ResponsiveScene {
     if (wasShowingProperties) this.openPropertyWindow();
     // 地図は全画面を覆うので、さらにその上へ開き直す。
     if (wasShowingMap) this.openMapWindow();
+    // ステータスの詳細は、プロパティウィンドウの上からも開けるので最後に開き直す。
+    if (openedStatus !== undefined) this.openStatusDetail(openedStatus);
     this.coverUntilLocationArtLoaded();
     // 死は取り消せないので、リサイズで表示物ごと捨てられたダイアログは出し直す（ResponsiveScene）。
     if (this.gameSession.player.isDead) this.showDeath();
@@ -1210,7 +1226,7 @@ export class PlayScene extends ResponsiveScene {
    * それを決めるのはこのウィンドウではなく世界の変化——アクションを宣言しているのがこのカードの
    * オブジェクトだから、主体としてそれが付く（originRectsOf）。
    */
-  private openObjectWindow(card: ObjectCardStack): void {
+  private openObjectWindow(card: ObjectCardStack, from?: Rect): void {
     // 束を押しても、ウィンドウへ移るのは先頭の1枚だけ（Windows.md 1.1節）。ボタンの操作が効くのも
     // その1個なので、残りは元の枠に居たまま掴める。
     const borrowed = this.view.cardOfObjects(card.objects.slice(0, 1), card.place);
@@ -1219,6 +1235,7 @@ export class PlayScene extends ResponsiveScene {
       { card: borrowed, description: borrowed.description },
       [...this.autoFillAction(borrowed), ...this.craftActions(borrowed), ...this.windowActions(borrowed)],
       borrowed.contents,
+      from,
     );
   }
 
@@ -1420,6 +1437,7 @@ export class PlayScene extends ResponsiveScene {
     object: ObjectWindowTarget,
     actions: readonly ObjectWindowAction[],
     place: CardPlace | undefined,
+    from?: Rect,
   ): void {
     noteOperation(`子ウィンドウを開いた: ${object.card.name}`);
     const returning = this.releaseBorrowed();
@@ -1440,7 +1458,7 @@ export class PlayScene extends ResponsiveScene {
       area: this.layout.slotWindowArea,
       onClose: () => this.closeChildWindow(),
     });
-    const borrowing = this.claimBorrowed(object.card);
+    const borrowing = this.claimBorrowed(object.card, from);
     this.setDragLanes();
     // 借りた1枚を枠から引き、手持ちの端が指す先を引き直す（laneCards・neighbourOf参照）。
     this.showView();
@@ -1480,17 +1498,20 @@ export class PlayScene extends ResponsiveScene {
    * 開いたウィンドウが映す札を、元の枠から借りる（Windows.md 1.1節）。カードを出さないウィンドウ
    * （装備・怪我）では何も借りない。
    *
+   * 出どころは今その札が出ている枠。**レシピ一覧から作り始めたときだけ、画面にしか無い出どころを
+   * 呼び出し側が渡す**（startCrafting。一覧は閉じているので、選んだ札がそのままウィンドウへ入る）。
+   *
    * 元の札が画面に出ていなければ運ばずにその場で出す——閉じた入れ物の中から開いた場合と、画面を
    * 作り直して開き直した場合（既にそこに在ったものなので、動いて見えてはいけない）。
    */
-  private claimBorrowed(content: CardContent): CardCarry | undefined {
+  private claimBorrowed(content: CardContent, origin: Rect | undefined): CardCarry | undefined {
     const window = this.childWindow;
     const to = window?.cardRect;
     const id = content.identity?.[0];
     if (window === undefined || to === undefined || id === undefined) return undefined;
 
     this.borrowedCard = content;
-    const from = this.borrowed.has(id) ? undefined : this.rectOfInstance(id);
+    const from = this.borrowed.has(id) ? undefined : (origin ?? this.rectOfInstance(id));
     this.borrowed.add(id);
     if (from === undefined) return undefined;
 
@@ -1640,10 +1661,14 @@ export class PlayScene extends ResponsiveScene {
     this.explorationWindow?.showFound(index);
   }
 
+  /** 現在地のレーンに出ているカード（設置物とアイテム）。 */
+  private get locationCards(): readonly ObjectCardStack[] {
+    return [...this.view.fixtures, ...this.view.items];
+  }
+
   /** 今フィールドとロケーションのレーンに出ているインスタンスのID。 */
   private shownInstanceIds(): ReadonlySet<number> {
-    const shown = [...this.view.fixtures, ...this.view.items];
-    return new Set(shown.flatMap((card) => card.identity ?? []));
+    return new Set(this.locationCards.flatMap((card) => card.identity ?? []));
   }
 
   /**
@@ -1653,8 +1678,7 @@ export class PlayScene extends ResponsiveScene {
    * 枠へ借り出すのは見つかった分だけで、元から在った分はレーンに残る。
    */
   private foundSince(shownBefore: ReadonlySet<number>): readonly CardContent[] {
-    const shown = [...this.view.fixtures, ...this.view.items];
-    return shown.flatMap((card) => {
+    return this.locationCards.flatMap((card) => {
       const ids = (card.identity ?? []).filter((id) => !shownBefore.has(id));
       return ids.length === 0 ? [] : [{ ...cardFace(card), identity: ids, count: ids.length }];
     });
@@ -2428,7 +2452,33 @@ export class PlayScene extends ResponsiveScene {
       midAction: this.passingTime,
       pinned: this.pinnedStatuses.has(status.key),
       onTogglePin: () => this.togglePinnedStatus(status.key),
+      onOpenDetail: () => this.openStatusDetail(status.key),
     };
+  }
+
+  /**
+   * バーをタップしたときに開く、そのステータスの詳細（Windows.md 8節）。開き直しでも同じ経路を
+   * 通せるよう、受け取るのは中身ではなくプロパティの識別子で、中身は今のviewから引き直す。
+   *
+   * ステータスエリアからもプロパティウィンドウの行からも開くため、既に開いていれば入れ替える。
+   */
+  private openStatusDetail(key: string): void {
+    const content = this.allStatuses().find((status) => status.key === key);
+    if (content === undefined) return;
+
+    noteOperation('ステータスの詳細を開いた');
+    this.statusDetailWindow?.close();
+    this.statusDetailKey = key;
+    this.statusDetailWindow = new StatusDetailWindow(this, this.metrics, {
+      content: this.statusContent(content),
+      area: { x: 0, y: 0, width: this.metrics.width, height: this.metrics.height },
+      // 影響の枠から相手の詳細へ渡り歩く。開き直しと同じ経路なので、今の窓は入れ替わる。
+      onOpenStatus: (target) => this.openStatusDetail(target),
+      onClose: () => {
+        this.statusDetailWindow = undefined;
+        this.statusDetailKey = undefined;
+      },
+    });
   }
 
   /**
@@ -2518,12 +2568,13 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 製作中オブジェクトを現在地のitemsスロットへ生み、その子ウィンドウを開く。
+   * 製作中オブジェクトを現在地へ生み、その子ウィンドウを開く。
    *
-   * 生んだ直後にすることは素材を入れることしかないので、アイテムレーンから探し直させない。
+   * 生んだ直後にすることは素材を入れることしかないので、レーンから探し直させない。
    *
    * originは一覧で選んだカードの居場所。生まれたカードはそこから飛んでくる——一覧は閉じているので、
-   * 選んだ札がそのまま場に出た、という見え方になる。
+   * 選んだ札がそのまま場に出た、という見え方になる。**開く子ウィンドウへもそこから直に飛ばす**
+   * （Windows.md 1.1節）——生んだ札はすぐ借り出されるので、レーンの枠を経由しても一瞬で通り過ぎる。
    *
    * **これだけは出どころが世界の事実ではない。** プレイヤーの操作が直に生んだので主体が居らず、
    * 出どころも閉じた一覧の中にしか無かった札の位置なので、その矩形を直に渡す（MotionContext.origins）。
@@ -2532,16 +2583,15 @@ export class PlayScene extends ResponsiveScene {
     const location = this.gameSession.player.location;
     if (location === undefined) return;
 
-    const spawned = this.gameSession.session.spawn(inProgressDefGlobalId);
-    spawned.moveToSlot(location.instance, this.codex.slotNames.getId('items'));
+    const spawned = spawnInProgressObject(this.gameSession.session, location.instance, inProgressDefGlobalId);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
     this.showView({ origins: new Map([[spawned.instanceId, origin]]), born: [spawned.instanceId] });
 
     // 生まれたものが同じ型の束へ合流していることもあるので、束の中を見て探す。
-    const card = this.view.items.find((stack) =>
+    const card = this.locationCards.find((stack) =>
       stack.objects.some((object) => object.instanceId === spawned.instanceId),
     );
-    if (card !== undefined) this.openObjectWindow(card);
+    if (card !== undefined) this.openObjectWindow(card, origin);
   }
 
   private openPropertyWindow(): void {

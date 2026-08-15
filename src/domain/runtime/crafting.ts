@@ -41,6 +41,24 @@ export function remainingRequirements(recipe: RecipeDef, progress: number): Map<
 }
 
 /**
+ * レシピ一覧から選ばれた製作中オブジェクトを、その場所へ生む（RecipeSystem.md 1節）。
+ *
+ * 置き場所はスロット名で指さず、受け入れられる側に選ばせる（spawnのintoと同じ規約、9.4節）。
+ * 製作中オブジェクトは完成品のタグを引き継ぐ（同5節）ので、道具はitemsへ、炉のような設置物は
+ * fixturesへ入る。どのスロットも受け入れないなら、行き先を失ったspawnと同じく枠の要件を無視して
+ * 先頭のスロットへ落とす——場違いな場所にでも出ている方が、黙って画面から消えるよりよい。
+ */
+export function spawnInProgressObject(
+  session: WorldSession,
+  location: WorldObject,
+  inProgressDefGlobalId: number,
+): WorldObject {
+  const spawned = session.spawn(inProgressDefGlobalId);
+  if (!spawned.moveIntoFirstAcceptingSlot(location)) spawned.moveIntoFirstAcceptingSlot(location, true);
+  return spawned;
+}
+
+/**
  * その工程が要求する素材と道具のうち、材料スロットに揃っている割合（0〜1）。
  *
  * **道具（`consume: false`）も数に入れる。** 作業を止めるのは素材と同じで、揃っていなければ

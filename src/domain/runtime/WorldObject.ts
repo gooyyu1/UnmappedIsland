@@ -5,6 +5,8 @@ import type { ObjectDef } from '../defs/ObjectDef';
 import type { ReferenceRoot } from '../defs/ReferenceRoot';
 import type { WellKnownProperties } from '../defs/WellKnownProperties';
 import type { ObjectStack } from './ObjectStack';
+import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
+import { PropertyInfluences } from './PropertyInfluence';
 import type { PropertyReading, PropertyValue } from './PropertyValue';
 import type { Requirement } from '../defs/Requirement';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
@@ -752,6 +754,62 @@ export class WorldObject {
   getIncomingPassiveEffects(propertyGlobalId: number): readonly RegisteredPassiveEffect[] {
     const property = this.tryGetProperty(propertyGlobalId);
     return property !== undefined ? property.incoming : [];
+  }
+
+  /**
+   * 名指しした1つのプロパティが、他と交わしている影響（docs/ui/Windows.md 8節）。
+   *
+   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果だけでよい。効果が届く先は
+   * self/parent/child/ancestor のいずれか（8.1節）なので、自分へ届く効果も自分が届かせる効果も、
+   * 宣言元は必ずこの3方向のどれかに居る——横に並んだ物どうしは互いに届かない。
+   */
+  readInfluences(propertyGlobalId: number): PropertyInfluenceReading {
+    const influences = new PropertyInfluences(this, propertyGlobalId);
+    this.collectInfluencesRecursively(influences);
+    for (let ancestor = this._parent; ancestor !== undefined; ancestor = ancestor._parent)
+      ancestor.def.passives.collectInfluences(ancestor, influences);
+    this.collectContainerInfluence(propertyGlobalId, influences);
+    return influences;
+  }
+
+  /**
+   * 中身から受ける寄与（weight/load、ContainerSystem.md 1〜2節）を1本の辺として書き出す。
+   *
+   * 持続効果ではないが、**読むたびに導出される可逆な押し上げ**なので modify と同じ形になる。
+   * 中身1つずつではなく1本にまとめるのは、担いでいる物の数だけ辺が増えても、読み手が知りたい
+   * 「何がこの値を押し上げているか」の答えは「中身」の1つだからで、宣言元は自分自身になる。
+   */
+  private collectContainerInfluence(propertyGlobalId: number, out: InfluenceWriter): void {
+    const { weightId, loadId } = this.wellKnown;
+    if (propertyGlobalId !== weightId && propertyGlobalId !== loadId) return;
+
+    out.write({
+      causeObject: this,
+      causePropertyGlobalId: undefined,
+      target: this,
+      targetPropertyGlobalId: propertyGlobalId,
+      reversible: true,
+      increases: true,
+      // 空身なら押し上げていない（条件が成立していない効果と同じ扱いで、薄く記号無しになる）。
+      active: this.containerContributionTo(propertyGlobalId) !== 0,
+    });
+  }
+
+  /** 自分と、自分の中に入っている物すべてが宣言する持続効果の辺を書き出す。 */
+  private collectInfluencesRecursively(out: InfluenceWriter): void {
+    this.def.passives.collectInfluences(this, out);
+    for (const child of this.children()) child.collectInfluencesRecursively(out);
+  }
+
+  /**
+   * 持続効果の対象（8.1節）を、影響の一覧のために解決する。**childは今入っている子を全部**返す
+   * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（registerChild）。
+   * actor/draggedはpassivesに現れない（parsePassiveTransfers）ため空になる。
+   */
+  resolveInfluenceTargets(root: ReferenceRoot, propertyGlobalId: number): readonly WorldObject[] {
+    if (root === 'child') return [...this.children()];
+    const target = this.resolveEffectTargetOrAncestor(root, propertyGlobalId, undefined, undefined);
+    return target === undefined ? [] : [target];
   }
 
   tryExecuteAction(actionName: string, actor: WorldObject | undefined, session: WorldSession): boolean {

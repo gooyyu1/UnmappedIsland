@@ -121,6 +121,27 @@ export class PropertyStage {
   }
 }
 
+/** 段（6.4節）がrangeの中で占める区間。両端とも0〜1で、startがminの側。 */
+export interface StageSpan {
+  readonly start: number;
+  readonly end: number;
+}
+
+/**
+ * 段（6.4節）の刻みと、その中で今どこにいるか（PropertyDef.stageOf）。
+ * nameは識別子であり表示名ではない（表示名はLocalization.stageが引く）。
+ */
+export interface StageReading {
+  /** 今いる段の名前。 */
+  readonly name: string;
+
+  /** rangeの中でこの段が占める区間。rangeを持たないプロパティと、eqで決まる段ではundefined。 */
+  readonly span: StageSpan | undefined;
+
+  /** 段の境目（rangeの中での位置、昇順）。両端（range自身の上下限）は含まない。 */
+  readonly boundaries: readonly number[];
+}
+
 /**
  * 1つの ObjectDef が持つ、1つのプロパティの定義（6節）。ObjectDef.propertyDefs の1要素として、
  * ローカルIDをそのままindexとする密配列に格納される。同名プロパティでも ObjectDef ごとに
@@ -429,6 +450,52 @@ export class PropertyDef {
   /** 実効値effectiveValueのときに該当する段（6.4節）の名前。該当する段が無ければundefined。 */
   stageNameOf(effectiveValue: number): string | undefined {
     return this.resolveStage(effectiveValue)?.name;
+  }
+
+  /**
+   * 実効値effectiveValueのときに該当する段（6.4節）を、表示側が要る形だけ切り出したもの。
+   * 該当する段が無ければundefined。
+   */
+  stageOf(effectiveValue: number): StageReading | undefined {
+    const stage = this.resolveStage(effectiveValue);
+    if (stage === undefined) return undefined;
+    return { name: stage.name, span: this.spanOf(stage), boundaries: this.stageBoundaries() };
+  }
+
+  /**
+   * 段の境目（rangeの中での位置、昇順）。**両端は含まない**——rangeの上下限はバーの端そのもので、
+   * 刻む線を引く場所ではない。完全一致（eq）で決まる段は値の並びの上に境目を持たない。
+   */
+  private stageBoundaries(): readonly number[] {
+    const boundaries: number[] = [];
+    for (const stage of this.stages) {
+      if (stage.min === undefined || stage.eq !== undefined) continue;
+      const ratio = this.ratioOf(stage.min);
+      if (ratio !== undefined && ratio > 0 && ratio < 1) boundaries.push(ratio);
+    }
+    return boundaries.sort((a, b) => a - b);
+  }
+
+  /**
+   * 段がrangeの中で占める区間（0〜1）。**下端はその段のmin**（最下段はrangeの下限）、**上端は
+   * それより上で最も近い段のmin**（無ければrangeの上限）で、段の宣言順ではなくminの大小だけで決まる
+   * （resolveStageと同じ見方）。
+   *
+   * 完全一致（eq）で決まる段はシンボル型（6.6節）のもので、値の並びの上に幅を持たないためundefined。
+   */
+  private spanOf(stage: PropertyStage): StageSpan | undefined {
+    if (this.range === undefined || stage.eq !== undefined) return undefined;
+
+    const start = stage.min ?? this.range.min;
+    let end = this.range.max;
+    for (const other of this.stages)
+      if (other.min !== undefined && other.min > start && other.min < end) end = other.min;
+
+    const startRatio = this.ratioOf(start);
+    const endRatio = this.ratioOf(end);
+    return startRatio === undefined || endRatio === undefined
+      ? undefined
+      : { start: startRatio, end: endRatio };
   }
 
   /** 実効値effectiveValueのとき、今いる段が宣言しているart接尾辞（PropertyStage.art、6.4節）。宣言が無ければundefined。 */
