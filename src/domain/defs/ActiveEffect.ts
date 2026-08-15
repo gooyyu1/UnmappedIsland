@@ -1,3 +1,4 @@
+import type { InfluenceWriter } from '../runtime/PropertyInfluence';
 import type { PropertyValue } from '../runtime/PropertyValue';
 import type { EffectSite, WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
@@ -389,6 +390,37 @@ export class TransferEffect extends ActiveEffect {
 
     for (const linked of this.linkedAdd)
       linked.applyScaled(owner, session, actor, dragged, taken, this.amount);
+  }
+
+  /**
+   * 輸送の両端を影響の辺として書き出す（PropertyInfluences参照）。
+   *
+   * **両端は互いの原因になる。** 受け取る側が増えるのは出す側の在庫があるからで、出す側が減るのは
+   * 受け取る側へ持っていかれるから——1本の輸送が、どちらの端から見ても相手のせいで動いて見える。
+   */
+  collectInfluences(declarer: WorldObject, active: boolean, out: InfluenceWriter): void {
+    const from = declarer.resolveInfluenceTargets(this.fromObject, this.fromPropertyGlobalId)[0];
+    const to = declarer.resolveInfluenceTargets(this.toObject, this.toPropertyGlobalId)[0];
+    if (from === undefined || to === undefined) return;
+
+    out.write({
+      causeObject: from,
+      causePropertyGlobalId: this.fromPropertyGlobalId,
+      target: to,
+      targetPropertyGlobalId: this.toPropertyGlobalId,
+      reversible: false,
+      increases: true,
+      active,
+    });
+    out.write({
+      causeObject: to,
+      causePropertyGlobalId: this.toPropertyGlobalId,
+      target: from,
+      targetPropertyGlobalId: this.fromPropertyGlobalId,
+      reversible: false,
+      increases: false,
+      active,
+    });
   }
 
   /** suffixは1行目の末尾へ足す断片（tick毎の輸送が、自分のゲートを同じ行に書き足す）。 */

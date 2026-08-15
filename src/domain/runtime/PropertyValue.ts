@@ -1,5 +1,5 @@
 import type { AlertLevel } from '../defs/AlertLevel';
-import type { GaugeDef, PropertyDef } from '../defs/PropertyDef';
+import type { GaugeDef, PropertyDef, StageReading } from '../defs/PropertyDef';
 import { INT32_MAX } from '../../util/int32';
 import { removeWhere } from '../../util/arrays';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
@@ -28,6 +28,9 @@ export interface PropertyReading {
    * 出すかどうかも両端の色も、この1つが決める（docs/ui/CardView.md 8節）。
    */
   readonly gauge: GaugeDef | undefined;
+
+  /** 今いる段（6.4節）。段を宣言していないプロパティはundefined。 */
+  readonly stage: StageReading | undefined;
 }
 
 /**
@@ -231,6 +234,7 @@ export class PropertyValue {
       // ゲージを持つプロパティは、帯の向きもゲージの宣言（両端の見せ方）から決まる。
       worsensUpward: this.def.gauge?.worsensUpward ?? this.def.worsensUpward,
       gauge: this.def.gauge,
+      stage: this.def.stageOf(value),
     };
   }
 

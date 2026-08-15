@@ -76,6 +76,7 @@ import { PropertyWindow } from './ui/PropertyWindow';
 import { ScreenAlertFrame } from './ui/ScreenAlertFrame';
 import type { StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
+import { StatusDetailWindow } from './ui/StatusDetailWindow';
 import type { IconName } from './ui/iconArt';
 import { iconTexture } from './ui/iconArt';
 import { WeatherPanel } from './ui/WeatherPanel';
@@ -351,6 +352,13 @@ export class PlayScene extends ResponsiveScene {
   private recipeWindow: RecipeWindow | undefined;
 
   /**
+   * 開いているステータス詳細ウィンドウと、それが映しているステータスの識別子。画面の作り直しを
+   * またいで開いたままにするため、どのステータスを映していたかを憶える（値は引き直す）。
+   */
+  private statusDetailWindow: StatusDetailWindow | undefined;
+  private statusDetailKey: string | undefined;
+
+  /**
    * ステータスエリアに出しうるバー（プロパティの識別子で引く）。出す行と並び順は行動のたびに変わるが、
    * バー自体は画面の組み立て時に全プロパティ分を作っておく（showStatuses参照）。
    */
@@ -487,6 +495,8 @@ export class PlayScene extends ResponsiveScene {
     this.childWindowPlace = undefined;
     this.propertyWindow = undefined;
     this.mapWindow = undefined;
+    this.statusDetailWindow = undefined;
+    this.statusDetailKey = undefined;
     this.recipeWindow = undefined;
 
     // 見せている最中だった演出は、それを終わらせるtweenごと消えている（終わったものとして始める）。
@@ -551,6 +561,7 @@ export class PlayScene extends ResponsiveScene {
     const openedPlace = this.childWindowPlace;
     const wasShowingProperties = this.propertyWindow !== undefined;
     const wasShowingMap = this.mapWindow !== undefined;
+    const openedStatus = this.statusDetailKey;
     const openedCard = this.childWindowCard;
     this.explorationWindow = undefined;
     this.childWindow = undefined;
@@ -558,6 +569,8 @@ export class PlayScene extends ResponsiveScene {
     this.childWindowPlace = undefined;
     this.propertyWindow = undefined;
     this.mapWindow = undefined;
+    this.statusDetailWindow = undefined;
+    this.statusDetailKey = undefined;
 
     // 手前から奥への重なりに合わせて組み立てる。レーンからはみ出したカードは切り抜かず、
     // 後から描く背景板で隠す設計のため、順序そのものに意味がある。
@@ -605,6 +618,8 @@ export class PlayScene extends ResponsiveScene {
     if (wasShowingProperties) this.openPropertyWindow();
     // 地図は全画面を覆うので、さらにその上へ開き直す。
     if (wasShowingMap) this.openMapWindow();
+    // ステータスの詳細は、プロパティウィンドウの上からも開けるので最後に開き直す。
+    if (openedStatus !== undefined) this.openStatusDetail(openedStatus);
     this.coverUntilLocationArtLoaded();
     // 死は取り消せないので、リサイズで表示物ごと捨てられたダイアログは出し直す（ResponsiveScene）。
     if (this.gameSession.player.isDead) this.showDeath();
@@ -2152,7 +2167,33 @@ export class PlayScene extends ResponsiveScene {
       midAction: this.passingTime,
       pinned: this.pinnedStatuses.has(status.key),
       onTogglePin: () => this.togglePinnedStatus(status.key),
+      onOpenDetail: () => this.openStatusDetail(status.key),
     };
+  }
+
+  /**
+   * バーをタップしたときに開く、そのステータスの詳細（Windows.md 8節）。開き直しでも同じ経路を
+   * 通せるよう、受け取るのは中身ではなくプロパティの識別子で、中身は今のviewから引き直す。
+   *
+   * ステータスエリアからもプロパティウィンドウの行からも開くため、既に開いていれば入れ替える。
+   */
+  private openStatusDetail(key: string): void {
+    const content = this.allStatuses().find((status) => status.key === key);
+    if (content === undefined) return;
+
+    noteOperation('ステータスの詳細を開いた');
+    this.statusDetailWindow?.close();
+    this.statusDetailKey = key;
+    this.statusDetailWindow = new StatusDetailWindow(this, this.metrics, {
+      content: this.statusContent(content),
+      area: { x: 0, y: 0, width: this.metrics.width, height: this.metrics.height },
+      // 影響の枠から相手の詳細へ渡り歩く。開き直しと同じ経路なので、今の窓は入れ替わる。
+      onOpenStatus: (target) => this.openStatusDetail(target),
+      onClose: () => {
+        this.statusDetailWindow = undefined;
+        this.statusDetailKey = undefined;
+      },
+    });
   }
 
   /**

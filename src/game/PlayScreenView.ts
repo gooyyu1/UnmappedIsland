@@ -4,6 +4,8 @@ import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { NewGameSession } from '../domain/generation/NewGame';
 import { Location } from '../domain/runtime/views/Location';
 import { Path } from '../domain/runtime/views/Path';
+import type { PropertyInfluence } from '../domain/runtime/PropertyInfluence';
+import type { PropertyReading } from '../domain/runtime/PropertyValue';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import { putIntoSlot } from '../domain/runtime/slotEntry';
 import { currentStep, stepSupplyRatio } from '../domain/runtime/crafting';
@@ -16,7 +18,7 @@ import type { CardContent, CardCooking, CardGauge } from './ui/Card';
 import { COLOR } from './ui/theme';
 import type { CardKind } from './ui/theme';
 import type { PropertyTab } from './ui/PropertyWindow';
-import type { StatusContent } from './ui/StatusBar';
+import type { StatusContent, StatusDetail, StatusInfluence } from './ui/StatusBar';
 
 /**
  * レーンの中でカードを置く場所。gapは枠と枠の隙間（indexは0が先頭の枠の前）、cellは空き枠そのもの
@@ -456,33 +458,6 @@ export function fromGameSession(
   const location = game.player.location ?? game.startLocation;
 
   const characterTexts = locale.object(game.player.instance.def.name);
-  /** タグが付いたキャラクターのプロパティを、表示名に直して並べる。未宣言のタグでは空。 */
-  const entriesWithTag = (tagGlobalId: number | undefined): readonly StatusContent[] =>
-    tagGlobalId === undefined
-      ? []
-      : game.player.instance.readPropertiesWithTag(tagGlobalId).map((reading) => {
-          const texts = characterTexts.prop(reading.name);
-          return {
-            key: reading.name,
-            name: texts.displayName,
-            icon: texts.icon,
-            value: reading.value,
-            ratio: reading.ratio,
-            alert: reading.alert,
-            worsensUpward: reading.worsensUpward,
-          };
-        });
-
-  // タグのIDは宣言順に振られる（WorldCodex.propertyTagNames）ため、昇順に見ればタブの並び順になる。
-  const propertyCategories: PropertyTab[] = [];
-  for (let tagGlobalId = 0; tagGlobalId < codex.propertyTagNames.count; tagGlobalId++) {
-    const entries = entriesWithTag(tagGlobalId);
-    if (entries.length > 0)
-      propertyCategories.push({
-        name: locale.propertyTag(codex.propertyTagNames.getName(tagGlobalId)).displayName,
-        entries,
-      });
-  }
 
   /**
    * カードの下端に積むゲージ（プロパティの`gauge`宣言、CardView.md 8節）。耐久度・炉の残り薪・
@@ -753,6 +728,100 @@ export function fromGameSession(
    */
   const artOf = (def: ObjectDef, instance?: WorldObject): string =>
     artNameFor((codex.productOf(def) ?? def).name, instance?.artSuffix());
+
+  /** プロパティを相手として指すときの表示（対応表の表示名と絵文字。プロパティは絵を持たない）。 */
+  const propertyLabelOf = (
+    propertyGlobalId: number,
+  ): { key: string | undefined; name: string; icon: string | undefined; art: string | undefined } => {
+    const name = codex.propertyNames.getName(propertyGlobalId);
+    const texts = characterTexts.prop(name);
+    return { key: name, name: texts.displayName, icon: texts.icon, art: undefined };
+  };
+
+  /**
+   * 影響1件（ステータス詳細ウィンドウ、Windows.md 8節）。相手は同じキャラクターのプロパティか、
+   * 影響を宣言しているオブジェクト（怪我・治療具）そのもの。
+   *
+   * movedはその増減で動く側のプロパティで、記号の色（良し悪し）だけがこれを見る。読めない相手
+   * （プロパティを持たないオブジェクト）は悪化としない。
+   */
+  const influenceOf = (influence: PropertyInfluence, moved: PropertyReading | undefined): StatusInfluence => {
+    const counterpart = influence.counterpart;
+    const shown =
+      counterpart.kind === 'object'
+        ? {
+            key: undefined,
+            name: nameOf(counterpart.object),
+            icon: iconOf(counterpart.object.def),
+            art: artOf(counterpart.object.def, counterpart.object),
+          }
+        : propertyLabelOf(counterpart.propertyGlobalId);
+
+    return {
+      key: shown.key,
+      name: shown.name,
+      icon: shown.icon,
+      art: shown.art,
+      reversible: influence.reversible,
+      increases: influence.increases,
+      worsens: influence.increases === (moved?.worsensUpward ?? false),
+      active: influence.active,
+    };
+  };
+
+  /** そのステータス1件の詳細（意味・今いる段・影響の出入り）。 */
+  const detailOf = (reading: PropertyReading): StatusDetail => {
+    const influences = game.player.instance.readInfluences(codex.propertyNames.getId(reading.name));
+    return {
+      description: characterTexts.prop(reading.name).description,
+      stage:
+        reading.stage === undefined
+          ? undefined
+          : {
+              name: locale.stage(reading.stage.name),
+              span: reading.stage.span,
+              boundaries: reading.stage.boundaries,
+            },
+      // 与えている影響で動くのは相手、受けている影響で動くのは自分（influenceOfのmoved）。
+      given: influences.given.map((influence) => influenceOf(influence, movedByGiven(influence))),
+      received: influences.received.map((influence) => influenceOf(influence, reading)),
+    };
+  };
+
+  /** 与えている影響で動く側＝相手のプロパティ。相手がオブジェクトなら読める値が無い。 */
+  const movedByGiven = (influence: PropertyInfluence): PropertyReading | undefined =>
+    influence.counterpart.kind === 'property'
+      ? game.player.instance.readProperty(influence.counterpart.propertyGlobalId)
+      : undefined;
+
+  /** タグが付いたキャラクターのプロパティを、表示名に直して並べる。未宣言のタグでは空。 */
+  const entriesWithTag = (tagGlobalId: number | undefined): readonly StatusContent[] =>
+    tagGlobalId === undefined
+      ? []
+      : game.player.instance.readPropertiesWithTag(tagGlobalId).map((reading) => {
+          const texts = characterTexts.prop(reading.name);
+          return {
+            key: reading.name,
+            name: texts.displayName,
+            icon: texts.icon,
+            value: reading.value,
+            ratio: reading.ratio,
+            alert: reading.alert,
+            worsensUpward: reading.worsensUpward,
+            detail: detailOf(reading),
+          };
+        });
+
+  // タグのIDは宣言順に振られる（WorldCodex.propertyTagNames）ため、昇順に見ればタブの並び順になる。
+  const propertyCategories: PropertyTab[] = [];
+  for (let tagGlobalId = 0; tagGlobalId < codex.propertyTagNames.count; tagGlobalId++) {
+    const entries = entriesWithTag(tagGlobalId);
+    if (entries.length > 0)
+      propertyCategories.push({
+        name: locale.propertyTag(codex.propertyTagNames.getName(tagGlobalId)).displayName,
+        entries,
+      });
+  }
 
   /**
    * そのオブジェクトが今在るスロット（カードの地を引く先。CardView.md 7節）。

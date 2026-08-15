@@ -107,6 +107,7 @@ object_texts:
       hydration:
         display_name: 水分
         icon: 💧
+        description: 体に残っている水。汗と呼気で絶えず失われ、飲めば戻る。尽きれば渇きで死ぬ。
       body_fat:
         display_name: 体脂肪
         icon: 🫃🏻
@@ -114,9 +115,11 @@ object_texts:
       wakefulness:
         display_name: 覚醒度
         icon: 💤
+        description: 意識を保っていられる残り。起きている限り減り続け、眠れば戻る。
       stamina:
         display_name: 体力
         icon: 💪
+        description: 今すぐ動ける余力。働けば減り、休めば戻る。
       carbohydrate:
         display_name: 糖質
         icon: 🌾
@@ -703,14 +706,61 @@ reason_texts:
   too_full: 腹がいっぱいで、これ以上は入らない。
 
 # 段（GameElementDefinition.md 6.4節のstages）のうち、UIが名前を読んで画面に出すもの。カードの上へ
-# 覆いとして出る（CardView.md 9.1節）ほか、死亡ダイアログが死因として出す（VitalsSystem.md 6節）ので、
-# 離れて見ても読める短い語にする。
+# 覆いとして出る（CardView.md 9.1節）ほか、死亡ダイアログが死因として出し（VitalsSystem.md 6節）、
+# ステータス詳細ウィンドウが今いる段として出す（Windows.md 8節）。
+#
+# 段の名前はプロパティごとの名前空間だが、対応表は平らなので、同じ名前の段には同じ言葉が出る
+# （怪我の傷の`sore`とキャラクタの痛みの`sore`は同じ語で通る）。
 stage_texts:
+  # カードの覆いとして出るもの。離れて見ても読める短い語にする（全角3文字まで）。
   unconscious: 気絶
   # 命を絶った値が居る段が、そのまま死因の名前になる（「渇きで死んだ。」）。
   dehydrated: 渇き
   starved: 飢え
   exsanguinated: 失血
+
+  # 痛み。
+  painless: 痛みなし
+  sore: 疼く
+  hurting: 痛む
+  unbearable: 耐えがたい
+  # 血。
+  replete: 十分
+  low: やや不足
+  bled: 出血
+  hemorrhaging: 大量出血
+  # 満腹度。
+  starving: 飢餓
+  hungry: 空腹
+  peckish: 小腹が空く
+  fed: 足りている
+  # 満水と満腹の両方に出る（どちらも「もう入らない」）。
+  full: いっぱい
+  # 水分。
+  parched: からから
+  thirsty: のどが渇く
+  dryish: やや渇き
+  hydrated: 潤っている
+  # 体脂肪。
+  gaunt: やせ細り
+  nourished: 標準
+  stout: 恰幅がいい
+  obese: 肥満
+  # 覚醒度。
+  overtired: 限界
+  sleepy: 眠い
+  yawning: あくび
+  rested: 休めている
+  # 体力。
+  exhausted: 疲労困憊
+  tired: 疲れ
+  winded: 息切れ
+  fresh: 元気
+  # 荷重。
+  light: 身軽
+  laden: 荷を負う
+  heavy: 重い
+  too_heavy: 重すぎる
 
 # 起きたことを告げる出来事（GameElementDefinition.md 9.8節のsignal）。起きた札の上に一瞬だけ浮かぶ
 # ので、離れて見ても読める短い語にする（CardView.md 14節）。
