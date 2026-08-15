@@ -1067,7 +1067,7 @@ export class PlayScene extends ResponsiveScene {
     this.childWindowCard = card;
     this.openChildWindow(
       { card, description: card.description },
-      [...this.autoFillAction(card), ...this.craftAction(card), ...this.windowActions(card)],
+      [...this.autoFillAction(card), ...this.craftActions(card), ...this.windowActions(card)],
       card.contents,
     );
   }
@@ -1118,13 +1118,13 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 製作中オブジェクトの「作業する」。工程の素材が揃っていれば、その工程ぶん時間と進捗を進める
-   * （RecipeSystem.md 4節。在庫確認と消費はYAMLの語彙で書けないためプログラム側）。
+   * 製作中オブジェクトの「作業する」と「中断」。
    *
-   * **閉じるのは経過し切ってから。** 他のアクションと違い、押した時点では閉じない——作業のあいだ
-   * 素材は材料の枠に在る（advanceCrafting）ので、それを映したまま経過を見せる。
+   * 作業は、工程の素材が揃っていれば、その工程ぶん時間と進捗を進める（RecipeSystem.md 4節。
+   * 在庫確認と消費はYAMLの語彙で書けないためプログラム側）。中断は作りかけを破棄するだけで、
+   * 入れてある素材はdestroyがその場へこぼす（GameElementDefinition.md 9.3節）。
    */
-  private craftAction(card: ObjectCardStack): ObjectWindowAction[] {
+  private craftActions(card: ObjectCardStack): ObjectWindowAction[] {
     const target = card.objects[0];
     if (target === undefined) return [];
     const recipe = recipeOf(target, this.codex);
@@ -1141,6 +1141,8 @@ export class PlayScene extends ResponsiveScene {
         minutes: step?.durationMinutes ?? 0,
         enabled: supplied,
         reason: supplied ? undefined : '素材が足りない。',
+        // **閉じるのは経過し切ってから。** 他のアクションと違い、押した時点では閉じない——作業の
+        // あいだ素材は材料の枠に在る（advanceCrafting）ので、それを映したまま経過を見せる。
         onTap: () => {
           this.applyToWorld(
             `作業した: ${card.name}`,
@@ -1150,6 +1152,17 @@ export class PlayScene extends ResponsiveScene {
             undefined,
             () => this.closeChildWindow(),
           );
+        },
+      },
+      {
+        label: '中断',
+        description: '作りかけをやめる。入れてある素材はその場へこぼれる。',
+        minutes: 0,
+        onTap: () => {
+          this.closeChildWindow();
+          this.applyToWorld(`中断した: ${card.name}`, () => {
+            target.destroy();
+          });
         },
       },
     ];
@@ -1647,7 +1660,7 @@ export class PlayScene extends ResponsiveScene {
    *
    * 映しているカードも引き直す。差し替えの前後で束は別物になっているので、そのまま使うと次の
    * アクションが古いインスタンスに対して組まれる。世界から消えていれば触らない——このあと閉じる
-   * ことが決まっている（craftActionのonDone）。
+   * ことが決まっている（craftActionsのonDone）。
    */
   private showChildWindowActions(): void {
     const opened = this.childWindowCard;
@@ -1660,7 +1673,7 @@ export class PlayScene extends ResponsiveScene {
     this.childWindow.setCard(card);
     this.childWindow.setActions([
       ...this.autoFillAction(card),
-      ...this.craftAction(card),
+      ...this.craftActions(card),
       ...this.windowActions(card),
     ]);
   }
