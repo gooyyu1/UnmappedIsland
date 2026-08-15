@@ -41,7 +41,7 @@
 wild_boar:
   combinations:
     strike:
-      with: weapon
+      with: {tag: weapon}
       duration: 15
 ```
 
@@ -129,7 +129,7 @@ wild_boar:
 monkey_carcass:
   combinations:
     butcher:
-      with: cutting_tool
+      with: {tag: cutting_tool}
       duration: 60
       destroy: self
       spawn:

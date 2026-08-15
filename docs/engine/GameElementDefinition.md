@@ -93,10 +93,15 @@ object_defs:
 
 ここでいうタグは `object_def` に付くもので、プロパティに付けるタグ（6.7 節）とは別の名前空間です。
 
-タグは、枠の`accept`（7.2節）・`combinations.with`（12.1節）が型・グループを指定する唯一の手段です。
-`object_defs` の id や trait 名では直接マッチングしません（trait は合成後に消える存在であり、外部から参照
-すべきではないため）。`beach` の例のように trait を経由せず直接 `tags` を書いても、同じタグを共有していれば
-同じ扱いを受けます。
+**「どの型が当てはまるか」を書く場所——枠の `accept`（7.2 節）と `combinations` の `with`（12.1 節）——は、
+`{tag: ...}` と `{object: ...}` の二択で同じ形をしています。** タグで指せばそのタグを持つあらゆる型
+（MOD 追加分も含む）が、`object_defs` の id で指せばまさにその型だけが当てはまります。**trait 名では
+どちらの形でもマッチングしません**（trait は合成後に消える存在であり、外部から参照すべきではないため）。
+`beach` の例のように trait を経由せず直接 `tags` を書いても、同じタグを共有していれば同じ扱いを受けます。
+
+どちらで書くかは、**後から仲間が増える余地があるか**で決めます。刃物・燃料のように「その役ができる物」の
+集まりならタグ、火種（`burning_tinder`）のように種類を増やす予定がその型そのものに無いなら id です。
+id で書けば、そのためだけの単発タグを新設せずに済みます。
 
 ## 5. traits（mixin）
 
@@ -527,9 +532,7 @@ object_defs:
 
 - **`accept`**: その枠が受け入れる型。`tag` か `object` のどちらか一方を指定します（両方またはどちらも
   なしはエラー）。省略すると型を問いません。
-  - `tag`: `tags`（4.1 節）で宣言したタグ名。そのタグを持つあらゆる型（MOD 追加分も含む）を受け入れます。
-  - `object`: `object_defs` の id そのもの。まさにその型だけを受け入れたい場合に、そのためだけの単発タグを
-    新設せずに書けます。trait 名では直接マッチングしません（4.1 節）。
+  書き方は `combinations` の `with`（12.1 節）と同じ二択です（4.1 節）。
 - **`max`**: その枠に積める同種の個数（省略で無制限）。**束ねられる型にだけ効きます**——
   `stackable: false` な型（道・かご、7.6 節）は同種でも束ならないので、1 枠には必ず 1 個しか入りません。
 
@@ -1239,7 +1242,7 @@ traits:
   liquid_container:
     combinations:
       pour_in:
-        with: liquid
+        with: {tag: liquid}
         move: {object: dragged, to: self}
 ```
 
@@ -1299,7 +1302,7 @@ actions:
 ```yaml
 combinations:
   strike:
-    with: weapon
+    with: {tag: weapon}
     pick:
       - weight: 70
         spawn: {object: laceration, into: self}
@@ -1314,7 +1317,7 @@ combinations:
 ```yaml
 combinations:
   strike:
-    with: weapon
+    with: {tag: weapon}
     signal: {dragged: chipped}   # 殴った側（重ねた武器）に起きたこととして告げる
 ```
 
@@ -1453,7 +1456,7 @@ actions:
 ## 12. combinations（ドラッグ型操作）
 
 `combinations` は、**変化の本体と言えるオブジェクト**に定義します（どちらへドラッグしても成立するので、
-受け側かどうかで決めません。12.3 節）。`with`（相手のカードが持つタグ、4.1 節）でマッチング対象を指定し、
+受け側かどうかで決めません。12.3 節）。`with`（相手のカードに求める型、4.1 節）でマッチング対象を指定し、
 宣言している側が `self`、相手が `dragged` になります。
 
 ```yaml
@@ -1461,7 +1464,7 @@ object_defs:
   wood:
     combinations:
       chop:
-        with: axe_tool
+        with: {tag: axe_tool}
         conditions:
           - {object: dragged, prop: durability, gt: 0}
         add:
@@ -1479,8 +1482,20 @@ object_defs:
 
 ### 12.1 with
 
-マッチング対象を、タグ（4.1 節）で指定します。`object_defs` の id や trait 名では直接マッチングしません
-（4.1 節）。そのタグを持つあらゆるカード（MOD 追加分・trait を介さず直接タグを宣言したカードも含む）と一致します。
+マッチング対象を、**枠の `accept`（7.2 節）と同じ `{tag: ...}` / `{object: ...}` の二択**で指定します
+（両方またはどちらもなしはエラー。4.1 節）。
+
+```yaml
+combinations:
+  chop:
+    with: {tag: axe_tool}          # そのタグを持つあらゆるカード
+  ignite:
+    with: {object: burning_tinder} # その型そのものだけ
+```
+
+`{tag: ...}` は、そのタグを持つあらゆるカード（MOD 追加分・trait を介さず直接タグを宣言したカードも
+含む）と一致します。`{object: ...}` はその型だけと一致し、**相手が 1 種類しか無い組み合わせのために
+単発のタグを新設せずに済みます**。trait 名ではどちらの形でもマッチングしません（4.1 節）。
 
 `combinations` も `duration`（11.3 節）を持てます。`{object, prop}` 参照では `dragged` も指せるため、
 「使う道具側のプロパティが所要時間を決める」（切れ味の悪い刃物ほど時間がかかる、など）も書けます。
@@ -1509,10 +1524,11 @@ object_defs:
   stick:
     combinations:
       craft_spear:
-        with: rope
+        with: {tag: rope}
         destroy: [self, dragged]
         spawn: {object: spear}
-  rope: {}
+  rope:
+    tags: [rope]
 ```
 
 上の例では、縄を棒へ重ねても棒を縄へ重ねても `craft_spear` が実行され、どちらの場合も `self` は棒、

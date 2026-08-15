@@ -609,7 +609,7 @@ object_defs:
   wood:
     combinations:
       chop:
-        with: axe_tool
+        with: {tag: axe_tool}
         conditions:
           - {object: dragged, prop: durability, gt: 0}
         spawn: {object: logs}
@@ -963,7 +963,7 @@ object_defs:
         value: empty
     combinations:
       pour_in:
-        with: liquid_container
+        with: {tag: liquid_container}
         conditions:
           - {prop: content, eq: {object: dragged, prop: content}}
         destroy: self
@@ -1012,7 +1012,7 @@ object_defs:
         value: empty
     combinations:
       pour_in:
-        with: liquid_container2
+        with: {tag: liquid_container2}
         set:
           self:
             content: {object: dragged, prop: content}
@@ -1212,6 +1212,35 @@ object_defs:
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
       /いずれかが必要です/,
+    );
+  });
+
+  it('combinationsのwithでtagとobjectを同時に指定するとエラーになる', () => {
+    const yaml = `
+object_defs:
+  hearth3:
+    combinations:
+      ignite:
+        with: {tag: tinder, object: burning_tinder3}
+        destroy: dragged
+  burning_tinder3: {}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+      /同時に指定できません/,
+    );
+  });
+
+  it('combinationsのwithをスカラーで書くとエラーになる（acceptと同じ{tag|object}の形）', () => {
+    const yaml = `
+object_defs:
+  hearth4:
+    combinations:
+      ignite:
+        with: tinder
+        destroy: dragged
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+      /マッピングである必要があります/,
     );
   });
 

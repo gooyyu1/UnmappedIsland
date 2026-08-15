@@ -60,7 +60,7 @@ object_defs:
         destroy: self
     combinations:
       cut:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         pick:
           - weight: 3
             spawn: {object: coconut_half, into: same_slot}
@@ -161,7 +161,7 @@ describe('定義の自己記述（describe）', () => {
     const cut = objectDef('coconut').combinations[0];
     const text = describeToText(codex, (out) => cut.describe(codex, out));
 
-    expect(text).toContain('with: cutting_toolを持つカードのドロップ');
+    expect(text).toContain('with: cutting_toolを持つ型のカードのドロップ');
     expect(text).toContain('pick:');
     // 候補の効果は候補（weight）より1段深い。
     expect(text).toContain('\n  weight = 3\n    spawn coconut_half → same_slot');

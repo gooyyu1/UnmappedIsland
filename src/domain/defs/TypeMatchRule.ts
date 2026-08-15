@@ -1,0 +1,58 @@
+import type { CraftingInput } from './CraftingStep';
+import type { DefNames, DescriptionToken } from './Description';
+import { objectRef, tagRef, text } from './Description';
+import type { ObjectDef } from './ObjectDef';
+
+/** マッチングの基準（TypeMatchRule参照）。 */
+type TypeMatchTargetKind =
+  /** targetはタグのグローバルID（4.1節）。候補がそのタグを持っていれば真。 */
+  | 'tag'
+  /** targetはobject_defのグローバルID。候補がまさにその型そのものであれば真。 */
+  | 'object';
+
+/**
+ * 「どの型が当てはまるか」の指定（GameElementDefinition.md 4.1節）。枠のaccept（7.2節）と
+ * combinationsのwith（12.1節）が共通で使う。
+ *
+ * タグで指せば、そのタグを持つあらゆる型（MOD追加分も含む）が当てはまる。object_defのidで指せば
+ * まさにその型だけが当てはまり、そのためだけの単発タグを新設せずに済む。trait名では直接
+ * マッチングしない（traitはmixin合成後に消えるため、外部から参照すべきではない）。
+ */
+export class TypeMatchRule {
+  private readonly kind: TypeMatchTargetKind;
+  private readonly target: number;
+
+  private constructor(kind: TypeMatchTargetKind, target: number) {
+    this.kind = kind;
+    this.target = target;
+  }
+
+  static tag(tagGlobalId: number): TypeMatchRule {
+    return new TypeMatchRule('tag', tagGlobalId);
+  }
+
+  static object(objectGlobalId: number): TypeMatchRule {
+    return new TypeMatchRule('object', objectGlobalId);
+  }
+
+  /** タグならcandidateがそのタグを持てば真、object_defならまさにその型であれば真。 */
+  matches(candidateDef: ObjectDef): boolean {
+    return this.kind === 'tag'
+      ? candidateDef.tags.includes(this.target)
+      : candidateDef.globalId === this.target;
+  }
+
+  /** この指定を書き表す（Description参照）。 */
+  describe(names: DefNames): readonly DescriptionToken[] {
+    return this.kind === 'tag'
+      ? [tagRef(names.tagName(this.target)), text('を持つ型')]
+      : [objectRef(names.objectName(this.target)), text('そのもの')];
+  }
+
+  /** この指定で相手を求める工程の入力1つ（CraftingStep参照）。consumedはその工程が相手を消すか。 */
+  craftingInput(consumed: boolean): CraftingInput {
+    return this.kind === 'tag'
+      ? { kind: 'tag', tagGlobalId: this.target, consumed }
+      : { kind: 'object', objectGlobalId: this.target, consumed };
+  }
+}

@@ -164,7 +164,7 @@ object_defs:
       # 餌を仕掛ける（TrapSystem.md 4節）。炉へ薪をくべるのとまったく同じ形（FireSystem.md 2節）で、
       # 移る量は餌の側が1箇所で持つ。草の餌と肉の餌で1つずつ。
       add_plant_bait:
-        with: plant_bait
+        with: {tag: plant_bait}
         duration: 1
         conditions:
           - {reason: trap_baited, prop: plant_bait, lt: 24}
@@ -177,7 +177,7 @@ object_defs:
         # 失うのは高々1個ぶん。
         destroy: dragged
       add_meat_bait:
-        with: meat_bait
+        with: {tag: meat_bait}
         duration: 1
         conditions:
           - {reason: trap_baited, prop: meat_bait, lt: 24}

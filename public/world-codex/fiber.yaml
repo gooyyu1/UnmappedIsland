@@ -28,7 +28,7 @@ object_defs:
     combinations:
       # 根元を刃物で断ち、運べる長さに切り分ける。株立ちなので1株から何本も採れる。
       fell:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         duration: 20
         destroy: self
         spawn: {object: banana_stem, count: 5, into: actor}
@@ -38,7 +38,7 @@ object_defs:
     tags: [fixture]
     combinations:
       fell:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         duration: 20
         destroy: self
         spawn:
@@ -72,7 +72,7 @@ object_defs:
     combinations:
       # 葉鞘を1枚ずつ剥ぎ、刃を立てて引き抜いて肉を落とす。残る髄と水はその場に捨てる。
       strip:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         duration: 30
         destroy: self
         spawn: {object: plant_fiber, count: 2}
@@ -90,7 +90,7 @@ object_defs:
     combinations:
       # 2束を手のひらで転がして1本に撚る。撚りに入りきらない短い屑は落ちる。
       spin:
-        with: plant_fiber
+        with: {tag: plant_fiber}
         duration: 20
         destroy: [self, dragged]
         spawn: {object: yarn}
@@ -104,7 +104,7 @@ object_defs:
     combinations:
       # 2本を撚りとは逆向きに撚り合わせる。互いの撚りが噛んで解けなくなり、太さと強さが出る。
       ply:
-        with: yarn
+        with: {tag: yarn}
         duration: 20
         destroy: [self, dragged]
         spawn: {object: cord}

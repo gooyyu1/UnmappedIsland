@@ -28,7 +28,7 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
   常に暗黙的に参加する。
 - **`combinations`（ドラッグ型、`Domain.Defs.CombinationDef`）**: カードを別のカードへ
   ドラッグ＆ドロップする操作。組み合わせを宣言している側が `self`、相手が `dragged` で、
-  `with`（タグのグローバルID）が `dragged` とのマッチング条件になる。宣言は**素材の側**に1つだけ置き
+  `with`（タグかobject_defのidで書く型の指定、12.1節）が `dragged` とのマッチング条件になる。宣言は**素材の側**に1つだけ置き
   （12.3節）、どちらの札をどちらへ運んでも同じ宣言が実行される——**どちらを `self` として試すかの順序は
   UI層が決める**（[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
 
@@ -55,7 +55,8 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 実行は次の順に進み、途中で失敗すると `false` を返して何も適用しない。順序に意味があるため、
 実装は `InteractionDef` に1つだけ置く（`with` マッチングだけは `CombinationDef` が先に見る）。
 
-1. `with` マッチング（combinations のみ）: `dragged` の `ObjectDef.Tags` に `with` タグが含まれるか。
+1. `with` マッチング（combinations のみ）: `dragged` の型が `with` の指定に当てはまるか
+   （`Domain.Defs.TypeMatchRule`。タグならそのタグを持つか、object_defならその型そのものか）。
 2. `conditions` 評価（3節）: 省略時は常に真。
 3. `duration` の解決: 「今の `self`（combinations では `dragged` も）の状態から見て、どれだけかかるか」
    なので、時間を進める前に分数だけ確定させる（切れ味の悪い刃物ほど時間がかかる、が書けるように）。

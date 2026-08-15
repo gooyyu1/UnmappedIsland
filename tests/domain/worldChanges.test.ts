@@ -48,7 +48,7 @@ object_defs:
       loot: {cell: {accept: {tag: item}}}
     combinations:
       rampage:
-        with: item
+        with: {tag: item}
         pick:
           - weight: 60
             destroy: dragged

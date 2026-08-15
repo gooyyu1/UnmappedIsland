@@ -113,7 +113,7 @@ traits:
       # **打撲の成分はshockが持ち、怪我としては表さない。** 一撃で「裂傷」と「打撲」の2枚を刺すと
       # 怪我スロットが溢れる。裂けた皮膚が傷（injuries.yaml）、殴られた揺れがshock、という分け方で足りる。
       strike:
-        with: weapon
+        with: {tag: weapon}
         duration: 15
         pick:
           # 打ち砕いた回。柄の遠心力が乗る武器（石斧）だけが引く。当たれば中型はその場で崩れ落ちる
@@ -242,7 +242,7 @@ object_defs:
       # 5000gの内訳: 生肉500g×4 + 獣骨500g + 生皮600g = 3100g。残る1900gは血と内臓・頭で、
       # 使い道が無いのでカードにしない。値を変えるときはこの内訳を崩さないこと。
       butcher:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         duration: 60
         destroy: self
         spawn:
@@ -436,7 +436,7 @@ object_defs:
       # 大きいぶん時間がかかるが、1kgあたりで見ればサル（60分/5kg）より速い——同じ手数で
       # 大きく取れるため。
       butcher:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         duration: 240
         destroy: self
         spawn:
@@ -456,7 +456,7 @@ object_defs:
       volume: {value: 2400}
     combinations:
       butcher:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         duration: 20
         destroy: self
         spawn:

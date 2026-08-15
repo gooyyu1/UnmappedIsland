@@ -1,7 +1,7 @@
 import type { YAMLMap } from 'yaml';
-import { asMap, entriesInOrder, requireScalar, tryGetScalar, tryGetSeq } from './yamlMapping';
+import { asMap, entriesInOrder, tryGetMap, tryGetScalar, tryGetSeq } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { tryGetNode } from './parseCommon';
+import { parseTypeMatchRule, tryGetNode } from './parseCommon';
 import { parseActiveEffectBody, parseWeight } from './parseActiveEffects';
 import {
   ACTION_CONDITION_ROOTS,
@@ -97,9 +97,15 @@ export function parseCombinations(
     const context = `'${objectDefName}'.combinations.'${name}'`;
     const map = asMap(node, context);
 
-    const withId = loader.tagNames.intern(requireScalar(map, 'with', context));
+    const withNode = tryGetMap(map, 'with', context);
+    if (withNode === undefined)
+      throw new YamlLoadError(
+        `${context}: 必須フィールド 'with' がありません（{tag: ...}か{object: ...}）。`,
+      );
+
+    const withRule = parseTypeMatchRule(loader, withNode, `${context}.with`);
     const body = parseInteractionBody(loader, context, map, true, COMBINATION_RESERVED_KEYS);
-    result.push(new CombinationDef(name, withId, body.requirements, body.effect, body.duration));
+    result.push(new CombinationDef(name, withRule, body.requirements, body.effect, body.duration));
   }
 
   return result;

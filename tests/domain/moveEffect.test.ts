@@ -135,7 +135,7 @@ object_defs:
     tags: [item]
     combinations:
       put_in:
-        with: item
+        with: {tag: item}
         move: {object: dragged, to: self}
     slots:
       contents:
@@ -177,7 +177,7 @@ object_defs:
     tags: [item]
     combinations:
       put_in:
-        with: item
+        with: {tag: item}
         move: {object: dragged, to: self}
     slots:
       contents:
@@ -292,7 +292,7 @@ object_defs:
     tags: [liquid]
     combinations:
       pour_in:
-        with: liquid
+        with: {tag: liquid}
         move: {object: dragged, to: parent}
 `,
       )

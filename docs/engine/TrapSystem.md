@@ -247,14 +247,14 @@ props:
 # 罠の側が宣言する。草の餌と肉の餌で1つずつ。
 combinations:
   add_plant_bait:
-    with: plant_bait
+    with: {tag: plant_bait}
     duration: 1
     conditions:
       - {reason: trap_baited, prop: plant_bait, lt: 24}
     transfer: {amount: 999, from_object: dragged, from_prop: plant_bait, to_prop: plant_bait}
     destroy: dragged
   add_meat_bait:
-    with: meat_bait
+    with: {tag: meat_bait}
     duration: 1
     conditions:
       - {reason: trap_baited, prop: meat_bait, lt: 24}

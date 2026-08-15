@@ -45,7 +45,7 @@ object_defs:
       loot: {cell: {accept: {tag: item}}}
     combinations:
       grab:
-        with: item
+        with: {tag: item}
         move: {object: dragged, to: self}
 `;
 

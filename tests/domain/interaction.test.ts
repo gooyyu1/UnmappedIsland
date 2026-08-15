@@ -300,7 +300,7 @@ object_defs:
   wood:
     combinations:
       chop:
-        with: axe_tool
+        with: {tag: axe_tool}
         add:
           dragged:
             durability: -1
@@ -331,7 +331,7 @@ object_defs:
   lever:
     combinations:
       operate:
-        with: marker_tag
+        with: {tag: marker_tag}
         add:
           dragged_parent:
             power: 3
@@ -362,7 +362,7 @@ object_defs:
         value: 0
     combinations:
       pour_in:
-        with: water_liquid
+        with: {tag: water_liquid}
         add:
           self:
             amount: 2
@@ -408,7 +408,7 @@ object_defs:
     tags: [liquid, water_liquid2]
     combinations:
       pour_in:
-        with: water_liquid2
+        with: {tag: water_liquid2}
         destroy: self
 `;
     const codex = load(yaml);
@@ -428,7 +428,7 @@ object_defs:
   wood2:
     combinations:
       chop:
-        with: axe_tool2
+        with: {tag: axe_tool2}
         destroy: self
   pebble3: {}
 `;
@@ -450,7 +450,7 @@ object_defs:
   wood3:
     combinations:
       chop:
-        with: sharp_tool
+        with: {tag: sharp_tool}
         destroy: self
   axe_tool3:
     traits: [sharp_tool]
@@ -467,15 +467,42 @@ object_defs:
     );
   });
 
+  it('withをobjectで書くと、その型そのものだけがマッチする', () => {
+    const yaml = `
+object_defs:
+  hearth2:
+    combinations:
+      ignite:
+        with: {object: burning_tinder2}
+        destroy: dragged
+  burning_tinder2:
+    tags: [tinder2]
+  dry_grass2:
+    tags: [tinder2]
+`;
+    const codex = load(yaml);
+    const session = new WorldSession(codex);
+    const hearthInstance = spawn(codex, 'hearth2');
+    const tinderInstance = spawn(codex, 'burning_tinder2');
+    const grassInstance = spawn(codex, 'dry_grass2');
+
+    expect(
+      hearthInstance.tryExecuteCombination(grassInstance, undefined, 'ignite', session),
+      '同じタグを持っていても、別の型はマッチしない',
+    ).toBe(false);
+    expect(hearthInstance.tryExecuteCombination(tinderInstance, undefined, 'ignite', session)).toBe(true);
+    expect(tinderInstance.parent, 'destroy: draggedが適用される').toBeUndefined();
+  });
+
   it('マッチするcombination検索はdraggedにマッチするものだけを返す', () => {
     const yaml = `
 object_defs:
   wood4:
     combinations:
       chop:
-        with: axe_tool4
+        with: {tag: axe_tool4}
       sand:
-        with: sandpaper
+        with: {tag: sandpaper}
   axe_tool4:
     tags: [axe_tool4]
 `;
@@ -494,7 +521,7 @@ object_defs:
   wood5:
     combinations:
       chop:
-        with: axe_tool5
+        with: {tag: axe_tool5}
         conditions:
           - {object: dragged, prop: durability, gt: 0}
         destroy: self

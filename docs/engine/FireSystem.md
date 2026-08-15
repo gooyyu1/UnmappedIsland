@@ -83,7 +83,7 @@ slots:
 # 炉の側が宣言する
 combinations:
   add_fuel:
-    with: fuel
+    with: {tag: fuel}
     duration: 1
     conditions:
       # 満杯の炉はくべさせない（無駄をここで止める）。上限は炉ごとに違うのでプロパティで持つ。
@@ -259,7 +259,7 @@ passives:
 # 火口の側が宣言する。成否は天気とスキルの段が重みを動かす
 combinations:
   light:
-    with: fire_starter
+    with: {tag: fire_starter}
     duration: 30
     pick:
       - weight: {prop: ignition_chance}
@@ -279,7 +279,7 @@ combinations:
 # 炉の側が宣言する
 combinations:
   ignite:
-    with: burning_tinder
+    with: {tag: burning_tinder}
     conditions:
       - {reason: no_fuel, prop: fuel, gt: 0}
     destroy: dragged
@@ -347,7 +347,7 @@ combinations:
 # 焚き火の側が宣言する
 combinations:
   add_stone:
-    with: stone
+    with: {tag: stone}
     destroy: dragged
     add: {self: {stones: 1}}
 props:

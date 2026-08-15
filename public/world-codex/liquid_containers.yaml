@@ -15,7 +15,7 @@ traits:
       # 受け側が空のとき、代表は容器自身なのでこちらが発火する（中身入りならliquid側が発火する）。
       # 空いている量だけ入り、入りきらない分は注ぎ元に残る（quantitativeの規定）。
       pour_in:
-        with: liquid
+        with: {tag: liquid}
         move: {object: dragged, to: self}
 
   # 液体に共通する、量としての振る舞い。
@@ -42,7 +42,7 @@ traits:
       # 受け側が中身入りのとき、代表は中身の液体自身。移し先は自分ではなく容器なのでto: parent。
       # 異種の液体はcontentの枠が1つしかないため入らず、条件を書く必要がない。
       pour_in:
-        with: liquid
+        with: {tag: liquid}
         move: {object: dragged, to: parent}
 
   sealed_container:
