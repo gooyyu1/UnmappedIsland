@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "src/assets/objects/roasted_rat.png を作り直すためのレシピ。build.py が読む。",
+    "丸焼きのネズミ。解体せず丸ごと火にかけたもの（public/world-codex/animals.yaml）。",
+    "",
+    "**罠に掛かった死体（rat_carcass）の生データから派生させる。** 同じ個体が焼けたものなので、",
+    "姿勢も体つきも変えない。変わるのは毛と皮の色だけ。",
+    "",
+    "**毛は残さない。** 丸焼きなので、毛が焼け落ちて皮が剥き出しになる。毛のまま焦げ目だけ付くと、",
+    "焼いたのではなく火事に遭った鼠に見える。",
+    "",
+    "大きさは死体と同じ256。",
+    "",
+    "肉と違って tolerance は既定寄りの40でよい（焼けた皮は紙よりじゅうぶん暗い）。"
+  ],
+  "output": "src/assets/objects/roasted_rat.png",
+  "edit": {
+    "source": "rat_carcass.json",
+    "prompt": "Show the same rat after it has been roasted whole over a fire, lying in the same place in the same pose at the same size. All of the fur is gone: the bare skin is now roasted a deep golden brown, crisp and taut over the body, with darker browned patches and a few small blackened marks where the fire touched it, on the ears, the feet and along the tail. The eye stays closed and the body keeps the same shape, only a little shrunken. Keep the same soft hand painted illustration style with gentle natural shading, the same flat even lighting, and the same plain empty white page with a wide white margin all around it and one soft grey shadow on the ground beneath it. There are no flames, no smoke, no skewer, no plate, no herbs and no blood, and nothing else in the image. No text, no letters, no numbers, no signature.",
+    "seed": 3
+  },
+  "cardArt": {
+    "size": "256",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
