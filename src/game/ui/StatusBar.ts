@@ -75,16 +75,27 @@ export interface StatusInfluence {
   readonly active: boolean;
 }
 
+/**
+ * バーに重ねる、段の刻みと今いる段（[`Windows.md`](../../../docs/ui/Windows.md) 8.1節）。
+ */
+export interface StatusStage {
+  /** 今いる段の表示名。 */
+  readonly name: string;
+
+  /** 今いる段がバーの中で占める区間（0〜1）。持たない段では囲みも名札も出さない。 */
+  readonly span: { readonly start: number; readonly end: number } | undefined;
+
+  /** 段の境目（0〜1、昇順）。バーに刻む目盛りになる。 */
+  readonly boundaries: readonly number[];
+}
+
 /** ステータス詳細ウィンドウ（[`Windows.md`](../../../docs/ui/Windows.md) 8節）に出す内容。 */
 export interface StatusDetail {
   /** そのステータスが何を表すか（対応表の`description`）。まだ書かれていなければundefined。 */
   readonly description: string | undefined;
 
-  /** 今いる段の表示名。段を宣言していないプロパティはundefined。 */
-  readonly stageName: string | undefined;
-
-  /** バーの上に囲みで出す、今いる段の区間（0〜1）。段を持たないプロパティはundefined。 */
-  readonly stageSpan: { readonly start: number; readonly end: number } | undefined;
+  /** 段の刻みと今いる段。段を宣言していないプロパティはundefined。 */
+  readonly stage: StatusStage | undefined;
 
   /** このステータスが与えている影響。 */
   readonly given: readonly StatusInfluence[];

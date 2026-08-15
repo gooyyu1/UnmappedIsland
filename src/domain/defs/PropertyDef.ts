@@ -128,14 +128,18 @@ export interface StageSpan {
 }
 
 /**
- * 今いる段（6.4節）を、表示側が要る形だけ切り出したもの（PropertyDef.stageOf）。
+ * 段（6.4節）の刻みと、その中で今どこにいるか（PropertyDef.stageOf）。
  * nameは識別子であり表示名ではない（表示名はLocalization.stageが引く）。
  */
 export interface StageReading {
+  /** 今いる段の名前。 */
   readonly name: string;
 
   /** rangeの中でこの段が占める区間。rangeを持たないプロパティと、eqで決まる段ではundefined。 */
   readonly span: StageSpan | undefined;
+
+  /** 段の境目（rangeの中での位置、昇順）。両端（range自身の上下限）は含まない。 */
+  readonly boundaries: readonly number[];
 }
 
 /**
@@ -455,7 +459,21 @@ export class PropertyDef {
   stageOf(effectiveValue: number): StageReading | undefined {
     const stage = this.resolveStage(effectiveValue);
     if (stage === undefined) return undefined;
-    return { name: stage.name, span: this.spanOf(stage) };
+    return { name: stage.name, span: this.spanOf(stage), boundaries: this.stageBoundaries() };
+  }
+
+  /**
+   * 段の境目（rangeの中での位置、昇順）。**両端は含まない**——rangeの上下限はバーの端そのもので、
+   * 刻む線を引く場所ではない。完全一致（eq）で決まる段は値の並びの上に境目を持たない。
+   */
+  private stageBoundaries(): readonly number[] {
+    const boundaries: number[] = [];
+    for (const stage of this.stages) {
+      if (stage.min === undefined || stage.eq !== undefined) continue;
+      const ratio = this.ratioOf(stage.min);
+      if (ratio !== undefined && ratio > 0 && ratio < 1) boundaries.push(ratio);
+    }
+    return boundaries.sort((a, b) => a - b);
   }
 
   /**

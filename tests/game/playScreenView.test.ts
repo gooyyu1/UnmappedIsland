@@ -1176,10 +1176,12 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       .flatMap((tab) => tab.entries)
       .find((entry) => entry.key === 'body_fat')?.detail;
 
-    expect(bodyFat?.stageName, '開始直後は標準の段（characters/）').toBe('nourished');
+    expect(bodyFat?.stage?.name, '開始直後は標準の段（characters/）').toBe('nourished');
     // 段はrangeの中の区間で、上端は次の段のmin（nourished 480〜stout 2880、medic）。
-    expect(bodyFat?.stageSpan?.start).toBeCloseTo(480 / 5760);
-    expect(bodyFat?.stageSpan?.end).toBeCloseTo(2880 / 5760);
+    expect(bodyFat?.stage?.span?.start).toBeCloseTo(480 / 5760);
+    expect(bodyFat?.stage?.span?.end).toBeCloseTo(2880 / 5760);
+    // 目盛りは全部の段の境目（starved 0 は下限なので含まない。gaunt 96・nourished 480・stout 2880・obese 4320）。
+    expect(bodyFat?.stage?.boundaries).toEqual([96, 480, 2880, 4320].map((value) => value / 5760));
     expect(
       bodyFat?.received.map((influence) => `${influence.name}${influence.increases ? '+' : '-'}`),
       '3大栄養素が流れ込み、自分の段の基礎代謝が削る',

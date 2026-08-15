@@ -25,14 +25,24 @@ const DESCRIPTION_LINE_GAP = 6;
 /** 説明がまだ用意されていないステータスに出す、代わりの1行。 */
 const NO_DESCRIPTION = 'これについて分かっていることはまだ無い。';
 
-/** バーと、その上に重ねる「今いる段の範囲」の囲み。 */
-const BAR_HEIGHT = 44;
-const STAGE_BOX_INSET = -8;
+/** バーと、そこに刻む段の目盛り・今いる段の囲みの太さ。 */
+const BAR_HEIGHT = 52;
+const STAGE_TICK_WIDTH = 2;
 const STAGE_BOX_WIDTH = 4;
 
-/** 囲みの上に添える段の名前と、囲みとの間隔。 */
-const STAGE_SIZE = 26;
-const STAGE_GAP = 10;
+/** 今いる段を、バーの上でどれだけ明るく塗るか（囲みの中だけ）。 */
+const STAGE_FACE_ALPHA = 0.3;
+
+/**
+ * 今いる段を指す名札（紙の板＋下向きのしっぽ）。**文字は見出しと同じ大きさ**にする——値そのものを
+ * 出さないこの画面では、「何のステータスか」と「今どの段にいるか」が同じ重さの答えだから。
+ * 高さは横型（1920×1080u）に収まる範囲で取る。
+ */
+const STAGE_SIZE = TITLE_SIZE;
+const STAGE_PLATE_PADDING_X = 30;
+const STAGE_PLATE_PADDING_Y = 12;
+const STAGE_TAIL_WIDTH = 26;
+const STAGE_TAIL_HEIGHT = 16;
 
 /** 影響の一覧の見出しと、そこに並ぶ枠。 */
 const SECTION_SIZE = 24;
@@ -108,22 +118,23 @@ export class StatusDetailWindow {
     const windowWidth = Math.min(metrics.px(WINDOW_WIDTH), options.area.width, width * 0.92);
     const contentWidth = windowWidth - padding * 2;
 
-    // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に置く必要がある。
+    // 台紙と段の名札は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に
+    // 置く必要がある（後から作ると、板が自分の上の文字を覆う）。
     const board = scene.add.graphics();
     this.objects.push(board);
+    const plate = scene.add.graphics();
+    this.objects.push(plate);
 
     const title = addLabel(scene, metrics, 0, 0, content.name, { size: TITLE_SIZE, bold: true });
 
-    // 今いる段の名前は、バーの上の囲み（8.1節）に添える。見出しの右端ではなく囲みの上へ置くのは、
-    // 「その名前がバーのどこからどこまでか」を、名前と囲みの位置関係そのもので言うため。
+    // 今いる段の名前は、バーの上へ名札として置き、しっぽでその段を指す（8.1節）。見出しの端ではなく
+    // バーの上に置くのは、「今ここ」を名前と目盛りの位置関係そのもので言うため。
     const stage =
-      detail?.stageName === undefined
+      detail?.stage === undefined
         ? undefined
-        : addLabel(scene, metrics, 0, 0, detail.stageName, {
-            size: STAGE_SIZE,
-            bold: true,
-          }).setOrigin(0.5, 0);
-    const stageHeight = stage === undefined ? 0 : stage.height + metrics.px(STAGE_GAP);
+        : addLabel(scene, metrics, 0, 0, detail.stage.name, { size: STAGE_SIZE, bold: true }).setOrigin(0.5);
+    const plateHeight = stage === undefined ? 0 : stage.height + metrics.px(STAGE_PLATE_PADDING_Y) * 2;
+    const stageHeight = stage === undefined ? 0 : plateHeight + metrics.px(STAGE_TAIL_HEIGHT);
 
     const description = addLabel(scene, metrics, 0, 0, detail?.description ?? NO_DESCRIPTION, {
       size: DESCRIPTION_SIZE,
@@ -173,8 +184,9 @@ export class StatusDetailWindow {
     this.objects.push(description);
 
     y += description.height + gap + stageHeight;
-    // 段の名前を置く中央。囲みがあればその中央、無ければバーの左端に揃える。
-    let stageCenterX = left + (stage?.width ?? 0) / 2;
+    // 名札の中央と、しっぽが指す先。囲みがあればその中央、無ければバーの左端に揃える。
+    let plateCenterX = left + (stage?.width ?? 0) / 2;
+    let tailX = plateCenterX;
     if (content.ratio !== undefined) {
       const bar = new ProgressBar(scene, metrics, left, y, contentWidth, barHeight, content.ratio, {
         worsensUpward: content.worsensUpward,
@@ -182,26 +194,21 @@ export class StatusDetailWindow {
       bar.setAlert(content.alert);
       this.objects.push(bar);
 
-      // 今いる段の範囲は、バーの上へ囲みとして重ねる（バーより後に作る＝手前へ出す）。
-      const span = detail?.stageSpan;
+      // 段の目盛りと今いる段の囲みは、バーの上へ重ねる（バーより後に作る＝手前へ出す）。
+      const marks = scene.add.graphics();
+      this.objects.push(marks);
+      const barRect = { x: left, y, width: contentWidth, height: barHeight };
+      this.drawStageTicks(marks, metrics, barRect, detail?.stage?.boundaries ?? []);
+
+      const span = detail?.stage?.span;
       if (span !== undefined) {
-        const box = scene.add.graphics();
-        const inset = metrics.px(STAGE_BOX_INSET);
         const boxX = left + contentWidth * span.start;
         const boxWidth = contentWidth * (span.end - span.start);
-        drawBox(
-          box,
-          { x: boxX, y: y + inset, width: boxWidth, height: barHeight - inset * 2 },
-          {
-            border: COLOR.text,
-            borderWidth: Math.max(1, metrics.px(STAGE_BOX_WIDTH)),
-            radius: metrics.px(SIZE.radius) / 2,
-          },
-        );
-        this.objects.push(box);
-        // 名前は囲みの中央へ。端の段では囲みからはみ出しても、ウィンドウの中には収める。
-        const half = (stage?.width ?? 0) / 2;
-        stageCenterX = Math.min(Math.max(boxX + boxWidth / 2, left + half), left + contentWidth - half);
+        this.drawStageBox(marks, metrics, { ...barRect, x: boxX, width: boxWidth });
+        // 名札は囲みの中央へ。端の段では囲みからはみ出しても、ウィンドウの中には収める。
+        const half = stage === undefined ? 0 : plateWidth(metrics, stage) / 2;
+        tailX = boxX + boxWidth / 2;
+        plateCenterX = Math.min(Math.max(tailX, left + half), left + contentWidth - half);
       }
     } else {
       this.objects.push(
@@ -211,9 +218,15 @@ export class StatusDetailWindow {
       );
     }
 
-    // 段の名前は囲みの上（高さはバーの手前で取ってある）。
+    // 名札の板としっぽは、文字より先に作ってある（板が文字を覆わないように）。
     if (stage !== undefined) {
-      stage.setPosition(stageCenterX, y - stageHeight);
+      this.drawStagePlate(plate, metrics, stage, {
+        centerX: plateCenterX,
+        tailX,
+        top: y - stageHeight,
+        height: plateHeight,
+      });
+      stage.setPosition(plateCenterX, y - stageHeight + plateHeight / 2);
       this.objects.push(stage);
     }
 
@@ -379,6 +392,74 @@ export class StatusDetailWindow {
   }
 
   /**
+   * 段の境目をバーに刻む。**全部の段を刻む**のは、次の段までの距離だけでなく「このステータスは
+   * 全部で何段あって、自分は何番目か」も読めるようにするため（Windows.md 8.1節）。
+   */
+  private drawStageTicks(
+    marks: Phaser.GameObjects.Graphics,
+    metrics: ScreenMetrics,
+    bar: Rect,
+    boundaries: readonly number[],
+  ): void {
+    marks.lineStyle(Math.max(1, metrics.px(STAGE_TICK_WIDTH)), COLOR.cardBorder, 0.35);
+    for (const boundary of boundaries) {
+      const x = bar.x + bar.width * boundary;
+      marks.lineBetween(x, bar.y, x, bar.y + bar.height);
+    }
+  }
+
+  /** 今いる段を、明るい面と太い囲みで示す。囲みはバーと同じ丸みで、バーの縁にぴたりと重ねる。 */
+  private drawStageBox(marks: Phaser.GameObjects.Graphics, metrics: ScreenMetrics, box: Rect): void {
+    const radius = box.height / 4;
+    marks.fillStyle(COLOR.textOnDark, STAGE_FACE_ALPHA);
+    marks.fillRoundedRect(box.x, box.y, box.width, box.height, radius);
+    marks.lineStyle(Math.max(1, metrics.px(STAGE_BOX_WIDTH)), COLOR.cardBorder, 1);
+    marks.strokeRoundedRect(box.x, box.y, box.width, box.height, radius);
+  }
+
+  /**
+   * 段の名札（紙の板と、下向きのしっぽ）。板は名前の幅に合わせ、**しっぽは板の中央ではなく指す先
+   * （囲みの中央）から降ります**——端の段では板をウィンドウの中へ寄せるので、板の中央から降ろすと
+   * 指している場所がずれます。
+   */
+  private drawStagePlate(
+    plate: Phaser.GameObjects.Graphics,
+    metrics: ScreenMetrics,
+    label: Phaser.GameObjects.Text,
+    at: { centerX: number; tailX: number; top: number; height: number },
+  ): void {
+    const width = plateWidth(metrics, label);
+    const bottom = at.top + at.height;
+    drawBox(
+      plate,
+      { x: at.centerX - width / 2, y: at.top, width, height: at.height },
+      {
+        fill: COLOR.optionsBar,
+        border: COLOR.cardBorder,
+        borderWidth: Math.max(1, metrics.px(2)),
+        radius: metrics.px(SIZE.radius),
+      },
+    );
+
+    const tailWidth = metrics.px(STAGE_TAIL_WIDTH);
+    const tailHeight = metrics.px(STAGE_TAIL_HEIGHT);
+    // しっぽの根元は板の中に収める（板から離れた三角にしない）。
+    const tailX = Math.min(
+      Math.max(at.tailX, at.centerX - width / 2 + tailWidth),
+      at.centerX + width / 2 - tailWidth,
+    );
+    plate.fillStyle(COLOR.cardBorder, 1);
+    plate.fillTriangle(
+      tailX - tailWidth / 2,
+      bottom,
+      tailX + tailWidth / 2,
+      bottom,
+      tailX,
+      bottom + tailHeight,
+    );
+  }
+
+  /**
    * 絵を持たない相手の代わりに出す見出し。対応表の絵文字があればそれを、それも無ければ表示名を
    * 枠の幅で折り返して出す（StatusArea.md 3節と同じ代用）。
    */
@@ -397,6 +478,11 @@ export class StatusDetailWindow {
     name.setWordWrapCallback(wrapByCharacter(width));
     return name;
   }
+}
+
+/** 段の名札の幅（名前に左右の余白を足したもの）。 */
+function plateWidth(metrics: ScreenMetrics, label: Phaser.GameObjects.Text): number {
+  return label.width + metrics.px(STAGE_PLATE_PADDING_X) * 2;
 }
 
 /**

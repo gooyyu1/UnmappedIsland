@@ -774,8 +774,14 @@ export function fromGameSession(
     const influences = game.player.instance.readInfluences(codex.propertyNames.getId(reading.name));
     return {
       description: characterTexts.prop(reading.name).description,
-      stageName: reading.stage === undefined ? undefined : locale.stage(reading.stage.name),
-      stageSpan: reading.stage?.span,
+      stage:
+        reading.stage === undefined
+          ? undefined
+          : {
+              name: locale.stage(reading.stage.name),
+              span: reading.stage.span,
+              boundaries: reading.stage.boundaries,
+            },
       // 与えている影響で動くのは相手、受けている影響で動くのは自分（influenceOfのmoved）。
       given: influences.given.map((influence) => influenceOf(influence, movedByGiven(influence))),
       received: influences.received.map((influence) => influenceOf(influence, reading)),
