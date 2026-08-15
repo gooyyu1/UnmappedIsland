@@ -5,12 +5,15 @@ import { ProgressBar } from './ProgressBar';
 import { onPressRelease } from './tap';
 import { COLOR, FONT_FAMILY, cssColor } from './theme';
 
-/** 名前欄の幅とバーの高さ（ScreenLayout_Mock.htmlの.status-name/.status-bar-container）。 */
-const NAME_WIDTH = 140;
+/** バーの高さ（ScreenLayout_Mock.htmlの.status-bar-container）。 */
 const BAR_HEIGHT = 36;
 
-/** 名前とバーの間隔。 */
-const NAME_GAP = 12;
+/** アイコン欄の幅と、そこに出す絵の大きさ。 */
+const ICON_WIDTH = 44;
+const ICON_SIZE = 34;
+
+/** 見出しとバーの間隔。 */
+const LABEL_GAP = 12;
 
 /** 固定表示の印を出す欄の幅。印が出ていない間も名前の位置が動かないよう、常に空けておく。 */
 const PIN_WIDTH = 34;
@@ -38,6 +41,12 @@ export interface StatusContent {
   readonly key: string;
 
   readonly name: string;
+
+  /**
+   * 名前の代わりに行の左へ出す絵（StatusArea.md 3節）。宣言が無ければ表示名を出すので、
+   * 絵を持たないプロパティを固定表示にしても行が無名にはならない。
+   */
+  readonly icon?: string;
 
   /** 実効値。ratioを持たないプロパティを数値で見せるために使う。 */
   readonly value: number;
@@ -70,10 +79,20 @@ export interface StatusContent {
   readonly onTogglePin?: () => void;
 }
 
+/**
+ * 行の左に出す見出し。**どちらも絵を出し**、プロパティウィンドウはその右に表示名も添える
+ * （絵と名前の対応をそこで覚えられるようにするため、Windows.md 6節）。ステータスエリアは絵だけで、
+ * 名前に要る幅をバーへ回す。
+ *
+ * **添えるかどうかと名前欄の幅を1つの宣言にする**のは、幅が要るのが表示名だけだから——別々の
+ * 選択肢にすると、呼ぶ側が2つを噛み合わせて渡す決まりを覚えることになる。
+ */
+export type StatusLabel = { readonly kind: 'icon' } | { readonly kind: 'withName'; readonly width: number };
+
 /** 行の見せ方の選択肢。 */
 export interface StatusBarOptions {
-  /** 名前欄の幅。長い表示名が並ぶプロパティウィンドウだけが広げる。 */
-  readonly nameWidth?: number;
+  /** 行の左に出す見出し。省略すると絵だけ。 */
+  readonly label?: StatusLabel;
 
   /**
    * 変化を見せ終わったときに呼ぶ。安全域へ戻った行はそれまで並びに残しているため、外す機会が
@@ -83,10 +102,10 @@ export interface StatusBarOptions {
 }
 
 /**
- * ステータス1件分の「固定表示の印＋名前＋バー＋増減」。行の高さはバーの高さと等しい。
+ * ステータス1件分の「固定表示の印＋見出し＋バー＋増減」。行の高さはバーの高さと等しい。
  * 割合を定義できないプロパティは、バーの代わりに実効値そのものを出す。
  *
- * 危険域・致命的域のバーは枠を明滅させる（StatusArea.md）。名前欄をタップすると
+ * 危険域・致命的域のバーは枠を明滅させる（StatusArea.md）。見出しの欄をタップすると
  * 固定表示が切り替わる。
  */
 export class StatusBar extends Phaser.GameObjects.Container {
@@ -122,8 +141,11 @@ export class StatusBar extends Phaser.GameObjects.Container {
 
     const height = metrics.px(BAR_HEIGHT);
     const pinWidth = metrics.px(PIN_WIDTH);
-    const nameWidth = metrics.px(options.nameWidth ?? NAME_WIDTH);
-    const barX = pinWidth + nameWidth + metrics.px(NAME_GAP);
+    const label = options.label ?? { kind: 'icon' };
+    const iconWidth = metrics.px(ICON_WIDTH);
+    const labelWidth =
+      label.kind === 'icon' ? iconWidth : iconWidth + metrics.px(LABEL_GAP) + metrics.px(label.width);
+    const barX = pinWidth + labelWidth + metrics.px(LABEL_GAP);
     const changeWidth = metrics.px(CHANGE_WIDTH);
     const barWidth = Math.max(0, width - barX - changeWidth - metrics.px(CHANGE_GAP));
 
@@ -135,23 +157,14 @@ export class StatusBar extends Phaser.GameObjects.Container {
       .setOrigin(0.5);
     this.add(this.pinMark);
 
-    const label = scene.add
-      .text(pinWidth, height / 2, content.name, {
-        fontFamily: FONT_FAMILY,
-        fontSize: `${metrics.fontPx(30)}px`,
-        fontStyle: 'bold',
-        color: cssColor(COLOR.text),
-      })
-      .setOrigin(0, 0.5);
-    // 名前欄に収まらない長い表示名は縮めて収める（はみ出すとバーに重なって読めなくなるため）。
-    if (label.width > nameWidth) label.setScale(nameWidth / label.width);
-    this.add(label);
+    for (const text of createLabel(scene, metrics, content, label, pinWidth, iconWidth, height))
+      this.add(text);
 
-    // 名前は小さすぎてタップしにくいため、印の欄と名前欄いっぱいの当たり判定を別に置く。
+    // 見出しは小さすぎてタップしにくいため、印の欄と見出しの欄いっぱいの当たり判定を別に置く。
     const togglePin = content.onTogglePin;
     if (togglePin !== undefined) {
       const hitArea = scene.add
-        .zone(0, 0, pinWidth + nameWidth, height)
+        .zone(0, 0, pinWidth + labelWidth, height)
         .setOrigin(0)
         .setInteractive({ useHandCursor: true });
       this.add(hitArea);
@@ -286,4 +299,54 @@ export class StatusBar extends Phaser.GameObjects.Container {
       .setText(increased ? '▲' : '▼')
       .setColor(cssColor(worsened ? COLOR.statusDecreased : COLOR.statusIncreased));
   }
+}
+
+/**
+ * 行の左の見出し。絵は絵の欄の中央へ、表示名はその右へ置く。
+ *
+ * **名前を添えない欄では、絵を持たないプロパティは表示名が代わりを務める**（どのプロパティも固定表示に
+ * すればステータスエリアへ出るため、絵は揃っているとは限らない）。欄の幅は代用しても変えない——バーの
+ * 左端が行ごとにずれると、長さを見比べられなくなる。
+ */
+function createLabel(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  content: StatusContent,
+  label: StatusLabel,
+  x: number,
+  iconWidth: number,
+  height: number,
+): readonly Phaser.GameObjects.Text[] {
+  const texts: Phaser.GameObjects.Text[] = [];
+
+  if (content.icon !== undefined) {
+    const icon = scene.add
+      .text(x + iconWidth / 2, height / 2, content.icon, {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(ICON_SIZE)}px`,
+      })
+      .setOrigin(0.5);
+    texts.push(fitted(icon, iconWidth));
+  }
+
+  const named = label.kind === 'withName';
+  if (named || content.icon === undefined) {
+    const name = scene.add
+      .text(named ? x + iconWidth + metrics.px(LABEL_GAP) : x, height / 2, content.name, {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(30)}px`,
+        fontStyle: 'bold',
+        color: cssColor(COLOR.text),
+      })
+      .setOrigin(0, 0.5);
+    texts.push(fitted(name, label.kind === 'withName' ? metrics.px(label.width) : iconWidth));
+  }
+
+  return texts;
+}
+
+/** 欄に収まらないものは縮めて収める（はみ出すとバーに重なって読めなくなるため）。 */
+function fitted(text: Phaser.GameObjects.Text, width: number): Phaser.GameObjects.Text {
+  if (text.width > width) text.setScale(width / text.width);
+  return text;
 }

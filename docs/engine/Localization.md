@@ -36,6 +36,27 @@ object_texts:
         display_name: 注ぎ移す
 ```
 
+## icon: 名前の代わりに置ける絵
+
+`display_name` と並べて `icon` を書けます。**名前を出す場所が、代わりにこれを出せる**という宣言で、
+今読んでいるのはステータスの行だけです（[`StatusArea.md`](../ui/StatusArea.md) 3 節）。
+
+```yaml
+object_texts:
+  default:
+    props:
+      hydration:
+        display_name: 水分
+        icon: 💧
+```
+
+**無ければ表示名に戻ります。** 絵は一度に揃うものではないので、書いていないプロパティが混じっても
+行は名無しになりません。今の値は絵文字ですが、これは絵が用意できるまでの仮の姿です。
+
+言語に依らない値でありながら言語ごとの対応表にあるのは、**名前とその代わりを1箇所に置くため**です。
+別の節や WorldCodex 側に分けると、同じプロパティの見せ方が2つのファイルに散り、
+新しい言語を足すときに「名前は書いたが絵は別の場所」という食い違いが起こります。
+
 ## defaultエントリ: メンバーの共通の文字列
 
 同じ名前のプロパティ・アクションを多くのオブジェクトが共有するため（`exploration_progress` は
@@ -231,6 +252,7 @@ locale.object('coconut').description          // '硬い殻に覆われた実。
 locale.object('canteen').displayNameWithContent('水')   // '水入りの水筒'
 locale.object('coconut').action('eat').displayName
 locale.object('coconut').prop('freshness').displayName
+locale.object('captain').prop('hydration').icon          // '💧' / 宣言が無ければundefined
 locale.object('coconut').combination('pour_in').displayName
 locale.propertyTag('nutrition').displayName   // '栄養'
 locale.symbol('scorching').displayName        // '灼熱'
@@ -246,8 +268,9 @@ locale.locationName(name)                     // 生成された土地の名前�
 知らない節・キーは無視するため、実装が追いつく前に対応表へ節を足しても壊れません。
 
 同梱の対応表については、カードに並ぶ型（`item`/`fixture` タグを持つ `object_def`）・土地（型・亜種）・
-シンボルが漏れなく表示名を持つこと、および存在しない識別子のエントリが残っていないことを自動テストで
-検証します（`tests/locale/localization.test.ts`）。
+シンボルが漏れなく表示名を持つこと、キャラクタのプロパティが漏れなく `icon` を持つこと、および
+存在しない識別子のエントリが残っていないことを自動テストで検証します
+（`tests/locale/localization.test.ts`）。
 
 **検証の対象外（props・actions など）の抜けは、閲覧ビューアで探すのが一番早いです。** 表示名が識別子の
 ままの対象には「未翻訳」の印が付くため、`npm run dev:codex` で開いて眺めれば漏れが目に入ります。

@@ -71,6 +71,9 @@ object_texts:
       exploration_progress:
         display_name: 探索の進み具合
         description: 共通の説明
+      hydration:
+        display_name: 水分
+        icon: 💧
     actions:
       eat:
         display_name: 食べる
@@ -105,6 +108,12 @@ object_texts:
     expect(locale.object('coconut').action('eat').displayName).toBe('かじる');
     expect(locale.object('coconut').action('eat').description).toBe('殻を割って中身を食べる。');
     expect(locale.object('coconut').combination('pour_in').displayName).toBe('注ぎ移す');
+  });
+
+  it('名前の代わりに置ける絵を引ける（宣言が無ければundefined）', () => {
+    expect(locale.object('captain').prop('hydration').icon).toBe('💧');
+    expect(locale.object('coconut').prop('freshness').icon, '書いていないプロパティ').toBeUndefined();
+    expect(locale.object('coconut').prop('weight').icon, 'どこにも定義が無いプロパティ').toBeUndefined();
   });
 
   it('オブジェクト側に定義が無いメンバーはdefaultエントリへフォールバックする', () => {
@@ -248,6 +257,24 @@ describe('同梱の表示文字列ファイル', () => {
     for (let globalId = 0; globalId < codex.propertyTagNames.count; globalId++) {
       const name = codex.propertyTagNames.getName(globalId);
       expect(locale.propertyTag(name).displayName, `${name} には表示名が必要`).not.toBe(name);
+    }
+  });
+
+  it('キャラクタのプロパティはすべてアイコンを持つ', () => {
+    // ステータスの行の左に出る（StatusArea.md 3節）。どのプロパティも固定表示にすればそこへ並ぶので、
+    // statusタグの有無では絞らない。欠けるとその行だけ絵ではなく名前になる。
+    const characterTag = codex.tagNames.getId('character');
+
+    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
+      const objectDef = codex.objects.get(globalId);
+      if (!objectDef.tags.includes(characterTag)) continue;
+
+      const texts = locale.object(objectDef.name);
+      for (const propertyDef of objectDef.enumeratePropertyDefs())
+        expect(
+          texts.prop(propertyDef.name).icon,
+          `${objectDef.name}の${propertyDef.name} にはアイコンが必要`,
+        ).toBeDefined();
     }
   });
 

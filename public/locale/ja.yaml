@@ -44,6 +44,9 @@ object_texts:
     # 青い覆いが示す（CardView.md 10節）ので、名前で言い直す必要はない。
     display_name_in_progress: '{product}'
     props:
+      # iconは、ステータスの行の左に名前の代わりに出す絵（docs/ui/StatusArea.md 3節）。
+      # キャラクタのプロパティはどれも固定表示にできる＝ステータスエリアへ出せるので、全部が持つ。
+      # 今は絵文字だが、絵が用意でき次第そちらへ差し替える。
       exploration_progress:
         display_name: 探索の進み具合
         description: この土地をどれだけ調べ尽くしたか。100%に達しても探索は続けられるが、隠された道はもう見つからない。
@@ -55,9 +58,11 @@ object_texts:
         display_name: 発見に必要な探索の進み具合
       load:
         display_name: 荷重
+        icon: 🎒
         description: 今の担ぎ方で感じている、持ち物と装備の重さ。重すぎると歩けなくなる。
       pain:
         display_name: 痛み
+        icon: 💢
         description: 今感じている痛みの強さ。負っている怪我が重なるほど強くなり、治れば引く。
       durability:
         display_name: 耐久
@@ -81,6 +86,7 @@ object_texts:
         description: この傷から流れている血の勢い。押さえれば早く、放っておいてもいずれ固まって止まる。
       blood:
         display_name: 血液量
+        icon: 🩸
         description: 体に残っている血。傷から流れ出た分は戻らず、失いすぎれば意識が薄れ、尽きれば死ぬ。
       vulnerability:
         display_name: 無防備さ
@@ -96,28 +102,38 @@ object_texts:
         description: 殴られた身体の揺れ。当たった瞬間に跳ね上がり、時間とともに引いていく。
       satiety:
         display_name: 満腹度
+        icon: 🍔
         description: 今どれだけ腹が満ちているか。胃に入っている分と、腸で吸収されている分の両方で決まる。
       stomach:
         display_name: 胃の中身
+        icon: 🥣
         description: 食べた物が最初に入る所。ここが満杯だともう食べられず、少しずつ腸へ送られていく。
       intestine:
         display_name: 腸の中身
+        icon: 🌀
         description: 吸収されつつある分。ここを通って初めて蓄えになるので、食べてから身になるまでには時が要る。
       hydration:
         display_name: 水分
+        icon: 💧
       body_fat:
         display_name: 体脂肪
+        icon: 🫃🏻
         description: 体に蓄えた脂肪。腸から吸収した分が積み上がり、何もしなくても少しずつ減る。尽きれば飢えで死ぬ。
       wakefulness:
         display_name: 覚醒度
+        icon: 💤
       stamina:
         display_name: 体力
+        icon: 💪
       vegetable_nutrition:
         display_name: 野菜の栄養
+        icon: 🥬
       meat_nutrition:
         display_name: 肉の栄養
+        icon: 🍖
       grain_tuber_nutrition:
         display_name: 穀物・イモの栄養
+        icon: 🌾
       fuel:
         display_name: 薪
         description: 炉に載っている燃えるもの。尽きれば火は弱っていく。
