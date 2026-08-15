@@ -10,8 +10,8 @@
 # 着火は2段構え。火起こし具を火口へ重ねて火種を作り、火種を炉へ重ねて種火を立てる。火種は1tickで
 # 燃え尽きるので、火のある場所へ持ち歩くことはできない（同3.1節）。
 #
-# 焼く物・焼く石・火にかけた器はfireスロットへ入るが、薪は入らない。くべた薪は物として残らず、
-# 炉のfuelへ溶けて消える（同2.1節）。
+# 直火で焼く物（roastable）と火にかけた器（cookware）はfireスロットへ入るが、薪は入らない。くべた薪は
+# 物として残らず、炉のfuelへ溶けて消える（同2.1節）。
 #
 # 加熱は炉が子のcooking_progressを進めるだけで、何分で何になるかは料理側の型が持つ（同7節）。
 # 生肉→焼けた肉→焦げた塊の鎖はanimals.yamlにある。
@@ -237,8 +237,8 @@ object_defs:
     slots:
       fire:
         cells:
-          - {accept: {tag: item}}
-          - {accept: {tag: item}}
+          - {accept: {tag: roastable}}
+          - {accept: {tag: roastable}}
     passives:
       # 種火が冷める速さ。薪が尽きている間だけ効く——薪が載っていれば火は育つ側になる。
       - conditions:
@@ -273,8 +273,8 @@ object_defs:
     slots:
       fire:
         cells:
-          - {accept: {tag: item}}
-          - {accept: {tag: item}}
+          - {accept: {tag: roastable}}
+          - {accept: {tag: roastable}}
           - {accept: {tag: cookware}}
     passives:
       - conditions:
@@ -302,9 +302,9 @@ object_defs:
     slots:
       fire:
         cells:
-          - {accept: {tag: item}}
-          - {accept: {tag: item}}
-          - {accept: {tag: item}}
+          - {accept: {tag: roastable}}
+          - {accept: {tag: roastable}}
+          - {accept: {tag: roastable}}
           - {accept: {tag: cookware}}
           - {accept: {tag: cookware}}
     passives:

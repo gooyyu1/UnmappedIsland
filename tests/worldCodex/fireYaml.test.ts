@@ -298,4 +298,25 @@ describe('fire.yamlの火の連鎖', () => {
     expect(cellCount('three_stone_hearth')).toBe(3);
     expect(cellCount('stone_hearth')).toBe(5);
   });
+
+  it('火の中の枠は、丸焼きの鎖に並ぶ物だけを受け入れる', () => {
+    const fireSlot = codex.objects
+      .get(codex.objectNames.getId('campfire'))
+      .getSlotDef(codex.slotNames.getId('fire'));
+    const accepts = (objectName: string): boolean =>
+      fireSlot?.acceptsAnywhere(codex.objects.get(codex.objectNames.getId(objectName))) === true;
+
+    // 焦げた塊は焼けないが、焦げた瞬間に枠を引き継ぐために入る（7.2節）。
+    for (const name of ['raw_meat', 'roasted_meat', 'charred_lump', 'rat_carcass', 'roasted_rat']) {
+      expect(accepts(name), name).toBe(true);
+    }
+    for (const name of ['stone', 'twig', 'fire_drill', 'dry_grass']) {
+      expect(accepts(name), name).toBe(false);
+    }
+
+    const hearth = litCampfire();
+    const stone = spawnInto('stone', land, 'items');
+    expect(stone.moveToSlot(hearth, codex.slotNames.getId('fire'))).toBeDefined();
+    expect(stone.parent, '入らなかった石は手元に残る').toBe(land);
+  });
 });
