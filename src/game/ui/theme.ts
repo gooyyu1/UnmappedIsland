@@ -205,6 +205,13 @@ export const COLOR = {
   progressRingTrack: 0x1b3a4b,
   progressRingFill: 0x4caf50,
 
+  /**
+   * 経過時間の数字。移動の暗転中も輪ごと暗幕の手前に残る（CardInteraction.md 9節）ので、
+   * 明るいカードの上でも暗幕の上でも読めるよう、塗りと縁取りの明暗を離す。
+   */
+  progressRingElapsed: 0xffffff,
+  progressRingElapsedOutline: 0x1b3a4b,
+
   headerBar: 0xf5e9d5,
   slotPortrait: 0xffe5d1,
   slotDelete: 0xfff0f0,
