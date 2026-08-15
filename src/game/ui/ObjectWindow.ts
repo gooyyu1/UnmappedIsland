@@ -23,8 +23,14 @@ import { wrapByCharacter } from './textLayout';
 import { Tooltip } from './Tooltip';
 import type { TooltipContent } from './Tooltip';
 
-/** 説明文を出すウィンドウの横幅（プロパティウィンドウと揃える）。狭い画面では中身ごと縮める。 */
-const DESCRIPTION_WIDTH = 760;
+/**
+ * オブジェクトウィンドウの**最低の横幅**（プロパティウィンドウと揃える）。中身の並びを持たない
+ * ——説明文を出す——ウィンドウは、ちょうどこの幅になる。狭い画面では中身ごと縮める。
+ *
+ * **枠の少ないスロットでも、これより狭くしない。** 幅は最下段の操作のボタンの幅でもあるので、
+ * 中身の少なさに合わせて詰めると、映しているものとは関係のない都合でボタンが窮屈になる。
+ */
+const MIN_WIDTH = 760;
 
 /**
  * 4枠に収まらないスロットで、**次の枠の頭を覗かせる幅**（u単位）。ちょうど4枠ぶんで切ると、そこで
@@ -92,7 +98,7 @@ export interface ObjectWindowOptions {
   /** 映しているスロット。持てば右の段が中身の並びに、持たなければ説明文になる。 */
   readonly slot?: ObjectWindowSlot;
 
-  /** 最下段に横並びにする操作。空でも「閉じる」だけの行になる。 */
+  /** 横並びにする操作。「閉じる」はこの下にもう1行取るので、空なら最下段が閉じるだけになる。 */
   readonly actions: readonly ObjectWindowAction[];
 
   /** ウィンドウを収める領域。 */
@@ -105,7 +111,8 @@ export interface ObjectWindowOptions {
  * カードやスロットのボタンを押すと開く子ウィンドウ（Windows.md 1節 子ウィンドウ）。
  *
  * **受け取るのはオブジェクト（必須）とスロット（任意）の2つだけ。** 組み方はどれも同じ3段で、
- * 最上段が見出し、最下段が操作のボタン、間が「左の自分のカード」と「右の説明文か中身の並び」。
+ * 最上段が見出し、最下段がボタン（操作の行と「閉じる」の行、addActions）、間が「左の自分のカード」と
+ * 「右の説明文か中身の並び」。
  * スロットを持つかで、見出しと真ん中の右側が決まる。
  *
  * **説明文と中身の並びは同時に出さない。** 縦にも横にも収まらないので、スロットがあればそちらを採る。
@@ -139,8 +146,15 @@ export class ObjectWindow {
   private readonly metrics: ScreenMetrics;
   private readonly onClose: () => void;
 
-  /** ボタンを並べる行。作り直すときも同じ場所へ置く。 */
-  private readonly actionRow: Rect;
+  /**
+   * ボタンを並べる行（上が操作、下が「閉じる」）。作り直すときも同じ場所へ置く。
+   *
+   * **操作の行は、開いた時点で操作を持つウィンドウにだけ空ける。** 説明文だけのウィンドウで空の行を
+   * 空けると、下に何も無い帯が残る。開いている間に操作の数は変わる（可否も並びも引き直す、setActions）が、
+   * 0だったものが増えることは無い——代表（`represented_by`）が入れ替わる物は、空のときも自分の操作を
+   * 持っているため。
+   */
+  private readonly actionRows: readonly Rect[];
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: ObjectWindowOptions) {
     this.scene = scene;
@@ -190,7 +204,10 @@ export class ObjectWindow {
 
     const columnHeight = contents === undefined ? (description?.height ?? 0) : laneHeight;
     const middleHeight = Math.max(cardHeight, columnHeight);
-    const windowHeight = padding * 2 + title.height + gap + middleHeight + gap + actionHeight;
+    // 最下段は「操作の行」と「閉じるの行」の2段。操作を持たないウィンドウでは1段（閉じるだけ）。
+    const actionRows = options.actions.length === 0 ? 1 : 2;
+    const actionsHeight = actionHeight * actionRows + gap * (actionRows - 1);
+    const windowHeight = padding * 2 + title.height + gap + middleHeight + gap + actionsHeight;
     const window = centerWindow(metrics, options.area, windowWidth, windowHeight);
     drawBox(board, window, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
 
@@ -235,12 +252,13 @@ export class ObjectWindow {
       this.objects.push(description);
     }
 
-    this.actionRow = {
+    const actionsY = middleY + middleHeight + gap;
+    this.actionRows = Array.from({ length: actionRows }, (_, index) => ({
       x: window.x + padding,
-      y: middleY + middleHeight + gap,
+      y: actionsY + index * (actionHeight + gap),
       width: contentWidth,
       height: actionHeight,
-    };
+    }));
     this.addActions(options.actions);
 
     // 吹き出しはボタンより後に作る（表示順は生成順で決まるため、ボタンの上に出す必要がある）。
@@ -290,11 +308,11 @@ export class ObjectWindow {
   }
 
   /**
-   * ウィンドウの横幅。
+   * ウィンドウの横幅。中身の並びを出すなら、カードの幅＋枠の数から決める。少ないときに間延びせず、
+   * 多いときは領域いっぱいまで広げて見える枚数を増やす（それでも収まらない分は横スクロールで送る）。
    *
-   * - 中身の並びを出すなら、カードの幅＋枠の数から決める。少ないときに間延びせず、多いときは
-   *   領域いっぱいまで広げて見える枚数を増やす（それでも収まらない分は横スクロールで送る）。
-   * - 説明文を出すなら決まった幅（DESCRIPTION_WIDTH）。
+   * **どのウィンドウもMIN_WIDTHより狭くはしない。** 説明文を出すウィンドウはちょうどその幅で、
+   * 枠の少ないスロットもそこまで広げる。
    */
   private decideWidth(
     metrics: ScreenMetrics,
@@ -304,21 +322,26 @@ export class ObjectWindow {
   ): number {
     const limit = Math.min(options.area.width, metrics.width * 0.92);
     const slot = options.slot;
-    if (slot === undefined) return Math.min(metrics.px(DESCRIPTION_WIDTH), limit);
-
-    const own = slot.unbounded ? 0 : metrics.px(SIZE.cardWidth) + gap;
-    return Math.min(own + laneWidthFor(metrics, slot) + padding * 2, limit);
+    const own = slot?.unbounded === true ? 0 : metrics.px(SIZE.cardWidth) + gap;
+    const contents = slot === undefined ? 0 : own + laneWidthFor(metrics, slot) + padding * 2;
+    return Math.min(Math.max(contents, metrics.px(MIN_WIDTH)), limit);
   }
 
   /**
-   * 操作のボタンを1行に横並びにする。「閉じる」も同じ行の末尾に置く（探索ウィンドウと同じ扱い）。
-   * 幅は行の中で等分し、数が少ないときに間延びしないよう上限で頭打ちにして、行ごと中央へ寄せる。
+   * 操作のボタンを並べる。**「閉じる」は操作と同じ行に置かない**——閉じるは世界を変えない別のもの
+   * なのに同じ行に居ると、操作の数が閉じるの大きさを決め、閉じるが操作の幅を1つぶん削る。数で割る
+   * 限りこの綱引きは消えないので、行を分けて切り離す。
+   *
+   * 閉じるが**常に最下段の同じ場所に在る**ことは変えない。スマホでは「押しやすい場所に必ず在る」
+   * ことが、閉じる操作の値打ちそのものだからで、折り返しを採らないのもこれが理由
+   * （数によって位置が動く）。
+   *
+   * どちらの行も幅は等分し、数が少ないときに間延びしないよう上限で頭打ちにして、行ごと中央へ寄せる。
    *
    * アクションのボタンは、長押しの間だけ説明文とかかる時間を吹き出しに出す。ボタンには名前しか
    * 載らないので、実行する前に「何が起きるか・どれだけ時間を取られるか」を確かめられるようにする。
    */
   private addActions(actions: readonly ObjectWindowAction[]): void {
-    const { scene, metrics, actionRow: row } = this;
     const close: ObjectWindowAction = {
       label: '閉じる',
       description: undefined,
@@ -328,7 +351,17 @@ export class ObjectWindow {
         this.onClose();
       },
     };
-    const buttons = [...actions, close];
+
+    // 行が1つしか無いのは、開いた時点で操作が無かったウィンドウ（actionRows）。後から現れた操作は
+    // 行き場が無いので、閉じると同じ行へ並べる（分かれる前の並べ方に落ちるだけ）。
+    const rows = this.actionRows.length === 1 ? [[...actions, close]] : [[...actions], [close]];
+    rows.forEach((buttons, index) => this.addButtonRow(this.actionRows[index], buttons, close));
+  }
+
+  /** 1行ぶんのボタンを、等分・上限つきで中央へ並べる。 */
+  private addButtonRow(row: Rect, buttons: readonly ObjectWindowAction[], close: ObjectWindowAction): void {
+    const { scene, metrics } = this;
+    if (buttons.length === 0) return;
 
     const gap = metrics.px(ACTION_GAP);
     const buttonWidth = Math.min(
