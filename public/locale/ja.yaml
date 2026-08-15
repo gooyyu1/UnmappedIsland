@@ -102,7 +102,7 @@ object_texts:
         description: 殴られた身体の揺れ。当たった瞬間に跳ね上がり、時間とともに引いていく。
       satiety:
         display_name: 満腹度
-        icon: 🍛
+        icon: 🍔
         description: 今どれだけ腹が満ちているか。胃に入っている分と、腸で吸収されている分の両方で決まる。
       stomach:
         display_name: 胃の中身
@@ -117,11 +117,11 @@ object_texts:
         icon: 💧
       body_fat:
         display_name: 体脂肪
-        icon: 🧈
+        icon: 🫃🏻
         description: 体に蓄えた脂肪。腸から吸収した分が積み上がり、何もしなくても少しずつ減る。尽きれば飢えで死ぬ。
       wakefulness:
         display_name: 覚醒度
-        icon: 😴
+        icon: 💤
       stamina:
         display_name: 体力
         icon: 💪
