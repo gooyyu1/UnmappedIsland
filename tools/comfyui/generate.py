@@ -8,6 +8,9 @@ ComfyUIの画面を操作せず、API形式のワークフロー（workflows/*.a
 
     python generate.py rocky_field_fixtures_lane --out ../../src/assets/backgrounds/_raw
 
+--raw-store を渡すと、生成の前に置き場（raw_store.py）へ訊き、同じ入力の絵が既にあれば
+ComfyUIへ投げずにそれを使う。
+
 使い方の全体は README.md を参照。
 """
 
@@ -15,14 +18,23 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
+import subprocess
+import tempfile
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import raw_store
+
 HERE = Path(__file__).resolve().parent
 DEFAULT_SERVER = "http://127.0.0.1:8188"
+COMFY = Path(os.environ.get("LOCALAPPDATA", "")) / "Comfy-Desktop/ComfyUI-Installs/ComfyUI/ComfyUI"
+# 直前に流したワークフローの種類。リポジトリではなく実行環境の状態なので一時ディレクトリに置く。
+STATE = Path(tempfile.gettempdir()) / "unmapped-island-comfyui-workflow.txt"
 
 # 切り出しの余白を持たせるため、仕上がり（2048x512）より広く生成する。中央へ寄りがちな
 # 特徴物を避けて切り出せるようにするのが狙い（README「大きめに生成して切り出す」）。
@@ -79,7 +91,7 @@ def wait_for_images(server: str, prompt_id: str, timeout: float) -> list[dict]:
     raise TimeoutError(f"{timeout}秒待っても生成が終わりませんでした")
 
 
-def download(server: str, image: dict, destination: Path) -> None:
+def download(server: str, image: dict) -> bytes:
     query = urllib.parse.urlencode(
         {
             "filename": image["filename"],
@@ -88,7 +100,60 @@ def download(server: str, image: dict, destination: Path) -> None:
         }
     )
     with urllib.request.urlopen(f"{server}/view?{query}") as response:
-        destination.write_bytes(response.read())
+        return response.read()
+
+
+def responds(server: str) -> bool:
+    try:
+        urllib.request.urlopen(f"{server}/system_stats", timeout=5)
+        return True
+    except (urllib.error.URLError, OSError):
+        return False
+
+
+def restart_server(server: str) -> None:
+    """ComfyUIを起動し直し、応答するまで待つ。"""
+    port = server.rsplit(":", 1)[-1]
+    subprocess.run(
+        ["powershell", "-NoProfile", "-Command",
+         "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | "
+         f"Where-Object {{ $_.CommandLine -like '*main.py --port {port}*' }} | "
+         "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"],
+        check=False,
+    )
+    subprocess.Popen(
+        [str(COMFY / ".venv/Scripts/python.exe"), "main.py", "--port", port],
+        cwd=COMFY, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    for _ in range(60):
+        if responds(server):
+            print("ComfyUIを起動し直しました", flush=True)
+            return
+        time.sleep(3)
+    raise SystemExit("ComfyUIが起動しません")
+
+
+def ensure_running(server: str) -> None:
+    """ComfyUIが応答しなければ起動する。パディングに触れない生成（qwen_edit.py）はこれだけでよい。"""
+    if not responds(server):
+        restart_server(server)
+
+
+def ensure_process(server: str, workflow: str) -> None:
+    """投げる直前に、ComfyUIを「この種類の生成が入っていないプロセス」にする。
+
+    タイリングのワークフローは畳み込みのパディングを差し替える。掛けたぶんは戻しているが完全には
+    戻らず、種類が混ざると後から作った絵がわずかにずれる（実測で平均1.94。混ざらなければ差は0）。
+    絵としては同じでもレシピから同じPNGが得られなくなるので、種類の変わり目で作り直す。
+
+    **置き場から生データが取れた手ではここへ来ない。** 生成しないならプロセスは汚れず、
+    ComfyUIが起動している必要も無い。
+    """
+    kind = "tiling" if "tiling" in workflow else "plain"
+    if responds(server) and STATE.exists() and STATE.read_text("utf-8").strip() == kind:
+        return
+    restart_server(server)
+    STATE.write_text(kind, "utf-8")
 
 
 def main() -> None:
@@ -117,6 +182,7 @@ def main() -> None:
         help="LoRAのトリガーワードを足さない。画風を出さず、輪郭を和らげる用途だけに使いたいとき",
     )
     parser.add_argument("--suffix", default="", help="出力ファイル名の末尾に足す文字（比較用）")
+    parser.add_argument("--raw-store", help="生データの置き場。同じ入力の絵があれば生成しない")
     parser.add_argument("--server", default=DEFAULT_SERVER)
     parser.add_argument("--timeout", type=float, default=900)
     args = parser.parse_args()
@@ -130,6 +196,7 @@ def main() -> None:
 
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
+    store = raw_store.Store(args.raw_store) if args.raw_store else None
 
     for index in range(args.count):
         seed = args.seed if args.seed is not None else random.getrandbits(48)
@@ -176,32 +243,40 @@ def main() -> None:
                 node["inputs"]["strength_model"] = args.lora_strength
                 node["inputs"]["strength_clip"] = args.lora_strength
 
-        print(f"[{index + 1}/{args.count}] seed={seed} {args.width}x{args.height} 生成中...")
-        started = time.time()
-        prompt_id = post_prompt(args.server, workflow)
-        images = wait_for_images(args.server, prompt_id, args.timeout)
-        print(f"    {time.time() - started:.0f}秒で完了")
+        stem = f"{args.name}_{seed}{args.suffix}"
+        raw_key = raw_store.key(None, workflow)
+        data = store.get(stem, raw_key) if store else None
+        if data is None:
+            ensure_process(args.server, args.workflow)
+            print(f"[{index + 1}/{args.count}] seed={seed} {args.width}x{args.height} 生成中...")
+            started = time.time()
+            prompt_id = post_prompt(args.server, workflow)
+            # ワークフローのSaveImageは1つなので、1手が出す絵も1枚。
+            image = wait_for_images(args.server, prompt_id, args.timeout)[0]
+            print(f"    {time.time() - started:.0f}秒で完了")
+            data = download(args.server, image)
+            if store:
+                print(f"    置き場へ {store.put(stem, raw_key, data).name}")
+        else:
+            print(f"[{index + 1}/{args.count}] seed={seed} 置き場の生データを使います")
 
-        for image_index, image in enumerate(images):
-            suffix = "" if len(images) == 1 else f"_{image_index}"
-            stem = f"{args.name}_{seed}{args.suffix}{suffix}"
-            download(args.server, image, out_dir / f"{stem}.png")
-            # 同じ絵を作り直すのに要る情報を、絵の隣へ丸ごと残す。
-            (out_dir / f"{stem}.json").write_text(
-                json.dumps(
-                    {
-                        "name": args.name,
-                        "seed": seed,
-                        "workflowFile": args.workflow,
-                        "values": values,
-                        "workflow": workflow,
-                    },
-                    ensure_ascii=False,
-                    indent=2,
-                ),
-                "utf-8",
-            )
-            print(f"    -> {out_dir / f'{stem}.png'}")
+        (out_dir / f"{stem}.png").write_bytes(data)
+        # 同じ絵を作り直すのに要る情報を、絵の隣へ丸ごと残す。
+        (out_dir / f"{stem}.json").write_text(
+            json.dumps(
+                {
+                    "name": args.name,
+                    "seed": seed,
+                    "workflowFile": args.workflow,
+                    "values": values,
+                    "workflow": workflow,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            "utf-8",
+        )
+        print(f"    -> {out_dir / f'{stem}.png'}")
 
 
 if __name__ == "__main__":

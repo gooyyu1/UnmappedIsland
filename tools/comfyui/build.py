@@ -16,27 +16,24 @@ edit を持つレシピは、生成の代わりに別レシピの生データを
 砂埃の粒を1枚出す（dust_puff.py）。
 
 --keep-raw を付けると、後処理前の生成物を残す（プロンプトを詰め直すときに見比べられる）。
-ComfyUIは要るが、起動していなければこちらで起動する。
+
+生成の1手ごとの生データは置き場（raw_store.py）が持つ。**既にあるものは作らないので、2度目からは
+ComfyUIが要らない**（後処理を詰め直すときは、生データを取ってきて掛け直すだけになる）。
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import tempfile
-import time
-import urllib.error
-import urllib.request
 from pathlib import Path
+
+import raw_store
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
-COMFY = Path(os.environ.get("LOCALAPPDATA", "")) / "Comfy-Desktop/ComfyUI-Installs/ComfyUI/ComfyUI"
-# 直前に流したワークフローの種類。リポジトリではなく実行環境の状態なので一時ディレクトリに置く。
-STATE = Path(tempfile.gettempdir()) / "unmapped-island-comfyui-workflow.txt"
 
 
 def echo(text: str) -> None:
@@ -55,42 +52,7 @@ def run(script: str, args: list[str]) -> None:
     subprocess.run(command, check=True, cwd=HERE)
 
 
-def restart_server(server: str) -> None:
-    """ComfyUIを起動し直し、応答するまで待つ。"""
-    port = server.rsplit(":", 1)[-1]
-    subprocess.run(
-        ["powershell", "-NoProfile", "-Command",
-         "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | "
-         f"Where-Object {{ $_.CommandLine -like '*main.py --port {port}*' }} | "
-         "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"],
-        check=False,
-    )
-    subprocess.Popen(
-        [str(COMFY / ".venv/Scripts/python.exe"), "main.py", "--port", port],
-        cwd=COMFY, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
-    for _ in range(60):
-        try:
-            urllib.request.urlopen(f"{server}/system_stats", timeout=5)
-            print("ComfyUIを起動し直しました", flush=True)
-            return
-        except (urllib.error.URLError, OSError):
-            time.sleep(3)
-    raise SystemExit("ComfyUIが起動しません")
-
-
-def base_workflow(recipe: dict, recipes_dir: Path) -> str | None:
-    """editの連鎖を根まで辿り、生成に使うワークフロー名を返す。生成しないレシピではNone。"""
-    while "edit" in recipe:
-        source = recipe["edit"].get("source")
-        if source is None:
-            recipe = {k: v for k, v in recipe.items() if k != "edit"}
-            break
-        recipe = json.loads((recipes_dir / source).read_text("utf-8"))
-    return recipe.get("workflow")
-
-
-def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str,
+def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str, store: str,
                 done: dict[str, Path] | None = None) -> Path:
     """レシピの生データ（後処理前の絵）を作り、そのパスを返す。
 
@@ -109,11 +71,11 @@ def produce_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str,
     done = {} if done is None else done
     key = json.dumps(recipe, sort_keys=True, ensure_ascii=False)
     if key not in done:
-        done[key] = build_raw(recipe, recipes_dir, raw_dir, server, done)
+        done[key] = build_raw(recipe, recipes_dir, raw_dir, server, store, done)
     return done[key]
 
 
-def build_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str,
+def build_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str, store: str,
               done: dict[str, Path]) -> Path:
     """produce_rawの中身（生データを実際に作る）。呼ぶのはproduce_rawだけ。"""
     edit = recipe.get("edit")
@@ -123,7 +85,7 @@ def build_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str,
             if edit.get("source")
             else {k: v for k, v in recipe.items() if k != "edit"}
         )
-        source_raw = produce_raw(source, recipes_dir, raw_dir, server, done)
+        source_raw = produce_raw(source, recipes_dir, raw_dir, server, store, done)
         edited = raw_dir / f"{Path(recipe['output']).stem}_edit_{edit['seed']}.png"
         run(
             "qwen_edit.py",
@@ -132,6 +94,7 @@ def build_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str,
                 "--out", str(edited),
                 "--prompt", edit["prompt"],
                 "--seed", str(edit["seed"]),
+                "--raw-store", store,
                 "--server", server,
             ],
         )
@@ -244,6 +207,7 @@ def build_raw(recipe: dict, recipes_dir: Path, raw_dir: Path, server: str,
             # 0は「LoRAを効かせない」という指定なので、getの真偽で見てはいけない。
             *(["--lora-strength", str(recipe["loraStrength"])] if "loraStrength" in recipe else []),
             *(["--no-trigger"] if recipe.get("noTrigger") else []),
+            "--raw-store", store,
             "--server", server,
         ],
     )
@@ -290,6 +254,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("recipe")
     parser.add_argument("--keep-raw", metavar="DIR", help="後処理前の生成物を残すディレクトリ")
+    parser.add_argument("--raw-store", metavar="DIR", help="生データの置き場（既定は raw_store.py）")
     parser.add_argument("--server", default="http://127.0.0.1:8188")
     args = parser.parse_args()
 
@@ -297,13 +262,13 @@ def main() -> None:
     recipe = json.loads(recipe_path.read_text("utf-8"))
     recipes_dir = recipe_path.resolve().parent
     output = REPO / recipe["output"]
-    ensure_fresh_process(base_workflow(recipe, recipes_dir), args.server)
+    store = args.raw_store or str(raw_store.default_dir())
 
     with tempfile.TemporaryDirectory() as tmp:
         raw_dir = Path(args.keep_raw) if args.keep_raw else Path(tmp)
         raw_dir.mkdir(parents=True, exist_ok=True)
         done: dict[str, Path] = {}
-        raw = produce_raw(recipe, recipes_dir, raw_dir, args.server, done)
+        raw = produce_raw(recipe, recipes_dir, raw_dir, args.server, store, done)
 
         # 後処理の設定は絵の隣ではなくレシピ側が持つので、書き出された .json は捨ててよい。
         processed = raw_dir / f"{raw.stem}_processed.png"
@@ -313,7 +278,7 @@ def main() -> None:
             align = (
                 produce_raw(
                     json.loads((recipes_dir / card["align"]).read_text("utf-8")),
-                    recipes_dir, raw_dir, args.server, done,
+                    recipes_dir, raw_dir, args.server, store, done,
                 )
                 if card.get("align")
                 else None
