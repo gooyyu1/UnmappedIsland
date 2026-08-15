@@ -5,13 +5,14 @@
     "",
     "作り方と、傷も血も描かせない理由・斜め上から見下ろす理由は recipes/monkey_carcass.json と同じ。",
     "",
-    "**姿勢を変える編集はseedで通ったり通らなかったりする。** seed 1 は目を閉じただけの立ち姿、",
-    "seed 2 は前脚を折って座り込んだ姿になった。倒れた姿が出るseedを選ぶ。",
+    "**seedは外接矩形の縦横で選ぶ。** 同じ指示でも倒れ方は毎回違い、4枚で縦/横が0.54〜1.22に",
+    "散った。札が縦長なので、横に伸びた姿勢はそれだけ小さく載る。",
     "",
-    "**頭は生体と同じ右へ向ける。** 左を向いた個体は、同じイノシシが裏返ったように見える。",
+    "**姿勢を変える編集は、基準の絵によっては通らない。** 真横を向いた生体を基準にしたときは、",
+    "目を閉じただけの立ち姿や、前脚を折って座り込んだ姿になった。",
     "",
     "**白い縁取りが描き込まれるseedは採らない。** 紙と同じ明るさの帯が輪郭を1周し、切り出しが",
-    "半透明の白い縁として残す（札の上ではステッカーに見える）。本文で止めてもseed 4 では出た。",
+    "半透明の白い縁として残す（札の上ではステッカーに見える）。",
     "",
     "大きさは wild_boar.json と同じ400。死んで軽くなるわけではない。"
   ],
@@ -19,7 +20,7 @@
   "edit": {
     "source": "wild_boar.json",
     "prompt": "The boar is dead and is not standing any more. Show the exact same wild boar fallen dead on the ground, seen from a high angle looking steeply down on it from above and a little to the side, so that its back and the length of its body both face the viewer. The whole heavy body lies flat on the ground, limp and lifeless: it has dropped onto one flank, the head is turned down with the eye closed and the snout resting on the ground with one pale ivory tusk showing, the short legs are splayed out loosely from the body across the ground, and the small tail lies slack. None of its legs carry any weight and it is not sitting up. There is only one boar in the picture. Keep the same boar with the same shaggy dark brown and black bristly coat with warm reddish brown tips and the same crest of bristles along its back, the same soft hand painted illustration style with gentle natural shading, the same flat even lighting, and the same plain empty white page with a wide white margin all around it and one soft grey shadow on the ground close beneath it. The boar is clearly darker than the white page and has no white outline, pale rim or glow around it. No blood, no wounds, no injuries, nothing else in the image. No text, no letters, no numbers, no signature.",
-    "seed": 5
+    "seed": 2
   },
   "cardArt": {
     "size": "400",

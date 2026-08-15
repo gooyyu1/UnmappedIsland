@@ -5,12 +5,14 @@
     "",
     "2段構えの理由と作り方は recipes/monkey.json と同じ。",
     "",
-    "**枠は横長（1152x896）。** 胴が長く脚が短いので、正方形だと上下が空く。",
+    "**体を斜めにして顔をこちらへ向ける**（ヤケイと同じ）。真横の立ち姿は外接矩形が横長になり、",
+    "縦長の札では絵そのものが小さく載る。枠は正方形（1024x1024）。",
     "",
-    "**右を向いた個体を採る。** サル・ネズミ・ヤケイが揃って右を向いている。",
+    "**牙は編集で足す。** 3/4の角度で牙まで出るseedは無かった（8枚とも口を閉じた顔）。",
+    "姿勢を変えずに描き足せるのは編集の側（recipes/fire_drill.json と同じ）。",
     "",
     "**博物図版の枠と手書きの説明文が付く。** 生成8枚のうち6枚が19世紀の図版の体裁になった。",
-    "枠の無いseedを採ったうえで、編集でも枠・文字・染みを落とすよう頼む。",
+    "編集で枠・地面・文字を落とす。",
     "",
     "60kgでカードの中では最大の獣だが、段は400が上限（README「大きさ」節）。サルと同じ段になる。"
   ],
@@ -20,12 +22,12 @@
   "workflow": "lane_background_sdxl.api.json",
   "loraStrength": 0,
   "noTrigger": true,
-  "width": 1152,
-  "height": 896,
-  "seed": 7304,
+  "width": 1024,
+  "height": 1024,
+  "seed": 7407,
   "edit": {
-    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same wild boar in the same standing pose at the same angle, the same size and the same place, with its whole body from its snout to its tail well inside the page, and paint it with soft brush strokes and gentle natural shading instead of photographic bristle detail. A shaggy coat of coarse dark brown and black bristles with warm reddish brown tips, a stiff crest of bristles standing along its back, a dark brown snout with a flat round nose, two short pale ivory tusks at the corners of its mouth, small dark hooves, matte bristly coat, flat even lighting. Remove everything else and replace the background with a plain empty white page, leaving the boar in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. Remove any frame, border, printed caption, handwriting, marks or smudges on the page. No text, no letters, no numbers, no signature.",
-    "seed": 1
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same wild boar in the same standing pose at the same three quarter angle with its head facing the viewer, the same size and the same place, with its whole body well inside the page, and paint it with soft brush strokes and gentle natural shading instead of photographic bristle detail. A shaggy coat of coarse dark brown and black bristles with warm reddish brown tips over its shoulders, a stiff crest of bristles standing along its back, a dark brown snout with a flat round nose, small dark eyes, short cloven hooves with two toes, matte bristly coat, flat even lighting. Give it two short pale ivory tusks curving up from the corners of its mouth. Remove the torn paper, the border and the patch of ground, and replace the background with a plain empty white page, leaving the boar in the middle with a wide white margin all around it and one soft grey shadow on the ground close beneath it. The boar is clearly darker than the white page and has no white outline, pale rim or glow around it. No text, no letters, no numbers, no signature.",
+    "seed": 3
   },
   "cardArt": {
     "size": "400",
