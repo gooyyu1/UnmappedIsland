@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "src/assets/objects/spear.png を作り直すためのレシピ。build.py が読む。",
+    "長い棒の先へ石の穂先を紐で固定した槍（public/world-codex/tools.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: spear）。** 生成に頼むと磨いた棒に小石を刺した工芸品になり、",
+    "紐の巻きが一度も出ない（8枚とも）。石の斧と同じ理由で、柄・穂先・巻きを置いてから描かせる。",
+    "",
+    "**対角線へ倒す（diagonal）。** 2mの長さが見せ場なので、下絵でも切り出しでも対角線に沿わせて",
+    "√2倍まで伸ばす（card_art.py の align_to_diagonal）。",
+    "",
+    "**影を描かせない理由は recipes/stone_axe.json と同じ。** 柄が細長いぶん、離れて置かれた影は",
+    "2本目の棒に見える。",
+    "",
+    "段は400。柄が長いので、太い枝と同じ幅まで使う（6000mL）。"
+  ],
+  "output": "src/assets/objects/spear.png",
+  "sketch": "spear",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: a primitive stone tipped spear lying flat on the ground seen from above, running corner to corner across the page, with the shaft and the stone point in exactly the same places at the same angles and the same lengths. Paint the shaft as one long straight pole of dry wood of even thickness, the bark peeled off, the grain showing and the butt end cut blunt. Paint the point as a leaf shaped piece of dark grey stone chipped to a sharp tip, its faces flaked and its edges straight. Where the point meets the end of the shaft, wrap many tight turns of rough twisted plant fibre cord, warm tan and mid brown with its strands visible, binding the stone to the wood. There is no metal, no steel and no polished blade. Keep the plain empty white page with a wide white margin all around, and paint no shadow at all: the page is empty white everywhere the spear itself does not cover. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 2
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "diagonal": true,
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 0,
+    "reach": 24,
+    "dropShadow": 0.35,
+    "dropOffset": 10,
+    "dropBlur": 8
+  }
+}

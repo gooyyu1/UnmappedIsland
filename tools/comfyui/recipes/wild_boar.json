@@ -1,0 +1,38 @@
+{
+  "_comment": [
+    "src/assets/objects/wild_boar.png を作り直すためのレシピ。build.py が読む。",
+    "狩猟システムの基準個体、60kgのイノシシ（public/world-codex/animals.yaml）。",
+    "",
+    "2段構えの理由と作り方は recipes/monkey.json と同じ。",
+    "",
+    "**枠は横長（1152x896）。** 胴が長く脚が短いので、正方形だと上下が空く。",
+    "",
+    "**右を向いた個体を採る。** サル・ネズミ・ヤケイが揃って右を向いている。",
+    "",
+    "**博物図版の枠と手書きの説明文が付く。** 生成8枚のうち6枚が19世紀の図版の体裁になった。",
+    "枠の無いseedを採ったうえで、編集でも枠・文字・染みを落とすよう頼む。",
+    "",
+    "60kgでカードの中では最大の獣だが、段は400が上限（README「大きさ」節）。サルと同じ段になる。"
+  ],
+  "output": "src/assets/objects/wild_boar.png",
+  "prompts": "objects.json",
+  "prompt": "wild_boar",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 1152,
+  "height": 896,
+  "seed": 7304,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same wild boar in the same standing pose at the same angle, the same size and the same place, with its whole body from its snout to its tail well inside the page, and paint it with soft brush strokes and gentle natural shading instead of photographic bristle detail. A shaggy coat of coarse dark brown and black bristles with warm reddish brown tips, a stiff crest of bristles standing along its back, a dark brown snout with a flat round nose, two short pale ivory tusks at the corners of its mouth, small dark hooves, matte bristly coat, flat even lighting. Remove everything else and replace the background with a plain empty white page, leaving the boar in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. Remove any frame, border, printed caption, handwriting, marks or smudges on the page. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

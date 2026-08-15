@@ -456,5 +456,47 @@
     ],
     "positive": "exactly one loop of brown cord lying on an empty white page, a running noose tied in a length of twisted plant fibre cord, the loop lying open and flat on the page in a wide circle, its long free end running out to one side and lashed to a short pointed wooden peg lying beside it, rough twisted cord of warm tan and mid brown fibre, dry matte surface, the whole thing is small and lies in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "steel wire, metal, chain, cable, spring, jaws, teeth, bear trap, leg hold trap, gin trap, cage trap, net, mesh, hook, carabiner, buckle, knot tying diagram, lasso, cowboy, skipping rope, jump rope, noose hanging from above, gallows, coiled rope only, ball of yarn, knitting, macrame, bracelet, necklace, animal, bird, rabbit, hands, tying hands, filling the frame, edge to edge, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "wild_boar": {
+    "description": [
+      "イノシシ（animals.yaml の wild_boar）。狩猟システムの基準個体で、60kgの大型獣。",
+      "",
+      "**pig / hog と書かない。** 桃色の家畜豚になる。wild boar と呼び、剛毛・背の鬣・下顎の牙を本文で言う。",
+      "**イボイノシシに逃げる。** 顔の疣と長く反った牙で別種になるので warthog を否定する。",
+      "**突進の姿を否定する。** 走る・吼える・泥をはねる絵になると、置かれた獲物ではなく場面になる。",
+      "",
+      "**脚の短さと胴の低さを本文で言う。** 黙っていると脚が長く胴が細い狼のような獣になる",
+      "（8枚とも）。肩の高さを胴の丈と並べ、地面すれすれの腹と短い脚を言う。",
+      "",
+      "**grey を色に使わない。** 「dark grey brown」と書いた8枚は全部が鉛筆画の灰色一色になった。",
+      "茶と黒で色を言い、鉛筆・木炭・白黒を否定する。"
+    ],
+    "positive": "exactly one wild boar alone on an empty white page, a heavy bodied wild pig standing still on all fours on the ground seen from the side with its head turned slightly towards the viewer, seen from a few steps back so that the whole animal from its snout to its tail is well inside the page with a wide empty white margin on all four sides, a shaggy coat of coarse dark brown and black bristles with warm reddish brown tips and a stiff crest of bristles standing up along its back, a long straight snout ending in a flat round nose, small dark eyes, small upright pointed ears, two short curved ivory tusks at the corners of its mouth, a massive wedge shaped head carried low and heavy shoulders tapering back to small narrow hindquarters, a deep barrel body hanging low and close to the ground, short thick legs no longer than the depth of its body, small dark hooves, a thin straight tail with a tuft at its tip, matte bristly coat, warm brown and black tones, it stands in the middle, a soft shadow beneath it, hand painted illustration in colour, plain white background, flat even lighting, high quality",
+    "negative": "pencil drawing, graphite, charcoal drawing, ink drawing, etching, monochrome, greyscale, black and white, desaturated, grey animal, silver fur, wolf, hyena, aardwolf, dog, coyote, deer, antelope, long legs, slender legs, tall legs, high shoulders, slim body, narrow chest, domestic pig, farm pig, pink pig, hairless pig, pot bellied pig, hog, piglet, baby boar, striped piglet, sow, mother and young, warthog, facial warts, babirusa, peccary, tapir, hippopotamus, rhinoceros, bear, boars head, mounted head, trophy, head only, huge curling tusks, tusks longer than the snout, armour, saddle, charging, running, leaping, rearing, snarling, open mouth, aggressive pose, blood, mud, wallow, splashing, forest, undergrowth, woodland, snow, hunter, spear, two boars, three boars, several boars, pair, group, sounder, herd, collection, scattered objects, repeated objects, filling the frame, edge to edge, close-up, portrait crop, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "stone_axe": {
+    "description": [
+      "石の斧（tools.yaml の stone_axe）。石の頭部を太い枝の柄へ紐で固定した物",
+      "（docs/world/SurvivalItems.md 1節）。",
+      "",
+      "**axe の語は鋼の斧を連れてくる。** 磨いた三日月形の刃と成形された柄になるので、",
+      "「割った石の塊」「樹皮の残る枝」「紐で何重にも縛る」を本文で言い、金属と磨きを否定する。",
+      "**柄を握らせない。** 人・手・薪割りの場面を否定しないと、切り株に立てた斧になる。"
+    ],
+    "positive": "exactly one primitive stone axe alone on an empty white page, a hafted axe lying flat on its side on the page seen from directly above, a straight wooden handle made from a rough dry branch with bark still on it, a wedge shaped grey stone head laid against the forked end of the handle and bound to it with many tight turns of twisted plant fibre cord, the stone head chipped into angular flat faces with a blunt working edge, dark grey stone with darker mottling, warm mid brown wood, tan brown fibre cord, dry matte surfaces, the whole tool lies in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "steel, iron, metal, metal blade, shiny blade, polished, honed edge, curved crescent blade, hatchet, tomahawk, viking axe, battle axe, war axe, double headed axe, halberd, fantasy weapon, glowing runes, pickaxe, mattock, adze, hammer, mallet, chisel, knife, sword, spear, arrow, turned handle, shaped haft, varnished wood, leather grip, loose stone with no handle, hand axe, held in hand, hands, person, chopping, splitting wood, log, firewood, tree stump, stuck in wood, leaning against, standing upright, two axes, three axes, several axes, pair, group, set of tools, collection, scattered objects, repeated objects, filling the frame, edge to edge, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "spear": {
+    "description": [
+      "槍（tools.yaml の spear）。2mの長い棒の先へ石の穂先を固定した物",
+      "（docs/world/SurvivalItems.md 3節）。",
+      "",
+      "**穂先は石だと言い切る。** 黙っていると鋼の穂先になる。木の葉形に割った灰色の石を、",
+      "紐で何重にも巻いて留める形で頼む。",
+      "**斜めに寝かせる。** 長さが見せ場なので、対角線に沿って端から端まで置く",
+      "（切り出しでも対角線へ倒す。recipes/spear.json の diagonal）。"
+    ],
+    "positive": "exactly one primitive stone tipped spear alone on an empty white page, a single long straight wooden shaft lying flat on the page along the diagonal from one corner towards the other, seen from directly above, a leaf shaped grey stone point lashed to the near end of the shaft with many tight turns of twisted plant fibre cord, the stone point chipped to a sharp tip with flaked faces, the shaft a slender peeled wooden pole of even thickness with a blunt butt end, dark grey stone, warm mid brown wood, tan brown fibre cord, dry matte surfaces, the whole spear lies in the middle with an empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "steel, iron, metal, metal spearhead, shiny blade, polished, bronze, silver, gold, trident, harpoon, javelin with metal tip, pike, halberd, lance, sword, knife, arrow, arrows, bow, quiver, fantasy weapon, glowing runes, feathers, ribbons, beads, decorated shaft, carved shaft, painted bands, planted in the ground, standing upright, leaning, held in hand, thrown, flying, hands, person, warrior, hunter, two spears, three spears, several spears, pair, crossed spears, group, bundle, rack of weapons, collection, scattered objects, repeated objects, filling the frame, edge to edge, close-up, cropped, cut off, out of frame, tip cut off, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   }
 }

@@ -1,0 +1,36 @@
+{
+  "_comment": [
+    "src/assets/objects/stone_axe.png を作り直すためのレシピ。build.py が読む。",
+    "石の頭部を太い枝の柄へ紐で固定した斧（public/world-codex/tools.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: axe）。** 生成に頼むと柄の先へ巨石を載せた石槌になり、刃も紐の",
+    "巻きも出ない（8枚とも）。柄・楔形の石・紐の巻きを layout_sketch.py で置いてからQwenに描かせる",
+    "（くくり罠と同じ理由）。",
+    "",
+    "**影を描かせない。** 下絵の物が紙から浮いているので、Qwenは影を物から離れた帯として置く。",
+    "切り出しはこれを物と見分けられず、札の上に灰色の棒が並ぶ。影は card_art.py に引かせる",
+    "（dropShadow。尖った石と同じ）。",
+    "",
+    "**seedは刃と白い縁取りで選ぶ。** 頭部が角材（石槌）になるseedと、輪郭に紙と同じ明るさの帯を",
+    "描くseedがある。楔形に刃が出ていて、紐が石と柄を結んでいるのが見えるものを採る。",
+    "",
+    "段は400。柄が長いので、太い枝と同じ幅まで使う（1800mL）。"
+  ],
+  "output": "src/assets/objects/stone_axe.png",
+  "sketch": "axe",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: a primitive stone axe lying flat on the ground seen from above, with the handle and the stone head in exactly the same places at the same angles and the same sizes. Paint the handle as one straight piece of dry branch with rough brown bark, thicker at the head and whittled smooth where it is gripped. Paint the head as a wedge of dark grey stone chipped into angular flat faces, thick where it meets the handle and tapering to a blunt cutting edge along its far end. Where the stone lies against the end of the handle, wrap many tight turns of rough twisted plant fibre cord, warm tan and mid brown with its strands visible, binding the stone to the wood. There is no metal, no steel and no polished blade. Keep the plain empty white page with a wide white margin all around, and paint no shadow at all: the page is empty white everywhere the axe itself does not cover. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 4
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 0,
+    "reach": 24,
+    "dropShadow": 0.35,
+    "dropOffset": 10,
+    "dropBlur": 8
+  }
+}
