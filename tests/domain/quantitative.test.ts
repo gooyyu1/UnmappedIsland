@@ -17,16 +17,16 @@ traits:
     combinations:
       # 受け側が空のとき（代表は容器自身）。中身入りのときは下のliquid側が発火する。
       pour_in:
-        with: liquid
-        move: {object: dragged, to: self}
+        with: {tag: liquid}
+        move: {subject: dragged, to: self}
 
   liquid:
     tags: [liquid]
     quantitative: true
     combinations:
       pour_in:
-        with: liquid
-        move: {object: dragged, to: parent}
+        with: {tag: liquid}
+        move: {subject: dragged, to: parent}
 
 object_defs:
   canteen:

@@ -37,7 +37,7 @@ traits:
       # どちらの回もsignal（9.8節）で結果を告げる。火口はどちらの回も同じように消えるので、
       # レーンの上では30分かけて札が1枚減っただけに見え、成否が付かない。
       light:
-        with: fire_starter
+        with: {object: fire_drill}
         duration: 30
         pick:
           - weight: {prop: ignition_chance}
@@ -135,26 +135,26 @@ traits:
       # （docs/engine/ContainerSystem.md 6節）。sheltered未実装の間はancestorが解決せず、
       # 否定形の演算子（neq）で「分からないときは効かせる」側に倒している。
       - conditions:
-          - {object: ancestor, prop: sheltered, neq: 1}
-          - {object: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
+          - {subject: ancestor, prop: sheltered, neq: 1}
+          - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
         add: {self: {heat: -4}}
     combinations:
       # 薪をくべる。燃料が持つfuelを炉のfuelへ移し、燃料そのものは消す（同2節）。
       # transferの後にdestroyが走るので、移した分が失われることはない。
       add_fuel:
-        with: fuel
+        with: {tag: fuel}
         duration: 1
         conditions:
-          - {reason: hearth_full, prop: fuel, lt: {object: self, prop: fuel_capacity}}
+          - {reason: hearth_full, prop: fuel, lt: {subject: self, prop: fuel_capacity}}
         transfer:
           amount: 999
-          from_object: dragged
+          from: dragged
           from_prop: fuel
           to_prop: fuel
         destroy: dragged
       # 火種を落として着火する。置くのは種火1つぶんだけで、そこから先は薪が育てる。
       ignite:
-        with: burning_tinder
+        with: {object: burning_tinder}
         conditions:
           - {reason: no_fuel, prop: fuel, gt: 0}
         destroy: dragged
@@ -164,7 +164,7 @@ object_defs:
   # きりもみ式の火起こし具。拾った木だけで作れるので、道具も紐も要らない
   # （docs/world/SurvivalItems.md 1.1節）。使っても無くならないのでtoolタグを持つ。
   fire_drill:
-    tags: [item, tool, fire_starter]
+    tags: [item, tool]
     props:
       weight: {value: 900}
       volume: {value: 1200}
@@ -193,8 +193,7 @@ object_defs:
   # 火のついた火口。炉へ運ぶためだけに在る（docs/engine/FireSystem.md 3.1節）。
   # 炉に残る種火とは別のもので、こちらは持ち運べる物。
   burning_tinder:
-    # 炉のigniteがwithで探す（withはタグでしか照合しない、12.1節）。
-    tags: [item, burning_tinder]
+    tags: [item]
     # 個体ごとに残り時間が違うので束ねない。
     stackable: false
     props:
@@ -247,7 +246,7 @@ object_defs:
         add: {self: {heat: -2}}
     combinations:
       add_stone:
-        with: stone
+        with: {object: stone}
         duration: 5
         destroy: dragged
         add: {self: {stones: 1}}
@@ -283,7 +282,7 @@ object_defs:
         add: {self: {heat: -1}}
     combinations:
       add_stone:
-        with: stone
+        with: {object: stone}
         duration: 5
         destroy: dragged
         add: {self: {stones: 1}}

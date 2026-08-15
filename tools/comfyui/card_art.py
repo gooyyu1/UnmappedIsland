@@ -9,10 +9,15 @@
     400  更に大きい物（98%）
     card 410x640。地形やポートレートのように、カード全面を使う絵
 
-透過のさせ方は絵の性格で2通りある（--mode）。
+透過のさせ方は絵の性格で選ぶ（--mode）。
 
 - background: 紙・物・影の3つに分ける（separate参照）。アイテムのように、白地に置かれた1つの物を
   切り出す絵向け。
+- flood: 明らかな前景と明らかな背景から染み出させて、灰色の帯の帰属を決める（flood_core参照）。
+  **影が濃くて、その最も暗い所が物の最も明るい所より暗い絵**向け——backgroundの単一のしきい値では
+  分けられない（実測で影157対物171）。囲まれた紙（紐の輪の内側）も自力で抜けるので、keep_holes /
+  holes の指定が要らない。**紙と物の色が近い絵には使えない**（灰色の地に置いた石で、石の面が
+  背景と判定された）。
 - luma: 明るい画素ほど透かす。**白い紙の上に主題だけが描かれた絵**（怪我の足）向け。生成された絵の
   白い余白がカードの紙地に置き換わり、絵と紙が地続きになる。
 - none: 透かさない。地形やポートレートのように、**絵そのものがカードを埋める**もの向け。
@@ -50,6 +55,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw
 from scipy.ndimage import (
+    binary_dilation,
     binary_fill_holes,
     distance_transform_edt,
     gaussian_filter,
@@ -57,6 +63,8 @@ from scipy.ndimage import (
     shift,
     sum_labels,
 )
+from scipy.sparse import coo_matrix
+from scipy.sparse.csgraph import dijkstra
 
 from postprocess import oilify
 
@@ -147,7 +155,8 @@ def fit_object(image: Image.Image, size: int, tolerance: float, edge: float, sha
                reach: float, reserve: float = 0, neutral: float = 0,
                keep_holes: bool = False,
                holes: list[tuple[int, int]] | None = None,
-               headroom: int = 0, reference: Image.Image | None = None) -> np.ndarray:
+               headroom: int = 0, reference: Image.Image | None = None,
+               flood: dict | None = None) -> np.ndarray:
     """物だけを切り出し、正方形のキャンバスの中央へ、長辺がキャンバスに収まる大きさで置く。
 
     中央に合わせるのも、大きさを決めるのも、影ではなく物そのもの。影は片側にしか出ないので、影ごと
@@ -174,12 +183,12 @@ def fit_object(image: Image.Image, size: int, tolerance: float, edge: float, sha
     rgb = np.asarray(image, dtype=np.float64)
     margin = max(edge, reach, OBJECT_SLACK, reserve)
     core, _ = separate(np.asarray(image if reference is None else reference, dtype=np.float64),
-                       tolerance, 0, 0, 1, neutral, keep_holes, holes)
+                       tolerance, 0, 0, 1, neutral, keep_holes, holes, flood)
     left, top, right, bottom = bounds(core)
     scale = (size - margin * 2) / max(right - left, bottom - top)
 
     alpha, premultiplied = separate(rgb, tolerance, edge / scale, shadow, reach / scale, neutral,
-                                    keep_holes, holes)
+                                    keep_holes, holes, flood)
     pad = int(np.ceil(margin / scale))
     box = (max(left - pad, 0), max(top - pad - int(np.ceil(headroom / scale)), 0),
            min(right + pad, image.width), min(bottom + pad, image.height))
@@ -261,9 +270,120 @@ def punch(core: np.ndarray, dark: np.ndarray, holes: list[tuple[int, int]]) -> n
     return core
 
 
+def extrapolate(rgb: np.ndarray, inside: np.ndarray) -> np.ndarray:
+    """insideの外の画素へ、最寄りのinsideの色を伸ばす。"""
+    _, (row, column) = distance_transform_edt(~inside, return_indices=True)
+    return np.where(inside[:, :, None], rgb, rgb[row, column])
+
+
+def steepness(rgb: np.ndarray, sigma: float) -> np.ndarray:
+    """色の傾きの大きさ（/px）。物の縁は数pxで急に変わり、影の縁は緩やかに変わる。
+
+    **明度ではなく色で測る。** 明るさがほぼ同じまま色だけが変わる境目——茶色い柄と、その隣の無彩色の
+    影——が明度では段として立たず、そこが前景の侵入口になる（実測で、色で測ると侵入が0pxになった）。
+    """
+    gy = gaussian_filter(rgb, (sigma, sigma, 0), order=(1, 0, 0))
+    gx = gaussian_filter(rgb, (sigma, sigma, 0), order=(0, 1, 0))
+    return np.sqrt((gy ** 2 + gx ** 2).sum(axis=2))
+
+
+def shade_field(luma: np.ndarray, paper_luma: float, known: np.ndarray) -> np.ndarray:
+    """紙に落ちた影を、紙に対する乗算の場として推定する。物の下は周りから外挿する。
+
+    影は物に近いほど濃い。**その勾配があるせいで、縁のαを解くときの背景色を1つに決められない**
+    ——帯のすぐ外で測ると薄すぎ、遠くで測るともっと薄い。場として推定して先に割ってしまえば、
+    背景はどこでも紙になる（実測で、影の側の縁の太りが 1.00px から 0.50px へ、最悪値は 4.25px
+    から 0.75px へ下がった）。
+
+    knownは背景と分かっている画素。粗い尺度へ順に送り、正規化畳み込みで埋める。
+    """
+    ratio = np.clip(luma / paper_luma, 0.05, 1.0)
+    field = np.zeros_like(ratio)
+    filled = np.zeros(ratio.shape, dtype=bool)
+    for sigma in (8, 16, 32, 64, 128):
+        weight = gaussian_filter(known.astype(np.float64), sigma)
+        value = gaussian_filter(np.where(known, ratio, 0.0), sigma)
+        enough = weight > 0.05
+        take = enough & ~filled
+        field[take] = value[take] / weight[take]
+        filled |= enough
+        if filled.all():
+            break
+    field[~filled] = 1.0
+    return np.clip(gaussian_filter(field, 8), 0.05, 1.0)
+
+
+def geodesic(cost: np.ndarray, seeds: np.ndarray) -> np.ndarray:
+    """seedsから、costを払って進んだときの各画素までの最小費用。4近傍。
+
+    辺の重みは両端の費用の平均。入る側だけで測ると、安い画素から高い画素へ入る一歩と、その逆とで
+    費用が変わってしまう。
+    """
+    height, width = cost.shape
+    index = np.arange(height * width).reshape(height, width)
+    rows, columns, weights = [], [], []
+    for axis in (0, 1):
+        here = index.take(np.arange(0, cost.shape[axis] - 1), axis=axis)
+        there = index.take(np.arange(1, cost.shape[axis]), axis=axis)
+        average = (cost.take(np.arange(0, cost.shape[axis] - 1), axis=axis)
+                   + cost.take(np.arange(1, cost.shape[axis]), axis=axis)) / 2
+        rows += [here.ravel(), there.ravel()]
+        columns += [there.ravel(), here.ravel()]
+        weights += [average.ravel(), average.ravel()]
+
+    graph = coo_matrix(
+        (np.concatenate(weights), (np.concatenate(rows), np.concatenate(columns))),
+        shape=(height * width, height * width),
+    ).tocsr()
+    reached = dijkstra(graph, directed=False, indices=index[seeds], min_only=True)
+    return reached.reshape(height, width)
+
+
+def flood_core(rgb: np.ndarray, paper: np.ndarray, flood: dict) -> tuple[np.ndarray, np.ndarray]:
+    """明らかな前景と明らかな背景から染み出させ、物と判定した範囲を返す（第2の返り値は影の場）。
+
+    **単一のしきい値では、影の最も暗い所と物の最も明るい所が逆転している絵がある**（実測で157対171）。
+    2つのしきい値で「明らかな前景／グレーゾーン／明らかな背景」に分け、灰色の帯はどちらの陣地かを
+    染み出しの安さで決める。費用は
+
+        1 + edgeWeight·(色の傾き/基準)^power + grayWeight·(相手側らしさ) + chromaWeight·(無彩色らしさ)
+
+    強い縁はほぼ越えられず、前景は明るい画素へ、背景は暗い画素へ、前景は無彩色の画素へ伸びにくい。
+    **エッジは二値化せず費用としてしか使わないので、輪郭が閉じている必要がない**——穴があっても、
+    そこを通った相手は自分の陣地の中を進む費用を払うので数px入って止まる。
+
+    **背景の種は「紙と同じ色か」で決める。明るさではない。** 明るいだけを種にすると、物の明るい面
+    （石の光る面、ココナッツの照り、サルの胸）にも種が立ってそこから食われる。外周と繋がっている
+    ことを条件にすると、今度は囲まれた紙（紐の輪の内側）が種を失って埋まる。
+
+    unshadeを立てると、1回目の判定を手掛かりに影の場を推定して割り、一様な紙の上で判定し直す。
+    """
+    paper_luma = max(float(paper @ np.array([0.299, 0.587, 0.114])), 1.0)
+
+    def belongs(image: np.ndarray) -> np.ndarray:
+        luma = image @ np.array([0.299, 0.587, 0.114])
+        steep = np.clip(steepness(image, flood["sigma"]) / flood["slopeRef"], 0, None) ** flood["power"]
+        lean = np.clip((paper_luma - luma) / max(paper_luma - flood["fg"], 1e-6), 0, 1)
+        neutral = 1 - np.clip((image.max(axis=2) - image.min(axis=2)) / flood["chromaRef"], 0, 1)
+        base = 1 + flood["edgeWeight"] * steep
+        from_fg = geodesic(base + flood["grayWeight"] * (1 - lean) + flood["chromaWeight"] * neutral,
+                           luma <= flood["fg"])
+        from_bg = geodesic(base + flood["grayWeight"] * lean + flood["chromaWeight"] * (1 - neutral),
+                           np.abs(image - paper).max(axis=2) <= flood["bg"])
+        return from_bg / np.maximum(from_fg + from_bg, 1e-6) > 0.5
+
+    core = belongs(rgb)
+    if not flood["unshade"]:
+        return core, None
+    field = shade_field(rgb @ np.array([0.299, 0.587, 0.114]), paper_luma,
+                        ~binary_dilation(core, iterations=flood["margin"]))
+    return belongs(np.clip(rgb / field[:, :, None], 0, 255)), field
+
+
 def separate(rgb: np.ndarray, tolerance: float, edge: float, shadow: float, reach: float,
              neutral: float = 0, keep_holes: bool = False,
-             holes: list[tuple[int, int]] | None = None) -> tuple[np.ndarray, np.ndarray]:
+             holes: list[tuple[int, int]] | None = None,
+             flood: dict | None = None) -> tuple[np.ndarray, np.ndarray]:
     """絵を紙・物・影に分け、不透明度と、乗算済みの前景色を返す。
 
     **返すのは観測された色ではなく、紙を取り除いた前景の色。** 輪郭の画素は生成時の紙と物が混ざった
@@ -308,15 +428,19 @@ def separate(rgb: np.ndarray, tolerance: float, edge: float, shadow: float, reac
     paper_rgb = paper_colour(rgb)
     paper = max(float(paper_rgb @ np.array([0.299, 0.587, 0.114])), 1.0)
 
-    dark = luma <= paper - tolerance
-    if neutral > 0:
-        dark &= rgb.max(axis=2) - rgb.min(axis=2) >= neutral
-    core = dark if keep_holes else punch(binary_fill_holes(dark), dark, holes or [])
-    regions, count = label(core)
-    if count:
-        # 小さな塊は落とす。文字の消し残りや、2つ目に描かれてしまった物を持ち込まないため。
-        areas = sum_labels(np.ones_like(regions), regions, np.arange(1, count + 1))
-        core = np.isin(regions, np.flatnonzero(areas >= areas.max() * 0.1) + 1)
+    field = None
+    if flood is not None:
+        core, field = flood_core(rgb, paper_rgb, flood)
+    else:
+        dark = luma <= paper - tolerance
+        if neutral > 0:
+            dark &= rgb.max(axis=2) - rgb.min(axis=2) >= neutral
+        core = dark if keep_holes else punch(binary_fill_holes(dark), dark, holes or [])
+        regions, count = label(core)
+        if count:
+            # 小さな塊は落とす。文字の消し残りや、2つ目に描かれてしまった物を持ち込まないため。
+            areas = sum_labels(np.ones_like(regions), regions, np.arange(1, count + 1))
+            core = np.isin(regions, np.flatnonzero(areas >= areas.max() * 0.1) + 1)
 
     # 縁の不透明度は、紙と物のあいだのどこに居るかの比。**明度ではなく色で測る。** 紙から最寄りの芯
     # へ向かう線に観測色を射影し、その位置を不透明度とする。明度の比だと、紙をそのまま暗くしただけの
@@ -324,18 +448,27 @@ def separate(rgb: np.ndarray, tolerance: float, edge: float, shadow: float, reac
     # 方向からずれるぶん不透明度が小さく出る。toleranceで割るのも駄目で、あれは芯を決めるしきい値
     # でしかなく物の色とは無関係なので、暗い物ほど見積もりを外す。
     outside, (row, column) = distance_transform_edt(~core, return_indices=True)
-    direction = rgb[row, column] - paper_rgb if core.any() else np.zeros_like(rgb)
+    # 背景の色。floodでは紙で代用しない——影の側は物の隣が紙ではなく影なので、紙を基準にすると
+    # 純粋な影の画素が α=0.5 と出て、縁が影の中へ2px太る（実測）。
+    behind = paper_rgb if flood is None else extrapolate(rgb, outside > edge)
+    direction = rgb[row, column] - behind if core.any() else np.zeros_like(rgb)
     coverage = np.clip(
-        np.einsum("...c,...c->...", rgb - paper_rgb, direction)
+        np.einsum("...c,...c->...", rgb - behind, direction)
         / np.maximum((direction ** 2).sum(axis=-1), 1e-6),
         0, 1)
     opacity = np.where(core, 1.0, np.where(outside <= edge, coverage, 0.0))
 
     # 影は物の近くにだけ置く。離れた場所の暗がりは、絵の具の下地板のような背景の描き込みなので拾わない。
-    cast = np.clip(1 - luma / paper, 0, 1) * shadow * np.clip(1 - outside / max(reach, 1e-6), 0, 1)
+    # 濃さは観測した暗さから測るが、floodでは推定した場そのものを使う（物の暗さを影と読み違えない）。
+    darkness = np.clip(1 - luma / paper, 0, 1) if field is None else np.clip(1 - field, 0, 1)
+    cast = darkness * shadow * np.clip(1 - outside / max(reach, 1e-6), 0, 1)
     alpha = opacity + (1 - opacity) * cast
 
-    foreground = rgb - (1 - opacity)[:, :, None] * paper_rgb
+    # 前景色。floodでは**αで割り戻さず**、最寄りの芯の色を外延して不透明度を掛けるだけにする。
+    # 割り戻しは誤差を 1/α 倍に増幅し、αの小さいところで紙より明るい色を作る（実測で、既存の絵の
+    # 半透明画素の25〜59%が前景色ほぼ白）。カードに載せると輪郭が白く光る。
+    foreground = (rgb - (1 - opacity)[:, :, None] * paper_rgb if flood is None
+                  else opacity[:, :, None] * extrapolate(rgb, core))
     return alpha, np.clip(np.where(opacity[:, :, None] > 0, foreground, 0), 0, 255)
 
 
@@ -405,8 +538,8 @@ def main() -> None:
     parser.add_argument("--out", required=True)
     parser.add_argument("--size", default="320", type=object_size,
                         help="出力の一辺。cardは410x640でカード全面")
-    parser.add_argument("--mode", choices=["background", "luma", "none"], default="background",
-                        help="背景の抜き方。noneは縁の処理だけ")
+    parser.add_argument("--mode", choices=["background", "luma", "none", "flood"],
+                        default="background", help="背景の抜き方。noneは縁の処理だけ")
     parser.add_argument("--tolerance", type=float, default=60,
                         help="background: 紙よりこれだけ暗ければ物と見なす")
     parser.add_argument("--edge", type=float, default=4, help="background: 物の輪郭が滲む幅（px）")
@@ -417,6 +550,23 @@ def main() -> None:
     parser.add_argument("--hole", type=int, nargs=2, action="append", metavar=("X", "Y"),
                         help="background: この座標（原寸の絵）を含む穴だけを抜く。"
                         "明るい場所を持つ物（動物）向け。何度でも指定できる")
+    parser.add_argument("--fg", type=float, default=110,
+                        help="flood: これ以下の明度は明らかに前景")
+    parser.add_argument("--bg", type=float, default=6,
+                        help="flood: 紙の色とのずれがこれ以下なら明らかに背景")
+    parser.add_argument("--edge-sigma", type=float, default=0.6, help="flood: 色の傾きを測る尺度")
+    parser.add_argument("--slope-ref", type=float, default=20.0, help="flood: この傾き(/px)を1とする")
+    parser.add_argument("--edge-weight", type=float, default=200.0, help="flood: 縁の越えにくさ")
+    parser.add_argument("--power", type=float, default=2.0, help="flood: 縁の効き方の鋭さ")
+    parser.add_argument("--gray-weight", type=float, default=12.0,
+                        help="flood: 明るい画素へ前景が、暗い画素へ背景が伸びにくくなる度合い")
+    parser.add_argument("--chroma-weight", type=float, default=40.0,
+                        help="flood: 無彩色の画素へ前景が伸びにくくなる度合い")
+    parser.add_argument("--chroma-ref", type=float, default=40.0, help="flood: この彩度を色付きと見なす")
+    parser.add_argument("--unshade", action="store_true",
+                        help="flood: 影の場を推定して先に割る。背景がどこでも紙になる")
+    parser.add_argument("--shade-margin", type=int, default=6,
+                        help="flood: 影の場を測るとき、物からこれだけ空ける（px）")
     parser.add_argument("--neutral-shadow", type=float, default=0,
                         help="background: 彩度がこれ未満の暗い画素を影と見なして芯から外す。"
                         "無彩色の物には使えない")
@@ -452,6 +602,12 @@ def main() -> None:
                         help="油絵風に潰す（postprocess.oilify）。写実的すぎる絵を他のカードへ寄せる")
     args = parser.parse_args()
     holes = [tuple(hole) for hole in args.hole] if args.hole else None
+    flood = {
+        "fg": args.fg, "bg": args.bg, "sigma": args.edge_sigma, "slopeRef": args.slope_ref,
+        "edgeWeight": args.edge_weight, "power": args.power, "grayWeight": args.gray_weight,
+        "chromaWeight": args.chroma_weight, "chromaRef": args.chroma_ref,
+        "unshade": args.unshade, "margin": args.shade_margin,
+    } if args.mode == "flood" else None
 
     image = Image.open(args.source).convert("RGB")
     if args.crop:
@@ -471,9 +627,10 @@ def main() -> None:
         if args.below_plate:
             rgb = below_plate(rgb)
         mask = paper_mask(CARD_WIDTH, CARD_HEIGHT, args.feather)
-        if args.mode == "background":
+        if args.mode in ("background", "flood"):
             alpha, premultiplied = separate(rgb, args.tolerance, args.edge, args.shadow,
-                                            args.reach, keep_holes=args.keep_holes, holes=holes)
+                                            args.reach, keep_holes=args.keep_holes, holes=holes,
+                                            flood=flood)
             rgb = np.divide(premultiplied, alpha[:, :, None],
                             out=np.zeros_like(rgb), where=alpha[:, :, None] > 0)
         elif args.mode == "luma":
@@ -494,7 +651,7 @@ def main() -> None:
                 )
         rgba = fit_object(image, int(args.size), args.tolerance, args.edge, args.shadow,
                           args.reach, reserve, args.neutral_shadow, args.keep_holes, holes,
-                          args.headroom, reference)
+                          args.headroom, reference, flood)
         if args.drop_shadow:
             rgba = drop_shadow(rgba, args.drop_shadow, args.drop_offset, args.drop_blur)
 
@@ -518,6 +675,11 @@ def main() -> None:
         **({"belowPlate": True} if args.below_plate else {}),
         **({"oilify": args.oilify} if args.oilify else {}),
         **({"mode": args.mode, "feather": args.feather} if args.size == "card" else {}),
+        **({"mode": args.mode, "fg": args.fg, "bg": args.bg, "edgeSigma": args.edge_sigma,
+            "slopeRef": args.slope_ref, "edgeWeight": args.edge_weight, "power": args.power,
+            "grayWeight": args.gray_weight, "chromaWeight": args.chroma_weight,
+            "chromaRef": args.chroma_ref, "unshade": args.unshade,
+            "shadeMargin": args.shade_margin} if flood else {}),
         **({"tolerance": args.tolerance, "edge": args.edge, "shadow": args.shadow, "reach": args.reach}
            if args.size != "card" or args.mode == "background" else {}),
         **({"white": args.white, "opaque": args.opaque}

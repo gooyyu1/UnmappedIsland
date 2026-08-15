@@ -19,10 +19,10 @@
 
 | 種別 | 名前 |
 |---|---|
-| タグ | `hearth`（炉）・`fuel`（燃料）・`tinder`（火口）・`fire_starter`（火起こし具）・`roastable`（直火に入れられる物）・`cookware`（火にかける器） |
+| タグ | `hearth`（炉）・`fuel`（燃料）・`tinder`（火口）・`roastable`（直火に入れられる物）・`cookware`（火にかける器） |
 | スロット | `fire`（火にかけているもの） |
 | プロパティ | `fuel`（くべた薪。燃料の側では「くべると増える量」）・`heat`（火力。一番下の段が種火）・`stones`（積んだ石）・`heat_soak`（石の蓄熱）・`cooking_progress`（加熱の進み） |
-| 型 | `campfire`（焚き火）・`three_stone_hearth`（三石のかまど）・`stone_hearth`（石囲いの炉）・`burning_tinder`（火種）・`hot_stone`（焼け石） |
+| 型 | `campfire`（焚き火）・`three_stone_hearth`（三石のかまど）・`stone_hearth`（石囲いの炉）・`fire_drill`（火起こし具）・`burning_tinder`（火種）・`hot_stone`（焼け石） |
 
 定義は `public/world-codex/fire.yaml`（燃料になる物と火口は `locations.yaml`・`coconut.yaml`・
 `fiber.yaml`、焼ける物は `animals.yaml`）、検証は `tests/worldCodex/fireYaml.test.ts` です。
@@ -83,14 +83,14 @@ slots:
 # 炉の側が宣言する
 combinations:
   add_fuel:
-    with: fuel
+    with: {tag: fuel}
     duration: 1
     conditions:
       # 満杯の炉はくべさせない（無駄をここで止める）。上限は炉ごとに違うのでプロパティで持つ。
-      - {reason: hearth_full, prop: fuel, lt: {object: self, prop: fuel_capacity}}
+      - {reason: hearth_full, prop: fuel, lt: {subject: self, prop: fuel_capacity}}
     transfer:
       amount: 999            # 入るだけ入れる
-      from_object: dragged
+      from: dragged
       from_prop: fuel
       to_prop: fuel
     destroy: dragged         # 入りきらなかった分は失われる
@@ -248,7 +248,7 @@ passives:
 
 ### 3.1 着火は、火種を炉へ運ぶ
 
-**火起こしと着火を分けます。** 火起こし具（`fire_starter`）を火口（`tinder`）へ重ねて火をつけ、できた
+**火起こしと着火を分けます。** 火起こし具（`fire_drill`）を火口（`tinder`）へ重ねて火をつけ、できた
 **火種**（`burning_tinder`）を炉へ重ねると、炉に種火が立ちます。
 
 **火種と種火は別のものです。** 火種は持ち運べる物（`burning_tinder`）で、炉へ運ぶために存在します。
@@ -259,7 +259,7 @@ passives:
 # 火口の側が宣言する。成否は天気とスキルの段が重みを動かす
 combinations:
   light:
-    with: fire_starter
+    with: {object: fire_drill}
     duration: 30
     pick:
       - weight: {prop: ignition_chance}
@@ -279,7 +279,7 @@ combinations:
 # 炉の側が宣言する
 combinations:
   ignite:
-    with: burning_tinder
+    with: {object: burning_tinder}
     conditions:
       - {reason: no_fuel, prop: fuel, gt: 0}
     destroy: dragged
@@ -347,7 +347,7 @@ combinations:
 # 焚き火の側が宣言する
 combinations:
   add_stone:
-    with: stone
+    with: {object: stone}
     destroy: dragged
     add: {self: {stones: 1}}
 props:
@@ -448,12 +448,12 @@ cooking_progress:
 # 器の側が宣言する
 passives:
   - conditions:
-      - {object: ancestor, prop: heat, in_stage: coals}
+      - {subject: ancestor, prop: heat, in_stage: coals}
     add:
       child:
         cooking_progress: 1
   - conditions:
-      - {object: ancestor, prop: heat, in_stage: flame}
+      - {subject: ancestor, prop: heat, in_stage: flame}
     add:
       child:
         cooking_progress: 3
@@ -516,8 +516,8 @@ passives:
 # 炉の側が宣言する
 passives:
   - conditions:
-      - {object: ancestor, prop: sheltered, eq: 0}
-      - {object: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
+      - {subject: ancestor, prop: sheltered, eq: 0}
+      - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
     add:
       self:
         heat: -4
@@ -571,7 +571,7 @@ passives:
 - `fuel` のバーと `heat` のシンボルを、カードのどこに出すか（[`CardView.md`](../ui/CardView.md) のバーは
   量的オブジェクトの中身に紐づくため、そのままは使えない）
 - 満杯の炉を拒む条件（2 節）のために、`fuel_capacity` が `fuel` の `range.max` と同じ値を 2 度
-  持つこと。炉ごとに違う値なので trait へは括り出せず、`range` は `{object, prop}` 参照を取れない
+  持つこと。炉ごとに違う値なので trait へは括り出せず、`range` は `{subject, prop}` 参照を取れない
 - 器の枠（1.1 節）に「ここは器を置く枠」と見せるかどうか。空き枠へ受け入れる型を薄く敷く仕組み
   （`EmptyCard`）は既にあるが、枠ごとの受け入れ型を画面へ渡しているのは製作中オブジェクトの材料欄
   だけで、普通の入れ物は `SlotDef` の枠ごとの `accept` を見ていない。受け入れがタグの場合に何の絵を

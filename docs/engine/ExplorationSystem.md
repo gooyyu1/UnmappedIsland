@@ -147,7 +147,7 @@ object_defs:
           - {in_slot: fixtures}   # 発見済み（fixturesスロット）の間だけ実行できる
         duration: {prop: travel_minutes}
         move:
-          object: actor
+          subject: actor
           to_prop: destination_id
 ```
 
@@ -196,7 +196,7 @@ object_defs:
 文法拡張です。
 
 - **`duration`**（`GameElementDefinition.md` 11.3 節）: アクションの実行にかかるゲーム内時間（分）。
-  リテラルか `{object, prop}` 参照（`weight` と同じ二択）で指定します。時間は効果の適用より**先**に
+  リテラルか `{subject, prop}` 参照（`weight` と同じ二択）で指定します。時間は効果の適用より**先**に
   `WorldSession.advanceWorldTime` で進めます（順序とその帰結は
   [ActionSystem.md](./ActionSystem.md) 2 節）。
 - **`move`**（`GameElementDefinition.md` 9.6 節）: 対象オブジェクトを、`self` のプロパティが指す

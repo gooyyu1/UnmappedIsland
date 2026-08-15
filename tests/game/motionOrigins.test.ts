@@ -45,8 +45,8 @@ object_defs:
       loot: {cell: {accept: {tag: item}}}
     combinations:
       grab:
-        with: item
-        move: {object: dragged, to: self}
+        with: {tag: item}
+        move: {subject: dragged, to: self}
 `;
 
   let codex: WorldCodex;

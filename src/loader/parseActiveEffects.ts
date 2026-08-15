@@ -15,7 +15,7 @@ import {
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { parseNumberLiteral, parseScalarNumber, tryGetNode } from './parseCommon';
-import { ACTION_CONDITION_ROOTS, COMBINATION_CONDITION_ROOTS, parseConditionObject } from './parseConditions';
+import { ACTION_CONDITION_ROOTS, COMBINATION_CONDITION_ROOTS, parseSubjectRoot } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
 import { PropertyPath } from '../domain/defs/ReferenceRoot';
@@ -139,7 +139,7 @@ export function parsePickList(
 }
 
 /**
- * リテラル数値か`{object, prop}`参照（GameElementDefinition.md 10.2節）を読む。durationもこの形で、
+ * リテラル数値か`{subject, prop}`参照（GameElementDefinition.md 10.2節）を読む。durationもこの形で、
  * 「今の状態から見ていくらか」を書けるようにするため（切れ味の悪い刃物ほど時間がかかる）。
  */
 export function parseWeight(
@@ -159,13 +159,13 @@ export function parseWeight(
 
   if (isMap(node)) {
     const allowedRoots = allowDragged ? COMBINATION_CONDITION_ROOTS : ACTION_CONDITION_ROOTS;
-    const objectName = tryGetScalar(node, 'object', context);
-    const root = objectName !== undefined ? parseConditionObject(context, objectName, allowedRoots) : 'self';
+    const subjectName = tryGetScalar(node, 'subject', context);
+    const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, allowedRoots) : 'self';
     const propName = requireScalar(node, 'prop', context);
 
     const unknownKeys = entriesInOrder(node)
       .map(([key]) => key)
-      .filter((key) => key !== 'object' && key !== 'prop');
+      .filter((key) => key !== 'subject' && key !== 'prop');
     if (unknownKeys.length > 0)
       throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
 
@@ -173,7 +173,7 @@ export function parseWeight(
   }
 
   throw new YamlLoadError(
-    `${context}: ${fieldName}はリテラル数値か{object, prop}のいずれかである必要があります。`,
+    `${context}: ${fieldName}はリテラル数値か{subject, prop}のいずれかである必要があります。`,
   );
 }
 
@@ -190,8 +190,8 @@ function parseSetEffect(
 }
 
 /**
- * transfer（9.5節）。from/toの参照はフラットな2フィールド（from_object/from_prop,
- * to_object/to_prop）で表し、from_object/to_objectは省略時self。対象ルートはset/add/destroyと
+ * transfer（9.5節）。from/toの参照はフラットな2フィールド（from/from_prop, to/to_prop）で表し、
+ * from/toは省略時self。対象ルートはset/add/destroyと
  * 同じ制約（selfOnly・allowDragged）を共有する。linked_add（省略可）はaddと同じ構造で、
  * 実際の移動量に比例してスケールされる副効果。to_amount（省略可）は、移送元と移送先で単位が違うときに
  * 「amount分を出すと移送先がどれだけ増えるか」を持つ。
@@ -203,16 +203,14 @@ function parseTransfer(
   allowDragged: boolean,
   selfOnly: boolean,
 ): TransferEffect {
-  const fromObjectRaw = tryGetScalar(map, 'from_object', context);
+  const fromRaw = tryGetScalar(map, 'from', context);
   const fromObject =
-    fromObjectRaw !== undefined
-      ? parseActiveTargetKey(context, fromObjectRaw, allowDragged, selfOnly)
-      : 'self';
+    fromRaw !== undefined ? parseActiveTargetKey(context, fromRaw, allowDragged, selfOnly) : 'self';
   const fromProp = loader.propertyNames.intern(requireScalar(map, 'from_prop', context));
 
-  const toObjectRaw = tryGetScalar(map, 'to_object', context);
+  const toRaw = tryGetScalar(map, 'to', context);
   const toObject =
-    toObjectRaw !== undefined ? parseActiveTargetKey(context, toObjectRaw, allowDragged, selfOnly) : 'self';
+    toRaw !== undefined ? parseActiveTargetKey(context, toRaw, allowDragged, selfOnly) : 'self';
   const toProp = loader.propertyNames.intern(requireScalar(map, 'to_prop', context));
 
   const amount = requireNumber(map, 'amount', context);
@@ -231,9 +229,9 @@ function parseTransfer(
     .map(([key]) => key)
     .filter(
       (key) =>
-        key !== 'from_object' &&
+        key !== 'from' &&
         key !== 'from_prop' &&
-        key !== 'to_object' &&
+        key !== 'to' &&
         key !== 'to_prop' &&
         key !== 'amount' &&
         key !== 'to_amount' &&
@@ -356,7 +354,7 @@ export function parsePassiveTransfers(
 ): TransferEffect[] {
   for (const map of isSeq(node) ? (node.items as YamlNode[]) : [node]) {
     if (!isMap(map)) continue;
-    for (const key of ['from_object', 'to_object'])
+    for (const key of ['from', 'to'])
       if (tryGetScalar(map, key, context) === 'actor')
         throw new YamlLoadError(
           `${context}.${key}: passivesの対象に'actor'は使えません（持続的な関係に紐づかないため）。`,
@@ -389,10 +387,10 @@ function parseTransfers(
 }
 
 /**
- * move（対象のオブジェクトを、移動先の中へ移動する。MoveEffect参照）。
- * transferと同じフラットフィールド規約（`move: {object: actor, to_prop: destination_id}`）。
+ * move（subjectのオブジェクトを、移動先の中へ移動する。MoveEffect参照）。
+ * transferと同じフラットフィールド規約（`move: {subject: actor, to_prop: destination_id}`）。
  *
- * objectはactor（アクション実行者）とdragged（combinationsでドラッグされてきたカード）のみ対応する。
+ * subjectはactor（アクション実行者）とdragged（combinationsでドラッグされてきたカード）のみ対応する。
  * self/parent/child等は「一度きりの命令に対してどれを動かすか」の意味論が未確定のため未対応。
  * 移動先はtoかto_propのどちらか一方で指す（両方・どちらも無しはエラー）。
  * selfOnly文脈（rangeイベント）にはactorもdraggedも存在しないため使えない。
@@ -408,19 +406,19 @@ function parseMove(
       `${context}: moveはon_overflow/on_shortfallでは使えません（actorが存在しないため）。`,
     );
 
-  const objectRaw = requireScalar(map, 'object', context);
-  if (objectRaw !== 'actor' && objectRaw !== 'dragged')
+  const subjectRaw = requireScalar(map, 'subject', context);
+  if (subjectRaw !== 'actor' && subjectRaw !== 'dragged')
     throw new YamlLoadError(
-      `${context}: moveのobjectは'actor'か'dragged'のみ対応しています（値: '${objectRaw}'）。`,
+      `${context}: moveのsubjectは'actor'か'dragged'のみ対応しています（値: '${subjectRaw}'）。`,
     );
 
   const unknownKeys = entriesInOrder(map)
     .map(([key]) => key)
-    .filter((key) => key !== 'object' && key !== 'to' && key !== 'to_prop');
+    .filter((key) => key !== 'subject' && key !== 'to' && key !== 'to_prop');
   if (unknownKeys.length > 0)
     throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
 
-  return new MoveEffect(objectRaw, parseMoveDestination(loader, context, map));
+  return new MoveEffect(subjectRaw, parseMoveDestination(loader, context, map));
 }
 
 /** moveの移動先（to か to_prop のどちらか一方）。 */

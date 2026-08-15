@@ -134,7 +134,7 @@ object_defs:
         value: 0
     combinations:
       crack:
-        with: hammer
+        with: {tag: hammer}
         duration: 20
         add:
           self:
@@ -161,8 +161,8 @@ object_defs:
   nut:
     combinations:
       crack:
-        with: hammer
-        duration: {object: dragged, prop: swing_minutes}
+        with: {tag: hammer}
+        duration: {subject: dragged, prop: swing_minutes}
 `);
     const nut = session.spawn(codex.objectNames.getId('nut'));
     const hammer = session.spawn(codex.objectNames.getId('blunt_hammer'));
@@ -263,7 +263,7 @@ object_defs:
         value: 0
     combinations:
       carve:
-        with: chisel
+        with: {tag: chisel}
         duration: 30
         add:
           self:

@@ -69,7 +69,7 @@ object_defs:
       # 満水でも実行できる。飲みきれない分はhydrationのクランプに任せてこぼれる。条件で塞ぐと、
       # 満水の間だけ連鎖が進まなくなる。
       bore:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         duration: 15
         add:
           actor:
@@ -89,7 +89,7 @@ object_defs:
       volume: {value: 4900}
     combinations:
       split:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         duration: 15
         destroy: self
         spawn: {object: coconut_jelly, count: 2}
@@ -104,7 +104,7 @@ object_defs:
       eat:
         conditions:
           - reason: too_full
-            not: {object: actor, prop: stomach, in_stage: full}
+            not: {subject: actor, prop: stomach, in_stage: full}
         add:
           actor:
             stomach: 2
@@ -121,7 +121,7 @@ object_defs:
       volume: {value: 3800}
     combinations:
       husk:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         duration: 30
         destroy: self
         spawn:
@@ -154,12 +154,12 @@ object_defs:
       volume: {value: 900}
     combinations:
       crack:
-        with: stone
+        with: {object: stone}
         duration: 15
         destroy: self
         spawn: {object: coconut_half, count: 2}
       pry_open:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         duration: 15
         destroy: self
         spawn: {object: coconut_half, count: 2}
@@ -172,7 +172,7 @@ object_defs:
       volume: {value: 900}
     combinations:
       scrape:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         duration: 30
         destroy: self
         spawn:
@@ -190,7 +190,7 @@ object_defs:
       eat:
         conditions:
           - reason: too_full
-            not: {object: actor, prop: stomach, in_stage: full}
+            not: {subject: actor, prop: stomach, in_stage: full}
         add:
           actor:
             stomach: 6

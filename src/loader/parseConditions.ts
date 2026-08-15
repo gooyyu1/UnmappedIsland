@@ -1,9 +1,17 @@
 import type { YAMLMap, YAMLSeq } from 'yaml';
 import { isMap, isSeq } from 'yaml';
-import { asMap, asScalarText, entriesInOrder, requireScalar, tryGetScalar, tryGetSeq } from './yamlMapping';
+import {
+  asMap,
+  asScalarText,
+  entriesInOrder,
+  requireScalar,
+  tryGetMap,
+  tryGetScalar,
+  tryGetSeq,
+} from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { tryGetNode, parseScalarNumber } from './parseCommon';
+import { parseScalarNumber, parseTypeMatchRule, tryGetNode } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
 import { PropertyPath } from '../domain/defs/ReferenceRoot';
@@ -12,10 +20,10 @@ import type { ConditionOp } from '../domain/defs/ConditionNode';
 import { Requirement, Requirements } from '../domain/defs/Requirement';
 
 /**
- * conditions（14節）・passivesのゲート（8節）が共通で使うobject参照キー。
+ * conditions（14節）・passivesのゲート（8節）が共通で使う`subject`（主語）の参照キー。
  * worldはシングルトンインスタンスの実行時追跡が無いため未対応（ancestorで代替できる）。
  */
-export function parseConditionObject(
+export function parseSubjectRoot(
   context: string,
   raw: string,
   allowedRoots: ReadonlySet<ReferenceRoot>,
@@ -39,14 +47,14 @@ export function parseConditionObject(
       break;
     case 'world':
       throw new YamlLoadError(
-        `${context}: object 'world' は未対応です（worldシングルトンインスタンスの実行時追跡が未実装のため）。`,
+        `${context}: subject 'world' は未対応です（worldシングルトンインスタンスの実行時追跡が未実装のため）。`,
       );
     default:
-      throw new YamlLoadError(`${context}: 未知のobject '${raw}' です。`);
+      throw new YamlLoadError(`${context}: 未知のsubject '${raw}' です。`);
   }
 
   if (!allowedRoots.has(root))
-    throw new YamlLoadError(`${context}: この文脈でobject '${raw}' は使えません。`);
+    throw new YamlLoadError(`${context}: この文脈でsubject '${raw}' は使えません。`);
 
   return root;
 }
@@ -67,14 +75,14 @@ export const COMBINATION_CONDITION_ROOTS: ReadonlySet<ReferenceRoot> = new Set([
 ]);
 
 /**
- * レシピの解放条件（SkillSystem.md 4節）で使えるobject。**actorのみ**。
+ * レシピの解放条件（SkillSystem.md 4節）で使えるsubject。**actorのみ**。
  *
  * 解放条件は「このレシピを知っているか」の判定で、評価する時点では成果物のインスタンスがまだ無い。
  * self/parent/ancestorはいずれも解決先を持たないため使えない（ancestorはselfから遡るので同様）。
  */
 export const RECIPE_CONDITION_ROOTS: ReadonlySet<ReferenceRoot> = new Set(['actor']);
 
-/** passivesのゲートで使えるobject。selfはSlotBearer、parentはその1つ上
+/** passivesのゲートで使えるsubject。selfはSlotBearer、parentはその1つ上
  * （RegisteredPassiveEffect参照）、ancestorは祖先探索（WorldObject.FindAncestorWithProperty参照）。
  * actor/draggedは持続的な関係に紐づかないため未対応。 */
 export const PASSIVE_CONDITION_ROOTS: ReadonlySet<ReferenceRoot> = new Set(['self', 'parent', 'ancestor']);
@@ -184,20 +192,26 @@ const PROPERTY_OPS: readonly ConditionOp[] = ['lt', 'lte', 'gt', 'gte', 'eq', 'n
 /** 段の判定（6.4節）の演算子キー。値は段の名前。 */
 const IN_STAGE_KEY = 'in_stage';
 
+/** 型の判定（14.3節・14.4節）の演算子キー。値は`{tag}`か`{object}`（TypeMatchRule）。 */
+const MATCHES_KEY = 'matches';
+
 /**
- * 条件木の葉。**主語を絞るキー（object/prop/slot）と、演算子キー（値が比較の相手）**でできている。
- * objectは省略時self、主語を絞るキーを持たない葉の主語はオブジェクト自身。
+ * 条件木の葉。**誰を見るかを決めるキー（subject）・主語を絞るキー（prop/slot）と、演算子キー
+ * （値が比較の相手）**でできている。subjectは省略時self。
  *
  * | 主語 | 使える演算子キー |
  * | --- | --- |
- * | `prop`（プロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage` |
- * | `slot`（自分のそのスロットの中身） | `tag` |
- * | 無し（オブジェクト自身） | `in_slot`（親の中での位置）/`tag`（自分のタグ） |
+ * | `prop`（subjectのそのプロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage` |
+ * | `slot`（subjectのそのスロットの中身） | `matches`（当てはまる中身が1つでもあるか） |
+ * | 無し（subject自身） | `in_slot`（親の中での位置）/`matches`（subject自身が当てはまるか） |
+ *
+ * **量化は主語が決める。** 同じ`matches`でも、`slot`があれば中身に対する存在判定、無ければ
+ * subject自身への判定になる（14.3節・14.4節）。
  *
  * **演算子キーは複数書ける（暗黙のAND）。** conditionsの配列と同じ規則で、範囲判定
  * （`{prop: x, gte: 100, lt: 200}`）のために同じ`prop`を2度書かなくて済む。
  *
- * 比較の相手はリテラルか{object, prop}参照（10.2節と同じ二択）。参照はlt/lte/gt/gte/eq/neqのみで
+ * 比較の相手はリテラルか{subject, prop}参照（10.2節と同じ二択）。参照はlt/lte/gt/gte/eq/neqのみで
  * 使える（in/not_inは複数値との比較のため噛み合わない）。
  */
 function parseConditionLeaf(
@@ -207,8 +221,8 @@ function parseConditionLeaf(
   allowedRoots: ReadonlySet<ReferenceRoot>,
   extraKey?: string,
 ): ConditionNode {
-  const objectName = tryGetScalar(map, 'object', context);
-  const root = objectName !== undefined ? parseConditionObject(context, objectName, allowedRoots) : 'self';
+  const subjectName = tryGetScalar(map, 'subject', context);
+  const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, allowedRoots) : 'self';
 
   const propName = tryGetScalar(map, 'prop', context);
   const slotName = tryGetScalar(map, 'slot', context);
@@ -216,7 +230,7 @@ function parseConditionLeaf(
     throw new YamlLoadError(`${context}: 'prop'と'slot'は同時に指定できません（主語は1つです）。`);
 
   /** 主語を絞るキーと、読み取った演算子キー。残ったキーは綴り間違いか、この主語では使えない演算子。 */
-  const used = new Set<string>(['object', 'prop', 'slot']);
+  const used = new Set<string>(['subject', 'prop', 'slot']);
   if (extraKey !== undefined) used.add(extraKey);
   const nodes: ConditionNode[] = [];
 
@@ -238,28 +252,34 @@ function parseConditionLeaf(
       nodes.push(ConditionNode.propertyStage(root, propertyGlobalId, stageName));
     }
   } else if (slotName !== undefined) {
-    const tagName = tryGetScalar(map, 'tag', context);
-    if (tagName === undefined)
-      throw new YamlLoadError(`${context}: 'slot'を使うスロット中身判定には'tag'が必須です。`);
-    used.add('tag');
+    const matchNode = tryGetMap(map, MATCHES_KEY, context);
+    if (matchNode === undefined)
+      throw new YamlLoadError(`${context}: 'slot'を使うスロット中身判定には'${MATCHES_KEY}'が必須です。`);
+    used.add(MATCHES_KEY);
     nodes.push(
-      ConditionNode.slotContent(root, loader.slotNames.intern(slotName), loader.tagNames.intern(tagName)),
+      ConditionNode.slotContent(
+        root,
+        loader.slotNames.intern(slotName),
+        parseTypeMatchRule(loader, matchNode, `${context}.${MATCHES_KEY}`),
+      ),
     );
   } else {
     const inSlotName = tryGetScalar(map, 'in_slot', context);
     if (inSlotName !== undefined) {
       if (root === 'ancestor')
         throw new YamlLoadError(
-          `${context}: in_slot判定でobject 'ancestor'は未対応です（ancestorはプロパティ名で祖先を探すため、探すプロパティを持たないin_slot判定とは噛み合いません）。`,
+          `${context}: in_slot判定でsubject 'ancestor'は未対応です（ancestorはプロパティ名で祖先を探すため、探すプロパティを持たないin_slot判定とは噛み合いません）。`,
         );
       used.add('in_slot');
       nodes.push(ConditionNode.slotPosition(root, loader.slotNames.intern(inSlotName)));
     }
 
-    const tagName = tryGetScalar(map, 'tag', context);
-    if (tagName !== undefined) {
-      used.add('tag');
-      nodes.push(ConditionNode.objectTag(root, loader.tagNames.intern(tagName)));
+    const matchNode = tryGetMap(map, MATCHES_KEY, context);
+    if (matchNode !== undefined) {
+      used.add(MATCHES_KEY);
+      nodes.push(
+        ConditionNode.objectMatches(root, parseTypeMatchRule(loader, matchNode, `${context}.${MATCHES_KEY}`)),
+      );
     }
   }
 
@@ -277,7 +297,7 @@ function parseConditionLeaf(
   return nodes.length === 1 ? nodes[0] : ConditionNode.all(nodes);
 }
 
-/** 演算子キー1つぶんのプロパティ比較。値はリテラル（in/not_inでは配列）か{object, prop}参照。 */
+/** 演算子キー1つぶんのプロパティ比較。値はリテラル（in/not_inでは配列）か{subject, prop}参照。 */
 function parsePropertyComparison(
   loader: WorldCodexYamlLoader,
   context: string,
@@ -290,17 +310,17 @@ function parsePropertyComparison(
   if (isMap(valueNode)) {
     if (op === 'in' || op === 'not_in')
       throw new YamlLoadError(
-        `${context}: '${op}'は{object, prop}参照と組み合わせられません（複数値との比較のため）。`,
+        `${context}: '${op}'は{subject, prop}参照と組み合わせられません（複数値との比較のため）。`,
       );
 
-    const refObjectName = tryGetScalar(valueNode, 'object', context);
+    const refSubjectName = tryGetScalar(valueNode, 'subject', context);
     const refRoot =
-      refObjectName !== undefined ? parseConditionObject(context, refObjectName, allowedRoots) : 'self';
+      refSubjectName !== undefined ? parseSubjectRoot(context, refSubjectName, allowedRoots) : 'self';
     const refPropName = requireScalar(valueNode, 'prop', context);
 
     const unknownRefKeys = entriesInOrder(valueNode)
       .map(([key]) => key)
-      .filter((key) => key !== 'object' && key !== 'prop');
+      .filter((key) => key !== 'subject' && key !== 'prop');
     if (unknownRefKeys.length > 0)
       throw new YamlLoadError(`${context}.${op}: 未知のキー '${unknownRefKeys.join(', ')}' です。`);
 

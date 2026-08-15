@@ -315,7 +315,7 @@ export class SpawnEffect extends ActiveEffect {
 /**
  * transfer（9.5節）の1命令。fromプロパティの実体値から、実際に出せる量とAmountの小さい方だけを
  * toプロパティへ移す（「在庫に応じて実際に動く量が変わる」移送）。YAMLはフラットな
- * `from_object`/`from_prop`/`to_object`/`to_prop`の4フィールドで表す。
+ * `from`/`from_prop`/`to`/`to_prop`の4フィールドで表す。
  *
  * fromとtoの単位が違う場合（mLの水 → tick数のhydration）は、`amount`に対して受け取る側が
  * どれだけ増えるかを`to_amount`が持つ。**換算率をエンジンは知らず、移送する側が宣言する**。

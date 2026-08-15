@@ -38,7 +38,7 @@ object_defs:
         transfer:
           amount: 2000
           from_prop: water_amount
-          to_object: actor
+          to: actor
           to_prop: hydration
 `;
     const codex = load(yaml);
@@ -74,7 +74,7 @@ object_defs:
         transfer:
           amount: 2000
           from_prop: water_amount
-          to_object: actor
+          to: actor
           to_prop: hydration
 `;
     const codex = load(yaml);
@@ -115,11 +115,11 @@ object_defs:
         transfer:
           - amount: 2000
             from_prop: water_amount
-            to_object: actor
+            to: actor
             to_prop: hydration
           - amount: 1000
             from_prop: juice_amount
-            to_object: actor
+            to: actor
             to_prop: vitamin
 `;
     const codex = load(yaml);
@@ -159,7 +159,7 @@ object_defs:
         transfer:
           amount: 2000
           from_prop: water_amount
-          to_object: actor
+          to: actor
           to_prop: hydration
 `;
     const codex = load(yaml);
@@ -194,7 +194,7 @@ object_defs:
         transfer:
           amount: 2000
           from_prop: water_amount
-          to_object: actor
+          to: actor
           to_prop: hydration
           allow_overflow: true
 `;
@@ -268,7 +268,7 @@ object_defs:
         transfer:
           amount: 1200
           from_prop: tea_amount
-          to_object: actor
+          to: actor
           to_prop: hydration
           linked_add:
             actor:
@@ -311,7 +311,7 @@ object_defs:
         transfer:
           amount: 1200
           from_prop: tea_amount
-          to_object: actor
+          to: actor
           to_prop: hydration
           linked_add:
             actor:
@@ -357,7 +357,7 @@ object_defs:
           amount: 250
           to_amount: ${toAmount}
           from_prop: volume
-          to_object: actor
+          to: actor
           to_prop: hydration
 `;
     }

@@ -6,16 +6,14 @@ import {
   tryGetInt,
   tryGetMap,
   tryGetNumber,
-  tryGetScalar,
   tryGetSeq,
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { tryGetNode } from './parseCommon';
+import { parseTypeMatchRule, tryGetNode } from './parseCommon';
 import { parseWeight } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import { CellAcceptRule, CellDef, SlotDef } from '../domain/defs/SlotDef';
-import type { SlotAcceptTargetKind } from '../domain/defs/SlotDef';
+import { CellDef, SlotDef } from '../domain/defs/SlotDef';
 import type { WeightSpec } from '../domain/defs/PickEffect';
 
 /** 廃止したキーと、その内容を今どこへ書くか。黙って無視すると、効いているつもりの宣言が通ってしまう。 */
@@ -93,24 +91,7 @@ function parsePutIn(loader: WorldCodexYamlLoader, node: YAMLMap, context: string
 function parseCell(loader: WorldCodexYamlLoader, node: YAMLMap, context: string): CellDef {
   const acceptNode = tryGetMap(node, 'accept', context);
   return new CellDef(
-    acceptNode === undefined ? undefined : parseAccept(loader, acceptNode, `${context}.accept`),
+    acceptNode === undefined ? undefined : parseTypeMatchRule(loader, acceptNode, `${context}.accept`),
     tryGetInt(node, 'max', context),
   );
-}
-
-/** 枠が受け入れる型（`{tag: ...}`か`{object: ...}`のいずれか一方）を読む。 */
-function parseAccept(loader: WorldCodexYamlLoader, node: YAMLMap, context: string): CellAcceptRule {
-  const tagName = tryGetScalar(node, 'tag', context);
-  const objectName = tryGetScalar(node, 'object', context);
-
-  if (tagName !== undefined && objectName !== undefined)
-    throw new YamlLoadError(`${context}: 'tag'と'object'は同時に指定できません。`);
-  if (tagName === undefined && objectName === undefined)
-    throw new YamlLoadError(`${context}: 'tag'または'object'のいずれかが必要です。`);
-
-  const targetKind: SlotAcceptTargetKind = tagName !== undefined ? 'tag' : 'object';
-  // objectNameは、直前の2つのチェックにより、tagNameが未指定の場合は必ず定義されている。
-  const withId =
-    tagName !== undefined ? loader.tagNames.intern(tagName) : loader.objectNames.intern(objectName!);
-  return new CellAcceptRule(targetKind, withId);
 }

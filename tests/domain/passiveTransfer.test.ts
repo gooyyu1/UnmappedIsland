@@ -260,7 +260,7 @@ object_defs:
     props:
       water: {value: 5, range: {min: 0, max: 100}}
     passives:
-      - transfer: {from_prop: water, to_object: parent, to_prop: water, amount: 2}
+      - transfer: {from_prop: water, to: parent, to_prop: water, amount: 2}
 `);
     const vessel = spawn(codex, 'vessel');
     const drip = new WorldObject(
@@ -284,7 +284,7 @@ object_defs:
     props:
       stomach: {value: 1, range: {min: 0, max: 32}}
     passives:
-      - transfer: {from_prop: stomach, to_object: actor, to_prop: satiety, amount: 1}
+      - transfer: {from_prop: stomach, to: actor, to_prop: satiety, amount: 1}
 `),
     ).toThrow(YamlLoadError);
   });

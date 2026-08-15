@@ -47,7 +47,7 @@ object_defs:
               # 地面に置かれている間だけ（1節）。
               - {in_slot: items}
               # 空いている間だけ（6節）。獲物も死体もquarryなので、両方をこれ1つで拾う。
-              - not: {slot: catch, tag: quarry}
+              - not: {slot: catch, matches: {tag: quarry}}
             add:
               self:
                 catch_remaining: -1
@@ -128,7 +128,7 @@ object_defs:
               self:
                 durability: -1
           - conditions:
-              - {slot: catch, tag: quarry}
+              - {slot: catch, matches: {tag: quarry}}
             add:
               self:
                 durability: -10
@@ -164,26 +164,26 @@ object_defs:
       # 餌を仕掛ける（TrapSystem.md 4節）。炉へ薪をくべるのとまったく同じ形（FireSystem.md 2節）で、
       # 移る量は餌の側が1箇所で持つ。草の餌と肉の餌で1つずつ。
       add_plant_bait:
-        with: plant_bait
+        with: {tag: plant_bait}
         duration: 1
         conditions:
           - {reason: trap_baited, prop: plant_bait, lt: 24}
         transfer:
           amount: 999
-          from_object: dragged
+          from: dragged
           from_prop: plant_bait
           to_prop: plant_bait
         # 中途半端に残った餌を作らない。入りきらなかった分は失われるが、満杯を拒む条件があるので
         # 失うのは高々1個ぶん。
         destroy: dragged
       add_meat_bait:
-        with: meat_bait
+        with: {tag: meat_bait}
         duration: 1
         conditions:
           - {reason: trap_baited, prop: meat_bait, lt: 24}
         transfer:
           amount: 999
-          from_object: dragged
+          from: dragged
           from_prop: meat_bait
           to_prop: meat_bait
         destroy: dragged

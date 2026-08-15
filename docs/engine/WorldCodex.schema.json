@@ -181,8 +181,8 @@
         "not_in"
       ]
     },
-    "condition_object": {
-      "description": "conditions/weight/set参照のobject参照ルート（14.1節）。self/parent/ancestor/actor/dragged（draggedはcombinations内のみ、12.2節。passivesのゲートはself/parent/ancestorのみ）。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
+    "subject_root": {
+      "description": "conditions/weightの`subject`（主語）の参照ルート（14.1節）。self/parent/ancestor/actor/dragged（draggedはcombinations内のみ、12.2節。passivesのゲートはself/parent/ancestorのみ）。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
       "enum": [
         "self",
         "parent",
@@ -192,11 +192,11 @@
       ]
     },
     "condition_property_leaf": {
-      "description": "propを主語にした葉（14.1節）。演算子キー（lt/lte/gt/gte/eq/neq/in/not_in/in_stage）の値が比較の相手で、**複数書けば暗黙のAND**（範囲は{prop: x, gte: 100, lt: 200}）。最低1つ必要。objectは省略可（既定値self）。",
+      "description": "propを主語にした葉（14.1節）。演算子キー（lt/lte/gt/gte/eq/neq/in/not_in/in_stage）の値が比較の相手で、**複数書けば暗黙のAND**（範囲は{prop: x, gte: 100, lt: 200}）。最低1つ必要。subjectは省略可（既定値self）。",
       "type": "object",
       "properties": {
-        "object": {
-          "$ref": "#/$defs/condition_object"
+        "subject": {
+          "$ref": "#/$defs/subject_root"
         },
         "prop": {
           "type": "string",
@@ -288,7 +288,7 @@
       ]
     },
     "condition_node": {
-      "description": "conditions（14節）の1ノード。葉（propを主語にした比較・段判定(14.1節)・スロット位置判定(in_slot、14.2節)・スロット中身判定(slot+tag、14.3節)・タグ判定(tag、14.4節)のいずれか）か、all/any/not（14.5節）による複合ノードのいずれか。",
+      "description": "conditions（14節）の1ノード。葉（propを主語にした比較・段判定(14.1節)・スロット位置判定(in_slot、14.2節)・スロット中身判定(slot+matches、14.3節)・型判定(matches、14.4節)のいずれか）か、all/any/not（14.5節）による複合ノードのいずれか。",
       "oneOf": [
         {
           "$ref": "#/$defs/condition_property_leaf"
@@ -300,7 +300,7 @@
           "$ref": "#/$defs/condition_slot_content_leaf"
         },
         {
-          "$ref": "#/$defs/condition_object_tag_leaf"
+          "$ref": "#/$defs/condition_object_matches_leaf"
         },
         {
           "type": "object",
@@ -538,7 +538,7 @@
       ]
     },
     "weight_spec": {
-      "description": "pick候補のweight（10.2節）・actions/combinationsのduration（11.3節）。リテラル数値、または既存propsへの参照（{object, prop}）。objectは省略可（既定値self）。",
+      "description": "pick候補のweight（10.2節）・actions/combinationsのduration（11.3節）。リテラル数値、または既存propsへの参照（{subject, prop}）。subjectは省略可（既定値self）。",
       "oneOf": [
         {
           "type": "number"
@@ -610,7 +610,7 @@
         },
         "duration": {
           "$ref": "#/$defs/weight_spec",
-          "description": "実行にかかるゲーム内時間（分）。weightと同じ「リテラルか{object, prop}参照か」の二択（11.3節）。省略時は時間を消費しない。"
+          "description": "実行にかかるゲーム内時間（分）。weightと同じ「リテラルか{subject, prop}参照か」の二択（11.3節）。省略時は時間を消費しない。"
         },
         "set": {
           "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",
@@ -646,15 +646,15 @@
       "type": "object",
       "properties": {
         "with": {
-          "$ref": "#/$defs/identifier",
-          "description": "組み合わせる相手のカード（dragged）とのマッチング条件。object_defのid、またはtraitの名前。"
+          "$ref": "#/$defs/type_match_rule",
+          "description": "組み合わせる相手のカード（dragged）に求める型。枠のacceptと同じ{tag}/{object}の二択（12.1節）。"
         },
         "conditions": {
           "$ref": "#/$defs/conditions_list"
         },
         "duration": {
           "$ref": "#/$defs/weight_spec",
-          "description": "実行にかかるゲーム内時間（分）。actionsのdurationと同じ（11.3節）。参照のobjectにはdraggedも使える（12.2節）。省略時は時間を消費しない。"
+          "description": "実行にかかるゲーム内時間（分）。actionsのdurationと同じ（11.3節）。参照のsubjectにはdraggedも使える（12.2節）。省略時は時間を消費しない。"
         },
         "set": {
           "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",
@@ -757,17 +757,17 @@
       ],
       "additionalProperties": false
     },
-    "cell_accept": {
-      "description": "枠が受け入れる型（GameElementDefinition.md 7.2節）。tag（タグを持つ任意のobject_def）とobject（特定のobject_def）はどちらか一方のみ指定する。",
+    "type_match_rule": {
+      "description": "どの型が当てはまるかの指定（GameElementDefinition.md 4.1節）。枠のaccept（7.2節）・combinationsのwith（12.1節）・conditionsのmatches（14.3節・14.4節）が共有する。tag（タグを持つ任意のobject_def）とobject（特定のobject_def）はどちらか一方のみ指定する。",
       "type": "object",
       "properties": {
         "tag": {
           "$ref": "#/$defs/identifier",
-          "description": "このタグを持つobject_defを受け入れる。"
+          "description": "このタグを持つobject_defが当てはまる。"
         },
         "object": {
           "$ref": "#/$defs/identifier",
-          "description": "このobject_defだけを受け入れる。"
+          "description": "このobject_defだけが当てはまる。"
         }
       },
       "oneOf": [
@@ -789,7 +789,7 @@
       "type": "object",
       "properties": {
         "accept": {
-          "$ref": "#/$defs/cell_accept",
+          "$ref": "#/$defs/type_match_rule",
           "description": "受け入れる型。省略すると型を問わない。"
         },
         "max": {
@@ -1054,11 +1054,11 @@
       ]
     },
     "prop_ref": {
-      "description": "他のプロパティの現在値への参照（{object, prop}）。objectは省略可で既定値self。",
+      "description": "他のプロパティの現在値への参照（{subject, prop}）。subjectは省略可で既定値self。",
       "type": "object",
       "properties": {
-        "object": {
-          "$ref": "#/$defs/condition_object"
+        "subject": {
+          "$ref": "#/$defs/subject_root"
         },
         "prop": {
           "type": "string",
@@ -1152,17 +1152,17 @@
       "additionalProperties": false
     },
     "transfer_map": {
-      "description": "transferの1件（9.5節）。from/toの参照をフラットな2フィールドで表す（from_object/to_objectは省略時self）。linked_addは実際の移動量に比例してスケールされる副効果。",
+      "description": "transferの1件（9.5節）。from/toの参照をフラットな2フィールドで表す（from/toは省略時self）。linked_addは実際の移動量に比例してスケールされる副効果。",
       "type": "object",
       "properties": {
-        "from_object": {
+        "from": {
           "$ref": "#/$defs/active_target_name"
         },
         "from_prop": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$"
         },
-        "to_object": {
+        "to": {
           "$ref": "#/$defs/active_target_name"
         },
         "to_prop": {
@@ -1202,10 +1202,10 @@
       ]
     },
     "move_spec": {
-      "description": "move（9.6節）: 対象を、移動先のオブジェクトの中へ移動する。objectはactorかdraggedのみ。移動先はto（self=move宣言元自身 / parent=その直接の親）かto_prop（そのプロパティが保持するインスタンスIDのオブジェクト）のどちらか一方で指す。on_overflow/on_shortfallでは使えない（actorが存在しないため、ロード時エラー）。",
+      "description": "move（9.6節）: subjectのオブジェクトを、移動先のオブジェクトの中へ移動する。subjectはactorかdraggedのみ。移動先はto（self=move宣言元自身 / parent=その直接の親）かto_prop（そのプロパティが保持するインスタンスIDのオブジェクト）のどちらか一方で指す。on_overflow/on_shortfallでは使えない（actorが存在しないため、ロード時エラー）。",
       "type": "object",
       "properties": {
-        "object": {
+        "subject": {
           "enum": [
             "actor",
             "dragged"
@@ -1223,7 +1223,7 @@
         }
       },
       "required": [
-        "object"
+        "subject"
       ],
       "oneOf": [
         {
@@ -1240,11 +1240,11 @@
       "additionalProperties": false
     },
     "condition_in_slot_leaf": {
-      "description": "{object, in_slot}形式の、objectが指すオブジェクト自身の現在のスロット位置判定（14.2節）。常に等価判定でopは持たない（否定はnotで包む）。objectにancestorは使えない（ロード時エラー）。",
+      "description": "{subject, in_slot}形式の、subjectが指すオブジェクトの現在のスロット位置判定（14.2節）。常に等価判定でopは持たない（否定はnotで包む）。subjectにancestorは使えない（ロード時エラー）。",
       "type": "object",
       "properties": {
-        "object": {
-          "$ref": "#/$defs/condition_object"
+        "subject": {
+          "$ref": "#/$defs/subject_root"
         },
         "in_slot": {
           "$ref": "#/$defs/identifier"
@@ -1259,17 +1259,17 @@
       "additionalProperties": false
     },
     "condition_slot_content_leaf": {
-      "description": "{object, slot, tag}形式の、objectの自分のslotの中にtagを持つ子がいるかの存在判定（14.3節）。",
+      "description": "{subject, slot, matches}形式の、subjectが持つslotの中にmatchesへ当てはまる子がいるかの存在判定（14.3節）。",
       "type": "object",
       "properties": {
-        "object": {
-          "$ref": "#/$defs/condition_object"
+        "subject": {
+          "$ref": "#/$defs/subject_root"
         },
         "slot": {
           "$ref": "#/$defs/identifier"
         },
-        "tag": {
-          "$ref": "#/$defs/identifier"
+        "matches": {
+          "$ref": "#/$defs/type_match_rule"
         },
         "reason": {
           "$ref": "#/$defs/condition_reason"
@@ -1277,31 +1277,31 @@
       },
       "required": [
         "slot",
-        "tag"
+        "matches"
       ],
       "additionalProperties": false
     },
-    "condition_object_tag_leaf": {
-      "description": "{object, tag}形式の、objectが指すオブジェクト自身がtagを持つかの判定（14.4節）。",
+    "condition_object_matches_leaf": {
+      "description": "{subject, matches}形式の、subjectが指すオブジェクト自身がmatchesへ当てはまるかの判定（14.4節）。",
       "type": "object",
       "properties": {
-        "object": {
-          "$ref": "#/$defs/condition_object"
+        "subject": {
+          "$ref": "#/$defs/subject_root"
         },
-        "tag": {
-          "$ref": "#/$defs/identifier"
+        "matches": {
+          "$ref": "#/$defs/type_match_rule"
         },
         "reason": {
           "$ref": "#/$defs/condition_reason"
         }
       },
       "required": [
-        "tag"
+        "matches"
       ],
       "additionalProperties": false
     },
     "condition_comparison_value": {
-      "description": "lt/lte/gt/gte/eq/neqの比較の相手（14.1節）。リテラル（整数・真偽値・シンボル名）か{object, prop}参照。'max'/'min'は未対応（参照先rangeの上下限を指す規約が未確定のため、ロード時エラー。17節）。",
+      "description": "lt/lte/gt/gte/eq/neqの比較の相手（14.1節）。リテラル（整数・真偽値・シンボル名）か{subject, prop}参照。'max'/'min'は未対応（参照先rangeの上下限を指す規約が未確定のため、ロード時エラー。17節）。",
       "oneOf": [
         {
           "type": [
@@ -1325,7 +1325,7 @@
       ]
     },
     "condition_list_value": {
-      "description": "in/not_inの比較の相手（14.1節）。リテラルの配列のみで、{object, prop}参照は使えない（複数値との比較のため）。",
+      "description": "in/not_inの比較の相手（14.1節）。リテラルの配列のみで、{subject, prop}参照は使えない（複数値との比較のため）。",
       "type": "array",
       "minItems": 1,
       "items": {

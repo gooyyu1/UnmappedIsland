@@ -29,7 +29,7 @@ export class ObjectDef {
 
   /** この object_def が持つタグのグローバルIDの一覧（4節）。自分自身が直接宣言したタグと、参照した
    * trait（5節）が宣言していたタグの両方を合成済みで持つ（trait自体は合成後に消えるため、
-   * 枠のaccept（7.2節）・combinations.with（12.1節）はこのタグ集合だけを見てマッチングする）。 */
+   * タグ指定のマッチング（TypeMatchRule）はこのタグ集合だけを見る）。 */
   readonly tags: readonly number[];
 
   /** グローバルなプロパティID → このObjectDefにおけるローカルindex。 */

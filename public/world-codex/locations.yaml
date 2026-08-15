@@ -64,10 +64,10 @@ object_defs:
           # 荷が重すぎると動けない。段の名前で見るので、境目はキャラクタのloadのstagesだけが持つ
           # （ContainerSystem.md 5節）。
           - reason: too_heavy
-            not: {object: actor, prop: load, in_stage: too_heavy}
+            not: {subject: actor, prop: load, in_stage: too_heavy}
         duration: {prop: travel_minutes}
         move:
-          object: actor
+          subject: actor
           to_prop: destination_id
 
   # ------------------------------------------------------------------
@@ -91,13 +91,13 @@ object_defs:
   # 石。石同士を打ち合わせると、片方が割れて尖った石（tools.yaml）になる。
   # 打ち合わせる相手（dragged）は槌として残り、割られる側（self）だけが尖った石へ置き換わる。
   stone:
-    tags: [item, stone]
+    tags: [item]
     props:
       weight: {value: 1000}
       volume: {value: 700}
     combinations:
       knap:
-        with: stone
+        with: {object: stone}
         duration: 60
         destroy: self
         spawn: {object: sharp_stone}

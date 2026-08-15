@@ -27,7 +27,7 @@ export abstract class InteractionDef {
   private readonly effect: ActiveEffect;
 
   /**
-   * 実行にかかるゲーム内時間（分）。リテラルか{object, prop}参照（weightの10.2節と同じ二択）。
+   * 実行にかかるゲーム内時間（分）。リテラルか{subject, prop}参照（weightの10.2節と同じ二択）。
    * undefinedなら時間を消費しない。時間進行（advanceWorldTime）までがこのクラスの責務で、
    * 呼び出し側が実行後に別途時間を進める必要はない。
    */

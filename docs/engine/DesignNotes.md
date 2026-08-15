@@ -202,10 +202,9 @@
 
 ## 入れ物への投入（[RecipeSystem.md](./RecipeSystem.md) 4節）
 
-- **枠の `accept` から投入の `combinations` を自動生成する方式は採らないこと。** 2つの理由で成立しない。
-  `with` はタグでしか噛み合わない（[GameElementDefinition.md](./GameElementDefinition.md) 12.1節）のに、
-  材料の枠は `{object: 名前}` で型を名指しする。さらに `move: {to: self}` の配置は自動配置スロットしか
-  走査しないため、`auto_placement: false` の材料スロットへは**黙って何も入らない**。
+- **枠の `accept` から投入の `combinations` を自動生成する方式は採らないこと。** `move: {to: self}` の
+  配置は自動配置スロットしか走査しないため、`auto_placement: false` の材料スロットへは**黙って何も
+  入らない**。
   投入は「中身を持つカード（`main_item_slot`）へ重ねたら、そのスロットへ入る」という画面側の1つの動きに
   統一してある。かごの手書きの `put_in` も、これに置き換えて消した——2経路あると、枠が受け入れない相手にも
   `with` だけで噛み合って「吹き出しは出るのに何も起きない」状態が作れてしまう。
