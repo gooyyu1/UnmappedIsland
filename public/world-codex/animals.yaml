@@ -471,7 +471,7 @@ object_defs:
   # レシピは「どちらでもよい」と書けない（HuntingSystem.md 1.5節が獲物の大きさを個数で表すのと同じ理由で、
   # 刻みを増やさない）。
   rat_carcass:
-    tags: [item, quarry]
+    tags: [item, quarry, roastable]
     props:
       weight: {value: 80}
       volume: {value: 200}
@@ -486,7 +486,7 @@ object_defs:
   # 丸焼きのネズミ。食べると小さな骨が残る（骨針の材料、docs/world/SurvivalItems.md 1.2節の
   # 繊維 → 罠 → 小動物 → 小骨 → 骨針）。**罠だけを起点に、刃物を1つも経由せず縫製へ届く。**
   roasted_rat:
-    tags: [item, food]
+    tags: [item, food, roastable]
     props:
       weight: {value: 60}
       volume: {value: 160}
@@ -538,7 +538,7 @@ object_defs:
   # 炉の火にかけると焼ける（docs/engine/FireSystem.md 7節）。**炉のことは何も知らない**——
   # 加熱の進み（cooking_progress）を持つだけで、進めるのは炉の側。
   raw_meat:
-    tags: [item, food, meat_bait]
+    tags: [item, food, meat_bait, roastable]
     props:
       weight: {value: 500}
       # 罠へ仕掛けると肉食の卓が引かれやすくなる（docs/engine/TrapSystem.md 4節）。
@@ -566,7 +566,7 @@ object_defs:
   # 焼けた肉。生より腹に残り、栄養も出る。焼き上がっても火の中の枠に居続けるので、
   # 放っておくと焦げる（docs/engine/FireSystem.md 7.2節）。
   roasted_meat:
-    tags: [item, food]
+    tags: [item, food, roastable]
     props:
       # 水が飛んだぶん軽くなる。
       weight: {value: 400}
@@ -590,8 +590,11 @@ object_defs:
         destroy: self
 
   # 焦げた塊。加熱の進みを持たないので、ここで鎖が終わる。食べられはするが、ほとんど何も残らない。
+  #
+  # 進みが無くてもroastableを持つのは、焦げた瞬間に火の中の枠を引き継ぐため——枠が受け入れないと、
+  # 置き換えが土地のアイテムへこぼれる（docs/engine/FireSystem.md 7.2節）。
   charred_lump:
-    tags: [item, food]
+    tags: [item, food, roastable]
     props:
       weight: {value: 250}
       volume: {value: 300}
