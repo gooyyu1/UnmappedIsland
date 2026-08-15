@@ -64,8 +64,9 @@ describe('操作が増やした値の観測', () => {
     expect(amounts.has('wakefulness'), '経過中に減った分は増加ではないので出ない').toBe(false);
   });
 
-  it('modifyで押し上げられた実効値は現れない（食べたら満腹度ではなく胃が出る）', () => {
-    drain('grain_tuber_nutrition', 100);
+  it('効果が書いた先がそのまま出る（食べたらかさと栄養素の両方）', () => {
+    drain('carbohydrate', 0);
+    drain('satiety', 0);
     const taro = spawn('taro');
     expect(taro.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
 
@@ -74,10 +75,10 @@ describe('操作が増やした値の観測', () => {
     });
 
     expect(source, '発生源は操作を宣言していた札').toBe('taro');
-    expect(amounts.get('stomach')).toBe(20);
-    expect(amounts.get('grain_tuber_nutrition')).toBe(200);
-    // 満腹度は誰も書かず、胃と腸の段がmodifyで押し上げている（DigestionSystem.md 2節）。
-    expect(amounts.has('satiety')).toBe(false);
+    expect(amounts.get('satiety'), 'かさ（mL）').toBe(600);
+    expect(amounts.get('carbohydrate'), '中身（tick）').toBe(40);
+    // 体脂肪は在庫から遅れて増えるので、操作そのものが書いた先には現れない（DigestionSystem.md 3節）。
+    expect(amounts.has('body_fat')).toBe(false);
   });
 
   it('出どころは、飲み干した水のように世界から出た物でも、抱えていた器まで辿れる', () => {

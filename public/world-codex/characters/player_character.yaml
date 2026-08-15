@@ -94,80 +94,65 @@ traits:
           - add:
               self:
                 blood: 2
-      # 栄養バランス（野菜/肉/穀物・イモの3カテゴリ）。食の好みではなく身体の仕組みを表すため、
-      # 満腹度などと違って個体差を持たせず全キャラクタで共通にする。
+      # 満腹感（docs/engine/DigestionSystem.md 2節）。**単位はmL——胃に入っているかさそのもの**で、
+      # エネルギーではない。食べたかさぶん増え、tickで減る。
       #
-      # エネルギーの配管（胃→腸→体脂肪）には載せない。載せるとカテゴリの数だけ腸が要る
-      # （docs/engine/DigestionSystem.md 6節）。
-      vegetable_nutrition:
-        tags: [nutrition]
-        value: 672
-        range: {min: 0, max: 672}
-        passives:
-          - add:
-              self:
-                vegetable_nutrition: -1
-      meat_nutrition:
-        tags: [nutrition]
-        value: 672
-        range: {min: 0, max: 672}
-        passives:
-          - add:
-              self:
-                meat_nutrition: -1
-      grain_tuber_nutrition:
-        tags: [nutrition]
-        value: 672
-        range: {min: 0, max: 672}
-        passives:
-          - add:
-              self:
-                grain_tuber_nutrition: -1
-      # 空腹感（docs/engine/DigestionSystem.md 2節）。**自分では動かない**——胃の伸展（胃の段）と
-      # 血糖（腸の段）が modify で押し上げる合流点で、痛みや意識と同じ実効値。だから食べた直後だけで
-      # なく、胃が空になっても腸が残っている間は保たれる。
+      # 「これ以上食べられない」もここが持つ（段full）。fullをmaxではなく6割に置いてあるのは、
+      # 最大の食料（600mL）を足しても溢れないようにするため——溢れた分は捨てられる（同2節）。
       #
-      # maxは容量ではなく感じ方の頂点なので、段は「maxの80%で安全域を外れる」規約ではなく
-      # 実際に取る値の分布から刻む（同3.3節）。感じ方に個体差は持たせず、この trait が配る。
+      # 感じ方に個体差は持たせず、この trait が配る。減りは一定で、1日1,536mL（3食×512mL）が
+      # ちょうど食べる量と釣り合う。
       satiety:
         tags: [status, nutrition]
-        value: 0
-        range: {min: 0, max: 100}
+        value: 300
+        range: {min: 0, max: 1500}
         stages:
           - {name: starving, alert: danger}
-          - {name: hungry, min: 15, alert: caution}
-          - {name: peckish, min: 30, alert: watch}
-          - {name: fed, min: 65}
-      # 腸の中身（同3.2節）。胃から届いた分がここで初めて体脂肪になる。
+          - {name: hungry, min: 50, alert: caution}
+          - {name: peckish, min: 200, alert: watch}
+          - {name: fed, min: 400}
+          - {name: full, min: 900}
+        passives:
+          - add:
+              self:
+                satiety: -16
+      # 体内に残っているエネルギー（同3節）。**単位はtick——1 = 15分ぶんの生命維持**で、
+      # 体脂肪と同じ物差し。食べ物が名乗るのはかさ（satiety）とこの3本で、かさと中身は別の数
+      # （水気の多い物はかさだけ大きく、生肉はかさの割に身にならない）。
       #
-      # **胃より遅く出す。** その差がそのまま在庫になり、「食後しばらく空腹が戻らない」と
-      # 「下痢で失える量」の両方をこの在庫が持つ（8.4.1節）。吸収率（to_amount）は書かない
-      # ——健康なら食べた分がそのまま身になり、下がるのは下痢・感染のときだけにする。
-      intestine:
+      # 3本を分けているのは、**吸収の速さが違う**ことと、**欠乏したときに起きることが違う**ため
+      # （同4節）。在庫がある間は体脂肪へ流れ続け、尽きれば体脂肪が削られる。
+      #
+      # 身体の仕組みなので個体差を持たせず、この trait が配る。
+      carbohydrate:
         tags: [nutrition]
-        value: 16
-        range: {min: 0, max: 64}
-        stages:
-          - name: fasting
-            passives:
-              - transfer: {from_prop: intestine, to_prop: body_fat, amount: 0.5}
-          - name: trickle
-            min: 2
-            passives:
-              - modify: {self: {satiety: 10}}
-              - transfer: {from_prop: intestine, to_prop: body_fat, amount: 0.5}
-          - name: absorbing
-            min: 8
-            passives:
-              - modify: {self: {satiety: 20}}
-              - transfer: {from_prop: intestine, to_prop: body_fat, amount: 1}
-          - name: loaded
-            min: 16
-            passives:
-              - modify: {self: {satiety: 30}}
-              - transfer: {from_prop: intestine, to_prop: body_fat, amount: 1}
-          - name: heavy
-            min: 32
-            passives:
-              - modify: {self: {satiety: 40}}
-              - transfer: {from_prop: intestine, to_prop: body_fat, amount: 2}
+        value: 40
+        range: {min: 0, max: 120}
+        passives:
+          - transfer: {from_prop: carbohydrate, to_prop: body_fat, amount: 2}
+      protein:
+        tags: [nutrition]
+        value: 30
+        range: {min: 0, max: 120}
+        passives:
+          - transfer: {from_prop: protein, to_prop: body_fat, amount: 1}
+      lipid:
+        tags: [nutrition]
+        value: 30
+        range: {min: 0, max: 120}
+        passives:
+          - transfer: {from_prop: lipid, to_prop: body_fat, amount: 0.5}
+      # 体内のビタミン（同4節）。**単位はmg——ビタミンC相当**で、エネルギーの3本とは物差しが違う。
+      # 葉物はエネルギーをほとんど持たないので、エネルギーの在庫にすると常に0に張り付き、
+      # 「食べていない」と区別が付かない。だから量を別に持つ。
+      #
+      # ヒトのプールは飽和で約1,500mg、300mgを割ると壊血病が出る。代謝回転は1日およそ48mg。
+      # 尽きた先（壊血病）はまだ書いていない。
+      vitamin:
+        tags: [nutrition]
+        value: 900
+        range: {min: 0, max: 1500}
+        passives:
+          - add:
+              self:
+                vitamin: -0.5

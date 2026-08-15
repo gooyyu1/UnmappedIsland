@@ -1,7 +1,8 @@
 # 食料のサンプル定義（GameElementDefinition.md参照）。栄養バランス（characters.yaml参照）の
 # 3カテゴリそれぞれに、南国の無人島で採取しやすい食材を1種類ずつ用意する。
-# stomachは「1食で何tick分の腹持ちか」（6.0節）。胃へ入り、腸を経てから体脂肪になる
-# （docs/engine/DigestionSystem.md）。値はいずれも仮のもの。
+# 食べ物が名乗るのは**かさ（satiety、mL）と中身（糖質・たんぱく質・脂質はtick、ビタミンはmg）**で、
+# 両者は別の数（docs/engine/DigestionSystem.md）。水気の多い物はかさだけ大きく、生肉はかさの割に
+# 身にならない。値はいずれも仮のもの。
 #
 # foodタグは「そのカード自身を口に入れると体の値が動く物」に付ける（CardView.md 2.1節）。eatで食べる
 # 物だけでなく、青いヤシの実（coconut.yaml）のようにcombinationで飲む物にも付く。加工すれば食べられる
@@ -21,11 +22,12 @@ object_defs:
       eat:
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: stomach, in_stage: full}
+            not: {subject: actor, prop: satiety, in_stage: full}
         add:
           actor:
-            stomach: 4
-            vegetable_nutrition: 200
+            satiety: 300
+            carbohydrate: 1
+            vitamin: 83
         destroy: self
 
   # ヤシガニ。狩猟の道具がなくても「見つけて捕まえる」だけで採取できる大型の甲殻類。
@@ -39,11 +41,13 @@ object_defs:
       eat:
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: stomach, in_stage: full}
+            not: {subject: actor, prop: satiety, in_stage: full}
         add:
           actor:
-            stomach: 16
-            meat_nutrition: 200
+            satiety: 500
+            protein: 25
+            lipid: 8
+            vitamin: 2
         destroy: self
 
   # タロイモ。東南アジア島嶼が原産の塊茎作物（docs/world/Animals.md 概要節）。野生形が自生している。
@@ -57,9 +61,11 @@ object_defs:
       eat:
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: stomach, in_stage: full}
+            not: {subject: actor, prop: satiety, in_stage: full}
         add:
           actor:
-            stomach: 20
-            grain_tuber_nutrition: 200
+            satiety: 600
+            carbohydrate: 40
+            protein: 2
+            vitamin: 36
         destroy: self

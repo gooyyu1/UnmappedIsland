@@ -103,37 +103,36 @@ object_texts:
       satiety:
         display_name: 満腹度
         icon: 🍔
-        description: 今どれだけ腹が満ちているか。胃に入っている分と、腸で吸収されている分の両方で決まる。
-      stomach:
-        display_name: 胃の中身
-        icon: 🥣
-        description: 食べた物が最初に入る所。ここが満杯だともう食べられず、少しずつ腸へ送られていく。
-      intestine:
-        display_name: 腸の中身
-        icon: 🌀
-        description: 吸収されつつある分。ここを通って初めて蓄えになるので、食べてから身になるまでには時が要る。
+        description: 胃に入っている物のかさ。食べれば増え、時が経つほど減る。いっぱいのときはもう食べられない。
       hydration:
         display_name: 水分
         icon: 💧
       body_fat:
         display_name: 体脂肪
         icon: 🫃🏻
-        description: 体に蓄えた脂肪。腸から吸収した分が積み上がり、何もしなくても少しずつ減る。尽きれば飢えで死ぬ。
+        description: 体に蓄えた脂肪。食べた物が身になって積み上がり、何もしなくても少しずつ減る。尽きれば飢えで死ぬ。
       wakefulness:
         display_name: 覚醒度
         icon: 💤
       stamina:
         display_name: 体力
         icon: 💪
-      vegetable_nutrition:
-        display_name: 野菜の栄養
-        icon: 🥬
-      meat_nutrition:
-        display_name: 肉の栄養
-        icon: 🍖
-      grain_tuber_nutrition:
-        display_name: 穀物・イモの栄養
+      carbohydrate:
+        display_name: 糖質
         icon: 🌾
+        description: 体に残っている糖質。最も速く力になるが、蓄えとしては長く保たない。
+      protein:
+        display_name: たんぱく質
+        icon: 🍖
+        description: 体に残っているたんぱく質。体を作り直すのに要る。
+      lipid:
+        display_name: 脂質
+        icon: 🧈
+        description: 体に残っている脂質。同じかさで最も大きな力になり、最も長く保つ。
+      vitamin:
+        display_name: ビタミン
+        icon: 🥬
+        description: 体に残っているビタミン。力にはならないが、尽きると古傷が開き歯が抜ける。
       fuel:
         display_name: 薪
         description: 炉に載っている燃えるもの。尽きれば火は弱っていく。
@@ -160,7 +159,7 @@ object_texts:
         description: この道を通って、繋がっている土地へ向かう。
       eat:
         display_name: 食べる
-        description: その場で食べる。腹が満ち、含まれている栄養と水分が身体に入る。
+        description: その場で食べる。かさのぶん腹が満ち、含まれている栄養と水分が身体に入る。
       drink:
         display_name: 飲む
         description: 一口（250mL）飲む。残りが少なければ、残っている分だけ飲む。
