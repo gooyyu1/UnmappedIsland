@@ -40,9 +40,14 @@ const ARRIVAL_SCATTER = 40;
 const ARC_FIXED = 70;
 const ARC_RATIO = 0.16;
 
-/** 湧き出し切るまでと、吸い込まれ切る前の、透け具合を動かす区間（飛ぶ時間に対する割合）。 */
-const FADE_IN = 0.15;
-const FADE_OUT = 0.2;
+/**
+ * 湧き出し切るまでと、吸い込まれ切る前の、透け具合を動かす区間（**経過時間**に対する割合）。
+ *
+ * 位置と同じ曲線（PULL_POWER）で測ってはならない——出どころに長く留まる曲線なので、湧いてから
+ * 半分の時間を使って現れることになり、はっきり見えている間が残らない。
+ */
+const FADE_IN = 0.08;
+const FADE_OUT = 0.12;
 
 /**
  * 操作がキャラクタの値を増やしたことを見せる粒（CardInteraction.md 10節）。
@@ -94,14 +99,15 @@ export function emitGainParticles(
       duration: Phaser.Math.Clamp((distance / metrics.px(1)) * FLY_MS_PER_UNIT, FLY_MIN_MS, FLY_MAX_MS),
       // 吸い寄せられるので、離れ際は遅く、着く直前が最も速い（PULL_POWER）。
       ease: (progress: number) => progress ** PULL_POWER,
-      onUpdate: () => {
+      onUpdate: (tween: Phaser.Tweens.Tween) => {
         const { t } = flight;
         const inverse = 1 - t;
         particle.setPosition(
           inverse * inverse * start.x + 2 * inverse * t * control.x + t * t * end.x,
           inverse * inverse * start.y + 2 * inverse * t * control.y + t * t * end.y,
         );
-        particle.setAlpha(Math.min(t / FADE_IN, 1, (1 - t) / FADE_OUT));
+        const elapsed = tween.progress;
+        particle.setAlpha(Math.min(elapsed / FADE_IN, 1, (1 - elapsed) / FADE_OUT));
       },
       onComplete: () => particle.destroy(),
     });
