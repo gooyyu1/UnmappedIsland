@@ -44,7 +44,7 @@ describe('操作が増やした値の観測', () => {
     const amounts = new Map<string, number>();
     for (const { gains } of observed)
       for (const gain of gains) if (gain.object === player) amounts.set(gain.property.name, gain.amount);
-    return { source: observed[0]?.source.def.name ?? '', amounts };
+    return { source: observed[0]?.source[0].def.name ?? '', amounts };
   }
 
   /** 満タンだと足した分がそのまま戻されるので、増加を見るテストは先に減らしておく。 */
@@ -78,6 +78,34 @@ describe('操作が増やした値の観測', () => {
     expect(amounts.get('grain_tuber_nutrition')).toBe(200);
     // 満腹度は誰も書かず、胃と腸の段がmodifyで押し上げている（DigestionSystem.md 2節）。
     expect(amounts.has('satiety')).toBe(false);
+  });
+
+  it('出どころは、飲み干した水のように世界から出た物でも、抱えていた器まで辿れる', () => {
+    // 水は札を持たず、器の札が中身入りの姿で出ている（represented_by）。飲む操作を宣言しているのは
+    // 水そのものなので、湧かせる札を決めるには器まで辿れなければならない。
+    drain('hydration', 100);
+    const bowl = spawn('coconut_bowl');
+    expect(bowl.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
+    const water = spawn('water_liquid');
+    expect(water.moveToSlot(bowl, codex.slotNames.getId('content'))).toBeUndefined();
+    water.setNumber(codex.propertyNames.getId('volume'), 250, session);
+
+    const observed: InteractionGains[] = [];
+    session.observeGains(
+      (gains) => observed.push(gains),
+      () => {
+        expect(water.tryExecuteAction('drink', player, session)).toBe(true);
+      },
+    );
+
+    expect(water.parent, '飲み干した水は世界から出ている').toBeUndefined();
+    expect(observed[0].source.map((object) => object.def.name)).toEqual([
+      'water_liquid',
+      'coconut_bowl',
+      SAMPLE_CHARACTER,
+      'sandy_beach',
+      'world',
+    ]);
   });
 
   it('上限で押し戻された分は増加に数えない', () => {

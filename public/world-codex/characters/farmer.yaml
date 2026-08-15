@@ -96,16 +96,16 @@ object_defs:
             min: 4860
             passives:
               - add: {self: {body_fat: -2}}
-      # 日の出とともに働く暮らしのまま、眠らずにいられるのは24時間（96 tick）。
+      # 日の出とともに働く暮らしのまま、意識を保っていられるのは48時間（192 tick）。
       wakefulness:
         tags: [status, health]
-        value: 96
-        range: {min: 0, max: 96}
+        value: 192
+        range: {min: 0, max: 192}
         stages:
           - {name: overtired, alert: danger}
           - {name: sleepy, min: 12, alert: caution}
           - {name: yawning, min: 48, alert: watch}
-          - {name: rested, min: 77}
+          - {name: rested, min: 154}
         passives:
           - add:
               self:

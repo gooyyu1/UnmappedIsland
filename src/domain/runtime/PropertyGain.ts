@@ -22,8 +22,17 @@ export interface PropertyGain {
   readonly amount: number;
 }
 
-/** 操作1回が増やした値と、その操作を宣言していた札（WorldChange.subjectと同じく**演出で動かす札**）。 */
+/** 操作1回が増やした値と、その出どころ。 */
 export interface InteractionGains {
-  readonly source: WorldObject;
+  /**
+   * 操作を宣言していた札（WorldChange.subjectと同じく**演出で動かす札**）と、それを抱えていた親を
+   * 外側へ向かって並べたもの。先頭が発生源で、画面に自分の札が無ければ次を見る——水筒の中の水は
+   * 札を持たず、水筒の札が中身入りの姿で出ている（`represented_by`、GameElementDefinition.md 7.6節）。
+   *
+   * **効果を適用する前に控える。** 飲み干した水のように、適用し終えた時点では世界から出ていて
+   * 親を辿れない物がある。
+   */
+  readonly source: readonly WorldObject[];
+
   readonly gains: readonly PropertyGain[];
 }
