@@ -3,10 +3,20 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { FONT_FAMILY } from './theme';
 
 /** 粒の大きさ。 */
-const PARTICLE_SIZE = 40;
+const PARTICLE_SIZE = 80;
 
-/** 1粒が吸い込まれるまでの時間。 */
-const FLY_MS = 900;
+/**
+ * 吸い込まれるまでの時間は距離で決める（1uあたり）。**時間を固定すると速さが揃わない**——同じ演出の
+ * 中で、近い粒ほど遅く、遠い粒ほど速く見えてしまう。
+ */
+const FLY_MS_PER_UNIT = 0.75;
+
+/**
+ * その時間の下限と上限。下限が無いと、湧いた所へすぐ吸われる短い弧（発生源がキャラクタ自身のとき）が
+ * 一瞬で消えて見えない。
+ */
+const FLY_MIN_MS = 320;
+const FLY_MAX_MS = 1200;
 
 /** 湧き出す点を、発生源の札の縁からどれだけ外へ出すか（uの範囲でばらつかせる）。 */
 const SPAWN_MARGIN_MIN = 4;
@@ -59,7 +69,8 @@ export function emitGainParticles(
       x: to.x + to.width / 2 + Phaser.Math.FloatBetween(-scatter, scatter),
       y: to.y + to.height / 2 + Phaser.Math.FloatBetween(-scatter, scatter),
     };
-    const control = arcControl(start, end, arcFixed);
+    const distance = Math.hypot(end.x - start.x, end.y - start.y);
+    const control = arcControl(start, end, distance, arcFixed);
 
     const particle = scene.add
       .text(start.x, start.y, icon, { fontFamily: FONT_FAMILY, fontSize: `${size}px` })
@@ -73,7 +84,7 @@ export function emitGainParticles(
       t: 1,
       // 湧き出しは行動の経過いっぱいに散らす。等間隔だと粒が列に見えるので、間隔ごとに揺らす。
       delay: (spreadMs * index) / count + Phaser.Math.FloatBetween(0, spreadMs / Math.max(count, 1)),
-      duration: FLY_MS,
+      duration: Phaser.Math.Clamp((distance / metrics.px(1)) * FLY_MS_PER_UNIT, FLY_MIN_MS, FLY_MAX_MS),
       // 吸い寄せられるので、離れ際は遅く、着く直前が最も速い。
       ease: 'Quad.easeIn',
       onUpdate: () => {
@@ -109,11 +120,11 @@ function pointOnEdge(rect: Rect, metrics: ScreenMetrics): { x: number; y: number
 function arcControl(
   start: { x: number; y: number },
   end: { x: number; y: number },
+  distance: number,
   fixed: number,
 ): { x: number; y: number } {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
-  const distance = Math.hypot(dx, dy);
   const offset =
     (fixed + distance * ARC_RATIO) * Phaser.Math.FloatBetween(0.5, 1) * (Phaser.Math.Between(0, 1) * 2 - 1);
 
