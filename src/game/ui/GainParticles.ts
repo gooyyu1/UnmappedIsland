@@ -9,14 +9,21 @@ const PARTICLE_SIZE = 80;
  * 吸い込まれるまでの時間は距離で決める（1uあたり）。**時間を固定すると速さが揃わない**——同じ演出の
  * 中で、近い粒ほど遅く、遠い粒ほど速く見えてしまう。
  */
-const FLY_MS_PER_UNIT = 0.75;
+const FLY_MS_PER_UNIT = 1;
 
 /**
  * その時間の下限と上限。下限が無いと、湧いた所へすぐ吸われる短い弧（発生源がキャラクタ自身のとき）が
  * 一瞬で消えて見えない。
  */
-const FLY_MIN_MS = 320;
-const FLY_MAX_MS = 1200;
+const FLY_MIN_MS = 450;
+const FLY_MAX_MS = 1400;
+
+/**
+ * 吸い寄せられる曲線の強さ。**大きいほど、湧いた所の近くに長く留まってから動き出す**——増えたのが
+ * どの札からかを読ませたいので、道中より出どころに時間を割く。3で、飛ぶ時間の半分を過ぎても
+ * まだ1割ほどしか進んでいない。
+ */
+const PULL_POWER = 3;
 
 /** 湧き出す点を、発生源の札の縁からどれだけ外へ出すか（uの範囲でばらつかせる）。 */
 const SPAWN_MARGIN_MIN = 4;
@@ -85,8 +92,8 @@ export function emitGainParticles(
       // 湧き出しは行動の経過いっぱいに散らす。等間隔だと粒が列に見えるので、間隔ごとに揺らす。
       delay: (spreadMs * index) / count + Phaser.Math.FloatBetween(0, spreadMs / Math.max(count, 1)),
       duration: Phaser.Math.Clamp((distance / metrics.px(1)) * FLY_MS_PER_UNIT, FLY_MIN_MS, FLY_MAX_MS),
-      // 吸い寄せられるので、離れ際は遅く、着く直前が最も速い。
-      ease: 'Quad.easeIn',
+      // 吸い寄せられるので、離れ際は遅く、着く直前が最も速い（PULL_POWER）。
+      ease: (progress: number) => progress ** PULL_POWER,
       onUpdate: () => {
         const { t } = flight;
         const inverse = 1 - t;
