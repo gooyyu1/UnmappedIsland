@@ -155,12 +155,19 @@ export class WorldSession {
   withInteractionEffect(source: WorldObject, body: () => void): void {
     const outer = this.gathered;
     this.gathered = new Map();
+
+    // 出どころは適用前に控える（InteractionGains.source）。飲み干した水は適用し終えた時点で
+    // 世界から出ていて、そこからでは親を辿れない。
+    const chain: WorldObject[] = [];
+    for (let object: WorldObject | undefined = source; object !== undefined; object = object.parent)
+      chain.push(object);
+
     try {
       body();
     } finally {
       const gains = [...this.gathered.values()].filter((gain) => gain.amount > 0);
       this.gathered = outer;
-      if (gains.length > 0) this.gainObserver?.({ source, gains });
+      if (gains.length > 0) this.gainObserver?.({ source: chain, gains });
     }
   }
 

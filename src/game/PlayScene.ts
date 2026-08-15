@@ -992,6 +992,19 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
+   * その物の姿が今出ている札の枠。**自分の札を持たない物は、それを抱えている親の札が代表している**
+   * ——水筒の中の水は札を持たず、水筒の札が中身入りの姿で出ている（`represented_by`、
+   * GameElementDefinition.md 7.6節）。飲む操作を宣言しているのは水そのものなので、外側へ順に見る。
+   */
+  private rectShowing(chain: readonly WorldObject[]): Rect | undefined {
+    for (const object of chain) {
+      const rect = this.rectOfInstance(object.instanceId);
+      if (rect !== undefined) return rect;
+    }
+    return undefined;
+  }
+
+  /**
    * ドロップで手から放したもの（releasedBy）は手を離した場所に居るので、そこから動き出す。
    *
    * combinationの成果物がどこから出るかは渡さない。効果を宣言している側の札（重ねた相手か、
@@ -1516,7 +1529,7 @@ export class PlayScene extends ResponsiveScene {
     const character = this.gameSession.player.instance;
     const texts = this.locale.object(character.def.name);
     for (const { source, gains: gained } of gains) {
-      const from = this.rectOfInstance(source.instanceId);
+      const from = this.rectShowing(source);
       if (from === undefined) continue;
 
       for (const gain of gained) {
