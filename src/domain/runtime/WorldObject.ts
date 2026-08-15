@@ -768,7 +768,31 @@ export class WorldObject {
     this.collectInfluencesRecursively(influences);
     for (let ancestor = this._parent; ancestor !== undefined; ancestor = ancestor._parent)
       ancestor.def.passives.collectInfluences(ancestor, influences);
+    this.collectContainerInfluence(propertyGlobalId, influences);
     return influences;
+  }
+
+  /**
+   * 中身から受ける寄与（weight/load、ContainerSystem.md 1〜2節）を1本の辺として書き出す。
+   *
+   * 持続効果ではないが、**読むたびに導出される可逆な押し上げ**なので modify と同じ形になる。
+   * 中身1つずつではなく1本にまとめるのは、担いでいる物の数だけ辺が増えても、読み手が知りたい
+   * 「何がこの値を押し上げているか」の答えは「中身」の1つだからで、宣言元は自分自身になる。
+   */
+  private collectContainerInfluence(propertyGlobalId: number, out: InfluenceWriter): void {
+    const { weightId, loadId } = this.wellKnown;
+    if (propertyGlobalId !== weightId && propertyGlobalId !== loadId) return;
+
+    out.write({
+      causeObject: this,
+      causePropertyGlobalId: undefined,
+      target: this,
+      targetPropertyGlobalId: propertyGlobalId,
+      reversible: true,
+      increases: true,
+      // 空身なら押し上げていない（条件が成立していない効果と同じ扱いで、薄く記号無しになる）。
+      active: this.containerContributionTo(propertyGlobalId) !== 0,
+    });
   }
 
   /** 自分と、自分の中に入っている物すべてが宣言する持続効果の辺を書き出す。 */

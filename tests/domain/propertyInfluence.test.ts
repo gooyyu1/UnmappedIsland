@@ -232,6 +232,38 @@ object_defs:
     expect(shown(codex, pain.received), '影響元が別々の個体なので畳まない').toEqual(['sprain▲', 'sprain▲']);
   });
 
+  it('中身の重さは、持続効果ではないが1件の影響として並ぶ', () => {
+    // ContainerSystem.md 2節: loadは中身から寄与を受ける。読むたびに導出される可逆な押し上げ
+    // なので、記号はmodifyと同じ（Windows.md 8.4節）。
+    const codex = load(`
+object_defs:
+  person:
+    props:
+      load:
+        value: 0
+        range: {min: 0, max: 30000}
+    slots:
+      hand:
+        cell: {accept: {tag: item}}
+  stone:
+    tags: [item]
+    props:
+      weight: {value: 500}
+`);
+    const session = new WorldSession(codex);
+    const person = spawn(codex, 'person', session);
+    const loadId = codex.propertyNames.getId('load');
+
+    expect(shown(codex, person.readInfluences(loadId).received), '空身では押し上げていない').toEqual([
+      'load▲(休)',
+    ]);
+
+    const stone = spawn(codex, 'stone', session);
+    expect(stone.moveToSlot(person, codex.slotNames.getId('hand'))).toBeUndefined();
+
+    expect(shown(codex, person.readInfluences(loadId).received), '担げば効いている').toEqual(['load▲']);
+  });
+
   it('怪我が外れれば、その影響も一覧から消える', () => {
     const codex = load(`
 object_defs:

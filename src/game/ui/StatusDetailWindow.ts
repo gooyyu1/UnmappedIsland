@@ -8,16 +8,14 @@ import { ProgressBar } from './ProgressBar';
 import { addPanel, drawBox } from './shapes';
 import type { StatusContent, StatusInfluence } from './StatusBar';
 import { wrapByCharacter } from './textLayout';
-import { COLOR, SIZE, fillColorFor } from './theme';
+import { COLOR, SIZE } from './theme';
 
 /** ウィンドウの横幅（プロパティウィンドウと揃える）。狭い画面では領域いっぱいまで縮む。 */
 const WINDOW_WIDTH = 760;
 
-/** 見出しの絵と表示名、今いる段の札。 */
+/** 見出しの絵と表示名。 */
 const HEADER_ICON_SIZE = 52;
 const TITLE_SIZE = 34;
-const STAGE_SIZE = 26;
-const STAGE_PADDING = 16;
 
 /** 意味の説明文。 */
 const DESCRIPTION_SIZE = 26;
@@ -30,6 +28,10 @@ const NO_DESCRIPTION = 'これについて分かっていることはまだ無�
 const BAR_HEIGHT = 44;
 const STAGE_BOX_INSET = -8;
 const STAGE_BOX_WIDTH = 4;
+
+/** 囲みの上に添える段の名前と、囲みとの間隔。 */
+const STAGE_SIZE = 26;
+const STAGE_GAP = 10;
 
 /** 影響の一覧の見出しと、そこに並ぶ札。 */
 const SECTION_SIZE = 24;
@@ -83,22 +85,22 @@ export class StatusDetailWindow {
     const windowWidth = Math.min(metrics.px(WINDOW_WIDTH), options.area.width, width * 0.92);
     const contentWidth = windowWidth - padding * 2;
 
-    // 台紙と段の札は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に
-    // 置く必要がある（後から作ると、札が自分の上の文字を覆う）。
+    // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に置く必要がある。
     const board = scene.add.graphics();
     this.objects.push(board);
-    const badge = scene.add.graphics();
-    this.objects.push(badge);
 
     const title = addLabel(scene, metrics, 0, 0, content.name, { size: TITLE_SIZE, bold: true });
+
+    // 今いる段の名前は、バーの上の囲み（8.1節）に添える。見出しの右端ではなく囲みの上へ置くのは、
+    // 「その名前がバーのどこからどこまでか」を、名前と囲みの位置関係そのもので言うため。
     const stage =
       detail?.stageName === undefined
         ? undefined
         : addLabel(scene, metrics, 0, 0, detail.stageName, {
             size: STAGE_SIZE,
             bold: true,
-            color: COLOR.textOnDark,
-          }).setOrigin(0.5);
+          }).setOrigin(0.5, 0);
+    const stageHeight = stage === undefined ? 0 : stage.height + metrics.px(STAGE_GAP);
 
     const description = addLabel(scene, metrics, 0, 0, detail?.description ?? NO_DESCRIPTION, {
       size: DESCRIPTION_SIZE,
@@ -122,6 +124,7 @@ export class StatusDetailWindow {
       gap +
       description.height +
       gap +
+      stageHeight +
       barHeight +
       gap +
       given.height +
@@ -135,35 +138,20 @@ export class StatusDetailWindow {
     const left = window.x + padding;
     let y = window.y + padding;
 
-    // 見出しは「絵・表示名・今いる段」の1行。段の札は右端へ寄せる（名前の長さで位置が動かない）。
+    // 見出しは「絵・表示名」の1行。
     const icon = addLabel(scene, metrics, left, y + headerHeight / 2, content.icon ?? '', {
       size: HEADER_ICON_SIZE,
     }).setOrigin(0, 0.5);
     this.objects.push(icon);
     title.setPosition(left + icon.width + metrics.px(12), y + (headerHeight - title.height) / 2);
     this.objects.push(title);
-    if (stage !== undefined) {
-      const stageWidth = stage.width + metrics.px(STAGE_PADDING) * 2;
-      const stageHeight = stage.height + metrics.px(8) * 2;
-      drawBox(
-        badge,
-        {
-          x: left + contentWidth - stageWidth,
-          y: y + (headerHeight - stageHeight) / 2,
-          width: stageWidth,
-          height: stageHeight,
-        },
-        { fill: fillColorFor(content.alert), radius: stageHeight / 2 },
-      );
-      stage.setPosition(left + contentWidth - stageWidth / 2, y + headerHeight / 2);
-      this.objects.push(stage);
-    }
-
     y += headerHeight + gap;
     description.setPosition(left, y);
     this.objects.push(description);
 
-    y += description.height + gap;
+    y += description.height + gap + stageHeight;
+    // 段の名前を置く中央。囲みがあればその中央、無ければバーの左端に揃える。
+    let stageCenterX = left + (stage?.width ?? 0) / 2;
     if (content.ratio !== undefined) {
       const bar = new ProgressBar(scene, metrics, left, y, contentWidth, barHeight, content.ratio, {
         worsensUpward: content.worsensUpward,
@@ -176,14 +164,11 @@ export class StatusDetailWindow {
       if (span !== undefined) {
         const box = scene.add.graphics();
         const inset = metrics.px(STAGE_BOX_INSET);
+        const boxX = left + contentWidth * span.start;
+        const boxWidth = contentWidth * (span.end - span.start);
         drawBox(
           box,
-          {
-            x: left + contentWidth * span.start,
-            y: y + inset,
-            width: contentWidth * (span.end - span.start),
-            height: barHeight - inset * 2,
-          },
+          { x: boxX, y: y + inset, width: boxWidth, height: barHeight - inset * 2 },
           {
             border: COLOR.text,
             borderWidth: Math.max(1, metrics.px(STAGE_BOX_WIDTH)),
@@ -191,6 +176,9 @@ export class StatusDetailWindow {
           },
         );
         this.objects.push(box);
+        // 名前は囲みの中央へ。端の段では囲みからはみ出しても、ウィンドウの中には収める。
+        const half = (stage?.width ?? 0) / 2;
+        stageCenterX = Math.min(Math.max(boxX + boxWidth / 2, left + half), left + contentWidth - half);
       }
     } else {
       this.objects.push(
@@ -198,6 +186,12 @@ export class StatusDetailWindow {
           size: 30,
         }).setOrigin(0, 0.5),
       );
+    }
+
+    // 段の名前は囲みの上（高さはバーの手前で取ってある）。
+    if (stage !== undefined) {
+      stage.setPosition(stageCenterX, y - stageHeight);
+      this.objects.push(stage);
     }
 
     y += barHeight + gap;
