@@ -154,7 +154,7 @@ object_defs:
       volume: {value: 900}
     combinations:
       crack:
-        with: {tag: stone}
+        with: {object: stone}
         duration: 15
         destroy: self
         spawn: {object: coconut_half, count: 2}

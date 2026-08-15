@@ -79,7 +79,7 @@ object_defs:
 
   # 掻き取って干した繊維のひと束。1本ずつを物として扱うことはしないので、束で1つと数える。
   plant_fiber:
-    tags: [item, plant_fiber]
+    tags: [item]
     # ほぐした繊維は火口になる（docs/engine/FireSystem.md 3.2節）。
     traits: [ignitable]
     props:
@@ -90,21 +90,21 @@ object_defs:
     combinations:
       # 2束を手のひらで転がして1本に撚る。撚りに入りきらない短い屑は落ちる。
       spin:
-        with: {tag: plant_fiber}
+        with: {object: plant_fiber}
         duration: 20
         destroy: [self, dragged]
         spawn: {object: yarn}
 
   # 撚った糸。細いが長い。縫うにも縛るにも使え、撚り合わせれば紐になる。
   yarn:
-    tags: [item, yarn]
+    tags: [item]
     props:
       weight: {value: 100}
       volume: {value: 150}
     combinations:
       # 2本を撚りとは逆向きに撚り合わせる。互いの撚りが噛んで解けなくなり、太さと強さが出る。
       ply:
-        with: {tag: yarn}
+        with: {object: yarn}
         duration: 20
         destroy: [self, dragged]
         spawn: {object: cord}

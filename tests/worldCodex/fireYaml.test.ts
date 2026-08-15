@@ -4,6 +4,7 @@ import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { Location } from '../../src/domain/runtime/views/Location';
 import { World } from '../../src/domain/runtime/views/World';
+import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -111,6 +112,16 @@ describe('fire.yamlの火の連鎖', () => {
 
     expect(itemsOn(land)).toEqual(['burning_tinder']);
     expect(drill.parent, '火起こし具は消費されない').toBe(player);
+  });
+
+  it('作りかけの火起こし具では火をつけられない', () => {
+    // 製作中オブジェクトは完成品のタグを引き継ぐ（RecipeSystem.md 5節）ので、lightがタグで
+    // 相手を探していると半分削っただけの棒で火が付いてしまう。withは型そのものを指す。
+    const grass = spawnInto('dry_grass', land, 'items');
+    const wipDrill = spawnInto(inProgressObjectName('fire_drill', 'carved'), player, 'hand');
+
+    expect(grass.findMatchingCombinations(wipDrill)).toEqual([]);
+    expect(grass.tryExecuteCombination(wipDrill, player, 'light', session)).toBe(false);
   });
 
   it('火が付いた回も外した回も、火口の札の上で起きたことを告げる', () => {
