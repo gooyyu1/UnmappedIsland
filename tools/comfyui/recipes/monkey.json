@@ -8,8 +8,9 @@
     "",
     "枠は正方形（1024x1024）。尾が体より長いので、縦長の枠だと必ず尾が下端から出る。",
     "",
-    "seedを選んでいるのは、全身と尾の先が余白の内側に収まり、かつ手の指が融けていない絵を採るため",
-    "（prompts/objects.json の monkey 参照）。",
+    "seedを選んでいるのは、全身と尾の先が余白の内側に収まり、顔がこちらを向いていて、かつ手の指が",
+    "融けていない絵を採るため（prompts/objects.json の monkey 参照）。尾が2本ある絵と、尾が枠の外へ",
+    "出る絵が同じくらい多いので、尾は本数と先端の両方を見る。",
     "",
     "5kgの動物なので400。編み籠や太い枝と同じ段で、カード幅410のほぼ全部を使う。"
   ],
@@ -21,9 +22,9 @@
   "noTrigger": true,
   "width": 1024,
   "height": 1024,
-  "seed": 9205,
+  "seed": 4014,
   "edit": {
-    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same monkey in the same sitting pose, the same size and the same place, with its long tail complete to the very tip, and paint it with soft brush strokes and gentle natural shading instead of photographic fur detail. Muted warm grey brown fur with a pale cream chest and a dark grey face, matte fur, flat even lighting. Remove everything else and replace the background with a plain empty white page, leaving the monkey in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. No text, no letters, no numbers, no signature.",
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same monkey in the same sitting pose with its face turned towards you, the same size and the same place, with its long tail complete to the very tip, and paint it with soft brush strokes and gentle natural shading instead of photographic fur detail. Muted warm grey brown fur with a pale cream chest and a dark grey face, matte fur, flat even lighting. Remove everything else and replace the background with a plain empty white page, leaving the monkey in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. No text, no letters, no numbers, no signature.",
     "seed": 1
   },
   "cardArt": {
