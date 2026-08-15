@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { ScreenMetrics } from '../layout/ScreenMetrics';
-import { COLOR } from './theme';
+import { elapsedText } from './durationText';
+import { COLOR, FONT_FAMILY, cssColor } from './theme';
 
 /** ドーナツの外半径と輪の太さ（u単位）。 */
 const RADIUS = 130;
@@ -9,6 +10,13 @@ const THICKNESS = 30;
 /** 画面の内容に重ねて出すので、下が透けるだけの濃さにする。 */
 const TRACK_ALPHA = 0.3;
 const FILL_ALPHA = 0.85;
+
+/**
+ * 経過時間の文字の大きさと縁取りの太さ。**輪の外径（260u）より横へはみ出す大きさ**にして、輪は
+ * 文字の後ろへ回す——輪だけでは何分経ったのかが読めないので、読ませたいほうを手前に置く。
+ */
+const ELAPSED_SIZE = 120;
+const ELAPSED_STROKE = 10;
 
 /**
  * 時間経過を見せるドーナツグラフ。全体を100%として、経過ぶんを真上から時計回りに塗る。
@@ -20,6 +28,9 @@ const MIN_SECTOR = 0.001;
 
 export class ProgressRing extends Phaser.GameObjects.Container {
   private readonly graphics: Phaser.GameObjects.Graphics;
+
+  /** 開始からの経過時間。輪の手前に出す（ELAPSED_SIZE）。 */
+  private readonly elapsed: Phaser.GameObjects.Text;
 
   /** 輪の外半径と内半径。 */
   private readonly outer: number;
@@ -33,13 +44,30 @@ export class ProgressRing extends Phaser.GameObjects.Container {
     this.inner = this.outer - metrics.px(THICKNESS);
     this.graphics = scene.add.graphics();
     this.add(this.graphics);
-    this.setRatio(0);
+
+    this.elapsed = scene.add
+      .text(0, 0, '', {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(ELAPSED_SIZE)}px`,
+        fontStyle: 'bold',
+        color: cssColor(COLOR.progressRingElapsed),
+      })
+      .setOrigin(0.5)
+      .setStroke(cssColor(COLOR.progressRingElapsedOutline), metrics.px(ELAPSED_STROKE));
+    this.add(this.elapsed);
+
+    this.setProgress(0, 0);
 
     scene.add.existing(this);
   }
 
-  /** 塗る割合（0〜1）を差し替える。時間の経過に合わせて毎フレーム呼ばれうる。 */
-  setRatio(ratio: number): void {
+  /**
+   * 塗る割合（0〜1）と、開始からの経過分を差し替える。時間の経過に合わせて毎フレーム呼ばれうる。
+   *
+   * 割合と経過分を1つの操作で受けるのは、輪と数字が同じ瞬間を指していなければならないため
+   * ——別々に渡せるようにすると、呼ぶ側が片方だけ更新できてしまう。
+   */
+  setProgress(ratio: number, elapsedMinutes: number): void {
     if (this.scene === undefined) return;
 
     this.graphics.clear();
@@ -48,6 +76,8 @@ export class ProgressRing extends Phaser.GameObjects.Container {
     const swept = Phaser.Math.Clamp(ratio, 0, 1) * Math.PI * 2;
     this.fillSector(COLOR.progressRingTrack, TRACK_ALPHA, top + swept, top + Math.PI * 2);
     this.fillSector(COLOR.progressRingFill, FILL_ALPHA, top, top + swept);
+
+    this.elapsed.setText(elapsedText(elapsedMinutes));
   }
 
   /**

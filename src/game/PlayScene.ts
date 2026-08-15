@@ -1456,7 +1456,7 @@ export class PlayScene extends ResponsiveScene {
         const elapsed = clock.minutes - fromMinutes;
         const stepped = fromMinutes + progress.steppedMinutesAt(elapsed);
         this.showClock(stepped);
-        ring.setRatio(progress.ratioAt(elapsed));
+        ring.setProgress(progress.ratioAt(elapsed), progress.steppedMinutesAt(elapsed));
         while (replayed < recorded.length && recorded[replayed].minutes <= stepped) {
           this.showRecorded(recorded[replayed]);
           replayed += 1;
