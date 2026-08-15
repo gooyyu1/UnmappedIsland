@@ -15,8 +15,8 @@ traits:
       # 受け側が空のとき、代表は容器自身なのでこちらが発火する（中身入りならliquid側が発火する）。
       # 空いている量だけ入り、入りきらない分は注ぎ元に残る（quantitativeの規定）。
       pour_in:
-        with: liquid
-        move: {object: dragged, to: self}
+        with: {tag: liquid}
+        move: {subject: dragged, to: self}
 
   # 液体に共通する、量としての振る舞い。
   liquid:
@@ -42,8 +42,8 @@ traits:
       # 受け側が中身入りのとき、代表は中身の液体自身。移し先は自分ではなく容器なのでto: parent。
       # 異種の液体はcontentの枠が1つしかないため入らず、条件を書く必要がない。
       pour_in:
-        with: liquid
-        move: {object: dragged, to: parent}
+        with: {tag: liquid}
+        move: {subject: dragged, to: parent}
 
   sealed_container:
     tags: [sealed_container]
@@ -62,13 +62,12 @@ traits:
       collect_rain:
         conditions:
           - reason: not_raining
-            object: ancestor
+            subject: ancestor
             prop: weather
             in: [light_rain, heavy_rain, storm]
         spawn: {object: water_liquid, into: self}
 
   water_liquid:
-    tags: [water_liquid]
     props:
       color: {value: 0x2f86d8}
     actions:
@@ -81,28 +80,27 @@ traits:
       drink:
         conditions:
           - reason: not_thirsty
-            not: {object: actor, prop: hydration, in_stage: full}
+            not: {subject: actor, prop: hydration, in_stage: full}
         transfer:
           amount: 250
           to_amount: 10
           from_prop: volume
-          to_object: actor
+          to: actor
           to_prop: hydration
 
   tea_liquid:
-    tags: [tea_liquid]
     props:
       color: {value: 0x6f8f3c}
     actions:
       drink:
         conditions:
           - reason: not_thirsty
-            not: {object: actor, prop: hydration, in_stage: full}
+            not: {subject: actor, prop: hydration, in_stage: full}
         transfer:
           amount: 250
           to_amount: 10
           from_prop: volume
-          to_object: actor
+          to: actor
           to_prop: hydration
           linked_add:
             actor:
@@ -110,7 +108,6 @@ traits:
 
   # 飲めない液体はdrinkを定義しないだけでよい。
   oil_liquid:
-    tags: [oil_liquid]
     props:
       color: {value: 0xe0b422}
 
@@ -121,46 +118,46 @@ traits:
     passives:
       # 基礎。湿度が未実装のため、雨天は「湿度が高くて乾かない」の代理として除外する。
       - conditions:
-          - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
+          - {subject: parent, matches: {tag: wide_open_container}}
+          - {subject: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
         add:
           self:
             volume: -1
       - conditions:
-          - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
+          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
         add:
           self:
             volume: -2
       # 日射による上乗せ。夜はsunlightが0になる（core.yamlのhour）ため成立せず、雨天のsunlightは
       # 最大6で最も低いしきい値10に届かないため、天候を見る必要がない。
       - conditions:
-          - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: sunlight, gte: 10}
+          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: sunlight, gte: 10}
         add:
           self:
             volume: -2
       - conditions:
-          - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: sunlight, gte: 12}
+          - {subject: parent, matches: {tag: wide_open_container}}
+          - {subject: ancestor, prop: sunlight, gte: 12}
         add:
           self:
             volume: -1
       - conditions:
-          - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: sunlight, gte: 12}
+          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: sunlight, gte: 12}
         add:
           self:
             volume: -2
       - conditions:
-          - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: sunlight, gte: 15}
+          - {subject: parent, matches: {tag: wide_open_container}}
+          - {subject: ancestor, prop: sunlight, gte: 15}
         add:
           self:
             volume: -1
       - conditions:
-          - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: sunlight, gte: 15}
+          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: sunlight, gte: 15}
         add:
           self:
             volume: -2
@@ -172,38 +169,38 @@ traits:
   rain_filled_liquid:
     passives:
       - conditions:
-          - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: weather, eq: light_rain}
+          - {subject: parent, matches: {tag: wide_open_container}}
+          - {subject: ancestor, prop: weather, eq: light_rain}
         add:
           self:
             volume: 10
       - conditions:
-          - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: weather, eq: heavy_rain}
+          - {subject: parent, matches: {tag: wide_open_container}}
+          - {subject: ancestor, prop: weather, eq: heavy_rain}
         add:
           self:
             volume: 20
       - conditions:
-          - {object: parent, tag: wide_open_container}
-          - {object: ancestor, prop: weather, eq: storm}
+          - {subject: parent, matches: {tag: wide_open_container}}
+          - {subject: ancestor, prop: weather, eq: storm}
         add:
           self:
             volume: 40
       - conditions:
-          - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: weather, eq: light_rain}
+          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: weather, eq: light_rain}
         add:
           self:
             volume: 20
       - conditions:
-          - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: weather, eq: heavy_rain}
+          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: weather, eq: heavy_rain}
         add:
           self:
             volume: 40
       - conditions:
-          - {object: parent, tag: narrow_open_container}
-          - {object: ancestor, prop: weather, eq: storm}
+          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: weather, eq: storm}
         add:
           self:
             volume: 80

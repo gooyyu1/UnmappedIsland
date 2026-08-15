@@ -580,7 +580,7 @@ object_defs:
       eat:
         showMenu: always
         conditions:
-          - {object: actor, prop: satiety, lt: 100}
+          - {subject: actor, prop: satiety, lt: 100}
         add:
           actor:
             satiety: 10
@@ -609,9 +609,9 @@ object_defs:
   wood:
     combinations:
       chop:
-        with: axe_tool
+        with: {tag: axe_tool}
         conditions:
-          - {object: dragged, prop: durability, gt: 0}
+          - {subject: dragged, prop: durability, gt: 0}
         spawn: {object: logs}
         destroy: self
         add:
@@ -699,7 +699,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - {object: world, prop: day, gt: 0}
+          - {subject: world, prop: day, gt: 0}
         destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/world/);
@@ -712,7 +712,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - {object: actor, prop: satiety, lt: max}
+          - {subject: actor, prop: satiety, lt: max}
         destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/max/);
@@ -874,7 +874,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - {slot: content, tag: red}
+          - {slot: content, matches: {tag: red}}
         destroy: self
   red_marker:
     tags: [marker, red]
@@ -902,7 +902,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - {slot: content, tag: red}
+          - {slot: content, matches: {tag: red}}
         destroy: self
   blue_marker2:
     tags: [marker, blue]
@@ -923,7 +923,7 @@ object_defs:
     expect(box.tryExecuteAction('use', undefined, session)).toBe(false); // contentスロットの中身がredタグを持たない(blueタグ)ので実行されない
   });
 
-  it('conditionのslotにtagを指定しないとエラーになる', () => {
+  it('conditionのslotにmatchesを指定しないとエラーになる', () => {
     const yaml = `
 object_defs:
   thing:
@@ -933,10 +933,10 @@ object_defs:
           - {slot: content}
         destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/tag/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/matches/);
   });
 
-  it('slotを伴わないtagはobjectのタグ判定としてパースされる', () => {
+  it('slotを伴わないmatchesは、subject自身への型判定としてパースされる', () => {
     const yaml = `
 object_defs:
   thing:
@@ -944,7 +944,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - {tag: red}
+          - {matches: {tag: red}}
         destroy: self
 `;
     const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
@@ -952,6 +952,80 @@ object_defs:
     const thing = new WorldObject(1, codex.objects.get(codex.objectNames.getId('thing')), session);
 
     expect(thing.tryExecuteAction('use', undefined, session)).toBe(true);
+  });
+
+  it('matchesはobject指定でも書ける（枠のacceptと同じ二択）', () => {
+    const yaml = `
+object_defs:
+  altar:
+    slots:
+      offering:
+        cell: {accept: {tag: gem}}
+    actions:
+      use:
+        conditions:
+          - {slot: offering, matches: {object: ruby}}
+        destroy: self
+  ruby:
+    tags: [gem]
+  sapphire:
+    tags: [gem]
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const offeringSlotId = codex.slotNames.getId('offering');
+    const session = new WorldSession(codex);
+    const spawn = (name: string, id: number): WorldObject =>
+      new WorldObject(id, codex.objects.get(codex.objectNames.getId(name)), session);
+
+    const altar = spawn('altar', 1);
+    const sapphire = spawn('sapphire', 2);
+    expect(sapphire.moveToSlot(altar, offeringSlotId)).toBeUndefined();
+    expect(altar.tryExecuteAction('use', undefined, session), '同じタグの別の型では偽').toBe(false);
+
+    sapphire.destroy();
+    const ruby = spawn('ruby', 3);
+    expect(ruby.moveToSlot(altar, offeringSlotId)).toBeUndefined();
+    expect(altar.tryExecuteAction('use', undefined, session)).toBe(true);
+  });
+
+  it('slot・in_slot判定はsubjectが指すオブジェクトを見る（selfとは限らない）', () => {
+    const yaml = `
+object_defs:
+  altar2:
+    combinations:
+      offer:
+        with: {tag: box_tag}
+        conditions:
+          - {subject: dragged, slot: content, matches: {tag: gem_tag}}
+          - {subject: dragged, in_slot: items}
+        destroy: self
+  box:
+    tags: [box_tag]
+    slots:
+      content: {}
+  gem:
+    tags: [gem_tag]
+  ground:
+    slots:
+      items: {}
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const session = new WorldSession(codex);
+    const spawn = (name: string, id: number): WorldObject =>
+      new WorldObject(id, codex.objects.get(codex.objectNames.getId(name)), session);
+
+    const altar = spawn('altar2', 1);
+    const box = spawn('box', 2);
+    const gem = spawn('gem', 3);
+    const ground = spawn('ground', 4);
+    expect(box.moveToSlot(ground, codex.slotNames.getId('items'))).toBeUndefined();
+
+    expect(altar.tryExecuteCombination(box, undefined, 'offer', session), 'draggedの中身が空なら偽').toBe(
+      false,
+    );
+
+    expect(gem.moveToSlot(box, codex.slotNames.getId('content'))).toBeUndefined();
+    expect(altar.tryExecuteCombination(box, undefined, 'offer', session)).toBe(true);
   });
 
   it('conditionのvalueをプロパティ参照にすると、2つの動的プロパティを比較できる', () => {
@@ -963,9 +1037,9 @@ object_defs:
         value: empty
     combinations:
       pour_in:
-        with: liquid_container
+        with: {tag: liquid_container}
         conditions:
-          - {prop: content, eq: {object: dragged, prop: content}}
+          - {prop: content, eq: {subject: dragged, prop: content}}
         destroy: self
   bottle_source:
     tags: [liquid_container]
@@ -997,7 +1071,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - {prop: content, in: {object: dragged, prop: content}}
+          - {prop: content, in: {subject: dragged, prop: content}}
         destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/in/);
@@ -1012,10 +1086,10 @@ object_defs:
         value: empty
     combinations:
       pour_in:
-        with: liquid_container2
+        with: {tag: liquid_container2}
         set:
           self:
-            content: {object: dragged, prop: content}
+            content: {subject: dragged, prop: content}
   oil_source:
     tags: [liquid_container2]
     props:
@@ -1215,6 +1289,35 @@ object_defs:
     );
   });
 
+  it('combinationsのwithでtagとobjectを同時に指定するとエラーになる', () => {
+    const yaml = `
+object_defs:
+  hearth3:
+    combinations:
+      ignite:
+        with: {tag: tinder, object: burning_tinder3}
+        destroy: dragged
+  burning_tinder3: {}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+      /同時に指定できません/,
+    );
+  });
+
+  it('combinationsのwithをスカラーで書くとエラーになる（acceptと同じ{tag|object}の形）', () => {
+    const yaml = `
+object_defs:
+  hearth4:
+    combinations:
+      ignite:
+        with: tinder
+        destroy: dragged
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+      /マッピングである必要があります/,
+    );
+  });
+
   // ------------------------------------------------------------------
   // on_overflow
   // ------------------------------------------------------------------
@@ -1395,7 +1498,7 @@ object_defs:
     actions:
       check:
         conditions:
-          - {object: ancestor, prop: weather, eq: 1}
+          - {subject: ancestor, prop: weather, eq: 1}
         destroy: self
 `;
     const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
@@ -1435,7 +1538,7 @@ object_defs:
     actions:
       use:
         conditions:
-          - {object: ancestor, in_slot: somewhere}
+          - {subject: ancestor, in_slot: somewhere}
         destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/ancestor/);

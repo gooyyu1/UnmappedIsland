@@ -1,59 +1,20 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { objectRef, tagRef, text } from './Description';
+import { text } from './Description';
 import type { ObjectDef } from './ObjectDef';
 import type { WeightSpec } from './PickEffect';
-
-/** 1つのCellAcceptRuleが何を基準にマッチングするか。 */
-export type SlotAcceptTargetKind =
-  /** withはタグのグローバルID（4節）。candidateDefがそのタグを持っていれば真。 */
-  | 'tag'
-  /**
-   * withはobject_defそのもののグローバルID。candidateDefがまさにその型そのものであれば真
-   * （レシピ制作中オブジェクトが特定の素材の型だけを受け入れたい場合など、そのためだけの単発タグを
-   * 新設するまでもないケース向け）。
-   */
-  | 'object';
-
-/**
- * 1つのセルが受け入れる型（GameElementDefinition.md 7.2節の`accept`）。targetKindに応じて、withを
- * タグ（4節）かobject_defのグローバルIDとして解釈する（matches参照）。trait名では直接マッチング
- * しない（traitはmixin合成後に消える。trait経由のタグ付けはtags（4節）を使う）。
- *
- * **個数は持たない。** そのセルに何個入るかはCellDef.max、枠がいくつあるかはSlotDef.cellCount、
- * かさの合計はSlotDef.capacityが答える（SlotSystem.md 2節）。
- */
-export class CellAcceptRule {
-  readonly targetKind: SlotAcceptTargetKind;
-  private readonly with: number;
-
-  constructor(targetKind: SlotAcceptTargetKind, withId: number) {
-    this.targetKind = targetKind;
-    this.with = withId;
-  }
-
-  /** tagならcandidateがそのタグを持てば真、objectならまさにそのobject_defであれば真。 */
-  matches(candidateDef: ObjectDef): boolean {
-    return this.targetKind === 'tag'
-      ? candidateDef.tags.includes(this.with)
-      : candidateDef.globalId === this.with;
-  }
-
-  /** この受け入れ条件を書き表す（Description参照）。 */
-  describe(names: DefNames): readonly DescriptionToken[] {
-    return this.targetKind === 'tag'
-      ? [tagRef(names.tagName(this.with)), text('を持つ型')]
-      : [objectRef(names.objectName(this.with)), text('そのもの')];
-  }
-}
+import type { TypeMatchRule } from './TypeMatchRule';
 
 /**
  * 1つのセル（枠）の定義（GameElementDefinition.md 7.2節）。スロットは中身を直接持たず、セルの並びを
  * 持つ——「板の枠が1つ、棒の枠が1つ（4本まで）」のように、枠ごとに違う要件を書けるようにするため。
+ *
+ * **個数は持たない。** そのセルに何個入るかはCellDef.max、枠がいくつあるかはSlotDef.cellCount、
+ * かさの合計はSlotDef.capacityが答える（SlotSystem.md 2節）。
  */
 export class CellDef {
-  /** 受け入れる型。undefinedならどんな型でも受け入れる。 */
-  readonly accept: CellAcceptRule | undefined;
+  /** 受け入れる型（`accept`）。undefinedならどんな型でも受け入れる。 */
+  readonly accept: TypeMatchRule | undefined;
 
   /**
    * このセルに積める同種の個数（undefined=無制限）。**スタックできる型にだけ効く**——
@@ -61,7 +22,7 @@ export class CellDef {
    */
   readonly max: number | undefined;
 
-  constructor(accept: CellAcceptRule | undefined, max: number | undefined) {
+  constructor(accept: TypeMatchRule | undefined, max: number | undefined) {
     this.accept = accept;
     this.max = max;
   }

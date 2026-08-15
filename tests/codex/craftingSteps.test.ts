@@ -27,7 +27,7 @@ object_defs:
     tags: [item]
     combinations:
       husk:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         destroy: self
         spawn:
           - {object: husked_coconut}

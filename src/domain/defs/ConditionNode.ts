@@ -1,8 +1,9 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { DefNames, DescriptionToken } from './Description';
-import { propertyRef, slotRef, stageRef, tagRef, text } from './Description';
+import { propertyRef, slotRef, stageRef, text } from './Description';
 import { LocalIndexMap } from './LocalIndexMap';
 import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
+import type { TypeMatchRule } from './TypeMatchRule';
 
 /** GameElementDefinition.md 14.1節の比較演算子。 */
 export type ConditionOp = 'lt' | 'lte' | 'gt' | 'gte' | 'eq' | 'neq' | 'in' | 'not_in';
@@ -20,22 +21,22 @@ const OP_SYMBOLS: Readonly<Record<ConditionOp, string>> = {
 };
 
 type ConditionNodeKind =
-  /** {object, prop, <比較演算子>: value}形式のプロパティ比較。 */
+  /** {subject, prop, <比較演算子>: value}形式のプロパティ比較。 */
   | 'property'
-  /** {object, prop, in_stage}形式。propの実効値が、その名前の段（6.4節）に該当しているか。 */
+  /** {subject, prop, in_stage}形式。propの実効値が、その名前の段（6.4節）に該当しているか。 */
   | 'property_stage'
   /**
-   * {object, in_slot}形式。objectが今まさに親のin_slotに入っているか（等価判定のみ。
-   * 否定はnotで包む）。「objectが外から見てどこに位置するか」を見る。
+   * {subject, in_slot}形式。subjectが今まさに親のin_slotに入っているか（等価判定のみ。
+   * 否定はnotで包む）。「subjectが外から見てどこに位置するか」を見る。
    */
   | 'slot_position'
   /**
-   * {object, slot, tag}形式。object自身が持つslotの中に、tagを持つ子が1つでもあるか（存在判定）。
-   * slot_positionとは向きが逆で「objectの内側、自分のスロットの中身」を見る。
+   * {subject, slot, matches}形式。subjectが持つslotの中に、matchesに当てはまる子が1つでもあるか
+   * （存在判定）。slot_positionとは向きが逆で「subjectの内側、そのスロットの中身」を見る。
    */
   | 'slot_content'
-  /** {object, tag}形式。object自身がtagを持つか（存在判定）。 */
-  | 'object_tag'
+  /** {subject, matches}形式。subject自身がmatchesに当てはまるか。 */
+  | 'object_matches'
   /** 子ノードすべての論理積。 */
   | 'all'
   /** 子ノードのいずれかの論理和。 */
@@ -52,13 +53,13 @@ interface ConditionNodeFields {
   readonly valueRef?: PropertyPath;
   readonly stageName?: string;
   readonly slotGlobalId?: number;
-  readonly tagGlobalId?: number;
+  readonly matchRule?: TypeMatchRule;
   readonly children?: readonly ConditionNode[];
 }
 
 /**
  * conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲートが
- * 同じ木を共用する。葉はproperty・property_stage・slot_position・slot_content・object_tagの5種、
+ * 同じ木を共用する。葉はproperty・property_stage・slot_position・slot_content・object_matchesの5種、
  * 複合はall/any/notの3種で、kindに応じて使うフィールドが変わる（単一クラス+kindで判別）。
  */
 export class ConditionNode {
@@ -77,7 +78,7 @@ export class ConditionNode {
    * in/not_inは複数要素になりうる。 */
   private readonly values: readonly number[] | undefined;
 
-  /** property葉のみ有効。設定されていれば、リテラルvalue（values）の代わりに{object, prop}参照先の
+  /** property葉のみ有効。設定されていれば、リテラルvalue（values）の代わりに{subject, prop}参照先の
    * 現在の実効値と比較する（10.2節と同じ「リテラルか参照か」の二択）。in/not_inでは意味を持たない
    * （ロード時エラー）。 */
   private readonly valueRef: PropertyPath | undefined;
@@ -85,12 +86,12 @@ export class ConditionNode {
   /** property_stage葉のみ有効。段は宣言したPropertyDefごとの名前なので、internせず文字列で持つ。 */
   private readonly stageName: string | undefined;
 
-  /** slot_position/slot_content葉のみ有効。slot_positionではobjectの親の中の位置、
-   * slot_contentではobject自身が持つスロットを指す（向きが異なる）。 */
+  /** slot_position/slot_content葉のみ有効。slot_positionではsubjectの親の中の位置、
+   * slot_contentではsubject自身が持つスロットを指す（向きが異なる）。 */
   private readonly slotGlobalId: number | undefined;
 
-  /** slot_content/object_tag葉のみ有効。 */
-  private readonly tagGlobalId: number | undefined;
+  /** slot_content/object_matches葉のみ有効。 */
+  private readonly matchRule: TypeMatchRule | undefined;
 
   /** all/any/notのみ有効。notは常に1要素。 */
   private readonly children: readonly ConditionNode[] | undefined;
@@ -104,7 +105,7 @@ export class ConditionNode {
     this.valueRef = fields.valueRef;
     this.stageName = fields.stageName;
     this.slotGlobalId = fields.slotGlobalId;
-    this.tagGlobalId = fields.tagGlobalId;
+    this.matchRule = fields.matchRule;
     this.children = fields.children;
   }
 
@@ -126,12 +127,12 @@ export class ConditionNode {
     return new ConditionNode('slot_position', { root, slotGlobalId });
   }
 
-  static slotContent(root: ReferenceRoot, slotGlobalId: number, tagGlobalId: number): ConditionNode {
-    return new ConditionNode('slot_content', { root, slotGlobalId, tagGlobalId });
+  static slotContent(root: ReferenceRoot, slotGlobalId: number, matchRule: TypeMatchRule): ConditionNode {
+    return new ConditionNode('slot_content', { root, slotGlobalId, matchRule });
   }
 
-  static objectTag(root: ReferenceRoot, tagGlobalId: number): ConditionNode {
-    return new ConditionNode('object_tag', { root, tagGlobalId });
+  static objectMatches(root: ReferenceRoot, matchRule: TypeMatchRule): ConditionNode {
+    return new ConditionNode('object_matches', { root, matchRule });
   }
 
   static all(children: readonly ConditionNode[]): ConditionNode {
@@ -172,11 +173,11 @@ export class ConditionNode {
           text(`${this.root}の`),
           slotRef(names.slotName(this.slotGlobalId!)),
           text('スロットに'),
-          tagRef(names.tagName(this.tagGlobalId!)),
+          ...this.matchRule!.describe(names),
           text('が入っている'),
         ];
-      case 'object_tag':
-        return [text(`${this.root}が`), tagRef(names.tagName(this.tagGlobalId!)), text('を持つ')];
+      case 'object_matches':
+        return [text(`${this.root}が`), ...this.matchRule!.describe(names), text('である')];
       case 'all':
         return this.describeChildren(names, 'かつ');
       case 'any':
@@ -228,8 +229,8 @@ export class ConditionNode {
         return this.evaluateSlotPosition(resolveRoot);
       case 'slot_content':
         return this.evaluateSlotContent(resolveRoot);
-      case 'object_tag':
-        return this.evaluateObjectTag(resolveRoot);
+      case 'object_matches':
+        return this.evaluateObjectMatches(resolveRoot);
       case 'all':
         return this.children!.every((child) => child.evaluate(resolveRoot));
       case 'any':
@@ -322,11 +323,11 @@ export class ConditionNode {
     const target = resolveRoot(this.root!);
     const slot = target?.tryGetSlot(this.slotGlobalId!);
     if (slot === undefined) return false;
-    return slot.contents.some((child) => child.def.tags.includes(this.tagGlobalId!));
+    return slot.contents.some((child) => this.matchRule!.matches(child.def));
   }
 
-  private evaluateObjectTag(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
+  private evaluateObjectMatches(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
     const target = resolveRoot(this.root!);
-    return target !== undefined && target.def.tags.includes(this.tagGlobalId!);
+    return target !== undefined && this.matchRule!.matches(target.def);
   }
 }

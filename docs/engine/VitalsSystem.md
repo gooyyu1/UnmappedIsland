@@ -149,7 +149,7 @@ shock:
 与えるのは攻撃の側で、`add` は実体値への即時の書き込みなので**殴った瞬間に効きます**。
 
 ```yaml
-- weight: {object: dragged, prop: heavy_blow}
+- weight: {subject: dragged, prop: heavy_blow}
   add: {self: {shock: 250, wariness: 25}, dragged: {durability: -20}}
   spawn: {object: deep_gash, into: self}
   signal: hit
@@ -246,7 +246,7 @@ laceration:
     # 流れている間だけ、宿主の血が失われていく。これが出血そのもの。
     - conditions:
         - {prop: bleeding, gte: 1}
-        - not: {slot: treatment, tag: hemostatic}
+        - not: {slot: treatment, matches: {tag: hemostatic}}
       add: {parent: {blood: -15}}
 ```
 

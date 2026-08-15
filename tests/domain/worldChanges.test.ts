@@ -48,12 +48,12 @@ object_defs:
       loot: {cell: {accept: {tag: item}}}
     combinations:
       rampage:
-        with: item
+        with: {tag: item}
         pick:
           - weight: 60
             destroy: dragged
           - weight: 40
-            move: {object: dragged, to: self}
+            move: {subject: dragged, to: self}
 `;
 
   /** 壊す側（重み60）を引くrollと、取り上げる側（重み40）を引くroll。 */

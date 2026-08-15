@@ -28,7 +28,7 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
   常に暗黙的に参加する。
 - **`combinations`（ドラッグ型、`Domain.Defs.CombinationDef`）**: カードを別のカードへ
   ドラッグ＆ドロップする操作。組み合わせを宣言している側が `self`、相手が `dragged` で、
-  `with`（タグのグローバルID）が `dragged` とのマッチング条件になる。宣言は**素材の側**に1つだけ置き
+  `with`（タグかobject_defのidで書く型の指定、12.1節）が `dragged` とのマッチング条件になる。宣言は**素材の側**に1つだけ置き
   （12.3節）、どちらの札をどちらへ運んでも同じ宣言が実行される——**どちらを `self` として試すかの順序は
   UI層が決める**（[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
 
@@ -55,7 +55,8 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 実行は次の順に進み、途中で失敗すると `false` を返して何も適用しない。順序に意味があるため、
 実装は `InteractionDef` に1つだけ置く（`with` マッチングだけは `CombinationDef` が先に見る）。
 
-1. `with` マッチング（combinations のみ）: `dragged` の `ObjectDef.Tags` に `with` タグが含まれるか。
+1. `with` マッチング（combinations のみ）: `dragged` の型が `with` の指定に当てはまるか
+   （`Domain.Defs.TypeMatchRule`。タグならそのタグを持つか、object_defならその型そのものか）。
 2. `conditions` 評価（3節）: 省略時は常に真。
 3. `duration` の解決: 「今の `self`（combinations では `dragged` も）の状態から見て、どれだけかかるか」
    なので、時間を進める前に分数だけ確定させる（切れ味の悪い刃物ほど時間がかかる、が書けるように）。
@@ -77,12 +78,12 @@ actions/combinations の一度きりの判定と、passives（8節）の持続�
 | SlotContent | `{object, slot, tag}` | object 自身のスロットの中に、タグを持つ子が1つでもあるか（内側の中身） |
 | ObjectTag | `{object, tag}` | object 自身がタグを持つか |
 
-`value` はリテラル・配列（`in`/`not_in`）・`{object, prop}` 参照の三択。参照先が解決できない場合
+`value` はリテラル・配列（`in`/`not_in`）・`{subject, prop}` 参照の三択。参照先が解決できない場合
 （親が無い等）、その葉は偽になる。
 
 ## 4. 条件・効果から参照できるオブジェクト
 
-`conditions` の `object`、効果の対象キー、`{object, prop}` 参照はすべて共通の起点
+`conditions` の `subject`、効果の対象キー、`{subject, prop}` 参照はすべて共通の起点
 `Domain.Defs.ReferenceRoot` を使う。`self.prop` のような1階層の参照のみで、パス連結はない。
 
 | 起点 | 解決先 | 使える文脈 |
@@ -109,7 +110,7 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
 
 設計上の要点:
 
-- `set`/`add` の値・`pick` の `weight` は「リテラルか `{object, prop}` 参照か」の二択で統一されている。
+- `set`/`add` の値・`pick` の `weight` は「リテラルか `{subject, prop}` 参照か」の二択で統一されている。
 - `spawn` の配置先は `same_slot`（既定）/ `self` / `actor`。`same_slot` は、適用の入口で捕捉した
   「self が占めていた位置」のスナップショット（`WorldObject.EffectSite`）を使い、destroy で self が
   消えた後でもその位置を引き継げる。配置に失敗した場合は起点の親へ伝播し、accepts/capacity を
@@ -125,7 +126,7 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
 
 ## 6. 時間の経過（duration）
 
-- `actions`/`combinations` の `duration` はゲーム内の**分**。リテラルか `{object, prop}` 参照
+- `actions`/`combinations` の `duration` はゲーム内の**分**。リテラルか `{subject, prop}` 参照
   （`weight` と同じ二択。`combinations` では `dragged` も指せる）で、省略時は時間を消費しない。
 - 時間進行は `InteractionDef` 自身が `WorldSession.AdvanceWorldTime(minutes)` を呼んで完結させる。
   呼び出し側（UI層）が実行後に別途時間を進める必要はない。解決した分数は実行前にも引ける

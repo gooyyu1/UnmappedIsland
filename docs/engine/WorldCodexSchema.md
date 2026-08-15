@@ -25,7 +25,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
   使う、`destroy` の対象に `ancestor` を使う、枠の `accept` に `tag` と `object` を同時指定する（またはどちらも省略する）、
   `combinations` に `with` を書き忘れる、廃止済みの `active:` 入れ子を使う、`passives` を配列でなく単一マッピングで
   書く、`conditions` の葉に `slot` と `prop` を同時指定する、`conditions` の `value` に未対応の `max`/`min` を使う、
-  `in`/`not_in` に配列でない `value` を渡す、`move` の `object` に `actor` 以外を使う、といった誤った記述が
+  `in`/`not_in` に配列でない `value` を渡す、`move` の `subject` に `actor` 以外を使う、といった誤った記述が
   拒否されることを確認
 
 ## 2. スキーマの範囲
@@ -44,7 +44,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 - **`covers`/`layer`（object_def直下）・`unit`（prop直下）**: 文法として文書化済みでスキーマにも
   含めているが、ローダーは現時点でこれらのキーを解釈しない（読み飛ばす）。
 - **文脈依存の制約**: rangeイベント内は対象が `self` のみ・`move` 不可、`dragged` は combinations 内のみ、
-  passivesのゲートの `object` は `self`/`parent`/`ancestor` のみ、といった「どの文脈で書かれたか」に依存する制約は、
+  passivesのゲートの `subject` は `self`/`parent`/`ancestor` のみ、といった「どの文脈で書かれたか」に依存する制約は、
   スキーマでは表現せずローダーのロード時チェックに委ねる（スキーマは全文脈の和集合を受理する）。
 - **`derived`（導出値、16節・17節）**: 採否そのものが未決定のため含めていません。
 - **YAML定義のマージ・上書き規則（3.3節・5節）**: 本スキーマは単一ファイルの構造のみを検証します。trait合成・
@@ -84,7 +84,7 @@ for e in v.iter_errors(yaml.safe_load(open('public/world-codex/core.yaml'))):
 
 - 地形生成（`axes`/`location_types`/`generation_scopes`）の中身の詳細スキーマ化（2.2節。現在はキーの許容のみ）
 - スキーマ検証をCI（テストスイート）へ組み込み、ローダーとスキーマの乖離を自動検知するかどうか
-- 本スキーマは単一ファイル内の構造のみを検証するため、「参照している `object` や `trait` の id が実在するか」
+- 本スキーマは単一ファイル内の構造のみを検証するため、「参照している `object_def` や `trait` の id が実在するか」
   といった、ファイル横断的な整合性チェックは対象外（別途のバリデーションステップ、ロード後の検証に相当）
 - `GameElementDefinition.md`・`ActionSystem.md`・`RecipeSystem.md`・`ContainerSystem.md` 側の未決事項
   （各ドキュメントの該当節を参照）が確定するたびに、本スキーマも追随して更新する必要がある

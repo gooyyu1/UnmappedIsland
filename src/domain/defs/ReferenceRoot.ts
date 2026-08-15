@@ -25,7 +25,7 @@ export type ReferenceRoot =
   | 'ancestor';
 
 /**
- * {object, prop}が指す、1階層のプロパティ参照（ReferenceRoot＋プロパティのグローバルID）。
+ * {subject, prop}が指す、1階層のプロパティ参照（ReferenceRoot＋プロパティのグローバルID）。
  * weightのpath参照（10.2節）・conditionsのvalueRef（14節）・activeのvalueRefが共有する
  * （いずれも「リテラルか参照か」の二択の『参照』側）。
  */

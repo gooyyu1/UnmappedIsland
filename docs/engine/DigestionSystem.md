@@ -79,7 +79,7 @@
   [`VitalsSystem.md`](./VitalsSystem.md) 2 節の「効き方は連続ではなく階段でよい」と同じ割り切りです。
 
 **「これ以上食べられない」は胃が持ちます。** `stomach` の `range.max` が胃の大きさで、段 **`full`** を
-置き、`eat` を `not: {object: actor, prop: stomach, in_stage: full}` で塞ぎます。水分の `full` と
+置き、`eat` を `not: {subject: actor, prop: stomach, in_stage: full}` で塞ぎます。水分の `full` と
 `not_thirsty` の対称形です（[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 5節）が、`full` の
 位置だけが違います——**`max` ちょうどではなく 3/4** に置き、残りを最後の一口があふれる余地にします。
 

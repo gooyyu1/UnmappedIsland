@@ -49,10 +49,10 @@ object_defs:
     combinations:
       # 重ねてきた物の側について告げる（対象を書く形の検査）。
       shrug_off:
-        with: item
+        with: {tag: item}
         signal: {dragged: bounced}
       hit_me:
-        with: item
+        with: {tag: item}
         pick:
           - weight: 70
             destroy: dragged

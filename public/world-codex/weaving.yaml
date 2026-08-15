@@ -28,7 +28,7 @@ object_defs:
       # 中軸で割ってから左右をそれぞれ編む。細長いパネルが2枚とれる。屋根を葺くときは
       # 軒から棟へ段を重ねるので、細長いほうが扱いやすい。
       split_and_weave:
-        with: cutting_tool
+        with: {tag: cutting_tool}
         duration: 60
         destroy: self
         spawn: {object: woven_leaf, count: 2}

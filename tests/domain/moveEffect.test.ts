@@ -52,7 +52,7 @@ object_defs:
     actions:
       travel:
         move:
-          object: actor
+          subject: actor
           to_prop: destination_id
 `;
 
@@ -135,8 +135,8 @@ object_defs:
     tags: [item]
     combinations:
       put_in:
-        with: item
-        move: {object: dragged, to: self}
+        with: {tag: item}
+        move: {subject: dragged, to: self}
     slots:
       contents:
         cell: {accept: {tag: item}}
@@ -177,8 +177,8 @@ object_defs:
     tags: [item]
     combinations:
       put_in:
-        with: item
-        move: {object: dragged, to: self}
+        with: {tag: item}
+        move: {subject: dragged, to: self}
     slots:
       contents:
         cell: {accept: {tag: item}}
@@ -222,7 +222,7 @@ object_defs:
     actions:
       travel:
         move:
-          object: self
+          subject: self
           to_prop: destination_id
 `,
         )
@@ -246,7 +246,7 @@ object_defs:
     actions:
       travel:
         move:
-          object: actor
+          subject: actor
           to: self
           to_prop: destination_id
 `,
@@ -267,7 +267,7 @@ object_defs:
   basket:
     actions:
       travel:
-        move: {object: actor, to: ancestor}
+        move: {subject: actor, to: ancestor}
 `,
         )
         .build();
@@ -292,8 +292,8 @@ object_defs:
     tags: [liquid]
     combinations:
       pour_in:
-        with: liquid
-        move: {object: dragged, to: parent}
+        with: {tag: liquid}
+        move: {subject: dragged, to: parent}
 `,
       )
       .build();
@@ -324,7 +324,7 @@ object_defs:
     actions:
       travel:
         move:
-          object: actor
+          subject: actor
           to_prop: destination_id
           into: characters
 `,
@@ -349,7 +349,7 @@ object_defs:
         range: {min: 0, max: 10}
         on_shortfall:
           move:
-            object: actor
+            subject: actor
             to_prop: fuse
 `,
         )
