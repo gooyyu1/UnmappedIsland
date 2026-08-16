@@ -26,6 +26,7 @@ export function renderBalancePage(view: CodexView): string {
   lastTables = tables;
 
   return (
+    `<div class="balance">` +
     `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
     `<h1>収支</h1>` +
     `<p class="muted">定義だけから計算した「時間あたりの収支」。時間はすべて<b>労働時間</b>で、` +
@@ -36,7 +37,8 @@ export function renderBalancePage(view: CodexView): string {
     chainsHtml(view, tables) +
     devicesHtml(view, tables) +
     consumptionHtml(view, tables) +
-    supplyHtml(view, tables)
+    supplyHtml(view, tables) +
+    `</div>`
   );
 }
 
@@ -101,6 +103,11 @@ function chainsHtml(view: CodexView, tables: BalanceTables): string {
     `<h2>連鎖（素材から摂取まで）</h2>` +
     `<p class="muted">1日ぶんの必要量は ${escapeHtml(SAMPLE_CHARACTER)} のもの。` +
     `行を開くと内訳・同時に返す値・前提が出る。</p>` +
+    // 道具は持ち歩けるので、その土地で作れなくても可否は分けない。ただし漂着直後は実際に持って
+    // いないので、自力で回るかを見たいときはここで絞る。
+    `<p><label class="balance-filter">` +
+    `<input type="checkbox" data-balance-import-filter> 持ち込みなしで完結する経路だけ` +
+    `</label></p>` +
     tables.places
       .filter((place) => place.properties.length > 0)
       .map((place) => placeHtml(view, place))
@@ -218,7 +225,8 @@ function routeHtml(view: CodexView, entry: PropertyRoute): string {
     .join('<span class="route-arrow">›</span>');
 
   return (
-    `<li class="route${route.blocked ? ' route-blocked' : ''}"><details><summary>` +
+    `<li class="route${route.blocked ? ' route-blocked' : ''}` +
+    `${route.needsImport ? ' route-import' : ''}"><details><summary>` +
     `<span class="route-icons">${icons}</span>` +
     `<span class="route-daily">${formatNumber(entry.dailyMinutes, 0)}分` +
     `<span class="muted"> / 日 ${formatNumber(entry.dailyShare, 0)}%</span></span>` +
@@ -244,7 +252,7 @@ function routeHtml(view: CodexView, entry: PropertyRoute): string {
 function prerequisitesHtml(view: CodexView, route: ChainRoute): string {
   if (route.prerequisites.length === 0) return '<span class="muted">なし</span>';
   return route.prerequisites
-    .map(({ label, objectName, minutes }) => {
+    .map(({ label, objectName, minutes, imported }) => {
       const shown =
         objectName === undefined
           ? escapeHtml(label)
@@ -253,7 +261,7 @@ function prerequisitesHtml(view: CodexView, route: ChainRoute): string {
       const cost =
         minutes === undefined
           ? `<span class="warn">入手経路なし</span>`
-          : `<span class="muted">${formatNumber(minutes)}分</span>`;
+          : `<span class="muted">${formatNumber(minutes)}分${imported ? '・他の土地で' : ''}</span>`;
       return `${shown} ${cost}`;
     })
     .join('、');
@@ -385,6 +393,8 @@ function signed(amount: number): string {
  * だけにする（同じ数字を2箇所で計算しない）。
  */
 export function wireBalanceMenu(): void {
+  wireImportFilter();
+
   const tables = lastTables;
   if (tables === undefined) return;
 
@@ -414,4 +424,15 @@ export function wireBalanceMenu(): void {
 
     for (const select of selects) select.addEventListener('change', update);
   }
+}
+
+/** 「持ち込みなしで完結する経路だけ」の絞り込み。隠すだけなので、組み立て直さずclassで切り替える。 */
+function wireImportFilter(): void {
+  const page = document.querySelector<HTMLElement>('.balance');
+  const toggle = document.querySelector<HTMLInputElement>('[data-balance-import-filter]');
+  if (page === null || toggle === null) return;
+
+  toggle.addEventListener('change', () => {
+    page.classList.toggle('hide-import', toggle.checked);
+  });
 }
