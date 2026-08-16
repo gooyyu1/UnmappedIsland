@@ -3,8 +3,9 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import type { CraftingStep } from '../../src/domain/defs/CraftingStep';
-import type { ObjectDef } from '../../src/domain/defs/ObjectDef';
+import type { ObjectDef, RangeCycle } from '../../src/domain/defs/ObjectDef';
 import type { TickDelta } from '../../src/domain/defs/PassiveEffect';
+import type { StaticValueResolver } from '../../src/domain/defs/ReferenceRoot';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -33,7 +34,7 @@ const EPSILON = 1e-9;
 const KEY_SEPARATOR = ' :: ';
 
 /**
- * 工程を実行するのに要る、消費されない入力1件。costがundefinedなら、この土地では前提が揃わない
+ * 工程を実行するのに要る、消費されない入力1件。costがundefinedなら、この文脈では前提が揃わない
  * （その経路はここでは辿れない）。
  */
 interface Prerequisite {
@@ -52,6 +53,18 @@ interface Cost {
 interface StepRef {
   readonly def: ObjectDef;
   readonly step: CraftingStep;
+
+  /**
+   * 時間で回る工程（罠の判定）なら、その周期と、宣言元の寿命。**プレイヤーは待ち時間を払わないが、
+   * 設備は待っている間も朽ちる**ので、1周期で使い切る設備の割合（周期÷寿命）が値段になる。
+   * 寿命を持たない設備では按分できないためundefined。
+   */
+  readonly cycle: DeviceCycle | undefined;
+}
+
+interface DeviceCycle {
+  readonly periodMinutes: number;
+  readonly lifetimeMinutes: number | undefined;
 }
 
 function totalOf(cost: Cost): number {
@@ -69,6 +82,13 @@ function divideCost(cost: Cost, divisor: number): Cost {
   return {
     exploreMinutes: cost.exploreMinutes / divisor,
     craftMinutes: cost.craftMinutes / divisor,
+  };
+}
+
+function scaleCost(cost: Cost, factor: number): Cost {
+  return {
+    exploreMinutes: cost.exploreMinutes * factor,
+    craftMinutes: cost.craftMinutes * factor,
   };
 }
 
@@ -120,13 +140,24 @@ class Acquisition {
     this.relax();
   }
 
-  /** この工程を1回実行するのにかかる時間（所要時間＋消費する入力の入手時間）。揃わなければundefined。 */
+  /**
+   * この工程を1回実行するのに**プレイヤーが払う**時間（労働時間＋消費する入力の入手時間）。
+   * 揃わなければundefined。待ち時間は含めない——待っている間に他のことができるため。
+   */
   stepCost(ref: StepRef): Cost | undefined {
     const owned = isLocation(this.codex, ref.def);
     let cost: Cost = {
-      exploreMinutes: owned ? ref.step.durationMinutes : 0,
-      craftMinutes: owned ? 0 : ref.step.durationMinutes,
+      exploreMinutes: owned ? ref.step.laborMinutes : 0,
+      craftMinutes: owned ? 0 : ref.step.laborMinutes,
     };
+
+    // 時間で回る工程は、1周期ぶんだけ設備を使い切る。朽ちない設備は按分できない（待てば無限に得られる）。
+    if (ref.cycle !== undefined) {
+      if (ref.cycle.lifetimeMinutes === undefined) return undefined;
+      const device = this.costByObject.get(ref.def.globalId);
+      if (device === undefined) return undefined;
+      cost = addCost(cost, scaleCost(device, ref.cycle.periodMinutes / ref.cycle.lifetimeMinutes));
+    }
 
     for (const input of ref.step.inputs) {
       if (!input.consumed) continue;
@@ -250,9 +281,40 @@ function allDefs(codex: WorldCodex): readonly ObjectDef[] {
   return [...Array(codex.objects.count).keys()].map((globalId) => codex.objects.get(globalId));
 }
 
-/** 全型の全工程。宣言順（型のグローバルID順、型の中は宣言順）。 */
-function allSteps(codex: WorldCodex): readonly StepRef[] {
-  return allDefs(codex).flatMap((def) => def.craftingSteps().map((step) => ({ def, step })));
+/**
+ * 全型の全工程。宣言順（型のグローバルID順、型の中は宣言順）。プレイヤーが起こす工程に続けて、
+ * 時間で回る工程（罠の判定）も並べる。
+ *
+ * outerは、祖先（＝置かれている土地）が入れる値を解く手立て。罠が掛ける動物の重みは土地が
+ * 宣言するので（`inherit`）、これが無いと候補が全部0になる。
+ */
+function allSteps(codex: WorldCodex, outer?: StaticValueResolver): readonly StepRef[] {
+  return allDefs(codex).flatMap((def) => {
+    const cycles = def.rangeCycles(outer);
+    const lifetimeMinutes = lifetimeOf(cycles);
+    return [
+      ...def.craftingSteps(outer).map((step) => ({ def, step, cycle: undefined })),
+      ...cycles
+        .filter((cycle) => cycle.repeats)
+        .map((cycle) => ({
+          def,
+          step: cycle.step,
+          cycle: { periodMinutes: cycle.minutes, lifetimeMinutes },
+        })),
+    ];
+  });
+}
+
+/** その型が朽ちるまでの時間（分）。複数あれば最も早く尽きるもの。朽ちないならundefined。 */
+function lifetimeOf(cycles: readonly RangeCycle[]): number | undefined {
+  const ends = cycles.filter((cycle) => cycle.destroysSelf && !cycle.repeats).map((cycle) => cycle.minutes);
+  return ends.length === 0 ? undefined : Math.min(...ends);
+}
+
+/** 祖先（置かれている土地）の宣言値を答える手立て。宣言していないプロパティは寄与0。 */
+function ancestorContext(location: ObjectDef): StaticValueResolver {
+  return (root, propertyGlobalId) =>
+    root === 'ancestor' ? (location.staticValueOf(propertyGlobalId) ?? 0) : undefined;
 }
 
 /** その土地に立っているときに実行できる工程（他の土地が宣言する工程は届かない）。 */
@@ -311,7 +373,6 @@ function buildReport(codex: WorldCodex): string {
   const characters = codex
     .objectDefNamesWithTag('character')
     .map((name) => codex.objects.get(codex.objectNames.getId(name)));
-  const steps = allSteps(codex);
 
   append('# アイテム収支レポート');
   append();
@@ -323,10 +384,16 @@ function buildReport(codex: WorldCodex): string {
   append('```');
   append();
 
+  const character = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
+  const needs = dailyNeeds(codex, character);
+  const balances = locationBalances(codex, needs);
+
   appendMethod(append);
   appendConsumption(append, codex, characters);
-  appendSupply(append, codex, steps);
-  appendChains(append, codex, steps);
+  // 供給表は島全体の文脈で出す。罠の重みは土地が入れるので、土地を決めないと候補が全部0になる。
+  appendSupply(append, codex, balances[0].steps);
+  appendChains(append, codex, balances, needs);
+  appendDevices(append, codex, balances);
 
   return lines.join('\n') + '\n';
 }
@@ -343,15 +410,39 @@ function appendMethod(append: (line?: string) => void): void {
   append('  1個あたりへ按分するには「何回使うか」の仮定が要り、その仮定が数字を支配するため。');
   append('  代わりに「前提」列へ、1度だけ払う入手時間として別に並べる。');
   append('- 連鎖の起点は探索。土地ごとに得られる物が違うので、連鎖表は土地ごとに出す。');
+  append(`  ただし資源は土地をまたいで分かれている（木は砂浜、石は岩場）ので、渡り歩ける前提の`);
+  append(`  **${WHOLE_ISLAND}**を先頭に置く——各資源を最も得やすい土地で得て、移動時間は数えない場合。`);
+  append();
+  append('### 待って得る生産の数え方');
+  append();
+  append('罠のように、仕掛けてから時間が経つと産物が返るものは、**待っている間に他のことができる**。');
+  append('そこで工程の時間を2本に分けて数える。');
+  append();
+  append('- **労働時間**: プレイヤーが払う分。他の行動と直接競合するのはこれだけで、');
+  append('  上の各表の「分」はすべてこちら。');
+  append('- **周期**: 経過するだけの分。単位あたりの時間には**足さない**。');
+  append();
+  append('では待ち時間が無コストかというと、そうではない。**設備は待っている間も朽ちる**ので、');
+  append('1周期で使い切る設備の割合（周期 ÷ 寿命）が、そのまま製作労働の按分になる——罠1回の判定は');
+  append('「罠を作る労働の、周期÷寿命ぶん」を払っている。連鎖表の数字はこの按分を含む。');
+  append();
+  append('この数え方が成り立つのは**並列度に上限があるとき**だけ。いくらでも並べられて朽ちもしない');
+  append('設備は、待つだけで無限に得られることになるので按分できず、連鎖表から外して4節へ回す。');
   append();
   append('### この表が数えていないもの');
   append();
   append('- **土地の間の移動時間。** 道ごとに違い、地形生成が個体へ書き込むため定義からは決まらない。');
-  append('- **罠による狩り。** 獲物を返すのは操作ではなく `catch_remaining` の `on_shortfall`');
-  append('  （時間で回る仕掛け）なので、所要時間を持つ工程として並べられない。');
+  append('  設備を見回る時間もこれに含まれるので、必要設備数が多い経路ほど実際は不利になる。');
+  append('- **餌の効果。** 餌は `modify`（実効値への可逆な寄与）で重みを押し上げるが、静的に読めるのは');
+  append('  宣言値だけなので、罠のレートは**餌なし**の値。');
   append('- **雨で溜まる水。** 量を増やすのは `rain_filled_liquid` のtick毎の持続効果で、工程ではない。');
   append('  そのため水を汲む経路は所要時間0分の工程として出る（下表で † を付けた行）。');
   append('- **採取ポイントの枯渇。** 同じ木から何度でも採れる前提で計算している。');
+  append('- **獲物が死体に変わるまで。** 罠に掛かった獲物を殺すのは、刺さった傷が**親へ**与える出血');
+  append('  （`snare_laceration` の `add: {parent: {blood: -15}}`）で、しかも傷の `bleeding` が尽きる');
+  append('  数tickだけ効く。「傷の勢い×効いている長さ」と「獲物の血の量」の勝負なので、tick毎の');
+  append('  増減を1つ足すだけでは決まらない。そのため4節の産物（獲物）は3節の連鎖へ繋がっておらず、');
+  append('  連鎖表の「設備数」列は今のところ全て空になる。');
   append();
 }
 
@@ -392,12 +483,15 @@ function appendSupply(append: (line?: string) => void, codex: WorldCodex, steps:
     '「値の増減」はキャラクタ（actor）が受け取る分で、括弧に（self）と書いたものは工程の主が受け取る分。',
   );
   append();
-  append('所要時間の `?` は、所要時間か分岐の重みが**定義だけでは決まらない**工程（相手の持ち物を見る');
+  append('`?` は、所要時間か分岐の重みが**定義だけでは決まらない**工程（相手の持ち物を見る');
   append('`{subject: dragged, prop: ...}` 参照など）。解けない重みは0として扱うので、その行の期待値は');
   append('残った候補へ寄っている——例えば `strike` の当たり方は武器が決めるため、ここでは出せない。');
   append();
-  append('| 宣言元 | 工程 | 種別 | 所要（分） | 期待産出 | 値の増減 |');
-  append('| --- | --- | --- | --- | --- | --- |');
+  append('種別 `periodic` は時間で回る工程（罠の判定）。労働は0で、周期だけが経過する。');
+  append('`transfer` の増減は宣言された上限で、実際に動く量は在庫と空きで目減りする。');
+  append();
+  append('| 宣言元 | 工程 | 種別 | 労働（分） | 周期（分） | 期待産出 | 値の増減 |');
+  append('| --- | --- | --- | --- | --- | --- | --- |');
 
   for (const ref of steps) {
     const spawns = expectedSpawns(ref.step);
@@ -418,53 +512,161 @@ function appendSupply(append: (line?: string) => void, codex: WorldCodex, steps:
     ].join('、');
 
     append(
-      `| ${ref.def.name} | ${ref.step.name} | ${ref.step.kind} | ${ref.step.durationMinutes}` +
-        `${ref.step.hasUnresolvedReferences ? ' ?' : ''} | ${spawnText || '—'} | ${deltaText || '—'} |`,
+      `| ${ref.def.name} | ${ref.step.name} | ${ref.step.kind} |` +
+        ` ${formatNumber(ref.step.laborMinutes, 0)}${ref.step.hasUnresolvedReferences ? ' ?' : ''} |` +
+        ` ${formatNumber(ref.step.elapsedMinutes, 0)} | ${spawnText || '—'} | ${deltaText || '—'} |`,
     );
   }
   append();
 }
 
-function appendChains(append: (line?: string) => void, codex: WorldCodex, steps: readonly StepRef[]): void {
+/** 土地1つぶんの計算結果。連鎖表と待ち生産表が同じものを見る。 */
+interface LocationBalance {
+  readonly name: string;
+  readonly acquisition: Acquisition;
+  readonly steps: readonly StepRef[];
+  readonly rows: readonly (readonly [number, readonly ChainRow[]])[];
+}
+
+/**
+ * 資源は土地ごとに分かれているので、1つの土地に閉じると多くの連鎖が「前提が揃わない」で終わる。
+ * 島を渡り歩ける前提の見方も要るため、全土地の探索を使える文脈を先頭に1つ置く。
+ */
+const WHOLE_ISLAND = '島全体';
+
+function locationBalances(codex: WorldCodex, needs: ReadonlyMap<number, number>): readonly LocationBalance[] {
+  const locations = allDefs(codex).filter((def) => isLocation(codex, def));
+
+  const balances: LocationBalance[] = [];
+  for (const location of [undefined, ...locations]) {
+    // 罠が掛ける動物の重みは土地が宣言する（inherit）ので、土地を決めてから工程を組み立てる。
+    // 島全体では、その値を最も高く宣言している土地に置く前提を取る。
+    const context = location === undefined ? bestAncestorContext(locations) : ancestorContext(location);
+    const steps =
+      location === undefined ? allSteps(codex, context) : stepsAt(codex, allSteps(codex, context), location);
+    const acquisition = new Acquisition(codex, steps);
+    balances.push({
+      name: location?.name ?? WHOLE_ISLAND,
+      acquisition,
+      steps,
+      rows: chainRows(codex, acquisition, steps, needs),
+    });
+  }
+  return balances;
+}
+
+/** どの土地に置いてもよい前提での祖先の値。最も高く宣言している土地に置いたものとして扱う。 */
+function bestAncestorContext(locations: readonly ObjectDef[]): StaticValueResolver {
+  return (root, propertyGlobalId) => {
+    if (root !== 'ancestor') return undefined;
+    const declared = locations
+      .map((location) => location.staticValueOf(propertyGlobalId))
+      .filter((value): value is number => value !== undefined);
+    return declared.length === 0 ? 0 : Math.max(...declared);
+  };
+}
+
+function appendChains(
+  append: (line?: string) => void,
+  codex: WorldCodex,
+  balances: readonly LocationBalance[],
+  needs: ReadonlyMap<number, number>,
+): void {
   append('## 3. 連鎖表（素材から摂取までの総時間）');
   append();
-  append(`1日ぶんの必要量は ${SAMPLE_CHARACTER} のもの（消費表の常時効く減りから）。`);
-  append('「1日の割合」は、1日ぶんを賄うのに要る時間が1日（1440分）に占める割合。');
+  append(
+    `1日ぶんの必要量は ${SAMPLE_CHARACTER} のもの（消費表の常時効く減りから）。時間はすべて労働時間で、`,
+  );
+  append('待ち時間は含まない（待ち生産の設備は、周期÷寿命ぶんの製作労働として計上する）。');
+  append('「1日の割合」は、1日ぶんを賄うのに要る労働が1日（1440分）に占める割合。');
+  append('「設備数」は、待ち生産の経路で1日ぶんを賄うのに同時に要る設備の数（4節参照）。');
   append('† は、素材を所要時間0分の工程で得ている経路（この表が時間を数えられていない、上の注記を参照）。');
-  append('前提の道具がその土地で手に入らない経路は、数字を出したうえで表の末尾へ回す。');
+  append('前提の道具に入手経路が無い経路は、数字を出したうえで表の末尾へ回す。');
   append();
 
-  const character = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
-  const needs = dailyNeeds(codex, character);
-
-  for (const location of allDefs(codex)) {
-    if (!isLocation(codex, location)) continue;
-
-    const available = stepsAt(codex, steps, location);
-    const acquisition = new Acquisition(codex, available);
-    const rows = chainRows(codex, acquisition, available, needs);
+  for (const { name, rows } of balances) {
     if (rows.length === 0) continue;
 
-    append(`### ${location.name}`);
+    append(`### ${name}`);
     append();
 
     for (const [propertyGlobalId, propertyRows] of rows) {
       const need = needs.get(propertyGlobalId) ?? 0;
       append(`#### ${codex.propertyName(propertyGlobalId)}（1日 ${formatNumber(need, 0)}）`);
       append();
-      append('| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 同時に返す値 | 前提 |');
-      append('| --- | --- | --- | --- | --- | --- | --- | --- |');
+      append(
+        '| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |',
+      );
+      append('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
       for (const row of propertyRows) {
         append(
           `| ${row.route} | ${formatNumber(row.perUnit, 2)}${row.untimed ? ' †' : ''} |` +
             ` ${formatNumber(row.exploreMinutes, 2)} | ${formatNumber(row.craftMinutes, 2)} |` +
             ` ${formatNumber(row.perUnit * need, 0)} |` +
             ` ${formatNumber((row.perUnit * need * 100) / MINUTES_PER_DAY, 1)}% |` +
+            ` ${row.deviceCount === undefined ? '—' : formatNumber(row.deviceCount, 1)} |` +
             ` ${row.coProducts || '—'} | ${row.prerequisites || '—'} |`,
         );
       }
       append();
     }
+  }
+}
+
+function appendDevices(
+  append: (line?: string) => void,
+  codex: WorldCodex,
+  balances: readonly LocationBalance[],
+): void {
+  append('## 4. 待ち生産表（設備が時間をかけて返す分）');
+  append();
+  append('仕掛けてから時間が経つと産物が返るもの。**周期は単位あたりの労働時間には足していない**');
+  append('（計測方法の「待って得る生産の数え方」参照）ので、この表が代わりに周期とレートを出す。');
+  append();
+  append('- **設備あたり（個/日）**: 1日は24時間まるごと回る。眠っている間も進むのが待ち生産の取り柄。');
+  append('- **寿命の間に（個）**: 設備1つが朽ちるまでに返す総数。これが並列度の上限を決める。');
+  append('- **労働（分/個）**: 製作労働 ÷ 寿命の間に返す数。連鎖表に載るのはこの値。');
+  append();
+
+  for (const { name, acquisition, steps } of balances) {
+    const devices = steps.filter((ref) => ref.cycle !== undefined && ref.step.outputs.length > 0);
+    if (devices.length === 0) continue;
+
+    append(`### ${name}`);
+    append();
+    append(
+      '| 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |',
+    );
+    append('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+
+    for (const ref of devices) {
+      const cycle = ref.cycle!;
+      const deviceCost = acquisition.costByObject.get(ref.def.globalId);
+      const lifetimeDays =
+        cycle.lifetimeMinutes === undefined ? undefined : cycle.lifetimeMinutes / MINUTES_PER_DAY;
+      const cyclesPerDay = MINUTES_PER_DAY / cycle.periodMinutes;
+
+      for (const [objectGlobalId, perCycle] of expectedSpawns(ref.step)) {
+        // 単独で存在できない型（怪我、7.9節）は産物ではない——獲物に刺さる傷は資源に数えない。
+        if (perCycle <= 0 || codex.objects.get(objectGlobalId).boundToOwner) continue;
+        const overLifetime = lifetimeDays === undefined ? undefined : perCycle * cyclesPerDay * lifetimeDays;
+        const laborPerUnit =
+          deviceCost === undefined || overLifetime === undefined
+            ? undefined
+            : totalOf(deviceCost) / overLifetime;
+
+        append(
+          `| ${ref.def.name} | ${ref.step.name} | ${formatNumber(cycle.periodMinutes, 0)} |` +
+            ` ${codex.objectName(objectGlobalId)} ×${formatNumber(perCycle, 3)} |` +
+            ` ${formatNumber(perCycle * cyclesPerDay, 2)} |` +
+            ` ${lifetimeDays === undefined ? '—（朽ちない）' : formatNumber(lifetimeDays, 1)} |` +
+            ` ${overLifetime === undefined ? '—' : formatNumber(overLifetime, 1)} |` +
+            ` ${deviceCost === undefined ? '入手経路なし' : formatNumber(totalOf(deviceCost))} |` +
+            ` ${laborPerUnit === undefined ? '—' : formatNumber(laborPerUnit, 2)} |`,
+        );
+      }
+    }
+    append();
   }
 }
 
@@ -476,11 +678,19 @@ interface ChainRow {
   readonly coProducts: string;
   readonly prerequisites: string;
 
-  /** この土地では前提の道具が手に入らない経路か。表の末尾へ回す。 */
+  /** 前提の道具に入手経路が無い経路か。表の末尾へ回す。 */
   readonly blocked: boolean;
 
   /** 途中に所要時間0分の工程を含む経路か（時間を数えられていない、†）。 */
   readonly untimed: boolean;
+
+  /**
+   * 待ち生産を含む経路で、1日ぶんを賄うのに同時に要る設備の数。含まないならundefined。
+   *
+   * 1日ぶんに要る労働を、設備1つを寿命の間に作り直し続ける労働（＝製作労働 ÷ 寿命の日数）で
+   * 割ったもの。**待ち時間が労働へ跳ね返る場所がここ**で、周期が長いほど設備数が要る。
+   */
+  readonly deviceCount: number | undefined;
 }
 
 /**
@@ -505,7 +715,18 @@ function chainRows(
 
       const route = [ref, ...acquisition.routeOf(ref.def.globalId)];
       const rows = byProperty.get(propertyGlobalId) ?? [];
-      rows.push(buildRow(codex, acquisition, route, cost, gain, deltas, propertyGlobalId));
+      rows.push(
+        buildRow(
+          codex,
+          acquisition,
+          route,
+          cost,
+          gain,
+          deltas,
+          propertyGlobalId,
+          needs.get(propertyGlobalId)!,
+        ),
+      );
       byProperty.set(propertyGlobalId, rows);
     }
   }
@@ -524,6 +745,7 @@ function buildRow(
   gain: number,
   deltas: ReadonlyMap<number, number>,
   propertyGlobalId: number,
+  dailyNeed: number,
 ): ChainRow {
   // 経路の中で作る物は前提に数えない（自分で用意する手順が既に経路として出ているため）。
   const madeInRoute = new Set(route.flatMap((ref) => [...expectedSpawns(ref.step).keys()]));
@@ -550,13 +772,35 @@ function buildRow(
     prerequisites: [...prerequisites.values()]
       .map(
         ({ label, cost: toolCost }) =>
-          `${label}（${toolCost === undefined ? 'この土地では入手できない' : `${formatNumber(totalOf(toolCost))}分`}）`,
+          `${label}（${toolCost === undefined ? '入手経路なし' : `${formatNumber(totalOf(toolCost))}分`}）`,
       )
       .join('、'),
     blocked: [...prerequisites.values()].some(({ cost: toolCost }) => toolCost === undefined),
     // 摂取そのもの（経路の先頭）が0分なのは仕様。素材を0分で得ている場合だけが数え落とし。
-    untimed: route.slice(1).some((ref) => ref.step.durationMinutes === 0),
+    untimed: route.slice(1).some((ref) => ref.cycle === undefined && ref.step.laborMinutes === 0),
+    deviceCount: deviceCountFor(acquisition, route, (totalOf(cost) / gain) * dailyNeed),
   };
+}
+
+/**
+ * 1日ぶんの労働を賄うのに同時に要る設備の数。経路に待ち生産が無ければundefined。
+ *
+ * 設備1つが1日に生む価値は「その設備を寿命の間ずっと作り直し続ける労働」＝製作労働÷寿命の日数に
+ * 等しい（連鎖表の単位あたりの労働がこの按分で出ているため）。1日ぶんの労働をそれで割れば個数が出る。
+ */
+function deviceCountFor(
+  acquisition: Acquisition,
+  route: readonly StepRef[],
+  dailyMinutes: number,
+): number | undefined {
+  let maintenancePerDay = 0;
+  for (const ref of route) {
+    if (ref.cycle?.lifetimeMinutes === undefined) continue;
+    const deviceCost = acquisition.costByObject.get(ref.def.globalId);
+    if (deviceCost === undefined) continue;
+    maintenancePerDay += totalOf(deviceCost) / (ref.cycle.lifetimeMinutes / MINUTES_PER_DAY);
+  }
+  return maintenancePerDay === 0 ? undefined : dailyMinutes / maintenancePerDay;
 }
 
 function signed(amount: number): string {

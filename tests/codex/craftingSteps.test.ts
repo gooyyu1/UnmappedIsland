@@ -91,7 +91,9 @@ object_defs:
   it('工程は所要時間と、weightから解いた確率つきの分岐を持つ', () => {
     const [explore] = stepsOf('beach');
 
-    expect(explore.durationMinutes).toBe(15);
+    // プレイヤーが手を止めている工程なので、払う時間と経過する時間は等しい。
+    expect(explore.laborMinutes).toBe(15);
+    expect(explore.elapsedMinutes).toBe(15);
     expect(explore.hasUnresolvedReferences).toBe(false);
     expect(explore.outcomes).toEqual([
       { probability: 0.75, spawns: [{ objectGlobalId: id('coconut'), count: 2 }], deltas: [] },
@@ -117,6 +119,61 @@ object_defs:
       { kind: 'tag', tagGlobalId: codex.tagNames.getId('cutting_tool'), consumed: false },
     ]);
     expect(husk.outputs.map((output) => output.objectGlobalId)).toEqual([id('husked_coconut'), id('husk')]);
+  });
+
+  it('tick毎に減る値がrangeの端で戻る仕掛けは、周期を持つ工程になる', () => {
+    const YAML_TRAP = `
+object_defs:
+  rat: {tags: [item]}
+  snare:
+    tags: [item]
+    props:
+      catch_remaining:
+        value: 16
+        range: {min: 1, max: 16}
+        passives:
+          - add: {self: {catch_remaining: -1}}
+        on_shortfall:
+          add: {self: {catch_remaining: 16}}
+          pick:
+            - weight: 3
+            - weight: 1
+              spawn: {object: rat, into: self}
+      durability:
+        value: 960
+        range: {min: 1, max: 960}
+        passives:
+          - add: {self: {durability: -1}}
+        on_shortfall:
+          destroy: self
+`;
+    const trapCodex = new WorldCodexYamlLoader().load('trap.yaml', YAML_TRAP).build();
+    const snare = trapCodex.objects.get(trapCodex.objectNames.getId('snare'));
+    const cycles = snare.rangeCycles();
+
+    // 16 tick で1周（16 × 15分）。プレイヤーは何も払わないので、労働時間は0。
+    const [judgement, lifetime] = cycles;
+    expect(judgement.repeats).toBe(true);
+    expect(judgement.minutes).toBe(240);
+    expect(judgement.step.laborMinutes).toBe(0);
+    expect(judgement.step.elapsedMinutes).toBe(240);
+    expect(judgement.step.outcomes).toEqual([
+      {
+        probability: 0.75,
+        spawns: [],
+        deltas: [{ target: 'self', propertyGlobalId: expect.any(Number), amount: 16 }],
+      },
+      {
+        probability: 0.25,
+        spawns: [{ objectGlobalId: trapCodex.objectNames.getId('rat'), count: 1 }],
+        deltas: [{ target: 'self', propertyGlobalId: expect.any(Number), amount: 16 }],
+      },
+    ]);
+
+    // 値が戻らず自分が消える側は寿命（960 tick = 10日）。
+    expect(lifetime.repeats).toBe(false);
+    expect(lifetime.destroysSelf).toBe(true);
+    expect(lifetime.minutes).toBe(960 * 15);
   });
 
   it('レシピは素材・道具が入力、完成品が出力になる', () => {

@@ -93,6 +93,11 @@ export class RecipeDef {
     this.unlock = unlock;
   }
 
+  /** 全工程を通した所要時間（分）。工程の別は畳むので、時間も和で1つにする。 */
+  private get totalMinutes(): number {
+    return this.steps.reduce((sum, step) => sum + step.durationMinutes, 0);
+  }
+
   /** このレシピがobjectGlobalIdの型を、どこかの工程で素材か道具として要求しているか。 */
   requires(objectGlobalId: number): boolean {
     return this.steps.some((step) => step.requires(objectGlobalId));
@@ -121,7 +126,8 @@ export class RecipeDef {
         })),
       ),
       outputs: collectOutputs(outcomes),
-      durationMinutes: this.steps.reduce((sum, step) => sum + step.durationMinutes, 0),
+      laborMinutes: this.totalMinutes,
+      elapsedMinutes: this.totalMinutes,
       outcomes,
       hasUnresolvedReferences: false,
     };

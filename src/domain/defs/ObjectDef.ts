@@ -4,6 +4,7 @@ import type { ActionDef } from './ActionDef';
 import type { ActiveEffect } from './ActiveEffect';
 import type { CombinationDef } from './CombinationDef';
 import type { CraftingStep } from './CraftingStep';
+import { collectOutputs } from './CraftingStep';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { actionRef, combinationRef, propertyRef, slotRef, text } from './Description';
 import type { InteractionDef } from './InteractionDef';
@@ -16,6 +17,34 @@ import type { StaticValueResolver } from './ReferenceRoot';
 import type { Requirement } from './Requirement';
 import type { SlotDef } from './SlotDef';
 import type { StackOrderDef } from './StackOrderDef';
+
+/** 1 tickのゲーム内時間（分）。tick毎の増減から周期を分へ直すのに使う。 */
+const MINUTES_PER_TICK = 15;
+
+/**
+ * tick毎に動く値がrangeの端へ届くまでの周期と、そこで起こること（ObjectDef.rangeCycles参照）。
+ *
+ * repeatsなら端で値が戻って繰り返す（罠は4時間ごとに獲物を判定する）。destroysSelfなら端で
+ * 自分が消えるので、minutesはその型の寿命そのものになる。
+ */
+export interface RangeCycle {
+  readonly propertyGlobalId: number;
+
+  /**
+   * 端へ届くまでの時間（分）。**条件つきの増減（8.2節）が最小限しか成立しない場合**の値——
+   * 罠の耐久は地面にある間ずっと減るが、獲物を抱えている間だけの上乗せは常時ではない。
+   */
+  readonly minutes: number;
+
+  /** 条件つきの増減がすべて同時に成立した場合の時間（分）。条件が1つ以下ならminutesと等しい。 */
+  readonly shortestMinutes: number;
+
+  readonly repeats: boolean;
+  readonly destroysSelf: boolean;
+
+  /** この周期を1つの工程として見たもの。何も生まない周期では出力が空になる。 */
+  readonly step: CraftingStep;
+}
 
 /**
  * 型定義（`object_defs` の1エントリ、4節）。ロード完了後は不変として扱う。
@@ -263,6 +292,96 @@ export class ObjectDef {
       steps.push(interaction.craftingStep(this.globalId, resolve));
     for (const recipe of this.recipes) steps.push(recipe.craftingStep(this.globalId));
     return steps;
+  }
+
+  /**
+   * **tick毎に動く値がrangeの端へ届くまでの周期**と、そこで起こること（RangeCycle参照）。
+   * 端で値が戻るものは繰り返す仕掛け（罠の判定、TrapSystem.md 2節）、端で自分が消えるものは
+   * 寿命（罠の朽ち、DurabilitySystem.md 2節）。
+   *
+   * 段で切り替わる増減（8.2節）は数えない——段ごとに周期が変わるものは、1つの周期で言い表せない。
+   */
+  rangeCycles(outer?: StaticValueResolver): readonly RangeCycle[] {
+    let unresolved = false;
+    const resolve: StaticValueResolver = (root, propertyGlobalId) => {
+      const value = this.staticResolver(outer)(root, propertyGlobalId);
+      if (value === undefined) unresolved = true;
+      return value;
+    };
+    const ancestorValue = (propertyGlobalId: number): number | undefined =>
+      outer?.('ancestor', propertyGlobalId);
+
+    const cycles: RangeCycle[] = [];
+    for (const propertyDef of this.propertyDefs) {
+      const { slowest, fastest } = this.tickAmountsOf(propertyDef.globalId);
+      const ticks = propertyDef.ticksToRangeEnd(slowest, ancestorValue);
+      const shortestTicks = propertyDef.ticksToRangeEnd(fastest, ancestorValue);
+      if (ticks === undefined || shortestTicks === undefined) continue;
+
+      for (const readout of propertyDef.rangeEventReadouts(resolve)) {
+        if (readout.label === (slowest < 0 ? 'on_overflow' : 'on_shortfall')) continue;
+
+        // 値が戻るなら、次の発火までは戻った量ぶん——初回だけが初期値からの距離になる。
+        const repeats = readout.returnedToSelf > 0;
+        const period = repeats ? readout.returnedToSelf / Math.abs(slowest) : ticks;
+        cycles.push({
+          propertyGlobalId: propertyDef.globalId,
+          minutes: period * MINUTES_PER_TICK,
+          shortestMinutes:
+            (repeats ? readout.returnedToSelf / Math.abs(fastest) : shortestTicks) * MINUTES_PER_TICK,
+          repeats,
+          destroysSelf: readout.destroysSelf,
+          step: {
+            kind: 'periodic',
+            name: `${propertyDef.name}.${readout.label}`,
+            ownerGlobalId: this.globalId,
+            inputs: [{ kind: 'object', objectGlobalId: this.globalId, consumed: readout.destroysSelf }],
+            outputs: collectOutputs(readout.outcomes),
+            // プレイヤーは何もしないので払う時間は無く、経過するだけ。
+            laborMinutes: 0,
+            elapsedMinutes: period * MINUTES_PER_TICK,
+            outcomes: readout.outcomes,
+            hasUnresolvedReferences: unresolved,
+          },
+        });
+      }
+    }
+    return cycles;
+  }
+
+  /**
+   * このプロパティが、自分のtick毎の持続効果でどれだけ動くか（段で切り替わるものは除く）。
+   *
+   * **条件つきの増減（8.2節）は、同時に成立するとは限らない。** どれが重なるかは定義からは
+   * 決まらないので、最も遅い場合（条件つきのうち最小の1つだけが効く）と最も速い場合（全部が
+   * 重なる）の両方を返す。罠の耐久がこれで、地面にある間の-1と獲物を抱えている間の-10は
+   * 足しっぱなしにすると寿命が1/11になる。
+   */
+  private tickAmountsOf(propertyGlobalId: number): { slowest: number; fastest: number } {
+    let unconditional = 0;
+    const conditional: number[] = [];
+    for (const delta of this.passives.tickDeltas()) {
+      if (delta.target !== 'self' || delta.propertyGlobalId !== propertyGlobalId) continue;
+      if (delta.gate.stage !== undefined) continue;
+      if (delta.gate.conditional) conditional.push(delta.amount);
+      else unconditional += delta.amount;
+    }
+
+    const fastest = unconditional + conditional.reduce((sum, amount) => sum + amount, 0);
+    if (unconditional !== 0 || conditional.length === 0) return { slowest: unconditional, fastest };
+
+    // 常時効くものが無いなら、同じ向きの条件つきのうち最も小さい1つだけが効く場合が最も遅い。
+    const sameDirection = conditional.filter((amount) => amount * fastest > 0);
+    const slowest = sameDirection.reduce(
+      (best, amount) => (Math.abs(amount) < Math.abs(best) ? amount : best),
+      sameDirection[0] ?? 0,
+    );
+    return { slowest, fastest };
+  }
+
+  /** この型が宣言しているプロパティの、定義だけから読める値（StaticValueResolver参照）。 */
+  staticValueOf(propertyGlobalId: number, outer?: StaticValueResolver): number | undefined {
+    return this.staticResolver(outer)('self', propertyGlobalId);
   }
 
   /**
