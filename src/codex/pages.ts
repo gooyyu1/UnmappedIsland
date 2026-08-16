@@ -22,7 +22,7 @@ export function renderObjectListPage(view: CodexView): string {
     `<p class="muted" title="${escapeHtml(view.source.files.join(', '))}">` +
     `${defs.length}件のobject_def（${view.source.files.length}ファイル）／` +
     `<a href="#/by-tag">タグ別の一覧</a>／<a href="#/tags">タグ一覧</a>／` +
-    `<a href="#/network">クラフトネットワーク</a></p>` +
+    `<a href="#/network">クラフトネットワーク</a>／<a href="#/balance">収支</a></p>` +
     `<p><input id="object-filter" type="search" placeholder="名前で絞り込む" autocomplete="off"></p>` +
     `<div class="object-grid">${cards}</div>` +
     `<p class="muted" id="object-filter-empty" hidden>該当するオブジェクトがありません。</p>`

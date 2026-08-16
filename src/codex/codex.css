@@ -513,3 +513,113 @@ a.ref:hover {
   stroke: var(--link);
   stroke-width: 2.5;
 }
+
+/* 収支のページ（balancePage）。狭い画面で読めることを優先し、連鎖は表にせず開閉する行にする。 */
+.balance-index {
+  margin: 0.8rem 0 1.2rem;
+}
+
+.balance-index p {
+  margin: 0.3rem 0;
+}
+
+.balance-method {
+  margin: 0.8rem 0;
+}
+
+.balance-method ul {
+  margin: 0.4rem 0;
+  padding-left: 1.2rem;
+}
+
+ol.routes {
+  margin: 0.4rem 0 1rem;
+  padding-left: 0;
+  list-style: none;
+}
+
+.route {
+  border-bottom: 1px solid var(--border);
+}
+
+/* 前提が揃わない経路。数字は出すが、辿れないことが一目で分かるように薄くする。 */
+.route-blocked {
+  opacity: 0.55;
+}
+
+.route > details > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.2rem;
+  cursor: pointer;
+}
+
+/* 経路は絵の列で出す（識別子を並べると1行で90字を超える）。 */
+.route-icons {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.route-icons .ref-art {
+  width: 1.9em;
+  height: 1.9em;
+  vertical-align: middle;
+}
+
+.route-arrow {
+  color: var(--muted);
+  padding: 0 0.1em;
+}
+
+.route-daily {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+dl.route-detail {
+  margin: 0.2rem 0 0.7rem;
+  padding-left: 0.4rem;
+  font-size: 0.9rem;
+}
+
+dl.route-detail dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 0.4rem;
+}
+
+dl.route-detail dd {
+  margin: 0.1rem 0 0;
+}
+
+.route-steps code {
+  font-size: 0.85em;
+}
+
+/* 表は横に溢れさせて、ページ自体は横スクロールさせない。 */
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table-scroll table {
+  min-width: 100%;
+}
+
+/* 数値が並ぶ表は折り返さない（狭い画面で列が潰れて縦書きになるため、溢れさせて横に送る）。 */
+.table-scroll.nowrap table {
+  width: max-content;
+}
+
+.table-scroll.nowrap th,
+.table-scroll.nowrap td {
+  white-space: nowrap;
+}
+
+.warn {
+  color: var(--warn-fg);
+}
