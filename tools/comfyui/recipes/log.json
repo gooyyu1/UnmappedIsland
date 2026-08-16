@@ -12,17 +12,23 @@
     "",
     "**木口を製材の切り口にしない。** 島にあるのは石斧だけなので、面は斧で叩き割った跡にする。",
     "",
-    "段は400。太い枝と同じ幅まで使う。"
+    "**奥へ細くなるのは遠近であって先細りではない。** 太い枝と分ける軸がそこなので、編集の指示で",
+    "「perspective であって tapering ではない」と言い分ける。",
+    "",
+    "段は400、対角線へ倒す（diagonal）。20kgの丸太が1kgの太い枝よりカードの上で小さく見えるのを",
+    "直すため——太い枝は斜めに寝ているぶん√2倍まで伸びている（card_art.py の align_to_diagonal）。",
+    "下絵の時点で対角線へ寝かせてあるので、ここでの回転はわずかで、手前と奥の関係は崩れない。"
   ],
   "output": "src/assets/objects/log.png",
   "sketch": "log",
   "edit": {
-    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: one log lying on its side, seen from the side, running straight across the page from left to right in exactly the same place at the same length and the same thickness. Paint it as one solid round log of dry hardwood, exactly the same thickness from one end to the other, with rough furrowed brown bark wrapping right around its curved side. At the right hand end show the pale cut face of the wood, roughly chipped and split where an axe hacked through it. The log does not taper, it has no knots, no side branches, no twigs, no leaves and no splintered ends. Nothing grows on it and nothing lies beside it. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow on the ground beneath the log. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Warm brown bark, dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: one log lying on the ground and running away from us corner to corner across the page, its near end down at the lower left and its far end up at the upper right, in exactly the same place at the same angle and the same length. Paint it as one solid round log of dry hardwood with rough furrowed brown bark wrapping right around its curved side. Draw it in perspective, so that the near end at the lower left is large and close to us and the log grows steadily smaller as it recedes towards the upper right: the log itself is the same thickness all the way along and does not taper, it only looks narrower at the far end because that end is further away. At the near lower left end show the pale cut face of the wood turned towards us, roughly chipped and split where an axe hacked through it. The far end is turned away, so no cut face shows there. The log has no knots, no side branches, no twigs, no leaves and no splintered ends. Nothing grows on it and nothing lies beside it. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow on the ground beneath the log, wider under the near end. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Warm brown bark, dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
     "seed": 1
   },
   "cardArt": {
     "size": "400",
     "mode": "background",
+    "diagonal": true,
     "tolerance": 40,
     "edge": 4,
     "shadow": 1,

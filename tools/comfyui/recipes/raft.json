@@ -10,12 +10,19 @@
     "**本数を編集の指示でも言う。** 下絵に6本置いてあっても、指示側で数を言わないと丸太が",
     "束ねられて本数が変わる。",
     "",
+    "**設置物なので、真上からではなく横に近い斜めから見下ろす。** 手前の丸太が奥の丸太を隠す",
+    "角度にして、本数は左右へ並ぶ木口で数えさせる。",
+    "",
+    "**帆を白くしない。** 白い布にすると紙と同じ明るさになり、card_art.py の「紙より暗ければ物」に",
+    "掛からずに消える（woven_basket の生成りと同じ制約）。島にあるのは植物繊維だけなので、",
+    "編んだ繊維の、日に灼けたくすんだ色として頼む。",
+    "",
     "段は400。丸太が並ぶ幅が見せ場なので、カード幅いっぱいまで使う。"
   ],
   "output": "src/assets/objects/raft.png",
   "sketch": "raft",
   "edit": {
-    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: a primitive raft of logs lying flat on the ground seen from above and a little to one side, with every log and every crosspiece in exactly the same place at the same angle and the same length. Paint exactly six logs of the same length laid side by side in one row, touching each other, each one a straight round log with rough furrowed brown bark, and show the round cut end of each of the six logs in a line along the near edge so that all six can be counted. Across the logs lay two straight wooden crosspieces, one near each end, and at every place where a crosspiece crosses a log wrap several tight turns of rough twisted plant fibre cord, warm tan and mid brown with its strands visible, binding the crosspiece down to the log. There is no sail, no mast, no oar, no cargo and no water. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow on the ground beneath the raft. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Dry matte surfaces, flat even lighting. No text, no letters, no numbers, no signature.",
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: a primitive log raft standing on the ground, seen from close to the side and only a little above, so that we look across the deck rather than down onto it, with every log, the mast and the sail in exactly the same place at the same angle and the same size. Paint exactly six logs of the same length laid side by side to make the deck, each one a straight round log with rough furrowed brown bark, the nearest logs overlapping the ones behind them, and show the round cut end of each of the six logs stepping away in a line at the left edge and again at the right edge so that all six can be counted. Across the logs lay two straight wooden crosspieces, one towards each end, and at every place where a crosspiece crosses a log wrap several tight turns of rough twisted plant fibre cord, warm tan and mid brown with its strands visible, binding the crosspiece down to the log. In the middle of the deck a rough wooden mast stands upright, with a straight wooden yard lashed across it near the top and one broad square sail hanging from the yard, bellying a little in the wind. The sail is a coarse mat woven from plant fibre, dull weathered tan and dusty olive brown with the weave showing, clearly darker than the white page: it is not white, not cream and not pale. Two fibre stays run from the top of the mast down to the near corners of the raft. There is no water, no boat hull, no cargo and no oar. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow on the ground beneath the raft. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Dry matte surfaces, flat even lighting. No text, no letters, no numbers, no signature.",
     "seed": 1
   },
   "cardArt": {

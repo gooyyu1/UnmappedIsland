@@ -611,8 +611,9 @@
       "**丸太が6本数えられること。** 自重120kg＝丸太（log）6本ぶんなので、本数が見えないと",
       "レシピ（log 6本＋rope 4本）と繋がらない。",
       "",
-      "**海に浮かべさせない。** 積荷も帆も櫂も描かせない——積荷はカードの上に別に並ぶし、",
-      "帆は仕組みとして無い（進むのは風・海流・積載だけ）。"
+      "**海に浮かべさせない。** 積荷も櫂も描かせない——積荷はカードの上に別に並ぶ。",
+      "帆は描く。進みを決める sail_speed が風向きで±する仕組み（voyage.yaml）なので、",
+      "帆が無いほうが辻褄が合わない。"
     ],
     "positive": "exactly one small raft made of logs alone on an empty white page, exactly six straight logs of the same length laid side by side in one flat row so that every log can be counted, the round cut ends of all six logs in a line along the near edge, two straight crosspieces laid across the logs near each end, thick twisted plant fibre rope wound in tight turns around every place where a crosspiece crosses a log, seen from above and a little to one side, rough brown bark on the logs, tan brown rope, matte dry surface, it is small and lies flat in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "sail, mast, rigging, flag, oar, paddle, rudder, tiller, anchor, cabin, hut, shelter, barrel, crate, cargo, luggage, supplies, water, sea, ocean, waves, foam, river, lake, pond, shore, beach, sand, floating, afloat, reflection in water, boat, canoe, kayak, dinghy, ship, ferry, pontoon, jetty, dock, pier, bridge, bamboo, reeds, planks, sawn boards, floorboards, deck planking, pallet, ladder, fence, gate, two rafts, three rafts, several rafts, pair, group, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"

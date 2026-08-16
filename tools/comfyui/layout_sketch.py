@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 
 from PIL import Image, ImageDraw
 
@@ -27,6 +28,7 @@ STONE = (146, 146, 146)
 STONE_DARK = (104, 104, 104)
 CORD = (163, 124, 78)
 CORD_DARK = (120, 88, 52)
+SAIL = (198, 186, 160)
 
 
 def draw_branch(
@@ -194,13 +196,63 @@ def draw_hafted(
 
 
 def draw_log(draw: ImageDraw.ImageDraw) -> None:
-    """丸太。太さの変わらない胴を横倒しにし、片端へ木口を向ける。
+    """丸太。左下を手前、右上を奥にして対角線へ寝かせ、手前の端へ木口を向ける。
 
     **姿勢と太さは生成では決まらない。** 横枠で出せば前後に極端な遠近が付いて胴が寸詰まりになり、
-    縦枠にすれば立った切り株になった（20枚で0。prompts/objects.json の log 参照）。太い枝と
+    縦枠にすれば立った切り株になった（26枚で0。prompts/objects.json の log 参照）。太い枝と
     分かれるのは「先細りが無いこと」と「木口」の2点だけなので、その2点をここで決める。
+
+    **奥へ向かって細くなるのは遠近であって先細りではない。** 太い枝と分ける軸を潰さないよう、
+    編集の指示でもそう言う（recipes/log.json）。対角線に沿わせるのは槍と同じ理由で、長さが
+    見せ場だから（card_art.py の align_to_diagonal）。
     """
-    draw_branch(draw, (200, 470), (1.0, 0.0), 760, 190)
+    near, far = (330.0, 690.0), (900.0, 250.0)
+    near_radius, far_radius = 150.0, 80.0
+    span = ((far[0] - near[0]) ** 2 + (far[1] - near[1]) ** 2) ** 0.5
+    axis = ((far[0] - near[0]) / span, (far[1] - near[1]) / span)
+    side = (-axis[1], axis[0])
+
+    def offset(point: tuple[float, float], along: float, across: float) -> tuple[float, float]:
+        return (
+            point[0] + axis[0] * along + side[0] * across,
+            point[1] + axis[1] * along + side[1] * across,
+        )
+
+    # 奥の端。面は見えないので丸く閉じる。
+    draw.ellipse(
+        [far[0] - far_radius, far[1] - far_radius, far[0] + far_radius, far[1] + far_radius],
+        fill=BARK_DARK,
+    )
+    draw.polygon(
+        [
+            offset(near, 0, near_radius),
+            offset(far, 0, far_radius),
+            offset(far, 0, -far_radius),
+            offset(near, 0, -near_radius),
+        ],
+        fill=BARK,
+    )
+    # 陰は手前側（右下）へ。丸みが無いと、胴が板に見える。
+    draw.polygon(
+        [
+            offset(near, 0, near_radius),
+            offset(far, 0, far_radius),
+            offset(far, 0, far_radius * 0.45),
+            offset(near, 0, near_radius * 0.45),
+        ],
+        fill=BARK_DARK,
+    )
+    # 手前の木口。軸に直交する楕円で、短径は見込みのぶんだけ潰す。
+    for scale, fill, outline in ((1.0, FACE, OUTLINE), (0.62, None, FACE_LINE), (0.3, None, FACE_LINE)):
+        rim = [
+            offset(
+                near,
+                -math.sin(step / 48 * math.tau) * near_radius * 0.42 * scale,
+                math.cos(step / 48 * math.tau) * near_radius * scale,
+            )
+            for step in range(48)
+        ]
+        draw.polygon(rim, fill=fill, outline=outline, width=4)
 
 
 def draw_raft(draw: ImageDraw.ImageDraw) -> None:
@@ -210,26 +262,53 @@ def draw_raft(draw: ImageDraw.ImageDraw) -> None:
     桁も縄も出ない（6枚とも。prompts/objects.json の raft 参照）。手前へ木口を向けて並べ、
     桁と縄の位置をここで決める。
     """
-    left, right = 150, 1010
-    # 丸太は間を空けずに並べる。隙間を空けると、下の紙が透けて筏が桟に見える。
-    spacing, thickness = 84, 92
-    rows = [448 + (index - 2.5) * spacing for index in range(6)]
-    for y in rows:
-        # 木口は手前（右）。draw_branch は伸びた先へ木口を置き、影を進行方向の右手（＝下）へ敷く。
-        draw_branch(draw, (left, y), (1.0, 0.0), right - left, thickness)
-        # 奥の端。切り口が見えない側なので、断ち切りに見えないよう影だけを置く。
-        draw.line([(left, y - thickness / 2), (left, y + thickness / 2)], fill=OUTLINE, width=8)
-    top, bottom = rows[0] - thickness * 0.6, rows[-1] + thickness * 0.6
-    for girder_x in (330, 830):
-        draw.line([(girder_x, top), (girder_x, bottom)], fill=BARK_DARK, width=40)
-        # 桁と丸太が交わるところの縄。丸太を跨いで巻きつく向きに置く。
-        for y in rows:
-            for offset in (-18, 18):
-                draw.line(
-                    [(girder_x - 38, y + offset), (girder_x + 38, y + offset)],
-                    fill=CORD,
-                    width=11,
-                )
+    middle = 576
+    # 手前ほど下・太く・長い。奥から順に描くので、手前の丸太が奥の丸太を隠す。
+    logs = []
+    for index in range(6):
+        depth = index / 5
+        logs.append((545 + depth * 180, 300 + depth * 78, 32 + depth * 24))
+    for y, half, thickness in logs:
+        draw.line([(middle - half, y), (middle + half, y)], fill=BARK, width=round(thickness))
+        draw.line(
+            [(middle - half, y + thickness * 0.3), (middle + half, y + thickness * 0.3)],
+            fill=BARK_DARK,
+            width=round(thickness / 3),
+        )
+        # 両端の木口。6本を数えられるように、左右へ扇状に並べる。
+        radius = thickness / 2
+        for x in (middle - half, middle + half):
+            draw.ellipse(
+                [x - radius * 0.55, y - radius, x + radius * 0.55, y + radius],
+                fill=FACE,
+                outline=OUTLINE,
+                width=3,
+            )
+    # 桁。手前へ向かって少し開く。丸太と同じ色では陰に紛れるので、縁を付けて浮かせる。
+    for girder in (-215, 215):
+        ends = [
+            (middle + girder * 0.84, logs[0][0] - 24),
+            (middle + girder, logs[-1][0] + 30),
+        ]
+        draw.line(ends, fill=OUTLINE, width=34)
+        draw.line(ends, fill=BARK, width=26)
+        for index, (y, _, thickness) in enumerate(logs):
+            x = middle + girder * (0.84 + 0.16 * index / 5)
+            draw.line([(x - 34, y), (x + 34, y)], fill=CORD, width=round(thickness * 0.42))
+
+    # 帆柱。甲板の中ほどに立てる。帆の下端との間を空けないと、帆が甲板に貼り付いて見える。
+    draw.line([(middle, logs[3][0]), (middle, 92)], fill=BARK, width=26)
+    # 支索。帆柱の頭から手前の隅へ。
+    for corner in (logs[-1][1], -logs[-1][1]):
+        draw.line([(middle, 106), (middle + corner, logs[-1][0])], fill=CORD, width=9)
+    # 帆桁と、風をはらんだ横帆。
+    draw.line([(392, 168), (760, 168)], fill=BARK, width=16)
+    draw.polygon(
+        [(406, 176), (746, 176), (776, 300), (762, 412), (576, 442), (390, 412), (376, 300)],
+        fill=SAIL,
+        outline=OUTLINE,
+        width=4,
+    )
 
 
 def draw_axe(draw: ImageDraw.ImageDraw) -> None:
