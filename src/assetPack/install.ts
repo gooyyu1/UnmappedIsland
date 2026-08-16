@@ -4,13 +4,12 @@ import type { AssetPack } from './AssetPack';
 import { fetchAssetPack } from './AssetPack';
 
 /**
- * 読み込むアセットパックのURL（AssetPack.md）。当面は固定の1つだけで、切り替えの入口は無い。
- * 空文字なら同梱ぶんだけで動く。
+ * サンプルアセットパックのURL（AssetPack.md）。読めるパックは当面この1つだけ。
  *
  * **ページからの相対で書く。** 公開ビルドは相対ベース（`--base=./`）で、ゲームは`/game/`、
  * ビューアは`/codex/`の下に出る。先頭に`/`を付けるとドメイン直下を見に行って取得できない。
  */
-export const ASSET_PACK_URL: string = 'sample-pack.zip';
+const SAMPLE_PACK_URL = 'sample-pack.zip';
 
 /**
  * インストール済みのアセットパック。
@@ -36,12 +35,21 @@ export function installAssetPack(pack: AssetPack): void {
 }
 
 /**
- * 設定されたURLからアセットパックを取得して入れる。URLが空なら何もしない。
+ * サンプルアセットパックを取得して入れる。読むかどうかを決めるのは呼び出し側。
  *
  * 失敗はそのまま投げる——パックが入らないまま起動すると、あるはずの物が無い世界で遊ぶことになり、
  * 定義の欠落と同じく黙って進めてよい状態ではない。
  */
-export async function installConfiguredAssetPack(): Promise<void> {
-  if (ASSET_PACK_URL === '') return;
-  installAssetPack(await fetchAssetPack(ASSET_PACK_URL));
+export async function installSampleAssetPack(): Promise<void> {
+  installAssetPack(await fetchAssetPack(SAMPLE_PACK_URL));
+}
+
+/**
+ * 今入っているものが、設定の言う通りか。
+ *
+ * 食い違っているなら、設定を反映する手はページを読み込み直すことしかない——絵の在庫表もWorldCodexも
+ * 起動時に1回だけ組み立てて以後不変（AssetPack.md 4節）だから。
+ */
+export function assetPackMatches(loadsAssetPack: boolean): boolean {
+  return (installed !== undefined) === loadsAssetPack;
 }
