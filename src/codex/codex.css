@@ -623,3 +623,46 @@ dl.route-detail dd {
 .warn {
   color: var(--warn-fg);
 }
+
+/* 1日を賄う献立。需要ごとに経路を選び替えると合計が動く。 */
+.menu {
+  margin: 0.6rem 0 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.menu-total {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+.menu-choices {
+  display: grid;
+  gap: 0.35rem;
+}
+
+/* 経路の名前は長いので、選択肢の幅で横幅が決まらないようにする。 */
+.menu-choice {
+  display: grid;
+  grid-template-columns: minmax(6rem, auto) minmax(0, 1fr);
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.menu-choice select {
+  max-width: 100%;
+  min-width: 0;
+}
+
+details.uncounted {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+}
+
+details.uncounted > summary {
+  color: var(--muted);
+  cursor: pointer;
+}

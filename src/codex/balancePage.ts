@@ -1,5 +1,5 @@
-import type { BalanceTables, ChainRoute, NamedAmount, PlaceBalance } from './balanceTables';
-import { buildBalanceTables, MINUTES_PER_DAY, TICKS_PER_DAY, WHOLE_ISLAND } from './balanceTables';
+import type { BalanceTables, ChainRoute, NamedAmount, PlaceBalance, PropertyRoute } from './balanceTables';
+import { buildBalanceTables, menuFor, MINUTES_PER_DAY, TICKS_PER_DAY, WHOLE_ISLAND } from './balanceTables';
 import type { CodexView } from './CodexView';
 import { escapeHtml, inlineArtHtml } from './CodexView';
 
@@ -15,8 +15,15 @@ import { escapeHtml, inlineArtHtml } from './CodexView';
 /** 1日の必要量を取る代表キャラクタ（docs/world/Characters.md）。 */
 const SAMPLE_CHARACTER = 'medic';
 
+/**
+ * 最後に描いた表。献立の選び替え（wireBalanceMenu）が、描き直さずに合計だけ計算し直すために持つ。
+ * 一覧の絞り込み（wireObjectFilter）と同じ形。
+ */
+let lastTables: BalanceTables | undefined;
+
 export function renderBalancePage(view: CodexView): string {
   const tables = buildBalanceTables(view.codex, SAMPLE_CHARACTER);
+  lastTables = tables;
 
   return (
     `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
@@ -103,23 +110,99 @@ function chainsHtml(view: CodexView, tables: BalanceTables): string {
 
 function placeHtml(view: CodexView, place: PlaceBalance): string {
   const properties = place.properties
-    .map(
-      (chains) =>
+    .map((chains) => {
+      const counted = chains.routes.filter((entry) => !entry.route.untimed);
+      const uncounted = chains.routes.filter((entry) => entry.route.untimed);
+      if (counted.length === 0 && uncounted.length === 0) return '';
+
+      return (
         `<h4>${escapeHtml(chains.propertyName)}` +
-        `<span class="muted"> 1日 ${formatNumber(chains.dailyNeed, 0)}</span></h4>` +
-        `<ol class="routes">` +
-        chains.routes.map((route) => routeHtml(view, route, chains.dailyNeed)).join('') +
-        `</ol>`,
-    )
+        `<span class="muted"> 1日 ${formatNumber(chains.dailyNeed, 0)}` +
+        `${chains.lethal ? '・尽きると死ぬ' : ''}` +
+        `${chains.suppliedByNames.length === 0 ? '' : `／${escapeHtml(chains.suppliedByNames.join('・'))}で埋まる`}` +
+        `</span></h4>` +
+        `<ol class="routes">${counted.map((entry) => routeHtml(view, entry)).join('')}</ol>` +
+        uncountedHtml(view, uncounted)
+      );
+    })
     .join('');
 
-  return `<h3 id="${balanceSectionId(place.name)}">${escapeHtml(placeLabel(view, place.name))}</h3>${properties}`;
+  return (
+    `<h3 id="${balanceSectionId(place.name)}">${escapeHtml(placeLabel(view, place.name))}</h3>` +
+    menuHtml(view, place) +
+    properties
+  );
 }
 
-function routeHtml(view: CodexView, route: ChainRoute, dailyNeed: number): string {
-  const daily = route.perUnitMinutes * dailyNeed;
-  const share = (daily * 100) / MINUTES_PER_DAY;
+/**
+ * 時間を数えられない経路。**既定では畳む**——0分の行を同じ並びに置くと、注記を読まない限り
+ * 最安の手段に見える（雨で水が溜まるのは工程ではないので、数えられていないだけ）。
+ */
+function uncountedHtml(view: CodexView, entries: readonly PropertyRoute[]): string {
+  if (entries.length === 0) return '';
+  return (
+    `<details class="uncounted"><summary>時間を数えられない経路 ${entries.length}件</summary>` +
+    `<ol class="routes">${entries.map((entry) => routeHtml(view, entry)).join('')}</ol>` +
+    `</details>`
+  );
+}
 
+/**
+ * 1日を賄う献立。既定は貪欲解で、需要ごとに経路を選び替えると合計が動く（wireBalanceMenu）。
+ * 合算はブラウザ側で行うが、単位あたりの労働も期待値も balanceTables が出した値をそのまま使う。
+ */
+function menuHtml(view: CodexView, place: PlaceBalance): string {
+  if (place.properties.length === 0) return '';
+
+  const selects = place.properties
+    .map((chains) => {
+      const preferred = place.menu.chosen.get(chains.propertyGlobalId);
+      const options = chains.routes
+        .filter((entry) => !entry.route.untimed && !entry.route.blocked)
+        .map((entry, index) => {
+          const selected =
+            preferred === undefined
+              ? index === 0
+                ? ' selected'
+                : ''
+              : entry.route === preferred
+                ? ' selected'
+                : '';
+          return (
+            `<option value="${index}"${selected}>` +
+            `${escapeHtml(routeText(view, entry.route))}（${formatNumber(entry.perUnitMinutes, 2)}分/単位）` +
+            `</option>`
+          );
+        })
+        .join('');
+      if (options === '') return '';
+      return (
+        `<label class="menu-choice"><span>${escapeHtml(chains.propertyName)}</span>` +
+        `<select data-menu-property="${escapeHtml(chains.propertyName)}">${options}</select></label>`
+      );
+    })
+    .join('');
+
+  return (
+    `<div class="menu" data-menu-place="${escapeHtml(place.name)}">` +
+    `<p class="menu-total">1日を賄う最小労働: ` +
+    `<b data-menu-total>${formatNumber(place.menu.totalMinutes, 0)}</b> 分` +
+    `<span class="muted">（1440分の <span data-menu-share>` +
+    `${formatNumber((place.menu.totalMinutes * 100) / MINUTES_PER_DAY, 1)}</span>%）</span></p>` +
+    (place.menu.unmet.length === 0
+      ? ''
+      : `<p class="warn">賄えない値: ${escapeHtml(place.menu.unmet.join('、'))}</p>`) +
+    `<div class="menu-choices">${selects}</div>` +
+    `</div>`
+  );
+}
+
+function routeText(view: CodexView, route: ChainRoute): string {
+  return route.steps.map((step) => view.objectLabel(step.objectName)).join(' › ');
+}
+
+function routeHtml(view: CodexView, entry: PropertyRoute): string {
+  const { route } = entry;
   const icons = route.steps
     .map((step) => {
       const art = inlineArtHtml(step.objectName);
@@ -132,15 +215,15 @@ function routeHtml(view: CodexView, route: ChainRoute, dailyNeed: number): strin
   return (
     `<li class="route${route.blocked ? ' route-blocked' : ''}"><details><summary>` +
     `<span class="route-icons">${icons}</span>` +
-    `<span class="route-daily">${formatNumber(daily, 0)}分${route.untimed ? ' †' : ''}` +
-    `<span class="muted"> / 日 ${formatNumber(share, 0)}%</span></span>` +
+    `<span class="route-daily">${formatNumber(entry.dailyMinutes, 0)}分` +
+    `<span class="muted"> / 日 ${formatNumber(entry.dailyShare, 0)}%</span></span>` +
     `</summary>` +
     `<dl class="route-detail">` +
-    `<dt>1単位あたり</dt><dd>${formatNumber(route.perUnitMinutes, 2)}分` +
-    `<span class="muted">（探索 ${formatNumber(route.exploreMinutes, 2)} ／ ` +
-    `加工 ${formatNumber(route.craftMinutes, 2)}）</span></dd>` +
-    (route.deviceCount === undefined ? '' : `<dt>設備数</dt><dd>${formatNumber(route.deviceCount, 1)}</dd>`) +
-    `<dt>同時に返す値</dt><dd>${amountListHtml(route.coProducts)}</dd>` +
+    `<dt>1単位あたり</dt><dd>${formatNumber(entry.perUnitMinutes, 2)}分` +
+    `<span class="muted">（探索 ${formatNumber(route.exploreMinutes / entry.gain, 2)} ／ ` +
+    `それ以外 ${formatNumber(route.craftMinutes / entry.gain, 2)}）</span></dd>` +
+    (entry.deviceCount === undefined ? '' : `<dt>設備数</dt><dd>${formatNumber(entry.deviceCount, 1)}</dd>`) +
+    `<dt>1回で返る値</dt><dd>${amountListHtml(route.deltas)}</dd>` +
     `<dt>前提</dt><dd>${prerequisitesHtml(view, route)}</dd>` +
     `<dt>工程</dt><dd class="route-steps">` +
     route.steps
@@ -290,4 +373,40 @@ function formatNumber(value: number, digits = 1): string {
 
 function signed(amount: number): string {
   return `${amount >= 0 ? '+' : ''}${formatNumber(amount, 2)}`;
+}
+
+/**
+ * 献立の選び替え。合計の計算は balanceTables の menuFor に委ね、ここは選択を集めて表示を差し替える
+ * だけにする（同じ数字を2箇所で計算しない）。
+ */
+export function wireBalanceMenu(): void {
+  const tables = lastTables;
+  if (tables === undefined) return;
+
+  for (const menu of document.querySelectorAll<HTMLElement>('[data-menu-place]')) {
+    const place = tables.places.find((candidate) => candidate.name === menu.dataset.menuPlace);
+    if (place === undefined) continue;
+
+    const selects = [...menu.querySelectorAll<HTMLSelectElement>('select[data-menu-property]')];
+    const update = (): void => {
+      const chosen = new Map<number, ChainRoute>();
+      for (const select of selects) {
+        const requirement = tables.requirements.find((r) => r.name === select.dataset.menuProperty);
+        const chains = place.properties.find((c) => c.propertyName === select.dataset.menuProperty);
+        if (requirement === undefined || chains === undefined) continue;
+
+        const usable = chains.routes.filter((entry) => !entry.route.untimed && !entry.route.blocked);
+        const entry = usable[Number(select.value)];
+        if (entry !== undefined) chosen.set(requirement.propertyGlobalId, entry.route);
+      }
+
+      const result = menuFor(tables.requirements, chosen);
+      const total = menu.querySelector<HTMLElement>('[data-menu-total]');
+      const share = menu.querySelector<HTMLElement>('[data-menu-share]');
+      if (total !== null) total.textContent = formatNumber(result.totalMinutes, 0);
+      if (share !== null) share.textContent = formatNumber((result.totalMinutes * 100) / MINUTES_PER_DAY, 1);
+    };
+
+    for (const select of selects) select.addEventListener('change', update);
+  }
 }
