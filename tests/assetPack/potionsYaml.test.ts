@@ -3,6 +3,7 @@ import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { samplePackPath } from '../support/samplePack';
 import {
   loadYamlDirectory,
   loadYamlFile,
@@ -11,17 +12,18 @@ import {
 } from '../support/worldCodexFiles';
 
 /**
- * potions.yamlの薬を、実ファイルの定義だけで検証する。効き目はどちらもblood一本なので、
- * 見るのは「幅を振り切るか」だけ——満タンから飲んでも下限を割り、空から飲んでも満タンに届く。
+ * サンプルアセットパックのpotions.yamlの薬を、実ファイルの定義だけで検証する。効き目はどちらも
+ * blood一本なので、見るのは「幅を振り切るか」だけ——満タンから飲んでも下限を割り、空から飲んでも
+ * 満タンに届く。パックの定義も同梱ぶんと同じローダーで読めることを、ここが押さえている。
  */
-describe('potions.yamlの薬', () => {
+describe('サンプルアセットパックの薬', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
     const loader = new WorldCodexYamlLoader();
     loadYamlFile(loader, worldCodexPath('core.yaml'));
     loadYamlDirectory(loader, worldCodexPath('characters'));
-    loadYamlFile(loader, worldCodexPath('potions.yaml'));
+    loadYamlFile(loader, samplePackPath('world-codex/potions.yaml'));
     codex = loader.build();
   });
 

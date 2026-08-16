@@ -6,8 +6,11 @@ import { fetchAssetPack } from './AssetPack';
 /**
  * 読み込むアセットパックのURL（AssetPack.md）。当面は固定の1つだけで、切り替えの入口は無い。
  * 空文字なら同梱ぶんだけで動く。
+ *
+ * **ページからの相対で書く。** 公開ビルドは相対ベース（`--base=./`）で、ゲームは`/game/`、
+ * ビューアは`/codex/`の下に出る。先頭に`/`を付けるとドメイン直下を見に行って取得できない。
  */
-export const ASSET_PACK_URL: string = '';
+export const ASSET_PACK_URL: string = 'sample-pack.zip';
 
 /**
  * インストール済みのアセットパック。
