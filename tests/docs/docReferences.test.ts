@@ -222,7 +222,6 @@ describe('ドキュメントの参照', () => {
           .replace(/^\s*\/\/.*$/gm, ''),
       ),
       ...listFiles('src', ['.yaml']).map((rel) => read(rel).replace(/#.*$/gm, '')),
-      ...listFiles('src', ['.yaml']).map((rel) => read(rel).replace(/#.*$/gm, '')),
     ].join('\n');
     const stale = labels.filter(({ ident }) => new RegExp(`\\b${ident}\\b`).test(sources));
     expect(
