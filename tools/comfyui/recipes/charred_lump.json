@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/charred_lump.png を作り直すためのレシピ。build.py が読む。",
-    "焼きすぎて焦げた塊（src/world-codex/animals.yaml）。",
+    "焼きすぎて焦げた塊（src/assets/world-codex/animals.yaml）。",
     "",
     "**焼けた肉（roasted_meat）の生データから派生させる。** 作風と光を揃えるためで、鎖の見た目を",
     "引き継ぐわけではない——**丸焼きのネズミを焼きすぎても同じ物になる**ので、元が何だったかは",

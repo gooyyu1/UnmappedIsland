@@ -5,9 +5,9 @@ import type { CardFrameColors, CardKind } from '../looks/theme';
 import { cssColor } from '../../util/cssColor';
 import { COLOR, FONT_FAMILY, SIZE, cardFrameColors, gaugeColorFor } from '../looks/theme';
 import { drawBox } from '../../ui/shapes';
-import type { SlotRef } from '../../assets/backgroundArt';
-import { cardBackgroundTexture } from '../../assets/backgroundArt';
-import { CARD_ART_WIDTH, objectMultiplyTexture, objectTexture } from '../../assets/objectArt';
+import type { SlotRef } from '../../art/backgroundArt';
+import { cardBackgroundTexture } from '../../art/backgroundArt';
+import { CARD_ART_WIDTH, objectMultiplyTexture, objectTexture } from '../../art/objectArt';
 import { ProgressBar, TRACK_BORDER_WIDTH } from './ProgressBar';
 import type { ProgressBarOptions } from './ProgressBar';
 import type { AlertLevel } from '../../domain/defs/AlertLevel';
@@ -19,7 +19,7 @@ import { onPressRelease } from '../../ui/tap';
 import { cardFace } from './cardFace';
 
 /**
- * カードの枠の画像のテクスチャキー（実体はsrc/assets/card_frame.png、BootSceneが読む）。
+ * カードの枠の画像のテクスチャキー（実体はsrc/assets/ui/card_frame.png、BootSceneが読む）。
  * カードの寸法（SIZE.cardWidth/cardHeight）はこの画像の比率に合わせてある。
  */
 export const CARD_FRAME_TEXTURE = 'card-frame';

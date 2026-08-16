@@ -10,7 +10,7 @@ import {
   centerWindow,
 } from '../looks/childWindowLayout';
 import { addLabel } from '../../ui/labels';
-import { objectTexture } from '../../assets/objectArt';
+import { objectTexture } from '../../art/objectArt';
 import { ProgressBar } from './ProgressBar';
 import { addPanel, drawBox } from '../../ui/shapes';
 import { onPressRelease } from '../../ui/tap';

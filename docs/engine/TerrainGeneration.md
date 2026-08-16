@@ -7,7 +7,7 @@
 任せる」「ファイル追加だけで拡張できる」という設計方針（2 節）に準拠し、以下を目的とします。
 
 - シード値ありのランダム生成で無人島の地形を生成する
-- 地形・構造物はすべて YAML でオブジェクト定義し、MOD 作成者がコードに触れずに拡張できる状態を保つ
+- 地形・構造物はすべて YAML でオブジェクト定義し、パック作成者がコードに触れずに拡張できる状態を保つ
 
 本書が扱うのは、**島の座標・軸・LocationType・パスネットワークを生成するアルゴリズムそのもの**
 （`Domain.Generation`、`WorldObject` に一切触れない生成時点だけの純粋な計算）です。生成された
@@ -19,7 +19,7 @@
 コードを読む・変更する際はそちらを参照してください。
 
 実装は `src/domain/generation/` 以下、定義データは
-`src/world-codex/terrain_generation.yaml`（生成パラメータ）・`locations.yaml`（土地・道の
+`src/assets/world-codex/terrain_generation.yaml`（生成パラメータ）・`locations.yaml`（土地・道の
 `object_defs`）にあります。
 
 ## 1. 用語定義
@@ -90,7 +90,7 @@ axes:
 
 **設計上の注意**: 軸の種類・数はハードコードしません。`Axis` 定義自体が YAML で完結し、`LocationType` 側は
 「言及した軸だけ気にする」設計にすることで、軸の増減に対して `LocationType` 定義が壊れないようにします
-（3.2 節参照）。実際の定義は `src/world-codex/terrain_generation.yaml`（`elevation`・
+（3.2 節参照）。実際の定義は `src/assets/world-codex/terrain_generation.yaml`（`elevation`・
 `humidity`・`coastal_distance`・`ruggedness` の4軸）を参照してください。
 
 ### 3.2 LocationTypeマッチング（軸ベース）
@@ -141,7 +141,7 @@ D(type, site) = sqrt( Σ_i w_i * ((v_i - ideal_i) / tolerance_i)^2  /  Σ_i w_i 
 - **フォールバック `LocationType`**: `is_fallback: true`。`hard_limits` によって全ての候補が除外された `Site`
   はこれが受けます（自身の `hard_limits` も無視する、最後の受け皿）。複数の `is_fallback` 型がある場合、
   `priority` が最大のものが選ばれます。
-- **フォールバックの機能化**: 特定の軸にのみ強くマッチする専用 `LocationType` を MOD 側で追加すれば、
+- **フォールバックの機能化**: 特定の軸にのみ強くマッチする専用 `LocationType` を パック側で追加すれば、
   フォールバックに落ちていた領域へ自動的に誘導できます。「マッチしない領域」は不具合ではなく「新しい
   `LocationType` を定義すべき場所」というシグナルとして扱います。
 

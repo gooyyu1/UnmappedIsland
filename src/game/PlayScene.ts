@@ -40,14 +40,10 @@ import type { LaneCell } from './ui/laneCells';
 import { cellsFor, unboundedSlot } from './ui/laneCells';
 import { Curtain } from './ui/Curtain';
 import { LocationArtLoader } from './ui/LocationArtLoader';
-import {
-  INFORMATION_BACKGROUND,
-  INFORMATION_BORDER_PX,
-  INFORMATION_OVERLAP_PX,
-} from '../assets/informationArt';
+import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from '../art/informationArt';
 import { addNineSlice } from '../ui/nineSlice';
-import { laneTexture } from '../assets/backgroundArt';
-import { SEPARATOR_TEXTURE } from '../assets/separatorArt';
+import { laneTexture } from '../art/backgroundArt';
+import { SEPARATOR_TEXTURE } from '../art/separatorArt';
 import type { LaneView, MotionContext } from './ui/CardTable';
 import { CardTable } from './ui/CardTable';
 import { bornInstances, originInstances, vanishedInstances } from './view/changedInstances';
@@ -68,8 +64,8 @@ import { ScreenAlertFrame } from './ui/ScreenAlertFrame';
 import type { StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
 import { StatusDetailWindow } from './ui/StatusDetailWindow';
-import type { IconName } from '../assets/iconArt';
-import { iconTexture } from '../assets/iconArt';
+import type { IconName } from '../art/iconArt';
+import { iconTexture } from '../art/iconArt';
 import { WeatherPanel } from './ui/WeatherPanel';
 import { WeatherOverlay } from './ui/WeatherOverlay';
 import { ScreenSkyTint } from './ui/ScreenSkyTint';

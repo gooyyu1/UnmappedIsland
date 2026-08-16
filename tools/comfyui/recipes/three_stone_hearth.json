@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/three_stone_hearth.png を作り直すためのレシピ。build.py が読む。",
-    "石が支点になって器を火にかけられる炉（src/world-codex/fire.yaml）。",
+    "石が支点になって器を火にかけられる炉（src/assets/world-codex/fire.yaml）。",
     "",
     "**焚き火とは組み方が違うので、下絵も別に持つ（sketch: three_stone）。** 焚き火の枝組みに石を",
     "3つ置いても、焚き火の周りに石が転がっているようにしか見えない。三石のかまどは石が主役で、",

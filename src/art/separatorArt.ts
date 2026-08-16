@@ -1,4 +1,4 @@
-import separatorUrl from './separator.png';
+import separatorUrl from '../assets/ui/separator.png';
 
 /**
  * エリアの境目に敷く木の帯のテクスチャキー。

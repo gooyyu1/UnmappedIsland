@@ -10,7 +10,7 @@ import { COLOR, SIZE } from '../looks/theme';
 
 /**
  * スロットボタン（地図・装備・怪我・レシピ）の地に敷く紙のテクスチャキー。
- * 実体は `src/assets/slot_button_paper.png` で、BootSceneがボタン1つぶんずつの
+ * 実体は `src/assets/ui/slot_button_paper.png` で、BootSceneがボタン1つぶんずつの
  * スプライトシートとして読む。
  *
  * **カードの枠とは別の絵を持つ。** 同じ紙から切り出してはいるが（`recipes/slot_button_paper.json`）、

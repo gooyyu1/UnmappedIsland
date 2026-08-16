@@ -4,7 +4,7 @@ import { cssColor } from '../../util/cssColor';
 import { COLOR, FONT_FAMILY } from '../looks/theme';
 import { drawBox } from '../../ui/shapes';
 
-/** 桁の紙の画像のテクスチャキー（実体はsrc/assets/flip_digit.png、BootSceneが読む）。 */
+/** 桁の紙の画像のテクスチャキー（実体はsrc/assets/ui/flip_digit.png、BootSceneが読む）。 */
 export const FLIP_DIGIT_TEXTURE = 'flip-digit';
 
 /**

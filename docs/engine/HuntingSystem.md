@@ -16,7 +16,7 @@
 1つも持たないことの帰結です。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。1 節・3 節は実装済みです
-（`src/world-codex/animals.yaml` の4種と `injuries.yaml`・`tools.yaml` の武器3種、検証は
+（`src/assets/world-codex/animals.yaml` の4種と `injuries.yaml`・`tools.yaml` の武器3種、検証は
 `tests/worldCodex/animalsYaml.test.ts`）。6 節の変化の観測と 6.3 節の告知も実装済みです
 （`WorldSession.observeChanges`・`observeSignals`）。5 節の動物の1手も実装済みで、時間が経てば
 2 節が述べる「動物の 6 手」がそのまま現れます（`Animal.takeTurn`、検証は
@@ -537,7 +537,7 @@ strike:
   急ぐ理由がまだ無い
 - **くくり罠**との役割分担は [`TrapSystem.md`](./TrapSystem.md) が持つ。掛かった獲物の拘束は 1.4 節の
   `vulnerability` へ、飼いならし（4 節）の入口としての罠は同 5 節へ接続する
-- **武器の作り方**（1.2 節）: 石斧・槍にレシピがまだ無く、シナリオ（`src/scenarios/hunting_ground.yaml`）
+- **武器の作り方**（1.2 節）: 石斧・槍にレシピがまだ無く、シナリオ（`src/assets/scenarios/hunting_ground.yaml`）
   だけが手元へ置いている。素材と工程は [`SurvivalItems.md`](../world/SurvivalItems.md) 1 節・3 節が持つ
 - **リーチと待ち受け**（1.2 節）: 槍が斧と違うのは、今は当たり外れの配分と傷の種類だけ。動物の手番が
   入ったので、間合いを取れることを配分へどう効かせるかを見直せる

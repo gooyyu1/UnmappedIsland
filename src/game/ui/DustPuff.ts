@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 
-/** 砂埃の粒の画像のテクスチャキー（実体は src/assets/dust_puff.png、BootSceneが読む）。 */
+/** 砂埃の粒の画像のテクスチャキー（実体は src/assets/ui/dust_puff.png、BootSceneが読む）。 */
 export const DUST_PUFF_TEXTURE = 'dust_puff';
 
 /**

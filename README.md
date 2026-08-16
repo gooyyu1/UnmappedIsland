@@ -49,9 +49,15 @@ UnmappedIsland/
 │   │   ├── runtime/      # 実行時状態（WorldObject・セッション・ビュー）
 │   │   └── generation/   # 地形生成（決定的な島レイアウト）
 │   ├── loader/           # WorldCodex YAMLローダー
-│   ├── locale/           # 表示文字列の対応表（言語ごとのYAMLと、その読み込み）
-│   ├── world-codex/      # ゲーム定義YAML（置くだけで読まれる）
-│   ├── scenarios/        # テスト用シナリオYAML（置くだけで一覧に出る）
+│   ├── locale/           # 表示文字列の読み込み
+│   ├── assets/           # データの実体（層ではない。置くだけで読まれる）
+│   │   ├── objects/      # 型ごとのカードの絵
+│   │   ├── backgrounds/  # レーン・カードの地に敷く絵
+│   │   ├── icons/  weather/  ui/   # ボタンのアイコン・空の絵・画面共通の紙
+│   │   ├── world-codex/  # ゲーム定義YAML
+│   │   ├── locale/       # 表示文字列YAML（言語ごと）
+│   │   └── scenarios/    # テスト用シナリオYAML
+│   ├── art/              # どのファイルがどの絵かを答えるモジュール
 │   ├── codex/            # ゲーム定義の閲覧ビューア（ゲームと同じローダー・表示文字列を使う）
 │   ├── game/             # Phaserシーン
 │   │   ├── layout/       # 画面寸法（u単位）とエリア配置の計算

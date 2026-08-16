@@ -4,7 +4,7 @@ import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
-/** 空の絵の置き場所（src/assets/weatherArt.ts の規約）。 */
+/** 空の絵の置き場所（src/art/weatherArt.ts の規約）。 */
 const ART_DIR = 'src/assets/weather';
 
 /**

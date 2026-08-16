@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/burning_tinder.png を作り直すためのレシピ。build.py が読む。",
-    "火のついた火口。炉へ運ぶためだけに在る物（src/world-codex/fire.yaml）。",
+    "火のついた火口。炉へ運ぶためだけに在る物（src/assets/world-codex/fire.yaml）。",
     "",
     "**何が燃えているかを描かない。** 火口は枯れ草・ヤシの実の皮・植物繊維のどれからでも作れ、",
     "火がついた後は素材を見ない（docs/engine/FireSystem.md 3.2節）。藁が見える絵は、枯れ草からしか",

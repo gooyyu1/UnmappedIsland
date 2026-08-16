@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/banana_stem.png を作り直すためのレシピ。build.py が読む。",
-    "切り倒したバナナの偽茎を、運べる長さに切った一節（src/world-codex/fiber.yaml）。",
+    "切り倒したバナナの偽茎を、運べる長さに切った一節（src/assets/world-codex/fiber.yaml）。",
     "",
     "**この題材は生成では作れない。** プロンプトに banana と書くと、どの seed でも実そのものか葉に",
     "なる（8枚で全滅）。語を外して「緑の丸太」として頼むと形だけは出るが、木口が木の年輪になり、",

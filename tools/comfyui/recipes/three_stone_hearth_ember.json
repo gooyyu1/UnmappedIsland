@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/three_stone_hearth_ember.png を作り直すためのレシピ。build.py が読む。",
-    "種火だけが残った三石のかまど（heatのember段、src/world-codex/fire.yaml）。",
+    "種火だけが残った三石のかまど（heatのember段、src/assets/world-codex/fire.yaml）。",
     "",
     "作り方と勘所は recipes/campfire_ember.json と同じ。熾が溜まるのは石に囲まれた中央の空き。",
     "",

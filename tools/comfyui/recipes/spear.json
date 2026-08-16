@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/spear.png を作り直すためのレシピ。build.py が読む。",
-    "長い棒の先へ石の穂先を紐で固定した槍（src/world-codex/tools.yaml）。",
+    "長い棒の先へ石の穂先を紐で固定した槍（src/assets/world-codex/tools.yaml）。",
     "",
     "**配置を描いて渡す（sketch: spear）。** 生成に頼むと磨いた棒に小石を刺した工芸品になり、",
     "紐の巻きが一度も出ない（8枚とも）。石の斧と同じ理由で、柄・穂先・巻きを置いてから描かせる。",

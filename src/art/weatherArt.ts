@@ -9,7 +9,7 @@
  * 主題（太陽・雲）は絵の右上へ寄せて描く——載せる日時と天候名がその位置を避けている
  * （ScreenLayout.md 5節 状況エリア）。
  */
-const FILES = import.meta.glob('./weather/*.png', {
+const FILES = import.meta.glob('../assets/weather/*.png', {
   eager: true,
   query: '?url',
   import: 'default',

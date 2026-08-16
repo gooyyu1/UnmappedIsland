@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/banana_plant.png を作り直すためのレシピ。build.py が読む。",
-    "実の付いたバナナの株（src/world-codex/fiber.yaml）。",
+    "実の付いたバナナの株（src/assets/world-codex/fiber.yaml）。",
     "",
     "設置物なので絵をカード全面へ敷く（size: card）。作り方は recipes/palm_tree.json と同じ。",
     "",

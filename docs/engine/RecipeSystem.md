@@ -13,7 +13,7 @@
 操作の語彙を持ち込みません。
 
 定義は `Domain.Defs.RecipeDef`・`CraftingStep`、実行時は `Domain.Runtime` の `crafting.ts`、レシピの
-データは `src/world-codex/containers.yaml` 等、検証は `tests/domain/crafting.test.ts` です。本書は
+データは `src/assets/world-codex/containers.yaml` 等、検証は `tests/domain/crafting.test.ts` です。本書は
 実装済みの仕組みの記述で、未決事項は 6 節に整理しています。
 
 ## 1. 製作中オブジェクトは、完成品とは別オブジェクト
@@ -29,7 +29,7 @@
 `progress` へ併せて宣言します（段は表示と `passives` のためだけに使い、完成は上の仕組みが担います）。
 
 製作中オブジェクトの型は、レシピの内容（工程数・各工程の要求・時間）から、決まった変換規則で自動的に導出します。
-人間も MOD 作成者も、この型を直接書きません。アイコンなど完成品ごとに変えたい情報は、レシピ自身の `icon`
+人間も パック作成者も、この型を直接書きません。アイコンなど完成品ごとに変えたい情報は、レシピ自身の `icon`
 （`GameElementDefinition.md` 13.2 節）として著者が指定し、自動生成時にその情報を型へ引き継がせます。
 
 ## 2. 材料・道具の要求は専用スキーマ（steps / requires）

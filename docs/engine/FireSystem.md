@@ -24,7 +24,7 @@
 | プロパティ | `fuel`（くべた薪。燃料の側では「くべると増える量」）・`heat`（火力。一番下の段が種火）・`stones`（積んだ石）・`heat_soak`（石の蓄熱）・`cooking_progress`（加熱の進み） |
 | 型 | `campfire`（焚き火）・`three_stone_hearth`（三石のかまど）・`stone_hearth`（石囲いの炉）・`fire_drill`（火起こし具）・`burning_tinder`（火種）・`hot_stone`（焼け石） |
 
-定義は `src/world-codex/fire.yaml`（燃料になる物と火口は `locations.yaml`・`coconut.yaml`・
+定義は `src/assets/world-codex/fire.yaml`（燃料になる物と火口は `locations.yaml`・`coconut.yaml`・
 `fiber.yaml`、焼ける物は `animals.yaml`）、検証は `tests/worldCodex/fireYaml.test.ts` です。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。**本書の設計は 9 節を除いて実装済み**で、

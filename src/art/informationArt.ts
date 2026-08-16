@@ -1,4 +1,4 @@
-import backgroundUrl from './information_background.png';
+import backgroundUrl from '../assets/ui/information_background.png';
 
 /**
  * 情報エリア（フィールドエリアの左／上）の背景画像。開いた本のページで、フィールドエリア側の端に

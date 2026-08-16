@@ -9,7 +9,7 @@
  * 一覧はimport.meta.globがビルド時に作る。実行時に総当たりで読みに行くと、絵をまだ用意していない
  * object_defのぶんだけ404が出るため。
  */
-const FILES = import.meta.glob('./objects/*.png', {
+const FILES = import.meta.glob('../assets/objects/*.png', {
   eager: true,
   query: '?url',
   import: 'default',
