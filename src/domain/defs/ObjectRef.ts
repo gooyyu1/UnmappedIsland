@@ -1,29 +1,39 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { DefNames, DescriptionToken } from './Description';
-import { propertyRef, text } from './Description';
+import { objectRef, propertyRef, text } from './Description';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
  * オブジェクトそのものを1つ指す参照（`destroy`の対象・`move`の`subject`と移動先、9.3節・9.6節）。
- * 指し方は2通りで、どちらも「1つのオブジェクトへ解決する」という同じ役目を持つ。
+ * 指し方は3通りで、どれも「1つのオブジェクトへ解決する」という同じ役目を持つ。
  *
  * - **対象キー**（`self`/`parent`/`actor`/`dragged`）: 定義時点で決まっている相手。
  * - **プロパティ**（`{prop: ...}`）: その実効値をインスタンスIDとして解釈した相手。定義時点では
  *   決まらず実行時に確定する個体（道が指す土地、動物がぶつかる物）を指す（`ExplorationSystem.md` 3節）。
+ * - **型**（`{object: ...}`）: 世界にただ1つ在る型（`singleton`、15節）のそのインスタンス。生成時に
+ *   確定する個体ではなく、定義の時点で名前の分かっている場所（外洋・本土、`Voyage.md`）を指すためのもの。
  *
- * 解決できない場合（プロパティを持たない・そのIDの個体が世界のどこにも居ない）はundefinedで、
- * 呼び出し側は「解決できない適用は無視」の既存規約（9.1節）に従う。
+ * 解決できない場合（プロパティを持たない・そのIDの個体が世界のどこにも居ない・その型が世界に居ない）は
+ * undefinedで、呼び出し側は「解決できない適用は無視」の既存規約（9.1節）に従う。
  */
 export class ObjectRef {
-  /** 対象キーで指す参照ならその起点、プロパティで指す参照ならundefined。 */
+  /** 対象キーで指す参照ならその起点、それ以外はundefined。 */
   private readonly root: ReferenceRoot | undefined;
 
-  /** プロパティで指す参照ならそのグローバルID、対象キーで指す参照ならundefined。 */
+  /** プロパティで指す参照ならそのグローバルID、それ以外はundefined。 */
   private readonly propertyGlobalId: number | undefined;
 
-  private constructor(root: ReferenceRoot | undefined, propertyGlobalId: number | undefined) {
+  /** 型で指す参照ならそのobject_defのグローバルID、それ以外はundefined。 */
+  private readonly objectDefGlobalId: number | undefined;
+
+  private constructor(
+    root: ReferenceRoot | undefined,
+    propertyGlobalId: number | undefined,
+    objectDefGlobalId?: number,
+  ) {
     this.root = root;
     this.propertyGlobalId = propertyGlobalId;
+    this.objectDefGlobalId = objectDefGlobalId;
   }
 
   static ofRoot(root: ReferenceRoot): ObjectRef {
@@ -34,9 +44,14 @@ export class ObjectRef {
     return new ObjectRef(undefined, propertyGlobalId);
   }
 
+  static ofObjectDef(objectDefGlobalId: number): ObjectRef {
+    return new ObjectRef(undefined, undefined, objectDefGlobalId);
+  }
+
   /**
    * 今の文脈で指している相手。プロパティで指す参照は、所属ツリーの根から実効値と同じinstanceIdを
-   * 持つ子孫を探す（`move`の`to_prop`が移動先を引くのと同じ引き方）。
+   * 持つ子孫を探す（`move`の`to_prop`が移動先を引くのと同じ引き方）。型で指す参照は、同じ根から
+   * その型のインスタンスを探す。
    */
   resolve(
     owner: WorldObject,
@@ -44,6 +59,9 @@ export class ObjectRef {
     dragged: WorldObject | undefined,
   ): WorldObject | undefined {
     if (this.root !== undefined) return owner.resolveEffectTarget(this.root, actor, dragged);
+
+    if (this.objectDefGlobalId !== undefined)
+      return owner.findRoot().findDescendantOfDef(this.objectDefGlobalId);
 
     const property = owner.tryGetProperty(this.propertyGlobalId!);
     if (property === undefined) return undefined;
@@ -55,9 +73,15 @@ export class ObjectRef {
     return this.root === root;
   }
 
+  /** 実行者（actor）や重ねた札（dragged）に依存する参照か（actorの居ない文脈で使えるかの判定用）。 */
+  needsInteraction(): boolean {
+    return this.root === 'actor' || this.root === 'dragged';
+  }
+
   /** この参照を書き表す（Description参照）。 */
   describe(names: DefNames): readonly DescriptionToken[] {
     if (this.root !== undefined) return [text(this.root)];
+    if (this.objectDefGlobalId !== undefined) return [objectRef(names.objectName(this.objectDefGlobalId))];
     return [propertyRef(names.propertyName(this.propertyGlobalId!), 'self')];
   }
 }

@@ -93,6 +93,14 @@ export class WorldObject {
     for (const slot of this.slots) for (const child of slot.contents) yield child;
   }
 
+  /** 自分の中に入っている物すべて（自分自身は含まず、何段でも下まで）。 */
+  *descendants(): IterableIterator<WorldObject> {
+    for (const child of this.children()) {
+      yield child;
+      yield* child.descendants();
+    }
+  }
+
   setParent(parent: WorldObject | undefined, parentSlotLocalId: number): void {
     this._parent = parent;
     this._parentSlotLocalId = parentSlotLocalId;
@@ -644,6 +652,24 @@ export class WorldObject {
     for (const slot of this.slots) {
       for (const child of slot.contents) {
         const found = child.findDescendantByInstanceId(instanceId);
+        if (found !== undefined) return found;
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * 自分自身を含む子孫から、その型のインスタンスを探す（深さ優先、無ければundefined）。
+   * 世界にただ1つ在る型（`singleton`、15節）を名前で指す`move`の`to_object`（9.6節）が使う。
+   * 同じ型が複数在れば最初に見つかったものを返す。
+   */
+  findDescendantOfDef(objectDefGlobalId: number): WorldObject | undefined {
+    if (this.def.globalId === objectDefGlobalId) return this;
+
+    for (const slot of this.slots) {
+      for (const child of slot.contents) {
+        const found = child.findDescendantOfDef(objectDefGlobalId);
         if (found !== undefined) return found;
       }
     }

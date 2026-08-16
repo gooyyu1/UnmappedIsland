@@ -9,6 +9,7 @@ import { SettingsScene } from './game/SettingsScene';
 import { SlotSelectScene } from './game/SlotSelectScene';
 import { NewGameScene } from './game/NewGameScene';
 import { ScenarioSelectScene } from './game/ScenarioSelectScene';
+import { ShelfScene } from './game/ShelfScene';
 import { PlayScene } from './game/PlayScene';
 import { cssColor } from './util/cssColor';
 import { setLabelDefaults } from './ui/labels';
@@ -37,6 +38,7 @@ DeviceScreen.startGame('game', {
     SlotSelectScene,
     NewGameScene,
     ScenarioSelectScene,
+    ShelfScene,
     PlayScene,
   ],
 });

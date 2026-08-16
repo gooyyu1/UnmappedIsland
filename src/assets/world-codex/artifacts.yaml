@@ -1,0 +1,15 @@
+# アーティファクト（docs/concept/GameEndings.md 6節）。
+#
+# 島から持ち出せた物だけが、周回をまたいで棚に残る。**artifact タグを持つ物がそのまま棚の枠**に
+# なるので（docs/world/Voyage.md 5節）、種類を増やすのはこのファイルへ1つ足すことと同じ。
+#
+# どれも生き延びるのに一切役立たない。重さとかさだけを持ち、それが航海では速さの代償になる。
+
+object_defs:
+  # 金の聖杯。島に流れ着いた誰かが、洞を掘るような場所へ隠して行ったもの。
+  # 岸壁・岩場・山腹の探索でごく稀に見つかる（locations.yaml の chalice_find）。
+  golden_chalice:
+    tags: [item, artifact]
+    props:
+      weight: {value: 900}
+      volume: {value: 700}
