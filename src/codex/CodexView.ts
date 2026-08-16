@@ -347,7 +347,7 @@ export class CodexView {
 }
 
 /** 文中に置く型の絵（1文字ぶんの高さ）。絵が用意されていなければ何も置かない。 */
-function inlineArtHtml(objectName: string): string {
+export function inlineArtHtml(objectName: string): string {
   const url = OBJECT_ART.get(objectName);
   return url === undefined ? '' : `<img class="ref-art" src="${url}" alt="">`;
 }

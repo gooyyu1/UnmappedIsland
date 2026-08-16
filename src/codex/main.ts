@@ -4,6 +4,7 @@ import type { CodexSource } from './CodexSource';
 import { loadCodexSource } from './CodexSource';
 import type { NamingMode } from './CodexView';
 import { CodexView, escapeHtml } from './CodexView';
+import { balanceSectionId, renderBalancePage } from './balancePage';
 import { networkNodeDomId, renderNetworkPage } from './networkPage';
 import {
   renderNotFoundPage,
@@ -60,6 +61,7 @@ function render(): void {
   window.scrollTo(0, 0);
   scrollToTagSection(parts);
   scrollToNetworkNode(parts);
+  scrollToBalanceSection(parts);
 }
 
 /**
@@ -110,6 +112,12 @@ function scrollToTagSection(parts: readonly string[]): void {
   document.getElementById(tagSectionId(parts[1]))?.scrollIntoView();
 }
 
+/** 収支のページ（1ページに全部が並ぶ）で、`#/balance/<場所>` の節まで送る。 */
+function scrollToBalanceSection(parts: readonly string[]): void {
+  if (parts[0] !== 'balance' || parts[1] === undefined) return;
+  document.getElementById(balanceSectionId(parts[1]))?.scrollIntoView();
+}
+
 function renderRoute(view: CodexView, parts: readonly string[]): string {
   if (parts.length === 0) return renderObjectListPage(view);
   if (parts[0] === 'object' && parts[1] !== undefined) return renderObjectPage(view, parts[1]);
@@ -120,6 +128,7 @@ function renderRoute(view: CodexView, parts: readonly string[]): string {
   if (parts[0] === 'tags') return renderTagListPage(view);
   if (parts[0] === 'by-tag') return renderObjectsByTagPage(view);
   if (parts[0] === 'network') return renderNetworkPage(view, parts[1]);
+  if (parts[0] === 'balance') return renderBalancePage(view);
   if (parts[0] === 'slot' && parts[1] !== undefined) return renderSlotPage(view, parts[1]);
   return renderNotFoundPage();
 }
