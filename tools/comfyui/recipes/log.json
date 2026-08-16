@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "src/assets/objects/log.png を作り直すためのレシピ。build.py が読む。",
+    "広葉樹を倒して玉切りにした丸太（src/assets/world-codex/timber.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: log）。** 生成では姿勢と太さが決まらない（26枚で0。",
+    "prompts/objects.json の log 参照）。形が単純なぶん、下絵で決めてしまう方が速い。",
+    "",
+    "**太い枝（thick_branch）と並んで落ちる。** 広葉樹を倒すと丸太2本と太い枝3本が同時に出るので、",
+    "並んだときに紛れないことが第一の要件。分けるのは「先細りが無いこと」と「木口」の2点で、",
+    "編集の指示でも先細り・節・側枝を名指しで否定する。",
+    "",
+    "**木口を製材の切り口にしない。** 島にあるのは石斧だけなので、面は斧で叩き割った跡にする。",
+    "",
+    "段は400。太い枝と同じ幅まで使う。"
+  ],
+  "output": "src/assets/objects/log.png",
+  "sketch": "log",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: one log lying on its side, seen from the side, running straight across the page from left to right in exactly the same place at the same length and the same thickness. Paint it as one solid round log of dry hardwood, exactly the same thickness from one end to the other, with rough furrowed brown bark wrapping right around its curved side. At the right hand end show the pale cut face of the wood, roughly chipped and split where an axe hacked through it. The log does not taper, it has no knots, no side branches, no twigs, no leaves and no splintered ends. Nothing grows on it and nothing lies beside it. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow on the ground beneath the log. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Warm brown bark, dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

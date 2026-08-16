@@ -193,6 +193,45 @@ def draw_hafted(
         )
 
 
+def draw_log(draw: ImageDraw.ImageDraw) -> None:
+    """丸太。太さの変わらない胴を横倒しにし、片端へ木口を向ける。
+
+    **姿勢と太さは生成では決まらない。** 横枠で出せば前後に極端な遠近が付いて胴が寸詰まりになり、
+    縦枠にすれば立った切り株になった（20枚で0。prompts/objects.json の log 参照）。太い枝と
+    分かれるのは「先細りが無いこと」と「木口」の2点だけなので、その2点をここで決める。
+    """
+    draw_branch(draw, (200, 470), (1.0, 0.0), 760, 190)
+
+
+def draw_raft(draw: ImageDraw.ImageDraw) -> None:
+    """筏。丸太を横倒しに6本並べ、桁を2本渡して交点を縛る。
+
+    **本数と縛りは配置でしか出せない。** 丸太6本と言葉で頼むと、積み上げた丸太の山になって
+    桁も縄も出ない（6枚とも。prompts/objects.json の raft 参照）。手前へ木口を向けて並べ、
+    桁と縄の位置をここで決める。
+    """
+    left, right = 150, 1010
+    # 丸太は間を空けずに並べる。隙間を空けると、下の紙が透けて筏が桟に見える。
+    spacing, thickness = 84, 92
+    rows = [448 + (index - 2.5) * spacing for index in range(6)]
+    for y in rows:
+        # 木口は手前（右）。draw_branch は伸びた先へ木口を置き、影を進行方向の右手（＝下）へ敷く。
+        draw_branch(draw, (left, y), (1.0, 0.0), right - left, thickness)
+        # 奥の端。切り口が見えない側なので、断ち切りに見えないよう影だけを置く。
+        draw.line([(left, y - thickness / 2), (left, y + thickness / 2)], fill=OUTLINE, width=8)
+    top, bottom = rows[0] - thickness * 0.6, rows[-1] + thickness * 0.6
+    for girder_x in (330, 830):
+        draw.line([(girder_x, top), (girder_x, bottom)], fill=BARK_DARK, width=40)
+        # 桁と丸太が交わるところの縄。丸太を跨いで巻きつく向きに置く。
+        for y in rows:
+            for offset in (-18, 18):
+                draw.line(
+                    [(girder_x - 38, y + offset), (girder_x + 38, y + offset)],
+                    fill=CORD,
+                    width=11,
+                )
+
+
 def draw_axe(draw: ImageDraw.ImageDraw) -> None:
     """石の斧。柄の先へ、刃を外へ向けた楔形の石を横向きに縛る。"""
     draw_hafted(draw, (880, 780), (350, 300), 44, (170, 55, 46, 74), 150, across=True)
@@ -206,6 +245,8 @@ def draw_spear(draw: ImageDraw.ImageDraw) -> None:
 LAYS = {
     "axe": draw_axe,
     "fan": draw_fan,
+    "log": draw_log,
+    "raft": draw_raft,
     "snare": draw_snare,
     "spear": draw_spear,
     "three_stone": draw_three_stone,

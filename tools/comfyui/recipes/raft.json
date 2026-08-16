@@ -1,0 +1,29 @@
+{
+  "_comment": [
+    "src/assets/objects/raft.png を作り直すためのレシピ。build.py が読む。",
+    "丸太6本を桁2本で縛った、島を出るための乗り物（src/assets/world-codex/voyage.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: raft）。** 生成に頼むと積み上げた丸太の山になり、桁も縄も一度も",
+    "出ない（6枚とも。prompts/objects.json の raft 参照）。焚き火・くくり罠・槍と同じで、",
+    "組み方そのものが物の正体である物は下絵から起こす。",
+    "",
+    "**本数を編集の指示でも言う。** 下絵に6本置いてあっても、指示側で数を言わないと丸太が",
+    "束ねられて本数が変わる。",
+    "",
+    "段は400。丸太が並ぶ幅が見せ場なので、カード幅いっぱいまで使う。"
+  ],
+  "output": "src/assets/objects/raft.png",
+  "sketch": "raft",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: a primitive raft of logs lying flat on the ground seen from above and a little to one side, with every log and every crosspiece in exactly the same place at the same angle and the same length. Paint exactly six logs of the same length laid side by side in one row, touching each other, each one a straight round log with rough furrowed brown bark, and show the round cut end of each of the six logs in a line along the near edge so that all six can be counted. Across the logs lay two straight wooden crosspieces, one near each end, and at every place where a crosspiece crosses a log wrap several tight turns of rough twisted plant fibre cord, warm tan and mid brown with its strands visible, binding the crosspiece down to the log. There is no sail, no mast, no oar, no cargo and no water. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow on the ground beneath the raft. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Dry matte surfaces, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
