@@ -471,6 +471,6 @@ describe('経過中のフレーム（ShownCards × planMotion）', () => {
       aloft,
     });
 
-    expect(plan.shown).toEqual([{ card: '石', remaining: 0, emptied: true }]);
+    expect(plan.shown).toEqual([{ card: '石', present: [], emptied: true }]);
   });
 });

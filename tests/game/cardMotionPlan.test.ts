@@ -25,7 +25,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     expect(plan.fadeIns).toEqual([]);
     expect(plan.discards).toEqual([]);
     // 宙に在る札は無いので、2個ともその枠に居る。
-    expect(plan.shown).toEqual([{ card: '石', remaining: 2, emptied: true }]);
+    expect(plan.shown).toEqual([{ card: '石', present: [1, 2], emptied: true }]);
   });
 
   it('3個まとめて生まれた束は、1枚に見えても3枚が順に飛ぶ', () => {
@@ -34,7 +34,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     );
 
     // 3個とも宙に在るので、着き始めるまで札は出ない。
-    expect(plan.shown).toEqual([{ card: '実', remaining: 0, emptied: false }]);
+    expect(plan.shown).toEqual([{ card: '実', present: [], emptied: false }]);
     expect(plan.flights).toHaveLength(3);
     expect(plan.flights.map((flight) => flight.delaySteps)).toEqual([0, 1, 2]);
     for (const flight of plan.flights) {
@@ -65,8 +65,8 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     expect(plan.flights).toHaveLength(1);
     expect(plan.flights[0]).toMatchObject({ face: '地の石', into: '地の石', from: 0, to: 500 });
     // 飛んでいる1個は着くまで合流先に居ない（3個のうち2個だけが見えている）。
-    expect(plan.shown).toContainEqual({ card: '地の石', remaining: 1, emptied: true });
-    expect(plan.shown).toContainEqual({ card: '手の石', remaining: 1, emptied: true });
+    expect(plan.shown).toContainEqual({ card: '地の石', present: [3], emptied: true });
+    expect(plan.shown).toContainEqual({ card: '手の石', present: [1], emptied: true });
   });
 
   it('掴んで離したインスタンスは、指を離した場所から動き出す', () => {
@@ -108,7 +108,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
       }),
     );
 
-    expect(plan.shown).toEqual([{ card: '石', remaining: 0, emptied: false }]);
+    expect(plan.shown).toEqual([{ card: '石', present: [], emptied: false }]);
     expect(plan.flights.map((flight) => flight.from).sort((a, b) => a - b)).toEqual([0, 0, 300]);
   });
 
@@ -167,7 +167,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     expect(plan.landings.get(1)).toEqual({ to: 500, into: '包帯' });
     expect(plan.flights).toEqual([]);
     // 運んでいるのは置いたままの分身なので、その1枚もまだ枠に居ない（フェードにもしない）。
-    expect(plan.shown).toEqual([{ card: '包帯', remaining: 0, emptied: false }]);
+    expect(plan.shown).toEqual([{ card: '包帯', present: [], emptied: false }]);
     expect(plan.fadeIns).toEqual([]);
   });
 
@@ -197,7 +197,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     );
 
     // 手に在る1枚は束に居ない。掴んで運んでいる間の見え方（CarriedCards）がそのまま続く。
-    expect(plan.shown).toEqual([{ card: '枯れ草', remaining: 2, emptied: true }]);
+    expect(plan.shown).toEqual([{ card: '枯れ草', present: [2, 3], emptied: true }]);
     expect(plan.flights).toEqual([]);
   });
 
@@ -206,7 +206,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
       input({ before: [placed('枯れ草', [1], 0)], staying: [placed('枯れ草', [1], 0)], aloft: [1] }),
     );
 
-    expect(plan.shown).toEqual([{ card: '枯れ草', remaining: 0, emptied: true }]);
+    expect(plan.shown).toEqual([{ card: '枯れ草', present: [], emptied: true }]);
   });
 
   it('子ウィンドウへ貸した1枚は束から引かれ、残りはその枠に居たまま（Windows.md 1.1節）', () => {
@@ -214,7 +214,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
       input({ before: [placed('石', [1, 2], 0)], staying: [placed('石', [1, 2], 0)], aloft: [1] }),
     );
 
-    expect(plan.shown).toEqual([{ card: '石', remaining: 1, emptied: true }]);
+    expect(plan.shown).toEqual([{ card: '石', present: [2], emptied: true }]);
     expect(plan.flights).toEqual([]);
     // 帰り先はいつでも答える（返すかどうかを決めるのは借りた側）。
     expect(plan.landings.get(1)).toEqual({ to: 0, into: '石' });
@@ -231,8 +231,8 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     );
 
     expect(plan.shown).toEqual([
-      { card: '石', remaining: 0, emptied: true },
-      { card: '枝', remaining: 0, emptied: true },
+      { card: '石', present: [], emptied: true },
+      { card: '枝', present: [], emptied: true },
     ]);
     expect(plan.landings.get(1)).toEqual({ to: 0, into: '石' });
     expect(plan.landings.get(2)).toEqual({ to: 100, into: '枝' });
@@ -255,7 +255,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     expect(plan.fadeIns).toEqual(['実']);
     expect(plan.flights).toEqual([]);
     // 運ばれてくるものが無いので、その場に1個居るものとして浮かび上がる。
-    expect(plan.shown).toEqual([{ card: '実', remaining: 1, emptied: false }]);
+    expect(plan.shown).toEqual([{ card: '実', present: [1], emptied: false }]);
   });
 
   it('同じ差し替えで生まれても、出どころが違えばそれぞれの出どころから飛ぶ', () => {

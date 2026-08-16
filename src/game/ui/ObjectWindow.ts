@@ -227,6 +227,8 @@ export class ObjectWindow {
         [{ card: borrowedFace(card) }],
         { bare: true },
       );
+      // レーンはカードを作らない（CardTable参照）。この1枚だけはウィンドウが自前で据える。
+      this.cardLane.showCard(borrowedFace(card));
     }
 
     const columnX = window.x + padding + (card === undefined ? 0 : cardWidth + gap);
@@ -286,7 +288,7 @@ export class ObjectWindow {
 
   /** 左のカードを、今の中身へ書き換える（カードを持たないウィンドウでは何もしない）。 */
   setCard(content: CardContent): void {
-    this.cardLane?.setCells([{ card: borrowedFace(content) }]);
+    this.cardLane?.showCard(borrowedFace(content));
     this.showCard();
   }
 

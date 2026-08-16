@@ -1,0 +1,604 @@
+import type Phaser from 'phaser';
+import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { CardContent } from './Card';
+import { Card, cardFace } from './Card';
+import type { CardLane } from './CardLane';
+import { FLY_EASE_OUT, FLY_MS } from './cardFlight';
+import { DustPuff } from './DustPuff';
+import type { PlacedCard } from './cardMotionPlan';
+import { planMotion } from './cardMotionPlan';
+import { REPEAT_MIN_MS } from './holdRepeat';
+import type { LaneCell } from './laneCells';
+
+/** 出現元が分からないカードが、その場で現れる時間（ミリ秒）。 */
+const FADE_MS = 200;
+
+/**
+ * 1枚ずつ間を置いて飛び立つときの間隔（ミリ秒）。押し続けて送り続けるときの最短間隔と揃える
+ * （holdRepeat参照）。
+ */
+const GAP_MS = REPEAT_MIN_MS;
+
+/**
+ * 差し替えのきっかけ。どちらも「そのカードがどこから動き出すか」を決めるための情報。
+ */
+export interface MotionContext {
+  /**
+   * 差し替え前に画面に無かったインスタンスの出発点を、そのインスタンスごとに持ったもの。
+   *
+   * **世界に起きた変化のログから引く**（motionOrigins、HuntingSystem.md 6.2節）。ログが「この個体は
+   * この札から来た」と言うので、UIはその札の矩形を引くだけになり、同じ差し替えで出どころの違う物が
+   * 生まれてもそれぞれの出どころから飛べる。
+   *
+   * 一覧から作り始めた製作中オブジェクトだけは、出どころが世界ではなく画面の事実（閉じた一覧の中で
+   * 選んだ札の位置）なので、UIが直に入れる。
+   */
+  readonly origins?: ReadonlyMap<number, Rect>;
+  /**
+   * 手から放したもの——掴んでいた1つ・待ってついてきたぶん・手を離した時点の矩形。いずれの
+   * インスタンスも元の枠ではなく指の下に居たので、そこから動き出す。
+   */
+  readonly released?: {
+    readonly grabbed: number;
+    readonly followers: readonly number[];
+    readonly rect: Rect;
+  };
+  /**
+   * 世界から出たインスタンスと、世界に生まれたインスタンス（motionOrigins）。砂埃を立てる場所を
+   * 決めるのに使う（cardMotionPlan）。**画面の出入りでは代われない**——別のレーンへ移っただけの
+   * カードも、レーンから見れば消えて現れるため。
+   */
+  readonly vanished?: readonly number[];
+  readonly born?: readonly number[];
+  /**
+   * 子ウィンドウが借りている札のインスタンス（Windows.md 1.1節）。**枠には居ないので並びから
+   * 引く**——借りた側が自分の場所に出しているので、同じ物の札が画面に2枚出ることはない。
+   * 控えではなく、借り手が持っている集合そのものを渡すこと。
+   */
+  readonly borrowed?: ReadonlySet<number>;
+}
+
+/** carry（1枚を運ぶ便）の指定。 */
+export interface CarryOptions {
+  /** 便が運ぶインスタンス。載せると、差し替えごとに行き先が引き直される（landings）。 */
+  readonly ids?: readonly number[];
+  /** 着いた枠の札（合流先）。着いた時点でこの札のIDセットへ合流する。 */
+  readonly into?: Card;
+  /** 着いた時点で呼ぶ（帳簿の後始末用。合流はintoが行う）。 */
+  readonly onArrive?: () => void;
+}
+
+/** 飛んでいる途中の便を外から止める手立て（窓を閉じたときなど）。 */
+export interface CarryHandle {
+  /** 便を打ち切り、札をその場で消す。 */
+  cancel(): void;
+}
+
+/** 1つの便——目標へ向かっている実体の札。 */
+interface Flight {
+  readonly card: Card;
+  ids: readonly number[];
+  to: Rect;
+  into: Card | undefined;
+  onArrive: (() => void) | undefined;
+  /** 差し替えごとに行き先を引き直すか。計画の外の場所（子ウィンドウの枠）へ向かう便は引き直さない。 */
+  readonly retargetable: boolean;
+  /** 発進位置と経過。目標が変わったら現在位置から測り直す。 */
+  fromX: number;
+  fromY: number;
+  elapsed: number;
+  /** 飛び立ちまでの残り時間（複数生まれたぶんは出どころに積まれ、順に飛び立つ）。 */
+  delay: number;
+  puffs: boolean;
+}
+
+/** レーンの枠に居ない自由な札（落とした札・時間のかかる操作の間そこに置いたままの札）。 */
+interface FreedCard {
+  readonly card: Card;
+  ids: readonly number[];
+  /** 経過を見せ切るまで発たない（時間のかかる操作の間、離した場所に置いたままにする）。 */
+  waiting: boolean;
+  /** 打ち切ったとき（実行しないと決めた操作）に、札を返す元の枠。 */
+  readonly source: Card | undefined;
+}
+
+/**
+ * 場に出ているカードの実体すべて（CardInteraction.md 6節 カードの移動アニメーション）。
+ *
+ * どの札がどこからどこへ飛ぶのかの解釈は計画（cardMotionPlan）が行う。このクラスは実体の札を
+ * 所有し、レーンの枠に置き（CardLane.adoptCard）、枠の外に在る間は最前面の層で目標へ向かわせる。
+ *
+ * **飛ぶのは常に実体の札そのもの**で、運んでいるインスタンス（ID）を載せている。枠の札は自分に
+ * 在るIDの集合を知っていて（Card.setPresence）、枚数はそこからの導出値。便が着くとIDセットが
+ * 合流する（Card.absorb）——分身と枚数の台帳は持たない。
+ *
+ * 飛んでいる途中に世界が変わったら、便は着かされるのではなく**向き直る**（plan.landings）。
+ * 差し替えと便の開始に順序の契約は無い。
+ *
+ * 最前面の層に置くのは、レーンからはみ出したカードは隣接エリアの背景板に隠れる設計
+ * （CardLane参照）のため、レーンの中に置いたままでは境界をまたげないから。
+ */
+export class CardTable {
+  private readonly scene: Phaser.Scene;
+  private readonly metrics: ScreenMetrics;
+  private readonly layer: Phaser.GameObjects.Container;
+  private readonly dust: DustPuff;
+
+  private readonly flights: Flight[] = [];
+  private readonly freed: FreedCard[] = [];
+
+  constructor(scene: Phaser.Scene, metrics: ScreenMetrics) {
+    this.scene = scene;
+    this.metrics = metrics;
+    this.layer = scene.add.container(0, 0).setDepth(1);
+    this.dust = new DustPuff(scene);
+    scene.events.on('update', this.step, this);
+    scene.events.once('shutdown', () => scene.events.off('update', this.step, this));
+  }
+
+  /** 枠の外に出している札をすべて片付ける。画面を作り直すときは、レーンごと捨てられる前にここを通す。 */
+  release(): void {
+    for (const flight of this.flights) flight.card.destroy();
+    this.flights.length = 0;
+    for (const freed of this.freed) freed.card.destroy();
+    this.freed.length = 0;
+  }
+
+  /** 各レーンの内容を差し替え、出入りするカードを動かす。lanesとcellsは同じ順に対応する。 */
+  update(
+    lanes: readonly CardLane[],
+    cells: readonly (readonly LaneCell[])[],
+    context: MotionContext = {},
+  ): void {
+    const before = placedCards(lanes);
+    // 最初の1回（作り直した直後）だけは出どころが無いので、飛ばさずその場に出す。
+    const firstShow = before.length === 0;
+
+    // 宙に在る札はどの枠にも居ない。飛んでいる便・自由な札・借りられている札のIDを、枠の枚数から引く。
+    const aloft = [
+      ...(context.borrowed ?? []),
+      ...this.flights.flatMap((flight) => flight.ids),
+      ...this.freed.flatMap((freed) => freed.ids),
+    ];
+
+    // 引き直すのはこの時点で既に飛んでいる便だけ。この差し替え自身が立てる便は、この計画が
+    // 出発点も行き先も決めたばかりで、引き直す理由が無い（landingsにも載っていない）。
+    const preexisting = [...this.flights];
+    const arriving: PlacedCard<Card, Rect>[] = [];
+    const left: { card: Card; ids: readonly number[] }[] = [];
+    lanes.forEach((lane, index) => {
+      const update = lane.reconcile(cells[index], (content) => this.makeCard(content));
+      for (const entered of update.entered) {
+        arriving.push({ card: entered.card, ids: idsOf(entered.card), rect: lane.slotRect(entered.index) });
+      }
+      for (const card of update.left) left.push({ card, ids: idsOf(card) });
+    });
+    const arrivingCards = new Set(arriving.map(({ card }) => card));
+    const staying = placedCards(lanes).filter(({ card }) => !arrivingCards.has(card));
+
+    const plan = planMotion({
+      before,
+      arriving,
+      staying,
+      left,
+      origins: context.origins,
+      released: releasedIdsOf(context.released),
+      aloft,
+      vanished: context.vanished,
+      born: context.born,
+    });
+
+    for (const { card, present, emptied } of plan.shown) {
+      if (card.scene !== undefined) card.setPresence(present, emptied);
+    }
+    for (const rect of plan.puffs) this.dust.burst(rect);
+    for (const flight of plan.flights) {
+      const card = new Card(this.scene, this.metrics, flight.from.x, flight.from.y, {
+        ...cardFace(flight.face.content),
+        identity: [flight.id],
+      });
+      this.layer.add(card);
+      this.startFlight({
+        card,
+        ids: [flight.id],
+        to: flight.to,
+        into: flight.into,
+        onArrive: undefined,
+        retargetable: true,
+        fromX: flight.from.x,
+        fromY: flight.from.y,
+        elapsed: 0,
+        delay: flight.delaySteps * GAP_MS,
+        puffs: flight.puffs,
+      });
+    }
+    for (const card of plan.fadeIns) this.fadeIn(card, firstShow);
+    for (const { card } of left) card.destroy();
+
+    // 飛んでいる途中の便と置いてある札は、行き先を引き直す（世界が変わって帰り先も変わりうる）。
+    this.retarget(preexisting, plan.landings, context);
+  }
+
+  /** 差し替えの結果に合わせて、宙に在る札の行き先を引き直す。 */
+  private retarget(
+    flights: readonly Flight[],
+    landings: ReadonlyMap<number, { readonly to: Rect; readonly into: Card }>,
+    context: MotionContext,
+  ): void {
+    for (const flight of flights) {
+      if (!this.flights.includes(flight)) continue;
+      if (!flight.retargetable || flight.ids.length === 0) continue;
+
+      const landing = landings.get(flight.ids[0]);
+      if (landing === undefined) {
+        // もう帰る枠が無い（世界から出たか、画面に出ない場所へ入った）。その場で消える。
+        if (flight.ids.some((id) => context.vanished?.includes(id) === true)) {
+          this.dust.burst(rectOf(flight.card));
+        }
+        this.dropFlight(flight);
+        continue;
+      }
+      if (landing.to.x === flight.to.x && landing.to.y === flight.to.y && landing.into === flight.into) {
+        continue;
+      }
+      // 向き直る。今の位置から新しい目標へ飛び直す（着かされはしない）。
+      flight.to = landing.to;
+      flight.into = landing.into;
+      flight.fromX = flight.card.x;
+      flight.fromY = flight.card.y;
+      flight.elapsed = flight.delay;
+    }
+
+    for (const freed of [...this.freed]) {
+      if (freed.waiting && context.released === undefined) continue;
+      freed.waiting = false;
+
+      const landing = freed.ids.map((id) => landings.get(id)).find((found) => found !== undefined);
+      this.freed.splice(this.freed.indexOf(freed), 1);
+      if (landing === undefined) {
+        // 運んでいたインスタンスはもう世界に無い（使い切った・壊れた）か、画面の外へ入った。
+        if (freed.ids.some((id) => context.vanished?.includes(id) === true)) {
+          this.dust.burst(rectOf(freed.card));
+        }
+        freed.card.destroy();
+        continue;
+      }
+      this.startFlight({
+        card: freed.card,
+        ids: freed.ids,
+        to: landing.to,
+        into: landing.into,
+        onArrive: undefined,
+        retargetable: true,
+        fromX: freed.card.x,
+        fromY: freed.card.y,
+        elapsed: 0,
+        delay: 0,
+        puffs: false,
+      });
+    }
+  }
+
+  /**
+   * 札を1枚、fromからtoへ運ぶ（子ウィンドウが借りるとき・返すとき、探索の発見物）。idsを載せた便は
+   * 差し替えごとに行き先が引き直され、intoの札へ合流する。載せない便は見た目だけの飛びで、toへ
+   * 着いたらonArriveを呼んで消える（発見物の枠はレーンではないので、受け取る側が自分の札を出す）。
+   */
+  carry(face: CardContent, from: Rect, to: Rect, options: CarryOptions = {}): CarryHandle {
+    const card = new Card(this.scene, this.metrics, from.x, from.y, {
+      ...cardFace(face),
+      identity: options.ids === undefined ? undefined : [...options.ids],
+    });
+    this.layer.add(card);
+    const flight: Flight = {
+      card,
+      ids: options.ids ?? [],
+      to,
+      into: options.into,
+      onArrive: options.onArrive,
+      retargetable: options.ids !== undefined,
+      fromX: from.x,
+      fromY: from.y,
+      elapsed: 0,
+      delay: 0,
+      puffs: false,
+    };
+    this.startFlight(flight);
+    return { cancel: () => this.dropFlight(flight) };
+  }
+
+  /**
+   * 落とした札を、経過を見せ切るまで離した場所に置いたままにする（時間のかかるcombination。
+   * 使っている道具はそこに在る）。運ぶインスタンスはここで確定する（掴んだ時点の見込みと、実際に
+   * 世界が動かす個体は違いうる——combinationは束の2つ目を使う）。
+   */
+  hold(released: NonNullable<MotionContext['released']>): void {
+    const freed = this.freed.find((entry) => entry.waiting);
+    if (freed === undefined) return;
+    freed.ids = [released.grabbed, ...released.followers];
+  }
+
+  /** 置いたままの札を、飛ばさずに元の枠へ返す（実行しないと決めた操作の後始末）。 */
+  settleFreed(): void {
+    for (const freed of this.freed.splice(0)) {
+      if (freed.source !== undefined && freed.source.scene !== undefined) {
+        freed.source.absorb(freed.ids);
+      }
+      freed.card.destroy();
+    }
+  }
+
+  /** 指が離した札を、枠の外の自由な札として引き取る（CarriedCard.release）。 */
+  adoptFreed(card: Card, ids: readonly number[], source: Card | undefined): void {
+    this.layer.add(card);
+    this.freed.push({ card, ids, waiting: true, source });
+  }
+
+  /** 指が運ぶ札を作る（CardDragController）。 */
+  grab(source: Card, home: () => Rect): CarriedCard {
+    return new CarriedCard(this.scene, this.metrics, this, this.layer, source, home);
+  }
+
+  /** 指へ向かうなど、目標が動き続ける便（CarriedCard用）。 */
+  flyTo(card: Card, target: () => Rect, onArrive: () => void): CarryHandle {
+    this.layer.add(card);
+    const flight: Flight & { tracked?: () => Rect } = {
+      card,
+      ids: [],
+      to: target(),
+      into: undefined,
+      onArrive,
+      retargetable: false,
+      fromX: card.x,
+      fromY: card.y,
+      elapsed: 0,
+      delay: 0,
+      puffs: false,
+    };
+    this.tracked.set(flight, target);
+    this.startFlight(flight);
+    return { cancel: () => this.dropFlight(flight) };
+  }
+
+  /** 目標が動き続ける便の、目標の引き直し先。 */
+  private readonly tracked = new Map<Flight, () => Rect>();
+
+  private startFlight(flight: Flight): void {
+    this.flights.push(flight);
+  }
+
+  /** 便を打ち切って札を消す（着いた扱いにはしない）。 */
+  private dropFlight(flight: Flight): void {
+    const index = this.flights.indexOf(flight);
+    if (index < 0) return;
+    this.flights.splice(index, 1);
+    this.tracked.delete(flight);
+    flight.card.destroy();
+  }
+
+  /** 毎フレーム、飛んでいる札を目標へ進める。目標が動いていれば追いかける（指・スクロール中の枠）。 */
+  private step(_time: number, delta: number): void {
+    for (const flight of [...this.flights]) {
+      const target = this.tracked.get(flight);
+      if (target !== undefined) flight.to = target();
+
+      flight.elapsed += delta;
+      if (flight.elapsed < flight.delay) continue;
+
+      const t = Math.min(1, (flight.elapsed - flight.delay) / FLY_MS);
+      const eased = FLY_EASE_OUT(t);
+      flight.card.setPosition(
+        flight.fromX + (flight.to.x - flight.fromX) * eased,
+        flight.fromY + (flight.to.y - flight.fromY) * eased,
+      );
+      if (t >= 1) this.land(flight);
+    }
+  }
+
+  /** 1つの便を終わらせる（着いた枠の札へ合流し、実体は行き先の札に引き継ぐ）。 */
+  private land(flight: Flight): void {
+    const index = this.flights.indexOf(flight);
+    if (index < 0) return;
+
+    this.flights.splice(index, 1);
+    this.tracked.delete(flight);
+    if (flight.puffs) this.dust.burst(flight.to);
+    if (flight.into !== undefined && flight.into.scene !== undefined) flight.into.absorb(flight.ids);
+    flight.onArrive?.();
+    flight.card.destroy();
+  }
+
+  /** 出どころの無いカードを、その場で出す。作り直した直後は飛びも浮かびもせず、既に在ったものとして出す。 */
+  private fadeIn(card: Card, instant: boolean): void {
+    card.setVisible(true);
+    if (instant) return;
+    card.setAlpha(0);
+    this.scene.tweens.add({ targets: card, alpha: 1, duration: FADE_MS });
+  }
+
+  /** レーンの枠に置く札を作る（CardLane.reconcileから呼ばれる。置き場所はレーンが決める）。 */
+  private makeCard(content: CardContent): Card {
+    const card = new Card(this.scene, this.metrics, 0, 0, content);
+    card.setVisible(false);
+    return card;
+  }
+}
+
+/**
+ * 指が運んでいる札——実体のカードそのもの（CardInteraction.md 2節）。掴んだ時点で元の束から
+ * 分かれ（元の札はそのぶん減って見える）、落とせば自由な札として置かれ、離せば元の枠へ帰って合流する。
+ *
+ * 束の2枚目以降は、元の枠から指へ飛んできて合流する（バッジの数字が増える）。重ねて見せる
+ * ファン表示は持たない——何枚運んでいるかは数字が伝える。
+ */
+export class CarriedCard {
+  private readonly scene: Phaser.Scene;
+  private readonly metrics: ScreenMetrics;
+  private readonly table: CardTable;
+  private readonly source: Card;
+  private readonly home: () => Rect;
+  private readonly card: Card;
+
+  /** 運んでいる個体（見込み。実際に世界が動かす個体はhold（落とした後）で確定する）。 */
+  private ids: number[];
+  /** 元の枠に残っている個体。 */
+  private rest: number[];
+  /** まだ指へ向かって飛んでいる札の便。 */
+  private readonly inbound: CarryHandle[] = [];
+  private state: 'carrying' | 'released' | 'gone' = 'carrying';
+
+  constructor(
+    scene: Phaser.Scene,
+    metrics: ScreenMetrics,
+    table: CardTable,
+    layer: Phaser.GameObjects.Container,
+    source: Card,
+    home: () => Rect,
+  ) {
+    this.scene = scene;
+    this.metrics = metrics;
+    this.table = table;
+    this.source = source;
+    this.home = home;
+
+    const present = source.presentIds;
+    this.ids = present.slice(0, 1);
+    this.rest = present.slice(1);
+    const at = home();
+    this.card = new Card(scene, metrics, at.x, at.y, {
+      ...cardFace(source.content),
+      identity: this.ids,
+      count: 1,
+    });
+    layer.add(this.card);
+    // 手に取った1枚は、もう元の枠には居ない。全部持ち出しても、そこは帰ってくる枠なので印が残る。
+    source.setPresence(this.rest, true);
+  }
+
+  /** 運んでいる枚数（そのままCardDrop.countになる）。 */
+  get count(): number {
+    return this.ids.length;
+  }
+
+  /** 札が今いる矩形。ドロップの出発点とツールチップの位置決めに使う。 */
+  get rect(): Rect {
+    return rectOf(this.card);
+  }
+
+  /** 札をポインタの中心へ置く。 */
+  follow(x: number, y: number): void {
+    this.card.setPosition(x - this.card.cardWidth / 2, y - this.card.cardHeight / 2);
+  }
+
+  /** 1枚ついてくる。元の枠から指の下へ飛んできて合流する（数字が増える）。 */
+  addOne(): void {
+    const next = this.rest[0];
+    if (next === undefined) return;
+
+    this.rest = this.rest.slice(1);
+    this.ids = [...this.ids, next];
+    this.source.setPresence(this.rest, true);
+    this.card.setContent({ ...this.card.content, identity: this.ids, count: this.ids.length });
+
+    const from = this.home();
+    const splinter = new Card(this.scene, this.metrics, from.x, from.y, {
+      ...cardFace(this.source.content),
+      count: 1,
+    });
+    const handle = this.table.flyTo(
+      splinter,
+      () => this.rect,
+      () => {
+        const at = this.inbound.indexOf(handle);
+        if (at >= 0) this.inbound.splice(at, 1);
+      },
+    );
+    this.inbound.push(handle);
+  }
+
+  /**
+   * 運ぶ枚数をその数まで減らす（足りていれば何もしない）。あふれた札は元の枠へ飛んで帰る。
+   * 戻り値は枚数が変わったかどうか。
+   */
+  keepAtMost(max: number): boolean {
+    const keep = Math.max(1, max);
+    if (this.ids.length <= keep) return false;
+
+    const returned = this.ids.slice(keep);
+    this.ids = this.ids.slice(0, keep);
+    this.card.setContent({ ...this.card.content, identity: this.ids, count: this.ids.length });
+    this.table.carry({ ...cardFace(this.source.content), count: returned.length }, this.rect, this.home(), {
+      onArrive: () => this.returnToSource(returned),
+    });
+    return true;
+  }
+
+  /** 落とさずに離した。札は元の枠へ飛んで帰り、着いた時点で合流して消える。 */
+  disband(): void {
+    if (this.state !== 'carrying') return;
+    this.state = 'gone';
+
+    for (const handle of this.inbound.splice(0)) handle.cancel();
+    const ids = this.ids;
+    this.table.flyTo(
+      this.card,
+      () => this.home(),
+      () => {
+        this.returnToSource(ids);
+        this.card.destroy();
+      },
+    );
+  }
+
+  /** 落とした。札は自由な札として離した場所に置かれ、行き先は世界の差し替えが決める（CardTable.freed）。 */
+  release(): void {
+    if (this.state !== 'carrying') return;
+    this.state = 'released';
+
+    for (const handle of this.inbound.splice(0)) handle.cancel();
+    this.table.adoptFreed(this.card, this.ids, this.source);
+  }
+
+  /** その場で解散する（画面の作り直しで続けられない）。表示物を片付け、元の束の見え方を掴む前へ戻す。 */
+  dissolve(): void {
+    if (this.state !== 'carrying') return;
+    this.state = 'gone';
+
+    for (const handle of this.inbound.splice(0)) handle.cancel();
+    this.returnToSource(this.ids);
+    this.card.destroy();
+  }
+
+  /** 帰ってきた個体を元の札へ合流させる。画面を作り直していれば、元の札はもう無い。 */
+  private returnToSource(ids: readonly number[]): void {
+    if (this.source.scene !== undefined) this.source.absorb(ids);
+  }
+}
+
+/** レーンに並んでいるカードを、位置とインスタンスのID付きで挙げる（計画の入力）。 */
+function placedCards(lanes: readonly CardLane[]): PlacedCard<Card, Rect>[] {
+  const placed: PlacedCard<Card, Rect>[] = [];
+  for (const lane of lanes) {
+    lane.cardObjects.forEach((card, index) => {
+      if (card !== undefined) placed.push({ card, ids: idsOf(card), rect: lane.slotRect(index) });
+    });
+  }
+  return placed;
+}
+
+/** 手から放したインスタンス全部を、計画のreleased（離した場所から動き出すもの）に直す。 */
+function releasedIdsOf(
+  released: MotionContext['released'],
+): { readonly ids: readonly number[]; readonly rect: Rect } | undefined {
+  return released === undefined
+    ? undefined
+    : { ids: [released.grabbed, ...released.followers], rect: released.rect };
+}
+
+function idsOf(card: Card): readonly number[] {
+  return card.content.identity ?? [];
+}
+
+function rectOf(card: Card): Rect {
+  return { x: card.x, y: card.y, width: card.cardWidth, height: card.cardHeight };
+}

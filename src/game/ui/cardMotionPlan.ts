@@ -1,5 +1,5 @@
 /**
- * レーンの差し替えを「どの札がどこからどこへ飛ぶか」に翻訳する計画（CardInteraction.md 6節）。実行はCardMotionが行い、ここは何も表示しない純粋な計算だけ。
+ * レーンの差し替えを「どの札がどこからどこへ飛ぶか」に翻訳する計画（CardInteraction.md 6節）。実行はCardTableが行い、ここは何も表示しない純粋な計算だけ。
  *
  * カードの実体Cも枠の矩形Rも、不透明な型として運ぶだけで読まない。**計画が座標に依存しないことは、
  * 総称であること自体が保証する**——依存した瞬間に型が通らなくなる。
@@ -49,7 +49,7 @@ export interface MotionInput<C, R> {
    */
   readonly released?: { readonly ids: readonly number[]; readonly rect: R };
   /**
-   * 今その枠から持ち出されているインスタンス——置いたままの分身が運ぶもの（CardMotion.hold）と、
+   * 今その枠から持ち出されているインスタンス——置いたままの分身が運ぶもの（CardTable.hold）と、
    * 子ウィンドウが借りている札（Windows.md 1.1節）。**どちらも枠には居ないので数から引き、通常の
    * 便も立てない**（動かすのは持ち出した側で、いつ返すのかもその側が決める）。
    */
@@ -63,9 +63,11 @@ export interface MotionInput<C, R> {
   readonly born?: readonly number[];
 }
 
-/** 分身1枚の飛行。 */
+/** 札1枚の飛行。 */
 export interface PlannedFlight<C, R> {
-  /** 分身の見た目を借りるカード（行き先のカード）。 */
+  /** この便が運ぶインスタンス。実行側はこのIDを載せた実体の札を飛ばし、着いた枠で合流させる。 */
+  readonly id: number;
+  /** 便の見た目を借りるカード（行き先のカード）。 */
   readonly face: C;
   /** 分身が運んでいる1枚の行き先。着いた時点で、その枠に居る枚数が1つ増える。 */
   readonly into: C;
@@ -77,11 +79,11 @@ export interface PlannedFlight<C, R> {
   readonly puffs: boolean;
 }
 
-/** 差し替えの直後に、その札が見せる枚数。 */
+/** 差し替えの直後に、その札の枠に在るインスタンス。枚数はここからの導出値。 */
 export interface ShownCard<C> {
   readonly card: C;
-  /** 映しているインスタンスのうち、まだ宙に在るもの（便・置いたままの分身）を除いた数。 */
-  readonly remaining: number;
+  /** 映しているインスタンスのうち、まだ宙に在るもの（便・運ばれている札）を除いた集合。 */
+  readonly present: readonly number[];
   /**
    * 0枚になったときに、帰ってくる場所を示す印を残すか。**元から居た札を持ち出された枠**だけが残す。
    * まだ1枚も来ていない枠には出さない——そこに在ったことのない札の帰る場所は無い。
@@ -157,29 +159,28 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
     let held = 0;
     // 生まれたのに出どころが分からないもの。飛ぶ便が無いので、着いた先で砂埃だけを立てる。
     let bornInPlace = false;
-    const sources: { rect: R; appeared: boolean; puffs: boolean }[] = [];
+    const present: number[] = [];
+    const sources: { id: number; rect: R; appeared: boolean; puffs: boolean }[] = [];
     for (const id of to.ids) {
       if (aloft.has(id)) {
         held += 1;
         landings.set(id, { to: to.rect, into: to.card });
       } else {
         const source = resolve(id, to, arriving);
-        if (source === undefined) bornInPlace ||= bornIds.has(id);
-        else sources.push({ ...source, puffs: bornIds.has(id) });
+        if (source === undefined) {
+          bornInPlace ||= bornIds.has(id);
+          present.push(id);
+        } else sources.push({ id, ...source, puffs: bornIds.has(id) });
       }
     }
     if (bornInPlace) puffs.push(to.rect);
 
-    // 運ばれている最中の札はまだここに居ない。1枚も居なければ札は出ないが、それは0枚という結果で
-    // あって別扱いではない——束の一部が宙に在るなら、残りはその枚数で見えている。
+    // 運ばれている最中の札はまだここに居ない。1枚も居なければ札は出ないが、それは空集合という結果で
+    // あって別扱いではない——束の一部が宙に在るなら、残りだけが見えている。
     //
     // 印を残すのは、元から居た札を持ち出された枠（staying）だけ。枠の外から来る途中の札を待って
     // いる枠（arriving）は、まだ何も在ったことがない。
-    shown.push({
-      card: to.card,
-      remaining: to.ids.length - sources.length - held,
-      emptied: !arriving,
-    });
+    shown.push({ card: to.card, present, emptied: !arriving });
 
     if (sources.length === 0) {
       if (arriving && held === 0) fadeIns.push(to.card);
@@ -189,6 +190,7 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
     let stagger = 0;
     for (const source of sources) {
       flights.push({
+        id: source.id,
         face: to.card,
         into: to.card,
         from: source.rect,

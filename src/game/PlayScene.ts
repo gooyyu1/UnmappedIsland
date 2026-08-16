@@ -46,8 +46,9 @@ import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX }
 import { addNineSlice } from './ui/nineSlice';
 import { laneTexture } from './ui/backgroundArt';
 import { SEPARATOR_TEXTURE } from './ui/separatorArt';
-import type { MotionContext } from './ui/CardMotion';
-import { CardMotion } from './ui/CardMotion';
+import type { MotionContext } from './ui/CardTable';
+import { CardTable } from './ui/CardTable';
+import type { CarryHandle } from './ui/CardTable';
 import { bornInstances, originInstances, vanishedInstances } from './ui/motionOrigins';
 import { floatSignalLabel } from './ui/signalLabel';
 import { ExplorationWindow } from './ui/ExplorationWindow';
@@ -155,7 +156,7 @@ const FIELD_DEPTH = -1;
 const WEATHER_DEPTH = -0.5;
 
 /**
- * 日射に応じた翳り・輝きは画面全体にかぶるので、飛んでいるカードの層（CardMotion）より手前。
+ * 日射に応じた翳り・輝きは画面全体にかぶるので、飛んでいるカードの層（CardTable）より手前。
  * ドーナツグラフと致命的域の枠だけは更に手前に残す——暗い時間帯でも変わらず読めている必要がある。
  */
 const SKY_TINT_DEPTH = 1.5;
@@ -183,15 +184,16 @@ const BRIGHTEN_MS = 320;
  */
 const DARKEN_MS = BRIGHTEN_MS * 2;
 
-/**
- * 借りる・返すの1回の運び（PlayScene.carry、Windows.md 1.1節）。出発点と行き先が決まった時点で
- * 組み立て、並びを貼り直したあとに運び始める。
- */
+/** 借りる・返すの1回の運び（PlayScene.carry、Windows.md 1.1節）。 */
 interface CardCarry {
+  /** 便が運ぶインスタンス（載せると行き先が引き直される。見た目だけの便は載せない）。 */
+  readonly ids?: readonly number[];
+  /** 着いた枠の札（合流先）。 */
+  readonly into?: Card;
   readonly content: CardContent;
   readonly from: Rect;
   readonly to: Rect;
-  /** 着いた時点ですること（借り手が札を表に出す・元の枠が1枚を受け取る）。 */
+  /** 便が終わったとき（着いたか、打ち切られたか）の帳簿の後始末。 */
   readonly onArrive: () => void;
 }
 
@@ -278,7 +280,10 @@ export class PlayScene extends ResponsiveScene {
    * 札なので、子ウィンドウへ貸し出すのも、そこから帰ってくるのも他のカードとまったく同じ経路を通る。
    */
   private portraitLane!: CardLane;
-  private motion!: CardMotion;
+  private motion!: CardTable;
+
+  /** 子ウィンドウへ札を運んでいる途中の便（窓を閉じたら打ち切る）。 */
+  private borrowFlight: CarryHandle | undefined;
   private situation!: WeatherPanel;
 
   /** フィールドエリアの背景板。レーンと合わせて、フィールドエリアだけを作り直すときに捨てる。 */
@@ -477,6 +482,7 @@ export class PlayScene extends ResponsiveScene {
     this.drag = new CardDragController(this, () => this.metrics, {
       describeDrop: (drop) => this.describeDrop(drop),
       onDrop: (drop, released) => this.applyDrop(drop, released),
+      grab: (card, home) => this.motion.grab(card, home),
     });
     this.haze = new LaneHaze(this);
 
@@ -579,7 +585,7 @@ export class PlayScene extends ResponsiveScene {
     // 翳り・輝きは画面全体にかぶるので、組み立ての順序ではなく深度で最前面近くへ出す。
     this.skyTint = new ScreenSkyTint(this, this.metrics, this.view.sunlight).setDepth(SKY_TINT_DEPTH);
     // 飛んでいるカードの層はフィールドエリアの作り直しでは捨てないので、そちらには含めない。
-    this.motion = new CardMotion(this, this.metrics);
+    this.motion = new CardTable(this, this.metrics);
     this.buildFilterBar(layout.filterBar);
     // 横型のオプションバーはフィールドエリアの隣（右サイドバー）なので、フィルターバーと同じく
     // レーンのはみ出しを隠す背景板を兼ねる。縦型は情報エリアの中なので、ページを敷いた後に置く。
@@ -606,6 +612,9 @@ export class PlayScene extends ResponsiveScene {
     if (layout.situationSeparator !== undefined) {
       addTiledImage(this, layout.situationSeparator, SEPARATOR_TEXTURE);
     }
+    // レーンはカードを作らない（CardTable参照）ので、組み上がったところで最初の差し替えを通して
+    // 札を出す。作り直しの直後は出どころが無いので、飛ばずその場に現れる。
+    this.showView();
     if (wasExploring) this.openExplorationWindow();
     if (openedCard !== undefined) this.openObjectWindow(openedCard);
     else if (openedPlace !== undefined) this.openSlotWindow(openedPlace);
@@ -703,6 +712,8 @@ export class PlayScene extends ResponsiveScene {
     this.fieldPanel.destroy();
     for (const lane of [this.fixtureLane, this.itemLane, this.handLane]) lane.destroy();
     this.buildFieldArea(this.layout);
+    // レーンはカードを作らない（CardTable参照）。作り直した並びへ札を出し直す。
+    this.showView();
   }
 
   /** ドラッグの対象になるレーン。設置物レーンも含める——持ち出せはしないが、同じレーンの中でなら並び替えられるため。 */
@@ -958,7 +969,10 @@ export class PlayScene extends ResponsiveScene {
    */
   private applyDrop(drop: CardDrop, released: Rect): void {
     const action = this.shown.dropAction(this.dropOf(drop));
-    if (action === undefined) return;
+    if (action === undefined) {
+      this.motion.settleFreed();
+      return;
+    }
 
     this.applyToWorld(this.dropLabel(drop), action, this.releasedBy(drop, released));
   }
@@ -1267,7 +1281,7 @@ export class PlayScene extends ResponsiveScene {
     // 借りた1枚を枠から引き、手持ちの端が指す先を引き直す（laneCards・neighbourOf参照）。
     this.showView();
     this.carry(returning);
-    this.carry(borrowing);
+    this.borrowFlight = this.carry(borrowing);
   }
 
   private closeChildWindow(): void {
@@ -1281,6 +1295,9 @@ export class PlayScene extends ResponsiveScene {
    * 並びの引き直しは呼び出し側——閉じるのは差し替えの途中のこともあるため。
    */
   private dropChildWindow(): CardCarry | undefined {
+    // まだ窓へ向かって飛んでいる途中なら打ち切る（窓は今から閉じる）。
+    this.borrowFlight?.cancel();
+    this.borrowFlight = undefined;
     const returning = this.releaseBorrowed();
     this.childWindow?.close();
     this.childWindow = undefined;
@@ -1290,12 +1307,14 @@ export class PlayScene extends ResponsiveScene {
     return returning;
   }
 
-  /**
-   * 控えておいた道のりで札を運ぶ。**運び始めるのは並びを貼り直したあと**——差し替えは飛んでいる
-   * 途中の分身をその場で着かせる（CardMotion.settle）ので、先に飛ばすと一瞬で着いてしまう。
-   */
-  private carry(carry: CardCarry | undefined): void {
-    if (carry !== undefined) this.motion.carry(carry.content, carry.from, carry.to, carry.onArrive);
+  /** 控えておいた道のりで札を運ぶ。 */
+  private carry(carry: CardCarry | undefined): CarryHandle | undefined {
+    if (carry === undefined) return undefined;
+    return this.motion.carry(carry.content, carry.from, carry.to, {
+      ids: carry.ids,
+      into: carry.into,
+      onArrive: carry.onArrive,
+    });
   }
 
   /**
@@ -1347,10 +1366,9 @@ export class PlayScene extends ResponsiveScene {
       content: taken.content,
       from,
       to: home.rect,
-      onArrive: () => {
-        this.shown.landed(taken.id);
-        this.motion.arrive(home.card);
-      },
+      ids: [taken.id],
+      into: home.card,
+      onArrive: () => this.shown.landed(taken.id),
     };
   }
 
@@ -1452,7 +1470,9 @@ export class PlayScene extends ResponsiveScene {
         return;
       }
 
-      this.motion.carry(card, from, window.foundRect(index), () => this.landFound(ids, index));
+      this.motion.carry(card, from, window.foundRect(index), {
+        onArrive: () => this.landFound(ids, index),
+      });
     });
   }
 
@@ -1694,12 +1714,16 @@ export class PlayScene extends ResponsiveScene {
     released?: MotionContext['released'],
     onDone?: () => void,
   ): void {
-    if (this.busy) return;
+    if (this.busy) {
+      // 実行しない。落とした札が離した場所に残っていれば、飛ばさず元の枠へ返す。
+      this.motion.settleFreed();
+      return;
+    }
 
     noteOperation(`${label}（${this.clockText()}）`);
 
     // 掴んで離したカードは、経過し切るまで離した場所に置いたままにする（使っている道具はそこに在る）。
-    if (released !== undefined) this.motion.hold(this.openLanes, released);
+    if (released !== undefined) this.motion.hold(released);
 
     const startedAt = this.gameSession.world.totalMinutes;
     const locationBefore = this.gameSession.player.location?.instance;
@@ -1766,7 +1790,7 @@ export class PlayScene extends ResponsiveScene {
 
   /**
    * 今のthis.viewを画面へ反映する。カードは作り直さずに差し替え、動いた分をアニメーションで
-   * 見せる（CardMotion）。
+   * 見せる（CardTable）。
    */
   private showView(context: MotionContext = {}): void {
     // 開いている子ウィンドウの中身も同じ差し替えに乗せる（openLanes）。手持ちとの間でカードが行き来する
@@ -1780,7 +1804,7 @@ export class PlayScene extends ResponsiveScene {
     const place = this.childWindowPlace;
     if (this.childWindow?.lane !== undefined && place !== undefined) cells.push(this.slotCells(place));
 
-    // 借りている札は**控えではなく集合そのもの**を渡す。差し替えの初めに帰り着く札（CardMotion.settle）
+    // 借りている札は**控えではなく集合そのもの**を渡す。差し替えの初めに帰り着く札（CardTable.settle）
     // はその場で借り出しが解けるので、控えを渡すと解けたはずの1枚を引き続き枚数から引いてしまう。
     this.motion.update(this.openLanes, cells, { ...context, borrowed: this.shown.lentIds });
     this.showChildWindowActions();
@@ -2117,7 +2141,7 @@ export class PlayScene extends ResponsiveScene {
    *
    * 出す行は行動のたびに変わる（安全域のステータスは出さない）が、バーはここで全プロパティ分を作って
    * おき、以後は見せ方と位置だけを変える。あとから作ると、開いている子ウィンドウの覆いより手前へ
-   * 出てしまうため（CardMotion参照）。
+   * 出てしまうため（CardTable参照）。
    */
   private buildStatusArea(area: Rect): void {
     const padding = this.metrics.px(STATUS_PADDING);

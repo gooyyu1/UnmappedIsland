@@ -76,7 +76,7 @@
 ## レーンの並び（[`Windows.md`](../ui/Windows.md) 1 節）
 
 - **1つの並びを、意味の違う2つの用途へ使い回さないこと。** `PlayScene.openLanes` は「差し替える中身と
-  位置で対応付ける並び」（`showView` → `CardMotion.update` が `lanes[i]` と `contents[i]` を組にする）
+  位置で対応付ける並び」（`showView` → `CardTable.update` が `lanes[i]` と `contents[i]` を組にする）
   なのに、ドラッグのドロップ先を探す順としても渡していた。ドロップ先は「最初に当たったレーン」で
   決まる（`CardDragController.dropAt`）ので、覆われている側が先に当たり、**子ウィンドウの中のカードへは
   何も落とせなかった**（装備も怪我も）。
