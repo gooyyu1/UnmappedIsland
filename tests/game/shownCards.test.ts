@@ -40,6 +40,7 @@ function stack(
     identity: ids,
     count: ids.length,
     objects: ids.map(object),
+    objectGlobalId: 0,
     actions: [],
     place,
     contents: options.contents,

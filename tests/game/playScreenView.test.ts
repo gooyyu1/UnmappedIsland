@@ -859,6 +859,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
         name,
         place: 'items' as const,
         objects,
+        objectGlobalId: objects[0].def.globalId,
         movedIds: () => objects.map((object) => object.instanceId),
         actions: [],
       };

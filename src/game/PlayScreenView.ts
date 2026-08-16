@@ -12,6 +12,8 @@ import { currentStep, stepSupplyRatio } from '../domain/runtime/crafting';
 import { IN_PROGRESS_TAG, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../loader/inProgressObjects';
 import type { Localization } from '../locale/Localization';
 import { artNameFor } from './ui/objectArt';
+import type { CraftingMaterial } from './craftingActions';
+import { craftingActions, craftingMaterials } from './craftingActions';
 import { recipeOf } from './recipeList';
 import type { SlotRef } from './ui/backgroundArt';
 import type { CardContent, CardCooking, CardGauge } from './ui/Card';
@@ -64,6 +66,9 @@ export interface ObjectCardStack extends CardContent {
    * 値（プロパティ）を見るときはメンバーを1つずつ読む。
    */
   readonly objects: readonly WorldObject[];
+
+  /** この束が映している物の型（object_defのグローバルID）。要求されている型と突き合わせるのに使う。 */
+  readonly objectGlobalId: number;
 
   /** カードを押して開く子ウィンドウに出す説明文。localeに書かれていなければundefined。 */
   readonly description?: string;
@@ -273,6 +278,12 @@ export interface PlayScreenView {
    * 限らない物——枠が受け入れる素材（LaneCell.accepts）——を見せるのに使う。
    */
   readonly cardOfType: (objectGlobalId: number) => CardContent;
+
+  /**
+   * その場所が製作中オブジェクトの材料スロットなら、要求している型ごとの枠（そうでなければundefined）。
+   * 並びは要求の順で、**もう要求されない型は挙げません**（craftingMaterials）。
+   */
+  readonly materialsOf: (place: CardPlace) => readonly CraftingMaterial[] | undefined;
 
   /**
    * 挙げた個体だけを映すカード。**束は割れる**——子ウィンドウは束のうち1個だけを借りるので
@@ -646,11 +657,14 @@ export function fromGameSession(
    *
    * `showMenu: never`のアクションはボタンにしない（GameElementDefinition.md 11.1節）。プレイヤーが
    * 押す機会が無い操作——動物の1手のように時間の側が起こすもの——のための宣言。
+   *
+   * 製作中オブジェクトの操作（craftingActions）も同じ並びに入る。**宣言から来たものと画面の都合で
+   * 足したものを分けない**——ボタンにする側は、どちらも同じ1つの並びとして受け取る。
    */
   const actionsOf = (instance: WorldObject): readonly CardAction[] => {
     const target = instance.resolveInteractionTarget();
     const texts = locale.object(target.def.name);
-    return target.def.actions
+    const fromDefinition = target.def.actions
       .filter((action) => action.showMenu === 'always')
       .map((action) => {
         const declared = texts.action(action.name);
@@ -666,6 +680,7 @@ export function fromGameSession(
           reason: unmet?.reasonName === undefined ? undefined : locale.reason(unmet.reasonName),
         };
       });
+    return [...craftingActions(instance, codex, game), ...fromDefinition];
   };
 
   const itemTagId = codex.tagNames.tryGetId('item');
@@ -883,6 +898,7 @@ export function fromGameSession(
     cooking: cookingOf(instances[0]),
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。
     objects: [...instances],
+    objectGlobalId: instances[0].def.globalId,
     movedIds: (count) => carriedOf(instances, count).map((instance) => instance.instanceId),
     description: locale.object(instances[0].def.name).description,
     actions: actionsOf(instances[0]),
@@ -1197,6 +1213,10 @@ export function fromGameSession(
       return stacks.map((stack) => cardOfStack(stack, place));
     },
     cardOfType,
+    materialsOf: (place) =>
+      typeof place === 'object' && 'container' in place
+        ? craftingMaterials(place.container, codex)
+        : undefined,
     // 道の差し替え（destinationOf）も通す。設置物レーンの束を割ったときに、行き先ではなく道そのものの
     // 名前が出てしまわないようにするため。
     cardOfObjects: (objects, place) => ({ ...cardOfStack(objects, place), ...destinationOf(objects[0]) }),
