@@ -39,25 +39,19 @@ export type CardPlacement =
 export type CardPlace =
   | 'fixtures'
   | 'items'
+  | 'structure'
   | 'hand'
   | 'equipment'
   | 'injuries'
-  /**
-   * あるオブジェクトの中。slotを省くと、そのオブジェクトが名乗る主要なスロット（`main_item_slot`、
-   * 7.8節）を指す——カードを押して開くのは常にそこなので、押した先を書くときは省ける。
-   *
-   * **slotを添えるのは、押して開く先とは別のスロットを映すとき**（現在地の札から開く構造の
-   * スロット、Windows.md）。持ち主が同じでもスロットが違えば別の場所なので、samePlaceも見分ける。
-   */
-  | { readonly container: WorldObject; readonly slot?: number };
+  | { readonly container: WorldObject };
 
 /**
  * 2つの場所が同じか。コンテナの場所は映しているインスタンスで見分ける（同じ型のコンテナが複数あっても
- * 中身は別なので、型では一意に決まらない）。同じ持ち主でもスロットが違えば別の場所。
+ * 中身は別なので、型では一意に決まらない）。
  */
 export function samePlace(a: CardPlace, b: CardPlace): boolean {
   if (typeof a === 'string' || typeof b === 'string') return a === b;
-  return a.container === b.container && a.slot === b.slot;
+  return a.container === b.container;
 }
 
 /**
@@ -1044,7 +1038,7 @@ export function fromGameSession(
    */
   const slotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined => {
     if (typeof place !== 'string') {
-      const slotId = place.slot ?? openableSlotOf(place.container);
+      const slotId = openableSlotOf(place.container);
       return slotId === undefined ? undefined : { owner: place.container, slotId };
     }
     switch (place) {
@@ -1052,6 +1046,12 @@ export function fromGameSession(
         return { owner: location.instance, slotId: location.itemsSlotId };
       case 'fixtures':
         return { owner: location.instance, slotId: location.fixturesSlotId };
+      // 現在地に組み込まれている部品（筏の帆、住居の壁）。itemsと同じく現在地のスロットだが、
+      // レーンには出ず、現在地の札から開くウィンドウだけが映す。
+      case 'structure':
+        return structureSlotId === undefined
+          ? undefined
+          : { owner: location.instance, slotId: structureSlotId };
       case 'hand':
         return { owner: game.player.instance, slotId: game.player.handSlotId };
       case 'equipment':
@@ -1243,9 +1243,9 @@ export function fromGameSession(
     currentLocationDescription: locale.object(location.instance.def.name).description,
     currentLocationActions: actionsOf(location.instance),
     currentLocationStructure:
-      structureSlotId === undefined || location.instance.tryGetSlot(structureSlotId) === undefined
-        ? undefined
-        : { container: location.instance, slot: structureSlotId },
+      structureSlotId !== undefined && location.instance.tryGetSlot(structureSlotId) !== undefined
+        ? 'structure'
+        : undefined,
     // 並び方はプレイヤーが地形をどう捉えているかで変わるため、同じスロットの中での並び替えを許す。
     // ヤシの木を持ち歩けないのはmoveIntoが弾くからで、このレーンが読み取り専用だからではない。
     fixtures: location.fixtureStacks.map((stack) => ({

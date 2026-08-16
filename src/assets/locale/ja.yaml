@@ -19,6 +19,10 @@ slot_texts:
   # 「筏の積荷」と読める言葉を当てる（土地のアイテムはレーンに出るので見出しを持たない）。
   items:
     display_name: 積荷
+  # 場所へ組み込まれている部品（筏の帆、Dwellings.md 1節の住居の壁）。中へ入って現在地の札を
+  # 押すと開く。
+  structure:
+    display_name: 部品
   # 製作中オブジェクトの材料スロット（レシピから自動生成される、inProgressObjects.ts）。
   materials:
     display_name: 材料
