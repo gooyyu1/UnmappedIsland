@@ -1,11 +1,11 @@
-import { readFileSync, readdirSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { AssetPack } from '../../src/assetPack/AssetPack';
 import { readZip } from '../../src/assetPack/zip';
 import { loadWorldCodex } from '../../src/loader/loadWorldCodex';
 import { loadLocalization } from '../../src/locale/Localization';
-import { SAMPLE_PACK_DIR, SAMPLE_PACK_ZIP } from '../support/samplePack';
+import { samplePackFiles } from '../../scripts/samplePackFiles.mjs';
+import { SAMPLE_PACK_ZIP } from '../support/samplePack';
 
 /**
  * 配布物として置いてあるサンプルアセットパック（`public/sample-pack.zip`）の検査。
@@ -13,6 +13,9 @@ import { SAMPLE_PACK_DIR, SAMPLE_PACK_ZIP } from '../support/samplePack';
  * ZIPは中身が読めない形でコミットされているため、**元の`sample-pack/`と食い違っても差分に
  * 現れない**。固め直し忘れも、パックの置き方の規約（AssetPack.md 3節）を変えたときの取り残しも、
  * ここで落とす。
+ *
+ * 期待するバイト列は固める側（`scripts/samplePackFiles.mjs`）から引く。作業ツリーの改行は
+ * 取り出し方で変わるので、ここでファイルを読み直すと、中身が合っていても環境によって落ちる。
  */
 describe('サンプルアセットパック', () => {
   const zip = new Uint8Array(readFileSync(SAMPLE_PACK_ZIP));
@@ -23,9 +26,19 @@ describe('サンプルアセットパック', () => {
 
   it('ZIPの中身が sample-pack/ と一致する（固め直し忘れの検出）', async () => {
     const files = await readZip(zip.buffer as ArrayBuffer);
+    const expected = samplePackFiles();
 
-    expect([...files.keys()].sort()).toEqual(sourceFiles().map(([name]) => name));
-    for (const [name, content] of sourceFiles()) expect(files.get(name), name).toEqual(content);
+    expect([...files.keys()].sort()).toEqual(expected.map(({ name }) => name));
+    for (const { name, content } of expected) expect(files.get(name), name).toEqual(content);
+  });
+
+  it('ZIPの中のテキストは改行がLFに揃っている（固めた環境でバイト列が変わらない）', async () => {
+    // 正規化を外して固め直しても、LFの作業ツリーでは何も起きないので、期待値との突き合わせでは
+    // 気付けない。コミットされたZIP自身を見れば、どの環境で検査しても同じ結果になる。
+    const files = await readZip(zip.buffer as ArrayBuffer);
+
+    for (const [name, content] of files)
+      if (name.endsWith('.yaml')) expect(content.includes(0x0d), name).toBe(false);
   });
 
   it('定義・表示文字列・絵が、置き方の規約どおりの場所に入っている', async () => {
@@ -48,15 +61,3 @@ describe('サンプルアセットパック', () => {
     expect(locale.object('poison_potion').action('drink').displayName).toBe('あおる');
   });
 });
-
-/** `sample-pack/` 以下の全ファイル（ZIP内のパスと中身。パス順）。 */
-function sourceFiles(): readonly [string, Uint8Array][] {
-  return readdirSync(SAMPLE_PACK_DIR, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile())
-    .map((entry) => join(entry.parentPath, entry.name))
-    .map((path): [string, Uint8Array] => [
-      relative(SAMPLE_PACK_DIR, path).split(sep).join('/'),
-      new Uint8Array(readFileSync(path)),
-    ])
-    .sort(([a], [b]) => (a < b ? -1 : 1));
-}
