@@ -57,16 +57,8 @@ import { ModalDialog } from './ui/ModalDialog';
 import type { ObjectWindowAction, ObjectWindowTarget } from './ui/ObjectWindow';
 import { borrowedFace, ObjectWindow } from './ui/ObjectWindow';
 import { RecipeWindow } from './ui/RecipeWindow';
-import { recipeCategories, recipeOf } from './recipeList';
-import { autoFillMaterials } from '../domain/runtime/autoFill';
-import { MATERIALS_SLOT } from '../loader/inProgressObjects';
-import {
-  advanceCrafting,
-  currentStep,
-  remainingRequirements,
-  spawnInProgressObject,
-  stepIsSupplied,
-} from '../domain/runtime/crafting';
+import { recipeCategories } from './recipeList';
+import { spawnInProgressObject } from '../domain/runtime/crafting';
 import { emitGainParticles } from './ui/GainParticles';
 import { ProgressRing } from './ui/ProgressRing';
 import type { PropertyTab } from './ui/PropertyWindow';
@@ -1066,8 +1058,8 @@ export class PlayScene extends ResponsiveScene {
    * カードを押すと開く子ウィンドウ。そのカードで実行できるアクション（ActionSystem.md 1節）を
    * ボタンとして並べ、中身のスロットを持つカード（コンテナ・怪我）ならその並びも一緒に出す。
    *
-   * アクションを実行するとワールドが変わり、このカードが消えることも別の場所へ移ることもあるため、
-   * 押した時点でウィンドウを閉じる。
+   * **ボタンでは閉じない。閉じるのは映しているものが世界から消えたとき**（refreshChildWindow）。
+   * 押した後に何が起きたかは、開いたままのウィンドウがそのまま見せる。
    *
    * アクションで生まれたものは、このカードを出どころとして飛ぶ（ヤシの木から採った実は木から手元へ）。
    * それを決めるのはこのウィンドウではなく世界の変化——アクションを宣言しているのがこのカードの
@@ -1082,101 +1074,11 @@ export class PlayScene extends ResponsiveScene {
     if (from !== undefined) for (const id of borrowed.identity ?? []) origins.set(id, from);
     this.openChildWindow(
       { card: borrowed, description: borrowed.description },
-      [...this.autoFillAction(borrowed), ...this.craftActions(borrowed), ...this.windowActions(borrowed)],
+      this.actionButtons(borrowed.actions, borrowed.name),
       borrowed.contents,
       origins,
       borrowed,
     );
-  }
-
-  /**
-   * 製作中オブジェクトの子ウィンドウに出す「自動補充」。**ボタン行の左端**に置く。
-   *
-   * 枠ごとに何をいくつ入れるかの判断はYAMLの語彙で書けないため、プログラム側で行う
-   * （autoFillMaterials）。持たないカードでは空を返す。
-   *
-   * 他のアクションと違い、押してもウィンドウを閉じない。補充の次にすることは同じウィンドウの
-   * 「作業する」なので、映しているものも場所も変わらないこの操作だけは開いたままにする。
-   */
-  private autoFillAction(card: ObjectCardStack): ObjectWindowAction[] {
-    const target = card.objects[0];
-    if (target === undefined || this.codex.productOf(target.def) === undefined) return [];
-
-    return [
-      {
-        label: '自動補充',
-        description: '手持ちと足元から、足りない素材を入れる。入れ物の中までは探さない。',
-        minutes: 0,
-        onTap: () => {
-          const player = this.gameSession.player.instance;
-          const location = this.gameSession.player.location;
-          autoFillMaterials(
-            target,
-            this.codex.slotNames.getId(MATERIALS_SLOT),
-            [
-              player.tryGetSlot(this.codex.slotNames.getId('hand'))?.contents ?? [],
-              location?.instance.tryGetSlot(this.codex.slotNames.getId('items'))?.contents ?? [],
-            ],
-            this.codex,
-            this.remainingFor(target),
-          );
-          // 開いたまま差し替える。閉じて開き直すと、入っていく素材が飛ぶ先のレーンごと消えてしまう。
-          this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-          this.showView();
-        },
-      },
-    ];
-  }
-
-  /**
-   * 製作中オブジェクトの「作業する」と「中断」。
-   *
-   * 作業は、工程の素材が揃っていれば、その工程ぶん時間と進捗を進める（RecipeSystem.md 4節。
-   * 在庫確認と消費はYAMLの語彙で書けないためプログラム側）。中断は作りかけを破棄するだけで、
-   * 入れてある素材はdestroyがその場へこぼす（GameElementDefinition.md 9.3節）。
-   */
-  private craftActions(card: ObjectCardStack): ObjectWindowAction[] {
-    const target = card.objects[0];
-    if (target === undefined) return [];
-    const recipe = recipeOf(target, this.codex);
-    if (recipe === undefined) return [];
-
-    const materialsSlotId = this.codex.slotNames.getId(MATERIALS_SLOT);
-    const step = currentStep(recipe, target.getNumber(this.codex.propertyNames.getId('progress')));
-    const supplied = step !== undefined && stepIsSupplied(target, materialsSlotId, step);
-
-    return [
-      {
-        label: '作業する',
-        description: '揃っている素材を使って、次の工程を進める。',
-        minutes: step?.durationMinutes ?? 0,
-        enabled: supplied,
-        reason: supplied ? undefined : '素材が足りない。',
-        // **閉じるのは経過し切ってから。** 他のアクションと違い、押した時点では閉じない——作業の
-        // あいだ素材は材料の枠に在る（advanceCrafting）ので、それを映したまま経過を見せる。
-        onTap: () => {
-          this.applyToWorld(
-            `作業した: ${card.name}`,
-            () => {
-              advanceCrafting(target, recipe, materialsSlotId, this.codex, this.gameSession.session);
-            },
-            undefined,
-            () => this.closeChildWindow(),
-          );
-        },
-      },
-      {
-        label: '中断',
-        description: '作りかけをやめる。入れてある素材はその場へこぼれる。',
-        minutes: 0,
-        onTap: () => {
-          this.closeChildWindow();
-          this.applyToWorld(`中断した: ${card.name}`, () => {
-            target.destroy();
-          });
-        },
-      },
-    ];
   }
 
   /**
@@ -1194,55 +1096,33 @@ export class PlayScene extends ResponsiveScene {
     stacks: readonly (ObjectCardStack | undefined)[],
     cards: readonly (CardContent | undefined)[],
   ): readonly LaneCell[] | undefined {
-    if (typeof place !== 'object' || !('container' in place)) return undefined;
+    const materials = this.view.materialsOf(place);
+    if (materials === undefined) return undefined;
 
-    const recipe = recipeOf(place.container, this.codex);
-    if (recipe === undefined) return undefined;
-
-    const progress = place.container.getNumber(this.codex.propertyNames.getId('progress'));
-    const remaining = remainingRequirements(recipe, progress);
-    const inStep = new Set(currentStep(recipe, progress)?.requirements.map((r) => r.objectGlobalId));
-
-    const typeOf = (index: number): number | undefined => stacks[index]?.objects[0]?.def.globalId;
-    const held = new Map<number, number>();
-    stacks.forEach((stack, index) => {
-      const globalId = typeOf(index);
-      if (stack !== undefined && globalId !== undefined) {
-        held.set(globalId, (held.get(globalId) ?? 0) + stack.objects.length);
-      }
-    });
-
-    const marksFor = (globalId: number | undefined): LaneCell => {
-      const needed = globalId === undefined ? undefined : remaining.get(globalId);
+    const wanted = new Map(materials.map((material) => [material.objectGlobalId, material]));
+    const marksFor = (objectGlobalId: number | undefined): LaneCell => {
+      const material = objectGlobalId === undefined ? undefined : wanted.get(objectGlobalId);
       // もう要求されない型は、取り出すための枠が残るだけで印は持たない。
-      if (globalId === undefined || needed === undefined) return {};
+      if (material === undefined) return {};
       return {
         // 空き枠のうちに何を入れる枠なのかを見せる（EmptyCard）。
-        accepts: this.view.cardOfType(globalId),
-        borderColor: inStep.has(globalId) ? COLOR.cellCurrentStep : COLOR.cellLaterStep,
+        accepts: this.view.cardOfType(material.objectGlobalId),
+        borderColor: material.inCurrentStep ? COLOR.cellCurrentStep : COLOR.cellLaterStep,
         // 1つしか要らない枠に数を出しても、枠そのものが既に言っていることの繰り返しにしかならない。
-        overlay: needed >= 2 ? `${held.get(globalId) ?? 0}/${needed}` : undefined,
+        overlay: material.needed >= 2 ? `${material.held}/${material.needed}` : undefined,
       };
     };
 
-    const cells: LaneCell[] = cards.map((card, index) => ({ card, ...marksFor(typeOf(index)) }));
+    const shownTypes = new Set(stacks.map((stack) => stack?.objectGlobalId));
+    const cells: LaneCell[] = cards.map((card, index) => ({
+      card,
+      ...marksFor(stacks[index]?.objectGlobalId),
+    }));
     // まだ1つも入っていない型の空き枠を、要求の順に足す。
-    for (const globalId of remaining.keys()) {
-      if (!held.has(globalId)) cells.push(marksFor(globalId));
+    for (const material of materials) {
+      if (!shownTypes.has(material.objectGlobalId)) cells.push(marksFor(material.objectGlobalId));
     }
     return cells;
-  }
-
-  /** 製作中オブジェクトなら、残りの工程が要求する型と数。そうでなければundefined。 */
-  private remainingFor(target: WorldObject): ReadonlyMap<number, number> | undefined {
-    const recipe = recipeOf(target, this.codex);
-    if (recipe === undefined) return undefined;
-    return remainingRequirements(recipe, target.getNumber(this.codex.propertyNames.getId('progress')));
-  }
-
-  /** カードのアクションを、子ウィンドウのボタンの形へ直す。 */
-  private windowActions(card: ObjectCardStack): ObjectWindowAction[] {
-    return this.actionButtons(card.actions, card.name);
   }
 
   /**
@@ -1257,7 +1137,6 @@ export class PlayScene extends ResponsiveScene {
       enabled: action.enabled,
       reason: action.reason,
       onTap: () => {
-        this.closeChildWindow();
         this.applyToWorld(`アクション: ${action.name}（${owner}）`, action.execute);
       },
     }));
@@ -1654,18 +1533,10 @@ export class PlayScene extends ResponsiveScene {
    * 移動を伴う操作かどうかはワールドを変えた時点で分かる（画面へ反映するのはその後なので、経過前の
    * 状態が出たまま）。そのため、場面転換の暗転を時間経過と並行して進められる（transit参照）。
    *
-   * onDoneは、経過し切って結果を画面へ反映したあとに呼ぶ。**結果を見せてから片付けたいもの**
-   * （作業し終えてから閉じる子ウィンドウ）のための後始末で、実行しないと決めたとき（busy）は呼ばない。
-   *
    * labelは、エラー報告に残す「何をしたか」（errorReport参照）。ワールドを変える操作はすべてここを
    * 通るので、再現手順として読める言葉を渡す。
    */
-  private applyToWorld(
-    label: string,
-    change: () => void,
-    released?: MotionContext['released'],
-    onDone?: () => void,
-  ): void {
+  private applyToWorld(label: string, change: () => void, released?: MotionContext['released']): void {
     if (this.busy) {
       // 実行しない。落とした札が離した場所に残っていれば、飛ばさず元の枠へ返す。
       this.motion.settleFreed();
@@ -1697,12 +1568,10 @@ export class PlayScene extends ResponsiveScene {
       if (curtain !== undefined) {
         // 土地を移った場合は出さない。出来事が起きた札は置いてきた土地の並びに居る。
         this.transit(curtain);
-        onDone?.();
         return;
       }
       this.showSignals(recorded.signals);
       this.showView({ ...this.motionOf(recorded.changes), released });
-      onDone?.();
     });
   }
 
@@ -1759,9 +1628,12 @@ export class PlayScene extends ResponsiveScene {
 
   /**
    * 子ウィンドウが映している札を、今のワールドで引き直す。差し替えの前後で束は別物になっているので、
-   * そのまま使うと次のアクションが古いインスタンスに対して組まれる。**借りていた1個が世界から
-   * 消えていれば閉じる**——映すものも、ボタンが効く相手も無くなっているため（手持ちから重ねて
-   * 打ち割った石など）。返すのは、閉じたときに手放した札の出どころ。
+   * そのまま使うと次のアクションが古いインスタンスに対して組まれる。
+   *
+   * **ウィンドウが閉じるのはここだけ**（プレイヤーが「閉じる」を押した場合を除く）。映していた1個が
+   * 世界から消えていれば、映すものもボタンが効く相手も無いので閉じる（食べた・打ち割った・中断した）。
+   * ボタンを押しただけでは閉じない——何が起きたかは開いたままのウィンドウが見せる。
+   * 返すのは、閉じたときに手放した札の出どころ。
    *
    * **枠を組み立てる前に呼ぶ**（showView）。閉じるならその枠は並びから消え、引き直せたならその
    * 新しい姿が枠に出る。
@@ -1780,11 +1652,7 @@ export class PlayScene extends ResponsiveScene {
     const card = this.shown.windowStack;
     if (this.childWindow === undefined || card === undefined) return;
 
-    this.childWindow.setActions([
-      ...this.autoFillAction(card),
-      ...this.craftActions(card),
-      ...this.windowActions(card),
-    ]);
+    this.childWindow.setActions(this.actionButtons(card.actions, card.name));
   }
 
   /**

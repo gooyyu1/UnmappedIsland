@@ -392,6 +392,7 @@ function awaitingStack(stack: ObjectCardStack, awaited: readonly number[]): Obje
     objects: [],
     actions: [],
     place: stack.place,
+    objectGlobalId: stack.objectGlobalId,
     movedIds: () => [],
   };
 }
