@@ -1,8 +1,8 @@
 import type { StatusDelta } from './statusChanges';
 import { statusChangesAfter } from './statusChanges';
 import { statusRows } from './statusRows';
-import type { PropertyTab } from './ui/PropertyWindow';
-import type { StatusContent } from './ui/StatusBar';
+import type { PropertyTab } from '../ui/PropertyWindow';
+import type { StatusContent } from '../ui/StatusBar';
 
 /** ShownStatusesが画面の外から読むもの。行動のたびに作り直される値なので、すべて呼び出しで受け取る。 */
 export interface StatusSource {

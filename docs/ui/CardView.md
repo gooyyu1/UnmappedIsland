@@ -12,7 +12,7 @@
 `status` タグ（[`StatusArea.md`](./StatusArea.md)）だけです。
 
 実装は `src/game/ui/Card.ts`（カード）と `src/game/ui/CardLane.ts`・`laneCells.ts`（枠）、色は
-`src/game/ui/theme.ts`、絵の解決は `objectArt.ts`・`backgroundArt.ts` で、実装済みです。
+`src/game/looks/theme.ts`、絵の解決は `objectArt.ts`・`backgroundArt.ts` で、実装済みです。
 
 ## 1. カードの枠
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rainStyleFor } from '../../src/game/ui/rainStyle';
+import { rainStyleFor } from '../../src/game/looks/rainStyle';
 
 /** 雨天ごとの雨の見え方（ScreenLayout.md 7.5.3節 雨の演出）。 */
 describe('rainStyle(天気ごとの雨の見え方)', () => {

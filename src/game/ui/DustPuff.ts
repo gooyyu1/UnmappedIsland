@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { Rect } from '../layout/ScreenMetrics';
+import type { Rect } from '../looks/ScreenMetrics';
 
 /** 砂埃の粒の画像のテクスチャキー（実体は src/assets/dust_puff.png、BootSceneが読む）。 */
 export const DUST_PUFF_TEXTURE = 'dust_puff';

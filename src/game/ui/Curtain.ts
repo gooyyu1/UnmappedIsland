@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
-import type { Rect } from '../layout/ScreenMetrics';
+import type { Rect } from '../looks/ScreenMetrics';
 import { addPanel } from './shapes';
-import { COLOR } from './theme';
+import { COLOR } from '../looks/theme';
 
 /**
  * 場面転換の暗幕。指定した矩形を覆って暗転し、明転し切ったら自分を片付ける。

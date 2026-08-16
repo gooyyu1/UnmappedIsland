@@ -4,7 +4,7 @@ import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import type { Localization } from '../../src/locale/Localization';
 import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { recordChange } from '../../src/game/recording';
+import { recordChange } from '../../src/game/view/recording';
 import { SeededRng } from '../support/SeededRng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 

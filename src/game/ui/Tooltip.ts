@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
-import { COLOR, FONT_FAMILY, SIZE, cssColor } from './theme';
+import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import { COLOR, FONT_FAMILY, SIZE, cssColor } from '../looks/theme';
 import { drawBox } from './shapes';
 import { wrapByCharacter } from './textLayout';
 

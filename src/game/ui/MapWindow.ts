@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
-import type { ScreenMetrics } from '../layout/ScreenMetrics';
-import type { MapLandView, MapRoadView } from '../PlayScreenView';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
+import type { MapLandView, MapRoadView } from '../view/PlayScreenView';
 import { addTextButton } from './Button';
 import { Card } from './Card';
 import { cardFace } from './cardFace';
-import { ACTION_HEIGHT, ACTION_MAX_WIDTH, WINDOW_PADDING } from './childWindow';
+import { ACTION_HEIGHT, ACTION_MAX_WIDTH, WINDOW_PADDING } from '../looks/childWindow';
 import { addLabel } from './labels';
 import { addPanel, drawBox } from './shapes';
-import { COLOR, SIZE } from './theme';
+import { COLOR, SIZE } from '../looks/theme';
 
 /** 地図上のカードの縮尺（レーンのカードに対する比）。一覧性を優先して小さめにする。 */
 const CARD_SCALE = 0.5;

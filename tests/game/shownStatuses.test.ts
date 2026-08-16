@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ShownStatuses } from '../../src/game/ShownStatuses';
+import { ShownStatuses } from '../../src/game/view/ShownStatuses';
 import type { PropertyTab } from '../../src/game/ui/PropertyWindow';
 import type { StatusContent } from '../../src/game/ui/StatusBar';
 

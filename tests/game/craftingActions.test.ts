@@ -4,7 +4,7 @@ import type { NewGameSession } from '../../src/domain/generation/NewGame';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
-import { craftingActions, craftingMaterials } from '../../src/game/craftingActions';
+import { craftingActions, craftingMaterials } from '../../src/game/view/craftingActions';
 import { inProgressObjectName, MATERIALS_SLOT } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { SeededRng } from '../support/SeededRng';

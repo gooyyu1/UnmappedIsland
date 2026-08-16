@@ -44,18 +44,23 @@
 
 ## 4. 在処
 
-| 層 | 主なファイル |
+**ディレクトリが層です。**
+
+| 層 | 置き場 |
 |---|---|
-| 世界 | `src/domain/`（`loader/`・`locale/` が定義を読み、ことばを与える） |
-| 映し | `src/game/PlayScreenView.ts`・`ShownCards.ts`・`ShownStatuses.ts`・`craftingActions.ts`・`recording.ts`・`statusRows.ts`・`statusChanges.ts`・`recipeList.ts`・`tickProgress.ts`、`src/game/ui/cardMotionPlan.ts` |
-| 意匠 | `src/game/ui/theme.ts`・`rainStyle.ts`・`skyTint.ts`・`heatHaze.ts`・`durationText.ts`・`childWindow.ts`・`cardFlight.ts`、`src/game/layout/` |
-| 素材 | `src/assets/`（絵の実体と、`objectArt.ts`・`backgroundArt.ts`・`iconArt.ts`・`locationArt.ts`・`weatherArt.ts`・`separatorArt.ts`・`informationArt.ts`） |
-| 部品 | `src/game/ui/` の残り（`Card`・`CardLane`・`CardTable`・`CardDragController`・`StatusBar`・`ProgressBar`・`Button` ほか） |
-| 組み立て | `src/game/PlayScene.ts`・各 `*Scene.ts`・`src/game/ui/*Window.ts` |
+| 世界 | `src/domain/`（`src/loader/` が定義を読み、`src/locale/` がことばを与える） |
+| 映し | `src/game/view/` |
+| 意匠 | `src/game/looks/`（色・寸法・領域・時間の見せ方） |
+| 素材 | `src/assets/`（絵の実体と、どのファイルがどの絵かを答えるモジュール） |
+| 部品 | `src/game/ui/` |
+| 組み立て | `src/game/*Scene.ts` と `src/game/ui/*Window.ts` |
 | （層の外） | `src/game/errorReport.ts`（横断の道具）・`src/save/`・`src/scenario/`・`src/util/` |
 
-**ディレクトリはまだ層に揃っていません。** `src/game/ui/` には映し（`cardMotionPlan.ts`）と意匠
-（`theme.ts` ほか）と、絵文字の代役を持つ `characterArt.ts` が残っています。
+- **ウィンドウは部品と同じ場所に置きます。** 組み立てでありながらPhaserの表示物そのものでもあるため、
+  シーンのように独立させても持ち出せません。
+- **契約（`CardContent`・`LaneCell`・`StatusContent`・`PropertyTab`）は部品側が定めます。**
+  「バーに何を渡せば描けるか」は部品の都合そのものだからです。映しはこれを**型として**輸入します
+  （`cardFace` だけは値として輸入しますが、Phaserを持ち込みません）。
 
 ## 5. Phaser をやめるとどうなるか
 

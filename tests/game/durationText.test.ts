@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { durationText, elapsedText, minutesText } from '../../src/game/ui/durationText';
+import { durationText, elapsedText, minutesText } from '../../src/game/looks/durationText';
 
 describe('minutesText(ゲーム内時間の長さ)', () => {
   it('1時間に満たなければ分だけ、超えれば時間と分に分ける', () => {

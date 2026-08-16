@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
 import { noteOperation } from '../errorReport';
 import { addLabel } from './labels';
 import type { BoxStyle } from './shapes';
 import { drawBox } from './shapes';
 import { onPressRelease } from './tap';
-import { COLOR, SIZE } from './theme';
+import { COLOR, SIZE } from '../looks/theme';
 
 /**
  * スロットボタン（地図・装備・怪我・レシピ）の地に敷く紙のテクスチャキー。

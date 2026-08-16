@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { CardFrameKind } from '../../src/game/ui/theme';
-import { cardFrameColors } from '../../src/game/ui/theme';
+import type { CardFrameKind } from '../../src/game/looks/theme';
+import { cardFrameColors } from '../../src/game/looks/theme';
 
 /**
  * カードの枠の色（CardView.md 2節 枠の色は種別で変える）の自動テスト。

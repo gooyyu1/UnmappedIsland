@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
 import type { Button } from './Button';
 import { addTextButton } from './Button';
 import type { CardContent } from './Card';
@@ -7,7 +7,7 @@ import { Card } from './Card';
 import { cardFace } from './cardFace';
 import { addLabel } from './labels';
 import { addPanel, drawBox } from './shapes';
-import { COLOR, SIZE } from './theme';
+import { COLOR, SIZE } from '../looks/theme';
 import { wrapByCharacter } from './textLayout';
 
 /** モーダルの寸法（StartScreen_Mock.htmlの.modal-card/.modal-button）。 */

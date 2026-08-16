@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
-import { heatHazeFor } from '../../src/game/ui/heatHaze';
-import { skyTintFor } from '../../src/game/ui/skyTint';
+import { heatHazeFor } from '../../src/game/looks/heatHaze';
+import { skyTintFor } from '../../src/game/looks/skyTint';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { SeededRng } from '../support/SeededRng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';

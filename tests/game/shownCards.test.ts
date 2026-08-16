@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldObject } from '../../src/domain/runtime/WorldObject';
-import type { CardSpot } from '../../src/game/ShownCards';
-import { ShownCards } from '../../src/game/ShownCards';
+import type { CardSpot } from '../../src/game/view/ShownCards';
+import { ShownCards } from '../../src/game/view/ShownCards';
 import type {
   CardCombination,
   CardPlace,
   CardPlacement,
   ObjectCardStack,
-} from '../../src/game/PlayScreenView';
-import { planMotion } from '../../src/game/ui/cardMotionPlan';
+} from '../../src/game/view/PlayScreenView';
+import { planMotion } from '../../src/game/view/cardMotionPlan';
 
 /**
  * 画面に出ている札の並びと、その上の操作の意味（ShownCards）の自動テスト。

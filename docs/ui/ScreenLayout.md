@@ -11,7 +11,7 @@
 単位は `u`（画面短辺 ÷ 1080）で、オプションバー・ダッシュボード・フィールド・フィルターバーの
 4 領域を、縦型・横型で同じ要素のままグリッドの配置換えだけで組み直します。
 
-実装は `src/game/PlayScene.ts`（寸法計算は `src/game/layout/PlayScreenLayout.ts`）で、本書の寸法
+実装は `src/game/PlayScene.ts`（寸法計算は `src/game/looks/PlayScreenLayout.ts`）で、本書の寸法
 トークンをそのまま使います（12 節）。レイアウトは HTML モック（13 節）で検証済みで、Phaser 側も
 実装済みです。
 
@@ -426,9 +426,9 @@
 
 | 演出 | 見ているもの | 映す範囲 | 実装 |
 |---|---|---|---|
-| 翳り・輝き | `sunlight`（日射） | 画面全体 | `src/game/ui/skyTint.ts` |
-| 雨 | `weather`（天気） | フィールドエリア | `src/game/ui/rainStyle.ts` |
-| 陽炎 | `ambient_temperature`（気温） | フィールドエリアの3レーン | `src/game/ui/heatHaze.ts` |
+| 翳り・輝き | `sunlight`（日射） | 画面全体 | `src/game/looks/skyTint.ts` |
+| 雨 | `weather`（天気） | フィールドエリア | `src/game/looks/rainStyle.ts` |
+| 陽炎 | `ambient_temperature`（気温） | フィールドエリアの3レーン | `src/game/looks/heatHaze.ts` |
 
 #### 7.5.1 明るさは日射が決める
 
@@ -612,14 +612,14 @@
 
 ## 12. 実装
 
-Phaser 側の実装は `src/game/PlayScene.ts`（エリアの寸法計算は `src/game/layout/PlayScreenLayout.ts`、
+Phaser 側の実装は `src/game/PlayScene.ts`（エリアの寸法計算は `src/game/looks/PlayScreenLayout.ts`、
 探索ウィンドウは `src/game/ui/ExplorationWindow.ts`）。本ドキュメントの u 単位の寸法トークンをそのまま
 用い、向きの変更時は画面を作り直して配置し直します（開いている子ウィンドウは組み立て直されます）。
 アクションで表示内容が変わったときは画面を作り直さず、レーンの中身を差し替えます。移動で現在地が
 変わったときだけは、フィールドエリアだけを作り直します
 （[移動の場面転換](./CardInteraction.md#9-移動の場面転換)）。
 
-表示する内容は `src/game/PlayScreenView.ts` が供給します。3 レーンと日時は実際のワールド状態
+表示する内容は `src/game/view/PlayScreenView.ts` が供給します。3 レーンと日時は実際のワールド状態
 （現在地とそのスロットの中身・キャラクターの手持ちスロット・`world` の日時）から作ります。
 アイテムの画像がまだ無いため、カードのアイコンは種別ごとの絵文字を仮に使っています。名前は
 言語ごとの対応表（[Localization.md](../engine/Localization.md)）から引きます。条件のアイコンは

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TickProgress } from '../../src/game/tickProgress';
+import { TickProgress } from '../../src/game/view/tickProgress';
 
 /**
  * 時間経過の見せ方（CardInteraction.md 7節 時間経過のドーナツグラフ）の自動テスト。

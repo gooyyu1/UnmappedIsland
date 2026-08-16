@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import type { AlertLevel } from '../../domain/defs/AlertLevel';
-import type { ScreenMetrics } from '../layout/ScreenMetrics';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { drawBox } from './shapes';
-import { COLOR, fadedFill, fillColorFor } from './theme';
+import { COLOR, fadedFill, fillColorFor } from '../looks/theme';
 
 /** 域ごとの警戒の枠の色（明滅させない域はundefined）。 */
 function alertBorderColor(alert: AlertLevel): number | undefined {

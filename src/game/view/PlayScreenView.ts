@@ -1,26 +1,26 @@
-import type { AlertLevel } from '../domain/defs/AlertLevel';
-import type { ObjectDef } from '../domain/defs/ObjectDef';
-import type { WorldCodex } from '../domain/defs/WorldCodex';
-import type { NewGameSession } from '../domain/generation/NewGame';
-import { Location } from '../domain/runtime/views/Location';
-import { Path } from '../domain/runtime/views/Path';
-import type { PropertyInfluence } from '../domain/runtime/PropertyInfluence';
-import type { PropertyReading } from '../domain/runtime/PropertyValue';
-import type { WorldObject } from '../domain/runtime/WorldObject';
-import { putIntoSlot } from '../domain/runtime/slotEntry';
-import { currentStep, stepSupplyRatio } from '../domain/runtime/crafting';
-import { IN_PROGRESS_TAG, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../loader/inProgressObjects';
-import type { Localization } from '../locale/Localization';
-import { artNameFor } from '../assets/objectArt';
+import type { AlertLevel } from '../../domain/defs/AlertLevel';
+import type { ObjectDef } from '../../domain/defs/ObjectDef';
+import type { WorldCodex } from '../../domain/defs/WorldCodex';
+import type { NewGameSession } from '../../domain/generation/NewGame';
+import { Location } from '../../domain/runtime/views/Location';
+import { Path } from '../../domain/runtime/views/Path';
+import type { PropertyInfluence } from '../../domain/runtime/PropertyInfluence';
+import type { PropertyReading } from '../../domain/runtime/PropertyValue';
+import type { WorldObject } from '../../domain/runtime/WorldObject';
+import { putIntoSlot } from '../../domain/runtime/slotEntry';
+import { currentStep, stepSupplyRatio } from '../../domain/runtime/crafting';
+import { IN_PROGRESS_TAG, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../../loader/inProgressObjects';
+import type { Localization } from '../../locale/Localization';
+import { artNameFor } from '../../assets/objectArt';
 import type { CraftingMaterial } from './craftingActions';
 import { craftingActions, craftingMaterials } from './craftingActions';
 import { recipeOf } from './recipeList';
-import type { SlotRef } from '../assets/backgroundArt';
-import type { CardContent, CardCooking, CardGauge } from './ui/Card';
-import { COLOR } from './ui/theme';
-import type { CardKind } from './ui/theme';
-import type { PropertyTab } from './ui/PropertyWindow';
-import type { StatusContent, StatusDetail, StatusInfluence } from './ui/StatusBar';
+import type { SlotRef } from '../../assets/backgroundArt';
+import type { CardContent, CardCooking, CardGauge } from '../ui/Card';
+import { COLOR } from '../looks/theme';
+import type { CardKind } from '../looks/theme';
+import type { PropertyTab } from '../ui/PropertyWindow';
+import type { StatusContent, StatusDetail, StatusInfluence } from '../ui/StatusBar';
 
 /**
  * レーンの中でカードを置く場所。gapは枠と枠の隙間（indexは0が先頭の枠の前）、cellは空き枠そのもの

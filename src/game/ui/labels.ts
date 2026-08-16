@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
-import type { ScreenMetrics } from '../layout/ScreenMetrics';
-import { COLOR, FONT_FAMILY, cssColor } from './theme';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
+import { COLOR, FONT_FAMILY, cssColor } from '../looks/theme';
 
 /** 文字の見た目。sizeはu単位のフォントサイズ。 */
 export interface LabelStyle {

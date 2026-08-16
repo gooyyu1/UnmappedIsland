@@ -16,7 +16,7 @@ import { SEPARATOR_ART } from '../assets/separatorArt';
 import { ICON_ART } from '../assets/iconArt';
 import { WEATHER_ART } from '../assets/weatherArt';
 import { commonArtFiles, locationDefNames } from '../assets/locationArt';
-import { COLOR, FONT_FAMILY, cssColor } from './ui/theme';
+import { COLOR, FONT_FAMILY, cssColor } from './looks/theme';
 import { WORLD_CODEX_FILES } from '../loader/worldCodexFiles';
 
 /** 組み立て済みWorldCodex・表示文字列をレジストリへ置くときのキー。 */

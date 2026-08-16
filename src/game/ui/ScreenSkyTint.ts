@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import type { ScreenMetrics } from '../layout/ScreenMetrics';
-import { skyTintFor } from './skyTint';
-import { COLOR } from './theme';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
+import { skyTintFor } from '../looks/skyTint';
+import { COLOR } from '../looks/theme';
 
 /**
  * 日射に応じて画面全体へかぶせる翳り・輝き（ScreenLayout.md 7.5節 空の演出）。見え方はskyTint.tsが

@@ -4,7 +4,7 @@ import type { NewGameSession } from '../../src/domain/generation/NewGame';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { Path } from '../../src/domain/runtime/views/Path';
-import { fromGameSession, withFrozenCards } from '../../src/game/PlayScreenView';
+import { fromGameSession, withFrozenCards } from '../../src/game/view/PlayScreenView';
 import type { CardGauge } from '../../src/game/ui/Card';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import type { Localization } from '../../src/locale/Localization';

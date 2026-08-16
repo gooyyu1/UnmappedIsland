@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { skyTintFor } from '../../src/game/ui/skyTint';
+import { skyTintFor } from '../../src/game/looks/skyTint';
 
 /**
  * 日射に応じてフィールドエリアへかぶせる色（ScreenLayout.md 7.5節 空の演出）。

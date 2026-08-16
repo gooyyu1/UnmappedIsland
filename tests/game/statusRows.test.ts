@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AlertLevel } from '../../src/domain/defs/AlertLevel';
-import { statusRows } from '../../src/game/statusRows';
+import { statusRows } from '../../src/game/view/statusRows';
 import type { StatusContent } from '../../src/game/ui/StatusBar';
 
 /** 並び順と絞り込みに効くkey・域・固定表示だけを指定して作る。 */

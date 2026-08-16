@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import type { Rect } from '../layout/ScreenMetrics';
+import type { Rect } from '../looks/ScreenMetrics';
 
 /** 角丸矩形の塗り・枠線の指定。枠線を省くと塗りだけを描く。 */
 export interface BoxStyle {

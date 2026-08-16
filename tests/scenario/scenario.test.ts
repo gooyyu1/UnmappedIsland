@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
-import { heatHazeFor } from '../../src/game/ui/heatHaze';
+import { heatHazeFor } from '../../src/game/looks/heatHaze';
 import { applyScenario, bundledScenario, parseScenario, scenarioNames } from '../../src/scenario/Scenario';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { SeededRng } from '../support/SeededRng';

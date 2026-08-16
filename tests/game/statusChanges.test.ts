@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { statusChangesAfter, statusChangesBetween } from '../../src/game/statusChanges';
+import { statusChangesAfter, statusChangesBetween } from '../../src/game/view/statusChanges';
 import type { StatusContent } from '../../src/game/ui/StatusBar';
 
 /** 域は増減の判定に使わないため、比較に効くkey・value・ratioだけを指定して作る。 */

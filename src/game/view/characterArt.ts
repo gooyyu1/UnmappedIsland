@@ -1,5 +1,5 @@
 import type { Localization } from '../../locale/Localization';
-import type { CardContent } from './Card';
+import type { CardContent } from '../ui/Card';
 
 /**
  * キャラクタの絵（`src/assets/objects/<識別子>.png`、objectArt.ts）が用意されるまでの代替アイコン。

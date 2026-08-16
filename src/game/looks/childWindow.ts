@@ -1,4 +1,4 @@
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from './ScreenMetrics';
 import { SIZE } from './theme';
 
 /**

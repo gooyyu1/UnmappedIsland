@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COLOR, fadedFill, fillColorFor } from '../../src/game/ui/theme';
+import { COLOR, fadedFill, fillColorFor } from '../../src/game/looks/theme';
 
 /** 色を成分に分ける（塗りの色が緑寄りか茶寄りかを見るため）。 */
 function channels(color: number): { red: number; green: number; blue: number } {
