@@ -14,7 +14,9 @@ object_defs:
   # 今どのスロットに入っているかが決める——土地のitemsスロットが「地面」で、手持ちはhand、
   # かごの中はcontentsと名前が違うので、条件1つで書ける。
   snare:
-    tags: [item, trap]
+    # fragileは、動物がぶつかって壊しうる物（docs/engine/HuntingSystem.md 5.4節）。繊維を結んだだけの
+    # 罠は踏まれれば切れ、掛かっていた獲物は地面へこぼれる。
+    tags: [item, trap, fragile]
     # 押すと掛かった獲物が並ぶ（7.8節）。レーンの上では空の罠と獲物入りの罠が見分けられない
     # ——開けてみるまで分からない、が隠す処理を1つも書かずに成立する（TrapSystem.md 5節）。
     main_item_slot: catch

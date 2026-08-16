@@ -4,6 +4,7 @@ import type { EffectSite, WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { objectRef, propertyRef, signedNumber, text } from './Description';
+import type { ObjectRef } from './ObjectRef';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -205,9 +206,9 @@ export class AddEffect extends ActiveEffect {
  * 要素2つのDestroyEffectとして表す。same_slot spawnとの連携はeffectSite（ActiveEffect参照）が担う。
  */
 export class DestroyEffect extends ActiveEffect {
-  private readonly target: ReferenceRoot;
+  private readonly target: ObjectRef;
 
-  constructor(target: ReferenceRoot) {
+  constructor(target: ObjectRef) {
     super();
     this.target = target;
   }
@@ -218,12 +219,12 @@ export class DestroyEffect extends ActiveEffect {
     actor: WorldObject | undefined,
     dragged: WorldObject | undefined,
   ): void {
-    const victim = owner.resolveEffectTarget(this.target, actor, dragged);
+    const victim = this.target.resolve(owner, actor, dragged);
     victim?.destroy();
   }
 
-  describe(_names: DefNames, out: DescriptionWriter): void {
-    out.write(text(`destroy ${this.target}`));
+  describe(names: DefNames, out: DescriptionWriter): void {
+    out.write(text('destroy '), ...this.target.describe(names));
   }
 
   /** オブジェクトごと消すだけで、個々のプロパティを書き換えはしない。 */
@@ -232,7 +233,7 @@ export class DestroyEffect extends ActiveEffect {
   }
 
   override destroys(target: ReferenceRoot): boolean {
-    return this.target === target;
+    return this.target.isRoot(target);
   }
 }
 

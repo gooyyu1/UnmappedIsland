@@ -165,6 +165,98 @@ object_defs:
           parent:
             blood: -200
 
+  # 噛まれた傷。動物の1手（docs/engine/HuntingSystem.md 5節）のうち、小さい獣が持つ攻め手が残す。
+  # 歯が並んで食い込むので、裂傷より浅い代わりに縁が細かく、血は同じ速さで止まる。
+  #
+  # **同じ傷が、噛んだ相手によらず同じ深さになる。** 傷の種類は候補（噛む・牙で突く）が持ち、
+  # どちらを引きやすいかだけが動物ごとに違う（重み配分）——武器の側が威力ではなく当たり所の配分だけを
+  # 宣言するのと同じ形（同1.2節）。
+  bite_wound:
+    tags: [injury]
+    traits: [treatable]
+    bound_to_owner: true
+    stackable: false
+    props:
+      # 自然に治るまで360 tick（3.75日）。裂傷（480）より浅い。
+      severity:
+        # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
+        gauge: {min: good, max: bad}
+        value: 360
+        range: {min: 1, max: 360}
+        stages:
+          - {name: mending}
+          - {name: sore, min: 120, alert: watch}
+          - {name: acute, min: 240, alert: caution}
+        passives:
+          - add:
+              self:
+                severity: -1
+        on_shortfall:
+          destroy: self
+      # 固まるまでの速さは裂傷と同じ4 tick。
+      bleeding:
+        value: 100
+        range: {min: 0, max: 100}
+        passives:
+          - add:
+              self:
+                bleeding: -25
+    passives:
+      - modify:
+          parent:
+            pain: 40
+      # 固まるまでの合計は40mL。ヒトには響かないが、噛まれた側が小動物なら1割を超える。
+      - conditions:
+          - {prop: bleeding, gte: 1}
+          - not: {slot: treatment, matches: {tag: hemostatic}}
+        add:
+          parent:
+            blood: -10
+
+  # 牙で突かれた傷。イノシシの1手（docs/engine/HuntingSystem.md 5節）が残す、この島で最も重い傷。
+  # 下から突き上げる牙が深部を裂くので、**刺し傷と同じ桁で血が流れる**（injuries.yamlの中で
+  # puncture_woundと並ぶ2つだけ）。手当てが間に合わなければ、その場を離れても倒れる。
+  gore_wound:
+    tags: [injury]
+    traits: [treatable]
+    bound_to_owner: true
+    stackable: false
+    props:
+      # 自然に治るまで720 tick（7.5日）。刺し傷と同じ深さの傷として扱う。
+      severity:
+        # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
+        gauge: {min: good, max: bad}
+        value: 720
+        range: {min: 1, max: 720}
+        stages:
+          - {name: mending}
+          - {name: sore, min: 240, alert: watch}
+          - {name: acute, min: 480, alert: caution}
+        passives:
+          - add:
+              self:
+                severity: -1
+        on_shortfall:
+          destroy: self
+      bleeding:
+        value: 100
+        range: {min: 0, max: 100}
+        passives:
+          - add:
+              self:
+                bleeding: -25
+    passives:
+      - modify:
+          parent:
+            pain: 60
+      # 固まるまでの4tickで合計600mL。ヒトの5,000mLの1割強で、2度突かれれば意識が薄れ始める。
+      - conditions:
+          - {prop: bleeding, gte: 1}
+          - not: {slot: treatment, matches: {tag: hemostatic}}
+        add:
+          parent:
+            blood: -150
+
   # くくり罠の傷（docs/engine/TrapSystem.md 5.1節）。縄が食い込んで裂ける傷で、鈍器で裂かれる
   # laceration より浅い。
   #

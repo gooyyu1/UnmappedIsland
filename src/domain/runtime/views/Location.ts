@@ -2,22 +2,29 @@ import type { NameRegistry } from '../../defs/NameRegistry';
 import type { WorldCodex } from '../../defs/WorldCodex';
 import type { WorldObject } from '../WorldObject';
 import type { WorldSession } from '../WorldSession';
+import { Animal } from './Animal';
+import { Path } from './Path';
 
 /**
  * 土地（locations.yamlのexplorable trait実装オブジェクト）に対する、UI/ゲームロジック向けの型付きビュー。World
  * と同じ理由で継承ではなくラップにしている。
  *
  * 探索の入口はexploreに一本化: exploreアクションの実行に加え、設置物の公開（revealDueFixtures）まで
- * 自分で行い、呼び出し側に後続手順を持たせない。
+ * 自分で行い、呼び出し側に後続手順を持たせない。動物の手番（runAnimalTurns）も同じ形で、
+ * 呼び出し側は「この土地に居る動物へ1手ずつ与えてほしい」と頼むだけになる。
  *
  * 名前解決はidOrMissingで行い、探索の語彙を持たないcodex（最小のテストフィクスチャ等）でも生成できるようにしている。
  */
 export class Location {
   readonly instance: WorldObject;
 
+  /** 語彙を持たないcodex（最小のテストフィクスチャ等）で生成された場合はundefined。 */
+  private readonly codex: WorldCodex | undefined;
+
   private readonly explorationProgressId: number = -1;
   private readonly requiredProgressId: number = -1;
   private readonly returnPathIdId: number = -1;
+  private readonly pathTagId: number = -1;
   readonly itemsSlotId: number = -1;
   readonly fixturesSlotId: number = -1;
   private readonly charactersSlotId: number = -1;
@@ -25,7 +32,9 @@ export class Location {
 
   constructor(instance: WorldObject, codex?: WorldCodex) {
     this.instance = instance;
+    this.codex = codex;
     if (codex !== undefined) {
+      this.pathTagId = codex.tagNames.tryGetId('path') ?? -1;
       this.explorationProgressId = Location.idOrMissing(codex.propertyNames, 'exploration_progress');
       this.requiredProgressId = Location.idOrMissing(codex.propertyNames, 'required_progress');
       this.returnPathIdId = Location.idOrMissing(codex.propertyNames, 'return_path_id');
@@ -115,6 +124,29 @@ export class Location {
   /** キャラクタスロットの中身。 */
   get characters(): readonly WorldObject[] {
     return this.slotContents(this.charactersSlotId);
+  }
+
+  /**
+   * この土地から出ている、**発見済みの**道（ExplorationSystem.md 1.2節）。未発見の道は隠しスロットに
+   * 居るので含まれない——プレイヤーが見つけていない道は、動物にとっても逃げ道にならない。
+   */
+  get paths(): readonly Path[] {
+    if (this.codex === undefined) return [];
+    const names = this.codex.propertyNames;
+    return this.fixtures
+      .filter((fixture) => fixture.def.tags.includes(this.pathTagId))
+      .map((fixture) => new Path(fixture, names));
+  }
+
+  /**
+   * この土地に居る動物へ、1手ずつ与える（HuntingSystem.md 5.2節）。tickの後処理として呼ばれる
+   * （WorldSession.advanceWorldTime → World.runAnimalTurns）。
+   *
+   * 手番の途中で動物が居なくなりうる（逃げる・仕留められる）ため、列挙前にスナップショットを取る。
+   */
+  runAnimalTurns(session: WorldSession): void {
+    if (this.codex === undefined) return;
+    for (const item of [...this.items]) Animal.tryWrap(item, this.codex)?.takeTurn(this, session);
   }
 
   /**

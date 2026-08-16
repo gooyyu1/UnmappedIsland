@@ -44,16 +44,29 @@ object_defs:
     tags: [character]
 
   path:
+    tags: [item]
     props:
       destination_id:
         value: 0
+      loot_target:
+        value: 0
       travel_minutes:
         value: 60
+    slots:
+      spoils: {}
     actions:
       travel:
         move:
           subject: actor
           to_prop: destination_id
+      walk_away:
+        move:
+          subject: self
+          to_prop: destination_id
+      snatch:
+        move:
+          subject_prop: loot_target
+          to: self
 `;
 
   function build(): {
@@ -208,7 +221,43 @@ object_defs:
     expect(outer.parent, '自分自身の中へは入らない').toBe(world);
   });
 
-  it('moveのobjectにactor以外を指定するとロードエラーになる', () => {
+  it('selfを移動先へ移す（動物が隣の土地へ逃げる1手）', () => {
+    // 動かす物が「この効果を宣言したオブジェクト自身」になる形（HuntingSystem.md 5節）。
+    const { codex, session, meadow, hilltop, path } = build();
+    path.setProperty(codex.propertyNames.getId('destination_id'), hilltop.instanceId);
+
+    expect(path.tryExecuteAction('walk_away', undefined, session)).toBe(true);
+
+    expect(path.parent, 'self自身が移動先へ移る').toBe(hilltop);
+    expect(
+      meadow.getSlotByLocalId(meadow.def.slotLayout.toLocal(codex.slotNames.getId('stuff'))).contents,
+      '元の土地からは居なくなる',
+    ).not.toContain(path);
+  });
+
+  it('プロパティが指す個体を移す（動物が足元の物をくわえる1手）', () => {
+    // 動かす物も、移動先と同じく「実行時に初めて確定する個体」を指せる（HuntingSystem.md 5節）。
+    const { codex, session, meadow, character, path } = build();
+    path.setProperty(codex.propertyNames.getId('loot_target'), character.instanceId);
+
+    expect(path.tryExecuteAction('snatch', undefined, session)).toBe(true);
+
+    expect(character.parent, 'プロパティが指す個体がselfの中へ入る').toBe(path);
+    expect(
+      meadow.getSlotByLocalId(meadow.def.slotLayout.toLocal(codex.slotNames.getId('characters'))).contents,
+      '元の土地からは居なくなる',
+    ).not.toContain(character);
+  });
+
+  it('subject_propが指す個体が居なければ何もしない', () => {
+    const { codex, session, meadow, character, path } = build();
+    path.setProperty(codex.propertyNames.getId('loot_target'), 9999);
+
+    expect(path.tryExecuteAction('snatch', undefined, session), 'アクション自体は成立する').toBe(true);
+    expect(character.parent, '指す先が居なければ何も起きない').toBe(meadow);
+  });
+
+  it('moveのsubjectにself/actor/dragged以外を指定するとロードエラーになる', () => {
     const loadBad = (): WorldCodex =>
       new WorldCodexYamlLoader()
         .load(
@@ -222,14 +271,41 @@ object_defs:
     actions:
       travel:
         move:
-          subject: self
+          subject: parent
           to_prop: destination_id
 `,
         )
         .build();
 
     expect(loadBad).toThrow(YamlLoadError);
-    expect(loadBad).toThrowError(/actor/);
+    expect(loadBad).toThrowError(/'self'\/'actor'\/'dragged'/);
+  });
+
+  it('moveの動かす物をsubjectとsubject_propの両方で指定するとロードエラーになる', () => {
+    const loadBad = (): WorldCodex =>
+      new WorldCodexYamlLoader()
+        .load(
+          'bad.yaml',
+          `
+object_defs:
+  path:
+    props:
+      destination_id:
+        value: 0
+      loot_target:
+        value: 0
+    actions:
+      travel:
+        move:
+          subject: actor
+          subject_prop: loot_target
+          to_prop: destination_id
+`,
+        )
+        .build();
+
+    expect(loadBad).toThrow(YamlLoadError);
+    expect(loadBad).toThrowError(/どちらか一方/);
   });
 
   it('moveの移動先をtoとto_propの両方で指定するとロードエラーになる', () => {

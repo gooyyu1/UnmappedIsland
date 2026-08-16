@@ -2,6 +2,7 @@ import type { NameRegistry } from '../../defs/NameRegistry';
 import type { Rng } from '../Rng';
 import type { WorldObject } from '../WorldObject';
 import type { WorldSession } from '../WorldSession';
+import { Location } from './Location';
 
 /**
  * world（唯一のシングルトン、GameElementDefinition.md 15節）に対する、UI/ゲームロジック向けの型付きビュー。
@@ -103,6 +104,24 @@ export class World {
 
     this.instance.setNumber(this.hourId, Math.trunc(minutes / 60));
     this.instance.setNumber(this.minuteId, minutes % 60);
+  }
+
+  /**
+   * 島のすべての土地へ、動物の1手を配る（tickの後処理、HuntingSystem.md 5.2節）。
+   *
+   * 配る先を「プレイヤーの居る土地」に絞らないのは、動物がプレイヤーを見ているわけではないから
+   * ——放って出かけた先で罠に掛かった獲物が暴れ、目を離した拠点の物が持ち去られる。
+   *
+   * 土地の語彙を持たないCodex（時間だけを扱うテスト用など）では何もしない。
+   */
+  runAnimalTurns(session: WorldSession): void {
+    const locationsSlotId = session.codex.slotNames.tryGetId('locations');
+    if (locationsSlotId === undefined) return;
+
+    const slot = this.instance.tryGetSlot(locationsSlotId);
+    if (slot === undefined) return;
+
+    for (const land of [...slot.contents]) new Location(land, session.codex).runAnimalTurns(session);
   }
 
   /** minuteへamountを加減算する（WorldSession.advanceWorldTime専用。負の値も許容する）。sessionを渡すことで、on_overflow等がtickを待たずその場で判定・実行される（WorldObject.addNumber参照）。 */

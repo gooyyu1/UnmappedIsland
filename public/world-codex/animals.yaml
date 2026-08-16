@@ -28,6 +28,14 @@ traits:
       # （characters/player_character.yamlのinjuriesと同じ扱い）。
       injuries:
         cell: {accept: {tag: injury}}
+      # 持ち去った物（HuntingSystem.md 5節）。**枠は1つだけ**——口や前肢で運べるのは1つで、
+      # 塞がっている間はもう持ち去れない（下のpassivesがsnatchの重みを打ち消す）。
+      #
+      # 倒せば中身は地面へこぼれる（destroyの規約、9.3節）ので、**追いつけば取り返せる**
+      # ——壊されるのと違い、持ち去りだけは取り返しが付く（docs/world/Animals.md 4.1節）。
+      spoils:
+        cell_count: 1
+        cell: {accept: {tag: item}}
     props:
       # 警戒（HuntingSystem.md 3.1節）。攻撃してくるか逃げるかを乱数の分岐にせず、この1つの
       # 連続量で駆動する。安全域を外れている間はカードの輪郭が明滅する
@@ -50,25 +58,95 @@ traits:
       # 今感じている痛み（VitalsSystem.md 2節）。自分では動かず、刺さっている怪我がmodifyで
       # 押し上げる。段が意識へ寄与する——ただし痛みだけでは気絶させない（最も深い段でもdazedに
       # 留める）。刻みはキャラクタと同じ規約（docs/world/Characters.md 値の刻み方節）。
+      #
+      # **深手ほど逃げに転じる**（HuntingSystem.md 5.5節）。段が上がるごとに逃走の重みを押し上げる
+      # のはここ1箇所で、動物の種類によらない——素の配分がどうであれ、痛めつければ逃げる。
+      # 押し上げる量は素の配分（合計100）と同じ目盛りで、最も深い段では他の候補を飲み込む。
       pain:
         value: 0
         range: {min: 0, max: 100}
         stages:
           - {name: painless}
-          - {name: sore, min: 25, alert: watch}
+          - name: sore
+            min: 25
+            alert: watch
+            passives:
+              - modify: {self: {flee: 25}}
           - name: hurting
             min: 50
             alert: caution
             passives:
-              - modify: {self: {consciousness: -20}}
+              - modify: {self: {consciousness: -20, flee: 60}}
           - name: unbearable
             min: 83
             alert: danger
             passives:
-              - modify: {self: {consciousness: -45}}
+              - modify: {self: {consciousness: -45, flee: 120}}
       # 無防備さ（HuntingSystem.md 1.4節）。仕留めの候補の重みそのもので、自分では動かず、状態が
       # 押し上げる。起きている間も0にはしない——暴れる相手でも、まれに急所へ入る。
       vulnerability: {value: 5}
+
+      # 立ち去りまでの残り（HuntingSystem.md 5.6節）。動物は探索が際限なく湧かせるので、消える口が
+      # 無いと島に溜まり続ける。**土地の地面に居て、同じ土地に誰も居ない間だけ**減り、尽きた個体は
+      # 世界から消える——人口は湧く速さ×平均寿命で自動的に釣り合う。
+      #
+      # 同じ土地に人が居る間は止まる（リセットではなく一時停止）ので、**目の前では絶対に消えない**。
+      # 罠・入れ物の中でも止まる（in_slot: itemsが「土地の地面に居る」を言う）ので、掛かった獲物は
+      # 取りに戻るまで残る。罠のcatch_remainingと同じ見えないタイマー（カードの状態バーは名前で
+      # 決まった量だけを映す、CardView.md 8節）。
+      #
+      # 消えるとき、くわえていた物（spoils）はその土地へこぼれる（destroyの規約、9.3節）。
+      # 逃げ込んだ先を突き止めれば、本体が消えた後でも盗品は落ちている。
+      stay_remaining:
+        value: 96
+        # 0に達した瞬間にon_shortfallを発火させるため、下限は0ではなく1（6.3節）。
+        range: {min: 1, max: 96}
+        passives:
+          - conditions:
+              - {in_slot: items}
+              - not: {subject: parent, slot: characters, matches: {tag: character}}
+            add:
+              self:
+                stay_remaining: -1
+        on_shortfall:
+          destroy: self
+
+      # 1手の重み配分（HuntingSystem.md 5節）。**候補は「その1手が何だったか」の型で、動物ごとに
+      # 変わるのはこの配分だけ**——武器が一撃の当たり所の配分だけを宣言するのと同じ形
+      # （同1.2節、tools.yamlのweapon trait）。素の配分がその動物の性分で、警戒・傷・その場の状況は
+      # 下のpassivesが押し引きする。
+      #
+      # 配分の合計は動物によらず100に揃える。傷が押し上げる量（painの段）と並ぶ目盛りが動物ごとに
+      # 変わると、同じ深手が動物によって別の意味を持ってしまうため。
+      #
+      # 7つとも値を持たないので、**宣言し忘れた動物はロードで落ちる**（5節）。0も明示して書く——
+      # 「この動物はしないこと」は書き忘れと同じ0になるため、並べて読めるようにする。
+      lurk: {}
+      bite: {}
+      gore: {}
+      snatch: {}
+      smash: {}
+      devour: {}
+      flee: {}
+
+      # 以下は手番を与える側（Animal.takeTurn）が毎ターン上書きするプレースホルダ（5.2節）。
+      # **数と対象は必ず同時に書き込まれる**ので、数が0の候補の対象は絶対に読まれない。値は毎ターン
+      # 上書きされるため、0へ戻す後始末は要らない。
+      #
+      # 同じ土地に居るキャラクタの数。0なら襲う相手が居ない。
+      nearby_characters: {value: 0}
+      # 持ち去れる物の数と、そのうち選ばれた1つのインスタンスID。
+      lootables: {value: 0}
+      loot_target: {value: 0}
+      # くわえている物（spoilsの先頭）のインスタンスID。空なら0。数は書かない——食べる候補の
+      # ゲートはスロットの中身（食べ物かどうか）を直接見る（下のpassives）。
+      spoils_target: {value: 0}
+      # ぶつかって壊せる物の数と、そのうち選ばれた1つのインスタンスID。
+      smashables: {value: 0}
+      smash_target: {value: 0}
+      # 発見済みの道の本数と、そのうち選ばれた1本の行き先（土地のインスタンスID）。
+      escape_routes: {value: 0}
+      flee_to: {value: 0}
       # 意識（VitalsSystem.md 2節）。自分では動かず、痛み・衝撃・失血の段が押し下げる。常にカードに
       # バーが出る（CardView.md 8節のgauge宣言）。unconsciousの段の名前は固定（同6節）。
       consciousness:
@@ -96,6 +174,78 @@ traits:
           - {name: dazed, min: 25, alert: caution}
           - {name: foggy, min: 60, alert: watch}
           - {name: clear, min: 80}
+    # 1手の重み配分（上のprops）を、その場の状況で押し引きする（HuntingSystem.md 5.5節）。
+    #
+    # **打ち消しは重みが0でクランプされること（10節）を使う。** 素の配分より桁の大きい負の寄与を
+    # 当てれば、その候補は抽選から丸ごと外れる——「できないことは起こらない」を、候補ごとの
+    # conditionsではなく重み1つで表せる。動物ごとに書く必要も無い。
+    passives:
+      # 落ち着いている相手には手を出さず、逃げもしない。**警戒しているかどうかで1手の顔ぶれが
+      # 変わる**のがこの2つで、落ち着いていれば足元の物へ手を出すか、様子をうかがうかだけになる。
+      - conditions: [{prop: wariness, in_stage: calm}]
+        modify: {self: {bite: -1000, gore: -1000, flee: -1000}}
+      # 荒ぶっている間は物どころではない。逃げるか、向かってくるかの二択になる。
+      - conditions: [{prop: wariness, in_stage: enraged}]
+        modify: {self: {snatch: -1000, smash: -1000}}
+      # 同じ土地にキャラクタが居なければ襲えない。
+      - conditions: [{prop: nearby_characters, lt: 1}]
+        modify: {self: {bite: -1000, gore: -1000}}
+      # 手を出せる物が無ければ、持ち去りも体当たりも起こらない。
+      - conditions: [{prop: lootables, lt: 1}]
+        modify: {self: {snatch: -1000}}
+      - conditions: [{prop: smashables, lt: 1}]
+        modify: {self: {smash: -1000}}
+      # 既に1つくわえていれば、次は持てない（spoilsは1枠）。
+      - conditions: [{slot: spoils, matches: {tag: item}}]
+        modify: {self: {snatch: -1000}}
+      # くわえた食べ物が無ければ、食べる手は起こらない。**食べ物でない物は食べない**——盗まれた
+      # 道具は立ち去り（stay_remaining）までくわえたまま残り、取り返しが付く（HuntingSystem.md 5.6節）。
+      - conditions:
+          - not: {slot: spoils, matches: {tag: food}}
+        modify: {self: {devour: -1000}}
+      # 逃げ道が無ければ逃げられない。**追い詰められた獣は逃げずに襲う**（5.3節）が、専用の条件を
+      # 1つも書かずに成立する。おまけに「開けた土地ほど逃げやすい」は道の本数が言う。
+      - conditions: [{prop: escape_routes, lt: 1}]
+        modify: {self: {flee: -1000}}
+    actions:
+      # 動物の1手（HuntingSystem.md 5節）。**プレイヤーが押すものではない**ので画面のボタンには
+      # 出さず（showMenu: never、11.1節）、tickの後処理が1手ずつ与える（Animal.takeTurn）。
+      # 15分の行動は1手、90分の行動は6手ぶんの時間になる（同2節）。
+      #
+      # どの回もsignal（9.8節）で結果を告げる。刺さった傷は相手の怪我スロットの中に入り、持ち去りは
+      # 自分の中へ入るので、**レーンの上では何も変わらない回がある**——告げなければ「何も起きなかった」
+      # ように見える。様子をうかがった回だけは、実際に何も起きていないので告げない。
+      turn:
+        showMenu: never
+        pick:
+          # 様子をうかがった回。**必ず先頭に置く**——他の候補がすべて抽選から外れた回に選ばれるのが
+          # これになる（全候補の重みが0なら先頭が選ばれる、10節）。逃走や攻撃を先頭に置くと、
+          # 逃げ道も相手も無い土地でそれが起きてしまう。
+          - weight: {prop: lurk}
+          # 噛みついた回。小さい獣が持てる唯一の攻め手で、浅いが血は流れる。
+          - weight: {prop: bite}
+            spawn: {object: bite_wound, into: actor}
+            signal: bit
+          # 牙を突き上げた回。大型だけが持つ一撃で、深く刺さって血が速く流れる。
+          - weight: {prop: gore}
+            spawn: {object: gore_wound, into: actor}
+            signal: gored
+          # 足元の物をくわえた回。倒せば地面へこぼれる（9.3節）ので、追えば取り返せる。
+          - weight: {prop: snatch}
+            move: {subject_prop: loot_target, to: self}
+            signal: snatched
+          # ぶつかって壊した回。中身は地面に散らばる（同）ので、壊された籠の中の物は残る。
+          - weight: {prop: smash}
+            destroy: {prop: smash_target}
+            signal: smashed
+          # くわえていた食べ物を食べてしまった回。取り返しの道はここで断たれる。
+          - weight: {prop: devour}
+            destroy: {prop: spoils_target}
+            signal: devoured
+          # 隣の土地へ逃げた回。くわえている物も一緒に運ばれる（中身は親に付いて動く）。
+          - weight: {prop: flee}
+            move: {subject: self, to_prop: flee_to}
+            signal: fled
     combinations:
       # 武器を重ねて殴る（HuntingSystem.md 1.2節）。**候補は「一撃がどう入ったか」の型**で、どれを
       # 引くかは武器が宣言する重み配分（tools.yamlのweapon trait）が決める。動物の側は体格
@@ -166,6 +316,16 @@ object_defs:
     props:
       weight: {value: 5000}
       volume: {value: 12000}
+      # 1手の配分（合計100、beast trait）。**持ち去りと盗み食いを持つ唯一の動物**で、警戒して
+      # いなくても足元の物へ手を出し、くわえた食べ物はやがて食べてしまう。噛むのは追い詰められた
+      # ときの手で、太くはない。
+      lurk: {value: 20}
+      bite: {value: 15}
+      gore: {value: 0}
+      snatch: {value: 35}
+      smash: {value: 0}
+      devour: {value: 10}
+      flee: {value: 20}
       # 殴られた衝撃（VitalsSystem.md 2.1節）。攻撃がaddで即座に上げ、自分で引いていく。
       # **maxが体格**（体重の1/50）で、5kgのサルは浅い一撃（30）3つで気を失う。
       #
@@ -257,6 +417,16 @@ object_defs:
     props:
       weight: {value: 1000}
       volume: {value: 2400}
+      # 1手の配分（合計100、beast trait）。**攻め手を1つも持たない**——警戒すれば藪へ走るだけで、
+      # 物にも手を出さない。危険が低いことが、飼いならしの学習台という役割そのものになっている
+      # （docs/world/Animals.md 3節）。
+      lurk: {value: 30}
+      bite: {value: 0}
+      gore: {value: 0}
+      snatch: {value: 0}
+      smash: {value: 0}
+      devour: {value: 0}
+      flee: {value: 70}
       # maxが体格（サル5kgの100に対して1kg）。どんな武器でも一撃で気を失う大きさで、引く速さも
       # 体格に比例する（max ÷ 25、サルの-4に対して-0.8）。
       shock:
@@ -315,6 +485,16 @@ object_defs:
     props:
       weight: {value: 80}
       volume: {value: 200}
+      # 1手の配分（合計100、beast trait）。**逃げ足が配分のほとんどを占める**——警戒した瞬間に
+      # 物陰へ走るので、追い払うのは易しく捕まえるのは難しい。噛むのは逃げ道が無いときだけで、
+      # そのときは逃走の重みが抽選から外れるぶん相対的に太くなる（5.3節）。
+      lurk: {value: 15}
+      bite: {value: 5}
+      gore: {value: 0}
+      snatch: {value: 0}
+      smash: {value: 0}
+      devour: {value: 0}
+      flee: {value: 80}
       # maxが体格（体重の1/50）。引く速さも体格に比例する（max ÷ 25）。
       shock:
         value: 0
@@ -365,13 +545,22 @@ object_defs:
   # 手が出ない**——石斧なら4撃で沈み、槍なら4突きで血を失って倒れるが、尖った石では衝撃が
   # 溜まる前に引いてしまう（下のshock）。
   #
-  # 突進・持ち去り（HuntingSystem.md 5節）はまだ無いので、こちらから殴らなければ何もしない。
   wild_boar:
     traits: [beast]
     props:
       weight: {value: 60000}
       # 荷重の上限（33kg）を大きく越えるので、倒しても丸ごとは運べない（Animals.md 5節）。
       volume: {value: 144000}
+      # 1手の配分（合計100、beast trait）。**牙が配分の中で最も太い唯一の動物**で、警戒した時点から
+      # 向かってくる。落ち着いている間は藪を割って進むついでに足元の物を壊すだけだが、警戒させれば
+      # そのぶんが攻めへ回る（荒ぶれば体当たりの候補が抽選から外れる）。
+      lurk: {value: 15}
+      bite: {value: 0}
+      gore: {value: 40}
+      snatch: {value: 0}
+      smash: {value: 25}
+      devour: {value: 0}
+      flee: {value: 20}
       # maxが体格（体重の1/50）。**サルの12倍**なので、打ち砕く一撃（250）でも4撃を要する。
       # 引く速さも体格に比例する（max ÷ 25）ため、浅い一撃（30）は溜まる前に引いてしまう。
       shock:

@@ -258,7 +258,9 @@ object_defs:
   # ヤシの殻。割ったヤシの実から果肉を掻き出すと残る（coconut.yaml）。カードとして持ち歩けるよう、
   # 容器の中では唯一itemタグを持つ（他の容器はまだ入手手段が無い）。
   coconut_bowl:
-    tags: [item]
+    # fragileは、動物がぶつかって壊しうる物（docs/engine/HuntingSystem.md 5.4節）。薄い殻の器は
+    # 踏まれれば割れ、入っていた液体は残らない（bound_to_ownerの中身は道連れ、9.3節）。
+    tags: [item, fragile]
     traits: [liquid_container, wide_open_container, rain_catching_container]
     props:
       weight: {value: 100}
