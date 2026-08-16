@@ -106,6 +106,7 @@ object_defs:
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}
+        duration: 15
         add:
           actor:
             satiety: 150
@@ -194,6 +195,7 @@ object_defs:
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}
+        duration: 15
         add:
           actor:
             satiety: 200

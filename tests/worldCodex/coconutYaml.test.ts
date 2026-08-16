@@ -143,7 +143,10 @@ describe('coconut.yamlのヤシの実の加工', () => {
   it('ゼリー状の果肉を食べると、水分は入るが腹には残らない', () => {
     const jelly = spawnInto('coconut_jelly', player, 'hand');
     const satietyId = codex.propertyNames.getId('satiety');
-    for (const id of [satietyId, hydrationId]) player.setProperty(id, 0);
+    // 食べるのに1 tickかかり、時間は効果より先に進む（actionTime参照）。0から測ると、その1 tickで
+    // 水分が尽きて渇き死ぬので、1 tickぶんの減り（satiety -16・hydration -1）を載せた値から測る。
+    player.setProperty(satietyId, 16);
+    player.setProperty(hydrationId, 1);
 
     expect(jelly.tryExecuteAction('eat', player, session)).toBe(true);
 
@@ -156,7 +159,8 @@ describe('coconut.yamlのヤシの実の加工', () => {
     // 青い実 = 水20 + ゼリー2個×5.2、熟した実 = 果肉2個×6（coconut.yaml。単位はtick分）。
     const waterOf = (name: string, action: string) => {
       const target = spawnInto(name, player, 'hand');
-      player.setProperty(hydrationId, 0);
+      // 1 tickぶんの減り（-1）を載せた値から測る（上のテスト参照）。
+      player.setProperty(hydrationId, 1);
       expect(target.tryExecuteAction(action, player, session)).toBe(true);
       return player.getNumber(hydrationId);
     };
@@ -267,7 +271,10 @@ describe('coconut.yamlのヤシの実の加工', () => {
     const meat = spawnInto('coconut_meat', player, 'hand');
     const satietyId = codex.propertyNames.getId('satiety');
     const lipidId = codex.propertyNames.getId('lipid');
-    for (const id of [satietyId, hydrationId, lipidId]) player.setProperty(id, 0);
+    // 1 tickぶんの減りを載せた値から測る（上のテスト参照）。脂質は在庫が0だと輸送も動かない。
+    player.setProperty(satietyId, 16);
+    player.setProperty(hydrationId, 1);
+    player.setProperty(lipidId, 0);
 
     expect(meat.tryExecuteAction('eat', player, session)).toBe(true);
 
