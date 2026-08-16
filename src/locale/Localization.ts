@@ -1,4 +1,5 @@
 import { parseDocument } from 'yaml';
+import type { AssetPack } from '../assetPack/AssetPack';
 import type { YAMLMap } from 'yaml';
 import { asMap, asScalarText, entriesInOrder, tryGetMap, tryGetScalar } from '../loader/yamlMapping';
 import { YamlLoadError } from '../loader/YamlLoadError';
@@ -24,9 +25,18 @@ export function bundledLocaleText(): string {
   return text;
 }
 
-/** 同梱の表示文字列を読む。書式の誤りはYamlLoadErrorのまま呼び出し側へ出す。 */
-export function bundledLocalization(): Localization {
-  return parseLocale(LOCALE_FILE, bundledLocaleText());
+/**
+ * 表示文字列を読む。同梱ぶんに、アセットパックが同じ言語の対応表を持っていれば重ねる
+ * （AssetPack.md）。書式の誤りも識別子の重複もYamlLoadErrorのまま呼び出し側へ出す。
+ */
+export function loadLocalization(pack: AssetPack | undefined): Localization {
+  const bundled = parseLocale(LOCALE_FILE, bundledLocaleText());
+
+  const packText = pack?.localeText(LANGUAGE);
+  if (pack === undefined || packText === undefined) return bundled;
+
+  const label = `${pack.name}:${LOCALE_FILE}`;
+  return bundled.mergedWith(parseLocale(label, packText), label);
 }
 
 /**
@@ -390,10 +400,46 @@ export class Localization {
     return new ObjectTexts(objectDefName, this.objects.get(objectDefName), this.objects.get(DEFAULT_KEY));
   }
 
+  /**
+   * もう1つの対応表を重ねた対応表を返す（アセットパックのぶん、AssetPack.md）。
+   *
+   * **同じ識別子が両方にあればエラー。** 定義YAMLと同じ規則で、後勝ちの上書きは持たない
+   * （どちらの言葉が出るかが読み込み順で決まってしまう）。通し番号の書式は、相手が宣言して
+   * いればそちらを採る（既定のままなら重複ではない）。
+   */
+  mergedWith(other: Localization, label: string): Localization {
+    return new Localization(
+      merged(this.objects, other.objects, label, 'object_texts'),
+      merged(this.propertyTags, other.propertyTags, label, 'property_tag_texts'),
+      merged(this.symbols, other.symbols, label, 'symbol_texts'),
+      merged(this.locations, other.locations, label, 'location_texts'),
+      merged(this.reasons, other.reasons, label, 'reason_texts'),
+      other.ordinalSuffix === DEFAULT_ORDINAL_SUFFIX ? this.ordinalSuffix : other.ordinalSuffix,
+      merged(this.slots, other.slots, label, 'slot_texts'),
+      merged(this.signals, other.signals, label, 'signal_texts'),
+      merged(this.stages, other.stages, label, 'stage_texts'),
+    );
+  }
+
   /** 表示文字列を1つも持たない対応表（表示文字列を必要としないテスト用）。 */
   static empty(): Localization {
     return new Localization(new Map());
   }
+}
+
+/** 2つの節を重ねる。同じ識別子が両方にあれば、どちらが出るか決められないのでエラー。 */
+function merged<T>(
+  base: ReadonlyMap<string, T>,
+  added: ReadonlyMap<string, T>,
+  label: string,
+  section: string,
+): ReadonlyMap<string, T> {
+  const all = new Map(base);
+  for (const [name, value] of added) {
+    if (all.has(name)) throw new YamlLoadError(`${label}: ${section} の '${name}' は既に宣言されています。`);
+    all.set(name, value);
+  }
+  return all;
 }
 
 /**

@@ -1,3 +1,5 @@
+import { addPackArt } from './packArt';
+
 /**
  * 背景の絵（レーンの全面に敷くもの・カードの地に敷くもの）の解決。
  *
@@ -12,8 +14,9 @@
  * 持ち主によらない絵は `<スロット名>_<用途>.png` に置き、持ち主ごとの絵が無いときの受け皿になる
  * （手はプレイヤー自身のものなので、キャラクタごとに描き分けていない）。
  *
- * 一覧はimport.meta.globがビルド時に作る。実行時に総当たりで読みに行くと、絵をまだ用意していない
- * スロットのぶんだけ404が出るため。
+ * 同梱ぶんの一覧はimport.meta.globがビルド時に作る。実行時に総当たりで読みに行くと、絵をまだ
+ * 用意していないスロットのぶんだけ404が出るため。アセットパックのぶんは起動時に重ねる
+ * （installPackBackgroundArt、AssetPack.md 4節）。
  */
 const FILES = import.meta.glob('../assets/backgrounds/*.png', {
   eager: true,
@@ -32,10 +35,21 @@ export interface SlotRef {
 /** 敷く場所。そのままファイル名の末尾になる。 */
 type Use = 'lane' | 'card';
 
-/** テクスチャキー → 画像のURL。用意されている絵だけが並ぶ。 */
-export const BACKGROUND_ART: ReadonlyMap<string, string> = new Map(
+/**
+ * テクスチャキー → 画像のURL。用意されている絵だけが並ぶ。同梱ぶんを土台に、起動時に
+ * アセットパックのぶんが重なる。重なった後は変わらない。
+ */
+const ART = new Map<string, string>(
   Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.png$/, 'background:$1'), url]),
 );
+
+/** テクスチャキー → 画像のURL。 */
+export const BACKGROUND_ART: ReadonlyMap<string, string> = ART;
+
+/** アセットパックの背景の絵を在庫表へ重ねる（起動時に1回、installAssetPackから）。 */
+export function installPackBackgroundArt(art: ReadonlyMap<string, string>, packName: string): void {
+  addPackArt(ART, new Map([...art].map(([name, url]) => [`background:${name}`, url])), packName, '背景の絵');
+}
 
 /** レーンの全面に敷く絵。用意されていなければundefinedを返し、呼び出し側は単色の背景板へ落とす。 */
 export function laneTexture(at: SlotRef): string | undefined {

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { Localization } from '../locale/Localization';
-import { bundledLocalization } from '../locale/Localization';
+import { loadLocalization } from '../locale/Localization';
 import cardFrameUrl from '../assets/ui/card_frame.png';
 import flipDigitUrl from '../assets/ui/flip_digit.png';
 import slotButtonPaperUrl from '../assets/ui/slot_button_paper.png';
@@ -17,7 +17,8 @@ import { WEATHER_ART } from '../art/weatherArt';
 import { commonArtFiles, locationDefNames } from '../art/artFiles';
 import { cssColor } from '../util/cssColor';
 import { COLOR, FONT_FAMILY } from './looks/theme';
-import { bundledWorldCodex } from '../loader/bundledWorldCodex';
+import { loadWorldCodex } from '../loader/loadWorldCodex';
+import { installedAssetPack } from '../assetPack/install';
 
 /** 組み立て済みWorldCodex・表示文字列をレジストリへ置くときのキー。 */
 export const WORLD_CODEX_KEY = 'worldCodex';
@@ -25,7 +26,8 @@ export const LOCALIZATION_KEY = 'localization';
 
 /**
  * 起動シーン。WorldCodexと表示文字列のYAMLを読み込んで組み立て、レジストリ経由で以降のシーンへ
- * 引き渡してからタイトル画面を開く。
+ * 引き渡してからタイトル画面を開く。アセットパックは起動前に入っている（src/main.ts）ので、
+ * ここでは同梱ぶんと同じように読むだけでよい。
  */
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -58,8 +60,9 @@ export class BootScene extends Phaser.Scene {
     let codex: WorldCodex;
     let localization: Localization;
     try {
-      codex = bundledWorldCodex();
-      localization = bundledLocalization();
+      const pack = installedAssetPack();
+      codex = loadWorldCodex(pack);
+      localization = loadLocalization(pack);
     } catch (error) {
       this.showMessage(
         `定義ファイルのロードに失敗しました:\n${error instanceof Error ? error.message : error}`,

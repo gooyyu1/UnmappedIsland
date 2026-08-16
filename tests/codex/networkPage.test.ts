@@ -3,7 +3,7 @@ import { CodexSource } from '../../src/codex/CodexSource';
 import { CodexView } from '../../src/codex/CodexView';
 import { renderNetworkPage } from '../../src/codex/networkPage';
 import { renderObjectPage } from '../../src/codex/pages';
-import { bundledLocalization } from '../../src/locale/Localization';
+import { loadLocalization } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -13,7 +13,7 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  */
 describe('クラフトネットワークのページ', () => {
   const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
-  const locale = bundledLocalization();
+  const locale = loadLocalization(undefined);
   const view = new CodexView(new CodexSource(codex, locale, ['test']), 'display');
 
   it('型・工程・タグのノードが1枚のSVGに出る', () => {
