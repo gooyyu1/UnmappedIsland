@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/stone_hearth_lit.png を作り直すためのレシピ。build.py が読む。",
-    "火が付いていて料理にも使える石囲いの炉（heatのcoals〜blaze段、public/world-codex/fire.yaml）。",
+    "火が付いていて料理にも使える石囲いの炉（heatのcoals〜blaze段、src/world-codex/fire.yaml）。",
     "",
     "作り方と勘所は recipes/campfire_lit.json と同じ。基準は stone_hearth.json（そちらが",
     "campfire.json から派生しているので、生データは焚き火→石囲い→火の3段で作られる）。"

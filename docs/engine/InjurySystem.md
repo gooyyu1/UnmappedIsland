@@ -9,13 +9,13 @@
 怪我が意識と命をどう奪うか——気絶・死——は [`VitalsSystem.md`](./VitalsSystem.md) が扱います。怪我を負う
 場面（動物との対峙）は [`HuntingSystem.md`](./HuntingSystem.md)、カードの見せ方は
 [`CardView.md`](../ui/CardView.md) です。実際にどんな傷を用意するかは
-`public/world-codex/injuries.yaml` そのものが一覧で、本書は個々の傷を並べません。
+`src/world-codex/injuries.yaml` そのものが一覧で、本書は個々の傷を並べません。
 
 **新設した文法はありません。** 怪我は普通のオブジェクトで、キャラクタの `injuries` スロットに入り、
 `severity` 1本と `range`/`on_shortfall`（自然治癒と消滅）・`passives` の `modify`（宿主の痛み）・
 `add`（宿主の血）・`treatment` スロット（治療具を1つ当てる枠）だけで成り立ちます。
 
-定義は `public/world-codex/injuries.yaml`（傷）と `treatments.yaml`（治療具）、検証は
+定義は `src/world-codex/injuries.yaml`（傷）と `treatments.yaml`（治療具）、検証は
 `tests/worldCodex/injuriesYaml.test.ts` で、**本書は実装済みです**（裂傷・刺し傷・捻挫と包帯）。未決事項は
 末尾に整理しています。
 

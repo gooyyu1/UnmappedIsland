@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/rat.png を作り直すためのレシピ。build.py が読む。",
-    "罠の最小単位のネズミ（public/world-codex/animals.yaml）。",
+    "罠の最小単位のネズミ（src/world-codex/animals.yaml）。",
     "",
     "2段構えの理由と作り方は recipes/monkey.json と同じ。",
     "",

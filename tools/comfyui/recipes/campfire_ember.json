@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/campfire_ember.png を作り直すためのレシピ。build.py が読む。",
-    "種火だけが残った焚き火（heatのember段、public/world-codex/fire.yaml）。料理には使えないが、",
+    "種火だけが残った焚き火（heatのember段、src/world-codex/fire.yaml）。料理には使えないが、",
     "薪をくべれば育つ。",
     "",
     "作り方は recipes/campfire_lit.json と同じで、描き足すものが炎ではなく熾と煙になっただけ。",

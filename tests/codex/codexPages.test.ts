@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CodexSource } from '../../src/codex/CodexSource';
 import { CodexView } from '../../src/codex/CodexView';
@@ -10,7 +9,7 @@ import {
   renderSlotPage,
   renderTagListPage,
 } from '../../src/codex/pages';
-import { LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
+import { bundledLocalization } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -21,7 +20,7 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  */
 describe('WorldCodexビューアのページ', () => {
   const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
-  const locale = parseLocale(LOCALE_FILE, readFileSync(`public/${LOCALE_FILE}`, 'utf8'));
+  const locale = bundledLocalization();
   const source = new CodexSource(codex, locale, ['coconut.yaml']);
   const view = new CodexView(source, 'display');
   const identifierView = new CodexView(source, 'identifier');

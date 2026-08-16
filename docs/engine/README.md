@@ -18,7 +18,7 @@
 - [WorldCodex YAMLスキーマ定義](./WorldCodexSchema.md)（[JSON Schema本体](./WorldCodex.schema.json)） — 上記文法の
   機械的な検証
 
-実際のゲームデータ（`public/world-codex/*.yaml`）を型・プロパティ・スロット・操作の単位で辿って読むには、
+実際のゲームデータ（`src/world-codex/*.yaml`）を型・プロパティ・スロット・操作の単位で辿って読むには、
 閲覧ビューア（`npm run dev:codex`、公開先は [`../../codex/`](../../codex/)）を開いてください。作りと設計判断は
 `src/codex/` の各ファイルのコメントにあります。
 
@@ -58,4 +58,6 @@
 - [セーブデータ管理](./SaveDataManagement.md) — 保存先・スキーマ・削除の扱いなど、
   [スタート画面・セーブ選択画面](../ui/StartScreen.md)のモックから派生した永続化の決定。
   決まった開始状態から起動するテスト用シナリオもこの節にある
+- [MOD対応](./ModSupport.md) — 同梱されていない定義YAMLと絵を、1つのZIPとして受け取る方針
+  （未実装）
 - [設計の経緯・教訓集](./DesignNotes.md) — 再発防止のために残す過去の失敗・不採用の決定（本文には経緯を書かない）

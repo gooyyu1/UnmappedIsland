@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/campfire.png を作り直すためのレシピ。build.py が読む。",
-    "枝を積んだだけの炉（public/world-codex/fire.yaml）。",
+    "枝を積んだだけの炉（src/world-codex/fire.yaml）。",
     "",
     "**組み方は描いて渡す（sketch）。** 焚き火らしさは枝の組み方そのもので決まるのに、SDXLは",
     "その配置を言葉から作れない。teepee と言えば幕の張られた住居に、cone of sticks なら枝の束や箒に、",

@@ -13,7 +13,7 @@
 何種類入るか（`cell_count`）と、どれだけのかさが入るか（`capacity`）の 2 つだけです。液体の容器は
 「中身の液体が容器を代表し、量は中身自身が持つ」逆向きの構造なので、trait もタグも分けています。
 スロット名も、複数種が入る固形物側は `contents`、1 種類しか入らない液体側は `content` と単複で
-使い分けます。定義は `public/world-codex/containers.yaml`、検証は
+使い分けます。定義は `src/world-codex/containers.yaml`、検証は
 `tests/worldCodex/containersYaml.test.ts` です。
 
 この構造の上で本書が扱うのは**数値をどう決めるか**です——物の重さがどう積み上がり、それを担ぐ人が

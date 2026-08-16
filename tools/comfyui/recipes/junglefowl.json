@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/junglefowl.png を作り直すためのレシピ。build.py が読む。",
-    "くくり罠で捕れるヤケイ（public/world-codex/animals.yaml）。",
+    "くくり罠で捕れるヤケイ（src/world-codex/animals.yaml）。",
     "",
     "2段構えの理由と作り方は recipes/monkey.json と同じ。",
     "",

@@ -1805,7 +1805,7 @@ object_defs:
             add: {minute: -60, hour: 1}
 ```
 
-（実際の定義は `public/world-codex/core.yaml` 参照。`day`/`hour`/`minute` に加え、累積 tick 数を表す
+（実際の定義は `src/world-codex/core.yaml` 参照。`day`/`hour`/`minute` に加え、累積 tick 数を表す
 `tick` も持つ。）
 
 日時・天候はオブジェクトから直接参照されるのではなく、**環境がオブジェクトに影響を与える**という位置づけです

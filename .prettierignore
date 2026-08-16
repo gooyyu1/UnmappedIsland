@@ -1,6 +1,6 @@
 dist/
 node_modules/
-public/world-codex/
+src/world-codex/
 docs/
 site/
 *.md

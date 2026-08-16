@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/fire_drill.png を作り直すためのレシピ。build.py が読む。",
-    "きりもみ式の火起こし具。板と心棒の2つで1組（public/world-codex/fire.yaml）。",
+    "きりもみ式の火起こし具。板と心棒の2つで1組（src/world-codex/fire.yaml）。",
     "",
     "**板だけを生成し、穴・切り欠き・心棒は編集で足す。** 一度に頼むと道具そのものが出てこない",
     "（prompts/objects.json の fire_drill 参照）。**足す物は編集のほうが強い**——生成で言うと",

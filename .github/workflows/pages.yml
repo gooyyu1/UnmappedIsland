@@ -16,7 +16,6 @@ on:
     paths:
       - 'docs/**'
       - 'src/**'
-      - 'public/**'
       - 'index.html'
       - 'codex/**'
       - 'typedoc.json'

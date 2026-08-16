@@ -17,7 +17,7 @@ import {
 } from './pages';
 
 /**
- * WorldCodexデータベースビューアの入口。実際のゲームデータ（public/world-codex/*.yaml）を、型・
+ * WorldCodexデータベースビューアの入口。実際のゲームデータ（src/world-codex/*.yaml）を、型・
  * プロパティ・スロット・操作の単位で辿って読むための閲覧ツール（npm run dev:codex、公開先は/codex/）。
  *
  * ゲーム本体と同じYAMLを同じローダーで読み、同じ表示文字列・同じ絵で見せる。ここが持つのは
@@ -46,10 +46,8 @@ function appElement(): HTMLElement {
 
 function render(): void {
   const app = appElement();
-  if (source === undefined) {
-    app.innerHTML = '<p class="muted">読み込み中…</p>';
-    return;
-  }
+  // 読み込みに失敗したときは、出したエラーをそのまま残す（ハッシュを変えても描き替えない）。
+  if (source === undefined) return;
 
   const view = new CodexView(source, namingMode);
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
@@ -159,19 +157,18 @@ function initialize(): void {
     button.addEventListener('click', () => setNamingMode(button.dataset.namingMode as NamingMode));
 
   window.addEventListener('hashchange', render);
-  render();
 
-  loadCodexSource()
-    .then((loaded) => {
-      source = loaded;
-      setStatus(`${loaded.files.length}ファイルを読み込みました`);
-      render();
-    })
-    .catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : String(error);
-      appElement().innerHTML = `<div class="error"><strong>読み込みに失敗しました。</strong><br>${escapeHtml(message)}</div>`;
-      setStatus('エラー');
-    });
+  try {
+    source = loadCodexSource();
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    appElement().innerHTML = `<div class="error"><strong>読み込みに失敗しました。</strong><br>${escapeHtml(message)}</div>`;
+    setStatus('エラー');
+    return;
+  }
+
+  setStatus(`${source.files.length}ファイルを読み込みました`);
+  render();
 }
 
 initialize();

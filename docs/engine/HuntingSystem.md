@@ -16,7 +16,7 @@
 1つも持たないことの帰結です。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。1 節・3 節は実装済みです
-（`public/world-codex/animals.yaml` の4種と `injuries.yaml`・`tools.yaml` の武器3種、検証は
+（`src/world-codex/animals.yaml` の4種と `injuries.yaml`・`tools.yaml` の武器3種、検証は
 `tests/worldCodex/animalsYaml.test.ts`）。6 節の変化の観測と 6.3 節の告知も実装済みです
 （`WorldSession.observeChanges`・`observeSignals`）。5 節の動物の1手も実装済みで、時間が経てば
 2 節が述べる「動物の 6 手」がそのまま現れます（`Animal.takeTurn`、検証は

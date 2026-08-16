@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/snare.png を作り直すためのレシピ。build.py が読む。",
-    "植物繊維の紐で作るくくり罠（public/world-codex/traps.yaml）。",
+    "植物繊維の紐で作るくくり罠（src/world-codex/traps.yaml）。",
     "",
     "**配置を描いて渡す（sketch: snare）。** 生成に頼むと紐の輪だけが出て、杭が付かない",
     "（8枚とも）。輪だけでは紐（cord）・縄（rope）のカードと見分けが付かないので、",

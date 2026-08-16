@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
-import { WorldCodexYamlLoader } from '../loader/WorldCodexYamlLoader';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { Localization } from '../locale/Localization';
-import { LOCALE_FILE, parseLocale } from '../locale/Localization';
+import { bundledLocalization } from '../locale/Localization';
 import cardFrameUrl from '../assets/card_frame.png';
 import flipDigitUrl from '../assets/flip_digit.png';
 import slotButtonPaperUrl from '../assets/slot_button_paper.png';
@@ -18,7 +17,7 @@ import { WEATHER_ART } from '../assets/weatherArt';
 import { commonArtFiles, locationDefNames } from '../assets/artFiles';
 import { cssColor } from '../util/cssColor';
 import { COLOR, FONT_FAMILY } from './looks/theme';
-import { WORLD_CODEX_FILES } from '../loader/worldCodexFiles';
+import { bundledWorldCodex } from '../loader/bundledWorldCodex';
 
 /** 組み立て済みWorldCodex・表示文字列をレジストリへ置くときのキー。 */
 export const WORLD_CODEX_KEY = 'worldCodex';
@@ -34,9 +33,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
-    for (const file of WORLD_CODEX_FILES) this.load.text(file, `world-codex/${file}`);
-    this.load.text(LOCALE_FILE, LOCALE_FILE);
-
     // 読み込めなくてもカードは図形で描かれる（Card.addFrame）ため、失敗しても起動は止めない。
     this.load.image(CARD_FRAME_TEXTURE, cardFrameUrl);
     // 日時のフリップカードの紙。こちらも読み込めなければ図形で描かれる（FlipCalendar）。
@@ -62,8 +58,8 @@ export class BootScene extends Phaser.Scene {
     let codex: WorldCodex;
     let localization: Localization;
     try {
-      codex = this.buildCodex();
-      localization = parseLocale(LOCALE_FILE, this.cache.text.get(LOCALE_FILE) as string);
+      codex = bundledWorldCodex();
+      localization = bundledLocalization();
     } catch (error) {
       this.showMessage(
         `定義ファイルのロードに失敗しました:\n${error instanceof Error ? error.message : error}`,
@@ -80,12 +76,6 @@ export class BootScene extends Phaser.Scene {
     for (const { key, url } of commonArtFiles(locationDefNames(codex))) this.load.image(key, url);
     this.load.once(Phaser.Loader.Events.COMPLETE, () => this.scene.start('title'));
     this.load.start();
-  }
-
-  private buildCodex(): WorldCodex {
-    const loader = new WorldCodexYamlLoader();
-    for (const file of WORLD_CODEX_FILES) loader.load(file, this.cache.text.get(file) as string);
-    return loader.build();
   }
 
   private showMessage(text: string): void {

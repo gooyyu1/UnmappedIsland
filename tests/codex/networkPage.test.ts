@@ -1,10 +1,9 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CodexSource } from '../../src/codex/CodexSource';
 import { CodexView } from '../../src/codex/CodexView';
 import { renderNetworkPage } from '../../src/codex/networkPage';
 import { renderObjectPage } from '../../src/codex/pages';
-import { LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
+import { bundledLocalization } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -14,7 +13,7 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  */
 describe('クラフトネットワークのページ', () => {
   const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
-  const locale = parseLocale(LOCALE_FILE, readFileSync(`public/${LOCALE_FILE}`, 'utf8'));
+  const locale = bundledLocalization();
   const view = new CodexView(new CodexSource(codex, locale, ['test']), 'display');
 
   it('型・工程・タグのノードが1枚のSVGに出る', () => {

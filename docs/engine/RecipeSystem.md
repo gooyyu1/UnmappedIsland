@@ -13,7 +13,7 @@
 操作の語彙を持ち込みません。
 
 定義は `Domain.Defs.RecipeDef`・`CraftingStep`、実行時は `Domain.Runtime` の `crafting.ts`、レシピの
-データは `public/world-codex/containers.yaml` 等、検証は `tests/domain/crafting.test.ts` です。本書は
+データは `src/world-codex/containers.yaml` 等、検証は `tests/domain/crafting.test.ts` です。本書は
 実装済みの仕組みの記述で、未決事項は 6 節に整理しています。
 
 ## 1. 製作中オブジェクトは、完成品とは別オブジェクト

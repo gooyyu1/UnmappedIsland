@@ -23,8 +23,8 @@
 | 段 `unconscious` | ここに落ちたら手番が回らない。名前を固定する（6 節） |
 | 段 `exsanguinated` | 失血で助からない域。本書が `fatal` を置く唯一の段 |
 
-定義の置き場所は `public/world-codex/animals.yaml`（動物）と `characters/player_character.yaml`
-（キャラクタ共通の props）、削る側は `public/world-codex/injuries.yaml` の各傷、読む側は
+定義の置き場所は `src/world-codex/animals.yaml`（動物）と `characters/player_character.yaml`
+（キャラクタ共通の props）、削る側は `src/world-codex/injuries.yaml` の各傷、読む側は
 カードの状態バー（`PlayScreenView`）と、気絶した間の手番を飛ばす側です。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。**キャラクタの死（6 節・8 節）は実装済み**

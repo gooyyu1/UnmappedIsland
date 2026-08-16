@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/roasted_meat.png を作り直すためのレシピ。build.py が読む。",
-    "焼けた肉。生肉を炉の火にかけると焼き上がる（public/world-codex/animals.yaml）。",
+    "焼けた肉。生肉を炉の火にかけると焼き上がる（src/world-codex/animals.yaml）。",
     "",
     "**生肉（raw_meat）の生データから派生させる。** 同じ一切れが焼けたものなので、別々に生成すると",
     "火にかけた瞬間に別の肉へすり替わって見える（火の付いた炉と同じ理由。READMEの該当節）。",

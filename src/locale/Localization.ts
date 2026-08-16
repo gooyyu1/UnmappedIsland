@@ -7,8 +7,27 @@ import type { LocationName } from '../domain/generation/IslandMap';
 /** 表示文字列を引く言語。切り替えの入口はまだ無いため、日本語で固定（Localization.md）。 */
 export const LANGUAGE = 'ja';
 
-/** ゲーム本体に同梱される表示文字列ファイルのパス（public/配下、ビルドでそのまま配信される）。 */
+/** ゲーム本体に同梱される表示文字列ファイル（src/locale/、ビルド時に中身が埋め込まれる）。 */
 export const LOCALE_FILE = `locale/${LANGUAGE}.yaml`;
+
+/** 同梱される表示文字列ファイルの中身。言語ごとに1ファイルで、コード側への登録は要らない。 */
+const LOCALE_TEXTS = import.meta.glob('./*.yaml', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+}) as Record<string, string>;
+
+/** LOCALE_FILEの中身。 */
+export function bundledLocaleText(): string {
+  const text = LOCALE_TEXTS[`./${LANGUAGE}.yaml`];
+  if (text === undefined) throw new YamlLoadError(`'${LOCALE_FILE}' が同梱されていません。`);
+  return text;
+}
+
+/** 同梱の表示文字列を読む。書式の誤りはYamlLoadErrorのまま呼び出し側へ出す。 */
+export function bundledLocalization(): Localization {
+  return parseLocale(LOCALE_FILE, bundledLocaleText());
+}
 
 /**
  * オブジェクトが持つメンバーのうち、表示文字列を定義できる種類。値はlocaleファイルの節名であり、
