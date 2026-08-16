@@ -157,18 +157,20 @@ npm run stats:balance
 | stone | knap | combination | 60 | 60 | sharp_stone ×1.00 | — |
 | sandy_beach | explore | action | 15 | 15 | palm_tree ×0.13、woven_basket ×0.05、coconut_crab ×0.29、coconut ×0.91、thick_branch ×0.67 | （self）exploration_progress +1.00 |
 | rocky_coast | explore | action | 15 | 15 | cave_entrance ×0.13、coconut_crab ×0.39、stone ×1.25、thick_branch ×0.28 | （self）exploration_progress +1.00 |
-| cliff_coast | explore | action | 15 | 15 | cave_entrance ×0.20、stone ×1.13、thick_branch ×0.25 | （self）exploration_progress +1.00 |
+| cliff_coast | explore | action | 15 | 15 | cave_entrance ×0.19、golden_chalice ×0.04、stone ×1.09、thick_branch ×0.24 | （self）exploration_progress +1.00 |
 | grassland | explore | action | 15 | 15 | berry_bush ×0.13、spring ×0.09、water_spinach ×1.01、taro ×0.71、dry_grass ×0.11 | （self）exploration_progress +1.00 |
-| forest | explore | action | 15 | 15 | berry_bush ×0.22、spring ×0.09、twig ×1.33、taro ×0.29、banana_plant ×0.11 | （self）exploration_progress +1.00 |
-| jungle | explore | action | 15 | 15 | palm_tree ×0.12、taro ×0.18、twig ×0.57、coconut ×0.73、water_spinach ×0.25、abaca ×0.10、banana_plant ×0.08 | （self）exploration_progress +1.00 |
-| rocky_field | explore | action | 15 | 15 | cave_entrance ×0.18、twig ×0.58、stone ×1.29 | （self）exploration_progress +1.00 |
+| forest | explore | action | 15 | 15 | berry_bush ×0.20、spring ×0.08、broadleaf_tree ×0.12、twig ×1.29、taro ×0.26、banana_plant ×0.09 | （self）exploration_progress +1.00 |
+| jungle | explore | action | 15 | 15 | palm_tree ×0.11、taro ×0.16、broadleaf_tree ×0.09、twig ×0.61、coconut ×0.66、water_spinach ×0.23、abaca ×0.09、banana_plant ×0.07 | （self）exploration_progress +1.00 |
+| rocky_field | explore | action | 15 | 15 | cave_entrance ×0.17、golden_chalice ×0.03、twig ×0.56、stone ×1.25 | （self）exploration_progress +1.00 |
 | wasteland | explore | action | 15 | 15 | stone ×1.01、twig ×0.51、dry_grass ×0.11 | （self）exploration_progress +1.00 |
-| mountainside | explore | action | 15 | 15 | cave_entrance ×0.15、berry_bush ×0.22、stone ×1.03、twig ×0.65 | （self）exploration_progress +1.00 |
+| mountainside | explore | action | 15 | 15 | cave_entrance ×0.15、golden_chalice ×0.03、berry_bush ×0.21、stone ×1.00、twig ×0.63 | （self）exploration_progress +1.00 |
 | mountain_peak | explore | action | 15 | 15 | cave_entrance ×0.37、stone ×1.21 | （self）exploration_progress +1.00 |
+| broadleaf_tree | fell | combination | 240 | 240 | log ×2.00、thick_branch ×3.00 | — |
 | snare | add_plant_bait | combination | 1 | 1 | — | （self）plant_bait +999.00 |
 | snare | add_meat_bait | combination | 1 | 1 | — | （self）meat_bait +999.00 |
 | snare | knotted | recipe | 30 | 30 | snare ×1.00 | — |
 | snare | catch_remaining.on_shortfall | periodic | 0 | 240 | junglefowl ×0.07、snare_laceration ×0.18、rat ×0.11 | （self）catch_remaining +16.00 |
+| raft | lashed | recipe | 420 | 420 | raft ×1.00 | — |
 | palm_frond | weave | action | 90 | 90 | woven_leaf ×1.00 | — |
 | palm_frond | split_and_weave | combination | 60 | 60 | woven_leaf ×2.00 | — |
 
@@ -179,7 +181,7 @@ npm run stats:balance
 「1日の割合」は、1日ぶんを賄うのに要る労働が1日（1440分）に占める割合。
 「設備数」は、待ち生産の経路で1日ぶんを賄うのに同時に要る設備の数（4節参照）。
 † は、素材を所要時間0分の工程で得ている経路（この表が時間を数えられていない、上の注記を参照）。
-前提の道具がその土地で手に入らない経路は、数字を出したうえで表の末尾へ回す。
+前提の道具に入手経路が無い経路は、数字を出したうえで表の末尾へ回す。
 
 ### 島全体
 
@@ -190,10 +192,10 @@ npm run stats:balance
 | grassland.explore → taro.eat | 0.04 | 0.04 | 0.00 | 54 | 3.8% | — | carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
 | grassland.explore → water_spinach.eat | 0.05 | 0.05 | 0.00 | 76 | 5.3% | — | carbohydrate +1.00、vitamin +83.00 | — |
 | rocky_coast.explore → coconut_crab.eat | 0.08 | 0.08 | 0.00 | 118 | 8.2% | — | protein +25.00、lipid +8.00、vitamin +2.00 | — |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（71.6分）、palm_tree（115.4分） |
-| forest.explore → banana_plant.fell → banana.eat | 0.23 | 0.20 | 0.03 | 351 | 24.4% | — | carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（71.6分） |
-| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 0.30 | 0.04 | 0.26 | 466 | 32.4% | — | carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（71.6分）、stone（11.6分） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（71.6分）、palm_tree（115.4分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.0分）、palm_tree（115.4分） |
+| forest.explore → banana_plant.fell → banana.eat | 0.26 | 0.23 | 0.03 | 392 | 27.2% | — | carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.0分） |
+| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 0.30 | 0.04 | 0.26 | 466 | 32.4% | — | carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.0分）、stone（12.0分） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（115.4分） |
 
 #### vitamin（1日 48）
 
@@ -201,27 +203,27 @@ npm run stats:balance
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | grassland.explore → water_spinach.eat | 0.18 | 0.18 | 0.00 | 9 | 0.6% | — | satiety +300.00、carbohydrate +1.00 | — |
 | grassland.explore → taro.eat | 0.59 | 0.59 | 0.00 | 28 | 2.0% | — | satiety +600.00、carbohydrate +40.00、protein +2.00 | — |
-| forest.explore → banana_plant.fell → banana.eat | 2.29 | 2.00 | 0.29 | 110 | 7.6% | — | satiety +350.00、carbohydrate +10.00 | cutting_tool → sharp_stone（71.6分） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（71.6分）、palm_tree（115.4分） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（71.6分）、palm_tree（115.4分） |
-| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 8.68 | 1.18 | 7.50 | 417 | 28.9% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、hydration +6.00 | cutting_tool → sharp_stone（71.6分）、stone（11.6分） |
+| forest.explore → banana_plant.fell → banana.eat | 2.55 | 2.27 | 0.29 | 123 | 8.5% | — | satiety +350.00、carbohydrate +10.00 | cutting_tool → sharp_stone（72.0分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（72.0分）、palm_tree（115.4分） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（115.4分） |
+| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 8.68 | 1.18 | 7.50 | 417 | 28.9% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、hydration +6.00 | cutting_tool → sharp_stone（72.0分）、stone（12.0分） |
 | rocky_coast.explore → coconut_crab.eat | 19.23 | 19.23 | 0.00 | 923 | 64.1% | — | satiety +500.00、protein +25.00、lipid +8.00 | — |
 
 #### hydration（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（71.6分）、palm_tree（115.4分） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（71.6分）、palm_tree（115.4分） |
-| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 10.12 | 1.37 | 8.75 | 972 | 67.5% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00 | cutting_tool → sharp_stone（71.6分）、stone（11.6分） |
-| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（この土地では入手できない） |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（115.4分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（115.4分） |
+| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 10.12 | 1.37 | 8.75 | 972 | 67.5% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00 | cutting_tool → sharp_stone（72.0分）、stone（12.0分） |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
 
 #### wakefulness（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（この土地では入手できない） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
 
 ### sandy_beach
 
@@ -230,34 +232,34 @@ npm run stats:balance
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | sandy_beach.explore → coconut_crab.eat | 0.10 | 0.10 | 0.00 | 159 | 11.0% | — | protein +25.00、lipid +8.00、vitamin +2.00 | — |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool（この土地では入手できない）、palm_tree（115.4分） |
-| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 0.30 | 0.04 | 0.26 | 466 | 32.4% | — | carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool（この土地では入手できない）、stone（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool（この土地では入手できない）、palm_tree（115.4分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（115.4分） |
+| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 0.30 | 0.04 | 0.26 | 466 | 32.4% | — | carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool（入手経路なし）、stone（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（115.4分） |
 
 #### vitamin（1日 48）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | sandy_beach.explore → coconut_crab.eat | 25.86 | 25.86 | 0.00 | 1241 | 86.2% | — | satiety +500.00、protein +25.00、lipid +8.00 | — |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool（この土地では入手できない）、palm_tree（115.4分） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool（この土地では入手できない）、palm_tree（115.4分） |
-| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 8.68 | 1.18 | 7.50 | 417 | 28.9% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、hydration +6.00 | cutting_tool（この土地では入手できない）、stone（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（115.4分） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（115.4分） |
+| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 8.68 | 1.18 | 7.50 | 417 | 28.9% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、hydration +6.00 | cutting_tool（入手経路なし）、stone（入手経路なし） |
 
 #### hydration（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（この土地では入手できない） |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool（この土地では入手できない）、palm_tree（115.4分） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool（この土地では入手できない）、palm_tree（115.4分） |
-| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 10.12 | 1.37 | 8.75 | 972 | 67.5% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00 | cutting_tool（この土地では入手できない）、stone（この土地では入手できない） |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（115.4分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（115.4分） |
+| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 10.12 | 1.37 | 8.75 | 972 | 67.5% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00 | cutting_tool（入手経路なし）、stone（入手経路なし） |
 
 #### wakefulness（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（この土地では入手できない） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
 
 ### rocky_coast
 
@@ -266,31 +268,31 @@ npm run stats:balance
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | rocky_coast.explore → coconut_crab.eat | 0.08 | 0.08 | 0.00 | 118 | 8.2% | — | protein +25.00、lipid +8.00、vitamin +2.00 | — |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.0分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.0分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（入手経路なし） |
 
 #### vitamin（1日 48）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | rocky_coast.explore → coconut_crab.eat | 19.23 | 19.23 | 0.00 | 923 | 64.1% | — | satiety +500.00、protein +25.00、lipid +8.00 | — |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（72.0分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（72.0分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（入手経路なし） |
 
 #### hydration（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（この土地では入手できない） |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（この土地では入手できない） |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（入手経路なし） |
 
 #### wakefulness（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（この土地では入手できない） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
 
 ### cliff_coast
 
@@ -298,30 +300,30 @@ npm run stats:balance
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（73.3分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（73.3分）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（73.8分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（73.8分）、palm_tree（入手経路なし） |
 
 #### vitamin（1日 48）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（73.3分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（73.3分）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（73.8分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（73.8分）、palm_tree（入手経路なし） |
 
 #### hydration（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（この土地では入手できない） |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（73.3分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（73.3分）、palm_tree（この土地では入手できない） |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（73.8分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（73.8分）、palm_tree（入手経路なし） |
 
 #### wakefulness（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（この土地では入手できない） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
 
 ### grassland
 
@@ -331,8 +333,8 @@ npm run stats:balance
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | grassland.explore → taro.eat | 0.04 | 0.04 | 0.00 | 54 | 3.8% | — | carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
 | grassland.explore → water_spinach.eat | 0.05 | 0.05 | 0.00 | 76 | 5.3% | — | carbohydrate +1.00、vitamin +83.00 | — |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool（この土地では入手できない）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool（この土地では入手できない）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
 
 #### vitamin（1日 48）
 
@@ -340,23 +342,23 @@ npm run stats:balance
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | grassland.explore → water_spinach.eat | 0.18 | 0.18 | 0.00 | 9 | 0.6% | — | satiety +300.00、carbohydrate +1.00 | — |
 | grassland.explore → taro.eat | 0.59 | 0.59 | 0.00 | 28 | 2.0% | — | satiety +600.00、carbohydrate +40.00、protein +2.00 | — |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool（この土地では入手できない）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool（この土地では入手できない）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
 
 #### hydration（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（この土地では入手できない） |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool（この土地では入手できない）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool（この土地では入手できない）、palm_tree（この土地では入手できない） |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
 
 #### wakefulness（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（この土地では入手できない） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
 
 ### forest
 
@@ -364,34 +366,34 @@ npm run stats:balance
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| forest.explore → taro.eat | 0.08 | 0.08 | 0.00 | 130 | 9.1% | — | carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool（この土地では入手できない）、palm_tree（この土地では入手できない） |
-| forest.explore → banana_plant.fell → banana.eat | 0.23 | 0.20 | 0.03 | 351 | 24.4% | — | carbohydrate +10.00、vitamin +35.00 | cutting_tool（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool（この土地では入手できない）、palm_tree（この土地では入手できない） |
+| forest.explore → taro.eat | 0.10 | 0.10 | 0.00 | 148 | 10.3% | — | carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| forest.explore → banana_plant.fell → banana.eat | 0.26 | 0.23 | 0.03 | 392 | 27.2% | — | carbohydrate +10.00、vitamin +35.00 | cutting_tool（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
 
 #### vitamin（1日 48）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| forest.explore → taro.eat | 1.41 | 1.41 | 0.00 | 68 | 4.7% | — | satiety +600.00、carbohydrate +40.00、protein +2.00 | — |
-| forest.explore → banana_plant.fell → banana.eat | 2.29 | 2.00 | 0.29 | 110 | 7.6% | — | satiety +350.00、carbohydrate +10.00 | cutting_tool（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool（この土地では入手できない）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool（この土地では入手できない）、palm_tree（この土地では入手できない） |
+| forest.explore → taro.eat | 1.60 | 1.60 | 0.00 | 77 | 5.3% | — | satiety +600.00、carbohydrate +40.00、protein +2.00 | — |
+| forest.explore → banana_plant.fell → banana.eat | 2.55 | 2.27 | 0.29 | 123 | 8.5% | — | satiety +350.00、carbohydrate +10.00 | cutting_tool（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
 
 #### hydration（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（この土地では入手できない） |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool（この土地では入手できない）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool（この土地では入手できない）、palm_tree（この土地では入手できない） |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
 
 #### wakefulness（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（この土地では入手できない） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
 
 ### jungle
 
@@ -399,39 +401,39 @@ npm run stats:balance
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jungle.explore → taro.eat | 0.14 | 0.14 | 0.00 | 213 | 14.8% | — | carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
-| jungle.explore → water_spinach.eat | 0.20 | 0.20 | 0.00 | 302 | 21.0% | — | carbohydrate +1.00、vitamin +83.00 | — |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool（この土地では入手できない）、palm_tree（122.0分） |
-| jungle.explore → banana_plant.fell → banana.eat | 0.29 | 0.26 | 0.03 | 445 | 30.9% | — | carbohydrate +10.00、vitamin +35.00 | cutting_tool（この土地では入手できない） |
-| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 0.31 | 0.05 | 0.26 | 482 | 33.5% | — | carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool（この土地では入手できない）、stone（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool（この土地では入手できない）、palm_tree（122.0分） |
+| jungle.explore → taro.eat | 0.15 | 0.15 | 0.00 | 234 | 16.2% | — | carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
+| jungle.explore → water_spinach.eat | 0.22 | 0.22 | 0.00 | 332 | 23.1% | — | carbohydrate +1.00、vitamin +83.00 | — |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（134.0分） |
+| jungle.explore → banana_plant.fell → banana.eat | 0.32 | 0.29 | 0.03 | 485 | 33.7% | — | carbohydrate +10.00、vitamin +35.00 | cutting_tool（入手経路なし） |
+| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 0.32 | 0.06 | 0.26 | 490 | 34.0% | — | carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool（入手経路なし）、stone（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（134.0分） |
 
 #### vitamin（1日 48）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jungle.explore → water_spinach.eat | 0.71 | 0.71 | 0.00 | 34 | 2.4% | — | satiety +300.00、carbohydrate +1.00 | — |
-| jungle.explore → taro.eat | 2.31 | 2.31 | 0.00 | 111 | 7.7% | — | satiety +600.00、carbohydrate +40.00、protein +2.00 | — |
-| jungle.explore → banana_plant.fell → banana.eat | 2.90 | 2.61 | 0.29 | 139 | 9.7% | — | satiety +350.00、carbohydrate +10.00 | cutting_tool（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool（この土地では入手できない）、palm_tree（122.0分） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool（この土地では入手できない）、palm_tree（122.0分） |
-| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 8.97 | 1.47 | 7.50 | 430 | 29.9% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、hydration +6.00 | cutting_tool（この土地では入手できない）、stone（この土地では入手できない） |
+| jungle.explore → water_spinach.eat | 0.78 | 0.78 | 0.00 | 37 | 2.6% | — | satiety +300.00、carbohydrate +1.00 | — |
+| jungle.explore → taro.eat | 2.54 | 2.54 | 0.00 | 122 | 8.5% | — | satiety +600.00、carbohydrate +40.00、protein +2.00 | — |
+| jungle.explore → banana_plant.fell → banana.eat | 3.16 | 2.87 | 0.29 | 152 | 10.5% | — | satiety +350.00、carbohydrate +10.00 | cutting_tool（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（134.0分） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（134.0分） |
+| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 9.11 | 1.61 | 7.50 | 437 | 30.4% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、hydration +6.00 | cutting_tool（入手経路なし）、stone（入手経路なし） |
 
 #### hydration（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（この土地では入手できない） |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool（この土地では入手できない）、palm_tree（122.0分） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool（この土地では入手できない）、palm_tree（122.0分） |
-| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 10.46 | 1.71 | 8.75 | 1004 | 69.8% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00 | cutting_tool（この土地では入手できない）、stone（この土地では入手できない） |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（134.0分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（134.0分） |
+| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 10.63 | 1.88 | 8.75 | 1021 | 70.9% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00 | cutting_tool（入手経路なし）、stone（入手経路なし） |
 
 #### wakefulness（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（この土地では入手できない） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
 
 ### rocky_field
 
@@ -439,30 +441,30 @@ npm run stats:balance
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（71.6分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（71.6分）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.0分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（入手経路なし） |
 
 #### vitamin（1日 48）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（71.6分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（71.6分）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（72.0分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（入手経路なし） |
 
 #### hydration（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（この土地では入手できない） |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（71.6分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（71.6分）、palm_tree（この土地では入手できない） |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（72.0分）、palm_tree（入手経路なし） |
 
 #### wakefulness（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（この土地では入手できない） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
 
 ### wasteland
 
@@ -470,30 +472,30 @@ npm run stats:balance
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（74.9分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（74.9分）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（74.9分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（74.9分）、palm_tree（入手経路なし） |
 
 #### vitamin（1日 48）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（74.9分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（74.9分）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（74.9分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（74.9分）、palm_tree（入手経路なし） |
 
 #### hydration（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（この土地では入手できない） |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（74.9分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（74.9分）、palm_tree（この土地では入手できない） |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（74.9分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（74.9分）、palm_tree（入手経路なし） |
 
 #### wakefulness（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（この土地では入手できない） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
 
 ### mountainside
 
@@ -501,30 +503,30 @@ npm run stats:balance
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（74.6分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（74.6分）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（75.0分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（75.0分）、palm_tree（入手経路なし） |
 
 #### vitamin（1日 48）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（74.6分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（74.6分）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（75.0分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（75.0分）、palm_tree（入手経路なし） |
 
 #### hydration（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（この土地では入手できない） |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（74.6分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（74.6分）、palm_tree（この土地では入手できない） |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（75.0分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（75.0分）、palm_tree（入手経路なし） |
 
 #### wakefulness（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（この土地では入手できない） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
 
 ### mountain_peak
 
@@ -532,30 +534,154 @@ npm run stats:balance
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.4分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.4分）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.4分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.4分）、palm_tree（入手経路なし） |
 
 #### vitamin（1日 48）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（72.4分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（72.4分）、palm_tree（この土地では入手できない） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool → sharp_stone（72.4分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool → sharp_stone（72.4分）、palm_tree（入手経路なし） |
 
 #### hydration（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（この土地では入手できない） |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（72.4分）、palm_tree（この土地では入手できない） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（72.4分）、palm_tree（この土地では入手できない） |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool → sharp_stone（72.4分）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool → sharp_stone（72.4分）、palm_tree（入手経路なし） |
 
 #### wakefulness（1日 96）
 
 | 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（この土地では入手できない） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
+
+### raft
+
+#### satiety（1日 1536）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+
+#### vitamin（1日 48）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+
+#### hydration（1日 96）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+
+#### wakefulness（1日 96）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
+
+### open_sea
+
+#### satiety（1日 1536）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+
+#### vitamin（1日 48）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+
+#### hydration（1日 96）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+
+#### wakefulness（1日 96）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
+
+### mainland
+
+#### satiety（1日 1536）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+
+#### vitamin（1日 48）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+
+#### hydration（1日 96）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+
+#### wakefulness（1日 96）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
+
+### raft__lashed
+
+#### satiety（1日 1536）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.16 | 0.00 | 0.16 | 239 | 16.6% | — | carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+
+#### vitamin（1日 48）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.67 | 0.00 | 4.67 | 224 | 15.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、hydration +5.20 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、hydration +20.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+
+#### hydration（1日 96）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| jar.collect_rain → water_liquid.drink | 0.00 † | 0.00 | 0.00 | 0 | 0.0% | — | — | jar（入手経路なし） |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | wakefulness +2.00 | tea_liquid（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 4.49 | 0.00 | 4.49 | 431 | 29.9% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00 | cutting_tool（入手経路なし）、palm_tree（入手経路なし） |
+
+#### wakefulness（1日 96）
+
+| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| tea_liquid.drink | 0.00 | 0.00 | 0.00 | 0 | 0.0% | — | hydration +10.00 | tea_liquid（入手経路なし） |
 
 ## 4. 待ち生産表（設備が時間をかけて返す分）
 
@@ -570,8 +696,8 @@ npm run stats:balance
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | junglefowl ×0.069 | 0.42 | 10.0 | 4.2 | 62.3 | 14.94 |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.113 | 0.68 | 10.0 | 6.8 | 62.3 | 9.17 |
+| snare | catch_remaining.on_shortfall | 240 | junglefowl ×0.069 | 0.42 | 10.0 | 4.2 | 63.8 | 15.30 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.113 | 0.68 | 10.0 | 6.8 | 63.8 | 9.39 |
 
 ### sandy_beach
 
@@ -602,14 +728,14 @@ npm run stats:balance
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.143 | 0.86 | 10.0 | 8.6 | 85.0 | 9.92 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.143 | 0.86 | 10.0 | 8.6 | 89.7 | 10.46 |
 
 ### jungle
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | junglefowl ×0.061 | 0.36 | 10.0 | 3.6 | 62.3 | 17.12 |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.117 | 0.70 | 10.0 | 7.0 | 62.3 | 8.88 |
+| snare | catch_remaining.on_shortfall | 240 | junglefowl ×0.061 | 0.36 | 10.0 | 3.6 | 63.8 | 17.53 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.117 | 0.70 | 10.0 | 7.0 | 63.8 | 9.09 |
 
 ### rocky_field
 
@@ -634,4 +760,24 @@ npm run stats:balance
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 入手経路なし | — |
+
+### raft
+
+| 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
+### open_sea
+
+| 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
+### mainland
+
+| 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+
+### raft__lashed
+
+| 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 

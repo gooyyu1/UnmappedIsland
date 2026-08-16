@@ -34,7 +34,7 @@ const EPSILON = 1e-9;
 const KEY_SEPARATOR = ' :: ';
 
 /**
- * 工程を実行するのに要る、消費されない入力1件。costがundefinedなら、この土地では前提が揃わない
+ * 工程を実行するのに要る、消費されない入力1件。costがundefinedなら、この文脈では前提が揃わない
  * （その経路はここでは辿れない）。
  */
 interface Prerequisite {
@@ -581,7 +581,7 @@ function appendChains(
   append('「1日の割合」は、1日ぶんを賄うのに要る労働が1日（1440分）に占める割合。');
   append('「設備数」は、待ち生産の経路で1日ぶんを賄うのに同時に要る設備の数（4節参照）。');
   append('† は、素材を所要時間0分の工程で得ている経路（この表が時間を数えられていない、上の注記を参照）。');
-  append('前提の道具がその土地で手に入らない経路は、数字を出したうえで表の末尾へ回す。');
+  append('前提の道具に入手経路が無い経路は、数字を出したうえで表の末尾へ回す。');
   append();
 
   for (const { name, rows } of balances) {
@@ -678,7 +678,7 @@ interface ChainRow {
   readonly coProducts: string;
   readonly prerequisites: string;
 
-  /** この土地では前提の道具が手に入らない経路か。表の末尾へ回す。 */
+  /** 前提の道具に入手経路が無い経路か。表の末尾へ回す。 */
   readonly blocked: boolean;
 
   /** 途中に所要時間0分の工程を含む経路か（時間を数えられていない、†）。 */
@@ -772,7 +772,7 @@ function buildRow(
     prerequisites: [...prerequisites.values()]
       .map(
         ({ label, cost: toolCost }) =>
-          `${label}（${toolCost === undefined ? 'この土地では入手できない' : `${formatNumber(totalOf(toolCost))}分`}）`,
+          `${label}（${toolCost === undefined ? '入手経路なし' : `${formatNumber(totalOf(toolCost))}分`}）`,
       )
       .join('、'),
     blocked: [...prerequisites.values()].some(({ cost: toolCost }) => toolCost === undefined),
