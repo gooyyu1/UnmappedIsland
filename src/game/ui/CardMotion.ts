@@ -189,7 +189,7 @@ export class CardMotion {
     const releasedCard = landing === undefined ? releasedCardOf(before, context.released) : undefined;
     const updates = lanes.map((lane, index) => lane.setCells(cells[index], releasedCard));
 
-    const arriving: PlacedCard<Card>[] = [];
+    const arriving: PlacedCard<Card, Rect>[] = [];
     updates.forEach((update, index) => {
       for (const { card, index: slot } of arrivals(update)) {
         arriving.push({ card, ids: idsOf(card), rect: lanes[index].slotRect(slot) });
@@ -338,8 +338,8 @@ interface Flight {
 }
 
 /** レーンに並んでいるカードを、位置とインスタンスのID付きで挙げる（計画の入力）。 */
-function placedCards(lanes: readonly CardLane[]): PlacedCard<Card>[] {
-  const placed: PlacedCard<Card>[] = [];
+function placedCards(lanes: readonly CardLane[]): PlacedCard<Card, Rect>[] {
+  const placed: PlacedCard<Card, Rect>[] = [];
   for (const lane of lanes) {
     lane.cardObjects.forEach((card, index) => {
       if (card !== undefined) placed.push({ card, ids: idsOf(card), rect: lane.slotRect(index) });
@@ -358,7 +358,7 @@ function arrivals(update: LaneUpdate): readonly { readonly card: Card; readonly 
 
 /** 掴んでいたインスタンスを、差し替え前に映していたカード（CardLane.setCellsが別扱いする）。 */
 function releasedCardOf(
-  before: readonly PlacedCard<Card>[],
+  before: readonly PlacedCard<Card, Rect>[],
   released: MotionContext['released'],
 ): ReleasedCard | undefined {
   if (released === undefined) return undefined;

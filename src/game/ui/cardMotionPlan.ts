@@ -1,7 +1,8 @@
-import type { Rect } from '../layout/ScreenMetrics';
-
 /**
  * レーンの差し替えを「どの札がどこからどこへ飛ぶか」に翻訳する計画（CardInteraction.md 6節）。実行はCardMotionが行い、ここは何も表示しない純粋な計算だけ。
+ *
+ * カードの実体Cも枠の矩形Rも、不透明な型として運ぶだけで読まない。**計画が座標に依存しないことは、
+ * 総称であること自体が保証する**——依存した瞬間に型が通らなくなる。
  *
  * **1つのインスタンスの移動は1回だけ見せる**。計画は差し替え後のインスタンスを1つずつ辿って
  * 出どころを1通りの規則で引くので、同じ移動が二重に飛ぶことは構造上起きない。
@@ -17,36 +18,36 @@ import type { Rect } from '../layout/ScreenMetrics';
  * ことでも現れたことでもない（vanished / born）。
  */
 
-/** 計画に映る1枚のカード。実体が何か（Card）は実行側だけが知る。 */
-export interface PlacedCard<C> {
+/** 計画に映る1枚のカード。実体が何か（Card）も矩形が何か（Rect）も実行側だけが知る。 */
+export interface PlacedCard<C, R> {
   readonly card: C;
   /** 映しているインスタンスのID（CardContent.identity）。 */
   readonly ids: readonly number[];
-  readonly rect: Rect;
+  readonly rect: R;
 }
 
-export interface MotionInput<C> {
+export interface MotionInput<C, R> {
   /** 差し替え前にレーンに居たカード。 */
-  readonly before: readonly PlacedCard<C>[];
+  readonly before: readonly PlacedCard<C, R>[];
   /**
    * 差し替えで枠の外から所定の位置へ動かすカード（新しく現れたもの・掴んで離したまま残ったもの）。
    * 処理順がそのまま、生まれたものが飛び立つ順になる。
    */
-  readonly arriving: readonly PlacedCard<C>[];
+  readonly arriving: readonly PlacedCard<C, R>[];
   /** 差し替え後も居続けるカード。カード自身は滑って動く（CardLane）ので、飛ぶのは移ったインスタンスだけ。 */
-  readonly staying: readonly PlacedCard<C>[];
+  readonly staying: readonly PlacedCard<C, R>[];
   /** 居なくなったカード。 */
   readonly left: readonly { readonly card: C; readonly ids: readonly number[] }[];
   /**
    * 差し替え前に画面のどこにも無かったインスタンスの出発点を、そのインスタンスごとに引いたもの
    * （MotionContext.origins）。持たないインスタンスは、出どころが分からないものとして扱う。
    */
-  readonly origins?: ReadonlyMap<number, Rect>;
+  readonly origins?: ReadonlyMap<number, R>;
   /**
    * 手から放したインスタンスたちと、手を離した場所。ついてきて一緒に落とされたぶんも、指の下に
    * 居たのだから同じ場所から動き出す。heldIdが混ざっていてもよい——そちらの規則が先に効く。
    */
-  readonly released?: { readonly ids: readonly number[]; readonly rect: Rect };
+  readonly released?: { readonly ids: readonly number[]; readonly rect: R };
   /**
    * 今その枠から持ち出されているインスタンス——置いたままの分身が運ぶもの（CardMotion.hold）と、
    * 子ウィンドウが借りている札（Windows.md 1.1節）。**どちらも枠には居ないので数から引き、通常の
@@ -63,13 +64,13 @@ export interface MotionInput<C> {
 }
 
 /** 分身1枚の飛行。 */
-export interface PlannedFlight<C> {
+export interface PlannedFlight<C, R> {
   /** 分身の見た目を借りるカード（行き先のカード）。 */
   readonly face: C;
   /** 分身が運んでいる1枚の行き先。着いた時点で、その枠に居る枚数が1つ増える。 */
   readonly into: C;
-  readonly from: Rect;
-  readonly to: Rect;
+  readonly from: R;
+  readonly to: R;
   /** 飛び立ちを遅らせる段数（1段＝送りの最短間隔。実時間にするのは実行側）。 */
   readonly delaySteps: number;
   /** 着いた時点で砂埃を立てるか（生まれたインスタンスを運ぶ便）。 */
@@ -88,8 +89,8 @@ export interface ShownCard<C> {
   readonly emptied: boolean;
 }
 
-export interface MotionPlan<C> {
-  readonly flights: readonly PlannedFlight<C>[];
+export interface MotionPlan<C, R> {
+  readonly flights: readonly PlannedFlight<C, R>[];
   /** 差し替えの直後の各札の見せ方（レーンに並ぶカード全部ぶん）。 */
   readonly shown: readonly ShownCard<C>[];
   /** 出どころが分からず、その場で浮かび上がらせるカード。 */
@@ -97,24 +98,24 @@ export interface MotionPlan<C> {
   /** 即座に片付けるカード（居なくなったもの全部。残ったインスタンスの移動は便が見せている）。 */
   readonly discards: readonly C[];
   /** その場ですぐ砂埃を立てる枠（消えた札の居場所と、飛ばずに現れた札の居場所）。 */
-  readonly puffs: readonly Rect[];
+  readonly puffs: readonly R[];
   /**
    * 持ち出されているインスタンス（aloft）の帰り先——差し替え後にそのインスタンスを映している枠。
    * **返すかどうかは持ち出した側が決める**ので、ここは行き先を答えるだけ。世界から出ていれば
    * 帰り先を持たない。
    */
-  readonly landings: ReadonlyMap<number, { readonly to: Rect; readonly into: C }>;
+  readonly landings: ReadonlyMap<number, { readonly to: R; readonly into: C }>;
 }
 
-export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
-  const before = new Map<number, PlacedCard<C>>();
+export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
+  const before = new Map<number, PlacedCard<C, R>>();
   for (const placed of input.before) for (const id of placed.ids) before.set(id, placed);
 
-  const flights: PlannedFlight<C>[] = [];
+  const flights: PlannedFlight<C, R>[] = [];
   const shown: ShownCard<C>[] = [];
   const fadeIns: C[] = [];
-  const puffs: Rect[] = [];
-  const landings = new Map<number, { to: Rect; into: C }>();
+  const puffs: R[] = [];
+  const landings = new Map<number, { to: R; into: C }>();
   const aloft = new Set(input.aloft ?? []);
   // 現れたものは差し替え全体で通し番号を取り、1枚ずつ間を置いて飛び立つ。
   let appeared = 0;
@@ -133,9 +134,9 @@ export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
   /** そのインスタンスの出どころ（唯一の規則）。undefinedは「飛ばさない」。 */
   const resolve = (
     id: number,
-    to: PlacedCard<C>,
+    to: PlacedCard<C, R>,
     arriving: boolean,
-  ): { rect: Rect; appeared: boolean } | undefined => {
+  ): { rect: R; appeared: boolean } | undefined => {
     if (input.released?.ids.includes(id) === true) {
       return { rect: input.released.rect, appeared: false };
     }
@@ -152,11 +153,11 @@ export function planMotion<C>(input: MotionInput<C>): MotionPlan<C> {
     return origin === undefined ? undefined : { rect: origin, appeared: true };
   };
 
-  const planArrivalsTo = (to: PlacedCard<C>, arriving: boolean): void => {
+  const planArrivalsTo = (to: PlacedCard<C, R>, arriving: boolean): void => {
     let held = 0;
     // 生まれたのに出どころが分からないもの。飛ぶ便が無いので、着いた先で砂埃だけを立てる。
     let bornInPlace = false;
-    const sources: { rect: Rect; appeared: boolean; puffs: boolean }[] = [];
+    const sources: { rect: R; appeared: boolean; puffs: boolean }[] = [];
     for (const id of to.ids) {
       if (aloft.has(id)) {
         held += 1;
