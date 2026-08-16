@@ -18,25 +18,20 @@ import type { InteractionGains } from '../domain/runtime/PropertyGain';
 import type { WorldChange } from '../domain/runtime/WorldChange';
 import type { WorldSignal } from '../domain/runtime/WorldSignal';
 import type { WorldObject } from '../domain/runtime/WorldObject';
-import type {
-  CardAction,
-  CardCombination,
-  CardPlace,
-  CardPutIn,
-  ObjectCardStack,
-  PlayScreenView,
-} from './PlayScreenView';
-import { fromGameSession, withFrozenCards } from './PlayScreenView';
-import type { AloftCards, CardSpot } from './ShownCards';
+import type { CardAction, CardPlace, ObjectCardStack, PlayScreenView } from './PlayScreenView';
+import { fromGameSession } from './PlayScreenView';
+import type { CardSpot, ShownDrop } from './ShownCards';
 import { ShownCards } from './ShownCards';
+import type { RecordedView, Recording } from './recording';
+import { recordChange } from './recording';
 import { noteOperation, setStateReporter } from './errorReport';
 import type { StatusDelta } from './statusChanges';
-import { statusChangesAfter, statusChangesBetween } from './statusChanges';
+import { allEntries, allStatuses, statusChangesAfter } from './statusChanges';
 import { statusRows } from './statusRows';
 import { TickProgress } from './tickProgress';
 import { Button, SLOT_BUTTON_PAPER_TEXTURE } from './ui/Button';
 import { EDGE_DIRECTIONS } from './ui/Card';
-import type { CardContent, CardEdgeAction, CardEdgeDirection } from './ui/Card';
+import type { CardContent, CardEdgeAction } from './ui/Card';
 import { characterCardContent } from './ui/characterArt';
 import type { Card } from './ui/Card';
 import { cardFace } from './ui/Card';
@@ -226,48 +221,6 @@ const FILTER_ICONS: readonly BarIcon[] = [
   { art: 'filter_fun', icon: '🎵' },
 ];
 
-/**
- * ワールドを変えている途中の、あるtick境界での表示内容（PlayScene.record）。
- *
- * ワールドは操作の実行時に一気に進み切るが、画面は実時間をかけて追いかける。経過中のtickで起きた変化を
- * その瞬間に見せるため、tickごとの表示内容を控えておいて再生する。
- */
-interface RecordedView {
-  /** この控えが映している時刻（ゲーム内の総経過分。tick境界の絶対時刻になる）。 */
-  readonly minutes: number;
-  readonly view: PlayScreenView;
-  /** 行動開始時からのステータスの増減。控えた時点までの分だけを見せる。 */
-  readonly statusChanges: ReadonlyMap<string, StatusDelta>;
-  /**
-   * このtickで起きた物の出入り。**矩形に直すのは再生する時点**——出どころの札の位置は、その時点の
-   * 画面（1つ前のtickの控え）にしか無い（HuntingSystem.md 6.1節）。
-   */
-  readonly changes: readonly WorldChange[];
-
-  /** このtickで告げられた出来事（WorldSignal）。出す場所の決め方は出入りと同じ。 */
-  readonly signals: readonly WorldSignal[];
-}
-
-/**
- * ワールドを変えた経過の控え（PlayScene.record）。
- *
- * 経過し切った時刻の控えは持たない（その並びは行動の効果まで含めてonElapsedが見せる）ため、
- * そこで起きた出入りだけが控えから漏れる。changesがその分を引き取る。
- */
-interface Recording {
-  /** 経過中の各tick境界の控え（実時間をかけて再生する分）。 */
-  readonly ticks: readonly RecordedView[];
-  /** 経過し切った時点で見せる分の出入り。 */
-  readonly changes: readonly WorldChange[];
-  /**
-   * 同じく、経過し切った時点で見せる分の出来事。アクションの効果は時間が経ち切ってから適用される
-   * （ActionSystem.md 2節）ので、**操作が告げる出来事は通常こちらに入る**。
-   */
-  readonly signals: readonly WorldSignal[];
-  /** 操作そのものが増やしたキャラクタの値（PropertyGain）。粒にして飛ばす（showGains）。 */
-  readonly gains: readonly InteractionGains[];
-}
-
 /** プレイ中の画面を開くときに渡す、対象のセーブデータ。 */
 export interface PlaySceneData {
   readonly save: SaveData;
@@ -359,19 +312,7 @@ export class PlayScene extends ResponsiveScene {
    * その場所が手持ちの「隣」になる（laneCards・cardsOf参照）。
    */
   private childWindow: ObjectWindow | undefined;
-  private childWindowCard: ObjectCardStack | undefined;
   private childWindowPlace: CardPlace | undefined;
-
-  /**
-   * 子ウィンドウが借りている札（Windows.md 1.1節）と、そこから元の枠へ帰る途中の札。
-   *
-   * **借りている間、そのインスタンスは元の枠に居ない**（枚数から引く、MotionContext.borrowed）。
-   * 同じ物を映す札が画面に2枚出ないようにするための、ただ1つの仕掛け。
-   */
-  private readonly borrowed = new Set<number>();
-
-  /** 今その子ウィンドウが映している、借りた1枚の見た目（返すときの分身の姿になる）。 */
-  private borrowedCard: CardContent | undefined;
 
   /**
    * 画面に出ている札の並び（ShownCards）。**表示もタップもドラッグもここを通す**——見えている札と
@@ -382,10 +323,9 @@ export class PlayScene extends ResponsiveScene {
    */
   private readonly shown = new ShownCards({
     stacksIn: (place) => this.cardsAt(place),
-    borrowedCard: () => this.childWindowCard,
-    aloft: () => this.aloftCards(),
     cardOfObjects: (objects, place) => this.view.cardOfObjects(objects, place),
     combinationOf: (dragged, target) => this.view.combinationOf(dragged, target),
+    windowPlace: () => this.childWindowPlace,
   });
 
   /** 開いているプロパティウィンドウ。探索の子ウィンドウと同じく、画面の作り直しをまたいで開いたままにする。 */
@@ -447,12 +387,9 @@ export class PlayScene extends ResponsiveScene {
   /**
    * 探索の結果待ちか（この間は次の探索を始められない）と、直前の探索で見つかったもの。
    *
-   * **見つかったものの札は探索ウィンドウが借りている**（Windows.md 5.1節）。まだどの枠にも
-   * 居たことがないので、借りている間はレーンの並びに入れず（ShownCardsのunplaced）、返す時点で
-   * 発見物の枠から本来の場所へ飛ぶ。
+   * 見つかったものの札は探索ウィンドウが借りている（ShownCards.takeFound、Windows.md 5.1節）。
    */
   private searching = false;
-  private found: readonly CardContent[] = [];
 
   /** 発見物の枠へまだ飛んでいる途中の札（着くまでは枠に伏せておく）。 */
   private foundArriving: ReadonlySet<number> = new Set();
@@ -546,10 +483,8 @@ export class PlayScene extends ResponsiveScene {
     // 開いていたウィンドウは前のプレイの世界を映している。入り直したら何も開いていない状態から始める。
     this.explorationWindow = undefined;
     this.childWindow = undefined;
-    this.childWindowCard = undefined;
     this.childWindowPlace = undefined;
-    this.borrowed.clear();
-    this.borrowedCard = undefined;
+    this.shown.reset();
     this.propertyWindow = undefined;
     this.mapWindow = undefined;
     this.statusDetailWindow = undefined;
@@ -559,7 +494,6 @@ export class PlayScene extends ResponsiveScene {
     // 見せている最中だった演出は、それを終わらせるtweenごと消えている（終わったものとして始める）。
     this.passingTime = false;
     this.searching = false;
-    this.found = [];
     this.foundArriving = new Set();
     this.statusChanges = new Map();
     this.selectedFilter = 0;
@@ -620,12 +554,12 @@ export class PlayScene extends ResponsiveScene {
     const wasShowingProperties = this.propertyWindow !== undefined;
     const wasShowingMap = this.mapWindow !== undefined;
     const openedStatus = this.statusDetailKey;
-    const openedCard = this.childWindowCard;
+    const openedCard = this.shown.windowStack;
     // 運んでいる途中だった札は、表示物ごと捨てられている（着いたものとして作り直す）。
     this.foundArriving = new Set();
     this.explorationWindow = undefined;
     this.childWindow = undefined;
-    this.childWindowCard = undefined;
+    this.shown.clearWindowStack();
     this.childWindowPlace = undefined;
     this.propertyWindow = undefined;
     this.mapWindow = undefined;
@@ -801,17 +735,6 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 今その枠に居ないインスタンス（ShownCards.AloftCards）。子ウィンドウへ貸した札は帰ってくるので
-   * 枠が待ち、探索ウィンドウが抱えている発見物はまだどの枠にも居たことがない。
-   */
-  private aloftCards(): AloftCards {
-    const aloft = new Map<number, 'awaited' | 'unplaced'>();
-    for (const id of this.borrowed) aloft.set(id, 'awaited');
-    for (const card of this.found) for (const id of card.identity ?? []) aloft.set(id, 'unplaced');
-    return aloft;
-  }
-
-  /**
    * 受け皿の空枠を持たないレーンの枠（設置物・手持ち）。設置物レーンは前詰めだが末尾に受け皿を
    * 出さず、手持ちは固定枠なので空き枠そのものが常に見えている。
    */
@@ -857,7 +780,7 @@ export class PlayScene extends ResponsiveScene {
   private cardEdges(card: ObjectCardStack): readonly CardEdgeAction[] {
     const edges: CardEdgeAction[] = [];
     for (const direction of EDGE_DIRECTIONS) {
-      const move = this.edgeMove(card, direction);
+      const move = this.shown.edgeMove(card, direction);
       if (move !== undefined) {
         const label = `カードの端を押した: ${card.name}（${card.place} の ${direction}）`;
         edges.push({ direction, onTap: () => this.applyToWorld(label, move) });
@@ -866,128 +789,27 @@ export class PlayScene extends ResponsiveScene {
     return edges;
   }
 
-  /** 端を押したときの移動（その向きへ移せないならundefined）。行き先は「空いている場所」なので位置は指定しない。 */
-  private edgeMove(card: ObjectCardStack, direction: CardEdgeDirection): (() => void) | undefined {
-    for (const place of this.edgeTargets(card.place, direction)) {
-      const move = card.moveTo?.(place);
-      if (move !== undefined) return move;
-    }
-    return undefined;
+  /** ドロップを、レーンを場所（CardSpot）に直した形へ（判断はShownCardsが行う）。 */
+  private dropOf(drop: CardDrop): ShownDrop {
+    return {
+      from: this.spotOf(drop.from),
+      fromIndex: drop.fromIndex,
+      to: this.spotOf(drop.to),
+      target: drop.target,
+      count: drop.count,
+    };
   }
 
   /**
-   * その向きの行き先の候補を、近い順に。フィールドの並びの上下関係（設置物→アイテム→手持ち）
-   * そのままで、子ウィンドウのカードの下は手持ち。
-   *
-   * 手持ちの上は、子ウィンドウを開いている間だけそちらを先に見る——カードをやり取りする相手が
-   * 画面に出ているなら、端を押す操作もその相手を指すのが自然なため。受け取れない相手（怪我）なら
-   * 元どおりアイテムへ落ちる。開いているだけで手持ちの端が使えなくなるのは不便なため。
-   */
-  private edgeTargets(from: CardPlace, direction: CardEdgeDirection): readonly CardPlace[] {
-    if (direction === 'up') {
-      if (from === 'items') return ['fixtures'];
-      if (from !== 'hand') return [];
-      return this.childWindowPlace === undefined ? ['items'] : [this.childWindowPlace, 'items'];
-    }
-    if (from === 'fixtures') return ['items'];
-    if (from === 'items') return ['hand'];
-    // 手持ちの下は無く、子ウィンドウのカード（装備・怪我・コンテナの中身）の下は手持ち。
-    return from === 'hand' ? [] : ['hand'];
-  }
-
-  /**
-   * ドロップで起きること（何も起きないならundefined）。カードに重ねたらcombination、相手が入れ物なら
-   * その中へ入れる、隙間・空き枠へ落としたら位置を変える。同じレーンの中ならスタックごとの並び替え、
-   * レーンをまたぐならカード1枚の移動。
-   */
-  private dropAction(drop: CardDrop): (() => void) | undefined {
-    if (drop.target.kind === 'combine') return this.combinationAt(drop)?.execute ?? this.putInto(drop);
-    // 借りた札の枠はワールドの場所ではないので、そこへ「入れる」ことはできない（重ねるだけ）。
-    if (drop.to === this.childWindow?.cardLane) return undefined;
-
-    const dragged = this.cardsOf(drop.from)[drop.fromIndex];
-    if (dragged === undefined) return undefined;
-    return drop.to === drop.from
-      ? dragged.reorder?.(drop.target)
-      : dragged.moveTo?.(this.placeOf(drop.to), drop.target, drop.count);
-  }
-
-  /**
-   * そのドロップでまとめて動かせる最大枚数（1ならついてこない）。**combinationは常に1**——
-   * 条件は世界のどこでも見られ、1回実行するたびに世界が変わるので、2回目が成立するかは
-   * やってみるまで分からない。ついてきた枚数を約束にできるのは、枠が空きを答えられる「入れる」だけ。
-   */
-  private multiDropLimit(drop: CardDrop): number {
-    if (this.combinationAt(drop) !== undefined) return 1;
-
-    const dragged = this.cardsOf(drop.from)[drop.fromIndex];
-    if (dragged === undefined) return 1;
-    if (drop.target.kind === 'combine') {
-      const into = this.contentsUnder(drop);
-      return into === undefined ? 1 : (dragged.acceptedCountAt?.(into) ?? 1);
-    }
-    // 同じ場所の中は並び替えで、束ごと動く（SlotSystem.md 3節）。
-    return drop.to === drop.from ? 1 : (dragged.acceptedCountAt?.(this.placeOf(drop.to)) ?? 1);
-  }
-
-  /**
-   * カードに重ねたときに、そのカードの中へ入れる操作（入れ物でない・入らないならundefined）。
-   *
-   * かごも製作中オブジェクトも同じ扱い——「押すと中身が並ぶカード」（main_item_slot）の上へ落としたら、
-   * そのスロットへ入る。入るかどうかは枠の宣言（accept・max）が決めるので、ここでは場所を指すだけ。
-   */
-  private putInto(drop: CardDrop): (() => void) | undefined {
-    const into = this.contentsUnder(drop);
-    return into === undefined
-      ? undefined
-      : this.cardsOf(drop.from)[drop.fromIndex]?.moveTo?.(into, undefined, drop.count);
-  }
-
-  /** カードに重ねたとき、そのカードが中身を映す場所（入れ物でなければundefined）。 */
-  private contentsUnder(drop: CardDrop): CardPlace | undefined {
-    if (drop.target.kind !== 'combine') return undefined;
-
-    const dragged = this.cardsOf(drop.from)[drop.fromIndex];
-    const target = this.cardsOf(drop.to)[drop.target.index];
-    // 自分自身の中へは入れられない（1枚しか映していないカードを、そのカードへ重ねた場合）。
-    return dragged === undefined || dragged === target ? undefined : target?.contents;
-  }
-
-  /** そのドロップが「入れる」なら、その見せ方（枠が文言も時間も宣言していなければundefined）。 */
-  private putInAt(drop: CardDrop): CardPutIn | undefined {
-    const dragged = this.cardsOf(drop.from)[drop.fromIndex];
-    if (dragged === undefined) return undefined;
-
-    if (drop.target.kind === 'combine') {
-      const into = this.contentsUnder(drop);
-      return into === undefined ? undefined : dragged.putInto?.(into, drop.count);
-    }
-    // 枠・隙間へ落とすのも同じ「入れる」。同じレーンの中は並び替えなので値段は付かない。
-    return drop.to === drop.from ? undefined : dragged.putInto?.(this.placeOf(drop.to), drop.count);
-  }
-
-  /** カードに重ねたときに実行できるcombination（重ねる操作でなければundefined）。 */
-  private combinationAt(drop: CardDrop): CardCombination | undefined {
-    if (drop.target.kind !== 'combine') return undefined;
-
-    return this.shown.combinationAt(
-      this.spotOf(drop.from),
-      drop.fromIndex,
-      this.spotOf(drop.to),
-      drop.target.index,
-    );
-  }
-
-  /**
-   * そのドロップで何が起きるか（何も起きないならundefined）。combinationと、文言や時間を宣言している
-   * 枠へ入れる操作（手当てなど）は名前・説明・かかる時間を返し、ドラッグ中の吹き出しになる。
-   * ただ位置を変えるだけの移動には説明が要らないので中身は空。
+   * そのドロップで何が起きるか（何も起きないならundefined）。何が起きるかの判断はShownCards、
+   * ここは吹き出しの文字列に直すだけ。ただ位置を変えるだけの移動には説明が要らないので中身は空。
    */
   private describeDrop(drop: CardDrop): CardDropInfo | undefined {
-    if (this.dropAction(drop) === undefined) return undefined;
+    const dropped = this.dropOf(drop);
+    if (this.shown.dropAction(dropped) === undefined) return undefined;
 
-    const maxCount = this.multiDropLimit(drop);
-    const told = this.combinationAt(drop) ?? this.putInAt(drop);
+    const maxCount = this.shown.multiDropLimit(dropped);
+    const told = this.shown.dropEffect(dropped);
     if (told === undefined) return { maxCount };
     return {
       maxCount,
@@ -1135,7 +957,7 @@ export class PlayScene extends ResponsiveScene {
    * 逆向きに成立したなら掴んだ札）を、世界の変化が出どころとして答える（originRectsOf）。
    */
   private applyDrop(drop: CardDrop, released: Rect): void {
-    const action = this.dropAction(drop);
+    const action = this.shown.dropAction(this.dropOf(drop));
     if (action === undefined) return;
 
     this.applyToWorld(this.dropLabel(drop), action, this.releasedBy(drop, released));
@@ -1149,7 +971,7 @@ export class PlayScene extends ResponsiveScene {
     if (drop.target.kind !== 'combine') return `カードを落とした: ${dragged}${count} → ${to}`;
 
     const onto = this.cardsOf(drop.to)[drop.target.index]?.name ?? '?';
-    const combination = this.combinationAt(drop);
+    const combination = this.shown.dropCombination(this.dropOf(drop));
     return combination !== undefined
       ? `カードを重ねた: ${dragged} → ${onto}（${combination.name}）`
       : `カードを入れた: ${dragged}${count} → ${onto}の中`;
@@ -1161,13 +983,8 @@ export class PlayScene extends ResponsiveScene {
    * 限らない（CardCombination.held参照）。
    */
   private releasedBy(drop: CardDrop, rect: Rect): MotionContext['released'] {
-    const combination = this.combinationAt(drop);
-    if (combination !== undefined) {
-      return { grabbed: combination.held.instanceId, followers: [], rect };
-    }
-
-    const [grabbed, ...followers] = this.cardsOf(drop.from)[drop.fromIndex]?.movedIds(drop.count) ?? [];
-    return grabbed === undefined ? undefined : { grabbed, followers, rect };
+    const moved = this.shown.movedBy(this.dropOf(drop));
+    return moved === undefined ? undefined : { grabbed: moved.grabbed, followers: moved.followers, rect };
   }
 
   /**
@@ -1175,7 +992,7 @@ export class PlayScene extends ResponsiveScene {
    * カードは持たず、見出しと中身の並びだけを出す。
    */
   private openSlotWindow(place: CardPlace): void {
-    this.childWindowCard = undefined;
+    this.shown.clearWindowStack();
     // 場所を開くときも映しているオブジェクトはある——その持ち主（キャラクタ）。
     this.openChildWindow({ card: this.portraitCard() }, [], place);
   }
@@ -1189,7 +1006,7 @@ export class PlayScene extends ResponsiveScene {
    * （装備・怪我はそれぞれのボタンから開く、Windows.md 3節）。
    */
   private openCharacterWindow(): void {
-    this.childWindowCard = undefined;
+    this.shown.clearWindowStack();
     this.openChildWindow(
       { card: this.portraitCard(), description: this.view.characterDescription },
       this.actionButtons(this.view.characterActions, this.view.characterName),
@@ -1230,10 +1047,7 @@ export class PlayScene extends ResponsiveScene {
    * オブジェクトだから、主体としてそれが付く（originRectsOf）。
    */
   private openObjectWindow(card: ObjectCardStack, from?: Rect): void {
-    // 束を押しても、ウィンドウへ移るのは先頭の1枚だけ（Windows.md 1.1節）。ボタンの操作が効くのも
-    // その1個なので、残りは元の枠に居たまま掴める。
-    const borrowed = this.view.cardOfObjects(card.objects.slice(0, 1), card.place);
-    this.childWindowCard = borrowed;
+    const borrowed = this.shown.borrowFirst(card);
     this.openChildWindow(
       { card: borrowed, description: borrowed.description },
       [...this.autoFillAction(borrowed), ...this.craftActions(borrowed), ...this.windowActions(borrowed)],
@@ -1279,21 +1093,6 @@ export class PlayScene extends ResponsiveScene {
         },
       },
     ];
-  }
-
-  /**
-   * 借りている1枚を今のviewで引き直したカード（世界から消えていればundefined）。**束ではなく
-   * その1個**——ウィンドウが映しているのも、ボタンの操作が効くのもその1個だけ（Windows.md 1.1節）。
-   */
-  private restack(card: ObjectCardStack): ObjectCardStack | undefined {
-    const [id] = card.identity ?? [];
-    for (const stack of this.cardsAt(card.place)) {
-      if (stack === undefined) continue;
-
-      const object = stack.objects.find((entry) => entry.instanceId === id);
-      if (object !== undefined) return this.view.cardOfObjects([object], stack.place);
-    }
-    return undefined;
   }
 
   /**
@@ -1485,7 +1284,7 @@ export class PlayScene extends ResponsiveScene {
     const returning = this.releaseBorrowed();
     this.childWindow?.close();
     this.childWindow = undefined;
-    this.childWindowCard = undefined;
+    this.shown.clearWindowStack();
     this.childWindowPlace = undefined;
     this.setDragLanes();
     return returning;
@@ -1512,12 +1311,12 @@ export class PlayScene extends ResponsiveScene {
   private claimBorrowed(content: CardContent, origin: Rect | undefined): CardCarry | undefined {
     const window = this.childWindow;
     const to = window?.cardRect;
-    const id = content.identity?.[0];
-    if (window === undefined || to === undefined || id === undefined) return undefined;
+    if (window === undefined || to === undefined) return undefined;
 
-    this.borrowedCard = content;
-    const from = this.borrowed.has(id) ? undefined : (origin ?? this.rectOfInstance(id));
-    this.borrowed.add(id);
+    const lent = this.shown.lend(content);
+    if (lent === undefined) return undefined;
+
+    const from = lent.alreadyAloft ? undefined : (origin ?? this.rectOfInstance(lent.id));
     if (from === undefined) return undefined;
 
     window.hideCard();
@@ -1535,23 +1334,21 @@ export class PlayScene extends ResponsiveScene {
     if (this.childWindow === undefined) return undefined;
 
     const from = this.childWindow.cardRect;
-    const content = this.borrowedCard;
-    const id = content?.identity?.[0];
-    this.borrowedCard = undefined;
-    if (content === undefined || id === undefined) return undefined;
+    const taken = this.shown.retrieve();
+    if (taken === undefined) return undefined;
 
-    const home = this.cardShowing(id);
+    const home = this.cardShowing(taken.id);
     if (from === undefined || home === undefined) {
-      this.borrowed.delete(id);
+      this.shown.landed(taken.id);
       return undefined;
     }
 
     return {
-      content,
+      content: taken.content,
       from,
       to: home.rect,
       onArrive: () => {
-        this.borrowed.delete(id);
+        this.shown.landed(taken.id);
         this.motion.arrive(home.card);
       },
     };
@@ -1565,7 +1362,7 @@ export class PlayScene extends ResponsiveScene {
       locationName: this.view.currentLocation.name,
       ratio: this.view.explorationRatio,
       area: this.layout.fieldArea,
-      found: this.found.map((card) => ({ card, arriving: this.arrivingFound(card) })),
+      found: this.shown.found.map((card) => ({ card, arriving: this.arrivingFound(card) })),
       searching: this.searching,
       onExplore: () => this.explore(),
       onClose: () => {
@@ -1586,16 +1383,16 @@ export class PlayScene extends ResponsiveScene {
    * 決めるので、借りるのをやめて差し替えれば、あとは通常の出どころの規則（origins）が飛ばす。
    */
   private returnFound(window: ExplorationWindow | undefined): void {
-    if (this.found.length === 0) return;
+    const found = this.shown.returnFound();
+    if (found.length === 0) return;
 
     const origins = new Map<number, Rect>();
-    this.found.forEach((card, index) => {
+    found.forEach((card, index) => {
       const rect = window?.foundRect(index);
       if (rect === undefined) return;
       for (const id of card.identity ?? []) origins.set(id, rect);
     });
 
-    this.found = [];
     this.foundArriving = new Set();
     this.showView({ origins });
   }
@@ -1615,7 +1412,7 @@ export class PlayScene extends ResponsiveScene {
 
     this.returnFound(this.explorationWindow);
     const shownBefore = this.shownInstanceIds();
-    const statusesBefore = this.allStatuses();
+    const statusesBefore = allStatuses(this.view);
     const startedAt = this.gameSession.world.totalMinutes;
 
     noteOperation(`探索した: ${this.view.currentLocation.name}（${this.clockText()}）`);
@@ -1629,8 +1426,9 @@ export class PlayScene extends ResponsiveScene {
       this.searching = false;
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
       this.noteStatusChanges(statusesBefore, startedAt);
-      this.found = this.foundSince(shownBefore);
-      this.foundArriving = new Set(this.found.flatMap((card) => card.identity ?? []));
+      const found = this.foundSince(shownBefore);
+      this.shown.takeFound(found);
+      this.foundArriving = new Set(found.flatMap((card) => card.identity ?? []));
       this.showSignals(recorded.signals);
       const context = this.motionOf(recorded.changes);
       this.showView(context);
@@ -1646,7 +1444,7 @@ export class PlayScene extends ResponsiveScene {
     const window = this.explorationWindow;
     if (window === undefined) return;
 
-    this.found.forEach((card, index) => {
+    this.shown.found.forEach((card, index) => {
       const ids = card.identity ?? [];
       const from = ids.map((id) => origins?.get(id)).find((rect) => rect !== undefined);
       if (from === undefined) {
@@ -1699,52 +1497,7 @@ export class PlayScene extends ResponsiveScene {
    * 分からず、出入りだけでは絵にならない（HuntingSystem.md 6.1節）。
    */
   private record(change: () => void): Recording {
-    const statusesBefore = this.allStatuses();
-    const recorded: RecordedView[] = [];
-    let changes: WorldChange[] = [];
-    let signals: WorldSignal[] = [];
-    const gains: InteractionGains[] = [];
-
-    this.gameSession.session.observeGains(
-      (interactionGains) => gains.push(interactionGains),
-      () => {
-        this.gameSession.session.observeChanges(
-          (worldChange) => changes.push(worldChange),
-          () => {
-            this.gameSession.session.observeSignals(
-              (signal) => signals.push(signal),
-              () => {
-                this.gameSession.session.observeTicks(() => {
-                  // 控えたviewをあとから表示するので、呼んだ時点のワールドを読むcardsInは今の答えに固定する。
-                  const view = withFrozenCards(
-                    fromGameSession(this.gameSession, this.codex, this.locale),
-                    this.childWindowPlace,
-                  );
-                  recorded.push({
-                    minutes: this.gameSession.world.totalMinutes,
-                    view,
-                    statusChanges: statusChangesBetween(statusesBefore, this.allStatuses(view)),
-                    changes,
-                    signals,
-                  });
-                  changes = [];
-                  signals = [];
-                }, change);
-              },
-            );
-          },
-        );
-      },
-    );
-
-    const endedAt = this.gameSession.world.totalMinutes;
-    const ended = recorded.filter((snapshot) => snapshot.minutes >= endedAt);
-    return {
-      ticks: recorded.filter((snapshot) => snapshot.minutes < endedAt),
-      changes: [...ended.flatMap((snapshot) => snapshot.changes), ...changes],
-      signals: [...ended.flatMap((snapshot) => snapshot.signals), ...signals],
-      gains,
-    };
+    return recordChange(this.gameSession, this.codex, this.locale, this.childWindowPlace, change);
   }
 
   /**
@@ -1886,7 +1639,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 前の土地に紐づいていたものを手放す。移動先へ持ち越すと、そこには無いものを見せてしまうため。 */
   private leaveLocation(): void {
-    this.found = [];
+    this.shown.returnFound();
     this.foundArriving = new Set();
     // 探索の子ウィンドウは前の土地の探索率・発見物を映しているため、開き直さずに閉じる。
     this.explorationWindow?.close();
@@ -1950,7 +1703,7 @@ export class PlayScene extends ResponsiveScene {
 
     const startedAt = this.gameSession.world.totalMinutes;
     const locationBefore = this.gameSession.player.location?.instance;
-    const statusesBefore = this.allStatuses();
+    const statusesBefore = allStatuses(this.view);
     const recorded = this.record(change);
 
     const moved = this.gameSession.player.location?.instance !== locationBefore;
@@ -2029,7 +1782,7 @@ export class PlayScene extends ResponsiveScene {
 
     // 借りている札は**控えではなく集合そのもの**を渡す。差し替えの初めに帰り着く札（CardMotion.settle）
     // はその場で借り出しが解けるので、控えを渡すと解けたはずの1枚を引き続き枚数から引いてしまう。
-    this.motion.update(this.openLanes, cells, { ...context, borrowed: this.borrowed });
+    this.motion.update(this.openLanes, cells, { ...context, borrowed: this.shown.lentIds });
     this.showChildWindowActions();
     this.showSky();
     this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
@@ -2047,18 +1800,15 @@ export class PlayScene extends ResponsiveScene {
    * ——映すものも、ボタンが効く相手も無くなっているため（手持ちから重ねて打ち割った石など）。
    */
   private showChildWindowActions(): void {
-    const opened = this.childWindowCard;
-    if (this.childWindow === undefined || opened === undefined) return;
+    if (this.childWindow === undefined || this.shown.windowStack === undefined) return;
 
-    const card = this.restack(opened);
+    const card = this.shown.restackWindow();
     if (card === undefined) {
       // 差し替えのあとなので、ここから運び始めても分身は着かされない（carry参照）。
       this.carry(this.dropChildWindow());
       return;
     }
 
-    this.childWindowCard = card;
-    this.borrowedCard = card;
     this.childWindow.setCard(card);
     this.childWindow.setActions([
       ...this.autoFillAction(card),
@@ -2380,7 +2130,7 @@ export class PlayScene extends ResponsiveScene {
     this.alertFrame = new ScreenAlertFrame(this, this.metrics).setDepth(ALERT_FRAME_DEPTH);
 
     const bars = new Map<string, StatusBar>();
-    for (const status of this.statusContents(this.allStatuses())) {
+    for (const status of this.statusContents(allStatuses(this.view))) {
       const bar = new StatusBar(
         this,
         this.metrics,
@@ -2408,7 +2158,7 @@ export class PlayScene extends ResponsiveScene {
   private showStatuses(): void {
     const rows = statusRows(
       this.statusContents(this.view.statuses),
-      this.statusContents(this.allEntries()),
+      this.statusContents(allEntries(this.view)),
       (status) => this.statusBars.get(status.key)?.isShowingChange(status) === true,
     );
     const rowHeight = StatusBar.height(this.metrics);
@@ -2423,25 +2173,6 @@ export class PlayScene extends ResponsiveScene {
     for (const [key, bar] of this.statusBars) if (!shown.has(key)) bar.hide();
 
     this.alertFrame.setAlerting(rows.some((row) => row.alert === 'fatal'));
-  }
-
-  /**
-   * ステータスエリアに出しうるプロパティ（ステータスと、プロパティウィンドウに出るもの全部）を
-   * 重複なく。固定表示にすればどれもステータスエリアへ出るため、バーの用意と増減の比較はこの範囲で行う。
-   *
-   * viewを渡せば、今出ているものではなくそのviewの分を返す（時間経過の再現で控えた時点の増減を出す、
-   * record参照）。
-   */
-  private allStatuses(view: PlayScreenView = this.view): readonly StatusContent[] {
-    const all = new Map<string, StatusContent>();
-    for (const status of [...view.statuses, ...this.allEntries(view)])
-      if (!all.has(status.key)) all.set(status.key, status);
-    return [...all.values()];
-  }
-
-  /** プロパティウィンドウの全タブの行（同じプロパティが複数のタブに現れうる）。 */
-  private allEntries(view: PlayScreenView = this.view): readonly StatusContent[] {
-    return view.propertyCategories.flatMap((tab) => tab.entries);
   }
 
   private statusContents(statuses: readonly StatusContent[]): readonly StatusContent[] {
@@ -2470,7 +2201,7 @@ export class PlayScene extends ResponsiveScene {
    * ステータスエリアからもプロパティウィンドウの行からも開くため、既に開いていれば入れ替える。
    */
   private openStatusDetail(key: string): void {
-    const content = this.allStatuses().find((status) => status.key === key);
+    const content = allStatuses(this.view).find((status) => status.key === key);
     if (content === undefined) return;
 
     noteOperation('ステータスの詳細を開いた');
@@ -2545,7 +2276,7 @@ export class PlayScene extends ResponsiveScene {
     this.statusChanges = statusChangesAfter(
       this.statusChanges,
       before,
-      this.allStatuses(),
+      allStatuses(this.view),
       this.gameSession.world.totalMinutes > startedAt,
     );
   }
