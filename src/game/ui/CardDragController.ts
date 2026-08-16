@@ -163,7 +163,8 @@ export class CardDragController {
     this.cancel();
 
     const found = this.locate(object);
-    if (found === undefined) return;
+    // 0枚の枠に在るのは札ではなく、帰ってくる場所を示す印なので掴めない（Card.holdsCard）。
+    if (found === undefined || !found.lane.cardObjects[found.index]?.holdsCard) return;
 
     const { lane, index } = found;
     lane.beginScroll();
