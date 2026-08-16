@@ -1,4 +1,22 @@
+import type { PlayScreenView } from './PlayScreenView';
 import type { StatusChange, StatusContent } from './ui/StatusBar';
+
+/** そのviewの全プロパティのステータス（タブの並び順）。固定表示の候補になる全件。 */
+export function allEntries(view: PlayScreenView): readonly StatusContent[] {
+  return view.propertyCategories.flatMap((tab) => tab.entries);
+}
+
+/**
+ * そのviewの全ステータス（重複は先勝ち）。行動の前後を比べる元になる——ステータスエリアに
+ * 出ている行だけで比べると、出ていない行の増減を取りこぼす。
+ */
+export function allStatuses(view: PlayScreenView): readonly StatusContent[] {
+  const all = new Map<string, StatusContent>();
+  for (const status of [...view.statuses, ...allEntries(view)]) {
+    if (!all.has(status.key)) all.set(status.key, status);
+  }
+  return [...all.values()];
+}
 
 /** 行動の前後で変わった1件分（StatusArea.md）。 */
 export interface StatusDelta {
