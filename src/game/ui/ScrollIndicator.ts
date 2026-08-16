@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
 import { scrollThumbSpan } from './scroll';
 import { drawBox } from './shapes';
-import { COLOR, SIZE } from './theme';
+import { COLOR, SIZE } from '../looks/theme';
 
 /** つまみの最小の長さ（u単位）。中身が長くても、これ以上は痩せさせない。 */
 const MIN_THUMB_LENGTH = 48;

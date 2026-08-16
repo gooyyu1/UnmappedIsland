@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import type { Rect } from '../layout/ScreenMetrics';
-import type { HeatHaze } from './heatHaze';
+import type { Rect } from '../looks/ScreenMetrics';
+import type { HeatHaze } from '../looks/heatHaze';
 
 /** 変位マップの一辺（px）と、テクスチャマネージャへ入れるキー。 */
 const MAP_SIZE = 128;

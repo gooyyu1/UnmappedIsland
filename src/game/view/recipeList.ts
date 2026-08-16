@@ -1,12 +1,12 @@
-import type { WorldCodex } from '../domain/defs/WorldCodex';
-import type { NewGameSession } from '../domain/generation/NewGame';
-import type { RecipeDef } from '../domain/defs/RecipeDef';
-import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
-import type { WorldObject } from '../domain/runtime/WorldObject';
-import type { Localization } from '../locale/Localization';
-import { IN_PROGRESS_TAG, inProgressObjectName } from '../loader/inProgressObjects';
-import type { Rect } from './layout/ScreenMetrics';
-import type { RecipeCategory, RecipeEntry } from './ui/RecipeWindow';
+import type { WorldCodex } from '../../domain/defs/WorldCodex';
+import type { NewGameSession } from '../../domain/generation/NewGame';
+import type { RecipeDef } from '../../domain/defs/RecipeDef';
+import type { ReferenceRoot } from '../../domain/defs/ReferenceRoot';
+import type { WorldObject } from '../../domain/runtime/WorldObject';
+import type { Localization } from '../../locale/Localization';
+import { IN_PROGRESS_TAG, inProgressObjectName } from '../../loader/inProgressObjects';
+import type { Rect } from '../looks/ScreenMetrics';
+import type { RecipeCategory, RecipeEntry } from '../ui/RecipeWindow';
 
 /** 解放条件に理由（reason、14.6節）が書かれていないときに出す、代わりの1行。 */
 const LOCKED = 'まだ作り方が分からない';

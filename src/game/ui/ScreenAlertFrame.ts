@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import type { ScreenMetrics } from '../layout/ScreenMetrics';
-import { COLOR } from './theme';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
+import { COLOR } from '../looks/theme';
 
 /** 枠の太さと、明滅の片道の時間・最も薄いときの濃さ。 */
 const FRAME_WIDTH = 20;

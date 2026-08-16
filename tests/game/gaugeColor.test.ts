@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COLOR, gaugeColorFor } from '../../src/game/ui/theme';
+import { COLOR, gaugeColorFor } from '../../src/game/looks/theme';
 
 /** 色を成分に分ける（塗りが緑寄りか赤寄りかを見るため）。 */
 function channels(color: number): { red: number; green: number; blue: number } {

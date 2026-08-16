@@ -1,14 +1,20 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
 import type { Button } from './Button';
 import { addTextButton } from './Button';
-import { ACTION_HEIGHT, ACTION_MAX_WIDTH, CONTENT_GAP, WINDOW_PADDING, centerWindow } from './childWindow';
+import {
+  ACTION_HEIGHT,
+  ACTION_MAX_WIDTH,
+  CONTENT_GAP,
+  WINDOW_PADDING,
+  centerWindow,
+} from '../looks/childWindow';
 import { addLabel } from './labels';
 import type { StatusContent } from './StatusBar';
 import { StatusBar } from './StatusBar';
 import type { BoxStyle } from './shapes';
 import { addPanel, drawBox } from './shapes';
-import { COLOR, SIZE } from './theme';
+import { COLOR, SIZE } from '../looks/theme';
 
 /** タブとバーの寸法。タブは最小タップ領域（アイコンボタン）と同じ高さにする。 */
 const TAB_HEIGHT = SIZE.iconButton;

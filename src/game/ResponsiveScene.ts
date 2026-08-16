@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { noteOperation } from './errorReport';
-import { ScreenMetrics } from './layout/ScreenMetrics';
+import { ScreenMetrics } from './looks/ScreenMetrics';
 
 /**
  * 画面サイズの変化に追従するシーンの土台。

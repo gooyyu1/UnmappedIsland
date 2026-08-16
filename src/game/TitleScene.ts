@@ -2,7 +2,7 @@ import { ResponsiveScene } from './ResponsiveScene';
 import { scenarioNames } from '../scenario/Scenario';
 import { Button } from './ui/Button';
 import { addLabel } from './ui/labels';
-import { COLOR, mixColor } from './ui/theme';
+import { COLOR, mixColor } from './looks/theme';
 
 /** 「はじめる」「設定」ボタンの寸法（StartScreen_Mock.htmlの.title-button）。 */
 const MENU_BUTTON_HEIGHT = 92;

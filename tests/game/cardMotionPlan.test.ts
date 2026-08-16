@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { MotionInput, PlacedCard } from '../../src/game/ui/cardMotionPlan';
-import { planMotion } from '../../src/game/ui/cardMotionPlan';
+import type { MotionInput, PlacedCard } from '../../src/game/view/cardMotionPlan';
+import { planMotion } from '../../src/game/view/cardMotionPlan';
 
 // カードの実体も枠の矩形も計画には見えない（総称CとR）ので、テストでは名前の文字列と
 // 位置を表すだけの数で代用する。数で書けること自体が「計画は座標を読まない」の確認になる。

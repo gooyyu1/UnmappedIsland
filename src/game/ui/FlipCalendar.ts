@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import type { ScreenMetrics } from '../layout/ScreenMetrics';
-import { COLOR, FONT_FAMILY, cssColor } from './theme';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
+import { COLOR, FONT_FAMILY, cssColor } from '../looks/theme';
 import { drawBox } from './shapes';
 
 /** 桁の紙の画像のテクスチャキー（実体はsrc/assets/flip_digit.png、BootSceneが読む）。 */

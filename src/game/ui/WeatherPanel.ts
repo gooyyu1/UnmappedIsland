@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
 import { FlipCalendar } from './FlipCalendar';
 import { addLabel } from './labels';
-import { COLOR } from './theme';
+import { COLOR } from '../looks/theme';
 import { drawBox } from './shapes';
 import { weatherTexture } from '../../assets/weatherArt';
 

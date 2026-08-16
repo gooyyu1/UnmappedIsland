@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import type { ScreenMetrics } from '../layout/ScreenMetrics';
-import { elapsedText } from './durationText';
-import { COLOR, FONT_FAMILY, cssColor } from './theme';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
+import { elapsedText } from '../looks/durationText';
+import { COLOR, FONT_FAMILY, cssColor } from '../looks/theme';
 
 /** ドーナツの外半径と輪の太さ（u単位）。 */
 const RADIUS = 130;

@@ -1,5 +1,5 @@
 import { INFORMATION_PAPER_INSET } from '../../assets/informationArt';
-import { SIZE } from '../ui/theme';
+import { SIZE } from './theme';
 import type { Rect, ScreenMetrics } from './ScreenMetrics';
 
 /** オプションバー・フィルターバーの厚み（アイコンボタン88 + 上下パディング16×2）。 */

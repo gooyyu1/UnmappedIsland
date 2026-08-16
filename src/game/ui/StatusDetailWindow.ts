@@ -1,7 +1,13 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
 import { addTextButton } from './Button';
-import { ACTION_HEIGHT, ACTION_MAX_WIDTH, CONTENT_GAP, WINDOW_PADDING, centerWindow } from './childWindow';
+import {
+  ACTION_HEIGHT,
+  ACTION_MAX_WIDTH,
+  CONTENT_GAP,
+  WINDOW_PADDING,
+  centerWindow,
+} from '../looks/childWindow';
 import { addLabel } from './labels';
 import { objectTexture } from '../../assets/objectArt';
 import { ProgressBar } from './ProgressBar';
@@ -9,7 +15,7 @@ import { addPanel, drawBox } from './shapes';
 import { onPressRelease } from './tap';
 import type { StatusContent, StatusInfluence } from './StatusBar';
 import { wrapByCharacter } from './textLayout';
-import { COLOR, SIZE } from './theme';
+import { COLOR, SIZE } from '../looks/theme';
 
 /** ウィンドウの横幅（プロパティウィンドウと揃える）。狭い画面では領域いっぱいまで縮む。 */
 const WINDOW_WIDTH = 760;

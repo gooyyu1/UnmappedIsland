@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { CardContent } from './Card';
 import { Card, EmptyCard } from './Card';
@@ -12,13 +12,13 @@ import {
   CONTENT_GAP,
   WINDOW_PADDING,
   centerWindow,
-} from './childWindow';
+} from '../looks/childWindow';
 import { ProgressBar } from './ProgressBar';
 import { addLabel } from './labels';
 import { wheelPixels } from './scroll';
 import { ScrollIndicator } from './ScrollIndicator';
 import { addPanel, drawBox } from './shapes';
-import { COLOR, SIZE } from './theme';
+import { COLOR, SIZE } from '../looks/theme';
 import { wrapByCharacter } from './textLayout';
 
 /** 探索の進み具合を示すバーの高さ（ゲームの主操作なので、ステータスバーより大きく取る）。 */

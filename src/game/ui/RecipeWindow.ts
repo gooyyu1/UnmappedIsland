@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { CardContent } from './Card';
 import { Card } from './Card';
@@ -7,7 +7,7 @@ import { clipToRect } from './clip';
 import { addLabel } from './labels';
 import { wheelPixels } from './scroll';
 import { addPanel, drawBox } from './shapes';
-import { COLOR, SIZE } from './theme';
+import { COLOR, SIZE } from '../looks/theme';
 
 /** 一覧の寸法（モーダルとして画面の中央に置く）。 */
 const WINDOW_MAX_WIDTH = 760;

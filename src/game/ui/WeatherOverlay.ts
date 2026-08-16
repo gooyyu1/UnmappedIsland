@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
-import type { RainStyle } from './rainStyle';
-import { rainStyleFor } from './rainStyle';
-import { COLOR, cssColor } from './theme';
+import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import type { RainStyle } from '../looks/rainStyle';
+import { rainStyleFor } from '../looks/rainStyle';
+import { COLOR, cssColor } from '../looks/theme';
 
 /**
  * 雨を敷き詰める絵の一辺（u単位）。**フィールドエリアより少し大きく取る**ので、画面に繰り返しの

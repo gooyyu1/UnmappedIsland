@@ -1,8 +1,8 @@
-import type { WorldObject } from '../domain/runtime/WorldObject';
+import type { WorldObject } from '../../domain/runtime/WorldObject';
 import type { CardCombination, CardPlace, CardPlacement, CardPutIn, ObjectCardStack } from './PlayScreenView';
 import { samePlace } from './PlayScreenView';
-import type { CardContent, CardEdgeDirection } from './ui/Card';
-import { cardFace } from './ui/cardFace';
+import type { CardContent, CardEdgeDirection } from '../ui/Card';
+import { cardFace } from '../ui/cardFace';
 
 /**
  * 札が出ている場所。ワールドのスロット（CardPlace）に、子ウィンドウが借りた1枚の枠を足したもの

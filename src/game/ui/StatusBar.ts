@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 import type { AlertLevel } from '../../domain/defs/AlertLevel';
-import type { ScreenMetrics } from '../layout/ScreenMetrics';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { ProgressBar } from './ProgressBar';
 import { onPressRelease } from './tap';
-import { COLOR, FONT_FAMILY, cssColor } from './theme';
+import { COLOR, FONT_FAMILY, cssColor } from '../looks/theme';
 
 /** バーの高さ（ScreenLayout_Mock.htmlの.status-bar-container）。 */
 const BAR_HEIGHT = 36;

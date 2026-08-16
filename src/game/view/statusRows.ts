@@ -1,4 +1,4 @@
-import type { StatusContent } from './ui/StatusBar';
+import type { StatusContent } from '../ui/StatusBar';
 
 /**
  * ステータスエリアに並べる行を、出すものだけ表示順に選ぶ（StatusArea.md）。

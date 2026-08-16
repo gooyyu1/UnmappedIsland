@@ -4,7 +4,7 @@ import type { WorldChange } from '../../src/domain/runtime/WorldChange';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { World } from '../../src/domain/runtime/views/World';
-import { bornInstances, originInstances, vanishedInstances } from '../../src/game/ui/motionOrigins';
+import { bornInstances, originInstances, vanishedInstances } from '../../src/game/view/motionOrigins';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 

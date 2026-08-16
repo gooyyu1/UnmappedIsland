@@ -6,7 +6,7 @@ import { PlayerCharacter } from '../../src/domain/runtime/views/PlayerCharacter'
 import { World } from '../../src/domain/runtime/views/World';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
-import { characterIcon } from '../../src/game/ui/characterArt';
+import { characterIcon } from '../../src/game/view/characterArt';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 

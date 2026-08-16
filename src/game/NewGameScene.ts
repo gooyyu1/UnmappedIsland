@@ -1,4 +1,4 @@
-import type { Rect } from './layout/ScreenMetrics';
+import type { Rect } from './looks/ScreenMetrics';
 import { ResponsiveScene } from './ResponsiveScene';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
@@ -17,14 +17,14 @@ import {
 } from '../save/newGameInput';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
-import { characterCardContent } from './ui/characterArt';
+import { characterCardContent } from './view/characterArt';
 import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { TextInput } from './ui/TextInput';
 import { addLabel } from './ui/labels';
 import { addPanel } from './ui/shapes';
 import { wrapByCharacter } from './ui/textLayout';
-import { COLOR, SIZE } from './ui/theme';
+import { COLOR, SIZE } from './looks/theme';
 
 /** 本文の余白と項目間の間隔（StartScreen_Mock.htmlの.newgame-body）。横型は左右を広く取る。 */
 const BODY_PADDING = 28;

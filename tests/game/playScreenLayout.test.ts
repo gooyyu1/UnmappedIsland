@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { PlayScreenLayout } from '../../src/game/layout/PlayScreenLayout';
-import { ScreenMetrics } from '../../src/game/layout/ScreenMetrics';
+import { PlayScreenLayout } from '../../src/game/looks/PlayScreenLayout';
+import { ScreenMetrics } from '../../src/game/looks/ScreenMetrics';
 
 describe('ScreenMetrics', () => {
   it('uは画面短辺の1/1080になる', () => {

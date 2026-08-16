@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import type { Rect } from '../layout/ScreenMetrics';
-import { COLOR } from './theme';
+import type { Rect } from '../looks/ScreenMetrics';
+import { COLOR } from '../looks/theme';
 
 /**
  * 表示物を矩形で切り抜く（矩形は画面座標）。返すのは切り抜きを解く後始末で、対象を捨てるときに呼ぶ

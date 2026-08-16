@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
 import type { Card } from './Card';
 import type { CardLane, LaneDropTarget } from './CardLane';
 import type { CarriedCard } from './CardTable';
@@ -8,7 +8,7 @@ import { HoldRepeat } from './holdRepeat';
 import type { TooltipContent } from './Tooltip';
 import { Tooltip } from './Tooltip';
 import { drawBox } from './shapes';
-import { COLOR, SIZE } from './theme';
+import { COLOR, SIZE } from '../looks/theme';
 
 /** タップの指のぶれと見分けて、動かす操作が始まったとみなす移動距離（u単位）。 */
 const MOVE_THRESHOLD = 20;

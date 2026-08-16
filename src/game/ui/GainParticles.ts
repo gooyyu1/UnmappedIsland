@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
-import { FONT_FAMILY } from './theme';
+import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import { FONT_FAMILY } from '../looks/theme';
 
 /** 粒の大きさ。 */
 const PARTICLE_SIZE = 80;

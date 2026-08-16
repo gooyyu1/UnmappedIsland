@@ -1,13 +1,13 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
+import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
 import type { CardContent } from './Card';
 import { Card } from './Card';
 import { cardFace } from './cardFace';
 import type { CardLane } from './CardLane';
-import { FLY_EASE_OUT, FLY_MS } from './cardFlight';
+import { FLY_EASE_OUT, FLY_MS } from '../looks/cardFlight';
 import { DustPuff } from './DustPuff';
-import type { PlacedCard } from './cardMotionPlan';
-import { planMotion } from './cardMotionPlan';
+import type { PlacedCard } from '../view/cardMotionPlan';
+import { planMotion } from '../view/cardMotionPlan';
 import { REPEAT_MIN_MS } from './holdRepeat';
 import type { LaneCell } from './laneCells';
 
