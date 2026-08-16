@@ -66,6 +66,44 @@
     "positive": "exactly one thick fallen branch alone on an empty white page, a stout piece of branch with an old knot where a side twig broke off, tapering slightly from one end to the other as thick as a wrist and about five times as long as it is thick, rough brown bark all over it, snapped and splintered at both ends, no leaves and no side twigs, straight and strong, dark brown weathered wood, rich warm brown tones, matte dry surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "sawn end, saw cut, flat cut end, tree rings, growth rings, lumber, timber, stump, firewood round, leaves, foliage, blossom, flowers, twigs sticking out, thin twig, slender stick, long thin pole, wand, thin sliver, splinter of wood, wood shaving, bark shard, plank, board, feather, white wood, grey wood, bleached driftwood, glossy, varnished, wet, two objects, three objects, several objects, multiple objects, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, standing upright, vertical, growing, rooted, tree, trunk, dead tree, snag, roots, gnarled wood, twisted branch, tangled branches, forked branch, animal, dog, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   },
+  "log": {
+    "description": [
+      "丸太。広葉樹（broadleaf_tree）を倒して玉切りにしたもの（src/assets/world-codex/timber.yaml）。",
+      "太い枝（thick_branch）と並んで落ちるので、**並んだときに紛れないこと**が第一の要件。",
+      "",
+      "**配置を描いて渡す（sketch: log）。以下は使っていない。** 下の本文を4通り、計26枚で振ったが、",
+      "横倒しで太さの変わらない丸太は1枚も出なかった。姿勢を決めていたのは本文ではなく枠の縦横で、",
+      "この被写体では生成側に決められることが残っていない。以下は、その4通りで何が起きたかの記録。",
+      "",
+      "**分けるのは木口。** 太い枝は「先細り・側枝の折れ跡・裂けた端」で、丸太はその全部を否定した",
+      "うえで「両端が真っ直ぐ切り落とされて年輪が見える」。太い枝のNGワードに sawn end / tree rings /",
+      "growth rings が入っているのはこのためで、こちらはそれを本文で名指しする。",
+      "",
+      "**先細りと節を本文へ足さない。** 太い枝の側で確認済みの崩れ方（複数本・立木・人物入り）が",
+      "頭の名詞が log のときに出る（prompts/objects.json の thick_branch 参照）。",
+      "",
+      "**木口を斧の跡にする。** ただ切り口と言うと製材のつるりとした面になって、石斧しかない島の",
+      "物に見えない。hacked through with an axe と、面が chipped であることを言う。",
+      "",
+      "**木口を主役として書くと、年輪のマクロ写真になる。** growth rings が見えると本文で頼んだ",
+      "6枚は、全部が木口を正面から捉えた画面いっぱいの絵になり、うち3枚では年輪に人の顔が現れた。",
+      "**木口は「奥の端に見える小さな楕円」として脇に書き**、本文の主語は横から見た胴にする。",
+      "顔・彫刻・マクロをNGワードで落とす。",
+      "",
+      "**距離を本文で言う。** 編んだ葉・小枝と同じで、数歩下がった距離と四辺の余白を言わないと",
+      "画面いっぱいのテクスチャになる。",
+      "",
+      "**石の文の骨格を崩さない。** 「it is small and lies on its side in the middle with a wide",
+      "empty white margin all around it」を末尾に置く。距離の指定を頭へ移して末尾から外した6枚は、",
+      "5枚が枠を埋めて端で断ち切られた。",
+      "",
+      "**縦枠（832x1280）にしてはいけない。** 余白を稼ごうとして縦枠で出した6枚は、6枚とも",
+      "立った切り株になった（「lies on its side」と書いてある）。太い枝が縦枠で成り立つのは",
+      "斜めに寝るからで、ずんぐりした丸太では枠の縦横がそのまま姿勢を決める。横枠（1152x896）で出す。"
+    ],
+    "positive": "exactly one log alone on an empty white page, one short section of tree trunk, a straight solid cylinder of the same thickness from end to end and about four times as long as it is thick, rough furrowed brown bark covering its curved side, one end turned a little towards us so that its pale cut face shows as a small oval, the cut face rough and chipped where an axe hacked through the wood, no side branches and no leaves, warm brown bark, matte dry surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "cross section, end grain, seen end on, from the end, cut face filling the frame, tree rings, growth rings, concentric circles, extreme close-up, macro, zoomed in, edge to edge, filling the frame, close-up, cropped, cut off, out of frame, face, human face, portrait, eyes, nose, mouth, carved face, wood carving, sculpture, mask, tapering, thin end, knot, side twig, twigs sticking out, forked branch, branch, snapped end, splintered end, thin twig, slender stick, long thin pole, wand, splinter of wood, wood shaving, plank, board, sawn plank, lumber yard, log cabin, two logs, three logs, several logs, pair, group, pile, stack of logs, woodpile, firewood stack, collection, scattered objects, repeated objects, chopping block, axe, hatchet, saw, tree stump, standing upright, vertical, growing, rooted, tree, dead tree, snag, roots, moss, mushrooms, ivy, leaves, foliage, white wood, grey wood, bleached driftwood, glossy, varnished, wet, animal, scenery, landscape, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
   "twig": {
     "description": [
       "小枝。焚き付けにする細い枝をひとまとめにした1枚。太い枝（thick_branch）は別アイテム。",
@@ -97,6 +135,39 @@
     "description": "ヤシの木。設置物なので、他のアイテムより大きくカードに載る。",
     "positive": "exactly one coconut palm tree alone on an empty white page, a single slender curved trunk with ringed grey brown bark, a crown of long green fronds spreading from the top, a few coconuts clustered where the fronds meet the trunk, the whole tree from root to crown, warm green and brown tones, matte surface, the tree is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "two trees, three trees, several trees, group of trees, grove, forest, row of palms, beach, sand, shore, sea, island, horizon, sunset, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, cropped, cut off, out of frame, filling the frame, close-up, only leaves, single frond, potted plant, plant pot, fern, banana tree, bamboo, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
+  },
+  "broadleaf_tree": {
+    "description": [
+      "広葉樹。斧で倒せる唯一の木で、倒すと丸太が採れる（src/assets/world-codex/timber.yaml）。",
+      "設置物なので、他のアイテムより大きくカードに載る。",
+      "",
+      "**同じ土地に立つヤシの木（palm_tree）と一目で分かれること。** 幹が太く真っ直ぐで、枝が",
+      "分かれ、丸い樹冠に広い葉が付く——ヤシの「細く反った幹＋頂点の羽状葉」と逆の形を本文で言い、",
+      "ヤシ・バナナ・竹・シダをNGワードで落とす。",
+      "",
+      "**針葉樹と花木を落とす。** hardwood と言うだけでは松や桜が混ざる。",
+      "",
+      "**画材と作風に関わるNGワードを足してはいけない。** 素の絵は灰緑に寄るが、grey /",
+      "sage green / muted colours / desaturated を落とすと、鮮やかになった代わりに全部が艶のある",
+      "ベクター調のクリップアートになる（6枚とも）。aged paper / parchment / botanical plate を",
+      "足した6枚も同じで、葉が数枚の巨大な葉に化けた。このファイル冒頭の「写真を否定するNGワードは",
+      "足さない」と同じことが、古紙と彩度にも起きる。**残してよいのは地面まわりだけ。**",
+      "地面まわりだけに絞った8枚は、作風がヤシの木と揃ったうえに彩度も足りていた",
+      "（足りなければ thick_branch と同じく --saturation で足す）。",
+      "",
+      "**「根から樹冠まで」は根張りと土を連れてくる。** ヤシの木では同じ文で出なかったが、",
+      "広葉樹では6枚中5枚に土の盛り上がりか露出した根が付いた。地際は「幹が地に着くところまで」",
+      "と言い、roots / soil / mound をNGワードへ入れる。根元の草はヤシの木と同じで残してよい。",
+      "",
+      "**距離を本文で言わないと枠いっぱいになる。** 6枚とも樹冠が左右と上の端に達し、カードでは",
+      "角が欠けて名前の板が樹冠を切る。小枝・編んだ葉と同じで、数歩下がった距離と四辺の余白を",
+      "本文で言う。",
+      "",
+      "**古紙の地とセピアの染みは残る。** 植物図譜として解釈されるためだが、上のとおり名指しで",
+      "落とすと絵が壊れるので、seedで避ける。"
+    ],
+    "positive": "exactly one broadleaf tree alone on an empty white page, seen from far enough back that the whole tree is well inside the page with a wide empty white margin on all four sides, a single hardwood tree with one thick straight trunk as wide as a barrel, the trunk rising clear before it divides into a few strong spreading boughs, a full rounded canopy of many small broad green leaves, the whole tree down to where the trunk meets the ground, deep green foliage and warm brown bark, matte surface, the tree is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "exposed roots, root flare, roots, soil, earth, mound, hillock, turf, undergrowth, palm tree, coconut palm, palm fronds, frond, banana tree, bamboo, fern, cycad, conifer, pine, fir, spruce, cypress, needles, cherry blossom, blossom, flowers, fruit, apples, autumn colours, red leaves, yellow leaves, bare winter tree, leafless, dead tree, snag, weeping willow, bonsai, potted plant, plant pot, topiary, hedge, bush, shrub, two trees, three trees, several trees, group of trees, grove, forest, row of trees, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, cropped, cut off, out of frame, filling the frame, close-up, only leaves, single leaf, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
   },
   "coconut": {
     "description": [
@@ -527,5 +598,48 @@
     ],
     "positive": "exactly one small glass potion bottle alone on an empty white page, a tall rounded bottle of pale glass with a long slender neck, standing upright on the page seen from slightly above eye level, filled almost to the neck with a deep rich crimson red liquid, a worn cork stopper pushed into the neck, the glass thin and slightly uneven with a few soft highlights along its edges, the bottle is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "empty bottle, transparent contents, colourless liquid, water, pink liquid, pale liquid, orange liquid, half empty, bottle lying on its side, tipped over, spilled, pouring, splash, drips, heart symbol, cross symbol, label, paper label, tag, ribbon, string around the neck, wax seal, engraving, embossed pattern, glowing, magical glow, sparkles, smoke, vapour, fumes, bubbles, cauldron, flask with a round bottom, test tube, beaker, laboratory glassware, syringe, wine bottle, wine glass, beer bottle, jar with a lid, teapot, lamp, oil lamp, perfume bottle, decanter, goblet, cup, metal cap, screw cap, held in hand, hands, person, character, two bottles, three bottles, several bottles, pair, group, row of bottles, shelf, collection, scattered objects, repeated objects, filling the frame, edge to edge, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "raft": {
+    "description": [
+      "筏。丸太6本をロープで縛った、島を出るための乗り物（src/assets/world-codex/voyage.yaml）。",
+      "",
+      "**配置を描いて渡す（sketch: raft）。以下は使っていない。** 焚き火・くくり罠・槍と同じで、",
+      "組み方そのものが物の正体である物は生成では作れない。下の本文で6枚出して、筏は1枚も",
+      "出なかった——どれも積み上げた丸太の山か木口のマクロで、桁も縄も一度も現れなかった。",
+      "丸太を6本と数え上げたことがかえって「丸太が主題」と読まれている。",
+      "",
+      "**丸太が6本数えられること。** 自重120kg＝丸太（log）6本ぶんなので、本数が見えないと",
+      "レシピ（log 6本＋rope 4本）と繋がらない。",
+      "",
+      "**海に浮かべさせない。** 積荷も櫂も描かせない——積荷はカードの上に別に並ぶ。",
+      "帆は描く。進みを決める sail_speed が風向きで±する仕組み（voyage.yaml）なので、",
+      "帆が無いほうが辻褄が合わない。"
+    ],
+    "positive": "exactly one small raft made of logs alone on an empty white page, exactly six straight logs of the same length laid side by side in one flat row so that every log can be counted, the round cut ends of all six logs in a line along the near edge, two straight crosspieces laid across the logs near each end, thick twisted plant fibre rope wound in tight turns around every place where a crosspiece crosses a log, seen from above and a little to one side, rough brown bark on the logs, tan brown rope, matte dry surface, it is small and lies flat in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "sail, mast, rigging, flag, oar, paddle, rudder, tiller, anchor, cabin, hut, shelter, barrel, crate, cargo, luggage, supplies, water, sea, ocean, waves, foam, river, lake, pond, shore, beach, sand, floating, afloat, reflection in water, boat, canoe, kayak, dinghy, ship, ferry, pontoon, jetty, dock, pier, bridge, bamboo, reeds, planks, sawn boards, floorboards, deck planking, pallet, ladder, fence, gate, two rafts, three rafts, several rafts, pair, group, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "golden_chalice": {
+    "description": [
+      "金の聖杯（src/assets/world-codex/artifacts.yaml）。生き延びるのに一切役立たず、持ち出せた",
+      "ものだけが周回をまたいで棚に残るアーティファクト。**道具類と質感を変える**——磨いた金属で、",
+      "島で作れる物（石・木・繊維）とは明らかに由来が違って見えること。",
+      "",
+      "**艶は否定しない。** 石の事情で入れている glossy / shiny / reflection は共通の制約ではなく",
+      "（このファイルの冒頭）、金属の物では逆に必要になる。",
+      "",
+      "**明るい金は切り出せない。** card_art.py は「紙より暗ければ物」で芯を決めるので、",
+      "黄色い明るい金だと紙と同じ明るさになって抜ける（woven_basket の生成りと同じ制約）。",
+      "くすんだ濃い金と、窪みの暗い変色を本文で頼む。実際に出た金は紙より十分暗い。",
+      "",
+      "**杯そのものは一発で出る。壊れるのは紙のほう。** 6枚とも狙いどおりの杯になったが、4枚は",
+      "唐草の装飾枠が絵を囲み、残りもセピアの古紙になった。中世の写本の挿絵として解釈されている。",
+      "",
+      "**枠と古紙をNGワードで落としてはいけない。** border / frame / illuminated manuscript /",
+      "parchment / aged paper を足した6枚は、枠も古紙も消えた代わりに全部が灰色の背景の製品写真に",
+      "なり（2枚は取っ手の付いた優勝カップになった）、他のカードの絵から浮いた。",
+      "**紙を直すのは edit の側**でやる（woven_basket と同じ2段構え）。"
+    ],
+    "positive": "exactly one golden chalice alone on an empty white page, an old goblet of solid gold standing upright, a deep rounded cup on a slender stem with a round spreading foot, a band of simple engraved ornament running around the rim and around the foot, the gold dark and tarnished in the hollows of the ornament so the metal reads deep and heavy, a few soft highlights along the curve of the cup, nothing inside it, deep antique gold with warm brown shadows, the chalice is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "bright yellow gold, pale gold, white gold, silver, pewter, copper, glass, crystal, jewels, gemstones, rubies, pearls, wine, blood, water, liquid inside, drink, full cup, lid, cover, handles, two handles, trophy, sports trophy, mug, tankard, teacup, bowl, vase, candlestick, candle, censer, crown, treasure, coins, gold coins, hoard, casket, altar, cloth, velvet cushion, glowing, magical glow, holy light, halo, sunburst, sparkles, stars, two chalices, three chalices, several chalices, pair, group, set, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
   }
 }

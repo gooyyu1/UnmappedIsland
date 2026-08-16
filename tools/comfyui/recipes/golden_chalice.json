@@ -1,0 +1,38 @@
+{
+  "_comment": [
+    "src/assets/objects/golden_chalice.png を作り直すためのレシピ。build.py が読む。",
+    "島に流れ着いた誰かが隠して行ったアーティファクト（src/assets/world-codex/artifacts.yaml）。",
+    "",
+    "**2段構え**（recipes/woven_basket.json と同じ）。杯そのものは生成が一発で出すが、地が",
+    "セピアの古紙になるので、Qwen Image Edit が白い紙へ置き直して落ち影を足す。",
+    "**枠と古紙をNGワードで落としてはいけない**——製品写真へ崩れる（prompts/objects.json 参照）。",
+    "",
+    "**編集の指示で金を明るくさせない。** 紙より暗いことが切り出しの条件なので、くすみと",
+    "窪みの変色を保つと言う。",
+    "",
+    "**seedは枠の付かないものを選ぶ。** 6枚中4枚に唐草の装飾枠が付く。",
+    "",
+    "細長く背が高いので400。"
+  ],
+  "output": "src/assets/objects/golden_chalice.png",
+  "prompts": "objects.json",
+  "prompt": "golden_chalice",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 832,
+  "height": 1280,
+  "seed": 183026805463366,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the golden chalice exactly as it is in shape, size, position and ornament, and keep its deep tarnished antique gold with the dark discolouration in the hollows of the engraving, but paint it with soft brush strokes and gentle natural shading instead of photographic detail. Remove the aged paper, the stains and the dark corners completely and replace the whole background with a plain empty white page, leaving the chalice alone in the middle with a wide white margin all around it and one soft grey shadow directly beneath its foot. The gold stays clearly darker than the white page and is not made brighter or more yellow. Matte surface, flat even lighting. No text, no letters, no numbers.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

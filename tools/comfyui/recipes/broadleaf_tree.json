@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "src/assets/objects/broadleaf_tree.png を作り直すためのレシピ。build.py が読む。",
+    "斧で倒せる唯一の木（src/assets/world-codex/timber.yaml）。",
+    "",
+    "設置物なので、物だけを切り出すのではなく絵をカード全面へ敷く（size: card）。抜き方も",
+    "ヤシの木（recipes/palm_tree.json）と揃える——lumaだと葉の明るい緑まで透ける。",
+    "",
+    "**幹の太いseedを選ぶ。** 倒せば丸太が採れる木なので、ヤシの木の細く反った幹と並べたときに",
+    "太さで分かれることが要る。同じ本文でも、樹冠だけ大きく幹が細いseedが混じる。",
+    "",
+    "**枠を埋めないseedを選ぶ。** size: card は生成物の余白ごと410x640へ拡大するので、樹冠が",
+    "絵の端に達していると、カードでは角丸で欠けて名前の板が樹冠を切る。",
+    "",
+    "根元の草はヤシの木と同じで残している（木を地に着けて見せるため）。"
+  ],
+  "output": "src/assets/objects/broadleaf_tree.png",
+  "prompts": "objects.json",
+  "prompt": "broadleaf_tree",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 832,
+  "height": 1280,
+  "seed": 242242736004862,
+  "cardArt": {
+    "size": "card",
+    "mode": "background",
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
