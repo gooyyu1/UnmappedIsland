@@ -1,4 +1,4 @@
-import { INFORMATION_PAPER_INSET } from '../ui/informationArt';
+import { INFORMATION_PAPER_INSET } from '../../assets/informationArt';
 import { SIZE } from '../ui/theme';
 import type { Rect, ScreenMetrics } from './ScreenMetrics';
 

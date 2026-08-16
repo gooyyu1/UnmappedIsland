@@ -2,10 +2,10 @@ import { readdirSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { artNameFor } from '../../src/game/ui/objectArt';
+import { artNameFor } from '../../src/assets/objectArt';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
-/** object_defごとの絵の置き場所（src/game/ui/objectArt.ts の規約）。 */
+/** object_defごとの絵の置き場所（src/assets/objectArt.ts の規約）。 */
 const ART_DIR = 'src/assets/objects';
 
 /**

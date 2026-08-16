@@ -1,9 +1,9 @@
 /**
- * ゲーム本体に同梱されるWorldCodex定義YAML（public/world-codex/ 配下、ビルドでそのまま配信される）。
+ * 同梱されるWorldCodex定義YAML（public/world-codex/ 配下、ビルドでそのまま配信される）。
+ * ゲーム（BootScene）もCodexビューア（src/codex）も、この一覧を読む。
  *
  * ここに載せ忘れたファイルは、テストがディレクトリ全体を読むために気づけない。過不足は
- * bootSceneFiles.test.tsが検査する。BootSceneではなくこの独立したモジュールに置くのは、
- * 一覧を読むだけのテストがPhaserの読み込み（windowを要求する）に巻き込まれないようにするため。
+ * tests/loader/worldCodexFiles.test.tsが検査する。
  */
 export const WORLD_CODEX_FILES = [
   'characters/player_character.yaml',

@@ -8,7 +8,7 @@
  * カードの絵と違い、識別子はドメインではなくUIが決める。これらは特定のobject_defではなく、
  * 画面に固定で置かれるボタンだから。
  */
-const FILES = import.meta.glob('../../assets/icons/*.png', {
+const FILES = import.meta.glob('./icons/*.png', {
   eager: true,
   query: '?url',
   import: 'default',
@@ -16,7 +16,7 @@ const FILES = import.meta.glob('../../assets/icons/*.png', {
 
 /**
  * 絵を置けるアイコンの識別子。ここに無い名前のファイルは黙って使われないままになるので、
- * 実在するかどうかは自動テスト（tests/game/iconArt.test.ts）が検査する。
+ * 実在するかどうかは自動テスト（tests/assets/iconArt.test.ts）が検査する。
  */
 export const ICON_NAMES = [
   'map',
