@@ -5,7 +5,9 @@ import type { WorldSession } from '../runtime/WorldSession';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { objectRef, propertyRef, signedNumber, text } from './Description';
 import type { ObjectRef } from './ObjectRef';
-import type { ReferenceRoot } from './ReferenceRoot';
+import type { PropertyDelta, StepOutcome } from './CraftingStep';
+import { UNCHANGED_OUTCOMES, combineOutcomes } from './CraftingStep';
+import type { ReferenceRoot, StaticValueResolver } from './ReferenceRoot';
 
 /**
  * 「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。対象の解決と適用まで自分で行う。
@@ -46,10 +48,15 @@ export abstract class ActiveEffect {
   }
 
   /**
-   * この効果が生み出しうる型と個数をすべて挙げる（クラフトネットワーク用）。pickの候補は
-   * 「起こりうる出力」としてすべて挙げる（どれが選ばれるかは実行時の抽選）。既定は何もしない。
+   * この効果を「起こりうる結果」の一覧に開く（StepOutcome参照）。pickは候補ごとに枝分かれし、
+   * 宣言順の合成は枝の直積になる。resolveは、weightの`{subject, prop}`参照を定義だけから
+   * 数値へ落とす手立て。
+   *
+   * 既定は「何も起きない枝が1つ」——値もオブジェクトも動かさない効果（set・destroy）はこれで足りる。
    */
-  collectSpawns(_add: (objectGlobalId: number, count: number) => void): void {}
+  collectOutcomes(_resolve: StaticValueResolver): readonly StepOutcome[] {
+    return UNCHANGED_OUTCOMES;
+  }
 
   /**
    * この効果がtargetのオブジェクトを消しうるか（クラフトネットワークが「消費される入力」の判定に使う）。
@@ -97,8 +104,11 @@ export class ActiveEffects extends ActiveEffect {
     return this.operations.some((operation) => operation.spawns(objectGlobalId));
   }
 
-  override collectSpawns(add: (objectGlobalId: number, count: number) => void): void {
-    for (const operation of this.operations) operation.collectSpawns(add);
+  override collectOutcomes(resolve: StaticValueResolver): readonly StepOutcome[] {
+    let outcomes = UNCHANGED_OUTCOMES;
+    for (const operation of this.operations)
+      outcomes = combineOutcomes(outcomes, operation.collectOutcomes(resolve));
+    return outcomes;
   }
 
   override destroys(target: ReferenceRoot): boolean {
@@ -185,6 +195,15 @@ export class AddEffect extends ActiveEffect {
 
   describe(names: DefNames, out: DescriptionWriter): void {
     out.write(...this.describeTokens(names));
+  }
+
+  /** この命令が動かすプロパティ1件（PropertyDelta参照）。transferのlinked_addも同じ形で自分を名乗る。 */
+  get delta(): PropertyDelta {
+    return { target: this.target, propertyGlobalId: this.propertyGlobalId, amount: this.amount };
+  }
+
+  override collectOutcomes(): readonly StepOutcome[] {
+    return [{ probability: 1, spawns: [], deltas: [this.delta] }];
   }
 
   /** transferのlinked_add（比例して効く）が、自分の行へ書き足せるように断片で返す。 */
@@ -309,8 +328,10 @@ export class SpawnEffect extends ActiveEffect {
     return this.objectGlobalId === objectGlobalId;
   }
 
-  override collectSpawns(add: (objectGlobalId: number, count: number) => void): void {
-    add(this.objectGlobalId, this.count);
+  override collectOutcomes(): readonly StepOutcome[] {
+    return [
+      { probability: 1, spawns: [{ objectGlobalId: this.objectGlobalId, count: this.count }], deltas: [] },
+    ];
   }
 }
 
@@ -391,6 +412,24 @@ export class TransferEffect extends ActiveEffect {
 
     for (const linked of this.linkedAdd)
       linked.applyScaled(owner, session, actor, dragged, taken, this.amount);
+  }
+
+  /**
+   * この輸送が動かすプロパティ（PropertyDelta参照）。出す側は`amount`だけ減り、受け取る側は
+   * `to_amount`だけ増え、linked_addは全量移った場合の値で並ぶ。
+   *
+   * **在庫が満ちている前提の上限。** 実際に動く量は出せる量と空きで目減りする（applyがそれを見る）。
+   */
+  get deltas(): readonly PropertyDelta[] {
+    return [
+      { target: this.fromObject, propertyGlobalId: this.fromPropertyGlobalId, amount: -this.amount },
+      { target: this.toObject, propertyGlobalId: this.toPropertyGlobalId, amount: this.toAmount },
+      ...this.linkedAdd.map((linked) => linked.delta),
+    ];
+  }
+
+  override collectOutcomes(): readonly StepOutcome[] {
+    return [{ probability: 1, spawns: [], deltas: this.deltas }];
   }
 
   /**

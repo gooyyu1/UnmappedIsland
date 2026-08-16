@@ -46,7 +46,10 @@ function tagNodeId(tagName: string): string {
 }
 
 /**
- * 全型のクラフト工程（ObjectDef.craftingSteps）からネットワークを組み立てる。
+ * 全型の工程（ObjectDef.craftingSteps）からネットワークを組み立てる。
+ *
+ * 描くのは**何かを生み出す工程だけ**。食べる・休むといった、値を返すだけでオブジェクトを生まない
+ * 工程は「入力 → 工程 → 出力」の線を持てず、線の無い結節点が増えるだけのため。
  *
  * 型のノードは、どこかの工程に関わるものだけを作る（クラフトに関わらない型を並べても
  * 線の無い島が増えるだけのため）。タグのノードも、工程の入力に使われたタグだけ。
@@ -66,6 +69,8 @@ export function buildCraftingNetwork(defs: readonly ObjectDef[], codex: WorldCod
 
   for (const def of defs) {
     for (const step of def.craftingSteps()) {
+      if (step.outputs.length === 0) continue;
+
       const stepId = `s:${def.name}:${step.name}`;
       nodes.set(stepId, {
         kind: 'step',

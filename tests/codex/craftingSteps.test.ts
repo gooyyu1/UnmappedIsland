@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import { buildCraftingNetwork } from '../../src/codex/craftingGraph';
 import type { CraftingStep } from '../../src/domain/defs/CraftingStep';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
- * クラフト工程の抽出（CraftingStep、クラフトネットワークの元データ）の検証。
- * actions・combinations・recipesという文法の違いが「入力 → 工程 → 出力」の同じ形に均されること、
- * 消費される入力とされない入力（道具）が区別されることを確かめる。
+ * 工程の抽出（CraftingStep）の検証。actions・combinations・recipesという文法の違いが
+ * 「入力 → 工程 → 出力」の同じ形に均されること、消費される入力とされない入力（道具）が
+ * 区別されること、そして所要時間と分岐（pickの候補と重み）がそのまま残ることを確かめる。
  */
 describe('クラフト工程の抽出（craftingSteps）', () => {
   const YAML = `
@@ -14,6 +15,7 @@ object_defs:
     tags: [location]
     actions:
       explore:
+        duration: 15
         pick:
           - weight: 3
             spawn: {object: coconut, count: 2, into: self}
@@ -53,12 +55,25 @@ object_defs:
   const id = (name: string) => codex.objectNames.getId(name);
   const stepsOf = (name: string): readonly CraftingStep[] => codex.objects.get(id(name)).craftingSteps();
 
-  it('アクションは、何かを生み出すものだけが工程になる', () => {
+  it('何も生み出さないアクションも工程になる', () => {
     const steps = stepsOf('beach');
 
-    // restは何も生まないので工程ではない。
-    expect(steps.map((step) => step.name)).toEqual(['explore']);
+    expect(steps.map((step) => step.name)).toEqual(['explore', 'rest']);
     expect(steps[0].kind).toBe('action');
+    // restは値もオブジェクトも動かさないので、何も起きない分岐が1つだけある。
+    expect(steps[1].outputs).toEqual([]);
+    expect(steps[1].outcomes).toEqual([{ probability: 1, spawns: [], deltas: [] }]);
+  });
+
+  it('クラフトネットワークは、出力を持つ工程だけを描く', () => {
+    const network = buildCraftingNetwork(
+      [...Array(codex.objects.count).keys()].map((globalId) => codex.objects.get(globalId)),
+      codex,
+    );
+
+    const stepNames = network.nodes.filter((node) => node.kind === 'step').map((node) => node.stepName);
+    expect(stepNames).toContain('explore');
+    expect(stepNames).not.toContain('rest');
   });
 
   it('探索の出力はpickの候補すべてで、個数は出現した値をすべて持つ', () => {
@@ -70,6 +85,24 @@ object_defs:
     expect(explore.outputs).toEqual([
       { objectGlobalId: id('coconut'), counts: [2, 1] },
       { objectGlobalId: id('twig'), counts: [1] },
+    ]);
+  });
+
+  it('工程は所要時間と、weightから解いた確率つきの分岐を持つ', () => {
+    const [explore] = stepsOf('beach');
+
+    expect(explore.durationMinutes).toBe(15);
+    expect(explore.hasUnresolvedReferences).toBe(false);
+    expect(explore.outcomes).toEqual([
+      { probability: 0.75, spawns: [{ objectGlobalId: id('coconut'), count: 2 }], deltas: [] },
+      {
+        probability: 0.25,
+        spawns: [
+          { objectGlobalId: id('coconut'), count: 1 },
+          { objectGlobalId: id('twig'), count: 1 },
+        ],
+        deltas: [],
+      },
     ]);
   });
 
