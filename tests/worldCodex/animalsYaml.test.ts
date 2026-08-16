@@ -534,7 +534,9 @@ describe('animals.yamlの動物', () => {
 
       expect(meat.tryExecuteAction('eat', player, session)).toBe(true);
 
-      expect(player.getNumber(satietyId) - before, '1切れが腹に入るかさ').toBe(500);
+      // 食べるのに15分かかり、時間は効果より先に進む（actionTime参照）ので、その1 tickぶん
+      // （satiety -16）が引かれた値になる。
+      expect(player.getNumber(satietyId) - before, '1切れが腹に入るかさ').toBe(500 - 16);
       expect(meat.parent, '食べた肉は無くなる').toBeUndefined();
     });
   });

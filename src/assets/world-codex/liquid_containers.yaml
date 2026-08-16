@@ -81,6 +81,7 @@ traits:
         conditions:
           - reason: not_thirsty
             not: {subject: actor, prop: hydration, in_stage: full}
+        duration: 3
         transfer:
           amount: 250
           to_amount: 10
@@ -96,6 +97,7 @@ traits:
         conditions:
           - reason: not_thirsty
             not: {subject: actor, prop: hydration, in_stage: full}
+        duration: 3
         transfer:
           amount: 250
           to_amount: 10

@@ -553,37 +553,32 @@ export function greedyMenu(requirements: readonly Requirement[], routes: readonl
   const remaining = new Map(requirements.map((r) => [r.propertyGlobalId, r.dailyNeed]));
   const chosen = new Map<number, ChainRoute>();
 
-  for (let guard = 0; guard <= requirements.length; guard++) {
-    let best: { route: ChainRoute; value: number } | undefined;
-    for (const route of usable) {
-      const value = filledShare(route, remaining, requirements) / route.executionMinutes;
-      if (value > 0 && (best === undefined || value > best.value)) best = { route, value };
-    }
-    if (best === undefined) break;
+  // **menuForと同じ順序で、同じ数え方で選ぶ。** 「どの需要を先に満たしたか」で経路を割り当てると、
+  // その経路がその需要を丸ごと賄うことになり、得意でない値を1つで埋めさせてしまう
+  // （水20を返す青い実で、満腹1536を賄う類）。
+  for (const requirement of requirements) {
+    const left = remaining.get(requirement.propertyGlobalId) ?? 0;
+    if (left <= 0) continue;
 
-    // **1つの需要を満たすところまで**実行する。足りない需要のうち最も多く要る回数まで回すと、
-    // その経路が不得手な値を1つで賄わされ、他の値を大きく作りすぎる（葉物96個で体脂肪を賄う類）。
-    let repetitions = Number.POSITIVE_INFINITY;
-    let satisfied: Requirement | undefined;
-    for (const requirement of requirements) {
-      const gain = best.route.fills.get(requirement.propertyGlobalId) ?? 0;
-      const left = remaining.get(requirement.propertyGlobalId) ?? 0;
-      if (gain <= 0 || left <= 0) continue;
-      if (left / gain < repetitions) {
-        repetitions = left / gain;
-        satisfied = requirement;
+    let best: ChainRoute | undefined;
+    let bestMinutes = Number.POSITIVE_INFINITY;
+    for (const route of usable) {
+      const gain = route.fills.get(requirement.propertyGlobalId) ?? 0;
+      if (gain <= 0) continue;
+      const minutes = (left / gain) * route.executionMinutes;
+      if (minutes < bestMinutes) {
+        bestMinutes = minutes;
+        best = route;
       }
     }
-    if (satisfied === undefined || !Number.isFinite(repetitions) || repetitions <= 0) break;
+    if (best === undefined) continue;
 
-    chosen.set(satisfied.propertyGlobalId, best.route);
-    for (const [propertyGlobalId, filled] of best.route.fills)
+    chosen.set(requirement.propertyGlobalId, best);
+    const repetitions = left / best.fills.get(requirement.propertyGlobalId)!;
+    for (const [propertyGlobalId, filled] of best.fills)
       remaining.set(propertyGlobalId, (remaining.get(propertyGlobalId) ?? 0) - filled * repetitions);
-    if ([...remaining.values()].every((left) => left <= 0)) break;
   }
 
-  // 合計は選び直しと同じ道筋で出す——viewerが経路を差し替えたときと数え方が違うと、既定値のまま
-  // 触っていないのに数字が動いて見える。
   return menuFor(requirements, chosen);
 }
 
@@ -636,21 +631,6 @@ function addEntry(entries: MenuEntry[], route: ChainRoute, repetitions: number):
     repetitions: merged,
     minutes: merged * route.executionMinutes,
   };
-}
-
-/** その経路を1回実行したときに埋まる、まだ足りない需要の割合の合計。 */
-function filledShare(
-  route: ChainRoute,
-  remaining: ReadonlyMap<number, number>,
-  requirements: readonly Requirement[],
-): number {
-  let share = 0;
-  for (const requirement of requirements) {
-    const gain = route.fills.get(requirement.propertyGlobalId) ?? 0;
-    const left = remaining.get(requirement.propertyGlobalId) ?? 0;
-    if (gain > 0 && left > 0) share += Math.min(left, gain) / requirement.dailyNeed;
-  }
-  return share;
 }
 
 /**

@@ -1086,8 +1086,12 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
     const path = pathsIn(game.startLocation, codex)[0];
-    const meat = game.session.spawn(codex.objectNames.getId('coconut_meat'));
-    expect(meat.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    // 食べるのに15分かかる肉（duration: 15）と、雨を受けるだけで時間のかからない器
+    // （coconut_bowlのcollect_rainはdurationを宣言していない）を並べて持たせる。
+    for (const name of ['coconut_meat', 'coconut_bowl']) {
+      const item = game.session.spawn(codex.objectNames.getId(name));
+      expect(item.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    }
 
     const view = fromGameSession(game, codex, locale);
 
@@ -1095,7 +1099,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const travel = view.fixtures.find((card) => card.objects[0] === path)!.actions[0];
     expect(travel.minutes).toBe(new Path(path, codex.propertyNames).travelMinutes);
     expect(travel.minutes, '移動には時間がかかる').toBeGreaterThan(0);
-    expect(view.hand[0]?.actions[0].minutes, 'eatはdurationを持たない').toBe(0);
+    expect(view.hand[0]?.actions[0].minutes, 'eatはdurationを持つ').toBe(15);
+    expect(view.hand[1]?.actions[0].minutes, 'collect_rainはdurationを持たない').toBe(0);
   });
 
   it('combinationもかかる時間を持つ', () => {
