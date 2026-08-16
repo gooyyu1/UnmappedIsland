@@ -71,14 +71,14 @@ export function parseActions(
     const context = `'${objectDefName}'.actions.'${name}'`;
     const map = asMap(node, context);
 
-    const showMenuRaw = tryGetScalar(map, 'showMenu', context);
-    if (showMenuRaw !== undefined && showMenuRaw !== 'always')
+    const showMenuRaw = tryGetScalar(map, 'showMenu', context) ?? 'always';
+    if (showMenuRaw !== 'always' && showMenuRaw !== 'never')
       throw new YamlLoadError(
-        `${context}: showMenuは現時点で'always'のみ対応しています（値: '${showMenuRaw}'）。`,
+        `${context}: showMenuは'always'か'never'のみ対応しています（値: '${showMenuRaw}'）。`,
       );
 
     const body = parseInteractionBody(loader, context, map, false, ACTION_RESERVED_KEYS);
-    result.push(new ActionDef(name, 'always', body.requirements, body.effect, body.duration));
+    result.push(new ActionDef(name, showMenuRaw, body.requirements, body.effect, body.duration));
   }
 
   return result;

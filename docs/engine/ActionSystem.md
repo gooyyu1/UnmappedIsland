@@ -214,5 +214,4 @@ UI が演出のために「誰が何をしたか」を要る（[`HuntingSystem.m
 - `combinations` を、`actor` の装備スロットを経由したパス参照（例: `actor.equip.tool`）を使う
   `actions` の条件・効果として書き換えられないか
 - `with` で複数タグのAND条件を指定する必要があるか
-- `showMenu` の値が `always` 以外に増える場合の用途・記法
 - ドラッグ中のハイライトで全カードの `conditions` を評価するコストの抑制

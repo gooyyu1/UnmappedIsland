@@ -23,7 +23,9 @@ object_defs:
   # itemとfixtureを兼ねるので、持ち歩くことも地面へ据えることもできる（設置物レーンと
   # アイテムレーンの間を端の▲▼で行き来する）。
   woven_basket:
-    tags: [item, fixture]
+    # fragileは、動物がぶつかって壊しうる物（docs/engine/HuntingSystem.md 5.4節）。編んだ物は
+    # 踏まれれば潰れる。壊れた籠の中身は地面に散らばる（destroyの規約、9.3節）。
+    tags: [item, fixture, fragile]
     # 中身が個体ごとに違うので束ねない。束ねると代表の中身しか開けなくなる（SlotSystem.md 4節）。
     stackable: false
     traits: [item_container]
