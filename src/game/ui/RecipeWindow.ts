@@ -1,12 +1,13 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { CardContent } from './Card';
 import { Card } from './Card';
-import { clipToRect } from './clip';
-import { addLabel } from './labels';
-import { wheelPixels } from './scroll';
-import { addPanel, drawBox } from './shapes';
+import { clipToRect } from '../../ui/clip';
+import { addLabel } from '../../ui/labels';
+import { wheelPixels } from '../../ui/scroll';
+import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
 /** 一覧の寸法（モーダルとして画面の中央に置く）。 */

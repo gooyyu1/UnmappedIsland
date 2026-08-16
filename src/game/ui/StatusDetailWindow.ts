@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { addTextButton } from './Button';
 import {
   ACTION_HEIGHT,
@@ -8,13 +9,13 @@ import {
   WINDOW_PADDING,
   centerWindow,
 } from '../looks/childWindowLayout';
-import { addLabel } from './labels';
+import { addLabel } from '../../ui/labels';
 import { objectTexture } from '../../assets/objectArt';
 import { ProgressBar } from './ProgressBar';
-import { addPanel, drawBox } from './shapes';
-import { onPressRelease } from './tap';
+import { addPanel, drawBox } from '../../ui/shapes';
+import { onPressRelease } from '../../ui/tap';
 import type { StatusContent, StatusInfluence } from './StatusBar';
-import { wrapByCharacter } from './textLayout';
+import { wrapByCharacter } from '../../ui/textLayout';
 import { COLOR, SIZE } from '../looks/theme';
 
 /** ウィンドウの横幅（プロパティウィンドウと揃える）。狭い画面では領域いっぱいまで縮む。 */

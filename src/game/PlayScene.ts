@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { Rect } from './looks/ScreenMetrics';
+import type { Rect } from '../ui/Rect';
 import { DISPLAY_PADDING, PlayScreenLayout } from './looks/PlayScreenLayout';
 import { ResponsiveScene } from './ResponsiveScene';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
@@ -45,7 +45,7 @@ import {
   INFORMATION_BORDER_PX,
   INFORMATION_OVERLAP_PX,
 } from '../assets/informationArt';
-import { addNineSlice } from './ui/nineSlice';
+import { addNineSlice } from '../ui/nineSlice';
 import { laneTexture } from '../assets/backgroundArt';
 import { SEPARATOR_TEXTURE } from '../assets/separatorArt';
 import type { LaneView, MotionContext } from './ui/CardTable';
@@ -76,9 +76,9 @@ import { ScreenSkyTint } from './ui/ScreenSkyTint';
 import { LaneHaze } from './ui/LaneHaze';
 import { heatHazeFor } from './looks/heatHaze';
 import { durationText } from './looks/durationText';
-import { addLabel } from './ui/labels';
-import type { BoxStyle } from './ui/shapes';
-import { addPanel, addTiledImage, addTiledImageVertical } from './ui/shapes';
+import { addLabel } from '../ui/labels';
+import type { BoxStyle } from '../ui/shapes';
+import { addPanel, addTiledImage, addTiledImageVertical } from '../ui/shapes';
 import { COLOR, SIZE } from './looks/theme';
 
 /** オプションバー・フィルターバーの内側パディング（縦型は左右が広め）。 */

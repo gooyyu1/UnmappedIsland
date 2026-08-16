@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
-import { scrollThumbSpan } from './scroll';
-import { drawBox } from './shapes';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
+import { scrollThumbSpan } from '../../ui/scroll';
+import { drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
 /** つまみの最小の長さ（u単位）。中身が長くても、これ以上は痩せさせない。 */

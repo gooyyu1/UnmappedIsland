@@ -1,6 +1,8 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
-import { COLOR, FONT_FAMILY, SIZE, cssColor } from '../looks/theme';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
+import { cssColor } from '../../util/cssColor';
+import { COLOR, FONT_FAMILY, SIZE } from '../looks/theme';
 
 export interface TextInputOptions {
   readonly value: string;

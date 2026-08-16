@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
-import type { Rect } from '../looks/ScreenMetrics';
-import { addPanel } from './shapes';
+import type { Rect } from '../../ui/Rect';
+import { addPanel } from '../../ui/shapes';
 import { COLOR } from '../looks/theme';
 
 /**

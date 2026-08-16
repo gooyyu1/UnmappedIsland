@@ -1,4 +1,4 @@
-import type { Rect } from './looks/ScreenMetrics';
+import type { Rect } from '../ui/Rect';
 import { ResponsiveScene } from './ResponsiveScene';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
@@ -21,9 +21,9 @@ import { characterCardContent } from './view/characterCard';
 import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { TextInput } from './ui/TextInput';
-import { addLabel } from './ui/labels';
-import { addPanel } from './ui/shapes';
-import { wrapByCharacter } from './ui/textLayout';
+import { addLabel } from '../ui/labels';
+import { addPanel } from '../ui/shapes';
+import { wrapByCharacter } from '../ui/textLayout';
 import { COLOR, SIZE } from './looks/theme';
 
 /** 本文の余白と項目間の間隔（StartScreen_Mock.htmlの.newgame-body）。横型は左右を広く取る。 */

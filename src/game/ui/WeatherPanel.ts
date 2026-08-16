@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { FlipCalendar } from './FlipCalendar';
-import { addLabel } from './labels';
+import { addLabel } from '../../ui/labels';
 import { COLOR } from '../looks/theme';
-import { drawBox } from './shapes';
+import { drawBox } from '../../ui/shapes';
 import { weatherTexture } from '../../assets/weatherArt';
 
 /** 空の絵の内側の余白。日時と天候名はこの内側に収める。 */

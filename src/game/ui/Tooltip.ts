@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
-import { COLOR, FONT_FAMILY, SIZE, cssColor } from '../looks/theme';
-import { drawBox } from './shapes';
-import { wrapByCharacter } from './textLayout';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
+import { cssColor } from '../../util/cssColor';
+import { COLOR, FONT_FAMILY, SIZE } from '../looks/theme';
+import { drawBox } from '../../ui/shapes';
+import { wrapByCharacter } from '../../ui/textLayout';
 
 /** 内側の余白と、行間・カードとの間隔（u単位）。 */
 const PADDING = 24;

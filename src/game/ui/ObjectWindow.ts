@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { HoldHandlers } from './Button';
 import type { CardContent } from './Card';
@@ -16,10 +17,10 @@ import {
   centerWindow,
 } from '../looks/childWindowLayout';
 import { durationText } from '../looks/durationText';
-import { addLabel } from './labels';
-import { addPanel, drawBox } from './shapes';
+import { addLabel } from '../../ui/labels';
+import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
-import { wrapByCharacter } from './textLayout';
+import { wrapByCharacter } from '../../ui/textLayout';
 import { Tooltip } from './Tooltip';
 import type { TooltipContent } from './Tooltip';
 

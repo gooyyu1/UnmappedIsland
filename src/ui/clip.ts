@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
-import type { Rect } from '../looks/ScreenMetrics';
-import { COLOR } from '../looks/theme';
+import type { Rect } from './Rect';
 
 /**
  * 表示物を矩形で切り抜く（矩形は画面座標）。返すのは切り抜きを解く後始末で、対象を捨てるときに呼ぶ
@@ -19,8 +18,9 @@ export function clipToRect(
   target: Phaser.GameObjects.Container,
   rect: Rect,
 ): () => void {
+  // マスクが使うのは塗った形だけなので、塗りの色は画面に出ない。
   const shape = scene.make.graphics({});
-  shape.fillStyle(COLOR.cardFace, 1);
+  shape.fillStyle(0xffffff, 1);
   shape.fillRect(rect.x, rect.y, rect.width, rect.height);
 
   if (scene.renderer.type === Phaser.CANVAS) {

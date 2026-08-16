@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import type { Button } from './Button';
 import { addTextButton } from './Button';
 import {
@@ -9,11 +10,11 @@ import {
   WINDOW_PADDING,
   centerWindow,
 } from '../looks/childWindowLayout';
-import { addLabel } from './labels';
+import { addLabel } from '../../ui/labels';
 import type { StatusContent } from './StatusBar';
 import { StatusBar } from './StatusBar';
-import type { BoxStyle } from './shapes';
-import { addPanel, drawBox } from './shapes';
+import type { BoxStyle } from '../../ui/shapes';
+import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
 /** タブとバーの寸法。タブは最小タップ領域（アイコンボタン）と同じ高さにする。 */

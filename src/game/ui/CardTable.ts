@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import type { CardContent } from './Card';
 import { Card } from './Card';
 import { cardFace } from './cardFace';
@@ -8,15 +9,18 @@ import { FLY_EASE_OUT, FLY_MS } from '../looks/cardFlight';
 import { DustPuff } from './DustPuff';
 import type { PlacedCard } from '../view/cardMotionPlan';
 import { planMotion } from '../view/cardMotionPlan';
-import { REPEAT_MIN_MS } from './holdRepeat';
+import { REPEAT_MIN_MS } from '../../ui/holdRepeat';
 import type { LaneCell } from './laneCells';
 
 /** 出現元が分からないカードが、その場で現れる時間（ミリ秒）。 */
 const FADE_MS = 200;
 
 /**
- * 1枚ずつ間を置いて飛び立つときの間隔（ミリ秒）。押し続けて送り続けるときの最短間隔と揃える
- * （holdRepeat参照）。
+ * 1枚ずつ間を置いて飛び立つときの間隔（ミリ秒）。
+ *
+ * **「カードが1枚ずつ出てくる」速さは1つだけ**にする。カードの端を押し続けて送るのも、束をまとめて
+ * 運ぶときに2枚目以降がついてくるのも、ここも同じ速さ——別々に持つと、片方だけ変えたときに別の
+ * 出来事に見える。押し続けの繰り返し（holdRepeat）の最短間隔に、こちらから揃えに行く。
  */
 const GAP_MS = REPEAT_MIN_MS;
 

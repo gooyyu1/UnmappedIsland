@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sliceSpans } from '../../src/game/ui/nineSlice';
+import { sliceSpans } from '../../src/ui/nineSlice';
 
 describe('9patchの切り分け(nineSlice)', () => {
   it('端は原寸のまま、中央が残りを埋める', () => {

@@ -1,8 +1,8 @@
 import type Phaser from 'phaser';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { Button } from './Button';
-import { addLabel } from './labels';
-import { addPanel } from './shapes';
+import { addLabel } from '../../ui/labels';
+import { addPanel } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
 /** 戻るボタンの一辺と、バーの上下・左右パディング（StartScreen_Mock.htmlの.screen-header）。 */

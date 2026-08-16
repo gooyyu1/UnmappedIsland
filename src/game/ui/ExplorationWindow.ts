@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { CardContent } from './Card';
 import { Card, EmptyCard } from './Card';
 import { cardFace } from './cardFace';
-import { clipToRect } from './clip';
+import { clipToRect } from '../../ui/clip';
 import {
   ACTION_GAP,
   ACTION_HEIGHT,
@@ -14,12 +15,12 @@ import {
   centerWindow,
 } from '../looks/childWindowLayout';
 import { ProgressBar } from './ProgressBar';
-import { addLabel } from './labels';
-import { wheelPixels } from './scroll';
+import { addLabel } from '../../ui/labels';
+import { wheelPixels } from '../../ui/scroll';
 import { ScrollIndicator } from './ScrollIndicator';
-import { addPanel, drawBox } from './shapes';
+import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
-import { wrapByCharacter } from './textLayout';
+import { wrapByCharacter } from '../../ui/textLayout';
 
 /** 探索の進み具合を示すバーの高さ（ゲームの主操作なので、ステータスバーより大きく取る）。 */
 const BAR_HEIGHT = 72;

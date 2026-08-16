@@ -5,7 +5,7 @@ import type { ReferenceRoot } from '../../domain/defs/ReferenceRoot';
 import type { WorldObject } from '../../domain/runtime/WorldObject';
 import type { Localization } from '../../locale/Localization';
 import { IN_PROGRESS_TAG, inProgressObjectName } from '../../loader/inProgressObjects';
-import type { Rect } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
 import type { RecipeCategory, RecipeEntry } from '../ui/RecipeWindow';
 
 /** 解放条件に理由（reason、14.6節）が書かれていないときに出す、代わりの1行。 */

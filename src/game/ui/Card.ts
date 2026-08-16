@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import type { CardFrameColors, CardKind } from '../looks/theme';
-import { COLOR, FONT_FAMILY, SIZE, cardFrameColors, cssColor, gaugeColorFor } from '../looks/theme';
-import { drawBox } from './shapes';
+import { cssColor } from '../../util/cssColor';
+import { COLOR, FONT_FAMILY, SIZE, cardFrameColors, gaugeColorFor } from '../looks/theme';
+import { drawBox } from '../../ui/shapes';
 import type { SlotRef } from '../../assets/backgroundArt';
 import { cardBackgroundTexture } from '../../assets/backgroundArt';
 import { CARD_ART_WIDTH, objectMultiplyTexture, objectTexture } from '../../assets/objectArt';
@@ -12,8 +14,8 @@ import type { AlertLevel } from '../../domain/defs/AlertLevel';
 import type { GaugeEnd } from '../../domain/defs/PropertyDef';
 import { noteOperation } from '../errorReport';
 import { minutesText } from '../looks/durationText';
-import { HoldRepeat } from './holdRepeat';
-import { onPressRelease } from './tap';
+import { HoldRepeat } from '../../ui/holdRepeat';
+import { onPressRelease } from '../../ui/tap';
 import { cardFace } from './cardFace';
 
 /**

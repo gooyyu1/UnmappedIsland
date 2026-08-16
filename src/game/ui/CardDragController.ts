@@ -1,13 +1,14 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import type { Card } from './Card';
 import type { CardLane, LaneDropTarget } from './CardLane';
 import type { CarriedCard } from './CardTable';
 import { noteOperation } from '../errorReport';
-import { HoldRepeat } from './holdRepeat';
+import { HoldRepeat } from '../../ui/holdRepeat';
 import type { TooltipContent } from './Tooltip';
 import { Tooltip } from './Tooltip';
-import { drawBox } from './shapes';
+import { drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
 /** タップの指のぶれと見分けて、動かす操作が始まったとみなす移動距離（u単位）。 */

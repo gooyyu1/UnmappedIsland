@@ -1,4 +1,4 @@
-import type { Rect } from './looks/ScreenMetrics';
+import type { Rect } from '../ui/Rect';
 import { ResponsiveScene } from './ResponsiveScene';
 import type { SaveData } from '../save/SaveData';
 import { SaveSlots, SLOT_COUNT } from '../save/SaveSlots';
@@ -9,10 +9,10 @@ import { Card } from './ui/Card';
 import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { characterCardContent } from './view/characterCard';
-import { addLabel } from './ui/labels';
-import { addPanel } from './ui/shapes';
+import { addLabel } from '../ui/labels';
+import { addPanel } from '../ui/shapes';
 import { COLOR, SIZE } from './looks/theme';
-import { truncateToWidth } from './ui/textLayout';
+import { truncateToWidth } from '../ui/textLayout';
 
 /** スロット一覧の外周パディングとカード間ギャップ（StartScreen_Mock.htmlの.slot-grid）。 */
 const GRID_PADDING = 20;

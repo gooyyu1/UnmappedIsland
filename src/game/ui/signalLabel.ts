@@ -1,7 +1,9 @@
 import type Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
-import { addLabel } from './labels';
-import { COLOR, cssColor } from '../looks/theme';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
+import { addLabel } from '../../ui/labels';
+import { cssColor } from '../../util/cssColor';
+import { COLOR } from '../looks/theme';
 
 /**
  * 文字の大きさ（u単位）とふちの太さ。カードの名前（16u）よりずっと大きく取る——一瞬しか出ないので、

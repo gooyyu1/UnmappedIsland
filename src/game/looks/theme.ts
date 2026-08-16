@@ -381,9 +381,4 @@ export function cardFrameColors(kind: CardFrameKind): CardFrameColors {
   };
 }
 
-/** Phaserのテキストスタイルは色を文字列で受け取るため、16進数値をCSS色へ直す。 */
-export function cssColor(color: number): string {
-  return `#${color.toString(16).padStart(6, '0')}`;
-}
-
 export const FONT_FAMILY = '"Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", sans-serif';
