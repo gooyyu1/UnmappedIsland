@@ -5,7 +5,7 @@ import type { Rect } from '../layout/ScreenMetrics';
 export const DUST_PUFF_TEXTURE = 'dust_puff';
 
 /**
- * 砂埃を置く層。飛んでいる分身（CardMotion）より手前で、空の翳り（PlayScene.SKY_TINT_DEPTH）
+ * 砂埃を置く層。飛んでいる分身（CardTable）より手前で、空の翳り（PlayScene.SKY_TINT_DEPTH）
  * よりは奥——埃は場に舞うものなので、時間帯の明るさはカードと同じだけ受ける。
  */
 const DEPTH = 1.2;

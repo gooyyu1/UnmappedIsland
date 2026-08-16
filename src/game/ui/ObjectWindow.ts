@@ -3,7 +3,7 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { HoldHandlers } from './Button';
 import type { CardContent } from './Card';
-import { cardFace } from './Card';
+import { cardFace } from './cardFace';
 import { CardLane } from './CardLane';
 import type { LaneCell } from './laneCells';
 import { LANE_CELLS_MAX } from './laneCells';
@@ -128,16 +128,18 @@ export class ObjectWindow {
    * 左に置く、そのオブジェクトのカードの枠（持たないウィンドウではundefined）。**枠1つのレーン**
    * なので、他のカードを重ねる操作（combination・中へ入れる）がレーンとまったく同じ仕組みで効く
    * ——借りてきた札はここに在るので、手持ちからここへ落とせなければ石を打ち割れない。
+   *
+   * カードそのものは置かない（CardTableが並びの差し替えで置く）。
    */
   readonly cardLane: CardLane | undefined;
+
+  /** 左に置く札の内容（枠を持たないウィンドウではundefined）。 */
+  readonly card: CardContent | undefined;
 
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
 
   /** 最下段のボタン。setActionsで丸ごと作り直すので、他の表示物とは分けて持つ。 */
   private actionObjects: Phaser.GameObjects.GameObject[] = [];
-
-  /** 借りた札が飛んでくる間は伏せておく（reveal参照）。差し替えでも伏せたままにするために持つ。 */
-  private cardVisible = true;
 
   /** アクションのボタンを長押ししている間だけ出す吹き出し（addActions参照）。 */
   private readonly tooltip: Tooltip;
@@ -164,6 +166,7 @@ export class ObjectWindow {
     const contents = options.slot;
     // 何枚入るか分からないスロットは、右の段を並びだけで使い切る（自分のカードを出さない）。
     const card = contents?.unbounded === true ? undefined : options.object.card;
+    this.card = card;
     const padding = metrics.px(WINDOW_PADDING);
     const gap = metrics.px(CONTENT_GAP);
     const actionHeight = metrics.px(ACTION_HEIGHT);
@@ -268,30 +271,6 @@ export class ObjectWindow {
   /** 借りた札の枠（カードを持たないウィンドウではundefined）。運んでくる先・返すときの出発点。 */
   get cardRect(): Rect | undefined {
     return this.cardLane?.slotRect(0);
-  }
-
-  /**
-   * 借りた札が着くまで伏せておく（運んでいる間、その1枚は元の枠にもここにも居ない、
-   * CardInteraction.md 6.2節）。運び終えた時点でrevealCardを呼ぶ。
-   */
-  hideCard(): void {
-    this.cardVisible = false;
-    this.showCard();
-  }
-
-  revealCard(): void {
-    this.cardVisible = true;
-    this.showCard();
-  }
-
-  /** 左のカードを、今の中身へ書き換える（カードを持たないウィンドウでは何もしない）。 */
-  setCard(content: CardContent): void {
-    this.cardLane?.setCells([{ card: borrowedFace(content) }]);
-    this.showCard();
-  }
-
-  private showCard(): void {
-    this.cardLane?.cardObjects[0]?.setVisible(this.cardVisible);
   }
 
   /**
@@ -422,10 +401,11 @@ export class ObjectWindow {
 }
 
 /**
- * 借りてきた札の見た目。操作は引き継がないが、**同じ札だと分かる識別子だけは持つ**——差し替えの
- * たびに作り直すと、飛んでくる途中の札が消えてしまう（CardLane.setCells）。
+ * 借りてきた札の見た目。操作は引き継がないが、**同じ札だと分かる識別子だけは持つ**——元の枠から
+ * ここへ運ばれてくるのも、閉じて帰るのも、この識別子を辿った並びの差し替えそのものだから
+ * （cardMotionPlan）。
  */
-function borrowedFace(content: CardContent): CardContent {
+export function borrowedFace(content: CardContent): CardContent {
   return { ...cardFace(content), identity: content.identity };
 }
 

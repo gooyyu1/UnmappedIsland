@@ -63,23 +63,12 @@ export interface CardLaneOptions {
   readonly bare?: boolean;
 }
 
-/** 掴んで離したカードと、そのインスタンスのID（CardMotion.MotionContext.released）。 */
-export interface ReleasedCard {
-  readonly card: Card;
-  readonly id: number;
-}
-
-/** レーンの内容を差し替えた結果。出入りするカードの見せ方は呼び出し側（CardMotion）が決める。 */
+/** レーンの内容を差し替えた結果。出入りするカードの見せ方は呼び出し側（CardTable）が決める。 */
 export interface LaneUpdate {
   /** このレーンに新しく現れたカード。stripの所定の位置に居るが、まだ表示されていない。 */
   readonly entered: readonly { readonly card: Card; readonly index: number }[];
   /** このレーンから居なくなったカード。stripからは外してあるが、破棄は呼び出し側が行う。 */
   readonly left: readonly Card[];
-  /**
-   * 掴んで離したまま、このレーンに残ったカード（居なければundefined）。stripの所定の位置に置いてあるが、
-   * 出発点は元の枠ではないので、動かすのは呼び出し側。
-   */
-  readonly returned: { readonly card: Card; readonly index: number } | undefined;
 }
 
 /**
@@ -91,8 +80,9 @@ export interface LaneUpdate {
  * **並ぶ単位は枠（LaneCell）で、位置＝添字**。表示は**背景 → カード → 重ねる物**の3層で、カードの
  * 居ない枠の破線と枠を強調する縁が1層目、カードに重ねる文字が3層目に入る（CardView.md 11節）。
  *
- * 内容が変わったときは作り直さずsetCellsで差し替える。同じインスタンスを映しているカードは
- * そのまま残して新しい位置へ滑らせ、出入りするカードだけを呼び出し側へ渡す。
+ * 内容が変わったときは作り直さずreconcileで差し替える。同じインスタンスを映しているカードは
+ * そのまま残して新しい位置へ滑らせ、出入りするカードだけを呼び出し側へ渡す。**カードを作るのも
+ * 消すのも呼び出し側（CardTable）**——レーンは枠の幾何と、枠に居る間の置き場所だけを受け持つ。
  */
 export class CardLane {
   /** レーンの矩形。ドロップ先の判定（dropTargetAt）に使う。 */
@@ -220,8 +210,8 @@ export class CardLane {
     );
     this.objects.push(this.scrollIndicator);
 
-    // 最初の1回だけは出どころが無いので、setCellsが伏せたカードをそのまま表に返す。
-    for (const { card } of this.setCells(cells).entered) card.setVisible(true);
+    // カードはまだ作らない（作るのはCardTable）。枠の装飾と送り幅だけを整える。
+    this.applyCells(cells);
 
     this.pinnedRect =
       pinned === undefined
@@ -264,25 +254,20 @@ export class CardLane {
 
   /**
    * 並べる枠を差し替える。同じインスタンスを映しているカード（identityが1つでも重なるもの）は
-   * 作り直さず、新しい位置へ滑らせる。新しく現れたカードは所定の位置に置くが、どこから来たのかは
-   * このレーンには分からないので、非表示のまま呼び出し側へ渡す。
-   *
-   * releasedのカードは、そのインスタンスを持ったままこのレーンに残る場合だけ別扱いにする。掴んで
-   * 離した1枚は元の枠にはもう居ないので、並びの詰め直しに混ぜて滑らせず、returnedとして渡す。
+   * 作り直さず、新しい位置へ滑らせる。新しく現れる内容の札はcreateで作らせて所定の位置に置くが、
+   * どこから来たのかはこのレーンには分からないので、非表示のまま呼び出し側へ渡す。
    */
-  setCells(cells: readonly LaneCell[], released?: ReleasedCard): LaneUpdate {
+  reconcile(cells: readonly LaneCell[], create: (content: CardContent) => Card): LaneUpdate {
     const reusable = this._cardObjects.filter((card): card is Card => card !== undefined);
     const entered: { card: Card; index: number }[] = [];
-    let returned: { card: Card; index: number } | undefined;
 
-    this._cells = cells;
     this._cardObjects = cells.map(({ card: content }, index) => {
       if (content === undefined) return undefined;
 
       const found = reusable.findIndex((card) => sharesIdentity(card.content, content));
       if (found < 0) {
-        const card = new Card(this.scene, this.metrics, index * this.pitch, 0, content);
-        card.setVisible(false);
+        const card = create(content);
+        card.setPosition(index * this.pitch, 0);
         this.cardLayer.add(card);
         entered.push({ card, index });
         return card;
@@ -290,24 +275,25 @@ export class CardLane {
 
       const [card] = reusable.splice(found, 1);
       card.setContent(content);
-      if (card === released?.card && content.identity?.includes(released.id) === true) {
-        this.placeAt(card, index);
-        returned = { card, index };
-      } else {
-        this.slideTo(card, index);
-      }
+      this.slideTo(card, index);
       return card;
     });
 
     for (const card of reusable) this.cardLayer.remove(card);
+    this.applyCells(cells);
+
+    return { entered, left: reusable };
+  }
+
+  /** 枠の装飾と送り幅を、並べる枠に合わせる。 */
+  private applyCells(cells: readonly LaneCell[]): void {
+    this._cells = cells;
     this.resetDecorations();
 
     // 空き枠も送れる範囲に含める（画面外に置いたままでは受け皿にならない）。
     const contentWidth = cells.length === 0 ? 0 : cells.length * this.pitch - (this.pitch - this.cardWidth);
     this.minScrollX = Math.min(0, this.stripWidth - contentWidth);
     this.scrollTo(this.strip.x - this.originX);
-
-    return { entered, left: reusable, returned };
   }
 
   /** 居続けるカードを新しい位置へ滑らせる（既に所定の位置なら何もしない）。 */
@@ -316,12 +302,6 @@ export class CardLane {
     if (card.x === x) return;
 
     this.scene.tweens.add({ targets: card, x, duration: SLIDE_MS, ease: SLIDE_EASE });
-  }
-
-  /** 滑らせずに所定の位置へ置く。滑っている途中で掴まれたカードもあるので、前の滑りは止める。 */
-  private placeAt(card: Card, index: number): void {
-    this.scene.tweens.killTweensOf(card);
-    card.setPosition(index * this.pitch, 0);
   }
 
   /**
@@ -503,8 +483,12 @@ export class CardLane {
   }
 }
 
-/** 2枚のカードが同じものを映しているか（identityが1つでも重なるか、Card.identity参照）。 */
+/**
+ * 2枚のカードが同じものを映しているか（Card.identity参照）。**帰りを待っているぶん（awaited）も
+ * 見る**——借りた1枚を出している間は名乗る個体が0になる枠があり、そこが帰ってきた札と繋がらないと、
+ * 印だったはずの枠が別のカードとして作り直されてしまう。
+ */
 function sharesIdentity(a: CardContent, b: CardContent): boolean {
-  if (a.identity === undefined || b.identity === undefined) return false;
-  return a.identity.some((id) => b.identity?.includes(id) === true);
+  const keys = new Set([...(a.identity ?? []), ...(a.awaited ?? [])]);
+  return [...(b.identity ?? []), ...(b.awaited ?? [])].some((id) => keys.has(id));
 }

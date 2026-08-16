@@ -14,6 +14,7 @@ import { noteOperation } from '../errorReport';
 import { minutesText } from './durationText';
 import { HoldRepeat } from './holdRepeat';
 import { onPressRelease } from './tap';
+import { cardFace } from './cardFace';
 
 /**
  * カードの枠の画像のテクスチャキー（実体はsrc/assets/card_frame.png、BootSceneが読む）。
@@ -249,6 +250,12 @@ export interface CardContent {
    * みなす。省略したカードは差し替えのたびに別のカードとして扱われる。
    */
   readonly identity?: readonly number[];
+  /**
+   * この枠が帰りを待っているインスタンス——**今は別の場所に出ている**もの（子ウィンドウが借りた1枚、
+   * Windows.md 1.1節）。identityには入らない（在るのはあちら側）が、帰り着いたときに同じ札として
+   * 繋がるよう、枠はこれを名乗って待つ。1つも在らなくなった枠が薄い印になるのはこのため。
+   */
+  readonly awaited?: readonly number[];
   /** 1枚が映しているインスタンスの数。2以上のときだけ、右上に丸で囲んだ数字として出す。 */
   readonly count?: number;
   /**
@@ -323,16 +330,6 @@ export interface CardContent {
    * 焼かれている肉にも、それを抱えている炉にも同じ覆いが出る。
    */
   readonly cooking?: CardCooking;
-}
-
-/**
- * 見た目のぶんだけを取り出す（操作も識別子も引き継がない）。見せるためだけのカード——ドラッグ中の
- * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
- */
-export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background, kind, alert, road, gauges, mark, overlay, inProgress, cooking } =
-    content;
-  return { icon, name, art, background, kind, alert, road, gauges, mark, overlay, inProgress, cooking };
 }
 
 /**
@@ -432,8 +429,14 @@ export class Card extends Phaser.GameObjects.Container {
   /** 今の押下がタップでなくなったか（cancelTap参照）。押し始めるたびに戻す。 */
   private tapCancelled = false;
 
-  /** この枠に今いくつ在ると言われているか（setRemaining）。言われるまでは在るものとして扱う。 */
-  private remaining = 1;
+  /**
+   * この枠に今在るインスタンス（setPresence）。言われるまでは、映しているもの全部が在るとして扱う
+   * （undefined）。**枚数はここからの導出値**——数を別に持つと、宙に在る札との引き算がずれる。
+   */
+  private present: readonly number[] | undefined;
+
+  /** 0枚になったとき、帰ってくる場所の印を残す枠か（setPresence）。 */
+  private emptied = false;
 
   /** 押下中だけ出す黒枠（makeTappable参照）。押せないカードは持たない。 */
   private pressHighlight: Phaser.GameObjects.Graphics | undefined;
@@ -582,30 +585,44 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * この枠に今いくつ在るかを言う（CardInteraction.md 2節・5節）。手に在るぶんも運ばれている最中の
-   * ぶんもまだここには居ないので、呼ぶ側はそれを引いた数を渡す。数字を書き換えるのか、札そのものを
-   * 出さないのかはここが決める。
+   * この枠に今在るインスタンスを言う（CardInteraction.md 2節・5節）。手に在るぶんも運ばれている
+   * 最中のぶんもまだここには居ないので、呼ぶ側はそれを除いた集合を渡す。数字を書き換えるのか、
+   * 札そのものを出さないのかはここが決める。
    *
    * 0枚の枠に札は出ない。**emptiedの枠だけは薄い印を残す**——そこに在るのは札ではなく、持ち出した
-   * 1枚が帰ってくる場所を示す印なので、数字のバッジも出ない。
+   * 札が帰ってくる場所を示す印なので、数字のバッジも出ない。
    */
-  setRemaining(remaining: number, emptied: boolean): void {
-    if ((this._content.count ?? 1) !== remaining) this.setContent({ ...this._content, count: remaining });
-    this.setVisible(remaining > 0 || emptied);
-    this.setAlpha(remaining === 0 ? EMPTIED_ALPHA : 1);
-    this.remaining = remaining;
+  setPresence(ids: readonly number[], emptied: boolean): void {
+    this.present = ids;
+    this.emptied = emptied;
+    if ((this._content.count ?? 1) !== ids.length) this.setContent({ ...this._content, count: ids.length });
+    this.setVisible(ids.length > 0 || emptied);
+    this.setAlpha(ids.length === 0 ? EMPTIED_ALPHA : 1);
+  }
+
+  /** この枠に今在るインスタンス。まだ何も言われていなければ、映しているもの全部。 */
+  get presentIds(): readonly number[] {
+    return this.present ?? this._content.identity ?? [];
+  }
+
+  /** 宙に在った札がこの枠に帰り着いた（合流）。IDセットの和になり、枚数はそこから導かれる。 */
+  absorb(ids: readonly number[]): void {
+    const merged = new Set([...this.presentIds, ...ids]);
+    this.setPresence([...merged], this.emptied);
   }
 
   /**
    * この枠に今その札が在るか。**0枚の枠に在るのは札ではなく、帰ってくる場所を示す印**なので、押しても
    * 掴んでも何も起きない（CardInteraction.md 6.2節）。帰り着けばまた押せる——**押せるかどうかを決める
-   * のは今の枚数だけ**で、内容の側は操作を持ったまま待つ。
+   * のは今在る札だけ**で、内容の側は操作を持ったまま待つ。
    *
-   * 入力そのものは切らない。掴んで運んでいる間も元の札は0枚になる（CarriedCards）ので、切ると運んで
-   * いる指の操作まで届かなくなる。
+   * 入力そのものは切らない。掴んで運んでいる間も元の札は0枚になるので、切ると運んでいる指の操作まで
+   * 届かなくなる。
+   *
+   * 識別子を持たない札（ピン留めの現在地・空の受け皿の顔）は常に在る。
    */
   get holdsCard(): boolean {
-    return this.remaining > 0;
+    return (this.present ?? this._content.identity)?.length !== 0;
   }
 
   /**

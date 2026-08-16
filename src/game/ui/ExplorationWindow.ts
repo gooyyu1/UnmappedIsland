@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { CardContent } from './Card';
-import { Card, cardFace, EmptyCard } from './Card';
+import { Card, EmptyCard } from './Card';
+import { cardFace } from './cardFace';
 import { clipToRect } from './clip';
 import {
   ACTION_GAP,

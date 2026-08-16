@@ -146,7 +146,7 @@ export interface CardCombination {
   readonly minutes: number;
   /**
    * 指が掴んでいたインスタンス。同じ束へ重ねたときは束の2つ目になるため、束の代表とは限らない。
-   * 画面側は「掴んでいたカード」の行方を追う（CardMotion.MotionContext.released）のに使う。
+   * 画面側は「掴んでいたカード」の行方を追う（CardTable.MotionContext.released）のに使う。
    *
    * combinationを宣言している側（`self`）とは限らない——逆向きに成立した組み合わせでは、掴んだ札の
    * ほうが宣言している側になる（combinationOf参照）。

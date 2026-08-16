@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { Card } from './Card';
 import type { CardLane, LaneDropTarget } from './CardLane';
-import { CarriedCards } from './CarriedCards';
+import type { CarriedCard } from './CardTable';
 import { noteOperation } from '../errorReport';
 import { HoldRepeat } from './holdRepeat';
 import type { TooltipContent } from './Tooltip';
@@ -63,8 +63,10 @@ export interface CardDragHandlers {
    * 説明の吹き出しは、いずれもこの答えだけを見て決める。
    */
   readonly describeDrop: (drop: CardDrop) => CardDropInfo | undefined;
-  /** releasedは手を離した時点で分身が居た矩形。落とした後の動きの出発点になる（CardMotion参照）。 */
+  /** releasedは手を離した時点で札が居た矩形。落とした後の動きの出発点になる（CardTable参照）。 */
   readonly onDrop: (drop: CardDrop, released: Rect) => void;
+  /** 掴んだ札を指の運ぶ実体の札にする（CardTable.grab）。 */
+  readonly grab: (card: Card, home: () => Rect) => CarriedCard;
 }
 
 /** ついてくる枚数を数え続けている落とし先。ここが変わらない限り数え続ける（trackCarry参照）。 */
@@ -81,8 +83,8 @@ interface Gesture {
   readonly startX: number;
   readonly startY: number;
   kind: 'pending' | 'scrolling' | 'dragging';
-  /** 指が運んでいる札（分身・ついてくる札・元の束の見え方はすべてこれが持つ）。 */
-  carried: CarriedCards | undefined;
+  /** 指が運んでいる札（実体のカードそのもの。CardTable.CarriedCard）。 */
+  carried: CarriedCard | undefined;
   indicator: Phaser.GameObjects.Graphics | undefined;
   /** 受け入れられるカードのふちの光と、その明滅。 */
   glow: Phaser.GameObjects.Graphics | undefined;
@@ -105,13 +107,13 @@ interface Gesture {
  * ものはレーンのスクロールへ回す（CardLane.isCardBody）。どちらになるかは押した時点で決まっているので、
  * 掴むのに待ち時間は要らない。
  *
- * ドラッグ中の表示は元のカードではなく、シーン直下に作る分身で行う。レーンからはみ出したカードは
- * 隣接エリアの背景板に隠れてしまう（CardLane参照）ため、レーンの外へは持ち出せないため。
+ * 指が運ぶのは実体の札そのもの（CardTable.CarriedCard）。掴んだ時点で元の束から分かれ、最前面の
+ * 層で指に追従する——レーンからはみ出したカードは隣接エリアの背景板に隠れてしまう（CardLane参照）
+ * ため、レーンの中に置いたままでは持ち出せない。
  *
  * **落とし先の上で待つと、同じ束の2枚目以降がついてくる**（trackCarry）。離せばついてきたぶんが
  * 一度に入る。ついてくるのは入る枚数までで、ついてきた枚数はそのまま「これだけ入る」という約束になる。
- * 運んでいる札そのもの（分身・ついてくる札・元の束の見え方）はCarriedCardsが持ち、ここは
- * 「いつ増やすか・何枚まで許されるか」だけを決める。
+ * 運んでいる札そのものはCarriedCardが持ち、ここは「いつ増やすか・何枚まで許されるか」だけを決める。
  */
 export class CardDragController {
   private readonly scene: Phaser.Scene;
@@ -229,9 +231,7 @@ export class CardDragController {
     // 運んでいる札より奥（指が運んでいるカードは常に見えている必要がある）、説明だけが手前。
     this.showAcceptingCards(gesture);
     gesture.indicator = this.scene.add.graphics();
-    gesture.carried = new CarriedCards(this.scene, this.metrics(), gesture.card, () =>
-      gesture.lane.slotRect(gesture.index),
-    );
+    gesture.carried = this.handlers.grab(gesture.card, () => gesture.lane.slotRect(gesture.index));
     gesture.tooltip = new Tooltip(this.scene, this.metrics());
     gesture.carryHold = new HoldRepeat(this.scene);
     this.follow(pointer);
@@ -372,7 +372,7 @@ export class CardDragController {
 
     const found = gesture.kind === 'dragging' ? this.dropAt(gesture, pointer) : undefined;
     if (found === undefined || gesture.carried === undefined) {
-      // 落とさなかったので、運んでいた札は元の枠へ飛んで帰る（帰り着くまではCarriedCardsが生きる）。
+      // 落とさなかったので、運んでいた札は元の枠へ飛んで帰る（帰り着いた時点で元の束に合流する）。
       if (gesture.kind === 'dragging') {
         noteOperation(`カードを離した: ${gesture.card.content.name}（落とし先なし）`);
       }
@@ -382,8 +382,9 @@ export class CardDragController {
       return;
     }
 
-    // 運んでいた札はcancelで消えるので、その居場所を先に控える。落としたカードはここから動き出す。
+    // 落とした札は自由な札として離した場所に残り、行き先は世界の差し替えが決める（CardTable.freed）。
     const released = gesture.carried.rect;
+    gesture.carried.release();
     this.cancel();
     this.handlers.onDrop(found.drop, released);
   }
