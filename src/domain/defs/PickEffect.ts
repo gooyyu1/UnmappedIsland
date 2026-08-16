@@ -2,10 +2,12 @@ import { pickWeighted } from '../runtime/Rng';
 import type { EffectSite, WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import { ActiveEffect } from './ActiveEffect';
+import type { StepOutcome } from './CraftingStep';
+import { UNCHANGED_OUTCOMES, scaleOutcomes } from './CraftingStep';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { propertyRef, text } from './Description';
 import { resolveReferenceRoot } from './ReferenceRoot';
-import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
+import type { PropertyPath, ReferenceRoot, StaticValueResolver } from './ReferenceRoot';
 
 /**
  * pick（10節）: weightで1候補を選び、その候補の効果を適用する効果。候補の効果もActiveEffect
@@ -46,8 +48,20 @@ export class PickEffect extends ActiveEffect {
     return this.candidates.some((candidate) => candidate.spawns(objectGlobalId));
   }
 
-  override collectSpawns(add: (objectGlobalId: number, count: number) => void): void {
-    for (const candidate of this.candidates) candidate.collectSpawns(add);
+  /**
+   * 候補ごとに枝分かれさせ、weightを確率へ直して返す（StepOutcome参照）。抽選の規約はselectWeightedと
+   * 同じで、負の重みは0として扱い、**全候補の重みが0なら先頭の候補だけが起こる**。
+   */
+  override collectOutcomes(resolve: StaticValueResolver): readonly StepOutcome[] {
+    if (this.candidates.length === 0) return UNCHANGED_OUTCOMES;
+
+    const weights = this.candidates.map((candidate) => Math.max(0, candidate.staticWeight(resolve) ?? 0));
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+    if (total <= 0) return this.candidates[0].collectOutcomes(resolve);
+
+    return this.candidates.flatMap((candidate, index) =>
+      scaleOutcomes(candidate.collectOutcomes(resolve), weights[index] / total),
+    );
   }
 
   override destroys(target: ReferenceRoot): boolean {
@@ -106,6 +120,16 @@ export class WeightSpec {
     return target !== undefined ? target.getEffectiveValue(path.propertyGlobalId) : 0;
   }
 
+  /**
+   * この値を、実行時のオブジェクトを使わずに定義だけから解く（StaticValueResolver参照）。
+   * リテラルはそのまま、参照はresolveに委ねる（解けなければundefined）。
+   */
+  staticResolve(resolve: StaticValueResolver): number | undefined {
+    if (!this.isPathRef) return this.literal;
+    const path = this.path!;
+    return resolve(path.root, path.propertyGlobalId);
+  }
+
   /** この値の出どころを書き表す（Description参照）。リテラルなら数値、参照ならプロパティ。 */
   describe(names: DefNames): readonly DescriptionToken[] {
     if (!this.isPathRef) return [text(String(this.literal))];
@@ -159,8 +183,13 @@ export class PickCandidateDef {
     return this.effect.spawns(objectGlobalId);
   }
 
-  collectSpawns(add: (objectGlobalId: number, count: number) => void): void {
-    this.effect.collectSpawns(add);
+  /** この候補の抽選重みを、定義だけから解く（PickEffect.collectOutcomesが使う）。 */
+  staticWeight(resolve: StaticValueResolver): number | undefined {
+    return this.weight.staticResolve(resolve);
+  }
+
+  collectOutcomes(resolve: StaticValueResolver): readonly StepOutcome[] {
+    return this.effect.collectOutcomes(resolve);
   }
 
   destroys(target: ReferenceRoot): boolean {

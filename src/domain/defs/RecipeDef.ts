@@ -1,5 +1,6 @@
 import type { WorldObject } from '../runtime/WorldObject';
-import type { CraftingStep } from './CraftingStep';
+import type { CraftingStep, StepOutcome } from './CraftingStep';
+import { collectOutputs } from './CraftingStep';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { objectRef, text } from './Description';
 import type { ReferenceRoot } from './ReferenceRoot';
@@ -98,11 +99,16 @@ export class RecipeDef {
   }
 
   /**
-   * このレシピをクラフトの1工程として見たもの（CraftingStep参照）。工程（steps）の別は畳む——
-   * 「何を使って何ができるか」の問いには、レシピ全体でひとつの答えで足りる。
-   * productGlobalIdは完成品（このレシピを宣言している型）。
+   * このレシピを1つの工程として見たもの（CraftingStep参照）。工程（steps）の別は畳む——
+   * 「何を使って何ができるか」の問いには、レシピ全体でひとつの答えで足りる。所要時間も同じ理由で
+   * 全工程の和にする。productGlobalIdは完成品（このレシピを宣言している型）。
+   *
+   * レシピは分岐も所要時間の参照も持たないので、確率1の1分岐で、数値は常に確定する。
    */
   craftingStep(productGlobalId: number): CraftingStep {
+    const outcomes: readonly StepOutcome[] = [
+      { probability: 1, spawns: [{ objectGlobalId: productGlobalId, count: 1 }], deltas: [] },
+    ];
     return {
       kind: 'recipe',
       name: this.name,
@@ -114,7 +120,10 @@ export class RecipeDef {
           consumed: requirement.consume,
         })),
       ),
-      outputs: [{ objectGlobalId: productGlobalId, counts: [1] }],
+      outputs: collectOutputs(outcomes),
+      durationMinutes: this.steps.reduce((sum, step) => sum + step.durationMinutes, 0),
+      outcomes,
+      hasUnresolvedReferences: false,
     };
   }
 

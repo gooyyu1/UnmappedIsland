@@ -290,6 +290,19 @@ export class PropertyDef {
   }
 
   /**
+   * このプロパティの、**定義だけから読める値**（StaticValueResolver参照）。抽選つきの初期値
+   * （`value: {min, max}`）はRNGを使わない生成と同じ扱いで、initialValueがそのまま答えになる。
+   *
+   * inheritなら祖先の値も足す（6.5節）。祖先を辿れない文脈ではundefined——0を返すと「祖先が
+   * 宣言していない」と区別が付かず、罠の候補が全部0になったのか土地が黙っているのか読めなくなる。
+   */
+  staticValue(ancestorValue: (propertyGlobalId: number) => number | undefined): number | undefined {
+    if (!this.inherit) return this.initialValue;
+    const inherited = ancestorValue(this.globalId);
+    return inherited === undefined ? undefined : this.initialValue + inherited;
+  }
+
+  /**
    * 初期値の書き表し（Description参照）。一覧の表など、1行で済ませたい場所向けに断片で返す。
    */
   describeInitialValue(names: DefNames): readonly DescriptionToken[] {

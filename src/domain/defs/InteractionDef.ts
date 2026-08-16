@@ -2,11 +2,12 @@ import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
 import type { CraftingInput, CraftingStep } from './CraftingStep';
-import { CraftingOutputCollector } from './CraftingStep';
+import { collectOutputs } from './CraftingStep';
 import type { DefNames, DescriptionWriter } from './Description';
 import { text } from './Description';
 import type { WeightSpec } from './PickEffect';
 import { resolveReferenceRoot } from './ReferenceRoot';
+import type { StaticValueResolver } from './ReferenceRoot';
 import type { Requirement, Requirements } from './Requirement';
 import { spendDuration } from './actionTime';
 
@@ -85,17 +86,24 @@ export abstract class InteractionDef {
   }
 
   /**
-   * この操作をクラフトの1工程として見たもの（CraftingStep参照）。何も生み出さない操作は
-   * クラフトではないのでundefined（移動・食べるだけの操作は工程に数えない）。
+   * この操作を1つの工程として見たもの（CraftingStep参照）。**何も生み出さない操作も返す**——
+   * 食べる・飲む操作はプロパティを返す終端の工程であり、出力の有無で絞るのは受け取る側の都合。
    *
    * 入力は常にself（この操作を宣言した型）で、消費されるかはdestroyの有無から分かる。
    * ドラッグ型の相手（withタグ）は具象（CombinationDef）が足す。
+   *
+   * resolveは、durationとweightの`{subject, prop}`参照を定義だけから解く手立て。1つでも解けなければ
+   * hasUnresolvedReferencesが立つので、読み手はその行の数値を鵜呑みにせずに済む。
    */
-  craftingStep(selfObjectGlobalId: number): CraftingStep | undefined {
-    const outputs = new CraftingOutputCollector();
-    this.effect.collectSpawns(outputs.add);
-    if (outputs.toOutputs().length === 0) return undefined;
+  craftingStep(selfObjectGlobalId: number, resolve: StaticValueResolver): CraftingStep {
+    let unresolved = false;
+    const track: StaticValueResolver = (root, propertyGlobalId) => {
+      const value = resolve(root, propertyGlobalId);
+      if (value === undefined) unresolved = true;
+      return value;
+    };
 
+    const outcomes = this.effect.collectOutcomes(track);
     const inputs: CraftingInput[] = [
       { kind: 'object', objectGlobalId: selfObjectGlobalId, consumed: this.effect.destroys('self') },
       ...this.extraCraftingInputs(this.effect),
@@ -105,8 +113,20 @@ export abstract class InteractionDef {
       name: this.name,
       ownerGlobalId: selfObjectGlobalId,
       inputs,
-      outputs: outputs.toOutputs(),
+      outputs: collectOutputs(outcomes),
+      durationMinutes: this.staticMinutes(track),
+      outcomes,
+      hasUnresolvedReferences: unresolved,
     };
+  }
+
+  /**
+   * この操作にかかるゲーム内時間（分）を、実行時のオブジェクトを使わずに解いた値。durationを省いて
+   * いれば0、参照が解けなければ0（工程の側がhasUnresolvedReferencesで印を持つ）。
+   */
+  private staticMinutes(resolve: StaticValueResolver): number {
+    if (this.duration === undefined) return 0;
+    return Math.trunc(this.duration.staticResolve(resolve) ?? 0);
   }
 
   /** self以外の入力（ドラッグ型のwithタグ）。メニュー型には無い。 */

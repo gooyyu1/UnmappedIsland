@@ -2,7 +2,7 @@ import type { InfluenceWriter } from '../runtime/PropertyInfluence';
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { DefNames, DescriptionWriter } from './Description';
-import type { PassiveEffect, TransferPassiveEffect } from './PassiveEffect';
+import type { PassiveEffect, TickDelta, TransferPassiveEffect } from './PassiveEffect';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -42,6 +42,16 @@ export class PassiveEffects {
   /** childがowner（親）に付く/離れる契機を全effectへ伝える（target=childのものだけが反応する）。 */
   registerChild(owner: WorldObject, child: WorldObject, register: boolean): void {
     for (const effect of this.effects) effect.registerChild(owner, child, register);
+  }
+
+  /**
+   * tick毎に実体値を動かす分を宣言順に挙げる（TickDelta参照）。「1日に何がどれだけ要るか」は
+   * これを96倍すれば出る。
+   */
+  tickDeltas(): readonly TickDelta[] {
+    const deltas: TickDelta[] = [];
+    for (const effect of this.effects) effect.collectTickDeltas((delta) => deltas.push(delta));
+    return deltas;
   }
 
   /** すべての効果が持つ影響の辺を書き出す（PassiveEffect.collectInfluences参照）。 */

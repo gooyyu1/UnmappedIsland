@@ -17,6 +17,31 @@ import type { ReferenceRoot } from './ReferenceRoot';
  * 参照はグローバルIDのまま持ち、評価のたびにローカル化する（変換コストは1 tick=15分の時間スケールに
  * 対して無視できるため、ビルド時の2段階パースを避ける）。
  */
+/**
+ * tick毎の増減を縛るゲートの、定義だけから読める姿（TickDelta参照）。
+ */
+export interface TickGate {
+  /** 段で縛られているならその段（8.2節）。常時効くならundefined。 */
+  readonly stage: { readonly propertyGlobalId: number; readonly name: string } | undefined;
+
+  /** 段以外の条件（conditions）でも縛られているか。真なら、その条件が成立している間だけ効く。 */
+  readonly conditional: boolean;
+}
+
+/**
+ * tick毎に実体値を動かす持続効果1件を、実行時のオブジェクトを使わずに読んだもの（8.4節）。
+ * 可逆な寄与（modify、8.3節）は実体値を動かさないので含まない。
+ */
+export interface TickDelta {
+  readonly target: ReferenceRoot;
+  readonly propertyGlobalId: number;
+  readonly amount: number;
+  readonly gate: TickGate;
+
+  /** 在庫の続く間だけ動く輸送（8.4節のtransfer）か。真ならamountは上限で、実際はそれ以下になりうる。 */
+  readonly capped: boolean;
+}
+
 export class PassiveEffectGate {
   private readonly conditions: ConditionNode | undefined;
   private readonly propertyGlobalId: number | undefined;
@@ -34,6 +59,18 @@ export class PassiveEffectGate {
    */
   get stagePropertyGlobalId(): number | undefined {
     return this.stageName === undefined ? undefined : this.propertyGlobalId;
+  }
+
+  /** このゲートを、実行時のオブジェクトを使わずに読んだ姿（TickGate参照）。 */
+  get staticGate(): TickGate {
+    const stagePropertyGlobalId = this.stagePropertyGlobalId;
+    return {
+      stage:
+        stagePropertyGlobalId === undefined
+          ? undefined
+          : { propertyGlobalId: stagePropertyGlobalId, name: this.stageName! },
+      conditional: this.conditions !== undefined,
+    };
   }
 
   isSatisfied(declarer: WorldObject, slotBearer: WorldObject): boolean {
@@ -123,6 +160,12 @@ export abstract class PassiveEffect {
   get tickTransfer(): TransferPassiveEffect | undefined {
     return undefined;
   }
+
+  /**
+   * tick毎に実体値を動かす分を書き出す（TickDelta参照）。実体値を動かさない効果（modify）は
+   * 何もしないので、既定は書き出さない。
+   */
+  collectTickDeltas(_add: (delta: TickDelta) => void): void {}
 }
 
 /**
@@ -207,6 +250,17 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * modifyでもaddでも同じ量。 */
   activeAmount(declarer: WorldObject, slotBearer: WorldObject): number {
     return this.gate.isSatisfied(declarer, slotBearer) ? this.amount : 0;
+  }
+
+  /** 自分をtick毎の増減1件として見たもの（実体値を動かす具象＝AccumulateEffectだけが使う）。 */
+  protected get tickDelta(): TickDelta {
+    return {
+      target: this.target,
+      propertyGlobalId: this.targetPropertyGlobalId,
+      amount: this.amount,
+      gate: this.gate.staticGate,
+      capped: false,
+    };
   }
 
   /**
@@ -327,6 +381,10 @@ export class AccumulateEffect extends PropertyPassiveEffect {
   registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void {
     target.registerAccumulate(registration);
   }
+
+  override collectTickDeltas(add: (delta: TickDelta) => void): void {
+    add(this.tickDelta);
+  }
 }
 
 /**
@@ -368,5 +426,11 @@ export class TransferPassiveEffect extends PassiveEffect {
 
   override affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
     return this.transfer.affects(propertyGlobalId, ownedByDeclarer);
+  }
+
+  /** 輸送の両端を、在庫の続く間だけ動く増減（capped）として書き出す。量は輸送自身が名乗る。 */
+  override collectTickDeltas(add: (delta: TickDelta) => void): void {
+    const gate = this.gate.staticGate;
+    for (const delta of this.transfer.deltas) add({ ...delta, gate, capped: true });
   }
 }

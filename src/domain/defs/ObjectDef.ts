@@ -12,6 +12,7 @@ import type { PassiveEffect } from './PassiveEffect';
 import { PassiveEffects } from './PassiveEffects';
 import type { PropertyDef } from './PropertyDef';
 import type { RecipeDef } from './RecipeDef';
+import type { StaticValueResolver } from './ReferenceRoot';
 import type { Requirement } from './Requirement';
 import type { SlotDef } from './SlotDef';
 import type { StackOrderDef } from './StackOrderDef';
@@ -248,17 +249,33 @@ export class ObjectDef {
   }
 
   /**
-   * この型が関わるクラフトの工程（CraftingStep参照）を宣言順に挙げる。actions・combinationsは
-   * 何かを生み出すものだけ（craftingStepがundefinedを返さないもの）、recipesはすべて。
+   * この型が関わる工程（CraftingStep参照）を宣言順に挙げる。actions・combinations・recipesのすべてで、
+   * **何も生み出さない操作も含む**——出力の有無で絞るのは受け取る側の都合（クラフトネットワークは
+   * 出力のある工程だけを描き、収支表は食べる操作も終端の工程として数える）。
+   *
+   * outerは、self以外の起点（祖先が入れる値など）を定義だけから解く手立て。省くと、それらを参照する
+   * 工程に「確定しない」印が付く（CraftingStep.hasUnresolvedReferences）。
    */
-  craftingSteps(): readonly CraftingStep[] {
+  craftingSteps(outer?: StaticValueResolver): readonly CraftingStep[] {
+    const resolve = this.staticResolver(outer);
     const steps: CraftingStep[] = [];
-    for (const interaction of [...this.actions, ...this.combinations]) {
-      const step = interaction.craftingStep(this.globalId);
-      if (step !== undefined) steps.push(step);
-    }
+    for (const interaction of [...this.actions, ...this.combinations])
+      steps.push(interaction.craftingStep(this.globalId, resolve));
     for (const recipe of this.recipes) steps.push(recipe.craftingStep(this.globalId));
     return steps;
+  }
+
+  /**
+   * この型を起点として、定義だけから値を解く手立て（StaticValueResolver参照）。selfは自分の
+   * プロパティ定義が答え、それ以外の起点はouterへ委ねる。
+   */
+  private staticResolver(outer: StaticValueResolver | undefined): StaticValueResolver {
+    const ancestorValue = (propertyGlobalId: number): number | undefined =>
+      outer?.('ancestor', propertyGlobalId);
+    return (root, propertyGlobalId) => {
+      if (root !== 'self') return outer?.(root, propertyGlobalId);
+      return this.getPropertyDef(propertyGlobalId)?.staticValue(ancestorValue);
+    };
   }
 
   /** 1つのプロパティのrange系イベントのうち、matchesが真になるものを、宣言元の名前を添えて書き出す。 */
