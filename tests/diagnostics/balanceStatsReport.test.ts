@@ -2,7 +2,14 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
-import type { BalanceTables, ChainRoute, NamedAmount } from '../../src/codex/balanceTables';
+import type {
+  BalanceTables,
+  ChainRoute,
+  NamedAmount,
+  PlaceBalance,
+  PropertyChains,
+  PropertyRoute,
+} from '../../src/codex/balanceTables';
 import {
   buildBalanceTables,
   MINUTES_PER_DAY,
@@ -112,7 +119,7 @@ function appendMethod(append: (line?: string) => void): void {
   append('- **餌の効果。** 餌は `modify`（実効値への可逆な寄与）で重みを押し上げるが、静的に読めるのは');
   append('  宣言値だけなので、罠のレートは**餌なし**の値。');
   append('- **雨で溜まる水。** 量を増やすのは `rain_filled_liquid` のtick毎の持続効果で、工程ではない。');
-  append('  そのため水を汲む経路は所要時間0分の工程として出る（† を付けた行）。');
+  append('  そのため水を汲む経路は労働0分になる——1節の「数えられない経路」へ分けてある。');
   append('- **採取ポイントの枯渇。** 同じ木から何度でも採れる前提で計算している。');
   append('- **獲物が死体に変わるまで。** 罠に掛かった獲物を殺すのは、刺さった傷が**親へ**与える出血');
   append('  （`snare_laceration` の `add: {parent: {blood: -15}}`）で、しかも傷の `bleeding` が尽きる');
@@ -120,17 +127,33 @@ function appendMethod(append: (line?: string) => void): void {
   append('  増減を1つ足すだけでは決まらない。そのため待ち生産表の産物（獲物）は連鎖表へ繋がっておらず、');
   append('  連鎖表の「設備数」列は今のところ全て空になる。');
   append();
+  append('### 何を「1日に要る量」と数えるか');
+  append();
+  append('**輸送で減る値は需要にしない。** `carbohydrate`/`protein`/`lipid` はtick毎に体脂肪へ流れるが、');
+  append('あの速さ（合計3.5/tick）は在庫がある間の流量であって、要る量ではない。体が実際に燃やすのは');
+  append('受け皿側の `body_fat` の減りだけで、三大栄養素はそこへ注ぐ原資（DigestionSystem.md 3節）。');
+  append('流量を要求量として数えると、必要な3.5倍を食べさせることになる。');
+  append();
+  append('**段で減る速さが変わる値は、初期値が入る段の速さを採る。** 体脂肪は段ごとに -0.5〜-1.6/tick と');
+  append('違うので、全部を足すとどの段にも当てはまらない量になる。');
+  append();
+  append('`satiety` は胃のかさであってエネルギーではない（同2節）。尽きても死なず、食べれば同時に');
+  append('埋まるので、献立では他の値を賄うついでに満たされることが多い。');
+  append();
 }
 
 function appendChains(append: (line?: string) => void, tables: BalanceTables): void {
   append('## 1. 連鎖表（素材から摂取までの総時間）');
   append();
-  append(`1日ぶんの必要量は ${SAMPLE_CHARACTER} のもの（消費表の常時効く減りから）。`);
+  append(`1日ぶんの必要量は ${SAMPLE_CHARACTER} のもの（消費表から）。`);
   append('時間はすべて労働時間で、待ち時間は含まない（待ち生産の設備は、周期÷寿命ぶんの製作労働と');
   append('して計上する）。「1日の割合」は、1日ぶんを賄うのに要る労働が1日（1440分）に占める割合。');
   append('「設備数」は、待ち生産の経路で1日ぶんを賄うのに同時に要る設備の数。');
-  append('† は、素材を所要時間0分の工程で得ている経路（この表が時間を数えられていない）。');
   append('前提の道具に入手経路が無い経路は、数字を出したうえで表の末尾へ回す。');
+  append();
+  append('**時間を数えられない経路（労働0で値が返るもの）はこの表に混ぜず、末尾の「数えられない経路」');
+  append('へ分けた。** 注記は読み飛ばされるが順位は読み飛ばされないので、0分の行を最安として');
+  append('並べると「水はタダ」と読めてしまう。');
   append();
 
   for (const place of tables.places) {
@@ -138,31 +161,102 @@ function appendChains(append: (line?: string) => void, tables: BalanceTables): v
 
     append(`### ${place.name}`);
     append();
+    appendMenu(append, place);
 
     for (const chains of place.properties) {
-      append(`#### ${chains.propertyName}（1日 ${formatNumber(chains.dailyNeed, 0)}）`);
+      const counted = chains.routes.filter((entry) => !entry.route.untimed);
+      if (counted.length === 0) continue;
+
+      append(`#### ${headingOf(chains)}`);
       append();
       append(
-        '| 経路 | 1単位あたり（分） | 探索 | 加工 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |',
+        '| 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |',
       );
       append('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
-      for (const route of chains.routes) {
-        const daily = route.perUnitMinutes * chains.dailyNeed;
-        const prerequisites = route.prerequisites
-          .map(({ label, minutes }) => `${label}（${minutesText(minutes)}）`)
-          .join('、');
-
-        append(
-          `| ${routeText(route)} | ${formatNumber(route.perUnitMinutes, 2)}${route.untimed ? ' †' : ''} |` +
-            ` ${formatNumber(route.exploreMinutes, 2)} | ${formatNumber(route.craftMinutes, 2)} |` +
-            ` ${formatNumber(daily, 0)} | ${formatNumber((daily * 100) / MINUTES_PER_DAY, 1)}% |` +
-            ` ${route.deviceCount === undefined ? '—' : formatNumber(route.deviceCount, 1)} |` +
-            ` ${amountList(route.coProducts) || '—'} | ${prerequisites || '—'} |`,
-        );
-      }
+      for (const entry of counted) append(chainRow(entry));
       append();
     }
   }
+
+  appendUncounted(append, tables);
+}
+
+/** 需要の見出し。何で埋まるか（体脂肪なら三大栄養素）と、尽きると死ぬかを添える。 */
+function headingOf(chains: PropertyChains): string {
+  const supplied =
+    chains.suppliedByNames.length === 0 ? '' : `／${chains.suppliedByNames.join('・')}で埋まる`;
+  return (
+    `${chains.propertyName}（1日 ${formatNumber(chains.dailyNeed, 0)}` +
+    `${chains.lethal ? '・尽きると死ぬ' : ''}${supplied}）`
+  );
+}
+
+function chainRow(entry: PropertyRoute): string {
+  const prerequisites = entry.route.prerequisites
+    .map(({ label, minutes }) => `${label}（${minutesText(minutes)}）`)
+    .join('、');
+
+  return (
+    `| ${routeText(entry.route)} | ${formatNumber(entry.perUnitMinutes, 2)} |` +
+    ` ${formatNumber(entry.route.exploreMinutes / entry.gain, 2)} |` +
+    ` ${formatNumber(entry.route.craftMinutes / entry.gain, 2)} |` +
+    ` ${formatNumber(entry.dailyMinutes, 0)} | ${formatNumber(entry.dailyShare, 1)}% |` +
+    ` ${entry.deviceCount === undefined ? '—' : formatNumber(entry.deviceCount, 1)} |` +
+    ` ${amountList(entry.route.deltas) || '—'} | ${prerequisites || '—'} |`
+  );
+}
+
+/**
+ * 1日を賄う最小労働（貪欲解）。**この数字がこのレポートで最も追いたいもの**なので、
+ * 差分で動きが見えるように献立ごと出す。
+ */
+function appendMenu(append: (line?: string) => void, place: PlaceBalance): void {
+  const { menu } = place;
+  if (menu.entries.length === 0 && menu.unmet.length === 0) return;
+
+  append(
+    `> **1日を賄う最小労働: ${formatNumber(menu.totalMinutes, 0)} 分**` +
+      `（1440分の ${formatNumber((menu.totalMinutes * 100) / MINUTES_PER_DAY, 1)}%）`,
+  );
+  if (menu.unmet.length > 0) append(`> 賄えない値: ${menu.unmet.join('、')}`);
+  append();
+
+  if (menu.entries.length === 0) return;
+  append('| 献立 | 回数 | 労働（分） |');
+  append('| --- | --- | --- |');
+  for (const entry of menu.entries)
+    append(
+      `| ${routeText(entry.route)} | ${formatNumber(entry.repetitions, 2)} |` +
+        ` ${formatNumber(entry.minutes, 0)} |`,
+    );
+  append();
+}
+
+/**
+ * 時間を数えられない経路。**別の節にする**——同じ並びに0分として混ぜると、注記を読まない限り
+ * 最安の手段に見える。
+ */
+function appendUncounted(append: (line?: string) => void, tables: BalanceTables): void {
+  const rows: string[] = [];
+  for (const place of tables.places)
+    for (const chains of place.properties)
+      for (const entry of chains.routes)
+        if (entry.route.untimed)
+          rows.push(
+            `| ${place.name} | ${chains.propertyName} | ${routeText(entry.route)} |` +
+              ` ${amountList(entry.route.deltas) || '—'} |`,
+          );
+  if (rows.length === 0) return;
+
+  append('### 数えられない経路');
+  append();
+  append('労働0で値が返る経路。**上の表には混ぜていない**——時間を数えられていないだけで、');
+  append('本当にタダなわけではない（雨で水が溜まるのはtick毎の持続効果で、工程ではない）。');
+  append();
+  append('| 場所 | 値 | 経路 | 同時に返す値 |');
+  append('| --- | --- | --- | --- |');
+  for (const row of rows) append(row);
+  append();
 }
 
 function appendDevices(append: (line?: string) => void, tables: BalanceTables): void {

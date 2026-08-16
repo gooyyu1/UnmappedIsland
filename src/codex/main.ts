@@ -4,7 +4,7 @@ import type { CodexSource } from './CodexSource';
 import { loadCodexSource } from './CodexSource';
 import type { NamingMode } from './CodexView';
 import { CodexView, escapeHtml } from './CodexView';
-import { balanceSectionId, renderBalancePage } from './balancePage';
+import { balanceSectionId, renderBalancePage, wireBalanceMenu } from './balancePage';
 import { networkNodeDomId, renderNetworkPage } from './networkPage';
 import {
   renderNotFoundPage,
@@ -58,6 +58,7 @@ function render(): void {
   updateNamingToggle();
   wireObjectFilter();
   wireNetworkZoom();
+  wireBalanceMenu();
   window.scrollTo(0, 0);
   scrollToTagSection(parts);
   scrollToNetworkNode(parts);

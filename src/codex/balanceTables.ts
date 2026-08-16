@@ -69,23 +69,26 @@ export interface NamedAmount {
 export interface ChainRoute {
   readonly steps: readonly RouteStep[];
 
-  /** プロパティ1単位を得るのにプレイヤーが払う時間（分）と、その内訳。 */
-  readonly perUnitMinutes: number;
+  /** 1回実行するのにプレイヤーが払う時間（分）と、その内訳。 */
+  readonly executionMinutes: number;
   readonly exploreMinutes: number;
   readonly craftMinutes: number;
 
-  /** 待ち生産を含む経路で、1日ぶんを賄うのに同時に要る設備の数。含まないならundefined。 */
-  readonly deviceCount: number | undefined;
+  /** 1回の実行で埋まる需要（キーは需要のプロパティ）。体脂肪は三大栄養素の増分がまとまって効く。 */
+  readonly fills: ReadonlyMap<number, number>;
 
-  /** 同じ工程が同時に返す他の値（時間を按分していないので、行を縦に足すと二重計上になる）。 */
-  readonly coProducts: readonly NamedAmount[];
+  /** 1回の実行で動く値すべて。時間を按分していないので、これらを縦に足すと二重計上になる。 */
+  readonly deltas: readonly NamedAmount[];
+
+  /** 待ち生産を含む経路なら、設備1つを保つのに要る1日あたりの労働（分）。含まないならundefined。 */
+  readonly deviceCount: number | undefined;
 
   readonly prerequisites: readonly RoutePrerequisite[];
 
-  /** 前提の道具に入手経路が無い経路か。表の末尾へ回す。 */
+  /** 前提の道具に入手経路が無い経路か。 */
   readonly blocked: boolean;
 
-  /** 素材を所要時間0分の工程で得ている経路か（この表が時間を数えられていない）。 */
+  /** 労働0で値が返る経路か（雨で溜まる水など、この表が時間を数えられていない）。 */
   readonly untimed: boolean;
 }
 
@@ -107,13 +110,60 @@ export interface RoutePrerequisite {
 
 /** 連鎖表の、プロパティ1つぶん。 */
 export interface PropertyChains {
+  readonly propertyGlobalId: number;
   readonly propertyName: string;
 
-  /** 1日に減る量（消費表の常時効く減りから）。 */
+  /** 1日に減る量。 */
   readonly dailyNeed: number;
 
-  /** 総時間の昇順。前提が揃わない経路は末尾。 */
-  readonly routes: readonly ChainRoute[];
+  /** 尽きると死ぬ値か（VitalsSystem.md）。 */
+  readonly lethal: boolean;
+
+  /** その値を埋める別のプロパティ（体脂肪なら三大栄養素）。自分自身で埋まるなら空。 */
+  readonly suppliedByNames: readonly string[];
+
+  /** 単位あたりの労働の昇順。数えられない経路と前提が揃わない経路は末尾。 */
+  readonly routes: readonly PropertyRoute[];
+}
+
+/**
+ * ある需要から見た経路1つ。**割り算はここで済ませる**——同じ数字を描き手ごとに計算し直すと、
+ * ずれたときにどちらが正か分からなくなる。
+ */
+export interface PropertyRoute {
+  readonly route: ChainRoute;
+
+  /** 1回の実行でこの需要が埋まる量。 */
+  readonly gain: number;
+
+  /** この需要を1単位埋めるのに要る労働（分）。 */
+  readonly perUnitMinutes: number;
+
+  /** 1日ぶんを賄うのに要る労働（分）と、それが1日（1440分）に占める割合（%）。 */
+  readonly dailyMinutes: number;
+  readonly dailyShare: number;
+
+  /** 待ち生産の経路で、1日ぶんを賄うのに同時に要る設備の数。含まないならundefined。 */
+  readonly deviceCount: number | undefined;
+}
+
+/** 1日を賄う献立の1行。 */
+export interface MenuEntry {
+  readonly route: ChainRoute;
+  readonly repetitions: number;
+  readonly minutes: number;
+}
+
+/** 1日を賄う献立と、その合計労働。 */
+export interface DailyMenu {
+  readonly entries: readonly MenuEntry[];
+  readonly totalMinutes: number;
+
+  /** どの経路でも埋まらなかった需要の名前。 */
+  readonly unmet: readonly string[];
+
+  /** 需要ごとに選んだ経路。viewerはこれを`<select>`の既定値にする。 */
+  readonly chosen: ReadonlyMap<number, ChainRoute>;
 }
 
 /** 待ち生産表の1行（設備1つが返す産物1種）。 */
@@ -140,11 +190,19 @@ export interface DeviceRow {
 export interface PlaceBalance {
   readonly name: string;
   readonly properties: readonly PropertyChains[];
+
+  /** 1日を賄う献立（貪欲解）。viewerはこれを既定値にして、経路を選び替えられるようにする。 */
+  readonly menu: DailyMenu;
+
   readonly devices: readonly DeviceRow[];
 }
 
 export interface BalanceTables {
   readonly characterNames: readonly string[];
+
+  /** 代表キャラクタが1日に賄わなければならない値。 */
+  readonly requirements: readonly Requirement[];
+
   readonly consumption: readonly ConsumptionRow[];
   readonly supply: readonly SupplyRow[];
   readonly places: readonly PlaceBalance[];
@@ -154,31 +212,85 @@ export interface BalanceTables {
 export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): BalanceTables {
   const characterNames = codex.objectDefNamesWithTag('character');
   const character = codex.objects.get(codex.objectNames.getId(sampleCharacter));
-  const needs = dailyNeeds(character);
+  const requirements = requirementsOf(codex, character);
 
-  const places = placeBalances(codex, needs);
   return {
     characterNames,
+    requirements,
     consumption: consumptionRows(codex, characterNames),
     // 供給表は島全体の文脈で出す。罠の重みは土地が入れるので、土地を決めないと候補が全部0になる。
-    supply: supplyRows(codex, allSteps(codex, bestAncestorContext(locationsOf(codex)))),
-    places,
+    supply: supplyRows(codex, allSteps(codex, bestAncestorContext(explorableLocationsOf(codex)))),
+    places: placeBalances(codex, character, requirements),
   };
 }
 
-/** 1日にそのプロパティが減る量（常時効く増減だけ）。減らないプロパティは含まない。 */
-function dailyNeeds(character: ObjectDef): ReadonlyMap<number, number> {
-  const needs = new Map<number, number>();
-  for (const delta of character.passives.tickDeltas()) {
-    if (delta.target !== 'self' || delta.capped) continue;
-    if (delta.gate.stage !== undefined || delta.gate.conditional) continue;
-    if (delta.amount >= 0) continue;
-    needs.set(
-      delta.propertyGlobalId,
-      (needs.get(delta.propertyGlobalId) ?? 0) + -delta.amount * TICKS_PER_DAY,
-    );
+/**
+ * 1日に賄わなければならない値1つ。
+ *
+ * **輸送で減る値は需要にしない。** `carbohydrate`/`protein`/`lipid` は tick 毎に体脂肪へ流れるが、
+ * あの速さは在庫がある間の流量であって、要る量ではない——体が実際に燃やすのは受け皿側
+ * （`body_fat`）の減りだけで、三大栄養素はそこへ注ぐ原資（DigestionSystem.md 3節）。
+ * 流量を要求量として数えると、必要な3.5倍を食べさせることになる。
+ */
+export interface Requirement {
+  readonly propertyGlobalId: number;
+  readonly name: string;
+  readonly dailyNeed: number;
+
+  /** この需要を埋められるプロパティ。体脂肪は三大栄養素が原資なので、そちらの増分で埋まる。 */
+  readonly suppliedBy: readonly number[];
+
+  /** 尽きると死ぬか（`on_shortfall` が自分を消す、VitalsSystem.md）。 */
+  readonly lethal: boolean;
+}
+
+/**
+ * 代表キャラクタが1日に賄わなければならない値。減らない値は含まない。
+ *
+ * 段で減る速さが変わる値（体脂肪）は、**初期値が入る段**の速さを採る。段ごとに違う数字を足すと、
+ * どの段にも当てはまらない量になる。
+ */
+function requirementsOf(codex: WorldCodex, character: ObjectDef): readonly Requirement[] {
+  const deltas = character.passives.tickDeltas().filter((delta) => delta.target === 'self');
+
+  // 輸送の両端。負の側（三大栄養素）が原資で、正の側（体脂肪）が受け皿。
+  const sources = [...new Set(deltas.filter((d) => d.capped && d.amount < 0).map((d) => d.propertyGlobalId))];
+  const sinks = new Set(deltas.filter((d) => d.capped && d.amount > 0).map((d) => d.propertyGlobalId));
+
+  const perTick = new Map<number, number>();
+  for (const delta of deltas) {
+    if (delta.capped || delta.gate.conditional || delta.amount >= 0) continue;
+    if (delta.gate.stage !== undefined && !inInitialStage(character, delta)) continue;
+    perTick.set(delta.propertyGlobalId, (perTick.get(delta.propertyGlobalId) ?? 0) + delta.amount);
   }
-  return needs;
+
+  return [...perTick].map(([propertyGlobalId, amount]) => ({
+    propertyGlobalId,
+    name: codex.propertyName(propertyGlobalId),
+    dailyNeed: -amount * TICKS_PER_DAY,
+    suppliedBy: sinks.has(propertyGlobalId) ? sources : [propertyGlobalId],
+    lethal: destroysWhenEmpty(character, propertyGlobalId),
+  }));
+}
+
+/** その増減を縛る段（8.2節）に、初期値が入っているか。段で縛られていない増減は常に真。 */
+function inInitialStage(def: ObjectDef, delta: TickDelta): boolean {
+  const stage = delta.gate.stage;
+  if (stage === undefined) return true;
+
+  const propertyDef = def.getPropertyDef(stage.propertyGlobalId);
+  const value = def.staticValueOf(stage.propertyGlobalId);
+  if (propertyDef === undefined || value === undefined) return false;
+  return propertyDef.stageOf(value)?.name === stage.name;
+}
+
+/** そのプロパティが尽きたとき、持ち主ごと消えるか（`on_shortfall: destroy self`）。 */
+function destroysWhenEmpty(def: ObjectDef, propertyGlobalId: number): boolean {
+  const propertyDef = def.getPropertyDef(propertyGlobalId);
+  if (propertyDef === undefined) return false;
+  return propertyDef
+    .rangeEventReadouts(() => undefined)
+    .some((readout) => readout.label === 'on_shortfall' && readout.destroysSelf);
 }
 
 function consumptionRows(codex: WorldCodex, characterNames: readonly string[]): readonly ConsumptionRow[] {
@@ -255,8 +367,12 @@ function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly Supp
   return rows;
 }
 
-function placeBalances(codex: WorldCodex, needs: ReadonlyMap<number, number>): readonly PlaceBalance[] {
-  const locations = locationsOf(codex);
+function placeBalances(
+  codex: WorldCodex,
+  character: ObjectDef,
+  requirements: readonly Requirement[],
+): readonly PlaceBalance[] {
+  const locations = explorableLocationsOf(codex);
 
   return [undefined, ...locations].map((location) => {
     // 罠が掛ける動物の重みは土地が宣言する（inherit）ので、土地を決めてから工程を組み立てる。
@@ -264,54 +380,119 @@ function placeBalances(codex: WorldCodex, needs: ReadonlyMap<number, number>): r
     const steps =
       location === undefined ? allSteps(codex, context) : stepsAt(codex, allSteps(codex, context), location);
     const acquisition = new Acquisition(codex, steps);
+    const routes = routeCandidates(codex, character, acquisition, steps, requirements);
 
     return {
       name: location?.name ?? WHOLE_ISLAND,
-      properties: propertyChains(codex, acquisition, steps, needs),
+      properties: propertyChains(codex, requirements, routes),
+      menu: greedyMenu(requirements, routes),
       devices: deviceRows(codex, acquisition, steps),
     };
   });
 }
 
 /**
- * 必要量のあるプロパティごとに、それを返す工程を総時間の昇順で並べる。**最良経路だけには絞らない**
+ * 需要のどれかを埋める経路をすべて挙げる。**プロパティごとではなく経路ごとに1件**——1回の実行で
+ * 複数の値が返るので、献立（greedyMenu）はまとめて見ないと同時に返る分を差し引けない。
+ */
+function routeCandidates(
+  codex: WorldCodex,
+  character: ObjectDef,
+  acquisition: Acquisition,
+  steps: readonly StepRef[],
+  requirements: readonly Requirement[],
+): readonly ChainRoute[] {
+  const suppliers = new Map<number, number[]>();
+  for (const requirement of requirements)
+    for (const propertyGlobalId of requirement.suppliedBy) {
+      const list = suppliers.get(propertyGlobalId) ?? [];
+      list.push(requirement.propertyGlobalId);
+      suppliers.set(propertyGlobalId, list);
+    }
+
+  const candidates: ChainRoute[] = [];
+  for (const ref of steps) {
+    // 休息はどのキャラクタも同じ宣言を持つ（trait が配る）。プレイするのは1人なので代表だけを見る。
+    if (isCharacter(codex, ref.def) && ref.def.globalId !== character.globalId) continue;
+
+    const cost = acquisition.stepCost(ref);
+    if (cost === undefined) continue;
+
+    const deltas = gainsOf(codex, ref);
+    // その工程が埋める需要（体脂肪は三大栄養素の増分がまとまって効く）。
+    const fills = new Map<number, number>();
+    for (const [propertyGlobalId, amount] of deltas) {
+      if (amount <= 0) continue;
+      for (const requirementId of suppliers.get(propertyGlobalId) ?? [])
+        fills.set(requirementId, (fills.get(requirementId) ?? 0) + amount);
+    }
+    if (fills.size === 0) continue;
+
+    candidates.push(
+      buildRoute(codex, acquisition, [ref, ...acquisition.routeOf(ref.def.globalId)], cost, deltas, fills),
+    );
+  }
+  return candidates;
+}
+
+/**
+ * その工程がキャラクタへ返す値。**宣言元がキャラクタ自身なら `self` も数える**——休息
+ * （`wait`/`rest`/`nap`/`sleep`）は自分の値を自分で戻す工程で、他の工程のように `actor` を持たない。
+ */
+function gainsOf(codex: WorldCodex, ref: StepRef): ReadonlyMap<number, number> {
+  const actor = expectedDeltas(ref.step, 'actor');
+  if (!isCharacter(codex, ref.def)) return actor;
+
+  const merged = new Map(actor);
+  for (const [propertyGlobalId, amount] of expectedDeltas(ref.step, 'self'))
+    merged.set(propertyGlobalId, (merged.get(propertyGlobalId) ?? 0) + amount);
+  return merged;
+}
+
+/**
+ * 需要ごとに、それを埋める経路を単位あたりの労働の昇順で並べる。**最良経路だけには絞らない**
  * ——順位が入れ替わったときに差分が「1行まるごと差し替え」になり、何が起きたか読めなくなるため。
  */
 function propertyChains(
   codex: WorldCodex,
-  acquisition: Acquisition,
-  steps: readonly StepRef[],
-  needs: ReadonlyMap<number, number>,
+  requirements: readonly Requirement[],
+  routes: readonly ChainRoute[],
 ): readonly PropertyChains[] {
-  const byProperty = new Map<number, ChainRoute[]>();
+  return requirements
+    .map((requirement) => ({
+      propertyGlobalId: requirement.propertyGlobalId,
+      propertyName: requirement.name,
+      dailyNeed: requirement.dailyNeed,
+      lethal: requirement.lethal,
+      suppliedByNames: requirement.suppliedBy
+        .filter((propertyGlobalId) => propertyGlobalId !== requirement.propertyGlobalId)
+        .map((propertyGlobalId) => codex.propertyName(propertyGlobalId)),
+      routes: routes
+        .filter((route) => (route.fills.get(requirement.propertyGlobalId) ?? 0) > 0)
+        .map((route) => propertyRoute(route, requirement))
+        // 数えられない経路・前提が揃わない経路は末尾へ。数字は出すが、最安として混ぜない。
+        .sort(
+          (a, b) =>
+            Number(a.route.untimed) - Number(b.route.untimed) ||
+            Number(a.route.blocked) - Number(b.route.blocked) ||
+            a.perUnitMinutes - b.perUnitMinutes,
+        ),
+    }))
+    .filter((chains) => chains.routes.length > 0);
+}
 
-  for (const ref of steps) {
-    const cost = acquisition.stepCost(ref);
-    if (cost === undefined) continue;
-
-    const deltas = expectedDeltas(ref.step, 'actor');
-    for (const [propertyGlobalId, gain] of deltas) {
-      const need = needs.get(propertyGlobalId);
-      if (gain <= 0 || need === undefined) continue;
-
-      const route = [ref, ...acquisition.routeOf(ref.def.globalId)];
-      const routes = byProperty.get(propertyGlobalId) ?? [];
-      routes.push(buildRoute(codex, acquisition, route, cost, gain, deltas, propertyGlobalId, need));
-      byProperty.set(propertyGlobalId, routes);
-    }
-  }
-
-  // 前提が揃わない経路は末尾へ。数字は出すが、この文脈では辿れない。
-  for (const routes of byProperty.values())
-    routes.sort((a, b) => Number(a.blocked) - Number(b.blocked) || a.perUnitMinutes - b.perUnitMinutes);
-
-  return [...byProperty]
-    .sort(([a], [b]) => a - b)
-    .map(([propertyGlobalId, routes]) => ({
-      propertyName: codex.propertyName(propertyGlobalId),
-      dailyNeed: needs.get(propertyGlobalId)!,
-      routes,
-    }));
+function propertyRoute(route: ChainRoute, requirement: Requirement): PropertyRoute {
+  const gain = route.fills.get(requirement.propertyGlobalId)!;
+  const perUnitMinutes = route.executionMinutes / gain;
+  const dailyMinutes = perUnitMinutes * requirement.dailyNeed;
+  return {
+    route,
+    gain,
+    perUnitMinutes,
+    dailyMinutes,
+    dailyShare: (dailyMinutes * 100) / MINUTES_PER_DAY,
+    deviceCount: route.deviceCount === undefined ? undefined : dailyMinutes / route.deviceCount,
+  };
 }
 
 function buildRoute(
@@ -319,10 +500,8 @@ function buildRoute(
   acquisition: Acquisition,
   route: readonly StepRef[],
   cost: Cost,
-  gain: number,
   deltas: ReadonlyMap<number, number>,
-  propertyGlobalId: number,
-  dailyNeed: number,
+  fills: ReadonlyMap<number, number>,
 ): ChainRoute {
   // 経路の中で作る物は前提に数えない（自分で用意する手順が既に経路として出ているため）。
   const madeInRoute = new Set(route.flatMap((ref) => [...expectedSpawns(ref.step).keys()]));
@@ -341,42 +520,154 @@ function buildRoute(
       });
     }
 
-  const perUnitMinutes = totalOf(cost) / gain;
   return {
     steps: [...route].reverse().map((ref) => ({ objectName: ref.def.name, stepName: ref.step.name })),
-    perUnitMinutes,
-    exploreMinutes: cost.exploreMinutes / gain,
-    craftMinutes: cost.craftMinutes / gain,
-    deviceCount: deviceCountFor(acquisition, route, perUnitMinutes * dailyNeed),
-    coProducts: [...deltas]
-      .filter(([otherId]) => otherId !== propertyGlobalId)
-      .map(([otherId, amount]) => ({ name: codex.propertyName(otherId), amount })),
+    executionMinutes: totalOf(cost),
+    exploreMinutes: cost.exploreMinutes,
+    craftMinutes: cost.craftMinutes,
+    fills,
+    deltas: [...deltas].map(([propertyGlobalId, amount]) => ({
+      name: codex.propertyName(propertyGlobalId),
+      amount,
+    })),
+    deviceCount: deviceMaintenancePerDay(acquisition, route),
     prerequisites: [...prerequisites.values()],
     blocked: [...prerequisites.values()].some(({ minutes }) => minutes === undefined),
-    // 摂取そのもの（経路の末尾）が0分なのは仕様。素材を0分で得ている場合だけが数え落とし。
-    untimed: route.slice(1).some((ref) => ref.cycle === undefined && ref.step.laborMinutes === 0),
+    // 労働0で値が返るなら、時間を数えられていない（雨で溜まる水など）。摂取そのものが0分なのは仕様
+    // なので、素材を0分で得ている場合と、経路まるごとが0分の場合だけを印にする。
+    untimed:
+      totalOf(cost) === 0 ||
+      route.slice(1).some((ref) => ref.cycle === undefined && ref.step.laborMinutes === 0),
   };
 }
 
 /**
- * 1日ぶんの労働を賄うのに同時に要る設備の数。経路に待ち生産が無ければundefined。
+ * 1日を賄う献立を貪欲に組む。**同時に返る値は差し引く**——按分しないと決めた以上、合計は献立を
+ * 1つ選んで出すしかない（issue #550 で時間を按分しないと決めた帰結）。
  *
- * 設備1つが1日に生む価値は「その設備を寿命の間ずっと作り直し続ける労働」＝製作労働÷寿命の日数に
- * 等しい（連鎖表の単位あたりの労働がこの按分で出ているため）。1日ぶんの労働をそれで割れば個数が出る。
+ * 毎回、まだ足りない分を最も速く埋める経路を選ぶ。速さは「1分あたりに埋まる需要の割合」で測る
+ * ——プロパティごとに単位が違うので、必要量に対する割合へ直さないと足し合わせられない。
  */
-function deviceCountFor(
-  acquisition: Acquisition,
-  route: readonly StepRef[],
-  dailyMinutes: number,
-): number | undefined {
-  let maintenancePerDay = 0;
+export function greedyMenu(requirements: readonly Requirement[], routes: readonly ChainRoute[]): DailyMenu {
+  const usable = routes.filter((route) => !route.blocked && !route.untimed && route.executionMinutes > 0);
+  const remaining = new Map(requirements.map((r) => [r.propertyGlobalId, r.dailyNeed]));
+  const chosen = new Map<number, ChainRoute>();
+
+  for (let guard = 0; guard <= requirements.length; guard++) {
+    let best: { route: ChainRoute; value: number } | undefined;
+    for (const route of usable) {
+      const value = filledShare(route, remaining, requirements) / route.executionMinutes;
+      if (value > 0 && (best === undefined || value > best.value)) best = { route, value };
+    }
+    if (best === undefined) break;
+
+    // **1つの需要を満たすところまで**実行する。足りない需要のうち最も多く要る回数まで回すと、
+    // その経路が不得手な値を1つで賄わされ、他の値を大きく作りすぎる（葉物96個で体脂肪を賄う類）。
+    let repetitions = Number.POSITIVE_INFINITY;
+    let satisfied: Requirement | undefined;
+    for (const requirement of requirements) {
+      const gain = best.route.fills.get(requirement.propertyGlobalId) ?? 0;
+      const left = remaining.get(requirement.propertyGlobalId) ?? 0;
+      if (gain <= 0 || left <= 0) continue;
+      if (left / gain < repetitions) {
+        repetitions = left / gain;
+        satisfied = requirement;
+      }
+    }
+    if (satisfied === undefined || !Number.isFinite(repetitions) || repetitions <= 0) break;
+
+    chosen.set(satisfied.propertyGlobalId, best.route);
+    for (const [propertyGlobalId, filled] of best.route.fills)
+      remaining.set(propertyGlobalId, (remaining.get(propertyGlobalId) ?? 0) - filled * repetitions);
+    if ([...remaining.values()].every((left) => left <= 0)) break;
+  }
+
+  // 合計は選び直しと同じ道筋で出す——viewerが経路を差し替えたときと数え方が違うと、既定値のまま
+  // 触っていないのに数字が動いて見える。
+  return menuFor(requirements, chosen);
+}
+
+/**
+ * 需要ごとに経路を1つ選んだときの合計労働（分）。**同時に返る値は差し引く**ので、宣言順に前から
+ * 埋めていく。viewerが選び替えたときもここを呼ぶ——合算をブラウザ側で書き直すと、ずれたときに
+ * どちらが正か分からなくなる。
+ */
+export function menuFor(
+  requirements: readonly Requirement[],
+  chosen: ReadonlyMap<number, ChainRoute>,
+): DailyMenu {
+  const remaining = new Map(requirements.map((r) => [r.propertyGlobalId, r.dailyNeed]));
+  const entries: MenuEntry[] = [];
+
+  for (const requirement of requirements) {
+    const route = chosen.get(requirement.propertyGlobalId);
+    const left = remaining.get(requirement.propertyGlobalId) ?? 0;
+    if (route === undefined || left <= 0) continue;
+
+    const gain = route.fills.get(requirement.propertyGlobalId) ?? 0;
+    if (gain <= 0) continue;
+
+    const repetitions = left / gain;
+    for (const [propertyGlobalId, filled] of route.fills)
+      remaining.set(propertyGlobalId, (remaining.get(propertyGlobalId) ?? 0) - filled * repetitions);
+    addEntry(entries, route, repetitions);
+  }
+
+  return {
+    entries,
+    totalMinutes: entries.reduce((sum, entry) => sum + entry.minutes, 0),
+    unmet: requirements
+      .filter((requirement) => (remaining.get(requirement.propertyGlobalId) ?? 0) > 0)
+      .map((requirement) => requirement.name),
+    chosen,
+  };
+}
+
+/** 同じ経路が複数回選ばれたら1行にまとめる（献立として読むとき、同じ料理は1行で足りる）。 */
+function addEntry(entries: MenuEntry[], route: ChainRoute, repetitions: number): void {
+  const existing = entries.find((entry) => entry.route === route);
+  if (existing === undefined) {
+    entries.push({ route, repetitions, minutes: repetitions * route.executionMinutes });
+    return;
+  }
+  const merged = existing.repetitions + repetitions;
+  entries[entries.indexOf(existing)] = {
+    route,
+    repetitions: merged,
+    minutes: merged * route.executionMinutes,
+  };
+}
+
+/** その経路を1回実行したときに埋まる、まだ足りない需要の割合の合計。 */
+function filledShare(
+  route: ChainRoute,
+  remaining: ReadonlyMap<number, number>,
+  requirements: readonly Requirement[],
+): number {
+  let share = 0;
+  for (const requirement of requirements) {
+    const gain = route.fills.get(requirement.propertyGlobalId) ?? 0;
+    const left = remaining.get(requirement.propertyGlobalId) ?? 0;
+    if (gain > 0 && left > 0) share += Math.min(left, gain) / requirement.dailyNeed;
+  }
+  return share;
+}
+
+/**
+ * その経路が使う設備を保つのに要る、1日あたりの労働（分）。待ち生産を含まないならundefined。
+ *
+ * 設備は寿命の間に朽ちるので、使い続けるには作り直し続けることになる。1日ぶんの労働をこれで割れば
+ * 「同時に何個要るか」が出る——**待ち時間が労働へ跳ね返る場所がここ**で、周期が長いほど数が要る。
+ */
+function deviceMaintenancePerDay(acquisition: Acquisition, route: readonly StepRef[]): number | undefined {
+  let perDay = 0;
   for (const ref of route) {
     if (ref.cycle?.lifetimeMinutes === undefined) continue;
     const deviceCost = acquisition.costByObject.get(ref.def.globalId);
     if (deviceCost === undefined) continue;
-    maintenancePerDay += totalOf(deviceCost) / (ref.cycle.lifetimeMinutes / MINUTES_PER_DAY);
+    perDay += totalOf(deviceCost) / (ref.cycle.lifetimeMinutes / MINUTES_PER_DAY);
   }
-  return maintenancePerDay === 0 ? undefined : dailyMinutes / maintenancePerDay;
+  return perDay === 0 ? undefined : perDay;
 }
 
 function deviceRows(
@@ -504,8 +795,20 @@ function allDefs(codex: WorldCodex): readonly ObjectDef[] {
   return defs;
 }
 
-function locationsOf(codex: WorldCodex): readonly ObjectDef[] {
-  return allDefs(codex).filter((def) => isLocation(codex, def));
+/**
+ * 連鎖の起点にできる土地。**探索できるものだけ**——筏や外洋も土地（location）だが、探索を持たない
+ * ので何も産まず、空の節が並ぶだけになる。`explorable` trait が配る進捗の宣言で見分ける。
+ */
+function explorableLocationsOf(codex: WorldCodex): readonly ObjectDef[] {
+  const progress = codex.propertyNames.tryGetId('exploration_progress');
+  if (progress === undefined) return [];
+  return allDefs(codex).filter((def) => isLocation(codex, def) && def.getPropertyDef(progress) !== undefined);
+}
+
+/** プレイヤーが操作するキャラクタか（休息のように自分の値を自分で戻す工程の宣言元）。 */
+function isCharacter(codex: WorldCodex, def: ObjectDef): boolean {
+  const characterTag = codex.tagNames.tryGetId('character');
+  return characterTag !== undefined && def.tags.includes(characterTag);
 }
 
 /**
@@ -611,15 +914,14 @@ class Acquisition {
   }
 
   /**
-   * この工程を実行するのに要る、消費されない入力（道具・採取ポイント）。土地そのものは除く——
-   * どこかの土地には必ず立っているため。
+   * この工程を実行するのに要る、消費されない入力（道具・採取ポイント）。**土地とキャラクタ自身は
+   * 除く**——どこかの土地には必ず立っているし、休息（`sleep`）の入力である自分は用意する物ではない。
    */
   prerequisites(ref: StepRef): readonly Prerequisite[] {
     const found: Prerequisite[] = [];
     for (const input of ref.step.inputs) {
       if (input.consumed) continue;
-      if (input.kind === 'object' && isLocation(this.codex, this.codex.objects.get(input.objectGlobalId)))
-        continue;
+      if (input.kind === 'object' && this.isAlwaysAtHand(input.objectGlobalId)) continue;
 
       // タグ指定の入力は、そのタグを名乗ったうえで実際に使う型を添える（cutting_tool → sharp_stone）。
       const declared =
@@ -658,6 +960,12 @@ class Acquisition {
       if (candidate !== undefined) route.push(...this.routeOf(candidate, seen));
     }
     return route;
+  }
+
+  /** 用意する必要が無い入力か（立っている土地と、自分自身）。 */
+  private isAlwaysAtHand(objectGlobalId: number): boolean {
+    const def = this.codex.objects.get(objectGlobalId);
+    return isLocation(this.codex, def) || isCharacter(this.codex, def);
   }
 
   /** 入力1件を満たすのに最も安い型。この文脈でどれも手に入らなければundefined。 */
