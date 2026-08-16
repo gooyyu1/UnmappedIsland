@@ -66,6 +66,8 @@ UnmappedIsland/
 │   ├── save/             # セーブデータ（localStorage、4スロット固定）
 │   └── util/             # 汎用ユーティリティ
 ├── codex/                # 閲覧ビューアの入口HTML（本体はsrc/codex/）
+├── sample-pack/          # サンプルアセットパックの中身（npm run pack:sample でZIPにする）
+├── public/               # ビルドが素通しで配るファイル（sample-pack.zip）
 ├── tests/                # テスト（Vitest）
 └── docs/                 # 開発ドキュメント（原稿）
     ├── concept/          # コンセプト
