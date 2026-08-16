@@ -12,8 +12,9 @@
 （`alertDirection`）、行の左に出す絵は対応表の `icon`
 （[`Localization.md`](../engine/Localization.md)）が決めます。UI 専用の新しい宣言はありません。
 
-実装は `src/game/ui/StatusBar.ts`・`ProgressBar`（バーの部品）と `src/game/ui/theme.ts`（色）で、
-実装済みです。どのプロパティが対象かは `characters/` の YAML が持ちます。
+実装は `src/game/ui/StatusBar.ts`・`ProgressBar`（バーの部品）と `src/game/ui/theme.ts`（色）、
+どの行がどう見えるかは `src/game/ShownStatuses.ts`（画面を持たない層）で、実装済みです。
+どのプロパティが対象かは `characters/` の YAML が持ちます。
 
 ## 1. 出すもの: `status` タグ
 
