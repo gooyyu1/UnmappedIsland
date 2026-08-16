@@ -189,7 +189,7 @@ object_defs:
           - requires:
               - {object: rawhide, count: 6, consume: true}
               - {object: yarn, count: 10, consume: true}
-              - {object: bone_needle, count: 1, consume: false}
+              - {tag: sewing_tool, count: 1, consume: false}
             duration: 300
 
   # 外洋。島と本土の間の海で、世界に1つだけ在る（15節）。

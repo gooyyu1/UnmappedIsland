@@ -32,6 +32,7 @@ import { Button, SLOT_BUTTON_PAPER_TEXTURE } from './ui/Button';
 import { EDGE_DIRECTIONS } from './ui/Card';
 import type { CardContent, CardEdgeAction } from './ui/Card';
 import { characterCardContent } from './view/characterCard';
+import type { CraftingMaterial } from './view/craftingView';
 import type { Card } from './ui/Card';
 import { borrowedFace, cardFace } from './ui/cardFace';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
@@ -143,6 +144,13 @@ const FIELD_DEPTH = -1;
  * カードの上に降らせつつ、はみ出したカードを隠す背景板の上には出さないため。
  */
 const WEATHER_DEPTH = -0.5;
+
+/**
+ * タグで書かれた要求の空き枠に、当てはまる型を出し替える間隔（ms）。
+ *
+ * **速すぎると読めず、遅すぎると1つの型に見える。** 1秒は、札の名前を読み終えて次が来る間隔。
+ */
+const MATERIAL_CYCLE_MS = 1000;
 
 /**
  * 日射に応じた翳り・輝きは画面全体にかぶるので、飛んでいるカードの層（CardTable）より手前。
@@ -425,6 +433,9 @@ export class PlayScene extends ResponsiveScene {
    * （record）作り直しを暗幕で隠していたり（transit）するため、そこから今のワールドを覗く子ウィンドウを
    * 開かせない——並んでいるカードは既に古い対象を指しており、そのアクションを実行させるわけにいかない。
    */
+  /** タグの要求の空き枠に出している型の番号（materialCells）。1秒ごとに1つ進む。 */
+  private materialCycle = 0;
+
   private whileIdle(onTap: () => void): () => void {
     return () => {
       if (!this.busy) onTap();
@@ -581,6 +592,12 @@ export class PlayScene extends ResponsiveScene {
     this.skyTint = new ScreenSkyTint(this, this.metrics, this.view.sunlight).setDepth(SKY_TINT_DEPTH);
     // 飛んでいるカードの層はフィールドエリアの作り直しでは捨てないので、そちらには含めない。
     this.motion = new CardTable(this, this.metrics);
+    // タグで書かれた要求の空き枠に、当てはまる型を順に出すための拍（materialCells）。
+    this.time.addEvent({
+      delay: MATERIAL_CYCLE_MS,
+      loop: true,
+      callback: () => this.advanceMaterialCycle(),
+    });
     this.buildFilterBar(layout.filterBar);
     // 横型のオプションバーはフィールドエリアの隣（右サイドバー）なので、フィルターバーと同じく
     // レーンのはみ出しを隠す背景板を兼ねる。縦型は情報エリアの中なので、ページを敷いた後に置く。
@@ -1120,30 +1137,58 @@ export class PlayScene extends ResponsiveScene {
     const materials = this.view.materialsOf(place);
     if (materials === undefined) return undefined;
 
-    const wanted = new Map(materials.map((material) => [material.objectGlobalId, material]));
-    const marksFor = (objectGlobalId: number | undefined): LaneCell => {
-      const material = objectGlobalId === undefined ? undefined : wanted.get(objectGlobalId);
+    // 枠に入っている物から、それがどの要求のものかを引く。**タグの要求は当てはまる型が複数ある**ので、
+    // 型からの逆引きは1対1にならない（先に書いた要求を採る、craftingのallocateと同じ順）。
+    const materialOf = (objectGlobalId: number | undefined): CraftingMaterial | undefined =>
+      objectGlobalId === undefined
+        ? undefined
+        : materials.find((material) => material.objectGlobalIds.includes(objectGlobalId));
+
+    const marksFor = (material: CraftingMaterial | undefined): LaneCell => {
       // もう要求されない型は、取り出すための枠が残るだけで印は持たない。
       if (material === undefined) return {};
       return {
         // 空き枠のうちに何を入れる枠なのかを見せる（EmptyCard）。
-        accepts: this.view.cardOfType(material.objectGlobalId),
+        accepts: this.view.cardOfType(this.cyclingType(material)),
         borderColor: material.inCurrentStep ? COLOR.cellCurrentStep : COLOR.cellLaterStep,
         // 1つしか要らない枠に数を出しても、枠そのものが既に言っていることの繰り返しにしかならない。
         overlay: material.needed >= 2 ? `${material.held}/${material.needed}` : undefined,
       };
     };
 
-    const shownTypes = new Set(stacks.map((stack) => stack?.objectGlobalId));
+    const shown = new Set(stacks.map((stack) => materialOf(stack?.objectGlobalId)));
     const cells: LaneCell[] = cards.map((card, index) => ({
       card,
-      ...marksFor(stacks[index]?.objectGlobalId),
+      ...marksFor(materialOf(stacks[index]?.objectGlobalId)),
     }));
-    // まだ1つも入っていない型の空き枠を、要求の順に足す。
+    // まだ1つも入っていない要求の空き枠を、要求の順に足す。
     for (const material of materials) {
-      if (!shownTypes.has(material.objectGlobalId)) cells.push(marksFor(material.objectGlobalId));
+      if (!shown.has(material)) cells.push(marksFor(material));
     }
     return cells;
+  }
+
+  /**
+   * その要求の空き枠に、今出す型。**タグの要求は当てはまる型を1秒ごとに順に出す**——どれか1つを
+   * 選んで出すと、その型でなければ入らないように見えてしまう。
+   */
+  private cyclingType(material: CraftingMaterial): number {
+    const candidates = material.objectGlobalIds;
+    return candidates[this.materialCycle % candidates.length] ?? candidates[0];
+  }
+
+  /**
+   * タグの要求の空き枠に出す型を1つ進める（1秒ごと）。**出す型が1つしかないなら引き直さない**
+   * ——見た目が変わらない差し替えを毎秒走らせる理由が無い。
+   */
+  private advanceMaterialCycle(): void {
+    if (this.busy) return;
+    const place = this.childWindowPlace;
+    const materials = place === undefined ? undefined : this.view.materialsOf(place);
+    if (materials?.some((material) => material.objectGlobalIds.length >= 2) !== true) return;
+
+    this.materialCycle += 1;
+    this.showView();
   }
 
   /**

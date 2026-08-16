@@ -14,6 +14,53 @@ describe('recipes', () => {
   const recipesOf = (codex: ReturnType<typeof load>, objectName: string) =>
     codex.objects.get(codex.objectNames.getId(objectName)).recipes;
 
+  it('requiresはタグでも書ける（道具は用途で求める）', () => {
+    const codex = load(`
+object_defs:
+  sharp_stone:
+    tags: [cutting_tool]
+  stone_axe:
+    tags: [cutting_tool]
+  hide: {}
+  cloak:
+    recipes:
+      sewn:
+        steps:
+          - requires:
+              - {object: hide, count: 2, consume: true}
+              - {tag: cutting_tool, consume: false}
+            duration: 30
+`);
+
+    const [step] = recipesOf(codex, 'cloak')[0].steps;
+    const def = (name: string) => codex.objects.get(codex.objectNames.getId(name));
+    const [material, tool] = step.requirements;
+
+    expect(material.requires(def('hide'))).toBe(true);
+    expect(tool.consume).toBe(false);
+    // タグの要求は、そのタグを持つどの型でも満たせる。
+    expect(tool.requires(def('sharp_stone'))).toBe(true);
+    expect(tool.requires(def('stone_axe'))).toBe(true);
+    expect(tool.requires(def('hide'))).toBe(false);
+  });
+
+  it('requiresのobjectとtagは同時に書けない', () => {
+    expect(() =>
+      load(`
+object_defs:
+  hide:
+    tags: [pelt]
+  cloak:
+    recipes:
+      sewn:
+        steps:
+          - requires:
+              - {object: hide, tag: pelt, consume: true}
+            duration: 30
+`),
+    ).toThrow(YamlLoadError);
+  });
+
   it('steps/requires/duration/iconを読める', () => {
     const codex = load(`
 object_defs:
@@ -44,7 +91,7 @@ object_defs:
 
     const [first, second] = recipe.steps;
     expect(first.durationMinutes).toBe(30);
-    expect(first.requirements[0].objectGlobalId).toBe(codex.objectNames.getId('wood'));
+    expect(first.requirements[0].requires(codex.objects.get(codex.objectNames.getId('wood')))).toBe(true);
     expect(first.requirements[0].count).toBe(2);
     expect(first.requirements[0].consume).toBe(true);
     expect(first.requirements[1].consume).toBe(false);

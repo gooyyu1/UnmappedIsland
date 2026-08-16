@@ -105,7 +105,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
     expect(recipe.steps).toHaveLength(1);
 
     const [requirement] = recipe.steps[0].requirements;
-    expect(requirement.objectGlobalId).toBe(codex.objectNames.getId('woven_leaf'));
+    expect(requirement.requires(codex.objects.get(codex.objectNames.getId('woven_leaf')))).toBe(true);
     expect(requirement.count).toBe(6);
     expect(requirement.consume).toBe(true);
 

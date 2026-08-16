@@ -20,10 +20,15 @@ import { recipeOf } from './recipeList';
  * 同じ形（CardAction）で答えるのはそのため——ボタンの作り方を2通りにしない。
  */
 
-/** 材料スロットが要求している型1つぶん。 */
+/** 材料スロットが要求している1件ぶん。 */
 export interface CraftingMaterial {
-  /** 要求している物の型（PlayScreenView.cardOfTypeで札にする）。 */
-  readonly objectGlobalId: number;
+  /**
+   * 要求に当てはまる型（PlayScreenView.cardOfTypeで札にする）。
+   *
+   * **1つとは限らない。** 要求はタグでも書けるので（刃物・縫い道具）、当てはまる型が複数になる。
+   * どれを出すかは画面の都合——今は1秒ごとに順に出して、どれでもよいことを見せている。
+   */
+  readonly objectGlobalIds: readonly number[];
   /** 残りの工程が要求する数と、今その枠に入っている数。 */
   readonly needed: number;
   readonly held: number;
@@ -101,25 +106,15 @@ export function craftingMaterials(
   if (recipe === undefined) return undefined;
 
   const progress = progressOf(container, codex);
-  const inStep = new Set(currentStep(recipe, progress)?.requirements.map((r) => r.objectGlobalId));
-  const held = heldByType(container, codex);
+  const inStep = new Set(currentStep(recipe, progress)?.requirements.map((r) => r.match.key));
+  const contents = contentsOf(container, codex, MATERIALS_SLOT);
 
-  return [...remainingRequirements(recipe, progress)].map(([objectGlobalId, needed]) => ({
-    objectGlobalId,
-    needed,
-    held: held.get(objectGlobalId) ?? 0,
-    inCurrentStep: inStep.has(objectGlobalId),
+  return remainingRequirements(recipe, progress).map((requirement) => ({
+    objectGlobalIds: requirement.match.candidates(codex.objects).map((def) => def.globalId),
+    needed: requirement.count,
+    held: contents.filter((object) => requirement.requires(object.def)).length,
+    inCurrentStep: inStep.has(requirement.match.key),
   }));
-}
-
-/** 材料スロットに今入っている数を、型ごとに数える。 */
-function heldByType(container: WorldObject, codex: WorldCodex): ReadonlyMap<number, number> {
-  const counts = new Map<number, number>();
-  for (const object of contentsOf(container, codex, MATERIALS_SLOT)) {
-    const globalId = object.def.globalId;
-    counts.set(globalId, (counts.get(globalId) ?? 0) + 1);
-  }
-  return counts;
 }
 
 function progressOf(object: WorldObject, codex: WorldCodex): number {

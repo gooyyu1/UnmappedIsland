@@ -282,8 +282,9 @@ describe('traps.yamlのくくり罠', () => {
     const [recipe] = def.recipes;
     const [step] = recipe!.steps;
 
-    expect(step!.requirements.map((requirement) => requirement.objectGlobalId)).toEqual([
-      codex.objectNames.getId('plant_fiber'),
-    ]);
+    expect(step!.requirements).toHaveLength(1);
+    expect(step!.requirements[0].requires(codex.objects.get(codex.objectNames.getId('plant_fiber')))).toBe(
+      true,
+    );
   });
 });

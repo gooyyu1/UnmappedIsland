@@ -75,7 +75,7 @@ export function renderObjectPage(view: CodexView, name: string): string {
     ) +
     section(
       'この型を材料・道具に使うもの',
-      objectGridOf(view, (other) => other.usesInRecipes(def.globalId)),
+      objectGridOf(view, (other) => other.usesInRecipes(def)),
     )
   );
 }

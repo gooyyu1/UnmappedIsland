@@ -3,7 +3,6 @@ import type { YamlNode } from './yamlMapping';
 import {
   asMap,
   entriesInOrder,
-  requireScalar,
   tryGetBool,
   tryGetInt,
   tryGetNumber,
@@ -12,12 +11,13 @@ import {
 } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { RECIPE_CONDITION_ROOTS, parseRequirementsField } from './parseConditions';
+import { parseTypeMatchRule } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../domain/defs/RecipeDef';
 
 const RECIPE_KEYS = ['icon', 'steps', 'conditions'];
 const STEP_KEYS = ['requires', 'duration'];
-const REQUIREMENT_KEYS = ['object', 'count', 'consume'];
+const REQUIREMENT_KEYS = ['object', 'tag', 'count', 'consume'];
 
 /** 宣言されたキーのうち、その文脈で認めていないものがあればエラーにする。 */
 function rejectUnknownKeys(map: YAMLMap, allowed: readonly string[], context: string): void {
@@ -35,8 +35,6 @@ function parseRequirement(
   const map = asMap(node, context);
   rejectUnknownKeys(map, REQUIREMENT_KEYS, context);
 
-  const objectName = requireScalar(map, 'object', context);
-
   const count = tryGetInt(map, 'count', context) ?? 1;
   if (count < 1) throw new YamlLoadError(`${context}: countは1以上である必要があります（値: ${count}）。`);
 
@@ -44,7 +42,7 @@ function parseRequirement(
     throw new YamlLoadError(`${context}: consumeは省略できません（素材か道具かは既定値を置けないため）。`);
 
   return new RecipeRequirementDef(
-    loader.objectNames.intern(objectName),
+    parseTypeMatchRule(loader, map, context),
     count,
     tryGetBool(map, 'consume', context, true),
   );
