@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { AssetPack } from '../../src/assetPack/AssetPack';
 import { readZip } from '../../src/assetPack/zip';
 import { addPackArt } from '../../src/art/packArt';
+import { loadDefinitions } from '../../src/loader/loadDefinitions';
+import { LoadReport } from '../../src/loader/LoadReport';
 import { loadWorldCodex } from '../../src/loader/loadWorldCodex';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { loadLocalization } from '../../src/locale/Localization';
@@ -56,6 +58,7 @@ describe('アセットパックを重ねた読み込み', () => {
   it('パックの定義が同梱の定義に足される', async () => {
     const codex = loadWorldCodex(
       await pack('sample', [{ name: 'world-codex/totem.yaml', content: OBJECT_YAML }]),
+      new LoadReport(),
     );
 
     expect(codex.objectNames.tryGetId('driftwood_totem')).toBeDefined();
@@ -68,7 +71,7 @@ describe('アセットパックを重ねた読み込み', () => {
       { name: 'world-codex/clash.yaml', content: 'object_defs:\n  coconut: {tags: [item]}\n' },
     ]);
 
-    expect(() => loadWorldCodex(clash)).toThrow(YamlLoadError);
+    expect(() => loadWorldCodex(clash, new LoadReport())).toThrow(YamlLoadError);
   });
 
   it('パックの表示文字列が同梱の対応表に足される', async () => {
@@ -93,8 +96,26 @@ describe('アセットパックを重ねた読み込み', () => {
     expect(() => loadLocalization(clash)).toThrow(YamlLoadError);
   });
 
+  it('読めないパックは丸ごと外し、同梱ぶんだけで組み直す', async () => {
+    const report = new LoadReport();
+    const broken = await pack('sample', [
+      { name: 'world-codex/totem.yaml', content: OBJECT_YAML },
+      // 同梱と同じ識別子。操作単位では捨てられないので、パックごと外れる（AssetPack.md 6.1節）。
+      { name: 'world-codex/clash.yaml', content: 'object_defs:\n  coconut: {tags: [item]}\n' },
+    ]);
+
+    const definitions = loadDefinitions(broken, report);
+
+    expect(definitions.codex.objectNames.tryGetId('driftwood_totem'), 'パックの型は入らない').toBeUndefined();
+    expect(definitions.codex.objectNames.tryGetId('coconut'), '同梱ぶんは読める').toBeDefined();
+    expect(definitions.files.some((file) => file.startsWith('sample:'))).toBe(false);
+    expect(report.problems).toHaveLength(1);
+  });
+
   it('パックを渡さなければ同梱ぶんだけを読む', () => {
-    expect(loadWorldCodex(undefined).objectNames.tryGetId('driftwood_totem')).toBeUndefined();
+    expect(
+      loadWorldCodex(undefined, new LoadReport()).objectNames.tryGetId('driftwood_totem'),
+    ).toBeUndefined();
   });
 });
 

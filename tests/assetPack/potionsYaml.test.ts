@@ -4,11 +4,13 @@ import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { samplePackPath } from '../support/samplePack';
+import type { ActionDef } from '../../src/domain/defs/ActionDef';
+import { DescriptionWriter } from '../../src/domain/defs/Description';
 import {
   loadYamlDirectory,
   loadYamlFile,
   SAMPLE_CHARACTER,
-  worldCodexPath,
+  WORLD_CODEX_DIR,
 } from '../support/worldCodexFiles';
 
 /**
@@ -20,11 +22,31 @@ describe('サンプルアセットパックの薬', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    const loader = new WorldCodexYamlLoader();
-    loadYamlFile(loader, worldCodexPath('core.yaml'));
-    loadYamlDirectory(loader, worldCodexPath('characters'));
+    // patchの当たる先（locations.yaml）が要るので、同梱ぶんを丸ごと読んだうえでパックを重ねる。
+    const loader = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR);
     loadYamlFile(loader, samplePackPath('world-codex/potions.yaml'));
     codex = loader.build();
+  });
+
+  /** 1つのアクションの書き出し（describe）。探索候補に載ったかを字面で確かめる。 */
+  function describeAction(objectName: string, actionName: string): string {
+    const def = codex.objects.get(codex.objectNames.getId(objectName));
+    const action = def.actions.find((candidate) => candidate.name === actionName);
+    const writer = new DescriptionWriter();
+    (action as ActionDef).describe(codex, writer);
+    return writer.toPlainText();
+  }
+
+  it('回復ポーションが砂浜の探索候補に載る（patchで足している）', () => {
+    expect(describeAction('sandy_beach', 'explore')).toContain('healing_potion');
+  });
+
+  it('毒薬はジャングルの探索候補に載る', () => {
+    expect(describeAction('jungle', 'explore')).toContain('poison_potion');
+  });
+
+  it('patchを当てても、同梱の候補は残る', () => {
+    expect(describeAction('sandy_beach', 'explore')).toContain('palm_tree');
   });
 
   function spawn(objectName: string, instanceId: number): WorldObject {

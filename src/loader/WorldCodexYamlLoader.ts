@@ -12,6 +12,9 @@ import {
 } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { RawObjectDef } from './RawObjectDef';
+import type { LoadReport } from './LoadReport';
+import type { RawPatch } from './RawPatch';
+import { applyPatches, parsePatch } from './RawPatch';
 import { RawTrait } from './RawTrait';
 import { buildGenerationDefs, loadGenerationSections, resetGeneration } from './parseGeneration';
 import { NameRegistry } from '../domain/defs/NameRegistry';
@@ -47,6 +50,9 @@ export class WorldCodexYamlLoader {
   private readonly globalObjectDefs = new Map<string, RawObjectDef>();
   private readonly globalTraits = new Map<string, RawTrait>();
 
+  /** 読み込んだpatch（3.4節）。当たる先が全部揃ってからでないと当てられないので、buildまで貯める。 */
+  private patches: RawPatch[] = [];
+
   private _objectNames = new NameRegistry();
   private _propertyNames = new NameRegistry();
   private _slotNames = new NameRegistry();
@@ -81,7 +87,7 @@ export class WorldCodexYamlLoader {
   readonly generationScopes = new Map<string, GenerationScopeDef>();
 
   /** テキストとして渡された1つのYAMLを読み込む（labelはエラーメッセージ用の出所表示）。 */
-  load(label: string, yamlText: string): this {
+  load(label: string, yamlText: string, report?: LoadReport): this {
     const doc = parseDocument(yamlText);
     if (doc.errors.length > 0) throw new YamlLoadError(`${label}: YAML構文エラー: ${doc.errors[0].message}`);
     if (doc.contents === null) return this;
@@ -115,6 +121,23 @@ export class WorldCodexYamlLoader {
           'traits',
         );
 
+    // 既存のobject_defへの変更（3.4節）。当たる先が揃っている必要があるので、適用はbuildまで待つ。
+    const patches = tryGetSeq(root, 'patch_object_defs', label);
+    if (patches !== undefined)
+      (patches.items as YamlNode[]).forEach((node, index) => {
+        try {
+          this.patches.push(parsePatch(node, index, label, report));
+        } catch (error) {
+          // 書き方そのものの誤りも、報告先があればその1件を捨てて続ける（AssetPack.md 6.1節）。
+          if (report === undefined) throw error;
+          report.add(
+            label,
+            `patch_object_defs[${index}]`,
+            error instanceof Error ? error.message : String(error),
+          );
+        }
+      });
+
     // 地形生成の3ルートキー（axes/location_types/generation_scopes。parseGeneration.ts）。
     loadGenerationSections(this, label, root);
 
@@ -124,6 +147,8 @@ export class WorldCodexYamlLoader {
   /** 蓄積したobject_defs/traitsから不変のWorldCodexを組み立てて返す。呼び終わると
    * このインスタンスの蓄積状態は初期化される。 */
   build(): WorldCodex {
+    applyPatches(this.patches, this.globalObjectDefs);
+
     const objectDefsByGlobalId = new Map<number, ObjectDef>();
     for (const raw of this.globalObjectDefs.values()) {
       const def = raw.resolve(this.globalTraits, this);
@@ -176,6 +201,7 @@ export class WorldCodexYamlLoader {
   private reset(): void {
     this.globalObjectDefs.clear();
     this.globalTraits.clear();
+    this.patches = [];
     resetGeneration(this);
     this._objectNames = new NameRegistry();
     this._propertyNames = new NameRegistry();
@@ -185,39 +211,10 @@ export class WorldCodexYamlLoader {
     this._symbolNames = new NameRegistry();
   }
 
-  /** object_defs.'name'の1エントリを浅く抽出する。trait合成（RawObjectDef.resolve）が
-   * まだ起こりうるフィールドは生YAMLノードのまま持つ。globalIdのみここで確定させる。 */
+  /** object_defs.'name'の1エントリ。中身の取り出しはRawObjectDef自身が行う（patchで取り直すため）。
+   * globalIdのみここで確定させる。 */
   private parseObjectDef(name: string, node: YAMLMap, source: string): RawObjectDef {
-    const context = `object_defs.'${name}'`;
-
-    const raw = new RawObjectDef(
-      name,
-      source,
-      this.objectNames.intern(name),
-      tryGetBool(node, 'singleton', context, false),
-    );
-    raw.props = tryGetMap(node, 'props', context);
-    raw.slots = tryGetMap(node, 'slots', context);
-    raw.passives = tryGetSeq(node, 'passives', context);
-    raw.stackOrder = tryGetMap(node, 'stack_order', context);
-    raw.representedBy = tryGetScalar(node, 'represented_by', context);
-    raw.mainItemSlot = tryGetScalar(node, 'main_item_slot', context);
-    raw.artByStage = tryGetScalar(node, 'art_by_stage', context);
-    raw.quantitative = tryGetBool(node, 'quantitative', context, false);
-    raw.boundToOwner = tryGetBool(node, 'bound_to_owner', context, false);
-    raw.notStackable = !tryGetBool(node, 'stackable', context, true);
-    raw.actions = tryGetMap(node, 'actions', context);
-    raw.combinations = tryGetMap(node, 'combinations', context);
-    raw.recipes = tryGetMap(node, 'recipes', context);
-
-    const traits = tryGetSeq(node, 'traits', context);
-    if (traits !== undefined)
-      for (const t of traits.items as YamlNode[]) raw.traitNames.push(asScalarText(t, context));
-
-    const tags = tryGetSeq(node, 'tags', context);
-    if (tags !== undefined) for (const t of tags.items as YamlNode[]) raw.tags.push(asScalarText(t, context));
-
-    return raw;
+    return new RawObjectDef(name, source, this.objectNames.intern(name), node);
   }
 
   /** traits.'name'の1エントリを浅く抽出する（parseObjectDefと同じく生YAMLノードのまま持つ）。

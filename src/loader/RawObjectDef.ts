@@ -1,6 +1,15 @@
 import { YAMLMap, YAMLSeq, Scalar, isSeq } from 'yaml';
 import type { YamlNode } from './yamlMapping';
-import { asMap, entriesInOrder, requireScalar, tryGetBool } from './yamlMapping';
+import {
+  asMap,
+  asScalarText,
+  entriesInOrder,
+  requireScalar,
+  tryGetBool,
+  tryGetMap,
+  tryGetScalar,
+  tryGetSeq,
+} from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { parseProp } from './parseProperties';
 import { parseSlot } from './parseSlots';
@@ -31,9 +40,16 @@ export class RawObjectDef {
   /** objectNames.internによるグローバルID。trait解決を待たずパース時点で確定する。 */
   readonly globalId: number;
 
-  readonly isSingleton: boolean;
-  readonly traitNames: string[] = [];
-  readonly tags: string[] = [];
+  /**
+   * 宣言そのもの。patch（3.4節）はこのノードを書き換え、書き換えたら readFields を呼び直して
+   * 下の各フィールドを取り直す。フィールドはこのノードの一部を指しているだけなので、両者が
+   * 食い違ったまま resolve へ進まないよう、取り直しはこのクラス自身が引き受ける。
+   */
+  readonly node: YAMLMap;
+
+  isSingleton = false;
+  traitNames: string[] = [];
+  tags: string[] = [];
   props: YAMLMap | undefined;
   slots: YAMLMap | undefined;
   passives: YAMLSeq | undefined;
@@ -63,11 +79,34 @@ export class RawObjectDef {
   /** recipes（13節）。成果物ごとの内容なのでtrait合成の対象にしない（resolve参照）。 */
   recipes: YAMLMap | undefined;
 
-  constructor(name: string, source: string, globalId: number, isSingleton: boolean) {
+  constructor(name: string, source: string, globalId: number, node: YAMLMap) {
     this.name = name;
     this.source = source;
     this.globalId = globalId;
-    this.isSingleton = isSingleton;
+    this.node = node;
+    this.readFields();
+  }
+
+  /** 宣言から各フィールドを取り直す。trait合成がまだ起こりうるものは生YAMLノードのまま持つ。 */
+  readFields(): void {
+    const context = `object_defs.'${this.name}'`;
+
+    this.isSingleton = tryGetBool(this.node, 'singleton', context, false);
+    this.props = tryGetMap(this.node, 'props', context);
+    this.slots = tryGetMap(this.node, 'slots', context);
+    this.passives = tryGetSeq(this.node, 'passives', context);
+    this.stackOrder = tryGetMap(this.node, 'stack_order', context);
+    this.representedBy = tryGetScalar(this.node, 'represented_by', context);
+    this.mainItemSlot = tryGetScalar(this.node, 'main_item_slot', context);
+    this.artByStage = tryGetScalar(this.node, 'art_by_stage', context);
+    this.quantitative = tryGetBool(this.node, 'quantitative', context, false);
+    this.boundToOwner = tryGetBool(this.node, 'bound_to_owner', context, false);
+    this.notStackable = !tryGetBool(this.node, 'stackable', context, true);
+    this.actions = tryGetMap(this.node, 'actions', context);
+    this.combinations = tryGetMap(this.node, 'combinations', context);
+    this.recipes = tryGetMap(this.node, 'recipes', context);
+    this.traitNames = namesIn(tryGetSeq(this.node, 'traits', context), context);
+    this.tags = namesIn(tryGetSeq(this.node, 'tags', context), context);
   }
 
   /**
@@ -361,4 +400,10 @@ function concatSeqs(base: YamlNode | undefined, overlay: YamlNode): YamlNode {
   const merged = new YAMLSeq();
   for (const item of [...base.items, ...overlay.items]) merged.add(item);
   return merged;
+}
+
+/** `traits`・`tags` のような、識別子を並べただけの配列を読む。 */
+function namesIn(seq: YAMLSeq | undefined, context: string): string[] {
+  if (seq === undefined) return [];
+  return (seq.items as YamlNode[]).map((item) => asScalarText(item, context));
 }

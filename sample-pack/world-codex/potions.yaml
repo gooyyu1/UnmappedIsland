@@ -33,3 +33,19 @@ object_defs:
           actor:
             blood: 9999
         destroy: self
+
+# 入手経路。同梱の土地の探索結果へ、自分のアイテムを差し込む（GameElementDefinition.md 3.4節）。
+# 重みは相対値なので、足したぶんだけ既存の出目が薄まる。砂浜・ジャングルとも合計はおよそ100あり、
+# ここの2は「たまに見つかる漂着物」くらいの重さ。
+patch_object_defs:
+  # 回復ポーションは砂浜へ流れ着く。
+  - append: sandy_beach.actions.explore.pick
+    value:
+      weight: 2
+      spawn: {object: healing_potion, into: self}
+
+  # 毒薬はジャングルの奥に落ちている。
+  - append: jungle.actions.explore.pick
+    value:
+      weight: 2
+      spawn: {object: poison_potion, into: self}
