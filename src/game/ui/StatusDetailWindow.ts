@@ -7,7 +7,7 @@ import {
   CONTENT_GAP,
   WINDOW_PADDING,
   centerWindow,
-} from '../looks/childWindow';
+} from '../looks/childWindowLayout';
 import { addLabel } from './labels';
 import { objectTexture } from '../../assets/objectArt';
 import { ProgressBar } from './ProgressBar';

@@ -4,14 +4,14 @@ import type { NewGameSession } from '../../src/domain/generation/NewGame';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
-import { craftingActions, craftingMaterials } from '../../src/game/view/craftingActions';
+import { craftingActions, craftingMaterials } from '../../src/game/view/craftingView';
 import { inProgressObjectName, MATERIALS_SLOT } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { SeededRng } from '../support/SeededRng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
- * 製作中オブジェクトが出す操作と、材料の枠が要求しているもの（craftingActions）の自動テスト。
+ * 製作中オブジェクトが出す操作と、材料の枠が要求しているもの（craftingView）の自動テスト。
  *
  * **画面を作らずに確かめられる**のがこの層の値打ちで、押せるか・理由は何か・あと何が要るかを
  * ワールドの状態から直に見る。

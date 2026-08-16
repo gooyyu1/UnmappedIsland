@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
-import type { ArtFile } from '../../assets/locationArt';
-import { locationArtFiles, locationCardArtFiles } from '../../assets/locationArt';
+import type { ArtFile } from '../../assets/artFiles';
+import { locationArtFiles, locationCardArtFiles } from '../../assets/artFiles';
 
 /**
- * 土地の絵の遅延ロード。起動時にはロードされない土地の絵（locationArt参照）を、プレイ中に
+ * 土地の絵の遅延ロード。起動時にはロードされない土地の絵（artFiles参照）を、プレイ中に
  * シーンのローダで読み込む。
  *
  * ロード済みかどうかはTextureManager（全シーン共有）で判定するため、シーンを開き直しても

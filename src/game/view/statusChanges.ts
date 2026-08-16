@@ -1,8 +1,8 @@
 import type { PlayScreenView } from './PlayScreenView';
 import type { StatusChange, StatusContent } from '../ui/StatusBar';
 
-/** そのviewの全プロパティのステータス（タブの並び順）。固定表示の候補になる全件。 */
-export function allEntries(view: PlayScreenView): readonly StatusContent[] {
+/** そのviewの全プロパティのステータス（タブの並び順）。 */
+function allEntries(view: PlayScreenView): readonly StatusContent[] {
   return view.propertyCategories.flatMap((tab) => tab.entries);
 }
 

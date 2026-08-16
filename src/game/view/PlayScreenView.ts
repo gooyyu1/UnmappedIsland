@@ -12,8 +12,8 @@ import { currentStep, stepSupplyRatio } from '../../domain/runtime/crafting';
 import { IN_PROGRESS_TAG, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../../loader/inProgressObjects';
 import type { Localization } from '../../locale/Localization';
 import { artNameFor } from '../../assets/objectArt';
-import type { CraftingMaterial } from './craftingActions';
-import { craftingActions, craftingMaterials } from './craftingActions';
+import type { CraftingMaterial } from './craftingView';
+import { craftingActions, craftingMaterials } from './craftingView';
 import { recipeOf } from './recipeList';
 import type { SlotRef } from '../../assets/backgroundArt';
 import type { CardContent, CardCooking, CardGauge } from '../ui/Card';
@@ -245,7 +245,7 @@ export interface PlayScreenView {
    */
   readonly weatherLabel: string | undefined;
   readonly currentLocation: CardContent;
-  /** 現在地のobject_defの識別子（表示名ではない）。土地の絵の遅延ロードの単位（locationArt参照）。 */
+  /** 現在地のobject_defの識別子（表示名ではない）。土地の絵の遅延ロードの単位（artFiles参照）。 */
   readonly locationArt: string;
   /**
    * そのレーンが映しているスロット。レーンの全面に敷く絵を引くのに使う（backgroundArt参照）——
@@ -658,7 +658,7 @@ export function fromGameSession(
    * `showMenu: never`のアクションはボタンにしない（GameElementDefinition.md 11.1節）。プレイヤーが
    * 押す機会が無い操作——動物の1手のように時間の側が起こすもの——のための宣言。
    *
-   * 製作中オブジェクトの操作（craftingActions）も同じ並びに入る。**宣言から来たものと画面の都合で
+   * 製作中オブジェクトの操作（craftingView）も同じ並びに入る。**宣言から来たものと画面の都合で
    * 足したものを分けない**——ボタンにする側は、どちらも同じ1つの並びとして受け取る。
    */
   const actionsOf = (instance: WorldObject): readonly CardAction[] => {

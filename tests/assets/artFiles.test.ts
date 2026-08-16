@@ -8,11 +8,11 @@ import {
   locationArtFiles,
   locationCardArtFiles,
   locationDefNames,
-} from '../../src/assets/locationArt';
+} from '../../src/assets/artFiles';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
- * 遅延ロードの単位分け（locationArt）の検査。土地の絵と起動時の絵は、重複せず・漏れなく全アセットを
+ * 遅延ロードの単位分け（artFiles）の検査。土地の絵と起動時の絵は、重複せず・漏れなく全アセットを
  * 覆っていなければならない——漏れた絵は誰にもロードされないまま黙って使われなくなるため。
  */
 describe('土地の絵の単位分け', () => {

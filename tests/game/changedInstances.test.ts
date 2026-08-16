@@ -4,12 +4,12 @@ import type { WorldChange } from '../../src/domain/runtime/WorldChange';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { World } from '../../src/domain/runtime/views/World';
-import { bornInstances, originInstances, vanishedInstances } from '../../src/game/view/motionOrigins';
+import { bornInstances, originInstances, vanishedInstances } from '../../src/game/view/changedInstances';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 
 /**
- * 世界に起きた変化を、カードの動きの言葉へ直す（motionOrigins、docs/engine/HuntingSystem.md 6.2節と
+ * 世界に起きた変化を、カードの動きの言葉へ直す（changedInstances、docs/engine/HuntingSystem.md 6.2節と
  * docs/ui/CardInteraction.md 6.1節）の自動テスト。
  *
  * 狙いは「新しく現れた札がどこから飛ぶか」「何が壊れて何が生まれたか」をUIが知らずに済むこと。定義は

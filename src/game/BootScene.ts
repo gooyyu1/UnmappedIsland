@@ -15,7 +15,7 @@ import { INFORMATION_ART } from '../assets/informationArt';
 import { SEPARATOR_ART } from '../assets/separatorArt';
 import { ICON_ART } from '../assets/iconArt';
 import { WEATHER_ART } from '../assets/weatherArt';
-import { commonArtFiles, locationDefNames } from '../assets/locationArt';
+import { commonArtFiles, locationDefNames } from '../assets/artFiles';
 import { COLOR, FONT_FAMILY, cssColor } from './looks/theme';
 import { WORLD_CODEX_FILES } from '../loader/worldCodexFiles';
 
@@ -73,7 +73,7 @@ export class BootScene extends Phaser.Scene {
     this.registry.set(WORLD_CODEX_KEY, codex);
     this.registry.set(LOCALIZATION_KEY, localization);
 
-    // 土地の絵はここではロードせず、プレイ中に必要になった土地からロードする（locationArt参照）。
+    // 土地の絵はここではロードせず、プレイ中に必要になった土地からロードする（artFiles参照）。
     // それ以外の絵（キャラクター・アイテム・共通の背景）は開始時点の画面に出うるため、ここで読み切る。
     // どの絵が土地のものかはCodexが要る（locationタグ）ので、preloadではなくYAMLを読み終えた後に行う。
     for (const { key, url } of commonArtFiles(locationDefNames(codex))) this.load.image(key, url);
