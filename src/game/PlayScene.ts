@@ -27,6 +27,8 @@ import type {
   PlayScreenView,
 } from './PlayScreenView';
 import { fromGameSession, withFrozenCards } from './PlayScreenView';
+import type { AloftCards, CardSpot } from './ShownCards';
+import { ShownCards } from './ShownCards';
 import { noteOperation, setStateReporter } from './errorReport';
 import type { StatusDelta } from './statusChanges';
 import { statusChangesAfter, statusChangesBetween } from './statusChanges';
@@ -371,6 +373,21 @@ export class PlayScene extends ResponsiveScene {
   /** 今その子ウィンドウが映している、借りた1枚の見た目（返すときの分身の姿になる）。 */
   private borrowedCard: CardContent | undefined;
 
+  /**
+   * 画面に出ている札の並び（ShownCards）。**表示もタップもドラッグもここを通す**——見えている札と
+   * 操作が動かすインスタンスを別々に数えないため。
+   *
+   * 読む先は呼び出しで渡す。viewは行動のたびに作り直され、借り出しも開閉のたびに変わるので、
+   * 控えを持たせると古い並びを答えることになる。
+   */
+  private readonly shown = new ShownCards({
+    stacksIn: (place) => this.cardsAt(place),
+    borrowedCard: () => this.childWindowCard,
+    aloft: () => this.aloftCards(),
+    cardOfObjects: (objects, place) => this.view.cardOfObjects(objects, place),
+    combinationOf: (dragged, target) => this.view.combinationOf(dragged, target),
+  });
+
   /** 開いているプロパティウィンドウ。探索の子ウィンドウと同じく、画面の作り直しをまたいで開いたままにする。 */
   private propertyWindow: PropertyWindow | undefined;
 
@@ -431,7 +448,7 @@ export class PlayScene extends ResponsiveScene {
    * 探索の結果待ちか（この間は次の探索を始められない）と、直前の探索で見つかったもの。
    *
    * **見つかったものの札は探索ウィンドウが借りている**（Windows.md 5.1節）。まだどの枠にも
-   * 居たことがないので、借りている間はレーンの並びに入れず（laneStacks）、返す時点で
+   * 居たことがないので、借りている間はレーンの並びに入れず（ShownCardsのunplaced）、返す時点で
    * 発見物の枠から本来の場所へ飛ぶ。
    */
   private searching = false;
@@ -698,7 +715,7 @@ export class PlayScene extends ResponsiveScene {
       fixtures,
       COLOR.fixtureLane,
       // 設置物は持ち出せないので、手持ちへ送る端の操作は付けない（並び替えのドラッグだけ）。
-      this.plainCells(this.laneStacks(this.view.fixtures)),
+      this.plainCells(this.shown.stacksAt('fixtures')),
       {
         pinned: {
           ...this.view.currentLocation,
@@ -712,10 +729,17 @@ export class PlayScene extends ResponsiveScene {
       art: this.laneArt('items'),
       depth: FIELD_DEPTH,
     });
-    this.handLane = new CardLane(this, this.metrics, hand, COLOR.handLane, this.plainCells(this.view.hand), {
-      art: this.laneArt('hand'),
-      depth: FIELD_DEPTH,
-    });
+    this.handLane = new CardLane(
+      this,
+      this.metrics,
+      hand,
+      COLOR.handLane,
+      this.plainCells(this.shown.stacksAt('hand')),
+      {
+        art: this.laneArt('hand'),
+        depth: FIELD_DEPTH,
+      },
+    );
 
     // 陽炎はフィールドエリアの3レーンすべてに立てる（LaneHaze参照）。
     this.haze.setSurfaces([
@@ -765,12 +789,11 @@ export class PlayScene extends ResponsiveScene {
     return cards.map((card) => {
       if (card === undefined) return undefined;
 
-      const rest = this.withoutBorrowed(card);
       return {
-        ...rest,
+        ...card,
         draggable: true,
-        onTap: this.whileIdle(() => this.openObjectWindow(rest)),
-        edges: this.cardEdges(rest),
+        onTap: this.whileIdle(() => this.openObjectWindow(card)),
+        edges: this.cardEdges(card),
         // 経過を見せている間は行動の途中の値。状態バーは減った分の帯を縮めずに溜める（statusContentと同じ）。
         midAction: this.passingTime,
       };
@@ -778,38 +801,14 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * その束から、子ウィンドウへ貸している1個を差し引いたもの（貸していなければそのまま）。
-   *
-   * **識別子は貸した1個も含めたまま**にする——その枠は貸した札が帰ってくる場所で、帰り着いたときに
-   * 同じ札として繋がる必要があるため（CardLane.setCells）。動かせるのは残りだけなので、操作
-   * （movedIds・moveTo）はビューに引き直させる。
-   *
-   * **丸ごと貸していても内容はそのまま渡す。** 枠に残る薄い印（CardInteraction.md 6.2節）は札では
-   * ないので押せず掴めないが、それを決めるのは枚数を知っているカード自身（Card.setRemaining）で、
-   * 内容から操作を抜くのではない——抜いてしまうと、帰り着いた札が押せないままになる。
+   * 今その枠に居ないインスタンス（ShownCards.AloftCards）。子ウィンドウへ貸した札は帰ってくるので
+   * 枠が待ち、探索ウィンドウが抱えている発見物はまだどの枠にも居たことがない。
    */
-  private withoutBorrowed(stack: ObjectCardStack): ObjectCardStack {
-    if (this.borrowed.size === 0) return stack;
-
-    const rest = stack.objects.filter((object) => !this.borrowed.has(object.instanceId));
-    if (rest.length === 0 || rest.length === stack.objects.length) return stack;
-    return { ...this.view.cardOfObjects(rest, stack.place), identity: stack.identity };
-  }
-
-  /**
-   * そのレーンに並べる束。**探索ウィンドウが借りている札は並べない**——見つかったばかりの物は
-   * まだどの枠にも居たことがないので、帰る場所を空けておく理由が無い（Windows.md 5.1節。持ち出された
-   * 枠に印が残るのと同じ区別、cardMotionPlanのemptied）。
-   */
-  private laneStacks(cards: readonly ObjectCardStack[]): readonly ObjectCardStack[] {
-    const held = new Set(this.found.flatMap((card) => card.identity ?? []));
-    if (held.size === 0) return cards;
-
-    return cards.flatMap((stack) => {
-      const rest = stack.objects.filter((object) => !held.has(object.instanceId));
-      if (rest.length === stack.objects.length) return [stack];
-      return rest.length === 0 ? [] : [this.view.cardOfObjects(rest, stack.place)];
-    });
+  private aloftCards(): AloftCards {
+    const aloft = new Map<number, 'awaited' | 'unplaced'>();
+    for (const id of this.borrowed) aloft.set(id, 'awaited');
+    for (const card of this.found) for (const id of card.identity ?? []) aloft.set(id, 'unplaced');
+    return aloft;
   }
 
   /**
@@ -832,7 +831,7 @@ export class PlayScene extends ResponsiveScene {
   /** アイテムレーンの枠。前詰めのレーンなので、末尾に受け皿の空枠が付く（cellsFor）。 */
   private itemCells(): readonly LaneCell[] {
     return cellsFor(
-      this.laneCards(this.laneStacks(this.view.items)),
+      this.laneCards(this.shown.stacksAt('items')),
       this.view.cellCountOf('items'),
       this.view.acceptsCards('items'),
     );
@@ -843,7 +842,7 @@ export class PlayScene extends ResponsiveScene {
    * （materialCells）。
    */
   private slotCells(place: CardPlace): readonly LaneCell[] {
-    const stacks = this.childWindowCards();
+    const stacks = this.shown.stacksAt(place);
     const cards = this.laneCards(stacks);
     return (
       this.materialCells(place, stacks, cards) ??
@@ -971,10 +970,12 @@ export class PlayScene extends ResponsiveScene {
   private combinationAt(drop: CardDrop): CardCombination | undefined {
     if (drop.target.kind !== 'combine') return undefined;
 
-    const dragged = this.cardsOf(drop.from)[drop.fromIndex];
-    const target = this.cardsOf(drop.to)[drop.target.index];
-    if (dragged === undefined || target === undefined) return undefined;
-    return this.view.combinationOf(dragged, target);
+    return this.shown.combinationAt(
+      this.spotOf(drop.from),
+      drop.fromIndex,
+      this.spotOf(drop.to),
+      drop.target.index,
+    );
   }
 
   /**
@@ -994,15 +995,17 @@ export class PlayScene extends ResponsiveScene {
     };
   }
 
+  /** そのレーンに出ている束（ShownCards）。掴める札もタップできる札も、この並びの中にしかない。 */
   private cardsOf(lane: CardLane): readonly (ObjectCardStack | undefined)[] {
-    // 借りた札の枠はワールドの場所ではなく、その1枚が今そこに在るというだけ（Windows.md 1.1節）。
-    if (lane === this.childWindow?.cardLane) return [this.childWindowCard];
-    return this.cardsAt(this.placeOf(lane));
+    return this.shown.stacksAt(this.spotOf(lane));
   }
 
   /**
    * その場所に今並んでいる束。レーンで常に見えている3つ（設置物・アイテム・手持ち）はviewが
    * 並びとして持ち、子ウィンドウが映す場所だけcardsInで引く（PlayScreenView参照）。
+   *
+   * **持ち出されている札を引く前の、ワールドがそう持っている並び。** 画面に出ている姿が要るなら
+   * ShownCardsへ訊く。
    */
   private cardsAt(place: CardPlace): readonly (ObjectCardStack | undefined)[] {
     if (place === 'hand') return this.view.hand;
@@ -1019,8 +1022,9 @@ export class PlayScene extends ResponsiveScene {
     return this.childWindowPlace ?? 'items';
   }
 
-  private childWindowCards(): readonly ObjectCardStack[] {
-    return this.childWindowPlace === undefined ? [] : this.view.cardsIn(this.childWindowPlace);
+  /** レーンが映している場所。借りた1枚の枠だけはワールドの場所ではない（CardSpot）。 */
+  private spotOf(lane: CardLane): CardSpot {
+    return lane === this.childWindow?.cardLane ? 'windowCard' : this.placeOf(lane);
   }
 
   /**
@@ -1355,7 +1359,7 @@ export class PlayScene extends ResponsiveScene {
    */
   private materialCells(
     place: CardPlace,
-    stacks: readonly ObjectCardStack[],
+    stacks: readonly (ObjectCardStack | undefined)[],
     cards: readonly (CardContent | undefined)[],
   ): readonly LaneCell[] | undefined {
     if (typeof place !== 'object' || !('container' in place)) return undefined;
@@ -1371,7 +1375,9 @@ export class PlayScene extends ResponsiveScene {
     const held = new Map<number, number>();
     stacks.forEach((stack, index) => {
       const globalId = typeOf(index);
-      if (globalId !== undefined) held.set(globalId, (held.get(globalId) ?? 0) + stack.objects.length);
+      if (stack !== undefined && globalId !== undefined) {
+        held.set(globalId, (held.get(globalId) ?? 0) + stack.objects.length);
+      }
     });
 
     const marksFor = (globalId: number | undefined): LaneCell => {
@@ -2013,9 +2019,9 @@ export class PlayScene extends ResponsiveScene {
     // 開いている子ウィンドウの中身も同じ差し替えに乗せる（openLanes）。手持ちとの間でカードが行き来する
     // ため、外していると出ていったカードがウィンドウ側に現れない。
     const cells: (readonly LaneCell[])[] = [
-      this.plainCells(this.laneStacks(this.view.fixtures)),
+      this.plainCells(this.shown.stacksAt('fixtures')),
       this.itemCells(),
-      this.plainCells(this.view.hand),
+      this.plainCells(this.shown.stacksAt('hand')),
       this.portraitCells(),
     ];
     const place = this.childWindowPlace;
