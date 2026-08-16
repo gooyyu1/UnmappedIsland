@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import type { CardContent } from './Card';
 import { Card, CellHighlight, CellOverlay, EmptyCard } from './Card';
 import type { LaneCell } from './laneCells';
-import { clipToRect } from './clip';
+import { clipToRect } from '../../ui/clip';
 import { COLOR, SIZE } from '../looks/theme';
-import { addPanel, addTiledPanel } from './shapes';
-import { wheelPixels } from './scroll';
+import { addPanel, addTiledPanel } from '../../ui/shapes';
+import { wheelPixels } from '../../ui/scroll';
 import { ScrollIndicator } from './ScrollIndicator';
 import type { HazeSurface, HazeTarget } from './LaneHaze';
 

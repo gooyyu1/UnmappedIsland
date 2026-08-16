@@ -7,10 +7,15 @@ import { SlotSelectScene } from './game/SlotSelectScene';
 import { NewGameScene } from './game/NewGameScene';
 import { ScenarioSelectScene } from './game/ScenarioSelectScene';
 import { PlayScene } from './game/PlayScene';
-import { COLOR, cssColor } from './game/looks/theme';
+import { cssColor } from './util/cssColor';
+import { setLabelDefaults } from './ui/labels';
+import { COLOR, FONT_FAMILY } from './game/looks/theme';
 
 // ゲームを組み立てる前に張る（組み立ての最中に投げられたものも受けたい）。
 installErrorReport();
+
+// 汎用の部品は意匠を知らないので、この画面の書体と文字色をここで入れる（src/ui/labels）。
+setLabelDefaults({ fontFamily: FONT_FAMILY, color: COLOR.text });
 
 DeviceScreen.startGame('game', {
   type: Phaser.AUTO,

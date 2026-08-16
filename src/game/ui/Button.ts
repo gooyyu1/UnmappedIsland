@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { noteOperation } from '../errorReport';
-import { addLabel } from './labels';
-import type { BoxStyle } from './shapes';
-import { drawBox } from './shapes';
-import { onPressRelease } from './tap';
+import { addLabel } from '../../ui/labels';
+import type { BoxStyle } from '../../ui/shapes';
+import { drawBox } from '../../ui/shapes';
+import { onPressRelease } from '../../ui/tap';
 import { COLOR, SIZE } from '../looks/theme';
 
 /**

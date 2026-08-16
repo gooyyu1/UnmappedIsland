@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { FONT_FAMILY } from '../looks/theme';
 
 /** 粒の大きさ。 */

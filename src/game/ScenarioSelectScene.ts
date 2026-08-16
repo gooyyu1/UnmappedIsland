@@ -3,8 +3,8 @@ import { bundledScenario, scenarioNames } from '../scenario/Scenario';
 import { scenarioPlayData } from './PlayScene';
 import { Button } from './ui/Button';
 import { ScreenHeader } from './ui/ScreenHeader';
-import { addLabel } from './ui/labels';
-import { addPanel } from './ui/shapes';
+import { addLabel } from '../ui/labels';
+import { addPanel } from '../ui/shapes';
 import { COLOR, SIZE } from './looks/theme';
 
 /** 一覧の外周パディングと、シナリオ1件ぶんの高さ。 */

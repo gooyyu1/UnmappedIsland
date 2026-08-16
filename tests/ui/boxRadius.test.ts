@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { drawBox } from '../../src/game/ui/shapes';
+import { drawBox } from '../../src/ui/shapes';
 
 interface RoundedRectCall {
   readonly x: number;

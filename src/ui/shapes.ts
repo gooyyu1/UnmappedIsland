@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import type { Rect } from '../looks/ScreenMetrics';
+import type { Rect } from './Rect';
 
 /** 角丸矩形の塗り・枠線の指定。枠線を省くと塗りだけを描く。 */
 export interface BoxStyle {
@@ -8,21 +8,17 @@ export interface BoxStyle {
   readonly border?: number;
   readonly borderWidth?: number;
   readonly radius?: number;
-  /** 空きスロットのような「まだ中身が無い」枠は破線で描く（StartScreen_Mock.htmlのborder-style: dashed）。 */
+  /** 「まだ中身が無い」枠を破線で描く（CSSのborder-style: dashedにあたる）。 */
   readonly dashed?: boolean;
-  /**
-   * 下地から浮いて見せる落ち影の、ずらし幅（px）。**紙として置かれる物**（スロットボタン）が持つ。
-   * 濃さと広がりはdrawBoxが決める。
-   */
+  /** 下地から浮いて見せる落ち影の、ずらし幅（px）。濃さと広がりはdrawBoxが決める。 */
   readonly shadow?: number;
 }
 
 /**
- * エリアの背景板を置く。塗りつぶしに加えて、ポインタイベントを飲み込む役目を持つ。
+ * 背景板を置く。塗りつぶしに加えて、ポインタイベントを飲み込む役目を持つ。
  *
- * フィールドエリアのカードはレーンからはみ出しても切り抜かず、隣接エリアの背景板を上に重ねて
- * 隠している（PlayScene参照）。背景板が入力を受け取らないと、隠れているはずのカードが
- * タップに反応してしまうため、背景板自身が必ず入力を遮る。
+ * **背景板は必ず入力を遮る。** はみ出した表示物を切り抜かずに背景板で覆って隠す使い方があり、
+ * 遮らないと、隠れているはずのものがタップに反応してしまう。
  */
 export function addPanel(
   scene: Phaser.Scene,
@@ -38,7 +34,7 @@ export function addPanel(
 /**
  * 絵を矩形いっぱいに敷く。高さが合うよう縦横同率で拡大縮小し、横方向は足りない分を繰り返して埋める。
  *
- * 入力は遮らない。レーンの区切りのように他の要素へかぶせて置くものが、下の要素のタップを
+ * 入力は遮らない。区切りの帯のように他の要素へかぶせて置くものが、下の要素のタップを
  * 奪わないようにするため。
  */
 export function addTiledImage(
@@ -79,8 +75,7 @@ export function addTiledImageVertical(
 }
 
 /**
- * 背景板を絵で敷く（addPanelの絵版。入力を遮る役目も同じ）。
- * 敷いた絵を横へ送るのは呼び出し側（CardLane.scrollTo）。
+ * 背景板を絵で敷く（addPanelの絵版。入力を遮る役目も同じ）。敷いた絵を送るのは呼び出し側。
  */
 export function addTiledPanel(
   scene: Phaser.Scene,
@@ -99,7 +94,7 @@ const SHADOW_LAYERS = [
 /**
  * 角の丸みが辺に収まる大きさへ丸める。**丸みは辺の半分を超えられない**——Phaserのfill/strokeRoundedRectは
  * 右側の角の弧を `x + width - radius` を中心に描くので、幅が丸みの2倍より狭いと弧が矩形の左外へ膨らみ、
- * `)` が左へ貫通して見える（値がごく小さいときのProgressBarの塗り）。
+ * `)` が左へ貫通して見える。
  */
 function fittingRadius(rect: Rect, radius: number): number {
   return Math.max(0, Math.min(radius, rect.width / 2, rect.height / 2));
@@ -109,8 +104,7 @@ function fittingRadius(rect: Rect, radius: number): number {
 export function drawBox(graphics: Phaser.GameObjects.Graphics, rect: Rect, style: BoxStyle): void {
   const radius = fittingRadius(rect, style.radius ?? 0);
   // 影は塗りより先に敷き、塗りで覆う。**ぼかせないので2枚重ねる**——1枚だと輪郭がそのまま出て
-  // 貼り絵に見える。色は黒に固定する。Buttonの押下の覆いと同じ理由で、下地の明るさによらず
-  // 「暗い側へ倒す」ほうが沈んで見えるため。
+  // 貼り絵に見える。色は黒に固定する。下地の明るさによらず、暗い側へ倒すほうが浮いて見えるため。
   if (style.shadow !== undefined) {
     for (const [distance, alpha] of SHADOW_LAYERS) {
       graphics.fillStyle(0x000000, alpha);

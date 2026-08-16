@@ -8,7 +8,7 @@ const WHEEL_DELTA_PIXELS = [1, 16, 400];
  *
  * 縦ホイールしか無いマウスでも送れるよう、横方向の回転が無ければ縦方向の回転を横スクロールに使う。
  * ブラウザによってdeltaの単位が行・ページになるため（Phaserは正規化しない）、ピクセルへ揃える。
- * ブラウザが渡すのはCSSピクセルなので、ゲームの座標系（物理ピクセル・DeviceScreen参照）へ換算する。
+ * ブラウザが渡すのはCSSピクセルなので、Phaserの座標系（物理ピクセル）へ換算する。
  */
 export function wheelPixels(pointer: Phaser.Input.Pointer, deltaX: number, deltaY: number): number {
   const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
@@ -23,8 +23,8 @@ export interface ThumbSpan {
 }
 
 /**
- * 送り具合を、つまみの位置と長さに直す。scrollXは0が左端・minScrollXが右端（負の値。
- * CardLaneのスクロール量と同じ符号）で、送る必要が無ければminScrollXは0になる。
+ * 送り具合を、つまみの位置と長さに直す。scrollXは0が左端・minScrollXが右端（左へずらすので
+ * 負の値）で、送る必要が無ければminScrollXは0になる。
  *
  * 長さは中身に対する可視域の割合そのものだが、中身が長いと1ピクセル未満まで痩せて見失うため、
  * minLengthで下限を切る。トラックの中でつまみが動ける幅もそのぶん縮み、両端は必ず端に着く。

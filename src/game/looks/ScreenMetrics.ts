@@ -1,11 +1,3 @@
-/** 画面上の矩形（左上原点・ピクセル）。 */
-export interface Rect {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-}
-
 /**
  * 縦型で積み上がる高さ（u）。オプションバー120 + 情報エリア600 + フィールドエリア1080 +
  * フィルターバー120（PlayScreenLayout）。フィールドエリアの1080uは3レーンぶんちょうどで、

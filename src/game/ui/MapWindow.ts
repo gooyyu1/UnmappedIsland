@@ -5,8 +5,8 @@ import { addTextButton } from './Button';
 import { Card } from './Card';
 import { cardFace } from './cardFace';
 import { ACTION_HEIGHT, ACTION_MAX_WIDTH, WINDOW_PADDING } from '../looks/childWindowLayout';
-import { addLabel } from './labels';
-import { addPanel, drawBox } from './shapes';
+import { addLabel } from '../../ui/labels';
+import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
 /** 地図上のカードの縮尺（レーンのカードに対する比）。一覧性を優先して小さめにする。 */

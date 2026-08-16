@@ -1,6 +1,7 @@
 import { INFORMATION_PAPER_INSET } from '../../assets/informationArt';
 import { SIZE } from './theme';
-import type { Rect, ScreenMetrics } from './ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from './ScreenMetrics';
 
 /** オプションバー・フィルターバーの厚み（アイコンボタン88 + 上下パディング16×2）。 */
 const BAR_THICKNESS = SIZE.iconButton + 32;

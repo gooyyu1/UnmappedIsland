@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { Rect } from '../looks/ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
 import type { HeatHaze } from '../looks/heatHaze';
 
 /** 変位マップの一辺（px）と、テクスチャマネージャへ入れるキー。 */

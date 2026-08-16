@@ -1,4 +1,5 @@
-import type { Rect, ScreenMetrics } from './ScreenMetrics';
+import type { Rect } from '../../ui/Rect';
+import type { ScreenMetrics } from './ScreenMetrics';
 import { SIZE } from './theme';
 
 /**

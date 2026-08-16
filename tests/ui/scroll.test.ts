@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { scrollThumbSpan } from '../../src/game/ui/scroll';
+import { scrollThumbSpan } from '../../src/ui/scroll';
 
 describe('scrollThumbSpan', () => {
   it('中身が可視域に収まるとトラック全体を占める', () => {
