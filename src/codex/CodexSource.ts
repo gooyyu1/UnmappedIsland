@@ -1,7 +1,8 @@
 import type { WorldCodex } from '../domain/defs/WorldCodex';
-import { bundledWorldCodex, WORLD_CODEX_TEXTS } from '../loader/bundledWorldCodex';
+import { installedAssetPack } from '../assetPack/install';
+import { loadWorldCodex, WORLD_CODEX_TEXTS } from '../loader/loadWorldCodex';
 import type { Localization } from '../locale/Localization';
-import { bundledLocalization } from '../locale/Localization';
+import { loadLocalization } from '../locale/Localization';
 
 /**
  * ビューアが読む定義一式。**ゲーム本体（BootScene）と同じファイルを同じローダーで読む**——
@@ -25,7 +26,9 @@ export class CodexSource {
   }
 }
 
-/** WorldCodexと表示文字列を組み立てる。 */
+/** WorldCodexと表示文字列を組み立てる（アセットパックが入っていればそれも含む）。 */
 export function loadCodexSource(): CodexSource {
-  return new CodexSource(bundledWorldCodex(), bundledLocalization(), [...WORLD_CODEX_TEXTS.keys()]);
+  const pack = installedAssetPack();
+  const files = [...WORLD_CODEX_TEXTS.keys(), ...(pack?.worldCodexTexts().keys() ?? [])];
+  return new CodexSource(loadWorldCodex(pack), loadLocalization(pack), files);
 }

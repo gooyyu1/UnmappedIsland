@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { installConfiguredAssetPack } from './assetPack/install';
 import { DeviceScreen } from './game/DeviceScreen';
 import { installErrorReport } from './game/errorReport';
 import { BootScene } from './game/BootScene';
@@ -16,6 +17,10 @@ installErrorReport();
 
 // 汎用の部品は意匠を知らないので、この画面の書体と文字色をここで入れる（src/ui/labels）。
 setLabelDefaults({ fontFamily: FONT_FAMILY, color: COLOR.text });
+
+// アセットパックは、定義も絵も読み込まれる前に入れる（AssetPack.md 4節）。取得に失敗したら
+// 起動しない——あるはずの物が無い世界で遊ぶことになるため、報告（errorReport）に出して止める。
+await installConfiguredAssetPack();
 
 DeviceScreen.startGame('game', {
   type: Phaser.AUTO,

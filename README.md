@@ -58,6 +58,7 @@ UnmappedIsland/
 │   │   ├── locale/       # 表示文字列YAML（言語ごと）
 │   │   └── scenarios/    # テスト用シナリオYAML
 │   ├── art/              # どのファイルがどの絵かを答えるモジュール
+│   ├── assetPack/        # アセットパック（ZIP）の読み込み
 │   ├── codex/            # ゲーム定義の閲覧ビューア（ゲームと同じローダー・表示文字列を使う）
 │   ├── game/             # Phaserシーン
 │   │   ├── layout/       # 画面寸法（u単位）とエリア配置の計算

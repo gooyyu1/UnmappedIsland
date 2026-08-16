@@ -1,3 +1,4 @@
+import type { AssetPack } from '../assetPack/AssetPack';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 
@@ -22,9 +23,13 @@ export const WORLD_CODEX_TEXTS: ReadonlyMap<string, string> = new Map(
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
 );
 
-/** 同梱の定義YAMLを読んでWorldCodexを組み立てる。書式の誤りはYamlLoadErrorのまま呼び出し側へ出す。 */
-export function bundledWorldCodex(): WorldCodex {
+/**
+ * 定義YAMLを読んでWorldCodexを組み立てる。同梱ぶんが先、アセットパックのぶんが後
+ * （AssetPack.md）。書式の誤りも識別子の重複もYamlLoadErrorのまま呼び出し側へ出す。
+ */
+export function loadWorldCodex(pack: AssetPack | undefined): WorldCodex {
   const loader = new WorldCodexYamlLoader();
   for (const [file, text] of WORLD_CODEX_TEXTS) loader.load(file, text);
+  if (pack !== undefined) for (const [file, text] of pack.worldCodexTexts()) loader.load(file, text);
   return loader.build();
 }

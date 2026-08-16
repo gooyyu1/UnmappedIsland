@@ -1,3 +1,5 @@
+import { addPackArt } from './packArt';
+
 /**
  * object_defごとの絵の解決。
  *
@@ -6,8 +8,9 @@
  * サフィックスも付けない——アイテムから設置物へ移しても、ファイル名を変えずに済むようにするため。
  * 唯一の例外が、載り方が違う絵を表す接尾辞（MULTIPLY_SUFFIX）。
  *
- * 一覧はimport.meta.globがビルド時に作る。実行時に総当たりで読みに行くと、絵をまだ用意していない
- * object_defのぶんだけ404が出るため。
+ * 同梱ぶんの一覧はimport.meta.globがビルド時に作る。実行時に総当たりで読みに行くと、絵をまだ
+ * 用意していないobject_defのぶんだけ404が出るため。アセットパックのぶんは起動時に重ねる
+ * （installPackObjectArt、AssetPack.md 4節）。
  */
 const FILES = import.meta.glob('../assets/objects/*.png', {
   eager: true,
@@ -15,10 +18,21 @@ const FILES = import.meta.glob('../assets/objects/*.png', {
   import: 'default',
 }) as Record<string, string>;
 
-/** object_defの識別子 → 画像のURL。 */
-export const OBJECT_ART: ReadonlyMap<string, string> = new Map(
+/**
+ * object_defの識別子 → 画像のURL。同梱ぶんを土台に、起動時にアセットパックのぶんが重なる。
+ * 重なった後は変わらない。
+ */
+const ART = new Map<string, string>(
   Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.png$/, '$1'), url]),
 );
+
+/** object_defの識別子 → 画像のURL。 */
+export const OBJECT_ART: ReadonlyMap<string, string> = ART;
+
+/** アセットパックの型の絵を在庫表へ重ねる（起動時に1回、installAssetPackから）。 */
+export function installPackObjectArt(art: ReadonlyMap<string, string>, packName: string): void {
+  addPackArt(ART, art, packName, '型の絵');
+}
 
 /**
  * 絵が描かれているときのカードの幅（tools/comfyui/card_art.py の CARD_WIDTH と同じ値）。

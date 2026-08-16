@@ -1,4 +1,5 @@
 import './codex.css';
+import { installConfiguredAssetPack } from '../assetPack/install';
 import type { CodexSource } from './CodexSource';
 import { loadCodexSource } from './CodexSource';
 import type { NamingMode } from './CodexView';
@@ -152,7 +153,9 @@ function setStatus(html: string): void {
   (document.getElementById('status') as HTMLElement).innerHTML = html;
 }
 
-function initialize(): void {
+async function initialize(): Promise<void> {
+  await installConfiguredAssetPack();
+
   for (const button of document.querySelectorAll<HTMLElement>('[data-naming-mode]'))
     button.addEventListener('click', () => setNamingMode(button.dataset.namingMode as NamingMode));
 
@@ -171,4 +174,4 @@ function initialize(): void {
   render();
 }
 
-initialize();
+await initialize();

@@ -9,7 +9,7 @@ import {
   renderSlotPage,
   renderTagListPage,
 } from '../../src/codex/pages';
-import { bundledLocalization } from '../../src/locale/Localization';
+import { loadLocalization } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -20,7 +20,7 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  */
 describe('WorldCodexビューアのページ', () => {
   const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
-  const locale = bundledLocalization();
+  const locale = loadLocalization(undefined);
   const source = new CodexSource(codex, locale, ['coconut.yaml']);
   const view = new CodexView(source, 'display');
   const identifierView = new CodexView(source, 'identifier');

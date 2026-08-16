@@ -4,7 +4,7 @@ import type { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader
 
 /**
  * ゲーム本体に同梱されるWorldCodex定義YAMLの置き場所（テストはリポジトリルートで実行される前提）。
- * ここを丸ごと読むため、ファイルを増やしてもテスト側の変更は要らない（src/loader/bundledWorldCodex.ts）。
+ * ここを丸ごと読むため、ファイルを増やしてもテスト側の変更は要らない（src/loader/loadWorldCodex.ts）。
  */
 export const WORLD_CODEX_DIR = 'src/assets/world-codex';
 
