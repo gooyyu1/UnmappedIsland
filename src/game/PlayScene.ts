@@ -11,6 +11,7 @@ import type { Localization } from '../locale/Localization';
 import type { SaveData } from '../save/SaveData';
 import { SAVE_SCHEMA_VERSION } from '../save/SaveData';
 import { SaveSlots } from '../save/SaveSlots';
+import { Shelf } from '../save/Shelf';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
 import { Path } from '../domain/runtime/views/Path';
@@ -620,8 +621,9 @@ export class PlayScene extends ResponsiveScene {
     // ステータスの詳細は、プロパティウィンドウの上からも開けるので最後に開き直す。
     if (openedStatus !== undefined) this.openStatusDetail(openedStatus);
     this.coverUntilLocationArtLoaded();
-    // 死は取り消せないので、リサイズで表示物ごと捨てられたダイアログは出し直す（ResponsiveScene）。
+    // 死も到達も取り消せないので、リサイズで表示物ごと捨てられたダイアログは出し直す（ResponsiveScene）。
     if (this.gameSession.player.isDead) this.showDeath();
+    else if (this.gameSession.player.hasReachedMainland) this.showEscape();
   }
 
   /**
@@ -658,7 +660,8 @@ export class PlayScene extends ResponsiveScene {
       {
         pinned: {
           ...this.view.currentLocation,
-          onTap: this.whileIdle(() => this.openExplorationWindow()),
+          // 探索できない場所（筏・外洋、voyage.yaml）では開く先が無いので、押せる札にしない。
+          onTap: this.view.canExplore ? this.whileIdle(() => this.openExplorationWindow()) : undefined,
         },
         art: this.laneArt('fixtures'),
         depth: FIELD_DEPTH,
@@ -1389,6 +1392,14 @@ export class PlayScene extends ResponsiveScene {
       return;
     }
 
+    // 見せ終わってから周回の終わりを出す（showEscape）。死と違って画面を止める必要はない
+    // ——本土へ移ったのは筏で、プレイヤーはその中に居るまま（現在地は筏）なので、映し直しても
+    // 足元の物は入れ替わらない。
+    const finish = (): void => {
+      onElapsed();
+      if (this.gameSession.player.hasReachedMainland) this.showEscape();
+    };
+
     const minutes = toMinutes - fromMinutes;
     // 粒は経過を見せている間いっぱいに散らす。効果が適用されるのは経過し切った時点だが、増えた量は
     // 押した瞬間に決まっている（ワールドは先に進み切っている）ので、待たずに散らし始められる。
@@ -1397,7 +1408,7 @@ export class PlayScene extends ResponsiveScene {
     const recorded = recording.ticks;
     if (minutes <= 0) {
       this.activity = 'idle';
-      onElapsed();
+      finish();
       return;
     }
 
@@ -1430,7 +1441,7 @@ export class PlayScene extends ResponsiveScene {
       onComplete: () => {
         ring.destroy();
         this.activity = 'idle';
-        onElapsed();
+        finish();
       },
     });
   }
@@ -2312,13 +2323,46 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
+   * 島を出たことを伝えるダイアログ（docs/concept/GameEndings.md 3節）。閉じると棚へ移る。
+   *
+   * **本土に着いた後は描かない。** 出すのは、渡り切ったことと、持ち帰った物がこれから棚へ収まる
+   * ことだけ——その先の暮らしは周回の外にある。
+   */
+  private showEscape(): void {
+    const brought = this.gameSession.player.broughtArtifacts;
+    noteOperation(`島を出た: 持ち帰り ${brought.length} 点（${this.clockText()}）`);
+
+    new ModalDialog(this, this.metrics, {
+      card: this.portraitCard(),
+      title: `${this.view.characterName}は島を出た`,
+      body: [
+        `島で ${this.view.elapsedDays} 日を過ごした`,
+        '潮に乗った筏は、ついに人の住む岸へ着いた。振り返っても、島はもう水平線の下にある。',
+        'この島の記録は残らない。棚に並ぶ物だけが残る。',
+      ].join('\n'),
+      actions: [{ label: '棚へ', style: 'primary', onTap: () => this.storeAndLeave(brought) }],
+    });
+  }
+
+  /** 持ち帰った物を棚へ収め、周回を終える（棚の画面へ移る）。 */
+  private storeAndLeave(brought: readonly string[]): void {
+    const added = new Shelf(localStorage).add(brought);
+    this.deleteSave();
+    this.scene.start('shelf', { added });
+  }
+
+  /**
    * 死んだセーブデータを消して、セーブ選択画面へ戻る。**続きから始められる状態は残さない**
-   * ——このゲームにはハードコアモードしか無い（SaveDataManagement.md）。スロットを使わない
-   * シナリオからの起動（slotIndexが-1）では、消すものが無い。
+   * ——このゲームにはハードコアモードしか無い（SaveDataManagement.md）。
    */
   private discardSave(): void {
-    if (this.slotIndex >= 0) new SaveSlots(localStorage).delete(this.slotIndex);
+    this.deleteSave();
     this.scene.start('slots');
+  }
+
+  /** 周回そのものを消す。スロットを使わないシナリオからの起動（slotIndexが-1）では消すものが無い。 */
+  private deleteSave(): void {
+    if (this.slotIndex >= 0) new SaveSlots(localStorage).delete(this.slotIndex);
   }
 
   private confirmReturnToTitle(): void {

@@ -44,15 +44,19 @@ describe('terrain_generation.yamlの地形生成定義', () => {
       expect(def.tags, `${type.name} のobject_defはlocationタグを持つ`).toContain(locationTag);
     }
 
-    // object_defs→location_types: locationタグを持つ土地object_defはすべて、少なくとも1つの
-    // location_typeから参照される（定義したのに絶対に生成されない土地を作らない）。
+    // object_defs→location_types: 探索できる土地（explorable、exploration_progressを持つ）はすべて、
+    // 少なくとも1つのlocation_typeから参照される（定義したのに絶対に生成されない土地を作らない）。
+    //
+    // locationタグではなく探索の進捗で絞るのは、**場所であることと、島の地形であることが別だから**
+    // ——筏・外洋・本土（voyage.yaml）も場所だが、地形生成が置くものではない。
+    const progressId = codex.propertyNames.getId('exploration_progress');
     const referencedDefIds = new Set(generation.locationTypes.map((t) => t.objectDefGlobalId));
     for (let id = 0; id < codex.objects.count; id++) {
       const def = codex.objects.get(id);
-      if (def === undefined || !def.tags.includes(locationTag)) continue;
+      if (def === undefined || def.getPropertyDef(progressId) === undefined) continue;
       expect(
         referencedDefIds.has(id),
-        `locationタグを持つ '${def.name}' はいずれかのlocation_typeから参照される`,
+        `探索できる土地 '${def.name}' はいずれかのlocation_typeから参照される`,
       ).toBe(true);
     }
   });

@@ -1,0 +1,46 @@
+# 木を伐り倒して丸太を採る連鎖（docs/world/SurvivalItems.md 0節）。
+#
+# 斧でしか倒せない木を1種だけ置く。刃物（cutting_tool）で足りる草の茎（fiber.yaml）・ヤシの葉
+# （weaving.yaml）と違い、木部を持つ幹は柄の遠心力が乗る道具でなければ断てない。石斧を作ることが、
+# そのまま丸太＝筏（voyage.yaml）への入口になる。
+#
+# 丸太は1本20kgで、荷重の限界（キャラクタのload、docs/world/Characters.md）に対して1本ずつしか
+# 運べない重さにしてある。筏に6本要るので、拠点をどこに置くかが運搬の手間を決める。
+
+object_defs:
+  # 広葉樹。幹が太く、倒せば丸太が採れる唯一の木。
+  # ヤシの木（coconut.yaml）は幹が繊維の束で丸太にならないため、こちらは別の物として置く。
+  broadleaf_tree:
+    tags: [fixture]
+    combinations:
+      # 根元を斧で断つ。倒した幹を運べる長さに玉切りするところまでを1つの作業として扱う。
+      fell:
+        with: {tag: chopping_tool}
+        duration: 240
+        conditions:
+          - reason: too_worn
+            subject: dragged
+            prop: durability
+            gt: 0
+        add:
+          dragged:
+            durability: -120
+        # 倒した場所に落ちる。木は中に物を持てないので、`into: self`は必ず親（土地）のアイテム
+        # スロットへ伝播する（9.4節）。重いので、運ぶかどうかはその場で決める。
+        #
+        # **spawnを先に書く。** destroyを先にすると木の親が無くなり、伝播先が決まらないまま消える。
+        spawn:
+          - {object: log, count: 2, into: self}
+          - {object: thick_branch, count: 3, into: self}
+        destroy: self
+
+  # 丸太。幹を運べる長さ（2mほど）に切ったもの。筏の浮力を担う。
+  log:
+    tags: [item]
+    # 焚き付けから育てた火に入れれば、一晩保つ大きさ（docs/engine/FireSystem.md 2.3節）。
+    traits: [burnable]
+    props:
+      weight: {value: 20000}
+      volume: {value: 35000}
+      # 太い枝（fuel 20）10本ぶん。
+      fuel: {value: 200}

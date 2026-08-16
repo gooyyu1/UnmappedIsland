@@ -95,7 +95,9 @@ player:
 location:
   type: jungle              # 開始地点にする土地のobject_def（省略すると通常の漂着地）
   items: [stone x100, thick_branch]     # `x個数` で同じものをまとめて指定できる（1〜1000）
-  fixtures: []
+  fixtures: [raft]
+  inside:                   # 置いた設置物の中へ入れる（積荷を積んだ筏、Voyage.md 2節）
+    raft: [green_coconut x60]
 world:
   props:
     weather: light_rain     # worldのプロパティの上書き（天候・季節・時刻）
@@ -133,6 +135,22 @@ world:
 （[`VitalsSystem.md`](./VitalsSystem.md) 6 節）を閉じた時点で消してセーブ選択画面へ戻る。
 
 テスト用シナリオはスロットを使わないため、死んでも消えるものが無い。
+
+**島を出てもスロットは消える**（[`GameEndings.md`](../concept/GameEndings.md) 3 節）。周回が終わる点は
+死と同じで、違いは棚（後述）に物が並ぶかどうかだけ。消す経路も同じで、島を出たことを伝えるダイアログを
+閉じた時点で消える。
+
+## 棚（周回をまたいで残る唯一のもの）
+
+持ち帰ったアーティファクトの棚（[`GameEndings.md`](../concept/GameEndings.md) 6 節、
+[`Voyage.md`](../world/Voyage.md) 5 節）は、**セーブスロットとは別のキー**（`unmapped-island:shelf`）に
+置く。周回そのものが消えても棚は残る——消えるなら、棚は周回を終わらせる理由にならない。
+
+- 中身は持ち帰ったobject_defの識別子の集合（JSONの配列）。同じ物を2度持ち帰っても枠は増えない。
+- 壊れた値は「まだ何も無い」として読む（スロット本体と同じ扱い）。
+- 削除の口は持たない。ユーザの操作で消せるのはスロットだけで、棚は積み上がる一方になる。
+
+実装は `src/save/Shelf.ts`、画面は `src/game/ShelfScene.ts`。
 
 ## スコープ外
 

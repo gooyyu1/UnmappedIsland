@@ -1,0 +1,150 @@
+# 島からの脱出（docs/concept/GameEndings.md・docs/world/Voyage.md）。
+#
+# 筏・外洋・本土の3つで、周回の終わりを表す。専用の文法は使わず、いずれも location（core.yaml）と
+# 既存の passives/stages/move だけで書いている。
+#
+#   - 筏は設置物であり場所でもある。中にプレイヤーと積荷が入るので、筏を1つ動かせば全部が動く。
+#   - 出航は、筏を外洋へ move する1手。外洋と本土は singleton（15節）なので、型の名前で行き先を指せる。
+#   - 航海の進みは、風・海流・積載から導かれる sail_speed の段が、毎tick voyage_progress へ足す。
+#     風向き（world の wind）と海流（外洋が子へ配る modify）が効くので、単なる時間経過にはならない。
+
+object_defs:
+  # 筏。丸太を並べて縛った、島を出るための乗り物。
+  #
+  # **設置物（fixture）でありながら場所（location）でもある。** 中に積荷を載せ、プレイヤー自身も
+  # 乗り込むため、土地と同じ items/fixtures/characters の3スロットを持つ。カードを押せば積荷が
+  # 並び（main_item_slot）、重ねれば積める——編み籠（containers.yaml）と同じ操作でよい。
+  raft:
+    tags: [fixture]
+    traits: [location]
+    # 積荷が個体ごとに違うので束ねない（SlotSystem.md 4節）。
+    stackable: false
+    main_item_slot: items
+    slots:
+      items:
+        # 何種類積めるか。土地の items は上限を持たないので、筏だけが枠数とかさを決める。
+        cell_count: 12
+        # 積めるかさの合計（500L）。**縛りようの上限であって、実際の限界は重さ**——嵩いっぱいに
+        # 積めば、その前に段（weight）が速さを削り始める。
+        capacity: 500000
+    props:
+      # 丸太6本ぶんの自重。中身の重さは実効値に足されるので（7.4節）、積むほど重くなる。
+      # **積むほど遅い**のは段が sail_speed を削るから（GameEndings.md 4節）。海の上で積荷を捨てれば
+      # 段が下がり、そのぶん速くなる——専用の仕組みは要らない。
+      weight:
+        value: 120000
+        stages:
+          # 80kgまでの積荷。
+          - name: light
+          # 80〜160kg。
+          - name: laden
+            min: 200000
+            passives:
+              - modify: {self: {sail_speed: -1}}
+          # 160〜240kg。
+          - name: heavy
+            min: 280000
+            passives:
+              - modify: {self: {sail_speed: -3}}
+          # 240kg超。追い風でようやく進む。
+          - name: overladen
+            min: 360000
+            passives:
+              - modify: {self: {sail_speed: -6}}
+      # 航海の速さ（実効値）。素の値は0で、寄与は3つ——外洋の海流（open_sea の modify）、
+      # 風向き（下の passives）、積載の重さ（weight の段）。陸に居る間はどれも効かないので0になる。
+      sail_speed:
+        value: 0
+        range: {min: 0, max: 20}
+        stages:
+          # 進まない（凪・向かい風・積みすぎ）。
+          - name: becalmed
+          - name: slow
+            min: 2
+            passives:
+              - add: {self: {voyage_progress: 1}}
+          - name: moderate
+            min: 4
+            passives:
+              - add: {self: {voyage_progress: 2}}
+          - name: steady
+            min: 7
+            passives:
+              - add: {self: {voyage_progress: 3}}
+          - name: fast
+            min: 10
+            passives:
+              - add: {self: {voyage_progress: 4}}
+      # 本土までの残り。range.max が航海の距離で、追い風が続けば8日ほど、風に恵まれなければ
+      # その倍以上かかる（docs/world/Voyage.md 3節）。
+      #
+      # 上限に達した瞬間に本土へ着く。moveのあとは親が外洋でなくなるため風も海流も効かず、
+      # sail_speed が0に戻る（＝進みも止まる）ので、境界へ戻すsetと合わせて二度は発火しない。
+      voyage_progress:
+        gauge: {min: neutral, max: good}
+        value: 0
+        range: {min: 0, max: 2200}
+        on_overflow:
+          set: {self: {voyage_progress: 2200}}
+          move: {subject: self, to_object: mainland}
+    passives:
+      # 風向きは world が持つ（core.yaml の wind）。祖先を遡って読むので、外洋に居る間だけ
+      # 親の型で絞る——陸に繋いだままの筏は風を受けない。
+      - conditions:
+          - {subject: parent, matches: {tag: sea}}
+          - {subject: ancestor, prop: wind, eq: tailwind}
+        modify: {self: {sail_speed: 6}}
+      - conditions:
+          - {subject: parent, matches: {tag: sea}}
+          - {subject: ancestor, prop: wind, eq: crosswind}
+        modify: {self: {sail_speed: 2}}
+      - conditions:
+          - {subject: parent, matches: {tag: sea}}
+          - {subject: ancestor, prop: wind, eq: headwind}
+        modify: {self: {sail_speed: -3}}
+    # 解放条件（conditions、13.3節）はまだ置かない。建築スキルのプロパティと、それを伸ばす経路が
+    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
+    recipes:
+      lashed:
+        steps:
+          # 丸太を並べて桁を渡す。
+          - requires:
+              - {object: log, count: 6, consume: true}
+            duration: 240
+          # 交差するところをロープで縛る。
+          - requires:
+              - {object: rope, count: 4, consume: true}
+            duration: 180
+    actions:
+      # 航海に出る。乗り込むところまでを1手に含める——降りられるのは本土だけなので、
+      # 乗る手と出る手を分けても選べることは増えない。
+      set_sail:
+        showMenu: always
+        conditions:
+          - reason: not_on_coast
+            subject: parent
+            matches: {tag: coast}
+        duration: 60
+        move:
+          - {subject: actor, to: self}
+          - {subject: self, to_object: open_sea}
+
+  # 外洋。島と本土の間の海で、世界に1つだけ在る（15節）。
+  #
+  # 資源を持たない場所なので、探索（explorable）は持たない。ここに居る間にできることは、
+  # 積荷を食べること・休むこと・捨てることだけになる。
+  open_sea:
+    singleton: true
+    traits: [location]
+    tags: [sea]
+    passives:
+      # 海流。浮かんでいるものを本土の方へ押し続ける。風が凪いでも進みが完全には止まらないのは
+      # これがあるためで、向かい風はこれを打ち消す量として書いてある（筏の sail_speed 参照）。
+      - modify: {child: {sail_speed: 3}}
+
+  # 本土。着いた時点で周回が終わる場所で、着いた後のことは描かない（GameEndings.md 3節）。
+  # 世界に1つだけ在り、筏の voyage_progress が上限へ達したときだけ、そこへ移る。
+  mainland:
+    singleton: true
+    traits: [location]
+    tags: [mainland]

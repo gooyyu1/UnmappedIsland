@@ -1,0 +1,34 @@
+# 島からの脱出（docs/world/Voyage.md）を通しで試すための開始状態。筏は組み上がっていて、
+# 水と食料を兼ねる青いヤシの実が積んであり、金の聖杯も載っている。筏のカードから「航海に出る」を
+# 選べばすぐ出航でき、あとは休息で時間を送れば本土へ着く。
+#
+# 追い風の多い乾季から始める（風向きは8時間ごとに引き直されるので、そのまま続くとは限らない）。
+# 青い実は刃物で穴を開けて飲むので、尖った石を持たせておく——無いと水が1滴も飲めない。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 出航のしたく
+
+# 3は開始地点が砂浜になるシード（海に面した土地からしか出航できない）。
+seed: 3
+
+player:
+  hand: [sharp_stone, stone_axe]
+
+location:
+  type: sandy_beach
+  fixtures: [raft]
+  # 筏の中へ積む（Scenario.tsのinside）。
+  inside:
+    raft:
+      # 水と食料を兼ねる青いヤシの実。1個で水分20（＝5時間ぶん）なので、これで12日ほど保つ。
+      - green_coconut x60
+      # 熟した実。水は無いが、割れば果肉が採れる。
+      - coconut x10
+      # 持ち帰るアーティファクト（docs/concept/GameEndings.md 6節）。到達すると棚に収まる。
+      - golden_chalice
+
+world:
+  props:
+    season: dry
+    wind: tailwind

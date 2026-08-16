@@ -67,6 +67,11 @@ object_defs:
         move:
           subject_prop: loot_target
           to: self
+      # 型で行き先を指す（to_object）。singletonなので、生成時に確定するIDを知らなくても指せる。
+      sail:
+        move:
+          - {subject: actor, to: self}
+          - {subject: self, to_object: hilltop}
 `;
 
   function build(): {
@@ -111,6 +116,20 @@ object_defs:
       meadow.getSlotByLocalId(meadow.def.slotLayout.toLocal(codex.slotNames.getId('characters'))).contents,
       '元のロケーションからは居なくなる',
     ).not.toContain(character);
+  });
+
+  it('to_objectは、その型のインスタンスを行き先にする（moveを並べて2つ動かす）', () => {
+    const { codex, session, hilltop, character, path } = build();
+    // pathはmeadowのstuffスロットに居る。sailはactorを自分の中へ入れ、続けて自分ごとhilltopへ移る
+    // ——筏に乗り込んでから漕ぎ出す形（voyage.yamlのset_sail）と同じ2手。
+    expect(path.tryExecuteAction('sail', character, session)).toBe(true);
+
+    expect(character.parent, 'actorはpathの中へ入る').toBe(path);
+    expect(path.parent, 'pathは型で指した行き先へ移る').toBe(hilltop);
+    expect(
+      character.findRoot().findDescendantOfDef(codex.objectNames.getId('character')),
+      '中の物も一緒に運ばれる',
+    ).toBe(character);
   });
 
   it('移動先が解決できない場合は何もしない', () => {
@@ -330,7 +349,7 @@ object_defs:
         .build();
 
     expect(loadBad).toThrow(YamlLoadError);
-    expect(loadBad).toThrowError(/どちらか一方/);
+    expect(loadBad).toThrowError(/どれか1つ/);
   });
 
   it('moveのtoにself/parent以外を指定するとロードエラーになる', () => {

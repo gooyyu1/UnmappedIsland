@@ -24,7 +24,15 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     const locationsSlotId = codex.slotNames.getId('locations');
     const locations = game.world.instance.tryGetSlot(locationsSlotId);
     expect(locations).toBeDefined();
-    expect(locations!.contents.length, '全サイトが土地として実体化される').toBe(map.sites.length);
+    // 島の外に最初から在る場所（外洋・本土、voyage.yaml）もworldのlocationsに居るので、
+    // サイトの数ぴったりにはならない（NewGame.spawnSingletons）。
+    const locationTag = codex.tagNames.getId('location');
+    const singletonLocations = codex
+      .singletonGlobalIds()
+      .filter((id) => codex.objects.get(id).tags.includes(locationTag)).length;
+    expect(locations!.contents.length, '全サイトが土地として実体化される').toBe(
+      map.sites.length + singletonLocations,
+    );
 
     let totalPaths = 0;
     for (const site of map.sites) {

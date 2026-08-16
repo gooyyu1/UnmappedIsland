@@ -138,6 +138,20 @@ export class WorldCodex implements DefNames {
   }
 
   /**
+   * 世界にただ1つ存在する型（`singleton: true`、15節）のグローバルIDを宣言順で返す。
+   *
+   * 「1つだけ存在すべき」を「**世界を作った時点で必ず1つ在る**」と読む（NewGame.start）。そうでないと、
+   * 型の名前で行き先を指す`move`の`to_object`（9.6節）が、まだ湧いていない場所を指すことになる。
+   */
+  singletonGlobalIds(): readonly number[] {
+    const ids: number[] = [];
+    for (let globalId = 0; globalId < this.objects.count; globalId++) {
+      if (this.objects.get(globalId).isSingleton) ids.push(globalId);
+    }
+    return ids;
+  }
+
+  /**
    * このスロットへ、外から持ち込める型が1つでもあるか。単独で在れない型（`bound_to_owner`、7.9節）
    * しか受け付けないスロットは、持ち主の中で生まれる以外に入りようがない——怪我のスロットがこれ。
    * 画面はこれを見て「落とせる場所」の空枠を出すかを決める。

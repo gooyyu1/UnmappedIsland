@@ -128,6 +128,23 @@ describe('locations.yamlの土地・道定義', () => {
     ).toBe(true);
   });
 
+  it('金の聖杯は、同じ土地からは二度と見つからない', () => {
+    // 見つかった候補が自分の重みを0にする（chalice_find、artifacts.yaml）。有限のアーティファクトが
+    // 1つの土地から何個も出ないことを、重みを大きくして必ず当たる状態で確かめる。
+    const session = new WorldSession(codex, undefined, new SeededRng(11));
+    const land = session.spawn(codex.objectNames.getId('cliff_coast'));
+    land.setProperty(codex.propertyNames.getId('chalice_find'), 10000);
+    const view = new Location(land, codex);
+
+    for (let i = 0; i < 30; i++) view.explore(undefined, session);
+
+    const chalice = codex.objectNames.getId('golden_chalice');
+    expect(
+      view.items.filter((object) => object.def.globalId === chalice),
+      '見つかるのは1つだけ',
+    ).toHaveLength(1);
+  });
+
   it('探索→道の発見→移動が一連の流れとして機能する', () => {
     // 探索 → 進捗が必要値に達した道の発見（隠しスロット→公開スロット） → 移動、の一連の流れを
     // 実ファイルの定義だけで検証する（地形生成は使わず、道の配線はこのテストが手で行う）。

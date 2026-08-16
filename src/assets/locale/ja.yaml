@@ -15,6 +15,10 @@ slot_texts:
     display_name_with_owner: '{owner}の{slot}'
   contents:
     display_name: 中身
+  # 土地・筏（voyage.yaml）が持つアイテムのスロット。子ウィンドウで開くのは筏だけなので、
+  # 「筏の積荷」と読める言葉を当てる（土地のアイテムはレーンに出るので見出しを持たない）。
+  items:
+    display_name: 積荷
   # 製作中オブジェクトの材料スロット（レシピから自動生成される、inProgressObjects.ts）。
   materials:
     display_name: 材料
@@ -598,6 +602,45 @@ object_texts:
     display_name: 油
     description: 燃料や調理に使う液体。飲むものではない。
 
+  # 木を伐って丸太を採る（timber.yaml）。
+  broadleaf_tree:
+    display_name: 広葉樹
+    description: 幹の太い木。斧があれば倒して丸太にできる。
+    combinations:
+      fell:
+        display_name: 伐り倒す
+        description: 根元を斧で断ち、倒した幹を運べる長さに切り分ける。半日がかりの仕事になる。
+  log:
+    display_name: 丸太
+    description: 幹を2mほどに切ったもの。1本でも相当に重いが、水に浮く。
+
+  # 島からの脱出（voyage.yaml、docs/world/Voyage.md）。
+  raft:
+    display_name: 筏
+    description: 丸太を縛り合わせた乗り物。中へ積んだ物とともに、海を渡ることができる。
+    props:
+      sail_speed:
+        display_name: 進み足
+        description: 今この筏が出している速さ。風向き・海流・積んだ重さで決まる。
+      voyage_progress:
+        display_name: 航海の進み
+        description: 本土までの道のりをどこまで来たか。満ちれば陸が見える。
+    actions:
+      set_sail:
+        display_name: 航海に出る
+        description: 乗り込んで漕ぎ出す。島へ戻ることはできない。
+  open_sea:
+    display_name: 外洋
+    description: 島と本土の間に広がる海。何も採れず、風と海流だけが筏を運ぶ。
+  mainland:
+    display_name: 本土
+    description: 人の住む陸地。
+
+  # アーティファクト（artifacts.yaml）。
+  golden_chalice:
+    display_name: 金の聖杯
+    description: 誰かがこの島へ持ち込み、置いていった杯。腹の足しにはならない。
+
 # プロパティのカテゴリ（GameElementDefinition.md 6.7節、src/world-codex/core.yamlのproperty_tags）。
 # キャラクターのプロパティウィンドウのタブ名として使う。
 property_tag_texts:
@@ -638,6 +681,13 @@ symbol_texts:
     display_name: 雨季
   dry:
     display_name: 乾季
+  # 風向き（docs/world/Voyage.md 3.1節）。本土へ向かう向きを基準にした3つ。
+  tailwind:
+    display_name: 追い風
+  crosswind:
+    display_name: 横風
+  headwind:
+    display_name: 向かい風
 
 # 土地の名前（TerrainGeneration.md 3.6節）。同じ型が島に1つだけならdisplay_nameが、複数あるなら
 # 亜種（variants）の名前がその土地の名前になる。亜種の名前は型の名前へ足すのではなく、置き換える。
@@ -763,6 +813,8 @@ reason_texts:
   not_thirsty: 喉はまったく渇いていない。これ以上は飲めない。
   not_raining: 雨は降っていない。溜められる雨がない。
   too_full: 腹がいっぱいで、これ以上は入らない。
+  not_on_coast: 海に面していない土地からは漕ぎ出せない。
+  too_worn: この道具はもう使いものにならない。
 
 # 段（GameElementDefinition.md 6.4節のstages）のうち、UIが名前を読んで画面に出すもの。カードの上へ
 # 覆いとして出る（CardView.md 9.1節）ほか、死亡ダイアログが死因として出し（VitalsSystem.md 6節）、
