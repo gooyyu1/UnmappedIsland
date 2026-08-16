@@ -285,20 +285,6 @@ export class CardLane {
     return { entered, left: reusable };
   }
 
-  /**
-   * 1枚だけの札を直接据える（子ウィンドウが映すオブジェクトのカード。CardTableの管理の外に居る、
-   * bareなレーンのためのもの）。前の札は片付ける。
-   */
-  showCard(content: CardContent): Card {
-    const previous = this._cardObjects[0];
-    previous?.destroy();
-
-    const card = new Card(this.scene, this.metrics, 0, 0, content);
-    this.cardLayer.add(card);
-    this._cardObjects = [card];
-    return card;
-  }
-
   /** 枠の装飾と送り幅を、並べる枠に合わせる。 */
   private applyCells(cells: readonly LaneCell[]): void {
     this._cells = cells;
@@ -497,8 +483,12 @@ export class CardLane {
   }
 }
 
-/** 2枚のカードが同じものを映しているか（identityが1つでも重なるか、Card.identity参照）。 */
+/**
+ * 2枚のカードが同じものを映しているか（Card.identity参照）。**帰りを待っているぶん（awaited）も
+ * 見る**——借りた1枚を出している間は名乗る個体が0になる枠があり、そこが帰ってきた札と繋がらないと、
+ * 印だったはずの枠が別のカードとして作り直されてしまう。
+ */
 function sharesIdentity(a: CardContent, b: CardContent): boolean {
-  if (a.identity === undefined || b.identity === undefined) return false;
-  return a.identity.some((id) => b.identity?.includes(id) === true);
+  const keys = new Set([...(a.identity ?? []), ...(a.awaited ?? [])]);
+  return [...(b.identity ?? []), ...(b.awaited ?? [])].some((id) => keys.has(id));
 }

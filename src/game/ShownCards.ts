@@ -2,6 +2,7 @@ import type { WorldObject } from '../domain/runtime/WorldObject';
 import type { CardCombination, CardPlace, CardPlacement, CardPutIn, ObjectCardStack } from './PlayScreenView';
 import { samePlace } from './PlayScreenView';
 import type { CardContent, CardEdgeDirection } from './ui/Card';
+import { cardFace } from './ui/cardFace';
 
 /**
  * 札が出ている場所。ワールドのスロット（CardPlace）に、子ウィンドウが借りた1枚の枠を足したもの
@@ -39,9 +40,9 @@ export interface ShownDrop {
  * 別々に数えると、画面に出ていない札を掴んだことにできてしまう（子ウィンドウへ貸した1枚を、手元に
  * 残っている札のつもりで打ち割る）。
  *
- * **宙に在る札もここが持つ**——子ウィンドウへ貸した札（lend〜landed）と、探索ウィンドウが抱えている
- * 発見物（takeFound〜returnFound）。持ち出しの記録と並びの引き算を別の持ち主に分けると、
- * 片方だけ更新して食い違わせることができてしまう。
+ * **枠の外に出ている札もここが持つ**——子ウィンドウが映している1枚（borrow〜returnBorrowed）と、
+ * 探索ウィンドウが抱えている発見物（takeFound〜returnFound）。どこに出ているかの記録と並びの引き算を
+ * 別の持ち主に分けると、片方だけ更新して食い違わせることができてしまう。
  *
  * Phaserを知らない——レーンでも矩形でもなく「場所（CardSpot）とその中の位置」で答えるので、
  * 描画の無いところで確かめられる。矩形（どこへ飛ぶか）と実行の時機は呼び出し側の仕事。
@@ -50,16 +51,14 @@ export class ShownCards {
   private readonly source: CardSource;
 
   /**
-   * 子ウィンドウへ貸している札のインスタンス（Windows.md 1.1節）と、そこから元の枠へ帰る途中の札。
-   * 帰り着くまで（landed）は元の枠に居ない。
+   * 子ウィンドウが今出している1枚（Windows.md 1.1節）。**借りているという事実はこれだけ**
+   * ——ウィンドウがその札を出しているなら、元の枠には出ていない。運んでいる途中かどうかは
+   * 画面の側の話で、ここには持ち込まない。
+   *
+   * 束から借りたならその束も持つ。ポートレイト（キャラクタ自身の札）のように束でない札もあり、
+   * そちらは映すだけでボタンの相手にはならない。
    */
-  private readonly lent = new Set<number>();
-
-  /** 今貸している1枚の見た目（返すときの分身の姿になる）。ポートレイトのような束でない札もある。 */
-  private lentFace: CardContent | undefined;
-
-  /** 子ウィンドウが映している、借りた1枚の束（カードを出さないウィンドウではundefined）。 */
-  private window: ObjectCardStack | undefined;
+  private window: { readonly card: CardContent; readonly stack: ObjectCardStack | undefined } | undefined;
 
   /** 探索ウィンドウが抱えている発見物（Windows.md 5.1節）。まだどの枠にも居たことがない。 */
   private foundCards: readonly CardContent[] = [];
@@ -70,8 +69,6 @@ export class ShownCards {
 
   /** 入り直すときに全部を手放す。前のプレイの世界の札を持ち越さない。 */
   reset(): void {
-    this.lent.clear();
-    this.lentFace = undefined;
     this.window = undefined;
     this.foundCards = [];
   }
@@ -80,7 +77,7 @@ export class ShownCards {
 
   /** そこに並ぶ束。持ち出されている札を差し引いた、画面に出ている姿そのもの。 */
   stacksAt(spot: CardSpot): readonly (ObjectCardStack | undefined)[] {
-    if (spot === 'windowCard') return [this.window];
+    if (spot === 'windowCard') return [this.window?.stack];
 
     const stacks = this.source.stacksIn(spot);
     const aloft = this.aloft();
@@ -97,14 +94,17 @@ export class ShownCards {
    */
   private aloft(): ReadonlyMap<number, 'awaited' | 'unplaced'> {
     const aloft = new Map<number, 'awaited' | 'unplaced'>();
-    for (const id of this.lent) aloft.set(id, 'awaited');
+    for (const id of this.window?.card.identity ?? []) aloft.set(id, 'awaited');
     for (const card of this.foundCards) for (const id of card.identity ?? []) aloft.set(id, 'unplaced');
     return aloft;
   }
 
   /**
-   * その束のうち画面に出ているぶん（1件）。全部が持ち出されていれば、帰りを待つ枠には印だけの束が
-   * 残り（薄い印、CardInteraction.md 6.2節）、待たない枠には何も残らない（0件）。
+   * その束のうち画面に出ているぶん（1件）。全部が持ち出されていれば、帰りを待つ枠には印だけが残り
+   * （薄い印、CardInteraction.md 6.2節）、待たない枠には何も残らない（0件）。
+   *
+   * **出ている個体だけを名乗る**（identity）。よそに出ているぶんはawaitedとして枠が待つので、
+   * 同じ個体の札が画面に2枚出ることはなく、掴める札・重ねられる札もここに在るものだけになる。
    */
   private showing(
     stack: ObjectCardStack,
@@ -113,78 +113,69 @@ export class ShownCards {
     const rest = stack.objects.filter((object) => !aloft.has(object.instanceId));
     if (rest.length === stack.objects.length) return [stack];
 
-    const awaited = stack.objects.some((object) => aloft.get(object.instanceId) === 'awaited');
-    if (rest.length === 0) return awaited ? [stack] : [];
+    const awaited = stack.objects
+      .filter((object) => aloft.get(object.instanceId) === 'awaited')
+      .map((object) => object.instanceId);
+    if (rest.length === 0) return awaited.length === 0 ? [] : [awaitingStack(stack, awaited)];
 
-    // 帰りを待つ札があるなら識別子は貸した1個も含めたまま——帰り着いたときに同じ札として繋がる
-    // 必要があるため（CardLane.setCells）。動かせるのは残りだけなので、操作は引き直させる。
     const shown = this.source.cardOfObjects(rest, stack.place);
-    return [awaited ? { ...shown, identity: stack.identity } : shown];
+    return [awaited.length === 0 ? shown : { ...shown, awaited }];
   }
 
   // ---- 子ウィンドウへの貸し出し（Windows.md 1.1節） ----
 
   /**
-   * その束の先頭の1個を、子ウィンドウへ映す札として取り分ける。束を押しても、ウィンドウへ移るのは
-   * 先頭の1枚だけ——ボタンの操作が効くのもその1個なので、残りは元の枠に居たまま掴める。
-   * この時点ではまだ貸していない（lend）。前のウィンドウの返却が先に済む必要があるため。
+   * その束のうち、子ウィンドウが映すことになる先頭の1個ぶんの札（まだ借りていない）。束を押しても、
+   * ウィンドウへ移るのは先頭の1枚だけ——ボタンの操作が効くのもその1個なので、残りは元の枠に
+   * 居たまま掴める。
    */
-  borrowFirst(stack: ObjectCardStack): ObjectCardStack {
-    const first = this.source.cardOfObjects(stack.objects.slice(0, 1), stack.place);
-    this.window = first;
-    return first;
+  firstOf(stack: ObjectCardStack): ObjectCardStack {
+    return this.source.cardOfObjects(stack.objects.slice(0, 1), stack.place);
   }
 
-  /** カードを出さないウィンドウ（装備・怪我・キャラクタ）を開く。映す束は無い。 */
-  clearWindowStack(): void {
+  /**
+   * その1枚を、子ウィンドウが出す札として借りる。この時点から、それは元の枠ではなくウィンドウの枠に
+   * 出ている——枠から枠への運びは、並びの差し替えがそのまま見せる（cardMotionPlan）。
+   *
+   * **札を出さないウィンドウでは借りない**（装備・怪我）。借りると、元の枠から消えたままどこにも
+   * 出ない札ができてしまう。
+   */
+  borrow(card: CardContent, stack: ObjectCardStack | undefined): void {
+    this.window = { card, stack };
+  }
+
+  /**
+   * 借りていた札を手放す。返ってくるのは手放したインスタンス。**次の差し替えから元の枠に並ぶ**ので、
+   * 呼び出し側はウィンドウの枠を出どころとして渡すだけでよい（MotionContext.origins）。
+   */
+  returnBorrowed(): readonly number[] {
+    const released = this.window?.card.identity ?? [];
     this.window = undefined;
+    return released;
   }
 
-  /** 子ウィンドウが今映している束（カードを出さないウィンドウではundefined）。 */
+  /** 子ウィンドウが今出している1枚（出していなければundefined）。 */
+  get windowCard(): CardContent | undefined {
+    return this.window?.card;
+  }
+
+  /** 子ウィンドウが今映している束（束でない札を出しているウィンドウではundefined）。 */
   get windowStack(): ObjectCardStack | undefined {
-    return this.window;
+    return this.window?.stack;
   }
 
   /**
-   * その札を貸し出す。返ってくるのは、貸した札のインスタンスと、それが既に宙に在ったか
-   * （画面を作り直して開き直した場合。既にそこに在ったものなので、運んで見せてはいけない）。
-   * 識別子の無い札は貸せない（undefined）。
+   * その札から、子ウィンドウが借りているぶんを引いた姿（束を持たない札——ポートレイト——のためのもの。
+   * 束の並びはstacksAtが同じ引き算をする）。1個も残らなければ、帰りを待つ印になる。
    */
-  lend(content: CardContent): { readonly id: number; readonly alreadyAloft: boolean } | undefined {
-    const id = content.identity?.[0];
-    if (id === undefined) return undefined;
+  shownCard(card: CardContent): CardContent {
+    const borrowed = new Set(this.window?.card.identity ?? []);
+    const ids = card.identity ?? [];
+    const awaited = ids.filter((id) => borrowed.has(id));
+    if (awaited.length === 0) return card;
 
-    this.lentFace = content;
-    const alreadyAloft = this.lent.has(id);
-    this.lent.add(id);
-    return { id, alreadyAloft };
-  }
-
-  /**
-   * 貸していた札を返してもらう（貸していなければundefined）。**インスタンスはまだ宙に在る**——
-   * 帰りの便が着くか、帰り先が無いと分かった時点でlandedを呼ぶこと。
-   */
-  retrieve(): { readonly content: CardContent; readonly id: number } | undefined {
-    const content = this.lentFace;
-    this.lentFace = undefined;
-
-    const id = content?.identity?.[0];
-    if (content === undefined || id === undefined) return undefined;
-    return { content, id };
-  }
-
-  /** 宙に在った1枚が元の枠に帰り着いた（または帰り先が無くその場で消えた）。 */
-  landed(id: number): void {
-    this.lent.delete(id);
-  }
-
-  /**
-   * 貸している札のインスタンス（差し替えの計画が枚数から引く、MotionContext.borrowed）。
-   * **生きた集合そのもの**——差し替えの初めに帰り着く札はその場で解ける（landed）ので、
-   * 控えを渡すと解けたはずの1枚を引き続き数えてしまう。
-   */
-  get lentIds(): ReadonlySet<number> {
-    return this.lent;
+    const rest = ids.filter((id) => !borrowed.has(id));
+    return rest.length === 0 ? awaitingMark(card, awaited) : { ...card, identity: rest, awaited };
   }
 
   /**
@@ -193,7 +184,7 @@ export class ShownCards {
    * 返すときの姿もその新しい札になる。
    */
   restackWindow(): ObjectCardStack | undefined {
-    const opened = this.window;
+    const opened = this.window?.stack;
     const id = opened?.identity?.[0];
     if (opened === undefined || id === undefined) return undefined;
 
@@ -201,8 +192,7 @@ export class ShownCards {
       const object = stack?.objects.find((entry) => entry.instanceId === id);
       if (stack !== undefined && object !== undefined) {
         const card = this.source.cardOfObjects([object], stack.place);
-        this.window = card;
-        this.lentFace = card;
+        this.window = { card, stack: card };
         return card;
       }
     }
@@ -244,6 +234,8 @@ export class ShownCards {
     const dragged = fromStacks[fromIndex];
     const target = (sameSpot(from, to) ? fromStacks : this.stacksAt(to))[toIndex];
     if (dragged === undefined || target === undefined) return undefined;
+    // 個体を1つも出していない札（帰りを待つ印）は、掴む相手にも重ねる相手にもならない。
+    if (dragged.objects.length === 0 || target.objects.length === 0) return undefined;
 
     return this.source.combinationOf(dragged, target);
   }
@@ -381,6 +373,27 @@ export class ShownCards {
     // 手持ちの下は無く、子ウィンドウのカード（装備・怪我・コンテナの中身）の下は手持ち。
     return from === 'hand' ? [] : ['hand'];
   }
+}
+
+/**
+ * 帰りを待つ印（CardInteraction.md 6.2節）。個体を1つも出していないので、**顔だけを持ち操作は
+ * 何も持たない**——掴めないだけでなく、重ねる相手にも入れ物にもならない。そこに在るのは札ではなく、
+ * 借りた1枚が帰ってくる場所の目印だから。
+ */
+function awaitingMark(card: CardContent, awaited: readonly number[]): CardContent {
+  // 個体を映す札ではあるが、今そこに在るのは0個（識別子を持たない札＝個体を映さない札とは別物）。
+  return { ...cardFace(card), identity: [], awaited };
+}
+
+/** 束の枠に残る印。操作を持たないだけでなく、個体を1つも出していない（掴めず、重ねる相手にもならない）。 */
+function awaitingStack(stack: ObjectCardStack, awaited: readonly number[]): ObjectCardStack {
+  return {
+    ...awaitingMark(stack, awaited),
+    objects: [],
+    actions: [],
+    place: stack.place,
+    movedIds: () => [],
+  };
 }
 
 /** 2つの場所が同じか。借りた1枚の枠はワールドの場所ではないので、名前そのもので見分ける。 */

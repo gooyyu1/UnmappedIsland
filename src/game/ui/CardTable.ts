@@ -1,7 +1,8 @@
 import type Phaser from 'phaser';
 import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import type { CardContent } from './Card';
-import { Card, cardFace } from './Card';
+import { Card } from './Card';
+import { cardFace } from './cardFace';
 import type { CardLane } from './CardLane';
 import { FLY_EASE_OUT, FLY_MS } from './cardFlight';
 import { DustPuff } from './DustPuff';
@@ -50,28 +51,18 @@ export interface MotionContext {
    */
   readonly vanished?: readonly number[];
   readonly born?: readonly number[];
-  /**
-   * 子ウィンドウが借りている札のインスタンス（Windows.md 1.1節）。**枠には居ないので並びから
-   * 引く**——借りた側が自分の場所に出しているので、同じ物の札が画面に2枚出ることはない。
-   * 控えではなく、借り手が持っている集合そのものを渡すこと。
-   */
-  readonly borrowed?: ReadonlySet<number>;
 }
 
-/** carry（1枚を運ぶ便）の指定。 */
-export interface CarryOptions {
-  /** 便が運ぶインスタンス。載せると、差し替えごとに行き先が引き直される（landings）。 */
-  readonly ids?: readonly number[];
-  /** 着いた枠の札（合流先）。着いた時点でこの札のIDセットへ合流する。 */
-  readonly into?: Card;
-  /** 着いた時点で呼ぶ（帳簿の後始末用。合流はintoが行う）。 */
-  readonly onArrive?: () => void;
-}
-
-/** 飛んでいる途中の便を外から止める手立て（窓を閉じたときなど）。 */
+/** 飛んでいる途中の便を外から止める手立て（運んでいた札を掴み直したときなど）。 */
 export interface CarryHandle {
   /** 便を打ち切り、札をその場で消す。 */
   cancel(): void;
+}
+
+/** レーン1本と、そこへ並べる枠。 */
+export interface LaneView {
+  readonly lane: CardLane;
+  readonly cells: readonly LaneCell[];
 }
 
 /** 1つの便——目標へ向かっている実体の札。 */
@@ -81,8 +72,6 @@ interface Flight {
   to: Rect;
   into: Card | undefined;
   onArrive: (() => void) | undefined;
-  /** 差し替えごとに行き先を引き直すか。計画の外の場所（子ウィンドウの枠）へ向かう便は引き直さない。 */
-  readonly retargetable: boolean;
   /** 発進位置と経過。目標が変わったら現在位置から測り直す。 */
   fromX: number;
   fromY: number;
@@ -144,19 +133,14 @@ export class CardTable {
     this.freed.length = 0;
   }
 
-  /** 各レーンの内容を差し替え、出入りするカードを動かす。lanesとcellsは同じ順に対応する。 */
-  update(
-    lanes: readonly CardLane[],
-    cells: readonly (readonly LaneCell[])[],
-    context: MotionContext = {},
-  ): void {
-    const before = placedCards(lanes);
+  /** 各レーンの内容を差し替え、出入りするカードを動かす。 */
+  update(views: readonly LaneView[], context: MotionContext = {}): void {
+    const before = placedCards(views.map(({ lane }) => lane));
     // 最初の1回（作り直した直後）だけは出どころが無いので、飛ばさずその場に出す。
     const firstShow = before.length === 0;
 
-    // 宙に在る札はどの枠にも居ない。飛んでいる便・自由な札・借りられている札のIDを、枠の枚数から引く。
+    // 宙に在る札はどの枠にも居ない。運んでいる最中のIDを、枠の枚数から引く。
     const aloft = [
-      ...(context.borrowed ?? []),
       ...this.flights.flatMap((flight) => flight.ids),
       ...this.freed.flatMap((freed) => freed.ids),
     ];
@@ -166,15 +150,15 @@ export class CardTable {
     const preexisting = [...this.flights];
     const arriving: PlacedCard<Card, Rect>[] = [];
     const left: { card: Card; ids: readonly number[] }[] = [];
-    lanes.forEach((lane, index) => {
-      const update = lane.reconcile(cells[index], (content) => this.makeCard(content));
+    for (const { lane, cells } of views) {
+      const update = lane.reconcile(cells, (content) => this.makeCard(content));
       for (const entered of update.entered) {
         arriving.push({ card: entered.card, ids: idsOf(entered.card), rect: lane.slotRect(entered.index) });
       }
       for (const card of update.left) left.push({ card, ids: idsOf(card) });
-    });
+    }
     const arrivingCards = new Set(arriving.map(({ card }) => card));
-    const staying = placedCards(lanes).filter(({ card }) => !arrivingCards.has(card));
+    const staying = placedCards(views.map(({ lane }) => lane)).filter(({ card }) => !arrivingCards.has(card));
 
     const plan = planMotion({
       before,
@@ -204,7 +188,6 @@ export class CardTable {
         to: flight.to,
         into: flight.into,
         onArrive: undefined,
-        retargetable: true,
         fromX: flight.from.x,
         fromY: flight.from.y,
         elapsed: 0,
@@ -227,7 +210,8 @@ export class CardTable {
   ): void {
     for (const flight of flights) {
       if (!this.flights.includes(flight)) continue;
-      if (!flight.retargetable || flight.ids.length === 0) continue;
+      // インスタンスを載せていない便（見た目だけの飛び）は、行き先が世界の並びと関わらない。
+      if (flight.ids.length === 0) continue;
 
       const landing = landings.get(flight.ids[0]);
       if (landing === undefined) {
@@ -269,7 +253,6 @@ export class CardTable {
         to: landing.to,
         into: landing.into,
         onArrive: undefined,
-        retargetable: true,
         fromX: freed.card.x,
         fromY: freed.card.y,
         elapsed: 0,
@@ -280,31 +263,27 @@ export class CardTable {
   }
 
   /**
-   * 札を1枚、fromからtoへ運ぶ（子ウィンドウが借りるとき・返すとき、探索の発見物）。idsを載せた便は
-   * 差し替えごとに行き先が引き直され、intoの札へ合流する。載せない便は見た目だけの飛びで、toへ
-   * 着いたらonArriveを呼んで消える（発見物の枠はレーンではないので、受け取る側が自分の札を出す）。
+   * 見た目だけの札を1枚、fromからtoへ運ぶ（探索の発見物）。着いたらonArriveを呼んで消える
+   * ——発見物の枠はレーンではないので、受け取る側が自分の札を出す。
+   *
+   * **枠から枠への移動にこれを使ってはいけない。** レーンに並ぶ札の運びは、並びの差し替えが
+   * そのまま見せる（update）。
    */
-  carry(face: CardContent, from: Rect, to: Rect, options: CarryOptions = {}): CarryHandle {
-    const card = new Card(this.scene, this.metrics, from.x, from.y, {
-      ...cardFace(face),
-      identity: options.ids === undefined ? undefined : [...options.ids],
-    });
+  carry(face: CardContent, from: Rect, to: Rect, onArrive: () => void): void {
+    const card = new Card(this.scene, this.metrics, from.x, from.y, cardFace(face));
     this.layer.add(card);
-    const flight: Flight = {
+    this.startFlight({
       card,
-      ids: options.ids ?? [],
+      ids: [],
       to,
-      into: options.into,
-      onArrive: options.onArrive,
-      retargetable: options.ids !== undefined,
+      into: undefined,
+      onArrive,
       fromX: from.x,
       fromY: from.y,
       elapsed: 0,
       delay: 0,
       puffs: false,
-    };
-    this.startFlight(flight);
-    return { cancel: () => this.dropFlight(flight) };
+    });
   }
 
   /**
@@ -348,7 +327,6 @@ export class CardTable {
       to: target(),
       into: undefined,
       onArrive,
-      retargetable: false,
       fromX: card.x,
       fromY: card.y,
       elapsed: 0,
@@ -527,9 +505,12 @@ export class CarriedCard {
     const returned = this.ids.slice(keep);
     this.ids = this.ids.slice(0, keep);
     this.card.setContent({ ...this.card.content, identity: this.ids, count: this.ids.length });
-    this.table.carry({ ...cardFace(this.source.content), count: returned.length }, this.rect, this.home(), {
-      onArrive: () => this.returnToSource(returned),
-    });
+    this.table.carry(
+      { ...cardFace(this.source.content), count: returned.length },
+      this.rect,
+      this.home(),
+      () => this.returnToSource(returned),
+    );
     return true;
   }
 

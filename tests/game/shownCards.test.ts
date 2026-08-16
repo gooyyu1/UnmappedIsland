@@ -80,10 +80,10 @@ function screen(
   });
 }
 
-/** 束の先頭1個を子ウィンドウへ借りる（開くときの経路そのもの: borrowFirst → lend）。 */
+/** 束の先頭1個を子ウィンドウへ借りる（開くときの経路そのもの）。 */
 function borrow(shown: ShownCards, borrowed: ObjectCardStack): ObjectCardStack {
-  const first = shown.borrowFirst(borrowed);
-  expect(shown.lend(first)?.alreadyAloft).toBe(false);
+  const first = shown.firstOf(borrowed);
+  shown.borrow(first, first);
   return first;
 }
 
@@ -93,19 +93,13 @@ const idsAt = (shown: ShownCards, spot: CardSpot, index: number): readonly numbe
 
 /**
  * 今画面に見えている個体を、場所を跨いで全部数える（発見物は探索ウィンドウに見えている）。
- * 貸している札はレーンでは枚数から引かれる（planMotionのaloft）ので、ここでも引いて数える。
+ * **札が名乗っている個体（identity）がそのまま「そこに見えているもの」**——よそに出ているぶんは
+ * 名乗らないので、引き算はここには要らない。
  */
 function visibleIds(shown: ShownCards, spots: readonly CardSpot[]): readonly number[] {
-  const aloft = new Set([...shown.lentIds, ...shown.found.flatMap((card) => card.identity ?? [])]);
   const visible: number[] = [];
   for (const spot of spots) {
-    for (const entry of shown.stacksAt(spot)) {
-      for (const shownObject of entry?.objects ?? []) {
-        if (spot === 'windowCard' || !aloft.has(shownObject.instanceId)) {
-          visible.push(shownObject.instanceId);
-        }
-      }
-    }
+    for (const entry of shown.stacksAt(spot)) visible.push(...(entry?.identity ?? []));
   }
   visible.push(...shown.found.flatMap((card) => card.identity ?? []));
   return visible;
@@ -123,20 +117,25 @@ describe('画面に出ている札', () => {
     borrow(shown, stack('hand', [1, 2]));
 
     expect(idsAt(shown, 'hand', 0), '手元に残っているのは貸していないほう').toEqual([2]);
+    expect(shown.stacksAt('hand')[0]?.identity, '名乗るのは手元に在るぶんだけ').toEqual([2]);
     expect(
-      shown.stacksAt('hand')[0]?.identity,
-      '識別子は貸した1個も含めたまま——帰り着いたときに同じ札として繋がる',
-    ).toEqual([1, 2]);
+      shown.stacksAt('hand')[0]?.awaited,
+      '貸した1個は枠が帰りを待つ——帰り着いたときに同じ札として繋がる',
+    ).toEqual([1]);
   });
 
-  it('丸ごと貸した束は、帰ってくる場所を示す印として残る', () => {
+  it('丸ごと貸した束の枠には、帰ってくる場所を示す印だけが残る', () => {
     const shown = screen({ hand: [stack('hand', [1])] });
     borrow(shown, stack('hand', [1]));
 
+    const mark = shown.stacksAt('hand')[0];
     expect(shown.stacksAt('hand')).toHaveLength(1);
-    expect(idsAt(shown, 'hand', 0), '内容はそのまま。押せるかどうかは枚数を知っている札が決める').toEqual([
-      1,
-    ]);
+    expect(idsAt(shown, 'hand', 0), '個体は1つも出ていない').toEqual([]);
+    expect(mark?.awaited, '待っているのは貸した1個').toEqual([1]);
+    expect(
+      [mark?.moveTo, mark?.reorder, mark?.acceptedCountAt],
+      '印は操作を持たない——掴む相手にも重ねる相手にもならない',
+    ).toEqual([undefined, undefined, undefined]);
   });
 
   it('探索が抱えている札は並びに入らず、後ろの札が繰り上がる', () => {
@@ -160,39 +159,20 @@ describe('画面に出ている札', () => {
 });
 
 describe('貸し借りの流れ（Windows.md 1.1節）', () => {
-  it('貸して、返して、帰り着けば、元どおり', () => {
+  it('借りて、手放せば、元の枠に戻る', () => {
     const shown = screen({ hand: [stack('hand', [1, 2])] });
     borrow(shown, stack('hand', [1, 2]));
-    expect(shown.lentIds.has(1)).toBe(true);
+    expect(idsAt(shown, 'hand', 0), '貸している間は手元のぶんだけ').toEqual([2]);
 
-    const taken = shown.retrieve();
-    expect(taken?.id).toBe(1);
-    expect(shown.lentIds.has(1), '帰りの便が着くまで、そのインスタンスはまだ宙に在る').toBe(true);
-
-    shown.landed(1);
-    expect(shown.lentIds.size).toBe(0);
+    expect(shown.returnBorrowed(), '手放した1個を答える（帰りの出どころを決めるのに使う）').toEqual([1]);
+    expect(shown.windowCard).toBeUndefined();
     expect(idsAt(shown, 'hand', 0), '束が全部戻っている').toEqual([1, 2]);
+    expect(shown.stacksAt('hand')[0]?.awaited, '待つものはもう無い').toBeUndefined();
   });
 
-  it('画面を作り直して開き直したときは、貸したままなので運ばない', () => {
+  it('借りていなければ、手放すものは無い', () => {
     const shown = screen({ hand: [stack('hand', [1])] });
-    borrow(shown, stack('hand', [1]));
-
-    // 作り直しはウィンドウの表示物だけを捨てる（貸し出しは生きている）。
-    shown.clearWindowStack();
-    const reopened = shown.borrowFirst(stack('hand', [1]));
-
-    expect(shown.lend(reopened)?.alreadyAloft, '既に宙に在るので、飛ばして見せてはいけない').toBe(true);
-  });
-
-  it('貸していなければ、返すものは無い', () => {
-    const shown = screen({ hand: [stack('hand', [1])] });
-    expect(shown.retrieve()).toBeUndefined();
-  });
-
-  it('識別子の無い札は貸せない', () => {
-    const shown = screen({});
-    expect(shown.lend({ icon: '👤', name: '誰か' })).toBeUndefined();
+    expect(shown.returnBorrowed()).toEqual([]);
   });
 
   it('借りている1枚は、ワールドが変わったら引き直す', () => {
@@ -299,6 +279,15 @@ describe('ドロップの意味', () => {
     } as const;
     expect(shown.dropAction(drop)).toBeUndefined();
     expect(shown.multiDropLimit(drop)).toBe(1);
+  });
+
+  it('帰りを待つ印へは重ねられない', () => {
+    // 印は個体を1つも出していないので、組み合わせの相手にならない（相手が居ないのだから、
+    // 何が成立するかを問うこともできない）。
+    const shown = screen({ hand: [stack('hand', [1])], items: [stack('items', [2])] });
+    borrow(shown, stack('hand', [1]));
+
+    expect(shown.combinationAt('items', 0, 'hand', 0)).toBeUndefined();
   });
 
   it('重ねて動くのは、掴んだ札が見せている個体', () => {
@@ -461,14 +450,17 @@ describe('経過中のフレーム（ShownCards × planMotion）', () => {
     })?.held;
     expect(held).toBeDefined();
 
-    // CardMotion.updateがこの2つを合わせてaloftにする（掴んだ1枚＋借りている集合）。
-    const aloft = [held!.instanceId, ...shown.lentIds];
+    // 枠が名乗るのは手元に在るぶんだけ（貸した1個はウィンドウの枠に出ている）。掴んで離した1枚は
+    // CardTableが宙に在るものとして引く。
+    const placed = { card: '石', ids: shown.stacksAt('hand')[0]?.identity ?? [], rect: 0 };
+    expect(placed.ids).toEqual([2]);
+
     const plan = planMotion({
-      before: [{ card: '石', ids: [1, 2], rect: 0 }],
+      before: [placed],
       arriving: [],
-      staying: [{ card: '石', ids: [1, 2], rect: 0 }],
+      staying: [placed],
       left: [],
-      aloft,
+      aloft: [held!.instanceId],
     });
 
     expect(plan.shown).toEqual([{ card: '石', present: [], emptied: true }]);

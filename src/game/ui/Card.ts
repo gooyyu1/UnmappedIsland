@@ -14,6 +14,7 @@ import { noteOperation } from '../errorReport';
 import { minutesText } from './durationText';
 import { HoldRepeat } from './holdRepeat';
 import { onPressRelease } from './tap';
+import { cardFace } from './cardFace';
 
 /**
  * カードの枠の画像のテクスチャキー（実体はsrc/assets/card_frame.png、BootSceneが読む）。
@@ -249,6 +250,12 @@ export interface CardContent {
    * みなす。省略したカードは差し替えのたびに別のカードとして扱われる。
    */
   readonly identity?: readonly number[];
+  /**
+   * この枠が帰りを待っているインスタンス——**今は別の場所に出ている**もの（子ウィンドウが借りた1枚、
+   * Windows.md 1.1節）。identityには入らない（在るのはあちら側）が、帰り着いたときに同じ札として
+   * 繋がるよう、枠はこれを名乗って待つ。1つも在らなくなった枠が薄い印になるのはこのため。
+   */
+  readonly awaited?: readonly number[];
   /** 1枚が映しているインスタンスの数。2以上のときだけ、右上に丸で囲んだ数字として出す。 */
   readonly count?: number;
   /**
@@ -323,16 +330,6 @@ export interface CardContent {
    * 焼かれている肉にも、それを抱えている炉にも同じ覆いが出る。
    */
   readonly cooking?: CardCooking;
-}
-
-/**
- * 見た目のぶんだけを取り出す（操作も識別子も引き継がない）。見せるためだけのカード——ドラッグ中の
- * 分身、探索で見つけたものの枠、スタックへ重なる1枚——を作るときに使う。
- */
-export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, background, kind, alert, road, gauges, mark, overlay, inProgress, cooking } =
-    content;
-  return { icon, name, art, background, kind, alert, road, gauges, mark, overlay, inProgress, cooking };
 }
 
 /**
