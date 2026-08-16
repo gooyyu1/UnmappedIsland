@@ -1,3 +1,4 @@
+import { pickWeighted } from '../runtime/Rng';
 import type { EffectSite, WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import { ActiveEffect } from './ActiveEffect';
@@ -53,27 +54,24 @@ export class PickEffect extends ActiveEffect {
     return this.candidates.some((candidate) => candidate.destroys(target));
   }
 
-  /** weightで重み付き抽選して1つ選ぶ。候補が非空であることは呼び出し側が保証する。 */
+  /**
+   * weightで重み付き抽選して1つ選ぶ。候補が非空であることは呼び出し側が保証する。
+   *
+   * **全候補の重みが0なら先頭の候補が選ばれる。** 何も起きない手番を作らないための規約で、
+   * 「起こりうることが1つも無い」ときに何を選ぶかは抽選（pickWeighted）ではなくこちらが決める。
+   */
   private selectWeighted(
     self: WorldObject,
     actor: WorldObject | undefined,
     dragged: WorldObject | undefined,
     session: WorldSession,
   ): PickCandidateDef {
-    if (this.candidates.length === 1) return this.candidates[0];
-
-    const weights = this.candidates.map((c) => Math.max(0, c.resolveWeight(self, actor, dragged)));
-    const total = weights.reduce((sum, w) => sum + w, 0);
-    if (total <= 0) return this.candidates[0];
-
-    const roll = session.rng.nextDouble() * total;
-    let cumulative = 0;
-    for (let i = 0; i < this.candidates.length; i++) {
-      cumulative += weights[i];
-      if (roll < cumulative) return this.candidates[i];
-    }
-
-    return this.candidates[this.candidates.length - 1];
+    const chosen = pickWeighted(
+      this.candidates,
+      (candidate) => candidate.resolveWeight(self, actor, dragged),
+      session.rng,
+    );
+    return chosen ?? this.candidates[0];
   }
 }
 

@@ -435,19 +435,44 @@
       ]
     },
     "destroy_target_spec": {
-      "description": "削除する対象を直接指定する。単一の対象名(`destroy: self`)か、対象名のリスト(`destroy: [self, dragged]`)のいずれか。",
+      "description": "削除する対象を直接指定する。単一の対象(`destroy: self` / `destroy: {prop: smash_target}`)か、そのリスト(`destroy: [self, dragged]`)のいずれか。",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/object_ref"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/object_ref"
+          },
+          "minItems": 1
+        }
+      ]
+    },
+    "object_ref": {
+      "description": "オブジェクトそのものを1つ指す参照（9.3節・9.6節）。対象名か、インスタンスIDを保持するプロパティ（`{prop: ...}`）のいずれか。",
       "oneOf": [
         {
           "$ref": "#/$defs/destroy_target_name"
         },
         {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/destroy_target_name"
-          },
-          "minItems": 1
+          "$ref": "#/$defs/instance_id_prop_ref"
         }
       ]
+    },
+    "instance_id_prop_ref": {
+      "description": "そのプロパティの実効値をインスタンスIDとして解釈した相手（9.6節）。定義時点では決まらず実行時に確定する個体を指す。",
+      "type": "object",
+      "properties": {
+        "prop": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        }
+      },
+      "required": [
+        "prop"
+      ],
+      "additionalProperties": false
     },
     "spawn_spec": {
       "type": "object",
@@ -600,9 +625,10 @@
       "type": "object",
       "properties": {
         "showMenu": {
-          "description": "メニューへの表示方法。現時点ではalwaysのみ（11.1節、ActionSystem.md 4節の未決事項）。",
+          "description": "メニューへの表示方法（11.1節）。省略時はalways。neverは画面のボタンには出さず、時間の側が起こす操作（動物の1手、HuntingSystem.md 5節）。",
           "enum": [
-            "always"
+            "always",
+            "never"
           ]
         },
         "conditions": {
@@ -1202,14 +1228,19 @@
       ]
     },
     "move_spec": {
-      "description": "move（9.6節）: subjectのオブジェクトを、移動先のオブジェクトの中へ移動する。subjectはactorかdraggedのみ。移動先はto（self=move宣言元自身 / parent=その直接の親）かto_prop（そのプロパティが保持するインスタンスIDのオブジェクト）のどちらか一方で指す。on_overflow/on_shortfallでは使えない（actorが存在しないため、ロード時エラー）。",
+      "description": "move（9.6節）: subjectのオブジェクトを、移動先のオブジェクトの中へ移動する。動かす物はsubject（self=move宣言元自身 / actor / dragged）かsubject_prop（そのプロパティが保持するインスタンスIDのオブジェクト）のどちらか一方、移動先はto（self / parent=その直接の親）かto_propのどちらか一方で指す。on_overflow/on_shortfallでは使えない（actorが存在しないため、ロード時エラー）。",
       "type": "object",
       "properties": {
         "subject": {
           "enum": [
+            "self",
             "actor",
             "dragged"
           ]
+        },
+        "subject_prop": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
         },
         "to": {
           "enum": [
@@ -1222,18 +1253,33 @@
           "pattern": "^[a-z][a-z0-9_]*$"
         }
       },
-      "required": [
-        "subject"
-      ],
-      "oneOf": [
+      "allOf": [
         {
-          "required": [
-            "to"
+          "oneOf": [
+            {
+              "required": [
+                "subject"
+              ]
+            },
+            {
+              "required": [
+                "subject_prop"
+              ]
+            }
           ]
         },
         {
-          "required": [
-            "to_prop"
+          "oneOf": [
+            {
+              "required": [
+                "to"
+              ]
+            },
+            {
+              "required": [
+                "to_prop"
+              ]
+            }
           ]
         }
       ],

@@ -28,6 +28,8 @@ slot_texts:
     display_name: 装備
   injuries:
     display_name: 怪我
+  spoils:
+    display_name: くわえた物
 
 object_texts:
   # 全オブジェクト共通のメンバー。ここにdisplay_name/descriptionを書いても、
@@ -91,6 +93,45 @@ object_texts:
       vulnerability:
         display_name: 無防備さ
         description: 狙って急所を打てる度合い。気を失っている相手ほど大きい。
+      lurk:
+        display_name: 様子見
+        description: 1手の重み配分のうち、何もせず様子をうかがう回の重み。
+      bite:
+        display_name: 噛みつき
+        description: 1手の重み配分のうち、同じ土地に居る相手へ噛みつく回の重み。
+      gore:
+        display_name: 牙
+        description: 1手の重み配分のうち、牙を突き上げる回の重み。大型だけが持つ。
+      snatch:
+        display_name: 持ち去り
+        description: 1手の重み配分のうち、足元の物をくわえて自分のものにする回の重み。
+      smash:
+        display_name: 破壊
+        description: 1手の重み配分のうち、足元の物にぶつかって壊す回の重み。
+      flee:
+        display_name: 逃走
+        description: 1手の重み配分のうち、隣の土地へ逃げる回の重み。深手を負うほど太くなる。
+      nearby_characters:
+        display_name: 近くの人
+        description: 同じ土地に居る人の数。手番のたびに数え直される。
+      lootables:
+        display_name: 持ち去れる物
+        description: 同じ土地にある、持ち去れる物の数。手番のたびに数え直される。
+      loot_target:
+        display_name: 持ち去る相手
+        description: 次の手番で持ち去る物。手番のたびに選び直される。
+      smashables:
+        display_name: 壊せる物
+        description: 同じ土地にある、ぶつかって壊せる物の数。手番のたびに数え直される。
+      smash_target:
+        display_name: ぶつかる相手
+        description: 次の手番でぶつかる物。手番のたびに選び直される。
+      escape_routes:
+        display_name: 逃げ道
+        description: この土地から出ている、見つかっている道の本数。1本も無ければ逃げられない。
+      flee_to:
+        display_name: 逃げ込む先
+        description: 次の手番で逃げ込む土地。手番のたびに選び直される。
       wariness:
         display_name: 警戒
         description: この動物がどれだけ気を立てているか。傷を負わされれば上がり、放っておけば下がる。
@@ -154,6 +195,9 @@ object_texts:
       life:
         display_name: 残り
     actions:
+      turn:
+        display_name: 手番
+        description: 時間の経過で回ってくる動物の1手。プレイヤーが起こすものではない。
       explore:
         display_name: 探索する
         description: あたりを調べて、アイテム・設置物・他の土地へ続く道を探す。何度でも続けられる。
@@ -293,6 +337,12 @@ object_texts:
   puncture_wound:
     display_name: 刺し傷
     description: 穂先が深く突き通した傷。開いたままの深部から、裂傷とは桁違いの速さで血が流れる。
+  bite_wound:
+    display_name: 噛み傷
+    description: 歯が並んで食い込んだ傷。裂傷より浅いが、放っておけばしばらく血が流れ続ける。
+  gore_wound:
+    display_name: 牙の傷
+    description: 下から突き上げた牙が深部まで裂いた傷。この島で最も速く血が流れる。手当てが間に合わなければ、その場を離れても倒れる。
 
   # 動物（animals.yaml）。
   monkey:
@@ -765,6 +815,9 @@ stage_texts:
 # 起きたことを告げる出来事（GameElementDefinition.md 9.8節のsignal）。起きた札の上に一瞬だけ浮かぶ
 # ので、離れて見ても読める短い語にする（CardView.md 14節）。
 signal_texts:
+  bit: 噛みつき
+  fled: 逃げた
+  gored: 突き上げ
   grazed: 浅手
   hit: 手応え
   killed: 仕留めた
@@ -772,3 +825,5 @@ signal_texts:
   missed: 空振り
   not_lit: 点かず
   pierced: 深手
+  smashed: 踏み壊し
+  snatched: 持ち去り

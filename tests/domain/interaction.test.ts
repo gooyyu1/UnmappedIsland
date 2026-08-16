@@ -172,6 +172,43 @@ object_defs:
     expect(executed, 'アクション自体は実行される(親が無いのでparent対象の適用だけが無視される)').toBe(true);
   });
 
+  it('destroyの対象を、インスタンスIDを持つプロパティで指せる', () => {
+    // 定義時点では決まらず実行時に確定する個体を消す形（動物がぶつかって壊す1手、
+    // docs/engine/HuntingSystem.md 5節）。指す先が居なければ何も起きない。
+    const yaml = `
+object_defs:
+  ground:
+    slots:
+      items: {}
+  boar:
+    props:
+      smash_target:
+        value: 0
+    actions:
+      trample:
+        destroy: {prop: smash_target}
+  basket: {}
+`;
+    const codex = load(yaml);
+    const session = new WorldSession(codex);
+    const itemsSlotId = codex.slotNames.getId('items');
+    const smashTargetId = codex.propertyNames.getId('smash_target');
+
+    const ground = spawn(codex, 'ground');
+    const boar = spawn(codex, 'boar');
+    const basket = spawn(codex, 'basket');
+    expect(boar.moveToSlot(ground, itemsSlotId)).toBeUndefined();
+    expect(basket.moveToSlot(ground, itemsSlotId)).toBeUndefined();
+
+    boar.setProperty(smashTargetId, 9999);
+    expect(boar.tryExecuteAction('trample', undefined, session)).toBe(true);
+    expect(basket.parent, '指す先が居なければ何も起きない').toBe(ground);
+
+    boar.setProperty(smashTargetId, basket.instanceId);
+    expect(boar.tryExecuteAction('trample', undefined, session)).toBe(true);
+    expect(basket.parent, 'プロパティが指す個体が消える').toBeUndefined();
+  });
+
   it('represented_by先の中身がある場合はそちらへ委譲される', () => {
     const yaml = `
 object_defs:

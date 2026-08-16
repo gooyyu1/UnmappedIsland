@@ -643,24 +643,29 @@ export function fromGameSession(
    * そのカードで実行できるアクション。宣言を読むのは操作対象の代表（represented_by、ActionSystem.md
    * 1節）で、実行はカードが映しているオブジェクト自身へ頼む（代表の解決はエンジン側が行う）。
    * 水筒のカードに、中身の水のdrinkがボタンとして出る。
+   *
+   * `showMenu: never`のアクションはボタンにしない（GameElementDefinition.md 11.1節）。プレイヤーが
+   * 押す機会が無い操作——動物の1手のように時間の側が起こすもの——のための宣言。
    */
   const actionsOf = (instance: WorldObject): readonly CardAction[] => {
     const target = instance.resolveInteractionTarget();
     const texts = locale.object(target.def.name);
-    return target.def.actions.map((action) => {
-      const declared = texts.action(action.name);
-      const unmet = instance.actionUnmetRequirement(action.name, game.player.instance);
-      return {
-        name: declared.displayName,
-        description: declared.description,
-        minutes: instance.actionMinutes(action.name, game.player.instance),
-        execute: () => {
-          instance.tryExecuteAction(action.name, game.player.instance, game.session);
-        },
-        enabled: unmet === undefined,
-        reason: unmet?.reasonName === undefined ? undefined : locale.reason(unmet.reasonName),
-      };
-    });
+    return target.def.actions
+      .filter((action) => action.showMenu === 'always')
+      .map((action) => {
+        const declared = texts.action(action.name);
+        const unmet = instance.actionUnmetRequirement(action.name, game.player.instance);
+        return {
+          name: declared.displayName,
+          description: declared.description,
+          minutes: instance.actionMinutes(action.name, game.player.instance),
+          execute: () => {
+            instance.tryExecuteAction(action.name, game.player.instance, game.session);
+          },
+          enabled: unmet === undefined,
+          reason: unmet?.reasonName === undefined ? undefined : locale.reason(unmet.reasonName),
+        };
+      });
   };
 
   const itemTagId = codex.tagNames.tryGetId('item');

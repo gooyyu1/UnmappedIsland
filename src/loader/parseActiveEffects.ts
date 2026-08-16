@@ -28,8 +28,8 @@ import {
   TransferEffect,
 } from '../domain/defs/ActiveEffect';
 import type { ActiveEffect, SpawnTargetRoot } from '../domain/defs/ActiveEffect';
-import type { MoveDestination } from '../domain/defs/MoveEffect';
 import { MoveEffect } from '../domain/defs/MoveEffect';
+import { ObjectRef } from '../domain/defs/ObjectRef';
 import { PickCandidateDef, PickEffect, WeightSpec } from '../domain/defs/PickEffect';
 import { SignalEffect } from '../domain/defs/SignalEffect';
 
@@ -73,7 +73,7 @@ export function parseActiveEffectBody(
         operations.push(parseMove(loader, keyContext, asMap(valueNode, keyContext), selfOnly));
         break;
       case 'destroy':
-        for (const target of parseDestroyTargets(keyContext, valueNode, allowDragged, selfOnly))
+        for (const target of parseDestroyTargets(loader, keyContext, valueNode, allowDragged, selfOnly))
           operations.push(new DestroyEffect(target));
         break;
       case 'spawn':
@@ -390,10 +390,9 @@ function parseTransfers(
  * move（subjectのオブジェクトを、移動先の中へ移動する。MoveEffect参照）。
  * transferと同じフラットフィールド規約（`move: {subject: actor, to_prop: destination_id}`）。
  *
- * subjectはactor（アクション実行者）とdragged（combinationsでドラッグされてきたカード）のみ対応する。
- * self/parent/child等は「一度きりの命令に対してどれを動かすか」の意味論が未確定のため未対応。
- * 移動先はtoかto_propのどちらか一方で指す（両方・どちらも無しはエラー）。
- * selfOnly文脈（rangeイベント）にはactorもdraggedも存在しないため使えない。
+ * 動かす物も行き先も「対象キーか、インスタンスIDを持つプロパティか」の二択（ObjectRef）で、
+ * subjectは`subject`/`subject_prop`、移動先は`to`/`to_prop`の**どちらか一方**で指す
+ * （両方・どちらも無しはエラー）。selfOnly文脈（rangeイベント）にはactorもdraggedも存在しないため使えない。
  */
 function parseMove(
   loader: WorldCodexYamlLoader,
@@ -406,35 +405,56 @@ function parseMove(
       `${context}: moveはon_overflow/on_shortfallでは使えません（actorが存在しないため）。`,
     );
 
-  const subjectRaw = requireScalar(map, 'subject', context);
-  if (subjectRaw !== 'actor' && subjectRaw !== 'dragged')
-    throw new YamlLoadError(
-      `${context}: moveのsubjectは'actor'か'dragged'のみ対応しています（値: '${subjectRaw}'）。`,
-    );
-
   const unknownKeys = entriesInOrder(map)
     .map(([key]) => key)
-    .filter((key) => key !== 'subject' && key !== 'to' && key !== 'to_prop');
+    .filter((key) => !MOVE_KEYS.has(key));
   if (unknownKeys.length > 0)
     throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
 
-  return new MoveEffect(subjectRaw, parseMoveDestination(loader, context, map));
+  return new MoveEffect(parseMoveSubject(loader, context, map), parseMoveDestination(loader, context, map));
+}
+
+/** moveが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。 */
+const MOVE_KEYS = new Set(['subject', 'subject_prop', 'to', 'to_prop']);
+
+/**
+ * moveの動かす物（subject か subject_prop のどちらか一方）。
+ *
+ * 対象キーは`self`（moveを宣言したオブジェクト自身）・`actor`（アクション実行者）・`dragged`
+ * （combinationsでドラッグされてきたカード）のみ対応する。`parent`/`ancestor`/`child`は
+ * 「一度きりの命令に対してどれを動かすか」の意味論が未確定のため未対応。
+ */
+function parseMoveSubject(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): ObjectRef {
+  const subject = tryGetScalar(map, 'subject', context);
+  const subjectProp = tryGetScalar(map, 'subject_prop', context);
+
+  if ((subject === undefined) === (subjectProp === undefined))
+    throw new YamlLoadError(
+      `${context}: moveの動かす物はsubjectかsubject_propのどちらか一方で指定してください。`,
+    );
+
+  if (subjectProp !== undefined) return ObjectRef.ofProperty(loader.propertyNames.intern(subjectProp));
+
+  if (subject !== 'self' && subject !== 'actor' && subject !== 'dragged')
+    throw new YamlLoadError(
+      `${context}: moveのsubjectは'self'/'actor'/'dragged'のみ対応しています（値: '${subject}'）。`,
+    );
+  return ObjectRef.ofRoot(subject);
 }
 
 /** moveの移動先（to か to_prop のどちらか一方）。 */
-function parseMoveDestination(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): MoveDestination {
+function parseMoveDestination(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): ObjectRef {
   const to = tryGetScalar(map, 'to', context);
   const toProp = tryGetScalar(map, 'to_prop', context);
 
   if ((to === undefined) === (toProp === undefined))
     throw new YamlLoadError(`${context}: moveの移動先はtoかto_propのどちらか一方で指定してください。`);
 
-  if (toProp !== undefined) {
-    return { kind: 'instance_id_prop', propertyGlobalId: loader.propertyNames.intern(toProp) };
-  }
-  if (to === 'self') return { kind: 'self' };
-  if (to === 'parent') return { kind: 'parent' };
-  throw new YamlLoadError(`${context}: moveのtoは'self'か'parent'のみ対応しています（値: '${to}'）。`);
+  if (toProp !== undefined) return ObjectRef.ofProperty(loader.propertyNames.intern(toProp));
+
+  if (to !== 'self' && to !== 'parent')
+    throw new YamlLoadError(`${context}: moveのtoは'self'か'parent'のみ対応しています（値: '${to}'）。`);
+  return ObjectRef.ofRoot(to);
 }
 
 /**
@@ -496,23 +516,46 @@ function parseSignals(
   });
 }
 
-/** destroy（削除対象の直接指定）を読む。単一の対象名か対象名のリストを許容する。
- * ancestorはプロパティ名が無いと解決できないため、destroyの対象としては未対応。 */
+/** destroy（削除対象の直接指定）を読む。単一の対象か対象のリストを許容する。 */
 function parseDestroyTargets(
+  loader: WorldCodexYamlLoader,
   context: string,
   node: YamlNode,
   allowDragged: boolean,
   selfOnly: boolean,
-): ReferenceRoot[] {
-  if (isMap(node))
-    throw new YamlLoadError(`${context}: destroyは対象名か、対象名のリストのいずれかである必要があります。`);
-
+): ObjectRef[] {
   if (isSeq(node))
-    return (node.items as YamlNode[]).map((n) =>
-      parseObjectTargetKey(context, asScalarText(n, context), allowDragged, selfOnly),
+    return (node.items as YamlNode[]).map((n) => parseObjectRef(loader, context, n, allowDragged, selfOnly));
+
+  return [parseObjectRef(loader, context, node, allowDragged, selfOnly)];
+}
+
+/**
+ * オブジェクトそのものを1つ指す参照（ObjectRef）を読む。対象キー（`self`）か、インスタンスIDを
+ * 持つプロパティ（`{prop: smash_target}`）のいずれか。
+ *
+ * ancestorはプロパティ名が無いと解決先が決まらないため、オブジェクトを指す文脈では使えない。
+ */
+function parseObjectRef(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YamlNode,
+  allowDragged: boolean,
+  selfOnly: boolean,
+): ObjectRef {
+  if (!isMap(node))
+    return ObjectRef.ofRoot(
+      parseObjectTargetKey(context, asScalarText(node, context), allowDragged, selfOnly),
     );
 
-  return [parseObjectTargetKey(context, asScalarText(node, context), allowDragged, selfOnly)];
+  const propName = requireScalar(node, 'prop', context);
+  const unknownKeys = entriesInOrder(node)
+    .map(([key]) => key)
+    .filter((key) => key !== 'prop');
+  if (unknownKeys.length > 0)
+    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+
+  return ObjectRef.ofProperty(loader.propertyNames.intern(propName));
 }
 
 /**

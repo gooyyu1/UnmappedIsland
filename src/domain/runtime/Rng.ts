@@ -12,6 +12,25 @@ export interface Rng {
   nextInt(minInclusive: number, maxExclusive: number): number;
 }
 
+/**
+ * 重み付き抽選で1つ選ぶ。負の重みは0として扱う（選ばれない）。候補が空、あるいは重みの合計が0なら
+ * 選べないのでundefined——「1つも引けなかったときにどうするか」は、抽選ではなく呼び出し側の決めごと。
+ */
+export function pickWeighted<T>(items: readonly T[], weightOf: (item: T) => number, rng: Rng): T | undefined {
+  const weights = items.map((item) => Math.max(0, weightOf(item)));
+  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  if (total <= 0) return undefined;
+
+  const roll = rng.nextDouble() * total;
+  let cumulative = 0;
+  for (let i = 0; i < items.length; i++) {
+    cumulative += weights[i];
+    if (roll < cumulative) return items[i];
+  }
+
+  return items[items.length - 1];
+}
+
 /** 既定の乱数源（非決定）。 */
 export function randomRng(): Rng {
   return {

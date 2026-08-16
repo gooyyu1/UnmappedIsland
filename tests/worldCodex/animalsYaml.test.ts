@@ -178,8 +178,10 @@ describe('animals.yamlの動物', () => {
     open(LANDS);
     expect(signalsOf(() => strikeWith('spear'))).toEqual(['monkey: pierced']);
 
+    // 殴るのに15分＝1tickかかるので、同じ回にサルの1手も入る（同2節）。手番は効果より先に回る
+    // （時間を進めてから効果を適用する、ActionSystem.md 2節）ので、告げられる順も1手が先になる。
     open(WHIFFS);
-    expect(signalsOf(() => strikeWith('sharp_stone'))).toEqual(['monkey: missed']);
+    expect(signalsOf(() => strikeWith('sharp_stone'))).toEqual(['monkey: bit', 'monkey: missed']);
   });
 
   describe('体格と武器', () => {
