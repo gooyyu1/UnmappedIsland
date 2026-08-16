@@ -5,8 +5,10 @@ import { INT32_MAX } from '../../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
 import type { AlertLevel } from './AlertLevel';
 import { ALERT_LEVELS } from './AlertLevel';
+import type { StepOutcome } from './CraftingStep';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { propertyTagRef, stageRef, text } from './Description';
+import type { StaticValueResolver } from './ReferenceRoot';
 
 /**
  * 値がどちらへ動くと悪いか（PropertyDef.alertDirection）。mixedは「両端が悪い」並びで、バーの
@@ -119,6 +121,23 @@ export class PropertyStage {
     if (this.art !== undefined) tokens.push(text(`（art: ${this.art}）`));
     return tokens;
   }
+}
+
+/** range系イベント（6.3節）の名前。 */
+export type RangeEventLabel = 'on_overflow' | 'on_shortfall';
+
+/**
+ * range系イベント（6.3節）が端で何をするかを、実行時のオブジェクトを使わずに読んだもの。
+ *
+ * returnedToSelfが正なら、そのイベントは自分の値を戻す＝**繰り返す仕掛け**（罠の判定周期、
+ * TrapSystem.md 2節）。destroysSelfなら、そこで自分が消える＝**寿命**（罠の朽ち、
+ * DurabilitySystem.md 2節）。
+ */
+export interface RangeEventReadout {
+  readonly label: RangeEventLabel;
+  readonly returnedToSelf: number;
+  readonly destroysSelf: boolean;
+  readonly outcomes: readonly StepOutcome[];
 }
 
 /** 段（6.4節）がrangeの中で占める区間。両端とも0〜1で、startがminの側。 */
@@ -366,11 +385,47 @@ export class PropertyDef {
   }
 
   /** 宣言されているrange系イベントとその名前。 */
-  private rangeEvents(): readonly (readonly [string, ActiveEffect])[] {
-    const events: (readonly [string, ActiveEffect])[] = [];
+  private rangeEvents(): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
+    const events: (readonly [RangeEventLabel, ActiveEffect])[] = [];
     if (this.onOverflow !== undefined) events.push(['on_overflow', this.onOverflow]);
     if (this.onShortfall !== undefined) events.push(['on_shortfall', this.onShortfall]);
     return events;
+  }
+
+  /**
+   * range系イベント（6.3節）が端で何をするかを、実行時のオブジェクトを使わずに読む
+   * （RangeEventReadout参照）。
+   */
+  rangeEventReadouts(resolve: StaticValueResolver): readonly RangeEventReadout[] {
+    return this.rangeEvents().map(([label, effect]) => {
+      const outcomes = effect.collectOutcomes(resolve);
+      let returnedToSelf = 0;
+      for (const outcome of outcomes)
+        for (const delta of outcome.deltas)
+          if (delta.target === 'self' && delta.propertyGlobalId === this.globalId)
+            returnedToSelf += outcome.probability * delta.amount;
+
+      return { label, returnedToSelf, destroysSelf: effect.destroys('self'), outcomes };
+    });
+  }
+
+  /**
+   * 値がtick毎にperTickずつ動いたとき、rangeの端を割る（超える）までのtick数。端まで届かない
+   * 向きへ動く場合と、rangeを持たない場合はundefined。
+   *
+   * 端は「割った瞬間」なので、下限側は`min - 1`まで、上限側は`max + 1`までの距離を数える
+   * （range系イベントが発火するのはrangeの外へ出た瞬間、6.3節）。
+   */
+  ticksToRangeEnd(
+    perTick: number,
+    ancestorValue: (propertyGlobalId: number) => number | undefined,
+  ): number | undefined {
+    if (this.range === undefined || perTick === 0) return undefined;
+    const value = this.staticValue(ancestorValue);
+    if (value === undefined) return undefined;
+
+    const distance = perTick < 0 ? value - (this.range.min - 1) : this.range.max + 1 - value;
+    return distance <= 0 ? undefined : distance / Math.abs(perTick);
   }
 
   /** このプロパティにタグ（6.7節）が付いているか。 */

@@ -114,7 +114,9 @@ export abstract class InteractionDef {
       ownerGlobalId: selfObjectGlobalId,
       inputs,
       outputs: collectOutputs(outcomes),
-      durationMinutes: this.staticMinutes(track),
+      // プレイヤーが手を止めている間に時間が進むので、払う時間と経過する時間は等しい。
+      laborMinutes: this.staticMinutes(track),
+      elapsedMinutes: this.staticMinutes(track),
       outcomes,
       hasUnresolvedReferences: unresolved,
     };

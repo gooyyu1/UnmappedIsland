@@ -57,7 +57,11 @@ export interface StepOutcome {
  * 分かる（収支表はこれを足し合わせる）。
  */
 export interface CraftingStep {
-  readonly kind: 'action' | 'combination' | 'recipe';
+  /**
+   * periodicは、プレイヤーが起こすのではなく**時間で回る**工程（罠の判定）。tick毎に動く値が
+   * rangeの端へ届くたびに起こるもので、周期はObjectDef.rangeCyclesが定義から導く。
+   */
+  readonly kind: 'action' | 'combination' | 'recipe' | 'periodic';
   readonly name: string;
   readonly ownerGlobalId: number;
   readonly inputs: readonly CraftingInput[];
@@ -65,8 +69,17 @@ export interface CraftingStep {
   /** 生まれうる型の一覧（outcomesから導いたもの）。何も生まない工程では空。 */
   readonly outputs: readonly CraftingOutput[];
 
-  /** 1回の実行にかかるゲーム内時間（分）。durationを宣言していない工程は0。 */
-  readonly durationMinutes: number;
+  /**
+   * 1回の実行で**プレイヤーが払う**時間（分）。他の行動と競合するのはこちらだけ。
+   * durationを宣言していない工程と、時間で回る工程（periodic）は0。
+   */
+  readonly laborMinutes: number;
+
+  /**
+   * 1回の実行で**経過する**時間（分）。プレイヤーが手を止めて待つ工程では労働時間と等しく、
+   * 時間で回る工程（periodic）だけが両者に差を持つ——罠は4時間かかるが、その間に別のことができる。
+   */
+  readonly elapsedMinutes: number;
 
   /** 起こりうる結果（確率つき）。分岐の無い工程でも必ず1件ある。 */
   readonly outcomes: readonly StepOutcome[];
