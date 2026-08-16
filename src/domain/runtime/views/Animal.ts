@@ -32,6 +32,7 @@ export class Animal {
   private readonly nearbyCharactersId: number;
   private readonly lootablesId: number;
   private readonly lootTargetId: number;
+  private readonly spoilsTargetId: number;
   private readonly smashablesId: number;
   private readonly smashTargetId: number;
   private readonly escapeRoutesId: number;
@@ -40,6 +41,7 @@ export class Animal {
 
   private readonly quarryTagId: number;
   private readonly fragileTagId: number;
+  private readonly spoilsSlotId: number;
 
   private constructor(instance: WorldObject, codex: WorldCodex) {
     this.instance = instance;
@@ -47,6 +49,7 @@ export class Animal {
     this.nearbyCharactersId = Animal.idOrMissing(props, 'nearby_characters');
     this.lootablesId = Animal.idOrMissing(props, 'lootables');
     this.lootTargetId = Animal.idOrMissing(props, 'loot_target');
+    this.spoilsTargetId = Animal.idOrMissing(props, 'spoils_target');
     this.smashablesId = Animal.idOrMissing(props, 'smashables');
     this.smashTargetId = Animal.idOrMissing(props, 'smash_target');
     this.escapeRoutesId = Animal.idOrMissing(props, 'escape_routes');
@@ -54,6 +57,7 @@ export class Animal {
     this.volumeId = Animal.idOrMissing(props, 'volume');
     this.quarryTagId = codex.tagNames.tryGetId('quarry') ?? -1;
     this.fragileTagId = codex.tagNames.tryGetId('fragile') ?? -1;
+    this.spoilsSlotId = codex.slotNames.tryGetId('spoils') ?? -1;
   }
 
   /** 未登録の名前は-1（LocalIndexMap.missing扱い）にする（理由はLocation.idOrMissing参照）。 */
@@ -80,6 +84,11 @@ export class Animal {
   takeTurn(location: Location, session: WorldSession): void {
     const characters = location.characters;
     this.instance.setProperty(this.nearbyCharactersId, characters.length);
+
+    // くわえている物（spoilsの先頭）。数は書かない——食べる候補のゲートはスロットの中身を
+    // 直接見る（animals.yamlのbeast）ので、対象だけを毎ターン書き直す。
+    const held = this.instance.tryGetSlot(this.spoilsSlotId)?.contents.at(0);
+    this.instance.setProperty(this.spoilsTargetId, held?.instanceId ?? 0);
 
     this.aim(this.lootablesId, this.lootTargetId, this.lootTargets(location), session.rng);
     this.aim(this.smashablesId, this.smashTargetId, this.smashTargets(location), session.rng);

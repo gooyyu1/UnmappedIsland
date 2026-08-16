@@ -250,6 +250,80 @@ describe('動物の1手', () => {
     expect(boar.getEffectiveValue(goreId), '相手が居なければ抽選から外れる').toBeLessThanOrEqual(0);
   });
 
+  it('誰も見ていない土地の動物は、丸1日で立ち去る', () => {
+    // 動物は探索が際限なく湧かせるので、消える口が無いと島に溜まり続ける（HuntingSystem.md 5.6節）。
+    open(0.0);
+    const rat = release('rat');
+    expect(player.moveToSlot(grassland, codex.slotNames.getId('characters'))).toBeUndefined();
+
+    passTurn(95);
+    expect(rat.parent, '残り1（下限）までは居る').toBe(jungle);
+
+    passTurn(1);
+    expect(rat.parent, '尽きた個体は世界から消える').toBeUndefined();
+  });
+
+  it('同じ土地に人が居る間は、立ち去りが止まる', () => {
+    // タイマーはリセットではなく一時停止（HuntingSystem.md 5.6節）。目の前では絶対に消えない。
+    open(0.0);
+    const stayId = codex.propertyNames.getId('stay_remaining');
+    const fowl = release('junglefowl');
+
+    passTurn(100);
+
+    expect(fowl.parent, '見ている間は消えない').toBe(jungle);
+    expect(fowl.getEffectiveValue(stayId), 'タイマーは減ってすらいない').toBe(96);
+  });
+
+  it('罠に掛かった獲物は立ち去らない', () => {
+    // in_slot: itemsが「土地の地面に居る」を言うので、罠の中ではタイマーが止まる
+    // （HuntingSystem.md 5.6節）。獲物が消えるより先に、もがかれた罠のほうが壊れる（traps.yamlの
+    // durability、-11/tickで約87tick）ので、罠が保っている間はいつ戻っても獲物が居る。
+    open(0.0);
+    const stayId = codex.propertyNames.getId('stay_remaining');
+    const snare = release('snare');
+    const fowl = spawnInto('junglefowl', snare, 'catch');
+    expect(player.moveToSlot(grassland, codex.slotNames.getId('characters'))).toBeUndefined();
+
+    passTurn(60);
+
+    expect(fowl.parent, '罠の中では消えない').toBe(snare);
+    expect(fowl.getEffectiveValue(stayId), 'タイマーは減ってすらいない').toBe(96);
+  });
+
+  it('立ち去った動物のくわえていた物は、その土地に落ちている', () => {
+    // 道具は食べ物と違って食べられない（beast traitのゲート）ので、立ち去りまでくわえたまま残り、
+    // 消えるときに中身としてその土地へこぼれる（destroyの規約、9.3節）。追跡が遅れても物は戻る。
+    open(0.7);
+    const monkey = release('monkey');
+    monkey.setProperty(warinessId, 0);
+    const stone = release('sharp_stone');
+
+    passTurn();
+    expect(spoilsOf(monkey), '道具は食べずにくわえたまま').toEqual(['sharp_stone']);
+
+    expect(player.moveToSlot(grassland, codex.slotNames.getId('characters'))).toBeUndefined();
+    passTurn(96);
+
+    expect(monkey.parent, '本体は立ち去って消える').toBeUndefined();
+    expect(stone.parent, '盗品はその土地へこぼれる').toBe(jungle);
+  });
+
+  it('くわえた食べ物は、やがて食べられて失われる', () => {
+    open(0.7);
+    const monkey = release('monkey');
+    monkey.setProperty(warinessId, 0);
+    const meat = release('raw_meat');
+
+    passTurn();
+    expect(spoilsOf(monkey), 'まずくわえる').toEqual(['raw_meat']);
+
+    passTurn();
+    expect(meat.parent, '食べられて世界から消える').toBeUndefined();
+    expect(spoilsOf(monkey)).toEqual([]);
+    expect(itemsIn(jungle), '地面にも戻らない').toEqual(['monkey']);
+  });
+
   /**
    * その動物へ裂傷を1つ負わせる（痛みを押し上げるため）。刺し傷ではなく裂傷なのは、失血で
    * 意識まで落とさないため——気を失った動物は警戒も消えるので、逃げるかどうかの話にならない。

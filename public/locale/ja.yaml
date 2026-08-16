@@ -105,6 +105,9 @@ object_texts:
       snatch:
         display_name: 持ち去り
         description: 1手の重み配分のうち、足元の物をくわえて自分のものにする回の重み。
+      devour:
+        display_name: 盗み食い
+        description: 1手の重み配分のうち、くわえている食べ物を食べてしまう回の重み。
       smash:
         display_name: 破壊
         description: 1手の重み配分のうち、足元の物にぶつかって壊す回の重み。
@@ -120,6 +123,12 @@ object_texts:
       loot_target:
         display_name: 持ち去る相手
         description: 次の手番で持ち去る物。手番のたびに選び直される。
+      spoils_target:
+        display_name: くわえている物
+        description: 今くわえている物。食べ物なら、いずれ食べられてしまう。
+      stay_remaining:
+        display_name: 立ち去りまで
+        description: この場に留まる残り。誰も居ない土地でだけ減っていき、尽きた動物はどこかへ行ってしまう。
       smashables:
         display_name: 壊せる物
         description: 同じ土地にある、ぶつかって壊せる物の数。手番のたびに数え直される。
@@ -816,6 +825,7 @@ stage_texts:
 # ので、離れて見ても読める短い語にする（CardView.md 14節）。
 signal_texts:
   bit: 噛みつき
+  devoured: 食べた
   fled: 逃げた
   gored: 突き上げ
   grazed: 浅手

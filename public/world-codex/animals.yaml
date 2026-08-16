@@ -86,6 +86,31 @@ traits:
       # 押し上げる。起きている間も0にはしない——暴れる相手でも、まれに急所へ入る。
       vulnerability: {value: 5}
 
+      # 立ち去りまでの残り（HuntingSystem.md 5.6節）。動物は探索が際限なく湧かせるので、消える口が
+      # 無いと島に溜まり続ける。**土地の地面に居て、同じ土地に誰も居ない間だけ**減り、尽きた個体は
+      # 世界から消える——人口は湧く速さ×平均寿命で自動的に釣り合う。
+      #
+      # 同じ土地に人が居る間は止まる（リセットではなく一時停止）ので、**目の前では絶対に消えない**。
+      # 罠・入れ物の中でも止まる（in_slot: itemsが「土地の地面に居る」を言う）ので、掛かった獲物は
+      # 取りに戻るまで残る。罠のcatch_remainingと同じ見えないタイマー（カードの状態バーは名前で
+      # 決まった量だけを映す、CardView.md 8節）。
+      #
+      # 消えるとき、くわえていた物（spoils）はその土地へこぼれる（destroyの規約、9.3節）。
+      # 逃げ込んだ先を突き止めれば、本体が消えた後でも盗品は落ちている。
+      stay_remaining:
+        value: 96
+        # 0に達した瞬間にon_shortfallを発火させるため、下限は0ではなく1（6.3節）。
+        range: {min: 1, max: 96}
+        passives:
+          - conditions:
+              - {in_slot: items}
+              - not: {subject: parent, slot: characters, matches: {tag: character}}
+            add:
+              self:
+                stay_remaining: -1
+        on_shortfall:
+          destroy: self
+
       # 1手の重み配分（HuntingSystem.md 5節）。**候補は「その1手が何だったか」の型で、動物ごとに
       # 変わるのはこの配分だけ**——武器が一撃の当たり所の配分だけを宣言するのと同じ形
       # （同1.2節、tools.yamlのweapon trait）。素の配分がその動物の性分で、警戒・傷・その場の状況は
@@ -94,13 +119,14 @@ traits:
       # 配分の合計は動物によらず100に揃える。傷が押し上げる量（painの段）と並ぶ目盛りが動物ごとに
       # 変わると、同じ深手が動物によって別の意味を持ってしまうため。
       #
-      # 6つとも値を持たないので、**宣言し忘れた動物はロードで落ちる**（5節）。0も明示して書く——
+      # 7つとも値を持たないので、**宣言し忘れた動物はロードで落ちる**（5節）。0も明示して書く——
       # 「この動物はしないこと」は書き忘れと同じ0になるため、並べて読めるようにする。
       lurk: {}
       bite: {}
       gore: {}
       snatch: {}
       smash: {}
+      devour: {}
       flee: {}
 
       # 以下は手番を与える側（Animal.takeTurn）が毎ターン上書きするプレースホルダ（5.2節）。
@@ -112,6 +138,9 @@ traits:
       # 持ち去れる物の数と、そのうち選ばれた1つのインスタンスID。
       lootables: {value: 0}
       loot_target: {value: 0}
+      # くわえている物（spoilsの先頭）のインスタンスID。空なら0。数は書かない——食べる候補の
+      # ゲートはスロットの中身（食べ物かどうか）を直接見る（下のpassives）。
+      spoils_target: {value: 0}
       # ぶつかって壊せる物の数と、そのうち選ばれた1つのインスタンスID。
       smashables: {value: 0}
       smash_target: {value: 0}
@@ -169,6 +198,11 @@ traits:
       # 既に1つくわえていれば、次は持てない（spoilsは1枠）。
       - conditions: [{slot: spoils, matches: {tag: item}}]
         modify: {self: {snatch: -1000}}
+      # くわえた食べ物が無ければ、食べる手は起こらない。**食べ物でない物は食べない**——盗まれた
+      # 道具は立ち去り（stay_remaining）までくわえたまま残り、取り返しが付く（HuntingSystem.md 5.6節）。
+      - conditions:
+          - not: {slot: spoils, matches: {tag: food}}
+        modify: {self: {devour: -1000}}
       # 逃げ道が無ければ逃げられない。**追い詰められた獣は逃げずに襲う**（5.3節）が、専用の条件を
       # 1つも書かずに成立する。おまけに「開けた土地ほど逃げやすい」は道の本数が言う。
       - conditions: [{prop: escape_routes, lt: 1}]
@@ -204,6 +238,10 @@ traits:
           - weight: {prop: smash}
             destroy: {prop: smash_target}
             signal: smashed
+          # くわえていた食べ物を食べてしまった回。取り返しの道はここで断たれる。
+          - weight: {prop: devour}
+            destroy: {prop: spoils_target}
+            signal: devoured
           # 隣の土地へ逃げた回。くわえている物も一緒に運ばれる（中身は親に付いて動く）。
           - weight: {prop: flee}
             move: {subject: self, to_prop: flee_to}
@@ -278,14 +316,15 @@ object_defs:
     props:
       weight: {value: 5000}
       volume: {value: 12000}
-      # 1手の配分（合計100、beast trait）。**持ち去りが半分近くを占める唯一の動物**で、警戒して
-      # いなくても足元の物へ手を出す（打ち消しが掛かるのは攻撃と逃走だけ）。噛むのは追い詰められた
+      # 1手の配分（合計100、beast trait）。**持ち去りと盗み食いを持つ唯一の動物**で、警戒して
+      # いなくても足元の物へ手を出し、くわえた食べ物はやがて食べてしまう。噛むのは追い詰められた
       # ときの手で、太くはない。
       lurk: {value: 20}
       bite: {value: 15}
       gore: {value: 0}
-      snatch: {value: 45}
+      snatch: {value: 35}
       smash: {value: 0}
+      devour: {value: 10}
       flee: {value: 20}
       # 殴られた衝撃（VitalsSystem.md 2.1節）。攻撃がaddで即座に上げ、自分で引いていく。
       # **maxが体格**（体重の1/50）で、5kgのサルは浅い一撃（30）3つで気を失う。
@@ -386,6 +425,7 @@ object_defs:
       gore: {value: 0}
       snatch: {value: 0}
       smash: {value: 0}
+      devour: {value: 0}
       flee: {value: 70}
       # maxが体格（サル5kgの100に対して1kg）。どんな武器でも一撃で気を失う大きさで、引く速さも
       # 体格に比例する（max ÷ 25、サルの-4に対して-0.8）。
@@ -453,6 +493,7 @@ object_defs:
       gore: {value: 0}
       snatch: {value: 0}
       smash: {value: 0}
+      devour: {value: 0}
       flee: {value: 80}
       # maxが体格（体重の1/50）。引く速さも体格に比例する（max ÷ 25）。
       shock:
@@ -518,6 +559,7 @@ object_defs:
       gore: {value: 40}
       snatch: {value: 0}
       smash: {value: 25}
+      devour: {value: 0}
       flee: {value: 20}
       # maxが体格（体重の1/50）。**サルの12倍**なので、打ち砕く一撃（250）でも4撃を要する。
       # 引く速さも体格に比例する（max ÷ 25）ため、浅い一撃（30）は溜まる前に引いてしまう。
