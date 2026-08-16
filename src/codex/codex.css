@@ -671,3 +671,15 @@ details.uncounted > summary {
   margin: 0.5rem 0 0;
   font-size: 0.8rem;
 }
+
+/* 「持ち込みなしで完結する経路だけ」の絞り込み。 */
+.balance-filter {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.balance.hide-import .route-import {
+  display: none;
+}

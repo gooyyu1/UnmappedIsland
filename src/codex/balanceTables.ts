@@ -88,6 +88,12 @@ export interface ChainRoute {
   /** 前提の道具に入手経路が無い経路か。 */
   readonly blocked: boolean;
 
+  /**
+   * この土地では作れない道具を持ち込む必要がある経路か。**漂着直後に自力で回るか**を見るための印で、
+   * 時間の扱いは変わらない（道具は1度だけ払う費用として、単位あたりへ按分しない）。
+   */
+  readonly needsImport: boolean;
+
   /** 労働0で値が返る経路か（雨で溜まる水など、この表が時間を数えられていない）。 */
   readonly untimed: boolean;
 }
@@ -106,6 +112,9 @@ export interface RoutePrerequisite {
 
   /** その道具を1つ手に入れるまでの時間（分）。入手経路が無ければundefined。 */
   readonly minutes: number | undefined;
+
+  /** この土地では作れず、他の土地から持ち込むことになる道具か。 */
+  readonly imported: boolean;
 }
 
 /** 連鎖表の、プロパティ1つぶん。 */
@@ -374,12 +383,16 @@ function placeBalances(
 ): readonly PlaceBalance[] {
   const locations = explorableLocationsOf(codex);
 
+  // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
+  const islandContext = bestAncestorContext(locations);
+  const islandWide = new Acquisition(codex, allSteps(codex, islandContext));
+
   return [undefined, ...locations].map((location) => {
     // 罠が掛ける動物の重みは土地が宣言する（inherit）ので、土地を決めてから工程を組み立てる。
-    const context = location === undefined ? bestAncestorContext(locations) : ancestorContext(location);
+    const context = location === undefined ? islandContext : ancestorContext(location);
     const steps =
       location === undefined ? allSteps(codex, context) : stepsAt(codex, allSteps(codex, context), location);
-    const acquisition = new Acquisition(codex, steps);
+    const acquisition = location === undefined ? islandWide : new Acquisition(codex, steps, islandWide);
     const routes = routeCandidates(codex, character, acquisition, steps, requirements);
 
     return {
@@ -517,6 +530,7 @@ function buildRoute(
             ? undefined
             : codex.objectName(prerequisite.objectGlobalId),
         minutes: prerequisite.cost === undefined ? undefined : totalOf(prerequisite.cost),
+        imported: prerequisite.imported,
       });
     }
 
@@ -533,6 +547,7 @@ function buildRoute(
     deviceCount: deviceMaintenancePerDay(acquisition, route),
     prerequisites: [...prerequisites.values()],
     blocked: [...prerequisites.values()].some(({ minutes }) => minutes === undefined),
+    needsImport: [...prerequisites.values()].some(({ imported }) => imported),
     // 労働0で値が返るなら、時間を数えられていない（雨で溜まる水など）。摂取そのものが0分なのは仕様
     // なので、素材を0分で得ている場合と、経路まるごとが0分の場合だけを印にする。
     untimed:
@@ -738,6 +753,7 @@ interface Prerequisite {
   readonly label: string;
   readonly objectGlobalId: number | undefined;
   readonly cost: Cost | undefined;
+  readonly imported: boolean;
 }
 
 function totalOf(cost: Cost): number {
@@ -859,9 +875,22 @@ class Acquisition {
   private readonly steps: readonly StepRef[];
   private readonly codex: WorldCodex;
 
-  constructor(codex: WorldCodex, steps: readonly StepRef[]) {
+  /**
+   * 島全体で見たときの入手時間。**持ち運べる前提（道具）だけがこれを見る。**
+   *
+   * 道具は1度作れば繰り返し使えるので、その土地で作れるかは可否を分けない——尖った石は石のある
+   * 土地で作って持ち歩ける。一方で消費される素材は毎回要るため、持ち込みには回数ぶんの移動が
+   * 要り、この表は移動を数えていないので局所のままにする（#550で時間を按分しないと決めたのと
+   * 同じ「何回要るか」の軸）。
+   *
+   * 島全体の文脈そのものではundefined（自分が答え）。
+   */
+  private readonly islandWide: Acquisition | undefined;
+
+  constructor(codex: WorldCodex, steps: readonly StepRef[], islandWide?: Acquisition) {
     this.codex = codex;
     this.steps = steps;
+    this.islandWide = islandWide;
     this.relax();
   }
 
@@ -909,9 +938,12 @@ class Acquisition {
           ? this.codex.tagName(input.tagGlobalId)
           : this.codex.objectName(input.objectGlobalId);
 
-      const objectGlobalId = this.cheapestCandidate(input);
+      const local = this.cheapestCandidate(input);
+      // この土地で作れなければ、持ち運べる道具に限って島全体から取る。
+      const imported = local === undefined ? this.importable(input) : undefined;
+      const objectGlobalId = local ?? imported?.objectGlobalId;
       if (objectGlobalId === undefined) {
-        found.push({ label: declared, objectGlobalId: undefined, cost: undefined });
+        found.push({ label: declared, objectGlobalId: undefined, cost: undefined, imported: false });
         continue;
       }
 
@@ -919,7 +951,8 @@ class Acquisition {
       found.push({
         label: chosen === declared ? chosen : `${declared} → ${chosen}`,
         objectGlobalId,
-        cost: this.costByObject.get(objectGlobalId),
+        cost: imported?.cost ?? this.costByObject.get(objectGlobalId),
+        imported: imported !== undefined,
       });
     }
     return found;
@@ -940,6 +973,29 @@ class Acquisition {
       if (candidate !== undefined) route.push(...this.routeOf(candidate, seen));
     }
     return route;
+  }
+
+  /**
+   * 他の土地から持ち込める入力か。持ち運べる型（`item` タグ）に限る——設置物は持ち込めないので、
+   * その土地に無ければブロックのままにする（ヤシの木を砂浜へ持って行くことはできない）。
+   */
+  private importable(
+    input: CraftingStep['inputs'][number],
+  ): { readonly objectGlobalId: number; readonly cost: Cost } | undefined {
+    const island = this.islandWide;
+    if (island === undefined) return undefined;
+
+    const itemTag = this.codex.tagNames.tryGetId('item');
+    if (itemTag === undefined) return undefined;
+
+    let best: { objectGlobalId: number; cost: Cost } | undefined;
+    for (const objectGlobalId of this.candidatesOf(input)) {
+      if (!this.codex.objects.get(objectGlobalId).tags.includes(itemTag)) continue;
+      const cost = island.costByObject.get(objectGlobalId);
+      if (cost === undefined) continue;
+      if (best === undefined || totalOf(cost) < totalOf(best.cost)) best = { objectGlobalId, cost };
+    }
+    return best;
   }
 
   /** 用意する必要が無い入力か（立っている土地と、自分自身）。 */
