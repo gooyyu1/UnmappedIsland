@@ -1,6 +1,6 @@
 # プレイヤーキャラクタ
 
-新規ゲーム作成時に選ぶ主人公。1キャラクタ＝1つの `object_def` で、`src/world-codex/characters/` に
+新規ゲーム作成時に選ぶ主人公。1キャラクタ＝1つの `object_def` で、`src/assets/world-codex/characters/` に
 1ファイルずつ置く（共通の骨組みだけが `player_character` trait）。
 
 `character` タグはプレイヤーが操作するキャラクタだけに付く。操作できない生物は、持ち運べるなら

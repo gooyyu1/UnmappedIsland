@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/dry_grass.png を作り直すためのレシピ。build.py が読む。",
-    "乾いた土地で拾える火口（src/world-codex/fire.yaml）。",
+    "乾いた土地で拾える火口（src/assets/world-codex/fire.yaml）。",
     "",
     "2段構えの理由は recipes/plant_fiber.json と同じ。生成は写真になり、藁が白く飛ぶ。",
     "",

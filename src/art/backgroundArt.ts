@@ -15,7 +15,7 @@
  * 一覧はimport.meta.globがビルド時に作る。実行時に総当たりで読みに行くと、絵をまだ用意していない
  * スロットのぶんだけ404が出るため。
  */
-const FILES = import.meta.glob('./backgrounds/*.png', {
+const FILES = import.meta.glob('../assets/backgrounds/*.png', {
   eager: true,
   query: '?url',
   import: 'default',

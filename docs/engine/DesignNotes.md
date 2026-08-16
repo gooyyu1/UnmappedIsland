@@ -126,7 +126,7 @@
   差し替えて確かめると「テクスチャは使われている」ことしか分からない。**格子模様と四隅の目印を入れた
   板で確かめれば、倍率と切り出し位置の狂いが一目で分かる**（この方法で1回で特定できた）。
 - 直し方は「共有をやめる」。同じ生成物から切り出した**別のPNG**を持たせる
-  （`recipes/slot_button_paper.json` → `src/assets/slot_button_paper.png`）。同じ絵を参照するのは
+  （`recipes/slot_button_paper.json` → `src/assets/ui/slot_button_paper.png`）。同じ絵を参照するのは
   生成の話で、実行時のテクスチャは別にする。
 
 ## 実行時エラー（`src/game/errorReport.ts`）

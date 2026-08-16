@@ -1,12 +1,12 @@
 {
   "_comment": [
-    "src/assets/flip_digit.png（日時のフリップカード）を作り直すためのレシピ。build.py が読む。",
+    "src/assets/ui/flip_digit.png（日時のフリップカード）を作り直すためのレシピ。build.py が読む。",
     "",
     "紙のテクスチャはカードの枠と同じ生成物（card_paper）を使い、色だけ白へ寄せる。",
     "素材を揃えることで、カードとフリップカードが同じ紙に見える。",
     "留具の穴・リング・落ち影は flip_card.py が描き込む（寸法もあちらの定数）。"
   ],
-  "output": "src/assets/flip_digit.png",
+  "output": "src/assets/ui/flip_digit.png",
   "prompts": "cards.json",
   "prompt": "card_paper",
   "workflow": "lane_background_sdxl.api.json",

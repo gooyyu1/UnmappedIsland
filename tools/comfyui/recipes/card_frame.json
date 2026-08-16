@@ -1,10 +1,10 @@
 {
   "_comment": [
-    "src/assets/card_frame.png を作り直すためのレシピ。build.py が読む。",
+    "src/assets/ui/card_frame.png を作り直すためのレシピ。build.py が読む。",
     "",
     "紙のテクスチャだけを生成し、カードの形は card_frame.py で作る（cardFrame / プロンプト側の_comment参照）。"
   ],
-  "output": "src/assets/card_frame.png",
+  "output": "src/assets/ui/card_frame.png",
   "prompts": "cards.json",
   "prompt": "card_paper",
   "workflow": "lane_background_sdxl.api.json",

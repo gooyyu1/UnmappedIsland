@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/three_stone_hearth_lit.png を作り直すためのレシピ。build.py が読む。",
-    "火が付いていて料理にも使える三石のかまど（heatのcoals〜blaze段、src/world-codex/fire.yaml）。",
+    "火が付いていて料理にも使える三石のかまど（heatのcoals〜blaze段、src/assets/world-codex/fire.yaml）。",
     "",
     "作り方と勘所は recipes/campfire_lit.json と同じ。炎が立つのは石に囲まれた中央の空きで、",
     "**石は焦がさない**——石まで黒くすると、火が消えた後の絵（無印）と地続きに見えなくなる。",

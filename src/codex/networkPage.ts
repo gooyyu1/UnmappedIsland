@@ -1,4 +1,4 @@
-import { OBJECT_ART } from '../assets/objectArt';
+import { OBJECT_ART } from '../art/objectArt';
 import type { CraftingNetwork, NetworkEdge, NetworkNode } from './craftingGraph';
 import { buildCraftingNetwork, objectNodeId } from './craftingGraph';
 import type { CodexView } from './CodexView';

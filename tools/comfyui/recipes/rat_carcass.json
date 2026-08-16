@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/rat_carcass.png を作り直すためのレシピ。build.py が読む。",
-    "罠に掛かって死んだネズミ（src/world-codex/animals.yaml）。",
+    "罠に掛かって死んだネズミ（src/assets/world-codex/animals.yaml）。",
     "",
     "作り方と、姿勢を変える編集の注意は recipes/junglefowl_carcass.json と同じ。",
     "seed 1 では生きたまま描き直されただけだった。",

@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/abaca.png を作り直すためのレシピ。build.py が読む。",
-    "アバカ（マニラ麻）の株（src/world-codex/fiber.yaml）。",
+    "アバカ（マニラ麻）の株（src/assets/world-codex/fiber.yaml）。",
     "",
     "設置物なので、物だけを切り出すのではなく絵をカード全面へ敷く（size: card）。作り方は",
     "recipes/palm_tree.json と同じで、背景は mode: background で抜く。",

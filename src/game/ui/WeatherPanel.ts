@@ -5,7 +5,7 @@ import { FlipCalendar } from './FlipCalendar';
 import { addLabel } from '../../ui/labels';
 import { COLOR } from '../looks/theme';
 import { drawBox } from '../../ui/shapes';
-import { weatherTexture } from '../../assets/weatherArt';
+import { weatherTexture } from '../../art/weatherArt';
 
 /** 空の絵の内側の余白。日時と天候名はこの内側に収める。 */
 const CONTENT_PADDING_PORTRAIT = { x: 24, y: 16 };

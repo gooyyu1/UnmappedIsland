@@ -33,7 +33,7 @@
 | 獲物を生かすか殺すか（5.1・5.2 節） | 罠ごとの怪我（[`InjurySystem.md`](./InjurySystem.md)）と、その `bleeding` の有無 |
 | 掛かり方のばらつき（5.1 節） | 生成時に 1 回ロールする初期値（6.2 節） |
 
-定義は `src/world-codex/traps.yaml`（罠）・`injuries.yaml`（`snare_laceration`）・`animals.yaml`
+定義は `src/assets/world-codex/traps.yaml`（罠）・`injuries.yaml`（`snare_laceration`）・`animals.yaml`
 （ヤケイ・ネズミ）・`locations.yaml`（土地ごとのつまみ）、検証は `tests/worldCodex/trapsYaml.test.ts` です。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。**くくり罠 1 つが実装済み**で、仕掛ける・

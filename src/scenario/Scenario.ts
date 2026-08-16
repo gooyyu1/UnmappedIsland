@@ -7,11 +7,11 @@ import type { YamlNode } from '../loader/yamlMapping';
 import { asScalarText } from '../loader/yamlMapping';
 
 /**
- * 同梱シナリオの中身。置き場所と名前の規約は `src/scenarios/<シナリオ名>.yaml` のみで、
+ * 同梱シナリオの中身。置き場所と名前の規約は `src/assets/scenarios/<シナリオ名>.yaml` のみで、
  * コード側への登録は要らない。一覧はimport.meta.globがビルド時に作る——画面にシナリオを並べるには
  * 名前を列挙できる必要があるが、public/配下に置くと実行時に一覧を得る手段が無いため。
  */
-const FILES = import.meta.glob('../scenarios/*.yaml', {
+const FILES = import.meta.glob('../assets/scenarios/*.yaml', {
   eager: true,
   query: '?raw',
   import: 'default',
