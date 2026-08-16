@@ -70,7 +70,7 @@ export function parseActiveEffectBody(
         operations.push(...parseTransfers(loader, keyContext, valueNode, allowDragged, selfOnly));
         break;
       case 'move':
-        operations.push(parseMove(loader, keyContext, asMap(valueNode, keyContext), selfOnly));
+        operations.push(...parseMoves(loader, keyContext, valueNode, selfOnly));
         break;
       case 'destroy':
         for (const target of parseDestroyTargets(loader, keyContext, valueNode, allowDragged, selfOnly))
@@ -386,13 +386,37 @@ function parseTransfers(
   throw new YamlLoadError(`${context}: mappingかmappingの配列である必要があります。`);
 }
 
+/** move（1つ、またはその配列）。同じ一手で2つ動かす（乗り込んでから漕ぎ出す）ために並べられる。 */
+function parseMoves(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YamlNode,
+  selfOnly: boolean,
+): MoveEffect[] {
+  if (isMap(node)) return [parseMove(loader, context, node, selfOnly)];
+
+  if (isSeq(node)) {
+    const items = node.items as YamlNode[];
+    return items.map((item, i) => {
+      if (!isMap(item)) throw new YamlLoadError(`${context}[${i}]: 各要素はmappingである必要があります。`);
+      return parseMove(loader, `${context}[${i}]`, item, selfOnly);
+    });
+  }
+
+  throw new YamlLoadError(`${context}: mappingかmappingの配列である必要があります。`);
+}
+
 /**
  * move（subjectのオブジェクトを、移動先の中へ移動する。MoveEffect参照）。
  * transferと同じフラットフィールド規約（`move: {subject: actor, to_prop: destination_id}`）。
  *
- * 動かす物も行き先も「対象キーか、インスタンスIDを持つプロパティか」の二択（ObjectRef）で、
- * subjectは`subject`/`subject_prop`、移動先は`to`/`to_prop`の**どちらか一方**で指す
- * （両方・どちらも無しはエラー）。selfOnly文脈（rangeイベント）にはactorもdraggedも存在しないため使えない。
+ * 動かす物も行き先も「対象キーか、インスタンスIDを持つプロパティか、型か」の三択（ObjectRef）で、
+ * subjectは`subject`/`subject_prop`、移動先は`to`/`to_prop`/`to_object`の**どれか1つ**で指す
+ * （複数・どれも無しはエラー）。
+ *
+ * selfOnly文脈（rangeイベント）で禁じるのは**actor/draggedを指す形だけ**。そこに実行者が居ないのは
+ * 対象キーの解決先が無いという理由なので、`self`と型で書いた移動（本土への到達、Voyage.md 4節）は
+ * 同じ理由に当たらない。
  */
 function parseMove(
   loader: WorldCodexYamlLoader,
@@ -400,22 +424,24 @@ function parseMove(
   map: YAMLMap,
   selfOnly: boolean,
 ): MoveEffect {
-  if (selfOnly)
-    throw new YamlLoadError(
-      `${context}: moveはon_overflow/on_shortfallでは使えません（actorが存在しないため）。`,
-    );
-
   const unknownKeys = entriesInOrder(map)
     .map(([key]) => key)
     .filter((key) => !MOVE_KEYS.has(key));
   if (unknownKeys.length > 0)
     throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
 
-  return new MoveEffect(parseMoveSubject(loader, context, map), parseMoveDestination(loader, context, map));
+  const subject = parseMoveSubject(loader, context, map);
+  const destination = parseMoveDestination(loader, context, map);
+  if (selfOnly && (subject.needsInteraction() || destination.needsInteraction()))
+    throw new YamlLoadError(
+      `${context}: on_overflow/on_shortfallのmoveでは、actor・draggedを指せません（存在しないため）。`,
+    );
+
+  return new MoveEffect(subject, destination);
 }
 
 /** moveが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。 */
-const MOVE_KEYS = new Set(['subject', 'subject_prop', 'to', 'to_prop']);
+const MOVE_KEYS = new Set(['subject', 'subject_prop', 'to', 'to_prop', 'to_object']);
 
 /**
  * moveの動かす物（subject か subject_prop のどちらか一方）。
@@ -442,15 +468,25 @@ function parseMoveSubject(loader: WorldCodexYamlLoader, context: string, map: YA
   return ObjectRef.ofRoot(subject);
 }
 
-/** moveの移動先（to か to_prop のどちらか一方）。 */
+/**
+ * moveの移動先（to / to_prop / to_object のどれか1つ）。
+ *
+ * `to_object`は、世界にただ1つ在る型（`singleton`、15節）をその名前で指す。生成時に確定する個体を
+ * 指すto_propと違い、**定義の時点で名前の分かっている行き先**（外洋・本土）のためのもの。
+ */
 function parseMoveDestination(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): ObjectRef {
   const to = tryGetScalar(map, 'to', context);
   const toProp = tryGetScalar(map, 'to_prop', context);
+  const toObject = tryGetScalar(map, 'to_object', context);
 
-  if ((to === undefined) === (toProp === undefined))
-    throw new YamlLoadError(`${context}: moveの移動先はtoかto_propのどちらか一方で指定してください。`);
+  const given = [to, toProp, toObject].filter((value) => value !== undefined);
+  if (given.length !== 1)
+    throw new YamlLoadError(
+      `${context}: moveの移動先はto・to_prop・to_objectのどれか1つで指定してください。`,
+    );
 
   if (toProp !== undefined) return ObjectRef.ofProperty(loader.propertyNames.intern(toProp));
+  if (toObject !== undefined) return ObjectRef.ofObjectDef(loader.objectNames.intern(toObject));
 
   if (to !== 'self' && to !== 'parent')
     throw new YamlLoadError(`${context}: moveのtoは'self'か'parent'のみ対応しています（値: '${to}'）。`);

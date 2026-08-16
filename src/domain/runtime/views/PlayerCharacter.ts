@@ -5,6 +5,14 @@ import type { WorldSession } from '../WorldSession';
 import { Location } from './Location';
 
 /**
+ * 周回の終わりを読むために、画面ではなくこのビューが名前で知っているタグ（voyage.yaml・artifacts.yaml）。
+ * 段の名前で死因を読むのと同じ分担で、しきい値も意味も宣言しているのはワールドの側だけになる
+ * （docs/engine/VitalsSystem.md 6節）。
+ */
+const MAINLAND_TAG = 'mainland';
+const ARTIFACT_TAG = 'artifact';
+
+/**
  * actor（プレイヤーキャラクター、GameElementDefinition.md 8.1節・11節）に対する、UI/ゲームロジック向けの型付き
  * ビュー。Worldと同じ理由で継承ではなくラップにしている。
  *
@@ -136,6 +144,45 @@ export class PlayerCharacter {
    */
   get causeOfDeath(): string | undefined {
     return this.isDead ? this.instance.exhaustedStage() : undefined;
+  }
+
+  /**
+   * 島から脱出したか（docs/concept/GameEndings.md 3節）。死と同じく旗は持たず、**本土（mainland
+   * タグを持つ場所）の中に居ることがそのまま到達を表す**——筏ごと本土へ移った（voyage.yaml）結果として、
+   * 自分もその中に居る。
+   */
+  get hasReachedMainland(): boolean {
+    return this.mainland !== undefined;
+  }
+
+  /**
+   * 持ち帰ったアーティファクト（`artifact`タグ、GameEndings.md 6節）のobject_defの識別子。
+   * 着いていなければ空。
+   *
+   * **本土に着いた物すべてが対象**で、筏の積荷か手持ちかは問わない——渡り切った側に在ることだけが
+   * 持ち帰った条件なので、置き場所ごとの数え方を持たない。
+   */
+  get broughtArtifacts(): readonly string[] {
+    const mainland = this.mainland;
+    const artifactTagId = this.codex.tagNames.tryGetId(ARTIFACT_TAG);
+    if (mainland === undefined || artifactTagId === undefined) return [];
+
+    const names: string[] = [];
+    for (const object of mainland.descendants()) {
+      if (object.def.tags.includes(artifactTagId)) names.push(object.def.name);
+    }
+    return names;
+  }
+
+  /** 自分が今その中に居る本土（居なければundefined）。 */
+  private get mainland(): WorldObject | undefined {
+    const mainlandTagId = this.codex.tagNames.tryGetId(MAINLAND_TAG);
+    if (mainlandTagId === undefined) return undefined;
+
+    for (let node = this.instance.parent; node !== undefined; node = node.parent) {
+      if (node.def.tags.includes(mainlandTagId)) return node;
+    }
+    return undefined;
   }
 
   /** 今いる土地（自分が入っているcharactersスロットの持ち主）。未配置ならundefined。 */

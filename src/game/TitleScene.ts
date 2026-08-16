@@ -40,6 +40,9 @@ export class TitleScene extends ResponsiveScene {
     // テスト用シナリオは同梱されているときだけ並べる（SaveDataManagement.md「テスト用シナリオ」節）。
     const menu: { label: string; primary: boolean; onTap?: () => void }[] = [
       { label: 'はじめる', primary: true, onTap: () => this.scene.start('slots') },
+      // 棚は周回をまたいで残る唯一のもの（GameEndings.md 6節）。空きが見えていることが次の周回へ
+      // 向かう動機なので、到達した直後だけでなくここからも開ける。
+      { label: 'アーティファクトの棚', primary: false, onTap: () => this.scene.start('shelf') },
       { label: '設定', primary: false, onTap: () => this.scene.start('settings') },
     ];
     if (scenarioNames().length > 0) {

@@ -99,6 +99,8 @@ export function start(codex: WorldCodex, characterDefName: string, seed: number,
   session.adoptWorld(world);
   world.rollTimeOfDay(START_TIME_EARLIEST_MINUTES, START_TIME_LATEST_MINUTES, session.rng);
 
+  spawnSingletons(session, worldInstance);
+
   const character = session.spawn(codex.objectNames.getId(characterDefName));
 
   const map = generate(codex.generation, 'island', seed);
@@ -106,4 +108,22 @@ export function start(codex: WorldCodex, characterDefName: string, seed: number,
   const startLocation = placePlayer(session, map, character);
 
   return new NewGameSession(session, world, new PlayerCharacter(character, codex), startLocation, map);
+}
+
+/**
+ * 世界にただ1つ在る型（`singleton: true`、15節）のうち、**worldが直に受け入れられるものを、世界を
+ * 作った時点で1つずつ湧かせる**。島の外に最初から在る場所（外洋・本土、docs/world/Voyage.md）が
+ * これにあたり、型の名前で行き先を指す`move`の`to_object`（9.6節）が必ず解決できることを保証する。
+ *
+ * 何を最初から在らせるかを決めるのはworldのスロットの宣言（`locations`が受け入れる型）で、コードは
+ * 型の名前を1つも知らない。キャラクタもsingletonだが、worldのどのスロットにも入らない（土地の
+ * charactersスロットに入る物なので）ため、ここでは湧かない。
+ */
+function spawnSingletons(session: WorldSession, worldInstance: WorldObject): void {
+  for (const globalId of session.codex.singletonGlobalIds()) {
+    if (globalId === worldInstance.def.globalId) continue;
+
+    const instance = session.spawn(globalId);
+    if (!instance.moveIntoFirstAcceptingSlot(worldInstance, false, session)) instance.destroy();
+  }
 }

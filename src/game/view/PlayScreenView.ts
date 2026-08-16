@@ -254,6 +254,11 @@ export interface PlayScreenView {
   readonly laneSlot: (place: CardPlace) => SlotRef | undefined;
   /** 現在地の探索率（0〜1）。100%に達しても探索は続けられる（ExplorationSystem.md 2節）。 */
   readonly explorationRatio: number;
+  /**
+   * 現在地を探索できるか（`explore`アクションを持つ場所か）。**探索できない場所もある**
+   * ——筏・外洋（voyage.yaml）は資源を持たないので、探索の子ウィンドウ自体を開かない。
+   */
+  readonly canExplore: boolean;
   /** 現在地の設置物（道・木・建物など、持ち歩けないもの）。 */
   readonly fixtures: readonly ObjectCardStack[];
   /** 現在地に落ちているアイテム（持ち歩けるもの）。 */
@@ -357,6 +362,9 @@ type ObjectKind = Extract<CardKind, 'item' | 'food' | 'container' | 'tool' | 'fi
 
 /** 命名処理が名前を付けていない土地（テスト用の最小Codex等）の代替表示。 */
 const UNNAMED_LOCATION = '名もなき土地';
+
+/** 探索アクションの名前（locations.yaml）。持っているかどうかで、現在地を探索できるかが決まる。 */
+const EXPLORE_ACTION = 'explore';
 
 /**
  * ステータスエリアへ出す候補になるプロパティに付けるタグ（GameElementDefinition.md 6.7節）。
@@ -910,9 +918,14 @@ export function fromGameSession(
    * 実体化された土地の表示名。生成側（IslandMap）が持つのは識別子の組み合わせだけなので、
    * 表示文字列はここで対応表から組み立てる（Localization.md）。
    */
-  const locationNameOf = (instanceId: number): string => {
+  const locationNameOf = (instanceId: number, defName?: string): string => {
     const name = game.map.nameOfInstance(instanceId);
-    return name === undefined ? UNNAMED_LOCATION : locale.locationName(name);
+    if (name !== undefined) return locale.locationName(name);
+
+    // 名前を付けるのは地形生成だけ（IslandMap）なので、島の外の場所——筏・外洋・本土
+    // （voyage.yaml）——はそこに載っていない。そういう場所は型の表示名がそのまま名前になる。
+    const displayName = defName === undefined ? undefined : locale.object(defName).displayName;
+    return displayName === undefined || displayName === defName ? UNNAMED_LOCATION : displayName;
   };
 
   const pathTagId = codex.tagNames.tryGetId('path');
@@ -928,7 +941,7 @@ export function fromGameSession(
     const path = new Path(fixture, codex.propertyNames);
     return {
       icon: LOCATION_ICON,
-      name: locationNameOf(path.destinationInstanceId),
+      name: locationNameOf(path.destinationInstanceId, path.destination?.def.name),
       art: path.destination?.def.name,
       // 名前も絵も行き先のものなので、道であることは桟の矢印だけが示す（枠の色は現在地と同じ、
       // どちらも場所を映す札のため）。
@@ -1174,9 +1187,11 @@ export function fromGameSession(
       game.world.weather === undefined ? undefined : locale.symbol(game.world.weather).displayName,
     currentLocation: {
       icon: LOCATION_ICON,
-      name: locationNameOf(location.instance.instanceId),
+      name: locationNameOf(location.instance.instanceId, location.instance.def.name),
       art: location.instance.def.name,
       kind: 'location',
+      // 現在地の札も、その場所が宣言したバーを出す（航海の進み、docs/world/Voyage.md 4節）。
+      gauges: gaugesOfCard(location.instance),
     },
     locationArt: location.instance.def.name,
     laneSlot: (place) => {
@@ -1190,6 +1205,7 @@ export function fromGameSession(
       location.explorationProgressMax === 0
         ? 0
         : location.explorationProgress / location.explorationProgressMax,
+    canExplore: location.instance.def.actions.some((action) => action.name === EXPLORE_ACTION),
     // 並び方はプレイヤーが地形をどう捉えているかで変わるため、同じスロットの中での並び替えを許す。
     // ヤシの木を持ち歩けないのはmoveIntoが弾くからで、このレーンが読み取り専用だからではない。
     fixtures: location.fixtureStacks.map((stack) => ({

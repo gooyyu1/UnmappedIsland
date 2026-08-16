@@ -68,6 +68,11 @@ export interface Scenario {
   /** 開始地点の土地に置くもの。 */
   readonly items: SlotContents;
   readonly fixtures: SlotContents;
+  /**
+   * 置いた設置物の**中**に入れるもの（キーはその設置物のobject_def名）。積荷を積んだ筏
+   * （docs/world/Voyage.md）のように、中身まで揃った状態から始めるために使う。
+   */
+  readonly inside: ReadonlyMap<string, SlotContents>;
   /** キャラクターのプロパティの上書き。値はYAMLに書かれたまま（整数かシンボル名、6.6節）。 */
   readonly props: ReadonlyMap<string, string>;
   /**
@@ -100,9 +105,27 @@ export function parseScenario(fileName: string, text: string): Scenario {
     locationType: location === undefined ? undefined : tryGetScalar(location, 'type', `${fileName}.location`),
     items: names(location, 'items', `${fileName}.location`),
     fixtures: names(location, 'fixtures', `${fileName}.location`),
+    inside: contentsByOwner(location, `${fileName}.location`),
     props: propertyValues(player, 'props', `${fileName}.player`),
     worldProps: propertyValues(world, 'props', `${fileName}.world`),
   };
+}
+
+/** `inside`（設置物の名前 → その中へ入れる物の並び）。書かれていなければ空。 */
+function contentsByOwner(
+  parent: ReturnType<typeof tryGetMap>,
+  context: string,
+): ReadonlyMap<string, SlotContents> {
+  const byOwner = new Map<string, SlotContents>();
+  if (parent === undefined) return byOwner;
+
+  const map = tryGetMap(parent, 'inside', context);
+  if (map === undefined) return byOwner;
+
+  for (const [owner] of entriesInOrder(map)) {
+    byOwner.set(owner, names(map, owner, `${context}.inside`));
+  }
+  return byOwner;
 }
 
 function names(parent: ReturnType<typeof tryGetMap>, key: string, context: string): SlotContents {
@@ -165,6 +188,7 @@ export function applyScenario(game: NewGameSession, scenario: Scenario, codex: W
   place(game, codex, scenario.injuries, 'injuries');
   place(game, codex, scenario.items, 'items');
   place(game, codex, scenario.fixtures, 'fixtures');
+  placeInside(game, codex, scenario.inside);
 
   for (const [name, raw] of scenario.props) {
     game.player.instance.setProperty(propertyIdOf(codex, name), resolveValue(codex, name, raw));
@@ -208,6 +232,34 @@ function place(game: NewGameSession, codex: WorldCodex, contents: SlotContents, 
     const failure = spawned.moveToSlot(owner, slotId);
     if (failure !== undefined) {
       throw new YamlLoadError(`シナリオ: '${name}' を '${slot}' へ置けません: ${failure}`);
+    }
+  }
+}
+
+/**
+ * 置いた設置物の中へ物を入れる（Scenario.inside）。行き先はその物のスロットを宣言順に走査して
+ * 決めるので（spawnの`into`と同じ規約）、シナリオ側はスロット名を書かない。
+ *
+ * 入れる先が見つからない・受け入れられない（かさの上限を超える）場合はエラーにする——黙って
+ * 落とすと、積んだつもりの物が地面に落ちた状態でゲームが始まってしまう。
+ */
+function placeInside(
+  game: NewGameSession,
+  codex: WorldCodex,
+  inside: ReadonlyMap<string, SlotContents>,
+): void {
+  for (const [ownerName, contents] of inside) {
+    const ownerDefId = objectIdOf(codex, ownerName);
+    const owner = game.startLocation.fixtures.find((fixture) => fixture.def.globalId === ownerDefId);
+    if (owner === undefined)
+      throw new YamlLoadError(
+        `シナリオ: '${ownerName}' が開始地点に置かれていないので、中へ入れられません。`,
+      );
+
+    for (const name of contents) {
+      const spawned = game.session.spawn(objectIdOf(codex, name));
+      if (!spawned.moveIntoFirstAcceptingSlot(owner, false, game.session))
+        throw new YamlLoadError(`シナリオ: '${name}' を '${ownerName}' の中へ入れられません。`);
     }
   }
 }

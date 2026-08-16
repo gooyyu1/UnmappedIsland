@@ -58,11 +58,14 @@ object_defs:
   # **柄が乗せる遠心力が、そのまま打ち砕く一撃になる。** サルなら一撃で沈み、イノシシでも数撃で届く。
   # 頭部は刃なので解体にも使える。
   #
+  # **木を倒せる唯一の道具**（chopping_tool、timber.yaml）。尖った石では幹の木部を断てないため、
+  # 丸太＝筏（voyage.yaml）への道はここを通る。
+  #
   # レシピはまだ無い（同8節）。今は狩りの釣り合いを見るシナリオ（src/scenarios/hunting_ground.yaml）
   # だけが手元へ置く。
   stone_axe:
     traits: [weapon]
-    tags: [item, tool, cutting_tool]
+    tags: [item, tool, cutting_tool, chopping_tool]
     props:
       weight: {value: 1200}
       volume: {value: 1800}

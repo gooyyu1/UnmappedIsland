@@ -195,6 +195,10 @@ object_defs:
               - modify:
                   self:
                     season_is_calm: 1
+                    # 風向きの重み（docs/world/Voyage.md 3.1節）。凪の季節は横風が多い。
+                    tailwind_weight: 30
+                    crosswind_weight: 45
+                    headwind_weight: 25
               - add:
                   self:
                     atmospheric_moisture: 0.1
@@ -205,6 +209,10 @@ object_defs:
               - modify:
                   self:
                     season_is_wet: 1
+                    # 雨季は向かい風が増える。出航には最も向かない季節になる。
+                    tailwind_weight: 20
+                    crosswind_weight: 40
+                    headwind_weight: 40
               - add:
                   self:
                     atmospheric_moisture: 1
@@ -215,6 +223,10 @@ object_defs:
               - modify:
                   self:
                     season_is_dry: 1
+                    # 乾季は追い風が多い。これが「出航に適した季節の窓」になる。
+                    tailwind_weight: 50
+                    crosswind_weight: 35
+                    headwind_weight: 15
               - add:
                   self:
                     atmospheric_moisture: -0.2
@@ -467,6 +479,40 @@ object_defs:
                 - weight: 1
                   set:
                     self: {weather: scorching, weather_remaining: 24}
+      # 現在の風向き。シンボル型プロパティ（6.6節）で、本土へ向かう向きを基準に3つだけを区別する
+      # （docs/world/Voyage.md 3.1節）。島の上での暮らしには効かず、今のところ航海の速さだけが読む。
+      # 段を持たないのは、読む側が段ではなくシンボルの一致（`eq: tailwind`）で見るため。
+      wind:
+        value: crosswind
+      # 風向きの候補ごとの重み。seasonのstagesがmodifyで維持する（ベース値0のため、modifyされない
+      # 候補は選ばれない）。天気の*_weightと同じ仕組み（ClimateSystem.md 4.3節）。
+      tailwind_weight:
+        value: 0
+      crosswind_weight:
+        value: 0
+      headwind_weight:
+        value: 0
+      # 今の風向きの残りtick数。0に達した瞬間（min:1を下回るon_shortfall、6.3節）に、*_weightを
+      # 重みとするpickで次の風向きを選ぶ。持続は一律8時間（32tick）——天気と違って向きしか無いので、
+      # 長さまで振ると、どちらが変わったのかが読めなくなる。
+      wind_remaining:
+        value: 32
+        range: {min: 1, max: 999999}
+        passives:
+          - add:
+              self:
+                wind_remaining: -1
+        on_shortfall:
+          pick:
+            - weight: {prop: tailwind_weight}
+              set:
+                self: {wind: tailwind, wind_remaining: 32}
+            - weight: {prop: crosswind_weight}
+              set:
+                self: {wind: crosswind, wind_remaining: 32}
+            - weight: {prop: headwind_weight}
+              set:
+                self: {wind: headwind, wind_remaining: 32}
       # 蓄熱量（ClimateSystem.md 3節のもう一つの貯水池）。季節レートをambient_temperatureへ直接
       # 加算すると±1/tickでも1季節で±2880になるため、atmospheric_moistureと同じ「スケールした
       # 貯水池のstagesが表向きの値をmodifyする」パターンを使う。dryで+1/tick（20日で0→上限1920）、

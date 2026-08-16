@@ -155,6 +155,8 @@ object_defs:
   # 砂浜。開けていて歩きやすく、漂着物とヤシの実に恵まれる。
   sandy_beach:
     traits: [location, explorable]
+    # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのraft.set_sail）。
+    tags: [coast]
     props:
       exploration_progress:
         value: 0
@@ -208,6 +210,8 @@ object_defs:
   # 岩だらけの海岸。石とヤシガニが多いが、足場が悪い。
   rocky_coast:
     traits: [location, explorable]
+    # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのraft.set_sail）。
+    tags: [coast]
     props:
       exploration_progress:
         value: 0
@@ -256,6 +260,8 @@ object_defs:
   # 岸壁。切り立った崖の海岸。得られるものは少ないが、洞窟が口を開けていることがある。
   cliff_coast:
     traits: [location, explorable]
+    # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのraft.set_sail）。
+    tags: [coast]
     props:
       exploration_progress:
         value: 0
@@ -266,6 +272,10 @@ object_defs:
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 20
+      # 金の聖杯が見つかる候補の重み（artifacts.yaml）。**一度見つけたらその土地では二度と出ない**
+      # ——候補自身が自分の重みを0にする。島に幾つも転がっていては、持ち帰る意味が薄れる。
+      chalice_find:
+        value: 4
     actions:
       explore:
         showMenu: always
@@ -275,6 +285,9 @@ object_defs:
           # 1個
           - weight: {prop: cave_find}
             spawn: {object: cave_entrance, into: self}
+          - weight: {prop: chalice_find}
+            set: {self: {chalice_find: 0}}
+            spawn: {object: golden_chalice, into: self}
           - weight: 30
             spawn: {object: stone, into: self}
           # 2個
@@ -357,6 +370,9 @@ object_defs:
       # 湧き水が見つかる候補の重み。
       spring_find:
         value: 10
+      # 斧で倒せる木が1本見つかる候補の重み（timber.yaml）。丸太の出どころなので、森を特徴づける。
+      tree_find:
+        value: 15
     actions:
       explore:
         showMenu: always
@@ -369,6 +385,10 @@ object_defs:
           - weight: {prop: spring_find}
             spawn: {object: spring, into: self}
           # 2個
+          - weight: {prop: tree_find}
+            spawn:
+              - {object: broadleaf_tree, into: self}
+              - {object: twig, into: self}
           - weight: 20
             spawn: {object: twig, count: 2, into: self}
           - weight: 15
@@ -408,6 +428,9 @@ object_defs:
       # タロイモが1つだけ見つかる候補の重み。
       taro_find:
         value: 10
+      # 斧で倒せる木が1本見つかる候補の重み（timber.yaml）。
+      tree_find:
+        value: 12
     actions:
       explore:
         showMenu: always
@@ -420,6 +443,10 @@ object_defs:
           - weight: {prop: taro_find}
             spawn: {object: taro, into: self}
           # 2個
+          - weight: {prop: tree_find}
+            spawn:
+              - {object: broadleaf_tree, into: self}
+              - {object: twig, into: self}
           - weight: 17
             spawn:
               - {object: twig, into: self}
@@ -462,6 +489,10 @@ object_defs:
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 18
+      # 金の聖杯が見つかる候補の重み（artifacts.yaml）。**一度見つけたらその土地では二度と出ない**
+      # ——候補自身が自分の重みを0にする。島に幾つも転がっていては、持ち帰る意味が薄れる。
+      chalice_find:
+        value: 3
     actions:
       explore:
         showMenu: always
@@ -471,6 +502,9 @@ object_defs:
           # 1個
           - weight: {prop: cave_find}
             spawn: {object: cave_entrance, into: self}
+          - weight: {prop: chalice_find}
+            set: {self: {chalice_find: 0}}
+            spawn: {object: golden_chalice, into: self}
           - weight: 7
             spawn: {object: twig, into: self}
           # 2個
@@ -550,6 +584,10 @@ object_defs:
       # 木苺の茂みが見つかる候補の重み。
       berry_find:
         value: 10
+      # 金の聖杯が見つかる候補の重み（artifacts.yaml）。**一度見つけたらその土地では二度と出ない**
+      # ——候補自身が自分の重みを0にする。島に幾つも転がっていては、持ち帰る意味が薄れる。
+      chalice_find:
+        value: 3
     actions:
       explore:
         showMenu: always
@@ -559,6 +597,9 @@ object_defs:
           # 1個
           - weight: {prop: cave_find}
             spawn: {object: cave_entrance, into: self}
+          - weight: {prop: chalice_find}
+            set: {self: {chalice_find: 0}}
+            spawn: {object: golden_chalice, into: self}
           - weight: {prop: berry_find}
             spawn: {object: berry_bush, into: self}
           # 2個
