@@ -25,9 +25,7 @@ import { ShownCards } from './ShownCards';
 import type { RecordedView, Recording } from './recording';
 import { recordChange } from './recording';
 import { noteOperation, setStateReporter } from './errorReport';
-import type { StatusDelta } from './statusChanges';
-import { allEntries, allStatuses, statusChangesAfter } from './statusChanges';
-import { statusRows } from './statusRows';
+import { ShownStatuses } from './ShownStatuses';
 import { TickProgress } from './tickProgress';
 import { Button, SLOT_BUTTON_PAPER_TEXTURE } from './ui/Button';
 import { EDGE_DIRECTIONS } from './ui/Card';
@@ -61,7 +59,6 @@ import { recipeCategories } from './recipeList';
 import { spawnInProgressObject } from '../domain/runtime/crafting';
 import { emitGainParticles } from './ui/GainParticles';
 import { ProgressRing } from './ui/ProgressRing';
-import type { PropertyTab } from './ui/PropertyWindow';
 import { PropertyWindow } from './ui/PropertyWindow';
 import { ScreenAlertFrame } from './ui/ScreenAlertFrame';
 import type { StatusContent } from './ui/StatusBar';
@@ -309,6 +306,23 @@ export class PlayScene extends ResponsiveScene {
   });
 
   /** 開いているプロパティウィンドウ。探索の子ウィンドウと同じく、画面の作り直しをまたいで開いたままにする。 */
+  /**
+   * ステータスエリアに出ている行と、その見え方（ShownStatuses）。**行の選び方・増減・固定表示を
+   * 混ぜた結果はここが答える**——画面はバーを並べる位置だけを決める。
+   */
+  private readonly status = new ShownStatuses({
+    statuses: () => this.view.statuses,
+    categories: () => this.view.propertyCategories,
+    midAction: () => this.passingTime,
+    onPinned: () => {
+      this.savePinnedStatuses();
+      this.showStatuses();
+      // プロパティウィンドウを開いたまま切り替えられるため、そちらの印も引き直す。
+      this.propertyWindow?.setTabs(this.status.tabs());
+    },
+    onOpenDetail: (key) => this.openStatusDetail(key),
+  });
+
   private propertyWindow: PropertyWindow | undefined;
 
   /** 開いている地図ウィンドウ。探索の子ウィンドウと同じく、画面の作り直しをまたいで開いたままにする。 */
@@ -350,19 +364,10 @@ export class PlayScene extends ResponsiveScene {
   private slotIndex = -1;
 
   /**
-   * ユーザが固定表示にしたプロパティの識別子。セーブデータが持つ値の作業用の複製で、
-   * 切り替えるたびにスロットへ書き戻す（togglePinnedStatus）。
-   */
-  private pinnedStatuses = new Set<string>();
-
-  /**
    * ユーザが地図に置いたカードの位置（サイトindex→正規化座標）。セーブデータが持つ値の
    * 作業用の複製で、カードを置くたびにスロットへ書き戻す（placeMapCard）。
    */
   private mapPositions = new Map<number, MapPlacement>();
-
-  /** 直前の行動でのステータスの増減。プロパティの識別子で引く（並びが変わっても対応が取れる）。 */
-  private statusChanges: ReadonlyMap<string, StatusDelta> = new Map();
 
   /**
    * 探索の結果待ちか（この間は次の探索を始められない）と、直前の探索で見つかったもの。
@@ -424,7 +429,7 @@ export class PlayScene extends ResponsiveScene {
     // Phaserはシーンのインスタンスを使い回すため、前のプレイの状態は必ずここで入れ替える。
     this.save = data.save;
     this.slotIndex = data.slotIndex;
-    this.pinnedStatuses = new Set(data.save.pinnedStatuses);
+    this.status.reset(data.save.pinnedStatuses);
     this.mapPositions = new Map(
       data.save.mapCardPositions.map((position) => [position.site, { x: position.x, y: position.y }]),
     );
@@ -476,7 +481,6 @@ export class PlayScene extends ResponsiveScene {
     this.passingTime = false;
     this.searching = false;
     this.foundArriving = new Set();
-    this.statusChanges = new Map();
     this.selectedFilter = 0;
   }
 
@@ -1263,7 +1267,7 @@ export class PlayScene extends ResponsiveScene {
 
     this.returnFound(this.explorationWindow);
     const shownBefore = this.shownInstanceIds();
-    const statusesBefore = allStatuses(this.view);
+    const statusesBefore = this.status.all();
     const startedAt = this.gameSession.world.totalMinutes;
 
     noteOperation(`探索した: ${this.view.currentLocation.name}（${this.clockText()}）`);
@@ -1466,7 +1470,7 @@ export class PlayScene extends ResponsiveScene {
   private showRecorded(recorded: RecordedView): void {
     const context = this.motionOf(recorded.changes);
     this.view = recorded.view;
-    this.statusChanges = recorded.statusChanges;
+    this.status.setChanges(recorded.statusChanges);
     this.showSignals(recorded.signals);
     this.showView(context);
   }
@@ -1550,7 +1554,7 @@ export class PlayScene extends ResponsiveScene {
 
     const startedAt = this.gameSession.world.totalMinutes;
     const locationBefore = this.gameSession.player.location?.instance;
-    const statusesBefore = allStatuses(this.view);
+    const statusesBefore = this.status.all();
     const recorded = this.record(change);
 
     const moved = this.gameSession.player.location?.instance !== locationBefore;
@@ -1968,7 +1972,7 @@ export class PlayScene extends ResponsiveScene {
     this.alertFrame = new ScreenAlertFrame(this, this.metrics).setDepth(ALERT_FRAME_DEPTH);
 
     const bars = new Map<string, StatusBar>();
-    for (const status of this.statusContents(allStatuses(this.view))) {
+    for (const status of this.status.all()) {
       const bar = new StatusBar(
         this,
         this.metrics,
@@ -1994,9 +1998,7 @@ export class PlayScene extends ResponsiveScene {
    * StatusBar.show）。
    */
   private showStatuses(): void {
-    const rows = statusRows(
-      this.statusContents(this.view.statuses),
-      this.statusContents(allEntries(this.view)),
+    const rows = this.status.rows(
       (status) => this.statusBars.get(status.key)?.isShowingChange(status) === true,
     );
     const rowHeight = StatusBar.height(this.metrics);
@@ -2013,25 +2015,6 @@ export class PlayScene extends ResponsiveScene {
     this.alertFrame.setAlerting(rows.some((row) => row.alert === 'fatal'));
   }
 
-  private statusContents(statuses: readonly StatusContent[]): readonly StatusContent[] {
-    return statuses.map((status) => this.statusContent(status));
-  }
-
-  /** バーに渡す1件分。直前の行動での増減と、固定表示の状態・トグルを添える。 */
-  private statusContent(status: StatusContent): StatusContent {
-    const delta = this.statusChanges.get(status.key);
-    return {
-      ...status,
-      change: delta?.change,
-      ratioBefore: delta?.ratioBefore,
-      // 経過を見せている間は行動の途中の値。バーは減った分の帯を縮めずに溜める（ProgressBar.setRatio）。
-      midAction: this.passingTime,
-      pinned: this.pinnedStatuses.has(status.key),
-      onTogglePin: () => this.togglePinnedStatus(status.key),
-      onOpenDetail: () => this.openStatusDetail(status.key),
-    };
-  }
-
   /**
    * バーをタップしたときに開く、そのステータスの詳細（Windows.md 8節）。開き直しでも同じ経路を
    * 通せるよう、受け取るのは中身ではなくプロパティの識別子で、中身は今のviewから引き直す。
@@ -2039,14 +2022,14 @@ export class PlayScene extends ResponsiveScene {
    * ステータスエリアからもプロパティウィンドウの行からも開くため、既に開いていれば入れ替える。
    */
   private openStatusDetail(key: string): void {
-    const content = allStatuses(this.view).find((status) => status.key === key);
+    const content = this.status.contentOf(key);
     if (content === undefined) return;
 
     noteOperation('ステータスの詳細を開いた');
     this.statusDetailWindow?.close();
     this.statusDetailKey = key;
     this.statusDetailWindow = new StatusDetailWindow(this, this.metrics, {
-      content: this.statusContent(content),
+      content,
       area: { x: 0, y: 0, width: this.metrics.width, height: this.metrics.height },
       // 影響の枠から相手の詳細へ渡り歩く。開き直しと同じ経路なので、今の窓は入れ替わる。
       onOpenStatus: (target) => this.openStatusDetail(target),
@@ -2058,23 +2041,11 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * ステータス名をタップしたときの固定表示の切り替え。固定表示にしたステータスは、安全域でも
-   * ステータスエリアの先頭に出続ける（StatusArea.md）。
-   */
-  private togglePinnedStatus(key: string): void {
-    if (!this.pinnedStatuses.delete(key)) this.pinnedStatuses.add(key);
-    this.savePinnedStatuses();
-    this.showStatuses();
-    // プロパティウィンドウを開いたまま切り替えられるため、そちらの印も引き直す。
-    this.propertyWindow?.setTabs(this.propertyTabs());
-  }
-
-  /**
    * 固定表示をセーブデータへ書き戻す（SaveDataManagement.md セーブデータのスキーマ節）。
    * スロットを使わないシナリオからの起動では、そのプレイの間だけ残る。
    */
   private savePinnedStatuses(): void {
-    this.save = { ...this.save, pinnedStatuses: [...this.pinnedStatuses] };
+    this.save = { ...this.save, pinnedStatuses: [...this.status.pinnedKeys] };
     this.writeSave();
   }
 
@@ -2096,14 +2067,6 @@ export class PlayScene extends ResponsiveScene {
     if (this.slotIndex >= 0) new SaveSlots(localStorage).write(this.slotIndex, this.save);
   }
 
-  /** プロパティウィンドウに渡すタブ（行に固定表示の状態とトグルを添える）。 */
-  private propertyTabs(): readonly PropertyTab[] {
-    return this.view.propertyCategories.map((tab) => ({
-      name: tab.name,
-      entries: this.statusContents(tab.entries),
-    }));
-  }
-
   /**
    * 行動の前後でステータスを比べ、増減を控える。次の行動まで記号を出し続けるので、移動で
    * フィールドエリアを作り直してもそのまま出る。
@@ -2111,12 +2074,7 @@ export class PlayScene extends ResponsiveScene {
    * 時間を消費しない操作では記号を消さない（statusChangesAfter）。
    */
   private noteStatusChanges(before: readonly StatusContent[], startedAt: number): void {
-    this.statusChanges = statusChangesAfter(
-      this.statusChanges,
-      before,
-      allStatuses(this.view),
-      this.gameSession.world.totalMinutes > startedAt,
-    );
+    this.status.note(before, this.gameSession.world.totalMinutes > startedAt);
   }
 
   /**
@@ -2177,7 +2135,7 @@ export class PlayScene extends ResponsiveScene {
 
     this.propertyWindow = new PropertyWindow(this, this.metrics, {
       title: this.view.characterName,
-      tabs: this.propertyTabs(),
+      tabs: this.status.tabs(),
       area: this.layout.slotWindowArea,
       onClose: () => {
         this.propertyWindow = undefined;
