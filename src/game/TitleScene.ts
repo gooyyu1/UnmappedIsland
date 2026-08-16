@@ -40,7 +40,7 @@ export class TitleScene extends ResponsiveScene {
     // テスト用シナリオは同梱されているときだけ並べる（SaveDataManagement.md「テスト用シナリオ」節）。
     const menu: { label: string; primary: boolean; onTap?: () => void }[] = [
       { label: 'はじめる', primary: true, onTap: () => this.scene.start('slots') },
-      { label: '設定', primary: false },
+      { label: '設定', primary: false, onTap: () => this.scene.start('settings') },
     ];
     if (scenarioNames().length > 0) {
       menu.push({ label: 'テスト用シナリオ', primary: false, onTap: () => this.scene.start('scenarios') });

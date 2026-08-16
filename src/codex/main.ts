@@ -1,5 +1,5 @@
 import './codex.css';
-import { installConfiguredAssetPack } from '../assetPack/install';
+import { installSampleAssetPack } from '../assetPack/install';
 import type { CodexSource } from './CodexSource';
 import { loadCodexSource } from './CodexSource';
 import type { NamingMode } from './CodexView';
@@ -154,7 +154,9 @@ function setStatus(html: string): void {
 }
 
 async function initialize(): Promise<void> {
-  await installConfiguredAssetPack();
+  // ビューアはゲーム側の設定によらず常に読む。読むかどうかを選べるのは、パックの物が世界に混ざる
+  // のを避けるためで（StartScreen.md 画面構成 4）、ここは世界を始めずに定義を読むだけの道具。
+  await installSampleAssetPack();
 
   for (const button of document.querySelectorAll<HTMLElement>('[data-naming-mode]'))
     button.addEventListener('click', () => setNamingMode(button.dataset.namingMode as NamingMode));
