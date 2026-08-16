@@ -149,7 +149,10 @@ function uncountedHtml(view: CodexView, entries: readonly PropertyRoute[]): stri
 
 /**
  * 1日を賄う献立。既定は貪欲解で、需要ごとに経路を選び替えると合計が動く（wireBalanceMenu）。
- * 合算はブラウザ側で行うが、単位あたりの労働も期待値も balanceTables が出した値をそのまま使う。
+ * 合算はブラウザ側で行うが、労働も期待値も balanceTables が出した値をそのまま使う。
+ *
+ * 選択肢に添える数字は**1日ぶんを賄う労働**にする。合計と同じ物差しなので「これを選ぶと1日が
+ * 何分になるか」がそのまま読める——単位あたりの時間だと、需要の大きさを掛け直さないと比べられない。
  */
 function menuHtml(view: CodexView, place: PlaceBalance): string {
   if (place.properties.length === 0) return '';
@@ -170,7 +173,7 @@ function menuHtml(view: CodexView, place: PlaceBalance): string {
                 : '';
           return (
             `<option value="${index}"${selected}>` +
-            `${escapeHtml(routeText(view, entry.route))}（${formatNumber(entry.perUnitMinutes, 2)}分/単位）` +
+            `${escapeHtml(routeText(view, entry.route))}（${formatNumber(entry.dailyMinutes, 0)}分）` +
             `</option>`
           );
         })
@@ -193,6 +196,8 @@ function menuHtml(view: CodexView, place: PlaceBalance): string {
       ? ''
       : `<p class="warn">賄えない値: ${escapeHtml(place.menu.unmet.join('、'))}</p>`) +
     `<div class="menu-choices">${selects}</div>` +
+    `<p class="muted menu-note">括弧内は、その経路だけで1日ぶんを賄った場合の労働。` +
+    `合計はここより小さくなりうる——同時に返る値が他の需要を先に埋めるため。</p>` +
     `</div>`
   );
 }
