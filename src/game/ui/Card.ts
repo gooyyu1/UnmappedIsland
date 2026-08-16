@@ -342,7 +342,7 @@ export class Card extends Phaser.GameObjects.Container {
     return this._content;
   }
 
-  /** カードの実寸。ドラッグ中の分身やドロップ先の枠を同じ大きさで描くために公開する。 */
+  /** カードの実寸。指が運ぶ札やドロップ先の枠を同じ大きさで描くために公開する。 */
   readonly cardWidth: number;
   readonly cardHeight: number;
 
@@ -1120,7 +1120,7 @@ export class Card extends Phaser.GameObjects.Container {
   /**
    * 今の押下をタップとして扱わない。掴んで動かす操作（カードのドラッグ・レーンの横スクロール）に
    * なったと分かった時点でCardDragControllerが呼ぶ。押下中の黒枠もここで引っ込める——押されている
-   * ことを示す表示は、掴んだ時点で分身に役目を譲る。
+   * ことを示す表示は、掴んだ時点で指が運ぶ札に役目を譲る。
    *
    * 押し始めたカードの上で指を離すと、動かしていてもタップとして成立してしまう（tap.ts）。
    * スタックの上の1枚を自分の位置へ重ねる操作（石と石の組み合わせ）や、カードを掴んだままの

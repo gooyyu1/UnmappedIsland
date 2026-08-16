@@ -125,7 +125,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     expect(plan.flights).toHaveLength(2);
     expect(plan.flights.map((flight) => flight.delaySteps)).toEqual([0, 1]);
     for (const flight of plan.flights) {
-      // 分身の見た目は行き先のカードから借りる（居なくなったカードは既に無いものとして扱う）。
+      // 便の見た目は行き先のカードから借りる（居なくなったカードは既に無いものとして扱う）。
       expect(flight).toMatchObject({ face: '手の石', from: 0, to: 500 });
     }
   });
@@ -155,7 +155,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     expect(plan.discards).toEqual(['地の石']);
   });
 
-  it('置いたままの分身が運ぶインスタンスは、通常の便にせず着地先だけを返す', () => {
+  it('置いたままの札が運ぶインスタンスは、通常の便にせず着地先だけを返す', () => {
     const plan = planMotion(
       input({
         before: [placed('包帯', [1], 0)],
@@ -166,12 +166,12 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
 
     expect(plan.landings.get(1)).toEqual({ to: 500, into: '包帯' });
     expect(plan.flights).toEqual([]);
-    // 運んでいるのは置いたままの分身なので、その1枚もまだ枠に居ない（フェードにもしない）。
+    // 運んでいるのは置いたままの札なので、その1枚もまだ枠に居ない（フェードにもしない）。
     expect(plan.shown).toEqual([{ card: '包帯', present: [], emptied: false }]);
     expect(plan.fadeIns).toEqual([]);
   });
 
-  it('置いたままの分身が運ぶインスタンスは、releasedに混ざっていても便にならない', () => {
+  it('置いたままの札が運ぶインスタンスは、releasedに混ざっていても便にならない', () => {
     const plan = planMotion(
       input({
         before: [placed('石', [1, 2], 0)],
@@ -181,13 +181,13 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
       }),
     );
 
-    // 掴んでいた1つ（aloft）は分身の着地で、ついてきた1つだけが離した場所からの便で動く。
+    // 掴んでいた1つ（aloft）は置いたままの札の着地で、ついてきた1つだけが離した場所からの便で動く。
     expect(plan.landings.get(1)).toEqual({ to: 500, into: '石' });
     expect(plan.flights).toHaveLength(1);
     expect(plan.flights[0].from).toEqual(300);
   });
 
-  it('置いたままの分身が運ぶ1枚は、束の残りから引いて見せる', () => {
+  it('置いたままの札が運ぶ1枚は、束の残りから引いて見せる', () => {
     const plan = planMotion(
       input({
         before: [placed('枯れ草', [1, 2, 3], 0)],
@@ -196,7 +196,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
       }),
     );
 
-    // 手に在る1枚は束に居ない。掴んで運んでいる間の見え方（CarriedCards）がそのまま続く。
+    // 手に在る1枚は束に居ない。掴んで運んでいる間の見え方（CarriedCard）がそのまま続く。
     expect(plan.shown).toEqual([{ card: '枯れ草', present: [2, 3], emptied: true }]);
     expect(plan.flights).toEqual([]);
   });
@@ -238,7 +238,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     expect(plan.landings.get(2)).toEqual({ to: 100, into: '枝' });
   });
 
-  it('置いたままの分身のインスタンスが失われていれば、着地先は無い', () => {
+  it('置いたままの札のインスタンスが失われていれば、着地先は無い', () => {
     const plan = planMotion(
       input({
         before: [placed('包帯', [1], 0)],
