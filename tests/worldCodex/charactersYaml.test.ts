@@ -6,7 +6,7 @@ import { PlayerCharacter } from '../../src/domain/runtime/views/PlayerCharacter'
 import { World } from '../../src/domain/runtime/views/World';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
-import { characterIcon } from '../../src/game/view/characterArt';
+import { characterIcon } from '../../src/game/view/characterCard';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -398,7 +398,7 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     it('絵ができるまでの代替アイコンを持つ', () => {
-      // 表に無いと選択画面で全員が同じ姿になる（characterArt.ts）。
+      // 表に無いと選択画面で全員が同じ姿になる（characterCard.ts）。
       expect(characterIcon(character)).not.toBe(characterIcon('いなくなったキャラクタ'));
     });
   });

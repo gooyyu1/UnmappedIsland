@@ -48,7 +48,7 @@ export function cardBackgroundTexture(at: SlotRef): string | undefined {
 }
 
 /**
- * 1つの持ち主に紐づく背景のテクスチャキー。土地の絵の遅延ロード（locationArt）が「その土地のぶん」を
+ * 1つの持ち主に紐づく背景のテクスチャキー。土地の絵の遅延ロード（artFiles）が「その土地のぶん」を
  * まとめて引くために使う。用途もスロットも問わないので、絵を足しても数え直す場所は無い。
  */
 export function backgroundTexturesOf(owner: string): readonly string[] {

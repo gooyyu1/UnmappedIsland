@@ -27,7 +27,7 @@ export interface MotionContext {
   /**
    * 差し替え前に画面に無かったインスタンスの出発点を、そのインスタンスごとに持ったもの。
    *
-   * **世界に起きた変化のログから引く**（motionOrigins、HuntingSystem.md 6.2節）。ログが「この個体は
+   * **世界に起きた変化のログから引く**（changedInstances、HuntingSystem.md 6.2節）。ログが「この個体は
    * この札から来た」と言うので、UIはその札の矩形を引くだけになり、同じ差し替えで出どころの違う物が
    * 生まれてもそれぞれの出どころから飛べる。
    *
@@ -45,7 +45,7 @@ export interface MotionContext {
     readonly rect: Rect;
   };
   /**
-   * 世界から出たインスタンスと、世界に生まれたインスタンス（motionOrigins）。砂埃を立てる場所を
+   * 世界から出たインスタンスと、世界に生まれたインスタンス（changedInstances）。砂埃を立てる場所を
    * 決めるのに使う（cardMotionPlan）。**画面の出入りでは代われない**——別のレーンへ移っただけの
    * カードも、レーンから見れば消えて現れるため。
    */

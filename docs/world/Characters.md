@@ -32,7 +32,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
 | プロパティ | `pain` / `blood` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` |
 | アクション | 休息の4つ（`wait` / `rest` / `nap` / `sleep`。下の[休息](#休息)節。`player_character` trait が配る） |
-| 表示 | `ja.yaml` の表示名、代替アイコン（`characterArt.ts`。絵が入るまでの繋ぎ） |
+| 表示 | `ja.yaml` の表示名、代替アイコン（`characterCard.ts`。絵が入るまでの繋ぎ） |
 
 `status` タグが付くのは `pain` / `blood` / `satiety` / `hydration` / `wakefulness` / `stamina` / `load` の7つで、
 宣言順もこの順に揃える（`readPropertiesWithTag` の戻り順がそのままステータスエリアの並びになる、

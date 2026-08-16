@@ -4,7 +4,7 @@ import type { MapLandView, MapRoadView } from '../view/PlayScreenView';
 import { addTextButton } from './Button';
 import { Card } from './Card';
 import { cardFace } from './cardFace';
-import { ACTION_HEIGHT, ACTION_MAX_WIDTH, WINDOW_PADDING } from '../looks/childWindow';
+import { ACTION_HEIGHT, ACTION_MAX_WIDTH, WINDOW_PADDING } from '../looks/childWindowLayout';
 import { addLabel } from './labels';
 import { addPanel, drawBox } from './shapes';
 import { COLOR, SIZE } from '../looks/theme';

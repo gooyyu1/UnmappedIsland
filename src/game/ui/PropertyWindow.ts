@@ -8,7 +8,7 @@ import {
   CONTENT_GAP,
   WINDOW_PADDING,
   centerWindow,
-} from '../looks/childWindow';
+} from '../looks/childWindowLayout';
 import { addLabel } from './labels';
 import type { StatusContent } from './StatusBar';
 import { StatusBar } from './StatusBar';

@@ -3,7 +3,7 @@ import type { Rect, ScreenMetrics } from '../looks/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { HoldHandlers } from './Button';
 import type { CardContent } from './Card';
-import { cardFace } from './cardFace';
+import { borrowedFace } from './cardFace';
 import { CardLane } from './CardLane';
 import type { LaneCell } from './laneCells';
 import { LANE_CELLS_MAX } from './laneCells';
@@ -14,7 +14,7 @@ import {
   CONTENT_GAP,
   WINDOW_PADDING,
   centerWindow,
-} from '../looks/childWindow';
+} from '../looks/childWindowLayout';
 import { durationText } from '../looks/durationText';
 import { addLabel } from './labels';
 import { addPanel, drawBox } from './shapes';
@@ -398,15 +398,6 @@ export class ObjectWindow {
     this.objects.length = 0;
     this.actionObjects = [];
   }
-}
-
-/**
- * 借りてきた札の見た目。操作は引き継がないが、**同じ札だと分かる識別子だけは持つ**——元の枠から
- * ここへ運ばれてくるのも、閉じて帰るのも、この識別子を辿った並びの差し替えそのものだから
- * （cardMotionPlan）。
- */
-export function borrowedFace(content: CardContent): CardContent {
-  return { ...cardFace(content), identity: content.identity };
 }
 
 /**

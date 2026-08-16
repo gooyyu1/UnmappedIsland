@@ -17,7 +17,7 @@ import {
 } from '../save/newGameInput';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
-import { characterCardContent } from './view/characterArt';
+import { characterCardContent } from './view/characterCard';
 import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { TextInput } from './ui/TextInput';

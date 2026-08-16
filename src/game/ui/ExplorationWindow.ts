@@ -12,7 +12,7 @@ import {
   CONTENT_GAP,
   WINDOW_PADDING,
   centerWindow,
-} from '../looks/childWindow';
+} from '../looks/childWindowLayout';
 import { ProgressBar } from './ProgressBar';
 import { addLabel } from './labels';
 import { wheelPixels } from './scroll';
