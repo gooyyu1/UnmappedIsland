@@ -23,6 +23,11 @@ function scalarText(scalar: Scalar): string {
   return scalar.value === null || scalar.value === undefined ? '' : String(scalar.value);
 }
 
+/** キーの値をノードのまま返す（種類を問わない。patchのようにYAMLを直に触る側が使う）。 */
+export function tryGetNode(map: YAMLMap, key: string): YamlNode | undefined {
+  return (map.get(key, true) ?? undefined) as YamlNode | undefined;
+}
+
 export function tryGetMap(map: YAMLMap, key: string, context: string): YAMLMap | undefined {
   const node = map.get(key, true);
   if (node === undefined) return undefined;

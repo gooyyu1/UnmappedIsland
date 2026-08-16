@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { Localization } from '../locale/Localization';
-import { loadLocalization } from '../locale/Localization';
 import cardFrameUrl from '../assets/ui/card_frame.png';
 import flipDigitUrl from '../assets/ui/flip_digit.png';
 import slotButtonPaperUrl from '../assets/ui/slot_button_paper.png';
@@ -17,7 +16,8 @@ import { WEATHER_ART } from '../art/weatherArt';
 import { commonArtFiles, locationDefNames } from '../art/artFiles';
 import { cssColor } from '../util/cssColor';
 import { COLOR, FONT_FAMILY } from './looks/theme';
-import { loadWorldCodex } from '../loader/loadWorldCodex';
+import { loadDefinitions } from '../loader/loadDefinitions';
+import { LOAD_REPORT } from '../loader/LoadReport';
 import { installedAssetPack } from '../assetPack/install';
 
 /** 組み立て済みWorldCodex・表示文字列をレジストリへ置くときのキー。 */
@@ -60,9 +60,9 @@ export class BootScene extends Phaser.Scene {
     let codex: WorldCodex;
     let localization: Localization;
     try {
-      const pack = installedAssetPack();
-      codex = loadWorldCodex(pack);
-      localization = loadLocalization(pack);
+      const definitions = loadDefinitions(installedAssetPack(), LOAD_REPORT);
+      codex = definitions.codex;
+      localization = definitions.localization;
     } catch (error) {
       this.showMessage(
         `定義ファイルのロードに失敗しました:\n${error instanceof Error ? error.message : error}`,

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { AssetPack } from '../../src/assetPack/AssetPack';
 import { readZip } from '../../src/assetPack/zip';
+import { LoadReport } from '../../src/loader/LoadReport';
 import { loadWorldCodex } from '../../src/loader/loadWorldCodex';
 import { loadLocalization } from '../../src/locale/Localization';
 import { samplePackFiles } from '../../scripts/samplePackFiles.mjs';
@@ -52,7 +53,7 @@ describe('サンプルアセットパック', () => {
   it('同梱ぶんへ重ねると、薬が型としても表示文字列としても足される', async () => {
     const loaded = await pack();
 
-    const codex = loadWorldCodex(loaded);
+    const codex = loadWorldCodex(loaded, new LoadReport());
     expect(codex.objectNames.tryGetId('poison_potion')).toBeDefined();
     expect(codex.objectNames.tryGetId('healing_potion')).toBeDefined();
 
