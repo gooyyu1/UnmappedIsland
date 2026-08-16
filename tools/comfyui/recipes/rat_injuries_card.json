@@ -6,7 +6,7 @@
     "",
     "**サルの毛皮（recipes/monkey_injuries_card.json）とまったく同じ絵。** 種は違うが、地に敷くのは",
     "短く寝た茶色い毛という素材までで、そこに種の差は出ない。**同じ絵をもう1枚置くのは、",
-    "ファイル名がスロットの持ち主を名乗る規約のため**（src/game/ui/backgroundArt.ts）。",
+    "ファイル名がスロットの持ち主を名乗る規約のため**（src/assets/backgroundArt.ts）。",
     "毛色を変えたくなったら、このレシピのeditだけを触ればサルから離れられる。"
   ],
   "output": "src/assets/backgrounds/rat_injuries_card.png",

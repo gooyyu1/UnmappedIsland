@@ -11,13 +11,13 @@ import { CARD_FRAME_TEXTURE } from './ui/Card';
 import { DUST_PUFF_TEXTURE } from './ui/DustPuff';
 import { SLOT_BUTTON_PAPER_FRAME, SLOT_BUTTON_PAPER_TEXTURE } from './ui/Button';
 import { FLIP_DIGIT_TEXTURE } from './ui/FlipCalendar';
-import { INFORMATION_ART } from './ui/informationArt';
-import { SEPARATOR_ART } from './ui/separatorArt';
-import { ICON_ART } from './ui/iconArt';
-import { WEATHER_ART } from './ui/weatherArt';
-import { commonArtFiles, locationDefNames } from './ui/locationArt';
+import { INFORMATION_ART } from '../assets/informationArt';
+import { SEPARATOR_ART } from '../assets/separatorArt';
+import { ICON_ART } from '../assets/iconArt';
+import { WEATHER_ART } from '../assets/weatherArt';
+import { commonArtFiles, locationDefNames } from '../assets/locationArt';
 import { COLOR, FONT_FAMILY, cssColor } from './ui/theme';
-import { WORLD_CODEX_FILES } from './worldCodexFiles';
+import { WORLD_CODEX_FILES } from '../loader/worldCodexFiles';
 
 /** 組み立て済みWorldCodex・表示文字列をレジストリへ置くときのキー。 */
 export const WORLD_CODEX_KEY = 'worldCodex';

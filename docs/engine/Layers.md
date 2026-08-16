@@ -49,13 +49,13 @@
 | 世界 | `src/domain/`（`loader/`・`locale/` が定義を読み、ことばを与える） |
 | 映し | `src/game/PlayScreenView.ts`・`ShownCards.ts`・`ShownStatuses.ts`・`craftingActions.ts`・`recording.ts`・`statusRows.ts`・`statusChanges.ts`・`recipeList.ts`・`tickProgress.ts`、`src/game/ui/cardMotionPlan.ts` |
 | 意匠 | `src/game/ui/theme.ts`・`rainStyle.ts`・`skyTint.ts`・`heatHaze.ts`・`durationText.ts`・`childWindow.ts`・`cardFlight.ts`、`src/game/layout/` |
-| 素材 | `src/game/ui/objectArt.ts`・`backgroundArt.ts`・`iconArt.ts`・`locationArt.ts`・`characterArt.ts`・`weatherArt.ts`・`separatorArt.ts`・`informationArt.ts`、`src/assets/`（絵の実体） |
+| 素材 | `src/assets/`（絵の実体と、`objectArt.ts`・`backgroundArt.ts`・`iconArt.ts`・`locationArt.ts`・`weatherArt.ts`・`separatorArt.ts`・`informationArt.ts`） |
 | 部品 | `src/game/ui/` の残り（`Card`・`CardLane`・`CardTable`・`CardDragController`・`StatusBar`・`ProgressBar`・`Button` ほか） |
 | 組み立て | `src/game/PlayScene.ts`・各 `*Scene.ts`・`src/game/ui/*Window.ts` |
 | （層の外） | `src/game/errorReport.ts`（横断の道具）・`src/save/`・`src/scenario/`・`src/util/` |
 
-**ディレクトリは層に揃っていません**（`src/game/ui/` に映し・意匠・素材が混ざり、素材と
-`worldCodexFiles.ts` は codex ビューアも使うのに `src/game/` に居ます）。揃える作業は未了です。
+**ディレクトリはまだ層に揃っていません。** `src/game/ui/` には映し（`cardMotionPlan.ts`）と意匠
+（`theme.ts` ほか）と、絵文字の代役を持つ `characterArt.ts` が残っています。
 
 ## 5. Phaser をやめるとどうなるか
 

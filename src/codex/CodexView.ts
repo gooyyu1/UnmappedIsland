@@ -2,7 +2,7 @@ import type { DescriptionLine, DescriptionToken } from '../domain/defs/Descripti
 import { DescriptionWriter } from '../domain/defs/Description';
 import type { LocationTypeDef } from '../domain/defs/generation/LocationTypeDef';
 import type { ObjectDef } from '../domain/defs/ObjectDef';
-import { OBJECT_ART } from '../game/ui/objectArt';
+import { OBJECT_ART } from '../assets/objectArt';
 import type { Texts } from '../locale/Localization';
 import type { CodexSource } from './CodexSource';
 

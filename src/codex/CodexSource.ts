@@ -1,5 +1,5 @@
 import type { WorldCodex } from '../domain/defs/WorldCodex';
-import { WORLD_CODEX_FILES } from '../game/worldCodexFiles';
+import { WORLD_CODEX_FILES } from '../loader/worldCodexFiles';
 import type { Localization } from '../locale/Localization';
 import { LOCALE_FILE, parseLocale } from '../locale/Localization';
 import { WorldCodexYamlLoader } from '../loader/WorldCodexYamlLoader';

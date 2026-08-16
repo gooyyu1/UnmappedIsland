@@ -1,4 +1,4 @@
-import type { WorldCodex } from '../../domain/defs/WorldCodex';
+import type { WorldCodex } from '../domain/defs/WorldCodex';
 import { BACKGROUND_ART, backgroundTexturesOf } from './backgroundArt';
 import { OBJECT_ART, objectTexture } from './objectArt';
 

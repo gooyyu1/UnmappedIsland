@@ -4,7 +4,7 @@ import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
-/** 背景画像の置き場所（src/game/ui/backgroundArt.ts の規約）。 */
+/** 背景画像の置き場所（src/assets/backgroundArt.ts の規約）。 */
 const ART_DIR = 'src/assets/backgrounds';
 
 /** 敷く場所。backgroundArt.ts の Use に一致していなければならない。 */

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import type { ArtFile } from './locationArt';
-import { locationArtFiles, locationCardArtFiles } from './locationArt';
+import type { ArtFile } from '../../assets/locationArt';
+import { locationArtFiles, locationCardArtFiles } from '../../assets/locationArt';
 
 /**
  * 土地の絵の遅延ロード。起動時にはロードされない土地の絵（locationArt参照）を、プレイ中に

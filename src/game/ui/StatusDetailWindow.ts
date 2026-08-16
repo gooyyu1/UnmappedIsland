@@ -3,7 +3,7 @@ import type { Rect, ScreenMetrics } from '../layout/ScreenMetrics';
 import { addTextButton } from './Button';
 import { ACTION_HEIGHT, ACTION_MAX_WIDTH, CONTENT_GAP, WINDOW_PADDING, centerWindow } from './childWindow';
 import { addLabel } from './labels';
-import { objectTexture } from './objectArt';
+import { objectTexture } from '../../assets/objectArt';
 import { ProgressBar } from './ProgressBar';
 import { addPanel, drawBox } from './shapes';
 import { onPressRelease } from './tap';

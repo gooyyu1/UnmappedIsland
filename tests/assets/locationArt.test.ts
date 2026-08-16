@@ -1,14 +1,14 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { BACKGROUND_ART } from '../../src/game/ui/backgroundArt';
-import { OBJECT_ART } from '../../src/game/ui/objectArt';
+import { BACKGROUND_ART } from '../../src/assets/backgroundArt';
+import { OBJECT_ART } from '../../src/assets/objectArt';
 import {
   commonArtFiles,
   locationArtFiles,
   locationCardArtFiles,
   locationDefNames,
-} from '../../src/game/ui/locationArt';
+} from '../../src/assets/locationArt';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**

@@ -1,8 +1,8 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { ICON_NAMES } from '../../src/game/ui/iconArt';
+import { ICON_NAMES } from '../../src/assets/iconArt';
 
-/** アイコンの絵の置き場所（src/game/ui/iconArt.ts の規約）。 */
+/** アイコンの絵の置き場所（src/assets/iconArt.ts の規約）。 */
 const ART_DIR = 'src/assets/icons';
 
 /**

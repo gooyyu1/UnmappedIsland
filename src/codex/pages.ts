@@ -2,7 +2,7 @@ import { DescriptionWriter } from '../domain/defs/Description';
 import type { InteractionDef } from '../domain/defs/InteractionDef';
 import type { ObjectDef } from '../domain/defs/ObjectDef';
 import type { SlotDef } from '../domain/defs/SlotDef';
-import { OBJECT_ART } from '../game/ui/objectArt';
+import { OBJECT_ART } from '../assets/objectArt';
 import { isInCraftingNetwork } from './networkPage';
 import type { CodexView } from './CodexView';
 import { EMPTY_HTML, escapeHtml } from './CodexView';
