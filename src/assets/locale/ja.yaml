@@ -396,6 +396,10 @@ object_texts:
   small_bone:
     display_name: 小さな骨
     description: 小動物から取れた細い骨。道具の頭部を支える太さはないが、割って削れば針になる。
+    combinations:
+      whittle:
+        display_name: 削って針にする
+        description: 刃物で細く削り、糸を通す穴を開ける。
   monkey_carcass:
     display_name: サルの死体
     description: 仕留めたサル。丸ごとでは重いが、刃物を当てれば肉と骨と皮に分けられる。
@@ -473,6 +477,9 @@ object_texts:
   spear:
     display_name: 槍
     description: 長い棒の先に石の穂先を固定した武器。突けば深く刺さるが、外すことも多く、解体には使えない。
+  bone_needle:
+    display_name: 骨針
+    description: 小さな骨を削って穴を開けた縫い針。皮を縫い合わせるのに要る。使っても減らない。
 
   # 葉を編む連鎖（weaving.yaml）。
   palm_frond:
@@ -626,9 +633,22 @@ object_texts:
         display_name: 航海の進み
         description: 本土までの道のりをどこまで来たか。満ちれば陸が見える。
     actions:
+      board:
+        display_name: 乗り込む
+        description: 筏の上へ移る。積荷を並べたり帆を張ったりは、乗ってからになる。
+      disembark:
+        display_name: 降りる
+        description: 筏から岸へ戻る。
       set_sail:
         display_name: 航海に出る
         description: 乗り込んで漕ぎ出す。島へ戻ることはできない。
+  rawhide_sail:
+    display_name: 生皮の帆
+    description: 生皮を縫い合わせて枠へ張った帆。筏に組み込めば、風をつかんで進みが増す。
+    recipes:
+      sewn:
+        display_name: 帆を張る
+        description: 枝と縄で枠を組み、生皮を縫い合わせて張る。
   open_sea:
     display_name: 外洋
     description: 島と本土の間に広がる海。何も採れず、風と海流だけが筏を運ぶ。
@@ -814,6 +834,7 @@ reason_texts:
   not_raining: 雨は降っていない。溜められる雨がない。
   too_full: 腹がいっぱいで、これ以上は入らない。
   not_on_coast: 海に面していない土地からは漕ぎ出せない。
+  at_sea: 海の上では降りられない。
   too_worn: この道具はもう使いものにならない。
 
 # 段（GameElementDefinition.md 6.4節のstages）のうち、UIが名前を読んで画面に出すもの。カードの上へ

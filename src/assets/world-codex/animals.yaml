@@ -719,6 +719,14 @@ object_defs:
     props:
       weight: {value: 10}
       volume: {value: 15}
+    combinations:
+      # 削って針にする（tools.yamlのbone_needle）。刃物を当てる側（dragged）は残り、削られる骨だけが
+      # 針へ置き換わる——石を打ち割って尖った石を作るのと同じ形（locations.yamlのknap）。
+      whittle:
+        with: {tag: cutting_tool}
+        duration: 40
+        destroy: self
+        spawn: {object: bone_needle}
 
   # 解体して得られる素材。獲物の種類によらず同じ物が出て、獲物の大きさは個数で表す
   # （HuntingSystem.md 1.5節）。骨と皮の使い道は docs/world/SurvivalItems.md 参照。

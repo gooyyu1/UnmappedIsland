@@ -37,15 +37,27 @@ export type CardPlacement =
  * 移動の宛先は名前で指す（moveTo）。「どのレーンの隣か」という暗黙の対応は持たない。
  */
 export type CardPlace =
-  'fixtures' | 'items' | 'hand' | 'equipment' | 'injuries' | { readonly container: WorldObject };
+  | 'fixtures'
+  | 'items'
+  | 'hand'
+  | 'equipment'
+  | 'injuries'
+  /**
+   * あるオブジェクトの中。slotを省くと、そのオブジェクトが名乗る主要なスロット（`main_item_slot`、
+   * 7.8節）を指す——カードを押して開くのは常にそこなので、押した先を書くときは省ける。
+   *
+   * **slotを添えるのは、押して開く先とは別のスロットを映すとき**（現在地の札から開く構造の
+   * スロット、Windows.md）。持ち主が同じでもスロットが違えば別の場所なので、samePlaceも見分ける。
+   */
+  | { readonly container: WorldObject; readonly slot?: number };
 
 /**
  * 2つの場所が同じか。コンテナの場所は映しているインスタンスで見分ける（同じ型のコンテナが複数あっても
- * 中身は別なので、型では一意に決まらない）。
+ * 中身は別なので、型では一意に決まらない）。同じ持ち主でもスロットが違えば別の場所。
  */
 export function samePlace(a: CardPlace, b: CardPlace): boolean {
   if (typeof a === 'string' || typeof b === 'string') return a === b;
-  return a.container === b.container;
+  return a.container === b.container && a.slot === b.slot;
 }
 
 /**
@@ -259,6 +271,18 @@ export interface PlayScreenView {
    * ——筏・外洋（voyage.yaml）は資源を持たないので、探索の子ウィンドウ自体を開かない。
    */
   readonly canExplore: boolean;
+  /** 現在地そのものの説明（オブジェクトウィンドウの見出しに添える）。 */
+  readonly currentLocationDescription: string | undefined;
+  /**
+   * 現在地そのものが宣言しているアクション。**中に入った場所を操作する唯一の経路**——筏に乗り込むと
+   * 筏の札は現在地の札になり、外の並びからは消えるので、降りる・出航するはここからになる。
+   */
+  readonly currentLocationActions: readonly CardAction[];
+  /**
+   * 現在地に組み込まれている部品の場所（構造スロットを持たない場所ならundefined）。
+   * 筏の帆・住居の壁がここに並ぶ（Dwellings.md 1節）。
+   */
+  readonly currentLocationStructure: CardPlace | undefined;
   /** 現在地の設置物（道・木・建物など、持ち歩けないもの）。 */
   readonly fixtures: readonly ObjectCardStack[];
   /** 現在地に落ちているアイテム（持ち歩けるもの）。 */
@@ -365,6 +389,15 @@ const UNNAMED_LOCATION = '名もなき土地';
 
 /** 探索アクションの名前（locations.yaml）。持っているかどうかで、現在地を探索できるかが決まる。 */
 const EXPLORE_ACTION = 'explore';
+
+/**
+ * 組み込んだ部品を並べるスロットの名前（voyage.yamlの筏、Dwellings.md 1節の住居）。
+ *
+ * **場所の種類がまだ無いので、探索（EXPLORE_ACTION）と同じく名前で決め打つ。** 探索できる土地と、
+ * 中に入る筏・住居を型として分けたうえで、どちらのスロットを開くかをワールド側に名乗らせるのが
+ * 本来の形（`main_item_slot`と同じ形にできる）。場所の種類を入れるときに一緒に直す。
+ */
+const STRUCTURE_SLOT = 'structure';
 
 /**
  * ステータスエリアへ出す候補になるプロパティに付けるタグ（GameElementDefinition.md 6.7節）。
@@ -691,6 +724,7 @@ export function fromGameSession(
     return [...craftingActions(instance, codex, game), ...fromDefinition];
   };
 
+  const structureSlotId = codex.slotNames.tryGetId(STRUCTURE_SLOT);
   const itemTagId = codex.tagNames.tryGetId('item');
   const fixtureTagId = codex.tagNames.tryGetId('fixture');
   const injuryTagId = codex.tagNames.tryGetId('injury');
@@ -1010,7 +1044,7 @@ export function fromGameSession(
    */
   const slotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined => {
     if (typeof place !== 'string') {
-      const slotId = openableSlotOf(place.container);
+      const slotId = place.slot ?? openableSlotOf(place.container);
       return slotId === undefined ? undefined : { owner: place.container, slotId };
     }
     switch (place) {
@@ -1206,6 +1240,12 @@ export function fromGameSession(
         ? 0
         : location.explorationProgress / location.explorationProgressMax,
     canExplore: location.instance.def.actions.some((action) => action.name === EXPLORE_ACTION),
+    currentLocationDescription: locale.object(location.instance.def.name).description,
+    currentLocationActions: actionsOf(location.instance),
+    currentLocationStructure:
+      structureSlotId === undefined || location.instance.tryGetSlot(structureSlotId) === undefined
+        ? undefined
+        : { container: location.instance, slot: structureSlotId },
     // 並び方はプレイヤーが地形をどう捉えているかで変わるため、同じスロットの中での並び替えを許す。
     // ヤシの木を持ち歩けないのはmoveIntoが弾くからで、このレーンが読み取り専用だからではない。
     fixtures: location.fixtureStacks.map((stack) => ({

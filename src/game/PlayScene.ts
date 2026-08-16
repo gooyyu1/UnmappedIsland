@@ -660,8 +660,12 @@ export class PlayScene extends ResponsiveScene {
       {
         pinned: {
           ...this.view.currentLocation,
-          // 探索できない場所（筏・外洋、voyage.yaml）では開く先が無いので、押せる札にしない。
-          onTap: this.view.canExplore ? this.whileIdle(() => this.openExplorationWindow()) : undefined,
+          // 探索できる土地は探索のウィンドウ、それ以外（中へ入る筏・住居）はその場所自身の
+          // オブジェクトウィンドウ。**中に入ると外の並びから札が消える**ので、降りる・出航する・
+          // 部品を差し替えるはここからしか辿れない。
+          onTap: this.view.canExplore
+            ? this.whileIdle(() => this.openExplorationWindow())
+            : this.whileIdle(() => this.openLocationWindow()),
         },
         art: this.laneArt('fixtures'),
         depth: FIELD_DEPTH,
@@ -1220,6 +1224,22 @@ export class PlayScene extends ResponsiveScene {
     const origins = new Map<number, Rect>();
     if (from !== undefined) for (const id of released) origins.set(id, from);
     return origins;
+  }
+
+  /**
+   * 現在地そのものを映す子ウィンドウ（探索できない場所の札を押したとき）。
+   *
+   * **場所の札は借りない。** 現在地の札は設置物レーンに固定された枠で、他の札のように並びから
+   * 抜けて戻る先が無い（openSlotWindowと同じ扱い）。
+   */
+  private openLocationWindow(): void {
+    const origins = this.dropChildWindow();
+    this.openChildWindow(
+      { card: this.view.currentLocation, description: this.view.currentLocationDescription },
+      this.actionButtons(this.view.currentLocationActions, this.view.currentLocation.name),
+      this.view.currentLocationStructure,
+      origins,
+    );
   }
 
   /** 現在地のロケーションカードから開く探索の子ウィンドウ。 */
