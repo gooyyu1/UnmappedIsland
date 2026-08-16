@@ -1,11 +1,10 @@
 import { join } from 'node:path';
+import { SAMPLE_PACK_DIR } from '../../scripts/samplePackFiles.mjs';
 
 /**
- * サンプルアセットパック（AssetPack.md）の在処。テストはリポジトリルートで実行される前提。
- *
- * 元のファイルは `sample-pack/`、配る形は `public/sample-pack.zip`（`npm run pack:sample` で固める）。
+ * サンプルアセットパック（AssetPack.md）の在処。元のファイルは `sample-pack/`、配る形は
+ * `public/sample-pack.zip`（`npm run pack:sample` で固める）。
  */
-export const SAMPLE_PACK_DIR = 'sample-pack';
 export const SAMPLE_PACK_ZIP = join('public', 'sample-pack.zip');
 
 /** `sample-pack/` 内の1ファイルへのパス。 */
