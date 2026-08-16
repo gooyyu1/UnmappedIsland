@@ -35,6 +35,7 @@ export function renderBalancePage(view: CodexView): string {
     methodHtml() +
     indexHtml(view, tables) +
     chainsHtml(view, tables) +
+    gapsHtml(view, tables) +
     devicesHtml(view, tables) +
     consumptionHtml(view, tables) +
     supplyHtml(view, tables) +
@@ -87,6 +88,7 @@ function indexHtml(view: CodexView, tables: BalanceTables): string {
     `<nav class="balance-index">` +
     `<p><b>連鎖</b> ${places}</p>` +
     `<p>` +
+    `<a class="chip" href="#/balance/${encodeURIComponent(GAPS_SECTION)}">入手経路なし</a> ` +
     `<a class="chip" href="#/balance/${encodeURIComponent(DEVICES_SECTION)}">待ち生産</a> ` +
     `<a class="chip" href="#/balance/${encodeURIComponent(CONSUMPTION_SECTION)}">消費</a> ` +
     `<a class="chip" href="#/balance/${encodeURIComponent(SUPPLY_SECTION)}">供給</a>` +
@@ -94,6 +96,7 @@ function indexHtml(view: CodexView, tables: BalanceTables): string {
   );
 }
 
+const GAPS_SECTION = '入手経路なし';
 const DEVICES_SECTION = '待ち生産';
 const CONSUMPTION_SECTION = '消費';
 const SUPPLY_SECTION = '供給';
@@ -103,10 +106,10 @@ function chainsHtml(view: CodexView, tables: BalanceTables): string {
     `<h2>連鎖（素材から摂取まで）</h2>` +
     `<p class="muted">1日ぶんの必要量は ${escapeHtml(SAMPLE_CHARACTER)} のもの。` +
     `行を開くと内訳・同時に返す値・前提が出る。</p>` +
-    // 道具は持ち歩けるので、その土地で作れなくても可否は分けない。ただし漂着直後は実際に持って
-    // いないので、自力で回るかを見たいときはここで絞る。
+    // 他の土地で用意した材料が要っても可否は分けない（普通の遊び方なので）。ただし移動時間を
+    // 数えていない以上そのぶん不利になるので、その土地だけで回るかを見たいときはここで絞る。
     `<p><label class="balance-filter">` +
-    `<input type="checkbox" data-balance-import-filter> 持ち込みなしで完結する経路だけ` +
+    `<input type="checkbox" data-balance-import-filter> その土地だけで完結する経路だけ` +
     `</label></p>` +
     tables.places
       .filter((place) => place.properties.length > 0)
@@ -201,7 +204,7 @@ function menuHtml(view: CodexView, place: PlaceBalance): string {
     `${formatNumber((place.menu.totalMinutes * 100) / MINUTES_PER_DAY, 1)}</span>%）</span></p>` +
     (place.menu.unmet.length === 0
       ? ''
-      : `<p class="warn">賄えない値: ${escapeHtml(place.menu.unmet.join('、'))}</p>`) +
+      : `<p class="warn">この土地を起点にできない値: ` + `${escapeHtml(place.menu.unmet.join('、'))}</p>`) +
     `<div class="menu-choices">${selects}</div>` +
     `<p class="muted menu-note">括弧内は、その経路だけで1日ぶんを賄った場合の労働。` +
     `合計はここより小さくなりうる——同時に返る値が他の需要を先に埋めるため。</p>` +
@@ -265,6 +268,51 @@ function prerequisitesHtml(view: CodexView, route: ChainRoute): string {
       return `${shown} ${cost}`;
     })
     .join('、');
+}
+
+/**
+ * 島のどこにも入手経路が無いもの。**土地の性質ではなく内容の穴**なので、土地ごとに繰り返さず
+ * ここへ1度だけ出す。この一覧がそのまま、埋めるべきものになる。
+ */
+function gapsHtml(view: CodexView, tables: BalanceTables): string {
+  if (tables.gaps.length === 0) return '';
+
+  const items = tables.gaps
+    .map(
+      (gap) =>
+        `<li><b>${escapeHtml(gapLabel(view, gap.label))}</b>` +
+        `<span class="muted"> ${gap.blockedRoutes.length}経路を塞いでいる</span>` +
+        `<ul class="plain">` +
+        gap.blockedRoutes
+          .map(
+            (route) =>
+              `<li>` +
+              route.steps
+                .map(
+                  (step) =>
+                    `<a href="${view.objectHref(step.objectName)}">` +
+                    `${escapeHtml(view.objectLabel(step.objectName))}</a>` +
+                    `.<code>${escapeHtml(step.stepName)}</code>`,
+                )
+                .join(' › ') +
+              ` <span class="muted">${amountListHtml(route.deltas)}</span></li>`,
+          )
+          .join('') +
+        `</ul></li>`,
+    )
+    .join('');
+
+  return (
+    `<h2 id="${balanceSectionId(GAPS_SECTION)}">島全体で入手経路が無いもの</h2>` +
+    `<p class="muted">島のどこを探しても作れも見つかりもしないもの。定義の穴で、これが下の経路を` +
+    `塞いでいる。土地ごとの表は可否を判定しないので、入手できないと言えるのはここだけ。</p>` +
+    `<ul>${items}</ul>`
+  );
+}
+
+/** 穴の見出し。型を指しているならその表示名にする（タグ指定はそのまま出す）。 */
+function gapLabel(view: CodexView, label: string): string {
+  return view.objectDef(label) === undefined ? label : view.objectLabel(label);
 }
 
 function devicesHtml(view: CodexView, tables: BalanceTables): string {

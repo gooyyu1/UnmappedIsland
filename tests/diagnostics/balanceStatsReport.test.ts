@@ -10,6 +10,7 @@ import type {
   PropertyChains,
   PropertyRoute,
   RoutePrerequisite,
+  RouteStep,
 } from '../../src/codex/balanceTables';
 import {
   buildBalanceTables,
@@ -48,12 +49,16 @@ function amountList(amounts: readonly NamedAmount[]): string {
 }
 
 function routeText(route: ChainRoute): string {
-  return route.steps.map((step) => `${step.objectName}.${step.stepName}`).join(' → ');
+  return stepsText(route.steps);
 }
 
 function prerequisiteText({ label, minutes, imported }: RoutePrerequisite): string {
   if (minutes === undefined) return `${label}（入手経路なし）`;
   return `${label}（${formatNumber(minutes)}分${imported ? '・他の土地で' : ''}）`;
+}
+
+function stepsText(steps: readonly RouteStep[]): string {
+  return steps.map((step) => `${step.objectName}.${step.stepName}`).join(' → ');
 }
 
 function buildReport(tables: BalanceTables): string {
@@ -151,12 +156,15 @@ function appendChains(append: (line?: string) => void, tables: BalanceTables): v
   append('時間はすべて労働時間で、待ち時間は含まない（待ち生産の設備は、周期÷寿命ぶんの製作労働と');
   append('して計上する）。「1日の割合」は、1日ぶんを賄うのに要る労働が1日（1440分）に占める割合。');
   append('「設備数」は、待ち生産の経路で1日ぶんを賄うのに同時に要る設備の数。');
-  append('前提の道具に入手経路が無い経路は、数字を出したうえで表の末尾へ回す。');
   append();
-  append('**‡ は、その土地では作れない道具を持ち込む経路。** 道具は1度作れば繰り返し使えるので、');
-  append('石のある土地で尖った石を作って持ち歩けばよく、可否を分けない。ただし漂着直後は実際に');
-  append('持っていないので、自力で回るかを見るための印として残す（設置物は持ち込めないため、');
-  append('その土地に無ければ「入手経路なし」のまま）。');
+  append('**土地ごとの表は可否を判定しない。** 答えるのは「この土地を起点にすると単位あたり何分か」');
+  append('だけで、ある経路が載らないのはできないからではなく**その表の対象ではない**から。');
+  append('入手できるかどうかは島全体でだけ判定し、島のどこにも経路が無いものは末尾の');
+  append('「島全体で入手経路が無いもの」へまとめる。');
+  append();
+  append('**‡ は、他の土地で用意した材料・道具が要る経路。** AとBの土地で集めた物を合わせて作るのは');
+  append('普通の遊び方なので可否は分けないが、土地の間の移動時間を数えていない以上、‡ の付いた経路は');
+  append('実際にはこの表より不利になる。');
   append();
   append('**時間を数えられない経路（労働0で値が返るもの）はこの表に混ぜず、末尾の「数えられない経路」');
   append('へ分けた。** 注記は読み飛ばされるが順位は読み飛ばされないので、0分の行を最安として');
@@ -186,6 +194,26 @@ function appendChains(append: (line?: string) => void, tables: BalanceTables): v
   }
 
   appendUncounted(append, tables);
+  appendGaps(append, tables);
+}
+
+/**
+ * 島のどこにも入手経路が無いもの。**土地の性質ではなく内容の穴**なので、土地ごとに繰り返さず
+ * ここへ1度だけ出す。この一覧がそのまま、埋めるべきものになる。
+ */
+function appendGaps(append: (line?: string) => void, tables: BalanceTables): void {
+  if (tables.gaps.length === 0) return;
+
+  append('### 島全体で入手経路が無いもの');
+  append();
+  append('島のどこを探しても作れも見つかりもしないもの。定義の穴で、これが下の経路を塞いでいる。');
+  append();
+  for (const gap of tables.gaps) {
+    append(`- **${gap.label}** — ${gap.blockedRoutes.length}経路を塞いでいる`);
+    for (const route of gap.blockedRoutes)
+      append(`  - \`${stepsText(route.steps)}\`（${amountList(route.deltas) || '—'}）`);
+  }
+  append();
 }
 
 /** 需要の見出し。何で埋まるか（体脂肪なら三大栄養素）と、尽きると死ぬかを添える。 */
@@ -223,7 +251,8 @@ function appendMenu(append: (line?: string) => void, place: PlaceBalance): void 
     `> **1日を賄う最小労働: ${formatNumber(menu.totalMinutes, 0)} 分**` +
       `（1440分の ${formatNumber((menu.totalMinutes * 100) / MINUTES_PER_DAY, 1)}%）`,
   );
-  if (menu.unmet.length > 0) append(`> 賄えない値: ${menu.unmet.join('、')}`);
+  if (menu.unmet.length > 0)
+    append(`> この土地を起点にできない値: ${menu.unmet.join('、')}（島全体の節を参照）`);
   append();
 
   if (menu.entries.length === 0) return;
