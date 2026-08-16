@@ -172,6 +172,20 @@ const BRIGHTEN_MS = 320;
  */
 const DARKEN_MS = BRIGHTEN_MS * 2;
 
+/**
+ * 画面が今見せている最中のこと（PlayScene.activity）。`idle`以外の間はワールドを変える操作を
+ * 受け付けない。
+ */
+type Activity = 'idle' | 'exploring' | 'elapsing' | 'transiting';
+
+/** エラー報告に載せる、演出中の呼び名（errorReport参照）。 */
+const ACTIVITY_NAMES: Readonly<Record<Activity, string>> = {
+  idle: 'なし',
+  exploring: '探索の結果待ち',
+  elapsing: '時間の経過',
+  transiting: '場面転換',
+};
+
 /** バーのアイコンボタン1つ。絵があればそれを、無ければ絵文字を置く（iconArt参照）。 */
 interface BarIcon {
   readonly art?: IconName;
@@ -313,7 +327,7 @@ export class PlayScene extends ResponsiveScene {
   private readonly status = new ShownStatuses({
     statuses: () => this.view.statuses,
     categories: () => this.view.propertyCategories,
-    midAction: () => this.passingTime,
+    midAction: () => this.midAction,
     onPinned: () => {
       this.savePinnedStatuses();
       this.showStatuses();
@@ -370,23 +384,17 @@ export class PlayScene extends ResponsiveScene {
   private mapPositions = new Map<number, MapPlacement>();
 
   /**
-   * 探索の結果待ちか（この間は次の探索を始められない）と、直前の探索で見つかったもの。
+   * 今この画面が見せている最中のこと。**立てるのは始める側、降ろすのは終わらせる側の1箇所ずつ**
+   * ——別々のbooleanで持つと、片方だけ降ろし忘れて操作を受け付けないまま固まる。
    *
-   * 見つかったものの札は探索ウィンドウが借りている（ShownCards.takeFound、Windows.md 5.1節）。
+   * - `exploring`: 探索の結果待ち（経過も見せている。次の探索は始められない）
+   * - `elapsing`: 行動の経過を見せている（passTime参照）
+   * - `transiting`: 場面転換の暗転 → フィールドエリアの作り直し → 明転（transit参照）
    */
-  private searching = false;
+  private activity: Activity = 'idle';
 
   /** 発見物の枠へまだ飛んでいる途中の札（着くまでは枠に伏せておく）。 */
   private foundArriving: ReadonlySet<number> = new Set();
-
-  /**
-   * 時間の経過を見せている最中か（passTime参照）。画面にはまだ経過前の状態が出ているため、
-   * そこへの操作は既に古い並びを指している。
-   */
-  private passingTime = false;
-
-  /** 場面転換（暗転 → フィールドエリアの作り直し → 明転）の最中か（transit参照）。 */
-  private transiting = false;
 
   /** 土地の絵の遅延ロード。initで必ず設定される。 */
   private artLoader!: LocationArtLoader;
@@ -400,7 +408,15 @@ export class PlayScene extends ResponsiveScene {
 
   /** 演出を見せている最中か。この間はワールドを変える操作を受け付けない。 */
   private get busy(): boolean {
-    return this.passingTime || this.transiting;
+    return this.activity !== 'idle';
+  }
+
+  /**
+   * 行動の途中の値を見せているか。画面にはまだ経過前・経過中の状態が出ているので、バーもカードも
+   * 減った分を縮めずに溜める（ProgressBar.setRatio）。
+   */
+  private get midAction(): boolean {
+    return this.activity === 'elapsing' || this.activity === 'exploring';
   }
 
   /**
@@ -478,8 +494,7 @@ export class PlayScene extends ResponsiveScene {
     this.recipeWindow = undefined;
 
     // 見せている最中だった演出は、それを終わらせるtweenごと消えている（終わったものとして始める）。
-    this.passingTime = false;
-    this.searching = false;
+    this.activity = 'idle';
     this.foundArriving = new Set();
     this.selectedFilter = 0;
   }
@@ -489,7 +504,7 @@ export class PlayScene extends ResponsiveScene {
     return [
       `ワールド時刻: ${this.clockText()}`,
       `現在地: ${this.view.currentLocation.name}`,
-      `演出中: ${this.passingTime ? '時間の経過' : this.transiting ? '場面転換' : 'なし'}`,
+      `演出中: ${ACTIVITY_NAMES[this.activity]}`,
       `子ウィンドウ: ${this.childWindowPlace === undefined ? 'なし' : JSON.stringify(this.childWindowPlace)}`,
       `手持ち: ${this.view.hand.map((card) => card?.name ?? '空き').join(' / ')}`,
       `アイテム: ${this.view.items.map((card) => card.name).join(' / ')}`,
@@ -619,11 +634,11 @@ export class PlayScene extends ResponsiveScene {
     this.artWait += 1;
     if (this.artLoader.loaded(this.view.locationArt)) {
       // 場面転換の途中で作り直された場合、その転換の明転はもう起きない。busyのまま固まらないよう戻す。
-      this.transiting = false;
+      this.activity = 'idle';
       return;
     }
 
-    this.transiting = true;
+    this.activity = 'transiting';
     const curtain = new Curtain(this, this.layout.fieldArea);
     curtain.darken(0);
     this.revealWhenLocationArtLoaded(curtain);
@@ -721,7 +736,7 @@ export class PlayScene extends ResponsiveScene {
         onTap: this.whileIdle(() => this.openObjectWindow(card)),
         edges: this.cardEdges(card),
         // 経過を見せている間は行動の途中の値。状態バーは減った分の帯を縮めずに溜める（statusContentと同じ）。
-        midAction: this.passingTime,
+        midAction: this.midAction,
       };
     });
   }
@@ -973,11 +988,6 @@ export class PlayScene extends ResponsiveScene {
    */
   private applyDrop(drop: CardDrop, released: Rect): void {
     const action = this.shown.dropAction(this.dropOf(drop));
-    if (action === undefined) {
-      this.motion.settleFreed();
-      return;
-    }
-
     this.applyToWorld(this.dropLabel(drop), action, this.releasedBy(drop, released));
   }
 
@@ -1218,7 +1228,7 @@ export class PlayScene extends ResponsiveScene {
       ratio: this.view.explorationRatio,
       area: this.layout.fieldArea,
       found: this.shown.found.map((card) => ({ card, arriving: this.arrivingFound(card) })),
-      searching: this.searching,
+      searching: this.activity === 'exploring',
       onExplore: () => this.explore(),
       onClose: () => {
         const window = this.explorationWindow;
@@ -1263,7 +1273,7 @@ export class PlayScene extends ResponsiveScene {
    * 消えるだけだと、その札が画面のどこにも居ない時間ができてしまう。
    */
   private explore(): void {
-    if (this.searching || this.busy) return;
+    if (this.busy) return;
 
     this.returnFound(this.explorationWindow);
     const shownBefore = this.shownInstanceIds();
@@ -1271,14 +1281,14 @@ export class PlayScene extends ResponsiveScene {
     const startedAt = this.gameSession.world.totalMinutes;
 
     noteOperation(`探索した: ${this.view.currentLocation.name}（${this.clockText()}）`);
-    this.searching = true;
+    // 結果待ちはここから。降ろすのは経過を見せ切った時点（passTime）。
+    this.activity = 'exploring';
     this.openExplorationWindow();
 
     const recorded = this.record(() => this.gameSession.player.explore(this.gameSession.session));
     // 道が見つかっていたら、経過を見せている間に行き先の絵のロードを始める。
     this.requestLocationArt();
     this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
-      this.searching = false;
       this.view = fromGameSession(this.gameSession, this.codex, this.locale);
       this.noteStatusChanges(statusesBefore, startedAt);
       const found = this.foundSince(shownBefore);
@@ -1363,7 +1373,8 @@ export class PlayScene extends ResponsiveScene {
    * その時刻へ飛ぶので、両者が食い違って見えない。recordedの控えも同じ刻みで見せる——控えた時刻は
    * tick境界そのものなので、目盛りに届いた瞬間がその変化が起きた瞬間になる。
    *
-   * 経過を見せている間はpassingTimeを立て、ワールドを変える操作を止める。
+   * **見せ終わった時点で演出中を降ろすのはここだけ**（activity）。何を見せている最中かは始めた側が
+   * 既に立てているので（探索）、立っていなければ経過そのものとして立てる。
    */
   private passTime(
     fromMinutes: number,
@@ -1372,6 +1383,7 @@ export class PlayScene extends ResponsiveScene {
     onElapsed: () => void,
   ): void {
     // 死んだら経過も結果も見せず、画面を死ぬ直前のまま止めてダイアログだけを出す（showDeath）。
+    // 演出中のまま止めるので、この先の操作も受け付けない。
     if (this.gameSession.player.isDead) {
       this.showDeath();
       return;
@@ -1384,11 +1396,12 @@ export class PlayScene extends ResponsiveScene {
 
     const recorded = recording.ticks;
     if (minutes <= 0) {
+      this.activity = 'idle';
       onElapsed();
       return;
     }
 
-    this.passingTime = true;
+    if (this.activity === 'idle') this.activity = 'elapsing';
     const progress = new TickProgress(fromMinutes, toMinutes, this.gameSession.world.minutesPerTick);
     const ring = new ProgressRing(
       this,
@@ -1416,7 +1429,7 @@ export class PlayScene extends ResponsiveScene {
       },
       onComplete: () => {
         ring.destroy();
-        this.passingTime = false;
+        this.activity = 'idle';
         onElapsed();
       },
     });
@@ -1526,7 +1539,8 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * ワールドを変える操作を実行し、その結果を画面へ反映する。
+   * ワールドを変える操作を実行し、その結果を画面へ反映する。**実行するかどうかもここが決める**
+   * ——changeがundefined（何も起きない落とし方）でも、演出中でも、決めた側として後始末まで行う。
    *
    * releasedは、その操作で手から放したもの（MotionContext.released）。**画面の事実だけを受け取る**
    * ——新しく現れるカードがどこから飛んでくるかは、この中で起きた世界の変化が答える（originRectsOf）。
@@ -1540,9 +1554,14 @@ export class PlayScene extends ResponsiveScene {
    * labelは、エラー報告に残す「何をしたか」（errorReport参照）。ワールドを変える操作はすべてここを
    * 通るので、再現手順として読める言葉を渡す。
    */
-  private applyToWorld(label: string, change: () => void, released?: MotionContext['released']): void {
-    if (this.busy) {
-      // 実行しない。落とした札が離した場所に残っていれば、飛ばさず元の枠へ返す。
+  private applyToWorld(
+    label: string,
+    change: (() => void) | undefined,
+    released?: MotionContext['released'],
+  ): void {
+    // 実行しないと決めるのはここ——何も起きない操作（changeが無い）と、演出中。**決めた側が後始末も
+    // する**ので、落とした札が離した場所に残っていれば飛ばさず元の枠へ返す。
+    if (change === undefined || this.busy) {
       this.motion.settleFreed();
       return;
     }
@@ -1586,7 +1605,7 @@ export class PlayScene extends ResponsiveScene {
    * まだ見えていないため、そこへの操作を受け付けると見えているものと食い違う。
    */
   private transit(curtain: Curtain): void {
-    this.transiting = true;
+    this.activity = 'transiting';
     this.leaveLocation();
     // 移動先の絵がまだ届いていなければ、暗転のまま揃うのを待つ。普段は道の発見時に始めたロード
     // （requestLocationArt）が済んでいて、待ちは出ない。
@@ -1608,7 +1627,7 @@ export class PlayScene extends ResponsiveScene {
       this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
       this.showInformation();
       curtain.brighten(BRIGHTEN_MS, () => {
-        this.transiting = false;
+        this.activity = 'idle';
       });
     });
   }
