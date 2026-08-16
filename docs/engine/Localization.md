@@ -4,9 +4,9 @@
 
 ## 方針: WorldCodexは識別子だけを持つ
 
-WorldCodex（`public/world-codex/*.yaml`）は**表示文字列を一切持ちません**。`object_defs` のキーは
+WorldCodex（`src/world-codex/*.yaml`）は**表示文字列を一切持ちません**。`object_defs` のキーは
 `coconut` のような識別子であり、それを画面にどう出すかは言語ごとの対応表
-（`public/locale/{言語}.yaml`）だけが知っています。
+（`src/locale/{言語}.yaml`）だけが知っています。
 
 分けている理由は、WorldCodexが言語に依存しないデータであるべきだからです。言語を増やす作業が
 WorldCodexの編集を伴うと、MOD作成者が新しい言語を足すたびにゲームデータ本体へ手を入れることになり、
@@ -277,9 +277,9 @@ locale.locationName(name)                     // 生成された土地の名前�
 
 ## 言語の切り替え
 
-現状は日本語固定です（`Localization.LANGUAGE`）。読み込むファイルのパスは言語名から組み立てており、
-`BootScene` が起動時に1ファイルだけ読んでレジストリへ置きます。切り替えUI・実行中の再読み込みは
-今後の課題です。
+現状は日本語固定です（`Localization.LANGUAGE`）。対応表は `src/locale/<言語>.yaml` に置き、
+`import.meta.glob` がビルド時に中身を埋め込みます。`BootScene` は起動時にそのうち1つを読んで
+レジストリへ置きます。切り替えUI・実行中の再読み込みは今後の課題です。
 
 ## 対象外・今後の課題
 

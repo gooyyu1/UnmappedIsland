@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/wild_boar_carcass.png を作り直すためのレシピ。build.py が読む。",
-    "仕留めたイノシシ（public/world-codex/animals.yaml）。",
+    "仕留めたイノシシ（src/world-codex/animals.yaml）。",
     "",
     "作り方と、傷も血も描かせない理由・斜め上から見下ろす理由は recipes/monkey_carcass.json と同じ。",
     "",

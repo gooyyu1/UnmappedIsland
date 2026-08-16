@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/stone_hearth.png を作り直すためのレシピ。build.py が読む。",
-    "石で囲って種火が翌朝まで生きる、常設の炉（public/world-codex/fire.yaml）。",
+    "石で囲って種火が翌朝まで生きる、常設の炉（src/world-codex/fire.yaml）。",
     "",
     "作り方は recipes/three_stone_hearth.json と同じで、足す石を輪にしただけ。",
     "三石のかまどとの違いは石の数と、囲いになっていること。",

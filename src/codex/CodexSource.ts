@@ -1,8 +1,7 @@
 import type { WorldCodex } from '../domain/defs/WorldCodex';
-import { WORLD_CODEX_FILES } from '../loader/worldCodexFiles';
+import { bundledWorldCodex, WORLD_CODEX_TEXTS } from '../loader/bundledWorldCodex';
 import type { Localization } from '../locale/Localization';
-import { LOCALE_FILE, parseLocale } from '../locale/Localization';
-import { WorldCodexYamlLoader } from '../loader/WorldCodexYamlLoader';
+import { bundledLocalization } from '../locale/Localization';
 
 /**
  * ビューアが読む定義一式。**ゲーム本体（BootScene）と同じファイルを同じローダーで読む**——
@@ -26,21 +25,7 @@ export class CodexSource {
   }
 }
 
-/** WorldCodexと表示文字列を取得して組み立てる。 */
-export async function loadCodexSource(): Promise<CodexSource> {
-  const [codexTexts, localeText] = await Promise.all([
-    Promise.all(WORLD_CODEX_FILES.map((file) => fetchText(`world-codex/${file}`))),
-    fetchText(LOCALE_FILE),
-  ]);
-
-  const loader = new WorldCodexYamlLoader();
-  for (const [index, text] of codexTexts.entries()) loader.load(WORLD_CODEX_FILES[index], text);
-
-  return new CodexSource(loader.build(), parseLocale(LOCALE_FILE, localeText), WORLD_CODEX_FILES);
-}
-
-async function fetchText(path: string): Promise<string> {
-  const response = await fetch(path);
-  if (!response.ok) throw new Error(`'${path}' を取得できませんでした（status ${response.status}）。`);
-  return response.text();
+/** WorldCodexと表示文字列を組み立てる。 */
+export function loadCodexSource(): CodexSource {
+  return new CodexSource(bundledWorldCodex(), bundledLocalization(), [...WORLD_CODEX_TEXTS.keys()]);
 }

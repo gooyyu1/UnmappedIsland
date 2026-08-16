@@ -19,7 +19,7 @@
 コードを読む・変更する際はそちらを参照してください。
 
 実装は `src/domain/generation/` 以下、定義データは
-`public/world-codex/terrain_generation.yaml`（生成パラメータ）・`locations.yaml`（土地・道の
+`src/world-codex/terrain_generation.yaml`（生成パラメータ）・`locations.yaml`（土地・道の
 `object_defs`）にあります。
 
 ## 1. 用語定義
@@ -90,7 +90,7 @@ axes:
 
 **設計上の注意**: 軸の種類・数はハードコードしません。`Axis` 定義自体が YAML で完結し、`LocationType` 側は
 「言及した軸だけ気にする」設計にすることで、軸の増減に対して `LocationType` 定義が壊れないようにします
-（3.2 節参照）。実際の定義は `public/world-codex/terrain_generation.yaml`（`elevation`・
+（3.2 節参照）。実際の定義は `src/world-codex/terrain_generation.yaml`（`elevation`・
 `humidity`・`coastal_distance`・`ruggedness` の4軸）を参照してください。
 
 ### 3.2 LocationTypeマッチング（軸ベース）

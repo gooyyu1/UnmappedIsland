@@ -37,7 +37,6 @@ const REF_FILES = [
   'CLAUDE.md',
   ...listFiles('src', ['.ts', '.yaml']),
   ...listFiles('tests', ['.ts']),
-  ...listFiles('public', ['.yaml']),
   ...listFiles('tools', ['.md', '.json']),
 ].filter((rel) => !rel.startsWith(join('tests', 'docs'))); // 本テスト自身の例・正規表現は対象外
 
@@ -223,7 +222,7 @@ describe('ドキュメントの参照', () => {
           .replace(/^\s*\/\/.*$/gm, ''),
       ),
       ...listFiles('src', ['.yaml']).map((rel) => read(rel).replace(/#.*$/gm, '')),
-      ...listFiles('public', ['.yaml']).map((rel) => read(rel).replace(/#.*$/gm, '')),
+      ...listFiles('src', ['.yaml']).map((rel) => read(rel).replace(/#.*$/gm, '')),
     ].join('\n');
     const stale = labels.filter(({ ident }) => new RegExp(`\\b${ident}\\b`).test(sources));
     expect(

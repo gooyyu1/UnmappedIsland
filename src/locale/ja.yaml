@@ -598,7 +598,7 @@ object_texts:
     display_name: 油
     description: 燃料や調理に使う液体。飲むものではない。
 
-# プロパティのカテゴリ（GameElementDefinition.md 6.7節、public/world-codex/core.yamlのproperty_tags）。
+# プロパティのカテゴリ（GameElementDefinition.md 6.7節、src/world-codex/core.yamlのproperty_tags）。
 # キャラクターのプロパティウィンドウのタブ名として使う。
 property_tag_texts:
   status:

@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/campfire_lit.png を作り直すためのレシピ。build.py が読む。",
-    "火が付いていて料理にも使える焚き火（heatのcoals〜blaze段、public/world-codex/fire.yaml）。",
+    "火が付いていて料理にも使える焚き火（heatのcoals〜blaze段、src/world-codex/fire.yaml）。",
     "",
     "**炉そのものは campfire.json の絵をそのまま使う。** 別々に生成すると枝の組み方も色も個体も",
     "揃わないので、火の付いていない絵の生データをQwenに描き足させ、切り出しの大きさと位置は",

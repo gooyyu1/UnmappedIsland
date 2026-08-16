@@ -3,13 +3,10 @@ import { parseDocument, isMap, isScalar } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import type { Localization } from '../../src/locale/Localization';
-import { LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
+import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexYamlPaths } from '../support/worldCodexFiles';
-
-/** ゲーム本体に同梱される表示文字列ファイル（テストはリポジトリルートで実行される前提）。 */
-const LOCALE_PATH = `public/${LOCALE_FILE}`;
 
 /** カードのタイトルの板に収まる幅（全角の文字数ぶん。CardView.md 1節 カードの枠）。 */
 const NAME_MAX_WIDTH = 10;
@@ -49,9 +46,9 @@ function declaredSignalNames(): readonly string[] {
 /** 同梱の対応表がstage_textsに書いている段の名前（幅の検査に使う）。 */
 function declaredStageTextNames(): readonly string[] {
   const found: string[] = [];
-  const section = /^stage_texts:$/m.exec(readFileSync(LOCALE_PATH, 'utf8'));
+  const section = /^stage_texts:$/m.exec(bundledLocaleText());
   if (section === null) return found;
-  const rest = readFileSync(LOCALE_PATH, 'utf8').slice(section.index + section[0].length);
+  const rest = bundledLocaleText().slice(section.index + section[0].length);
   for (const line of rest.split('\n')) {
     const match = /^ {2}([a-z][a-z0-9_]*):/.exec(line);
     if (match === null) break;
@@ -233,7 +230,7 @@ describe('同梱の表示文字列ファイル', () => {
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
-    locale = parseLocale(LOCALE_PATH, readFileSync(LOCALE_PATH, 'utf8'));
+    locale = parseLocale(LOCALE_FILE, bundledLocaleText());
   });
 
   it('カードに並ぶもの（item/fixture/injury）はすべて表示名を持つ', () => {
@@ -402,7 +399,7 @@ describe('同梱の表示文字列ファイル', () => {
    * ファイルを直接読む。
    */
   function declaredSectionKeys(sectionName: string): string[] {
-    const root = parseDocument(readFileSync(LOCALE_PATH, 'utf8')).contents;
+    const root = parseDocument(bundledLocaleText()).contents;
     if (!isMap(root)) throw new Error(`${sectionName}が見つかりません。`);
 
     const section = root.get(sectionName, true);
@@ -415,7 +412,7 @@ describe('同梱の表示文字列ファイル', () => {
 
   /** 対応表のlocation_texts節に並ぶ「型の識別子 → 亜種の識別子の並び」（defaultを除く）。 */
   function declaredLocationNames(): Map<string, string[]> {
-    const root = parseDocument(readFileSync(LOCALE_PATH, 'utf8')).contents;
+    const root = parseDocument(bundledLocaleText()).contents;
     if (!isMap(root)) throw new Error('location_textsが見つかりません。');
 
     const section = root.get('location_texts', true);

@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/roasted_rat.png を作り直すためのレシピ。build.py が読む。",
-    "丸焼きのネズミ。解体せず丸ごと火にかけたもの（public/world-codex/animals.yaml）。",
+    "丸焼きのネズミ。解体せず丸ごと火にかけたもの（src/world-codex/animals.yaml）。",
     "",
     "**罠に掛かった死体（rat_carcass）の生データから派生させる。** 同じ個体が焼けたものなので、",
     "姿勢も体つきも変えない。変わるのは毛と皮の色だけ。",

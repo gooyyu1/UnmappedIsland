@@ -262,7 +262,7 @@
     "description": [
       "獣骨。1頭ぶんの長い骨をまとめた1枚。",
       "",
-      "**頭骨は描かせない。** 頭は解体の取り分に入らない（public/world-codex/animals.yaml）。",
+      "**頭骨は描かせない。** 頭は解体の取り分に入らない（src/world-codex/animals.yaml）。",
       "髑髏が入ると素材ではなく戦利品に見える。",
       "",
       "**「1つの物」を強いる否定語は外してある**（pile / stack / two objects など）。この物は",
@@ -402,7 +402,7 @@
   },
   "fire_drill": {
     "description": [
-      "きりもみ式の火起こし具。板と心棒の2つで1組（public/world-codex/fire.yaml）。",
+      "きりもみ式の火起こし具。板と心棒の2つで1組（src/world-codex/fire.yaml）。",
       "",
       "**板だけを出す。** 板・穴・切り欠き・心棒を一度に頼むと、まな板か旋盤で挽いた道具か電動ドリルに",
       "なる（言い方を変えて4周、当たり0）。穴と切り欠きと心棒は編集で足す（recipes/fire_drill.json）。",
@@ -414,7 +414,7 @@
   },
   "dry_grass": {
     "description": [
-      "枯れ草。乾いた土地で拾える火口（public/world-codex/fire.yaml）。ふわりと束ねた嵩のある塊。",
+      "枯れ草。乾いた土地で拾える火口（src/world-codex/fire.yaml）。ふわりと束ねた嵩のある塊。",
       "",
       "**頭の名詞で全部決まる。** hay と言うとロール状のベールになり、armful of dry grass だと生えた",
       "草むらになる。handful of hay と言ったうえで「低く崩れた山」と続けたときだけ藁の山になる。",

@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/plant_fiber.png を作り直すためのレシピ。build.py が読む。",
-    "茎から掻き取って干した繊維のひと束（public/world-codex/fiber.yaml）。",
+    "茎から掻き取って干した繊維のひと束（src/world-codex/fiber.yaml）。",
     "",
     "2段構えの理由と色を足す段は recipes/yarn.json と同じ。",
     "",

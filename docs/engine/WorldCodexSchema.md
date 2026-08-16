@@ -17,7 +17,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 
 - **スキーマ自体の妥当性**: `jsonschema` ライブラリの `Draft202012Validator.check_schema` により、Draft 2020-12として
   構文的に正しいスキーマであることを確認
-- **実データ全ファイルの受理**: `public/world-codex/` の全YAMLファイル（`core.yaml`・`locations.yaml`・
+- **実データ全ファイルの受理**: `src/world-codex/` の全YAMLファイル（`core.yaml`・`locations.yaml`・
   `liquid_containers.yaml`・`containers.yaml`・`foods.yaml`・`characters/`・`terrain_generation.yaml`）が、実際にゲームがロードしている
   ままの内容でスキーマを満たすことを確認（ローダーで読み込めるファイルはスキーマも通る、が維持基準）
 - **不正な記述の拒否**: identifier の
@@ -74,7 +74,7 @@ python3 -c "
 import json, yaml, jsonschema
 schema = json.load(open('docs/engine/WorldCodex.schema.json'))
 v = jsonschema.Draft202012Validator(schema)
-for e in v.iter_errors(yaml.safe_load(open('public/world-codex/core.yaml'))):
+for e in v.iter_errors(yaml.safe_load(open('src/world-codex/core.yaml'))):
     print(list(e.absolute_path), e.message)
 "
 ```

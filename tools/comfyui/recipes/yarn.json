@@ -1,7 +1,7 @@
 {
   "_comment": [
     "src/assets/objects/yarn.png を作り直すためのレシピ。build.py が読む。",
-    "繊維2束を撚った糸（public/world-codex/fiber.yaml）。",
+    "繊維2束を撚った糸（src/world-codex/fiber.yaml）。",
     "",
     "**2段構え**（recipes/woven_basket.json と同じ）。下絵は白い机の商品写真として出るので、",
     "Qwen Image Edit が絵の具の質感へ描き直しつつ、白い紙の上へ置き直す。",

@@ -49,7 +49,9 @@ UnmappedIsland/
 │   │   ├── runtime/      # 実行時状態（WorldObject・セッション・ビュー）
 │   │   └── generation/   # 地形生成（決定的な島レイアウト）
 │   ├── loader/           # WorldCodex YAMLローダー
-│   ├── locale/           # 表示文字列の対応表（言語ごと）
+│   ├── locale/           # 表示文字列の対応表（言語ごとのYAMLと、その読み込み）
+│   ├── world-codex/      # ゲーム定義YAML（置くだけで読まれる）
+│   ├── scenarios/        # テスト用シナリオYAML（置くだけで一覧に出る）
 │   ├── codex/            # ゲーム定義の閲覧ビューア（ゲームと同じローダー・表示文字列を使う）
 │   ├── game/             # Phaserシーン
 │   │   ├── layout/       # 画面寸法（u単位）とエリア配置の計算
@@ -57,9 +59,6 @@ UnmappedIsland/
 │   ├── save/             # セーブデータ（localStorage、4スロット固定）
 │   └── util/             # 汎用ユーティリティ
 ├── codex/                # 閲覧ビューアの入口HTML（本体はsrc/codex/）
-├── public/
-│   ├── locale/           # 表示文字列YAML（そのまま配信される）
-│   └── world-codex/      # ゲーム定義YAML（そのまま配信される）
 ├── tests/                # テスト（Vitest）
 └── docs/                 # 開発ドキュメント（原稿）
     ├── concept/          # コンセプト
