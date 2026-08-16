@@ -1,0 +1,35 @@
+{
+  "_comment": [
+    "src/assets/objects/healing_potion.png を作り直すためのレシピ。build.py が読む。",
+    "回復ポーション（src/assets/world-codex/potions.yaml）。",
+    "",
+    "2段構えの理由と、中身を編集の段で入れる理由は recipes/poison_potion.json と同じ。",
+    "赤い液は緑よりさらに空になりやすく、6枚のうち4枚が底に少し溜まっただけの瓶だった。",
+    "",
+    "seed 215023460262009 は、丸い胴が首まで濃い赤で満ちている唯一の1枚。毒薬の角瓶と",
+    "形が違うので、札の上で色を見なくても見分けが付く。",
+    "",
+    "段は毒薬と同じ320。並んだときに背丈が食い違わないようにする。"
+  ],
+  "output": "src/assets/objects/healing_potion.png",
+  "prompts": "objects.json",
+  "prompt": "healing_potion",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 832,
+  "height": 1280,
+  "seed": 215023460262009,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the rounded glass bottle with its long slender neck and its cork stopper exactly as they are in shape, size and position, standing upright, but fill the bottle right up to the base of its neck with a deep rich crimson red liquid, evenly coloured with no bright white glare across it, and paint the glass with soft brush strokes and gentle shading instead of photographic detail. Remove the background completely and replace it with a plain empty white page, leaving the bottle alone in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. Flat even lighting. No label, no text, no letters, no numbers.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "320",
+    "mode": "background",
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

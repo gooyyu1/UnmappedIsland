@@ -1,0 +1,39 @@
+{
+  "_comment": [
+    "src/assets/objects/poison_potion.png を作り直すためのレシピ。build.py が読む。",
+    "毒薬（src/assets/world-codex/potions.yaml）。",
+    "",
+    "**2段構え。** ガラスの小瓶を頼むと、SDXLはほぼ必ず studio 写真を出す——灰色やベージュの",
+    "背景に置かれた実物の瓶で、白い紙にはならない（12枚とも）。生成には形だけを出させ、",
+    "画風と白い紙は Qwen Image Edit の段で足す（recipes/rope.json と同じ組み立て）。",
+    "",
+    "**中身も編集の段で入れる。** 生成が出す瓶はどれも空か透き通ったままで、本文で opaque と",
+    "言っても中身が濃くならない。編集で首まで満たすと、card_art.py が紙と見分けられる濃さになる。",
+    "",
+    "seed 129375438327293 は、角瓶がまっすぐ立ち、ラベルも余計な蓋も写っていない唯一の1枚。",
+    "",
+    "段は320。手のひらに収まる小瓶だが、立った瓶は縦長で、外接矩形の長い辺に合わせる256だと",
+    "札の上での面積が小石より小さくなる（--size の効き方は tools/comfyui/README.md）。"
+  ],
+  "output": "src/assets/objects/poison_potion.png",
+  "prompts": "objects.json",
+  "prompt": "poison_potion",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "width": 832,
+  "height": 1280,
+  "seed": 129375438327293,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the squat four sided glass bottle and its cork stopper exactly as they are in shape, size and position, standing upright, but fill the bottle right up to the base of its neck with an opaque murky liquid of very dark blackish green, so dark that no light passes through it and the far side of the glass cannot be seen, and paint the glass with soft brush strokes and gentle shading instead of photographic detail. Remove the background completely and replace it with a plain empty white page, leaving the bottle alone in the middle with a wide white margin all around it and a soft grey shadow directly beneath it. Flat even lighting. No label, no text, no letters, no numbers.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "320",
+    "mode": "background",
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
