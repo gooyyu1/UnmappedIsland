@@ -81,6 +81,7 @@ function buildReport(tables: BalanceTables): string {
 
   appendMethod(append);
   appendChains(append, tables);
+  appendObjectCosts(append, tables);
   appendDevices(append, tables);
   appendConsumption(append, tables);
   appendSupply(append, tables);
@@ -293,8 +294,75 @@ function appendUncounted(append: (line?: string) => void, tables: BalanceTables)
   append();
 }
 
+/**
+ * オブジェクトごとの総コスト。**生存に要る値だけを見ていると、筏のような物のコストがどこにも
+ * 出ない**（issue #568）。入手経路が無いものは先に挙げる——そこが定義の穴になる。
+ */
+function appendObjectCosts(append: (line?: string) => void, tables: BalanceTables): void {
+  append('## 2. オブジェクトの総コスト');
+  append();
+  append('1つ手に入れるまでの労働を、素材の採集から数えたもの。組み立ての時間だけではない');
+  append('——筏は組むのに420分だが、丸太と縄を揃えるところから数えると桁が変わる。');
+  append();
+  append('「日数」は、生存に要る労働を引いた残り（1日の余剰時間）で割った日数。**目標までに');
+  append('何日かかるか**がこれで出る。道具（前提）の時間は総コストに含めない（#550のまま）。');
+  append();
+  append('土地・キャラクタ・単独で存在できない物（怪我・道）・製作中オブジェクトは、手に入れると');
+  append('いう言い方が成り立たないので対象外。');
+  append();
+
+  const missing = tables.objectCosts.filter((cost) => cost.minutes === undefined);
+  if (missing.length > 0) {
+    append('### 入手経路が無いもの');
+    append();
+    append('島のどこにも作り方も見つけ方も無い。**足りない入力**まで出すので、そのまま埋めるべき穴になる。');
+    append();
+    append('| オブジェクト | 足りない入力 |');
+    append('| --- | --- |');
+    for (const cost of missing)
+      append(`| ${cost.objectName} | ${cost.missing.join('、') || '作る工程が無い'} |`);
+    append();
+  }
+
+  const toolBlocked = tables.objectCosts.filter((cost) => cost.blockedByTool);
+  if (toolBlocked.length > 0) {
+    append('### 道具が無くて作れないもの');
+    append();
+    append('材料は揃うが、要る道具に入手経路が無い。**総コストは出るが、実際には作れない**');
+    append('——道具の時間を総コストへ按分しない決まり（#550）の裏返しなので、ここで別に出す。');
+    append();
+    append('| オブジェクト | 総労働（分） | 無い道具 |');
+    append('| --- | --- | --- |');
+    for (const cost of toolBlocked)
+      append(
+        `| ${cost.objectName} | ${formatNumber(cost.minutes ?? 0)} |` +
+          ` ${cost.prerequisites
+            .filter(({ minutes }) => minutes === undefined)
+            .map(({ label }) => label)
+            .join('、')} |`,
+      );
+    append();
+  }
+
+  append('### 総コスト');
+  append();
+  append('| オブジェクト | 総労働（分） | 探索 | それ以外 | 日数 | 作り方 | 前提 |');
+  append('| --- | --- | --- | --- | --- | --- | --- |');
+  for (const cost of tables.objectCosts) {
+    if (cost.minutes === undefined) continue;
+    append(
+      `| ${cost.objectName} | ${formatNumber(cost.minutes)} |` +
+        ` ${formatNumber(cost.exploreMinutes ?? 0)} | ${formatNumber(cost.craftMinutes ?? 0)} |` +
+        ` ${cost.days === undefined ? '—' : formatNumber(cost.days, 2)} |` +
+        ` ${stepsText(cost.steps) || '—'} |` +
+        ` ${cost.prerequisites.map(prerequisiteText).join('、') || '—'} |`,
+    );
+  }
+  append();
+}
+
 function appendDevices(append: (line?: string) => void, tables: BalanceTables): void {
-  append('## 2. 待ち生産表（設備が時間をかけて返す分）');
+  append('## 3. 待ち生産表（設備が時間をかけて返す分）');
   append();
   append('仕掛けてから時間が経つと産物が返るもの。**周期は単位あたりの労働時間には足していない**');
   append('（計測方法の「待って得る生産の数え方」参照）ので、この表が代わりに周期とレートを出す。');
@@ -327,7 +395,7 @@ function appendDevices(append: (line?: string) => void, tables: BalanceTables): 
 }
 
 function appendConsumption(append: (line?: string) => void, tables: BalanceTables): void {
-  append('## 3. 消費表（1日あたり何が要るか）');
+  append('## 4. 消費表（1日あたり何が要るか）');
   append();
   append('キャラクタが自分のプロパティをtick毎にどれだけ動かすか（`passives` の `add` と `transfer`）。');
   append('括弧内は1日ぶん（×96）。個体差はそのまま列に出る。**連鎖表の「1日 N」の出どころ**。');
@@ -344,7 +412,7 @@ function appendConsumption(append: (line?: string) => void, tables: BalanceTable
 }
 
 function appendSupply(append: (line?: string) => void, tables: BalanceTables): void {
-  append('## 4. 供給表（1工程あたり）');
+  append('## 5. 供給表（1工程あたり）');
   append();
   append('何かを生むか、値を動かす工程すべて。産出は1回の実行あたりの期待個数。');
   append('各オブジェクトのページにも同じ宣言があるので、ここは横断して見比べるための一覧。');

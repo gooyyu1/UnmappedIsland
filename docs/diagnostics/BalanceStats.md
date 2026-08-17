@@ -203,7 +203,7 @@ npm run stats:balance
 ### rocky_coast
 
 > **1日を賄う最小労働: 1643 分**（1440分の 114.1%）
-> 賄えない値: hydration
+> この土地を起点にできない値: hydration（島全体の節を参照）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
@@ -238,7 +238,7 @@ npm run stats:balance
 ### cliff_coast
 
 > **1日を賄う最小労働: 360 分**（1440分の 25.0%）
-> 賄えない値: satiety、vitamin、hydration、body_fat
+> この土地を起点にできない値: satiety、vitamin、hydration、body_fat（島全体の節を参照）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
@@ -254,7 +254,7 @@ npm run stats:balance
 ### grassland
 
 > **1日を賄う最小労働: 453 分**（1440分の 31.4%）
-> 賄えない値: hydration
+> この土地を起点にできない値: hydration（島全体の節を参照）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
@@ -292,7 +292,7 @@ npm run stats:balance
 ### forest
 
 > **1日を賄う最小労働: 546 分**（1440分の 37.9%）
-> 賄えない値: hydration
+> この土地を起点にできない値: hydration（島全体の節を参照）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
@@ -388,7 +388,7 @@ npm run stats:balance
 ### rocky_field
 
 > **1日を賄う最小労働: 360 分**（1440分の 25.0%）
-> 賄えない値: satiety、vitamin、hydration、body_fat
+> この土地を起点にできない値: satiety、vitamin、hydration、body_fat（島全体の節を参照）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
@@ -404,7 +404,7 @@ npm run stats:balance
 ### wasteland
 
 > **1日を賄う最小労働: 360 分**（1440分の 25.0%）
-> 賄えない値: satiety、vitamin、hydration、body_fat
+> この土地を起点にできない値: satiety、vitamin、hydration、body_fat（島全体の節を参照）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
@@ -420,7 +420,7 @@ npm run stats:balance
 ### mountainside
 
 > **1日を賄う最小労働: 360 分**（1440分の 25.0%）
-> 賄えない値: satiety、vitamin、hydration、body_fat
+> この土地を起点にできない値: satiety、vitamin、hydration、body_fat（島全体の節を参照）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
@@ -436,7 +436,7 @@ npm run stats:balance
 ### mountain_peak
 
 > **1日を賄う最小労働: 360 分**（1440分の 25.0%）
-> 賄えない値: satiety、vitamin、hydration、body_fat
+> この土地を起点にできない値: satiety、vitamin、hydration、body_fat（島全体の節を参照）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
@@ -458,7 +458,107 @@ npm run stats:balance
 - **tea_liquid** — 1経路を塞いでいる
   - `tea_liquid.drink`（hydration +10.00、wakefulness +2.00）
 
-## 2. 待ち生産表（設備が時間をかけて返す分）
+## 2. オブジェクトの総コスト
+
+1つ手に入れるまでの労働を、素材の採集から数えたもの。組み立ての時間だけではない
+——筏は組むのに420分だが、丸太と縄を揃えるところから数えると桁が変わる。
+
+「日数」は、生存に要る労働を引いた残り（1日の余剰時間）で割った日数。**目標までに
+何日かかるか**がこれで出る。道具（前提）の時間は総コストに含めない（#550のまま）。
+
+土地・キャラクタ・単独で存在できない物（怪我・道）・製作中オブジェクトは、手に入れると
+いう言い方が成り立たないので対象外。
+
+### 入手経路が無いもの
+
+島のどこにも作り方も見つけ方も無い。**足りない入力**まで出すので、そのまま埋めるべき穴になる。
+
+| オブジェクト | 足りない入力 |
+| --- | --- |
+| monkey | 作る工程が無い |
+| monkey_carcass | 作る工程が無い |
+| wild_boar | 作る工程が無い |
+| wild_boar_carcass | 作る工程が無い |
+| junglefowl_carcass | 作る工程が無い |
+| rat_carcass | 作る工程が無い |
+| roasted_rat | 作る工程が無い |
+| feather | junglefowl_carcass |
+| small_bone | junglefowl_carcass |
+| raw_meat | monkey_carcass |
+| roasted_meat | 作る工程が無い |
+| charred_lump | 作る工程が無い |
+| animal_bone | monkey_carcass |
+| rawhide | monkey_carcass |
+| three_stone_hearth | 作る工程が無い |
+| stone_hearth | 作る工程が無い |
+| canteen | 作る工程が無い |
+| pot | 作る工程が無い |
+| bottle | 作る工程が無い |
+| jar | 作る工程が無い |
+| stone_axe | 作る工程が無い |
+| bone_needle | small_bone |
+| spear | 作る工程が無い |
+| bandage | 作る工程が無い |
+| rawhide_sail | rawhide、sewing_tool |
+
+### 道具が無くて作れないもの
+
+材料は揃うが、要る道具に入手経路が無い。**総コストは出るが、実際には作れない**
+——道具の時間を総コストへ按分しない決まり（#550）の裏返しなので、ここで別に出す。
+
+| オブジェクト | 総労働（分） | 無い道具 |
+| --- | --- | --- |
+| log | 183.5 | chopping_tool |
+| raft | 858.5 | chopping_tool |
+
+### 総コスト
+
+| オブジェクト | 総労働（分） | 探索 | それ以外 | 日数 | 作り方 | 前提 |
+| --- | --- | --- | --- | --- | --- | --- |
+| junglefowl | 15.3 | 4.0 | 11.3 | 0.02 | snare.catch_remaining.on_shortfall | snare（63.8分） |
+| rat | 9.4 | 2.5 | 6.9 | 0.01 | snare.catch_remaining.on_shortfall | snare（63.8分） |
+| golden_chalice | 390.0 | 390.0 | 0.0 | 0.47 | cliff_coast.explore | — |
+| palm_tree | 115.4 | 115.4 | 0.0 | 0.14 | sandy_beach.explore | — |
+| green_coconut | 16.7 | 0.0 | 16.7 | 0.02 | palm_tree.pick_green_coconut | palm_tree（115.4分） |
+| drained_green_coconut | 31.7 | 0.0 | 31.7 | 0.04 | palm_tree.pick_green_coconut → green_coconut.bore | cutting_tool → sharp_stone（72.0分）、palm_tree（115.4分） |
+| coconut_jelly | 23.3 | 0.0 | 23.3 | 0.03 | palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split | cutting_tool → sharp_stone（72.0分）、palm_tree（115.4分） |
+| coconut | 16.5 | 16.5 | 0.0 | 0.02 | sandy_beach.explore | — |
+| coconut_husk | 46.5 | 16.5 | 30.0 | 0.06 | sandy_beach.explore → coconut.husk | cutting_tool → sharp_stone（72.0分） |
+| husked_coconut | 46.5 | 16.5 | 30.0 | 0.06 | sandy_beach.explore → coconut.husk | cutting_tool → sharp_stone（72.0分） |
+| coconut_half | 30.7 | 8.2 | 22.5 | 0.04 | sandy_beach.explore → coconut.husk → husked_coconut.crack | stone（12.0分）、cutting_tool → sharp_stone（72.0分） |
+| coconut_meat | 60.7 | 8.2 | 52.5 | 0.07 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape | cutting_tool → sharp_stone（72.0分）、stone（12.0分） |
+| woven_basket | 155.6 | 0.0 | 155.6 | 0.19 | palm_tree.pick_frond → palm_frond.split_and_weave → woven_basket.woven | cutting_tool → sharp_stone（72.0分）、palm_tree（115.4分） |
+| abaca | 167.5 | 167.5 | 0.0 | 0.20 | jungle.explore | — |
+| banana_plant | 158.8 | 158.8 | 0.0 | 0.19 | forest.explore | — |
+| banana | 89.4 | 79.4 | 10.0 | 0.11 | forest.explore → banana_plant.fell | cutting_tool → sharp_stone（72.0分） |
+| banana_stem | 37.5 | 33.5 | 4.0 | 0.04 | jungle.explore → abaca.fell | cutting_tool → sharp_stone（72.0分） |
+| plant_fiber | 33.8 | 16.8 | 17.0 | 0.04 | jungle.explore → abaca.fell → banana_stem.strip | cutting_tool → sharp_stone（72.0分） |
+| yarn | 87.5 | 33.5 | 54.0 | 0.10 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin | cutting_tool → sharp_stone（72.0分） |
+| cord | 195.0 | 67.0 | 128.0 | 0.23 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply | cutting_tool → sharp_stone（72.0分） |
+| rope | 255.0 | 67.0 | 188.0 | 0.31 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted | cutting_tool → sharp_stone（72.0分） |
+| fire_drill | 94.0 | 34.0 | 60.0 | 0.11 | sandy_beach.explore → forest.explore → fire_drill.carved | — |
+| dry_grass | 140.0 | 140.0 | 0.0 | 0.17 | grassland.explore | — |
+| burning_tinder | 95.6 | 25.1 | 70.5 | 0.11 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.light | fire_drill（94.0分）、cutting_tool → sharp_stone（72.0分） |
+| campfire | 26.6 | 11.6 | 15.0 | 0.03 | forest.explore → campfire.stacked | — |
+| water_spinach | 14.9 | 14.9 | 0.0 | 0.02 | grassland.explore | — |
+| coconut_crab | 38.5 | 38.5 | 0.0 | 0.05 | rocky_coast.explore | — |
+| taro | 21.3 | 21.3 | 0.0 | 0.03 | grassland.explore | — |
+| coconut_bowl | 60.7 | 8.2 | 52.5 | 0.07 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape | cutting_tool → sharp_stone（72.0分）、stone（12.0分） |
+| thick_branch | 22.4 | 22.4 | 0.0 | 0.03 | sandy_beach.explore | — |
+| stone | 12.0 | 12.0 | 0.0 | 0.01 | rocky_field.explore | — |
+| twig | 11.6 | 11.6 | 0.0 | 0.01 | forest.explore | — |
+| berry_bush | 70.2 | 70.2 | 0.0 | 0.08 | mountainside.explore | — |
+| cave_entrance | 40.5 | 40.5 | 0.0 | 0.05 | mountain_peak.explore | — |
+| spring | 168.0 | 168.0 | 0.0 | 0.20 | grassland.explore | — |
+| broadleaf_tree | 127.0 | 127.0 | 0.0 | 0.15 | forest.explore | — |
+| log | 183.5 | 63.5 | 120.0 | 0.22 | forest.explore → broadleaf_tree.fell | chopping_tool（入手経路なし） |
+| sharp_stone | 72.0 | 12.0 | 60.0 | 0.09 | rocky_field.explore → stone.knap | — |
+| snare | 63.8 | 16.8 | 47.0 | 0.08 | jungle.explore → abaca.fell → banana_stem.strip → snare.knotted | cutting_tool → sharp_stone（72.0分） |
+| raft | 858.5 | 550.5 | 308.0 | 1.03 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted → forest.explore → broadleaf_tree.fell → raft.lashed | chopping_tool（入手経路なし）、cutting_tool → sharp_stone（72.0分） |
+| palm_frond | 11.1 | 0.0 | 11.1 | 0.01 | palm_tree.pick_frond | palm_tree（115.4分） |
+| woven_leaf | 35.6 | 0.0 | 35.6 | 0.04 | palm_tree.pick_frond → palm_frond.split_and_weave | cutting_tool → sharp_stone（72.0分）、palm_tree（115.4分） |
+
+## 3. 待ち生産表（設備が時間をかけて返す分）
 
 仕掛けてから時間が経つと産物が返るもの。**周期は単位あたりの労働時間には足していない**
 （計測方法の「待って得る生産の数え方」参照）ので、この表が代わりに周期とレートを出す。
@@ -536,7 +636,7 @@ npm run stats:balance
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 63.8 | 9.56 |
 
-## 3. 消費表（1日あたり何が要るか）
+## 4. 消費表（1日あたり何が要るか）
 
 キャラクタが自分のプロパティをtick毎にどれだけ動かすか（`passives` の `add` と `transfer`）。
 括弧内は1日ぶん（×96）。個体差はそのまま列に出る。**連鎖表の「1日 N」の出どころ**。
@@ -558,7 +658,7 @@ npm run stats:balance
 | body_fat | 段 body_fat=obese | -1.60（-154） | -1.40（-134） | -2.00（-192） | -1.60（-154） |
 | wakefulness | 常時 | -1.00（-96） | -1.00（-96） | -1.00（-96） | -1.00（-96） |
 
-## 4. 供給表（1工程あたり）
+## 5. 供給表（1工程あたり）
 
 何かを生むか、値を動かす工程すべて。産出は1回の実行あたりの期待個数。
 各オブジェクトのページにも同じ宣言があるので、ここは横断して見比べるための一覧。
@@ -584,6 +684,7 @@ npm run stats:balance
 | wild_boar_carcass | butcher | combination | 240 | 240 | raw_meat ×40.00、animal_bone ×6.00、rawhide ×6.00 | — |
 | junglefowl_carcass | butcher | combination | 20 | 20 | raw_meat ×1.00、feather ×1.00、small_bone ×1.00 | — |
 | roasted_rat | eat | action | 15 | 15 | small_bone ×1.00 | satiety +60.00、protein +3.00、lipid +1.00 |
+| small_bone | whittle | combination | 40 | 40 | bone_needle ×1.00 | — |
 | raw_meat | eat | action | 15 | 15 | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 |
 | roasted_meat | eat | action | 15 | 15 | — | satiety +450.00、protein +24.00、lipid +7.00 |
 | charred_lump | eat | action | 15 | 15 | — | satiety +200.00、protein +4.00、lipid +1.00 |
@@ -655,6 +756,7 @@ npm run stats:balance
 | snare | knotted | recipe | 30 | 30 | snare ×1.00 | — |
 | snare | catch_remaining.on_shortfall | periodic | 0 | 240 | junglefowl ×0.07、snare_laceration ×0.18、rat ×0.11 | （self）catch_remaining +16.00 |
 | raft | lashed | recipe | 420 | 420 | raft ×1.00 | — |
+| rawhide_sail | sewn | recipe | 420 | 420 | rawhide_sail ×1.00 | — |
 | palm_frond | weave | action | 90 | 90 | woven_leaf ×1.00 | — |
 | palm_frond | split_and_weave | combination | 60 | 60 | woven_leaf ×2.00 | — |
 
