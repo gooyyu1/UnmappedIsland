@@ -11,6 +11,7 @@ import type { Localization } from '../locale/Localization';
 import type { SaveData } from '../save/SaveData';
 import { SAVE_SCHEMA_VERSION } from '../save/SaveData';
 import { SaveSlots } from '../save/SaveSlots';
+import { Settings } from '../save/Settings';
 import { Shelf } from '../save/Shelf';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
@@ -55,7 +56,7 @@ import type { MapPlacement } from './ui/MapWindow';
 import { MapWindow } from './ui/MapWindow';
 import { ModalDialog } from './ui/ModalDialog';
 import type { ObjectWindowAction, ObjectWindowTarget } from './ui/ObjectWindow';
-import { ObjectWindow } from './ui/ObjectWindow';
+import { DESCRIPTION_TAB, ObjectWindow } from './ui/ObjectWindow';
 import { RecipeWindow } from './ui/RecipeWindow';
 import { recipeCategories } from './view/recipeList';
 import { spawnInProgressObject } from '../domain/runtime/crafting';
@@ -313,12 +314,20 @@ export class PlayScene extends ResponsiveScene {
   /**
    * 開いている子ウィンドウ（ObjectWindow）と、それが映しているもの。
    *
-   * カードから開いたなら`childWindowCard`、中身のスロットを映しているなら`childWindowPlace`を持つ
-   * （両方持つのはコンテナ・怪我のように、カードでありながら中身も見せるとき）。中身を映している間は、
-   * その場所が手持ちの「隣」になる（laneCards・cardsOf参照）。
+   * `childWindowPlace`は**今開いているタブが映している場所**（説明のタブではundefined）。中身を
+   * 映している間は、その場所が手持ちの「隣」になる（laneCards・cardsOf参照）。
    */
   private childWindow: ObjectWindow | undefined;
   private childWindowPlace: CardPlace | undefined;
+
+  /** タブに並べているスロットと、その識別子（説明のタブは並びの外なので持たない）。 */
+  private childWindowTabs: readonly { readonly key: string; readonly place: CardPlace }[] = [];
+
+  /** 開いているタブを覚える型の名前（覚えない相手ではundefined、Windows.md 1.2節）。 */
+  private childWindowDef: string | undefined;
+
+  /** タブの記憶の置き場所。セーブ枠ではなくプレイヤーの好みなので、設定と同じところに置く。 */
+  private readonly settings = new Settings(localStorage);
 
   /**
    * 画面に出ている札の並び（ShownCards）。**表示もタップもドラッグもここを通す**——見えている札と
@@ -1052,7 +1061,16 @@ export class PlayScene extends ResponsiveScene {
   private openSlotWindow(place: CardPlace): void {
     const origins = this.dropChildWindow();
     // 場所を開くときも映しているオブジェクトはある——その持ち主（キャラクタ）。
-    this.openChildWindow({ card: this.portraitCard() }, [], place, origins);
+    // 押したボタンがそのスロットを名指ししているので、記憶より優先してそのタブから開く。
+    // 説明のタブも持つ（Windows.md 1.2節）——本人の窓であることに変わりはないので、説明が読めなく
+    // なる理由が無い。
+    this.openChildWindow(
+      { card: this.portraitCard(), description: this.view.characterDescription },
+      [],
+      this.view.characterSlots,
+      origins,
+      { opensPlace: place },
+    );
   }
 
   /**
@@ -1068,7 +1086,7 @@ export class PlayScene extends ResponsiveScene {
     this.openChildWindow(
       { card: this.portraitCard(), description: this.view.characterDescription },
       this.actionButtons(this.view.characterActions, this.view.characterName),
-      undefined,
+      this.view.characterSlots,
       origins,
     );
   }
@@ -1109,7 +1127,7 @@ export class PlayScene extends ResponsiveScene {
    * それを決めるのはこのウィンドウではなく世界の変化——アクションを宣言しているのがこのカードの
    * オブジェクトだから、主体としてそれが付く（originRectsOf）。
    */
-  private openObjectWindow(card: ObjectCardStack, from?: Rect): void {
+  private openObjectWindow(card: ObjectCardStack, from?: Rect, opensPlace = false): void {
     // 前のウィンドウが映していた札を先に手放してから借りる（同じ1枚が2箇所に出ないため）。
     const origins = new Map(this.dropChildWindow());
     const borrowed = this.shown.firstOf(card);
@@ -1119,9 +1137,9 @@ export class PlayScene extends ResponsiveScene {
     this.openChildWindow(
       { card: borrowed, description: borrowed.description },
       this.actionButtons(borrowed.actions, borrowed.name),
-      borrowed.contents,
+      borrowed.visibleSlots,
       origins,
-      borrowed,
+      { stack: borrowed, opensPlace: opensPlace ? borrowed.visibleSlots[0] : undefined },
     );
   }
 
@@ -1225,33 +1243,76 @@ export class PlayScene extends ResponsiveScene {
   private openChildWindow(
     object: ObjectWindowTarget,
     actions: readonly ObjectWindowAction[],
-    place: CardPlace | undefined,
+    places: readonly CardPlace[],
     origins: ReadonlyMap<number, Rect>,
-    stack?: ObjectCardStack,
+    opened?: { readonly stack?: ObjectCardStack; readonly opensPlace?: CardPlace },
   ): void {
     noteOperation(`子ウィンドウを開いた: ${object.card.name}`);
-    this.childWindowPlace = place;
+    // タブに並べるスロット。可視のスロット（visible_slots、7.11節）を宣言順に並べる。
+    this.childWindowTabs = places.map((slot) => ({ key: this.view.slotKeyOf(slot), place: slot }));
+    // 型ごとの記憶の鍵。束が無いウィンドウ（装備・怪我）は覚えない——映しているのは場所であって、
+    // 「この型を次に開いたときどうするか」の話にならない。
+    this.childWindowDef = opened?.stack?.objects[0]?.def.name;
+    const initialTab = this.initialTab(opened?.opensPlace);
+    this.childWindowPlace = this.placeOfTab(initialTab);
 
     this.childWindow = new ObjectWindow(this, this.metrics, {
       object,
-      slot:
-        place === undefined
-          ? undefined
-          : {
-              title: this.view.nameOf(place),
-              cells: this.slotCells(place),
-              unbounded: unboundedSlot(this.view.cellCountOf(place)),
-            },
+      slots: this.childWindowTabs.map((tab) => ({
+        key: tab.key,
+        title: this.view.slotLabelOf(tab.place),
+        cells: this.slotCells(tab.place),
+        unbounded: unboundedSlot(this.view.cellCountOf(tab.place)),
+      })),
+      initialTab,
       actions,
       area: this.layout.slotWindowArea,
+      onTabChange: (tab) => this.changeWindowTab(tab),
       onClose: () => this.closeChildWindow(),
     });
-    // 札を出すウィンドウだけが借りる。何枚並ぶか分からないスロット（装備・怪我）は自分のカードを
-    // 出さないので、借りると元の枠から消えたままどこにも出ない札ができてしまう。
-    if (this.childWindow.card !== undefined) this.shown.borrow(object.card, stack);
+    // 借りるのはタブによらない。**説明のタブでだけ描かれる**が、借りている間その札は元の枠に
+    // 印だけを残す（Windows.md 1.1節）——タブを行き来するたびに札を飛ばさないため。
+    this.shown.borrow(object.card, opened?.stack);
+    this.rememberTab(initialTab);
     this.setDragLanes();
     // 借りた1枚がウィンドウの枠へ移り、手持ちの端が指す先も変わる（laneCards・neighbourOf参照）。
     this.showView({ origins });
+  }
+
+  /**
+   * 最初に開くタブ。**プログラムの指定 ＞ 型ごとの記憶 ＞ 説明**（Windows.md 1.2節）。
+   *
+   * 指定するのは、開いた文脈がそのスロットを見に来たと分かっている場合だけ——装備・怪我のボタンと、
+   * 作り始めた直後の製作中オブジェクト。それ以外は覚えているものに従う。
+   */
+  private initialTab(opensPlace: CardPlace | undefined): string {
+    const named = opensPlace === undefined ? undefined : this.view.slotKeyOf(opensPlace);
+    if (named !== undefined && this.placeOfTab(named) !== undefined) return named;
+    const remembered =
+      this.childWindowDef === undefined ? undefined : this.settings.openedTab(this.childWindowDef);
+    return remembered !== undefined && this.placeOfTab(remembered) !== undefined
+      ? remembered
+      : DESCRIPTION_TAB;
+  }
+
+  /** タブの識別子が指す場所（説明のタブではundefined）。 */
+  private placeOfTab(tab: string): CardPlace | undefined {
+    return this.childWindowTabs.find((candidate) => candidate.key === tab)?.place;
+  }
+
+  /**
+   * 開いたタブが変わった。**映している場所ごと変わる**ので、落とし先も並びも引き直す
+   * （ドラッグの相手になるレーンはタブごとに作り直されている）。
+   */
+  private changeWindowTab(tab: string): void {
+    this.childWindowPlace = this.placeOfTab(tab);
+    this.rememberTab(tab);
+    this.setDragLanes();
+    this.showView();
+  }
+
+  private rememberTab(tab: string): void {
+    if (this.childWindowDef !== undefined) this.settings.rememberOpenedTab(this.childWindowDef, tab);
   }
 
   private closeChildWindow(): void {
@@ -1270,6 +1331,8 @@ export class PlayScene extends ResponsiveScene {
     this.childWindow?.close();
     this.childWindow = undefined;
     this.childWindowPlace = undefined;
+    this.childWindowTabs = [];
+    this.childWindowDef = undefined;
     this.setDragLanes();
 
     const origins = new Map<number, Rect>();
@@ -1288,7 +1351,7 @@ export class PlayScene extends ResponsiveScene {
     this.openChildWindow(
       { card: this.view.currentLocation, description: this.view.currentLocationDescription },
       this.actionButtons(this.view.currentLocationActions, this.view.currentLocation.name),
-      this.view.currentLocationStructure,
+      this.view.currentLocationSlots,
       origins,
     );
   }
@@ -2229,7 +2292,8 @@ export class PlayScene extends ResponsiveScene {
     const card = this.locationCards.find((stack) =>
       stack.objects.some((object) => object.instanceId === spawned.instanceId),
     );
-    if (card !== undefined) this.openObjectWindow(card, origin);
+    // 生んだ直後にすることは素材を入れることしかないので、素材のタブから開く（記憶より優先する）。
+    if (card !== undefined) this.openObjectWindow(card, origin, true);
   }
 
   private openPropertyWindow(): void {

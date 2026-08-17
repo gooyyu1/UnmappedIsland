@@ -83,6 +83,8 @@ function inProgressObjectDef(
     stackable: false,
     // カードを押したとき、材料スロットの中身をレーンに並べる（7.8節）。
     main_item_slot: MATERIALS_SLOT,
+    // 素材の枠は外から見える（7.11節）。何がどれだけ入っているかが、作りかけの札の存在意義そのもの。
+    visible_slots: [MATERIALS_SLOT],
     props: {
       [PROGRESS_PROPERTY]: {
         value: 0,

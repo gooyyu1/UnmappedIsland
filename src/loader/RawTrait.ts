@@ -24,6 +24,9 @@ export class RawTrait {
   /** main_item_slot（7.8節）で指定されたスロット名。未指定ならundefined。 */
   mainItemSlot: string | undefined;
 
+  /** visible_slots（7.11節）で並べられたスロット名。未指定なら空。 */
+  visibleSlots: readonly string[] = [];
+
   /** art_by_stage（6.4節）で指定されたプロパティ名。未指定ならundefined。 */
   artByStage: string | undefined;
 

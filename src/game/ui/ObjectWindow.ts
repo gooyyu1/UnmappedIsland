@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { addTextButton } from './Button';
-import type { HoldHandlers } from './Button';
+import type { Button, HoldHandlers } from './Button';
 import type { CardContent } from './Card';
 import { borrowedFace } from './cardFace';
 import { CardLane } from './CardLane';
@@ -40,6 +40,12 @@ const MIN_WIDTH = 760;
  */
 const PEEK_WIDTH = 40;
 
+/** タブの行の高さ（u単位）。タブが1つだけのウィンドウでは行そのものを空けない。 */
+const TAB_HEIGHT = 64;
+
+/** 説明のタブのラベル。 */
+const DESCRIPTION_LABEL = '説明';
+
 /** 説明文がまだ用意されていないオブジェクトに出す、代わりの1行。 */
 const NO_DESCRIPTION = 'これについて分かっていることはまだ無い。';
 
@@ -64,31 +70,34 @@ export interface ObjectWindowAction {
   readonly reason?: string | undefined;
 }
 
+/** 説明のタブの識別子（タブの記憶の鍵、Windows.md 1.2節）。スロットのタブはスロット名を名乗る。 */
+export const DESCRIPTION_TAB = 'description';
+
 /** ウィンドウが映しているオブジェクト。 */
 export interface ObjectWindowTarget {
   /**
-   * 左に置くカード。**元のレーンから借りてきた1枚そのもの**（Windows.md 1.1節）なので、渡す側は
-   * 束ではなく1個ぶんの内容を渡す。操作は引き継がない（押しても掴んでも何も起きない）が、差し替えで
-   * 同じ札だと分かるよう識別子だけは持つ。見出しの名前もここから採る。
+   * 説明のタブに置くカード。**元のレーンから借りてきた1枚そのもの**（Windows.md 1.1節）なので、
+   * 渡す側は束ではなく1個ぶんの内容を渡す。操作は引き継がない（押しても掴んでも何も起きない）が、
+   * 差し替えで同じ札だと分かるよう識別子だけは持つ。見出しの名前もここから採る。
    */
   readonly card: CardContent;
 
-  /** 右の段に出す説明文。スロットを映すウィンドウでは使わない（そちらが右の段を使う）。 */
+  /** 説明のタブに出す説明文。 */
   readonly description?: string;
 }
 
-/** ウィンドウが映しているスロット。 */
+/** ウィンドウが映しているスロット1つ＝タブ1つ。 */
 export interface ObjectWindowSlot {
-  /** 最上段の見出し。スロットは必ず持ち主のものなので、持ち主込みの名前を呼び出し側が組み立てて渡す。 */
+  /** タブの識別子（記憶の鍵）。呼び出し側はこれで「どのスロットのタブか」を引き当てる。 */
+  readonly key: string;
+
+  /** タブのラベル。スロットは必ず持ち主のものなので、持ち主込みの名前を呼び出し側が組み立てて渡す。 */
   readonly title: string;
 
   /** 並べる枠（cellsFor）。カードも空き枠も枠の縁もこの1本が持ち、はみ出した分は横スクロールで送る。 */
   readonly cells: readonly LaneCell[];
 
-  /**
-   * 枠の数が決まっていないスロットか（unboundedSlot）。**何枚並ぶか分からないので、右の段を並びへ
-   * 譲って自分のカードを出さず**、レーンは頭打ちの枠数まで広げる。
-   */
+  /** 枠の数が決まっていないスロットか（unboundedSlot）。レーンは頭打ちの枠数まで広げる。 */
   readonly unbounded: boolean;
 }
 
@@ -96,8 +105,11 @@ export interface ObjectWindowOptions {
   /** 映しているオブジェクト。**常に持つ**——どのウィンドウも「何の」ウィンドウかは決まっている。 */
   readonly object: ObjectWindowTarget;
 
-  /** 映しているスロット。持てば右の段が中身の並びに、持たなければ説明文になる。 */
-  readonly slot?: ObjectWindowSlot;
+  /** 説明の後ろに並べるスロットのタブ（宣言順）。 */
+  readonly slots: readonly ObjectWindowSlot[];
+
+  /** 最初に開くタブの識別子。知らない識別子と省略はどちらも説明のタブになる。 */
+  readonly initialTab?: string;
 
   /** 横並びにする操作。「閉じる」はこの下にもう1行取るので、空なら最下段が閉じるだけになる。 */
   readonly actions: readonly ObjectWindowAction[];
@@ -105,39 +117,56 @@ export interface ObjectWindowOptions {
   /** ウィンドウを収める領域。 */
   readonly area: Rect;
 
+  /** タブが変わったときに、選ばれたタブの識別子を知らせる。 */
+  readonly onTabChange?: (tab: string) => void;
+
   readonly onClose: () => void;
 }
 
 /**
  * カードやスロットのボタンを押すと開く子ウィンドウ（Windows.md 1節 子ウィンドウ）。
  *
- * **受け取るのはオブジェクト（必須）とスロット（任意）の2つだけ。** 組み方はどれも同じ3段で、
- * 最上段が見出し、最下段がボタン（操作の行と「閉じる」の行、addActions）、間が「左の自分のカード」と
- * 「右の説明文か中身の並び」。
- * スロットを持つかで、見出しと真ん中の右側が決まる。
+ * 組み方はどれも同じ4段で、最上段が見出し（**常にオブジェクトの名前**）、その下がタブ、
+ * 最下段がボタン（操作の行と「閉じる」の行、addActions）、間がタブの中身。
  *
- * **説明文と中身の並びは同時に出さない。** 縦にも横にも収まらないので、スロットがあればそちらを採る。
+ * **説明と中身の並びはタブで分ける**（Windows.md 1.2節）。どちらか一方しか出せないと、
+ * オブジェクトの一面しか見せられない。
+ *
+ * **オブジェクト自身のカードは説明のタブにだけ出す。** スロットのタブは右の段を並びで使い切る。
+ *
+ * **寸法はタブによらず固定**（decideWidth・decideHeight）。切り替えのたびに枠が伸び縮みすると、
+ * どのタブが今開いているのかより枠の動きのほうが目に付く。
  */
 export class ObjectWindow {
-  /**
-   * 中身の並び。ドラッグの対象として呼び出し側（PlayScene）が受け取る。
-   * 中身を持たないウィンドウではundefined。
-   */
-  readonly lane: CardLane | undefined;
+  /** 左に置く札の内容。説明のタブが出す1枚で、タブによらず借りたままにする。 */
+  readonly card: CardContent;
+
+  /** 開いている間ずっと在るもの（台紙・見出し・タブ）。 */
+  private readonly objects: Phaser.GameObjects.GameObject[] = [];
+
+  /** タブの中身。切り替えのたびに作り直す。 */
+  private tabObjects: Phaser.GameObjects.GameObject[] = [];
+
+  /** 中身の並び（説明のタブではundefined）。ドラッグの対象として呼び出し側（PlayScene）が受け取る。 */
+  private contentLane: CardLane | undefined;
 
   /**
-   * 左に置く、そのオブジェクトのカードの枠（持たないウィンドウではundefined）。**枠1つのレーン**
-   * なので、他のカードを重ねる操作（combination・中へ入れる）がレーンとまったく同じ仕組みで効く
+   * 左に置く、そのオブジェクトのカードの枠（説明のタブでだけ持つ）。**枠1つのレーン**なので、
+   * 他のカードを重ねる操作（combination・中へ入れる）がレーンとまったく同じ仕組みで効く
    * ——借りてきた札はここに在るので、手持ちからここへ落とせなければ石を打ち割れない。
    *
    * カードそのものは置かない（CardTableが並びの差し替えで置く）。
    */
-  readonly cardLane: CardLane | undefined;
+  private ownCardLane: CardLane | undefined;
 
-  /** 左に置く札の内容（枠を持たないウィンドウではundefined）。 */
-  readonly card: CardContent | undefined;
+  /** 借りた札が最後に居た枠。スロットのタブでは描かないので、閉じたときの出発点として控える。 */
+  private lastCardRect: Rect | undefined;
 
-  private readonly objects: Phaser.GameObjects.GameObject[] = [];
+  /** タブのボタン（選択中だけ塗りを変えるので、作り直さず塗りだけ差し替える）。 */
+  private readonly tabButtons: Button[] = [];
+
+  /** 今開いているタブの識別子。 */
+  private selected: string = DESCRIPTION_TAB;
 
   /** 最下段のボタン。setActionsで丸ごと作り直すので、他の表示物とは分けて持つ。 */
   private actionObjects: Phaser.GameObjects.GameObject[] = [];
@@ -159,15 +188,21 @@ export class ObjectWindow {
    */
   private readonly actionRows: readonly Rect[];
 
+  /** タブの中身を置く場所（左の札の枠と、右の段）。タブを切り替えても動かない。 */
+  private readonly middle: { cardX: number; columnX: number; columnWidth: number; y: number; height: number };
+
+  private readonly slots: readonly ObjectWindowSlot[];
+  private readonly description: Phaser.GameObjects.Text;
+  private readonly onTabChange: ((tab: string) => void) | undefined;
+
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: ObjectWindowOptions) {
     this.scene = scene;
     this.metrics = metrics;
     this.onClose = options.onClose;
+    this.onTabChange = options.onTabChange;
+    this.slots = options.slots;
+    this.card = options.object.card;
 
-    const contents = options.slot;
-    // 何枚入るか分からないスロットは、右の段を並びだけで使い切る（自分のカードを出さない）。
-    const card = contents?.unbounded === true ? undefined : options.object.card;
-    this.card = card;
     const padding = metrics.px(WINDOW_PADDING);
     const gap = metrics.px(CONTENT_GAP);
     const actionHeight = metrics.px(ACTION_HEIGHT);
@@ -177,86 +212,66 @@ export class ObjectWindow {
     // 入力を吸われる——借りた札へ手持ちから物を重ねられる以上、どのウィンドウも読み取り専用ではない。
     this.objects.push(addPanel(scene, options.area, COLOR.modalOverlay, 0.5));
 
-    const windowWidth = this.decideWidth(metrics, options, padding, gap);
+    const windowWidth = this.decideWidth(metrics, options, padding);
     const contentWidth = windowWidth - padding * 2;
     // **カードは縮めない。** ここに在るのはレーンから借りてきた札そのもの（Windows.md 1.1節）なので、
     // 大きさが変わると別の札に見える。狭い画面でも取り分を削るのは文の側。
-    const cardWidth = card === undefined ? 0 : metrics.px(SIZE.cardWidth);
-    const cardHeight = card === undefined ? 0 : metrics.px(SIZE.cardHeight);
-    const columnWidth = card === undefined ? contentWidth : contentWidth - cardWidth - gap;
+    const cardWidth = metrics.px(SIZE.cardWidth);
+    const cardHeight = metrics.px(SIZE.cardHeight);
+    const columnWidth = contentWidth - cardWidth - gap;
 
     // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に置く必要がある。
     const board = scene.add.graphics();
     this.objects.push(board);
 
-    const title = addLabel(scene, metrics, 0, 0, contents?.title ?? options.object.card.name, {
-      size: 34,
-      bold: true,
-    })
+    // **見出しは常にオブジェクトの名前。** スロットの名前はタブのラベルが持つ。
+    const title = addLabel(scene, metrics, 0, 0, options.object.card.name, { size: 34, bold: true })
       .setOrigin(0.5, 0)
       .setAlign('center');
     title.setWordWrapCallback(wrapByCharacter(contentWidth));
 
-    const description =
-      contents !== undefined
-        ? undefined
-        : addLabel(scene, metrics, 0, 0, options.object.description ?? NO_DESCRIPTION, {
-            size: 26,
-            color: options.object.description === undefined ? COLOR.textMuted : COLOR.text,
-          }).setLineSpacing(metrics.px(6));
-    description?.setWordWrapCallback(wrapByCharacter(columnWidth));
+    this.description = addLabel(scene, metrics, 0, 0, options.object.description ?? NO_DESCRIPTION, {
+      size: 26,
+      color: options.object.description === undefined ? COLOR.textMuted : COLOR.text,
+    }).setLineSpacing(metrics.px(6));
+    this.description.setWordWrapCallback(wrapByCharacter(columnWidth));
+    this.objects.push(this.description);
 
-    const columnHeight = contents === undefined ? (description?.height ?? 0) : laneHeight;
-    const middleHeight = Math.max(cardHeight, columnHeight);
+    // 中段の高さは**最も高いタブに合わせて固定**する。説明のタブは札と文のうち高いほう、
+    // スロットのタブはレーン1本ぶん。
+    const middleHeight = Math.max(
+      cardHeight,
+      this.description.height,
+      options.slots.length === 0 ? 0 : laneHeight,
+    );
+    const tabsHeight = options.slots.length === 0 ? 0 : metrics.px(TAB_HEIGHT) + gap;
     // 最下段は「操作の行」と「閉じるの行」の2段。操作を持たないウィンドウでは1段（閉じるだけ）。
     const actionRows = options.actions.length === 0 ? 1 : 2;
     const actionsHeight = actionHeight * actionRows + gap * (actionRows - 1);
-    const windowHeight = padding * 2 + title.height + gap + middleHeight + gap + actionsHeight;
+    const windowHeight = padding * 2 + title.height + gap + tabsHeight + middleHeight + gap + actionsHeight;
     const window = centerWindow(metrics, options.area, windowWidth, windowHeight);
     drawBox(board, window, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
 
     title.setPosition(window.x + windowWidth / 2, window.y + padding);
     this.objects.push(title);
 
-    const middleY = window.y + padding + title.height + gap;
-    if (card !== undefined) {
-      // レーンはカードを自分の高さの中央へ置く（CardLane）。並べるときは自分のカードも同じだけ
-      // 下げて、左右のカードの縦位置を揃える。
-      const cardY = middleY + (contents === undefined ? 0 : (laneHeight - cardHeight) / 2);
-      this.cardLane = new CardLane(
-        scene,
-        metrics,
-        { x: window.x + padding, y: cardY, width: cardWidth, height: cardHeight },
-        COLOR.slotWindowLane,
-        [{ card: borrowedFace(card) }],
-        { bare: true },
-      );
-    }
+    const tabsY = window.y + padding + title.height + gap;
+    this.addTabs(options.slots, {
+      x: window.x + padding,
+      y: tabsY,
+      width: contentWidth,
+      height: metrics.px(TAB_HEIGHT),
+    });
 
-    const columnX = window.x + padding + (card === undefined ? 0 : cardWidth + gap);
-    if (contents !== undefined) {
-      // 枠数の決まっているスロットは、レーンを枠の数まで縮めて中央へ寄せる。幅いっぱいのレーンに
-      // 1枠だけ左詰めで置くと、どこへ落とすのかが読み取りにくい。
-      const laneWidth = Math.min(columnWidth, laneWidthFor(metrics, contents));
-      this.lane = new CardLane(
-        scene,
-        metrics,
-        {
-          x: columnX + (columnWidth - laneWidth) / 2,
-          y: middleY,
-          width: laneWidth,
-          height: laneHeight,
-        },
-        COLOR.slotWindowLane,
-        contents.cells,
-        { clip: true },
-      );
-    } else if (description !== undefined) {
-      description.setPosition(columnX, middleY);
-      this.objects.push(description);
-    }
+    this.middle = {
+      cardX: window.x + padding,
+      columnX: window.x + padding + cardWidth + gap,
+      columnWidth,
+      y: tabsY + tabsHeight,
+      height: middleHeight,
+    };
 
-    const actionsY = middleY + middleHeight + gap;
+    const actionsY = this.middle.y + middleHeight + gap;
     this.actionRows = Array.from({ length: actionRows }, (_, index) => ({
       x: window.x + padding,
       y: actionsY + index * (actionHeight + gap),
@@ -267,11 +282,126 @@ export class ObjectWindow {
 
     // 吹き出しはボタンより後に作る（表示順は生成順で決まるため、ボタンの上に出す必要がある）。
     this.tooltip = new Tooltip(scene, metrics);
+
+    // 最初のタブは呼び出し側が決める（プログラムの指定＞記憶＞説明、Windows.md 1.2節）。知らない
+    // 識別子は説明へ落とす。ここではonTabChangeを呼ばない——呼び出し側はまだこのウィンドウを持っていない。
+    this.showTab(
+      this.slots.some((slot) => slot.key === options.initialTab) ? options.initialTab! : DESCRIPTION_TAB,
+    );
   }
 
-  /** 借りた札の枠（カードを持たないウィンドウではundefined）。運んでくる先・返すときの出発点。 */
+  /** 中身の並び（説明のタブではundefined）。 */
+  get lane(): CardLane | undefined {
+    return this.contentLane;
+  }
+
+  /** 借りた札の枠（説明のタブでだけ在る）。 */
+  get cardLane(): CardLane | undefined {
+    return this.ownCardLane;
+  }
+
+  /** 今開いているタブの識別子。 */
+  get openedTab(): string {
+    return this.selected;
+  }
+
+  /** 借りた札の枠。運んでくる先・返すときの出発点で、**別のタブへ移っても最後の枠を覚えている**。 */
   get cardRect(): Rect | undefined {
-    return this.cardLane?.slotRect(0);
+    return this.ownCardLane?.slotRect(0) ?? this.lastCardRect;
+  }
+
+  /** タブの行。タブが1つ（＝スロットを持たない）ウィンドウでは出さない。 */
+  private addTabs(slots: readonly ObjectWindowSlot[], row: Rect): void {
+    if (slots.length === 0) return;
+
+    const gap = this.metrics.px(8);
+    const labels = [{ key: DESCRIPTION_TAB, title: DESCRIPTION_LABEL }, ...slots];
+    const width = (row.width - gap * (labels.length - 1)) / labels.length;
+
+    labels.forEach((tab, index) => {
+      const button = addTextButton(
+        this.scene,
+        this.metrics,
+        { x: row.x + index * (width + gap), y: row.y, width, height: row.height },
+        tab.title,
+        { fill: COLOR.button },
+        () => this.select(tab.key),
+      );
+      this.tabButtons.push(button);
+      this.objects.push(button);
+    });
+  }
+
+  private select(tab: string): void {
+    if (tab === this.selected) return;
+    this.showTab(tab);
+    this.onTabChange?.(tab);
+  }
+
+  /**
+   * タブの中身を差し替える。**説明のタブだけがオブジェクト自身のカードを出す**——スロットのタブは
+   * 右の段を並びで使い切る。借りた札はタブによらず借りたままで、描かれないだけ。
+   */
+  private showTab(tab: string): void {
+    const { scene, metrics, middle } = this;
+    this.selected = tab;
+    if (this.ownCardLane !== undefined) this.lastCardRect = this.ownCardLane.slotRect(0);
+    this.ownCardLane?.destroy();
+    this.ownCardLane = undefined;
+    this.contentLane?.destroy();
+    this.contentLane = undefined;
+    for (const object of this.tabObjects) object.destroy();
+    this.tabObjects = [];
+
+    const tabs = [DESCRIPTION_TAB, ...this.slots.map((slot) => slot.key)];
+    this.tabButtons.forEach((button, index) =>
+      button.setBoxStyle({
+        fill: tabs[index] === tab ? COLOR.buttonActive : COLOR.button,
+        border: COLOR.buttonBorder,
+        borderWidth: Math.max(1, metrics.px(2)),
+        radius: metrics.px(SIZE.radius),
+      }),
+    );
+
+    const slot = this.slots.find((candidate) => candidate.key === tab);
+    this.description.setVisible(slot === undefined);
+    if (slot === undefined) {
+      const cardHeight = metrics.px(SIZE.cardHeight);
+      this.ownCardLane = new CardLane(
+        scene,
+        metrics,
+        {
+          x: middle.cardX,
+          y: middle.y + (middle.height - cardHeight) / 2,
+          width: metrics.px(SIZE.cardWidth),
+          height: cardHeight,
+        },
+        COLOR.slotWindowLane,
+        [{ card: borrowedFace(this.card) }],
+        { bare: true },
+      );
+      this.description.setPosition(middle.columnX, middle.y + (middle.height - this.description.height) / 2);
+      return;
+    }
+
+    // 枠数の決まっているスロットは、レーンを枠の数まで縮めて中央へ寄せる。幅いっぱいのレーンに
+    // 1枠だけ左詰めで置くと、どこへ落とすのかが読み取りにくい。
+    const laneWidth = Math.min(middle.columnWidth + metrics.px(SIZE.cardWidth), laneWidthFor(metrics, slot));
+    const laneHeight = metrics.px(SIZE.laneHeight);
+    const contentWidth = middle.columnX + middle.columnWidth - middle.cardX;
+    this.contentLane = new CardLane(
+      scene,
+      metrics,
+      {
+        x: middle.cardX + (contentWidth - laneWidth) / 2,
+        y: middle.y + (middle.height - laneHeight) / 2,
+        width: laneWidth,
+        height: laneHeight,
+      },
+      COLOR.slotWindowLane,
+      slot.cells,
+      { clip: true },
+    );
   }
 
   /**
@@ -288,23 +418,17 @@ export class ObjectWindow {
   }
 
   /**
-   * ウィンドウの横幅。中身の並びを出すなら、カードの幅＋枠の数から決める。少ないときに間延びせず、
-   * 多いときは領域いっぱいまで広げて見える枚数を増やす（それでも収まらない分は横スクロールで送る）。
+   * ウィンドウの横幅。**最も広いタブに合わせて固定**する（切り替えで枠を伸び縮みさせない）。
+   * スロットのタブは枠の数から決め、少ないときに間延びせず、多いときは領域いっぱいまで広げて
+   * 見える枚数を増やす（それでも収まらない分は横スクロールで送る）。
    *
-   * **どのウィンドウもMIN_WIDTHより狭くはしない。** 説明文を出すウィンドウはちょうどその幅で、
-   * 枠の少ないスロットもそこまで広げる。
+   * **どのウィンドウもMIN_WIDTHより狭くはしない。** 説明のタブはちょうどその幅で、枠の少ない
+   * スロットもそこまで広げる。
    */
-  private decideWidth(
-    metrics: ScreenMetrics,
-    options: ObjectWindowOptions,
-    padding: number,
-    gap: number,
-  ): number {
+  private decideWidth(metrics: ScreenMetrics, options: ObjectWindowOptions, padding: number): number {
     const limit = Math.min(options.area.width, metrics.width * 0.92);
-    const slot = options.slot;
-    const own = slot?.unbounded === true ? 0 : metrics.px(SIZE.cardWidth) + gap;
-    const contents = slot === undefined ? 0 : own + laneWidthFor(metrics, slot) + padding * 2;
-    return Math.min(Math.max(contents, metrics.px(MIN_WIDTH)), limit);
+    const wanted = options.slots.map((slot) => laneWidthFor(metrics, slot) + padding * 2);
+    return Math.min(Math.max(metrics.px(MIN_WIDTH), ...wanted), limit);
   }
 
   /**
@@ -392,11 +516,12 @@ export class ObjectWindow {
   }
 
   close(): void {
-    this.lane?.destroy();
-    this.cardLane?.destroy();
+    this.contentLane?.destroy();
+    this.ownCardLane?.destroy();
     this.tooltip.destroy();
-    for (const object of [...this.objects, ...this.actionObjects]) object.destroy();
+    for (const object of [...this.objects, ...this.tabObjects, ...this.actionObjects]) object.destroy();
     this.objects.length = 0;
+    this.tabObjects = [];
     this.actionObjects = [];
   }
 }

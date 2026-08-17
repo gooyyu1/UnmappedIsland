@@ -11,7 +11,7 @@ import {
   tryGetSeq,
 } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { RawObjectDef } from './RawObjectDef';
+import { namesIn, RawObjectDef } from './RawObjectDef';
 import type { LoadReport } from './LoadReport';
 import type { RawPatch } from './RawPatch';
 import { applyPatches, parsePatch } from './RawPatch';
@@ -243,6 +243,7 @@ export class WorldCodexYamlLoader {
     raw.stackOrder = tryGetMap(node, 'stack_order', context);
     raw.representedBy = tryGetScalar(node, 'represented_by', context);
     raw.mainItemSlot = tryGetScalar(node, 'main_item_slot', context);
+    raw.visibleSlots = namesIn(tryGetSeq(node, 'visible_slots', context), `${context}.visible_slots`);
     raw.artByStage = tryGetScalar(node, 'art_by_stage', context);
     raw.quantitative = tryGetBool(node, 'quantitative', context, false);
     raw.boundToOwner = tryGetBool(node, 'bound_to_owner', context, false);
