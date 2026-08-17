@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ShownStatuses } from '../../src/game/view/ShownStatuses';
-import type { PropertyTab } from '../../src/game/ui/PropertyWindow';
+import type { PropertyCategory as PropertyTab } from '../../src/game/ui/PropertiesPane';
 import type { StatusContent } from '../../src/game/ui/StatusBar';
 
 /**

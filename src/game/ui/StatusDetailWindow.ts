@@ -18,7 +18,7 @@ import type { StatusContent, StatusInfluence } from './StatusBar';
 import { wrapByCharacter } from '../../ui/textLayout';
 import { COLOR, SIZE } from '../looks/theme';
 
-/** ウィンドウの横幅（プロパティウィンドウと揃える）。狭い画面では領域いっぱいまで縮む。 */
+/** ウィンドウの横幅（オブジェクトウィンドウの最低の幅と揃える）。狭い画面では領域いっぱいまで縮む。 */
 const WINDOW_WIDTH = 760;
 
 /** 見出しの絵と表示名。 */

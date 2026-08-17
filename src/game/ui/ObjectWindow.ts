@@ -6,6 +6,10 @@ import type { Button, HoldHandlers } from './Button';
 import type { CardContent } from './Card';
 import { borrowedFace } from './cardFace';
 import { CardLane } from './CardLane';
+import type { ExplorationContent } from './ExplorationPane';
+import { ExplorationPane } from './ExplorationPane';
+import type { PropertyCategory } from './PropertiesPane';
+import { PropertiesPane } from './PropertiesPane';
 import type { LaneCell } from './laneCells';
 import { LANE_CELLS_MAX } from './laneCells';
 import {
@@ -25,7 +29,7 @@ import { Tooltip } from './Tooltip';
 import type { TooltipContent } from './Tooltip';
 
 /**
- * オブジェクトウィンドウの**最低の横幅**（プロパティウィンドウと揃える）。中身の並びを持たない
+ * オブジェクトウィンドウの**最低の横幅**（ステータス詳細のウィンドウと揃える）。中身の並びを持たない
  * ——説明文を出す——ウィンドウは、ちょうどこの幅になる。狭い画面では中身ごと縮める。
  *
  * **枠の少ないスロットでも、これより狭くしない。** 幅は最下段の操作のボタンの幅でもあるので、
@@ -43,8 +47,10 @@ const PEEK_WIDTH = 40;
 /** タブの行の高さ（u単位）。タブが1つだけのウィンドウでは行そのものを空けない。 */
 const TAB_HEIGHT = 64;
 
-/** 説明のタブのラベル。 */
+/** 組み込みのタブのラベル。 */
 const DESCRIPTION_LABEL = '説明';
+const PROPERTIES_LABEL = '状態';
+const EXPLORATION_LABEL = '探索';
 
 /** 説明文がまだ用意されていないオブジェクトに出す、代わりの1行。 */
 const NO_DESCRIPTION = 'これについて分かっていることはまだ無い。';
@@ -72,6 +78,10 @@ export interface ObjectWindowAction {
 
 /** 説明のタブの識別子（タブの記憶の鍵、Windows.md 1.2節）。スロットのタブはスロット名を名乗る。 */
 export const DESCRIPTION_TAB = 'description';
+
+/** 組み込みのタブの識別子。スロット名と衝突しないよう、スロットに使えない文字を頭に付ける。 */
+export const PROPERTIES_TAB = '@properties';
+export const EXPLORATION_TAB = '@exploration';
 
 /** ウィンドウが映しているオブジェクト。 */
 export interface ObjectWindowTarget {
@@ -107,6 +117,15 @@ export interface ObjectWindowOptions {
 
   /** 説明の後ろに並べるスロットのタブ（宣言順）。 */
   readonly slots: readonly ObjectWindowSlot[];
+
+  /** スロットの後ろに並べる探索のタブ（探索できる場所だけ持つ）。 */
+  readonly exploration?: ExplorationContent;
+
+  /**
+   * 最後に並べるプロパティのタブ（カテゴリごとのバー）。空なら出さない——見せると宣言した
+   * プロパティ（property_tags、GameElementDefinition.md 6.7節）を1つも持たない物のこと。
+   */
+  readonly properties?: readonly PropertyCategory[];
 
   /** 最初に開くタブの識別子。知らない識別子と省略はどちらも説明のタブになる。 */
   readonly initialTab?: string;
@@ -192,8 +211,14 @@ export class ObjectWindow {
   private readonly middle: { cardX: number; columnX: number; columnWidth: number; y: number; height: number };
 
   private readonly slots: readonly ObjectWindowSlot[];
+  private readonly properties: readonly PropertyCategory[];
+  private exploration: ExplorationContent | undefined;
   private readonly description: Phaser.GameObjects.Text;
   private readonly onTabChange: ((tab: string) => void) | undefined;
+
+  /** その面を開いている間だけ持つ中身。 */
+  private propertiesPane: PropertiesPane | undefined;
+  private explorationPane: ExplorationPane | undefined;
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: ObjectWindowOptions) {
     this.scene = scene;
@@ -201,6 +226,8 @@ export class ObjectWindow {
     this.onClose = options.onClose;
     this.onTabChange = options.onTabChange;
     this.slots = options.slots;
+    this.properties = options.properties ?? [];
+    this.exploration = options.exploration;
     this.card = options.object.card;
 
     const padding = metrics.px(WINDOW_PADDING);
@@ -238,13 +265,15 @@ export class ObjectWindow {
     this.objects.push(this.description);
 
     // 中段の高さは**最も高いタブに合わせて固定**する。説明のタブは札と文のうち高いほう、
-    // スロットのタブはレーン1本ぶん。
+    // スロットのタブはレーン1本ぶん、プロパティのタブは決め打ちの行数ぶん。
     const middleHeight = Math.max(
       cardHeight,
       this.description.height,
       options.slots.length === 0 ? 0 : laneHeight,
+      this.properties.length === 0 ? 0 : PropertiesPane.height(metrics),
+      options.exploration === undefined ? 0 : ExplorationPane.height(metrics),
     );
-    const tabsHeight = options.slots.length === 0 ? 0 : metrics.px(TAB_HEIGHT) + gap;
+    const tabsHeight = this.tabKeys().length <= 1 ? 0 : metrics.px(TAB_HEIGHT) + gap;
     // 最下段は「操作の行」と「閉じるの行」の2段。操作を持たないウィンドウでは1段（閉じるだけ）。
     const actionRows = options.actions.length === 0 ? 1 : 2;
     const actionsHeight = actionHeight * actionRows + gap * (actionRows - 1);
@@ -256,7 +285,7 @@ export class ObjectWindow {
     this.objects.push(title);
 
     const tabsY = window.y + padding + title.height + gap;
-    this.addTabs(options.slots, {
+    this.addTabs({
       x: window.x + padding,
       y: tabsY,
       width: contentWidth,
@@ -305,17 +334,72 @@ export class ObjectWindow {
     return this.selected;
   }
 
+  /** プロパティの行の内容を書き直す（プロパティのタブを開いていなければ何もしない）。 */
+  setProperties(properties: readonly PropertyCategory[]): void {
+    this.propertiesPane?.setCategories(properties);
+  }
+
+  /** 探索のタブの中身を差し替える（開いていれば作り直す）。 */
+  setExploration(exploration: ExplorationContent): void {
+    this.exploration = exploration;
+    if (this.selected === EXPLORATION_TAB) this.showTab(EXPLORATION_TAB);
+  }
+
+  /**
+   * プログラムからタブを開く。**記憶と同じ扱いで覚える**（呼び出し側がonTabChangeを受ける）
+   * ——最後に見えていたものが次も見える、を破らないため。
+   */
+  openTab(tab: string): void {
+    this.select(tab);
+  }
+
+  /** 発見物の枠（探索のタブを開いていなければundefined）。運んでくる先・返すときの出発点。 */
+  foundRect(index: number): Rect | undefined {
+    return this.explorationPane?.foundRect(index);
+  }
+
+  /** 運んできた1枚が発見物の枠に着いた。 */
+  showFound(index: number): void {
+    this.explorationPane?.showFound(index);
+  }
+
+  /** タブの中身を置ける矩形（中段いっぱい）。 */
+  private contentArea(): Rect {
+    const { middle } = this;
+    return {
+      x: middle.cardX,
+      y: middle.y,
+      width: middle.columnX + middle.columnWidth - middle.cardX,
+      height: middle.height,
+    };
+  }
+
   /** 借りた札の枠。運んでくる先・返すときの出発点で、**別のタブへ移っても最後の枠を覚えている**。 */
   get cardRect(): Rect | undefined {
     return this.ownCardLane?.slotRect(0) ?? this.lastCardRect;
   }
 
-  /** タブの行。タブが1つ（＝スロットを持たない）ウィンドウでは出さない。 */
-  private addTabs(slots: readonly ObjectWindowSlot[], row: Rect): void {
-    if (slots.length === 0) return;
+  /** タブの識別子を並び順で返す。説明 → スロット（宣言順）→ プロパティ。 */
+  private tabKeys(): readonly string[] {
+    return [
+      DESCRIPTION_TAB,
+      ...this.slots.map((slot) => slot.key),
+      ...(this.exploration === undefined ? [] : [EXPLORATION_TAB]),
+      ...(this.properties.length === 0 ? [] : [PROPERTIES_TAB]),
+    ];
+  }
+
+  /** タブの行。タブが1つ（＝説明しか無い）ウィンドウでは出さない。 */
+  private addTabs(row: Rect): void {
+    const labels = [
+      { key: DESCRIPTION_TAB, title: DESCRIPTION_LABEL },
+      ...this.slots,
+      ...(this.exploration === undefined ? [] : [{ key: EXPLORATION_TAB, title: EXPLORATION_LABEL }]),
+      ...(this.properties.length === 0 ? [] : [{ key: PROPERTIES_TAB, title: PROPERTIES_LABEL }]),
+    ];
+    if (labels.length <= 1) return;
 
     const gap = this.metrics.px(8);
-    const labels = [{ key: DESCRIPTION_TAB, title: DESCRIPTION_LABEL }, ...slots];
     const width = (row.width - gap * (labels.length - 1)) / labels.length;
 
     labels.forEach((tab, index) => {
@@ -350,10 +434,14 @@ export class ObjectWindow {
     this.ownCardLane = undefined;
     this.contentLane?.destroy();
     this.contentLane = undefined;
+    this.propertiesPane?.destroy();
+    this.propertiesPane = undefined;
+    this.explorationPane?.destroy();
+    this.explorationPane = undefined;
     for (const object of this.tabObjects) object.destroy();
     this.tabObjects = [];
 
-    const tabs = [DESCRIPTION_TAB, ...this.slots.map((slot) => slot.key)];
+    const tabs = this.tabKeys();
     this.tabButtons.forEach((button, index) =>
       button.setBoxStyle({
         fill: tabs[index] === tab ? COLOR.buttonActive : COLOR.button,
@@ -364,7 +452,18 @@ export class ObjectWindow {
     );
 
     const slot = this.slots.find((candidate) => candidate.key === tab);
-    this.description.setVisible(slot === undefined);
+    this.description.setVisible(slot === undefined && tab !== PROPERTIES_TAB && tab !== EXPLORATION_TAB);
+
+    if (tab === EXPLORATION_TAB && this.exploration !== undefined) {
+      this.explorationPane = new ExplorationPane(scene, metrics, this.contentArea(), this.exploration);
+      return;
+    }
+
+    if (tab === PROPERTIES_TAB) {
+      this.propertiesPane = new PropertiesPane(scene, metrics, this.contentArea(), this.properties);
+      return;
+    }
+
     if (slot === undefined) {
       const cardHeight = metrics.px(SIZE.cardHeight);
       this.ownCardLane = new CardLane(
@@ -428,6 +527,7 @@ export class ObjectWindow {
   private decideWidth(metrics: ScreenMetrics, options: ObjectWindowOptions, padding: number): number {
     const limit = Math.min(options.area.width, metrics.width * 0.92);
     const wanted = options.slots.map((slot) => laneWidthFor(metrics, slot) + padding * 2);
+    if (options.exploration !== undefined) wanted.push(ExplorationPane.width(metrics) + padding * 2);
     return Math.min(Math.max(metrics.px(MIN_WIDTH), ...wanted), limit);
   }
 
@@ -518,6 +618,8 @@ export class ObjectWindow {
   close(): void {
     this.contentLane?.destroy();
     this.ownCardLane?.destroy();
+    this.propertiesPane?.destroy();
+    this.explorationPane?.destroy();
     this.tooltip.destroy();
     for (const object of [...this.objects, ...this.tabObjects, ...this.actionObjects]) object.destroy();
     this.objects.length = 0;

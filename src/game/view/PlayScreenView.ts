@@ -19,7 +19,7 @@ import type { SlotRef } from '../../art/backgroundArt';
 import type { CardContent, CardCooking, CardGauge } from '../ui/Card';
 import { COLOR } from '../looks/theme';
 import type { CardKind } from '../looks/theme';
-import type { PropertyTab } from '../ui/PropertyWindow';
+import type { PropertyCategory as PropertyTab } from '../ui/PropertiesPane';
 import type { StatusContent, StatusDetail, StatusInfluence } from '../ui/StatusBar';
 
 /**
@@ -136,6 +136,13 @@ export interface ObjectCardStack extends CardContent {
  * 実行する手段だけでなく表示文字列も持つ（locale/ja.yamlのactions節、Localization.md）。
  */
 export interface CardAction {
+  /**
+   * 宣言の識別子（`actions`のキー）。画面が特定の操作を見分けるためのもので、表示には使わない
+   * ——探索だけは、見つかったものを見せる手順が要るので画面側が実行を引き受ける（PlayScene）。
+   * 画面の都合で足した操作（製作中オブジェクトのもの、craftingView）は持たない。
+   */
+  readonly key?: string;
+
   readonly name: string;
   /** 説明文。localeに書かれていなければundefined。 */
   readonly description: string | undefined;
@@ -240,6 +247,12 @@ export interface PlayScreenView {
    * 空のタブになるだけなので落とす。
    */
   readonly propertyCategories: readonly PropertyTab[];
+
+  /**
+   * そのオブジェクトのプロパティを、カテゴリごとに並べたもの（子ウィンドウのプロパティのタブ）。
+   * タグの付いたプロパティを1つも持たない型では空になり、タブそのものが出ない。
+   */
+  readonly propertiesOf: (object: WorldObject) => readonly PropertyTab[];
   readonly elapsedDays: number;
   readonly hour: number;
   readonly minute: number;
@@ -405,7 +418,7 @@ type ObjectKind = Extract<CardKind, 'item' | 'food' | 'container' | 'tool' | 'fi
 const UNNAMED_LOCATION = '名もなき土地';
 
 /** 探索アクションの名前（locations.yaml）。持っているかどうかで、現在地を探索できるかが決まる。 */
-const EXPLORE_ACTION = 'explore';
+export const EXPLORE_ACTION = 'explore';
 
 /**
  * 組み込んだ部品を並べるスロットの名前（voyage.yamlの筏、Dwellings.md 1節の住居）。
@@ -754,6 +767,7 @@ export function fromGameSession(
         const declared = texts.action(action.name);
         const unmet = instance.actionUnmetRequirement(action.name, game.player.instance);
         return {
+          key: action.name,
           name: declared.displayName,
           description: declared.description,
           minutes: instance.actionMinutes(action.name, game.player.instance),
@@ -906,12 +920,12 @@ export function fromGameSession(
       ? game.player.instance.readProperty(influence.counterpart.propertyGlobalId)
       : undefined;
 
-  /** タグが付いたキャラクターのプロパティを、表示名に直して並べる。未宣言のタグでは空。 */
-  const entriesWithTag = (tagGlobalId: number | undefined): readonly StatusContent[] =>
+  /** タグが付いたそのオブジェクトのプロパティを、表示名に直して並べる。未宣言のタグでは空。 */
+  const entriesWithTag = (object: WorldObject, tagGlobalId: number | undefined): readonly StatusContent[] =>
     tagGlobalId === undefined
       ? []
-      : game.player.instance.readPropertiesWithTag(tagGlobalId).map((reading) => {
-          const texts = characterTexts.prop(reading.name);
+      : object.readPropertiesWithTag(tagGlobalId).map((reading) => {
+          const texts = locale.object(object.def.name).prop(reading.name);
           return {
             key: reading.name,
             name: texts.displayName,
@@ -924,16 +938,29 @@ export function fromGameSession(
           };
         });
 
-  // タグのIDは宣言順に振られる（WorldCodex.propertyTagNames）ため、昇順に見ればタブの並び順になる。
-  const propertyCategories: PropertyTab[] = [];
-  for (let tagGlobalId = 0; tagGlobalId < codex.propertyTagNames.count; tagGlobalId++) {
-    const entries = entriesWithTag(tagGlobalId);
-    if (entries.length > 0)
-      propertyCategories.push({
-        name: locale.propertyTag(codex.propertyTagNames.getName(tagGlobalId)).displayName,
-        entries,
-      });
-  }
+  /**
+   * そのオブジェクトのプロパティを、カテゴリ（`property_tags`、GameElementDefinition.md 6.7節）ごとに
+   * 並べる。子ウィンドウのプロパティのタブになる（Windows.md 6節）。
+   *
+   * **タグの付いたプロパティだけを出す。** 見せるかどうかは型ごとの真偽値ではなく、プロパティ1つ
+   * ずつが「人に見せる値か」を名乗ることで決まる——今タグを持つのはキャラクタだけなので、他の型では
+   * 空になりタブそのものが出ない。
+   */
+  const propertiesOf = (object: WorldObject): readonly PropertyTab[] => {
+    // タグのIDは宣言順に振られる（WorldCodex.propertyTagNames）ため、昇順に見ればタブの並び順になる。
+    const categories: PropertyTab[] = [];
+    for (let tagGlobalId = 0; tagGlobalId < codex.propertyTagNames.count; tagGlobalId++) {
+      const entries = entriesWithTag(object, tagGlobalId);
+      if (entries.length > 0)
+        categories.push({
+          name: locale.propertyTag(codex.propertyTagNames.getName(tagGlobalId)).displayName,
+          entries,
+        });
+    }
+    return categories;
+  };
+
+  const propertyCategories = propertiesOf(game.player.instance);
 
   /**
    * そのオブジェクトが今在るスロット（カードの地を引く先。CardView.md 7節）。
@@ -1257,8 +1284,9 @@ export function fromGameSession(
     conditions: ['💭', '🥶', '😪', '🍽️'],
     equipmentIcon: '👕',
     injuryIcon: '🩹',
-    statuses: entriesWithTag(codex.propertyTagNames.tryGetId(STATUS_TAG)),
+    statuses: entriesWithTag(game.player.instance, codex.propertyTagNames.tryGetId(STATUS_TAG)),
     propertyCategories,
+    propertiesOf,
     // dayは1始まり（GameElementDefinition.md 17節）なので、生存日数は0始まりへ直す。
     elapsedDays: game.world.day - 1,
     hour: game.world.hour,
