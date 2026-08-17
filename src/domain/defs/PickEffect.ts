@@ -6,7 +6,7 @@ import type { DefNames, DescriptionToken, DescriptionWriter } from './Descriptio
 import { propertyRef, text } from './Description';
 import type { EffectReader, PickCandidateReading, WeightReading } from './EffectReader';
 import { resolveReferenceRoot } from './ReferenceRoot';
-import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
+import type { PropertyPath } from './ReferenceRoot';
 
 /**
  * pick（10節）: weightで1候補を選び、その候補の効果を適用する効果。候補の効果もActiveEffect
@@ -49,10 +49,6 @@ export class PickEffect extends ActiveEffect {
 
   read(reader: EffectReader): void {
     reader.pick(this.candidates.map((candidate) => candidate.reading));
-  }
-
-  override destroys(target: ReferenceRoot): boolean {
-    return this.candidates.some((candidate) => candidate.destroys(target));
   }
 
   /**
@@ -170,9 +166,5 @@ export class PickCandidateDef {
   /** この候補の宣言（PickCandidateReading参照）。PickEffect.readが読み手へ渡す。 */
   get reading(): PickCandidateReading {
     return { weight: this.weight.reading, effect: this.effect };
-  }
-
-  destroys(target: ReferenceRoot): boolean {
-    return this.effect.destroys(target);
   }
 }

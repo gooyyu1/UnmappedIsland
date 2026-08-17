@@ -4,7 +4,8 @@ import type { RecipeDef } from '../domain/defs/RecipeDef';
 import type { TypeMatchReading } from '../domain/defs/TypeMatchRule';
 import type { CraftingInput, CraftingStep, StepOutcome } from './CraftingStep';
 import { collectOutputs, combineOutcomes } from './CraftingStep';
-import { outcomesOf } from './effectOutcomes';
+import type { EffectReading } from './effectOutcomes';
+import { destroysRoot, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
 import type { StaticValueResolver } from './staticValue';
 import { resolveWeight, staticResolverOf, staticValueOf } from './staticValue';
@@ -49,21 +50,26 @@ function interactionStep(
     return value;
   };
 
-  const outcomes = outcomesOf(interaction, resolve);
+  const reading = readEffect(interaction, resolve);
   const minutes = minutesOf(interaction, resolve);
   return {
     kind: interaction.kind,
     name: interaction.name,
     ownerGlobalId: def.globalId,
     inputs: [
-      { kind: 'object', objectGlobalId: def.globalId, consumed: interaction.destroys('self'), count: 1 },
-      ...draggedInputOf(interaction),
+      {
+        kind: 'object',
+        objectGlobalId: def.globalId,
+        consumed: destroysRoot(reading, 'self'),
+        count: 1,
+      },
+      ...draggedInputOf(interaction, reading),
     ],
-    outputs: collectOutputs(outcomes),
+    outputs: collectOutputs(reading.outcomes),
     // プレイヤーが手を止めている間に時間が進むので、払う時間と経過する時間は等しい。
     laborMinutes: minutes,
     elapsedMinutes: minutes,
-    outcomes,
+    outcomes: reading.outcomes,
     hasUnresolvedReferences: unresolved,
   };
 }
@@ -171,9 +177,9 @@ function selfMovesOf(
 }
 
 /** ドラッグ型の相手（withが指す型）。メニュー型には無い。消費されるかはdraggedへのdestroyで決まる。 */
-function draggedInputOf(interaction: InteractionDef): readonly CraftingInput[] {
-  const reading = interaction.draggedReading;
-  return reading === undefined ? [] : [inputOf(reading, interaction.destroys('dragged'), 1)];
+function draggedInputOf(interaction: InteractionDef, reading: EffectReading): readonly CraftingInput[] {
+  const dragged = interaction.draggedReading;
+  return dragged === undefined ? [] : [inputOf(dragged, destroysRoot(reading, 'dragged'), 1)];
 }
 
 /** 型の指定（タグか型そのもの）を、工程の入力1件へ直す。 */
