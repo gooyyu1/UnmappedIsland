@@ -19,7 +19,6 @@ object_defs:
     tags: [item, trap, fragile]
     # 押すと掛かった獲物が並ぶ（7.8節）。レーンの上では空の罠と獲物入りの罠が見分けられない
     # ——開けてみるまで分からない、が隠す処理を1つも書かずに成立する（TrapSystem.md 5節）。
-    main_item_slot: catch
     # 外から見えるもの（7.11節）。**掛かった獲物は覗き込めば分かる**——罠のカードは掛かったかどうかを
     # 出さないので（TrapSystem.md 5節）、確かめる手段はこのタブだけになる。
     visible_slots: [catch]

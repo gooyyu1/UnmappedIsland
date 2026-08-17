@@ -55,7 +55,6 @@ traits:
   hearth:
     tags: [fixture, hearth]
     # 火にかけている物のスロット（同1.1節）。押せば開き、重ねれば入る。
-    main_item_slot: fire
     # 外から見えるもの（7.11節）。何が燃えているかは炎を見れば分かる。
     visible_slots: [fire]
     # 火力で絵が差し替わる（CardView.md 5.1節）。絵は消えている・種火・ついているの3つ（heat参照）。

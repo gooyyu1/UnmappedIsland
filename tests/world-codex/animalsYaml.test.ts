@@ -599,11 +599,14 @@ describe('animals.yamlの動物', () => {
     ).toContain('離せません');
   });
 
-  it('傷は押して開ける主要なスロットに入るので、カードを開けば並ぶ', () => {
+  it('傷もくわえた物も外から見えるので、カードを開けばタブに並ぶ', () => {
     // キャラクタの怪我と同じ見え方にするための宣言（HuntingSystem.md 3節）。
     const def = codex.objects.get(codex.objectNames.getId('monkey'));
 
-    expect(def.mainItemSlotGlobalId).toBe(codex.slotNames.getId('injuries'));
+    expect(def.visibleSlotGlobalIds).toEqual([
+      codex.slotNames.getId('injuries'),
+      codex.slotNames.getId('spoils'),
+    ]);
   });
 
   it('武器でない物を重ねても殴れない', () => {

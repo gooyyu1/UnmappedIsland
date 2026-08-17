@@ -21,11 +21,11 @@ export class RawTrait {
   /** represented_by（7.6節）で指定されたスロット名。未指定ならundefined。 */
   representedBy: string | undefined;
 
-  /** main_item_slot（7.8節）で指定されたスロット名。未指定ならundefined。 */
-  mainItemSlot: string | undefined;
-
   /** visible_slots（7.11節）で並べられたスロット名。未指定なら空。 */
   visibleSlots: readonly string[] = [];
+
+  /** storage（7.12節）。物を溜める入れ物として使う型か。quantitativeと同じくORで合成する。 */
+  isStorage = false;
 
   /** art_by_stage（6.4節）で指定されたプロパティ名。未指定ならundefined。 */
   artByStage: string | undefined;

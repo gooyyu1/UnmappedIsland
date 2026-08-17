@@ -1,8 +1,8 @@
 import type { YAMLMap } from 'yaml';
 import {
   asMap,
+  asScalarText,
   entriesInOrder,
-  tryGetBool,
   tryGetInt,
   tryGetMap,
   tryGetNumber,
@@ -22,6 +22,7 @@ const RETIRED_KEYS: readonly (readonly [string, string])[] = [
   ['unit_capacity', "枠の数を表す'cell_count'"],
   ['fixed_positions', "枠の数を表す'cell_count'（数を決めれば位置も安定する）"],
   ['stackable', "object_def側の'stackable'"],
+  ['auto_placement', "誰が入れてよいかを並べる'placement'（7.7節）"],
 ];
 
 /** slots.'slotName'エントリを1つ読む。trait合成済みのノードを渡すこと。 */
@@ -61,6 +62,7 @@ export function parseSlot(
     sharedCellNode === undefined ? undefined : parseCell(loader, sharedCellNode, `${context}.cell`);
 
   const putInNode = tryGetMap(node, 'put_in', context);
+  const placement = parsePlacement(node, context);
 
   return new SlotDef(
     slotGlobalId,
@@ -69,9 +71,26 @@ export function parseSlot(
     sharedCell,
     cellCount,
     tryGetNumber(node, 'capacity', context),
-    tryGetBool(node, 'auto_placement', context, true),
+    placement.includes('auto'),
     putInNode === undefined ? undefined : parsePutIn(loader, putInNode, `${context}.put_in`),
+    placement.includes('manual'),
   );
+}
+
+/** 誰がここへ物を入れてよいか（`placement`、7.7節）。省略すればエンジンもプレイヤーも入れられる。 */
+const PLACERS = ['auto', 'manual'] as const;
+
+function parsePlacement(node: YAMLMap, context: string): readonly string[] {
+  const seq = tryGetSeq(node, 'placement', context);
+  if (seq === undefined) return PLACERS;
+
+  const names = (seq.items as YamlNode[]).map((item) => asScalarText(item, `${context}.placement`));
+  for (const name of names)
+    if (!(PLACERS as readonly string[]).includes(name))
+      throw new YamlLoadError(
+        `${context}.placement: 未知の指定 '${name}' です（'${PLACERS.join("' か '")}'）。`,
+      );
+  return names;
 }
 
 /** `put_in: {duration: ...}`（ここへ入れるのにかかる時間）を読む。出す側に時間は課さない。 */

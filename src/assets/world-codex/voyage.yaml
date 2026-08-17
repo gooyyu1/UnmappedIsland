@@ -12,18 +12,19 @@ object_defs:
   # 筏。丸太を並べて縛った、島を出るための乗り物。
   #
   # **設置物（fixture）でありながら場所（location）でもある。** 中に積荷を載せ、プレイヤー自身も
-  # 乗り込むため、土地と同じ items/fixtures/characters の3スロットを持つ。重ねれば積める
-  # （main_item_slot）——編み籠（containers.yaml）と同じ操作でよい。
+  # 乗り込むため、土地と同じ items/fixtures/characters の3スロットを持つ。札へ重ねれば積める
+  # （7.8節）——編み籠（containers.yaml）と同じ操作でよい。
   raft:
     tags: [fixture]
     traits: [location]
     # 積荷が個体ごとに違うので束ねない（SlotSystem.md 4節）。
     stackable: false
-    main_item_slot: items
     # **外から見えるのは帆だけ**（7.11節）。積荷は重ねれば積めるが、何を積んだかは乗り込まないと
     # 分からない——中に入れば items がレーンに出る。土地から受け継いだ items/fixtures/characters を
     # 外から覗ける場所にすると、筏が「開けば中身が並ぶ箱」になってしまう。
     visible_slots: [structure]
+    # 物を溜める入れ物（7.12節）。積荷の枠の詰まり具合をカードのバーに出す。
+    storage: true
     slots:
       items:
         # 何種類積めるか。土地の items は上限を持たないので、筏だけが枠数とかさを決める。

@@ -242,8 +242,8 @@ export class WorldCodexYamlLoader {
     raw.passives = tryGetSeq(node, 'passives', context);
     raw.stackOrder = tryGetMap(node, 'stack_order', context);
     raw.representedBy = tryGetScalar(node, 'represented_by', context);
-    raw.mainItemSlot = tryGetScalar(node, 'main_item_slot', context);
     raw.visibleSlots = namesIn(tryGetSeq(node, 'visible_slots', context), `${context}.visible_slots`);
+    raw.isStorage = tryGetBool(node, 'storage', context, false);
     raw.artByStage = tryGetScalar(node, 'art_by_stage', context);
     raw.quantitative = tryGetBool(node, 'quantitative', context, false);
     raw.boundToOwner = tryGetBool(node, 'bound_to_owner', context, false);

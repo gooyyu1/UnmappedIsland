@@ -308,8 +308,8 @@ export class ShownCards {
   /**
    * カードに重ねたときに、そのカードの中へ入れる操作（入れ物でない・入らないならundefined）。
    *
-   * かごも製作中オブジェクトも同じ扱い——「押すと中身が並ぶカード」（main_item_slot）の上へ落としたら、
-   * そのスロットへ入る。入るかどうかは枠の宣言（accept・max）が決めるので、ここでは場所を指すだけ。
+   * かごも製作中オブジェクトも筏も同じ扱い——落とした先が受け取れるスロットを持っていれば、そこへ入る。
+   * どのスロットかは重ねる物で変わる（contentsFor）ので、ここでは場所を尋ねるだけ。
    */
   private putInto(drop: ShownDrop): (() => void) | undefined {
     const into = this.contentsUnder(drop);
@@ -325,7 +325,7 @@ export class ShownCards {
     const dragged = this.stacksAt(drop.from)[drop.fromIndex];
     const target = this.stacksAt(drop.to)[drop.target.index];
     // 自分自身の中へは入れられない（1枚しか映していないカードを、そのカードへ重ねた場合）。
-    return dragged === undefined || dragged === target ? undefined : target?.contents;
+    return dragged === undefined || dragged === target ? undefined : target?.contentsFor(dragged);
   }
 
   /** そのドロップが「入れる」なら、その見せ方（枠が文言も時間も宣言していなければundefined）。 */
@@ -392,6 +392,7 @@ function awaitingStack(stack: ObjectCardStack, awaited: readonly number[]): Obje
     objects: [],
     actions: [],
     visibleSlots: [],
+    contentsFor: () => undefined,
     place: stack.place,
     objectGlobalId: stack.objectGlobalId,
     movedIds: () => [],

@@ -14,16 +14,16 @@ describe('入れ物の詰まり具合', () => {
       'containerCapacity.yaml',
       `
 object_defs:
-  # 上限を持つ入れ物。押したときに開くスロット（main_item_slot）が詰まり具合の出所になる。
+  # 上限を持つ入れ物。入れ物と名乗った型（storage）の、上限つきスロットが詰まり具合の出所になる。
   basket:
-    main_item_slot: contents
+    storage: true
     slots:
       contents:
         cell: {accept: {tag: item}}
         capacity: 100
   # 上限を持たない入れ物。いくらでも入るので、満たされ具合そのものが無い。
   cart:
-    main_item_slot: contents
+    storage: true
     slots:
       contents:
         cell: {accept: {tag: item}}
@@ -58,13 +58,13 @@ object_defs:
   it('入れた物のかさが上限を占めるぶんだけ増える', () => {
     const { container, put } = setUp('basket');
 
-    expect(container.mainSlotFillRatio(), '空の入れ物は0（バーは出るが空）').toBe(0);
+    expect(container.storageFillRatio(), '空の入れ物は0（バーは出るが空）').toBe(0);
 
     expect(put('stone')).toBeUndefined();
-    expect(container.mainSlotFillRatio()).toBeCloseTo(0.3, 5);
+    expect(container.storageFillRatio()).toBeCloseTo(0.3, 5);
 
     expect(put('stone')).toBeUndefined();
-    expect(container.mainSlotFillRatio()).toBeCloseTo(0.6, 5);
+    expect(container.storageFillRatio()).toBeCloseTo(0.6, 5);
   });
 
   it('上限を超える物は入らないので、割合は1を超えない', () => {
@@ -72,7 +72,7 @@ object_defs:
     for (let i = 0; i < 3; i++) expect(put('stone'), `${i + 1}個目`).toBeUndefined();
 
     expect(put('stone'), '4個目は容量を超えるので弾かれる').toContain('容量');
-    expect(container.mainSlotFillRatio()).toBeCloseTo(0.9, 5);
+    expect(container.storageFillRatio()).toBeCloseTo(0.9, 5);
   });
 
   it('かさを宣言していない物を入れても増えない', () => {
@@ -82,7 +82,7 @@ object_defs:
 
     expect(put('feather')).toBeUndefined();
 
-    expect(container.mainSlotFillRatio()).toBe(0);
+    expect(container.storageFillRatio()).toBe(0);
   });
 
   it('上限を持たない入れ物は、詰まり具合そのものを持たない', () => {
@@ -90,10 +90,31 @@ object_defs:
 
     expect(put('stone')).toBeUndefined();
 
-    expect(container.mainSlotFillRatio()).toBeUndefined();
+    expect(container.storageFillRatio()).toBeUndefined();
   });
 
   it('中身を持たない物は、詰まり具合そのものを持たない', () => {
-    expect(spawn('stone').object.mainSlotFillRatio()).toBeUndefined();
+    expect(spawn('stone').object.storageFillRatio()).toBeUndefined();
+  });
+
+  it('入れ物と名乗らない型は、上限つきのスロットを持っていてもバーの出所にならない', () => {
+    // 液体の容器がこれ。上限は同じcapacityでも、量を持つのは中身の液体自身
+    // （LiquidContainerSystem.md 2節）。
+    const withoutStorage = new WorldCodexYamlLoader()
+      .load(
+        'noStorage.yaml',
+        `
+object_defs:
+  canteen:
+    slots:
+      content:
+        cell: {accept: {tag: item}}
+        capacity: 100
+`,
+      )
+      .build();
+    const session = new WorldSession(withoutStorage);
+
+    expect(session.spawn(withoutStorage.objectNames.getId('canteen')).storageFillRatio()).toBeUndefined();
   });
 });

@@ -5,7 +5,6 @@ traits:
   # 手当てのできる怪我。治療具（treatments.yaml）を1つだけ当てておける。
   treatable:
     # 怪我を代表する物のスロット（7.8節）。カードを押すと治療具が並ぶ——付け外しの唯一の経路。
-    main_item_slot: treatment
     # 外から見えるもの（7.11節）。当てている手当ては傷の上に見えている。
     visible_slots: [treatment]
     slots:

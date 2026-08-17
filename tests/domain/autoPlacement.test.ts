@@ -5,8 +5,8 @@ import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
- * auto_placement（GameElementDefinition.md 7.7節）に対する自動テスト。spawn/moveの宣言順走査から
- * 外したスロットが、あふれた物の行き先にも強制配置の行き先にもならないことを確認する。
+ * placement（GameElementDefinition.md 7.7節）に対する自動テスト。エンジンの走査（auto）から外した
+ * スロットが、あふれた物の行き先にも強制配置の行き先にもならないことを確認する。
  */
 describe('自動配置の対象外スロット', () => {
   const YAML = `
@@ -26,7 +26,7 @@ object_defs:
         cell_count: 1
       equipment:
         cell: {accept: {tag: item}}
-        auto_placement: false
+        placement: [manual]
     actions:
       craft:
         spawn: {object: knife, into: actor}

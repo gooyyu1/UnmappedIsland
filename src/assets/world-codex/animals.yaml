@@ -20,7 +20,6 @@ traits:
     # 掛かった獲物がその場で死んでも、死体は罠の中に残る。
     tags: [item, animal, quarry]
     # 押すと刺さっている怪我が並ぶ（7.8節）。キャラクタの怪我と同じ見え方になる（同3節）。
-    main_item_slot: injuries
     # 外から見えるもの（7.11節）。傷は見れば分かるし、くわえている物も見れば分かる。
     visible_slots: [injuries, spoils]
     # 気を失っている間は、絵が倒れた姿へ変わる（consciousnessのunconscious段、CardView.md 5.1節）。
@@ -38,6 +37,8 @@ traits:
       spoils:
         cell_count: 1
         cell: {accept: {tag: item}}
+        # 入れるのは獣自身（snatch）だけ。**外から見えるが、渡せはしない**（7.7節・7.11節）。
+        placement: [auto]
     props:
       # 警戒（HuntingSystem.md 3.1節）。攻撃してくるか逃げるかを乱数の分岐にせず、この1つの
       # 連続量で駆動する。安全域を外れている間はカードの輪郭が明滅する
