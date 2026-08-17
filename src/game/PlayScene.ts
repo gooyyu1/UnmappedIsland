@@ -20,14 +20,9 @@ import type { InteractionGains } from '../domain/runtime/PropertyGain';
 import type { WorldChange } from '../domain/runtime/WorldChange';
 import type { WorldSignal } from '../domain/runtime/WorldSignal';
 import type { WorldObject } from '../domain/runtime/WorldObject';
-import type {
-  CardAction,
-  CardPlace,
-  ObjectCardStack,
-  ObjectWindowView,
-  PlayScreenView,
-} from './view/PlayScreenView';
+import type { CardAction, ObjectCardStack, ObjectWindowView, PlayScreenView } from './view/PlayScreenView';
 import { EXPLORE_ACTION, fromGameSession } from './view/PlayScreenView';
+import type { CardPlace } from './view/cardPlaces';
 import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
 import type { RecordedView, Recording } from './view/recording';

@@ -16,44 +16,14 @@ import type { CraftingMaterial } from './craftingView';
 import { craftingActions, craftingMaterials } from './craftingView';
 import { characterCardContent } from './characterCard';
 import { recipeOf } from './recipeList';
+import type { CardPlace, CardPlacement } from './cardPlaces';
+import { cardPlacesOf, samePlace } from './cardPlaces';
 import type { SlotRef } from '../../art/backgroundArt';
 import type { CardContent, CardCooking, CardGauge } from '../ui/Card';
 import { COLOR } from '../looks/theme';
 import type { CardKind } from '../looks/theme';
 import type { PropertyCategory as PropertyTab } from '../ui/PropertiesPane';
 import type { StatusContent, StatusDetail, StatusInfluence } from '../ui/StatusBar';
-
-/**
- * レーンの中でカードを置く場所。gapは枠と枠の隙間（indexは0が先頭の枠の前）、cellは空き枠そのもの
- * （indexはその枠の位置）。CardLaneのドロップ先（LaneDropTarget）と同じ形。
- */
-export type CardPlacement =
-  { readonly kind: 'gap'; readonly index: number } | { readonly kind: 'cell'; readonly index: number };
-
-/**
- * カードが並ぶ場所（＝ワールド上の1つのスロット）の名前。名前はスロット名そのもので、レーンと
- * 子ウィンドウの対応付けに使う。
- *
- * 今後コンテナ（箱・かご）の中身も同じ子ウィンドウで見せるため、ここに置き場所を足していけるよう
- * 移動の宛先は名前で指す（moveTo）。「どのレーンの隣か」という暗黙の対応は持たない。
- */
-export type CardPlace =
-  | 'fixtures'
-  | 'items'
-  | 'structure'
-  | 'hand'
-  | 'equipment'
-  | 'injuries'
-  | { readonly container: WorldObject; readonly slotGlobalId: number };
-
-/**
- * 2つの場所が同じか。コンテナの場所は映しているインスタンスで見分ける（同じ型のコンテナが複数あっても
- * 中身は別なので、型では一意に決まらない）。
- */
-export function samePlace(a: CardPlace, b: CardPlace): boolean {
-  if (typeof a === 'string' || typeof b === 'string') return a === b;
-  return a.container === b.container && a.slotGlobalId === b.slotGlobalId;
-}
 
 /**
  * 積み重なったカードの束（ドメインのObjectStackに対応する画面側の1まとまり）。
@@ -421,15 +391,6 @@ const UNNAMED_LOCATION = '名もなき土地';
 export const EXPLORE_ACTION = 'explore';
 
 /**
- * 組み込んだ部品を並べるスロットの名前（voyage.yamlの筏、Dwellings.md 1節の住居）。
- *
- * **場所の種類がまだ無いので、探索（EXPLORE_ACTION）と同じく名前で決め打つ。** 探索できる土地と、
- * 中に入る筏・住居を型として分けたうえで、どちらのスロットを開くかをワールド側に名乗らせるのが
- * 本来の形（visible_slotsと同じ形にできる）。場所の種類を入れるときに一緒に直す。
- */
-const STRUCTURE_SLOT = 'structure';
-
-/**
  * ステータスエリアへ出す候補になるプロパティに付けるタグ（GameElementDefinition.md 6.7節）。
  * 健康・栄養といったカテゴリのタグと重ねて付ける（満腹度はstatusでありnutritionでもある）。
  */
@@ -545,6 +506,7 @@ export function fromGameSession(
   locale: Localization,
 ): PlayScreenView {
   const location = game.player.location ?? game.startLocation;
+  const places = cardPlacesOf(game.player, location, codex);
 
   const characterTexts = locale.object(game.player.instance.def.name);
 
@@ -725,27 +687,11 @@ export function fromGameSession(
   };
 
   /**
-   * そのカードの子ウィンドウにタブとして並ぶスロット（`visible_slots`、GameElementDefinition.md
+   * その物の子ウィンドウにタブとして並ぶスロット（`visible_slots`、GameElementDefinition.md
    * 7.11節）。宣言順がそのまま並び順で、名乗らない物では空。
    */
-  const visibleSlotsOf = (object: WorldObject): readonly CardPlace[] =>
-    object.def.visibleSlotGlobalIds.map((slotGlobalId) => ({ container: object, slotGlobalId }));
-
-  /**
-   * 同じスロットでも、画面に定位置を持つもの（手持ち・装備・怪我・現在地の構造）は名前の場所で指す。
-   * **同じスロットを2通りの場所で指さない**ため——指し方が割れると、行き先の比較（samePlace）が
-   * 食い違い、端の行き先も落とし先も別物として扱われる。
-   */
-  const namedPlaces = new Map<number, CardPlace>();
-  for (const name of ['hand', 'equipment', 'injuries', 'items', 'fixtures', 'structure'] as const) {
-    const slotGlobalId = codex.slotNames.tryGetId(name);
-    if (slotGlobalId !== undefined) namedPlaces.set(slotGlobalId, name);
-  }
-
   const visiblePlacesOf = (object: WorldObject): readonly CardPlace[] =>
-    object.def.visibleSlotGlobalIds.map(
-      (slotGlobalId) => namedPlaces.get(slotGlobalId) ?? { container: object, slotGlobalId },
-    );
+    object.def.visibleSlotGlobalIds.map((slotGlobalId) => places.placeOf(object, slotGlobalId));
 
   /**
    * そのカードで実行できるアクション。宣言を読むのは操作対象の代表（represented_by、ActionSystem.md
@@ -781,7 +727,6 @@ export function fromGameSession(
     return [...craftingActions(instance, codex, game), ...fromDefinition];
   };
 
-  const structureSlotId = codex.slotNames.tryGetId(STRUCTURE_SLOT);
   const itemTagId = codex.tagNames.tryGetId('item');
   const fixtureTagId = codex.tagNames.tryGetId('fixture');
   const injuryTagId = codex.tagNames.tryGetId('injury');
@@ -1016,7 +961,7 @@ export function fromGameSession(
     actions: actionsOf(instances[0]),
     place,
     contentsFor: (dragged) => contentsOf(instances[0], dragged.objects[0].def),
-    visibleSlots: visibleSlotsOf(instances[0]),
+    visibleSlots: visiblePlacesOf(instances[0]),
   });
 
   /**
@@ -1106,38 +1051,6 @@ export function fromGameSession(
   const discovered = discoveredMap();
 
   /**
-   * 場所ごとの「どのオブジェクトのどのスロットか」。カードの移動はすべてこの表を引いた
-   * スロット移動（WorldObject.moveToSlot*）で、場所ごとの特別扱いは持たない。コンテナ（箱・かご）
-   * を足すときも、この表に1行増やすだけで移動もドラッグも動く。
-   *
-   * **どこへ移せるかはこの表では決めない。** それはワールド側の宣言（枠の型・bound_to_owner）から
-   * 引く（moveInto参照）。設置物のかごを持ち歩けるようにしたら、画面を直さずに外せるようになる。
-   */
-  const slotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined => {
-    if (typeof place !== 'string') {
-      return { owner: place.container, slotId: place.slotGlobalId };
-    }
-    switch (place) {
-      case 'items':
-        return { owner: location.instance, slotId: location.itemsSlotId };
-      case 'fixtures':
-        return { owner: location.instance, slotId: location.fixturesSlotId };
-      // 現在地に組み込まれている部品（筏の帆、住居の壁）。itemsと同じく現在地のスロットだが、
-      // レーンには出ず、現在地の札から開くウィンドウだけが映す。
-      case 'structure':
-        return structureSlotId === undefined
-          ? undefined
-          : { owner: location.instance, slotId: structureSlotId };
-      case 'hand':
-        return { owner: game.player.instance, slotId: game.player.handSlotId };
-      case 'equipment':
-        return { owner: game.player.instance, slotId: game.player.equipmentSlotId };
-      case 'injuries':
-        return { owner: game.player.instance, slotId: game.player.injuriesSlotId };
-    }
-  };
-
-  /**
    * itemを場所placeへ入れる操作（そこへは入れられないならundefined）。入れられるかの判断はすべて
    * ドメインに任せる（WorldObject.rejectionForMoveTo）——捻挫が身体から剥がれないのも、ヤシの木が
    * 手に持てないのも、画面が場所ごとに覚えている決まりではなくワールド側の宣言の帰結。
@@ -1145,7 +1058,7 @@ export function fromGameSession(
   const moveInto =
     (stack: readonly WorldObject[], from: CardPlace) =>
     (place: CardPlace, at?: CardPlacement, count = 1): (() => void) | undefined => {
-      const dest = slotOf(place);
+      const dest = places.slotOf(place);
       if (dest === undefined || samePlace(place, from)) return undefined;
       if (stack[0].rejectionForMoveTo(dest.owner, dest.slotId) !== undefined) return undefined;
 
@@ -1179,7 +1092,7 @@ export function fromGameSession(
   const acceptedCountIn =
     (stack: readonly WorldObject[], from: CardPlace) =>
     (place: CardPlace): number => {
-      const dest = slotOf(place);
+      const dest = places.slotOf(place);
       if (dest === undefined || samePlace(place, from)) return 0;
 
       return stack[0].acceptedCountForMoveTo(stack.slice(1), dest.owner, dest.slotId);
@@ -1192,7 +1105,7 @@ export function fromGameSession(
   const putIntoTexts =
     (stack: readonly WorldObject[], from: CardPlace) =>
     (place: CardPlace, count = 1): CardPutIn | undefined => {
-      const dest = slotOf(place);
+      const dest = places.slotOf(place);
       if (dest === undefined || samePlace(place, from)) return undefined;
 
       const slotDef = dest.owner.def.getSlotDef(dest.slotId);
@@ -1346,7 +1259,7 @@ export function fromGameSession(
     currentLocation: currentLocationCard,
     locationArt: location.instance.def.name,
     laneSlot: (place) => {
-      const found = slotOf(place);
+      const found = places.slotOf(place);
       if (found === undefined) return undefined;
       const slot = found.owner.def.getSlotDef(found.slotId);
       return slot === undefined ? undefined : { owner: found.owner.def.name, slot: slot.name };
@@ -1370,7 +1283,7 @@ export function fromGameSession(
           ? game.player.equipmentStacks
           : place === 'injuries'
             ? game.player.injuryStacks
-            : stacksIn(slotOf(place));
+            : stacksIn(places.slotOf(place));
       return stacks.map((stack) => cardOfStack(stack, place));
     },
     cardOfType,
@@ -1382,12 +1295,12 @@ export function fromGameSession(
     // 名前が出てしまわないようにするため。
     cardOfObjects: (objects, place) => ({ ...cardOfStack(objects, place), ...destinationOf(objects[0]) }),
     slotLabelOf: (place) => {
-      const slot = slotOf(place);
+      const slot = places.slotOf(place);
       if (slot === undefined) return typeof place === 'string' ? place : nameOf(place.container);
       return locale.slot(codex.slotNames.getName(slot.slotId)).displayName;
     },
     slotKeyOf: (place) => {
-      const slot = slotOf(place);
+      const slot = places.slotOf(place);
       return slot === undefined
         ? typeof place === 'string'
           ? place
@@ -1395,12 +1308,12 @@ export function fromGameSession(
         : codex.slotNames.getName(slot.slotId);
     },
     acceptsCards: (place) => {
-      const slot = slotOf(place);
+      const slot = places.slotOf(place);
       const slotDef = slot === undefined ? undefined : slot.owner.def.getSlotDef(slot.slotId);
       return slotDef !== undefined && codex.admitsBroughtObjects(slotDef);
     },
     cellCountOf: (place) => {
-      const slot = slotOf(place);
+      const slot = places.slotOf(place);
       return slot === undefined ? undefined : slot.owner.def.getSlotDef(slot.slotId)?.cellCount;
     },
     combinationOf: (dragged, target) => {
