@@ -87,9 +87,6 @@ export abstract class InteractionDef {
     return this.duration?.reading;
   }
 
-  /** 入口の別（メニュー型かドラッグ型か）。表示名の引き方がこれで変わる（Localization.md）。 */
-  abstract get kind(): 'action' | 'combination';
-
   /** 重ねる相手の指定（12.1節）。メニュー型は相手を取らないのでundefined。 */
   get draggedReading(): TypeMatchReading | undefined {
     return undefined;

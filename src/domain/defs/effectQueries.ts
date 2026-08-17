@@ -1,5 +1,5 @@
 import type { EffectDeclaration, EffectReader, PickCandidateReading, TransferReading } from './EffectReader';
-import type { ObjectRef } from './ObjectRef';
+import type { ObjectRefReading } from './ObjectRef';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -39,9 +39,9 @@ abstract class Finder implements EffectReader {
   set(_target: ReferenceRoot, _propertyGlobalId: number, _value: number): void {}
   add(_target: ReferenceRoot, _propertyGlobalId: number, _amount: number): void {}
   spawn(_objectGlobalId: number, _count: number): void {}
-  destroy(_target: ObjectRef): void {}
+  destroy(_target: ObjectRefReading): void {}
   transfer(_reading: TransferReading): void {}
-  move(_subject: ObjectRef, _destination: ObjectRef): void {}
+  move(_subject: ObjectRefReading, _destination: ObjectRefReading): void {}
   signal(_name: string): void {}
 
   /** 候補の奥にあるものも数える（pickは分岐でしかなく、起こることを隠さない）。 */

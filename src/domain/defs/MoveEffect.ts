@@ -41,6 +41,6 @@ export class MoveEffect extends ActiveEffect {
   }
 
   read(reader: EffectReader): void {
-    reader.move(this.subject, this.destination);
+    reader.move(this.subject.reading, this.destination.reading);
   }
 }

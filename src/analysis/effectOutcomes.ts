@@ -1,5 +1,5 @@
 import type { EffectReader, PickCandidateReading, TransferReading } from '../domain/defs/EffectReader';
-import type { ObjectRef } from '../domain/defs/ObjectRef';
+import type { ObjectRefReading } from '../domain/defs/ObjectRef';
 import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
 import type { StepOutcome } from './CraftingStep';
 import { UNCHANGED_OUTCOMES, combineOutcomes, scaleOutcomes } from './CraftingStep';
@@ -15,7 +15,7 @@ export interface EffectReading {
    * 消えるオブジェクトの指し先（`destroy`、9.3節）。**分岐をまたいで集めたもの**なので、
    * 「どれか1つの分岐で消えるか」しか言えない——どの確率で消えるかは分岐の側にある。
    */
-  readonly destroyed: readonly ObjectRef[];
+  readonly destroyed: readonly ObjectRefReading[];
 }
 
 /**
@@ -38,7 +38,7 @@ export function outcomesOf(declaration: Readable, resolve: StaticValueResolver):
 
 /** rootが指すオブジェクトを消す分岐があるか。 */
 export function destroysRoot(reading: EffectReading, root: ReferenceRoot): boolean {
-  return reading.destroyed.some((ref) => ref.isRoot(root));
+  return reading.destroyed.some((ref) => ref.kind === 'root' && ref.root === root);
 }
 
 /** 自分が何を宣言しているかを読み上げられるもの（効果そのものと、それを抱える操作）。 */
@@ -53,7 +53,7 @@ export interface Readable {
 class OutcomeReader implements EffectReader {
   outcomes: readonly StepOutcome[] = UNCHANGED_OUTCOMES;
 
-  readonly destroyed: ObjectRef[] = [];
+  readonly destroyed: ObjectRefReading[] = [];
 
   private readonly resolve: StaticValueResolver;
 
@@ -78,7 +78,7 @@ class OutcomeReader implements EffectReader {
   }
 
   /** 消えたことは分岐に出ない（値も産出も動かない）ので、別に控える。 */
-  destroy(target: ObjectRef): void {
+  destroy(target: ObjectRefReading): void {
     this.destroyed.push(target);
   }
 

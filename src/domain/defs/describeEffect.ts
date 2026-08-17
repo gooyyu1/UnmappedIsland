@@ -8,7 +8,7 @@ import type {
   TransferReading,
   WeightReading,
 } from './EffectReader';
-import type { ObjectRef } from './ObjectRef';
+import type { ObjectRefReading } from './ObjectRef';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -67,6 +67,18 @@ export function linkedAddTokens(linked: LinkedAddReading, names: DefNames): read
   ];
 }
 
+/** オブジェクトを指す参照の書き表し（`destroy`の対象・`move`の両端）。 */
+export function objectRefTokens(reading: ObjectRefReading, names: DefNames): readonly DescriptionToken[] {
+  switch (reading.kind) {
+    case 'root':
+      return [text(reading.root)];
+    case 'object':
+      return [objectRef(names.objectName(reading.objectGlobalId))];
+    case 'property':
+      return [propertyRef(names.propertyName(reading.propertyGlobalId), 'self')];
+  }
+}
+
 /** 重み・所要時間の書き表し。リテラルなら数値、参照ならプロパティ。 */
 export function weightTokens(reading: WeightReading, names: DefNames): readonly DescriptionToken[] {
   return reading.kind === 'literal'
@@ -104,8 +116,8 @@ class EffectDescriber implements EffectReader {
     this.out.write(...tokens);
   }
 
-  destroy(target: ObjectRef): void {
-    this.out.write(text('destroy '), ...target.describe(this.names));
+  destroy(target: ObjectRefReading): void {
+    this.out.write(text('destroy '), ...objectRefTokens(target, this.names));
   }
 
   transfer(reading: TransferReading): void {
@@ -116,12 +128,12 @@ class EffectDescriber implements EffectReader {
     });
   }
 
-  move(subject: ObjectRef, destination: ObjectRef): void {
+  move(subject: ObjectRefReading, destination: ObjectRefReading): void {
     this.out.write(
       text('move '),
-      ...subject.describe(this.names),
+      ...objectRefTokens(subject, this.names),
       text(' → '),
-      ...destination.describe(this.names),
+      ...objectRefTokens(destination, this.names),
     );
   }
 

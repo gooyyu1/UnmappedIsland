@@ -1,5 +1,5 @@
 import type { ActiveEffect } from './ActiveEffect';
-import type { ObjectRef } from './ObjectRef';
+import type { ObjectRefReading } from './ObjectRef';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /** 自分が何を宣言しているかを読み上げられるもの（効果そのものと、それを抱える操作）。 */
@@ -28,13 +28,13 @@ export interface EffectReader {
   spawn(objectGlobalId: number, count: number): void;
 
   /** `destroy`（9.3節）。 */
-  destroy(target: ObjectRef): void;
+  destroy(target: ObjectRefReading): void;
 
   /** `transfer`（9.5節）。amountは在庫が満ちている場合の上限で、実際に動く量は目減りしうる。 */
   transfer(reading: TransferReading): void;
 
   /** `move`（9.6節）。オブジェクトの居場所を変えるだけで、値も個数も動かさない。 */
-  move(subject: ObjectRef, destination: ObjectRef): void;
+  move(subject: ObjectRefReading, destination: ObjectRefReading): void;
 
   /**
    * `signal`（9.8節）。世界の形は何も変わらない。

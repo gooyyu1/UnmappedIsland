@@ -714,113 +714,113 @@ npm run stats:balance
 
 | 宣言元 | 工程 | 種別 | 労働（分） | 周期（分） | 期待産出 | 値の増減 |
 | --- | --- | --- | --- | --- | --- | --- |
-| monkey | turn | action | 0 | 0 | bite_wound ×0.15、gore_wound ×0.00 | — |
-| monkey | strike | combination | 15 | 15 | laceration ×0.55、puncture_wound ×0.23、monkey_carcass ×0.02 | （self）wariness +24.47、（self）shock +79.79 |
+| monkey | turn | interaction | 0 | 0 | bite_wound ×0.15、gore_wound ×0.00 | — |
+| monkey | strike | interaction | 15 | 15 | laceration ×0.55、puncture_wound ×0.23、monkey_carcass ×0.02 | （self）wariness +24.47、（self）shock +79.79 |
 | monkey | blood.on_shortfall | periodic | 0 | 30 | monkey_carcass ×1.00 | — |
 | monkey | blood.on_shortfall | periodic | 0 | 40 | monkey_carcass ×1.00 | — |
-| monkey_carcass | butcher | combination | 60 | 60 | raw_meat ×4.00、animal_bone ×1.00、rawhide ×1.00 | — |
-| junglefowl | turn | action | 0 | 0 | bite_wound ×0.00、gore_wound ×0.00 | — |
-| junglefowl | strike | combination | 15 | 15 | laceration ×0.55、puncture_wound ×0.23、junglefowl_carcass ×0.02 | （self）wariness +24.47、（self）shock +79.79 |
+| monkey_carcass | butcher | interaction | 60 | 60 | raw_meat ×4.00、animal_bone ×1.00、rawhide ×1.00 | — |
+| junglefowl | turn | interaction | 0 | 0 | bite_wound ×0.00、gore_wound ×0.00 | — |
+| junglefowl | strike | interaction | 15 | 15 | laceration ×0.55、puncture_wound ×0.23、junglefowl_carcass ×0.02 | （self）wariness +24.47、（self）shock +79.79 |
 | junglefowl | blood.on_shortfall | periodic | 0 | 6 | junglefowl_carcass ×1.00 | — |
 | junglefowl | blood.on_shortfall | periodic | 0 | 8 | junglefowl_carcass ×1.00 | — |
-| rat | turn | action | 0 | 0 | bite_wound ×0.05、gore_wound ×0.00 | — |
-| rat | strike | combination | 15 | 15 | laceration ×0.55、puncture_wound ×0.23、rat_carcass ×0.02 | （self）wariness +24.47、（self）shock +79.79 |
+| rat | turn | interaction | 0 | 0 | bite_wound ×0.05、gore_wound ×0.00 | — |
+| rat | strike | interaction | 15 | 15 | laceration ×0.55、puncture_wound ×0.23、rat_carcass ×0.02 | （self）wariness +24.47、（self）shock +79.79 |
 | rat | blood.on_shortfall | periodic | 0 | 6 | rat_carcass ×1.00 | — |
 | rat | blood.on_shortfall | periodic | 0 | 0 | rat_carcass ×1.00 | — |
 | rat | blood.on_shortfall | periodic | 0 | 9 | rat_carcass ×1.00 | — |
 | rat | blood.on_shortfall | periodic | 0 | 1 | rat_carcass ×1.00 | — |
 | rat | blood.on_shortfall | periodic | 0 | 6 | rat_carcass ×1.00 | — |
-| wild_boar | turn | action | 0 | 0 | bite_wound ×0.00、gore_wound ×0.40 | — |
-| wild_boar | strike | combination | 15 | 15 | laceration ×0.55、puncture_wound ×0.23、wild_boar_carcass ×0.02 | （self）wariness +24.47、（self）shock +79.79 |
-| wild_boar_carcass | butcher | combination | 240 | 240 | raw_meat ×40.00、animal_bone ×6.00、rawhide ×6.00 | — |
-| junglefowl_carcass | butcher | combination | 20 | 20 | raw_meat ×1.00、feather ×1.00、small_bone ×1.00 | — |
+| wild_boar | turn | interaction | 0 | 0 | bite_wound ×0.00、gore_wound ×0.40 | — |
+| wild_boar | strike | interaction | 15 | 15 | laceration ×0.55、puncture_wound ×0.23、wild_boar_carcass ×0.02 | （self）wariness +24.47、（self）shock +79.79 |
+| wild_boar_carcass | butcher | interaction | 240 | 240 | raw_meat ×40.00、animal_bone ×6.00、rawhide ×6.00 | — |
+| junglefowl_carcass | butcher | interaction | 20 | 20 | raw_meat ×1.00、feather ×1.00、small_bone ×1.00 | — |
 | rat_carcass | cooking_progress.on_overflow | periodic | 0 | 105 | roasted_rat ×1.00 | — |
 | rat_carcass | cooking_progress.on_overflow | periodic | 0 | 105 | roasted_rat ×1.00 | — |
 | rat_carcass | cooking_progress.on_overflow | periodic | 0 | 105 | roasted_rat ×1.00 | — |
-| roasted_rat | eat | action | 15 | 15 | small_bone ×1.00 | satiety +60.00、protein +3.00、lipid +1.00 |
+| roasted_rat | eat | interaction | 15 | 15 | small_bone ×1.00 | satiety +60.00、protein +3.00、lipid +1.00 |
 | roasted_rat | cooking_progress.on_overflow | periodic | 0 | 75 | charred_lump ×1.00 | — |
 | roasted_rat | cooking_progress.on_overflow | periodic | 0 | 75 | charred_lump ×1.00 | — |
 | roasted_rat | cooking_progress.on_overflow | periodic | 0 | 75 | charred_lump ×1.00 | — |
-| small_bone | whittle | combination | 40 | 40 | bone_needle ×1.00 | — |
-| raw_meat | eat | action | 15 | 15 | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 |
+| small_bone | whittle | interaction | 40 | 40 | bone_needle ×1.00 | — |
+| raw_meat | eat | interaction | 15 | 15 | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 |
 | raw_meat | cooking_progress.on_overflow | periodic | 0 | 375 | roasted_meat ×1.00 | — |
 | raw_meat | cooking_progress.on_overflow | periodic | 0 | 375 | roasted_meat ×1.00 | — |
 | raw_meat | cooking_progress.on_overflow | periodic | 0 | 375 | roasted_meat ×1.00 | — |
-| roasted_meat | eat | action | 15 | 15 | — | satiety +450.00、protein +24.00、lipid +7.00 |
+| roasted_meat | eat | interaction | 15 | 15 | — | satiety +450.00、protein +24.00、lipid +7.00 |
 | roasted_meat | cooking_progress.on_overflow | periodic | 0 | 195 | charred_lump ×1.00 | — |
 | roasted_meat | cooking_progress.on_overflow | periodic | 0 | 195 | charred_lump ×1.00 | — |
 | roasted_meat | cooking_progress.on_overflow | periodic | 0 | 195 | charred_lump ×1.00 | — |
-| charred_lump | eat | action | 15 | 15 | — | satiety +200.00、protein +4.00、lipid +1.00 |
-| captain | wait | action | 15 | 15 | — | （self）stamina +2.00 |
-| captain | rest | action | 60 | 60 | — | （self）stamina +10.00 |
-| captain | nap | action | 180 | 180 | — | （self）stamina +36.00、（self）wakefulness +36.00 |
-| captain | sleep | action | 360 | 360 | — | （self）stamina +90.00、（self）wakefulness +96.00 |
-| engineer | wait | action | 15 | 15 | — | （self）stamina +2.00 |
-| engineer | rest | action | 60 | 60 | — | （self）stamina +10.00 |
-| engineer | nap | action | 180 | 180 | — | （self）stamina +36.00、（self）wakefulness +36.00 |
-| engineer | sleep | action | 360 | 360 | — | （self）stamina +90.00、（self）wakefulness +96.00 |
-| farmer | wait | action | 15 | 15 | — | （self）stamina +2.00 |
-| farmer | rest | action | 60 | 60 | — | （self）stamina +10.00 |
-| farmer | nap | action | 180 | 180 | — | （self）stamina +36.00、（self）wakefulness +36.00 |
-| farmer | sleep | action | 360 | 360 | — | （self）stamina +90.00、（self）wakefulness +96.00 |
-| medic | wait | action | 15 | 15 | — | （self）stamina +2.00 |
-| medic | rest | action | 60 | 60 | — | （self）stamina +10.00 |
-| medic | nap | action | 180 | 180 | — | （self）stamina +36.00、（self）wakefulness +36.00 |
-| medic | sleep | action | 360 | 360 | — | （self）stamina +90.00、（self）wakefulness +96.00 |
-| palm_tree | pick_green_coconut | action | 30 | 30 | green_coconut ×1.80、sprained_ankle ×0.10 | — |
-| palm_tree | pick_frond | action | 30 | 30 | palm_frond ×2.70、sprained_ankle ×0.10 | — |
-| green_coconut | bore | combination | 15 | 15 | drained_green_coconut ×1.00 | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 |
-| drained_green_coconut | split | combination | 15 | 15 | coconut_jelly ×2.00 | — |
-| coconut_jelly | eat | action | 15 | 15 | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 |
-| coconut | husk | combination | 30 | 30 | husked_coconut ×1.00、coconut_husk ×1.00 | — |
-| coconut_husk | light | combination | 30 | 30 | burning_tinder ×0.71 | — |
-| husked_coconut | crack | combination | 15 | 15 | coconut_half ×2.00 | — |
-| husked_coconut | pry_open | combination | 15 | 15 | coconut_half ×2.00 | — |
-| coconut_half | scrape | combination | 30 | 30 | coconut_meat ×1.00、coconut_bowl ×1.00 | — |
-| coconut_meat | eat | action | 15 | 15 | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 |
+| charred_lump | eat | interaction | 15 | 15 | — | satiety +200.00、protein +4.00、lipid +1.00 |
+| captain | wait | interaction | 15 | 15 | — | （self）stamina +2.00 |
+| captain | rest | interaction | 60 | 60 | — | （self）stamina +10.00 |
+| captain | nap | interaction | 180 | 180 | — | （self）stamina +36.00、（self）wakefulness +36.00 |
+| captain | sleep | interaction | 360 | 360 | — | （self）stamina +90.00、（self）wakefulness +96.00 |
+| engineer | wait | interaction | 15 | 15 | — | （self）stamina +2.00 |
+| engineer | rest | interaction | 60 | 60 | — | （self）stamina +10.00 |
+| engineer | nap | interaction | 180 | 180 | — | （self）stamina +36.00、（self）wakefulness +36.00 |
+| engineer | sleep | interaction | 360 | 360 | — | （self）stamina +90.00、（self）wakefulness +96.00 |
+| farmer | wait | interaction | 15 | 15 | — | （self）stamina +2.00 |
+| farmer | rest | interaction | 60 | 60 | — | （self）stamina +10.00 |
+| farmer | nap | interaction | 180 | 180 | — | （self）stamina +36.00、（self）wakefulness +36.00 |
+| farmer | sleep | interaction | 360 | 360 | — | （self）stamina +90.00、（self）wakefulness +96.00 |
+| medic | wait | interaction | 15 | 15 | — | （self）stamina +2.00 |
+| medic | rest | interaction | 60 | 60 | — | （self）stamina +10.00 |
+| medic | nap | interaction | 180 | 180 | — | （self）stamina +36.00、（self）wakefulness +36.00 |
+| medic | sleep | interaction | 360 | 360 | — | （self）stamina +90.00、（self）wakefulness +96.00 |
+| palm_tree | pick_green_coconut | interaction | 30 | 30 | green_coconut ×1.80、sprained_ankle ×0.10 | — |
+| palm_tree | pick_frond | interaction | 30 | 30 | palm_frond ×2.70、sprained_ankle ×0.10 | — |
+| green_coconut | bore | interaction | 15 | 15 | drained_green_coconut ×1.00 | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 |
+| drained_green_coconut | split | interaction | 15 | 15 | coconut_jelly ×2.00 | — |
+| coconut_jelly | eat | interaction | 15 | 15 | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 |
+| coconut | husk | interaction | 30 | 30 | husked_coconut ×1.00、coconut_husk ×1.00 | — |
+| coconut_husk | light | interaction | 30 | 30 | burning_tinder ×0.71 | — |
+| husked_coconut | crack | interaction | 15 | 15 | coconut_half ×2.00 | — |
+| husked_coconut | pry_open | interaction | 15 | 15 | coconut_half ×2.00 | — |
+| coconut_half | scrape | interaction | 30 | 30 | coconut_meat ×1.00、coconut_bowl ×1.00 | — |
+| coconut_meat | eat | interaction | 15 | 15 | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 |
 | woven_basket | woven | recipe | 120 | 120 | woven_basket ×1.00 | — |
-| abaca | fell | combination | 20 | 20 | banana_stem ×5.00 | — |
-| banana_plant | fell | combination | 20 | 20 | banana ×2.00、banana_stem ×2.00 | — |
-| banana | eat | action | 15 | 15 | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 |
-| banana_stem | strip | combination | 30 | 30 | plant_fiber ×2.00 | — |
-| plant_fiber | light | combination | 30 | 30 | burning_tinder ×0.67 | — |
-| plant_fiber | spin | combination | 20 | 20 | yarn ×1.00 | — |
-| yarn | ply | combination | 20 | 20 | cord ×1.00 | — |
+| abaca | fell | interaction | 20 | 20 | banana_stem ×5.00 | — |
+| banana_plant | fell | interaction | 20 | 20 | banana ×2.00、banana_stem ×2.00 | — |
+| banana | eat | interaction | 15 | 15 | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 |
+| banana_stem | strip | interaction | 30 | 30 | plant_fiber ×2.00 | — |
+| plant_fiber | light | interaction | 30 | 30 | burning_tinder ×0.67 | — |
+| plant_fiber | spin | interaction | 20 | 20 | yarn ×1.00 | — |
+| yarn | ply | interaction | 20 | 20 | cord ×1.00 | — |
 | rope | twisted | recipe | 60 | 60 | rope ×1.00 | — |
 | fire_drill | carved | recipe | 60 | 60 | fire_drill ×1.00 | — |
-| dry_grass | light | combination | 30 | 30 | burning_tinder ×0.60 | — |
-| campfire | add_fuel | combination | 1 | 1 | — | （self）fuel +999.00 |
-| campfire | add_stone | combination | 5 | 5 | — | （self）stones +1.00 |
+| dry_grass | light | interaction | 30 | 30 | burning_tinder ×0.60 | — |
+| campfire | add_fuel | interaction | 1 | 1 | — | （self）fuel +999.00 |
+| campfire | add_stone | interaction | 5 | 5 | — | （self）stones +1.00 |
 | campfire | stacked | recipe | 15 | 15 | campfire ×1.00 | — |
-| three_stone_hearth | add_fuel | combination | 1 | 1 | — | （self）fuel +999.00 |
-| three_stone_hearth | add_stone | combination | 5 | 5 | — | （self）stones +1.00 |
-| stone_hearth | add_fuel | combination | 1 | 1 | — | （self）fuel +999.00 |
-| water_spinach | eat | action | 15 | 15 | — | satiety +300.00、carbohydrate +1.00、vitamin +83.00 |
-| coconut_crab | eat | action | 15 | 15 | — | satiety +500.00、protein +25.00、lipid +8.00、vitamin +2.00 |
-| taro | eat | action | 15 | 15 | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 |
-| jar | collect_rain | action | 0 | 0 | water_liquid ×1.00 | — |
-| coconut_bowl | collect_rain | action | 0 | 0 | water_liquid ×1.00 | — |
-| water_liquid | drink | action | 3 | 3 | — | hydration +10.00、（self）volume -250.00 |
-| tea_liquid | drink | action | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）volume -250.00 |
-| stone | knap | combination | 60 | 60 | sharp_stone ×1.00 | — |
-| sandy_beach | explore | action | 15 | 15 | palm_tree ×0.12、woven_basket ×0.05、coconut_crab ×0.27、rat ×0.02、monkey ×0.04、coconut ×0.86、thick_branch ×0.63 | （self）exploration_progress +1.00 |
-| rocky_coast | explore | action | 15 | 15 | cave_entrance ×0.13、coconut_crab ×0.38、rat ×0.02、stone ×1.23、thick_branch ×0.27 | （self）exploration_progress +1.00 |
-| cliff_coast | explore | action | 15 | 15 | cave_entrance ×0.19、golden_chalice ×0.04、stone ×1.07、rat ×0.02、thick_branch ×0.24 | （self）exploration_progress +1.00 |
-| grassland | explore | action | 15 | 15 | berry_bush ×0.13、spring ×0.08、rat ×0.03、junglefowl ×0.03、water_spinach ×0.95、taro ×0.66、dry_grass ×0.10 | （self）exploration_progress +1.00 |
-| forest | explore | action | 15 | 15 | berry_bush ×0.18、spring ×0.07、rat ×0.02、monkey ×0.03、wild_boar ×0.02、broadleaf_tree ×0.11、twig ×1.20、taro ×0.24、banana_plant ×0.09 | （self）exploration_progress +1.00 |
-| jungle | explore | action | 15 | 15 | palm_tree ×0.10、taro ×0.15、rat ×0.02、junglefowl ×0.02、monkey ×0.03、wild_boar ×0.02、broadleaf_tree ×0.08、twig ×0.56、coconut ×0.61、water_spinach ×0.21、abaca ×0.08、banana_plant ×0.07 | （self）exploration_progress +1.00 |
-| rocky_field | explore | action | 15 | 15 | cave_entrance ×0.17、golden_chalice ×0.03、twig ×0.55、rat ×0.02、stone ×1.23 | （self）exploration_progress +1.00 |
-| wasteland | explore | action | 15 | 15 | stone ×0.99、twig ×0.50、rat ×0.02、dry_grass ×0.11 | （self）exploration_progress +1.00 |
-| mountainside | explore | action | 15 | 15 | cave_entrance ×0.14、golden_chalice ×0.03、berry_bush ×0.21、rat ×0.02、stone ×0.98、twig ×0.62 | （self）exploration_progress +1.00 |
-| mountain_peak | explore | action | 15 | 15 | cave_entrance ×0.36、stone ×1.19、rat ×0.02 | （self）exploration_progress +1.00 |
-| broadleaf_tree | fell | combination | 240 | 240 | log ×2.00、thick_branch ×3.00 | — |
+| three_stone_hearth | add_fuel | interaction | 1 | 1 | — | （self）fuel +999.00 |
+| three_stone_hearth | add_stone | interaction | 5 | 5 | — | （self）stones +1.00 |
+| stone_hearth | add_fuel | interaction | 1 | 1 | — | （self）fuel +999.00 |
+| water_spinach | eat | interaction | 15 | 15 | — | satiety +300.00、carbohydrate +1.00、vitamin +83.00 |
+| coconut_crab | eat | interaction | 15 | 15 | — | satiety +500.00、protein +25.00、lipid +8.00、vitamin +2.00 |
+| taro | eat | interaction | 15 | 15 | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 |
+| jar | collect_rain | interaction | 0 | 0 | water_liquid ×1.00 | — |
+| coconut_bowl | collect_rain | interaction | 0 | 0 | water_liquid ×1.00 | — |
+| water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）volume -250.00 |
+| tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）volume -250.00 |
+| stone | knap | interaction | 60 | 60 | sharp_stone ×1.00 | — |
+| sandy_beach | explore | interaction | 15 | 15 | palm_tree ×0.12、woven_basket ×0.05、coconut_crab ×0.27、rat ×0.02、monkey ×0.04、coconut ×0.86、thick_branch ×0.63 | （self）exploration_progress +1.00 |
+| rocky_coast | explore | interaction | 15 | 15 | cave_entrance ×0.13、coconut_crab ×0.38、rat ×0.02、stone ×1.23、thick_branch ×0.27 | （self）exploration_progress +1.00 |
+| cliff_coast | explore | interaction | 15 | 15 | cave_entrance ×0.19、golden_chalice ×0.04、stone ×1.07、rat ×0.02、thick_branch ×0.24 | （self）exploration_progress +1.00 |
+| grassland | explore | interaction | 15 | 15 | berry_bush ×0.13、spring ×0.08、rat ×0.03、junglefowl ×0.03、water_spinach ×0.95、taro ×0.66、dry_grass ×0.10 | （self）exploration_progress +1.00 |
+| forest | explore | interaction | 15 | 15 | berry_bush ×0.18、spring ×0.07、rat ×0.02、monkey ×0.03、wild_boar ×0.02、broadleaf_tree ×0.11、twig ×1.20、taro ×0.24、banana_plant ×0.09 | （self）exploration_progress +1.00 |
+| jungle | explore | interaction | 15 | 15 | palm_tree ×0.10、taro ×0.15、rat ×0.02、junglefowl ×0.02、monkey ×0.03、wild_boar ×0.02、broadleaf_tree ×0.08、twig ×0.56、coconut ×0.61、water_spinach ×0.21、abaca ×0.08、banana_plant ×0.07 | （self）exploration_progress +1.00 |
+| rocky_field | explore | interaction | 15 | 15 | cave_entrance ×0.17、golden_chalice ×0.03、twig ×0.55、rat ×0.02、stone ×1.23 | （self）exploration_progress +1.00 |
+| wasteland | explore | interaction | 15 | 15 | stone ×0.99、twig ×0.50、rat ×0.02、dry_grass ×0.11 | （self）exploration_progress +1.00 |
+| mountainside | explore | interaction | 15 | 15 | cave_entrance ×0.14、golden_chalice ×0.03、berry_bush ×0.21、rat ×0.02、stone ×0.98、twig ×0.62 | （self）exploration_progress +1.00 |
+| mountain_peak | explore | interaction | 15 | 15 | cave_entrance ×0.36、stone ×1.19、rat ×0.02 | （self）exploration_progress +1.00 |
+| broadleaf_tree | fell | interaction | 240 | 240 | log ×2.00、thick_branch ×3.00 | — |
 | stone_axe | hafted | recipe | 180 | 180 | stone_axe ×1.00 | — |
-| snare | add_plant_bait | combination | 1 | 1 | — | （self）plant_bait +999.00 |
-| snare | add_meat_bait | combination | 1 | 1 | — | （self）meat_bait +999.00 |
+| snare | add_plant_bait | interaction | 1 | 1 | — | （self）plant_bait +999.00 |
+| snare | add_meat_bait | interaction | 1 | 1 | — | （self）meat_bait +999.00 |
 | snare | knotted | recipe | 30 | 30 | snare ×1.00 | — |
 | snare | catch_remaining.on_shortfall | periodic | 0 | 240 | junglefowl ×0.07、snare_laceration ×0.18、rat ×0.11 | （self）catch_remaining +16.00 |
 | raft | lashed | recipe | 420 | 420 | raft ×1.00 | — |
 | rawhide_sail | sewn | recipe | 420 | 420 | rawhide_sail ×1.00 | — |
-| palm_frond | weave | action | 90 | 90 | woven_leaf ×1.00 | — |
-| palm_frond | split_and_weave | combination | 60 | 60 | woven_leaf ×2.00 | — |
+| palm_frond | weave | interaction | 90 | 90 | woven_leaf ×1.00 | — |
+| palm_frond | split_and_weave | interaction | 60 | 60 | woven_leaf ×2.00 | — |
 

@@ -163,7 +163,7 @@ export class DestroyEffect extends ActiveEffect {
   }
 
   read(reader: EffectReader): void {
-    reader.destroy(this.target);
+    reader.destroy(this.target.reading);
   }
 }
 

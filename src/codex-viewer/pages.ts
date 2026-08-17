@@ -64,8 +64,8 @@ export function renderObjectPage(view: CodexView, name: string): string {
       'passives（持続効果）',
       view.describeHtml(name, (out) => def.passives.describe(view.codex, out)),
     ) +
-    section('actions（メニューから選ぶ操作）', interactionsHtml(view, def, def.actions, false)) +
-    section('combinations（カードを重ねる操作）', interactionsHtml(view, def, def.combinations, true)) +
+    section('actions（メニューから選ぶ操作）', interactionsHtml(view, def, def.actions)) +
+    section('combinations（カードを重ねる操作）', interactionsHtml(view, def, def.combinations)) +
     section('recipes', recipesHtml(view, def)) +
     variantsSection(view, name) +
     // 逆引きはどちらも、行き先の型を絵で並べるだけにする——どの操作・どの工程かはリンク先で分かる。
@@ -417,18 +417,13 @@ function slotsHtml(view: CodexView, def: ObjectDef): string {
   return rows === '' ? EMPTY_HTML : slotTableHtml('スロット', rows);
 }
 
-function interactionsHtml(
-  view: CodexView,
-  def: ObjectDef,
-  interactions: readonly InteractionDef[],
-  isCombination: boolean,
-): string {
+function interactionsHtml(view: CodexView, def: ObjectDef, interactions: readonly InteractionDef[]): string {
   const cards = interactions
     .map((interaction) => {
-      const texts = view.interactionTexts(def.name, interaction.name, isCombination);
+      const texts = view.interactionTexts(def.name, interaction.name);
       const description =
         texts.description === undefined ? '' : `<p class="muted">${escapeHtml(texts.description)}</p>`;
-      const label = view.interactionLabel(def.name, interaction.name, isCombination);
+      const label = view.interactionLabel(def.name, interaction.name);
       return card(
         escapeHtml(label) + headingIdentifier(label, interaction.name),
         description + view.describeHtml(def.name, (out) => interaction.describe(view.codex, out)),

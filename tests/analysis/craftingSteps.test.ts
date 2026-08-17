@@ -61,7 +61,7 @@ object_defs:
     const steps = stepsOf('beach');
 
     expect(steps.map((step) => step.name)).toEqual(['explore', 'rest']);
-    expect(steps[0].kind).toBe('action');
+    expect(steps[0].kind).toBe('interaction');
     // restは値もオブジェクトも動かさないので、何も起きない分岐が1つだけある。
     expect(steps[1].outputs).toEqual([]);
     expect(steps[1].outcomes).toEqual([{ probability: 1, spawns: [], deltas: [], assignments: [] }]);
@@ -121,7 +121,7 @@ object_defs:
   it('combinationはselfとwithタグが入力になり、destroyの有無が消費を決める', () => {
     const [husk] = stepsOf('coconut');
 
-    expect(husk.kind).toBe('combination');
+    expect(husk.kind).toBe('interaction');
     expect(husk.inputs).toEqual([
       // selfはdestroyされるので消費。
       { kind: 'object', objectGlobalId: id('coconut'), consumed: true, count: 1 },

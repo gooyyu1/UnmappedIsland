@@ -40,10 +40,12 @@ export function loadLocalization(pack: AssetPack | undefined): Localization {
 }
 
 /**
- * オブジェクトが持つメンバーのうち、表示文字列を定義できる種類。値はlocaleファイルの節名であり、
- * WorldCodex側の呼び名（props/actions/combinations）に揃えている。
+ * オブジェクトが持つメンバーのうち、表示文字列を定義できる種類。値はlocaleファイルの節名。
+ *
+ * **操作はactions/combinationsを分けずに1つの節へ書く**——プレイヤーから見れば操作は1つの語彙で、
+ * 押して選ぶか重ねるかは入口の違いでしかない（Localization.md）。
  */
-const MEMBER_CATEGORIES = ['props', 'actions', 'combinations'] as const;
+const MEMBER_CATEGORIES = ['props', 'interactions'] as const;
 type MemberCategory = (typeof MEMBER_CATEGORIES)[number];
 
 /** 全オブジェクト共通のメンバーの表示文字列を書くときの、オブジェクト識別子の代わりのキー。 */
@@ -215,12 +217,13 @@ export class ObjectTexts {
     return this.member('props', propertyName);
   }
 
-  action(actionName: string): Texts {
-    return this.member('actions', actionName);
-  }
-
-  combination(combinationName: string): Texts {
-    return this.member('combinations', combinationName);
+  /**
+   * 操作の表示文字列。**メニュー型（actions）とドラッグ型（combinations）を分けない**——
+   * プレイヤーから見れば操作は1つの語彙で、押して選ぶか重ねるかは入口の違いでしかない
+   * （同じ物に同名の操作を2つ置くことは、ロード時に弾く）。
+   */
+  interaction(interactionName: string): Texts {
+    return this.member('interactions', interactionName);
   }
 
   private member(category: MemberCategory, name: string): Texts {
