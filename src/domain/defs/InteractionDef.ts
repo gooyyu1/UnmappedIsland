@@ -1,14 +1,14 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
-import type { CraftingInput, CraftingStep } from './CraftingStep';
-import { collectOutputs } from './CraftingStep';
 import type { DefNames, DescriptionWriter } from './Description';
 import { text } from './Description';
+import type { EffectReader, WeightReading } from './EffectReader';
 import type { WeightSpec } from './PickEffect';
 import { resolveReferenceRoot } from './ReferenceRoot';
-import type { StaticValueResolver } from './ReferenceRoot';
+import type { ReferenceRoot } from './ReferenceRoot';
 import type { Requirement, Requirements } from './Requirement';
+import type { TypeMatchReading } from './TypeMatchRule';
 import { spendDuration } from './actionTime';
 
 /**
@@ -85,64 +85,28 @@ export abstract class InteractionDef {
     return matches(this.effect);
   }
 
-  /**
-   * この操作を1つの工程として見たもの（CraftingStep参照）。**何も生み出さない操作も返す**——
-   * 食べる・飲む操作はプロパティを返す終端の工程であり、出力の有無で絞るのは受け取る側の都合。
-   *
-   * 入力は常にself（この操作を宣言した型）で、消費されるかはdestroyの有無から分かる。
-   * ドラッグ型の相手（withタグ）は具象（CombinationDef）が足す。
-   *
-   * resolveは、durationとweightの`{subject, prop}`参照を定義だけから解く手立て。1つでも解けなければ
-   * hasUnresolvedReferencesが立つので、読み手はその行の数値を鵜呑みにせずに済む。
-   */
-  craftingStep(selfObjectGlobalId: number, resolve: StaticValueResolver): CraftingStep {
-    let unresolved = false;
-    const track: StaticValueResolver = (root, propertyGlobalId) => {
-      const value = resolve(root, propertyGlobalId);
-      if (value === undefined) unresolved = true;
-      return value;
-    };
-
-    const outcomes = this.effect.collectOutcomes(track);
-    const inputs: CraftingInput[] = [
-      {
-        kind: 'object',
-        objectGlobalId: selfObjectGlobalId,
-        consumed: this.effect.destroys('self'),
-        count: 1,
-      },
-      ...this.extraCraftingInputs(this.effect),
-    ];
-    return {
-      kind: this.craftingKind,
-      name: this.name,
-      ownerGlobalId: selfObjectGlobalId,
-      inputs,
-      outputs: collectOutputs(outcomes),
-      // プレイヤーが手を止めている間に時間が進むので、払う時間と経過する時間は等しい。
-      laborMinutes: this.staticMinutes(track),
-      elapsedMinutes: this.staticMinutes(track),
-      outcomes,
-      hasUnresolvedReferences: unresolved,
-    };
+  /** この操作が何を起こすと宣言しているかを読み上げる（EffectReader参照）。 */
+  read(reader: EffectReader): void {
+    this.effect.read(reader);
   }
 
-  /**
-   * この操作にかかるゲーム内時間（分）を、実行時のオブジェクトを使わずに解いた値。durationを省いて
-   * いれば0、参照が解けなければ0（工程の側がhasUnresolvedReferencesで印を持つ）。
-   */
-  private staticMinutes(resolve: StaticValueResolver): number {
-    if (this.duration === undefined) return 0;
-    return Math.trunc(this.duration.staticResolve(resolve) ?? 0);
+  /** この操作がtargetのオブジェクトを消すか（ActiveEffect.destroys参照）。 */
+  destroys(target: ReferenceRoot): boolean {
+    return this.effect.destroys(target);
   }
 
-  /** self以外の入力（ドラッグ型のwithタグ）。メニュー型には無い。 */
-  protected extraCraftingInputs(_effect: ActiveEffect): readonly CraftingInput[] {
-    return [];
+  /** 所要時間の宣言（WeightReading参照）。durationを省いていればundefined＝時間を消費しない。 */
+  get durationReading(): WeightReading | undefined {
+    return this.duration?.reading;
   }
 
-  /** クラフト工程としての種別（表示名の引き方が違う、CraftingStep参照）。 */
-  protected abstract get craftingKind(): 'action' | 'combination';
+  /** 入口の別（メニュー型かドラッグ型か）。表示名の引き方がこれで変わる（Localization.md）。 */
+  abstract get kind(): 'action' | 'combination';
+
+  /** 重ねる相手の指定（12.1節）。メニュー型は相手を取らないのでundefined。 */
+  get draggedReading(): TypeMatchReading | undefined {
+    return undefined;
+  }
 
   /**
    * 宣言順で最初に満たしていない要件（14節）。すべて満たしていればundefined＝今この操作を実行できる。

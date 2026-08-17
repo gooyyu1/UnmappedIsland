@@ -5,10 +5,8 @@ import { INT32_MAX } from '../../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
 import type { AlertLevel } from './AlertLevel';
 import { ALERT_LEVELS } from './AlertLevel';
-import type { StepOutcome } from './CraftingStep';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { propertyTagRef, stageRef, text } from './Description';
-import type { StaticValueResolver } from './ReferenceRoot';
 
 /**
  * 値がどちらへ動くと悪いか（PropertyDef.alertDirection）。mixedは「両端が悪い」並びで、バーの
@@ -126,20 +124,6 @@ export class PropertyStage {
 /** range系イベント（6.3節）の名前。 */
 export type RangeEventLabel = 'on_overflow' | 'on_shortfall';
 
-/**
- * range系イベント（6.3節）が端で何をするかを、実行時のオブジェクトを使わずに読んだもの。
- *
- * returnedToSelfが正なら、そのイベントは自分の値を戻す＝**繰り返す仕掛け**（罠の判定周期、
- * TrapSystem.md 2節）。destroysSelfなら、そこで自分が消える＝**寿命**（罠の朽ち、
- * DurabilitySystem.md 2節）。
- */
-export interface RangeEventReadout {
-  readonly label: RangeEventLabel;
-  readonly returnedToSelf: number;
-  readonly destroysSelf: boolean;
-  readonly outcomes: readonly StepOutcome[];
-}
-
 /** 段（6.4節）がrangeの中で占める区間。両端とも0〜1で、startがminの側。 */
 export interface StageSpan {
   readonly start: number;
@@ -173,7 +157,7 @@ export class PropertyDef {
   readonly name: string;
 
   /** 初期値（スカラー）。initialValueRangeを持つ場合は、RNGを使わない生成でのフォールバック（= range.min）。 */
-  private readonly initialValue: number;
+  readonly initialValue: number;
 
   /** value: {min, max} 記法による初期値のランダム範囲（6.2節、createValue参照）。無ければundefined。 */
   private readonly initialValueRange: PropertyRange | undefined;
@@ -234,7 +218,7 @@ export class PropertyDef {
    * 実効値に加算するか。祖先が見つからなければ寄与0。parentではなくancestorなのは、直接の親が
    * このプロパティを持たない場合に備えるため（例: ambient_temperatureは部屋が持つ）。
    */
-  private readonly inherit: boolean;
+  readonly inherit: boolean;
 
   /**
    * このプロパティに付いたタグのグローバルIDの一覧（6.7節）。object_defのタグ（4.1節）とは別の
@@ -309,19 +293,6 @@ export class PropertyDef {
   }
 
   /**
-   * このプロパティの、**定義だけから読める値**（StaticValueResolver参照）。抽選つきの初期値
-   * （`value: {min, max}`）はRNGを使わない生成と同じ扱いで、initialValueがそのまま答えになる。
-   *
-   * inheritなら祖先の値も足す（6.5節）。祖先を辿れない文脈ではundefined——0を返すと「祖先が
-   * 宣言していない」と区別が付かず、罠の候補が全部0になったのか土地が黙っているのか読めなくなる。
-   */
-  staticValue(ancestorValue: (propertyGlobalId: number) => number | undefined): number | undefined {
-    if (!this.inherit) return this.initialValue;
-    const inherited = ancestorValue(this.globalId);
-    return inherited === undefined ? undefined : this.initialValue + inherited;
-  }
-
-  /**
    * 初期値の書き表し（Description参照）。一覧の表など、1行で済ませたい場所向けに断片で返す。
    */
   describeInitialValue(names: DefNames): readonly DescriptionToken[] {
@@ -384,65 +355,17 @@ export class PropertyDef {
       if (matches(effect)) this.describeRangeEvent(label, effect, names, out);
   }
 
+  /** 名前で指したrange系イベント（6.3節）。宣言が無ければundefined。 */
+  rangeEvent(label: RangeEventLabel): ActiveEffect | undefined {
+    return label === 'on_overflow' ? this.onOverflow : this.onShortfall;
+  }
+
   /** 宣言されているrange系イベントとその名前。 */
   private rangeEvents(): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
     const events: (readonly [RangeEventLabel, ActiveEffect])[] = [];
     if (this.onOverflow !== undefined) events.push(['on_overflow', this.onOverflow]);
     if (this.onShortfall !== undefined) events.push(['on_shortfall', this.onShortfall]);
     return events;
-  }
-
-  /**
-   * range系イベント（6.3節）が端で何をするかを、実行時のオブジェクトを使わずに読む
-   * （RangeEventReadout参照）。
-   */
-  rangeEventReadouts(resolve: StaticValueResolver): readonly RangeEventReadout[] {
-    return this.rangeEvents().map(([label, effect]) => {
-      const outcomes = effect.collectOutcomes(resolve);
-      let returnedToSelf = 0;
-      for (const outcome of outcomes)
-        for (const delta of outcome.deltas)
-          if (delta.target === 'self' && delta.propertyGlobalId === this.globalId)
-            returnedToSelf += outcome.probability * delta.amount;
-
-      return { label, returnedToSelf, destroysSelf: effect.destroys('self'), outcomes };
-    });
-  }
-
-  /**
-   * この値がvalueになったとき、rangeの外へ出るなら、そこで起こること（RangeEventReadout参照）。
-   * 範囲に収まるならundefined。
-   *
-   * **一撃で端まで動かす効果も、range系イベントの引き金になる**（6.3節）。仕留めの一撃は血を0に
-   * するだけで、獲物を死体へ置き換えるのは`blood`の`on_shortfall`——これを繋がないと、死体の
-   * 作り方がどこにも無いことになる。
-   */
-  rangeEventAt(value: number, resolve: StaticValueResolver): RangeEventReadout | undefined {
-    if (this.range === undefined) return undefined;
-
-    const label: RangeEventLabel | undefined =
-      value > this.range.max ? 'on_overflow' : value < this.range.min ? 'on_shortfall' : undefined;
-    if (label === undefined) return undefined;
-    return this.rangeEventReadouts(resolve).find((readout) => readout.label === label);
-  }
-
-  /**
-   * 値がtick毎にperTickずつ動いたとき、rangeの端を割る（超える）までのtick数。端まで届かない
-   * 向きへ動く場合と、rangeを持たない場合はundefined。
-   *
-   * 端は「割った瞬間」なので、下限側は`min - 1`まで、上限側は`max + 1`までの距離を数える
-   * （range系イベントが発火するのはrangeの外へ出た瞬間、6.3節）。
-   */
-  ticksToRangeEnd(
-    perTick: number,
-    ancestorValue: (propertyGlobalId: number) => number | undefined,
-  ): number | undefined {
-    if (this.range === undefined || perTick === 0) return undefined;
-    const value = this.staticValue(ancestorValue);
-    if (value === undefined) return undefined;
-
-    const distance = perTick < 0 ? value - (this.range.min - 1) : this.range.max + 1 - value;
-    return distance <= 0 ? undefined : distance / Math.abs(perTick);
   }
 
   /** このプロパティにタグ（6.7節）が付いているか。 */

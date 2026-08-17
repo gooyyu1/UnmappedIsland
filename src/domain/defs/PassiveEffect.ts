@@ -445,6 +445,12 @@ export class TransferPassiveEffect extends PassiveEffect {
   /** 輸送の両端を、在庫の続く間だけ動く増減（capped）として書き出す。量は輸送自身が名乗る。 */
   override collectTickDeltas(add: (delta: TickDelta) => void): void {
     const gate = this.gate.staticGate;
-    for (const delta of this.transfer.deltas) add({ ...delta, gate, capped: true });
+    const reading = this.transfer.reading;
+    const deltas = [
+      { target: reading.from, propertyGlobalId: reading.fromPropertyGlobalId, amount: -reading.amount },
+      { target: reading.to, propertyGlobalId: reading.toPropertyGlobalId, amount: reading.toAmount },
+      ...reading.linked,
+    ];
+    for (const delta of deltas) add({ ...delta, gate, capped: true });
   }
 }

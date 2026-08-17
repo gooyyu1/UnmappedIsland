@@ -1,14 +1,13 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
-import type { CraftingInput } from './CraftingStep';
 import type { DefNames, DescriptionWriter } from './Description';
 import { text } from './Description';
 import { InteractionDef } from './InteractionDef';
 import type { ObjectDef } from './ObjectDef';
 import type { WeightSpec } from './PickEffect';
 import type { Requirements } from './Requirement';
-import type { TypeMatchRule } from './TypeMatchRule';
+import type { TypeMatchReading, TypeMatchRule } from './TypeMatchRule';
 
 /**
  * ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。素材側のobject_defに1つだけ定義し、
@@ -16,7 +15,8 @@ import type { TypeMatchRule } from './TypeMatchRule';
  * withは、相手とのマッチング条件（タグかobject_defのid、12.1節）。
  */
 export class CombinationDef extends InteractionDef {
-  private readonly with: TypeMatchRule;
+  /** 相手とのマッチング条件（12.1節）。 */
+  readonly with: TypeMatchRule;
 
   constructor(
     name: string,
@@ -33,13 +33,12 @@ export class CombinationDef extends InteractionDef {
     out.write(text('with: '), ...this.with.describe(names), text('のカードのドロップ'));
   }
 
-  protected get craftingKind(): 'combination' {
+  get kind(): 'combination' {
     return 'combination';
   }
 
-  /** ドラッグされてくる相手はwithが指す。消費されるかはdraggedへのdestroyの有無から分かる。 */
-  protected override extraCraftingInputs(effect: ActiveEffect): readonly CraftingInput[] {
-    return [this.with.craftingInput(effect.destroys('dragged'))];
+  override get draggedReading(): TypeMatchReading {
+    return this.with.reading;
   }
 
   /** draggedDefがこのcombinationのwithに当てはまれば真（12.1節）。 */

@@ -5,9 +5,8 @@ import type { WorldSession } from '../runtime/WorldSession';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { objectRef, propertyRef, signedNumber, text } from './Description';
 import type { ObjectRef } from './ObjectRef';
-import type { PropertyDelta, StepOutcome } from './CraftingStep';
-import { UNCHANGED_OUTCOMES, combineOutcomes } from './CraftingStep';
-import type { ReferenceRoot, StaticValueResolver } from './ReferenceRoot';
+import type { EffectReader, LinkedAddReading, TransferReading } from './EffectReader';
+import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
  * 「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。対象の解決と適用まで自分で行う。
@@ -48,15 +47,10 @@ export abstract class ActiveEffect {
   }
 
   /**
-   * この効果を「起こりうる結果」の一覧に開く（StepOutcome参照）。pickは候補ごとに枝分かれし、
-   * 宣言順の合成は枝の直積になる。resolveは、weightの`{subject, prop}`参照を定義だけから
-   * 数値へ落とす手立て。
-   *
-   * 既定は「何も起きない枝が1つ」——値もオブジェクトも動かさない効果（destroy）はこれで足りる。
+   * この効果が何を宣言しているかを読み上げる（EffectReader参照）。**抽象なのは取りこぼしを防ぐため**
+   * ——既定を持たせると、動詞を1つ足したときに読み手が黙って何も受け取らなくなる。
    */
-  collectOutcomes(_resolve: StaticValueResolver): readonly StepOutcome[] {
-    return UNCHANGED_OUTCOMES;
-  }
+  abstract read(reader: EffectReader): void;
 
   /**
    * この効果がtargetのオブジェクトを消しうるか（クラフトネットワークが「消費される入力」の判定に使う）。
@@ -104,11 +98,8 @@ export class ActiveEffects extends ActiveEffect {
     return this.operations.some((operation) => operation.spawns(objectGlobalId));
   }
 
-  override collectOutcomes(resolve: StaticValueResolver): readonly StepOutcome[] {
-    let outcomes = UNCHANGED_OUTCOMES;
-    for (const operation of this.operations)
-      outcomes = combineOutcomes(outcomes, operation.collectOutcomes(resolve));
-    return outcomes;
+  read(reader: EffectReader): void {
+    for (const operation of this.operations) operation.read(reader);
   }
 
   override destroys(target: ReferenceRoot): boolean {
@@ -148,15 +139,8 @@ export class SetEffect extends ActiveEffect {
     );
   }
 
-  override collectOutcomes(): readonly StepOutcome[] {
-    return [
-      {
-        probability: 1,
-        spawns: [],
-        deltas: [],
-        assignments: [{ target: this.target, propertyGlobalId: this.propertyGlobalId, value: this.value }],
-      },
-    ];
+  read(reader: EffectReader): void {
+    reader.set(this.target, this.propertyGlobalId, this.value);
   }
 
   affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
@@ -208,13 +192,13 @@ export class AddEffect extends ActiveEffect {
     out.write(...this.describeTokens(names));
   }
 
-  /** この命令が動かすプロパティ1件（PropertyDelta参照）。transferのlinked_addも同じ形で自分を名乗る。 */
-  get delta(): PropertyDelta {
-    return { target: this.target, propertyGlobalId: this.propertyGlobalId, amount: this.amount };
+  read(reader: EffectReader): void {
+    reader.add(this.target, this.propertyGlobalId, this.amount);
   }
 
-  override collectOutcomes(): readonly StepOutcome[] {
-    return [{ probability: 1, spawns: [], deltas: [this.delta], assignments: [] }];
+  /** transferのlinked_addが、自分を1件として名乗るための読み上げ（LinkedAddReading参照）。 */
+  get linkedReading(): LinkedAddReading {
+    return { target: this.target, propertyGlobalId: this.propertyGlobalId, amount: this.amount };
   }
 
   /** transferのlinked_add（比例して効く）が、自分の行へ書き足せるように断片で返す。 */
@@ -264,6 +248,10 @@ export class DestroyEffect extends ActiveEffect {
 
   override destroys(target: ReferenceRoot): boolean {
     return this.target.isRoot(target);
+  }
+
+  read(reader: EffectReader): void {
+    reader.destroy(this.target);
   }
 }
 
@@ -339,15 +327,8 @@ export class SpawnEffect extends ActiveEffect {
     return this.objectGlobalId === objectGlobalId;
   }
 
-  override collectOutcomes(): readonly StepOutcome[] {
-    return [
-      {
-        probability: 1,
-        spawns: [{ objectGlobalId: this.objectGlobalId, count: this.count }],
-        deltas: [],
-        assignments: [],
-      },
-    ];
+  read(reader: EffectReader): void {
+    reader.spawn(this.objectGlobalId, this.count);
   }
 }
 
@@ -431,21 +412,25 @@ export class TransferEffect extends ActiveEffect {
   }
 
   /**
-   * この輸送が動かすプロパティ（PropertyDelta参照）。出す側は`amount`だけ減り、受け取る側は
-   * `to_amount`だけ増え、linked_addは全量移った場合の値で並ぶ。
+   * この輸送の宣言（TransferReading参照）。出す側は`amount`だけ減り、受け取る側は`to_amount`だけ
+   * 増え、linked_addは全量移った場合の値で並ぶ。
    *
    * **在庫が満ちている前提の上限。** 実際に動く量は出せる量と空きで目減りする（applyがそれを見る）。
    */
-  get deltas(): readonly PropertyDelta[] {
-    return [
-      { target: this.fromObject, propertyGlobalId: this.fromPropertyGlobalId, amount: -this.amount },
-      { target: this.toObject, propertyGlobalId: this.toPropertyGlobalId, amount: this.toAmount },
-      ...this.linkedAdd.map((linked) => linked.delta),
-    ];
+  get reading(): TransferReading {
+    return {
+      from: this.fromObject,
+      fromPropertyGlobalId: this.fromPropertyGlobalId,
+      to: this.toObject,
+      toPropertyGlobalId: this.toPropertyGlobalId,
+      amount: this.amount,
+      toAmount: this.toAmount,
+      linked: this.linkedAdd.map((linked) => linked.linkedReading),
+    };
   }
 
-  override collectOutcomes(): readonly StepOutcome[] {
-    return [{ probability: 1, spawns: [], deltas: this.deltas, assignments: [] }];
+  read(reader: EffectReader): void {
+    reader.transfer(this.reading);
   }
 
   /**
