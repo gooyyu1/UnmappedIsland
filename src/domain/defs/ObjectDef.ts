@@ -270,11 +270,11 @@ export class ObjectDef {
   }
 
   /**
-   * この型のレシピが、objectGlobalIdの型を素材か道具として要求しているか（材料側からの逆引き）。
+   * この型のレシピが、candidateDefを素材か道具として要求しているか（材料側からの逆引き）。
    * 「何になるのか」を知りたい読み手には完成品＝この型が答えなので、どの工程で使うかまでは返さない。
    */
-  usesInRecipes(objectGlobalId: number): boolean {
-    return this.recipes.some((recipe) => recipe.requires(objectGlobalId));
+  usesInRecipes(candidateDef: ObjectDef): boolean {
+    return this.recipes.some((recipe) => recipe.requires(candidateDef));
   }
 
   /**
@@ -534,5 +534,10 @@ export class ObjectDefTable {
 
   get(globalId: number): ObjectDef {
     return this.byGlobalId[globalId];
+  }
+
+  /** 全ての型を宣言順に。タグに当てはまる型を挙げる用途（TypeMatchRule.candidates）で使う。 */
+  [Symbol.iterator](): Iterator<ObjectDef> {
+    return this.byGlobalId[Symbol.iterator]();
   }
 }

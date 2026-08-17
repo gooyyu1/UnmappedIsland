@@ -2,38 +2,41 @@ import type { WorldObject } from '../runtime/WorldObject';
 import type { CraftingStep, StepOutcome } from './CraftingStep';
 import { collectOutputs } from './CraftingStep';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { objectRef, text } from './Description';
+import { text } from './Description';
+import type { ObjectDef } from './ObjectDef';
+import type { TypeMatchRule } from './TypeMatchRule';
 import type { ReferenceRoot } from './ReferenceRoot';
 import type { Requirement, Requirements } from './Requirement';
 
-/** 工程が要求する素材または道具1件（GameElementDefinition.md 13.1節）。 */
+/**
+ * 工程が要求する素材または道具1件（GameElementDefinition.md 13.1節）。
+ *
+ * **要求はタグでも書ける**（枠の`accept`・combinationsの`with`と同じTypeMatchRule）。道具は
+ * 「その用途に使える物」であって特定の型ではないので、刃物を`cutting_tool`で求められる。
+ */
 export class RecipeRequirementDef {
-  /** 要求する型のグローバルID。 */
-  readonly objectGlobalId: number;
+  /** 要求する型の指定（型そのもの、またはタグ）。 */
+  readonly match: TypeMatchRule;
 
   readonly count: number;
 
   /** trueなら素材（消費される）、falseなら道具（存在確認のみ）。 */
   readonly consume: boolean;
 
-  constructor(objectGlobalId: number, count: number, consume: boolean) {
-    this.objectGlobalId = objectGlobalId;
+  constructor(match: TypeMatchRule, count: number, consume: boolean) {
+    this.match = match;
     this.count = count;
     this.consume = consume;
   }
 
-  /** この要求がobjectGlobalIdの型を名指ししているか（素材・道具のどちらでも）。 */
-  requires(objectGlobalId: number): boolean {
-    return this.objectGlobalId === objectGlobalId;
+  /** この要求にcandidateDefが当てはまるか（素材・道具のどちらでも）。 */
+  requires(candidateDef: ObjectDef): boolean {
+    return this.match.matches(candidateDef);
   }
 
   /** この要求を書き表す（Description参照）。 */
   describe(names: DefNames): readonly DescriptionToken[] {
-    return [
-      text(this.consume ? '素材: ' : '道具: '),
-      objectRef(names.objectName(this.objectGlobalId)),
-      text(` ×${this.count}`),
-    ];
+    return [text(this.consume ? '素材: ' : '道具: '), ...this.match.describe(names), text(` ×${this.count}`)];
   }
 }
 
@@ -49,9 +52,9 @@ export class RecipeStepDef {
     this.durationMinutes = durationMinutes;
   }
 
-  /** この工程がobjectGlobalIdの型を要求しているか。 */
-  requires(objectGlobalId: number): boolean {
-    return this.requirements.some((requirement) => requirement.requires(objectGlobalId));
+  /** この工程がcandidateDefを要求しているか。 */
+  requires(candidateDef: ObjectDef): boolean {
+    return this.requirements.some((requirement) => requirement.requires(candidateDef));
   }
 
   /** この工程を書き出す（Description参照）。stepNumberは1始まりの見出し用の番号。 */
@@ -98,9 +101,9 @@ export class RecipeDef {
     return this.steps.reduce((sum, step) => sum + step.durationMinutes, 0);
   }
 
-  /** このレシピがobjectGlobalIdの型を、どこかの工程で素材か道具として要求しているか。 */
-  requires(objectGlobalId: number): boolean {
-    return this.steps.some((step) => step.requires(objectGlobalId));
+  /** このレシピがcandidateDefを、どこかの工程で素材か道具として要求しているか。 */
+  requires(candidateDef: ObjectDef): boolean {
+    return this.steps.some((step) => step.requires(candidateDef));
   }
 
   /**
@@ -119,11 +122,7 @@ export class RecipeDef {
       name: this.name,
       ownerGlobalId: productGlobalId,
       inputs: this.steps.flatMap((step) =>
-        step.requirements.map((requirement) => ({
-          kind: 'object' as const,
-          objectGlobalId: requirement.objectGlobalId,
-          consumed: requirement.consume,
-        })),
+        step.requirements.map((requirement) => requirement.match.craftingInput(requirement.consume)),
       ),
       outputs: collectOutputs(outcomes),
       laborMinutes: this.totalMinutes,

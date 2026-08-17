@@ -27,32 +27,49 @@ object_defs:
         # 積めるかさの合計（500L）。**縛りようの上限であって、実際の限界は重さ**——嵩いっぱいに
         # 積めば、その前に段（weight）が速さを削り始める。
         capacity: 500000
+      # 組み込んだ部品（Dwellings.md 1節の構造スロットと同じ形）。積荷とは別の並びにする——
+      # 帆は「積んである物」ではなく筏の一部で、外すまで効き続ける。
+      #
+      # **中へ入って札を押すと開く**（現在地の札 → オブジェクトウィンドウ）。積荷のスロット
+      # （main_item_slot）は外から札を押して開くので、2つは操作の入口から分かれている。
+      structure:
+        cells:
+          - {accept: {tag: sail}, max: 1}
     props:
-      # 丸太6本ぶんの自重。中身の重さは実効値に足されるので（7.4節）、積むほど重くなる。
-      # **積むほど遅い**のは段が sail_speed を削るから（GameEndings.md 4節）。海の上で積荷を捨てれば
-      # 段が下がり、そのぶん速くなる——専用の仕組みは要らない。
+      # 材料ぶんの自重（丸太6本120kg＋ロープ4本2.4kg）。中身の重さは実効値に足されるので（7.4節）、
+      # 積むほど重くなる。**積むほど遅い**のは段が sail_speed を削るから（GameEndings.md 4節）。
+      # 海の上で積荷を捨てれば段が下がり、そのぶん速くなる——専用の仕組みは要らない。
+      #
+      # **段の境目は自重＋積荷で書く。** 段が見るのは実効値なので、積荷の量で言い表すには自重を
+      # 足した値になる。自重を変えるときは境目も一緒に動かすこと（動かさないと積める量が変わる）。
       weight:
-        value: 120000
+        value: 122400
         stages:
           # 80kgまでの積荷。
           - name: light
           # 80〜160kg。
           - name: laden
-            min: 200000
+            min: 202400
             passives:
               - modify: {self: {sail_speed: -1}}
           # 160〜240kg。
           - name: heavy
-            min: 280000
+            min: 282400
             passives:
               - modify: {self: {sail_speed: -3}}
           # 240kg超。追い風でようやく進む。
           - name: overladen
-            min: 360000
+            min: 362400
             passives:
               - modify: {self: {sail_speed: -6}}
-      # 航海の速さ（実効値）。素の値は0で、寄与は3つ——外洋の海流（open_sea の modify）、
-      # 風向き（下の passives）、積載の重さ（weight の段）。陸に居る間はどれも効かないので0になる。
+      # 浮いているか。外洋が子へ配る（open_sea の modify）ので、海に出ている間だけ1になる。
+      #
+      # **帆のような部品が「陸では効かない」と言うための足場。** 筏自身の寄与は親の型で絞れるが
+      # （下の passives の `parent matches sea`）、部品から見た海は親の親で、条件では指せない。
+      afloat: {value: 0}
+      # 航海の速さ（実効値）。素の値は0で、寄与は4つ——外洋の海流（open_sea の modify）、
+      # 風向き（下の passives）、積載の重さ（weight の段）、組み込んだ帆（rawhide_sail）。
+      # 陸に居る間はどれも効かないので0になる。
       sail_speed:
         value: 0
         range: {min: 0, max: 20}
@@ -116,8 +133,27 @@ object_defs:
               - {object: rope, count: 4, consume: true}
             duration: 180
     actions:
-      # 航海に出る。乗り込むところまでを1手に含める——降りられるのは本土だけなので、
-      # 乗る手と出る手を分けても選べることは増えない。
+      # 乗り込む。**筏は場所なので、中の仕事は中に入らないとできない**——積荷を並べる・帆を張るは
+      # 筏のスロットへの操作で、岸に立ったままでは届かない。
+      #
+      # 既に中に居るときは移動が空振りするだけなので、条件は置かない。そもそも中からは筏の札が
+      # 見えない（現在地の札になる）ので、押す機会が無い。
+      board:
+        showMenu: always
+        duration: 5
+        move: {subject: actor, to: self}
+
+      # 降りる。海の上では降りられない（泳いで戻る手はまだ無い）。
+      disembark:
+        showMenu: always
+        conditions:
+          - reason: at_sea
+            not: {subject: parent, matches: {tag: sea}}
+        duration: 5
+        move: {subject: actor, to: parent}
+
+      # 航海に出る。乗り込むところまでを1手に含める——岸から直に出せるほうが手数が少なく、
+      # 既に乗っていれば移動が空振りするだけで結果は同じになる。
       set_sail:
         showMenu: always
         conditions:
@@ -128,6 +164,44 @@ object_defs:
         move:
           - {subject: actor, to: self}
           - {subject: self, to_object: open_sea}
+
+  # 生皮の帆。筏の構造スロットへ組み込むと、風を受ける量が増える（sail_speed +2）。
+  #
+  # **段をちょうど1つ上げる最小の値が2。** 向かい風（海流+3、風-3）では素の筏が `becalmed` で
+  # 止まるが、+2 で `slow` に届いて進み始める。+3 にしても向かい風の段は変わらず、盤面に差が
+  # 出ない。後から入るなめし革の帆を+4にすれば、悪い日ほど差が開く伸び方になる。
+  #
+  # 質量は材料の和（生皮6×600 + 糸10×100 + 太い枝2×1000 + ロープ2×600 = 7800g）。
+  rawhide_sail:
+    tags: [item, sail]
+    props:
+      weight: {value: 7800}
+      # 畳んでも枠と革はかさばる。筏の積載（500L）に対しては小さい。
+      volume: {value: 15000}
+    passives:
+      # 効き先は親（＝組み込まれた筏）。積荷のスロットに置いても親は同じなので、構造スロットに
+      # 入れることを強いているのは枠のaccept（tag: sail）であって、この宣言ではない。
+      #
+      # **浮いている間だけ効かせる。** 条件を付けないと、浜に置いた筏の sail_speed が2になって
+      # 段が `slow` へ上がり、陸のまま voyage_progress が溜まって本土へ着いてしまう（実際に起きた）。
+      - conditions:
+          - {subject: parent, prop: afloat, gt: 0}
+        modify: {parent: {sail_speed: 2}}
+    # 解放条件（conditions、13.3節）はまだ置かない（筏・編み籠と同じ理由）。
+    recipes:
+      sewn:
+        steps:
+          # 帆柱と帆桁を組んで縛る。
+          - requires:
+              - {object: thick_branch, count: 2, consume: true}
+              - {object: rope, count: 2, consume: true}
+            duration: 120
+          # 生皮を糸で縫い合わせ、枠へ張る。骨針は道具なので減らない。
+          - requires:
+              - {object: rawhide, count: 6, consume: true}
+              - {object: yarn, count: 10, consume: true}
+              - {tag: sewing_tool, count: 1, consume: false}
+            duration: 300
 
   # 外洋。島と本土の間の海で、世界に1つだけ在る（15節）。
   #
@@ -141,6 +215,9 @@ object_defs:
       # 海流。浮かんでいるものを本土の方へ押し続ける。風が凪いでも進みが完全には止まらないのは
       # これがあるためで、向かい風はこれを打ち消す量として書いてある（筏の sail_speed 参照）。
       - modify: {child: {sail_speed: 3}}
+      # 浮いていること自体を子へ配る。組み込んだ部品が「陸では効かない」と言うために読む
+      # （筏の afloat 参照）。
+      - modify: {child: {afloat: 1}}
 
   # 本土。着いた時点で周回が終わる場所で、着いた後のことは描かない（GameEndings.md 3節）。
   # 世界に1つだけ在り、筏の voyage_progress が上限へ達したときだけ、そこへ移る。

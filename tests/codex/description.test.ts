@@ -215,10 +215,11 @@ describe('生まれる側・材料側からの逆引き', () => {
   it('材料としても道具としても、使う型から完成品を辿れる', () => {
     const bowl = objectDef('bowl');
 
-    expect(bowl.usesInRecipes(codex.objectNames.getId('coconut_half'))).toBe(true);
+    const def = (name: string) => codex.objects.get(codex.objectNames.getId(name));
+    expect(bowl.usesInRecipes(def('coconut_half'))).toBe(true);
     // 消費しない道具（consume: false）も、そのレシピに関わる型として数える。
-    expect(bowl.usesInRecipes(codex.objectNames.getId('sharp_stone'))).toBe(true);
-    expect(bowl.usesInRecipes(codex.objectNames.getId('coconut'))).toBe(false);
+    expect(bowl.usesInRecipes(def('sharp_stone'))).toBe(true);
+    expect(bowl.usesInRecipes(def('coconut'))).toBe(false);
   });
 });
 

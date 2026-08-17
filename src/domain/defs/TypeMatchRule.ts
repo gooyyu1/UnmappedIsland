@@ -49,6 +49,32 @@ export class TypeMatchRule {
       : [objectRef(names.objectName(this.target)), text('そのもの')];
   }
 
+  /**
+   * 同じ指定どうしをまとめるための鍵。タグとobject_defはIDの空間が別なので、種類を混ぜて比べない
+   * ようにここで前置きを付ける（レシピの要求を型ごとに畳むのに使う、crafting.remainingRequirements）。
+   */
+  get key(): string {
+    return `${this.kind}:${this.target}`;
+  }
+
+  /** この指定に当てはまる型を全部挙げる。1つに定まらない指定（タグ）を絵で見せるのに使う。 */
+  candidates(defs: Iterable<ObjectDef>): readonly ObjectDef[] {
+    return [...defs].filter((def) => this.matches(def));
+  }
+
+  /**
+   * 枠の`accept`（7.2節）として書き出した形。レシピの要求から製作中オブジェクトの枠を組み立てる
+   * （inProgressObjects）ときに、宣言をYAMLへ戻すために使う。
+   */
+  acceptSpec(names: {
+    objectName(globalId: number): string;
+    tagName(globalId: number): string;
+  }): Record<string, string> {
+    return this.kind === 'tag'
+      ? { tag: names.tagName(this.target) }
+      : { object: names.objectName(this.target) };
+  }
+
   /** この指定で相手を求める工程の入力1つ（CraftingStep参照）。consumedはその工程が相手を消すか。 */
   craftingInput(consumed: boolean): CraftingInput {
     return this.kind === 'tag'

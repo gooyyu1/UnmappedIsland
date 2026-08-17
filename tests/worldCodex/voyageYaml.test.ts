@@ -74,6 +74,48 @@ describe('筏と航海', () => {
     expect(raft.parent, '筏は内陸に残る').toBe(landing);
   });
 
+  /** 帆を1枚作って、筏の構造スロットへ組み込む。 */
+  function rigSail(game: NewGameSession, raft: WorldObject): WorldObject {
+    const sail = game.session.spawn(codex.objectNames.getId('rawhide_sail'));
+    const failure = sail.moveToSlot(raft, codex.slotNames.getId('structure'));
+    if (failure !== undefined) throw new Error(`帆を組み込めません: ${failure}`);
+    return sail;
+  }
+
+  it('帆は浮いている間だけ効く（浜に置いたままでは進まない）', () => {
+    const { game, raft } = ready();
+    rigSail(game, raft);
+    setWind(game, 'tailwind');
+
+    tick(game);
+
+    // **帆に条件を付けないとここが2になり、段がslowへ上がって浜のまま本土へ着く。**
+    expect(propertyOf(raft, 'sail_speed'), '浜では帆も効かない').toBe(0);
+    expect(propertyOf(raft, 'voyage_progress'), '浜では進まない').toBe(0);
+  });
+
+  it('帆を張ると、同じ風でも段が1つ上がる', () => {
+    // **積荷は降ろす。** 出航のしたくの積荷（ヤシの実70個）とプレイヤーの体重では段がheavyまで
+    // 落ちていて、向かい風では帆を張っても下限0に張り付いたまま差が出ない。
+    const sailSpeedIn = (wind: string, withSail: boolean): number => {
+      const { game, raft } = ready();
+      if (withSail) rigSail(game, raft);
+      raft.tryExecuteAction('set_sail', game.player.instance, game.session);
+      for (const cargo of [...raft.children()]) {
+        if (cargo !== game.player.instance && cargo.def.name !== 'rawhide_sail') cargo.destroy();
+      }
+      setWind(game, wind);
+      tick(game);
+      return propertyOf(raft, 'sail_speed');
+    };
+
+    // 向かい風（海流+3、風-3）は帆が無ければ0。帆の+2でslowへ届く。
+    expect(sailSpeedIn('headwind', false), '帆が無ければ向かい風では止まる').toBe(0);
+    expect(sailSpeedIn('headwind', true), '帆があれば向かい風でも進む').toBe(2);
+    // 追い風でも同じだけ足される。
+    expect(sailSpeedIn('tailwind', true) - sailSpeedIn('tailwind', false), '寄与は2').toBe(2);
+  });
+
   it('陸に居る間は進まない（風も海流も効かない）', () => {
     const { game, raft } = ready();
     setWind(game, 'tailwind');

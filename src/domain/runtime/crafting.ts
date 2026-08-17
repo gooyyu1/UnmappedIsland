@@ -1,4 +1,5 @@
 import type { WorldCodex } from '../defs/WorldCodex';
+import { RecipeRequirementDef } from '../defs/RecipeDef';
 import type { RecipeDef, RecipeStepDef } from '../defs/RecipeDef';
 import { spendDuration } from '../defs/actionTime';
 import type { WorldObject } from './WorldObject';
@@ -25,19 +26,54 @@ export function currentStep(recipe: RecipeDef, progress: number): RecipeStepDef 
  * 枠は型ごとにまとまっている（inProgressObjects.materialCells）ので、「この型はもう要らない」も
  * 「あといくつ要る」も、この表だけで答えられる。
  */
-export function remainingRequirements(recipe: RecipeDef, progress: number): Map<number, number> {
-  const remaining = new Map<number, number>();
+export function remainingRequirements(recipe: RecipeDef, progress: number): readonly RecipeRequirementDef[] {
+  const remaining = new Map<string, RecipeRequirementDef>();
   let consumed = 0;
   for (const step of recipe.steps) {
     consumed += step.durationMinutes;
     if (progress >= consumed) continue;
-    for (const requirement of step.requirements)
+    for (const requirement of step.requirements) {
+      const merged = remaining.get(requirement.match.key);
+      // 同じ指定を複数の工程が要求するなら、枠は1つで足りるので数だけ足し合わせる。
+      // どれか1つでも消費するなら素材として扱う（枠に残しておく理由が消えないため）。
       remaining.set(
-        requirement.objectGlobalId,
-        (remaining.get(requirement.objectGlobalId) ?? 0) + requirement.count,
+        requirement.match.key,
+        merged === undefined
+          ? requirement
+          : new RecipeRequirementDef(
+              requirement.match,
+              merged.count + requirement.count,
+              merged.consume || requirement.consume,
+            ),
       );
+    }
   }
-  return remaining;
+  return [...remaining.values()];
+}
+
+/**
+ * 工程の要求ごとに、材料スロットの中身を宣言順に割り当てる。
+ *
+ * **1つの物を2つの要求で二重に数えない。** 要求はタグでも書けるので、尖った石1つが
+ * `cutting_tool`の要求にも`sharp_stone`の要求にも当てはまりうる。先に書いた要求から取る。
+ */
+function allocate(
+  contents: readonly WorldObject[],
+  step: RecipeStepDef,
+): ReadonlyMap<RecipeRequirementDef, readonly WorldObject[]> {
+  const used = new Set<WorldObject>();
+  const allocated = new Map<RecipeRequirementDef, readonly WorldObject[]>();
+  for (const requirement of step.requirements) {
+    const taken: WorldObject[] = [];
+    for (const object of contents) {
+      if (taken.length >= requirement.count) break;
+      if (used.has(object) || !requirement.requires(object.def)) continue;
+      used.add(object);
+      taken.push(object);
+    }
+    allocated.set(requirement, taken);
+  }
+  return allocated;
 }
 
 /**
@@ -69,14 +105,13 @@ export function stepSupplyRatio(
   materialsSlotGlobalId: number,
   step: RecipeStepDef,
 ): number {
-  const contents = inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [];
+  const allocated = allocate(inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [], step);
   let needed = 0;
   let held = 0;
   for (const requirement of step.requirements) {
-    const inSlot = contents.filter((object) => object.def.globalId === requirement.objectGlobalId).length;
     needed += requirement.count;
-    // 要求数を超えて入っている分は数えない（余りは充足を進めない）。
-    held += Math.min(inSlot, requirement.count);
+    // 割り当ては要求数で打ち切られているので、余分に入っている分は数に入らない。
+    held += allocated.get(requirement)?.length ?? 0;
   }
   return needed === 0 ? 1 : held / needed;
 }
@@ -123,13 +158,10 @@ export function advanceCrafting(
   if (!spendDuration(step.durationMinutes, session, [inProgress])) return false;
 
   // 消費が進捗より先なのは、進捗が上限を超えた瞬間に完成し、残っている物は親へこぼれてしまうため。
-  const slot = inProgress.tryGetSlot(materialsSlotGlobalId);
+  const allocated = allocate(inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [], step);
   for (const requirement of step.requirements) {
     if (!requirement.consume) continue;
-    const spent = (slot?.contents ?? [])
-      .filter((object) => object.def.globalId === requirement.objectGlobalId)
-      .slice(0, requirement.count);
-    for (const object of spent) object.destroy();
+    for (const object of allocated.get(requirement) ?? []) object.destroy();
   }
 
   inProgress.addNumber(progressGlobalId, step.durationMinutes, session);
@@ -167,7 +199,7 @@ function spillUnneeded(
     inProgress.getNumber(codex.propertyNames.getId('progress')),
   );
   const leftovers = (inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? []).filter(
-    (object) => !stillNeeded.has(object.def.globalId),
+    (object) => !stillNeeded.some((requirement) => requirement.requires(object.def)),
   );
 
   for (const object of leftovers) object.moveToSlot(parent, parentSlot.globalId);

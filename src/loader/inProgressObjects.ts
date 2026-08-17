@@ -1,6 +1,7 @@
 import { stringify } from 'yaml';
 import type { ObjectDef } from '../domain/defs/ObjectDef';
 import type { NameRegistry } from '../domain/defs/NameRegistry';
+import type { TypeMatchRule } from '../domain/defs/TypeMatchRule';
 
 /** 生成した定義の出所として、エラーメッセージに出す名前。 */
 export const IN_PROGRESS_SOURCE = '<製作中オブジェクトの自動生成>';
@@ -118,7 +119,7 @@ function inProgressObjectDef(
       // 素材も道具も同じスロットへ入れる。何が何個要るかが、そのまま枠の形になる
       // （RecipeSystem.md 3節）。
       [MATERIALS_SLOT]: {
-        cells: materialCells(recipe, objectNames),
+        cells: materialCells(recipe, tagNames, objectNames),
         // 自動配置（7.7節）から外す。終わった工程の枠は表示から消すので、そこへ勝手に物が
         // 入ると取り出せなくなる。入れるのは投入操作と自動補充だけに限る。
         auto_placement: false,
@@ -133,18 +134,21 @@ function inProgressObjectDef(
  */
 function materialCells(
   recipe: ObjectDef['recipes'][number],
+  tagNames: NameRegistry,
   objectNames: NameRegistry,
 ): Array<Record<string, unknown>> {
-  const totalByObject = new Map<number, number>();
+  const totals = new Map<string, { match: TypeMatchRule; max: number }>();
   for (const step of recipe.steps)
-    for (const requirement of step.requirements)
-      totalByObject.set(
-        requirement.objectGlobalId,
-        (totalByObject.get(requirement.objectGlobalId) ?? 0) + requirement.count,
-      );
+    for (const requirement of step.requirements) {
+      const entry = totals.get(requirement.match.key);
+      if (entry === undefined)
+        totals.set(requirement.match.key, { match: requirement.match, max: requirement.count });
+      else entry.max += requirement.count;
+    }
 
-  return [...totalByObject].map(([objectGlobalId, max]) => ({
-    accept: { object: objectNames.getName(objectGlobalId) },
-    max,
-  }));
+  const names = {
+    objectName: (globalId: number) => objectNames.getName(globalId),
+    tagName: (globalId: number) => tagNames.getName(globalId),
+  };
+  return [...totals.values()].map(({ match, max }) => ({ accept: match.acceptSpec(names), max }));
 }

@@ -113,7 +113,7 @@ describe('製作中オブジェクトの操作と材料の枠', () => {
 
     expect(materials).toHaveLength(1);
     expect(materials?.[0]).toMatchObject({
-      objectGlobalId: codex.objectNames.getId('woven_leaf'),
+      objectGlobalIds: [codex.objectNames.getId('woven_leaf')],
       needed: 6,
       held: 2,
       inCurrentStep: true,

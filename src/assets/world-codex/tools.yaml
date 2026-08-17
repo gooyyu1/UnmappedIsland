@@ -74,6 +74,19 @@ object_defs:
       thrust: {value: 0}
       whiff: {value: 25}
 
+  # 骨針。小さな骨を削って穴を開けた縫い針（docs/world/SurvivalItems.md 1.2節）。
+  #
+  # **縫うための道具で、縫っても減らない**（レシピでは consume: false で要求する）。繊維 → 罠 →
+  # 小動物 → 小骨 → 骨針 → 縫製、という浅い経路の終点で、大型動物を狩らずに皮革へ届く。
+  #
+  # 武器にはならない（weapon traitを持たない）。獣骨（animal_bone）と違って荷重のかかる頭部に
+  # できない細い骨から作るので、刺すための物ではあっても殴るための物ではない。
+  bone_needle:
+    tags: [item, tool, sewing_tool]
+    props:
+      weight: {value: 5}
+      volume: {value: 5}
+
   # 槍。長い棒の先へ石の穂先を固定した物（docs/world/SurvivalItems.md 3節）。
   #
   # **突くか、空を切るかの二択。** 浅く当たるということが無い代わりに、当たれば深く刺さって血が速く

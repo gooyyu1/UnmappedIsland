@@ -37,7 +37,13 @@ export type CardPlacement =
  * 移動の宛先は名前で指す（moveTo）。「どのレーンの隣か」という暗黙の対応は持たない。
  */
 export type CardPlace =
-  'fixtures' | 'items' | 'hand' | 'equipment' | 'injuries' | { readonly container: WorldObject };
+  | 'fixtures'
+  | 'items'
+  | 'structure'
+  | 'hand'
+  | 'equipment'
+  | 'injuries'
+  | { readonly container: WorldObject };
 
 /**
  * 2つの場所が同じか。コンテナの場所は映しているインスタンスで見分ける（同じ型のコンテナが複数あっても
@@ -259,6 +265,18 @@ export interface PlayScreenView {
    * ——筏・外洋（voyage.yaml）は資源を持たないので、探索の子ウィンドウ自体を開かない。
    */
   readonly canExplore: boolean;
+  /** 現在地そのものの説明（オブジェクトウィンドウの見出しに添える）。 */
+  readonly currentLocationDescription: string | undefined;
+  /**
+   * 現在地そのものが宣言しているアクション。**中に入った場所を操作する唯一の経路**——筏に乗り込むと
+   * 筏の札は現在地の札になり、外の並びからは消えるので、降りる・出航するはここからになる。
+   */
+  readonly currentLocationActions: readonly CardAction[];
+  /**
+   * 現在地に組み込まれている部品の場所（構造スロットを持たない場所ならundefined）。
+   * 筏の帆・住居の壁がここに並ぶ（Dwellings.md 1節）。
+   */
+  readonly currentLocationStructure: CardPlace | undefined;
   /** 現在地の設置物（道・木・建物など、持ち歩けないもの）。 */
   readonly fixtures: readonly ObjectCardStack[];
   /** 現在地に落ちているアイテム（持ち歩けるもの）。 */
@@ -365,6 +383,15 @@ const UNNAMED_LOCATION = '名もなき土地';
 
 /** 探索アクションの名前（locations.yaml）。持っているかどうかで、現在地を探索できるかが決まる。 */
 const EXPLORE_ACTION = 'explore';
+
+/**
+ * 組み込んだ部品を並べるスロットの名前（voyage.yamlの筏、Dwellings.md 1節の住居）。
+ *
+ * **場所の種類がまだ無いので、探索（EXPLORE_ACTION）と同じく名前で決め打つ。** 探索できる土地と、
+ * 中に入る筏・住居を型として分けたうえで、どちらのスロットを開くかをワールド側に名乗らせるのが
+ * 本来の形（`main_item_slot`と同じ形にできる）。場所の種類を入れるときに一緒に直す。
+ */
+const STRUCTURE_SLOT = 'structure';
 
 /**
  * ステータスエリアへ出す候補になるプロパティに付けるタグ（GameElementDefinition.md 6.7節）。
@@ -691,6 +718,7 @@ export function fromGameSession(
     return [...craftingActions(instance, codex, game), ...fromDefinition];
   };
 
+  const structureSlotId = codex.slotNames.tryGetId(STRUCTURE_SLOT);
   const itemTagId = codex.tagNames.tryGetId('item');
   const fixtureTagId = codex.tagNames.tryGetId('fixture');
   const injuryTagId = codex.tagNames.tryGetId('injury');
@@ -1018,6 +1046,12 @@ export function fromGameSession(
         return { owner: location.instance, slotId: location.itemsSlotId };
       case 'fixtures':
         return { owner: location.instance, slotId: location.fixturesSlotId };
+      // 現在地に組み込まれている部品（筏の帆、住居の壁）。itemsと同じく現在地のスロットだが、
+      // レーンには出ず、現在地の札から開くウィンドウだけが映す。
+      case 'structure':
+        return structureSlotId === undefined
+          ? undefined
+          : { owner: location.instance, slotId: structureSlotId };
       case 'hand':
         return { owner: game.player.instance, slotId: game.player.handSlotId };
       case 'equipment':
@@ -1206,6 +1240,12 @@ export function fromGameSession(
         ? 0
         : location.explorationProgress / location.explorationProgressMax,
     canExplore: location.instance.def.actions.some((action) => action.name === EXPLORE_ACTION),
+    currentLocationDescription: locale.object(location.instance.def.name).description,
+    currentLocationActions: actionsOf(location.instance),
+    currentLocationStructure:
+      structureSlotId !== undefined && location.instance.tryGetSlot(structureSlotId) !== undefined
+        ? 'structure'
+        : undefined,
     // 並び方はプレイヤーが地形をどう捉えているかで変わるため、同じスロットの中での並び替えを許す。
     // ヤシの木を持ち歩けないのはmoveIntoが弾くからで、このレーンが読み取り専用だからではない。
     fixtures: location.fixtureStacks.map((stack) => ({

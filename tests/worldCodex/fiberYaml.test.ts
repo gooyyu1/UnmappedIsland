@@ -143,7 +143,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
     expect(recipe.steps).toHaveLength(1);
 
     const [requirement] = recipe.steps[0].requirements;
-    expect(requirement.objectGlobalId).toBe(codex.objectNames.getId('cord'));
+    expect(requirement.requires(codex.objects.get(codex.objectNames.getId('cord')))).toBe(true);
     expect(requirement.count).toBe(3);
     expect(requirement.consume).toBe(true);
 

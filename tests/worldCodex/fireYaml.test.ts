@@ -96,10 +96,11 @@ describe('fire.yamlの火の連鎖', () => {
 
     expect(drill.recipes).toHaveLength(1);
     const [step] = drill.recipes[0].steps;
-    expect(step.requirements.map((r) => codex.objectNames.getName(r.objectGlobalId)).sort()).toEqual([
-      'thick_branch',
-      'twig',
-    ]);
+    const requires = (name: string): boolean =>
+      step.requirements.some((r) => r.requires(codex.objects.get(codex.objectNames.getId(name))));
+    expect(step.requirements).toHaveLength(2);
+    expect(requires('thick_branch')).toBe(true);
+    expect(requires('twig')).toBe(true);
     // 火スキルが未実装なので、今は誰でも作れる（きりもみ式は道具も紐も要らない）。
     expect(drill.recipes[0].isUnlocked(() => undefined)).toBe(true);
   });
