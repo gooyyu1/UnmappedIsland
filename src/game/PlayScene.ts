@@ -21,7 +21,7 @@ import type { WorldChange } from '../domain/runtime/WorldChange';
 import type { WorldSignal } from '../domain/runtime/WorldSignal';
 import type { WorldObject } from '../domain/runtime/WorldObject';
 import type { CardAction, CardPlace, ObjectCardStack, PlayScreenView } from './view/PlayScreenView';
-import { fromGameSession } from './view/PlayScreenView';
+import { EXPLORE_ACTION, fromGameSession } from './view/PlayScreenView';
 import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
 import type { RecordedView, Recording } from './view/recording';
@@ -51,12 +51,12 @@ import type { LaneView, MotionContext } from './ui/CardTable';
 import { CardTable } from './ui/CardTable';
 import { bornInstances, originInstances, vanishedInstances } from './view/changedInstances';
 import { floatSignalLabel } from './ui/signalLabel';
-import { ExplorationWindow } from './ui/ExplorationWindow';
 import type { MapPlacement } from './ui/MapWindow';
 import { MapWindow } from './ui/MapWindow';
 import { ModalDialog } from './ui/ModalDialog';
+import type { ExplorationContent } from './ui/ExplorationPane';
 import type { ObjectWindowAction, ObjectWindowTarget } from './ui/ObjectWindow';
-import { DESCRIPTION_TAB, ObjectWindow } from './ui/ObjectWindow';
+import { DESCRIPTION_TAB, EXPLORATION_TAB, ObjectWindow } from './ui/ObjectWindow';
 import { RecipeWindow } from './ui/RecipeWindow';
 import { recipeCategories } from './view/recipeList';
 import { spawnInProgressObject } from '../domain/runtime/crafting';
@@ -309,7 +309,6 @@ export class PlayScene extends ResponsiveScene {
   private filterButtons: Button[] = [];
 
   /** 開いている探索の子ウィンドウ。画面の作り直しをまたいで開いたままにするために持つ。 */
-  private explorationWindow: ExplorationWindow | undefined;
 
   /**
    * 開いている子ウィンドウ（ObjectWindow）と、それが映しているもの。
@@ -508,7 +507,6 @@ export class PlayScene extends ResponsiveScene {
     this.haze = new LaneHaze(this);
 
     // 開いていたウィンドウは前のプレイの世界を映している。入り直したら何も開いていない状態から始める。
-    this.explorationWindow = undefined;
     this.childWindow = undefined;
     this.childWindowPlace = undefined;
     this.shown.reset();
@@ -573,14 +571,12 @@ export class PlayScene extends ResponsiveScene {
     const layout = new PlayScreenLayout(this.metrics);
     this.layout = layout;
     // 開いていた子ウィンドウは、画面を作り直したあと同じものを開き直す（表示物は捨てられているため）。
-    const wasExploring = this.explorationWindow !== undefined;
     const openedPlace = this.childWindowPlace;
     const wasShowingMap = this.mapWindow !== undefined;
     const openedStatus = this.statusDetailKey;
     const openedCard = this.shown.windowStack;
     // 運んでいる途中だった札は、表示物ごと捨てられている（着いたものとして作り直す）。
     this.foundArriving = new Set();
-    this.explorationWindow = undefined;
     this.childWindow = undefined;
     this.shown.returnBorrowed();
     this.childWindowPlace = undefined;
@@ -641,7 +637,6 @@ export class PlayScene extends ResponsiveScene {
     // レーンはカードを作らない（CardTable参照）ので、組み上がったところで最初の差し替えを通して
     // 札を出す。作り直しの直後は出どころが無いので、飛ばずその場に現れる。
     this.showView();
-    if (wasExploring) this.openExplorationWindow();
     // 地図は全画面を覆うので、さらにその上へ開き直す。
     if (wasShowingMap) this.openMapWindow();
     // ステータスの詳細は、子ウィンドウの上からも開けるので最後に開き直す。
@@ -686,12 +681,9 @@ export class PlayScene extends ResponsiveScene {
       {
         pinned: {
           ...this.view.currentLocation,
-          // 探索できる土地は探索のウィンドウ、それ以外（中へ入る筏・住居）はその場所自身の
-          // オブジェクトウィンドウ。**中に入ると外の並びから札が消える**ので、降りる・出航する・
-          // 部品を差し替えるはここからしか辿れない。
-          onTap: this.view.canExplore
-            ? this.whileIdle(() => this.openExplorationWindow())
-            : this.whileIdle(() => this.openLocationWindow()),
+          // 現在地そのものの子ウィンドウ。**中に入ると外の並びから札が消える**ので、探索する・
+          // 降りる・出航する・部品を差し替えるはここからしか辿れない。
+          onTap: this.whileIdle(() => this.openLocationWindow()),
         },
         art: this.laneArt('fixtures'),
         depth: FIELD_DEPTH,
@@ -1225,9 +1217,14 @@ export class PlayScene extends ResponsiveScene {
       minutes: action.minutes,
       enabled: action.enabled,
       reason: action.reason,
-      onTap: () => {
-        this.applyToWorld(`アクション: ${action.name}（${owner}）`, action.execute);
-      },
+      // **探索だけは画面が実行を引き受ける。** 見つかったものを現在地の札から発見物の枠へ運び、
+      // その面へ移るところまでが1つの操作なので（Windows.md 5節）、世界を変えるだけでは終わらない。
+      onTap:
+        action.key === EXPLORE_ACTION
+          ? () => this.explore()
+          : () => {
+              this.applyToWorld(`アクション: ${action.name}（${owner}）`, action.execute);
+            },
     }));
   }
 
@@ -1249,6 +1246,8 @@ export class PlayScene extends ResponsiveScene {
       readonly opensPlace?: CardPlace;
       /** プロパティのタブに出すカテゴリ（空ならタブを出さない）。 */
       readonly properties?: readonly PropertyTab[];
+      /** 探索のタブに出すもの（探索できる場所だけ渡す）。 */
+      readonly exploration?: ExplorationContent;
     },
   ): void {
     noteOperation(`子ウィンドウを開いた: ${object.card.name}`);
@@ -1263,6 +1262,7 @@ export class PlayScene extends ResponsiveScene {
     this.childWindow = new ObjectWindow(this, this.metrics, {
       object,
       properties: opened?.properties ?? [],
+      exploration: opened?.exploration,
       slots: this.childWindowTabs.map((tab) => ({
         key: tab.key,
         title: this.view.slotLabelOf(tab.place),
@@ -1362,27 +1362,18 @@ export class PlayScene extends ResponsiveScene {
         properties: this.view.propertiesOf(
           this.gameSession.player.location?.instance ?? this.gameSession.player.instance,
         ),
+        exploration: this.explorationContent(),
       },
     );
   }
 
-  /** 現在地のロケーションカードから開く探索の子ウィンドウ。 */
-  private openExplorationWindow(): void {
-    if (this.explorationWindow === undefined) noteOperation('探索のウィンドウを開いた');
-    this.explorationWindow?.close();
-    this.explorationWindow = new ExplorationWindow(this, this.metrics, {
-      locationName: this.view.currentLocation.name,
+  /** 探索のタブに出すもの（探索できない場所ではundefined＝タブを出さない）。 */
+  private explorationContent(): ExplorationContent | undefined {
+    if (!this.view.canExplore) return undefined;
+    return {
       ratio: this.view.explorationRatio,
-      area: this.layout.fieldArea,
       found: this.shown.found.map((card) => ({ card, arriving: this.arrivingFound(card) })),
-      searching: this.activity === 'exploring',
-      onExplore: () => this.explore(),
-      onClose: () => {
-        const window = this.explorationWindow;
-        this.explorationWindow = undefined;
-        this.returnFound(window);
-      },
-    });
+    };
   }
 
   /** その発見物が、まだ現在地の札から運ばれてくる途中か。 */
@@ -1394,13 +1385,13 @@ export class PlayScene extends ResponsiveScene {
    * 借りている発見物を、それぞれの本来の場所へ帰す（Windows.md 5.1節）。帰り先はレーンの並びが
    * 決めるので、借りるのをやめて差し替えれば、あとは通常の出どころの規則（origins）が飛ばす。
    */
-  private returnFound(window: ExplorationWindow | undefined): void {
+  private returnFound(): void {
     const found = this.shown.returnFound();
     if (found.length === 0) return;
 
     const origins = new Map<number, Rect>();
     found.forEach((card, index) => {
-      const rect = window?.foundRect(index);
+      const rect = this.childWindow?.foundRect(index);
       if (rect === undefined) return;
       for (const id of card.identity ?? []) origins.set(id, rect);
     });
@@ -1422,7 +1413,7 @@ export class PlayScene extends ResponsiveScene {
   private explore(): void {
     if (this.busy) return;
 
-    this.returnFound(this.explorationWindow);
+    this.returnFound();
     const shownBefore = this.shownInstanceIds();
     const statusesBefore = this.status.all();
     const startedAt = this.gameSession.world.totalMinutes;
@@ -1430,7 +1421,6 @@ export class PlayScene extends ResponsiveScene {
     noteOperation(`探索した: ${this.view.currentLocation.name}（${this.clockText()}）`);
     // 結果待ちはここから。降ろすのは経過を見せ切った時点（passTime）。
     this.activity = 'exploring';
-    this.openExplorationWindow();
 
     const recorded = this.record(() => this.gameSession.player.explore(this.gameSession.session));
     // 道が見つかっていたら、経過を見せている間に行き先の絵のロードを始める。
@@ -1441,6 +1431,11 @@ export class PlayScene extends ResponsiveScene {
       const found = this.foundSince(shownBefore);
       this.shown.takeFound(found);
       this.foundArriving = new Set(found.flatMap((card) => card.identity ?? []));
+      // 見つかったものを見せる面へ自分から移る（Windows.md 5節）。探索は必ず1個以上見つかるので、
+      // 押した結果がどのタブに出るかを覚えていなくてよい。
+      const exploration = this.explorationContent();
+      if (exploration !== undefined) this.childWindow?.setExploration(exploration);
+      this.childWindow?.openTab(EXPLORATION_TAB);
       this.showSignals(recorded.signals);
       const context = this.motionOf(recorded.changes);
       this.showView(context);
@@ -1453,18 +1448,16 @@ export class PlayScene extends ResponsiveScene {
    * ので、枠には伏せたまま置いておき、着いた時点で表に出す（CardInteraction.md 6.2節）。
    */
   private carryFound(origins: ReadonlyMap<number, Rect> | undefined): void {
-    const window = this.explorationWindow;
-    if (window === undefined) return;
-
     this.shown.found.forEach((card, index) => {
       const ids = card.identity ?? [];
       const from = ids.map((id) => origins?.get(id)).find((rect) => rect !== undefined);
-      if (from === undefined) {
+      const to = this.childWindow?.foundRect(index);
+      if (from === undefined || to === undefined) {
         this.landFound(ids, index);
         return;
       }
 
-      this.motion.carry(card, from, window.foundRect(index), () => this.landFound(ids, index));
+      this.motion.carry(card, from, to, () => this.landFound(ids, index));
     });
   }
 
@@ -1473,7 +1466,7 @@ export class PlayScene extends ResponsiveScene {
     const arriving = new Set(this.foundArriving);
     for (const id of ids) arriving.delete(id);
     this.foundArriving = arriving;
-    this.explorationWindow?.showFound(index);
+    this.childWindow?.showFound(index);
   }
 
   /** 現在地のレーンに出ているカード（設置物とアイテム）。 */
@@ -1664,9 +1657,6 @@ export class PlayScene extends ResponsiveScene {
   private leaveLocation(): void {
     this.shown.returnFound();
     this.foundArriving = new Set();
-    // 探索の子ウィンドウは前の土地の探索率・発見物を映しているため、開き直さずに閉じる。
-    this.explorationWindow?.close();
-    this.explorationWindow = undefined;
     // 置いてきた入れ物の中身は開いたままにできない。手に持っている入れ物も、開き直せば済むので一律に閉じる。
     // 現在地に紐づく場所（構造の部品）も同じ——移った先の同じ名前のスロットへ黙って映り、
     // 筏の札を出したまま中身だけが空になる（筏から降りたときに実際に起きた）。
@@ -1804,7 +1794,6 @@ export class PlayScene extends ResponsiveScene {
     this.showSky();
     this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
     this.showInformation();
-    if (this.explorationWindow !== undefined) this.openExplorationWindow();
   }
 
   /**

@@ -673,7 +673,7 @@ object_texts:
     description: 誰かがこの島へ持ち込み、置いていった杯。腹の足しにはならない。
 
 # プロパティのカテゴリ（GameElementDefinition.md 6.7節、src/world-codex/core.yamlのproperty_tags）。
-# キャラクターのプロパティウィンドウのタブ名として使う。
+# 子ウィンドウのプロパティのタブで、カテゴリの縦タブの名前として使う。
 property_tag_texts:
   status:
     display_name: 状態

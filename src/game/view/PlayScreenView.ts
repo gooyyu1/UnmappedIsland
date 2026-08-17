@@ -136,6 +136,13 @@ export interface ObjectCardStack extends CardContent {
  * 実行する手段だけでなく表示文字列も持つ（locale/ja.yamlのactions節、Localization.md）。
  */
 export interface CardAction {
+  /**
+   * 宣言の識別子（`actions`のキー）。画面が特定の操作を見分けるためのもので、表示には使わない
+   * ——探索だけは、見つかったものを見せる手順が要るので画面側が実行を引き受ける（PlayScene）。
+   * 画面の都合で足した操作（製作中オブジェクトのもの、craftingView）は持たない。
+   */
+  readonly key?: string;
+
   readonly name: string;
   /** 説明文。localeに書かれていなければundefined。 */
   readonly description: string | undefined;
@@ -411,7 +418,7 @@ type ObjectKind = Extract<CardKind, 'item' | 'food' | 'container' | 'tool' | 'fi
 const UNNAMED_LOCATION = '名もなき土地';
 
 /** 探索アクションの名前（locations.yaml）。持っているかどうかで、現在地を探索できるかが決まる。 */
-const EXPLORE_ACTION = 'explore';
+export const EXPLORE_ACTION = 'explore';
 
 /**
  * 組み込んだ部品を並べるスロットの名前（voyage.yamlの筏、Dwellings.md 1節の住居）。
@@ -760,6 +767,7 @@ export function fromGameSession(
         const declared = texts.action(action.name);
         const unmet = instance.actionUnmetRequirement(action.name, game.player.instance);
         return {
+          key: action.name,
           name: declared.displayName,
           description: declared.description,
           minutes: instance.actionMinutes(action.name, game.player.instance),

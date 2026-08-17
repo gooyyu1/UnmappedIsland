@@ -1,31 +1,23 @@
 import Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import { addTextButton } from './Button';
 import type { CardContent } from './Card';
 import { Card, EmptyCard } from './Card';
 import { cardFace } from './cardFace';
 import { clipToRect } from '../../ui/clip';
-import {
-  ACTION_GAP,
-  ACTION_HEIGHT,
-  ACTION_MAX_WIDTH,
-  CONTENT_GAP,
-  WINDOW_PADDING,
-  centerWindow,
-} from '../looks/childWindowLayout';
+import { CONTENT_GAP } from '../looks/childWindowLayout';
 import { ProgressBar } from './ProgressBar';
 import { addLabel } from '../../ui/labels';
 import { wheelPixels } from '../../ui/scroll';
 import { ScrollIndicator } from './ScrollIndicator';
-import { addPanel, drawBox } from '../../ui/shapes';
+import { addPanel } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 import { wrapByCharacter } from '../../ui/textLayout';
 
 /** 探索の進み具合を示すバーの高さ（ゲームの主操作なので、ステータスバーより大きく取る）。 */
 const BAR_HEIGHT = 72;
 
-/** 発見物の枠の数。1枠はレーンのカードと同じ幅で、ウィンドウの横幅はこの4枠から決まる。 */
+/** 発見物の枠の数。1枠はレーンのカードと同じ幅。 */
 const FOUND_SLOTS = 4;
 
 /** 発見物の枠に出す1枚。 */
@@ -39,42 +31,48 @@ export interface FoundCard {
   readonly arriving: boolean;
 }
 
-export interface ExplorationWindowOptions {
-  /** 探索する土地の名前。 */
-  readonly locationName: string;
-
+/** 探索のタブに出すもの。 */
+export interface ExplorationContent {
   /** 探索率（0〜1）。 */
   readonly ratio: number;
 
   /**
-   * ウィンドウを収める領域。フィールドエリアを渡す（Windows.md 5節 探索ウィンドウ）。
-   * ウィンドウはこの中央へ置く——画面の中央に置くと、縦型では状況エリアの時計を覆ってしまうため。
-   */
-  readonly area: Rect;
-
-  /**
    * 直前の探索で見つかったもの（アイテムと道）。枠に収まらない分は横スクロールで見る。
    *
-   * **ここに在る札は本物**——見つかったものはまずこの枠へ入り、閉じるか次の探索を始めた時点で
+   * **ここに在る札は本物**——見つかったものはまずこの枠へ入り、窓を閉じるか次の探索を始めた時点で
    * 本来の場所へ帰る（Windows.md 5.1節）。そのあいだレーンには並ばない。
    */
   readonly found: readonly FoundCard[];
-
-  /** 探索中は結果待ちなので、もう一度探索を始めることはできない。 */
-  readonly searching: boolean;
-
-  readonly onExplore: () => void;
-  readonly onClose: () => void;
 }
 
 /**
- * ロケーションカードから開く探索の子ウィンドウ。見つかったものの枠・探索率のバーと、
- * 探索・閉じるのボタンを持つ。
+ * オブジェクトウィンドウの探索のタブ（Windows.md 5節）。発見物の枠・探索率のバー・補足の1行を持つ。
  *
- * 探索率が100%でも探索は続けられる（ExplorationSystem.md 2節）ため、探索ボタンは常に押せる。
- * 100%で変わるのは「隠された道がもう見つからない」ことだけなので、それを補足の1行で伝える。
+ * **「探索する」ボタンは持ちません。** 探索は現在地が宣言しているアクション（`explore`）なので、
+ * 最下段の操作の行に他のアクションと並びます——画面の都合で足したボタンと、宣言から来たボタンを
+ * 分けないためです。
  */
-export class ExplorationWindow {
+export class ExplorationPane {
+  /**
+   * この面が要る幅。**発見物の4枠ぶん**で、窓の幅はこれを下回らない（Windows.md 5節）。
+   * 枠は縮めない——レーンから来てレーンへ帰る札そのものなので、大きさが変わると別の札に見える。
+   */
+  static width(metrics: ScreenMetrics): number {
+    return metrics.px(SIZE.cardWidth) * FOUND_SLOTS + metrics.px(SIZE.gap) * (FOUND_SLOTS - 1);
+  }
+
+  /** この面が要る高さ。窓の中段の高さは、最も高いタブに合わせて決まる（ObjectWindow）。 */
+  static height(metrics: ScreenMetrics): number {
+    return (
+      metrics.px(SIZE.cardHeight) +
+      cardPaddingOf(metrics) +
+      metrics.px(CONTENT_GAP) +
+      metrics.px(BAR_HEIGHT) +
+      metrics.px(CONTENT_GAP) +
+      metrics.px(NOTE_HEIGHT)
+    );
+  }
+
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
 
   /** 発見物の並びの切り抜きを解く後始末（送る必要があるときだけ持つ、clip.ts参照）。 */
@@ -87,109 +85,40 @@ export class ExplorationWindow {
   /** 発見物の枠に並べた札（空き枠はundefined）。運んでいる途中の1枚を表に出すために持つ。 */
   private foundCards: (Card | undefined)[] = [];
 
-  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: ExplorationWindowOptions) {
-    const { width, height } = metrics;
-    this.objects.push(addPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5));
-
-    const padding = metrics.px(WINDOW_PADDING);
+  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, area: Rect, content: ExplorationContent) {
     const gap = metrics.px(CONTENT_GAP);
     const barHeight = metrics.px(BAR_HEIGHT);
-    const actionHeight = metrics.px(ACTION_HEIGHT);
-
-    // 横幅は発見物の4枠ぶんで決める。領域（横型のフィールドエリア）に合わせて広げると横に間延びし、
-    // 4枠が離れて散らばって見えるため。入りきらない画面ではその範囲まで絞る（枠は縮めず、送る）。
-    const foundWidth = metrics.px(SIZE.cardWidth) * FOUND_SLOTS + metrics.px(SIZE.gap) * (FOUND_SLOTS - 1);
-    const windowWidth = Math.min(foundWidth + padding * 2, options.area.width, width * 0.92);
-    const contentWidth = windowWidth - padding * 2;
-
-    // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に置く必要がある。
-    const card = scene.add.graphics();
-    this.objects.push(card);
-
-    const title = addLabel(scene, metrics, 0, 0, options.locationName, { size: 34, bold: true })
-      .setOrigin(0.5, 0)
-      .setAlign('center');
-    title.setWordWrapCallback(wrapByCharacter(contentWidth));
-    const note = addLabel(scene, metrics, 0, 0, noteFor(options.ratio), {
-      size: 24,
-      color: COLOR.textMuted,
-    })
-      .setOrigin(0.5, 0)
-      .setAlign('center');
-    note.setWordWrapCallback(wrapByCharacter(contentWidth));
-
     const foundHeight = metrics.px(SIZE.cardHeight);
-    // カードの下は、レーンのカードの余白と同じだけ空けてスクロールバーの場所にする（ScreenLayout.md 7.4節）。送る必要が無い間は空くが、見つかった件数でウィンドウの高さは変わらない。
-    const cardPadding = metrics.px((SIZE.laneHeight - SIZE.cardHeight) / 2);
+    // カードの下は、レーンのカードの余白と同じだけ空けてスクロールバーの場所にする
+    // （ScreenLayout.md 7.4節）。送る必要が無い間は空くが、見つかった件数で寸法は変わらない。
+    const cardPadding = cardPaddingOf(metrics);
+    const centerX = area.x + area.width / 2;
 
-    const windowHeight =
-      padding * 2 +
-      title.height +
-      gap +
-      foundHeight +
-      cardPadding +
-      gap +
-      barHeight +
-      gap +
-      note.height +
-      gap +
-      actionHeight;
-    const window = centerWindow(metrics, options.area, windowWidth, windowHeight);
-    const centerX = window.x + windowWidth / 2;
-    drawBox(card, window, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
-
-    title.setPosition(centerX, window.y + padding);
-    this.objects.push(title, note);
-
-    let cursorY = window.y + padding + title.height + gap;
-    this.addFound(scene, metrics, options.found, {
-      x: window.x + padding,
-      y: cursorY,
-      width: contentWidth,
+    this.addFound(scene, metrics, content.found, {
+      x: area.x,
+      y: area.y,
+      width: area.width,
       height: foundHeight,
     });
 
-    cursorY += foundHeight + cardPadding + gap;
+    let cursorY = area.y + foundHeight + cardPadding + gap;
     this.objects.push(
-      new ProgressBar(scene, metrics, window.x + padding, cursorY, contentWidth, barHeight, options.ratio),
-      addLabel(scene, metrics, centerX, cursorY + barHeight / 2, percentOf(options.ratio), {
+      new ProgressBar(scene, metrics, area.x, cursorY, area.width, barHeight, content.ratio),
+      addLabel(scene, metrics, centerX, cursorY + barHeight / 2, percentOf(content.ratio), {
         size: 32,
         bold: true,
       }).setOrigin(0.5),
     );
 
     cursorY += barHeight + gap;
-    note.setPosition(centerX, cursorY);
-
-    cursorY += note.height + gap;
-    const actionWidth = Math.min(metrics.px(ACTION_MAX_WIDTH), (contentWidth - metrics.px(ACTION_GAP)) / 2);
-    const actionsX = centerX - (actionWidth * 2 + metrics.px(ACTION_GAP)) / 2;
-    this.objects.push(
-      addTextButton(
-        scene,
-        metrics,
-        { x: actionsX, y: cursorY, width: actionWidth, height: actionHeight },
-        '探索する',
-        { fill: options.searching ? COLOR.buttonDisabled : COLOR.primaryButton },
-        options.searching ? () => undefined : options.onExplore,
-      ),
-      addTextButton(
-        scene,
-        metrics,
-        {
-          x: actionsX + actionWidth + metrics.px(ACTION_GAP),
-          y: cursorY,
-          width: actionWidth,
-          height: actionHeight,
-        },
-        '閉じる',
-        { fill: COLOR.button },
-        () => {
-          this.close();
-          options.onClose();
-        },
-      ),
-    );
+    const note = addLabel(scene, metrics, centerX, cursorY, noteFor(content.ratio), {
+      size: 24,
+      color: COLOR.textMuted,
+    })
+      .setOrigin(0.5, 0)
+      .setAlign('center');
+    note.setWordWrapCallback(wrapByCharacter(area.width));
+    this.objects.push(note);
   }
 
   /**
@@ -240,7 +169,7 @@ export class ExplorationWindow {
     // 送る必要があるときだけ、枠からはみ出す分を切り抜く（clip.ts参照）。
     this.unclip = clipToRect(scene, strip, viewport);
 
-    // バーはカードの下に空けてある余白（呼び出し側が確保するcardPadding）の上寄せに置く。
+    // バーはカードの下に空けてある余白（cardPadding）の上寄せに置く。
     const indicator = new ScrollIndicator(
       scene,
       metrics,
@@ -274,8 +203,8 @@ export class ExplorationWindow {
   }
 
   /**
-   * 発見物の枠（添字の位置）。運んでくる先であり、返すときの出発点でもある。**閉じたあとも答える**
-   * ——閉じた時点で本来の場所へ帰す（Windows.md 5.1節）ので、そこから飛ばす必要がある。
+   * 発見物の枠（添字の位置）。運んでくる先であり、返すときの出発点でもある。**捨てたあとも答える**
+   * ——タブを移るか窓を閉じた時点で本来の場所へ帰す（Windows.md 5.1節）ので、そこから飛ばす必要がある。
    */
   foundRect(index: number): Rect {
     const layout = this.foundLayout;
@@ -292,12 +221,21 @@ export class ExplorationWindow {
     this.foundCards[index]?.setVisible(true);
   }
 
-  close(): void {
+  destroy(): void {
     for (const object of this.objects) object.destroy();
     this.objects.length = 0;
+    this.foundCards = [];
     this.unclip?.();
     this.unclip = undefined;
   }
+}
+
+/** 補足の1行が占める高さ（u単位）。**件数によらず窓の寸法を変えない**ため、2行ぶんで決め打つ。 */
+const NOTE_HEIGHT = 68;
+
+/** カードの下に空ける余白（レーンのカードの上下の余白と同じ）。スクロールバーの場所になる。 */
+function cardPaddingOf(metrics: ScreenMetrics): number {
+  return metrics.px((SIZE.laneHeight - SIZE.cardHeight) / 2);
 }
 
 /** 探索率は整数の%で見せる。100%に届いていない進捗を切り上げて100%と誤解させないよう切り捨てる。 */
