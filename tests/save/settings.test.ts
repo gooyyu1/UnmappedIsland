@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Settings } from '../../src/save/Settings';
-import { assetPackMatches } from '../../src/assetPack/install';
+import { assetPackMatches } from '../../src/asset-pack/install';
 import { MemoryStorage } from '../support/MemoryStorage';
 
 /** ゲームを始める前にだけ変えられる設定（StartScreen.md 画面構成 4）。 */

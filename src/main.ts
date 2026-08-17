@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { installSampleAssetPack } from './assetPack/install';
+import { installSampleAssetPack } from './asset-pack/install';
 import { Settings } from './save/Settings';
 import { DeviceScreen } from './game/DeviceScreen';
 import { installErrorReport } from './game/errorReport';

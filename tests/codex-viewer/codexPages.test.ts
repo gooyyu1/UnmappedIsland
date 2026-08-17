@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CodexSource } from '../../src/codex/CodexSource';
-import { CodexView } from '../../src/codex/CodexView';
+import { CodexSource } from '../../src/codex-viewer/CodexSource';
+import { CodexView } from '../../src/codex-viewer/CodexView';
 import {
   renderObjectListPage,
   renderObjectPage,
@@ -8,7 +8,7 @@ import {
   renderPropertyPage,
   renderSlotPage,
   renderTagListPage,
-} from '../../src/codex/pages';
+} from '../../src/codex-viewer/pages';
 import { loadLocalization } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';

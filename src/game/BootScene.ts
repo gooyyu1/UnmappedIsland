@@ -18,7 +18,7 @@ import { cssColor } from '../util/cssColor';
 import { COLOR, FONT_FAMILY } from './looks/theme';
 import { loadDefinitions } from '../loader/loadDefinitions';
 import { LOAD_REPORT } from '../loader/LoadReport';
-import { installedAssetPack } from '../assetPack/install';
+import { installedAssetPack } from '../asset-pack/install';
 
 /** 組み立て済みWorldCodex・表示文字列をレジストリへ置くときのキー。 */
 export const WORLD_CODEX_KEY = 'worldCodex';

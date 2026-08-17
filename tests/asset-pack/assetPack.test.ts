@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { AssetPack } from '../../src/assetPack/AssetPack';
-import { readZip } from '../../src/assetPack/zip';
+import { AssetPack } from '../../src/asset-pack/AssetPack';
+import { readZip } from '../../src/asset-pack/zip';
 import { addPackArt } from '../../src/art/packArt';
 import { loadDefinitions } from '../../src/loader/loadDefinitions';
 import { LoadReport } from '../../src/loader/LoadReport';

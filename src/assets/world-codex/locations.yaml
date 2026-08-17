@@ -142,7 +142,7 @@ object_defs:
   #   どの候補が選ばれても起こるので、pickの外に1つだけ置く（9.7節）。
   # - どの候補も1個以上を必ず見つける（ハズレの候補は置かない）。1回で見つかる数は候補ごとに1〜3個で、
   #   実りの多い土地は平均2個、荒野・山頂・岸壁のような乏しい土地は平均1.6個になるよう重みを配る
-  #   （tests/worldCodex/explorationYield.test.tsが検証する）。設置物（木・茂み・洞窟の入口など）は
+  #   （tests/world-codex/explorationYield.test.tsが検証する）。設置物（木・茂み・洞窟の入口など）は
   #   1回に1つまでにし、数で増えるのはアイテムだけにする。
   # - durationは1回の探索にかかる時間（分）。全土地で1tick（minutes_per_tick、core.yaml）に揃える。
   #   土地ごとの探索の重さは、回数（exploration_progress.range.max）だけで表す。

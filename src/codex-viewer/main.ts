@@ -1,5 +1,5 @@
 import './codex.css';
-import { installSampleAssetPack } from '../assetPack/install';
+import { installSampleAssetPack } from '../asset-pack/install';
 import type { CodexSource } from './CodexSource';
 import { loadCodexSource } from './CodexSource';
 import type { NamingMode } from './CodexView';

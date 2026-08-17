@@ -17,10 +17,10 @@
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。1 節・3 節は実装済みです
 （`src/assets/world-codex/animals.yaml` の4種と `injuries.yaml`・`tools.yaml` の武器3種、検証は
-`tests/worldCodex/animalsYaml.test.ts`）。6 節の変化の観測と 6.3 節の告知も実装済みです
+`tests/world-codex/animalsYaml.test.ts`）。6 節の変化の観測と 6.3 節の告知も実装済みです
 （`WorldSession.observeChanges`・`observeSignals`）。5 節の動物の1手も実装済みで、時間が経てば
 2 節が述べる「動物の 6 手」がそのまま現れます（`Animal.takeTurn`、検証は
-`tests/worldCodex/animalTurn.test.ts`）。**4 節だけが丸ごと未実装**で、見出しに【未実装】の印を
+`tests/world-codex/animalTurn.test.ts`）。**4 節だけが丸ごと未実装**で、見出しに【未実装】の印を
 付けています。新設が必要なエンジン拡張は 7 節、未決事項は 8 節にまとめています。
 
 ## 1. 既存の操作に載せる

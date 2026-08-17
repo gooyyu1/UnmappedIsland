@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readZip, ZipReadError } from '../../src/assetPack/zip';
+import { readZip, ZipReadError } from '../../src/asset-pack/zip';
 import { zipArchive } from '../support/zipArchive';
 
 /** ZIPの読み取り（AssetPack.md 2節）。無圧縮とdeflateの両方、および読めない形を確かめる。 */

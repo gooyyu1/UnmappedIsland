@@ -29,7 +29,7 @@ npm run stats:terrain
   待って得る生産のレートと必要設備数、キャラクタが1日に要る量、1工程あたりの所要時間と産出。
   実行結果ではなく、定義（`src/assets/world-codex/*.yaml`）だけから計算した値。
   生成元: `tests/diagnostics/balanceStatsReport.test.ts`
-  （計算は `src/codex/balanceTables.ts`。同じ表はコーデックスビューアの `#/balance` でも見られる
+  （計算は `src/codex-viewer/balanceTables.ts`。同じ表はコーデックスビューアの `#/balance` でも見られる
   ——絵つきで読めるのはそちら、**数値を変えたときの差分を読めるのはこちら**）。
 - [気候システム統計レポート](./ClimateSystemStats.md) — 季節の持続日数・気温・天気ごとの持続時間・
   連続降雨/未降雨時間の平均/最小/最大/標準偏差（[`ClimateSystem.md`](../engine/ClimateSystem.md) 参照）。

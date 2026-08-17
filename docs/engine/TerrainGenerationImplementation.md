@@ -247,7 +247,7 @@ WorldSession.rngのシードが異なっても同じ島レイアウトになる�
 | テストファイル | 対象 |
 |---|---|
 | `tests/loader/generationYamlLoader.test.ts` | 2節（`parseGeneration.ts`） |
-| `tests/worldCodex/terrainGenerationYaml.test.ts` | 実ファイル `terrain_generation.yaml` と `locations.yaml` の対応 |
+| `tests/world-codex/terrainGenerationYaml.test.ts` | 実ファイル `terrain_generation.yaml` と `locations.yaml` の対応 |
 | `tests/generation/terrainGenerator.test.ts` | 3節（`generate` の不変条件） |
 | `tests/generation/islandSpawner.test.ts` | 4節・6節（`IslandSpawner`/`NewGame`、決定性） |
 | `tests/domain/actionDuration.test.ts` | 7節（`duration`） |

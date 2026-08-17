@@ -24,7 +24,7 @@ const PHASER_FREE = [
   'src/scenario',
   'src/util',
   'src/art',
-  'src/assetPack',
+  'src/asset-pack',
   'src/game/view',
   'src/game/looks',
 ];

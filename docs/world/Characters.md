@@ -11,7 +11,7 @@
 
 キャラクタごとに数値は違ってよいが、**あるキャラクタだけ満腹度の定義が無い**、**最大値だけ変えて
 `stages` を直し忘れた**といった食い違いは許容できない。これを防ぐのは trait ではなくテスト
-（`tests/worldCodex/charactersYaml.test.ts`）である。
+（`tests/world-codex/charactersYaml.test.ts`）である。
 
 trait は「何を持つべきか」ではなく「省略したらこの値」しか表現できない。`props` のマージはフィールド
 単位の上書き（`RawObjectDef.resolve`）なので、trait に既定値を置くと「`range.max` だけ上書きして

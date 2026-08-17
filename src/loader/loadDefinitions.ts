@@ -1,4 +1,4 @@
-import type { AssetPack } from '../assetPack/AssetPack';
+import type { AssetPack } from '../asset-pack/AssetPack';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { Localization } from '../locale/Localization';
 import { loadLocalization } from '../locale/Localization';

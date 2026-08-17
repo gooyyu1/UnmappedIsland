@@ -1,7 +1,7 @@
 import { deflateRawSync } from 'node:zlib';
 
 /**
- * テスト用のZIPを組み立てる（src/assetPack/zip.ts が読む側）。
+ * テスト用のZIPを組み立てる（src/asset-pack/zip.ts が読む側）。
  *
  * 実際のパックと同じ形——中央ディレクトリを末尾に持ち、エントリごとに無圧縮（store）と
  * deflateを選べる——にすることで、読む側の両方の経路を通す。

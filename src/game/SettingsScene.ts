@@ -1,5 +1,5 @@
 import { ResponsiveScene } from './ResponsiveScene';
-import { assetPackMatches } from '../assetPack/install';
+import { assetPackMatches } from '../asset-pack/install';
 import { Settings } from '../save/Settings';
 import { Button } from './ui/Button';
 import { ScreenHeader } from './ui/ScreenHeader';

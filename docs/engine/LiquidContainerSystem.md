@@ -3,7 +3,7 @@
 ## 概要
 
 液体（水・茶・油）を容器で保持し、飲用・注ぎ移し・蒸発させ、雨を貯める仕組みの設計ドキュメントです。定義本体は
-`src/assets/world-codex/liquid_containers.yaml`、検証は `tests/worldCodex/liquidContainersYaml.test.ts`。
+`src/assets/world-codex/liquid_containers.yaml`、検証は `tests/world-codex/liquidContainersYaml.test.ts`。
 
 液体は**個数ではなく量で存在する**という一点だけをエンジンに宣言し（1節）、あとは汎用文法
 （`represented_by`・`capacity`・`move`・`transfer`・`passives`、いずれも

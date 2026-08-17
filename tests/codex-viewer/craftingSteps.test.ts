@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCraftingNetwork } from '../../src/codex/craftingGraph';
+import { buildCraftingNetwork } from '../../src/codex-viewer/craftingGraph';
 import type { CraftingStep } from '../../src/domain/defs/CraftingStep';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
