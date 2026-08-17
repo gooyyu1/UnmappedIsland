@@ -2,8 +2,6 @@ import type { InfluenceWriter } from '../runtime/PropertyInfluence';
 import type { PropertyValue } from '../runtime/PropertyValue';
 import type { EffectSite, WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
-import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { objectRef, propertyRef, signedNumber, text } from './Description';
 import type { ObjectRef } from './ObjectRef';
 import type { EffectReader, LinkedAddReading, TransferReading } from './EffectReader';
 import type { ReferenceRoot } from './ReferenceRoot';
@@ -26,25 +24,6 @@ export abstract class ActiveEffect {
     dragged: WorldObject | undefined,
     effectSite: EffectSite | undefined,
   ): void;
-
-  /** この効果を書き表す（Description参照）。命令1つにつき1行で、入れ子（pick・linked_add）は字下げする。 */
-  abstract describe(names: DefNames, out: DescriptionWriter): void;
-
-  /**
-   * この効果がpropertyGlobalIdのプロパティを書き換えうるか（プロパティ側からの逆引き用）。
-   * ownedByDeclarerの意味はPassiveEffect.affectsと同じ。
-   */
-  abstract affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean;
-
-  /**
-   * この効果がobjectGlobalIdの型を生み出しうるか（生まれる側からの逆引き用）。
-   *
-   * 生むのはspawn（9.4節）だけなので、既定は偽。中に他の効果を抱える合成（ActiveEffects・pick）は、
-   * 自分の中を見て答える。
-   */
-  spawns(_objectGlobalId: number): boolean {
-    return false;
-  }
 
   /**
    * この効果が何を宣言しているかを読み上げる（EffectReader参照）。**抽象なのは取りこぼしを防ぐため**
@@ -78,18 +57,6 @@ export class ActiveEffects extends ActiveEffect {
     for (const operation of this.operations) operation.apply(owner, session, actor, dragged, effectSite);
   }
 
-  describe(names: DefNames, out: DescriptionWriter): void {
-    for (const operation of this.operations) operation.describe(names, out);
-  }
-
-  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
-    return this.operations.some((operation) => operation.affects(propertyGlobalId, ownedByDeclarer));
-  }
-
-  override spawns(objectGlobalId: number): boolean {
-    return this.operations.some((operation) => operation.spawns(objectGlobalId));
-  }
-
   read(reader: EffectReader): void {
     for (const operation of this.operations) operation.read(reader);
   }
@@ -118,21 +85,8 @@ export class SetEffect extends ActiveEffect {
     resolved?.setNumber(this.propertyGlobalId, this.value, session);
   }
 
-  describe(names: DefNames, out: DescriptionWriter): void {
-    out.write(
-      text('set '),
-      propertyRef(names.propertyName(this.propertyGlobalId), this.target),
-      text(' = '),
-      names.propertyValue(this.propertyGlobalId, this.value),
-    );
-  }
-
   read(reader: EffectReader): void {
     reader.set(this.target, this.propertyGlobalId, this.value);
-  }
-
-  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
-    return this.propertyGlobalId === propertyGlobalId && (ownedByDeclarer || this.target !== 'self');
   }
 }
 
@@ -176,10 +130,6 @@ export class AddEffect extends ActiveEffect {
     resolved?.addNumber(this.propertyGlobalId, scaled, session);
   }
 
-  describe(names: DefNames, out: DescriptionWriter): void {
-    out.write(...this.describeTokens(names));
-  }
-
   read(reader: EffectReader): void {
     reader.add(this.target, this.propertyGlobalId, this.amount);
   }
@@ -187,19 +137,6 @@ export class AddEffect extends ActiveEffect {
   /** transferのlinked_addが、自分を1件として名乗るための読み上げ（LinkedAddReading参照）。 */
   get linkedReading(): LinkedAddReading {
     return { target: this.target, propertyGlobalId: this.propertyGlobalId, amount: this.amount };
-  }
-
-  /** transferのlinked_add（比例して効く）が、自分の行へ書き足せるように断片で返す。 */
-  describeTokens(names: DefNames): readonly DescriptionToken[] {
-    return [
-      text('add '),
-      propertyRef(names.propertyName(this.propertyGlobalId), this.target),
-      text(` ${signedNumber(this.amount)}`),
-    ];
-  }
-
-  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
-    return this.propertyGlobalId === propertyGlobalId && (ownedByDeclarer || this.target !== 'self');
   }
 }
 
@@ -225,17 +162,8 @@ export class DestroyEffect extends ActiveEffect {
     victim?.destroy();
   }
 
-  describe(names: DefNames, out: DescriptionWriter): void {
-    out.write(text('destroy '), ...this.target.describe(names));
-  }
-
-  /** オブジェクトごと消すだけで、個々のプロパティを書き換えはしない。 */
-  affects(): boolean {
-    return false;
-  }
-
   read(reader: EffectReader): void {
-    reader.destroy(this.target);
+    reader.destroy(this.target.reading);
   }
 }
 
@@ -292,23 +220,6 @@ export class SpawnEffect extends ActiveEffect {
     effectSite: EffectSite | undefined,
   ): void {
     for (let i = 0; i < this.count; i++) owner.executeSpawn(this, session, actor, effectSite);
-  }
-
-  describe(names: DefNames, out: DescriptionWriter): void {
-    out.write(
-      text('spawn '),
-      objectRef(names.objectName(this.objectGlobalId)),
-      text(`${this.count === 1 ? '' : ` ×${this.count}`} → ${this.into}`),
-    );
-  }
-
-  /** 新しいオブジェクトを生むだけで、既にあるプロパティを書き換えはしない。 */
-  affects(): boolean {
-    return false;
-  }
-
-  override spawns(objectGlobalId: number): boolean {
-    return this.objectGlobalId === objectGlobalId;
   }
 
   read(reader: EffectReader): void {
@@ -446,35 +357,5 @@ export class TransferEffect extends ActiveEffect {
       increases: false,
       active,
     });
-  }
-
-  /** suffixは1行目の末尾へ足す断片（tick毎の輸送が、自分のゲートを同じ行に書き足す）。 */
-  describe(names: DefNames, out: DescriptionWriter, suffix: readonly DescriptionToken[] = []): void {
-    const tokens: DescriptionToken[] = [
-      text('transfer '),
-      propertyRef(names.propertyName(this.fromPropertyGlobalId), this.fromObject),
-      text(' → '),
-      propertyRef(names.propertyName(this.toPropertyGlobalId), this.toObject),
-      text(`（最大${this.amount}`),
-    ];
-    // 単位が違う移送（水のmL → 水分のtick数）だけ、受け取る側の量も書く。
-    if (this.toAmount !== this.amount) tokens.push(text(` → ${this.toAmount}`));
-    if (this.allowOverflow) tokens.push(text('、あふれても移す'));
-    tokens.push(text('）'));
-    out.write(...tokens, ...suffix);
-
-    if (this.linkedAdd.length === 0) return;
-    out.indented(() => {
-      for (const linked of this.linkedAdd)
-        out.write(...linked.describeTokens(names), text('（実際に移した量に比例）'));
-    });
-  }
-
-  affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
-    if (this.fromPropertyGlobalId === propertyGlobalId && (ownedByDeclarer || this.fromObject !== 'self'))
-      return true;
-    if (this.toPropertyGlobalId === propertyGlobalId && (ownedByDeclarer || this.toObject !== 'self'))
-      return true;
-    return this.linkedAdd.some((linked) => linked.affects(propertyGlobalId, ownedByDeclarer));
   }
 }

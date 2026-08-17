@@ -1,5 +1,6 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
+import { weightTokens } from './describeEffect';
 import { text } from './Description';
 import type { ObjectDef } from './ObjectDef';
 import type { WeightSpec } from './PickEffect';
@@ -128,7 +129,7 @@ export class SlotDef {
 
   /** ここへ物を入れるのにかかる時間（7.10節）の書き表し。宣言が無ければundefined（一瞬で入る）。 */
   describePutInDuration(names: DefNames): readonly DescriptionToken[] | undefined {
-    return this.putInDuration?.describe(names);
+    return this.putInDuration === undefined ? undefined : weightTokens(this.putInDuration.reading, names);
   }
 
   /** index番目の枠の定義。枠数が決まっていないスロットではどの位置でも共通の定義。 */

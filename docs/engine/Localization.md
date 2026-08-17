@@ -16,8 +16,12 @@ WorldCodexの編集を伴うと、パック作成者が新しい言語を足す�
 ## 対応表の形式
 
 `object_texts` の下に、object_defの識別子をキーとして並べます。各エントリはそのオブジェクト自身の
-`display_name`/`description` と、メンバー（`props`・`actions`・`combinations`）ごとの同じ組を持てます。
+`display_name`/`description` と、メンバー（`props`・`interactions`）ごとの同じ組を持てます。
 いずれも省略可能です。
+
+**操作は `actions`（メニュー型）と `combinations`（ドラッグ型）を分けず、`interactions` に
+まとめて書きます。** 操作の名前は元から1つの名前空間だからです
+（[`GameElementDefinition.md`](./GameElementDefinition.md) 11節）。
 
 ```yaml
 object_texts:
@@ -27,12 +31,11 @@ object_texts:
     props:
       freshness:
         display_name: 鮮度
-    actions:
-      eat:
+    interactions:
+      eat:                      # actions の操作
         display_name: かじる
         description: 殻を割って中身を食べる。
-    combinations:
-      pour_in:
+      pour_in:                  # combinations の操作も同じ節へ
         display_name: 注ぎ移す
 ```
 
@@ -69,11 +72,11 @@ object_texts:
     props:
       exploration_progress:
         display_name: 探索の進み具合
-    actions:
+    interactions:
       eat:
         display_name: 食べる
   coconut:
-    actions:
+    interactions:
       eat:
         display_name: かじる   # このオブジェクトだけ言い方を変える
 ```
@@ -286,7 +289,7 @@ locale.locationName(name)                     // 生成された土地の名前�
 存在しない識別子のエントリが残っていないことを自動テストで検証します
 （`tests/locale/localization.test.ts`）。
 
-**検証の対象外（props・actions など）の抜けは、閲覧ビューアで探すのが一番早いです。** 表示名が識別子の
+**検証の対象外（props・interactions など）の抜けは、閲覧ビューアで探すのが一番早いです。** 表示名が識別子の
 ままの対象には「未翻訳」の印が付くため、`npm run dev:codex` で開いて眺めれば漏れが目に入ります。
 
 ## 言語の切り替え

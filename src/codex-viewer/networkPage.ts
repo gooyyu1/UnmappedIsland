@@ -262,9 +262,7 @@ function stepNodeHtml(
   state: string,
 ): string {
   const label =
-    node.stepKind === 'recipe'
-      ? node.stepName
-      : view.interactionLabel(node.ownerName, node.stepName, node.stepKind === 'combination');
+    node.stepKind === 'recipe' ? node.stepName : view.interactionLabel(node.ownerName, node.stepName);
   return (
     `<a class="net-node net-step${state}" href="#/object/${encodeURIComponent(node.ownerName)}">` +
     `<circle class="net-step-dot" cx="${position.x + STEP_NODE.width / 2}" ` +

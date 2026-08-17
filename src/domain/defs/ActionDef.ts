@@ -36,10 +36,6 @@ export class ActionDef extends InteractionDef {
     out.write(text(`show_menu: ${this.showMenu}`));
   }
 
-  get kind(): 'action' {
-    return 'action';
-  }
-
   tryExecute(self: WorldObject, actor: WorldObject | undefined, session: WorldSession): boolean {
     return this.apply(self, undefined, actor, session);
   }

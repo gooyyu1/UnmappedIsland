@@ -17,18 +17,13 @@ export interface RangeEventReadout {
   readonly outcomes: readonly StepOutcome[];
 }
 
-const LABELS: readonly RangeEventLabel[] = ['on_overflow', 'on_shortfall'];
-
 /** そのプロパティが宣言しているrange系イベントを、端で起こることまで開いて読む。 */
 export function rangeEventReadouts(
   propertyDef: PropertyDef,
   resolve: StaticValueResolver,
 ): readonly RangeEventReadout[] {
   const readouts: RangeEventReadout[] = [];
-  for (const label of LABELS) {
-    const effect = propertyDef.rangeEvent(label);
-    if (effect === undefined) continue;
-
+  for (const [label, effect] of propertyDef.rangeEvents()) {
     const reading = readEffect(effect, resolve);
     let returnedToSelf = 0;
     for (const outcome of reading.outcomes)

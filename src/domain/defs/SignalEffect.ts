@@ -1,8 +1,6 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import { ActiveEffect } from './ActiveEffect';
-import type { DefNames, DescriptionWriter } from './Description';
-import { signalRef, text } from './Description';
 import type { EffectReader } from './EffectReader';
 import type { ReferenceRoot } from './ReferenceRoot';
 
@@ -37,15 +35,6 @@ export class SignalEffect extends ActiveEffect {
   ): void {
     const resolved = owner.resolveEffectTarget(this.target, actor, dragged);
     if (resolved !== undefined) session.recordSignal(this.name, resolved);
-  }
-
-  describe(_names: DefNames, out: DescriptionWriter): void {
-    out.write(text('signal '), signalRef(this.name), text(` → ${this.target}`));
-  }
-
-  /** 告げるだけで、プロパティは書き換えない。 */
-  affects(): boolean {
-    return false;
   }
 
   read(reader: EffectReader): void {

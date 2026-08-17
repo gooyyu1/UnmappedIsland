@@ -1,6 +1,11 @@
 import type { ActiveEffect } from './ActiveEffect';
-import type { ObjectRef } from './ObjectRef';
+import type { ObjectRefReading } from './ObjectRef';
 import type { ReferenceRoot } from './ReferenceRoot';
+
+/** 自分が何を宣言しているかを読み上げられるもの（効果そのものと、それを抱える操作）。 */
+export interface EffectDeclaration {
+  read(reader: EffectReader): void;
+}
 
 /**
  * 一時的な効果（9・10節）が**何を宣言しているか**を読み上げる相手（ActiveEffect.read）。
@@ -23,15 +28,20 @@ export interface EffectReader {
   spawn(objectGlobalId: number, count: number): void;
 
   /** `destroy`（9.3節）。 */
-  destroy(target: ObjectRef): void;
+  destroy(target: ObjectRefReading): void;
 
   /** `transfer`（9.5節）。amountは在庫が満ちている場合の上限で、実際に動く量は目減りしうる。 */
   transfer(reading: TransferReading): void;
 
   /** `move`（9.6節）。オブジェクトの居場所を変えるだけで、値も個数も動かさない。 */
-  move(): void;
+  move(subject: ObjectRefReading, destination: ObjectRefReading): void;
 
-  /** `signal`（9.8節）。世界の形は何も変わらない。 */
+  /**
+   * `signal`（9.8節）。世界の形は何も変わらない。
+   *
+   * **誰の身に起きたかは渡さない。** 「避けた」のか「避けられた」のかは識別子を付けた側の裁量で、
+   * 読む側がその意味に関心を持てない以上、対象にも関心を持てない。
+   */
   signal(name: string): void;
 
   /**

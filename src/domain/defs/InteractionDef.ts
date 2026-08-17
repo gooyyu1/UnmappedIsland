@@ -3,6 +3,7 @@ import type { WorldSession } from '../runtime/WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
 import type { DefNames, DescriptionWriter } from './Description';
 import { text } from './Description';
+import { describeEffect, weightTokens } from './describeEffect';
 import type { EffectReader, WeightReading } from './EffectReader';
 import type { WeightSpec } from './PickEffect';
 import { resolveReferenceRoot } from './ReferenceRoot';
@@ -68,21 +69,13 @@ export abstract class InteractionDef {
     }
 
     if (this.duration !== undefined)
-      out.write(text('所要時間: '), ...this.duration.describe(names), text('分'));
+      out.write(text('所要時間: '), ...weightTokens(this.duration.reading, names), text('分'));
 
-    this.effect.describe(names, out);
+    describeEffect(this, names, out);
   }
 
   /** 何がこの操作のきっかけになるか（具象ごとに違う）。describeが先頭に書く。 */
   protected abstract describeTrigger(names: DefNames, out: DescriptionWriter): void;
-
-  /**
-   * この操作の効果にmatchesが真になるものがあるか（逆引きの絞り込み用）。効果そのものを渡すので、
-   * 何を尋ねるか（どのプロパティを書き換えるか・どの型を生むか）は呼び出し側が決める。
-   */
-  hasEffectMatching(matches: (effect: ActiveEffect) => boolean): boolean {
-    return matches(this.effect);
-  }
 
   /** この操作が何を起こすと宣言しているかを読み上げる（EffectReader参照）。 */
   read(reader: EffectReader): void {
@@ -93,9 +86,6 @@ export abstract class InteractionDef {
   get durationReading(): WeightReading | undefined {
     return this.duration?.reading;
   }
-
-  /** 入口の別（メニュー型かドラッグ型か）。表示名の引き方がこれで変わる（Localization.md）。 */
-  abstract get kind(): 'action' | 'combination';
 
   /** 重ねる相手の指定（12.1節）。メニュー型は相手を取らないのでundefined。 */
   get draggedReading(): TypeMatchReading | undefined {

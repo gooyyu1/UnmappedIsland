@@ -59,6 +59,6 @@ describe('サンプルアセットパック', () => {
 
     const locale = loadLocalization(loaded);
     expect(locale.object('poison_potion').displayName).toBe('毒薬');
-    expect(locale.object('poison_potion').action('drink').displayName).toBe('あおる');
+    expect(locale.object('poison_potion').interaction('drink').displayName).toBe('あおる');
   });
 });

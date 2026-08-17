@@ -1067,7 +1067,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       `object_texts:
   stone:
     display_name: 石
-    combinations:
+    interactions:
       knap:
         display_name: 打ち割る
         description: 石を打ち合わせて割る。
@@ -1096,7 +1096,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   coconut_meat:
     display_name: ヤシの果肉
     description: 殻から掻き出した白い果肉。
-    actions:
+    interactions:
       eat:
         display_name: 食べる
         description: そのまま口へ運ぶ。

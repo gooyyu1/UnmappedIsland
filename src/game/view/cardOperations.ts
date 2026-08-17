@@ -149,7 +149,7 @@ export function cardOperationsOf(
     const fromDefinition = target.def.actions
       .filter((action) => action.showMenu === 'always')
       .map((action) => {
-        const declared = texts.action(action.name);
+        const declared = texts.interaction(action.name);
         const unmet = instance.actionUnmetRequirement(action.name, game.player.instance);
         return {
           key: action.name,
@@ -259,7 +259,7 @@ export function cardOperationsOf(
     const [combination] = self.findMatchingCombinations(dragged);
     if (combination === undefined) return undefined;
 
-    const texts = locale.object(self.def.name).combination(combination.name);
+    const texts = locale.object(self.def.name).interaction(combination.name);
     return {
       name: texts.displayName,
       description: texts.description,

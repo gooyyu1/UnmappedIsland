@@ -244,6 +244,16 @@ export class RawObjectDef {
 
     const actions = parseActions(loader, this.name, mergedActions);
     const combinations = parseCombinations(loader, this.name, mergedCombinations);
+
+    // **操作の名前は1つの名前空間**（11節）。同じカードに同名の操作が2つ並ぶと、押して開く
+    // メニューの「食べる」と重ねたときの「食べる」をプレイヤーが見分けられない。
+    const actionNames = new Set(actions.map((action) => action.name));
+    const clash = combinations.find((combination) => actionNames.has(combination.name));
+    if (clash !== undefined)
+      throw new YamlLoadError(
+        `'${this.name}': 同じ名前の actions と combinations があります（'${clash.name}'）。` +
+          '操作の名前は1つの名前空間なので、どちらかを別の名前にしてください。',
+      );
     const tagIds = [...new Set(tags.map((tag) => loader.tagNames.intern(tag)))];
     const representedBySlotGlobalId =
       representedByName !== undefined ? loader.slotNames.intern(representedByName) : undefined;
