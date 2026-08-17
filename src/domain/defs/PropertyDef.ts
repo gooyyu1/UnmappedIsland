@@ -410,6 +410,23 @@ export class PropertyDef {
   }
 
   /**
+   * この値がvalueになったとき、rangeの外へ出るなら、そこで起こること（RangeEventReadout参照）。
+   * 範囲に収まるならundefined。
+   *
+   * **一撃で端まで動かす効果も、range系イベントの引き金になる**（6.3節）。仕留めの一撃は血を0に
+   * するだけで、獲物を死体へ置き換えるのは`blood`の`on_shortfall`——これを繋がないと、死体の
+   * 作り方がどこにも無いことになる。
+   */
+  rangeEventAt(value: number, resolve: StaticValueResolver): RangeEventReadout | undefined {
+    if (this.range === undefined) return undefined;
+
+    const label: RangeEventLabel | undefined =
+      value > this.range.max ? 'on_overflow' : value < this.range.min ? 'on_shortfall' : undefined;
+    if (label === undefined) return undefined;
+    return this.rangeEventReadouts(resolve).find((readout) => readout.label === label);
+  }
+
+  /**
    * 値がtick毎にperTickずつ動いたとき、rangeの端を割る（超える）までのtick数。端まで届かない
    * 向きへ動く場合と、rangeを持たない場合はundefined。
    *

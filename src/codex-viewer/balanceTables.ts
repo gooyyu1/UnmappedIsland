@@ -1,5 +1,5 @@
 import type { CraftingStep } from '../domain/defs/CraftingStep';
-import type { ObjectDef, RangeCycle } from '../domain/defs/ObjectDef';
+import type { ExternalTickDelta, ObjectDef, RangeCycle } from '../domain/defs/ObjectDef';
 import type { TickDelta } from '../domain/defs/PassiveEffect';
 import type { StaticValueResolver } from '../domain/defs/ReferenceRoot';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
@@ -288,7 +288,10 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
     objectCosts: objectCosts(codex, islandWide, MINUTES_PER_DAY - places[0].menu.totalMinutes),
     consumption: consumptionRows(codex, characterNames),
     // 供給表は島全体の文脈で出す。罠の重みは土地が入れるので、土地を決めないと候補が全部0になる。
-    supply: supplyRows(codex, allSteps(codex, bestAncestorContext(explorableLocationsOf(codex)))),
+    supply: supplyRows(
+      codex,
+      allSteps(codex, withBestDragged(allDefs(codex), bestAncestorContext(explorableLocationsOf(codex)))),
+    ),
     places,
   };
 }
@@ -446,15 +449,16 @@ function placeBalances(
   readonly islandWide: Acquisition;
 } {
   const locations = explorableLocationsOf(codex);
+  const defs = allDefs(codex);
 
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
-  const islandContext = bestAncestorContext(locations);
+  const islandContext = withBestDragged(defs, bestAncestorContext(locations));
   const islandWide = new Acquisition(codex, allSteps(codex, islandContext));
 
   let islandRoutes: readonly ChainRoute[] = [];
   const places = [undefined, ...locations].map((location) => {
     // 罠が掛ける動物の重みは土地が宣言する（inherit）ので、土地を決めてから工程を組み立てる。
-    const context = location === undefined ? islandContext : ancestorContext(location);
+    const context = location === undefined ? islandContext : withBestDragged(defs, ancestorContext(location));
     const steps =
       location === undefined ? allSteps(codex, context) : stepsAt(codex, allSteps(codex, context), location);
     const acquisition = location === undefined ? islandWide : new Acquisition(codex, steps, islandWide);
@@ -696,7 +700,8 @@ function buildRoute(
       route.some((ref) => ref.def.globalId === place.globalId) ||
       !(resolved.imported || [...prerequisites.values()].some(({ imported }) => imported)),
     // 労働0で値が返るなら、時間を数えられていない（雨で溜まる水など）。摂取そのものが0分なのは仕様
-    // なので、素材を0分で得ている場合と、経路まるごとが0分の場合だけを印にする。
+    // なので、素材を0分で得ている場合と、経路まるごとが0分の場合だけを印にする。時間で回る工程
+    // （罠・焼き上がり）は労働0でよい——待つ間に他のことができるだけで、数え落としではない。
     untimed:
       totalOf(cost) === 0 ||
       route.slice(1).some((ref) => ref.cycle === undefined && ref.step.laborMinutes === 0),
@@ -804,7 +809,7 @@ function addEntry(entries: MenuEntry[], route: ChainRoute, repetitions: number):
 function deviceMaintenancePerDay(acquisition: Acquisition, route: readonly StepRef[]): number | undefined {
   let perDay = 0;
   for (const ref of route) {
-    if (ref.cycle?.lifetimeMinutes === undefined) continue;
+    if (!(ref.cycle?.repeats === true) || ref.cycle.lifetimeMinutes === undefined) continue;
     const deviceCost = acquisition.costByObject.get(ref.def.globalId);
     if (deviceCost === undefined) continue;
     perDay += totalOf(deviceCost) / (ref.cycle.lifetimeMinutes / MINUTES_PER_DAY);
@@ -819,7 +824,9 @@ function deviceRows(
 ): readonly DeviceRow[] {
   const rows: DeviceRow[] = [];
   for (const ref of steps) {
-    if (ref.cycle === undefined || ref.step.outputs.length === 0) continue;
+    // 繰り返す仕掛けだけ。1回で終わる作り替え（焼き上がり・失血死）は、設備を1つ保って何個返るかを
+    // 数える表に載せる意味が無い——返るのは常に1個で、消えるのは設備ではなく入力そのもの。
+    if (ref.cycle?.repeats !== true || ref.step.outputs.length === 0) continue;
 
     const { periodMinutes, lifetimeMinutes } = ref.cycle;
     const deviceCost = acquisition.costByObject.get(ref.def.globalId);
@@ -882,16 +889,21 @@ interface StepRef {
   readonly def: ObjectDef;
   readonly step: CraftingStep;
 
-  /**
-   * 時間で回る工程（罠の判定）なら、その周期と、宣言元の寿命。**プレイヤーは待ち時間を払わないが、
-   * 設備は待っている間も朽ちる**ので、1周期で使い切る設備の割合（周期÷寿命）が値段になる。
-   * 寿命を持たない設備では按分できないためundefined。
-   */
+  /** 時間で回る工程（罠の判定、火にかけた肉の焼き上がり）なら、その周期。 */
   readonly cycle: DeviceCycle | undefined;
 }
 
 interface DeviceCycle {
   readonly periodMinutes: number;
+
+  /**
+   * 繰り返す仕掛け（罠）か。真なら**プレイヤーは待ち時間を払わないが、設備は待っている間も朽ちる**
+   * ので、1周期で使い切る設備の割合（周期÷寿命）が値段になる。偽は1回で終わる作り替えで、
+   * 消えるのは入力そのものなので按分は要らない。
+   */
+  readonly repeats: boolean;
+
+  /** 宣言元が朽ちるまでの時間（分）。朽ちない設備では按分できないためundefined。 */
   readonly lifetimeMinutes: number | undefined;
 }
 
@@ -973,25 +985,52 @@ function isCharacter(codex: WorldCodex, def: ObjectDef): boolean {
  * 宣言するので（`inherit`）、これが無いと候補が全部0になる。
  */
 function allSteps(codex: WorldCodex, outer?: StaticValueResolver): readonly StepRef[] {
-  return allDefs(codex).flatMap((def) => {
-    const cycles = def.rangeCycles(outer);
+  const defs = allDefs(codex);
+  return defs.flatMap((def) => {
+    const cycles = def.rangeCycles(outer, externalTickDeltasOn(def, defs));
     const lifetimeMinutes = lifetimeOf(cycles);
     return [
       ...def.craftingSteps(outer).map((step) => ({ def, step, cycle: undefined })),
+      // 繰り返す周期は設備（罠）。1回で終わる周期は、外から押されて初めて起こる作り替え
+      // （火にかけた肉が焼ける・失血した獲物が死体になる）。朽ちるだけの周期は工程ではない。
       ...cycles
-        .filter((cycle) => cycle.repeats)
+        .filter((cycle) => cycle.repeats || cycle.drivenBy !== undefined)
         .map((cycle) => ({
           def,
           step: cycle.step,
-          cycle: { periodMinutes: cycle.minutes, lifetimeMinutes },
+          cycle: { periodMinutes: cycle.minutes, repeats: cycle.repeats, lifetimeMinutes },
         })),
     ];
   });
 }
 
-/** その型が朽ちるまでの時間（分）。複数あれば最も早く尽きるもの。朽ちないならundefined。 */
+/**
+ * その型のtick毎の値を外から動かす物（ExternalTickDelta参照）。**枠の受け入れが唯一の手掛かり**——
+ * 炉の火の枠が`roastable`を受けるから炉は肉を焼けるし、獲物の怪我の枠が`injury`を受けるから
+ * 刺さった傷は血を奪える。
+ */
+function externalTickDeltasOn(def: ObjectDef, defs: readonly ObjectDef[]): readonly ExternalTickDelta[] {
+  const found: ExternalTickDelta[] = [];
+  for (const source of defs) {
+    if (source.globalId === def.globalId) continue;
+    if (source.slotDefs.some((slot) => slot.acceptsAnywhere(def)))
+      found.push(...source.externalTickDeltas('child'));
+    if (def.slotDefs.some((slot) => slot.acceptsAnywhere(source)))
+      found.push(...source.externalTickDeltas('parent'));
+  }
+  return found;
+}
+
+/**
+ * その型が朽ちるまでの時間（分）。複数あれば最も早く尽きるもの。朽ちないならundefined。
+ *
+ * 外から押されて消える周期（焼き上がり・失血死）は数えない——**置いておくだけでは起こらない**ので、
+ * それを寿命と呼ぶと、火にかけていない肉まで勝手に焼け落ちることになる。
+ */
 function lifetimeOf(cycles: readonly RangeCycle[]): number | undefined {
-  const ends = cycles.filter((cycle) => cycle.destroysSelf && !cycle.repeats).map((cycle) => cycle.minutes);
+  const ends = cycles
+    .filter((cycle) => cycle.destroysSelf && !cycle.repeats && cycle.drivenBy === undefined)
+    .map((cycle) => cycle.minutes);
   return ends.length === 0 ? undefined : Math.min(...ends);
 }
 
@@ -1009,6 +1048,24 @@ function bestAncestorContext(locations: readonly ObjectDef[]): StaticValueResolv
       .map((location) => location.staticValueOf(propertyGlobalId))
       .filter((value): value is number => value !== undefined);
     return declared.length === 0 ? 0 : Math.max(...declared);
+  };
+}
+
+/**
+ * ancestorに、重ねる相手（dragged）の値を足した文脈。**最も高く宣言している型を重ねたものとして
+ * 扱う**（bestAncestorContextと同じ見方）。
+ *
+ * これが無いと、相手の値を見る重み——一撃がどう入るかは武器が決める（HuntingSystem.md 1.2節）——が
+ * 全て0になり、宣言順で最初の候補だけが起こることになる（PickEffect.collectOutcomes）。
+ * 分岐ごとに最も良い武器を選べる前提の配分なので、**どれか1つの武器で出る配分ではない**。
+ */
+function withBestDragged(defs: readonly ObjectDef[], ancestor: StaticValueResolver): StaticValueResolver {
+  return (root, propertyGlobalId) => {
+    if (root !== 'dragged') return ancestor(root, propertyGlobalId);
+    const declared = defs
+      .map((def) => def.staticValueOf(propertyGlobalId))
+      .filter((value): value is number => value !== undefined);
+    return declared.length === 0 ? undefined : Math.max(...declared);
   };
 }
 
@@ -1075,8 +1132,8 @@ class Acquisition {
     };
     let imported = false;
 
-    // 時間で回る工程は、1周期ぶんだけ設備を使い切る。朽ちない設備は按分できない（待てば無限に得られる）。
-    if (ref.cycle !== undefined) {
+    // 繰り返す仕掛けは、1周期ぶんだけ設備を使い切る。朽ちない設備は按分できない（待てば無限に得られる）。
+    if (ref.cycle?.repeats === true) {
       if (ref.cycle.lifetimeMinutes === undefined) return undefined;
       const device = this.costByObject.get(ref.def.globalId);
       if (device === undefined) return undefined;

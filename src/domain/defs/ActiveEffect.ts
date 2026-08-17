@@ -52,7 +52,7 @@ export abstract class ActiveEffect {
    * 宣言順の合成は枝の直積になる。resolveは、weightの`{subject, prop}`参照を定義だけから
    * 数値へ落とす手立て。
    *
-   * 既定は「何も起きない枝が1つ」——値もオブジェクトも動かさない効果（set・destroy）はこれで足りる。
+   * 既定は「何も起きない枝が1つ」——値もオブジェクトも動かさない効果（destroy）はこれで足りる。
    */
   collectOutcomes(_resolve: StaticValueResolver): readonly StepOutcome[] {
     return UNCHANGED_OUTCOMES;
@@ -148,6 +148,17 @@ export class SetEffect extends ActiveEffect {
     );
   }
 
+  override collectOutcomes(): readonly StepOutcome[] {
+    return [
+      {
+        probability: 1,
+        spawns: [],
+        deltas: [],
+        assignments: [{ target: this.target, propertyGlobalId: this.propertyGlobalId, value: this.value }],
+      },
+    ];
+  }
+
   affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
     return this.propertyGlobalId === propertyGlobalId && (ownedByDeclarer || this.target !== 'self');
   }
@@ -203,7 +214,7 @@ export class AddEffect extends ActiveEffect {
   }
 
   override collectOutcomes(): readonly StepOutcome[] {
-    return [{ probability: 1, spawns: [], deltas: [this.delta] }];
+    return [{ probability: 1, spawns: [], deltas: [this.delta], assignments: [] }];
   }
 
   /** transferのlinked_add（比例して効く）が、自分の行へ書き足せるように断片で返す。 */
@@ -330,7 +341,12 @@ export class SpawnEffect extends ActiveEffect {
 
   override collectOutcomes(): readonly StepOutcome[] {
     return [
-      { probability: 1, spawns: [{ objectGlobalId: this.objectGlobalId, count: this.count }], deltas: [] },
+      {
+        probability: 1,
+        spawns: [{ objectGlobalId: this.objectGlobalId, count: this.count }],
+        deltas: [],
+        assignments: [],
+      },
     ];
   }
 }
@@ -429,7 +445,7 @@ export class TransferEffect extends ActiveEffect {
   }
 
   override collectOutcomes(): readonly StepOutcome[] {
-    return [{ probability: 1, spawns: [], deltas: this.deltas }];
+    return [{ probability: 1, spawns: [], deltas: this.deltas, assignments: [] }];
   }
 
   /**
