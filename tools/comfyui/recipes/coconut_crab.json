@@ -1,0 +1,37 @@
+{
+  "_comment": [
+    "src/assets/objects/coconut_crab.png を作り直すためのレシピ。build.py が読む。",
+    "岩場の海岸で見つけて捕まえる2kgの陸生の甲殻類（src/assets/world-codex/foods.yaml）。",
+    "",
+    "**2段構え**（recipes/rat.json と同じ）。生成は写真になるので、Qwen Image Edit が絵の具の",
+    "質感へ描き直しつつ白い紙の上へ置き直す。",
+    "",
+    "枠は横長（1152x896）。脚を広げると横へ伸びる。",
+    "",
+    "**seedは脚と鋏が枠に収まるものを選ぶ。** 甲羅と色は素直に出るが、大きく描かれると鋏か脚が",
+    "枠に当たる（21枚中、四辺の内側に収まったのは2枚）。切り出しは外接矩形なので、当たれば欠ける。",
+    "",
+    "段は400。2kgの獲物なので、ヤケイ（junglefowl）と同じ扱い。"
+  ],
+  "output": "src/assets/objects/coconut_crab.png",
+  "prompts": "objects.json",
+  "prompt": "coconut_crab",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 99459967165215,
+  "width": 1152,
+  "height": 896,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same crab exactly as it is in shape, pose and layout, with both of its big pincer claws and all of its walking legs complete to the very tips, and paint it with soft brush strokes and gentle natural shading instead of photographic detail. Keep its deep blue violet and rusty orange brown shell, a little deeper so that it is clearly darker than the white page, with darker joints between the segments. Dry matte shell, flat even lighting. Remove the background completely and replace it with a plain empty white page, leaving the crab alone in the middle with a wide white margin all around it and one soft grey shadow directly beneath it. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "_comment": [
+    "src/assets/objects/water_spinach.png を作り直すためのレシピ。build.py が読む。",
+    "草原の探索で摘める葉物（src/assets/world-codex/foods.yaml）。",
+    "",
+    "**2段構え**（recipes/dry_grass.json と同じ）。生成は写真になり、葉の緑が飛ぶ。",
+    "",
+    "枠は横長（1152x896）。束は横へ寝るので、縦長だと立った草むらになる。",
+    "",
+    "**葉の隙間は埋めない**（keepHoles）。茎の間から紙が見えるので、埋めると不透明な白い塊が",
+    "束の中に残る（recipes/raft.json と同じ制約）。",
+    "",
+    "段は400。3000mlの嵩なので、枯れ草（dry_grass）と同じ扱い。"
+  ],
+  "output": "src/assets/objects/water_spinach.png",
+  "prompts": "objects.json",
+  "prompt": "water_spinach",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 191655096839788,
+  "width": 1152,
+  "height": 896,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same bundle of water spinach exactly as it is in shape and layout, the long hollow stems laid down together on their sides with the cut ends at one side and the narrow pointed leaves spread at the other, and paint it with soft brush strokes and gentle natural shading instead of photographic detail. Deepen the leaves to a fresh deep green and the stems to a paler yellow green, clearly darker than the white page. Crisp matte leaves, flat even lighting. Remove the background completely and replace it with a plain empty white page, leaving the bundle alone in the middle with a wide white margin all around it and one soft grey shadow directly beneath it. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "keepHoles": true,
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

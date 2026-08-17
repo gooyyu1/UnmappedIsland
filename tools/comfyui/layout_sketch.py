@@ -31,6 +31,9 @@ CORD_DARK = (120, 88, 52)
 SAIL = (198, 186, 160)
 BONE = (216, 203, 176)
 BONE_DARK = (166, 152, 126)
+TARO = (124, 92, 64)
+TARO_DARK = (86, 62, 42)
+TARO_RING = (170, 142, 110)
 PAGE = (255, 255, 255)
 
 
@@ -258,6 +261,52 @@ def draw_log(draw: ImageDraw.ImageDraw) -> None:
         draw.polygon(rim, fill=fill, outline=outline, width=4)
 
 
+def draw_taro(draw: ImageDraw.ImageDraw) -> None:
+    """タロイモ。太い側を左下へ寝かせ、胴に輪の節を巻き、太い側の端へ葉柄の切り株を1つ。
+
+    **輪と切り株が芋を芋にする。** 生成に頼むと、輪を年輪と読んで木目の彫刻になり、切り株を柄と
+    読んでキノコになった（21枚で0。prompts/objects.json の taro 参照）。どちらも位置の話なので
+    ここで決める。
+    """
+    butt, tip = (400.0, 600.0), (850.0, 330.0)
+    span = ((tip[0] - butt[0]) ** 2 + (tip[1] - butt[1]) ** 2) ** 0.5
+    axis = ((tip[0] - butt[0]) / span, (tip[1] - butt[1]) / span)
+    side = (-axis[1], axis[0])
+    steps = 48
+
+    def at(along: float, across: float) -> tuple[float, float]:
+        return (butt[0] + axis[0] * along + side[0] * across, butt[1] + axis[1] * along + side[1] * across)
+
+    def radius_at(ratio: float) -> float:
+        """両端が丸く閉じる楕円の輪郭に、太い側ほど太る重みを掛ける。"""
+        return 2 * math.sqrt(max(0.0, ratio * (1 - ratio))) * (215 - 65 * ratio)
+
+    # 葉柄の切り株。胴より先に描いて、胴に隠させる（生えている根元は見えない）。
+    draw.line([at(0, 0), at(-140, 0)], fill=TARO_DARK, width=76)
+    draw.line([at(-140, 40), at(-140, -40)], fill=TARO_RING, width=12)
+
+    body = [at(span * i / steps, radius_at(i / steps)) for i in range(steps + 1)]
+    body += [at(span * i / steps, -radius_at(i / steps)) for i in range(steps, -1, -1)]
+    draw.polygon(body, fill=TARO)
+    # 陰は手前（右下）側へ。丸みが無いと、平たい葉に見える。
+    shade = [at(span * i / steps, radius_at(i / steps)) for i in range(steps + 1)]
+    shade += [at(span * i / steps, radius_at(i / steps) * 0.38) for i in range(steps, -1, -1)]
+    draw.polygon(shade, fill=TARO_DARK)
+
+    # 輪の節。胴を横切る弧を等間隔に巻く。手前へ膨らませて、巻いていることを出す。
+    for index in range(1, 7):
+        ratio = index / 7
+        radius = radius_at(ratio)
+        ring = [
+            at(
+                span * ratio + radius * 0.30 * math.sin(step / steps * math.pi),
+                radius * math.cos(step / steps * math.pi),
+            )
+            for step in range(steps + 1)
+        ]
+        draw.line(ring, fill=TARO_RING, width=7, joint="curve")
+
+
 def draw_needle(draw: ImageDraw.ImageDraw) -> None:
     """骨針。太い側から先へ細り、太い側の近くに糸を通す穴が1つ。
 
@@ -396,6 +445,7 @@ LAYS = {
     "sail": draw_sail,
     "snare": draw_snare,
     "spear": draw_spear,
+    "taro": draw_taro,
     "three_stone": draw_three_stone,
 }
 
