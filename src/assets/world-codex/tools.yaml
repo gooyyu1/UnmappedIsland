@@ -61,8 +61,8 @@ object_defs:
   # **木を倒せる唯一の道具**（chopping_tool、timber.yaml）。尖った石では幹の木部を断てないため、
   # 丸太＝筏（voyage.yaml）への道はここを通る。
   #
-  # レシピはまだ無い（同8節）。今は狩りの釣り合いを見るシナリオ（src/scenarios/hunting_ground.yaml）
-  # だけが手元へ置く。
+  # **材料より軽い。** 頭部400＋柄600＋紐200＝1200gで、太い枝1000gのうち400gは削り落とす木屑。
+  # 撚る工程（fiber.yaml）が重さを保つのと違い、削る工程では減る。
   stone_axe:
     traits: [weapon]
     tags: [item, tool, cutting_tool, chopping_tool]
@@ -73,6 +73,21 @@ object_defs:
       light_blow: {value: 15}
       thrust: {value: 0}
       whiff: {value: 25}
+    # 解放条件（conditions、13.3節）はまだ置かない。石器・繊維のスキルのプロパティと、それを
+    # 伸ばす経路が未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
+    # 何が揃えば作れるべきかはdocs/world/Skills.md 3節が持つ。
+    recipes:
+      hafted:
+        steps:
+          # 柄をこしらえる。枝の先を割り、刃を落とし込む溝を作る。
+          - requires:
+              - {object: thick_branch, count: 1, consume: true}
+            duration: 60
+          # 刃を溝へ据え、紐で締め上げる（柄付け、docs/world/Skills.md 3節）。
+          - requires:
+              - {object: sharp_stone, count: 1, consume: true}
+              - {object: cord, count: 1, consume: true}
+            duration: 120
 
   # 骨針。小さな骨を削って穴を開けた縫い針（docs/world/SurvivalItems.md 1.2節）。
   #

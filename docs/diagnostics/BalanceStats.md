@@ -495,21 +495,10 @@ npm run stats:balance
 | pot | 作る工程が無い |
 | bottle | 作る工程が無い |
 | jar | 作る工程が無い |
-| stone_axe | 作る工程が無い |
 | bone_needle | small_bone |
 | spear | 作る工程が無い |
 | bandage | 作る工程が無い |
 | rawhide_sail | rawhide、sewing_tool |
-
-### 道具が無くて作れないもの
-
-材料は揃うが、要る道具に入手経路が無い。**総コストは出るが、実際には作れない**
-——道具の時間を総コストへ按分しない決まり（#550）の裏返しなので、ここで別に出す。
-
-| オブジェクト | 総労働（分） | 無い道具 |
-| --- | --- | --- |
-| log | 183.5 | chopping_tool |
-| raft | 4101.0 | chopping_tool |
 
 ### 総コスト
 
@@ -551,10 +540,11 @@ npm run stats:balance
 | cave_entrance | 40.5 | 40.5 | 0.0 | 0.05 | mountain_peak.explore | — |
 | spring | 168.0 | 168.0 | 0.0 | 0.20 | grassland.explore | — |
 | broadleaf_tree | 127.0 | 127.0 | 0.0 | 0.15 | forest.explore | — |
-| log | 183.5 | 63.5 | 120.0 | 0.22 | forest.explore → broadleaf_tree.fell | chopping_tool（入手経路なし） |
+| log | 183.5 | 63.5 | 120.0 | 0.22 | forest.explore → broadleaf_tree.fell | chopping_tool → stone_axe（469.4分） |
 | sharp_stone | 72.0 | 12.0 | 60.0 | 0.09 | rocky_field.explore → stone.knap | — |
+| stone_axe | 469.4 | 101.4 | 368.0 | 0.56 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rocky_field.explore → stone.knap → sandy_beach.explore → stone_axe.hafted | — |
 | snare | 97.5 | 33.5 | 64.0 | 0.12 | jungle.explore → abaca.fell → banana_stem.strip → snare.knotted | cutting_tool → sharp_stone（72.0分） |
-| raft | 4101.0 | 1605.0 | 2496.0 | 4.91 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted → forest.explore → broadleaf_tree.fell → raft.lashed | chopping_tool（入手経路なし）、cutting_tool → sharp_stone（72.0分） |
+| raft | 4101.0 | 1605.0 | 2496.0 | 4.91 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted → forest.explore → broadleaf_tree.fell → raft.lashed | chopping_tool → stone_axe（469.4分）、cutting_tool → sharp_stone（72.0分） |
 | palm_frond | 11.1 | 0.0 | 11.1 | 0.01 | palm_tree.pick_frond | palm_tree（115.4分） |
 | woven_leaf | 35.6 | 0.0 | 35.6 | 0.04 | palm_tree.pick_frond → palm_frond.split_and_weave | cutting_tool → sharp_stone（72.0分）、palm_tree（115.4分） |
 
@@ -751,6 +741,7 @@ npm run stats:balance
 | mountainside | explore | action | 15 | 15 | cave_entrance ×0.15、golden_chalice ×0.03、berry_bush ×0.21、stone ×1.00、twig ×0.63 | （self）exploration_progress +1.00 |
 | mountain_peak | explore | action | 15 | 15 | cave_entrance ×0.37、stone ×1.21 | （self）exploration_progress +1.00 |
 | broadleaf_tree | fell | combination | 240 | 240 | log ×2.00、thick_branch ×3.00 | — |
+| stone_axe | hafted | recipe | 180 | 180 | stone_axe ×1.00 | — |
 | snare | add_plant_bait | combination | 1 | 1 | — | （self）plant_bait +999.00 |
 | snare | add_meat_bait | combination | 1 | 1 | — | （self）meat_bait +999.00 |
 | snare | knotted | recipe | 30 | 30 | snare ×1.00 | — |

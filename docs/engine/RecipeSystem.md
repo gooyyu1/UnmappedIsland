@@ -96,6 +96,13 @@ actions/combinations と同じで（[ActionSystem.md](ActionSystem.md) 2 節）�
 作るには、製作中の壁が `wall` タグを持っていなければ枠へ入りません。引き継がない場合は、枠の側が製作中
 オブジェクトも受け入れるよう個別に書く必要があり、枠の宣言が「置ける物」以外の知識を持つことになります。
 
+**引き継ぐのは置き場所だけで、働きは引き継ぎません。** 製作中オブジェクトは `combinations` の相手
+（`with`、[`GameElementDefinition.md`](./GameElementDefinition.md) 12.1 節）になりません
+（`ObjectDef.combinationsAccepting`）。石斧は `cutting_tool`・`chopping_tool`・`weapon` を持つので、
+弾かなければ**半分できた斧で木を伐り、獣を殴れて**しまいます——しかも製作中オブジェクトは完成品の
+`props` を持たないため、一撃の重み配分（`HuntingSystem.md` 1.2 節）が全て0になり、
+重みが全て0のときの規約（先頭の候補）で最も重い一撃が必ず出ます。
+
 ## 6. 未決事項・今後の検討課題
 
 - 製作中オブジェクトの型の自動生成が、ゲーム起動時にエンジンがメモリ上で行う処理なのか、ビルド時の前処理ステップ
