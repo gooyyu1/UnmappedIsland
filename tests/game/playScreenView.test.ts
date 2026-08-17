@@ -627,8 +627,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       .find((entry) => entry.key === 'satiety');
 
     expect(charmSatiety?.value, 'お守り自身の値が出る').toBe(10);
-    expect(charmSatiety?.detail.received, 'お守りは何の影響も受けていない').toEqual([]);
-    expect(characterSatiety?.detail.received.length, 'キャラクタの満腹度は影響を受けている').toBeGreaterThan(
+    expect(charmSatiety?.detail?.received, 'お守りは何の影響も受けていない').toEqual([]);
+    expect(characterSatiety?.detail?.received.length, 'キャラクタの満腹度は影響を受けている').toBeGreaterThan(
       0,
     );
   });

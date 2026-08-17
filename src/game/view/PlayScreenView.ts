@@ -6,13 +6,14 @@ import { Path } from '../../domain/runtime/views/Path';
 import type { PropertyInfluence } from '../../domain/runtime/PropertyInfluence';
 import type { PropertyReading } from '../../domain/runtime/PropertyValue';
 import type { WorldObject } from '../../domain/runtime/WorldObject';
-import { putIntoSlot } from '../../domain/runtime/slotEntry';
 import type { Localization } from '../../locale/Localization';
 import type { CraftingMaterial } from './craftingView';
-import { craftingActions, craftingMaterials } from './craftingView';
+import { craftingMaterials } from './craftingView';
 import { characterCardContent } from './characterCard';
 import { cardLooksOf } from './cardLooks';
-import type { CardPlace, CardPlacement } from './cardPlaces';
+import type { CardAction, CardCombination, CardOperations, CardPutIn } from './cardOperations';
+import { cardOperationsOf } from './cardOperations';
+import type { CardPlace, CardPlacement, SlotOfPlace } from './cardPlaces';
 import { cardPlacesOf, samePlace } from './cardPlaces';
 import type { SlotRef } from '../../art/backgroundArt';
 import type { CardContent } from '../ui/Card';
@@ -72,9 +73,9 @@ export interface ObjectCardStack extends CardContent {
 
   /**
    * countを渡した操作（moveTo・putInto）が動かすインスタンスのID。先頭は束の代表＝掴まれていた1つ。
-   * どの個体が動くのかの選び方はビューが1箇所で決め（carriedOf）、画面の移動アニメーション
-   * （MotionContext.released）はこれに合わせる——ワールドが動かすものと画面が飛ばすものを
-   * 食い違わせないため。
+   * どの個体が動くのかの選び方は操作の側が1箇所で決め（cardOperationsのcarriedOf）、画面の移動
+   * アニメーション（MotionContext.released）はこれに合わせる——ワールドが動かすものと画面が飛ばす
+   * ものを食い違わせないため。
    */
   readonly movedIds: (count: number) => readonly number[];
 
@@ -95,67 +96,6 @@ export interface ObjectCardStack extends CardContent {
    * SlotSystem.md 3節）。
    */
   readonly reorder?: (at: CardPlacement) => (() => void) | undefined;
-}
-
-/**
- * カード1枚だけで完結する操作（ActionSystem.md 1節のactions）。子ウィンドウにボタンとして並べるため、
- * 実行する手段だけでなく表示文字列も持つ（locale/ja.yamlのactions節、Localization.md）。
- */
-export interface CardAction {
-  /**
-   * 宣言の識別子（`actions`のキー）。画面が特定の操作を見分けるためのもので、表示には使わない
-   * ——探索だけは、見つかったものを見せる手順が要るので画面側が実行を引き受ける（PlayScene）。
-   * 画面の都合で足した操作（製作中オブジェクトのもの、craftingView）は持たない。
-   */
-  readonly key?: string;
-
-  readonly name: string;
-  /** 説明文。localeに書かれていなければundefined。 */
-  readonly description: string | undefined;
-  /** 実行にかかるゲーム内時間（分）。時間を消費しない操作は0。 */
-  readonly minutes: number;
-  /** 実行する。ワールドを変えるだけで、画面への反映は呼び出し側の責務。 */
-  readonly execute: () => void;
-
-  /** 今この操作の要件（14節）を満たしているか。falseならボタンを押せなくする。 */
-  readonly enabled: boolean;
-
-  /** 満たしていない要件が宣言している理由の文言（14.6節）。宣言が無ければundefined。 */
-  readonly reason: string | undefined;
-}
-
-/**
- * カードを重ねたときに実行できるcombination。何が起きるかをドラッグ中に見せるため、実行する手段だけで
- * なく表示文字列も持つ（locale/ja.yamlのcombinations節、Localization.md）。
- */
-export interface CardCombination {
-  readonly name: string;
-  /** 説明文。localeに書かれていなければundefined。 */
-  readonly description: string | undefined;
-  /** 実行にかかるゲーム内時間（分）。時間を消費しない組み合わせは0。 */
-  readonly minutes: number;
-  /**
-   * 指が掴んでいたインスタンス。同じ束へ重ねたときは束の2つ目になるため、束の代表とは限らない。
-   * 画面側は「掴んでいたカード」の行方を追う（CardTable.MotionContext.released）のに使う。
-   *
-   * combinationを宣言している側（`self`）とは限らない——逆向きに成立した組み合わせでは、掴んだ札の
-   * ほうが宣言している側になる（combinationOf参照）。
-   */
-  readonly held: WorldObject;
-  /** 実行する。ワールドを変えるだけで、画面への反映は呼び出し側の責務。 */
-  readonly execute: () => void;
-}
-
-/**
- * 物を枠へ入れる操作の見せ方（SlotDef.putInDuration・slot_textsのput_in）。かごへしまうのも怪我へ
- * 治療具を当てるのも同じこの1つの操作で、値段と呼び名は枠が決める。
- */
-export interface CardPutIn {
-  readonly name: string;
-  /** 説明文。localeに書かれていなければundefined。 */
-  readonly description: string | undefined;
-  /** 入れるのにかかるゲーム内時間（分）。一瞬で入る枠は0。 */
-  readonly minutes: number;
 }
 
 /**
@@ -376,26 +316,8 @@ export const EXPLORE_ACTION = 'explore';
  */
 const STATUS_TAG = 'status';
 
-/**
- * そのスロットの枠の位置が安定しているか（`cell_count`、SlotSystem.md 3節）。空き枠を指した
- * ドロップを、枠そのものへ入れる操作として扱ってよいのはこちらだけ。
- */
-function hasFixedCells(owner: WorldObject, slotGlobalId: number): boolean {
-  return owner.tryGetSlot(slotGlobalId)?.def.cellCount !== undefined;
-}
-
-/**
- * 束のうち、まとめての操作が動かす先頭のcount個。**どの個体が動くのかはここだけが決める**——
- * 実際に動かす側（moveTo・putInto）と、動きを見せる側（movedIds）の両方がここを通る。
- */
-function carriedOf<T>(stack: readonly T[], count: number): readonly T[] {
-  return stack.slice(0, Math.max(1, count));
-}
-
 /** スロットの中身を、積み重なっているまとまりごとに分けたもの。 */
-function stacksIn(
-  dest: { owner: WorldObject; slotId: number } | undefined,
-): readonly (readonly WorldObject[])[] {
+function stacksIn(dest: SlotOfPlace | undefined): readonly (readonly WorldObject[])[] {
   const slot = dest?.owner.tryGetSlot(dest.slotId);
   return slot === undefined ? [] : slot.cells.flatMap((cell) => (cell === undefined ? [] : [cell.members]));
 }
@@ -405,6 +327,10 @@ function stacksIn(
  * 現在地とキャラクターのスロットの中身をそのまま映す。
  *
  * ワールドの状態を写し取るだけなので、アクションでワールドが変わったら作り直す（PlayScene参照）。
+ * **写し取るのは一度に全部**——ここが作るものは同じ時点のワールドを映す。
+ *
+ * カードの語彙は3つに分かれている。場所とスロットの対応（cardPlaces）・札の見た目（cardLooks）・
+ * 札の上の操作（cardOperations）で、ここはそれを束ねて画面の区画へ配る。
  */
 export function fromGameSession(
   game: NewGameSession,
@@ -414,6 +340,7 @@ export function fromGameSession(
   const location = game.player.location ?? game.startLocation;
   const places = cardPlacesOf(game.player, location, codex);
   const looks = cardLooksOf(codex, locale, game.world.minutesPerTick);
+  const operations = cardOperationsOf(game, codex, locale, places);
 
   const characterTexts = locale.object(game.player.instance.def.name);
 
@@ -438,40 +365,6 @@ export function fromGameSession(
    */
   const visiblePlacesOf = (object: WorldObject): readonly CardPlace[] =>
     object.def.visibleSlotGlobalIds.map((slotGlobalId) => places.placeOf(object, slotGlobalId));
-
-  /**
-   * そのカードで実行できるアクション。宣言を読むのは操作対象の代表（represented_by、ActionSystem.md
-   * 1節）で、実行はカードが映しているオブジェクト自身へ頼む（代表の解決はエンジン側が行う）。
-   * 水筒のカードに、中身の水のdrinkがボタンとして出る。
-   *
-   * `showMenu: never`のアクションはボタンにしない（GameElementDefinition.md 11.1節）。プレイヤーが
-   * 押す機会が無い操作——動物の1手のように時間の側が起こすもの——のための宣言。
-   *
-   * 製作中オブジェクトの操作（craftingView）も同じ並びに入る。**宣言から来たものと画面の都合で
-   * 足したものを分けない**——ボタンにする側は、どちらも同じ1つの並びとして受け取る。
-   */
-  const actionsOf = (instance: WorldObject): readonly CardAction[] => {
-    const target = instance.resolveInteractionTarget();
-    const texts = locale.object(target.def.name);
-    const fromDefinition = target.def.actions
-      .filter((action) => action.showMenu === 'always')
-      .map((action) => {
-        const declared = texts.action(action.name);
-        const unmet = instance.actionUnmetRequirement(action.name, game.player.instance);
-        return {
-          key: action.name,
-          name: declared.displayName,
-          description: declared.description,
-          minutes: instance.actionMinutes(action.name, game.player.instance),
-          execute: () => {
-            instance.tryExecuteAction(action.name, game.player.instance, game.session);
-          },
-          enabled: unmet === undefined,
-          reason: unmet?.reasonName === undefined ? undefined : locale.reason(unmet.reasonName),
-        };
-      });
-    return [...craftingActions(instance, codex, game), ...fromDefinition];
-  };
 
   /**
    * プロパティを相手として指すときの表示（対応表の表示名と絵文字。プロパティは絵を持たない）。
@@ -593,7 +486,11 @@ export function fromGameSession(
 
   const propertyCategories = propertiesOf(game.player.instance);
 
-  const stackOf = (instances: readonly WorldObject[], place: CardPlace): ObjectCardStack => ({
+  /** 束が映すもの（操作は持たない。それはcardOperationsが足す）。 */
+  const stackOf = (
+    instances: readonly WorldObject[],
+    place: CardPlace,
+  ): Omit<ObjectCardStack, keyof CardOperations> => ({
     // 見た目は代表のものを出す。個体ごとに違い得る値（状態のバー）を持つが、名前も絵も操作も代表の
     // ものなので、1枚に束ねたカードが映すのは代表の姿で揃える。
     ...looks.contentOf(instances[0]),
@@ -602,9 +499,7 @@ export function fromGameSession(
     // スタックが渡してくる並びは中身が入れ替わり続ける実体（ObjectStack.members）なので、写し取る。
     objects: [...instances],
     objectGlobalId: instances[0].def.globalId,
-    movedIds: (count) => carriedOf(instances, count).map((instance) => instance.instanceId),
     description: locale.object(instances[0].def.name).description,
-    actions: actionsOf(instances[0]),
     place,
     contentsFor: (dragged) => contentsOf(instances[0], dragged.objects[0].def),
     visibleSlots: visiblePlacesOf(instances[0]),
@@ -695,82 +590,6 @@ export function fromGameSession(
     return { lands, roads: [...roads.values()] };
   };
   const discovered = discoveredMap();
-
-  /**
-   * itemを場所placeへ入れる操作（そこへは入れられないならundefined）。入れられるかの判断はすべて
-   * ドメインに任せる（WorldObject.rejectionForMoveTo）——捻挫が身体から剥がれないのも、ヤシの木が
-   * 手に持てないのも、画面が場所ごとに覚えている決まりではなくワールド側の宣言の帰結。
-   */
-  const moveInto =
-    (stack: readonly WorldObject[], from: CardPlace) =>
-    (place: CardPlace, at?: CardPlacement, count = 1): (() => void) | undefined => {
-      const dest = places.slotOf(place);
-      if (dest === undefined || samePlace(place, from)) return undefined;
-      if (stack[0].rejectionForMoveTo(dest.owner, dest.slotId) !== undefined) return undefined;
-
-      // まとめて運んできたぶんも、1つずつ入れるのと同じことをする（時間も個数ぶんかかる）。
-      // 入る個数を超えて頼まれても、超えたぶんは枠が断るだけ。
-      const carried = carriedOf(stack, count);
-      const put = (item: WorldObject, first: boolean): void => {
-        // 位置の指定が効くのは1つ目だけ。残りは同じ束へ合流するか、空いている枠へ入る。
-        if (at === undefined || !first) {
-          item.moveToSlot(dest.owner, dest.slotId);
-        } else if (at.kind === 'cell' && hasFixedCells(dest.owner, dest.slotId)) {
-          item.moveToSlotAtCell(dest.owner, dest.slotId, at.index);
-        } else {
-          // 前詰めスロットの空き枠は末尾の受け皿だけなので、その位置の隙間へ落としたものとして扱う
-          // （枠の位置がそのまま並びの終わりを指す）。
-          item.moveToSlotAtGap(dest.owner, dest.slotId, at.index);
-        }
-      };
-
-      // 時間のかかる枠（手当てなど）はここで時間を進める。どの経路で入れても同じ値段になる。
-      return () => {
-        carried.forEach((item, index) =>
-          putIntoSlot(item, dest.owner, dest.slotId, game.player.instance, game.session, () =>
-            put(item, index === 0),
-          ),
-        );
-      };
-    };
-
-  /** stackのうち、placeへまとめて入れられる個数（入れられない場所では0）。 */
-  const acceptedCountIn =
-    (stack: readonly WorldObject[], from: CardPlace) =>
-    (place: CardPlace): number => {
-      const dest = places.slotOf(place);
-      if (dest === undefined || samePlace(place, from)) return 0;
-
-      return stack[0].acceptedCountForMoveTo(stack.slice(1), dest.owner, dest.slotId);
-    };
-
-  /**
-   * itemをplaceへ入れるとどうなるか（吹き出しに出す文言と時間）。入れられない場所と、文言も時間も
-   * 宣言していない枠ではundefined——ただ位置が変わるだけの移動には説明が要らない。
-   */
-  const putIntoTexts =
-    (stack: readonly WorldObject[], from: CardPlace) =>
-    (place: CardPlace, count = 1): CardPutIn | undefined => {
-      const dest = places.slotOf(place);
-      if (dest === undefined || samePlace(place, from)) return undefined;
-
-      const slotDef = dest.owner.def.getSlotDef(dest.slotId);
-      if (slotDef === undefined) return undefined;
-
-      const texts = locale.slot(slotDef.name).putIn;
-      // まとめて入れるなら時間も個数ぶん。1つずつ入れるのと同じことをするため（moveInto参照）。
-      const minutes = carriedOf(stack, count).reduce(
-        (total, item) => total + slotDef.putInMinutes(dest.owner, item, game.player.instance),
-        0,
-      );
-      if (texts === undefined && minutes === 0) return undefined;
-      return {
-        name: texts?.displayName ?? locale.slot(slotDef.name).displayName,
-        description: texts?.description,
-        minutes,
-      };
-    };
-
   /**
    * 束のカード1枚ぶん（表示内容と操作の一そろい）。
    *
@@ -781,59 +600,8 @@ export function fromGameSession(
    */
   const cardOfStack = (live: readonly WorldObject[], place: CardPlace): ObjectCardStack => {
     const stack = [...live];
-    return {
-      ...stackOf(stack, place),
-      moveTo: moveInto(stack, place),
-      acceptedCountAt: acceptedCountIn(stack, place),
-      putInto: putIntoTexts(stack, place),
-      reorder: reorderIn(stack[0]),
-    };
+    return { ...stackOf(stack, place), ...operations.forStack(stack, place) };
   };
-
-  /**
-   * selfが宣言しているcombinationsのうち、draggedにマッチする先頭を実行する手段（無ければundefined）。
-   * heldは指が掴んでいたインスタンスで、self・draggedのどちらの役でもありうる（CardCombination.held参照）。
-   *
-   * 複数の組み合わせがマッチしたときにどれを実行するかの解決はUI層に委ねられている
-   * （ActionSystem.md 1節）ため、宣言順の先頭を採る。
-   */
-  const combinationWith = (
-    self: WorldObject,
-    dragged: WorldObject,
-    held: WorldObject,
-  ): CardCombination | undefined => {
-    const [combination] = self.findMatchingCombinations(dragged);
-    if (combination === undefined) return undefined;
-
-    const texts = locale.object(self.def.name).combination(combination.name);
-    return {
-      name: texts.displayName,
-      description: texts.description,
-      minutes: self.combinationMinutes(dragged, game.player.instance, combination.name),
-      held,
-      execute: () => {
-        self.tryExecuteCombination(dragged, game.player.instance, combination.name, game.session);
-      },
-    };
-  };
-
-  /** itemを同じ場所の中で動かす操作（動かせない位置ならundefined）。今いるスロットの中だけで完結する。 */
-  const reorderIn =
-    (item: WorldObject) =>
-    (at: CardPlacement): (() => void) | undefined => {
-      const parent = item.parent;
-      const fixed =
-        parent !== undefined && parent.getSlotByLocalId(item.parentSlotLocalId).def.cellCount !== undefined;
-      if (at.kind === 'cell' && fixed) {
-        return () => {
-          item.moveToCellInParentSlot(at.index);
-        };
-      }
-      return () => {
-        item.reorderInParentSlot(at.index);
-      };
-    };
-
   /**
    * キャラクタ自身を映す札。**自分のインスタンスを識別子として名乗る**——レーンに並ぶ他の札と同じく、
    * 差し替えで同じ札だと分かり、子ウィンドウへ貸し出したときに元の枠が分かるようにするため。
@@ -862,7 +630,7 @@ export function fromGameSession(
     characterWindow: {
       card: characterCard,
       description: characterTexts.description,
-      actions: actionsOf(game.player.instance),
+      actions: operations.actionsOf(game.player.instance),
       slots: visiblePlacesOf(game.player.instance),
       properties: propertyCategories,
       explorationRatio: undefined,
@@ -870,7 +638,7 @@ export function fromGameSession(
     currentLocationWindow: {
       card: currentLocationCard,
       description: locale.object(location.instance.def.name).description,
-      actions: actionsOf(location.instance),
+      actions: operations.actionsOf(location.instance),
       slots: visiblePlacesOf(location.instance),
       properties: propertiesOf(location.instance),
       // 探索できない土地（探索の語彙を持たないCodex）では上限が0になるため、0除算を避けて0%にする。
@@ -971,7 +739,7 @@ export function fromGameSession(
 
       // 落とされた側を先に、次に掴んだ側を見る（CardInteraction.md 2節）。素材側に1つ書けば、
       // 道具を素材へ運んでも素材を道具へ運んでも同じ組み合わせが成立する。
-      return combinationWith(first, held, held) ?? combinationWith(held, first, held);
+      return operations.combinationWith(first, held, held) ?? operations.combinationWith(held, first, held);
     },
   };
 }

@@ -9,7 +9,7 @@ import {
   stepIsSupplied,
 } from '../../domain/runtime/crafting';
 import { MATERIALS_SLOT, PROGRESS_PROPERTY } from '../../loader/inProgressObjects';
-import type { CardAction } from './PlayScreenView';
+import type { CardAction } from './cardOperations';
 import { recipeOf } from './recipeList';
 
 /**
