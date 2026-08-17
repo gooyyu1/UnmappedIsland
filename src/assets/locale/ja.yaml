@@ -214,7 +214,7 @@ object_texts:
         display_name: 火の付きやすさ
       life:
         display_name: 残り
-    actions:
+    interactions:
       turn:
         display_name: 手番
         description: 時間の経過で回ってくる動物の1手。プレイヤーが起こすものではない。
@@ -245,7 +245,6 @@ object_texts:
       sleep:
         display_name: 睡眠
         description: 通しで眠る。最も効率よく体力と眠気が戻るが、それでも一晩では眠気は戻り切らない。
-    combinations:
       pour_in:
         display_name: 注ぎ移す
         description: 中身を相手の容器へ移す。入る分だけ移り、あふれる分は元の容器に残る。
@@ -264,7 +263,6 @@ object_texts:
       strike:
         display_name: 殴る
         description: 手にした武器で打ちかかる。一撃がどう入るかは武器の性格が決め、外しても相手は気を立てる。
-
   # プレイヤーキャラクタ（characters/）。プロパティの表示名は全員共通なのでdefaultへ置く。
   # 表示名は肖像の札に載る名前。どういう人物かは説明の頭の肩書きで示す（選択画面の吹き出しに出る）。
   farmer:
@@ -289,7 +287,7 @@ object_texts:
   palm_tree:
     display_name: ヤシの木
     description: 高く伸びたヤシ。幹を登れば、まだ落ちない青い実と枯れ葉が採れる。
-    actions:
+    interactions:
       pick_green_coconut:
         display_name: 実を採る
         description: 幹を登って、まだ落ちない青い実を切り落とす。
@@ -299,14 +297,14 @@ object_texts:
   green_coconut:
     display_name: 青いヤシの実
     description: まだ熟していない実。皮も殻も柔らかく、中に飲める水を抱えている。
-    combinations:
+    interactions:
       bore:
         display_name: 穴を開けて飲む
         description: 皮の上から殻まで刃先を通し、中の水を飲む。開けた水は保たないので、その場で飲みきる。
   drained_green_coconut:
     display_name: 水を飲んだ青い実
     description: 水の抜けた青い実。薄い殻は刃物だけで割れ、内側にゼリー状の果肉が張り付いている。
-    combinations:
+    interactions:
       split:
         display_name: 割る
         description: 刃物で薄い殻を割り、ゼリー状の果肉を取り出す。器になる殻は残らない。
@@ -316,7 +314,7 @@ object_texts:
   coconut:
     display_name: 熟したヤシの実
     description: 厚い繊維の皮に覆われた実。刃物ではがさないと中の殻に届かない。飲める水は残っていない。
-    combinations:
+    interactions:
       husk:
         display_name: 皮をはぐ
         description: 刃物で繊維の皮を削ぎ落とし、中の実を取り出す。
@@ -326,7 +324,7 @@ object_texts:
   husked_coconut:
     display_name: 皮を剥いだヤシの実
     description: 皮を落として殻がむき出しになった実。殻は硬いが、叩くかこじれば二つに割れる。
-    combinations:
+    interactions:
       crack:
         display_name: 叩き割る
         description: 石を打ちつけ、走った割れ目で二つに割る。
@@ -336,7 +334,7 @@ object_texts:
   coconut_half:
     display_name: 割れたヤシの実
     description: 半分になった実。殻の内側に白い果肉が張り付いている。
-    combinations:
+    interactions:
       scrape:
         display_name: 果肉を削り取る
         description: 刃物で内側の果肉を掻き出す。あとには器になる殻が残る。
@@ -374,7 +372,7 @@ object_texts:
   junglefowl_carcass:
     display_name: ヤケイの死体
     description: 仕留めたヤケイ。刃物を当てれば肉が取れる。
-    combinations:
+    interactions:
       butcher:
         display_name: 解体する
         description: 羽をむしり、肉を外し、細い骨を抜く。肉は獣のものと同じ1枚になる。
@@ -387,7 +385,7 @@ object_texts:
   wild_boar_carcass:
     display_name: イノシシの死体
     description: 仕留めたイノシシ。丸ごと運べる重さではないので、その場で解体するしかない。
-    combinations:
+    interactions:
       butcher:
         display_name: 解体する
         description: 皮を剥ぎ、肉を外し、骨を落とす。半日仕事だが、取れる量も桁が違う。
@@ -403,14 +401,14 @@ object_texts:
   small_bone:
     display_name: 小さな骨
     description: 小動物から取れた細い骨。道具の頭部を支える太さはないが、割って削れば針になる。
-    combinations:
+    interactions:
       whittle:
         display_name: 削って針にする
         description: 刃物で細く削り、糸を通す穴を開ける。
   monkey_carcass:
     display_name: サルの死体
     description: 仕留めたサル。丸ごとでは重いが、刃物を当てれば肉と骨と皮に分けられる。
-    combinations:
+    interactions:
       butcher:
         display_name: 解体する
         description: 皮を剥ぎ、肉を外し、骨を落とす。血と内臓はその場に残す。
@@ -441,14 +439,13 @@ object_texts:
         display_name: 草の餌
       meat_bait:
         display_name: 肉の餌
-    combinations:
+    interactions:
       add_plant_bait:
         display_name: 草の餌を仕掛ける
         description: 草食の獲物を寄せる。仕掛けてある間だけ効き、時間で傷んで切れる。
       add_meat_bait:
         display_name: 肉の餌を仕掛ける
         description: 肉食の獲物を寄せる。自分が食べられる肉を先に賭けることになる。
-
   # 治療具（treatments.yaml）。
   bandage:
     display_name: 包帯
@@ -496,11 +493,10 @@ object_texts:
   palm_frond:
     display_name: ヤシの葉
     description: 長い軸に細長い小葉が並んだ大きな葉。かさばるが、編めば小さくまとまる。
-    actions:
+    interactions:
       weave:
         display_name: 編む
         description: 中軸を残したまま、左右の小葉を互い違いに組む。
-    combinations:
       split_and_weave:
         display_name: 割って編む
         description: 中軸を縦に割り、左右をそれぞれ編む。同じ葉から2枚とれる。
@@ -512,14 +508,14 @@ object_texts:
   abaca:
     display_name: アバカ
     description: バナナによく似た草。実は種ばかりで食べられないが、茎から丈夫な繊維が大量に採れる。
-    combinations:
+    interactions:
       fell:
         display_name: 切り倒す
         description: 根元を刃物で断ち、運べる長さに切り分ける。株立ちなので何本も採れる。
   banana_plant:
     display_name: バナナの株
     description: 実を付けたバナナ。一度実った茎は二度と実らないので、房を採るには切り倒すことになる。
-    combinations:
+    interactions:
       fell:
         display_name: 切り倒す
         description: 根元を刃物で断ち、房を外して茎を切り分ける。
@@ -529,21 +525,21 @@ object_texts:
   banana_stem:
     display_name: バナナの茎
     description: 木のように見えて、葉鞘が巻き重なっただけの茎。水を含んで重く、繊維はこの葉鞘にある。
-    combinations:
+    interactions:
       strip:
         display_name: 繊維を掻き取る
         description: 葉鞘を1枚ずつ剥ぎ、刃を立てて引き抜いて肉を落とす。髄と水はその場に捨てる。
   plant_fiber:
     display_name: 植物繊維
     description: 掻き取って干した繊維のひと束。細く長いが、1本では何も縛れない。
-    combinations:
+    interactions:
       spin:
         display_name: 撚る
         description: 2束を手のひらで転がして1本に撚る。撚りに入りきらない短い屑は落ちる。
   yarn:
     display_name: 糸
     description: 繊維を撚った糸。細いが長く、縫うにも縛るにも使える。
-    combinations:
+    interactions:
       ply:
         display_name: 撚り合わせる
         description: 2本を撚りとは逆向きに撚り合わせる。互いの撚りが噛んで解けなくなる。
@@ -561,7 +557,7 @@ object_texts:
   dry_grass:
     display_name: 枯れ草
     description: よく乾いた草の束。細くほぐれていて、摩擦の熾を受け止められる数少ない素材。
-    combinations:
+    interactions:
       light:
         display_name: 火をつける
         description: 錐を揉んで熾を落とし、息を吹き込んで炎に育てる。外せば火口だけが無駄になる。
@@ -624,7 +620,7 @@ object_texts:
   broadleaf_tree:
     display_name: 広葉樹
     description: 幹の太い木。斧があれば倒して丸太にできる。
-    combinations:
+    interactions:
       fell:
         display_name: 伐り倒す
         description: 根元を斧で断ち、倒した幹を運べる長さに切り分ける。半日がかりの仕事になる。
@@ -643,7 +639,7 @@ object_texts:
       voyage_progress:
         display_name: 航海の進み
         description: 本土までの道のりをどこまで来たか。満ちれば陸が見える。
-    actions:
+    interactions:
       board:
         display_name: 乗り込む
         description: 筏の上へ移る。積荷を並べたり帆を張ったりは、乗ってからになる。

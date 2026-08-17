@@ -33,10 +33,6 @@ export class CombinationDef extends InteractionDef {
     out.write(text('with: '), ...this.with.describe(names), text('のカードのドロップ'));
   }
 
-  get kind(): 'combination' {
-    return 'combination';
-  }
-
   override get draggedReading(): TypeMatchReading {
     return this.with.reading;
   }

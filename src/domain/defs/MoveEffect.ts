@@ -1,8 +1,6 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import { ActiveEffect } from './ActiveEffect';
-import type { DefNames, DescriptionWriter } from './Description';
-import { text } from './Description';
 import type { EffectReader } from './EffectReader';
 import type { ObjectRef } from './ObjectRef';
 
@@ -42,21 +40,7 @@ export class MoveEffect extends ActiveEffect {
     mover.moveIntoFirstAcceptingSlot(destination, false, session);
   }
 
-  describe(names: DefNames, out: DescriptionWriter): void {
-    out.write(
-      text('move '),
-      ...this.subject.describe(names),
-      text(' → '),
-      ...this.destination.describe(names),
-    );
-  }
-
-  /** オブジェクトの居場所を変えるだけで、プロパティを書き換えはしない。 */
-  affects(): boolean {
-    return false;
-  }
-
   read(reader: EffectReader): void {
-    reader.move();
+    reader.move(this.subject.reading, this.destination.reading);
   }
 }

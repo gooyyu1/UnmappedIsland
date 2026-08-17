@@ -89,10 +89,11 @@ export interface StepOutcome {
  */
 export interface CraftingStep {
   /**
-   * periodicは、プレイヤーが起こすのではなく**時間で回る**工程（罠の判定）。tick毎に動く値が
-   * rangeの端へ届くたびに起こるもので、周期はObjectDef.rangeCyclesが定義から導く。
+   * interactionはプレイヤーが起こす操作（メニュー型・ドラッグ型の別は持たない——入口の違いでしかなく、
+   * 工程としては同じ）。periodicは、プレイヤーが起こすのではなく**時間で回る**工程（罠の判定）で、
+   * tick毎に動く値がrangeの端へ届くたびに起こる（周期はrangeCyclesが定義から導く）。
    */
-  readonly kind: 'action' | 'combination' | 'recipe' | 'periodic';
+  readonly kind: 'interaction' | 'recipe' | 'periodic';
   readonly name: string;
   readonly ownerGlobalId: number;
   readonly inputs: readonly CraftingInput[];

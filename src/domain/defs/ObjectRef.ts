@@ -1,7 +1,17 @@
 import type { WorldObject } from '../runtime/WorldObject';
-import type { DefNames, DescriptionToken } from './Description';
-import { objectRef, propertyRef, text } from './Description';
 import type { ReferenceRoot } from './ReferenceRoot';
+
+/**
+ * オブジェクトを1つ指す参照の宣言（ObjectRef参照）。指し方の3通りをそのまま表す。
+ *
+ * **読み手へは実体ではなくこれを渡す。** 「rootそのものか」を尋ねるメソッドを生やすと、
+ * 述語の顔をして中身を1つずつ出すことになり、読み手が増えるたびに問いも増える。
+ */
+export type ObjectRefReading =
+  | { readonly kind: 'root'; readonly root: ReferenceRoot }
+  /** 実効値をインスタンスIDとして解釈した相手。どの個体かは実行時にしか決まらない。 */
+  | { readonly kind: 'property'; readonly propertyGlobalId: number }
+  | { readonly kind: 'object'; readonly objectGlobalId: number };
 
 /**
  * オブジェクトそのものを1つ指す参照（`destroy`の対象・`move`の`subject`と移動先、9.3節・9.6節）。
@@ -68,23 +78,16 @@ export class ObjectRef {
     return owner.findRoot().findDescendantByInstanceId(property.getEffectiveValue());
   }
 
-  /**
-   * この参照が、名指しの対象キーrootそのものか。**プロパティや型で指す参照には答えられない**
-   * ——どの個体を指すかは実行時にしか決まらないので、常に偽になる。
-   */
-  isRoot(root: ReferenceRoot): boolean {
-    return this.root === root;
+  /** この参照の宣言そのもの（ObjectRefReading参照）。 */
+  get reading(): ObjectRefReading {
+    if (this.root !== undefined) return { kind: 'root', root: this.root };
+    if (this.objectDefGlobalId !== undefined)
+      return { kind: 'object', objectGlobalId: this.objectDefGlobalId };
+    return { kind: 'property', propertyGlobalId: this.propertyGlobalId! };
   }
 
   /** 実行者（actor）や重ねた札（dragged）に依存する参照か（actorの居ない文脈で使えるかの判定用）。 */
   needsInteraction(): boolean {
     return this.root === 'actor' || this.root === 'dragged';
-  }
-
-  /** この参照を書き表す（Description参照）。 */
-  describe(names: DefNames): readonly DescriptionToken[] {
-    if (this.root !== undefined) return [text(this.root)];
-    if (this.objectDefGlobalId !== undefined) return [objectRef(names.objectName(this.objectDefGlobalId))];
-    return [propertyRef(names.propertyName(this.propertyGlobalId!), 'self')];
   }
 }

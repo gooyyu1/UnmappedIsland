@@ -71,10 +71,9 @@ object_texts:
       hydration:
         display_name: 水分
         icon: 💧
-    actions:
+    interactions:
       eat:
         display_name: 食べる
-    combinations:
       pour_in:
         display_name: 注ぎ移す
   coconut:
@@ -83,7 +82,7 @@ object_texts:
     props:
       freshness:
         display_name: 鮮度
-    actions:
+    interactions:
       eat:
         display_name: かじる
         description: 殻を割って中身を食べる。
@@ -100,11 +99,12 @@ object_texts:
     expect(locale.object('thick_branch').description).toBeUndefined();
   });
 
-  it('props・actions・combinationsの表示文字列を引ける', () => {
+  it('props・操作の表示文字列を引ける（メニュー型とドラッグ型は分けない）', () => {
     expect(locale.object('coconut').prop('freshness').displayName).toBe('鮮度');
-    expect(locale.object('coconut').action('eat').displayName).toBe('かじる');
-    expect(locale.object('coconut').action('eat').description).toBe('殻を割って中身を食べる。');
-    expect(locale.object('coconut').combination('pour_in').displayName).toBe('注ぎ移す');
+    expect(locale.object('coconut').interaction('eat').displayName).toBe('かじる');
+    expect(locale.object('coconut').interaction('eat').description).toBe('殻を割って中身を食べる。');
+    // pour_in はドラッグ型だが、引き方はメニュー型と同じ。
+    expect(locale.object('captain').interaction('pour_in').displayName).toBe('注ぎ移す');
   });
 
   it('名前の代わりに置ける絵を引ける（宣言が無ければundefined）', () => {
@@ -123,8 +123,8 @@ object_texts:
   });
 
   it('オブジェクト側の定義はdefaultエントリより優先される', () => {
-    expect(locale.object('coconut').action('eat').displayName).toBe('かじる');
-    expect(locale.object('thick_branch').action('eat').displayName, 'defaultの側').toBe('食べる');
+    expect(locale.object('coconut').interaction('eat').displayName).toBe('かじる');
+    expect(locale.object('thick_branch').interaction('eat').displayName, 'defaultの側').toBe('食べる');
   });
 
   it('defaultエントリのdisplay_nameはオブジェクトの表示名には使われない', () => {
@@ -133,8 +133,8 @@ object_texts:
 
   it('どこにも定義が無いメンバーは識別子を表示名にする', () => {
     expect(locale.object('coconut').prop('weight').displayName).toBe('weight');
-    expect(locale.object('coconut').action('burn').displayName).toBe('burn');
-    expect(locale.object('coconut').combination('mix').description).toBeUndefined();
+    expect(locale.object('coconut').interaction('burn').displayName).toBe('burn');
+    expect(locale.object('coconut').interaction('mix').description).toBeUndefined();
   });
 
   it('中身がいるオブジェクトの名前は、{container}に自分の表示名・{content}に中身の名前が入る', () => {

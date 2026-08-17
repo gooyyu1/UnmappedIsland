@@ -53,7 +53,7 @@ function interactionStep(
   const reading = readEffect(interaction, resolve);
   const minutes = minutesOf(interaction, resolve);
   return {
-    kind: interaction.kind,
+    kind: 'interaction',
     name: interaction.name,
     ownerGlobalId: def.globalId,
     inputs: [

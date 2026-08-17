@@ -5,14 +5,14 @@ object_texts:
   poison_potion:
     display_name: 毒薬
     description: 黒く澱んだ液の入った小瓶。ひと口で血の残らない体になる。
-    actions:
+    interactions:
       drink:
         display_name: あおる
         description: 中身を一息に飲み干す。持っている血を残らず失う。
   healing_potion:
     display_name: 回復ポーション
     description: 赤く澄んだ液の入った小瓶。どれだけ失っていても血が満ちる。
-    actions:
+    interactions:
       drink:
         display_name: あおる
         description: 中身を一息に飲み干す。失った血がすべて戻る。

@@ -156,14 +156,13 @@ export class CodexView {
     return this.label(propertyName, this.propertyTexts(objectName, propertyName).displayName);
   }
 
-  /** actions/combinations（操作）の表示名。オブジェクトのメンバーなので持ち主とセットで引く。 */
-  interactionLabel(objectName: string, name: string, isCombination: boolean): string {
-    return this.label(name, this.interactionTexts(objectName, name, isCombination).displayName);
+  /** 操作の表示名。オブジェクトのメンバーなので持ち主とセットで引く。 */
+  interactionLabel(objectName: string, name: string): string {
+    return this.label(name, this.interactionTexts(objectName, name).displayName);
   }
 
-  interactionTexts(objectName: string, name: string, isCombination: boolean): Texts {
-    const objectTexts = this.locale.object(objectName);
-    return isCombination ? objectTexts.combination(name) : objectTexts.action(name);
+  interactionTexts(objectName: string, name: string): Texts {
+    return this.locale.object(objectName).interaction(name);
   }
 
   slotLabel(name: string): string {
@@ -294,9 +293,7 @@ export class CodexView {
       case 'combination': {
         // 操作は宣言元の型のメンバー（Localization.md）。selfが指す型がその持ち主になる。
         const label =
-          selfObjectName === undefined
-            ? token.name
-            : this.interactionLabel(selfObjectName, token.name, token.kind === 'combination');
+          selfObjectName === undefined ? token.name : this.interactionLabel(selfObjectName, token.name);
         return this.refHtml(token.kind, token.name, label, undefined);
       }
       case 'reason':

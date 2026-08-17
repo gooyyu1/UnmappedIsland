@@ -88,6 +88,29 @@ object_defs:
     tags: [item, cutting_tool]
     props:
       weight: {value: 100}
+
+  # 効果の全動詞を1つずつ通すための型。書き出しの取りこぼしを検査するためだけに置く。
+  gourd:
+    tags: [item]
+    props:
+      water: {value: 500}
+      hydration: {value: 0}
+      spilled: {value: 0}
+    actions:
+      drink:
+        transfer: {from: self, from_prop: water, to: actor, to_prop: hydration, amount: 200, to_amount: 4}
+        set: {self: {spilled: 1}}
+        signal: {actor: gulped}
+      tip_over:
+        transfer:
+          from: self
+          from_prop: water
+          to: parent
+          to_prop: spilled
+          amount: 999
+          allow_overflow: true
+          linked_add: {self: {spilled: -1}}
+        move: {subject: self, to: parent}
 `;
 
 function describeToText(codex: WorldCodex, body: (out: DescriptionWriter) => void): string {
@@ -157,6 +180,43 @@ describe('定義の自己記述（describe）', () => {
     expect(lines).toContain('destroy self');
   });
 
+  it('効果の動詞は、対象と量を書き出す', () => {
+    const lines = describeToText(codex, (out) => objectDef('gourd').actions[0].describe(codex, out)).split(
+      '\n',
+    );
+
+    expect(lines).toContain('transfer water → hydration（最大200 → 4）');
+    expect(lines).toContain('set spilled = 1');
+  });
+
+  it('linked_addと、moveの両端を書き出す', () => {
+    const lines = describeToText(codex, (out) => objectDef('gourd').actions[1].describe(codex, out)).split(
+      '\n',
+    );
+
+    expect(lines).toContain('transfer water → spilled（最大999）');
+    expect(lines).toContain('  add spilled -1（実際に移した量に比例）');
+    expect(lines).toContain('move self → parent');
+  });
+
+  /**
+   * 読み手（EffectReader）が渡さないものは書けない。**渡さないと決めた3つ**を、決めたとおりに
+   * 落ちていることで固定する——`spawn`の配置先と`transfer`のあふれ許可は説明に要らない細かさ、
+   * `signal`の対象は「避けた」のか「避けられた」のかがYAMLの作者次第で、読む側が意味を持てない。
+   */
+  it('配置先・あふれ許可・出来事の対象は書かない', () => {
+    const text = describeToText(codex, (out) => {
+      objectDef('gourd').actions[0].describe(codex, out);
+      objectDef('gourd').actions[1].describe(codex, out);
+      objectDef('coconut').combinations[0].describe(codex, out);
+    });
+
+    expect(text).toContain('signal gulped');
+    expect(text).not.toContain('→ actor');
+    expect(text).not.toContain('あふれても移す');
+    expect(text).not.toContain('→ same_slot');
+  });
+
   it('combinationは相手のタグとpickの候補を書き出す', () => {
     const cut = objectDef('coconut').combinations[0];
     const text = describeToText(codex, (out) => cut.describe(codex, out));
@@ -164,7 +224,7 @@ describe('定義の自己記述（describe）', () => {
     expect(text).toContain('with: cutting_toolを持つ型のカードのドロップ');
     expect(text).toContain('pick:');
     // 候補の効果は候補（weight）より1段深い。
-    expect(text).toContain('\n  weight = 3\n    spawn coconut_half → same_slot');
+    expect(text).toContain('\n  weight = 3\n    spawn coconut_half');
     // weightはリテラルだけでなくプロパティ参照にもなる（10.2節）。
     expect(text).toContain('weight = freshness');
   });

@@ -1,5 +1,6 @@
 import type { ObjectDef } from '../domain/defs/ObjectDef';
-import type { TickGate } from '../domain/defs/PassiveEffect';
+import type { TickGate } from './tickDeltas';
+import { tickDeltasOf } from './tickDeltas';
 import type { CraftingStep } from './CraftingStep';
 import { collectOutputs } from './CraftingStep';
 import { rangeEventReadouts, ticksToRangeEnd } from './rangeEvents';
@@ -154,7 +155,7 @@ export function rangeCyclesOf(
  */
 export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): readonly ExternalTickDelta[] {
   const byProperty = new Map<number, ExternalTickDelta>();
-  for (const delta of def.passives.tickDeltas()) {
+  for (const delta of tickDeltasOf(def)) {
     if (delta.target !== root || delta.amount === 0) continue;
 
     const ticks = ticksWhileGateHolds(def, delta.gate);
@@ -196,7 +197,7 @@ export function tickAmountsOf(
 ): { slowest: number; fastest: number } {
   let unconditional = 0;
   const conditional: number[] = [];
-  for (const delta of def.passives.tickDeltas()) {
+  for (const delta of tickDeltasOf(def)) {
     if (delta.target !== 'self' || delta.propertyGlobalId !== propertyGlobalId) continue;
     if (delta.gate.stage !== undefined) continue;
     if (delta.gate.conditional) conditional.push(delta.amount);

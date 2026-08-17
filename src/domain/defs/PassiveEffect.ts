@@ -4,9 +4,8 @@ import { RegisteredPassiveEffect } from '../runtime/RegisteredPassiveEffect';
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ConditionNode } from './ConditionNode';
+import type { GateReading, PassivePropertyReading, PassiveReader } from './PassiveReader';
 import type { InfluenceWriter } from '../runtime/PropertyInfluence';
-import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { propertyRef, signedNumber, stageRef, text } from './Description';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -17,37 +16,6 @@ import type { ReferenceRoot } from './ReferenceRoot';
  * 参照はグローバルIDのまま持ち、評価のたびにローカル化する（変換コストは1 tick=15分の時間スケールに
  * 対して無視できるため、ビルド時の2段階パースを避ける）。
  */
-/**
- * tick毎の増減を縛るゲートの、定義だけから読める姿（TickDelta参照）。
- */
-export interface TickGate {
-  /** 段で縛られているならその段（8.2節）。常時効くならundefined。 */
-  readonly stage: { readonly propertyGlobalId: number; readonly name: string } | undefined;
-
-  /** 段以外の条件（conditions）でも縛られているか。真なら、その条件が成立している間だけ効く。 */
-  readonly conditional: boolean;
-
-  /**
-   * 条件が見ている、宣言元自身のプロパティ。**その増減がいつまで効くか**の手掛かりで、出血なら
-   * `bleeding`——それが尽きた時点で血を奪うのが止まる。
-   */
-  readonly watchedSelfProperties: readonly number[];
-}
-
-/**
- * tick毎に実体値を動かす持続効果1件を、実行時のオブジェクトを使わずに読んだもの（8.4節）。
- * 可逆な寄与（modify、8.3節）は実体値を動かさないので含まない。
- */
-export interface TickDelta {
-  readonly target: ReferenceRoot;
-  readonly propertyGlobalId: number;
-  readonly amount: number;
-  readonly gate: TickGate;
-
-  /** 在庫の続く間だけ動く輸送（8.4節のtransfer）か。真ならamountは上限で、実際はそれ以下になりうる。 */
-  readonly capped: boolean;
-}
-
 export class PassiveEffectGate {
   private readonly conditions: ConditionNode | undefined;
   private readonly propertyGlobalId: number | undefined;
@@ -67,24 +35,16 @@ export class PassiveEffectGate {
     return this.stageName === undefined ? undefined : this.propertyGlobalId;
   }
 
-  /** このゲートを、実行時のオブジェクトを使わずに読んだ姿（TickGate参照）。 */
-  get staticGate(): TickGate {
+  /** このゲートの宣言そのもの（GateReading参照）。 */
+  get reading(): GateReading {
     const stagePropertyGlobalId = this.stagePropertyGlobalId;
     return {
       stage:
         stagePropertyGlobalId === undefined
           ? undefined
           : { propertyGlobalId: stagePropertyGlobalId, name: this.stageName! },
-      conditional: this.conditions !== undefined,
-      watchedSelfProperties: this.watchedSelfProperties(),
+      conditions: this.conditions,
     };
-  }
-
-  /** 条件が見ている、宣言元自身のプロパティ（TickGate参照）。 */
-  private watchedSelfProperties(): readonly number[] {
-    const found: number[] = [];
-    this.conditions?.collectWatchedProperties('self', (propertyGlobalId) => found.push(propertyGlobalId));
-    return found;
   }
 
   isSatisfied(declarer: WorldObject, slotBearer: WorldObject): boolean {
@@ -100,24 +60,6 @@ export class PassiveEffectGate {
       return false;
 
     return true;
-  }
-
-  /** このゲートを書き表す（Description参照）。常時有効なら空（条件が無いことを書き足さない）。 */
-  describe(names: DefNames): readonly DescriptionToken[] {
-    const tokens: DescriptionToken[] = [];
-    if (this.stageName !== undefined && this.propertyGlobalId !== undefined)
-      tokens.push(
-        propertyRef(names.propertyName(this.propertyGlobalId)),
-        text('が段'),
-        stageRef(this.stageName),
-        text('にある'),
-      );
-
-    if (this.conditions !== undefined) {
-      if (tokens.length > 0) tokens.push(text(' かつ '));
-      tokens.push(...this.conditions.describe(names));
-    }
-    return tokens;
   }
 
   private static resolve(root: ReferenceRoot, slotBearer: WorldObject): WorldObject | undefined {
@@ -144,16 +86,11 @@ export class PassiveEffectGate {
  * 同時に動かす操作は、どちらか一方への寄与としては表せないため。
  */
 export abstract class PassiveEffect {
-  /** この効果を1行で書き表す（Description参照）。 */
-  abstract describe(names: DefNames, out: DescriptionWriter): void;
-
   /**
-   * この効果がpropertyGlobalIdのプロパティを書き換えうるか（プロパティ側からの逆引き用）。
-   *
-   * ownedByDeclarerは、そのプロパティが宣言元のobject_def自身のものか。target=selfの効果は
-   * 宣言元自身のプロパティしか書き換えないため、他の型の同名プロパティは書き換え対象にならない。
+   * この効果が何を宣言しているかを読み上げる（PassiveReader参照）。**抽象なのは取りこぼしを防ぐため**
+   * ——既定を持たせると、動詞を1つ足したときに読み手が黙って何も受け取らなくなる。
    */
-  abstract affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean;
+  abstract read(reader: PassiveReader): void;
 
   /**
    * この効果が持つ影響の辺（InfluenceEdge）を書き出す。declarerは宣言したオブジェクトで、
@@ -174,12 +111,6 @@ export abstract class PassiveEffect {
   get tickTransfer(): TransferPassiveEffect | undefined {
     return undefined;
   }
-
-  /**
-   * tick毎に実体値を動かす分を書き出す（TickDelta参照）。実体値を動かさない効果（modify）は
-   * 何もしないので、既定は書き出さない。
-   */
-  collectTickDeltas(_add: (delta: TickDelta) => void): void {}
 }
 
 /**
@@ -218,8 +149,6 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
   abstract registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void;
 
   /** YAMLでの書き方の名前（modify/add）。describeが対象の前に置く。 */
-  protected abstract get kindLabel(): string;
-
   /** 可逆な寄与（modify、8.3節）か。影響の一覧が記号の形をこれで選ぶ（PropertyInfluence）。 */
   protected abstract get reversible(): boolean;
 
@@ -243,38 +172,20 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
     }
   }
 
-  override affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
-    if (this.targetPropertyGlobalId !== propertyGlobalId) return false;
-    return ownedByDeclarer || this.target !== 'self';
-  }
-
-  override describe(names: DefNames, out: DescriptionWriter): void {
-    const tokens: DescriptionToken[] = [
-      text(`${this.kindLabel} `),
-      propertyRef(names.propertyName(this.targetPropertyGlobalId), this.target),
-      text(` ${signedNumber(this.amount)}`),
-    ];
-
-    const gate = this.gate.describe(names);
-    if (gate.length > 0) tokens.push(text('（'), ...gate, text('間）'));
-    out.write(...tokens);
+  /** 自分を1件の宣言として読んだもの（PassivePropertyReading参照）。 */
+  protected get reading(): PassivePropertyReading {
+    return {
+      target: this.target,
+      propertyGlobalId: this.targetPropertyGlobalId,
+      amount: this.amount,
+      gate: this.gate.reading,
+    };
   }
 
   /** declarer/slotBearerの現在の文脈でゲート（8.2節）が有効ならamountを、無効なら0を返す。
    * modifyでもaddでも同じ量。 */
   activeAmount(declarer: WorldObject, slotBearer: WorldObject): number {
     return this.gate.isSatisfied(declarer, slotBearer) ? this.amount : 0;
-  }
-
-  /** 自分をtick毎の増減1件として見たもの（実体値を動かす具象＝AccumulateEffectだけが使う）。 */
-  protected get tickDelta(): TickDelta {
-    return {
-      target: this.target,
-      propertyGlobalId: this.targetPropertyGlobalId,
-      amount: this.amount,
-      gate: this.gate.staticGate,
-      capped: false,
-    };
   }
 
   /**
@@ -357,8 +268,8 @@ export class ModifyEffect extends PropertyPassiveEffect {
     super(target, targetPropertyGlobalId, amount, gate);
   }
 
-  protected get kindLabel(): string {
-    return 'modify';
+  read(reader: PassiveReader): void {
+    reader.modify(this.reading);
   }
 
   protected get reversible(): boolean {
@@ -384,8 +295,8 @@ export class AccumulateEffect extends PropertyPassiveEffect {
     super(target, targetPropertyGlobalId, amount, gate);
   }
 
-  protected get kindLabel(): string {
-    return 'add';
+  read(reader: PassiveReader): void {
+    reader.accumulate(this.reading);
   }
 
   protected get reversible(): boolean {
@@ -394,10 +305,6 @@ export class AccumulateEffect extends PropertyPassiveEffect {
 
   registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void {
     target.registerAccumulate(registration);
-  }
-
-  override collectTickDeltas(add: (delta: TickDelta) => void): void {
-    add(this.tickDelta);
   }
 }
 
@@ -432,25 +339,7 @@ export class TransferPassiveEffect extends PassiveEffect {
     this.transfer.collectInfluences(declarer, this.gate.isSatisfied(declarer, declarer), out);
   }
 
-  override describe(names: DefNames, out: DescriptionWriter): void {
-    const gate = this.gate.describe(names);
-    const suffix = gate.length > 0 ? [text('（'), ...gate, text('間、tick毎）')] : [text('（tick毎）')];
-    this.transfer.describe(names, out, suffix);
-  }
-
-  override affects(propertyGlobalId: number, ownedByDeclarer: boolean): boolean {
-    return this.transfer.affects(propertyGlobalId, ownedByDeclarer);
-  }
-
-  /** 輸送の両端を、在庫の続く間だけ動く増減（capped）として書き出す。量は輸送自身が名乗る。 */
-  override collectTickDeltas(add: (delta: TickDelta) => void): void {
-    const gate = this.gate.staticGate;
-    const reading = this.transfer.reading;
-    const deltas = [
-      { target: reading.from, propertyGlobalId: reading.fromPropertyGlobalId, amount: -reading.amount },
-      { target: reading.to, propertyGlobalId: reading.toPropertyGlobalId, amount: reading.toAmount },
-      ...reading.linked,
-    ];
-    for (const delta of deltas) add({ ...delta, gate, capped: true });
+  read(reader: PassiveReader): void {
+    reader.transfer(this.transfer.reading, this.gate.reading);
   }
 }
