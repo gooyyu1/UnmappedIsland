@@ -1,4 +1,11 @@
-import type { BalanceTables, ChainRoute, NamedAmount, PlaceBalance, PropertyRoute } from './balanceTables';
+import type {
+  BalanceTables,
+  ChainRoute,
+  NamedAmount,
+  ObjectCost,
+  PlaceBalance,
+  PropertyRoute,
+} from './balanceTables';
 import { buildBalanceTables, menuFor, MINUTES_PER_DAY, TICKS_PER_DAY, WHOLE_ISLAND } from './balanceTables';
 import type { CodexView } from './CodexView';
 import { escapeHtml, inlineArtHtml } from './CodexView';
@@ -36,6 +43,7 @@ export function renderBalancePage(view: CodexView): string {
     indexHtml(view, tables) +
     chainsHtml(view, tables) +
     gapsHtml(view, tables) +
+    objectCostsHtml(view, tables) +
     devicesHtml(view, tables) +
     consumptionHtml(view, tables) +
     supplyHtml(view, tables) +
@@ -89,6 +97,7 @@ function indexHtml(view: CodexView, tables: BalanceTables): string {
     `<p><b>連鎖</b> ${places}</p>` +
     `<p>` +
     `<a class="chip" href="#/balance/${encodeURIComponent(GAPS_SECTION)}">入手経路なし</a> ` +
+    `<a class="chip" href="#/balance/${encodeURIComponent(COSTS_SECTION)}">総コスト</a> ` +
     `<a class="chip" href="#/balance/${encodeURIComponent(DEVICES_SECTION)}">待ち生産</a> ` +
     `<a class="chip" href="#/balance/${encodeURIComponent(CONSUMPTION_SECTION)}">消費</a> ` +
     `<a class="chip" href="#/balance/${encodeURIComponent(SUPPLY_SECTION)}">供給</a>` +
@@ -97,6 +106,7 @@ function indexHtml(view: CodexView, tables: BalanceTables): string {
 }
 
 const GAPS_SECTION = '入手経路なし';
+const COSTS_SECTION = '総コスト';
 const DEVICES_SECTION = '待ち生産';
 const CONSUMPTION_SECTION = '消費';
 const SUPPLY_SECTION = '供給';
@@ -313,6 +323,87 @@ function gapsHtml(view: CodexView, tables: BalanceTables): string {
 /** 穴の見出し。型を指しているならその表示名にする（タグ指定はそのまま出す）。 */
 function gapLabel(view: CodexView, label: string): string {
   return view.objectDef(label) === undefined ? label : view.objectLabel(label);
+}
+
+/**
+ * オブジェクトごとの総コスト。**生存に要る値だけを見ていると、筏のような物のコストがどこにも
+ * 出ない**（issue #568）。作れないものは先に挙げる——そこが定義の穴になる。
+ */
+function objectCostsHtml(view: CodexView, tables: BalanceTables): string {
+  const missing = tables.objectCosts.filter((cost) => cost.minutes === undefined);
+  const toolBlocked = tables.objectCosts.filter((cost) => cost.blockedByTool);
+  const buildable = tables.objectCosts.filter((cost) => cost.minutes !== undefined);
+
+  return (
+    `<h2 id="${balanceSectionId(COSTS_SECTION)}">オブジェクトの総コスト</h2>` +
+    `<p class="muted">1つ手に入れるまでの労働を、素材の採集から数えたもの。組み立ての時間だけでは` +
+    `ない——筏は組むのに420分だが、材料を揃えるところから数えると桁が変わる。「日数」は生存に要る` +
+    `労働を引いた残りで割った日数で、<b>目標までに何日かかるか</b>がこれで出る。</p>` +
+    blockedListHtml(view, '入手経路が無いもの', missing, (cost) =>
+      cost.missing.length === 0
+        ? '作る工程が無い'
+        : `足りない入力: ${escapeHtml(cost.missing.map((name) => gapLabel(view, name)).join('、'))}`,
+    ) +
+    blockedListHtml(
+      view,
+      '道具が無くて作れないもの',
+      toolBlocked,
+      (cost) =>
+        `無い道具: ${escapeHtml(
+          cost.prerequisites
+            .filter(({ minutes }) => minutes === undefined)
+            .map(({ label }) => gapLabel(view, label))
+            .join('、'),
+        )}`,
+    ) +
+    tableHtml(
+      ['オブジェクト', '総労働', '探索', 'それ以外', '日数', '作り方', '前提'],
+      buildable.map((cost) => [
+        objectLinkHtml(view, cost.objectName),
+        `${formatNumber(cost.minutes ?? 0)}分`,
+        formatNumber(cost.exploreMinutes ?? 0),
+        formatNumber(cost.craftMinutes ?? 0),
+        cost.days === undefined ? '—' : `${formatNumber(cost.days, 2)}日`,
+        cost.steps
+          .map(
+            (step) =>
+              `${escapeHtml(view.objectLabel(step.objectName))}.<code>${escapeHtml(step.stepName)}</code>`,
+          )
+          .join(' › ') || '—',
+        cost.prerequisites
+          .map(
+            ({ label, minutes }) =>
+              `${escapeHtml(gapLabel(view, label))}` +
+              (minutes === undefined
+                ? ' <span class="warn">入手経路なし</span>'
+                : ` <span class="muted">${formatNumber(minutes)}分</span>`),
+          )
+          .join('、') || '—',
+      ]),
+      true,
+    )
+  );
+}
+
+/** 作れないものの一覧。理由の出し方だけが違うので、見出しと理由を渡して共用する。 */
+function blockedListHtml(
+  view: CodexView,
+  heading: string,
+  costs: readonly ObjectCost[],
+  reason: (cost: ObjectCost) => string,
+): string {
+  if (costs.length === 0) return '';
+  return (
+    `<h3>${escapeHtml(heading)}</h3>` +
+    `<ul class="plain">` +
+    costs
+      .map(
+        (cost) =>
+          `<li>${objectLinkHtml(view, cost.objectName)} ` + `<span class="muted">${reason(cost)}</span></li>`,
+      )
+      .join('') +
+    `</ul>`
+  );
 }
 
 function devicesHtml(view: CodexView, tables: BalanceTables): string {

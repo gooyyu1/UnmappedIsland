@@ -227,8 +227,41 @@ export interface RouteSummary {
   readonly deltas: readonly NamedAmount[];
 }
 
+/**
+ * オブジェクト1つを素材の採集から手に入れるまでの総労働。
+ *
+ * **生存に要る値だけを見ていると、筏のような物のコストがどこにも出ない**（issue #568）。前提の列で
+ * 既に出していた計算を、生存の連鎖から辿れるものに限らず全オブジェクトへ広げたもの。
+ */
+export interface ObjectCost {
+  readonly objectName: string;
+
+  /** 素材の採集から数えた総労働（分）。島のどこにも入手経路が無ければundefined。 */
+  readonly minutes: number | undefined;
+  readonly exploreMinutes: number | undefined;
+  readonly craftMinutes: number | undefined;
+
+  /** 最も安い作り方（上流→下流）。入手経路が無ければ空。 */
+  readonly steps: readonly RouteStep[];
+
+  /** 要る道具。単位あたりへは按分しない（#550）。 */
+  readonly prerequisites: readonly RoutePrerequisite[];
+
+  /** 入手経路が無いとき、足りていない入力。**どこで詰まっているか**がこれで分かる。 */
+  readonly missing: readonly string[];
+
+  /** 材料は揃うが、要る道具に入手経路が無いか。筏は丸太も縄も作れるが、丸太を切る道具が無い。 */
+  readonly blockedByTool: boolean;
+
+  /** 生存に要る労働を引いた残りで割った日数。余剰が無ければundefined。 */
+  readonly days: number | undefined;
+}
+
 export interface BalanceTables {
   readonly characterNames: readonly string[];
+
+  /** 全オブジェクトの総コスト（宣言順）。 */
+  readonly objectCosts: readonly ObjectCost[];
 
   /** 島のどこにも入手経路が無いもの（内容の穴）。 */
   readonly gaps: readonly Gap[];
@@ -246,12 +279,13 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
   const characterNames = codex.objectDefNamesWithTag('character');
   const character = codex.objects.get(codex.objectNames.getId(sampleCharacter));
   const requirements = requirementsOf(codex, character);
-  const { places, gaps } = placeBalances(codex, character, requirements);
+  const { places, gaps, islandWide } = placeBalances(codex, character, requirements);
 
   return {
     characterNames,
     requirements,
     gaps,
+    objectCosts: objectCosts(codex, islandWide, MINUTES_PER_DAY - places[0].menu.totalMinutes),
     consumption: consumptionRows(codex, characterNames),
     // 供給表は島全体の文脈で出す。罠の重みは土地が入れるので、土地を決めないと候補が全部0になる。
     supply: supplyRows(codex, allSteps(codex, bestAncestorContext(explorableLocationsOf(codex)))),
@@ -406,7 +440,11 @@ function placeBalances(
   codex: WorldCodex,
   character: ObjectDef,
   requirements: readonly Requirement[],
-): { readonly places: readonly PlaceBalance[]; readonly gaps: readonly Gap[] } {
+): {
+  readonly places: readonly PlaceBalance[];
+  readonly gaps: readonly Gap[];
+  readonly islandWide: Acquisition;
+} {
   const locations = explorableLocationsOf(codex);
 
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
@@ -435,7 +473,47 @@ function placeBalances(
     };
   });
 
-  return { places, gaps: gapsOf(islandRoutes) };
+  return { places, gaps: gapsOf(islandRoutes), islandWide };
+}
+
+/**
+ * 全オブジェクトの総コスト。**生存の連鎖から辿れるものに限らない**——筏のように、どの生存経路の
+ * 前提でもない物のコストが、これまでどこにも出ていなかった（issue #568）。
+ *
+ * 並びは宣言順にする。値で並べ替えると、数値を触るたびに行が入れ替わって差分が読めなくなる。
+ * 対象から外すのは、手に入れるという言い方が成り立たないもの——土地・キャラクタ・世界（singleton）、
+ * 単独で存在できない物（怪我・道）、レシピが自動生成する製作中オブジェクト。
+ */
+function objectCosts(
+  codex: WorldCodex,
+  islandWide: Acquisition,
+  surplusMinutes: number,
+): readonly ObjectCost[] {
+  const rows: ObjectCost[] = [];
+  for (const def of allDefs(codex)) {
+    if (def.isSingleton || def.boundToOwner) continue;
+    if (codex.productOf(def) !== undefined) continue;
+    // 土地は生成されるもので、手に入れるものではない。**ただし作れる土地は対象**——筏は乗り込む
+    // 場所であると同時に、丸太と縄から組み上げる物でもある。
+    if (isLocation(codex, def) && !islandWide.producedObjects.has(def.globalId)) continue;
+
+    const cost = islandWide.costByObject.get(def.globalId);
+    const route = islandWide.routeOf(def.globalId);
+    const prerequisites = route.length === 0 ? [] : [...prerequisitesOf(codex, islandWide, route).values()];
+
+    rows.push({
+      objectName: def.name,
+      minutes: cost === undefined ? undefined : totalOf(cost),
+      exploreMinutes: cost?.exploreMinutes,
+      craftMinutes: cost?.craftMinutes,
+      steps: [...route].reverse().map((ref) => ({ objectName: ref.def.name, stepName: ref.step.name })),
+      prerequisites,
+      missing: cost === undefined ? islandWide.missingInputsFor(def.globalId) : [],
+      blockedByTool: cost !== undefined && prerequisites.some(({ minutes }) => minutes === undefined),
+      days: cost === undefined || surplusMinutes <= 0 ? undefined : totalOf(cost) / surplusMinutes,
+    });
+  }
+  return rows;
 }
 
 /**
@@ -557,17 +635,15 @@ function propertyRoute(route: ChainRoute, requirement: Requirement): PropertyRou
   };
 }
 
-function buildRoute(
+/**
+ * 経路を通して要る道具（消費されない入力）。**経路の中で作る物は数えない**——自分で用意する手順が
+ * 既に経路として出ているため。同じ物が複数の工程で要っても1件にまとめる。
+ */
+function prerequisitesOf(
   codex: WorldCodex,
   acquisition: Acquisition,
   route: readonly StepRef[],
-  resolved: StepCost,
-  deltas: ReadonlyMap<number, number>,
-  fills: ReadonlyMap<number, number>,
-  place: ObjectDef | undefined,
-): ChainRoute {
-  const cost = resolved.cost;
-  // 経路の中で作る物は前提に数えない（自分で用意する手順が既に経路として出ているため）。
+): ReadonlyMap<string, RoutePrerequisite> {
   const madeInRoute = new Set(route.flatMap((ref) => [...expectedSpawns(ref.step).keys()]));
 
   const prerequisites = new Map<string, RoutePrerequisite>();
@@ -584,6 +660,20 @@ function buildRoute(
         imported: prerequisite.imported,
       });
     }
+  return prerequisites;
+}
+
+function buildRoute(
+  codex: WorldCodex,
+  acquisition: Acquisition,
+  route: readonly StepRef[],
+  resolved: StepCost,
+  deltas: ReadonlyMap<number, number>,
+  fills: ReadonlyMap<number, number>,
+  place: ObjectDef | undefined,
+): ChainRoute {
+  const cost = resolved.cost;
+  const prerequisites = prerequisitesOf(codex, acquisition, route);
 
   return {
     steps: [...route].reverse().map((ref) => ({ objectName: ref.def.name, stepName: ref.step.name })),
@@ -937,6 +1027,9 @@ function stepsAt(codex: WorldCodex, steps: readonly StepRef[], location: ObjectD
 class Acquisition {
   readonly costByObject = new Map<number, Cost>();
 
+  /** どこかの工程が生み出す型。土地のように「生成されるもの」と、作れる物を分けるのに使う。 */
+  readonly producedObjects = new Set<number>();
+
   /**
    * その型を最も安く手に入れる道筋が、他の土地の産物を含むか。**入手連鎖を伝って残す**——
    * 熟したヤシの実を持ち込んで加工した果肉は、果肉そのものがこの土地で作れても「持ち込みが要る」。
@@ -965,6 +1058,8 @@ class Acquisition {
     this.codex = codex;
     this.steps = steps;
     this.islandWide = islandWide;
+    for (const ref of steps)
+      for (const objectGlobalId of expectedSpawns(ref.step).keys()) this.producedObjects.add(objectGlobalId);
     this.relax();
   }
 
@@ -1032,6 +1127,34 @@ class Acquisition {
       });
     }
     return found;
+  }
+
+  /**
+   * その型が手に入らないとき、足りていない入力。**最も惜しい工程**（足りない入力が最も少ない
+   * 工程）のものを返す——どこで詰まっているかを1つに絞らないと、読み手が辿る先を決められない。
+   * 手に入る型では空。
+   */
+  missingInputsFor(objectGlobalId: number): readonly string[] {
+    if (this.costByObject.has(objectGlobalId)) return [];
+
+    let best: string[] | undefined;
+    for (const ref of this.steps) {
+      if (!expectedSpawns(ref.step).has(objectGlobalId)) continue;
+
+      const missing: string[] = [];
+      for (const input of ref.step.inputs) {
+        if (input.kind === 'object' && this.isAlwaysAtHand(input.objectGlobalId)) continue;
+        if (this.cheapestCandidate(input) !== undefined) continue;
+        if (this.importable(input) !== undefined) continue;
+        missing.push(
+          input.kind === 'tag'
+            ? this.codex.tagName(input.tagGlobalId)
+            : this.codex.objectName(input.objectGlobalId),
+        );
+      }
+      if (best === undefined || missing.length < best.length) best = missing;
+    }
+    return best ?? [];
   }
 
   /** その型を手に入れるまでの連鎖に現れる工程を、最も安い経路だけ遡って挙げる。 */
