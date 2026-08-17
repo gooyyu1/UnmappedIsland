@@ -219,8 +219,8 @@ export class ObjectTexts {
 
   /**
    * 操作の表示文字列。**メニュー型（actions）とドラッグ型（combinations）を分けない**——
-   * プレイヤーから見れば操作は1つの語彙で、押して選ぶか重ねるかは入口の違いでしかない
-   * （同じ物に同名の操作を2つ置くことは、ロード時に弾く）。
+   * 操作の名前は元から1つの名前空間で、同じ物に同名の操作を2つ置くことはロードで弾く
+   * （GameElementDefinition.md 11節）。
    */
   interaction(interactionName: string): Texts {
     return this.member('interactions', interactionName);

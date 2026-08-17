@@ -245,8 +245,8 @@ export class RawObjectDef {
     const actions = parseActions(loader, this.name, mergedActions);
     const combinations = parseCombinations(loader, this.name, mergedCombinations);
 
-    // **操作の名前は1つの名前空間**（Localization.md）。プレイヤーから見れば操作は1つの語彙で、
-    // 押して選ぶか重ねるかは入口の違いでしかないため、表示文字列も1つの節に書く。
+    // **操作の名前は1つの名前空間**（11節）。同じカードに同名の操作が2つ並ぶと、押して開く
+    // メニューの「食べる」と重ねたときの「食べる」をプレイヤーが見分けられない。
     const actionNames = new Set(actions.map((action) => action.name));
     const clash = combinations.find((combination) => actionNames.has(combination.name));
     if (clash !== undefined)

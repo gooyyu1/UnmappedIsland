@@ -20,9 +20,8 @@ WorldCodexの編集を伴うと、パック作成者が新しい言語を足す�
 いずれも省略可能です。
 
 **操作は `actions`（メニュー型）と `combinations`（ドラッグ型）を分けず、`interactions` に
-まとめて書きます。** プレイヤーから見れば操作は1つの語彙で、押して選ぶか重ねるかは入口の違いで
-しかないためです。同じオブジェクトが同名の `actions` と `combinations` を持つことは、ロード時に
-弾きます（`RawObjectDef.resolve`）。
+まとめて書きます。** 操作の名前は元から1つの名前空間だからです
+（[`GameElementDefinition.md`](./GameElementDefinition.md) 11節）。
 
 ```yaml
 object_texts:
