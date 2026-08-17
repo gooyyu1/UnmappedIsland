@@ -219,10 +219,10 @@ describe('fire.yamlの火の連鎖', () => {
 
     expect(numberOf(hearth, 'heat'), '火力の上限で頭打ちになる').toBe(30);
     expect(heatIs(hearth, 'flame'), '開いた焚き火は炎まで').toBe(true);
-    expect(heatIs(hearth, 'blaze'), '本焼きの高温には届かない').toBe(false);
+    expect(heatIs(hearth, 'blaze'), '高温には届かない').toBe(false);
   });
 
-  it('石囲いの炉は薪を多く積めるので、本焼きの高温へ届く', () => {
+  it('石囲いの炉は薪を多く積めるので、高温へ届く', () => {
     const hearth = spawnInto('stone_hearth', land, 'fixtures');
     for (let i = 0; i < 6; i++) stoke(hearth, 'thick_branch');
     expect(numberOf(hearth, 'fuel')).toBe(120);
@@ -230,7 +230,7 @@ describe('fire.yamlの火の連鎖', () => {
     hearth.setNumber(codex.propertyNames.getId('heat'), 1, session);
     session.advanceWorldTime(60 * 6);
 
-    expect(heatIs(hearth, 'blaze'), '土器の本焼きに要る高温').toBe(true);
+    expect(heatIs(hearth, 'blaze'), '料理の最上段').toBe(true);
   });
 
   it('満杯の炉にはくべられない', () => {

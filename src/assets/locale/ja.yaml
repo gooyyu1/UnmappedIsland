@@ -574,6 +574,29 @@ object_texts:
     display_name: 石囲いの炉
     description: 石で囲った炉。風を防ぎ、灰をかぶった種火が翌朝まで生きる。
 
+  # 土器づくり（pottery.yaml）。
+  clay:
+    display_name: 粘土
+    description: 水際から掘り取った、よく練れる土。乾かして焼けば水を通さなくなる。
+  unfired_jar:
+    display_name: 素焼き前の壺
+    description: 形を作って乾かした壺。まだ土のままで、水を入れれば崩れる。焼けば甕になる。
+    recipes:
+      coiled:
+        display_name: 壺を成形する
+        description: 粘土の紐を巻き上げて壺の形にし、腰が立つのを待って口まで積み、日陰で乾かす。
+  earth_kiln:
+    display_name: 覆い焼きの炉
+    description: 器と薪をまとめて土で覆った、一度きりの炉。ここでしか土器は焼けず、料理はできない。
+    recipes:
+      heaped:
+        display_name: 炉を築く
+        description: 焼く器と薪を積み、練った粘土でまるごと覆って、空気の通り道を突く。
+    interactions:
+      break_open:
+        display_name: 覆いを壊す
+        description: 冷めた土の殻を崩して、中の焼き物を取り出す。炉は二度と使えない。
+
   # 入れ物（containers.yaml）。
   woven_basket:
     display_name: 編み籠

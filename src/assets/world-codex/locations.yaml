@@ -373,6 +373,11 @@ object_defs:
             spawn:
               - {object: dry_grass, into: self}
               - {object: water_spinach, into: self}
+          # 粘土は水際に堆積するので、水気のある土地（草地・森林・密林）にだけ置く（pottery.yaml）。
+          # 壺1つ分をまとめて掘り取る。**2個の候補なので、足しても1回あたりの平均個数（約2個）は
+          # ほとんど動かない**——上の「平均2個」の配りは、既存の重みを触らずに保てる。
+          - weight: 14
+            spawn: {object: clay, count: 2, into: self}
           # 3個
           - weight: 18
             spawn:
@@ -443,6 +448,9 @@ object_defs:
             spawn:
               - {object: banana_plant, into: self}
               - {object: twig, into: self}
+          # 粘土（pottery.yaml）。草地と同じ扱い。
+          - weight: 12
+            spawn: {object: clay, count: 2, into: self}
           # 3個
           - weight: 18
             spawn:
@@ -519,6 +527,9 @@ object_defs:
             spawn:
               - {object: banana_plant, into: self}
               - {object: twig, into: self}
+          # 粘土（pottery.yaml）。草地と同じ扱い。
+          - weight: 10
+            spawn: {object: clay, count: 2, into: self}
           # 3個
           - weight: 18
             spawn:
