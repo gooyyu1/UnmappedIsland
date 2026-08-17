@@ -591,6 +591,48 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(basketCard.contentsFor(bandageCard), 'かごは持ち物を受け取る').toEqual(contents);
   });
 
+  it('プロパティの詳細は、その値を持つ物から読む', () => {
+    // 同じ名前のプロパティを複数の型が持つことはある。詳細に出る影響の出入りは、プロパティの名前では
+    // なく持ち主で決まる（Windows.md 6節）。
+    const loader = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR);
+    loader.load(
+      'test.yaml',
+      [
+        'object_defs:',
+        '  test_charm:',
+        '    tags: [item]',
+        '    props:',
+        '      weight: {value: 10}',
+        '      volume: {value: 10}',
+        '      satiety:',
+        '        tags: [status]',
+        '        value: 10',
+        '        range: {min: 0, max: 100}',
+        '',
+      ].join('\n'),
+    );
+    const withCharm = loader.build();
+    const game = startNewGame(withCharm, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const charm = game.session.spawn(withCharm.objectNames.getId('test_charm'));
+    expect(charm.moveToSlot(game.player.instance, withCharm.slotNames.getId('hand'))).toBeUndefined();
+
+    const view = fromGameSession(game, withCharm, locale);
+    const card = view.hand.find((held) => held?.objects[0] === charm);
+    const charmSatiety = view
+      .windowOfCard(card!)
+      .properties.flatMap((tab) => tab.entries)
+      .find((entry) => entry.key === 'satiety');
+    const characterSatiety = view.characterWindow.properties
+      .flatMap((tab) => tab.entries)
+      .find((entry) => entry.key === 'satiety');
+
+    expect(charmSatiety?.value, 'お守り自身の値が出る').toBe(10);
+    expect(charmSatiety?.detail.received, 'お守りは何の影響も受けていない').toEqual([]);
+    expect(characterSatiety?.detail.received.length, 'キャラクタの満腹度は影響を受けている').toBeGreaterThan(
+      0,
+    );
+  });
+
   it('子ウィンドウに要るものは、対象ごとに1つのまとまりで答える', () => {
     // 呼び出し側（PlayScene）がばらばらのメンバーから組み立てると、窓を足すたびに組み立ての手順も
     // 増える。1つの窓に要るものは1つの問い合わせで揃う（Windows.md 1節）。

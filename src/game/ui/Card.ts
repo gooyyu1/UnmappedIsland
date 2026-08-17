@@ -209,7 +209,7 @@ export interface CardGauge {
    * これが一致する間はバーを作り直さずに値だけを差し替える（変化の帯が途切れないようにするため）。
    *
    * プロパティのゲージはプロパティ名そのもの。入れ物と中身から出るバーは`@`で始まる名前を使う
-   * （YAMLの識別子とは決して衝突しない、PlayScreenViewのBUILTIN_GAUGE_KEYS）。
+   * （YAMLの識別子とは決して衝突しない、cardLooksのBUILTIN_GAUGE_KEYS）。
    */
   readonly key: string;
 
@@ -297,7 +297,7 @@ export interface CardContent {
 
   /**
    * 桟へ積むバー（CardView.md 8節）。**カードのバーはこれが全部**で、上から渡された順に積む。
-   * 何本出るか・どちらの端が良いかを決めるのはすべて渡す側（PlayScreenView）で、カードは
+   * 何本出るか・どちらの端が良いかを決めるのはすべて渡す側（cardLooks）で、カードは
    * 「並べて色を塗る」だけを引き受ける。1本も無いカードは空配列。
    */
   readonly gauges?: readonly CardGauge[];

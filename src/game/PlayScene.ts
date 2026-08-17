@@ -153,7 +153,7 @@ const WEATHER_DEPTH = -0.5;
 const MATERIAL_CYCLE_MS = 1000;
 
 /**
- * 現在地の持ち物として解決される場所（PlayScreenView.slotOf）。土地を移ると別の場所を指すので、
+ * 現在地の持ち物として解決される場所（cardPlaces）。土地を移ると別の場所を指すので、
  * これらを映している子ウィンドウは移動のたびに閉じる。
  */
 const LOCATION_PLACES: readonly string[] = ['items', 'fixtures', 'structure'];
