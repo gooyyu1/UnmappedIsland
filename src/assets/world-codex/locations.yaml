@@ -144,6 +144,8 @@ object_defs:
   #   実りの多い土地は平均2個、荒野・山頂・岸壁のような乏しい土地は平均1.6個になるよう重みを配る
   #   （tests/world-codex/explorationYield.test.tsが検証する）。設置物（木・茂み・洞窟の入口など）は
   #   1回に1つまでにし、数で増えるのはアイテムだけにする。
+  # - 生きた獣（animals.yaml）は**単独の候補**にする。収穫ではなく出くわすものなので、他の物と一緒に
+  #   見つかると「実り」に混ざってしまう（docs/engine/ExplorationSystem.md 2.1節）。
   # - durationは1回の探索にかかる時間（分）。全土地で1tick（minutes_per_tick、core.yaml）に揃える。
   #   土地ごとの探索の重さは、回数（exploration_progress.range.max）だけで表す。
   # - `weight: {prop: ...}`の候補は**発見量のつまみ**。valueが素の重みで、亜種
@@ -173,6 +175,9 @@ object_defs:
       # 太い枝2本とヤシガニが見つかる候補の重み。
       driftwood_find:
         value: 12
+      # サルに出くわす候補の重み（docs/world/Animals.md 8節）。
+      monkey_find:
+        value: 4
     actions:
       explore:
         showMenu: always
@@ -186,6 +191,9 @@ object_defs:
             spawn: {object: woven_basket, into: self}
           - weight: {prop: crab_find}
             spawn: {object: coconut_crab, into: self}
+          # 出くわす獣（収穫ではないので、単独で出る）
+          - weight: {prop: monkey_find}
+            spawn: {object: monkey, into: self}
           # 2個
           - weight: 20
             spawn: {object: coconut, count: 2, into: self}
@@ -373,6 +381,11 @@ object_defs:
       # 斧で倒せる木が1本見つかる候補の重み（timber.yaml）。丸太の出どころなので、森を特徴づける。
       tree_find:
         value: 15
+      # 出くわす獣の候補の重み（docs/world/Animals.md 8節）。
+      monkey_find:
+        value: 4
+      wild_boar_find:
+        value: 3
     actions:
       explore:
         showMenu: always
@@ -384,6 +397,11 @@ object_defs:
             spawn: {object: berry_bush, into: self}
           - weight: {prop: spring_find}
             spawn: {object: spring, into: self}
+          # 出くわす獣（収穫ではないので、単独で出る）
+          - weight: {prop: monkey_find}
+            spawn: {object: monkey, into: self}
+          - weight: {prop: wild_boar_find}
+            spawn: {object: wild_boar, into: self}
           # 2個
           - weight: {prop: tree_find}
             spawn:
@@ -431,6 +449,11 @@ object_defs:
       # 斧で倒せる木が1本見つかる候補の重み（timber.yaml）。
       tree_find:
         value: 12
+      # 出くわす獣の候補の重み（docs/world/Animals.md 8節）。
+      monkey_find:
+        value: 4
+      wild_boar_find:
+        value: 3
     actions:
       explore:
         showMenu: always
@@ -442,6 +465,11 @@ object_defs:
             spawn: {object: palm_tree, into: self}
           - weight: {prop: taro_find}
             spawn: {object: taro, into: self}
+          # 出くわす獣（収穫ではないので、単独で出る）
+          - weight: {prop: monkey_find}
+            spawn: {object: monkey, into: self}
+          - weight: {prop: wild_boar_find}
+            spawn: {object: wild_boar, into: self}
           # 2個
           - weight: {prop: tree_find}
             spawn:
