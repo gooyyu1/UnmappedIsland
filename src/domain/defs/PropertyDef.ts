@@ -3,6 +3,8 @@ import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import { INT32_MAX } from '../../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
+import { describeEffect } from './describeEffect';
+import type { EffectDeclaration } from './EffectReader';
 import type { AlertLevel } from './AlertLevel';
 import { ALERT_LEVELS } from './AlertLevel';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
@@ -333,7 +335,7 @@ export class PropertyDef {
   ): void {
     if (effect === undefined) return;
     out.write(text(`${label}:`));
-    out.indented(() => effect.describe(names, out));
+    out.indented(() => describeEffect(effect, names, out));
   }
 
   /**
@@ -341,13 +343,13 @@ export class PropertyDef {
    * 効果そのものを渡すので、何を尋ねるか（どのプロパティを書き換えるか・どの型を生むか）は
    * 呼び出し側が決める。
    */
-  hasRangeEventMatching(matches: (effect: ActiveEffect) => boolean): boolean {
+  hasRangeEventMatching(matches: (declaration: EffectDeclaration) => boolean): boolean {
     return this.rangeEvents().some(([, effect]) => matches(effect));
   }
 
   /** range系イベントのうち、matchesが真になるものだけを書き出す。 */
   describeRangeEventsMatching(
-    matches: (effect: ActiveEffect) => boolean,
+    matches: (declaration: EffectDeclaration) => boolean,
     names: DefNames,
     out: DescriptionWriter,
   ): void {
@@ -355,13 +357,8 @@ export class PropertyDef {
       if (matches(effect)) this.describeRangeEvent(label, effect, names, out);
   }
 
-  /** 名前で指したrange系イベント（6.3節）。宣言が無ければundefined。 */
-  rangeEvent(label: RangeEventLabel): ActiveEffect | undefined {
-    return label === 'on_overflow' ? this.onOverflow : this.onShortfall;
-  }
-
-  /** 宣言されているrange系イベントとその名前。 */
-  private rangeEvents(): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
+  /** 宣言されているrange系イベントとその名前（6.3節）。 */
+  rangeEvents(): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
     const events: (readonly [RangeEventLabel, ActiveEffect])[] = [];
     if (this.onOverflow !== undefined) events.push(['on_overflow', this.onOverflow]);
     if (this.onShortfall !== undefined) events.push(['on_shortfall', this.onShortfall]);

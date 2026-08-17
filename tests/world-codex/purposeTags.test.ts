@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import { writesToProperty } from '../../src/domain/defs/effectQueries';
 import type { ObjectDef } from '../../src/domain/defs/ObjectDef';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -27,12 +28,12 @@ describe('用途のタグ', () => {
     const hydrationId = codex.propertyNames.getId('hydration');
 
     // 自分の操作が「自分以外」（＝食べる本人）の満腹度か水分を動かすなら、それは口に入る物
-    // （affectsの第2引数がfalse＝宣言元の物のプロパティではない、ActiveEffect参照）。
+    // （writesToPropertyの第3引数がfalse＝宣言元の物のプロパティではない、effectQueries参照）。
     const feedsTheEater = (def: ObjectDef): boolean =>
-      [...def.actions, ...def.combinations].some((interaction) =>
-        interaction.hasEffectMatching(
-          (effect) => effect.affects(satietyId, false) || effect.affects(hydrationId, false),
-        ),
+      [...def.actions, ...def.combinations].some(
+        (interaction) =>
+          writesToProperty(interaction, satietyId, false) ||
+          writesToProperty(interaction, hydrationId, false),
       );
     // カードとして並ぶ物だけを見る。液体そのもの（水・茶）は容器のカードが代表するので、枠の色を持たない。
     const edible = defs.filter((def) => def.tags.includes(itemTagId) && feedsTheEater(def));

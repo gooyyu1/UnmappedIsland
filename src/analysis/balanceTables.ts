@@ -1,5 +1,6 @@
 import type { ObjectDef } from '../domain/defs/ObjectDef';
-import type { TickDelta } from '../domain/defs/PassiveEffect';
+import type { TickDelta } from './tickDeltas';
+import { tickDeltasOf } from './tickDeltas';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
 import { craftingStepsOf } from './craftingSteps';
@@ -328,7 +329,7 @@ export interface Requirement {
  * どの段にも当てはまらない量になる。
  */
 function requirementsOf(codex: WorldCodex, character: ObjectDef): readonly Requirement[] {
-  const deltas = character.passives.tickDeltas().filter((delta) => delta.target === 'self');
+  const deltas = tickDeltasOf(character).filter((delta) => delta.target === 'self');
 
   // 輸送の両端。負の側（三大栄養素）が原資で、正の側（体脂肪）が受け皿。
   const sources = [...new Set(deltas.filter((d) => d.capped && d.amount < 0).map((d) => d.propertyGlobalId))];
@@ -372,7 +373,7 @@ function destroysWhenEmpty(def: ObjectDef, propertyGlobalId: number): boolean {
 
 function consumptionRows(codex: WorldCodex, characterNames: readonly string[]): readonly ConsumptionRow[] {
   const byCharacter = characterNames.map((name) =>
-    tickDeltasOf(codex, codex.objects.get(codex.objectNames.getId(name))),
+    tickAmountsByName(codex, codex.objects.get(codex.objectNames.getId(name))),
   );
 
   const keys: string[] = [];
@@ -397,9 +398,9 @@ function splitKey(key: string): readonly [string, string] {
 }
 
 /** キャラクタ1人が、自分のプロパティをtick毎にどれだけ動かすか。 */
-function tickDeltasOf(codex: WorldCodex, def: ObjectDef): ReadonlyMap<string, number> {
+function tickAmountsByName(codex: WorldCodex, def: ObjectDef): ReadonlyMap<string, number> {
   const byKey = new Map<string, number>();
-  for (const delta of def.passives.tickDeltas()) {
+  for (const delta of tickDeltasOf(def)) {
     if (delta.target !== 'self') continue;
     const key = `${codex.propertyName(delta.propertyGlobalId)}${KEY_SEPARATOR}${conditionLabel(codex, delta)}`;
     byKey.set(key, (byKey.get(key) ?? 0) + delta.amount);

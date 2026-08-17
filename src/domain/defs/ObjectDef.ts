@@ -1,8 +1,9 @@
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { ActionDef } from './ActionDef';
-import type { ActiveEffect } from './ActiveEffect';
 import type { CombinationDef } from './CombinationDef';
+import type { EffectDeclaration } from './EffectReader';
+import { spawnsObject, writesToProperty } from './effectQueries';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { actionRef, combinationRef, propertyRef, slotRef, text } from './Description';
 import type { InteractionDef } from './InteractionDef';
@@ -206,7 +207,8 @@ export class ObjectDef {
   ): void {
     this.passives.describeAffecting(propertyGlobalId, ownedByThisDef, names, out);
 
-    const matches = (effect: ActiveEffect): boolean => effect.affects(propertyGlobalId, ownedByThisDef);
+    const matches = (declaration: EffectDeclaration): boolean =>
+      writesToProperty(declaration, propertyGlobalId, ownedByThisDef);
 
     for (const propertyDef of this.propertyDefs) {
       // 自分自身を値域へ丸めるon_overflow/on_shortfallは、そのプロパティの定義を見れば分かる
@@ -229,7 +231,7 @@ export class ObjectDef {
    * 生む側の型が答えで、その先はその型のページにある。
    */
   creates(objectGlobalId: number): boolean {
-    const matches = (effect: ActiveEffect): boolean => effect.spawns(objectGlobalId);
+    const matches = (declaration: EffectDeclaration): boolean => spawnsObject(declaration, objectGlobalId);
     return (
       this.propertyDefs.some((propertyDef) => propertyDef.hasRangeEventMatching(matches)) ||
       this.matchingInteractions(matches).length > 0
@@ -247,7 +249,7 @@ export class ObjectDef {
   /** 1つのプロパティのrange系イベントのうち、matchesが真になるものを、宣言元の名前を添えて書き出す。 */
   private describeRangeEvents(
     propertyDef: PropertyDef,
-    matches: (effect: ActiveEffect) => boolean,
+    matches: (declaration: EffectDeclaration) => boolean,
     names: DefNames,
     out: DescriptionWriter,
   ): void {
@@ -258,13 +260,12 @@ export class ObjectDef {
 
   /** matchesが真になる操作を、その名前を指す断片（actions/combinationsの区別つき）とともに集める。 */
   private matchingInteractions(
-    matches: (effect: ActiveEffect) => boolean,
+    matches: (declaration: EffectDeclaration) => boolean,
   ): readonly (readonly [DescriptionToken, InteractionDef])[] {
     const found: (readonly [DescriptionToken, InteractionDef])[] = [];
-    for (const action of this.actions)
-      if (action.hasEffectMatching(matches)) found.push([actionRef(action.name), action]);
+    for (const action of this.actions) if (matches(action)) found.push([actionRef(action.name), action]);
     for (const combination of this.combinations)
-      if (combination.hasEffectMatching(matches)) found.push([combinationRef(combination.name), combination]);
+      if (matches(combination)) found.push([combinationRef(combination.name), combination]);
     return found;
   }
 

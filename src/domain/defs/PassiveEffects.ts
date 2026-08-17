@@ -2,7 +2,8 @@ import type { InfluenceWriter } from '../runtime/PropertyInfluence';
 import type { WorldObject } from '../runtime/WorldObject';
 import type { WorldSession } from '../runtime/WorldSession';
 import type { DefNames, DescriptionWriter } from './Description';
-import type { PassiveEffect, TickDelta, TransferPassiveEffect } from './PassiveEffect';
+import { describePassive, passiveWritesToProperty } from './describePassive';
+import type { PassiveEffect, TransferPassiveEffect } from './PassiveEffect';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -44,14 +45,9 @@ export class PassiveEffects {
     for (const effect of this.effects) effect.registerChild(owner, child, register);
   }
 
-  /**
-   * tick毎に実体値を動かす分を宣言順に挙げる（TickDelta参照）。「1日に何がどれだけ要るか」は
-   * これを96倍すれば出る。
-   */
-  tickDeltas(): readonly TickDelta[] {
-    const deltas: TickDelta[] = [];
-    for (const effect of this.effects) effect.collectTickDeltas((delta) => deltas.push(delta));
-    return deltas;
+  /** 宣言されている持続効果を宣言順に挙げる（読み上げは効果自身が答える、PassiveReader参照）。 */
+  get declarations(): readonly PassiveEffect[] {
+    return this.effects;
   }
 
   /** すべての効果が持つ影響の辺を書き出す（PassiveEffect.collectInfluences参照）。 */
@@ -61,7 +57,7 @@ export class PassiveEffects {
 
   /** すべての効果を宣言順に書き出す（Description参照）。 */
   describe(names: DefNames, out: DescriptionWriter): void {
-    for (const effect of this.effects) effect.describe(names, out);
+    for (const effect of this.effects) describePassive(effect, names, out);
   }
 
   /** propertyGlobalIdを書き換えうる効果だけを書き出す（引数の意味はPassiveEffect.affects）。 */
@@ -72,6 +68,7 @@ export class PassiveEffects {
     out: DescriptionWriter,
   ): void {
     for (const effect of this.effects)
-      if (effect.affects(propertyGlobalId, ownedByDeclarer)) effect.describe(names, out);
+      if (passiveWritesToProperty(effect, propertyGlobalId, ownedByDeclarer))
+        describePassive(effect, names, out);
   }
 }
