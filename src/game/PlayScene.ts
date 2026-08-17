@@ -153,6 +153,12 @@ const WEATHER_DEPTH = -0.5;
 const MATERIAL_CYCLE_MS = 1000;
 
 /**
+ * 現在地の持ち物として解決される場所（PlayScreenView.slotOf）。土地を移ると別の場所を指すので、
+ * これらを映している子ウィンドウは移動のたびに閉じる。
+ */
+const LOCATION_PLACES: readonly string[] = ['items', 'fixtures', 'structure'];
+
+/**
  * 日射に応じた翳り・輝きは画面全体にかぶるので、飛んでいるカードの層（CardTable）より手前。
  * ドーナツグラフと致命的域の枠だけは更に手前に残す——暗い時間帯でも変わらず読めている必要がある。
  */
@@ -1589,7 +1595,10 @@ export class PlayScene extends ResponsiveScene {
     this.explorationWindow?.close();
     this.explorationWindow = undefined;
     // 置いてきた入れ物の中身は開いたままにできない。手に持っている入れ物も、開き直せば済むので一律に閉じる。
-    if (this.childWindowPlace !== undefined && typeof this.childWindowPlace !== 'string') {
+    // 現在地に紐づく場所（構造の部品）も同じ——移った先の同じ名前のスロットへ黙って映り、
+    // 筏の札を出したまま中身だけが空になる（筏から降りたときに実際に起きた）。
+    const place = this.childWindowPlace;
+    if (place !== undefined && (typeof place !== 'string' || LOCATION_PLACES.includes(place))) {
       this.closeChildWindow();
     }
   }

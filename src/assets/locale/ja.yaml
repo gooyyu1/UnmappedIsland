@@ -194,6 +194,9 @@ object_texts:
         display_name: ビタミン
         icon: 🥬
         description: 体に残っているビタミン。力にはならないが、尽きると古傷が開き歯が抜ける。
+      afloat:
+        display_name: 浮いている
+        description: 水に浮かんでいるか。帆のような部品は、浮いている間だけ効く。
       fuel:
         display_name: 薪
         description: 炉に載っている燃えるもの。尽きれば火は弱っていく。

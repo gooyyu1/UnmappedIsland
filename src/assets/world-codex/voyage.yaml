@@ -62,8 +62,14 @@ object_defs:
             min: 362400
             passives:
               - modify: {self: {sail_speed: -6}}
-      # 航海の速さ（実効値）。素の値は0で、寄与は3つ——外洋の海流（open_sea の modify）、
-      # 風向き（下の passives）、積載の重さ（weight の段）。陸に居る間はどれも効かないので0になる。
+      # 浮いているか。外洋が子へ配る（open_sea の modify）ので、海に出ている間だけ1になる。
+      #
+      # **帆のような部品が「陸では効かない」と言うための足場。** 筏自身の寄与は親の型で絞れるが
+      # （下の passives の `parent matches sea`）、部品から見た海は親の親で、条件では指せない。
+      afloat: {value: 0}
+      # 航海の速さ（実効値）。素の値は0で、寄与は4つ——外洋の海流（open_sea の modify）、
+      # 風向き（下の passives）、積載の重さ（weight の段）、組み込んだ帆（rawhide_sail）。
+      # 陸に居る間はどれも効かないので0になる。
       sail_speed:
         value: 0
         range: {min: 0, max: 20}
@@ -175,7 +181,12 @@ object_defs:
     passives:
       # 効き先は親（＝組み込まれた筏）。積荷のスロットに置いても親は同じなので、構造スロットに
       # 入れることを強いているのは枠のaccept（tag: sail）であって、この宣言ではない。
-      - modify: {parent: {sail_speed: 2}}
+      #
+      # **浮いている間だけ効かせる。** 条件を付けないと、浜に置いた筏の sail_speed が2になって
+      # 段が `slow` へ上がり、陸のまま voyage_progress が溜まって本土へ着いてしまう（実際に起きた）。
+      - conditions:
+          - {subject: parent, prop: afloat, gt: 0}
+        modify: {parent: {sail_speed: 2}}
     # 解放条件（conditions、13.3節）はまだ置かない（筏・編み籠と同じ理由）。
     recipes:
       sewn:
@@ -204,6 +215,9 @@ object_defs:
       # 海流。浮かんでいるものを本土の方へ押し続ける。風が凪いでも進みが完全には止まらないのは
       # これがあるためで、向かい風はこれを打ち消す量として書いてある（筏の sail_speed 参照）。
       - modify: {child: {sail_speed: 3}}
+      # 浮いていること自体を子へ配る。組み込んだ部品が「陸では効かない」と言うために読む
+      # （筏の afloat 参照）。
+      - modify: {child: {afloat: 1}}
 
   # 本土。着いた時点で周回が終わる場所で、着いた後のことは描かない（GameEndings.md 3節）。
   # 世界に1つだけ在り、筏の voyage_progress が上限へ達したときだけ、そこへ移る。

@@ -13,7 +13,8 @@ title: 出航のしたく
 seed: 3
 
 player:
-  hand: [sharp_stone, stone_axe]
+  # 帆は組み込み前の状態で持たせる（筏へ乗り込んで、部品の枠へ差す）。
+  hand: [sharp_stone, stone_axe, rawhide_sail]
 
 location:
   type: sandy_beach

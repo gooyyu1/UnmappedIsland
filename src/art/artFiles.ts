@@ -48,7 +48,16 @@ export function commonArtFiles(locations: readonly string[]): readonly ArtFile[]
   return files;
 }
 
-/** locationタグを持つobject_defの識別子（＝絵を遅延ロードする土地）の一覧。 */
+/**
+ * 絵を遅延ロードする土地の識別子。
+ *
+ * **locationタグを持つだけでは足りない。** 筏（voyage.yaml）は場所でありながら設置物でもあり、
+ * 岸に置かれた札として、そこへ入る前から画面に出る。土地と一括りにすると、その札の絵だけが
+ * 読まれないまま絵文字で出る（実際に出た）。
+ *
+ * 遅延にする理由は常駐量——1つの土地が背景を何枚も持ち、それが土地の数だけ在ることにある。
+ * **背景を持たない場所は遅らせる意味が無い**ので、そこで線を引く。
+ */
 export function locationDefNames(codex: WorldCodex): readonly string[] {
-  return codex.objectDefNamesWithTag('location');
+  return codex.objectDefNamesWithTag('location').filter((name) => backgroundTexturesOf(name).length > 0);
 }
