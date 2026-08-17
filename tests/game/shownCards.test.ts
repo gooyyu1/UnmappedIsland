@@ -2,12 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { WorldObject } from '../../src/domain/runtime/WorldObject';
 import type { CardSpot } from '../../src/game/view/ShownCards';
 import { ShownCards } from '../../src/game/view/ShownCards';
-import type {
-  CardCombination,
-  CardPlace,
-  CardPlacement,
-  ObjectCardStack,
-} from '../../src/game/view/PlayScreenView';
+import type { ObjectCardStack } from '../../src/game/view/PlayScreenView';
+import type { CardCombination } from '../../src/game/view/cardOperations';
+import type { CardPlace, CardPlacement } from '../../src/game/view/cardPlaces';
 import { planMotion } from '../../src/game/view/cardMotionPlan';
 
 /**

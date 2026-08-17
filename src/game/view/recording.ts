@@ -4,8 +4,9 @@ import type { InteractionGains } from '../../domain/runtime/PropertyGain';
 import type { WorldChange } from '../../domain/runtime/WorldChange';
 import type { WorldSignal } from '../../domain/runtime/WorldSignal';
 import type { Localization } from '../../locale/Localization';
-import type { CardPlace, PlayScreenView } from './PlayScreenView';
+import type { PlayScreenView } from './PlayScreenView';
 import { fromGameSession, withFrozenCards } from './PlayScreenView';
+import type { CardPlace } from './cardPlaces';
 import type { StatusDelta } from './statusChanges';
 import { allStatuses, statusChangesBetween } from './statusChanges';
 

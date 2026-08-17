@@ -1,6 +1,8 @@
 import type { WorldObject } from '../../domain/runtime/WorldObject';
-import type { CardCombination, CardPlace, CardPlacement, CardPutIn, ObjectCardStack } from './PlayScreenView';
-import { samePlace } from './PlayScreenView';
+import type { ObjectCardStack } from './PlayScreenView';
+import type { CardCombination, CardPutIn } from './cardOperations';
+import type { CardPlace, CardPlacement } from './cardPlaces';
+import { samePlace } from './cardPlaces';
 import type { CardContent, CardEdgeDirection } from '../ui/Card';
 import { cardFace } from '../ui/cardFace';
 

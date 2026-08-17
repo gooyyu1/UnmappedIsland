@@ -20,14 +20,10 @@ import type { InteractionGains } from '../domain/runtime/PropertyGain';
 import type { WorldChange } from '../domain/runtime/WorldChange';
 import type { WorldSignal } from '../domain/runtime/WorldSignal';
 import type { WorldObject } from '../domain/runtime/WorldObject';
-import type {
-  CardAction,
-  CardPlace,
-  ObjectCardStack,
-  ObjectWindowView,
-  PlayScreenView,
-} from './view/PlayScreenView';
+import type { ObjectCardStack, ObjectWindowView, PlayScreenView } from './view/PlayScreenView';
+import type { CardAction } from './view/cardOperations';
 import { EXPLORE_ACTION, fromGameSession } from './view/PlayScreenView';
+import type { CardPlace } from './view/cardPlaces';
 import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
 import type { RecordedView, Recording } from './view/recording';
@@ -158,7 +154,7 @@ const WEATHER_DEPTH = -0.5;
 const MATERIAL_CYCLE_MS = 1000;
 
 /**
- * 現在地の持ち物として解決される場所（PlayScreenView.slotOf）。土地を移ると別の場所を指すので、
+ * 現在地の持ち物として解決される場所（cardPlaces）。土地を移ると別の場所を指すので、
  * これらを映している子ウィンドウは移動のたびに閉じる。
  */
 const LOCATION_PLACES: readonly string[] = ['items', 'fixtures', 'structure'];
