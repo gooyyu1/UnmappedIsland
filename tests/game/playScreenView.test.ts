@@ -202,14 +202,20 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('探索率は現在地の進捗を0〜1で表し、100%を超えない', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
 
-    expect(fromGameSession(game, codex, locale).explorationRatio, '開始直後は未探索').toBe(0);
+    expect(
+      fromGameSession(game, codex, locale).currentLocationWindow.explorationRatio,
+      '開始直後は未探索',
+    ).toBe(0);
 
     exploreToFull(game);
-    expect(fromGameSession(game, codex, locale).explorationRatio, '探索し切れば100%').toBe(1);
+    expect(
+      fromGameSession(game, codex, locale).currentLocationWindow.explorationRatio,
+      '探索し切れば100%',
+    ).toBe(1);
 
     // 100%到達後も探索は続けられる（ExplorationSystem.md 2節）が、探索率は100%のまま。
     expect(game.player.explore(game.session)).toBe(true);
-    expect(fromGameSession(game, codex, locale).explorationRatio).toBe(1);
+    expect(fromGameSession(game, codex, locale).currentLocationWindow.explorationRatio).toBe(1);
   });
 
   it('アイテムのmoveで手持ちへ移り、手持ちのmoveでフィールドへ戻る', () => {
@@ -583,6 +589,30 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(basketCard.visibleSlots, '中身のタブが出る').toEqual([contents]);
     expect(view.cellCountOf(contents), 'かごは10枠（Containers.md 1節）').toBe(10);
     expect(basketCard.contentsFor(bandageCard), 'かごは持ち物を受け取る').toEqual(contents);
+  });
+
+  it('子ウィンドウに要るものは、対象ごとに1つのまとまりで答える', () => {
+    // 呼び出し側（PlayScene）がばらばらのメンバーから組み立てると、窓を足すたびに組み立ての手順も
+    // 増える。1つの窓に要るものは1つの問い合わせで揃う（Windows.md 1節）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
+    expect(basket.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+    const basketWindow = view.windowOfCard(view.hand.find((card) => card?.objects[0] === basket)!);
+
+    expect(basketWindow.card.name, 'その札そのものを出す').toBe(view.hand[0]?.name);
+    expect(basketWindow.slots, 'かごは中身のタブを持つ').toHaveLength(1);
+    expect(basketWindow.properties, 'タグの付いたプロパティを持たないのでタブが出ない').toEqual([]);
+    expect(basketWindow.explorationRatio, '探索できるのは場所だけ').toBeUndefined();
+
+    expect(view.characterWindow.properties.length, 'キャラクタはプロパティのタブを持つ').toBeGreaterThan(0);
+    expect(view.characterWindow.slots, '外から見えるのは装備と怪我だけ（手持ちはレーンに出ている）').toEqual([
+      'equipment',
+      'injuries',
+    ]);
+    expect(view.currentLocationWindow.explorationRatio, '土地は探索のタブを持つ').toBe(0);
+    expect(view.currentLocationWindow.actions.map((action) => action.key)).toContain('explore');
   });
 
   it('液体の容器は中身を開かない（水を単独で取り出させない）', () => {
