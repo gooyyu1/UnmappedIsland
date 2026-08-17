@@ -1,9 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import { advanceCrafting, spawnInProgressObject } from '../../src/domain/runtime/crafting';
 import { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { WorldSession } from '../../src/domain/runtime/WorldSession';
 import { Location } from '../../src/domain/runtime/views/Location';
 import { World } from '../../src/domain/runtime/views/World';
+import { inProgressObjectName, MATERIALS_SLOT } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -48,7 +50,11 @@ describe('tools.yamlの道具定義', () => {
     const shares = ['heavy_blow', 'light_blow', 'thrust', 'whiff'].map((name) =>
       codex.propertyNames.getId(name),
     );
-    const weapons = codex.objectDefNamesWithTag('weapon');
+    // 製作中オブジェクトは完成品のタグを引き継ぐ（RecipeSystem.md 5節）ので weapon タグを持つが、
+    // 相手として指名されない（ObjectDef.combinationsAccepting）ため配分も持たない。
+    const weapons = codex
+      .objectDefNamesWithTag('weapon')
+      .filter((name) => codex.productOf(codex.objects.get(codex.objectNames.getId(name))) === undefined);
 
     expect(weapons.length, '検査対象が無い（weaponタグが変わっていないか）').toBeGreaterThan(0);
     for (const name of weapons) {
@@ -104,5 +110,84 @@ describe('tools.yamlの道具定義', () => {
     expect(hammer.parent, '打ち合わせた側は消えない').toBeUndefined();
     expect(worldView.hour, 'durationの60分が経つ').toBe(1);
     expect(worldView.minute).toBe(0);
+  });
+});
+
+/**
+ * 石斧のレシピ（tools.yaml）。**島で拾える物だけから斧へ届く**ことが、丸太＝筏（voyage.yaml）への
+ * 入口を開ける（docs/world/Voyage.md 1節）。
+ */
+describe('石斧を作る', () => {
+  let codex: WorldCodex;
+
+  beforeAll(() => {
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+  });
+
+  /** 岩場を1つ置いた世界。時間を進めるのでWorldを持つセッションを使う。 */
+  function rockyField(): { session: WorldSession; field: WorldObject } {
+    const worldInstance = new WorldObject(
+      0,
+      codex.objects.get(codex.objectNames.getId('world')),
+      new WorldSession(codex),
+    );
+    const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
+    const session = new WorldSession(codex, worldView);
+
+    const field = session.spawn(codex.objectNames.getId('rocky_field'));
+    expect(field.moveToSlot(worldInstance, codex.slotNames.getId('locations'))).toBeUndefined();
+    return { session, field };
+  }
+
+  /** 石斧の作りかけを、その土地へ置く。 */
+  function startAxe(session: WorldSession, field: WorldObject): WorldObject {
+    return spawnInProgressObject(
+      session,
+      field,
+      codex.objectNames.getId(inProgressObjectName('stone_axe', 'hafted')),
+    );
+  }
+
+  it('太い枝・尖った石・紐から、2工程で石斧ができる', () => {
+    const { session, field } = rockyField();
+    const recipe = codex.objects.get(codex.objectNames.getId('stone_axe')).recipes[0];
+    const materialsId = codex.slotNames.getId(MATERIALS_SLOT);
+    const wip = startAxe(session, field);
+    const put = (name: string) =>
+      expect(session.spawn(codex.objectNames.getId(name)).moveToSlot(wip, materialsId)).toBeUndefined();
+
+    put('thick_branch');
+    expect(advanceCrafting(wip, recipe, materialsId, codex, session), '柄を削り出す').toBe(true);
+
+    put('sharp_stone');
+    put('cord');
+    expect(advanceCrafting(wip, recipe, materialsId, codex, session), '刃を据えて縛る').toBe(true);
+
+    expect(
+      new Location(field, codex).items.map((item) => item.def.name),
+      '作りかけが石斧そのものへ置き換わる',
+    ).toEqual(['stone_axe']);
+  });
+
+  it('作りかけの石斧は、刃物として使えない', () => {
+    // 製作中オブジェクトは完成品のタグ（cutting_tool等）を引き継ぐ（RecipeSystem.md 5節）。
+    // 引き継ぎの目的は枠のacceptに当てはまることだけなので、道具としては働かない。
+    const { session, field } = rockyField();
+    const wip = startAxe(session, field);
+
+    const stem = session.spawn(codex.objectNames.getId('banana_stem'));
+    expect(stem.moveToSlot(field, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(wip.def.tags, 'タグの上では刃物').toContain(codex.tagNames.getId('cutting_tool'));
+
+    expect(stem.findMatchingCombinations(wip), '作りかけは相手にならない').toEqual([]);
+    expect(stem.tryExecuteCombination(wip, undefined, 'strip', session), '名指しでも実行できない').toBe(
+      false,
+    );
+
+    const sharpStone = session.spawn(codex.objectNames.getId('sharp_stone'));
+    expect(
+      stem.findMatchingCombinations(sharpStone).map((combination) => combination.name),
+      '出来上がった刃物でなら成立する',
+    ).toEqual(['strip']);
   });
 });

@@ -481,6 +481,10 @@ object_texts:
   stone_axe:
     display_name: 石斧
     description: 石の頭部を枝の柄へ縛りつけた斧。柄が乗せる勢いで、獲物を一撃で打ち倒せる。
+    recipes:
+      hafted:
+        display_name: 柄を付ける
+        description: 枝を削って柄をこしらえ、刃を溝へ据えて紐で締め上げる。
   spear:
     display_name: 槍
     description: 長い棒の先に石の穂先を固定した武器。突けば深く刺さるが、外すことも多く、解体には使えない。

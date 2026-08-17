@@ -61,6 +61,17 @@ export class WorldObject {
     return this.session.codex.wellKnown;
   }
 
+  /**
+   * 作りかけの物か（製作中オブジェクト、RecipeSystem.md 1節）。
+   *
+   * 製作中オブジェクトは完成品のタグを引き継ぐ（同5節）ので、**タグだけを見ると完成品と区別が
+   * 付かない**。引き継ぎの目的は枠のacceptに当てはまること1点なので、それ以外の
+   * 「その物であること」を問う場所はここで弾く。
+   */
+  get isInProgress(): boolean {
+    return this.session.codex.productOf(this.def) !== undefined;
+  }
+
   /** sessionは必須（value:{min,max}を持つプロパティの初期値ランダム化にsession.rngを使う）。 */
   constructor(instanceId: number, def: ObjectDef, session: WorldSession) {
     this.instanceId = instanceId;

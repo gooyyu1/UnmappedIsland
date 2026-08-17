@@ -511,15 +511,30 @@ export class ObjectDef {
   ): boolean {
     const resolvedSelf = self.resolveInteractionTarget();
     const resolvedDragged = dragged.resolveInteractionTarget();
-    const combination = resolvedSelf.def.combinations.find((c) => c.name === combinationName);
+    const combination = combinationsAccepting(resolvedSelf, resolvedDragged).find(
+      (c) => c.name === combinationName,
+    );
     return combination !== undefined && combination.tryExecute(resolvedSelf, resolvedDragged, actor, session);
   }
 
   findMatchingCombinations(self: WorldObject, dragged: WorldObject): readonly CombinationDef[] {
-    const resolvedSelf = self.resolveInteractionTarget();
-    const resolvedDragged = dragged.resolveInteractionTarget();
-    return resolvedSelf.def.combinations.filter((c) => c.matches(resolvedDragged.def));
+    return combinationsAccepting(self.resolveInteractionTarget(), dragged.resolveInteractionTarget());
   }
+}
+
+/**
+ * resolvedSelfが持つcombinationのうち、resolvedDraggedを相手（with、12.1節）として受け入れるもの。
+ *
+ * **作りかけの物は相手にならない。** 製作中オブジェクトは完成品のタグを引き継ぐ
+ * （RecipeSystem.md 5節）ので、弾かなければ半分できた石斧で木を伐り、獣を殴れてしまう
+ * ——引き継ぎは枠のacceptへ入れるためのもので、道具として働けることまでは意味しない。
+ */
+function combinationsAccepting(
+  resolvedSelf: WorldObject,
+  resolvedDragged: WorldObject,
+): readonly CombinationDef[] {
+  if (resolvedDragged.isInProgress) return [];
+  return resolvedSelf.def.combinations.filter((c) => c.matches(resolvedDragged.def));
 }
 
 /** ロード済みの全 ObjectDef を、グローバルIDをそのままindexとする配列で保持する。 */
