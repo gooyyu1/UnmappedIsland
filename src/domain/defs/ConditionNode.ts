@@ -150,9 +150,9 @@ export class ConditionNode {
   /**
    * この条件が見ている、rootが指す先のプロパティを挙げる（入れ子の条件も辿る）。
    *
-   * **その条件がいつまで成り立つか**を、見ているプロパティの動きから見積もるために使う——出血は
+   * **その条件がいつまで成り立つか**を、見ているプロパティの動きから見積もる手掛かり——出血は
    * `bleeding` が尽きるまでしか効かないので、条件が何を見ているかが分からないと、いつ止まるかも
-   * 分からない（収支レポートが持続時間を出すのに使う）。
+   * 分からない。見積もり方はここでは決めない（読み手の裁量）。
    */
   collectWatchedProperties(root: ReferenceRoot, add: (propertyGlobalId: number) => void): void {
     if (this.propertyGlobalId !== undefined && this.root === root) add(this.propertyGlobalId);

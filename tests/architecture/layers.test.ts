@@ -29,6 +29,12 @@ const PHASER_FREE = [
   'src/game/looks',
 ];
 
+/**
+ * 解析層（`src/analysis`）へ到達してはいけない置き場（Layers.md 6節）。定義から数値を導く近似の
+ * 置き場所なので、**ドメインと遊びの本体はその存在を知らない**。
+ */
+const ANALYSIS_FREE = ['src/domain', 'src/loader', 'src/locale', 'src/game', 'src/ui'];
+
 /** そのディレクトリ以下の.tsファイル（リポジトリ相対）。 */
 function sourcesIn(dir: string): string[] {
   const found: string[] = [];
@@ -46,12 +52,12 @@ function sourcesIn(dir: string): string[] {
  * `import type` は数えない。契約（`CardContent`・`StatusContent` ほか）を定めるのは部品側で、映しは
  * それを型として輸入する（Layers.md 4節）——型はビルドで消えるので、Phaserは付いてこない。
  */
-function importsOf(rel: string): readonly string[] {
+function importsOf(rel: string, includeTypes = false): readonly string[] {
   const source = readFileSync(join(ROOT, rel), 'utf-8');
   const specifiers = [
     // import ... from '…' / export ... from '…'（先頭が type のものは除く）
     ...[...source.matchAll(/(?:^|\n)\s*(?:import|export)\s+([^'"()]*?)\s*from\s*['"]([^'"]+)['"]/g)]
-      .filter((m) => !m[1].trimStart().startsWith('type'))
+      .filter((m) => includeTypes || !m[1].trimStart().startsWith('type'))
       .map((m) => m[2]),
     // 副作用だけの import と、動的 import
     ...[...source.matchAll(/(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g)].map((m) => m[1]),
@@ -69,13 +75,17 @@ function importsOf(rel: string): readonly string[] {
  * そのファイルから、行き先に当てはまるものへ至る経路（無ければundefined）。同じファイルを2度
  * 辿らないので、循環があっても止まる。
  */
-function pathTo(entry: string, forbidden: (target: string) => boolean): readonly string[] | undefined {
+function pathTo(
+  entry: string,
+  forbidden: (target: string) => boolean,
+  includeTypes = false,
+): readonly string[] | undefined {
   const seen = new Set<string>();
   const walk = (rel: string, trail: readonly string[]): readonly string[] | undefined => {
     if (seen.has(rel)) return undefined;
     seen.add(rel);
 
-    for (const target of importsOf(rel)) {
+    for (const target of importsOf(rel, includeTypes)) {
       if (forbidden(target)) return [...trail, rel, target];
       if (!target.endsWith('.ts')) continue;
       const found = walk(target, [...trail, rel]);
@@ -87,9 +97,13 @@ function pathTo(entry: string, forbidden: (target: string) => boolean): readonly
 }
 
 /** その置き場から禁じた先へ至る経路を、読める形にして全部並べる。 */
-function routesFrom(dir: string, forbidden: (target: string) => boolean): readonly string[] {
+function routesFrom(
+  dir: string,
+  forbidden: (target: string) => boolean,
+  includeTypes = false,
+): readonly string[] {
   return sourcesIn(dir)
-    .map((rel) => pathTo(rel, forbidden))
+    .map((rel) => pathTo(rel, forbidden, includeTypes))
     .filter((route): route is readonly string[] => route !== undefined)
     .map((route) => route.join(' → '));
 }
@@ -111,9 +125,21 @@ describe('層の境界', () => {
     ).toEqual([]);
   });
 
+  it.each(ANALYSIS_FREE)('%s は解析層へ到達しない', (dir) => {
+    // **型として輸入するのも数える。** Phaserと違って、ここで守っているのは実行時の依存ではなく
+    // 「近似がドメインの語彙に混ざらないこと」——`StaticValueResolver`を引数に取った時点で、
+    // その仮定はドメインの契約になってしまう。
+    expect(
+      routesFrom(dir, (target) => target.startsWith('src/analysis/'), true),
+      'この経路のどこかで、定義から数値を導く近似を覗いている',
+    ).toEqual([]);
+  });
+
   it('検査対象の置き場が実在する', () => {
     // 引っ越しで置き場が消えたときに、検査が黙って空を通さないようにする。
     expect(PHASER_FREE.filter((dir) => !existsSync(join(ROOT, dir)))).toEqual([]);
+    expect(ANALYSIS_FREE.filter((dir) => !existsSync(join(ROOT, dir)))).toEqual([]);
+    expect(sourcesIn('src/analysis').length).toBeGreaterThan(3);
     expect(sourcesIn('src/game/view').length).toBeGreaterThan(5);
     expect(sourcesIn('src/ui').length).toBeGreaterThan(5);
   });

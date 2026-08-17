@@ -3,6 +3,7 @@ import type { WorldSession } from '../runtime/WorldSession';
 import { ActiveEffect } from './ActiveEffect';
 import type { DefNames, DescriptionWriter } from './Description';
 import { text } from './Description';
+import type { EffectReader } from './EffectReader';
 import type { ObjectRef } from './ObjectRef';
 
 /**
@@ -53,5 +54,9 @@ export class MoveEffect extends ActiveEffect {
   /** オブジェクトの居場所を変えるだけで、プロパティを書き換えはしない。 */
   affects(): boolean {
     return false;
+  }
+
+  read(reader: EffectReader): void {
+    reader.move();
   }
 }

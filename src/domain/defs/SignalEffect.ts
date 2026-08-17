@@ -3,6 +3,7 @@ import type { WorldSession } from '../runtime/WorldSession';
 import { ActiveEffect } from './ActiveEffect';
 import type { DefNames, DescriptionWriter } from './Description';
 import { signalRef, text } from './Description';
+import type { EffectReader } from './EffectReader';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -45,5 +46,9 @@ export class SignalEffect extends ActiveEffect {
   /** 告げるだけで、プロパティは書き換えない。 */
   affects(): boolean {
     return false;
+  }
+
+  read(reader: EffectReader): void {
+    reader.signal(this.name);
   }
 }

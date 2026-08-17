@@ -5,8 +5,14 @@ import type {
   ObjectCost,
   PlaceBalance,
   PropertyRoute,
-} from './balanceTables';
-import { buildBalanceTables, menuFor, MINUTES_PER_DAY, TICKS_PER_DAY, WHOLE_ISLAND } from './balanceTables';
+} from '../analysis/balanceTables';
+import {
+  buildBalanceTables,
+  menuFor,
+  MINUTES_PER_DAY,
+  TICKS_PER_DAY,
+  WHOLE_ISLAND,
+} from '../analysis/balanceTables';
 import type { CodexView } from './CodexView';
 import { escapeHtml, inlineArtHtml } from './CodexView';
 

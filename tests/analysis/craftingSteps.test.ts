@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import type { CraftingStep } from '../../src/analysis/CraftingStep';
+import { craftingStepsOf } from '../../src/analysis/craftingSteps';
+import { externalTickDeltasOf, rangeCyclesOf } from '../../src/analysis/rangeCycles';
 import { buildCraftingNetwork } from '../../src/codex-viewer/craftingGraph';
-import type { CraftingStep } from '../../src/domain/defs/CraftingStep';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
@@ -53,7 +55,7 @@ object_defs:
 
   const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).build();
   const id = (name: string) => codex.objectNames.getId(name);
-  const stepsOf = (name: string): readonly CraftingStep[] => codex.objects.get(id(name)).craftingSteps();
+  const stepsOf = (name: string): readonly CraftingStep[] => craftingStepsOf(codex.objects.get(id(name)));
 
   it('何も生み出さないアクションも工程になる', () => {
     const steps = stepsOf('beach');
@@ -164,7 +166,7 @@ object_defs:
 `;
     const trapCodex = new WorldCodexYamlLoader().load('trap.yaml', YAML_TRAP).build();
     const snare = trapCodex.objects.get(trapCodex.objectNames.getId('snare'));
-    const cycles = snare.rangeCycles();
+    const cycles = rangeCyclesOf(snare);
 
     // 16 tick で1周（16 × 15分）。プレイヤーは何も払わないので、労働時間は0。
     const [judgement, lifetime] = cycles;
@@ -292,10 +294,10 @@ object_defs:
     const huntCodex = new WorldCodexYamlLoader().load('hunt.yaml', YAML_HUNT).build();
     const huntId = (name: string) => huntCodex.objectNames.getId(name);
     const defOf = (name: string) => huntCodex.objects.get(huntId(name));
-    const drivers = (source: string, root: 'parent' | 'child') => defOf(source).externalTickDeltas(root);
+    const drivers = (source: string, root: 'parent' | 'child') => externalTickDeltasOf(defOf(source), root);
 
     it('炉が進める加熱は、炉を道具に要る1回きりの周期になる', () => {
-      const [cooking] = defOf('raw_meat').rangeCycles(undefined, drivers('hearth', 'child'));
+      const [cooking] = rangeCyclesOf(defOf('raw_meat'), undefined, drivers('hearth', 'child'));
 
       // maxちょうどでは溢れない（6.3節）ので、届くべき距離は24ではなく25。3/tickなので25/3 tick。
       expect(cooking.minutes).toBeCloseTo((25 / 3) * 15);
@@ -321,12 +323,12 @@ object_defs:
         },
       ]);
 
-      expect(defOf('rat').rangeCycles(undefined, drivers('wound', 'parent'))).toHaveLength(1);
-      expect(defOf('boar').rangeCycles(undefined, drivers('wound', 'parent'))).toEqual([]);
+      expect(rangeCyclesOf(defOf('rat'), undefined, drivers('wound', 'parent'))).toHaveLength(1);
+      expect(rangeCyclesOf(defOf('boar'), undefined, drivers('wound', 'parent'))).toEqual([]);
     });
 
     it('一撃で値を端の外へ押す工程は、そこで起こることまで含めて1つの工程になる', () => {
-      const [strike] = defOf('boar').craftingSteps();
+      const [strike] = craftingStepsOf(defOf('boar'));
 
       // 20回に1回しか仕留められないので、1回の実行で要る獲物もその確率ぶん。
       expect(strike.inputs).toEqual([

@@ -1,4 +1,3 @@
-import type { CraftingInput } from './CraftingStep';
 import type { DefNames, DescriptionToken } from './Description';
 import { objectRef, tagRef, text } from './Description';
 import type { ObjectDef } from './ObjectDef';
@@ -9,6 +8,11 @@ type TypeMatchTargetKind =
   | 'tag'
   /** targetはobject_defのグローバルID。候補がまさにその型そのものであれば真。 */
   | 'object';
+
+/** 「どの型を指しているか」の読み上げ（TypeMatchRule.reading参照）。 */
+export type TypeMatchReading =
+  | { readonly kind: 'tag'; readonly tagGlobalId: number }
+  | { readonly kind: 'object'; readonly objectGlobalId: number };
 
 /**
  * 「どの型が当てはまるか」の指定（GameElementDefinition.md 4.1節）。枠のaccept（7.2節）と
@@ -75,10 +79,10 @@ export class TypeMatchRule {
       : { object: names.objectName(this.target) };
   }
 
-  /** この指定で相手を求める工程の入力1つ（CraftingStep参照）。consumedはその工程が相手を消すか。 */
-  craftingInput(consumed: boolean, count = 1): CraftingInput {
+  /** この指定の宣言そのもの（TypeMatchReading参照）。 */
+  get reading(): TypeMatchReading {
     return this.kind === 'tag'
-      ? { kind: 'tag', tagGlobalId: this.target, consumed, count }
-      : { kind: 'object', objectGlobalId: this.target, consumed, count };
+      ? { kind: 'tag', tagGlobalId: this.target }
+      : { kind: 'object', objectGlobalId: this.target };
   }
 }

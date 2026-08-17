@@ -1,6 +1,4 @@
 import type { WorldObject } from '../runtime/WorldObject';
-import type { CraftingStep, StepOutcome } from './CraftingStep';
-import { collectOutputs } from './CraftingStep';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { text } from './Description';
 import type { ObjectDef } from './ObjectDef';
@@ -96,47 +94,9 @@ export class RecipeDef {
     this.unlock = unlock;
   }
 
-  /** 全工程を通した所要時間（分）。工程の別は畳むので、時間も和で1つにする。 */
-  private get totalMinutes(): number {
-    return this.steps.reduce((sum, step) => sum + step.durationMinutes, 0);
-  }
-
   /** このレシピがcandidateDefを、どこかの工程で素材か道具として要求しているか。 */
   requires(candidateDef: ObjectDef): boolean {
     return this.steps.some((step) => step.requires(candidateDef));
-  }
-
-  /**
-   * このレシピを1つの工程として見たもの（CraftingStep参照）。工程（steps）の別は畳む——
-   * 「何を使って何ができるか」の問いには、レシピ全体でひとつの答えで足りる。所要時間も同じ理由で
-   * 全工程の和にする。productGlobalIdは完成品（このレシピを宣言している型）。
-   *
-   * レシピは分岐も所要時間の参照も持たないので、確率1の1分岐で、数値は常に確定する。
-   */
-  craftingStep(productGlobalId: number): CraftingStep {
-    const outcomes: readonly StepOutcome[] = [
-      {
-        probability: 1,
-        spawns: [{ objectGlobalId: productGlobalId, count: 1 }],
-        deltas: [],
-        assignments: [],
-      },
-    ];
-    return {
-      kind: 'recipe',
-      name: this.name,
-      ownerGlobalId: productGlobalId,
-      inputs: this.steps.flatMap((step) =>
-        step.requirements.map((requirement) =>
-          requirement.match.craftingInput(requirement.consume, requirement.count),
-        ),
-      ),
-      outputs: collectOutputs(outcomes),
-      laborMinutes: this.totalMinutes,
-      elapsedMinutes: this.totalMinutes,
-      outcomes,
-      hasUnresolvedReferences: false,
-    };
   }
 
   /** このレシピを書き出す（Description参照）。 */

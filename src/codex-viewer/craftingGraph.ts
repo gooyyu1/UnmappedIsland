@@ -1,4 +1,5 @@
-import type { CraftingStep } from '../domain/defs/CraftingStep';
+import type { CraftingStep } from '../analysis/CraftingStep';
+import { craftingStepsOf } from '../analysis/craftingSteps';
 import type { ObjectDef } from '../domain/defs/ObjectDef';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 
@@ -68,7 +69,7 @@ export function buildCraftingNetwork(defs: readonly ObjectDef[], codex: WorldCod
   };
 
   for (const def of defs) {
-    for (const step of def.craftingSteps()) {
+    for (const step of craftingStepsOf(def)) {
       if (step.outputs.length === 0) continue;
 
       const stepId = `s:${def.name}:${step.name}`;

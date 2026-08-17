@@ -1,8 +1,13 @@
-import type { CraftingStep } from '../domain/defs/CraftingStep';
-import type { ExternalTickDelta, ObjectDef, RangeCycle } from '../domain/defs/ObjectDef';
+import type { ObjectDef } from '../domain/defs/ObjectDef';
 import type { TickDelta } from '../domain/defs/PassiveEffect';
-import type { StaticValueResolver } from '../domain/defs/ReferenceRoot';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
+import type { CraftingStep } from './CraftingStep';
+import { craftingStepsOf } from './craftingSteps';
+import type { ExternalTickDelta, RangeCycle } from './rangeCycles';
+import { externalTickDeltasOf, rangeCyclesOf } from './rangeCycles';
+import { rangeEventReadouts } from './rangeEvents';
+import type { StaticValueResolver } from './staticValue';
+import { staticValueOf } from './staticValue';
 
 /**
  * 定義（`src/assets/world-codex/*.yaml`）だけから「時間あたりの収支」を計算する。
@@ -351,7 +356,7 @@ function inInitialStage(def: ObjectDef, delta: TickDelta): boolean {
   if (stage === undefined) return true;
 
   const propertyDef = def.getPropertyDef(stage.propertyGlobalId);
-  const value = def.staticValueOf(stage.propertyGlobalId);
+  const value = staticValueOf(def, stage.propertyGlobalId);
   if (propertyDef === undefined || value === undefined) return false;
   return propertyDef.stageOf(value)?.name === stage.name;
 }
@@ -360,9 +365,9 @@ function inInitialStage(def: ObjectDef, delta: TickDelta): boolean {
 function destroysWhenEmpty(def: ObjectDef, propertyGlobalId: number): boolean {
   const propertyDef = def.getPropertyDef(propertyGlobalId);
   if (propertyDef === undefined) return false;
-  return propertyDef
-    .rangeEventReadouts(() => undefined)
-    .some((readout) => readout.label === 'on_shortfall' && readout.destroysSelf);
+  return rangeEventReadouts(propertyDef, () => undefined).some(
+    (readout) => readout.label === 'on_shortfall' && readout.destroysSelf,
+  );
 }
 
 function consumptionRows(codex: WorldCodex, characterNames: readonly string[]): readonly ConsumptionRow[] {
@@ -987,10 +992,10 @@ function isCharacter(codex: WorldCodex, def: ObjectDef): boolean {
 function allSteps(codex: WorldCodex, outer?: StaticValueResolver): readonly StepRef[] {
   const defs = allDefs(codex);
   return defs.flatMap((def) => {
-    const cycles = def.rangeCycles(outer, externalTickDeltasOn(def, defs));
+    const cycles = rangeCyclesOf(def, outer, externalTickDeltasOn(def, defs));
     const lifetimeMinutes = lifetimeOf(cycles);
     return [
-      ...def.craftingSteps(outer).map((step) => ({ def, step, cycle: undefined })),
+      ...craftingStepsOf(def, outer).map((step) => ({ def, step, cycle: undefined })),
       // 繰り返す周期は設備（罠）。1回で終わる周期は、外から押されて初めて起こる作り替え
       // （火にかけた肉が焼ける・失血した獲物が死体になる）。朽ちるだけの周期は工程ではない。
       ...cycles
@@ -1014,9 +1019,9 @@ function externalTickDeltasOn(def: ObjectDef, defs: readonly ObjectDef[]): reado
   for (const source of defs) {
     if (source.globalId === def.globalId) continue;
     if (source.slotDefs.some((slot) => slot.acceptsAnywhere(def)))
-      found.push(...source.externalTickDeltas('child'));
+      found.push(...externalTickDeltasOf(source, 'child'));
     if (def.slotDefs.some((slot) => slot.acceptsAnywhere(source)))
-      found.push(...source.externalTickDeltas('parent'));
+      found.push(...externalTickDeltasOf(source, 'parent'));
   }
   return found;
 }
@@ -1037,7 +1042,7 @@ function lifetimeOf(cycles: readonly RangeCycle[]): number | undefined {
 /** 祖先（置かれている土地）の宣言値を答える手立て。宣言していないプロパティは寄与0。 */
 function ancestorContext(location: ObjectDef): StaticValueResolver {
   return (root, propertyGlobalId) =>
-    root === 'ancestor' ? (location.staticValueOf(propertyGlobalId) ?? 0) : undefined;
+    root === 'ancestor' ? (staticValueOf(location, propertyGlobalId) ?? 0) : undefined;
 }
 
 /** どの土地に置いてもよい前提での祖先の値。最も高く宣言している土地に置いたものとして扱う。 */
@@ -1045,7 +1050,7 @@ function bestAncestorContext(locations: readonly ObjectDef[]): StaticValueResolv
   return (root, propertyGlobalId) => {
     if (root !== 'ancestor') return undefined;
     const declared = locations
-      .map((location) => location.staticValueOf(propertyGlobalId))
+      .map((location) => staticValueOf(location, propertyGlobalId))
       .filter((value): value is number => value !== undefined);
     return declared.length === 0 ? 0 : Math.max(...declared);
   };
@@ -1063,7 +1068,7 @@ function withBestDragged(defs: readonly ObjectDef[], ancestor: StaticValueResolv
   return (root, propertyGlobalId) => {
     if (root !== 'dragged') return ancestor(root, propertyGlobalId);
     const declared = defs
-      .map((def) => def.staticValueOf(propertyGlobalId))
+      .map((def) => staticValueOf(def, propertyGlobalId))
       .filter((value): value is number => value !== undefined);
     return declared.length === 0 ? undefined : Math.max(...declared);
   };

@@ -36,7 +36,7 @@ export class ActionDef extends InteractionDef {
     out.write(text(`show_menu: ${this.showMenu}`));
   }
 
-  protected get craftingKind(): 'action' {
+  get kind(): 'action' {
     return 'action';
   }
 

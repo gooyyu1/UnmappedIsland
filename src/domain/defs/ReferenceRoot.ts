@@ -40,16 +40,6 @@ export class PropertyPath {
 }
 
 /**
- * ReferenceRootが指すプロパティの値を、**定義だけから**解く手立て。実行時のWorldObjectが存在しない
- * 文脈（収支表など、定義を静的に集計する側）で、weightやdurationの`{subject, prop}`参照を数値へ
- * 落とすために使う。
- *
- * 解けないものはundefinedを返す——祖先が入れる値（inherit）も、生成時に個体へ上書きされる値も、
- * 「どの文脈に置いた場合の数字か」を決めた側にしか答えられない。
- */
-export type StaticValueResolver = (root: ReferenceRoot, propertyGlobalId: number) => number | undefined;
-
-/**
  * ReferenceRootを実行時のWorldObjectへ解決する。Ancestorはプロパティごとに解決先が変わりうるため
  * 扱わず、各利用側がfindAncestorWithPropertyを併用する（該当なしはundefined）。
  */
