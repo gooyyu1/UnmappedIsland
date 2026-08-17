@@ -6,17 +6,39 @@ import { UNCHANGED_OUTCOMES, combineOutcomes, scaleOutcomes } from './CraftingSt
 import type { StaticValueResolver } from './staticValue';
 import { resolveWeight } from './staticValue';
 
+/** 効果の宣言を1度読み下した結果。 */
+export interface EffectReading {
+  /** 起こりうる結果の一覧（StepOutcome参照）。 */
+  readonly outcomes: readonly StepOutcome[];
+
+  /**
+   * 消えるオブジェクトの指し先（`destroy`、9.3節）。**分岐をまたいで集めたもの**なので、
+   * 「どれか1つの分岐で消えるか」しか言えない——どの確率で消えるかは分岐の側にある。
+   */
+  readonly destroyed: readonly ObjectRef[];
+}
+
 /**
- * 効果の宣言（EffectReader）を、**起こりうる結果の一覧**へ開く（StepOutcome参照）。
+ * 効果の宣言（EffectReader）を読み下す。
  *
  * ここが置いている近似は2つ。**重みを確率に読み替えること**——実際の抽選は実行時の実効値で
  * 行われるので、宣言値から出す確率はその代用でしかない。そして**分岐を直積で畳むこと**——
  * 宣言順に並んだ効果は順に起こるので、pickが2つ並べば枝は掛け算になる。
  */
-export function outcomesOf(declaration: Readable, resolve: StaticValueResolver): readonly StepOutcome[] {
+export function readEffect(declaration: Readable, resolve: StaticValueResolver): EffectReading {
   const reader = new OutcomeReader(resolve);
   declaration.read(reader);
-  return reader.outcomes;
+  return reader;
+}
+
+/** 起こりうる結果だけが要るときの近道。 */
+export function outcomesOf(declaration: Readable, resolve: StaticValueResolver): readonly StepOutcome[] {
+  return readEffect(declaration, resolve).outcomes;
+}
+
+/** rootが指すオブジェクトを消す分岐があるか。 */
+export function destroysRoot(reading: EffectReading, root: ReferenceRoot): boolean {
+  return reading.destroyed.some((ref) => ref.isRoot(root));
 }
 
 /** 自分が何を宣言しているかを読み上げられるもの（効果そのものと、それを抱える操作）。 */
@@ -30,6 +52,8 @@ export interface Readable {
  */
 class OutcomeReader implements EffectReader {
   outcomes: readonly StepOutcome[] = UNCHANGED_OUTCOMES;
+
+  readonly destroyed: ObjectRef[] = [];
 
   private readonly resolve: StaticValueResolver;
 
@@ -53,8 +77,10 @@ class OutcomeReader implements EffectReader {
     this.combine([{ probability: 1, spawns: [{ objectGlobalId, count }], deltas: [], assignments: [] }]);
   }
 
-  /** オブジェクトごと消すだけで、値も産出も動かない（消えたかどうかは工程の側がdestroysで問う）。 */
-  destroy(_target: ObjectRef): void {}
+  /** 消えたことは分岐に出ない（値も産出も動かない）ので、別に控える。 */
+  destroy(target: ObjectRef): void {
+    this.destroyed.push(target);
+  }
 
   transfer(reading: TransferReading): void {
     this.combine([
@@ -91,15 +117,17 @@ class OutcomeReader implements EffectReader {
       Math.max(0, resolveWeight(candidate.weight, this.resolve) ?? 0),
     );
     const total = weights.reduce((sum, weight) => sum + weight, 0);
+    const readings = candidates.map((candidate) => readEffect(candidate.effect, this.resolve));
+    // 消える物は分岐をまたいで集める——「どれか1つの分岐で消えるか」を問うものなので。
+    for (const reading of readings) this.destroyed.push(...reading.destroyed);
+
     if (total <= 0) {
-      this.combine(outcomesOf(candidates[0].effect, this.resolve));
+      this.combine(readings[0].outcomes);
       return;
     }
 
     this.combine(
-      candidates.flatMap((candidate, index) =>
-        scaleOutcomes(outcomesOf(candidate.effect, this.resolve), weights[index] / total),
-      ),
+      readings.flatMap((reading, index) => scaleOutcomes(reading.outcomes, weights[index] / total)),
     );
   }
 

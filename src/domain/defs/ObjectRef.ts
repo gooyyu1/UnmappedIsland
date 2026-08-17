@@ -68,7 +68,10 @@ export class ObjectRef {
     return owner.findRoot().findDescendantByInstanceId(property.getEffectiveValue());
   }
 
-  /** この参照が、名指しの対象キーrootそのものか（クラフトネットワークの「消費される入力」判定用）。 */
+  /**
+   * この参照が、名指しの対象キーrootそのものか。**プロパティや型で指す参照には答えられない**
+   * ——どの個体を指すかは実行時にしか決まらないので、常に偽になる。
+   */
   isRoot(root: ReferenceRoot): boolean {
     return this.root === root;
   }

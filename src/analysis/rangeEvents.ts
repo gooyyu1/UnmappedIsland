@@ -1,6 +1,6 @@
 import type { PropertyDef, RangeEventLabel } from '../domain/defs/PropertyDef';
 import type { StepOutcome } from './CraftingStep';
-import { outcomesOf } from './effectOutcomes';
+import { destroysRoot, readEffect } from './effectOutcomes';
 import type { StaticValueResolver } from './staticValue';
 
 /**
@@ -29,14 +29,19 @@ export function rangeEventReadouts(
     const effect = propertyDef.rangeEvent(label);
     if (effect === undefined) continue;
 
-    const outcomes = outcomesOf(effect, resolve);
+    const reading = readEffect(effect, resolve);
     let returnedToSelf = 0;
-    for (const outcome of outcomes)
+    for (const outcome of reading.outcomes)
       for (const delta of outcome.deltas)
         if (delta.target === 'self' && delta.propertyGlobalId === propertyDef.globalId)
           returnedToSelf += outcome.probability * delta.amount;
 
-    readouts.push({ label, returnedToSelf, destroysSelf: effect.destroys('self'), outcomes });
+    readouts.push({
+      label,
+      returnedToSelf,
+      destroysSelf: destroysRoot(reading, 'self'),
+      outcomes: reading.outcomes,
+    });
   }
   return readouts;
 }

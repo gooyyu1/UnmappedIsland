@@ -51,14 +51,6 @@ export abstract class ActiveEffect {
    * ——既定を持たせると、動詞を1つ足したときに読み手が黙って何も受け取らなくなる。
    */
   abstract read(reader: EffectReader): void;
-
-  /**
-   * この効果がtargetのオブジェクトを消しうるか（クラフトネットワークが「消費される入力」の判定に使う）。
-   * 消すのはdestroy（9.3節）だけなので、既定は偽。
-   */
-  destroys(_target: ReferenceRoot): boolean {
-    return false;
-  }
 }
 
 /**
@@ -100,10 +92,6 @@ export class ActiveEffects extends ActiveEffect {
 
   read(reader: EffectReader): void {
     for (const operation of this.operations) operation.read(reader);
-  }
-
-  override destroys(target: ReferenceRoot): boolean {
-    return this.operations.some((operation) => operation.destroys(target));
   }
 }
 
@@ -244,10 +232,6 @@ export class DestroyEffect extends ActiveEffect {
   /** オブジェクトごと消すだけで、個々のプロパティを書き換えはしない。 */
   affects(): boolean {
     return false;
-  }
-
-  override destroys(target: ReferenceRoot): boolean {
-    return this.target.isRoot(target);
   }
 
   read(reader: EffectReader): void {

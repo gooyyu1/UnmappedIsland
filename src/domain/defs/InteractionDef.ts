@@ -6,7 +6,6 @@ import { text } from './Description';
 import type { EffectReader, WeightReading } from './EffectReader';
 import type { WeightSpec } from './PickEffect';
 import { resolveReferenceRoot } from './ReferenceRoot';
-import type { ReferenceRoot } from './ReferenceRoot';
 import type { Requirement, Requirements } from './Requirement';
 import type { TypeMatchReading } from './TypeMatchRule';
 import { spendDuration } from './actionTime';
@@ -88,11 +87,6 @@ export abstract class InteractionDef {
   /** この操作が何を起こすと宣言しているかを読み上げる（EffectReader参照）。 */
   read(reader: EffectReader): void {
     this.effect.read(reader);
-  }
-
-  /** この操作がtargetのオブジェクトを消すか（ActiveEffect.destroys参照）。 */
-  destroys(target: ReferenceRoot): boolean {
-    return this.effect.destroys(target);
   }
 
   /** 所要時間の宣言（WeightReading参照）。durationを省いていればundefined＝時間を消費しない。 */
