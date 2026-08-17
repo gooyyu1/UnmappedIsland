@@ -61,6 +61,9 @@ export class RawObjectDef {
   /** main_item_slot（7.8節）で指定されたスロット名。未指定ならundefined。 */
   mainItemSlot: string | undefined;
 
+  /** visible_slots（7.11節）で並べられたスロット名。未指定なら空。 */
+  visibleSlots: readonly string[] = [];
+
   /** art_by_stage（6.4節）で指定されたプロパティ名。未指定ならundefined。 */
   artByStage: string | undefined;
 
@@ -98,6 +101,7 @@ export class RawObjectDef {
     this.stackOrder = tryGetMap(this.node, 'stack_order', context);
     this.representedBy = tryGetScalar(this.node, 'represented_by', context);
     this.mainItemSlot = tryGetScalar(this.node, 'main_item_slot', context);
+    this.visibleSlots = namesIn(tryGetSeq(this.node, 'visible_slots', context), `${context}.visible_slots`);
     this.artByStage = tryGetScalar(this.node, 'art_by_stage', context);
     this.quantitative = tryGetBool(this.node, 'quantitative', context, false);
     this.boundToOwner = tryGetBool(this.node, 'bound_to_owner', context, false);
@@ -131,6 +135,7 @@ export class RawObjectDef {
     const stackOrderCandidates: Array<[string, YAMLMap]> = [];
     const representedByCandidates: Array<[string, string]> = [];
     const mainItemSlotCandidates: Array<[string, string]> = [];
+    const visibleSlotNames: string[] = [];
     const artByStageCandidates: Array<[string, string]> = [];
     const tags: string[] = [];
     let quantitative = this.quantitative;
@@ -152,6 +157,7 @@ export class RawObjectDef {
       if (trait.stackOrder !== undefined) stackOrderCandidates.push([traitName, trait.stackOrder]);
       if (trait.representedBy !== undefined) representedByCandidates.push([traitName, trait.representedBy]);
       if (trait.mainItemSlot !== undefined) mainItemSlotCandidates.push([traitName, trait.mainItemSlot]);
+      visibleSlotNames.push(...trait.visibleSlots);
       if (trait.artByStage !== undefined) artByStageCandidates.push([traitName, trait.artByStage]);
       // quantitativeは真偽値なので、represented_byのような重複エラーにせずtagsと同じくORで合成する。
       if (trait.quantitative) quantitative = true;
@@ -253,6 +259,15 @@ export class RawObjectDef {
     const mainItemSlotGlobalId =
       mainItemSlotName !== undefined ? loader.slotNames.intern(mainItemSlotName) : undefined;
 
+    // visible_slots（7.11節）はタグと同じく足し合わせる。**並びが表示順**なので、trait由来を先に、
+    // 自分自身の宣言を後ろに置く。同じスロットを2度書いても先に現れた位置を保つ。
+    const visibleSlotGlobalIds = [...new Set([...visibleSlotNames, ...this.visibleSlots])].map((slotName) => {
+      const slotDef = slotDefs.find((candidate) => candidate.globalId === loader.slotNames.intern(slotName));
+      if (slotDef === undefined)
+        throw new YamlLoadError(`'${this.name}': visible_slots が指すスロット '${slotName}' を持ちません。`);
+      return slotDef.globalId;
+    });
+
     let artByStageName = this.artByStage;
     if (artByStageName === undefined) {
       if (artByStageCandidates.length > 1)
@@ -314,6 +329,7 @@ export class RawObjectDef {
       !notStackable,
       parseRecipes(loader, this.name, this.recipes),
       artByStagePropertyGlobalId,
+      visibleSlotGlobalIds,
     );
   }
 }
@@ -402,8 +418,8 @@ function concatSeqs(base: YamlNode | undefined, overlay: YamlNode): YamlNode {
   return merged;
 }
 
-/** `traits`・`tags` のような、識別子を並べただけの配列を読む。 */
-function namesIn(seq: YAMLSeq | undefined, context: string): string[] {
+/** `traits`・`tags`・`visible_slots` のような、識別子を並べただけの配列を読む。 */
+export function namesIn(seq: YAMLSeq | undefined, context: string): string[] {
   if (seq === undefined) return [];
   return (seq.items as YamlNode[]).map((item) => asScalarText(item, context));
 }

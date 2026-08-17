@@ -12,14 +12,18 @@ object_defs:
   # 筏。丸太を並べて縛った、島を出るための乗り物。
   #
   # **設置物（fixture）でありながら場所（location）でもある。** 中に積荷を載せ、プレイヤー自身も
-  # 乗り込むため、土地と同じ items/fixtures/characters の3スロットを持つ。カードを押せば積荷が
-  # 並び（main_item_slot）、重ねれば積める——編み籠（containers.yaml）と同じ操作でよい。
+  # 乗り込むため、土地と同じ items/fixtures/characters の3スロットを持つ。重ねれば積める
+  # （main_item_slot）——編み籠（containers.yaml）と同じ操作でよい。
   raft:
     tags: [fixture]
     traits: [location]
     # 積荷が個体ごとに違うので束ねない（SlotSystem.md 4節）。
     stackable: false
     main_item_slot: items
+    # **外から見えるのは帆だけ**（7.11節）。積荷は重ねれば積めるが、何を積んだかは乗り込まないと
+    # 分からない——中に入れば items がレーンに出る。土地から受け継いだ items/fixtures/characters を
+    # 外から覗ける場所にすると、筏が「開けば中身が並ぶ箱」になってしまう。
+    visible_slots: [structure]
     slots:
       items:
         # 何種類積めるか。土地の items は上限を持たないので、筏だけが枠数とかさを決める。
@@ -30,8 +34,8 @@ object_defs:
       # 組み込んだ部品（Dwellings.md 1節の構造スロットと同じ形）。積荷とは別の並びにする——
       # 帆は「積んである物」ではなく筏の一部で、外すまで効き続ける。
       #
-      # **中へ入って札を押すと開く**（現在地の札 → オブジェクトウィンドウ）。積荷のスロット
-      # （main_item_slot）は外から札を押して開くので、2つは操作の入口から分かれている。
+      # **外からも中からも、この枠だけがタブに出る**（visible_slots）。積荷は中に入ったときだけ
+      # レーンに出るので、2つは見える場所から分かれている。
       structure:
         cells:
           - {accept: {tag: sail}, max: 1}

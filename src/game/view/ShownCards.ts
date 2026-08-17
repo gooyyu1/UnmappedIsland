@@ -391,6 +391,7 @@ function awaitingStack(stack: ObjectCardStack, awaited: readonly number[]): Obje
     ...awaitingMark(stack, awaited),
     objects: [],
     actions: [],
+    visibleSlots: [],
     place: stack.place,
     objectGlobalId: stack.objectGlobalId,
     movedIds: () => [],

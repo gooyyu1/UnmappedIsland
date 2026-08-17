@@ -12,6 +12,8 @@ traits:
     # かごを代表する物のスロット（7.8節）。カードを押すとここの中身が並び、カードへ重ねた物は
     # ここへ入る（CardInteraction.md 2節 カードのドラッグ＆ドロップ）。投入のcombinationは要らない。
     main_item_slot: contents
+    # 外から見えるもの（7.11節）。かごは中身が見える器で、それがこの型の存在意義そのもの。
+    visible_slots: [contents]
     slots:
       # 中身。何種類（cell_count）とどれだけのかさ（capacity）が入るかは入れ物ごとに違うので、
       # trait側では宣言しない。

@@ -43,7 +43,7 @@ export type CardPlace =
   | 'hand'
   | 'equipment'
   | 'injuries'
-  | { readonly container: WorldObject };
+  | { readonly container: WorldObject; readonly slotGlobalId: number };
 
 /**
  * 2つの場所が同じか。コンテナの場所は映しているインスタンスで見分ける（同じ型のコンテナが複数あっても
@@ -51,7 +51,7 @@ export type CardPlace =
  */
 export function samePlace(a: CardPlace, b: CardPlace): boolean {
   if (typeof a === 'string' || typeof b === 'string') return a === b;
-  return a.container === b.container;
+  return a.container === b.container && a.slotGlobalId === b.slotGlobalId;
 }
 
 /**
@@ -86,10 +86,16 @@ export interface ObjectCardStack extends CardContent {
   readonly place: CardPlace;
 
   /**
-   * 代表がコンテナ（containerタグ、containers.yaml）なら、その中身を映す場所。
-   * 画面側はこれを持つカードをタップで開けるようにする。
+   * このカードへ重ねた物の行き先（`main_item_slot`、GameElementDefinition.md 7.8節）。
+   * 受け取らないカードではundefined。
    */
   readonly contents?: CardPlace;
+
+  /**
+   * 子ウィンドウにタブとして並ぶスロット（`visible_slots`、GameElementDefinition.md 7.11節）。宣言順。
+   * **重ねて入れられるかとは別**——中が見えなくても入れられるスロットはある（筏の積荷）。
+   */
+  readonly visibleSlots: readonly CardPlace[];
 
   /**
    * 束のうち先頭のcount個を別の場所へ移す操作。atは移した先での置き場所（1つ目にだけ効く）で、
@@ -273,10 +279,17 @@ export interface PlayScreenView {
    */
   readonly currentLocationActions: readonly CardAction[];
   /**
-   * 現在地に組み込まれている部品の場所（構造スロットを持たない場所ならundefined）。
-   * 筏の帆・住居の壁がここに並ぶ（Dwellings.md 1節）。
+   * 現在地の子ウィンドウにタブとして並ぶ場所（`visible_slots`、GameElementDefinition.md 7.11節の
+   * 宣言順）。筏の帆・住居の壁がここに並ぶ（Dwellings.md 1節）。
    */
-  readonly currentLocationStructure: CardPlace | undefined;
+  readonly currentLocationSlots: readonly CardPlace[];
+
+  /**
+   * キャラクタ自身の子ウィンドウにタブとして並ぶ場所（GameElementDefinition.md 7.11節の宣言順）。
+   * 装備・怪我がここに並ぶ。
+   * **手持ちは並びません**——レーンに出ているので、タブにも出すと同じ札が画面に2枚出る。
+   */
+  readonly characterSlots: readonly CardPlace[];
   /** 現在地の設置物（道・木・建物など、持ち歩けないもの）。 */
   readonly fixtures: readonly ObjectCardStack[];
   /** 現在地に落ちているアイテム（持ち歩けるもの）。 */
@@ -320,12 +333,15 @@ export interface PlayScreenView {
    * その場所を映す子ウィンドウの見出し。**スロットの名前を持ち主込みで言う**（「マルコの装備」
    * 「編み籠の中身」）。スロットは必ず持ち主のものなので、名前だけでは何のスロットか分からない。
    */
-  readonly nameOf: (place: CardPlace) => string;
+  /**
+   * その場所が映しているスロットの名前（子ウィンドウのタブのラベル）。**持ち主は込めません**
+   * ——持ち主の名前はウィンドウの見出しに既に出ているので、タブにまで繰り返す場所が無い。
+   */
+  readonly slotLabelOf: (place: CardPlace) => string;
 
   /**
    * その場所が映しているスロットの識別子（スロット名）。**表示名ではなく識別子**で、子ウィンドウの
-   * タブの記憶（Settings.openedTab）の鍵になる——持ち主の名前が入る表示名では、同じスロットを
-   * 別の物として覚えてしまう。
+   * タブの記憶（Settings.openedTab）の鍵になる——言語で変わる表示名を鍵にはできない。
    */
   readonly slotKeyOf: (place: CardPlace) => string;
 
@@ -680,17 +696,39 @@ export function fromGameSession(
     );
 
   /**
-   * カードを押したときに開く、そのオブジェクトの主要なスロット（持たなければundefined）。
+   * そのカードへ重ねた物の行き先（受け取らないカードではundefined）。
    *
    * **どのスロットかはワールド側が名指しする**（`main_item_slot`、GameElementDefinition.md 7.8節）。
    * UIがスロット名で決めていた頃は、液体の容器のスロット（`content`）が入れ物のスロット（`contents`）と
    * 1文字違いだったおかげで開かれずに済んでいただけで、名前が揃えば水を取り出せてしまう。
    */
-  const openableSlotOf = (object: WorldObject): number | undefined => object.def.mainItemSlotGlobalId;
+  const contentsOf = (object: WorldObject): CardPlace | undefined => {
+    const slotGlobalId = object.def.mainItemSlotGlobalId;
+    return slotGlobalId === undefined ? undefined : { container: object, slotGlobalId };
+  };
 
-  /** そのカードが中身を持つなら、それを映す場所。持たなければundefined（押しても中身は開かない）。 */
-  const contentsOf = (object: WorldObject): CardPlace | undefined =>
-    openableSlotOf(object) === undefined ? undefined : { container: object };
+  /**
+   * そのカードの子ウィンドウにタブとして並ぶスロット（`visible_slots`、GameElementDefinition.md
+   * 7.11節）。宣言順がそのまま並び順で、名乗らない物では空。
+   */
+  const visibleSlotsOf = (object: WorldObject): readonly CardPlace[] =>
+    object.def.visibleSlotGlobalIds.map((slotGlobalId) => ({ container: object, slotGlobalId }));
+
+  /**
+   * 同じスロットでも、画面に定位置を持つもの（手持ち・装備・怪我・現在地の構造）は名前の場所で指す。
+   * **同じスロットを2通りの場所で指さない**ため——指し方が割れると、行き先の比較（samePlace）が
+   * 食い違い、端の行き先も落とし先も別物として扱われる。
+   */
+  const namedPlaces = new Map<number, CardPlace>();
+  for (const name of ['hand', 'equipment', 'injuries', 'items', 'fixtures', 'structure'] as const) {
+    const slotGlobalId = codex.slotNames.tryGetId(name);
+    if (slotGlobalId !== undefined) namedPlaces.set(slotGlobalId, name);
+  }
+
+  const visiblePlacesOf = (object: WorldObject): readonly CardPlace[] =>
+    object.def.visibleSlotGlobalIds.map(
+      (slotGlobalId) => namedPlaces.get(slotGlobalId) ?? { container: object, slotGlobalId },
+    );
 
   /**
    * そのカードで実行できるアクション。宣言を読むのは操作対象の代表（represented_by、ActionSystem.md
@@ -947,6 +985,7 @@ export function fromGameSession(
     actions: actionsOf(instances[0]),
     place,
     contents: contentsOf(instances[0]),
+    visibleSlots: visibleSlotsOf(instances[0]),
   });
 
   /**
@@ -1045,8 +1084,7 @@ export function fromGameSession(
    */
   const slotOf = (place: CardPlace): { owner: WorldObject; slotId: number } | undefined => {
     if (typeof place !== 'string') {
-      const slotId = openableSlotOf(place.container);
-      return slotId === undefined ? undefined : { owner: place.container, slotId };
+      return { owner: place.container, slotId: place.slotGlobalId };
     }
     switch (place) {
       case 'items':
@@ -1249,10 +1287,8 @@ export function fromGameSession(
     canExplore: location.instance.def.actions.some((action) => action.name === EXPLORE_ACTION),
     currentLocationDescription: locale.object(location.instance.def.name).description,
     currentLocationActions: actionsOf(location.instance),
-    currentLocationStructure:
-      structureSlotId !== undefined && location.instance.tryGetSlot(structureSlotId) !== undefined
-        ? 'structure'
-        : undefined,
+    currentLocationSlots: visiblePlacesOf(location.instance),
+    characterSlots: visiblePlacesOf(game.player.instance),
     // 並び方はプレイヤーが地形をどう捉えているかで変わるため、同じスロットの中での並び替えを許す。
     // ヤシの木を持ち歩けないのはmoveIntoが弾くからで、このレーンが読み取り専用だからではない。
     fixtures: location.fixtureStacks.map((stack) => ({
@@ -1283,12 +1319,10 @@ export function fromGameSession(
     // 道の差し替え（destinationOf）も通す。設置物レーンの束を割ったときに、行き先ではなく道そのものの
     // 名前が出てしまわないようにするため。
     cardOfObjects: (objects, place) => ({ ...cardOfStack(objects, place), ...destinationOf(objects[0]) }),
-    nameOf: (place) => {
+    slotLabelOf: (place) => {
       const slot = slotOf(place);
       if (slot === undefined) return typeof place === 'string' ? place : nameOf(place.container);
-      const slotName = codex.slotNames.getName(slot.slotId);
-      const owner = slot.owner === game.player.instance ? characterTexts.displayName : nameOf(slot.owner);
-      return locale.slot(slotName).displayNameWithOwner(owner);
+      return locale.slot(codex.slotNames.getName(slot.slotId)).displayName;
     },
     slotKeyOf: (place) => {
       const slot = slotOf(place);

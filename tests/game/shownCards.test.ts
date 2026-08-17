@@ -43,6 +43,7 @@ function stack(
     objectGlobalId: 0,
     actions: [],
     place,
+    visibleSlots: [],
     contents: options.contents,
     movedIds: (count: number) => ids.slice(0, count),
     moveTo: (to, at, count) => () => {
@@ -386,7 +387,7 @@ describe('ドロップの意味', () => {
   it('入れ物のカードへ重ねると、その中身の場所へ入る', () => {
     const moves: Moved[] = [];
     const box = object(9);
-    const inside: CardPlace = { container: box };
+    const inside: CardPlace = { container: box, slotGlobalId: 0 };
     const shown = screen({
       hand: [stack('hand', [1, 2], { moves, accepted: 2 })],
       items: [stack('items', [9], { contents: inside })],
@@ -419,7 +420,7 @@ describe('ドロップの意味', () => {
 
 describe('カードの端の行き先', () => {
   it('手持ちの上は、子ウィンドウを開いている間だけそちらを先に見る', () => {
-    const inside: CardPlace = { container: object(9) };
+    const inside: CardPlace = { container: object(9), slotGlobalId: 0 };
     expect(screen({}, inside).edgeTargets('hand', 'up')).toEqual([inside, 'items']);
     expect(screen({}).edgeTargets('hand', 'up')).toEqual(['items']);
   });
@@ -430,7 +431,9 @@ describe('カードの端の行き先', () => {
     expect(shown.edgeTargets('fixtures', 'down')).toEqual(['items']);
     expect(shown.edgeTargets('items', 'down')).toEqual(['hand']);
     expect(shown.edgeTargets('hand', 'down')).toEqual([]);
-    expect(shown.edgeTargets({ container: object(9) }, 'down'), '中身の下は手持ち').toEqual(['hand']);
+    expect(shown.edgeTargets({ container: object(9), slotGlobalId: 0 }, 'down'), '中身の下は手持ち').toEqual([
+      'hand',
+    ]);
   });
 });
 

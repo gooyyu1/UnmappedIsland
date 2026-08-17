@@ -33,6 +33,9 @@ traits:
         showMenu: always
         duration: 360
         add: {self: {stamina: 90, wakefulness: 96}}
+    # 外から見えるもの（7.11節）。**手持ちは入れない**——レーンに出ているので、タブにも出すと
+    # 同じ札が画面に2枚出る（Windows.md 1.1節）。
+    visible_slots: [equipment, injuries]
     slots:
       # 手持ち。枠数はキャラクタごとに決める（cell_count）。数を決めると持ち替えても枠の位置が
       # 動かない（ScreenLayout.md 7.3節・SlotSystem.md 3節）。

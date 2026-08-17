@@ -21,6 +21,8 @@ traits:
     tags: [item, animal, quarry]
     # 押すと刺さっている怪我が並ぶ（7.8節）。キャラクタの怪我と同じ見え方になる（同3節）。
     main_item_slot: injuries
+    # 外から見えるもの（7.11節）。傷は見れば分かるし、くわえている物も見れば分かる。
+    visible_slots: [injuries, spoils]
     # 気を失っている間は、絵が倒れた姿へ変わる（consciousnessのunconscious段、CardView.md 5.1節）。
     art_by_stage: consciousness
     slots:

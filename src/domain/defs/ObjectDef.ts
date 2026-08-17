@@ -103,6 +103,12 @@ export class ObjectDef {
   readonly mainItemSlotGlobalId: number | undefined;
 
   /**
+   * 外から中身が見えるスロット（`visible_slots`、7.11節）のグローバルID。**並びが表示順**で、
+   * 子ウィンドウのタブになる（Windows.md 1.2節）。名乗らないスロットは、中に入らないと分からない。
+   */
+  readonly visibleSlotGlobalIds: readonly number[];
+
+  /**
    * **カードに出す絵を段で切り替えるプロパティ**のグローバルID（`art_by_stage`、6.4節）。undefinedなら
    * 持たず、常にこの型自身の絵（`object_defの識別子.png`）を出す。
    *
@@ -160,6 +166,7 @@ export class ObjectDef {
     stackable = true,
     recipes: readonly RecipeDef[] = [],
     artByStagePropertyGlobalId?: number,
+    visibleSlotGlobalIds: readonly number[] = [],
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -181,6 +188,7 @@ export class ObjectDef {
     this.isQuantitative = isQuantitative;
     this.recipes = recipes;
     this.artByStagePropertyGlobalId = artByStagePropertyGlobalId;
+    this.visibleSlotGlobalIds = visibleSlotGlobalIds;
   }
 
   /**

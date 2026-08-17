@@ -1067,9 +1067,9 @@ export class PlayScene extends ResponsiveScene {
     this.openChildWindow(
       { card: this.portraitCard(), description: this.view.characterDescription },
       [],
-      place,
+      this.view.characterSlots,
       origins,
-      { opensPlace: true },
+      { opensPlace: place },
     );
   }
 
@@ -1086,7 +1086,7 @@ export class PlayScene extends ResponsiveScene {
     this.openChildWindow(
       { card: this.portraitCard(), description: this.view.characterDescription },
       this.actionButtons(this.view.characterActions, this.view.characterName),
-      undefined,
+      this.view.characterSlots,
       origins,
     );
   }
@@ -1137,9 +1137,9 @@ export class PlayScene extends ResponsiveScene {
     this.openChildWindow(
       { card: borrowed, description: borrowed.description },
       this.actionButtons(borrowed.actions, borrowed.name),
-      borrowed.contents,
+      borrowed.visibleSlots,
       origins,
-      { stack: borrowed, opensPlace },
+      { stack: borrowed, opensPlace: opensPlace ? borrowed.visibleSlots[0] : undefined },
     );
   }
 
@@ -1243,24 +1243,24 @@ export class PlayScene extends ResponsiveScene {
   private openChildWindow(
     object: ObjectWindowTarget,
     actions: readonly ObjectWindowAction[],
-    place: CardPlace | undefined,
+    places: readonly CardPlace[],
     origins: ReadonlyMap<number, Rect>,
-    opened?: { readonly stack?: ObjectCardStack; readonly opensPlace?: boolean },
+    opened?: { readonly stack?: ObjectCardStack; readonly opensPlace?: CardPlace },
   ): void {
     noteOperation(`子ウィンドウを開いた: ${object.card.name}`);
-    // タブに並べるスロット。今は1つまでだが、可視のスロットを宣言できるようになれば数だけが増える。
-    this.childWindowTabs = place === undefined ? [] : [{ key: this.view.slotKeyOf(place), place }];
+    // タブに並べるスロット。可視のスロット（visible_slots、7.11節）を宣言順に並べる。
+    this.childWindowTabs = places.map((slot) => ({ key: this.view.slotKeyOf(slot), place: slot }));
     // 型ごとの記憶の鍵。束が無いウィンドウ（装備・怪我）は覚えない——映しているのは場所であって、
     // 「この型を次に開いたときどうするか」の話にならない。
     this.childWindowDef = opened?.stack?.objects[0]?.def.name;
-    const initialTab = this.initialTab(opened?.opensPlace === true);
+    const initialTab = this.initialTab(opened?.opensPlace);
     this.childWindowPlace = this.placeOfTab(initialTab);
 
     this.childWindow = new ObjectWindow(this, this.metrics, {
       object,
       slots: this.childWindowTabs.map((tab) => ({
         key: tab.key,
-        title: this.view.nameOf(tab.place),
+        title: this.view.slotLabelOf(tab.place),
         cells: this.slotCells(tab.place),
         unbounded: unboundedSlot(this.view.cellCountOf(tab.place)),
       })),
@@ -1285,9 +1285,9 @@ export class PlayScene extends ResponsiveScene {
    * 指定するのは、開いた文脈がそのスロットを見に来たと分かっている場合だけ——装備・怪我のボタンと、
    * 作り始めた直後の製作中オブジェクト。それ以外は覚えているものに従う。
    */
-  private initialTab(opensPlace: boolean): string {
-    const slot = this.childWindowTabs[0]?.key;
-    if (opensPlace && slot !== undefined) return slot;
+  private initialTab(opensPlace: CardPlace | undefined): string {
+    const named = opensPlace === undefined ? undefined : this.view.slotKeyOf(opensPlace);
+    if (named !== undefined && this.placeOfTab(named) !== undefined) return named;
     const remembered =
       this.childWindowDef === undefined ? undefined : this.settings.openedTab(this.childWindowDef);
     return remembered !== undefined && this.placeOfTab(remembered) !== undefined
@@ -1351,7 +1351,7 @@ export class PlayScene extends ResponsiveScene {
     this.openChildWindow(
       { card: this.view.currentLocation, description: this.view.currentLocationDescription },
       this.actionButtons(this.view.currentLocationActions, this.view.currentLocation.name),
-      this.view.currentLocationStructure,
+      this.view.currentLocationSlots,
       origins,
     );
   }
