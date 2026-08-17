@@ -5,6 +5,8 @@ import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/runtime/WorldObject';
 import { Path } from '../../src/domain/runtime/views/Path';
 import { fromGameSession, withFrozenCards } from '../../src/game/view/PlayScreenView';
+import type { CardPlace, ScreenPlace } from '../../src/game/view/cardPlaces';
+import { cardPlacesOf, samePlace } from '../../src/game/view/cardPlaces';
 import type { CardGauge } from '../../src/game/ui/Card';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import type { Localization } from '../../src/locale/Localization';
@@ -27,6 +29,14 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const injury = game.session.spawn(codex.objectNames.getId('sprained_ankle'));
     expect(injury.moveToSlot(game.player.instance, codex.slotNames.getId('injuries'))).toBeUndefined();
     return injury;
+  }
+
+  /**
+   * 画面の区画（レーン・装備/怪我のボタン）が今映している場所。テストは区画を名前で書きたいので、
+   * その都度ビューと同じ解決を通す（cardPlaces）。
+   */
+  function place(game: NewGameSession, screen: ScreenPlace): CardPlace {
+    return cardPlacesOf(game.player, game.player.location ?? game.startLocation)(screen);
   }
 
   /**
@@ -223,12 +233,12 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     exploreToFull(game);
     const picked = game.startLocation.items[0];
 
-    fromGameSession(game, codex, locale).items[0].moveTo?.('hand')?.();
+    fromGameSession(game, codex, locale).items[0].moveTo?.(place(game, 'hand'))?.();
 
     expect(game.player.hand[0], '押したアイテムが手持ちの先頭の枠に入る').toBe(picked);
     expect(game.startLocation.items, 'フィールドからは無くなる').not.toContain(picked);
 
-    fromGameSession(game, codex, locale).hand[0]?.moveTo?.('items')?.();
+    fromGameSession(game, codex, locale).hand[0]?.moveTo?.(place(game, 'items'))?.();
 
     expect(game.player.hand[0], '手持ちの枠は空く').toBeUndefined();
     expect(game.startLocation.items, 'フィールドへ戻る').toContain(picked);
@@ -244,8 +254,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.items, '設置物はアイテムのレーンには出ない').toEqual([]);
     // 持ち歩けないのは「設置物レーンが読み取り専用だから」ではなく、ヤシの木がitemタグを持たず
     // 手持ちのacceptsに掛からないから。itemも兼ねる設置物（持ち運べるかご）を足せば移せるようになる。
-    expect(view.fixtures[0].moveTo?.('hand'), '手には持てない').toBeUndefined();
-    expect(view.fixtures[0].moveTo?.('items'), '地面へも下ろせない').toBeUndefined();
+    expect(view.fixtures[0].moveTo?.(place(game, 'hand')), '手には持てない').toBeUndefined();
+    expect(view.fixtures[0].moveTo?.(place(game, 'items')), '地面へも下ろせない').toBeUndefined();
     expect(view.fixtures[0].reorder, '並び方はプレイヤーが決めるので並び替えはできる').toBeTypeOf('function');
   });
 
@@ -256,7 +266,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
     expect(basket.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'))).toBeUndefined();
 
-    fromGameSession(game, codex, locale).items[0].moveTo?.('fixtures')?.();
+    fromGameSession(game, codex, locale).items[0].moveTo?.(place(game, 'fixtures'))?.();
 
     const placed = fromGameSession(game, codex, locale);
     expect(
@@ -265,12 +275,12 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toEqual([placed.fixtures[0].name]);
     expect(placed.items, 'アイテムレーンからは消える').toEqual([]);
 
-    placed.fixtures[0].moveTo?.('items')?.();
+    placed.fixtures[0].moveTo?.(place(game, 'items'))?.();
 
     const lifted = fromGameSession(game, codex, locale);
     expect(lifted.fixtures, '据えたものを拾い直せる').toEqual([]);
     expect(lifted.items).toHaveLength(1);
-    expect(lifted.items[0].moveTo?.('hand'), 'そのまま手にも持てる').toBeTypeOf('function');
+    expect(lifted.items[0].moveTo?.(place(game, 'hand')), 'そのまま手にも持てる').toBeTypeOf('function');
   });
 
   it('カードは、自分が今在るスロットを地の引き先として持つ', () => {
@@ -302,8 +312,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const view = fromGameSession(game, codex, locale);
 
-    expect(view.laneSlot('fixtures')).toEqual({ owner: view.locationArt, slot: 'fixtures' });
-    expect(view.laneSlot('hand')).toEqual({ owner: view.characterArt, slot: 'hand' });
+    expect(view.laneSlot(place(game, 'fixtures'))).toEqual({ owner: view.locationArt, slot: 'fixtures' });
+    expect(view.laneSlot(place(game, 'hand'))).toEqual({ owner: view.characterArt, slot: 'hand' });
   });
 
   it('現在地のカードは、その土地の絵を持つ', () => {
@@ -368,7 +378,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const injury = injure(game);
 
-    expect(gaugeOf(fromGameSession(game, codex, locale).cardsIn('injuries')[0], 'severity')).toEqual({
+    expect(
+      gaugeOf(fromGameSession(game, codex, locale).cardsIn(place(game, 'injuries'))[0], 'severity'),
+    ).toEqual({
       key: 'severity',
       ratio: 1,
       // 残っている傷は増えるほど悪いので、耐久度（min: bad）と両端が入れ替わる。
@@ -380,7 +392,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const severityId = codex.propertyNames.getId('severity');
     injury.addNumber(severityId, -injury.getNumber(severityId) / 2, game.session);
 
-    const healing = gaugeOf(fromGameSession(game, codex, locale).cardsIn('injuries')[0], 'severity');
+    const healing = gaugeOf(
+      fromGameSession(game, codex, locale).cardsIn(place(game, 'injuries'))[0],
+      'severity',
+    );
     // 傷の下限は0ではなく1（injuries.yaml）なので、割合はぴったり半分にはならない。
     expect(healing?.ratio, '半分治れば半分まで縮む').toBeCloseTo(0.5, 2);
   });
@@ -390,7 +405,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const monkey = placeMonkey(game);
     const consciousnessId = codex.propertyNames.getId('consciousness');
 
-    const fresh = gaugeOf(fromGameSession(game, codex, locale).cardsIn('items')[0], 'consciousness');
+    const fresh = gaugeOf(
+      fromGameSession(game, codex, locale).cardsIn(place(game, 'items'))[0],
+      'consciousness',
+    );
     expect(fresh, '起きていれば意識は満タン').toEqual({
       key: 'consciousness',
       ratio: 1,
@@ -401,7 +419,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     monkey.setNumber(consciousnessId, 10, game.session);
 
-    const reduced = gaugeOf(fromGameSession(game, codex, locale).cardsIn('items')[0], 'consciousness');
+    const reduced = gaugeOf(
+      fromGameSession(game, codex, locale).cardsIn(place(game, 'items'))[0],
+      'consciousness',
+    );
     expect(reduced?.ratio, '削られた分だけ割合が下がる').toBe(0.1);
   });
 
@@ -410,7 +431,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     placeMonkey(game);
 
-    expect(fromGameSession(game, codex, locale).cardsIn('items')[0].kind).toBe('animal');
+    expect(fromGameSession(game, codex, locale).cardsIn(place(game, 'items'))[0].kind).toBe('animal');
   });
 
   it('警戒している動物のカードだけが、輪郭を明滅させる域を持つ', () => {
@@ -419,15 +440,17 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const monkey = placeMonkey(game);
     const warinessId = codex.propertyNames.getId('wariness');
 
-    expect(fromGameSession(game, codex, locale).cardsIn('items')[0].alert, '現れた時点で警戒している').toBe(
-      'caution',
-    );
+    expect(
+      fromGameSession(game, codex, locale).cardsIn(place(game, 'items'))[0].alert,
+      '現れた時点で警戒している',
+    ).toBe('caution');
 
     monkey.setNumber(warinessId, 0, game.session);
 
-    expect(fromGameSession(game, codex, locale).cardsIn('items')[0].alert, '落ち着けば明滅しない').toBe(
-      'safe',
-    );
+    expect(
+      fromGameSession(game, codex, locale).cardsIn(place(game, 'items'))[0].alert,
+      '落ち着けば明滅しない',
+    ).toBe('safe');
   });
 
   it('警戒を持たないカードは、明滅させる域を持たない', () => {
@@ -435,7 +458,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
     expect(stone.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'))).toBeUndefined();
 
-    expect(fromGameSession(game, codex, locale).cardsIn('items')[0].alert).toBeUndefined();
+    expect(fromGameSession(game, codex, locale).cardsIn(place(game, 'items'))[0].alert).toBeUndefined();
   });
 
   it('治療具を当てた怪我のカードだけが、手当て済みの印を持つ', () => {
@@ -443,12 +466,12 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const injury = injure(game);
 
-    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].mark).toBeUndefined();
+    expect(fromGameSession(game, codex, locale).cardsIn(place(game, 'injuries'))[0].mark).toBeUndefined();
 
     const bandage = game.session.spawn(codex.objectNames.getId('bandage'));
     expect(bandage.moveToSlot(injury, codex.slotNames.getId('treatment'))).toBeUndefined();
 
-    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].mark).toBe('🩹');
+    expect(fromGameSession(game, codex, locale).cardsIn(place(game, 'injuries'))[0].mark).toBe('🩹');
   });
 
   it('血が流れている傷は、手当て済みより先に出血の印を出す', () => {
@@ -460,12 +483,12 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const bandage = game.session.spawn(codex.objectNames.getId('bandage'));
     expect(bandage.moveToSlot(wound, codex.slotNames.getId('treatment'))).toBeUndefined();
 
-    expect(fromGameSession(game, codex, locale).cardsIn('injuries')[0].mark).toBe('🩸');
+    expect(fromGameSession(game, codex, locale).cardsIn(place(game, 'injuries'))[0].mark).toBe('🩸');
 
     wound.setNumber(codex.propertyNames.getId('bleeding'), 0, game.session);
 
     expect(
-      fromGameSession(game, codex, locale).cardsIn('injuries')[0].mark,
+      fromGameSession(game, codex, locale).cardsIn(place(game, 'injuries'))[0].mark,
       '固まれば手当て済みの印へ戻る',
     ).toBe('🩹');
   });
@@ -491,14 +514,14 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const monkey = placeMonkey(game);
     expect(
-      fromGameSession(game, codex, locale).cardsIn('items')[0].mark,
+      fromGameSession(game, codex, locale).cardsIn(place(game, 'items'))[0].mark,
       '無傷なら何も出ない',
     ).toBeUndefined();
 
     const wound = game.session.spawn(codex.objectNames.getId('laceration'));
     expect(wound.moveToSlot(monkey, codex.slotNames.getId('injuries'))).toBeUndefined();
 
-    expect(fromGameSession(game, codex, locale).cardsIn('items')[0].mark).toBe('🩸');
+    expect(fromGameSession(game, codex, locale).cardsIn(place(game, 'items'))[0].mark).toBe('🩸');
   });
 
   it('火にかけた物のカードは、変わるまでの残り時間と進み具合を出す', () => {
@@ -574,7 +597,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(bandage.moveToSlot(game.player.instance, handSlot)).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
-    const injuryCard = view.cardsIn('injuries')[0];
+    const injuryCard = view.cardsIn(place(game, 'injuries'))[0];
     const basketCard = view.hand.find((card) => card?.objects[0] === basket)!;
     const bandageCard = view.hand.find((card) => card?.objects[0] === bandage)!;
 
@@ -649,10 +672,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(basketWindow.explorationRatio, '探索できるのは場所だけ').toBeUndefined();
 
     expect(view.characterWindow.properties.length, 'キャラクタはプロパティのタブを持つ').toBeGreaterThan(0);
-    expect(view.characterWindow.slots, '外から見えるのは装備と怪我だけ（手持ちはレーンに出ている）').toEqual([
-      'equipment',
-      'injuries',
-    ]);
+    expect(
+      view.characterWindow.slots.map((slot) => view.slotKeyOf(slot)),
+      '外から見えるのは装備と怪我だけ（手持ちはレーンに出ている）',
+    ).toEqual(['equipment', 'injuries']);
     expect(view.currentLocationWindow.explorationRatio, '土地は探索のタブを持つ').toBe(0);
     expect(view.currentLocationWindow.actions.map((action) => action.key)).toContain('explore');
   });
@@ -787,7 +810,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const newKind = view.items.find((card) => !held.has(card.objects[0].def.name));
     expect(newKind, '手持ちに無い種類のアイテムが落ちている土地で確かめる').toBeDefined();
 
-    newKind?.moveTo?.('hand')?.();
+    newKind?.moveTo?.(place(game, 'hand'))?.();
 
     expect(game.startLocation.items, 'フィールドの中身は変わらない').toEqual(items);
   });
@@ -818,7 +841,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
     expect(stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
 
-    fromGameSession(game, codex, locale).hand[0]?.moveTo?.('equipment')?.();
+    fromGameSession(game, codex, locale).hand[0]?.moveTo?.(place(game, 'equipment'))?.();
 
     expect(game.player.hand[0], '手持ちからは無くなる').toBeUndefined();
     expect(
@@ -827,9 +850,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toEqual([stone]);
 
     const view = fromGameSession(game, codex, locale);
-    expect(view.cardsIn('equipment')[0].place).toBe('equipment');
+    expect(samePlace(view.cardsIn(place(game, 'equipment'))[0].place, place(game, 'equipment'))).toBe(true);
 
-    view.cardsIn('equipment')[0].moveTo?.('hand')?.();
+    view.cardsIn(place(game, 'equipment'))[0].moveTo?.(place(game, 'hand'))?.();
     expect(game.player.hand[0], '手持ちへ戻せる').toBe(stone);
   });
 
@@ -842,17 +865,17 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(stone.moveToSlot(game.player.instance, equipment)).toBeUndefined();
 
     const live = fromGameSession(game, codex, locale);
-    const frozen = withFrozenCards(live, 'equipment');
+    const frozen = withFrozenCards(live, place(game, 'equipment'));
 
     // 控えたあとでワールドが変わる（装備が外れる）。
     expect(stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
 
     expect(
-      frozen.cardsIn('equipment').map((card) => card.objects[0]),
+      frozen.cardsIn(place(game, 'equipment')).map((card) => card.objects[0]),
       '固定した場所は控えた時点のまま',
     ).toEqual([stone]);
-    expect(live.cardsIn('equipment'), '固定していないviewは今のワールドを読む').toEqual([]);
-    expect(frozen.cardsIn('injuries'), '固定していない場所は今のワールドを読む').toEqual([]);
+    expect(live.cardsIn(place(game, 'equipment')), '固定していないviewは今のワールドを読む').toEqual([]);
+    expect(frozen.cardsIn(place(game, 'injuries')), '固定していない場所は今のワールドを読む').toEqual([]);
     expect(frozen.items, 'cardsIn以外は元のviewのまま').toBe(live.items);
   });
 
@@ -871,12 +894,18 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const view = fromGameSession(game, codex, locale);
 
-    expect(view.cardsIn('injuries')).toHaveLength(1);
-    expect(view.cardsIn('injuries')[0].moveTo?.('hand'), '取り出せない').toBeUndefined();
-    expect(view.cardsIn('injuries')[0].moveTo?.('items'), '捨てることもできない').toBeUndefined();
-    expect(view.hand[0]?.moveTo?.('injuries'), '怪我は移動の宛先にならない').toBeUndefined();
-    expect(view.acceptsCards('injuries'), '受け皿の空枠も出さない').toBe(false);
-    expect(view.acceptsCards('equipment'), '装備は落とせる場所なので空枠を出す').toBe(true);
+    expect(view.cardsIn(place(game, 'injuries'))).toHaveLength(1);
+    expect(
+      view.cardsIn(place(game, 'injuries'))[0].moveTo?.(place(game, 'hand')),
+      '取り出せない',
+    ).toBeUndefined();
+    expect(
+      view.cardsIn(place(game, 'injuries'))[0].moveTo?.(place(game, 'items')),
+      '捨てることもできない',
+    ).toBeUndefined();
+    expect(view.hand[0]?.moveTo?.(place(game, 'injuries')), '怪我は移動の宛先にならない').toBeUndefined();
+    expect(view.acceptsCards(place(game, 'injuries')), '受け皿の空枠も出さない').toBe(false);
+    expect(view.acceptsCards(place(game, 'equipment')), '装備は落とせる場所なので空枠を出す').toBe(true);
   });
 
   it('かごは束ねられないので、2つ持てば2枚のカードとして並ぶ', () => {
@@ -928,7 +957,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(view.hand[1], '石は手持ちから無くなる').toBeUndefined();
 
     // 中身のカードは手持ちへ戻せる。
-    view.cardsIn(opened!)[0].moveTo?.('hand')?.();
+    view.cardsIn(opened!)[0].moveTo?.(place(game, 'hand'))?.();
     expect(game.player.hand[1]).toBe(stone);
   });
 
@@ -951,7 +980,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       return {
         icon: '',
         name,
-        place: 'items' as const,
+        place: place(game, 'items'),
         objects,
         objectGlobalId: objects[0].def.globalId,
         movedIds: () => objects.map((object) => object.instanceId),
@@ -1055,8 +1084,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 経過の途中経過（RecordedView）を再生する頃には、ワールド側の束は空になり得る。
     // カードは作った時点の中身を写し取っているので、端の表示の試し打ち（moveTo）は壊れない。
     expect(stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
-    expect(() => card.moveTo?.('hand')).not.toThrow();
-    expect(() => card.acceptedCountAt?.('hand')).not.toThrow();
+    expect(() => card.moveTo?.(place(game, 'hand'))).not.toThrow();
+    expect(() => card.acceptedCountAt?.(place(game, 'hand'))).not.toThrow();
     expect(card.movedIds(1)).toEqual([stone.instanceId]);
   });
 

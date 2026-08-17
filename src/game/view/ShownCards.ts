@@ -1,7 +1,7 @@
 import type { WorldObject } from '../../domain/runtime/WorldObject';
 import type { ObjectCardStack } from './PlayScreenView';
 import type { CardCombination, CardPutIn } from './cardOperations';
-import type { CardPlace, CardPlacement } from './cardPlaces';
+import type { CardPlace, CardPlacement, ScreenPlaces } from './cardPlaces';
 import { samePlace } from './cardPlaces';
 import type { CardContent, CardEdgeDirection } from '../ui/Card';
 import { cardFace } from '../ui/cardFace';
@@ -22,6 +22,8 @@ export interface CardSource {
   readonly combinationOf: (dragged: ObjectCardStack, target: ObjectCardStack) => CardCombination | undefined;
   /** 子ウィンドウが映しているスロット（映していなければundefined）。端の行き先の候補に入る。 */
   readonly windowPlace: () => CardPlace | undefined;
+  /** 画面の区画が映しているスロット（PlayScreenView.places）。端の行き先はレーンの並びで決まる。 */
+  readonly places: ScreenPlaces;
 }
 
 /** ドラッグしたカードを落とした先（CardDropの、レーンを場所に直した形）。 */
@@ -364,16 +366,18 @@ export class ShownCards {
    * 元どおりアイテムへ落ちる。開いているだけで手持ちの端が使えなくなるのは不便なため。
    */
   edgeTargets(from: CardPlace, direction: CardEdgeDirection): readonly CardPlace[] {
+    const places = this.source.places;
+    const [fixtures, items, hand] = [places('fixtures'), places('items'), places('hand')];
     if (direction === 'up') {
-      if (from === 'items') return ['fixtures'];
-      if (from !== 'hand') return [];
+      if (samePlace(from, items)) return [fixtures];
+      if (!samePlace(from, hand)) return [];
       const window = this.source.windowPlace();
-      return window === undefined ? ['items'] : [window, 'items'];
+      return window === undefined ? [items] : [window, items];
     }
-    if (from === 'fixtures') return ['items'];
-    if (from === 'items') return ['hand'];
+    if (samePlace(from, fixtures)) return [items];
+    if (samePlace(from, items)) return [hand];
     // 手持ちの下は無く、子ウィンドウのカード（装備・怪我・コンテナの中身）の下は手持ち。
-    return from === 'hand' ? [] : ['hand'];
+    return samePlace(from, hand) ? [] : [hand];
   }
 }
 

@@ -4,7 +4,7 @@ import type { WorldObject } from '../../domain/runtime/WorldObject';
 import { putIntoSlot } from '../../domain/runtime/slotEntry';
 import type { Localization } from '../../locale/Localization';
 import { craftingActions } from './craftingView';
-import type { CardPlace, CardPlaces, CardPlacement } from './cardPlaces';
+import type { CardPlace, CardPlacement } from './cardPlaces';
 import { samePlace } from './cardPlaces';
 
 /**
@@ -125,12 +125,11 @@ export interface CardOperationsFactory {
   ) => CardCombination | undefined;
 }
 
-/** 今のゲームでの札の操作を作れるようにする。placesは移動の宛先を解決する表。 */
+/** 今のゲームでの札の操作を作れるようにする。 */
 export function cardOperationsOf(
   game: NewGameSession,
   codex: WorldCodex,
   locale: Localization,
-  places: CardPlaces,
 ): CardOperationsFactory {
   /**
    * そのカードで実行できるアクション。宣言を読むのは操作対象の代表（represented_by、ActionSystem.md
@@ -167,9 +166,6 @@ export function cardOperationsOf(
   };
 
   /**
-   * プロパティを相手として指すときの表示（対応表の表示名と絵文字。プロパティは絵を持たない）。
-
-  /**
    * itemを場所placeへ入れる操作（そこへは入れられないならundefined）。入れられるかの判断はすべて
    * ドメインに任せる（WorldObject.rejectionForMoveTo）——捻挫が身体から剥がれないのも、ヤシの木が
    * 手に持てないのも、画面が場所ごとに覚えている決まりではなくワールド側の宣言の帰結。
@@ -177,9 +173,9 @@ export function cardOperationsOf(
   const moveInto =
     (stack: readonly WorldObject[], from: CardPlace) =>
     (place: CardPlace, at?: CardPlacement, count = 1): (() => void) | undefined => {
-      const dest = places.slotOf(place);
-      if (dest === undefined || samePlace(place, from)) return undefined;
-      if (stack[0].rejectionForMoveTo(dest.owner, dest.slotId) !== undefined) return undefined;
+      if (samePlace(place, from)) return undefined;
+      const { container, slotGlobalId } = place;
+      if (stack[0].rejectionForMoveTo(container, slotGlobalId) !== undefined) return undefined;
 
       // まとめて運んできたぶんも、1つずつ入れるのと同じことをする（時間も個数ぶんかかる）。
       // 入る個数を超えて頼まれても、超えたぶんは枠が断るだけ。
@@ -187,20 +183,20 @@ export function cardOperationsOf(
       const put = (item: WorldObject, first: boolean): void => {
         // 位置の指定が効くのは1つ目だけ。残りは同じ束へ合流するか、空いている枠へ入る。
         if (at === undefined || !first) {
-          item.moveToSlot(dest.owner, dest.slotId);
-        } else if (at.kind === 'cell' && hasFixedCells(dest.owner, dest.slotId)) {
-          item.moveToSlotAtCell(dest.owner, dest.slotId, at.index);
+          item.moveToSlot(container, slotGlobalId);
+        } else if (at.kind === 'cell' && hasFixedCells(container, slotGlobalId)) {
+          item.moveToSlotAtCell(container, slotGlobalId, at.index);
         } else {
           // 前詰めスロットの空き枠は末尾の受け皿だけなので、その位置の隙間へ落としたものとして扱う
           // （枠の位置がそのまま並びの終わりを指す）。
-          item.moveToSlotAtGap(dest.owner, dest.slotId, at.index);
+          item.moveToSlotAtGap(container, slotGlobalId, at.index);
         }
       };
 
       // 時間のかかる枠（手当てなど）はここで時間を進める。どの経路で入れても同じ値段になる。
       return () => {
         carried.forEach((item, index) =>
-          putIntoSlot(item, dest.owner, dest.slotId, game.player.instance, game.session, () =>
+          putIntoSlot(item, container, slotGlobalId, game.player.instance, game.session, () =>
             put(item, index === 0),
           ),
         );
@@ -211,10 +207,9 @@ export function cardOperationsOf(
   const acceptedCountIn =
     (stack: readonly WorldObject[], from: CardPlace) =>
     (place: CardPlace): number => {
-      const dest = places.slotOf(place);
-      if (dest === undefined || samePlace(place, from)) return 0;
+      if (samePlace(place, from)) return 0;
 
-      return stack[0].acceptedCountForMoveTo(stack.slice(1), dest.owner, dest.slotId);
+      return stack[0].acceptedCountForMoveTo(stack.slice(1), place.container, place.slotGlobalId);
     };
 
   /**
@@ -224,16 +219,16 @@ export function cardOperationsOf(
   const putIntoTexts =
     (stack: readonly WorldObject[], from: CardPlace) =>
     (place: CardPlace, count = 1): CardPutIn | undefined => {
-      const dest = places.slotOf(place);
-      if (dest === undefined || samePlace(place, from)) return undefined;
+      if (samePlace(place, from)) return undefined;
+      const { container, slotGlobalId } = place;
 
-      const slotDef = dest.owner.def.getSlotDef(dest.slotId);
+      const slotDef = container.def.getSlotDef(slotGlobalId);
       if (slotDef === undefined) return undefined;
 
       const texts = locale.slot(slotDef.name).putIn;
       // まとめて入れるなら時間も個数ぶん。1つずつ入れるのと同じことをするため（moveInto参照）。
       const minutes = carriedOf(stack, count).reduce(
-        (total, item) => total + slotDef.putInMinutes(dest.owner, item, game.player.instance),
+        (total, item) => total + slotDef.putInMinutes(container, item, game.player.instance),
         0,
       );
       if (texts === undefined && minutes === 0) return undefined;

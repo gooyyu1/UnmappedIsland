@@ -23,7 +23,8 @@ import type { WorldObject } from '../domain/runtime/WorldObject';
 import type { ObjectCardStack, ObjectWindowView, PlayScreenView } from './view/PlayScreenView';
 import type { CardAction } from './view/cardOperations';
 import { EXPLORE_ACTION, fromGameSession } from './view/PlayScreenView';
-import type { CardPlace } from './view/cardPlaces';
+import type { CardPlace, ScreenPlace } from './view/cardPlaces';
+import { samePlace } from './view/cardPlaces';
 import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
 import type { RecordedView, Recording } from './view/recording';
@@ -152,12 +153,6 @@ const WEATHER_DEPTH = -0.5;
  * **速すぎると読めず、遅すぎると1つの型に見える。** 1秒は、札の名前を読み終えて次が来る間隔。
  */
 const MATERIAL_CYCLE_MS = 1000;
-
-/**
- * 現在地の持ち物として解決される場所（cardPlaces）。土地を移ると別の場所を指すので、
- * これらを映している子ウィンドウは移動のたびに閉じる。
- */
-const LOCATION_PLACES: readonly string[] = ['items', 'fixtures', 'structure'];
 
 /**
  * 日射に応じた翳り・輝きは画面全体にかぶるので、飛んでいるカードの層（CardTable）より手前。
@@ -340,6 +335,7 @@ export class PlayScene extends ResponsiveScene {
     cardOfObjects: (objects, place) => this.view.cardOfObjects(objects, place),
     combinationOf: (dragged, target) => this.view.combinationOf(dragged, target),
     windowPlace: () => this.childWindowPlace,
+    places: (screen) => this.place(screen),
   });
 
   /** 開いているプロパティウィンドウ。探索の子ウィンドウと同じく、画面の作り直しをまたいで開いたままにする。 */
@@ -521,13 +517,26 @@ export class PlayScene extends ResponsiveScene {
     this.selectedFilter = 0;
   }
 
+  /**
+   * 画面の区画（レーン・装備/怪我のボタン）が今映している場所。**土地を移れば別の場所を指す**ので、
+   * その都度ビューへ訊く（cardPlaces）。
+   */
+  private place(screen: ScreenPlace): CardPlace {
+    return this.view.places(screen);
+  }
+
+  /** エラー報告に載せる、場所1つ。同じ型の入れ物が複数あっても見分けられるよう、持ち主も出す。 */
+  private placeText(place: CardPlace): string {
+    return `${place.container.def.name}#${place.container.instanceId}の${this.view.slotKeyOf(place)}`;
+  }
+
   /** エラー報告に載せる、今の画面の状態（errorReport.setStateReporter）。 */
   private stateLines(): readonly string[] {
     return [
       `ワールド時刻: ${this.clockText()}`,
       `現在地: ${this.view.currentLocation.name}`,
       `演出中: ${ACTIVITY_NAMES[this.activity]}`,
-      `子ウィンドウ: ${this.childWindowPlace === undefined ? 'なし' : JSON.stringify(this.childWindowPlace)}`,
+      `子ウィンドウ: ${this.childWindowPlace === undefined ? 'なし' : this.placeText(this.childWindowPlace)}`,
       `手持ち: ${this.view.hand.map((card) => card?.name ?? '空き').join(' / ')}`,
       `アイテム: ${this.view.items.map((card) => card.name).join(' / ')}`,
     ];
@@ -677,7 +686,7 @@ export class PlayScene extends ResponsiveScene {
       fixtures,
       COLOR.fixtureLane,
       // 設置物は持ち出せないので、手持ちへ送る端の操作は付けない（並び替えのドラッグだけ）。
-      this.plainCells(this.shown.stacksAt('fixtures')),
+      this.plainCells(this.shown.stacksAt(this.place('fixtures'))),
       {
         pinned: {
           ...this.view.currentLocation,
@@ -685,12 +694,12 @@ export class PlayScene extends ResponsiveScene {
           // 降りる・出航する・部品を差し替えるはここからしか辿れない。
           onTap: this.whileIdle(() => this.openLocationWindow()),
         },
-        art: this.laneArt('fixtures'),
+        art: this.laneArt(this.place('fixtures')),
         depth: FIELD_DEPTH,
       },
     );
     this.itemLane = new CardLane(this, this.metrics, items, COLOR.itemLane, this.itemCells(), {
-      art: this.laneArt('items'),
+      art: this.laneArt(this.place('items')),
       depth: FIELD_DEPTH,
     });
     this.handLane = new CardLane(
@@ -698,9 +707,9 @@ export class PlayScene extends ResponsiveScene {
       this.metrics,
       hand,
       COLOR.handLane,
-      this.plainCells(this.shown.stacksAt('hand')),
+      this.plainCells(this.shown.stacksAt(this.place('hand'))),
       {
-        art: this.laneArt('hand'),
+        art: this.laneArt(this.place('hand')),
         depth: FIELD_DEPTH,
       },
     );
@@ -785,10 +794,11 @@ export class PlayScene extends ResponsiveScene {
 
   /** アイテムレーンの枠。前詰めのレーンなので、末尾に受け皿の空枠が付く（cellsFor）。 */
   private itemCells(): readonly LaneCell[] {
+    const items = this.place('items');
     return cellsFor(
-      this.laneCards(this.shown.stacksAt('items')),
-      this.view.cellCountOf('items'),
-      this.view.acceptsCards('items'),
+      this.laneCards(this.shown.stacksAt(items)),
+      this.view.cellCountOf(items),
+      this.view.acceptsCards(items),
     );
   }
 
@@ -862,18 +872,18 @@ export class PlayScene extends ResponsiveScene {
    * ShownCardsへ訊く。
    */
   private cardsAt(place: CardPlace): readonly (ObjectCardStack | undefined)[] {
-    if (place === 'hand') return this.view.hand;
-    if (place === 'items') return this.view.items;
-    if (place === 'fixtures') return this.view.fixtures;
+    if (samePlace(place, this.place('hand'))) return this.view.hand;
+    if (samePlace(place, this.place('items'))) return this.view.items;
+    if (samePlace(place, this.place('fixtures'))) return this.view.fixtures;
     return this.view.cardsIn(place);
   }
 
   /** レーンが映している場所。 */
   private placeOf(lane: CardLane): CardPlace {
-    if (lane === this.handLane) return 'hand';
-    if (lane === this.itemLane) return 'items';
-    if (lane === this.fixtureLane) return 'fixtures';
-    return this.childWindowPlace ?? 'items';
+    if (lane === this.handLane) return this.place('hand');
+    if (lane === this.itemLane) return this.place('items');
+    if (lane === this.fixtureLane) return this.place('fixtures');
+    return this.childWindowPlace ?? this.place('items');
   }
 
   /** レーンが映している場所。借りた1枚の枠だけはワールドの場所ではない（CardSpot）。 */
@@ -888,9 +898,9 @@ export class PlayScene extends ResponsiveScene {
    */
   private get laneViews(): readonly LaneView[] {
     const views: LaneView[] = [
-      { lane: this.fixtureLane, cells: this.plainCells(this.shown.stacksAt('fixtures')) },
+      { lane: this.fixtureLane, cells: this.plainCells(this.shown.stacksAt(this.place('fixtures'))) },
       { lane: this.itemLane, cells: this.itemCells() },
-      { lane: this.handLane, cells: this.plainCells(this.shown.stacksAt('hand')) },
+      { lane: this.handLane, cells: this.plainCells(this.shown.stacksAt(this.place('hand'))) },
       { lane: this.portraitLane, cells: this.portraitCells() },
     ];
 
@@ -1611,11 +1621,11 @@ export class PlayScene extends ResponsiveScene {
   private leaveLocation(): void {
     this.shown.returnFound();
     this.foundArriving = new Set();
-    // 置いてきた入れ物の中身は開いたままにできない。手に持っている入れ物も、開き直せば済むので一律に閉じる。
-    // 現在地に紐づく場所（構造の部品）も同じ——移った先の同じ名前のスロットへ黙って映り、
-    // 筏の札を出したまま中身だけが空になる（筏から降りたときに実際に起きた）。
+    // **自分自身のスロット以外は、移った先には無い。** 置いてきた入れ物の中身も、現在地に紐づく場所
+    // （構造の部品）も開いたままにできない。手に持っている入れ物は持ち越せるが、開き直せば済むので
+    // 持ち主で一律に決める。
     const place = this.childWindowPlace;
-    if (place !== undefined && (typeof place !== 'string' || LOCATION_PLACES.includes(place))) {
+    if (place !== undefined && place.container !== this.gameSession.player.instance) {
       this.closeChildWindow();
     }
   }
@@ -1957,13 +1967,13 @@ export class PlayScene extends ResponsiveScene {
         art: 'equipment',
         icon: this.view.equipmentIcon,
         fill: COLOR.equipmentButton,
-        onTap: () => this.openSlotWindow('equipment'),
+        onTap: () => this.openSlotWindow(this.place('equipment')),
       },
       {
         art: 'injury',
         icon: this.view.injuryIcon,
         fill: COLOR.injuryButton,
-        onTap: () => this.openSlotWindow('injuries'),
+        onTap: () => this.openSlotWindow(this.place('injuries')),
       },
       {
         art: 'recipe',
