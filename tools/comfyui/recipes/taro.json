@@ -1,0 +1,26 @@
+{
+  "_comment": [
+    "src/assets/objects/taro.png を作り直すためのレシピ。build.py が読む。",
+    "草原の探索で見つかる塊茎（src/assets/world-codex/foods.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: taro）。** 生成では芋にならない（21枚とも。",
+    "prompts/objects.json の taro 参照）。輪の節は年輪と読まれて木目の彫刻になり、葉柄の切り株は",
+    "柄と読まれてキノコになる。芋を芋にしている2点なので、そこを下絵で決める。",
+    "",
+    "段は320。800gの芋なので、ヤシの実（coconut）と同じ扱い。"
+  ],
+  "output": "src/assets/objects/taro.png",
+  "sketch": "taro",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: one taro root vegetable lying on its side at exactly the same angle in the same place at the same size, its fat end at the lower left and its narrow end at the upper right. Paint it as a whole unpeeled taro corm just dug out of the ground, its rough skin ringed by the same bands running around the body, a few short stiff bristles standing out along the bands, and the short cut stub of the leaf stalk at the lower left end with its flat cut face showing pale. Nothing is growing from it. The skin is deep earthy brown and dusty grey brown, clearly darker than the white page: it is not cream, not beige and not pale. There are no leaves, no stems and no soil. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow beneath it. Dry matte earthy surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "320",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

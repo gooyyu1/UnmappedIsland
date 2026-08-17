@@ -673,5 +673,55 @@
     ],
     "positive": "exactly one golden chalice alone on an empty white page, an old goblet of solid gold standing upright, a deep rounded cup on a slender stem with a round spreading foot, a band of simple engraved ornament running around the rim and around the foot, the gold dark and tarnished in the hollows of the ornament so the metal reads deep and heavy, a few soft highlights along the curve of the cup, nothing inside it, deep antique gold with warm brown shadows, the chalice is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "bright yellow gold, pale gold, white gold, silver, pewter, copper, glass, crystal, jewels, gemstones, rubies, pearls, wine, blood, water, liquid inside, drink, full cup, lid, cover, handles, two handles, trophy, sports trophy, mug, tankard, teacup, bowl, vase, candlestick, candle, censer, crown, treasure, coins, gold coins, hoard, casket, altar, cloth, velvet cushion, glowing, magical glow, holy light, halo, sunburst, sparkles, stars, two chalices, three chalices, several chalices, pair, group, set, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
+  },
+  "coconut_crab": {
+    "description": [
+      "ヤシガニ（src/assets/world-codex/foods.yaml）。道具が無くても捕まえられる2kgの陸生の甲殻類。",
+      "",
+      "**名前を避けると、ただのワタリガニになる。** ヤシの実が出るのを恐れて giant land crab と",
+      "呼んだ6枚は、全部が扇形の甲羅の海のカニで、ヤシガニを決定づける巨大な鋏が一度も出なかった",
+      "（鋏の大きさを本文で言っても、体の形が海のカニのままだと小さく畳まれる）。**coconut crab と",
+      "名指しし、ヤシの実の方をNGワードで落とす。**",
+      "",
+      "**茹でた赤にしない。** 生きた個体は青紫〜赤茶で、真っ赤は料理の色。皿・盛り付けも止める。",
+      "",
+      "**枠は横長（1152x896）。** 脚を広げると横へ伸びるので、正方形だと脚が枠に当たる。"
+    ],
+    "positive": "exactly one giant land crab alone on an empty white page, a large heavy crab standing on the ground seen from above and a little to one side, its rounded shell broader than it is long, two very large thick pincer claws folded in low in front of the shell and clearly bigger than its head, the left claw noticeably larger than the right, four pairs of stout jointed walking legs spread out to the sides, two short eyestalks at the front, seen from far back so that the crab is small in the middle of the page and every claw tip and leg tip stops far short of all four edges, wide empty white margin on all four sides, deep blue violet and rusty orange brown shell with darker joints, dry matte shell, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "coconut, coconuts, palm, palm tree, tree, climbing, snail shell, spiral shell, hermit crab in a shell, borrowed shell, seashell, conch, cooked crab, boiled crab, bright red crab, steamed, served, plate, dish, bowl, platter, garnish, lemon, parsley, butter, restaurant, seafood market, ice, crushed ice, fishing net, bucket, spider crab, king crab, long thin legs, spindly legs, lobster, crayfish, shrimp, prawn, scorpion, spider, insect, alien creature, monster, sand, beach, rocks, water, sea, ocean, waves, tide pool, two crabs, three crabs, several crabs, pair, group, collection, scattered objects, repeated objects, filling the frame, edge to edge, claws touching the edge, legs touching the edge, close-up, cropped, cut off, out of frame, sheet of paper, open book, page edge, scenery, landscape, background scenery, ground, floor, grass, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "taro": {
+    "description": [
+      "タロイモ（src/assets/world-codex/foods.yaml）。自生している野生形の塊茎を掘り上げたもの。",
+      "",
+      "**株ではなく芋。** taro とだけ言うと大きな葉の付いた鉢植えになるので、掘り上げた塊茎1個で",
+      "あることと、葉を落とした跡だけが上に残ることを本文で言う。",
+      "",
+      "**切らせない。** 断面を見せると紫の斑点の入った白い肉が主題になり、食材写真へ寄る。",
+      "",
+      "**質感を比喩で言うと、比喩の方が絵になる。** 「木の年輪のような輪」「粗い毛と繊維」と",
+      "書いた6枚は、木目の彫刻・毛の生えた莢・枯れ木そのものになり、芋は1つも出なかった。",
+      "輪は banded with pale horizontal rings、毛は short stiff bristles と、**芋の側の語**で言う。",
+      "",
+      "**色を言わないと生成りになる。** 上の6枚はどれも白っぽいベージュで、紙から切り出せない",
+      "明るさだった（golden_chalice と同じ制約）。土の茶と紫がかった灰を本文で頼む。"
+    ],
+    "positive": "exactly one taro root alone on an empty white page, one whole unpeeled taro root vegetable just dug out of the ground, a short fat rounded root narrowing at the bottom, rough dark brown skin with pale rings around it and a few short bristles, the cut stub of the stalk on top, deep earthy brown, dry matte earthy surface, it is small and lies on its side in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "wood, wood grain, timber, tree, tree trunk, growth rings, bark, seed pod, cocoon, flower, arum flower, lily, aubergine, eggplant, leaves, foliage, plant, potted plant, growing plant, stalks, whole plant, sliced, cut open, halved, cross section, white flesh, purple flesh, peeled, cooked, boiled, mashed, potato, sweet potato, onion, ginger root, coconut, sack, basket, crate, market stall, price tag, soil, dirt pile, mud, two taros, three taros, several taros, pair, group, pile, heap, collection, scattered objects, repeated objects, filling the frame, close-up, macro, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, cream, beige, overexposed"
+  },
+  "water_spinach": {
+    "description": [
+      "空心菜（src/assets/world-codex/foods.yaml）。水辺で摘んで束ねた葉物で、茎が空洞。",
+      "",
+      "**採ってきた束として描く。** water spinach とだけ言うと水面に浮かぶ群落か、炒め物の皿になる。",
+      "摘んだ茎をひとまとめに寝かせた形を本文で言い、水と鍋を止める。",
+      "",
+      "**ほうれん草にしない。** 葉は矢じり形で、長い中空の茎に間隔をあけて付く。丸い葉の束にすると",
+      "別の野菜になる。",
+      "",
+      "**枠は横長（1152x896）。** 束は横へ寝るので、縦長だと立った草むらになる。"
+    ],
+    "positive": "exactly one bundle of freshly picked water spinach alone on an empty white page, long hollow green stems gathered together and laid down on their sides in one loose bundle with all the cut stem ends together at one side and the leaves spread at the other, narrow arrow shaped pointed leaves spaced out along the stems, seen from a few steps back so that the whole bundle is well inside the page with a wide empty white margin on all four sides, fresh deep green leaves and paler yellow green stems, crisp matte leaves, it is small and lies in the middle, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "growing in water, floating on water, pond, paddy, marsh, stream, wet, droplets, mud, soil, roots, rooted, standing upright, growing plant, field of greens, spinach, baby spinach, round leaves, oval leaves, lettuce, cabbage, bok choy, pak choi, kale, herbs, basil, mint, cooked, stir fry, wok, pan, garlic, chilli, plate, dish, bowl, salad, chopsticks, market stall, rubber band, plastic bag, packaging, price tag, vase, bouquet, flowers, two bundles, three bundles, several bundles, pair, group, pile, heap, collection, scattered objects, repeated objects, filling the frame, close-up, macro, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   }
 }
