@@ -68,10 +68,13 @@ export class SlotDef {
   readonly capacity: number | undefined;
 
   /**
-   * spawn/moveの宣言順走査（GameElementDefinition.md 7.7節）の対象になるか（既定true）。falseなら、
-   * このスロットへはプレイヤーの手動配置とスロット名を名指しした移動でしか入らない（例: 装備欄）。
+   * **誰がここへ物を入れてよいか**（`placement`、GameElementDefinition.md 7.7節。既定は両方）。
+   *
+   * autoはspawn/moveの宣言順走査（同節）の対象になるか、manualはプレイヤーが札を重ねて入れられるか。
+   * どちらもfalseなら、スロット名を名指しした移動でしか入らない（隠された道の枠）。
    */
   readonly autoPlacement: boolean;
+  readonly manualPlacement: boolean;
 
   /**
    * ここへ物を入れるのにかかるゲーム内時間（GameElementDefinition.md 7.10節）。undefinedなら一瞬。
@@ -91,6 +94,7 @@ export class SlotDef {
     capacity: number | undefined,
     autoPlacement = true,
     putInDuration: WeightSpec | undefined = undefined,
+    manualPlacement = true,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -100,6 +104,7 @@ export class SlotDef {
       cells ?? (cellCount === undefined ? [] : Array.from({ length: cellCount }, () => this.sharedCell));
     this.capacity = capacity;
     this.autoPlacement = autoPlacement;
+    this.manualPlacement = manualPlacement;
     this.putInDuration = putInDuration;
   }
 

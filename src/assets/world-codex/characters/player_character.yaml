@@ -48,7 +48,7 @@ traits:
       # 行き先を全部吸い込んでしまう（手元でクラフトした物が身につくことになる）。
       equipment:
         cell: {accept: {tag: item}}
-        auto_placement: false
+        placement: [manual]
       # 怪我。プレイヤーが任意に出し入れするものではなく、ワールド側の効果だけが付け外しする
       # （UIからの移動・並び替えを許さない、Windows.md 2節）。中身はinjuries.yaml。
       injuries:

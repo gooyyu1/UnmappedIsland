@@ -82,7 +82,6 @@ function inProgressObjectDef(
     // 個体ごとに進捗も中身も違うので束ねない（SlotSystem.md 4節）。
     stackable: false,
     // カードを押したとき、材料スロットの中身をレーンに並べる（7.8節）。
-    main_item_slot: MATERIALS_SLOT,
     // 素材の枠は外から見える（7.11節）。何がどれだけ入っているかが、作りかけの札の存在意義そのもの。
     visible_slots: [MATERIALS_SLOT],
     props: {
@@ -122,9 +121,9 @@ function inProgressObjectDef(
       // （RecipeSystem.md 3節）。
       [MATERIALS_SLOT]: {
         cells: materialCells(recipe, tagNames, objectNames),
-        // 自動配置（7.7節）から外す。終わった工程の枠は表示から消すので、そこへ勝手に物が
-        // 入ると取り出せなくなる。入れるのは投入操作と自動補充だけに限る。
-        auto_placement: false,
+        // 入れるのはプレイヤーの投入操作と自動補充だけ（7.7節）。終わった工程の枠は表示から消すので、
+        // エンジンが勝手に選んで入れると取り出せなくなる。
+        placement: ['manual'],
       },
     },
   };

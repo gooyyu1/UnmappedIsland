@@ -211,16 +211,23 @@ export class WorldObject {
   }
 
   /**
-   * 自分の主要なスロット（`main_item_slot`、7.8節）へ入っている物のかさが、そのスロットの上限
-   * （capacity）をどれだけ満たしているか（0〜1）。主要なスロットを持たない物、そのスロットが
-   * 上限を持たない入れ物ではundefined。
+   * 入れ物としての詰まり具合（0〜1）。入れ物として名乗っていない型（`storage`、7.12節）と、
+   * 上限（capacity）を持つスロットが1つも無い型ではundefined。
+   *
+   * **最も詰まっているスロットを返す。** バーが答えるのは「あとどれだけ入るか」なので、先に一杯に
+   * なる側を映す——合計で割ると、片方が満杯でも半分に見える。
    *
    * fillRatioInParentSlotと表裏で、こちらは入れ物の側から自分の詰まり具合を見る。
    */
-  mainSlotFillRatio(): number | undefined {
-    const slotGlobalId = this.def.mainItemSlotGlobalId;
-    if (slotGlobalId === undefined) return undefined;
-    return this.tryGetSlot(slotGlobalId)?.fillRatio(this.wellKnown.volumeId);
+  storageFillRatio(): number | undefined {
+    if (!this.def.isStorage) return undefined;
+
+    let fullest: number | undefined;
+    for (const slotDef of this.def.slotDefs) {
+      const ratio = this.tryGetSlot(slotDef.globalId)?.fillRatio(this.wellKnown.volumeId);
+      if (ratio !== undefined) fullest = Math.max(fullest ?? 0, ratio);
+    }
+    return fullest;
   }
 
   /**

@@ -86,10 +86,10 @@ export interface ObjectCardStack extends CardContent {
   readonly place: CardPlace;
 
   /**
-   * このカードへ重ねた物の行き先（`main_item_slot`、GameElementDefinition.md 7.8節）。
-   * 受け取らないカードではundefined。
+   * このカードへdraggedを重ねたときの行き先（受け取れるスロットが無ければundefined、
+   * GameElementDefinition.md 7.8節）。**行き先は重ねる物で変わる**ので、カードごとの値ではなく問い合わせ。
    */
-  readonly contents?: CardPlace;
+  readonly contentsFor: (dragged: ObjectCardStack) => CardPlace | undefined;
 
   /**
    * 子ウィンドウにタブとして並ぶスロット（`visible_slots`、GameElementDefinition.md 7.11節）。宣言順。
@@ -412,7 +412,7 @@ const EXPLORE_ACTION = 'explore';
  *
  * **場所の種類がまだ無いので、探索（EXPLORE_ACTION）と同じく名前で決め打つ。** 探索できる土地と、
  * 中に入る筏・住居を型として分けたうえで、どちらのスロットを開くかをワールド側に名乗らせるのが
- * 本来の形（`main_item_slot`と同じ形にできる）。場所の種類を入れるときに一緒に直す。
+ * 本来の形（visible_slotsと同じ形にできる）。場所の種類を入れるときに一緒に直す。
  */
 const STRUCTURE_SLOT = 'structure';
 
@@ -609,16 +609,17 @@ export function fromGameSession(
   };
 
   /**
-   * 入れ物のカードに出す、中身が容量をどれだけ占めているか（ContainerSystem.md 1節）。上限
-   * （capacity）を持たない入れ物と、そもそも中身を持たない物ではundefined——あとどれだけ入るかが
-   * 決まっていないものに、満たされ具合は無い。**満杯へ近づくほど物が入らなくなる**ので、空いている
+   * 入れ物のカードに出す、中身が容量をどれだけ占めているか（ContainerSystem.md 1節）。入れ物として
+   * 名乗っていない型（`storage`、GameElementDefinition.md 7.12節）と、上限（capacity）を持つスロットが
+   * 1つも無い型ではundefined——あとどれだけ入るかが決まっていないものに、満たされ具合は無い。**満杯へ近づくほど物が入らなくなる**ので、空いている
    * 側がgood・満杯側がbad。
    *
-   * 液体の容器はこのバーを持たない。上限は同じcapacityでも、量を持つのは中身の液体自身なので、
-   * 中身のバー（fillGaugeOf）が中身の色で映す側になる（LiquidContainerSystem.md 2節）。
+   * 液体の容器はこのバーを持たない（storageを名乗らない）。上限は同じcapacityでも、量を持つのは
+   * 中身の液体自身なので、中身のバー（fillGaugeOf）が中身の色で映す側になる
+   * （LiquidContainerSystem.md 2節）。
    */
   const capacityGaugeOf = (object: WorldObject): CardGauge | undefined => {
-    const ratio = object.mainSlotFillRatio();
+    const ratio = object.storageFillRatio();
     if (ratio === undefined) return undefined;
     return { key: BUILTIN_GAUGE_KEYS.capacity, ratio, atMin: 'good', atMax: 'bad', worsensUpward: true };
   };
@@ -696,15 +697,18 @@ export function fromGameSession(
     );
 
   /**
-   * そのカードへ重ねた物の行き先（受け取らないカードではundefined）。
+   * そのカードへ重ねたdraggedの行き先（受け取れるスロットが無ければundefined、
+   * GameElementDefinition.md 7.8節）。
    *
-   * **どのスロットかはワールド側が名指しする**（`main_item_slot`、GameElementDefinition.md 7.8節）。
-   * UIがスロット名で決めていた頃は、液体の容器のスロット（`content`）が入れ物のスロット（`contents`）と
-   * 1文字違いだったおかげで開かれずに済んでいただけで、名前が揃えば水を取り出せてしまう。
+   * **スロットがあるなら入れられる**が既定で、入れられて困るスロットが自分で断る（`placement`、
+   * 同 7.7節）。複数が受け入れるときは**宣言順で最初のもの**——編み籠は item でも fixture でもあるので、
+   * 筏へ重ねれば積荷（items）に入り、設置物の枠には落ちない。
    */
-  const contentsOf = (object: WorldObject): CardPlace | undefined => {
-    const slotGlobalId = object.def.mainItemSlotGlobalId;
-    return slotGlobalId === undefined ? undefined : { container: object, slotGlobalId };
+  const contentsOf = (object: WorldObject, dragged: ObjectDef): CardPlace | undefined => {
+    const slotDef = object.def.slotDefs.find(
+      (candidate) => candidate.manualPlacement && candidate.acceptsAnywhere(dragged),
+    );
+    return slotDef === undefined ? undefined : { container: object, slotGlobalId: slotDef.globalId };
   };
 
   /**
@@ -984,7 +988,7 @@ export function fromGameSession(
     description: locale.object(instances[0].def.name).description,
     actions: actionsOf(instances[0]),
     place,
-    contents: contentsOf(instances[0]),
+    contentsFor: (dragged) => contentsOf(instances[0], dragged.objects[0].def),
     visibleSlots: visibleSlotsOf(instances[0]),
   });
 

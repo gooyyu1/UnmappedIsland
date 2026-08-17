@@ -94,19 +94,16 @@ export class ObjectDef {
   readonly representedBySlotGlobalId: number | undefined;
 
   /**
-   * この型を**代表する物のスロット**のグローバルID（7.8節）。undefinedなら持たない。
-   *
-   * 画面はカードを押したときにここの中身を並べる（かごの中身、怪我に当てている治療具）。
-   * 液体の容器は持たない——中身は物ではなく量で、1枚ずつ取り出せるものではないため。
-   * キャラクタも持たない——手持ち・装備・怪我はどれも物のスロットだが、そのどれもが代表ではない。
-   */
-  readonly mainItemSlotGlobalId: number | undefined;
-
-  /**
    * 外から中身が見えるスロット（`visible_slots`、7.11節）のグローバルID。**並びが表示順**で、
    * 子ウィンドウのタブになる（Windows.md 1.2節）。名乗らないスロットは、中に入らないと分からない。
    */
   readonly visibleSlotGlobalIds: readonly number[];
+
+  /**
+   * 物を溜める入れ物として使う型か（`storage`、7.12節）。名乗った型は、上限（capacity）を持つ
+   * スロットの詰まり具合をカードのバーに出す（CardView.md 8節）。
+   */
+  readonly isStorage: boolean;
 
   /**
    * **カードに出す絵を段で切り替えるプロパティ**のグローバルID（`art_by_stage`、6.4節）。undefinedなら
@@ -161,12 +158,12 @@ export class ObjectDef {
     combinations: readonly CombinationDef[] = [],
     representedBySlotGlobalId?: number,
     isQuantitative = false,
-    mainItemSlotGlobalId?: number,
     boundToOwner = false,
     stackable = true,
     recipes: readonly RecipeDef[] = [],
     artByStagePropertyGlobalId?: number,
     visibleSlotGlobalIds: readonly number[] = [],
+    isStorage = false,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -182,13 +179,13 @@ export class ObjectDef {
     this.actions = actions;
     this.combinations = combinations;
     this.representedBySlotGlobalId = representedBySlotGlobalId;
-    this.mainItemSlotGlobalId = mainItemSlotGlobalId;
     this.boundToOwner = boundToOwner;
     this.stackable = stackable;
     this.isQuantitative = isQuantitative;
     this.recipes = recipes;
     this.artByStagePropertyGlobalId = artByStagePropertyGlobalId;
     this.visibleSlotGlobalIds = visibleSlotGlobalIds;
+    this.isStorage = isStorage;
   }
 
   /**
@@ -206,13 +203,6 @@ export class ObjectDef {
         text('represented_by: '),
         slotRef(names.slotName(this.representedBySlotGlobalId)),
         text('の中身が代表になる'),
-      );
-
-    if (this.mainItemSlotGlobalId !== undefined)
-      out.write(
-        text('main_item_slot: '),
-        slotRef(names.slotName(this.mainItemSlotGlobalId)),
-        text('（カードを押すと並ぶ中身）'),
       );
 
     if (this.stackOrder !== undefined) out.write(text('stack_order: '), ...this.stackOrder.describe(names));

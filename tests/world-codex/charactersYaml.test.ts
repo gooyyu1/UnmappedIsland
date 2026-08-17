@@ -131,11 +131,12 @@ describe('プレイヤーキャラクタの定義', () => {
         ).toBeDefined();
     });
 
-    it('代表する物のスロット（main_item_slot）は持たない', () => {
-      // 手持ち・装備・怪我はどれも物のスロットだが、そのどれもがキャラクタを代表しない
-      // （GameElementDefinition.md 7.8節）。装備・怪我のボタンは、開くスロットを固定で
-      // 子ウィンドウへ渡すのでこれに依らない。
-      expect(def(character).mainItemSlotGlobalId).toBeUndefined();
+    it('外から見えるのは装備と怪我だけ（手持ちはレーンに出ている）', () => {
+      // 手持ちをタブにも出すと、同じ札が画面に2枚出る（Windows.md 1.1節）。
+      expect(def(character).visibleSlotGlobalIds).toEqual([
+        codex.slotNames.getId('equipment'),
+        codex.slotNames.getId('injuries'),
+      ]);
     });
 
     it.each([

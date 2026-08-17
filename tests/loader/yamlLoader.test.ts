@@ -359,7 +359,7 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/consciousness/);
   });
 
-  it('art_by_stageは、main_item_slotと同じくtrait側の宣言も参照できる', () => {
+  it('art_by_stageは、represented_byと同じくtrait側の宣言も参照できる', () => {
     const yaml = `
 traits:
   hearth:

@@ -561,22 +561,28 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 中身を見せるかはタグではなくスロットで決める（Windows.md 1節 子ウィンドウ）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const injury = injure(game);
+    const handSlot = codex.slotNames.getId('hand');
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
-    expect(basket.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    const bandage = game.session.spawn(codex.objectNames.getId('bandage'));
+    expect(basket.moveToSlot(game.player.instance, handSlot)).toBeUndefined();
+    expect(bandage.moveToSlot(game.player.instance, handSlot)).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
     const injuryCard = view.cardsIn('injuries')[0];
     const basketCard = view.hand.find((card) => card?.objects[0] === basket)!;
+    const bandageCard = view.hand.find((card) => card?.objects[0] === bandage)!;
 
     const treatment = { container: injury, slotGlobalId: codex.slotNames.getId('treatment') };
-    expect(injuryCard.contents, '怪我へ重ねた物は治療具のスロットへ入る').toEqual(treatment);
     expect(injuryCard.visibleSlots, '治療具のタブが出る').toEqual([treatment]);
-    expect(view.cellCountOf(injuryCard.contents!), '治療具の枠は1つだけ').toBe(1);
+    expect(view.cellCountOf(treatment), '治療具の枠は1つだけ').toBe(1);
+    // 行き先は重ねる物で変わる。怪我が受け取るのは治療具だけで、かごは受け取らない。
+    expect(injuryCard.contentsFor(bandageCard), '包帯は治療具のスロットへ入る').toEqual(treatment);
+    expect(injuryCard.contentsFor(basketCard), 'かごは怪我に入らない').toBeUndefined();
 
     const contents = { container: basket, slotGlobalId: codex.slotNames.getId('contents') };
-    expect(basketCard.contents, 'コンテナへ重ねた物は中身のスロットへ入る').toEqual(contents);
     expect(basketCard.visibleSlots, '中身のタブが出る').toEqual([contents]);
-    expect(view.cellCountOf(basketCard.contents!), 'かごは10枠（Containers.md 1節）').toBe(10);
+    expect(view.cellCountOf(contents), 'かごは10枠（Containers.md 1節）').toBe(10);
+    expect(basketCard.contentsFor(bandageCard), 'かごは持ち物を受け取る').toEqual(contents);
   });
 
   it('液体の容器は中身を開かない（水を単独で取り出させない）', () => {
@@ -590,7 +596,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const card = fromGameSession(game, codex, locale).hand.find((held) => held?.objects[0] === bowl)!;
 
-    expect(card.contents, '中身の並びは開かない').toBeUndefined();
+    expect(card.visibleSlots, '中身の並びは開かない').toEqual([]);
     expect(gaugeOf(card, '@fill')?.ratio, '入っていることはバーで見せる').toBeGreaterThan(0);
   });
 
@@ -636,7 +642,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(basket.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
 
     const [card] = fromGameSession(game, codex, locale).hand;
-    expect(card?.contents, '固形物の入れ物なので中身は子ウィンドウで見せる').toBeDefined();
+    expect(card?.visibleSlots, '固形物の入れ物なので中身は子ウィンドウで見せる').toHaveLength(1);
     expect(gaugeOf(card, '@fill'), '量で満たされるものではないのでバーは出さない').toBeUndefined();
   });
 
@@ -818,10 +824,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       '1つずつ別のカードになる',
     ).toEqual([[baskets[0]], [baskets[1]]]);
     expect(
-      view.cardsIn(cards[0].contents!).flatMap((card) => card.objects),
+      view.cardsIn(cards[0].visibleSlots[0]).flatMap((card) => card.objects),
       '石を入れた方を開けば石が見える',
     ).toEqual([stone]);
-    expect(view.cardsIn(cards[1].contents!), 'もう一方は空のまま').toEqual([]);
+    expect(view.cardsIn(cards[1].visibleSlots[0]), 'もう一方は空のまま').toEqual([]);
   });
 
   it('コンテナのカードは中身を映す場所を持ち、そこへ出し入れできる', () => {
@@ -833,9 +839,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       expect(item.moveToSlot(game.player.instance, handSlotId)).toBeUndefined();
     }
 
-    const opened = fromGameSession(game, codex, locale).hand[0]?.contents;
+    const stoneCard = fromGameSession(game, codex, locale).hand[1]!;
+    const opened = fromGameSession(game, codex, locale).hand[0]?.contentsFor(stoneCard);
     expect(opened, 'コンテナのカードは中身の場所を持つ').toBeDefined();
-    expect(fromGameSession(game, codex, locale).hand[1]?.contents, '石はコンテナではない').toBeUndefined();
+    expect(stoneCard.contentsFor(stoneCard), '石は何も受け取らない').toBeUndefined();
 
     // 手持ちの石を、開いた籠の中へ入れる。
     fromGameSession(game, codex, locale).hand[1]?.moveTo?.(opened!)?.();
@@ -860,7 +867,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const card = fromGameSession(game, codex, locale).hand[0];
 
-    expect(card?.moveTo?.(card.contents!), '籠を籠自身の中へは入れられない').toBeUndefined();
+    expect(card?.moveTo?.(card.contentsFor(card)!), '籠を籠自身の中へは入れられない').toBeUndefined();
   });
 
   it('combinationOfは、withタグが合うカード同士にだけ実行手段を返す', () => {
@@ -878,6 +885,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
         movedIds: () => objects.map((object) => object.instanceId),
         actions: [],
         visibleSlots: [],
+        contentsFor: () => undefined,
       };
     };
     const water = cardOf('water_liquid');

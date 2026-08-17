@@ -58,11 +58,11 @@ export class RawObjectDef {
   /** represented_by（7.6節）で指定されたスロット名。未指定ならundefined。 */
   representedBy: string | undefined;
 
-  /** main_item_slot（7.8節）で指定されたスロット名。未指定ならundefined。 */
-  mainItemSlot: string | undefined;
-
   /** visible_slots（7.11節）で並べられたスロット名。未指定なら空。 */
   visibleSlots: readonly string[] = [];
+
+  /** storage（7.12節）。物を溜める入れ物として使う型か。 */
+  isStorage = false;
 
   /** art_by_stage（6.4節）で指定されたプロパティ名。未指定ならundefined。 */
   artByStage: string | undefined;
@@ -100,8 +100,8 @@ export class RawObjectDef {
     this.passives = tryGetSeq(this.node, 'passives', context);
     this.stackOrder = tryGetMap(this.node, 'stack_order', context);
     this.representedBy = tryGetScalar(this.node, 'represented_by', context);
-    this.mainItemSlot = tryGetScalar(this.node, 'main_item_slot', context);
     this.visibleSlots = namesIn(tryGetSeq(this.node, 'visible_slots', context), `${context}.visible_slots`);
+    this.isStorage = tryGetBool(this.node, 'storage', context, false);
     this.artByStage = tryGetScalar(this.node, 'art_by_stage', context);
     this.quantitative = tryGetBool(this.node, 'quantitative', context, false);
     this.boundToOwner = tryGetBool(this.node, 'bound_to_owner', context, false);
@@ -121,7 +121,7 @@ export class RawObjectDef {
    * - props/slots/actions/combinations: 同名エントリが複数のtraitにあればエラー（5節）。
    *   object_def自身が同名エントリを持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。
    * - passives: 識別子を持たないため単純に連結（trait由来→自分自身の順）。
-   * - stack_order/represented_by/main_item_slot/art_by_stage: 自分自身の指定を優先。無ければちょうど1つの
+   * - stack_order/represented_by/art_by_stage: 自分自身の指定を優先。無ければちょうど1つの
    *   traitが指定している必要がある（複数ならエラー）。
    * - recipes: 成果物ごとの内容なので合成せず、自分自身の宣言だけを読む。
    * 未対応（Codex側にビルド先の型が無いため意図的にスキップ）: covers/layer。
@@ -134,10 +134,10 @@ export class RawObjectDef {
     const passiveNodes: YAMLMap[] = [];
     const stackOrderCandidates: Array<[string, YAMLMap]> = [];
     const representedByCandidates: Array<[string, string]> = [];
-    const mainItemSlotCandidates: Array<[string, string]> = [];
     const visibleSlotNames: string[] = [];
     const artByStageCandidates: Array<[string, string]> = [];
     const tags: string[] = [];
+    let isStorage = this.isStorage;
     let quantitative = this.quantitative;
     let boundToOwner = this.boundToOwner;
     let notStackable = this.notStackable;
@@ -156,10 +156,10 @@ export class RawObjectDef {
           passiveNodes.push(asMap(passiveNode, `traits.'${traitName}'.passives`));
       if (trait.stackOrder !== undefined) stackOrderCandidates.push([traitName, trait.stackOrder]);
       if (trait.representedBy !== undefined) representedByCandidates.push([traitName, trait.representedBy]);
-      if (trait.mainItemSlot !== undefined) mainItemSlotCandidates.push([traitName, trait.mainItemSlot]);
       visibleSlotNames.push(...trait.visibleSlots);
       if (trait.artByStage !== undefined) artByStageCandidates.push([traitName, trait.artByStage]);
       // quantitativeは真偽値なので、represented_byのような重複エラーにせずtagsと同じくORで合成する。
+      if (trait.isStorage) isStorage = true;
       if (trait.quantitative) quantitative = true;
       if (trait.boundToOwner) boundToOwner = true;
       if (trait.notStackable) notStackable = true;
@@ -248,17 +248,6 @@ export class RawObjectDef {
     const representedBySlotGlobalId =
       representedByName !== undefined ? loader.slotNames.intern(representedByName) : undefined;
 
-    let mainItemSlotName = this.mainItemSlot;
-    if (mainItemSlotName === undefined) {
-      if (mainItemSlotCandidates.length > 1)
-        throw new YamlLoadError(
-          `'${this.name}': main_item_slot が複数のtrait（'${mainItemSlotCandidates[0][0]}' と '${mainItemSlotCandidates[1][0]}'）で重複して宣言されています。`,
-        );
-      if (mainItemSlotCandidates.length === 1) mainItemSlotName = mainItemSlotCandidates[0][1];
-    }
-    const mainItemSlotGlobalId =
-      mainItemSlotName !== undefined ? loader.slotNames.intern(mainItemSlotName) : undefined;
-
     // visible_slots（7.11節）はタグと同じく足し合わせる。**並びが表示順**なので、trait由来を先に、
     // 自分自身の宣言を後ろに置く。同じスロットを2度書いても先に現れた位置を保つ。
     const visibleSlotGlobalIds = [...new Set([...visibleSlotNames, ...this.visibleSlots])].map((slotName) => {
@@ -324,12 +313,12 @@ export class RawObjectDef {
       combinations,
       representedBySlotGlobalId,
       quantitative,
-      mainItemSlotGlobalId,
       boundToOwner,
       !notStackable,
       parseRecipes(loader, this.name, this.recipes),
       artByStagePropertyGlobalId,
       visibleSlotGlobalIds,
+      isStorage,
     );
   }
 }

@@ -8,7 +8,7 @@
 
 **入れ物は専用の仕組みを持たず、スロット（[`GameElementDefinition.md`](./GameElementDefinition.md)
 7 節）そのもので表します。** `item_container` trait が `container` タグと中身のスロット `contents` を
-与え、そのスロットを `main_item_slot`（同 7.8 節）として宣言することで、カードを押すと中身が並び、
+与え、そのスロットを `visible_slots`（同 7.11 節）に並べることで、カードを押すと中身が並び、
 カードへ重ねた物はそこへ入ります（投入用の `combination` は要りません）。入れ物ごとに決めるのは、
 何種類入るか（`cell_count`）と、どれだけのかさが入るか（`capacity`）の 2 つだけです。液体の容器は
 「中身の液体が容器を代表し、量は中身自身が持つ」逆向きの構造なので、trait もタグも分けています。

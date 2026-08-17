@@ -79,7 +79,7 @@ actions/combinations と同じで（[ActionSystem.md](ActionSystem.md) 2 節）�
 ## 4. 投入操作は「入れ物へ落とす」そのもの
 
 箱へのアイテム投入は、製作中オブジェクト（1 節）専用の操作ではありません。**中身を持つカードへ重ねたら
-そのスロットへ入る**という、かごと共通の 1 つの動きです（[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。行き先は `main_item_slot`（`GameElementDefinition.md` 7.8 節）、入るか
+そのスロットへ入る**という、かごと共通の 1 つの動きです（[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。行き先は宣言順で最初に受け取れるスロット（`GameElementDefinition.md` 7.8 節）、入るか
 どうかは枠の `accept` と `max` が答えるので、レシピ側に宣言は要りません。
 
 素材が揃っているかの確認・消費・進捗更新（`actions.work` 相当）は、通常の `actions` の `conditions`/`active`

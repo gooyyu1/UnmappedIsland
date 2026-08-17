@@ -44,7 +44,7 @@ function stack(
     actions: [],
     place,
     visibleSlots: [],
-    contents: options.contents,
+    contentsFor: () => options.contents,
     movedIds: (count: number) => ids.slice(0, count),
     moveTo: (to, at, count) => () => {
       options.moves?.push({ ids: ids.slice(0, count ?? 1), to, at });
