@@ -166,6 +166,9 @@ object_defs:
       # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
       # 罠の候補に載る。
       rat_catch: {value: 4}
+      # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
+      rat_find: {value: 2}
+      monkey_find: {value: 4}
       # ヤシの木が1本だけ見つかる候補の重み。亜種が上書きする（terrain_generation.yaml）。
       palm_find:
         value: 13
@@ -175,9 +178,6 @@ object_defs:
       # 太い枝2本とヤシガニが見つかる候補の重み。
       driftwood_find:
         value: 12
-      # サルに出くわす候補の重み（docs/world/Animals.md 8節）。
-      monkey_find:
-        value: 4
     actions:
       explore:
         showMenu: always
@@ -192,6 +192,8 @@ object_defs:
           - weight: {prop: crab_find}
             spawn: {object: coconut_crab, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
+          - weight: {prop: rat_find}
+            spawn: {object: rat, into: self}
           - weight: {prop: monkey_find}
             spawn: {object: monkey, into: self}
           # 2個
@@ -227,6 +229,8 @@ object_defs:
       # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
       # 罠の候補に載る。
       rat_catch: {value: 4}
+      # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
+      rat_find: {value: 2}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 13
@@ -244,6 +248,9 @@ object_defs:
             spawn: {object: cave_entrance, into: self}
           - weight: {prop: crab_find}
             spawn: {object: coconut_crab, into: self}
+          # 出くわす獣（収穫ではないので、単独で出る）
+          - weight: {prop: rat_find}
+            spawn: {object: rat, into: self}
           # 2個
           - weight: 20
             spawn: {object: stone, count: 2, into: self}
@@ -277,6 +284,8 @@ object_defs:
       # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
       # 罠の候補に載る。
       rat_catch: {value: 4}
+      # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
+      rat_find: {value: 2}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 20
@@ -298,6 +307,9 @@ object_defs:
             spawn: {object: golden_chalice, into: self}
           - weight: 30
             spawn: {object: stone, into: self}
+          # 出くわす獣（収穫ではないので、単独で出る）
+          - weight: {prop: rat_find}
+            spawn: {object: rat, into: self}
           # 2個
           - weight: 25
             spawn: {object: stone, count: 2, into: self}
@@ -322,6 +334,9 @@ object_defs:
       # 罠の候補に載る。
       rat_catch: {value: 6}
       junglefowl_catch: {value: 10}
+      # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
+      rat_find: {value: 3}
+      junglefowl_find: {value: 4}
       # 木苺の茂みが見つかる候補の重み。
       berry_find:
         value: 15
@@ -339,6 +354,11 @@ object_defs:
             spawn: {object: berry_bush, into: self}
           - weight: {prop: spring_find}
             spawn: {object: spring, into: self}
+          # 出くわす獣（収穫ではないので、単独で出る）
+          - weight: {prop: rat_find}
+            spawn: {object: rat, into: self}
+          - weight: {prop: junglefowl_find}
+            spawn: {object: junglefowl, into: self}
           # 2個
           - weight: 18
             spawn: {object: water_spinach, count: 2, into: self}
@@ -372,6 +392,10 @@ object_defs:
       # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
       # 罠の候補に載る。
       rat_catch: {value: 6}
+      # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
+      rat_find: {value: 3}
+      monkey_find: {value: 4}
+      wild_boar_find: {value: 3}
       # 木苺の茂みが見つかる候補の重み。
       berry_find:
         value: 15
@@ -381,11 +405,6 @@ object_defs:
       # 斧で倒せる木が1本見つかる候補の重み（timber.yaml）。丸太の出どころなので、森を特徴づける。
       tree_find:
         value: 15
-      # 出くわす獣の候補の重み（docs/world/Animals.md 8節）。
-      monkey_find:
-        value: 4
-      wild_boar_find:
-        value: 3
     actions:
       explore:
         showMenu: always
@@ -398,6 +417,8 @@ object_defs:
           - weight: {prop: spring_find}
             spawn: {object: spring, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
+          - weight: {prop: rat_find}
+            spawn: {object: rat, into: self}
           - weight: {prop: monkey_find}
             spawn: {object: monkey, into: self}
           - weight: {prop: wild_boar_find}
@@ -440,6 +461,11 @@ object_defs:
       # 罠の候補に載る。
       rat_catch: {value: 6}
       junglefowl_catch: {value: 8}
+      # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
+      rat_find: {value: 3}
+      junglefowl_find: {value: 3}
+      monkey_find: {value: 4}
+      wild_boar_find: {value: 3}
       # ヤシの木が1本だけ見つかる候補の重み。
       palm_find:
         value: 15
@@ -449,11 +475,6 @@ object_defs:
       # 斧で倒せる木が1本見つかる候補の重み（timber.yaml）。
       tree_find:
         value: 12
-      # 出くわす獣の候補の重み（docs/world/Animals.md 8節）。
-      monkey_find:
-        value: 4
-      wild_boar_find:
-        value: 3
     actions:
       explore:
         showMenu: always
@@ -466,6 +487,10 @@ object_defs:
           - weight: {prop: taro_find}
             spawn: {object: taro, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
+          - weight: {prop: rat_find}
+            spawn: {object: rat, into: self}
+          - weight: {prop: junglefowl_find}
+            spawn: {object: junglefowl, into: self}
           - weight: {prop: monkey_find}
             spawn: {object: monkey, into: self}
           - weight: {prop: wild_boar_find}
@@ -514,6 +539,8 @@ object_defs:
       # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
       # 罠の候補に載る。
       rat_catch: {value: 4}
+      # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
+      rat_find: {value: 2}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 18
@@ -535,6 +562,9 @@ object_defs:
             spawn: {object: golden_chalice, into: self}
           - weight: 7
             spawn: {object: twig, into: self}
+          # 出くわす獣（収穫ではないので、単独で出る）
+          - weight: {prop: rat_find}
+            spawn: {object: rat, into: self}
           # 2個
           - weight: 22
             spawn: {object: stone, count: 2, into: self}
@@ -562,6 +592,8 @@ object_defs:
       # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
       # 罠の候補に載る。
       rat_catch: {value: 4}
+      # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
+      rat_find: {value: 2}
       # 石が1つだけ見つかる候補の重み。
       stone_find:
         value: 30
@@ -579,6 +611,9 @@ object_defs:
             spawn: {object: stone, into: self}
           - weight: {prop: wood_find}
             spawn: {object: twig, into: self}
+          # 出くわす獣（収穫ではないので、単独で出る）
+          - weight: {prop: rat_find}
+            spawn: {object: rat, into: self}
           # 2個
           - weight: 25
             spawn: {object: stone, count: 2, into: self}
@@ -606,6 +641,8 @@ object_defs:
       # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
       # 罠の候補に載る。
       rat_catch: {value: 4}
+      # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
+      rat_find: {value: 2}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 15
@@ -630,6 +667,9 @@ object_defs:
             spawn: {object: golden_chalice, into: self}
           - weight: {prop: berry_find}
             spawn: {object: berry_bush, into: self}
+          # 出くわす獣（収穫ではないので、単独で出る）
+          - weight: {prop: rat_find}
+            spawn: {object: rat, into: self}
           # 2個
           - weight: 20
             spawn: {object: stone, count: 2, into: self}
@@ -660,6 +700,8 @@ object_defs:
       # くくり罠で掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
       # 罠の候補に載る。
       rat_catch: {value: 4}
+      # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
+      rat_find: {value: 2}
     actions:
       explore:
         showMenu: always
@@ -671,6 +713,9 @@ object_defs:
             spawn: {object: cave_entrance, into: self}
           - weight: 25
             spawn: {object: stone, into: self}
+          # 出くわす獣（収穫ではないので、単独で出る）
+          - weight: {prop: rat_find}
+            spawn: {object: rat, into: self}
           # 2個
           - weight: 30
             spawn: {object: stone, count: 2, into: self}

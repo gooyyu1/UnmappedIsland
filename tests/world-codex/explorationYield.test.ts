@@ -39,13 +39,25 @@ const EXPECTED_MEAN: ReadonlyMap<string, readonly [number, number]> = new Map([
   ['mountain_peak', [1.4, 1.8]],
 ]);
 
-/** 獣が出る土地と、そのつまみ・出くわす獣（docs/world/Animals.md 8節）。 */
+/** 土地ごとの、出くわす獣とそのつまみ（docs/world/Animals.md 8節）。ネズミはどの土地にも居る。 */
 const BEAST_FINDS: readonly (readonly [string, string, string])[] = [
+  ['sandy_beach', 'rat_find', 'rat'],
   ['sandy_beach', 'monkey_find', 'monkey'],
+  ['rocky_coast', 'rat_find', 'rat'],
+  ['cliff_coast', 'rat_find', 'rat'],
+  ['grassland', 'rat_find', 'rat'],
+  ['grassland', 'junglefowl_find', 'junglefowl'],
+  ['forest', 'rat_find', 'rat'],
   ['forest', 'monkey_find', 'monkey'],
   ['forest', 'wild_boar_find', 'wild_boar'],
+  ['jungle', 'rat_find', 'rat'],
+  ['jungle', 'junglefowl_find', 'junglefowl'],
   ['jungle', 'monkey_find', 'monkey'],
   ['jungle', 'wild_boar_find', 'wild_boar'],
+  ['rocky_field', 'rat_find', 'rat'],
+  ['wasteland', 'rat_find', 'rat'],
+  ['mountainside', 'rat_find', 'rat'],
+  ['mountain_peak', 'rat_find', 'rat'],
 ];
 
 /** 1回の探索で新しく見つかった物（object_def名 → 個数）。 */
