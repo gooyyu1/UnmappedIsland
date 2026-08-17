@@ -26,6 +26,12 @@ export interface TickGate {
 
   /** 段以外の条件（conditions）でも縛られているか。真なら、その条件が成立している間だけ効く。 */
   readonly conditional: boolean;
+
+  /**
+   * 条件が見ている、宣言元自身のプロパティ。**その増減がいつまで効くか**の手掛かりで、出血なら
+   * `bleeding`——それが尽きた時点で血を奪うのが止まる。
+   */
+  readonly watchedSelfProperties: readonly number[];
 }
 
 /**
@@ -70,7 +76,15 @@ export class PassiveEffectGate {
           ? undefined
           : { propertyGlobalId: stagePropertyGlobalId, name: this.stageName! },
       conditional: this.conditions !== undefined,
+      watchedSelfProperties: this.watchedSelfProperties(),
     };
+  }
+
+  /** 条件が見ている、宣言元自身のプロパティ（TickGate参照）。 */
+  private watchedSelfProperties(): readonly number[] {
+    const found: number[] = [];
+    this.conditions?.collectWatchedProperties('self', (propertyGlobalId) => found.push(propertyGlobalId));
+    return found;
   }
 
   isSatisfied(declarer: WorldObject, slotBearer: WorldObject): boolean {

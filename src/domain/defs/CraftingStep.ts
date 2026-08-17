@@ -14,6 +14,9 @@ export type CraftingInput =
    * consumedは、この工程がその入力を消す（destroy・レシピのconsume）か。道具は消えないので偽。
    * countは1回の実行で要る個数（レシピの`count`、既定1）——**筏は丸太を6本使う**ので、
    * 総コストを出す側はこれを掛けないと1本ぶんで数えることになる。
+   *
+   * **確率でしか消えない入力では1を下回る。** 殴って仕留められるのは21回に1回で、外した回の獲物は
+   * その場に残る——1回の実行で要るのは獲物1匹ではなく、その確率ぶんだけ。
    */
   | {
       readonly kind: 'object';
@@ -44,6 +47,19 @@ export interface PropertyDelta {
   readonly amount: number;
 }
 
+/**
+ * 工程が代入するプロパティ1件（`set`、9.2節）。
+ *
+ * **増減とは別に持つ。** 実際に動く量は今の値によるので、代入を増減として足すと、値域の端へ戻す
+ * 既定のイベント（`on_overflow`が自分をmaxへ戻す、6.3節）が「max ぶん増えた」に化ける。
+ * 一方で「どこへ動いたか」は代入だけが確定して言えるので、rangeの外へ出たかはこちらで問える。
+ */
+export interface PropertyAssignment {
+  readonly target: ReferenceRoot;
+  readonly propertyGlobalId: number;
+  readonly value: number;
+}
+
 /** 1つの分岐で生まれる型と個数。同じ型を複数回spawnする分岐では合算済み。 */
 export interface SpawnedCount {
   readonly objectGlobalId: number;
@@ -61,6 +77,7 @@ export interface StepOutcome {
   readonly probability: number;
   readonly spawns: readonly SpawnedCount[];
   readonly deltas: readonly PropertyDelta[];
+  readonly assignments: readonly PropertyAssignment[];
 }
 
 /**
@@ -106,7 +123,9 @@ export interface CraftingStep {
 }
 
 /** 何も起こさない1分岐（値もオブジェクトも動かさない効果の結果）。 */
-export const UNCHANGED_OUTCOMES: readonly StepOutcome[] = [{ probability: 1, spawns: [], deltas: [] }];
+export const UNCHANGED_OUTCOMES: readonly StepOutcome[] = [
+  { probability: 1, spawns: [], deltas: [], assignments: [] },
+];
 
 /** 分岐の一覧の確率を一律に倍する（pickが候補の枝を自分の確率へ畳むときに使う）。 */
 export function scaleOutcomes(outcomes: readonly StepOutcome[], factor: number): readonly StepOutcome[] {
@@ -128,6 +147,7 @@ export function combineOutcomes(
         probability: a.probability * b.probability,
         spawns: mergeSpawns(a.spawns, b.spawns),
         deltas: [...a.deltas, ...b.deltas],
+        assignments: [...a.assignments, ...b.assignments],
       });
   return combined;
 }

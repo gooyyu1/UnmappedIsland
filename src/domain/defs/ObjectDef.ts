@@ -3,13 +3,13 @@ import type { WorldSession } from '../runtime/WorldSession';
 import type { ActionDef } from './ActionDef';
 import type { ActiveEffect } from './ActiveEffect';
 import type { CombinationDef } from './CombinationDef';
-import type { CraftingStep } from './CraftingStep';
-import { collectOutputs } from './CraftingStep';
+import type { CraftingStep, StepOutcome } from './CraftingStep';
+import { collectOutputs, combineOutcomes } from './CraftingStep';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { actionRef, combinationRef, propertyRef, slotRef, text } from './Description';
 import type { InteractionDef } from './InteractionDef';
 import { LocalIndexMap } from './LocalIndexMap';
-import type { PassiveEffect } from './PassiveEffect';
+import type { PassiveEffect, TickGate } from './PassiveEffect';
 import { PassiveEffects } from './PassiveEffects';
 import type { PropertyDef } from './PropertyDef';
 import type { RecipeDef } from './RecipeDef';
@@ -20,6 +20,25 @@ import type { StackOrderDef } from './StackOrderDef';
 
 /** 1 tickのゲーム内時間（分）。tick毎の増減から周期を分へ直すのに使う。 */
 const MINUTES_PER_TICK = 15;
+
+/**
+ * 外から与えられるtick毎の増減（ObjectDef.rangeCycles参照）。**焼くのも失血も、自分では動かない値を
+ * 隣の物が動かす**——炉が火にかけた物の加熱を進め、刺さった傷が持ち主の血を奪う。誰が誰の隣に
+ * 居るかは型だけでは決まらないので、文脈を知っている側（収支レポート）が組み立てて渡す。
+ */
+export interface ExternalTickDelta {
+  /** その増減を与える型。その周期を回すのに要る物（炉・刺さった傷）として工程の入力に並ぶ。 */
+  readonly sourceGlobalId: number;
+
+  readonly propertyGlobalId: number;
+
+  /** 最も遅い場合と最も速い場合の量（tickAmountsOfと同じ見方。炉は火力の段で3段階に変わる）。 */
+  readonly slowest: number;
+  readonly fastest: number;
+
+  /** その増減が止まるまでに動かせる総量。止まらない増減（薪をくべ続ける炉）ではundefined。 */
+  readonly maxTotal: number | undefined;
+}
 
 /**
  * tick毎に動く値がrangeの端へ届くまでの周期と、そこで起こること（ObjectDef.rangeCycles参照）。
@@ -41,6 +60,9 @@ export interface RangeCycle {
 
   readonly repeats: boolean;
   readonly destroysSelf: boolean;
+
+  /** 外から与えられた増減で動いた周期なら、それを与える型（炉が焼く・傷が血を奪う）。 */
+  readonly drivenBy: number | undefined;
 
   /** この周期を1つの工程として見たもの。何も生まない周期では出力が空になる。 */
   readonly step: CraftingStep;
@@ -297,9 +319,75 @@ export class ObjectDef {
     const resolve = this.staticResolver(outer);
     const steps: CraftingStep[] = [];
     for (const interaction of [...this.actions, ...this.combinations])
-      steps.push(interaction.craftingStep(this.globalId, resolve));
+      steps.push(this.withTriggeredRangeEvents(interaction.craftingStep(this.globalId, resolve), outer));
     for (const recipe of this.recipes) steps.push(recipe.craftingStep(this.globalId));
     return steps;
+  }
+
+  /**
+   * 工程が自分の値をrangeの外へ押すなら、そこで起こることもその工程の結果に畳んだもの
+   * （PropertyDef.rangeEventAt参照）。押していない工程はそのまま返る。
+   *
+   * 押した先で自分が消えるなら、自分は**その確率のぶんだけ**消費される入力になる（CraftingInput参照）
+   * ——外した回の獲物はその場に残るので、1回の実行に獲物1匹ぶんの値段を載せてはいけない。
+   */
+  private withTriggeredRangeEvents(step: CraftingStep, outer: StaticValueResolver | undefined): CraftingStep {
+    const resolve = this.staticResolver(outer);
+    const ancestorValue = (propertyGlobalId: number): number | undefined =>
+      outer?.('ancestor', propertyGlobalId);
+
+    let triggered = false;
+    let destroyedProbability = 0;
+    const outcomes = step.outcomes.map((outcome) => {
+      let expanded: readonly StepOutcome[] = [outcome];
+      let destroysSelf = false;
+
+      for (const [propertyGlobalId, value] of this.selfMovesOf(outcome, ancestorValue)) {
+        const readout = this.getPropertyDef(propertyGlobalId)?.rangeEventAt(value, resolve);
+        if (readout === undefined) continue;
+        // 分岐の確率は積で畳まれる（rangeイベントの分岐の和は1）ので、掛け直さなくてよい。
+        expanded = combineOutcomes(expanded, readout.outcomes);
+        destroysSelf ||= readout.destroysSelf;
+        triggered = true;
+      }
+      if (destroysSelf) destroyedProbability += outcome.probability;
+      return expanded;
+    });
+
+    if (!triggered) return step;
+    const flattened = outcomes.flat();
+    return {
+      ...step,
+      inputs: step.inputs.map((input) =>
+        destroyedProbability > 0 &&
+        input.kind === 'object' &&
+        input.objectGlobalId === this.globalId &&
+        !input.consumed
+          ? { ...input, consumed: true, count: destroyedProbability }
+          : input,
+      ),
+      outputs: collectOutputs(flattened),
+      outcomes: flattened,
+    };
+  }
+
+  /**
+   * 1つの分岐が、自分のどのプロパティをどこへ動かすか。**増減は今の値からの差、代入はそのものが
+   * 行き先**なので、range系イベントを問う前に「動かした先」へ均す。
+   */
+  private selfMovesOf(
+    outcome: StepOutcome,
+    ancestorValue: (propertyGlobalId: number) => number | undefined,
+  ): readonly (readonly [number, number])[] {
+    const moves: (readonly [number, number])[] = [];
+    for (const delta of outcome.deltas) {
+      if (delta.target !== 'self') continue;
+      const before = this.getPropertyDef(delta.propertyGlobalId)?.staticValue(ancestorValue);
+      if (before !== undefined) moves.push([delta.propertyGlobalId, before + delta.amount]);
+    }
+    for (const assignment of outcome.assignments)
+      if (assignment.target === 'self') moves.push([assignment.propertyGlobalId, assignment.value]);
+    return moves;
   }
 
   /**
@@ -308,8 +396,14 @@ export class ObjectDef {
    * 寿命（罠の朽ち、DurabilitySystem.md 2節）。
    *
    * 段で切り替わる増減（8.2節）は数えない——段ごとに周期が変わるものは、1つの周期で言い表せない。
+   *
+   * externalは、隣の物が与えるtick毎の増減（ExternalTickDelta参照）。同じプロパティを動かすものが
+   * 複数あれば、**与え手ごとに別の周期**を返す——炉で焼くのと傷で失血するのは、要る物も速さも違う。
    */
-  rangeCycles(outer?: StaticValueResolver): readonly RangeCycle[] {
+  rangeCycles(
+    outer?: StaticValueResolver,
+    external: readonly ExternalTickDelta[] = [],
+  ): readonly RangeCycle[] {
     let unresolved = false;
     const resolve: StaticValueResolver = (root, propertyGlobalId) => {
       const value = this.staticResolver(outer)(root, propertyGlobalId);
@@ -321,39 +415,65 @@ export class ObjectDef {
 
     const cycles: RangeCycle[] = [];
     for (const propertyDef of this.propertyDefs) {
-      const { slowest, fastest } = this.tickAmountsOf(propertyDef.globalId);
-      const ticks = propertyDef.ticksToRangeEnd(slowest, ancestorValue);
-      const shortestTicks = propertyDef.ticksToRangeEnd(fastest, ancestorValue);
-      if (ticks === undefined || shortestTicks === undefined) continue;
+      const own = this.tickAmountsOf(propertyDef.globalId);
+      const drivers: readonly (ExternalTickDelta | undefined)[] = [
+        undefined,
+        ...external.filter((delta) => delta.propertyGlobalId === propertyDef.globalId),
+      ];
 
-      for (const readout of propertyDef.rangeEventReadouts(resolve)) {
-        if (readout.label === (slowest < 0 ? 'on_overflow' : 'on_shortfall')) continue;
+      for (const driver of drivers) {
+        const slowest = own.slowest + (driver?.slowest ?? 0);
+        const fastest = own.fastest + (driver?.fastest ?? 0);
+        const ticks = propertyDef.ticksToRangeEnd(slowest, ancestorValue);
+        const shortestTicks = propertyDef.ticksToRangeEnd(fastest, ancestorValue);
+        if (ticks === undefined || shortestTicks === undefined) continue;
 
-        // 値が戻るなら、次の発火までは戻った量ぶん——初回だけが初期値からの距離になる。
-        const repeats = readout.returnedToSelf > 0;
-        const period = repeats ? readout.returnedToSelf / Math.abs(slowest) : ticks;
-        cycles.push({
-          propertyGlobalId: propertyDef.globalId,
-          minutes: period * MINUTES_PER_TICK,
-          shortestMinutes:
-            (repeats ? readout.returnedToSelf / Math.abs(fastest) : shortestTicks) * MINUTES_PER_TICK,
-          repeats,
-          destroysSelf: readout.destroysSelf,
-          step: {
-            kind: 'periodic',
-            name: `${propertyDef.name}.${readout.label}`,
-            ownerGlobalId: this.globalId,
-            inputs: [
-              { kind: 'object', objectGlobalId: this.globalId, consumed: readout.destroysSelf, count: 1 },
-            ],
-            outputs: collectOutputs(readout.outcomes),
-            // プレイヤーは何もしないので払う時間は無く、経過するだけ。
-            laborMinutes: 0,
-            elapsedMinutes: period * MINUTES_PER_TICK,
-            outcomes: readout.outcomes,
-            hasUnresolvedReferences: unresolved,
-          },
-        });
+        // 外からの増減が止まる前に端へ届かないなら、その仕掛けは成立しない——小さな獲物は罠の傷でも
+        // 失血で死ぬが、血の多い獲物は傷が固まるほうが先になる。
+        if (driver?.maxTotal !== undefined && ticks * Math.abs(driver.slowest) > driver.maxTotal) continue;
+
+        for (const readout of propertyDef.rangeEventReadouts(resolve)) {
+          if (readout.label === (slowest < 0 ? 'on_overflow' : 'on_shortfall')) continue;
+
+          // 値が戻るなら、次の発火までは戻った量ぶん——初回だけが初期値からの距離になる。
+          const repeats = readout.returnedToSelf > 0;
+          const period = repeats ? readout.returnedToSelf / Math.abs(slowest) : ticks;
+          cycles.push({
+            propertyGlobalId: propertyDef.globalId,
+            minutes: period * MINUTES_PER_TICK,
+            shortestMinutes:
+              (repeats ? readout.returnedToSelf / Math.abs(fastest) : shortestTicks) * MINUTES_PER_TICK,
+            repeats,
+            destroysSelf: readout.destroysSelf,
+            drivenBy: driver?.sourceGlobalId,
+            step: {
+              kind: 'periodic',
+              name: `${propertyDef.name}.${readout.label}`,
+              ownerGlobalId: this.globalId,
+              inputs: [
+                { kind: 'object', objectGlobalId: this.globalId, consumed: readout.destroysSelf, count: 1 },
+                // 与え手は消えない。焼き上がっても炉は残り、獲物が倒れれば傷は道連れに消えるが、
+                // どちらも「傍に在り続けること」が要るという意味では道具と同じ。
+                ...(driver === undefined
+                  ? []
+                  : [
+                      {
+                        kind: 'object' as const,
+                        objectGlobalId: driver.sourceGlobalId,
+                        consumed: false,
+                        count: 1,
+                      },
+                    ]),
+              ],
+              outputs: collectOutputs(readout.outcomes),
+              // プレイヤーは何もしないので払う時間は無く、経過するだけ。
+              laborMinutes: 0,
+              elapsedMinutes: period * MINUTES_PER_TICK,
+              outcomes: readout.outcomes,
+              hasUnresolvedReferences: unresolved,
+            },
+          });
+        }
       }
     }
     return cycles;
@@ -387,6 +507,61 @@ export class ObjectDef {
       sameDirection[0] ?? 0,
     );
     return { slowest, fastest };
+  }
+
+  /**
+   * この型が、隣の物のtick毎の値を動かす分（ExternalTickDelta参照）。rootは相手から見た自分の
+   * 位置——親が子を焼くなら`child`、刺さった傷が持ち主の血を奪うなら`parent`。
+   *
+   * **誰の隣に立てるかは答えない**（枠の受け入れを見る側の仕事）。答えるのは、隣に立てたとして
+   * どれだけ速く、いつまで動かせるか。
+   */
+  externalTickDeltas(root: 'parent' | 'child'): readonly ExternalTickDelta[] {
+    const byProperty = new Map<number, ExternalTickDelta>();
+    for (const delta of this.passives.tickDeltas()) {
+      if (delta.target !== root || delta.amount === 0) continue;
+
+      const ticks = this.ticksWhileGateHolds(delta.gate);
+      const limit = ticks === undefined ? undefined : ticks * Math.abs(delta.amount);
+      const known = byProperty.get(delta.propertyGlobalId);
+      byProperty.set(delta.propertyGlobalId, {
+        sourceGlobalId: this.globalId,
+        propertyGlobalId: delta.propertyGlobalId,
+        // 段で切り替わる増減（炉の火力）は同時には効かないので、束ねずに幅として持つ。
+        slowest:
+          known === undefined || Math.abs(delta.amount) < Math.abs(known.slowest)
+            ? delta.amount
+            : known.slowest,
+        fastest:
+          known === undefined || Math.abs(delta.amount) > Math.abs(known.fastest)
+            ? delta.amount
+            : known.fastest,
+        maxTotal:
+          known === undefined
+            ? limit
+            : known.maxTotal === undefined || limit === undefined
+              ? undefined
+              : Math.max(known.maxTotal, limit),
+      });
+    }
+    return [...byProperty.values()];
+  }
+
+  /**
+   * ゲートが自分の値を見ているなら、その値が尽きて条件が落ちるまでのtick数（TickGate参照）。
+   * 見ていない、または尽きない値なら undefined＝止まらない。
+   */
+  private ticksWhileGateHolds(gate: TickGate): number | undefined {
+    let fewest: number | undefined;
+    for (const propertyGlobalId of gate.watchedSelfProperties) {
+      const value = this.staticValueOf(propertyGlobalId);
+      const { fastest } = this.tickAmountsOf(propertyGlobalId);
+      if (value === undefined || fastest >= 0) continue;
+
+      const ticks = Math.ceil(value / -fastest);
+      if (fewest === undefined || ticks < fewest) fewest = ticks;
+    }
+    return fewest;
   }
 
   /** この型が宣言しているプロパティの、定義だけから読める値（StaticValueResolver参照）。 */

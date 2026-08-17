@@ -62,7 +62,7 @@ object_defs:
     expect(steps[0].kind).toBe('action');
     // restは値もオブジェクトも動かさないので、何も起きない分岐が1つだけある。
     expect(steps[1].outputs).toEqual([]);
-    expect(steps[1].outcomes).toEqual([{ probability: 1, spawns: [], deltas: [] }]);
+    expect(steps[1].outcomes).toEqual([{ probability: 1, spawns: [], deltas: [], assignments: [] }]);
   });
 
   it('クラフトネットワークは、出力を持つ工程だけを描く', () => {
@@ -98,7 +98,12 @@ object_defs:
     expect(explore.elapsedMinutes).toBe(15);
     expect(explore.hasUnresolvedReferences).toBe(false);
     expect(explore.outcomes).toEqual([
-      { probability: 0.75, spawns: [{ objectGlobalId: id('coconut'), count: 2 }], deltas: [] },
+      {
+        probability: 0.75,
+        spawns: [{ objectGlobalId: id('coconut'), count: 2 }],
+        deltas: [],
+        assignments: [],
+      },
       {
         probability: 0.25,
         spawns: [
@@ -106,6 +111,7 @@ object_defs:
           { objectGlobalId: id('twig'), count: 1 },
         ],
         deltas: [],
+        assignments: [],
       },
     ]);
   });
@@ -171,11 +177,13 @@ object_defs:
         probability: 0.75,
         spawns: [],
         deltas: [{ target: 'self', propertyGlobalId: expect.any(Number), amount: 16 }],
+        assignments: [],
       },
       {
         probability: 0.25,
         spawns: [{ objectGlobalId: trapCodex.objectNames.getId('rat'), count: 1 }],
         deltas: [{ target: 'self', propertyGlobalId: expect.any(Number), amount: 16 }],
+        assignments: [],
       },
     ]);
 
@@ -194,5 +202,139 @@ object_defs:
       { kind: 'object', objectGlobalId: id('knife'), consumed: false, count: 1 },
     ]);
     expect(woven.outputs).toEqual([{ objectGlobalId: id('basket'), counts: [1] }]);
+  });
+
+  /**
+   * 外から押されて起こるrangeイベントの検証。炉が子を焼くのも、刺さった傷が持ち主の血を奪うのも、
+   * 一撃で血を空にするのも、「値が端を割れば置き換わる」という同じ仕掛けの入口違い。
+   */
+  describe('外から押されて起こるrangeイベント', () => {
+    const YAML_HUNT = `
+object_defs:
+  hearth:
+    tags: [fixture]
+    slots:
+      fire:
+        cell: {accept: {tag: roastable}}
+    props:
+      heat:
+        value: 0
+        stages:
+          - {name: out}
+          - name: lit
+            min: 1
+            passives:
+              - add: {child: {cooking_progress: 3}}
+
+  raw_meat:
+    tags: [item, roastable]
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_overflow:
+          destroy: self
+          spawn: {object: roasted_meat}
+
+  roasted_meat: {tags: [item, roastable]}
+
+  wound:
+    tags: [injury]
+    bound_to_owner: true
+    props:
+      bleeding:
+        value: 100
+        range: {min: 0, max: 100}
+        passives:
+          - add: {self: {bleeding: -25}}
+    passives:
+      - conditions: [{prop: bleeding, gte: 1}]
+        add: {parent: {blood: -15}}
+
+  rat:
+    tags: [item]
+    slots:
+      injuries:
+        cell: {accept: {tag: injury}}
+    props:
+      blood:
+        value: 6
+        range: {min: 1, max: 6}
+        on_shortfall:
+          destroy: self
+          spawn: {object: rat_carcass}
+
+  boar:
+    tags: [item]
+    slots:
+      injuries:
+        cell: {accept: {tag: injury}}
+    props:
+      blood:
+        value: 4600
+        range: {min: 1, max: 4600}
+        on_shortfall:
+          destroy: self
+          spawn: {object: boar_carcass}
+    combinations:
+      strike:
+        with: {tag: weapon}
+        duration: 15
+        pick:
+          - weight: 19
+          - weight: 1
+            set: {self: {blood: 0}}
+
+  rat_carcass: {tags: [item]}
+  boar_carcass: {tags: [item]}
+  club: {tags: [item, weapon]}
+`;
+    const huntCodex = new WorldCodexYamlLoader().load('hunt.yaml', YAML_HUNT).build();
+    const huntId = (name: string) => huntCodex.objectNames.getId(name);
+    const defOf = (name: string) => huntCodex.objects.get(huntId(name));
+    const drivers = (source: string, root: 'parent' | 'child') => defOf(source).externalTickDeltas(root);
+
+    it('炉が進める加熱は、炉を道具に要る1回きりの周期になる', () => {
+      const [cooking] = defOf('raw_meat').rangeCycles(undefined, drivers('hearth', 'child'));
+
+      // maxちょうどでは溢れない（6.3節）ので、届くべき距離は24ではなく25。3/tickなので25/3 tick。
+      expect(cooking.minutes).toBeCloseTo((25 / 3) * 15);
+      expect(cooking.repeats).toBe(false);
+      expect(cooking.drivenBy).toBe(huntId('hearth'));
+      expect(cooking.step.laborMinutes).toBe(0);
+      expect(cooking.step.inputs).toEqual([
+        { kind: 'object', objectGlobalId: huntId('raw_meat'), consumed: true, count: 1 },
+        { kind: 'object', objectGlobalId: huntId('hearth'), consumed: false, count: 1 },
+      ]);
+      expect(cooking.step.outputs).toEqual([{ objectGlobalId: huntId('roasted_meat'), counts: [1] }]);
+    });
+
+    it('出血で死ぬのは、傷が固まるまでに奪える血の量が足りる獲物だけ', () => {
+      // 100 ÷ 25 = 4 tick で固まるので、奪えるのは合計60mL。
+      expect(drivers('wound', 'parent')).toEqual([
+        {
+          sourceGlobalId: huntId('wound'),
+          propertyGlobalId: expect.any(Number),
+          slowest: -15,
+          fastest: -15,
+          maxTotal: 60,
+        },
+      ]);
+
+      expect(defOf('rat').rangeCycles(undefined, drivers('wound', 'parent'))).toHaveLength(1);
+      expect(defOf('boar').rangeCycles(undefined, drivers('wound', 'parent'))).toEqual([]);
+    });
+
+    it('一撃で値を端の外へ押す工程は、そこで起こることまで含めて1つの工程になる', () => {
+      const [strike] = defOf('boar').craftingSteps();
+
+      // 20回に1回しか仕留められないので、1回の実行で要る獲物もその確率ぶん。
+      expect(strike.inputs).toEqual([
+        { kind: 'object', objectGlobalId: huntId('boar'), consumed: true, count: 0.05 },
+        { kind: 'tag', tagGlobalId: expect.any(Number), consumed: false, count: 1 },
+      ]);
+      expect(strike.outputs).toEqual([{ objectGlobalId: huntId('boar_carcass'), counts: [1] }]);
+      expect(strike.outcomes.find((outcome) => outcome.spawns.length > 0)?.probability).toBe(0.05);
+    });
   });
 });

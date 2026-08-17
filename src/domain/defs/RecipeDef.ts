@@ -115,7 +115,12 @@ export class RecipeDef {
    */
   craftingStep(productGlobalId: number): CraftingStep {
     const outcomes: readonly StepOutcome[] = [
-      { probability: 1, spawns: [{ objectGlobalId: productGlobalId, count: 1 }], deltas: [] },
+      {
+        probability: 1,
+        spawns: [{ objectGlobalId: productGlobalId, count: 1 }],
+        deltas: [],
+        assignments: [],
+      },
     ];
     return {
       kind: 'recipe',

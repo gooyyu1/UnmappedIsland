@@ -148,6 +148,18 @@ export class ConditionNode {
   }
 
   /**
+   * この条件が見ている、rootが指す先のプロパティを挙げる（入れ子の条件も辿る）。
+   *
+   * **その条件がいつまで成り立つか**を、見ているプロパティの動きから見積もるために使う——出血は
+   * `bleeding` が尽きるまでしか効かないので、条件が何を見ているかが分からないと、いつ止まるかも
+   * 分からない（収支レポートが持続時間を出すのに使う）。
+   */
+  collectWatchedProperties(root: ReferenceRoot, add: (propertyGlobalId: number) => void): void {
+    if (this.propertyGlobalId !== undefined && this.root === root) add(this.propertyGlobalId);
+    for (const child of this.children ?? []) child.collectWatchedProperties(root, add);
+  }
+
+  /**
    * この条件を読める形に書き表す（Description参照）。1つの式なので行に分けず、断片の並びを返す。
    * 複合ノード（all/any/not）は括弧で包み、入れ子の切れ目が読み取れるようにする。
    */
