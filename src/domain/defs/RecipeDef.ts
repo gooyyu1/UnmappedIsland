@@ -122,7 +122,9 @@ export class RecipeDef {
       name: this.name,
       ownerGlobalId: productGlobalId,
       inputs: this.steps.flatMap((step) =>
-        step.requirements.map((requirement) => requirement.match.craftingInput(requirement.consume)),
+        step.requirements.map((requirement) =>
+          requirement.match.craftingInput(requirement.consume, requirement.count),
+        ),
       ),
       outputs: collectOutputs(outcomes),
       laborMinutes: this.totalMinutes,
