@@ -14,6 +14,7 @@ import type { Localization } from '../../locale/Localization';
 import { artNameFor } from '../../art/objectArt';
 import type { CraftingMaterial } from './craftingView';
 import { craftingActions, craftingMaterials } from './craftingView';
+import { characterCardContent } from './characterCard';
 import { recipeOf } from './recipeList';
 import type { SlotRef } from '../../art/backgroundArt';
 import type { CardContent, CardCooking, CardGauge } from '../ui/Card';
@@ -211,6 +212,32 @@ export interface MapRoadView {
 }
 
 /**
+ * 子ウィンドウ1つに出るもの一式（Windows.md 1節）。**1つの窓に要るものを1つのまとまりで答える**
+ * ——ばらばらのメンバーから呼び出し側が組み立てると、窓を足すたびに組み立ての手順も増える。
+ *
+ * **画面が覚えているものはここに含めません。** 発見物の枠（直前の探索で何が出たか）と固定表示の印は
+ * ワールドではなく画面の記憶なので、呼び出し側が重ねます——explorationRatioが探索率だけを答え、
+ * 発見物を答えないのはそのためです。
+ */
+export interface ObjectWindowView {
+  /** 説明のタブに出す札。カードの窓では、借りてきた1枚そのもの（Windows.md 1.1節）。 */
+  readonly card: CardContent;
+  readonly description: string | undefined;
+
+  /** 最下段に並べる操作。 */
+  readonly actions: readonly CardAction[];
+
+  /** タブに並ぶスロット（`visible_slots`の宣言順、GameElementDefinition.md 7.11節）。 */
+  readonly slots: readonly CardPlace[];
+
+  /** プロパティのタブに出すカテゴリ（空ならタブを出さない）。 */
+  readonly properties: readonly PropertyTab[];
+
+  /** 探索率（探索できない対象ではundefined＝探索のタブを出さない）。 */
+  readonly explorationRatio: number | undefined;
+}
+
+/**
  * プレイ中の画面が表示する内容。画面の組み立て（PlayScene）とゲーム状態の間を仕切る。
  *
  * 天候・条件・装備・怪我のように、ドメイン側にまだ表示できる形が無い項目はモック
@@ -225,17 +252,18 @@ export interface PlayScreenView {
    * （CardView.md 9節）。負っていなければundefined。
    */
   readonly characterMark: string | undefined;
-  /** キャラクタ自身の説明文（人物像）。localeに書かれていなければundefined。 */
-  readonly characterDescription: string | undefined;
-  /**
-   * キャラクタ自身が持つアクション（休息、Characters.md 休息節）。日時から開く子ウィンドウに
-   * 並ぶ（Windows.md 4節）。他のカードのアクションと同じ形で、実行の経路も同じ。
-   */
-  readonly characterActions: readonly CardAction[];
-  /** 条件アイコン。複数同時に付き得るので件数は可変。 */
-  readonly conditions: readonly string[];
-  readonly equipmentIcon: string;
-  readonly injuryIcon: string;
+  /** キャラクタ自身を映す札。ポートレイトの枠と、キャラクタの子ウィンドウが同じ姿で出す1枚。 */
+  readonly characterCard: CardContent;
+
+  /** キャラクタ自身の子ウィンドウ（ポートレイト・日時・装備/怪我のボタンから開く）。 */
+  readonly characterWindow: ObjectWindowView;
+
+  /** 現在地そのものの子ウィンドウ（現在地の札から開く）。 */
+  readonly currentLocationWindow: ObjectWindowView;
+
+  /** その札の子ウィンドウ。**札ごとに変わる**ので、値ではなく問い合わせで答える。 */
+  readonly windowOfCard: (stack: ObjectCardStack) => ObjectWindowView;
+
   /**
    * ステータスエリアに出す候補（statusタグが付いたもの、StatusArea.md）。
    * このうち実際に出すのは、安全域を外れたものと固定表示にされたものだけ（statusRows参照）。
@@ -243,16 +271,14 @@ export interface PlayScreenView {
   readonly statuses: readonly StatusContent[];
 
   /**
-   * プロパティウィンドウのタブ一式（property_tagsの宣言順）。キャラクターが1つも持たないタグは
-   * 空のタブになるだけなので落とす。
+   * キャラクタのプロパティのカテゴリ（property_tagsの宣言順）。ステータスエリアの固定表示の
+   * 引き当て（ShownStatuses）が読む。子ウィンドウへ出るぶんはcharacterWindow.propertiesが持つ。
    */
   readonly propertyCategories: readonly PropertyTab[];
-
-  /**
-   * そのオブジェクトのプロパティを、カテゴリごとに並べたもの（子ウィンドウのプロパティのタブ）。
-   * タグの付いたプロパティを1つも持たない型では空になり、タブそのものが出ない。
-   */
-  readonly propertiesOf: (object: WorldObject) => readonly PropertyTab[];
+  /** 条件アイコン。複数同時に付き得るので件数は可変。 */
+  readonly conditions: readonly string[];
+  readonly equipmentIcon: string;
+  readonly injuryIcon: string;
   readonly elapsedDays: number;
   readonly hour: number;
   readonly minute: number;
@@ -277,32 +303,6 @@ export interface PlayScreenView {
    * どのスロットにどの絵を敷くかは、画面側ではなく絵のファイル名が決める。
    */
   readonly laneSlot: (place: CardPlace) => SlotRef | undefined;
-  /** 現在地の探索率（0〜1）。100%に達しても探索は続けられる（ExplorationSystem.md 2節）。 */
-  readonly explorationRatio: number;
-  /**
-   * 現在地を探索できるか（`explore`アクションを持つ場所か）。**探索できない場所もある**
-   * ——筏・外洋（voyage.yaml）は資源を持たないので、探索の子ウィンドウ自体を開かない。
-   */
-  readonly canExplore: boolean;
-  /** 現在地そのものの説明（オブジェクトウィンドウの見出しに添える）。 */
-  readonly currentLocationDescription: string | undefined;
-  /**
-   * 現在地そのものが宣言しているアクション。**中に入った場所を操作する唯一の経路**——筏に乗り込むと
-   * 筏の札は現在地の札になり、外の並びからは消えるので、降りる・出航するはここからになる。
-   */
-  readonly currentLocationActions: readonly CardAction[];
-  /**
-   * 現在地の子ウィンドウにタブとして並ぶ場所（`visible_slots`、GameElementDefinition.md 7.11節の
-   * 宣言順）。筏の帆・住居の壁がここに並ぶ（Dwellings.md 1節）。
-   */
-  readonly currentLocationSlots: readonly CardPlace[];
-
-  /**
-   * キャラクタ自身の子ウィンドウにタブとして並ぶ場所（GameElementDefinition.md 7.11節の宣言順）。
-   * 装備・怪我がここに並ぶ。
-   * **手持ちは並びません**——レーンに出ているので、タブにも出すと同じ札が画面に2枚出る。
-   */
-  readonly characterSlots: readonly CardPlace[];
   /** 現在地の設置物（道・木・建物など、持ち歩けないもの）。 */
   readonly fixtures: readonly ObjectCardStack[];
   /** 現在地に落ちているアイテム（持ち歩けるもの）。 */
@@ -1275,18 +1275,65 @@ export function fromGameSession(
       };
     };
 
+  /**
+   * キャラクタ自身を映す札。**自分のインスタンスを識別子として名乗る**——レーンに並ぶ他の札と同じく、
+   * 差し替えで同じ札だと分かり、子ウィンドウへ貸し出したときに元の枠が分かるようにするため。
+   */
+  const characterCard: CardContent = {
+    ...characterCardContent(game.player.instance.def.name, locale),
+    name: characterTexts.displayName,
+    mark: markOf(game.player.instance),
+    identity: [game.player.instance.instanceId],
+  };
+
+  const currentLocationCard: CardContent = {
+    icon: LOCATION_ICON,
+    name: locationNameOf(location.instance.instanceId, location.instance.def.name),
+    art: location.instance.def.name,
+    kind: 'location',
+    // 現在地の札も、その場所が宣言したバーを出す（航海の進み、docs/world/Voyage.md 4節）。
+    gauges: gaugesOfCard(location.instance),
+  };
+
   return {
     characterName: characterTexts.displayName,
     characterArt: game.player.instance.def.name,
     characterMark: markOf(game.player.instance),
-    characterDescription: characterTexts.description,
-    characterActions: actionsOf(game.player.instance),
+    characterCard,
+    characterWindow: {
+      card: characterCard,
+      description: characterTexts.description,
+      actions: actionsOf(game.player.instance),
+      slots: visiblePlacesOf(game.player.instance),
+      properties: propertyCategories,
+      explorationRatio: undefined,
+    },
+    currentLocationWindow: {
+      card: currentLocationCard,
+      description: locale.object(location.instance.def.name).description,
+      actions: actionsOf(location.instance),
+      slots: visiblePlacesOf(location.instance),
+      properties: propertiesOf(location.instance),
+      // 探索できない土地（探索の語彙を持たないCodex）では上限が0になるため、0除算を避けて0%にする。
+      explorationRatio: location.instance.def.actions.some((action) => action.name === EXPLORE_ACTION)
+        ? location.explorationProgressMax === 0
+          ? 0
+          : location.explorationProgress / location.explorationProgressMax
+        : undefined,
+    },
+    windowOfCard: (stack) => ({
+      card: stack,
+      description: stack.description,
+      actions: stack.actions,
+      slots: stack.visibleSlots,
+      properties: propertiesOf(stack.objects[0]),
+      explorationRatio: undefined,
+    }),
     conditions: ['💭', '🥶', '😪', '🍽️'],
     equipmentIcon: '👕',
     injuryIcon: '🩹',
     statuses: entriesWithTag(game.player.instance, codex.propertyTagNames.tryGetId(STATUS_TAG)),
     propertyCategories,
-    propertiesOf,
     // dayは1始まり（GameElementDefinition.md 17節）なので、生存日数は0始まりへ直す。
     elapsedDays: game.world.day - 1,
     hour: game.world.hour,
@@ -1296,14 +1343,7 @@ export function fromGameSession(
     ambientTemperature: game.world.ambientTemperature,
     weatherLabel:
       game.world.weather === undefined ? undefined : locale.symbol(game.world.weather).displayName,
-    currentLocation: {
-      icon: LOCATION_ICON,
-      name: locationNameOf(location.instance.instanceId, location.instance.def.name),
-      art: location.instance.def.name,
-      kind: 'location',
-      // 現在地の札も、その場所が宣言したバーを出す（航海の進み、docs/world/Voyage.md 4節）。
-      gauges: gaugesOfCard(location.instance),
-    },
+    currentLocation: currentLocationCard,
     locationArt: location.instance.def.name,
     laneSlot: (place) => {
       const found = slotOf(place);
@@ -1311,16 +1351,6 @@ export function fromGameSession(
       const slot = found.owner.def.getSlotDef(found.slotId);
       return slot === undefined ? undefined : { owner: found.owner.def.name, slot: slot.name };
     },
-    // 探索できない土地（探索の語彙を持たないCodex）では上限が0になるため、0除算を避けて0%にする。
-    explorationRatio:
-      location.explorationProgressMax === 0
-        ? 0
-        : location.explorationProgress / location.explorationProgressMax,
-    canExplore: location.instance.def.actions.some((action) => action.name === EXPLORE_ACTION),
-    currentLocationDescription: locale.object(location.instance.def.name).description,
-    currentLocationActions: actionsOf(location.instance),
-    currentLocationSlots: visiblePlacesOf(location.instance),
-    characterSlots: visiblePlacesOf(game.player.instance),
     // 並び方はプレイヤーが地形をどう捉えているかで変わるため、同じスロットの中での並び替えを許す。
     // ヤシの木を持ち歩けないのはmoveIntoが弾くからで、このレーンが読み取り専用だからではない。
     fixtures: location.fixtureStacks.map((stack) => ({

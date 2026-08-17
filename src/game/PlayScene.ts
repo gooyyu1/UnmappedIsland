@@ -20,7 +20,13 @@ import type { InteractionGains } from '../domain/runtime/PropertyGain';
 import type { WorldChange } from '../domain/runtime/WorldChange';
 import type { WorldSignal } from '../domain/runtime/WorldSignal';
 import type { WorldObject } from '../domain/runtime/WorldObject';
-import type { CardAction, CardPlace, ObjectCardStack, PlayScreenView } from './view/PlayScreenView';
+import type {
+  CardAction,
+  CardPlace,
+  ObjectCardStack,
+  ObjectWindowView,
+  PlayScreenView,
+} from './view/PlayScreenView';
 import { EXPLORE_ACTION, fromGameSession } from './view/PlayScreenView';
 import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
@@ -32,7 +38,6 @@ import { TickProgress } from './view/tickProgress';
 import { Button, SLOT_BUTTON_PAPER_TEXTURE } from './ui/Button';
 import { EDGE_DIRECTIONS } from './ui/Card';
 import type { CardContent, CardEdgeAction } from './ui/Card';
-import { characterCardContent } from './view/characterCard';
 import type { CraftingMaterial } from './view/craftingView';
 import type { Card } from './ui/Card';
 import { borrowedFace, cardFace } from './ui/cardFace';
@@ -54,8 +59,7 @@ import { floatSignalLabel } from './ui/signalLabel';
 import type { MapPlacement } from './ui/MapWindow';
 import { MapWindow } from './ui/MapWindow';
 import { ModalDialog } from './ui/ModalDialog';
-import type { ExplorationContent } from './ui/ExplorationPane';
-import type { ObjectWindowAction, ObjectWindowTarget } from './ui/ObjectWindow';
+import type { ObjectWindowAction } from './ui/ObjectWindow';
 import { DESCRIPTION_TAB, EXPLORATION_TAB, ObjectWindow } from './ui/ObjectWindow';
 import { RecipeWindow } from './ui/RecipeWindow';
 import { recipeCategories } from './view/recipeList';
@@ -1041,65 +1045,35 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 装備・怪我のボタンから開く、場所そのものの子ウィンドウ。映す対象が1つに定まらないので
-   * カードは持たず、見出しと中身の並びだけを出す。
+   * 装備・怪我のボタンから開く子ウィンドウ。**キャラクタ自身の窓そのもの**で、押したボタンが
+   * 名指ししているスロットのタブから開くだけの違いしかない（記憶より優先する、Windows.md 1.2節）。
+   *
+   * 休息のアクションは並べない——ボタンが指しているのは持ち物であって、本人の過ごし方ではない。
    */
   private openSlotWindow(place: CardPlace): void {
     const origins = this.dropChildWindow();
-    // 場所を開くときも映しているオブジェクトはある——その持ち主（キャラクタ）。
-    // 押したボタンがそのスロットを名指ししているので、記憶より優先してそのタブから開く。
-    // 説明のタブも持つ（Windows.md 1.2節）——本人の窓であることに変わりはないので、説明が読めなく
-    // なる理由が無い。
-    this.openChildWindow(
-      { card: this.portraitCard(), description: this.view.characterDescription },
-      [],
-      this.view.characterSlots,
-      origins,
-      { opensPlace: place, properties: this.status.tabs() },
-    );
+    this.openChildWindow({ ...this.view.characterWindow, actions: [] }, origins, {
+      opensPlace: place,
+      properties: this.status.tabs(),
+    });
   }
 
   /**
-   * 日時を押すと開く、キャラクタ自身の子ウィンドウ（Windows.md 4節）。休息のアクション
+   * 日時とポートレイトを押すと開く、キャラクタ自身の子ウィンドウ（Windows.md 4節）。休息のアクション
    * （Characters.md 休息節）が並ぶ。**カードのウィンドウと同じ経路**——映しているのは自分の札で、
    * ボタンはそのオブジェクトが宣言しているアクションそのもの。
-   *
-   * 中身のスロットは渡さない。キャラクタのどのスロットも「キャラクタと言えばこれ」ではないため
-   * （装備・怪我はそれぞれのボタンから開く、Windows.md 3節）。
    */
   private openCharacterWindow(): void {
     const origins = this.dropChildWindow();
-    this.openChildWindow(
-      { card: this.portraitCard(), description: this.view.characterDescription },
-      this.actionButtons(this.view.characterActions, this.view.characterName),
-      this.view.characterSlots,
-      origins,
-      { properties: this.status.tabs() },
-    );
+    this.openChildWindow(this.view.characterWindow, origins, { properties: this.status.tabs() });
   }
 
   /**
-   * キャラクタ本人を映す札の中身。ポートレイトと、装備・怪我の子ウィンドウの見出しが同じ姿になる
-   * ようにここへ寄せる（名乗っている名前で見せる点だけが、選択画面の札と違う）。
-   *
-   * **自分のインスタンスを識別子として名乗る。** レーンに並ぶ他の札と同じく、差し替えで同じ札だと
-   * 分かり、子ウィンドウへ貸し出したときに元の枠が分かるようにするため。
-   */
-  private portraitCard(): CardContent {
-    return {
-      ...characterCardContent(this.view.characterArt, this.locale),
-      name: this.view.characterName,
-      mark: this.view.characterMark,
-      identity: [this.gameSession.player.instance.instanceId],
-    };
-  }
-
-  /**
-   * ポートレイトのレーンの枠。押すとプロパティウィンドウが開く（ScreenLayout.md 4.1節）。
+   * ポートレイトのレーンの枠。押すとキャラクタ自身の子ウィンドウが開く（ScreenLayout.md 4.1節）。
    * キャラクタ自身の札も他の札と同じで、子ウィンドウへ出ている間はここに印だけが残る。
    */
   private portraitCells(): readonly LaneCell[] {
-    const portrait = { ...this.portraitCard(), onTap: this.whileIdle(() => this.openCharacterWindow()) };
+    const portrait = { ...this.view.characterCard, onTap: this.whileIdle(() => this.openCharacterWindow()) };
     return [{ card: this.shown.shownCard(portrait) }];
   }
 
@@ -1121,17 +1095,10 @@ export class PlayScene extends ResponsiveScene {
     // レシピ一覧から作り始めたときだけ、出どころが世界ではなく画面の事実（閉じた一覧の中で選んだ札の
     // 位置）なので呼び出し側が渡す。並びに出ている札は、差し替えがその枠から飛ばす。
     if (from !== undefined) for (const id of borrowed.identity ?? []) origins.set(id, from);
-    this.openChildWindow(
-      { card: borrowed, description: borrowed.description },
-      this.actionButtons(borrowed.actions, borrowed.name),
-      borrowed.visibleSlots,
-      origins,
-      {
-        stack: borrowed,
-        opensPlace: opensPlace ? borrowed.visibleSlots[0] : undefined,
-        properties: this.view.propertiesOf(borrowed.objects[0]),
-      },
-    );
+    this.openChildWindow(this.view.windowOfCard(borrowed), origins, {
+      stack: borrowed,
+      opensPlace: opensPlace ? borrowed.visibleSlots[0] : undefined,
+    });
   }
 
   /**
@@ -1237,22 +1204,21 @@ export class PlayScene extends ResponsiveScene {
    * （Windows.md 1.1節）。運びは並びの差し替えがそのまま見せる。
    */
   private openChildWindow(
-    object: ObjectWindowTarget,
-    actions: readonly ObjectWindowAction[],
-    places: readonly CardPlace[],
+    window: ObjectWindowView,
     origins: ReadonlyMap<number, Rect>,
     opened?: {
       readonly stack?: ObjectCardStack;
       readonly opensPlace?: CardPlace;
-      /** プロパティのタブに出すカテゴリ（空ならタブを出さない）。 */
+      /**
+       * プロパティのタブに出すカテゴリ。**画面が覚えている固定表示の印を重ねたい対象だけ**が渡す
+       * （キャラクタ、ShownStatuses）。渡さなければワールドから引いたものをそのまま出す。
+       */
       readonly properties?: readonly PropertyTab[];
-      /** 探索のタブに出すもの（探索できる場所だけ渡す）。 */
-      readonly exploration?: ExplorationContent;
     },
   ): void {
-    noteOperation(`子ウィンドウを開いた: ${object.card.name}`);
+    noteOperation(`子ウィンドウを開いた: ${window.card.name}`);
     // タブに並べるスロット。可視のスロット（visible_slots、7.11節）を宣言順に並べる。
-    this.childWindowTabs = places.map((slot) => ({ key: this.view.slotKeyOf(slot), place: slot }));
+    this.childWindowTabs = window.slots.map((slot) => ({ key: this.view.slotKeyOf(slot), place: slot }));
     // 型ごとの記憶の鍵。束が無いウィンドウ（装備・怪我）は覚えない——映しているのは場所であって、
     // 「この型を次に開いたときどうするか」の話にならない。
     this.childWindowDef = opened?.stack?.objects[0]?.def.name;
@@ -1260,9 +1226,17 @@ export class PlayScene extends ResponsiveScene {
     this.childWindowPlace = this.placeOfTab(initialTab);
 
     this.childWindow = new ObjectWindow(this, this.metrics, {
-      object,
-      properties: opened?.properties ?? [],
-      exploration: opened?.exploration,
+      object: { card: window.card, description: window.description },
+      properties: opened?.properties ?? window.properties,
+      // 発見物の枠は画面が覚えているもの（ワールドの場所ではない、Windows.md 1.1節）なので、
+      // ワールドから来た探索率へここで重ねる。
+      exploration:
+        window.explorationRatio === undefined
+          ? undefined
+          : {
+              ratio: window.explorationRatio,
+              found: this.shown.found.map((card) => ({ card, arriving: this.arrivingFound(card) })),
+            },
       slots: this.childWindowTabs.map((tab) => ({
         key: tab.key,
         title: this.view.slotLabelOf(tab.place),
@@ -1270,14 +1244,14 @@ export class PlayScene extends ResponsiveScene {
         unbounded: unboundedSlot(this.view.cellCountOf(tab.place)),
       })),
       initialTab,
-      actions,
+      actions: this.actionButtons(window.actions, window.card.name),
       area: this.layout.slotWindowArea,
       onTabChange: (tab) => this.changeWindowTab(tab),
       onClose: () => this.closeChildWindow(),
     });
     // 借りるのはタブによらない。**説明のタブでだけ描かれる**が、借りている間その札は元の枠に
     // 印だけを残す（Windows.md 1.1節）——タブを行き来するたびに札を飛ばさないため。
-    this.shown.borrow(object.card, opened?.stack);
+    this.shown.borrow(window.card, opened?.stack);
     this.rememberTab(initialTab);
     this.setDragLanes();
     // 借りた1枚がウィンドウの枠へ移り、手持ちの端が指す先も変わる（laneCards・neighbourOf参照）。
@@ -1353,27 +1327,7 @@ export class PlayScene extends ResponsiveScene {
    */
   private openLocationWindow(): void {
     const origins = this.dropChildWindow();
-    this.openChildWindow(
-      { card: this.view.currentLocation, description: this.view.currentLocationDescription },
-      this.actionButtons(this.view.currentLocationActions, this.view.currentLocation.name),
-      this.view.currentLocationSlots,
-      origins,
-      {
-        properties: this.view.propertiesOf(
-          this.gameSession.player.location?.instance ?? this.gameSession.player.instance,
-        ),
-        exploration: this.explorationContent(),
-      },
-    );
-  }
-
-  /** 探索のタブに出すもの（探索できない場所ではundefined＝タブを出さない）。 */
-  private explorationContent(): ExplorationContent | undefined {
-    if (!this.view.canExplore) return undefined;
-    return {
-      ratio: this.view.explorationRatio,
-      found: this.shown.found.map((card) => ({ card, arriving: this.arrivingFound(card) })),
-    };
+    this.openChildWindow(this.view.currentLocationWindow, origins);
   }
 
   /** その発見物が、まだ現在地の札から運ばれてくる途中か。 */
@@ -1433,8 +1387,12 @@ export class PlayScene extends ResponsiveScene {
       this.foundArriving = new Set(found.flatMap((card) => card.identity ?? []));
       // 見つかったものを見せる面へ自分から移る（Windows.md 5節）。探索は必ず1個以上見つかるので、
       // 押した結果がどのタブに出るかを覚えていなくてよい。
-      const exploration = this.explorationContent();
-      if (exploration !== undefined) this.childWindow?.setExploration(exploration);
+      const ratio = this.view.currentLocationWindow.explorationRatio;
+      if (ratio !== undefined)
+        this.childWindow?.setExploration({
+          ratio,
+          found: this.shown.found.map((card) => ({ card, arriving: this.arrivingFound(card) })),
+        });
       this.childWindow?.openTab(EXPLORATION_TAB);
       this.showSignals(recorded.signals);
       const context = this.motionOf(recorded.changes);
@@ -2432,7 +2390,7 @@ export class PlayScene extends ResponsiveScene {
     noteOperation(`死んだ: ${cause ?? '不明'}（${this.clockText()}）`);
 
     new ModalDialog(this, this.metrics, {
-      card: this.portraitCard(),
+      card: this.view.characterCard,
       title: `${this.view.characterName}は息絶えた`,
       // 死因を名乗るのはワールドの側（命を絶った値が居る段）で、画面は文言を引くだけ。
       body: [
@@ -2455,7 +2413,7 @@ export class PlayScene extends ResponsiveScene {
     noteOperation(`島を出た: 持ち帰り ${brought.length} 点（${this.clockText()}）`);
 
     new ModalDialog(this, this.metrics, {
-      card: this.portraitCard(),
+      card: this.view.characterCard,
       title: `${this.view.characterName}は島を出た`,
       body: [
         `島で ${this.view.elapsedDays} 日を過ごした`,
