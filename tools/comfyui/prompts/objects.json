@@ -599,6 +599,38 @@
     "positive": "exactly one small glass potion bottle alone on an empty white page, a tall rounded bottle of pale glass with a long slender neck, standing upright on the page seen from slightly above eye level, filled almost to the neck with a deep rich crimson red liquid, a worn cork stopper pushed into the neck, the glass thin and slightly uneven with a few soft highlights along its edges, the bottle is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "empty bottle, transparent contents, colourless liquid, water, pink liquid, pale liquid, orange liquid, half empty, bottle lying on its side, tipped over, spilled, pouring, splash, drips, heart symbol, cross symbol, label, paper label, tag, ribbon, string around the neck, wax seal, engraving, embossed pattern, glowing, magical glow, sparkles, smoke, vapour, fumes, bubbles, cauldron, flask with a round bottom, test tube, beaker, laboratory glassware, syringe, wine bottle, wine glass, beer bottle, jar with a lid, teapot, lamp, oil lamp, perfume bottle, decanter, goblet, cup, metal cap, screw cap, held in hand, hands, person, character, two bottles, three bottles, several bottles, pair, group, row of bottles, shelf, collection, scattered objects, repeated objects, filling the frame, edge to edge, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
   },
+  "bone_needle": {
+    "description": [
+      "骨針。小さな骨を削って穴を開けた縫い針（src/assets/world-codex/tools.yaml）。",
+      "",
+      "**象牙色は紙から切り出せない。** 獣骨（animal_bone）が tolerance 16 で通しているのと同じ事情で、",
+      "白い紙とほとんど同じ明るさになる。獣骨と同じく、くすみと茶の染みを本文で頼む。",
+      "",
+      "**縫い糸を通させない。** 糸（yarn）は別アイテムなので、針そのものだけを出す。",
+      "",
+      "**鋼の縫い針を落とす。** needle と書くと銀色の金属針になる。骨から削った物であることと、",
+      "表面が多孔質であることを言い、metal / steel / silver を否定する。"
+    ],
+    "positive": "exactly one bone sewing needle alone on an empty white page, a single slender needle carved from a splinter of animal bone, tapering to a sharp point at one end and pierced by one small round eye at the blunt end, its surface hand whittled with faint facets left by the blade, aged ivory and warm cream with brown staining along it, dry matte porous surface, nothing threaded through the eye, it is small and lies at an angle in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "metal, steel, silver, chrome, shiny, polished, glinting, sewing machine needle, syringe, hypodermic, pin, safety pin, nail, screw, dart, arrow, spear, knife, blade, thread, threaded, yarn, string, cotton reel, spool, pincushion, fabric, cloth, leather, two needles, three needles, several needles, pair, group, pile, stack, set, collection, scattered objects, repeated objects, filling the frame, extreme close-up, macro, close-up, cropped, cut off, out of frame, skull, teeth, skeleton, scenery, landscape, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, overexposed"
+  },
+  "rawhide_sail": {
+    "description": [
+      "生皮の帆。生皮を縫い合わせて、太い枝の枠へロープで張った帆（voyage.yaml）。",
+      "組み込む前の1枚なので、筏（raft）は描かせない。",
+      "",
+      "**白い帆にしない。** 紙と同じ明るさになると card_art.py の「紙より暗ければ物」に掛からず、",
+      "切り出しで消える（woven_basket の生成りと同じ制約）。日に灼けた革の色で頼む。",
+      "",
+      "**縫い目が見えること。** 生皮6枚を糸で縫い合わせた物なので、継ぎ目と縫い目が材料との",
+      "繋がりを見せる。1枚革の幕にすると、何から作ったのか読めない。",
+      "",
+      "**布にしない。** sail と書くと帆布のヨットの帆になる。革であること（hide / skin）と、",
+      "縁が不揃いであることを言い、canvas / linen / sailboat を否定する。"
+    ],
+    "positive": "exactly one primitive sail alone on an empty white page, several stiff rawhide skins stitched edge to edge with coarse plant fibre thread to make one broad square sheet, the seams and the stitch marks showing across it, its outer edges left uneven and rough as the hides were cut, the sheet lashed along its top edge to a straight wooden pole with many turns of twisted fibre rope, hanging with a slack curve across the middle, weathered tan and dusty olive brown leather, dry matte surface, it is small and hangs in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "white sail, canvas, linen, cotton, cloth, fabric, woven textile, flag, banner, pennant, curtain, tent, awning, sailboat, yacht, ship, boat, raft, mast and rigging, deck, sea, water, waves, wind lines, parchment, scroll, paper, map, two sails, three sails, several sails, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, ground, floor, grass, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+  },
   "raft": {
     "description": [
       "筏。丸太6本をロープで縛った、島を出るための乗り物（src/assets/world-codex/voyage.yaml）。",

@@ -1,0 +1,29 @@
+{
+  "_comment": [
+    "src/assets/objects/rawhide_sail.png を作り直すためのレシピ。build.py が読む。",
+    "生皮を縫い合わせて太い枝の枠へ張った帆（src/assets/world-codex/voyage.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: sail）。** 生成では1枚革の幕か、革を張った枠・壁掛けになる",
+    "（6枚とも。prompts/objects.json の rawhide_sail 参照）。継ぎ目の本数が材料の本数なので、",
+    "そこを下絵で決める——縦の縫い目5本で、生皮6枚に割れる。",
+    "",
+    "**白い帆にしない。** 紙と同じ明るさになると切り出しで消える（筏に組んだ帆と同じ制約、",
+    "recipes/raft.json）。日に灼けた革の色で頼む。",
+    "",
+    "段は400。筏に組み込む物なので、部品として大きく見せる。"
+  ],
+  "output": "src/assets/objects/rawhide_sail.png",
+  "sketch": "sail",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: one broad square sail hanging from a straight wooden pole, with the pole and the sail in exactly the same places at the same sizes. Paint the sail as exactly six panels of stiff rawhide stitched edge to edge, so that five seams run from the top edge down to the bottom edge and the coarse stitches show along every seam. Leave the outer edges uneven and rough, as the hides were cut, and let the bottom edge sag a little in the middle. Along the top edge the sail is lashed to the pole with turns of rough twisted plant fibre rope, warm tan and mid brown with its strands visible. Paint the pole as a straight dry branch with the bark still on it. The leather is weathered tan and dusty olive brown, clearly darker than the white page: it is not white, not cream and not pale. There is no boat, no raft, no mast, no sea and no water. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow beneath the sail. Dry matte surfaces, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
