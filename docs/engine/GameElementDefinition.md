@@ -42,6 +42,11 @@
 ファイル全体が 1 つの `WorldCodex` を表します。専用のルートキーは置かず、`object_defs`・`traits` と、
 プロパティのカテゴリを宣言する `property_tags`（6.7 節）をトップレベルキーとして持ちます。
 
+ほかに、画面の都合だけを持つルートキーが 1 つあります。`recipe_categories` は、レシピ一覧の棚に使う
+タグ（4.1 節）を**優先順位の順に**並べた列で、意味は [`Windows.md`](../ui/Windows.md) 9.2 節が持ちます。
+地形生成の `axes`・`location_types`・`generation_scopes` は
+[`TerrainGeneration.md`](./TerrainGeneration.md) が持ちます。
+
 ### 3.2 命名規則
 
 - 構造キーワード（`props`、`traits`、`actions` など）・型名・プロパティ名は、すべて **snake_case** で統一します。

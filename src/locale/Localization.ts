@@ -293,6 +293,7 @@ export class Localization {
   private readonly slots: ReadonlyMap<string, SlotTextsEntry>;
   private readonly signals: ReadonlyMap<string, string>;
   private readonly stages: ReadonlyMap<string, string>;
+  private readonly tags: ReadonlyMap<string, string>;
 
   constructor(
     objects: ReadonlyMap<string, ObjectTextsEntry>,
@@ -304,6 +305,7 @@ export class Localization {
     slots: ReadonlyMap<string, SlotTextsEntry> = new Map(),
     signals: ReadonlyMap<string, string> = new Map(),
     stages: ReadonlyMap<string, string> = new Map(),
+    tags: ReadonlyMap<string, string> = new Map(),
   ) {
     this.objects = objects;
     this.propertyTags = propertyTags;
@@ -314,6 +316,7 @@ export class Localization {
     this.slots = slots;
     this.signals = signals;
     this.stages = stages;
+    this.tags = tags;
   }
 
   /** 1つの土地の型の表示文字列。未登録の型でも、識別子へフォールバックする窓口として必ず返る。 */
@@ -377,6 +380,16 @@ export class Localization {
     );
   }
 
+  /**
+   * object_defのタグ（GameElementDefinition.md 4.1節）の文言。未登録なら識別子そのもの。
+   *
+   * タグの大半は判定のためだけに在って画面へ出ないので、名前を持つのは出す物だけでよい
+   * （レシピ一覧の棚の見出し、Windows.md 9節）。
+   */
+  tag(tagName: string): string {
+    return this.tags.get(tagName) ?? tagName;
+  }
+
   /** プロパティのタグ（GameElementDefinition.md 6.7節）の表示文字列。未登録なら識別子そのもの。 */
   propertyTag(tagName: string): Texts {
     const declared = this.propertyTags.get(tagName);
@@ -418,6 +431,7 @@ export class Localization {
       merged(this.slots, other.slots, label, 'slot_texts'),
       merged(this.signals, other.signals, label, 'signal_texts'),
       merged(this.stages, other.stages, label, 'stage_texts'),
+      merged(this.tags, other.tags, label, 'tag_texts'),
     );
   }
 
@@ -539,6 +553,12 @@ export function parseLocale(label: string, yamlText: string): Localization {
     for (const [name, node] of entriesInOrder(stageSection))
       stages.set(name, asScalarText(node, `${label}.stage_texts.'${name}'`));
 
+  const tags = new Map<string, string>();
+  const tagTextSection = tryGetMap(root, 'tag_texts', label);
+  if (tagTextSection !== undefined)
+    for (const [name, node] of entriesInOrder(tagTextSection))
+      tags.set(name, asScalarText(node, `${label}.tag_texts.'${name}'`));
+
   return new Localization(
     objects,
     propertyTags,
@@ -549,6 +569,7 @@ export function parseLocale(label: string, yamlText: string): Localization {
     slots,
     signals,
     stages,
+    tags,
   );
 }
 

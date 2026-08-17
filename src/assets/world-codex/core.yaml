@@ -11,6 +11,11 @@ property_tags:
   health:
   nutrition:
 
+# レシピ一覧の棚（docs/ui/Windows.md 9節）。完成品はこの並びで**最初に一致したタグ**の棚に
+# だけ載るので、並びは「粗い分類ほど後ろ」にする。どれにも当たらない完成品は「その他」へ落ちる
+# （tests/world-codex/purposeTags.test.tsが同梱データにそれが無いことを見張る）。
+recipe_categories: [tool, container, fixture, item]
+
 traits:
   # あらゆる「場所」が探索の可否によらず共通して持つ構造（ExplorationSystem.md参照）。
   # worldのlocationsスロットの受け入れ判定用のタグ（GameElementDefinition.md 4.1節・7.2節）もこのtraitが配る。
