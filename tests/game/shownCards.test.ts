@@ -4,7 +4,8 @@ import type { CardSpot } from '../../src/game/view/ShownCards';
 import { ShownCards } from '../../src/game/view/ShownCards';
 import type { ObjectCardStack } from '../../src/game/view/PlayScreenView';
 import type { CardCombination } from '../../src/game/view/cardOperations';
-import type { CardPlace, CardPlacement } from '../../src/game/view/cardPlaces';
+import type { CardPlace, CardPlacement, ScreenPlace } from '../../src/game/view/cardPlaces';
+import { samePlace } from '../../src/game/view/cardPlaces';
 import { planMotion } from '../../src/game/view/cardMotionPlan';
 
 /**
@@ -17,6 +18,22 @@ import { planMotion } from '../../src/game/view/cardMotionPlan';
 
 /** 番号だけを持つ個体。ShownCardsが読むのはinstanceIdだけ。 */
 const object = (instanceId: number): WorldObject => ({ instanceId }) as WorldObject;
+
+/**
+ * 画面の区画が映している場所（PlayScreenView.places）。場所はワールドのスロット1つなので、
+ * 区画ごとに持ち主を1つ立てれば足りる——ここで見るのは同じ場所かどうかだけ。
+ */
+const LANE_OWNERS: Record<ScreenPlace, WorldObject> = {
+  fixtures: object(-1),
+  items: object(-2),
+  hand: object(-3),
+  equipment: object(-4),
+  injuries: object(-5),
+};
+const place = (screen: ScreenPlace): CardPlace => ({
+  container: LANE_OWNERS[screen],
+  slotGlobalId: 0,
+});
 
 /** 束が受けた操作の記録。どの操作がどの個体・場所で組まれたかをテストが確かめる。 */
 interface Moved {
@@ -58,11 +75,14 @@ function stack(
  * 最小の実装（CardCombination.heldの契約そのもの）。何と何が組み合わさるかはここでは問わない。
  */
 function screen(
-  places: Partial<Record<'hand' | 'items' | 'fixtures', readonly (ObjectCardStack | undefined)[]>>,
+  lanes: Partial<Record<'hand' | 'items' | 'fixtures', readonly (ObjectCardStack | undefined)[]>>,
   windowPlace?: CardPlace,
 ): ShownCards {
   return new ShownCards({
-    stacksIn: (place) => (typeof place === 'string' ? (places[place as 'hand'] ?? []) : []),
+    stacksIn: (asked) => {
+      const lane = (['hand', 'items', 'fixtures'] as const).find((name) => samePlace(asked, place(name)));
+      return lane === undefined ? [] : (lanes[lane] ?? []);
+    },
     cardOfObjects: (objects, place) =>
       stack(
         place,
@@ -76,6 +96,7 @@ function screen(
         : ({ name: '組み合わせ', minutes: 0, held, execute: () => {} } as CardCombination);
     },
     windowPlace: () => windowPlace,
+    places: place,
   });
 }
 
@@ -106,30 +127,30 @@ function visibleIds(shown: ShownCards, spots: readonly CardSpot[]): readonly num
 
 describe('画面に出ている札', () => {
   it('持ち出されていなければ、ワールドの並びがそのまま出る', () => {
-    const shown = screen({ hand: [stack('hand', [1, 2]), undefined, stack('hand', [3])] });
+    const shown = screen({ hand: [stack(place('hand'), [1, 2]), undefined, stack(place('hand'), [3])] });
 
-    expect(shown.stacksAt('hand').map((entry) => entry?.name)).toEqual(['#1+2', undefined, '#3']);
+    expect(shown.stacksAt(place('hand')).map((entry) => entry?.name)).toEqual(['#1+2', undefined, '#3']);
   });
 
   it('子ウィンドウへ貸した1枚は、束から引かれる', () => {
-    const shown = screen({ hand: [stack('hand', [1, 2])] });
-    borrow(shown, stack('hand', [1, 2]));
+    const shown = screen({ hand: [stack(place('hand'), [1, 2])] });
+    borrow(shown, stack(place('hand'), [1, 2]));
 
-    expect(idsAt(shown, 'hand', 0), '手元に残っているのは貸していないほう').toEqual([2]);
-    expect(shown.stacksAt('hand')[0]?.identity, '名乗るのは手元に在るぶんだけ').toEqual([2]);
+    expect(idsAt(shown, place('hand'), 0), '手元に残っているのは貸していないほう').toEqual([2]);
+    expect(shown.stacksAt(place('hand'))[0]?.identity, '名乗るのは手元に在るぶんだけ').toEqual([2]);
     expect(
-      shown.stacksAt('hand')[0]?.awaited,
+      shown.stacksAt(place('hand'))[0]?.awaited,
       '貸した1個は枠が帰りを待つ——帰り着いたときに同じ札として繋がる',
     ).toEqual([1]);
   });
 
   it('丸ごと貸した束の枠には、帰ってくる場所を示す印だけが残る', () => {
-    const shown = screen({ hand: [stack('hand', [1])] });
-    borrow(shown, stack('hand', [1]));
+    const shown = screen({ hand: [stack(place('hand'), [1])] });
+    borrow(shown, stack(place('hand'), [1]));
 
-    const mark = shown.stacksAt('hand')[0];
-    expect(shown.stacksAt('hand')).toHaveLength(1);
-    expect(idsAt(shown, 'hand', 0), '個体は1つも出ていない').toEqual([]);
+    const mark = shown.stacksAt(place('hand'))[0];
+    expect(shown.stacksAt(place('hand'))).toHaveLength(1);
+    expect(idsAt(shown, place('hand'), 0), '個体は1つも出ていない').toEqual([]);
     expect(mark?.awaited, '待っているのは貸した1個').toEqual([1]);
     expect(
       [mark?.moveTo, mark?.reorder, mark?.acceptedCountAt],
@@ -139,15 +160,17 @@ describe('画面に出ている札', () => {
 
   it('探索が抱えている札は並びに入らず、後ろの札が繰り上がる', () => {
     // まだどの枠にも居たことがないので、帰る場所を空けておく理由が無い（Windows.md 5.1節）。
-    const shown = screen({ items: [stack('items', [1]), stack('items', [2]), stack('items', [3])] });
+    const shown = screen({
+      items: [stack(place('items'), [1]), stack(place('items'), [2]), stack(place('items'), [3])],
+    });
     shown.takeFound([{ icon: '📦', name: '#2', identity: [2] }]);
 
-    expect(shown.stacksAt('items').map((entry) => entry?.name)).toEqual(['#1', '#3']);
+    expect(shown.stacksAt(place('items')).map((entry) => entry?.name)).toEqual(['#1', '#3']);
   });
 
   it('借りた1枚の枠には、その1枚だけが出る', () => {
-    const shown = screen({ hand: [stack('hand', [1, 2])] });
-    const borrowed = borrow(shown, stack('hand', [1, 2]));
+    const shown = screen({ hand: [stack(place('hand'), [1, 2])] });
+    const borrowed = borrow(shown, stack(place('hand'), [1, 2]));
 
     expect(shown.stacksAt('windowCard')).toEqual([borrowed]);
     expect(
@@ -159,28 +182,28 @@ describe('画面に出ている札', () => {
 
 describe('貸し借りの流れ（Windows.md 1.1節）', () => {
   it('借りて、手放せば、元の枠に戻る', () => {
-    const shown = screen({ hand: [stack('hand', [1, 2])] });
-    borrow(shown, stack('hand', [1, 2]));
-    expect(idsAt(shown, 'hand', 0), '貸している間は手元のぶんだけ').toEqual([2]);
+    const shown = screen({ hand: [stack(place('hand'), [1, 2])] });
+    borrow(shown, stack(place('hand'), [1, 2]));
+    expect(idsAt(shown, place('hand'), 0), '貸している間は手元のぶんだけ').toEqual([2]);
 
     expect(shown.returnBorrowed(), '手放した1個を答える（帰りの出どころを決めるのに使う）').toEqual([1]);
     expect(shown.windowCard).toBeUndefined();
-    expect(idsAt(shown, 'hand', 0), '束が全部戻っている').toEqual([1, 2]);
-    expect(shown.stacksAt('hand')[0]?.awaited, '待つものはもう無い').toBeUndefined();
+    expect(idsAt(shown, place('hand'), 0), '束が全部戻っている').toEqual([1, 2]);
+    expect(shown.stacksAt(place('hand'))[0]?.awaited, '待つものはもう無い').toBeUndefined();
   });
 
   it('借りていなければ、手放すものは無い', () => {
-    const shown = screen({ hand: [stack('hand', [1])] });
+    const shown = screen({ hand: [stack(place('hand'), [1])] });
     expect(shown.returnBorrowed()).toEqual([]);
   });
 
   it('借りている1枚は、ワールドが変わったら引き直す', () => {
-    const stones = [stack('hand', [1, 2])];
+    const stones = [stack(place('hand'), [1, 2])];
     const shown = screen({ hand: stones });
     borrow(shown, stones[0]);
 
     // ワールドが変わった（束の並びが組み直された）が、その個体は残っている。
-    stones[0] = stack('hand', [2, 1]);
+    stones[0] = stack(place('hand'), [2, 1]);
     const card = shown.restackWindow();
 
     expect(
@@ -191,45 +214,45 @@ describe('貸し借りの流れ（Windows.md 1.1節）', () => {
   });
 
   it('借りている1枚が世界から消えていたら、引き直せない', () => {
-    const stones = [stack('hand', [1, 2])];
+    const stones = [stack(place('hand'), [1, 2])];
     const shown = screen({ hand: stones });
     borrow(shown, stones[0]);
 
-    stones[0] = stack('hand', [2]);
+    stones[0] = stack(place('hand'), [2]);
     expect(shown.restackWindow(), '映すものが無い＝ウィンドウを閉じる合図').toBeUndefined();
   });
 });
 
 describe('発見物の流れ（Windows.md 5.1節）', () => {
   it('抱えて、手放せば、次の差し替えから並びに戻る', () => {
-    const shown = screen({ items: [stack('items', [1, 2])] });
+    const shown = screen({ items: [stack(place('items'), [1, 2])] });
 
     shown.takeFound([{ icon: '📦', name: '#2', identity: [2] }]);
-    expect(idsAt(shown, 'items', 0), '見つかった分だけが抜ける').toEqual([1]);
+    expect(idsAt(shown, place('items'), 0), '見つかった分だけが抜ける').toEqual([1]);
 
     const returned = shown.returnFound();
     expect(returned.map((card) => card.identity)).toEqual([[2]]);
-    expect(idsAt(shown, 'items', 0)).toEqual([1, 2]);
+    expect(idsAt(shown, place('items'), 0)).toEqual([1, 2]);
     expect(shown.found).toEqual([]);
   });
 });
 
 describe('1つのオブジェクトに札は1つ（不変条件）', () => {
-  const SPOTS: readonly CardSpot[] = ['fixtures', 'items', 'hand', 'windowCard'];
+  const SPOTS: readonly CardSpot[] = [place('fixtures'), place('items'), place('hand'), 'windowCard'];
 
   it.each([
     ['貸していない', (shown: ShownCards) => shown],
     [
       '1枚貸している',
       (shown: ShownCards) => {
-        borrow(shown, stack('hand', [1, 2]));
+        borrow(shown, stack(place('hand'), [1, 2]));
         return shown;
       },
     ],
     [
       '丸ごと貸している',
       (shown: ShownCards) => {
-        borrow(shown, stack('items', [3]));
+        borrow(shown, stack(place('items'), [3]));
         return shown;
       },
     ],
@@ -243,7 +266,7 @@ describe('1つのオブジェクトに札は1つ（不変条件）', () => {
     [
       '貸しながら抱えている',
       (shown: ShownCards) => {
-        borrow(shown, stack('hand', [1, 2]));
+        borrow(shown, stack(place('hand'), [1, 2]));
         shown.takeFound([{ icon: '📦', name: '#4+5', identity: [4, 5] }]);
         return shown;
       },
@@ -252,9 +275,9 @@ describe('1つのオブジェクトに札は1つ（不変条件）', () => {
     const world = [1, 2, 3, 4, 5, 6];
     const shown = arrange(
       screen({
-        hand: [stack('hand', [1, 2]), undefined],
-        items: [stack('items', [3]), stack('items', [4, 5])],
-        fixtures: [stack('fixtures', [6])],
+        hand: [stack(place('hand'), [1, 2]), undefined],
+        items: [stack(place('items'), [3]), stack(place('items'), [4, 5])],
+        fixtures: [stack(place('fixtures'), [6])],
       }),
     );
 
@@ -266,11 +289,11 @@ describe('1つのオブジェクトに札は1つ（不変条件）', () => {
 
 describe('ドロップの意味', () => {
   it('借りた札の枠はワールドの場所ではないので、空き枠へは落とせない', () => {
-    const shown = screen({ hand: [stack('hand', [1, 2])] });
-    borrow(shown, stack('hand', [1, 2]));
+    const shown = screen({ hand: [stack(place('hand'), [1, 2])] });
+    borrow(shown, stack(place('hand'), [1, 2]));
 
     const drop = {
-      from: 'hand',
+      from: place('hand'),
       fromIndex: 0,
       to: 'windowCard',
       target: { kind: 'cell', index: 0 },
@@ -283,20 +306,20 @@ describe('ドロップの意味', () => {
   it('帰りを待つ印へは重ねられない', () => {
     // 印は個体を1つも出していないので、組み合わせの相手にならない（相手が居ないのだから、
     // 何が成立するかを問うこともできない）。
-    const shown = screen({ hand: [stack('hand', [1])], items: [stack('items', [2])] });
-    borrow(shown, stack('hand', [1]));
+    const shown = screen({ hand: [stack(place('hand'), [1])], items: [stack(place('items'), [2])] });
+    borrow(shown, stack(place('hand'), [1]));
 
-    expect(shown.combinationAt('items', 0, 'hand', 0)).toBeUndefined();
+    expect(shown.combinationAt(place('items'), 0, place('hand'), 0)).toBeUndefined();
   });
 
   it('重ねて動くのは、掴んだ札が見せている個体', () => {
     // 手持ちの石2個のうち1個を子ウィンドウへ貸し、残りをその札へ重ねる。動くのは手元に残っている
     // ほうでなければならない——貸した1個は画面のあちら側に出ていて、掴めるものではない。
-    const shown = screen({ hand: [stack('hand', [1, 2])] });
-    borrow(shown, stack('hand', [1, 2]));
+    const shown = screen({ hand: [stack(place('hand'), [1, 2])] });
+    borrow(shown, stack(place('hand'), [1, 2]));
 
     const combination = shown.dropCombination({
-      from: 'hand',
+      from: place('hand'),
       fromIndex: 0,
       to: 'windowCard',
       target: { kind: 'combine', index: 0 },
@@ -306,7 +329,7 @@ describe('ドロップの意味', () => {
     expect(combination?.held.instanceId).toBe(2);
     expect(
       shown.movedBy({
-        from: 'hand',
+        from: place('hand'),
         fromIndex: 0,
         to: 'windowCard',
         target: { kind: 'combine', index: 0 },
@@ -318,11 +341,11 @@ describe('ドロップの意味', () => {
   it('どこから重ねても、動くのはその札が見せている個体のどれか', () => {
     // 上の1件の一般形。掴んだ札に出ていない個体が動くことは、どの組み合わせでも起きてはいけない。
     const shown = screen({
-      hand: [stack('hand', [1, 2]), stack('hand', [4, 5])],
-      items: [stack('items', [3])],
+      hand: [stack(place('hand'), [1, 2]), stack(place('hand'), [4, 5])],
+      items: [stack(place('items'), [3])],
     });
-    borrow(shown, stack('hand', [1, 2]));
-    const spots: readonly CardSpot[] = ['hand', 'items', 'windowCard'];
+    borrow(shown, stack(place('hand'), [1, 2]));
+    const spots: readonly CardSpot[] = [place('hand'), place('items'), 'windowCard'];
 
     for (const from of spots) {
       for (let fromIndex = 0; fromIndex < shown.stacksAt(from).length; fromIndex++) {
@@ -342,43 +365,49 @@ describe('ドロップの意味', () => {
   });
 
   it('同じ札へ重ねたときは、その札が見せている2つを組み合わせる', () => {
-    const shown = screen({ hand: [stack('hand', [1, 2, 3])] });
-    borrow(shown, stack('hand', [1, 2, 3]));
+    const shown = screen({ hand: [stack(place('hand'), [1, 2, 3])] });
+    borrow(shown, stack(place('hand'), [1, 2, 3]));
 
-    expect(shown.combinationAt('hand', 0, 'hand', 0)?.held.instanceId, '見せている2枚目').toBe(3);
+    expect(shown.combinationAt(place('hand'), 0, place('hand'), 0)?.held.instanceId, '見せている2枚目').toBe(
+      3,
+    );
   });
 
   it('1個しか見せていない札を自分へ重ねても、組み合わせは成立しない', () => {
-    const shown = screen({ hand: [stack('hand', [1, 2])] });
-    borrow(shown, stack('hand', [1, 2]));
+    const shown = screen({ hand: [stack(place('hand'), [1, 2])] });
+    borrow(shown, stack(place('hand'), [1, 2]));
 
-    expect(shown.combinationAt('hand', 0, 'hand', 0)).toBeUndefined();
+    expect(shown.combinationAt(place('hand'), 0, place('hand'), 0)).toBeUndefined();
   });
 
   it('同じ場所の中は並び替え、場所をまたげば移動', () => {
     const moves: Moved[] = [];
     const shown = screen({
-      hand: [stack('hand', [1], { moves })],
-      items: [stack('items', [2])],
+      hand: [stack(place('hand'), [1], { moves })],
+      items: [stack(place('items'), [2])],
     });
 
     shown.dropAction({
-      from: 'hand',
+      from: place('hand'),
       fromIndex: 0,
-      to: 'hand',
+      to: place('hand'),
       target: { kind: 'gap', index: 1 },
       count: 1,
     })?.();
-    expect(moves.at(-1), '並び替えは束ごと').toEqual({ ids: [1], to: 'hand', at: { kind: 'gap', index: 1 } });
+    expect(moves.at(-1), '並び替えは束ごと').toEqual({
+      ids: [1],
+      to: place('hand'),
+      at: { kind: 'gap', index: 1 },
+    });
 
     shown.dropAction({
-      from: 'hand',
+      from: place('hand'),
       fromIndex: 0,
-      to: 'items',
+      to: place('items'),
       target: { kind: 'cell', index: 1 },
       count: 1,
     })?.();
-    expect(moves.at(-1)).toEqual({ ids: [1], to: 'items', at: { kind: 'cell', index: 1 } });
+    expect(moves.at(-1)).toEqual({ ids: [1], to: place('items'), at: { kind: 'cell', index: 1 } });
   });
 
   it('入れ物のカードへ重ねると、その中身の場所へ入る', () => {
@@ -386,25 +415,26 @@ describe('ドロップの意味', () => {
     const box = object(9);
     const inside: CardPlace = { container: box, slotGlobalId: 0 };
     const shown = screen({
-      hand: [stack('hand', [1, 2], { moves, accepted: 2 })],
-      items: [stack('items', [9], { contents: inside })],
+      hand: [stack(place('hand'), [1, 2], { moves, accepted: 2 })],
+      items: [stack(place('items'), [9], { contents: inside })],
     });
     // 入れ物と中身の間に組み合わせは無い画面（重ねる＝入れる、だけが成立する）。
     const noCombination = new ShownCards({
-      stacksIn: (place) => (place === 'hand' ? shown.stacksAt('hand') : shown.stacksAt('items')),
-      cardOfObjects: (objects, place) =>
+      stacksIn: (asked) => shown.stacksAt(asked),
+      cardOfObjects: (objects, at) =>
         stack(
-          place,
+          at,
           objects.map((entry) => entry.instanceId),
         ),
       combinationOf: () => undefined,
       windowPlace: () => undefined,
+      places: place,
     });
 
     const drop = {
-      from: 'hand',
+      from: place('hand'),
       fromIndex: 0,
-      to: 'items',
+      to: place('items'),
       target: { kind: 'combine', index: 0 },
       count: 2,
     } as const;
@@ -418,18 +448,18 @@ describe('ドロップの意味', () => {
 describe('カードの端の行き先', () => {
   it('手持ちの上は、子ウィンドウを開いている間だけそちらを先に見る', () => {
     const inside: CardPlace = { container: object(9), slotGlobalId: 0 };
-    expect(screen({}, inside).edgeTargets('hand', 'up')).toEqual([inside, 'items']);
-    expect(screen({}).edgeTargets('hand', 'up')).toEqual(['items']);
+    expect(screen({}, inside).edgeTargets(place('hand'), 'up')).toEqual([inside, place('items')]);
+    expect(screen({}).edgeTargets(place('hand'), 'up')).toEqual([place('items')]);
   });
 
   it('フィールドの上下関係はそのまま', () => {
     const shown = screen({});
-    expect(shown.edgeTargets('items', 'up')).toEqual(['fixtures']);
-    expect(shown.edgeTargets('fixtures', 'down')).toEqual(['items']);
-    expect(shown.edgeTargets('items', 'down')).toEqual(['hand']);
-    expect(shown.edgeTargets('hand', 'down')).toEqual([]);
+    expect(shown.edgeTargets(place('items'), 'up')).toEqual([place('fixtures')]);
+    expect(shown.edgeTargets(place('fixtures'), 'down')).toEqual([place('items')]);
+    expect(shown.edgeTargets(place('items'), 'down')).toEqual([place('hand')]);
+    expect(shown.edgeTargets(place('hand'), 'down')).toEqual([]);
     expect(shown.edgeTargets({ container: object(9), slotGlobalId: 0 }, 'down'), '中身の下は手持ち').toEqual([
-      'hand',
+      place('hand'),
     ]);
   });
 });
@@ -439,11 +469,11 @@ describe('経過中のフレーム（ShownCards × planMotion）', () => {
     // 石2個のうち1個を子ウィンドウへ貸し、残り1個を掴んでその札へ重ねた直後のフレーム。
     // 貸した1個も掴んだ1個も宙に在るので、枠は0枚の印になる——ここが1枚に見えたのが、
     // クラフト中に手持ちの石が復活する不具合（操作が「貸したほうの石」を掴んだことにしていた）。
-    const shown = screen({ hand: [stack('hand', [1, 2])] });
-    borrow(shown, stack('hand', [1, 2]));
+    const shown = screen({ hand: [stack(place('hand'), [1, 2])] });
+    borrow(shown, stack(place('hand'), [1, 2]));
 
     const held = shown.dropCombination({
-      from: 'hand',
+      from: place('hand'),
       fromIndex: 0,
       to: 'windowCard',
       target: { kind: 'combine', index: 0 },
@@ -453,7 +483,7 @@ describe('経過中のフレーム（ShownCards × planMotion）', () => {
 
     // 枠が名乗るのは手元に在るぶんだけ（貸した1個はウィンドウの枠に出ている）。掴んで離した1枚は
     // CardTableが宙に在るものとして引く。
-    const placed = { card: '石', ids: shown.stacksAt('hand')[0]?.identity ?? [], rect: 0 };
+    const placed = { card: '石', ids: shown.stacksAt(place('hand'))[0]?.identity ?? [], rect: 0 };
     expect(placed.ids).toEqual([2]);
 
     const plan = planMotion({

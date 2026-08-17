@@ -13,7 +13,7 @@ import { characterCardContent } from './characterCard';
 import { cardLooksOf } from './cardLooks';
 import type { CardAction, CardCombination, CardOperations, CardPutIn } from './cardOperations';
 import { cardOperationsOf } from './cardOperations';
-import type { CardPlace, CardPlacement, SlotOfPlace } from './cardPlaces';
+import type { CardPlace, CardPlacement, ScreenPlaces } from './cardPlaces';
 import { cardPlacesOf, samePlace } from './cardPlaces';
 import type { SlotRef } from '../../art/backgroundArt';
 import type { CardContent } from '../ui/Card';
@@ -204,6 +204,12 @@ export interface PlayScreenView {
   /** 現在地のobject_defの識別子（表示名ではない）。土地の絵の遅延ロードの単位（artFiles参照）。 */
   readonly locationArt: string;
   /**
+   * 画面の区画（レーン・装備/怪我のボタン）が今映しているスロット。**画面が名前で指せるのはこの5つ
+   * だけ**で、それ以外の場所はカードや現在地が名乗る`visible_slots`から来る（cardPlaces参照）。
+   */
+  readonly places: ScreenPlaces;
+
+  /**
    * そのレーンが映しているスロット。レーンの全面に敷く絵を引くのに使う（backgroundArt参照）——
    * どのスロットにどの絵を敷くかは、画面側ではなく絵のファイル名が決める。
    */
@@ -316,9 +322,9 @@ export const EXPLORE_ACTION = 'explore';
  */
 const STATUS_TAG = 'status';
 
-/** スロットの中身を、積み重なっているまとまりごとに分けたもの。 */
-function stacksIn(dest: SlotOfPlace | undefined): readonly (readonly WorldObject[])[] {
-  const slot = dest?.owner.tryGetSlot(dest.slotId);
+/** スロットの中身を、積み重なっているまとまりごとに分けたもの。持たないスロットを指していれば空。 */
+function stacksIn(place: CardPlace): readonly (readonly WorldObject[])[] {
+  const slot = place.container.tryGetSlot(place.slotGlobalId);
   return slot === undefined ? [] : slot.cells.flatMap((cell) => (cell === undefined ? [] : [cell.members]));
 }
 
@@ -338,9 +344,15 @@ export function fromGameSession(
   locale: Localization,
 ): PlayScreenView {
   const location = game.player.location ?? game.startLocation;
-  const places = cardPlacesOf(game.player, location, codex);
+  const places = cardPlacesOf(game.player, location);
+
+  /** その場所が指しているスロットの名前（そのスロットを持たない物ではundefined）。 */
+  const slotNameOf = (place: CardPlace): string | undefined =>
+    place.container.def.getSlotDef(place.slotGlobalId) === undefined
+      ? undefined
+      : codex.slotNames.getName(place.slotGlobalId);
   const looks = cardLooksOf(codex, locale, game.world.minutesPerTick);
-  const operations = cardOperationsOf(game, codex, locale, places);
+  const operations = cardOperationsOf(game, codex, locale);
 
   const characterTexts = locale.object(game.player.instance.def.name);
 
@@ -364,7 +376,7 @@ export function fromGameSession(
    * 7.11節）。宣言順がそのまま並び順で、名乗らない物では空。
    */
   const visiblePlacesOf = (object: WorldObject): readonly CardPlace[] =>
-    object.def.visibleSlotGlobalIds.map((slotGlobalId) => places.placeOf(object, slotGlobalId));
+    object.def.visibleSlotGlobalIds.map((slotGlobalId) => ({ container: object, slotGlobalId }));
 
   /**
    * プロパティを相手として指すときの表示（対応表の表示名と絵文字。プロパティは絵を持たない）。
@@ -672,64 +684,40 @@ export function fromGameSession(
       game.world.weather === undefined ? undefined : locale.symbol(game.world.weather).displayName,
     currentLocation: currentLocationCard,
     locationArt: location.instance.def.name,
+    places,
     laneSlot: (place) => {
-      const found = places.slotOf(place);
-      if (found === undefined) return undefined;
-      const slot = found.owner.def.getSlotDef(found.slotId);
-      return slot === undefined ? undefined : { owner: found.owner.def.name, slot: slot.name };
+      const slot = place.container.def.getSlotDef(place.slotGlobalId);
+      return slot === undefined ? undefined : { owner: place.container.def.name, slot: slot.name };
     },
     // 並び方はプレイヤーが地形をどう捉えているかで変わるため、同じスロットの中での並び替えを許す。
     // ヤシの木を持ち歩けないのはmoveIntoが弾くからで、このレーンが読み取り専用だからではない。
     fixtures: location.fixtureStacks.map((stack) => ({
-      ...cardOfStack(stack, 'fixtures'),
+      ...cardOfStack(stack, places('fixtures')),
       // 道だけは名前と絵が行き先のものに差し替わる（destinationOf参照）。
       ...destinationOf(stack[0]),
     })),
-    items: location.itemStacks.map((stack) => cardOfStack(stack, 'items')),
+    items: location.itemStacks.map((stack) => cardOfStack(stack, places('items'))),
     hand: game.player.handStacks.map((stack) =>
-      stack.length === 0 ? undefined : cardOfStack(stack, 'hand'),
+      stack.length === 0 ? undefined : cardOfStack(stack, places('hand')),
     ),
     mapLands: discovered.lands,
     mapRoads: discovered.roads,
-    cardsIn: (place) => {
-      const stacks =
-        place === 'equipment'
-          ? game.player.equipmentStacks
-          : place === 'injuries'
-            ? game.player.injuryStacks
-            : stacksIn(places.slotOf(place));
-      return stacks.map((stack) => cardOfStack(stack, place));
-    },
+    cardsIn: (place) => stacksIn(place).map((stack) => cardOfStack(stack, place)),
     cardOfType: looks.typeContentOf,
-    materialsOf: (place) =>
-      typeof place === 'object' && 'container' in place
-        ? craftingMaterials(place.container, codex)
-        : undefined,
+    materialsOf: (place) => craftingMaterials(place.container, codex),
     // 道の差し替え（destinationOf）も通す。設置物レーンの束を割ったときに、行き先ではなく道そのものの
     // 名前が出てしまわないようにするため。
     cardOfObjects: (objects, place) => ({ ...cardOfStack(objects, place), ...destinationOf(objects[0]) }),
     slotLabelOf: (place) => {
-      const slot = places.slotOf(place);
-      if (slot === undefined) return typeof place === 'string' ? place : looks.nameOf(place.container);
-      return locale.slot(codex.slotNames.getName(slot.slotId)).displayName;
+      const name = slotNameOf(place);
+      return name === undefined ? looks.nameOf(place.container) : locale.slot(name).displayName;
     },
-    slotKeyOf: (place) => {
-      const slot = places.slotOf(place);
-      return slot === undefined
-        ? typeof place === 'string'
-          ? place
-          : String(place.container.instanceId)
-        : codex.slotNames.getName(slot.slotId);
-    },
+    slotKeyOf: (place) => slotNameOf(place) ?? String(place.container.instanceId),
     acceptsCards: (place) => {
-      const slot = places.slotOf(place);
-      const slotDef = slot === undefined ? undefined : slot.owner.def.getSlotDef(slot.slotId);
+      const slotDef = place.container.def.getSlotDef(place.slotGlobalId);
       return slotDef !== undefined && codex.admitsBroughtObjects(slotDef);
     },
-    cellCountOf: (place) => {
-      const slot = places.slotOf(place);
-      return slot === undefined ? undefined : slot.owner.def.getSlotDef(slot.slotId)?.cellCount;
-    },
+    cellCountOf: (place) => place.container.def.getSlotDef(place.slotGlobalId)?.cellCount,
     combinationOf: (dragged, target) => {
       // ドラッグが動かすのはスタックのうち1つなので、同じカードへ重ねたときはスタックの中の2つを
       // 組み合わせる（石と石のように、自分自身とcombinationできる場合）。
