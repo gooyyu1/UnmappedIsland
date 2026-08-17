@@ -19,7 +19,7 @@
     "stats:lines": "node scripts/countLines.mjs",
     "stats:terrain": "RUN_TERRAIN_STATS=1 vitest run tests/diagnostics/terrainStatsReport.test.ts",
     "test": "vitest run",
-    "test:climate": "RUN_CLIMATE_TESTS=1 vitest run tests/worldCodex/climateSystem.test.ts",
+    "test:climate": "RUN_CLIMATE_TESTS=1 vitest run tests/world-codex/climateSystem.test.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },

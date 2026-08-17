@@ -77,7 +77,7 @@ object_defs:
 
   it('かさを宣言していない物を入れても増えない', () => {
     // sizeを宣言し忘れた物はかさ0として扱われ、いくらでも入ってしまう。実ファイルの全アイテムが
-    // 宣言していることはtests/worldCodex/containersYaml.test.tsが検査する。
+    // 宣言していることはtests/world-codex/containersYaml.test.tsが検査する。
     const { container, put } = setUp('basket');
 
     expect(put('feather')).toBeUndefined();

@@ -138,7 +138,7 @@ def below_plate(rgb: np.ndarray) -> np.ndarray:
     ぶん下端は失われるが、胸から下の余りより顔のほうが要る。
 
     埋めた帯は板に隠れて見えない。**それでも単色で塗らないのは、コーデックスが同じ絵をそのまま
-    並べるため**（src/codex/pages.ts）。最上行を伸ばせば、そこだけ色が切り替わった帯にはならない。
+    並べるため**（src/codex-viewer/pages.ts）。最上行を伸ばせば、そこだけ色が切り替わった帯にはならない。
     """
     return np.vstack([np.repeat(rgb[:1], PLATE_BOTTOM, axis=0), rgb[:-PLATE_BOTTOM]])
 

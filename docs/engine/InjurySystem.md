@@ -16,7 +16,7 @@
 `add`（宿主の血）・`treatment` スロット（治療具を1つ当てる枠）だけで成り立ちます。
 
 定義は `src/assets/world-codex/injuries.yaml`（傷）と `treatments.yaml`（治療具）、検証は
-`tests/worldCodex/injuriesYaml.test.ts` で、**本書は実装済みです**（裂傷・刺し傷・捻挫と包帯）。未決事項は
+`tests/world-codex/injuriesYaml.test.ts` で、**本書は実装済みです**（裂傷・刺し傷・捻挫と包帯）。未決事項は
 末尾に整理しています。
 
 ## 1. 契約

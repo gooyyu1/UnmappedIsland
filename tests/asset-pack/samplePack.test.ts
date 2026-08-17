@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { AssetPack } from '../../src/assetPack/AssetPack';
-import { readZip } from '../../src/assetPack/zip';
+import { AssetPack } from '../../src/asset-pack/AssetPack';
+import { readZip } from '../../src/asset-pack/zip';
 import { LoadReport } from '../../src/loader/LoadReport';
 import { loadWorldCodex } from '../../src/loader/loadWorldCodex';
 import { loadLocalization } from '../../src/locale/Localization';

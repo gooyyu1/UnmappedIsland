@@ -58,14 +58,14 @@ UnmappedIsland/
 │   │   ├── locale/       # 表示文字列YAML（言語ごと）
 │   │   └── scenarios/    # テスト用シナリオYAML
 │   ├── art/              # どのファイルがどの絵かを答えるモジュール
-│   ├── assetPack/        # アセットパック（ZIP）の読み込み
-│   ├── codex/            # ゲーム定義の閲覧ビューア（ゲームと同じローダー・表示文字列を使う）
+│   ├── asset-pack/       # アセットパック（ZIP）の読み込み
+│   ├── codex-viewer/     # ゲーム定義の閲覧ビューア（ゲームと同じローダー・表示文字列を使う）
 │   ├── game/             # Phaserシーン
 │   │   ├── layout/       # 画面寸法（u単位）とエリア配置の計算
 │   │   └── ui/           # 画面共通の部品（カード・ボタン・モーダルなど）
 │   ├── save/             # セーブデータ（localStorage、4スロット固定）
 │   └── util/             # 汎用ユーティリティ
-├── codex/                # 閲覧ビューアの入口HTML（本体はsrc/codex/）
+├── codex/                # 閲覧ビューアの入口HTML（本体はsrc/codex-viewer/）
 ├── sample-pack/          # サンプルアセットパックの中身（npm run pack:sample でZIPにする）
 ├── public/               # ビルドが素通しで配るファイル（sample-pack.zip）
 ├── tests/                # テスト（Vitest）
@@ -80,7 +80,7 @@ UnmappedIsland/
 公開サイトは `site/` へ生成してGitHub Pagesへ直接デプロイするため、生成物はリポジトリに入らない
 （`.gitignore` 済み）。サイトは `/docs/`（`docs/` から生成したHTML）・`/reference/`（TypeDocの
 ソースリファレンス）・`/game/`（ビルド済みのゲーム本体）・`/codex/`（ゲーム定義の閲覧ビューア、
-`src/codex/`）の4本立て。
+`src/codex-viewer/`）の4本立て。
 
 ## ドキュメント
 

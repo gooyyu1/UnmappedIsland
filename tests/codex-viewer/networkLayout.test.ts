@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { LayoutEdge, LayoutNode } from '../../src/codex/networkLayout';
-import { layoutLayered } from '../../src/codex/networkLayout';
+import type { LayoutEdge, LayoutNode } from '../../src/codex-viewer/networkLayout';
+import { layoutLayered } from '../../src/codex-viewer/networkLayout';
 
 /**
  * 階層レイアウト（networkLayout）の検証。座標そのものではなく、レイアウトが守るべき性質

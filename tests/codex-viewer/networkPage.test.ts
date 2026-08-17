@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { CodexSource } from '../../src/codex/CodexSource';
-import { CodexView } from '../../src/codex/CodexView';
-import { renderNetworkPage } from '../../src/codex/networkPage';
-import { renderObjectPage } from '../../src/codex/pages';
+import { CodexSource } from '../../src/codex-viewer/CodexSource';
+import { CodexView } from '../../src/codex-viewer/CodexView';
+import { renderNetworkPage } from '../../src/codex-viewer/networkPage';
+import { renderObjectPage } from '../../src/codex-viewer/pages';
 import { loadLocalization } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';

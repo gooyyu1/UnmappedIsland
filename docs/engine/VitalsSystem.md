@@ -29,9 +29,9 @@
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。**キャラクタの死（6 節・8 節）は実装済み**
 ——渇き・飢え・失血の3つで死に、死ねばセーブデータごと消えます。**2 節から 6 節までは4種の動物で
-実装済みです**（検証は `tests/worldCodex/animalsYaml.test.ts`）——**体格に見合う武器で**殴れば気を失い、
+実装済みです**（検証は `tests/world-codex/animalsYaml.test.ts`）——**体格に見合う武器で**殴れば気を失い、
 裂けた傷から血が流れ、放っておけば固まって止まり、失いすぎれば目を覚まさず、尽きれば死体になります。**キャラクタが持つのは
-`blood` までで**（検証は `tests/worldCodex/charactersYaml.test.ts`）、`shock` と `consciousness` は
+`blood` までで**（検証は `tests/world-codex/charactersYaml.test.ts`）、`shock` と `consciousness` は
 まだ配っていません（7 節）。8 節が挙げる**新しい死因を既存の死に方へ流す道**（感染・発熱）と 4.1 節は
 未実装で、未決事項は末尾に整理しています。
 
@@ -353,7 +353,7 @@ laceration:
 
 **致死性プロパティは「死に方」の数だけ持ち、「死因」の数だけ持ちません。** 今ある死に方は3つ——
 渇き（`hydration`）・飢え（`body_fat`）・失血（`blood`）で、**3つとも実装済みです**（検証は
-`tests/worldCodex/charactersYaml.test.ts`）。感染・発熱・下痢・毒はいずれも
+`tests/world-codex/charactersYaml.test.ts`）。感染・発熱・下痢・毒はいずれも
 **死に方ではなく、そこへ至る道**です。新しい原因を足すたびにプレイヤーが見張るバーが増えるのでは、
 原因を見抜く判断は生まれず、ただ計器盤を眺めることになります。
 

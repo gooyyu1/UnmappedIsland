@@ -17,7 +17,7 @@
 場所を型の名前で指す `move` の `to_object` だけを足しました。
 
 在処は `src/assets/world-codex/voyage.yaml`（船・外洋・本土）・`artifacts.yaml`（持ち帰る物）・
-`timber.yaml`（船の材料）、棚が `src/save/Shelf.ts`、検証が `tests/worldCodex/voyageYaml.test.ts` です。
+`timber.yaml`（船の材料）、棚が `src/save/Shelf.ts`、検証が `tests/world-codex/voyageYaml.test.ts` です。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。**骨組み（1・2・4・6・8 節）は実装済みで、
 残りは未実装です。**どの節が未実装かは節ごとに記します。未決事項は

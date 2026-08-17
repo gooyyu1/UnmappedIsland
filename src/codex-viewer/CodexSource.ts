@@ -1,5 +1,5 @@
 import type { WorldCodex } from '../domain/defs/WorldCodex';
-import { installedAssetPack } from '../assetPack/install';
+import { installedAssetPack } from '../asset-pack/install';
 import { loadDefinitions } from '../loader/loadDefinitions';
 import { LOAD_REPORT } from '../loader/LoadReport';
 import type { Localization } from '../locale/Localization';

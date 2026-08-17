@@ -13,7 +13,7 @@ import { samplePackFiles } from './samplePackFiles.mjs';
  *
  * **出力は入力だけで決まる**（時刻を書かない・並び順はパス順・テキストの改行はLF）。同じ中身なら
  * どの環境で固めても同じバイト列になり、中身を変えていないのに差分が出ることがない。ZIPが
- * `sample-pack/` と食い違っていないかは `tests/assetPack/samplePack.test.ts` が検査する。
+ * `sample-pack/` と食い違っていないかは `tests/asset-pack/samplePack.test.ts` が検査する。
  */
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const OUTPUT = join(ROOT, 'public', 'sample-pack.zip');

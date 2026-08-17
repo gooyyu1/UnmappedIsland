@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 /**
  * サンプルアセットパックに入るファイルと、ZIPへ入るバイト列。
  *
- * 固める側（`packSample.mjs`）と、固め直し忘れを見る側（`tests/assetPack/samplePack.test.ts`）が
+ * 固める側（`packSample.mjs`）と、固め直し忘れを見る側（`tests/asset-pack/samplePack.test.ts`）が
  * ここを共有する。走査の規約（パス区切り・並び順）も正規化も両方が持つと、規約を変えたときに
  * 片方だけが古くなる。
  */

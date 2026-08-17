@@ -11,21 +11,21 @@ import type {
   PropertyRoute,
   RoutePrerequisite,
   RouteStep,
-} from '../../src/codex/balanceTables';
+} from '../../src/codex-viewer/balanceTables';
 import {
   buildBalanceTables,
   MINUTES_PER_DAY,
   MINUTES_PER_TICK,
   TICKS_PER_DAY,
   WHOLE_ISLAND,
-} from '../../src/codex/balanceTables';
+} from '../../src/codex-viewer/balanceTables';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
- * 定義から計算した収支表（`src/codex/balanceTables.ts`）を`docs/diagnostics/BalanceStats.md`へ書き出す。
+ * 定義から計算した収支表（`src/codex-viewer/balanceTables.ts`）を`docs/diagnostics/BalanceStats.md`へ書き出す。
  *
- * 同じ表はコーデックスビューア（`src/codex/balancePage.ts`）でも見られる。**Markdownを残すのは
+ * 同じ表はコーデックスビューア（`src/codex-viewer/balancePage.ts`）でも見られる。**Markdownを残すのは
  * 差分のため**——数値を触ったときに何がどう動いたかは`git diff`でしか読めず、ビューアはその瞬間の
  * 姿しか見せられない。
  *

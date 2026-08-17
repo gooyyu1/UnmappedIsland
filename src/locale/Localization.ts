@@ -1,5 +1,5 @@
 import { parseDocument } from 'yaml';
-import type { AssetPack } from '../assetPack/AssetPack';
+import type { AssetPack } from '../asset-pack/AssetPack';
 import type { YAMLMap } from 'yaml';
 import { asMap, asScalarText, entriesInOrder, tryGetMap, tryGetScalar } from '../loader/yamlMapping';
 import { YamlLoadError } from '../loader/YamlLoadError';

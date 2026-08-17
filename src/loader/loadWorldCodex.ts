@@ -1,4 +1,4 @@
-import type { AssetPack } from '../assetPack/AssetPack';
+import type { AssetPack } from '../asset-pack/AssetPack';
 import type { LoadReport } from './LoadReport';
 import type { WorldCodex } from '../domain/defs/WorldCodex';
 import { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
