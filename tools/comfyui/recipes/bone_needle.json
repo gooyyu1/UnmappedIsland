@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "src/assets/objects/bone_needle.png を作り直すためのレシピ。build.py が読む。",
+    "小さな骨を削って穴を開けた縫い針（src/assets/world-codex/tools.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: needle）。** 生成では穴が開かない（6枚とも。",
+    "prompts/objects.json の bone_needle 参照）。針を針たらしめているのは穴なので、下絵で開ける。",
+    "",
+    "**象牙色は紙から切り出せない。** 獣骨（animal_bone）と同じ事情で、白い紙とほとんど同じ明るさに",
+    "なる。編集の指示でも「紙より明らかに暗い」と言い、toleranceは獣骨と同じ16まで下げる。",
+    "",
+    "**edgeを広く取らない。** 縁を4px滲ませると、先端の細いところが消える。",
+    "",
+    "段は256、対角線へ倒す（diagonal）。5gの物なので大きくはしないが、細いので短くすると読めない。"
+  ],
+  "output": "src/assets/objects/bone_needle.png",
+  "sketch": "needle",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: one small sewing needle carved from bone, lying at exactly the same angle in the same place at the same length, its thick end at the lower left and its point at the upper right. Paint it as a slender needle whittled from a splinter of animal bone, rounded and blunt at the lower left end and tapering to a fine sharp point at the upper right, with faint flat facets left by the blade along its surface. Near the thick end, one small round hole is pierced right through the bone, and the white page shows through the hole. Nothing is threaded through it. The bone is aged ivory and warm cream with brown staining along it, clearly darker than the white page: it is not white and it is not pale. There is no metal, no steel and nothing shiny. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow on the ground beneath the needle. Nothing else in the picture. Dry matte porous surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "256",
+    "mode": "background",
+    "diagonal": true,
+    "tolerance": 16,
+    "edge": 2,
+    "shadow": 1,
+    "reach": 24
+  }
+}

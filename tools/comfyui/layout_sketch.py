@@ -29,6 +29,9 @@ STONE_DARK = (104, 104, 104)
 CORD = (163, 124, 78)
 CORD_DARK = (120, 88, 52)
 SAIL = (198, 186, 160)
+BONE = (216, 203, 176)
+BONE_DARK = (166, 152, 126)
+PAGE = (255, 255, 255)
 
 
 def draw_branch(
@@ -255,6 +258,69 @@ def draw_log(draw: ImageDraw.ImageDraw) -> None:
         draw.polygon(rim, fill=fill, outline=outline, width=4)
 
 
+def draw_needle(draw: ImageDraw.ImageDraw) -> None:
+    """骨針。太い側から先へ細り、太い側の近くに糸を通す穴が1つ。
+
+    **穴は生成では出ない。** 本文で「blunt end に eye が1つ」と頼んだ6枚のどれにも開かなかった
+    （prompts/objects.json の bone_needle 参照）。針を針たらしめているのは穴なので、ここで開ける。
+    """
+    butt, tip = (280.0, 640.0), (900.0, 260.0)
+    span = ((tip[0] - butt[0]) ** 2 + (tip[1] - butt[1]) ** 2) ** 0.5
+    axis = ((tip[0] - butt[0]) / span, (tip[1] - butt[1]) / span)
+    side = (-axis[1], axis[0])
+
+    def at(along: float, across: float) -> tuple[float, float]:
+        return (
+            butt[0] + axis[0] * along + side[0] * across,
+            butt[1] + axis[1] * along + side[1] * across,
+        )
+
+    # 胴。太い側（手前）から先端へ真っ直ぐ細る。
+    draw.polygon([at(0, 22), at(span, 2), at(span, -2), at(0, -22)], fill=BONE)
+    # 陰。丸みが無いと、削り出した棒に見えない。
+    draw.polygon([at(0, 22), at(span, 2), at(span, 0.6), at(0, 8)], fill=BONE_DARK)
+    # 太い側の端。丸く閉じる。
+    draw.ellipse([butt[0] - 22, butt[1] - 22, butt[0] + 22, butt[1] + 22], fill=BONE)
+    # 糸を通す穴。紙が透けて見える向きに開ける。
+    eye = at(span * 0.12, 0)
+    draw.ellipse([eye[0] - 11, eye[1] - 11, eye[0] + 11, eye[1] + 11], fill=PAGE, outline=OUTLINE, width=4)
+
+
+def draw_sail(draw: ImageDraw.ImageDraw) -> None:
+    """生皮の帆。帆桁へ縛った1枚で、生皮6枚ぶんの継ぎ目が縦に走る。
+
+    **継ぎ目の本数が材料の本数。** 生皮6枚を縫い合わせた物なので、縦の縫い目が5本で6枚に割れる。
+    生成に頼むと1枚革の幕か、革を張った枠になる（6枚とも。prompts/objects.json 参照）。
+    """
+    left, right = 200, 950
+    top, bottom = 214, 716
+    # 帆桁。上端へ渡す1本。
+    draw.line([(left - 40, 190), (right + 40, 190)], fill=BARK, width=34)
+    # 帆。下端はたわみ、左右の縁は生皮の裁ち目なので少し不揃いにする。
+    draw.polygon(
+        [
+            (left, top),
+            (right, top),
+            (right + 14, (top + bottom) / 2),
+            (right - 6, bottom),
+            ((left + right) / 2, bottom + 34),
+            (left + 8, bottom - 6),
+            (left - 12, (top + bottom) / 2),
+        ],
+        fill=SAIL,
+        outline=OUTLINE,
+        width=4,
+    )
+    # 縦の継ぎ目。5本で6枚に割れる。
+    for index in range(1, 6):
+        x = left + (right - left) * index / 6
+        draw.line([(x, top + 6), (x, bottom + (34 if index == 3 else 6))], fill=CORD_DARK, width=7)
+    # 帆桁へ巻きつける縄。
+    for index in range(7):
+        x = left + (right - left) * index / 6
+        draw.line([(x, 168), (x, top + 26)], fill=CORD, width=12)
+
+
 def draw_raft(draw: ImageDraw.ImageDraw) -> None:
     """筏。丸太を横倒しに6本並べ、桁を2本渡して交点を縛る。
 
@@ -325,7 +391,9 @@ LAYS = {
     "axe": draw_axe,
     "fan": draw_fan,
     "log": draw_log,
+    "needle": draw_needle,
     "raft": draw_raft,
+    "sail": draw_sail,
     "snare": draw_snare,
     "spear": draw_spear,
     "three_stone": draw_three_stone,
