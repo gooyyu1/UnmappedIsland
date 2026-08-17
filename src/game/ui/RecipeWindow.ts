@@ -11,7 +11,6 @@ import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
 /** 一覧の寸法（モーダルとして画面の中央に置く）。 */
-const WINDOW_MAX_WIDTH = 760;
 const PADDING = 32;
 const GAP = 16;
 const TITLE_SIZE = 28;
@@ -20,6 +19,10 @@ const TAB_HEIGHT = 64;
 const CARD_GAP = 12;
 const VISIBLE_ROWS = 2;
 const CLOSE_HEIGHT = 72;
+
+/** 横に並べたいカードの枚数。窓の幅はこれが収まる寸法を上限にする。 */
+const WINDOW_COLUMNS = 4;
+const WINDOW_MAX_WIDTH = PADDING * 2 + WINDOW_COLUMNS * SIZE.cardWidth + (WINDOW_COLUMNS - 1) * CARD_GAP;
 
 /** 一覧に並ぶレシピ1つ。完成品のカードとして出す。 */
 export interface RecipeEntry {
