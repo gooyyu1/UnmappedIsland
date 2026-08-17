@@ -105,7 +105,12 @@ export abstract class InteractionDef {
 
     const outcomes = this.effect.collectOutcomes(track);
     const inputs: CraftingInput[] = [
-      { kind: 'object', objectGlobalId: selfObjectGlobalId, consumed: this.effect.destroys('self') },
+      {
+        kind: 'object',
+        objectGlobalId: selfObjectGlobalId,
+        consumed: this.effect.destroys('self'),
+        count: 1,
+      },
       ...this.extraCraftingInputs(this.effect),
     ];
     return {

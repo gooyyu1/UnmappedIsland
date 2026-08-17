@@ -10,9 +10,23 @@ import type { ReferenceRoot } from './ReferenceRoot';
 
 /** 工程への入力1つ。型そのもの（object）か、タグで指した相手（tag）のどちらか。 */
 export type CraftingInput =
-  /** consumedは、この工程がその入力を消す（destroy・レシピのconsume）か。道具は消えないので偽。 */
-  | { readonly kind: 'object'; readonly objectGlobalId: number; readonly consumed: boolean }
-  | { readonly kind: 'tag'; readonly tagGlobalId: number; readonly consumed: boolean };
+  /**
+   * consumedは、この工程がその入力を消す（destroy・レシピのconsume）か。道具は消えないので偽。
+   * countは1回の実行で要る個数（レシピの`count`、既定1）——**筏は丸太を6本使う**ので、
+   * 総コストを出す側はこれを掛けないと1本ぶんで数えることになる。
+   */
+  | {
+      readonly kind: 'object';
+      readonly objectGlobalId: number;
+      readonly consumed: boolean;
+      readonly count: number;
+    }
+  | {
+      readonly kind: 'tag';
+      readonly tagGlobalId: number;
+      readonly consumed: boolean;
+      readonly count: number;
+    };
 
 /** 工程の出力1つ。countsは1回の実行で生まれうる個数（分岐どうしで違いうるため、出現した値を全て持つ）。 */
 export interface CraftingOutput {

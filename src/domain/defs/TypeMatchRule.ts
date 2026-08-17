@@ -76,9 +76,9 @@ export class TypeMatchRule {
   }
 
   /** この指定で相手を求める工程の入力1つ（CraftingStep参照）。consumedはその工程が相手を消すか。 */
-  craftingInput(consumed: boolean): CraftingInput {
+  craftingInput(consumed: boolean, count = 1): CraftingInput {
     return this.kind === 'tag'
-      ? { kind: 'tag', tagGlobalId: this.target, consumed }
-      : { kind: 'object', objectGlobalId: this.target, consumed };
+      ? { kind: 'tag', tagGlobalId: this.target, consumed, count }
+      : { kind: 'object', objectGlobalId: this.target, consumed, count };
   }
 }

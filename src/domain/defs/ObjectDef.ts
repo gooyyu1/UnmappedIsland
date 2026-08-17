@@ -335,7 +335,9 @@ export class ObjectDef {
             kind: 'periodic',
             name: `${propertyDef.name}.${readout.label}`,
             ownerGlobalId: this.globalId,
-            inputs: [{ kind: 'object', objectGlobalId: this.globalId, consumed: readout.destroysSelf }],
+            inputs: [
+              { kind: 'object', objectGlobalId: this.globalId, consumed: readout.destroysSelf, count: 1 },
+            ],
             outputs: collectOutputs(readout.outcomes),
             // プレイヤーは何もしないので払う時間は無く、経過するだけ。
             laborMinutes: 0,

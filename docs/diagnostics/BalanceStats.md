@@ -509,14 +509,14 @@ npm run stats:balance
 | オブジェクト | 総労働（分） | 無い道具 |
 | --- | --- | --- |
 | log | 183.5 | chopping_tool |
-| raft | 858.5 | chopping_tool |
+| raft | 4101.0 | chopping_tool |
 
 ### 総コスト
 
 | オブジェクト | 総労働（分） | 探索 | それ以外 | 日数 | 作り方 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- |
-| junglefowl | 15.3 | 4.0 | 11.3 | 0.02 | snare.catch_remaining.on_shortfall | snare（63.8分） |
-| rat | 9.4 | 2.5 | 6.9 | 0.01 | snare.catch_remaining.on_shortfall | snare（63.8分） |
+| junglefowl | 23.4 | 8.0 | 15.4 | 0.03 | snare.catch_remaining.on_shortfall | snare（97.5分） |
+| rat | 14.4 | 4.9 | 9.4 | 0.02 | snare.catch_remaining.on_shortfall | snare（97.5分） |
 | golden_chalice | 390.0 | 390.0 | 0.0 | 0.47 | cliff_coast.explore | — |
 | palm_tree | 115.4 | 115.4 | 0.0 | 0.14 | sandy_beach.explore | — |
 | green_coconut | 16.7 | 0.0 | 16.7 | 0.02 | palm_tree.pick_green_coconut | palm_tree（115.4分） |
@@ -527,7 +527,7 @@ npm run stats:balance
 | husked_coconut | 46.5 | 16.5 | 30.0 | 0.06 | sandy_beach.explore → coconut.husk | cutting_tool → sharp_stone（72.0分） |
 | coconut_half | 30.7 | 8.2 | 22.5 | 0.04 | sandy_beach.explore → coconut.husk → husked_coconut.crack | stone（12.0分）、cutting_tool → sharp_stone（72.0分） |
 | coconut_meat | 60.7 | 8.2 | 52.5 | 0.07 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape | cutting_tool → sharp_stone（72.0分）、stone（12.0分） |
-| woven_basket | 155.6 | 0.0 | 155.6 | 0.19 | palm_tree.pick_frond → palm_frond.split_and_weave → woven_basket.woven | cutting_tool → sharp_stone（72.0分）、palm_tree（115.4分） |
+| woven_basket | 300.0 | 300.0 | 0.0 | 0.36 | sandy_beach.explore | — |
 | abaca | 167.5 | 167.5 | 0.0 | 0.20 | jungle.explore | — |
 | banana_plant | 158.8 | 158.8 | 0.0 | 0.19 | forest.explore | — |
 | banana | 89.4 | 79.4 | 10.0 | 0.11 | forest.explore → banana_plant.fell | cutting_tool → sharp_stone（72.0分） |
@@ -535,11 +535,11 @@ npm run stats:balance
 | plant_fiber | 33.8 | 16.8 | 17.0 | 0.04 | jungle.explore → abaca.fell → banana_stem.strip | cutting_tool → sharp_stone（72.0分） |
 | yarn | 87.5 | 33.5 | 54.0 | 0.10 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin | cutting_tool → sharp_stone（72.0分） |
 | cord | 195.0 | 67.0 | 128.0 | 0.23 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply | cutting_tool → sharp_stone（72.0分） |
-| rope | 255.0 | 67.0 | 188.0 | 0.31 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted | cutting_tool → sharp_stone（72.0分） |
+| rope | 645.0 | 201.0 | 444.0 | 0.77 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted | cutting_tool → sharp_stone（72.0分） |
 | fire_drill | 94.0 | 34.0 | 60.0 | 0.11 | sandy_beach.explore → forest.explore → fire_drill.carved | — |
 | dry_grass | 140.0 | 140.0 | 0.0 | 0.17 | grassland.explore | — |
 | burning_tinder | 95.6 | 25.1 | 70.5 | 0.11 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.light | fire_drill（94.0分）、cutting_tool → sharp_stone（72.0分） |
-| campfire | 26.6 | 11.6 | 15.0 | 0.03 | forest.explore → campfire.stacked | — |
+| campfire | 49.8 | 34.8 | 15.0 | 0.06 | forest.explore → campfire.stacked | — |
 | water_spinach | 14.9 | 14.9 | 0.0 | 0.02 | grassland.explore | — |
 | coconut_crab | 38.5 | 38.5 | 0.0 | 0.05 | rocky_coast.explore | — |
 | taro | 21.3 | 21.3 | 0.0 | 0.03 | grassland.explore | — |
@@ -553,8 +553,8 @@ npm run stats:balance
 | broadleaf_tree | 127.0 | 127.0 | 0.0 | 0.15 | forest.explore | — |
 | log | 183.5 | 63.5 | 120.0 | 0.22 | forest.explore → broadleaf_tree.fell | chopping_tool（入手経路なし） |
 | sharp_stone | 72.0 | 12.0 | 60.0 | 0.09 | rocky_field.explore → stone.knap | — |
-| snare | 63.8 | 16.8 | 47.0 | 0.08 | jungle.explore → abaca.fell → banana_stem.strip → snare.knotted | cutting_tool → sharp_stone（72.0分） |
-| raft | 858.5 | 550.5 | 308.0 | 1.03 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted → forest.explore → broadleaf_tree.fell → raft.lashed | chopping_tool（入手経路なし）、cutting_tool → sharp_stone（72.0分） |
+| snare | 97.5 | 33.5 | 64.0 | 0.12 | jungle.explore → abaca.fell → banana_stem.strip → snare.knotted | cutting_tool → sharp_stone（72.0分） |
+| raft | 4101.0 | 1605.0 | 2496.0 | 4.91 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted → forest.explore → broadleaf_tree.fell → raft.lashed | chopping_tool（入手経路なし）、cutting_tool → sharp_stone（72.0分） |
 | palm_frond | 11.1 | 0.0 | 11.1 | 0.01 | palm_tree.pick_frond | palm_tree（115.4分） |
 | woven_leaf | 35.6 | 0.0 | 35.6 | 0.04 | palm_tree.pick_frond → palm_frond.split_and_weave | cutting_tool → sharp_stone（72.0分）、palm_tree（115.4分） |
 
@@ -571,70 +571,70 @@ npm run stats:balance
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | junglefowl ×0.069 | 0.42 | 10.0 | 4.2 | 63.8 | 15.30 |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.113 | 0.68 | 10.0 | 6.8 | 63.8 | 9.39 |
+| snare | catch_remaining.on_shortfall | 240 | junglefowl ×0.069 | 0.42 | 10.0 | 4.2 | 97.5 | 23.40 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.113 | 0.68 | 10.0 | 6.8 | 97.5 | 14.37 |
 
 ### sandy_beach
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 63.8 | 9.56 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 97.5 | 14.63 |
 
 ### rocky_coast
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 63.8 | 9.56 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 97.5 | 14.63 |
 
 ### cliff_coast
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 63.8 | 9.56 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 97.5 | 14.63 |
 
 ### grassland
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | junglefowl ×0.069 | 0.42 | 10.0 | 4.2 | 63.8 | 15.30 |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.113 | 0.68 | 10.0 | 6.8 | 63.8 | 9.39 |
+| snare | catch_remaining.on_shortfall | 240 | junglefowl ×0.069 | 0.42 | 10.0 | 4.2 | 97.5 | 23.40 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.113 | 0.68 | 10.0 | 6.8 | 97.5 | 14.37 |
 
 ### forest
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.143 | 0.86 | 10.0 | 8.6 | 63.8 | 7.44 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.143 | 0.86 | 10.0 | 8.6 | 97.5 | 11.37 |
 
 ### jungle
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | junglefowl ×0.061 | 0.36 | 10.0 | 3.6 | 63.8 | 17.53 |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.117 | 0.70 | 10.0 | 7.0 | 63.8 | 9.09 |
+| snare | catch_remaining.on_shortfall | 240 | junglefowl ×0.061 | 0.36 | 10.0 | 3.6 | 97.5 | 26.81 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.117 | 0.70 | 10.0 | 7.0 | 97.5 | 13.90 |
 
 ### rocky_field
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 63.8 | 9.56 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 97.5 | 14.63 |
 
 ### wasteland
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 63.8 | 9.56 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 97.5 | 14.63 |
 
 ### mountainside
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 63.8 | 9.56 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 97.5 | 14.63 |
 
 ### mountain_peak
 
 | 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 63.8 | 9.56 |
+| snare | catch_remaining.on_shortfall | 240 | rat ×0.111 | 0.67 | 10.0 | 6.7 | 97.5 | 14.63 |
 
 ## 4. 消費表（1日あたり何が要るか）
 

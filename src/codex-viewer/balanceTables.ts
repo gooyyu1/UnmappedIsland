@@ -1087,7 +1087,8 @@ class Acquisition {
       if (!input.consumed) continue;
       const resolved = this.inputCost(input);
       if (resolved === undefined) return undefined;
-      cost = addCost(cost, resolved.cost);
+      // **要る個数を掛ける。** 筏は丸太を6本使うので、1本ぶんで数えると桁が変わる。
+      cost = addCost(cost, scaleCost(resolved.cost, input.count));
       imported ||= resolved.imported;
     }
     return { cost, imported };

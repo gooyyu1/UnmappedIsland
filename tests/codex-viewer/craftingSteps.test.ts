@@ -80,7 +80,9 @@ object_defs:
     const [explore] = stepsOf('beach');
 
     // 土地は探索で消えない＝消費されない入力。
-    expect(explore.inputs).toEqual([{ kind: 'object', objectGlobalId: id('beach'), consumed: false }]);
+    expect(explore.inputs).toEqual([
+      { kind: 'object', objectGlobalId: id('beach'), consumed: false, count: 1 },
+    ]);
     // coconutは候補ごとに×2と×1で出る。twigは×1のみ。
     expect(explore.outputs).toEqual([
       { objectGlobalId: id('coconut'), counts: [2, 1] },
@@ -114,11 +116,18 @@ object_defs:
     expect(husk.kind).toBe('combination');
     expect(husk.inputs).toEqual([
       // selfはdestroyされるので消費。
-      { kind: 'object', objectGlobalId: id('coconut'), consumed: true },
+      { kind: 'object', objectGlobalId: id('coconut'), consumed: true, count: 1 },
       // 刃物（dragged）はdestroyされないので道具＝消費されない。
-      { kind: 'tag', tagGlobalId: codex.tagNames.getId('cutting_tool'), consumed: false },
+      { kind: 'tag', tagGlobalId: codex.tagNames.getId('cutting_tool'), consumed: false, count: 1 },
     ]);
     expect(husk.outputs.map((output) => output.objectGlobalId)).toEqual([id('husked_coconut'), id('husk')]);
+  });
+
+  it('レシピの要求個数が入力に載る（1個ぶんで数えないため）', () => {
+    const [woven] = stepsOf('basket');
+
+    // 6枚の皮から編む。入力を1個ぶんで数えると、総コストが桁ごと変わる。
+    expect(woven.inputs.map((input) => input.count)).toEqual([6, 1]);
   });
 
   it('tick毎に減る値がrangeの端で戻る仕掛けは、周期を持つ工程になる', () => {
@@ -181,8 +190,8 @@ object_defs:
 
     expect(woven.kind).toBe('recipe');
     expect(woven.inputs).toEqual([
-      { kind: 'object', objectGlobalId: id('husk'), consumed: true },
-      { kind: 'object', objectGlobalId: id('knife'), consumed: false },
+      { kind: 'object', objectGlobalId: id('husk'), consumed: true, count: 6 },
+      { kind: 'object', objectGlobalId: id('knife'), consumed: false, count: 1 },
     ]);
     expect(woven.outputs).toEqual([{ objectGlobalId: id('basket'), counts: [1] }]);
   });
