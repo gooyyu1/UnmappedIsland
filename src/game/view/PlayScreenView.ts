@@ -323,6 +323,13 @@ export interface PlayScreenView {
   readonly nameOf: (place: CardPlace) => string;
 
   /**
+   * その場所が映しているスロットの識別子（スロット名）。**表示名ではなく識別子**で、子ウィンドウの
+   * タブの記憶（Settings.openedTab）の鍵になる——持ち主の名前が入る表示名では、同じスロットを
+   * 別の物として覚えてしまう。
+   */
+  readonly slotKeyOf: (place: CardPlace) => string;
+
+  /**
    * その場所がカードを受け入れるか（怪我のような読み取り専用の場所はfalse）。中身が空でも
    * 「落とせる場所かどうか」を見せるために、画面側が受け皿の空枠を出すかの判断に使う。
    */
@@ -1282,6 +1289,14 @@ export function fromGameSession(
       const slotName = codex.slotNames.getName(slot.slotId);
       const owner = slot.owner === game.player.instance ? characterTexts.displayName : nameOf(slot.owner);
       return locale.slot(slotName).displayNameWithOwner(owner);
+    },
+    slotKeyOf: (place) => {
+      const slot = slotOf(place);
+      return slot === undefined
+        ? typeof place === 'string'
+          ? place
+          : String(place.container.instanceId)
+        : codex.slotNames.getName(slot.slotId);
     },
     acceptsCards: (place) => {
       const slot = slotOf(place);
