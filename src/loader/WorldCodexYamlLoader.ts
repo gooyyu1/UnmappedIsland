@@ -53,6 +53,9 @@ export class WorldCodexYamlLoader {
   /** 読み込んだpatch（3.4節）。当たる先が全部揃ってからでないと当てられないので、buildまで貯める。 */
   private patches: RawPatch[] = [];
 
+  /** レシピ一覧の棚に使うタグ（recipe_categories、Windows.md 9節）。宣言順がそのまま優先順位。 */
+  private recipeCategoryTagIds: number[] = [];
+
   private _objectNames = new NameRegistry();
   private _propertyNames = new NameRegistry();
   private _slotNames = new NameRegistry();
@@ -100,6 +103,15 @@ export class WorldCodexYamlLoader {
     const propertyTags = tryGetMap(root, 'property_tags', label);
     if (propertyTags !== undefined)
       for (const [name] of entriesInOrder(propertyTags)) this._propertyTagNames.intern(name);
+
+    // レシピ一覧の棚（Windows.md 9節）。既にあるタグ（4.1節）を並べ替えて指すだけなので、
+    // ここでの重複は書き間違いではなく「パックが同じ棚を足した」だけ。先に宣言された位置を保つ。
+    const recipeCategories = tryGetSeq(root, 'recipe_categories', label);
+    if (recipeCategories !== undefined)
+      for (const node of recipeCategories.items as YamlNode[]) {
+        const tagId = this._tagNames.intern(asScalarText(node, `${label}.recipe_categories`));
+        if (!this.recipeCategoryTagIds.includes(tagId)) this.recipeCategoryTagIds.push(tagId);
+      }
 
     const objectDefs = tryGetMap(root, 'object_defs', label);
     if (objectDefs !== undefined)
@@ -192,6 +204,7 @@ export class WorldCodexYamlLoader {
       wellKnown,
       generation,
       inProgressProducts,
+      this.recipeCategoryTagIds,
     );
 
     this.reset();
@@ -202,6 +215,7 @@ export class WorldCodexYamlLoader {
     this.globalObjectDefs.clear();
     this.globalTraits.clear();
     this.patches = [];
+    this.recipeCategoryTagIds = [];
     resetGeneration(this);
     this._objectNames = new NameRegistry();
     this._propertyNames = new NameRegistry();

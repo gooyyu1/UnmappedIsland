@@ -45,6 +45,12 @@ export class WorldCodex implements DefNames {
    */
   private readonly inProgressProducts: ReadonlyMap<number, number>;
 
+  /**
+   * レシピ一覧の棚に使うタグ（`recipe_categories`、Windows.md 9節）のグローバルID。
+   * **並びが優先順位**で、完成品は最初に一致した棚にだけ載る。
+   */
+  readonly recipeCategoryTagIds: readonly number[];
+
   constructor(
     objectNames: NameRegistry,
     propertyNames: NameRegistry,
@@ -56,8 +62,10 @@ export class WorldCodex implements DefNames {
     wellKnown: WellKnownProperties,
     generation?: GenerationDefs,
     inProgressProducts?: ReadonlyMap<number, number>,
+    recipeCategoryTagIds: readonly number[] = [],
   ) {
     this.inProgressProducts = inProgressProducts ?? new Map();
+    this.recipeCategoryTagIds = recipeCategoryTagIds;
     this.objectNames = objectNames;
     this.propertyNames = propertyNames;
     this.slotNames = slotNames;

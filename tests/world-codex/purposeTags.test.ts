@@ -41,6 +41,19 @@ describe('用途のタグ', () => {
     expect(edible.filter((def) => !def.tags.includes(foodTagId)).map((def) => def.name)).toEqual([]);
   });
 
+  it('レシピを持つ物には、レシピ一覧の棚のタグが1つは付いている', () => {
+    // 棚に載らない完成品は画面で「その他」へ落ちる（Windows.md 9.2節）。UIは落ちても壊れないが、
+    // 同梱データでそれが起きるのは棚（recipe_categories）の付け忘れなので、ここで捕まえる。
+    const craftable = defs.filter((def) => def.recipes.length > 0);
+
+    expect(craftable.length).toBeGreaterThan(0);
+    expect(
+      craftable
+        .filter((def) => !codex.recipeCategoryTagIds.some((tagId) => def.tags.includes(tagId)))
+        .map((def) => def.name),
+    ).toEqual([]);
+  });
+
   it('液体の容器には、入れ物のタグが付いている', () => {
     const liquidContainerTagId = codex.tagNames.getId('liquid_container');
     const contentSlotId = codex.slotNames.getId('content');

@@ -159,6 +159,20 @@ property_tag_texts:
     display_name: 栄養
 ```
 
+## tag_texts: object_defのタグの文言
+
+`object_def` のタグ（[GameElementDefinition.md](./GameElementDefinition.md) 4.1節）の文言です。値は
+文字列 1 つで、説明文は持ちません。
+
+```yaml
+tag_texts:
+  tool: 道具
+```
+
+**書くのは画面へ出るタグだけです。** タグの大半は枠の `accept` や `combinations` の相手を探すための
+ものでプレイヤーの目に触れないので、網羅する必要はありません。今この節を読むのはレシピ一覧の棚の
+見出し（[`Windows.md`](../ui/Windows.md) 9.2節）だけです。
+
 ## symbol_texts: シンボル型プロパティの値
 
 シンボル型プロパティ（[GameElementDefinition.md](./GameElementDefinition.md) 6.6節）の値——天気の
