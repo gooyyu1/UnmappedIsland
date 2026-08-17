@@ -62,7 +62,7 @@ import { recipeCategories } from './view/recipeList';
 import { spawnInProgressObject } from '../domain/runtime/crafting';
 import { emitGainParticles } from './ui/GainParticles';
 import { ProgressRing } from './ui/ProgressRing';
-import { PropertyWindow } from './ui/PropertyWindow';
+import type { PropertyCategory as PropertyTab } from './ui/PropertiesPane';
 import { ScreenAlertFrame } from './ui/ScreenAlertFrame';
 import type { StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
@@ -355,13 +355,11 @@ export class PlayScene extends ResponsiveScene {
     onPinned: () => {
       this.savePinnedStatuses();
       this.showStatuses();
-      // プロパティウィンドウを開いたまま切り替えられるため、そちらの印も引き直す。
-      this.propertyWindow?.setTabs(this.status.tabs());
+      // 子ウィンドウのプロパティのタブを開いたまま切り替えられるため、そちらの印も引き直す。
+      this.childWindow?.setProperties(this.status.tabs());
     },
     onOpenDetail: (key) => this.openStatusDetail(key),
   });
-
-  private propertyWindow: PropertyWindow | undefined;
 
   /** 開いている地図ウィンドウ。探索の子ウィンドウと同じく、画面の作り直しをまたいで開いたままにする。 */
   private mapWindow: MapWindow | undefined;
@@ -514,7 +512,6 @@ export class PlayScene extends ResponsiveScene {
     this.childWindow = undefined;
     this.childWindowPlace = undefined;
     this.shown.reset();
-    this.propertyWindow = undefined;
     this.mapWindow = undefined;
     this.statusDetailWindow = undefined;
     this.statusDetailKey = undefined;
@@ -578,7 +575,6 @@ export class PlayScene extends ResponsiveScene {
     // 開いていた子ウィンドウは、画面を作り直したあと同じものを開き直す（表示物は捨てられているため）。
     const wasExploring = this.explorationWindow !== undefined;
     const openedPlace = this.childWindowPlace;
-    const wasShowingProperties = this.propertyWindow !== undefined;
     const wasShowingMap = this.mapWindow !== undefined;
     const openedStatus = this.statusDetailKey;
     const openedCard = this.shown.windowStack;
@@ -588,7 +584,6 @@ export class PlayScene extends ResponsiveScene {
     this.childWindow = undefined;
     this.shown.returnBorrowed();
     this.childWindowPlace = undefined;
-    this.propertyWindow = undefined;
     this.mapWindow = undefined;
     this.statusDetailWindow = undefined;
     this.statusDetailKey = undefined;
@@ -647,10 +642,9 @@ export class PlayScene extends ResponsiveScene {
     // 札を出す。作り直しの直後は出どころが無いので、飛ばずその場に現れる。
     this.showView();
     if (wasExploring) this.openExplorationWindow();
-    if (wasShowingProperties) this.openPropertyWindow();
     // 地図は全画面を覆うので、さらにその上へ開き直す。
     if (wasShowingMap) this.openMapWindow();
-    // ステータスの詳細は、プロパティウィンドウの上からも開けるので最後に開き直す。
+    // ステータスの詳細は、子ウィンドウの上からも開けるので最後に開き直す。
     if (openedStatus !== undefined) this.openStatusDetail(openedStatus);
     this.coverUntilLocationArtLoaded();
     // 死も到達も取り消せないので、リサイズで表示物ごと捨てられたダイアログは出し直す（ResponsiveScene）。
@@ -1069,7 +1063,7 @@ export class PlayScene extends ResponsiveScene {
       [],
       this.view.characterSlots,
       origins,
-      { opensPlace: place },
+      { opensPlace: place, properties: this.status.tabs() },
     );
   }
 
@@ -1088,6 +1082,7 @@ export class PlayScene extends ResponsiveScene {
       this.actionButtons(this.view.characterActions, this.view.characterName),
       this.view.characterSlots,
       origins,
+      { properties: this.status.tabs() },
     );
   }
 
@@ -1112,7 +1107,7 @@ export class PlayScene extends ResponsiveScene {
    * キャラクタ自身の札も他の札と同じで、子ウィンドウへ出ている間はここに印だけが残る。
    */
   private portraitCells(): readonly LaneCell[] {
-    const portrait = { ...this.portraitCard(), onTap: this.whileIdle(() => this.openPropertyWindow()) };
+    const portrait = { ...this.portraitCard(), onTap: this.whileIdle(() => this.openCharacterWindow()) };
     return [{ card: this.shown.shownCard(portrait) }];
   }
 
@@ -1139,7 +1134,11 @@ export class PlayScene extends ResponsiveScene {
       this.actionButtons(borrowed.actions, borrowed.name),
       borrowed.visibleSlots,
       origins,
-      { stack: borrowed, opensPlace: opensPlace ? borrowed.visibleSlots[0] : undefined },
+      {
+        stack: borrowed,
+        opensPlace: opensPlace ? borrowed.visibleSlots[0] : undefined,
+        properties: this.view.propertiesOf(borrowed.objects[0]),
+      },
     );
   }
 
@@ -1245,7 +1244,12 @@ export class PlayScene extends ResponsiveScene {
     actions: readonly ObjectWindowAction[],
     places: readonly CardPlace[],
     origins: ReadonlyMap<number, Rect>,
-    opened?: { readonly stack?: ObjectCardStack; readonly opensPlace?: CardPlace },
+    opened?: {
+      readonly stack?: ObjectCardStack;
+      readonly opensPlace?: CardPlace;
+      /** プロパティのタブに出すカテゴリ（空ならタブを出さない）。 */
+      readonly properties?: readonly PropertyTab[];
+    },
   ): void {
     noteOperation(`子ウィンドウを開いた: ${object.card.name}`);
     // タブに並べるスロット。可視のスロット（visible_slots、7.11節）を宣言順に並べる。
@@ -1258,6 +1262,7 @@ export class PlayScene extends ResponsiveScene {
 
     this.childWindow = new ObjectWindow(this, this.metrics, {
       object,
+      properties: opened?.properties ?? [],
       slots: this.childWindowTabs.map((tab) => ({
         key: tab.key,
         title: this.view.slotLabelOf(tab.place),
@@ -1353,6 +1358,11 @@ export class PlayScene extends ResponsiveScene {
       this.actionButtons(this.view.currentLocationActions, this.view.currentLocation.name),
       this.view.currentLocationSlots,
       origins,
+      {
+        properties: this.view.propertiesOf(
+          this.gameSession.player.location?.instance ?? this.gameSession.player.instance,
+        ),
+      },
     );
   }
 
@@ -2294,21 +2304,6 @@ export class PlayScene extends ResponsiveScene {
     );
     // 生んだ直後にすることは素材を入れることしかないので、素材のタブから開く（記憶より優先する）。
     if (card !== undefined) this.openObjectWindow(card, origin, true);
-  }
-
-  private openPropertyWindow(): void {
-    if (this.propertyWindow !== undefined) return;
-
-    noteOperation('体の状態を開いた');
-
-    this.propertyWindow = new PropertyWindow(this, this.metrics, {
-      title: this.view.characterName,
-      tabs: this.status.tabs(),
-      area: this.layout.slotWindowArea,
-      onClose: () => {
-        this.propertyWindow = undefined;
-      },
-    });
   }
 
   /** 地図ボタンから開く地図ウィンドウ。既知の土地と発見済みの道を、ユーザが並べた位置で見せる。 */
