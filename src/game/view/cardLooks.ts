@@ -7,12 +7,17 @@ import { IN_PROGRESS_TAG, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../../loader
 import type { Localization } from '../../locale/Localization';
 import { artNameFor } from '../../art/objectArt';
 import type { SlotRef } from '../../art/backgroundArt';
+import { placeholderIconOf } from './characterCard';
 import { recipeOf } from './recipeList';
 import type { CardContent, CardCooking, CardGauge } from '../ui/Card';
 import { COLOR } from '../looks/theme';
 import type { CardKind } from '../looks/theme';
 
-const KIND_ICONS: Readonly<Record<ObjectKind, string>> = {
+/**
+ * 絵がまだ無い物の、種別ごとの代役アイコン（iconOf参照）。**種別はすべてここに行がある**
+ * ——キャラクタも土地も、物の型が名乗るタグから決まる同じ種別の1つ（CardKind）。
+ */
+const KIND_ICONS: Readonly<Record<CardKind, string>> = {
   item: '📦',
   food: '🍎',
   container: '🧺',
@@ -20,13 +25,9 @@ const KIND_ICONS: Readonly<Record<ObjectKind, string>> = {
   fixture: '🌳',
   injury: '🩹',
   animal: '🐾',
+  character: '🧍',
+  location: '🗺️',
 };
-
-/**
- * 物そのものの型が決める種別（kindOf）。カードの枠の色にも仮のアイコンにもこれを使う。
- * 道とキャラクタはカードの見せ方であって物の型ではないので、ここには入らない。
- */
-type ObjectKind = Extract<CardKind, 'item' | 'food' | 'container' | 'tool' | 'fixture' | 'injury' | 'animal'>;
 
 /**
  * 中身のバー（液体の残量、CardView.md 8.2節）の塗り色を持つプロパティの名前
@@ -138,8 +139,18 @@ export interface CardLooks {
   readonly gaugesOf: (object: WorldObject) => readonly CardGauge[];
 }
 
-/** そのCodexと対応表での札の見た目を引けるようにする。minutesPerTickは加熱の残り時間に使う。 */
-export function cardLooksOf(codex: WorldCodex, locale: Localization, minutesPerTick: number): CardLooks {
+/**
+ * そのCodexと対応表での札の見た目を引けるようにする。minutesPerTickは加熱の残り時間に使う。
+ *
+ * instanceNameは、ワールドが**個体に**付けた名前を引く手段（土地の命名、IslandMap）。付いていない
+ * 個体ではundefinedを返す。
+ */
+export function cardLooksOf(
+  codex: WorldCodex,
+  locale: Localization,
+  minutesPerTick: number,
+  instanceName: (instanceId: number) => string | undefined,
+): CardLooks {
   /**
    * カードの下端に積むゲージ（プロパティの`gauge`宣言、CardView.md 8節）。耐久度・炉の残り薪・
    * 残っている傷・意識・工程の進捗はすべてこの1つの経路を通る——**UI側はプロパティの名前を1つも
@@ -304,6 +315,8 @@ export function cardLooksOf(codex: WorldCodex, locale: Localization, minutesPerT
       capacityGaugeOf(object),
     ].filter((gauge): gauge is CardGauge => gauge !== undefined);
 
+  const characterTagId = codex.tagNames.tryGetId('character');
+  const locationTagId = codex.tagNames.tryGetId('location');
   const itemTagId = codex.tagNames.tryGetId('item');
   const fixtureTagId = codex.tagNames.tryGetId('fixture');
   const injuryTagId = codex.tagNames.tryGetId('injury');
@@ -325,10 +338,16 @@ export function cardLooksOf(codex: WorldCodex, locale: Localization, minutesPerT
   };
 
   /**
-   * そのオブジェクトの表示名。中身を代表にしているもの（水入りの水筒）は、中身の名前を差し込んだ
-   * 名前になる（Localization.md）。代表がさらに中身を持つ入れ子は、内側から順に畳まれる。
+   * そのオブジェクトの表示名。**個体に名前が付いていればそれ**（土地）。付いていなければ型の名前で、
+   * 中身を代表にしているもの（水入りの水筒）は中身の名前を差し込んだ名前になる（Localization.md）。
+   * 代表がさらに中身を持つ入れ子は、内側から順に畳まれる。
    */
   const nameOf = (object: WorldObject): string => {
+    // 個体に名前が付いていればそれ（土地の命名）。型の名前より優先する——同じ地形の土地が2つあっても
+    // 別の場所として呼ばれる。
+    const named = instanceName(object.instanceId);
+    if (named !== undefined) return named;
+
     // 製作中オブジェクトも中身（材料）を持つが、名前は型のものをそのまま使う。
     if (codex.productOf(object.def) !== undefined) return typeNameOf(object.def);
 
@@ -343,8 +362,11 @@ export function cardLooksOf(codex: WorldCodex, locale: Localization, minutesPerT
    * itemとfixtureを兼ねる編み籠は、地面へ据えてもアイテムのまま持ち歩けるので、レーンを移った
    * だけで別の物に見えては困る。持ち歩けるかどうかを先に見るのはそのため。
    */
-  const kindOf = (def: ObjectDef): ObjectKind => {
+  const kindOf = (def: ObjectDef): CardKind => {
     const has = (tagId: number | undefined): boolean => tagId !== undefined && def.tags.includes(tagId);
+    // 人と場所は物の用途の並びに入らない（どちらも持ち歩く対象ではない）ので、先に見る。
+    if (has(characterTagId)) return 'character';
+    if (has(locationTagId)) return 'location';
     if (has(injuryTagId)) return 'injury';
     // 動物はitemも兼ねる（HuntingSystem.md 1.1節）ので、itemより先に見る。
     if (has(animalTagId)) return 'animal';
@@ -364,7 +386,11 @@ export function cardLooksOf(codex: WorldCodex, locale: Localization, minutesPerT
    */
   const inProgressDef = (def: ObjectDef): boolean => wipTagId !== undefined && def.tags.includes(wipTagId);
 
-  const iconOf = (def: ObjectDef): string => KIND_ICONS[kindOf(def)];
+  /**
+   * 絵がまだ無い物の代役アイコン。**型あての代役を先に、無ければ種別の代役**——キャラクタは絵が
+   * 入るまで一人ずつ見分けたいので、型ごとの表（characterCard.ts）を持っている。
+   */
+  const iconOf = (def: ObjectDef): string => placeholderIconOf(def.name) ?? KIND_ICONS[kindOf(def)];
 
   /**
    * カードに映す絵の出所。製作中オブジェクトは完成品の絵を映す——作りかけであることは青の覆いが
@@ -406,6 +432,9 @@ export function cardLooksOf(codex: WorldCodex, locale: Localization, minutesPerT
   };
 
   const contentOf = (object: WorldObject): CardContent => ({
+    // 札が映している個体。**貸し出した札が帰る先の鍵**（ShownCards.returnBorrowed）なので、
+    // 1個ぶんの札にも要る。束は全メンバーのIDで上書きする（stackOf）。
+    identity: [object.instanceId],
     icon: iconOf(object.def),
     name: nameOf(object),
     kind: kindOf(object.def),
