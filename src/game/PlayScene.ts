@@ -527,7 +527,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** エラー報告に載せる、場所1つ。同じ型の入れ物が複数あっても見分けられるよう、持ち主も出す。 */
   private placeText(place: CardPlace): string {
-    return `${place.container.def.name}#${place.container.instanceId}の${this.view.slotKeyOf(place)}`;
+    return `${place.container.def.name}#${place.container.instanceId}の${this.view.slotViewOf(place).key}`;
   }
 
   /** エラー報告に載せる、今の画面の状態（errorReport.setStateReporter）。 */
@@ -786,8 +786,8 @@ export class PlayScene extends ResponsiveScene {
    * どのスロットにどの絵を敷くかは画面側では決めず、絵のファイル名が名乗る（backgroundArt参照）。
    */
   private laneArt(place: CardPlace): string | undefined {
-    const slot = this.view.laneSlot(place);
-    return slot === undefined ? undefined : laneTexture(slot);
+    const background = this.view.slotViewOf(place).background;
+    return background === undefined ? undefined : laneTexture(background);
   }
 
   private plainCells(cards: readonly (ObjectCardStack | undefined)[]): readonly LaneCell[] {
@@ -797,11 +797,8 @@ export class PlayScene extends ResponsiveScene {
   /** アイテムレーンの枠。前詰めのレーンなので、末尾に受け皿の空枠が付く（cellsFor）。 */
   private itemCells(): readonly LaneCell[] {
     const items = this.place('items');
-    return cellsFor(
-      this.laneCards(this.shown.stacksAt(items)),
-      this.view.cellCountOf(items),
-      this.view.acceptsCards(items),
-    );
+    const slot = this.view.slotViewOf(items);
+    return cellsFor(this.laneCards(this.shown.stacksAt(items)), slot.cellCount, slot.acceptsCards);
   }
 
   /**
@@ -811,9 +808,9 @@ export class PlayScene extends ResponsiveScene {
   private slotCells(place: CardPlace): readonly LaneCell[] {
     const stacks = this.shown.stacksAt(place);
     const cards = this.laneCards(stacks);
+    const slot = this.view.slotViewOf(place);
     return (
-      this.materialCells(place, stacks, cards) ??
-      cellsFor(cards, this.view.cellCountOf(place), this.view.acceptsCards(place))
+      this.materialCells(slot.materials, stacks, cards) ?? cellsFor(cards, slot.cellCount, slot.acceptsCards)
     );
   }
 
@@ -1118,11 +1115,10 @@ export class PlayScene extends ResponsiveScene {
    * 入った枠で隠れてしまうため。
    */
   private materialCells(
-    place: CardPlace,
+    materials: readonly CraftingMaterial[] | undefined,
     stacks: readonly (ObjectCardStack | undefined)[],
     cards: readonly (CardContent | undefined)[],
   ): readonly LaneCell[] | undefined {
-    const materials = this.view.materialsOf(place);
     if (materials === undefined) return undefined;
 
     // 枠に入っている物から、それがどの要求のものかを引く。**タグの要求は当てはまる型が複数ある**ので、
@@ -1172,7 +1168,7 @@ export class PlayScene extends ResponsiveScene {
   private advanceMaterialCycle(): void {
     if (this.busy) return;
     const place = this.childWindowPlace;
-    const materials = place === undefined ? undefined : this.view.materialsOf(place);
+    const materials = place === undefined ? undefined : this.view.slotViewOf(place).materials;
     if (materials?.some((material) => material.objectGlobalIds.length >= 2) !== true) return;
 
     this.materialCycle += 1;
@@ -1224,7 +1220,10 @@ export class PlayScene extends ResponsiveScene {
   ): void {
     noteOperation(`子ウィンドウを開いた: ${window.card.name}`);
     // タブに並べるスロット。可視のスロット（visible_slots、7.11節）を宣言順に並べる。
-    this.childWindowTabs = window.slots.map((slot) => ({ key: this.view.slotKeyOf(slot), place: slot }));
+    this.childWindowTabs = window.slots.map((slot) => ({
+      key: this.view.slotViewOf(slot).key,
+      place: slot,
+    }));
     // 型ごとの記憶の鍵。束が無いウィンドウ（装備・怪我）は覚えない——映しているのは場所であって、
     // 「この型を次に開いたときどうするか」の話にならない。
     this.childWindowDef = opened?.stack?.objects[0]?.def.name;
@@ -1243,12 +1242,15 @@ export class PlayScene extends ResponsiveScene {
               ratio: window.explorationRatio,
               found: this.shown.found.map((card) => ({ card, arriving: this.arrivingFound(card) })),
             },
-      slots: this.childWindowTabs.map((tab) => ({
-        key: tab.key,
-        title: this.view.slotLabelOf(tab.place),
-        cells: this.slotCells(tab.place),
-        unbounded: unboundedSlot(this.view.cellCountOf(tab.place)),
-      })),
+      slots: this.childWindowTabs.map((tab) => {
+        const slot = this.view.slotViewOf(tab.place);
+        return {
+          key: tab.key,
+          title: slot.label,
+          cells: this.slotCells(tab.place),
+          unbounded: unboundedSlot(slot.cellCount),
+        };
+      }),
       initialTab,
       actions: this.actionButtons(window.actions, window.card.name),
       area: this.layout.slotWindowArea,
@@ -1271,7 +1273,7 @@ export class PlayScene extends ResponsiveScene {
    * 作り始めた直後の製作中オブジェクト。それ以外は覚えているものに従う。
    */
   private initialTab(opensPlace: CardPlace | undefined): string {
-    const named = opensPlace === undefined ? undefined : this.view.slotKeyOf(opensPlace);
+    const named = opensPlace === undefined ? undefined : this.view.slotViewOf(opensPlace).key;
     if (named !== undefined && this.placeOfTab(named) !== undefined) return named;
     const remembered =
       this.childWindowDef === undefined ? undefined : this.settings.openedTab(this.childWindowDef);
