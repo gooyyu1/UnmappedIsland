@@ -215,6 +215,34 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(card.inProgress, '完成品と同じ絵なので、作りかけであることは覆いだけが示す').toBe(true);
   });
 
+  it('場所について訊きたいことは、1つのまとまりで揃う', () => {
+    // 見出し・記憶の鍵・枠の数・落とせるか・敷く絵・製作の材料は、どれも同じスロットの宣言から出る。
+    // ばらばらに訊くと、場所を映す先を足すたびに訊く手順も増える（Windows.md 1節）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const wip = game.session.spawn(codex.objectNames.getId(inProgressObjectName('woven_basket', 'woven')));
+    expect(wip.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'))).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+    const hand = view.slotViewOf(place(game, 'hand'));
+    const injuries = view.slotViewOf(place(game, 'injuries'));
+    const materials = view.slotViewOf({
+      container: wip,
+      slotGlobalId: codex.slotNames.getId('materials'),
+    });
+
+    expect(hand.key, 'タブの記憶の鍵はスロット名').toBe('hand');
+    expect(hand.cellCount, '手持ちは枠の数が決まっている').toBeGreaterThan(0);
+    expect(hand.acceptsCards).toBe(true);
+    expect(hand.background, 'レーンに敷く絵はスロットで引く').toEqual({
+      owner: view.characterCard.art,
+      slot: 'hand',
+    });
+    expect(hand.materials, '製作中でなければ材料の枠は無い').toBeUndefined();
+
+    expect(injuries.acceptsCards, '怪我は落とせる場所ではない').toBe(false);
+    expect(materials.materials?.length, '製作中オブジェクトの材料は要求ごとに枠を持つ').toBeGreaterThan(0);
+  });
+
   it('探索率は現在地の進捗を0〜1で表し、100%を超えない', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
 
@@ -326,8 +354,14 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const view = fromGameSession(game, codex, locale);
 
-    expect(view.laneSlot(place(game, 'fixtures'))).toEqual({ owner: view.locationArt, slot: 'fixtures' });
-    expect(view.laneSlot(place(game, 'hand'))).toEqual({ owner: view.characterCard.art, slot: 'hand' });
+    expect(view.slotViewOf(place(game, 'fixtures')).background).toEqual({
+      owner: view.locationArt,
+      slot: 'fixtures',
+    });
+    expect(view.slotViewOf(place(game, 'hand')).background).toEqual({
+      owner: view.characterCard.art,
+      slot: 'hand',
+    });
   });
 
   it('現在地のカードは、その土地の絵を持つ', () => {
@@ -622,14 +656,14 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const treatment = { container: injury, slotGlobalId: codex.slotNames.getId('treatment') };
     expect(injuryCard.visibleSlots, '治療具のタブが出る').toEqual([treatment]);
-    expect(view.cellCountOf(treatment), '治療具の枠は1つだけ').toBe(1);
+    expect(view.slotViewOf(treatment).cellCount, '治療具の枠は1つだけ').toBe(1);
     // 行き先は重ねる物で変わる。怪我が受け取るのは治療具だけで、かごは受け取らない。
     expect(injuryCard.contentsFor(bandageCard), '包帯は治療具のスロットへ入る').toEqual(treatment);
     expect(injuryCard.contentsFor(basketCard), 'かごは怪我に入らない').toBeUndefined();
 
     const contents = { container: basket, slotGlobalId: codex.slotNames.getId('contents') };
     expect(basketCard.visibleSlots, '中身のタブが出る').toEqual([contents]);
-    expect(view.cellCountOf(contents), 'かごは10枠（Containers.md 1節）').toBe(10);
+    expect(view.slotViewOf(contents).cellCount, 'かごは10枠（Containers.md 1節）').toBe(10);
     expect(basketCard.contentsFor(bandageCard), 'かごは持ち物を受け取る').toEqual(contents);
   });
 
@@ -692,7 +726,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     expect(view.characterWindow.properties.length, 'キャラクタはプロパティのタブを持つ').toBeGreaterThan(0);
     expect(
-      view.characterWindow.slots.map((slot) => view.slotKeyOf(slot)),
+      view.characterWindow.slots.map((slot) => view.slotViewOf(slot).key),
       '外から見えるのは装備と怪我だけ（手持ちはレーンに出ている）',
     ).toEqual(['equipment', 'injuries']);
     expect(view.currentLocationWindow.explorationRatio, '土地は探索のタブを持つ').toBe(0);
@@ -923,8 +957,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       '捨てることもできない',
     ).toBeUndefined();
     expect(view.hand[0]?.moveTo?.(place(game, 'injuries')), '怪我は移動の宛先にならない').toBeUndefined();
-    expect(view.acceptsCards(place(game, 'injuries')), '受け皿の空枠も出さない').toBe(false);
-    expect(view.acceptsCards(place(game, 'equipment')), '装備は落とせる場所なので空枠を出す').toBe(true);
+    expect(view.slotViewOf(place(game, 'injuries')).acceptsCards, '受け皿の空枠も出さない').toBe(false);
+    expect(view.slotViewOf(place(game, 'equipment')).acceptsCards, '装備は落とせる場所なので空枠を出す').toBe(
+      true,
+    );
   });
 
   it('かごは束ねられないので、2つ持てば2枚のカードとして並ぶ', () => {
@@ -970,9 +1006,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
     expect(view.cardsIn(opened!).flatMap((card) => card.objects)).toEqual([stone]);
     // タブのラベルはスロットの名前だけ（持ち主は見出しが言う）。この対応表は未登録なので識別子のまま。
-    expect(view.slotLabelOf(opened!)).toBe(locale.slot('contents').displayName);
-    expect(view.slotKeyOf(opened!), 'タブの記憶の鍵はスロット名').toBe('contents');
-    expect(view.acceptsCards(opened!)).toBe(true);
+    expect(view.slotViewOf(opened!).label).toBe(locale.slot('contents').displayName);
+    expect(view.slotViewOf(opened!).key, 'タブの記憶の鍵はスロット名').toBe('contents');
+    expect(view.slotViewOf(opened!).acceptsCards).toBe(true);
     expect(view.hand[1], '石は手持ちから無くなる').toBeUndefined();
 
     // 中身のカードは手持ちへ戻せる。

@@ -143,6 +143,53 @@ export interface ObjectWindowView {
 }
 
 /**
+ * その場所を1つの並び（レーン・子ウィンドウのタブ）として見せるのに要るもの一式。**1つの場所に
+ * ついて知りたいことは1つの問い合わせで揃う**——ばらばらに訊くと、場所を映す先を足すたびに
+ * 訊く手順も増える（Windows.md 1節、ObjectWindowViewと同じ形）。
+ *
+ * **並ぶ札は含めません。** 画面に出る札は、貸し出している1枚を引き算した後のもの（ShownCards）で、
+ * ワールドがそう持っている並び（cardsIn）をそのまま描くことは無い。
+ */
+export interface SlotView {
+  /**
+   * その場所が映しているスロットの識別子（スロット名）。**表示名ではなく識別子**で、子ウィンドウの
+   * タブの記憶（Settings.openedTab）の鍵になる——言語で変わる表示名を鍵にはできない。
+   */
+  readonly key: string;
+
+  /**
+   * タブの見出しに出す、そのスロットの表示名。**持ち主は込めません**——持ち主の名前はウィンドウの
+   * 見出しに既に出ているので、タブにまで繰り返す場所が無い。
+   */
+  readonly label: string;
+
+  /**
+   * そのスロットが持つ枠の数（`cell_count`、SlotSystem.md 2節。決まっていなければundefined）。
+   * 空けておく枠の数を決めるのに使う——1枠しか無い場所に4枠空けると「4つ入る」と誤って伝わる。
+   * 中身のかさの合計の上限（`capacity`）とは別物。
+   */
+  readonly cellCount: number | undefined;
+
+  /**
+   * カードを受け入れるか（怪我のような読み取り専用の場所はfalse）。中身が空でも「落とせる場所か
+   * どうか」を見せるために、受け皿の空枠を出すかの判断に使う。
+   */
+  readonly acceptsCards: boolean;
+
+  /**
+   * レーンの全面に敷く絵を引く先（backgroundArt参照）。どのスロットにどの絵を敷くかは、画面側では
+   * なく絵のファイル名が決める。
+   */
+  readonly background: SlotRef | undefined;
+
+  /**
+   * 製作中オブジェクトの材料スロットなら、要求している型ごとの枠（そうでなければundefined）。
+   * 並びは要求の順で、**もう要求されない型は挙げません**（craftingMaterials）。
+   */
+  readonly materials: readonly CraftingMaterial[] | undefined;
+}
+
+/**
  * プレイ中の画面が表示する内容。画面の組み立て（PlayScene）とゲーム状態の間を仕切る。
  *
  * 天候・条件・装備・怪我のように、ドメイン側にまだ表示できる形が無い項目はモック
@@ -209,11 +256,9 @@ export interface PlayScreenView {
    */
   readonly places: ScreenPlaces;
 
-  /**
-   * そのレーンが映しているスロット。レーンの全面に敷く絵を引くのに使う（backgroundArt参照）——
-   * どのスロットにどの絵を敷くかは、画面側ではなく絵のファイル名が決める。
-   */
-  readonly laneSlot: (place: CardPlace) => SlotRef | undefined;
+  /** その場所を並びとして見せるのに要るもの。**場所ごとに変わる**ので、値ではなく問い合わせ。 */
+  readonly slotViewOf: (place: CardPlace) => SlotView;
+
   /**
    * 手持ちの並び。**枠の位置がそのまま意味を持つ**ので、空き枠をundefinedとして挟んだ形で答える
    * ——前詰めの場所（cardsIn）と違い、抜けた枠は詰まらない。
@@ -239,47 +284,11 @@ export interface PlayScreenView {
   readonly cardOfType: (objectGlobalId: number) => CardContent;
 
   /**
-   * その場所が製作中オブジェクトの材料スロットなら、要求している型ごとの枠（そうでなければundefined）。
-   * 並びは要求の順で、**もう要求されない型は挙げません**（craftingMaterials）。
-   */
-  readonly materialsOf: (place: CardPlace) => readonly CraftingMaterial[] | undefined;
-
-  /**
    * 挙げた個体だけを映すカード。**束は割れる**——子ウィンドウは束のうち1個だけを借りるので
    * （Windows.md 1.1節）、借りた1個と枠に残る残りが、それぞれ自分の個体だけを動かすカードになる。
    * 表示も操作も先頭を代表とする点は、スロットの中身から作る束（cardsIn）と同じ。
    */
   readonly cardOfObjects: (objects: readonly WorldObject[], place: CardPlace) => ObjectCardStack;
-
-  /** 子ウィンドウのタイトルに出す、その場所の名前。 */
-  /**
-   * その場所を映す子ウィンドウの見出し。**スロットの名前を持ち主込みで言う**（「マルコの装備」
-   * 「編み籠の中身」）。スロットは必ず持ち主のものなので、名前だけでは何のスロットか分からない。
-   */
-  /**
-   * その場所が映しているスロットの名前（子ウィンドウのタブのラベル）。**持ち主は込めません**
-   * ——持ち主の名前はウィンドウの見出しに既に出ているので、タブにまで繰り返す場所が無い。
-   */
-  readonly slotLabelOf: (place: CardPlace) => string;
-
-  /**
-   * その場所が映しているスロットの識別子（スロット名）。**表示名ではなく識別子**で、子ウィンドウの
-   * タブの記憶（Settings.openedTab）の鍵になる——言語で変わる表示名を鍵にはできない。
-   */
-  readonly slotKeyOf: (place: CardPlace) => string;
-
-  /**
-   * その場所がカードを受け入れるか（怪我のような読み取り専用の場所はfalse）。中身が空でも
-   * 「落とせる場所かどうか」を見せるために、画面側が受け皿の空枠を出すかの判断に使う。
-   */
-  readonly acceptsCards: (place: CardPlace) => boolean;
-
-  /**
-   * その場所が持つ枠の数（`cell_count`、SlotSystem.md 2節。決まっていなければundefined）。
-   * 子ウィンドウが空けておく枠の数を決めるのに使う——1枠しか無い場所に4枠空けると「4つ入る」と
-   * 誤って伝わる。中身のかさの合計の上限（`capacity`）とは別物。
-   */
-  readonly cellCountOf: (place: CardPlace) => number | undefined;
 
   /**
    * draggedをtargetへ重ねたときに実行できるcombination（GameElementDefinition.md 12節）。
@@ -345,13 +354,28 @@ export function fromGameSession(
   const location = game.player.location ?? game.startLocation;
   const places = cardPlacesOf(game.player, location);
 
-  /** その場所が指しているスロットの名前（そのスロットを持たない物ではundefined）。 */
-  const slotNameOf = (place: CardPlace): string | undefined =>
-    place.container.def.getSlotDef(place.slotGlobalId) === undefined
-      ? undefined
-      : codex.slotNames.getName(place.slotGlobalId);
   const looks = cardLooksOf(codex, locale, game.world.minutesPerTick);
   const operations = cardOperationsOf(game, codex, locale);
+
+  /**
+   * その場所を並びとして見せるのに要るもの（SlotView）。**スロットの宣言を1度だけ引く**——
+   * 見出しも枠の数も受け入れの可否も、同じ1つの宣言から出る。
+   *
+   * 持ち主がそのスロットを持たない場合（語彙を持たないCodex）は、名前の代わりに持ち主の名前を出し、
+   * 枠は無いものとして扱う。
+   */
+  const slotViewOf = (place: CardPlace): SlotView => {
+    const slotDef = place.container.def.getSlotDef(place.slotGlobalId);
+    const name = slotDef === undefined ? undefined : codex.slotNames.getName(place.slotGlobalId);
+    return {
+      key: name ?? String(place.container.instanceId),
+      label: name === undefined ? looks.nameOf(place.container) : locale.slot(name).displayName,
+      cellCount: slotDef?.cellCount,
+      acceptsCards: slotDef !== undefined && codex.admitsBroughtObjects(slotDef),
+      background: slotDef === undefined ? undefined : { owner: place.container.def.name, slot: slotDef.name },
+      materials: craftingMaterials(place.container, codex),
+    };
+  };
 
   const characterTexts = locale.object(game.player.instance.def.name);
 
@@ -690,10 +714,7 @@ export function fromGameSession(
     currentLocation: currentLocationCard,
     locationArt,
     places,
-    laneSlot: (place) => {
-      const slot = place.container.def.getSlotDef(place.slotGlobalId);
-      return slot === undefined ? undefined : { owner: place.container.def.name, slot: slot.name };
-    },
+    slotViewOf,
     hand: game.player.handStacks.map((stack) =>
       stack.length === 0 ? undefined : cardOfStack(stack, places('hand')),
     ),
@@ -701,18 +722,7 @@ export function fromGameSession(
     mapRoads: discovered.roads,
     cardsIn: (place) => stacksIn(place).map((stack) => cardOfStack(stack, place)),
     cardOfType: looks.typeContentOf,
-    materialsOf: (place) => craftingMaterials(place.container, codex),
     cardOfObjects: cardOfStack,
-    slotLabelOf: (place) => {
-      const name = slotNameOf(place);
-      return name === undefined ? looks.nameOf(place.container) : locale.slot(name).displayName;
-    },
-    slotKeyOf: (place) => slotNameOf(place) ?? String(place.container.instanceId),
-    acceptsCards: (place) => {
-      const slotDef = place.container.def.getSlotDef(place.slotGlobalId);
-      return slotDef !== undefined && codex.admitsBroughtObjects(slotDef);
-    },
-    cellCountOf: (place) => place.container.def.getSlotDef(place.slotGlobalId)?.cellCount,
     combinationOf: (dragged, target) => {
       // ドラッグが動かすのはスタックのうち1つなので、同じカードへ重ねたときはスタックの中の2つを
       // 組み合わせる（石と石のように、自分自身とcombinationできる場合）。
