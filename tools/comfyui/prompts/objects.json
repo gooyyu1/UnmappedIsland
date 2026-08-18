@@ -723,5 +723,54 @@
     ],
     "positive": "exactly one bundle of freshly picked water spinach alone on an empty white page, long hollow green stems gathered together and laid down on their sides in one loose bundle with all the cut stem ends together at one side and the leaves spread at the other, narrow arrow shaped pointed leaves spaced out along the stems, seen from a few steps back so that the whole bundle is well inside the page with a wide empty white margin on all four sides, fresh deep green leaves and paler yellow green stems, crisp matte leaves, it is small and lies in the middle, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
     "negative": "growing in water, floating on water, pond, paddy, marsh, stream, wet, droplets, mud, soil, roots, rooted, standing upright, growing plant, field of greens, spinach, baby spinach, round leaves, oval leaves, lettuce, cabbage, bok choy, pak choi, kale, herbs, basil, mint, cooked, stir fry, wok, pan, garlic, chilli, plate, dish, bowl, salad, chopsticks, market stall, rubber band, plastic bag, packaging, price tag, vase, bouquet, flowers, two bundles, three bundles, several bundles, pair, group, pile, heap, collection, scattered objects, repeated objects, filling the frame, close-up, macro, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, sky, table, desk, cloth, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, overexposed"
+  },
+  "clay": {
+    "description": [
+      "粘土（src/assets/world-codex/pottery.yaml）。水際から掘り取った、まだ濡れている練り土の塊。",
+      "",
+      "**作り方を書くと作り手が出る。** 最初「刃で切った面」「指で押した窪み」と工程で書いたら、",
+      "9枚中6枚に手と刃物が写り込んだ（negativeのhandsは効かない——正の文が呼んだものは正の文でしか",
+      "止まらない）。**結果の形だけを書く**: 片面が平ら、他は丸くて窪みがある。",
+      "",
+      "**石と紛れないことが第一。** 同じ「灰色がかった塊」なので、丸い河原石（stone）と見分けが",
+      "付かないと素材として読めない。平らな面と、しっとりした濡れの艶がその見分けになる。",
+      "",
+      "**艶は否定しない。** 石の事情で入れている glossy / wet の否定はここでは逆に困る",
+      "（このファイルの冒頭）。濡れているのが粘土の見分けそのもの。",
+      "",
+      "**色は放っておくとピンクの油粘土になる。** 焼く前の土なので、赤茶ではなく暗い灰褐色に寄せる。"
+    ],
+    "positive": "exactly one lump of wet clay alone on an empty white page, a heavy fist sized block of dark damp digging clay, one face flat and smooth, the other faces uneven and rounded with shallow hollows and soft ridges across them, the edges soft and rounded because the clay is heavy and damp, a faint damp sheen on the flat face, deep grey brown earth colour with darker damp patches, clearly darker than the white page, the lump is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "hand, fingers, thumb, fingernail, arm, wrist, knife, blade, wire, tool, working, sculpting, slab, sheet, tile, puddle, spill, splash, pink clay, terracotta, plasticine, modelling clay, stone, rock, pebble, boulder, gravel, brick, dough, bread, cheese, chocolate, meat, dirt pile, soil heap, sand, dry cracked earth, pottery, pot, bowl, vase, sculpture, figurine, potters wheel, cloth, bag, two lumps, three lumps, several lumps, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+  },
+  "unfired_jar": {
+    "description": [
+      "素焼き前の壺（src/assets/world-codex/pottery.yaml）。粘土紐を巻き上げて形にしただけの、",
+      "まだ焼いていない壺。焼き上がりの甕（jar）は**この生データから派生させる**——同じ壺が焼ける",
+      "話なので、別々に生成すると形の違う壺へすり替わって見える（炉の3枚と同じ理由）。",
+      "",
+      "**釉薬を掛けさせない。** pot と言うだけで、艶のある完成した陶器か、絵付けのある壺が出る。",
+      "unglazed / matte / raw clay を本文に置き、glazed / shiny / decorated を否定する。",
+      "",
+      "**巻き上げの跡が、材料との繋がりを見せる。** 轆轤の滑らかな壺ではなく、粘土紐の段が横に",
+      "うっすら残る胴にする（粘土の塊 → この壺、と読めるように）。"
+    ],
+    "positive": "exactly one unfired clay jar alone on an empty white page, a hand built storage jar of raw unglazed clay standing upright, a round belly narrowing to a short straight neck with a plain thick rim and a small flat base, faint horizontal ridges winding around the belly where coils of clay were stacked and smoothed, the surface dull and powdery with no glaze and no decoration, deep grey brown earth colour, clearly darker than the white page, the jar is small and stands in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "glazed, glossy, shiny, polished, lacquered, varnish, painted decoration, pattern, ornament, motif, greek vase, chinese porcelain, blue and white, handles, spout, lid, cover, flowers, plants inside, water, liquid, food, coins, full jar, amphora, urn, teapot, cup, mug, bowl, plate, basket, potters wheel, kiln, two jars, three jars, several jars, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, sky, table, desk, cloth, shelf, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
+  },
+  "earth_kiln": {
+    "description": [
+      "覆い焼きの炉（src/assets/world-codex/pottery.yaml）。器と薪をまとめて濡れた土で覆っただけの、",
+      "一度きりの焼成設備。窯ではないので、**レンガ・扉・煙突・アーチを描かせない**——出すと",
+      "パン窯かタンドールになり、「壊して取り出す一度きりの覆い」に見えなくなる。",
+      "",
+      "**穴が炉であることの唯一の手掛かり。** 土を盛っただけの塚は、穴が無いと墓か土の山にしか",
+      "見えない。裾に小さな空気穴をいくつかと、天に1つ大きめの穴を頼む。",
+      "",
+      "火の付いた絵（_ember / _lit）はこの生データから派生させる。上に空ける余白（headroom）は",
+      "3枚で共通（README「火の付いた炉」節）。**この絵には火も煙も描かせない。**"
+    ],
+    "positive": "exactly one low dome of packed wet earth alone on an empty white page, a rough rounded mound patted together by hand out of dark damp clay and soil, wider than it is tall, its surface uneven and lumpy with the marks of hands pressed into it, a row of three small round air holes low along its foot and one larger round opening at the top of the dome, the openings dark inside, no door and no bricks, deep grey brown damp earth clearly darker than the white page, the mound is small and sits in the middle with a wide empty white margin all around it, a soft shadow beneath it, plain white background, hand painted illustration, flat even lighting, high quality",
+    "negative": "fire, flame, flames, smoke, embers, glow, sparks, bricks, brickwork, masonry, stonework, stone wall, arch, archway, doorway, door, iron door, chimney, flue, pipe, oven, bread oven, pizza oven, tandoor, furnace, forge, igloo, tent, hut, house, roof, grave, burial mound, anthill, termite mound, haystack, rock, boulder, cave, tunnel, pottery, pots, jars, tools, two mounds, three mounds, several mounds, pair, group, pile, stack, collection, scattered objects, repeated objects, filling the frame, close-up, cropped, cut off, out of frame, scenery, landscape, background scenery, ground, floor, grass, water, sky, table, desk, cluttered background, busy background, gradient background, dark background, colored background, vignette, text, letters, numbers, watermark, logo, signature, hands, person, character, photorealistic photo, 3d render, cartoon, cel shading, flat vector art, blurry, low quality, jpeg artifacts, multiple shadows, harsh shadow, washed out, faded, pale, whitish, overexposed"
   }
 }

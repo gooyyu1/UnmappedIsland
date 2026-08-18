@@ -1,0 +1,33 @@
+{
+  "_comment": [
+    "src/assets/objects/clay.png を作り直すためのレシピ。build.py が読む。",
+    "水際の探索で掘り取れる練り土（src/assets/world-codex/pottery.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: clay）。** 生成では塊にならない（18枚とも。prompts/objects.json の",
+    "clay 参照）。工程で書けば手と刃物が写り込み、窪みと稜線だけ書けば粘土で作った顔になる。",
+    "",
+    "**下絵を渡してもなお石になる。** 1周目は灰色の岩に穴が開いた絵が返った（隣に置いた stone.png と",
+    "見分けが付かない）。効いたのは色を言い切ることで、**灰色ではなく濡れた土の茶色**と本文で指定し、",
+    "下絵の色も灰褐色から茶へ寄せた。",
+    "",
+    "**窪みは描かない。** 2周目で茶色にはなったが、下絵の浅い凹みが貫通した穴として描かれ、小さな",
+    "石臼になった。平らな切り口と歪んだ輪郭だけで掘り取った土として読めるので、凹みは下絵からも",
+    "本文からも外してある。",
+    "",
+    "段は256。800gの塊なので、丸くて小さい物としてヤシの殻・石と同じ扱い。"
+  ],
+  "output": "src/assets/objects/clay.png",
+  "sketch": "clay",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: one lump of wet digging clay lying on the ground in exactly the same place at the same size, its top sliced off flat and the rest of it rounded and bulging. It is soft wet earth, not a stone: the sliced top is smooth, flat and damp looking, the rounded sides bulge and sag under their own weight, and every edge is soft and rounded. Its colour is a deep warm brown, the brown of wet river mud, with darker damp patches and clearly darker than the white page: it is not grey, not stony, not pink and not pale. There is no hard mineral surface, no speckling and no cracks, and there is no hole, no hollow, no dent and no bowl shape anywhere in it: the flat top is unbroken. Nothing is growing on it, and there are no hands, no tools and no face. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow beneath it. Flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "256",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

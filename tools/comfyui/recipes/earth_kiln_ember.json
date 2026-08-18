@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "src/assets/objects/earth_kiln_ember.png を作り直すためのレシピ。build.py が読む。",
+    "種火だけが残った覆い焼きの炉（heatのember段、src/assets/world-codex/fire.yaml）。",
+    "",
+    "作り方は recipes/campfire_ember.json と同じで、描き足す場所が枝の山ではなく天の穴になっただけ。",
+    "",
+    "**覆われているので、見えるのは穴の中だけ。** 炉の外に炎も熾も出さない——出すと覆いが開いて",
+    "いるように見え、「壊して取り出す」まで中身に触れない炉として読めなくなる。",
+    "",
+    "**塚を焦がさせない。** 1周目は熾と灰の語が塚全体へ回って、鱗のような黒い肌になった。火が消えた",
+    "絵（無印）と並べると別の炉に見える。**塚を名指しして色と肌を据え置く**まで止まらない",
+    "（recipes/three_stone_hearth_lit.json の「石と枝の両方に名指しで要る」と同じ）。"
+  ],
+  "output": "src/assets/objects/earth_kiln_ember.png",
+  "edit": {
+    "source": "earth_kiln.json",
+    "prompt": "Keep this picture exactly as it is: the same mound of earth, in the same place, at the same size, with the same four openings, painted in the same soft hand painted style on the same plain empty white page with the same wide white margin and the same soft grey shadow. Now show the fire inside it dying down to embers. Deep inside the opening at the top, and deep inside each of the three air holes along the foot, a dull red orange glow shows, dim and low, as if from coals half covered in ash. There is no flame anywhere in the picture, not one, and nothing burning sticks out of any opening. A single thin wisp of pale grey smoke curls straight up from the top opening, no higher than half the height of the mound, and fades away before it reaches the top. The mound itself does not change at all: it keeps exactly the same pale grey brown earth colour and the same smooth rounded lumps it has now. Do not darken it, do not blacken it, and do not add ash, soot, char, cracks, scales or any texture to it. Do not move, resize or redraw the mound. The white page stays plain white: there is no glow, no haze and no coloured light spilling onto the page, and nothing comes near the edges of the page. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "headroom": 110,
+    "align": "earth_kiln.json",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
