@@ -245,12 +245,8 @@ export interface PlayScreenView {
    * 区別できないため、名前は必ず出す（ScreenLayout.md 5節）。天気の語彙を持たないCodexではundefined。
    */
   readonly weatherLabel: string | undefined;
-  readonly currentLocation: CardContent;
-  /**
-   * 現在地の絵の名前（`currentLocation.art`と同じ値）。土地の絵の遅延ロードの単位（artFiles参照）で、
-   * **必ず1枚を待つ**ので、札の側と違って欠けない形で持つ。
-   */
-  readonly locationArt: string;
+  /** 現在地を映す札。設置物レーンの左端にピン留めされる1枚と、現在地の子ウィンドウが同じ姿で出す。 */
+  readonly currentLocationCard: CardContent;
   /**
    * 画面の区画（レーン・装備/怪我のボタン）が今映しているスロット。**画面が名前で指せるのはこの5つ
    * だけ**で、それ以外の場所はカードや現在地が名乗る`visible_slots`から来る（cardPlaces参照）。
@@ -260,12 +256,6 @@ export interface PlayScreenView {
   /** その場所を並びとして見せるのに要るもの。**場所ごとに変わる**ので、値ではなく問い合わせ。 */
   readonly slotViewOf: (place: CardPlace) => SlotView;
 
-  /**
-   * 手持ちの並び。**枠の位置がそのまま意味を持つ**ので、空き枠をundefinedとして挟んだ形で答える
-   * ——前詰めの場所（cardsIn）と違い、抜けた枠は詰まらない。
-   */
-  readonly hand: readonly (ObjectCardStack | undefined)[];
-
   /** 地図ウィンドウに出す既知の土地（現在地と、発見済みの道の両端）。 */
   readonly mapLands: readonly MapLandView[];
 
@@ -273,10 +263,11 @@ export interface PlayScreenView {
   readonly mapRoads: readonly MapRoadView[];
 
   /**
-   * 子ウィンドウに並べる、その場所の中身（装備・怪我・コンテナの中身）。前詰めスロットなので
-   * 空きセルは無い。レーンで常に見えているfixtures/items/handはこちらでは扱わない。
+   * その場所の枠の並び（空き枠はundefined）。**枠の位置がそのまま並びになる**ので、枠数の決まった
+   * スロット（手持ち・入れ物の中身）で抜けた枠は詰まらない——世界が枠の位置を保つ以上、画面もそこを
+   * 動かさない（SlotSystem.md 3節）。
    */
-  readonly cardsIn: (place: CardPlace) => readonly ObjectCardStack[];
+  readonly cardsIn: (place: CardPlace) => readonly (ObjectCardStack | undefined)[];
 
   /**
    * その型（object_defのグローバルID）そのものを表すカード。インスタンスを持たないので、まだ在るとは
@@ -331,10 +322,15 @@ export const EXPLORE_ACTION = 'explore';
  */
 const STATUS_TAG = 'status';
 
-/** スロットの中身を、積み重なっているまとまりごとに分けたもの。持たないスロットを指していれば空。 */
-function stacksIn(place: CardPlace): readonly (readonly WorldObject[])[] {
+/**
+ * スロットの枠の並び（空き枠はundefined）。持たないスロットを指していれば空。
+ *
+ * **空き枠が出るのは枠数が決まっているスロットだけ**（Slot.cells、SlotSystem.md 3節）。前詰めの
+ * スロットは詰まっているので、undefinedは現れない。
+ */
+function stacksIn(place: CardPlace): readonly (readonly WorldObject[] | undefined)[] {
   const slot = place.container.tryGetSlot(place.slotGlobalId);
-  return slot === undefined ? [] : slot.cells.flatMap((cell) => (cell === undefined ? [] : [cell.members]));
+  return slot === undefined ? [] : slot.cells.map((cell) => cell?.members);
 }
 
 /**
@@ -679,9 +675,6 @@ export function fromGameSession(
   const characterWindow = windowOf(game.player.instance);
   const currentLocationWindow = windowOf(location.instance);
 
-  /** 現在地の絵の名前。札に映すのも、ロードを待つのもこの1枚（locationArt）。 */
-  const locationArt = location.instance.def.name;
-
   return {
     characterCard: characterWindow.card,
     characterWindow,
@@ -699,16 +692,13 @@ export function fromGameSession(
     ambientTemperature: game.world.ambientTemperature,
     weatherLabel:
       game.world.weather === undefined ? undefined : locale.symbol(game.world.weather).displayName,
-    currentLocation: currentLocationWindow.card,
-    locationArt,
+    currentLocationCard: currentLocationWindow.card,
     places,
     slotViewOf,
-    hand: game.player.handStacks.map((stack) =>
-      stack.length === 0 ? undefined : cardOfStack(stack, places('hand')),
-    ),
     mapLands: discovered.lands,
     mapRoads: discovered.roads,
-    cardsIn: (place) => stacksIn(place).map((stack) => cardOfStack(stack, place)),
+    cardsIn: (place) =>
+      stacksIn(place).map((stack) => (stack === undefined ? undefined : cardOfStack(stack, place))),
     cardOfType: looks.typeContentOf,
     cardOfObjects: cardOfStack,
     combinationOf: (dragged, target) => {

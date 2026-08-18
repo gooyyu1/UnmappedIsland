@@ -24,7 +24,6 @@ import type { ObjectCardStack, ObjectWindowView, PlayScreenView } from './view/P
 import type { CardAction } from './view/cardOperations';
 import { EXPLORE_ACTION, fromGameSession } from './view/PlayScreenView';
 import type { CardPlace, ScreenPlace } from './view/cardPlaces';
-import { samePlace } from './view/cardPlaces';
 import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
 import type { RecordedView, Recording } from './view/recording';
@@ -212,7 +211,19 @@ const MENU_ICON: BarIcon = { icon: '☰' };
  *
  * レシピだけ道具の絵を避けているのは、下のフィルターバーが道具の絞り込みに🔨を使っているため。
  */
-const SLOT_BUTTON_ICONS = { map: '🗺️', equipment: '👕', injury: '🩹', recipe: '📜' } as const;
+const SLOT_BUTTON_ICONS = { map: '🗺️', equipment: '👕', injuries: '🩹', recipe: '📜' } as const;
+
+/**
+ * キャラクタの見えるスロット（`visible_slots`）1つにつき1つ並ぶボタンの姿。**どのスロットが並ぶかを
+ * 決めるのはワールド**（characterWindow.slots）で、ここが持つのは姿だけ。
+ *
+ * 姿を用意していないスロットにはボタンを出さない——染めは絵に焼いてあり（COLOR参照）、絵と色の
+ * 両方を用意して初めてこの列に並べられる。ボタンが無くても、キャラクタの窓のタブからは開ける。
+ */
+const CHARACTER_SLOT_BUTTONS: Readonly<Record<string, { art: IconName; icon: string; fill: number }>> = {
+  equipment: { art: 'equipment', icon: SLOT_BUTTON_ICONS.equipment, fill: COLOR.equipmentButton },
+  injuries: { art: 'injury', icon: SLOT_BUTTON_ICONS.injuries, fill: COLOR.injuryButton },
+};
 
 const OPTION_ICONS: readonly BarIcon[] = [
   { art: 'settings', icon: '⚙️' },
@@ -539,10 +550,12 @@ export class PlayScene extends ResponsiveScene {
   private stateLines(): readonly string[] {
     return [
       `ワールド時刻: ${this.clockText()}`,
-      `現在地: ${this.view.currentLocation.name}`,
+      `現在地: ${this.view.currentLocationCard.name}`,
       `演出中: ${ACTIVITY_NAMES[this.activity]}`,
       `子ウィンドウ: ${this.childWindowPlace === undefined ? 'なし' : this.placeText(this.childWindowPlace)}`,
-      `手持ち: ${this.view.hand.map((card) => card?.name ?? '空き').join(' / ')}`,
+      `手持ち: ${this.cardsAt(this.place('hand'))
+        .map((card) => card?.name ?? '空き')
+        .join(' / ')}`,
       `アイテム: ${this.cardsAt(this.place('items'))
         .map((card) => card?.name)
         .join(' / ')}`,
@@ -556,10 +569,11 @@ export class PlayScene extends ResponsiveScene {
    * カードなら届いた時点で貼り替わり（Card）、移動なら暗転のまま待つ（transit）。
    */
   private requestLocationArt(): void {
+    this.artLoader.request(this.currentLandArt);
+
     const location = this.gameSession.player.location;
     if (location === undefined) return;
 
-    this.artLoader.request(location.instance.def.name);
     // 発見済みの道の行き先は、移動に備えて絵を全部読む。
     for (const name of this.pathDestinationNames(location.fixtures)) this.artLoader.request(name);
     // 未発見の道の行き先は、土地カードの絵1枚だけ読んでおく。道は発見と同時に行き先の絵のカードと
@@ -671,7 +685,7 @@ export class PlayScene extends ResponsiveScene {
   private coverUntilLocationArtLoaded(): void {
     // 作り直し前の幕を明転させようとする待ちが残っていれば無効にする（幕は作り直しで消えている）。
     this.artWait += 1;
-    if (this.artLoader.loaded(this.view.locationArt)) {
+    if (this.locationArtLoaded) {
       // 場面転換の途中で作り直された場合、その転換の明転はもう起きない。busyのまま固まらないよう戻す。
       this.activity = 'idle';
       return;
@@ -696,7 +710,7 @@ export class PlayScene extends ResponsiveScene {
       this.plainCells(this.shown.stacksAt(this.place('fixtures'))),
       {
         pinned: {
-          ...this.view.currentLocation,
+          ...this.view.currentLocationCard,
           // 現在地そのものの子ウィンドウ。**中に入ると外の並びから札が消える**ので、探索する・
           // 降りる・出航する・部品を差し替えるはここからしか辿れない。
           onTap: this.whileIdle(() => this.openLocationWindow()),
@@ -876,8 +890,7 @@ export class PlayScene extends ResponsiveScene {
    * ShownCardsへ訊く。
    */
   private cardsAt(place: CardPlace): readonly (ObjectCardStack | undefined)[] {
-    // 手持ちだけは枠の位置が意味を持つので、空き枠を挟んだ並びで受け取る（PlayScreenView.hand）。
-    return samePlace(place, this.place('hand')) ? this.view.hand : this.view.cardsIn(place);
+    return this.view.cardsIn(place);
   }
 
   /** レーンが映している場所。 */
@@ -1385,7 +1398,7 @@ export class PlayScene extends ResponsiveScene {
     const statusesBefore = this.status.all();
     const startedAt = this.gameSession.world.totalMinutes;
 
-    noteOperation(`探索した: ${this.view.currentLocation.name}（${this.clockText()}）`);
+    noteOperation(`探索した: ${this.view.currentLocationCard.name}（${this.clockText()}）`);
     // 結果待ちはここから。降ろすのは経過を見せ切った時点（passTime）。
     this.activity = 'exploring';
 
@@ -1440,9 +1453,11 @@ export class PlayScene extends ResponsiveScene {
     this.childWindow?.showFound(index);
   }
 
-  /** 現在地のレーンに出ているカード（設置物とアイテム）。 */
+  /** 現在地のレーンに出ているカード（設置物とアイテム）。どちらも前詰めなので空き枠は無い。 */
   private get locationCards(): readonly ObjectCardStack[] {
-    return [...this.view.cardsIn(this.place('fixtures')), ...this.view.cardsIn(this.place('items'))];
+    return [...this.cardsAt(this.place('fixtures')), ...this.cardsAt(this.place('items'))].filter(
+      (card): card is ObjectCardStack => card !== undefined,
+    );
   }
 
   /** 今フィールドとロケーションのレーンに出ているインスタンスのID。 */
@@ -1739,7 +1754,7 @@ export class PlayScene extends ResponsiveScene {
   private revealWhenLocationArtLoaded(curtain: Curtain): void {
     this.artWait += 1;
     const wait = this.artWait;
-    this.artLoader.onceLoaded(this.view.locationArt, () => {
+    const reveal = (): void => {
       if (wait !== this.artWait) return;
       this.rebuildFieldArea();
       this.showSky();
@@ -1748,7 +1763,30 @@ export class PlayScene extends ResponsiveScene {
       curtain.brighten(BRIGHTEN_MS, () => {
         this.activity = 'idle';
       });
-    });
+    };
+
+    this.artLoader.onceLoaded(this.currentLandArt, reveal);
+  }
+
+  /**
+   * 今の土地の識別子。**絵の遅延ロードの単位**（artFiles参照）で、土地カードの絵とレーンの地が
+   * この1つの名前で束ねられている。
+   *
+   * **札の絵とは別物。** 札が映す絵は段で差し替わりうる（`art_by_stage`）が、読む単位は土地そのもの
+   * ——札の絵の名前で待つと、段の絵しか見ずにレーンの地を待ち損ねる。
+   */
+  private get currentLandArt(): string {
+    return (this.gameSession.player.location ?? this.gameSession.startLocation).instance.def.name;
+  }
+
+  /**
+   * 現在地の絵が届いているか。絵が1枚も無い土地（最小のCodex）では、待つものが無いので即座に真。
+   *
+   * **待っているのはレーンの地。** 札の絵は届いた時点で貼り替わる（Card）が、レーンの地は組み立て時に
+   * しか差し込めない。同じ単位で一度に届くので、札の絵と別々には待たない。
+   */
+  private get locationArtLoaded(): boolean {
+    return this.artLoader.loaded(this.currentLandArt);
   }
 
   /**
@@ -1963,32 +2001,27 @@ export class PlayScene extends ResponsiveScene {
    * 同じで、地図が最も押す頻度が低いので端に来る。レシピは持ち物ではないので反対の端。
    */
   private addSlotButtonColumn(column: Rect): void {
+    // 真ん中は、キャラクタが外から見せているスロット（visible_slots）。どれが並ぶかは画面ではなく
+    // ワールドが決める——窓のタブと同じ並びが、そのままボタンになる。
+    const characterSlots = this.view.characterWindow.slots.flatMap((place) => {
+      const looks = CHARACTER_SLOT_BUTTONS[this.view.slotViewOf(place).key];
+      return looks === undefined ? [] : [{ ...looks, onTap: () => this.openSlotWindow(place) }];
+    });
     const buttons = [
       {
-        art: 'map',
+        art: 'map' as IconName,
         icon: SLOT_BUTTON_ICONS.map,
         fill: COLOR.mapButton,
         onTap: () => this.openMapWindow(),
       },
+      ...characterSlots,
       {
-        art: 'equipment',
-        icon: SLOT_BUTTON_ICONS.equipment,
-        fill: COLOR.equipmentButton,
-        onTap: () => this.openSlotWindow(this.place('equipment')),
-      },
-      {
-        art: 'injury',
-        icon: SLOT_BUTTON_ICONS.injury,
-        fill: COLOR.injuryButton,
-        onTap: () => this.openSlotWindow(this.place('injuries')),
-      },
-      {
-        art: 'recipe',
+        art: 'recipe' as IconName,
         icon: SLOT_BUTTON_ICONS.recipe,
         fill: COLOR.recipeButton,
         onTap: () => this.openRecipeWindow(),
       },
-    ] as const;
+    ];
     // 列の高さを4等分せず、上下へ余白を空けた残りを間隔に回す（SIZE.slotButtonColumnInset）。
     // **間隔を別の定数にはしない**——両方を定数にすると、片方を変えたときに列の高さと合わなくなる。
     const width = Math.min(this.metrics.px(SIZE.slotButton.width), column.width);
