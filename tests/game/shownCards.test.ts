@@ -27,8 +27,6 @@ const LANE_OWNERS: Record<ScreenPlace, WorldObject> = {
   fixtures: object(-1),
   items: object(-2),
   hand: object(-3),
-  equipment: object(-4),
-  injuries: object(-5),
 };
 const place = (screen: ScreenPlace): CardPlace => ({
   container: LANE_OWNERS[screen],

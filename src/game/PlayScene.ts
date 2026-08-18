@@ -212,7 +212,19 @@ const MENU_ICON: BarIcon = { icon: '☰' };
  *
  * レシピだけ道具の絵を避けているのは、下のフィルターバーが道具の絞り込みに🔨を使っているため。
  */
-const SLOT_BUTTON_ICONS = { map: '🗺️', equipment: '👕', injury: '🩹', recipe: '📜' } as const;
+const SLOT_BUTTON_ICONS = { map: '🗺️', equipment: '👕', injuries: '🩹', recipe: '📜' } as const;
+
+/**
+ * キャラクタの見えるスロット（`visible_slots`）1つにつき1つ並ぶボタンの姿。**どのスロットが並ぶかを
+ * 決めるのはワールド**（characterWindow.slots）で、ここが持つのは姿だけ。
+ *
+ * 姿を用意していないスロットにはボタンを出さない——染めは絵に焼いてあり（COLOR参照）、絵と色の
+ * 両方を用意して初めてこの列に並べられる。ボタンが無くても、キャラクタの窓のタブからは開ける。
+ */
+const CHARACTER_SLOT_BUTTONS: Readonly<Record<string, { art: IconName; icon: string; fill: number }>> = {
+  equipment: { art: 'equipment', icon: SLOT_BUTTON_ICONS.equipment, fill: COLOR.equipmentButton },
+  injuries: { art: 'injury', icon: SLOT_BUTTON_ICONS.injuries, fill: COLOR.injuryButton },
+};
 
 const OPTION_ICONS: readonly BarIcon[] = [
   { art: 'settings', icon: '⚙️' },
@@ -539,7 +551,7 @@ export class PlayScene extends ResponsiveScene {
   private stateLines(): readonly string[] {
     return [
       `ワールド時刻: ${this.clockText()}`,
-      `現在地: ${this.view.currentLocation.name}`,
+      `現在地: ${this.view.currentLocationCard.name}`,
       `演出中: ${ACTIVITY_NAMES[this.activity]}`,
       `子ウィンドウ: ${this.childWindowPlace === undefined ? 'なし' : this.placeText(this.childWindowPlace)}`,
       `手持ち: ${this.view.hand.map((card) => card?.name ?? '空き').join(' / ')}`,
@@ -671,7 +683,7 @@ export class PlayScene extends ResponsiveScene {
   private coverUntilLocationArtLoaded(): void {
     // 作り直し前の幕を明転させようとする待ちが残っていれば無効にする（幕は作り直しで消えている）。
     this.artWait += 1;
-    if (this.artLoader.loaded(this.view.locationArt)) {
+    if (this.locationArtLoaded) {
       // 場面転換の途中で作り直された場合、その転換の明転はもう起きない。busyのまま固まらないよう戻す。
       this.activity = 'idle';
       return;
@@ -696,7 +708,7 @@ export class PlayScene extends ResponsiveScene {
       this.plainCells(this.shown.stacksAt(this.place('fixtures'))),
       {
         pinned: {
-          ...this.view.currentLocation,
+          ...this.view.currentLocationCard,
           // 現在地そのものの子ウィンドウ。**中に入ると外の並びから札が消える**ので、探索する・
           // 降りる・出航する・部品を差し替えるはここからしか辿れない。
           onTap: this.whileIdle(() => this.openLocationWindow()),
@@ -1385,7 +1397,7 @@ export class PlayScene extends ResponsiveScene {
     const statusesBefore = this.status.all();
     const startedAt = this.gameSession.world.totalMinutes;
 
-    noteOperation(`探索した: ${this.view.currentLocation.name}（${this.clockText()}）`);
+    noteOperation(`探索した: ${this.view.currentLocationCard.name}（${this.clockText()}）`);
     // 結果待ちはここから。降ろすのは経過を見せ切った時点（passTime）。
     this.activity = 'exploring';
 
@@ -1739,7 +1751,7 @@ export class PlayScene extends ResponsiveScene {
   private revealWhenLocationArtLoaded(curtain: Curtain): void {
     this.artWait += 1;
     const wait = this.artWait;
-    this.artLoader.onceLoaded(this.view.locationArt, () => {
+    const reveal = (): void => {
       if (wait !== this.artWait) return;
       this.rebuildFieldArea();
       this.showSky();
@@ -1748,7 +1760,20 @@ export class PlayScene extends ResponsiveScene {
       curtain.brighten(BRIGHTEN_MS, () => {
         this.activity = 'idle';
       });
-    });
+    };
+
+    const art = this.view.currentLocationCard.art;
+    if (art === undefined) reveal();
+    else this.artLoader.onceLoaded(art, reveal);
+  }
+
+  /**
+   * 現在地の絵が届いているか。**絵を持たない場所は待たない**——絵の無い土地（最小のCodex）でも
+   * 場面転換が止まらないようにする。
+   */
+  private get locationArtLoaded(): boolean {
+    const art = this.view.currentLocationCard.art;
+    return art === undefined || this.artLoader.loaded(art);
   }
 
   /**
@@ -1963,32 +1988,27 @@ export class PlayScene extends ResponsiveScene {
    * 同じで、地図が最も押す頻度が低いので端に来る。レシピは持ち物ではないので反対の端。
    */
   private addSlotButtonColumn(column: Rect): void {
+    // 真ん中は、キャラクタが外から見せているスロット（visible_slots）。どれが並ぶかは画面ではなく
+    // ワールドが決める——窓のタブと同じ並びが、そのままボタンになる。
+    const characterSlots = this.view.characterWindow.slots.flatMap((place) => {
+      const looks = CHARACTER_SLOT_BUTTONS[this.view.slotViewOf(place).key];
+      return looks === undefined ? [] : [{ ...looks, onTap: () => this.openSlotWindow(place) }];
+    });
     const buttons = [
       {
-        art: 'map',
+        art: 'map' as IconName,
         icon: SLOT_BUTTON_ICONS.map,
         fill: COLOR.mapButton,
         onTap: () => this.openMapWindow(),
       },
+      ...characterSlots,
       {
-        art: 'equipment',
-        icon: SLOT_BUTTON_ICONS.equipment,
-        fill: COLOR.equipmentButton,
-        onTap: () => this.openSlotWindow(this.place('equipment')),
-      },
-      {
-        art: 'injury',
-        icon: SLOT_BUTTON_ICONS.injury,
-        fill: COLOR.injuryButton,
-        onTap: () => this.openSlotWindow(this.place('injuries')),
-      },
-      {
-        art: 'recipe',
+        art: 'recipe' as IconName,
         icon: SLOT_BUTTON_ICONS.recipe,
         fill: COLOR.recipeButton,
         onTap: () => this.openRecipeWindow(),
       },
-    ] as const;
+    ];
     // 列の高さを4等分せず、上下へ余白を空けた残りを間隔に回す（SIZE.slotButtonColumnInset）。
     // **間隔を別の定数にはしない**——両方を定数にすると、片方を変えたときに列の高さと合わなくなる。
     const width = Math.min(this.metrics.px(SIZE.slotButton.width), column.width);

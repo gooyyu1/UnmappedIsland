@@ -245,12 +245,8 @@ export interface PlayScreenView {
    * 区別できないため、名前は必ず出す（ScreenLayout.md 5節）。天気の語彙を持たないCodexではundefined。
    */
   readonly weatherLabel: string | undefined;
-  readonly currentLocation: CardContent;
-  /**
-   * 現在地の絵の名前（`currentLocation.art`と同じ値）。土地の絵の遅延ロードの単位（artFiles参照）で、
-   * **必ず1枚を待つ**ので、札の側と違って欠けない形で持つ。
-   */
-  readonly locationArt: string;
+  /** 現在地を映す札。設置物レーンの左端にピン留めされる1枚と、現在地の子ウィンドウが同じ姿で出す。 */
+  readonly currentLocationCard: CardContent;
   /**
    * 画面の区画（レーン・装備/怪我のボタン）が今映しているスロット。**画面が名前で指せるのはこの5つ
    * だけ**で、それ以外の場所はカードや現在地が名乗る`visible_slots`から来る（cardPlaces参照）。
@@ -679,9 +675,6 @@ export function fromGameSession(
   const characterWindow = windowOf(game.player.instance);
   const currentLocationWindow = windowOf(location.instance);
 
-  /** 現在地の絵の名前。札に映すのも、ロードを待つのもこの1枚（locationArt）。 */
-  const locationArt = location.instance.def.name;
-
   return {
     characterCard: characterWindow.card,
     characterWindow,
@@ -699,8 +692,7 @@ export function fromGameSession(
     ambientTemperature: game.world.ambientTemperature,
     weatherLabel:
       game.world.weather === undefined ? undefined : locale.symbol(game.world.weather).displayName,
-    currentLocation: currentLocationWindow.card,
-    locationArt,
+    currentLocationCard: currentLocationWindow.card,
     places,
     slotViewOf,
     hand: game.player.handStacks.map((stack) =>

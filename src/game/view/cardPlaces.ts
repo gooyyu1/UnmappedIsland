@@ -27,13 +27,13 @@ export function samePlace(a: CardPlace, b: CardPlace): boolean {
 }
 
 /**
- * 画面が自分で名指しする入口（ScreenLayout.md）。3つのレーンと、キャラクタの装備・怪我を開く
- * ショートカット。
+ * 画面が自分で名指しする入口——**常に見えている3つのレーン**（ScreenLayout.md）だけ。
  *
- * **カードから辿り着く場所はここに要らない。** 入れ物の中身も現在地の構造も、その物が名乗る
- * `visible_slots`から場所として出てくる（GameElementDefinition.md 7.11節）。
+ * **物から辿り着く場所はここに要らない。** 装備も怪我も、入れ物の中身も現在地の構造も、その物が
+ * 名乗る`visible_slots`から場所として出てくる（GameElementDefinition.md 7.11節）——装備・怪我の
+ * ボタンが開く先も、キャラクタの窓が並べるスロットそのもの。
  */
-export type ScreenPlace = 'fixtures' | 'items' | 'hand' | 'equipment' | 'injuries';
+export type ScreenPlace = 'fixtures' | 'items' | 'hand';
 
 /**
  * 画面の区画が今映しているスロット。**現在地とプレイヤーで解決するので、土地を移れば別のスロットを
@@ -52,10 +52,6 @@ export function cardPlacesOf(player: PlayerCharacter, location: Location): Scree
         return { container: location.instance, slotGlobalId: location.fixturesSlotId };
       case 'hand':
         return { container: player.instance, slotGlobalId: player.handSlotId };
-      case 'equipment':
-        return { container: player.instance, slotGlobalId: player.equipmentSlotId };
-      case 'injuries':
-        return { container: player.instance, slotGlobalId: player.injuriesSlotId };
     }
   };
 }
