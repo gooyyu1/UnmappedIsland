@@ -72,15 +72,15 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   }
 
   it('食べた物は、かさと栄養素の両方に入る', () => {
-    const taro = spawn('taro');
+    const taro = spawn('roasted_taro');
     expect(taro.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
     player.setProperty(satietyId, 0);
     stock(0);
 
     expect(taro.tryExecuteAction('eat', player, session)).toBe(true);
 
-    expect(valueOf(satietyId), 'かさはmL').toBe(600);
-    expect(valueOf(carbohydrateId), '中身はtick（かさとは別の数）').toBe(40);
+    expect(valueOf(satietyId), 'かさはmL').toBe(550);
+    expect(valueOf(carbohydrateId), '中身はtick（かさとは別の数）').toBe(48);
   });
 
   it('在庫は時間をかけて蓄えになり、尽きれば蓄えが削られる', () => {
@@ -109,7 +109,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   });
 
   it('腹がいっぱいだと食べられず、直前まで食べても溢れない', () => {
-    const taro = spawn('taro');
+    const taro = spawn('roasted_taro');
     expect(taro.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
     const max = 1500;
 
@@ -118,8 +118,8 @@ describe('消化（かさ・栄養素・蓄え）', () => {
 
     player.setProperty(satietyId, 899);
     expect(taro.tryExecuteAction('eat', player, session), '1つ下の段なら食べられる').toBe(true);
-    expect(valueOf(satietyId), '最大の食料でも溢れない').toBe(899 + 600);
-    expect(899 + 600).toBeLessThanOrEqual(max);
+    expect(valueOf(satietyId), '最大の食料でも溢れない').toBe(899 + 550);
+    expect(899 + 550).toBeLessThanOrEqual(max);
   });
 
   it('1日3食（512mLのイモ）で体脂肪は横ばいになる', () => {

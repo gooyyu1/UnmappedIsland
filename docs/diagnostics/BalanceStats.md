@@ -111,11 +111,11 @@ npm run stats:balance
 
 ### 島全体
 
-> **1日を賄う最小労働: 615 分**（1440分の 42.7%）
+> **1日を賄う最小労働: 624 分**（1440分の 43.4%）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
-| grassland.explore → taro.eat | 2.56 | 103 |
+| grassland.explore → taro.cooking_progress.on_overflow → roasted_taro.eat | 2.79 | 112 |
 | palm_tree.pick_green_coconut → green_coconut.bore | 4.80 | 152 |
 | medic.sleep | 1.00 | 360 |
 
@@ -123,12 +123,12 @@ npm run stats:balance
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| grassland.explore → taro.eat | 0.07 | 0.04 | 0.03 | 103 | 7.2% | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
-| rocky_coast.explore → coconut_crab.eat | 0.11 | 0.08 | 0.03 | 167 | 11.6% | — | satiety +500.00、protein +25.00、lipid +8.00、vitamin +2.00 | — |
+| grassland.explore → taro.cooking_progress.on_overflow → roasted_taro.eat | 0.07 | 0.05 | 0.03 | 112 | 7.8% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
 | grassland.explore → water_spinach.eat | 0.11 | 0.06 | 0.05 | 167 | 11.6% | — | satiety +300.00、carbohydrate +1.00、vitamin +83.00 | — |
 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat | 0.11 | 0.04 | 0.08 | 176 | 12.2% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
+| rocky_coast.explore → coconut_crab.cooking_progress.on_overflow → roasted_coconut_crab.eat | 0.12 | 0.09 | 0.03 | 181 | 12.6% | — | satiety +460.00、protein +28.00、lipid +9.00、vitamin +1.00 | campfire（55.9分） |
 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_overflow → roasted_meat.eat | 0.13 | 0.04 | 0.09 | 195 | 13.6% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
-| snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.cooking_progress.on_overflow → charred_lump.eat | 0.15 | 0.03 | 0.12 | 232 | 16.1% | 22.5 | satiety +200.00、protein +4.00、lipid +1.00 | campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
+| snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.cooking_progress.on_overflow → charred_lump.eat | 0.15 | 0.03 | 0.12 | 232 | 16.1% | 22.5 | satiety +200.00 | campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
 | palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.26 | 0.00 | 0.26 | 393 | 27.3% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
 | forest.explore → banana_plant.fell → banana.eat | 0.34 | 0.27 | 0.07 | 518 | 36.0% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 0.38 | 0.04 | 0.34 | 585 | 40.7% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分） |
@@ -140,13 +140,13 @@ npm run stats:balance
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | grassland.explore → water_spinach.eat | 0.39 | 0.21 | 0.18 | 19 | 1.3% | — | satiety +300.00、carbohydrate +1.00、vitamin +83.00 | — |
-| grassland.explore → taro.eat | 1.12 | 0.70 | 0.42 | 54 | 3.7% | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
+| grassland.explore → taro.cooking_progress.on_overflow → roasted_taro.eat | 1.68 | 1.05 | 0.63 | 81 | 5.6% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
 | forest.explore → banana_plant.fell → banana.eat | 3.38 | 2.66 | 0.71 | 162 | 11.3% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
 | palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
 | palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 368 | 25.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 10.89 | 1.25 | 9.64 | 523 | 36.3% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分） |
-| rocky_coast.explore → coconut_crab.eat | 27.12 | 19.62 | 7.50 | 1302 | 90.4% | — | satiety +500.00、protein +25.00、lipid +8.00、vitamin +2.00 | — |
 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat | 28.63 | 9.31 | 19.31 | 1374 | 95.4% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
+| rocky_coast.explore → coconut_crab.cooking_progress.on_overflow → roasted_coconut_crab.eat | 54.23 | 39.23 | 15.00 | 2603 | 180.8% | — | satiety +460.00、protein +28.00、lipid +9.00、vitamin +1.00 | campfire（55.9分） |
 
 #### hydration（1日 96・尽きると死ぬ）
 
@@ -160,12 +160,11 @@ npm run stats:balance
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| grassland.explore → taro.eat | 0.96 | 0.60 | 0.36 | 92 | 6.4% | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
-| rocky_coast.explore → coconut_crab.eat | 1.64 | 1.19 | 0.45 | 158 | 11.0% | — | satiety +500.00、protein +25.00、lipid +8.00、vitamin +2.00 | — |
+| grassland.explore → taro.cooking_progress.on_overflow → roasted_taro.eat | 0.81 | 0.51 | 0.30 | 77 | 5.4% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
+| rocky_coast.explore → coconut_crab.cooking_progress.on_overflow → roasted_coconut_crab.eat | 1.47 | 1.06 | 0.41 | 141 | 9.8% | — | satiety +460.00、protein +28.00、lipid +9.00、vitamin +1.00 | campfire（55.9分） |
 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_overflow → roasted_meat.eat | 1.85 | 0.60 | 1.25 | 177 | 12.3% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat | 2.31 | 0.26 | 2.05 | 222 | 15.4% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分） |
 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat | 2.39 | 0.78 | 1.61 | 229 | 15.9% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
-| snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.cooking_progress.on_overflow → charred_lump.eat | 6.04 | 1.16 | 4.89 | 580 | 40.3% | 56.2 | satiety +200.00、protein +4.00、lipid +1.00 | campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
 | snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.eat | 7.55 | 1.45 | 6.11 | 725 | 50.4% | 70.2 | satiety +60.00、protein +3.00、lipid +1.00 | campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
 | palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 736 | 51.1% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
 | forest.explore → banana_plant.fell → banana.eat | 11.81 | 9.31 | 2.50 | 1134 | 78.8% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
@@ -181,19 +180,19 @@ npm run stats:balance
 
 ### sandy_beach
 
-> **1日を賄う最小労働: 840 分**（1440分の 58.3%）
+> **1日を賄う最小労働: 824 分**（1440分の 57.2%）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
-| sandy_beach.explore → coconut_crab.eat | 3.07 | 215 |
-| palm_tree.pick_green_coconut → green_coconut.bore | 8.37 | 265 |
+| sandy_beach.explore → coconut_crab.cooking_progress.on_overflow → roasted_coconut_crab.eat | 3.34 | 181 |
+| palm_tree.pick_green_coconut → green_coconut.bore | 8.93 | 283 |
 | medic.sleep | 1.00 | 360 |
 
 #### satiety（1日 1536）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| sandy_beach.explore → coconut_crab.eat | 0.14 | 0.11 | 0.03 | 215 | 14.9% | — | satiety +500.00、protein +25.00、lipid +8.00、vitamin +2.00 | — |
+| sandy_beach.explore → coconut_crab.cooking_progress.on_overflow → roasted_coconut_crab.eat ‡ | 0.12 | 0.09 | 0.03 | 181 | 12.6% | — | satiety +460.00、protein +28.00、lipid +9.00、vitamin +1.00 | campfire（55.9分） |
 | palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.26 | 0.00 | 0.26 | 393 | 27.3% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 0.38 | 0.04 | 0.34 | 585 | 40.7% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分・他の土地で） |
 | palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
@@ -205,7 +204,7 @@ npm run stats:balance
 | palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
 | palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 368 | 25.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 10.89 | 1.25 | 9.64 | 523 | 36.3% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分・他の土地で） |
-| sandy_beach.explore → coconut_crab.eat | 34.91 | 27.41 | 7.50 | 1676 | 116.4% | — | satiety +500.00、protein +25.00、lipid +8.00、vitamin +2.00 | — |
+| sandy_beach.explore → coconut_crab.cooking_progress.on_overflow → roasted_coconut_crab.eat ‡ | 54.23 | 39.23 | 15.00 | 2603 | 180.8% | — | satiety +460.00、protein +28.00、lipid +9.00、vitamin +1.00 | campfire（55.9分） |
 
 #### hydration（1日 96・尽きると死ぬ）
 
@@ -219,7 +218,7 @@ npm run stats:balance
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| sandy_beach.explore → coconut_crab.eat | 2.12 | 1.66 | 0.45 | 203 | 14.1% | — | satiety +500.00、protein +25.00、lipid +8.00、vitamin +2.00 | — |
+| sandy_beach.explore → coconut_crab.cooking_progress.on_overflow → roasted_coconut_crab.eat ‡ | 1.47 | 1.06 | 0.41 | 141 | 9.8% | — | satiety +460.00、protein +28.00、lipid +9.00、vitamin +1.00 | campfire（55.9分） |
 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 2.31 | 0.26 | 2.05 | 222 | 15.4% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分・他の土地で） |
 | palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 736 | 51.1% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
 | palm_tree.pick_green_coconut → green_coconut.bore | 15.83 | 0.00 | 15.83 | 1520 | 105.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
@@ -233,31 +232,31 @@ npm run stats:balance
 
 ### rocky_coast
 
-> **1日を賄う最小労働: 1662 分**（1440分の 115.4%）
+> **1日を賄う最小労働: 2963 分**（1440分の 205.8%）
 > この土地を起点にできない値: hydration（島全体の節を参照）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
-| rocky_coast.explore → coconut_crab.eat | 24.00 | 1302 |
+| rocky_coast.explore → coconut_crab.cooking_progress.on_overflow → roasted_coconut_crab.eat | 48.00 | 2603 |
 | medic.sleep | 1.00 | 360 |
 
 #### satiety（1日 1536）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| rocky_coast.explore → coconut_crab.eat | 0.11 | 0.08 | 0.03 | 167 | 11.6% | — | satiety +500.00、protein +25.00、lipid +8.00、vitamin +2.00 | — |
+| rocky_coast.explore → coconut_crab.cooking_progress.on_overflow → roasted_coconut_crab.eat ‡ | 0.12 | 0.09 | 0.03 | 181 | 12.6% | — | satiety +460.00、protein +28.00、lipid +9.00、vitamin +1.00 | campfire（55.9分） |
 
 #### vitamin（1日 48）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| rocky_coast.explore → coconut_crab.eat | 27.12 | 19.62 | 7.50 | 1302 | 90.4% | — | satiety +500.00、protein +25.00、lipid +8.00、vitamin +2.00 | — |
+| rocky_coast.explore → coconut_crab.cooking_progress.on_overflow → roasted_coconut_crab.eat ‡ | 54.23 | 39.23 | 15.00 | 2603 | 180.8% | — | satiety +460.00、protein +28.00、lipid +9.00、vitamin +1.00 | campfire（55.9分） |
 
 #### body_fat（1日 96・尽きると死ぬ／carbohydrate・protein・lipidで埋まる）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| rocky_coast.explore → coconut_crab.eat | 1.64 | 1.19 | 0.45 | 158 | 11.0% | — | satiety +500.00、protein +25.00、lipid +8.00、vitamin +2.00 | — |
+| rocky_coast.explore → coconut_crab.cooking_progress.on_overflow → roasted_coconut_crab.eat ‡ | 1.47 | 1.06 | 0.41 | 141 | 9.8% | — | satiety +460.00、protein +28.00、lipid +9.00、vitamin +1.00 | campfire（55.9分） |
 
 #### wakefulness（1日 96）
 
@@ -284,19 +283,19 @@ npm run stats:balance
 
 ### grassland
 
-> **1日を賄う最小労働: 463 分**（1440分の 32.2%）
+> **1日を賄う最小労働: 472 分**（1440分の 32.8%）
 > この土地を起点にできない値: hydration（島全体の節を参照）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
-| grassland.explore → taro.eat | 2.56 | 103 |
+| grassland.explore → taro.cooking_progress.on_overflow → roasted_taro.eat | 2.79 | 112 |
 | medic.sleep | 1.00 | 360 |
 
 #### satiety（1日 1536）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| grassland.explore → taro.eat | 0.07 | 0.04 | 0.03 | 103 | 7.2% | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
+| grassland.explore → taro.cooking_progress.on_overflow → roasted_taro.eat ‡ | 0.07 | 0.05 | 0.03 | 112 | 7.8% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
 | grassland.explore → water_spinach.eat | 0.11 | 0.06 | 0.05 | 167 | 11.6% | — | satiety +300.00、carbohydrate +1.00、vitamin +83.00 | — |
 
 #### vitamin（1日 48）
@@ -304,13 +303,13 @@ npm run stats:balance
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | grassland.explore → water_spinach.eat | 0.39 | 0.21 | 0.18 | 19 | 1.3% | — | satiety +300.00、carbohydrate +1.00、vitamin +83.00 | — |
-| grassland.explore → taro.eat | 1.12 | 0.70 | 0.42 | 54 | 3.7% | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
+| grassland.explore → taro.cooking_progress.on_overflow → roasted_taro.eat ‡ | 1.68 | 1.05 | 0.63 | 81 | 5.6% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
 
 #### body_fat（1日 96・尽きると死ぬ／carbohydrate・protein・lipidで埋まる）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| grassland.explore → taro.eat | 0.96 | 0.60 | 0.36 | 92 | 6.4% | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
+| grassland.explore → taro.cooking_progress.on_overflow → roasted_taro.eat ‡ | 0.81 | 0.51 | 0.30 | 77 | 5.4% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
 | grassland.explore → water_spinach.eat | 32.65 | 17.65 | 15.00 | 3135 | 217.7% | — | satiety +300.00、carbohydrate +1.00、vitamin +83.00 | — |
 
 #### wakefulness（1日 96）
@@ -322,23 +321,22 @@ npm run stats:balance
 
 ### forest
 
-> **1日を賄う最小労働: 632 分**（1440分の 43.9%）
+> **1日を賄う最小労働: 472 分**（1440分の 32.8%）
 > この土地を起点にできない値: hydration（島全体の節を参照）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
-| forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat | 3.07 | 176 |
-| forest.explore → taro.eat | 1.16 | 96 |
+| forest.explore → taro.cooking_progress.on_overflow → roasted_taro.eat | 2.79 | 112 |
 | medic.sleep | 1.00 | 360 |
 
 #### satiety（1日 1536）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| forest.explore → taro.cooking_progress.on_overflow → roasted_taro.eat ‡ | 0.07 | 0.05 | 0.03 | 112 | 7.8% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 0.11 | 0.04 | 0.08 | 176 | 12.2% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_overflow → roasted_meat.eat ‡ | 0.13 | 0.04 | 0.09 | 195 | 13.6% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
-| snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.cooking_progress.on_overflow → charred_lump.eat | 0.14 | 0.02 | 0.11 | 208 | 14.4% | 20.1 | satiety +200.00、protein +4.00、lipid +1.00 | campfire（55.9分）、laceration（27.6分）、snare（103.3分） |
-| forest.explore → taro.eat | 0.14 | 0.11 | 0.03 | 212 | 14.7% | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
+| snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.cooking_progress.on_overflow → charred_lump.eat | 0.14 | 0.02 | 0.11 | 208 | 14.4% | 20.1 | satiety +200.00 | campfire（55.9分）、laceration（27.6分）、snare（103.3分） |
 | forest.explore → banana_plant.fell → banana.eat ‡ | 0.34 | 0.27 | 0.07 | 518 | 36.0% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
 | snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.eat | 0.45 | 0.08 | 0.37 | 692 | 48.1% | 67.1 | satiety +60.00、protein +3.00、lipid +1.00 | campfire（55.9分）、laceration（27.6分）、snare（103.3分） |
 
@@ -346,7 +344,7 @@ npm run stats:balance
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| forest.explore → taro.eat | 2.30 | 1.88 | 0.42 | 110 | 7.7% | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
+| forest.explore → taro.cooking_progress.on_overflow → roasted_taro.eat ‡ | 1.68 | 1.05 | 0.63 | 81 | 5.6% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
 | forest.explore → banana_plant.fell → banana.eat ‡ | 3.38 | 2.66 | 0.71 | 162 | 11.3% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 28.63 | 9.31 | 19.31 | 1374 | 95.4% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
 
@@ -354,10 +352,9 @@ npm run stats:balance
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| forest.explore → taro.cooking_progress.on_overflow → roasted_taro.eat ‡ | 0.81 | 0.51 | 0.30 | 77 | 5.4% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_overflow → roasted_meat.eat ‡ | 1.85 | 0.60 | 1.25 | 177 | 12.3% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
-| forest.explore → taro.eat | 1.97 | 1.61 | 0.36 | 189 | 13.1% | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 2.39 | 0.78 | 1.61 | 229 | 15.9% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
-| snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.cooking_progress.on_overflow → charred_lump.eat | 5.41 | 0.92 | 4.49 | 519 | 36.1% | 50.3 | satiety +200.00、protein +4.00、lipid +1.00 | campfire（55.9分）、laceration（27.6分）、snare（103.3分） |
 | snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.eat | 6.76 | 1.14 | 5.62 | 649 | 45.1% | 62.9 | satiety +60.00、protein +3.00、lipid +1.00 | campfire（55.9分）、laceration（27.6分）、snare（103.3分） |
 | forest.explore → banana_plant.fell → banana.eat ‡ | 11.81 | 9.31 | 2.50 | 1134 | 78.8% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
 
@@ -370,24 +367,22 @@ npm run stats:balance
 
 ### jungle
 
-> **1日を賄う最小労働: 756 分**（1440分の 52.5%）
+> **1日を賄う最小労働: 624 分**（1440分の 43.4%）
 
 | 献立 | 回数 | 労働（分） |
 | --- | --- | --- |
-| jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat | 3.07 | 176 |
-| jungle.explore → water_spinach.eat | 0.50 | 46 |
+| jungle.explore → taro.cooking_progress.on_overflow → roasted_taro.eat | 2.79 | 112 |
 | palm_tree.pick_green_coconut → green_coconut.bore | 4.80 | 152 |
-| jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_overflow → roasted_meat.eat | 0.39 | 22 |
 | medic.sleep | 1.00 | 360 |
 
 #### satiety（1日 1536）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| jungle.explore → taro.cooking_progress.on_overflow → roasted_taro.eat ‡ | 0.07 | 0.05 | 0.03 | 112 | 7.8% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
 | jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 0.11 | 0.04 | 0.08 | 176 | 12.2% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
 | jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_overflow → roasted_meat.eat ‡ | 0.13 | 0.04 | 0.09 | 195 | 13.6% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
-| snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.cooking_progress.on_overflow → charred_lump.eat | 0.15 | 0.03 | 0.12 | 228 | 15.9% | 22.1 | satiety +200.00、protein +4.00、lipid +1.00 | campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
-| jungle.explore → taro.eat | 0.20 | 0.18 | 0.03 | 312 | 21.7% | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
+| snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.cooking_progress.on_overflow → charred_lump.eat | 0.15 | 0.03 | 0.12 | 228 | 15.9% | 22.1 | satiety +200.00 | campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
 | palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.26 | 0.00 | 0.26 | 393 | 27.3% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（157.0分） |
 | jungle.explore → water_spinach.eat | 0.30 | 0.25 | 0.05 | 466 | 32.3% | — | satiety +300.00、carbohydrate +1.00、vitamin +83.00 | — |
 | jungle.explore → banana_plant.fell → banana.eat ‡ | 0.34 | 0.27 | 0.07 | 518 | 36.0% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
@@ -400,8 +395,8 @@ npm run stats:balance
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | jungle.explore → water_spinach.eat | 1.10 | 0.92 | 0.18 | 53 | 3.7% | — | satiety +300.00、carbohydrate +1.00、vitamin +83.00 | — |
+| jungle.explore → taro.cooking_progress.on_overflow → roasted_taro.eat ‡ | 1.68 | 1.05 | 0.63 | 81 | 5.6% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
 | jungle.explore → banana_plant.fell → banana.eat ‡ | 3.38 | 2.66 | 0.71 | 162 | 11.3% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
-| jungle.explore → taro.eat | 3.39 | 2.97 | 0.42 | 163 | 11.3% | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
 | palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.2分）、palm_tree（157.0分） |
 | palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 368 | 25.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（157.0分） |
 | jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 10.89 | 1.25 | 9.64 | 523 | 36.3% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分・他の土地で） |
@@ -419,11 +414,10 @@ npm run stats:balance
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| jungle.explore → taro.cooking_progress.on_overflow → roasted_taro.eat ‡ | 0.81 | 0.51 | 0.30 | 77 | 5.4% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
 | jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_overflow → roasted_meat.eat ‡ | 1.85 | 0.60 | 1.25 | 177 | 12.3% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
 | jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 2.31 | 0.26 | 2.05 | 222 | 15.4% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分・他の土地で） |
 | jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 2.39 | 0.78 | 1.61 | 229 | 15.9% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
-| jungle.explore → taro.eat | 2.91 | 2.55 | 0.36 | 279 | 19.4% | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 | — |
-| snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.cooking_progress.on_overflow → charred_lump.eat | 5.94 | 1.12 | 4.83 | 571 | 39.6% | 55.3 | satiety +200.00、protein +4.00、lipid +1.00 | campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
 | snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.eat | 7.43 | 1.40 | 6.03 | 713 | 49.5% | 69.1 | satiety +60.00、protein +3.00、lipid +1.00 | campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
 | palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 736 | 51.1% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（157.0分） |
 | jungle.explore → banana_plant.fell → banana.eat ‡ | 11.81 | 9.31 | 2.50 | 1134 | 78.8% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
@@ -556,12 +550,12 @@ npm run stats:balance
 
 | オブジェクト | 総労働（分） | 探索 | それ以外 | 日数 | 作り方 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- |
-| monkey | 397.5 | 397.5 | 0.0 | 0.48 | sandy_beach.explore | — |
-| monkey_carcass | 397.5 | 397.5 | 0.0 | 0.48 | sandy_beach.explore → monkey.blood.on_shortfall | puncture_wound（65.5分） |
+| monkey | 397.5 | 397.5 | 0.0 | 0.49 | sandy_beach.explore | — |
+| monkey_carcass | 397.5 | 397.5 | 0.0 | 0.49 | sandy_beach.explore → monkey.blood.on_shortfall | puncture_wound（65.5分） |
 | junglefowl | 24.8 | 9.4 | 15.4 | 0.03 | snare.catch_remaining.on_shortfall | snare（103.3分） |
 | rat | 15.2 | 5.8 | 9.4 | 0.02 | snare.catch_remaining.on_shortfall | snare（103.3分） |
-| wild_boar | 745.0 | 745.0 | 0.0 | 0.90 | forest.explore | — |
-| wild_boar_carcass | 1450.0 | 745.0 | 705.0 | 1.76 | forest.explore → wild_boar.strike | weapon → sharp_stone（72.2分） |
+| wild_boar | 745.0 | 745.0 | 0.0 | 0.91 | forest.explore | — |
+| wild_boar_carcass | 1450.0 | 745.0 | 705.0 | 1.78 | forest.explore → wild_boar.strike | weapon → sharp_stone（72.2分） |
 | junglefowl_carcass | 24.8 | 9.4 | 15.4 | 0.03 | snare.catch_remaining.on_shortfall → junglefowl.blood.on_shortfall | puncture_wound（65.5分）、snare（103.3分） |
 | rat_carcass | 15.2 | 5.8 | 9.4 | 0.02 | snare.catch_remaining.on_shortfall → rat.blood.on_shortfall | laceration（27.7分）、snare（103.3分） |
 | roasted_rat | 15.2 | 5.8 | 9.4 | 0.02 | snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow | campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
@@ -570,9 +564,9 @@ npm run stats:balance
 | raw_meat | 42.3 | 18.6 | 23.6 | 0.05 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
 | roasted_meat | 42.3 | 18.6 | 23.6 | 0.05 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_overflow | campfire（55.9分）、cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
 | charred_lump | 15.2 | 5.8 | 9.4 | 0.02 | snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.cooking_progress.on_overflow | campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
-| animal_bone | 281.7 | 124.2 | 157.5 | 0.34 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
-| rawhide | 281.7 | 124.2 | 157.5 | 0.34 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
-| golden_chalice | 397.5 | 397.5 | 0.0 | 0.48 | cliff_coast.explore | — |
+| animal_bone | 281.7 | 124.2 | 157.5 | 0.35 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
+| rawhide | 281.7 | 124.2 | 157.5 | 0.35 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
+| golden_chalice | 397.5 | 397.5 | 0.0 | 0.49 | cliff_coast.explore | — |
 | palm_tree | 122.3 | 122.3 | 0.0 | 0.15 | sandy_beach.explore | — |
 | green_coconut | 16.7 | 0.0 | 16.7 | 0.02 | palm_tree.pick_green_coconut | palm_tree（122.3分） |
 | drained_green_coconut | 31.7 | 0.0 | 31.7 | 0.04 | palm_tree.pick_green_coconut → green_coconut.bore | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
@@ -581,7 +575,7 @@ npm run stats:balance
 | coconut_husk | 47.5 | 17.5 | 30.0 | 0.06 | sandy_beach.explore → coconut.husk | cutting_tool → sharp_stone（72.2分） |
 | husked_coconut | 47.5 | 17.5 | 30.0 | 0.06 | sandy_beach.explore → coconut.husk | cutting_tool → sharp_stone（72.2分） |
 | coconut_half | 31.2 | 8.7 | 22.5 | 0.04 | sandy_beach.explore → coconut.husk → husked_coconut.crack | stone（12.2分）、cutting_tool → sharp_stone（72.2分） |
-| coconut_meat | 61.2 | 8.7 | 52.5 | 0.07 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape | cutting_tool → sharp_stone（72.2分）、stone（12.2分） |
+| coconut_meat | 61.2 | 8.7 | 52.5 | 0.08 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape | cutting_tool → sharp_stone（72.2分）、stone（12.2分） |
 | woven_basket | 318.0 | 318.0 | 0.0 | 0.39 | sandy_beach.explore | — |
 | abaca | 196.3 | 196.3 | 0.0 | 0.24 | jungle.explore | — |
 | banana_plant | 186.3 | 186.3 | 0.0 | 0.23 | forest.explore | — |
@@ -590,16 +584,18 @@ npm run stats:balance
 | plant_fiber | 36.6 | 19.6 | 17.0 | 0.04 | jungle.explore → abaca.fell → banana_stem.strip | cutting_tool → sharp_stone（72.2分） |
 | yarn | 93.3 | 39.3 | 54.0 | 0.11 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin | cutting_tool → sharp_stone（72.2分） |
 | cord | 206.5 | 78.5 | 128.0 | 0.25 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply | cutting_tool → sharp_stone（72.2分） |
-| rope | 679.5 | 235.5 | 444.0 | 0.82 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted | cutting_tool → sharp_stone（72.2分） |
+| rope | 679.5 | 235.5 | 444.0 | 0.83 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted | cutting_tool → sharp_stone（72.2分） |
 | fire_drill | 97.4 | 37.4 | 60.0 | 0.12 | sandy_beach.explore → forest.explore → fire_drill.carved | — |
 | dry_grass | 142.5 | 142.5 | 0.0 | 0.17 | wasteland.explore | — |
 | burning_tinder | 99.9 | 29.4 | 70.5 | 0.12 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.light | fire_drill（97.4分）、cutting_tool → sharp_stone（72.2分） |
 | campfire | 55.9 | 40.9 | 15.0 | 0.07 | forest.explore → campfire.stacked | — |
 | water_spinach | 17.7 | 17.7 | 0.0 | 0.02 | grassland.explore | — |
 | coconut_crab | 39.2 | 39.2 | 0.0 | 0.05 | rocky_coast.explore | — |
+| roasted_coconut_crab | 39.2 | 39.2 | 0.0 | 0.05 | rocky_coast.explore → coconut_crab.cooking_progress.on_overflow | campfire（55.9分） |
 | taro | 25.3 | 25.3 | 0.0 | 0.03 | grassland.explore | — |
-| jar | 465.0 | 285.0 | 180.0 | 0.56 | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_overflow | earth_kiln（303.8分） |
-| coconut_bowl | 61.2 | 8.7 | 52.5 | 0.07 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape | cutting_tool → sharp_stone（72.2分）、stone（12.2分） |
+| roasted_taro | 25.3 | 25.3 | 0.0 | 0.03 | grassland.explore → taro.cooking_progress.on_overflow | campfire（55.9分） |
+| jar | 465.0 | 285.0 | 180.0 | 0.57 | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_overflow | earth_kiln（303.8分） |
+| coconut_bowl | 61.2 | 8.7 | 52.5 | 0.08 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape | cutting_tool → sharp_stone（72.2分）、stone（12.2分） |
 | thick_branch | 23.7 | 23.7 | 0.0 | 0.03 | sandy_beach.explore | — |
 | stone | 12.2 | 12.2 | 0.0 | 0.01 | rocky_field.explore | — |
 | twig | 13.6 | 13.6 | 0.0 | 0.02 | forest.explore | — |
@@ -607,16 +603,16 @@ npm run stats:balance
 | cave_entrance | 41.4 | 41.4 | 0.0 | 0.05 | mountain_peak.explore | — |
 | spring | 199.5 | 199.5 | 0.0 | 0.24 | grassland.explore | — |
 | clay | 71.3 | 71.3 | 0.0 | 0.09 | grassland.explore | — |
-| unfired_jar | 232.5 | 142.5 | 90.0 | 0.28 | grassland.explore → unfired_jar.coiled | — |
+| unfired_jar | 232.5 | 142.5 | 90.0 | 0.29 | grassland.explore → unfired_jar.coiled | — |
 | earth_kiln | 303.8 | 213.8 | 90.0 | 0.37 | grassland.explore → earth_kiln.heaped | — |
 | broadleaf_tree | 149.0 | 149.0 | 0.0 | 0.18 | forest.explore | — |
 | log | 194.5 | 74.5 | 120.0 | 0.24 | forest.explore → broadleaf_tree.fell | chopping_tool → stone_axe（482.4分） |
 | sharp_stone | 72.2 | 12.2 | 60.0 | 0.09 | rocky_field.explore → stone.knap | — |
-| stone_axe | 482.4 | 114.4 | 368.0 | 0.58 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rocky_field.explore → stone.knap → sandy_beach.explore → stone_axe.hafted | — |
+| stone_axe | 482.4 | 114.4 | 368.0 | 0.59 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rocky_field.explore → stone.knap → sandy_beach.explore → stone_axe.hafted | — |
 | bone_needle | 70.2 | 5.8 | 64.4 | 0.09 | snare.catch_remaining.on_shortfall → rat.blood.on_shortfall → rat_carcass.cooking_progress.on_overflow → roasted_rat.eat → small_bone.whittle | cutting_tool → sharp_stone（72.2分）、campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
 | snare | 103.3 | 39.3 | 64.0 | 0.13 | jungle.explore → abaca.fell → banana_stem.strip → snare.knotted | cutting_tool → sharp_stone（72.2分） |
-| raft | 4305.0 | 1809.0 | 2496.0 | 5.22 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted → forest.explore → broadleaf_tree.fell → raft.lashed | chopping_tool → stone_axe（482.4分）、cutting_tool → sharp_stone（72.2分） |
-| rawhide_sail | 4449.0 | 1656.0 | 2793.0 | 5.39 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher → jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted → sandy_beach.explore → rawhide_sail.sewn | sewing_tool → bone_needle（70.2分）、cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
+| raft | 4305.0 | 1809.0 | 2496.0 | 5.28 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted → forest.explore → broadleaf_tree.fell → raft.lashed | chopping_tool → stone_axe（482.4分）、cutting_tool → sharp_stone（72.2分） |
+| rawhide_sail | 4449.0 | 1656.0 | 2793.0 | 5.45 | forest.explore → wild_boar.strike → wild_boar_carcass.butcher → jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.spin → yarn.ply → rope.twisted → sandy_beach.explore → rawhide_sail.sewn | sewing_tool → bone_needle（70.2分）、cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
 | palm_frond | 11.1 | 0.0 | 11.1 | 0.01 | palm_tree.pick_frond | palm_tree（122.3分） |
 | woven_leaf | 35.6 | 0.0 | 35.6 | 0.04 | palm_tree.pick_frond → palm_frond.split_and_weave | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
 
@@ -770,7 +766,7 @@ npm run stats:balance
 | roasted_meat | cooking_progress.on_overflow | periodic | 0 | 195 | charred_lump ×1.00 | — |
 | roasted_meat | cooking_progress.on_overflow | periodic | 0 | 195 | charred_lump ×1.00 | — |
 | roasted_meat | cooking_progress.on_overflow | periodic | 0 | 195 | charred_lump ×1.00 | — |
-| charred_lump | eat | interaction | 15 | 15 | — | satiety +200.00、protein +4.00、lipid +1.00 |
+| charred_lump | eat | interaction | 15 | 15 | — | satiety +200.00 |
 | captain | wait | interaction | 15 | 15 | — | （self）stamina +2.00 |
 | captain | rest | interaction | 60 | 60 | — | （self）stamina +10.00 |
 | captain | nap | interaction | 180 | 180 | — | （self）stamina +36.00、（self）wakefulness +36.00 |
@@ -816,8 +812,20 @@ npm run stats:balance
 | three_stone_hearth | add_stone | interaction | 5 | 5 | — | （self）stones +1.00 |
 | stone_hearth | add_fuel | interaction | 1 | 1 | — | （self）fuel +999.00 |
 | water_spinach | eat | interaction | 15 | 15 | — | satiety +300.00、carbohydrate +1.00、vitamin +83.00 |
-| coconut_crab | eat | interaction | 15 | 15 | — | satiety +500.00、protein +25.00、lipid +8.00、vitamin +2.00 |
-| taro | eat | interaction | 15 | 15 | — | satiety +600.00、carbohydrate +40.00、protein +2.00、vitamin +36.00 |
+| coconut_crab | cooking_progress.on_overflow | periodic | 0 | 555 | roasted_coconut_crab ×1.00 | — |
+| coconut_crab | cooking_progress.on_overflow | periodic | 0 | 555 | roasted_coconut_crab ×1.00 | — |
+| coconut_crab | cooking_progress.on_overflow | periodic | 0 | 555 | roasted_coconut_crab ×1.00 | — |
+| roasted_coconut_crab | eat | interaction | 15 | 15 | — | satiety +460.00、protein +28.00、lipid +9.00、vitamin +1.00 |
+| roasted_coconut_crab | cooking_progress.on_overflow | periodic | 0 | 285 | charred_lump ×1.00 | — |
+| roasted_coconut_crab | cooking_progress.on_overflow | periodic | 0 | 285 | charred_lump ×1.00 | — |
+| roasted_coconut_crab | cooking_progress.on_overflow | periodic | 0 | 285 | charred_lump ×1.00 | — |
+| taro | cooking_progress.on_overflow | periodic | 0 | 465 | roasted_taro ×1.00 | — |
+| taro | cooking_progress.on_overflow | periodic | 0 | 465 | roasted_taro ×1.00 | — |
+| taro | cooking_progress.on_overflow | periodic | 0 | 465 | roasted_taro ×1.00 | — |
+| roasted_taro | eat | interaction | 15 | 15 | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 |
+| roasted_taro | cooking_progress.on_overflow | periodic | 0 | 240 | charred_lump ×1.00 | — |
+| roasted_taro | cooking_progress.on_overflow | periodic | 0 | 240 | charred_lump ×1.00 | — |
+| roasted_taro | cooking_progress.on_overflow | periodic | 0 | 240 | charred_lump ×1.00 | — |
 | jar | collect_rain | interaction | 0 | 0 | water_liquid ×1.00 | — |
 | coconut_bowl | collect_rain | interaction | 0 | 0 | water_liquid ×1.00 | — |
 | water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）volume -250.00 |

@@ -10,6 +10,9 @@
 
 object_defs:
   # 空心菜（クウシンサイ）。熱帯の水辺に自生する、採取しやすい葉物野菜。
+  #
+  # **ここだけが生で食べられる。** 東南アジアでは実際に生のまま和えて食べる。危ないのは植物では
+  # なく育った水のほう（寄生虫）なので、物としては生食に向く。ヤシガニとタロイモは違う（各項参照）。
   water_spinach:
     tags: [item, food, plant_bait]
     props:
@@ -32,12 +35,42 @@ object_defs:
         destroy: self
 
   # ヤシガニ。狩猟の道具がなくても「見つけて捕まえる」だけで採取できる大型の甲殻類。
+  #
+  # **生では食べられないので、foodタグを持たない**（ネズミの死体と同じ扱い、animals.yaml）。2kgの
+  # 甲殻を素手で開けて生食する話にならないうえ、生の甲殻類そのものが危ない。殻ごと火にかけるのが
+  # 現実の食べ方でもある。
+  #
+  # **現実には、加熱しても抜けない危険が別にある。** ヤシガニは食べたものの毒を身に溜め、ミフクラギ
+  # （海マンゴー）などを食べた個体は肉ごと有毒になる。これは体調を崩す仕組みが要るので入れていない
+  # （docs/world/Animals.md 1節）。
   coconut_crab:
-    tags: [item, food, meat_bait]
+    tags: [item, meat_bait, roastable]
     props:
       weight: {value: 2000}
       meat_bait: {value: 12}
       volume: {value: 1900}
+      # 2kgを殻ごと焼くので、生肉（500gで24）より長くかかる。炎（3/tick）なら12tick＝3時間。
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 36}
+        on_overflow:
+          destroy: self
+          spawn: {object: roasted_coconut_crab}
+
+  # 丸焼きのヤシガニ。殻が器になるので、割って身を掻き出して食べる。
+  roasted_coconut_crab:
+    tags: [item, food, roastable]
+    props:
+      # 水が飛んだぶん軽くなる。
+      weight: {value: 1700}
+      volume: {value: 1800}
+      # 焦げるまでの猶予は生から焼きより短い。炎なら6tick＝1時間30分。
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 18}
+        on_overflow:
+          destroy: self
+          spawn: {object: charred_lump}
     actions:
       eat:
         conditions:
@@ -46,19 +79,47 @@ object_defs:
         duration: 15
         add:
           actor:
-            satiety: 500
-            protein: 25
-            lipid: 8
-            vitamin: 2
+            satiety: 460
+            protein: 28
+            lipid: 9
+            vitamin: 1
         destroy: self
 
   # タロイモ。東南アジア島嶼が原産の塊茎作物（docs/world/Animals.md 概要節）。野生形が自生している。
+  #
+  # **生では食べられないので、foodタグを持たない。** シュウ酸カルシウムの針状結晶を含み、生の塊茎は
+  # 口と喉を刺して腫れさせる。「加熱したほうがおいしい」ではなく、加熱が食用の条件で、しかも自生の
+  # 野生形は栽培種より強い。熾火に埋めて焼くのが太平洋の島々の調理法（茹でるほうが効くが、鍋は
+  # 火より後に来る）。
   taro:
-    tags: [item, food, plant_bait]
+    tags: [item, plant_bait, roastable]
     props:
       weight: {value: 800}
       plant_bait: {value: 12}
       volume: {value: 800}
+      # **肉より長くかける。** 針状結晶を壊すには芯まで熱を通す必要があり、生焼けでは食べられない。
+      # 炎（3/tick）なら10tick＝2時間30分。
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 30}
+        on_overflow:
+          destroy: self
+          spawn: {object: roasted_taro}
+
+  # 焼いたタロイモ。芯まで火が通って、初めて食べられる。
+  roasted_taro:
+    tags: [item, food, roastable]
+    props:
+      # 水が飛んだぶん軽くなる。
+      weight: {value: 600}
+      volume: {value: 700}
+      # 焦げるまでの猶予は生から焼きより短い。炎なら5tick＝1時間15分。
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 15}
+        on_overflow:
+          destroy: self
+          spawn: {object: charred_lump}
     actions:
       eat:
         conditions:
@@ -67,8 +128,9 @@ object_defs:
         duration: 15
         add:
           actor:
-            satiety: 600
-            carbohydrate: 40
+            satiety: 550
+            # 水が飛んで詰まったぶん、糖質は生より濃い。ビタミンCは熱で壊れるので逆に減る。
+            carbohydrate: 48
             protein: 2
-            vitamin: 36
+            vitamin: 24
         destroy: self
