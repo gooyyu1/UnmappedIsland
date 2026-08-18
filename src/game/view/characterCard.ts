@@ -17,8 +17,16 @@ const PLACEHOLDER_ICONS: ReadonlyMap<string, string> = new Map([
 /** 未知の識別子（旧セーブ）でも一覧を開けるようにするための、姿の分からないキャラクタの代役。 */
 const UNKNOWN_CHARACTER_ICON = '🧍';
 
+/**
+ * その型あての代役アイコン（用意していない型ではundefined）。札の見た目（cardLooks.iconOf）が、
+ * 種別ごとの代役より先に引く——同じ種別の中で見分けたい型だけが、自分の姿を名乗る。
+ */
+export function placeholderIconOf(objectDefName: string): string | undefined {
+  return PLACEHOLDER_ICONS.get(objectDefName);
+}
+
 export function characterIcon(characterDefName: string): string {
-  return PLACEHOLDER_ICONS.get(characterDefName) ?? UNKNOWN_CHARACTER_ICON;
+  return placeholderIconOf(characterDefName) ?? UNKNOWN_CHARACTER_ICON;
 }
 
 /**

@@ -1098,7 +1098,7 @@ export class PlayScene extends ResponsiveScene {
     // レシピ一覧から作り始めたときだけ、出どころが世界ではなく画面の事実（閉じた一覧の中で選んだ札の
     // 位置）なので呼び出し側が渡す。並びに出ている札は、差し替えがその枠から飛ばす。
     if (from !== undefined) for (const id of borrowed.identity ?? []) origins.set(id, from);
-    this.openChildWindow(this.view.windowOfCard(borrowed), origins, {
+    this.openChildWindow(this.view.windowOf(borrowed.objects[0]), origins, {
       stack: borrowed,
       opensPlace: opensPlace ? borrowed.visibleSlots[0] : undefined,
     });

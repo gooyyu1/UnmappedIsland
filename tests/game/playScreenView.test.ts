@@ -10,6 +10,7 @@ import type { CardPlace, ScreenPlace } from '../../src/game/view/cardPlaces';
 import { cardPlacesOf, samePlace } from '../../src/game/view/cardPlaces';
 import type { CardGauge } from '../../src/game/ui/Card';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
+import { characterIcon } from '../../src/game/view/characterCard';
 import type { Localization } from '../../src/locale/Localization';
 import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -667,6 +668,43 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(basketCard.contentsFor(bandageCard), 'かごは持ち物を受け取る').toEqual(contents);
   });
 
+  it('キャラクタと土地の札も、他の札と同じ道で作る', () => {
+    // どちらもWorldObjectで、種別は物の型が名乗るタグ（character / location、core.yaml）から決まる。
+    // 札の作り方を対象ごとに分けると、印・バー・個体の識別子といった規約がそこにだけ届かなくなる。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const view = fromGameSession(game, codex, locale);
+
+    expect(view.characterCard.kind).toBe('character');
+    expect(view.characterCard.icon, 'キャラクタは型ごとの代役アイコンを持つ').toBe(
+      characterIcon(SAMPLE_CHARACTER),
+    );
+    expect(view.characterCard.identity, '貸し出した札が帰る先の鍵').toEqual([
+      game.player.instance.instanceId,
+    ]);
+
+    expect(view.currentLocation.kind).toBe('location');
+    expect(view.currentLocation.identity).toEqual([game.startLocation.instance.instanceId]);
+    expect(view.currentLocation.name, '個体に付いた名前は型の名前より優先される').toBe(
+      locale.locationName(game.map.nameOfInstance(game.startLocation.instance.instanceId)!),
+    );
+  });
+
+  it('子ウィンドウは、映す対象のオブジェクト1つから作る', () => {
+    // 窓が映すのは1個ぶんなので、束かどうかもどの枠に居るかも要らない。キャラクタ・現在地は
+    // 画面から名前で開く入口で、答えは同じ経路（windowOf）から来る。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const stone = game.session.spawn(codex.objectNames.getId('stone'));
+    expect(stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(view.characterWindow.card, 'ポートレイトと同じ1枚').toBe(view.characterCard);
+    expect(view.currentLocationWindow.card).toBe(view.currentLocation);
+    expect(view.windowOf(game.startLocation.instance).explorationRatio, '土地は探索できる').toBe(0);
+    expect(view.windowOf(stone).explorationRatio, '石は探索できない').toBeUndefined();
+    expect(view.windowOf(stone).card.name, '押した札が映す物の姿を出す').toBe(view.hand[0]?.name);
+  });
+
   it('プロパティの詳細は、その値を持つ物から読む', () => {
     // 同じ名前のプロパティを複数の型が持つことはある。詳細に出る影響の出入りは、プロパティの名前では
     // なく持ち主で決まる（Windows.md 6節）。
@@ -695,7 +733,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, withCharm, locale);
     const card = view.hand.find((held) => held?.objects[0] === charm);
     const charmSatiety = view
-      .windowOfCard(card!)
+      .windowOf(card!.objects[0])
       .properties.flatMap((tab) => tab.entries)
       .find((entry) => entry.key === 'satiety');
     const characterSatiety = view.characterWindow.properties
@@ -717,7 +755,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(basket.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
-    const basketWindow = view.windowOfCard(view.hand.find((card) => card?.objects[0] === basket)!);
+    const basketWindow = view.windowOf(basket);
 
     expect(basketWindow.card.name, 'その札そのものを出す').toBe(view.hand[0]?.name);
     expect(basketWindow.slots, 'かごは中身のタブを持つ').toHaveLength(1);

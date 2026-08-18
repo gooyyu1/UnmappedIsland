@@ -9,7 +9,6 @@ import type { WorldObject } from '../../domain/runtime/WorldObject';
 import type { Localization } from '../../locale/Localization';
 import type { CraftingMaterial } from './craftingView';
 import { craftingMaterials } from './craftingView';
-import { characterCardContent } from './characterCard';
 import { cardLooksOf } from './cardLooks';
 import type { CardAction, CardCombination, CardOperations, CardPutIn } from './cardOperations';
 import { cardOperationsOf } from './cardOperations';
@@ -210,8 +209,11 @@ export interface PlayScreenView {
   /** 現在地そのものの子ウィンドウ（現在地の札から開く）。 */
   readonly currentLocationWindow: ObjectWindowView;
 
-  /** その札の子ウィンドウ。**札ごとに変わる**ので、値ではなく問い合わせで答える。 */
-  readonly windowOfCard: (stack: ObjectCardStack) => ObjectWindowView;
+  /**
+   * その物の子ウィンドウ。**物ごとに変わる**ので、値ではなく問い合わせで答える。キャラクタと現在地は
+   * 画面から名前で開く入口なので、同じ答えを上の2つが持つ。
+   */
+  readonly windowOf: (object: WorldObject) => ObjectWindowView;
 
   /**
    * ステータスエリアに出す候補（statusタグが付いたもの、StatusArea.md）。
@@ -354,7 +356,13 @@ export function fromGameSession(
   const location = game.player.location ?? game.startLocation;
   const places = cardPlacesOf(game.player, location);
 
-  const looks = cardLooksOf(codex, locale, game.world.minutesPerTick);
+  /** ワールドが個体に付けた名前（土地の命名、IslandMap）。付いていない個体ではundefined。 */
+  const instanceName = (instanceId: number): string | undefined => {
+    const name = game.map.nameOfInstance(instanceId);
+    return name === undefined ? undefined : locale.locationName(name);
+  };
+
+  const looks = cardLooksOf(codex, locale, game.world.minutesPerTick, instanceName);
   const operations = cardOperationsOf(game, codex, locale);
 
   /**
@@ -376,8 +384,6 @@ export function fromGameSession(
       materials: craftingMaterials(place.container, codex),
     };
   };
-
-  const characterTexts = locale.object(game.player.instance.def.name);
 
   /**
    * そのカードへ重ねたdraggedの行き先（受け取れるスロットが無ければundefined、
@@ -545,8 +551,8 @@ export function fromGameSession(
    * 表示文字列はここで対応表から組み立てる（Localization.md）。
    */
   const locationNameOf = (instanceId: number, defName?: string): string => {
-    const name = game.map.nameOfInstance(instanceId);
-    if (name !== undefined) return locale.locationName(name);
+    const named = instanceName(instanceId);
+    if (named !== undefined) return named;
 
     // 名前を付けるのは地形生成だけ（IslandMap）なので、島の外の場所——筏・外洋・本土
     // （voyage.yaml）——はそこに載っていない。そういう場所は型の表示名がそのまま名前になる。
@@ -644,59 +650,44 @@ export function fromGameSession(
     };
   };
   /**
-   * キャラクタ自身を映す札。**自分のインスタンスを識別子として名乗る**——レーンに並ぶ他の札と同じく、
-   * 差し替えで同じ札だと分かり、子ウィンドウへ貸し出したときに元の枠が分かるようにするため。
+   * その物の探索率（探索できない物ではundefined＝探索のタブを出さない）。
+   *
+   * 探索できるかは**その物がexploreを宣言しているか**で決まる（ExplorationSystem.md）。探索の語彙を
+   * 持たないCodexでは上限が0になるため、0除算を避けて0%にする。
    */
-  const characterCard: CardContent = {
-    ...characterCardContent(game.player.instance.def.name, locale),
-    name: characterTexts.displayName,
-    mark: looks.markOf(game.player.instance),
-    identity: [game.player.instance.instanceId],
+  const explorationRatioOf = (object: WorldObject): number | undefined => {
+    if (!object.def.actions.some((action) => action.name === EXPLORE_ACTION)) return undefined;
+
+    const explorable = new Location(object, codex);
+    return explorable.explorationProgressMax === 0
+      ? 0
+      : explorable.explorationProgress / explorable.explorationProgressMax;
   };
+
+  /**
+   * その物の子ウィンドウに出るもの一式（Windows.md 1節）。**窓が映すのは1個ぶん**なので、束かどうかも、
+   * どの枠に居るかも要らない——キャラクタも現在地も、押した札が映す物も同じこの1本を通る。
+   */
+  const windowOf = (object: WorldObject): ObjectWindowView => ({
+    card: looks.contentOf(object),
+    description: locale.object(object.def.name).description,
+    actions: operations.actionsOf(object),
+    slots: visiblePlacesOf(object),
+    properties: propertiesOf(object),
+    explorationRatio: explorationRatioOf(object),
+  });
+
+  const characterWindow = windowOf(game.player.instance);
+  const currentLocationWindow = windowOf(location.instance);
 
   /** 現在地の絵の名前。札に映すのも、ロードを待つのもこの1枚（locationArt）。 */
   const locationArt = location.instance.def.name;
 
-  const currentLocationCard: CardContent = {
-    icon: LOCATION_ICON,
-    name: locationNameOf(location.instance.instanceId, location.instance.def.name),
-    art: locationArt,
-    kind: 'location',
-    // 現在地の札も、その場所が宣言したバーを出す（航海の進み、docs/world/Voyage.md 4節）。
-    gauges: looks.gaugesOf(location.instance),
-  };
-
   return {
-    characterCard,
-    characterWindow: {
-      card: characterCard,
-      description: characterTexts.description,
-      actions: operations.actionsOf(game.player.instance),
-      slots: visiblePlacesOf(game.player.instance),
-      properties: propertyCategories,
-      explorationRatio: undefined,
-    },
-    currentLocationWindow: {
-      card: currentLocationCard,
-      description: locale.object(location.instance.def.name).description,
-      actions: operations.actionsOf(location.instance),
-      slots: visiblePlacesOf(location.instance),
-      properties: propertiesOf(location.instance),
-      // 探索できない土地（探索の語彙を持たないCodex）では上限が0になるため、0除算を避けて0%にする。
-      explorationRatio: location.instance.def.actions.some((action) => action.name === EXPLORE_ACTION)
-        ? location.explorationProgressMax === 0
-          ? 0
-          : location.explorationProgress / location.explorationProgressMax
-        : undefined,
-    },
-    windowOfCard: (stack) => ({
-      card: stack,
-      description: stack.description,
-      actions: stack.actions,
-      slots: stack.visibleSlots,
-      properties: propertiesOf(stack.objects[0]),
-      explorationRatio: undefined,
-    }),
+    characterCard: characterWindow.card,
+    characterWindow,
+    currentLocationWindow,
+    windowOf,
     conditions: ['💭', '🥶', '😪', '🍽️'],
     equipmentIcon: '👕',
     injuryIcon: '🩹',
@@ -711,7 +702,7 @@ export function fromGameSession(
     ambientTemperature: game.world.ambientTemperature,
     weatherLabel:
       game.world.weather === undefined ? undefined : locale.symbol(game.world.weather).displayName,
-    currentLocation: currentLocationCard,
+    currentLocation: currentLocationWindow.card,
     locationArt,
     places,
     slotViewOf,
