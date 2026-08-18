@@ -420,7 +420,7 @@ object_texts:
     description: 火が通って締まった肉。生より腹に残る。出し忘れると焦げる。
   charred_lump:
     display_name: 焦げた塊
-    description: 焼きすぎて炭になった肉。腹の足しにはならない。
+    description: 焼きすぎて炭になったもの。腹は少し膨れるが、身になるものは何も残っていない。
   animal_bone:
     display_name: 獣骨
     description: 1頭ぶんの骨。硬く、削れば針にも道具の頭にもなる。
@@ -463,13 +463,19 @@ object_texts:
     description: 地面から拾い集めた細い枝。よく乾いていて、焚き付けにちょうどよい。
   water_spinach:
     display_name: 空心菜
-    description: 水辺に生える葉野菜。茎は空洞で、そのまま食べられる。
+    description: 水辺に生える葉野菜。茎は空洞で、火を通さずそのまま食べられる。
   coconut_crab:
     display_name: ヤシガニ
-    description: 陸に住む大型の甲殻類。道具が無くても、見つけて捕まえるだけで採れる。
+    description: 陸に住む大型の甲殻類。道具が無くても捕まえられるが、殻ごと火にかけないと食べられない。
+  roasted_coconut_crab:
+    display_name: 丸焼きのヤシガニ
+    description: 殻ごと焼いたヤシガニ。割って身を掻き出す。出し忘れると焦げる。
   taro:
     display_name: タロイモ
-    description: 太平洋の島々で主食とされてきた塊茎。腹持ちがよい。
+    description: 太平洋の島々で主食とされてきた塊茎。生のままかじると、口も喉も刺すように痛む。
+  roasted_taro:
+    display_name: 焼いたタロイモ
+    description: 熾火に埋めて芯まで焼いた芋。ここまでやって、初めて食べられる。出し忘れると焦げる。
 
   # 道具（tools.yaml）。
   sharp_stone:

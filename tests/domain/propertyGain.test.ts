@@ -67,16 +67,16 @@ describe('操作が増やした値の観測', () => {
   it('効果が書いた先がそのまま出る（食べたらかさと栄養素の両方）', () => {
     drain('carbohydrate', 0);
     drain('satiety', 0);
-    const taro = spawn('taro');
+    const taro = spawn('roasted_taro');
     expect(taro.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
 
     const { source, amounts } = gainsDuring(() => {
       expect(taro.tryExecuteAction('eat', player, session)).toBe(true);
     });
 
-    expect(source, '発生源は操作を宣言していた札').toBe('taro');
-    expect(amounts.get('satiety'), 'かさ（mL）').toBe(600);
-    expect(amounts.get('carbohydrate'), '中身（tick）').toBe(40);
+    expect(source, '発生源は操作を宣言していた札').toBe('roasted_taro');
+    expect(amounts.get('satiety'), 'かさ（mL）').toBe(550);
+    expect(amounts.get('carbohydrate'), '中身（tick）').toBe(48);
     // 体脂肪は在庫から遅れて増えるので、操作そのものが書いた先には現れない（DigestionSystem.md 3節）。
     expect(amounts.has('body_fat')).toBe(false);
   });
