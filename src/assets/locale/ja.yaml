@@ -574,6 +574,33 @@ object_texts:
     display_name: 石囲いの炉
     description: 石で囲った炉。風を防ぎ、灰をかぶった種火が翌朝まで生きる。
 
+  # 土器づくり（pottery.yaml）。
+  clay:
+    display_name: 粘土
+    description: 水際から掘り取った、よく練れる土。乾かして焼けば水を通さなくなる。
+  unfired_jar:
+    display_name: 素焼き前の壺
+    description: 形を作っただけの壺。まだ土のままで、水を入れれば崩れる。乾かしてから焼けば甕になる。
+    props:
+      moisture:
+        display_name: 残った水
+        description: 練り土に残っている水。日陰に置けば抜けていく。濡れたまま焼くと、水蒸気で割れる。
+    recipes:
+      coiled:
+        display_name: 壺を成形する
+        description: 粘土の紐を底から巻き上げ、口をすぼめて壺の形にする。乾かすのはこのあと。
+  earth_kiln:
+    display_name: 覆い焼きの炉
+    description: 器と薪をまとめて土で覆った、一度きりの炉。ここでしか土器は焼けず、料理はできない。
+    recipes:
+      heaped:
+        display_name: 炉を築く
+        description: 焼く器と薪を積み、練った粘土でまるごと覆って、空気の通り道を突く。
+    interactions:
+      break_open:
+        display_name: 覆いを壊す
+        description: 冷めた土の殻を崩して、中の焼き物を取り出す。炉は二度と使えない。
+
   # 入れ物（containers.yaml）。
   woven_basket:
     display_name: 編み籠
@@ -908,12 +935,18 @@ stage_texts:
   laden: 荷を負う
   heavy: 重い
   too_heavy: 重すぎる
+  # 未焼成の壺に残った水（pottery.yaml）。
+  bone_dry: 乾いた
+  leather_hard: 半乾き
+  wet: 生乾き
 
 # 起きたことを告げる出来事（GameElementDefinition.md 9.8節のsignal）。起きた札の上に一瞬だけ浮かぶ
 # ので、離れて見ても読める短い語にする（CardView.md 14節）。
 signal_texts:
   bit: 噛みつき
+  cracked: 割れた
   devoured: 食べた
+  fired: 焼けた
   fled: 逃げた
   gored: 突き上げ
   grazed: 浅手
