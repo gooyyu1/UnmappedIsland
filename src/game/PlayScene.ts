@@ -24,7 +24,6 @@ import type { ObjectCardStack, ObjectWindowView, PlayScreenView } from './view/P
 import type { CardAction } from './view/cardOperations';
 import { EXPLORE_ACTION, fromGameSession } from './view/PlayScreenView';
 import type { CardPlace, ScreenPlace } from './view/cardPlaces';
-import { samePlace } from './view/cardPlaces';
 import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
 import type { RecordedView, Recording } from './view/recording';
@@ -554,7 +553,9 @@ export class PlayScene extends ResponsiveScene {
       `現在地: ${this.view.currentLocationCard.name}`,
       `演出中: ${ACTIVITY_NAMES[this.activity]}`,
       `子ウィンドウ: ${this.childWindowPlace === undefined ? 'なし' : this.placeText(this.childWindowPlace)}`,
-      `手持ち: ${this.view.hand.map((card) => card?.name ?? '空き').join(' / ')}`,
+      `手持ち: ${this.cardsAt(this.place('hand'))
+        .map((card) => card?.name ?? '空き')
+        .join(' / ')}`,
       `アイテム: ${this.cardsAt(this.place('items'))
         .map((card) => card?.name)
         .join(' / ')}`,
@@ -889,8 +890,7 @@ export class PlayScene extends ResponsiveScene {
    * ShownCardsへ訊く。
    */
   private cardsAt(place: CardPlace): readonly (ObjectCardStack | undefined)[] {
-    // 手持ちだけは枠の位置が意味を持つので、空き枠を挟んだ並びで受け取る（PlayScreenView.hand）。
-    return samePlace(place, this.place('hand')) ? this.view.hand : this.view.cardsIn(place);
+    return this.view.cardsIn(place);
   }
 
   /** レーンが映している場所。 */
@@ -1453,9 +1453,11 @@ export class PlayScene extends ResponsiveScene {
     this.childWindow?.showFound(index);
   }
 
-  /** 現在地のレーンに出ているカード（設置物とアイテム）。 */
+  /** 現在地のレーンに出ているカード（設置物とアイテム）。どちらも前詰めなので空き枠は無い。 */
   private get locationCards(): readonly ObjectCardStack[] {
-    return [...this.view.cardsIn(this.place('fixtures')), ...this.view.cardsIn(this.place('items'))];
+    return [...this.cardsAt(this.place('fixtures')), ...this.cardsAt(this.place('items'))].filter(
+      (card): card is ObjectCardStack => card !== undefined,
+    );
   }
 
   /** 今フィールドとロケーションのレーンに出ているインスタンスのID。 */
