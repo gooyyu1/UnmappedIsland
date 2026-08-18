@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "src/assets/objects/earth_kiln.png を作り直すためのレシピ。build.py が読む。",
+    "器と薪を土で覆っただけの、一度きりの焼成設備（src/assets/world-codex/pottery.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: kiln）。** 生成では炉にならない（9枚とも。prompts/objects.json の",
+    "earth_kiln 参照）。穴の無い陶器のドームか、扉の付いたイグルーになる。穴の数と位置が炉である",
+    "ことの唯一の手掛かりなので、そこを下絵で決める。",
+    "",
+    "**肌は「手で盛った土くれの重なり」で頼む。** 滑らかな塚として頼むと、火を点けた2枚",
+    "（_ember / _lit）だけが土くれの肌になって、無印と別の炉に見えた。Qwenが描きたがる側は決まって",
+    "いるので、**押し返さずに無印をそちらへ寄せる**。色と肌を据え置く文は3枚に共通で入れてある。",
+    "",
+    "**火は描かない。** 種火と炎は別の絵が持つ（earth_kiln_ember.json / _lit.json）。",
+    "上に空ける余白（headroom）はその2枚と共通（README「火の付いた炉」節）。",
+    "",
+    "段は400。炉の梯子（焚き火・三石・石囲い）と揃える。"
+  ],
+  "output": "src/assets/objects/earth_kiln.png",
+  "sketch": "kiln",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout and the same sizes: one low wide mound of packed earth sitting on the ground, with three small round air holes spaced along its foot and one larger round opening at the top, all four openings dark inside. Paint it as damp clay built up by hand: whole handfuls of earth pressed on one over another in overlapping rows all the way up, each clod keeping its own rounded edge, so the surface is covered in soft lumps rather than smoothed flat, and the rim of each opening is rough and crumbling. The earth is a pale grey brown, clearly darker than the white page. There are no bricks, no stones, no masonry, no arch and no door. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow along the foot of the mound. Dry matte earthy surface, flat even lighting. There is no fire, no flame, no smoke and no glow anywhere in the picture. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "headroom": 110,
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

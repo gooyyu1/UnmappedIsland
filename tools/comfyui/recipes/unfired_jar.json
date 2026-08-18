@@ -1,0 +1,42 @@
+{
+  "_comment": [
+    "src/assets/objects/unfired_jar.png を作り直すためのレシピ。build.py が読む。",
+    "粘土を巻き上げて形にしただけの、まだ焼いていない壺（src/assets/world-codex/pottery.yaml）。",
+    "",
+    "**2段構え**（recipes/dry_grass.json と同じ）。生成は製品写真になり、紙が灰色の壁になる。",
+    "",
+    "枠は縦長（896x1152）。立った壺なので、横長だと余白ばかりになる。",
+    "",
+    "**seedは口の締まった壺を選ぶ。** 9枚すべてが艶も装飾も無い素焼きの壺になった（この物は素直に",
+    "出る）が、首の無い寸胴や口の開いた花瓶が半分を占める。甕は口の狭い容器（liquid_containers.yaml",
+    "の narrow_open_container）なので、首と縁のある形を採る。淡すぎる個体も外す——白い紙より暗く",
+    "ないと card_art.py が物として拾えない。",
+    "",
+    "**焼き上がりの甕（jar.json）はこの生データから派生させる。** 同じ壺が焼ける話なので、",
+    "別々に生成すると形の違う壺へすり替わって見える（炉の3枚と同じ理由、README「火の付いた炉」節）。",
+    "切り出しも align で揃えるため、こちらの外接矩形が2枚の基準になる。",
+    "",
+    "段は320。かさ15Lの壺なので、ヤシの実（coconut）より一回り大きい扱い。"
+  ],
+  "output": "src/assets/objects/unfired_jar.png",
+  "prompts": "objects.json",
+  "prompt": "unfired_jar",
+  "workflow": "lane_background_sdxl.api.json",
+  "loraStrength": 0,
+  "noTrigger": true,
+  "seed": 58571267993129,
+  "width": 896,
+  "height": 1152,
+  "edit": {
+    "prompt": "Repaint this picture as a soft hand painted illustration on a plain empty white page. Keep the same jar exactly as it is in shape, size and position, and paint it with soft brush strokes and gentle natural shading instead of photographic detail. It is raw unfired clay: the surface stays dull, powdery and completely matte, with no glaze, no gloss and no decoration, and the faint horizontal coil ridges stay visible around the belly. Deepen its colour to a dark grey brown earth colour, clearly darker than the white page. Remove the background completely and replace it with a plain empty white page, leaving the jar alone in the middle with a wide white margin all around it and one soft grey shadow directly beneath it. Flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "320",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "src/assets/objects/jar.png を作り直すためのレシピ。build.py が読む。",
+    "覆い焼きの炉で焼き上がった甕（src/assets/world-codex/liquid_containers.yaml）。",
+    "",
+    "**素焼き前の壺（unfired_jar.json）の生データから派生させる。** 焼く前と後で形は変わらず、",
+    "変わるのは色と肌だけ。別々に生成すると、焼いた瞬間に別の壺へすり替わって見える",
+    "（炉の3枚と同じ理由、README「火の付いた炉」節）。",
+    "",
+    "**切り出しは align で素焼き前と揃える。** 形が同じなのに外接矩形から別々に決めさせると、",
+    "わずかな輪郭の差でカード上の大きさが動き、焼いたら縮んだように見える。",
+    "",
+    "焼成で変わるのは、鉄分が酸化して赤茶へ振れることと、粉っぽさが取れて硬い肌になること。",
+    "**釉薬は掛けない**（素焼きなので艶は出さない）。"
+  ],
+  "output": "src/assets/objects/jar.png",
+  "edit": {
+    "source": "unfired_jar.json",
+    "prompt": "This clay jar has been fired in a kiln. Keep the exact same jar in the same shape, the same size and the same place, with the same coil ridges around its belly, in the same soft hand painted style on the same plain empty white page with the same wide white margin and the same soft grey shadow. Only its colour and its surface change: the clay has turned a warm reddish brown terracotta, deeper and warmer than before, with faint darker smoke marks clouding one side where the fire touched it, and the surface is now hard and closed instead of powdery. It is still unglazed, so it stays matte with no gloss and no shine. Do not move, resize or redraw the jar, and add nothing to the page. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "320",
+    "align": "unfired_jar.json",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

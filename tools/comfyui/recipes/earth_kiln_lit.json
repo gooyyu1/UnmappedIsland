@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "src/assets/objects/earth_kiln_lit.png を作り直すためのレシピ。build.py が読む。",
+    "火が回っている覆い焼きの炉（heatのcoals〜blaze段、src/assets/world-codex/fire.yaml）。",
+    "",
+    "作り方と勘所は recipes/campfire_lit.json と同じ。ただし**炎は炉の上に立たない**——覆われた炉",
+    "なので、天の穴から吹き出す1本だけになる。炎の高さは炉の幅の1/3で言う（三石のかまどと同じ",
+    "理由で、平たい炉では石や山の高さを基準にすると極端に低くなる）。",
+    "",
+    "**土は焦がさない。** 塚まで黒くすると、火が消えた後の絵（無印）と地続きに見えなくなる。",
+    "橙に染めるなという否定は、塚に名指しで要る。",
+    "1周目は塚全体が鱗のような黒い肌になった。詳しくは recipes/earth_kiln_ember.json の同じ節。"
+  ],
+  "output": "src/assets/objects/earth_kiln_lit.png",
+  "edit": {
+    "source": "earth_kiln.json",
+    "prompt": "A fire is burning inside this earth mound and roaring out of the opening at the top, and that flame is the largest bright thing in the picture. Paint one tall flame standing straight up out of the top opening, as tall as a third of the width of the mound, wide and rounded where it leaves the opening and breaking into three or four sharp curling tongues above it. Paint it deep red at its foot, orange through its body and pale yellow at the tongues, with the white page showing between the separate tongues. Deep inside each of the three air holes along the foot, a bright orange glow shows. Everything else in the picture stays exactly as it is: the same mound of earth in the same place, at the same size, with the same lumpy surface, in the same soft hand painted style, on the same plain empty white page with the same wide white margin and the same soft grey shadow. The mound itself does not change at all: it keeps exactly the same pale grey brown earth colour and the same smooth rounded lumps it has now. Do not darken it, do not blacken it, and do not add ash, soot, char, cracks, scales or any texture to it. There is no orange light on it away from the openings. Do not move, resize or redraw the mound. The page stays plain white right up to the edge of the flame: no glow, no starburst, no rays of light, no haze, no smoke and no coloured light on the page, and nothing comes near the edges of the page. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "headroom": 110,
+    "align": "earth_kiln.json",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

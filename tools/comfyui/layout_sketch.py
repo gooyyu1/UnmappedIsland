@@ -31,6 +31,12 @@ CORD_DARK = (120, 88, 52)
 SAIL = (198, 186, 160)
 BONE = (216, 203, 176)
 BONE_DARK = (166, 152, 126)
+EARTH = (108, 88, 70)
+EARTH_DARK = (74, 60, 47)
+HOLE = (38, 31, 25)
+CLAY = (118, 92, 66)
+CLAY_DARK = (78, 58, 40)
+CLAY_FACE = (152, 124, 94)
 TARO = (124, 92, 64)
 TARO_DARK = (86, 62, 42)
 TARO_RING = (170, 142, 110)
@@ -201,6 +207,38 @@ def draw_hafted(
         )
 
 
+def draw_kiln(draw: ImageDraw.ImageDraw) -> None:
+    """覆い焼きの炉。低く平たい土の塚に、裾の空気穴3つと天の穴1つ。
+
+    **穴だけが炉であることの手掛かり。** 生成に頼むと、穴の無い陶器のドームか、扉の付いたイグルーに
+    なった（9枚で0。prompts/objects.json の earth_kiln 参照）。穴の数と位置の話なのでここで決める。
+
+    火の付いた絵（_ember / _lit）は天の穴から出るので、**塚は低く置いて上を空けておく**
+    （headroom、README「火の付いた炉」節）。
+    """
+    left, right, base, apex = 250.0, 900.0, 700.0, 360.0
+    center_x = (left + right) / 2
+    radius_x, radius_y = (right - left) / 2, base - apex
+    steps = 48
+
+    def dome(index: int) -> tuple[float, float]:
+        """左の裾から天を通って右の裾までの輪郭。手で盛った塚なので凹凸を持たせる。"""
+        angle = math.pi * index / steps
+        lump = 1 + 0.035 * math.sin(angle * 7) + 0.02 * math.sin(angle * 13)
+        return (center_x - radius_x * lump * math.cos(angle), base - radius_y * lump * math.sin(angle))
+
+    body = [dome(i) for i in range(steps + 1)] + [(right, base), (left, base)]
+    draw.polygon(body, fill=EARTH)
+    # 右半分の陰。丸みが無いと、切り立った壁に見える。
+    draw.polygon([dome(i) for i in range(steps // 2, steps + 1)] + [(right, base), (center_x, base)], fill=EARTH_DARK)
+
+    # 天の穴。ここから炎が出るので、裾の穴より大きく。
+    draw.ellipse([center_x - 78, apex + 6, center_x + 78, apex + 74], fill=HOLE)
+    # 裾の空気穴。3つを等間隔に置く。
+    for hole_x in (center_x - 215, center_x - 5, center_x + 205):
+        draw.ellipse([hole_x - 36, base - 62, hole_x + 36, base - 6], fill=HOLE)
+
+
 def draw_log(draw: ImageDraw.ImageDraw) -> None:
     """丸太。左下を手前、右上を奥にして対角線へ寝かせ、手前の端へ木口を向ける。
 
@@ -259,6 +297,47 @@ def draw_log(draw: ImageDraw.ImageDraw) -> None:
             for step in range(48)
         ]
         draw.polygon(rim, fill=fill, outline=outline, width=4)
+
+
+def draw_clay(draw: ImageDraw.ImageDraw) -> None:
+    """粘土の塊。丸い塊の天を弦で切り落とし、その切り口だけを明るく置く。
+
+    **形を言葉で頼むと作り手が出るか、顔になる。** 「刃で切った面」「指の窪み」と工程で書くと手と
+    刃物が写り、窪みと稜線だけ書くと粘土で作った顔になった（18枚で0。prompts/objects.json の clay
+    参照）。切り口と丸みの位置関係だけをここで決める。
+    """
+    center_x, center_y = 576.0, 520.0
+    radius_x, radius_y = 232.0, 212.0
+    # 塊なので輪郭は不揃いにする。真円だと石（stone）と同じ形になる。
+    wobble = [1.00, 1.04, 0.97, 1.03, 0.95, 1.02, 0.98, 1.05, 0.96, 1.03, 0.99, 1.04, 1.00, 1.03, 0.97, 1.02]
+    steps = len(wobble)
+
+    def edge(index: int) -> tuple[float, float]:
+        angle = 2 * math.pi * index / steps
+        return (
+            center_x + radius_x * wobble[index] * math.cos(angle),
+            center_y + radius_y * wobble[index] * math.sin(angle),
+        )
+
+    # 天（11〜13）を飛ばすと、そこだけ弦が渡って切り落とした面になる。
+    cut = (11, 12, 13)
+    draw.polygon([edge(i) for i in range(steps) if i not in cut], fill=CLAY)
+
+    # 手前（下）側の陰。丸みが無いと、平たい板に見える。
+    draw.polygon([edge(i) for i in range(steps // 2 + 1)], fill=CLAY_DARK)
+
+    # 切り口。弦を内側へずらした帯として置く。ここだけ明るいのが、濡れた土の見分けになる。
+    start, end = edge(cut[0] - 1), edge(cut[-1] + 1)
+    inward_x, inward_y = center_x - (start[0] + end[0]) / 2, center_y - (start[1] + end[1]) / 2
+    length = math.hypot(inward_x, inward_y)
+    step_x, step_y = inward_x / length * 52, inward_y / length * 52
+    draw.polygon(
+        [start, end, (end[0] + step_x, end[1] + step_y), (start[0] + step_x, start[1] + step_y)],
+        fill=CLAY_FACE,
+    )
+
+    # **窪みは描かない。** 2つ並べると目になって顔へ戻り、1つでも貫通した穴として描かれて
+    # 石臼になった。平らな切り口と歪んだ輪郭だけで、掘り取った土として読める。
 
 
 def draw_taro(draw: ImageDraw.ImageDraw) -> None:
@@ -438,6 +517,8 @@ def draw_spear(draw: ImageDraw.ImageDraw) -> None:
 
 LAYS = {
     "axe": draw_axe,
+    "clay": draw_clay,
+    "kiln": draw_kiln,
     "fan": draw_fan,
     "log": draw_log,
     "needle": draw_needle,
