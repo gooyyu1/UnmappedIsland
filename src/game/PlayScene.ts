@@ -568,10 +568,11 @@ export class PlayScene extends ResponsiveScene {
    * カードなら届いた時点で貼り替わり（Card）、移動なら暗転のまま待つ（transit）。
    */
   private requestLocationArt(): void {
+    this.artLoader.request(this.currentLandArt);
+
     const location = this.gameSession.player.location;
     if (location === undefined) return;
 
-    this.artLoader.request(location.instance.def.name);
     // 発見済みの道の行き先は、移動に備えて絵を全部読む。
     for (const name of this.pathDestinationNames(location.fixtures)) this.artLoader.request(name);
     // 未発見の道の行き先は、土地カードの絵1枚だけ読んでおく。道は発見と同時に行き先の絵のカードと
@@ -1762,18 +1763,28 @@ export class PlayScene extends ResponsiveScene {
       });
     };
 
-    const art = this.view.currentLocationCard.art;
-    if (art === undefined) reveal();
-    else this.artLoader.onceLoaded(art, reveal);
+    this.artLoader.onceLoaded(this.currentLandArt, reveal);
   }
 
   /**
-   * 現在地の絵が届いているか。**絵を持たない場所は待たない**——絵の無い土地（最小のCodex）でも
-   * 場面転換が止まらないようにする。
+   * 今の土地の識別子。**絵の遅延ロードの単位**（artFiles参照）で、土地カードの絵とレーンの地が
+   * この1つの名前で束ねられている。
+   *
+   * **札の絵とは別物。** 札が映す絵は段で差し替わりうる（`art_by_stage`）が、読む単位は土地そのもの
+   * ——札の絵の名前で待つと、段の絵しか見ずにレーンの地を待ち損ねる。
+   */
+  private get currentLandArt(): string {
+    return (this.gameSession.player.location ?? this.gameSession.startLocation).instance.def.name;
+  }
+
+  /**
+   * 現在地の絵が届いているか。絵が1枚も無い土地（最小のCodex）では、待つものが無いので即座に真。
+   *
+   * **待っているのはレーンの地。** 札の絵は届いた時点で貼り替わる（Card）が、レーンの地は組み立て時に
+   * しか差し込めない。同じ単位で一度に届くので、札の絵と別々には待たない。
    */
   private get locationArtLoaded(): boolean {
-    const art = this.view.currentLocationCard.art;
-    return art === undefined || this.artLoader.loaded(art);
+    return this.artLoader.loaded(this.currentLandArt);
   }
 
   /**
