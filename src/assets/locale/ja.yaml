@@ -580,11 +580,15 @@ object_texts:
     description: 水際から掘り取った、よく練れる土。乾かして焼けば水を通さなくなる。
   unfired_jar:
     display_name: 素焼き前の壺
-    description: 形を作って乾かした壺。まだ土のままで、水を入れれば崩れる。焼けば甕になる。
+    description: 形を作っただけの壺。まだ土のままで、水を入れれば崩れる。乾かしてから焼けば甕になる。
+    props:
+      moisture:
+        display_name: 残った水
+        description: 練り土に残っている水。日陰に置けば抜けていく。濡れたまま焼くと、水蒸気で割れる。
     recipes:
       coiled:
         display_name: 壺を成形する
-        description: 粘土の紐を巻き上げて壺の形にし、腰が立つのを待って口まで積み、日陰で乾かす。
+        description: 粘土の紐を底から巻き上げ、口をすぼめて壺の形にする。乾かすのはこのあと。
   earth_kiln:
     display_name: 覆い焼きの炉
     description: 器と薪をまとめて土で覆った、一度きりの炉。ここでしか土器は焼けず、料理はできない。
@@ -931,12 +935,18 @@ stage_texts:
   laden: 荷を負う
   heavy: 重い
   too_heavy: 重すぎる
+  # 未焼成の壺に残った水（pottery.yaml）。
+  bone_dry: 乾いた
+  leather_hard: 半乾き
+  wet: 生乾き
 
 # 起きたことを告げる出来事（GameElementDefinition.md 9.8節のsignal）。起きた札の上に一瞬だけ浮かぶ
 # ので、離れて見ても読める短い語にする（CardView.md 14節）。
 signal_texts:
   bit: 噛みつき
+  cracked: 割れた
   devoured: 食べた
+  fired: 焼けた
   fled: 逃げた
   gored: 突き上げ
   grazed: 浅手

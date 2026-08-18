@@ -598,7 +598,7 @@ npm run stats:balance
 | water_spinach | 17.7 | 17.7 | 0.0 | 0.02 | grassland.explore | — |
 | coconut_crab | 39.2 | 39.2 | 0.0 | 0.05 | rocky_coast.explore | — |
 | taro | 25.3 | 25.3 | 0.0 | 0.03 | grassland.explore | — |
-| jar | 682.5 | 142.5 | 540.0 | 0.83 | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_overflow | earth_kiln（303.8分） |
+| jar | 465.0 | 285.0 | 180.0 | 0.56 | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_overflow | earth_kiln（303.8分） |
 | coconut_bowl | 61.2 | 8.7 | 52.5 | 0.07 | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape | cutting_tool → sharp_stone（72.2分）、stone（12.2分） |
 | thick_branch | 23.7 | 23.7 | 0.0 | 0.03 | sandy_beach.explore | — |
 | stone | 12.2 | 12.2 | 0.0 | 0.01 | rocky_field.explore | — |
@@ -607,7 +607,7 @@ npm run stats:balance
 | cave_entrance | 41.4 | 41.4 | 0.0 | 0.05 | mountain_peak.explore | — |
 | spring | 199.5 | 199.5 | 0.0 | 0.24 | grassland.explore | — |
 | clay | 71.3 | 71.3 | 0.0 | 0.09 | grassland.explore | — |
-| unfired_jar | 682.5 | 142.5 | 540.0 | 0.83 | grassland.explore → unfired_jar.coiled | — |
+| unfired_jar | 232.5 | 142.5 | 90.0 | 0.28 | grassland.explore → unfired_jar.coiled | — |
 | earth_kiln | 303.8 | 213.8 | 90.0 | 0.37 | grassland.explore → earth_kiln.heaped | — |
 | broadleaf_tree | 149.0 | 149.0 | 0.0 | 0.18 | forest.explore | — |
 | log | 194.5 | 74.5 | 120.0 | 0.24 | forest.explore → broadleaf_tree.fell | chopping_tool → stone_axe（482.4分） |
@@ -833,8 +833,8 @@ npm run stats:balance
 | wasteland | explore | interaction | 15 | 15 | stone ×0.99、twig ×0.50、rat ×0.02、dry_grass ×0.11 | （self）exploration_progress +1.00 |
 | mountainside | explore | interaction | 15 | 15 | cave_entrance ×0.14、golden_chalice ×0.03、berry_bush ×0.21、rat ×0.02、stone ×0.98、twig ×0.62 | （self）exploration_progress +1.00 |
 | mountain_peak | explore | interaction | 15 | 15 | cave_entrance ×0.36、stone ×1.19、rat ×0.02 | （self）exploration_progress +1.00 |
-| unfired_jar | coiled | recipe | 540 | 540 | unfired_jar ×1.00 | — |
-| unfired_jar | cooking_progress.on_overflow | periodic | 0 | 1815 | jar ×1.00 | — |
+| unfired_jar | coiled | recipe | 90 | 90 | unfired_jar ×1.00 | — |
+| unfired_jar | cooking_progress.on_overflow | periodic | 0 | 1815 | jar ×0.50 | — |
 | earth_kiln | add_fuel | interaction | 1 | 1 | — | （self）fuel +999.00 |
 | earth_kiln | heaped | recipe | 90 | 90 | earth_kiln ×1.00 | — |
 | broadleaf_tree | fell | interaction | 240 | 240 | log ×2.00、thick_branch ×3.00 | — |

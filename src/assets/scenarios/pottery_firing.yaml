@@ -1,0 +1,26 @@
+# 土器づくりのテスト用（src/assets/world-codex/pottery.yaml）。成形から焼き上がりまでを一通り試せる。
+#
+# 手順: 粘土2個で壺を成形する → 「残った水」が抜けるのを待つ（1日で乾き切る） → 覆い焼きの炉へ入れ、
+# 丸太をくべて火種を落とす → 6時間ほどで焼き上がる → 覆いを壊して甕を取り出す。
+#
+# **急ぐと割れる。** 乾かさずに火へ入れれば、溢れる時点でも水が7割残っていて、6割弱の賭けになる。
+# 手元の壺は最初から濡れているので、待たずに焼く側もそのまま試せる。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 土器を焼く
+
+# 3は開始地点が砂浜になるシード（fire_making.yamlと同じ）。粘土は探索では草地・森林・密林でしか
+# 見つからないので、ここでは最初から持たせる。
+seed: 3
+
+player:
+  # 成形済みの壺2つと、もう1つ作れるだけの粘土。炉はこの場で築く。
+  hand: [unfired_jar, unfired_jar, clay, clay]
+
+location:
+  type: sandy_beach
+  # 炉は粘土3個のレシピでも作れるが、焼成から試せるよう最初から据えておく。
+  fixtures: [earth_kiln]
+  # 丸太1本で炉は満杯（fuel 200）。火起こしは4割外すので、枯れ草は何度か試せる数を持たせる。
+  items: [clay x3, log, fire_drill, dry_grass, dry_grass, dry_grass]
