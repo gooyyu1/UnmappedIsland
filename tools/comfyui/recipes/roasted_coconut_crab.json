@@ -1,0 +1,29 @@
+{
+  "_comment": [
+    "src/assets/objects/roasted_coconut_crab.png を作り直すためのレシピ。build.py が読む。",
+    "殻ごと火にかけたヤシガニ（src/assets/world-codex/foods.yaml）。",
+    "",
+    "**生のヤシガニ（coconut_crab.json）の生データから派生させる。** 焼く前と後で同じ1匹なので、",
+    "別々に生成すると別のカニへすり替わって見える（甕と炉の3枚と同じ理由、README「火の付いた炉」節）。",
+    "生のseedは脚と鋏が枠に収まる個体を21枚から選んであるので、構図もそのまま引き継げる。",
+    "切り出しも align で揃える。",
+    "",
+    "**変わるのは色だけ。** 甲殻類は加熱で殻の色素が壊れ、青紫が鮮やかな橙赤へ振れる——生と焼きの",
+    "差がこれほど分かりやすい物は他に無いので、形には一切触らせない。"
+  ],
+  "output": "src/assets/objects/roasted_coconut_crab.png",
+  "edit": {
+    "source": "coconut_crab.json",
+    "prompt": "This crab has been roasted whole over a fire. Keep the exact same crab in the same shape, the same pose and the same place, at the same size, with both pincer claws and every walking leg exactly where they are and complete to the very tips, in the same soft hand painted style on the same plain empty white page with the same wide white margin and the same soft grey shadow. Only its colour changes: the shell has turned a bright orange red all over, deep red along the ridges of the back and the tops of the claws, fading to a warm orange on the legs, with the joints between the segments a little darker. None of the blue violet colour is left anywhere on it. A few small dark scorch marks show on the undersides of the legs where they touched the fire. The shell stays dry and matte, with no glaze and no wetness. Do not move, resize or redraw the crab, and add nothing to the page: no fire, no embers, no smoke, no plate and no garnish. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "align": "coconut_crab.json",
+    "mode": "background",
+    "tolerance": 40,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}

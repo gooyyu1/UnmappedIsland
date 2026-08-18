@@ -1,0 +1,33 @@
+{
+  "_comment": [
+    "src/assets/objects/roasted_taro.png を作り直すためのレシピ。build.py が読む。",
+    "熾火に埋めて芯まで焼いたタロイモ（src/assets/world-codex/foods.yaml）。",
+    "",
+    "**生のタロイモ（taro.json）の生データから派生させる。** 焼く前と後で同じ1つの芋なので、",
+    "別々に生成すると焼いた瞬間に別の芋へすり替わって見える（甕と炉の3枚と同じ理由、",
+    "README「火の付いた炉」節）。切り出しも align で揃える。",
+    "",
+    "**焦げた塊（charred_lump）と見分けが付かなくてはいけない。** 鎖の次がそれなので、皮を黒く",
+    "しすぎると1つ先の絵になる。1周目に「暗い煙色」「灰をかぶって」と頼んだら、皮が真っ黒になり、",
+    "灰は白い引っ掻き傷になって、焦げた塊とほとんど同じ絵が返った。",
+    "",
+    "**効くのは、変える点を2つに絞って優先順位を付けること。** 皮は「少しだけ濃い茶のまま。黒には",
+    "しない」と上限を切り、**割れ目から覗く白い身を絵の中で最も目立つ変化として頼む**。火が通って",
+    "いることは、皮の色ではなく中身が見えていることで出す。"
+  ],
+  "output": "src/assets/objects/roasted_taro.png",
+  "edit": {
+    "source": "taro.json",
+    "prompt": "This taro root has been roasted in the embers of a fire. Keep the exact same taro in the same shape, the same size and the same place, lying at the same angle, with the same rings around its body and the same cut stub of the stalk, in the same soft hand painted style on the same plain empty white page with the same wide white margin and the same soft grey shadow. Exactly two things change, and nothing else. First and most important: a wide split has opened along the top of the body, and through it the cooked flesh inside shows, creamy white flecked with faint purple, soft and much paler than the skin. This pale opening is the clearest, brightest change in the whole picture. Second: the skin has dried a little and gone slightly deeper, to a warm mid brown. The skin must stay clearly brown — it does not turn black, it is not charred, not sooty, not burnt to charcoal, and there are no white streaks, scratches or ash on it. Do not move, resize or redraw the taro, and add nothing to the page: no fire, no embers, no smoke and no leaves. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "320",
+    "align": "taro.json",
+    "mode": "background",
+    "tolerance": 24,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
