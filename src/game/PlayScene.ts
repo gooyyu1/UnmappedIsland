@@ -206,8 +206,13 @@ interface BarIcon {
 /** メニューだけは押したときの行き先があるため、判別できるよう切り出す。 */
 const MENU_ICON: BarIcon = { icon: '☰' };
 
-/** 地図ボタンのアイコン。ドメイン側に表示できる形が無い固定値（装備・怪我のアイコンと同じ扱い）。 */
-const MAP_ICON = '🗺️';
+/**
+ * スロットボタンの代役アイコン。**絵（art）が届くまでの繋ぎ**で、押した先の中身とは関係が無い
+ * ——ボタンの姿は画面の意匠なので、ワールドを映すPlayScreenViewには置かない。
+ *
+ * レシピだけ道具の絵を避けているのは、下のフィルターバーが道具の絞り込みに🔨を使っているため。
+ */
+const SLOT_BUTTON_ICONS = { map: '🗺️', equipment: '👕', injury: '🩹', recipe: '📜' } as const;
 
 const OPTION_ICONS: readonly BarIcon[] = [
   { art: 'settings', icon: '⚙️' },
@@ -1961,26 +1966,25 @@ export class PlayScene extends ResponsiveScene {
     const buttons = [
       {
         art: 'map',
-        icon: MAP_ICON,
+        icon: SLOT_BUTTON_ICONS.map,
         fill: COLOR.mapButton,
         onTap: () => this.openMapWindow(),
       },
       {
         art: 'equipment',
-        icon: this.view.equipmentIcon,
+        icon: SLOT_BUTTON_ICONS.equipment,
         fill: COLOR.equipmentButton,
         onTap: () => this.openSlotWindow(this.place('equipment')),
       },
       {
         art: 'injury',
-        icon: this.view.injuryIcon,
+        icon: SLOT_BUTTON_ICONS.injury,
         fill: COLOR.injuryButton,
         onTap: () => this.openSlotWindow(this.place('injuries')),
       },
       {
         art: 'recipe',
-        // 下のフィルターバーが道具の絞り込みに🔨を使っているので、道具の絵は避ける。
-        icon: '📜',
+        icon: SLOT_BUTTON_ICONS.recipe,
         fill: COLOR.recipeButton,
         onTap: () => this.openRecipeWindow(),
       },

@@ -191,8 +191,9 @@ export interface SlotView {
 /**
  * プレイ中の画面が表示する内容。画面の組み立て（PlayScene）とゲーム状態の間を仕切る。
  *
- * 天候・条件・装備・怪我のように、ドメイン側にまだ表示できる形が無い項目はモック
- * （ScreenLayout_Mock.html）と同じ固定値を返す（fromGameSession参照）。
+ * 条件のように、ドメイン側にまだ表示できる形が無い項目はモック（ScreenLayout_Mock.html）と同じ
+ * 固定値を返す（fromGameSession参照）。**画面の意匠でしかないもの——ボタンの代役アイコンなど——は
+ * ここに置かない。** ワールドを映していないものは、ワールドが変わっても変わらない。
  */
 export interface PlayScreenView {
   /**
@@ -228,8 +229,6 @@ export interface PlayScreenView {
   readonly propertyCategories: readonly PropertyTab[];
   /** 条件アイコン。複数同時に付き得るので件数は可変。 */
   readonly conditions: readonly string[];
-  readonly equipmentIcon: string;
-  readonly injuryIcon: string;
   readonly elapsedDays: number;
   readonly hour: number;
   readonly minute: number;
@@ -689,8 +688,6 @@ export function fromGameSession(
     currentLocationWindow,
     windowOf,
     conditions: ['💭', '🥶', '😪', '🍽️'],
-    equipmentIcon: '👕',
-    injuryIcon: '🩹',
     statuses: entriesWithTag(game.player.instance, codex.propertyTagNames.tryGetId(STATUS_TAG)),
     propertyCategories,
     // dayは1始まり（GameElementDefinition.md 17節）なので、生存日数は0始まりへ直す。
