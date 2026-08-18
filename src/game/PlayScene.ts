@@ -538,7 +538,9 @@ export class PlayScene extends ResponsiveScene {
       `演出中: ${ACTIVITY_NAMES[this.activity]}`,
       `子ウィンドウ: ${this.childWindowPlace === undefined ? 'なし' : this.placeText(this.childWindowPlace)}`,
       `手持ち: ${this.view.hand.map((card) => card?.name ?? '空き').join(' / ')}`,
-      `アイテム: ${this.view.items.map((card) => card.name).join(' / ')}`,
+      `アイテム: ${this.cardsAt(this.place('items'))
+        .map((card) => card?.name)
+        .join(' / ')}`,
     ];
   }
 
@@ -872,10 +874,8 @@ export class PlayScene extends ResponsiveScene {
    * ShownCardsへ訊く。
    */
   private cardsAt(place: CardPlace): readonly (ObjectCardStack | undefined)[] {
-    if (samePlace(place, this.place('hand'))) return this.view.hand;
-    if (samePlace(place, this.place('items'))) return this.view.items;
-    if (samePlace(place, this.place('fixtures'))) return this.view.fixtures;
-    return this.view.cardsIn(place);
+    // 手持ちだけは枠の位置が意味を持つので、空き枠を挟んだ並びで受け取る（PlayScreenView.hand）。
+    return samePlace(place, this.place('hand')) ? this.view.hand : this.view.cardsIn(place);
   }
 
   /** レーンが映している場所。 */
@@ -1435,7 +1435,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 現在地のレーンに出ているカード（設置物とアイテム）。 */
   private get locationCards(): readonly ObjectCardStack[] {
-    return [...this.view.fixtures, ...this.view.items];
+    return [...this.view.cardsIn(this.place('fixtures')), ...this.view.cardsIn(this.place('items'))];
   }
 
   /** 今フィールドとロケーションのレーンに出ているインスタンスのID。 */
@@ -2397,7 +2397,7 @@ export class PlayScene extends ResponsiveScene {
 
     new ModalDialog(this, this.metrics, {
       card: this.view.characterCard,
-      title: `${this.view.characterName}は息絶えた`,
+      title: `${this.view.characterCard.name}は息絶えた`,
       // 死因を名乗るのはワールドの側（命を絶った値が居る段）で、画面は文言を引くだけ。
       body: [
         `生存 ${this.view.elapsedDays} 日目`,
@@ -2420,7 +2420,7 @@ export class PlayScene extends ResponsiveScene {
 
     new ModalDialog(this, this.metrics, {
       card: this.view.characterCard,
-      title: `${this.view.characterName}は島を出た`,
+      title: `${this.view.characterCard.name}は島を出た`,
       body: [
         `島で ${this.view.elapsedDays} 日を過ごした`,
         '潮に乗った筏は、ついに人の住む岸へ着いた。振り返っても、島はもう水平線の下にある。',

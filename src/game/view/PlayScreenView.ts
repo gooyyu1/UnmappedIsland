@@ -149,15 +149,12 @@ export interface ObjectWindowView {
  * （ScreenLayout_Mock.html）と同じ固定値を返す（fromGameSession参照）。
  */
 export interface PlayScreenView {
-  readonly characterName: string;
-  /** キャラクターのobject_defの識別子（表示名ではない）。ポートレートカードの絵を選ぶ（objectArt参照）。 */
-  readonly characterArt: string;
   /**
-   * ポートレートカードに出す印。動物のカードと同じ規約で、血が流れている傷を負っていれば出る
-   * （CardView.md 9節）。負っていなければundefined。
+   * キャラクタ自身を映す札。ポートレイトの枠と、キャラクタの子ウィンドウが同じ姿で出す1枚。
+   *
+   * **名前も絵も印もこの札が持つ。** 血が流れている傷を負っていれば印が付くのも、動物のカードと
+   * 同じ規約（CardView.md 9節）。
    */
-  readonly characterMark: string | undefined;
-  /** キャラクタ自身を映す札。ポートレイトの枠と、キャラクタの子ウィンドウが同じ姿で出す1枚。 */
   readonly characterCard: CardContent;
 
   /** キャラクタ自身の子ウィンドウ（ポートレイト・日時・装備/怪我のボタンから開く）。 */
@@ -201,7 +198,10 @@ export interface PlayScreenView {
    */
   readonly weatherLabel: string | undefined;
   readonly currentLocation: CardContent;
-  /** 現在地のobject_defの識別子（表示名ではない）。土地の絵の遅延ロードの単位（artFiles参照）。 */
+  /**
+   * 現在地の絵の名前（`currentLocation.art`と同じ値）。土地の絵の遅延ロードの単位（artFiles参照）で、
+   * **必ず1枚を待つ**ので、札の側と違って欠けない形で持つ。
+   */
   readonly locationArt: string;
   /**
    * 画面の区画（レーン・装備/怪我のボタン）が今映しているスロット。**画面が名前で指せるのはこの5つ
@@ -214,11 +214,10 @@ export interface PlayScreenView {
    * どのスロットにどの絵を敷くかは、画面側ではなく絵のファイル名が決める。
    */
   readonly laneSlot: (place: CardPlace) => SlotRef | undefined;
-  /** 現在地の設置物（道・木・建物など、持ち歩けないもの）。 */
-  readonly fixtures: readonly ObjectCardStack[];
-  /** 現在地に落ちているアイテム（持ち歩けるもの）。 */
-  readonly items: readonly ObjectCardStack[];
-  /** 手持ちは固定枠スロットなので、空きセルはundefined（プレースホルダー）として並ぶ。 */
+  /**
+   * 手持ちの並び。**枠の位置がそのまま意味を持つ**ので、空き枠をundefinedとして挟んだ形で答える
+   * ——前詰めの場所（cardsIn）と違い、抜けた枠は詰まらない。
+   */
   readonly hand: readonly (ObjectCardStack | undefined)[];
 
   /** 地図ウィンドウに出す既知の土地（現在地と、発見済みの道の両端）。 */
@@ -612,7 +611,13 @@ export function fromGameSession(
    */
   const cardOfStack = (live: readonly WorldObject[], place: CardPlace): ObjectCardStack => {
     const stack = [...live];
-    return { ...stackOf(stack, place), ...operations.forStack(stack, place) };
+    return {
+      ...stackOf(stack, place),
+      ...operations.forStack(stack, place),
+      // 道だけは名前と絵が行き先のものに差し替わる（destinationOf参照）。**札を作る道は1本**なので、
+      // どこから作った札でも同じ姿になる——束を割った1枚が、行き先ではなく道そのものの名前で出ない。
+      ...destinationOf(stack[0]),
+    };
   };
   /**
    * キャラクタ自身を映す札。**自分のインスタンスを識別子として名乗る**——レーンに並ぶ他の札と同じく、
@@ -625,19 +630,19 @@ export function fromGameSession(
     identity: [game.player.instance.instanceId],
   };
 
+  /** 現在地の絵の名前。札に映すのも、ロードを待つのもこの1枚（locationArt）。 */
+  const locationArt = location.instance.def.name;
+
   const currentLocationCard: CardContent = {
     icon: LOCATION_ICON,
     name: locationNameOf(location.instance.instanceId, location.instance.def.name),
-    art: location.instance.def.name,
+    art: locationArt,
     kind: 'location',
     // 現在地の札も、その場所が宣言したバーを出す（航海の進み、docs/world/Voyage.md 4節）。
     gauges: looks.gaugesOf(location.instance),
   };
 
   return {
-    characterName: characterTexts.displayName,
-    characterArt: game.player.instance.def.name,
-    characterMark: looks.markOf(game.player.instance),
     characterCard,
     characterWindow: {
       card: characterCard,
@@ -683,20 +688,12 @@ export function fromGameSession(
     weatherLabel:
       game.world.weather === undefined ? undefined : locale.symbol(game.world.weather).displayName,
     currentLocation: currentLocationCard,
-    locationArt: location.instance.def.name,
+    locationArt,
     places,
     laneSlot: (place) => {
       const slot = place.container.def.getSlotDef(place.slotGlobalId);
       return slot === undefined ? undefined : { owner: place.container.def.name, slot: slot.name };
     },
-    // 並び方はプレイヤーが地形をどう捉えているかで変わるため、同じスロットの中での並び替えを許す。
-    // ヤシの木を持ち歩けないのはmoveIntoが弾くからで、このレーンが読み取り専用だからではない。
-    fixtures: location.fixtureStacks.map((stack) => ({
-      ...cardOfStack(stack, places('fixtures')),
-      // 道だけは名前と絵が行き先のものに差し替わる（destinationOf参照）。
-      ...destinationOf(stack[0]),
-    })),
-    items: location.itemStacks.map((stack) => cardOfStack(stack, places('items'))),
     hand: game.player.handStacks.map((stack) =>
       stack.length === 0 ? undefined : cardOfStack(stack, places('hand')),
     ),
@@ -705,9 +702,7 @@ export function fromGameSession(
     cardsIn: (place) => stacksIn(place).map((stack) => cardOfStack(stack, place)),
     cardOfType: looks.typeContentOf,
     materialsOf: (place) => craftingMaterials(place.container, codex),
-    // 道の差し替え（destinationOf）も通す。設置物レーンの束を割ったときに、行き先ではなく道そのものの
-    // 名前が出てしまわないようにするため。
-    cardOfObjects: (objects, place) => ({ ...cardOfStack(objects, place), ...destinationOf(objects[0]) }),
+    cardOfObjects: cardOfStack,
     slotLabelOf: (place) => {
       const name = slotNameOf(place);
       return name === undefined ? looks.nameOf(place.container) : locale.slot(name).displayName;
