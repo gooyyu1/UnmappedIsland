@@ -596,46 +596,49 @@ export class WorldObject {
   becomeType(newDef: ObjectDef, session: WorldSession): void {
     if (newDef === this._def) return;
 
-    // 行き場を失う中身は、まだ全部が噛み合っているこの時点で送り出す（居場所の記録も普段どおり残る）。
-    for (const slot of this.slots)
-      if (newDef.slotLayout.toLocal(slot.def.globalId) === LocalIndexMap.missing)
-        this.evictSlot(slot, this._parent);
+    // 新しい型のスロットを先に組み、中身を宣言順に配ってみる。**受け取れなかった中身は、まだ全部が
+    // 噛み合っているこの時点で送り出す**——旧スロットがまだ現役なので、どこから出たかも普段どおり残る。
+    const newSlots = newDef.enumerateSlotDefs().map((slotDef) => new Slot(slotDef));
+    const rehomed: Array<{ child: WorldObject; slotLocalId: number }> = [];
+    for (const slot of this.slots) {
+      const slotLocalId = newDef.slotLayout.toLocal(slot.def.globalId);
+      for (const child of [...slot.contents]) {
+        const destination = slotLocalId === LocalIndexMap.missing ? undefined : newSlots[slotLocalId];
+        if (
+          destination === undefined ||
+          destination.canAccept(child, this.wellKnown, newDef.name) !== undefined
+        ) {
+          this.evict(child);
+          continue;
+        }
+        destination.addInternal(child);
+        rehomed.push({ child, slotLocalId });
+      }
+    }
 
     const parent = this._parent;
-    const children = [...this.children()];
 
     this.registerAncestorTargetedRecursively(false);
     this._def.passives.registerRelation(this, 'self', false);
     if (parent !== undefined) this.registerEdgeWith(parent, false);
-    for (const child of children) child.registerEdgeWith(this, false);
+    for (const { child } of rehomed) child.registerEdgeWith(this, false);
 
     const carriedValues = new Map<number, number>();
     for (const property of this.properties) carriedValues.set(property.def.globalId, property.number);
-    const carriedContents = this.slots.map((slot) => [slot.def.globalId, [...slot.contents]] as const);
 
     this._def = newDef;
     this.properties = newDef.enumeratePropertyDefs().map((pd) => new PropertyValue(pd, this, session.rng));
-    this.slots = newDef.enumerateSlotDefs().map((sd) => new Slot(sd));
+    this.slots = newSlots;
+    for (const { child, slotLocalId } of rehomed) child.setParent(this, slotLocalId);
 
     for (const property of this.properties) {
       const carried = carriedValues.get(property.def.globalId);
       if (carried !== undefined) property.copyValueFrom(clampToRange(property.def, carried));
     }
 
-    // 引き継ぐ中身は、枠が足りなくてもそのまま受け止める（既に世界に在る物を、置き場所を理由に
-    // 押し出さない。spawnの伝播と同じ扱い、9.4節）。行き先そのものが無い場合だけが上のevictSlot。
-    for (const [slotGlobalId, contents] of carriedContents) {
-      const localId = newDef.slotLayout.toLocal(slotGlobalId);
-      if (localId === LocalIndexMap.missing) continue;
-      for (const child of contents) {
-        this.slots[localId].addInternal(child);
-        child.setParent(this, localId);
-      }
-    }
-
     this._def.passives.registerRelation(this, 'self', true);
     if (parent !== undefined) this.registerEdgeWith(parent, true);
-    for (const child of this.children()) child.registerEdgeWith(this, true);
+    for (const { child } of rehomed) child.registerEdgeWith(this, true);
     this.registerAncestorTargetedRecursively(true);
 
     if (parent === undefined) return;
@@ -646,14 +649,12 @@ export class WorldObject {
   }
 
   /**
-   * スロットごと無くなるときに、その中身を送り出す（becomeType参照）。単独で在れない子は移せる先が
-   * 無いのでそこで失われる（destroyの道連れと同じ、7.9節）。
+   * 新しい型が受け取れなかった中身を送り出す（becomeType参照）。行き先はdestroyのこぼし先と同じ
+   * 自分の親で、単独で在れない子（7.9節）は移せる先が無いのでそこで失われる。
    */
-  private evictSlot(slot: Slot, destination: WorldObject | undefined): void {
-    for (const child of [...slot.contents]) {
-      if (child.def.boundToOwner || destination === undefined) child.destroy();
-      else child.moveIntoFirstAcceptingSlot(destination, true);
-    }
+  private evict(child: WorldObject): void {
+    if (child.def.boundToOwner || this._parent === undefined) child.destroy();
+    else child.moveIntoFirstAcceptingSlot(this._parent, true);
   }
 
   /**

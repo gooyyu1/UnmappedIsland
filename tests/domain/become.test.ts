@@ -42,6 +42,19 @@ object_defs:
           - requires:
               - {object: stick, count: 1, consume: true}
             duration: 30
+  # 作りかけより枠の狭い完成品。2本まで入る箱から1本しか置けない箱になるので、溢れる。
+  spear:
+    tags: [item]
+    slots:
+      materials:
+        cell_count: 1
+        cell: {accept: {tag: item}, max: 1}
+    recipes:
+      basic:
+        steps:
+          - requires:
+              - {object: stick, count: 2, consume: true}
+            duration: 30
   # 作りかけと名前の重なるスロットを持たない完成品。中身は行き場を失う。
   torch:
     tags: [item]
@@ -127,6 +140,20 @@ object_defs:
 
     expect(wip.def.name).toBe('torch');
     expect(material.parent, '行き場を失った中身はdestroyと同じ規則で親へ出る').toBe(ground);
+  });
+
+  it('引き継いだスロットの枠に入りきらない中身も、同じ規則で親へこぼれる', () => {
+    const wip = wipOn('spear');
+    const kept = session.spawn(idOf('stick'));
+    const overflowing = session.spawn(idOf('stick'));
+    kept.moveToSlot(wip, materialsId());
+    overflowing.moveToSlot(wip, materialsId());
+
+    wip.becomeAlong(toBase, session);
+
+    const materials = wip.getSlotByLocalId(wip.def.slotLayout.toLocal(materialsId()));
+    expect(materials.contents, '枠に収まる分だけが残る').toEqual([kept]);
+    expect(overflowing.parent, '入りきらなかった分は親へ出る').toBe(ground);
   });
 
   it('行き先の座標に型が居なければ何も起きない', () => {
