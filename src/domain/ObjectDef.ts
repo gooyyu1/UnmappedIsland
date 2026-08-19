@@ -357,30 +357,47 @@ export class ObjectDef {
   ): boolean {
     const resolvedSelf = self.resolveInteractionTarget();
     const resolvedDragged = dragged.resolveInteractionTarget();
-    const combination = combinationsAccepting(resolvedSelf, resolvedDragged).find(
+    const combination = combinationsWith(resolvedSelf, resolvedDragged, actor).find(
       (c) => c.name === combinationName,
     );
     return combination !== undefined && combination.tryExecute(resolvedSelf, resolvedDragged, actor, session);
   }
 
-  findMatchingCombinations(self: WorldObject, dragged: WorldObject): readonly CombinationDef[] {
-    return combinationsAccepting(self.resolveInteractionTarget(), dragged.resolveInteractionTarget());
+  /**
+   * selfへdraggedを重ねたときに**今**成立する組み合わせ（宣言順）。相手として受け入れるかだけでなく、
+   * 要件（14節）を満たしているかまで見る——満杯の炉に薪をくべる組み合わせは、候補にならない。
+   */
+  combinationsWith(
+    self: WorldObject,
+    dragged: WorldObject,
+    actor: WorldObject | undefined,
+  ): readonly CombinationDef[] {
+    return combinationsWith(self.resolveInteractionTarget(), dragged.resolveInteractionTarget(), actor);
   }
 }
 
 /**
- * resolvedSelfが持つcombinationのうち、resolvedDraggedを相手（with、12.1節）として受け入れるもの。
+ * resolvedSelfが持つcombinationのうち、resolvedDraggedを相手（with、12.1節）として受け入れ、かつ
+ * 今その要件（14節）を満たしているもの。
+ *
+ * **要件まで見るのは、候補を選ぶ側と実行できる側を食い違わせないため。** 型だけで選ぶと、選んだ
+ * 先が実行できない場合に「落とせるのに何も起きない」になる。
  *
  * **作りかけの物は相手にならない。** 製作中オブジェクトは完成品のタグを引き継ぐ
  * （RecipeSystem.md 5節）ので、弾かなければ半分できた石斧で木を伐り、獣を殴れてしまう
  * ——引き継ぎは枠のacceptへ入れるためのもので、道具として働けることまでは意味しない。
  */
-function combinationsAccepting(
+function combinationsWith(
   resolvedSelf: WorldObject,
   resolvedDragged: WorldObject,
+  actor: WorldObject | undefined,
 ): readonly CombinationDef[] {
   if (resolvedDragged.isInProgress) return [];
-  return resolvedSelf.def.combinations.filter((c) => c.matches(resolvedDragged.def));
+  return resolvedSelf.def.combinations.filter(
+    (c) =>
+      c.matches(resolvedDragged.def) &&
+      c.unmetRequirement(resolvedSelf, resolvedDragged, actor) === undefined,
+  );
 }
 
 /** ロード済みの全 ObjectDef を、グローバルIDをそのままindexとする配列で保持する。 */

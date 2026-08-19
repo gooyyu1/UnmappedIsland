@@ -512,7 +512,7 @@ describe('animals.yamlの動物', () => {
       const carcass = kill();
       const stone = spawnInto('stone', player, 'hand');
 
-      expect(carcass.findMatchingCombinations(stone), '素手の石はcutting_toolタグを持たない').toEqual([]);
+      expect(carcass.combinationsWith(stone, player), '素手の石はcutting_toolタグを持たない').toEqual([]);
     });
 
     it('槍では解体できない', () => {
@@ -521,7 +521,7 @@ describe('animals.yamlの動物', () => {
       const carcass = kill();
       const spear = spawnInto('spear', player, 'hand');
 
-      expect(carcass.findMatchingCombinations(spear), '槍はcutting_toolタグを持たない').toEqual([]);
+      expect(carcass.combinationsWith(spear, player), '槍はcutting_toolタグを持たない').toEqual([]);
     });
 
     it('生肉は食べられる', () => {
@@ -612,6 +612,6 @@ describe('animals.yamlの動物', () => {
   it('武器でない物を重ねても殴れない', () => {
     const stone = spawnInto('stone', player, 'hand');
 
-    expect(monkey.findMatchingCombinations(stone), '素手の石はweaponタグを持たない').toEqual([]);
+    expect(monkey.combinationsWith(stone, player), '素手の石はweaponタグを持たない').toEqual([]);
   });
 });

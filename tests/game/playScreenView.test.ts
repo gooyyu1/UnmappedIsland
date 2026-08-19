@@ -1103,6 +1103,31 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(game.player.hand[1]).toBe(stone);
   });
 
+  it('重ねる先の枠は、型が合うだけでなく今その物が入るかで選ぶ', () => {
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const view = fromGameSession(game, codex, locale);
+    const handSlotId = codex.slotNames.getId('hand');
+
+    // 手持ちの枠を埋める。同じ型は1つの枠へ束ねられてしまうので、枠ごとに違う型を置く。
+    const fillers = ['stone', 'twig', 'dry_grass', 'plant_fiber', 'feather', 'small_bone', 'banana'];
+    handCells(view, game).forEach((cell, index) => {
+      if (cell !== undefined) return;
+      const filler = game.session.spawn(codex.objectNames.getId(fillers[index]));
+      expect(filler.moveToSlotAtCell(game.player.instance, handSlotId, index)).toBeUndefined();
+    });
+    expect(
+      handCells(view, game).every((cell) => cell !== undefined),
+      '手はすべて塞がっている',
+    ).toBe(true);
+
+    const branch = game.session.spawn(codex.objectNames.getId('thick_branch'));
+    expect(branch.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'))).toBeUndefined();
+
+    // handはequipmentより先に宣言されているが、塞がっているので次に受け取れる枠が行き先になる。
+    const into = view.cardOfObjects([game.player.instance]).contentsFor(view.cardOfObjects([branch]));
+    expect(into !== undefined && samePlace(into, characterSlot(game, 'equipment'))).toBe(true);
+  });
+
   it('コンテナを自分自身の中へは入れられない', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
@@ -1110,7 +1135,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const card = handCells(fromGameSession(game, codex, locale), game)[0];
 
-    expect(card?.moveTo?.(card.contentsFor(card)!), '籠を籠自身の中へは入れられない').toBeUndefined();
+    expect(card!.contentsFor(card!), '籠を籠自身の中へは入れられない').toBeUndefined();
   });
 
   it('combinationOfは、withタグが合うカード同士にだけ実行手段を返す', () => {

@@ -96,7 +96,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
   it('素手では切り倒せない', () => {
     const plant = spawnInto('abaca', jungle, 'fixtures');
 
-    expect(plant.findMatchingCombinations(player), '刃物以外を当てても組み合わせは成立しない').toEqual([]);
+    expect(plant.combinationsWith(player, player), '刃物以外を当てても組み合わせは成立しない').toEqual([]);
     expect(plant.parent).toBe(jungle);
   });
 

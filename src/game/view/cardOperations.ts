@@ -251,7 +251,7 @@ export function cardOperationsOf(
     dragged: WorldObject,
     held: WorldObject,
   ): CardCombination | undefined => {
-    const [combination] = self.findMatchingCombinations(dragged);
+    const [combination] = self.combinationsWith(dragged, game.player.instance);
     if (combination === undefined) return undefined;
 
     const texts = locale.object(self.def.name).interaction(combination.name);

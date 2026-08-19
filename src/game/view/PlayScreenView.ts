@@ -1,4 +1,3 @@
-import type { ObjectDef } from '../../domain/ObjectDef';
 import type { WorldCodex } from '../../domain/WorldCodex';
 import type { NewGameSession } from '../../domain/generation/NewGame';
 import { Location } from '../../domain/views/Location';
@@ -393,10 +392,17 @@ export function fromGameSession(
    * **スロットがあるなら入れられる**が既定で、入れられて困るスロットが自分で断る（`placement`、
    * 同 7.7節）。複数が受け入れるときは**宣言順で最初のもの**——編み籠は item でも fixture でもあるので、
    * 筏へ重ねれば積荷（items）に入り、設置物の枠には落ちない。
+   *
+   * **今その物が実際に入るかまで見る。** 型が合うだけで選ぶと、手が塞がっているときに装備の枠が
+   * 空いていても落とせない。今いる場所は候補にしない（同じ枠への移動は入れる操作ではない）。
    */
-  const contentsOf = (object: WorldObject, dragged: ObjectDef): CardPlace | undefined => {
+  const contentsOf = (object: WorldObject, dragged: WorldObject): CardPlace | undefined => {
+    const from = placeOfObject(dragged);
     const slotDef = object.def.slotDefs.find(
-      (candidate) => candidate.manualPlacement && candidate.acceptsAnywhere(dragged),
+      (candidate) =>
+        candidate.manualPlacement &&
+        !samePlace({ container: object, slotGlobalId: candidate.globalId }, from) &&
+        dragged.rejectionForMoveTo(object, candidate.globalId) === undefined,
     );
     return slotDef === undefined ? undefined : { container: object, slotGlobalId: slotDef.globalId };
   };
@@ -558,7 +564,7 @@ export function fromGameSession(
     objectGlobalId: instances[0].def.globalId,
     description: locale.object(instances[0].def.name).description,
     place,
-    contentsFor: (dragged) => contentsOf(instances[0], dragged.objects[0].def),
+    contentsFor: (dragged) => contentsOf(instances[0], dragged.objects[0]),
     visibleSlots: visiblePlacesOf(instances[0]),
   });
 
