@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /** レシピ一覧の棚の宣言（`recipe_categories`、Windows.md 9.2節）のロードに対する自動テスト。 */

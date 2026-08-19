@@ -1,4 +1,4 @@
-import type { Rng } from '../../src/domain/runtime/Rng';
+import type { Rng } from '../../src/domain/Rng';
 
 /**
  * 常に同じ値を返す乱数源。pick（GameElementDefinition.md 10節）がどの候補を引くかを、

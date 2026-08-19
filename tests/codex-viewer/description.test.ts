@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DescriptionWriter } from '../../src/domain/defs/Description';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import { DescriptionWriter } from '../../src/domain/Description';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
- * 定義が自分自身を書き表す仕組み（`describe`、src/domain/defs/Description.ts）のテスト。
+ * 定義が自分自身を書き表す仕組み（`describe`、src/domain/Description.ts）のテスト。
  * 文言そのものより、**読み手が必要とする情報が落ちていないこと**（対象・量・条件・入れ子の深さ、
  * シンボル値が名前に戻ること）を確かめる。
  */

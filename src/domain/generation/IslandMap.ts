@@ -1,4 +1,4 @@
-import type { LocationTypeDef, LocationVariantDef } from '../defs/generation/LocationTypeDef';
+import type { LocationTypeDef, LocationVariantDef } from './LocationTypeDef';
 
 /**
  * 土地の名前（TerrainGeneration.md 3.6節）。**表示文字列ではなく構成要素で持つ**——WorldCodexは

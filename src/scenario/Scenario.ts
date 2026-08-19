@@ -1,5 +1,5 @@
 import { parseDocument } from 'yaml';
-import type { WorldCodex } from '../domain/defs/WorldCodex';
+import type { WorldCodex } from '../domain/WorldCodex';
 import type { NewGameSession } from '../domain/generation/NewGame';
 import { asMap, entriesInOrder, requireInt, tryGetMap, tryGetScalar, tryGetSeq } from '../loader/yamlMapping';
 import { YamlLoadError } from '../loader/YamlLoadError';

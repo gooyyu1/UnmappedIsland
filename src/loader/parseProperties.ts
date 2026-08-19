@@ -18,13 +18,13 @@ import { parseScalarNumber, tryGetNode } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
 import { parsePassive } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import { ActiveEffects, SetEffect } from '../domain/defs/ActiveEffect';
-import type { AlertLevel } from '../domain/defs/AlertLevel';
-import { ALERT_LEVELS } from '../domain/defs/AlertLevel';
-import type { ActiveEffect } from '../domain/defs/ActiveEffect';
-import { GAUGE_ENDS, GaugeDef, PropertyDef, PropertyRange, PropertyStage } from '../domain/defs/PropertyDef';
-import type { GaugeEnd } from '../domain/defs/PropertyDef';
-import type { PassiveEffect } from '../domain/defs/PassiveEffect';
+import { ActiveEffects, SetEffect } from '../domain/ActiveEffect';
+import type { AlertLevel } from '../domain/AlertLevel';
+import { ALERT_LEVELS } from '../domain/AlertLevel';
+import type { ActiveEffect } from '../domain/ActiveEffect';
+import { GAUGE_ENDS, GaugeDef, PropertyDef, PropertyRange, PropertyStage } from '../domain/PropertyDef';
+import type { GaugeEnd } from '../domain/PropertyDef';
+import type { PassiveEffect } from '../domain/PassiveEffect';
 
 /** props（6節）の1エントリが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。
  * unitは単位表記などの注記用で、ローダーは解釈しない（WorldCodex.schema.json参照）。 */

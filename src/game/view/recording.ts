@@ -1,8 +1,8 @@
-import type { WorldCodex } from '../../domain/defs/WorldCodex';
+import type { WorldCodex } from '../../domain/WorldCodex';
 import type { NewGameSession } from '../../domain/generation/NewGame';
-import type { InteractionGains } from '../../domain/runtime/PropertyGain';
-import type { WorldChange } from '../../domain/runtime/WorldChange';
-import type { WorldSignal } from '../../domain/runtime/WorldSignal';
+import type { InteractionGains } from '../../domain/PropertyGain';
+import type { WorldChange } from '../../domain/WorldChange';
+import type { WorldSignal } from '../../domain/WorldSignal';
 import type { Localization } from '../../locale/Localization';
 import type { PlayScreenView } from './PlayScreenView';
 import { fromGameSession, withFrozenCards } from './PlayScreenView';

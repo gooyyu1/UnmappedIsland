@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { NewGameSession } from '../../src/domain/generation/NewGame';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
-import type { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { Path } from '../../src/domain/runtime/views/Path';
+import type { WorldObject } from '../../src/domain/WorldObject';
+import { Path } from '../../src/domain/views/Path';
 import type { PlayScreenView } from '../../src/game/view/PlayScreenView';
 import { fromGameSession, withFrozenCards } from '../../src/game/view/PlayScreenView';
 import type { CardPlace, ScreenPlace } from '../../src/game/view/cardPlaces';

@@ -1,11 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
-import type { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { Location } from '../../src/domain/runtime/views/Location';
-import { Path } from '../../src/domain/runtime/views/Path';
-import type { World } from '../../src/domain/runtime/views/World';
+import type { WorldObject } from '../../src/domain/WorldObject';
+import { Location } from '../../src/domain/views/Location';
+import { Path } from '../../src/domain/views/Path';
+import type { World } from '../../src/domain/views/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 import { SeededRng } from '../support/SeededRng';
 import { pathsIn } from '../support/paths';

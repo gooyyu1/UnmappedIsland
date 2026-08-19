@@ -1,4 +1,4 @@
-import type { WorldCodex } from '../domain/defs/WorldCodex';
+import type { WorldCodex } from '../domain/WorldCodex';
 import type { Localization } from '../locale/Localization';
 import { Shelf } from '../save/Shelf';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';

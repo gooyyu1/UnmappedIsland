@@ -1,4 +1,4 @@
-import type { GenerationScopeDef } from '../defs/generation/GenerationScopeDef';
+import type { GenerationScopeDef } from './GenerationScopeDef';
 import type { Pcg32 } from './Pcg32';
 import { Site } from './IslandMap';
 

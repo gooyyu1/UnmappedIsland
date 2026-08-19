@@ -1,6 +1,6 @@
-import type { WeightReading } from '../domain/defs/EffectReader';
-import type { ObjectDef } from '../domain/defs/ObjectDef';
-import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
+import type { WeightReading } from '../domain/EffectReader';
+import type { ObjectDef } from '../domain/ObjectDef';
+import type { ReferenceRoot } from '../domain/ReferenceRoot';
 
 /**
  * 定義だけから値を解く手立てと、その周りの近似。

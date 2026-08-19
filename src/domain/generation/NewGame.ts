@@ -1,10 +1,10 @@
-import type { WorldCodex } from '../defs/WorldCodex';
-import { WorldObject } from '../runtime/WorldObject';
-import { WorldSession } from '../runtime/WorldSession';
-import type { Rng } from '../runtime/Rng';
-import { World } from '../runtime/views/World';
-import { PlayerCharacter } from '../runtime/views/PlayerCharacter';
-import type { Location } from '../runtime/views/Location';
+import type { WorldCodex } from '../WorldCodex';
+import { WorldObject } from '../WorldObject';
+import { WorldSession } from '../WorldSession';
+import type { Rng } from '../Rng';
+import { World } from '../views/World';
+import { PlayerCharacter } from '../views/PlayerCharacter';
+import type { Location } from '../views/Location';
 import type { IslandMap } from './IslandMap';
 import { generate } from './TerrainGenerator';
 import { populate, placePlayer, placePlayerAt } from './IslandSpawner';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 
 /**
  * 地形生成定義（axes/location_types/generation_scopesの3ルートキー、terrain_generation.yaml相当）の

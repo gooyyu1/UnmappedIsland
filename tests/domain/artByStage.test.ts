@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
 
 // art_by_stage（段による絵の差し替え、GameElementDefinition.md 6.4節）の実行時の解決
 // （WorldObject.artSuffix）に対する自動テスト。YAML文法そのもの（ロード時検証）はyamlLoader.test.tsが持つ。

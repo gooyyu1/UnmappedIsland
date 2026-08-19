@@ -1,7 +1,7 @@
 import type { CraftingStep } from '../analysis/CraftingStep';
 import { craftingStepsOf } from '../analysis/craftingSteps';
-import type { ObjectDef } from '../domain/defs/ObjectDef';
-import type { WorldCodex } from '../domain/defs/WorldCodex';
+import type { ObjectDef } from '../domain/ObjectDef';
+import type { WorldCodex } from '../domain/WorldCodex';
 
 /**
  * クラフトネットワークのグラフ構造。

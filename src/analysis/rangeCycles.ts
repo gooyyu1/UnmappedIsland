@@ -1,4 +1,4 @@
-import type { ObjectDef } from '../domain/defs/ObjectDef';
+import type { ObjectDef } from '../domain/ObjectDef';
 import type { TickGate } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { CraftingStep } from './CraftingStep';

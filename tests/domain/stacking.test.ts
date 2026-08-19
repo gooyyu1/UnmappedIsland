@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { ObjectStack } from '../../src/domain/runtime/ObjectStack';
-import type { Slot } from '../../src/domain/runtime/Slot';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { ObjectStack } from '../../src/domain/ObjectStack';
+import type { Slot } from '../../src/domain/Slot';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 // アイテムのスタック表示（Slot.contentsの並び順・SlotDefのcellCount・ObjectDefのstackable・

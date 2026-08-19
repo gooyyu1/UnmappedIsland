@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import type { NewGameSession } from '../../src/domain/generation/NewGame';
-import type { WorldObject } from '../../src/domain/runtime/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { applyScenario, bundledScenario } from '../../src/scenario/Scenario';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { SeededRng } from '../support/SeededRng';

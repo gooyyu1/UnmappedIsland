@@ -1,6 +1,6 @@
-import type { WorldObject } from '../../domain/runtime/WorldObject';
-import type { Location } from '../../domain/runtime/views/Location';
-import type { PlayerCharacter } from '../../domain/runtime/views/PlayerCharacter';
+import type { WorldObject } from '../../domain/WorldObject';
+import type { Location } from '../../domain/views/Location';
+import type { PlayerCharacter } from '../../domain/views/PlayerCharacter';
 
 /**
  * レーンの中でカードを置く場所。gapは枠と枠の隙間（indexは0が先頭の枠の前）、cellは空き枠そのもの

@@ -1,7 +1,7 @@
 import process from 'node:process';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { SeededRng } from '../support/SeededRng';
 import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';

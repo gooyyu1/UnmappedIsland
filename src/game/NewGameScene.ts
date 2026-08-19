@@ -1,10 +1,10 @@
 import type { Rect } from '../ui/Rect';
 import { ResponsiveScene } from './ResponsiveScene';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
-import type { WorldCodex } from '../domain/defs/WorldCodex';
+import type { WorldCodex } from '../domain/WorldCodex';
 import type { Localization } from '../locale/Localization';
 import { characterDefNames } from '../domain/generation/NewGame';
-import { randomRng } from '../domain/runtime/Rng';
+import { randomRng } from '../domain/Rng';
 import { ISLAND_NAME_MAX_LENGTH, SEED_MAX } from '../save/SaveData';
 import { SaveSlots } from '../save/SaveSlots';
 import {

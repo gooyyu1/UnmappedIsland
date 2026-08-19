@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { WorldObject } from '../../src/domain/runtime/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import type { CardSpot } from '../../src/game/view/ShownCards';
 import { ShownCards } from '../../src/game/view/ShownCards';
 import type { ObjectCardStack } from '../../src/game/view/PlayScreenView';

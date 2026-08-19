@@ -1,4 +1,4 @@
-import type { Rng } from '../domain/runtime/Rng';
+import type { Rng } from '../domain/Rng';
 import type { SaveData } from './SaveData';
 import { ISLAND_NAME_MAX_LENGTH, SAVE_SCHEMA_VERSION, SEED_MAX } from './SaveData';
 

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import { recipeCategories } from '../../src/game/view/recipeList';
 import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';

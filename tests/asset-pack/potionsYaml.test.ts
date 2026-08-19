@@ -1,11 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { samplePackPath } from '../support/samplePack';
-import type { ActionDef } from '../../src/domain/defs/ActionDef';
-import { DescriptionWriter } from '../../src/domain/defs/Description';
+import type { ActionDef } from '../../src/domain/ActionDef';
+import { DescriptionWriter } from '../../src/domain/Description';
 import {
   loadYamlDirectory,
   loadYamlFile,

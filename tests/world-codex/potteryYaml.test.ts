@@ -1,11 +1,11 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { spawnsObject } from '../../src/domain/defs/effectQueries';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
-import { advanceCrafting, spawnInProgressObject } from '../../src/domain/runtime/crafting';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
-import { Location } from '../../src/domain/runtime/views/Location';
-import { World } from '../../src/domain/runtime/views/World';
+import { spawnsObject } from '../../src/domain/effectQueries';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
+import { advanceCrafting, spawnInProgressObject } from '../../src/domain/crafting';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
+import { Location } from '../../src/domain/views/Location';
+import { World } from '../../src/domain/views/World';
 import { inProgressObjectName, MATERIALS_SLOT } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';

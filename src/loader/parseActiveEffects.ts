@@ -17,8 +17,8 @@ import { YamlLoadError } from './YamlLoadError';
 import { parseNumberLiteral, parseScalarNumber, tryGetNode } from './parseCommon';
 import { ACTION_CONDITION_ROOTS, COMBINATION_CONDITION_ROOTS, parseSubjectRoot } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
-import { PropertyPath } from '../domain/defs/ReferenceRoot';
+import type { ReferenceRoot } from '../domain/ReferenceRoot';
+import { PropertyPath } from '../domain/ReferenceRoot';
 import {
   ActiveEffects,
   AddEffect,
@@ -26,12 +26,12 @@ import {
   SetEffect,
   SpawnEffect,
   TransferEffect,
-} from '../domain/defs/ActiveEffect';
-import type { ActiveEffect, SpawnTargetRoot } from '../domain/defs/ActiveEffect';
-import { MoveEffect } from '../domain/defs/MoveEffect';
-import { ObjectRef } from '../domain/defs/ObjectRef';
-import { PickCandidateDef, PickEffect, WeightSpec } from '../domain/defs/PickEffect';
-import { SignalEffect } from '../domain/defs/SignalEffect';
+} from '../domain/ActiveEffect';
+import type { ActiveEffect, SpawnTargetRoot } from '../domain/ActiveEffect';
+import { MoveEffect } from '../domain/MoveEffect';
+import { ObjectRef } from '../domain/ObjectRef';
+import { PickCandidateDef, PickEffect, WeightSpec } from '../domain/PickEffect';
+import { SignalEffect } from '../domain/SignalEffect';
 
 /**
  * 効果の中身（9節の命令と、10節の`pick`）を読む。文法は「操作(set/add)が上位、

@@ -1,11 +1,11 @@
-import type { ObjectDef } from '../../domain/defs/ObjectDef';
-import type { WorldCodex } from '../../domain/defs/WorldCodex';
+import type { ObjectDef } from '../../domain/ObjectDef';
+import type { WorldCodex } from '../../domain/WorldCodex';
 import type { NewGameSession } from '../../domain/generation/NewGame';
-import { Location } from '../../domain/runtime/views/Location';
-import { Path } from '../../domain/runtime/views/Path';
-import type { PropertyInfluence } from '../../domain/runtime/PropertyInfluence';
-import type { PropertyReading } from '../../domain/runtime/PropertyValue';
-import type { WorldObject } from '../../domain/runtime/WorldObject';
+import { Location } from '../../domain/views/Location';
+import { Path } from '../../domain/views/Path';
+import type { PropertyInfluence } from '../../domain/PropertyInfluence';
+import type { PropertyReading } from '../../domain/PropertyValue';
+import type { WorldObject } from '../../domain/WorldObject';
 import type { Localization } from '../../locale/Localization';
 import type { CraftingMaterial } from './craftingView';
 import { craftingMaterials } from './craftingView';

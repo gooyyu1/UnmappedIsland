@@ -1,13 +1,8 @@
-import type { WorldCodex } from '../../domain/defs/WorldCodex';
+import type { WorldCodex } from '../../domain/WorldCodex';
 import type { NewGameSession } from '../../domain/generation/NewGame';
-import type { WorldObject } from '../../domain/runtime/WorldObject';
-import { autoFillMaterials } from '../../domain/runtime/autoFill';
-import {
-  advanceCrafting,
-  currentStep,
-  remainingRequirements,
-  stepIsSupplied,
-} from '../../domain/runtime/crafting';
+import type { WorldObject } from '../../domain/WorldObject';
+import { autoFillMaterials } from '../../domain/autoFill';
+import { advanceCrafting, currentStep, remainingRequirements, stepIsSupplied } from '../../domain/crafting';
 import { MATERIALS_SLOT, PROGRESS_PROPERTY } from '../../loader/inProgressObjects';
 import type { CardAction } from './cardOperations';
 import { recipeOf } from './recipeList';

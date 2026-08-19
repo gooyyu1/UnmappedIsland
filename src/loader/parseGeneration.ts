@@ -15,18 +15,18 @@ import {
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import { PropertyRange } from '../domain/defs/PropertyDef';
-import type { ObjectDef } from '../domain/defs/ObjectDef';
-import { AxisDef, GeneratorLayer } from '../domain/defs/generation/AxisDef';
-import { GenerationDefs } from '../domain/defs/generation/GenerationDefs';
-import { GenerationScopeDef, GuaranteeDef } from '../domain/defs/generation/GenerationScopeDef';
-import type { GuaranteePick } from '../domain/defs/generation/GenerationScopeDef';
+import { PropertyRange } from '../domain/PropertyDef';
+import type { ObjectDef } from '../domain/ObjectDef';
+import { AxisDef, GeneratorLayer } from '../domain/generation/AxisDef';
+import { GenerationDefs } from '../domain/generation/GenerationDefs';
+import { GenerationScopeDef, GuaranteeDef } from '../domain/generation/GenerationScopeDef';
+import type { GuaranteePick } from '../domain/generation/GenerationScopeDef';
 import {
   AxisLimit,
   AxisPreference,
   LocationTypeDef,
   LocationVariantDef,
-} from '../domain/defs/generation/LocationTypeDef';
+} from '../domain/generation/LocationTypeDef';
 
 /** 蓄積した地形生成定義（axes/location_types/generation_scopes）をLoad系メソッドの呼び出しごとに
  * この関数群を通じて登録する。trait合成が無いためパース済みのDefで持ち、他ファイルとの相互参照の

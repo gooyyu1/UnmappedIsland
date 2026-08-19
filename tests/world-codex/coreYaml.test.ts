@@ -1,11 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { ObjectDef } from '../../src/domain/defs/ObjectDef';
-import type { PropertyDef } from '../../src/domain/defs/PropertyDef';
-import type { SlotDef } from '../../src/domain/defs/SlotDef';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
-import { World } from '../../src/domain/runtime/views/World';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import type { ObjectDef } from '../../src/domain/ObjectDef';
+import type { PropertyDef } from '../../src/domain/PropertyDef';
+import type { SlotDef } from '../../src/domain/SlotDef';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
+import { World } from '../../src/domain/views/World';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
 

@@ -1,5 +1,5 @@
 import { Pcg32 } from '../../src/domain/generation/Pcg32';
-import type { Rng } from '../../src/domain/runtime/Rng';
+import type { Rng } from '../../src/domain/Rng';
 
 /** シードで決定的に振る舞うRng実装。「同じシード→同じ結果」の再現性を検証するテスト用。 */
 export class SeededRng implements Rng {

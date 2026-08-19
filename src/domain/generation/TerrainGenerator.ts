@@ -1,4 +1,4 @@
-import type { GenerationDefs } from '../defs/generation/GenerationDefs';
+import type { GenerationDefs } from './GenerationDefs';
 import { Pcg32 } from './Pcg32';
 import { IslandMap } from './IslandMap';
 import { place } from './SitePlacer';

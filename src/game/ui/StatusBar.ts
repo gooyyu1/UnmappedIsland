@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { AlertLevel } from '../../domain/defs/AlertLevel';
+import type { AlertLevel } from '../../domain/AlertLevel';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { ProgressBar } from './ProgressBar';
 import { onPressRelease } from '../../ui/tap';

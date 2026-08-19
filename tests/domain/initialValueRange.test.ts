@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import { WorldSession } from '../../src/domain/WorldSession';
 import { SeededRng } from '../support/SeededRng';
 
 // value: {min, max} 記法（GameElementDefinition.md 6.2節）による「初期値をレンジ内でランダムに決める」
