@@ -33,8 +33,11 @@ export interface EffectReader {
   /** `transfer`（9.5節）。amountは在庫が満ちている場合の上限で、実際に動く量は目減りしうる。 */
   transfer(reading: TransferReading): void;
 
-  /** `move`（9.6節）。オブジェクトの居場所を変えるだけで、値も個数も動かさない。 */
-  move(subject: ObjectRefReading, destination: ObjectRefReading): void;
+  /**
+   * `move`（9.6節）。オブジェクトの居場所を変えるだけで、値も個数も動かさない。
+   * slotGlobalIdは名指しの行き先スロット（`to_slot`）で、undefinedなら宣言順で最初に受け入れた枠。
+   */
+  move(subject: ObjectRefReading, destination: ObjectRefReading, slotGlobalId: number | undefined): void;
 
   /**
    * `signal`（9.8節）。世界の形は何も変わらない。

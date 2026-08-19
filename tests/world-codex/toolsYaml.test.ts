@@ -97,7 +97,7 @@ describe('tools.yamlの道具定義', () => {
     const hammer = session.spawn(codex.objectNames.getId('stone'));
     expect(target.moveToSlot(beach, itemsSlotId)).toBeUndefined();
 
-    const [combination] = target.findMatchingCombinations(hammer);
+    const [combination] = target.combinationsWith(hammer, undefined);
     expect(combination?.name, '石は石とのcombinationにマッチする').toBe('knap');
 
     expect(target.tryExecuteCombination(hammer, undefined, 'knap', session)).toBe(true);
@@ -179,14 +179,14 @@ describe('石斧を作る', () => {
     expect(stem.moveToSlot(field, codex.slotNames.getId('items'))).toBeUndefined();
     expect(wip.def.tags, 'タグの上では刃物').toContain(codex.tagNames.getId('cutting_tool'));
 
-    expect(stem.findMatchingCombinations(wip), '作りかけは相手にならない').toEqual([]);
+    expect(stem.combinationsWith(wip, undefined), '作りかけは相手にならない').toEqual([]);
     expect(stem.tryExecuteCombination(wip, undefined, 'strip', session), '名指しでも実行できない').toBe(
       false,
     );
 
     const sharpStone = session.spawn(codex.objectNames.getId('sharp_stone'));
     expect(
-      stem.findMatchingCombinations(sharpStone).map((combination) => combination.name),
+      stem.combinationsWith(sharpStone, undefined).map((combination) => combination.name),
       '出来上がった刃物でなら成立する',
     ).toEqual(['strip']);
   });

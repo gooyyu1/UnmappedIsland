@@ -6,7 +6,7 @@ import { text } from './Description';
 import { InteractionDef } from './InteractionDef';
 import type { ObjectDef } from './ObjectDef';
 import type { WeightSpec } from './PickEffect';
-import type { Requirements } from './Requirement';
+import type { Requirement, Requirements } from './Requirement';
 import type { TypeMatchReading, TypeMatchRule } from './TypeMatchRule';
 
 /**
@@ -40,6 +40,15 @@ export class CombinationDef extends InteractionDef {
   /** draggedDefがこのcombinationのwithに当てはまれば真（12.1節）。 */
   matches(draggedDef: ObjectDef): boolean {
     return this.with.matches(draggedDef);
+  }
+
+  /** 今この組み合わせを実行できない理由（最初に落ちた要件、14節）。実行できるならundefined。 */
+  unmetRequirement(
+    self: WorldObject,
+    dragged: WorldObject,
+    actor: WorldObject | undefined,
+  ): Requirement | undefined {
+    return this.firstUnmetRequirement(self, dragged, actor);
   }
 
   tryExecute(

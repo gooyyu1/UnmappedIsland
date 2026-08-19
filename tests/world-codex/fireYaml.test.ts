@@ -121,7 +121,7 @@ describe('fire.yamlの火の連鎖', () => {
     const grass = spawnInto('dry_grass', land, 'items');
     const wipDrill = spawnInto(inProgressObjectName('fire_drill', 'carved'), player, 'hand');
 
-    expect(grass.findMatchingCombinations(wipDrill)).toEqual([]);
+    expect(grass.combinationsWith(wipDrill, player)).toEqual([]);
     expect(grass.tryExecuteCombination(wipDrill, player, 'light', session)).toBe(false);
   });
 
@@ -154,7 +154,7 @@ describe('fire.yamlの火の連鎖', () => {
     const twig = spawnInto('twig', land, 'items');
     const drill = spawnInto('fire_drill', player, 'hand');
 
-    expect(twig.findMatchingCombinations(drill), '小枝と火起こし具は組み合わない').toEqual([]);
+    expect(twig.combinationsWith(drill, player), '小枝と火起こし具は組み合わない').toEqual([]);
   });
 
   it('ヤシの実の皮と植物繊維も火口になる', () => {
@@ -240,6 +240,10 @@ describe('fire.yamlの火の連鎖', () => {
     expect(numberOf(hearth, 'fuel')).toBe(30);
 
     const extra = spawnInto('thick_branch', land, 'items');
+    expect(
+      hearth.combinationsWith(extra, player),
+      '候補にも挙がらない（落とせるのに何も起きない、にしない）',
+    ).toEqual([]);
     expect(hearth.tryExecuteCombination(extra, player, 'add_fuel', session)).toBe(false);
     expect(extra.parent, 'くべられなかった薪は手元に残る').toBe(land);
   });

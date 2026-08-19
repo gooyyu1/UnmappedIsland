@@ -71,7 +71,7 @@ describe('timber.yamlの伐採', () => {
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
     spawnInto('sharp_stone', player, 'hand');
 
-    expect(tree.findMatchingCombinations(player), '尖った石を当てても成立しない').toEqual([]);
+    expect(tree.combinationsWith(player, player), '尖った石を当てても成立しない').toEqual([]);
     expect(tree.parent, '木は立ったまま').toBe(forest);
   });
 

@@ -455,7 +455,7 @@ object_defs:
     const source = spawn(codex, 'source2');
     expect(spawn(codex, 'water_liquid2').moveToSlot(receiver, contentSlotId)).toBeUndefined();
     expect(spawn(codex, 'water_liquid2').moveToSlot(source, contentSlotId)).toBeUndefined();
-    const names = receiver.findMatchingCombinations(source).map((c) => c.name);
+    const names = receiver.combinationsWith(source, undefined).map((c) => c.name);
     expect(names).toEqual(['pour_in']);
   });
 
@@ -547,7 +547,7 @@ object_defs:
     const woodInstance = spawn(codex, 'wood4');
     const axeInstance = spawn(codex, 'axe_tool4');
 
-    const matches = woodInstance.findMatchingCombinations(axeInstance);
+    const matches = woodInstance.combinationsWith(axeInstance, undefined);
 
     expect(matches.map((c) => c.name)).toEqual(['chop']);
   });

@@ -41,8 +41,10 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 
 - `TryExecuteAction(actionName, actor, session)`
 - `TryExecuteCombination(dragged, actor, combinationName, session)`
-- `FindMatchingCombinations(dragged)` — ドラッグ中のハイライト等のために、`with` にマッチする
-  `combinations` を宣言順に列挙する。**どちらの札を `self` として引くか**（落とされた側が先、次に掴んだ側）と、
+- `combinationsWith(dragged, actor)` — ドラッグ中のハイライト等のために、**今成立する** `combinations` を
+  宣言順に列挙する。`with` のマッチング（1）だけでなく `conditions`（2）まで見る——候補を選ぶ側と実行
+  できる側が食い違うと、満杯の炉に薪を落とせるのに何も起きない、という形になるため。**どちらの札を
+  `self` として引くか**（落とされた側が先、次に掴んだ側）と、
   複数マッチした場合にどれを実行するかの解決はUI層に委ねる
   （[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節、`PlayScreenView.combinationOf`）。
 

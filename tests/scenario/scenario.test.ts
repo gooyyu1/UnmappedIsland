@@ -229,7 +229,7 @@ describe('テスト用シナリオ', () => {
     ).toEqual(['sharp_stone', 'stone_axe', 'spear']);
     for (const weapon of weapons)
       expect(
-        boar.findMatchingCombinations(weapon).map((c) => c.name),
+        boar.combinationsWith(weapon, game.player.instance).map((c) => c.name),
         `${weapon.def.name}で殴れる`,
       ).toEqual(['strike']);
     expect(

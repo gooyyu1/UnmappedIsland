@@ -872,8 +872,8 @@ export class WorldObject {
     return this.def.combinationMinutes(this, dragged, actor, combinationName);
   }
 
-  findMatchingCombinations(dragged: WorldObject): readonly CombinationDef[] {
-    return this.def.findMatchingCombinations(this, dragged);
+  combinationsWith(dragged: WorldObject, actor: WorldObject | undefined): readonly CombinationDef[] {
+    return this.def.combinationsWith(this, dragged, actor);
   }
 
   /**
