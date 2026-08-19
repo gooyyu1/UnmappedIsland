@@ -348,7 +348,7 @@ export class PlayScene extends ResponsiveScene {
    */
   private readonly shown = new ShownCards({
     stacksIn: (place) => this.cardsAt(place),
-    cardOfObjects: (objects, place) => this.view.cardOfObjects(objects, place),
+    cardOfObjects: (objects) => this.view.cardOfObjects(objects),
     combinationOf: (dragged, target) => this.view.combinationOf(dragged, target),
     windowPlace: () => this.childWindowPlace,
     places: (screen) => this.place(screen),
@@ -842,7 +842,7 @@ export class PlayScene extends ResponsiveScene {
     for (const direction of EDGE_DIRECTIONS) {
       const move = this.shown.edgeMove(card, direction);
       if (move !== undefined) {
-        const label = `カードの端を押した: ${card.name}（${card.place} の ${direction}）`;
+        const label = `カードの端を押した: ${card.name}（${this.placeText(card.place)} の ${direction}）`;
         edges.push({ direction, onTap: () => this.applyToWorld(label, move) });
       }
     }

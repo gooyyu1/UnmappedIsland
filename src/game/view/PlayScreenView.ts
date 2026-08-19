@@ -124,7 +124,10 @@ export interface MapRoadView {
  * 発見物を答えないのはそのためです。
  */
 export interface ObjectWindowView {
-  /** 説明のタブに出す札。カードの窓では、借りてきた1枚そのもの（Windows.md 1.1節）。 */
+  /**
+   * 説明のタブに出す札。**その物1個ぶん**の姿で、子ウィンドウはこれをそのまま借りて出す
+   * （Windows.md 1.1節）。
+   */
   readonly card: CardContent;
   readonly description: string | undefined;
 
@@ -279,8 +282,11 @@ export interface PlayScreenView {
    * 挙げた個体だけを映すカード。**束は割れる**——子ウィンドウは束のうち1個だけを借りるので
    * （Windows.md 1.1節）、借りた1個と枠に残る残りが、それぞれ自分の個体だけを動かすカードになる。
    * 表示も操作も先頭を代表とする点は、スロットの中身から作る束（cardsIn）と同じ。
+   *
+   * **どこの札かは言い添えません。** その物が今いる場所は世界が答えるので、呼び出し側の思い違いが
+   * 札に載ることは無い。
    */
-  readonly cardOfObjects: (objects: readonly WorldObject[], place: CardPlace) => ObjectCardStack;
+  readonly cardOfObjects: (objects: readonly WorldObject[]) => ObjectCardStack;
 
   /**
    * draggedをtargetへ重ねたときに実行できるcombination（GameElementDefinition.md 12節）。
@@ -523,6 +529,21 @@ export function fromGameSession(
   const propertyCategories = propertiesOf(game.player.instance);
 
   /** 束が映すもの（操作は持たない。それはcardOperationsが足す）。 */
+  /**
+   * その物が今いる場所。**世界が答える**ので、札を作る側が「どこの札か」を言い添える必要は無い
+   * ——言い添えられると、実際に居る場所と食い違った札を作れてしまう。
+   *
+   * 親を持たない物（どのスロットにも入っていない）はカードにならないので、ここへは来ない。
+   */
+  const placeOfObject = (object: WorldObject): CardPlace => {
+    const parent = object.parent;
+    if (parent === undefined) throw new Error(`親スロットに居ない物の札は作れない: ${object.def.name}`);
+    return {
+      container: parent,
+      slotGlobalId: parent.getSlotByLocalId(object.parentSlotLocalId).def.globalId,
+    };
+  };
+
   const stackOf = (
     instances: readonly WorldObject[],
     place: CardPlace,
@@ -634,8 +655,9 @@ export function fromGameSession(
    * （RecordedView）を再生する頃には実体が空になっていて、端の表示の試し打ち（PlayScene.cardEdges）
    * が先頭の無い束を踏む。
    */
-  const cardOfStack = (live: readonly WorldObject[], place: CardPlace): ObjectCardStack => {
+  const cardOfStack = (live: readonly WorldObject[]): ObjectCardStack => {
     const stack = [...live];
+    const place = placeOfObject(stack[0]);
     return {
       ...stackOf(stack, place),
       ...operations.forStack(stack, place),
@@ -698,7 +720,7 @@ export function fromGameSession(
     mapLands: discovered.lands,
     mapRoads: discovered.roads,
     cardsIn: (place) =>
-      stacksIn(place).map((stack) => (stack === undefined ? undefined : cardOfStack(stack, place))),
+      stacksIn(place).map((stack) => (stack === undefined ? undefined : cardOfStack(stack))),
     cardOfType: looks.typeContentOf,
     cardOfObjects: cardOfStack,
     combinationOf: (dragged, target) => {

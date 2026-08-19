@@ -81,11 +81,19 @@ function screen(
       const lane = (['hand', 'items', 'fixtures'] as const).find((name) => samePlace(asked, place(name)));
       return lane === undefined ? [] : (lanes[lane] ?? []);
     },
-    cardOfObjects: (objects, place) =>
-      stack(
-        place,
+    // 本物は物の親スロットから場所を導く（PlayScreenView.placeOfObject）。ここでは、その個体を
+    // 抱えているレーンを探すことで同じことをする。
+    cardOfObjects: (objects) => {
+      const lane = (['hand', 'items', 'fixtures'] as const).find((name) =>
+        (lanes[name] ?? []).some((card) =>
+          card?.objects.some((entry) => entry.instanceId === objects[0].instanceId),
+        ),
+      );
+      return stack(
+        place(lane ?? 'items'),
         objects.map((entry) => entry.instanceId),
-      ),
+      );
+    },
     combinationOf: (dragged, target) => {
       const [first, second] = target.objects;
       const held = dragged === target ? second : dragged.objects[0];
@@ -419,9 +427,9 @@ describe('ドロップの意味', () => {
     // 入れ物と中身の間に組み合わせは無い画面（重ねる＝入れる、だけが成立する）。
     const noCombination = new ShownCards({
       stacksIn: (asked) => shown.stacksAt(asked),
-      cardOfObjects: (objects, at) =>
+      cardOfObjects: (objects) =>
         stack(
-          at,
+          place('hand'),
           objects.map((entry) => entry.instanceId),
         ),
       combinationOf: () => undefined,
