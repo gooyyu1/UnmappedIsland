@@ -1,6 +1,6 @@
 import type { WorldObject } from '../../domain/WorldObject';
 import type { ObjectCardStack } from './PlayScreenView';
-import type { CardCombination, CardPutIn } from './cardOperations';
+import type { CardCombination, CardDrop } from './cardOperations';
 import type { CardPlace, CardPlacement, ScreenPlaces } from './cardPlaces';
 import { samePlace } from './cardPlaces';
 import type { CardContent, CardEdgeDirection } from '../ui/Card';
@@ -18,8 +18,12 @@ export interface CardSource {
   readonly stacksIn: (place: CardPlace) => readonly (ObjectCardStack | undefined)[];
   /** 挙げた個体だけを映すカード（PlayScreenView.cardOfObjects）。 */
   readonly cardOfObjects: (objects: readonly WorldObject[]) => ObjectCardStack;
-  /** 重ねたときに成立する組み合わせ（PlayScreenView.combinationOf）。 */
-  readonly combinationOf: (dragged: ObjectCardStack, target: ObjectCardStack) => CardCombination | undefined;
+  /** 重ねたときに成立する組み合わせ（PlayScreenView.combinationOf）。countはまとめて実行する個数。 */
+  readonly combinationOf: (
+    dragged: ObjectCardStack,
+    target: ObjectCardStack,
+    count?: number,
+  ) => CardCombination | undefined;
   /** 子ウィンドウが映しているスロット（映していなければundefined）。端の行き先の候補に入る。 */
   readonly windowPlace: () => CardPlace | undefined;
   /** 画面の区画が映しているスロット（PlayScreenView.places）。端の行き先はレーンの並びで決まる。 */
@@ -233,6 +237,7 @@ export class ShownCards {
     fromIndex: number,
     to: CardSpot,
     toIndex: number,
+    count = 1,
   ): CardCombination | undefined {
     const fromStacks = this.stacksAt(from);
     const dragged = fromStacks[fromIndex];
@@ -241,30 +246,58 @@ export class ShownCards {
     // 個体を1つも出していない札（帰りを待つ印）は、掴む相手にも重ねる相手にもならない。
     if (dragged.objects.length === 0 || target.objects.length === 0) return undefined;
 
-    return this.source.combinationOf(dragged, target);
+    return this.source.combinationOf(dragged, target, count);
   }
 
   /** そのドロップが重ねる操作なら、成立する組み合わせ。 */
   dropCombination(drop: ShownDrop): CardCombination | undefined {
     if (drop.target.kind !== 'combine') return undefined;
-    return this.combinationAt(drop.from, drop.fromIndex, drop.to, drop.target.index);
+    return this.combinationAt(drop.from, drop.fromIndex, drop.to, drop.target.index, drop.count);
   }
 
   /**
-   * ドロップで起きること（何も起きないならundefined）。カードに重ねたらcombination、相手が入れ物なら
+   * そのドロップで起きること（何も起きないならundefined）。カードに重ねたらcombination、相手が入れ物なら
    * その中へ入れる、隙間・空き枠へ落としたら位置を変える。同じ場所の中ならスタックごとの並び替え、
    * 場所をまたぐならカード1枚の移動。
+   *
+   * **どれも同じ1つの形（CardDrop）で返る。** 画面は「重ねた」と「入れた」を区別せず、名前と時間を
+   * 吹き出しに出して実行するだけ（CardInteraction.md 2節）。
    */
-  dropAction(drop: ShownDrop): (() => void) | undefined {
-    if (drop.target.kind === 'combine') return this.dropCombination(drop)?.execute ?? this.putInto(drop);
+  dropEffect(drop: ShownDrop): CardDrop | undefined {
+    const dragged = this.stacksAt(drop.from)[drop.fromIndex];
+    if (dragged === undefined) return undefined;
+
+    if (drop.target.kind === 'combine') {
+      const combination = this.dropCombination(drop);
+      if (combination !== undefined) return combination;
+
+      const into = this.contentsUnder(drop);
+      return into === undefined ? undefined : dragged.dropInto?.(into, undefined, drop.count);
+    }
+
     // 借りた札の枠はワールドの場所ではないので、そこへ「入れる」ことはできない（重ねるだけ）。
     if (drop.to === 'windowCard') return undefined;
 
-    const dragged = this.stacksAt(drop.from)[drop.fromIndex];
-    if (dragged === undefined) return undefined;
-    return sameSpot(drop.from, drop.to)
-      ? dragged.reorder?.(drop.target)
-      : dragged.moveTo?.(drop.to, drop.target, drop.count);
+    // 同じ場所の中は並び替え。位置が変わるだけなので、名乗るものも値段も無い。
+    if (sameSpot(drop.from, drop.to)) {
+      const execute = dragged.reorder?.(drop.target);
+      return execute === undefined
+        ? undefined
+        : {
+            name: undefined,
+            description: undefined,
+            minutes: 0,
+            maxCount: 1,
+            movedIds: dragged.movedIds(drop.count),
+            execute,
+          };
+    }
+    return dragged.dropInto?.(drop.to, drop.target, drop.count);
+  }
+
+  /** そのドロップを起こす手段（何も起きないならundefined）。 */
+  dropAction(drop: ShownDrop): (() => void) | undefined {
+    return this.dropEffect(drop)?.execute;
   }
 
   /**
@@ -273,53 +306,17 @@ export class ShownCards {
    * やってみるまで分からない。ついてきた枚数を約束にできるのは、枠が空きを答えられる「入れる」だけ。
    */
   multiDropLimit(drop: ShownDrop): number {
-    if (this.dropCombination(drop) !== undefined) return 1;
-
-    const dragged = this.stacksAt(drop.from)[drop.fromIndex];
-    if (dragged === undefined) return 1;
-    if (drop.target.kind === 'combine') {
-      const into = this.contentsUnder(drop);
-      return into === undefined ? 1 : (dragged.acceptedCountAt?.(into) ?? 1);
-    }
-    // 同じ場所の中は並び替えで、束ごと動く（SlotSystem.md 3節）。
-    if (sameSpot(drop.from, drop.to) || drop.to === 'windowCard') return 1;
-    return dragged.acceptedCountAt?.(drop.to) ?? 1;
-  }
-
-  /**
-   * そのドロップで起きることの見せ方（文言も時間も宣言されていなければundefined）。combinationと、
-   * 文言や時間を宣言している枠へ入れる操作（手当てなど）が名前・説明・かかる時間を持つ。
-   */
-  dropEffect(drop: ShownDrop): CardCombination | CardPutIn | undefined {
-    return this.dropCombination(drop) ?? this.putInAt(drop);
+    return this.dropEffect({ ...drop, count: 1 })?.maxCount ?? 1;
   }
 
   /**
    * そのドロップで手から放したもの（MotionContext.released。矩形を添えるのは呼び出し側）。
-   * どの個体が動くのかはビューが答える（movedIds）。重ねて実行するcombinationに加わるのは
-   * 掴んでいた1つだけで、それは束の代表とは限らない（CardCombination.held参照）。
+   * どの個体が動くのかは、起きることの側が答える（CardDrop.movedIds）——ワールドが動かすものと
+   * 画面が飛ばすものを食い違わせないため。
    */
   movedBy(drop: ShownDrop): { readonly grabbed: number; readonly followers: readonly number[] } | undefined {
-    const combination = this.dropCombination(drop);
-    if (combination !== undefined) {
-      return { grabbed: combination.held.instanceId, followers: [] };
-    }
-
-    const [grabbed, ...followers] = this.stacksAt(drop.from)[drop.fromIndex]?.movedIds(drop.count) ?? [];
+    const [grabbed, ...followers] = this.dropEffect(drop)?.movedIds ?? [];
     return grabbed === undefined ? undefined : { grabbed, followers };
-  }
-
-  /**
-   * カードに重ねたときに、そのカードの中へ入れる操作（入れ物でない・入らないならundefined）。
-   *
-   * かごも製作中オブジェクトも筏も同じ扱い——落とした先が受け取れるスロットを持っていれば、そこへ入る。
-   * どのスロットかは重ねる物で変わる（contentsFor）ので、ここでは場所を尋ねるだけ。
-   */
-  private putInto(drop: ShownDrop): (() => void) | undefined {
-    const into = this.contentsUnder(drop);
-    return into === undefined
-      ? undefined
-      : this.stacksAt(drop.from)[drop.fromIndex]?.moveTo?.(into, undefined, drop.count);
   }
 
   /** カードに重ねたとき、そのカードが中身を映す場所（入れ物でなければundefined）。 */
@@ -332,27 +329,13 @@ export class ShownCards {
     return dragged === undefined || dragged === target ? undefined : target?.contentsFor(dragged);
   }
 
-  /** そのドロップが「入れる」なら、その見せ方（枠が文言も時間も宣言していなければundefined）。 */
-  private putInAt(drop: ShownDrop): CardPutIn | undefined {
-    const dragged = this.stacksAt(drop.from)[drop.fromIndex];
-    if (dragged === undefined) return undefined;
-
-    if (drop.target.kind === 'combine') {
-      const into = this.contentsUnder(drop);
-      return into === undefined ? undefined : dragged.putInto?.(into, drop.count);
-    }
-    // 枠・隙間へ落とすのも同じ「入れる」。同じ場所の中は並び替えなので値段は付かない。
-    if (sameSpot(drop.from, drop.to) || drop.to === 'windowCard') return undefined;
-    return dragged.putInto?.(drop.to, drop.count);
-  }
-
   // ---- カードの端の移動 ----
 
   /** 端を押したときの移動（その向きへ移せないならundefined）。行き先は「空いている場所」なので位置は指定しない。 */
   edgeMove(card: ObjectCardStack, direction: CardEdgeDirection): (() => void) | undefined {
     for (const place of this.edgeTargets(card.place, direction)) {
-      const move = card.moveTo?.(place);
-      if (move !== undefined) return move;
+      const dropped = card.dropInto?.(place);
+      if (dropped !== undefined) return dropped.execute;
     }
     return undefined;
   }

@@ -35,37 +35,39 @@ export interface CardAction {
 }
 
 /**
- * カードを重ねたときに実行できるcombination。何が起きるかをドラッグ中に見せるため、実行する手段だけで
- * なく表示文字列も持つ（locale/ja.yamlのcombinations節、Localization.md）。
+ * 札を落としたときに起きること1件。**画面は、宣言された組み合わせと枠へ入れる操作を区別しない**
+ * ——どちらも名前と時間を吹き出しに出し、実行するだけ（CardInteraction.md 2節）。
  */
-export interface CardCombination {
-  readonly name: string;
+export interface CardDrop {
+  /**
+   * 吹き出しに出す名前。名前も時間も宣言していない枠ではundefined——ただ位置が変わるだけの移動に
+   * 説明は要らない。
+   */
+  readonly name: string | undefined;
   /** 説明文。localeに書かれていなければundefined。 */
   readonly description: string | undefined;
-  /** 実行にかかるゲーム内時間（分）。時間を消費しない組み合わせは0。 */
+  /** 起こすのにかかるゲーム内時間（分）。時間を消費しないものは0。 */
   readonly minutes: number;
   /**
-   * 指が掴んでいたインスタンス。同じ束へ重ねたときは束の2つ目になるため、束の代表とは限らない。
-   * 画面側は「掴んでいたカード」の行方を追う（CardTable.MotionContext.released）のに使う。
-   *
-   * combinationを宣言している側（`self`）とは限らない——逆向きに成立した組み合わせでは、掴んだ札の
-   * ほうが宣言している側になる（combinationOf参照）。
+   * まとめて起こせる最大数。**ドラッグ中に何枚ついてくるかを決める**のに使う（CardDragController）。
+   * これを問うのは枚数が決まる前なので、返るのは「今の枚数で起きること」ではなく上限そのもの。
    */
-  readonly held: WorldObject;
+  readonly maxCount: number;
+  /**
+   * 動く個体のID（先頭が指の掴んでいたもの）。画面の移動アニメーション（MotionContext.released）が
+   * これを追う——ワールドが動かすものと画面が飛ばすものを食い違わせないため。
+   */
+  readonly movedIds: readonly number[];
   /** 実行する。ワールドを変えるだけで、画面への反映は呼び出し側の責務。 */
   readonly execute: () => void;
 }
 
 /**
- * 物を枠へ入れる操作の見せ方（SlotDef.putInDuration・slot_textsのput_in）。かごへしまうのも怪我へ
- * 治療具を当てるのも同じこの1つの操作で、値段と呼び名は枠が決める。
+ * カードを重ねたときに実行できるcombination（GameElementDefinition.md 12節）。宣言されている操作なので
+ * 名前が必ずある。
  */
-export interface CardPutIn {
+export interface CardCombination extends CardDrop {
   readonly name: string;
-  /** 説明文。localeに書かれていなければundefined。 */
-  readonly description: string | undefined;
-  /** 入れるのにかかるゲーム内時間（分）。一瞬で入る枠は0。 */
-  readonly minutes: number;
 }
 
 /**
@@ -78,7 +80,7 @@ function hasFixedCells(owner: WorldObject, slotGlobalId: number): boolean {
 
 /**
  * 束のうち、まとめての操作が動かす先頭のcount個。**どの個体が動くのかはここだけが決める**——
- * 実際に動かす側（moveTo・putInto）と、動きを見せる側（movedIds）の両方がここを通る。
+ * 実際に動かす側（dropInto）と、動きを見せる側（movedIds）の両方がここを通る。
  */
 function carriedOf<T>(stack: readonly T[], count: number): readonly T[] {
   return stack.slice(0, Math.max(1, count));
@@ -93,9 +95,7 @@ function carriedOf<T>(stack: readonly T[], count: number): readonly T[] {
 export interface CardOperations {
   readonly actions: readonly CardAction[];
   readonly movedIds: (count: number) => readonly number[];
-  readonly moveTo: (place: CardPlace, at?: CardPlacement, count?: number) => (() => void) | undefined;
-  readonly acceptedCountAt: (place: CardPlace) => number;
-  readonly putInto: (place: CardPlace, count?: number) => CardPutIn | undefined;
+  readonly dropInto: (place: CardPlace, at?: CardPlacement, count?: number) => CardDrop | undefined;
   readonly reorder: (at: CardPlacement) => (() => void) | undefined;
 }
 
@@ -115,13 +115,18 @@ export interface CardOperationsFactory {
   readonly actionsOf: (instance: WorldObject) => readonly CardAction[];
 
   /**
-   * selfが宣言しているcombinationsのうち、draggedにマッチする先頭を実行する手段（無ければundefined）。
-   * heldは指が掴んでいたインスタンス（CardCombination.held参照）。
+   * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭を実行する手段
+   * （無ければundefined）。candidatesは`dragged`の役になる個体を運んできた順に並べたもの、movedは
+   * 指が運んできた個体（演出で追う札）で、countはまとめて実行する個数。
+   *
+   * **candidatesとmovedは別物**——逆向きに成立した組み合わせでは、指が運んできた札のほうが`self`に
+   * なるため、相手として渡す個体と画面上で動く個体が入れ替わる。
    */
   readonly combinationWith: (
     self: WorldObject,
-    dragged: WorldObject,
-    held: WorldObject,
+    candidates: readonly WorldObject[],
+    moved: readonly WorldObject[],
+    count?: number,
   ) => CardCombination | undefined;
 }
 
@@ -166,13 +171,16 @@ export function cardOperationsOf(
   };
 
   /**
-   * itemを場所placeへ入れる操作（そこへは入れられないならundefined）。入れられるかの判断はすべて
-   * ドメインに任せる（WorldObject.rejectionForMoveTo）——捻挫が身体から剥がれないのも、ヤシの木が
+   * itemを場所placeへ落としたときに起きること（そこへは落とせないならundefined）。入れられるかの判断は
+   * すべてドメインに任せる（WorldObject.rejectionForMoveTo）——捻挫が身体から剥がれないのも、ヤシの木が
    * 手に持てないのも、画面が場所ごとに覚えている決まりではなくワールド側の宣言の帰結。
+   *
+   * **「落とせるか」「何と言うか」「何分か」「どう動かすか」を1つの問いで答える。** 別々に問うと、
+   * 落とせないのに吹き出しだけ出る、といった食い違いが生まれる。
    */
-  const moveInto =
+  const dropInto =
     (stack: readonly WorldObject[], from: CardPlace) =>
-    (place: CardPlace, at?: CardPlacement, count = 1): (() => void) | undefined => {
+    (place: CardPlace, at?: CardPlacement, count = 1): CardDrop | undefined => {
       if (samePlace(place, from)) return undefined;
       const { container, slotGlobalId } = place;
       if (stack[0].rejectionForMoveTo(container, slotGlobalId) !== undefined) return undefined;
@@ -193,75 +201,77 @@ export function cardOperationsOf(
         }
       };
 
-      // 時間のかかる枠（手当てなど）はここで時間を進める。どの経路で入れても同じ値段になる。
-      return () => {
-        carried.forEach((item, index) =>
-          putIntoSlot(item, container, slotGlobalId, game.player.instance, game.session, () =>
-            put(item, index === 0),
-          ),
-        );
-      };
-    };
-
-  /** stackのうち、placeへまとめて入れられる個数（入れられない場所では0）。 */
-  const acceptedCountIn =
-    (stack: readonly WorldObject[], from: CardPlace) =>
-    (place: CardPlace): number => {
-      if (samePlace(place, from)) return 0;
-
-      return stack[0].acceptedCountForMoveTo(stack.slice(1), place.container, place.slotGlobalId);
-    };
-
-  /**
-   * itemをplaceへ入れるとどうなるか（吹き出しに出す文言と時間）。入れられない場所と、文言も時間も
-   * 宣言していない枠ではundefined——ただ位置が変わるだけの移動には説明が要らない。
-   */
-  const putIntoTexts =
-    (stack: readonly WorldObject[], from: CardPlace) =>
-    (place: CardPlace, count = 1): CardPutIn | undefined => {
-      if (samePlace(place, from)) return undefined;
-      const { container, slotGlobalId } = place;
-
       const slotDef = container.def.getSlotDef(slotGlobalId);
-      if (slotDef === undefined) return undefined;
+      const texts = slotDef === undefined ? undefined : locale.slot(slotDef.name).putIn;
+      const minutes =
+        slotDef === undefined
+          ? 0
+          : carried.reduce(
+              (total, item) => total + slotDef.putInMinutes(container, item, game.player.instance),
+              0,
+            );
 
-      const texts = locale.slot(slotDef.name).putIn;
-      // まとめて入れるなら時間も個数ぶん。1つずつ入れるのと同じことをするため（moveInto参照）。
-      const minutes = carriedOf(stack, count).reduce(
-        (total, item) => total + slotDef.putInMinutes(container, item, game.player.instance),
-        0,
-      );
-      if (texts === undefined && minutes === 0) return undefined;
+      // 名乗りも値段も無い枠は、ただ位置が変わるだけなので何も言わない。
+      const told =
+        slotDef === undefined || (texts === undefined && minutes === 0)
+          ? undefined
+          : {
+              name: texts?.displayName ?? locale.slot(slotDef.name).displayName,
+              description: texts?.description,
+            };
+
       return {
-        name: texts?.displayName ?? locale.slot(slotDef.name).displayName,
-        description: texts?.description,
+        name: told?.name,
+        description: told?.description,
         minutes,
+        maxCount: stack[0].acceptedCountForMoveTo(stack.slice(1), container, slotGlobalId),
+        movedIds: carried.map((item) => item.instanceId),
+        // 時間のかかる枠（手当てなど）はここで時間を進める。どの経路で入れても同じ値段になる。
+        execute: () => {
+          carried.forEach((item, index) =>
+            putIntoSlot(item, container, slotGlobalId, game.player.instance, game.session, () =>
+              put(item, index === 0),
+            ),
+          );
+        },
       };
     };
 
   /**
-   * selfが宣言しているcombinationsのうち、draggedにマッチする先頭を実行する手段（無ければundefined）。
-   * heldは指が掴んでいたインスタンスで、self・draggedのどちらの役でもありうる（CardCombination.held参照）。
+   * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭を実行する手段
+   * （無ければundefined）。candidatesは`dragged`の役になる個体、movedは指が運んできた個体。
    *
    * 複数の組み合わせがマッチしたときにどれを実行するかの解決はUI層に委ねられている
    * （ActionSystem.md 1節）ため、宣言順の先頭を採る。
+   *
+   * **まとめて実行するのは、宣言が数を約束できる場合だけ**（`allow_multiple`、
+   * GameElementDefinition.md 12.4節）。時間も個数ぶんかかる。
    */
   const combinationWith = (
     self: WorldObject,
-    dragged: WorldObject,
-    held: WorldObject,
+    candidates: readonly WorldObject[],
+    moved: readonly WorldObject[],
+    count = 1,
   ): CardCombination | undefined => {
+    const dragged = candidates[0];
+    if (dragged === undefined) return undefined;
+
     const [combination] = self.combinationsWith(dragged, game.player.instance);
     if (combination === undefined) return undefined;
 
     const texts = locale.object(self.def.name).interaction(combination.name);
+    const carried = carriedOf(candidates, count);
     return {
       name: texts.displayName,
       description: texts.description,
-      minutes: self.combinationMinutes(dragged, game.player.instance, combination.name),
-      held,
+      minutes: carried.length * self.combinationMinutes(dragged, game.player.instance, combination.name),
+      maxCount: self.combinationAcceptedCount(candidates, game.player.instance, combination.name),
+      movedIds: carriedOf(moved, count).map((instance) => instance.instanceId),
       execute: () => {
-        self.tryExecuteCombination(dragged, game.player.instance, combination.name, game.session);
+        for (const candidate of carried) {
+          if (!self.tryExecuteCombination(candidate, game.player.instance, combination.name, game.session))
+            break;
+        }
       },
     };
   };
@@ -287,9 +297,7 @@ export function cardOperationsOf(
     forStack: (stack, place) => ({
       actions: actionsOf(stack[0]),
       movedIds: (count) => carriedOf(stack, count).map((instance) => instance.instanceId),
-      moveTo: moveInto(stack, place),
-      acceptedCountAt: acceptedCountIn(stack, place),
-      putInto: putIntoTexts(stack, place),
+      dropInto: dropInto(stack, place),
       reorder: reorderIn(stack[0]),
     }),
     actionsOf,

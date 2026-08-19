@@ -30,6 +30,29 @@ export abstract class ActiveEffect {
    * ——既定を持たせると、動詞を1つ足したときに読み手が黙って何も受け取らなくなる。
    */
   abstract read(reader: EffectReader): void;
+
+  /**
+   * まとめて実行するとき、回数の上限を決める器がいくつあるか（`allow_multiple`、12.4節）。
+   * undefinedは「繰り返すと意味が変わるので数えられない」（pick）。
+   *
+   * **既定は0＝数に影響しない。** 取りこぼしても「まとめられない」に倒れるだけで安全側なので、readと
+   * 違い抽象にしない。数を決められるのは、単調に埋まる器へ入れる効果（transfer）だけ。
+   */
+  countableVessels(): number | undefined {
+    return 0;
+  }
+
+  /**
+   * candidatesを先頭から順に、この効果を続けて何回適用できるか。undefinedは「答えられない」。
+   * 各candidateはdraggedの役で、器（countableVessels）を持つ効果だけが答える。
+   */
+  acceptedCount(
+    _owner: WorldObject,
+    _candidates: readonly WorldObject[],
+    _actor: WorldObject | undefined,
+  ): number | undefined {
+    return undefined;
+  }
 }
 
 /**
@@ -59,6 +82,30 @@ export class ActiveEffects extends ActiveEffect {
 
   read(reader: EffectReader): void {
     for (const operation of this.operations) operation.read(reader);
+  }
+
+  /** 子の合計。1つでも数えられない子（pick）があれば、合成も数えられない。 */
+  override countableVessels(): number | undefined {
+    let total = 0;
+    for (const operation of this.operations) {
+      const vessels = operation.countableVessels();
+      if (vessels === undefined) return undefined;
+      total += vessels;
+    }
+    return total;
+  }
+
+  /** 器を持つ子（ちょうど1つであることはロード時に確かめてある）に訊く。 */
+  override acceptedCount(
+    owner: WorldObject,
+    candidates: readonly WorldObject[],
+    actor: WorldObject | undefined,
+  ): number | undefined {
+    for (const operation of this.operations) {
+      const count = operation.acceptedCount(owner, candidates, actor);
+      if (count !== undefined) return count;
+    }
+    return undefined;
   }
 }
 
@@ -322,6 +369,55 @@ export class TransferEffect extends ActiveEffect {
       toAmount: this.toAmount,
       linked: this.linkedAdd.map((linked) => linked.linkedReading),
     };
+  }
+
+  /**
+   * 移送先が全candidatesで共通なら、その値が器になる（1つ）。移送先がdraggedなら、器はcandidateごとに
+   * 別なので回数の上限を決めない（0）。
+   */
+  override countableVessels(): number | undefined {
+    return this.toObject === 'dragged' ? 0 : 1;
+  }
+
+  /**
+   * 移送先の残り（PropertyValue.remainingTransferCapacity）が尽きるまでに、何個ぶん移せるか。
+   * 移送先・移送元が解決できなければ、そこで打ち切る。
+   */
+  override acceptedCount(
+    owner: WorldObject,
+    candidates: readonly WorldObject[],
+    actor: WorldObject | undefined,
+  ): number | undefined {
+    if (this.toObject === 'dragged' || candidates.length === 0) return undefined;
+
+    const to = owner.resolveEffectTargetOrAncestor(
+      this.toObject,
+      this.toPropertyGlobalId,
+      actor,
+      candidates[0],
+    );
+    const toValue = to?.tryGetProperty(this.toPropertyGlobalId);
+    if (toValue === undefined) return undefined;
+
+    let room = toValue.remainingTransferCapacity();
+    let count = 0;
+    for (const candidate of candidates) {
+      if (room <= 0) break;
+      const from = owner.resolveEffectTargetOrAncestor(
+        this.fromObject,
+        this.fromPropertyGlobalId,
+        actor,
+        candidate,
+      );
+      const fromValue = from?.tryGetProperty(this.fromPropertyGlobalId);
+      if (fromValue === undefined) break;
+
+      const taken = Math.min(this.amount, fromValue.availableToTransferOut());
+      if (taken <= 0) break;
+      room -= (taken * this.toAmount) / this.amount;
+      count += 1;
+    }
+    return count;
   }
 
   read(reader: EffectReader): void {

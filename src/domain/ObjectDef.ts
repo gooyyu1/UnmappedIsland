@@ -348,6 +348,25 @@ export class ObjectDef {
     );
   }
 
+  /**
+   * combinationNameをまとめて実行できる個数（宣言が無ければ1）。candidatesは先頭から順に相手になる
+   * 個体で、先頭が指の掴んでいたもの。対象の解決はtryExecuteCombinationと同じ。
+   */
+  combinationAcceptedCount(
+    self: WorldObject,
+    candidates: readonly WorldObject[],
+    actor: WorldObject | undefined,
+    combinationName: string,
+  ): number {
+    const resolvedSelf = self.resolveInteractionTarget();
+    const resolved = candidates.map((candidate) => candidate.resolveInteractionTarget());
+    return (
+      resolvedSelf.def.combinations
+        .find((c) => c.name === combinationName)
+        ?.acceptedCount(resolvedSelf, resolved, actor) ?? 1
+    );
+  }
+
   tryExecuteCombination(
     self: WorldObject,
     dragged: WorldObject,

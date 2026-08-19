@@ -348,8 +348,8 @@ export class PlayScene extends ResponsiveScene {
    */
   private readonly shown = new ShownCards({
     stacksIn: (place) => this.cardsAt(place),
-    cardOfObjects: (objects) => this.view.cardOfObjects(objects),
-    combinationOf: (dragged, target) => this.view.combinationOf(dragged, target),
+    cardOfObjects: (...asked) => this.view.cardOfObjects(...asked),
+    combinationOf: (...asked) => this.view.combinationOf(...asked),
     windowPlace: () => this.childWindowPlace,
     places: (screen) => this.place(screen),
   });
@@ -866,11 +866,11 @@ export class PlayScene extends ResponsiveScene {
    */
   private describeDrop(drop: CardDrop): CardDropInfo | undefined {
     const dropped = this.dropOf(drop);
-    if (this.shown.dropAction(dropped) === undefined) return undefined;
+    const told = this.shown.dropEffect(dropped);
+    if (told === undefined) return undefined;
 
     const maxCount = this.shown.multiDropLimit(dropped);
-    const told = this.shown.dropEffect(dropped);
-    if (told === undefined) return { maxCount };
+    if (told.name === undefined) return { maxCount };
     return {
       maxCount,
       tooltip: { title: told.name, body: told.description, note: durationText(told.minutes) },

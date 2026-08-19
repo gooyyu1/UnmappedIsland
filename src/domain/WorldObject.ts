@@ -186,6 +186,24 @@ export class WorldObject {
   }
 
   /**
+   * itemを自分の中へ入れるなら、どの枠か（GameElementDefinition.md 7.8節）。プレイヤーが手で入れられる
+   * 枠（`placement: manual`、7.7節）のうち、**宣言順で最初に今itemを受け取れるもの**。どこにも入らな
+   * ければundefined。
+   *
+   * 型が合うかではなく今入るかで選ぶので、先の枠が埋まっていれば次の枠が答えになる。**今itemが居る枠は
+   * 答えない**——同じ枠へ入れ直すのは入れる操作ではない。
+   */
+  putInSlotFor(item: WorldObject): number | undefined {
+    const from = item.parent === this ? this.getSlotByLocalId(item.parentSlotLocalId) : undefined;
+    return this.def.slotDefs.find(
+      (slotDef) =>
+        slotDef.manualPlacement &&
+        slotDef !== from?.def &&
+        item.rejectionForMoveTo(this, slotDef.globalId) === undefined,
+    )?.globalId;
+  }
+
+  /**
    * 名指しした1つのプロパティが、今の進み方であと何tickでrangeを超える（on_overflowが起きる）か。
    * そのプロパティを持たない・今は進んでいない場合はundefined。
    */
@@ -870,6 +888,15 @@ export class WorldObject {
   /** combinationNameの実行にかかるゲーム内時間（分）。 */
   combinationMinutes(dragged: WorldObject, actor: WorldObject | undefined, combinationName: string): number {
     return this.def.combinationMinutes(this, dragged, actor, combinationName);
+  }
+
+  /** combinationNameをまとめて実行できる個数（`allow_multiple`、GameElementDefinition.md 12.4節）。 */
+  combinationAcceptedCount(
+    candidates: readonly WorldObject[],
+    actor: WorldObject | undefined,
+    combinationName: string,
+  ): number {
+    return this.def.combinationAcceptedCount(this, candidates, actor, combinationName);
   }
 
   combinationsWith(dragged: WorldObject, actor: WorldObject | undefined): readonly CombinationDef[] {
