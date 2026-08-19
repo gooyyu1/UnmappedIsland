@@ -1,5 +1,5 @@
 import type { AlertLevel } from './AlertLevel';
-import type { GaugeDef, PropertyDef, StageReading } from './PropertyDef';
+import type { PropertyDef, StageReading } from './PropertyDef';
 import { INT32_MAX } from '../util/int32';
 import { removeWhere } from '../util/arrays';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
@@ -22,7 +22,7 @@ export class PropertyValue {
     return this._number;
   }
 
-  private readonly def: PropertyDef;
+  readonly def: PropertyDef;
   private readonly owner: WorldObject;
 
   /**
@@ -197,11 +197,6 @@ export class PropertyValue {
     return this.def.stageNameOf(this.getEffectiveValue());
   }
 
-  /** このプロパティの識別子。表示名ではない（表示名はLocalizationが引く）。 */
-  get name(): string {
-    return this.def.name;
-  }
-
   /** rangeの中での位置（0〜1）。rangeを持たないプロパティはundefinedで、バーではなく数値で見せる。 */
   get ratio(): number | undefined {
     return this.def.ratioOf(this.getEffectiveValue());
@@ -212,27 +207,9 @@ export class PropertyValue {
     return this.def.alertLevelOf(this.getEffectiveValue());
   }
 
-  /** 増えるほど悪い値か。ゲージを持つなら、帯の向きもゲージの宣言（両端の見せ方）が決める。 */
-  get worsensUpward(): boolean {
-    return this.def.gauge?.worsensUpward ?? this.def.worsensUpward;
-  }
-
-  /**
-   * カードのゲージとして見せる宣言（6.8節）。持たないプロパティはundefinedで、カードにバーが出ない。
-   * 出すかどうかも両端の色も、この1つが決める（docs/ui/CardView.md 8節）。
-   */
-  get gauge(): GaugeDef | undefined {
-    return this.def.gauge;
-  }
-
   /** 今いる段（6.4節）。段を宣言していないプロパティはundefined。 */
   get stage(): StageReading | undefined {
     return this.def.stageOf(this.getEffectiveValue());
-  }
-
-  /** タグ（6.7節）が付いているか。 */
-  hasTag(tagGlobalId: number): boolean {
-    return this.def.hasTag(tagGlobalId);
   }
 
   /** transfer（9.5節）でこのプロパティから出せる量の上限。rangeがあればrange.minを下限とみなし、無ければ現在値そのまま。 */

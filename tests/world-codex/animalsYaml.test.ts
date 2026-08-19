@@ -127,7 +127,7 @@ describe('animals.yamlの動物', () => {
   it('野生のサルは警戒した状態で現れ、放っておけば落ち着く', () => {
     // 明滅（CardView.md 3節）は域だけで決まるので、現れた時点で安全域を外れていることが要件。
     expect(monkey.tryGetProperty(warinessId)?.alert, '現れた時点で安全域ではない').not.toBe('safe');
-    expect(monkey.tryGetProperty(warinessId)?.worsensUpward, '増えるほど悪い').toBe(true);
+    expect(monkey.tryGetProperty(warinessId)?.def.worsensUpward, '増えるほど悪い').toBe(true);
 
     // 40からの-1/tickなので、21tick（5時間15分）で安全域へ落ちる。
     tick(21);

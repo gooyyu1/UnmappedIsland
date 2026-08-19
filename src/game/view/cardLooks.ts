@@ -160,15 +160,16 @@ export function cardLooksOf(
    */
   const declaredGaugesOf = (object: WorldObject): readonly CardGauge[] =>
     object.gaugeProperties().flatMap((property) => {
+      const gauge = property.def.gauge;
       // gaugePropertiesはrangeを持つものだけを返す（ロード時に保証）ので、ここは実質always trueの絞り込み。
-      if (property.ratio === undefined || property.gauge === undefined) return [];
+      if (property.ratio === undefined || gauge === undefined) return [];
       return [
         {
-          key: property.name,
+          key: property.def.name,
           ratio: property.ratio,
-          atMin: property.gauge.atMin,
-          atMax: property.gauge.atMax,
-          worsensUpward: property.gauge.worsensUpward,
+          atMin: gauge.atMin,
+          atMax: gauge.atMax,
+          worsensUpward: gauge.worsensUpward,
         },
       ];
     });

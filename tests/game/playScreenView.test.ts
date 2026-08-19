@@ -1414,15 +1414,15 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 荷重と痛みは0、残りは満タンで始まる（characters/・Characters.md 域の区分節）。
     const startRatios: Record<string, number> = { satiety: 0.2, hydration: 0.75, load: 0, pain: 0 };
     expect(view.statuses.map((status) => status.ratio)).toEqual(
-      tagged.map((property) => startRatios[property.name] ?? 1),
+      tagged.map((property) => startRatios[property.def.name] ?? 1),
     );
     const startAlerts: Record<string, string> = { satiety: 'watch', hydration: 'watch' };
     expect(view.statuses.map((status) => status.alert)).toEqual(
-      tagged.map((property) => startAlerts[property.name] ?? 'safe'),
+      tagged.map((property) => startAlerts[property.def.name] ?? 'safe'),
     );
-    expect(view.statuses.map((status) => status.key)).toEqual(tagged.map((property) => property.name));
+    expect(view.statuses.map((status) => status.key)).toEqual(tagged.map((property) => property.def.name));
     // localeに登録の無いcharacterでは識別子がそのまま出る（Localization.md）。
-    expect(view.statuses.map((status) => status.name)).toEqual(tagged.map((property) => property.name));
+    expect(view.statuses.map((status) => status.name)).toEqual(tagged.map((property) => property.def.name));
   });
 
   it('ステータスの行には、対応表が宣言したアイコンが付く', () => {

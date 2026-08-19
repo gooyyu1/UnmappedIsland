@@ -165,7 +165,7 @@ describe('プレイヤーキャラクタの定義', () => {
       const instance = new WorldObject(1, def(character), new WorldSession(codex));
       const status = instance.propertiesWithTag(codex.propertyTagNames.getId('status'));
 
-      expect(status.map((property) => property.name)).toEqual([
+      expect(status.map((property) => property.def.name)).toEqual([
         'pain',
         'blood',
         'satiety',
@@ -333,9 +333,9 @@ describe('プレイヤーキャラクタの定義', () => {
 
       const fatal = instance
         .propertiesWithTag(codex.propertyTagNames.getId('status'))
-        .filter((property) => propOf(def(character), property.name).alertLevelOf(0) === 'fatal');
+        .filter((property) => property.def.alertLevelOf(0) === 'fatal');
 
-      expect(fatal.map((property) => property.name)).toEqual(['blood', 'hydration']);
+      expect(fatal.map((property) => property.def.name)).toEqual(['blood', 'hydration']);
     });
 
     // 死に方は3つだけ（VitalsSystem.md 8節）。どれも「尽きたら世界から出る」という同じ形で、

@@ -150,7 +150,7 @@ describe('injuries.yamlの怪我', () => {
 
     const severityId = codex.propertyNames.getId('severity');
     expect(injury.tryGetProperty(severityId)?.alert, '負った直後は要注意域').toBe('caution');
-    expect(injury.tryGetProperty(severityId)?.worsensUpward, '増えるほど悪い').toBe(true);
+    expect(injury.tryGetProperty(severityId)?.def.worsensUpward, '増えるほど悪い').toBe(true);
 
     tick(HEALING_TICKS / 2);
 

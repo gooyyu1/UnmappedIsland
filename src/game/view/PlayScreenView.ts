@@ -451,7 +451,7 @@ export function fromGameSession(
       art: shown.art,
       reversible: influence.reversible,
       increases: influence.increases,
-      worsens: influence.increases === (moved?.worsensUpward ?? false),
+      worsens: influence.increases === (moved?.def.worsensUpward ?? false),
       active: influence.active,
     };
   };
@@ -461,9 +461,9 @@ export function fromGameSession(
    * プロパティを別の物が持っていても、値も影響もその物のもの。
    */
   const detailOf = (object: WorldObject, property: PropertyValue): StatusDetail => {
-    const influences = object.readInfluences(codex.propertyNames.getId(property.name));
+    const influences = object.readInfluences(codex.propertyNames.getId(property.def.name));
     return {
-      description: locale.object(object.def.name).prop(property.name).description,
+      description: locale.object(object.def.name).prop(property.def.name).description,
       stage:
         property.stage === undefined
           ? undefined
@@ -491,15 +491,15 @@ export function fromGameSession(
     tagGlobalId === undefined
       ? []
       : object.propertiesWithTag(tagGlobalId).map((property) => {
-          const texts = locale.object(object.def.name).prop(property.name);
+          const texts = locale.object(object.def.name).prop(property.def.name);
           return {
-            key: property.name,
+            key: property.def.name,
             name: texts.displayName,
             icon: texts.icon,
             value: property.getEffectiveValue(),
             ratio: property.ratio,
             alert: property.alert,
-            worsensUpward: property.worsensUpward,
+            worsensUpward: property.def.worsensUpward,
             detail: detailOf(object, property),
           };
         });

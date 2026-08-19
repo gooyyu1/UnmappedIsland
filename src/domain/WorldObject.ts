@@ -248,7 +248,7 @@ export class WorldObject {
    * `ratio`は常に定義されている。並ぶ順と本数がそのままカードのバーになる（docs/ui/CardView.md 8節）。
    */
   gaugeProperties(): readonly PropertyValue[] {
-    return this.properties.filter((property) => property.gauge !== undefined);
+    return this.properties.filter((property) => property.def.gauge !== undefined);
   }
 
   /**
@@ -256,7 +256,7 @@ export class WorldObject {
    * 1つも持たないオブジェクトでは空配列。
    */
   propertiesWithTag(tagGlobalId: number): readonly PropertyValue[] {
-    return this.properties.filter((property) => property.hasTag(tagGlobalId));
+    return this.properties.filter((property) => property.def.hasTag(tagGlobalId));
   }
 
   /** modifyのみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。プロパティを持たなければ0。 */

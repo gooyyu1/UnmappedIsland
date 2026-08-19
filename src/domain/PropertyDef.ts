@@ -210,9 +210,13 @@ export class PropertyDef {
    */
   readonly alertDirection: AlertDirection;
 
-  /** 値が増えるほど悪いか。`mixed`は向きを決められないので、既定の「減ると悪い」として扱う。 */
+  /**
+   * 値が増えるほど悪いか。ゲージを宣言していれば、その両端の見せ方（6.8節）が向きを決める——段の
+   * alertと食い違う宣言はロード時に弾くので、両方あるときは必ず同じ答えになる。ゲージが無ければ
+   * 段のalertの向きから決まり、`mixed`は向きを決められないので既定の「減ると悪い」として扱う。
+   */
   get worsensUpward(): boolean {
-    return this.alertDirection === 'up';
+    return this.gauge?.worsensUpward ?? this.alertDirection === 'up';
   }
 
   /**
