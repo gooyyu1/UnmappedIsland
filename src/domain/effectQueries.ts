@@ -40,6 +40,7 @@ abstract class Finder implements EffectReader {
   add(_target: ReferenceRoot, _propertyGlobalId: number, _amount: number): void {}
   spawn(_objectGlobalId: number, _count: number): void {}
   destroy(_target: ObjectRefReading): void {}
+  become(_subject: ObjectRefReading, _axisValues: ReadonlyMap<string, string>): void {}
   transfer(_reading: TransferReading): void {}
   move(_subject: ObjectRefReading, _destination: ObjectRefReading, _slotGlobalId: number | undefined): void {}
   signal(_name: string): void {}

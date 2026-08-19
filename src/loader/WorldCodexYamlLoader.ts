@@ -21,7 +21,8 @@ import { NameRegistry } from '../domain/NameRegistry';
 import type { ObjectDef } from '../domain/ObjectDef';
 import { ObjectDefTable } from '../domain/ObjectDef';
 import { WellKnownProperties } from '../domain/WellKnownProperties';
-import { IN_PROGRESS_SOURCE, inProgressObjectsYaml, productGlobalIdOf } from './inProgressObjects';
+import { IN_PROGRESS_SOURCE, inProgressCoordinateOf, inProgressObjectsYaml } from './inProgressObjects';
+import { GeneratedTypes } from '../domain/GeneratedTypes';
 import { WorldCodex } from '../domain/WorldCodex';
 import type { AxisDef } from '../domain/generation/AxisDef';
 import type { GenerationScopeDef } from '../domain/generation/GenerationScopeDef';
@@ -175,7 +176,7 @@ export class WorldCodexYamlLoader {
       this.tagNames,
       this.objectNames,
     );
-    const inProgressProducts = new Map<number, number>();
+    const generatedTypes = new GeneratedTypes();
     if (generated !== undefined) {
       const authored = new Set(this.globalObjectDefs.keys());
       this.load(IN_PROGRESS_SOURCE, generated);
@@ -183,7 +184,7 @@ export class WorldCodexYamlLoader {
         if (authored.has(name)) continue;
         const def = raw.resolve(this.globalTraits, this);
         objectDefsByGlobalId.set(def.globalId, def);
-        inProgressProducts.set(def.globalId, productGlobalIdOf(name, this.objectNames));
+        generatedTypes.register(def.globalId, inProgressCoordinateOf(name, this.objectNames));
       }
     }
 
@@ -203,7 +204,7 @@ export class WorldCodexYamlLoader {
       new ObjectDefTable(defsByGlobalId),
       wellKnown,
       generation,
-      inProgressProducts,
+      generatedTypes,
       this.recipeCategoryTagIds,
     );
 

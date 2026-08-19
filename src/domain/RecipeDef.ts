@@ -7,6 +7,12 @@ import type { ReferenceRoot } from './ReferenceRoot';
 import type { Requirement, Requirements } from './Requirement';
 
 /**
+ * 製作中オブジェクト（RecipeSystem.md 1節）を生成するときの軸名（GameElementDefinition.md 3.5節）。
+ * 値はレシピの名前で、この軸を落とした座標——`become: {recipe: none}`——が完成品そのものを指す。
+ */
+export const RECIPE_AXIS = 'recipe';
+
+/**
  * 工程が要求する素材または道具1件（GameElementDefinition.md 13.1節）。
  *
  * **要求はタグでも書ける**（枠の`accept`・combinationsの`with`と同じTypeMatchRule）。道具は

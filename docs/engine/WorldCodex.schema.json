@@ -520,7 +520,7 @@
           "$ref": "#/$defs/spawn_spec"
         },
         "become": {
-          "description": "同じ個体のまま型を差し替える（9.9節）。未実装。",
+          "description": "同じ個体のまま型を差し替える（9.9節）。",
           "$ref": "#/$defs/become_spec"
         },
         "transfer": {
@@ -599,7 +599,7 @@
           "$ref": "#/$defs/spawn_spec"
         },
         "become": {
-          "description": "同じ個体のまま型を差し替える（9.9節）。未実装。",
+          "description": "同じ個体のまま型を差し替える（9.9節）。",
           "$ref": "#/$defs/become_spec"
         },
         "transfer": {
@@ -661,7 +661,7 @@
           "$ref": "#/$defs/spawn_spec"
         },
         "become": {
-          "description": "同じ個体のまま型を差し替える（9.9節）。未実装。",
+          "description": "同じ個体のまま型を差し替える（9.9節）。",
           "$ref": "#/$defs/become_spec"
         },
         "transfer": {
@@ -709,7 +709,7 @@
           "$ref": "#/$defs/spawn_spec"
         },
         "become": {
-          "description": "同じ個体のまま型を差し替える（9.9節）。未実装。",
+          "description": "同じ個体のまま型を差し替える（9.9節）。",
           "$ref": "#/$defs/become_spec"
         },
         "transfer": {
@@ -1417,7 +1417,7 @@
       "pattern": "^[a-z][a-z0-9_]*$"
     },
     "become_spec": {
-      "description": "同じ個体のまま型を差し替える（GameElementDefinition.md 9.9節）。未実装。subject以外のキーは、行き先の型を決める軸の値（3.5節）。書かなかった軸は変化前の自分から引き継ぐ。同名のプロパティとスロットは中身ごと引き継ぎ、新しい型が持たないスロットの中身はdestroy（9.3節）と同じ規則で親へこぼれる。軸の名前は生成器が決めるためスキーマでは列挙できない。",
+      "description": "同じ個体のまま型を差し替える（GameElementDefinition.md 9.9節）。subject以外のキーは、行き先の型を決める軸の値（3.5節）。書かなかった軸は変化前の自分から引き継ぐ。同名のプロパティとスロットは中身ごと引き継ぎ、新しい型が持たないスロットの中身はdestroy（9.3節）と同じ規則で親へこぼれる。軸の名前は生成器が決めるためスキーマでは列挙できない。",
       "type": "object",
       "properties": {
         "subject": {

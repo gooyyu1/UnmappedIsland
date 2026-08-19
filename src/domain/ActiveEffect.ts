@@ -43,6 +43,22 @@ export abstract class ActiveEffect {
   }
 
   /**
+   * 今この文脈で、この効果が行き先を持たないために、宣言している操作そのものが成立しないか
+   * （`become` の座標が空、9.9節）。成立しない操作は候補に出さない——落とせるのに何も起きない、を
+   * 作らないため。
+   *
+   * **既定はfalse＝妨げない。** countableVesselsと同じく、取りこぼしても安全側（操作は出る）に
+   * 倒れるので抽象にしない。
+   */
+  unresolvable(
+    _owner: WorldObject,
+    _actor: WorldObject | undefined,
+    _dragged: WorldObject | undefined,
+  ): boolean {
+    return false;
+  }
+
+  /**
    * candidatesを先頭から順に、この効果を続けて何回適用できるか。undefinedは「答えられない」。
    * 各candidateはdraggedの役で、器（countableVessels）を持つ効果だけが答える。
    */
@@ -82,6 +98,15 @@ export class ActiveEffects extends ActiveEffect {
 
   read(reader: EffectReader): void {
     for (const operation of this.operations) operation.read(reader);
+  }
+
+  /** 1つでも成立しない子があれば、合成も成立しない（並べた命令はすべて起こる約束のため）。 */
+  override unresolvable(
+    owner: WorldObject,
+    actor: WorldObject | undefined,
+    dragged: WorldObject | undefined,
+  ): boolean {
+    return this.operations.some((operation) => operation.unresolvable(owner, actor, dragged));
   }
 
   /** 子の合計。1つでも数えられない子（pick）があれば、合成も数えられない。 */

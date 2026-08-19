@@ -120,6 +120,15 @@ class EffectDescriber implements EffectReader {
     this.out.write(text('destroy '), ...objectRefTokens(target, this.names));
   }
 
+  /**
+   * 行き先は座標なので、動かす軸とその値をそのまま書く（9.9節）。**どの型になるかは書かない**
+   * ——対象が今居る座標との組み合わせで決まるので、宣言だけでは1つに定まらない。
+   */
+  become(subject: ObjectRefReading, axisValues: ReadonlyMap<string, string>): void {
+    const axes = [...axisValues].map(([axis, value]) => `${axis}: ${value}`).join(', ');
+    this.out.write(text('become '), ...objectRefTokens(subject, this.names), text(` {${axes}}`));
+  }
+
   transfer(reading: TransferReading): void {
     this.out.write(...transferTokens(reading, this.names));
     if (reading.linked.length === 0) return;

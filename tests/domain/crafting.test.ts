@@ -224,7 +224,7 @@ object_defs:
     expect(advanceCrafting(spearWip, spear, materialsId(), codex, session)).toBe(true);
 
     expect(rotting.parent, '素材は経過中に壊れて世界から外れている').toBeUndefined();
-    expect(spearWip.getNumber(progressId()), 'それでも工程は進む').toBe(30);
+    expect(spearWip.def.name, 'それでも工程は成立し、同じ個体が完成品になる').toBe('spear');
   });
 
   it('最後の工程を終えると、完成品が製作中オブジェクトのいた場所へ生まれる', () => {
