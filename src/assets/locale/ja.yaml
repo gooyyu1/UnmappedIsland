@@ -203,8 +203,6 @@ object_texts:
       heat:
         display_name: 火力
         description: 今どれだけ燃えているか。一番下は種火で、料理はできないが薪を足せば育つ。
-      fuel_capacity:
-        display_name: 積める薪
       stones:
         display_name: 積んだ石
       cooking_progress:

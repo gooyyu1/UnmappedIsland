@@ -116,7 +116,6 @@ object_defs:
             duration: 90
     props:
       # 丸太1本（fuel 200）でちょうど満ちる。太い枝なら10本——斧を持たない経路でも焚ける。
-      fuel_capacity: {value: 200}
       fuel:
         value: 0
         range: {min: 0, max: 200}

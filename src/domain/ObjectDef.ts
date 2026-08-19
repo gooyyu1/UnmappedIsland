@@ -13,7 +13,7 @@ import { PassiveEffects } from './PassiveEffects';
 import type { PropertyDef } from './PropertyDef';
 import type { RecipeDef } from './RecipeDef';
 import type { Requirement } from './Requirement';
-import type { SlotDef } from './SlotDef';
+import type { Placement, SlotDef } from './SlotDef';
 import type { StackOrderDef } from './StackOrderDef';
 
 /**
@@ -45,8 +45,8 @@ export class ObjectDef {
   /** このobject_defが持つスロットの定義（宣言順）。 */
   readonly slotDefs: readonly SlotDef[];
 
-  /** slotDefsのうち、自動配置（7.7節）を受け入れるものだけを宣言順に並べたもの。 */
-  private readonly autoPlacementSlotDefs: readonly SlotDef[];
+  /** slotDefsのうち、それぞれの走査（`placement`、7.7節）に参加するものだけを宣言順に並べたもの。 */
+  private readonly placementSlots: Readonly<Record<Placement, readonly SlotDef[]>>;
 
   /** このObjectDefが宣言する持続効果（8節）の一式（PassiveEffects参照）。 */
   readonly passives: PassiveEffects;
@@ -142,7 +142,10 @@ export class ObjectDef {
     this.propertyDefs = propertyDefs;
     this.slotLayout = slotLayout;
     this.slotDefs = slotDefs;
-    this.autoPlacementSlotDefs = slotDefs.filter((slotDef) => slotDef.autoPlacement);
+    this.placementSlots = {
+      auto: slotDefs.filter((slotDef) => slotDef.allows('auto')),
+      manual: slotDefs.filter((slotDef) => slotDef.allows('manual')),
+    };
     this.passives = new PassiveEffects(passives);
     this.stackOrder = stackOrder;
     this.tags = tags;
@@ -292,12 +295,14 @@ export class ObjectDef {
   }
 
   /**
-   * spawn/moveの宛先候補になるSlotDefを宣言順に列挙する（7.7節）。`auto_placement: false`のスロットは、
-   * 走査を強制配置（force）で行う場合も含めて候補にならない——forceが省くのは受け入れ判定であって、
-   * 「そもそも自動では入らない」という宣言ではないため。
+   * その走査（`placement`、7.7節）で宛先候補になるSlotDefを宣言順に列挙する。**行き先を宣言順に探す
+   * 規約は1つで、入口が2つあるだけ**——`auto`はspawn/moveが、`manual`は札を重ねたドロップが辿る。
+   *
+   * 走査から外したスロットは、強制配置（force）で行う場合も候補にならない——forceが省くのは受け入れ
+   * 判定であって、「そもそも自動では入らない」という宣言ではないため。
    */
-  enumerateAutoPlacementSlotDefs(): readonly SlotDef[] {
-    return this.autoPlacementSlotDefs;
+  placementSlotDefs(placement: Placement): readonly SlotDef[] {
+    return this.placementSlots[placement];
   }
 
   tryExecuteAction(
@@ -397,7 +402,7 @@ export class ObjectDef {
 
 /**
  * resolvedSelfが持つcombinationのうち、resolvedDraggedを相手（with、12.1節）として受け入れ、かつ
- * 今その要件（14節）を満たしているもの。
+ * 今その要件（14節）を満たし、1つ以上受け取れるもの。
  *
  * **要件まで見るのは、候補を選ぶ側と実行できる側を食い違わせないため。** 型だけで選ぶと、選んだ
  * 先が実行できない場合に「落とせるのに何も起きない」になる。
@@ -415,7 +420,8 @@ function combinationsWith(
   return resolvedSelf.def.combinations.filter(
     (c) =>
       c.matches(resolvedDragged.def) &&
-      c.unmetRequirement(resolvedSelf, resolvedDragged, actor) === undefined,
+      c.unmetRequirement(resolvedSelf, resolvedDragged, actor) === undefined &&
+      c.acceptedCount(resolvedSelf, [resolvedDragged], actor) >= 1,
   );
 }
 

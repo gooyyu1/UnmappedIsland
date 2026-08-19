@@ -195,12 +195,11 @@ export class WorldObject {
    */
   putInSlotFor(item: WorldObject): number | undefined {
     const from = item.parent === this ? this.getSlotByLocalId(item.parentSlotLocalId) : undefined;
-    return this.def.slotDefs.find(
-      (slotDef) =>
-        slotDef.manualPlacement &&
-        slotDef !== from?.def &&
-        item.rejectionForMoveTo(this, slotDef.globalId) === undefined,
-    )?.globalId;
+    return this.def
+      .placementSlotDefs('manual')
+      .find(
+        (slotDef) => slotDef !== from?.def && item.rejectionForMoveTo(this, slotDef.globalId) === undefined,
+      )?.globalId;
   }
 
   /**
@@ -707,12 +706,16 @@ export class WorldObject {
   }
 
   /**
-   * targetの自動配置スロット（ObjectDef.enumerateAutoPlacementSlotDefs）を宣言順に走査し、最初に受け入れ
-   * られたスロットへ自分自身を移動する（著者がスロット名を知らなくてよい規約。spawnのintoとmoveが共用、
+   * targetの自動配置スロット（ObjectDef.placementSlotDefs）を宣言順に走査し、最初に受け入れられた
+   * スロットへ自分自身を移動する（著者がスロット名を知らなくてよい規約。spawnのintoとmoveが共用、
    * 9.4節）。force=trueは受け入れ判定を飛ばすため、自動配置スロットが1つでもあれば必ず成功する。
+   *
+   * **札を重ねたドロップ（putInSlotFor）と同じ規約の、別の入口。** 走査する枠の並びは1箇所が
+   * 答える（placementSlotDefs）が、こちらは受け入れの判定が移動そのもの——量的オブジェクトは
+   * 注いでみるまで入るか分からず（pourVolumeInto）、rejectionForMoveToでは答えが出ない。
    */
   moveIntoFirstAcceptingSlot(target: WorldObject, force = false, session?: WorldSession): boolean {
-    for (const slotDef of target.def.enumerateAutoPlacementSlotDefs()) {
+    for (const slotDef of target.def.placementSlotDefs('auto')) {
       if (this.def.isQuantitative && !force && session !== undefined) {
         if (this.pourVolumeInto(target, slotDef.globalId, session)) return true;
         continue;
