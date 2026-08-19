@@ -74,7 +74,7 @@ export function parseProp(
       requireNumber(valueNode, 'max', context),
     );
     initialValueRange = initRange;
-    // 初期値はspawn時に[min,max]の一様乱数で決まる（PropertyDef.createValue）。
+    // 初期値はspawn時に[min,max]の一様乱数で決まる（PropertyDef.rollInitialValue）。
     // sessionを渡さない直接生成では決定的にminを使う。
     initialValue = initRange.min;
     isSymbolProperty = false;

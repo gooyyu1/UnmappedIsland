@@ -1,43 +1,20 @@
 import type { AlertLevel } from './AlertLevel';
-import type { GaugeDef, PropertyDef, StageReading } from './PropertyDef';
+import type { PropertyDef, StageReading } from './PropertyDef';
 import { INT32_MAX } from '../util/int32';
 import { removeWhere } from '../util/arrays';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
+import type { Rng } from './Rng';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
-
-/**
- * 1つのプロパティの現在の状態を、表示側が必要とする形だけ切り出したもの（PropertyValue.readIfTagged）。
- * nameは識別子であり表示名ではない（表示名はLocalizationが引く）。
- */
-export interface PropertyReading {
-  readonly name: string;
-  readonly value: number;
-
-  /** rangeの中での位置（0〜1）。rangeを持たないプロパティはundefinedで、バーではなく数値で見せる。 */
-  readonly ratio: number | undefined;
-
-  /** 今の値がどの域にあるか（6.4節のalert）。表示するか・明滅させるかの判断はUI側（StatusArea.md 2節）。 */
-  readonly alert: AlertLevel;
-
-  /** 増えるほど悪い値か（PropertyDef.worsensUpward）。バーの向きと増減の記号の色だけがこれを見る。 */
-  readonly worsensUpward: boolean;
-
-  /**
-   * カードのゲージとして見せる宣言（6.8節）。持たないプロパティはundefinedで、カードにバーが出ない。
-   * 出すかどうかも両端の色も、この1つが決める（docs/ui/CardView.md 8節）。
-   */
-  readonly gauge: GaugeDef | undefined;
-
-  /** 今いる段（6.4節）。段を宣言していないプロパティはundefined。 */
-  readonly stage: StageReading | undefined;
-}
 
 /**
  * props の実行時の値。数値（32bit整数、6節）のみを扱う。PassiveEffectの影響先は「プロパティ」であるため、
  * 登録済み効果の一覧・tick毎の反映・実効値の算出はWorldObjectではなくこの値自身が持つ。値の変更後のrangeイベント
  * 判定（どのon_*をいつ発火するか）は自分のPropertyDef（checkRangeEvents）へ委譲し、呼び出し側は変更後に何を
  * 判定すべきかを知らなくてよい。
+ *
+ * 見せ方に関わる問い（ratio・alert・stage）は実効値（8.3節）で答える。画面に出るのは「今そう見えている値」
+ * であり、実体値のまま出すと、包帯を当てても痛みが下がらないように見えるため。
  */
 export class PropertyValue {
   private _number: number;
@@ -45,7 +22,7 @@ export class PropertyValue {
     return this._number;
   }
 
-  private readonly def: PropertyDef;
+  readonly def: PropertyDef;
   private readonly owner: WorldObject;
 
   /**
@@ -62,9 +39,9 @@ export class PropertyValue {
    */
   private isComputingEffectiveValue = false;
 
-  /** 生成はPropertyDef.createValueが担う（初期値numberは定義側が決める）。 */
-  constructor(number: number, def: PropertyDef, owner: WorldObject) {
-    this._number = number;
+  /** 初期値は定義が決める（PropertyDef.rollInitialValue、6.2節）。抽選つきの宣言があるので乱数源が要る。 */
+  constructor(def: PropertyDef, owner: WorldObject, rng: Rng) {
+    this._number = def.rollInitialValue(rng);
     this.def = def;
     this.owner = owner;
   }
@@ -220,32 +197,19 @@ export class PropertyValue {
     return this.def.stageNameOf(this.getEffectiveValue());
   }
 
-  /**
-   * 今の値を読み取る。実効値で読むのは、画面に出すのが「今そう見えている値」（modify・inheritを
-   * 加味した値）であるため。
-   */
-  read(): PropertyReading {
-    const value = this.getEffectiveValue();
-    return {
-      name: this.def.name,
-      value,
-      ratio: this.def.ratioOf(value),
-      alert: this.def.alertLevelOf(value),
-      // ゲージを持つプロパティは、帯の向きもゲージの宣言（両端の見せ方）から決まる。
-      worsensUpward: this.def.gauge?.worsensUpward ?? this.def.worsensUpward,
-      gauge: this.def.gauge,
-      stage: this.def.stageOf(value),
-    };
+  /** rangeの中での位置（0〜1）。rangeを持たないプロパティはundefinedで、バーではなく数値で見せる。 */
+  get ratio(): number | undefined {
+    return this.def.ratioOf(this.getEffectiveValue());
   }
 
-  /** タグ（6.7節）が付いていれば今の値を読み取る。付いていなければundefined。 */
-  readIfTagged(tagGlobalId: number): PropertyReading | undefined {
-    return this.def.hasTag(tagGlobalId) ? this.read() : undefined;
+  /** 今の値がどの域にあるか（6.4節のalert）。出すか・明滅させるかの判断はUI側（StatusArea.md 2節）。 */
+  get alert(): AlertLevel {
+    return this.def.alertLevelOf(this.getEffectiveValue());
   }
 
-  /** ゲージとして見せる宣言（6.8節）があれば今の値を読み取る。無ければundefined。 */
-  readIfGauge(): PropertyReading | undefined {
-    return this.def.gauge === undefined ? undefined : this.read();
+  /** 今いる段（6.4節）。段を宣言していないプロパティはundefined。 */
+  get stage(): StageReading | undefined {
+    return this.def.stageOf(this.getEffectiveValue());
   }
 
   /** transfer（9.5節）でこのプロパティから出せる量の上限。rangeがあればrange.minを下限とみなし、無ければ現在値そのまま。 */

@@ -146,16 +146,16 @@ describe('injuries.yamlの怪我', () => {
     pickCoconut();
     const injury = new PlayerCharacter(player, codex).injuryStacks[0][0];
 
-    expect(injury.readProperty(codex.propertyNames.getId('durability'))).toBeUndefined();
+    expect(injury.tryGetProperty(codex.propertyNames.getId('durability'))).toBeUndefined();
 
     const severityId = codex.propertyNames.getId('severity');
-    expect(injury.readProperty(severityId)?.alert, '負った直後は要注意域').toBe('caution');
-    expect(injury.readProperty(severityId)?.worsensUpward, '増えるほど悪い').toBe(true);
+    expect(injury.tryGetProperty(severityId)?.alert, '負った直後は要注意域').toBe('caution');
+    expect(injury.tryGetProperty(severityId)?.def.worsensUpward, '増えるほど悪い').toBe(true);
 
     tick(HEALING_TICKS / 2);
 
-    expect(injury.readProperty(severityId)?.alert, '半分治れば留意域').toBe('watch');
-    expect(injury.readProperty(severityId)?.ratio).toBeCloseTo(0.5, 2);
+    expect(injury.tryGetProperty(severityId)?.alert, '半分治れば留意域').toBe('watch');
+    expect(injury.tryGetProperty(severityId)?.ratio).toBeCloseTo(0.5, 2);
   });
 
   describe('手当て', () => {

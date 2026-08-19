@@ -103,14 +103,16 @@ describe('traps.yamlのくくり罠', () => {
     // 「仕掛けた罠」と「持ち歩く罠」を型で分けない（TrapSystem.md 1節）。作動しているかどうかは、
     // 今どのスロットに入っているかだけが決める。
     open(NOTHING_CAME);
-    const onGround = snare.readProperty(catchRemainingId)!.value;
+    const onGround = snare.tryGetProperty(catchRemainingId)!.getEffectiveValue();
     tick(1);
-    expect(snare.readProperty(catchRemainingId)!.value, '地面では減る').toBeLessThan(onGround);
+    expect(snare.tryGetProperty(catchRemainingId)!.getEffectiveValue(), '地面では減る').toBeLessThan(
+      onGround,
+    );
 
     expect(snare.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
-    const inHand = snare.readProperty(catchRemainingId)!.value;
+    const inHand = snare.tryGetProperty(catchRemainingId)!.getEffectiveValue();
     tick(1);
-    expect(snare.readProperty(catchRemainingId)!.value, '手に持てば止まる').toBe(inHand);
+    expect(snare.tryGetProperty(catchRemainingId)!.getEffectiveValue(), '手に持てば止まる').toBe(inHand);
   });
 
   it('掛かった獲物は罠のスロットへ入り、その罠の怪我が1つ刺さる', () => {
@@ -127,10 +129,10 @@ describe('traps.yamlのくくり罠', () => {
     // 見回らなければ罠は増えない（6節）。回収するまで次の抽選は回らない。
     open(CATCHES_FOWL);
     tickUntilCaught();
-    const stopped = snare.readProperty(catchRemainingId)!.value;
+    const stopped = snare.tryGetProperty(catchRemainingId)!.getEffectiveValue();
 
     tick(5);
-    expect(snare.readProperty(catchRemainingId)!.value).toBe(stopped);
+    expect(snare.tryGetProperty(catchRemainingId)!.getEffectiveValue()).toBe(stopped);
     expect(caught(), '2匹目は掛からない').toHaveLength(1);
   });
 
@@ -140,8 +142,10 @@ describe('traps.yamlのくくり罠', () => {
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
 
-    expect(prey.readProperty(warinessId)!.value, '罠の中では暴れない').toBe(0);
-    expect(prey.readProperty(vulnerabilityId)!.value, '無防備さが跳ね上がる').toBeGreaterThan(100);
+    expect(prey.tryGetProperty(warinessId)!.getEffectiveValue(), '罠の中では暴れない').toBe(0);
+    expect(prey.tryGetProperty(vulnerabilityId)!.getEffectiveValue(), '無防備さが跳ね上がる').toBeGreaterThan(
+      100,
+    );
   });
 
   it('ネズミは掛かったその場で死に、死体は罠の中に残る', () => {
@@ -153,10 +157,12 @@ describe('traps.yamlのくくり罠', () => {
 
     // 死体はanimalタグを持たないが、枠もタイマーのゲートもquarryで受けるので、罠の中に残り、
     // 次の抽選も回らない（1.1節・6節）。
-    const stopped = snare.readProperty(catchRemainingId)!.value;
+    const stopped = snare.tryGetProperty(catchRemainingId)!.getEffectiveValue();
     tick(4);
     expect(caught().map((object) => object.def.name)).toEqual(['rat_carcass']);
-    expect(snare.readProperty(catchRemainingId)!.value, '死体が入ったままでも回らない').toBe(stopped);
+    expect(snare.tryGetProperty(catchRemainingId)!.getEffectiveValue(), '死体が入ったままでも回らない').toBe(
+      stopped,
+    );
   });
 
   it('ヤケイは同じ傷で生き延びる', () => {
@@ -169,7 +175,7 @@ describe('traps.yamlのくくり罠', () => {
       caught().map((object) => object.def.name),
       '死体になっていない',
     ).toEqual(['junglefowl']);
-    expect(prey.readProperty(bloodId)!.value).toBeGreaterThan(0);
+    expect(prey.tryGetProperty(bloodId)!.getEffectiveValue()).toBeGreaterThan(0);
   });
 
   it('土地が宣言していない動物は掛からない', () => {
@@ -193,17 +199,20 @@ describe('traps.yamlのくくり罠', () => {
     // 餌は掛かる確率を上げるのと、掛かる相手を食性で寄せるのを同時に言う（4節）。
     open(NOTHING_CAME);
     const before = {
-      miss: snare.readProperty(missWeightId)!.value,
-      herbivore: snare.readProperty(herbivoreWeightId)!.value,
+      miss: snare.tryGetProperty(missWeightId)!.getEffectiveValue(),
+      herbivore: snare.tryGetProperty(herbivoreWeightId)!.getEffectiveValue(),
     };
 
     const spinach = spawnInto('water_spinach', player, 'hand');
     expect(snare.tryExecuteCombination(spinach, undefined, 'add_plant_bait', session)).toBe(true);
 
-    expect(snare.readProperty(missWeightId)!.value, '何も寄って来ない回が減る').toBeLessThan(before.miss);
-    expect(snare.readProperty(herbivoreWeightId)!.value, '草食の卓が引かれやすくなる').toBeGreaterThan(
-      before.herbivore,
+    expect(snare.tryGetProperty(missWeightId)!.getEffectiveValue(), '何も寄って来ない回が減る').toBeLessThan(
+      before.miss,
     );
+    expect(
+      snare.tryGetProperty(herbivoreWeightId)!.getEffectiveValue(),
+      '草食の卓が引かれやすくなる',
+    ).toBeGreaterThan(before.herbivore);
     expect(itemsOnGround(), '仕掛けた餌は物として残らない').toEqual(['snare']);
   });
 
@@ -211,14 +220,14 @@ describe('traps.yamlのくくり罠', () => {
     // 放置の罰は獲物と罠の両方を失うこと（6.1節）。壊れた罠の中身は道連れにならず親へこぼれ、
     // 拘束のmodifyが消えるので警戒が戻る。
     open(CATCHES_FOWL);
-    const empty = snare.readProperty(durabilityId)!.value;
+    const empty = snare.tryGetProperty(durabilityId)!.getEffectiveValue();
     tick(1);
-    const emptyRate = empty - snare.readProperty(durabilityId)!.value;
+    const emptyRate = empty - snare.tryGetProperty(durabilityId)!.getEffectiveValue();
 
     const prey = tickUntilCaught();
-    const occupied = snare.readProperty(durabilityId)!.value;
+    const occupied = snare.tryGetProperty(durabilityId)!.getEffectiveValue();
     tick(1);
-    const occupiedRate = occupied - snare.readProperty(durabilityId)!.value;
+    const occupiedRate = occupied - snare.tryGetProperty(durabilityId)!.getEffectiveValue();
     expect(occupiedRate, 'もがかれている間のほうが速い').toBeGreaterThan(emptyRate);
 
     tick(200);
@@ -269,10 +278,12 @@ describe('traps.yamlのくくり罠', () => {
     const prey = tickUntilCaught();
 
     expect(prey.moveToSlot(grassland, codex.slotNames.getId('items'))).toBeUndefined();
-    expect(prey.readProperty(warinessId)!.value, '掛かってすぐ出せば暴れる').toBeGreaterThan(0);
+    expect(prey.tryGetProperty(warinessId)!.getEffectiveValue(), '掛かってすぐ出せば暴れる').toBeGreaterThan(
+      0,
+    );
 
     tick(40);
-    expect(prey.readProperty(warinessId)!.value, '時間が経てば落ち着く').toBe(0);
+    expect(prey.tryGetProperty(warinessId)!.getEffectiveValue(), '時間が経てば落ち着く').toBe(0);
   });
 
   it('くくり罠は植物繊維だけから作れる', () => {

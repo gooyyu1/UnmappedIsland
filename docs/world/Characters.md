@@ -35,7 +35,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterCard.ts`。絵が入るまでの繋ぎ） |
 
 `status` タグが付くのは `pain` / `blood` / `satiety` / `hydration` / `wakefulness` / `stamina` / `load` の7つで、
-宣言順もこの順に揃える（`readPropertiesWithTag` の戻り順がそのままステータスエリアの並びになる、
+宣言順もこの順に揃える（`propertiesWithTag` の戻り順がそのままステータスエリアの並びになる、
 [`StatusArea.md`](../ui/StatusArea.md)）。先頭の3つが trait 由来なのは、trait の props がキャラクタ自身の
 props より前に並ぶため（`RawObjectDef.resolve`）。**栄養素の在庫（`carbohydrate` ほか3つ）は `status` を
 持たない**——常に見せるのは腹が満ちているかどうかだけで、在庫は開いて見るもの

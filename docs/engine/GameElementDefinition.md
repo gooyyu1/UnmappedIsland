@@ -257,7 +257,7 @@ satiety:
 
 固定値の代わりに `{min, max}` の範囲を `value` に持たせると、**インスタンスの生成（spawn）時に 1 回だけ、
 範囲内の一様乱数で初期値をロール**します。以後は固定値と同じ扱いで、tick ごとの再ロールは行いません
-（`PropertyDef.createValue` 参照）。
+（`PropertyDef.rollInitialValue` 参照）。
 
 ```yaml
 props:
@@ -1830,7 +1830,7 @@ conditions:
 `modify` だけで決まる派生プロパティ（例: 天候と時間から決まる日照）も、他の `conditions` から参照できます。
 `value` が `{subject, prop}` 参照の場合も同様に実効値を読みます。ただし、あるプロパティの `modify` のゲートが、
 直接・間接を問わず自分自身の実効値に依存する（循環参照）と、実行時に例外を送出します
-（`PropertyValue.GetEffectiveValue` 参照）。この種の循環はエンジン側では防げず、YAML の書き方で避ける必要が
+（`PropertyValue.getEffectiveValue` 参照）。この種の循環はエンジン側では防げず、YAML の書き方で避ける必要が
 あります。
 
 ### 14.2 葉: スロット位置判定
