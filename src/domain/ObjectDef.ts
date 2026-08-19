@@ -397,7 +397,7 @@ export class ObjectDef {
 
 /**
  * resolvedSelfが持つcombinationのうち、resolvedDraggedを相手（with、12.1節）として受け入れ、かつ
- * 今その要件（14節）を満たしているもの。
+ * 今その要件（14節）を満たし、1つ以上受け取れるもの。
  *
  * **要件まで見るのは、候補を選ぶ側と実行できる側を食い違わせないため。** 型だけで選ぶと、選んだ
  * 先が実行できない場合に「落とせるのに何も起きない」になる。
@@ -415,7 +415,8 @@ function combinationsWith(
   return resolvedSelf.def.combinations.filter(
     (c) =>
       c.matches(resolvedDragged.def) &&
-      c.unmetRequirement(resolvedSelf, resolvedDragged, actor) === undefined,
+      c.unmetRequirement(resolvedSelf, resolvedDragged, actor) === undefined &&
+      c.acceptedCount(resolvedSelf, [resolvedDragged], actor) >= 1,
   );
 }
 

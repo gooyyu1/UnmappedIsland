@@ -89,9 +89,7 @@ combinations:
   add_fuel:
     with: {tag: fuel}
     duration: 1
-    conditions:
-      # 満杯の炉はくべさせない（無駄をここで止める）。上限は炉ごとに違うのでプロパティで持つ。
-      - {reason: hearth_full, prop: fuel, lt: {subject: self, prop: fuel_capacity}}
+    allow_multiple: true     # 束ねた薪はまとめてくべられる（GameElementDefinition.md 12.4節）
     transfer:
       amount: 999            # 入るだけ入れる
       from: dragged
@@ -99,6 +97,10 @@ combinations:
       to_prop: fuel
     destroy: dragged         # 入りきらなかった分は失われる
 ```
+
+**満杯の炉を拒む条件は書きません。** 移送先の `fuel` は `range` を持つので、あと何本くべられるかは
+その残りから決まります（同 12.4 節）。残りが 0 なら組み合わせは候補にならず、薪だけ失う結果になりません
+——**上限は `range` が既に言っている**ので、同じ値を条件としてもう一度書く必要はありません。
 
 ```yaml
 # 燃料の側が宣言する
@@ -584,8 +586,6 @@ passives:
 - 炉そのものの劣化。雨で崩れるか、放置しても残り続けるか
 - `fuel` のバーと `heat` のシンボルを、カードのどこに出すか（[`CardView.md`](../ui/CardView.md) のバーは
   量的オブジェクトの中身に紐づくため、そのままは使えない）
-- 満杯の炉を拒む条件（2 節）のために、`fuel_capacity` が `fuel` の `range.max` と同じ値を 2 度
-  持つこと。炉ごとに違う値なので trait へは括り出せず、`range` は `{subject, prop}` 参照を取れない
 - 器の枠（1.1 節）に「ここは器を置く枠」と見せるかどうか。空き枠へ受け入れる型を薄く敷く仕組み
   （`EmptyCard`）は既にあるが、枠ごとの受け入れ型を画面へ渡しているのは製作中オブジェクトの材料欄
   だけで、普通の入れ物は `SlotDef` の枠ごとの `accept` を見ていない。受け入れがタグの場合に何の絵を
