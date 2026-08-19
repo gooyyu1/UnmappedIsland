@@ -142,9 +142,13 @@ traits:
     combinations:
       # 薪をくべる。燃料が持つfuelを炉のfuelへ移し、燃料そのものは消す（同2節）。
       # transferの後にdestroyが走るので、移した分が失われることはない。
+      #
+      # 束ねた薪はまとめてくべられる（allow_multiple、GameElementDefinition.md 12.4節）。何本入るかは
+      # fuelのrangeの残りからエンジンが数えるので、ここには書かない。
       add_fuel:
         with: {tag: fuel}
         duration: 1
+        allow_multiple: true
         conditions:
           - {reason: hearth_full, prop: fuel, lt: {subject: self, prop: fuel_capacity}}
         transfer:

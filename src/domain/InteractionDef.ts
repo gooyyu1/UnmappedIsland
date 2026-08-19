@@ -82,6 +82,15 @@ export abstract class InteractionDef {
     this.effect.read(reader);
   }
 
+  /** まとめて実行するときの回数の上限を効果に訊く（ActiveEffect.acceptedCount）。 */
+  protected acceptedCountOf(
+    self: WorldObject,
+    candidates: readonly WorldObject[],
+    actor: WorldObject | undefined,
+  ): number | undefined {
+    return this.effect.acceptedCount(self, candidates, actor);
+  }
+
   /** 所要時間の宣言（WeightReading参照）。durationを省いていればundefined＝時間を消費しない。 */
   get durationReading(): WeightReading | undefined {
     return this.duration?.reading;

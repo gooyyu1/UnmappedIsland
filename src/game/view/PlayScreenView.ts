@@ -78,12 +78,6 @@ export interface ObjectCardStack extends CardContent {
   readonly movedIds: (count: number) => readonly number[];
 
   /**
-   * そこへまとめて入れられる最大個数（入れられない場所では0）。**ドラッグ中に何枚ついてくるかを
-   * 決める**のに使う（CardDragController）。
-   */
-  readonly acceptedCountAt?: (place: CardPlace) => number;
-
-  /**
    * 同じ場所の中で位置を変える操作。こちらは束ごと動かす（1つずつでは元の束へ合流して戻ってしまうため、
    * SlotSystem.md 3節）。
    */
@@ -290,7 +284,11 @@ export interface PlayScreenView {
    * （CardInteraction.md 2節）。どちらも宣言順の先頭を採る。マッチはwithタグだけで判定するので、
    * conditionsを満たさず実行が空振りすることはある。
    */
-  readonly combinationOf: (dragged: ObjectCardStack, target: ObjectCardStack) => CardCombination | undefined;
+  readonly combinationOf: (
+    dragged: ObjectCardStack,
+    target: ObjectCardStack,
+    count?: number,
+  ) => CardCombination | undefined;
 }
 
 /**
@@ -710,16 +708,23 @@ export function fromGameSession(
       stacksIn(place).map((stack) => (stack === undefined ? undefined : cardOfStack(stack))),
     cardOfType: looks.typeContentOf,
     cardOfObjects: cardOfStack,
-    combinationOf: (dragged, target) => {
+    combinationOf: (dragged, target, count = 1) => {
       // ドラッグが動かすのはスタックのうち1つなので、同じカードへ重ねたときはスタックの中の2つを
       // 組み合わせる（石と石のように、自分自身とcombinationできる場合）。
-      const [first, second] = target.objects;
-      const held = dragged === target ? second : dragged.objects[0];
+      const [first] = target.objects;
+      const carried = dragged === target ? target.objects.slice(1) : dragged.objects;
+      const held = carried[0];
       if (held === undefined) return undefined;
 
       // 落とされた側を先に、次に掴んだ側を見る（CardInteraction.md 2節）。素材側に1つ書けば、
       // 道具を素材へ運んでも素材を道具へ運んでも同じ組み合わせが成立する。
-      return operations.combinationWith(first, held, held) ?? operations.combinationWith(held, first, held);
+      //
+      // **まとめられるのは、落とされた側が宣言している向きだけ。** 逆向きでは運んできた札の1枚ずつが
+      // 別々のselfになるので、1つの器で数を決められない。
+      return (
+        operations.combinationWith(first, carried, carried, count) ??
+        operations.combinationWith(held, [first], [held])
+      );
     },
   };
 }

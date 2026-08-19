@@ -34,6 +34,11 @@ export class PickEffect extends ActiveEffect {
     reader.pick(this.candidates.map((candidate) => candidate.reading));
   }
 
+  /** **数えられない。** 引くたびに起きることが変わるので、2回目が何をするかは実行するまで分からない。 */
+  override countableVessels(): undefined {
+    return undefined;
+  }
+
   /**
    * weightで重み付き抽選して1つ選ぶ。候補が非空であることは呼び出し側が保証する。
    *

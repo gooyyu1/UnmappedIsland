@@ -109,6 +109,22 @@ export class SlotDef {
     this.putInDuration = putInDuration;
   }
 
+  /**
+   * ここへ入れるのに時間がかかるか（`put_in`の宣言があるか）。値そのものはownerとitemで変わるので、
+   * 「宣言しているか」だけを答える。
+   */
+  get hasPutInDuration(): boolean {
+    return this.putInDuration !== undefined;
+  }
+
+  /**
+   * どんな型でも1つしか受け取れない枠か（枠が1つで、そこに同種を束ねない）。**まとめて落とせるか**を
+   * 型を持たずに言える唯一の形で、時間のかかる枠がこれを外れていないかの見張りに使う。
+   */
+  get acceptsAtMostOne(): boolean {
+    return this.cellCount === 1 && this.cellDefs.every((cell) => cell.max === 1);
+  }
+
   /** itemをownerのこのスロットへ入れるのにかかる分数（宣言が無ければ0）。 */
   putInMinutes(owner: WorldObject, item: WorldObject, actor: WorldObject | undefined): number {
     return this.putInDuration === undefined ? 0 : Math.trunc(this.putInDuration.resolve(owner, actor, item));

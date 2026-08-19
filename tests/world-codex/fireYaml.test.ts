@@ -233,6 +233,24 @@ describe('fire.yamlの火の連鎖', () => {
     expect(heatIs(hearth, 'blaze'), '料理の最上段').toBe(true);
   });
 
+  it('束ねた薪はまとめてくべられる。何本入るかは炉の残りが決める', () => {
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    const branches = [
+      spawnInto('thick_branch', land, 'items'),
+      spawnInto('thick_branch', land, 'items'),
+      spawnInto('thick_branch', land, 'items'),
+    ];
+
+    // 焚き火のfuelは0〜30、太い枝は1本20。2本目で満ちるので、3本目は入らない。
+    expect(hearth.combinationAcceptedCount(branches, player, 'add_fuel')).toBe(2);
+
+    for (const branch of branches.slice(0, 2))
+      expect(hearth.tryExecuteCombination(branch, player, 'add_fuel', session)).toBe(true);
+
+    expect(numberOf(hearth, 'fuel'), '溢れた分は捨てられる（量の器は部分的に受け取る）').toBe(30);
+    expect(itemsOn(land), 'くべた2本は残らない').toEqual(['thick_branch']);
+  });
+
   it('満杯の炉にはくべられない', () => {
     const hearth = spawnInto('campfire', land, 'fixtures');
     stoke(hearth, 'thick_branch');

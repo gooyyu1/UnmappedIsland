@@ -278,7 +278,14 @@ export class ShownCards {
       const execute = dragged.reorder?.(drop.target);
       return execute === undefined
         ? undefined
-        : { name: undefined, description: undefined, minutes: 0, execute };
+        : {
+            name: undefined,
+            description: undefined,
+            minutes: 0,
+            maxCount: 1,
+            movedIds: dragged.movedIds(drop.count),
+            execute,
+          };
     }
     return dragged.dropInto?.(drop.to, drop.target, drop.count);
   }
@@ -294,31 +301,16 @@ export class ShownCards {
    * やってみるまで分からない。ついてきた枚数を約束にできるのは、枠が空きを答えられる「入れる」だけ。
    */
   multiDropLimit(drop: ShownDrop): number {
-    if (this.dropCombination(drop) !== undefined) return 1;
-
-    const dragged = this.stacksAt(drop.from)[drop.fromIndex];
-    if (dragged === undefined) return 1;
-    if (drop.target.kind === 'combine') {
-      const into = this.contentsUnder(drop);
-      return into === undefined ? 1 : (dragged.acceptedCountAt?.(into) ?? 1);
-    }
-    // 同じ場所の中は並び替えで、束ごと動く（SlotSystem.md 3節）。
-    if (sameSpot(drop.from, drop.to) || drop.to === 'windowCard') return 1;
-    return dragged.acceptedCountAt?.(drop.to) ?? 1;
+    return this.dropEffect({ ...drop, count: 1 })?.maxCount ?? 1;
   }
 
   /**
    * そのドロップで手から放したもの（MotionContext.released。矩形を添えるのは呼び出し側）。
-   * どの個体が動くのかはビューが答える（movedIds）。重ねて実行するcombinationに加わるのは
-   * 掴んでいた1つだけで、それは束の代表とは限らない（CardCombination.held参照）。
+   * どの個体が動くのかは、起きることの側が答える（CardDrop.movedIds）——ワールドが動かすものと
+   * 画面が飛ばすものを食い違わせないため。
    */
   movedBy(drop: ShownDrop): { readonly grabbed: number; readonly followers: readonly number[] } | undefined {
-    const combination = this.dropCombination(drop);
-    if (combination !== undefined) {
-      return { grabbed: combination.held.instanceId, followers: [] };
-    }
-
-    const [grabbed, ...followers] = this.stacksAt(drop.from)[drop.fromIndex]?.movedIds(drop.count) ?? [];
+    const [grabbed, ...followers] = this.dropEffect(drop)?.movedIds ?? [];
     return grabbed === undefined ? undefined : { grabbed, followers };
   }
 

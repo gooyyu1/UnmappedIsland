@@ -1318,6 +1318,43 @@ object_defs:
     );
   });
 
+  it('allow_multipleは、まとめた枚数を数える器を持たない効果ではエラーになる', () => {
+    const yaml = `
+object_defs:
+  altar:
+    combinations:
+      offer:
+        with: {tag: offering}
+        allow_multiple: true
+        destroy: dragged
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+      /器を1つだけ持つ効果です/,
+    );
+  });
+
+  it('allow_multipleは、pickを含む効果ではエラーになる（引くたびに起きることが変わる）', () => {
+    const yaml = `
+object_defs:
+  altar2:
+    props:
+      offerings:
+        value: 0
+        range: {min: 0, max: 10}
+    combinations:
+      offer:
+        with: {tag: offering}
+        allow_multiple: true
+        transfer: {amount: 1, from: dragged, from_prop: weight, to_prop: offerings}
+        pick:
+          - weight: 1
+            destroy: dragged
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+      /器を1つだけ持つ効果です/,
+    );
+  });
+
   // ------------------------------------------------------------------
   // on_overflow
   // ------------------------------------------------------------------

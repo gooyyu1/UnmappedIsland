@@ -18,15 +18,37 @@ export class CombinationDef extends InteractionDef {
   /** 相手とのマッチング条件（12.1節）。 */
   readonly with: TypeMatchRule;
 
+  /**
+   * まとめて重ねてよいか（`allow_multiple`、12.4節）。**構造として何個受け取れるかとは別の宣言**——
+   * 器が答えられても、まとめて実行させたくない操作はある（時間のかかる操作を止める手段がプレイヤーに
+   * 無いため）。既定はfalseで、1枚ずつ。
+   */
+  private readonly allowMultiple: boolean;
+
   constructor(
     name: string,
     withRule: TypeMatchRule,
     requirements: Requirements | undefined,
     effect: ActiveEffect,
     duration?: WeightSpec,
+    allowMultiple = false,
   ) {
     super(name, requirements, effect, duration);
     this.with = withRule;
+    this.allowMultiple = allowMultiple;
+  }
+
+  /**
+   * draggedたちを先頭から順に重ねたとき、続けて実行できる個数。まとめてよいと宣言していなければ1で、
+   * 宣言していても効果が数を答えられなければ1。
+   */
+  acceptedCount(
+    self: WorldObject,
+    candidates: readonly WorldObject[],
+    actor: WorldObject | undefined,
+  ): number {
+    if (!this.allowMultiple) return 1;
+    return Math.max(1, this.acceptedCountOf(self, candidates, actor) ?? 1);
   }
 
   protected describeTrigger(names: DefNames, out: DescriptionWriter): void {

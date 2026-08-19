@@ -1194,9 +1194,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(dropped?.execute, '刃物をアバカへ重ねる').toBeTypeOf('function');
     expect(reversed?.execute, 'アバカを刃物へ重ねても同じ組み合わせが成立する').toBeTypeOf('function');
     expect(reversed?.name, '実行するのはアバカが宣言しているfell').toBe(dropped?.name);
-    // 掴んでいたのはアバカのほうなので、手を離した場所から動き出すのもアバカ（CardCombination.held）。
-    expect(reversed?.held).toBe(abaca);
-    expect(dropped?.held).toBe(knife);
+    // 掴んでいたのはアバカのほうなので、手を離した場所から動き出すのもアバカ（CardDrop.movedIds）。
+    expect(reversed?.movedIds).toEqual([abaca.instanceId]);
+    expect(dropped?.movedIds).toEqual([knife.instanceId]);
 
     reversed?.execute();
     expect(abaca.parent, '逆向きでも切り倒される').toBeUndefined();
@@ -1264,7 +1264,6 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // カードは作った時点の中身を写し取っているので、端の表示の試し打ち（moveTo）は壊れない。
     expect(stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
     expect(() => card.dropInto?.(place(game, 'hand'))).not.toThrow();
-    expect(() => card.acceptedCountAt?.(place(game, 'hand'))).not.toThrow();
     expect(card.movedIds(1)).toEqual([stone.instanceId]);
   });
 

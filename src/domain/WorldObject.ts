@@ -890,6 +890,15 @@ export class WorldObject {
     return this.def.combinationMinutes(this, dragged, actor, combinationName);
   }
 
+  /** combinationNameをまとめて実行できる個数（`allow_multiple`、GameElementDefinition.md 12.4節）。 */
+  combinationAcceptedCount(
+    candidates: readonly WorldObject[],
+    actor: WorldObject | undefined,
+    combinationName: string,
+  ): number {
+    return this.def.combinationAcceptedCount(this, candidates, actor, combinationName);
+  }
+
   combinationsWith(dragged: WorldObject, actor: WorldObject | undefined): readonly CombinationDef[] {
     return this.def.combinationsWith(this, dragged, actor);
   }

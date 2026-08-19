@@ -62,6 +62,8 @@ function stack(
       name: undefined,
       description: undefined,
       minutes: 0,
+      maxCount: options.accepted ?? 1,
+      movedIds: ids.slice(0, count ?? 1),
       execute: () => {
         options.moves?.push({ ids: ids.slice(0, count ?? 1), to, at });
       },
@@ -69,7 +71,6 @@ function stack(
     reorder: (at) => () => {
       options.moves?.push({ ids, to: place, at });
     },
-    acceptedCountAt: () => options.accepted ?? 1,
   } as ObjectCardStack;
 }
 
@@ -104,7 +105,14 @@ function screen(
       const held = dragged === target ? second : dragged.objects[0];
       return held === undefined || first === undefined
         ? undefined
-        : ({ name: '組み合わせ', minutes: 0, held, execute: () => {} } as CardCombination);
+        : ({
+            name: '組み合わせ',
+            description: undefined,
+            minutes: 0,
+            maxCount: 1,
+            movedIds: [held.instanceId],
+            execute: () => {},
+          } as CardCombination);
     },
     windowPlace: () => windowPlace,
     places: place,
@@ -163,10 +171,9 @@ describe('画面に出ている札', () => {
     expect(shown.stacksAt(place('hand'))).toHaveLength(1);
     expect(idsAt(shown, place('hand'), 0), '個体は1つも出ていない').toEqual([]);
     expect(mark?.awaited, '待っているのは貸した1個').toEqual([1]);
-    expect(
-      [mark?.dropInto, mark?.reorder, mark?.acceptedCountAt],
-      '印は操作を持たない——掴む相手にも重ねる相手にもならない',
-    ).toEqual([undefined, undefined, undefined]);
+    expect([mark?.dropInto, mark?.reorder], '印は操作を持たない——掴む相手にも重ねる相手にもならない').toEqual(
+      [undefined, undefined],
+    );
   });
 
   it('探索が抱えている札は並びに入らず、後ろの札が繰り上がる', () => {
@@ -337,7 +344,7 @@ describe('ドロップの意味', () => {
       count: 1,
     });
 
-    expect(combination?.held.instanceId).toBe(2);
+    expect(combination?.movedIds).toEqual([2]);
     expect(
       shown.movedBy({
         from: place('hand'),
@@ -362,13 +369,13 @@ describe('ドロップの意味', () => {
       for (let fromIndex = 0; fromIndex < shown.stacksAt(from).length; fromIndex++) {
         for (const to of spots) {
           for (let toIndex = 0; toIndex < shown.stacksAt(to).length; toIndex++) {
-            const held = shown.combinationAt(from, fromIndex, to, toIndex)?.held;
+            const [held] = shown.combinationAt(from, fromIndex, to, toIndex)?.movedIds ?? [];
             if (held === undefined) continue;
 
             expect(
               idsAt(shown, from, fromIndex),
               `${String(from)}[${fromIndex}] → ${String(to)}[${toIndex}]`,
-            ).toContain(held.instanceId);
+            ).toContain(held);
           }
         }
       }
@@ -379,9 +386,7 @@ describe('ドロップの意味', () => {
     const shown = screen({ hand: [stack(place('hand'), [1, 2, 3])] });
     borrow(shown, stack(place('hand'), [1, 2, 3]));
 
-    expect(shown.combinationAt(place('hand'), 0, place('hand'), 0)?.held.instanceId, '見せている2枚目').toBe(
-      3,
-    );
+    expect(shown.combinationAt(place('hand'), 0, place('hand'), 0)?.movedIds, '見せている2枚目').toEqual([3]);
   });
 
   it('1個しか見せていない札を自分へ重ねても、組み合わせは成立しない', () => {
@@ -452,7 +457,7 @@ describe('ドロップの意味', () => {
     noCombination.dropAction(drop)?.();
 
     expect(moves.at(-1), '2枚まとめて中へ').toEqual({ ids: [1, 2], to: inside, at: undefined });
-    expect(noCombination.multiDropLimit(drop), '入る枚数は枠の宣言（acceptedCountAt）').toBe(2);
+    expect(noCombination.multiDropLimit(drop), '入る枚数は枠の宣言（CardDrop.maxCount）').toBe(2);
   });
 });
 
@@ -483,14 +488,14 @@ describe('経過中のフレーム（ShownCards × planMotion）', () => {
     const shown = screen({ hand: [stack(place('hand'), [1, 2])] });
     borrow(shown, stack(place('hand'), [1, 2]));
 
-    const held = shown.dropCombination({
+    const heldIds = shown.dropCombination({
       from: place('hand'),
       fromIndex: 0,
       to: 'windowCard',
       target: { kind: 'combine', index: 0 },
       count: 1,
-    })?.held;
-    expect(held).toBeDefined();
+    })?.movedIds;
+    expect(heldIds).toEqual([2]);
 
     // 枠が名乗るのは手元に在るぶんだけ（貸した1個はウィンドウの枠に出ている）。掴んで離した1枚は
     // CardTableが宙に在るものとして引く。
@@ -502,7 +507,7 @@ describe('経過中のフレーム（ShownCards × planMotion）', () => {
       arriving: [],
       staying: [placed],
       left: [],
-      aloft: [held!.instanceId],
+      aloft: heldIds!,
     });
 
     expect(plan.shown).toEqual([{ card: '石', present: [], emptied: true }]);

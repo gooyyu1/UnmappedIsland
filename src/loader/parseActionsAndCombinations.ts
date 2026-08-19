@@ -1,5 +1,5 @@
 import type { YAMLMap } from 'yaml';
-import { asMap, entriesInOrder, tryGetMap, tryGetScalar, tryGetSeq } from './yamlMapping';
+import { asMap, entriesInOrder, tryGetBool, tryGetMap, tryGetScalar, tryGetSeq } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { parseTypeMatchRule, tryGetNode } from './parseCommon';
 import { parseActiveEffectBody, parseWeight } from './parseActiveEffects';
@@ -19,7 +19,7 @@ import { CombinationDef } from '../domain/CombinationDef';
 const ACTION_RESERVED_KEYS = ['showMenu', 'conditions', 'duration'] as const;
 
 /** combinationエントリが持つ、効果以外の兄弟キー。 */
-const COMBINATION_RESERVED_KEYS = ['with', 'conditions', 'duration'] as const;
+const COMBINATION_RESERVED_KEYS = ['with', 'conditions', 'duration', 'allow_multiple'] as const;
 
 /** actions・combinationsに共通する中身（InteractionDefが持つもの）。 */
 interface InteractionBody {
@@ -105,7 +105,19 @@ export function parseCombinations(
 
     const withRule = parseTypeMatchRule(loader, withNode, `${context}.with`);
     const body = parseInteractionBody(loader, context, map, true, COMBINATION_RESERVED_KEYS);
-    result.push(new CombinationDef(name, withRule, body.requirements, body.effect, body.duration));
+    const allowMultiple = tryGetBool(map, 'allow_multiple', context, false);
+
+    // 何個受け取れるかを答えられる形かは、宣言だけで決まる。許可したのに答えられない宣言は、
+    // 黙って1枚ずつになるとプレイヤーには理由が分からないので、ここで弾く（GameElementDefinition.md 12.4節）。
+    if (allowMultiple && body.effect.countableVessels() !== 1)
+      throw new YamlLoadError(
+        `${context}: allow_multipleを宣言できるのは、まとめた枚数の上限を決める器を1つだけ持つ効果です` +
+          '（値域を持つプロパティへのtransferが1つ。pickを含むもの・器が複数あるものは数えられません）。',
+      );
+
+    result.push(
+      new CombinationDef(name, withRule, body.requirements, body.effect, body.duration, allowMultiple),
+    );
   }
 
   return result;
