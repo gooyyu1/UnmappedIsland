@@ -1091,10 +1091,14 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       expect(item.moveToSlot(game.player.instance, handSlotId)).toBeUndefined();
     }
 
+    const basketCard = handCells(fromGameSession(game, codex, locale), game)[0]!;
     const stoneCard = handCells(fromGameSession(game, codex, locale), game)[1]!;
-    const opened = handCells(fromGameSession(game, codex, locale), game)[0]?.contentsFor(stoneCard);
+    const opened = basketCard.contentsFor(stoneCard);
     expect(opened, 'コンテナのカードは中身の場所を持つ').toBeDefined();
     expect(stoneCard.contentsFor(stoneCard), '石は何も受け取らない').toBeUndefined();
+    // 行き先を探すのは落とされた側だけ。籠を石へ重ねても、石が籠へ入ることはない（combinationsと違い、
+    // 枠へ入れる操作は逆向きに成立しない）。
+    expect(stoneCard.contentsFor(basketCard), '籠を石へ重ねても何も起きない').toBeUndefined();
 
     // 手持ちの石を、開いた籠の中へ入れる。
     handCells(fromGameSession(game, codex, locale), game)[1]
