@@ -13,7 +13,7 @@ import { YamlLoadError } from './YamlLoadError';
 import { RECIPE_CONDITION_ROOTS, parseRequirementsField } from './parseConditions';
 import { parseTypeMatchRule } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../domain/defs/RecipeDef';
+import { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../domain/RecipeDef';
 
 const RECIPE_KEYS = ['icon', 'steps', 'conditions'];
 const STEP_KEYS = ['requires', 'duration'];

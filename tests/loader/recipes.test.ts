@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
 
 /**
  * recipes（GameElementDefinition.md 13節）のロードと、解放条件（同13.3節・SkillSystem.md 4節）の

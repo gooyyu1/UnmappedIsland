@@ -5,15 +5,15 @@ import { parseNumberLiteral, tryGetNode } from './parseCommon';
 import { parseConditionsField, PASSIVE_CONDITION_ROOTS } from './parseConditions';
 import { parsePassiveTransfers } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
-import type { ConditionNode } from '../domain/defs/ConditionNode';
+import type { ReferenceRoot } from '../domain/ReferenceRoot';
+import type { ConditionNode } from '../domain/ConditionNode';
 import {
   AccumulateEffect,
   ModifyEffect,
   PassiveEffectGate,
   TransferPassiveEffect,
-} from '../domain/defs/PassiveEffect';
-import type { PassiveEffect } from '../domain/defs/PassiveEffect';
+} from '../domain/PassiveEffect';
+import type { PassiveEffect } from '../domain/PassiveEffect';
 
 /**
  * passivesの1ブロック（"passives:"配列の1要素。conditions/modify/add/transferのみを持つ）を読み、

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AlertLevel } from '../../src/domain/defs/AlertLevel';
+import type { AlertLevel } from '../../src/domain/AlertLevel';
 import { statusRows } from '../../src/game/view/statusRows';
 import type { StatusContent } from '../../src/game/ui/StatusBar';
 

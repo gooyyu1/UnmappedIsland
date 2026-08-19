@@ -1,4 +1,4 @@
-import type { WorldCodex } from '../domain/defs/WorldCodex';
+import type { WorldCodex } from '../domain/WorldCodex';
 import { installedAssetPack } from '../asset-pack/install';
 import { loadDefinitions } from '../loader/loadDefinitions';
 import { LOAD_REPORT } from '../loader/LoadReport';

@@ -5,15 +5,15 @@ import {
   spawnInProgressObject,
   stepIsSupplied,
   stepSupplyRatio,
-} from '../../src/domain/runtime/crafting';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+} from '../../src/domain/crafting';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { World } from '../../src/domain/runtime/views/World';
+import { World } from '../../src/domain/views/World';
 import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
 import { inProgressObjectName, MATERIALS_SLOT } from '../../src/loader/inProgressObjects';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
-import type { RecipeDef } from '../../src/domain/defs/RecipeDef';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
+import type { RecipeDef } from '../../src/domain/RecipeDef';
 
 /** 工程を進める操作（RecipeSystem.md 4節）。 */
 describe('工程を進める', () => {

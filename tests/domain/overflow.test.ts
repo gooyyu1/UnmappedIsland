@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 // on_overflow（GameElementDefinition.md 6.3節）に対する自動テスト。値が変わった直後にcheckRangeEventsが

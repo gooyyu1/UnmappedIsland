@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { parseDocument, isMap, isScalar } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { Localization } from '../../src/locale/Localization';
 import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';

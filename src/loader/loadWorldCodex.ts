@@ -1,6 +1,6 @@
 import type { AssetPack } from '../asset-pack/AssetPack';
 import type { LoadReport } from './LoadReport';
-import type { WorldCodex } from '../domain/defs/WorldCodex';
+import type { WorldCodex } from '../domain/WorldCodex';
 import { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 
 /**

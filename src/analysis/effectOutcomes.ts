@@ -1,6 +1,6 @@
-import type { EffectReader, PickCandidateReading, TransferReading } from '../domain/defs/EffectReader';
-import type { ObjectRefReading } from '../domain/defs/ObjectRef';
-import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
+import type { EffectReader, PickCandidateReading, TransferReading } from '../domain/EffectReader';
+import type { ObjectRefReading } from '../domain/ObjectRef';
+import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { StepOutcome } from './CraftingStep';
 import { UNCHANGED_OUTCOMES, combineOutcomes, scaleOutcomes } from './CraftingStep';
 import type { StaticValueResolver } from './staticValue';

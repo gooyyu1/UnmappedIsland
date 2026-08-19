@@ -1,7 +1,7 @@
-import type { WorldCodex } from '../../domain/defs/WorldCodex';
+import type { WorldCodex } from '../../domain/WorldCodex';
 import type { NewGameSession } from '../../domain/generation/NewGame';
-import type { WorldObject } from '../../domain/runtime/WorldObject';
-import { putIntoSlot } from '../../domain/runtime/slotEntry';
+import type { WorldObject } from '../../domain/WorldObject';
+import { putIntoSlot } from '../../domain/slotEntry';
 import type { Localization } from '../../locale/Localization';
 import { craftingActions } from './craftingView';
 import type { CardPlace, CardPlacement } from './cardPlaces';

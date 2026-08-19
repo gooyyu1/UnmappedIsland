@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { GenerationDefs } from '../../src/domain/defs/generation/GenerationDefs';
-import type { GenerationScopeDef } from '../../src/domain/defs/generation/GenerationScopeDef';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { GenerationDefs } from '../../src/domain/generation/GenerationDefs';
+import type { GenerationScopeDef } from '../../src/domain/generation/GenerationScopeDef';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 

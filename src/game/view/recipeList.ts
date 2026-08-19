@@ -1,8 +1,8 @@
-import type { WorldCodex } from '../../domain/defs/WorldCodex';
+import type { WorldCodex } from '../../domain/WorldCodex';
 import type { NewGameSession } from '../../domain/generation/NewGame';
-import type { RecipeDef } from '../../domain/defs/RecipeDef';
-import type { ReferenceRoot } from '../../domain/defs/ReferenceRoot';
-import type { WorldObject } from '../../domain/runtime/WorldObject';
+import type { RecipeDef } from '../../domain/RecipeDef';
+import type { ReferenceRoot } from '../../domain/ReferenceRoot';
+import type { WorldObject } from '../../domain/WorldObject';
 import type { Localization } from '../../locale/Localization';
 import { inProgressObjectName } from '../../loader/inProgressObjects';
 import type { Rect } from '../../ui/Rect';

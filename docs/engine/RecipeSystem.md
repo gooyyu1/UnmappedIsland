@@ -12,7 +12,7 @@
 操作そのもの（4 節）です。専用スキーマは要求の宣言（`steps`/`requires`）だけで、製作の実行に新しい
 操作の語彙を持ち込みません。
 
-定義は `Domain.Defs.RecipeDef`、実行時は `Domain.Runtime` の `crafting.ts`、レシピの
+定義は `RecipeDef`、実行時は `crafting.ts`、レシピの
 データは `src/assets/world-codex/containers.yaml` 等、検証は `tests/domain/crafting.test.ts` です。本書は
 実装済みの仕組みの記述で、未決事項は 6 節に整理しています。
 

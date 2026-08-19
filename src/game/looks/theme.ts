@@ -1,6 +1,6 @@
-import type { AlertLevel } from '../../domain/defs/AlertLevel';
-import { ALERT_LEVELS } from '../../domain/defs/AlertLevel';
-import type { GaugeEnd } from '../../domain/defs/PropertyDef';
+import type { AlertLevel } from '../../domain/AlertLevel';
+import { ALERT_LEVELS } from '../../domain/AlertLevel';
+import type { GaugeEnd } from '../../domain/PropertyDef';
 
 /**
  * docs/ui のモック（ScreenLayout_Mock.html・StartScreen_Mock.html）のCSSに対応する

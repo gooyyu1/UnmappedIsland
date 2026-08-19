@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
-import type { WorldChange } from '../../src/domain/runtime/WorldChange';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
-import { World } from '../../src/domain/runtime/views/World';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
+import type { WorldChange } from '../../src/domain/WorldChange';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
+import { World } from '../../src/domain/views/World';
 import { bornInstances, originInstances, vanishedInstances } from '../../src/game/view/changedInstances';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';

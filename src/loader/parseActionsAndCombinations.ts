@@ -9,11 +9,11 @@ import {
   parseRequirementsField,
 } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import type { ActiveEffect } from '../domain/defs/ActiveEffect';
-import type { Requirements } from '../domain/defs/Requirement';
-import type { WeightSpec } from '../domain/defs/PickEffect';
-import { ActionDef } from '../domain/defs/ActionDef';
-import { CombinationDef } from '../domain/defs/CombinationDef';
+import type { ActiveEffect } from '../domain/ActiveEffect';
+import type { Requirements } from '../domain/Requirement';
+import type { WeightSpec } from '../domain/PickEffect';
+import { ActionDef } from '../domain/ActionDef';
+import { CombinationDef } from '../domain/CombinationDef';
 
 /** actionエントリが持つ、効果以外の兄弟キー。 */
 const ACTION_RESERVED_KEYS = ['showMenu', 'conditions', 'duration'] as const;

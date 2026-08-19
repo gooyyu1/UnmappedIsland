@@ -1,7 +1,7 @@
 import { stringify } from 'yaml';
-import type { ObjectDef } from '../domain/defs/ObjectDef';
-import type { NameRegistry } from '../domain/defs/NameRegistry';
-import type { TypeMatchRule } from '../domain/defs/TypeMatchRule';
+import type { ObjectDef } from '../domain/ObjectDef';
+import type { NameRegistry } from '../domain/NameRegistry';
+import type { TypeMatchRule } from '../domain/TypeMatchRule';
 
 /** 生成した定義の出所として、エラーメッセージに出す名前。 */
 export const IN_PROGRESS_SOURCE = '<製作中オブジェクトの自動生成>';

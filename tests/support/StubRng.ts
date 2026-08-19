@@ -1,4 +1,4 @@
-import type { Rng } from '../../src/domain/runtime/Rng';
+import type { Rng } from '../../src/domain/Rng';
 
 /**
  * 意図した値列を順に返す乱数スタブ。抽選結果に依存するテストで、シード任せにせず

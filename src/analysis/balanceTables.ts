@@ -1,7 +1,7 @@
-import type { ObjectDef } from '../domain/defs/ObjectDef';
+import type { ObjectDef } from '../domain/ObjectDef';
 import type { TickDelta } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
-import type { WorldCodex } from '../domain/defs/WorldCodex';
+import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
 import { craftingStepsOf } from './craftingSteps';
 import type { ExternalTickDelta, RangeCycle } from './rangeCycles';

@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { writesToProperty } from '../../src/domain/defs/effectQueries';
-import type { ObjectDef } from '../../src/domain/defs/ObjectDef';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import { writesToProperty } from '../../src/domain/effectQueries';
+import type { ObjectDef } from '../../src/domain/ObjectDef';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 

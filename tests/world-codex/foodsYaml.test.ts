@@ -1,9 +1,9 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { ObjectDef } from '../../src/domain/defs/ObjectDef';
-import type { PropertyDef } from '../../src/domain/defs/PropertyDef';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import type { ObjectDef } from '../../src/domain/ObjectDef';
+import type { PropertyDef } from '../../src/domain/PropertyDef';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 

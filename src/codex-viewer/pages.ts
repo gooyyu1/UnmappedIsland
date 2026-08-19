@@ -1,7 +1,7 @@
-import { DescriptionWriter } from '../domain/defs/Description';
-import type { InteractionDef } from '../domain/defs/InteractionDef';
-import type { ObjectDef } from '../domain/defs/ObjectDef';
-import type { SlotDef } from '../domain/defs/SlotDef';
+import { DescriptionWriter } from '../domain/Description';
+import type { InteractionDef } from '../domain/InteractionDef';
+import type { ObjectDef } from '../domain/ObjectDef';
+import type { SlotDef } from '../domain/SlotDef';
 import { OBJECT_ART } from '../art/objectArt';
 import { isInCraftingNetwork } from './networkPage';
 import type { CodexView } from './CodexView';

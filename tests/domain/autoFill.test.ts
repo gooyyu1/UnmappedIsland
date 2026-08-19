@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { autoFillMaterials } from '../../src/domain/runtime/autoFill';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import { autoFillMaterials } from '../../src/domain/autoFill';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { inProgressObjectName, MATERIALS_SLOT } from '../../src/loader/inProgressObjects';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 
 /** 製作中オブジェクトへの自動補充（RecipeSystem.md 4節）。 */
 describe('自動補充', () => {

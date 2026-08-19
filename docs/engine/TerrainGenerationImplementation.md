@@ -2,7 +2,7 @@
 
 ## 概要
 
-本ドキュメントは、`src/domain/generation/`（実行）・`src/domain/defs/generation/`（定義）・
+本ドキュメントは、`src/domain/generation/`（定義と実行）・
 `src/loader/parseGeneration.ts`（ロード）にまたがる地形生成の実装を、**実際の
 クラス名・関数名を使ってトップダウンに**説明するものです。
 
@@ -29,8 +29,8 @@ WorldCodexYamlLoader.load(label, yamlText)               src/loader/WorldCodexYa
        └─ parseGenerationScope                              → loader.generationScopes へ蓄積
 WorldCodexYamlLoader.build()
   └─ buildGenerationDefs(loader, objectDefsByGlobalId)     src/loader/parseGeneration.ts（object_def/axis/location_type の相互参照を検証）
-       └─ new GenerationDefs(axes, locationTypes, scopes)  src/domain/defs/generation/GenerationDefs.ts
-            → WorldCodex.generation プロパティへ格納        src/domain/defs/WorldCodex.ts
+       └─ new GenerationDefs(axes, locationTypes, scopes)  src/domain/generation/GenerationDefs.ts
+            → WorldCodex.generation プロパティへ格納        src/domain/WorldCodex.ts
 
 [生成・実体化]
 start(codex, seed, rng)                                   src/domain/generation/NewGame.ts  ← ゲーム開始の入口
@@ -64,13 +64,13 @@ start(codex, seed, rng)                                   src/domain/generation/
   `loader.generationScopes` へ蓄積します（`object_defs`/`traits` の蓄積と同じパターン。複数ファイルへ分割しても
   `load` を繰り返し呼べば1つに集約されます）。
 - `parseAxis`/`parseGeneratorLayer`: `axes.'name'` 1件を `AxisDef`（`GeneratorLayer` の
-  リストを持つ、`src/domain/defs/generation/AxisDef.ts`）へ変換します。
+  リストを持つ、`src/domain/generation/AxisDef.ts`）へ変換します。
 - `parseLocationType`: `location_types.'name'` 1件を `LocationTypeDef`
-  （`src/domain/defs/generation/LocationTypeDef.ts`）へ変換します。
+  （`src/domain/generation/LocationTypeDef.ts`）へ変換します。
   `object_def` フィールドはこの時点では `objectNames.intern` するだけで、実在検証は行いません（後述の
   `buildGenerationDefs` まで遅延）。
 - `parseGenerationScope`: `generation_scopes.'name'` 1件を `GenerationScopeDef`
-  （`guarantees` を含む、`src/domain/defs/generation/GenerationScopeDef.ts`）へ変換します。
+  （`guarantees` を含む、`src/domain/generation/GenerationScopeDef.ts`）へ変換します。
 - `buildGenerationDefs(loader, objectDefsByGlobalId)`: `WorldCodexYamlLoader.build()` の中から、全 `object_defs` の
   解決が終わった後に呼ばれます。`LocationTypeDef.objectDefGlobalId` が実在するか、`axis_preferences`/
   `hard_limits`/`guarantees` が参照する軸名・`LocationType` 名が実在するかをここでまとめて検証し、
@@ -168,15 +168,15 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 - **`placePlayer(session, map, character)`**: 開始地点を `sandy_beach` 優先、無ければ `Site.onCoastRing`、
   それも無ければ `map.sites[0]` の順で選び、`WorldObject.findDescendantByInstanceId`（`WorldObject` 自身の
   汎用メソッド）で実体を解決し、`characters` スロットへ `moveToSlot` した上で
-  `Location`（`src/domain/runtime/views/Location.ts`）を返します。
+  `Location`（`src/domain/views/Location.ts`）を返します。
 
 ## 5. データの流れ（型で見る3層）
 
 | 層 | 主な型 | 特徴 |
 |---|---|---|
-| 定義（ロード後不変） | `GenerationDefs`（`AxisDef`/`LocationTypeDef`/`GenerationScopeDef`、`src/domain/defs/generation/`） | `WorldCodex.generation` として1つだけ存在。YAMLの内容そのもの |
+| 定義（ロード後不変） | `GenerationDefs`（`AxisDef`/`LocationTypeDef`/`GenerationScopeDef`、`src/domain/generation/`） | `WorldCodex.generation` として1つだけ存在。YAMLの内容そのもの |
 | 生成の中間・最終結果（純粋計算） | `Site`/`IslandEdge`/`IslandMap`（`src/domain/generation/IslandMap.ts`） | `WorldObject` を一切含まない。`generate`（`TerrainGenerator.ts`）が返す。座標・軸値・確定した `LocationTypeDef`・命名・辺を持つだけの、ただのデータ |
-| 実体化後（実行時状態） | `WorldObject`（`Location`/`Path` でラップ、`src/domain/runtime/views/`） | `IslandSpawner` が `Site`/`IslandEdge` を読んで生成する、実際にゲームが動かす対象 |
+| 実体化後（実行時状態） | `WorldObject`（`Location`/`Path` でラップ、`src/domain/views/`） | `IslandSpawner` が `Site`/`IslandEdge` を読んで生成する、実際にゲームが動かす対象 |
 
 `IslandMap`（中間層）を経由することで、`generate`（`TerrainGenerator.ts`）は完全に決定的な純粋関数として単体テスト
 でき（`tests/generation/terrainGenerator.test.ts`）、`IslandSpawner` 以降の実体化のテスト
@@ -189,7 +189,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
   （`ValueNoise` は状態を持たない純関数のハッシュベースノイズです）。`LocationTypeMatcher`・
   `DelaunayTriangulator`・`PathNetworkBuilder`・`NameAssigner` は乱数を一切使いません（`Site` の座標・
   軸値が決まった時点で結果は一意に決まります）。
-- **`WorldSession.rng`**（`Rng` インターフェース、`src/domain/runtime/Rng.ts`）: `session.spawn` した
+- **`WorldSession.rng`**（`Rng` インターフェース、`src/domain/Rng.ts`）: `session.spawn` した
   `WorldObject` の初期値ロール（`value: {min,max}`）や、探索の発見物を選ぶ `pick`（`explore` アクション）の
   抽選に使われます。**島のレイアウト（座標・軸値・型・辺・名前）には一切影響しません。**
 
@@ -210,20 +210,20 @@ WorldSession.rngのシードが異なっても同じ島レイアウトになる�
   `owner.findRoot().findDescendantByInstanceId(destinationId)` で移動先を解決し、
   `mover.moveIntoFirstAcceptingSlot(destination, ...)` で配置します。`findRoot`/
   `findDescendantByInstanceId`/`moveIntoFirstAcceptingSlot` はいずれも `WorldObject`
-  （`src/domain/runtime/WorldObject.ts`）に定義した汎用メソッドです。
-- **道の発見・移動の入口**: `Location.explore(actor, session)`（`src/domain/runtime/views/Location.ts`）が
+  （`src/domain/WorldObject.ts`）に定義した汎用メソッドです。
+- **道の発見・移動の入口**: `Location.explore(actor, session)`（`src/domain/views/Location.ts`）が
   `explore` アクションの実行と `revealDueFixtures`（`undiscovered_fixtures` → `fixtures` の移動）を1回の呼び出しに
-  まとめています。`Path.travel(actor, session)`（`src/domain/runtime/views/Path.ts`）が `travel` アクション
+  まとめています。`Path.travel(actor, session)`（`src/domain/views/Path.ts`）が `travel` アクション
   を実行します。
 
 ## 8. ファイル一覧（索引）
 
 | ファイル | 役割 |
 |---|---|
-| `src/domain/defs/generation/AxisDef.ts` | `AxisDef`・`GeneratorLayer`・`GeneratorLayerType`（層の種類の文字列リテラルユニオン） |
-| `src/domain/defs/generation/LocationTypeDef.ts` | `LocationTypeDef`・`AxisPreference`・`AxisLimit` |
-| `src/domain/defs/generation/GenerationScopeDef.ts` | `GenerationScopeDef`・`GuaranteeDef`・`GuaranteePick` |
-| `src/domain/defs/generation/GenerationDefs.ts` | `GenerationDefs`（上記3つの束、`WorldCodex.generation` の中身） |
+| `src/domain/generation/AxisDef.ts` | `AxisDef`・`GeneratorLayer`・`GeneratorLayerType`（層の種類の文字列リテラルユニオン） |
+| `src/domain/generation/LocationTypeDef.ts` | `LocationTypeDef`・`AxisPreference`・`AxisLimit` |
+| `src/domain/generation/GenerationScopeDef.ts` | `GenerationScopeDef`・`GuaranteeDef`・`GuaranteePick` |
+| `src/domain/generation/GenerationDefs.ts` | `GenerationDefs`（上記3つの束、`WorldCodex.generation` の中身） |
 | `src/loader/parseGeneration.ts` | YAML → 上記Defsのパース（2節） |
 | `src/domain/generation/Pcg32.ts` | 生成専用の決定的RNG |
 | `src/domain/generation/ValueNoise.ts` | シード付き格子値ノイズ |
@@ -237,10 +237,10 @@ WorldSession.rngのシードが異なっても同じ島レイアウトになる�
 | `src/domain/generation/TerrainGenerator.ts` | 3節全体のオーケストレータ（`generate`） |
 | `src/domain/generation/IslandSpawner.ts` | 4節: 実体化（`populate`/`placePlayer`） |
 | `src/domain/generation/NewGame.ts` | ゲーム開始の入口（`start`）・`NewGameSession` |
-| `src/domain/defs/MoveEffect.ts` | 7節: `move` 効果動詞 |
-| `src/domain/defs/ActionDef.ts` | 7節: `duration` フィールド |
-| `src/domain/runtime/views/Location.ts` | 7節: 探索の入口（`explore`/`revealDueFixtures`） |
-| `src/domain/runtime/views/Path.ts` | 7節: 道のビュー（`travel`） |
+| `src/domain/MoveEffect.ts` | 7節: `move` 効果動詞 |
+| `src/domain/ActionDef.ts` | 7節: `duration` フィールド |
+| `src/domain/views/Location.ts` | 7節: 探索の入口（`explore`/`revealDueFixtures`） |
+| `src/domain/views/Path.ts` | 7節: 道のビュー（`travel`） |
 
 対応するテストは以下のとおりです。
 

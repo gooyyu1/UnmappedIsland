@@ -1,4 +1,4 @@
-import type { GenerationScopeDef } from '../defs/generation/GenerationScopeDef';
+import type { GenerationScopeDef } from './GenerationScopeDef';
 import { IslandEdge } from './IslandMap';
 import type { Site } from './IslandMap';
 

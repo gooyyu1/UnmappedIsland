@@ -1,8 +1,8 @@
-import type { AlertLevel } from '../../domain/defs/AlertLevel';
-import type { ObjectDef } from '../../domain/defs/ObjectDef';
-import type { WorldCodex } from '../../domain/defs/WorldCodex';
-import type { WorldObject } from '../../domain/runtime/WorldObject';
-import { currentStep, stepSupplyRatio } from '../../domain/runtime/crafting';
+import type { AlertLevel } from '../../domain/AlertLevel';
+import type { ObjectDef } from '../../domain/ObjectDef';
+import type { WorldCodex } from '../../domain/WorldCodex';
+import type { WorldObject } from '../../domain/WorldObject';
+import { currentStep, stepSupplyRatio } from '../../domain/crafting';
 import { IN_PROGRESS_TAG, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../../loader/inProgressObjects';
 import type { Localization } from '../../locale/Localization';
 import { artNameFor } from '../../art/objectArt';

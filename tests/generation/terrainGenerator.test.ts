@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { generate as generateTerrain } from '../../src/domain/generation/TerrainGenerator';
 import type { IslandEdge, IslandMap } from '../../src/domain/generation/IslandMap';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /** 不変条件の検証に使うシード群。特別な意味は無く、多様なレイアウトを試すための個数。 */

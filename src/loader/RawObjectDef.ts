@@ -18,12 +18,12 @@ import { parseActions, parseCombinations } from './parseActionsAndCombinations';
 import { parseRecipes } from './parseRecipes';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { RawTrait } from './RawTrait';
-import { LocalIndexMap } from '../domain/defs/LocalIndexMap';
-import { ObjectDef } from '../domain/defs/ObjectDef';
-import type { PassiveEffect } from '../domain/defs/PassiveEffect';
-import type { PropertyDef } from '../domain/defs/PropertyDef';
-import type { SlotDef } from '../domain/defs/SlotDef';
-import { StackOrderDef } from '../domain/defs/StackOrderDef';
+import { LocalIndexMap } from '../domain/LocalIndexMap';
+import { ObjectDef } from '../domain/ObjectDef';
+import type { PassiveEffect } from '../domain/PassiveEffect';
+import type { PropertyDef } from '../domain/PropertyDef';
+import type { SlotDef } from '../domain/SlotDef';
+import { StackOrderDef } from '../domain/StackOrderDef';
 
 /**
  * object_defs（GameElementDefinition.md 4節）の1エントリの、まだtrait解決を経ていない生の形。

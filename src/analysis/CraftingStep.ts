@@ -1,4 +1,4 @@
-import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
+import type { ReferenceRoot } from '../domain/ReferenceRoot';
 
 /**
  * クラフトの1工程を「入力 → 工程 → 出力」の形に均した見方。

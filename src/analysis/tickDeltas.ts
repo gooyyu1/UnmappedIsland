@@ -1,12 +1,12 @@
-import type { ObjectDef } from '../domain/defs/ObjectDef';
-import type { TransferReading } from '../domain/defs/EffectReader';
+import type { ObjectDef } from '../domain/ObjectDef';
+import type { TransferReading } from '../domain/EffectReader';
 import type {
   GateReading,
   PassiveDeclaration,
   PassivePropertyReading,
   PassiveReader,
-} from '../domain/defs/PassiveReader';
-import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
+} from '../domain/PassiveReader';
+import type { ReferenceRoot } from '../domain/ReferenceRoot';
 
 /**
  * tick毎に実体値を動かす持続効果を、実行時のオブジェクトを使わずに読んだもの（8.4節）。

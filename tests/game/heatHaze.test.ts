@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import { heatHazeFor } from '../../src/game/looks/heatHaze';
 import { skyTintFor } from '../../src/game/looks/skyTint';

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { ObjectDef } from '../../src/domain/defs/ObjectDef';
-import type { PropertyDef } from '../../src/domain/defs/PropertyDef';
+import type { ObjectDef } from '../../src/domain/ObjectDef';
+import type { PropertyDef } from '../../src/domain/PropertyDef';
 import { characterDefNames, resolveCharacterDefName } from '../../src/domain/generation/NewGame';
-import { PlayerCharacter } from '../../src/domain/runtime/views/PlayerCharacter';
-import { World } from '../../src/domain/runtime/views/World';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import { PlayerCharacter } from '../../src/domain/views/PlayerCharacter';
+import { World } from '../../src/domain/views/World';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
 import { characterIcon } from '../../src/game/view/characterCard';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';

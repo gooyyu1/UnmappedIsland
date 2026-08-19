@@ -11,7 +11,7 @@
 （`accept`）・位置があるか（`cell_count`/`max`）・かさが入るか（`capacity`）——に分けます（2 節）。
 束ねてよいか（`stackable`）は枠ではなく物の性質です（4 節）。スロット専用の新しい文法はありません。
 
-定義は `Domain.Defs.SlotDef`、実行時状態は `Domain.Runtime.Slot` と `Domain.Runtime.ObjectStack`、
+定義は `SlotDef`、実行時状態は `Slot` と `ObjectStack`、
 検証は `tests/domain/cells.test.ts`・`stacking.test.ts`・`objectStack.test.ts` 等です。本書は実装済みの
 仕組みの記述で、未決事項は 7 節に整理しています。
 
@@ -127,7 +127,7 @@ seed の**代表チェーン**（自分の `ObjectDef` を先頭に、`represent
 
 ## 6. スタック内の並び順（stack_order）
 
-型ごとの表示専用の並び順（`Domain.Defs.StackOrderDef`、7.6節）。指定プロパティの値で、新規
+型ごとの表示専用の並び順（`StackOrderDef`、7.6節）。指定プロパティの値で、新規
 メンバーの**挿入位置を決めるだけ**で、挿入後の値の変化に追従した再ソートは行わない
 （`add` は同種で同じ速度で変化するため、挿入時点の相対順序が保たれる前提）。
 同値は既存メンバーの後ろ（挿入順維持）。`ascending` は「値が大きいほどリストの後ろ = 手前」で、

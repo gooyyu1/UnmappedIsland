@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
 
 /**
  * レシピから自動生成される製作中オブジェクト（RecipeSystem.md 1節）の検証。

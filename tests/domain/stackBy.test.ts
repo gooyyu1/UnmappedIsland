@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 // represented_by（GameElementDefinition.md 7.6節）に対する自動テスト。同じObjectDefでも、代表オブジェクト

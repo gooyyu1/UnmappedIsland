@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
-import type { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
-import { Location } from '../../src/domain/runtime/views/Location';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
+import type { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
+import { Location } from '../../src/domain/views/Location';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**

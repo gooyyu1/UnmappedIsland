@@ -1,6 +1,6 @@
-import type { WorldObject } from '../runtime/WorldObject';
-import type { WorldSession } from '../runtime/WorldSession';
-import { Location } from '../runtime/views/Location';
+import type { WorldObject } from '../WorldObject';
+import type { WorldSession } from '../WorldSession';
+import { Location } from '../views/Location';
 import type { IslandMap, Site } from './IslandMap';
 
 /** 最初の道が見つかる進捗。1回目の探索でいきなり道が出ないようにする最低値。 */

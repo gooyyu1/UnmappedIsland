@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
-import type { WorldChange } from '../../src/domain/runtime/WorldChange';
-import type { WorldSignal } from '../../src/domain/runtime/WorldSignal';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
-import { World } from '../../src/domain/runtime/views/World';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
+import type { WorldChange } from '../../src/domain/WorldChange';
+import type { WorldSignal } from '../../src/domain/WorldSignal';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
+import { World } from '../../src/domain/views/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { fixedRng } from '../support/rng';

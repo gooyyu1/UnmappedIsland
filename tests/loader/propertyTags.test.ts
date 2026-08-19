@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 
 /** プロパティのタグ（GameElementDefinition.md 6.7節）に対する自動テスト。 */
 describe('プロパティのタグ', () => {

@@ -1,6 +1,6 @@
-import type { GenerationDefs } from '../defs/generation/GenerationDefs';
-import type { GenerationScopeDef, GuaranteeDef } from '../defs/generation/GenerationScopeDef';
-import type { LocationTypeDef } from '../defs/generation/LocationTypeDef';
+import type { GenerationDefs } from './GenerationDefs';
+import type { GenerationScopeDef, GuaranteeDef } from './GenerationScopeDef';
+import type { LocationTypeDef } from './LocationTypeDef';
 import type { Site } from './IslandMap';
 
 /**

@@ -1,6 +1,6 @@
-import type { WorldCodex } from '../../src/domain/defs/WorldCodex';
-import type { Location } from '../../src/domain/runtime/views/Location';
-import type { WorldObject } from '../../src/domain/runtime/WorldObject';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
+import type { Location } from '../../src/domain/views/Location';
+import type { WorldObject } from '../../src/domain/WorldObject';
 
 /**
  * その土地の発見済みの道。道は「持ち歩けないもの」として木や建物と同じfixturesスロットに並ぶので、

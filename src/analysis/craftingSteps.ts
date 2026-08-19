@@ -1,7 +1,7 @@
-import type { InteractionDef } from '../domain/defs/InteractionDef';
-import type { ObjectDef } from '../domain/defs/ObjectDef';
-import type { RecipeDef } from '../domain/defs/RecipeDef';
-import type { TypeMatchReading } from '../domain/defs/TypeMatchRule';
+import type { InteractionDef } from '../domain/InteractionDef';
+import type { ObjectDef } from '../domain/ObjectDef';
+import type { RecipeDef } from '../domain/RecipeDef';
+import type { TypeMatchReading } from '../domain/TypeMatchRule';
 import type { CraftingInput, CraftingStep, StepOutcome } from './CraftingStep';
 import { collectOutputs, combineOutcomes } from './CraftingStep';
 import type { EffectReading } from './effectOutcomes';

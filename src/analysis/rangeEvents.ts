@@ -1,4 +1,4 @@
-import type { PropertyDef, RangeEventLabel } from '../domain/defs/PropertyDef';
+import type { PropertyDef, RangeEventLabel } from '../domain/PropertyDef';
 import type { StepOutcome } from './CraftingStep';
 import { destroysRoot, readEffect } from './effectOutcomes';
 import type { StaticValueResolver } from './staticValue';

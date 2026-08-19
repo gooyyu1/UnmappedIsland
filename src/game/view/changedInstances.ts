@@ -1,4 +1,4 @@
-import type { WorldChange } from '../../domain/runtime/WorldChange';
+import type { WorldChange } from '../../domain/WorldChange';
 
 /**
  * 世界に起きた変化（WorldChange）を、カードの動きの言葉へ直す——どこから飛び立つか

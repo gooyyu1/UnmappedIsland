@@ -17,15 +17,15 @@ import type { RawPatch } from './RawPatch';
 import { applyPatches, parsePatch } from './RawPatch';
 import { RawTrait } from './RawTrait';
 import { buildGenerationDefs, loadGenerationSections, resetGeneration } from './parseGeneration';
-import { NameRegistry } from '../domain/defs/NameRegistry';
-import type { ObjectDef } from '../domain/defs/ObjectDef';
-import { ObjectDefTable } from '../domain/defs/ObjectDef';
-import { WellKnownProperties } from '../domain/defs/WellKnownProperties';
+import { NameRegistry } from '../domain/NameRegistry';
+import type { ObjectDef } from '../domain/ObjectDef';
+import { ObjectDefTable } from '../domain/ObjectDef';
+import { WellKnownProperties } from '../domain/WellKnownProperties';
 import { IN_PROGRESS_SOURCE, inProgressObjectsYaml, productGlobalIdOf } from './inProgressObjects';
-import { WorldCodex } from '../domain/defs/WorldCodex';
-import type { AxisDef } from '../domain/defs/generation/AxisDef';
-import type { GenerationScopeDef } from '../domain/defs/generation/GenerationScopeDef';
-import type { LocationTypeDef } from '../domain/defs/generation/LocationTypeDef';
+import { WorldCodex } from '../domain/WorldCodex';
+import type { AxisDef } from '../domain/generation/AxisDef';
+import type { GenerationScopeDef } from '../domain/generation/GenerationScopeDef';
+import type { LocationTypeDef } from '../domain/generation/LocationTypeDef';
 
 /**
  * YAMLファイル群からWorldCodexを組み立てるロード処理の入口（GameElementDefinition.md 3節）。

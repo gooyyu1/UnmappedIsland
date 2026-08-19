@@ -1,4 +1,4 @@
-import type { WorldObject } from '../../domain/runtime/WorldObject';
+import type { WorldObject } from '../../domain/WorldObject';
 import type { ObjectCardStack } from './PlayScreenView';
 import type { CardCombination, CardPutIn } from './cardOperations';
 import type { CardPlace, CardPlacement, ScreenPlaces } from './cardPlaces';

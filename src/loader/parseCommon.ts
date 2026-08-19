@@ -4,7 +4,7 @@ import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { INT32_MAX, INT32_MIN } from '../util/int32';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import { TypeMatchRule } from '../domain/defs/TypeMatchRule';
+import { TypeMatchRule } from '../domain/TypeMatchRule';
 
 /**
  * 複数の領域（props/conditions/active効果/pick）から使う小さなパースヘルパー。

@@ -1,5 +1,5 @@
-import type { AxisDef, GeneratorLayer } from '../defs/generation/AxisDef';
-import type { GenerationScopeDef } from '../defs/generation/GenerationScopeDef';
+import type { AxisDef, GeneratorLayer } from './AxisDef';
+import type { GenerationScopeDef } from './GenerationScopeDef';
 import type { Site } from './IslandMap';
 import { sample as sampleNoise } from './ValueNoise';
 import { ISLAND_RADIUS } from './SitePlacer';

@@ -1,7 +1,7 @@
-import type { DescriptionLine, DescriptionToken } from '../domain/defs/Description';
-import { DescriptionWriter } from '../domain/defs/Description';
-import type { LocationTypeDef } from '../domain/defs/generation/LocationTypeDef';
-import type { ObjectDef } from '../domain/defs/ObjectDef';
+import type { DescriptionLine, DescriptionToken } from '../domain/Description';
+import { DescriptionWriter } from '../domain/Description';
+import type { LocationTypeDef } from '../domain/generation/LocationTypeDef';
+import type { ObjectDef } from '../domain/ObjectDef';
 import { OBJECT_ART } from '../art/objectArt';
 import type { Texts } from '../locale/Localization';
 import type { CodexSource } from './CodexSource';
@@ -26,7 +26,7 @@ export function escapeHtml(value: string): string {
 /**
  * 読み込んだ定義を人間向けのHTMLに変換する窓口。
  *
- * 定義の中身をどう言い表すかは定義自身（`describe`、domain/defs/Description.ts）が知っているので、
+ * 定義の中身をどう言い表すかは定義自身（`describe`、domain/Description.ts）が知っているので、
  * ここが担うのは**見せ方**だけ——表示名を引く、リンクを張る、識別子と表示名を切り替える。
  */
 export class CodexView {

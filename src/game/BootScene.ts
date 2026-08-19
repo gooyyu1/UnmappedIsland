@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import type { WorldCodex } from '../domain/defs/WorldCodex';
+import type { WorldCodex } from '../domain/WorldCodex';
 import type { Localization } from '../locale/Localization';
 import cardFrameUrl from '../assets/ui/card_frame.png';
 import flipDigitUrl from '../assets/ui/flip_digit.png';

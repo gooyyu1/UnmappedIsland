@@ -13,11 +13,11 @@ import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { parseScalarNumber, parseTypeMatchRule, tryGetNode } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import type { ReferenceRoot } from '../domain/defs/ReferenceRoot';
-import { PropertyPath } from '../domain/defs/ReferenceRoot';
-import { ConditionNode } from '../domain/defs/ConditionNode';
-import type { ConditionOp } from '../domain/defs/ConditionNode';
-import { Requirement, Requirements } from '../domain/defs/Requirement';
+import type { ReferenceRoot } from '../domain/ReferenceRoot';
+import { PropertyPath } from '../domain/ReferenceRoot';
+import { ConditionNode } from '../domain/ConditionNode';
+import type { ConditionOp } from '../domain/ConditionNode';
+import { Requirement, Requirements } from '../domain/Requirement';
 
 /**
  * conditions（14節）・passivesのゲート（8節）が共通で使う`subject`（主語）の参照キー。

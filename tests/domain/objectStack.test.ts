@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ObjectStack } from '../../src/domain/runtime/ObjectStack';
-import { WorldObject } from '../../src/domain/runtime/WorldObject';
-import { WorldSession } from '../../src/domain/runtime/WorldSession';
+import { ObjectStack } from '../../src/domain/ObjectStack';
+import { WorldObject } from '../../src/domain/WorldObject';
+import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 // ObjectStack.tryInsert（7.6節）が「同種（Matches: ObjectDef・代表ObjectDef列が一致）だけが積み重なる」
