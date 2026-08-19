@@ -37,9 +37,9 @@ describe('tools.yamlの道具定義', () => {
     const session = new WorldSession(codex);
     const sharpStone = session.spawn(codex.objectNames.getId('sharp_stone'));
 
-    const durability = sharpStone.readProperty(codex.propertyNames.getId('durability'));
+    const durability = sharpStone.tryGetProperty(codex.propertyNames.getId('durability'));
     expect(durability?.ratio, '打ち出したばかりの刃は減っていない').toBe(1);
-    expect(durability?.value, '上限は種類によらず統一（DurabilitySystem.md 1節）').toBe(960);
+    expect(durability?.getEffectiveValue(), '上限は種類によらず統一（DurabilitySystem.md 1節）').toBe(960);
   });
 
   it('武器は、一撃がどこへ入るかの重み配分を宣言する', () => {

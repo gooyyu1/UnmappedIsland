@@ -1405,7 +1405,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('ステータスエリアには、statusタグが付いたプロパティだけが実際の値で並ぶ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const statusTagId = codex.propertyTagNames.getId('status');
-    const tagged = game.player.instance.readPropertiesWithTag(statusTagId);
+    const tagged = game.player.instance.propertiesWithTag(statusTagId);
 
     const view = fromGameSession(game, codex, locale);
 
@@ -1414,15 +1414,15 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 荷重と痛みは0、残りは満タンで始まる（characters/・Characters.md 域の区分節）。
     const startRatios: Record<string, number> = { satiety: 0.2, hydration: 0.75, load: 0, pain: 0 };
     expect(view.statuses.map((status) => status.ratio)).toEqual(
-      tagged.map((reading) => startRatios[reading.name] ?? 1),
+      tagged.map((property) => startRatios[property.name] ?? 1),
     );
     const startAlerts: Record<string, string> = { satiety: 'watch', hydration: 'watch' };
     expect(view.statuses.map((status) => status.alert)).toEqual(
-      tagged.map((reading) => startAlerts[reading.name] ?? 'safe'),
+      tagged.map((property) => startAlerts[property.name] ?? 'safe'),
     );
-    expect(view.statuses.map((status) => status.key)).toEqual(tagged.map((reading) => reading.name));
+    expect(view.statuses.map((status) => status.key)).toEqual(tagged.map((property) => property.name));
     // localeに登録の無いcharacterでは識別子がそのまま出る（Localization.md）。
-    expect(view.statuses.map((status) => status.name)).toEqual(tagged.map((reading) => reading.name));
+    expect(view.statuses.map((status) => status.name)).toEqual(tagged.map((property) => property.name));
   });
 
   it('ステータスの行には、対応表が宣言したアイコンが付く', () => {
@@ -1535,7 +1535,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const view = fromGameSession(game, codex, locale);
 
     const shown = declared.filter(
-      (name) => game.player.instance.readPropertiesWithTag(codex.propertyTagNames.getId(name)).length > 0,
+      (name) => game.player.instance.propertiesWithTag(codex.propertyTagNames.getId(name)).length > 0,
     );
     expect(view.propertyCategories.map((category) => category.name)).toEqual(shown);
     for (const category of view.propertyCategories) expect(category.entries.length).toBeGreaterThan(0);

@@ -1,6 +1,6 @@
-import { PropertyValue } from './PropertyValue';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
+import type { Rng } from './Rng';
 import { INT32_MAX } from '../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
 import { describeEffect } from './describeEffect';
@@ -161,7 +161,7 @@ export class PropertyDef {
   /** 初期値（スカラー）。initialValueRangeを持つ場合は、RNGを使わない生成でのフォールバック（= range.min）。 */
   readonly initialValue: number;
 
-  /** value: {min, max} 記法による初期値のランダム範囲（6.2節、createValue参照）。無ければundefined。 */
+  /** value: {min, max} 記法による初期値のランダム範囲（6.2節、rollInitialValue参照）。無ければundefined。 */
   private readonly initialValueRange: PropertyRange | undefined;
 
   /** 生成時に1回ロールされる初期値を持つか（6.2節）。量的オブジェクトでは禁止（7.6節）。 */
@@ -382,17 +382,15 @@ export class PropertyDef {
   }
 
   /**
-   * このプロパティ定義に属する、新しい実行時値（PropertyValue）を生成する。initialValueRangeを持つ
-   * プロパティは初期値を[min,max]の一様乱数（session.rng）に、持たない場合は決定的なinitialValueにする（6.2節）。
+   * 生成時の初期値（6.2節）。initialValueRangeを持つプロパティは[min,max]の一様乱数を1回引き、
+   * 持たない場合は決定的なinitialValueになる。
    */
-  createValue(owner: WorldObject, session: WorldSession): PropertyValue {
-    let initial = this.initialValue;
-    if (this.initialValueRange !== undefined) {
-      const { min, max } = this.initialValueRange;
-      // nextIntの上限は排他なので+1して[min,max]の閉区間にする（max==INT32_MAXのみ桁あふれ回避）。
-      initial = session.rng.nextInt(min, max === INT32_MAX ? max : max + 1);
-    }
-    return new PropertyValue(initial, this, owner);
+  rollInitialValue(rng: Rng): number {
+    if (this.initialValueRange === undefined) return this.initialValue;
+
+    const { min, max } = this.initialValueRange;
+    // nextIntの上限は排他なので+1して[min,max]の閉区間にする（max==INT32_MAXのみ桁あふれ回避）。
+    return rng.nextInt(min, max === INT32_MAX ? max : max + 1);
   }
 
   /**

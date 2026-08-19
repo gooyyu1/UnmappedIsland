@@ -159,16 +159,16 @@ export function cardLooksOf(
    * 何本出るかも、どちらの端が良いかも、宣言の側が決める。1つも宣言していない物では空配列。
    */
   const declaredGaugesOf = (object: WorldObject): readonly CardGauge[] =>
-    object.readGauges().flatMap((reading) => {
-      // readGaugesはrangeを持つものだけを返す（ロード時に保証）ので、ここは実質always trueの絞り込み。
-      if (reading.ratio === undefined || reading.gauge === undefined) return [];
+    object.gaugeProperties().flatMap((property) => {
+      // gaugePropertiesはrangeを持つものだけを返す（ロード時に保証）ので、ここは実質always trueの絞り込み。
+      if (property.ratio === undefined || property.gauge === undefined) return [];
       return [
         {
-          key: reading.name,
-          ratio: reading.ratio,
-          atMin: reading.gauge.atMin,
-          atMax: reading.gauge.atMax,
-          worsensUpward: reading.gauge.worsensUpward,
+          key: property.name,
+          ratio: property.ratio,
+          atMin: property.gauge.atMin,
+          atMax: property.gauge.atMax,
+          worsensUpward: property.gauge.worsensUpward,
         },
       ];
     });
@@ -183,13 +183,14 @@ export function cardLooksOf(
   const warinessPropertyId = codex.propertyNames.tryGetId(WARINESS_PROPERTY);
   /** 輪郭を明滅させる域。warinessを持たない物はundefined（明滅しない）。 */
   const alertOf = (object: WorldObject): AlertLevel | undefined =>
-    warinessPropertyId === undefined ? undefined : object.readProperty(warinessPropertyId)?.alert;
+    warinessPropertyId === undefined ? undefined : object.tryGetProperty(warinessPropertyId)?.alert;
 
   const treatmentSlotId = codex.slotNames.tryGetId(TREATMENT_SLOT);
   const bleedingPropertyId = codex.propertyNames.tryGetId(BLEEDING_PROPERTY);
   /** その物自身から血が流れているか。持たない物・止まった物はfalse。 */
   const isBleeding = (object: WorldObject): boolean =>
-    bleedingPropertyId !== undefined && (object.readProperty(bleedingPropertyId)?.value ?? 0) >= 1;
+    bleedingPropertyId !== undefined &&
+    (object.tryGetProperty(bleedingPropertyId)?.getEffectiveValue() ?? 0) >= 1;
 
   /**
    * カードに出す印。血が流れていれば🩸、そうでなく治療具が当たっていれば🩹、どちらでもなければundefined。
@@ -220,7 +221,10 @@ export function cardLooksOf(
     const ratio = content.fillRatioInParentSlot();
     if (ratio === undefined) return undefined;
 
-    const color = colorPropertyId === undefined ? undefined : content.readProperty(colorPropertyId)?.value;
+    const color =
+      colorPropertyId === undefined
+        ? undefined
+        : content.tryGetProperty(colorPropertyId)?.getEffectiveValue();
     return { ...NEUTRAL_ENDS, key: BUILTIN_GAUGE_KEYS.fill, ratio, color: color ?? COLOR.cardFillUnknown };
   };
 
@@ -276,7 +280,7 @@ export function cardLooksOf(
     const ticks = object.ticksUntilOverflow(cookingPropertyId);
     if (ticks === undefined) return undefined;
 
-    const ratio = object.readProperty(cookingPropertyId)?.ratio;
+    const ratio = object.tryGetProperty(cookingPropertyId)?.ratio;
     return ratio === undefined ? undefined : { ratio, minutes: ticks * minutesPerTick };
   };
 

@@ -161,11 +161,11 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     it('ステータスエリアに出るのは7件で、並び順も揃っている', () => {
-      // readPropertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（StatusArea.md 3節）。
+      // propertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（StatusArea.md 3節）。
       const instance = new WorldObject(1, def(character), new WorldSession(codex));
-      const status = instance.readPropertiesWithTag(codex.propertyTagNames.getId('status'));
+      const status = instance.propertiesWithTag(codex.propertyTagNames.getId('status'));
 
-      expect(status.map((reading) => reading.name)).toEqual([
+      expect(status.map((property) => property.name)).toEqual([
         'pain',
         'blood',
         'satiety',
@@ -332,10 +332,10 @@ describe('プレイヤーキャラクタの定義', () => {
       const instance = new WorldObject(1, def(character), new WorldSession(codex));
 
       const fatal = instance
-        .readPropertiesWithTag(codex.propertyTagNames.getId('status'))
-        .filter((reading) => propOf(def(character), reading.name).alertLevelOf(0) === 'fatal');
+        .propertiesWithTag(codex.propertyTagNames.getId('status'))
+        .filter((property) => propOf(def(character), property.name).alertLevelOf(0) === 'fatal');
 
-      expect(fatal.map((reading) => reading.name)).toEqual(['blood', 'hydration']);
+      expect(fatal.map((property) => property.name)).toEqual(['blood', 'hydration']);
     });
 
     // 死に方は3つだけ（VitalsSystem.md 8節）。どれも「尽きたら世界から出る」という同じ形で、

@@ -7,7 +7,7 @@ import type { WellKnownProperties } from './WellKnownProperties';
 import type { ObjectStack } from './ObjectStack';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
-import type { PropertyReading, PropertyValue } from './PropertyValue';
+import { PropertyValue } from './PropertyValue';
 import type { Requirement } from './Requirement';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
 import { Slot } from './Slot';
@@ -78,7 +78,7 @@ export class WorldObject {
     this.def = def;
     this.session = session;
 
-    this.properties = def.enumeratePropertyDefs().map((pd) => pd.createValue(this, session));
+    this.properties = def.enumeratePropertyDefs().map((pd) => new PropertyValue(pd, this, session.rng));
     this.slots = def.enumerateSlotDefs().map((sd) => new Slot(sd));
 
     // 生成時はまだトポロジが無いため、Self関係のみ登録する。Parent/Child/Ancestorはmove_to_slot以降に登録される。
@@ -185,11 +185,6 @@ export class WorldObject {
     return this.tryGetProperty(propertyGlobalId)?.artSuffix();
   }
 
-  /** 名指しした1つのプロパティの現在の状態。持たないオブジェクトではundefined。 */
-  readProperty(globalPropertyId: number): PropertyReading | undefined {
-    return this.tryGetProperty(globalPropertyId)?.read();
-  }
-
   /**
    * 名指しした1つのプロパティが、今の進み方であと何tickでrangeを超える（on_overflowが起きる）か。
    * そのプロパティを持たない・今は進んでいない場合はundefined。
@@ -246,32 +241,22 @@ export class WorldObject {
   }
 
   /**
-   * ゲージとして見せると宣言している（6.8節）プロパティの現在の状態を、propsの宣言順で読み取る。
-   * 1つも宣言していないオブジェクトでは空配列。
+   * ゲージとして見せると宣言している（6.8節）プロパティを、propsの宣言順で。1つも宣言していない
+   * オブジェクトでは空配列。
    *
-   * **上下限（range）を持たないプロパティは宣言できない**（ロード時に弾く）ので、返る読み取りの
+   * **上下限（range）を持たないプロパティは宣言できない**（ロード時に弾く）ので、返る値の
    * `ratio`は常に定義されている。並ぶ順と本数がそのままカードのバーになる（docs/ui/CardView.md 8節）。
    */
-  readGauges(): readonly PropertyReading[] {
-    const readings: PropertyReading[] = [];
-    for (const property of this.properties) {
-      const reading = property.readIfGauge();
-      if (reading !== undefined) readings.push(reading);
-    }
-    return readings;
+  gaugeProperties(): readonly PropertyValue[] {
+    return this.properties.filter((property) => property.gauge !== undefined);
   }
 
   /**
-   * 指定したタグ（6.7節）が付いたプロパティの現在の状態を、propsの宣言順で読み取る。
-   * タグを1つも持たないオブジェクトでは空配列。
+   * 指定したタグ（6.7節）が付いたプロパティを、propsの宣言順で。タグの付いたプロパティを
+   * 1つも持たないオブジェクトでは空配列。
    */
-  readPropertiesWithTag(tagGlobalId: number): readonly PropertyReading[] {
-    const readings: PropertyReading[] = [];
-    for (const property of this.properties) {
-      const reading = property.readIfTagged(tagGlobalId);
-      if (reading !== undefined) readings.push(reading);
-    }
-    return readings;
+  propertiesWithTag(tagGlobalId: number): readonly PropertyValue[] {
+    return this.properties.filter((property) => property.hasTag(tagGlobalId));
   }
 
   /** modifyのみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。プロパティを持たなければ0。 */

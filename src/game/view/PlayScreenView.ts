@@ -4,7 +4,7 @@ import type { NewGameSession } from '../../domain/generation/NewGame';
 import { Location } from '../../domain/views/Location';
 import { Path } from '../../domain/views/Path';
 import type { PropertyInfluence } from '../../domain/PropertyInfluence';
-import type { PropertyReading } from '../../domain/PropertyValue';
+import type { PropertyValue } from '../../domain/PropertyValue';
 import type { WorldObject } from '../../domain/WorldObject';
 import type { Localization } from '../../locale/Localization';
 import type { CraftingMaterial } from './craftingView';
@@ -431,7 +431,7 @@ export function fromGameSession(
   const influenceOf = (
     object: WorldObject,
     influence: PropertyInfluence,
-    moved: PropertyReading | undefined,
+    moved: PropertyValue | undefined,
   ): StatusInfluence => {
     const counterpart = influence.counterpart;
     const shown =
@@ -460,47 +460,47 @@ export function fromGameSession(
    * そのプロパティ1件の詳細（意味・今いる段・影響の出入り）。**持ち主から読む**——同じ名前の
    * プロパティを別の物が持っていても、値も影響もその物のもの。
    */
-  const detailOf = (object: WorldObject, reading: PropertyReading): StatusDetail => {
-    const influences = object.readInfluences(codex.propertyNames.getId(reading.name));
+  const detailOf = (object: WorldObject, property: PropertyValue): StatusDetail => {
+    const influences = object.readInfluences(codex.propertyNames.getId(property.name));
     return {
-      description: locale.object(object.def.name).prop(reading.name).description,
+      description: locale.object(object.def.name).prop(property.name).description,
       stage:
-        reading.stage === undefined
+        property.stage === undefined
           ? undefined
           : {
-              name: locale.stage(reading.stage.name),
-              span: reading.stage.span,
-              boundaries: reading.stage.boundaries,
+              name: locale.stage(property.stage.name),
+              span: property.stage.span,
+              boundaries: property.stage.boundaries,
             },
       // 与えている影響で動くのは相手、受けている影響で動くのは自分（influenceOfのmoved）。
       given: influences.given.map((influence) =>
         influenceOf(object, influence, movedByGiven(object, influence)),
       ),
-      received: influences.received.map((influence) => influenceOf(object, influence, reading)),
+      received: influences.received.map((influence) => influenceOf(object, influence, property)),
     };
   };
 
   /** 与えている影響で動く側＝相手のプロパティ。相手がオブジェクトなら読める値が無い。 */
-  const movedByGiven = (object: WorldObject, influence: PropertyInfluence): PropertyReading | undefined =>
+  const movedByGiven = (object: WorldObject, influence: PropertyInfluence): PropertyValue | undefined =>
     influence.counterpart.kind === 'property'
-      ? object.readProperty(influence.counterpart.propertyGlobalId)
+      ? object.tryGetProperty(influence.counterpart.propertyGlobalId)
       : undefined;
 
   /** タグが付いたそのオブジェクトのプロパティを、表示名に直して並べる。未宣言のタグでは空。 */
   const entriesWithTag = (object: WorldObject, tagGlobalId: number | undefined): readonly StatusContent[] =>
     tagGlobalId === undefined
       ? []
-      : object.readPropertiesWithTag(tagGlobalId).map((reading) => {
-          const texts = locale.object(object.def.name).prop(reading.name);
+      : object.propertiesWithTag(tagGlobalId).map((property) => {
+          const texts = locale.object(object.def.name).prop(property.name);
           return {
-            key: reading.name,
+            key: property.name,
             name: texts.displayName,
             icon: texts.icon,
-            value: reading.value,
-            ratio: reading.ratio,
-            alert: reading.alert,
-            worsensUpward: reading.worsensUpward,
-            detail: detailOf(object, reading),
+            value: property.getEffectiveValue(),
+            ratio: property.ratio,
+            alert: property.alert,
+            worsensUpward: property.worsensUpward,
+            detail: detailOf(object, property),
           };
         });
 

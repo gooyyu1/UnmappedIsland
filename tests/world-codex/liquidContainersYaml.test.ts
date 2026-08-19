@@ -241,7 +241,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(liquids.length, '検査対象が無い（liquidタグが変わっていないか）').toBeGreaterThan(0);
 
     const colors = liquids.map((name) => {
-      const color = spawn(name).readProperty(colorId)?.value;
+      const color = spawn(name).tryGetProperty(colorId)?.getEffectiveValue();
       expect(color, `'${name}' が色を宣言していない`).toBeDefined();
       return color;
     });

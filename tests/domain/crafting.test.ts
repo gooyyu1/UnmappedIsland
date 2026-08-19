@@ -146,14 +146,14 @@ object_defs:
     // CardView.md 10.1節の進捗バー（gauge宣言）が読む値。progressと違い所要時間ではなく
     // 純粋な回数なので、工程の長さが不揃いでも「2工程中1工程＝0.5」がそのまま割合になる。
     const finishedStepsId = codex.propertyNames.getId('finished_steps');
-    expect(wip.readProperty(finishedStepsId)?.ratio, '着手前は0').toBe(0);
+    expect(wip.tryGetProperty(finishedStepsId)?.ratio, '着手前は0').toBe(0);
 
     put('wood', 2);
     put('knife', 1);
     expect(advanceCrafting(wip, recipe, materialsId(), codex, session)).toBe(true);
 
     expect(wip.getNumber(finishedStepsId), '1工程終えるごとに1増える').toBe(1);
-    expect(wip.readProperty(finishedStepsId)?.ratio, '2工程中1工程＝0.5').toBe(0.5);
+    expect(wip.tryGetProperty(finishedStepsId)?.ratio, '2工程中1工程＝0.5').toBe(0.5);
   });
 
   it('工程が1つのレシピには、進捗バー用のfinished_stepsがそもそも宣言されない', () => {
@@ -165,7 +165,7 @@ object_defs:
     const spearWip = session.spawn(idOf(inProgressObjectName('spear', 'basic')));
     spearWip.moveToSlot(ground, codex.slotNames.getId('items'));
 
-    expect(spearWip.readProperty(finishedStepsId!)).toBeUndefined();
+    expect(spearWip.tryGetProperty(finishedStepsId!)).toBeUndefined();
   });
 
   it('素材が足りなければ進まない', () => {

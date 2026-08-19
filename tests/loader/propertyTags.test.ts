@@ -19,7 +19,7 @@ describe('プロパティのタグ', () => {
   }
 
   function propertyNamesWithTag(codex: WorldCodex, object: WorldObject, tagName: string): string[] {
-    return object.readPropertiesWithTag(codex.propertyTagNames.getId(tagName)).map((r) => r.name);
+    return object.propertiesWithTag(codex.propertyTagNames.getId(tagName)).map((r) => r.name);
   }
 
   const declaration = `
@@ -182,12 +182,20 @@ object_defs:
         value: 7
 `,
     );
-    const readings = instanceOf(codex, 'character').readPropertiesWithTag(
+    const properties = instanceOf(codex, 'character').propertiesWithTag(
       codex.propertyTagNames.getId('status'),
     );
 
     // stagesを持たないプロパティはどの域にも入らない扱い（safe）になる。
-    expect(readings).toEqual([
+    expect(
+      properties.map((property) => ({
+        name: property.name,
+        value: property.getEffectiveValue(),
+        ratio: property.ratio,
+        alert: property.alert,
+        worsensUpward: property.worsensUpward,
+      })),
+    ).toEqual([
       { name: 'stamina', value: 25, ratio: 0.25, alert: 'safe', worsensUpward: false },
       { name: 'tick_count', value: 7, ratio: undefined, alert: 'safe', worsensUpward: false },
     ]);

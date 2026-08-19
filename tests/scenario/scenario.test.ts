@@ -64,7 +64,7 @@ describe('テスト用シナリオ', () => {
     applyScenario(game, scenario, codex);
 
     const alertOf = (propertyName: string): string | undefined =>
-      game.player.instance.readProperty(codex.propertyNames.getId(propertyName))?.alert;
+      game.player.instance.tryGetProperty(codex.propertyNames.getId(propertyName))?.alert;
 
     expect(alertOf('hydration'), '水分は致命的域').toBe('fatal');
     expect(alertOf('satiety'), '満腹度は危険域').toBe('danger');
@@ -233,7 +233,7 @@ describe('テスト用シナリオ', () => {
         `${weapon.def.name}で殴れる`,
       ).toEqual(['strike']);
     expect(
-      monkey.readProperty(codex.propertyNames.getId('wariness'))?.alert,
+      monkey.tryGetProperty(codex.propertyNames.getId('wariness'))?.alert,
       '始めた時点で警戒している',
     ).not.toBe('safe');
   });
