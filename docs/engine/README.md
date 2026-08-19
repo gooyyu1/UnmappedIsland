@@ -47,7 +47,6 @@
 
 - [層の分け方](./Layers.md) — 世界・映し・意匠・部品の4層と、層の外の「組み立て」。新しいファイルを
   どこへ置くか、各層が何を知ってよいか
-- [Domain.Defs と Domain.Runtime の統合方針](./DomainDefsRuntimeIntegration.md)
 - [地形生成 実装ガイド](./TerrainGenerationImplementation.md) — 実際のクラス名・メソッド名でたどる、
   ロードから島の実体化までの呼び出し関係
 - [ソースリファレンス](https://gooyyu1.github.io/UnmappedIsland/reference/) — `src/` のクラス・型・JSDocから

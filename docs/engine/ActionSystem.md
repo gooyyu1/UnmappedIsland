@@ -14,8 +14,8 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 実行前には代表（`represented_by`）の解決が入り、起きたことは分岐名ではなく世界に起きた変化として
 観測します（7 節）。操作専用の新しい文法はありません。
 
-実装は `src/domain/defs/InteractionDef.ts`（`ActionDef`・`CombinationDef` の基底）と
-`src/domain/runtime/WorldObject.ts`・`WorldSession.ts`、検証は `tests/domain/interaction.test.ts`・
+実装は `src/domain/InteractionDef.ts`（`ActionDef`・`CombinationDef` の基底）と
+`src/domain/WorldObject.ts`・`WorldSession.ts`、検証は `tests/domain/interaction.test.ts`・
 `actionDuration.test.ts`・`worldChanges.test.ts` です。本書は実装済みの仕組みの記述で、
 未決事項は 8 節に整理しています。
 
@@ -23,21 +23,21 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 
 プレイヤー操作の入口は2種類だけで、どちらも `object_def` に宣言的に定義される。
 
-- **`actions`（メニュー型、`Domain.Defs.ActionDef`）**: 1枚のカード（`self`）だけで完結する操作。
+- **`actions`（メニュー型、`ActionDef`）**: 1枚のカード（`self`）だけで完結する操作。
   カード選択時にボタンとして表示され、クリックで実行される。`actor`（プレイヤーキャラクター）は
   常に暗黙的に参加する。
-- **`combinations`（ドラッグ型、`Domain.Defs.CombinationDef`）**: カードを別のカードへ
+- **`combinations`（ドラッグ型、`CombinationDef`）**: カードを別のカードへ
   ドラッグ＆ドロップする操作。組み合わせを宣言している側が `self`、相手が `dragged` で、
   `with`（タグかobject_defのidで書く型の指定、12.1節）が `dragged` とのマッチング条件になる。宣言は**素材の側**に1つだけ置き
   （12.3節）、どちらの札をどちらへ運んでも同じ宣言が実行される——**どちらを `self` として試すかの順序は
   UI層が決める**（[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
 
-2種が違うのは**入口（どう選ばれるか）だけ**なので、どちらも `Domain.Defs.InteractionDef` を継承し、
+2種が違うのは**入口（どう選ばれるか）だけ**なので、どちらも `InteractionDef` を継承し、
 選ばれた後の実行（2節）と所要時間の解決はその基底クラスが1箇所で持つ。派生が足すのは、
 `ActionDef` が `showMenu`、`CombinationDef` が `with` によるマッチングだけ。`dragged` はドラッグ型
 だけが持つ相手で、メニュー型では `undefined` のまま同じ経路を通る。
 
-実行時の入口は `Runtime.WorldObject` の3メソッド。
+実行時の入口は `WorldObject` の3メソッド。
 
 - `TryExecuteAction(actionName, actor, session)`
 - `TryExecuteCombination(dragged, actor, combinationName, session)`
@@ -56,7 +56,7 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 実装は `InteractionDef` に1つだけ置く（`with` マッチングだけは `CombinationDef` が先に見る）。
 
 1. `with` マッチング（combinations のみ）: `dragged` の型が `with` の指定に当てはまるか
-   （`Domain.Defs.TypeMatchRule`。タグならそのタグを持つか、object_defならその型そのものか）。
+   （`TypeMatchRule`。タグならそのタグを持つか、object_defならその型そのものか）。
 2. `conditions` 評価（3節）: 省略時は常に真。
 3. `duration` の解決: 「今の `self`（combinations では `dragged` も）の状態から見て、どれだけかかるか」
    なので、時間を進める前に分数だけ確定させる（切れ味の悪い刃物ほど時間がかかる、が書けるように）。
@@ -68,7 +68,7 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 
 ## 3. 実行可能条件（conditions）
 
-`Domain.Defs.ConditionNode` の木。葉は4種、複合は `all` / `any` / `not` の3種で、
+`ConditionNode` の木。葉は4種、複合は `all` / `any` / `not` の3種で、
 actions/combinations の一度きりの判定と、passives（8節）の持続的なゲートが同じ木を共用する。
 
 | 葉 | 形 | 判定 |
@@ -84,7 +84,7 @@ actions/combinations の一度きりの判定と、passives（8節）の持続�
 ## 4. 条件・効果から参照できるオブジェクト
 
 `conditions` の `subject`、効果の対象キー、`{subject, prop}` 参照はすべて共通の起点
-`Domain.Defs.ReferenceRoot` を使う。`self.prop` のような1階層の参照のみで、パス連結はない。
+`ReferenceRoot` を使う。`self.prop` のような1階層の参照のみで、パス連結はない。
 
 | 起点 | 解決先 | 使える文脈 |
 | --- | --- | --- |
@@ -100,7 +100,7 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
 
 ## 5. 効果（ActiveEffect）
 
-効果はポリモーフィックな `Domain.Defs.ActiveEffect` で、3形態を再帰的に組み合わせる。
+効果はポリモーフィックな `ActiveEffect` で、3形態を再帰的に組み合わせる。
 
 - **単一命令**: `set` / `add` / `destroy` / `spawn` / `transfer` / `move`（9節）。
 - **宣言順合成（`ActiveEffects`）**: パーサが set → add → transfer → destroy → spawn の順に並べる

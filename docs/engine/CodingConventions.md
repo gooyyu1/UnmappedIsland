@@ -9,7 +9,7 @@
 - どのフォルダへ置くかは、そのファイルが答えることで決まる（[`Layers.md`](./Layers.md) 1節）。
 - ファイル名は主要エクスポートの名前に一致させる。クラス・型が主ならPascalCase（`PropertyValue.ts`）、
   関数群のモジュールならcamelCase（`yamlMapping.ts`）。
-- ディレクトリ名は小文字で、複数語はケバブケース（`domain/runtime`・`asset-pack`・`assets/world-codex`）。
+- ディレクトリ名は小文字で、複数語はケバブケース（`domain/generation`・`asset-pack`・`assets/world-codex`）。
   ファイル名と違い指す識別子が無いので、綴りを合わせる相手がいない。データのファイル名（`src/assets/`
   以下）だけは例外で、識別子と同じsnake_caseに揃える
   （[`GameElementDefinition.md`](./GameElementDefinition.md) 3.2節）。

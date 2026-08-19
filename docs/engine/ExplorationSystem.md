@@ -225,7 +225,7 @@ object_defs:
 
 ## 5. カプセル化: 探索の入口を1箇所にする
 
-`Location.explore(actor, session)`（`src/domain/runtime/views/Location.ts`）を、探索の唯一の入口としています。
+`Location.explore(actor, session)`（`src/domain/views/Location.ts`）を、探索の唯一の入口としています。
 
 ```typescript
 explore(actor: WorldObject | undefined, session: WorldSession): boolean {
