@@ -67,6 +67,12 @@ object_defs:
         move:
           subject_prop: loot_target
           to: self
+      # 行き先の枠を名指しする（to_slot）。charactersが先に受け取れるが、そちらへは入らない。
+      shove:
+        move:
+          subject: actor
+          to_prop: destination_id
+          to_slot: stuff
       # 型で行き先を指す（to_object）。singletonなので、生成時に確定するIDを知らなくても指せる。
       sail:
         move:
@@ -116,6 +122,18 @@ object_defs:
       meadow.getSlotByLocalId(meadow.def.slotLayout.toLocal(codex.slotNames.getId('characters'))).contents,
       '元のロケーションからは居なくなる',
     ).not.toContain(character);
+  });
+
+  it('to_slotは、宣言順の走査ではなく名指しした枠へ入れる', () => {
+    const { codex, session, hilltop, character, path } = build();
+    path.setProperty(codex.propertyNames.getId('destination_id'), hilltop.instanceId);
+
+    expect(path.tryExecuteAction('shove', character, session)).toBe(true);
+
+    expect(character.parent).toBe(hilltop);
+    expect(character.parentSlotLocalId, 'charactersが先に受け取れるが、名指しのstuffへ入る').toBe(
+      hilltop.def.slotLayout.toLocal(codex.slotNames.getId('stuff')),
+    );
   });
 
   it('to_objectは、その型のインスタンスを行き先にする（moveを並べて2つ動かす）', () => {

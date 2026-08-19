@@ -1,5 +1,5 @@
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { objectRef, propertyRef, signalRef, signedNumber, text } from './Description';
+import { objectRef, propertyRef, signalRef, signedNumber, slotRef, text } from './Description';
 import type {
   EffectDeclaration,
   EffectReader,
@@ -128,12 +128,13 @@ class EffectDescriber implements EffectReader {
     });
   }
 
-  move(subject: ObjectRefReading, destination: ObjectRefReading): void {
+  move(subject: ObjectRefReading, destination: ObjectRefReading, slotGlobalId: number | undefined): void {
     this.out.write(
       text('move '),
       ...objectRefTokens(subject, this.names),
       text(' → '),
       ...objectRefTokens(destination, this.names),
+      ...(slotGlobalId === undefined ? [] : [text('.'), slotRef(this.names.slotName(slotGlobalId))]),
     );
   }
 

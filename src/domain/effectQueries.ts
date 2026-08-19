@@ -41,7 +41,7 @@ abstract class Finder implements EffectReader {
   spawn(_objectGlobalId: number, _count: number): void {}
   destroy(_target: ObjectRefReading): void {}
   transfer(_reading: TransferReading): void {}
-  move(_subject: ObjectRefReading, _destination: ObjectRefReading): void {}
+  move(_subject: ObjectRefReading, _destination: ObjectRefReading, _slotGlobalId: number | undefined): void {}
   signal(_name: string): void {}
 
   /** 候補の奥にあるものも数える（pickは分岐でしかなく、起こることを隠さない）。 */

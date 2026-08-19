@@ -412,7 +412,8 @@ function parseMoves(
  *
  * 動かす物も行き先も「対象キーか、インスタンスIDを持つプロパティか、型か」の三択（ObjectRef）で、
  * subjectは`subject`/`subject_prop`、移動先は`to`/`to_prop`/`to_object`の**どれか1つ**で指す
- * （複数・どれも無しはエラー）。
+ * （複数・どれも無しはエラー）。`to_slot`は行き先の中のどの枠へ入れるかで、省けば宣言順で最初に
+ * 受け入れた枠になる。
  *
  * selfOnly文脈（rangeイベント）で禁じるのは**actor/draggedを指す形だけ**。そこに実行者が居ないのは
  * 対象キーの解決先が無いという理由なので、`self`と型で書いた移動（本土への到達、Voyage.md 4節）は
@@ -437,11 +438,16 @@ function parseMove(
       `${context}: on_overflow/on_shortfallのmoveでは、actor・draggedを指せません（存在しないため）。`,
     );
 
-  return new MoveEffect(subject, destination);
+  const slotName = tryGetScalar(map, 'to_slot', context);
+  return new MoveEffect(
+    subject,
+    destination,
+    slotName === undefined ? undefined : loader.slotNames.intern(slotName),
+  );
 }
 
 /** moveが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。 */
-const MOVE_KEYS = new Set(['subject', 'subject_prop', 'to', 'to_prop', 'to_object']);
+const MOVE_KEYS = new Set(['subject', 'subject_prop', 'to', 'to_prop', 'to_object', 'to_slot']);
 
 /**
  * moveの動かす物（subject か subject_prop のどちらか一方）。
