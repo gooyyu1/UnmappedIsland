@@ -502,7 +502,7 @@
       "description": "新規オブジェクトを生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。destroyと同時に指定できる。"
     },
     "active_def": {
-      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/transfer/move/signal)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_overflow/on_shortfall（6.3節）は、専用キー(on_shortfall:等)の値としてこの形をそのまま持つ。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_shortfall: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントでは効果の対象はselfのみ・moveは不可（いずれもロード時エラー。本スキーマでは文脈ごとの制限までは表現しない）。actions/combinations/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（action_def/combination_def/pick_candidate参照）。",
+      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/become/transfer/move/signal)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_overflow/on_shortfall（6.3節）は、専用キー(on_shortfall:等)の値としてこの形をそのまま持つ。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_shortfall: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントでは効果の対象はselfのみ・moveは不可（いずれもロード時エラー。本スキーマでは文脈ごとの制限までは表現しない）。actions/combinations/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（action_def/combination_def/pick_candidate参照）。",
       "type": "object",
       "properties": {
         "set": {
@@ -518,6 +518,10 @@
         },
         "spawn": {
           "$ref": "#/$defs/spawn_spec"
+        },
+        "become": {
+          "description": "同じ個体のまま型を差し替える（9.9節）。未実装。",
+          "$ref": "#/$defs/become_spec"
         },
         "transfer": {
           "$ref": "#/$defs/transfer_spec"
@@ -574,7 +578,7 @@
       ]
     },
     "pick_candidate": {
-      "description": "pickの1候補（GameElementDefinition.md 10.1節）。専用の`active:`ラップを挟まず、set/add/destroy/spawnをweight/pickと対等な兄弟キーとして直接持つ。候補自身がさらにpickを持つ再帰も構造上排除しない。",
+      "description": "pickの1候補（GameElementDefinition.md 10.1節）。専用の`active:`ラップを挟まず、set/add/destroy/spawn/becomeをweight/pickと対等な兄弟キーとして直接持つ。候補自身がさらにpickを持つ再帰も構造上排除しない。",
       "type": "object",
       "properties": {
         "weight": {
@@ -593,6 +597,10 @@
         },
         "spawn": {
           "$ref": "#/$defs/spawn_spec"
+        },
+        "become": {
+          "description": "同じ個体のまま型を差し替える（9.9節）。未実装。",
+          "$ref": "#/$defs/become_spec"
         },
         "transfer": {
           "$ref": "#/$defs/transfer_spec"
@@ -652,6 +660,10 @@
         "spawn": {
           "$ref": "#/$defs/spawn_spec"
         },
+        "become": {
+          "description": "同じ個体のまま型を差し替える（9.9節）。未実装。",
+          "$ref": "#/$defs/become_spec"
+        },
         "transfer": {
           "$ref": "#/$defs/transfer_spec"
         },
@@ -695,6 +707,10 @@
         },
         "spawn": {
           "$ref": "#/$defs/spawn_spec"
+        },
+        "become": {
+          "description": "同じ個体のまま型を差し替える（9.9節）。未実装。",
+          "$ref": "#/$defs/become_spec"
         },
         "transfer": {
           "$ref": "#/$defs/transfer_spec"
@@ -1399,6 +1415,19 @@
       "description": "この要件を満たさないときにプレイヤーへ出す理由の識別子（14.6節）。actions/combinationsのconditionsの要素にだけ書ける（文言はlocaleのreason_textsが持つ）。",
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "become_spec": {
+      "description": "同じ個体のまま型を差し替える（GameElementDefinition.md 9.9節）。未実装。subject以外のキーは、行き先の型を決める軸の値（3.5節）。書かなかった軸は変化前の自分から引き継ぐ。同名のプロパティとスロットは中身ごと引き継ぎ、新しい型が持たないスロットの中身はdestroy（9.3節）と同じ規則で親へこぼれる。軸の名前は生成器が決めるためスキーマでは列挙できない。",
+      "type": "object",
+      "properties": {
+        "subject": {
+          "$ref": "#/$defs/destroy_target_name",
+          "description": "形を変える対象（9.9節）。省略時はself。"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/identifier"
+      }
     }
   }
 }
