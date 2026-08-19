@@ -1082,6 +1082,34 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toBe(true);
   });
 
+  it('まとめて重ねると、宣言が許した個数ぶん実行される', () => {
+    // 焚き火へ太い枝をまとめてくべる（allow_multiple、fire.yaml）。fuelは0〜30で1本20なので、
+    // 3本運んでも入るのは2本。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const hearth = game.session.spawn(codex.objectNames.getId('campfire'));
+    expect(hearth.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'))).toBeUndefined();
+    const branches = [0, 1, 2].map(() => {
+      const branch = game.session.spawn(codex.objectNames.getId('thick_branch'));
+      expect(branch.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+      return branch;
+    });
+
+    const view = fromGameSession(game, codex, locale);
+    const hearthCard = lane(view, game, 'fixtures').find((card) => card.objects[0] === hearth)!;
+    const branchCard = handCells(view, game).find((card) => card?.objects[0] === branches[0])!;
+
+    expect(view.combinationOf(branchCard, hearthCard)?.maxCount, '入るのは2本まで').toBe(2);
+
+    view.combinationOf(branchCard, hearthCard, 2)?.execute();
+
+    const fuelId = codex.propertyNames.getId('fuel');
+    expect(hearth.tryGetProperty(fuelId)?.getEffectiveValue(), '2本ぶんで満ちる').toBe(30);
+    expect(
+      branches.filter((branch) => branch.parent !== undefined),
+      '残るのは1本',
+    ).toHaveLength(1);
+  });
+
   it('コンテナのカードは中身を映す場所を持ち、そこへ出し入れできる', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const handSlotId = codex.slotNames.getId('hand');

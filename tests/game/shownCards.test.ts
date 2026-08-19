@@ -100,17 +100,18 @@ function screen(
         objects.map((entry) => entry.instanceId),
       );
     },
-    combinationOf: (dragged, target) => {
-      const [first, second] = target.objects;
-      const held = dragged === target ? second : dragged.objects[0];
-      return held === undefined || first === undefined
+    combinationOf: (dragged, target, count = 1) => {
+      const [first] = target.objects;
+      const carried = dragged === target ? target.objects.slice(1) : dragged.objects;
+      return carried.length === 0 || first === undefined
         ? undefined
         : ({
             name: '組み合わせ',
             description: undefined,
             minutes: 0,
-            maxCount: 1,
-            movedIds: [held.instanceId],
+            maxCount: carried.length,
+            // 本物と同じく、運んできた枚数ぶんが動く（cardOperations.combinationWith）。
+            movedIds: carried.slice(0, count).map((entry) => entry.instanceId),
             execute: () => {},
           } as CardCombination);
     },
@@ -387,6 +388,26 @@ describe('ドロップの意味', () => {
     borrow(shown, stack(place('hand'), [1, 2, 3]));
 
     expect(shown.combinationAt(place('hand'), 0, place('hand'), 0)?.movedIds, '見せている2枚目').toEqual([3]);
+  });
+
+  it('重ねる操作にも、運んできた枚数が伝わる', () => {
+    // まとめて実行してよい組み合わせ（allow_multiple）では、ついてきた枚数ぶんが動く。枚数を渡し
+    // 忘れると、2枚ついてきたのに1枚しか消えない。
+    const shown = screen({
+      hand: [stack(place('hand'), [1, 2])],
+      items: [stack(place('items'), [9])],
+    });
+
+    const drop = {
+      from: place('hand'),
+      fromIndex: 0,
+      to: place('items'),
+      target: { kind: 'combine', index: 0 },
+      count: 2,
+    } as const;
+
+    expect(shown.multiDropLimit(drop), '2枚までついてくる').toBe(2);
+    expect(shown.dropEffect(drop)?.movedIds, '動くのも2枚').toEqual([1, 2]);
   });
 
   it('1個しか見せていない札を自分へ重ねても、組み合わせは成立しない', () => {

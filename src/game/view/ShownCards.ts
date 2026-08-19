@@ -18,8 +18,12 @@ export interface CardSource {
   readonly stacksIn: (place: CardPlace) => readonly (ObjectCardStack | undefined)[];
   /** 挙げた個体だけを映すカード（PlayScreenView.cardOfObjects）。 */
   readonly cardOfObjects: (objects: readonly WorldObject[]) => ObjectCardStack;
-  /** 重ねたときに成立する組み合わせ（PlayScreenView.combinationOf）。 */
-  readonly combinationOf: (dragged: ObjectCardStack, target: ObjectCardStack) => CardCombination | undefined;
+  /** 重ねたときに成立する組み合わせ（PlayScreenView.combinationOf）。countはまとめて実行する個数。 */
+  readonly combinationOf: (
+    dragged: ObjectCardStack,
+    target: ObjectCardStack,
+    count?: number,
+  ) => CardCombination | undefined;
   /** 子ウィンドウが映しているスロット（映していなければundefined）。端の行き先の候補に入る。 */
   readonly windowPlace: () => CardPlace | undefined;
   /** 画面の区画が映しているスロット（PlayScreenView.places）。端の行き先はレーンの並びで決まる。 */
@@ -233,6 +237,7 @@ export class ShownCards {
     fromIndex: number,
     to: CardSpot,
     toIndex: number,
+    count = 1,
   ): CardCombination | undefined {
     const fromStacks = this.stacksAt(from);
     const dragged = fromStacks[fromIndex];
@@ -241,13 +246,13 @@ export class ShownCards {
     // 個体を1つも出していない札（帰りを待つ印）は、掴む相手にも重ねる相手にもならない。
     if (dragged.objects.length === 0 || target.objects.length === 0) return undefined;
 
-    return this.source.combinationOf(dragged, target);
+    return this.source.combinationOf(dragged, target, count);
   }
 
   /** そのドロップが重ねる操作なら、成立する組み合わせ。 */
   dropCombination(drop: ShownDrop): CardCombination | undefined {
     if (drop.target.kind !== 'combine') return undefined;
-    return this.combinationAt(drop.from, drop.fromIndex, drop.to, drop.target.index);
+    return this.combinationAt(drop.from, drop.fromIndex, drop.to, drop.target.index, drop.count);
   }
 
   /**
