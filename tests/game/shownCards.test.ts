@@ -40,7 +40,7 @@ interface Moved {
   readonly at: CardPlacement | undefined;
 }
 
-/** その個体たちを1枚に束ねた札。moveTo・reorderは、実行されたら記録だけを残す。 */
+/** その個体たちを1枚に束ねた札。dropInto・reorderは、実行されたら記録だけを残す。 */
 function stack(
   place: CardPlace,
   ids: readonly number[],
@@ -58,9 +58,14 @@ function stack(
     visibleSlots: [],
     contentsFor: () => options.contents,
     movedIds: (count: number) => ids.slice(0, count),
-    moveTo: (to, at, count) => () => {
-      options.moves?.push({ ids: ids.slice(0, count ?? 1), to, at });
-    },
+    dropInto: (to: CardPlace, at: CardPlacement | undefined, count: number | undefined) => ({
+      name: undefined,
+      description: undefined,
+      minutes: 0,
+      execute: () => {
+        options.moves?.push({ ids: ids.slice(0, count ?? 1), to, at });
+      },
+    }),
     reorder: (at) => () => {
       options.moves?.push({ ids, to: place, at });
     },
@@ -159,7 +164,7 @@ describe('画面に出ている札', () => {
     expect(idsAt(shown, place('hand'), 0), '個体は1つも出ていない').toEqual([]);
     expect(mark?.awaited, '待っているのは貸した1個').toEqual([1]);
     expect(
-      [mark?.moveTo, mark?.reorder, mark?.acceptedCountAt],
+      [mark?.dropInto, mark?.reorder, mark?.acceptedCountAt],
       '印は操作を持たない——掴む相手にも重ねる相手にもならない',
     ).toEqual([undefined, undefined, undefined]);
   });

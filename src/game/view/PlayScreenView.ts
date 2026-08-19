@@ -9,7 +9,7 @@ import type { Localization } from '../../locale/Localization';
 import type { CraftingMaterial } from './craftingView';
 import { craftingMaterials } from './craftingView';
 import { cardLooksOf } from './cardLooks';
-import type { CardAction, CardCombination, CardOperations, CardPutIn } from './cardOperations';
+import type { CardAction, CardCombination, CardDrop, CardOperations } from './cardOperations';
 import { cardOperationsOf } from './cardOperations';
 import type { CardPlace, CardPlacement, ScreenPlaces } from './cardPlaces';
 import { cardPlacesOf, samePlace } from './cardPlaces';
@@ -25,8 +25,8 @@ import type { StatusContent, StatusDetail, StatusInfluence } from '../ui/StatusB
  * スタックのメンバーはobjectsに全部入っていて、束ねているだけの表示上の都合で1枚に見えている
  * （CardContent.identityも全メンバーのID）。1枚しか無い束もこの形で表す。
  *
- * moveTo・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への反映（表示内容の
- * 作り直し）は呼び出し側の責務。moveToとreorderは「そこへ落とせるか」を、操作を返すか否かで答える。
+ * dropInto・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への反映（表示内容の
+ * 作り直し）は呼び出し側の責務。dropIntoとreorderは「そこへ落とせるか」を、答えを返すか否かで示す。
  * 落とせない場所（持ち歩けない設置物、前詰めの場所の空き枠、出し入れできない怪我など）ではundefinedに
  * なるので、呼び出し側は落とし先の枠を出す前に問い合わせられる。
  */
@@ -63,14 +63,14 @@ export interface ObjectCardStack extends CardContent {
   readonly visibleSlots: readonly CardPlace[];
 
   /**
-   * 束のうち先頭のcount個を別の場所へ移す操作。atは移した先での置き場所（1つ目にだけ効く）で、
-   * 省略すると空いている場所へ入る。動かせない束（設置物・怪我）にはない。移せなかった場合
-   * （手持ちが埋まっている等）は何も起きない。
+   * 束のうち先頭のcount個をその場所へ落としたときに起きること（落とせないならundefined）。atは落とした
+   * 先での置き場所（1つ目にだけ効く）で、省略すると空いている場所へ入る。動かせない束（設置物・怪我）
+   * にはない。
    */
-  readonly moveTo?: (place: CardPlace, at?: CardPlacement, count?: number) => (() => void) | undefined;
+  readonly dropInto?: (place: CardPlace, at?: CardPlacement, count?: number) => CardDrop | undefined;
 
   /**
-   * countを渡した操作（moveTo・putInto）が動かすインスタンスのID。先頭は束の代表＝掴まれていた1つ。
+   * countを渡した操作（dropInto）が動かすインスタンスのID。先頭は束の代表＝掴まれていた1つ。
    * どの個体が動くのかの選び方は操作の側が1箇所で決め（cardOperationsのcarriedOf）、画面の移動
    * アニメーション（MotionContext.released）はこれに合わせる——ワールドが動かすものと画面が飛ばす
    * ものを食い違わせないため。
@@ -82,12 +82,6 @@ export interface ObjectCardStack extends CardContent {
    * 決める**のに使う（CardDragController）。
    */
   readonly acceptedCountAt?: (place: CardPlace) => number;
-
-  /**
-   * そこへcount個入れる操作の見せ方（枠が文言も時間も宣言していなければundefined）。moveToが
-   * 「入れられるか」を答えるのに対し、こちらは「入れると何が起きるか」を答える——ドラッグ中の吹き出し。
-   */
-  readonly putInto?: (place: CardPlace, count?: number) => CardPutIn | undefined;
 
   /**
    * 同じ場所の中で位置を変える操作。こちらは束ごと動かす（1つずつでは元の束へ合流して戻ってしまうため、
@@ -386,25 +380,12 @@ export function fromGameSession(
   };
 
   /**
-   * そのカードへ重ねたdraggedの行き先（受け取れるスロットが無ければundefined、
-   * GameElementDefinition.md 7.8節）。
-   *
-   * **スロットがあるなら入れられる**が既定で、入れられて困るスロットが自分で断る（`placement`、
-   * 同 7.7節）。複数が受け入れるときは**宣言順で最初のもの**——編み籠は item でも fixture でもあるので、
-   * 筏へ重ねれば積荷（items）に入り、設置物の枠には落ちない。
-   *
-   * **今その物が実際に入るかまで見る。** 型が合うだけで選ぶと、手が塞がっているときに装備の枠が
-   * 空いていても落とせない。今いる場所は候補にしない（同じ枠への移動は入れる操作ではない）。
+   * そのカードへ重ねたdraggedの行き先（受け取れるスロットが無ければundefined）。**どの枠かを決めるのは
+   * ワールドの側**（WorldObject.putInSlotFor、GameElementDefinition.md 7.8節）で、画面は場所へ直すだけ。
    */
   const contentsOf = (object: WorldObject, dragged: WorldObject): CardPlace | undefined => {
-    const from = placeOfObject(dragged);
-    const slotDef = object.def.slotDefs.find(
-      (candidate) =>
-        candidate.manualPlacement &&
-        !samePlace({ container: object, slotGlobalId: candidate.globalId }, from) &&
-        dragged.rejectionForMoveTo(object, candidate.globalId) === undefined,
-    );
-    return slotDef === undefined ? undefined : { container: object, slotGlobalId: slotDef.globalId };
+    const slotGlobalId = object.putInSlotFor(dragged);
+    return slotGlobalId === undefined ? undefined : { container: object, slotGlobalId };
   };
 
   /**
@@ -657,7 +638,7 @@ export function fromGameSession(
    * 束のカード1枚ぶん（表示内容と操作の一そろい）。
    *
    * **ワールドが渡してくる並びは、中身が入れ替わり続ける実体（ObjectStack.members）なので、
-   * ここで写し取る。** 操作の閉包（moveTo・movedIds等）まで写した並びを見ないと、経過の途中経過
+   * ここで写し取る。** 操作の閉包（dropInto・movedIds等）まで写した並びを見ないと、経過の途中経過
    * （RecordedView）を再生する頃には実体が空になっていて、端の表示の試し打ち（PlayScene.cardEdges）
    * が先頭の無い束を踏む。
    */
