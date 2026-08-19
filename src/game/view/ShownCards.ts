@@ -17,7 +17,7 @@ export interface CardSource {
   /** その場所にワールドが持っている束（持ち出されている札を引く前）。 */
   readonly stacksIn: (place: CardPlace) => readonly (ObjectCardStack | undefined)[];
   /** 挙げた個体だけを映すカード（PlayScreenView.cardOfObjects）。 */
-  readonly cardOfObjects: (objects: readonly WorldObject[], place: CardPlace) => ObjectCardStack;
+  readonly cardOfObjects: (objects: readonly WorldObject[]) => ObjectCardStack;
   /** 重ねたときに成立する組み合わせ（PlayScreenView.combinationOf）。 */
   readonly combinationOf: (dragged: ObjectCardStack, target: ObjectCardStack) => CardCombination | undefined;
   /** 子ウィンドウが映しているスロット（映していなければundefined）。端の行き先の候補に入る。 */
@@ -122,7 +122,7 @@ export class ShownCards {
       .map((object) => object.instanceId);
     if (rest.length === 0) return awaited.length === 0 ? [] : [awaitingStack(stack, awaited)];
 
-    const shown = this.source.cardOfObjects(rest, stack.place);
+    const shown = this.source.cardOfObjects(rest);
     return [awaited.length === 0 ? shown : { ...shown, awaited }];
   }
 
@@ -134,7 +134,7 @@ export class ShownCards {
    * 居たまま掴める。
    */
   firstOf(stack: ObjectCardStack): ObjectCardStack {
-    return this.source.cardOfObjects(stack.objects.slice(0, 1), stack.place);
+    return this.source.cardOfObjects(stack.objects.slice(0, 1));
   }
 
   /**
@@ -195,7 +195,7 @@ export class ShownCards {
     for (const stack of this.source.stacksIn(opened.place)) {
       const object = stack?.objects.find((entry) => entry.instanceId === id);
       if (stack !== undefined && object !== undefined) {
-        const card = this.source.cardOfObjects([object], stack.place);
+        const card = this.source.cardOfObjects([object]);
         this.window = { card, stack: card };
         return card;
       }
