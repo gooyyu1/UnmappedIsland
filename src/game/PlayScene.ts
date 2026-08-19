@@ -348,8 +348,8 @@ export class PlayScene extends ResponsiveScene {
    */
   private readonly shown = new ShownCards({
     stacksIn: (place) => this.cardsAt(place),
-    cardOfObjects: (objects) => this.view.cardOfObjects(objects),
-    combinationOf: (dragged, target) => this.view.combinationOf(dragged, target),
+    cardOfObjects: (...asked) => this.view.cardOfObjects(...asked),
+    combinationOf: (...asked) => this.view.combinationOf(...asked),
     windowPlace: () => this.childWindowPlace,
     places: (screen) => this.place(screen),
   });
