@@ -448,7 +448,7 @@ object_defs:
     expect(loadBad).toThrowError(/未知のキー/);
   });
 
-  it('on_shortfall内のmoveはロードエラーになる', () => {
+  it('on_min内のmoveはロードエラーになる', () => {
     const loadBad = (): WorldCodex =>
       new WorldCodexYamlLoader()
         .load(
@@ -460,7 +460,7 @@ object_defs:
       fuse:
         value: 1
         range: {min: 0, max: 10}
-        on_shortfall:
+        on_min:
           move:
             subject: actor
             to_prop: fuse

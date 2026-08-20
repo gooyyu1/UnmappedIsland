@@ -32,16 +32,16 @@ object_defs:
         value: ${minutesPerTick}
       minute:
         value: 0
-        range: {min: 0, max: 59}
-        on_overflow:
+        range: {min: 0, max: 60}
+        on_max:
           add:
             self:
               minute: -60
               hour: 1
       hour:
         value: 0
-        range: {min: 0, max: 23}
-        on_overflow:
+        range: {min: 0, max: 24}
+        on_max:
           add:
             self:
               hour: -24

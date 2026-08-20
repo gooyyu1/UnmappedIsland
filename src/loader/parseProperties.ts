@@ -18,7 +18,6 @@ import { parseScalarNumber, tryGetNode } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
 import { parsePassive } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import { ActiveEffects, SetEffect } from '../domain/ActiveEffect';
 import type { AlertLevel } from '../domain/AlertLevel';
 import { ALERT_LEVELS } from '../domain/AlertLevel';
 import type { ActiveEffect } from '../domain/ActiveEffect';
@@ -32,9 +31,8 @@ const KNOWN_PROP_KEYS = new Set<string>([
   'value',
   'unit',
   'range',
-  'on_overflow',
-  'on_shortfall',
-  'on_exhausted',
+  'on_max',
+  'on_min',
   'stages',
   'passives',
   'inherit',
@@ -91,32 +89,9 @@ export function parseProp(
       requireNumber(rangeSpec, 'max', context),
     );
 
-  let onOverflow: ActiveEffect | undefined;
-  const onOverflowNode = tryGetMap(node, 'on_overflow', context);
-  if (onOverflowNode !== undefined) {
-    if (range === undefined) throw new YamlLoadError(`${context}: on_overflowを使うには'range'が必須です。`);
-    onOverflow = parseRangeEventEffect(loader, `${context}.on_overflow`, onOverflowNode);
-  } else {
-    onOverflow = range !== undefined ? buildDefaultOverflowEffect(range, propertyGlobalId, true) : undefined;
-  }
-
-  let onShortfall: ActiveEffect | undefined;
-  const onShortfallNode = tryGetMap(node, 'on_shortfall', context);
-  if (onShortfallNode !== undefined) {
-    if (range === undefined) throw new YamlLoadError(`${context}: on_shortfallを使うには'range'が必須です。`);
-    onShortfall = parseRangeEventEffect(loader, `${context}.on_shortfall`, onShortfallNode);
-  } else {
-    onShortfall =
-      range !== undefined ? buildDefaultOverflowEffect(range, propertyGlobalId, false) : undefined;
-  }
-
-  // 「尽きた」に反応する口（6.3節）。既定は無く、宣言した型だけが反応する。
-  let onExhausted: ActiveEffect | undefined;
-  const onExhaustedNode = tryGetMap(node, 'on_exhausted', context);
-  if (onExhaustedNode !== undefined) {
-    if (range === undefined) throw new YamlLoadError(`${context}: on_exhaustedを使うには'range'が必須です。`);
-    onExhausted = parseRangeEventEffect(loader, `${context}.on_exhausted`, onExhaustedNode);
-  }
+  // 未指定のときは渡さない。rangeを持つプロパティの既定のクランプはPropertyDef自身が組み立てる。
+  const onMax = parseOptionalRangeEvent(loader, context, node, range, 'on_max');
+  const onMin = parseOptionalRangeEvent(loader, context, node, range, 'on_min');
 
   const stages: PropertyStage[] = [];
   const stagesNode = tryGetSeq(node, 'stages', context);
@@ -149,14 +124,13 @@ export function parseProp(
     initialValue,
     initialValueRange,
     range,
-    onOverflow,
+    onMax,
     stages,
-    onShortfall,
+    onMin,
     inherit,
     tags,
     isSymbolProperty,
     gauge,
-    onExhausted,
   );
 
   // ゲージの向きとstagesのalertの向きは、同じ「どちらが危ないか」を二度言うことになる。食い違って
@@ -238,8 +212,8 @@ function parsePropertyTags(loader: WorldCodexYamlLoader, context: string, node: 
 }
 
 /**
- * rangeイベント（on_overflow・on_shortfall、6.3節）の中身を読む。対象はselfのみで、
- * pick候補の中の効果にも引き継ぐ。空のmapping（`on_shortfall: {}`）は「宣言だけして何もしない」
+ * rangeイベント（on_max・on_min、6.3節）の中身を読む。対象はselfのみで、
+ * pick候補の中の効果にも引き継ぐ。空のmapping（`on_min: {}`）は「宣言だけして何もしない」
  * （既定のクランプを打ち消す）を意味し、空のActiveEffectsになる。
  */
 function parseRangeEventEffect(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): ActiveEffect {
@@ -297,16 +271,16 @@ function parseAlertLevel(context: string, stageMap: YAMLMap): AlertLevel {
   return level;
 }
 
-/**
- * on_overflow/on_shortfall未指定時の既定動作として、「自分自身をrangeの境界（isMax指定側）へ
- * setする」ActiveEffectを合成する。著者は`range`を書くだけでクランプが得られ、特別な挙動が
- * 要る場合だけon_overflow/on_shortfallを明示すればよい。
- */
-function buildDefaultOverflowEffect(
-  range: PropertyRange,
-  propertyGlobalId: number,
-  isMax: boolean,
-): ActiveEffects {
-  const operations: ActiveEffect[] = [new SetEffect('self', propertyGlobalId, isMax ? range.max : range.min)];
-  return new ActiveEffects(operations);
+/** labelのrangeイベント（6.3節）が書かれていればその中身。書かれていなければundefined。 */
+function parseOptionalRangeEvent(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YAMLMap,
+  range: PropertyRange | undefined,
+  label: 'on_max' | 'on_min',
+): ActiveEffect | undefined {
+  const eventNode = tryGetMap(node, label, context);
+  if (eventNode === undefined) return undefined;
+  if (range === undefined) throw new YamlLoadError(`${context}: ${label}を使うには'range'が必須です。`);
+  return parseRangeEventEffect(loader, `${context}.${label}`, eventNode);
 }

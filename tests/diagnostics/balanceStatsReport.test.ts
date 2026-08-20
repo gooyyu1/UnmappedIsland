@@ -124,8 +124,8 @@ function appendMethod(append: (line?: string) => void): void {
   append();
   append('焼くのも失血死も、**自分では動かない値を隣の物が動かす**。炉は火にかけた物の');
   append('`cooking_progress` を進め（`add: {child: ...}`）、刺さった傷は持ち主の `blood` を奪う');
-  append('（`add: {parent: ...}`）。値が range の端を割った瞬間に、その型自身の `on_overflow`/');
-  append('`on_shortfall` が生肉を焼けた肉へ、獲物を死体へ置き換える。');
+  append('（`add: {parent: ...}`）。値が range の端へ届いた瞬間に、その型自身の `on_max`/');
+  append('`on_min` が生肉を焼けた肉へ、獲物を死体へ置き換える。');
   append();
   append('どちらも「1回で終わる待ち生産」なので、労働0・経過時間ありの工程として連鎖表に載せ、');
   append('押し手（炉・傷）は**要る道具**として前提の列に出す。誰が誰の隣に立てるかは、枠の');
@@ -136,7 +136,7 @@ function appendMethod(append: (line?: string) => void): void {
   append('届かない組み合わせはその工程を立てない。');
   append();
   append('一撃で端まで押す効果も同じ引き金を引く。仕留めの一撃（`set: {self: {blood: 0}}`）は');
-  append('血を空にするだけで、死体を生むのは `blood` の `on_shortfall` ——工程の結果にこれを');
+  append('血を空にするだけで、死体を生むのは `blood` の `on_min` ——工程の結果にこれを');
   append('畳まないと、イノシシの死体（血4,600mLで失血死には届かない）の作り方がどこにも無くなる。');
   append('確率でしか消えない入力は、**その確率ぶんだけ**消費されるものとして数える（21回に1回');
   append('しか仕留められないなら、1回の実行に要る獲物は0.048匹）。');

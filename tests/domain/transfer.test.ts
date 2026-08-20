@@ -211,7 +211,7 @@ object_defs:
     expect(canteen.getNumber(waterId), 'toの残容量を見ずにamount(2000)そのまま出す').toBe(3000);
     expect(
       actor.getNumber(hydrationId),
-      'range超過分はtoのon_overflow既定動作(range.maxへクランプ)で失われる(あふれた分は無駄になる)',
+      'range超過分はtoのon_max既定動作(range.maxへクランプ)で失われる(あふれた分は無駄になる)',
     ).toBe(28800);
   });
 

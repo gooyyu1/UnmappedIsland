@@ -168,7 +168,7 @@ traits:
 
   # 開いた容器から蒸発する。日射に依らない基礎の蒸発と、sunlightのしきい値で決まる上乗せの和
   # （LiquidContainerSystem.md 6節）。密閉容器はどちらのゲートも成立しないため蒸発しない。
-  # 量が尽きた変種は空の容器へ戻る（fillのon_shortfall、3.5節の生成が置く）。
+  # 量が尽きた変種は空の容器へ戻る（fillのon_min）。
   #
   # **口の開き方は自分自身のタグで見る**——容器と中身が同じ1つのオブジェクトなので、親を辿らない。
   evaporating_liquid:
@@ -269,13 +269,12 @@ object_defs:
     traits: [liquid_container, sealed_container]
     props:
       # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
-      # traitを配られた変種だけ（LiquidContainerSystem.md 1節）。尽きたら中身の軸を落として
-      # 空の容器へ戻る。境界をrangeの外に置くon_shortfallでは書けない——transferはrange.minを
-      # 出せる量の床と見るので、注ぎ切っても下限は割らない（GameElementDefinition.md 6.3節）。
+      # traitを配られた変種だけ。尽きたら中身の軸を落として空の容器へ戻る
+      # （LiquidContainerSystem.md 1節）。
       fill:
         value: 0
         range: {min: 0, max: 1000}
-        on_exhausted:
+        on_min:
           become: {content: none}
       weight: {value: 300}
       volume: {value: 1000}
@@ -286,13 +285,12 @@ object_defs:
     traits: [liquid_container, sealed_container]
     props:
       # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
-      # traitを配られた変種だけ（LiquidContainerSystem.md 1節）。尽きたら中身の軸を落として
-      # 空の容器へ戻る。境界をrangeの外に置くon_shortfallでは書けない——transferはrange.minを
-      # 出せる量の床と見るので、注ぎ切っても下限は割らない（GameElementDefinition.md 6.3節）。
+      # traitを配られた変種だけ。尽きたら中身の軸を落として空の容器へ戻る
+      # （LiquidContainerSystem.md 1節）。
       fill:
         value: 0
         range: {min: 0, max: 1000}
-        on_exhausted:
+        on_min:
           become: {content: none}
       weight: {value: 1500}
       volume: {value: 4700}
@@ -303,13 +301,12 @@ object_defs:
     traits: [liquid_container, sealed_container]
     props:
       # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
-      # traitを配られた変種だけ（LiquidContainerSystem.md 1節）。尽きたら中身の軸を落として
-      # 空の容器へ戻る。境界をrangeの外に置くon_shortfallでは書けない——transferはrange.minを
-      # 出せる量の床と見るので、注ぎ切っても下限は割らない（GameElementDefinition.md 6.3節）。
+      # traitを配られた変種だけ。尽きたら中身の軸を落として空の容器へ戻る
+      # （LiquidContainerSystem.md 1節）。
       fill:
         value: 0
         range: {min: 0, max: 2000}
-        on_exhausted:
+        on_min:
           become: {content: none}
       weight: {value: 500}
       volume: {value: 2800}
@@ -326,13 +323,12 @@ object_defs:
     traits: [liquid_container, narrow_open_container, rain_catching_container]
     props:
       # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
-      # traitを配られた変種だけ（LiquidContainerSystem.md 1節）。尽きたら中身の軸を落として
-      # 空の容器へ戻る。境界をrangeの外に置くon_shortfallでは書けない——transferはrange.minを
-      # 出せる量の床と見るので、注ぎ切っても下限は割らない（GameElementDefinition.md 6.3節）。
+      # traitを配られた変種だけ。尽きたら中身の軸を落として空の容器へ戻る
+      # （LiquidContainerSystem.md 1節）。
       fill:
         value: 0
         range: {min: 0, max: 4000}
-        on_exhausted:
+        on_min:
           become: {content: none}
       weight: {value: 1200}
       volume: {value: 15000}
@@ -347,13 +343,12 @@ object_defs:
     traits: [liquid_container, wide_open_container, rain_catching_container]
     props:
       # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
-      # traitを配られた変種だけ（LiquidContainerSystem.md 1節）。尽きたら中身の軸を落として
-      # 空の容器へ戻る。境界をrangeの外に置くon_shortfallでは書けない——transferはrange.minを
-      # 出せる量の床と見るので、注ぎ切っても下限は割らない（GameElementDefinition.md 6.3節）。
+      # traitを配られた変種だけ。尽きたら中身の軸を落として空の容器へ戻る
+      # （LiquidContainerSystem.md 1節）。
       fill:
         value: 0
         range: {min: 0, max: 250}
-        on_exhausted:
+        on_min:
           become: {content: none}
       weight: {value: 100}
       # 半球の殻は重ねて入るので、1個ぶんの外寸より小さく見る。

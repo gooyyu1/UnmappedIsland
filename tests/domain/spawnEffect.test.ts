@@ -20,8 +20,8 @@ object_defs:
       weight: {value: 4000}
       life:
         value: 0
-        range: {min: 1, max: 2147483647}
-        on_shortfall:
+        range: {min: 0, max: 2147483647}
+        on_min:
           destroy: self
           spawn: {object: crafted_part, count: 2}
   crafted_part:
@@ -46,7 +46,7 @@ object_defs:
     const material = new WorldObject(2, codex.objects.get(codex.objectNames.getId('raw_material')), session);
     material.moveToSlot(bench, itemsSlotId);
 
-    // lifeがrangeの下限を割っているので、tickでon_shortfall（destroy+spawn）が発火する。
+    // lifeがrangeの下限を割っているので、tickでon_min（destroy+spawn）が発火する。
     bench.tick(session);
 
     return bench.tryGetSlot(itemsSlotId)!.contents;

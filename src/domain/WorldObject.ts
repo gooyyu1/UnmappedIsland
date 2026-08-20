@@ -217,11 +217,11 @@ export class WorldObject {
   }
 
   /**
-   * 名指しした1つのプロパティが、今の進み方であと何tickでrangeを超える（on_overflowが起きる）か。
+   * 名指しした1つのプロパティが、今の進み方であと何tickでrange.maxへ届く（on_maxが起きる）か。
    * そのプロパティを持たない・今は進んでいない場合はundefined。
    */
-  ticksUntilOverflow(globalPropertyId: number): number | undefined {
-    return this.tryGetProperty(globalPropertyId)?.ticksUntilOverflow();
+  ticksUntilMax(globalPropertyId: number): number | undefined {
+    return this.tryGetProperty(globalPropertyId)?.ticksUntilMax();
   }
 
   /**
@@ -260,7 +260,7 @@ export class WorldObject {
    * 尽きたまま残っている値が今居る段（6.4節）の名前。尽きた値が無ければundefinedで、複数あれば
    * propsの宣言順で最初の1つ。
    *
-   * 尽きた瞬間に自分を消すプロパティ（on_shortfallのdestroy、6.3節）は尽きた値のまま静止するので、
+   * 尽きた瞬間に自分を消すプロパティ（on_minのdestroy、6.3節）は尽きた値のまま静止するので、
    * **世界から出たあとでも「何が尽きて消えたのか」を答えられる**（VitalsSystem.md 6節の死因）。
    */
   exhaustedStage(): string | undefined {

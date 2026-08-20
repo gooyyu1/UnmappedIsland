@@ -52,12 +52,12 @@ export class PropertyValue {
   }
 
   /**
-   * 数値を加減算し（不可逆）、値が変わった直後にon_overflow・on_shortfall（6.3節）の判定を行う。
+   * 数値を加減算し（不可逆）、値が変わった直後にon_max・on_min（6.3節）の判定を行う。
    *
    * sessionが未指定の場合は判定を行わない（呼び出し側が後で明示的にtick()を呼んで判定させる場合。
    * WorldObject.addNumber参照）。
    *
-   * deltaが0の場合は何もしない。on_overflow等の既定の補正（rangeの境界へのset）が境界に着地した後の再setで、
+   * deltaが0の場合は何もしない。on_max等の既定の補正（rangeの境界へのset）が境界に着地した後の再setで、
    * add→checkRangeEvents→applyActiveEffect→setNumber→addが無限に連鎖するのを防ぐガード。
    */
   add(delta: number, session: WorldSession | undefined): void {
@@ -157,19 +157,16 @@ export class PropertyValue {
   }
 
   /**
-   * 今の進み方が続いたとき、あと何tickでrange.maxを超える（on_overflowが起きる、6.3節）か。
+   * 今の進み方が続いたとき、あと何tickでrange.maxへ届く（on_maxが起きる、6.3節）か。
    * 進んでいない（合計が0以下）・rangeを持たない場合はundefined。
-   *
-   * 溢れは`> max`で起きるので、maxちょうどに乗ったtickではまだ起きない——**maxへ届く回ではなく、
-   * その次の回**が答えになる。
    */
-  ticksUntilOverflow(): number | undefined {
+  ticksUntilMax(): number | undefined {
     const range = this.def.range;
     if (range === undefined) return undefined;
 
     const perTick = this.changePerTick();
     if (perTick <= 0) return undefined;
-    return Math.max(1, Math.floor((range.max - this._number) / perTick) + 1);
+    return Math.max(1, Math.ceil((range.max - this._number) / perTick));
   }
 
   /**
@@ -186,14 +183,14 @@ export class PropertyValue {
   }
 
   /**
-   * 値がrangeの下限を割ったまま残っているなら、今居る段（6.4節）の名前。範囲の中にあるか、
-   * 該当する段が無ければundefined。
+   * 値が尽きたまま残っているなら（PropertyDef.isExhausted）、今居る段（6.4節）の名前。
+   * 尽きていないか、該当する段が無ければundefined。
    *
-   * 尽きた瞬間に自分を消すプロパティ（on_shortfallのdestroy、6.3節）は既定のクランプを持たないため、
+   * 尽きた瞬間に自分を消すプロパティ（on_minのdestroy、6.3節）は既定のクランプを持たないため、
    * 尽きた値のまま静止する。「何が尽きたのか」はそこから読める。
    */
   exhaustedStage(): string | undefined {
-    if (!this.def.isBelowRange(this._number)) return undefined;
+    if (!this.def.isExhausted(this._number)) return undefined;
     return this.def.stageNameOf(this.getEffectiveValue());
   }
 

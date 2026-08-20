@@ -100,7 +100,7 @@ export function rangeCyclesOf(
       if (driver?.maxTotal !== undefined && ticks * Math.abs(driver.slowest) > driver.maxTotal) continue;
 
       for (const readout of rangeEventReadouts(propertyDef, resolve)) {
-        if (readout.label === (slowest < 0 ? 'on_overflow' : 'on_shortfall')) continue;
+        if (readout.label === (slowest < 0 ? 'on_max' : 'on_min')) continue;
 
         // 値が戻るなら、次の発火までは戻った量ぶん——初回だけが初期値からの距離になる。
         const repeats = readout.returnedToSelf > 0;

@@ -9,7 +9,7 @@ import type { WorldSession } from './WorldSession';
  * 製作中オブジェクトで、今取り掛かっている工程（RecipeSystem.md 1節）。
  *
  * 進捗は工程の所要時間を積み上げた値なので、**進捗が入る区間**がそのまま工程を指す。
- * 全工程を終えていればundefined（完成はprogressのon_overflowが起こす）。
+ * 全工程を終えていればundefined（完成はprogressのon_maxが起こす）。
  */
 export function currentStep(recipe: RecipeDef, progress: number): RecipeStepDef | undefined {
   let consumed = 0;

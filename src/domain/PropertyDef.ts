@@ -3,6 +3,7 @@ import type { WorldSession } from './WorldSession';
 import type { Rng } from './Rng';
 import { INT32_MAX } from '../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
+import { ActiveEffects, SetEffect } from './ActiveEffect';
 import { describeEffect } from './describeEffect';
 import type { EffectDeclaration } from './EffectReader';
 import type { AlertLevel } from './AlertLevel';
@@ -124,7 +125,7 @@ export class PropertyStage {
 }
 
 /** range系イベント（6.3節）の名前。 */
-export type RangeEventLabel = 'on_overflow' | 'on_shortfall' | 'on_exhausted';
+export type RangeEventLabel = 'on_max' | 'on_min';
 
 /** 段（6.4節）がrangeの中で占める区間。両端とも0〜1で、startがminの側。 */
 export interface StageSpan {
@@ -169,30 +170,28 @@ export class PropertyDef {
     return this.initialValueRange !== undefined;
   }
 
-  /** 取りうる値域（6.3節）。on_overflow/on_shortfallを使う場合は必須。使わない場合はundefined。 */
+  /** 取りうる値域（6.3節）。on_max/on_minを使う場合は必須。使わない場合はundefined。 */
   readonly range: PropertyRange | undefined;
 
   /**
-   * on_overflow（6.3節）: 値がrange.maxを超えた際にselfへ一度だけ適用するactive内容。対象プロパティは
-   * 自分自身（折り返し）でも他のプロパティ（繰り上げ先）でも構わない。rangeが定義されていて著者が
-   * 明示的に書かなかった場合、「自分自身をrange.maxへsetする」既定のActiveEffectがビルド時に自動生成
-   * されて入る（WorldCodexYamlLoaderのプロパティ解析参照）。range自体が未定義の場合のみundefined。
+   * 著者が書いたon_max（6.3節）。書かれていなければundefinedで、その場合は既定のクランプ
+   * （自分自身をrange.maxへset）が代わりに走る——どちらが走るかは{@link onMax}が答える。
    */
-  private readonly onOverflow: ActiveEffect | undefined;
+  private readonly declaredOnMax: ActiveEffect | undefined;
+
+  /** 著者が書いたon_min（6.3節）。declaredOnMaxの下限側の鏡像。 */
+  private readonly declaredOnMin: ActiveEffect | undefined;
 
   /**
-   * on_shortfall（6.3節）: on_overflowの下限側の鏡像。値がrange.minを下回った際にselfへ一度だけ適用する。
-   * 未記述時は「自分自身をrange.minへsetする」既定が自動生成される。range未定義の場合のみundefined。
+   * on_max（6.3節）: 値がrange.max**に達した**とき（超えたときを含む）にselfへ一度だけ適用するactive内容。
+   * 対象プロパティは自分自身（折り返し）でも他のプロパティ（繰り上げ先）でも構わない。著者が書かなかった
+   * 場合は「自分自身をrange.maxへsetする」既定のクランプ——著者は`range`を書くだけでクランプが得られ、
+   * 特別な挙動が要る場合だけon_maxを書けばよい。range自体が未定義の場合のみundefined。
    */
-  private readonly onShortfall: ActiveEffect | undefined;
+  private readonly onMax: ActiveEffect | undefined;
 
-  /**
-   * on_exhausted（6.3節）: 値が`range.min`**ちょうど**に着いたときにselfへ一度だけ適用する。
-   * 「尽きた」に反応するための口で、境界をrangeの外に置く on_shortfall とは別の出来事——`transfer`
-   * （9.5節）は`range.min`を出せる量の床と見るため、**在庫を出し切る操作は下限を割らない**。
-   * 既定は無し（宣言した型だけが反応する）。
-   */
-  private readonly onExhausted: ActiveEffect | undefined;
+  /** on_min（6.3節）: on_maxの下限側の鏡像。値がrange.minに達したときにselfへ一度だけ適用する。 */
+  private readonly onMin: ActiveEffect | undefined;
 
   /** 順不同で構わない（resolveStage が min の値そのもので判定するため）。空なら stages なし。 */
   private readonly stages: readonly PropertyStage[];
@@ -258,28 +257,28 @@ export class PropertyDef {
     initialValue: number,
     initialValueRange: PropertyRange | undefined,
     range: PropertyRange | undefined,
-    onOverflow: ActiveEffect | undefined,
+    onMax: ActiveEffect | undefined,
     stages: readonly PropertyStage[],
-    onShortfall?: ActiveEffect,
+    onMin?: ActiveEffect,
     inherit = false,
     tags: readonly number[] = [],
     isSymbolic = false,
     gauge: GaugeDef | undefined = undefined,
-    onExhausted: ActiveEffect | undefined = undefined,
   ) {
     this.globalId = globalId;
     this.name = name;
     this.initialValue = initialValue;
     this.initialValueRange = initialValueRange;
     this.range = range;
-    this.onOverflow = onOverflow;
+    this.declaredOnMax = onMax;
+    this.declaredOnMin = onMin;
+    this.onMax = onMax ?? defaultClampTo(range, globalId, true);
     this.stages = stages;
-    this.onShortfall = onShortfall;
+    this.onMin = onMin ?? defaultClampTo(range, globalId, false);
     this.inherit = inherit;
     this.tags = tags;
     this.isSymbolic = isSymbolic;
     this.gauge = gauge;
-    this.onExhausted = onExhausted;
 
     this.fallbackStage = stages.find((stage) => stage.eq === undefined && stage.min === undefined);
     this.alertDirection = PropertyDef.deriveAlertDirection(stages);
@@ -337,9 +336,8 @@ export class PropertyDef {
       });
     }
 
-    this.describeRangeEvent('on_overflow', this.onOverflow, names, out);
-    this.describeRangeEvent('on_shortfall', this.onShortfall, names, out);
-    this.describeRangeEvent('on_exhausted', this.onExhausted, names, out);
+    this.describeRangeEvent('on_max', this.onMax, names, out);
+    this.describeRangeEvent('on_min', this.onMin, names, out);
   }
 
   private describeRangeEvent(
@@ -375,9 +373,8 @@ export class PropertyDef {
   /** 宣言されているrange系イベントとその名前（6.3節）。 */
   rangeEvents(): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
     const events: (readonly [RangeEventLabel, ActiveEffect])[] = [];
-    if (this.onExhausted !== undefined) events.push(['on_exhausted', this.onExhausted]);
-    if (this.onOverflow !== undefined) events.push(['on_overflow', this.onOverflow]);
-    if (this.onShortfall !== undefined) events.push(['on_shortfall', this.onShortfall]);
+    if (this.onMax !== undefined) events.push(['on_max', this.onMax]);
+    if (this.onMin !== undefined) events.push(['on_min', this.onMin]);
     return events;
   }
 
@@ -410,7 +407,7 @@ export class PropertyDef {
   }
 
   /**
-   * number（変更直後の実体値）に対してon_overflow・on_shortfall（6.3節）を判定し、該当するものを
+   * number（変更直後の実体値）に対してon_max・on_min（6.3節）を判定し、該当するものを
    * owner自身へ適用する。rangeが未定義なら何もしない。
    *
    * 適用はowner側のadd/setNumberを通って本メソッドを再帰的に呼ぶため、1回の呼び出しの中で
@@ -420,14 +417,11 @@ export class PropertyDef {
     if (this.range === undefined) return;
     const range = this.range;
 
-    if (this.onOverflow !== undefined && number > range.max)
-      owner.applyActiveEffect(this.onOverflow, session, undefined, undefined);
+    if (this.onMax !== undefined && number >= range.max)
+      owner.applyActiveEffect(this.onMax, session, undefined, undefined);
 
-    if (this.onShortfall !== undefined && number < range.min)
-      owner.applyActiveEffect(this.onShortfall, session, undefined, undefined);
-
-    if (this.onExhausted !== undefined && number === range.min)
-      owner.applyActiveEffect(this.onExhausted, session, undefined, undefined);
+    if (this.onMin !== undefined && number <= range.min)
+      owner.applyActiveEffect(this.onMin, session, undefined, undefined);
   }
 
   /**
@@ -532,9 +526,13 @@ export class PropertyDef {
     ];
   }
 
-  /** 実体値numberがrangeの下限を割っているか（rangeを持たないプロパティでは常に偽）。 */
-  isBelowRange(number: number): boolean {
-    return this.range !== undefined && number < this.range.min;
+  /**
+   * 実体値numberがこのプロパティにとって「尽きた」か。下限へ届いたことを合図として扱う宣言
+   * （on_min、6.3節）を持つプロパティだけが尽きうる——下限に居るだけの値（痛みの0など）は
+   * 尽きたのではなく、単に何も起きていない。
+   */
+  isExhausted(number: number): boolean {
+    return this.declaredOnMin !== undefined && this.range !== undefined && number <= this.range.min;
   }
 
   /** inherit（6節）による、祖先からownerの実効値へ加える寄与。inheritが無効、または該当する祖先が見つからない場合は0。 */
@@ -543,4 +541,17 @@ export class PropertyDef {
     const ancestor = owner.findAncestorWithProperty(this.globalId);
     return ancestor !== undefined ? ancestor.getEffectiveValue(this.globalId) : 0;
   }
+}
+
+/**
+ * on_max/on_min未指定時の既定動作、「自分自身をrangeの境界（isMax指定側）へsetする」効果。
+ * rangeを持たないプロパティには境界が無いのでundefined。
+ */
+function defaultClampTo(
+  range: PropertyRange | undefined,
+  propertyGlobalId: number,
+  isMax: boolean,
+): ActiveEffect | undefined {
+  if (range === undefined) return undefined;
+  return new ActiveEffects([new SetEffect('self', propertyGlobalId, isMax ? range.max : range.min)]);
 }

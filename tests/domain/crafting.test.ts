@@ -38,8 +38,8 @@ object_defs:
     props:
       durability:
         value: 2
-        range: {min: 1, max: 10}
-        on_shortfall:
+        range: {min: 0, max: 10}
+        on_min:
           destroy: self
         passives:
           - add:

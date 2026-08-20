@@ -18,7 +18,7 @@ export const PROGRESS_PROPERTY = 'progress';
  * 終えた工程の数を持つプロパティ名（工程が2つ以上のレシピにだけ宣言する）。`progress`が工程の
  * 所要時間で動くのに対し、こちらは工程を1つ終えるたびに1増える純粋な回数なので、`range`に対する
  * 割合（`gauge`宣言、CardView.md 10.1節）がそのまま「終えた工程の数 ÷ 全工程数」になる。
- * `progress`と役割が重なるが、`progress`は所要時間で完成（on_overflow）を起こす側なので、
+ * `progress`と役割が重なるが、`progress`は所要時間で完成（on_max）を起こす側なので、
  * 表示専用の割合をここへ分ける（時間の不揃いな工程では両者の割合が一致しないため）。
  */
 export const FINISHED_STEPS_PROPERTY = 'finished_steps';
@@ -99,15 +99,12 @@ function inProgressObjectDef(
     props: {
       [PROGRESS_PROPERTY]: {
         value: 0,
-        // 完成はrangeの上限を超えた瞬間に起こす。stagesのpassivesにはspawn/destroyを書けない
-        // （GameElementDefinition.md 9.7節・10節）ため、段ではなくrangeイベントで表す。
-        //
-        // 上限を合計より1つ内側に置くのは、境界値ちょうどでは発火しないため（同6.3節）。
-        // 全工程を終えると進捗は合計と等しくなるので、そこが上限だと完成しない。
-        range: { min: 0, max: totalMinutes - 1 },
+        // 完成は進捗が上限（＝工程の所要時間の合計）に達した瞬間に起こす。stagesのpassivesには
+        // becomeを書けない（GameElementDefinition.md 9.7節・10節）ため、段ではなくrangeイベントで表す。
+        range: { min: 0, max: totalMinutes },
         // レシピの軸を落とした座標＝完成品そのものへ、同じ個体のまま変わる（9.9節・3.5節）。
         // 残った素材はmaterialsスロットごと無くなるので親へこぼれる（RecipeSystem.md 3節）。
-        on_overflow: { become: { [RECIPE_AXIS]: NO_AXIS_VALUE } },
+        on_max: { become: { [RECIPE_AXIS]: NO_AXIS_VALUE } },
       },
       // 工程が1つのレシピでは、この値が動く前に最初の作業でそのまま完成してカードが入れ替わるので、
       // そもそも宣言しない（CardView.md 10.1節）。「gaugeを宣言したプロパティが無ければバーも
@@ -118,7 +115,7 @@ function inProgressObjectDef(
               // 良し悪しではなく「ここまで終えた」量なので、両端とも良し悪しを言わない（1色で塗る）。
               gauge: { min: 'neutral', max: 'neutral' },
               value: 0,
-              // 完成した瞬間にこの物自体が消える（progressのon_overflow）ため、rangeの上限
+              // 完成した瞬間にこの物自体が消える（progressのon_max）ため、rangeの上限
               // （全工程数）そのものへ到達したあとを気にする必要がない。progressと違い、
               // 境界を1つ内側へ避ける調整は要らない。
               range: { min: 0, max: recipe.steps.length },

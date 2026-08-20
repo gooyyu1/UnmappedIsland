@@ -318,7 +318,7 @@ export interface Requirement {
   /** この需要を埋められるプロパティ。体脂肪は三大栄養素が原資なので、そちらの増分で埋まる。 */
   readonly suppliedBy: readonly number[];
 
-  /** 尽きると死ぬか（`on_shortfall` が自分を消す、VitalsSystem.md）。 */
+  /** 尽きると死ぬか（`on_min` が自分を消す、VitalsSystem.md）。 */
   readonly lethal: boolean;
 }
 
@@ -362,12 +362,12 @@ function inInitialStage(def: ObjectDef, delta: TickDelta): boolean {
   return propertyDef.stageOf(value)?.name === stage.name;
 }
 
-/** そのプロパティが尽きたとき、持ち主ごと消えるか（`on_shortfall: destroy self`）。 */
+/** そのプロパティが尽きたとき、持ち主ごと消えるか（`on_min: destroy self`）。 */
 function destroysWhenEmpty(def: ObjectDef, propertyGlobalId: number): boolean {
   const propertyDef = def.getPropertyDef(propertyGlobalId);
   if (propertyDef === undefined) return false;
   return rangeEventReadouts(propertyDef, () => undefined).some(
-    (readout) => readout.label === 'on_shortfall' && readout.destroysSelf,
+    (readout) => readout.label === 'on_min' && readout.destroysSelf,
   );
 }
 

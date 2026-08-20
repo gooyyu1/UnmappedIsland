@@ -102,8 +102,8 @@ traits:
       # 逃げ込んだ先を突き止めれば、本体が消えた後でも盗品は落ちている。
       stay_remaining:
         value: 96
-        # 0に達した瞬間にon_shortfallを発火させるため、下限は0ではなく1（6.3節）。
-        range: {min: 1, max: 96}
+        # 0に達したところで立ち去る（6.3節のon_min）。
+        range: {min: 0, max: 96}
         passives:
           - conditions:
               - {in_slot: items}
@@ -111,7 +111,7 @@ traits:
             add:
               self:
                 stay_remaining: -1
-        on_shortfall:
+        on_min:
           destroy: self
 
       # 1手の重み配分（HuntingSystem.md 5節）。**候補は「その1手が何だったか」の型で、動物ごとに
@@ -302,7 +302,7 @@ traits:
           # 死ぬ。**怪我としては表さない**（手当てできず、残らないものだから。InjurySystem.md 4節）。
           # 重みは無防備さそのものなので、気を失っている相手ではここが最も太くなる。
           #
-          # **仕留めは血を空にすることで表す。** 死体へ置き換えるのはbloodのon_shortfall（動物ごとの
+          # **仕留めは血を空にすることで表す。** 死体へ置き換えるのはbloodのon_min（動物ごとの
           # 宣言）で、**死体の名前を知っているのは動物だけ**になる——この候補は獲物の種類を知らない。
           # 頸を落とすとは実際に血を失わせることなので、失血死と別の道を用意する必要も無い。
           - weight: {prop: vulnerability}
@@ -359,8 +359,7 @@ object_defs:
       # 条件は付けず、常に戻す——手負いのまま逃げた個体は、追いつけなければ癒えてしまう。
       blood:
         value: 400
-        # 0に達した瞬間にon_shortfallを発火させるため、下限は0ではなく1（6.3節）。
-        range: {min: 1, max: 400}
+        range: {min: 0, max: 400}
         stages:
           # 助からない域。ここまで失えば意識は無い——最も深い段が最も強く奪う。
           - name: exsanguinated
@@ -382,7 +381,7 @@ object_defs:
         # 血が尽きれば、自分が居た枠がそのまま死体に変わる（destroyをspawnより先に書く、9.4節）。
         # **この型が死体になる唯一の道**で、仕留めの一撃（beast traitのstrike）も、逃げられた個体が
         # 後で倒れる道も、どちらもここへ合流する——だから死体の名前はここにしか書かれていない。
-        on_shortfall:
+        on_min:
           destroy: self
           spawn: {object: monkey_carcass}
         passives:
@@ -455,7 +454,7 @@ object_defs:
       # 生き延び、深く食い込めば死ぬ。ロールが分かれ目になる唯一の大きさ（TrapSystem.md 5.1節）。
       blood:
         value: 80
-        range: {min: 1, max: 80}
+        range: {min: 0, max: 80}
         stages:
           - name: exsanguinated
             alert: fatal
@@ -473,7 +472,7 @@ object_defs:
               - modify: {self: {consciousness: -30}}
           - {name: low, min: 56, alert: watch}
           - {name: replete, min: 64}
-        on_shortfall:
+        on_min:
           destroy: self
           spawn: {object: junglefowl_carcass}
         passives:
@@ -518,7 +517,7 @@ object_defs:
                 shock: -0.08
       blood:
         value: 6
-        range: {min: 1, max: 6}
+        range: {min: 0, max: 6}
         stages:
           - name: exsanguinated
             alert: fatal
@@ -536,7 +535,7 @@ object_defs:
               - modify: {self: {consciousness: -30}}
           - {name: low, min: 4.2, alert: watch}
           - {name: replete, min: 4.8}
-        on_shortfall:
+        on_min:
           destroy: self
           spawn: {object: rat_carcass}
         passives:
@@ -584,11 +583,11 @@ object_defs:
               self:
                 shock: -48
       # maxが体格（体重のおよそ1/13＝4,600mL）。ヒトに近い量なので、**裂傷1つ（60mL）は
-      # ほとんど響かない**——刺し傷（800mL、injuries.yamlのpuncture_wound）だけが釣り合う。
+      # ほとんど響かない**——刺し傷（1,000mL、injuries.yamlのpuncture_wound）だけが釣り合う。
       # 段のしきい値も戻る速さも、サルと同じ割合で刻む。
       blood:
         value: 4600
-        range: {min: 1, max: 4600}
+        range: {min: 0, max: 4600}
         stages:
           - name: exsanguinated
             alert: fatal
@@ -606,7 +605,7 @@ object_defs:
               - modify: {self: {consciousness: -30}}
           - {name: low, min: 3220, alert: watch}
           - {name: replete, min: 3680}
-        on_shortfall:
+        on_min:
           destroy: self
           spawn: {object: wild_boar_carcass}
         passives:
@@ -671,7 +670,7 @@ object_defs:
       cooking_progress:
         value: 0
         range: {min: 0, max: 6}
-        on_overflow:
+        on_max:
           destroy: self
           spawn: {object: roasted_rat}
 
@@ -685,7 +684,7 @@ object_defs:
       cooking_progress:
         value: 0
         range: {min: 0, max: 4}
-        on_overflow:
+        on_max:
           destroy: self
           spawn: {object: charred_lump}
     actions:
@@ -751,7 +750,7 @@ object_defs:
       cooking_progress:
         value: 0
         range: {min: 0, max: 24}
-        on_overflow:
+        on_max:
           destroy: self
           spawn: {object: roasted_meat}
     actions:
@@ -780,7 +779,7 @@ object_defs:
       cooking_progress:
         value: 0
         range: {min: 0, max: 12}
-        on_overflow:
+        on_max:
           destroy: self
           spawn: {object: charred_lump}
     actions:

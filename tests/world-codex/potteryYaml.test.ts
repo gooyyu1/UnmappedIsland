@@ -109,7 +109,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     return kiln;
   }
 
-  /** 焼き上がりの判定だけを起こす。値を超えさせるとon_overflowが走る（6.3節）。 */
+  /** 焼き上がりの判定だけを起こす。値を超えさせるとon_maxが走る（6.3節）。 */
   function overheat(greenware: WorldObject): void {
     greenware.setNumber(codex.propertyNames.getId('cooking_progress'), 200, session);
   }

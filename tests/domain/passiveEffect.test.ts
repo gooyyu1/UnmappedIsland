@@ -4,7 +4,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 
-// modify/add（GameElementDefinition.md 8節）の実行時集計と、on_overflow/on_shortfall
+// modify/add（GameElementDefinition.md 8節）の実行時集計と、on_max/on_min
 // （6.3節、値がRangeの外へ出た際にselfへ適用されるactive内容）に対する自動テスト。
 describe('PassiveEffect', () => {
   let nextInstanceId: number;
@@ -520,10 +520,10 @@ object_defs:
   });
 
   // ------------------------------------------------------------------
-  // on_overflow / on_shortfall / destroy / spawn: 値がRangeの外へ出た際にselfへ適用されるactive内容。
+  // on_max / on_min / destroy / spawn: 値がRangeの外へ出た際にselfへ適用されるactive内容。
   // ------------------------------------------------------------------
-  describe('on_overflow / on_shortfall / destroy / spawn: 値がRangeの外へ出た際にselfへ適用されるactive内容。', () => {
-    it('on_overflowが発火するとdestroy: selfで自分自身が破棄される', () => {
+  describe('on_max / on_min / destroy / spawn: 値がRangeの外へ出た際にselfへ適用されるactive内容。', () => {
+    it('on_maxが発火するとdestroy: selfで自分自身が破棄される', () => {
       const yaml = `
 object_defs:
   holder:
@@ -534,7 +534,7 @@ object_defs:
       pressure:
         value: 100
         range: {min: 0, max: 99}
-        on_overflow:
+        on_max:
           destroy: self
 `;
       const codex = load(yaml);
@@ -552,7 +552,7 @@ object_defs:
       expect(slot?.contents.length).toBe(0);
     });
 
-    it('値がmax以下の間はon_overflowが発火しない', () => {
+    it('値がmax以下の間はon_maxが発火しない', () => {
       const yaml = `
 object_defs:
   holder:
@@ -563,7 +563,7 @@ object_defs:
       pressure:
         value: 50
         range: {min: 0, max: 100}
-        on_overflow:
+        on_max:
           destroy: self
 `;
       const codex = load(yaml);
@@ -576,7 +576,7 @@ object_defs:
 
       containerInstance.tick(session);
 
-      expect(tankInstance.parent).toBeDefined(); // on_overflowは上限以下では発火しない
+      expect(tankInstance.parent).toBeDefined(); // on_maxは上限以下では発火しない
     });
 
     it('tickは子のtickを直接呼ばなくても子孫へ再帰する', () => {
@@ -608,7 +608,7 @@ object_defs:
       expect(batteryInstance.getEffectiveValue(chargeId)).toBe(9);
     });
 
-    it('on_shortfallが発火するとdestroy: selfで自分自身が破棄される', () => {
+    it('on_minが発火するとdestroy: selfで自分自身が破棄される', () => {
       const yaml = `
 object_defs:
   lantern_holder:
@@ -618,8 +618,8 @@ object_defs:
     props:
       durability:
         value: 0
-        range: {min: 1, max: 2147483647}
-        on_shortfall:
+        range: {min: 0, max: 2147483647}
+        on_min:
           destroy: self
 `;
       const codex = load(yaml);
@@ -646,8 +646,8 @@ object_defs:
     props:
       ripeness:
         value: 0
-        range: {min: 1, max: 2147483647}
-        on_shortfall:
+        range: {min: 0, max: 2147483647}
+        on_min:
           spawn:
             object: berry
             into: self
@@ -676,8 +676,8 @@ object_defs:
     props:
       freshness:
         value: 0
-        range: {min: 1, max: 2147483647}
-        on_shortfall:
+        range: {min: 0, max: 2147483647}
+        on_min:
           destroy: self
           spawn:
             object: rotten_log
@@ -719,8 +719,8 @@ object_defs:
     props:
       ripeness:
         value: 0
-        range: {min: 1, max: 2147483647}
-        on_shortfall:
+        range: {min: 0, max: 2147483647}
+        on_min:
           spawn:
             object: boulder
             into: self
@@ -760,8 +760,8 @@ object_defs:
     props:
       yield:
         value: 0
-        range: {min: 1, max: 2147483647}
-        on_shortfall:
+        range: {min: 0, max: 2147483647}
+        on_min:
           spawn:
             object: pebble
             into: self
@@ -831,8 +831,8 @@ object_defs:
     props:
       yield:
         value: 0
-        range: {min: 1, max: 2147483647}
-        on_shortfall:
+        range: {min: 0, max: 2147483647}
+        on_min:
           spawn:
             object: pebble2
             into: self
@@ -850,7 +850,7 @@ object_defs:
       expect(slot?.contents.length).toBe(0);
     });
 
-    it('on_shortfall文脈にはactorが無いため、into: actorのspawnは何も配置しない', () => {
+    it('on_min文脈にはactorが無いため、into: actorのspawnは何も配置しない', () => {
       const yaml = `
 object_defs:
   clearing3:
@@ -861,8 +861,8 @@ object_defs:
     props:
       ripeness:
         value: 0
-        range: {min: 1, max: 2147483647}
-        on_shortfall:
+        range: {min: 0, max: 2147483647}
+        on_min:
           destroy: self
           spawn:
             object: berry
@@ -880,7 +880,7 @@ object_defs:
 
       expect(bushInstance.parent).toBeUndefined(); // bush自身は破棄される
       const slot = locationInstance.tryGetSlot(groundSlotId);
-      expect(slot?.contents.length).toBe(0); // actorルートはon_shortfall文脈では解決できないため、berryはどこにも配置されない
+      expect(slot?.contents.length).toBe(0); // actorルートはon_min文脈では解決できないため、berryはどこにも配置されない
     });
 
     it('同じtick内で複数の子が自分自身を破棄しても、tickは正常に完了する', () => {
@@ -893,8 +893,8 @@ object_defs:
     props:
       integrity:
         value: 0
-        range: {min: 1, max: 2147483647}
-        on_shortfall:
+        range: {min: 0, max: 2147483647}
+        on_min:
           destroy: self
 `;
       const codex = load(yaml);
@@ -942,7 +942,7 @@ object_defs:
     });
 
     it('tickの最中に親が破棄されても、子はこぼれ出て次のtickから動き続ける', () => {
-      // innerBoxは自分自身のon_shortfallによって、outerBox.tick()の実行中に破棄される。その子
+      // innerBoxは自分自身のon_minによって、outerBox.tick()の実行中に破棄される。その子
       // (battery)は単独で在れるので、道連れにならずouterBoxへこぼれ出る（7.9節）。
       //
       // こぼれた先はもう子を数え終えているので、そのtickの残りは動かない（1 tickぶんの取りこぼしは、
@@ -958,8 +958,8 @@ object_defs:
     props:
       integrity:
         value: 0
-        range: {min: 1, max: 2147483647}
-        on_shortfall:
+        range: {min: 0, max: 2147483647}
+        on_min:
           destroy: self
   cell:
     props:
@@ -984,7 +984,7 @@ object_defs:
 
       outerInstance.tick(session);
 
-      expect(innerInstance.parent).toBeUndefined(); // inner_boxは自分自身のon_shortfallにより破棄される
+      expect(innerInstance.parent).toBeUndefined(); // inner_boxは自分自身のon_minにより破棄される
       expect(batteryInstance.parent, '子は道連れにならず、祖父へこぼれ出る').toBe(outerInstance);
       expect(batteryInstance.getEffectiveValue(chargeId), 'こぼれたtickは動かない').toBe(10);
 

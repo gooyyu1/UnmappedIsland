@@ -7,7 +7,7 @@ import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { StubRng } from '../support/StubRng';
 import { SeededRng } from '../support/SeededRng';
 
-// rangeイベント（on_shortfall等）の直下にpickを書ける文法（GameElementDefinition.md 9.7節・10節）の
+// rangeイベント（on_min等）の直下にpickを書ける文法（GameElementDefinition.md 9.7節・10節）の
 // 自動テスト。気候システム（ClimateSystem.md）の「残り時間が0に達した瞬間、プロパティ参照の重みで
 // 次の状態を抽選し、残り時間自体も再ロールする」パターンがこの文法に依存する。
 describe('rangeイベントのpick文法', () => {
@@ -37,12 +37,12 @@ object_defs:
         value: 0
       counter:
         value: 3
-        range: {min: 1, max: 999}
+        range: {min: 0, max: 999}
         passives:
           - add:
               self:
                 counter: -1
-        on_shortfall:
+        on_min:
           pick:
             - weight: {prop: go_a}
               set:
@@ -71,16 +71,16 @@ object_defs:
     expect(cycler.getNumber(counterId)).toBe(20);
   });
 
-  it('on_shortfall配下のpick候補（ネストを含む）にparent対象を書くとロードエラーになる', () => {
-    // on_shortfall配下のpick候補（ネストを含む）の効果対象はselfのみ（6.3節の制約をそのまま引き継ぐ）
+  it('on_min配下のpick候補（ネストを含む）にparent対象を書くとロードエラーになる', () => {
+    // on_min配下のpick候補（ネストを含む）の効果対象はselfのみ（6.3節の制約をそのまま引き継ぐ）
     const yaml = `
 object_defs:
   broken:
     props:
       counter:
         value: 3
-        range: {min: 1, max: 999}
-        on_shortfall:
+        range: {min: 0, max: 999}
+        on_min:
           pick:
             - weight: 1
               pick:
@@ -91,7 +91,7 @@ object_defs:
     expect(() => load(yaml)).toThrow(YamlLoadError);
   });
 
-  it('on_shortfallに9節の命令とpickを並べると、書かれた順に適用される', () => {
+  it('on_minに9節の命令とpickを並べると、書かれた順に適用される', () => {
     // 分岐しない共通の処理（set）と、分岐する処理（pick）を並べて書ける。
     const yaml = `
 object_defs:
@@ -101,12 +101,12 @@ object_defs:
         value: 0
       counter:
         value: 3
-        range: {min: 1, max: 999}
+        range: {min: 0, max: 999}
         passives:
           - add:
               self:
                 counter: -1
-        on_shortfall:
+        on_min:
           set:
             self: {counter: 10, chosen: 1}
           pick:
@@ -125,8 +125,8 @@ object_defs:
     expect(mixer.getNumber(codex.propertyNames.getId('chosen'))).toBe(11);
   });
 
-  it('on_shortfall: {} という空宣言は、既定の下限クランプをエラーなく打ち消す', () => {
-    // 「宣言だけして何もしない」on_shortfall: {}。既定の下限クランプが打ち消され、
+  it('on_min: {} という空宣言は、既定の下限クランプをエラーなく打ち消す', () => {
+    // 「宣言だけして何もしない」on_min: {}。既定の下限クランプが打ち消され、
     // 値が下限を下回ったまま残ることを許容する。
     const yaml = `
 object_defs:
@@ -135,7 +135,7 @@ object_defs:
       level:
         value: 5
         range: {min: 0, max: 10}
-        on_shortfall: {}
+        on_min: {}
         passives:
           - add:
               self:

@@ -23,7 +23,7 @@
 
 | 決めたいこと | 載せた既存機能 |
 |---|---|
-| 結果が出るまでの時間（2 節） | `range` + `add` + `on_shortfall`（6.3 節） |
+| 結果が出るまでの時間（2 節） | `range` + `add` + `on_min`（6.3 節） |
 | 待ち時間のばらつき（2.1 節） | 生成時に 1 回ロールする初期値（6.2 節）と、当たるまでの回数 |
 | 土地ごとの成否（3 節） | `inherit`（6.5 節）と `pick` の `weight`（10.2 節） |
 | 罠のサイズ（1.1 節） | 内側の `pick` に並べた候補の一覧 |
@@ -129,15 +129,14 @@ props:
   catch_remaining:
     # 生成時に1回ロールされる位相（2.1節）。以後この幅は使われない。
     value: {min: 1, max: 16}
-    # 0に達した瞬間にon_shortfallを発火させるため、下限は0ではなく1（6.3節）。
-    range: {min: 1, max: 16}
+    range: {min: 0, max: 16}
     passives:
       - conditions:
           - {in_slot: items}                  # 地面に置かれている間だけ（1節）
           # 空いている間だけ（6節）。獲物も死体もquarryなので、両方をこれ1つで拾う。
           - not: {slot: catch, matches: {tag: quarry}}
         add: {self: {catch_remaining: -1}}
-    on_shortfall:
+    on_min:
       # 外側は食性の卓を選び（餌が決める、4節）、内側はその卓で掛かるかどうかと種を選ぶ
       # （土地が決める、3節）。
       add: {self: {catch_remaining: 16}}
@@ -391,9 +390,9 @@ snare_laceration:
   props:
     severity:
       value: {min: 240, max: 480}
-      range: {min: 1, max: 480}
+      range: {min: 0, max: 480}
       passives: [{add: {self: {severity: -1}}}]
-      on_shortfall: {destroy: self}
+      on_min: {destroy: self}
     # 掛かり方の深さ。2〜4 tickで固まり、その間に30〜60mLを奪う。
     bleeding:
       value: {min: 40, max: 100}
@@ -471,7 +470,7 @@ snare_laceration:
 ——怪我を受け取れるスロットを持つ子は 1 つしか居ません。
 
 - **これが無いと、罠は自分が生んだ獲物へ何も渡せません。** `into` は `same_slot`/`self`/`actor` しか
-  取れず、`actor` は `on_shortfall` に存在しません（9.4 節）。**罠には手番を持つ実行者が居ない**という
+  取れず、`actor` は `on_min` に存在しません（9.4 節）。**罠には手番を持つ実行者が居ない**という
   一点だけで、`strike` が `into: actor` で書けること（`animals.yaml`）が書けなくなります。
 - **一意性は罠が保証します。** `catch` は `cell_count: 1` なので子は 1 つです。一般には「最初に
   受け取れた子」で決まり、`into` が既にスロットに対して行っている決め方と同じです。
@@ -503,13 +502,13 @@ snare_laceration:
 props:
   durability:
     value: 960
-    range: {min: 1, max: 960}
+    range: {min: 0, max: 960}
     passives:
       - conditions: [{in_slot: items}]
         add: {self: {durability: -1}}       # 屋外での劣化（10日）
       - conditions: [{slot: catch, matches: {tag: quarry}}]
         add: {self: {durability: -10}}      # もがかれている間（新品でも1日弱）
-    on_shortfall:
+    on_min:
       destroy: self
 ```
 

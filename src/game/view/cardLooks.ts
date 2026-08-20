@@ -275,7 +275,7 @@ export function cardLooksOf(
    */
   const ownCookingOf = (object: WorldObject): CardCooking | undefined => {
     if (cookingPropertyId === undefined) return undefined;
-    const ticks = object.ticksUntilOverflow(cookingPropertyId);
+    const ticks = object.ticksUntilMax(cookingPropertyId);
     if (ticks === undefined) return undefined;
 
     const ratio = object.tryGetProperty(cookingPropertyId)?.ratio;

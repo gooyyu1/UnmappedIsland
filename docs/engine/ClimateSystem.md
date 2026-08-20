@@ -47,11 +47,11 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
   `+1` される。`stages`（`first`: 0 / `later`: 1 以上）が `first_cycle_flag`/`later_cycle_flag` を `modify` で
   立て、2.3 節の固定/ランダム分岐の重みとして参照される。
 
-### 2.3 遷移の実装: `season_remaining` の `on_shortfall` と 0/1 重みの `pick`
+### 2.3 遷移の実装: `season_remaining` の `on_min` と 0/1 重みの `pick`
 
-`season_remaining` の `on_shortfall`（GameElementDefinition.md 6.3 節）で、次の季節への遷移を行います。
-`range.min` を 1 に置き、残り tick 数が 0 に達した（1 を下回った）瞬間に発火させる形です。`on_shortfall` の
-対象は `self` のみ許可されていますが、すべて `world` 自身のプロパティなので制約になりません。
+`season_remaining` の `on_min`（GameElementDefinition.md 6.3 節）で、次の季節への遷移を行います。
+残り tick 数が 0 に達した瞬間に発火します。`on_min` の対象は `self` のみ許可されていますが、
+すべて `world` 自身のプロパティなので制約になりません。
 
 エンジンの `active` には「現在の値によって `set` の内容を変える」条件分岐の記法がないため、遷移は
 **0/1 の重みプロパティを参照する `pick`（10 節）**で表現します。重みが 0 の候補は選ばれないため、0/1 の重みは
@@ -67,7 +67,7 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
 葉の候補はいずれも `set` で「次の季節」と「新しい `season_remaining`」を同時に設定し、`dry`→`calm` の葉
 （＝1 周が完了する瞬間）だけがさらに `add` で `season_cycle` を `+1` します。
 
-著者が書いた `on_shortfall` は既定の下限クランプを置き換えるため、pick の再設定とクランプが干渉することは
+著者が書いた `on_min` は既定の下限クランプを置き換えるため、pick の再設定とクランプが干渉することは
 ありません（`weather_remaining` も同様）。
 
 ## 3. 大気水分量・蓄熱量: 季節が駆動する2つの貯水池
@@ -171,7 +171,7 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
 
 - **レートへのノイズ**: `layered_noise`（`TerrainGeneration.md` 3.1 節）を時間軸に適用し、毎 tick の加算量へ
   小さなランダム変動を加える。エンジンへの新機能追加（ノイズ駆動の `add`）が必要になる。
-- **季節開始ごとのレート選び直し**: 季節の遷移（2.3 節の `on_shortfall`）で「今回のレート区分」を表す専用プロパティを
+- **季節開始ごとのレート選び直し**: 季節の遷移（2.3 節の `on_min`）で「今回のレート区分」を表す専用プロパティを
   `pick` で `set` し、`calm`/`wet`/`dry` それぞれの `stages` に、その区分ごとの `conditions` で切り替わる複数の
   `add` ブロックを用意する。新しいエンジン機能は不要。
 
@@ -202,7 +202,7 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
 
 ### 4.3 遷移先: 天気ごとの重みプロパティを貯水池（大気水分量・蓄熱量）の `stages` が `modify` する
 
-`weather_remaining` の `on_shortfall`（`self`）で `pick`（GameElementDefinition.md 10 節）を実行し、次の天気を選びます。
+`weather_remaining` の `on_min`（`self`）で `pick`（GameElementDefinition.md 10 節）を実行し、次の天気を選びます。
 外側の `pick` の各候補は対応する `*_weight` プロパティを重みとして参照し（10.2 節の「既存プロパティへの参照」）、
 選ばれた候補の内側の `pick` が持続時間（16/20/24 tick）を等確率で選び、葉の `set` が「次の天気」と
 「新しい `weather_remaining`」を同時に設定します（構造は 2.3 節の季節遷移と同型。完全な定義は `core.yaml` 参照）。
@@ -210,12 +210,12 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
 ```yaml
 weather_remaining:
   value: 20                        # 初期値5時間: day1の最初の遷移までの猶予
-  range: {min: 1, max: 999999}     # 0に達した（1を下回った）瞬間にon_shortfallが発火する
+  range: {min: 0, max: 999999}     # 0に達した瞬間にon_minが発火する
   passives:
     - add:
         self:
           weather_remaining: -1
-  on_shortfall:
+  on_min:
     pick:
       - weight: {prop: sunny_weight}
         pick:
@@ -458,5 +458,5 @@ first_dry_rain_calibration:
   変わるだけで、sunlight 以外への影響は未実装）
 - 天気に反応する別オブジェクト（例: 装備の防水性）を作る場合の参照経路。`subject: world` を条件・重みから
   参照する仕組みが未実装（`GameElementDefinition.md` 14.1 節・15 節・17 節）のため、`ancestor` 経由での
-  参照が必要になる。本書の季節・天気遷移ロジック自体はすべて `world` 自身の `on_shortfall`（対象は常に
+  参照が必要になる。本書の季節・天気遷移ロジック自体はすべて `world` 自身の `on_min`（対象は常に
   `self`）で完結しており、影響を受けない

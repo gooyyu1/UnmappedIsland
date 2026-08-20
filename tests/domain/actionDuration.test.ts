@@ -28,16 +28,16 @@ object_defs:
         value: 15
       minute:
         value: 0
-        range: {min: 0, max: 59}
-        on_overflow:
+        range: {min: 0, max: 60}
+        on_max:
           add:
             self:
               minute: -60
               hour: 1
       hour:
         value: 0
-        range: {min: 0, max: 23}
-        on_overflow:
+        range: {min: 0, max: 24}
+        on_max:
           add:
             self:
               hour: -24
@@ -215,8 +215,8 @@ object_defs:
     props:
       durability:
         value: 2
-        range: {min: 1, max: 10}
-        on_shortfall:
+        range: {min: 0, max: 10}
+        on_min:
           destroy: self
         passives:
           - add:
@@ -250,8 +250,8 @@ object_defs:
     props:
       durability:
         value: 1
-        range: {min: 1, max: 10}
-        on_shortfall:
+        range: {min: 0, max: 10}
+        on_min:
           destroy: self
         passives:
           - add:

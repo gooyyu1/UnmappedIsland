@@ -130,7 +130,7 @@ export class PlayerCharacter {
 
   /**
    * 死んでいるか（VitalsSystem.md 6節）。命を絶つ値は尽きた瞬間に自分を消す
-   * （`on_shortfall`の`destroy`）ので、**世界の中に居ないことがそのまま死んでいること**になる。
+   * （`on_min`の`destroy`）ので、**世界の中に居ないことがそのまま死んでいること**になる。
    * 死んだかどうかを覚えておく旗は要らない。
    */
   get isDead(): boolean {

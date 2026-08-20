@@ -24,7 +24,7 @@ canteen:
     fill:
       value: 0
       range: {min: 0, max: 1000}          # この容器の容量（mL）
-      on_exhausted: {become: {content: none}}   # 尽きたら中身の軸を落とす＝空へ戻る
+      on_min: {become: {content: none}}   # 尽きたら中身の軸を落とす＝空へ戻る
   variation_axes:
     content: {of: {tag: liquid}}
 ```

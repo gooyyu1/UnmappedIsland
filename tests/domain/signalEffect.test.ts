@@ -43,8 +43,8 @@ object_defs:
       # 下限を割ったら自分から「弱った」と告げる（rangeイベントからも告げられることの検査）。
       stamina:
         value: 1
-        range: {min: 1, max: 10}
-        on_shortfall:
+        range: {min: 0, max: 10}
+        on_min:
           signal: weakened
     combinations:
       # 重ねてきた物の側について告げる（対象を書く形の検査）。

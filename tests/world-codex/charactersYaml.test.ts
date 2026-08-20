@@ -348,14 +348,14 @@ describe('プレイヤーキャラクタの定義', () => {
       const { player, session } = stand(character);
       const propertyId = codex.propertyNames.getId(propertyName);
 
-      player.instance.addNumber(propertyId, -player.instance.getNumber(propertyId), session);
+      player.instance.addNumber(propertyId, -(player.instance.getNumber(propertyId) - 1), session);
 
-      expect(player.isDead, '0ちょうどはrangeの中なのでまだ生きている').toBe(false);
+      expect(player.isDead, '下限に達するまでは生きている').toBe(false);
       expect(player.causeOfDeath).toBeUndefined();
 
       player.instance.addNumber(propertyId, -1, session);
 
-      expect(player.isDead, '下限を割った時点で世界から外れる').toBe(true);
+      expect(player.isDead, '下限に達した時点で世界から外れる').toBe(true);
       expect(player.causeOfDeath).toBe(stageName);
     });
 

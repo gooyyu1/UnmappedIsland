@@ -58,10 +58,10 @@ describe('core.yamlのworld定義', () => {
     const world = codex.objects.get(codex.objectNames.getId('world'));
 
     const minute = propOf(world, 'minute');
-    expect(minute.range?.max).toBe(59);
+    expect(minute.range?.max, '60分で1時間へ繰り上がる').toBe(60);
 
     const hour = propOf(world, 'hour');
-    expect(hour.range?.max).toBe(23);
+    expect(hour.range?.max, '24時で1日へ繰り上がる').toBe(24);
   });
 
   it('tickは毎tick加算されるが、minuteはtick駆動では変化しない', () => {

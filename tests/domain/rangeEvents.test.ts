@@ -3,16 +3,16 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
-// on_overflow（GameElementDefinition.md 6.3節）に対する自動テスト。値が変わった直後にcheckRangeEventsが
+// on_max（GameElementDefinition.md 6.3節）に対する自動テスト。値が変わった直後にcheckRangeEventsが
 // 再評価されるため、補正の連鎖は宣言順やTickの回数に依存せず同じtick()内で解決される。
 // YAMLパーサ経由のテストはyamlLoader.test.tsを参照。
-describe('OverflowTests', () => {
+describe('rangeイベント', () => {
   function load(yaml: string) {
     return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
   }
 
-  it('sessionを渡してAddNumberを呼ぶと、Tick()を待たずにその場でoverflowが補正される', () => {
-    // Tick()を待たず、addNumberにsessionを渡した瞬間にon_overflowが判定・適用されることを確認する。
+  it('sessionを渡してAddNumberを呼ぶと、Tick()を待たずにその場でon_maxが補正する', () => {
+    // Tick()を待たず、addNumberにsessionを渡した瞬間にon_maxが判定・適用されることを確認する。
     // これにより、値がrangeの外側（この例では60）にある状態が外部から観測される瞬間は生じない。
     const yaml = `
 object_defs:
@@ -20,8 +20,8 @@ object_defs:
     props:
       minute:
         value: 45
-        range: {min: 0, max: 59}
-        on_overflow:
+        range: {min: 0, max: 60}
+        on_max:
           add: {self: {minute: -60, hour: 1}}
       hour:
         value: 0
@@ -43,7 +43,7 @@ object_defs:
     expect(instance.getNumber(hourId)).toBe(1);
   });
 
-  it('sessionを渡さないAddNumberは、明示的にTick()を呼ぶまでoverflowを判定しない', () => {
+  it('sessionを渡さないAddNumberは、明示的にTick()を呼ぶまでrangeイベントを判定しない', () => {
     // sessionを渡さない呼び出し（既存の呼び出し方との後方互換）は、値がrangeの外側のままでも
     // 即座には補正されず、明示的にTick()を呼ぶまで持ち越されることを確認する。
     const yaml = `
@@ -52,8 +52,8 @@ object_defs:
     props:
       minute:
         value: 45
-        range: {min: 0, max: 59}
-        on_overflow:
+        range: {min: 0, max: 60}
+        on_max:
           add: {self: {minute: -60, hour: 1}}
       hour:
         value: 0
@@ -80,8 +80,8 @@ object_defs:
     expect(instance.getNumber(hourId)).toBe(1);
   });
 
-  it('on_overflow省略時の既定合成（自身をrange.maxへset）は無限再帰を起こさない', () => {
-    // on_overflowを省略した場合の既定合成（「自分自身をrange.maxへset」）は、値がちょうど境界に
+  it('on_max省略時の既定合成（自身をrange.maxへset）は無限再帰を起こさない', () => {
+    // on_maxを省略した場合の既定合成（「自分自身をrange.maxへset」）は、値がちょうど境界に
     // 着地した後は同じ値への再setになる（差分0）。addNumberが差分0を何もしないことで、
     // checkRangeEvents→applyActiveEffect→setNumber→addNumberという無限再帰を防いでいることを確認する。
     const yaml = `
@@ -91,7 +91,7 @@ object_defs:
       pressure:
         value: 5
         range: {min: 0, max: 10}
-        # on_overflowを指定しない: YAMLコンバータが「自分自身をrange.maxへset」を既定合成する
+        # on_maxを指定しない: YAMLコンバータが「自分自身をrange.maxへset」を既定合成する
 `;
     const codex = load(yaml);
     const pressureId = codex.propertyNames.getId('pressure');
@@ -115,8 +115,8 @@ object_defs:
     props:
       minute:
         value: 45
-        range: {min: 0, max: 59}
-        on_overflow:
+        range: {min: 0, max: 60}
+        on_max:
           add: {self: {minute: -60, hour: 1}}
       hour:
         value: 0
@@ -138,7 +138,7 @@ object_defs:
     expect(instance.getNumber(hourId)).toBe(1);
   });
 
-  it('on_overflowでsetとaddを併用すると、setで自身が絶対値に戻りaddで繰り上げ先へ伝播する', () => {
+  it('on_maxでsetとaddを併用すると、setで自身が絶対値に戻りaddで繰り上げ先へ伝播する', () => {
     // set: {self: {minute: 0}} + add: {self: {hour: 1}} という、core.yamlが実際に使っている文法
     // （passivesのaddの"-60"のような差分指定ではなく、setで絶対値へ戻す）を検証する。
     const yaml = `
@@ -147,8 +147,8 @@ object_defs:
     props:
       minute:
         value: 45
-        range: {min: 0, max: 59}
-        on_overflow:
+        range: {min: 0, max: 60}
+        on_max:
           set: {self: {minute: 0}}
           add: {self: {hour: 1}}
       hour:
@@ -178,8 +178,8 @@ object_defs:
     props:
       minute:
         value: 10
-        range: {min: 0, max: 59}
-        on_overflow:
+        range: {min: 0, max: 60}
+        on_max:
           add: {self: {minute: -60, hour: 1}}
       hour:
         value: 0
@@ -201,8 +201,8 @@ object_defs:
     expect(instance.getNumber(hourId)).toBe(0);
   });
 
-  it('on_overflowの補正が連鎖し、1回のTick()の中でrange幅の複数span分が解決する', () => {
-    // on_overflowの補正自体(add: {self: {minute: -10}}})がaddNumberを通るため、その場でもう一度
+  it('on_maxの補正が連鎖し、1回のTick()の中でrange幅の複数span分が解決する', () => {
+    // on_maxの補正自体(add: {self: {minute: -10}}})がaddNumberを通るため、その場でもう一度
     // checkRangeEventsが評価される。1tickでrangeの幅を複数回分飛び越えていても、この連鎖により
     // 1回のTick()呼び出しの中だけで完全に解決される。
     const yaml = `
@@ -212,7 +212,7 @@ object_defs:
       minute:
         value: 35
         range: {min: 0, max: 9}
-        on_overflow:
+        on_max:
           add: {self: {minute: -10, hour: 1}}
       hour:
         value: 0
@@ -243,13 +243,13 @@ object_defs:
     props:
       minute:
         value: 50
-        range: {min: 0, max: 59}
-        on_overflow:
+        range: {min: 0, max: 60}
+        on_max:
           add: {self: {minute: -60, hour: 1}}
       hour:
         value: 23
-        range: {min: 0, max: 23}
-        on_overflow:
+        range: {min: 0, max: 24}
+        on_max:
           add: {self: {hour: -24, day: 1}}
       day:
         value: 1
@@ -278,7 +278,7 @@ object_defs:
   });
 
   it('宣言順に関わらず、先に宣言されたプロパティへの繰り上げも同じTick()の中で連鎖して解決する', () => {
-    // hourがminuteより先に宣言されていても、minuteのon_overflowが行うadd: {self: {hour: 1}}}が
+    // hourがminuteより先に宣言されていても、minuteのon_maxが行うadd: {self: {hour: 1}}}が
     // addNumberを通るため、その場でhour自身のcheckRangeEventsも即座に評価される。宣言順に関わらず
     // 同じTick()呼び出しの中で連鎖的に解決される。
     const yaml = `
@@ -287,15 +287,15 @@ object_defs:
     props:
       hour:
         value: 23
-        range: {min: 0, max: 23}
-        on_overflow:
+        range: {min: 0, max: 24}
+        on_max:
           add: {self: {hour: -24, day: 1}}
       day:
         value: 1
       minute:
         value: 50
-        range: {min: 0, max: 59}
-        on_overflow:
+        range: {min: 0, max: 60}
+        on_max:
           add: {self: {minute: -60, hour: 1}}
     passives:
       - add:
@@ -320,7 +320,7 @@ object_defs:
     expect(instance.getNumber(dayId), 'hourの繰り上げでdayも同じTick()内で+1される').toBe(2);
   });
 
-  it('overflow補正の加算先プロパティをこのobject_defが持たない場合は黙って無視される', () => {
+  it('on_maxの加算先プロパティをこのobject_defが持たない場合は黙って無視される', () => {
     // add（WorldObject.addNumber）の通常の規約と同じ: このobject_defが持たないプロパティへの
     // 加算は、たとえ同名のプロパティを別のobject_defが持っていて名前自体は登録されていても、
     // 黙って無視される（エラーにしない）。
@@ -330,8 +330,8 @@ object_defs:
     props:
       minute:
         value: 45
-        range: {min: 0, max: 59}
-        on_overflow:
+        range: {min: 0, max: 60}
+        on_max:
           add: {self: {minute: -60, hour: 1}}
     passives:
       - add:
@@ -354,10 +354,10 @@ object_defs:
     expect(instance.getNumber(minuteId)).toBe(0);
   });
 
-  it('折り返しと別プロパティへの加算を1つのon_overflowに併記すると、span数だけ加算される', () => {
+  it('折り返しと別プロパティへの加算を1つのon_maxに併記すると、span数だけ加算される', () => {
     // gaugeは0-100を循環するプロパティ。1tickでの加算(+250)がrangeの幅を複数span分飛び越えても、
-    // on_overflowの補正が連鎖するため、併記したalarm_countへの加算はspanごとに1回ずつ適用される
-    // （「境界を越えた回数を数える」は折り返しと同じon_overflowに併記すれば足りる）。
+    // on_maxの補正が連鎖するため、併記したalarm_countへの加算はspanごとに1回ずつ適用される
+    // （「境界を越えた回数を数える」は折り返しと同じon_maxに併記すれば足りる）。
     const yaml = `
 object_defs:
   tank2:
@@ -365,7 +365,7 @@ object_defs:
       gauge:
         value: 0
         range: {min: 0, max: 100}
-        on_overflow:
+        on_max:
           add: {self: {gauge: -101, alarm_count: 1}}
       alarm_count:
         value: 0

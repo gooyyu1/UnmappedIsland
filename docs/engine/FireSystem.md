@@ -13,7 +13,7 @@
 [`ContainerSystem.md`](./ContainerSystem.md) 6 節が持ちます。
 
 **新設する文法はありません。** 火は炉のプロパティ（1 節）、くべる操作は `transfer`（2 節）、火の育ちと
-衰え・燃焼・加熱は `add`（2.2 節・7 節）、炉の段上げは `on_overflow`（5 節）で、いずれも
+衰え・燃焼・加熱は `add`（2.2 節・7 節）、炉の段上げは `on_max`（5 節）で、いずれも
 [`GameElementDefinition.md`](./GameElementDefinition.md) の既存語彙です。本書が導入するのは語彙の名前
 だけです。
 
@@ -364,12 +364,12 @@ props:
   stones:
     value: 0
     range: {min: 0, max: 2}
-    on_overflow:
+    on_max:
       spawn: {object: three_stone_hearth}
       destroy: self
 ```
 
-`range.max` を必要数より 1 小さく置き、超えた瞬間に反応させるのは、耐久値 0 での自壊と同じ形です
+`range.max` を必要数に置き、そこへ届いた瞬間に反応させるのは、耐久値 0 での自壊と同じ形です
 （`GameElementDefinition.md` 6.3 節）。段上げは箱のレシピにしません。地面に石を運んで積むだけの作業で、材料を箱へ入れて待つ
 形にする理由がないためです。
 
@@ -446,7 +446,7 @@ props:
 cooking_progress:
   value: 0
   range: {min: 0, max: 24}
-  on_overflow:
+  on_max:
     spawn: {object: roasted_meat}
     destroy: self
 ```
@@ -501,8 +501,8 @@ passives:
 
 ### 7.2 焼き上がりも進行度を持ち、同じ仕組みで焦げる
 
-**進行度を持つのは食料自身で、炉は進めるだけです。** 生肉は自分の `cooking_progress` を進め、上限を
-超えたら自分を破棄して焼けた肉を生みます。焼けた肉も同じ形の `cooking_progress` を持つので、火から
+**進行度を持つのは食料自身で、炉は進めるだけです。** 生肉は自分の `cooking_progress` を進め、上限へ
+届いたら自分を破棄して焼けた肉を生みます。焼けた肉も同じ形の `cooking_progress` を持つので、火から
 出さずに放っておくと焦げた塊へ変わります。**焦げた塊は進行度を持たず、そこで鎖が終わります。**
 
 生 → 焼き → 焦げ を成り立たせているのは、`spawn` の 3 つの既定の振る舞いです

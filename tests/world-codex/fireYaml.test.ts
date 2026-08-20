@@ -286,17 +286,17 @@ describe('fire.yamlの火の連鎖', () => {
 
     const cookingId = codex.propertyNames.getId('cooking_progress');
     const meat = spawnInto('raw_meat', land, 'items');
-    expect(meat.ticksUntilOverflow(cookingId), '火の外では進まない').toBeUndefined();
+    expect(meat.ticksUntilMax(cookingId), '火の外では進まない').toBeUndefined();
 
     expect(meat.moveToSlot(hearth, codex.slotNames.getId('fire'))).toBeUndefined();
-    // 24 ÷ 3 = 8tickでmaxちょうどに乗るが、溢れは`> max`で起きるのでその次のtickまで焼ける。
-    expect(meat.ticksUntilOverflow(cookingId)).toBe(9);
+    // 24 ÷ 3 = 8tickでmaxちょうどに乗り、そのtickでon_maxが起きる。
+    expect(meat.ticksUntilMax(cookingId)).toBe(8);
 
-    session.advanceWorldTime(15 * 8);
-    expect(childNames(hearth), '8tickではまだ焼き上がらない').toEqual(['raw_meat']);
+    session.advanceWorldTime(15 * 7);
+    expect(childNames(hearth), '7tickではまだ焼き上がらない').toEqual(['raw_meat']);
 
     session.advanceWorldTime(15);
-    expect(childNames(hearth), '9tick目に焼き上がる').toEqual(['roasted_meat']);
+    expect(childNames(hearth), '8tick目に焼き上がる').toEqual(['roasted_meat']);
   });
 
   /** 炉のfireスロットに入っている物の型名。 */

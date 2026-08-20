@@ -115,7 +115,7 @@ export function parsePickList(
   context: string,
   pickNode: YAMLSeq,
   allowDragged: boolean,
-  // selfOnly（on_shortfall等のrangeイベント内のpick）は、ネストした候補にもそのまま引き継ぐ。
+  // selfOnly（on_min等のrangeイベント内のpick）は、ネストした候補にもそのまま引き継ぐ。
   selfOnly = false,
 ): PickCandidateDef[] {
   const result: PickCandidateDef[] = [];
@@ -441,7 +441,7 @@ function parseMove(
   const destination = parseMoveDestination(loader, context, map);
   if (selfOnly && (subject.needsInteraction() || destination.needsInteraction()))
     throw new YamlLoadError(
-      `${context}: on_overflow/on_shortfallのmoveでは、actor・draggedを指せません（存在しないため）。`,
+      `${context}: on_max/on_minのmoveでは、actor・draggedを指せません（存在しないため）。`,
     );
 
   const slotName = tryGetScalar(map, 'to_slot', context);

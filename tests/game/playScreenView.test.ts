@@ -612,7 +612,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const { hearth } = placeCookingHearth(game);
 
-    // 24 ÷ 3 = 8tickでmaxちょうどに乗り、溢れる（`> max`）のはその次のtick → 9tick × 15分。
+    // 24 ÷ 3 = 8tickでmaxちょうどに乗り、そこでon_maxが起きる → 8tick × 15分。
     expect(
       fromGameSession(game, codex, locale).cardsIn({
         container: hearth,
@@ -620,7 +620,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       })[0]!.cooking,
     ).toEqual({
       ratio: 0,
-      minutes: 135,
+      minutes: 120,
     });
   });
 
@@ -658,8 +658,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       (c) => c.objects[0] === hearth,
     );
 
-    // ネズミは6 ÷ 3 = 2tick＋1で45分。生肉の135分より先に変わるので、こちらが上がる。
-    expect(card?.cooking?.minutes).toBe(45);
+    // ネズミは6 ÷ 3 = 2tickで30分。生肉の120分より先に変わるので、こちらが上がる。
+    expect(card?.cooking?.minutes).toBe(30);
   });
 
   it('手当て済みの印は、負っている本人までは上がらない', () => {
@@ -844,7 +844,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       worsensUpward: false,
     });
 
-    // 飲み干す＝fillが尽きる。量が尽きた変種は空の容器へ戻る（fillのon_shortfall）。
+    // 飲み干す＝fillが尽きる。量が尽きた変種は空の容器へ戻る（fillのon_min）。
     bowl.setNumber(codex.propertyNames.getId('fill'), 0, game.session);
 
     expect(
@@ -1405,7 +1405,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(canteen.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), true)).toBeUndefined();
     fill(canteen, 'water_liquid', 1000, game.session);
     const hydrationId = codex.propertyNames.getId('hydration');
-    game.player.instance.setNumber(hydrationId, 0, game.session);
+    // 0まで下げると渇きで死ぬ（hydrationのon_min）ので、飲む余地を残しつつ1で止める。
+    game.player.instance.setNumber(hydrationId, 1, game.session);
 
     // 水入りの水筒は1つの型なので、中身のtraitが配ったdrinkがそのまま自分のアクションになる。
     const card = handCells(fromGameSession(game, codex, locale), game)[0];
@@ -1414,7 +1415,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     card?.actions[0].execute();
 
-    expect(game.player.instance.getNumber(hydrationId), '飲んだ分だけ水分が増える').toBeGreaterThan(0);
+    expect(game.player.instance.getNumber(hydrationId), '飲んだ分だけ水分が増える').toBeGreaterThan(1);
   });
 
   it('中身入りの容器の名前は、素の型と中身の名前から組み立てられる', () => {

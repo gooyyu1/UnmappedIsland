@@ -44,8 +44,7 @@ object_defs:
       # 防ぐためだけのもので、待たされる長さは「当たるまでの回数」が作る。
       catch_remaining:
         value: {min: 1, max: 16}
-        # 0に達した瞬間にon_shortfallを発火させるため、下限は0ではなく1（6.3節）。
-        range: {min: 1, max: 16}
+        range: {min: 0, max: 16}
         passives:
           - conditions:
               # 地面に置かれている間だけ（1節）。
@@ -57,7 +56,7 @@ object_defs:
                 catch_remaining: -1
         # 外側は食性の卓を選び（餌が決める、4節）、内側はその卓で掛かるかどうかと種を選ぶ
         # （土地が決める、3節）。周期の置き直しは分岐に関わらず起こるので、pickの外に1つだけ置く。
-        on_shortfall:
+        on_min:
           add: {self: {catch_remaining: 16}}
           pick:
             # 何も寄って来なかった回。先頭に置く（3節）。
@@ -124,7 +123,7 @@ object_defs:
         # 尽きると使えなくなるので、満タン側がgood（CardView.md 8節）。
         gauge: {min: bad, max: good}
         value: 960
-        range: {min: 1, max: 960}
+        range: {min: 0, max: 960}
         passives:
           - conditions:
               - {in_slot: items}
@@ -136,7 +135,7 @@ object_defs:
             add:
               self:
                 durability: -10
-        on_shortfall:
+        on_min:
           destroy: self
     passives:
       # 掛かった獲物の拘束（TrapSystem.md 5節）。気を失った動物への宣言（animals.yamlの

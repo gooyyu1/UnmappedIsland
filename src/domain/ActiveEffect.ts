@@ -73,8 +73,8 @@ export abstract class ActiveEffect {
 
 /**
  * 一時的な命令（`set`/`add`/`destroy`/`spawn`/`transfer`、9節）と`pick`（10節）を、書かれた順に
- * まとめた合成効果。on_overflow・on_shortfall（6節）、actions/combinations/pickの中身（11・12・10節）が
- * 共用する。on_overflow/on_shortfallはselfのみが有効な対象（パーサ側で強制する）。
+ * まとめた合成効果。on_max・on_min（6節）、actions/combinations/pickの中身（11・12・10節）が
+ * 共用する。on_max/on_minはselfのみが有効な対象（パーサ側で強制する）。
  * 空（命令が1つも無い）なら、適用しても何も起きない。
  */
 export class ActiveEffects extends ActiveEffect {
@@ -242,7 +242,7 @@ export class DestroyEffect extends ActiveEffect {
 /**
  * spawn の配置先（9.4節）が起点にする参照ルート。スロットは指定せず、起点が持つスロットを宣言順に
  * 走査して最初に配置できた所へ入れる（著者がスロット名を知らなくてよい）。fallbackはYAML上に存在せず、
- * 配置失敗時は必ず起点自身の親へ伝播する（WorldObject.place参照）。on_overflow/on_shortfallには
+ * 配置失敗時は必ず起点自身の親へ伝播する（WorldObject.place参照）。on_max/on_minには
  * actorが存在しないため、それらのspawnでintoにActorを指定しても何も起きない。
  */
 export type SpawnTargetRoot =
@@ -258,7 +258,7 @@ export type SpawnTargetRoot =
   /**
    * selfの子を順に走査し、最初に受け取れた子のスロットへ入れる。intoが既に持つ「宣言順に走査して最初に
    * 配置できた所へ」という決め方が、1階層下へ伸びるだけ（docs/engine/TrapSystem.md 5.3節）。
-   * 罠が自分の生んだ獲物へ怪我を渡す経路で、actorを持たないon_shortfallからは他に手段が無い。
+   * 罠が自分の生んだ獲物へ怪我を渡す経路で、actorを持たないon_minからは他に手段が無い。
    */
   | 'child';
 

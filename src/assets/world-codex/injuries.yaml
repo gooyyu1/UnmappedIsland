@@ -36,8 +36,7 @@ object_defs:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
         gauge: {min: good, max: bad}
         value: 960
-        # 0に達した瞬間にon_shortfallを発火させるため、下限は0ではなく1（6.3節）。
-        range: {min: 1, max: 960}
+        range: {min: 0, max: 960}
         # 段はそのまま怪我カードのバーの色になる（CardView.md 8節 カードの状態バー）。捻挫は
         # 負った直後でも要注意域までで、危険域は骨折のようなより重い怪我のために空けておく。
         stages:
@@ -48,7 +47,7 @@ object_defs:
           - add:
               self:
                 severity: -1
-        on_shortfall:
+        on_min:
           destroy: self
     passives:
       # 怪我はinjuriesスロットにしか入らないので、親は常にそれを負ったキャラクタ。
@@ -73,7 +72,7 @@ object_defs:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
         gauge: {min: good, max: bad}
         value: 480
-        range: {min: 1, max: 480}
+        range: {min: 0, max: 480}
         stages:
           - {name: mending}
           - {name: sore, min: 160, alert: watch}
@@ -82,7 +81,7 @@ object_defs:
           - add:
               self:
                 severity: -1
-        on_shortfall:
+        on_min:
           destroy: self
       # 今この傷から流れている血の勢い（docs/engine/VitalsSystem.md 4節）。
       #
@@ -119,8 +118,8 @@ object_defs:
   # animals.yamlのstrikeの刺突の候補）。
   #
   # **裂傷との違いは血の流れる速さで、桁で書き分ける**（docs/engine/VitalsSystem.md 4節）。潰れた
-  # 血管が縮んで塞がる裂傷（-15/tick）に対し、刺し傷は深部の血管を開いたまま残すので-200/tick。
-  # 固まるまでの4tickで合計800mL——サル（400mL）なら30分で死に、イノシシ（4,600mL）でも数突きで
+  # 血管が縮んで塞がる裂傷（-15/tick）に対し、刺し傷は深部の血管を開いたまま残すので-250/tick。
+  # 固まるまでの4tickで合計1,000mL——サル（400mL）なら30分で死に、イノシシ（4,600mL）でも数突きで
   # 危機に届く。**同じ傷が、体格で意味を変える。**
   #
   # 衝撃（shock）はほとんど生まれないので、**突かれた獲物はその場では倒れない**。深手を負ったまま
@@ -136,7 +135,7 @@ object_defs:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
         gauge: {min: good, max: bad}
         value: 720
-        range: {min: 1, max: 720}
+        range: {min: 0, max: 720}
         stages:
           - {name: mending}
           - {name: sore, min: 240, alert: watch}
@@ -145,7 +144,7 @@ object_defs:
           - add:
               self:
                 severity: -1
-        on_shortfall:
+        on_min:
           destroy: self
       # 固まるまでの速さは裂傷と同じ4 tick。変わるのは下の流れる量だけ。
       bleeding:
@@ -164,7 +163,7 @@ object_defs:
           - not: {slot: treatment, matches: {tag: hemostatic}}
         add:
           parent:
-            blood: -200
+            blood: -250
 
   # 噛まれた傷。動物の1手（docs/engine/HuntingSystem.md 5節）のうち、小さい獣が持つ攻め手が残す。
   # 歯が並んで食い込むので、裂傷より浅い代わりに縁が細かく、血は同じ速さで止まる。
@@ -183,7 +182,7 @@ object_defs:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
         gauge: {min: good, max: bad}
         value: 360
-        range: {min: 1, max: 360}
+        range: {min: 0, max: 360}
         stages:
           - {name: mending}
           - {name: sore, min: 120, alert: watch}
@@ -192,7 +191,7 @@ object_defs:
           - add:
               self:
                 severity: -1
-        on_shortfall:
+        on_min:
           destroy: self
       # 固まるまでの速さは裂傷と同じ4 tick。
       bleeding:
@@ -228,7 +227,7 @@ object_defs:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
         gauge: {min: good, max: bad}
         value: 720
-        range: {min: 1, max: 720}
+        range: {min: 0, max: 720}
         stages:
           - {name: mending}
           - {name: sore, min: 240, alert: watch}
@@ -237,7 +236,7 @@ object_defs:
           - add:
               self:
                 severity: -1
-        on_shortfall:
+        on_min:
           destroy: self
       bleeding:
         value: 100
@@ -274,7 +273,7 @@ object_defs:
         # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
         gauge: {min: good, max: bad}
         value: {min: 240, max: 480}
-        range: {min: 1, max: 480}
+        range: {min: 0, max: 480}
         stages:
           - {name: mending}
           - {name: sore, min: 160, alert: watch}
@@ -283,7 +282,7 @@ object_defs:
           - add:
               self:
                 severity: -1
-        on_shortfall:
+        on_min:
           destroy: self
       # 2〜4 tickで固まり、その間に30〜60mLを奪う。レートは laceration と同じ-15/tickで、
       # 変わるのは初期値の幅だけ——罠は傷の勢いではなく、掛かりの深さでばらつく。

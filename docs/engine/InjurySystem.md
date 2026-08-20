@@ -12,7 +12,7 @@
 `src/assets/world-codex/injuries.yaml` そのものが一覧で、本書は個々の傷を並べません。
 
 **新設した文法はありません。** 怪我は普通のオブジェクトで、キャラクタの `injuries` スロットに入り、
-`severity` 1本と `range`/`on_shortfall`（自然治癒と消滅）・`passives` の `modify`（宿主の痛み）・
+`severity` 1本と `range`/`on_min`（自然治癒と消滅）・`passives` の `modify`（宿主の痛み）・
 `add`（宿主の血）・`treatment` スロット（治療具を1つ当てる枠）だけで成り立ちます。
 
 定義は `src/assets/world-codex/injuries.yaml`（傷）と `treatments.yaml`（治療具）、検証は
@@ -28,7 +28,7 @@
 | | 内容 |
 | --- | --- |
 | タグ | `injury`（`item` は付けない——手持ちへ入ってしまう） |
-| プロパティ | `severity`（`range.min` は 1、`stages` を持ち、`on_shortfall` に `destroy: self`）。血が流れる傷はさらに `bleeding`（[`VitalsSystem.md`](./VitalsSystem.md) 4 節） |
+| プロパティ | `severity`（`stages` を持ち、`on_min` に `destroy: self`）。血が流れる傷はさらに `bleeding`（[`VitalsSystem.md`](./VitalsSystem.md) 4 節） |
 | trait | `treatable`（治療具を1つ当てられる。3 節） |
 | `stackable` | `false`（同じ怪我を2つ負っても1つずつ並ぶ。手当ては1つずつ当てるため） |
 | `passives` | `modify` で `parent`（負ったキャラクタ）の `pain` を上げる |
