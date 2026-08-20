@@ -53,7 +53,7 @@ object_defs:
     const executed = appleInstance.tryExecuteAction('eat', actor);
 
     expect(executed).toBe(true);
-    expect(actor.getNumber(satietyId)).toBe(10);
+    expect(actor.tryGetProperty(satietyId)?.number ?? 0).toBe(10);
     expect(appleInstance.parent, 'destroy: trueによりself(apple)は消滅する').toBeUndefined();
   });
 
@@ -82,7 +82,7 @@ object_defs:
     const executed = appleInstance.tryExecuteAction('eat', actor);
 
     expect(executed, 'satietyが既に100(<100を満たさない)のため実行されない').toBe(false);
-    expect(actor.getNumber(satietyId), '条件を満たさないため何も変化しない').toBe(100);
+    expect(actor.tryGetProperty(satietyId)?.number ?? 0, '条件を満たさないため何も変化しない').toBe(100);
   });
 
   it('spawnの配列で1回のアクションから複数のオブジェクトが生成される', () => {
@@ -151,7 +151,7 @@ object_defs:
     const executed = rockInstance.tryExecuteAction('use', undefined);
 
     expect(executed).toBe(true);
-    expect(basketInstance.getNumber(budgetId)).toBe(9);
+    expect(basketInstance.tryGetProperty(budgetId)?.number ?? 0).toBe(9);
   });
 
   it('parent対象は親を持たない場合は黙って無視される', () => {
@@ -197,11 +197,11 @@ object_defs:
     expect(boar.moveToSlot(ground, itemsSlotId)).toBeUndefined();
     expect(basket.moveToSlot(ground, itemsSlotId)).toBeUndefined();
 
-    boar.setProperty(smashTargetId, 9999);
+    boar.getProperty(smashTargetId).init(9999);
     expect(boar.tryExecuteAction('trample', undefined)).toBe(true);
     expect(basket.parent, '指す先が居なければ何も起きない').toBe(ground);
 
-    boar.setProperty(smashTargetId, basket.instanceId);
+    boar.getProperty(smashTargetId).init(basket.instanceId);
     expect(boar.tryExecuteAction('trample', undefined)).toBe(true);
     expect(basket.parent, 'プロパティが指す個体が消える').toBeUndefined();
   });
@@ -243,7 +243,7 @@ object_defs:
     }
 
     expect(
-      actor.getNumber(hpId),
+      actor.tryGetProperty(hpId)?.number ?? 0,
       '重み100:0なので常に最初の候補(-10)だけが選ばれ続け、2番目(-9999)は一度も選ばれない',
     ).toBe(100 - 20 * 10);
   });
@@ -275,13 +275,13 @@ object_defs:
     const luckId = codex.propertyNames.getId('luck');
 
     const actor = spawn(codex, 'player4');
-    actor.setProperty(luckId, 1000); // 2番目(重み0固定)を圧倒する
+    actor.getProperty(luckId).init(1000); // 2番目(重み0固定)を圧倒する
     const bowInstance = spawn(codex, 'bow');
 
     bowInstance.tryExecuteAction('shoot', actor);
 
     expect(
-      actor.getNumber(hpId),
+      actor.tryGetProperty(hpId)?.number ?? 0,
       'luck(1000)がweightのpath参照先なので、ほぼ確実に1番目の候補が選ばれる',
     ).toBe(101);
   });
@@ -317,7 +317,7 @@ object_defs:
 
     expect(executed).toBe(true);
     expect(woodInstance.parent, 'self(wood)はdestroyされる').toBeUndefined();
-    expect(axeInstance.getNumber(durabilityId)).toBe(9);
+    expect(axeInstance.tryGetProperty(durabilityId)?.number ?? 0).toBe(9);
   });
 
   it('dragged_parentは対象キーとして使えない', () => {
@@ -453,7 +453,7 @@ object_defs:
       'durabilityが0(gt 0を満たさない)なので実行されない',
     ).toBe(false);
 
-    axeInstance.setProperty(durabilityId, 1);
+    axeInstance.getProperty(durabilityId).init(1);
     expect(woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop')).toBe(true);
   });
 });

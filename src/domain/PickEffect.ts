@@ -89,7 +89,9 @@ export class WeightSpec {
       path.root === 'ancestor'
         ? self.findAncestorWithProperty(path.propertyGlobalId)
         : resolveReferenceRoot(path.root, self, actor, dragged);
-    return target !== undefined ? target.getEffectiveValue(path.propertyGlobalId) : 0;
+    return target !== undefined
+      ? (target.tryGetProperty(path.propertyGlobalId)?.getEffectiveValue() ?? 0)
+      : 0;
   }
 
   /** この値の宣言そのもの（WeightReading参照）。数値へ解くのは、文脈を知っている読み手の側。 */

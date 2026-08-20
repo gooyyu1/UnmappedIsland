@@ -113,7 +113,7 @@ export function craftingMaterials(
 }
 
 function progressOf(object: WorldObject, codex: WorldCodex): number {
-  return object.getNumber(codex.propertyNames.getId(PROGRESS_PROPERTY));
+  return object.tryGetProperty(codex.propertyNames.getId(PROGRESS_PROPERTY))?.number ?? 0;
 }
 
 function contentsOf(owner: WorldObject, codex: WorldCodex, slotName: string): readonly WorldObject[] {

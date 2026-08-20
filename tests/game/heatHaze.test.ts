@@ -18,9 +18,9 @@ describe('空の演出が、同梱のWorldCodexの値の上で成り立つ', () 
   function skyWith(weather: string, hour: number, thermalLevel: number) {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const world = game.world.instance;
-    world.setNumber(codex.propertyNames.getId('weather'), codex.symbolNames.getId(weather));
-    world.setNumber(codex.propertyNames.getId('hour'), hour);
-    world.setNumber(codex.propertyNames.getId('thermal_level'), thermalLevel);
+    world.tryGetProperty(codex.propertyNames.getId('weather'))?.setNumber(codex.symbolNames.getId(weather));
+    world.tryGetProperty(codex.propertyNames.getId('hour'))?.setNumber(hour);
+    world.tryGetProperty(codex.propertyNames.getId('thermal_level'))?.setNumber(thermalLevel);
     return { sunlight: game.world.sunlight, temperature: game.world.ambientTemperature };
   }
 

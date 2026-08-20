@@ -204,7 +204,9 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     for (const site of withProps) {
       const location = game.world.instance.findDescendantByInstanceId(game.map.siteInstanceIds[site.index])!;
       for (const [propertyGlobalId, value] of site.variant!.props)
-        expect(location.getEffectiveValue(propertyGlobalId), `${site.name}`).toBe(value);
+        expect(location.tryGetProperty(propertyGlobalId)?.getEffectiveValue() ?? 0, `${site.name}`).toBe(
+          value,
+        );
     }
   });
 

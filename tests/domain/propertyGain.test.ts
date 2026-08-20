@@ -49,7 +49,7 @@ describe('操作が増やした値の観測', () => {
 
   /** 満タンだと足した分がそのまま戻されるので、増加を見るテストは先に減らしておく。 */
   function drain(propertyName: string, to: number): void {
-    player.setNumber(codex.propertyNames.getId(propertyName), to);
+    player.tryGetProperty(codex.propertyNames.getId(propertyName))?.setNumber(to);
   }
 
   it('効果が直に書いた値だけが現れ、経過中のtickが動かした分は現れない', () => {
@@ -88,7 +88,7 @@ describe('操作が増やした値の観測', () => {
     const bowl = spawn('coconut_bowl');
     expect(bowl.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
     bowl.becomeAlong(new Map([['content', 'water_liquid']]));
-    bowl.setNumber(codex.propertyNames.getId('fill'), 250);
+    bowl.tryGetProperty(codex.propertyNames.getId('fill'))?.setNumber(250);
 
     const observed: InteractionGains[] = [];
     session.observeGains(

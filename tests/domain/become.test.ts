@@ -103,18 +103,20 @@ object_defs:
   it('同じ名前のプロパティは値を引き継ぎ、新しいrangeの外はクランプするだけで反応させない', () => {
     const wip = wipOn('axe');
     const progressId = codex.propertyNames.getId('progress');
-    wip.setProperty(progressId, 30);
+    wip.getProperty(progressId).init(30);
 
     wip.becomeAlong(toBase);
 
-    expect(wip.getNumber(progressId), '完成品のrange（0〜5）の上端へ丸める').toBe(5);
+    expect(wip.tryGetProperty(progressId)?.number ?? 0, '完成品のrange（0〜5）の上端へ丸める').toBe(5);
     expect(wip.parent, 'クランプでon_maxは起きない（器が変わっただけ）').toBe(ground);
   });
 
   it('新しい型にしか無いプロパティは初期値から始まる', () => {
     const wip = wipOn('axe');
     // 作りかけは1工程なのでfinished_stepsを持たない（RecipeSystem.md 1節）。
-    expect(wip.getNumber(codex.propertyNames.getId('progress')), '作りかけの初期値').toBe(0);
+    expect(wip.tryGetProperty(codex.propertyNames.getId('progress'))?.number ?? 0, '作りかけの初期値').toBe(
+      0,
+    );
 
     wip.becomeAlong(toBase);
 

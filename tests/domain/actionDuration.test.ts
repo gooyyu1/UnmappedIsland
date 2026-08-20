@@ -80,9 +80,15 @@ object_defs:
     const executed = campfire.tryExecuteAction('rest', undefined);
 
     expect(executed).toBe(true);
-    expect(campfire.getNumber(codex.propertyNames.getId('warmth')), '効果は適用される').toBe(1);
+    expect(
+      campfire.tryGetProperty(codex.propertyNames.getId('warmth'))?.number ?? 0,
+      '効果は適用される',
+    ).toBe(1);
     expect(world.minute, 'duration分だけ時間が進む').toBe(30);
-    expect(world.instance.getNumber(codex.propertyNames.getId('tick')), '15分tickを2回跨ぐ').toBe(2);
+    expect(
+      world.instance.tryGetProperty(codex.propertyNames.getId('tick'))?.number ?? 0,
+      '15分tickを2回跨ぐ',
+    ).toBe(2);
   });
 
   it('プロパティ参照durationはselfのプロパティを読む', () => {
@@ -146,7 +152,7 @@ object_defs:
 
     expect(nut.tryExecuteCombination(hammer, undefined, 'crack')).toBe(true);
 
-    expect(nut.getNumber(codex.propertyNames.getId('cracked')), '効果は適用される').toBe(1);
+    expect(nut.tryGetProperty(codex.propertyNames.getId('cracked'))?.number ?? 0, '効果は適用される').toBe(1);
     expect(world.minute, 'duration分だけ時間が進む').toBe(20);
   });
 
@@ -197,11 +203,14 @@ object_defs:
 
     expect(oven.tryExecuteAction('bake', undefined)).toBe(true);
 
-    expect(world.instance.getNumber(codex.propertyNames.getId('tick')), '60分＝4tick経つ').toBe(4);
+    expect(
+      world.instance.tryGetProperty(codex.propertyNames.getId('tick'))?.number ?? 0,
+      '60分＝4tick経つ',
+    ).toBe(4);
     const bread = oven.tryGetSlot(codex.slotNames.getId('output'))?.contents[0];
     expect(bread, '焼き上がったパンが出力スロットに入る').toBeDefined();
     expect(
-      bread?.getNumber(codex.propertyNames.getId('staleness')),
+      bread?.tryGetProperty(codex.propertyNames.getId('staleness'))?.number ?? 0,
       '焼き上がったばかりなので、焼いていた1時間ぶんは古びていない',
     ).toBe(0);
   });
@@ -279,7 +288,7 @@ object_defs:
     expect(block.tryExecuteCombination(chisel, undefined, 'carve')).toBe(false);
 
     expect(chisel.parent, 'ノミは経過中に壊れて世界から外れている').toBeUndefined();
-    expect(block.getNumber(codex.propertyNames.getId('carved')), '彫りは入らない').toBe(0);
+    expect(block.tryGetProperty(codex.propertyNames.getId('carved'))?.number ?? 0, '彫りは入らない').toBe(0);
     expect(world.minute, '時間は経過している').toBe(30);
   });
 
@@ -308,6 +317,6 @@ object_defs:
     const campfire = session.spawn(codex.objectNames.getId('campfire'));
 
     expect(campfire.tryExecuteAction('rest', undefined)).toBe(true);
-    expect(campfire.getNumber(codex.propertyNames.getId('warmth'))).toBe(1);
+    expect(campfire.tryGetProperty(codex.propertyNames.getId('warmth'))?.number ?? 0).toBe(1);
   });
 });

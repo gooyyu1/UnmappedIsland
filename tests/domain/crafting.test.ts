@@ -153,7 +153,7 @@ object_defs:
     put('knife', 1);
     expect(advanceCrafting(wip, recipe, materialsId(), codex, session)).toBe(true);
 
-    expect(wip.getNumber(finishedStepsId), '1工程終えるごとに1増える').toBe(1);
+    expect(wip.tryGetProperty(finishedStepsId)?.number ?? 0, '1工程終えるごとに1増える').toBe(1);
     expect(wip.tryGetProperty(finishedStepsId)?.ratio, '2工程中1工程＝0.5').toBe(0.5);
   });
 
@@ -175,7 +175,7 @@ object_defs:
 
     expect(stepIsSupplied(wip, materialsId(), recipe.steps[0])).toBe(false);
     expect(advanceCrafting(wip, recipe, materialsId(), codex, session)).toBe(false);
-    expect(wip.getNumber(progressId())).toBe(0);
+    expect(wip.tryGetProperty(progressId())?.number ?? 0).toBe(0);
   });
 
   it('素材は消え、出番の終わった道具は足元へこぼれる', () => {
@@ -186,7 +186,7 @@ object_defs:
     // 木は消費される。刃物は2工程目が要求しないので、箱に留めず親へ返す。
     expect(boxContents()).toEqual([]);
     expect(onGround().sort()).toEqual([inProgressObjectName('axe', 'basic'), 'knife']);
-    expect(wip.getNumber(progressId()), '工程の所要時間ぶん進む').toBe(30);
+    expect(wip.tryGetProperty(progressId())?.number ?? 0, '工程の所要時間ぶん進む').toBe(30);
   });
 
   it('工程の所要時間ぶん、ゲーム内時間が進む', () => {

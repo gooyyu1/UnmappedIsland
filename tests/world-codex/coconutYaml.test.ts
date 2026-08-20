@@ -62,7 +62,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
   /** 土地のitemsスロットに並ぶ物の重さ（g）。 */
   function weightsOn(location: WorldObject): number[] {
     const weightId = codex.propertyNames.getId('weight');
-    return new Location(location, codex).items.map((object) => object.getNumber(weightId));
+    return new Location(location, codex).items.map((object) => object.tryGetProperty(weightId)?.number ?? 0);
   }
 
   /** 手持ちに並ぶ物の識別子（同種のスタックは個数ぶん並べる）。 */
@@ -107,11 +107,11 @@ describe('coconut.yamlのヤシの実の加工', () => {
   it('青い実に穴を開けると、その場で水を飲み、水の抜けた実が残る', () => {
     const green = spawnInto('green_coconut', beach, 'items');
     // 空になる寸前から。0にすると、穴を開ける15分の間に水分が尽きて渇きで死ぬ（VitalsSystem.md 8節）。
-    player.setProperty(hydrationId, 2);
+    player.getProperty(hydrationId).init(2);
 
     combine(green, 'sharp_stone', 'bore');
 
-    expect(player.getNumber(hydrationId), '1個ぶんの水500mL = 20 tick分').toBe(21);
+    expect(player.tryGetProperty(hydrationId)?.number ?? 0, '1個ぶんの水500mL = 20 tick分').toBe(21);
     expect(itemsOn(beach), '実は元の実が居た場所へ置き換わる').toEqual(['drained_green_coconut']);
   });
 
@@ -121,11 +121,11 @@ describe('coconut.yamlのヤシの実の加工', () => {
     const hydrationMax = codex.objects
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
       .getPropertyDef(hydrationId)!.range!.max;
-    player.setProperty(hydrationId, hydrationMax);
+    player.getProperty(hydrationId).init(hydrationMax);
 
     combine(green, 'sharp_stone', 'bore');
 
-    expect(player.getNumber(hydrationId), 'あふれる分は失われる').toBe(hydrationMax);
+    expect(player.tryGetProperty(hydrationId)?.number ?? 0, 'あふれる分は失われる').toBe(hydrationMax);
     expect(itemsOn(beach)).toEqual(['drained_green_coconut']);
   });
 
@@ -145,13 +145,13 @@ describe('coconut.yamlのヤシの実の加工', () => {
     const satietyId = codex.propertyNames.getId('satiety');
     // 食べるのに1 tickかかり、時間は効果より先に進む（actionTime参照）。0から測ると、その1 tickで
     // 水分が尽きて渇き死ぬので、1 tickぶんの減り（satiety -16・hydration -1）を載せた値から測る。
-    player.setProperty(satietyId, 16);
-    player.setProperty(hydrationId, 2);
+    player.getProperty(satietyId).init(16);
+    player.getProperty(hydrationId).init(2);
 
     expect(jelly.tryExecuteAction('eat', player)).toBe(true);
 
-    expect(player.getNumber(hydrationId)).toBeCloseTo(6.2, 10);
-    expect(player.getNumber(satietyId), '熟した果肉（200mL）より小さい').toBe(150);
+    expect(player.tryGetProperty(hydrationId)?.number ?? 0).toBeCloseTo(6.2, 10);
+    expect(player.tryGetProperty(satietyId)?.number ?? 0, '熟した果肉（200mL）より小さい').toBe(150);
     expect(jelly.parent, '食べた果肉は消える').toBeUndefined();
   });
 
@@ -161,9 +161,9 @@ describe('coconut.yamlのヤシの実の加工', () => {
       const target = spawnInto(name, player, 'hand');
       // 1 tickぶんの減り（-1）を載せた2から測り、残る1を引いて増えた分だけを返す
       // （0まで減ると尽きて死ぬので、1を残す）。
-      player.setProperty(hydrationId, 2);
+      player.getProperty(hydrationId).init(2);
       expect(target.tryExecuteAction(action, player)).toBe(true);
-      return player.getNumber(hydrationId) - 1;
+      return (player.tryGetProperty(hydrationId)?.number ?? 0) - 1;
     };
 
     const green = 20 + 2 * waterOf('coconut_jelly', 'eat');
@@ -277,15 +277,15 @@ describe('coconut.yamlのヤシの実の加工', () => {
     const satietyId = codex.propertyNames.getId('satiety');
     const lipidId = codex.propertyNames.getId('lipid');
     // 1 tickぶんの減りを載せた値から測る（0まで減ると尽きて死ぬので2から）。脂質は在庫が0だと輸送も動かない。
-    player.setProperty(satietyId, 16);
-    player.setProperty(hydrationId, 2);
-    player.setProperty(lipidId, 0);
+    player.getProperty(satietyId).init(16);
+    player.getProperty(hydrationId).init(2);
+    player.getProperty(lipidId).init(0);
 
     expect(meat.tryExecuteAction('eat', player)).toBe(true);
 
-    expect(player.getNumber(satietyId)).toBe(200);
-    expect(player.getNumber(hydrationId)).toBe(7);
-    expect(player.getNumber(lipidId), '脂質が多い').toBe(26);
+    expect(player.tryGetProperty(satietyId)?.number ?? 0).toBe(200);
+    expect(player.tryGetProperty(hydrationId)?.number ?? 0).toBe(7);
+    expect(player.tryGetProperty(lipidId)?.number ?? 0, '脂質が多い').toBe(26);
     expect(meat.parent, '食べた果肉は消える').toBeUndefined();
   });
 

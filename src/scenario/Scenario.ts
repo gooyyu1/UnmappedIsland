@@ -191,10 +191,10 @@ export function applyScenario(game: NewGameSession, scenario: Scenario, codex: W
   placeInside(game, codex, scenario.inside);
 
   for (const [name, raw] of scenario.props) {
-    game.player.instance.setProperty(propertyIdOf(codex, name), resolveValue(codex, name, raw));
+    game.player.instance.getProperty(propertyIdOf(codex, name)).init(resolveValue(codex, name, raw));
   }
   for (const [name, raw] of scenario.worldProps) {
-    game.world.instance.setProperty(propertyIdOf(codex, name), resolveValue(codex, name, raw));
+    game.world.instance.getProperty(propertyIdOf(codex, name)).init(resolveValue(codex, name, raw));
   }
 }
 

@@ -41,13 +41,13 @@ describe('foods.yamlの食料定義', () => {
       const vitaminId = codex.propertyNames.getId('vitamin');
 
       // 在庫は体脂肪へ流れ続ける（characters/参照）ため、加算量だけを見たい。一旦0まで下げる。
-      for (const id of [satietyId, nutrientId, vitaminId]) character.setProperty(id, 0);
+      for (const id of [satietyId, nutrientId, vitaminId]) character.getProperty(id).init(0);
 
       expect(food.tryExecuteAction('eat', character)).toBe(true);
 
-      expect(character.getNumber(satietyId), 'かさ').toBe(expectedBulk);
-      expect(character.getNumber(nutrientId), '栄養素').toBe(expectedNutrient);
-      expect(character.getNumber(vitaminId), 'ビタミン').toBe(expectedVitamin);
+      expect(character.tryGetProperty(satietyId)?.number ?? 0, 'かさ').toBe(expectedBulk);
+      expect(character.tryGetProperty(nutrientId)?.number ?? 0, '栄養素').toBe(expectedNutrient);
+      expect(character.tryGetProperty(vitaminId)?.number ?? 0, 'ビタミン').toBe(expectedVitamin);
     },
   );
 
@@ -77,12 +77,13 @@ describe('foods.yamlの食料定義', () => {
       codex.propertyNames.getId(name),
     );
     const satietyId = codex.propertyNames.getId('satiety');
-    for (const id of [satietyId, ...nutrients]) character.setProperty(id, 0);
+    for (const id of [satietyId, ...nutrients]) character.getProperty(id).init(0);
 
     expect(lump.tryExecuteAction('eat', character)).toBe(true);
 
-    expect(character.getNumber(satietyId), 'かさは少し戻る').toBe(200);
-    for (const id of nutrients) expect(character.getNumber(id), '身になるものは残っていない').toBe(0);
+    expect(character.tryGetProperty(satietyId)?.number ?? 0, 'かさは少し戻る').toBe(200);
+    for (const id of nutrients)
+      expect(character.tryGetProperty(id)?.number ?? 0, '身になるものは残っていない').toBe(0);
   });
 
   it('characterはエネルギーの在庫を3本持ち、速さが栄養素ごとに違う', () => {
@@ -96,7 +97,7 @@ describe('foods.yamlの食料定義', () => {
       ['lipid', 0.5],
     ] as const) {
       const id = codex.propertyNames.getId(name);
-      expect(instance.getNumber(id), `${name}の初期値`).toBeGreaterThan(0);
+      expect(instance.tryGetProperty(id)?.number ?? 0, `${name}の初期値`).toBeGreaterThan(0);
       expect(propOf(character, name).range?.max, `${name}のmax`).toBe(120);
 
       // 体脂肪は基礎代謝でも動くので、在庫があるときと空のときの差を見る。
@@ -111,13 +112,15 @@ describe('foods.yamlの食料定義', () => {
     const instance = new WorldObject(1, character, session);
     const bodyFatId = codex.propertyNames.getId('body_fat');
     for (const name of ['carbohydrate', 'protein', 'lipid'])
-      instance.setProperty(codex.propertyNames.getId(name), 0);
-    instance.setProperty(codex.propertyNames.getId('vitamin'), 1000);
-    instance.setProperty(bodyFatId, 100);
+      instance.getProperty(codex.propertyNames.getId(name)).init(0);
+    instance.getProperty(codex.propertyNames.getId('vitamin')).init(1000);
+    instance.getProperty(bodyFatId).init(100);
 
     instance.tick();
 
-    expect(instance.getNumber(bodyFatId), '在庫が空なら基礎代謝で減るだけ').toBeLessThan(100);
+    expect(instance.tryGetProperty(bodyFatId)?.number ?? 0, '在庫が空なら基礎代謝で減るだけ').toBeLessThan(
+      100,
+    );
     expect(propOf(character, 'vitamin').range?.max).toBe(1500);
   });
 
@@ -128,11 +131,11 @@ describe('foods.yamlの食料定義', () => {
     const instance = new WorldObject(1, def, session);
     const bodyFatId = codex.propertyNames.getId('body_fat');
     for (const name of ['carbohydrate', 'protein', 'lipid'])
-      instance.setProperty(codex.propertyNames.getId(name), name === stocked ? 100 : 0);
+      instance.getProperty(codex.propertyNames.getId(name)).init(name === stocked ? 100 : 0);
 
-    const before = instance.getNumber(bodyFatId);
+    const before = instance.tryGetProperty(bodyFatId)?.number ?? 0;
     instance.tick();
-    return instance.getNumber(bodyFatId) - before + basalPerTick();
+    return (instance.tryGetProperty(bodyFatId)?.number ?? 0) - before + basalPerTick();
   }
 
   /** 在庫が空のときに1 tickで減る体脂肪（＝基礎代謝）。 */
@@ -142,11 +145,11 @@ describe('foods.yamlの食料定義', () => {
     const instance = new WorldObject(1, def, session);
     const bodyFatId = codex.propertyNames.getId('body_fat');
     for (const name of ['carbohydrate', 'protein', 'lipid'])
-      instance.setProperty(codex.propertyNames.getId(name), 0);
+      instance.getProperty(codex.propertyNames.getId(name)).init(0);
 
-    const before = instance.getNumber(bodyFatId);
+    const before = instance.tryGetProperty(bodyFatId)?.number ?? 0;
     instance.tick();
-    return before - instance.getNumber(bodyFatId);
+    return before - (instance.tryGetProperty(bodyFatId)?.number ?? 0);
   }
 
   function propOf(def: ObjectDef, propertyName: string): PropertyDef {

@@ -28,7 +28,7 @@ object_defs:
 
     const seen = new Set<number>();
     for (let i = 0; i < 100; i++) {
-      const v = session.spawn(gemId).getNumber(qualityId);
+      const v = session.spawn(gemId).tryGetProperty(qualityId)?.number ?? 0;
       expect(v).toBeGreaterThanOrEqual(10); // 初期値は[min,max]の閉区間に収まる
       expect(v).toBeLessThanOrEqual(20);
       seen.add(v);
@@ -44,7 +44,10 @@ object_defs:
     const gemId = codex.objectNames.getId('gem');
 
     function firstSpawn(seed: number): number {
-      return new WorldSession(codex, undefined, new SeededRng(seed)).spawn(gemId).getNumber(qualityId);
+      return (
+        new WorldSession(codex, undefined, new SeededRng(seed)).spawn(gemId).tryGetProperty(qualityId)
+          ?.number ?? 0
+      );
     }
 
     // 同じシードなら初期値も再現する（決定的に振る舞わせられる）

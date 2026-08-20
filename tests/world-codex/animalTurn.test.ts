@@ -51,7 +51,7 @@ describe('動物の1手', () => {
   /** 密林から草原へ抜ける、発見済みの道を1本通す。 */
   function openPath(): WorldObject {
     const path = spawnInto('path', jungle, 'fixtures');
-    path.setProperty(codex.propertyNames.getId('destination_id'), grassland.instanceId);
+    path.getProperty(codex.propertyNames.getId('destination_id')).init(grassland.instanceId);
     return path;
   }
 
@@ -94,7 +94,7 @@ describe('動物の1手', () => {
     open(0.5);
     openPath();
     const monkey = release('monkey');
-    monkey.setProperty(warinessId, 0);
+    monkey.getProperty(warinessId).init(0);
 
     passTurn(4);
 
@@ -132,7 +132,7 @@ describe('動物の1手', () => {
     // 倒せば中身として地面へこぼれる（9.3節）。
     open(0.5);
     const monkey = release('monkey');
-    monkey.setProperty(warinessId, 0);
+    monkey.getProperty(warinessId).init(0);
     const coconut = release('coconut');
 
     passTurn();
@@ -148,7 +148,7 @@ describe('動物の1手', () => {
   it('サルは、既に1つくわえていれば次を持ち去らない', () => {
     open(0.5);
     const monkey = release('monkey');
-    monkey.setProperty(warinessId, 0);
+    monkey.getProperty(warinessId).init(0);
     release('coconut');
     release('coconut');
 
@@ -163,7 +163,7 @@ describe('動物の1手', () => {
     // 一撃で消えることはない。
     open(0.5);
     const boar = release('wild_boar');
-    boar.setProperty(warinessId, 0);
+    boar.getProperty(warinessId).init(0);
     const basket = release('woven_basket');
     const stone = release('sharp_stone');
     expect(stone.moveToSlot(basket, codex.slotNames.getId('contents'))).toBeUndefined();
@@ -196,18 +196,20 @@ describe('動物の1手', () => {
     const monkey = release('monkey');
 
     passTurn();
-    const base = monkey.getEffectiveValue(fleeId);
+    const base = monkey.tryGetProperty(fleeId)?.getEffectiveValue() ?? 0;
 
     wound(monkey);
     passTurn();
-    const hurt = monkey.getEffectiveValue(fleeId);
+    const hurt = monkey.tryGetProperty(fleeId)?.getEffectiveValue() ?? 0;
 
     wound(monkey);
     passTurn();
 
     expect(base, '素の配分（animals.yamlのmonkey）').toBe(20);
     expect(hurt, '傷1つで痛みの段が上がる').toBeGreaterThan(base);
-    expect(monkey.getEffectiveValue(fleeId), '深手ほどさらに太くなる').toBeGreaterThan(hurt);
+    expect(monkey.tryGetProperty(fleeId)?.getEffectiveValue() ?? 0, '深手ほどさらに太くなる').toBeGreaterThan(
+      hurt,
+    );
     expect(monkey.parent, '様子見を引き続けたので動いていない').toBe(jungle);
   });
 
@@ -220,14 +222,19 @@ describe('動物の1手', () => {
 
     passTurn();
 
-    expect(monkey.getEffectiveValue(fleeId), '警戒していれば逃げられる').toBeGreaterThan(0);
-    expect(monkey.getEffectiveValue(biteId), '警戒していれば噛みつく').toBeGreaterThan(0);
+    expect(
+      monkey.tryGetProperty(fleeId)?.getEffectiveValue() ?? 0,
+      '警戒していれば逃げられる',
+    ).toBeGreaterThan(0);
+    expect(monkey.tryGetProperty(biteId)?.getEffectiveValue() ?? 0, '警戒していれば噛みつく').toBeGreaterThan(
+      0,
+    );
 
-    monkey.setProperty(warinessId, 0);
+    monkey.getProperty(warinessId).init(0);
     passTurn();
 
-    expect(monkey.getEffectiveValue(fleeId)).toBeLessThanOrEqual(0);
-    expect(monkey.getEffectiveValue(biteId)).toBeLessThanOrEqual(0);
+    expect(monkey.tryGetProperty(fleeId)?.getEffectiveValue() ?? 0).toBeLessThanOrEqual(0);
+    expect(monkey.tryGetProperty(biteId)?.getEffectiveValue() ?? 0).toBeLessThanOrEqual(0);
   });
 
   it('人の居ない土地では襲う手が抽選から外れる', () => {
@@ -238,13 +245,16 @@ describe('動物の1手', () => {
     passTurn();
 
     expect(injuriesOf(player), '同じ土地に居るうちは突かれる').toEqual(['gore_wound']);
-    expect(boar.getEffectiveValue(goreId)).toBeGreaterThan(0);
+    expect(boar.tryGetProperty(goreId)?.getEffectiveValue() ?? 0).toBeGreaterThan(0);
 
     expect(player.moveToSlot(grassland, codex.slotNames.getId('characters'))).toBeUndefined();
     passTurn();
 
     expect(injuriesOf(player), '離れれば増えない').toEqual(['gore_wound']);
-    expect(boar.getEffectiveValue(goreId), '相手が居なければ抽選から外れる').toBeLessThanOrEqual(0);
+    expect(
+      boar.tryGetProperty(goreId)?.getEffectiveValue() ?? 0,
+      '相手が居なければ抽選から外れる',
+    ).toBeLessThanOrEqual(0);
   });
 
   it('誰も見ていない土地の動物は、丸1日で立ち去る', () => {
@@ -269,7 +279,7 @@ describe('動物の1手', () => {
     passTurn(100);
 
     expect(fowl.parent, '見ている間は消えない').toBe(jungle);
-    expect(fowl.getEffectiveValue(stayId), 'タイマーは減ってすらいない').toBe(96);
+    expect(fowl.tryGetProperty(stayId)?.getEffectiveValue() ?? 0, 'タイマーは減ってすらいない').toBe(96);
   });
 
   it('罠に掛かった獲物は立ち去らない', () => {
@@ -285,7 +295,7 @@ describe('動物の1手', () => {
     passTurn(60);
 
     expect(fowl.parent, '罠の中では消えない').toBe(snare);
-    expect(fowl.getEffectiveValue(stayId), 'タイマーは減ってすらいない').toBe(96);
+    expect(fowl.tryGetProperty(stayId)?.getEffectiveValue() ?? 0, 'タイマーは減ってすらいない').toBe(96);
   });
 
   it('立ち去った動物のくわえていた物は、その土地に落ちている', () => {
@@ -293,7 +303,7 @@ describe('動物の1手', () => {
     // 消えるときに中身としてその土地へこぼれる（destroyの規約、9.3節）。追跡が遅れても物は戻る。
     open(0.7);
     const monkey = release('monkey');
-    monkey.setProperty(warinessId, 0);
+    monkey.getProperty(warinessId).init(0);
     const stone = release('sharp_stone');
 
     passTurn();
@@ -309,7 +319,7 @@ describe('動物の1手', () => {
   it('くわえた食べ物は、やがて食べられて失われる', () => {
     open(0.7);
     const monkey = release('monkey');
-    monkey.setProperty(warinessId, 0);
+    monkey.getProperty(warinessId).init(0);
     const meat = release('raw_meat');
 
     passTurn();

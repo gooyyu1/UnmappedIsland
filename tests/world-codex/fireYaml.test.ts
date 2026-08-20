@@ -65,12 +65,12 @@ describe('fire.yamlの火の連鎖', () => {
   }
 
   function numberOf(object: WorldObject, propertyName: string): number {
-    return object.getNumber(codex.propertyNames.getId(propertyName));
+    return object.tryGetProperty(codex.propertyNames.getId(propertyName))?.number ?? 0;
   }
 
   /** その炉の火力が指定した段にあるか。 */
   function heatIs(hearth: WorldObject, stageName: string): boolean {
-    return hearth.isInStage(codex.propertyNames.getId('heat'), stageName);
+    return hearth.tryGetProperty(codex.propertyNames.getId('heat'))?.isInStage(stageName) ?? false;
   }
 
   /** 火のついた炉を1つ作って返す（火口・火起こし具・着火まで済ませる）。 */
@@ -227,7 +227,7 @@ describe('fire.yamlの火の連鎖', () => {
     for (let i = 0; i < 6; i++) stoke(hearth, 'thick_branch');
     expect(numberOf(hearth, 'fuel')).toBe(120);
 
-    hearth.setNumber(codex.propertyNames.getId('heat'), 1);
+    hearth.tryGetProperty(codex.propertyNames.getId('heat'))?.setNumber(1);
     session.advanceWorldTime(60 * 6);
 
     expect(heatIs(hearth, 'blaze'), '料理の最上段').toBe(true);
@@ -286,11 +286,11 @@ describe('fire.yamlの火の連鎖', () => {
 
     const cookingId = codex.propertyNames.getId('cooking_progress');
     const meat = spawnInto('raw_meat', land, 'items');
-    expect(meat.ticksUntilMax(cookingId), '火の外では進まない').toBeUndefined();
+    expect(meat.tryGetProperty(cookingId)?.ticksUntilMax(), '火の外では進まない').toBeUndefined();
 
     expect(meat.moveToSlot(hearth, codex.slotNames.getId('fire'))).toBeUndefined();
     // 24 ÷ 3 = 8tickでmaxちょうどに乗り、そのtickでon_maxが起きる。
-    expect(meat.ticksUntilMax(cookingId)).toBe(8);
+    expect(meat.tryGetProperty(cookingId)?.ticksUntilMax()).toBe(8);
 
     session.advanceWorldTime(15 * 7);
     expect(childNames(hearth), '7tickではまだ焼き上がらない').toEqual(['raw_meat']);

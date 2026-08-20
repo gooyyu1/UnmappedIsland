@@ -70,7 +70,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
    */
   function fill(container: WorldObject, liquid: string, amount: number) {
     container.becomeAlong(new Map([['content', liquid]]));
-    container.setNumber(codex.propertyNames.getId('fill'), amount);
+    container.tryGetProperty(codex.propertyNames.getId('fill'))?.setNumber(amount);
   }
 
   /** 開始地点にサル（animals.yaml）を1匹置き、そのインスタンスを返す。 */
@@ -84,9 +84,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   function placeCookingHearth(game: NewGameSession) {
     const hearth = game.session.spawn(codex.objectNames.getId('campfire'));
     expect(hearth.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'))).toBeUndefined();
-    hearth.setNumber(codex.propertyNames.getId('fuel'), 20);
+    hearth.tryGetProperty(codex.propertyNames.getId('fuel'))?.setNumber(20);
     // 炎の段（20〜）。火の中の物のcooking_progressが3/tickで進む（FireSystem.md 2.3節）。
-    hearth.setNumber(codex.propertyNames.getId('heat'), 30);
+    hearth.tryGetProperty(codex.propertyNames.getId('heat'))?.setNumber(30);
 
     const meat = game.session.spawn(codex.objectNames.getId('raw_meat'));
     expect(meat.moveToSlot(hearth, codex.slotNames.getId('fire'))).toBeUndefined();
@@ -127,7 +127,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     expect(fromGameSession(game, codex, locale).weather).toBe('clear');
 
-    game.world.instance.setNumber(weatherId, codex.symbolNames.getId('storm'));
+    game.world.instance.tryGetProperty(weatherId)?.setNumber(codex.symbolNames.getId('storm'));
 
     expect(fromGameSession(game, codex, locale).weather).toBe('storm');
   });
@@ -426,7 +426,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       '石は耐久度を持たない',
     ).toBeUndefined();
 
-    sharpStone.addNumber(durabilityId, -sharpStone.getNumber(durabilityId) / 4);
+    sharpStone.tryGetProperty(durabilityId)?.add(-(sharpStone.tryGetProperty(durabilityId)?.number ?? 0) / 4);
 
     expect(
       gaugeOf(handCells(fromGameSession(game, codex, locale), game)[0], 'durability')?.ratio,
@@ -447,7 +447,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       '薪が無ければ0',
     ).toBe(0);
 
-    campfire.setNumber(fuelId, campfire.getNumber(fuelId) + 15);
+    campfire.tryGetProperty(fuelId)?.setNumber((campfire.tryGetProperty(fuelId)?.number ?? 0) + 15);
 
     expect(
       gaugeOf(lane(fromGameSession(game, codex, locale), game, 'fixtures')[0], 'fuel')?.ratio,
@@ -471,7 +471,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     });
 
     const severityId = codex.propertyNames.getId('severity');
-    injury.addNumber(severityId, -injury.getNumber(severityId) / 2);
+    injury.tryGetProperty(severityId)?.add(-(injury.tryGetProperty(severityId)?.number ?? 0) / 2);
 
     const healing = gaugeOf(
       fromGameSession(game, codex, locale).cardsIn(characterSlot(game, 'injuries'))[0]!,
@@ -498,7 +498,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       worsensUpward: false,
     });
 
-    monkey.setNumber(consciousnessId, 10);
+    monkey.tryGetProperty(consciousnessId)?.setNumber(10);
 
     const reduced = gaugeOf(
       fromGameSession(game, codex, locale).cardsIn(place(game, 'items'))[0]!,
@@ -526,7 +526,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       '現れた時点で警戒している',
     ).toBe('caution');
 
-    monkey.setNumber(warinessId, 0);
+    monkey.tryGetProperty(warinessId)?.setNumber(0);
 
     expect(
       fromGameSession(game, codex, locale).cardsIn(place(game, 'items'))[0]!.alert,
@@ -568,7 +568,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     expect(fromGameSession(game, codex, locale).cardsIn(characterSlot(game, 'injuries'))[0]!.mark).toBe('🩸');
 
-    wound.setNumber(codex.propertyNames.getId('bleeding'), 0);
+    wound.tryGetProperty(codex.propertyNames.getId('bleeding'))?.setNumber(0);
 
     expect(
       fromGameSession(game, codex, locale).cardsIn(characterSlot(game, 'injuries'))[0]!.mark,
@@ -587,7 +587,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     expect(fromGameSession(game, codex, locale).characterCard.mark).toBe('🩸');
 
-    wound.setNumber(codex.propertyNames.getId('bleeding'), 0);
+    wound.tryGetProperty(codex.propertyNames.getId('bleeding'))?.setNumber(0);
 
     expect(fromGameSession(game, codex, locale).characterCard.mark, '止まれば消える').toBeUndefined();
   });
@@ -636,7 +636,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const { hearth } = placeCookingHearth(game);
 
-    hearth.setNumber(codex.propertyNames.getId('heat'), 0);
+    hearth.tryGetProperty(codex.propertyNames.getId('heat'))?.setNumber(0);
 
     expect(
       fromGameSession(game, codex, locale).cardsIn({
@@ -836,7 +836,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toEqual({
       key: '@fill',
       ratio: 0.4,
-      color: bowl.getNumber(codex.propertyNames.getId('color')),
+      color: bowl.tryGetProperty(codex.propertyNames.getId('color'))?.number ?? 0,
       // 良し悪しではなく中身そのものの色を映すバーなので、両端は色を決めない。
       atMin: 'neutral',
       atMax: 'neutral',
@@ -844,7 +844,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     });
 
     // 飲み干す＝fillが尽きる。量が尽きた変種は空の容器へ戻る（fillのon_min）。
-    bowl.setNumber(codex.propertyNames.getId('fill'), 0);
+    bowl.tryGetProperty(codex.propertyNames.getId('fill'))?.setNumber(0);
 
     expect(
       gaugeOf(handCells(fromGameSession(game, codex, locale), game)[0], '@fill')?.ratio,
@@ -1373,7 +1373,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(meat.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
     // 満腹度は初期値が上限なので、食べた分が乗る余地を空けておく。
     const satietyId = codex.propertyNames.getId('satiety');
-    game.player.instance.setNumber(satietyId, 0);
+    game.player.instance.tryGetProperty(satietyId)?.setNumber(0);
 
     const card = handCells(fromGameSession(game, codex, texts), game)[0];
 
@@ -1382,7 +1382,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     card?.actions[0].execute();
 
-    expect(game.player.instance.getNumber(satietyId), '食べたかさだけ腹が満ちる').toBeGreaterThan(0);
+    expect(
+      game.player.instance.tryGetProperty(satietyId)?.number ?? 0,
+      '食べたかさだけ腹が満ちる',
+    ).toBeGreaterThan(0);
     expect(game.player.hand[0], '食べた果肉は無くなる').toBeUndefined();
   });
 
@@ -1405,7 +1408,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     fill(canteen, 'water_liquid', 1000);
     const hydrationId = codex.propertyNames.getId('hydration');
     // 0まで下げると渇きで死ぬ（hydrationのon_min）ので、飲む余地を残しつつ1で止める。
-    game.player.instance.setNumber(hydrationId, 1);
+    game.player.instance.tryGetProperty(hydrationId)?.setNumber(1);
 
     // 水入りの水筒は1つの型なので、中身のtraitが配ったdrinkがそのまま自分のアクションになる。
     const card = handCells(fromGameSession(game, codex, locale), game)[0];
@@ -1414,7 +1417,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     card?.actions[0].execute();
 
-    expect(game.player.instance.getNumber(hydrationId), '飲んだ分だけ水分が増える').toBeGreaterThan(1);
+    expect(
+      game.player.instance.tryGetProperty(hydrationId)?.number ?? 0,
+      '飲んだ分だけ水分が増える',
+    ).toBeGreaterThan(1);
   });
 
   it('中身入りの容器の名前は、素の型と中身の名前から組み立てられる', () => {
@@ -1593,7 +1599,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     for (let i = 0; i < 40; i++)
       game.session.spawn(codex.objectNames.getId('stone')).moveToSlot(game.player.instance, equipmentId);
     expect(
-      game.player.instance.getEffectiveValue(codex.propertyNames.getId('load')),
+      game.player.instance.tryGetProperty(codex.propertyNames.getId('load'))?.getEffectiveValue() ?? 0,
       '装備の重さがそのまま負荷になる',
     ).toBeGreaterThan(0);
 
@@ -1611,7 +1617,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const hydration = codex.propertyNames.getId('hydration');
     // 残り24 tick分（6時間）未満で致命的域（characters/）。
-    game.player.instance.setNumber(hydration, 20);
+    game.player.instance.tryGetProperty(hydration)?.setNumber(20);
 
     const view = fromGameSession(game, codex, locale);
 

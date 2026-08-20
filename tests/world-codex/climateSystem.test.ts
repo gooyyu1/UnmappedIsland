@@ -81,10 +81,10 @@ describe.runIf(process.env.RUN_CLIMATE_TESTS === '1')('気候システム(Climat
 
       for (let t = 0; t < SIM_TICKS; t++) {
         world.tick();
-        trace.weather[t] = world.getNumber(weatherId);
-        trace.season[t] = world.getNumber(seasonId);
-        trace.seasonCycle[t] = world.getNumber(seasonCycleId);
-        trace.effectiveTemperature[t] = world.getEffectiveValue(temperatureId);
+        trace.weather[t] = world.tryGetProperty(weatherId)?.number ?? 0;
+        trace.season[t] = world.tryGetProperty(seasonId)?.number ?? 0;
+        trace.seasonCycle[t] = world.tryGetProperty(seasonCycleId)?.number ?? 0;
+        trace.effectiveTemperature[t] = world.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0;
       }
 
       traces.push(trace);

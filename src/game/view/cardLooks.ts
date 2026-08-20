@@ -178,7 +178,8 @@ export function cardLooksOf(
   const consciousnessPropertyId = codex.propertyNames.tryGetId(CONSCIOUSNESS_PROPERTY);
   /** 気を失っているカードへ出す覆い（CardView.md 9.1節）。意識を持たない物・起きている物はundefined。 */
   const overlayOf = (object: WorldObject): string | undefined =>
-    consciousnessPropertyId !== undefined && object.isInStage(consciousnessPropertyId, UNCONSCIOUS_STAGE)
+    consciousnessPropertyId !== undefined &&
+    (object.tryGetProperty(consciousnessPropertyId)?.isInStage(UNCONSCIOUS_STAGE) ?? false)
       ? locale.stage(UNCONSCIOUS_STAGE)
       : undefined;
 
@@ -258,7 +259,7 @@ export function cardLooksOf(
     const recipe = recipeOf(object, codex);
     if (recipe === undefined) return undefined;
 
-    const step = currentStep(recipe, object.getNumber(progressPropertyId));
+    const step = currentStep(recipe, object.tryGetProperty(progressPropertyId)?.number ?? 0);
     if (step === undefined) return undefined;
     const ratio = stepSupplyRatio(object, materialsSlotId, step);
     return { key: BUILTIN_GAUGE_KEYS.material, ratio, atMin: 'bad', atMax: 'good', worsensUpward: false };
@@ -275,7 +276,7 @@ export function cardLooksOf(
    */
   const ownCookingOf = (object: WorldObject): CardCooking | undefined => {
     if (cookingPropertyId === undefined) return undefined;
-    const ticks = object.ticksUntilMax(cookingPropertyId);
+    const ticks = object.tryGetProperty(cookingPropertyId)?.ticksUntilMax();
     if (ticks === undefined) return undefined;
 
     const ratio = object.tryGetProperty(cookingPropertyId)?.ratio;

@@ -49,7 +49,10 @@ export class PassiveEffectGate {
 
   isSatisfied(declarer: WorldObject, slotBearer: WorldObject): boolean {
     if (this.stageName !== undefined) {
-      if (this.propertyGlobalId === undefined || !declarer.isInStage(this.propertyGlobalId, this.stageName))
+      if (
+        this.propertyGlobalId === undefined ||
+        !(declarer.tryGetProperty(this.propertyGlobalId)?.isInStage(this.stageName) ?? false)
+      )
         return false;
     }
 
@@ -242,15 +245,14 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
     slotBearer: WorldObject,
   ): void {
     if (targetOwner === undefined) return;
-    targetOwner.registerPassiveEffect(
-      this.targetPropertyGlobalId,
-      new RegisteredPassiveEffect(declarer, slotBearer, this),
-    );
+    targetOwner
+      .tryGetProperty(this.targetPropertyGlobalId)
+      ?.registerPassiveEffect(new RegisteredPassiveEffect(declarer, slotBearer, this));
   }
 
   /** targetOwnerの対象プロパティから、declarerが宣言した登録を解除する。 */
   private unregister(targetOwner: WorldObject | undefined, declarer: WorldObject): void {
-    targetOwner?.unregisterPassiveEffectsFrom(declarer, this.targetPropertyGlobalId);
+    targetOwner?.tryGetProperty(this.targetPropertyGlobalId)?.unregisterPassiveEffectsFrom(declarer);
   }
 }
 

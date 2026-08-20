@@ -12,7 +12,6 @@ import { IN_PROGRESS_TAG } from './RecipeDef';
 import type { PropertyDef } from './PropertyDef';
 import { PropertyValue } from './PropertyValue';
 import type { Requirement } from './Requirement';
-import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
 import { Slot } from './Slot';
 import type { WorldPlace } from './WorldChange';
 import type { WorldSession } from './WorldSession';
@@ -139,37 +138,17 @@ export class WorldObject {
     return this.properties[local];
   }
 
-  /** 登録済みのincoming（modify/add）はそのまま、値の中身だけを差し替える。 */
-  setProperty(globalPropertyId: number, value: number): void {
+  /**
+   * tryGetPropertyと同じ引き方で、持っていないことを許さない版。**その型が必ず持っているはずの
+   * プロパティ**——生成が書き込む行き先ID、シナリオが名指しする値——を引くときに使う。名前の綴り違いが
+   * 黙って無視されず、書いた場所で分かる。
+   */
+  getProperty(globalPropertyId: number): PropertyValue {
     const property = this.tryGetProperty(globalPropertyId);
     if (property === undefined) {
       throw new Error(`'${this.def.name}' はプロパティ(id=${globalPropertyId})を持ちません。`);
     }
-    property.copyValueFrom(value);
-  }
-
-  getNumber(globalPropertyId: number, fallback = 0): number {
-    const property = this.tryGetProperty(globalPropertyId);
-    return property !== undefined ? property.number : fallback;
-  }
-
-  /**
-   * 数値プロパティへの不可逆な加減算（9.2節の`add`）。対象プロパティを持たない場合は何もしない（例: 重さを
-   * 気にしない置物）。range判定はPropertyValue自身が行う。
-   */
-  addNumber(globalPropertyId: number, delta: number): void {
-    this.tryGetProperty(globalPropertyId)?.add(delta);
-  }
-
-  /** 数値プロパティへの不可逆な絶対値代入（9.2節の`set`）。対象プロパティを持たない場合は何もしない（addNumberと同じ規約）。 */
-  setNumber(globalPropertyId: number, value: number): void {
-    this.tryGetProperty(globalPropertyId)?.setNumber(value);
-  }
-
-  /** 指定したプロパティが、今まさに指定した名前のstageに該当しているか（WhenOwnStageゲート専用、6.4節・8節）。 */
-  isInStage(propertyGlobalId: number, stageName: string): boolean {
-    const property = this.tryGetProperty(propertyGlobalId);
-    return property !== undefined && property.isInStage(stageName);
+    return property;
   }
 
   /**
@@ -198,14 +177,6 @@ export class WorldObject {
       .find(
         (slotDef) => slotDef !== from?.def && item.rejectionForMoveTo(this, slotDef.globalId) === undefined,
       )?.globalId;
-  }
-
-  /**
-   * 名指しした1つのプロパティが、今の進み方であと何tickでrange.maxへ届く（on_maxが起きる）か。
-   * そのプロパティを持たない・今は進んでいない場合はundefined。
-   */
-  ticksUntilMax(globalPropertyId: number): number | undefined {
-    return this.tryGetProperty(globalPropertyId)?.ticksUntilMax();
   }
 
   /**
@@ -260,12 +231,6 @@ export class WorldObject {
    */
   propertiesWithTag(tagGlobalId: number): readonly PropertyValue[] {
     return this.properties.filter((property) => property.def.hasTag(tagGlobalId));
-  }
-
-  /** modifyのみを加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。プロパティを持たなければ0。 */
-  getEffectiveValue(propertyGlobalId: number): number {
-    const value = this.tryGetProperty(propertyGlobalId);
-    return value !== undefined ? value.getEffectiveValue() : 0;
   }
 
   /**
@@ -530,7 +495,7 @@ export class WorldObject {
 
     for (const property of this.properties) {
       const carried = carriedValues.get(property.def.globalId);
-      if (carried !== undefined) property.copyValueFrom(clampToRange(property.def, carried));
+      if (carried !== undefined) property.init(clampToRange(property.def, carried));
     }
 
     this._def.passives.registerRelation(this, 'self', true);
@@ -598,7 +563,9 @@ export class WorldObject {
     if (propertyGlobalId === wellKnown.weightId) {
       // 中身入りの変種は、抱えている量ぶんだけ自分が重い（fill × density = mL × g/mL = g）。
       // 空の容器はfillを持たないので0になり、器の自重だけが残る。
-      let sum = this.getNumber(wellKnown.fillId) * this.getNumber(wellKnown.densityId, 1);
+      let sum =
+        (this.tryGetProperty(wellKnown.fillId)?.number ?? 0) *
+        (this.tryGetProperty(wellKnown.densityId)?.number ?? 1);
       for (const slot of this.slots) for (const child of slot.contents) sum += child.effectiveWeight();
       return sum;
     }
@@ -609,7 +576,10 @@ export class WorldObject {
         for (const child of slot.contents) {
           // 1で「まったく感じない」。1を超える宣言は0扱いにするが、負の値は通す——抱えにくい物を
           // 「実際より重く感じる」向きへ書けるようにするため。
-          const rate = Math.min(child.getEffectiveValue(wellKnown.loadReductionRateId), 1);
+          const rate = Math.min(
+            child.tryGetProperty(wellKnown.loadReductionRateId)?.getEffectiveValue() ?? 0,
+            1,
+          );
           sum += child.effectiveWeight() * (1 - rate);
         }
       }
@@ -728,18 +698,6 @@ export class WorldObject {
     for (const slot of this.slots) {
       for (const child of [...slot.contents]) child.registerAncestorTargetedRecursively(register);
     }
-  }
-
-  /** 対象プロパティのincomingへ、登録済み効果1件を登録する。このオブジェクトがそのプロパティを持たなければ何もしない（呼び出し側は宛先の有無を気にしなくてよい）。 */
-  registerPassiveEffect(propertyGlobalId: number, effect: RegisteredPassiveEffect): void {
-    const property = this.tryGetProperty(propertyGlobalId);
-    property?.registerPassiveEffect(effect);
-  }
-
-  /** 対象プロパティから、declarerが宣言した登録を解除する。プロパティを持たなければ何もしない。 */
-  unregisterPassiveEffectsFrom(declarer: WorldObject, propertyGlobalId: number): void {
-    const property = this.tryGetProperty(propertyGlobalId);
-    property?.unregisterPassiveEffectsFrom(declarer);
   }
 
   /**

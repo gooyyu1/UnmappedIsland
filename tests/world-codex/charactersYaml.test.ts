@@ -35,11 +35,11 @@ function decayPerTick(character: string, propertyName: string): number {
   const session = new WorldSession(codex);
   const instance = new WorldObject(1, def(character), session);
   const propertyId = codex.propertyNames.getId(propertyName);
-  const before = instance.getNumber(propertyId);
+  const before = instance.tryGetProperty(propertyId)?.number ?? 0;
 
   instance.tick();
 
-  return before - instance.getNumber(propertyId);
+  return before - (instance.tryGetProperty(propertyId)?.number ?? 0);
 }
 
 /**
@@ -82,15 +82,15 @@ function takeRest(
   const minutes = player.instance.actionMinutes(actionName, player.instance);
   const spent = minutes / 15;
 
-  player.instance.setNumber(staminaId, 0);
-  player.instance.setNumber(wakefulnessId, spent);
+  player.instance.tryGetProperty(staminaId)?.setNumber(0);
+  player.instance.tryGetProperty(wakefulnessId)?.setNumber(spent);
 
   expect(player.instance.tryExecuteAction(actionName, player.instance)).toBe(true);
 
   return {
     minutes,
-    stamina: player.instance.getNumber(staminaId),
-    wakefulness: player.instance.getNumber(wakefulnessId) - spent,
+    stamina: player.instance.tryGetProperty(staminaId)?.number ?? 0,
+    wakefulness: (player.instance.tryGetProperty(wakefulnessId)?.number ?? 0) - spent,
   };
 }
 
@@ -209,18 +209,18 @@ describe('プレイヤーキャラクタの定義', () => {
 
       // 開始直後からステータスバーに出るよう、安全域の境目（80%）のやや下の75%から始める（Characters.md）。
       expect(
-        instance.getNumber(codex.propertyNames.getId('hydration')),
+        instance.tryGetProperty(codex.propertyNames.getId('hydration'))?.number ?? 0,
         'hydration は最大値の3/4で始まる',
       ).toBe((maxOf(character, 'hydration') * 3) / 4);
 
       for (const propertyName of ['wakefulness', 'stamina'])
         expect(
-          instance.getNumber(codex.propertyNames.getId(propertyName)),
+          instance.tryGetProperty(codex.propertyNames.getId(propertyName))?.number ?? 0,
           `${propertyName} は満タンで始まる`,
         ).toBe(maxOf(character, propertyName));
 
       // 太っても痩せてもいない標準体格の位置（Characters.md）。
-      expect(instance.getNumber(codex.propertyNames.getId('body_fat'))).toBe(
+      expect(instance.tryGetProperty(codex.propertyNames.getId('body_fat'))?.number ?? 0).toBe(
         maxOf(character, 'body_fat') / 4,
       );
     });
@@ -316,15 +316,15 @@ describe('プレイヤーキャラクタの定義', () => {
       const instance = new WorldObject(1, def(character), session);
       const bloodId = codex.propertyNames.getId('blood');
       const max = maxOf(character, 'blood');
-      instance.setNumber(bloodId, max - 100);
+      instance.tryGetProperty(bloodId)?.setNumber(max - 100);
 
       instance.tick();
 
-      expect(instance.getNumber(bloodId), '1 tickで2mL戻る').toBe(max - 98);
+      expect(instance.tryGetProperty(bloodId)?.number ?? 0, '1 tickで2mL戻る').toBe(max - 98);
 
       for (let i = 0; i < 100; i++) instance.tick();
 
-      expect(instance.getNumber(bloodId), '満タンを超えては溜まらない').toBe(max);
+      expect(instance.tryGetProperty(bloodId)?.number ?? 0, '満タンを超えては溜まらない').toBe(max);
     });
 
     it('ステータスエリアに出るもののうち、致命的域を持つのは水分と血だけ', () => {
@@ -349,12 +349,14 @@ describe('プレイヤーキャラクタの定義', () => {
       const { player } = stand(character);
       const propertyId = codex.propertyNames.getId(propertyName);
 
-      player.instance.addNumber(propertyId, -(player.instance.getNumber(propertyId) - 1));
+      player.instance
+        .tryGetProperty(propertyId)
+        ?.add(-((player.instance.tryGetProperty(propertyId)?.number ?? 0) - 1));
 
       expect(player.isDead, '下限に達するまでは生きている').toBe(false);
       expect(player.causeOfDeath).toBeUndefined();
 
-      player.instance.addNumber(propertyId, -1);
+      player.instance.tryGetProperty(propertyId)?.add(-1);
 
       expect(player.isDead, '下限に達した時点で世界から外れる').toBe(true);
       expect(player.causeOfDeath).toBe(stageName);

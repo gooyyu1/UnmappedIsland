@@ -35,10 +35,10 @@ export class StackOrderDef {
    * （＝挿入順を保つ）。membersはこの並び順で既に整列済みである前提。
    */
   insertionIndexOf(obj: WorldObject, members: readonly WorldObject[]): number {
-    const value = obj.getNumber(this.propertyGlobalId);
+    const value = obj.tryGetProperty(this.propertyGlobalId)?.number ?? 0;
     let i = 0;
     while (i < members.length) {
-      const otherValue = members[i].getNumber(this.propertyGlobalId);
+      const otherValue = members[i].tryGetProperty(this.propertyGlobalId)?.number ?? 0;
       const staysBefore = this.ascending ? otherValue <= value : otherValue >= value;
       if (!staysBefore) break;
       i++;

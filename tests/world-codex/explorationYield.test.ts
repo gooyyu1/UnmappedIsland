@@ -87,7 +87,7 @@ describe('探索で見つかる物', () => {
     const explorer = new WorldSession(codex, worldView, new SeededRng(20250801));
 
     const instance = explorer.spawn(codex.objectNames.getId(landName));
-    for (const [propertyGlobalId, value] of props) instance.setProperty(propertyGlobalId, value);
+    for (const [propertyGlobalId, value] of props) instance.getProperty(propertyGlobalId).init(value);
     expect(instance.moveToSlot(worldInstance, codex.slotNames.getId('locations'))).toBeUndefined();
     const location = new Location(instance, codex);
 

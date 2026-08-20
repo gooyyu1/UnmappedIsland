@@ -54,11 +54,11 @@ object_defs:
 
     const session = new WorldSession(codex);
     const pond = session.spawn(codex.objectNames.getId('pond'));
-    expect(pond.getNumber(moistureId), '初期値も小数').toBe(0.5);
+    expect(pond.tryGetProperty(moistureId)?.number ?? 0, '初期値も小数').toBe(0.5);
 
     pond.tick();
 
-    expect(pond.getNumber(moistureId), '毎tickの加減算も小数で効く').toBeCloseTo(0.15, 10);
+    expect(pond.tryGetProperty(moistureId)?.number ?? 0, '毎tickの加減算も小数で効く').toBeCloseTo(0.15, 10);
   });
 
   // ------------------------------------------------------------------
@@ -500,10 +500,10 @@ object_defs:
     const swordInstance = new WorldObject(2, codex.objects.get(codex.objectNames.getId('sword')), session);
 
     expect(swordInstance.moveToSlot(characterInstance, mainHandId)).toBeUndefined();
-    expect(characterInstance.getEffectiveValue(attackId)).toBe(15); // main_handでは+5
+    expect(characterInstance.tryGetProperty(attackId)?.getEffectiveValue() ?? 0).toBe(15); // main_handでは+5
 
     expect(swordInstance.moveToSlot(characterInstance, offHandId)).toBeUndefined();
-    expect(characterInstance.getEffectiveValue(attackId)).toBe(12); // off_handへ持ち替えると+2に切り替わる
+    expect(characterInstance.tryGetProperty(attackId)?.getEffectiveValue() ?? 0).toBe(12); // off_handへ持ち替えると+2に切り替わる
   });
 
   it('on_minはrangeが無いとエラーになる', () => {
@@ -599,7 +599,7 @@ object_defs:
     const player = new WorldObject(2, codex.objects.get(codex.objectNames.getId('player')), session);
 
     expect(appleInstance.tryExecuteAction('eat', player)).toBe(false); // actor.satiety=100 は lt 100 を満たさない
-    player.setNumber(satietyId, 99);
+    player.tryGetProperty(satietyId)?.setNumber(99);
     expect(appleInstance.tryExecuteAction('eat', player)).toBe(true); // actor.satiety=99 は lt 100 を満たす
   });
 
@@ -632,11 +632,11 @@ object_defs:
     const woodInstance = new WorldObject(1, wood, session);
     const axe = new WorldObject(2, codex.objects.get(codex.objectNames.getId('axe_tool')), session);
 
-    axe.setNumber(durabilityId, 0);
+    axe.tryGetProperty(durabilityId)?.setNumber(0);
     expect(woodInstance.tryExecuteCombination(axe, undefined, 'chop')).toBe(false); // dragged.durability=0 のとき条件 gt 0 を満たさない
-    axe.setNumber(durabilityId, 10);
+    axe.tryGetProperty(durabilityId)?.setNumber(10);
     expect(woodInstance.tryExecuteCombination(axe, undefined, 'chop')).toBe(true); // dragged.durability=10 のとき条件 gt 0 を満たす
-    expect(axe.getNumber(durabilityId)).toBe(9); // add: dragged.durability: -1 が適用される
+    expect(axe.tryGetProperty(durabilityId)?.number ?? 0).toBe(9); // add: dragged.durability: -1 が適用される
     expect(woodInstance.parent).toBeUndefined(); // destroy: self が適用される
   });
 
@@ -739,7 +739,7 @@ object_defs:
     const thingInstance = new WorldObject(1, thing, session);
 
     expect(thingInstance.tryExecuteAction('use', undefined)).toBe(true); // object/op省略時は self.mode == 1 の等価比較として成立する
-    thingInstance.setNumber(modeId, 2);
+    thingInstance.tryGetProperty(modeId)?.setNumber(2);
     expect(thingInstance.tryExecuteAction('use', undefined)).toBe(false); // self.mode != 1 では不成立
   });
 
@@ -805,11 +805,11 @@ object_defs:
     expect(inRange.tryExecuteAction('use', undefined), '20以上30未満').toBe(true);
 
     const tooHot = new WorldObject(2, thingDef, session);
-    tooHot.setNumber(temperature, 30);
+    tooHot.tryGetProperty(temperature)?.setNumber(30);
     expect(tooHot.tryExecuteAction('use', undefined), '上限は含まない').toBe(false);
 
     const tooCold = new WorldObject(3, thingDef, session);
-    tooCold.setNumber(temperature, 19);
+    tooCold.tryGetProperty(temperature)?.setNumber(19);
     expect(tooCold.tryExecuteAction('use', undefined)).toBe(false);
   });
 
@@ -838,7 +838,7 @@ object_defs:
     expect(light.tryExecuteAction('use', undefined)).toBe(true);
 
     const heavy = new WorldObject(2, thingDef, session);
-    heavy.setNumber(load, 100);
+    heavy.tryGetProperty(load)?.setNumber(100);
     expect(heavy.tryExecuteAction('use', undefined), '段に入ると実行できない').toBe(false);
   });
 
@@ -1058,7 +1058,7 @@ object_defs:
     expect(bottle.tryExecuteCombination(sameContent, undefined, 'pour_in')).toBe(false); // self(empty)とdragged(water)のcontentが異なるので不成立
 
     const contentId = codex.propertyNames.getId('content');
-    bottle.setProperty(contentId, codex.symbolNames.getId('water'));
+    bottle.getProperty(contentId).init(codex.symbolNames.getId('water'));
     expect(bottle.tryExecuteCombination(sameContent, undefined, 'pour_in')).toBe(true); // selfとdraggedのcontentが同じ(water)なので成立
   });
 
@@ -1124,8 +1124,8 @@ object_defs:
     const hpId = codex.propertyNames.getId('hp');
     const mpId = codex.propertyNames.getId('mp');
 
-    falseCase.setNumber(hpId, 99);
-    falseCase.setNumber(mpId, 4);
+    falseCase.tryGetProperty(hpId)?.setNumber(99);
+    falseCase.tryGetProperty(mpId)?.setNumber(4);
     expect(falseCase.tryExecuteAction('use', undefined)).toBe(false); // hp(99)もmp(4)も条件を満たさないため不成立
 
     expect(trueCase.tryExecuteAction('use', undefined)).toBe(true); // hp(5)はgte 100を満たさないが、mp(5)がgte 5を満たすのでanyとして成立する
@@ -1194,13 +1194,13 @@ object_defs:
     const logInstance = new WorldObject(2, codex.objects.get(codex.objectNames.getId('log')), session);
 
     expect(logInstance.moveToSlot(campfireInstance, fuelSlotId)).toBeUndefined();
-    expect(logInstance.getEffectiveValue(warmthId)).toBe(0); // fuel_slotには入っているが、heatがunlitステージのためボーナスなし
+    expect(logInstance.tryGetProperty(warmthId)?.getEffectiveValue() ?? 0).toBe(0); // fuel_slotには入っているが、heatがunlitステージのためボーナスなし
 
-    campfireInstance.setProperty(heatId, 1);
-    expect(logInstance.getEffectiveValue(warmthId)).toBe(5); // litステージかつfuel_slot条件の両方を満たすのでボーナスが乗る
+    campfireInstance.getProperty(heatId).init(1);
+    expect(logInstance.tryGetProperty(warmthId)?.getEffectiveValue() ?? 0).toBe(5); // litステージかつfuel_slot条件の両方を満たすのでボーナスが乗る
 
     expect(logInstance.moveToSlot(campfireInstance, storageSlotId)).toBeUndefined();
-    expect(logInstance.getEffectiveValue(warmthId)).toBe(0); // litステージのままでもfuel_slotから外れるとボーナスが消える
+    expect(logInstance.tryGetProperty(warmthId)?.getEffectiveValue() ?? 0).toBe(0); // litステージのままでもfuel_slotから外れるとボーナスが消える
   });
 
   it('9節の命令は、動詞ごとの優先順位ではなく書かれた順に適用される', () => {
@@ -1225,11 +1225,11 @@ object_defs:
 
     const addThenSet = new WorldObject(1, tallyDef, session);
     expect(addThenSet.tryExecuteAction('add_then_set', undefined)).toBe(true);
-    expect(addThenSet.getNumber(nId)).toBe(5);
+    expect(addThenSet.tryGetProperty(nId)?.number ?? 0).toBe(5);
 
     const setThenAdd = new WorldObject(2, tallyDef, session);
     expect(setThenAdd.tryExecuteAction('set_then_add', undefined)).toBe(true);
-    expect(setThenAdd.getNumber(nId)).toBe(6);
+    expect(setThenAdd.tryGetProperty(nId)?.number ?? 0).toBe(6);
   });
 
   it('9節の命令とpickは同じ場所に並べて書ける', () => {
@@ -1252,8 +1252,8 @@ object_defs:
     const worker = new WorldObject(1, codex.objects.get(codex.objectNames.getId('worker')), session);
 
     expect(worker.tryExecuteAction('turn', undefined)).toBe(true);
-    expect(worker.getNumber(codex.propertyNames.getId('fatigue'))).toBe(1);
-    expect(worker.getNumber(codex.propertyNames.getId('mark'))).toBe(7);
+    expect(worker.tryGetProperty(codex.propertyNames.getId('fatigue'))?.number ?? 0).toBe(1);
+    expect(worker.tryGetProperty(codex.propertyNames.getId('mark'))?.number ?? 0).toBe(7);
   });
 
   // ------------------------------------------------------------------
@@ -1393,11 +1393,11 @@ object_defs:
 
     const session = new WorldSession(codex);
     const instance = new WorldObject(1, clock, session);
-    instance.setProperty(codex.propertyNames.getId('minute'), 60); // 手動で溢れさせる
+    instance.getProperty(codex.propertyNames.getId('minute')).init(60); // 手動で溢れさせる
     instance.tick(); // passivesのadd契機は無いが、既に溢れているのでon_maxだけが発火する
 
-    expect(instance.getNumber(codex.propertyNames.getId('minute'))).toBe(0);
-    expect(instance.getNumber(codex.propertyNames.getId('hour'))).toBe(1);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('minute'))?.number ?? 0).toBe(0);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('hour'))?.number ?? 0).toBe(1);
   });
 
   it('on_maxの対象にself以外を指定するとエラーになる', () => {
@@ -1431,10 +1431,10 @@ object_defs:
 
     const session = new WorldSession(codex);
     const instance = new WorldObject(1, gauge, session);
-    instance.setProperty(codex.propertyNames.getId('value'), 150);
+    instance.getProperty(codex.propertyNames.getId('value')).init(150);
     instance.tick();
 
-    expect(instance.getNumber(codex.propertyNames.getId('value'))).toBe(100); // 既定のon_maxにより100へクランプされる
+    expect(instance.tryGetProperty(codex.propertyNames.getId('value'))?.number ?? 0).toBe(100); // 既定のon_maxにより100へクランプされる
   });
 
   // ------------------------------------------------------------------
@@ -1489,11 +1489,11 @@ object_defs:
 
     const session = new WorldSession(codex);
     const instance = new WorldObject(1, clock, session);
-    instance.setProperty(codex.propertyNames.getId('minute'), -10); // 手動で下回らせる
+    instance.getProperty(codex.propertyNames.getId('minute')).init(-10); // 手動で下回らせる
     instance.tick();
 
-    expect(instance.getNumber(codex.propertyNames.getId('minute'))).toBe(50);
-    expect(instance.getNumber(codex.propertyNames.getId('hour'))).toBe(0);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('minute'))?.number ?? 0).toBe(50);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('hour'))?.number ?? 0).toBe(0);
   });
 
   it('on_minを省略するとselfをminへクランプする既定効果になる', () => {
@@ -1511,10 +1511,10 @@ object_defs:
 
     const session = new WorldSession(codex);
     const instance = new WorldObject(1, gauge, session);
-    instance.setProperty(codex.propertyNames.getId('value'), -50);
+    instance.getProperty(codex.propertyNames.getId('value')).init(-50);
     instance.tick();
 
-    expect(instance.getNumber(codex.propertyNames.getId('value'))).toBe(0); // 既定のon_minにより0へクランプされる
+    expect(instance.tryGetProperty(codex.propertyNames.getId('value'))?.number ?? 0).toBe(0); // 既定のon_minにより0へクランプされる
   });
 
   it('object: ancestorは、そのプロパティを持たない祖先を素通りして最も近い定義元を見つける', () => {

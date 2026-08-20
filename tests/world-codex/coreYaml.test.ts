@@ -46,12 +46,12 @@ describe('core.yamlのworld定義', () => {
 
     // 初期値は実行時インスタンスの現在値として観測する（DefaultNumberは非公開）。
     const instance = new WorldSession(codex).spawn(world.globalId);
-    expect(instance.getNumber(codex.propertyNames.getId('tick'))).toBe(0);
-    expect(instance.getNumber(codex.propertyNames.getId('minutes_per_tick'))).toBe(15);
-    expect(instance.getNumber(codex.propertyNames.getId('minute'))).toBe(0);
-    expect(instance.getNumber(codex.propertyNames.getId('hour'))).toBe(0);
-    expect(instance.getNumber(codex.propertyNames.getId('day'))).toBe(1);
-    expect(instance.getNumber(codex.propertyNames.getId('ambient_temperature'))).toBe(20);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('tick'))?.number ?? 0).toBe(0);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('minutes_per_tick'))?.number ?? 0).toBe(15);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('minute'))?.number ?? 0).toBe(0);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('hour'))?.number ?? 0).toBe(0);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('day'))?.number ?? 0).toBe(1);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('ambient_temperature'))?.number ?? 0).toBe(20);
   });
 
   it('minuteとhourには折り返し用のrangeが設定されている', () => {
@@ -78,8 +78,8 @@ describe('core.yamlのworld定義', () => {
     worldInstance.tick();
     worldInstance.tick();
 
-    expect(worldInstance.getNumber(tickId)).toBe(3);
-    expect(worldInstance.getNumber(minuteId)).toBe(0);
+    expect(worldInstance.tryGetProperty(tickId)?.number ?? 0).toBe(3);
+    expect(worldInstance.tryGetProperty(minuteId)?.number ?? 0).toBe(0);
   });
 
   it('minuteの繰り上がりはhourへ、さらにdayへ連鎖する', () => {
@@ -94,14 +94,14 @@ describe('core.yamlのworld定義', () => {
 
     session.advanceWorldTime(60); // 60分 -> minuteが折り返し、hourへ+1
 
-    expect(worldInstance.getNumber(minuteId)).toBe(0);
-    expect(worldInstance.getNumber(hourId)).toBe(1);
+    expect(worldInstance.tryGetProperty(minuteId)?.number ?? 0).toBe(0);
+    expect(worldInstance.tryGetProperty(hourId)?.number ?? 0).toBe(1);
 
     session.advanceWorldTime(60 * 23); // 残り23時間分進め、hourもdayへ折り返させる
 
-    expect(worldInstance.getNumber(minuteId)).toBe(0);
-    expect(worldInstance.getNumber(hourId)).toBe(0);
-    expect(worldInstance.getNumber(dayId)).toBe(2);
+    expect(worldInstance.tryGetProperty(minuteId)?.number ?? 0).toBe(0);
+    expect(worldInstance.tryGetProperty(hourId)?.number ?? 0).toBe(0);
+    expect(worldInstance.tryGetProperty(dayId)?.number ?? 0).toBe(2);
   });
 
   it('sunlightがambient_temperatureを補正する', () => {
@@ -118,9 +118,11 @@ describe('core.yamlのworld定義', () => {
       expectedEffective: number,
       because: string,
     ): void {
-      worldInstance.setProperty(weatherId, codex.symbolNames.intern(weather));
-      worldInstance.setProperty(hourId, hour);
-      expect(worldInstance.getEffectiveValue(ambientTemperatureId), because).toBe(expectedEffective);
+      worldInstance.getProperty(weatherId).init(codex.symbolNames.intern(weather));
+      worldInstance.getProperty(hourId).init(hour);
+      expect(worldInstance.tryGetProperty(ambientTemperatureId)?.getEffectiveValue() ?? 0, because).toBe(
+        expectedEffective,
+      );
     }
 
     // 夜はweatherによらずsunlight=0のため、常にやや涼しい（hourを直接見ず、sunlight経由で補正）
@@ -153,9 +155,11 @@ describe('core.yamlのworld定義', () => {
       expectedEffective: number,
       because: string,
     ): void {
-      worldInstance.setProperty(weatherId, codex.symbolNames.intern(weather));
-      worldInstance.setProperty(hourId, hour);
-      expect(worldInstance.getEffectiveValue(sunlightId), because).toBe(expectedEffective);
+      worldInstance.getProperty(weatherId).init(codex.symbolNames.intern(weather));
+      worldInstance.getProperty(hourId).init(hour);
+      expect(worldInstance.tryGetProperty(sunlightId)?.getEffectiveValue() ?? 0, because).toBe(
+        expectedEffective,
+      );
     }
 
     // 夜: hour側の最低限の寄与が0であり、weather側の追加ボーナスもconditionsで無効化されるため、

@@ -44,8 +44,25 @@ export class PropertyValue {
     this.owner = owner;
   }
 
-  /** setProperty用。登録済みのincomingはそのまま、値の中身だけを差し替える。 */
-  copyValueFrom(number: number): void {
+  /**
+   * **まだ世界のルールを走らせてはいけない時点で**値を置く。登録済みのincoming（modify/add）は
+   * そのまま、値の中身だけを差し替え、rangeイベント（6.3節）もgainの記録（PropertyGain）も行わない。
+   *
+   * 途中の状態が世界から見えてはいけない場面のための入口:
+   *
+   * - 型が変わったときの値の引き継ぎ（becomeType、9.9節）。passiveの登録もスタックの再判定も
+   *   まだ済んでおらず、ここで起きた効果は組み立て途中のオブジェクトを見ることになる。
+   *   引き継ぎをaddへ寄せられない理由はもう1つあって、becomeは操作の効果の中から走るため、
+   *   引き継いだ値がそのままプレイヤーの稼ぎとして記録されてしまう。
+   * - 生成が書き込む行き先ID（IslandSpawner）。両端の道が互いを指し終えるまで、片側だけを
+   *   指した状態は世界として成立していない。
+   * - シナリオが用意する開始値。水を置く前に水分を0にした瞬間に渇きで死ぬ、という順序依存を
+   *   持ち込まない。
+   *
+   * **出来上がったオブジェクトの値を動かすのには使わない。** そちらは add / setNumber で、
+   * rangeイベントもgainも通常どおり働く。
+   */
+  init(number: number): void {
     this._number = number;
   }
 

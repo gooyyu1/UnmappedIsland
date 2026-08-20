@@ -93,7 +93,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     const kiln = spawnInto('earth_kiln', land, 'fixtures');
     const log = spawnInto('log', land, 'items');
     expect(kiln.tryExecuteCombination(log, undefined, 'add_fuel')).toBe(true);
-    kiln.setNumber(codex.propertyNames.getId('heat'), 1);
+    kiln.tryGetProperty(codex.propertyNames.getId('heat'))?.setNumber(1);
     return kiln;
   }
 
@@ -111,7 +111,7 @@ describe('pottery.yamlの土器の連鎖', () => {
 
   /** 焼き上がりの判定だけを起こす。値を超えさせるとon_maxが走る（6.3節）。 */
   function overheat(greenware: WorldObject): void {
-    greenware.setNumber(codex.propertyNames.getId('cooking_progress'), 200);
+    greenware.tryGetProperty(codex.propertyNames.getId('cooking_progress'))?.setNumber(200);
   }
 
   /** bodyの実行中に告げられた出来事（signal、9.8節）を「誰の身に・何が」の形で並べる。 */
@@ -139,7 +139,9 @@ describe('pottery.yamlの土器の連鎖', () => {
 
     expect(itemsOn(land), '作りかけが壺そのものへ置き換わる').toEqual(['unfired_jar']);
     const [greenware] = new Location(land, codex).items;
-    expect(greenware.getNumber(codex.propertyNames.getId('moisture')), '練り土の水').toBe(96);
+    expect(greenware.tryGetProperty(codex.propertyNames.getId('moisture'))?.number ?? 0, '練り土の水').toBe(
+      96,
+    );
   });
 
   it('置いておくだけで乾く（工程ではなく時間が乾かす）', () => {
@@ -147,11 +149,11 @@ describe('pottery.yamlの土器の連鎖', () => {
     const moistureId = codex.propertyNames.getId('moisture');
 
     session.advanceWorldTime(60 * 12);
-    expect(greenware.getNumber(moistureId), '半日で半分ほど抜ける').toBe(48);
+    expect(greenware.tryGetProperty(moistureId)?.number ?? 0, '半日で半分ほど抜ける').toBe(48);
 
     session.advanceWorldTime(60 * 12);
-    expect(greenware.getNumber(moistureId), '1日で乾き切る').toBe(0);
-    expect(greenware.isInStage(moistureId, 'bone_dry')).toBe(true);
+    expect(greenware.tryGetProperty(moistureId)?.number ?? 0, '1日で乾き切る').toBe(0);
+    expect(greenware.tryGetProperty(moistureId)?.isInStage('bone_dry') ?? false).toBe(true);
   });
 
   it('粘土3個から覆い焼きの炉を築ける', () => {
@@ -214,9 +216,9 @@ describe('pottery.yamlの土器の連鎖', () => {
     expect(greenware.moveToSlot(kiln, codex.slotNames.getId('fire'))).toBeUndefined();
     const moistureId = codex.propertyNames.getId('moisture');
 
-    let remaining = greenware.getNumber(moistureId);
+    let remaining = greenware.tryGetProperty(moistureId)?.number ?? 0;
     for (let tick = 0; tick < 96 && !childNames(kiln).includes('jar'); tick++) {
-      remaining = greenware.getNumber(moistureId);
+      remaining = greenware.tryGetProperty(moistureId)?.number ?? 0;
       session.advanceWorldTime(15);
     }
 

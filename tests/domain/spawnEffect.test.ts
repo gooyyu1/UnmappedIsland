@@ -57,6 +57,6 @@ object_defs:
 
     expect(parts.map((part) => part.def.name)).toEqual(['crafted_part', 'crafted_part']);
     // 元の素材の4000gを引き継がない。countで複数生まれても、重さは増えも分かれもしない。
-    expect(parts.map((part) => part.getNumber(weightId))).toEqual([400, 400]);
+    expect(parts.map((part) => part.tryGetProperty(weightId)?.number ?? 0)).toEqual([400, 400]);
   });
 });

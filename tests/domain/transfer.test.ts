@@ -56,8 +56,8 @@ object_defs:
     const executed = canteen.tryExecuteAction('drink', actor);
 
     expect(executed).toBe(true);
-    expect(canteen.getNumber(waterId), 'amount(2000)だけ減る').toBe(3000);
-    expect(actor.getNumber(hydrationId), 'amount(2000)だけ増える').toBe(2000);
+    expect(canteen.tryGetProperty(waterId)?.number ?? 0, 'amount(2000)だけ減る').toBe(3000);
+    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, 'amount(2000)だけ増える').toBe(2000);
   });
 
   it('sourceの在庫がamount未満なら在庫分だけにクランプされる', () => {
@@ -90,8 +90,8 @@ object_defs:
 
     canteen.tryExecuteAction('drink', actor);
 
-    expect(canteen.getNumber(waterId), '容器に実際に入っていた分(500)しか出せない').toBe(0);
-    expect(actor.getNumber(hydrationId), '実際に出せた分(500)しか回復しない').toBe(500);
+    expect(canteen.tryGetProperty(waterId)?.number ?? 0, '容器に実際に入っていた分(500)しか出せない').toBe(0);
+    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '実際に出せた分(500)しか回復しない').toBe(500);
   });
 
   it('transferの配列で1回のアクションから複数の移送が適用される', () => {
@@ -137,10 +137,10 @@ object_defs:
     const executed = canteen.tryExecuteAction('drink', actor);
 
     expect(executed).toBe(true);
-    expect(canteen.getNumber(waterId)).toBe(3000);
-    expect(canteen.getNumber(juiceId)).toBe(2000);
-    expect(actor.getNumber(hydrationId)).toBe(2000);
-    expect(actor.getNumber(vitaminId)).toBe(1000);
+    expect(canteen.tryGetProperty(waterId)?.number ?? 0).toBe(3000);
+    expect(canteen.tryGetProperty(juiceId)?.number ?? 0).toBe(2000);
+    expect(actor.tryGetProperty(hydrationId)?.number ?? 0).toBe(2000);
+    expect(actor.tryGetProperty(vitaminId)?.number ?? 0).toBe(1000);
   });
 
   it('allow_overflowがfalseなら移送先の残容量にクランプされ、残りはsourceに残る', () => {
@@ -173,8 +173,11 @@ object_defs:
 
     canteen.tryExecuteAction('drink', actor);
 
-    expect(actor.getNumber(hydrationId), '残容量(100)分しか回復しない').toBe(28800);
-    expect(canteen.getNumber(waterId), '収まらない分(1900)は容器に残る(水を無駄にしない)').toBe(4900);
+    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '残容量(100)分しか回復しない').toBe(28800);
+    expect(
+      canteen.tryGetProperty(waterId)?.number ?? 0,
+      '収まらない分(1900)は容器に残る(水を無駄にしない)',
+    ).toBe(4900);
   });
 
   it('allow_overflowがtrueなら移送先の容量を無視して全量出し、超過分は失われる', () => {
@@ -208,9 +211,11 @@ object_defs:
 
     canteen.tryExecuteAction('drink', actor);
 
-    expect(canteen.getNumber(waterId), 'toの残容量を見ずにamount(2000)そのまま出す').toBe(3000);
+    expect(canteen.tryGetProperty(waterId)?.number ?? 0, 'toの残容量を見ずにamount(2000)そのまま出す').toBe(
+      3000,
+    );
     expect(
-      actor.getNumber(hydrationId),
+      actor.tryGetProperty(hydrationId)?.number ?? 0,
       'range超過分はtoのon_max既定動作(range.maxへクランプ)で失われる(あふれた分は無駄になる)',
     ).toBe(28800);
   });
@@ -242,8 +247,8 @@ object_defs:
     const executed = cauldron.tryExecuteAction('pour_in', undefined);
 
     expect(executed, 'from_object/to_objectを省略してもself同士で成立する').toBe(true);
-    expect(cauldron.getNumber(waterId)).toBe(2000);
-    expect(cauldron.getNumber(brothId)).toBe(1000);
+    expect(cauldron.tryGetProperty(waterId)?.number ?? 0).toBe(2000);
+    expect(cauldron.tryGetProperty(brothId)?.number ?? 0).toBe(1000);
   });
 
   it('linked_addは全量移送されたときにamountの全量分スケールされる', () => {
@@ -283,9 +288,12 @@ object_defs:
 
     canteen.tryExecuteAction('drink', actor);
 
-    expect(actor.getNumber(hydrationId), 'amount(1200)分を全量移送する').toBe(1200);
-    expect(actor.getNumber(wakefulnessId), '全量移送時はlinked_addも全量(200)適用される').toBe(200);
-    expect(canteen.getNumber(teaId)).toBe(3800);
+    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, 'amount(1200)分を全量移送する').toBe(1200);
+    expect(
+      actor.tryGetProperty(wakefulnessId)?.number ?? 0,
+      '全量移送時はlinked_addも全量(200)適用される',
+    ).toBe(200);
+    expect(canteen.tryGetProperty(teaId)?.number ?? 0).toBe(3800);
   });
 
   it('linked_addは一部しか移送されなかったときは比例してスケールされる', () => {
@@ -325,12 +333,12 @@ object_defs:
 
     canteen.tryExecuteAction('drink', actor);
 
-    expect(actor.getNumber(hydrationId), '在庫(600)の分しか移送されない').toBe(600);
+    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '在庫(600)の分しか移送されない').toBe(600);
     expect(
-      actor.getNumber(wakefulnessId),
+      actor.tryGetProperty(wakefulnessId)?.number ?? 0,
       '実際に移送された量(600)に比例してlinked_addもスケールされる(200 * 600 / 1200 = 100)',
     ).toBe(100);
-    expect(canteen.getNumber(teaId)).toBe(0);
+    expect(canteen.tryGetProperty(teaId)?.number ?? 0).toBe(0);
   });
 
   describe('to_amount（単位の違う移送）', () => {
@@ -367,8 +375,8 @@ object_defs:
       expect(cup.tryExecuteAction('drink', actor)).toBe(true);
 
       return {
-        water: cup.getNumber(codex.propertyNames.getId('volume')),
-        hydration: actor.getNumber(codex.propertyNames.getId('hydration')),
+        water: cup.tryGetProperty(codex.propertyNames.getId('volume'))?.number ?? 0,
+        hydration: actor.tryGetProperty(codex.propertyNames.getId('hydration'))?.number ?? 0,
       };
     }
 

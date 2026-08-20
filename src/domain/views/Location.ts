@@ -52,7 +52,7 @@ export class Location {
 
   /** 現在の探索進捗（実効値）。 */
   get explorationProgress(): number {
-    return this.instance.getEffectiveValue(this.explorationProgressId);
+    return this.instance.tryGetProperty(this.explorationProgressId)?.getEffectiveValue() ?? 0;
   }
 
   /**
@@ -170,7 +170,8 @@ export class Location {
 
     const progress = this.explorationProgress;
     for (const fixture of [...hidden.contents]) {
-      if (fixture.getEffectiveValue(this.requiredProgressId) <= progress) this.reveal(fixture);
+      if ((fixture.tryGetProperty(this.requiredProgressId)?.getEffectiveValue() ?? 0) <= progress)
+        this.reveal(fixture);
     }
   }
 
@@ -182,7 +183,7 @@ export class Location {
   private reveal(fixture: WorldObject): void {
     this.revealInOwnLocation(fixture);
 
-    const returnPathId = fixture.getEffectiveValue(this.returnPathIdId);
+    const returnPathId = fixture.tryGetProperty(this.returnPathIdId)?.getEffectiveValue() ?? 0;
     if (returnPathId === 0) return;
 
     const returnPath = fixture.findRoot().findDescendantByInstanceId(returnPathId);

@@ -62,9 +62,10 @@ describe('timber.yamlの伐採', () => {
     ).toHaveLength(3);
     expect(tree.parent, '倒した木は残らない').toBeUndefined();
     expect(axe.parent, '斧は消費されない').toBe(player);
-    expect(axe.getEffectiveValue(codex.propertyNames.getId('durability')), '斧は刃こぼれする').toBeLessThan(
-      960,
-    );
+    expect(
+      axe.tryGetProperty(codex.propertyNames.getId('durability'))?.getEffectiveValue() ?? 0,
+      '斧は刃こぼれする',
+    ).toBeLessThan(960);
   });
 
   it('刃物では伐り倒せない（斧が要る）', () => {
@@ -82,6 +83,8 @@ describe('timber.yamlの伐採', () => {
     expect(log.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
 
     // 1本担いだだけで、荷重の段が「軽い」を外れる（2本目は運べない、docs/world/Voyage.md 1節）。
-    expect(player.isInStage(loadId, 'light'), '1本担いだだけで軽い段を外れる').toBe(false);
+    expect(player.tryGetProperty(loadId)?.isInStage('light') ?? false, '1本担いだだけで軽い段を外れる').toBe(
+      false,
+    );
   });
 });
