@@ -5,7 +5,6 @@ import { putIntoSlot } from '../../domain/slotEntry';
 import type { Localization } from '../../locale/Localization';
 import { craftingActions } from './craftingView';
 import type { CardPlace, CardPlacement } from './cardPlaces';
-import { samePlace } from './cardPlaces';
 
 /**
  * カード1枚だけで完結する操作（ActionSystem.md 1節のactions）。子ウィンドウにボタンとして並べるため、
@@ -68,14 +67,6 @@ export interface CardDrop {
  */
 export interface CardCombination extends CardDrop {
   readonly name: string;
-}
-
-/**
- * そのスロットの枠の位置が安定しているか（`cell_count`、SlotSystem.md 3節）。空き枠を指した
- * ドロップを、枠そのものへ入れる操作として扱ってよいのはこちらだけ。
- */
-function hasFixedCells(owner: WorldObject, slotGlobalId: number): boolean {
-  return owner.tryGetSlot(slotGlobalId)?.def.cellCount !== undefined;
 }
 
 /**
@@ -179,9 +170,8 @@ export function cardOperationsOf(
   const dropInto =
     (stack: readonly WorldObject[], from: CardPlace) =>
     (place: CardPlace, at?: CardPlacement, count = 1): CardDrop | undefined => {
-      if (samePlace(place, from)) return undefined;
-      const { container, slotGlobalId } = place;
-      if (stack[0].rejectionForMoveTo(container, slotGlobalId) !== undefined) return undefined;
+      if (place === from) return undefined;
+      if (stack[0].rejectionForMoveTo(place) !== undefined) return undefined;
 
       // まとめて運んできたぶんも、1つずつ入れるのと同じことをする（時間も個数ぶんかかる）。
       // 入る個数を超えて頼まれても、超えたぶんは枠が断るだけ。
@@ -189,32 +179,28 @@ export function cardOperationsOf(
       const put = (item: WorldObject, first: boolean): void => {
         // 位置の指定が効くのは1つ目だけ。残りは同じ束へ合流するか、空いている枠へ入る。
         if (at === undefined || !first) {
-          item.moveToSlot(container, slotGlobalId);
-        } else if (at.kind === 'cell' && hasFixedCells(container, slotGlobalId)) {
-          item.moveToSlotAtCell(container, slotGlobalId, at.index);
+          item.moveToSlot(place);
+        } else if (at.kind === 'cell' && place.hasFixedCells) {
+          item.moveToSlotAtCell(place, at.index);
         } else {
           // 前詰めスロットの空き枠は末尾の受け皿だけなので、その位置の隙間へ落としたものとして扱う
           // （枠の位置がそのまま並びの終わりを指す）。
-          item.moveToSlotAtGap(container, slotGlobalId, at.index);
+          item.moveToSlotAtGap(place, at.index);
         }
       };
 
-      const slotDef = container.def.getSlotDef(slotGlobalId);
-      const texts = slotDef === undefined ? undefined : locale.slot(slotDef.name).putIn;
-      const minutes =
-        slotDef === undefined
-          ? 0
-          : carried.reduce(
-              (total, item) => total + slotDef.putInMinutes(container, item, game.player.instance),
-              0,
-            );
+      const texts = locale.slot(place.def.name).putIn;
+      const minutes = carried.reduce(
+        (total, item) => total + place.putInMinutes(item, game.player.instance),
+        0,
+      );
 
       // 名乗りも値段も無い枠は、ただ位置が変わるだけなので何も言わない。
       const told =
-        slotDef === undefined || (texts === undefined && minutes === 0)
+        texts === undefined && minutes === 0
           ? undefined
           : {
-              name: texts?.displayName ?? locale.slot(slotDef.name).displayName,
+              name: texts?.displayName ?? locale.slot(place.def.name).displayName,
               description: texts?.description,
             };
 
@@ -222,14 +208,12 @@ export function cardOperationsOf(
         name: told?.name,
         description: told?.description,
         minutes,
-        maxCount: stack[0].acceptedCountForMoveTo(stack.slice(1), container, slotGlobalId),
+        maxCount: stack[0].acceptedCountForMoveTo(stack.slice(1), place),
         movedIds: carried.map((item) => item.instanceId),
         // 時間のかかる枠（手当てなど）はここで時間を進める。どの経路で入れても同じ値段になる。
         execute: () => {
           carried.forEach((item, index) =>
-            putIntoSlot(item, container, slotGlobalId, game.player.instance, game.session, () =>
-              put(item, index === 0),
-            ),
+            putIntoSlot(item, place, game.player.instance, game.session, () => put(item, index === 0)),
           );
         },
       };
@@ -276,7 +260,7 @@ export function cardOperationsOf(
     (item: WorldObject) =>
     (at: CardPlacement): (() => void) | undefined => {
       const parent = item.parent;
-      const fixed = parent !== undefined && item.parentSlot?.def.cellCount !== undefined;
+      const fixed = parent !== undefined && item.parentSlot?.hasFixedCells === true;
       if (at.kind === 'cell' && fixed) {
         return () => {
           item.moveToCellInParentSlot(at.index);

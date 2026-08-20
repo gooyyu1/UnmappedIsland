@@ -5,7 +5,6 @@ import { ShownCards } from '../../src/game/view/ShownCards';
 import type { ObjectCardStack } from '../../src/game/view/PlayScreenView';
 import type { CardCombination } from '../../src/game/view/cardOperations';
 import type { CardPlace, CardPlacement, ScreenPlace } from '../../src/game/view/cardPlaces';
-import { samePlace } from '../../src/game/view/cardPlaces';
 import { planMotion } from '../../src/game/view/cardMotionPlan';
 
 /**
@@ -19,19 +18,19 @@ import { planMotion } from '../../src/game/view/cardMotionPlan';
 /** 番号だけを持つ個体。ShownCardsが読むのはinstanceIdだけ。 */
 const object = (instanceId: number): WorldObject => ({ instanceId }) as WorldObject;
 
+/** 中身を持たない場所（スロット1つ）。ここで見るのは同じ場所かどうかだけなので、区別が付けば足りる。 */
+const somewhere = (): CardPlace => ({}) as CardPlace;
+
 /**
  * 画面の区画が映している場所（PlayScreenView.places）。場所はワールドのスロット1つなので、
- * 区画ごとに持ち主を1つ立てれば足りる——ここで見るのは同じ場所かどうかだけ。
+ * 区画ごとに1つ立てれば足りる。
  */
-const LANE_OWNERS: Record<ScreenPlace, WorldObject> = {
-  fixtures: object(-1),
-  items: object(-2),
-  hand: object(-3),
+const LANE_PLACES: Record<ScreenPlace, CardPlace> = {
+  fixtures: somewhere(),
+  items: somewhere(),
+  hand: somewhere(),
 };
-const place = (screen: ScreenPlace): CardPlace => ({
-  container: LANE_OWNERS[screen],
-  slotGlobalId: 0,
-});
+const place = (screen: ScreenPlace): CardPlace => LANE_PLACES[screen];
 
 /** 束が受けた操作の記録。どの操作がどの個体・場所で組まれたかをテストが確かめる。 */
 interface Moved {
@@ -84,7 +83,7 @@ function screen(
 ): ShownCards {
   return new ShownCards({
     stacksIn: (asked) => {
-      const lane = (['hand', 'items', 'fixtures'] as const).find((name) => samePlace(asked, place(name)));
+      const lane = (['hand', 'items', 'fixtures'] as const).find((name) => asked === place(name));
       return lane === undefined ? [] : (lanes[lane] ?? []);
     },
     // 本物は物の親スロットから場所を導く（PlayScreenView.placeOfObject）。ここでは、その個体を
@@ -449,8 +448,7 @@ describe('ドロップの意味', () => {
 
   it('入れ物のカードへ重ねると、その中身の場所へ入る', () => {
     const moves: Moved[] = [];
-    const box = object(9);
-    const inside: CardPlace = { container: box, slotGlobalId: 0 };
+    const inside = somewhere();
     const shown = screen({
       hand: [stack(place('hand'), [1, 2], { moves, accepted: 2 })],
       items: [stack(place('items'), [9], { contents: inside })],
@@ -484,7 +482,7 @@ describe('ドロップの意味', () => {
 
 describe('カードの端の行き先', () => {
   it('手持ちの上は、子ウィンドウを開いている間だけそちらを先に見る', () => {
-    const inside: CardPlace = { container: object(9), slotGlobalId: 0 };
+    const inside = somewhere();
     expect(screen({}, inside).edgeTargets(place('hand'), 'up')).toEqual([inside, place('items')]);
     expect(screen({}).edgeTargets(place('hand'), 'up')).toEqual([place('items')]);
   });
@@ -495,9 +493,7 @@ describe('カードの端の行き先', () => {
     expect(shown.edgeTargets(place('fixtures'), 'down')).toEqual([place('items')]);
     expect(shown.edgeTargets(place('items'), 'down')).toEqual([place('hand')]);
     expect(shown.edgeTargets(place('hand'), 'down')).toEqual([]);
-    expect(shown.edgeTargets({ container: object(9), slotGlobalId: 0 }, 'down'), '中身の下は手持ち').toEqual([
-      place('hand'),
-    ]);
+    expect(shown.edgeTargets(somewhere(), 'down'), '中身の下は手持ち').toEqual([place('hand')]);
   });
 });
 

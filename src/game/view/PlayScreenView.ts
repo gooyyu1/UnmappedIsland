@@ -12,7 +12,7 @@ import { cardLooksOf } from './cardLooks';
 import type { CardAction, CardCombination, CardDrop, CardOperations } from './cardOperations';
 import { cardOperationsOf } from './cardOperations';
 import type { CardPlace, CardPlacement, ScreenPlaces } from './cardPlaces';
-import { cardPlacesOf, samePlace } from './cardPlaces';
+import { cardPlacesOf } from './cardPlaces';
 import type { SlotRef } from '../../art/backgroundArt';
 import type { CardContent } from '../ui/Card';
 import type { CardKind } from '../looks/theme';
@@ -301,7 +301,7 @@ export function withFrozenCards(view: PlayScreenView, place: CardPlace | undefin
   if (place === undefined) return view;
 
   const frozen = view.cardsIn(place);
-  return { ...view, cardsIn: (asked) => (samePlace(asked, place) ? frozen : view.cardsIn(asked)) };
+  return { ...view, cardsIn: (asked) => (asked === place ? frozen : view.cardsIn(asked)) };
 }
 
 /** 場所を映す札の仮のアイコン。土地は種別を持たない（物ではない）ので、種別ごとの表とは別に置く。 */
@@ -326,7 +326,7 @@ const STATUS_TAG = 'status';
  * スロットは詰まっているので、undefinedは現れない。
  */
 function stacksIn(place: CardPlace): readonly (readonly WorldObject[] | undefined)[] {
-  const slot = place.container.tryGetSlot(place.slotGlobalId);
+  const slot = place.owner.tryGetSlot(place.def.globalId);
   return slot === undefined ? [] : slot.cells.map((cell) => cell?.members);
 }
 
@@ -365,15 +365,15 @@ export function fromGameSession(
    * 枠は無いものとして扱う。
    */
   const slotViewOf = (place: CardPlace): SlotView => {
-    const slotDef = place.container.def.getSlotDef(place.slotGlobalId);
-    const name = slotDef === undefined ? undefined : codex.slotNames.getName(place.slotGlobalId);
+    const slotDef = place.owner.def.getSlotDef(place.def.globalId);
+    const name = slotDef === undefined ? undefined : codex.slotNames.getName(place.def.globalId);
     return {
-      key: name ?? String(place.container.instanceId),
-      label: name === undefined ? looks.nameOf(place.container) : locale.slot(name).displayName,
+      key: name ?? String(place.owner.instanceId),
+      label: name === undefined ? looks.nameOf(place.owner) : locale.slot(name).displayName,
       cellCount: slotDef?.cellCount,
       acceptsCards: slotDef !== undefined && codex.admitsBroughtObjects(slotDef),
-      background: slotDef === undefined ? undefined : { owner: place.container.def.name, slot: slotDef.name },
-      materials: craftingMaterials(place.container, codex),
+      background: slotDef === undefined ? undefined : { owner: place.owner.def.name, slot: slotDef.name },
+      materials: craftingMaterials(place.owner, codex),
     };
   };
 
@@ -381,17 +381,15 @@ export function fromGameSession(
    * そのカードへ重ねたdraggedの行き先（受け取れるスロットが無ければundefined）。**どの枠かを決めるのは
    * ワールドの側**（WorldObject.putInSlotFor、GameElementDefinition.md 7.8節）で、画面は場所へ直すだけ。
    */
-  const contentsOf = (object: WorldObject, dragged: WorldObject): CardPlace | undefined => {
-    const slotGlobalId = object.putInSlotFor(dragged);
-    return slotGlobalId === undefined ? undefined : { container: object, slotGlobalId };
-  };
+  const contentsOf = (object: WorldObject, dragged: WorldObject): CardPlace | undefined =>
+    object.putInSlotFor(dragged);
 
   /**
    * その物の子ウィンドウにタブとして並ぶスロット（`visible_slots`、GameElementDefinition.md
    * 7.11節）。宣言順がそのまま並び順で、名乗らない物では空。
    */
   const visiblePlacesOf = (object: WorldObject): readonly CardPlace[] =>
-    object.def.visibleSlotGlobalIds.map((slotGlobalId) => ({ container: object, slotGlobalId }));
+    object.def.visibleSlotGlobalIds.map((slotGlobalId) => object.getSlot(slotGlobalId));
 
   /**
    * プロパティを相手として指すときの表示（対応表の表示名と絵文字。プロパティは絵を持たない）。
@@ -521,12 +519,9 @@ export function fromGameSession(
    * 親を持たない物（どのスロットにも入っていない）はカードにならないので、ここへは来ない。
    */
   const placeOfObject = (object: WorldObject): CardPlace => {
-    const parent = object.parent;
-    if (parent === undefined) throw new Error(`親スロットに居ない物の札は作れない: ${object.def.name}`);
-    return {
-      container: parent,
-      slotGlobalId: object.parentSlot!.def.globalId,
-    };
+    const slot = object.parentSlot;
+    if (slot === undefined) throw new Error(`親スロットに居ない物の札は作れない: ${object.def.name}`);
+    return slot;
   };
 
   const stackOf = (

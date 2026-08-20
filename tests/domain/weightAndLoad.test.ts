@@ -88,7 +88,7 @@ object_defs:
     const session = new WorldSession(codex);
     const make = (name: string): WorldObject => session.spawn(codex.objectNames.getId(name));
     const put = (child: WorldObject, parent: WorldObject, slotName: string): void => {
-      expect(child.moveToSlot(parent, codex.slotNames.getId(slotName))).toBeUndefined();
+      expect(child.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     };
     return {
       codex,

@@ -56,7 +56,7 @@ describe('fire.yamlの火の連鎖', () => {
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent, codex.slotNames.getId(slotName))).toBeUndefined();
+    expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 
@@ -314,7 +314,7 @@ describe('fire.yamlの火の連鎖', () => {
   it('火にかけた生肉は焼けた肉になり、放っておくと焦げる', () => {
     const hearth = litCampfire();
     const meat = spawnInto('raw_meat', land, 'items');
-    expect(meat.moveToSlot(hearth, codex.slotNames.getId('fire'))).toBeUndefined();
+    expect(meat.moveToSlot(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
 
     session.advanceWorldTime(60 * 3);
     expect(new Location(land, codex).fixtures[0].def.name).toBe('campfire');
@@ -333,7 +333,7 @@ describe('fire.yamlの火の連鎖', () => {
     const meat = spawnInto('raw_meat', land, 'items');
     expect(meat.tryGetProperty(cookingId)?.ticksUntilMax(), '火の外では進まない').toBeUndefined();
 
-    expect(meat.moveToSlot(hearth, codex.slotNames.getId('fire'))).toBeUndefined();
+    expect(meat.moveToSlot(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
     // 24 ÷ 3 = 8tickでmaxちょうどに乗り、そのtickでon_maxが起きる。
     expect(meat.tryGetProperty(cookingId)?.ticksUntilMax()).toBe(8);
 
@@ -405,7 +405,7 @@ describe('fire.yamlの火の連鎖', () => {
 
     const hearth = litCampfire();
     const stone = spawnInto('stone', land, 'items');
-    expect(stone.moveToSlot(hearth, codex.slotNames.getId('fire'))).toBeDefined();
+    expect(stone.moveToSlot(hearth.getSlot(codex.slotNames.getId('fire')))).toBeDefined();
     expect(stone.parent, '入らなかった石は手元に残る').toBe(land);
   });
 });

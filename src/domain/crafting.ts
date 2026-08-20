@@ -202,5 +202,5 @@ function spillUnneeded(
     (object) => !stillNeeded.some((requirement) => requirement.requires(object.def)),
   );
 
-  for (const object of leftovers) object.moveToSlot(parent, parentSlot.globalId);
+  for (const object of leftovers) object.moveToSlot(parent.getSlot(parentSlot.globalId));
 }

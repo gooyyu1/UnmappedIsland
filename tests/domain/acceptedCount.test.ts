@@ -62,7 +62,7 @@ object_defs:
 
   /** itemsのうち何個がownerのcontentsへ続けて入るか。 */
   function accepted(owner: WorldObject, items: readonly WorldObject[]): number {
-    return items[0].acceptedCountForMoveTo(items.slice(1), owner, contentsId);
+    return items[0].acceptedCountForMoveTo(items.slice(1), owner.getSlot(contentsId));
   }
 
   it('枠のmaxと枠の数を掛けたところで頭打ちになる', () => {
@@ -73,7 +73,7 @@ object_defs:
 
   it('既に入っているぶんだけ減る', () => {
     const [basket, coconuts] = open('basket', 'coconut', 10);
-    expect(coconuts[0].moveToSlot(basket, contentsId)).toBeUndefined();
+    expect(coconuts[0].moveToSlot(basket.getSlot(contentsId))).toBeUndefined();
 
     expect(accepted(basket, coconuts.slice(1)), '1つ入れたので残りは5').toBe(5);
   });
@@ -106,10 +106,10 @@ object_defs:
   it('1個も入らないなら0で、1個だけ入るかを訊いた答えと食い違わない', () => {
     const [basket, coconuts] = open('basket', 'coconut', 7);
     for (const coconut of coconuts.slice(0, 6))
-      expect(coconut.moveToSlot(basket, contentsId)).toBeUndefined();
+      expect(coconut.moveToSlot(basket.getSlot(contentsId))).toBeUndefined();
 
     const last = coconuts[6];
     expect(accepted(basket, [last])).toBe(0);
-    expect(last.rejectionForMoveTo(basket, contentsId)).toBeDefined();
+    expect(last.rejectionForMoveTo(basket.getSlot(contentsId))).toBeDefined();
   });
 });

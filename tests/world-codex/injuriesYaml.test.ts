@@ -52,7 +52,7 @@ describe('injuries.yamlの怪我', () => {
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent, codex.slotNames.getId(slotName))).toBeUndefined();
+    expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 
@@ -137,9 +137,9 @@ describe('injuries.yamlの怪我', () => {
     pickCoconut();
     const injury = new PlayerCharacter(player, codex).injuryStacks[0][0];
 
-    expect(injury.moveToSlot(beach, codex.slotNames.getId('items'))).toContain('離せません');
+    expect(injury.moveToSlot(beach.getSlot(codex.slotNames.getId('items')))).toContain('離せません');
     // 同じ本人の中でも手持ちへは移らない。こちらを弾くのはhandのaccepts（itemのみ）。
-    expect(injury.moveToSlot(player, codex.slotNames.getId('hand'))).toBeDefined();
+    expect(injury.moveToSlot(player.getSlot(codex.slotNames.getId('hand')))).toBeDefined();
     expect(injuriesOf(player), '弾かれた側は怪我スロットに残る').toEqual(['sprained_ankle']);
   });
 
@@ -176,9 +176,9 @@ describe('injuries.yamlの怪我', () => {
 
     /** 治療具を当てる。画面のドロップと同じ経路（枠が時間を課すので、そこを通さないと値段を払わない）。 */
     function treat(injury: WorldObject, treatment: WorldObject): void {
-      const slotId = codex.slotNames.getId('treatment');
-      putIntoSlot(treatment, injury, slotId, player, session, () => {
-        treatment.moveToSlot(injury, slotId);
+      const slot = injury.getSlot(codex.slotNames.getId('treatment'));
+      putIntoSlot(treatment, slot, player, session, () => {
+        treatment.moveToSlot(slot);
       });
     }
 
@@ -230,7 +230,7 @@ describe('injuries.yamlの怪我', () => {
       expect(session.world!.totalMinutes - before, '当てるのに30分').toBe(30);
       const applied = session.world!.totalMinutes;
 
-      bandage.moveToSlot(player, codex.slotNames.getId('hand'));
+      bandage.moveToSlot(player.getSlot(codex.slotNames.getId('hand')));
 
       expect(session.world!.totalMinutes, '外すのは一瞬').toBe(applied);
     });
@@ -239,7 +239,7 @@ describe('injuries.yamlの怪我', () => {
       const { injury } = injured();
       const stone = spawnInto('stone', player, 'hand');
 
-      expect(stone.moveToSlot(injury, codex.slotNames.getId('treatment'))).toBeDefined();
+      expect(stone.moveToSlot(injury.getSlot(codex.slotNames.getId('treatment')))).toBeDefined();
       expect(treatmentOn(injury)).toEqual([]);
     });
 
@@ -262,7 +262,7 @@ describe('injuries.yamlの怪我', () => {
       const { injury, bandage } = injured();
       treat(injury, bandage);
 
-      expect(bandage.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
+      expect(bandage.moveToSlot(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
       expect(player.tryGetProperty(painId)?.getEffectiveValue() ?? 0, '可逆な寄与なので戻る').toBe(40);
       const severityId = codex.propertyNames.getId('severity');

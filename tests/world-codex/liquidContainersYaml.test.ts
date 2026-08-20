@@ -84,7 +84,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   function spawnEmptyUnderWorld(containerName: string, world: WorldObject): WorldObject {
     const container = spawn(containerName);
-    container.moveToSlot(world, locationsSlotId, true);
+    container.moveToSlot(world.getSlot(locationsSlotId), true);
     return container;
   }
 
@@ -95,7 +95,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     world: WorldObject,
   ): WorldObject {
     const container = spawnContainer(containerName, liquidKind, size);
-    container.moveToSlot(world, locationsSlotId, true);
+    container.moveToSlot(world.getSlot(locationsSlotId), true);
     return container;
   }
 

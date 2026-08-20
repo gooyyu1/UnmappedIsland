@@ -70,7 +70,10 @@ describe('筏と航海', () => {
     expect(inland, 'シード3の島に草原がある').toBeDefined();
 
     const landing = game.world.instance.findDescendantByInstanceId(game.map.siteInstanceIds[inland!.index]);
-    expect(raft.moveToSlot(landing!, codex.slotNames.getId('fixtures')), '筏を内陸へ運ぶ').toBeUndefined();
+    expect(
+      raft.moveToSlot(landing!.getSlot(codex.slotNames.getId('fixtures'))),
+      '筏を内陸へ運ぶ',
+    ).toBeUndefined();
 
     expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute() === true, '出航できない').toBe(
       false,
@@ -81,7 +84,7 @@ describe('筏と航海', () => {
   /** 帆を1枚作って、筏の構造スロットへ組み込む。 */
   function rigSail(game: NewGameSession, raft: WorldObject): WorldObject {
     const sail = game.session.spawn(codex.objectNames.getId('rawhide_sail'));
-    const failure = sail.moveToSlot(raft, codex.slotNames.getId('structure'));
+    const failure = sail.moveToSlot(raft.getSlot(codex.slotNames.getId('structure')));
     if (failure !== undefined) throw new Error(`帆を組み込めません: ${failure}`);
     return sail;
   }

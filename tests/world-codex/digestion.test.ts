@@ -40,9 +40,9 @@ describe('消化（かさ・栄養素・蓄え）', () => {
     );
     session = new WorldSession(codex, undefined, fixedRng(0));
     const beach = spawn('sandy_beach');
-    expect(beach.moveToSlot(worldInstance, codex.slotNames.getId('locations'))).toBeUndefined();
+    expect(beach.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
     player = spawn(SAMPLE_CHARACTER);
-    expect(player.moveToSlot(beach, codex.slotNames.getId('characters'))).toBeUndefined();
+    expect(player.moveToSlot(beach.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
   });
 
   function spawn(objectName: string): WorldObject {
@@ -73,7 +73,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
 
   it('食べた物は、かさと栄養素の両方に入る', () => {
     const taro = spawn('roasted_taro');
-    expect(taro.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(taro.moveToSlot(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     player.getProperty(satietyId).init(0);
     stock(0);
 
@@ -110,7 +110,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
 
   it('腹がいっぱいだと食べられず、直前まで食べても溢れない', () => {
     const taro = spawn('roasted_taro');
-    expect(taro.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(taro.moveToSlot(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     const max = 1500;
 
     player.getProperty(satietyId).init(900);

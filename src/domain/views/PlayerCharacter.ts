@@ -91,8 +91,8 @@ export class PlayerCharacter {
   take(item: WorldObject, session: WorldSession, gapIndex?: number): boolean {
     const failure =
       gapIndex === undefined
-        ? item.moveToSlot(this.instance, this.handSlotId)
-        : item.moveToSlotAtGap(this.instance, this.handSlotId, gapIndex);
+        ? item.moveToSlot(this.instance.getSlot(this.handSlotId))
+        : item.moveToSlotAtGap(this.instance.getSlot(this.handSlotId), gapIndex);
     return failure === undefined;
   }
 
@@ -101,7 +101,7 @@ export class PlayerCharacter {
    * られない場合はfalse（Slot.tryInsertAtCell）。
    */
   takeIntoCell(item: WorldObject, session: WorldSession, cellIndex: number): boolean {
-    return item.moveToSlotAtCell(this.instance, this.handSlotId, cellIndex) === undefined;
+    return item.moveToSlotAtCell(this.instance.getSlot(this.handSlotId), cellIndex) === undefined;
   }
 
   /**

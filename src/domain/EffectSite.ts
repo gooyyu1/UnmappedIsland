@@ -51,8 +51,7 @@ export class EffectSite {
    */
   placeReplacement(spawned: WorldObject): boolean {
     const slot = this.slot;
-    const placed =
-      spawned.insertSameSlot(this.parent, slot.def.globalId, this.nextPlacement(slot)) === undefined;
+    const placed = spawned.insertSameSlot(slot, this.nextPlacement(slot)) === undefined;
 
     // 既存スタックへ合流したもの（findOwnStackがundefined）はセルを消費しないため基準にしない——originの
     // 位置はまだ誰も引き継いでおらず、次の1つのために空けておく。配置に失敗したものも同じ扱いになる。

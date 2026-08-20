@@ -27,9 +27,9 @@ describe('操作が増やした値の観測', () => {
     world = spawn('world');
     session.adoptWorld(new World(world, codex.propertyNames, codex.symbolNames));
     const beach = spawn('sandy_beach');
-    expect(beach.moveToSlot(world, codex.slotNames.getId('locations'))).toBeUndefined();
+    expect(beach.moveToSlot(world.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
     player = spawn(SAMPLE_CHARACTER);
-    expect(player.moveToSlot(beach, codex.slotNames.getId('characters'))).toBeUndefined();
+    expect(player.moveToSlot(beach.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
   });
 
   function spawn(objectName: string): WorldObject {
@@ -68,7 +68,7 @@ describe('操作が増やした値の観測', () => {
     drain('carbohydrate', 0);
     drain('satiety', 0);
     const taro = spawn('roasted_taro');
-    expect(taro.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(taro.moveToSlot(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     const { source, amounts } = gainsDuring(() => {
       expect(taro.tryGetAction('eat', player)?.tryExecute() === true).toBe(true);
@@ -86,7 +86,7 @@ describe('操作が増やした値の観測', () => {
     // 個体は続く**ので、湧かせる札は型が変わった後も同じ札のまま。
     drain('hydration', 100);
     const bowl = spawn('coconut_bowl');
-    expect(bowl.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(bowl.moveToSlot(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     bowl.becomeAlong(new Map([['content', 'water_liquid']]));
     bowl.tryGetProperty(codex.propertyNames.getId('fill'))?.setNumber(250);
 

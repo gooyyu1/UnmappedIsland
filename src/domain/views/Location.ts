@@ -82,8 +82,8 @@ export class Location {
   receiveItem(item: WorldObject, session: WorldSession, gapIndex?: number): boolean {
     const failure =
       gapIndex === undefined
-        ? item.moveToSlot(this.instance, this.itemsSlotId)
-        : item.moveToSlotAtGap(this.instance, this.itemsSlotId, gapIndex);
+        ? item.moveToSlot(this.instance.getSlot(this.itemsSlotId))
+        : item.moveToSlotAtGap(this.instance.getSlot(this.itemsSlotId), gapIndex);
     return failure === undefined;
   }
 
@@ -201,7 +201,7 @@ export class Location {
     const hidden = owner.tryGetSlot(this.undiscoveredFixturesSlotId);
     if (hidden === undefined || !hidden.contents.includes(fixture)) return;
 
-    fixture.moveToSlot(owner, this.fixturesSlotId);
+    fixture.moveToSlot(owner.getSlot(this.fixturesSlotId));
   }
 
   private slotContents(slotGlobalId: number): readonly WorldObject[] {

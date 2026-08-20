@@ -47,7 +47,7 @@ export function autoFillMaterials(
     if (needed <= 0) continue;
 
     for (const candidate of chooseCandidates(cell, needed, available).slice(0, needed)) {
-      if (candidate.moveToSlot(inProgress, materialsSlotGlobalId) !== undefined) break;
+      if (candidate.moveToSlot(inProgress.getSlot(materialsSlotGlobalId)) !== undefined) break;
       available.splice(available.indexOf(candidate), 1);
       moved += 1;
     }

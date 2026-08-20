@@ -67,7 +67,7 @@ describe('animals.yamlの動物', () => {
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent, codex.slotNames.getId(slotName))).toBeUndefined();
+    expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 
@@ -417,7 +417,7 @@ describe('animals.yamlの動物', () => {
       // 止血帯（未実装）との差がここに出る（InjurySystem.md 3.1節）。
       strikeWithSharpStone();
       const bandage = spawnInto('bandage', player, 'hand');
-      expect(bandage.moveToSlot(firstWound(), codex.slotNames.getId('treatment'))).toBeUndefined();
+      expect(bandage.moveToSlot(firstWound().getSlot(codex.slotNames.getId('treatment')))).toBeUndefined();
 
       tick(4);
 
@@ -622,7 +622,7 @@ describe('animals.yamlの動物', () => {
     expect(effective(codex.propertyNames.getId('pain')), '傷の痛みが届く').toBe(50);
 
     expect(
-      wound.moveToSlot(jungle, codex.slotNames.getId('items')),
+      wound.moveToSlot(jungle.getSlot(codex.slotNames.getId('items'))),
       '負った本人から剥がせない（bound_to_owner）',
     ).toContain('離せません');
   });

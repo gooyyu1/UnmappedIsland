@@ -7,7 +7,7 @@ import { Path } from '../../src/domain/views/Path';
 import type { PlayScreenView } from '../../src/game/view/PlayScreenView';
 import { fromGameSession, withFrozenCards } from '../../src/game/view/PlayScreenView';
 import type { CardPlace, ScreenPlace } from '../../src/game/view/cardPlaces';
-import { cardPlacesOf, samePlace } from '../../src/game/view/cardPlaces';
+import { cardPlacesOf } from '../../src/game/view/cardPlaces';
 import type { CardGauge } from '../../src/game/ui/Card';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { characterIcon } from '../../src/game/view/characterCard';
@@ -29,7 +29,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   /** プレイヤーに怪我（injuries.yaml）を1つ負わせ、そのインスタンスを返す。 */
   function injure(game: NewGameSession) {
     const injury = game.session.spawn(codex.objectNames.getId('sprained_ankle'));
-    expect(injury.moveToSlot(game.player.instance, codex.slotNames.getId('injuries'))).toBeUndefined();
+    expect(
+      injury.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('injuries'))),
+    ).toBeUndefined();
     return injury;
   }
 
@@ -53,7 +55,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
   /** キャラクタが外から見せているスロット（装備・怪我）の場所。 */
   function characterSlot(game: NewGameSession, slotName: string): CardPlace {
-    return { container: game.player.instance, slotGlobalId: codex.slotNames.getId(slotName) };
+    return game.player.instance.getSlot(codex.slotNames.getId(slotName));
   }
 
   /**
@@ -76,20 +78,24 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   /** 開始地点にサル（animals.yaml）を1匹置き、そのインスタンスを返す。 */
   function placeMonkey(game: NewGameSession) {
     const monkey = game.session.spawn(codex.objectNames.getId('monkey'));
-    expect(monkey.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(
+      monkey.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('items'))),
+    ).toBeUndefined();
     return monkey;
   }
 
   /** 現在地に炎を上げている焚き火を据え、その火の中へ生肉を1切れ入れる。 */
   function placeCookingHearth(game: NewGameSession) {
     const hearth = game.session.spawn(codex.objectNames.getId('campfire'));
-    expect(hearth.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'))).toBeUndefined();
+    expect(
+      hearth.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('fixtures'))),
+    ).toBeUndefined();
     hearth.tryGetProperty(codex.propertyNames.getId('fuel'))?.setNumber(20);
     // 炎の段（20〜）。火の中の物のcooking_progressが3/tickで進む（FireSystem.md 2.3節）。
     hearth.tryGetProperty(codex.propertyNames.getId('heat'))?.setNumber(30);
 
     const meat = game.session.spawn(codex.objectNames.getId('raw_meat'));
-    expect(meat.moveToSlot(hearth, codex.slotNames.getId('fire'))).toBeUndefined();
+    expect(meat.moveToSlot(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
     return { hearth, meat };
   }
 
@@ -135,7 +141,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('手持ちは固定6枠ぶん並び、空きセルはundefinedになる', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
-    expect(stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(stone.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
 
@@ -227,7 +233,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 完成品の絵を映せば、絵文字の代用に落ちずに「何が出来つつあるのか」が見える。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const wip = game.session.spawn(codex.objectNames.getId(inProgressObjectName('woven_basket', 'woven')));
-    expect(wip.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(
+      wip.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('items'))),
+    ).toBeUndefined();
 
     const card = lane(fromGameSession(game, codex, locale), game, 'items')[0];
 
@@ -240,15 +248,14 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // ばらばらに訊くと、場所を映す先を足すたびに訊く手順も増える（Windows.md 1節）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const wip = game.session.spawn(codex.objectNames.getId(inProgressObjectName('woven_basket', 'woven')));
-    expect(wip.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(
+      wip.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('items'))),
+    ).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
     const hand = view.slotViewOf(place(game, 'hand'));
     const injuries = view.slotViewOf(characterSlot(game, 'injuries'));
-    const materials = view.slotViewOf({
-      container: wip,
-      slotGlobalId: codex.slotNames.getId('materials'),
-    });
+    const materials = view.slotViewOf(wip.getSlot(codex.slotNames.getId('materials')));
 
     expect(hand.key, 'タブの記憶の鍵はスロット名').toBe('hand');
     expect(hand.cellCount, '手持ちは枠の数が決まっている').toBeGreaterThan(0);
@@ -305,7 +312,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('設置物のカードは移せないが、同じレーンの中でなら並び替えられる', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const tree = game.session.spawn(codex.objectNames.getId('palm_tree'));
-    expect(tree.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'))).toBeUndefined();
+    expect(
+      tree.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('fixtures'))),
+    ).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
 
@@ -328,7 +337,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 編み籠は設置物レーンで▼、アイテムレーンで▲を出す。画面側に場所ごとの決まりは無い。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
-    expect(basket.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(
+      basket.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('items'))),
+    ).toBeUndefined();
 
     lane(fromGameSession(game, codex, locale), game, 'items')[0]
       .dropInto?.(place(game, 'fixtures'))
@@ -355,9 +366,11 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('カードは、自分が今在るスロットを地の引き先として持つ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const tree = game.session.spawn(codex.objectNames.getId('palm_tree'));
-    expect(tree.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'))).toBeUndefined();
+    expect(
+      tree.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('fixtures'))),
+    ).toBeUndefined();
     const coconut = game.session.spawn(codex.objectNames.getId('coconut'));
-    expect(coconut.moveToSlot(game.player.instance, game.player.handSlotId)).toBeUndefined();
+    expect(coconut.moveToSlot(game.player.instance.getSlot(game.player.handSlotId))).toBeUndefined();
     exploreToFull(game);
 
     const view = fromGameSession(game, codex, locale);
@@ -408,7 +421,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const sharpStone = game.session.spawn(codex.objectNames.getId('sharp_stone'));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
     for (const item of [sharpStone, stone]) {
-      expect(item.moveToSlot(game.player.instance, handSlotId)).toBeUndefined();
+      expect(item.moveToSlot(game.player.instance.getSlot(handSlotId))).toBeUndefined();
     }
 
     expect(
@@ -439,7 +452,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const fuelId = codex.propertyNames.getId('fuel');
     const campfire = game.session.spawn(codex.objectNames.getId('campfire'));
     expect(
-      campfire.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures')),
+      campfire.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('fixtures'))),
     ).toBeUndefined();
 
     expect(
@@ -537,7 +550,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('警戒を持たないカードは、明滅させる域を持たない', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
-    expect(stone.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(
+      stone.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('items'))),
+    ).toBeUndefined();
 
     expect(fromGameSession(game, codex, locale).cardsIn(place(game, 'items'))[0]!.alert).toBeUndefined();
   });
@@ -552,7 +567,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toBeUndefined();
 
     const bandage = game.session.spawn(codex.objectNames.getId('bandage'));
-    expect(bandage.moveToSlot(injury, codex.slotNames.getId('treatment'))).toBeUndefined();
+    expect(bandage.moveToSlot(injury.getSlot(codex.slotNames.getId('treatment')))).toBeUndefined();
 
     expect(fromGameSession(game, codex, locale).cardsIn(characterSlot(game, 'injuries'))[0]!.mark).toBe('🩹');
   });
@@ -562,9 +577,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // （VitalsSystem.md 9節）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const wound = game.session.spawn(codex.objectNames.getId('laceration'));
-    expect(wound.moveToSlot(game.player.instance, codex.slotNames.getId('injuries'))).toBeUndefined();
+    expect(wound.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
     const bandage = game.session.spawn(codex.objectNames.getId('bandage'));
-    expect(bandage.moveToSlot(wound, codex.slotNames.getId('treatment'))).toBeUndefined();
+    expect(bandage.moveToSlot(wound.getSlot(codex.slotNames.getId('treatment')))).toBeUndefined();
 
     expect(fromGameSession(game, codex, locale).cardsIn(characterSlot(game, 'injuries'))[0]!.mark).toBe('🩸');
 
@@ -583,7 +598,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(fromGameSession(game, codex, locale).characterCard.mark, '無傷なら何も出ない').toBeUndefined();
 
     const wound = game.session.spawn(codex.objectNames.getId('laceration'));
-    expect(wound.moveToSlot(game.player.instance, codex.slotNames.getId('injuries'))).toBeUndefined();
+    expect(wound.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
 
     expect(fromGameSession(game, codex, locale).characterCard.mark).toBe('🩸');
 
@@ -602,7 +617,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toBeUndefined();
 
     const wound = game.session.spawn(codex.objectNames.getId('laceration'));
-    expect(wound.moveToSlot(monkey, codex.slotNames.getId('injuries'))).toBeUndefined();
+    expect(wound.moveToSlot(monkey.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
 
     expect(fromGameSession(game, codex, locale).cardsIn(place(game, 'items'))[0]!.mark).toBe('🩸');
   });
@@ -613,10 +628,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     // 24 ÷ 3 = 8tickでmaxちょうどに乗り、そこでon_maxが起きる → 8tick × 15分。
     expect(
-      fromGameSession(game, codex, locale).cardsIn({
-        container: hearth,
-        slotGlobalId: codex.slotNames.getId('fire'),
-      })[0]!.cooking,
+      fromGameSession(game, codex, locale).cardsIn(hearth.getSlot(codex.slotNames.getId('fire')))[0]!.cooking,
     ).toEqual({
       ratio: 0,
       minutes: 120,
@@ -627,7 +639,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 出すかどうかは場所ではなく「今その値が進んでいるか」で決まる（CardView.md 15節）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const { meat } = placeCookingHearth(game);
-    expect(meat.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(
+      meat.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('items'))),
+    ).toBeUndefined();
 
     expect(lane(fromGameSession(game, codex, locale), game, 'items')[0].cooking).toBeUndefined();
   });
@@ -639,10 +653,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     hearth.tryGetProperty(codex.propertyNames.getId('heat'))?.setNumber(0);
 
     expect(
-      fromGameSession(game, codex, locale).cardsIn({
-        container: hearth,
-        slotGlobalId: codex.slotNames.getId('fire'),
-      })[0]!.cooking,
+      fromGameSession(game, codex, locale).cardsIn(hearth.getSlot(codex.slotNames.getId('fire')))[0]!.cooking,
     ).toBeUndefined();
   });
 
@@ -651,7 +662,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const { hearth } = placeCookingHearth(game);
     const rat = game.session.spawn(codex.objectNames.getId('rat_carcass'));
-    expect(rat.moveToSlot(hearth, codex.slotNames.getId('fire'))).toBeUndefined();
+    expect(rat.moveToSlot(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
 
     const card = lane(fromGameSession(game, codex, locale), game, 'fixtures').find(
       (c) => c.objects[0] === hearth,
@@ -666,7 +677,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const injury = injure(game);
     const bandage = game.session.spawn(codex.objectNames.getId('bandage'));
-    expect(bandage.moveToSlot(injury, codex.slotNames.getId('treatment'))).toBeUndefined();
+    expect(bandage.moveToSlot(injury.getSlot(codex.slotNames.getId('treatment')))).toBeUndefined();
 
     expect(fromGameSession(game, codex, locale).characterCard.mark).toBeUndefined();
   });
@@ -678,22 +689,22 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const handSlot = codex.slotNames.getId('hand');
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
     const bandage = game.session.spawn(codex.objectNames.getId('bandage'));
-    expect(basket.moveToSlot(game.player.instance, handSlot)).toBeUndefined();
-    expect(bandage.moveToSlot(game.player.instance, handSlot)).toBeUndefined();
+    expect(basket.moveToSlot(game.player.instance.getSlot(handSlot))).toBeUndefined();
+    expect(bandage.moveToSlot(game.player.instance.getSlot(handSlot))).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
     const injuryCard = view.cardsIn(characterSlot(game, 'injuries'))[0]!;
     const basketCard = handCells(view, game).find((card) => card?.objects[0] === basket)!;
     const bandageCard = handCells(view, game).find((card) => card?.objects[0] === bandage)!;
 
-    const treatment = { container: injury, slotGlobalId: codex.slotNames.getId('treatment') };
+    const treatment = injury.getSlot(codex.slotNames.getId('treatment'));
     expect(injuryCard.visibleSlots, '治療具のタブが出る').toEqual([treatment]);
     expect(view.slotViewOf(treatment).cellCount, '治療具の枠は1つだけ').toBe(1);
     // 行き先は重ねる物で変わる。怪我が受け取るのは治療具だけで、かごは受け取らない。
     expect(injuryCard.contentsFor(bandageCard), '包帯は治療具のスロットへ入る').toEqual(treatment);
     expect(injuryCard.contentsFor(basketCard), 'かごは怪我に入らない').toBeUndefined();
 
-    const contents = { container: basket, slotGlobalId: codex.slotNames.getId('contents') };
+    const contents = basket.getSlot(codex.slotNames.getId('contents'));
     expect(basketCard.visibleSlots, '中身のタブが出る').toEqual([contents]);
     expect(view.slotViewOf(contents).cellCount, 'かごは10枠（Containers.md 1節）').toBe(10);
     expect(basketCard.contentsFor(bandageCard), 'かごは持ち物を受け取る').toEqual(contents);
@@ -725,7 +736,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 画面から名前で開く入口で、答えは同じ経路（windowOf）から来る。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
-    expect(stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(stone.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
 
@@ -759,7 +770,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const withCharm = loader.build();
     const game = startNewGame(withCharm, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const charm = game.session.spawn(withCharm.objectNames.getId('test_charm'));
-    expect(charm.moveToSlot(game.player.instance, withCharm.slotNames.getId('hand'))).toBeUndefined();
+    expect(charm.moveToSlot(game.player.instance.getSlot(withCharm.slotNames.getId('hand')))).toBeUndefined();
 
     const view = fromGameSession(game, withCharm, locale);
     const card = handCells(view, game).find((held) => held?.objects[0] === charm);
@@ -783,7 +794,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 増える。1つの窓に要るものは1つの問い合わせで揃う（Windows.md 1節）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
-    expect(basket.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(basket.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
     const basketWindow = view.windowOf(basket);
@@ -806,7 +817,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 中身は容器自身のfillなので、そもそも開く先が無い（LiquidContainerSystem.md 2節）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));
-    expect(bowl.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(bowl.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     fill(bowl, 'water_liquid', 100);
 
     const card = handCells(fromGameSession(game, codex, locale), game).find(
@@ -820,7 +831,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('液体容器のカードは、中身が入っている間だけ、その割合と液体の色を持つ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));
-    expect(bowl.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(bowl.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     expect(
       gaugeOf(handCells(fromGameSession(game, codex, locale), game)[0], '@fill')?.ratio,
@@ -855,7 +866,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('液体を入れられないカードは、中身のバーを持たない', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
-    expect(basket.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(basket.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     const [card] = handCells(fromGameSession(game, codex, locale), game);
     expect(card?.visibleSlots, '固形物の入れ物なので中身は子ウィンドウで見せる').toHaveLength(1);
@@ -869,8 +880,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const handSlotId = codex.slotNames.getId('hand');
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
-    expect(basket.moveToSlot(game.player.instance, handSlotId)).toBeUndefined();
-    expect(stone.moveToSlot(game.player.instance, handSlotId)).toBeUndefined();
+    expect(basket.moveToSlot(game.player.instance.getSlot(handSlotId))).toBeUndefined();
+    expect(stone.moveToSlot(game.player.instance.getSlot(handSlotId))).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
 
@@ -902,7 +913,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 2本出ると同じ位置に重なる。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));
-    expect(bowl.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(bowl.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     fill(bowl, 'water_liquid', 100);
 
     const [card] = handCells(fromGameSession(game, codex, locale), game);
@@ -917,7 +928,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const handSlotId = codex.slotNames.getId('hand');
     for (const name of ['stone', 'twig', 'thick_branch', 'coconut', 'taro', 'water_spinach']) {
       const item = game.session.spawn(codex.objectNames.getId(name));
-      expect(item.moveToSlot(game.player.instance, handSlotId)).toBeUndefined();
+      expect(item.moveToSlot(game.player.instance.getSlot(handSlotId))).toBeUndefined();
     }
     exploreToFull(game);
     const items = [...game.startLocation.items];
@@ -940,7 +951,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const handSlotId = codex.slotNames.getId('hand');
     const stones = [0, 1].map(() => game.session.spawn(codex.objectNames.getId('stone')));
     for (const stone of stones) {
-      expect(stone.moveToSlot(game.player.instance, handSlotId)).toBeUndefined();
+      expect(stone.moveToSlot(game.player.instance.getSlot(handSlotId))).toBeUndefined();
     }
     exploreToFull(game);
 
@@ -959,7 +970,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('手持ちのカードは装備へ移せる（装備固有の経路ではなく、場所を指すだけ）', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
-    expect(stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(stone.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     handCells(fromGameSession(game, codex, locale), game)[0]
       ?.dropInto?.(characterSlot(game, 'equipment'))
@@ -972,9 +983,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toEqual([stone]);
 
     const view = fromGameSession(game, codex, locale);
-    expect(
-      samePlace(view.cardsIn(characterSlot(game, 'equipment'))[0]!.place, characterSlot(game, 'equipment')),
-    ).toBe(true);
+    expect(view.cardsIn(characterSlot(game, 'equipment'))[0]!.place).toBe(characterSlot(game, 'equipment'));
 
     view.cardsIn(characterSlot(game, 'equipment'))[0]!.dropInto?.(place(game, 'hand'))?.execute();
     expect(game.player.hand[0], '手持ちへ戻せる').toBe(stone);
@@ -986,13 +995,13 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
     const equipment = codex.slotNames.getId('equipment');
-    expect(stone.moveToSlot(game.player.instance, equipment)).toBeUndefined();
+    expect(stone.moveToSlot(game.player.instance.getSlot(equipment))).toBeUndefined();
 
     const live = fromGameSession(game, codex, locale);
     const frozen = withFrozenCards(live, characterSlot(game, 'equipment'));
 
     // 控えたあとでワールドが変わる（装備が外れる）。
-    expect(stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(stone.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     expect(
       frozen.cardsIn(characterSlot(game, 'equipment')).map((card) => card?.objects[0]),
@@ -1049,10 +1058,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 落とした枠と札が出る枠が食い違う（空き枠へ落とすと moveToSlotAtCell が枠の番号で入れる）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
-    expect(basket.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
-    const contents = { container: basket, slotGlobalId: codex.slotNames.getId('contents') };
+    expect(basket.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+    const contents = basket.getSlot(codex.slotNames.getId('contents'));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
-    expect(stone.moveToSlotAtCell(basket, contents.slotGlobalId, 3)).toBeUndefined();
+    expect(stone.moveToSlotAtCell(contents, 3)).toBeUndefined();
 
     const cells = fromGameSession(game, codex, locale).cardsIn(contents);
 
@@ -1066,9 +1075,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const handSlotId = codex.slotNames.getId('hand');
     const baskets = [0, 1].map(() => game.session.spawn(codex.objectNames.getId('woven_basket')));
-    for (const basket of baskets) expect(basket.moveToSlot(game.player.instance, handSlotId)).toBeUndefined();
+    for (const basket of baskets)
+      expect(basket.moveToSlot(game.player.instance.getSlot(handSlotId))).toBeUndefined();
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
-    expect(stone.moveToSlot(baskets[0], codex.slotNames.getId('contents'))).toBeUndefined();
+    expect(stone.moveToSlot(baskets[0].getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
     const cards = handCells(view, game).filter((card) => card !== undefined);
@@ -1092,10 +1102,12 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 3本運んでも入るのは2本。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const hearth = game.session.spawn(codex.objectNames.getId('campfire'));
-    expect(hearth.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'))).toBeUndefined();
+    expect(
+      hearth.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('fixtures'))),
+    ).toBeUndefined();
     const branches = [0, 1, 2].map(() => {
       const branch = game.session.spawn(codex.objectNames.getId('thick_branch'));
-      expect(branch.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+      expect(branch.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
       return branch;
     });
 
@@ -1120,9 +1132,11 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // （CardInteraction.md 2節）。**起きることは向きで変わらない**——selfは宣言している炉のまま。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const hearth = game.session.spawn(codex.objectNames.getId('campfire'));
-    expect(hearth.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'))).toBeUndefined();
+    expect(
+      hearth.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('fixtures'))),
+    ).toBeUndefined();
     const branch = game.session.spawn(codex.objectNames.getId('thick_branch'));
-    expect(branch.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(branch.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
     const hearthCard = lane(view, game, 'fixtures').find((card) => card.objects[0] === hearth)!;
@@ -1146,7 +1160,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
     for (const item of [basket, stone]) {
-      expect(item.moveToSlot(game.player.instance, handSlotId)).toBeUndefined();
+      expect(item.moveToSlot(game.player.instance.getSlot(handSlotId))).toBeUndefined();
     }
 
     const basketCard = handCells(fromGameSession(game, codex, locale), game)[0]!;
@@ -1186,7 +1200,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     handCells(view, game).forEach((cell, index) => {
       if (cell !== undefined) return;
       const filler = game.session.spawn(codex.objectNames.getId(fillers[index]));
-      expect(filler.moveToSlotAtCell(game.player.instance, handSlotId, index)).toBeUndefined();
+      expect(filler.moveToSlotAtCell(game.player.instance.getSlot(handSlotId), index)).toBeUndefined();
     });
     expect(
       handCells(view, game).every((cell) => cell !== undefined),
@@ -1194,17 +1208,19 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toBe(true);
 
     const branch = game.session.spawn(codex.objectNames.getId('thick_branch'));
-    expect(branch.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(
+      branch.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('items'))),
+    ).toBeUndefined();
 
     // handはequipmentより先に宣言されているが、塞がっているので次に受け取れる枠が行き先になる。
     const into = view.cardOfObjects([game.player.instance]).contentsFor(view.cardOfObjects([branch]));
-    expect(into !== undefined && samePlace(into, characterSlot(game, 'equipment'))).toBe(true);
+    expect(into).toBe(characterSlot(game, 'equipment'));
   });
 
   it('コンテナを自分自身の中へは入れられない', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const basket = game.session.spawn(codex.objectNames.getId('woven_basket'));
-    expect(basket.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBe(undefined);
+    expect(basket.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBe(undefined);
 
     const card = handCells(fromGameSession(game, codex, locale), game)[0];
 
@@ -1243,9 +1259,11 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     // アバカはwith: cutting_toolのfellを持ち、sharp_stoneは何も持たない（fiber.yaml・tools.yaml）。
     const abaca = game.session.spawn(codex.objectNames.getId('abaca'));
-    expect(abaca.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'))).toBeUndefined();
+    expect(
+      abaca.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('fixtures'))),
+    ).toBeUndefined();
     const knife = game.session.spawn(codex.objectNames.getId('sharp_stone'));
-    expect(knife.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(knife.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
     const abacaCard = lane(view, game, 'fixtures').find((card) => card.objects[0] === abaca)!;
@@ -1270,10 +1288,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const handId = codex.slotNames.getId('hand');
     const bowlId = codex.objectNames.getId('coconut_bowl');
     const filled = game.session.spawn(bowlId);
-    expect(filled.moveToSlot(game.player.instance, handId)).toBeUndefined();
+    expect(filled.moveToSlot(game.player.instance.getSlot(handId))).toBeUndefined();
     fill(filled, 'water_liquid', 100);
     const empty = game.session.spawn(bowlId);
-    expect(empty.moveToSlot(game.player.instance, handId)).toBeUndefined();
+    expect(empty.moveToSlot(game.player.instance.getSlot(handId))).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
     const cardOf = (bowl: WorldObject) => handCells(view, game).find((card) => card?.objects[0] === bowl)!;
@@ -1290,7 +1308,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const itemsSlotId = codex.slotNames.getId('items');
     for (const name of ['stone', 'stone', 'thick_branch']) {
       const item = game.session.spawn(codex.objectNames.getId(name));
-      expect(item.moveToSlot(game.startLocation.instance, itemsSlotId)).toBeUndefined();
+      expect(item.moveToSlot(game.startLocation.instance.getSlot(itemsSlotId))).toBeUndefined();
     }
 
     const view = fromGameSession(game, codex, locale);
@@ -1314,14 +1332,14 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const itemsSlotId = codex.slotNames.getId('items');
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
-    expect(stone.moveToSlot(game.startLocation.instance, itemsSlotId)).toBeUndefined();
+    expect(stone.moveToSlot(game.startLocation.instance.getSlot(itemsSlotId))).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
     const card = lane(view, game, 'items').find((c) => c?.objects[0] === stone)!;
 
     // 経過の途中経過（RecordedView）を再生する頃には、ワールド側の束は空になり得る。
     // カードは作った時点の中身を写し取っているので、端の表示の試し打ち（moveTo）は壊れない。
-    expect(stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(stone.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     expect(() => card.dropInto?.(place(game, 'hand'))).not.toThrow();
     expect(card.movedIds(1)).toEqual([stone.instanceId]);
   });
@@ -1343,7 +1361,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const itemsSlotId = codex.slotNames.getId('items');
     for (const name of ['stone', 'stone']) {
       const stone = game.session.spawn(codex.objectNames.getId(name));
-      expect(stone.moveToSlot(game.startLocation.instance, itemsSlotId)).toBeUndefined();
+      expect(stone.moveToSlot(game.startLocation.instance.getSlot(itemsSlotId))).toBeUndefined();
     }
 
     const view = fromGameSession(game, codex, texts);
@@ -1370,7 +1388,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     );
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const meat = game.session.spawn(codex.objectNames.getId('coconut_meat'));
-    expect(meat.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(meat.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     // 満腹度は初期値が上限なので、食べた分が乗る余地を空けておく。
     const satietyId = codex.propertyNames.getId('satiety');
     game.player.instance.tryGetProperty(satietyId)?.setNumber(0);
@@ -1392,7 +1410,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('アクションを持たないオブジェクトのカードは、アクションが空になる', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const thickBranch = game.session.spawn(codex.objectNames.getId('thick_branch'));
-    expect(thickBranch.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(
+      thickBranch.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand'))),
+    ).toBeUndefined();
 
     const card = handCells(fromGameSession(game, codex, locale), game)[0];
 
@@ -1404,7 +1424,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const canteen = game.session.spawn(codex.objectNames.getId('canteen'));
     // 液体容器にはまだitemタグが無く手持ちのaccepts制約に掛かるため、強制的に入れて手持ちのカードにする。
-    expect(canteen.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), true)).toBeUndefined();
+    expect(
+      canteen.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')), true),
+    ).toBeUndefined();
     fill(canteen, 'water_liquid', 1000);
     const hydrationId = codex.propertyNames.getId('hydration');
     // 0まで下げると渇きで死ぬ（hydrationのon_min）ので、飲む余地を残しつつ1で止める。
@@ -1439,7 +1461,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const canteen = game.session.spawn(codex.objectNames.getId('canteen'));
     const handId = codex.slotNames.getId('hand');
-    expect(canteen.moveToSlot(game.player.instance, handId, true)).toBeUndefined();
+    expect(canteen.moveToSlot(game.player.instance.getSlot(handId), true)).toBeUndefined();
 
     expect(handCells(fromGameSession(game, codex, texts), game)[0]?.name, '空なら入れ物の名前だけ').toBe(
       '水筒',
@@ -1458,7 +1480,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // （coconut_bowlのcollect_rainはdurationを宣言していない）を並べて持たせる。
     for (const name of ['coconut_meat', 'coconut_bowl']) {
       const item = game.session.spawn(codex.objectNames.getId(name));
-      expect(item.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+      expect(item.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     }
 
     const view = fromGameSession(game, codex, locale);
@@ -1476,7 +1498,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const itemsSlotId = codex.slotNames.getId('items');
     for (const name of ['stone', 'stone']) {
       const stone = game.session.spawn(codex.objectNames.getId(name));
-      expect(stone.moveToSlot(game.startLocation.instance, itemsSlotId)).toBeUndefined();
+      expect(stone.moveToSlot(game.startLocation.instance.getSlot(itemsSlotId))).toBeUndefined();
     }
 
     const view = fromGameSession(game, codex, locale);
@@ -1597,7 +1619,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 装備スロットへ石（1kgずつ）を積んで、どのキャラクタでも危険域へ届く重さにする。
     const equipmentId = codex.slotNames.getId('equipment');
     for (let i = 0; i < 40; i++)
-      game.session.spawn(codex.objectNames.getId('stone')).moveToSlot(game.player.instance, equipmentId);
+      game.session
+        .spawn(codex.objectNames.getId('stone'))
+        .moveToSlot(game.player.instance.getSlot(equipmentId));
     expect(
       game.player.instance.tryGetProperty(codex.propertyNames.getId('load'))?.getEffectiveValue() ?? 0,
       '装備の重さがそのまま負荷になる',

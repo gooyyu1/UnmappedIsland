@@ -69,7 +69,7 @@ object_defs:
     const ground = new WorldObject(0, codex.objects.get(codex.objectNames.getId('ground')), session);
 
     const wip = session.spawn(codex.objectNames.getId(inProgressObjectName('axe', 'basic')));
-    expect(wip.moveToSlot(ground, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(wip.moveToSlot(ground.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
 
     // 工程の合計は30 + 10 = 40分。超えた瞬間にon_maxが発火する。
     wip.tryGetProperty(codex.propertyNames.getId('progress'))?.setNumber(41);

@@ -78,7 +78,7 @@ object_defs:
   /** groundの上に置いた、そのレシピの製作中オブジェクト。 */
   const wipOn = (product: string): WorldObject => {
     const wip = session.spawn(idOf(inProgressObjectName(product, 'basic')));
-    wip.moveToSlot(ground, itemsId());
+    wip.moveToSlot(ground.getSlot(itemsId()));
     return wip;
   };
 
@@ -126,7 +126,7 @@ object_defs:
   it('同じ名前のスロットの中身はそのまま残る', () => {
     const wip = wipOn('axe');
     const material = session.spawn(idOf('stick'));
-    material.moveToSlot(wip, materialsId());
+    material.moveToSlot(wip.getSlot(materialsId()));
 
     wip.becomeAlong(toBase);
 
@@ -136,7 +136,7 @@ object_defs:
   it('新しい型が持たないスロットの中身は親へこぼれる', () => {
     const wip = wipOn('torch');
     const material = session.spawn(idOf('stick'));
-    material.moveToSlot(wip, materialsId());
+    material.moveToSlot(wip.getSlot(materialsId()));
 
     wip.becomeAlong(toBase);
 
@@ -148,8 +148,8 @@ object_defs:
     const wip = wipOn('spear');
     const kept = session.spawn(idOf('stick'));
     const overflowing = session.spawn(idOf('stick'));
-    kept.moveToSlot(wip, materialsId());
-    overflowing.moveToSlot(wip, materialsId());
+    kept.moveToSlot(wip.getSlot(materialsId()));
+    overflowing.moveToSlot(wip.getSlot(materialsId()));
 
     wip.becomeAlong(toBase);
 
@@ -178,16 +178,16 @@ object_defs:
 
   it('行き先の座標に型が居ない組み合わせは、候補にならない', () => {
     const stick = session.spawn(idOf('stick'));
-    stick.moveToSlot(ground, itemsId());
+    stick.moveToSlot(ground.getSlot(itemsId()));
     const other = session.spawn(idOf('stick'));
-    other.moveToSlot(ground, itemsId());
+    other.moveToSlot(ground.getSlot(itemsId()));
 
     expect(stick.combinationsWith(other, undefined)).toEqual([]);
   });
 
   it('型が変われば、同種のまとまりも判定し直される', () => {
     const axe = session.spawn(idOf('axe'));
-    axe.moveToSlot(ground, itemsId());
+    axe.moveToSlot(ground.getSlot(itemsId()));
     const wip = wipOn('axe');
     const items = ground.tryGetSlot(itemsId())!;
     expect(

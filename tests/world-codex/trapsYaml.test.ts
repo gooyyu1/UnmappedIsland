@@ -65,7 +65,7 @@ describe('traps.yamlのくくり罠', () => {
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent, codex.slotNames.getId(slotName))).toBeUndefined();
+    expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 
@@ -109,7 +109,7 @@ describe('traps.yamlのくくり罠', () => {
       onGround,
     );
 
-    expect(snare.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(snare.moveToSlot(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     const inHand = snare.tryGetProperty(catchRemainingId)!.getEffectiveValue();
     tick(1);
     expect(snare.tryGetProperty(catchRemainingId)!.getEffectiveValue(), '手に持てば止まる').toBe(inHand);
@@ -246,7 +246,7 @@ describe('traps.yamlのくくり罠', () => {
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
     const carcass = session.spawn(codex.objectNames.getId('junglefowl_carcass'));
-    expect(carcass.moveToSlot(grassland, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(carcass.moveToSlot(grassland.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
     prey.destroy();
 
     const knife = spawnInto('sharp_stone', player, 'hand');
@@ -287,7 +287,7 @@ describe('traps.yamlのくくり罠', () => {
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
 
-    expect(prey.moveToSlot(grassland, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(prey.moveToSlot(grassland.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
     expect(prey.tryGetProperty(warinessId)!.getEffectiveValue(), '掛かってすぐ出せば暴れる').toBeGreaterThan(
       0,
     );
