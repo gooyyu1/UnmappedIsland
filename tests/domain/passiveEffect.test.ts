@@ -94,7 +94,7 @@ object_defs:
       const brightnessId = codex.propertyNames.getId('brightness');
       const instance = spawn(codex, 'torch');
 
-      instance.getProperty(brightnessId).overwrite(10);
+      instance.getProperty(brightnessId).init(10);
 
       expect(instance.tryGetProperty(brightnessId)?.number ?? 0).toBe(10); // 生値だけを差し替える
       expect(instance.tryGetProperty(brightnessId)?.getEffectiveValue() ?? 0).toBe(12); // 既存のincoming（modify）は維持される
@@ -227,7 +227,7 @@ object_defs:
 
       expect(instance.tryGetProperty(outputId)?.getEffectiveValue() ?? 0).toBe(15); // chargeが満タンなのでfullステージのボーナスが乗る
 
-      instance.getProperty(chargeId).overwrite(10);
+      instance.getProperty(chargeId).init(10);
 
       expect(instance.tryGetProperty(outputId)?.getEffectiveValue() ?? 0).toBe(5); // chargeがlowステージへ落ちたのでボーナスが消える（再登録なし）
     });
@@ -428,7 +428,7 @@ object_defs:
       characterInstance.tick();
       expect(characterInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(36); // progressがnoneの間は上がらない
 
-      infectionInstance.getProperty(progressId).overwrite(30);
+      infectionInstance.getProperty(progressId).init(30);
       characterInstance.tick();
       expect(characterInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(37); // mildへ遷移した後は毎tick上がる（再登録なし）
     });

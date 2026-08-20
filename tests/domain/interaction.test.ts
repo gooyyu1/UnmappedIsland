@@ -197,11 +197,11 @@ object_defs:
     expect(boar.moveToSlot(ground, itemsSlotId)).toBeUndefined();
     expect(basket.moveToSlot(ground, itemsSlotId)).toBeUndefined();
 
-    boar.getProperty(smashTargetId).overwrite(9999);
+    boar.getProperty(smashTargetId).init(9999);
     expect(boar.tryExecuteAction('trample', undefined)).toBe(true);
     expect(basket.parent, '指す先が居なければ何も起きない').toBe(ground);
 
-    boar.getProperty(smashTargetId).overwrite(basket.instanceId);
+    boar.getProperty(smashTargetId).init(basket.instanceId);
     expect(boar.tryExecuteAction('trample', undefined)).toBe(true);
     expect(basket.parent, 'プロパティが指す個体が消える').toBeUndefined();
   });
@@ -275,7 +275,7 @@ object_defs:
     const luckId = codex.propertyNames.getId('luck');
 
     const actor = spawn(codex, 'player4');
-    actor.getProperty(luckId).overwrite(1000); // 2番目(重み0固定)を圧倒する
+    actor.getProperty(luckId).init(1000); // 2番目(重み0固定)を圧倒する
     const bowInstance = spawn(codex, 'bow');
 
     bowInstance.tryExecuteAction('shoot', actor);
@@ -453,7 +453,7 @@ object_defs:
       'durabilityが0(gt 0を満たさない)なので実行されない',
     ).toBe(false);
 
-    axeInstance.getProperty(durabilityId).overwrite(1);
+    axeInstance.getProperty(durabilityId).init(1);
     expect(woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop')).toBe(true);
   });
 });

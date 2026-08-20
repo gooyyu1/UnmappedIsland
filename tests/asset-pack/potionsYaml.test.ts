@@ -74,7 +74,7 @@ describe('サンプルアセットパックの薬', () => {
     const character = spawn(SAMPLE_CHARACTER, 1);
     const potion = spawn('healing_potion', 2);
     const bloodId = codex.propertyNames.getId('blood');
-    character.getProperty(bloodId).overwrite(0);
+    character.getProperty(bloodId).init(0);
 
     expect(potion.tryExecuteAction('drink', character)).toBe(true);
 

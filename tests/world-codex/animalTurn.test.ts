@@ -51,7 +51,7 @@ describe('動物の1手', () => {
   /** 密林から草原へ抜ける、発見済みの道を1本通す。 */
   function openPath(): WorldObject {
     const path = spawnInto('path', jungle, 'fixtures');
-    path.getProperty(codex.propertyNames.getId('destination_id')).overwrite(grassland.instanceId);
+    path.getProperty(codex.propertyNames.getId('destination_id')).init(grassland.instanceId);
     return path;
   }
 
@@ -94,7 +94,7 @@ describe('動物の1手', () => {
     open(0.5);
     openPath();
     const monkey = release('monkey');
-    monkey.getProperty(warinessId).overwrite(0);
+    monkey.getProperty(warinessId).init(0);
 
     passTurn(4);
 
@@ -132,7 +132,7 @@ describe('動物の1手', () => {
     // 倒せば中身として地面へこぼれる（9.3節）。
     open(0.5);
     const monkey = release('monkey');
-    monkey.getProperty(warinessId).overwrite(0);
+    monkey.getProperty(warinessId).init(0);
     const coconut = release('coconut');
 
     passTurn();
@@ -148,7 +148,7 @@ describe('動物の1手', () => {
   it('サルは、既に1つくわえていれば次を持ち去らない', () => {
     open(0.5);
     const monkey = release('monkey');
-    monkey.getProperty(warinessId).overwrite(0);
+    monkey.getProperty(warinessId).init(0);
     release('coconut');
     release('coconut');
 
@@ -163,7 +163,7 @@ describe('動物の1手', () => {
     // 一撃で消えることはない。
     open(0.5);
     const boar = release('wild_boar');
-    boar.getProperty(warinessId).overwrite(0);
+    boar.getProperty(warinessId).init(0);
     const basket = release('woven_basket');
     const stone = release('sharp_stone');
     expect(stone.moveToSlot(basket, codex.slotNames.getId('contents'))).toBeUndefined();
@@ -230,7 +230,7 @@ describe('動物の1手', () => {
       0,
     );
 
-    monkey.getProperty(warinessId).overwrite(0);
+    monkey.getProperty(warinessId).init(0);
     passTurn();
 
     expect(monkey.tryGetProperty(fleeId)?.getEffectiveValue() ?? 0).toBeLessThanOrEqual(0);
@@ -303,7 +303,7 @@ describe('動物の1手', () => {
     // 消えるときに中身としてその土地へこぼれる（destroyの規約、9.3節）。追跡が遅れても物は戻る。
     open(0.7);
     const monkey = release('monkey');
-    monkey.getProperty(warinessId).overwrite(0);
+    monkey.getProperty(warinessId).init(0);
     const stone = release('sharp_stone');
 
     passTurn();
@@ -319,7 +319,7 @@ describe('動物の1手', () => {
   it('くわえた食べ物は、やがて食べられて失われる', () => {
     open(0.7);
     const monkey = release('monkey');
-    monkey.getProperty(warinessId).overwrite(0);
+    monkey.getProperty(warinessId).init(0);
     const meat = release('raw_meat');
 
     passTurn();

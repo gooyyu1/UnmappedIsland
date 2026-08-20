@@ -495,7 +495,7 @@ export class WorldObject {
 
     for (const property of this.properties) {
       const carried = carriedValues.get(property.def.globalId);
-      if (carried !== undefined) property.overwrite(clampToRange(property.def, carried));
+      if (carried !== undefined) property.init(clampToRange(property.def, carried));
     }
 
     this._def.passives.registerRelation(this, 'self', true);

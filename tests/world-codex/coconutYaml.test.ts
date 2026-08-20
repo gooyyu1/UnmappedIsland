@@ -107,7 +107,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
   it('青い実に穴を開けると、その場で水を飲み、水の抜けた実が残る', () => {
     const green = spawnInto('green_coconut', beach, 'items');
     // 空になる寸前から。0にすると、穴を開ける15分の間に水分が尽きて渇きで死ぬ（VitalsSystem.md 8節）。
-    player.getProperty(hydrationId).overwrite(2);
+    player.getProperty(hydrationId).init(2);
 
     combine(green, 'sharp_stone', 'bore');
 
@@ -121,7 +121,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     const hydrationMax = codex.objects
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
       .getPropertyDef(hydrationId)!.range!.max;
-    player.getProperty(hydrationId).overwrite(hydrationMax);
+    player.getProperty(hydrationId).init(hydrationMax);
 
     combine(green, 'sharp_stone', 'bore');
 
@@ -145,8 +145,8 @@ describe('coconut.yamlのヤシの実の加工', () => {
     const satietyId = codex.propertyNames.getId('satiety');
     // 食べるのに1 tickかかり、時間は効果より先に進む（actionTime参照）。0から測ると、その1 tickで
     // 水分が尽きて渇き死ぬので、1 tickぶんの減り（satiety -16・hydration -1）を載せた値から測る。
-    player.getProperty(satietyId).overwrite(16);
-    player.getProperty(hydrationId).overwrite(2);
+    player.getProperty(satietyId).init(16);
+    player.getProperty(hydrationId).init(2);
 
     expect(jelly.tryExecuteAction('eat', player)).toBe(true);
 
@@ -161,7 +161,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
       const target = spawnInto(name, player, 'hand');
       // 1 tickぶんの減り（-1）を載せた2から測り、残る1を引いて増えた分だけを返す
       // （0まで減ると尽きて死ぬので、1を残す）。
-      player.getProperty(hydrationId).overwrite(2);
+      player.getProperty(hydrationId).init(2);
       expect(target.tryExecuteAction(action, player)).toBe(true);
       return (player.tryGetProperty(hydrationId)?.number ?? 0) - 1;
     };
@@ -277,9 +277,9 @@ describe('coconut.yamlのヤシの実の加工', () => {
     const satietyId = codex.propertyNames.getId('satiety');
     const lipidId = codex.propertyNames.getId('lipid');
     // 1 tickぶんの減りを載せた値から測る（0まで減ると尽きて死ぬので2から）。脂質は在庫が0だと輸送も動かない。
-    player.getProperty(satietyId).overwrite(16);
-    player.getProperty(hydrationId).overwrite(2);
-    player.getProperty(lipidId).overwrite(0);
+    player.getProperty(satietyId).init(16);
+    player.getProperty(hydrationId).init(2);
+    player.getProperty(lipidId).init(0);
 
     expect(meat.tryExecuteAction('eat', player)).toBe(true);
 

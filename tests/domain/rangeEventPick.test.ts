@@ -63,8 +63,8 @@ object_defs:
     expect(cycler.tryGetProperty(counterId)?.number ?? 0).toBe(10); // 選ばれた候補がcounter自身を再ロールする
 
     // 重みを入れ替えると、次の発火では反対の候補が選ばれる
-    cycler.getProperty(codex.propertyNames.getId('go_a')).overwrite(0);
-    cycler.getProperty(codex.propertyNames.getId('go_b')).overwrite(1);
+    cycler.getProperty(codex.propertyNames.getId('go_a')).init(0);
+    cycler.getProperty(codex.propertyNames.getId('go_b')).init(1);
     for (let i = 0; i < 10; i++) cycler.tick();
 
     expect(cycler.tryGetProperty(chosenId)?.number ?? 0).toBe(2);

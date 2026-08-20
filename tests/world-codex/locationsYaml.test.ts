@@ -93,7 +93,7 @@ describe('locations.yamlの土地・道定義', () => {
       const land = session.spawn(codex.objectNames.getId(name));
       const max = land.def.getPropertyDef(progressId)?.range?.max ?? 0;
 
-      land.getProperty(progressId).overwrite(max - 1);
+      land.getProperty(progressId).init(max - 1);
       expect(land.tryExecuteAction('explore', undefined), `${name}: 探索できる`).toBe(true);
       expect(
         land.tryGetProperty(progressId)?.number ?? 0,
@@ -137,7 +137,7 @@ describe('locations.yamlの土地・道定義', () => {
     // 1つの土地から何個も出ないことを、重みを大きくして必ず当たる状態で確かめる。
     const session = new WorldSession(codex, undefined, new SeededRng(11));
     const land = session.spawn(codex.objectNames.getId('cliff_coast'));
-    land.getProperty(codex.propertyNames.getId('chalice_find')).overwrite(10000);
+    land.getProperty(codex.propertyNames.getId('chalice_find')).init(10000);
     const view = new Location(land, codex);
 
     for (let i = 0; i < 30; i++) view.explore(undefined);
@@ -170,9 +170,9 @@ describe('locations.yamlの土地・道定義', () => {
       pathToForest.moveToSlot(grassland, codex.slotNames.getId('undiscovered_fixtures')),
     ).toBeUndefined();
 
-    pathToForest.getProperty(codex.propertyNames.getId('required_progress')).overwrite(3);
-    pathToForest.getProperty(codex.propertyNames.getId('travel_minutes')).overwrite(90);
-    pathToForest.getProperty(codex.propertyNames.getId('destination_id')).overwrite(forest.instanceId);
+    pathToForest.getProperty(codex.propertyNames.getId('required_progress')).init(3);
+    pathToForest.getProperty(codex.propertyNames.getId('travel_minutes')).init(90);
+    pathToForest.getProperty(codex.propertyNames.getId('destination_id')).init(forest.instanceId);
 
     const grasslandView = new Location(grassland, codex);
     const pathView = new Path(pathToForest, codex.propertyNames);

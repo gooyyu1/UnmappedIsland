@@ -83,12 +83,12 @@ export class Animal {
    */
   takeTurn(location: Location, session: WorldSession): void {
     const characters = location.characters;
-    this.instance.getProperty(this.nearbyCharactersId).overwrite(characters.length);
+    this.instance.getProperty(this.nearbyCharactersId).setNumber(characters.length);
 
     // くわえている物（spoilsの先頭）。数は書かない——食べる候補のゲートはスロットの中身を
     // 直接見る（animals.yamlのbeast）ので、対象だけを毎ターン書き直す。
     const held = this.instance.tryGetSlot(this.spoilsSlotId)?.contents.at(0);
-    this.instance.getProperty(this.spoilsTargetId).overwrite(held?.instanceId ?? 0);
+    this.instance.getProperty(this.spoilsTargetId).setNumber(held?.instanceId ?? 0);
 
     this.aim(this.lootablesId, this.lootTargetId, this.lootTargets(location), session.rng);
     this.aim(this.smashablesId, this.smashTargetId, this.smashTargets(location), session.rng);
@@ -103,10 +103,10 @@ export class Animal {
    * 数だけを0にする——2箇所が暗黙に一致すべき規約を、ここ1箇所に閉じるための形。
    */
   private aim(countId: number, targetId: number, targets: readonly TurnTarget[], rng: Rng): void {
-    this.instance.getProperty(countId).overwrite(targets.length);
+    this.instance.getProperty(countId).setNumber(targets.length);
 
     const chosen = pickWeighted(targets, (target) => target.weight, rng);
-    if (chosen !== undefined) this.instance.getProperty(targetId).overwrite(chosen.instanceId);
+    if (chosen !== undefined) this.instance.getProperty(targetId).setNumber(chosen.instanceId);
   }
 
   /**

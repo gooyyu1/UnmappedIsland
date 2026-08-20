@@ -41,7 +41,7 @@ describe('foods.yamlの食料定義', () => {
       const vitaminId = codex.propertyNames.getId('vitamin');
 
       // 在庫は体脂肪へ流れ続ける（characters/参照）ため、加算量だけを見たい。一旦0まで下げる。
-      for (const id of [satietyId, nutrientId, vitaminId]) character.getProperty(id).overwrite(0);
+      for (const id of [satietyId, nutrientId, vitaminId]) character.getProperty(id).init(0);
 
       expect(food.tryExecuteAction('eat', character)).toBe(true);
 
@@ -77,7 +77,7 @@ describe('foods.yamlの食料定義', () => {
       codex.propertyNames.getId(name),
     );
     const satietyId = codex.propertyNames.getId('satiety');
-    for (const id of [satietyId, ...nutrients]) character.getProperty(id).overwrite(0);
+    for (const id of [satietyId, ...nutrients]) character.getProperty(id).init(0);
 
     expect(lump.tryExecuteAction('eat', character)).toBe(true);
 
@@ -112,9 +112,9 @@ describe('foods.yamlの食料定義', () => {
     const instance = new WorldObject(1, character, session);
     const bodyFatId = codex.propertyNames.getId('body_fat');
     for (const name of ['carbohydrate', 'protein', 'lipid'])
-      instance.getProperty(codex.propertyNames.getId(name)).overwrite(0);
-    instance.getProperty(codex.propertyNames.getId('vitamin')).overwrite(1000);
-    instance.getProperty(bodyFatId).overwrite(100);
+      instance.getProperty(codex.propertyNames.getId(name)).init(0);
+    instance.getProperty(codex.propertyNames.getId('vitamin')).init(1000);
+    instance.getProperty(bodyFatId).init(100);
 
     instance.tick();
 
@@ -131,7 +131,7 @@ describe('foods.yamlの食料定義', () => {
     const instance = new WorldObject(1, def, session);
     const bodyFatId = codex.propertyNames.getId('body_fat');
     for (const name of ['carbohydrate', 'protein', 'lipid'])
-      instance.getProperty(codex.propertyNames.getId(name)).overwrite(name === stocked ? 100 : 0);
+      instance.getProperty(codex.propertyNames.getId(name)).init(name === stocked ? 100 : 0);
 
     const before = instance.tryGetProperty(bodyFatId)?.number ?? 0;
     instance.tick();
@@ -145,7 +145,7 @@ describe('foods.yamlの食料定義', () => {
     const instance = new WorldObject(1, def, session);
     const bodyFatId = codex.propertyNames.getId('body_fat');
     for (const name of ['carbohydrate', 'protein', 'lipid'])
-      instance.getProperty(codex.propertyNames.getId(name)).overwrite(0);
+      instance.getProperty(codex.propertyNames.getId(name)).init(0);
 
     const before = instance.tryGetProperty(bodyFatId)?.number ?? 0;
     instance.tick();
