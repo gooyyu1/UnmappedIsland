@@ -1,5 +1,4 @@
 import type { WorldObject } from './WorldObject';
-import type { WorldSession } from './WorldSession';
 import type { Rng } from './Rng';
 import { INT32_MAX } from '../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
@@ -413,15 +412,15 @@ export class PropertyDef {
    * 適用はowner側のadd/setNumberを通って本メソッドを再帰的に呼ぶため、1回の呼び出しの中で
    * 複数span分の溢れや繰り上げ先自身のさらなる溢れ（分→時→日の連鎖）が解決される。
    */
-  checkRangeEvents(number: number, owner: WorldObject, session: WorldSession): void {
+  checkRangeEvents(number: number, owner: WorldObject): void {
     if (this.range === undefined) return;
     const range = this.range;
 
     if (this.onMax !== undefined && number >= range.max)
-      owner.applyActiveEffect(this.onMax, session, undefined, undefined);
+      owner.applyActiveEffect(this.onMax, undefined, undefined);
 
     if (this.onMin !== undefined && number <= range.min)
-      owner.applyActiveEffect(this.onMin, session, undefined, undefined);
+      owner.applyActiveEffect(this.onMin, undefined, undefined);
   }
 
   /**

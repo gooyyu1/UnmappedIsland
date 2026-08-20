@@ -120,13 +120,13 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
       // 開始地点の道が1本見つかるまで探索する。
       let discovered: readonly WorldObject[] = [];
       for (let i = 0; i < start.explorationProgressMax && discovered.length === 0; i++) {
-        game.player.explore(game.session);
+        game.player.explore();
         discovered = pathsIn(start, codex);
       }
       expect(discovered.length, `シード${seed}: 探索で道が見つかる`).toBeGreaterThan(0);
 
       const outbound = new Path(discovered[0], codex.propertyNames);
-      expect(outbound.travel(game.player.instance, game.session), `シード${seed}: 渡れる`).toBe(true);
+      expect(outbound.travel(game.player.instance), `シード${seed}: 渡れる`).toBe(true);
 
       const arrived = game.player.location!;
       expect(arrived.explorationProgress, `シード${seed}: 渡った先はまだ未探索`).toBe(0);
@@ -134,7 +134,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
       const home = back.find((p) => p.destinationInstanceId === start.instance.instanceId);
       expect(home, `シード${seed}: 未探索でも帰り道は見つかっている`).toBeDefined();
 
-      expect(home!.travel(game.player.instance, game.session), `シード${seed}: 帰れる`).toBe(true);
+      expect(home!.travel(game.player.instance), `シード${seed}: 帰れる`).toBe(true);
       expect(game.player.location!.instance.instanceId, `シード${seed}: 元の土地へ戻る`).toBe(
         start.instance.instanceId,
       );
@@ -154,7 +154,6 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
 
   it('探索ですべての道が見つかり、その後の移動でプレイヤーと時間が進む', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
-    const session = game.session;
     const start = game.startLocation;
     const actor = game.player.instance;
 
@@ -164,7 +163,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
 
     // 探索率100%まで繰り返す。途中(上限-1以前)ですべての道が見つかる。
     for (let i = 0; i < start.explorationProgressMax; i++)
-      expect(start.explore(actor, session), '探索できる土地なので毎回成立する').toBe(true);
+      expect(start.explore(actor), '探索できる土地なので毎回成立する').toBe(true);
 
     expect(start.explorationProgress, '探索率100%に達している').toBe(start.explorationProgressMax);
     expect(pathsIn(start, codex).length, '探索でこの土地のすべての道が見つかる').toBe(degree);
@@ -173,7 +172,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     const path = new Path(pathsIn(start, codex)[0], codex.propertyNames);
     const minutesBefore = totalMinutes(game.world);
 
-    expect(path.travel(actor, session)).toBe(true);
+    expect(path.travel(actor)).toBe(true);
 
     expect(actor.parent!.instanceId, 'プレイヤーは道の行き先の土地へ移る').toBe(path.destinationInstanceId);
     expect(new Location(actor.parent!, codex).characters, '移動先ではcharactersスロットに入る').toContain(

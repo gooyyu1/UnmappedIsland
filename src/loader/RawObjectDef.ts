@@ -55,9 +55,6 @@ export class RawObjectDef {
   passives: YAMLSeq | undefined;
   stackOrder: YAMLMap | undefined;
 
-  /** represented_by（7.6節）で指定されたスロット名。未指定ならundefined。 */
-  representedBy: string | undefined;
-
   /** visible_slots（7.11節）で並べられたスロット名。未指定なら空。 */
   visibleSlots: readonly string[] = [];
 
@@ -67,10 +64,7 @@ export class RawObjectDef {
   /** art_by_stage（6.4節）で指定されたプロパティ名。未指定ならundefined。 */
   artByStage: string | undefined;
 
-  /** quantitative（7.6節）。個数ではなく量で存在する型か。traitのどれか1つでも宣言していれば真。 */
-  quantitative = false;
-
-  /** bound_to_owner（7.9節）。単独では存在できない型か。quantitativeと同じくORで合成する。 */
+  /** bound_to_owner（7.9節）。単独では存在できない型か。tagsと同じくORで合成する。 */
   boundToOwner = false;
 
   /** stackable。同種と束ねてよい型か（既定true）。束ねない宣言が1つでもあれば束ねない。 */
@@ -105,11 +99,9 @@ export class RawObjectDef {
     this.slots = tryGetMap(this.node, 'slots', context);
     this.passives = tryGetSeq(this.node, 'passives', context);
     this.stackOrder = tryGetMap(this.node, 'stack_order', context);
-    this.representedBy = tryGetScalar(this.node, 'represented_by', context);
     this.visibleSlots = namesIn(tryGetSeq(this.node, 'visible_slots', context), `${context}.visible_slots`);
     this.isStorage = tryGetBool(this.node, 'storage', context, false);
     this.artByStage = tryGetScalar(this.node, 'art_by_stage', context);
-    this.quantitative = tryGetBool(this.node, 'quantitative', context, false);
     this.boundToOwner = tryGetBool(this.node, 'bound_to_owner', context, false);
     this.notStackable = !tryGetBool(this.node, 'stackable', context, true);
     this.actions = tryGetMap(this.node, 'actions', context);
@@ -128,7 +120,7 @@ export class RawObjectDef {
    * - props/slots/actions/combinations: 同名エントリが複数のtraitにあればエラー（5節）。
    *   object_def自身が同名エントリを持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。
    * - passives: 識別子を持たないため単純に連結（trait由来→自分自身の順）。
-   * - stack_order/represented_by/art_by_stage: 自分自身の指定を優先。無ければちょうど1つの
+   * - stack_order/art_by_stage: 自分自身の指定を優先。無ければちょうど1つの
    *   traitが指定している必要がある（複数ならエラー）。
    * - recipes: 成果物ごとの内容なので合成せず、自分自身の宣言だけを読む。
    * 未対応（Codex側にビルド先の型が無いため意図的にスキップ）: covers/layer。
@@ -140,12 +132,10 @@ export class RawObjectDef {
     const traitCombinations: Array<[string, YAMLMap | undefined]> = [];
     const passiveNodes: YAMLMap[] = [];
     const stackOrderCandidates: Array<[string, YAMLMap]> = [];
-    const representedByCandidates: Array<[string, string]> = [];
     const visibleSlotNames: string[] = [];
     const artByStageCandidates: Array<[string, string]> = [];
     const tags: string[] = [];
     let isStorage = this.isStorage;
-    let quantitative = this.quantitative;
     let boundToOwner = this.boundToOwner;
     let notStackable = this.notStackable;
 
@@ -162,12 +152,10 @@ export class RawObjectDef {
         for (const passiveNode of trait.passives.items as YamlNode[])
           passiveNodes.push(asMap(passiveNode, `traits.'${traitName}'.passives`));
       if (trait.stackOrder !== undefined) stackOrderCandidates.push([traitName, trait.stackOrder]);
-      if (trait.representedBy !== undefined) representedByCandidates.push([traitName, trait.representedBy]);
       visibleSlotNames.push(...trait.visibleSlots);
       if (trait.artByStage !== undefined) artByStageCandidates.push([traitName, trait.artByStage]);
-      // quantitativeは真偽値なので、represented_byのような重複エラーにせずtagsと同じくORで合成する。
+      // 真偽値は、stack_orderのような重複エラーにせずtagsと同じくORで合成する。
       if (trait.isStorage) isStorage = true;
-      if (trait.quantitative) quantitative = true;
       if (trait.boundToOwner) boundToOwner = true;
       if (trait.notStackable) notStackable = true;
       tags.push(...trait.tags);
@@ -195,15 +183,6 @@ export class RawObjectDef {
           `'${this.name}': stack_order が複数のtrait（'${stackOrderCandidates[0][0]}' と '${stackOrderCandidates[1][0]}'）で重複して宣言されています。`,
         );
       if (stackOrderCandidates.length === 1) stackOrderNode = stackOrderCandidates[0][1];
-    }
-
-    let representedByName = this.representedBy;
-    if (representedByName === undefined) {
-      if (representedByCandidates.length > 1)
-        throw new YamlLoadError(
-          `'${this.name}': represented_by が複数のtrait（'${representedByCandidates[0][0]}' と '${representedByCandidates[1][0]}'）で重複して宣言されています。`,
-        );
-      if (representedByCandidates.length === 1) representedByName = representedByCandidates[0][1];
     }
 
     // フェーズ2: マージ済みノードから最終的なObjectDefを組み立てる。
@@ -262,8 +241,6 @@ export class RawObjectDef {
           '操作の名前は1つの名前空間なので、どちらかを別の名前にしてください。',
       );
     const tagIds = [...new Set(tags.map((tag) => loader.tagNames.intern(tag)))];
-    const representedBySlotGlobalId =
-      representedByName !== undefined ? loader.slotNames.intern(representedByName) : undefined;
 
     // visible_slots（7.11節）はタグと同じく足し合わせる。**並びが表示順**なので、trait由来を先に、
     // 自分自身の宣言を後ろに置く。同じスロットを2度書いても先に現れた位置を保つ。
@@ -306,15 +283,6 @@ export class RawObjectDef {
             `段にartを書けるのはart_by_stageが指すプロパティだけです。`,
         );
 
-    // 量的オブジェクトは注ぐたびにインスタンスが生まれ直すため、生成時ロール（6.2節）を持てない
-    // （移すたびに振り直されてしまう、7.6節）。
-    if (quantitative)
-      for (const propertyDef of propertyDefs)
-        if (propertyDef.hasInitialValueRoll)
-          throw new YamlLoadError(
-            `'${this.name}': quantitative な型のプロパティ '${propertyDef.name}' に生成時ロールの範囲値（value: {min, max}）は使えません（量を移すたびに振り直されるため）。`,
-          );
-
     return new ObjectDef(
       this.globalId,
       this.name,
@@ -328,8 +296,6 @@ export class RawObjectDef {
       tagIds,
       actions,
       combinations,
-      representedBySlotGlobalId,
-      quantitative,
       boundToOwner,
       !notStackable,
       parseRecipes(loader, this.name, this.recipes),

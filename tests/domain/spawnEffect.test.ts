@@ -47,7 +47,7 @@ object_defs:
     material.moveToSlot(bench, itemsSlotId);
 
     // lifeがrangeの下限を割っているので、tickでon_min（destroy+spawn）が発火する。
-    bench.tick(session);
+    bench.tick();
 
     return bench.tryGetSlot(itemsSlotId)!.contents;
   }

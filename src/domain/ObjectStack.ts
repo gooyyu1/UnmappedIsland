@@ -3,16 +3,14 @@ import type { WorldObject } from './WorldObject';
 
 /**
  * Slot内で「見た目上1つのまとまり」として積み重なる、同じ種類のWorldObjectの集まり
- * （GameElementDefinition.md 7.6節）。ObjectDefと、represented_byで辿った代表ObjectDef列が一致するインスタンス
- * 同士だけがまとまる（例: 同じ液体容器でも中身のObjectDefが違えば別スタック）。
+ * （GameElementDefinition.md 7.6節）。同じObjectDefのインスタンス同士だけがまとまる。
  */
 export class ObjectStack {
   /**
-   * このスタックのアイデンティティ（seed自身のObjectDefを先頭に、represented_byで辿った代表ObjectDef列が続く、
-   * 生成時点のスナップショット）。生成後は書き換えない。メンバーの中身が変わってこの列に合致しなくなった場合に
-   * 動くのは、そのメンバーの所属スタックであってこの列ではない。
+   * このスタックのアイデンティティ（生成時点のseedのObjectDef）。生成後は書き換えない。メンバーの型が
+   * 変わって（become、9.9節）合致しなくなった場合に動くのは、そのメンバーの所属スタックであってこの値ではない。
    */
-  private readonly representationChain: readonly number[];
+  private readonly objectDefGlobalId: number;
 
   private readonly _members: WorldObject[];
   get members(): readonly WorldObject[] {
@@ -20,13 +18,13 @@ export class ObjectStack {
   }
 
   constructor(seed: WorldObject) {
-    this.representationChain = seed.captureRepresentationChain();
+    this.objectDefGlobalId = seed.def.globalId;
     this._members = [seed];
   }
 
-  /** candidateがこのObjectStackへ合流できるか（代表ObjectDef列が完全一致するか）。 */
+  /** candidateがこのObjectStackへ合流できるか（ObjectDefが一致するか）。 */
   matches(candidate: WorldObject): boolean {
-    return candidate.matchesRepresentation(this.representationChain);
+    return candidate.def.globalId === this.objectDefGlobalId;
   }
 
   /**

@@ -1,6 +1,7 @@
 import type { InfluenceWriter } from './PropertyInfluence';
 import type { PropertyValue } from './PropertyValue';
-import type { EffectSite, WorldObject } from './WorldObject';
+import type { EffectSite } from './EffectSite';
+import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 import type { ObjectRef } from './ObjectRef';
 import type { EffectReader, LinkedAddReading, TransferReading } from './EffectReader';
@@ -154,7 +155,7 @@ export class SetEffect extends ActiveEffect {
     dragged: WorldObject | undefined,
   ): void {
     const resolved = owner.resolveEffectTargetOrAncestor(this.target, this.propertyGlobalId, actor, dragged);
-    resolved?.setNumber(this.propertyGlobalId, this.value, session);
+    resolved?.setNumber(this.propertyGlobalId, this.value);
   }
 
   read(reader: EffectReader): void {
@@ -199,7 +200,7 @@ export class AddEffect extends ActiveEffect {
     const scaled = (this.amount * numerator) / denominator;
     if (scaled === 0) return;
     const resolved = owner.resolveEffectTargetOrAncestor(this.target, this.propertyGlobalId, actor, dragged);
-    resolved?.addNumber(this.propertyGlobalId, scaled, session);
+    resolved?.addNumber(this.propertyGlobalId, scaled);
   }
 
   read(reader: EffectReader): void {
@@ -291,7 +292,7 @@ export class SpawnEffect extends ActiveEffect {
     dragged: WorldObject | undefined,
     effectSite: EffectSite | undefined,
   ): void {
-    for (let i = 0; i < this.count; i++) owner.executeSpawn(this, session, actor, effectSite);
+    for (let i = 0; i < this.count; i++) owner.executeSpawn(this, actor, effectSite);
   }
 
   read(reader: EffectReader): void {
@@ -371,8 +372,8 @@ export class TransferEffect extends ActiveEffect {
     }
     if (taken <= 0) return;
 
-    from.addNumber(this.fromPropertyGlobalId, -taken, session);
-    to.addNumber(this.toPropertyGlobalId, (taken * this.toAmount) / this.amount, session);
+    from.addNumber(this.fromPropertyGlobalId, -taken);
+    to.addNumber(this.toPropertyGlobalId, (taken * this.toAmount) / this.amount);
 
     for (const linked of this.linkedAdd)
       linked.applyScaled(owner, session, actor, dragged, taken, this.amount);

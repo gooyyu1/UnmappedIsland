@@ -95,9 +95,10 @@ object_defs:
     loadYamlFile(loader, worldCodexPath('core.yaml'));
     codex = loader.load('crafting.yaml', YAML).build();
 
-    const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), new WorldSession(codex));
-    session = new WorldSession(codex, new World(worldInstance, codex.propertyNames, codex.symbolNames));
-    ground = new WorldObject(1, codex.objects.get(idOf('crafting_ground')), session);
+    session = new WorldSession(codex);
+    const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), session);
+    session.adoptWorld(new World(worldInstance, codex.propertyNames, codex.symbolNames));
+    ground = session.spawn(idOf('crafting_ground'));
     ground.moveToSlot(worldInstance, codex.slotNames.getId('locations'));
     wip = session.spawn(idOf(inProgressObjectName('axe', 'basic')));
     wip.moveToSlot(ground, codex.slotNames.getId('items'));
@@ -289,9 +290,10 @@ object_defs:
     loadYamlFile(loader, worldCodexPath('core.yaml'));
     codex = loader.load('crafting.yaml', YAML).build();
 
-    const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), new WorldSession(codex));
-    session = new WorldSession(codex, new World(worldInstance, codex.propertyNames, codex.symbolNames));
-    ground = new WorldObject(1, codex.objects.get(idOf('crafting_ground')), session);
+    session = new WorldSession(codex);
+    const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), session);
+    session.adoptWorld(new World(worldInstance, codex.propertyNames, codex.symbolNames));
+    ground = session.spawn(idOf('crafting_ground'));
     ground.moveToSlot(worldInstance, codex.slotNames.getId('locations'));
   });
 

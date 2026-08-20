@@ -29,7 +29,7 @@ export class BecomeEffect extends ActiveEffect {
     actor: WorldObject | undefined,
     dragged: WorldObject | undefined,
   ): void {
-    this.subject.resolve(owner, actor, dragged)?.becomeAlong(this.axisValues, session);
+    this.subject.resolve(owner, actor, dragged)?.becomeAlong(this.axisValues);
   }
 
   /**

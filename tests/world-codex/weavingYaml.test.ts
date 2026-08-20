@@ -65,7 +65,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
   it('ヤシの木から葉を採ると、1回でまとめて手に入る', () => {
     const tree = spawnInto('palm_tree', beach, 'fixtures');
 
-    expect(tree.tryExecuteAction('pick_frond', player, session)).toBe(true);
+    expect(tree.tryExecuteAction('pick_frond', player)).toBe(true);
 
     expect(handOf(player)).toEqual(['palm_frond', 'palm_frond', 'palm_frond']);
     expect(tree.parent, 'ヤシの木は残る').toBe(beach);
@@ -75,7 +75,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
   it('素手で編むと、葉1枚から編んだ葉が1枚できる', () => {
     const frond = spawnInto('palm_frond', beach, 'items');
 
-    expect(frond.tryExecuteAction('weave', player, session)).toBe(true);
+    expect(frond.tryExecuteAction('weave', player)).toBe(true);
 
     expect(itemsOn(beach)).toEqual(['woven_leaf']);
     expect(weightsOn(beach), '重さの大半を占める中軸を捨てるので、葉4000gより軽くなる').toEqual([400]);
@@ -87,7 +87,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
     const frond = spawnInto('palm_frond', beach, 'items');
     const knife = spawnInto('sharp_stone', player, 'hand');
 
-    expect(frond.tryExecuteCombination(knife, player, 'split_and_weave', session)).toBe(true);
+    expect(frond.tryExecuteCombination(knife, player, 'split_and_weave')).toBe(true);
 
     expect(itemsOn(beach), '元の葉が居た場所へ2枚が並んで置き換わる').toEqual(['woven_leaf', 'woven_leaf']);
     expect(weightsOn(beach), '2枚に増えても1枚ぶんの重さは変わらない').toEqual([400, 400]);

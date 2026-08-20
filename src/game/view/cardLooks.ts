@@ -399,7 +399,7 @@ export function cardLooksOf(
   const slotOfObject = (object: WorldObject): SlotRef | undefined => {
     const parent = object.parent;
     if (parent === undefined) return undefined;
-    const slot = parent.getSlotByLocalId(object.parentSlotLocalId).def.name;
+    const slot = object.parentSlot!.def.name;
     return { owner: parent.def.name, slot };
   };
 

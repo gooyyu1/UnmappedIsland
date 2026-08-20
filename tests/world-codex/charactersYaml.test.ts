@@ -37,7 +37,7 @@ function decayPerTick(character: string, propertyName: string): number {
   const propertyId = codex.propertyNames.getId(propertyName);
   const before = instance.getNumber(propertyId);
 
-  instance.tick(session);
+  instance.tick();
 
   return before - instance.getNumber(propertyId);
 }
@@ -47,8 +47,9 @@ function decayPerTick(character: string, propertyName: string): number {
  * 居場所を持たせて始める必要がある。
  */
 function stand(character: string): { player: PlayerCharacter; session: WorldSession } {
-  const worldInstance = new WorldObject(0, def('world'), new WorldSession(codex));
-  const session = new WorldSession(codex, new World(worldInstance, codex.propertyNames, codex.symbolNames));
+  const session = new WorldSession(codex);
+  const worldInstance = new WorldObject(0, def('world'), session);
+  session.adoptWorld(new World(worldInstance, codex.propertyNames, codex.symbolNames));
   const beach = session.spawn(codex.objectNames.getId('sandy_beach'));
   expect(beach.moveToSlot(worldInstance, codex.slotNames.getId('locations'))).toBeUndefined();
   const instance = session.spawn(codex.objectNames.getId(character));
@@ -75,16 +76,16 @@ function takeRest(
   character: string,
   actionName: string,
 ): { minutes: number; stamina: number; wakefulness: number } {
-  const { player, session } = stand(character);
+  const { player } = stand(character);
   const staminaId = codex.propertyNames.getId('stamina');
   const wakefulnessId = codex.propertyNames.getId('wakefulness');
   const minutes = player.instance.actionMinutes(actionName, player.instance);
   const spent = minutes / 15;
 
-  player.instance.setNumber(staminaId, 0, session);
-  player.instance.setNumber(wakefulnessId, spent, session);
+  player.instance.setNumber(staminaId, 0);
+  player.instance.setNumber(wakefulnessId, spent);
 
-  expect(player.instance.tryExecuteAction(actionName, player.instance, session)).toBe(true);
+  expect(player.instance.tryExecuteAction(actionName, player.instance)).toBe(true);
 
   return {
     minutes,
@@ -162,7 +163,7 @@ describe('プレイヤーキャラクタの定義', () => {
 
     it('ステータスエリアに出るのは7件で、並び順も揃っている', () => {
       // propertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（StatusArea.md 3節）。
-      const instance = new WorldObject(1, def(character), new WorldSession(codex));
+      const instance = new WorldSession(codex).spawn(def(character).globalId);
       const status = instance.propertiesWithTag(codex.propertyTagNames.getId('status'));
 
       expect(status.map((property) => property.def.name)).toEqual([
@@ -204,7 +205,7 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     it('水分は安全域のやや下、覚醒度と体力は満タン、体脂肪は最大値の1/4から始まる', () => {
-      const instance = new WorldObject(1, def(character), new WorldSession(codex));
+      const instance = new WorldSession(codex).spawn(def(character).globalId);
 
       // 開始直後からステータスバーに出るよう、安全域の境目（80%）のやや下の75%から始める（Characters.md）。
       expect(
@@ -315,13 +316,13 @@ describe('プレイヤーキャラクタの定義', () => {
       const instance = new WorldObject(1, def(character), session);
       const bloodId = codex.propertyNames.getId('blood');
       const max = maxOf(character, 'blood');
-      instance.setNumber(bloodId, max - 100, session);
+      instance.setNumber(bloodId, max - 100);
 
-      instance.tick(session);
+      instance.tick();
 
       expect(instance.getNumber(bloodId), '1 tickで2mL戻る').toBe(max - 98);
 
-      for (let i = 0; i < 100; i++) instance.tick(session);
+      for (let i = 0; i < 100; i++) instance.tick();
 
       expect(instance.getNumber(bloodId), '満タンを超えては溜まらない').toBe(max);
     });
@@ -329,7 +330,7 @@ describe('プレイヤーキャラクタの定義', () => {
     it('ステータスエリアに出るもののうち、致命的域を持つのは水分と血だけ', () => {
       // 3つ目の死に方（飢え）はbody_fatが持つが、statusタグが無いのでここには現れない
       // （画面に出る飢えの兆しは満腹度、docs/world/Characters.md）。
-      const instance = new WorldObject(1, def(character), new WorldSession(codex));
+      const instance = new WorldSession(codex).spawn(def(character).globalId);
 
       const fatal = instance
         .propertiesWithTag(codex.propertyTagNames.getId('status'))
@@ -345,15 +346,15 @@ describe('プレイヤーキャラクタの定義', () => {
       ['body_fat', 'starved'],
       ['blood', 'exsanguinated'],
     ])('%sを使い切ると死に、死因は段「%s」になる', (propertyName, stageName) => {
-      const { player, session } = stand(character);
+      const { player } = stand(character);
       const propertyId = codex.propertyNames.getId(propertyName);
 
-      player.instance.addNumber(propertyId, -(player.instance.getNumber(propertyId) - 1), session);
+      player.instance.addNumber(propertyId, -(player.instance.getNumber(propertyId) - 1));
 
       expect(player.isDead, '下限に達するまでは生きている').toBe(false);
       expect(player.causeOfDeath).toBeUndefined();
 
-      player.instance.addNumber(propertyId, -1, session);
+      player.instance.addNumber(propertyId, -1);
 
       expect(player.isDead, '下限に達した時点で世界から外れる').toBe(true);
       expect(player.causeOfDeath).toBe(stageName);

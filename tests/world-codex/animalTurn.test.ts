@@ -40,12 +40,9 @@ describe('動物の1手', () => {
    * 決める。道はまだ通していない——逃げ道が要る検証だけがopenPath()で通す。
    */
   function open(roll: number): void {
-    world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), new WorldSession(codex));
-    session = new WorldSession(
-      codex,
-      new World(world, codex.propertyNames, codex.symbolNames),
-      fixedRng(roll),
-    );
+    session = new WorldSession(codex, undefined, fixedRng(roll));
+    world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
+    session.adoptWorld(new World(world, codex.propertyNames, codex.symbolNames));
     jungle = spawnInto('jungle', world, 'locations');
     grassland = spawnInto('grassland', world, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');

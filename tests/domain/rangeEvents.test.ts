@@ -37,18 +37,18 @@ object_defs:
       session,
     );
 
-    instance.addNumber(minuteId, 15, session); // 45+15=60 > 59。Tick()は一度も呼んでいない
+    instance.addNumber(minuteId, 15); // 45+15=60 > 59。Tick()は一度も呼んでいない
 
     expect(instance.getNumber(minuteId), 'Tick()を呼んでいなくても、その場で折り返る').toBe(0);
     expect(instance.getNumber(hourId)).toBe(1);
   });
 
-  it('sessionを渡さないAddNumberは、明示的にTick()を呼ぶまでrangeイベントを判定しない', () => {
-    // sessionを渡さない呼び出し（既存の呼び出し方との後方互換）は、値がrangeの外側のままでも
-    // 即座には補正されず、明示的にTick()を呼ぶまで持ち越されることを確認する。
+  it('PropertyValueを直に書き換えても、rangeイベントは同じように判定される', () => {
+    // 値を変えた後に何を判定すべきかを知っているのはPropertyValue自身なので、WorldObject.addNumberを
+    // 通したかどうかで挙動が変わってはいけない。
     const yaml = `
 object_defs:
-  clock_deferred:
+  clock_direct:
     props:
       minute:
         value: 45
@@ -63,20 +63,11 @@ object_defs:
     const hourId = codex.propertyNames.getId('hour');
     const session = new WorldSession(codex);
 
-    const instance = new WorldObject(
-      1,
-      codex.objects.get(codex.objectNames.getId('clock_deferred')),
-      session,
-    );
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock_direct')), session);
 
-    instance.addNumber(minuteId, 15); // sessionを渡さない
+    instance.tryGetProperty(minuteId)!.add(15);
 
-    expect(instance.getNumber(minuteId), 'sessionを渡さない間はrange外のまま').toBe(60);
-    expect(instance.getNumber(hourId)).toBe(0);
-
-    instance.tick(session);
-
-    expect(instance.getNumber(minuteId), '明示的にTick()を呼ぶと折り返る').toBe(0);
+    expect(instance.getNumber(minuteId), 'その場で折り返る').toBe(0);
     expect(instance.getNumber(hourId)).toBe(1);
   });
 
@@ -103,7 +94,7 @@ object_defs:
       session,
     );
 
-    instance.addNumber(pressureId, 5, session); // 5+5=10 >= max(10)。例外・制御不能なスタックオーバーフローを起こさなければ成功
+    instance.addNumber(pressureId, 5); // 5+5=10 >= max(10)。例外・制御不能なスタックオーバーフローを起こさなければ成功
 
     expect(instance.getNumber(pressureId)).toBe(10);
   });
@@ -132,7 +123,7 @@ object_defs:
 
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock')), session);
 
-    instance.tick(session); // 45 + 15 = 60 > 59 なので折り返す
+    instance.tick(); // 45 + 15 = 60 > 59 なので折り返す
 
     expect(instance.getNumber(minuteId)).toBe(0);
     expect(instance.getNumber(hourId)).toBe(1);
@@ -165,7 +156,7 @@ object_defs:
 
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock_set')), session);
 
-    instance.tick(session); // 45 + 15 = 60 > 59 なので折り返す
+    instance.tick(); // 45 + 15 = 60 > 59 なので折り返す
 
     expect(instance.getNumber(minuteId), 'setにより絶対値0へ戻る（差分ではなく代入）').toBe(0);
     expect(instance.getNumber(hourId)).toBe(1);
@@ -195,7 +186,7 @@ object_defs:
 
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock2')), session);
 
-    instance.tick(session); // 10 + 15 = 25、59以下なので折り返さない
+    instance.tick(); // 10 + 15 = 25、59以下なので折り返さない
 
     expect(instance.getNumber(minuteId)).toBe(25);
     expect(instance.getNumber(hourId)).toBe(0);
@@ -224,11 +215,11 @@ object_defs:
 
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock3')), session);
 
-    instance.tick(session);
+    instance.tick();
     expect(instance.getNumber(minuteId), '3span分の補正が1回のTick()の中で連鎖的に解決される').toBe(5);
     expect(instance.getNumber(hourId)).toBe(3);
 
-    instance.tick(session);
+    instance.tick();
     expect(instance.getNumber(minuteId), '範囲内に収まった後は何もしない').toBe(5);
     expect(instance.getNumber(hourId)).toBe(3);
   });
@@ -267,7 +258,7 @@ object_defs:
 
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock4')), session);
 
-    instance.tick(session);
+    instance.tick();
 
     expect(instance.getNumber(minuteId)).toBe(5);
     expect(
@@ -311,7 +302,7 @@ object_defs:
 
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock5')), session);
 
-    instance.tick(session);
+    instance.tick();
 
     expect(instance.getNumber(minuteId)).toBe(5);
     expect(instance.getNumber(hourId), 'hourがminuteより先に宣言されていても、即座に連鎖して折り返る').toBe(
@@ -349,7 +340,7 @@ object_defs:
 
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('a_clock2')), session);
 
-    instance.tick(session); // 例外を投げればテスト自体が失敗する
+    instance.tick(); // 例外を投げればテスト自体が失敗する
 
     expect(instance.getNumber(minuteId)).toBe(0);
   });
@@ -381,7 +372,7 @@ object_defs:
 
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('tank2')), session);
 
-    instance.tick(session); // 0 + 250 = 250 > 100。250 -> 149 -> 48 と2回連鎖する
+    instance.tick(); // 0 + 250 = 250 > 100。250 -> 149 -> 48 と2回連鎖する
 
     expect(instance.getNumber(gaugeId)).toBe(48);
     expect(instance.getNumber(alarmId), '2span分の折り返しでalarm_countも2回加算される').toBe(2);

@@ -150,15 +150,15 @@ object_defs:
   });
 
   it('中身の重さが後から変わっても追従する', () => {
-    const { codex, session, weightId, make, put } = build();
+    const { codex, weightId, make, put } = build();
     const sledge = make('sledge');
     const water = make('water');
-    water.setNumber(codex.wellKnown.fillId, 1000, session);
+    water.setNumber(codex.wellKnown.fillId, 1000);
     put(water, sledge, 'cargo');
 
     expect(sledge.getEffectiveValue(weightId), '自重1000 + 水1L(1000mL × 密度1 = 1000g)').toBe(2000);
 
-    water.setNumber(codex.wellKnown.fillId, 500, session);
+    water.setNumber(codex.wellKnown.fillId, 500);
     expect(sledge.getEffectiveValue(weightId), '蒸発しても読み直せば正しい').toBe(1500);
   });
 

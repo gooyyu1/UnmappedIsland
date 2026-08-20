@@ -11,8 +11,7 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 **入口は2種でも、実行は1本です。** メニュー型（`actions`）とドラッグ型（`combinations`）は
 「どう選ばれるか」だけが違い、どちらも `InteractionDef` を基底として、同じ実行パイプライン
 （マッチング → `conditions` → `duration` の解決 → 時間進行 → 生存確認 → 効果の適用、2 節）を通ります。
-実行前には代表（`represented_by`）の解決が入り、起きたことは分岐名ではなく世界に起きた変化として
-観測します（7 節）。操作専用の新しい文法はありません。
+起きたことは分岐名ではなく世界に起きた変化として観測します（7 節）。操作専用の新しい文法はありません。
 
 実装は `src/domain/InteractionDef.ts`（`ActionDef`・`CombinationDef` の基底）と
 `src/domain/WorldObject.ts`・`WorldSession.ts`、検証は `tests/domain/interaction.test.ts`・
@@ -47,10 +46,6 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
   `self` として引くか**（落とされた側が先、次に掴んだ側）と、
   複数マッチした場合にどれを実行するかの解決はUI層に委ねる
   （[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節、`PlayScreenView.combinationOf`）。
-
-いずれも実行前に `ResolveInteractionTarget()` で **代表（`represented_by`）** を解決する:
-代表スロットを持つカード（液体容器など）への操作は、そのスロットの中身（代表チェーンの末端）へ
-リダイレクトされる。`self` と `dragged` の両方が対象。
 
 ## 2. 実行パイプライン
 

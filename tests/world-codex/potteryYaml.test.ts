@@ -92,8 +92,8 @@ describe('pottery.yamlの土器の連鎖', () => {
   function litKiln(): WorldObject {
     const kiln = spawnInto('earth_kiln', land, 'fixtures');
     const log = spawnInto('log', land, 'items');
-    expect(kiln.tryExecuteCombination(log, undefined, 'add_fuel', session)).toBe(true);
-    kiln.setNumber(codex.propertyNames.getId('heat'), 1, session);
+    expect(kiln.tryExecuteCombination(log, undefined, 'add_fuel')).toBe(true);
+    kiln.setNumber(codex.propertyNames.getId('heat'), 1);
     return kiln;
   }
 
@@ -111,7 +111,7 @@ describe('pottery.yamlの土器の連鎖', () => {
 
   /** 焼き上がりの判定だけを起こす。値を超えさせるとon_maxが走る（6.3節）。 */
   function overheat(greenware: WorldObject): void {
-    greenware.setNumber(codex.propertyNames.getId('cooking_progress'), 200, session);
+    greenware.setNumber(codex.propertyNames.getId('cooking_progress'), 200);
   }
 
   /** bodyの実行中に告げられた出来事（signal、9.8節）を「誰の身に・何が」の形で並べる。 */
@@ -228,7 +228,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     // 消える物の中身は、消える自分ではなく自分の親へこぼれる（9.3節）。焼いた物まで道連れにしない。
     const kiln = fireDriedGreenware(24);
 
-    expect(kiln.tryExecuteAction('break_open', undefined, session)).toBe(true);
+    expect(kiln.tryExecuteAction('break_open', undefined)).toBe(true);
 
     expect(fixturesOn(land), '炉は一度きり').toEqual([]);
     expect(itemsOn(land), '甕は土地へこぼれる').toEqual(['jar']);

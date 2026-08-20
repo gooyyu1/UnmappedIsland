@@ -239,19 +239,19 @@ export class WorldSession {
     const ticksToRun = Math.trunc(total / minutesPerTick);
 
     if (ticksToRun === 0) {
-      world.addMinutes(amount, this);
+      world.addMinutes(amount);
       return;
     }
 
-    world.addMinutes(minutesPerTick - minuteOfTick, this);
+    world.addMinutes(minutesPerTick - minuteOfTick);
     this.runTick(world);
 
     for (let i = 1; i < ticksToRun; i++) {
-      world.addMinutes(minutesPerTick, this);
+      world.addMinutes(minutesPerTick);
       this.runTick(world);
     }
 
-    world.addMinutes(total % minutesPerTick, this);
+    world.addMinutes(total % minutesPerTick);
   }
 
   /**
@@ -262,7 +262,7 @@ export class WorldSession {
    * 動物がしたことも含まれている。
    */
   private runTick(world: World): void {
-    world.instance.tick(this);
+    world.instance.tick();
     world.runAnimalTurns(this);
     this.tickObserver?.();
   }

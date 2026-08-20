@@ -57,7 +57,7 @@ object_defs:
     const counterId = codex.propertyNames.getId('counter');
     const chosenId = codex.propertyNames.getId('chosen');
 
-    for (let i = 0; i < 3; i++) cycler.tick(session);
+    for (let i = 0; i < 3; i++) cycler.tick();
 
     expect(cycler.getNumber(chosenId)).toBe(1); // 重み1のgo_a候補だけが選ばれる
     expect(cycler.getNumber(counterId)).toBe(10); // 選ばれた候補がcounter自身を再ロールする
@@ -65,7 +65,7 @@ object_defs:
     // 重みを入れ替えると、次の発火では反対の候補が選ばれる
     cycler.setProperty(codex.propertyNames.getId('go_a'), 0);
     cycler.setProperty(codex.propertyNames.getId('go_b'), 1);
-    for (let i = 0; i < 10; i++) cycler.tick(session);
+    for (let i = 0; i < 10; i++) cycler.tick();
 
     expect(cycler.getNumber(chosenId)).toBe(2);
     expect(cycler.getNumber(counterId)).toBe(20);
@@ -118,7 +118,7 @@ object_defs:
     const session = new WorldSession(codex, undefined, new StubRng({ doubles: [0.5] }));
     const mixer = instantiate(codex, 'mixer', session);
 
-    for (let i = 0; i < 3; i++) mixer.tick(session);
+    for (let i = 0; i < 3; i++) mixer.tick();
 
     expect(mixer.getNumber(codex.propertyNames.getId('counter'))).toBe(10);
     // setが先に走ってから候補のaddが乗る（逆順ならsetが上書きして1になる）
@@ -147,7 +147,7 @@ object_defs:
     const sinker = instantiate(codex, 'sinker', session);
     const levelId = codex.propertyNames.getId('level');
 
-    for (let i = 0; i < 3; i++) sinker.tick(session);
+    for (let i = 0; i < 3; i++) sinker.tick();
 
     // 5 -> 3 -> 1 -> -1。既定クランプなら0で止まるが、空宣言により素通しになる
     expect(sinker.getNumber(levelId)).toBe(-1);

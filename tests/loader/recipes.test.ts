@@ -146,7 +146,7 @@ object_defs:
 
     expect(recipe.isUnlocked(resolveRoot)).toBe(false);
 
-    actor.setNumber(skillId, 60, session);
+    actor.setNumber(skillId, 60);
     expect(recipe.isUnlocked(resolveRoot)).toBe(true);
   });
 

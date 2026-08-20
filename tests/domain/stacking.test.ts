@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { ObjectStack } from '../../src/domain/ObjectStack';
 import type { Slot } from '../../src/domain/Slot';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -9,24 +9,28 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 // アイテムのスタック表示（Slot.contentsの並び順・SlotDefのcellCount・ObjectDefのstackable・
 // ObjectDef.stackOrder・same_slotとの相互作用）に対する自動テスト。
 describe('StackingTests', () => {
-  let nextInstanceId: number;
+  let sessions: Map<WorldCodex, WorldSession>;
 
   beforeEach(() => {
-    nextInstanceId = 1;
+    sessions = new Map();
   });
 
   function load(yaml: string): WorldCodex {
     return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
   }
 
+  /** 1つのcodexから作る物は同じセッションに属する（WorldObject.session）。 */
   function spawn(codex: WorldCodex, objectName: string): WorldObject {
-    const def = codex.objects.get(codex.objectNames.getId(objectName));
-    return new WorldObject(nextInstanceId++, def, new WorldSession(codex));
+    let session = sessions.get(codex);
+    if (session === undefined) {
+      session = new WorldSession(codex);
+      sessions.set(codex, session);
+    }
+    return session.spawn(codex.objectNames.getId(objectName));
   }
 
   // テスト補助: 固定スロット内で、指定した型(ObjectDef)のアイテムを持つスタックとその番号を引く。
-  // 素の型（represented_by無し＝1型1スタック）のテスト専用。スタック側のDefではなく各メンバーの
-  // Def(WorldObject.def)で引くのであって、外側Def一致で位置を決めているわけではない。
+  // スタック側のDefではなく各メンバーのDef(WorldObject.def)で引く。
   function stackOfType(slot: Slot, objectDefGlobalId: number): ObjectStack | undefined {
     return slot.cells.find((s) => s !== undefined && s.members[0].def.globalId === objectDefGlobalId);
   }
@@ -138,7 +142,6 @@ object_defs:
     const codex = load(yaml);
     const pileSlotId = codex.slotNames.getId('pile');
 
-    const session = new WorldSession(codex);
     const locInstance = spawn(codex, 'loc_abc');
     const aInstance = spawn(codex, 'a_item');
     const bInstance = spawn(codex, 'b_item');
@@ -148,7 +151,7 @@ object_defs:
     bInstance.moveToSlot(locInstance, pileSlotId);
     cInstance.moveToSlot(locInstance, pileSlotId);
 
-    locInstance.tick(session);
+    locInstance.tick();
 
     const pile = locInstance.tryGetSlot(pileSlotId)!;
     expect(
@@ -181,7 +184,6 @@ object_defs:
     const pileSlotId = codex.slotNames.getId('pile');
     const lifeId = codex.propertyNames.getId('life');
 
-    const session = new WorldSession(codex);
     const locInstance = spawn(codex, 'loc_abbc');
     const aInstance = spawn(codex, 'a_item2');
     const bInstance1 = spawn(codex, 'b_item2'); // 生き残る方
@@ -196,7 +198,7 @@ object_defs:
     // bInstance1 は on_min が発火しないよう life を残す（bInstance2 のみ 0 のまま）。
     bInstance1.setProperty(lifeId, 5);
 
-    locInstance.tick(session);
+    locInstance.tick();
 
     const pile = locInstance.tryGetSlot(pileSlotId)!;
     expect(
@@ -227,7 +229,6 @@ object_defs:
     const codex = load(yaml);
     const pileSlotId = codex.slotNames.getId('pile');
 
-    const session = new WorldSession(codex);
     const locInstance = spawn(codex, 'loc_grow');
     const aInstance = spawn(codex, 'a_item3');
     const bInstance = spawn(codex, 'b_item3');
@@ -237,7 +238,7 @@ object_defs:
     bInstance.moveToSlot(locInstance, pileSlotId);
     cInstance.moveToSlot(locInstance, pileSlotId);
 
-    locInstance.tick(session);
+    locInstance.tick();
 
     const pile = locInstance.tryGetSlot(pileSlotId)!;
     expect(
@@ -271,13 +272,12 @@ object_defs:
     const codex = load(yaml);
     const pileSlotId = codex.slotNames.getId('pile');
 
-    const session = new WorldSession(codex);
     const locInstance = spawn(codex, 'loc_pair');
 
     for (const name of ['a_item5', 'b_item5', 'c_item5'])
       spawn(codex, name).moveToSlot(locInstance, pileSlotId);
 
-    locInstance.tick(session);
+    locInstance.tick();
 
     const pile = locInstance.tryGetSlot(pileSlotId)!;
     expect(
@@ -318,7 +318,6 @@ object_defs:
     const rottenId = codex.objectNames.getId('rotten_potato3');
     const peelId = codex.objectNames.getId('potato_peel');
 
-    const session = new WorldSession(codex);
     const locationInstance = spawn(codex, 'loc_fallback2');
     const handInstance = spawn(codex, 'hand_owner10');
     handInstance.moveToSlot(locationInstance, groundSlotId);
@@ -326,7 +325,7 @@ object_defs:
     spawn(codex, 'filler_item2').moveToSlot(handInstance, handSlotId); // 0番
     spawn(codex, 'potato3').moveToSlot(handInstance, handSlotId); // 1番
 
-    handInstance.tick(session);
+    handInstance.tick();
 
     const hand10 = handInstance.tryGetSlot(handSlotId)!;
     expect(gridIndexOfType(hand10, rottenId), '1個目はpotatoの固定番号(1)を引き継ぐ').toBe(1);
@@ -364,7 +363,6 @@ object_defs:
     const meatId = codex.objectNames.getId('meat_item');
     const bowlId = codex.objectNames.getId('bowl_item');
 
-    const session = new WorldSession(codex);
     const handInstance = spawn(codex, 'hand_owner11');
     spawn(codex, 'meat_item').moveToSlot(handInstance, handSlotId); // 0番
     spawn(codex, 'half_item').moveToSlot(handInstance, handSlotId); // 1番
@@ -373,7 +371,7 @@ object_defs:
     // 前提を「meat(0) _(1) half(2) _(3)」に合わせる。
     expect(hand11.trySetManualPosition(hand11.cells[1]!, 2)).toBe(true);
 
-    handInstance.tick(session);
+    handInstance.tick();
 
     expect(gridIndexOfType(hand11, meatId), '1個目は既存の果肉のスタックへ合流する').toBe(0);
     expect(
@@ -418,7 +416,6 @@ object_defs:
     const freshnessId = codex.propertyNames.getId('freshness');
     const peelId = codex.objectNames.getId('potato_peel2');
 
-    const session = new WorldSession(codex);
     const locationInstance = spawn(codex, 'loc_fallback3');
     const handInstance = spawn(codex, 'hand_owner12');
     handInstance.moveToSlot(locationInstance, groundSlotId);
@@ -433,7 +430,7 @@ object_defs:
     survivor.setProperty(freshnessId, 9); // 生き残る方（同種が残るので、置き換えは隣の枠を要る）
     rotting.setProperty(freshnessId, 0);
 
-    handInstance.tick(session);
+    handInstance.tick();
 
     const hand12 = handInstance.tryGetSlot(handSlotId)!;
     expect(
@@ -468,7 +465,6 @@ object_defs:
     const codex = load(yaml);
     const pileSlotId = codex.slotNames.getId('pile');
 
-    const session = new WorldSession(codex);
     const locInstance = spawn(codex, 'loc_merge');
 
     // D A B の並びで、Bが置き換わって生まれるDは、Bが居た位置ではなく既にあるDのスタックへ入る。
@@ -476,7 +472,7 @@ object_defs:
     spawn(codex, 'a_item4').moveToSlot(locInstance, pileSlotId);
     spawn(codex, 'b_item4').moveToSlot(locInstance, pileSlotId);
 
-    locInstance.tick(session);
+    locInstance.tick();
 
     const pile = locInstance.tryGetSlot(pileSlotId)!;
     expect(
@@ -646,7 +642,6 @@ object_defs:
     const handSlotId = codex.slotNames.getId('hand');
     const rottenId = codex.objectNames.getId('rotten_potato');
 
-    const session = new WorldSession(codex);
     const handInstance = spawn(codex, 'hand_owner4');
     const fillerInstance = spawn(codex, 'filler_item'); // 0番を先に占有
     const potatoInstance = spawn(codex, 'potato'); // 1番に入る
@@ -659,7 +654,7 @@ object_defs:
     const potatoGridIndex = gridIndexOfType(hand4, codex.objectNames.getId('potato'))!;
     expect(potatoGridIndex, '前提: potatoは1番のまま（0番が空いても前詰めされない）').toBe(1);
 
-    handInstance.tick(session);
+    handInstance.tick();
 
     expect(
       gridIndexOfType(hand4, rottenId),
@@ -693,7 +688,6 @@ object_defs:
     const rottenId = codex.objectNames.getId('rotten_potato2');
     const freshnessId = codex.propertyNames.getId('freshness');
 
-    const session = new WorldSession(codex);
     const handInstance = spawn(codex, 'hand_owner5');
     const potato1 = spawn(codex, 'potato2'); // freshness=5のまま生き残る方
     const potato2 = spawn(codex, 'potato2'); // freshness=0のまま置き換わる方
@@ -705,7 +699,7 @@ object_defs:
     const hand5 = handInstance.tryGetSlot(handSlotId)!;
     const potatoGridIndex = gridIndexOfType(hand5, potatoId)!;
 
-    handInstance.tick(session);
+    handInstance.tick();
 
     expect(gridIndexOfType(hand5, potatoId), '残ったpotatoの番号は変わらない').toBe(potatoGridIndex);
     expect(
@@ -766,7 +760,6 @@ object_defs:
     const cTypeId = codex.objectNames.getId('type_c3');
     const dTypeId = codex.objectNames.getId('type_d3');
 
-    const session = new WorldSession(codex);
     const locationInstance = spawn(codex, 'loc_fallback');
     const handInstance = spawn(codex, 'hand_owner6');
     handInstance.moveToSlot(locationInstance, groundSlotId);
@@ -789,7 +782,7 @@ object_defs:
 
     // --- Cが生まれる: 期待 A(0) C(1) B(2) _(3) ---
     aInstance.setProperty(spawnCId, 0);
-    handInstance.tick(session);
+    handInstance.tick();
     aInstance.setProperty(spawnCId, 1); // 再発火を防ぐ
 
     expect(gridIndexOfType(hand6, aTypeId)).toBe(0);
@@ -798,7 +791,7 @@ object_defs:
 
     // --- Dが生まれる: 期待 A(0) D(1) C(2) B(3) ---
     aInstance.setProperty(spawnDId, 0);
-    handInstance.tick(session);
+    handInstance.tick();
     aInstance.setProperty(spawnDId, 1);
 
     expect(gridIndexOfType(hand6, aTypeId)).toBe(0);
@@ -814,7 +807,7 @@ object_defs:
 
     // --- Eが生まれる: 4枠すべて埋まっており入る場所が無いのでfallback ---
     aInstance.setProperty(spawnEId, 0);
-    handInstance.tick(session);
+    handInstance.tick();
 
     expect(
       hand6.contents.some((o) => o.def.name === 'type_e3'),
@@ -848,7 +841,6 @@ object_defs:
     const handSlotId = codex.slotNames.getId('hand');
     const aTypeId = codex.objectNames.getId('type_a4');
 
-    const session = new WorldSession(codex);
     const handInstance = spawn(codex, 'hand_owner7');
     const aInstance = spawn(codex, 'type_a4');
     aInstance.moveToSlot(handInstance, handSlotId);
@@ -858,7 +850,7 @@ object_defs:
 
     // 枠が1つなので、別の型なら絶対に入らないが、同種のスタックへの合流は
     // 新しい固定番号を消費しないため、あふれずに成功するはず。
-    handInstance.tick(session);
+    handInstance.tick();
 
     expect(
       hand7.contents.filter((o) => o.def.name === 'type_a4').length,
@@ -907,7 +899,6 @@ object_defs:
     const cTypeId = codex.objectNames.getId('type_c4');
     const dTypeId = codex.objectNames.getId('type_d4');
 
-    const session = new WorldSession(codex);
     const handInstance = spawn(codex, 'hand_owner8');
     const aInstance = spawn(codex, 'type_a5');
     const bInstance = spawn(codex, 'type_b5');
@@ -921,7 +912,7 @@ object_defs:
 
     // --- Cが生まれる: 期待 _ C A B ---
     aInstance.setProperty(spawnCId, 0);
-    handInstance.tick(session);
+    handInstance.tick();
     aInstance.setProperty(spawnCId, 1);
 
     expect(gridIndexOfType(hand8, cTypeId), '右(3番)はBで埋まっているため、左の空き(1番)へ入る').toBe(1);
@@ -930,7 +921,7 @@ object_defs:
 
     // --- Dが生まれる: 期待 C A D B ---
     bInstance.setProperty(spawnDId, 0);
-    handInstance.tick(session);
+    handInstance.tick();
 
     expect(gridIndexOfType(hand8, cTypeId), 'Cはさらに左へ押し出される').toBe(0);
     expect(gridIndexOfType(hand8, aTypeId), 'Aも左へ押し出される').toBe(1);
@@ -973,7 +964,6 @@ object_defs:
     const cTypeId = codex.objectNames.getId('type_c5');
     const dTypeId = codex.objectNames.getId('type_d5');
 
-    const session = new WorldSession(codex);
     const handInstance = spawn(codex, 'hand_owner9');
     const c1 = spawn(codex, 'type_c5');
     const c2 = spawn(codex, 'type_c5'); // Cは2個のスタック
@@ -995,7 +985,7 @@ object_defs:
     // Bから(destroyなしで)Dが生まれる: 右(4番)は存在せず、左は「A(2)」で埋まっているため、
     // さらに左の空き(0番)まで探し、C・Aをそれぞれ1つずつ左へ押し出してDが2番に割り込む。
     bInstance.setProperty(spawnDId, 0);
-    handInstance.tick(session);
+    handInstance.tick();
 
     expect(gridIndexOfType(hand9, cTypeId), 'Cのスタックごと左へ押し出される').toBe(0);
     expect(gridIndexOfType(hand9, aTypeId), 'Aも左へ押し出される').toBe(1);

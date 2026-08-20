@@ -72,7 +72,7 @@ object_defs:
     expect(wip.moveToSlot(ground, codex.slotNames.getId('items'))).toBeUndefined();
 
     // 工程の合計は30 + 10 = 40分。超えた瞬間にon_maxが発火する。
-    wip.setNumber(codex.propertyNames.getId('progress'), 41, session);
+    wip.setNumber(codex.propertyNames.getId('progress'), 41);
 
     const names = ground
       .tryGetSlot(codex.slotNames.getId('items'))!

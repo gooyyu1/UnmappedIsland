@@ -75,14 +75,14 @@ describe('coconut.yamlのヤシの実の加工', () => {
   /** 道具を手に取り、対象のカードへドラッグしてcombinationを1つ実行する。 */
   function combine(target: WorldObject, toolName: string, combinationName: string): void {
     const tool = spawnInto(toolName, player, 'hand');
-    expect(target.tryExecuteCombination(tool, player, combinationName, session)).toBe(true);
+    expect(target.tryExecuteCombination(tool, player, combinationName)).toBe(true);
     expect(tool.parent, '道具は消費されない').toBe(player);
   }
 
   it('ヤシの木に登ると、手持ちに青い実が増える', () => {
     const tree = spawnInto('palm_tree', beach, 'fixtures');
 
-    expect(tree.tryExecuteAction('pick_green_coconut', player, session)).toBe(true);
+    expect(tree.tryExecuteAction('pick_green_coconut', player)).toBe(true);
 
     expect(handOf(player), '1回登ればまとめて採れる').toEqual(['green_coconut', 'green_coconut']);
     expect(tree.parent, 'ヤシの木は残る').toBe(beach);
@@ -96,7 +96,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     for (const name of ['stone', 'sharp_stone', 'twig', 'thick_branch', 'taro', 'water_spinach'])
       spawnInto(name, player, 'hand');
 
-    expect(tree.tryExecuteAction('pick_green_coconut', player, session)).toBe(true);
+    expect(tree.tryExecuteAction('pick_green_coconut', player)).toBe(true);
 
     expect(new PlayerCharacter(player, codex).equipmentStacks, '装備欄は自動配置の対象外（7.7節）').toEqual(
       [],
@@ -148,7 +148,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     player.setProperty(satietyId, 16);
     player.setProperty(hydrationId, 2);
 
-    expect(jelly.tryExecuteAction('eat', player, session)).toBe(true);
+    expect(jelly.tryExecuteAction('eat', player)).toBe(true);
 
     expect(player.getNumber(hydrationId)).toBeCloseTo(6.2, 10);
     expect(player.getNumber(satietyId), '熟した果肉（200mL）より小さい').toBe(150);
@@ -162,7 +162,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
       // 1 tickぶんの減り（-1）を載せた2から測り、残る1を引いて増えた分だけを返す
       // （0まで減ると尽きて死ぬので、1を残す）。
       player.setProperty(hydrationId, 2);
-      expect(target.tryExecuteAction(action, player, session)).toBe(true);
+      expect(target.tryExecuteAction(action, player)).toBe(true);
       return player.getNumber(hydrationId) - 1;
     };
 
@@ -264,7 +264,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     const bowl = spawnInto('coconut_bowl', player, 'hand');
 
     // 中身入りは容器の変種（3.5節）。同じ個体のまま水入りになり、持ち物としての立場は変わらない。
-    bowl.becomeAlong(new Map([['content', 'water_liquid']]), session);
+    bowl.becomeAlong(new Map([['content', 'water_liquid']]));
 
     expect(bowl.def.name).toBe('coconut_bowl__content_water_liquid');
     expect(handOf(player), '手持ちのaccepts（itemタグ）を通る').toEqual([
@@ -281,7 +281,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     player.setProperty(hydrationId, 2);
     player.setProperty(lipidId, 0);
 
-    expect(meat.tryExecuteAction('eat', player, session)).toBe(true);
+    expect(meat.tryExecuteAction('eat', player)).toBe(true);
 
     expect(player.getNumber(satietyId)).toBe(200);
     expect(player.getNumber(hydrationId)).toBe(7);
@@ -294,7 +294,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     (name) => {
       const raw = spawnInto(name, player, 'hand');
 
-      expect(raw.tryExecuteAction('eat', player, session)).toBe(false);
+      expect(raw.tryExecuteAction('eat', player)).toBe(false);
     },
   );
 });

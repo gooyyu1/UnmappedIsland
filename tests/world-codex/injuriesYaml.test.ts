@@ -73,7 +73,7 @@ describe('injuries.yamlの怪我', () => {
   /** ヤシの実を採ろうとする。成否はopenへ渡したrollで決まっている。 */
   function pickCoconut(): void {
     const tree = spawnInto('palm_tree', beach, 'fixtures');
-    expect(tree.tryExecuteAction('pick_green_coconut', player, session)).toBe(true);
+    expect(tree.tryExecuteAction('pick_green_coconut', player)).toBe(true);
   }
 
   /**
@@ -85,7 +85,7 @@ describe('injuries.yamlの怪我', () => {
     const vital = ['hydration', 'body_fat'].map((name) => codex.propertyNames.getId(name));
     const held = vital.map((id) => player.getNumber(id));
     for (let i = 0; i < count; i++) {
-      player.tick(session);
+      player.tick();
       vital.forEach((id, index) => player.setProperty(id, held[index]));
     }
   }

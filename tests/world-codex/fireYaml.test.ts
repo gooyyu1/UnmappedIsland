@@ -81,14 +81,14 @@ describe('fire.yamlの火の連鎖', () => {
 
     const tinder = new Location(land, codex).items.find((o) => o.def.name === 'burning_tinder');
     expect(tinder, '火起こしに成功している').toBeDefined();
-    expect(hearth.tryExecuteCombination(tinder!, player, 'ignite', session)).toBe(true);
+    expect(hearth.tryExecuteCombination(tinder!, player, 'ignite')).toBe(true);
     return hearth;
   }
 
   /** 炉へ燃料を1つくべる。 */
   function stoke(hearth: WorldObject, fuelName: string): void {
     const fuel = spawnInto(fuelName, land, 'items');
-    expect(hearth.tryExecuteCombination(fuel, player, 'add_fuel', session)).toBe(true);
+    expect(hearth.tryExecuteCombination(fuel, player, 'add_fuel')).toBe(true);
   }
 
   it('火起こし具は小枝と太い枝から作れて、解放条件を持たない', () => {
@@ -109,7 +109,7 @@ describe('fire.yamlの火の連鎖', () => {
     const grass = spawnInto('dry_grass', land, 'items');
     const drill = spawnInto('fire_drill', player, 'hand');
 
-    expect(grass.tryExecuteCombination(drill, player, 'light', session)).toBe(true);
+    expect(grass.tryExecuteCombination(drill, player, 'light')).toBe(true);
 
     expect(itemsOn(land)).toEqual(['burning_tinder']);
     expect(drill.parent, '火起こし具は消費されない').toBe(player);
@@ -122,7 +122,7 @@ describe('fire.yamlの火の連鎖', () => {
     const wipDrill = spawnInto(inProgressObjectName('fire_drill', 'carved'), player, 'hand');
 
     expect(grass.combinationsWith(wipDrill, player)).toEqual([]);
-    expect(grass.tryExecuteCombination(wipDrill, player, 'light', session)).toBe(false);
+    expect(grass.tryExecuteCombination(wipDrill, player, 'light')).toBe(false);
   });
 
   it('火が付いた回も外した回も、火口の札の上で起きたことを告げる', () => {
@@ -140,7 +140,7 @@ describe('fire.yamlの火の連鎖', () => {
   function lightDryGrass(): void {
     const grass = spawnInto('dry_grass', land, 'items');
     const drill = spawnInto('fire_drill', player, 'hand');
-    expect(grass.tryExecuteCombination(drill, player, 'light', session)).toBe(true);
+    expect(grass.tryExecuteCombination(drill, player, 'light')).toBe(true);
   }
 
   /** bodyの実行中に告げられた出来事（signal、9.8節）を「誰の身に・何が」の形で並べる。 */
@@ -187,7 +187,7 @@ describe('fire.yamlの火の連鎖', () => {
     const hearth = spawnInto('campfire', land, 'fixtures');
     const tinder = spawnInto('burning_tinder', land, 'items');
 
-    expect(hearth.tryExecuteCombination(tinder, player, 'ignite', session)).toBe(false);
+    expect(hearth.tryExecuteCombination(tinder, player, 'ignite')).toBe(false);
     expect(heatIs(hearth, 'out'), '火は消えたまま').toBe(true);
   });
 
@@ -227,7 +227,7 @@ describe('fire.yamlの火の連鎖', () => {
     for (let i = 0; i < 6; i++) stoke(hearth, 'thick_branch');
     expect(numberOf(hearth, 'fuel')).toBe(120);
 
-    hearth.setNumber(codex.propertyNames.getId('heat'), 1, session);
+    hearth.setNumber(codex.propertyNames.getId('heat'), 1);
     session.advanceWorldTime(60 * 6);
 
     expect(heatIs(hearth, 'blaze'), '料理の最上段').toBe(true);
@@ -245,7 +245,7 @@ describe('fire.yamlの火の連鎖', () => {
     expect(hearth.combinationAcceptedCount(branches, player, 'add_fuel')).toBe(2);
 
     for (const branch of branches.slice(0, 2))
-      expect(hearth.tryExecuteCombination(branch, player, 'add_fuel', session)).toBe(true);
+      expect(hearth.tryExecuteCombination(branch, player, 'add_fuel')).toBe(true);
 
     expect(numberOf(hearth, 'fuel'), '溢れた分は捨てられる（量の器は部分的に受け取る）').toBe(30);
     expect(itemsOn(land), 'くべた2本は残らない').toEqual(['thick_branch']);
@@ -262,7 +262,7 @@ describe('fire.yamlの火の連鎖', () => {
       hearth.combinationsWith(extra, player),
       '候補にも挙がらない（落とせるのに何も起きない、にしない）',
     ).toEqual([]);
-    expect(hearth.tryExecuteCombination(extra, player, 'add_fuel', session)).toBe(false);
+    expect(hearth.tryExecuteCombination(extra, player, 'add_fuel')).toBe(false);
     expect(extra.parent, 'くべられなかった薪は手元に残る').toBe(land);
   });
 
@@ -310,14 +310,14 @@ describe('fire.yamlの火の連鎖', () => {
 
     for (let i = 0; i < 3; i++) {
       const stone = spawnInto('stone', land, 'items');
-      expect(hearth.tryExecuteCombination(stone, player, 'add_stone', session)).toBe(true);
+      expect(hearth.tryExecuteCombination(stone, player, 'add_stone')).toBe(true);
     }
     hearth = new Location(land, codex).fixtures[0];
     expect(hearth.def.name).toBe('three_stone_hearth');
 
     for (let i = 0; i < 8; i++) {
       const stone = spawnInto('stone', land, 'items');
-      expect(hearth.tryExecuteCombination(stone, player, 'add_stone', session)).toBe(true);
+      expect(hearth.tryExecuteCombination(stone, player, 'add_stone')).toBe(true);
     }
     expect(new Location(land, codex).fixtures[0].def.name).toBe('stone_hearth');
   });

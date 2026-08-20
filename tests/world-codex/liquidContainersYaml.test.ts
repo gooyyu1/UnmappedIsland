@@ -121,7 +121,6 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   it('中身入りの容器の重さは、容器の自重と水の重さの和になる', () => {
     // weight = volume × density（mL × g/mL = g、ContainerSystem.md 1節）。密度の桁が狂うと
     // ここだけが静かに壊れる——実ファイルの値で確かめる場所を1つ持っておく。
-    const session = new WorldSession(codex);
     const bowl = spawnContainer('coconut_bowl', 'water', 250);
     const weightId = codex.propertyNames.getId('weight');
     const densityId = codex.propertyNames.getId('density');
@@ -129,7 +128,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(bowl.getNumber(densityId), '水は1g/mL').toBe(1);
     expect(bowl.getEffectiveValue(weightId), 'ヤシの器100g + 水250mL = 350g').toBe(350);
 
-    bowl.setNumber(fillId, 100, session);
+    bowl.setNumber(fillId, 100);
 
     expect(bowl.getEffectiveValue(weightId), '飲めばそのぶん軽くなる').toBe(200);
   });
@@ -142,12 +141,11 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   });
 
   it('水を飲むと中身のvolumeからactorのhydrationへ移る', () => {
-    const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     actor.setProperty(hydrationId, 0);
     const canteen = spawnContainer('canteen', 'water', 1000);
 
-    expect(canteen.tryExecuteAction('drink', actor, session), '容器への操作は中身へ委譲される').toBe(true);
+    expect(canteen.tryExecuteAction('drink', actor), '容器への操作は中身へ委譲される').toBe(true);
 
     expect(actor.getNumber(hydrationId), '250mLは10 tick分（to_amount、9.5節）').toBe(10);
     expect(amountIn(canteen), '減るのは液体の単位（mL）のまま').toBe(750);
@@ -155,7 +153,6 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   it('水分が満水だと飲めず、理由not_thirstyを返す', () => {
     // 満水では0mLの何も起きない飲用になるため、実行自体をさせない（liquid_containers.yaml）。
-    const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     const hydrationMax = codex.objects
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
@@ -164,12 +161,11 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const canteen = spawnContainer('canteen', 'water', 1000);
 
     expect(canteen.actionUnmetRequirement('drink', actor)?.reasonName).toBe('not_thirsty');
-    expect(canteen.tryExecuteAction('drink', actor, session)).toBe(false);
+    expect(canteen.tryExecuteAction('drink', actor)).toBe(false);
     expect(amountIn(canteen), '実行されないので量は変わらない').toBe(1000);
   });
 
   it('水分が満水の一歩手前なら飲め、入る分だけが移る', () => {
-    const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     const hydrationMax = codex.objects
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
@@ -178,7 +174,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const canteen = spawnContainer('canteen', 'water', 1000);
 
     expect(canteen.actionUnmetRequirement('drink', actor)).toBeUndefined();
-    expect(canteen.tryExecuteAction('drink', actor, session)).toBe(true);
+    expect(canteen.tryExecuteAction('drink', actor)).toBe(true);
 
     expect(actor.getNumber(hydrationId), 'あふれる分は飲まない').toBe(hydrationMax);
     // 空きは4 tick分。移送元の単位へ割り戻すと 4 × 250 / 10 = 100mL しか出ない（9.5節）。
@@ -186,49 +182,45 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   });
 
   it('残りを飲み切ると、中身のインスタンスごと消えて空の容器へ戻る', () => {
-    const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     actor.setProperty(hydrationId, 0);
     const canteen = spawnContainer('canteen', 'water', 100); // 1回分(250)より少ない
 
-    expect(canteen.tryExecuteAction('drink', actor, session)).toBe(true);
+    expect(canteen.tryExecuteAction('drink', actor)).toBe(true);
 
     expect(actor.getNumber(hydrationId), '残っている分だけ飲む（100mL = 4 tick分）').toBe(4);
     expect(contentOf(canteen), 'tickを待たずに空へ戻る（0mLの水は存在しない）').toBeUndefined();
   });
 
   it('お茶を飲むと追加の効果も適用できる', () => {
-    const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     actor.setProperty(hydrationId, 0);
     actor.setProperty(wakefulnessId, 0);
     const canteen = spawnContainer('canteen', 'tea', 1000);
 
-    expect(canteen.tryExecuteAction('drink', actor, session)).toBe(true);
+    expect(canteen.tryExecuteAction('drink', actor)).toBe(true);
 
     expect(actor.getNumber(hydrationId)).toBe(10);
     expect(actor.getNumber(wakefulnessId)).toBe(2);
   });
 
   it('お茶のwakefulness効果は飲んだ量に比例する', () => {
-    const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     actor.setProperty(hydrationId, 0);
     actor.setProperty(wakefulnessId, 0);
     const canteen = spawnContainer('canteen', 'tea', 125); // 1回分(250)の半分しか無い
 
-    expect(canteen.tryExecuteAction('drink', actor, session)).toBe(true);
+    expect(canteen.tryExecuteAction('drink', actor)).toBe(true);
 
     expect(actor.getNumber(hydrationId), '在庫の分だけ飲む（125mL = 5 tick分）').toBe(5);
     expect(actor.getNumber(wakefulnessId), 'linked_addは実際に移った量に比例する').toBe(1);
   });
 
   it('油にはdrinkアクションが無い', () => {
-    const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     const canteen = spawnContainer('canteen', 'oil', 1000);
 
-    expect(canteen.tryExecuteAction('drink', actor, session), '飲用不可の液体はdrinkを持たない').toBe(false);
+    expect(canteen.tryExecuteAction('drink', actor), '飲用不可の液体はdrinkを持たない').toBe(false);
   });
 
   /**
@@ -270,11 +262,10 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     ['sunny', -2],
     ['scorching', -3],
   ])('coconut_bowlの昼の蒸発量は日差しの強さ(%s)で決まる', (weather, expectedDelta) => {
-    const session = new WorldSession(codex);
     const world = spawnWorld(weather);
     const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world);
 
-    bowl.tick(session);
+    bowl.tick();
 
     expect(amountIn(bowl)).toBe(100 + expectedDelta);
   });
@@ -285,11 +276,10 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     ['sunny', -6],
     ['scorching', -8],
   ])('jarの昼の蒸発量は日差しの強さ(%s)で決まる', (weather, expectedDelta) => {
-    const session = new WorldSession(codex);
     const world = spawnWorld(weather);
     const jar = spawnContainerUnderWorld('jar', 'water', 200, world);
 
-    jar.tick(session);
+    jar.tick();
 
     expect(amountIn(jar)).toBe(200 + expectedDelta);
   });
@@ -298,11 +288,10 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     ['coconut_bowl', -1],
     ['jar', -2],
   ])('夜(%s)は日射の上乗せが消え、基礎の蒸発だけが残る', (containerName, expectedDelta) => {
-    const session = new WorldSession(codex);
     const world = spawnWorld('scorching', 0); // 夜はsunlightが0にクランプされる
     const container = spawnContainerUnderWorld(containerName, 'water', 200, world);
 
-    container.tick(session);
+    container.tick();
 
     expect(amountIn(container)).toBe(200 + expectedDelta);
   });
@@ -311,11 +300,10 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     ['coconut_bowl', -2],
     ['jar', -6],
   ])('朝夕(%s)の日差しは昼より弱い', (containerName, expectedDelta) => {
-    const session = new WorldSession(codex);
     const world = spawnWorld('scorching', 7); // sunlight 12（昼のsunnyと同値）
     const container = spawnContainerUnderWorld(containerName, 'water', 200, world);
 
-    container.tick(session);
+    container.tick();
 
     expect(amountIn(container)).toBe(200 + expectedDelta);
   });
@@ -326,11 +314,10 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     ['heavy_rain', 20],
     ['storm', 40],
   ])('coconut_bowlに溜まる雨の量は降り方(%s)で決まる', (weather, expectedDelta) => {
-    const session = new WorldSession(codex);
     const world = spawnWorld(weather);
     const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world);
 
-    bowl.tick(session);
+    bowl.tick();
 
     expect(amountIn(bowl)).toBe(100 + expectedDelta);
   });
@@ -340,120 +327,109 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     ['heavy_rain', 40],
     ['storm', 80],
   ])('jarに溜まる雨の量は降り方(%s)で決まる', (weather, expectedDelta) => {
-    const session = new WorldSession(codex);
     const world = spawnWorld(weather);
     const jar = spawnContainerUnderWorld('jar', 'water', 100, world);
 
-    jar.tick(session);
+    jar.tick();
 
     expect(amountIn(jar)).toBe(100 + expectedDelta);
   });
 
   it.each(['canteen', 'pot', 'bottle'])('密閉容器(%s)には雨が溜まらない', (objectName) => {
-    const session = new WorldSession(codex);
     const world = spawnWorld('storm');
     const container = spawnContainerUnderWorld(objectName, 'water', 100, world);
 
-    container.tick(session);
+    container.tick();
 
     expect(amountIn(container)).toBe(100);
   });
 
   it('雨で増えるのは水だけで、茶の入った容器は開いていても増えない', () => {
-    const session = new WorldSession(codex);
     const world = spawnWorld('storm');
     const bowl = spawnContainerUnderWorld('coconut_bowl', 'tea', 100, world);
 
-    bowl.tick(session);
+    bowl.tick();
 
     expect(amountIn(bowl)).toBe(100);
   });
 
   it('capacityを超えて降った分はあふれて失われる', () => {
-    const session = new WorldSession(codex);
     const world = spawnWorld('storm'); // ヤシの器へ1tickに40mL
     const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 240, world);
 
-    bowl.tick(session);
+    bowl.tick();
 
     expect(amountIn(bowl), '満杯(250)で止まる').toBe(250);
   });
 
   it('雨が降っていれば、空の容器に雨を貯め始められる', () => {
-    const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     const world = spawnWorld('light_rain');
     const bowl = spawnEmptyUnderWorld('coconut_bowl', world);
 
     expect(bowl.actionUnmetRequirement('collect_rain', actor)).toBeUndefined();
-    expect(bowl.tryExecuteAction('collect_rain', actor, session)).toBe(true);
+    expect(bowl.tryExecuteAction('collect_rain', actor)).toBe(true);
 
     expect(contentOf(bowl)?.name, '溜まるのは水').toBe('water_liquid');
     expect(amountIn(bowl), '最少の量で始まり、以後は降っている間に増える').toBe(1);
   });
 
   it('貯め始めた雨は、そのまま降り続けるぶんだけ増える', () => {
-    const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     const world = spawnWorld('light_rain');
     const bowl = spawnEmptyUnderWorld('coconut_bowl', world);
 
-    bowl.tryExecuteAction('collect_rain', actor, session);
-    bowl.tick(session);
+    bowl.tryExecuteAction('collect_rain', actor);
+    bowl.tick();
 
     expect(amountIn(bowl)).toBe(1 + 10);
   });
 
   it('雨が降っていなければ貯められず、理由not_rainingを返す', () => {
-    const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     const world = spawnWorld('clear');
     const bowl = spawnEmptyUnderWorld('coconut_bowl', world);
 
     expect(bowl.actionUnmetRequirement('collect_rain', actor)?.reasonName).toBe('not_raining');
-    expect(bowl.tryExecuteAction('collect_rain', actor, session)).toBe(false);
+    expect(bowl.tryExecuteAction('collect_rain', actor)).toBe(false);
     expect(contentOf(bowl), '空のまま').toBeUndefined();
   });
 
   it('中身の入った容器では雨を貯めるアクションが出ない（操作が中身へ委譲されるため）', () => {
-    const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     const world = spawnWorld('light_rain');
     const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world);
 
-    expect(bowl.tryExecuteAction('collect_rain', actor, session)).toBe(false);
+    expect(bowl.tryExecuteAction('collect_rain', actor)).toBe(false);
 
     expect(amountIn(bowl), '溜まり続けるのはpassiveの仕事で、操作は要らない').toBe(100);
   });
 
   it.each(['canteen', 'pot', 'bottle'])('密閉容器(%s)は雨を貯めるアクション自体を持たない', (name) => {
-    const session = new WorldSession(codex);
     const actor = spawn(SAMPLE_CHARACTER);
     const world = spawnWorld('storm');
     const container = spawnEmptyUnderWorld(name, world);
 
-    expect(container.tryExecuteAction('collect_rain', actor, session)).toBe(false);
+    expect(container.tryExecuteAction('collect_rain', actor)).toBe(false);
     expect(contentOf(container)).toBeUndefined();
   });
 
   it.each(['canteen', 'pot', 'bottle'])('密閉容器(%s)は蒸発しない', (objectName) => {
-    const session = new WorldSession(codex);
     const world = spawnWorld('scorching');
     const container = spawnContainerUnderWorld(objectName, 'water', 100, world);
 
-    container.tick(session);
+    container.tick();
 
     expect(amountIn(container)).toBe(100);
   });
 
   it('蒸発で量が尽きると中身のインスタンスごと消える', () => {
-    const session = new WorldSession(codex);
     const world = spawnWorld('clear');
     const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 1, world);
 
-    bowl.tick(session);
+    bowl.tick();
 
-    expect(contentOf(bowl), '量が0の液体は存在しない（quantitativeの不変条件）').toBeUndefined();
+    expect(contentOf(bowl), '量が0なら中身の軸が落ちて素の器へ戻る').toBeUndefined();
   });
 
   it('中身の液体は器から出せない', () => {
@@ -466,46 +442,42 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   });
 
   it('空の容器へ注ぐと、注ぎ先がその液体の変種になる', () => {
-    const session = new WorldSession(codex);
     const empty = spawn('canteen');
     const jar = spawnContainer('jar', 'water', 800);
 
     // 宣言を持つのは中身入りの側だけなので、selfは注ぎ元・draggedは空の容器（12.3節）。
-    expect(jar.tryExecuteCombination(empty, undefined, 'pour_into_empty', session)).toBe(true);
+    expect(jar.tryExecuteCombination(empty, undefined, 'pour_into_empty')).toBe(true);
 
     expect(amountIn(empty), '全量が移る').toBe(800);
     expect(jar.def.name, '注ぎ切った側は空の容器へ戻る').toBe('jar');
   });
 
   it('同じ種類の中身が入った容器へ注ぐと継ぎ足される', () => {
-    const session = new WorldSession(codex);
     const canteen = spawnContainer('canteen', 'water', 400);
     const jar = spawnContainer('jar', 'water', 500);
 
-    expect(canteen.tryExecuteCombination(jar, undefined, 'pour_into_filled', session)).toBe(true);
+    expect(canteen.tryExecuteCombination(jar, undefined, 'pour_into_filled')).toBe(true);
 
     expect(amountIn(canteen)).toBe(900);
     expect(jar.def.name, '注ぎ切った側は空の容器へ戻る').toBe('jar');
   });
 
   it('capacityに入りきらない量は注ぎ元に残る', () => {
-    const session = new WorldSession(codex);
     const bowl = spawn('coconut_bowl'); // capacity 250
     const jar = spawnContainer('jar', 'water', 1000);
 
-    expect(jar.tryExecuteCombination(bowl, undefined, 'pour_into_empty', session)).toBe(true);
+    expect(jar.tryExecuteCombination(bowl, undefined, 'pour_into_empty')).toBe(true);
 
     expect(amountIn(bowl), '入る分だけ入る').toBe(250);
     expect(amountIn(jar), '残りは注ぎ元に留まる').toBe(750);
   });
 
   it('異なる種類の中身が入った容器へは注げない', () => {
-    const session = new WorldSession(codex);
     const canteen = spawnContainer('canteen', 'tea', 400);
     const jar = spawnContainer('jar', 'water', 500);
 
     expect(canteen.combinationsWith(jar, undefined), '混ぜる組み合わせがそもそも現れない').toEqual([]);
-    canteen.tryExecuteCombination(jar, undefined, 'pour_into_filled', session);
+    canteen.tryExecuteCombination(jar, undefined, 'pour_into_filled');
 
     expect(amountIn(canteen), '混ざらない（種類ごとのタグに合致しない）').toBe(400);
     expect(amountIn(jar)).toBe(500);

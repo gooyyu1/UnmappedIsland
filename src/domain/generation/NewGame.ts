@@ -124,6 +124,6 @@ function spawnSingletons(session: WorldSession, worldInstance: WorldObject): voi
     if (globalId === worldInstance.def.globalId) continue;
 
     const instance = session.spawn(globalId);
-    if (!instance.moveIntoFirstAcceptingSlot(worldInstance, false, session)) instance.destroy();
+    if (!instance.moveIntoFirstAcceptingSlot(worldInstance, false)) instance.destroy();
   }
 }

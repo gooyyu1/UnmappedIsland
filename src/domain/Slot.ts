@@ -159,42 +159,12 @@ export class Slot {
   }
 
   /**
-   * 量的オブジェクト（7.6節）をこのスロットへ何単位まで受け入れられるか。capacity未指定なら無制限
-   * （Number.POSITIVE_INFINITY）。既に入っている量の分だけ空きが減る。
-   */
-  remainingCapacity(volumePropertyGlobalId: number): number {
-    if (this.def.capacity === undefined) return Number.POSITIVE_INFINITY;
-    return this.def.capacity - this.sumVolume(volumePropertyGlobalId);
-  }
-
-  /**
-   * 中身の量が上限（capacity）を超えている分。超えていなければ0。中身自身の積分（passivesのadd）は上限を
-   * 知らずに量を増やせるため（降雨で溜まる水）、超過分を捨てる側がこの量を問い合わせる。
-   */
-  overflowingVolume(volumePropertyGlobalId: number): number {
-    return Math.max(0, -this.remainingCapacity(volumePropertyGlobalId));
-  }
-
-  /**
    * 中身のかさ（7.3節のvolume）が上限（capacity）に対して占める割合（0〜1）。上限を持たないスロットは
    * 割合を定義できないためundefined。
    */
   fillRatio(volumePropertyGlobalId: number): number | undefined {
     if (this.def.capacity === undefined || this.def.capacity <= 0) return undefined;
     return Math.min(1, this.sumVolume(volumePropertyGlobalId) / this.def.capacity);
-  }
-
-  /**
-   * 量的オブジェクトの合流先（同じ型の在中インスタンス）。同種は1インスタンスに保たれる前提のため
-   * 最初の1つを返す。枠に空きが無い場合はundefined（異種の液体が既にいる場合など）。
-   */
-  findVolumeMergeTarget(candidate: WorldObject): WorldObject | undefined {
-    return this.contents.find((o) => o.def.globalId === candidate.def.globalId);
-  }
-
-  /** 型だけを判定する（7.2節）。量的オブジェクトはcapacityをかさとして別に扱うため分けて使う。 */
-  acceptsByRule(candidate: WorldObject): boolean {
-    return this.def.acceptsAnywhere(candidate.def);
   }
 
   /**
@@ -416,8 +386,8 @@ export class Slot {
   /**
    * このObjectStackがセルの並びの何番目にあるか（＝位置。枠数固定のスロットでは固定番号）。属していなければ-1。
    * 位置を知りたい呼び出し側は、対象の具体的なObjectStack（cells / findStackContaining / findMatchingStackで
-   * 得る）を渡す。型（ObjectDef）では引かない——represented_byが絡むと同じ外側Defでも別スタックが並びうるため、
-   * Defは位置を一意に決めない。
+   * 得る）を渡す。型（ObjectDef）では引かない——束ねない型（stackable: false）は同じDefでも1個ずつ
+   * 別スタックになるため、Defは位置を一意に決めない。
    */
   indexOfStack(stack: ObjectStack): number {
     return this._cells.indexOf(stack);

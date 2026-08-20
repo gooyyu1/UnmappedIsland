@@ -1,7 +1,6 @@
 import type { WorldObject } from './WorldObject';
 import type { DefNames, DescriptionToken } from './Description';
 import { propertyRef, slotRef, stageRef, text } from './Description';
-import { LocalIndexMap } from './LocalIndexMap';
 import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
 
@@ -327,8 +326,7 @@ export class ConditionNode {
     const target = resolveRoot(this.root!);
     if (target?.parent === undefined) return false;
 
-    const slotLocal = target.parent.def.slotLayout.toLocal(this.slotGlobalId!);
-    return slotLocal !== LocalIndexMap.missing && target.parentSlotLocalId === slotLocal;
+    return target.parentSlot?.def.globalId === this.slotGlobalId;
   }
 
   private evaluateSlotContent(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {

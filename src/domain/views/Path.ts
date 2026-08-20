@@ -1,6 +1,5 @@
 import type { NameRegistry } from '../NameRegistry';
 import type { WorldObject } from '../WorldObject';
-import type { WorldSession } from '../WorldSession';
 
 /**
  * 道（locations.yamlのpath object_def）に対する、UI/ゲームロジック向けの型付きビュー。Worldと同じ理由で継承では
@@ -59,7 +58,7 @@ export class Path {
   }
 
   /** この道を通って移動する（YAML側のtravelアクション: 未発見なら不成立、成功ならactorが移動先へ移り、travel_minutes分の時間が進む）。 */
-  travel(actor: WorldObject | undefined, session: WorldSession): boolean {
-    return this.instance.tryExecuteAction('travel', actor, session);
+  travel(actor: WorldObject | undefined): boolean {
+    return this.instance.tryExecuteAction('travel', actor);
   }
 }

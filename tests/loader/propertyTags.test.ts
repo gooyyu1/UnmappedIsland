@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 
@@ -14,8 +14,7 @@ describe('プロパティのタグ', () => {
   }
 
   function instanceOf(codex: WorldCodex, objectDefName: string): WorldObject {
-    const def = codex.objects.get(codex.objectNames.getId(objectDefName));
-    return new WorldObject(1, def, new WorldSession(codex));
+    return new WorldSession(codex).spawn(codex.objectNames.getId(objectDefName));
   }
 
   function propertyNamesWithTag(codex: WorldCodex, object: WorldObject, tagName: string): string[] {

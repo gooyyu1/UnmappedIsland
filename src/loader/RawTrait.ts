@@ -18,13 +18,10 @@ export class RawTrait {
   passives: YAMLSeq | undefined;
   stackOrder: YAMLMap | undefined;
 
-  /** represented_by（7.6節）で指定されたスロット名。未指定ならundefined。 */
-  representedBy: string | undefined;
-
   /** visible_slots（7.11節）で並べられたスロット名。未指定なら空。 */
   visibleSlots: readonly string[] = [];
 
-  /** storage（7.12節）。物を溜める入れ物として使う型か。quantitativeと同じくORで合成する。 */
+  /** storage（7.12節）。物を溜める入れ物として使う型か。tagsと同じくORで合成する。 */
   isStorage = false;
 
   /** art_by_stage（6.4節）で指定されたプロパティ名。未指定ならundefined。 */
@@ -33,9 +30,6 @@ export class RawTrait {
   /** bound_to_owner（7.9節）。単独では存在できない型か。 */
   boundToOwner = false;
   notStackable = false;
-
-  /** quantitative（7.6節）。個数ではなく量で存在する型か。 */
-  quantitative = false;
 
   actions: YAMLMap | undefined;
   combinations: YAMLMap | undefined;

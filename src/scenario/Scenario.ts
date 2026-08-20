@@ -258,7 +258,7 @@ function placeInside(
 
     for (const name of contents) {
       const spawned = game.session.spawn(objectIdOf(codex, name));
-      if (!spawned.moveIntoFirstAcceptingSlot(owner, false, game.session))
+      if (!spawned.moveIntoFirstAcceptingSlot(owner, false))
         throw new YamlLoadError(`シナリオ: '${name}' を '${ownerName}' の中へ入れられません。`);
     }
   }

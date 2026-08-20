@@ -4,7 +4,7 @@
 
 スロット（親子関係とコンテナ、[`GameElementDefinition.md`](./GameElementDefinition.md) 7節）が
 実行時にどう実装されているかを記述する設計ドキュメントです。重さの伝播は
-[`ContainerSystem.md`](./ContainerSystem.md)、`represented_by` を使う代表例は
+[`ContainerSystem.md`](./ContainerSystem.md)、中身入りの容器は
 [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) を参照してください。
 
 **データ構造はセルの並びとスタックの2階層**（1 節）で、受け入れ判定は重ならない3つの問い——型が合うか
@@ -24,7 +24,7 @@
 - 親子関係の正の情報源は親側のスロット配列で、子側の `WorldObject.Parent` は逆引きキャッシュ（7.1節）。
 
 出入りは唯一の汎用操作 `move_to_slot`（`WorldObject.MoveToSlot` → `AttachToSlot`）経由のみ。
-親子整合・weight 伝播・passive エッジの登録・代表チェーン再判定という副作用を1箇所に集約する。
+親子整合・weight 伝播・passive エッジの登録という副作用を1箇所に集約する。
 `force: true`（spawn の強制配置フォールバック専用、9.4節）は受け入れ検証だけを飛ばす。
 
 ## 2. 受け入れ判定: 重ならない3つの問い
@@ -108,22 +108,19 @@
 枠の `max`（7.2節）は**束ねられる型にだけ効く**。`stackable: false` な型を受ける枠に `max: 4` と書いても
 実質1個で、2通りの言い方ではなく片方の軸がもう片方の有効値を縛るだけ。
 
-## 5. スタックの同一性: 容器の中身まで見る
+## 5. スタックの同一性
 
-同じスタックにまとまる条件は「外側の `ObjectDef` が同じ」だけではない。`ObjectStack` は生成時に、
-seed の**代表チェーン**（自分の `ObjectDef` を先頭に、`represented_by` で辿った代表、さらにその
-代表…の `ObjectDef` 列）をスナップショットし（`WorldObject.CaptureRepresentationChain`）、
-合流判定（`Matches`）はこの列の**完全一致**を要求する。これにより、水入り水筒と茶入り水筒は
-外側が同じ `canteen` でも別スタックになる。
+`ObjectStack` は生成時に seed の `ObjectDef` をスナップショットし、合流判定（`Matches`）はこれとの
+一致を要求する。水入り水筒と茶入り水筒が別スタックになるのは、中身入りの容器が中身ごとに別の型だから
+（[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 1 節）で、スタック側は型を1つ見るだけでよい。
 
-- チェーンは生成後不変。中身が入れ替わって列に合致しなくなったとき動くのは**メンバーの側**:
-  `move_to_slot` が代表スロットの出入りを検知して `OnRepresentationChanged` を呼び、所属スタックの
-  `Restack`（抜いて入れ直し）で「同種は1スタックにまとまる」不変条件を回復する。親方向への伝播は
-  `represented_by` のネスト分だけで有界。
+- スナップショットは生成後不変。`become`（9.9節）でメンバーの型が変わり合致しなくなったとき動くのは
+  **メンバーの側**で、所属スタックの `Restack`（抜いて入れ直し）が「同種は1スタックにまとまる」
+  不変条件を回復する。
 - 「同種のみが積み重なる」は `ObjectStack.TryInsert` 自身が保証し、呼び出し側の事前確認に
   依存しない。
-- セルの位置を型（`ObjectDef`）で引くことはしない: 代表チェーンが絡むと同じ外側の型でも複数
-  スタックが並びうるため、位置は常に具体的な `ObjectStack` で特定する（`Slot.IndexOfStack`）。
+- セルの位置を型（`ObjectDef`）で引くことはしない: 位置は常に具体的な `ObjectStack` で特定する
+  （`Slot.IndexOfStack`）。
 
 ## 6. スタック内の並び順（stack_order）
 

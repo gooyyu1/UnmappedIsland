@@ -70,7 +70,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
     const plant = spawnInto('abaca', jungle, 'fixtures');
     const knife = armPlayer();
 
-    expect(plant.tryExecuteCombination(knife, player, 'fell', session)).toBe(true);
+    expect(plant.tryExecuteCombination(knife, player, 'fell')).toBe(true);
 
     expect(carriedBy(player).filter((name) => name === 'banana_stem')).toHaveLength(5);
     expect(carriedBy(player), '実は付かない').not.toContain('banana');
@@ -82,7 +82,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
     const plant = spawnInto('banana_plant', jungle, 'fixtures');
     const knife = armPlayer();
 
-    expect(plant.tryExecuteCombination(knife, player, 'fell', session)).toBe(true);
+    expect(plant.tryExecuteCombination(knife, player, 'fell')).toBe(true);
 
     const carried = carriedBy(player);
     expect(carried.filter((name) => name === 'banana')).toHaveLength(2);
@@ -104,7 +104,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
     const stem = spawnInto('banana_stem', jungle, 'items');
     const knife = armPlayer();
 
-    expect(stem.tryExecuteCombination(knife, player, 'strip', session)).toBe(true);
+    expect(stem.tryExecuteCombination(knife, player, 'strip')).toBe(true);
 
     expect(itemsOn(jungle), '元の茎が居た場所へ2束が並んで置き換わる').toEqual([
       'plant_fiber',
@@ -118,7 +118,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
     const first = spawnInto('plant_fiber', jungle, 'items');
     const second = spawnInto('plant_fiber', jungle, 'items');
 
-    expect(first.tryExecuteCombination(second, player, 'spin', session)).toBe(true);
+    expect(first.tryExecuteCombination(second, player, 'spin')).toBe(true);
 
     expect(itemsOn(jungle)).toEqual(['yarn']);
     expect(weightsOn(jungle), '繊維60g×2から、撚りきれない屑20gが落ちる').toEqual([100]);
@@ -128,7 +128,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
     const first = spawnInto('yarn', jungle, 'items');
     const second = spawnInto('yarn', jungle, 'items');
 
-    expect(first.tryExecuteCombination(second, player, 'ply', session)).toBe(true);
+    expect(first.tryExecuteCombination(second, player, 'ply')).toBe(true);
 
     expect(itemsOn(jungle)).toEqual(['cord']);
     expect(weightsOn(jungle), '糸100g×2がそのまま紐200gになる').toEqual([200]);

@@ -137,9 +137,7 @@ export function cardOperationsOf(
   locale: Localization,
 ): CardOperationsFactory {
   /**
-   * そのカードで実行できるアクション。宣言を読むのは操作対象の代表（represented_by、ActionSystem.md
-   * 1節）で、実行はカードが映しているオブジェクト自身へ頼む（代表の解決はエンジン側が行う）。
-   * 水筒のカードに、中身の水のdrinkがボタンとして出る。
+   * そのカードで実行できるアクション（ActionSystem.md 1節）。
    *
    * `showMenu: never`のアクションはボタンにしない（GameElementDefinition.md 11.1節）。プレイヤーが
    * 押す機会が無い操作——動物の1手のように時間の側が起こすもの——のための宣言。
@@ -148,9 +146,8 @@ export function cardOperationsOf(
    * 足したものを分けない**——ボタンにする側は、どちらも同じ1つの並びとして受け取る。
    */
   const actionsOf = (instance: WorldObject): readonly CardAction[] => {
-    const target = instance.resolveInteractionTarget();
-    const texts = locale.object(target.def.name);
-    const fromDefinition = target.def.actions
+    const texts = locale.object(instance.def.name);
+    const fromDefinition = instance.def.actions
       .filter((action) => action.showMenu === 'always')
       .map((action) => {
         const declared = texts.interaction(action.name);
@@ -161,7 +158,7 @@ export function cardOperationsOf(
           description: declared.description,
           minutes: instance.actionMinutes(action.name, game.player.instance),
           execute: () => {
-            instance.tryExecuteAction(action.name, game.player.instance, game.session);
+            instance.tryExecuteAction(action.name, game.player.instance);
           },
           enabled: unmet === undefined,
           reason: unmet?.reasonName === undefined ? undefined : locale.reason(unmet.reasonName),
@@ -269,8 +266,7 @@ export function cardOperationsOf(
       movedIds: carriedOf(moved, count).map((instance) => instance.instanceId),
       execute: () => {
         for (const candidate of carried) {
-          if (!self.tryExecuteCombination(candidate, game.player.instance, combination.name, game.session))
-            break;
+          if (!self.tryExecuteCombination(candidate, game.player.instance, combination.name)) break;
         }
       },
     };
@@ -281,8 +277,7 @@ export function cardOperationsOf(
     (item: WorldObject) =>
     (at: CardPlacement): (() => void) | undefined => {
       const parent = item.parent;
-      const fixed =
-        parent !== undefined && parent.getSlotByLocalId(item.parentSlotLocalId).def.cellCount !== undefined;
+      const fixed = parent !== undefined && item.parentSlot?.def.cellCount !== undefined;
       if (at.kind === 'cell' && fixed) {
         return () => {
           item.moveToCellInParentSlot(at.index);

@@ -94,13 +94,12 @@ describe('locations.yamlの土地・道定義', () => {
       const max = land.def.getPropertyDef(progressId)?.range?.max ?? 0;
 
       land.setProperty(progressId, max - 1);
-      expect(land.tryExecuteAction('explore', undefined, session), `${name}: 探索できる`).toBe(true);
+      expect(land.tryExecuteAction('explore', undefined), `${name}: 探索できる`).toBe(true);
       expect(land.getNumber(progressId), `${name}: 探索1回で進捗が+1される（どの抽選候補でも）`).toBe(max);
 
-      expect(
-        land.tryExecuteAction('explore', undefined, session),
-        `${name}: 探索率100%でも探索は続けられる`,
-      ).toBe(true);
+      expect(land.tryExecuteAction('explore', undefined), `${name}: 探索率100%でも探索は続けられる`).toBe(
+        true,
+      );
       expect(land.getNumber(progressId), `${name}: 100%を超えた進捗は上限に張り付く`).toBe(max);
     }
   });
@@ -113,7 +112,7 @@ describe('locations.yamlの土地・道定義', () => {
     const view = new Location(land, codex);
 
     // 100%到達後も探索は続けられるため、回数を数えて探索率100%で止める。
-    for (let i = 0; i < view.explorationProgressMax; i++) view.explore(undefined, session);
+    for (let i = 0; i < view.explorationProgressMax; i++) view.explore(undefined);
 
     expect(view.explorationProgress).toBe(view.explorationProgressMax);
     const itemTag = codex.tagNames.getId('item');
@@ -136,7 +135,7 @@ describe('locations.yamlの土地・道定義', () => {
     land.setProperty(codex.propertyNames.getId('chalice_find'), 10000);
     const view = new Location(land, codex);
 
-    for (let i = 0; i < 30; i++) view.explore(undefined, session);
+    for (let i = 0; i < 30; i++) view.explore(undefined);
 
     const chalice = codex.objectNames.getId('golden_chalice');
     expect(
@@ -148,9 +147,10 @@ describe('locations.yamlの土地・道定義', () => {
   it('探索→道の発見→移動が一連の流れとして機能する', () => {
     // 探索 → 進捗が必要値に達した道の発見（隠しスロット→公開スロット） → 移動、の一連の流れを
     // 実ファイルの定義だけで検証する（地形生成は使わず、道の配線はこのテストが手で行う）。
-    const worldInstance = new WorldObject(0, def('world'), new WorldSession(codex));
+    const session = new WorldSession(codex, undefined, new SeededRng(42));
+    const worldInstance = new WorldObject(0, def('world'), session);
     const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
-    const session = new WorldSession(codex, worldView, new SeededRng(42));
+    session.adoptWorld(worldView);
 
     const grassland = session.spawn(codex.objectNames.getId('grassland'));
     const forest = session.spawn(codex.objectNames.getId('forest'));
@@ -173,14 +173,14 @@ describe('locations.yamlの土地・道定義', () => {
     const pathView = new Path(pathToForest, codex.propertyNames);
 
     // 進捗2までは道は見つからず、未発見の道は移動アクションも成立しない（in_slot: fixtures条件）。
-    expect(grasslandView.explore(character, session)).toBe(true);
-    expect(grasslandView.explore(character, session)).toBe(true);
+    expect(grasslandView.explore(character)).toBe(true);
+    expect(grasslandView.explore(character)).toBe(true);
     expect(pathsIn(grasslandView, codex), '進捗2ではまだ道は見つからない').toHaveLength(0);
-    expect(pathView.travel(character, session), '未発見の道は移動できない').toBe(false);
+    expect(pathView.travel(character), '未発見の道は移動できない').toBe(false);
     expect(character.parent).toBe(grassland);
 
     // 進捗3で道が発見される。
-    expect(grasslandView.explore(character, session)).toBe(true);
+    expect(grasslandView.explore(character)).toBe(true);
     expect(pathsIn(grasslandView, codex), '進捗3（required_progress）で道が公開される').toContain(
       pathToForest,
     );
@@ -188,7 +188,7 @@ describe('locations.yamlの土地・道定義', () => {
     // 発見済みの道で移動すると、プレイヤーは移動先のcharactersスロットへ移り、移動時間分だけ時間が進む。
     const minutesBefore = worldView.hour * 60 + worldView.minute;
     expect(minutesBefore, '草原の探索3回でduration 15分×3が経過している').toBe(15 * 3);
-    expect(pathView.travel(character, session)).toBe(true);
+    expect(pathView.travel(character)).toBe(true);
 
     expect(character.parent, '移動で移動先の土地へ移る').toBe(forest);
     expect(new Location(forest, codex).characters, '移動先ではcharactersスロットに入る').toContain(character);

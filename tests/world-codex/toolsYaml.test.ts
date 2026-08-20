@@ -100,7 +100,7 @@ describe('tools.yamlの道具定義', () => {
     const [combination] = target.combinationsWith(hammer, undefined);
     expect(combination?.name, '石は石とのcombinationにマッチする').toBe('knap');
 
-    expect(target.tryExecuteCombination(hammer, undefined, 'knap', session)).toBe(true);
+    expect(target.tryExecuteCombination(hammer, undefined, 'knap')).toBe(true);
 
     const view = new Location(beach, codex);
     expect(
@@ -180,9 +180,7 @@ describe('石斧を作る', () => {
     expect(wip.def.tags, 'タグの上では刃物').toContain(codex.tagNames.getId('cutting_tool'));
 
     expect(stem.combinationsWith(wip, undefined), '作りかけは相手にならない').toEqual([]);
-    expect(stem.tryExecuteCombination(wip, undefined, 'strip', session), '名指しでも実行できない').toBe(
-      false,
-    );
+    expect(stem.tryExecuteCombination(wip, undefined, 'strip'), '名指しでも実行できない').toBe(false);
 
     const sharpStone = session.spawn(codex.objectNames.getId('sharp_stone'));
     expect(

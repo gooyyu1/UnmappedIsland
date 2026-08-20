@@ -80,7 +80,7 @@ describe.runIf(process.env.RUN_CLIMATE_TESTS === '1')('気候システム(Climat
       };
 
       for (let t = 0; t < SIM_TICKS; t++) {
-        world.tick(session);
+        world.tick();
         trace.weather[t] = world.getNumber(weatherId);
         trace.season[t] = world.getNumber(seasonId);
         trace.seasonCycle[t] = world.getNumber(seasonCycleId);

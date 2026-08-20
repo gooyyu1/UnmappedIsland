@@ -525,7 +525,7 @@ export function fromGameSession(
     if (parent === undefined) throw new Error(`親スロットに居ない物の札は作れない: ${object.def.name}`);
     return {
       container: parent,
-      slotGlobalId: parent.getSlotByLocalId(object.parentSlotLocalId).def.globalId,
+      slotGlobalId: object.parentSlot!.def.globalId,
     };
   };
 

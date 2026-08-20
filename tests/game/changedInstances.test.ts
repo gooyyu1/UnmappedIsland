@@ -85,7 +85,7 @@ object_defs:
     const stone = placeOnGround('stone');
 
     const origins = originsOf(() => {
-      expect(beast.tryExecuteCombination(stone, undefined, 'grab', session)).toBe(true);
+      expect(beast.tryExecuteCombination(stone, undefined, 'grab')).toBe(true);
     });
 
     expect(origins).toEqual(new Map([[stone.instanceId, beast.instanceId]]));
@@ -98,7 +98,7 @@ object_defs:
 
     const origins = originsOf(() => {
       for (const [index, beast] of beasts.entries()) {
-        expect(beast.tryExecuteCombination(stones[index], undefined, 'grab', session)).toBe(true);
+        expect(beast.tryExecuteCombination(stones[index], undefined, 'grab')).toBe(true);
       }
     });
 
