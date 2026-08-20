@@ -87,7 +87,7 @@ object_defs:
     const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
     session.adoptWorld(new World(worldInstance, codex.propertyNames, codex.symbolNames));
     ground = spawn('ground');
-    expect(ground.moveToSlot(worldInstance, codex.slotNames.getId('locations'))).toBeUndefined();
+    expect(ground.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
     beast = placeOnGround('beast', 'beasts');
   }
 
@@ -95,7 +95,7 @@ object_defs:
 
   function placeOnGround(name: string, slotName = 'items'): WorldObject {
     const object = spawn(name);
-    expect(object.moveToSlot(ground, codex.slotNames.getId(slotName))).toBeUndefined();
+    expect(object.moveToSlot(ground.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return object;
   }
 

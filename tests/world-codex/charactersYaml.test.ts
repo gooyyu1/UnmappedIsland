@@ -51,9 +51,9 @@ function stand(character: string): { player: PlayerCharacter; session: WorldSess
   const worldInstance = new WorldObject(0, def('world'), session);
   session.adoptWorld(new World(worldInstance, codex.propertyNames, codex.symbolNames));
   const beach = session.spawn(codex.objectNames.getId('sandy_beach'));
-  expect(beach.moveToSlot(worldInstance, codex.slotNames.getId('locations'))).toBeUndefined();
+  expect(beach.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
   const instance = session.spawn(codex.objectNames.getId(character));
-  expect(instance.moveToSlot(beach, codex.slotNames.getId('characters'))).toBeUndefined();
+  expect(instance.moveToSlot(beach.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
   return { player: new PlayerCharacter(instance, codex), session };
 }
 

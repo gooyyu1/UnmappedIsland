@@ -27,7 +27,9 @@ describe('製作中オブジェクトの操作と材料の枠', () => {
   function startWeaving(): { game: NewGameSession; wip: WorldObject } {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const wip = game.session.spawn(codex.objectNames.getId(inProgressObjectName('woven_basket', 'woven')));
-    expect(wip.moveToSlot(game.startLocation.instance, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(
+      wip.moveToSlot(game.startLocation.instance.getSlot(codex.slotNames.getId('items'))),
+    ).toBeUndefined();
     return { game, wip };
   }
 
@@ -35,7 +37,7 @@ describe('製作中オブジェクトの操作と材料の枠', () => {
   function intoHand(game: NewGameSession, name: string, count: number): void {
     for (let i = 0; i < count; i += 1) {
       const object = game.session.spawn(codex.objectNames.getId(name));
-      expect(object.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+      expect(object.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     }
   }
 

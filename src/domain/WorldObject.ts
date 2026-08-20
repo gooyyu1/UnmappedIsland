@@ -12,7 +12,6 @@ import { IN_PROGRESS_TAG } from './RecipeDef';
 import type { PropertyDef } from './PropertyDef';
 import { PropertyValue } from './PropertyValue';
 import { Slot } from './Slot';
-import type { WorldPlace } from './WorldChange';
 import type { WorldSession } from './WorldSession';
 
 /** rangeを持つプロパティなら、その両端へ丸めた値。rangeが無ければそのまま（becomeType参照）。 */
@@ -97,10 +96,22 @@ export class WorldObject {
     this.session = session;
 
     this.properties = def.enumeratePropertyDefs().map((pd) => new PropertyValue(pd, this));
-    this.slots = def.enumerateSlotDefs().map((sd) => new Slot(sd));
+    this.slots = def.enumerateSlotDefs().map((sd) => new Slot(sd, this));
 
     // 生成時はまだトポロジが無いため、Self関係のみ登録する。Parent/Child/Ancestorはmove_to_slot以降に登録される。
     def.passives.registerRelation(this, 'self', true);
+  }
+
+  /**
+   * tryGetSlotと同じ引き方で、持っていないことを許さない版（getPropertyと同じ対）。名指しした枠が
+   * 必ずあるはずの場所——生成・シナリオ・ビューが自分の型の枠を引くとき——に使う。
+   */
+  getSlot(globalSlotId: number): Slot {
+    const slot = this.tryGetSlot(globalSlotId);
+    if (slot === undefined) {
+      throw new Error(`'${this.def.name}' はスロット(id=${globalSlotId})を持ちません。`);
+    }
+    return slot;
   }
 
   tryGetSlot(globalSlotId: number): Slot | undefined {
@@ -169,13 +180,12 @@ export class WorldObject {
    * 型が合うかではなく今入るかで選ぶので、先の枠が埋まっていれば次の枠が答えになる。**今itemが居る枠は
    * 答えない**——同じ枠へ入れ直すのは入れる操作ではない。
    */
-  putInSlotFor(item: WorldObject): number | undefined {
+  putInSlotFor(item: WorldObject): Slot | undefined {
     const from = item.parent === this ? item.parentSlot : undefined;
     return this.def
       .placementSlotDefs('manual')
-      .find(
-        (slotDef) => slotDef !== from?.def && item.rejectionForMoveTo(this, slotDef.globalId) === undefined,
-      )?.globalId;
+      .map((slotDef) => this.getSlot(slotDef.globalId))
+      .find((slot) => slot !== from && item.rejectionForMoveTo(slot) === undefined);
   }
 
   /**
@@ -236,28 +246,22 @@ export class WorldObject {
    * スロット移動を行う唯一の汎用操作（7.1節の`move_to_slot`）。枠の要件・capacityの検証は対象Slot
    * 自身（Slot.canAccept）に委ねる。
    *
-   * force=trueは検証を飛ばして必ず配置を成功させる（spawnのフォールバック、9.4節専用）。スロット自体が
-   * 存在しない場合はforceでも失敗する。
+   * force=trueは検証を飛ばして必ず配置を成功させる（spawnのフォールバック、9.4節専用）。
    *
    * 戻り値: 成功時はundefined、失敗時はその理由。
    */
-  moveToSlot(newParent: WorldObject, slotGlobalId: number, force = false): string | undefined {
-    return this.attachToSlot(newParent, slotGlobalId, undefined, force);
+  moveToSlot(slot: Slot, force = false): string | undefined {
+    return this.attachToSlot(slot, undefined, force);
   }
 
   /**
    * same_slot専用。置き換えオブジェクトを、originが居たセルを基準に配置する（Slot.placeSameSlot参照）。
    * fixedPositionsで空きが作れず配置できない場合はエラーを返す（＝呼び出し側でfallbackへ委ねる）。
    */
-  insertSameSlot(
-    newParent: WorldObject,
-    slotGlobalId: number,
-    placement: SameSlotPlacement,
-  ): string | undefined {
+  insertSameSlot(slot: Slot, placement: SameSlotPlacement): string | undefined {
     return this.attachToSlot(
-      newParent,
-      slotGlobalId,
-      (slot) => slot.placeSameSlot(this, placement.originCellIndex, placement.kindRemains),
+      slot,
+      (target) => target.placeSameSlot(this, placement.originCellIndex, placement.kindRemains),
       false,
     );
   }
@@ -266,16 +270,16 @@ export class WorldObject {
    * プレイヤーが隙間を指定して入れる手動配置（Slot.tryInsertAtGap参照）。fixedPositionsのスロットで
    * 既存のセルをずらして場所を作れない場合はエラーを返す。
    */
-  moveToSlotAtGap(newParent: WorldObject, slotGlobalId: number, gapIndex: number): string | undefined {
-    return this.attachToSlot(newParent, slotGlobalId, (slot) => slot.tryInsertAtGap(this, gapIndex), false);
+  moveToSlotAtGap(slot: Slot, gapIndex: number): string | undefined {
+    return this.attachToSlot(slot, (target) => target.tryInsertAtGap(this, gapIndex), false);
   }
 
   /**
    * プレイヤーが空きセルを指定して入れる手動配置（Slot.tryInsertAtCell参照）。fixedPositionsのスロット
    * 専用で、そのセルが空いていない場合はエラーを返す。
    */
-  moveToSlotAtCell(newParent: WorldObject, slotGlobalId: number, cellIndex: number): string | undefined {
-    return this.attachToSlot(newParent, slotGlobalId, (slot) => slot.tryInsertAtCell(this, cellIndex), false);
+  moveToSlotAtCell(slot: Slot, cellIndex: number): string | undefined {
+    return this.attachToSlot(slot, (target) => target.tryInsertAtCell(this, cellIndex), false);
   }
 
   /**
@@ -312,13 +316,11 @@ export class WorldObject {
    * 何が移せないかを画面側が場所ごとに覚えていると、ワールド側の宣言と食い違う（設置物のかごを
    * 持ち歩けるようにしたのに、画面がそのレーンを読み取り専用のままにしている、など）。
    */
-  rejectionForMoveTo(newParent: WorldObject, slotGlobalId: number, force = false): string | undefined {
-    const rejection = this.rejectionBeforeSlot(newParent, slotGlobalId);
+  rejectionForMoveTo(slot: Slot, force = false): string | undefined {
+    const rejection = this.rejectionBeforeSlot(slot);
     if (rejection !== undefined) return rejection;
 
-    if (force) return undefined;
-    // rejectionBeforeSlotがスロットの存在を確かめた後なので、ここでは必ず引ける。
-    return newParent.tryGetSlot(slotGlobalId)!.canAccept(this, this.wellKnown, newParent.def.name);
+    return force ? undefined : slot.canAccept(this);
   }
 
   /**
@@ -329,38 +331,30 @@ export class WorldObject {
    * 決まるため（Slot.acceptedCount）。**束をまとめて落とす操作が、落とす前に「何枚ついてくるか」を
    * 決めるための問い**で、ついてきた枚数はそのまま「これだけ入る」という約束になる。
    */
-  acceptedCountForMoveTo(
-    followers: readonly WorldObject[],
-    newParent: WorldObject,
-    slotGlobalId: number,
-  ): number {
+  acceptedCountForMoveTo(followers: readonly WorldObject[], slot: Slot): number {
     const candidates: WorldObject[] = [];
     for (const candidate of [this as WorldObject, ...followers]) {
-      if (candidate.rejectionBeforeSlot(newParent, slotGlobalId) !== undefined) break;
+      if (candidate.rejectionBeforeSlot(slot) !== undefined) break;
       candidates.push(candidate);
     }
     if (candidates.length === 0) return 0;
 
-    return newParent.tryGetSlot(slotGlobalId)!.acceptedCount(candidates, this.wellKnown);
+    return slot.acceptedCount(candidates);
   }
 
   /** 枠の空き（Slot.canAccept）を見るまでもなく移れない理由。移れる個数を数えるときも1つずつ見る。 */
-  private rejectionBeforeSlot(newParent: WorldObject, slotGlobalId: number): string | undefined {
+  private rejectionBeforeSlot(slot: Slot): string | undefined {
     // 入れ物を自分自身や自分の中身の中へ入れると、ツリーから切り離された輪ができる（7.1節）。
     // forceでも許さない——forceが省くのは枠の要件・capacityの判定であって、木構造の不変条件ではない。
-    if (this.contains(newParent)) {
+    if (this.contains(slot.owner)) {
       return `'${this.def.name}' を自分自身の中へは入れられません。`;
     }
 
     // 単独で在れない物は、いったん持ち主に付いたら別の持ち主へは移せない（7.9節）。捻挫は身体から
     // 剥がせないし、道は繋がる土地から外せない。forceでも許さない——枠の要件・capacityの判定ではなく、
     // 「その物がどう存在するか」の不変条件だから。生まれた直後（親を持たない間）の配置は通す。
-    if (this.def.boundToOwner && this._parent !== undefined && this._parent !== newParent) {
+    if (this.def.boundToOwner && this._parent !== undefined && this._parent !== slot.owner) {
       return `'${this.def.name}' は '${this._parent.def.name}' から離せません。`;
-    }
-
-    if (newParent.def.slotLayout.toLocal(slotGlobalId) === LocalIndexMap.missing) {
-      return `'${newParent.def.name}' はスロット(id=${slotGlobalId})を持ちません。`;
     }
 
     return undefined;
@@ -374,16 +368,15 @@ export class WorldObject {
    * 切り離す前に控える——切り離した後では、どこから来たのかを誰も知らない。
    */
   private attachToSlot(
-    newParent: WorldObject,
-    slotGlobalId: number,
+    targetSlot: Slot,
     place: ((slot: Slot) => boolean) | undefined,
     force: boolean,
   ): string | undefined {
-    const rejection = this.rejectionForMoveTo(newParent, slotGlobalId, force);
+    const rejection = this.rejectionForMoveTo(targetSlot, force);
     if (rejection !== undefined) return rejection;
 
-    const targetSlot = newParent.tryGetSlot(slotGlobalId)!;
-    const from = this.currentPlace();
+    const newParent = targetSlot.owner;
+    const from = this._parentSlot;
 
     this.detachFromParent();
 
@@ -398,7 +391,7 @@ export class WorldObject {
       targetSlot.addInternal(this);
     }
 
-    this.session.recordChange(this, from, { parent: newParent, slotGlobalId });
+    this.session.recordChange(this, from, targetSlot);
     this.setParent(newParent, targetSlot);
     this.registerEdgeWith(newParent, true);
     // 祖先対象の登録は、新しい親チェーンが確定した後に行う（detachFromParentでの解除と対、
@@ -418,15 +411,9 @@ export class WorldObject {
    */
   destroy(): void {
     this.spillContentsTo(this._parent);
-    const from = this.currentPlace();
+    const from = this._parentSlot;
     this.detachFromParent();
     this.session.recordChange(this, from, undefined);
-  }
-
-  /** 今の居場所（WorldChange）。どこにも属していなければundefined。 */
-  private currentPlace(): WorldPlace | undefined {
-    if (this._parent === undefined || this._parentSlot === undefined) return undefined;
-    return { parent: this._parent, slotGlobalId: this._parentSlot.def.globalId };
   }
 
   /**
@@ -459,16 +446,13 @@ export class WorldObject {
 
     // 新しい型のスロットを先に組み、中身を宣言順に配ってみる。**受け取れなかった中身は、まだ全部が
     // 噛み合っているこの時点で送り出す**——旧スロットがまだ現役なので、どこから出たかも普段どおり残る。
-    const newSlots = newDef.enumerateSlotDefs().map((slotDef) => new Slot(slotDef));
+    const newSlots = newDef.enumerateSlotDefs().map((slotDef) => new Slot(slotDef, this));
     const rehomed: Array<{ child: WorldObject; slot: Slot }> = [];
     for (const slot of this.slots) {
       const slotLocalId = newDef.slotLayout.toLocal(slot.def.globalId);
       for (const child of [...slot.contents]) {
         const destination = slotLocalId === LocalIndexMap.missing ? undefined : newSlots[slotLocalId];
-        if (
-          destination === undefined ||
-          destination.canAccept(child, this.wellKnown, newDef.name) !== undefined
-        ) {
+        if (destination === undefined || destination.canAccept(child) !== undefined) {
           this.evict(child);
           continue;
         }
@@ -671,7 +655,7 @@ export class WorldObject {
    */
   moveIntoFirstAcceptingSlot(target: WorldObject, force = false): boolean {
     for (const slotDef of target.def.placementSlotDefs('auto'))
-      if (this.moveToSlot(target, slotDef.globalId, force) === undefined) return true;
+      if (this.moveToSlot(target.getSlot(slotDef.globalId), force) === undefined) return true;
 
     return false;
   }

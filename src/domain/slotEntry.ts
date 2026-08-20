@@ -1,4 +1,5 @@
 import { spendDuration } from './actionTime';
+import type { Slot } from './Slot';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 
@@ -16,17 +17,15 @@ import type { WorldSession } from './WorldSession';
  */
 export function putIntoSlot(
   item: WorldObject,
-  owner: WorldObject,
-  slotGlobalId: number,
+  slot: Slot,
   actor: WorldObject | undefined,
   session: WorldSession,
   place: () => void,
 ): void {
   // 入らないと分かっているなら時間も取らない。時間だけ取られて何も入らない、が起きないようにする。
-  if (item.rejectionForMoveTo(owner, slotGlobalId) !== undefined) return;
+  if (item.rejectionForMoveTo(slot) !== undefined) return;
 
-  const minutes = owner.def.getSlotDef(slotGlobalId)?.putInMinutes(owner, item, actor) ?? 0;
-  if (!spendDuration(minutes, session, [item, owner])) return;
+  if (!spendDuration(slot.putInMinutes(item, actor), session, [item, slot.owner])) return;
 
   place();
 }

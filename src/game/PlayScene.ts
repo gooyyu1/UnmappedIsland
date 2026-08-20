@@ -543,7 +543,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** エラー報告に載せる、場所1つ。同じ型の入れ物が複数あっても見分けられるよう、持ち主も出す。 */
   private placeText(place: CardPlace): string {
-    return `${place.container.def.name}#${place.container.instanceId}の${this.view.slotViewOf(place).key}`;
+    return `${place.owner.def.name}#${place.owner.instanceId}の${this.view.slotViewOf(place).key}`;
   }
 
   /** エラー報告に載せる、今の画面の状態（errorReport.setStateReporter）。 */
@@ -1646,7 +1646,7 @@ export class PlayScene extends ResponsiveScene {
     // （構造の部品）も開いたままにできない。手に持っている入れ物は持ち越せるが、開き直せば済むので
     // 持ち主で一律に決める。
     const place = this.childWindowPlace;
-    if (place !== undefined && place.container !== this.gameSession.player.instance) {
+    if (place !== undefined && place.owner !== this.gameSession.player.instance) {
       this.closeChildWindow();
     }
   }

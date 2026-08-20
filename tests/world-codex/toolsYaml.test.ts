@@ -96,12 +96,12 @@ describe('tools.yamlの道具定義', () => {
     const session = new WorldSession(codex, worldView);
 
     const beach = session.spawn(codex.objectNames.getId('sandy_beach'));
-    expect(beach.moveToSlot(worldInstance, codex.slotNames.getId('locations'))).toBeUndefined();
+    expect(beach.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
 
     const itemsSlotId = codex.slotNames.getId('items');
     const target = session.spawn(codex.objectNames.getId('stone'));
     const hammer = session.spawn(codex.objectNames.getId('stone'));
-    expect(target.moveToSlot(beach, itemsSlotId)).toBeUndefined();
+    expect(target.moveToSlot(beach.getSlot(itemsSlotId))).toBeUndefined();
 
     const [combination] = target.combinationsWith(hammer, undefined);
     expect(combination?.name, '石は石とのcombinationにマッチする').toBe('knap');
@@ -146,7 +146,7 @@ describe('石斧を作る', () => {
     const session = new WorldSession(codex, worldView);
 
     const field = session.spawn(codex.objectNames.getId('rocky_field'));
-    expect(field.moveToSlot(worldInstance, codex.slotNames.getId('locations'))).toBeUndefined();
+    expect(field.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
     return { session, field };
   }
 
@@ -165,7 +165,9 @@ describe('石斧を作る', () => {
     const materialsId = codex.slotNames.getId(MATERIALS_SLOT);
     const wip = startAxe(session, field);
     const put = (name: string) =>
-      expect(session.spawn(codex.objectNames.getId(name)).moveToSlot(wip, materialsId)).toBeUndefined();
+      expect(
+        session.spawn(codex.objectNames.getId(name)).moveToSlot(wip.getSlot(materialsId)),
+      ).toBeUndefined();
 
     put('thick_branch');
     expect(advanceCrafting(wip, recipe, materialsId, codex, session), '柄を削り出す').toBe(true);
@@ -187,7 +189,7 @@ describe('石斧を作る', () => {
     const wip = startAxe(session, field);
 
     const stem = session.spawn(codex.objectNames.getId('banana_stem'));
-    expect(stem.moveToSlot(field, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(stem.moveToSlot(field.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
     expect(wip.def.tags, 'タグの上では刃物').toContain(codex.tagNames.getId('cutting_tool'));
 
     expect(stem.combinationsWith(wip, undefined), '作りかけは相手にならない').toEqual([]);

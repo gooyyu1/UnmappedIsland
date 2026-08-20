@@ -76,7 +76,7 @@ object_defs:
     const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
     session.adoptWorld(new World(worldInstance, codex.propertyNames, codex.symbolNames));
     ground = spawn('ground');
-    expect(ground.moveToSlot(worldInstance, slot('locations'))).toBeUndefined();
+    expect(ground.moveToSlot(worldInstance.getSlot(slot('locations')))).toBeUndefined();
     changes = [];
   }
 
@@ -86,7 +86,7 @@ object_defs:
   /** その名前のオブジェクトを生成し、地面へ置く。 */
   function placeOnGround(name: string, slotName = 'items'): WorldObject {
     const object = spawn(name);
-    expect(object.moveToSlot(ground, slot(slotName))).toBeUndefined();
+    expect(object.moveToSlot(ground.getSlot(slot(slotName)))).toBeUndefined();
     return object;
   }
 
@@ -94,7 +94,7 @@ object_defs:
   function observe(body: () => void): string[] {
     session.observeChanges((change) => changes.push(change), body);
     const place = (p: WorldChange['from']): string =>
-      p === undefined ? '—' : `${p.parent.def.name}.${codex.slotNames.getName(p.slotGlobalId)}`;
+      p === undefined ? '—' : `${p.owner.def.name}.${p.def.name}`;
     return changes.map(
       (c) => `${c.subject?.def.name ?? '—'}: ${c.object.def.name} ${place(c.from)} → ${place(c.to)}`,
     );
@@ -105,7 +105,7 @@ object_defs:
     const stone = spawn('stone');
 
     const seen = observe(() => {
-      expect(stone.moveToSlot(ground, slot('items'))).toBeUndefined();
+      expect(stone.moveToSlot(ground.getSlot(slot('items')))).toBeUndefined();
     });
 
     expect(seen).toEqual(['—: stone — → ground.items']);
@@ -193,7 +193,7 @@ object_defs:
     const beast = placeOnGround('beast', 'beasts');
     const basket = placeOnGround('basket');
     const stone = spawn('stone');
-    expect(stone.moveToSlot(basket, slot('contents'))).toBeUndefined();
+    expect(stone.moveToSlot(basket.getSlot(slot('contents')))).toBeUndefined();
 
     const seen = observe(() => {
       expect(

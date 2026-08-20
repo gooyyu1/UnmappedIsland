@@ -36,7 +36,7 @@ object_defs:
       const bench = session.spawn(codex.objectNames.getId('chair_in_progress'));
       return {
         bench,
-        put: (name) => session.spawn(codex.objectNames.getId(name)).moveToSlot(bench, materialsId),
+        put: (name) => session.spawn(codex.objectNames.getId(name)).moveToSlot(bench.getSlot(materialsId)),
       };
     };
 
@@ -88,7 +88,7 @@ object_defs:
       const session = new WorldSession(codex);
       const shelf = session.spawn(codex.objectNames.getId('shelf'));
       return Array.from({ length: count }, () =>
-        session.spawn(codex.objectNames.getId(name)).moveToSlot(shelf, thingsId),
+        session.spawn(codex.objectNames.getId(name)).moveToSlot(shelf.getSlot(thingsId)),
       );
     };
 

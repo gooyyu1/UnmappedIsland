@@ -1,5 +1,4 @@
 import type { SlotDef } from './SlotDef';
-import type { WellKnownProperties } from './WellKnownProperties';
 import { ObjectStack } from './ObjectStack';
 import type { WorldObject } from './WorldObject';
 
@@ -16,6 +15,12 @@ import type { WorldObject } from './WorldObject';
  */
 export class Slot {
   readonly def: SlotDef;
+
+  /**
+   * この枠を持っているオブジェクト。**枠は必ず誰かのもの**なので、受け入れ判定に要る規約プロパティも
+   * 断る理由に書く名前も、呼び出し側から渡されずに自分で辿る。
+   */
+  readonly owner: WorldObject;
 
   /** セルの並び。要素はObjectStackかundefined（空セル、枠数固定のスロットのみ）。位置＝添字。 */
   private readonly _cells: (ObjectStack | undefined)[] = [];
@@ -34,13 +39,17 @@ export class Slot {
     return this.liveStacks.flatMap((s) => s.members);
   }
 
-  /** 枠の数が決まっているスロットか（＝空セルを残して位置を安定させるか、SlotSystem.md 3節）。 */
-  private get hasFixedCells(): boolean {
+  /**
+   * 枠の数が決まっているスロットか（＝空セルを残して位置を安定させるか、SlotSystem.md 3節）。
+   * 空き枠を指したドロップを、枠そのものへ入れる操作として扱ってよいのはこちらだけ。
+   */
+  get hasFixedCells(): boolean {
     return this.def.cellCount !== undefined;
   }
 
-  constructor(def: SlotDef) {
+  constructor(def: SlotDef, owner: WorldObject) {
     this.def = def;
+    this.owner = owner;
     // 枠数が決まっていれば、その長さの配列（全て空=undefined）として持つ。
     for (let i = 0; i < (def.cellCount ?? 0); i++) this._cells.push(undefined);
   }
@@ -51,7 +60,9 @@ export class Slot {
    *
    * 戻り値: 受け入れ可能ならundefined、拒否する場合はその理由。
    */
-  canAccept(candidate: WorldObject, wellKnown: WellKnownProperties, ownerName: string): string | undefined {
+  canAccept(candidate: WorldObject): string | undefined {
+    const wellKnown = this.owner.session.codex.wellKnown;
+    const ownerName = this.owner.def.name;
     if (!this.def.acceptsAnywhere(candidate.def)) {
       return `'${ownerName}.${this.def.name}' は '${candidate.def.name}' を受け入れられません（枠の型が合いません）。`;
     }
@@ -72,6 +83,14 @@ export class Slot {
   }
 
   /**
+   * この枠へitemを入れるのにかかるゲーム内時間（分、SlotDef.putInMinutes）。宣言が無ければ0。
+   * 値段は枠が決めるので、どの経路で入れても同じだけかかる（slotEntry参照）。
+   */
+  putInMinutes(item: WorldObject, actor: WorldObject | undefined): number {
+    return this.def.putInMinutes(this.owner, item, actor);
+  }
+
+  /**
    * candidatesを先頭から順に入れていったとき、続けて受け取れる個数（1つ目で断るなら0）。
    *
    * 1つずつcanAcceptを訊いても答えは出ない——2つ目が入るかは、1つ目が入った後の空きで決まるため。
@@ -80,7 +99,8 @@ export class Slot {
    * candidatesは同じ束の仲間（同じ型・同じ代表チェーン）であることを前提にする。置ける枠の数は
    * 型だけで決まるので先頭の1つで代表して数え、かさ（volume）だけを1つずつ積み上げる。
    */
-  acceptedCount(candidates: readonly WorldObject[], wellKnown: WellKnownProperties): number {
+  acceptedCount(candidates: readonly WorldObject[]): number {
+    const wellKnown = this.owner.session.codex.wellKnown;
     if (candidates.length === 0 || !this.def.acceptsAnywhere(candidates[0].def)) return 0;
 
     const vacancy = this.vacancyFor(candidates[0]);

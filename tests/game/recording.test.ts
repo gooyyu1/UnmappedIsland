@@ -61,7 +61,7 @@ describe('recordChange（経過中のtickごとの控え）', () => {
     const recording = recordChange(game, codex, locale, undefined, () => {
       const stone = game.session.spawn(codex.objectNames.getId('stone'));
       stoneId = stone.instanceId;
-      expect(stone.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+      expect(stone.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     });
 
     expect(recording.ticks, '時間が経っていないのでtick境界を跨がない').toEqual([]);

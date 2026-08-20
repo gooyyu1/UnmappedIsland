@@ -197,8 +197,8 @@ object_defs:
     const person = spawn(codex, 'person', session);
     const sprain = spawn(codex, 'sprain', session);
     const bandage = spawn(codex, 'bandage', session);
-    expect(sprain.moveToSlot(person, codex.slotNames.getId('injuries'))).toBeUndefined();
-    expect(bandage.moveToSlot(sprain, codex.slotNames.getId('treatment'))).toBeUndefined();
+    expect(sprain.moveToSlot(person.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
+    expect(bandage.moveToSlot(sprain.getSlot(codex.slotNames.getId('treatment')))).toBeUndefined();
 
     const pain = person.readInfluences(codex.propertyNames.getId('pain'));
 
@@ -225,7 +225,7 @@ object_defs:
     const session = new WorldSession(codex);
     const person = spawn(codex, 'person', session);
     for (const injury of [spawn(codex, 'sprain', session), spawn(codex, 'sprain', session)])
-      expect(injury.moveToSlot(person, codex.slotNames.getId('injuries'))).toBeUndefined();
+      expect(injury.moveToSlot(person.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
 
     const pain = person.readInfluences(codex.propertyNames.getId('pain'));
 
@@ -259,7 +259,7 @@ object_defs:
     ]);
 
     const stone = spawn(codex, 'stone', session);
-    expect(stone.moveToSlot(person, codex.slotNames.getId('hand'))).toBeUndefined();
+    expect(stone.moveToSlot(person.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     expect(shown(codex, person.readInfluences(loadId).received), '担げば効いている').toEqual(['load▲']);
   });
@@ -288,8 +288,8 @@ object_defs:
     const person = spawn(codex, 'person', session);
     const ground = spawn(codex, 'ground', session);
     const sprain = spawn(codex, 'sprain', session);
-    expect(sprain.moveToSlot(person, codex.slotNames.getId('injuries'))).toBeUndefined();
-    expect(sprain.moveToSlot(ground, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(sprain.moveToSlot(person.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
+    expect(sprain.moveToSlot(ground.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
 
     const pain = person.readInfluences(codex.propertyNames.getId('pain'));
 

@@ -49,12 +49,12 @@ describe('pottery.yamlの土器の連鎖', () => {
     session = new WorldSession(codex, worldView, fixedRng(roll));
 
     land = session.spawn(codex.objectNames.getId('grassland'));
-    expect(land.moveToSlot(worldInstance, codex.slotNames.getId('locations'))).toBeUndefined();
+    expect(land.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
   }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent, codex.slotNames.getId(slotName))).toBeUndefined();
+    expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 
@@ -82,7 +82,9 @@ describe('pottery.yamlの土器の連鎖', () => {
 
     for (const step of materials) {
       for (const name of step) {
-        expect(session.spawn(codex.objectNames.getId(name)).moveToSlot(wip, materialsId)).toBeUndefined();
+        expect(
+          session.spawn(codex.objectNames.getId(name)).moveToSlot(wip.getSlot(materialsId)),
+        ).toBeUndefined();
       }
       expect(advanceCrafting(wip, recipe, materialsId, codex, session), `${productName}の工程`).toBe(true);
     }
@@ -108,7 +110,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     session.advanceWorldTime(60 * hours);
 
     const kiln = litKiln();
-    expect(greenware.moveToSlot(kiln, codex.slotNames.getId('fire'))).toBeUndefined();
+    expect(greenware.moveToSlot(kiln.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
     // 高温（blaze、5/tick）まで昇ってから24tick。昇温のぶんを足して余裕を見る。
     session.advanceWorldTime(60 * 8);
     return kiln;
@@ -172,10 +174,13 @@ describe('pottery.yamlの土器の連鎖', () => {
     const kiln = spawnInto('earth_kiln', land, 'fixtures');
     const fireId = codex.slotNames.getId('fire');
 
-    expect(spawnInto('unfired_jar', land, 'items').moveToSlot(kiln, fireId)).toBeUndefined();
-    expect(spawnInto('raw_meat', land, 'items').moveToSlot(kiln, fireId), '覆うので焼けない').toBeDefined();
+    expect(spawnInto('unfired_jar', land, 'items').moveToSlot(kiln.getSlot(fireId))).toBeUndefined();
     expect(
-      spawnInto('coconut_bowl', land, 'items').moveToSlot(kiln, fireId),
+      spawnInto('raw_meat', land, 'items').moveToSlot(kiln.getSlot(fireId)),
+      '覆うので焼けない',
+    ).toBeDefined();
+    expect(
+      spawnInto('coconut_bowl', land, 'items').moveToSlot(kiln.getSlot(fireId)),
       '煮炊きもできない',
     ).toBeDefined();
   });
@@ -184,7 +189,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     const hearth = spawnInto('stone_hearth', land, 'fixtures');
     const greenware = spawnInto('unfired_jar', land, 'items');
 
-    expect(greenware.moveToSlot(hearth, codex.slotNames.getId('fire'))).toBeDefined();
+    expect(greenware.moveToSlot(hearth.getSlot(codex.slotNames.getId('fire')))).toBeDefined();
   });
 
   it('乾かしてから焼けば、割れの引きでも必ず甕になる', () => {
@@ -197,7 +202,7 @@ describe('pottery.yamlの土器の連鎖', () => {
   it('濡れたまま焼くと、残った水が器を割る', () => {
     const kiln = spawnInto('earth_kiln', land, 'fixtures');
     const greenware = spawnInto('unfired_jar', land, 'items');
-    expect(greenware.moveToSlot(kiln, codex.slotNames.getId('fire'))).toBeUndefined();
+    expect(greenware.moveToSlot(kiln.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
 
     expect(signalsOf(() => overheat(greenware))).toEqual(['unfired_jar: cracked']);
     expect(childNames(kiln), '割れた器は何も残さない').toEqual([]);
@@ -207,7 +212,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     open(SURVIVES);
     const kiln = spawnInto('earth_kiln', land, 'fixtures');
     const greenware = spawnInto('unfired_jar', land, 'items');
-    expect(greenware.moveToSlot(kiln, codex.slotNames.getId('fire'))).toBeUndefined();
+    expect(greenware.moveToSlot(kiln.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
 
     expect(signalsOf(() => overheat(greenware))).toEqual(['unfired_jar: fired']);
     expect(childNames(kiln)).toEqual(['jar']);
@@ -218,7 +223,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     open(SURVIVES);
     const kiln = litKiln();
     const greenware = spawnInto('unfired_jar', land, 'items');
-    expect(greenware.moveToSlot(kiln, codex.slotNames.getId('fire'))).toBeUndefined();
+    expect(greenware.moveToSlot(kiln.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
     const moistureId = codex.propertyNames.getId('moisture');
 
     let remaining = greenware.tryGetProperty(moistureId)?.number ?? 0;

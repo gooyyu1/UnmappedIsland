@@ -1,4 +1,4 @@
-import type { WorldObject } from '../../domain/WorldObject';
+import type { Slot } from '../../domain/Slot';
 import type { Location } from '../../domain/views/Location';
 import type { PlayerCharacter } from '../../domain/views/PlayerCharacter';
 
@@ -10,21 +10,13 @@ export type CardPlacement =
   { readonly kind: 'gap'; readonly index: number } | { readonly kind: 'cell'; readonly index: number };
 
 /**
- * カードが並ぶ場所＝ワールド上の1つのスロット。**指し方はこれ1つだけ**——同じスロットを2通りに
- * 指せると、行き先の比較（samePlace）が食い違い、端の行き先も落とし先も別物として扱われる。
+ * カードが並ぶ場所＝ワールド上の1つのスロット（Slotそのもの）。**指し方はこれ1つだけ**——同じスロットを
+ * 2通りに指せると、行き先の比較が食い違い、端の行き先も落とし先も別物として扱われる。
  *
  * 画面の区画（レーン・装備/怪我のボタン）はスロットではなく**入口**なので、場所そのものではなく
  * 名前（ScreenPlace）で持ち、映す先はここへ解決する。
  */
-export interface CardPlace {
-  readonly container: WorldObject;
-  readonly slotGlobalId: number;
-}
-
-/** 2つの場所が同じか。同じ型のコンテナが複数あっても中身は別なので、持ち主はインスタンスで見分ける。 */
-export function samePlace(a: CardPlace, b: CardPlace): boolean {
-  return a.container === b.container && a.slotGlobalId === b.slotGlobalId;
-}
+export type CardPlace = Slot;
 
 /**
  * 画面が自分で名指しする入口——**常に見えている3つのレーン**（ScreenLayout.md）だけ。
@@ -47,11 +39,11 @@ export function cardPlacesOf(player: PlayerCharacter, location: Location): Scree
   return (screen) => {
     switch (screen) {
       case 'items':
-        return { container: location.instance, slotGlobalId: location.itemsSlotId };
+        return location.instance.getSlot(location.itemsSlotId);
       case 'fixtures':
-        return { container: location.instance, slotGlobalId: location.fixturesSlotId };
+        return location.instance.getSlot(location.fixturesSlotId);
       case 'hand':
-        return { container: player.instance, slotGlobalId: player.handSlotId };
+        return player.instance.getSlot(player.handSlotId);
     }
   };
 }

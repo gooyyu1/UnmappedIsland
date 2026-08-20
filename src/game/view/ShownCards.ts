@@ -2,7 +2,6 @@ import type { WorldObject } from '../../domain/WorldObject';
 import type { ObjectCardStack } from './PlayScreenView';
 import type { CardCombination, CardDrop } from './cardOperations';
 import type { CardPlace, CardPlacement, ScreenPlaces } from './cardPlaces';
-import { samePlace } from './cardPlaces';
 import type { CardContent, CardEdgeDirection } from '../ui/Card';
 import { cardFace } from '../ui/cardFace';
 
@@ -352,15 +351,15 @@ export class ShownCards {
     const places = this.source.places;
     const [fixtures, items, hand] = [places('fixtures'), places('items'), places('hand')];
     if (direction === 'up') {
-      if (samePlace(from, items)) return [fixtures];
-      if (!samePlace(from, hand)) return [];
+      if (from === items) return [fixtures];
+      if (from !== hand) return [];
       const window = this.source.windowPlace();
       return window === undefined ? [items] : [window, items];
     }
-    if (samePlace(from, fixtures)) return [items];
-    if (samePlace(from, items)) return [hand];
+    if (from === fixtures) return [items];
+    if (from === items) return [hand];
     // 手持ちの下は無く、子ウィンドウのカード（装備・怪我・コンテナの中身）の下は手持ち。
-    return samePlace(from, hand) ? [] : [hand];
+    return from === hand ? [] : [hand];
   }
 }
 
@@ -391,5 +390,5 @@ function awaitingStack(stack: ObjectCardStack, awaited: readonly number[]): Obje
 /** 2つの場所が同じか。借りた1枚の枠はワールドの場所ではないので、名前そのもので見分ける。 */
 export function sameSpot(a: CardSpot, b: CardSpot): boolean {
   if (a === 'windowCard' || b === 'windowCard') return a === b;
-  return samePlace(a, b);
+  return a === b;
 }

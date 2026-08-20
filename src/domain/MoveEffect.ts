@@ -46,7 +46,8 @@ export class MoveEffect extends ActiveEffect {
       mover.moveIntoFirstAcceptingSlot(destination, false);
       return;
     }
-    mover.moveToSlot(destination, this.slotGlobalId);
+    const slot = destination.tryGetSlot(this.slotGlobalId);
+    if (slot !== undefined) mover.moveToSlot(slot);
   }
 
   read(reader: EffectReader): void {

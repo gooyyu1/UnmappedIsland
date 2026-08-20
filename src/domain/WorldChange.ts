@@ -1,10 +1,5 @@
+import type { Slot } from './Slot';
 import type { WorldObject } from './WorldObject';
-
-/** 世界の中の居場所（どのオブジェクトの、どのスロットか）。 */
-export interface WorldPlace {
-  readonly parent: WorldObject;
-  readonly slotGlobalId: number;
-}
 
 /**
  * 世界の形が変わった1件（`WorldSession.observeChanges`）。
@@ -30,9 +25,9 @@ export interface WorldChange {
    */
   readonly subject: WorldObject | undefined;
 
-  /** 直前の居場所。undefinedは「それまで世界の中に無かった」＝生まれたということ。 */
-  readonly from: WorldPlace | undefined;
+  /** 直前に入っていた枠。undefinedは「それまで世界の中に無かった」＝生まれたということ。 */
+  readonly from: Slot | undefined;
 
-  /** 移った先。undefinedは「世界の中から出た」＝壊れた・外れたということ。 */
-  readonly to: WorldPlace | undefined;
+  /** 移った先の枠。undefinedは「世界の中から出た」＝壊れた・外れたということ。 */
+  readonly to: Slot | undefined;
 }

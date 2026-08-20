@@ -24,7 +24,7 @@ export function originInstances(changes: readonly WorldChange[]): ReadonlyMap<nu
   for (const change of changes) {
     if (change.to === undefined) continue;
 
-    const origin = change.subject ?? change.from?.parent;
+    const origin = change.subject ?? change.from?.owner;
     if (origin === undefined) continue;
 
     const id = change.object.instanceId;

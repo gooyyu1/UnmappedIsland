@@ -499,10 +499,10 @@ object_defs:
     );
     const swordInstance = new WorldObject(2, codex.objects.get(codex.objectNames.getId('sword')), session);
 
-    expect(swordInstance.moveToSlot(characterInstance, mainHandId)).toBeUndefined();
+    expect(swordInstance.moveToSlot(characterInstance.getSlot(mainHandId))).toBeUndefined();
     expect(characterInstance.tryGetProperty(attackId)?.getEffectiveValue() ?? 0).toBe(15); // main_handでは+5
 
-    expect(swordInstance.moveToSlot(characterInstance, offHandId)).toBeUndefined();
+    expect(swordInstance.moveToSlot(characterInstance.getSlot(offHandId))).toBeUndefined();
     expect(characterInstance.tryGetProperty(attackId)?.getEffectiveValue() ?? 0).toBe(12); // off_handへ持ち替えると+2に切り替わる
   });
 
@@ -897,7 +897,7 @@ object_defs:
     const session = new WorldSession(codex);
     const box = new WorldObject(1, codex.objects.get(codex.objectNames.getId('box')), session);
     const redMarker = new WorldObject(2, codex.objects.get(codex.objectNames.getId('red_marker')), session);
-    redMarker.moveToSlot(box, contentSlotId);
+    redMarker.moveToSlot(box.getSlot(contentSlotId));
 
     expect(box.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true); // contentスロットにredタグのマーカーがあるので実行される
   });
@@ -929,7 +929,7 @@ object_defs:
       codex.objects.get(codex.objectNames.getId('blue_marker2')),
       session,
     );
-    blueMarker.moveToSlot(box, contentSlotId);
+    blueMarker.moveToSlot(box.getSlot(contentSlotId));
     expect(box.tryGetAction('use', undefined)?.tryExecute() === true).toBe(false); // contentスロットの中身がredタグを持たない(blueタグ)ので実行されない
   });
 
@@ -989,12 +989,12 @@ object_defs:
 
     const altar = spawn('altar', 1);
     const sapphire = spawn('sapphire', 2);
-    expect(sapphire.moveToSlot(altar, offeringSlotId)).toBeUndefined();
+    expect(sapphire.moveToSlot(altar.getSlot(offeringSlotId))).toBeUndefined();
     expect(altar.tryGetAction('use', undefined)?.tryExecute() === true, '同じタグの別の型では偽').toBe(false);
 
     sapphire.destroy();
     const ruby = spawn('ruby', 3);
-    expect(ruby.moveToSlot(altar, offeringSlotId)).toBeUndefined();
+    expect(ruby.moveToSlot(altar.getSlot(offeringSlotId))).toBeUndefined();
     expect(altar.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true);
   });
 
@@ -1028,7 +1028,7 @@ object_defs:
     const box = spawn('box', 2);
     const gem = spawn('gem', 3);
     const ground = spawn('ground', 4);
-    expect(box.moveToSlot(ground, codex.slotNames.getId('items'))).toBeUndefined();
+    expect(box.moveToSlot(ground.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
 
     expect(
       altar
@@ -1038,7 +1038,7 @@ object_defs:
       'draggedの中身が空なら偽',
     ).toBe(false);
 
-    expect(gem.moveToSlot(box, codex.slotNames.getId('content'))).toBeUndefined();
+    expect(gem.moveToSlot(box.getSlot(codex.slotNames.getId('content')))).toBeUndefined();
     expect(
       altar
         .combinationsWith(box, undefined)
@@ -1224,13 +1224,13 @@ object_defs:
     );
     const logInstance = new WorldObject(2, codex.objects.get(codex.objectNames.getId('log')), session);
 
-    expect(logInstance.moveToSlot(campfireInstance, fuelSlotId)).toBeUndefined();
+    expect(logInstance.moveToSlot(campfireInstance.getSlot(fuelSlotId))).toBeUndefined();
     expect(logInstance.tryGetProperty(warmthId)?.getEffectiveValue() ?? 0).toBe(0); // fuel_slotには入っているが、heatがunlitステージのためボーナスなし
 
     campfireInstance.getProperty(heatId).init(1);
     expect(logInstance.tryGetProperty(warmthId)?.getEffectiveValue() ?? 0).toBe(5); // litステージかつfuel_slot条件の両方を満たすのでボーナスが乗る
 
-    expect(logInstance.moveToSlot(campfireInstance, storageSlotId)).toBeUndefined();
+    expect(logInstance.moveToSlot(campfireInstance.getSlot(storageSlotId))).toBeUndefined();
     expect(logInstance.tryGetProperty(warmthId)?.getEffectiveValue() ?? 0).toBe(0); // litステージのままでもfuel_slotから外れるとボーナスが消える
   });
 
@@ -1580,8 +1580,8 @@ object_defs:
     );
     const foodInstance = new WorldObject(3, codex.objects.get(codex.objectNames.getId('food')), session);
 
-    expect(characterInstance.moveToSlot(roomInstance, contentsSlotId)).toBeUndefined();
-    expect(foodInstance.moveToSlot(characterInstance, pocketSlotId)).toBeUndefined();
+    expect(characterInstance.moveToSlot(roomInstance.getSlot(contentsSlotId))).toBeUndefined();
+    expect(foodInstance.moveToSlot(characterInstance.getSlot(pocketSlotId))).toBeUndefined();
 
     expect(foodInstance.tryGetAction('check', undefined)?.tryExecute() === true).toBe(true); // characterはweatherを持たないため素通りし、roomのweather(1)と比較して真になる
   });

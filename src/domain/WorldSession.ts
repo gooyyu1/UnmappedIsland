@@ -4,7 +4,8 @@ import type { Rng } from './Rng';
 import type { World } from './views/World';
 import type { PropertyDef } from './PropertyDef';
 import type { InteractionGains, PropertyGain } from './PropertyGain';
-import type { WorldChange, WorldPlace } from './WorldChange';
+import type { Slot } from './Slot';
+import type { WorldChange } from './WorldChange';
 import type { WorldSignal } from './WorldSignal';
 import { WorldObject } from './WorldObject';
 
@@ -206,7 +207,7 @@ export class WorldSession {
    *
    * 観測していなければ何もしない。世界に出入りが無い呼び出し（未配置のまま消えた物）も流さない。
    */
-  recordChange(object: WorldObject, from: WorldPlace | undefined, to: WorldPlace | undefined): void {
+  recordChange(object: WorldObject, from: Slot | undefined, to: Slot | undefined): void {
     if (this.changeObserver === undefined || (from === undefined && to === undefined)) return;
     this.changeObserver({ object, subject: this.subject, from, to });
   }
