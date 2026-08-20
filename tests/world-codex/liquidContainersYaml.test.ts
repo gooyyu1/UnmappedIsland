@@ -58,9 +58,10 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     return container;
   }
 
-  /** 中身の型（空の容器ならundefined）。 */
+  /** 中身の型（空の容器ならundefined）。中身は軸`content`の値。 */
   function contentOf(container: WorldObject): ObjectDef | undefined {
-    return codex.contentsOf(container.def).at(0);
+    const value = codex.variationsOf(container.def).get('content');
+    return value === undefined ? undefined : codex.objects.get(codex.objectNames.getId(value));
   }
 
   function amountIn(container: WorldObject): number {

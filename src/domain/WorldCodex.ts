@@ -4,7 +4,6 @@ import type { GenerationDefs } from './generation/GenerationDefs';
 import { GeneratedTypes } from './GeneratedTypes';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef, ObjectDefTable } from './ObjectDef';
-import { RECIPE_AXIS } from './RecipeDef';
 import type { SlotDef } from './SlotDef';
 import type { WellKnownProperties } from './WellKnownProperties';
 
@@ -123,12 +122,6 @@ export class WorldCodex implements DefNames {
 
   private symbolicPropertyIds: ReadonlySet<number> | undefined;
 
-  /** この型が製作中オブジェクトなら、その完成品の型（＝レシピの軸を落とした素の型）。 */
-  productOf(def: ObjectDef): ObjectDef | undefined {
-    const productGlobalId = this.generatedTypes.baseAlong(def, RECIPE_AXIS);
-    return productGlobalId === undefined ? undefined : this.objects.get(productGlobalId);
-  }
-
   /**
    * 生成型（3.5節）の素の型。生成型でなければ自分自身。**絵と名前の骨格はここから引く**
    * ——変種のために絵を描き足す道は無いので、素の型のものを映す。
@@ -146,26 +139,13 @@ export class WorldCodex implements DefNames {
   }
 
   /**
-   * この型が軸の値として持っている型（3.5節）。素の型では空。
+   * この型が素の型からどれだけ動いた先に居るか（3.5節）。軸の名前 → その軸の値の識別子で、素の型では空。
    *
-   * **レシピの軸は含めません**——製作中オブジェクトが持つのは中身ではなく「作りかけ」という状態で、
-   * 名前も絵も別の規約（productOf）で決まるためです。
+   * **どの軸かで扱いを分けません。** 作りかけも中身入りも「素の型の変種」で、違うのは軸の名前と、
+   * その名前に紐づく書式（[`Localization.md`](../../docs/engine/Localization.md)）だけです。
    */
-  contentsOf(def: ObjectDef): readonly ObjectDef[] {
-    const contents: ObjectDef[] = [];
-    for (const axis of this.contentAxesOf(def)) {
-      const value = this.generatedTypes.coordinateOf(def).axisValues.get(axis)!;
-      const globalId = this.objectNames.tryGetId(value);
-      if (globalId !== undefined) contents.push(this.objects.get(globalId));
-    }
-    return contents;
-  }
-
-  /** この型が値を持っている軸のうち、中身を表すもの（レシピの軸を除く、contentsOf参照）。 */
-  contentAxesOf(def: ObjectDef): readonly string[] {
-    return [...this.generatedTypes.coordinateOf(def).axisValues.keys()].filter(
-      (axis) => axis !== RECIPE_AXIS,
-    );
+  variationsOf(def: ObjectDef): ReadonlyMap<string, string> {
+    return this.generatedTypes.coordinateOf(def).axisValues;
   }
 
   /**

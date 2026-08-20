@@ -138,29 +138,36 @@ object_texts:
     expect(locale.object('coconut').interaction('mix').description).toBeUndefined();
   });
 
-  it('中身がいるオブジェクトの名前は、{container}に自分の表示名・{content}に中身の名前が入る', () => {
+  it('変種の名前は、{base}に素の型の表示名・{value}に軸の値の名前が入る', () => {
     const texts = parseLocale(
       'ja.yaml',
       `object_texts:
   default:
-    display_name_with_content: '{content}入りの{container}'
+    variation_names:
+      content: '{value}入りの{base}'
   canteen:
     display_name: 水筒
   jar:
     display_name: 甕
-    display_name_with_content: '{container}（{content}）'
+    variation_names:
+      content: '{base}（{value}）'
 `,
     );
 
-    expect(texts.object('canteen').displayNameWithContent('水'), 'defaultの書式').toBe('水入りの水筒');
-    expect(texts.object('jar').displayNameWithContent('水'), '自分の書式が優先される').toBe('甕（水）');
+    expect(texts.object('canteen').variationName('content', '水筒', '水'), 'defaultの書式').toBe(
+      '水入りの水筒',
+    );
+    expect(texts.object('jar').variationName('content', '甕', '水'), '自分の書式が優先される').toBe(
+      '甕（水）',
+    );
   });
 
-  it('書式が無ければ、中身がいても表示名のまま', () => {
-    expect(locale.object('coconut').displayNameWithContent('水')).toBe('ヤシの実');
-    expect(locale.object('thick_branch').displayNameWithContent('水'), '未登録なら識別子').toBe(
-      'thick_branch',
-    );
+  it('その軸の書式が無ければ、素の型の名前のまま', () => {
+    expect(locale.object('coconut').variationName('content', 'ヤシの実', '水')).toBe('ヤシの実');
+    expect(
+      locale.object('thick_branch').variationName('content', 'thick_branch', '水'),
+      '未登録なら識別子',
+    ).toBe('thick_branch');
   });
 
   it('差し込んだ名前の中のプレースホルダは置換されない', () => {
@@ -168,13 +175,14 @@ object_texts:
       'ja.yaml',
       `object_texts:
   default:
-    display_name_with_content: '{content}入りの{container}'
+    variation_names:
+      content: '{value}入りの{base}'
   canteen:
-    display_name: '{content}筒'
+    display_name: '{value}筒'
 `,
     );
 
-    expect(texts.object('canteen').displayNameWithContent('水')).toBe('水入りの{content}筒');
+    expect(texts.object('canteen').variationName('content', '{value}筒', '水')).toBe('水入りの{value}筒');
   });
 
   it('object_textsの節が無い・空のファイルでも読める', () => {

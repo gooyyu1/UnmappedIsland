@@ -111,7 +111,7 @@ slot_texts:
     display_name: 装備
 ```
 
-**書式だけは `default` エントリを参照します**（次節の `display_name_with_content` と同じ理由）。
+**書式だけは `default` エントリを参照します**（次節の `variation_names` と同じ理由）。
 `{slot}` は各スロット自身の名前から埋まるので、共通の書式を書いてもすべてが同じ名前にはなりません。
 
 `put_in` は、**そこへ物を入れる操作**の呼び名と説明です。ドラッグ中の吹き出しに出ます
@@ -131,25 +131,30 @@ slot_texts:
 時間を要求している場合（`put_in: {duration: ...}`、GameElementDefinition.md 7.10節）は、値段を伏せる
 わけにいかないので、スロットの名前を見出しにして時間だけを出します。
 
-## display_name_with_content: 中身がいるときの名前
+## variation_names: 変種の名前
 
-`represented_by`（[GameElementDefinition.md](./GameElementDefinition.md) 7.6節）で中身を代表にしている
-オブジェクトは、中身がいる間だけ名前が変わります。書式を `display_name_with_content` に書き、
-**`{container}` が入れ物自身の表示名、`{content}` が中身の名前**に置き換わります。
+ロード時に生成された型（[GameElementDefinition.md](./GameElementDefinition.md) 3.5節）は、自分の
+エントリを持てません。**素の型の名前から始めて、動いた軸のぶんだけ書式を重ねて組み立てます。**
+書式は軸の名前ごとに `variation_names` へ書き、**`{base}` が素の型の名前、`{value}` がその軸の値の
+名前**に置き換わります。
 
 ```yaml
 object_texts:
   default:
-    display_name_with_content: '{content}入りの{container}'   # 水筒 + 水 → 水入りの水筒
+    variation_names:
+      content: '{value}入りの{base}'   # 水筒 + 水 → 水入りの水筒
+      recipe: '{base}'                 # 作りかけの斧も「石斧」（CardView.md 10節）
 ```
 
-**この書式だけは `default` エントリを参照します。** `display_name` を `default` から採らないのは、
-未登録のオブジェクトがすべて同じ名前になってしまうからですが、こちらは名前ではなく書式で、`{container}` は
-各オブジェクト自身の表示名から埋まります。中身を持つ入れ物はどれも同じ言い方でよいので、共通の
-書式を1回書けば済み、言い方を変えたい入れ物だけが自分のエントリで上書きします。
+**作りかけも中身入りも、扱いは同じ1つの畳み込みです。** 違うのは軸の名前と、その名前に紐づく書式
+だけで、どちらか一方のための分岐はありません。
 
-書式が無ければ名前は変わりません（中身の有無で名前が動かない）。中身がさらに中身を持つ入れ子は、
-内側から順に畳んで1つの名前にします。
+**この書式だけは `default` エントリを参照します。** `display_name` を `default` から採らないのは、
+未登録のオブジェクトがすべて同じ名前になってしまうからですが、こちらは名前ではなく書式で、`{base}` は
+素の型の表示名から埋まります。共通の書式を1回書けば済み、言い方を変えたい型だけが自分のエントリで
+上書きします。
+
+その軸の書式が無ければ、素の型の名前のままです。
 
 ## property_tag_texts: プロパティのカテゴリ名
 

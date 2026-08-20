@@ -13,6 +13,12 @@ import type { Requirement, Requirements } from './Requirement';
 export const RECIPE_AXIS = 'recipe';
 
 /**
+ * 製作中であることを表すタグ（RecipeSystem.md 5節）。作りかけは完成品のタグを引き継ぐので、
+ * **タグだけを見ると完成品と区別が付かない**——道具として働けるかを問う場所はこれで弾く。
+ */
+export const IN_PROGRESS_TAG = 'wip';
+
+/**
  * 工程が要求する素材または道具1件（GameElementDefinition.md 13.1節）。
  *
  * **要求はタグでも書ける**（枠の`accept`・combinationsの`with`と同じTypeMatchRule）。道具は

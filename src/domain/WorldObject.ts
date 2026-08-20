@@ -8,6 +8,7 @@ import type { ObjectStack } from './ObjectStack';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
 import { NO_AXIS_VALUE } from './GeneratedTypes';
+import { IN_PROGRESS_TAG } from './RecipeDef';
 import type { PropertyDef } from './PropertyDef';
 import { PropertyValue } from './PropertyValue';
 import type { Requirement } from './Requirement';
@@ -82,7 +83,8 @@ export class WorldObject {
    * 「その物であること」を問う場所はここで弾く。
    */
   get isInProgress(): boolean {
-    return this.session.codex.productOf(this.def) !== undefined;
+    const wipTagId = this.session.codex.tagNames.tryGetId(IN_PROGRESS_TAG);
+    return wipTagId !== undefined && this._def.tags.includes(wipTagId);
   }
 
   /** sessionは必須（value:{min,max}を持つプロパティの初期値ランダム化にsession.rngを使う）。 */
@@ -190,9 +192,13 @@ export class WorldObject {
    * 境界を`range`の外へ置くと注ぎ切ることも飲み干すこともできなくなる。
    */
   private settleFill(session: WorldSession): void {
-    if (this.getNumber(this.wellKnown.fillId) > 0) return;
+    // 量を持たない型は対象外。**「量が0」と「量が無い」は別**で、後者には戻る先が無い
+    // （作りかけの斧はfillを持たないが、素の型へ戻ってよいわけではない）。
+    const fill = this.tryGetProperty(this.wellKnown.fillId);
+    if (fill === undefined || fill.number > 0) return;
 
-    const axes = this.session.codex.contentAxesOf(this._def);
+    // 量を与えたのは変種の軸なので、素の型（＝空）へ戻るとはその軸を落とすこと。
+    const axes = [...this.session.codex.variationsOf(this._def).keys()];
     if (axes.length === 0) return;
     this.becomeAlong(new Map(axes.map((axis) => [axis, NO_AXIS_VALUE])), session);
   }

@@ -27,7 +27,7 @@ describe('固形物のかさと入れ物の容量', () => {
     for (let globalId = 0; globalId < codex.objects.count; globalId++) {
       const def = codex.objects.get(globalId);
       if (!def.tags.includes(itemTagId)) continue;
-      if (codex.productOf(def) !== undefined) continue;
+      if (codex.isGenerated(def)) continue;
       defs.push(def);
     }
     return defs;

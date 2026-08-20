@@ -1416,12 +1416,13 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(game.player.instance.getNumber(hydrationId), '飲んだ分だけ水分が増える').toBeGreaterThan(0);
   });
 
-  it('中身が代表するカードの名前は、中身の名前を差し込んだものになる', () => {
+  it('中身入りの容器の名前は、素の型と中身の名前から組み立てられる', () => {
     const texts = parseLocale(
       'ja.yaml',
       `object_texts:
   default:
-    display_name_with_content: '{content}入りの{container}'
+    variation_names:
+      content: '{value}入りの{base}'
   canteen:
     display_name: 水筒
   water_liquid:

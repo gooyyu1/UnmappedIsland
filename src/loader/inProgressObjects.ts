@@ -3,14 +3,13 @@ import type { ObjectDef } from '../domain/ObjectDef';
 import type { GeneratedCoordinate } from '../domain/GeneratedTypes';
 import { NO_AXIS_VALUE } from '../domain/GeneratedTypes';
 import type { NameRegistry } from '../domain/NameRegistry';
-import { RECIPE_AXIS } from '../domain/RecipeDef';
+import { IN_PROGRESS_TAG, RECIPE_AXIS } from '../domain/RecipeDef';
 import type { TypeMatchRule } from '../domain/TypeMatchRule';
 
 /** 生成した定義の出所として、エラーメッセージに出す名前。 */
 export const IN_PROGRESS_SOURCE = '<製作中オブジェクトの自動生成>';
 
-/** 製作中であることを表すタグ。完成品のタグを引き継ぐため、機能判定はこのタグで除外する。 */
-export const IN_PROGRESS_TAG = 'wip';
+export { IN_PROGRESS_TAG } from '../domain/RecipeDef';
 
 /** 進捗を持つプロパティ名。工程の所要時間の合計が上限になる。 */
 export const PROGRESS_PROPERTY = 'progress';
