@@ -85,7 +85,12 @@ describe('animals.yamlの動物', () => {
   /** 武器を手に持たせ、それを相手のカードへ重ねて殴る。返すのは使った武器。 */
   function strikeWith(weaponName: string, target: WorldObject = monkey): WorldObject {
     const weapon = spawnInto(weaponName, player, 'hand');
-    expect(target.tryExecuteCombination(weapon, undefined, 'strike')).toBe(true);
+    expect(
+      target
+        .combinationsWith(weapon, undefined)
+        .find((c) => c.name === 'strike')
+        ?.tryExecute() === true,
+    ).toBe(true);
     return weapon;
   }
 
@@ -462,7 +467,12 @@ describe('animals.yamlの動物', () => {
     /** 刃物を手に取り、死体へ重ねて解体する。 */
     function butcher(carcass: WorldObject): WorldObject {
       const knife = spawnInto('sharp_stone', player, 'hand');
-      expect(carcass.tryExecuteCombination(knife, player, 'butcher')).toBe(true);
+      expect(
+        carcass
+          .combinationsWith(knife, player)
+          .find((c) => c.name === 'butcher')
+          ?.tryExecute() === true,
+      ).toBe(true);
       return knife;
     }
 
@@ -544,7 +554,7 @@ describe('animals.yamlの動物', () => {
       const satietyId = codex.propertyNames.getId('satiety');
       const before = player.tryGetProperty(satietyId)?.number ?? 0;
 
-      expect(meat.tryExecuteAction('eat', player)).toBe(true);
+      expect(meat.tryGetAction('eat', player)?.tryExecute() === true).toBe(true);
 
       // 食べるのに15分かかり、時間は効果より先に進む（actionTime参照）ので、その1 tickぶん
       // （satiety -16）が引かれた値になる。

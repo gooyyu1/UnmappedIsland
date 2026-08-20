@@ -57,7 +57,7 @@ describe('操作が増やした値の観測', () => {
 
     // 休憩は60分（4 tick）かかり、その間に覚醒度が-1/tickずつ減る（characters/）。
     const { amounts } = gainsDuring(() => {
-      expect(player.tryExecuteAction('rest', player)).toBe(true);
+      expect(player.tryGetAction('rest', player)?.tryExecute() === true).toBe(true);
     });
 
     expect(amounts.get('stamina'), '効果が足した分がそのまま出る').toBe(10);
@@ -71,7 +71,7 @@ describe('操作が増やした値の観測', () => {
     expect(taro.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
 
     const { source, amounts } = gainsDuring(() => {
-      expect(taro.tryExecuteAction('eat', player)).toBe(true);
+      expect(taro.tryGetAction('eat', player)?.tryExecute() === true).toBe(true);
     });
 
     expect(source, '発生源は操作を宣言していた札').toBe('roasted_taro');
@@ -94,7 +94,7 @@ describe('操作が増やした値の観測', () => {
     session.observeGains(
       (gains) => observed.push(gains),
       () => {
-        expect(bowl.tryExecuteAction('drink', player)).toBe(true);
+        expect(bowl.tryGetAction('drink', player)?.tryExecute() === true).toBe(true);
       },
     );
 
@@ -110,14 +110,14 @@ describe('操作が増やした値の観測', () => {
   it('上限で押し戻された分は増加に数えない', () => {
     // 満タンの体力へ休憩を足すと、上限のクランプが同じ値へ書き戻す。正味は0なので流れない。
     const { amounts } = gainsDuring(() => {
-      expect(player.tryExecuteAction('rest', player)).toBe(true);
+      expect(player.tryGetAction('rest', player)?.tryExecute() === true).toBe(true);
     });
 
     expect(amounts.has('stamina')).toBe(false);
   });
 
   it('観測していない間の操作は溜め置かれない', () => {
-    expect(player.tryExecuteAction('wait', player)).toBe(true);
+    expect(player.tryGetAction('wait', player)?.tryExecute() === true).toBe(true);
 
     const { amounts } = gainsDuring(() => {
       /* 何もしない */

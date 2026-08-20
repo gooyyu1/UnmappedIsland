@@ -92,7 +92,12 @@ describe('pottery.yamlの土器の連鎖', () => {
   function litKiln(): WorldObject {
     const kiln = spawnInto('earth_kiln', land, 'fixtures');
     const log = spawnInto('log', land, 'items');
-    expect(kiln.tryExecuteCombination(log, undefined, 'add_fuel')).toBe(true);
+    expect(
+      kiln
+        .combinationsWith(log, undefined)
+        .find((c) => c.name === 'add_fuel')
+        ?.tryExecute() === true,
+    ).toBe(true);
     kiln.tryGetProperty(codex.propertyNames.getId('heat'))?.setNumber(1);
     return kiln;
   }
@@ -230,7 +235,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     // 消える物の中身は、消える自分ではなく自分の親へこぼれる（9.3節）。焼いた物まで道連れにしない。
     const kiln = fireDriedGreenware(24);
 
-    expect(kiln.tryExecuteAction('break_open', undefined)).toBe(true);
+    expect(kiln.tryGetAction('break_open', undefined)?.tryExecute() === true).toBe(true);
 
     expect(fixturesOn(land), '炉は一度きり').toEqual([]);
     expect(itemsOn(land), '甕は土地へこぼれる').toEqual(['jar']);

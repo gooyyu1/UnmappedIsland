@@ -61,7 +61,7 @@ object_defs:
   });
 
   it('手持ちに空きがあれば、そこへ入る', () => {
-    expect(player.tryExecuteAction('craft', player)).toBe(true);
+    expect(player.tryGetAction('craft', player)?.tryExecute() === true).toBe(true);
 
     expect(contentsOf(player, 'hand')).toEqual(['knife']);
     expect(contentsOf(player, 'equipment')).toEqual([]);
@@ -70,7 +70,7 @@ object_defs:
   it('手持ちが埋まっていると、装備欄を飛ばして足元の土地へ落ちる', () => {
     spawnInto('stone', player, 'hand');
 
-    expect(player.tryExecuteAction('craft', player)).toBe(true);
+    expect(player.tryGetAction('craft', player)?.tryExecute() === true).toBe(true);
 
     expect(contentsOf(player, 'equipment'), '装備欄は自動配置の対象外').toEqual([]);
     expect(contentsOf(clearing, 'items')).toEqual(['knife']);

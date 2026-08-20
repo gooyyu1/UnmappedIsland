@@ -50,7 +50,7 @@ object_defs:
     const actor = spawn(codex, 'player');
     const appleInstance = spawn(codex, 'apple');
 
-    const executed = appleInstance.tryExecuteAction('eat', actor);
+    const executed = appleInstance.tryGetAction('eat', actor)?.tryExecute() === true;
 
     expect(executed).toBe(true);
     expect(actor.tryGetProperty(satietyId)?.number ?? 0).toBe(10);
@@ -79,7 +79,7 @@ object_defs:
     const actor = spawn(codex, 'player2');
     const appleInstance = spawn(codex, 'apple2');
 
-    const executed = appleInstance.tryExecuteAction('eat', actor);
+    const executed = appleInstance.tryGetAction('eat', actor)?.tryExecute() === true;
 
     expect(executed, 'satietyが既に100(<100を満たさない)のため実行されない').toBe(false);
     expect(actor.tryGetProperty(satietyId)?.number ?? 0, '条件を満たさないため何も変化しない').toBe(100);
@@ -104,7 +104,7 @@ object_defs:
 
     const crate = spawn(codex, 'crate');
 
-    const executed = crate.tryExecuteAction('open', undefined);
+    const executed = crate.tryGetAction('open', undefined)?.tryExecute() === true;
 
     const inside = crate.tryGetSlot(insideSlotId);
     expect(executed).toBe(true);
@@ -121,7 +121,7 @@ object_defs:
 
     const appleInstance = spawn(codex, 'apple3');
 
-    expect(appleInstance.tryExecuteAction('does_not_exist', undefined)).toBe(false);
+    expect(appleInstance.tryGetAction('does_not_exist', undefined)?.tryExecute() === true).toBe(false);
   });
 
   it('parent対象は現在の親に適用される', () => {
@@ -148,7 +148,7 @@ object_defs:
     const rockInstance = spawn(codex, 'rock_item');
     expect(rockInstance.moveToSlot(basketInstance, itemsSlotId)).toBeUndefined();
 
-    const executed = rockInstance.tryExecuteAction('use', undefined);
+    const executed = rockInstance.tryGetAction('use', undefined)?.tryExecute() === true;
 
     expect(executed).toBe(true);
     expect(basketInstance.tryGetProperty(budgetId)?.number ?? 0).toBe(9);
@@ -165,7 +165,7 @@ object_defs:
     const codex = load(yaml);
     const rockInstance = spawn(codex, 'rock_item2'); // 親を持たない
 
-    const executed = rockInstance.tryExecuteAction('use', undefined);
+    const executed = rockInstance.tryGetAction('use', undefined)?.tryExecute() === true;
 
     expect(executed, 'アクション自体は実行される(親が無いのでparent対象の適用だけが無視される)').toBe(true);
   });
@@ -198,11 +198,11 @@ object_defs:
     expect(basket.moveToSlot(ground, itemsSlotId)).toBeUndefined();
 
     boar.getProperty(smashTargetId).init(9999);
-    expect(boar.tryExecuteAction('trample', undefined)).toBe(true);
+    expect(boar.tryGetAction('trample', undefined)?.tryExecute() === true).toBe(true);
     expect(basket.parent, '指す先が居なければ何も起きない').toBe(ground);
 
     boar.getProperty(smashTargetId).init(basket.instanceId);
-    expect(boar.tryExecuteAction('trample', undefined)).toBe(true);
+    expect(boar.tryGetAction('trample', undefined)?.tryExecute() === true).toBe(true);
     expect(basket.parent, 'プロパティが指す個体が消える').toBeUndefined();
   });
 
@@ -239,7 +239,7 @@ object_defs:
     const swordInstance = spawn(codex, 'sword');
 
     for (let i = 0; i < 20; i++) {
-      swordInstance.tryExecuteAction('attack', actor);
+      swordInstance.tryGetAction('attack', actor)?.tryExecute();
     }
 
     expect(
@@ -278,7 +278,7 @@ object_defs:
     actor.getProperty(luckId).init(1000); // 2番目(重み0固定)を圧倒する
     const bowInstance = spawn(codex, 'bow');
 
-    bowInstance.tryExecuteAction('shoot', actor);
+    bowInstance.tryGetAction('shoot', actor)?.tryExecute();
 
     expect(
       actor.tryGetProperty(hpId)?.number ?? 0,
@@ -313,7 +313,11 @@ object_defs:
     const woodInstance = spawn(codex, 'wood');
     const axeInstance = spawn(codex, 'axe_tool');
 
-    const executed = woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop');
+    const executed =
+      woodInstance
+        .combinationsWith(axeInstance, undefined)
+        .find((c) => c.name === 'chop')
+        ?.tryExecute() === true;
 
     expect(executed).toBe(true);
     expect(woodInstance.parent, 'self(wood)はdestroyされる').toBeUndefined();
@@ -350,7 +354,11 @@ object_defs:
     const woodInstance = spawn(codex, 'wood2');
     const pebbleInstance = spawn(codex, 'pebble3');
 
-    const executed = woodInstance.tryExecuteCombination(pebbleInstance, undefined, 'chop');
+    const executed =
+      woodInstance
+        .combinationsWith(pebbleInstance, undefined)
+        .find((c) => c.name === 'chop')
+        ?.tryExecute() === true;
 
     expect(executed, 'draggedがwithのタグを持たないため実行されない').toBe(false);
   });
@@ -372,7 +380,11 @@ object_defs:
     const woodInstance = spawn(codex, 'wood3');
     const axeInstance = spawn(codex, 'axe_tool3');
 
-    const executed = woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop');
+    const executed =
+      woodInstance
+        .combinationsWith(axeInstance, undefined)
+        .find((c) => c.name === 'chop')
+        ?.tryExecute() === true;
 
     expect(executed, "object_def自身のidではなく、参照したtrait経由で得た'sharp_tool'タグでマッチする").toBe(
       true,
@@ -398,10 +410,18 @@ object_defs:
     const grassInstance = spawn(codex, 'dry_grass2');
 
     expect(
-      hearthInstance.tryExecuteCombination(grassInstance, undefined, 'ignite'),
+      hearthInstance
+        .combinationsWith(grassInstance, undefined)
+        .find((c) => c.name === 'ignite')
+        ?.tryExecute() === true,
       '同じタグを持っていても、別の型はマッチしない',
     ).toBe(false);
-    expect(hearthInstance.tryExecuteCombination(tinderInstance, undefined, 'ignite')).toBe(true);
+    expect(
+      hearthInstance
+        .combinationsWith(tinderInstance, undefined)
+        .find((c) => c.name === 'ignite')
+        ?.tryExecute() === true,
+    ).toBe(true);
     expect(tinderInstance.parent, 'destroy: draggedが適用される').toBeUndefined();
   });
 
@@ -449,11 +469,19 @@ object_defs:
     const axeInstance = spawn(codex, 'axe_tool5');
 
     expect(
-      woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop'),
+      woodInstance
+        .combinationsWith(axeInstance, undefined)
+        .find((c) => c.name === 'chop')
+        ?.tryExecute() === true,
       'durabilityが0(gt 0を満たさない)なので実行されない',
     ).toBe(false);
 
     axeInstance.getProperty(durabilityId).init(1);
-    expect(woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop')).toBe(true);
+    expect(
+      woodInstance
+        .combinationsWith(axeInstance, undefined)
+        .find((c) => c.name === 'chop')
+        ?.tryExecute() === true,
+    ).toBe(true);
   });
 });

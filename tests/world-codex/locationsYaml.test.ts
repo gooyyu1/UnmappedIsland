@@ -94,15 +94,18 @@ describe('locations.yamlの土地・道定義', () => {
       const max = land.def.getPropertyDef(progressId)?.range?.max ?? 0;
 
       land.getProperty(progressId).init(max - 1);
-      expect(land.tryExecuteAction('explore', undefined), `${name}: 探索できる`).toBe(true);
+      expect(land.tryGetAction('explore', undefined)?.tryExecute() === true, `${name}: 探索できる`).toBe(
+        true,
+      );
       expect(
         land.tryGetProperty(progressId)?.number ?? 0,
         `${name}: 探索1回で進捗が+1される（どの抽選候補でも）`,
       ).toBe(max);
 
-      expect(land.tryExecuteAction('explore', undefined), `${name}: 探索率100%でも探索は続けられる`).toBe(
-        true,
-      );
+      expect(
+        land.tryGetAction('explore', undefined)?.tryExecute() === true,
+        `${name}: 探索率100%でも探索は続けられる`,
+      ).toBe(true);
       expect(land.tryGetProperty(progressId)?.number ?? 0, `${name}: 100%を超えた進捗は上限に張り付く`).toBe(
         max,
       );

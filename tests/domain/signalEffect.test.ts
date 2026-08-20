@@ -116,7 +116,12 @@ object_defs:
       session.observeChanges(
         (change) => changes.push(change),
         () => {
-          expect(beast.tryExecuteCombination(stick, undefined, 'hit_me')).toBe(true);
+          expect(
+            beast
+              .combinationsWith(stick, undefined)
+              .find((c) => c.name === 'hit_me')
+              ?.tryExecute() === true,
+          ).toBe(true);
         },
       );
     });
@@ -130,7 +135,12 @@ object_defs:
     const stick = placeOnGround('stick');
 
     const seen = observe(() => {
-      expect(beast.tryExecuteCombination(stick, undefined, 'hit_me')).toBe(true);
+      expect(
+        beast
+          .combinationsWith(stick, undefined)
+          .find((c) => c.name === 'hit_me')
+          ?.tryExecute() === true,
+      ).toBe(true);
     });
 
     expect(seen).toEqual(['beast: hit']);
@@ -141,7 +151,12 @@ object_defs:
     const stick = placeOnGround('stick');
 
     const seen = observe(() => {
-      expect(beast.tryExecuteCombination(stick, undefined, 'shrug_off')).toBe(true);
+      expect(
+        beast
+          .combinationsWith(stick, undefined)
+          .find((c) => c.name === 'shrug_off')
+          ?.tryExecute() === true,
+      ).toBe(true);
     });
 
     expect(seen).toEqual(['stick: bounced']);
@@ -150,7 +165,7 @@ object_defs:
   it('解決できない対象へは何も告げない', () => {
     // 他の命令が対象を解決できないときと同じ扱い（actorを渡さずに実行している）。
     const seen = observe(() => {
-      expect(beast.tryExecuteAction('roar', undefined)).toBe(true);
+      expect(beast.tryGetAction('roar', undefined)?.tryExecute() === true).toBe(true);
     });
 
     expect(seen).toEqual([]);
@@ -158,11 +173,21 @@ object_defs:
 
   it('どの候補を引いたかで、違う出来事が告げられる', () => {
     const first = observe(() => {
-      expect(beast.tryExecuteCombination(placeOnGround('stick'), undefined, 'hit_me')).toBe(true);
+      expect(
+        beast
+          .combinationsWith(placeOnGround('stick'), undefined)
+          .find((c) => c.name === 'hit_me')
+          ?.tryExecute() === true,
+      ).toBe(true);
     });
     open(MISSES);
     const second = observe(() => {
-      expect(beast.tryExecuteCombination(placeOnGround('stick'), undefined, 'hit_me')).toBe(true);
+      expect(
+        beast
+          .combinationsWith(placeOnGround('stick'), undefined)
+          .find((c) => c.name === 'hit_me')
+          ?.tryExecute() === true,
+      ).toBe(true);
     });
 
     expect(first).toEqual(['beast: hit']);
@@ -173,7 +198,7 @@ object_defs:
     // rangeイベントの効果は対象がselfに限られるが、省略形（`signal: weakened`）がそのまま
     // selfを指すので、書ける形が減るだけで使えなくはならない。
     const seen = observe(() => {
-      expect(beast.tryExecuteAction('exhaust', undefined)).toBe(true);
+      expect(beast.tryGetAction('exhaust', undefined)?.tryExecute() === true).toBe(true);
     });
 
     expect(seen).toEqual(['beast: weakened']);
@@ -181,7 +206,12 @@ object_defs:
 
   it('観測していない間に告げられた分は残らない（溜め置きはしない）', () => {
     const stick = placeOnGround('stick');
-    expect(beast.tryExecuteCombination(stick, undefined, 'hit_me')).toBe(true);
+    expect(
+      beast
+        .combinationsWith(stick, undefined)
+        .find((c) => c.name === 'hit_me')
+        ?.tryExecute() === true,
+    ).toBe(true);
 
     const seen = observe(() => {
       // 何もしない。
@@ -195,7 +225,12 @@ object_defs:
     const outer: string[] = [];
     const inner: string[] = [];
     const strike = (): void => {
-      expect(beast.tryExecuteCombination(placeOnGround('stick'), undefined, 'hit_me')).toBe(true);
+      expect(
+        beast
+          .combinationsWith(placeOnGround('stick'), undefined)
+          .find((c) => c.name === 'hit_me')
+          ?.tryExecute() === true,
+      ).toBe(true);
     };
 
     session.observeSignals(

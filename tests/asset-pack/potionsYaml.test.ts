@@ -62,7 +62,7 @@ describe('サンプルアセットパックの薬', () => {
     const potion = spawn('poison_potion', 2);
     const bloodId = codex.propertyNames.getId('blood');
 
-    expect(potion.tryExecuteAction('drink', character)).toBe(true);
+    expect(potion.tryGetAction('drink', character)?.tryExecute() === true).toBe(true);
 
     // bloodのon_minが既定のクランプを置き換えるので、0を割った値がそのまま残る
     // （VitalsSystem.md 3節・6節）。死因はその段が名乗る。
@@ -76,7 +76,7 @@ describe('サンプルアセットパックの薬', () => {
     const bloodId = codex.propertyNames.getId('blood');
     character.getProperty(bloodId).init(0);
 
-    expect(potion.tryExecuteAction('drink', character)).toBe(true);
+    expect(potion.tryGetAction('drink', character)?.tryExecute() === true).toBe(true);
 
     expect(character.tryGetProperty(bloodId)?.number ?? 0).toBe(5000);
   });
@@ -87,7 +87,7 @@ describe('サンプルアセットパックの薬', () => {
     const potion = spawn(objectName, 2);
     expect(potion.moveToSlot(character, handId)).toBeUndefined();
 
-    expect(potion.tryExecuteAction('drink', character)).toBe(true);
+    expect(potion.tryGetAction('drink', character)?.tryExecute() === true).toBe(true);
 
     expect(character.tryGetSlot(handId)?.contents).toEqual([]);
   });
