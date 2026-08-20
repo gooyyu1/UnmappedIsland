@@ -130,6 +130,45 @@ export class WorldCodex implements DefNames {
   }
 
   /**
+   * 生成型（3.5節）の素の型。生成型でなければ自分自身。**絵と名前の骨格はここから引く**
+   * ——変種のために絵を描き足す道は無いので、素の型のものを映す。
+   */
+  baseOf(def: ObjectDef): ObjectDef {
+    return this.objects.get(this.generatedTypes.coordinateOf(def).baseGlobalId);
+  }
+
+  /**
+   * ロード時に自動生成された型か（3.5節）。**一覧にも対応表にも自分の場所を持たない**——名前も絵も
+   * 素の型から組み立てるので、並べても同じ物の別の顔が増えるだけになる。
+   */
+  isGenerated(def: ObjectDef): boolean {
+    return this.baseOf(def) !== def;
+  }
+
+  /**
+   * この型が軸の値として持っている型（3.5節）。素の型では空。
+   *
+   * **レシピの軸は含めません**——製作中オブジェクトが持つのは中身ではなく「作りかけ」という状態で、
+   * 名前も絵も別の規約（productOf）で決まるためです。
+   */
+  contentsOf(def: ObjectDef): readonly ObjectDef[] {
+    const contents: ObjectDef[] = [];
+    for (const axis of this.contentAxesOf(def)) {
+      const value = this.generatedTypes.coordinateOf(def).axisValues.get(axis)!;
+      const globalId = this.objectNames.tryGetId(value);
+      if (globalId !== undefined) contents.push(this.objects.get(globalId));
+    }
+    return contents;
+  }
+
+  /** この型が値を持っている軸のうち、中身を表すもの（レシピの軸を除く、contentsOf参照）。 */
+  contentAxesOf(def: ObjectDef): readonly string[] {
+    return [...this.generatedTypes.coordinateOf(def).axisValues.keys()].filter(
+      (axis) => axis !== RECIPE_AXIS,
+    );
+  }
+
+  /**
    * defの座標から、axisValuesで指した軸だけを動かした先の型（`become`、9.9節）。その座標に型が
    * 居なければundefined＝そこへは変われない。
    */

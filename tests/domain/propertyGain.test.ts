@@ -81,27 +81,25 @@ describe('操作が増やした値の観測', () => {
     expect(amounts.has('body_fat')).toBe(false);
   });
 
-  it('出どころは、飲み干した水のように世界から出た物でも、抱えていた器まで辿れる', () => {
-    // 水は札を持たず、器の札が中身入りの姿で出ている（represented_by）。飲む操作を宣言しているのは
-    // 水そのものなので、湧かせる札を決めるには器まで辿れなければならない。
+  it('出どころは、飲み干して型が変わった器でも、同じ札を指し続ける', () => {
+    // 中身入りの器は1つの型（3.5節）で、飲み干すと素の型（空の器）へ戻る。**変わるのは型だけで
+    // 個体は続く**ので、湧かせる札は型が変わった後も同じ札のまま。
     drain('hydration', 100);
     const bowl = spawn('coconut_bowl');
     expect(bowl.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
-    const water = spawn('water_liquid');
-    expect(water.moveToSlot(bowl, codex.slotNames.getId('content'))).toBeUndefined();
-    water.setNumber(codex.propertyNames.getId('volume'), 250, session);
+    bowl.becomeAlong(new Map([['content', 'water_liquid']]), session);
+    bowl.setNumber(codex.propertyNames.getId('fill'), 250, session);
 
     const observed: InteractionGains[] = [];
     session.observeGains(
       (gains) => observed.push(gains),
       () => {
-        expect(water.tryExecuteAction('drink', player, session)).toBe(true);
+        expect(bowl.tryExecuteAction('drink', player, session)).toBe(true);
       },
     );
 
-    expect(water.parent, '飲み干した水は世界から出ている').toBeUndefined();
+    expect(bowl.def.name, '飲み干した器は空へ戻っている').toBe('coconut_bowl');
     expect(observed[0].source.map((object) => object.def.name)).toEqual([
-      'water_liquid',
       'coconut_bowl',
       SAMPLE_CHARACTER,
       'sandy_beach',

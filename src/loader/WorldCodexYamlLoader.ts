@@ -23,6 +23,7 @@ import { ObjectDefTable } from '../domain/ObjectDef';
 import { WellKnownProperties } from '../domain/WellKnownProperties';
 import { IN_PROGRESS_SOURCE, inProgressCoordinateOf, inProgressObjectsYaml } from './inProgressObjects';
 import { GeneratedTypes } from '../domain/GeneratedTypes';
+import { AXIS_VARIANT_SOURCE, axisVariantsYaml } from './axisVariants';
 import { WorldCodex } from '../domain/WorldCodex';
 import type { AxisDef } from '../domain/generation/AxisDef';
 import type { GenerationScopeDef } from '../domain/generation/GenerationScopeDef';
@@ -185,6 +186,20 @@ export class WorldCodexYamlLoader {
         const def = raw.resolve(this.globalTraits, this);
         objectDefsByGlobalId.set(def.globalId, def);
         generatedTypes.register(def.globalId, inProgressCoordinateOf(name, this.objectNames));
+      }
+    }
+
+    // 軸を宣言した型から変種を生成する（3.5節）。製作中オブジェクトの後に行うのは、素の型が持つ
+    // recipesを変種へ写さないため（作れるのは空の容器のほう）。
+    const variants = axisVariantsYaml(this.globalObjectDefs, [...objectDefsByGlobalId.values()], this);
+    if (variants !== undefined) {
+      const authored = new Set(this.globalObjectDefs.keys());
+      this.load(AXIS_VARIANT_SOURCE, variants.yaml);
+      for (const [name, raw] of this.globalObjectDefs) {
+        if (authored.has(name)) continue;
+        const def = raw.resolve(this.globalTraits, this);
+        objectDefsByGlobalId.set(def.globalId, def);
+        generatedTypes.register(def.globalId, variants.coordinates.get(name)!);
       }
     }
 

@@ -261,10 +261,14 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
   it('ヤシの殻は液体を入れられ、持ち歩ける', () => {
     const bowl = spawnInto('coconut_bowl', player, 'hand');
-    const water = session.spawn(codex.objectNames.getId('water_liquid'));
 
-    expect(water.moveToSlot(bowl, codex.slotNames.getId('content'))).toBeUndefined();
-    expect(handOf(player), '手持ちのaccepts（itemタグ）を通る').toEqual(['coconut_bowl']);
+    // 中身入りは容器の変種（3.5節）。同じ個体のまま水入りになり、持ち物としての立場は変わらない。
+    bowl.becomeAlong(new Map([['content', 'water_liquid']]), session);
+
+    expect(bowl.def.name).toBe('coconut_bowl__content_water_liquid');
+    expect(handOf(player), '手持ちのaccepts（itemタグ）を通る').toEqual([
+      'coconut_bowl__content_water_liquid',
+    ]);
   });
 
   it('果肉を食べると満腹度・水分・栄養が増え、果肉は無くなる', () => {

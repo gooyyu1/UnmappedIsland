@@ -7,6 +7,7 @@ import type { WellKnownProperties } from './WellKnownProperties';
 import type { ObjectStack } from './ObjectStack';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
+import { NO_AXIS_VALUE } from './GeneratedTypes';
 import type { PropertyDef } from './PropertyDef';
 import { PropertyValue } from './PropertyValue';
 import type { Requirement } from './Requirement';
@@ -176,8 +177,24 @@ export class WorldObject {
    */
   private settleChangedVolume(globalPropertyId: number, session: WorldSession | undefined): void {
     if (session === undefined) return;
+    if (globalPropertyId === this.wellKnown.fillId) this.settleFill(session);
     if (!this.def.isQuantitative || globalPropertyId !== this.wellKnown.volumeId) return;
     this.settleVolume(session);
+  }
+
+  /**
+   * 中身が尽きた変種を素の型へ戻す（3.5節）。**空の容器は「中身の軸を持たない座標」そのもの**なので、
+   * 量が0になった変種がそのまま残ると、空なのに中身入りの型を名乗る個体ができてしまう。
+   *
+   * rangeイベント（6.3節）には載せられない——`transfer`は`range.min`を「出せる量の床」と見るため、
+   * 境界を`range`の外へ置くと注ぎ切ることも飲み干すこともできなくなる。
+   */
+  private settleFill(session: WorldSession): void {
+    if (this.getNumber(this.wellKnown.fillId) > 0) return;
+
+    const axes = this.session.codex.contentAxesOf(this._def);
+    if (axes.length === 0) return;
+    this.becomeAlong(new Map(axes.map((axis) => [axis, NO_AXIS_VALUE])), session);
   }
 
   /** 指定したプロパティが、今まさに指定した名前のstageに該当しているか（WhenOwnStageゲート専用、6.4節・8節）。 */
@@ -704,9 +721,9 @@ export class WorldObject {
   containerContributionTo(propertyGlobalId: number): number {
     const wellKnown = this.wellKnown;
     if (propertyGlobalId === wellKnown.weightId) {
-      let sum = this.def.isQuantitative
-        ? this.getNumber(wellKnown.volumeId) * this.getNumber(wellKnown.densityId, 1)
-        : 0;
+      // 中身入りの変種は、抱えている量ぶんだけ自分が重い（fill × density = mL × g/mL = g）。
+      // 空の容器はfillを持たないので0になり、器の自重だけが残る。
+      let sum = this.getNumber(wellKnown.fillId) * this.getNumber(wellKnown.densityId, 1);
       for (const slot of this.slots) for (const child of slot.contents) sum += child.effectiveWeight();
       return sum;
     }
@@ -1025,6 +1042,7 @@ export class WorldObject {
     }
 
     if (this.def.isQuantitative) this.settleVolume(session);
+    this.settleFill(session);
   }
 
   /**

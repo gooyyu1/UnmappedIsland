@@ -502,7 +502,7 @@ function objectCosts(
   const rows: ObjectCost[] = [];
   for (const def of allDefs(codex)) {
     if (def.isSingleton || def.boundToOwner) continue;
-    if (codex.productOf(def) !== undefined) continue;
+    if (codex.isGenerated(def)) continue;
     // 土地は生成されるもので、手に入れるものではない。**ただし作れる土地は対象**——筏は乗り込む
     // 場所であると同時に、丸太と縄から組み上げる物でもある。
     if (isLocation(codex, def) && !islandWide.producedObjects.has(def.globalId)) continue;
@@ -958,7 +958,7 @@ function scaleCost(cost: Cost, factor: number): Cost {
 function isLocation(codex: WorldCodex, def: ObjectDef): boolean {
   const locationTag = codex.tagNames.tryGetId('location');
   if (locationTag === undefined || !def.tags.includes(locationTag)) return false;
-  return codex.productOf(def) === undefined;
+  return !codex.isGenerated(def);
 }
 
 function allDefs(codex: WorldCodex): readonly ObjectDef[] {

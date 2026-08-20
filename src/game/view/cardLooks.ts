@@ -6,6 +6,8 @@ import { currentStep, stepSupplyRatio } from '../../domain/crafting';
 import { IN_PROGRESS_TAG, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../../loader/inProgressObjects';
 import type { Localization } from '../../locale/Localization';
 import { artNameFor } from '../../art/objectArt';
+import { FILL_PROPERTY } from '../../loader/axisVariants';
+import { typeDisplayName } from '../../locale/typeDisplayName';
 import type { SlotRef } from '../../art/backgroundArt';
 import { placeholderIconOf } from './characterCard';
 import { recipeOf } from './recipeList';
@@ -207,25 +209,22 @@ export function cardLooksOf(
   };
 
   const colorPropertyId = codex.propertyNames.tryGetId(COLOR_PROPERTY);
+  const fillPropertyId = codex.propertyNames.tryGetId(FILL_PROPERTY);
   /**
-   * 量として存在する中身（水・茶・油）のバー（LiquidContainerSystem.md 2節・4.1節）。
+   * 中身のバー（LiquidContainerSystem.md 2節・4.1節）。
    *
-   * 割合は中身自身の状態なので、代表（represented_by、7.6節）が量的オブジェクトかどうかだけで
-   * 決まる。空の容器は代表が自分自身になるため、バーは出ない——映す中身がいない。UI側は容器の
-   * スロット名を知らない。**色は良し悪しではなく中身そのものの色**なので、両端の見せ方ではなく
-   * 中身が`color`として宣言した値をそのまま渡す（宣言していない液体は灰色）。
+   * **`fill`を持っているかどうかだけで決まります。** 中身入りの容器はロード時に生成された変種で
+   * （3.5節）、`fill`はその変種にしかありません——空の容器は持たないので、バーも出ません。
+   * **色は良し悪しではなく中身そのものの色**なので、両端の見せ方ではなく`color`として宣言された
+   * 値をそのまま渡します（宣言していない液体は灰色）。
    */
   const fillGaugeOf = (object: WorldObject): CardGauge | undefined => {
-    const content = object.tryGetRepresentative();
-    if (content === undefined || !content.def.isQuantitative) return undefined;
-
-    const ratio = content.fillRatioInParentSlot();
+    if (fillPropertyId === undefined) return undefined;
+    const ratio = object.tryGetProperty(fillPropertyId)?.ratio;
     if (ratio === undefined) return undefined;
 
     const color =
-      colorPropertyId === undefined
-        ? undefined
-        : content.tryGetProperty(colorPropertyId)?.getEffectiveValue();
+      colorPropertyId === undefined ? undefined : object.tryGetProperty(colorPropertyId)?.getEffectiveValue();
     return { ...NEUTRAL_ENDS, key: BUILTIN_GAUGE_KEYS.fill, ratio, color: color ?? COLOR.cardFillUnknown };
   };
 
@@ -332,15 +331,7 @@ export function cardLooksOf(
   const toolTagId = codex.tagNames.tryGetId('tool');
   const wipTagId = codex.tagNames.tryGetId(IN_PROGRESS_TAG);
 
-  /** その型の表示名。インスタンスを見ないので、中身による差し替え（水入りの水筒）は含まない。 */
-  const typeNameOf = (def: ObjectDef): string => {
-    const texts = locale.object(def.name);
-    // 製作中オブジェクトは自動生成なので対応表に載らない。完成品の名前から組み立てる。
-    const product = codex.productOf(def);
-    return product === undefined
-      ? texts.displayName
-      : texts.displayNameInProgress(locale.object(product.name).displayName);
-  };
+  const typeNameOf = (def: ObjectDef): string => typeDisplayName(codex, locale, def);
 
   /**
    * そのオブジェクトの表示名。**個体に名前が付いていればそれ**（土地）。付いていなければ型の名前で、
@@ -352,14 +343,7 @@ export function cardLooksOf(
     // 別の場所として呼ばれる。
     const named = instanceName(object.instanceId);
     if (named !== undefined) return named;
-
-    // 製作中オブジェクトも中身（材料）を持つが、名前は型のものをそのまま使う。
-    if (codex.productOf(object.def) !== undefined) return typeNameOf(object.def);
-
-    const content = object.tryGetRepresentative();
-    return content === undefined
-      ? typeNameOf(object.def)
-      : locale.object(object.def.name).displayNameWithContent(nameOf(content));
+    return typeNameOf(object.def);
   };
 
   /**
@@ -406,7 +390,7 @@ export function cardLooksOf(
    * （CardView.md 5.1節）。型だけのカード（instance無し）は個体の状態を持たないので常に型自身の絵。
    */
   const artOf = (def: ObjectDef, instance?: WorldObject): string =>
-    artNameFor((codex.productOf(def) ?? def).name, instance?.artSuffix());
+    artNameFor(codex.baseOf(def).name, instance?.artSuffix());
 
   /**
    * そのオブジェクトが今在るスロット（カードの地を引く先。CardView.md 7節）。

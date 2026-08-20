@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { Localization } from '../../src/locale/Localization';
 import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
+import { typeDisplayName } from '../../src/locale/typeDisplayName';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexYamlPaths } from '../support/worldCodexFiles';
@@ -240,10 +241,8 @@ describe('同梱の表示文字列ファイル', () => {
     for (let globalId = 0; globalId < codex.objects.count; globalId++) {
       const objectDef = codex.objects.get(globalId);
       if (!carded.some((tag) => objectDef.tags.includes(tag))) continue;
-      // 製作中オブジェクト（自動生成）は自分のエントリを持たず、完成品の名前と
-      // default.display_name_in_progress から組み立てる（PlayScreenViewのnameOf）。
-      if (codex.productOf(objectDef) !== undefined) continue;
-      expect(locale.object(objectDef.name).displayName, `${objectDef.name} には表示名が必要`).not.toBe(
+      // 自動生成された型は自分のエントリを持たず、素の型の名前と書式から組み立てる（3.5節）。
+      expect(typeDisplayName(codex, locale, objectDef), `${objectDef.name} には表示名が必要`).not.toBe(
         objectDef.name,
       );
     }
@@ -342,8 +341,9 @@ describe('同梱の表示文字列ファイル', () => {
     // 常に大きめに出る——16uでの英字の平均は0.50字ぶんで、最も細い並び（illi…）は0.19字ぶん。
     // つまり**この検査を通れば実物は必ず収まる**。
     for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const name = codex.objects.get(globalId).name;
-      const label = locale.object(name).displayName;
+      const def = codex.objects.get(globalId);
+      const name = def.name;
+      const label = typeDisplayName(codex, locale, def);
       expect(nameWidth(label), `'${label}' (${name}) はカードのタイトルに収まらない`).toBeLessThanOrEqual(
         NAME_MAX_WIDTH,
       );

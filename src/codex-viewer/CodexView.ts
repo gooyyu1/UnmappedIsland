@@ -62,7 +62,7 @@ export class CodexView {
     for (let globalId = 0; globalId < this.codex.objects.count; globalId++) {
       const def: ObjectDef | undefined = this.codex.objects.get(globalId);
       // 名前だけが登録されて定義が無いグローバルID（参照だけされた型）は飛ばす。
-      if (def !== undefined && this.codex.productOf(def) === undefined) defs.push(def);
+      if (def !== undefined && !this.codex.isGenerated(def)) defs.push(def);
     }
     return defs;
   }

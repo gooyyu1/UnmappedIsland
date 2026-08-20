@@ -68,11 +68,11 @@ object_defs:
       contents:
         cell: {accept: {tag: item}}
 
+  # 量を抱えている物（中身入りの容器、LiquidContainerSystem.md 2節）。fill × density が自分の重さになる。
   water:
     tags: [item]
-    quantitative: true
     props:
-      volume: {value: 0}
+      fill: {value: 0}
       density: {value: 1}
 `;
 
@@ -153,12 +153,12 @@ object_defs:
     const { codex, session, weightId, make, put } = build();
     const sledge = make('sledge');
     const water = make('water');
-    water.setNumber(codex.wellKnown.volumeId, 1000, session);
+    water.setNumber(codex.wellKnown.fillId, 1000, session);
     put(water, sledge, 'cargo');
 
     expect(sledge.getEffectiveValue(weightId), '自重1000 + 水1L(1000mL × 密度1 = 1000g)').toBe(2000);
 
-    water.setNumber(codex.wellKnown.volumeId, 500, session);
+    water.setNumber(codex.wellKnown.fillId, 500, session);
     expect(sledge.getEffectiveValue(weightId), '蒸発しても読み直せば正しい').toBe(1500);
   });
 
