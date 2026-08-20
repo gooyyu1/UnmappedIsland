@@ -133,7 +133,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(bowl.getEffectiveValue(weightId), '飲めばそのぶん軽くなる').toBe(200);
   });
 
-  it('容量は軸の宣言のcapacityが決める', () => {
+  it('容量は軸の宣言が変種へ渡すfillのrangeが決める', () => {
     expect(capacityOf('coconut_bowl'), 'ヤシの器は250mL').toBe(250);
     expect(capacityOf('canteen'), '水筒は1L').toBe(1000);
     expect(capacityOf('bottle'), '瓶は2L').toBe(2000);

@@ -15,6 +15,12 @@ export interface GeneratedCoordinate {
 
   /** 軸名 → 値の識別子。どちらも生成器が決める名前で、ここは意味を解釈しない。 */
   readonly axisValues: ReadonlyMap<string, string>;
+
+  /**
+   * 軸名 → 尽きるとその軸が外れるプロパティのグローバルID（宣言した軸だけ）。
+   * **何が「量」かは宣言が決め、エンジンは名前を知りません**（`exhausted_when`、3.5.1節）。
+   */
+  readonly exhaustedWhen?: ReadonlyMap<string, number>;
 }
 
 /**
@@ -66,12 +72,22 @@ export class GeneratedTypes {
     return this.byKey.get(keyOf({ baseGlobalId: current.baseGlobalId, axisValues: moved }));
   }
 
+  /**
+   * defの軸のうち、そのプロパティが尽きたときに外れるもの（軸名 → プロパティのグローバルID）。
+   * 宣言が無い軸は含まれない。
+   */
+  exhaustionRulesOf(def: ObjectDef): ReadonlyMap<string, number> {
+    return this.coordinates.get(def.globalId)?.exhaustedWhen ?? EMPTY_RULES;
+  }
+
   /** defが軸axisの値を持つ生成型なら、その素の型のグローバルID。そうでなければundefined。 */
   baseAlong(def: ObjectDef, axis: string): number | undefined {
     const coordinate = this.coordinates.get(def.globalId);
     return coordinate?.axisValues.has(axis) === true ? coordinate.baseGlobalId : undefined;
   }
 }
+
+const EMPTY_RULES: ReadonlyMap<string, number> = new Map();
 
 /** 座標を1つの文字列へ畳む。軸は宣言順を持たないので、名前で整列してから並べる。 */
 function keyOf(coordinate: GeneratedCoordinate): string {

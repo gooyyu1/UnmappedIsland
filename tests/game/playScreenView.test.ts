@@ -1215,7 +1215,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('combinationOfは、withタグが合うカード同士にだけ実行手段を返す', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const view = fromGameSession(game, codex, locale);
-    // water_liquidはwith: water_liquidのpour_inを持つ（liquid_containers.yaml）。
+    // 水入りの器はwith: waterのpour_into_filledを持つ（liquid_containers.yaml）。
     const cardOf = (name: string) => {
       const objects = [game.session.spawn(codex.objectNames.getId(name))];
       return {
@@ -1230,9 +1230,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
         contentsFor: () => undefined,
       };
     };
-    const water = cardOf('water_liquid');
+    const filled = 'coconut_bowl__content_water_liquid';
+    const water = cardOf(filled);
 
-    expect(view.combinationOf(water, cardOf('water_liquid'))?.execute).toBeTypeOf('function');
+    expect(view.combinationOf(water, cardOf(filled))?.execute).toBeTypeOf('function');
     expect(
       view.combinationOf(water, cardOf('stone')),
       'どちらにもマッチする組み合わせが無い',

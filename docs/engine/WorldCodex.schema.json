@@ -1437,22 +1437,24 @@
       }
     },
     "variation_axis_def": {
-      "description": "変種を並べる軸1本（GameElementDefinition.md 3.5.1節）。ofが選んだ型ごとに「素の型＋その型が持つtraits」の変種が生成され、量を持つfill（range: 0〜capacity）が足される。",
+      "description": "変種を並べる軸1本（GameElementDefinition.md 3.5.1節）。ofが選んだ型ごとに「素の型＋その型が持つtraits＋この軸のprops」の変種が生成される。",
       "type": "object",
       "properties": {
         "of": {
           "$ref": "#/$defs/type_match_rule",
           "description": "この軸の値になれる型。traitsだけを宣言した型でなければロードエラー。"
         },
-        "capacity": {
-          "type": "integer",
-          "minimum": 1,
-          "description": "その変種が抱えられる量の上限（fillのrangeの上端）。"
+        "props": {
+          "type": "object",
+          "description": "その軸の値を持つ変種にだけ足すprops（3.5.1節）。素の型ごとに違う値（容器ごとの上限など）を渡す口で、配られたtraitの同名の宣言をフィールド単位で上書きする。"
+        },
+        "exhausted_when": {
+          "$ref": "#/$defs/identifier",
+          "description": "尽きるとこの軸が外れるプロパティ名（3.5.1節）。0以下になった変種は素の型へ戻る。"
         }
       },
       "required": [
-        "of",
-        "capacity"
+        "of"
       ],
       "additionalProperties": false
     }

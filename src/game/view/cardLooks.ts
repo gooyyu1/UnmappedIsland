@@ -6,7 +6,6 @@ import { currentStep, stepSupplyRatio } from '../../domain/crafting';
 import { IN_PROGRESS_TAG, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../../loader/inProgressObjects';
 import type { Localization } from '../../locale/Localization';
 import { artNameFor } from '../../art/objectArt';
-import { FILL_PROPERTY } from '../../loader/axisVariants';
 import { typeDisplayName } from '../../locale/typeDisplayName';
 import type { SlotRef } from '../../art/backgroundArt';
 import { placeholderIconOf } from './characterCard';
@@ -209,7 +208,7 @@ export function cardLooksOf(
   };
 
   const colorPropertyId = codex.propertyNames.tryGetId(COLOR_PROPERTY);
-  const fillPropertyId = codex.propertyNames.tryGetId(FILL_PROPERTY);
+  const fillPropertyId = codex.wellKnown.fillId;
   /**
    * 中身のバー（LiquidContainerSystem.md 2節・4.1節）。
    *
@@ -219,7 +218,6 @@ export function cardLooksOf(
    * 値をそのまま渡します（宣言していない液体は灰色）。
    */
   const fillGaugeOf = (object: WorldObject): CardGauge | undefined => {
-    if (fillPropertyId === undefined) return undefined;
     const ratio = object.tryGetProperty(fillPropertyId)?.ratio;
     if (ratio === undefined) return undefined;
 
