@@ -35,4 +35,9 @@ export class NameRegistry {
   getName(id: number): string {
     return this.idToName[id];
   }
+
+  /** 登録されていないIDならundefined（エラーの文面のように、名前を出せないことがありうる場所で使う）。 */
+  tryGetName(id: number): string | undefined {
+    return this.idToName[id] as string | undefined;
+  }
 }

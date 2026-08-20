@@ -3,6 +3,7 @@ import { Action, Combination } from './Interaction';
 import { EffectSite } from './EffectSite';
 import type { SameSlotPlacement } from './EffectSite';
 import { LocalIndexMap } from './LocalIndexMap';
+import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef } from './ObjectDef';
 import type { ReferenceRoot } from './ReferenceRoot';
 import type { WellKnownProperties } from './WellKnownProperties';
@@ -109,7 +110,7 @@ export class WorldObject {
   getSlot(globalSlotId: number): Slot {
     const slot = this.tryGetSlot(globalSlotId);
     if (slot === undefined) {
-      throw new Error(`'${this.def.name}' はスロット(id=${globalSlotId})を持ちません。`);
+      throw new Error(this.missing('スロット', this.session.codex.slotNames, globalSlotId));
     }
     return slot;
   }
@@ -156,9 +157,23 @@ export class WorldObject {
   getProperty(globalPropertyId: number): PropertyValue {
     const property = this.tryGetProperty(globalPropertyId);
     if (property === undefined) {
-      throw new Error(`'${this.def.name}' はプロパティ(id=${globalPropertyId})を持ちません。`);
+      throw new Error(this.missing('プロパティ', this.session.codex.propertyNames, globalPropertyId));
     }
     return property;
+  }
+
+  /**
+   * getProperty・getSlotが引けなかったときの文面。**捕まえたいのはYAMLの書き間違い**なので、
+   * IDではなくその名前で言う（'path' はプロパティ 'travel_minute' を持ちません）。
+   *
+   * codexがそのIDを知らない場合だけIDのまま見せる——名前を出せないこと自体が、名前で引けなかった
+   * （NameRegistryに登録の無い名前を使った）という手掛かりになる。
+   */
+  private missing(kind: string, names: NameRegistry, globalId: number): string {
+    const name = names.tryGetName(globalId);
+    return name === undefined
+      ? `'${this.def.name}' は${kind}(id=${globalId})を持ちません。`
+      : `'${this.def.name}' は${kind} '${name}' を持ちません。`;
   }
 
   /**
