@@ -100,6 +100,12 @@ class OutcomeReader implements EffectReader {
   /** 居場所が変わるだけで、値も産出も動かない。 */
   move(): void {}
 
+  /**
+   * 型が変わるだけで、値も産出も動かない。**新しい型のプロパティを産出として数えない**——同じ個体が
+   * 続くのであって、何かが生まれるわけではない。
+   */
+  become(): void {}
+
   /** 出来事を告げるだけで、世界の形は変わらない。 */
   signal(_name: string): void {}
 

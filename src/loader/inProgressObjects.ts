@@ -1,6 +1,9 @@
 import { stringify } from 'yaml';
 import type { ObjectDef } from '../domain/ObjectDef';
+import type { GeneratedCoordinate } from '../domain/GeneratedTypes';
+import { NO_AXIS_VALUE } from '../domain/GeneratedTypes';
 import type { NameRegistry } from '../domain/NameRegistry';
+import { RECIPE_AXIS } from '../domain/RecipeDef';
 import type { TypeMatchRule } from '../domain/TypeMatchRule';
 
 /** 生成した定義の出所として、エラーメッセージに出す名前。 */
@@ -33,9 +36,19 @@ export function inProgressObjectName(productName: string, recipeName: string): s
   return `${productName}${NAME_SEPARATOR}${recipeName}`;
 }
 
-/** inProgressObjectNameで組み立てた名前から、完成品のグローバルIDを取り出す。 */
-export function productGlobalIdOf(inProgressName: string, objectNames: NameRegistry): number {
-  return objectNames.getId(inProgressName.slice(0, inProgressName.lastIndexOf(NAME_SEPARATOR)));
+/**
+ * inProgressObjectNameで組み立てた名前から、その型が居る座標（GameElementDefinition.md 3.5節）を
+ * 取り出す。素の型は完成品で、軸`recipe`の値がレシピの名前。
+ */
+export function inProgressCoordinateOf(
+  inProgressName: string,
+  objectNames: NameRegistry,
+): GeneratedCoordinate {
+  const separator = inProgressName.lastIndexOf(NAME_SEPARATOR);
+  return {
+    baseGlobalId: objectNames.getId(inProgressName.slice(0, separator)),
+    axisValues: new Map([[RECIPE_AXIS, inProgressName.slice(separator + NAME_SEPARATOR.length)]]),
+  };
 }
 
 const NAME_SEPARATOR = '__';
@@ -93,11 +106,9 @@ function inProgressObjectDef(
         // 上限を合計より1つ内側に置くのは、境界値ちょうどでは発火しないため（同6.3節）。
         // 全工程を終えると進捗は合計と等しくなるので、そこが上限だと完成しない。
         range: { min: 0, max: totalMinutes - 1 },
-        on_overflow: {
-          destroy: 'self',
-          // intoを省略しているので、自分がいたスロットへ完成品が生まれる（9.4節）。
-          spawn: { object: product.name },
-        },
+        // レシピの軸を落とした座標＝完成品そのものへ、同じ個体のまま変わる（9.9節・3.5節）。
+        // 残った素材はmaterialsスロットごと無くなるので親へこぼれる（RecipeSystem.md 3節）。
+        on_overflow: { become: { [RECIPE_AXIS]: NO_AXIS_VALUE } },
       },
       // 工程が1つのレシピでは、この値が動く前に最初の作業でそのまま完成してカードが入れ替わるので、
       // そもそも宣言しない（CardView.md 10.1節）。「gaugeを宣言したプロパティが無ければバーも

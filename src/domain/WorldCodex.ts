@@ -1,8 +1,10 @@
 import type { DefNames, DescriptionToken } from './Description';
 import { symbolRef, text } from './Description';
 import type { GenerationDefs } from './generation/GenerationDefs';
+import { GeneratedTypes } from './GeneratedTypes';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef, ObjectDefTable } from './ObjectDef';
+import { RECIPE_AXIS } from './RecipeDef';
 import type { SlotDef } from './SlotDef';
 import type { WellKnownProperties } from './WellKnownProperties';
 
@@ -38,12 +40,11 @@ export class WorldCodex implements DefNames {
   readonly generation: GenerationDefs | undefined;
 
   /**
-   * 自動生成された製作中オブジェクト（RecipeSystem.md 1節）→ その完成品のグローバルID。
-   *
-   * 製作中オブジェクトは名前も表示名もレシピから導かれるため、完成品を指す手掛かりを型自身は
-   * 持てない（YAMLの語彙に無い）。生成した側だけが知っている対応をここへ残す。
+   * ロード時に生成された型の座標表（GameElementDefinition.md 3.5節）。生成型は名前も表示名も
+   * 組み立てた結果でしかないため、素の型と軸の値の組をここへ残す。becomeの行き先解決も、
+   * 製作中オブジェクトから完成品を引くのも、この1つの表が答える。
    */
-  private readonly inProgressProducts: ReadonlyMap<number, number>;
+  readonly generatedTypes: GeneratedTypes;
 
   /**
    * レシピ一覧の棚に使うタグ（`recipe_categories`、Windows.md 9節）のグローバルID。
@@ -61,10 +62,10 @@ export class WorldCodex implements DefNames {
     objects: ObjectDefTable,
     wellKnown: WellKnownProperties,
     generation?: GenerationDefs,
-    inProgressProducts?: ReadonlyMap<number, number>,
+    generatedTypes?: GeneratedTypes,
     recipeCategoryTagIds: readonly number[] = [],
   ) {
-    this.inProgressProducts = inProgressProducts ?? new Map();
+    this.generatedTypes = generatedTypes ?? new GeneratedTypes();
     this.recipeCategoryTagIds = recipeCategoryTagIds;
     this.objectNames = objectNames;
     this.propertyNames = propertyNames;
@@ -122,10 +123,19 @@ export class WorldCodex implements DefNames {
 
   private symbolicPropertyIds: ReadonlySet<number> | undefined;
 
-  /** この型が製作中オブジェクトなら、その完成品の型。そうでなければundefined。 */
+  /** この型が製作中オブジェクトなら、その完成品の型（＝レシピの軸を落とした素の型）。 */
   productOf(def: ObjectDef): ObjectDef | undefined {
-    const productGlobalId = this.inProgressProducts.get(def.globalId);
+    const productGlobalId = this.generatedTypes.baseAlong(def, RECIPE_AXIS);
     return productGlobalId === undefined ? undefined : this.objects.get(productGlobalId);
+  }
+
+  /**
+   * defの座標から、axisValuesで指した軸だけを動かした先の型（`become`、9.9節）。その座標に型が
+   * 居なければundefined＝そこへは変われない。
+   */
+  tryResolveBecome(def: ObjectDef, axisValues: ReadonlyMap<string, string>): ObjectDef | undefined {
+    const globalId = this.generatedTypes.tryResolve(def, axisValues);
+    return globalId === undefined ? undefined : this.objects.get(globalId);
   }
 
   /**

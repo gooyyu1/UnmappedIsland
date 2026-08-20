@@ -76,7 +76,7 @@ describe('製作中オブジェクトの操作と材料の枠', () => {
     expect(craftingActions(wip, codex, game)[1].enabled, '揃ったので作業できる').toBe(true);
   });
 
-  it('作業すると工程が進み、出来上がった時点で作りかけは消える', () => {
+  it('作業すると工程が進み、出来上がると同じ札が完成品になる', () => {
     const { game, wip } = startWeaving();
     intoHand(game, 'woven_leaf', 6);
     craftingActions(wip, codex, game)[0].execute();
@@ -87,7 +87,7 @@ describe('製作中オブジェクトの操作と材料の枠', () => {
       game.startLocation.items.some((object) => object.def.name === 'woven_basket'),
       '1工程しかないレシピなので、1回の作業で編み籠になる',
     ).toBe(true);
-    expect(game.startLocation.items, '作りかけはもう無い').not.toContain(wip);
+    expect(wip.def.name, '作りかけの札がそのまま編み籠になる（become、9.9節）').toBe('woven_basket');
   });
 
   it('中断すると作りかけは消え、入れてあった素材はその場へこぼれる', () => {

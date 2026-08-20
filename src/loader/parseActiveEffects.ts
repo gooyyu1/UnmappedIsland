@@ -28,6 +28,7 @@ import {
   TransferEffect,
 } from '../domain/ActiveEffect';
 import type { ActiveEffect, SpawnTargetRoot } from '../domain/ActiveEffect';
+import { BecomeEffect } from '../domain/BecomeEffect';
 import { MoveEffect } from '../domain/MoveEffect';
 import { ObjectRef } from '../domain/ObjectRef';
 import { PickCandidateDef, PickEffect, WeightSpec } from '../domain/PickEffect';
@@ -78,6 +79,11 @@ export function parseActiveEffectBody(
         break;
       case 'spawn':
         operations.push(...parseSpawns(loader, keyContext, valueNode));
+        break;
+      case 'become':
+        operations.push(
+          parseBecome(loader, keyContext, asMap(valueNode, keyContext), allowDragged, selfOnly),
+        );
         break;
       case 'signal':
         operations.push(...parseSignals(keyContext, valueNode, allowDragged, selfOnly));
@@ -598,6 +604,35 @@ function parseObjectRef(
     throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
 
   return ObjectRef.ofProperty(loader.propertyNames.intern(propName));
+}
+
+/**
+ * become（9.9節）を読む。`subject`以外のキーはすべて**動かす軸とその値**で、軸の名前は生成器が
+ * 決めるためエンジン側の語彙には無い（3.5節）。だからここは名前を検証せず、識別子としてそのまま持つ
+ * ——存在しない座標を指した宣言は、ロード時ではなく実行時に「そこへは変われない」として現れる。
+ */
+function parseBecome(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YAMLMap,
+  allowDragged: boolean,
+  selfOnly: boolean,
+): BecomeEffect {
+  let subject: ObjectRef | undefined;
+  const axisValues = new Map<string, string>();
+
+  for (const [key, valueNode] of entriesInOrder(node)) {
+    if (key === 'subject') {
+      subject = parseObjectRef(loader, `${context}.subject`, valueNode, allowDragged, selfOnly);
+      continue;
+    }
+    axisValues.set(key, asScalarText(valueNode, `${context}.${key}`));
+  }
+
+  if (axisValues.size === 0)
+    throw new YamlLoadError(`${context}: 動かす軸を1つ以上書いてください（例: 'content: water_liquid'）。`);
+
+  return new BecomeEffect(subject ?? ObjectRef.ofRoot('self'), axisValues);
 }
 
 /**

@@ -7,6 +7,7 @@ import type { WellKnownProperties } from './WellKnownProperties';
 import type { ObjectStack } from './ObjectStack';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
+import type { PropertyDef } from './PropertyDef';
 import { PropertyValue } from './PropertyValue';
 import type { Requirement } from './Requirement';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
@@ -29,13 +30,24 @@ import type { WorldSession } from './WorldSession';
  * same_slot spawnの位置捕捉（EffectSite）・配置（place）を持つが、値の変更そのものは対象のPropertyValueへ、
  * 条件判定・抽選はDef側の効果へ委ねる。
  */
+/** rangeを持つプロパティなら、その両端へ丸めた値。rangeが無ければそのまま（becomeType参照）。 */
+function clampToRange(def: PropertyDef, value: number): number {
+  const range = def.range;
+  return range === undefined ? value : Math.min(range.max, Math.max(range.min, value));
+}
+
 export class WorldObject {
   readonly instanceId: number;
-  readonly def: ObjectDef;
+
+  /** 今の型。becomeType（9.9節）だけが差し替える——同じ個体のまま型だけが変わる。 */
+  private _def: ObjectDef;
+  get def(): ObjectDef {
+    return this._def;
+  }
 
   // ローカルindexで並ぶ密配列。それぞれdef.propertyDefs / def.slotDefsと対になる。
-  private readonly properties: PropertyValue[];
-  private readonly slots: Slot[];
+  private properties: PropertyValue[];
+  private slots: Slot[];
 
   /** 所属先（7.1節）。ルート（未格納）ならundefined。 */
   private _parent: WorldObject | undefined;
@@ -75,7 +87,7 @@ export class WorldObject {
   /** sessionは必須（value:{min,max}を持つプロパティの初期値ランダム化にsession.rngを使う）。 */
   constructor(instanceId: number, def: ObjectDef, session: WorldSession) {
     this.instanceId = instanceId;
-    this.def = def;
+    this._def = def;
     this.session = session;
 
     this.properties = def.enumeratePropertyDefs().map((pd) => new PropertyValue(pd, this, session.rng));
@@ -553,6 +565,95 @@ export class WorldObject {
       parent: this._parent,
       slotGlobalId: this._parent.getSlotByLocalId(this._parentSlotLocalId).def.globalId,
     };
+  }
+
+  /**
+   * axisValuesで指した座標に居る型へ、同じ個体のまま変わる（9.9節）。行き先に型が居なければ何もしない。
+   */
+  becomeAlong(axisValues: ReadonlyMap<string, string>, session: WorldSession): void {
+    const destination = this.session.codex.tryResolveBecome(this._def, axisValues);
+    if (destination !== undefined) this.becomeType(destination, session);
+  }
+
+  /** その座標に型が居るか。居なければ、becomeを宣言した操作そのものが成立しない（9.9節）。 */
+  canBecomeAlong(axisValues: ReadonlyMap<string, string>): boolean {
+    return this.session.codex.tryResolveBecome(this._def, axisValues) !== undefined;
+  }
+
+  /**
+   * 同じ個体のまま型だけを差し替える（9.9節）。instanceIdも居場所も変わらず、変わるのは型と、そこから
+   * 決まるプロパティ・スロットの顔ぶれだけ。
+   *
+   * - 同じ名前のプロパティは値を引き継ぐ。新しいrangeから外れる値はクランプするだけで、range系イベント
+   *   （6.3節）は起こさない——器が変わったのは値の出来事ではない。
+   * - 同じ名前のスロットは中身をそのまま引き継ぐ。**新しい型が持たないスロットの中身は親へこぼれる**
+   *   （destroyと同じ規則、9.3節）。
+   *
+   * 登録済みの持続効果は、組み直す前にすべて解除して新しいdefで登録し直す——解除は宣言元のdefを辿るので、
+   * 先に差し替えると外し先を見失う。
+   */
+  becomeType(newDef: ObjectDef, session: WorldSession): void {
+    if (newDef === this._def) return;
+
+    // 新しい型のスロットを先に組み、中身を宣言順に配ってみる。**受け取れなかった中身は、まだ全部が
+    // 噛み合っているこの時点で送り出す**——旧スロットがまだ現役なので、どこから出たかも普段どおり残る。
+    const newSlots = newDef.enumerateSlotDefs().map((slotDef) => new Slot(slotDef));
+    const rehomed: Array<{ child: WorldObject; slotLocalId: number }> = [];
+    for (const slot of this.slots) {
+      const slotLocalId = newDef.slotLayout.toLocal(slot.def.globalId);
+      for (const child of [...slot.contents]) {
+        const destination = slotLocalId === LocalIndexMap.missing ? undefined : newSlots[slotLocalId];
+        if (
+          destination === undefined ||
+          destination.canAccept(child, this.wellKnown, newDef.name) !== undefined
+        ) {
+          this.evict(child);
+          continue;
+        }
+        destination.addInternal(child);
+        rehomed.push({ child, slotLocalId });
+      }
+    }
+
+    const parent = this._parent;
+
+    this.registerAncestorTargetedRecursively(false);
+    this._def.passives.registerRelation(this, 'self', false);
+    if (parent !== undefined) this.registerEdgeWith(parent, false);
+    for (const { child } of rehomed) child.registerEdgeWith(this, false);
+
+    const carriedValues = new Map<number, number>();
+    for (const property of this.properties) carriedValues.set(property.def.globalId, property.number);
+
+    this._def = newDef;
+    this.properties = newDef.enumeratePropertyDefs().map((pd) => new PropertyValue(pd, this, session.rng));
+    this.slots = newSlots;
+    for (const { child, slotLocalId } of rehomed) child.setParent(this, slotLocalId);
+
+    for (const property of this.properties) {
+      const carried = carriedValues.get(property.def.globalId);
+      if (carried !== undefined) property.copyValueFrom(clampToRange(property.def, carried));
+    }
+
+    this._def.passives.registerRelation(this, 'self', true);
+    if (parent !== undefined) this.registerEdgeWith(parent, true);
+    for (const { child } of rehomed) child.registerEdgeWith(this, true);
+    this.registerAncestorTargetedRecursively(true);
+
+    if (parent === undefined) return;
+    // 型が変われば同種の判定も変わる（7.6節）。変わったのは自分の型なので、代表チェーンが
+    // 入れ替わったときと同じ後始末で足りる。
+    parent.getSlotByLocalId(this._parentSlotLocalId).restack(this);
+    if (parent.isRepresentedBySlot(this._parentSlotLocalId)) parent.onRepresentationChanged();
+  }
+
+  /**
+   * 新しい型が受け取れなかった中身を送り出す（becomeType参照）。行き先はdestroyのこぼし先と同じ
+   * 自分の親で、単独で在れない子（7.9節）は移せる先が無いのでそこで失われる。
+   */
+  private evict(child: WorldObject): void {
+    if (child.def.boundToOwner || this._parent === undefined) child.destroy();
+    else child.moveIntoFirstAcceptingSlot(this._parent, true);
   }
 
   /**

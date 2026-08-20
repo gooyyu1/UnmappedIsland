@@ -30,6 +30,12 @@ export interface EffectReader {
   /** `destroy`（9.3節）。 */
   destroy(target: ObjectRefReading): void;
 
+  /**
+   * `become`（9.9節）。行き先は識別子ではなく座標——動かす軸とその値——で渡す（3.5節）。
+   * どの型になるかは対象が今居る座標との組み合わせで決まるので、宣言だけでは定まらない。
+   */
+  become(subject: ObjectRefReading, axisValues: ReadonlyMap<string, string>): void;
+
   /** `transfer`（9.5節）。amountは在庫が満ちている場合の上限で、実際に動く量は目減りしうる。 */
   transfer(reading: TransferReading): void;
 
