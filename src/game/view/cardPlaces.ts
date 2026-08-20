@@ -1,13 +1,14 @@
 import type { Slot } from '../../domain/Slot';
+import type { SlotPosition } from '../../domain/SlotPosition';
 import type { Location } from '../../domain/views/Location';
 import type { PlayerCharacter } from '../../domain/views/PlayerCharacter';
 
 /**
- * レーンの中でカードを置く場所。gapは枠と枠の隙間（indexは0が先頭の枠の前）、cellは空き枠そのもの
- * （indexはその枠の位置）。CardLaneのドロップ先（LaneDropTarget）と同じ形。
+ * レーンの中でカードを置く場所。**ワールド側の位置の指し方そのもの**（SlotPosition）で、
+ * CardLaneのドロップ先（LaneDropTarget）と同じ形。gapとcellのどちらが効くかは枠が決めるので、
+ * 画面は指で示した位置をそのまま渡すだけでよい。
  */
-export type CardPlacement =
-  { readonly kind: 'gap'; readonly index: number } | { readonly kind: 'cell'; readonly index: number };
+export type CardPlacement = SlotPosition;
 
 /**
  * カードが並ぶ場所＝ワールド上の1つのスロット（Slotそのもの）。**指し方はこれ1つだけ**——同じスロットを

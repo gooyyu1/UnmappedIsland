@@ -1,4 +1,5 @@
 import type { SlotDef } from './SlotDef';
+import type { SlotPosition } from './SlotPosition';
 import { ObjectStack } from './ObjectStack';
 import type { WorldObject } from './WorldObject';
 
@@ -319,6 +320,24 @@ export class Slot {
     for (let i = emptyAt; i !== target; i -= step) this._cells[i] = this._cells[i - step];
     this._cells[target] = stack;
     return true;
+  }
+
+  /**
+   * 位置を指定して入れる（SlotPosition参照）。**枠を指せるのは枠数を決めたスロットだけ**なので、
+   * 前詰めスロットではその位置の隙間として扱う——空き枠は末尾の受け皿だけで、枠の位置がそのまま
+   * 並びの終わりを指すため。指す側がどちらのスロットかを知らなくて済むよう、読み替えはここで行う。
+   */
+  insertAt(obj: WorldObject, at: SlotPosition): boolean {
+    return at.kind === 'cell' && this.hasFixedCells
+      ? this.tryInsertAtCell(obj, at.index)
+      : this.tryInsertAtGap(obj, at.index);
+  }
+
+  /** 位置を指定して並び替える（insertAtと同じ読み替え）。動くのは1個ではなくスタック丸ごと。 */
+  moveStackTo(stack: ObjectStack, at: SlotPosition): boolean {
+    return at.kind === 'cell' && this.hasFixedCells
+      ? this.trySetManualPosition(stack, at.index)
+      : this.tryMoveStackToGap(stack, at.index);
   }
 
   /**

@@ -13,6 +13,7 @@ import { IN_PROGRESS_TAG } from './RecipeDef';
 import type { PropertyDef } from './PropertyDef';
 import { PropertyValue } from './PropertyValue';
 import { Slot } from './Slot';
+import type { SlotPosition } from './SlotPosition';
 import type { WorldSession } from './WorldSession';
 
 /** rangeを持つプロパティなら、その両端へ丸めた値。rangeが無ければそのまま（becomeType参照）。 */
@@ -261,12 +262,27 @@ export class WorldObject {
    * スロット移動を行う唯一の汎用操作（7.1節の`move_to_slot`）。枠の要件・capacityの検証は対象Slot
    * 自身（Slot.canAccept）に委ねる。
    *
-   * force=trueは検証を飛ばして必ず配置を成功させる（spawnのフォールバック、9.4節専用）。
+   * atを渡すと枠の中の位置まで指定する（SlotPosition参照）。**指した位置に置けなければ失敗**で、
+   * 位置を無視して入れることはしない——プレイヤーが示した場所と違う所へ入るくらいなら、入らないほうが
+   * 分かる。gapとcellの読み替えはSlot自身が行うので、呼び出し側はどちらのスロットかを知らなくてよい。
    *
    * 戻り値: 成功時はundefined、失敗時はその理由。
    */
-  moveToSlot(slot: Slot, force = false): string | undefined {
-    return this.attachToSlot(slot, undefined, force);
+  moveToSlot(slot: Slot, at?: SlotPosition): string | undefined {
+    return this.attachToSlot(
+      slot,
+      at === undefined ? undefined : (target) => target.insertAt(this, at),
+      false,
+    );
+  }
+
+  /**
+   * 枠の要件・capacityを無視して押し込む（spawnの伝播フォールバック、9.4節）。**既に世界に在る物を、
+   * 置き場所が無いことを理由に消さないため**の入口で、木構造の不変条件（自分の中へは入れない・
+   * 単独で在れない物は持ち主から離せない）はこれでも省かない。
+   */
+  forceIntoSlot(slot: Slot): string | undefined {
+    return this.attachToSlot(slot, undefined, true);
   }
 
   /**
@@ -282,46 +298,18 @@ export class WorldObject {
   }
 
   /**
-   * プレイヤーが隙間を指定して入れる手動配置（Slot.tryInsertAtGap参照）。fixedPositionsのスロットで
-   * 既存のセルをずらして場所を作れない場合はエラーを返す。
-   */
-  moveToSlotAtGap(slot: Slot, gapIndex: number): string | undefined {
-    return this.attachToSlot(slot, (target) => target.tryInsertAtGap(this, gapIndex), false);
-  }
-
-  /**
-   * プレイヤーが空きセルを指定して入れる手動配置（Slot.tryInsertAtCell参照）。fixedPositionsのスロット
-   * 専用で、そのセルが空いていない場合はエラーを返す。
-   */
-  moveToSlotAtCell(slot: Slot, cellIndex: number): string | undefined {
-    return this.attachToSlot(slot, (target) => target.tryInsertAtCell(this, cellIndex), false);
-  }
-
-  /**
-   * プレイヤーによる手動並び替え（Slot.tryMoveStackToGap参照）。今いるスロットの中で、自分が属する
-   * スタックを丸ごと指定した隙間へ入れ直す。どこにも属していない場合はfalse。
+   * 今いるスロットの中での並び替え（Slot.moveStackTo参照）。どこにも属していない場合はfalse。
    *
-   * 「どのスロットに居るか」を呼び出し側に持たせないための入口。1個ずつではなくスタックごと動かす
-   * 理由はSlot側にある。
+   * 「どのスロットに居るか」を呼び出し側に持たせないための入口。**moveToSlotで同じ枠を指すのとは
+   * 別物**——付け替えはいったん抜いてから入れるので、抜いた時点でセルが詰まって指した位置の意味が
+   * ずれる。動かすのも1個ではなくスタック丸ごとで、理由はSlot側にある。
    */
-  reorderInParentSlot(gapIndex: number): boolean {
+  reorderInParentSlot(at: SlotPosition): boolean {
     const slot = this._parentSlot;
     if (slot === undefined) return false;
 
     const stack = slot.findStackContaining(this);
-    return stack !== undefined && slot.tryMoveStackToGap(stack, gapIndex);
-  }
-
-  /**
-   * プレイヤーによる手動並び替えのうち、行き先を空きセルで指定するもの（Slot.trySetManualPosition参照）。
-   * fixedPositionsのスロット専用。
-   */
-  moveToCellInParentSlot(cellIndex: number): boolean {
-    const slot = this._parentSlot;
-    if (slot === undefined) return false;
-
-    const stack = slot.findStackContaining(this);
-    return stack !== undefined && slot.trySetManualPosition(stack, cellIndex);
+    return stack !== undefined && slot.moveStackTo(stack, at);
   }
 
   /**
@@ -331,11 +319,8 @@ export class WorldObject {
    * 何が移せないかを画面側が場所ごとに覚えていると、ワールド側の宣言と食い違う（設置物のかごを
    * 持ち歩けるようにしたのに、画面がそのレーンを読み取り専用のままにしている、など）。
    */
-  rejectionForMoveTo(slot: Slot, force = false): string | undefined {
-    const rejection = this.rejectionBeforeSlot(slot);
-    if (rejection !== undefined) return rejection;
-
-    return force ? undefined : slot.canAccept(this);
+  rejectionForMoveTo(slot: Slot): string | undefined {
+    return this.rejectionBeforeSlot(slot) ?? slot.canAccept(this);
   }
 
   /**
@@ -387,7 +372,8 @@ export class WorldObject {
     place: ((slot: Slot) => boolean) | undefined,
     force: boolean,
   ): string | undefined {
-    const rejection = this.rejectionForMoveTo(targetSlot, force);
+    // forceが省くのは枠の宣言（要件・capacity）の判定だけ。木構造の不変条件はどちらも通る。
+    const rejection = force ? this.rejectionBeforeSlot(targetSlot) : this.rejectionForMoveTo(targetSlot);
     if (rejection !== undefined) return rejection;
 
     const newParent = targetSlot.owner;
@@ -670,7 +656,7 @@ export class WorldObject {
    */
   moveIntoFirstAcceptingSlot(target: WorldObject, force = false): boolean {
     for (const slotDef of target.def.placementSlotDefs('auto'))
-      if (this.moveToSlot(target.getSlot(slotDef.globalId), force) === undefined) return true;
+      if (this.attachToSlot(target.getSlot(slotDef.globalId), undefined, force) === undefined) return true;
 
     return false;
   }

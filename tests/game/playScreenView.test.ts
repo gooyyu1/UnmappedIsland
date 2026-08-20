@@ -1061,7 +1061,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(basket.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     const contents = basket.getSlot(codex.slotNames.getId('contents'));
     const stone = game.session.spawn(codex.objectNames.getId('stone'));
-    expect(stone.moveToSlotAtCell(contents, 3)).toBeUndefined();
+    expect(stone.moveToSlot(contents, { kind: 'cell', index: 3 })).toBeUndefined();
 
     const cells = fromGameSession(game, codex, locale).cardsIn(contents);
 
@@ -1200,7 +1200,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     handCells(view, game).forEach((cell, index) => {
       if (cell !== undefined) return;
       const filler = game.session.spawn(codex.objectNames.getId(fillers[index]));
-      expect(filler.moveToSlotAtCell(game.player.instance.getSlot(handSlotId), index)).toBeUndefined();
+      expect(
+        filler.moveToSlot(game.player.instance.getSlot(handSlotId), { kind: 'cell', index }),
+      ).toBeUndefined();
     });
     expect(
       handCells(view, game).every((cell) => cell !== undefined),
@@ -1425,7 +1427,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const canteen = game.session.spawn(codex.objectNames.getId('canteen'));
     // 液体容器にはまだitemタグが無く手持ちのaccepts制約に掛かるため、強制的に入れて手持ちのカードにする。
     expect(
-      canteen.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')), true),
+      canteen.forceIntoSlot(game.player.instance.getSlot(codex.slotNames.getId('hand'))),
     ).toBeUndefined();
     fill(canteen, 'water_liquid', 1000);
     const hydrationId = codex.propertyNames.getId('hydration');
@@ -1461,7 +1463,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const canteen = game.session.spawn(codex.objectNames.getId('canteen'));
     const handId = codex.slotNames.getId('hand');
-    expect(canteen.moveToSlot(game.player.instance.getSlot(handId), true)).toBeUndefined();
+    expect(canteen.forceIntoSlot(game.player.instance.getSlot(handId))).toBeUndefined();
 
     expect(handCells(fromGameSession(game, codex, texts), game)[0]?.name, '空なら入れ物の名前だけ').toBe(
       '水筒',

@@ -69,7 +69,7 @@ object_defs:
   it('隙間へ入れるとき、まず右方向へ既存の枠を押し出す', () => {
     fill('a', 'b', 'c', 'd', 'e');
 
-    expect(player.take(item('g'), session, 2)).toBe(true);
+    expect(player.take(item('g'), session, { kind: 'gap', index: 2 })).toBe(true);
 
     expect(hand()).toEqual(['a', 'b', 'g', 'c', 'd', 'e']);
   });
@@ -79,7 +79,7 @@ object_defs:
     a.destroy();
     expect(hand(), '左端だけが空いた状態を作る').toEqual(['_', 'b', 'c', 'd', 'e', 'f']);
 
-    expect(player.take(item('g'), session, 3)).toBe(true);
+    expect(player.take(item('g'), session, { kind: 'gap', index: 3 })).toBe(true);
 
     expect(hand()).toEqual(['b', 'c', 'g', 'd', 'e', 'f']);
   });
@@ -88,7 +88,7 @@ object_defs:
     const [, b] = fill('a', 'b', 'c');
     b.destroy();
 
-    expect(player.take(item('g'), session, 1)).toBe(true);
+    expect(player.take(item('g'), session, { kind: 'gap', index: 1 })).toBe(true);
 
     expect(hand()).toEqual(['a', 'g', 'c', '_', '_', '_']);
   });
@@ -96,7 +96,7 @@ object_defs:
   it('同種のアイテムは、指定した位置より既存スタックへの合流が優先される', () => {
     const [a] = fill('a', 'b');
 
-    expect(player.take(item('a'), session, 4)).toBe(true);
+    expect(player.take(item('a'), session, { kind: 'gap', index: 4 })).toBe(true);
 
     expect(hand(), '空いた枠は使わない').toEqual(['a', 'b', '_', '_', '_', '_']);
     expect(player.hand[0], '先頭の枠は同種2個のスタックになっている').toBe(a);
@@ -107,7 +107,7 @@ object_defs:
     expect(player.take(item('a'), session)).toBe(true);
     expect(hand(), '同種2個は先頭の枠で1スタックになる').toEqual(['a', 'b', 'c', '_', '_', '_']);
 
-    expect(player.reorderHand(a, 3), 'cの右へ動かす').toBe(true);
+    expect(player.reorderHand(a, { kind: 'gap', index: 3 }), 'cの右へ動かす').toBe(true);
 
     expect(hand()).toEqual(['b', 'c', 'a', '_', '_', '_']);
     expect(player.handStacks[2], '2個とも一緒に動く').toHaveLength(2);
@@ -116,7 +116,7 @@ object_defs:
   it('並び替えでは、抜けた跡の側へ詰める', () => {
     const [, , c] = fill('a', 'b', 'c', 'd');
 
-    expect(player.reorderHand(c, 1), 'aとbの隙間へ左向きに動かす').toBe(true);
+    expect(player.reorderHand(c, { kind: 'gap', index: 1 }), 'aとbの隙間へ左向きに動かす').toBe(true);
 
     expect(hand(), '跡（右側）へ詰めるので、bだけが右へずれる').toEqual(['a', 'c', 'b', 'd', '_', '_']);
   });
@@ -124,8 +124,8 @@ object_defs:
   it('自分の両隣の隙間へ落としても並びは変わらない', () => {
     const [, b] = fill('a', 'b', 'c');
 
-    expect(player.reorderHand(b, 1)).toBe(true);
-    expect(player.reorderHand(b, 2)).toBe(true);
+    expect(player.reorderHand(b, { kind: 'gap', index: 1 })).toBe(true);
+    expect(player.reorderHand(b, { kind: 'gap', index: 2 })).toBe(true);
 
     expect(hand()).toEqual(['a', 'b', 'c', '_', '_', '_']);
   });
@@ -133,7 +133,7 @@ object_defs:
   it('6枠とも埋まっていても並び替えはできる', () => {
     const [a] = fill('a', 'b', 'c', 'd', 'e', 'f');
 
-    expect(player.reorderHand(a, 3)).toBe(true);
+    expect(player.reorderHand(a, { kind: 'gap', index: 3 })).toBe(true);
 
     expect(hand()).toEqual(['b', 'c', 'a', 'd', 'e', 'f']);
   });
@@ -142,7 +142,7 @@ object_defs:
     const [, b] = fill('a', 'b', 'c');
     b.destroy();
 
-    expect(player.takeIntoCell(item('g'), session, 1)).toBe(true);
+    expect(player.take(item('g'), session, { kind: 'cell', index: 1 })).toBe(true);
 
     expect(hand()).toEqual(['a', 'g', 'c', '_', '_', '_']);
   });
@@ -151,7 +151,7 @@ object_defs:
     fill('a', 'b');
     const g = item('g');
 
-    expect(player.takeIntoCell(g, session, 0)).toBe(false);
+    expect(player.take(g, session, { kind: 'cell', index: 0 })).toBe(false);
 
     expect(hand()).toEqual(['a', 'b', '_', '_', '_', '_']);
     expect(g.parent, '失敗したので入れ替わりもしない').toBeUndefined();
@@ -160,7 +160,7 @@ object_defs:
   it('空き枠を指しても、同種のアイテムは既存スタックへの合流が優先される', () => {
     fill('a', 'b');
 
-    expect(player.takeIntoCell(item('a'), session, 4)).toBe(true);
+    expect(player.take(item('a'), session, { kind: 'cell', index: 4 })).toBe(true);
 
     expect(hand(), '指した空き枠は使わない').toEqual(['a', 'b', '_', '_', '_', '_']);
     expect(player.handStacks[0]).toHaveLength(2);
@@ -169,7 +169,7 @@ object_defs:
   it('空き枠への移動は、間の枠を動かさずにその枠へ移る', () => {
     const [a] = fill('a', 'b', 'c');
 
-    expect(player.moveHandToCell(a, 4)).toBe(true);
+    expect(player.reorderHand(a, { kind: 'cell', index: 4 })).toBe(true);
 
     expect(hand()).toEqual(['_', 'b', 'c', '_', 'a', '_']);
   });
@@ -178,7 +178,7 @@ object_defs:
     fill('a', 'b', 'c', 'd', 'e', 'f');
     const g = item('g');
 
-    expect(player.take(g, session, 3)).toBe(false);
+    expect(player.take(g, session, { kind: 'gap', index: 3 })).toBe(false);
 
     expect(hand()).toEqual(['a', 'b', 'c', 'd', 'e', 'f']);
     expect(g.parent, '失敗したので入れ替わりもしない').toBeUndefined();

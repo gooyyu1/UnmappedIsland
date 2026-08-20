@@ -86,7 +86,7 @@ object_defs:
   it('forceでも移せない（acceptsの判定ではなく、その物の在り方の制約だから）', () => {
     const { codex, there, road } = setUp();
 
-    expect(road.moveToSlot(there.getSlot(codex.slotNames.getId('roads')), true)).toContain('離せません');
+    expect(road.forceIntoSlot(there.getSlot(codex.slotNames.getId('roads')))).toContain('離せません');
   });
 
   it('弾くのは持ち主が変わるときだけで、同じ持ち主の中では動かせる', () => {
