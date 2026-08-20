@@ -47,10 +47,10 @@ object_defs:
 
     expect(campfire.artSuffix(), 'outの段はartを宣言していない').toBeUndefined();
 
-    campfire.setNumber(heatId, 20);
+    campfire.tryGetProperty(heatId)?.setNumber(20);
     expect(campfire.artSuffix(), 'litの段はart: litを宣言している').toBe('lit');
 
-    campfire.setNumber(heatId, 0);
+    campfire.tryGetProperty(heatId)?.setNumber(0);
     expect(campfire.artSuffix(), 'outへ戻れば絵も戻る').toBeUndefined();
   });
 
@@ -72,10 +72,10 @@ object_defs:
     const campfire = instantiate(codex, 'campfire', session);
     const heatId = codex.propertyNames.getId('heat');
 
-    campfire.setNumber(heatId, 1);
+    campfire.tryGetProperty(heatId)?.setNumber(1);
     expect(campfire.artSuffix()).toBe('lit');
 
-    campfire.setNumber(heatId, 60);
+    campfire.tryGetProperty(heatId)?.setNumber(60);
     expect(campfire.artSuffix()).toBe('lit');
   });
 });

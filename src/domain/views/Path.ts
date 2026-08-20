@@ -31,17 +31,17 @@ export class Path {
 
   /** 移動時間（分）。 */
   get travelMinutes(): number {
-    return this.instance.getEffectiveValue(this.travelMinutesId);
+    return this.instance.tryGetProperty(this.travelMinutesId)?.getEffectiveValue() ?? 0;
   }
 
   /** 発見に必要な、親の土地の探索進捗。 */
   get requiredProgress(): number {
-    return this.instance.getEffectiveValue(this.requiredProgressId);
+    return this.instance.tryGetProperty(this.requiredProgressId)?.getEffectiveValue() ?? 0;
   }
 
   /** 移動先LocationのインスタンスID。 */
   get destinationInstanceId(): number {
-    return this.instance.getEffectiveValue(this.destinationIdId);
+    return this.instance.tryGetProperty(this.destinationIdId)?.getEffectiveValue() ?? 0;
   }
 
   /**
@@ -54,7 +54,7 @@ export class Path {
 
   /** 移動先の土地にある、こちらへ戻る道のインスタンスID（辺の両端の道は互いを指す）。 */
   get returnPathInstanceId(): number {
-    return this.instance.getEffectiveValue(this.returnPathIdId);
+    return this.instance.tryGetProperty(this.returnPathIdId)?.getEffectiveValue() ?? 0;
   }
 
   /** この道を通って移動する（YAML側のtravelアクション: 未発見なら不成立、成功ならactorが移動先へ移り、travel_minutes分の時間が進む）。 */

@@ -80,7 +80,9 @@ describe('テスト用シナリオ', () => {
     applyScenario(game, scenario, codex);
 
     expect(game.player.injuryStacks.map((stack) => stack[0].def.name)).toEqual(['sprained_ankle']);
-    expect(game.player.instance.getEffectiveValue(codex.propertyNames.getId('pain'))).toBeGreaterThan(0);
+    expect(
+      game.player.instance.tryGetProperty(codex.propertyNames.getId('pain'))?.getEffectiveValue() ?? 0,
+    ).toBeGreaterThan(0);
   });
 
   it('jungle_startは、漂着地ではなく密林から始める', () => {
@@ -183,7 +185,7 @@ describe('テスト用シナリオ', () => {
 
     applyScenario(game, scenario, codex);
 
-    expect(game.player.instance.getNumber(codex.propertyNames.getId('hydration'))).toBe(12);
+    expect(game.player.instance.tryGetProperty(codex.propertyNames.getId('hydration'))?.number ?? 0).toBe(12);
   });
 
   it('world.propsはシンボル型のプロパティも上書きできる（天候はシードで選べない）', () => {
@@ -193,7 +195,7 @@ describe('テスト用シナリオ', () => {
     applyScenario(game, scenario, codex);
 
     const weatherId = codex.propertyNames.getId('weather');
-    expect(game.world.instance.getNumber(weatherId)).toBe(codex.symbolNames.getId('storm'));
+    expect(game.world.instance.tryGetProperty(weatherId)?.number ?? 0).toBe(codex.symbolNames.getId('storm'));
   });
 
   it('シンボル名が違えばエラーになる（一生降らない雨を待たせない）', () => {
@@ -245,7 +247,7 @@ describe('テスト用シナリオ', () => {
     applyScenario(game, scenario, codex);
 
     const weatherId = codex.propertyNames.getId('weather');
-    expect(game.world.instance.getNumber(weatherId), '雨を待たずに試せる').toBe(
+    expect(game.world.instance.tryGetProperty(weatherId)?.number ?? 0, '雨を待たずに試せる').toBe(
       codex.symbolNames.getId('light_rain'),
     );
     expect(game.player.hand[0]?.def.name).toBe('coconut_bowl');

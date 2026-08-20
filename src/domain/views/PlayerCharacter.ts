@@ -45,11 +45,11 @@ export class PlayerCharacter {
   }
 
   get hp(): number {
-    return this.instance.getEffectiveValue(this.hpId);
+    return this.instance.tryGetProperty(this.hpId)?.getEffectiveValue() ?? 0;
   }
 
   get satiety(): number {
-    return this.instance.getEffectiveValue(this.satietyId);
+    return this.instance.tryGetProperty(this.satietyId)?.getEffectiveValue() ?? 0;
   }
 
   /**

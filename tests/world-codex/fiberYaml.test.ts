@@ -58,7 +58,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
   /** 土地のitemsスロットに並ぶ物の重さ（g）。 */
   function weightsOn(location: WorldObject): number[] {
     const weightId = codex.propertyNames.getId('weight');
-    return new Location(location, codex).items.map((object) => object.getNumber(weightId));
+    return new Location(location, codex).items.map((object) => object.tryGetProperty(weightId)?.number ?? 0);
   }
 
   /** 刃物を1本持たせる。 */

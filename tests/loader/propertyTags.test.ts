@@ -117,7 +117,7 @@ object_defs:
     expect(propertyNamesWithTag(codex, character, 'status')).toEqual(['stamina']);
     expect(propertyNamesWithTag(codex, character, 'health')).toEqual(['stamina']);
     // valueは上書き、rangeはtrait側を引き継ぐ（5節）という既存の規則は変わらない。
-    expect(character.getNumber(codex.propertyNames.getId('stamina'))).toBe(80);
+    expect(character.tryGetProperty(codex.propertyNames.getId('stamina'))?.number ?? 0).toBe(80);
     expect(
       codex.objects
         .get(codex.objectNames.getId('character'))

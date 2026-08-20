@@ -380,7 +380,7 @@ describe.runIf(process.env.RUN_CLIMATE_STATS === '1')('気候システム統計�
       session.adoptWorld(new World(worldInstance, codex.propertyNames, codex.symbolNames));
 
       // 現在進行中のセグメント（季節が変わるまでの一区間）のバッファ
-      let segSeason = worldInstance.getNumber(seasonId);
+      let segSeason = worldInstance.tryGetProperty(seasonId)?.number ?? 0;
       let segTemps: number[] = [];
       let segWeathers: number[] = [];
       let segMoistures: number[] = [];
@@ -406,16 +406,16 @@ describe.runIf(process.env.RUN_CLIMATE_STATS === '1')('気候システム統計�
       for (let t = 0; t < totalTicks; t++) {
         session.advanceWorldTime(15); // minutes_per_tick分。ちょうど1tick進める
 
-        const currentSeason = worldInstance.getNumber(seasonId);
+        const currentSeason = worldInstance.tryGetProperty(seasonId)?.number ?? 0;
         if (currentSeason !== segSeason) {
           flushSegment();
           isFirstSegment = false;
           segSeason = currentSeason;
         }
 
-        segTemps.push(worldInstance.getEffectiveValue(temperatureId));
-        segWeathers.push(worldInstance.getNumber(weatherId));
-        segMoistures.push(worldInstance.getNumber(moistureId));
+        segTemps.push(worldInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0);
+        segWeathers.push(worldInstance.tryGetProperty(weatherId)?.number ?? 0);
+        segMoistures.push(worldInstance.tryGetProperty(moistureId)?.number ?? 0);
       }
       // 末尾の未完了セグメントは破棄（flushSegmentを呼ばない）
     }

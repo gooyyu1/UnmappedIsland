@@ -37,10 +37,12 @@ object_defs:
       session,
     );
 
-    instance.addNumber(minuteId, 15); // 45+15=60 > 59。Tick()は一度も呼んでいない
+    instance.tryGetProperty(minuteId)?.add(15); // 45+15=60 > 59。Tick()は一度も呼んでいない
 
-    expect(instance.getNumber(minuteId), 'Tick()を呼んでいなくても、その場で折り返る').toBe(0);
-    expect(instance.getNumber(hourId)).toBe(1);
+    expect(instance.tryGetProperty(minuteId)?.number ?? 0, 'Tick()を呼んでいなくても、その場で折り返る').toBe(
+      0,
+    );
+    expect(instance.tryGetProperty(hourId)?.number ?? 0).toBe(1);
   });
 
   it('PropertyValueを直に書き換えても、rangeイベントは同じように判定される', () => {
@@ -67,8 +69,8 @@ object_defs:
 
     instance.tryGetProperty(minuteId)!.add(15);
 
-    expect(instance.getNumber(minuteId), 'その場で折り返る').toBe(0);
-    expect(instance.getNumber(hourId)).toBe(1);
+    expect(instance.tryGetProperty(minuteId)?.number ?? 0, 'その場で折り返る').toBe(0);
+    expect(instance.tryGetProperty(hourId)?.number ?? 0).toBe(1);
   });
 
   it('on_max省略時の既定合成（自身をrange.maxへset）は無限再帰を起こさない', () => {
@@ -94,9 +96,9 @@ object_defs:
       session,
     );
 
-    instance.addNumber(pressureId, 5); // 5+5=10 >= max(10)。例外・制御不能なスタックオーバーフローを起こさなければ成功
+    instance.tryGetProperty(pressureId)?.add(5); // 5+5=10 >= max(10)。例外・制御不能なスタックオーバーフローを起こさなければ成功
 
-    expect(instance.getNumber(pressureId)).toBe(10);
+    expect(instance.tryGetProperty(pressureId)?.number ?? 0).toBe(10);
   });
 
   it('range上限を超えるとTick()でプロパティが折り返り、繰り上げ先へ伝播する', () => {
@@ -125,8 +127,8 @@ object_defs:
 
     instance.tick(); // 45 + 15 = 60 > 59 なので折り返す
 
-    expect(instance.getNumber(minuteId)).toBe(0);
-    expect(instance.getNumber(hourId)).toBe(1);
+    expect(instance.tryGetProperty(minuteId)?.number ?? 0).toBe(0);
+    expect(instance.tryGetProperty(hourId)?.number ?? 0).toBe(1);
   });
 
   it('on_maxでsetとaddを併用すると、setで自身が絶対値に戻りaddで繰り上げ先へ伝播する', () => {
@@ -158,8 +160,10 @@ object_defs:
 
     instance.tick(); // 45 + 15 = 60 > 59 なので折り返す
 
-    expect(instance.getNumber(minuteId), 'setにより絶対値0へ戻る（差分ではなく代入）').toBe(0);
-    expect(instance.getNumber(hourId)).toBe(1);
+    expect(instance.tryGetProperty(minuteId)?.number ?? 0, 'setにより絶対値0へ戻る（差分ではなく代入）').toBe(
+      0,
+    );
+    expect(instance.tryGetProperty(hourId)?.number ?? 0).toBe(1);
   });
 
   it('値がrange内に収まっていればTick()で折り返らない', () => {
@@ -188,8 +192,8 @@ object_defs:
 
     instance.tick(); // 10 + 15 = 25、59以下なので折り返さない
 
-    expect(instance.getNumber(minuteId)).toBe(25);
-    expect(instance.getNumber(hourId)).toBe(0);
+    expect(instance.tryGetProperty(minuteId)?.number ?? 0).toBe(25);
+    expect(instance.tryGetProperty(hourId)?.number ?? 0).toBe(0);
   });
 
   it('on_maxの補正が連鎖し、1回のTick()の中でrange幅の複数span分が解決する', () => {
@@ -216,12 +220,15 @@ object_defs:
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('clock3')), session);
 
     instance.tick();
-    expect(instance.getNumber(minuteId), '3span分の補正が1回のTick()の中で連鎖的に解決される').toBe(5);
-    expect(instance.getNumber(hourId)).toBe(3);
+    expect(
+      instance.tryGetProperty(minuteId)?.number ?? 0,
+      '3span分の補正が1回のTick()の中で連鎖的に解決される',
+    ).toBe(5);
+    expect(instance.tryGetProperty(hourId)?.number ?? 0).toBe(3);
 
     instance.tick();
-    expect(instance.getNumber(minuteId), '範囲内に収まった後は何もしない').toBe(5);
-    expect(instance.getNumber(hourId)).toBe(3);
+    expect(instance.tryGetProperty(minuteId)?.number ?? 0, '範囲内に収まった後は何もしない').toBe(5);
+    expect(instance.tryGetProperty(hourId)?.number ?? 0).toBe(3);
   });
 
   it('宣言順で後にあるプロパティへの繰り上げも、同じTick()の中で連鎖して解決する', () => {
@@ -260,12 +267,12 @@ object_defs:
 
     instance.tick();
 
-    expect(instance.getNumber(minuteId)).toBe(5);
+    expect(instance.tryGetProperty(minuteId)?.number ?? 0).toBe(5);
     expect(
-      instance.getNumber(hourId),
+      instance.tryGetProperty(hourId)?.number ?? 0,
       '23+1=24は範囲(0-23)を超えるため、同じtick内でhour自身も折り返す',
     ).toBe(0);
-    expect(instance.getNumber(dayId), 'hourの繰り上げでdayも+1される').toBe(2);
+    expect(instance.tryGetProperty(dayId)?.number ?? 0, 'hourの繰り上げでdayも+1される').toBe(2);
   });
 
   it('宣言順に関わらず、先に宣言されたプロパティへの繰り上げも同じTick()の中で連鎖して解決する', () => {
@@ -304,11 +311,14 @@ object_defs:
 
     instance.tick();
 
-    expect(instance.getNumber(minuteId)).toBe(5);
-    expect(instance.getNumber(hourId), 'hourがminuteより先に宣言されていても、即座に連鎖して折り返る').toBe(
-      0,
+    expect(instance.tryGetProperty(minuteId)?.number ?? 0).toBe(5);
+    expect(
+      instance.tryGetProperty(hourId)?.number ?? 0,
+      'hourがminuteより先に宣言されていても、即座に連鎖して折り返る',
+    ).toBe(0);
+    expect(instance.tryGetProperty(dayId)?.number ?? 0, 'hourの繰り上げでdayも同じTick()内で+1される').toBe(
+      2,
     );
-    expect(instance.getNumber(dayId), 'hourの繰り上げでdayも同じTick()内で+1される').toBe(2);
   });
 
   it('on_maxの加算先プロパティをこのobject_defが持たない場合は黙って無視される', () => {
@@ -342,7 +352,7 @@ object_defs:
 
     instance.tick(); // 例外を投げればテスト自体が失敗する
 
-    expect(instance.getNumber(minuteId)).toBe(0);
+    expect(instance.tryGetProperty(minuteId)?.number ?? 0).toBe(0);
   });
 
   it('折り返しと別プロパティへの加算を1つのon_maxに併記すると、span数だけ加算される', () => {
@@ -374,7 +384,10 @@ object_defs:
 
     instance.tick(); // 0 + 250 = 250 > 100。250 -> 149 -> 48 と2回連鎖する
 
-    expect(instance.getNumber(gaugeId)).toBe(48);
-    expect(instance.getNumber(alarmId), '2span分の折り返しでalarm_countも2回加算される').toBe(2);
+    expect(instance.tryGetProperty(gaugeId)?.number ?? 0).toBe(48);
+    expect(
+      instance.tryGetProperty(alarmId)?.number ?? 0,
+      '2span分の折り返しでalarm_countも2回加算される',
+    ).toBe(2);
   });
 });

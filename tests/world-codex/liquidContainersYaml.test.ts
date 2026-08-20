@@ -54,7 +54,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
    */
   function spawnContainer(containerName: string, liquidKind: string, size: number): WorldObject {
     const container = spawn(`${containerName}__content_${liquidKind}_liquid`);
-    container.setProperty(fillId, size);
+    container.getProperty(fillId).overwrite(size);
     return container;
   }
 
@@ -65,7 +65,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   }
 
   function amountIn(container: WorldObject): number {
-    return container.getNumber(fillId);
+    return container.tryGetProperty(fillId)?.number ?? 0;
   }
 
   /** その容器が抱えられる量の上限（中身入りの変種のfillのrangeが持つ）。 */
@@ -77,8 +77,8 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   /** hourは既定で昼（10-17時のdayステージ）。sunlightはhourとweatherの寄与の和で決まる。 */
   function spawnWorld(weather: string, hour = 12): WorldObject {
     const world = spawn('world');
-    world.setProperty(weatherId, codex.symbolNames.intern(weather));
-    world.setProperty(hourId, hour);
+    world.getProperty(weatherId).overwrite(codex.symbolNames.intern(weather));
+    world.getProperty(hourId).overwrite(hour);
     return world;
   }
 
@@ -125,12 +125,14 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const weightId = codex.propertyNames.getId('weight');
     const densityId = codex.propertyNames.getId('density');
 
-    expect(bowl.getNumber(densityId), '水は1g/mL').toBe(1);
-    expect(bowl.getEffectiveValue(weightId), 'ヤシの器100g + 水250mL = 350g').toBe(350);
+    expect(bowl.tryGetProperty(densityId)?.number ?? 0, '水は1g/mL').toBe(1);
+    expect(bowl.tryGetProperty(weightId)?.getEffectiveValue() ?? 0, 'ヤシの器100g + 水250mL = 350g').toBe(
+      350,
+    );
 
-    bowl.setNumber(fillId, 100);
+    bowl.tryGetProperty(fillId)?.setNumber(100);
 
-    expect(bowl.getEffectiveValue(weightId), '飲めばそのぶん軽くなる').toBe(200);
+    expect(bowl.tryGetProperty(weightId)?.getEffectiveValue() ?? 0, '飲めばそのぶん軽くなる').toBe(200);
   });
 
   it('容量は軸の宣言が変種へ渡すfillのrangeが決める', () => {
@@ -142,12 +144,12 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   it('水を飲むと中身のvolumeからactorのhydrationへ移る', () => {
     const actor = spawn(SAMPLE_CHARACTER);
-    actor.setProperty(hydrationId, 0);
+    actor.getProperty(hydrationId).overwrite(0);
     const canteen = spawnContainer('canteen', 'water', 1000);
 
     expect(canteen.tryExecuteAction('drink', actor), '容器への操作は中身へ委譲される').toBe(true);
 
-    expect(actor.getNumber(hydrationId), '250mLは10 tick分（to_amount、9.5節）').toBe(10);
+    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '250mLは10 tick分（to_amount、9.5節）').toBe(10);
     expect(amountIn(canteen), '減るのは液体の単位（mL）のまま').toBe(750);
   });
 
@@ -157,7 +159,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const hydrationMax = codex.objects
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
       .getPropertyDef(hydrationId)!.range!.max;
-    actor.setProperty(hydrationId, hydrationMax);
+    actor.getProperty(hydrationId).overwrite(hydrationMax);
     const canteen = spawnContainer('canteen', 'water', 1000);
 
     expect(canteen.actionUnmetRequirement('drink', actor)?.reasonName).toBe('not_thirsty');
@@ -170,50 +172,52 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const hydrationMax = codex.objects
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
       .getPropertyDef(hydrationId)!.range!.max;
-    actor.setProperty(hydrationId, hydrationMax - 4);
+    actor.getProperty(hydrationId).overwrite(hydrationMax - 4);
     const canteen = spawnContainer('canteen', 'water', 1000);
 
     expect(canteen.actionUnmetRequirement('drink', actor)).toBeUndefined();
     expect(canteen.tryExecuteAction('drink', actor)).toBe(true);
 
-    expect(actor.getNumber(hydrationId), 'あふれる分は飲まない').toBe(hydrationMax);
+    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, 'あふれる分は飲まない').toBe(hydrationMax);
     // 空きは4 tick分。移送元の単位へ割り戻すと 4 × 250 / 10 = 100mL しか出ない（9.5節）。
     expect(amountIn(canteen), '入る分だけ減る').toBe(900);
   });
 
   it('残りを飲み切ると、中身のインスタンスごと消えて空の容器へ戻る', () => {
     const actor = spawn(SAMPLE_CHARACTER);
-    actor.setProperty(hydrationId, 0);
+    actor.getProperty(hydrationId).overwrite(0);
     const canteen = spawnContainer('canteen', 'water', 100); // 1回分(250)より少ない
 
     expect(canteen.tryExecuteAction('drink', actor)).toBe(true);
 
-    expect(actor.getNumber(hydrationId), '残っている分だけ飲む（100mL = 4 tick分）').toBe(4);
+    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '残っている分だけ飲む（100mL = 4 tick分）').toBe(
+      4,
+    );
     expect(contentOf(canteen), 'tickを待たずに空へ戻る（0mLの水は存在しない）').toBeUndefined();
   });
 
   it('お茶を飲むと追加の効果も適用できる', () => {
     const actor = spawn(SAMPLE_CHARACTER);
-    actor.setProperty(hydrationId, 0);
-    actor.setProperty(wakefulnessId, 0);
+    actor.getProperty(hydrationId).overwrite(0);
+    actor.getProperty(wakefulnessId).overwrite(0);
     const canteen = spawnContainer('canteen', 'tea', 1000);
 
     expect(canteen.tryExecuteAction('drink', actor)).toBe(true);
 
-    expect(actor.getNumber(hydrationId)).toBe(10);
-    expect(actor.getNumber(wakefulnessId)).toBe(2);
+    expect(actor.tryGetProperty(hydrationId)?.number ?? 0).toBe(10);
+    expect(actor.tryGetProperty(wakefulnessId)?.number ?? 0).toBe(2);
   });
 
   it('お茶のwakefulness効果は飲んだ量に比例する', () => {
     const actor = spawn(SAMPLE_CHARACTER);
-    actor.setProperty(hydrationId, 0);
-    actor.setProperty(wakefulnessId, 0);
+    actor.getProperty(hydrationId).overwrite(0);
+    actor.getProperty(wakefulnessId).overwrite(0);
     const canteen = spawnContainer('canteen', 'tea', 125); // 1回分(250)の半分しか無い
 
     expect(canteen.tryExecuteAction('drink', actor)).toBe(true);
 
-    expect(actor.getNumber(hydrationId), '在庫の分だけ飲む（125mL = 5 tick分）').toBe(5);
-    expect(actor.getNumber(wakefulnessId), 'linked_addは実際に移った量に比例する').toBe(1);
+    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '在庫の分だけ飲む（125mL = 5 tick分）').toBe(5);
+    expect(actor.tryGetProperty(wakefulnessId)?.number ?? 0, 'linked_addは実際に移った量に比例する').toBe(1);
   });
 
   it('油にはdrinkアクションが無い', () => {
@@ -246,7 +250,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   it('水は青、茶は茶緑、油は黄色に見える', () => {
     const colorId = codex.propertyNames.getId('color');
     const [water, tea, oil] = ['water', 'tea', 'oil'].map((kind) => {
-      const color = spawn(`${kind}_liquid`).getNumber(colorId);
+      const color = spawn(`${kind}_liquid`).tryGetProperty(colorId)?.number ?? 0;
       return { red: (color >> 16) & 0xff, green: (color >> 8) & 0xff, blue: color & 0xff };
     });
 

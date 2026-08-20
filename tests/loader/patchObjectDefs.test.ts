@@ -89,7 +89,7 @@ patch_object_defs:
 
     const session = new WorldSession(codex);
     const ground = new WorldObject(1, codex.objects.get(codex.objectNames.getId('ground')), session);
-    expect(ground.getNumber(codex.propertyNames.getId('find_stone'))).toBe(99);
+    expect(ground.tryGetProperty(codex.propertyNames.getId('find_stone'))?.number ?? 0).toBe(99);
     // 同じプロパティを見ている候補の重みも、差し替えた値で引かれる。
     expect(describeExplore(codex)).toContain('find_stone');
   });
@@ -185,7 +185,10 @@ patch_object_defs:
 
     const session = new WorldSession(codex);
     const ground = new WorldObject(1, codex.objects.get(codex.objectNames.getId('ground')), session);
-    expect(ground.getNumber(codex.propertyNames.getId('find_stone')), '先に読んだ方が残る').toBe(1);
+    expect(
+      ground.tryGetProperty(codex.propertyNames.getId('find_stone'))?.number ?? 0,
+      '先に読んだ方が残る',
+    ).toBe(1);
     expect(report.problems).toHaveLength(1);
   });
 });

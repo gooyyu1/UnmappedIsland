@@ -538,7 +538,7 @@ export class PropertyDef {
   inheritedContribution(owner: WorldObject): number {
     if (!this.inherit) return 0;
     const ancestor = owner.findAncestorWithProperty(this.globalId);
-    return ancestor !== undefined ? ancestor.getEffectiveValue(this.globalId) : 0;
+    return ancestor !== undefined ? (ancestor.tryGetProperty(this.globalId)?.getEffectiveValue() ?? 0) : 0;
   }
 }
 

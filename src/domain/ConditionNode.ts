@@ -298,7 +298,10 @@ export class ConditionNode {
    */
   private evaluatePropertyStage(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
     const owner = this.resolvePropertyOwner(this.root!, this.propertyGlobalId!, resolveRoot);
-    return owner !== undefined && owner.isInStage(this.propertyGlobalId!, this.stageName!);
+    return (
+      owner !== undefined &&
+      (owner.tryGetProperty(this.propertyGlobalId!)?.isInStage(this.stageName!) ?? false)
+    );
   }
 
   private resolvePropertyEffectiveValue(

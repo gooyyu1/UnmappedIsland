@@ -51,8 +51,8 @@ object_defs:
 `;
 
   function valuesOf(instance: WorldObject, codex: WorldCodex): readonly number[] {
-    return ['stomach', 'digesting', 'body_fat'].map((name) =>
-      instance.getNumber(codex.propertyNames.getId(name)),
+    return ['stomach', 'digesting', 'body_fat'].map(
+      (name) => instance.tryGetProperty(codex.propertyNames.getId(name))?.number ?? 0,
     );
   }
 
@@ -71,14 +71,23 @@ object_defs:
     const digestingId = codex.propertyNames.getId('digesting');
 
     instance.tick();
-    expect([instance.getNumber(stomachId), instance.getNumber(digestingId)]).toEqual([1, 1]);
+    expect([
+      instance.tryGetProperty(stomachId)?.number ?? 0,
+      instance.tryGetProperty(digestingId)?.number ?? 0,
+    ]).toEqual([1, 1]);
 
     instance.tick();
-    expect([instance.getNumber(stomachId), instance.getNumber(digestingId)]).toEqual([0, 2]);
+    expect([
+      instance.tryGetProperty(stomachId)?.number ?? 0,
+      instance.tryGetProperty(digestingId)?.number ?? 0,
+    ]).toEqual([0, 2]);
 
     // 出せる量が無くなれば止まる（出す側がrange.minを割ることはない）。
     instance.tick();
-    expect([instance.getNumber(stomachId), instance.getNumber(digestingId)]).toEqual([0, 2]);
+    expect([
+      instance.tryGetProperty(stomachId)?.number ?? 0,
+      instance.tryGetProperty(digestingId)?.number ?? 0,
+    ]).toEqual([0, 2]);
   });
 
   it('直列に繋いだ輸送は、上流を速くした差が中間に溜まる', () => {
@@ -132,15 +141,15 @@ object_defs:
     const stomachId = codex.propertyNames.getId('stomach');
 
     instance.tick();
-    expect(instance.getNumber(stomachId), '満杯の段では4ずつ').toBe(26);
+    expect(instance.tryGetProperty(stomachId)?.number ?? 0, '満杯の段では4ずつ').toBe(26);
 
     instance.tick();
     instance.tick();
-    expect(instance.getNumber(stomachId), '24を割ると3ずつへ落ちる').toBe(19);
+    expect(instance.tryGetProperty(stomachId)?.number ?? 0, '24を割ると3ずつへ落ちる').toBe(19);
 
     // 最下段は輸送を宣言していないので、そこまで減れば止まる。
     for (let i = 0; i < 5; i++) instance.tick();
-    expect(instance.getNumber(stomachId)).toBe(10);
+    expect(instance.tryGetProperty(stomachId)?.number ?? 0).toBe(10);
   });
 
   it('同じ値から出す輸送が並んでも、在庫を二重には動かさない', () => {
@@ -176,8 +185,8 @@ object_defs:
 
     instance.tick();
 
-    expect(instance.getNumber(codex.propertyNames.getId('digesting'))).toBe(8);
-    expect(instance.getNumber(codex.propertyNames.getId('body_fat'))).toBe(3);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('digesting'))?.number ?? 0).toBe(8);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('body_fat'))?.number ?? 0).toBe(3);
   });
 
   it('受け取る側が満杯なら、出す側に残る', () => {
@@ -194,8 +203,11 @@ object_defs:
 
     instance.tick();
 
-    expect(instance.getNumber(codex.propertyNames.getId('stomach')), '入る1だけが動く').toBe(9);
-    expect(instance.getNumber(codex.propertyNames.getId('digesting'))).toBe(5);
+    expect(
+      instance.tryGetProperty(codex.propertyNames.getId('stomach'))?.number ?? 0,
+      '入る1だけが動く',
+    ).toBe(9);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('digesting'))?.number ?? 0).toBe(5);
   });
 
   it('conditionsのゲートが閉じている間は動かない', () => {
@@ -214,11 +226,11 @@ object_defs:
     const nauseaId = codex.propertyNames.getId('nausea');
 
     instance.tick();
-    expect(instance.getNumber(codex.propertyNames.getId('digesting'))).toBe(0);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('digesting'))?.number ?? 0).toBe(0);
 
-    instance.setNumber(nauseaId, 0);
+    instance.tryGetProperty(nauseaId)?.setNumber(0);
     instance.tick();
-    expect(instance.getNumber(codex.propertyNames.getId('digesting'))).toBe(1);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('digesting'))?.number ?? 0).toBe(1);
   });
 
   it('linked_addは、実際に動いた量に比例して効く', () => {
@@ -242,8 +254,11 @@ object_defs:
 
     instance.tick();
 
-    expect(instance.getNumber(codex.propertyNames.getId('stomach'))).toBe(0);
-    expect(instance.getNumber(codex.propertyNames.getId('warmth')), '2のうち1しか動かないので半分').toBe(2);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('stomach'))?.number ?? 0).toBe(0);
+    expect(
+      instance.tryGetProperty(codex.propertyNames.getId('warmth'))?.number ?? 0,
+      '2のうち1しか動かないので半分',
+    ).toBe(2);
   });
 
   it('親のプロパティへも運べる', () => {
@@ -273,7 +288,9 @@ object_defs:
     vessel.tick();
 
     const waterId = codex.propertyNames.getId('water');
-    expect([drip.getNumber(waterId), vessel.getNumber(waterId)]).toEqual([3, 2]);
+    expect([drip.tryGetProperty(waterId)?.number ?? 0, vessel.tryGetProperty(waterId)?.number ?? 0]).toEqual([
+      3, 2,
+    ]);
   });
 
   it('対象にactorは書けない（持続的な関係に紐づかないため）', () => {

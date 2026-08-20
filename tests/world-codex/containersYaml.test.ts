@@ -51,8 +51,8 @@ describe('固形物のかさと入れ物の容量', () => {
 
     for (const def of itemDefs()) {
       const instance = new WorldObject(1, def, session);
-      const volume = instance.getNumber(volumeId);
-      const weight = instance.getNumber(weightId);
+      const volume = instance.tryGetProperty(volumeId)?.number ?? 0;
+      const weight = instance.tryGetProperty(weightId)?.number ?? 0;
 
       expect(volume, `${def.name} のかさ`).toBeGreaterThan(0);
       expect(weight / volume, `${def.name} の見かけの密度`).toBeLessThan(2.7);

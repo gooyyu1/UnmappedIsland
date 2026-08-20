@@ -50,7 +50,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   }
 
   function valueOf(propertyId: number): number {
-    return player.getNumber(propertyId);
+    return player.tryGetProperty(propertyId)?.number ?? 0;
   }
 
   /**
@@ -61,20 +61,20 @@ describe('消化（かさ・栄養素・蓄え）', () => {
     const held = valueOf(hydrationId);
     for (let i = 0; i < count; i++) {
       player.tick();
-      player.setProperty(hydrationId, held);
+      player.getProperty(hydrationId).overwrite(held);
     }
   }
 
   /** 在庫へ直接入れる（食べ物を用意せずに量だけを置きたいとき）。 */
   function stock(amount: number): void {
-    player.setProperty(carbohydrateId, amount);
-    for (const name of ['protein', 'lipid']) player.setProperty(codex.propertyNames.getId(name), 0);
+    player.getProperty(carbohydrateId).overwrite(amount);
+    for (const name of ['protein', 'lipid']) player.getProperty(codex.propertyNames.getId(name)).overwrite(0);
   }
 
   it('食べた物は、かさと栄養素の両方に入る', () => {
     const taro = spawn('roasted_taro');
     expect(taro.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
-    player.setProperty(satietyId, 0);
+    player.getProperty(satietyId).overwrite(0);
     stock(0);
 
     expect(taro.tryExecuteAction('eat', player)).toBe(true);
@@ -84,7 +84,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   });
 
   it('在庫は時間をかけて蓄えになり、尽きれば蓄えが削られる', () => {
-    player.setProperty(bodyFatId, 1000);
+    player.getProperty(bodyFatId).overwrite(1000);
     stock(4);
 
     const fatBefore = valueOf(bodyFatId);
@@ -99,7 +99,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
 
   it('満腹感はかさで、1食が8時間もつ', () => {
     // 512mL（1食）を16mL/tickで空にすると32 tick＝8時間（DigestionSystem.md 2節）。
-    player.setProperty(satietyId, 512);
+    player.getProperty(satietyId).overwrite(512);
 
     tick(31);
     expect(valueOf(satietyId), '31 tickではまだ残っている').toBeGreaterThan(0);
@@ -113,10 +113,10 @@ describe('消化（かさ・栄養素・蓄え）', () => {
     expect(taro.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
     const max = 1500;
 
-    player.setProperty(satietyId, 900);
+    player.getProperty(satietyId).overwrite(900);
     expect(taro.tryExecuteAction('eat', player), 'full段では実行できない').toBe(false);
 
-    player.setProperty(satietyId, 899);
+    player.getProperty(satietyId).overwrite(899);
     expect(taro.tryExecuteAction('eat', player), '1つ下の段なら食べられる').toBe(true);
     expect(valueOf(satietyId), '最大の食料でも溢れない').toBe(899 + 550);
     expect(899 + 550).toBeLessThanOrEqual(max);
@@ -129,7 +129,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
 
     for (let day = 0; day < 5; day++) {
       for (let meal = 0; meal < 3; meal++) {
-        player.setProperty(carbohydrateId, valueOf(carbohydrateId) + 32);
+        player.getProperty(carbohydrateId).overwrite(valueOf(carbohydrateId) + 32);
         tick(DAY / 3);
       }
     }
@@ -143,7 +143,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
 
     // 段が上がるほど速く減る。ここが単調でないと、太るほど痩せやすいという裏返りが起きる。
     const rates = [0, 96, 480, 2880, 4320].map((fat) => {
-      player.setProperty(bodyFatId, fat);
+      player.getProperty(bodyFatId).overwrite(fat);
       stock(0);
       const before = valueOf(bodyFatId);
       tick(1);

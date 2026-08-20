@@ -83,10 +83,10 @@ describe('injuries.yamlの怪我', () => {
    */
   function tick(count: number): void {
     const vital = ['hydration', 'body_fat'].map((name) => codex.propertyNames.getId(name));
-    const held = vital.map((id) => player.getNumber(id));
+    const held = vital.map((id) => player.tryGetProperty(id)?.number ?? 0);
     for (let i = 0; i < count; i++) {
       player.tick();
-      vital.forEach((id, index) => player.setProperty(id, held[index]));
+      vital.forEach((id, index) => player.getProperty(id).overwrite(held[index]));
     }
   }
 
@@ -103,18 +103,20 @@ describe('injuries.yamlの怪我', () => {
     pickCoconut();
 
     expect(injuriesOf(player)).toEqual([]);
-    expect(player.getEffectiveValue(painId)).toBe(0);
+    expect(player.tryGetProperty(painId)?.getEffectiveValue() ?? 0).toBe(0);
   });
 
   it('怪我は痛みを押し上げ、重なるほど強くなる', () => {
-    expect(player.getEffectiveValue(painId), '無傷なら痛みは無い').toBe(0);
+    expect(player.tryGetProperty(painId)?.getEffectiveValue() ?? 0, '無傷なら痛みは無い').toBe(0);
 
     pickCoconut();
-    expect(player.getEffectiveValue(painId)).toBe(40);
+    expect(player.tryGetProperty(painId)?.getEffectiveValue() ?? 0).toBe(40);
 
     pickCoconut();
     expect(injuriesOf(player), '同じ怪我でも2つぶん負う').toEqual(['sprained_ankle', 'sprained_ankle']);
-    expect(player.getEffectiveValue(painId), 'modifyは単純加算される（8.3節）').toBe(80);
+    expect(player.tryGetProperty(painId)?.getEffectiveValue() ?? 0, 'modifyは単純加算される（8.3節）').toBe(
+      80,
+    );
   });
 
   it('痛みは怪我が治るまで残り、治れば引く', () => {
@@ -122,11 +124,11 @@ describe('injuries.yamlの怪我', () => {
 
     tick(HEALING_TICKS - 1);
     expect(injuriesOf(player), '治りきる手前ではまだ残っている').toEqual(['sprained_ankle']);
-    expect(player.getEffectiveValue(painId)).toBe(40);
+    expect(player.tryGetProperty(painId)?.getEffectiveValue() ?? 0).toBe(40);
 
     tick(1);
     expect(injuriesOf(player), '傷が尽きた瞬間に消える').toEqual([]);
-    expect(player.getEffectiveValue(painId), '可逆な寄与なので痛みも消える').toBe(0);
+    expect(player.tryGetProperty(painId)?.getEffectiveValue() ?? 0, '可逆な寄与なので痛みも消える').toBe(0);
   });
 
   it('怪我は負った本人から離せない', () => {
@@ -244,16 +246,16 @@ describe('injuries.yamlの怪我', () => {
     it('包帯を当てている間は、治りが速くなり痛みも減る', () => {
       const { injury, bandage } = injured();
       const severityId = codex.propertyNames.getId('severity');
-      expect(player.getEffectiveValue(painId)).toBe(40);
+      expect(player.tryGetProperty(painId)?.getEffectiveValue() ?? 0).toBe(40);
 
       treat(injury, bandage);
       // 当て終わるまでの30分は当たっていないので、そこは効き目の外。数えるのは当ててからの分。
-      const before = injury.getNumber(severityId);
+      const before = injury.tryGetProperty(severityId)?.number ?? 0;
 
-      expect(player.getEffectiveValue(painId), '当てている間だけ痛みが引く').toBe(30);
+      expect(player.tryGetProperty(painId)?.getEffectiveValue() ?? 0, '当てている間だけ痛みが引く').toBe(30);
       tick(10);
       // 自然治癒の-1/tickに、包帯の-0.4/tickが重なる（8.4節）。
-      expect(before - injury.getNumber(severityId)).toBeCloseTo(1.4 * 10, 10);
+      expect(before - (injury.tryGetProperty(severityId)?.number ?? 0)).toBeCloseTo(1.4 * 10, 10);
     });
 
     it('外せば効き目も消える', () => {
@@ -262,11 +264,11 @@ describe('injuries.yamlの怪我', () => {
 
       expect(bandage.moveToSlot(player, codex.slotNames.getId('hand'))).toBeUndefined();
 
-      expect(player.getEffectiveValue(painId), '可逆な寄与なので戻る').toBe(40);
+      expect(player.tryGetProperty(painId)?.getEffectiveValue() ?? 0, '可逆な寄与なので戻る').toBe(40);
       const severityId = codex.propertyNames.getId('severity');
-      const before = injury.getNumber(severityId);
+      const before = injury.tryGetProperty(severityId)?.number ?? 0;
       tick(10);
-      expect(before - injury.getNumber(severityId), '治りの速さも元へ戻る').toBe(1 * 10);
+      expect(before - (injury.tryGetProperty(severityId)?.number ?? 0), '治りの速さも元へ戻る').toBe(1 * 10);
     });
 
     it('手持ちに入れているだけの治療具は効かない', () => {
@@ -274,7 +276,7 @@ describe('injuries.yamlの怪我', () => {
       pickCoconut();
       spawnInto('bandage', player, 'hand');
 
-      expect(player.getEffectiveValue(painId)).toBe(40);
+      expect(player.tryGetProperty(painId)?.getEffectiveValue() ?? 0).toBe(40);
     });
 
     it('怪我が治れば、当てていた治療具はこぼれ出る', () => {
@@ -297,6 +299,6 @@ describe('injuries.yamlの怪我', () => {
 
     pickCoconut();
 
-    expect(player.getEffectiveValue(loadId)).toBe(0);
+    expect(player.tryGetProperty(loadId)?.getEffectiveValue() ?? 0).toBe(0);
   });
 });

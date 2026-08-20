@@ -37,15 +37,15 @@ export class World {
   }
 
   get day(): number {
-    return this.instance.getEffectiveValue(this.dayId);
+    return this.instance.tryGetProperty(this.dayId)?.getEffectiveValue() ?? 0;
   }
 
   get hour(): number {
-    return this.instance.getEffectiveValue(this.hourId);
+    return this.instance.tryGetProperty(this.hourId)?.getEffectiveValue() ?? 0;
   }
 
   get minute(): number {
-    return this.instance.getEffectiveValue(this.minuteId);
+    return this.instance.tryGetProperty(this.minuteId)?.getEffectiveValue() ?? 0;
   }
 
   /**
@@ -63,7 +63,7 @@ export class World {
    */
   get weather(): string | undefined {
     if (this.weatherId === undefined) return undefined;
-    return this.symbolNames.getName(this.instance.getEffectiveValue(this.weatherId));
+    return this.symbolNames.getName(this.instance.tryGetProperty(this.weatherId)?.getEffectiveValue() ?? 0);
   }
 
   /**
@@ -71,7 +71,9 @@ export class World {
    * 日射の語彙を持たないCodexではundefined。
    */
   get sunlight(): number | undefined {
-    return this.sunlightId === undefined ? undefined : this.instance.getEffectiveValue(this.sunlightId);
+    return this.sunlightId === undefined
+      ? undefined
+      : (this.instance.tryGetProperty(this.sunlightId)?.getEffectiveValue() ?? 0);
   }
 
   /**
@@ -81,12 +83,12 @@ export class World {
   get ambientTemperature(): number | undefined {
     return this.ambientTemperatureId === undefined
       ? undefined
-      : this.instance.getEffectiveValue(this.ambientTemperatureId);
+      : (this.instance.tryGetProperty(this.ambientTemperatureId)?.getEffectiveValue() ?? 0);
   }
 
   /** 1tickに相当するゲーム内時間（分）。実体値をそのまま返す（WorldSession.advanceWorldTime参照）。 */
   get minutesPerTick(): number {
-    return this.instance.getNumber(this.minutesPerTickId);
+    return this.instance.tryGetProperty(this.minutesPerTickId)?.number ?? 0;
   }
 
   /**
@@ -102,8 +104,8 @@ export class World {
     const lastStep = Math.trunc(latestMinutes / step);
     const minutes = rng.nextInt(firstStep, lastStep + 1) * step;
 
-    this.instance.setNumber(this.hourId, Math.trunc(minutes / 60));
-    this.instance.setNumber(this.minuteId, minutes % 60);
+    this.instance.tryGetProperty(this.hourId)?.setNumber(Math.trunc(minutes / 60));
+    this.instance.tryGetProperty(this.minuteId)?.setNumber(minutes % 60);
   }
 
   /**
@@ -126,6 +128,6 @@ export class World {
 
   /** minuteへamountを加減算する（WorldSession.advanceWorldTime専用。負の値も許容する）。繰り上げ（on_max）はtickを待たずその場で走る（PropertyValue.add参照）。 */
   addMinutes(amount: number): void {
-    this.instance.addNumber(this.minuteId, amount);
+    this.instance.tryGetProperty(this.minuteId)?.add(amount);
   }
 }

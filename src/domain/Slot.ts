@@ -58,7 +58,7 @@ export class Slot {
 
     if (this.def.capacity !== undefined) {
       const currentVolume = this.sumVolume(wellKnown.volumeId);
-      const addedVolume = candidate.getNumber(wellKnown.volumeId);
+      const addedVolume = candidate.tryGetProperty(wellKnown.volumeId)?.number ?? 0;
       if (currentVolume + addedVolume > this.def.capacity) {
         return `'${ownerName}.${this.def.name}' の容量（${this.def.capacity}）を超えます。`;
       }
@@ -88,7 +88,7 @@ export class Slot {
     let count = 0;
     for (const candidate of candidates) {
       if (count >= vacancy) break;
-      volume += candidate.getNumber(wellKnown.volumeId);
+      volume += candidate.tryGetProperty(wellKnown.volumeId)?.number ?? 0;
       if (this.def.capacity !== undefined && volume > this.def.capacity) break;
       count += 1;
     }
@@ -155,7 +155,7 @@ export class Slot {
   }
 
   private sumVolume(volumePropertyGlobalId: number): number {
-    return this.contents.reduce((sum, o) => sum + o.getNumber(volumePropertyGlobalId), 0);
+    return this.contents.reduce((sum, o) => sum + (o.tryGetProperty(volumePropertyGlobalId)?.number ?? 0), 0);
   }
 
   /**

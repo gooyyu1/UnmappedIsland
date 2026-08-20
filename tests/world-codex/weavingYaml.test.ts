@@ -59,7 +59,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
   /** 土地のitemsスロットに並ぶ物の重さ（g）。 */
   function weightsOn(location: WorldObject): number[] {
     const weightId = codex.propertyNames.getId('weight');
-    return new Location(location, codex).items.map((object) => object.getNumber(weightId));
+    return new Location(location, codex).items.map((object) => object.tryGetProperty(weightId)?.number ?? 0);
   }
 
   it('ヤシの木から葉を採ると、1回でまとめて手に入る', () => {

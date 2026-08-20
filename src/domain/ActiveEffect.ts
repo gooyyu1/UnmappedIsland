@@ -155,7 +155,7 @@ export class SetEffect extends ActiveEffect {
     dragged: WorldObject | undefined,
   ): void {
     const resolved = owner.resolveEffectTargetOrAncestor(this.target, this.propertyGlobalId, actor, dragged);
-    resolved?.setNumber(this.propertyGlobalId, this.value);
+    resolved?.tryGetProperty(this.propertyGlobalId)?.setNumber(this.value);
   }
 
   read(reader: EffectReader): void {
@@ -200,7 +200,7 @@ export class AddEffect extends ActiveEffect {
     const scaled = (this.amount * numerator) / denominator;
     if (scaled === 0) return;
     const resolved = owner.resolveEffectTargetOrAncestor(this.target, this.propertyGlobalId, actor, dragged);
-    resolved?.addNumber(this.propertyGlobalId, scaled);
+    resolved?.tryGetProperty(this.propertyGlobalId)?.add(scaled);
   }
 
   read(reader: EffectReader): void {
@@ -372,8 +372,8 @@ export class TransferEffect extends ActiveEffect {
     }
     if (taken <= 0) return;
 
-    from.addNumber(this.fromPropertyGlobalId, -taken);
-    to.addNumber(this.toPropertyGlobalId, (taken * this.toAmount) / this.amount);
+    from.tryGetProperty(this.fromPropertyGlobalId)?.add(-taken);
+    to.tryGetProperty(this.toPropertyGlobalId)?.add((taken * this.toAmount) / this.amount);
 
     for (const linked of this.linkedAdd)
       linked.applyScaled(owner, session, actor, dragged, taken, this.amount);

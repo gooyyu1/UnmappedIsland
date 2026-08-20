@@ -48,7 +48,7 @@ object_defs:
 
       const instance = spawn(codex, 'torch');
 
-      expect(instance.getEffectiveValue(brightnessId)).toBe(3);
+      expect(instance.tryGetProperty(brightnessId)?.getEffectiveValue() ?? 0).toBe(3);
     });
 
     it('同じObjectDefから複数spawnしても、プロパティの状態は独立している', () => {
@@ -71,11 +71,11 @@ object_defs:
       const first = spawn(codex, 'torch');
       const second = spawn(codex, 'torch');
 
-      first.addNumber(brightnessId, 10);
+      first.tryGetProperty(brightnessId)?.add(10);
       first.tick();
 
-      expect(first.getNumber(brightnessId)).toBe(16); // 1体目: 1(初期値) + 10(add) + 5(passivesのadd)
-      expect(second.getNumber(brightnessId)).toBe(1); // 2体目は未タッチのまま初期値のはず
+      expect(first.tryGetProperty(brightnessId)?.number ?? 0).toBe(16); // 1体目: 1(初期値) + 10(add) + 5(passivesのadd)
+      expect(second.tryGetProperty(brightnessId)?.number ?? 0).toBe(1); // 2体目は未タッチのまま初期値のはず
     });
 
     it('setPropertyは生値だけを差し替え、登録済みのincoming効果は保持される', () => {
@@ -94,10 +94,10 @@ object_defs:
       const brightnessId = codex.propertyNames.getId('brightness');
       const instance = spawn(codex, 'torch');
 
-      instance.setProperty(brightnessId, 10);
+      instance.getProperty(brightnessId).overwrite(10);
 
-      expect(instance.getNumber(brightnessId)).toBe(10); // 生値だけを差し替える
-      expect(instance.getEffectiveValue(brightnessId)).toBe(12); // 既存のincoming（modify）は維持される
+      expect(instance.tryGetProperty(brightnessId)?.number ?? 0).toBe(10); // 生値だけを差し替える
+      expect(instance.tryGetProperty(brightnessId)?.getEffectiveValue() ?? 0).toBe(12); // 既存のincoming（modify）は維持される
     });
 
     it('in_slot条件付きのparentへのmodifyは、そのスロットに入っている間だけ効く', () => {
@@ -126,13 +126,13 @@ object_defs:
       const characterInstance = spawn(codex, 'character');
       const armorInstance = spawn(codex, 'armor');
 
-      expect(characterInstance.getEffectiveValue(defenseId)).toBe(10); // 装備前はボーナスなし
+      expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(10); // 装備前はボーナスなし
 
       expect(armorInstance.moveToSlot(characterInstance, equipSlotId)).toBeUndefined();
-      expect(characterInstance.getEffectiveValue(defenseId)).toBe(15); // equipに入っている間はボーナスが乗る
+      expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(15); // equipに入っている間はボーナスが乗る
 
       expect(armorInstance.moveToSlot(characterInstance, inventorySlotId)).toBeUndefined();
-      expect(characterInstance.getEffectiveValue(defenseId)).toBe(10); // 同じ親のままequip以外へ移すとボーナスが外れる
+      expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(10); // 同じ親のままequip以外へ移すとボーナスが外れる
     });
 
     it('別の親へ移動すると、元の親へのmodifyは消える', () => {
@@ -165,10 +165,10 @@ object_defs:
       const armorInstance = spawn(codex, 'armor');
 
       expect(armorInstance.moveToSlot(characterInstance, equipSlotId)).toBeUndefined();
-      expect(characterInstance.getEffectiveValue(defenseId)).toBe(15);
+      expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(15);
 
       expect(armorInstance.moveToSlot(chestInstance, storageSlotId)).toBeUndefined();
-      expect(characterInstance.getEffectiveValue(defenseId)).toBe(10); // 別の親へ移動したら元の親からの登録は消える
+      expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(10); // 別の親へ移動したら元の親からの登録は消える
     });
 
     it('childへのmodifyは、スロットに入った子自身を条件判定の基準にする', () => {
@@ -195,10 +195,10 @@ object_defs:
       const containerInstance = spawn(codex, 'preserving_container');
       const foodInstance = spawn(codex, 'food');
 
-      expect(foodInstance.getEffectiveValue(decayRateId)).toBe(3); // 格納前は影響なし
+      expect(foodInstance.tryGetProperty(decayRateId)?.getEffectiveValue() ?? 0).toBe(3); // 格納前は影響なし
 
       expect(foodInstance.moveToSlot(containerInstance, storageSlotId)).toBeUndefined();
-      expect(foodInstance.getEffectiveValue(decayRateId)).toBe(2); // storageに入っている間は腐敗速度が下がる
+      expect(foodInstance.tryGetProperty(decayRateId)?.getEffectiveValue() ?? 0).toBe(2); // storageに入っている間は腐敗速度が下がる
     });
 
     it('selfのown_stage条件は、再登録なしでステージの遷移を追跡する', () => {
@@ -225,11 +225,11 @@ object_defs:
 
       const instance = spawn(codex, 'battery');
 
-      expect(instance.getEffectiveValue(outputId)).toBe(15); // chargeが満タンなのでfullステージのボーナスが乗る
+      expect(instance.tryGetProperty(outputId)?.getEffectiveValue() ?? 0).toBe(15); // chargeが満タンなのでfullステージのボーナスが乗る
 
-      instance.setProperty(chargeId, 10);
+      instance.getProperty(chargeId).overwrite(10);
 
-      expect(instance.getEffectiveValue(outputId)).toBe(5); // chargeがlowステージへ落ちたのでボーナスが消える（再登録なし）
+      expect(instance.tryGetProperty(outputId)?.getEffectiveValue() ?? 0).toBe(5); // chargeがlowステージへ落ちたのでボーナスが消える（再登録なし）
     });
 
     it('複数のpassiveによるmodifyは合算される', () => {
@@ -267,7 +267,7 @@ object_defs:
       expect(helmetInstance.moveToSlot(characterInstance, equipSlotId)).toBeUndefined();
       expect(armorInstance.moveToSlot(characterInstance, equipSlotId)).toBeUndefined();
 
-      expect(characterInstance.getEffectiveValue(defenseId)).toBe(18);
+      expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(18);
     });
 
     it('modify後の実効値はrangeでクランプされる', () => {
@@ -297,7 +297,7 @@ object_defs:
 
       expect(armorInstance.moveToSlot(characterInstance, equipSlotId)).toBeUndefined();
 
-      expect(characterInstance.getEffectiveValue(defenseId)).toBe(100);
+      expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(100);
     });
 
     it('持っていないプロパティのgetEffectiveValueは0を返す', () => {
@@ -317,7 +317,7 @@ object_defs:
 
       const rockInstance = spawn(codex, 'rock');
 
-      expect(rockInstance.getEffectiveValue(volumeId)).toBe(0);
+      expect(rockInstance.tryGetProperty(volumeId)?.getEffectiveValue() ?? 0).toBe(0);
     });
   });
 
@@ -342,13 +342,13 @@ object_defs:
 
       const instance = spawn(codex, 'candle');
 
-      expect(instance.getEffectiveValue(waxId)).toBe(100); // tick前は変化しない
+      expect(instance.tryGetProperty(waxId)?.getEffectiveValue() ?? 0).toBe(100); // tick前は変化しない
 
       instance.tick();
-      expect(instance.getEffectiveValue(waxId)).toBe(99); // tick1回で実体値が減る
+      expect(instance.tryGetProperty(waxId)?.getEffectiveValue() ?? 0).toBe(99); // tick1回で実体値が減る
 
       instance.tick();
-      expect(instance.getEffectiveValue(waxId)).toBe(98); // tick毎に加算され続ける
+      expect(instance.tryGetProperty(waxId)?.getEffectiveValue() ?? 0).toBe(98); // tick毎に加算され続ける
     });
 
     it('in_slot条件付きのparentへのpassivesのaddは、装着している間だけtick毎に効く', () => {
@@ -381,15 +381,15 @@ object_defs:
       const bleedingInstance = spawn(codex, 'bleeding');
 
       characterInstance.tick();
-      expect(characterInstance.getEffectiveValue(hydrationId)).toBe(100); // 装着前はtickしても変化なし
+      expect(characterInstance.tryGetProperty(hydrationId)?.getEffectiveValue() ?? 0).toBe(100); // 装着前はtickしても変化なし
 
       expect(bleedingInstance.moveToSlot(characterInstance, conditionsSlotId)).toBeUndefined();
       characterInstance.tick();
-      expect(characterInstance.getEffectiveValue(hydrationId)).toBe(95); // conditionsに入っている間はtick毎に減る
+      expect(characterInstance.tryGetProperty(hydrationId)?.getEffectiveValue() ?? 0).toBe(95); // conditionsに入っている間はtick毎に減る
 
       expect(bleedingInstance.moveToSlot(trashInstance, storageSlotId)).toBeUndefined();
       characterInstance.tick();
-      expect(characterInstance.getEffectiveValue(hydrationId)).toBe(95); // 取り除いた後はtickしても変化しない
+      expect(characterInstance.tryGetProperty(hydrationId)?.getEffectiveValue() ?? 0).toBe(95); // 取り除いた後はtickしても変化しない
     });
 
     it('parentへのpassivesのaddは、宣言側own_stageの遷移を再登録なしで追跡する', () => {
@@ -426,11 +426,11 @@ object_defs:
       expect(infectionInstance.moveToSlot(characterInstance, conditionsSlotId)).toBeUndefined();
 
       characterInstance.tick();
-      expect(characterInstance.getEffectiveValue(temperatureId)).toBe(36); // progressがnoneの間は上がらない
+      expect(characterInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(36); // progressがnoneの間は上がらない
 
-      infectionInstance.setProperty(progressId, 30);
+      infectionInstance.getProperty(progressId).overwrite(30);
       characterInstance.tick();
-      expect(characterInstance.getEffectiveValue(temperatureId)).toBe(37); // mildへ遷移した後は毎tick上がる（再登録なし）
+      expect(characterInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(37); // mildへ遷移した後は毎tick上がる（再登録なし）
     });
 
     it('modifyとpassivesのaddは互いの評価経路に漏れ出さない', () => {
@@ -468,10 +468,10 @@ object_defs:
       expect(bootsInstance.moveToSlot(characterInstance, equipSlotId)).toBeUndefined();
       expect(exhaustionInstance.moveToSlot(characterInstance, equipSlotId)).toBeUndefined();
 
-      expect(characterInstance.getEffectiveValue(staminaId)).toBe(60); // modifyだけが都度加味される（実体値は50のまま）
+      expect(characterInstance.tryGetProperty(staminaId)?.getEffectiveValue() ?? 0).toBe(60); // modifyだけが都度加味される（実体値は50のまま）
 
       characterInstance.tick();
-      expect(characterInstance.getEffectiveValue(staminaId)).toBe(59); // tickでpassivesのaddだけが実体値へ入る(50-1+10=59)
+      expect(characterInstance.tryGetProperty(staminaId)?.getEffectiveValue() ?? 0).toBe(59); // tickでpassivesのaddだけが実体値へ入る(50-1+10=59)
     });
 
     it('PropertyValue.incomingはmodify/addの種別を問わず全件を返す', () => {
@@ -602,7 +602,7 @@ object_defs:
 
       containerInstance.tick();
 
-      expect(batteryInstance.getEffectiveValue(chargeId)).toBe(9);
+      expect(batteryInstance.tryGetProperty(chargeId)?.getEffectiveValue() ?? 0).toBe(9);
     });
 
     it('on_minが発火するとdestroy: selfで自分自身が破棄される', () => {
@@ -974,10 +974,15 @@ object_defs:
 
       expect(innerInstance.parent).toBeUndefined(); // inner_boxは自分自身のon_minにより破棄される
       expect(batteryInstance.parent, '子は道連れにならず、祖父へこぼれ出る').toBe(outerInstance);
-      expect(batteryInstance.getEffectiveValue(chargeId), 'こぼれたtickは動かない').toBe(10);
+      expect(
+        batteryInstance.tryGetProperty(chargeId)?.getEffectiveValue() ?? 0,
+        'こぼれたtickは動かない',
+      ).toBe(10);
 
       outerInstance.tick();
-      expect(batteryInstance.getEffectiveValue(chargeId), '次のtickからは動く').toBe(9);
+      expect(batteryInstance.tryGetProperty(chargeId)?.getEffectiveValue() ?? 0, '次のtickからは動く').toBe(
+        9,
+      );
     });
   });
 
@@ -1011,7 +1016,7 @@ object_defs:
       const instance = spawn(codex, 'thing');
 
       // sourceの生値は10のままだが、実効値(10+5=15)を見るゲートは条件を満たす
-      expect(instance.getEffectiveValue(targetId)).toBe(100);
+      expect(instance.tryGetProperty(targetId)?.getEffectiveValue() ?? 0).toBe(100);
     });
 
     it('conditionsが循環参照するとスタックオーバーフローの代わりにエラーを投げる', () => {
@@ -1041,7 +1046,7 @@ object_defs:
 
       const instance = spawn(codex, 'circular');
 
-      expect(() => instance.getEffectiveValue(aId)).toThrowError(/循環参照/);
+      expect(() => instance.tryGetProperty(aId)?.getEffectiveValue() ?? 0).toThrowError(/循環参照/);
     });
   });
 
@@ -1076,13 +1081,13 @@ object_defs:
       const characterInstance = spawn(codex, 'character');
       const foodInstance = spawn(codex, 'food');
 
-      expect(foodInstance.getEffectiveValue(temperatureId)).toBe(-2); // 未接続の間は祖先が見つからず寄与0
+      expect(foodInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(-2); // 未接続の間は祖先が見つからず寄与0
 
       expect(characterInstance.moveToSlot(roomInstance, contentsSlotId)).toBeUndefined();
       expect(foodInstance.moveToSlot(characterInstance, inventorySlotId)).toBeUndefined();
 
       // characterはtemperatureを持たないため素通りし、roomの実効値(20)に自分のオフセット(-2)を加算する
-      expect(foodInstance.getEffectiveValue(temperatureId)).toBe(18);
+      expect(foodInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(18);
     });
 
     it('inheritは同名プロパティを定義している最も近い祖先で探索を止める', () => {
@@ -1118,7 +1123,7 @@ object_defs:
       expect(foodInstance.moveToSlot(tentInstance, contentsSlotId)).toBeUndefined();
 
       // tent自身がtemperatureを定義しているため、そこで探索が止まりroom(20)までは遡らない
-      expect(foodInstance.getEffectiveValue(temperatureId)).toBe(5);
+      expect(foodInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(5);
     });
   });
 
@@ -1149,13 +1154,13 @@ object_defs:
       const roomInstance = spawn(codex, 'room');
       const fireplaceInstance = spawn(codex, 'fireplace');
 
-      expect(roomInstance.getEffectiveValue(temperatureId)).toBe(20); // 暖炉を置く前は補正なし
+      expect(roomInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(20); // 暖炉を置く前は補正なし
 
       expect(fireplaceInstance.moveToSlot(roomInstance, contentsSlotId)).toBeUndefined();
-      expect(roomInstance.getEffectiveValue(temperatureId)).toBe(25); // 暖炉を置くと部屋の気温が+5される
+      expect(roomInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(25); // 暖炉を置くと部屋の気温が+5される
 
       fireplaceInstance.destroy();
-      expect(roomInstance.getEffectiveValue(temperatureId)).toBe(20); // 暖炉が無くなれば補正も消える
+      expect(roomInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(20); // 暖炉が無くなれば補正も消える
     });
 
     it('ancestorへのmodifyは、対象プロパティを定義していない中間の入れ物を素通りする', () => {
@@ -1188,7 +1193,7 @@ object_defs:
       expect(fireplaceInstance.moveToSlot(cartInstance, contentsSlotId)).toBeUndefined();
 
       // cartはtemperatureを持たないため素通りし、roomへ直接効果が及ぶ
-      expect(roomInstance.getEffectiveValue(temperatureId)).toBe(25);
+      expect(roomInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(25);
     });
 
     it('祖先自身が移動すると、ancestorへのmodifyは再帰的に解決し直される', () => {
@@ -1221,16 +1226,16 @@ object_defs:
       expect(cartInstance.moveToSlot(room1Instance, contentsSlotId)).toBeUndefined();
       expect(fireplaceInstance.moveToSlot(cartInstance, contentsSlotId)).toBeUndefined();
 
-      expect(room1Instance.getEffectiveValue(temperatureId)).toBe(25); // room1に置かれたcartの中の暖炉がroom1を温める
-      expect(room2Instance.getEffectiveValue(temperatureId)).toBe(20); // room2にはまだ何も影響していない
+      expect(room1Instance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(25); // room1に置かれたcartの中の暖炉がroom1を温める
+      expect(room2Instance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(20); // room2にはまだ何も影響していない
 
       // 暖炉自身ではなく、暖炉を運ぶcart(祖先)がroom2へ移動する。
       expect(cartInstance.moveToSlot(room2Instance, contentsSlotId)).toBeUndefined();
 
       // cartが立ち去ったのでroom1への補正は消える（再帰的な再解決が効いている証拠）
-      expect(room1Instance.getEffectiveValue(temperatureId)).toBe(20);
+      expect(room1Instance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(20);
       // cartの中の暖炉は、暖炉自身は動いていないのに新しいroom2を正しく温める
-      expect(room2Instance.getEffectiveValue(temperatureId)).toBe(25);
+      expect(room2Instance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(25);
     });
 
     it('ancestorへのpassivesのaddは、対象プロパティを定義している最も近い祖先へtick毎に積み上がる', () => {
@@ -1260,7 +1265,7 @@ object_defs:
       roomInstance.tick();
       roomInstance.tick();
 
-      expect(roomInstance.getNumber(sootId)).toBe(2); // passivesのaddのancestorターゲットもtick毎に部屋のsootへ積み上がる
+      expect(roomInstance.tryGetProperty(sootId)?.number ?? 0).toBe(2); // passivesのaddのancestorターゲットもtick毎に部屋のsootへ積み上がる
     });
   });
 });

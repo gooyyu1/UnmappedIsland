@@ -105,7 +105,7 @@ object_defs:
     const sledge = make('sledge');
     put(make('stone'), sledge, 'cargo');
 
-    expect(sledge.getEffectiveValue(weightId), '自重1000 + 石100').toBe(1100);
+    expect(sledge.tryGetProperty(weightId)?.getEffectiveValue() ?? 0, '自重1000 + 石100').toBe(1100);
   });
 
   it('石を載せたそりを引くと、体感は110になる', () => {
@@ -115,9 +115,12 @@ object_defs:
     put(make('stone'), sledge, 'cargo');
     put(sledge, character, 'hand');
 
-    expect(sledge.getEffectiveValue(weightId)).toBe(1100);
-    expect(character.getEffectiveValue(weightId), '自重70000 + そり1100').toBe(71100);
-    expect(character.getEffectiveValue(loadId), '1100 × (1 - 0.9)').toBeCloseTo(110, 6);
+    expect(sledge.tryGetProperty(weightId)?.getEffectiveValue() ?? 0).toBe(1100);
+    expect(character.tryGetProperty(weightId)?.getEffectiveValue() ?? 0, '自重70000 + そり1100').toBe(71100);
+    expect(character.tryGetProperty(loadId)?.getEffectiveValue() ?? 0, '1100 × (1 - 0.9)').toBeCloseTo(
+      110,
+      6,
+    );
   });
 
   it('そりを台車に積むと、台車の重さはそりの重さをそのまま加えたものになる', () => {
@@ -129,9 +132,12 @@ object_defs:
     put(sledge, cart, 'cargo');
     put(cart, character, 'hand');
 
-    expect(cart.getEffectiveValue(weightId), '自重15000 + そり1100。そりの軽減率は効かない').toBe(16100);
     expect(
-      character.getEffectiveValue(loadId),
+      cart.tryGetProperty(weightId)?.getEffectiveValue() ?? 0,
+      '自重15000 + そり1100。そりの軽減率は効かない',
+    ).toBe(16100);
+    expect(
+      character.tryGetProperty(loadId)?.getEffectiveValue() ?? 0,
       '効くのは引いている台車の率だけ: 16100 × (1 - 0.95)',
     ).toBeCloseTo(805, 6);
   });
@@ -143,23 +149,28 @@ object_defs:
     put(make('stone'), backpack, 'contents');
 
     put(backpack, character, 'hand');
-    expect(character.getEffectiveValue(loadId), '手に提げれば軽くならない').toBe(600);
+    expect(character.tryGetProperty(loadId)?.getEffectiveValue() ?? 0, '手に提げれば軽くならない').toBe(600);
 
     put(backpack, character, 'equipment');
-    expect(character.getEffectiveValue(loadId), '背負えば半分').toBe(300);
+    expect(character.tryGetProperty(loadId)?.getEffectiveValue() ?? 0, '背負えば半分').toBe(300);
   });
 
   it('中身の重さが後から変わっても追従する', () => {
     const { codex, weightId, make, put } = build();
     const sledge = make('sledge');
     const water = make('water');
-    water.setNumber(codex.wellKnown.fillId, 1000);
+    water.tryGetProperty(codex.wellKnown.fillId)?.setNumber(1000);
     put(water, sledge, 'cargo');
 
-    expect(sledge.getEffectiveValue(weightId), '自重1000 + 水1L(1000mL × 密度1 = 1000g)').toBe(2000);
+    expect(
+      sledge.tryGetProperty(weightId)?.getEffectiveValue() ?? 0,
+      '自重1000 + 水1L(1000mL × 密度1 = 1000g)',
+    ).toBe(2000);
 
-    water.setNumber(codex.wellKnown.fillId, 500);
-    expect(sledge.getEffectiveValue(weightId), '蒸発しても読み直せば正しい').toBe(1500);
+    water.tryGetProperty(codex.wellKnown.fillId)?.setNumber(500);
+    expect(sledge.tryGetProperty(weightId)?.getEffectiveValue() ?? 0, '蒸発しても読み直せば正しい').toBe(
+      1500,
+    );
   });
 
   it('出し入れを繰り返しても重さの帳尻が合う', () => {
@@ -169,13 +180,18 @@ object_defs:
     const ground = make('character'); // 置き場所として使うだけ
 
     put(sledge, character, 'hand');
-    expect(character.getEffectiveValue(loadId)).toBeCloseTo(100, 6);
+    expect(character.tryGetProperty(loadId)?.getEffectiveValue() ?? 0).toBeCloseTo(100, 6);
 
     put(sledge, ground, 'hand');
-    expect(character.getEffectiveValue(weightId), '出したら自重だけに戻る').toBe(70000);
-    expect(character.getEffectiveValue(loadId)).toBe(0);
+    expect(character.tryGetProperty(weightId)?.getEffectiveValue() ?? 0, '出したら自重だけに戻る').toBe(
+      70000,
+    );
+    expect(character.tryGetProperty(loadId)?.getEffectiveValue() ?? 0).toBe(0);
 
     put(sledge, character, 'hand');
-    expect(character.getEffectiveValue(loadId), '入れ直しても同じ値').toBeCloseTo(100, 6);
+    expect(character.tryGetProperty(loadId)?.getEffectiveValue() ?? 0, '入れ直しても同じ値').toBeCloseTo(
+      100,
+      6,
+    );
   });
 });

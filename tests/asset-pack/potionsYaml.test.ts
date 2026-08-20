@@ -66,19 +66,19 @@ describe('サンプルアセットパックの薬', () => {
 
     // bloodのon_minが既定のクランプを置き換えるので、0を割った値がそのまま残る
     // （VitalsSystem.md 3節・6節）。死因はその段が名乗る。
-    expect(character.getNumber(bloodId), '飲んだ量がそのまま引かれる').toBe(5000 - 9999);
-    expect(character.isInStage(bloodId, 'exsanguinated'), '失血死の段').toBe(true);
+    expect(character.tryGetProperty(bloodId)?.number ?? 0, '飲んだ量がそのまま引かれる').toBe(5000 - 9999);
+    expect(character.tryGetProperty(bloodId)?.isInStage('exsanguinated') ?? false, '失血死の段').toBe(true);
   });
 
   it('回復ポーションをあおると、空から飲んでも血が満タンに戻る', () => {
     const character = spawn(SAMPLE_CHARACTER, 1);
     const potion = spawn('healing_potion', 2);
     const bloodId = codex.propertyNames.getId('blood');
-    character.setProperty(bloodId, 0);
+    character.getProperty(bloodId).overwrite(0);
 
     expect(potion.tryExecuteAction('drink', character)).toBe(true);
 
-    expect(character.getNumber(bloodId)).toBe(5000);
+    expect(character.tryGetProperty(bloodId)?.number ?? 0).toBe(5000);
   });
 
   it.each(['poison_potion', 'healing_potion'])('%sは飲めば手元から消える', (objectName) => {

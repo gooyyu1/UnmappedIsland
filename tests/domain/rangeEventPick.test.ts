@@ -59,16 +59,16 @@ object_defs:
 
     for (let i = 0; i < 3; i++) cycler.tick();
 
-    expect(cycler.getNumber(chosenId)).toBe(1); // 重み1のgo_a候補だけが選ばれる
-    expect(cycler.getNumber(counterId)).toBe(10); // 選ばれた候補がcounter自身を再ロールする
+    expect(cycler.tryGetProperty(chosenId)?.number ?? 0).toBe(1); // 重み1のgo_a候補だけが選ばれる
+    expect(cycler.tryGetProperty(counterId)?.number ?? 0).toBe(10); // 選ばれた候補がcounter自身を再ロールする
 
     // 重みを入れ替えると、次の発火では反対の候補が選ばれる
-    cycler.setProperty(codex.propertyNames.getId('go_a'), 0);
-    cycler.setProperty(codex.propertyNames.getId('go_b'), 1);
+    cycler.getProperty(codex.propertyNames.getId('go_a')).overwrite(0);
+    cycler.getProperty(codex.propertyNames.getId('go_b')).overwrite(1);
     for (let i = 0; i < 10; i++) cycler.tick();
 
-    expect(cycler.getNumber(chosenId)).toBe(2);
-    expect(cycler.getNumber(counterId)).toBe(20);
+    expect(cycler.tryGetProperty(chosenId)?.number ?? 0).toBe(2);
+    expect(cycler.tryGetProperty(counterId)?.number ?? 0).toBe(20);
   });
 
   it('on_min配下のpick候補（ネストを含む）にparent対象を書くとロードエラーになる', () => {
@@ -120,9 +120,9 @@ object_defs:
 
     for (let i = 0; i < 3; i++) mixer.tick();
 
-    expect(mixer.getNumber(codex.propertyNames.getId('counter'))).toBe(10);
+    expect(mixer.tryGetProperty(codex.propertyNames.getId('counter'))?.number ?? 0).toBe(10);
     // setが先に走ってから候補のaddが乗る（逆順ならsetが上書きして1になる）
-    expect(mixer.getNumber(codex.propertyNames.getId('chosen'))).toBe(11);
+    expect(mixer.tryGetProperty(codex.propertyNames.getId('chosen'))?.number ?? 0).toBe(11);
   });
 
   it('on_min: {} という空宣言は、既定の下限クランプをエラーなく打ち消す', () => {
@@ -150,6 +150,6 @@ object_defs:
     for (let i = 0; i < 3; i++) sinker.tick();
 
     // 5 -> 3 -> 1 -> -1。既定クランプなら0で止まるが、空宣言により素通しになる
-    expect(sinker.getNumber(levelId)).toBe(-1);
+    expect(sinker.tryGetProperty(levelId)?.number ?? 0).toBe(-1);
   });
 });

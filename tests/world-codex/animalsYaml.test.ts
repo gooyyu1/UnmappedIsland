@@ -144,12 +144,12 @@ describe('animals.yamlの動物', () => {
   });
 
   it('殴れば警戒が上がり、刃も摩耗する', () => {
-    const before = monkey.getNumber(warinessId);
+    const before = monkey.tryGetProperty(warinessId)?.number ?? 0;
 
     const stone = strikeWithSharpStone();
 
     // 上げるのは25だが、殴るのに15分＝1tickかかるぶんの落ち着き（-1/tick）が同時に起きる。
-    expect(monkey.getNumber(warinessId) - before).toBe(25 - 1);
+    expect((monkey.tryGetProperty(warinessId)?.number ?? 0) - before).toBe(25 - 1);
     expect(stone.tryGetProperty(codex.propertyNames.getId('durability'))?.getEffectiveValue()).toBe(960 - 20);
   });
 
@@ -157,12 +157,14 @@ describe('animals.yamlの動物', () => {
     // 当たり外れによらない分（警戒・摩耗）を各候補が持つ（animals.yaml）ので、外れた側でも
     // 抜けていないことを確かめる。
     open(WHIFFS);
-    const before = monkey.getNumber(warinessId);
+    const before = monkey.tryGetProperty(warinessId)?.number ?? 0;
 
     const stone = strikeWithSharpStone();
 
     expect(injuriesOf(monkey), '外れれば傷は付かない').toEqual([]);
-    expect(monkey.getNumber(warinessId) - before, '殴られたこと自体で気は立つ').toBe(25 - 1);
+    expect((monkey.tryGetProperty(warinessId)?.number ?? 0) - before, '殴られたこと自体で気は立つ').toBe(
+      25 - 1,
+    );
     expect(stone.tryGetProperty(codex.propertyNames.getId('durability'))?.getEffectiveValue()).toBe(960 - 20);
   });
 
@@ -192,7 +194,7 @@ describe('animals.yamlの動物', () => {
 
     /** 気を失っているか（VitalsSystem.md 6節の段）。 */
     function isDown(animal: WorldObject): boolean {
-      return animal.isInStage(consciousnessId, 'unconscious');
+      return animal.tryGetProperty(consciousnessId)?.isInStage('unconscious') ?? false;
     }
 
     it('小動物は、尖った石でも一撃で沈む', () => {
@@ -218,7 +220,9 @@ describe('animals.yamlの動物', () => {
 
       strikeWithSharpStone();
 
-      expect(monkey.getNumber(shockId), '30ずつ足し、1tickごとに4引く').toBe(30 * 3 - 4 * 2);
+      expect(monkey.tryGetProperty(shockId)?.number ?? 0, '30ずつ足し、1tickごとに4引く').toBe(
+        30 * 3 - 4 * 2,
+      );
       expect(isDown(monkey), '3撃目で沈む').toBe(true);
 
       open(LANDS);
@@ -245,7 +249,7 @@ describe('animals.yamlの動物', () => {
 
       for (let i = 0; i < 10; i++) strikeWith('sharp_stone', untouched);
 
-      expect(untouched.getNumber(shockId), '足す30より引く48のほうが大きい').toBe(30);
+      expect(untouched.tryGetProperty(shockId)?.number ?? 0, '足す30より引く48のほうが大きい').toBe(30);
       expect(isDown(untouched), '尖った石では何撃当てても沈まない').toBe(false);
     });
 
@@ -286,7 +290,9 @@ describe('animals.yamlの動物', () => {
 
     // 効果は時間が経ち切ってから適用される（ActionSystem.md 2節）ので、殴ったぶんはtickで引かれない。
     // 250はサルの体格（max 100）を越えるので、そこで頭打ちになる。
-    expect(monkey.getNumber(shockId), '衝撃はaddで即座に立ち、体格で頭打ちになる').toBe(100);
+    expect(monkey.tryGetProperty(shockId)?.number ?? 0, '衝撃はaddで即座に立ち、体格で頭打ちになる').toBe(
+      100,
+    );
     expect(consciousness(), 'reelingの-80と痛みの-20で底を打つ（unconsciousの段）').toEqual({
       value: 0,
       alert: 'danger',
@@ -303,7 +309,7 @@ describe('animals.yamlの動物', () => {
     // 28まで引けばsteadyへ。残るのは痛みの-20だけで、意識ははっきりした域へ戻る。
     tick(8);
 
-    expect(monkey.getNumber(shockId)).toBe(28);
+    expect(monkey.tryGetProperty(shockId)?.number ?? 0).toBe(28);
     expect(consciousness(), '残るのは痛みの-20だけ（clearの段）').toEqual({ value: 80, alert: 'safe' });
   });
 
@@ -314,7 +320,7 @@ describe('animals.yamlの動物', () => {
     strikeWithSharpStone();
     tick(20); // 衝撃だけを引かせる（傷はまだ残る）。
 
-    expect(monkey.getNumber(shockId), '衝撃は引き切っている').toBe(0);
+    expect(monkey.tryGetProperty(shockId)?.number ?? 0, '衝撃は引き切っている').toBe(0);
     expect(effective(painId), '裂傷2つで50+50').toBe(100);
     expect(consciousness(), '痛みが最も深くても朦朧に留まる（dazedの段）').toEqual({
       value: 100 - 45,
@@ -343,22 +349,22 @@ describe('animals.yamlの動物', () => {
       // 出血は傷の重さとは別の時間で動く（VitalsSystem.md 4節）。severityの段で表すと、傷が治る
       // まで何日も流れ続けることになる。
       strikeWithSharpStone();
-      expect(monkey.getNumber(bloodId), '殴った時点ではまだ失っていない').toBe(400);
-      expect(firstWound().getNumber(bleedingId)).toBe(100);
+      expect(monkey.tryGetProperty(bloodId)?.number ?? 0, '殴った時点ではまだ失っていない').toBe(400);
+      expect(firstWound().tryGetProperty(bleedingId)?.number ?? 0).toBe(100);
 
       tick(4);
 
-      expect(firstWound().getNumber(bleedingId), '1時間で固まる').toBe(0);
-      const afterClotting = monkey.getNumber(bloodId);
+      expect(firstWound().tryGetProperty(bleedingId)?.number ?? 0, '1時間で固まる').toBe(0);
+      const afterClotting = monkey.tryGetProperty(bloodId)?.number ?? 0;
       expect(afterClotting).toBeCloseTo(400 - LOST_PER_WOUND + 4 * RECOVERED_PER_TICK, 5);
 
       tick(100);
 
       // 削るのは一瞬でも戻るのは桁違いに遅い（VitalsSystem.md 3節）——1日かけて16mLしか戻らない。
-      expect(monkey.getNumber(bloodId) - afterClotting, '止まった後は少しずつ戻る').toBeCloseTo(
-        100 * RECOVERED_PER_TICK,
-        5,
-      );
+      expect(
+        (monkey.tryGetProperty(bloodId)?.number ?? 0) - afterClotting,
+        '止まった後は少しずつ戻る',
+      ).toBeCloseTo(100 * RECOVERED_PER_TICK, 5);
       expect(injuriesOf(monkey), '血が止まっても傷そのものは残る').toEqual(['laceration']);
     });
 
@@ -379,10 +385,14 @@ describe('animals.yamlの動物', () => {
       strikeWithSharpStone();
       tick(24);
 
-      expect(monkey.getNumber(shockId), '衝撃は引き切っている').toBe(0);
-      expect(monkey.getNumber(bloodId), '3つぶん失った').toBeLessThan(400 - 3 * LOST_PER_WOUND + 5);
+      expect(monkey.tryGetProperty(shockId)?.number ?? 0, '衝撃は引き切っている').toBe(0);
+      expect(monkey.tryGetProperty(bloodId)?.number ?? 0, '3つぶん失った').toBeLessThan(
+        400 - 3 * LOST_PER_WOUND + 5,
+      );
       expect(monkey.tryGetProperty(bloodId)?.alert, '危険域').toBe('danger');
-      expect(monkey.isInStage(consciousnessId, 'unconscious'), '目覚めない').toBe(true);
+      expect(monkey.tryGetProperty(consciousnessId)?.isInStage('unconscious') ?? false, '目覚めない').toBe(
+        true,
+      );
     });
 
     it('血が尽きれば、その枠のまま死体になる', () => {
@@ -406,7 +416,7 @@ describe('animals.yamlの動物', () => {
 
       tick(4);
 
-      expect(monkey.getNumber(bloodId), '固まるのが倍速なので失うのは半分').toBeCloseTo(
+      expect(monkey.tryGetProperty(bloodId)?.number ?? 0, '固まるのが倍速なので失うのは半分').toBeCloseTo(
         400 - LOST_PER_WOUND / 2 + 4 * RECOVERED_PER_TICK,
         5,
       );
@@ -420,7 +430,9 @@ describe('animals.yamlの動物', () => {
     strikeWith('stone_axe');
 
     expect(itemsInJungle(), '1発目は当たるだけ').toEqual(['monkey']);
-    expect(monkey.isInStage(consciousnessId, 'unconscious'), '気を失っている').toBe(true);
+    expect(monkey.tryGetProperty(consciousnessId)?.isInStage('unconscious') ?? false, '気を失っている').toBe(
+      true,
+    );
 
     const killed = signalsOf(() => strikeWith('stone_axe'));
 
@@ -459,7 +471,7 @@ describe('animals.yamlの動物', () => {
       const weightId = codex.propertyNames.getId('weight');
       return jungle
         .tryGetSlot(codex.slotNames.getId('items'))!
-        .contents.map((object) => object.getNumber(weightId));
+        .contents.map((object) => object.tryGetProperty(weightId)?.number ?? 0);
     }
 
     it('刃物を死体へ重ねると、肉・骨・生皮に分かれる', () => {
@@ -530,13 +542,13 @@ describe('animals.yamlの動物', () => {
       butcher(carcass);
       const meat = jungle.tryGetSlot(codex.slotNames.getId('items'))!.contents[0];
       const satietyId = codex.propertyNames.getId('satiety');
-      const before = player.getNumber(satietyId);
+      const before = player.tryGetProperty(satietyId)?.number ?? 0;
 
       expect(meat.tryExecuteAction('eat', player)).toBe(true);
 
       // 食べるのに15分かかり、時間は効果より先に進む（actionTime参照）ので、その1 tickぶん
       // （satiety -16）が引かれた値になる。
-      expect(player.getNumber(satietyId) - before, '1切れが腹に入るかさ').toBe(500 - 16);
+      expect((player.tryGetProperty(satietyId)?.number ?? 0) - before, '1切れが腹に入るかさ').toBe(500 - 16);
       expect(meat.parent, '食べた肉は無くなる').toBeUndefined();
     });
   });
@@ -559,15 +571,21 @@ describe('animals.yamlの動物', () => {
     // カードの覆いが言う（同 9.1節）——UIはunconsciousの段の名前だけを読む。
     strikeWith('stone_axe');
 
-    expect(monkey.getNumber(warinessId), '警戒そのものは上がっている').toBe(40 + 25 - 1);
+    expect(monkey.tryGetProperty(warinessId)?.number ?? 0, '警戒そのものは上がっている').toBe(40 + 25 - 1);
     expect(monkey.tryGetProperty(warinessId)?.getEffectiveValue(), '気絶が打ち消すので実効値は0').toBe(0);
     expect(monkey.tryGetProperty(warinessId)?.alert, '縁は明滅しない').toBe('safe');
-    expect(monkey.isInStage(consciousnessId, 'unconscious'), '覆いを出す段に居る').toBe(true);
+    expect(
+      monkey.tryGetProperty(consciousnessId)?.isInStage('unconscious') ?? false,
+      '覆いを出す段に居る',
+    ).toBe(true);
     expect(injuriesOf(monkey), '同じ個体なので傷は残る').toEqual(['laceration']);
 
     tick(18);
 
-    expect(monkey.isInStage(consciousnessId, 'unconscious'), '目覚めれば覆いは消える').toBe(false);
+    expect(
+      monkey.tryGetProperty(consciousnessId)?.isInStage('unconscious') ?? false,
+      '目覚めれば覆いは消える',
+    ).toBe(false);
     expect(monkey.tryGetProperty(warinessId)?.alert, '警戒も戻る').toBe('caution');
   });
 

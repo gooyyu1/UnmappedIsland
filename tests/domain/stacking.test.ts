@@ -66,11 +66,11 @@ object_defs:
     const groundInstance = spawn(codex, 'ground');
 
     const log10 = spawn(codex, 'log');
-    log10.setProperty(lifeId, 10);
+    log10.getProperty(lifeId).overwrite(10);
     const log5 = spawn(codex, 'log');
-    log5.setProperty(lifeId, 5);
+    log5.getProperty(lifeId).overwrite(5);
     const log20 = spawn(codex, 'log');
-    log20.setProperty(lifeId, 20);
+    log20.getProperty(lifeId).overwrite(20);
 
     log10.moveToSlot(groundInstance, pileSlotId);
     log5.moveToSlot(groundInstance, pileSlotId);
@@ -196,7 +196,7 @@ object_defs:
     cInstance.moveToSlot(locInstance, pileSlotId);
 
     // bInstance1 は on_min が発火しないよう life を残す（bInstance2 のみ 0 のまま）。
-    bInstance1.setProperty(lifeId, 5);
+    bInstance1.getProperty(lifeId).overwrite(5);
 
     locInstance.tick();
 
@@ -427,8 +427,8 @@ object_defs:
     survivor.moveToSlot(handInstance, handSlotId);
     spawn(codex, 'potato_peel2').moveToSlot(handInstance, handSlotId);
     spawn(codex, 'filler_item3').moveToSlot(handInstance, handSlotId);
-    survivor.setProperty(freshnessId, 9); // 生き残る方（同種が残るので、置き換えは隣の枠を要る）
-    rotting.setProperty(freshnessId, 0);
+    survivor.getProperty(freshnessId).overwrite(9); // 生き残る方（同種が残るので、置き換えは隣の枠を要る）
+    rotting.getProperty(freshnessId).overwrite(0);
 
     handInstance.tick();
 
@@ -694,7 +694,7 @@ object_defs:
 
     potato1.moveToSlot(handInstance, handSlotId);
     potato2.moveToSlot(handInstance, handSlotId);
-    potato1.setProperty(freshnessId, 5);
+    potato1.getProperty(freshnessId).overwrite(5);
 
     const hand5 = handInstance.tryGetSlot(handSlotId)!;
     const potatoGridIndex = gridIndexOfType(hand5, potatoId)!;
@@ -781,18 +781,18 @@ object_defs:
     expect(gridIndexOfType(hand6, bTypeId)).toBe(2);
 
     // --- Cが生まれる: 期待 A(0) C(1) B(2) _(3) ---
-    aInstance.setProperty(spawnCId, 0);
+    aInstance.getProperty(spawnCId).overwrite(0);
     handInstance.tick();
-    aInstance.setProperty(spawnCId, 1); // 再発火を防ぐ
+    aInstance.getProperty(spawnCId).overwrite(1); // 再発火を防ぐ
 
     expect(gridIndexOfType(hand6, aTypeId)).toBe(0);
     expect(gridIndexOfType(hand6, cTypeId), '空いている1番へそのまま入る（ずれ無し）').toBe(1);
     expect(gridIndexOfType(hand6, bTypeId), 'Bの番号は変わらない').toBe(2);
 
     // --- Dが生まれる: 期待 A(0) D(1) C(2) B(3) ---
-    aInstance.setProperty(spawnDId, 0);
+    aInstance.getProperty(spawnDId).overwrite(0);
     handInstance.tick();
-    aInstance.setProperty(spawnDId, 1);
+    aInstance.getProperty(spawnDId).overwrite(1);
 
     expect(gridIndexOfType(hand6, aTypeId)).toBe(0);
     expect(gridIndexOfType(hand6, dTypeId), 'Dは1番に割り込む').toBe(1);
@@ -806,7 +806,7 @@ object_defs:
     ).toEqual(['type_a3', 'type_d3', 'type_c3', 'type_b3']);
 
     // --- Eが生まれる: 4枠すべて埋まっており入る場所が無いのでfallback ---
-    aInstance.setProperty(spawnEId, 0);
+    aInstance.getProperty(spawnEId).overwrite(0);
     handInstance.tick();
 
     expect(
@@ -911,16 +911,16 @@ object_defs:
     expect(hand8.trySetManualPosition(stackOfType(hand8, bTypeId)!, 3)).toBe(true);
 
     // --- Cが生まれる: 期待 _ C A B ---
-    aInstance.setProperty(spawnCId, 0);
+    aInstance.getProperty(spawnCId).overwrite(0);
     handInstance.tick();
-    aInstance.setProperty(spawnCId, 1);
+    aInstance.getProperty(spawnCId).overwrite(1);
 
     expect(gridIndexOfType(hand8, cTypeId), '右(3番)はBで埋まっているため、左の空き(1番)へ入る').toBe(1);
     expect(gridIndexOfType(hand8, aTypeId), 'Aの番号は変わらない').toBe(2);
     expect(gridIndexOfType(hand8, bTypeId), 'Bの番号も変わらない').toBe(3);
 
     // --- Dが生まれる: 期待 C A D B ---
-    bInstance.setProperty(spawnDId, 0);
+    bInstance.getProperty(spawnDId).overwrite(0);
     handInstance.tick();
 
     expect(gridIndexOfType(hand8, cTypeId), 'Cはさらに左へ押し出される').toBe(0);
@@ -984,7 +984,7 @@ object_defs:
 
     // Bから(destroyなしで)Dが生まれる: 右(4番)は存在せず、左は「A(2)」で埋まっているため、
     // さらに左の空き(0番)まで探し、C・Aをそれぞれ1つずつ左へ押し出してDが2番に割り込む。
-    bInstance.setProperty(spawnDId, 0);
+    bInstance.getProperty(spawnDId).overwrite(0);
     handInstance.tick();
 
     expect(gridIndexOfType(hand9, cTypeId), 'Cのスタックごと左へ押し出される').toBe(0);

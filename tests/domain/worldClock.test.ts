@@ -66,7 +66,7 @@ object_defs:
     session.advanceWorldTime(5);
 
     expect(world.minute, '15分未満はTickを跨がず、そのまま加算される').toBe(5);
-    expect(world.instance.getNumber(tickId)).toBe(0);
+    expect(world.instance.tryGetProperty(tickId)?.number ?? 0).toBe(0);
   });
 
   it('tick境界を跨ぐとちょうど1回だけtickが発火し、正しいminuteで終わる', () => {
@@ -79,7 +79,7 @@ object_defs:
     session.advanceWorldTime(5);
     session.advanceWorldTime(20);
 
-    expect(world.instance.getNumber(tickId), '5+20=25分 -> 15分境界を1回だけ跨ぐ').toBe(1);
+    expect(world.instance.tryGetProperty(tickId)?.number ?? 0, '5+20=25分 -> 15分境界を1回だけ跨ぐ').toBe(1);
     expect(world.minute, 'minuteはtickの回数によらずamountの合計をそのまま反映する').toBe(25);
     expect(world.minute % world.minutesPerTick, 'tick内経過分は10になる').toBe(10);
   });
@@ -94,7 +94,7 @@ object_defs:
     session.advanceWorldTime(10); // tick内経過分は10、まだ境界に届かない
     session.advanceWorldTime(10); // 10+10=20分 -> 15を1回跨ぐ
 
-    expect(world.instance.getNumber(tickId)).toBe(1);
+    expect(world.instance.tryGetProperty(tickId)?.number ?? 0).toBe(1);
     expect(world.minute).toBe(20);
     expect(world.minute % world.minutesPerTick).toBe(5);
   });
@@ -111,8 +111,8 @@ object_defs:
 
     expect(world.minute).toBe(0);
     expect(world.hour).toBe(1);
-    expect(world.instance.getNumber(dayId)).toBe(2);
-    expect(world.instance.getNumber(tickId)).toBe(Math.trunc((60 * 25) / minutesPerTick));
+    expect(world.instance.tryGetProperty(dayId)?.number ?? 0).toBe(2);
+    expect(world.instance.tryGetProperty(tickId)?.number ?? 0).toBe(Math.trunc((60 * 25) / minutesPerTick));
   });
 
   it('1tickの長さはハードコードではなく設定されたminutes_per_tickに従う', () => {
@@ -124,7 +124,10 @@ object_defs:
 
     session.advanceWorldTime(25);
 
-    expect(world.instance.getNumber(tickId), 'minutes_per_tickが20なら25分で1tick跨ぐ').toBe(1);
+    expect(
+      world.instance.tryGetProperty(tickId)?.number ?? 0,
+      'minutes_per_tickが20なら25分で1tick跨ぐ',
+    ).toBe(1);
     expect(world.minute % world.minutesPerTick).toBe(5);
   });
 
@@ -169,10 +172,12 @@ object_defs:
 
       world.rollTimeOfDay(8 * 60, 12 * 60, pickSecondCandidate([]));
       session.advanceWorldTime(world.minutesPerTick - 1);
-      expect(world.instance.getNumber(tickId), '1tickに1分足りなければまだ回らない').toBe(0);
+      expect(world.instance.tryGetProperty(tickId)?.number ?? 0, '1tickに1分足りなければまだ回らない').toBe(
+        0,
+      );
 
       session.advanceWorldTime(1);
-      expect(world.instance.getNumber(tickId), 'ちょうど1tick分でtickが回る').toBe(1);
+      expect(world.instance.tryGetProperty(tickId)?.number ?? 0, 'ちょうど1tick分でtickが回る').toBe(1);
     });
   });
 

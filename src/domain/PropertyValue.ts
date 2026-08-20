@@ -44,8 +44,18 @@ export class PropertyValue {
     this.owner = owner;
   }
 
-  /** setProperty用。登録済みのincomingはそのまま、値の中身だけを差し替える。 */
-  copyValueFrom(number: number): void {
+  /**
+   * 値を据え付ける。登録済みのincoming（modify/add）はそのまま、値の中身だけを差し替える。
+   *
+   * **世界の出来事ではないので、rangeイベント（6.3節）もgainの記録も行わない。** 生成が書き込む
+   * 行き先ID・条件が読むための数え上げ・シナリオが用意する開始値のように、**値そのものがデータで
+   * あるもの**と、据え付けの途中で世界のルールを走らせたくない場面のための入口。型が変わったときの
+   * 値の引き継ぎ（becomeType、9.9節: 器が変わったのは値の出来事ではない）もこれで書く——addに
+   * 寄せると、引き継いだ値がプレイヤーの稼ぎとして記録されてしまう（PropertyGain参照）。
+   *
+   * 値が動いたこと自体が出来事なら add / setNumber を使う。
+   */
+  overwrite(number: number): void {
     this._number = number;
   }
 

@@ -59,7 +59,7 @@ describe('tools.yamlの道具定義', () => {
     expect(weapons.length, '検査対象が無い（weaponタグが変わっていないか）').toBeGreaterThan(0);
     for (const name of weapons) {
       const weapon = session.spawn(codex.objectNames.getId(name));
-      const total = shares.reduce((sum, id) => sum + weapon.getNumber(id), 0);
+      const total = shares.reduce((sum, id) => sum + (weapon.tryGetProperty(id)?.number ?? 0), 0);
       expect(total, `'${name}' の配分の合計`).toBe(100);
     }
   });
@@ -71,10 +71,16 @@ describe('tools.yamlの道具定義', () => {
     const axe = session.spawn(codex.objectNames.getId('stone_axe'));
     const spear = session.spawn(codex.objectNames.getId('spear'));
 
-    expect(axe.getNumber(codex.propertyNames.getId('heavy_blow')), '斧だけが強打を持つ').toBeGreaterThan(0);
-    expect(spear.getNumber(codex.propertyNames.getId('heavy_blow'))).toBe(0);
-    expect(spear.getNumber(codex.propertyNames.getId('thrust')), '槍だけが刺突を持つ').toBeGreaterThan(0);
-    expect(axe.getNumber(codex.propertyNames.getId('thrust'))).toBe(0);
+    expect(
+      axe.tryGetProperty(codex.propertyNames.getId('heavy_blow'))?.number ?? 0,
+      '斧だけが強打を持つ',
+    ).toBeGreaterThan(0);
+    expect(spear.tryGetProperty(codex.propertyNames.getId('heavy_blow'))?.number ?? 0).toBe(0);
+    expect(
+      spear.tryGetProperty(codex.propertyNames.getId('thrust'))?.number ?? 0,
+      '槍だけが刺突を持つ',
+    ).toBeGreaterThan(0);
+    expect(axe.tryGetProperty(codex.propertyNames.getId('thrust'))?.number ?? 0).toBe(0);
 
     expect(axe.def.tags).toContain(codex.tagNames.getId('cutting_tool'));
     expect(spear.def.tags, '槍では解体できない').not.toContain(codex.tagNames.getId('cutting_tool'));
