@@ -214,7 +214,7 @@ export class ObjectDef {
       writesToProperty(declaration, propertyGlobalId, ownedByThisDef);
 
     for (const propertyDef of this.propertyDefs) {
-      // 自分自身を値域へ丸めるon_overflow/on_shortfallは、そのプロパティの定義を見れば分かる
+      // 自分自身を値域へ丸めるon_max/on_minは、そのプロパティの定義を見れば分かる
       // （「どこから影響されるか」を知りたい読み手には何も足さない）。
       if (ownedByThisDef && propertyDef.globalId === propertyGlobalId) continue;
       this.describeRangeEvents(propertyDef, matches, names, out);

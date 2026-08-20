@@ -147,10 +147,10 @@ object_defs:
     props:
       catch_remaining:
         value: 16
-        range: {min: 1, max: 16}
+        range: {min: 0, max: 16}
         passives:
           - add: {self: {catch_remaining: -1}}
-        on_shortfall:
+        on_min:
           add: {self: {catch_remaining: 16}}
           pick:
             - weight: 3
@@ -158,10 +158,10 @@ object_defs:
               spawn: {object: rat, into: self}
       durability:
         value: 960
-        range: {min: 1, max: 960}
+        range: {min: 0, max: 960}
         passives:
           - add: {self: {durability: -1}}
-        on_shortfall:
+        on_min:
           destroy: self
 `;
     const trapCodex = new WorldCodexYamlLoader().load('trap.yaml', YAML_TRAP).build();
@@ -234,7 +234,7 @@ object_defs:
       cooking_progress:
         value: 0
         range: {min: 0, max: 24}
-        on_overflow:
+        on_max:
           destroy: self
           spawn: {object: roasted_meat}
 
@@ -261,8 +261,8 @@ object_defs:
     props:
       blood:
         value: 6
-        range: {min: 1, max: 6}
-        on_shortfall:
+        range: {min: 0, max: 6}
+        on_min:
           destroy: self
           spawn: {object: rat_carcass}
 
@@ -274,8 +274,8 @@ object_defs:
     props:
       blood:
         value: 4600
-        range: {min: 1, max: 4600}
-        on_shortfall:
+        range: {min: 0, max: 4600}
+        on_min:
           destroy: self
           spawn: {object: boar_carcass}
     combinations:
@@ -299,8 +299,8 @@ object_defs:
     it('炉が進める加熱は、炉を道具に要る1回きりの周期になる', () => {
       const [cooking] = rangeCyclesOf(defOf('raw_meat'), undefined, drivers('hearth', 'child'));
 
-      // maxちょうどでは溢れない（6.3節）ので、届くべき距離は24ではなく25。3/tickなので25/3 tick。
-      expect(cooking.minutes).toBeCloseTo((25 / 3) * 15);
+      // maxちょうどでon_maxが起きる（6.3節）ので、届くべき距離は24。3/tickなので8 tick。
+      expect(cooking.minutes).toBeCloseTo((24 / 3) * 15);
       expect(cooking.repeats).toBe(false);
       expect(cooking.drivenBy).toBe(huntId('hearth'));
       expect(cooking.step.laborMinutes).toBe(0);

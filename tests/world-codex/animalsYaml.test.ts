@@ -251,7 +251,7 @@ describe('animals.yamlの動物', () => {
 
     it('槍は沈められないが、刺し傷から血が抜けて倒れる', () => {
       // 槍の一撃は衝撃をほとんど生まないので、その場では倒れない（HuntingSystem.md 1.2節の
-      // 「急所寄り」）。代わりに刺し傷が-200/tickで血を奪い、400mLのサルは2tickで尽きる。
+      // 「急所寄り」）。代わりに刺し傷が-250/tickで血を奪い、400mLのサルは2tickで尽きる。
       strikeWith('spear');
 
       expect(injuriesOf(monkey), '裂傷ではなく刺し傷が刺さる').toEqual(['puncture_wound']);
@@ -386,7 +386,7 @@ describe('animals.yamlの動物', () => {
     });
 
     it('血が尽きれば、その枠のまま死体になる', () => {
-      // 仕留めの一撃（HuntingSystem.md 1.4節）と同じ置き換えで、**同じon_shortfallが受ける**。
+      // 仕留めの一撃（HuntingSystem.md 1.4節）と同じ置き換えで、**同じon_minが受ける**。
       // こちらは殴り続けて失血させる道。
       for (let i = 0; i < 8; i++) strikeWithSharpStone();
       expect(itemsInJungle(), '殴っただけではまだ生きている').toEqual(['monkey']);
@@ -415,7 +415,7 @@ describe('animals.yamlの動物', () => {
 
   it('気を失っている相手は仕留められる', () => {
     // 仕留めは怪我にしない（残らないものだから、InjurySystem.md 4節）。pickの候補が血を空にし、
-    // bloodのon_shortfallが死体へ置き換える（HuntingSystem.md 1.4節）。
+    // bloodのon_minが死体へ置き換える（HuntingSystem.md 1.4節）。
     open(KILLS_IF_HELPLESS);
     strikeWith('stone_axe');
 

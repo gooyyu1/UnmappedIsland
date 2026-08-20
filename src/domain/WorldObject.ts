@@ -7,6 +7,7 @@ import type { WellKnownProperties } from './WellKnownProperties';
 import type { ObjectStack } from './ObjectStack';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
+import { IN_PROGRESS_TAG } from './RecipeDef';
 import type { PropertyDef } from './PropertyDef';
 import { PropertyValue } from './PropertyValue';
 import type { Requirement } from './Requirement';
@@ -81,7 +82,8 @@ export class WorldObject {
    * 「その物であること」を問う場所はここで弾く。
    */
   get isInProgress(): boolean {
-    return this.session.codex.productOf(this.def) !== undefined;
+    const wipTagId = this.session.codex.tagNames.tryGetId(IN_PROGRESS_TAG);
+    return wipTagId !== undefined && this._def.tags.includes(wipTagId);
   }
 
   /** sessionは必須（value:{min,max}を持つプロパティの初期値ランダム化にsession.rngを使う）。 */
@@ -215,11 +217,11 @@ export class WorldObject {
   }
 
   /**
-   * 名指しした1つのプロパティが、今の進み方であと何tickでrangeを超える（on_overflowが起きる）か。
+   * 名指しした1つのプロパティが、今の進み方であと何tickでrange.maxへ届く（on_maxが起きる）か。
    * そのプロパティを持たない・今は進んでいない場合はundefined。
    */
-  ticksUntilOverflow(globalPropertyId: number): number | undefined {
-    return this.tryGetProperty(globalPropertyId)?.ticksUntilOverflow();
+  ticksUntilMax(globalPropertyId: number): number | undefined {
+    return this.tryGetProperty(globalPropertyId)?.ticksUntilMax();
   }
 
   /**
@@ -258,7 +260,7 @@ export class WorldObject {
    * 尽きたまま残っている値が今居る段（6.4節）の名前。尽きた値が無ければundefinedで、複数あれば
    * propsの宣言順で最初の1つ。
    *
-   * 尽きた瞬間に自分を消すプロパティ（on_shortfallのdestroy、6.3節）は尽きた値のまま静止するので、
+   * 尽きた瞬間に自分を消すプロパティ（on_minのdestroy、6.3節）は尽きた値のまま静止するので、
    * **世界から出たあとでも「何が尽きて消えたのか」を答えられる**（VitalsSystem.md 6節の死因）。
    */
   exhaustedStage(): string | undefined {
@@ -704,9 +706,9 @@ export class WorldObject {
   containerContributionTo(propertyGlobalId: number): number {
     const wellKnown = this.wellKnown;
     if (propertyGlobalId === wellKnown.weightId) {
-      let sum = this.def.isQuantitative
-        ? this.getNumber(wellKnown.volumeId) * this.getNumber(wellKnown.densityId, 1)
-        : 0;
+      // 中身入りの変種は、抱えている量ぶんだけ自分が重い（fill × density = mL × g/mL = g）。
+      // 空の容器はfillを持たないので0になり、器の自重だけが残る。
+      let sum = this.getNumber(wellKnown.fillId) * this.getNumber(wellKnown.densityId, 1);
       for (const slot of this.slots) for (const child of slot.contents) sum += child.effectiveWeight();
       return sum;
     }

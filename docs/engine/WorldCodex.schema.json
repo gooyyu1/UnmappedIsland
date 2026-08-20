@@ -135,15 +135,15 @@
         },
         "range": {
           "$ref": "#/$defs/range_value",
-          "description": "overflow機構における値の上下限（6.3節）。value の {min,max}（生成時1回ロールの初期値範囲、6.2節）とは別の仕組み。"
+          "description": "rangeイベント機構における値の上下限（6.3節）。value の {min,max}（生成時1回ロールの初期値範囲、6.2節）とは別の仕組み。"
         },
-        "on_overflow": {
+        "on_max": {
           "$ref": "#/$defs/active_def",
-          "description": "rangeの上限を超えている間、値の変更・tickのたびに適用される挙動（6.3節。対象は現時点でselfのみ対応、それ以外はロード時エラー）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。rangeを使う場合は必須。"
+          "description": "値がrange.maxへ達している間（>= max）、値の変更・tickのたびに適用される挙動（6.3節。対象は現時点でselfのみ対応、それ以外はロード時エラー）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。rangeが無いと使えない。"
         },
-        "on_shortfall": {
+        "on_min": {
           "$ref": "#/$defs/active_def",
-          "description": "on_overflowの下限側の鏡像（6.3節）。rangeの下限を下回っている間の挙動。省略した場合、'自分自身をrange.minへset'という既定の挙動が自動的に補われる（単純な下限クランプ）。「境界値に達した瞬間」に反応させたい場合は、境界値をrangeの外に置く（例: range.minを1にして0到達でon_shortfallを発火させる）。rangeを使う場合は必須。"
+          "description": "on_maxの下限側の鏡像（6.3節）。値がrange.minへ達している間（<= min）の挙動で、尽きたことそのものへの反応をここに書く。省略した場合、'自分自身をrange.minへset'という既定の挙動が自動的に補われる（単純な下限クランプ）。rangeが無いと使えない。"
         },
         "stages": {
           "type": "array",
@@ -502,7 +502,7 @@
       "description": "新規オブジェクトを生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。destroyと同時に指定できる。"
     },
     "active_def": {
-      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/become/transfer/move/signal)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_overflow/on_shortfall（6.3節）は、専用キー(on_shortfall:等)の値としてこの形をそのまま持つ。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_shortfall: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントでは効果の対象はselfのみ・moveは不可（いずれもロード時エラー。本スキーマでは文脈ごとの制限までは表現しない）。actions/combinations/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（action_def/combination_def/pick_candidate参照）。",
+      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/become/transfer/move/signal)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_max/on_min（6.3節）は、専用キー(on_min:等)の値としてこの形をそのまま持つ。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_min: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントでは効果の対象はselfのみ・moveは不可（いずれもロード時エラー。本スキーマでは文脈ごとの制限までは表現しない）。actions/combinations/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（action_def/combination_def/pick_candidate参照）。",
       "type": "object",
       "properties": {
         "set": {
@@ -1051,6 +1051,13 @@
           "$ref": "#/$defs/recipes_map",
           "description": "この型を成果物とするレシピ（13節）。traitには書けない（成果物が決まらないため）。"
         },
+        "variation_axes": {
+          "description": "この型の変種を並べる軸（3.5.1節）。軸の名前をキーにする。traitからは合成しない——どんな変種を持つかは型自身の性質。",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/variation_axis_def"
+          }
+        },
         "slots": {
           "$ref": "#/$defs/slots_map"
         },
@@ -1244,7 +1251,7 @@
       ]
     },
     "move_spec": {
-      "description": "move（9.6節）: subjectのオブジェクトを、移動先のオブジェクトの中へ移動する。動かす物はsubject（self=move宣言元自身 / actor / dragged）かsubject_prop（そのプロパティが保持するインスタンスIDのオブジェクト）のどちらか一方、移動先はto（self / parent=その直接の親）かto_propのどちらか一方で指す。on_overflow/on_shortfallでは使えない（actorが存在しないため、ロード時エラー）。",
+      "description": "move（9.6節）: subjectのオブジェクトを、移動先のオブジェクトの中へ移動する。動かす物はsubject（self=move宣言元自身 / actor / dragged）かsubject_prop（そのプロパティが保持するインスタンスIDのオブジェクト）のどちらか一方、移動先はto（self / parent=その直接の親）かto_propのどちらか一方で指す。on_max/on_minでは使えない（actorが存在しないため、ロード時エラー）。",
       "type": "object",
       "properties": {
         "subject": {
@@ -1428,6 +1435,20 @@
       "additionalProperties": {
         "$ref": "#/$defs/identifier"
       }
+    },
+    "variation_axis_def": {
+      "description": "変種を並べる軸1本（GameElementDefinition.md 3.5.1節）。ofが選んだ型ごとに「素の型＋その型が持つtraits」の変種が生成される。変種が素の型と何が違うかは配られたtraitだけが決め、この仕組みは何を配っているのかを知らない。",
+      "type": "object",
+      "properties": {
+        "of": {
+          "$ref": "#/$defs/type_match_rule",
+          "description": "この軸の値になれる型。traitsだけを宣言した型でなければロードエラー。"
+        }
+      },
+      "required": [
+        "of"
+      ],
+      "additionalProperties": false
     }
   }
 }

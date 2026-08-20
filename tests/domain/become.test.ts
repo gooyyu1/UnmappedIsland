@@ -31,7 +31,7 @@ object_defs:
       progress:
         value: 0
         range: {min: 0, max: 5}
-        on_overflow:
+        on_max:
           destroy: self
     slots:
       materials:
@@ -108,7 +108,7 @@ object_defs:
     wip.becomeAlong(toBase, session);
 
     expect(wip.getNumber(progressId), '完成品のrange（0〜5）の上端へ丸める').toBe(5);
-    expect(wip.parent, 'クランプでon_overflowは起きない（器が変わっただけ）').toBe(ground);
+    expect(wip.parent, 'クランプでon_maxは起きない（器が変わっただけ）').toBe(ground);
   });
 
   it('新しい型にしか無いプロパティは初期値から始まる', () => {

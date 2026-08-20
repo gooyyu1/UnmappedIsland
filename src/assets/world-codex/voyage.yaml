@@ -106,7 +106,7 @@ object_defs:
         gauge: {min: neutral, max: good}
         value: 0
         range: {min: 0, max: 2200}
-        on_overflow:
+        on_max:
           set: {self: {voyage_progress: 2200}}
           move: {subject: self, to_object: mainland}
     passives:

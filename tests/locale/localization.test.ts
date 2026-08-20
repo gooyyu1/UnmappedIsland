@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { Localization } from '../../src/locale/Localization';
 import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
+import { typeDisplayName } from '../../src/locale/typeDisplayName';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexYamlPaths } from '../support/worldCodexFiles';
@@ -137,29 +138,36 @@ object_texts:
     expect(locale.object('coconut').interaction('mix').description).toBeUndefined();
   });
 
-  it('中身がいるオブジェクトの名前は、{container}に自分の表示名・{content}に中身の名前が入る', () => {
+  it('変種の名前は、{base}に素の型の表示名・{value}に軸の値の名前が入る', () => {
     const texts = parseLocale(
       'ja.yaml',
       `object_texts:
   default:
-    display_name_with_content: '{content}入りの{container}'
+    variation_names:
+      content: '{value}入りの{base}'
   canteen:
     display_name: 水筒
   jar:
     display_name: 甕
-    display_name_with_content: '{container}（{content}）'
+    variation_names:
+      content: '{base}（{value}）'
 `,
     );
 
-    expect(texts.object('canteen').displayNameWithContent('水'), 'defaultの書式').toBe('水入りの水筒');
-    expect(texts.object('jar').displayNameWithContent('水'), '自分の書式が優先される').toBe('甕（水）');
+    expect(texts.object('canteen').variationName('content', '水筒', '水'), 'defaultの書式').toBe(
+      '水入りの水筒',
+    );
+    expect(texts.object('jar').variationName('content', '甕', '水'), '自分の書式が優先される').toBe(
+      '甕（水）',
+    );
   });
 
-  it('書式が無ければ、中身がいても表示名のまま', () => {
-    expect(locale.object('coconut').displayNameWithContent('水')).toBe('ヤシの実');
-    expect(locale.object('thick_branch').displayNameWithContent('水'), '未登録なら識別子').toBe(
-      'thick_branch',
-    );
+  it('その軸の書式が無ければ、素の型の名前のまま', () => {
+    expect(locale.object('coconut').variationName('content', 'ヤシの実', '水')).toBe('ヤシの実');
+    expect(
+      locale.object('thick_branch').variationName('content', 'thick_branch', '水'),
+      '未登録なら識別子',
+    ).toBe('thick_branch');
   });
 
   it('差し込んだ名前の中のプレースホルダは置換されない', () => {
@@ -167,13 +175,14 @@ object_texts:
       'ja.yaml',
       `object_texts:
   default:
-    display_name_with_content: '{content}入りの{container}'
+    variation_names:
+      content: '{value}入りの{base}'
   canteen:
-    display_name: '{content}筒'
+    display_name: '{value}筒'
 `,
     );
 
-    expect(texts.object('canteen').displayNameWithContent('水')).toBe('水入りの{content}筒');
+    expect(texts.object('canteen').variationName('content', '{value}筒', '水')).toBe('水入りの{value}筒');
   });
 
   it('object_textsの節が無い・空のファイルでも読める', () => {
@@ -240,10 +249,8 @@ describe('同梱の表示文字列ファイル', () => {
     for (let globalId = 0; globalId < codex.objects.count; globalId++) {
       const objectDef = codex.objects.get(globalId);
       if (!carded.some((tag) => objectDef.tags.includes(tag))) continue;
-      // 製作中オブジェクト（自動生成）は自分のエントリを持たず、完成品の名前と
-      // default.display_name_in_progress から組み立てる（PlayScreenViewのnameOf）。
-      if (codex.productOf(objectDef) !== undefined) continue;
-      expect(locale.object(objectDef.name).displayName, `${objectDef.name} には表示名が必要`).not.toBe(
+      // 自動生成された型は自分のエントリを持たず、素の型の名前と書式から組み立てる（3.5節）。
+      expect(typeDisplayName(codex, locale, objectDef), `${objectDef.name} には表示名が必要`).not.toBe(
         objectDef.name,
       );
     }
@@ -342,8 +349,9 @@ describe('同梱の表示文字列ファイル', () => {
     // 常に大きめに出る——16uでの英字の平均は0.50字ぶんで、最も細い並び（illi…）は0.19字ぶん。
     // つまり**この検査を通れば実物は必ず収まる**。
     for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const name = codex.objects.get(globalId).name;
-      const label = locale.object(name).displayName;
+      const def = codex.objects.get(globalId);
+      const name = def.name;
+      const label = typeDisplayName(codex, locale, def);
       expect(nameWidth(label), `'${label}' (${name}) はカードのタイトルに収まらない`).toBeLessThanOrEqual(
         NAME_MAX_WIDTH,
       );

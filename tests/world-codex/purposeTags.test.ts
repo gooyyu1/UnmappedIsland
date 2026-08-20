@@ -35,8 +35,12 @@ describe('用途のタグ', () => {
           writesToProperty(interaction, satietyId, false) ||
           writesToProperty(interaction, hydrationId, false),
       );
-    // カードとして並ぶ物だけを見る。液体そのもの（水・茶）は容器のカードが代表するので、枠の色を持たない。
-    const edible = defs.filter((def) => def.tags.includes(itemTagId) && feedsTheEater(def));
+    // カードとして並ぶ物だけを見る。**液体の容器は除く**——飲めるのは中身であって、枠の色が言うのは
+    // その物が何であるか（器は器）。水入りの水筒は食べ物の枠では出ない（CardView.md 2.1節）。
+    const liquidContainerTagId = codex.tagNames.getId('liquid_container');
+    const edible = defs.filter(
+      (def) => def.tags.includes(itemTagId) && !def.tags.includes(liquidContainerTagId) && feedsTheEater(def),
+    );
 
     expect(edible.length).toBeGreaterThan(0);
     expect(edible.filter((def) => !def.tags.includes(foodTagId)).map((def) => def.name)).toEqual([]);
@@ -57,9 +61,10 @@ describe('用途のタグ', () => {
 
   it('液体の容器には、入れ物のタグが付いている', () => {
     const liquidContainerTagId = codex.tagNames.getId('liquid_container');
-    const contentSlotId = codex.slotNames.getId('content');
-    // 中身の液体を代表にしている（represented_by: content）のが液体の容器（LiquidContainerSystem.md 3節）。
-    const containers = defs.filter((def) => def.representedBySlotGlobalId === contentSlotId);
+    const liquidTagId = codex.tagNames.getId('liquid');
+    // 中身の液体をtraitとして配られた変種が、中身入りの容器（LiquidContainerSystem.md 2節）。
+    // 配る側の束（water_liquid等）はインスタンスにならないので見ない。
+    const containers = defs.filter((def) => codex.isGenerated(def) && def.tags.includes(liquidTagId));
 
     expect(containers.length).toBeGreaterThan(0);
     expect(

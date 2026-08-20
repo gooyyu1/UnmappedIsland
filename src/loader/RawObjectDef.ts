@@ -82,6 +82,12 @@ export class RawObjectDef {
   /** recipes（13節）。成果物ごとの内容なのでtrait合成の対象にしない（resolve参照）。 */
   recipes: YAMLMap | undefined;
 
+  /**
+   * variation_axes（3.5節）。この型の変種を並べる軸で、読むのは生成器（axisVariants.ts）だけ。
+   * trait合成の対象にしない——どんな変種を持つかは、混ぜ込まれる側ではなく型自身の性質。
+   */
+  variationAxes: YAMLMap | undefined;
+
   constructor(name: string, source: string, globalId: number, node: YAMLMap) {
     this.name = name;
     this.source = source;
@@ -109,6 +115,7 @@ export class RawObjectDef {
     this.actions = tryGetMap(this.node, 'actions', context);
     this.combinations = tryGetMap(this.node, 'combinations', context);
     this.recipes = tryGetMap(this.node, 'recipes', context);
+    this.variationAxes = tryGetMap(this.node, 'variation_axes', context);
     this.traitNames = namesIn(tryGetSeq(this.node, 'traits', context), context);
     this.tags = namesIn(tryGetSeq(this.node, 'tags', context), context);
   }

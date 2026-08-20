@@ -3,6 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { NewGameSession } from '../../src/domain/generation/NewGame';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldSession } from '../../src/domain/WorldSession';
 import { Path } from '../../src/domain/views/Path';
 import type { PlayScreenView } from '../../src/game/view/PlayScreenView';
 import { fromGameSession, withFrozenCards } from '../../src/game/view/PlayScreenView';
@@ -62,6 +63,15 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
    */
   function gaugeOf(card: { readonly gauges?: readonly CardGauge[] } | undefined, key: string) {
     return card?.gauges?.find((gauge) => gauge.key === key);
+  }
+
+  /**
+   * 容器を中身入りの変種にして、量を入れる（LiquidContainerSystem.md 2節）。中身は容器自身の
+   * `fill`なので、置く物は無く型が変わるだけ。
+   */
+  function fill(container: WorldObject, liquid: string, amount: number, session: WorldSession) {
+    container.becomeAlong(new Map([['content', liquid]]), session);
+    container.setNumber(codex.propertyNames.getId('fill'), amount, session);
   }
 
   /** 開始地点にサル（animals.yaml）を1匹置き、そのインスタンスを返す。 */
@@ -602,7 +612,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const { hearth } = placeCookingHearth(game);
 
-    // 24 ÷ 3 = 8tickでmaxちょうどに乗り、溢れる（`> max`）のはその次のtick → 9tick × 15分。
+    // 24 ÷ 3 = 8tickでmaxちょうどに乗り、そこでon_maxが起きる → 8tick × 15分。
     expect(
       fromGameSession(game, codex, locale).cardsIn({
         container: hearth,
@@ -610,7 +620,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       })[0]!.cooking,
     ).toEqual({
       ratio: 0,
-      minutes: 135,
+      minutes: 120,
     });
   });
 
@@ -648,8 +658,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       (c) => c.objects[0] === hearth,
     );
 
-    // ネズミは6 ÷ 3 = 2tick＋1で45分。生肉の135分より先に変わるので、こちらが上がる。
-    expect(card?.cooking?.minutes).toBe(45);
+    // ネズミは6 ÷ 3 = 2tickで30分。生肉の120分より先に変わるので、こちらが上がる。
+    expect(card?.cooking?.minutes).toBe(30);
   });
 
   it('手当て済みの印は、負っている本人までは上がらない', () => {
@@ -794,13 +804,11 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   });
 
   it('液体の容器は中身を開かない（水を単独で取り出させない）', () => {
-    // 見せるスロットはワールド側が名乗る（show_contents、GameElementDefinition.md 7.8節）。
-    // 液体の容器のcontentは名乗っていないので、押しても説明とアクションだけが出る。
+    // 中身は容器自身のfillなので、そもそも開く先が無い（LiquidContainerSystem.md 2節）。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));
-    const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
     expect(bowl.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
-    expect(water.moveToSlot(bowl, codex.slotNames.getId('content'))).toBeUndefined();
+    fill(bowl, 'water_liquid', 100, game.session);
 
     const card = handCells(fromGameSession(game, codex, locale), game).find(
       (held) => held?.objects[0] === bowl,
@@ -816,14 +824,12 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(bowl.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
 
     expect(
-      gaugeOf(handCells(fromGameSession(game, codex, locale), game)[0], '@fill'),
-      '空の容器は映す中身がいないのでバーを出さない',
-    ).toBeUndefined();
+      gaugeOf(handCells(fromGameSession(game, codex, locale), game)[0], '@fill')?.ratio,
+      '空の容器も量を持つので、0のバーが出る（どれだけ入るかは容器自身の情報）',
+    ).toBe(0);
 
     // ヤシの器の容量は250mL（liquid_containers.yaml）なので、100mLで4割。
-    const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
-    water.setNumber(codex.wellKnown.volumeId, 100, game.session);
-    expect(water.moveToSlot(bowl, codex.slotNames.getId('content'))).toBeUndefined();
+    fill(bowl, 'water_liquid', 100, game.session);
 
     expect(
       gaugeOf(handCells(fromGameSession(game, codex, locale), game)[0], '@fill'),
@@ -831,19 +837,20 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toEqual({
       key: '@fill',
       ratio: 0.4,
-      color: water.getNumber(codex.propertyNames.getId('color')),
+      color: bowl.getNumber(codex.propertyNames.getId('color')),
       // 良し悪しではなく中身そのものの色を映すバーなので、両端は色を決めない。
       atMin: 'neutral',
       atMax: 'neutral',
       worsensUpward: false,
     });
 
-    water.destroy();
+    // 飲み干す＝fillが尽きる。量が尽きた変種は空の容器へ戻る（fillのon_min）。
+    bowl.setNumber(codex.propertyNames.getId('fill'), 0, game.session);
 
     expect(
-      gaugeOf(handCells(fromGameSession(game, codex, locale), game)[0], '@fill'),
-      '飲み干して空へ戻ればバーも消える',
-    ).toBeUndefined();
+      gaugeOf(handCells(fromGameSession(game, codex, locale), game)[0], '@fill')?.ratio,
+      '飲み干して空へ戻れば0に戻る',
+    ).toBe(0);
   });
 
   it('液体を入れられないカードは、中身のバーを持たない', () => {
@@ -896,9 +903,8 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     // 2本出ると同じ位置に重なる。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const bowl = game.session.spawn(codex.objectNames.getId('coconut_bowl'));
-    const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
     expect(bowl.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
-    expect(water.moveToSlot(bowl, codex.slotNames.getId('content'))).toBeUndefined();
+    fill(bowl, 'water_liquid', 100, game.session);
 
     const [card] = handCells(fromGameSession(game, codex, locale), game);
 
@@ -1209,7 +1215,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('combinationOfは、withタグが合うカード同士にだけ実行手段を返す', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const view = fromGameSession(game, codex, locale);
-    // water_liquidはwith: water_liquidのpour_inを持つ（liquid_containers.yaml）。
+    // 水入りの器はwith: waterのpour_into_filledを持つ（liquid_containers.yaml）。
     const cardOf = (name: string) => {
       const objects = [game.session.spawn(codex.objectNames.getId(name))];
       return {
@@ -1224,9 +1230,10 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
         contentsFor: () => undefined,
       };
     };
-    const water = cardOf('water_liquid');
+    const filled = 'coconut_bowl__content_water_liquid';
+    const water = cardOf(filled);
 
-    expect(view.combinationOf(water, cardOf('water_liquid'))?.execute).toBeTypeOf('function');
+    expect(view.combinationOf(water, cardOf(filled))?.execute).toBeTypeOf('function');
     expect(
       view.combinationOf(water, cardOf('stone')),
       'どちらにもマッチする組み合わせが無い',
@@ -1262,25 +1269,21 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('空の器を水入りの器へ重ねると、注ぎ移しが逆向きに成立する', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const handId = codex.slotNames.getId('hand');
-    const contentId = codex.slotNames.getId('content');
     const bowlId = codex.objectNames.getId('coconut_bowl');
     const filled = game.session.spawn(bowlId);
     expect(filled.moveToSlot(game.player.instance, handId)).toBeUndefined();
-    const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
-    expect(water.moveToSlot(filled, contentId)).toBeUndefined();
+    fill(filled, 'water_liquid', 100, game.session);
     const empty = game.session.spawn(bowlId);
     expect(empty.moveToSlot(game.player.instance, handId)).toBeUndefined();
 
     const view = fromGameSession(game, codex, locale);
     const cardOf = (bowl: WorldObject) => handCells(view, game).find((card) => card?.objects[0] === bowl)!;
 
-    // 空の器はliquid_containerとしてpour_inを宣言し、水入りの器は代表（中身の水）がliquidタグを持つ。
+    // 宣言があるのは水入りの側だけなので、どちらへ重ねてもselfは水入り・draggedは空になる（12.3節）。
     view.combinationOf(cardOf(empty), cardOf(filled))?.execute();
 
-    const contentNames = (bowl: WorldObject) =>
-      bowl.tryGetSlot(contentId)?.contents.map((content) => content.def.name);
-    expect(contentNames(empty), '掴んだ空の器のほうへ注がれる').toEqual(['water_liquid']);
-    expect(contentNames(filled), '注ぎ元は空になる').toEqual([]);
+    expect(empty.def.name, '掴んだ空の器のほうへ注がれる').toBe('coconut_bowl__content_water_liquid');
+    expect(filled.def.name, '注ぎ切った側は空の容器へ戻る').toBe('coconut_bowl');
   });
 
   it('同じカードへ重ねたときは、スタックの中の2つを組み合わせる', () => {
@@ -1398,30 +1401,30 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('中身が代表するカード（液体容器）には、中身のアクションが並ぶ', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const canteen = game.session.spawn(codex.objectNames.getId('canteen'));
-    const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
-    water.setNumber(codex.propertyNames.getId('volume'), 1000, game.session);
-    expect(water.moveToSlot(canteen, codex.slotNames.getId('content'))).toBeUndefined();
     // 液体容器にはまだitemタグが無く手持ちのaccepts制約に掛かるため、強制的に入れて手持ちのカードにする。
     expect(canteen.moveToSlot(game.player.instance, codex.slotNames.getId('hand'), true)).toBeUndefined();
+    fill(canteen, 'water_liquid', 1000, game.session);
     const hydrationId = codex.propertyNames.getId('hydration');
-    game.player.instance.setNumber(hydrationId, 0, game.session);
+    // 0まで下げると渇きで死ぬ（hydrationのon_min）ので、飲む余地を残しつつ1で止める。
+    game.player.instance.setNumber(hydrationId, 1, game.session);
 
-    // 水筒のカードだが、操作の対象は代表（represented_by）である中身の水になる（ActionSystem.md 1節）。
+    // 水入りの水筒は1つの型なので、中身のtraitが配ったdrinkがそのまま自分のアクションになる。
     const card = handCells(fromGameSession(game, codex, locale), game)[0];
 
     expect(card?.actions.map((action) => action.name)).toEqual(['drink']);
 
     card?.actions[0].execute();
 
-    expect(game.player.instance.getNumber(hydrationId), '飲んだ分だけ水分が増える').toBeGreaterThan(0);
+    expect(game.player.instance.getNumber(hydrationId), '飲んだ分だけ水分が増える').toBeGreaterThan(1);
   });
 
-  it('中身が代表するカードの名前は、中身の名前を差し込んだものになる', () => {
+  it('中身入りの容器の名前は、素の型と中身の名前から組み立てられる', () => {
     const texts = parseLocale(
       'ja.yaml',
       `object_texts:
   default:
-    display_name_with_content: '{content}入りの{container}'
+    variation_names:
+      content: '{value}入りの{base}'
   canteen:
     display_name: 水筒
   water_liquid:
@@ -1437,9 +1440,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
       '水筒',
     );
 
-    const water = game.session.spawn(codex.objectNames.getId('water_liquid'));
-    water.setNumber(codex.propertyNames.getId('volume'), 1000, game.session);
-    expect(water.moveToSlot(canteen, codex.slotNames.getId('content'))).toBeUndefined();
+    fill(canteen, 'water_liquid', 1000, game.session);
 
     expect(handCells(fromGameSession(game, codex, texts), game)[0]?.name).toBe('水入りの水筒');
   });

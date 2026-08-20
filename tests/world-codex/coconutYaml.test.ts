@@ -107,11 +107,11 @@ describe('coconut.yamlのヤシの実の加工', () => {
   it('青い実に穴を開けると、その場で水を飲み、水の抜けた実が残る', () => {
     const green = spawnInto('green_coconut', beach, 'items');
     // 空になる寸前から。0にすると、穴を開ける15分の間に水分が尽きて渇きで死ぬ（VitalsSystem.md 8節）。
-    player.setProperty(hydrationId, 1);
+    player.setProperty(hydrationId, 2);
 
     combine(green, 'sharp_stone', 'bore');
 
-    expect(player.getNumber(hydrationId), '1個ぶんの水500mL = 20 tick分').toBe(20);
+    expect(player.getNumber(hydrationId), '1個ぶんの水500mL = 20 tick分').toBe(21);
     expect(itemsOn(beach), '実は元の実が居た場所へ置き換わる').toEqual(['drained_green_coconut']);
   });
 
@@ -146,11 +146,11 @@ describe('coconut.yamlのヤシの実の加工', () => {
     // 食べるのに1 tickかかり、時間は効果より先に進む（actionTime参照）。0から測ると、その1 tickで
     // 水分が尽きて渇き死ぬので、1 tickぶんの減り（satiety -16・hydration -1）を載せた値から測る。
     player.setProperty(satietyId, 16);
-    player.setProperty(hydrationId, 1);
+    player.setProperty(hydrationId, 2);
 
     expect(jelly.tryExecuteAction('eat', player, session)).toBe(true);
 
-    expect(player.getNumber(hydrationId)).toBeCloseTo(5.2, 10);
+    expect(player.getNumber(hydrationId)).toBeCloseTo(6.2, 10);
     expect(player.getNumber(satietyId), '熟した果肉（200mL）より小さい').toBe(150);
     expect(jelly.parent, '食べた果肉は消える').toBeUndefined();
   });
@@ -159,10 +159,11 @@ describe('coconut.yamlのヤシの実の加工', () => {
     // 青い実 = 水20 + ゼリー2個×5.2、熟した実 = 果肉2個×6（coconut.yaml。単位はtick分）。
     const waterOf = (name: string, action: string) => {
       const target = spawnInto(name, player, 'hand');
-      // 1 tickぶんの減り（-1）を載せた値から測る（上のテスト参照）。
-      player.setProperty(hydrationId, 1);
+      // 1 tickぶんの減り（-1）を載せた2から測り、残る1を引いて増えた分だけを返す
+      // （0まで減ると尽きて死ぬので、1を残す）。
+      player.setProperty(hydrationId, 2);
       expect(target.tryExecuteAction(action, player, session)).toBe(true);
-      return player.getNumber(hydrationId);
+      return player.getNumber(hydrationId) - 1;
     };
 
     const green = 20 + 2 * waterOf('coconut_jelly', 'eat');
@@ -261,25 +262,29 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
   it('ヤシの殻は液体を入れられ、持ち歩ける', () => {
     const bowl = spawnInto('coconut_bowl', player, 'hand');
-    const water = session.spawn(codex.objectNames.getId('water_liquid'));
 
-    expect(water.moveToSlot(bowl, codex.slotNames.getId('content'))).toBeUndefined();
-    expect(handOf(player), '手持ちのaccepts（itemタグ）を通る').toEqual(['coconut_bowl']);
+    // 中身入りは容器の変種（3.5節）。同じ個体のまま水入りになり、持ち物としての立場は変わらない。
+    bowl.becomeAlong(new Map([['content', 'water_liquid']]), session);
+
+    expect(bowl.def.name).toBe('coconut_bowl__content_water_liquid');
+    expect(handOf(player), '手持ちのaccepts（itemタグ）を通る').toEqual([
+      'coconut_bowl__content_water_liquid',
+    ]);
   });
 
   it('果肉を食べると満腹度・水分・栄養が増え、果肉は無くなる', () => {
     const meat = spawnInto('coconut_meat', player, 'hand');
     const satietyId = codex.propertyNames.getId('satiety');
     const lipidId = codex.propertyNames.getId('lipid');
-    // 1 tickぶんの減りを載せた値から測る（上のテスト参照）。脂質は在庫が0だと輸送も動かない。
+    // 1 tickぶんの減りを載せた値から測る（0まで減ると尽きて死ぬので2から）。脂質は在庫が0だと輸送も動かない。
     player.setProperty(satietyId, 16);
-    player.setProperty(hydrationId, 1);
+    player.setProperty(hydrationId, 2);
     player.setProperty(lipidId, 0);
 
     expect(meat.tryExecuteAction('eat', player, session)).toBe(true);
 
     expect(player.getNumber(satietyId)).toBe(200);
-    expect(player.getNumber(hydrationId)).toBe(6);
+    expect(player.getNumber(hydrationId)).toBe(7);
     expect(player.getNumber(lipidId), '脂質が多い').toBe(26);
     expect(meat.parent, '食べた果肉は消える').toBeUndefined();
   });

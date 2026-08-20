@@ -89,7 +89,7 @@ function format(text: string, values: Readonly<Record<string, string>>): string 
  *
  * スロットは必ず持ち主のものなので、名前は2通りある。`displayName` はスロットだけを指す短い言い方
  * （「装備」）、`displayNameWithOwner` は持ち主込みの言い方（「マルコの装備」）で、後者は書式から
- * 組み立てる。中身入りの入れ物の名前（`displayNameWithContent`）と同じ考え方。
+ * 組み立てる。変種の名前（`variationName`）と同じ考え方。
  */
 export class SlotTexts {
   readonly displayName: string;
@@ -124,9 +124,10 @@ interface DeclaredTexts {
   readonly displayName: string | undefined;
   readonly description: string | undefined;
   readonly icon: string | undefined;
-  readonly displayNameWithContent: string | undefined;
   readonly displayNameWithOwner: string | undefined;
-  readonly displayNameInProgress: string | undefined;
+
+  /** 変種の名前の書式（GameElementDefinition.md 3.5.1節）。軸の名前 → 書式。 */
+  readonly variationNames: ReadonlyMap<string, string> | undefined;
 }
 
 /** localeファイルのslot_textsの1エントリ（スロット自身の文字列と、そこへ入れる操作の文字列）。 */
@@ -188,29 +189,18 @@ export class ObjectTexts {
   }
 
   /**
-   * 中身（represented_byの代表、GameElementDefinition.md 7.6節）がいるときの表示名。
-   * display_name_with_content の `%1` が自分の表示名、`%2` が中身の名前になる。書式が無ければ
-   * 表示名のまま（中身の有無で名前が変わらない）。
+   * 軸axisの値を持つ変種（GameElementDefinition.md 3.5.1節）の表示名。`{base}` が素の型の名前、
+   * `{value}` がその軸の値の名前。書式が無ければ素の型の名前のまま。
    *
-   * displayNameと違いdefaultエントリを参照する。書式であって名前ではなく、`%1` は各オブジェクト
-   * 自身の表示名から埋まるので、共通の書式を書いても全オブジェクトが同じ名前になることはない。
+   * **どの軸かで扱いを分けません**——「作りかけの{base}」も「{value}入りの{base}」も、軸の名前に
+   * 紐づいた1つの書式です。生成型は自分のエントリを持てないので、書式は素の型のエントリ（無ければ
+   * defaultエントリ）から引きます。
    */
-  displayNameWithContent(contentName: string): string {
-    const declared = this.entry?.own?.displayNameWithContent ?? this.defaults?.own?.displayNameWithContent;
-    if (declared === undefined) return this.displayName;
-    return format(declared, { container: this.displayName, content: contentName });
-  }
-
-  /**
-   * 製作中オブジェクト（RecipeSystem.md 1節）の表示名。`{product}` に完成品の名前が入る。
-   *
-   * この型は自動生成なので対応表に自分のエントリを持てない。displayNameWithContentと同じく、
-   * 書式であって名前なのでdefaultエントリを参照する。
-   */
-  displayNameInProgress(productName: string): string {
-    const declared = this.entry?.own?.displayNameInProgress ?? this.defaults?.own?.displayNameInProgress;
-    if (declared === undefined) return productName;
-    return format(declared, { product: productName });
+  variationName(axis: string, baseName: string, valueName: string): string {
+    const declared =
+      this.entry?.own?.variationNames?.get(axis) ?? this.defaults?.own?.variationNames?.get(axis);
+    if (declared === undefined) return baseName;
+    return format(declared, { base: baseName, value: valueName });
   }
 
   prop(propertyName: string): Texts {
@@ -594,29 +584,42 @@ function parseEntry(node: YAMLMap, context: string): ObjectTextsEntry {
   return new ObjectTextsEntry(parseTexts(node, context), members);
 }
 
+/**
+ * 変種の名前の書式（`variation_names`）を読む。キーが軸の名前で、値が書式。
+ * 軸の名前はWorldCodex側が決めるものなので、ここでは検証せず識別子としてそのまま持つ。
+ */
+function parseVariationNames(node: YAMLMap, context: string): ReadonlyMap<string, string> | undefined {
+  const map = tryGetMap(node, 'variation_names', context);
+  if (map === undefined) return undefined;
+
+  return new Map(
+    entriesInOrder(map).map(([axis, node]) => [
+      axis,
+      asScalarText(node, `${context}.variation_names.${axis}`),
+    ]),
+  );
+}
+
 /** 1つの対象の表示文字列を読む。1つも書かれていなければundefined。 */
 function parseTexts(node: YAMLMap, context: string): DeclaredTexts | undefined {
   const displayName = tryGetScalar(node, 'display_name', context);
   const description = tryGetScalar(node, 'description', context);
   const icon = tryGetScalar(node, 'icon', context);
-  const displayNameWithContent = tryGetScalar(node, 'display_name_with_content', context);
   const displayNameWithOwner = tryGetScalar(node, 'display_name_with_owner', context);
-  const displayNameInProgress = tryGetScalar(node, 'display_name_in_progress', context);
+  const variationNames = parseVariationNames(node, context);
   if (
     displayName === undefined &&
     description === undefined &&
     icon === undefined &&
-    displayNameWithContent === undefined &&
     displayNameWithOwner === undefined &&
-    displayNameInProgress === undefined
+    variationNames === undefined
   )
     return undefined;
   return {
     displayName,
     description,
     icon,
-    displayNameWithContent,
     displayNameWithOwner,
-    displayNameInProgress,
+    variationNames,
   };
 }

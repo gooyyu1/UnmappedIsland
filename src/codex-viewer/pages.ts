@@ -35,7 +35,7 @@ export function renderObjectPage(view: CodexView, name: string): string {
   if (def === undefined) return errorPage(`object_def '${escapeHtml(name)}' が見つかりません。`);
 
   const description = view.objectDescription(name);
-  const product = view.codex.productOf(def);
+  const base = view.codex.isGenerated(def) ? view.codex.baseOf(def) : undefined;
 
   return (
     `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
@@ -46,10 +46,10 @@ export function renderObjectPage(view: CodexView, name: string): string {
     identifierLine(view, name, view.objectLabel(name), view.objectDisplayName(name)) +
     (description === undefined ? '' : `<p class="lead">${escapeHtml(description)}</p>`) +
     `<p>${tagChipsHtml(view, def)}</p>` +
-    (product === undefined
+    (base === undefined
       ? ''
-      : `<p class="muted">レシピから自動生成された製作中オブジェクト（完成品: ` +
-        `<a href="${view.objectHref(product.name)}">${escapeHtml(view.objectLabel(product.name))}</a>）</p>`) +
+      : `<p class="muted">自動生成された変種（素の型: ` +
+        `<a href="${view.objectHref(base.name)}">${escapeHtml(view.objectLabel(base.name))}</a>）</p>`) +
     (isInCraftingNetwork(view, name)
       ? `<p><a href="#/network/${encodeURIComponent(name)}">クラフトネットワークで見る</a></p>`
       : '') +

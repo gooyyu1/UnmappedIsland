@@ -45,7 +45,7 @@ export function rangeEventReadouts(
  * その値がvalueになったとき、rangeの外へ出るなら、そこで起こること。範囲に収まるならundefined。
  *
  * **一撃で端まで動かす効果も、range系イベントの引き金になる**（6.3節）。仕留めの一撃は血を0に
- * するだけで、獲物を死体へ置き換えるのは`blood`の`on_shortfall`——これを繋がないと、死体の
+ * するだけで、獲物を死体へ置き換えるのは`blood`の`on_min`——これを繋がないと、死体の
  * 作り方がどこにも無いことになる。
  */
 export function rangeEventAt(
@@ -57,17 +57,15 @@ export function rangeEventAt(
   if (range === undefined) return undefined;
 
   const label: RangeEventLabel | undefined =
-    value > range.max ? 'on_overflow' : value < range.min ? 'on_shortfall' : undefined;
+    value >= range.max ? 'on_max' : value <= range.min ? 'on_min' : undefined;
   if (label === undefined) return undefined;
   return rangeEventReadouts(propertyDef, resolve).find((readout) => readout.label === label);
 }
 
 /**
- * 値がtick毎にperTickずつ動いたとき、rangeの端を割る（超える）までのtick数。端まで届かない
- * 向きへ動く場合と、rangeを持たない場合、初期値が読めない場合はundefined。
- *
- * 端は「割った瞬間」なので、下限側は`min - 1`まで、上限側は`max + 1`までの距離を数える
- * （range系イベントが発火するのはrangeの外へ出た瞬間、6.3節）。
+ * 値がtick毎にperTickずつ動いたとき、rangeの端へ届くまでのtick数。端まで届かない向きへ動く場合と、
+ * rangeを持たない場合、初期値が読めない場合はundefined（range系イベントが発火するのは端へ届いた
+ * 瞬間、6.3節）。
  */
 export function ticksToRangeEnd(
   propertyDef: PropertyDef,
@@ -77,6 +75,6 @@ export function ticksToRangeEnd(
   const range = propertyDef.range;
   if (range === undefined || perTick === 0 || value === undefined) return undefined;
 
-  const distance = perTick < 0 ? value - (range.min - 1) : range.max + 1 - value;
+  const distance = perTick < 0 ? value - range.min : range.max - value;
   return distance <= 0 ? undefined : distance / Math.abs(perTick);
 }

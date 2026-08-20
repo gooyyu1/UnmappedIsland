@@ -1,49 +1,28 @@
-# 液体容器の定義。液体は個数ではなく量で存在し（quantitative、GameElementDefinition.md 7.6節）、
-# 量は液体自身がvolumeとして持つ。上限は容器のcontentスロットのcapacityが決める。
+# 液体容器の定義。**液体は独立した物ではなく、容器の変種として存在する**——「水入りの水筒」は
+# 水筒と水の親子2つではなく、ロード時に生成される1つの型（GameElementDefinition.md 3.5節の軸）。
+# 容器が variation_axes で「中身」の軸を宣言し、液体の側は配られる trait の束として宣言する。
 # 設計の全体像はLiquidContainerSystem.mdを参照。
 #
-# 固形物を入れる容器（containers.yaml）とは構造が別。あちらは中身をスロットへそのまま入れるだけで、
-# こちらは中身が量を持ち、注ぎ移しが量の移動になる。
+# 固形物を入れる容器（containers.yaml）とは構造が別。あちらは中身をスロットへそのまま入れるが、
+# こちらは中身が容器自身のfillになり、注ぎ移しは量の移送（transfer）になる。
 
 traits:
-  # 液体を1つ入れる容器。中身が代表（represented_by）となり、操作もスタック判定も中身へ委譲する。
+  # 液体を入れられること自体のタグ（固形物を入れるcontainerタグと対になる、containers.yaml）。
+  # 空の容器も中身入りの変種もこのタグを持つ。空かどうかはfillの有無で見る（下のpour_in）。
   liquid_container:
-    # 液体を入れられること自体のタグ（固形物を入れるcontainerタグと対になる、containers.yaml）。
     tags: [liquid_container]
-    represented_by: content
-    combinations:
-      # 受け側が空のとき、代表は容器自身なのでこちらが発火する（中身入りならliquid側が発火する）。
-      # 空いている量だけ入り、入りきらない分は注ぎ元に残る（quantitativeの規定）。
-      pour_in:
-        with: {tag: liquid}
-        move: {subject: dragged, to: self}
 
-  # 液体に共通する、量としての振る舞い。
+  # 液体に共通する、量としての振る舞い。中身入りの変種へ配られる。
   liquid:
     tags: [liquid]
-    quantitative: true
-    # 器の無い水は存在しない（7.9節）。器から出せず、器が壊れれば一緒に失われる。
-    bound_to_owner: true
     props:
-      # 量。単位はmL（1 = 1mL、LiquidContainerSystem.md 5節）。
-      # 上限は容器のcontentスロットのcapacityが決めるため、ここではrangeを持たない。
-      # 値が効くのはspawnで生まれたときだけ（注ぎ移しで生まれたインスタンスは移った量で上書きされる）。
-      # 0にできないのは、量が0の量的オブジェクトは存在しないため（quantitativeの不変条件）。
-      volume:
-        value: 1
       # 単位量あたりの重さ（g/mL）。水は1で、油のように軽い液体は0.92のように書く。
-      # volume × density がそのまま重さ（g）になる（ContainerSystem.md 1節）。
+      # fill × density がそのまま重さ（g）になる（ContainerSystem.md 1節）。
       density:
         value: 1
     # 見た目の色（color、0xRRGGBB）は種類ごとのtraitが宣言する。何色に見えるかは液体そのものの
     # 性質で、共通の既定値には意味が無いため。容器カードの中身のバーがこの色で塗られる
     # （CardView.md 8節 カードの状態バー）。
-    combinations:
-      # 受け側が中身入りのとき、代表は中身の液体自身。移し先は自分ではなく容器なのでto: parent。
-      # 異種の液体はcontentの枠が1つしかないため入らず、条件を書く必要がない。
-      pour_in:
-        with: {tag: liquid}
-        move: {subject: dragged, to: parent}
 
   sealed_container:
     tags: [sealed_container]
@@ -54,9 +33,9 @@ traits:
   narrow_open_container:
     tags: [narrow_open_container]
 
-  # 空けたまま置いて雨を受けられる容器（LiquidContainerSystem.md 7節）。中身が入っている容器は
-  # 代表が中身の液体へ移る（3節）ため、このアクションは空のときにしか現れない。溜まり始めたあとの量は
-  # 水自身が増やす（rain_filled_liquid）。
+  # 空けたまま置いて雨を受けられる容器（LiquidContainerSystem.md 7節）。溜め始めるのは操作で、
+  # 増えるのは自動（rain_filled_liquid）。中身入りの変種はfillを持つので条件で弾かれ、
+  # 空の容器にだけボタンが出る。
   rain_catching_container:
     actions:
       collect_rain:
@@ -65,11 +44,43 @@ traits:
             subject: ancestor
             prop: weather
             in: [light_rain, heavy_rain, storm]
-        spawn: {object: water_liquid, into: self}
+          # 中身のある容器では雨を受け始められない（既にある中身が水に置き換わってしまう）。
+          - {reason: not_empty, subject: self, prop: fill, eq: 0}
+        become: {content: water_liquid}
+        # 溜め始めた瞬間の量は「まだほとんど無い」を表す最少値（LiquidContainerSystem.md 7節）。
+        # 実際に溜まる量は降り方が決めるので、以後はrain_filled_liquidが増やす。
+        set: {self: {fill: 1}}
 
   water_liquid:
+    # この液体を保持していることを表すタグ。注ぎ移しの相手を種類ごとに指す（pour_in）。
+    tags: [water]
     props:
       color: {value: 0x2f86d8}
+    combinations:
+      # 空の容器へ注ぐ。**宣言はこちら側（中身入り）にしか無いので、どちらの札をどちらへ重ねても
+      # selfは中身入り・draggedは空になる**（12.3節）。相手を水入りの変種にしてから移すので、
+      # becomeをtransferより先に書く（transferは相手がfillを持たないと何もしない）。
+      pour_into_empty:
+        with: {tag: liquid_container}
+        conditions:
+          - {reason: not_empty, subject: dragged, prop: fill, eq: 0}
+        become: {subject: dragged, content: water_liquid}
+        transfer:
+          amount: 999999
+          from: self
+          from_prop: fill
+          to: dragged
+          to_prop: fill
+      # 水入りの容器同士。入るだけ入り、入りきらない分は注ぎ元に残る（transferの両側のクランプ）。
+      # 異種の液体はこのタグに合致しないので、混ぜる組み合わせがそもそも現れない。
+      pour_into_filled:
+        with: {tag: water}
+        transfer:
+          amount: 999999
+          from: dragged
+          from_prop: fill
+          to: self
+          to_prop: fill
     actions:
       # 1回の飲用 = 250mL。残量が足りなければ残っている分だけ飲む（transferの在庫クランプ）。
       # 満水では何も移らない操作になるため、実行自体をさせない。境目はキャラクターのhydrationの
@@ -85,13 +96,34 @@ traits:
         transfer:
           amount: 250
           to_amount: 10
-          from_prop: volume
+          from_prop: fill
           to: actor
           to_prop: hydration
 
   tea_liquid:
+    tags: [tea]
     props:
       color: {value: 0x6f8f3c}
+    combinations:
+      pour_into_empty:
+        with: {tag: liquid_container}
+        conditions:
+          - {reason: not_empty, subject: dragged, prop: fill, eq: 0}
+        become: {subject: dragged, content: tea_liquid}
+        transfer:
+          amount: 999999
+          from: self
+          from_prop: fill
+          to: dragged
+          to_prop: fill
+      pour_into_filled:
+        with: {tag: tea}
+        transfer:
+          amount: 999999
+          from: dragged
+          from_prop: fill
+          to: self
+          to_prop: fill
     actions:
       drink:
         conditions:
@@ -101,7 +133,7 @@ traits:
         transfer:
           amount: 250
           to_amount: 10
-          from_prop: volume
+          from_prop: fill
           to: actor
           to_prop: hydration
           linked_add:
@@ -110,140 +142,176 @@ traits:
 
   # 飲めない液体はdrinkを定義しないだけでよい。
   oil_liquid:
+    tags: [oil]
     props:
       color: {value: 0xe0b422}
+    combinations:
+      pour_into_empty:
+        with: {tag: liquid_container}
+        conditions:
+          - {reason: not_empty, subject: dragged, prop: fill, eq: 0}
+        become: {subject: dragged, content: oil_liquid}
+        transfer:
+          amount: 999999
+          from: self
+          from_prop: fill
+          to: dragged
+          to_prop: fill
+      pour_into_filled:
+        with: {tag: oil}
+        transfer:
+          amount: 999999
+          from: dragged
+          from_prop: fill
+          to: self
+          to_prop: fill
 
   # 開いた容器から蒸発する。日射に依らない基礎の蒸発と、sunlightのしきい値で決まる上乗せの和
   # （LiquidContainerSystem.md 6節）。密閉容器はどちらのゲートも成立しないため蒸発しない。
-  # 量が尽きたインスタンスはエンジンが消す（quantitativeの規定）。
+  # 量が尽きた変種は空の容器へ戻る（fillのon_min）。
+  #
+  # **口の開き方は自分自身のタグで見る**——容器と中身が同じ1つのオブジェクトなので、親を辿らない。
   evaporating_liquid:
     passives:
       # 基礎。湿度が未実装のため、雨天は「湿度が高くて乾かない」の代理として除外する。
       - conditions:
-          - {subject: parent, matches: {tag: wide_open_container}}
+          - {subject: self, matches: {tag: wide_open_container}}
           - {subject: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
         add:
           self:
-            volume: -1
+            fill: -1
       - conditions:
-          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: self, matches: {tag: narrow_open_container}}
           - {subject: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
         add:
           self:
-            volume: -2
+            fill: -2
       # 日射による上乗せ。夜はsunlightが0になる（core.yamlのhour）ため成立せず、雨天のsunlightは
       # 最大6で最も低いしきい値10に届かないため、天候を見る必要がない。
       - conditions:
-          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: self, matches: {tag: narrow_open_container}}
           - {subject: ancestor, prop: sunlight, gte: 10}
         add:
           self:
-            volume: -2
+            fill: -2
       - conditions:
-          - {subject: parent, matches: {tag: wide_open_container}}
+          - {subject: self, matches: {tag: wide_open_container}}
           - {subject: ancestor, prop: sunlight, gte: 12}
         add:
           self:
-            volume: -1
+            fill: -1
       - conditions:
-          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: self, matches: {tag: narrow_open_container}}
           - {subject: ancestor, prop: sunlight, gte: 12}
         add:
           self:
-            volume: -2
+            fill: -2
       - conditions:
-          - {subject: parent, matches: {tag: wide_open_container}}
+          - {subject: self, matches: {tag: wide_open_container}}
           - {subject: ancestor, prop: sunlight, gte: 15}
         add:
           self:
-            volume: -1
+            fill: -1
       - conditions:
-          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: self, matches: {tag: narrow_open_container}}
           - {subject: ancestor, prop: sunlight, gte: 15}
         add:
           self:
-            volume: -2
+            fill: -2
 
   # 開いた容器に置かれている間、降っている雨のぶんだけ増える（LiquidContainerSystem.md 7節）。
   # 蒸発の裏返しで、ゲートは同じ「容器の開き方」と「天候」の2つ。雨の強さは3段しかないので、
   # 蒸発のような基礎＋上乗せの形は取らず、1行が1つの降り方の量そのものを表す。
-  # capacityを超えた分はあふれて失われる（エンジンが戻す不変条件、GameElementDefinition.md 7.6節）。
+  # 満杯を超えた分はrangeが受け止める（fillの上限は容器のcapacity）。
   rain_filled_liquid:
     passives:
       - conditions:
-          - {subject: parent, matches: {tag: wide_open_container}}
+          - {subject: self, matches: {tag: wide_open_container}}
           - {subject: ancestor, prop: weather, eq: light_rain}
         add:
           self:
-            volume: 10
+            fill: 10
       - conditions:
-          - {subject: parent, matches: {tag: wide_open_container}}
+          - {subject: self, matches: {tag: wide_open_container}}
           - {subject: ancestor, prop: weather, eq: heavy_rain}
         add:
           self:
-            volume: 20
+            fill: 20
       - conditions:
-          - {subject: parent, matches: {tag: wide_open_container}}
+          - {subject: self, matches: {tag: wide_open_container}}
           - {subject: ancestor, prop: weather, eq: storm}
         add:
           self:
-            volume: 40
+            fill: 40
       - conditions:
-          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: self, matches: {tag: narrow_open_container}}
           - {subject: ancestor, prop: weather, eq: light_rain}
         add:
           self:
-            volume: 20
+            fill: 20
       - conditions:
-          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: self, matches: {tag: narrow_open_container}}
           - {subject: ancestor, prop: weather, eq: heavy_rain}
         add:
           self:
-            volume: 40
+            fill: 40
       - conditions:
-          - {subject: parent, matches: {tag: narrow_open_container}}
+          - {subject: self, matches: {tag: narrow_open_container}}
           - {subject: ancestor, prop: weather, eq: storm}
         add:
           self:
-            volume: 80
+            fill: 80
 
 object_defs:
-  # 容量はcontentスロットのcapacityで持つ。単位はmLなので、1L = 1000。
+  # 中身入りの変種（水入りの水筒など）はロード時に生成される（3.5節）。**一度に入る液体は1種類だけ**
+  # ——軸が1本しかないので、水の入った水筒へ茶は注げない。
   canteen:
     traits: [liquid_container, sealed_container]
     props:
+      # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
+      # traitを配られた変種だけ。尽きたら中身の軸を落として空の容器へ戻る
+      # （LiquidContainerSystem.md 1節）。
+      fill:
+        value: 0
+        range: {min: 0, max: 1000}
+        on_min:
+          become: {content: none}
       weight: {value: 300}
       volume: {value: 1000}
-    slots:
-      content:
-        # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
-        cell_count: 1
-        cell: {accept: {tag: liquid}}
-        capacity: 1000
+    variation_axes:
+      content: {of: {tag: liquid}}
 
   pot:
     traits: [liquid_container, sealed_container]
     props:
+      # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
+      # traitを配られた変種だけ。尽きたら中身の軸を落として空の容器へ戻る
+      # （LiquidContainerSystem.md 1節）。
+      fill:
+        value: 0
+        range: {min: 0, max: 1000}
+        on_min:
+          become: {content: none}
       weight: {value: 1500}
       volume: {value: 4700}
-    slots:
-      content:
-        # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
-        cell_count: 1
-        cell: {accept: {tag: liquid}}
-        capacity: 1000
+    variation_axes:
+      content: {of: {tag: liquid}}
 
   bottle:
     traits: [liquid_container, sealed_container]
     props:
+      # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
+      # traitを配られた変種だけ。尽きたら中身の軸を落として空の容器へ戻る
+      # （LiquidContainerSystem.md 1節）。
+      fill:
+        value: 0
+        range: {min: 0, max: 2000}
+        on_min:
+          become: {content: none}
       weight: {value: 500}
       volume: {value: 2800}
-    slots:
-      content:
-        # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
-        cell_count: 1
-        cell: {accept: {tag: liquid}}
-        capacity: 2000
+    variation_axes:
+      content: {of: {tag: liquid}}
 
   # 甕。粘土を焼いて作る（pottery.yaml）。**汲み置きできる唯一の容器**で、これが入るまで運べる水は
   # 青いヤシの実だけだった（docs/world/Voyage.md）。
@@ -254,34 +322,45 @@ object_defs:
     tags: [item, fragile, pottery]
     traits: [liquid_container, narrow_open_container, rain_catching_container]
     props:
+      # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
+      # traitを配られた変種だけ。尽きたら中身の軸を落として空の容器へ戻る
+      # （LiquidContainerSystem.md 1節）。
+      fill:
+        value: 0
+        range: {min: 0, max: 4000}
+        on_min:
+          become: {content: none}
       weight: {value: 1200}
       volume: {value: 15000}
-    slots:
-      content:
-        # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
-        cell_count: 1
-        cell: {accept: {tag: liquid}}
-        capacity: 4000
+    variation_axes:
+      content: {of: {tag: liquid}}
 
   # ヤシの殻。割ったヤシの実から果肉を掻き出すと残る（coconut.yaml）。
   coconut_bowl:
     # fragileは、動物がぶつかって壊しうる物（docs/engine/HuntingSystem.md 5.4節）。薄い殻の器は
-    # 踏まれれば割れ、入っていた液体は残らない（bound_to_ownerの中身は道連れ、9.3節）。
+    # 踏まれれば割れ、入っていた液体は残らない（中身は容器自身のfillなので、割れれば一緒に消える）。
     tags: [item, fragile]
     traits: [liquid_container, wide_open_container, rain_catching_container]
     props:
+      # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
+      # traitを配られた変種だけ。尽きたら中身の軸を落として空の容器へ戻る
+      # （LiquidContainerSystem.md 1節）。
+      fill:
+        value: 0
+        range: {min: 0, max: 250}
+        on_min:
+          become: {content: none}
       weight: {value: 100}
       # 半球の殻は重ねて入るので、1個ぶんの外寸より小さく見る。
       volume: {value: 200}
-    slots:
-      content:
-        # 一度に入る液体は1種類だけ。水の入った水筒へ茶は注げない。
-        cell_count: 1
-        cell: {accept: {tag: liquid}}
-        capacity: 250
+    variation_axes:
+      content: {of: {tag: liquid}}
 
-  # 雨として降るのは水なので、rain_filled_liquidを持つのは水だけ。茶・油が入っている容器は、
-  # 開いていても雨で増えない（異種は混ざらない、4節）。
+  # 液体は軸の値であり、配られるtraitの束。インスタンスは作られないので、traits以外は宣言しない
+  # （axisVariants.tsが検査する）。
+  #
+  # 雨として降るのは水なので、rain_filled_liquidを持つのは水だけ。茶・油が入った容器は、
+  # 開いていても雨で増えない。
   water_liquid:
     traits: [liquid, water_liquid, evaporating_liquid, rain_filled_liquid]
 

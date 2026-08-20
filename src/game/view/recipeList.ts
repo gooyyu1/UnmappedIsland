@@ -1,6 +1,7 @@
 import type { WorldCodex } from '../../domain/WorldCodex';
 import type { NewGameSession } from '../../domain/generation/NewGame';
 import type { RecipeDef } from '../../domain/RecipeDef';
+import { RECIPE_AXIS } from '../../domain/RecipeDef';
 import type { ReferenceRoot } from '../../domain/ReferenceRoot';
 import type { WorldObject } from '../../domain/WorldObject';
 import type { Localization } from '../../locale/Localization';
@@ -20,14 +21,13 @@ const PRODUCT_ICON = '📦';
 /**
  * その製作中オブジェクトが従っているレシピ（製作中オブジェクトでなければundefined）。
  *
- * 型自身はどのレシピから生まれたかを持てない（YAMLの語彙に無い、WorldCodex.productOf参照）ので、
- * 完成品のレシピのうち、生成した型名（inProgressObjectName）が一致するものを引く。
+ * 製作中オブジェクトは完成品の変種で、**どのレシピから生まれたかは軸`recipe`の値**
+ * （GameElementDefinition.md 3.5節）。完成品はその素の型。
  */
 export function recipeOf(target: WorldObject, codex: WorldCodex): RecipeDef | undefined {
-  const product = codex.productOf(target.def);
-  return product?.recipes.find(
-    (candidate) => inProgressObjectName(product.name, candidate.name) === target.def.name,
-  );
+  const recipeName = codex.variationsOf(target.def).get(RECIPE_AXIS);
+  if (recipeName === undefined) return undefined;
+  return codex.baseOf(target.def).recipes.find((candidate) => candidate.name === recipeName);
 }
 
 /**

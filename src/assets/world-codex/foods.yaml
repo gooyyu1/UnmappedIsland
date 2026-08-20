@@ -53,7 +53,7 @@ object_defs:
       cooking_progress:
         value: 0
         range: {min: 0, max: 36}
-        on_overflow:
+        on_max:
           destroy: self
           spawn: {object: roasted_coconut_crab}
 
@@ -68,7 +68,7 @@ object_defs:
       cooking_progress:
         value: 0
         range: {min: 0, max: 18}
-        on_overflow:
+        on_max:
           destroy: self
           spawn: {object: charred_lump}
     actions:
@@ -102,7 +102,7 @@ object_defs:
       cooking_progress:
         value: 0
         range: {min: 0, max: 30}
-        on_overflow:
+        on_max:
           destroy: self
           spawn: {object: roasted_taro}
 
@@ -117,7 +117,7 @@ object_defs:
       cooking_progress:
         value: 0
         range: {min: 0, max: 15}
-        on_overflow:
+        on_max:
           destroy: self
           spawn: {object: charred_lump}
     actions:

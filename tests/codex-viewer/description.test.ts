@@ -20,11 +20,11 @@ object_defs:
     props:
       hour:
         value: 0
-        range: {min: 0, max: 23}
+        range: {min: 0, max: 24}
         stages:
           - {name: night}
           - {name: day, min: 6}
-        on_overflow:
+        on_max:
           add: {self: {hour: -24, day: 1}}
       day: {value: 1}
       weather:
@@ -129,11 +129,11 @@ describe('定義の自己記述（describe）', () => {
     const text = describeToText(codex, (out) => hour.describe(codex, out));
 
     expect(text).toContain('初期値: 0');
-    expect(text).toContain('range: 0 〜 23');
+    expect(text).toContain('range: 0 〜 24');
     expect(text).toContain('night: どの段にも該当しないとき');
     expect(text).toContain('day: 6以上');
-    expect(text).toContain('on_overflow:');
-    // 繰り上げ先（day）への加算は、入れ子（字下げ）としてon_overflowの下に置かれる。
+    expect(text).toContain('on_max:');
+    // 繰り上げ先（day）への加算は、入れ子（字下げ）としてon_maxの下に置かれる。
     expect(text).toContain('\n  add hour -24');
     expect(text).toContain('\n  add day +1');
   });
@@ -253,7 +253,7 @@ describe('プロパティの逆引き（describeInfluencesOn）', () => {
 
   it('自分自身を値域へ丸めるrange系イベントは影響元に挙げない（プロパティ自身を見れば分かる）', () => {
     expect(influences('world', 'world', 'hour')).toBe('');
-    // 繰り上げ先（day）から見れば、hourのon_overflowは立派な影響元。
+    // 繰り上げ先（day）から見れば、hourのon_maxは立派な影響元。
     expect(influences('world', 'world', 'day')).toContain('add day +1');
   });
 });

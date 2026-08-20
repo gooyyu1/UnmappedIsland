@@ -506,34 +506,20 @@ object_defs:
     expect(characterInstance.getEffectiveValue(attackId)).toBe(12); // off_handへ持ち替えると+2に切り替わる
   });
 
-  it('on_shortfallはrangeが無いとエラーになる', () => {
+  it('on_minはrangeが無いとエラーになる', () => {
     const yaml = `
 object_defs:
   log:
     props:
       life:
         value: 0
-        on_shortfall:
+        on_min:
           destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/range/);
   });
 
-  it('on_shortfallの対象にself以外を指定するとエラーになる', () => {
-    const yaml = `
-object_defs:
-  log:
-    props:
-      life:
-        value: 0
-        range: {min: 0, max: 100}
-        on_shortfall:
-          destroy: parent
-`;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_shortfall/);
-  });
-
-  it('propの未知のキーはエラーになる（廃止されたon_min/on_maxを含む）', () => {
+  it('on_minの対象にself以外を指定するとエラーになる', () => {
     const yaml = `
 object_defs:
   log:
@@ -542,10 +528,24 @@ object_defs:
         value: 0
         range: {min: 0, max: 100}
         on_min:
+          destroy: parent
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_min/);
+  });
+
+  it('propの未知のキーはエラーになる', () => {
+    const yaml = `
+object_defs:
+  log:
+    props:
+      life:
+        value: 0
+        range: {min: 0, max: 100}
+        on_exhausted:
           destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/未知のキー/);
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_min/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_exhausted/);
   });
 
   // ------------------------------------------------------------------
@@ -1356,17 +1356,17 @@ object_defs:
   });
 
   // ------------------------------------------------------------------
-  // on_overflow
+  // on_max
   // ------------------------------------------------------------------
 
-  it('on_overflowはrangeが無いとエラーになる', () => {
+  it('on_maxはrangeが無いとエラーになる', () => {
     const yaml = `
 object_defs:
   clock:
     props:
       minute:
         value: 0
-        on_overflow:
+        on_max:
           set: {self: {minute: 0}}
           add: {self: {hour: 1}}
       hour:
@@ -1375,15 +1375,15 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/range/);
   });
 
-  it('on_overflowをパースし、実行時に適用する', () => {
+  it('on_maxをパースし、実行時に適用する', () => {
     const yaml = `
 object_defs:
   clock:
     props:
       minute:
         value: 45
-        range: {min: 0, max: 59}
-        on_overflow:
+        range: {min: 0, max: 60}
+        on_max:
           set: {self: {minute: 0}}
           add: {self: {hour: 1}}
       hour:
@@ -1396,28 +1396,28 @@ object_defs:
     const session = new WorldSession(codex);
     const instance = new WorldObject(1, clock, session);
     instance.setProperty(codex.propertyNames.getId('minute'), 60); // 手動で溢れさせる
-    instance.tick(session); // passivesのadd契機は無いが、既に溢れているのでon_overflowだけが発火する
+    instance.tick(session); // passivesのadd契機は無いが、既に溢れているのでon_maxだけが発火する
 
     expect(instance.getNumber(codex.propertyNames.getId('minute'))).toBe(0);
     expect(instance.getNumber(codex.propertyNames.getId('hour'))).toBe(1);
   });
 
-  it('on_overflowの対象にself以外を指定するとエラーになる', () => {
+  it('on_maxの対象にself以外を指定するとエラーになる', () => {
     const yaml = `
 object_defs:
   clock:
     props:
       minute:
         value: 0
-        range: {min: 0, max: 59}
-        on_overflow:
+        range: {min: 0, max: 60}
+        on_max:
           add: {parent: {minute: -60}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_overflow/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_max/);
   });
 
-  it('on_overflowを省略するとselfをmaxへクランプする既定効果になる', () => {
-    // rangeだけ定義してon_overflowを省略すると、「自分自身をRange.Maxへsetする」既定の
+  it('on_maxを省略するとselfをmaxへクランプする既定効果になる', () => {
+    // rangeだけ定義してon_maxを省略すると、「自分自身をRange.Maxへsetする」既定の
     // ActiveEffectが自動生成され、上限クランプとして機能する。
     const yaml = `
 object_defs:
@@ -1436,42 +1436,42 @@ object_defs:
     instance.setProperty(codex.propertyNames.getId('value'), 150);
     instance.tick(session);
 
-    expect(instance.getNumber(codex.propertyNames.getId('value'))).toBe(100); // 既定のon_overflowにより100へクランプされる
+    expect(instance.getNumber(codex.propertyNames.getId('value'))).toBe(100); // 既定のon_maxにより100へクランプされる
   });
 
   // ------------------------------------------------------------------
-  // on_shortfall（on_overflowの下限側の鏡像）
+  // on_min（on_maxの下限側の鏡像）
   // ------------------------------------------------------------------
 
-  it('on_shortfallはrangeが無いとエラーになる', () => {
+  it('on_minはrangeが無いとエラーになる', () => {
     const yaml = `
 object_defs:
   clock:
     props:
       minute:
         value: 0
-        on_shortfall:
+        on_min:
           set: {self: {minute: 0}}
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/range/);
   });
 
-  it('on_shortfallの対象にself以外を指定するとエラーになる', () => {
+  it('on_minの対象にself以外を指定するとエラーになる', () => {
     const yaml = `
 object_defs:
   clock:
     props:
       minute:
         value: 0
-        range: {min: 0, max: 59}
-        on_shortfall:
+        range: {min: 0, max: 60}
+        on_min:
           add: {parent: {minute: 60}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_shortfall/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_min/);
   });
 
-  it('on_shortfallをパースし、実行時に適用する', () => {
-    // on_overflowの下限側の鏡像。addで折り返し量・繰り下げ量を一度に加減算する（on_overflowと
+  it('on_minをパースし、実行時に適用する', () => {
+    // on_maxの下限側の鏡像。addで折り返し量・繰り下げ量を一度に加減算する（on_maxと
     // 同じく、setより堅牢）。
     const yaml = `
 object_defs:
@@ -1479,8 +1479,8 @@ object_defs:
     props:
       minute:
         value: 5
-        range: {min: 0, max: 59}
-        on_shortfall:
+        range: {min: 0, max: 60}
+        on_min:
           add: {self: {minute: 60, hour: -1}}
       hour:
         value: 1
@@ -1498,7 +1498,7 @@ object_defs:
     expect(instance.getNumber(codex.propertyNames.getId('hour'))).toBe(0);
   });
 
-  it('on_shortfallを省略するとselfをminへクランプする既定効果になる', () => {
+  it('on_minを省略するとselfをminへクランプする既定効果になる', () => {
     const yaml = `
 object_defs:
   gauge:
@@ -1516,7 +1516,7 @@ object_defs:
     instance.setProperty(codex.propertyNames.getId('value'), -50);
     instance.tick(session);
 
-    expect(instance.getNumber(codex.propertyNames.getId('value'))).toBe(0); // 既定のon_shortfallにより0へクランプされる
+    expect(instance.getNumber(codex.propertyNames.getId('value'))).toBe(0); // 既定のon_minにより0へクランプされる
   });
 
   it('object: ancestorは、そのプロパティを持たない祖先を素通りして最も近い定義元を見つける', () => {

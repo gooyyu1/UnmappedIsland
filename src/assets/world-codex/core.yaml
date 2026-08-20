@@ -52,13 +52,13 @@ object_defs:
       # 1tickに相当するゲーム内時間（分）。ゲーム側（WorldSession）は実行時にこの値を読む。
       minutes_per_tick:
         value: 15
-      # 現在の分（0-59）。溢れたらhourへ繰り上げ（6.3節のon_overflow）。setではなくaddで折り返すのは、
+      # 現在の分（0-59）。溢れたらhourへ繰り上げ（6.3節のon_max）。setではなくaddで折り返すのは、
       # 1tickで複数span分溢れても超過分を保持できるため。毎tickの加算はゲーム側（WorldSession）が担う
       # （YAML側にもpassivesを持つと二重加算になるため、tick駆動のpassivesは持たない）。
       minute:
         value: 0
-        range: {min: 0, max: 59}
-        on_overflow:
+        range: {min: 0, max: 60}
+        on_max:
           add:
             self:
               minute: -60
@@ -70,8 +70,8 @@ object_defs:
       # 2エントリで概念上1つの「夜」段階を表す。区切り時刻・補正量はいずれも仮の値。
       hour:
         value: 0
-        range: {min: 0, max: 23}
-        on_overflow:
+        range: {min: 0, max: 24}
+        on_max:
           add:
             self:
               hour: -24
@@ -265,17 +265,17 @@ object_defs:
         value: 0
       later_cycle_flag:
         value: 0
-      # 現在の季節の残りtick数。0に達した瞬間（min:1を下回るon_shortfall、6.3節）に3段のpick（10節）で
+      # 現在の季節の残りtick数。0に達した瞬間（min:1を下回るon_min、6.3節）に3段のpick（10節）で
       # 遷移: (1)season_is_*で今の季節へ分岐、(2)初回サイクルか否かで分岐、(3)初回は30日（2880tick）固定、
       # 2周目以降は24/30/36日（2304/2880/3456tick）の等確率pick。dry→calm遷移だけがseason_cycleを+1する。
       season_remaining:
         value: 2880
-        range: {min: 1, max: 999999}
+        range: {min: 0, max: 999999}
         passives:
           - add:
               self:
                 season_remaining: -1
-        on_shortfall:
+        on_min:
           pick:
             - weight: {prop: season_is_calm}
               pick:
@@ -395,17 +395,17 @@ object_defs:
         value: 0
       scorching_weight:
         value: 0
-      # 現在の天気の残りtick数。0に達した瞬間（min:1を下回るon_shortfall、6.3節）に、外側のpickが
+      # 現在の天気の残りtick数。0に達した瞬間（min:1を下回るon_min、6.3節）に、外側のpickが
       # *_weightを重みに次の天気を、内側のpickが持続時間4/5/6時間（16/20/24tick）を等確率で選ぶ
       # （ClimateSystem.md 4節）。初期値20（5時間）はday1の最初の遷移までの猶予。
       weather_remaining:
         value: 20
-        range: {min: 1, max: 999999}
+        range: {min: 0, max: 999999}
         passives:
           - add:
               self:
                 weather_remaining: -1
-        on_shortfall:
+        on_min:
           pick:
             - weight: {prop: sunny_weight}
               pick:
@@ -497,17 +497,17 @@ object_defs:
         value: 0
       headwind_weight:
         value: 0
-      # 今の風向きの残りtick数。0に達した瞬間（min:1を下回るon_shortfall、6.3節）に、*_weightを
+      # 今の風向きの残りtick数。0に達した瞬間（min:1を下回るon_min、6.3節）に、*_weightを
       # 重みとするpickで次の風向きを選ぶ。持続は一律8時間（32tick）——天気と違って向きしか無いので、
       # 長さまで振ると、どちらが変わったのかが読めなくなる。
       wind_remaining:
         value: 32
-        range: {min: 1, max: 999999}
+        range: {min: 0, max: 999999}
         passives:
           - add:
               self:
                 wind_remaining: -1
-        on_shortfall:
+        on_min:
           pick:
             - weight: {prop: tailwind_weight}
               set:

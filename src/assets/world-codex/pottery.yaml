@@ -80,7 +80,7 @@ object_defs:
         # 炉の中でも水は抜け続ける（moistureの受動効果は場所を問わない）が、焼成が26tickなのに対し
         # 乾燥は96tickかかるので追いつかない。成形直後に火へ入れると、溢れる時点でまだ70残っていて、
         # 賭けは6割弱になる——現実の「あぶり焚き」（水を抜きながら焼く）がそのまま出ている。
-        on_overflow:
+        on_max:
           pick:
             - weight: {prop: moisture}
               signal: cracked

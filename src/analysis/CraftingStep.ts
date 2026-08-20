@@ -51,7 +51,7 @@ export interface PropertyDelta {
  * 工程が代入するプロパティ1件（`set`、9.2節）。
  *
  * **増減とは別に持つ。** 実際に動く量は今の値によるので、代入を増減として足すと、値域の端へ戻す
- * 既定のイベント（`on_overflow`が自分をmaxへ戻す、6.3節）が「max ぶん増えた」に化ける。
+ * 既定のイベント（`on_max`が自分をmaxへ戻す、6.3節）が「max ぶん増えた」に化ける。
  * 一方で「どこへ動いたか」は代入だけが確定して言えるので、rangeの外へ出たかはこちらで問える。
  */
 export interface PropertyAssignment {

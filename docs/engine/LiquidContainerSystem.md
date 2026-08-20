@@ -5,110 +5,108 @@
 液体（水・茶・油）を容器で保持し、飲用・注ぎ移し・蒸発させ、雨を貯める仕組みの設計ドキュメントです。定義本体は
 `src/assets/world-codex/liquid_containers.yaml`、検証は `tests/world-codex/liquidContainersYaml.test.ts`。
 
-液体は**個数ではなく量で存在する**という一点だけをエンジンに宣言し（1節）、あとは汎用文法
-（`represented_by`・`capacity`・`move`・`transfer`・`passives`、いずれも
+**液体は独立した物ではなく、容器の変種として存在します**（1 節）。この一点だけをエンジンへ宣言し
+（`variation_axes`）、あとは汎用文法（`transfer`・`become`・`passives`、いずれも
 [`GameElementDefinition.md`](./GameElementDefinition.md)）をそのまま使います。
 
-本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 9 節に整理しています。1 節の
-`quantitative`（[`GameElementDefinition.md`](./GameElementDefinition.md) 7.6 節）と 4 節の `move` の
-`to: parent`（同 9.6 節）は文法として確定し、実装済みです。固形物の入れ物（重さ・負荷・かさ）は
-[`ContainerSystem.md`](./ContainerSystem.md) が扱います。
+本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 9 節に整理しています。固形物の
+入れ物（重さ・負荷・かさ）は [`ContainerSystem.md`](./ContainerSystem.md) が扱います。
 
-## 1. 液体は量で存在する（quantitative）
+## 1. 中身入りの容器は、容器の変種
 
-`quantitative: true` を宣言した型は、インスタンスが「1個・2個」ではなく「どれだけあるか」で存在します。
-量は `volume`（7.3節）が持ちます。この宣言1つから、次のすべてが決まります。
-
-| 振る舞い | 個数のオブジェクト | 量のオブジェクト |
-|---|---|---|
-| 同じスロットへの合流 | 個数が増える | `volume` が加算される |
-| 入りきらないとき | 全部入るか、入らないか | **入るぶんだけ入り、残りは元に留まる** |
-| `volume` が 0 になったとき | （0にならない） | **消滅する** |
-| 入ったまま `volume` が増えて上限を超えたとき | （増えない） | **あふれた分は失われる** |
-
-「入るぶんだけ入る」が意味を持つのは、量は分割できるからです。固形物は分割できないので全か無かになります。
-`stackable`（7.6節）が「数える単位」を決めるのと同じ軸の話で、量はその第3の状態にあたります。
-
-## 2. 役割分担: 量も種類も振る舞いも中身、上限だけが容器
-
-液体入り容器は「容器本体」と「中身の液体カード」の親子2オブジェクトで表します。
-
-- **容器本体**（`canteen`・`pot`・`bottle`・`jar`・`coconut_bowl`）: 液体を1つだけ入れる `content`
-  スロット（`cell_count: 1`・`cell: {accept: {tag: liquid}}`・`capacity: 容量`）と `represented_by: content` を持つ。
-  空の容器へ注ぎ込む `combinations` だけを持つ（4節）。
-- **中身の液体カード**（`water_liquid`・`tea_liquid`・`oil_liquid`）: `quantitative: true`。
-  量（`volume`）・密度（`density`）・色（`color`）・種類タグ・飲用 `actions`・注ぎ `combinations`・
-  蒸発 `passives` を持つ。
-
-**上限を決めるのは容器、量そのものは中身**です。上限だけが容器側なのは、同じ `water_liquid` が水筒
-（1L）にも甕（4L）にも入るためで、型定義である `range` では表せません。スロットの `capacity` は
-まさにこのための仕組みで、編み籠の「石がいくつ入るか」と同じ語彙・同じ意味です。
-
-空の容器の `content` は本当に空です。空を表すための目印オブジェクトは置きません。
-
-## 3. represented_by による委譲
-
-容器本体は `represented_by: content` により、操作もスタック判定も中身へ委譲します（7.6節）。
-
-- **操作**: 容器カードへの `actions`/`combinations` は、実行前に代表へリダイレクトされます
-  （`WorldObject.resolveInteractionTarget`、`ActionSystem.md` 1節）。中身がいれば液体カードが、
-  空なら容器自身が代表になります。
-- **スタック判定**: 代表チェーンの完全一致を要求するため、水入り水筒と茶入り水筒は別スタックです。
-- **中身のバー**: 代表が量的オブジェクトのときだけ、カードに中身のバーが出ます
-  （[`CardView.md`](../ui/CardView.md) 8 節）。空の容器に出ないことも、
-  容器のスロット名をUIが知らずに済むことも、この1つの条件から出ます。
-
-代表が「容器自身か中身か」で切り替わることが、4節の書き分けの土台になります。
-
-## 4. 注ぎ移しは move
-
-液体は場所が変わるだけで別の概念にはならないので、**注ぎ移しは量的オブジェクトの移動**として表します。
-`transfer` は概念が転移するとき（飲用、5節）にだけ使います。
-
-代表解決（3節）は `self` と `dragged` の両方に効くため、**`self` になった側が空か中身入りかは、
-combination を宣言する場所だけで分かれます**。条件は要りません。
+**「水入りの水筒」は、水筒と水の親子2つではなく1つの型です。** 容器が「中身」の軸を宣言し、その軸の
+値ごとの型がロード時に生成されます（[`GameElementDefinition.md`](./GameElementDefinition.md) 3.5 節）。
 
 ```yaml
-traits:
-  # selfが空のとき（代表は容器自身）
-  liquid_container:
-    represented_by: content
-    combinations:
-      pour_in:
-        with: {tag: liquid}
-        move: {subject: dragged, to: self}
-
-  # selfが中身入りのとき（代表は中身の液体）
-  liquid:
-    tags: [liquid]
-    quantitative: true
-    combinations:
-      pour_in:
-        with: {tag: liquid}
-        move: {subject: dragged, to: parent}
+canteen:
+  traits: [liquid_container, sealed_container]
+  props:
+    fill:
+      value: 0
+      range: {min: 0, max: 1000}          # この容器の容量（mL）
+      on_min: {become: {content: none}}   # 尽きたら中身の軸を落とす＝空へ戻る
+  variation_axes:
+    content: {of: {tag: liquid}}
 ```
 
-| ドラッグ | ドロップ先 | 発火する宣言 |
+液体の側（`water_liquid` 等）は**配られる trait の束**で、インスタンスにはなりません。器の無い水は
+存在しない、が禁止ではなく構造で決まります。
+
+| 振る舞い | 個数のオブジェクト | 中身入りの容器 |
 |---|---|---|
-| 中身入り | 空 | 落とし先の容器側 |
-| 中身入り | 中身入り | 落とし先の中身側 |
-| 空 | 中身入り | **掴んだ空の容器側**（汲む。落とし先に組み合わせが無いので、掴んだ側を見た結果。[`GameElementDefinition.md`](./GameElementDefinition.md) 12.3 節） |
-| 空 | 空 | なし（何も起きない） |
+| 量 | 持たない | 自分の `fill`（mL）。空の容器は 0 のまま動かない |
+| 入りきらないとき | 全部入るか、入らないか | **入るぶんだけ入り、残りは元に留まる**（`transfer` の両側のクランプ） |
+| 量が 0 になったとき | （0にならない） | **素の型（空の容器）へ戻る** |
+| 上限を超えたとき | （増えない） | `fill` の `range` が受け止める |
 
-**異種の混合は枠が1つしかないことで阻まれます。** 茶が入っている容器へ水を入れようとすると、水は茶とは
-別のインスタンスなので2つ目の枠が要り、受け入れが失敗します。種類ごとに `with` を分ける必要はありません。
+**空の容器も `fill` を持ちます。** 空とは量が 0 であることで、**増やせるのは中身の trait を配られた
+変種だけ**です——素の型には量を増やす宣言が1つも無いので、0 のまま動きません。空を表すための目印
+オブジェクトも、空の液体も置きません。
 
-**入りきらない分は注ぎ側に残ります。** 量的オブジェクトの部分移動（1節）がそのまま働くためで、
+## 2. 役割分担: 上限は容器、量も種類も振る舞いも中身
+
+- **容器**（`canteen`・`pot`・`bottle`・`jar`・`coconut_bowl`）: 抱えられる量（`fill`）と、何を抱えられるか
+  （`variation_axes` の `content`）を宣言する。絵と名前の骨格も容器のもの。
+- **中身の trait**（`liquid`・`water_liquid`・`evaporating_liquid`・`rain_filled_liquid` 等）:
+  密度（`density`）・色（`color`）・種類タグ・飲用 `actions`・注ぎ `combinations`・蒸発 `passives` を持つ。
+
+**量そのものが容器側なのは、同じ水が水筒（1L）にも甕（4L）にも入るためです。** 上限も、尽きたときに
+空へ戻ることも、`fill` を持つ容器自身が宣言します——中身の軸を持っているのも容器なので、両方が
+同じ場所にあります。
+
+**中身の宣言は「容器に混ざる前提」で書きます。** 口の開き方を見る条件が `{subject: self, matches:
+{tag: wide_open_container}}` と自分自身を見るのは、容器と中身が同じ1つのオブジェクトだからです。
+
+## 3. 名前・絵・バーの出どころ
+
+生成された型は表示の対応表に自分のエントリを持てないので、**素の型と軸の値から組み立てます**。
+
+- **名前**: `{content}入りの{container}`（`typeDisplayName`、[`Localization.md`](./Localization.md)）。
+- **絵**: 素の型（容器）のもの。変種のために絵を描き足す道はありません。
+- **中身のバー**: `fill` を持つカードに出ます（[`CardView.md`](../ui/CardView.md) 8 節）。空の容器では
+  0 のバーになります——どれだけ入るかは容器自身の情報なので、容量のバーと同じ理由で 0 でも出します。
+  色は中身が `color` として宣言した値をそのまま使います（中身の無い容器は灰色）。
+
+## 4. 注ぎ移しは transfer
+
+液体は場所が変わるだけで別の概念にはならないので、**注ぎ移しは量の移送**です。宣言は液体の trait が
+持ち、相手が空か中身入りかで 2 つに分かれます。
+
+```yaml
+water_liquid:
+  tags: [water]
+  combinations:
+    # 相手が空の容器のとき。相手を水入りの変種にしてから移す（becomeが先、transferは相手が
+    # fillを持たないと何もしない）。
+    pour_into_empty:
+      with: {tag: liquid_container}
+      conditions:
+        - {reason: not_empty, not: {subject: dragged, prop: fill, gte: 1}}
+      become: {subject: dragged, content: water_liquid}
+      transfer: {amount: 999999, from: self, from_prop: fill, to: dragged, to_prop: fill}
+    # 相手も水入りのとき。
+    pour_into_filled:
+      with: {tag: water}
+      transfer: {amount: 999999, from: dragged, from_prop: fill, to: self, to_prop: fill}
+```
+
+**宣言を持つのは中身入りの側だけなので、どちらの札をどちらへ重ねても `self` は中身入り・`dragged` は
+相手になります**（[`GameElementDefinition.md`](./GameElementDefinition.md) 12.3 節）。汲む向きと注ぐ向きで別の宣言は要りません。
+
+**異種の混合は、混ぜる組み合わせが現れないことで阻まれます。** 種類ごとのタグ（`water`・`tea`・`oil`）に
+合致しないので、茶の入った容器へ水を注ぐ組み合わせはそもそも候補になりません。
+
+**入りきらない分は注ぎ側に残ります。** `transfer` が出せる量と受け取れる量の両方でクランプするので、
 「あるだけ注ぎ、入るだけ受け、残りは残る」に特別な記述は要りません。
 
-**注ぎ切った側は消えます。** `volume` が 0 になった液体はその場で消滅し（1節）、容器の `content` が空に
-戻ります。飲み切った容器（5節）も同じで、空になった瞬間に中身のバー（3節）も名前の「〜入り」も消えます。
+**注ぎ切った側は空の容器へ戻ります。** `fill` が 0 になった変種は素の型へ戻り（1 節）、名前の「〜入り」も
+中身のバーも同時に消えます。飲み切った容器（5 節）も同じです。
 
-液体の種類を増やしても、この2つの `combinations` に手を入れる必要はありません。
+液体の種類を増やしても、容器側に手を入れる必要はありません。
 
 ## 4.1 色（color）
 
-液体は**自分の色を `color` プロパティ（`0xRRGGBB` の整数）として宣言します**。容器カードに出る
+液体の trait は**自分の色を `color` プロパティ（`0xRRGGBB` の整数）として宣言します**。容器カードに出る
 「中身の割合を示すバー」がこの色で塗られます（[`CardView.md`](../ui/CardView.md) 8.2 節）。
 
 **UI 側に液体ごとの対応表を持ちません。** 表を持つと、後から足された液体が必ず「色の分からない液体」に
@@ -119,8 +117,8 @@ traits:
 
 ## 5. 単位と飲用（drink）
 
-**液体の量（`volume`）の単位は mL、重さ（`weight`）の単位は g です（1 = 1mL、1 = 1g）。** この 2 つは
-別々に選べません。`weight` は `volume × density` で、`density` は g/mL そのもの（水は 1）なので、水は「量の数値が
+**中身の量（`fill`）の単位は mL、重さ（`weight`）の単位は g です（1 = 1mL、1 = 1g）。** この 2 つは
+別々に選べません。`weight` は容器の自重に `fill × density` を足したもので、`density` は g/mL そのもの（水は 1）なので、水は「量の数値が
 そのまま重さの数値」になります。水 1L = 1kg を保つ以上、量の単位を 1mL にすると重さの単位は 1g に決まります。
 
 **3 つの単位が噛み合っているので、換算定数は要りません**（mL × g/mL = g）。油は `density: 0.92` と
@@ -136,7 +134,7 @@ traits:
 **250mL = 10 tick 分**です。3日分の `max` は 288 になります。**エンジンは換算率を知りません**——
 同じ 1 口でも水より寄与の小さい液体（酒）は、この比を小さくするだけで表せます。
 
-飲用は液体トレイト側の `actions`。`transfer` で自分の `volume` から 1回 250（＝250mL）出し、
+飲用は液体トレイト側の `actions`。`transfer` で自分の `fill` から 1回 250（＝250mL）出し、
 `actor.hydration` を 10 増やします。`transfer` の在庫クランプにより、残量が 250mL 未満なら残っている分だけ
 飲みます（増える水分もその比で減ります）。逆に `hydration` 側の空きが 10 tick 分未満なら入る分だけ飲み、
 あふれる分は容器に残ります（`allow_overflow` 既定の受け側クランプ。空きは mL へ割り戻して比べられます）。
@@ -149,7 +147,7 @@ traits:
 
 ## 6. 蒸発
 
-`evaporating_liquid` トレイトの `passives`（`add`）で、自分の `volume` を毎 tick 減らします。
+`evaporating_liquid` トレイトの `passives`（`add`）で、自分の `fill` を毎 tick 減らします。
 **日射に依らない基礎の蒸発と、`ancestor.sunlight` のしきい値で決まる上乗せの和**です。
 
 | | 基礎 | +`sunlight` ≧10 | +`sunlight` ≧12 | +`sunlight` ≧15 |
@@ -195,11 +193,11 @@ traits:
 - **`collect_rain`（`rain_catching_container` トレイトの `actions`）**: 雨天のときだけ実行でき、
   `spawn` で水を 1 つ生みます。**空の容器にしか出ません**——中身がいる容器の操作は代表（3 節）へ
   リダイレクトされ、水は `collect_rain` を持たないためで、条件は要りません。
-- **量（`rain_filled_liquid` トレイトの `passives`）**: 降っている間、毎 tick 自分の `volume` を増やします。
+- **量（`rain_filled_liquid` トレイトの `passives`）**: 降っている間、毎 tick 自分の `fill` を増やします。
 
-生まれる水の `volume` は **1mL**（`liquid` トレイトの `volume` の既定値）です。量が 0 の量的オブジェクトは
-存在できない（1 節）ため 0 にはできず、かといって実際に溜まる量は降り方が決めるので、**貯め始めた瞬間の量は
-「まだほとんど無い」を表す最少値**に置いています。
+溜め始めた瞬間の量は **1mL**（`collect_rain` が `become` の直後に `set` する値）です。**`become` で変種に
+なった直後は空**（[`GameElementDefinition.md`](./GameElementDefinition.md) 3.5.1 節）で、実際に溜まる量は降り方が決めるので、**「まだほとんど無い」を表す
+最少値**をここへ置いています。
 
 結果の量（mL/tick）と、空から満杯までにかかる時間:
 
@@ -223,16 +221,15 @@ traits:
 
 ## 8. 重さ
 
-**重さ**は `volume × density` です（`density` は単位量あたりの重さ = g/mL、水は 1）。液体は
+**重さ**は `fill × density` です（`density` は単位量あたりの重さ = g/mL、水は 1）。液体は
 1個あたりではなく単位体積あたりの重さを持つ、という当たり前をそのまま表します。単位は 5 節、容器の重さへの
 合算は [`ContainerSystem.md`](./ContainerSystem.md) が扱います。
 
 ## 9. 未決事項・今後の検討課題
 
-- **`represented_by` をやめ、容器と液体の組ごとに型を生成する方針**（[`GameElementDefinition.md`](./GameElementDefinition.md)
-  3.5 節・9.9 節）。中身の量は容器自身の `fill` になり、注ぎ移しは `transfer`、空と中身入りの行き来は
-  `become` になる。本書の 1〜8 節は現行の構造を書いたもので、移行のときに全面的に書き直す
-- 異種液体の混合（水＋茶）は表現できない（枠が1つしかない、が現状の仕様）
+- 異種液体の混合（水＋茶）は表現できない（軸が1本しかない、が現状の仕様）
+- 図鑑（`src/codex-viewer`）に中身入りの容器のページが無い。生成された型は一覧に載せていないので、
+  「水入りの水筒」を名指しで開く道がない
 - `density` の差（油は 0.92）を実際に効かせるか、全液体を水と同じ 1 に揃えるか
 - 空の容器同士を重ねたときに何も起きないことを、UI 側でどう見せるか
 - 蒸発量は現実（口径 10cm の器で炎天下 40〜60mL/日程度）の 4〜5 倍に置いている。「開けっ放しの器は

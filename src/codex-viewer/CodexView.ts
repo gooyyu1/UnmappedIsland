@@ -4,6 +4,7 @@ import type { LocationTypeDef } from '../domain/generation/LocationTypeDef';
 import type { ObjectDef } from '../domain/ObjectDef';
 import { OBJECT_ART } from '../art/objectArt';
 import type { Texts } from '../locale/Localization';
+import { typeDisplayName } from '../locale/typeDisplayName';
 import type { CodexSource } from './CodexSource';
 
 /**
@@ -62,7 +63,7 @@ export class CodexView {
     for (let globalId = 0; globalId < this.codex.objects.count; globalId++) {
       const def: ObjectDef | undefined = this.codex.objects.get(globalId);
       // 名前だけが登録されて定義が無いグローバルID（参照だけされた型）は飛ばす。
-      if (def !== undefined && this.codex.productOf(def) === undefined) defs.push(def);
+      if (def !== undefined && !this.codex.isGenerated(def)) defs.push(def);
     }
     return defs;
   }
@@ -130,12 +131,11 @@ export class CodexView {
     const declared = this.locale.object(name).displayName;
     if (declared !== name) return declared;
 
-    // 製作中オブジェクト（RecipeSystem.md 1節）は自動生成なので対応表に自分のエントリを持てず、
-    // 完成品の名前と書式から組み立てる。
+    // 生成された型（GameElementDefinition.md 3.5節）は自分のエントリを持てず、素の型の名前と
+    // 軸ごとの書式から組み立てる。
     const def = this.objectDef(name);
-    const product = def === undefined ? undefined : this.codex.productOf(def);
-    if (product !== undefined)
-      return this.locale.object(name).displayNameInProgress(this.objectDisplayName(product.name));
+    if (def !== undefined && this.codex.isGenerated(def))
+      return typeDisplayName(this.codex, this.locale, def);
 
     const locationType = this.locationTypeOf(name);
     return locationType === undefined ? name : this.locale.location(locationType.name).displayName;

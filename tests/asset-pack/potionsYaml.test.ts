@@ -65,7 +65,7 @@ describe('サンプルアセットパックの薬', () => {
 
     expect(potion.tryExecuteAction('drink', character, session)).toBe(true);
 
-    // bloodのon_shortfallが既定のクランプを置き換えるので、0を割った値がそのまま残る
+    // bloodのon_minが既定のクランプを置き換えるので、0を割った値がそのまま残る
     // （VitalsSystem.md 3節・6節）。死因はその段が名乗る。
     expect(character.getNumber(bloodId), '飲んだ量がそのまま引かれる').toBe(5000 - 9999);
     expect(character.isInStage(bloodId, 'exsanguinated'), '失血死の段').toBe(true);

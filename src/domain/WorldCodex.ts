@@ -4,7 +4,6 @@ import type { GenerationDefs } from './generation/GenerationDefs';
 import { GeneratedTypes } from './GeneratedTypes';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef, ObjectDefTable } from './ObjectDef';
-import { RECIPE_AXIS } from './RecipeDef';
 import type { SlotDef } from './SlotDef';
 import type { WellKnownProperties } from './WellKnownProperties';
 
@@ -123,10 +122,30 @@ export class WorldCodex implements DefNames {
 
   private symbolicPropertyIds: ReadonlySet<number> | undefined;
 
-  /** この型が製作中オブジェクトなら、その完成品の型（＝レシピの軸を落とした素の型）。 */
-  productOf(def: ObjectDef): ObjectDef | undefined {
-    const productGlobalId = this.generatedTypes.baseAlong(def, RECIPE_AXIS);
-    return productGlobalId === undefined ? undefined : this.objects.get(productGlobalId);
+  /**
+   * 生成型（3.5節）の素の型。生成型でなければ自分自身。**絵と名前の骨格はここから引く**
+   * ——変種のために絵を描き足す道は無いので、素の型のものを映す。
+   */
+  baseOf(def: ObjectDef): ObjectDef {
+    return this.objects.get(this.generatedTypes.coordinateOf(def).baseGlobalId);
+  }
+
+  /**
+   * ロード時に自動生成された型か（3.5節）。**一覧にも対応表にも自分の場所を持たない**——名前も絵も
+   * 素の型から組み立てるので、並べても同じ物の別の顔が増えるだけになる。
+   */
+  isGenerated(def: ObjectDef): boolean {
+    return this.baseOf(def) !== def;
+  }
+
+  /**
+   * この型が素の型からどれだけ動いた先に居るか（3.5節）。軸の名前 → その軸の値の識別子で、素の型では空。
+   *
+   * **どの軸かで扱いを分けません。** 作りかけも中身入りも「素の型の変種」で、違うのは軸の名前と、
+   * その名前に紐づく書式（[`Localization.md`](../../docs/engine/Localization.md)）だけです。
+   */
+  variationsOf(def: ObjectDef): ReadonlyMap<string, string> {
+    return this.generatedTypes.coordinateOf(def).axisValues;
   }
 
   /**

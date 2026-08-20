@@ -12,6 +12,9 @@ import type { NameRegistry } from './NameRegistry';
  */
 export class WellKnownProperties {
   readonly volumeId: number;
+
+  /** 中身入りの変種（3.5節）が抱えている量。0になった変種は素の型へ戻る（WorldObject.settleFill）。 */
+  readonly fillId: number;
   readonly weightId: number;
   readonly densityId: number;
   readonly loadId: number;
@@ -19,6 +22,7 @@ export class WellKnownProperties {
 
   constructor(propertyNames: NameRegistry) {
     this.volumeId = propertyNames.intern('volume');
+    this.fillId = propertyNames.intern('fill');
     this.weightId = propertyNames.intern('weight');
     this.densityId = propertyNames.intern('density');
     this.loadId = propertyNames.intern('load');

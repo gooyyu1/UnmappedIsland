@@ -54,7 +54,7 @@ describe('tools.yamlの道具定義', () => {
     // 相手として指名されない（ObjectDef.combinationsAccepting）ため配分も持たない。
     const weapons = codex
       .objectDefNamesWithTag('weapon')
-      .filter((name) => codex.productOf(codex.objects.get(codex.objectNames.getId(name))) === undefined);
+      .filter((name) => !codex.isGenerated(codex.objects.get(codex.objectNames.getId(name))));
 
     expect(weapons.length, '検査対象が無い（weaponタグが変わっていないか）').toBeGreaterThan(0);
     for (const name of weapons) {
