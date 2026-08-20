@@ -7,7 +7,6 @@ import type { WellKnownProperties } from './WellKnownProperties';
 import type { ObjectStack } from './ObjectStack';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
-import { NO_AXIS_VALUE } from './GeneratedTypes';
 import { IN_PROGRESS_TAG } from './RecipeDef';
 import type { PropertyDef } from './PropertyDef';
 import { PropertyValue } from './PropertyValue';
@@ -179,28 +178,8 @@ export class WorldObject {
    */
   private settleChangedVolume(globalPropertyId: number, session: WorldSession | undefined): void {
     if (session === undefined) return;
-    this.settleExhaustedVariations(session);
     if (!this.def.isQuantitative || globalPropertyId !== this.wellKnown.volumeId) return;
     this.settleVolume(session);
-  }
-
-  /**
-   * 量が尽きた変種を素の型へ戻す（3.5.1節の `exhausted_when`）。**空の容器は「その軸を持たない座標」
-   * そのもの**なので、量が0になった変種が残ると、空なのに中身入りの型を名乗る個体ができてしまう。
-   *
-   * **どのプロパティが「量」かはYAMLが決めます**（軸の宣言が名指しした軸だけが対象）。rangeイベント
-   * （6.3節）には載せられません——`transfer`は`range.min`を「出せる量の床」と見るため、境界を`range`の
-   * 外へ置くと注ぎ切ることも飲み干すこともできなくなります。
-   */
-  private settleExhaustedVariations(session: WorldSession): void {
-    const rules = this.session.codex.generatedTypes.exhaustionRulesOf(this._def);
-    if (rules.size === 0) return;
-
-    // 「量が0」と「量が無い」は別。プロパティを持たない型には戻る先が無い。
-    const exhausted = [...rules]
-      .filter(([, propertyGlobalId]) => (this.tryGetProperty(propertyGlobalId)?.number ?? 1) <= 0)
-      .map(([axis]) => [axis, NO_AXIS_VALUE] as const);
-    if (exhausted.length > 0) this.becomeAlong(new Map(exhausted), session);
   }
 
   /** 指定したプロパティが、今まさに指定した名前のstageに該当しているか（WhenOwnStageゲート専用、6.4節・8節）。 */
@@ -1048,7 +1027,6 @@ export class WorldObject {
     }
 
     if (this.def.isQuantitative) this.settleVolume(session);
-    this.settleExhaustedVariations(session);
   }
 
   /**

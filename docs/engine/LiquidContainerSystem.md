@@ -20,11 +20,13 @@
 ```yaml
 canteen:
   traits: [liquid_container, sealed_container]
+  props:
+    fill:
+      value: 0
+      range: {min: 0, max: 1000}          # この容器の容量（mL）
+      on_exhausted: {become: {content: none}}   # 尽きたら中身の軸を落とす＝空へ戻る
   variation_axes:
-    content:
-      of: {tag: liquid}
-      props: {fill: {range: {min: 0, max: 1000}}}   # この容器の容量（mL）
-      exhausted_when: fill                          # 尽きたら空の容器へ戻る
+    content: {of: {tag: liquid}}
 ```
 
 液体の側（`water_liquid` 等）は**配られる trait の束**で、インスタンスにはなりません。器の無い水は
@@ -32,24 +34,25 @@ canteen:
 
 | 振る舞い | 個数のオブジェクト | 中身入りの容器 |
 |---|---|---|
-| 量 | 持たない | 自分の `fill`（mL） |
+| 量 | 持たない | 自分の `fill`（mL）。空の容器は 0 のまま動かない |
 | 入りきらないとき | 全部入るか、入らないか | **入るぶんだけ入り、残りは元に留まる**（`transfer` の両側のクランプ） |
 | 量が 0 になったとき | （0にならない） | **素の型（空の容器）へ戻る** |
 | 上限を超えたとき | （増えない） | `fill` の `range` が受け止める |
 
-**空の容器は `fill` を持ちません。** 空であることは、量が 0 なのではなく量そのものが無い、という形で
-表れます。空を表すための目印オブジェクトも、空の液体も置きません。
+**空の容器も `fill` を持ちます。** 空とは量が 0 であることで、**増やせるのは中身の trait を配られた
+変種だけ**です——素の型には量を増やす宣言が1つも無いので、0 のまま動きません。空を表すための目印
+オブジェクトも、空の液体も置きません。
 
 ## 2. 役割分担: 上限は容器、量も種類も振る舞いも中身
 
-- **容器**（`canteen`・`pot`・`bottle`・`jar`・`coconut_bowl`）: `variation_axes` の `content` で、
-  何を（`of: {tag: liquid}`）どれだけ（`fill` の上限）抱えられるかを宣言する。絵と名前の骨格も容器のもの。
+- **容器**（`canteen`・`pot`・`bottle`・`jar`・`coconut_bowl`）: 抱えられる量（`fill`）と、何を抱えられるか
+  （`variation_axes` の `content`）を宣言する。絵と名前の骨格も容器のもの。
 - **中身の trait**（`liquid`・`water_liquid`・`evaporating_liquid`・`rain_filled_liquid` 等）:
   密度（`density`）・色（`color`）・種類タグ・飲用 `actions`・注ぎ `combinations`・蒸発 `passives` を持つ。
 
-**上限だけが容器側なのは、同じ水が水筒（1L）にも甕（4L）にも入るためです。** `fill` そのものは
-`liquid` トレイトが宣言し、**容器はその `range` の上端だけを上書きします**——変種は容器ごとに別の型
-なので、trait の合成規則（同 5 節）がそのまま使えます。
+**量そのものが容器側なのは、同じ水が水筒（1L）にも甕（4L）にも入るためです。** 上限も、尽きたときに
+空へ戻ることも、`fill` を持つ容器自身が宣言します——中身の軸を持っているのも容器なので、両方が
+同じ場所にあります。
 
 **中身の宣言は「容器に混ざる前提」で書きます。** 口の開き方を見る条件が `{subject: self, matches:
 {tag: wide_open_container}}` と自分自身を見るのは、容器と中身が同じ1つのオブジェクトだからです。
@@ -60,9 +63,9 @@ canteen:
 
 - **名前**: `{content}入りの{container}`（`typeDisplayName`、[`Localization.md`](./Localization.md)）。
 - **絵**: 素の型（容器）のもの。変種のために絵を描き足す道はありません。
-- **中身のバー**: `fill` を持つカードにだけ出ます（[`CardView.md`](../ui/CardView.md) 8 節）。空の容器は
-  `fill` を持たないので出ません——この 1 つの条件だけで「空なら出ない」まで決まります。色は中身が
-  `color` として宣言した値をそのまま使います（宣言していない液体は灰色）。
+- **中身のバー**: `fill` を持つカードに出ます（[`CardView.md`](../ui/CardView.md) 8 節）。空の容器では
+  0 のバーになります——どれだけ入るかは容器自身の情報なので、容量のバーと同じ理由で 0 でも出します。
+  色は中身が `color` として宣言した値をそのまま使います（中身の無い容器は灰色）。
 
 ## 4. 注ぎ移しは transfer
 

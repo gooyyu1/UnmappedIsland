@@ -34,6 +34,7 @@ const KNOWN_PROP_KEYS = new Set<string>([
   'range',
   'on_overflow',
   'on_shortfall',
+  'on_exhausted',
   'stages',
   'passives',
   'inherit',
@@ -109,6 +110,14 @@ export function parseProp(
       range !== undefined ? buildDefaultOverflowEffect(range, propertyGlobalId, false) : undefined;
   }
 
+  // 「尽きた」に反応する口（6.3節）。既定は無く、宣言した型だけが反応する。
+  let onExhausted: ActiveEffect | undefined;
+  const onExhaustedNode = tryGetMap(node, 'on_exhausted', context);
+  if (onExhaustedNode !== undefined) {
+    if (range === undefined) throw new YamlLoadError(`${context}: on_exhaustedを使うには'range'が必須です。`);
+    onExhausted = parseRangeEventEffect(loader, `${context}.on_exhausted`, onExhaustedNode);
+  }
+
   const stages: PropertyStage[] = [];
   const stagesNode = tryGetSeq(node, 'stages', context);
   if (stagesNode !== undefined)
@@ -147,6 +156,7 @@ export function parseProp(
     tags,
     isSymbolProperty,
     gauge,
+    onExhausted,
   );
 
   // ゲージの向きとstagesのalertの向きは、同じ「どちらが危ないか」を二度言うことになる。食い違って

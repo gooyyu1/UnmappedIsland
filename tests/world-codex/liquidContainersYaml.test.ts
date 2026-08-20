@@ -105,8 +105,9 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     expect(canteen.actions, '空の容器は中身の行動を持たない').toHaveLength(0);
     expect(canteen.combinations, '注ぎ移しを宣言するのは中身の側').toHaveLength(0);
-    // volumeは容器自身の外寸のかさで、中身の量はfillが持つ（LiquidContainerSystem.md 5節）。
-    expect(canteen.getPropertyDef(fillId), '空の容器は量を持たない').toBeUndefined();
+    // volumeは容器自身の外寸のかさで、抱えている量はfillが持つ（LiquidContainerSystem.md 5節）。
+    // **空の容器もfillを持つ**——空とは量が0であることで、増やせるのは中身のtraitを配られた変種だけ。
+    expect(canteen.getPropertyDef(fillId)?.range?.max, '空の容器も上限を持つ').toBe(1000);
     expect(canteen.getPropertyDef(codex.propertyNames.getId('density')), '密度も中身のもの').toBeUndefined();
 
     expect(codex.baseOf(filled), '中身入りは容器の変種').toBe(canteen);
@@ -114,7 +115,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
       filled.actions.map((action) => action.name),
       '中身のdrinkが自分の行動になる',
     ).toEqual(['drink']);
-    expect(filled.getPropertyDef(fillId), '量は自分が持つ').toBeDefined();
+    expect(filled.getPropertyDef(fillId)?.range?.max, '上限は素の型から引き継ぐ').toBe(1000);
   });
 
   it('中身入りの容器の重さは、容器の自重と水の重さの和になる', () => {

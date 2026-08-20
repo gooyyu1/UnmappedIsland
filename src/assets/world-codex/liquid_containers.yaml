@@ -16,13 +16,6 @@ traits:
   liquid:
     tags: [liquid]
     props:
-      # 抱えている量。単位はmL（LiquidContainerSystem.md 5節）。**生まれたときは空**で、becomeで
-      # 変種になった直後の量は変えた側が入れる（注ぎ移しなら移った量、雨なら最少量）——ここに正の
-      # 既定値を置くと、注ぐたびに出どころの無い量が足される。
-      # 上限は容器ごとに違うので、rangeのmaxは各容器のvariation_axesが上書きする。
-      fill:
-        value: 0
-        range: {min: 0, max: 0}
       # 単位量あたりの重さ（g/mL）。水は1で、油のように軽い液体は0.92のように書く。
       # fill × density がそのまま重さ（g）になる（ContainerSystem.md 1節）。
       density:
@@ -52,9 +45,7 @@ traits:
             prop: weather
             in: [light_rain, heavy_rain, storm]
           # 中身のある容器では雨を受け始められない（既にある中身が水に置き換わってしまう）。
-          # fillを持たない＝空、なので「1以上でない」で空を言う。
-          - reason: not_empty
-            not: {subject: self, prop: fill, gte: 1}
+          - {reason: not_empty, subject: self, prop: fill, eq: 0}
         become: {content: water_liquid}
         # 溜め始めた瞬間の量は「まだほとんど無い」を表す最少値（LiquidContainerSystem.md 7節）。
         # 実際に溜まる量は降り方が決めるので、以後はrain_filled_liquidが増やす。
@@ -72,8 +63,7 @@ traits:
       pour_into_empty:
         with: {tag: liquid_container}
         conditions:
-          - reason: not_empty
-            not: {subject: dragged, prop: fill, gte: 1}
+          - {reason: not_empty, subject: dragged, prop: fill, eq: 0}
         become: {subject: dragged, content: water_liquid}
         transfer:
           amount: 999999
@@ -118,8 +108,7 @@ traits:
       pour_into_empty:
         with: {tag: liquid_container}
         conditions:
-          - reason: not_empty
-            not: {subject: dragged, prop: fill, gte: 1}
+          - {reason: not_empty, subject: dragged, prop: fill, eq: 0}
         become: {subject: dragged, content: tea_liquid}
         transfer:
           amount: 999999
@@ -160,8 +149,7 @@ traits:
       pour_into_empty:
         with: {tag: liquid_container}
         conditions:
-          - reason: not_empty
-            not: {subject: dragged, prop: fill, gte: 1}
+          - {reason: not_empty, subject: dragged, prop: fill, eq: 0}
         become: {subject: dragged, content: oil_liquid}
         transfer:
           amount: 999999
@@ -280,44 +268,53 @@ object_defs:
   canteen:
     traits: [liquid_container, sealed_container]
     props:
+      # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
+      # traitを配られた変種だけ（LiquidContainerSystem.md 1節）。尽きたら中身の軸を落として
+      # 空の容器へ戻る。境界をrangeの外に置くon_shortfallでは書けない——transferはrange.minを
+      # 出せる量の床と見るので、注ぎ切っても下限は割らない（GameElementDefinition.md 6.3節）。
+      fill:
+        value: 0
+        range: {min: 0, max: 1000}
+        on_exhausted:
+          become: {content: none}
       weight: {value: 300}
       volume: {value: 1000}
     variation_axes:
-      content:
-        of: {tag: liquid}
-        # 容量。単位はmLなので、1L = 1000。液体traitが宣言したfillの上限だけを、容器ごとに上書きする。
-        props:
-          fill: {range: {min: 0, max: 1000}}
-        # 量が尽きたら中身の軸が外れる＝空の容器へ戻る（GameElementDefinition.md 3.5.1節）。
-        exhausted_when: fill
+      content: {of: {tag: liquid}}
 
   pot:
     traits: [liquid_container, sealed_container]
     props:
+      # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
+      # traitを配られた変種だけ（LiquidContainerSystem.md 1節）。尽きたら中身の軸を落として
+      # 空の容器へ戻る。境界をrangeの外に置くon_shortfallでは書けない——transferはrange.minを
+      # 出せる量の床と見るので、注ぎ切っても下限は割らない（GameElementDefinition.md 6.3節）。
+      fill:
+        value: 0
+        range: {min: 0, max: 1000}
+        on_exhausted:
+          become: {content: none}
       weight: {value: 1500}
       volume: {value: 4700}
     variation_axes:
-      content:
-        of: {tag: liquid}
-        # 容量。単位はmLなので、1L = 1000。液体traitが宣言したfillの上限だけを、容器ごとに上書きする。
-        props:
-          fill: {range: {min: 0, max: 1000}}
-        # 量が尽きたら中身の軸が外れる＝空の容器へ戻る（GameElementDefinition.md 3.5.1節）。
-        exhausted_when: fill
+      content: {of: {tag: liquid}}
 
   bottle:
     traits: [liquid_container, sealed_container]
     props:
+      # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
+      # traitを配られた変種だけ（LiquidContainerSystem.md 1節）。尽きたら中身の軸を落として
+      # 空の容器へ戻る。境界をrangeの外に置くon_shortfallでは書けない——transferはrange.minを
+      # 出せる量の床と見るので、注ぎ切っても下限は割らない（GameElementDefinition.md 6.3節）。
+      fill:
+        value: 0
+        range: {min: 0, max: 2000}
+        on_exhausted:
+          become: {content: none}
       weight: {value: 500}
       volume: {value: 2800}
     variation_axes:
-      content:
-        of: {tag: liquid}
-        # 容量。単位はmLなので、1L = 1000。液体traitが宣言したfillの上限だけを、容器ごとに上書きする。
-        props:
-          fill: {range: {min: 0, max: 2000}}
-        # 量が尽きたら中身の軸が外れる＝空の容器へ戻る（GameElementDefinition.md 3.5.1節）。
-        exhausted_when: fill
+      content: {of: {tag: liquid}}
 
   # 甕。粘土を焼いて作る（pottery.yaml）。**汲み置きできる唯一の容器**で、これが入るまで運べる水は
   # 青いヤシの実だけだった（docs/world/Voyage.md）。
@@ -328,16 +325,19 @@ object_defs:
     tags: [item, fragile, pottery]
     traits: [liquid_container, narrow_open_container, rain_catching_container]
     props:
+      # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
+      # traitを配られた変種だけ（LiquidContainerSystem.md 1節）。尽きたら中身の軸を落として
+      # 空の容器へ戻る。境界をrangeの外に置くon_shortfallでは書けない——transferはrange.minを
+      # 出せる量の床と見るので、注ぎ切っても下限は割らない（GameElementDefinition.md 6.3節）。
+      fill:
+        value: 0
+        range: {min: 0, max: 4000}
+        on_exhausted:
+          become: {content: none}
       weight: {value: 1200}
       volume: {value: 15000}
     variation_axes:
-      content:
-        of: {tag: liquid}
-        # 容量。単位はmLなので、1L = 1000。液体traitが宣言したfillの上限だけを、容器ごとに上書きする。
-        props:
-          fill: {range: {min: 0, max: 4000}}
-        # 量が尽きたら中身の軸が外れる＝空の容器へ戻る（GameElementDefinition.md 3.5.1節）。
-        exhausted_when: fill
+      content: {of: {tag: liquid}}
 
   # ヤシの殻。割ったヤシの実から果肉を掻き出すと残る（coconut.yaml）。
   coconut_bowl:
@@ -346,17 +346,20 @@ object_defs:
     tags: [item, fragile]
     traits: [liquid_container, wide_open_container, rain_catching_container]
     props:
+      # 抱えられる量（mL）。**空の容器も持つ**——空とは量が0であることで、増やせるのは中身の
+      # traitを配られた変種だけ（LiquidContainerSystem.md 1節）。尽きたら中身の軸を落として
+      # 空の容器へ戻る。境界をrangeの外に置くon_shortfallでは書けない——transferはrange.minを
+      # 出せる量の床と見るので、注ぎ切っても下限は割らない（GameElementDefinition.md 6.3節）。
+      fill:
+        value: 0
+        range: {min: 0, max: 250}
+        on_exhausted:
+          become: {content: none}
       weight: {value: 100}
       # 半球の殻は重ねて入るので、1個ぶんの外寸より小さく見る。
       volume: {value: 200}
     variation_axes:
-      content:
-        of: {tag: liquid}
-        # 容量。単位はmLなので、1L = 1000。液体traitが宣言したfillの上限だけを、容器ごとに上書きする。
-        props:
-          fill: {range: {min: 0, max: 250}}
-        # 量が尽きたら中身の軸が外れる＝空の容器へ戻る（GameElementDefinition.md 3.5.1節）。
-        exhausted_when: fill
+      content: {of: {tag: liquid}}
 
   # 液体は軸の値であり、配られるtraitの束。インスタンスは作られないので、traits以外は宣言しない
   # （axisVariants.tsが検査する）。

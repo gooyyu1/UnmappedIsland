@@ -6,7 +6,7 @@ import { parseTypeMatchRule } from './parseCommon';
 import type { RawObjectDef } from './RawObjectDef';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { YamlLoadError } from './YamlLoadError';
-import { asMap, entriesInOrder, tryGetMap, tryGetScalar } from './yamlMapping';
+import { asMap, entriesInOrder, tryGetMap } from './yamlMapping';
 
 /** 生成した定義の出所として、エラーメッセージに出す名前。 */
 export const AXIS_VARIANT_SOURCE = '<軸による変種の自動生成>';
@@ -16,22 +16,10 @@ function variantName(baseName: string, axisName: string, valueName: string): str
   return `${baseName}__${axisName}_${valueName}`;
 }
 
-/** 軸1本の宣言（`variation_axes`の1エントリ、GameElementDefinition.md 3.5節）。 */
+/** 軸1本の宣言（`variation_axes`の1エントリ、GameElementDefinition.md 3.5.1節）。 */
 interface AxisDecl {
   /** 軸の値になれる型。 */
   readonly values: readonly ObjectDef[];
-
-  /**
-   * その軸の値を持つ変種にだけ足すprops。**素の型ごとに違う値（容器ごとの上限など）を、変種の宣言
-   * として渡すための口**——ここに何を書くかは著者の裁量で、生成器は名前も意味も見ない。
-   */
-  readonly props: unknown;
-
-  /**
-   * 尽きるとこの軸が外れるプロパティの名前（省略可）。**どのプロパティが「量」かはYAMLが決めます**
-   * （WorldObject.settleExhaustedVariations）。
-   */
-  readonly exhaustedWhen: string | undefined;
 }
 
 /**
@@ -58,23 +46,18 @@ export function axisVariantsYaml(
     for (const [axisName, axis] of readAxes(raw, defs, loader)) {
       for (const value of axis.values) {
         const name = variantName(raw.name, axisName, value.name);
-        objectDefs[name] = variantBody(raw, value, axis, rawDefs);
+        objectDefs[name] = variantBody(raw, value, rawDefs);
         coordinates.set(name, {
           baseGlobalId: raw.globalId,
           axisValues: new Map([[axisName, value.name]]),
-          exhaustedWhen:
-            axis.exhaustedWhen === undefined
-              ? undefined
-              : new Map([[axisName, loader.propertyNames.intern(axis.exhaustedWhen)]]),
         });
       }
     }
   }
 
   if (coordinates.size === 0) return undefined;
-  // **同じ宣言を共有していてもアンカーにしない。** 軸のpropsは変種すべてに同じオブジェクトとして
-  // 配られるので、既定のままだと2つ目以降がエイリアス（`*a1`）になり、ローダーがマッピングとして
-  // 読めない。人が書いたYAMLと同じ形で食わせるための指定。
+  // **同じ宣言が並んでもアンカーにしない。** 既定のままだと2つ目以降がエイリアス（`*a1`）になり、
+  // ローダーがマッピングとして読めない。人が書いたYAMLと同じ形で食わせるための指定。
   return { yaml: stringify({ object_defs: objectDefs }, { aliasDuplicateObjects: false }), coordinates };
 }
 
@@ -92,27 +75,19 @@ function readAxes(
     const ofNode = tryGetMap(map, 'of', axisContext);
     if (ofNode === undefined) throw new YamlLoadError(`${axisContext}: 'of'は必須です。`);
     const rule = parseTypeMatchRule(loader, ofNode, `${axisContext}.of`);
-    return [
-      axisName,
-      {
-        values: rule.candidates(defs),
-        props: tryGetMap(map, 'props', axisContext)?.toJSON(),
-        exhaustedWhen: tryGetScalar(map, 'exhausted_when', axisContext),
-      },
-    ];
+    return [axisName, { values: rule.candidates(defs) }];
   });
 }
 
 /**
- * 変種1つの定義。素の型の宣言をそのまま写し、軸の値のtraitと、軸が宣言しているpropsを足す。
+ * 変種1つの定義。**素の型の宣言をそのまま写し、軸の値のtraitを足すだけ**です。
  *
- * `variation_axes`と`recipes`は写しません——変種の変種は作らず、作れるのは素の型のほう（空の容器を作ってから
- * 中身を入れる）だからです。
+ * `variation_axes`と`recipes`は写しません——変種の変種は作らず、作れるのは素の型のほう（空の容器を
+ * 作ってから中身を入れる）だからです。
  */
 function variantBody(
   raw: RawObjectDef,
   value: ObjectDef,
-  axis: AxisDecl,
   rawDefs: ReadonlyMap<string, RawObjectDef>,
 ): Record<string, unknown> {
   const body = (raw.node.toJSON() ?? {}) as Record<string, unknown>;
@@ -120,8 +95,6 @@ function variantBody(
   delete body.recipes;
 
   body.traits = [...raw.traitNames, ...valueTraitNames(value, rawDefs)];
-  if (axis.props !== undefined)
-    body.props = { ...((body.props as Record<string, unknown> | undefined) ?? {}), ...axis.props };
   return body;
 }
 

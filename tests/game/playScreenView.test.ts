@@ -824,9 +824,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(bowl.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
 
     expect(
-      gaugeOf(handCells(fromGameSession(game, codex, locale), game)[0], '@fill'),
-      '空の容器は映す中身がいないのでバーを出さない',
-    ).toBeUndefined();
+      gaugeOf(handCells(fromGameSession(game, codex, locale), game)[0], '@fill')?.ratio,
+      '空の容器も量を持つので、0のバーが出る（どれだけ入るかは容器自身の情報）',
+    ).toBe(0);
 
     // ヤシの器の容量は250mL（liquid_containers.yaml）なので、100mLで4割。
     fill(bowl, 'water_liquid', 100, game.session);
@@ -848,9 +848,9 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     bowl.setNumber(codex.propertyNames.getId('fill'), 0, game.session);
 
     expect(
-      gaugeOf(handCells(fromGameSession(game, codex, locale), game)[0], '@fill'),
-      '飲み干して空へ戻ればバーも消える',
-    ).toBeUndefined();
+      gaugeOf(handCells(fromGameSession(game, codex, locale), game)[0], '@fill')?.ratio,
+      '飲み干して空へ戻れば0に戻る',
+    ).toBe(0);
   });
 
   it('液体を入れられないカードは、中身のバーを持たない', () => {

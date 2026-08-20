@@ -145,6 +145,10 @@
           "$ref": "#/$defs/active_def",
           "description": "on_overflowの下限側の鏡像（6.3節）。rangeの下限を下回っている間の挙動。省略した場合、'自分自身をrange.minへset'という既定の挙動が自動的に補われる（単純な下限クランプ）。「境界値に達した瞬間」に反応させたい場合は、境界値をrangeの外に置く（例: range.minを1にして0到達でon_shortfallを発火させる）。rangeを使う場合は必須。"
         },
+        "on_exhausted": {
+          "$ref": "#/$defs/active_def",
+          "description": "値がrange.minちょうどに着いたときに一度だけ適用する内容（6.3節）。尽きたことへの反応で、境界をrangeの外に置くon_shortfallとは別（transferはrange.minを出せる量の床と見るため、出し切る操作は下限を割らない）。既定は無い。"
+        },
         "stages": {
           "type": "array",
           "items": {
@@ -1437,20 +1441,12 @@
       }
     },
     "variation_axis_def": {
-      "description": "変種を並べる軸1本（GameElementDefinition.md 3.5.1節）。ofが選んだ型ごとに「素の型＋その型が持つtraits＋この軸のprops」の変種が生成される。",
+      "description": "変種を並べる軸1本（GameElementDefinition.md 3.5.1節）。ofが選んだ型ごとに「素の型＋その型が持つtraits」の変種が生成される。変種が素の型と何が違うかは配られたtraitだけが決め、この仕組みは何を配っているのかを知らない。",
       "type": "object",
       "properties": {
         "of": {
           "$ref": "#/$defs/type_match_rule",
           "description": "この軸の値になれる型。traitsだけを宣言した型でなければロードエラー。"
-        },
-        "props": {
-          "type": "object",
-          "description": "その軸の値を持つ変種にだけ足すprops（3.5.1節）。素の型ごとに違う値（容器ごとの上限など）を渡す口で、配られたtraitの同名の宣言をフィールド単位で上書きする。"
-        },
-        "exhausted_when": {
-          "$ref": "#/$defs/identifier",
-          "description": "尽きるとこの軸が外れるプロパティ名（3.5.1節）。0以下になった変種は素の型へ戻る。"
         }
       },
       "required": [

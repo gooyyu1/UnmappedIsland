@@ -124,7 +124,7 @@ export class PropertyStage {
 }
 
 /** range系イベント（6.3節）の名前。 */
-export type RangeEventLabel = 'on_overflow' | 'on_shortfall';
+export type RangeEventLabel = 'on_overflow' | 'on_shortfall' | 'on_exhausted';
 
 /** 段（6.4節）がrangeの中で占める区間。両端とも0〜1で、startがminの側。 */
 export interface StageSpan {
@@ -185,6 +185,14 @@ export class PropertyDef {
    * 未記述時は「自分自身をrange.minへsetする」既定が自動生成される。range未定義の場合のみundefined。
    */
   private readonly onShortfall: ActiveEffect | undefined;
+
+  /**
+   * on_exhausted（6.3節）: 値が`range.min`**ちょうど**に着いたときにselfへ一度だけ適用する。
+   * 「尽きた」に反応するための口で、境界をrangeの外に置く on_shortfall とは別の出来事——`transfer`
+   * （9.5節）は`range.min`を出せる量の床と見るため、**在庫を出し切る操作は下限を割らない**。
+   * 既定は無し（宣言した型だけが反応する）。
+   */
+  private readonly onExhausted: ActiveEffect | undefined;
 
   /** 順不同で構わない（resolveStage が min の値そのもので判定するため）。空なら stages なし。 */
   private readonly stages: readonly PropertyStage[];
@@ -257,6 +265,7 @@ export class PropertyDef {
     tags: readonly number[] = [],
     isSymbolic = false,
     gauge: GaugeDef | undefined = undefined,
+    onExhausted: ActiveEffect | undefined = undefined,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -270,6 +279,7 @@ export class PropertyDef {
     this.tags = tags;
     this.isSymbolic = isSymbolic;
     this.gauge = gauge;
+    this.onExhausted = onExhausted;
 
     this.fallbackStage = stages.find((stage) => stage.eq === undefined && stage.min === undefined);
     this.alertDirection = PropertyDef.deriveAlertDirection(stages);
@@ -329,6 +339,7 @@ export class PropertyDef {
 
     this.describeRangeEvent('on_overflow', this.onOverflow, names, out);
     this.describeRangeEvent('on_shortfall', this.onShortfall, names, out);
+    this.describeRangeEvent('on_exhausted', this.onExhausted, names, out);
   }
 
   private describeRangeEvent(
@@ -364,6 +375,7 @@ export class PropertyDef {
   /** 宣言されているrange系イベントとその名前（6.3節）。 */
   rangeEvents(): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
     const events: (readonly [RangeEventLabel, ActiveEffect])[] = [];
+    if (this.onExhausted !== undefined) events.push(['on_exhausted', this.onExhausted]);
     if (this.onOverflow !== undefined) events.push(['on_overflow', this.onOverflow]);
     if (this.onShortfall !== undefined) events.push(['on_shortfall', this.onShortfall]);
     return events;
@@ -413,6 +425,9 @@ export class PropertyDef {
 
     if (this.onShortfall !== undefined && number < range.min)
       owner.applyActiveEffect(this.onShortfall, session, undefined, undefined);
+
+    if (this.onExhausted !== undefined && number === range.min)
+      owner.applyActiveEffect(this.onExhausted, session, undefined, undefined);
   }
 
   /**
