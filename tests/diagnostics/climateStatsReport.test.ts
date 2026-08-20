@@ -375,9 +375,9 @@ describe.runIf(process.env.RUN_CLIMATE_STATS === '1')('気候システム統計�
     const totalTicks = SIM_DAYS * 96;
 
     for (let seed = 1; seed <= SEED_COUNT; seed++) {
-      const worldInstance = new WorldObject(1, worldDef, new WorldSession(codex));
-      const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
-      const session = new WorldSession(codex, worldView, new SeededRng(seed));
+      const session = new WorldSession(codex, undefined, new SeededRng(seed));
+      const worldInstance = new WorldObject(1, worldDef, session);
+      session.adoptWorld(new World(worldInstance, codex.propertyNames, codex.symbolNames));
 
       // 現在進行中のセグメント（季節が変わるまでの一区間）のバッファ
       let segSeason = worldInstance.getNumber(seasonId);

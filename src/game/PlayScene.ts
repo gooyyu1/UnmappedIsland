@@ -1019,8 +1019,7 @@ export class PlayScene extends ResponsiveScene {
 
   /**
    * その物の姿が今出ている札の枠。**自分の札を持たない物は、それを抱えている親の札が代表している**
-   * ——水筒の中の水は札を持たず、水筒の札が中身入りの姿で出ている（`represented_by`、
-   * GameElementDefinition.md 7.6節）。飲む操作を宣言しているのは水そのものなので、外側へ順に見る。
+   * ——見えないスロットの中身には札が無いので、外側へ順に見る。
    */
   private rectShowing(chain: readonly WorldObject[]): Rect | undefined {
     for (const object of chain) {
@@ -1402,7 +1401,7 @@ export class PlayScene extends ResponsiveScene {
     // 結果待ちはここから。降ろすのは経過を見せ切った時点（passTime）。
     this.activity = 'exploring';
 
-    const recorded = this.record(() => this.gameSession.player.explore(this.gameSession.session));
+    const recorded = this.record(() => this.gameSession.player.explore());
     // 道が見つかっていたら、経過を見せている間に行き先の絵のロードを始める。
     this.requestLocationArt();
     this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {

@@ -108,39 +108,39 @@ object_defs:
   }
 
   it('actorを移動先のcharactersスロットへ移す', () => {
-    const { codex, session, meadow, hilltop, character, path } = build();
+    const { codex, meadow, hilltop, character, path } = build();
     path.setProperty(codex.propertyNames.getId('destination_id'), hilltop.instanceId);
 
-    expect(path.tryExecuteAction('travel', character, session)).toBe(true);
+    expect(path.tryExecuteAction('travel', character)).toBe(true);
 
     expect(character.parent, 'actorは移動先ロケーションへ移る').toBe(hilltop);
     expect(
-      character.parentSlotLocalId,
+      character.parentSlot?.def.globalId,
       'acceptsのタグ判定により、宣言順走査でcharactersスロットへ振り分けられる',
-    ).toBe(hilltop.def.slotLayout.toLocal(codex.slotNames.getId('characters')));
+    ).toBe(codex.slotNames.getId('characters'));
     expect(
-      meadow.getSlotByLocalId(meadow.def.slotLayout.toLocal(codex.slotNames.getId('characters'))).contents,
+      meadow.tryGetSlot(codex.slotNames.getId('characters'))!.contents,
       '元のロケーションからは居なくなる',
     ).not.toContain(character);
   });
 
   it('to_slotは、宣言順の走査ではなく名指しした枠へ入れる', () => {
-    const { codex, session, hilltop, character, path } = build();
+    const { codex, hilltop, character, path } = build();
     path.setProperty(codex.propertyNames.getId('destination_id'), hilltop.instanceId);
 
-    expect(path.tryExecuteAction('shove', character, session)).toBe(true);
+    expect(path.tryExecuteAction('shove', character)).toBe(true);
 
     expect(character.parent).toBe(hilltop);
-    expect(character.parentSlotLocalId, 'charactersが先に受け取れるが、名指しのstuffへ入る').toBe(
-      hilltop.def.slotLayout.toLocal(codex.slotNames.getId('stuff')),
+    expect(character.parentSlot?.def.globalId, 'charactersが先に受け取れるが、名指しのstuffへ入る').toBe(
+      codex.slotNames.getId('stuff'),
     );
   });
 
   it('to_objectは、その型のインスタンスを行き先にする（moveを並べて2つ動かす）', () => {
-    const { codex, session, hilltop, character, path } = build();
+    const { codex, hilltop, character, path } = build();
     // pathはmeadowのstuffスロットに居る。sailはactorを自分の中へ入れ、続けて自分ごとhilltopへ移る
     // ——筏に乗り込んでから漕ぎ出す形（voyage.yamlのset_sail）と同じ2手。
-    expect(path.tryExecuteAction('sail', character, session)).toBe(true);
+    expect(path.tryExecuteAction('sail', character)).toBe(true);
 
     expect(character.parent, 'actorはpathの中へ入る').toBe(path);
     expect(path.parent, 'pathは型で指した行き先へ移る').toBe(hilltop);
@@ -151,18 +151,18 @@ object_defs:
   });
 
   it('移動先が解決できない場合は何もしない', () => {
-    const { codex, meadow, character, path, session } = build();
+    const { codex, meadow, character, path } = build();
     path.setProperty(codex.propertyNames.getId('destination_id'), 9999);
 
-    expect(path.tryExecuteAction('travel', character, session), 'アクション自体は成立する').toBe(true);
+    expect(path.tryExecuteAction('travel', character), 'アクション自体は成立する').toBe(true);
     expect(character.parent, '移動先が解決できなければ何も起きない').toBe(meadow);
   });
 
   it('actorがいない場合は何もしない', () => {
-    const { codex, meadow, hilltop, character, path, session } = build();
+    const { codex, meadow, hilltop, character, path } = build();
     path.setProperty(codex.propertyNames.getId('destination_id'), hilltop.instanceId);
 
-    expect(path.tryExecuteAction('travel', undefined, session)).toBe(true);
+    expect(path.tryExecuteAction('travel', undefined)).toBe(true);
     expect(character.parent, 'actorがいない文脈では何も起きない').toBe(meadow);
   });
 
@@ -203,11 +203,11 @@ object_defs:
       expect(item.moveToSlot(world, stuffSlot)).toBeUndefined();
     }
 
-    expect(basket.tryExecuteCombination(stone, undefined, 'put_in', session)).toBe(true);
+    expect(basket.tryExecuteCombination(stone, undefined, 'put_in')).toBe(true);
 
     expect(stone.parent, 'draggedがかごの中へ移る').toBe(basket);
-    expect(stone.parentSlotLocalId, '宣言順走査でcontentsスロットへ入る').toBe(
-      basket.def.slotLayout.toLocal(codex.slotNames.getId('contents')),
+    expect(stone.parentSlot?.def.globalId, '宣言順走査でcontentsスロットへ入る').toBe(
+      codex.slotNames.getId('contents'),
     );
   });
 
@@ -245,52 +245,52 @@ object_defs:
     expect(inner.moveToSlot(world, stuffSlot)).toBeUndefined();
 
     // かご同士も入れ子にできる。
-    expect(outer.tryExecuteCombination(inner, undefined, 'put_in', session)).toBe(true);
+    expect(outer.tryExecuteCombination(inner, undefined, 'put_in')).toBe(true);
     expect(inner.parent, '内側のかごが外側のかごへ入る').toBe(outer);
 
     // 逆向き（外側を、その中に入っている内側へ）は輪ができるので弾く。
-    expect(inner.tryExecuteCombination(outer, undefined, 'put_in', session)).toBe(true);
+    expect(inner.tryExecuteCombination(outer, undefined, 'put_in')).toBe(true);
     expect(outer.parent, '自分の中身の中へは入らない').toBe(world);
     expect(inner.parent, '相手も動かない').toBe(outer);
 
     // 自分自身の中へも入らない。
-    expect(outer.tryExecuteCombination(outer, undefined, 'put_in', session)).toBe(true);
+    expect(outer.tryExecuteCombination(outer, undefined, 'put_in')).toBe(true);
     expect(outer.parent, '自分自身の中へは入らない').toBe(world);
   });
 
   it('selfを移動先へ移す（動物が隣の土地へ逃げる1手）', () => {
     // 動かす物が「この効果を宣言したオブジェクト自身」になる形（HuntingSystem.md 5節）。
-    const { codex, session, meadow, hilltop, path } = build();
+    const { codex, meadow, hilltop, path } = build();
     path.setProperty(codex.propertyNames.getId('destination_id'), hilltop.instanceId);
 
-    expect(path.tryExecuteAction('walk_away', undefined, session)).toBe(true);
+    expect(path.tryExecuteAction('walk_away', undefined)).toBe(true);
 
     expect(path.parent, 'self自身が移動先へ移る').toBe(hilltop);
     expect(
-      meadow.getSlotByLocalId(meadow.def.slotLayout.toLocal(codex.slotNames.getId('stuff'))).contents,
+      meadow.tryGetSlot(codex.slotNames.getId('stuff'))!.contents,
       '元の土地からは居なくなる',
     ).not.toContain(path);
   });
 
   it('プロパティが指す個体を移す（動物が足元の物をくわえる1手）', () => {
     // 動かす物も、移動先と同じく「実行時に初めて確定する個体」を指せる（HuntingSystem.md 5節）。
-    const { codex, session, meadow, character, path } = build();
+    const { codex, meadow, character, path } = build();
     path.setProperty(codex.propertyNames.getId('loot_target'), character.instanceId);
 
-    expect(path.tryExecuteAction('snatch', undefined, session)).toBe(true);
+    expect(path.tryExecuteAction('snatch', undefined)).toBe(true);
 
     expect(character.parent, 'プロパティが指す個体がselfの中へ入る').toBe(path);
     expect(
-      meadow.getSlotByLocalId(meadow.def.slotLayout.toLocal(codex.slotNames.getId('characters'))).contents,
+      meadow.tryGetSlot(codex.slotNames.getId('characters'))!.contents,
       '元の土地からは居なくなる',
     ).not.toContain(character);
   });
 
   it('subject_propが指す個体が居なければ何もしない', () => {
-    const { codex, session, meadow, character, path } = build();
+    const { codex, meadow, character, path } = build();
     path.setProperty(codex.propertyNames.getId('loot_target'), 9999);
 
-    expect(path.tryExecuteAction('snatch', undefined, session), 'アクション自体は成立する').toBe(true);
+    expect(path.tryExecuteAction('snatch', undefined), 'アクション自体は成立する').toBe(true);
     expect(character.parent, '指す先が居なければ何も起きない').toBe(meadow);
   });
 
@@ -390,8 +390,6 @@ object_defs:
   });
 
   it('to: parentは、宣言元ではなくその親の中へ移す', () => {
-    // 代表(represented_by)へリダイレクトされた中身が、自分ではなく容器を行き先にするケース
-    // （液体の注ぎ移し、LiquidContainerSystem.md 4節）。
     const codex = new WorldCodexYamlLoader()
       .load(
         'jar.yaml',
@@ -418,7 +416,7 @@ object_defs:
     const contentId = codex.slotNames.getId('content');
     expect(receiver.moveToSlot(jar, contentId)).toBeUndefined();
 
-    expect(receiver.tryExecuteCombination(poured, undefined, 'pour_in', session)).toBe(true);
+    expect(receiver.tryExecuteCombination(poured, undefined, 'pour_in')).toBe(true);
 
     expect(poured.parent, '宣言元(receiver)ではなく、その親である容器へ入る').toBe(jar);
   });

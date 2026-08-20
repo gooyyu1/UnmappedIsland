@@ -49,7 +49,7 @@ describe('timber.yamlの伐採', () => {
     const tree = spawnInto('broadleaf_tree', forest, 'fixtures');
     const axe = spawnInto('stone_axe', player, 'hand');
 
-    expect(tree.tryExecuteCombination(axe, player, 'fell', session)).toBe(true);
+    expect(tree.tryExecuteCombination(axe, player, 'fell')).toBe(true);
 
     const items = itemsOn(forest);
     expect(

@@ -578,9 +578,9 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 同じインスタンスを映し続けるカードの表示内容を差し替える。カードが何を映しているかは、代表
-   * （`represented_by`）が入れ替われば名前も絵も変わるため、**構築時の値をそのまま持ち続けてよい
-   * ものは無い**という前提で全部を貼り直す。
+   * 同じインスタンスを映し続けるカードの表示内容を差し替える。同じ個体のまま型が変われば
+   * （become、9.9節）名前も絵も変わるため、**構築時の値をそのまま持ち続けてよいものは無い**という
+   * 前提で全部を貼り直す。
    */
   setContent(content: CardContent): void {
     this.applyContent(content, true);

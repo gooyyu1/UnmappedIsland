@@ -33,7 +33,6 @@ describe('foods.yamlの食料定義', () => {
   ])(
     '%sを食べると、かさ・栄養素・ビタミンが加算され、食料自身は消滅する',
     (foodObjectName, expectedBulk, nutrientName, expectedNutrient, expectedVitamin) => {
-      const session = new WorldSession(codex);
       const character = spawn(SAMPLE_CHARACTER, 1);
       const food = spawn(foodObjectName, 2);
 
@@ -44,7 +43,7 @@ describe('foods.yamlの食料定義', () => {
       // 在庫は体脂肪へ流れ続ける（characters/参照）ため、加算量だけを見たい。一旦0まで下げる。
       for (const id of [satietyId, nutrientId, vitaminId]) character.setProperty(id, 0);
 
-      expect(food.tryExecuteAction('eat', character, session)).toBe(true);
+      expect(food.tryExecuteAction('eat', character)).toBe(true);
 
       expect(character.getNumber(satietyId), 'かさ').toBe(expectedBulk);
       expect(character.getNumber(nutrientId), '栄養素').toBe(expectedNutrient);
@@ -71,7 +70,6 @@ describe('foods.yamlの食料定義', () => {
   it('焦げた塊は、腹の嵩だけを返す', () => {
     // 肉も芋もここへ落ちる（foods.yamlのタロイモ・ヤシガニ）ので、元が何だったかによらない終端に
     // していなければならない（animals.yaml）。
-    const session = new WorldSession(codex);
     const character = spawn(SAMPLE_CHARACTER, 1);
     const lump = spawn('charred_lump', 2);
 
@@ -81,7 +79,7 @@ describe('foods.yamlの食料定義', () => {
     const satietyId = codex.propertyNames.getId('satiety');
     for (const id of [satietyId, ...nutrients]) character.setProperty(id, 0);
 
-    expect(lump.tryExecuteAction('eat', character, session)).toBe(true);
+    expect(lump.tryExecuteAction('eat', character)).toBe(true);
 
     expect(character.getNumber(satietyId), 'かさは少し戻る').toBe(200);
     for (const id of nutrients) expect(character.getNumber(id), '身になるものは残っていない').toBe(0);
@@ -90,7 +88,7 @@ describe('foods.yamlの食料定義', () => {
   it('characterはエネルギーの在庫を3本持ち、速さが栄養素ごとに違う', () => {
     // 速いものから 糖質 → たんぱく質 → 脂質（DigestionSystem.md 3節）。
     const character = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
-    const instance = new WorldObject(1, character, new WorldSession(codex));
+    const instance = new WorldSession(codex).spawn(character.globalId);
 
     for (const [name, expectedRate] of [
       ['carbohydrate', 2],
@@ -117,7 +115,7 @@ describe('foods.yamlの食料定義', () => {
     instance.setProperty(codex.propertyNames.getId('vitamin'), 1000);
     instance.setProperty(bodyFatId, 100);
 
-    instance.tick(session);
+    instance.tick();
 
     expect(instance.getNumber(bodyFatId), '在庫が空なら基礎代謝で減るだけ').toBeLessThan(100);
     expect(propOf(character, 'vitamin').range?.max).toBe(1500);
@@ -133,7 +131,7 @@ describe('foods.yamlの食料定義', () => {
       instance.setProperty(codex.propertyNames.getId(name), name === stocked ? 100 : 0);
 
     const before = instance.getNumber(bodyFatId);
-    instance.tick(session);
+    instance.tick();
     return instance.getNumber(bodyFatId) - before + basalPerTick();
   }
 
@@ -147,7 +145,7 @@ describe('foods.yamlの食料定義', () => {
       instance.setProperty(codex.propertyNames.getId(name), 0);
 
     const before = instance.getNumber(bodyFatId);
-    instance.tick(session);
+    instance.tick();
     return before - instance.getNumber(bodyFatId);
   }
 

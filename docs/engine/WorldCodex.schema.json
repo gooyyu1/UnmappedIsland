@@ -993,17 +993,9 @@
             "$ref": "#/$defs/identifier"
           }
         },
-        "represented_by": {
-          "$ref": "#/$defs/identifier",
-          "description": "スタック上の見た目を代表させるスロット名（7.6節）。"
-        },
         "art_by_stage": {
           "$ref": "#/$defs/identifier",
           "description": "カードに出す絵を段で切り替えるプロパティ名（6.4節）。指したプロパティはstagesを持つ必要があり、artを宣言できるのはこのプロパティの段だけ（他のプロパティの段でartを使うとロード時エラー）。1つの型につき高々1つ。"
-        },
-        "quantitative": {
-          "type": "boolean",
-          "description": "個数ではなく量で存在する型か（7.6節）。真ならvolumeが量を表し、インスタンスの存在とvolumeが正であることが同値になる（moveは量を移し、移り先に生まれ、移し元は尽きたら消える）。既定false。"
         },
         "stackable": {
           "type": "boolean",
@@ -1074,17 +1066,9 @@
             "$ref": "#/$defs/identifier"
           }
         },
-        "represented_by": {
-          "$ref": "#/$defs/identifier",
-          "description": "スタック上の見た目を代表させるスロット名（7.6節）。"
-        },
         "art_by_stage": {
           "$ref": "#/$defs/identifier",
           "description": "カードに出す絵を段で切り替えるプロパティ名（6.4節）。指したプロパティはstagesを持つ必要があり、artを宣言できるのはこのプロパティの段だけ（他のプロパティの段でartを使うとロード時エラー）。1つの型につき高々1つ。"
-        },
-        "quantitative": {
-          "type": "boolean",
-          "description": "個数ではなく量で存在する型か（7.6節）。真ならvolumeが量を表し、インスタンスの存在とvolumeが正であることが同値になる（moveは量を移し、移り先に生まれ、移し元は尽きたら消える）。既定false。"
         },
         "stackable": {
           "type": "boolean",

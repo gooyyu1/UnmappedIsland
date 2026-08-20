@@ -70,14 +70,14 @@ object_defs:
     const stomachId = codex.propertyNames.getId('stomach');
     const digestingId = codex.propertyNames.getId('digesting');
 
-    instance.tick(session);
+    instance.tick();
     expect([instance.getNumber(stomachId), instance.getNumber(digestingId)]).toEqual([1, 1]);
 
-    instance.tick(session);
+    instance.tick();
     expect([instance.getNumber(stomachId), instance.getNumber(digestingId)]).toEqual([0, 2]);
 
     // 出せる量が無くなれば止まる（出す側がrange.minを割ることはない）。
-    instance.tick(session);
+    instance.tick();
     expect([instance.getNumber(stomachId), instance.getNumber(digestingId)]).toEqual([0, 2]);
   });
 
@@ -87,13 +87,13 @@ object_defs:
     const codex = load(digestion(2, 1));
     const instance = spawn(codex, 'body');
 
-    instance.tick(session);
+    instance.tick();
     expect(valuesOf(instance, codex), '入った2のうち1が抜け、1が残る').toEqual([8, 1, 1]);
 
-    instance.tick(session);
+    instance.tick();
     expect(valuesOf(instance, codex)).toEqual([6, 2, 2]);
 
-    instance.tick(session);
+    instance.tick();
     expect(valuesOf(instance, codex), '毎tick 1ずつ溜まっていく').toEqual([4, 3, 3]);
   });
 
@@ -103,7 +103,7 @@ object_defs:
     const codex = load(digestion(1, 1));
     const instance = spawn(codex, 'body');
 
-    instance.tick(session);
+    instance.tick();
 
     expect(valuesOf(instance, codex)).toEqual([9, 0, 1]);
   });
@@ -131,15 +131,15 @@ object_defs:
     const instance = spawn(codex, 'body');
     const stomachId = codex.propertyNames.getId('stomach');
 
-    instance.tick(session);
+    instance.tick();
     expect(instance.getNumber(stomachId), '満杯の段では4ずつ').toBe(26);
 
-    instance.tick(session);
-    instance.tick(session);
+    instance.tick();
+    instance.tick();
     expect(instance.getNumber(stomachId), '24を割ると3ずつへ落ちる').toBe(19);
 
     // 最下段は輸送を宣言していないので、そこまで減れば止まる。
-    for (let i = 0; i < 5; i++) instance.tick(session);
+    for (let i = 0; i < 5; i++) instance.tick();
     expect(instance.getNumber(stomachId)).toBe(10);
   });
 
@@ -157,7 +157,7 @@ object_defs:
 `);
     const instance = spawn(codex, 'body');
 
-    instance.tick(session);
+    instance.tick();
 
     expect(valuesOf(instance, codex), '残り1は先に宣言した輸送が持っていく').toEqual([0, 1, 0]);
   });
@@ -174,7 +174,7 @@ object_defs:
 `);
     const instance = spawn(codex, 'body');
 
-    instance.tick(session);
+    instance.tick();
 
     expect(instance.getNumber(codex.propertyNames.getId('digesting'))).toBe(8);
     expect(instance.getNumber(codex.propertyNames.getId('body_fat'))).toBe(3);
@@ -192,7 +192,7 @@ object_defs:
 `);
     const instance = spawn(codex, 'body');
 
-    instance.tick(session);
+    instance.tick();
 
     expect(instance.getNumber(codex.propertyNames.getId('stomach')), '入る1だけが動く').toBe(9);
     expect(instance.getNumber(codex.propertyNames.getId('digesting'))).toBe(5);
@@ -213,11 +213,11 @@ object_defs:
     const instance = spawn(codex, 'body');
     const nauseaId = codex.propertyNames.getId('nausea');
 
-    instance.tick(session);
+    instance.tick();
     expect(instance.getNumber(codex.propertyNames.getId('digesting'))).toBe(0);
 
-    instance.setNumber(nauseaId, 0, session);
-    instance.tick(session);
+    instance.setNumber(nauseaId, 0);
+    instance.tick();
     expect(instance.getNumber(codex.propertyNames.getId('digesting'))).toBe(1);
   });
 
@@ -240,7 +240,7 @@ object_defs:
 `);
     const instance = spawn(codex, 'body');
 
-    instance.tick(session);
+    instance.tick();
 
     expect(instance.getNumber(codex.propertyNames.getId('stomach'))).toBe(0);
     expect(instance.getNumber(codex.propertyNames.getId('warmth')), '2のうち1しか動かないので半分').toBe(2);
@@ -270,7 +270,7 @@ object_defs:
     );
     expect(drip.moveToSlot(vessel, codex.slotNames.getId('contents'))).toBeUndefined();
 
-    vessel.tick(session);
+    vessel.tick();
 
     const waterId = codex.propertyNames.getId('water');
     expect([drip.getNumber(waterId), vessel.getNumber(waterId)]).toEqual([3, 2]);

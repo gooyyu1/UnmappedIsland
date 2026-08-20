@@ -95,7 +95,7 @@ export class Animal {
     this.aim(this.escapeRoutesId, this.fleeToId, this.escapeTargets(location), session.rng);
 
     // 襲う相手はプロパティではなくactorとして渡す（spawnのinto: actorが受け取る、5.1節）。
-    this.instance.tryExecuteAction(TURN_ACTION, characters.at(0), session);
+    this.instance.tryExecuteAction(TURN_ACTION, characters.at(0));
   }
 
   /**

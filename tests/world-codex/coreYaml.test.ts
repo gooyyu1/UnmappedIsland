@@ -45,7 +45,7 @@ describe('core.yamlのworld定義', () => {
     expect(world.isSingleton).toBe(true);
 
     // 初期値は実行時インスタンスの現在値として観測する（DefaultNumberは非公開）。
-    const instance = new WorldObject(1, world, new WorldSession(codex));
+    const instance = new WorldSession(codex).spawn(world.globalId);
     expect(instance.getNumber(codex.propertyNames.getId('tick'))).toBe(0);
     expect(instance.getNumber(codex.propertyNames.getId('minutes_per_tick'))).toBe(15);
     expect(instance.getNumber(codex.propertyNames.getId('minute'))).toBe(0);
@@ -74,9 +74,9 @@ describe('core.yamlのworld定義', () => {
 
     const session = new WorldSession(codex);
     const worldInstance = new WorldObject(1, world, session);
-    worldInstance.tick(session);
-    worldInstance.tick(session);
-    worldInstance.tick(session);
+    worldInstance.tick();
+    worldInstance.tick();
+    worldInstance.tick();
 
     expect(worldInstance.getNumber(tickId)).toBe(3);
     expect(worldInstance.getNumber(minuteId)).toBe(0);
@@ -88,7 +88,7 @@ describe('core.yamlのworld定義', () => {
     const hourId = codex.propertyNames.getId('hour');
     const dayId = codex.propertyNames.getId('day');
 
-    const worldInstance = new WorldObject(1, world, new WorldSession(codex));
+    const worldInstance = new WorldSession(codex).spawn(world.globalId);
     const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
     const session = new WorldSession(codex, worldView);
 
@@ -110,7 +110,7 @@ describe('core.yamlのworld定義', () => {
     const weatherId = codex.propertyNames.getId('weather');
     const ambientTemperatureId = codex.propertyNames.getId('ambient_temperature');
 
-    const worldInstance = new WorldObject(1, world, new WorldSession(codex));
+    const worldInstance = new WorldSession(codex).spawn(world.globalId);
 
     function assertAmbientTemperatureAt(
       weather: string,
@@ -145,7 +145,7 @@ describe('core.yamlのworld定義', () => {
     const weatherId = codex.propertyNames.getId('weather');
     const sunlightId = codex.propertyNames.getId('sunlight');
 
-    const worldInstance = new WorldObject(1, world, new WorldSession(codex));
+    const worldInstance = new WorldSession(codex).spawn(world.globalId);
 
     function assertSunlightAt(
       weather: string,

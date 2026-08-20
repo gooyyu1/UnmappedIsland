@@ -124,8 +124,8 @@ export class World {
     for (const land of [...slot.contents]) new Location(land, session.codex).runAnimalTurns(session);
   }
 
-  /** minuteへamountを加減算する（WorldSession.advanceWorldTime専用。負の値も許容する）。sessionを渡すことで、on_max等がtickを待たずその場で判定・実行される（WorldObject.addNumber参照）。 */
-  addMinutes(amount: number, session: WorldSession): void {
-    this.instance.addNumber(this.minuteId, amount, session);
+  /** minuteへamountを加減算する（WorldSession.advanceWorldTime専用。負の値も許容する）。繰り上げ（on_max）はtickを待たずその場で走る（PropertyValue.add参照）。 */
+  addMinutes(amount: number): void {
+    this.instance.addNumber(this.minuteId, amount);
   }
 }

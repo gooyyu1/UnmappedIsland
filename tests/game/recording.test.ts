@@ -29,7 +29,7 @@ describe('recordChange（経過中のtickごとの控え）', () => {
     const before = game.world.totalMinutes;
 
     const recording = recordChange(game, codex, locale, undefined, () => {
-      game.player.explore(game.session);
+      game.player.explore();
     });
 
     const after = game.world.totalMinutes;

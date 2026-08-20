@@ -190,11 +190,11 @@ object_defs:
     const instance = session.spawn(codex.objectNames.getId('character'));
     const actor = new PlayerCharacter(instance, codex);
 
-    expect(actor.explore(session), '土地に居なければ探索できない').toBe(false);
+    expect(actor.explore(), '土地に居なければ探索できない').toBe(false);
 
     instance.moveToSlot(clearing, codex.slotNames.getId('characters'));
 
-    expect(actor.explore(session)).toBe(true);
+    expect(actor.explore()).toBe(true);
     expect(new Location(clearing, codex).explorationProgress, '今いる土地の進捗が進む').toBe(1);
   });
 

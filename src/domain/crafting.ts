@@ -164,13 +164,13 @@ export function advanceCrafting(
     for (const object of allocated.get(requirement) ?? []) object.destroy();
   }
 
-  inProgress.addNumber(progressGlobalId, step.durationMinutes, session);
+  inProgress.addNumber(progressGlobalId, step.durationMinutes);
 
   // 工程の進捗バー（CardView.md 10.1節、inProgressObjects.FINISHED_STEPS_PROPERTY）が読む純粋な
   // 回数。工程が1つのレシピにはそもそも宣言が無いので、addNumberは黙って何もしない
   // （WorldObject.addNumber参照）。
   const finishedStepsGlobalId = codex.propertyNames.tryGetId('finished_steps');
-  if (finishedStepsGlobalId !== undefined) inProgress.addNumber(finishedStepsGlobalId, 1, session);
+  if (finishedStepsGlobalId !== undefined) inProgress.addNumber(finishedStepsGlobalId, 1);
 
   spillUnneeded(inProgress, materialsSlotGlobalId, recipe, codex);
   return true;
@@ -191,7 +191,7 @@ function spillUnneeded(
 ): void {
   const parent = inProgress.parent;
   // こぼす先は、製作中オブジェクト自身が居るスロット（足元なら足元、かごの中ならかごの中）。
-  const parentSlot = parent?.def.slotDefs[inProgress.parentSlotLocalId];
+  const parentSlot = inProgress.parentSlot?.def;
   if (parent === undefined || parentSlot === undefined) return;
 
   const stillNeeded = remainingRequirements(

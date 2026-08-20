@@ -92,12 +92,12 @@ object_defs:
     const wip = wipOn('axe');
     const instanceId = wip.instanceId;
 
-    wip.becomeAlong(toBase, session);
+    wip.becomeAlong(toBase);
 
     expect(wip.def.name, 'レシピの軸を落とした座標＝完成品そのもの').toBe('axe');
     expect(wip.instanceId, '同じ個体が続く').toBe(instanceId);
     expect(wip.parent, '居場所も変わらない').toBe(ground);
-    expect(ground.getSlotByLocalId(ground.def.slotLayout.toLocal(itemsId())).contents).toEqual([wip]);
+    expect(ground.tryGetSlot(itemsId())!.contents).toEqual([wip]);
   });
 
   it('同じ名前のプロパティは値を引き継ぎ、新しいrangeの外はクランプするだけで反応させない', () => {
@@ -105,7 +105,7 @@ object_defs:
     const progressId = codex.propertyNames.getId('progress');
     wip.setProperty(progressId, 30);
 
-    wip.becomeAlong(toBase, session);
+    wip.becomeAlong(toBase);
 
     expect(wip.getNumber(progressId), '完成品のrange（0〜5）の上端へ丸める').toBe(5);
     expect(wip.parent, 'クランプでon_maxは起きない（器が変わっただけ）').toBe(ground);
@@ -116,7 +116,7 @@ object_defs:
     // 作りかけは1工程なのでfinished_stepsを持たない（RecipeSystem.md 1節）。
     expect(wip.getNumber(codex.propertyNames.getId('progress')), '作りかけの初期値').toBe(0);
 
-    wip.becomeAlong(toBase, session);
+    wip.becomeAlong(toBase);
 
     expect(wip.def.name).toBe('axe');
   });
@@ -126,7 +126,7 @@ object_defs:
     const material = session.spawn(idOf('stick'));
     material.moveToSlot(wip, materialsId());
 
-    wip.becomeAlong(toBase, session);
+    wip.becomeAlong(toBase);
 
     expect(material.parent, '完成品も同じ名前のスロットを持つので、中身は動かない').toBe(wip);
   });
@@ -136,7 +136,7 @@ object_defs:
     const material = session.spawn(idOf('stick'));
     material.moveToSlot(wip, materialsId());
 
-    wip.becomeAlong(toBase, session);
+    wip.becomeAlong(toBase);
 
     expect(wip.def.name).toBe('torch');
     expect(material.parent, '行き場を失った中身はdestroyと同じ規則で親へ出る').toBe(ground);
@@ -149,9 +149,9 @@ object_defs:
     kept.moveToSlot(wip, materialsId());
     overflowing.moveToSlot(wip, materialsId());
 
-    wip.becomeAlong(toBase, session);
+    wip.becomeAlong(toBase);
 
-    const materials = wip.getSlotByLocalId(wip.def.slotLayout.toLocal(materialsId()));
+    const materials = wip.tryGetSlot(materialsId())!;
     expect(materials.contents, '枠に収まる分だけが残る').toEqual([kept]);
     expect(overflowing.parent, '入りきらなかった分は親へ出る').toBe(ground);
   });
@@ -159,7 +159,7 @@ object_defs:
   it('行き先の座標に型が居なければ何も起きない', () => {
     const wip = wipOn('axe');
 
-    wip.becomeAlong(new Map([['recipe', 'missing']]), session);
+    wip.becomeAlong(new Map([['recipe', 'missing']]));
 
     expect(wip.def.name, '座標が空なので変わらない').toBe(inProgressObjectName('axe', 'basic'));
     expect(wip.canBecomeAlong(new Map([['recipe', 'missing']]))).toBe(false);
@@ -169,7 +169,7 @@ object_defs:
   it('素の型は、軸を落とした座標では自分自身のまま', () => {
     const stick = session.spawn(idOf('stick'));
 
-    stick.becomeAlong(toBase, session);
+    stick.becomeAlong(toBase);
 
     expect(stick.def.name, '軸を1つも持たない座標＝自分自身').toBe('stick');
   });
@@ -187,13 +187,13 @@ object_defs:
     const axe = session.spawn(idOf('axe'));
     axe.moveToSlot(ground, itemsId());
     const wip = wipOn('axe');
-    const items = ground.getSlotByLocalId(ground.def.slotLayout.toLocal(itemsId()));
+    const items = ground.tryGetSlot(itemsId())!;
     expect(
       items.cells.filter((cell) => cell !== undefined),
       '作りかけは別の枠に並ぶ',
     ).toHaveLength(2);
 
-    wip.becomeAlong(toBase, session);
+    wip.becomeAlong(toBase);
 
     expect(
       items.cells.filter((cell) => cell !== undefined),

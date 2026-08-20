@@ -1,25 +1,30 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 
 // modify/add（GameElementDefinition.md 8節）の実行時集計と、on_max/on_min
 // （6.3節、値がRangeの外へ出た際にselfへ適用されるactive内容）に対する自動テスト。
 describe('PassiveEffect', () => {
-  let nextInstanceId: number;
+  let sessions: Map<WorldCodex, WorldSession>;
 
   beforeEach(() => {
-    nextInstanceId = 1;
+    sessions = new Map();
   });
 
   function load(yaml: string): WorldCodex {
     return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
   }
 
+  /** 1つのcodexから作る物は同じセッションに属する（WorldObject.session）。 */
   function spawn(codex: WorldCodex, objectName: string): WorldObject {
-    const def = codex.objects.get(codex.objectNames.getId(objectName));
-    return new WorldObject(nextInstanceId++, def, new WorldSession(codex));
+    let session = sessions.get(codex);
+    if (session === undefined) {
+      session = new WorldSession(codex);
+      sessions.set(codex, session);
+    }
+    return session.spawn(codex.objectNames.getId(objectName));
   }
 
   // ------------------------------------------------------------------
@@ -62,13 +67,12 @@ object_defs:
 `;
       const codex = load(yaml);
       const brightnessId = codex.propertyNames.getId('brightness');
-      const session = new WorldSession(codex);
 
       const first = spawn(codex, 'torch');
       const second = spawn(codex, 'torch');
 
       first.addNumber(brightnessId, 10);
-      first.tick(session);
+      first.tick();
 
       expect(first.getNumber(brightnessId)).toBe(16); // 1体目: 1(初期値) + 10(add) + 5(passivesのadd)
       expect(second.getNumber(brightnessId)).toBe(1); // 2体目は未タッチのまま初期値のはず
@@ -335,16 +339,15 @@ object_defs:
 `;
       const codex = load(yaml);
       const waxId = codex.propertyNames.getId('wax');
-      const session = new WorldSession(codex);
 
       const instance = spawn(codex, 'candle');
 
       expect(instance.getEffectiveValue(waxId)).toBe(100); // tick前は変化しない
 
-      instance.tick(session);
+      instance.tick();
       expect(instance.getEffectiveValue(waxId)).toBe(99); // tick1回で実体値が減る
 
-      instance.tick(session);
+      instance.tick();
       expect(instance.getEffectiveValue(waxId)).toBe(98); // tick毎に加算され続ける
     });
 
@@ -373,20 +376,19 @@ object_defs:
       const conditionsSlotId = codex.slotNames.getId('conditions');
       const storageSlotId = codex.slotNames.getId('storage');
 
-      const session = new WorldSession(codex);
       const characterInstance = spawn(codex, 'character');
       const trashInstance = spawn(codex, 'trash');
       const bleedingInstance = spawn(codex, 'bleeding');
 
-      characterInstance.tick(session);
+      characterInstance.tick();
       expect(characterInstance.getEffectiveValue(hydrationId)).toBe(100); // 装着前はtickしても変化なし
 
       expect(bleedingInstance.moveToSlot(characterInstance, conditionsSlotId)).toBeUndefined();
-      characterInstance.tick(session);
+      characterInstance.tick();
       expect(characterInstance.getEffectiveValue(hydrationId)).toBe(95); // conditionsに入っている間はtick毎に減る
 
       expect(bleedingInstance.moveToSlot(trashInstance, storageSlotId)).toBeUndefined();
-      characterInstance.tick(session);
+      characterInstance.tick();
       expect(characterInstance.getEffectiveValue(hydrationId)).toBe(95); // 取り除いた後はtickしても変化しない
     });
 
@@ -418,17 +420,16 @@ object_defs:
       const progressId = codex.propertyNames.getId('progress');
       const conditionsSlotId = codex.slotNames.getId('conditions');
 
-      const session = new WorldSession(codex);
       const characterInstance = spawn(codex, 'character');
       const infectionInstance = spawn(codex, 'infection');
 
       expect(infectionInstance.moveToSlot(characterInstance, conditionsSlotId)).toBeUndefined();
 
-      characterInstance.tick(session);
+      characterInstance.tick();
       expect(characterInstance.getEffectiveValue(temperatureId)).toBe(36); // progressがnoneの間は上がらない
 
       infectionInstance.setProperty(progressId, 30);
-      characterInstance.tick(session);
+      characterInstance.tick();
       expect(characterInstance.getEffectiveValue(temperatureId)).toBe(37); // mildへ遷移した後は毎tick上がる（再登録なし）
     });
 
@@ -460,7 +461,6 @@ object_defs:
       const staminaId = codex.propertyNames.getId('stamina');
       const equipSlotId = codex.slotNames.getId('equip');
 
-      const session = new WorldSession(codex);
       const characterInstance = spawn(codex, 'character');
       const bootsInstance = spawn(codex, 'boots');
       const exhaustionInstance = spawn(codex, 'exhaustion');
@@ -470,11 +470,11 @@ object_defs:
 
       expect(characterInstance.getEffectiveValue(staminaId)).toBe(60); // modifyだけが都度加味される（実体値は50のまま）
 
-      characterInstance.tick(session);
+      characterInstance.tick();
       expect(characterInstance.getEffectiveValue(staminaId)).toBe(59); // tickでpassivesのaddだけが実体値へ入る(50-1+10=59)
     });
 
-    it('getIncomingPassiveEffectsはmodify/addの種別を問わず全件を返す', () => {
+    it('PropertyValue.incomingはmodify/addの種別を問わず全件を返す', () => {
       const yaml = `
 object_defs:
   character:
@@ -509,7 +509,7 @@ object_defs:
       expect(bootsInstance.moveToSlot(characterInstance, equipSlotId)).toBeUndefined();
       expect(exhaustionInstance.moveToSlot(characterInstance, equipSlotId)).toBeUndefined();
 
-      const incoming = characterInstance.getIncomingPassiveEffects(staminaId);
+      const incoming = characterInstance.tryGetProperty(staminaId)?.incoming ?? [];
 
       // 種別（modify/add）はPassiveEffectの内部事情で外から見えないため、declarerで両方の
       // 効果が種別を問わず1つの一覧に載ることを確認する（bootsはmodify、exhaustionはpassivesのadd）。
@@ -540,12 +540,11 @@ object_defs:
       const codex = load(yaml);
       const itemsSlotId = codex.slotNames.getId('items');
 
-      const session = new WorldSession(codex);
       const containerInstance = spawn(codex, 'holder');
       const bombInstance = spawn(codex, 'bomb');
       expect(bombInstance.moveToSlot(containerInstance, itemsSlotId)).toBeUndefined();
 
-      containerInstance.tick(session);
+      containerInstance.tick();
 
       expect(bombInstance.parent).toBeUndefined();
       const slot = containerInstance.tryGetSlot(itemsSlotId);
@@ -569,12 +568,11 @@ object_defs:
       const codex = load(yaml);
       const itemsSlotId = codex.slotNames.getId('items');
 
-      const session = new WorldSession(codex);
       const containerInstance = spawn(codex, 'holder');
       const tankInstance = spawn(codex, 'tank');
       expect(tankInstance.moveToSlot(containerInstance, itemsSlotId)).toBeUndefined();
 
-      containerInstance.tick(session);
+      containerInstance.tick();
 
       expect(tankInstance.parent).toBeDefined(); // on_maxは上限以下では発火しない
     });
@@ -598,12 +596,11 @@ object_defs:
       const itemsSlotId = codex.slotNames.getId('items');
       const chargeId = codex.propertyNames.getId('charge');
 
-      const session = new WorldSession(codex);
       const containerInstance = spawn(codex, 'backpack');
       const batteryInstance = spawn(codex, 'power_cell');
       expect(batteryInstance.moveToSlot(containerInstance, itemsSlotId)).toBeUndefined();
 
-      containerInstance.tick(session);
+      containerInstance.tick();
 
       expect(batteryInstance.getEffectiveValue(chargeId)).toBe(9);
     });
@@ -625,12 +622,11 @@ object_defs:
       const codex = load(yaml);
       const itemsSlotId = codex.slotNames.getId('items');
 
-      const session = new WorldSession(codex);
       const containerInstance = spawn(codex, 'lantern_holder');
       const torchInstance = spawn(codex, 'torch');
       expect(torchInstance.moveToSlot(containerInstance, itemsSlotId)).toBeUndefined();
 
-      containerInstance.tick(session);
+      containerInstance.tick();
 
       expect(torchInstance.parent).toBeUndefined();
       const slot = containerInstance.tryGetSlot(itemsSlotId);
@@ -656,10 +652,9 @@ object_defs:
       const codex = load(yaml);
       const groundSlotId = codex.slotNames.getId('ground');
 
-      const session = new WorldSession(codex);
       const bushInstance = spawn(codex, 'bush');
 
-      bushInstance.tick(session);
+      bushInstance.tick();
 
       const slot = bushInstance.tryGetSlot(groundSlotId);
       expect(slot?.contents.length).toBe(1);
@@ -686,12 +681,11 @@ object_defs:
       const codex = load(yaml);
       const groundSlotId = codex.slotNames.getId('ground');
 
-      const session = new WorldSession(codex);
       const locationInstance = spawn(codex, 'clearing2');
       const wetLogInstance = spawn(codex, 'wet_log');
       expect(wetLogInstance.moveToSlot(locationInstance, groundSlotId)).toBeUndefined();
 
-      locationInstance.tick(session);
+      locationInstance.tick();
 
       expect(wetLogInstance.parent).toBeUndefined(); // wet_log自身は破棄される
       const slot = locationInstance.tryGetSlot(groundSlotId);
@@ -729,12 +723,11 @@ object_defs:
       const shelfSlotId = codex.slotNames.getId('shelf');
       const cavitySlotId = codex.slotNames.getId('cavity');
 
-      const session = new WorldSession(codex);
       const boxInstance = spawn(codex, 'small_box');
       const geodeInstance = spawn(codex, 'geode');
       expect(geodeInstance.moveToSlot(boxInstance, shelfSlotId)).toBeUndefined();
 
-      boxInstance.tick(session);
+      boxInstance.tick();
 
       const cavitySlot = geodeInstance.tryGetSlot(cavitySlotId);
       const shelfSlot = boxInstance.tryGetSlot(shelfSlotId);
@@ -770,12 +763,11 @@ object_defs:
       const floorSlotId = codex.slotNames.getId('floor');
       const orePocketSlotId = codex.slotNames.getId('ore_pocket');
 
-      const session = new WorldSession(codex);
       const caveInstance = spawn(codex, 'cave');
       const veinInstance = spawn(codex, 'vein');
       expect(veinInstance.moveToSlot(caveInstance, floorSlotId)).toBeUndefined();
 
-      caveInstance.tick(session);
+      caveInstance.tick();
 
       const orePocketSlot = veinInstance.tryGetSlot(orePocketSlotId);
       const floorSlot = caveInstance.tryGetSlot(floorSlotId);
@@ -840,10 +832,9 @@ object_defs:
       const codex = load(yaml);
       const contentsSlotId = codex.slotNames.getId('contents');
 
-      const session = new WorldSession(codex);
       const veinInstance = spawn(codex, 'vein2'); // 親を持たない(どこにも格納されていない)
 
-      veinInstance.tick(session);
+      veinInstance.tick();
 
       const slot = veinInstance.tryGetSlot(contentsSlotId);
       // pebble2はcapacity超過で入れず、vein2には親が無いため伝播先も無く、どこにも配置されない
@@ -871,12 +862,11 @@ object_defs:
       const codex = load(yaml);
       const groundSlotId = codex.slotNames.getId('ground');
 
-      const session = new WorldSession(codex);
       const locationInstance = spawn(codex, 'clearing3');
       const bushInstance = spawn(codex, 'bush');
       expect(bushInstance.moveToSlot(locationInstance, groundSlotId)).toBeUndefined();
 
-      locationInstance.tick(session);
+      locationInstance.tick();
 
       expect(bushInstance.parent).toBeUndefined(); // bush自身は破棄される
       const slot = locationInstance.tryGetSlot(groundSlotId);
@@ -900,7 +890,6 @@ object_defs:
       const codex = load(yaml);
       const contentsSlotId = codex.slotNames.getId('contents');
 
-      const session = new WorldSession(codex);
       const containerInstance = spawn(codex, 'trashcan');
       const junk1 = spawn(codex, 'junk');
       const junk2 = spawn(codex, 'junk');
@@ -910,7 +899,7 @@ object_defs:
       expect(junk2.moveToSlot(containerInstance, contentsSlotId)).toBeUndefined();
       expect(junk3.moveToSlot(containerInstance, contentsSlotId)).toBeUndefined();
 
-      containerInstance.tick(session); // 例外を投げればテスト自体が失敗する
+      containerInstance.tick(); // 例外を投げればテスト自体が失敗する
 
       const slot = containerInstance.tryGetSlot(contentsSlotId);
       expect(slot?.contents.length).toBe(0);
@@ -974,7 +963,6 @@ object_defs:
       const itemsSlotId = codex.slotNames.getId('items');
       const chargeId = codex.propertyNames.getId('charge');
 
-      const session = new WorldSession(codex);
       const outerInstance = spawn(codex, 'outer_box');
       const innerInstance = spawn(codex, 'inner_box');
       const batteryInstance = spawn(codex, 'cell');
@@ -982,13 +970,13 @@ object_defs:
       expect(innerInstance.moveToSlot(outerInstance, itemsSlotId)).toBeUndefined();
       expect(batteryInstance.moveToSlot(innerInstance, itemsSlotId)).toBeUndefined();
 
-      outerInstance.tick(session);
+      outerInstance.tick();
 
       expect(innerInstance.parent).toBeUndefined(); // inner_boxは自分自身のon_minにより破棄される
       expect(batteryInstance.parent, '子は道連れにならず、祖父へこぼれ出る').toBe(outerInstance);
       expect(batteryInstance.getEffectiveValue(chargeId), 'こぼれたtickは動かない').toBe(10);
 
-      outerInstance.tick(session);
+      outerInstance.tick();
       expect(batteryInstance.getEffectiveValue(chargeId), '次のtickからは動く').toBe(9);
     });
   });
@@ -1264,14 +1252,13 @@ object_defs:
       const sootId = codex.propertyNames.getId('soot');
       const contentsSlotId = codex.slotNames.getId('contents');
 
-      const session = new WorldSession(codex);
       const roomInstance = spawn(codex, 'room');
       const fireplaceInstance = spawn(codex, 'fireplace');
 
       expect(fireplaceInstance.moveToSlot(roomInstance, contentsSlotId)).toBeUndefined();
 
-      roomInstance.tick(session);
-      roomInstance.tick(session);
+      roomInstance.tick();
+      roomInstance.tick();
 
       expect(roomInstance.getNumber(sootId)).toBe(2); // passivesのaddのancestorターゲットもtick毎に部屋のsootへ積み上がる
     });

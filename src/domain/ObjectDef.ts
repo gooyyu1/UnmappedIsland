@@ -5,7 +5,7 @@ import type { CombinationDef } from './CombinationDef';
 import type { EffectDeclaration } from './EffectReader';
 import { spawnsObject, writesToProperty } from './effectQueries';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { actionRef, combinationRef, propertyRef, slotRef, text } from './Description';
+import { actionRef, combinationRef, propertyRef, text } from './Description';
 import type { InteractionDef } from './InteractionDef';
 import { LocalIndexMap } from './LocalIndexMap';
 import type { PassiveEffect } from './PassiveEffect';
@@ -58,11 +58,6 @@ export class ObjectDef {
    * 追加される（新規インスタンス同士の相対順序＝挿入順）。 */
   readonly stackOrder: StackOrderDef | undefined;
 
-  /** interaction/stack判定を委譲する代表オブジェクトが入っているスロットのグローバルID（7.6節）。
-   * undefinedなら常に自分自身が代表。指定時は、そのスロットの先頭の1個（さらにその代表…）が
-   * interactionの実行対象・stack判定の識別に使われる。 */
-  readonly representedBySlotGlobalId: number | undefined;
-
   /**
    * 外から中身が見えるスロット（`visible_slots`、7.11節）のグローバルID。**並びが表示順**で、
    * 子ウィンドウのタブになる（Windows.md 1.2節）。名乗らないスロットは、中に入らないと分からない。
@@ -107,12 +102,6 @@ export class ObjectDef {
   /** このObjectDefが（selfとして）持つドラッグ型操作（12節）。 */
   readonly combinations: readonly CombinationDef[];
 
-  /**
-   * 個数ではなく量で存在する型か（7.6節）。真なら、インスタンスの存在と「sizeが正であること」が
-   * 同値になる——moveは量を移し、移り先に同種が無ければ生まれ、移し元は量が尽きた時点で消える。
-   */
-  readonly isQuantitative: boolean;
-
   constructor(
     globalId: number,
     name: string,
@@ -126,8 +115,6 @@ export class ObjectDef {
     tags: readonly number[] = [],
     actions: readonly ActionDef[] = [],
     combinations: readonly CombinationDef[] = [],
-    representedBySlotGlobalId?: number,
-    isQuantitative = false,
     boundToOwner = false,
     stackable = true,
     recipes: readonly RecipeDef[] = [],
@@ -151,10 +138,8 @@ export class ObjectDef {
     this.tags = tags;
     this.actions = actions;
     this.combinations = combinations;
-    this.representedBySlotGlobalId = representedBySlotGlobalId;
     this.boundToOwner = boundToOwner;
     this.stackable = stackable;
-    this.isQuantitative = isQuantitative;
     this.recipes = recipes;
     this.artByStagePropertyGlobalId = artByStagePropertyGlobalId;
     this.visibleSlotGlobalIds = visibleSlotGlobalIds;
@@ -167,16 +152,8 @@ export class ObjectDef {
    */
   describe(names: DefNames, out: DescriptionWriter): void {
     if (this.isSingleton) out.write(text('singleton: 世界にただ1つだけ存在する'));
-    if (this.isQuantitative) out.write(text('quantitative: 個数ではなく量で存在する'));
     if (!this.stackable) out.write(text('stackable: false（同種でも1個ずつ別の枠に並ぶ）'));
     if (this.boundToOwner) out.write(text('bound_to_owner: 入っていた親が消えるとき一緒に消える'));
-
-    if (this.representedBySlotGlobalId !== undefined)
-      out.write(
-        text('represented_by: '),
-        slotRef(names.slotName(this.representedBySlotGlobalId)),
-        text('の中身が代表になる'),
-      );
 
     if (this.stackOrder !== undefined) out.write(text('stack_order: '), ...this.stackOrder.describe(names));
 
@@ -311,30 +288,24 @@ export class ObjectDef {
     actionName: string,
     session: WorldSession,
   ): boolean {
-    const resolved = self.resolveInteractionTarget();
-    const action = resolved.def.actions.find((a) => a.name === actionName);
-    return action !== undefined && action.tryExecute(resolved, actor, session);
+    const action = this.actions.find((a) => a.name === actionName);
+    return action !== undefined && action.tryExecute(self, actor, session);
   }
 
   /**
    * actionNameを今実行できない理由（最初に落ちた要件、14節）。実行できる・宣言が無い場合はundefined。
-   * 対象の解決はtryExecuteActionと同じ。
    */
   actionUnmetRequirement(
     self: WorldObject,
     actor: WorldObject | undefined,
     actionName: string,
   ): Requirement | undefined {
-    const resolved = self.resolveInteractionTarget();
-    return resolved.def.actions.find((a) => a.name === actionName)?.unmetRequirement(resolved, actor);
+    return this.actions.find((a) => a.name === actionName)?.unmetRequirement(self, actor);
   }
 
-  /** actionNameの実行にかかるゲーム内時間（分）。宣言が無ければ0。対象の解決はtryExecuteActionと同じ。 */
+  /** actionNameの実行にかかるゲーム内時間（分）。宣言が無ければ0。 */
   actionMinutes(self: WorldObject, actor: WorldObject | undefined, actionName: string): number {
-    const resolved = self.resolveInteractionTarget();
-    return (
-      resolved.def.actions.find((a) => a.name === actionName)?.minutesFor(resolved, undefined, actor) ?? 0
-    );
+    return this.actions.find((a) => a.name === actionName)?.minutesFor(self, undefined, actor) ?? 0;
   }
 
   /** combinationNameの実行にかかるゲーム内時間（分）。宣言が無ければ0。 */
@@ -344,18 +315,12 @@ export class ObjectDef {
     actor: WorldObject | undefined,
     combinationName: string,
   ): number {
-    const resolvedSelf = self.resolveInteractionTarget();
-    const resolvedDragged = dragged.resolveInteractionTarget();
-    return (
-      resolvedSelf.def.combinations
-        .find((c) => c.name === combinationName)
-        ?.minutesFor(resolvedSelf, resolvedDragged, actor) ?? 0
-    );
+    return this.combinations.find((c) => c.name === combinationName)?.minutesFor(self, dragged, actor) ?? 0;
   }
 
   /**
    * combinationNameをまとめて実行できる個数（宣言が無ければ1）。candidatesは先頭から順に相手になる
-   * 個体で、先頭が指の掴んでいたもの。対象の解決はtryExecuteCombinationと同じ。
+   * 個体で、先頭が指の掴んでいたもの。
    */
   combinationAcceptedCount(
     self: WorldObject,
@@ -363,12 +328,8 @@ export class ObjectDef {
     actor: WorldObject | undefined,
     combinationName: string,
   ): number {
-    const resolvedSelf = self.resolveInteractionTarget();
-    const resolved = candidates.map((candidate) => candidate.resolveInteractionTarget());
     return (
-      resolvedSelf.def.combinations
-        .find((c) => c.name === combinationName)
-        ?.acceptedCount(resolvedSelf, resolved, actor) ?? 1
+      this.combinations.find((c) => c.name === combinationName)?.acceptedCount(self, candidates, actor) ?? 1
     );
   }
 
@@ -379,12 +340,8 @@ export class ObjectDef {
     combinationName: string,
     session: WorldSession,
   ): boolean {
-    const resolvedSelf = self.resolveInteractionTarget();
-    const resolvedDragged = dragged.resolveInteractionTarget();
-    const combination = combinationsWith(resolvedSelf, resolvedDragged, actor).find(
-      (c) => c.name === combinationName,
-    );
-    return combination !== undefined && combination.tryExecute(resolvedSelf, resolvedDragged, actor, session);
+    const combination = combinationsWith(self, dragged, actor).find((c) => c.name === combinationName);
+    return combination !== undefined && combination.tryExecute(self, dragged, actor, session);
   }
 
   /**
@@ -396,7 +353,7 @@ export class ObjectDef {
     dragged: WorldObject,
     actor: WorldObject | undefined,
   ): readonly CombinationDef[] {
-    return combinationsWith(self.resolveInteractionTarget(), dragged.resolveInteractionTarget(), actor);
+    return combinationsWith(self, dragged, actor);
   }
 }
 

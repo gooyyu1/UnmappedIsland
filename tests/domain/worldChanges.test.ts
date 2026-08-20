@@ -133,7 +133,7 @@ object_defs:
     const stone = placeOnGround('stone');
 
     const seen = observe(() => {
-      expect(beast.tryExecuteCombination(stone, undefined, 'rampage', session)).toBe(true);
+      expect(beast.tryExecuteCombination(stone, undefined, 'rampage')).toBe(true);
     });
 
     expect(seen).toEqual(['beast: stone ground.items → —']);
@@ -146,7 +146,7 @@ object_defs:
     const stone = placeOnGround('stone');
 
     const seen = observe(() => {
-      expect(beast.tryExecuteCombination(stone, undefined, 'rampage', session)).toBe(true);
+      expect(beast.tryExecuteCombination(stone, undefined, 'rampage')).toBe(true);
     });
 
     expect(seen).toEqual(['beast: stone ground.items → beast.loot']);
@@ -160,8 +160,8 @@ object_defs:
     const stones = [placeOnGround('stone'), placeOnGround('stone')];
 
     observe(() => {
-      expect(first.tryExecuteCombination(stones[0], undefined, 'rampage', session)).toBe(true);
-      expect(second.tryExecuteCombination(stones[1], undefined, 'rampage', session)).toBe(true);
+      expect(first.tryExecuteCombination(stones[0], undefined, 'rampage')).toBe(true);
+      expect(second.tryExecuteCombination(stones[1], undefined, 'rampage')).toBe(true);
     });
 
     expect(changes.map((c) => c.subject)).toEqual([first, second]);
@@ -176,7 +176,7 @@ object_defs:
     expect(stone.moveToSlot(basket, slot('contents'))).toBeUndefined();
 
     const seen = observe(() => {
-      expect(beast.tryExecuteCombination(basket, undefined, 'rampage', session)).toBe(true);
+      expect(beast.tryExecuteCombination(basket, undefined, 'rampage')).toBe(true);
     });
 
     expect(seen).toEqual(['beast: stone basket.contents → ground.items', 'beast: basket ground.items → —']);

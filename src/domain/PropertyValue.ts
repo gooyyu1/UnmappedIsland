@@ -3,9 +3,7 @@ import type { PropertyDef, StageReading } from './PropertyDef';
 import { INT32_MAX } from '../util/int32';
 import { removeWhere } from '../util/arrays';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
-import type { Rng } from './Rng';
 import type { WorldObject } from './WorldObject';
-import type { WorldSession } from './WorldSession';
 
 /**
  * props の実行時の値。数値（32bit整数、6節）のみを扱う。PassiveEffectの影響先は「プロパティ」であるため、
@@ -40,8 +38,8 @@ export class PropertyValue {
   private isComputingEffectiveValue = false;
 
   /** 初期値は定義が決める（PropertyDef.rollInitialValue、6.2節）。抽選つきの宣言があるので乱数源が要る。 */
-  constructor(def: PropertyDef, owner: WorldObject, rng: Rng) {
-    this._number = def.rollInitialValue(rng);
+  constructor(def: PropertyDef, owner: WorldObject) {
+    this._number = def.rollInitialValue(owner.session.rng);
     this.def = def;
     this.owner = owner;
   }
@@ -52,28 +50,25 @@ export class PropertyValue {
   }
 
   /**
-   * 数値を加減算し（不可逆）、値が変わった直後にon_max・on_min（6.3節）の判定を行う。
-   *
-   * sessionが未指定の場合は判定を行わない（呼び出し側が後で明示的にtick()を呼んで判定させる場合。
-   * WorldObject.addNumber参照）。
+   * 数値を加減算し（不可逆）、値が変わった直後にon_max・on_min（6.3節）の判定を自分で行う。
+   * **どこから呼ばれても判定は走る**ので、呼び出し側は変更後に何をすべきかを覚えなくてよい。
    *
    * deltaが0の場合は何もしない。on_max等の既定の補正（rangeの境界へのset）が境界に着地した後の再setで、
    * add→checkRangeEvents→applyActiveEffect→setNumber→addが無限に連鎖するのを防ぐガード。
    */
-  add(delta: number, session: WorldSession | undefined): void {
+  add(delta: number): void {
     if (delta === 0) return;
 
     this._number += delta;
-    if (session === undefined) return;
 
     // 操作が直に動かした値はここだけを通る（毎tickの積分はtick()が直に足す、PropertyGain参照）。
-    session.recordGain(this.owner, this.def, delta);
-    this.def.checkRangeEvents(this._number, this.owner, session);
+    this.owner.session.recordGain(this.owner, this.def, delta);
+    this.def.checkRangeEvents(this._number, this.owner);
   }
 
   /** 絶対値代入（set）。差分をaddへ委譲するため、range判定はadd側に一本化される。 */
-  setNumber(value: number, session: WorldSession | undefined): void {
-    this.add(value - this._number, session);
+  setNumber(value: number): void {
+    this.add(value - this._number);
   }
 
   /**
@@ -138,10 +133,10 @@ export class PropertyValue {
    * passivesの`add`を実体値へ加減算し（8.4節、不可逆）、rangeイベント（6.3節）を判定する。
    * 1tickにつき1回、WorldObject.tick経由で呼ばれる想定。
    */
-  tick(session: WorldSession): void {
+  tick(): void {
     for (const c of this.accumulateEffects) this._number += c.activeAmount();
 
-    this.def.checkRangeEvents(this._number, this.owner, session);
+    this.def.checkRangeEvents(this._number, this.owner);
   }
 
   /**

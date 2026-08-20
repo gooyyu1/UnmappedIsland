@@ -1,10 +1,11 @@
 import type { ActiveEffect, SpawnEffect, SpawnTargetRoot } from './ActiveEffect';
 import type { CombinationDef } from './CombinationDef';
+import { EffectSite } from './EffectSite';
+import type { SameSlotPlacement } from './EffectSite';
 import { LocalIndexMap } from './LocalIndexMap';
 import type { ObjectDef } from './ObjectDef';
 import type { ReferenceRoot } from './ReferenceRoot';
 import type { WellKnownProperties } from './WellKnownProperties';
-import type { ObjectStack } from './ObjectStack';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
 import { IN_PROGRESS_TAG } from './RecipeDef';
@@ -16,27 +17,27 @@ import { Slot } from './Slot';
 import type { WorldPlace } from './WorldChange';
 import type { WorldSession } from './WorldSession';
 
-/**
- * 実行時のオブジェクト実体（ObjectDefのインスタンス）。
- *
- * プロパティの現在値・スロットの中身は、Def側のローカルIDをそのままindexとする密配列として保持する。
- * プロパティへ登録された効果の一覧・tick毎の反映・実効値の算出はPropertyValueが持ち、WorldObjectはローカルID
- * 解決とグローバルAPIの提供に専念する（プロパティの読み書き）。represented_byによる代表・同種スタック判定では、
- * 自分の代表チェーンのスナップショット化・突き合わせと、中身が入れ替わったときの再スタック伝播を担う。
- * move_to_slotによる所属先の差し替え（旧親からの離脱・新親への合流・weight伝播・passive effect edgeの登録・
- * represented_by再判定）にも専念し、枠の要件・capacityの検証は対象Slot自身へ委ねる。持続効果（modify/add）の
- * 登録・解除は、生成・エッジ形成/解消・トポロジ変化の契機で、Defが宣言する効果一式（PassiveEffects）へ
- * 「登録/解除してほしい」と依頼するだけで、どのtargetがどこへ紐付くかは効果自身が知る。能動効果
- * （set/add/destroy/spawn/transfer・actions/combinations・tick）は、適用の入口（applyActiveEffect）と対象解決、
- * same_slot spawnの位置捕捉（EffectSite）・配置（place）を持つが、値の変更そのものは対象のPropertyValueへ、
- * 条件判定・抽選はDef側の効果へ委ねる。
- */
 /** rangeを持つプロパティなら、その両端へ丸めた値。rangeが無ければそのまま（becomeType参照）。 */
 function clampToRange(def: PropertyDef, value: number): number {
   const range = def.range;
   return range === undefined ? value : Math.min(range.max, Math.max(range.min, value));
 }
 
+/**
+ * 実行時のオブジェクト実体（ObjectDefのインスタンス）。
+ *
+ * プロパティの現在値・スロットの中身は、Def側のローカルIDをそのままindexとする密配列として保持する。
+ * プロパティへ登録された効果の一覧・tick毎の反映・実効値の算出・値を変えた後のrange判定はPropertyValueが
+ * 持ち、WorldObjectはローカルID解決とグローバルAPIの提供に専念する。move_to_slotによる所属先の差し替え
+ * （旧親からの離脱・新親への合流・weight伝播・passive effect edgeの登録）にも専念し、枠の要件・capacityの
+ * 検証は対象Slot自身へ委ねる。持続効果（modify/add）の登録・解除は、生成・エッジ形成/解消・トポロジ変化の
+ * 契機で、Defが宣言する効果一式（PassiveEffects）へ「登録/解除してほしい」と依頼するだけで、どのtargetが
+ * どこへ紐付くかは効果自身が知る。能動効果（set/add/destroy/spawn/transfer・actions/combinations・tick）は、
+ * 適用の入口（applyActiveEffect）と対象解決、same_slot spawnの位置捕捉（EffectSite）・配置（place）を持つが、
+ * 値の変更そのものは対象のPropertyValueへ、条件判定・抽選はDef側の効果へ委ねる。
+ *
+ * **セッションは自分で持つ。** 何かを頼む側がWorldSessionを渡すことはない（sessionフィールド参照）。
+ */
 export class WorldObject {
   readonly instanceId: number;
 
@@ -56,18 +57,23 @@ export class WorldObject {
     return this._parent;
   }
 
-  /** parentの中で自分が入っているスロットのローカルID。parentがundefinedならmissing。 */
-  private _parentSlotLocalId: number = LocalIndexMap.missing;
-  get parentSlotLocalId(): number {
-    return this._parentSlotLocalId;
+  /**
+   * 今自分が入っている枠（7.1節）。どこにも入っていなければundefined。
+   *
+   * **親の中での位置を、親のローカルIDでは持たない。** ローカルIDはそのオブジェクトの中でしか意味を
+   * 持たない値で、他人の番号を控えると、控えた側が「誰の番号か」を覚えている必要がある。
+   */
+  private _parentSlot: Slot | undefined;
+  get parentSlot(): Slot | undefined {
+    return this._parentSlot;
   }
 
   /**
    * このオブジェクトが生きるセッション。**生成したセッションと、その後この物が居るセッションは同じ**
-   * ——だから配置の関門（attachToSlot・destroy）が、呼び出し側から渡されずに変化を記録できる
-   * （WorldSession.recordChange）。
+   * ——だからこの物へ何かを頼む側は、セッションを渡さない。配置の関門（attachToSlot・destroy）も、
+   * プロパティの値の変更（PropertyValue.add）も、ここから辿って自分で記録・判定する。
    */
-  private readonly session: WorldSession;
+  readonly session: WorldSession;
 
   /** weight/loadの実効値導出（containerContributionTo）が使う、規約で決まったプロパティ名のID。 */
   private get wellKnown(): WellKnownProperties {
@@ -92,7 +98,7 @@ export class WorldObject {
     this._def = def;
     this.session = session;
 
-    this.properties = def.enumeratePropertyDefs().map((pd) => new PropertyValue(pd, this, session.rng));
+    this.properties = def.enumeratePropertyDefs().map((pd) => new PropertyValue(pd, this));
     this.slots = def.enumerateSlotDefs().map((sd) => new Slot(sd));
 
     // 生成時はまだトポロジが無いため、Self関係のみ登録する。Parent/Child/Ancestorはmove_to_slot以降に登録される。
@@ -103,10 +109,6 @@ export class WorldObject {
     const local = this.def.slotLayout.toLocal(globalSlotId);
     if (local === LocalIndexMap.missing) return undefined;
     return this.slots[local];
-  }
-
-  getSlotByLocalId(localId: number): Slot {
-    return this.slots[localId];
   }
 
   /**
@@ -126,9 +128,9 @@ export class WorldObject {
     }
   }
 
-  setParent(parent: WorldObject | undefined, parentSlotLocalId: number): void {
+  private setParent(parent: WorldObject | undefined, parentSlot: Slot | undefined): void {
     this._parent = parent;
-    this._parentSlotLocalId = parentSlotLocalId;
+    this._parentSlot = parentSlot;
   }
 
   tryGetProperty(globalPropertyId: number): PropertyValue | undefined {
@@ -153,33 +155,15 @@ export class WorldObject {
 
   /**
    * 数値プロパティへの不可逆な加減算（9.2節の`add`）。対象プロパティを持たない場合は何もしない（例: 重さを
-   * 気にしない置物）。sessionを渡さない呼び出しは、その場ではrange判定を行わない（後で明示的にtick()を呼んで
-   * 判定させる呼び出し方）。
+   * 気にしない置物）。range判定はPropertyValue自身が行う。
    */
-  addNumber(globalPropertyId: number, delta: number, session?: WorldSession): void {
-    const value = this.tryGetProperty(globalPropertyId);
-    value?.add(delta, session);
-    this.settleChangedVolume(globalPropertyId, session);
+  addNumber(globalPropertyId: number, delta: number): void {
+    this.tryGetProperty(globalPropertyId)?.add(delta);
   }
 
   /** 数値プロパティへの不可逆な絶対値代入（9.2節の`set`）。対象プロパティを持たない場合は何もしない（addNumberと同じ規約）。 */
-  setNumber(globalPropertyId: number, value: number, session?: WorldSession): void {
-    const property = this.tryGetProperty(globalPropertyId);
-    property?.setNumber(value, session);
-    this.settleChangedVolume(globalPropertyId, session);
-  }
-
-  /**
-   * volumeを書き換えた直後に、量的オブジェクトの不変条件（settleVolume）を戻す。飲み干した水が次のtickまで
-   * 0mLのまま残っていると、その間だけ「空なのに中身がいる容器」が見えてしまう。量を動かした側が後始末を
-   * 覚えておかなくて済むよう、動かされた側がその場で畳む。
-   *
-   * sessionを渡さない呼び出しは、その場では何も判定しない規約（addNumber参照）なのでtickに任せる。
-   */
-  private settleChangedVolume(globalPropertyId: number, session: WorldSession | undefined): void {
-    if (session === undefined) return;
-    if (!this.def.isQuantitative || globalPropertyId !== this.wellKnown.volumeId) return;
-    this.settleVolume(session);
+  setNumber(globalPropertyId: number, value: number): void {
+    this.tryGetProperty(globalPropertyId)?.setNumber(value);
   }
 
   /** 指定したプロパティが、今まさに指定した名前のstageに該当しているか（WhenOwnStageゲート専用、6.4節・8節）。 */
@@ -208,7 +192,7 @@ export class WorldObject {
    * 答えない**——同じ枠へ入れ直すのは入れる操作ではない。
    */
   putInSlotFor(item: WorldObject): number | undefined {
-    const from = item.parent === this ? this.getSlotByLocalId(item.parentSlotLocalId) : undefined;
+    const from = item.parent === this ? item.parentSlot : undefined;
     return this.def
       .placementSlotDefs('manual')
       .find(
@@ -222,18 +206,6 @@ export class WorldObject {
    */
   ticksUntilMax(globalPropertyId: number): number | undefined {
     return this.tryGetProperty(globalPropertyId)?.ticksUntilMax();
-  }
-
-  /**
-   * 自分が入っているスロットを、自分のかさ（7.3節のvolume）がどれだけ満たしているか（0〜1）。
-   * どこにも入っていない、あるいはスロットが上限（capacity）を持たず割合を定義できない場合はundefined。
-   *
-   * 上限は入れ物、量は中身が持つ（LiquidContainerSystem.md 2節）ので、割合はこの2つが出会う
-   * 「中身から見た自分の親スロット」でしか出せない。
-   */
-  fillRatioInParentSlot(): number | undefined {
-    if (this._parent === undefined) return undefined;
-    return this._parent.getSlotByLocalId(this._parentSlotLocalId).fillRatio(this.wellKnown.volumeId);
   }
 
   /**
@@ -297,72 +269,6 @@ export class WorldObject {
   }
 
   /**
-   * 自分を代表しているオブジェクト（represented_by先の最初の子）。represented_by未指定・対象スロット
-   * 不存在・空スロットならundefined。1段だけ辿るので、代表がさらに持つ代表は含まない。
-   */
-  tryGetRepresentative(): WorldObject | undefined {
-    if (this.def.representedBySlotGlobalId === undefined) return undefined;
-    return this.tryGetSlot(this.def.representedBySlotGlobalId)?.contents.at(0);
-  }
-
-  /**
-   * interaction/stack判定の代表として採用する、代表チェーンの末端を返す。代表がいなければ自分自身。
-   */
-  resolveInteractionTarget(): WorldObject {
-    return this.tryGetRepresentative()?.resolveInteractionTarget() ?? this;
-  }
-
-  /**
-   * stack判定用の代表ObjectDef列を、現在のrepresented_byチェーンからスナップショットする。先頭は自分自身の
-   * ObjectDefで、続いて代表・代表の代表…を深さ順に並べる（外側オブジェクトも同種判定の対象。例: 水入りボウルと
-   * 水入り瓶は先頭のObjectDefが違うので別スタック）。
-   */
-  captureRepresentationChain(): readonly number[] {
-    const chain: number[] = [];
-    this.appendRepresentationChain(chain);
-    return chain;
-  }
-
-  /** 自分の代表チェーンが、スナップショット済みのexpectedと完全に一致するか。頻繁に呼ばれるため、候補側の配列生成を伴わずに突き合わせる。 */
-  matchesRepresentation(expected: readonly number[]): boolean {
-    return this.matchRepresentationFrom(expected, 0) === expected.length;
-  }
-
-  /** expected[index..]と、自分以下の代表チェーンを突き合わせる。一致した分だけ進めたindexを返し、途中で食い違う（値が違う／expectedが先に尽きる）と-1を返す。 */
-  private matchRepresentationFrom(expected: readonly number[], index: number): number {
-    if (index >= expected.length || expected[index] !== this.def.globalId) return -1;
-    index++;
-
-    const represented = this.tryGetRepresentative();
-    return represented === undefined ? index : represented.matchRepresentationFrom(expected, index);
-  }
-
-  private appendRepresentationChain(chain: number[]): void {
-    chain.push(this.def.globalId);
-    this.tryGetRepresentative()?.appendRepresentationChain(chain);
-  }
-
-  /**
-   * 自分の代表チェーンが変わった直後の後始末（represented_by先スロットの中身が入れ替わったときに呼ばれる）。
-   * 自分の所属スタックをスロットへ再判定させ（restack）、自分を代表に使う親があれば同じ後始末を親へ伝える。
-   * 上りの連鎖はrepresented_byのネスト分だけ有界。
-   */
-  private onRepresentationChanged(): void {
-    if (this._parent === undefined) return;
-
-    this._parent.getSlotByLocalId(this._parentSlotLocalId).restack(this);
-
-    // 自分が親のrepresented_by先スロットに居るなら、自分の代表チェーンの変化は親の代表チェーンの変化でもある。
-    if (this._parent.isRepresentedBySlot(this._parentSlotLocalId)) this._parent.onRepresentationChanged();
-  }
-
-  /** slotLocalIdが、このオブジェクトの代表を採るスロット（represented_by先）か。 */
-  private isRepresentedBySlot(slotLocalId: number): boolean {
-    if (this.def.representedBySlotGlobalId === undefined) return false;
-    return this.def.slotLayout.toLocal(this.def.representedBySlotGlobalId) === slotLocalId;
-  }
-
-  /**
    * スロット移動を行う唯一の汎用操作（7.1節の`move_to_slot`）。枠の要件・capacityの検証は対象Slot
    * 自身（Slot.canAccept）に委ねる。
    *
@@ -416,9 +322,9 @@ export class WorldObject {
    * 理由はSlot側にある。
    */
   reorderInParentSlot(gapIndex: number): boolean {
-    if (this._parent === undefined) return false;
+    const slot = this._parentSlot;
+    if (slot === undefined) return false;
 
-    const slot = this._parent.getSlotByLocalId(this._parentSlotLocalId);
     const stack = slot.findStackContaining(this);
     return stack !== undefined && slot.tryMoveStackToGap(stack, gapIndex);
   }
@@ -428,9 +334,9 @@ export class WorldObject {
    * fixedPositionsのスロット専用。
    */
   moveToCellInParentSlot(cellIndex: number): boolean {
-    if (this._parent === undefined) return false;
+    const slot = this._parentSlot;
+    if (slot === undefined) return false;
 
-    const slot = this._parent.getSlotByLocalId(this._parentSlotLocalId);
     const stack = slot.findStackContaining(this);
     return stack !== undefined && slot.trySetManualPosition(stack, cellIndex);
   }
@@ -447,9 +353,8 @@ export class WorldObject {
     if (rejection !== undefined) return rejection;
 
     if (force) return undefined;
-    return newParent
-      .getSlotByLocalId(newParent.def.slotLayout.toLocal(slotGlobalId))
-      .canAccept(this, this.wellKnown, newParent.def.name);
+    // rejectionBeforeSlotがスロットの存在を確かめた後なので、ここでは必ず引ける。
+    return newParent.tryGetSlot(slotGlobalId)!.canAccept(this, this.wellKnown, newParent.def.name);
   }
 
   /**
@@ -472,9 +377,7 @@ export class WorldObject {
     }
     if (candidates.length === 0) return 0;
 
-    return newParent
-      .getSlotByLocalId(newParent.def.slotLayout.toLocal(slotGlobalId))
-      .acceptedCount(candidates, this.wellKnown);
+    return newParent.tryGetSlot(slotGlobalId)!.acceptedCount(candidates, this.wellKnown);
   }
 
   /** 枠の空き（Slot.canAccept）を見るまでもなく移れない理由。移れる個数を数えるときも1つずつ見る。 */
@@ -515,8 +418,7 @@ export class WorldObject {
     const rejection = this.rejectionForMoveTo(newParent, slotGlobalId, force);
     if (rejection !== undefined) return rejection;
 
-    const localSlot = newParent.def.slotLayout.toLocal(slotGlobalId);
-    const targetSlot = newParent.getSlotByLocalId(localSlot);
+    const targetSlot = newParent.tryGetSlot(slotGlobalId)!;
     const from = this.currentPlace();
 
     this.detachFromParent();
@@ -533,14 +435,11 @@ export class WorldObject {
     }
 
     this.session.recordChange(this, from, { parent: newParent, slotGlobalId });
-    this.setParent(newParent, localSlot);
+    this.setParent(newParent, targetSlot);
     this.registerEdgeWith(newParent, true);
     // 祖先対象の登録は、新しい親チェーンが確定した後に行う（detachFromParentでの解除と対、
     // registerAncestorTargetedRecursively参照）。
     this.registerAncestorTargetedRecursively(true);
-
-    // 入ったスロットがnewParentのrepresented_by先なら、newParentの代表チェーンが変わった。
-    if (newParent.isRepresentedBySlot(localSlot)) newParent.onRepresentationChanged();
 
     return undefined;
   }
@@ -562,19 +461,16 @@ export class WorldObject {
 
   /** 今の居場所（WorldChange）。どこにも属していなければundefined。 */
   private currentPlace(): WorldPlace | undefined {
-    if (this._parent === undefined) return undefined;
-    return {
-      parent: this._parent,
-      slotGlobalId: this._parent.getSlotByLocalId(this._parentSlotLocalId).def.globalId,
-    };
+    if (this._parent === undefined || this._parentSlot === undefined) return undefined;
+    return { parent: this._parent, slotGlobalId: this._parentSlot.def.globalId };
   }
 
   /**
    * axisValuesで指した座標に居る型へ、同じ個体のまま変わる（9.9節）。行き先に型が居なければ何もしない。
    */
-  becomeAlong(axisValues: ReadonlyMap<string, string>, session: WorldSession): void {
+  becomeAlong(axisValues: ReadonlyMap<string, string>): void {
     const destination = this.session.codex.tryResolveBecome(this._def, axisValues);
-    if (destination !== undefined) this.becomeType(destination, session);
+    if (destination !== undefined) this.becomeType(destination);
   }
 
   /** その座標に型が居るか。居なければ、becomeを宣言した操作そのものが成立しない（9.9節）。 */
@@ -594,13 +490,13 @@ export class WorldObject {
    * 登録済みの持続効果は、組み直す前にすべて解除して新しいdefで登録し直す——解除は宣言元のdefを辿るので、
    * 先に差し替えると外し先を見失う。
    */
-  becomeType(newDef: ObjectDef, session: WorldSession): void {
+  private becomeType(newDef: ObjectDef): void {
     if (newDef === this._def) return;
 
     // 新しい型のスロットを先に組み、中身を宣言順に配ってみる。**受け取れなかった中身は、まだ全部が
     // 噛み合っているこの時点で送り出す**——旧スロットがまだ現役なので、どこから出たかも普段どおり残る。
     const newSlots = newDef.enumerateSlotDefs().map((slotDef) => new Slot(slotDef));
-    const rehomed: Array<{ child: WorldObject; slotLocalId: number }> = [];
+    const rehomed: Array<{ child: WorldObject; slot: Slot }> = [];
     for (const slot of this.slots) {
       const slotLocalId = newDef.slotLayout.toLocal(slot.def.globalId);
       for (const child of [...slot.contents]) {
@@ -613,7 +509,7 @@ export class WorldObject {
           continue;
         }
         destination.addInternal(child);
-        rehomed.push({ child, slotLocalId });
+        rehomed.push({ child, slot: destination });
       }
     }
 
@@ -628,9 +524,9 @@ export class WorldObject {
     for (const property of this.properties) carriedValues.set(property.def.globalId, property.number);
 
     this._def = newDef;
-    this.properties = newDef.enumeratePropertyDefs().map((pd) => new PropertyValue(pd, this, session.rng));
+    this.properties = newDef.enumeratePropertyDefs().map((pd) => new PropertyValue(pd, this));
     this.slots = newSlots;
-    for (const { child, slotLocalId } of rehomed) child.setParent(this, slotLocalId);
+    for (const { child, slot } of rehomed) child.setParent(this, slot);
 
     for (const property of this.properties) {
       const carried = carriedValues.get(property.def.globalId);
@@ -642,11 +538,8 @@ export class WorldObject {
     for (const { child } of rehomed) child.registerEdgeWith(this, true);
     this.registerAncestorTargetedRecursively(true);
 
-    if (parent === undefined) return;
-    // 型が変われば同種の判定も変わる（7.6節）。変わったのは自分の型なので、代表チェーンが
-    // 入れ替わったときと同じ後始末で足りる。
-    parent.getSlotByLocalId(this._parentSlotLocalId).restack(this);
-    if (parent.isRepresentedBySlot(this._parentSlotLocalId)) parent.onRepresentationChanged();
+    // 型が変われば同種の判定も変わる（7.6節）ので、所属スタックを判定し直させる。
+    this._parentSlot?.restack(this);
   }
 
   /**
@@ -677,19 +570,16 @@ export class WorldObject {
 
   private detachFromParent(): void {
     const oldParent = this._parent;
-    if (oldParent === undefined) return;
+    const oldSlot = this._parentSlot;
+    if (oldParent === undefined || oldSlot === undefined) return;
 
     // 祖先対象の登録解除は、トポロジが変わる前（旧祖先がまだ辿れるうち）に行う（registerAncestorTargetedRecursively
     // 参照。再登録はattachToSlot側）。
     this.registerAncestorTargetedRecursively(false);
 
-    const oldParentSlotLocalId = this._parentSlotLocalId;
-    oldParent.getSlotByLocalId(oldParentSlotLocalId).removeInternal(this);
+    oldSlot.removeInternal(this);
     this.registerEdgeWith(oldParent, false);
-    this.setParent(undefined, LocalIndexMap.missing);
-
-    // 抜けたスロットがoldParentのrepresented_by先なら、oldParentの代表チェーンが変わった。
-    if (oldParent.isRepresentedBySlot(oldParentSlotLocalId)) oldParent.onRepresentationChanged();
+    this.setParent(undefined, undefined);
   }
 
   /**
@@ -733,7 +623,7 @@ export class WorldObject {
    * 中身と、量的オブジェクトなら自分の量を含めた重さ。weightプロパティを宣言していないオブジェクトでも、
    * 中身の重さは上へ伝わる（液体は volume × density が重さなので、weightを宣言する必要が無い）。
    */
-  effectiveWeight(): number {
+  private effectiveWeight(): number {
     const own = this.tryGetProperty(this.wellKnown.weightId);
     return own !== undefined
       ? own.getEffectiveValue()
@@ -755,13 +645,7 @@ export class WorldObject {
 
   /** 自分から親を遡った、所属ツリーの根（通常はworld。未配置なら自分自身）。 */
   findRoot(): WorldObject {
-    return WorldObject.findRootFrom(this);
-  }
-
-  private static findRootFrom(start: WorldObject): WorldObject {
-    let current = start;
-    while (current.parent !== undefined) current = current.parent;
-    return current;
+    return this._parent === undefined ? this : this._parent.findRoot();
   }
 
   /**
@@ -814,58 +698,13 @@ export class WorldObject {
    * 9.4節）。force=trueは受け入れ判定を飛ばすため、自動配置スロットが1つでもあれば必ず成功する。
    *
    * **札を重ねたドロップ（putInSlotFor）と同じ規約の、別の入口。** 走査する枠の並びは1箇所が
-   * 答える（placementSlotDefs）が、こちらは受け入れの判定が移動そのもの——量的オブジェクトは
-   * 注いでみるまで入るか分からず（pourVolumeInto）、rejectionForMoveToでは答えが出ない。
+   * 答える（placementSlotDefs）。
    */
-  moveIntoFirstAcceptingSlot(target: WorldObject, force = false, session?: WorldSession): boolean {
-    for (const slotDef of target.def.placementSlotDefs('auto')) {
-      if (this.def.isQuantitative && !force && session !== undefined) {
-        if (this.pourVolumeInto(target, slotDef.globalId, session)) return true;
-        continue;
-      }
+  moveIntoFirstAcceptingSlot(target: WorldObject, force = false): boolean {
+    for (const slotDef of target.def.placementSlotDefs('auto'))
       if (this.moveToSlot(target, slotDef.globalId, force) === undefined) return true;
-    }
 
     return false;
-  }
-
-  /**
-   * 量的オブジェクト（7.6節）の量を、target のスロットへ移す。インスタンスは移動せず、
-   * **移り先に生まれ、移し元は量が尽きた時点で消える**（「量が正であること」と「インスタンスが
-   * 存在すること」が同値、という不変条件を保つ唯一のやり方）。入りきらない量は移し元に残る。
-   *
-   * 戻り値: 1単位でも移せたか。
-   */
-  private pourVolumeInto(target: WorldObject, slotGlobalId: number, session: WorldSession): boolean {
-    if (target === this || this.contains(target)) return false;
-
-    const localSlot = target.def.slotLayout.toLocal(slotGlobalId);
-    if (localSlot === LocalIndexMap.missing) return false;
-    const slot = target.getSlotByLocalId(localSlot);
-
-    const wellKnown = this.wellKnown;
-    const available = this.getNumber(wellKnown.volumeId);
-    if (available <= 0) return false;
-
-    const merged = slot.findVolumeMergeTarget(this);
-    // 合流先が無いときだけ、新しいインスタンスを置ける枠があるかを問う（既にいるなら枠は増えない）。
-    if (merged === undefined && !slot.acceptsByRule(this)) return false;
-
-    const amount = Math.min(available, slot.remainingCapacity(wellKnown.volumeId));
-    if (amount <= 0) return false;
-
-    if (merged !== undefined) {
-      merged.setNumber(wellKnown.volumeId, merged.getNumber(wellKnown.volumeId) + amount, session);
-    } else {
-      const born = session.spawn(this.def.globalId);
-      born.setNumber(wellKnown.volumeId, amount, session);
-      if (born.moveToSlot(target, slotGlobalId) !== undefined) return false;
-    }
-
-    // 注ぎ切って量が尽きた移し元は、setNumberの中で自分を畳む（settleChangedVolume）。
-    this.setNumber(wellKnown.volumeId, available - amount, session);
-
-    return true;
   }
 
   /**
@@ -901,12 +740,6 @@ export class WorldObject {
   unregisterPassiveEffectsFrom(declarer: WorldObject, propertyGlobalId: number): void {
     const property = this.tryGetProperty(propertyGlobalId);
     property?.unregisterPassiveEffectsFrom(declarer);
-  }
-
-  /** 現在このプロパティに登録されている全寄与（modify/add両方）。UI表示用。各効果が現在いくら効いているかはRegisteredPassiveEffect.activeAmountで得られる。 */
-  getIncomingPassiveEffects(propertyGlobalId: number): readonly RegisteredPassiveEffect[] {
-    const property = this.tryGetProperty(propertyGlobalId);
-    return property !== undefined ? property.incoming : [];
   }
 
   /**
@@ -965,8 +798,8 @@ export class WorldObject {
     return target === undefined ? [] : [target];
   }
 
-  tryExecuteAction(actionName: string, actor: WorldObject | undefined, session: WorldSession): boolean {
-    return this.def.tryExecuteAction(this, actor, actionName, session);
+  tryExecuteAction(actionName: string, actor: WorldObject | undefined): boolean {
+    return this.def.tryExecuteAction(this, actor, actionName, this.session);
   }
 
   /**
@@ -986,9 +819,8 @@ export class WorldObject {
     dragged: WorldObject,
     actor: WorldObject | undefined,
     combinationName: string,
-    session: WorldSession,
   ): boolean {
-    return this.def.tryExecuteCombination(this, dragged, actor, combinationName, session);
+    return this.def.tryExecuteCombination(this, dragged, actor, combinationName, this.session);
   }
 
   /** combinationNameの実行にかかるゲーム内時間（分）。 */
@@ -1017,37 +849,14 @@ export class WorldObject {
    * rangeイベントのdestroy/spawnは処理中に自分自身や兄弟をツリーから切り離しうるため、各スロットの中身は
    * 列挙前にスナップショットを取る。
    */
-  tick(session: WorldSession): void {
-    for (const property of this.properties) property.tick(session);
+  tick(): void {
+    for (const property of this.properties) property.tick();
     // 輸送は、この物のプロパティが積分され切ってから走らせる（8.4節）。
-    this.def.passives.applyTickTransfers(this, session);
+    this.def.passives.applyTickTransfers(this, this.session);
 
     for (const slot of this.slots) {
-      for (const child of [...slot.contents]) child.tick(session);
+      for (const child of [...slot.contents]) child.tick();
     }
-
-    if (this.def.isQuantitative) this.settleVolume(session);
-  }
-
-  /**
-   * 量的オブジェクト（7.6節）の量を、passivesのaddが動かしたあとの不変条件へ戻す。どちらもスロットの
-   * 上限・量の下限という、YAMLの著者ではなくエンジンが持つ約束事なので、各液体に宣言を書かせない。
-   *
-   * - 「volumeが正であること」と「インスタンスが存在すること」が同値: 量が尽きたら消える（蒸発）。
-   * - 中身の量の合計はcapacityを超えない（7.3節）: あふれた分は失われる（降雨）。moveは移し元に
-   *   残す（9.6節）が、こちらは移し元が無いため捨てるほかない。
-   */
-  private settleVolume(session: WorldSession): void {
-    const volumeId = session.codex.wellKnown.volumeId;
-    const volume = this.getNumber(volumeId);
-    if (volume <= 0) {
-      this.destroy();
-      return;
-    }
-
-    if (this._parent === undefined) return;
-    const overflow = this._parent.getSlotByLocalId(this._parentSlotLocalId).overflowingVolume(volumeId);
-    if (overflow > 0) this.setNumber(volumeId, Math.max(0, volume - overflow), session);
   }
 
   /**
@@ -1064,7 +873,6 @@ export class WorldObject {
    */
   applyActiveEffect(
     effect: ActiveEffect,
-    session: WorldSession,
     actor: WorldObject | undefined,
     dragged: WorldObject | undefined,
   ): void {
@@ -1072,6 +880,7 @@ export class WorldObject {
     // selfを消した後でも、spawnはこのアンカーと配置時のスロットの状態から置き換え位置を決められる（EffectSite
     // 参照）。
     const effectSite = this.captureEffectSite();
+    const session = this.session;
     session.withSubject(this, () => effect.apply(this, session, actor, dragged, effectSite));
   }
 
@@ -1109,13 +918,13 @@ export class WorldObject {
 
   /** same_slotの置き換えのために、selfが今占めている位置を捕捉する。「これから消えるか」の予測は織り込まず、置き換え位置の判断は配置時にEffectSite自身が行う。parentが無ければ位置が無いのでundefined。 */
   private captureEffectSite(): EffectSite | undefined {
-    if (this._parent === undefined) return undefined;
+    const slot = this._parentSlot;
+    if (this._parent === undefined || slot === undefined) return undefined;
 
-    const slot = this._parent.getSlotByLocalId(this._parentSlotLocalId);
     const originStack = slot.findStackContaining(this);
     if (originStack === undefined) return undefined;
 
-    return new EffectSite(this._parent, this._parentSlotLocalId, originStack, slot.indexOfStack(originStack));
+    return new EffectSite(this._parent, slot, originStack, slot.indexOfStack(originStack));
   }
 
   /**
@@ -1124,12 +933,11 @@ export class WorldObject {
    */
   executeSpawn(
     effect: SpawnEffect,
-    session: WorldSession,
     actor: WorldObject | undefined,
     effectSite: EffectSite | undefined,
   ): void {
-    const spawned = session.spawn(effect.objectGlobalId);
-    this.place(spawned, effect.into, session, actor, effect.into === 'same_slot' ? effectSite : undefined);
+    const spawned = this.session.spawn(effect.objectGlobalId);
+    this.place(spawned, effect.into, actor, effect.into === 'same_slot' ? effectSite : undefined);
   }
 
   /**
@@ -1141,7 +949,6 @@ export class WorldObject {
   private place(
     spawned: WorldObject,
     into: SpawnTargetRoot,
-    session: WorldSession,
     actor: WorldObject | undefined,
     site: EffectSite | undefined,
   ): void {
@@ -1155,125 +962,28 @@ export class WorldObject {
     } else if (into === 'child') {
       // 受け取れる子が居なければselfの親へ伝播させる（＝持ちきれない物は地面に落ちる、と同じ扱い）。
       primaryTarget = this; // eslint-disable-line @typescript-eslint/no-this-alias -- 伝播先の起点として使うだけ
-      placed = this.tryFirstAcceptingChild(spawned, session);
+      placed = this.tryFirstAcceptingChild(spawned);
     } else {
       const target = into === 'self' ? this : actor;
       if (target === undefined) return;
       primaryTarget = target;
-      placed = WorldObject.tryFirstAcceptingSlot(spawned, primaryTarget, session, false);
+      placed = spawned.moveIntoFirstAcceptingSlot(primaryTarget);
     }
 
     if (placed) return;
     if (primaryTarget.parent === undefined) return;
 
-    WorldObject.tryFirstAcceptingSlot(spawned, primaryTarget.parent, session, true);
+    spawned.moveIntoFirstAcceptingSlot(primaryTarget.parent, true);
   }
 
   /**
    * 自分の子を順に走査し、最初に受け取れた子のスロットへ入れる（into: child、9.4節）。子のどのスロットが
    * 受け取るかは通常の走査に委ねるため、著者は「どの子か」も「どのスロットか」も書かない。
    */
-  private tryFirstAcceptingChild(spawned: WorldObject, session: WorldSession): boolean {
+  private tryFirstAcceptingChild(spawned: WorldObject): boolean {
     for (const child of this.children()) {
-      if (WorldObject.tryFirstAcceptingSlot(spawned, child, session, false)) return true;
+      if (spawned.moveIntoFirstAcceptingSlot(child)) return true;
     }
     return false;
-  }
-
-  /** targetのスロットを宣言順に走査し、最初に配置できたスロットへ入れる（moveIntoFirstAcceptingSlot参照）。 */
-  private static tryFirstAcceptingSlot(
-    spawned: WorldObject,
-    target: WorldObject,
-    session: WorldSession,
-    force: boolean,
-  ): boolean {
-    return spawned.moveIntoFirstAcceptingSlot(target, force);
-  }
-}
-
-/** same_slot置き換えの配置指示: originが居たセルの位置と、そのセルに同種が残っているか。 */
-export class SameSlotPlacement {
-  readonly originCellIndex: number;
-  readonly kindRemains: boolean;
-
-  constructor(originCellIndex: number, kindRemains: boolean) {
-    this.originCellIndex = originCellIndex;
-    this.kindRemains = kindRemains;
-  }
-}
-
-/**
- * applyActiveEffectの入口でself（効果の起点）が占めていた位置を捕捉したスナップショット。same_slot spawnだけが
- * これを使い、置き換え先を決める。「これからselfが消えるか」は捕捉時には織り込まず、置き換え位置の判断は配置時の
- * スロットの状態から行う（originKindRemains参照）。1つの効果が複数のオブジェクトを生む場合、2個目以降の位置も
- * ここが決めるため（placeReplacement）、置いた場所を覚えている。
- */
-export class EffectSite {
-  readonly parent: WorldObject;
-  readonly parentSlotLocalId: number;
-
-  /** 捕捉時にself(origin)が属していたObjectStack。 */
-  private readonly originStack: ObjectStack;
-
-  /** 捕捉時のoriginStackのセル位置。空セルが除去される非fixedPositionsでは、同種が消えた後はindexOfStackで引けなくなるため捕捉値が要る。 */
-  private readonly stackIndexAtCapture: number;
-
-  /** 次の1つを「その隣」へ並べる基準になるスタック。直前にセルを消費して置いた置き換えオブジェクトが入る（まだ誰も消費していなければundefined＝originの位置が基準）。 */
-  private anchorStack: ObjectStack | undefined;
-
-  constructor(
-    parent: WorldObject,
-    parentSlotLocalId: number,
-    originStack: ObjectStack,
-    stackIndexAtCapture: number,
-  ) {
-    this.parent = parent;
-    this.parentSlotLocalId = parentSlotLocalId;
-    this.originStack = originStack;
-    this.stackIndexAtCapture = stackIndexAtCapture;
-  }
-
-  /**
-   * 置き換えオブジェクトをoriginが居た位置へ配置する（Slot.placeSameSlot参照）。1つの効果が複数のオブジェクトを
-   * 生む場合、位置を引き継ぐのは新しいセルを要る最初の1つで、以降はその隣へ続けて並ぶ。空いた1つのセルを
-   * 取り合わせると、2個目以降は置き場所を失ってfallbackで外へこぼれてしまうため（ヤシの実の皮がアイテム
-   * レーンへ落ちる）。
-   *
-   * 戻り値: 配置できたらtrue。falseなら呼び出し側がfallbackへ委ねる。
-   */
-  placeReplacement(spawned: WorldObject): boolean {
-    const slot = this.parent.getSlotByLocalId(this.parentSlotLocalId);
-    const placed =
-      spawned.insertSameSlot(this.parent, slot.def.globalId, this.nextPlacement(slot)) === undefined;
-
-    // 既存スタックへ合流したもの（findOwnStackがundefined）はセルを消費しないため基準にしない——originの
-    // 位置はまだ誰も引き継いでおらず、次の1つのために空けておく。配置に失敗したものも同じ扱いになる。
-    const ownStack = placed ? slot.findOwnStack(spawned) : undefined;
-    if (ownStack !== undefined) this.anchorStack = ownStack;
-
-    return placed;
-  }
-
-  /** 次の置き換えオブジェクトの置き場所。基準になるスタックが居れば「その隣」＝同種が残っている場合と同じ扱いになる。 */
-  private nextPlacement(slot: Slot): SameSlotPlacement {
-    if (this.anchorStack !== undefined) {
-      return new SameSlotPlacement(slot.indexOfStack(this.anchorStack), true);
-    }
-    return new SameSlotPlacement(this.originCellIndex(slot), this.originKindRemains);
-  }
-
-  /**
-   * 元のスタックにoriginと同種がまだ残っているか（selfが生き残る／同種の兄弟が残る）。残っていれば置き換え
-   * オブジェクトは隣へ、残っていなければ空いたその位置をそのまま引き継ぐ。判定は在庫（members.length）で行う
-   * ——「その位置が同種を受け入れられるか」ではない。空になったセルも同種を受け入れ可能だが、位置は引き継ぐ
-   * べきだから。
-   */
-  private get originKindRemains(): boolean {
-    return this.originStack.members.length > 0;
-  }
-
-  /** originが居たセルの位置。同種が残っていればoriginStackの現在位置、消えていれば捕捉時の位置。 */
-  private originCellIndex(slot: Slot): number {
-    return this.originKindRemains ? slot.indexOfStack(this.originStack) : this.stackIndexAtCapture;
   }
 }

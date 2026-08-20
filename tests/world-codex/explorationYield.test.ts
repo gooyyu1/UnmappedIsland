@@ -94,7 +94,7 @@ describe('探索で見つかる物', () => {
     const findings: Finding[] = [];
     let previous: Finding = new Map();
     for (let i = 0; i < trials; i++) {
-      expect(location.explore(undefined, explorer), `${landName}: 探索は必ず成立する`).toBe(true);
+      expect(location.explore(undefined), `${landName}: 探索は必ず成立する`).toBe(true);
       const now = countByName([...location.items, ...location.fixtures]);
       findings.push(added(now, previous));
       previous = now;

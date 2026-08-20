@@ -1,23 +1,28 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 describe('transfer効果（WorldObject.applyActiveEffect）の実行', () => {
-  let nextInstanceId: number;
+  let sessions: Map<WorldCodex, WorldSession>;
 
   beforeEach(() => {
-    nextInstanceId = 1;
+    sessions = new Map();
   });
 
   function load(yaml: string): WorldCodex {
     return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
   }
 
+  /** 1つのcodexから作る物は同じセッションに属する（WorldObject.session）。 */
   function spawn(codex: WorldCodex, objectName: string): WorldObject {
-    const def = codex.objects.get(codex.objectNames.getId(objectName));
-    return new WorldObject(nextInstanceId++, def, new WorldSession(codex));
+    let session = sessions.get(codex);
+    if (session === undefined) {
+      session = new WorldSession(codex);
+      sessions.set(codex, session);
+    }
+    return session.spawn(codex.objectNames.getId(objectName));
   }
 
   it('sourceとdestinationの双方に十分な余裕があればamount分だけ移動する', () => {
@@ -45,11 +50,10 @@ object_defs:
     const waterId = codex.propertyNames.getId('water_amount');
     const hydrationId = codex.propertyNames.getId('hydration');
 
-    const session = new WorldSession(codex);
     const actor = spawn(codex, 'player');
     const canteen = spawn(codex, 'canteen');
 
-    const executed = canteen.tryExecuteAction('drink', actor, session);
+    const executed = canteen.tryExecuteAction('drink', actor);
 
     expect(executed).toBe(true);
     expect(canteen.getNumber(waterId), 'amount(2000)だけ減る').toBe(3000);
@@ -81,11 +85,10 @@ object_defs:
     const waterId = codex.propertyNames.getId('water_amount');
     const hydrationId = codex.propertyNames.getId('hydration');
 
-    const session = new WorldSession(codex);
     const actor = spawn(codex, 'player2');
     const canteen = spawn(codex, 'canteen2');
 
-    canteen.tryExecuteAction('drink', actor, session);
+    canteen.tryExecuteAction('drink', actor);
 
     expect(canteen.getNumber(waterId), '容器に実際に入っていた分(500)しか出せない').toBe(0);
     expect(actor.getNumber(hydrationId), '実際に出せた分(500)しか回復しない').toBe(500);
@@ -128,11 +131,10 @@ object_defs:
     const hydrationId = codex.propertyNames.getId('hydration');
     const vitaminId = codex.propertyNames.getId('vitamin');
 
-    const session = new WorldSession(codex);
     const actor = spawn(codex, 'player_multi');
     const canteen = spawn(codex, 'canteen_multi');
 
-    const executed = canteen.tryExecuteAction('drink', actor, session);
+    const executed = canteen.tryExecuteAction('drink', actor);
 
     expect(executed).toBe(true);
     expect(canteen.getNumber(waterId)).toBe(3000);
@@ -166,11 +168,10 @@ object_defs:
     const waterId = codex.propertyNames.getId('water_amount');
     const hydrationId = codex.propertyNames.getId('hydration');
 
-    const session = new WorldSession(codex);
     const actor = spawn(codex, 'player3');
     const canteen = spawn(codex, 'canteen3');
 
-    canteen.tryExecuteAction('drink', actor, session);
+    canteen.tryExecuteAction('drink', actor);
 
     expect(actor.getNumber(hydrationId), '残容量(100)分しか回復しない').toBe(28800);
     expect(canteen.getNumber(waterId), '収まらない分(1900)は容器に残る(水を無駄にしない)').toBe(4900);
@@ -202,11 +203,10 @@ object_defs:
     const waterId = codex.propertyNames.getId('water_amount');
     const hydrationId = codex.propertyNames.getId('hydration');
 
-    const session = new WorldSession(codex);
     const actor = spawn(codex, 'player4');
     const canteen = spawn(codex, 'canteen4');
 
-    canteen.tryExecuteAction('drink', actor, session);
+    canteen.tryExecuteAction('drink', actor);
 
     expect(canteen.getNumber(waterId), 'toの残容量を見ずにamount(2000)そのまま出す').toBe(3000);
     expect(
@@ -237,10 +237,9 @@ object_defs:
     const waterId = codex.propertyNames.getId('water_amount');
     const brothId = codex.propertyNames.getId('broth_amount');
 
-    const session = new WorldSession(codex);
     const cauldron = spawn(codex, 'cauldron');
 
-    const executed = cauldron.tryExecuteAction('pour_in', undefined, session);
+    const executed = cauldron.tryExecuteAction('pour_in', undefined);
 
     expect(executed, 'from_object/to_objectを省略してもself同士で成立する').toBe(true);
     expect(cauldron.getNumber(waterId)).toBe(2000);
@@ -279,11 +278,10 @@ object_defs:
     const hydrationId = codex.propertyNames.getId('hydration');
     const wakefulnessId = codex.propertyNames.getId('wakefulness');
 
-    const session = new WorldSession(codex);
     const actor = spawn(codex, 'player5');
     const canteen = spawn(codex, 'canteen5');
 
-    canteen.tryExecuteAction('drink', actor, session);
+    canteen.tryExecuteAction('drink', actor);
 
     expect(actor.getNumber(hydrationId), 'amount(1200)分を全量移送する').toBe(1200);
     expect(actor.getNumber(wakefulnessId), '全量移送時はlinked_addも全量(200)適用される').toBe(200);
@@ -322,11 +320,10 @@ object_defs:
     const hydrationId = codex.propertyNames.getId('hydration');
     const wakefulnessId = codex.propertyNames.getId('wakefulness');
 
-    const session = new WorldSession(codex);
     const actor = spawn(codex, 'player6');
     const canteen = spawn(codex, 'canteen6');
 
-    canteen.tryExecuteAction('drink', actor, session);
+    canteen.tryExecuteAction('drink', actor);
 
     expect(actor.getNumber(hydrationId), '在庫(600)の分しか移送されない').toBe(600);
     expect(
@@ -364,11 +361,10 @@ object_defs:
 
     function drink(yaml: string): { water: number; hydration: number } {
       const codex = load(yaml);
-      const session = new WorldSession(codex);
       const actor = spawn(codex, 'drinker');
       const cup = spawn(codex, 'cup');
 
-      expect(cup.tryExecuteAction('drink', actor, session)).toBe(true);
+      expect(cup.tryExecuteAction('drink', actor)).toBe(true);
 
       return {
         water: cup.getNumber(codex.propertyNames.getId('volume')),

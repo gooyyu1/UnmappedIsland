@@ -1,24 +1,28 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldObject } from '../../src/domain/WorldObject';
+import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { StubRng } from '../support/StubRng';
 
 describe('WorldObjectのactions/combinations実行', () => {
-  let nextInstanceId: number;
+  let sessions: Map<WorldCodex, WorldSession>;
 
   beforeEach(() => {
-    nextInstanceId = 1;
+    sessions = new Map();
   });
 
   function load(yaml: string): WorldCodex {
     return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
   }
 
+  /** 1つのcodexから作る物は同じセッションに属する（WorldObject.session）。 */
   function spawn(codex: WorldCodex, objectName: string): WorldObject {
-    const def = codex.objects.get(codex.objectNames.getId(objectName));
-    return new WorldObject(nextInstanceId++, def, new WorldSession(codex));
+    let session = sessions.get(codex);
+    if (session === undefined) {
+      session = new WorldSession(codex);
+      sessions.set(codex, session);
+    }
+    return session.spawn(codex.objectNames.getId(objectName));
   }
 
   // ------------------------------------------------------------------
@@ -43,11 +47,10 @@ object_defs:
     const codex = load(yaml);
     const satietyId = codex.propertyNames.getId('satiety');
 
-    const session = new WorldSession(codex);
     const actor = spawn(codex, 'player');
     const appleInstance = spawn(codex, 'apple');
 
-    const executed = appleInstance.tryExecuteAction('eat', actor, session);
+    const executed = appleInstance.tryExecuteAction('eat', actor);
 
     expect(executed).toBe(true);
     expect(actor.getNumber(satietyId)).toBe(10);
@@ -73,11 +76,10 @@ object_defs:
     const codex = load(yaml);
     const satietyId = codex.propertyNames.getId('satiety');
 
-    const session = new WorldSession(codex);
     const actor = spawn(codex, 'player2');
     const appleInstance = spawn(codex, 'apple2');
 
-    const executed = appleInstance.tryExecuteAction('eat', actor, session);
+    const executed = appleInstance.tryExecuteAction('eat', actor);
 
     expect(executed, 'satietyが既に100(<100を満たさない)のため実行されない').toBe(false);
     expect(actor.getNumber(satietyId), '条件を満たさないため何も変化しない').toBe(100);
@@ -100,10 +102,9 @@ object_defs:
     const codex = load(yaml);
     const insideSlotId = codex.slotNames.getId('inside');
 
-    const session = new WorldSession(codex);
     const crate = spawn(codex, 'crate');
 
-    const executed = crate.tryExecuteAction('open', undefined, session);
+    const executed = crate.tryExecuteAction('open', undefined);
 
     const inside = crate.tryGetSlot(insideSlotId);
     expect(executed).toBe(true);
@@ -118,10 +119,9 @@ object_defs:
 `;
     const codex = load(yaml);
 
-    const session = new WorldSession(codex);
     const appleInstance = spawn(codex, 'apple3');
 
-    expect(appleInstance.tryExecuteAction('does_not_exist', undefined, session)).toBe(false);
+    expect(appleInstance.tryExecuteAction('does_not_exist', undefined)).toBe(false);
   });
 
   it('parent対象は現在の親に適用される', () => {
@@ -144,12 +144,11 @@ object_defs:
     const itemsSlotId = codex.slotNames.getId('items');
     const budgetId = codex.propertyNames.getId('weight_budget');
 
-    const session = new WorldSession(codex);
     const basketInstance = spawn(codex, 'basket');
     const rockInstance = spawn(codex, 'rock_item');
     expect(rockInstance.moveToSlot(basketInstance, itemsSlotId)).toBeUndefined();
 
-    const executed = rockInstance.tryExecuteAction('use', undefined, session);
+    const executed = rockInstance.tryExecuteAction('use', undefined);
 
     expect(executed).toBe(true);
     expect(basketInstance.getNumber(budgetId)).toBe(9);
@@ -164,10 +163,9 @@ object_defs:
         destroy: parent
 `;
     const codex = load(yaml);
-    const session = new WorldSession(codex);
     const rockInstance = spawn(codex, 'rock_item2'); // 親を持たない
 
-    const executed = rockInstance.tryExecuteAction('use', undefined, session);
+    const executed = rockInstance.tryExecuteAction('use', undefined);
 
     expect(executed, 'アクション自体は実行される(親が無いのでparent対象の適用だけが無視される)').toBe(true);
   });
@@ -190,7 +188,6 @@ object_defs:
   basket: {}
 `;
     const codex = load(yaml);
-    const session = new WorldSession(codex);
     const itemsSlotId = codex.slotNames.getId('items');
     const smashTargetId = codex.propertyNames.getId('smash_target');
 
@@ -201,48 +198,12 @@ object_defs:
     expect(basket.moveToSlot(ground, itemsSlotId)).toBeUndefined();
 
     boar.setProperty(smashTargetId, 9999);
-    expect(boar.tryExecuteAction('trample', undefined, session)).toBe(true);
+    expect(boar.tryExecuteAction('trample', undefined)).toBe(true);
     expect(basket.parent, '指す先が居なければ何も起きない').toBe(ground);
 
     boar.setProperty(smashTargetId, basket.instanceId);
-    expect(boar.tryExecuteAction('trample', undefined, session)).toBe(true);
+    expect(boar.tryExecuteAction('trample', undefined)).toBe(true);
     expect(basket.parent, 'プロパティが指す個体が消える').toBeUndefined();
-  });
-
-  it('represented_by先の中身がある場合はそちらへ委譲される', () => {
-    const yaml = `
-object_defs:
-  player_repr:
-    props:
-      satiety:
-        value: 0
-  snack_container:
-    represented_by: content
-    slots:
-      content:
-        cell: {accept: {tag: edible}}
-  apple_slice:
-    tags: [edible]
-    actions:
-      eat:
-        add:
-          actor:
-            satiety: 10
-`;
-    const codex = load(yaml);
-    const satietyId = codex.propertyNames.getId('satiety');
-    const contentSlotId = codex.slotNames.getId('content');
-
-    const session = new WorldSession(codex);
-    const actor = spawn(codex, 'player_repr');
-    const container = spawn(codex, 'snack_container');
-    const slice = spawn(codex, 'apple_slice');
-    expect(slice.moveToSlot(container, contentSlotId)).toBeUndefined();
-
-    const executed = container.tryExecuteAction('eat', actor, session);
-
-    expect(executed).toBe(true);
-    expect(actor.getNumber(satietyId)).toBe(10);
   });
 
   // ------------------------------------------------------------------
@@ -274,12 +235,11 @@ object_defs:
 
     // weight比が100:0のため、nextDoubleが[0,1)のどんな値でも常に1番目(-10)だけが選ばれる。
     // 「どのpickが選ばれるか」に依存するシナリオなので、StubRngで20回分の値列を明示する。
-    const session = new WorldSession(codex, undefined, new StubRng({ doubles: Array(20).fill(0.5) }));
     const actor = spawn(codex, 'player3');
     const swordInstance = spawn(codex, 'sword');
 
     for (let i = 0; i < 20; i++) {
-      swordInstance.tryExecuteAction('attack', actor, session);
+      swordInstance.tryExecuteAction('attack', actor);
     }
 
     expect(
@@ -314,12 +274,11 @@ object_defs:
     const hpId = codex.propertyNames.getId('hp');
     const luckId = codex.propertyNames.getId('luck');
 
-    const session = new WorldSession(codex);
     const actor = spawn(codex, 'player4');
     actor.setProperty(luckId, 1000); // 2番目(重み0固定)を圧倒する
     const bowInstance = spawn(codex, 'bow');
 
-    bowInstance.tryExecuteAction('shoot', actor, session);
+    bowInstance.tryExecuteAction('shoot', actor);
 
     expect(
       actor.getNumber(hpId),
@@ -351,11 +310,10 @@ object_defs:
     const codex = load(yaml);
     const durabilityId = codex.propertyNames.getId('durability');
 
-    const session = new WorldSession(codex);
     const woodInstance = spawn(codex, 'wood');
     const axeInstance = spawn(codex, 'axe_tool');
 
-    const executed = woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop', session);
+    const executed = woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop');
 
     expect(executed).toBe(true);
     expect(woodInstance.parent, 'self(wood)はdestroyされる').toBeUndefined();
@@ -378,87 +336,6 @@ object_defs:
     expect(() => load(yaml)).toThrowError(/未知の対象キー/);
   });
 
-  it('receiver/draggedの両方が代表(represented_by)の中身へ委譲される', () => {
-    const yaml = `
-traits:
-  liquid_container:
-    represented_by: content
-    slots:
-      content:
-        cell_count: 1
-        cell: {accept: {tag: liquid}}
-object_defs:
-  receiver:
-    traits: [liquid_container]
-  source:
-    traits: [liquid_container]
-  water_liquid:
-    tags: [liquid, water_liquid]
-    props:
-      amount:
-        value: 0
-    combinations:
-      pour_in:
-        with: {tag: water_liquid}
-        add:
-          self:
-            amount: 2
-          dragged:
-            amount: -2
-`;
-    const codex = load(yaml);
-    const contentSlotId = codex.slotNames.getId('content');
-    const amountId = codex.propertyNames.getId('amount');
-
-    const session = new WorldSession(codex);
-    const receiver = spawn(codex, 'receiver');
-    const source = spawn(codex, 'source');
-    const receiverLiquid = spawn(codex, 'water_liquid');
-    const sourceLiquid = spawn(codex, 'water_liquid');
-    receiverLiquid.setProperty(amountId, 1);
-    sourceLiquid.setProperty(amountId, 5);
-    expect(receiverLiquid.moveToSlot(receiver, contentSlotId)).toBeUndefined();
-    expect(sourceLiquid.moveToSlot(source, contentSlotId)).toBeUndefined();
-
-    const executed = receiver.tryExecuteCombination(source, undefined, 'pour_in', session);
-
-    expect(executed).toBe(true);
-    expect(receiverLiquid.getNumber(amountId)).toBe(3);
-    expect(sourceLiquid.getNumber(amountId)).toBe(3);
-  });
-
-  it('マッチするcombination検索も代表(represented_by)の中身を使う', () => {
-    const yaml = `
-traits:
-  liquid_container:
-    represented_by: content
-    slots:
-      content:
-        cell_count: 1
-        cell: {accept: {tag: liquid}}
-object_defs:
-  receiver2:
-    traits: [liquid_container]
-  source2:
-    traits: [liquid_container]
-  water_liquid2:
-    tags: [liquid, water_liquid2]
-    combinations:
-      pour_in:
-        with: {tag: water_liquid2}
-        destroy: self
-`;
-    const codex = load(yaml);
-    const contentSlotId = codex.slotNames.getId('content');
-
-    const receiver = spawn(codex, 'receiver2');
-    const source = spawn(codex, 'source2');
-    expect(spawn(codex, 'water_liquid2').moveToSlot(receiver, contentSlotId)).toBeUndefined();
-    expect(spawn(codex, 'water_liquid2').moveToSlot(source, contentSlotId)).toBeUndefined();
-    const names = receiver.combinationsWith(source, undefined).map((c) => c.name);
-    expect(names).toEqual(['pour_in']);
-  });
-
   it('タグが一致しないdraggedに対してはfalseを返す', () => {
     const yaml = `
 object_defs:
@@ -470,11 +347,10 @@ object_defs:
   pebble3: {}
 `;
     const codex = load(yaml);
-    const session = new WorldSession(codex);
     const woodInstance = spawn(codex, 'wood2');
     const pebbleInstance = spawn(codex, 'pebble3');
 
-    const executed = woodInstance.tryExecuteCombination(pebbleInstance, undefined, 'chop', session);
+    const executed = woodInstance.tryExecuteCombination(pebbleInstance, undefined, 'chop');
 
     expect(executed, 'draggedがwithのタグを持たないため実行されない').toBe(false);
   });
@@ -493,11 +369,10 @@ object_defs:
     traits: [sharp_tool]
 `;
     const codex = load(yaml);
-    const session = new WorldSession(codex);
     const woodInstance = spawn(codex, 'wood3');
     const axeInstance = spawn(codex, 'axe_tool3');
 
-    const executed = woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop', session);
+    const executed = woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop');
 
     expect(executed, "object_def自身のidではなく、参照したtrait経由で得た'sharp_tool'タグでマッチする").toBe(
       true,
@@ -518,16 +393,15 @@ object_defs:
     tags: [tinder2]
 `;
     const codex = load(yaml);
-    const session = new WorldSession(codex);
     const hearthInstance = spawn(codex, 'hearth2');
     const tinderInstance = spawn(codex, 'burning_tinder2');
     const grassInstance = spawn(codex, 'dry_grass2');
 
     expect(
-      hearthInstance.tryExecuteCombination(grassInstance, undefined, 'ignite', session),
+      hearthInstance.tryExecuteCombination(grassInstance, undefined, 'ignite'),
       '同じタグを持っていても、別の型はマッチしない',
     ).toBe(false);
-    expect(hearthInstance.tryExecuteCombination(tinderInstance, undefined, 'ignite', session)).toBe(true);
+    expect(hearthInstance.tryExecuteCombination(tinderInstance, undefined, 'ignite')).toBe(true);
     expect(tinderInstance.parent, 'destroy: draggedが適用される').toBeUndefined();
   });
 
@@ -571,16 +445,15 @@ object_defs:
     const codex = load(yaml);
     const durabilityId = codex.propertyNames.getId('durability');
 
-    const session = new WorldSession(codex);
     const woodInstance = spawn(codex, 'wood5');
     const axeInstance = spawn(codex, 'axe_tool5');
 
     expect(
-      woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop', session),
+      woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop'),
       'durabilityが0(gt 0を満たさない)なので実行されない',
     ).toBe(false);
 
     axeInstance.setProperty(durabilityId, 1);
-    expect(woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop', session)).toBe(true);
+    expect(woodInstance.tryExecuteCombination(axeInstance, undefined, 'chop')).toBe(true);
   });
 });

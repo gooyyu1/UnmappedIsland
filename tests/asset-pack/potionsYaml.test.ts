@@ -58,12 +58,11 @@ describe('サンプルアセットパックの薬', () => {
   }
 
   it('毒薬をあおると、満タンから飲んでも血が下限を割って失血死する', () => {
-    const session = new WorldSession(codex);
     const character = spawn(SAMPLE_CHARACTER, 1);
     const potion = spawn('poison_potion', 2);
     const bloodId = codex.propertyNames.getId('blood');
 
-    expect(potion.tryExecuteAction('drink', character, session)).toBe(true);
+    expect(potion.tryExecuteAction('drink', character)).toBe(true);
 
     // bloodのon_minが既定のクランプを置き換えるので、0を割った値がそのまま残る
     // （VitalsSystem.md 3節・6節）。死因はその段が名乗る。
@@ -72,25 +71,23 @@ describe('サンプルアセットパックの薬', () => {
   });
 
   it('回復ポーションをあおると、空から飲んでも血が満タンに戻る', () => {
-    const session = new WorldSession(codex);
     const character = spawn(SAMPLE_CHARACTER, 1);
     const potion = spawn('healing_potion', 2);
     const bloodId = codex.propertyNames.getId('blood');
     character.setProperty(bloodId, 0);
 
-    expect(potion.tryExecuteAction('drink', character, session)).toBe(true);
+    expect(potion.tryExecuteAction('drink', character)).toBe(true);
 
     expect(character.getNumber(bloodId)).toBe(5000);
   });
 
   it.each(['poison_potion', 'healing_potion'])('%sは飲めば手元から消える', (objectName) => {
-    const session = new WorldSession(codex);
     const character = spawn(SAMPLE_CHARACTER, 1);
     const handId = codex.slotNames.getId('hand');
     const potion = spawn(objectName, 2);
     expect(potion.moveToSlot(character, handId)).toBeUndefined();
 
-    expect(potion.tryExecuteAction('drink', character, session)).toBe(true);
+    expect(potion.tryExecuteAction('drink', character)).toBe(true);
 
     expect(character.tryGetSlot(handId)?.contents).toEqual([]);
   });

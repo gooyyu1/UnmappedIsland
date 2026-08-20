@@ -60,7 +60,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   function tick(count: number): void {
     const held = valueOf(hydrationId);
     for (let i = 0; i < count; i++) {
-      player.tick(session);
+      player.tick();
       player.setProperty(hydrationId, held);
     }
   }
@@ -77,7 +77,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
     player.setProperty(satietyId, 0);
     stock(0);
 
-    expect(taro.tryExecuteAction('eat', player, session)).toBe(true);
+    expect(taro.tryExecuteAction('eat', player)).toBe(true);
 
     expect(valueOf(satietyId), 'かさはmL').toBe(550);
     expect(valueOf(carbohydrateId), '中身はtick（かさとは別の数）').toBe(48);
@@ -114,10 +114,10 @@ describe('消化（かさ・栄養素・蓄え）', () => {
     const max = 1500;
 
     player.setProperty(satietyId, 900);
-    expect(taro.tryExecuteAction('eat', player, session), 'full段では実行できない').toBe(false);
+    expect(taro.tryExecuteAction('eat', player), 'full段では実行できない').toBe(false);
 
     player.setProperty(satietyId, 899);
-    expect(taro.tryExecuteAction('eat', player, session), '1つ下の段なら食べられる').toBe(true);
+    expect(taro.tryExecuteAction('eat', player), '1つ下の段なら食べられる').toBe(true);
     expect(valueOf(satietyId), '最大の食料でも溢れない').toBe(899 + 550);
     expect(899 + 550).toBeLessThanOrEqual(max);
   });

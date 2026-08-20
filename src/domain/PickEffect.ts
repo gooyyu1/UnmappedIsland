@@ -1,5 +1,6 @@
 import { pickWeighted } from './Rng';
-import type { EffectSite, WorldObject } from './WorldObject';
+import type { EffectSite } from './EffectSite';
+import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 import { ActiveEffect } from './ActiveEffect';
 import type { EffectReader, PickCandidateReading, WeightReading } from './EffectReader';
