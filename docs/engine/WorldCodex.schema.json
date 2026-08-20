@@ -1051,6 +1051,13 @@
           "$ref": "#/$defs/recipes_map",
           "description": "この型を成果物とするレシピ（13節）。traitには書けない（成果物が決まらないため）。"
         },
+        "variation_axes": {
+          "description": "この型の変種を並べる軸（3.5.1節）。軸の名前をキーにする。traitからは合成しない——どんな変種を持つかは型自身の性質。",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/variation_axis_def"
+          }
+        },
         "slots": {
           "$ref": "#/$defs/slots_map"
         },
@@ -1428,6 +1435,26 @@
       "additionalProperties": {
         "$ref": "#/$defs/identifier"
       }
+    },
+    "variation_axis_def": {
+      "description": "変種を並べる軸1本（GameElementDefinition.md 3.5.1節）。ofが選んだ型ごとに「素の型＋その型が持つtraits」の変種が生成され、量を持つfill（range: 0〜capacity）が足される。",
+      "type": "object",
+      "properties": {
+        "of": {
+          "$ref": "#/$defs/type_match_rule",
+          "description": "この軸の値になれる型。traitsだけを宣言した型でなければロードエラー。"
+        },
+        "capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "その変種が抱えられる量の上限（fillのrangeの上端）。"
+        }
+      },
+      "required": [
+        "of",
+        "capacity"
+      ],
+      "additionalProperties": false
     }
   }
 }

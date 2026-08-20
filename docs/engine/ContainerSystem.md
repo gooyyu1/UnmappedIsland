@@ -11,9 +11,8 @@
 与え、そのスロットを `visible_slots`（同 7.11 節）に並べることで、カードを押すと中身が並び、
 カードへ重ねた物はそこへ入ります（投入用の `combination` は要りません）。入れ物ごとに決めるのは、
 何種類入るか（`cell_count`）と、どれだけのかさが入るか（`capacity`）の 2 つだけです。液体の容器は
-「中身の液体が容器を代表し、量は中身自身が持つ」逆向きの構造なので、trait もタグも分けています。
-スロット名も、複数種が入る固形物側は `contents`、1 種類しか入らない液体側は `content` と単複で
-使い分けます。定義は `src/assets/world-codex/containers.yaml`、検証は
+「中身が容器の変種になり、量は容器自身が `fill` として持つ」別の構造なので、trait もタグも分けています
+（スロットを持つのは固形物側だけです）。定義は `src/assets/world-codex/containers.yaml`、検証は
 `tests/world-codex/containersYaml.test.ts` です。
 
 この構造の上で本書が扱うのは**数値をどう決めるか**です——物の重さがどう積み上がり、それを担ぐ人が
@@ -29,7 +28,7 @@
 オブジェクトの `weight` は、自分自身の重さに、中身の `weight` をそのまま足したものです。
 
 ```
-weight の実効値 = weight.value + 通常の modify + Σ( 子の weight実効値 ) + 量的オブジェクトなら volume × density
+weight の実効値 = weight.value + 通常の modify + Σ( 子の weight実効値 ) + fill × density
 ```
 
 **ここに軽減率は一切かかりません。** そりを台車に積めば、台車の重さはそりの重さをそのまま加えたものになります。
@@ -39,8 +38,8 @@ weight の実効値 = weight.value + 通常の modify + Σ( 子の weight実効�
 `weight` は物理量として素直に上へ伝わります。この一貫性のおかげで、将来キャラクターを担架やボートに乗せても、
 自重と荷物を合わせた重さがそのまま伝わります。
 
-液体は 1 個あたりではなく単位量あたりの重さを持つため、`volume × density` として合算します（`density` は
-単位量あたりの重さ = g/mL、`LiquidContainerSystem.md` 8 節）。**換算定数は要りません**——mL × g/mL = g が
+中身入りの容器は、抱えている量ぶんだけ自分が重くなります——`fill × density` を自分の重さへ足します
+（`density` は単位量あたりの重さ = g/mL、`LiquidContainerSystem.md` 8 節）。**換算定数は要りません**——mL × g/mL = g が
 そのまま成立するよう、3 つの単位を噛み合わせて選んでいます。
 
 **`weight` の単位は g です（1 = 1g、1kg = 1000）。** 液体の量の単位（1 = 1mL）と対になっていて別々には
