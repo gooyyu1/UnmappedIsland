@@ -7,6 +7,12 @@ import type { WeightSpec } from './PickEffect';
 import type { TypeMatchRule } from './TypeMatchRule';
 
 /**
+ * 誰がその枠へ物を入れる走査に参加するか（`placement`、GameElementDefinition.md 7.7節）。
+ * `auto`はspawn/moveの宣言順走査（9.4節）、`manual`はプレイヤーが札を重ねたときの走査（7.8節）。
+ */
+export type Placement = 'auto' | 'manual';
+
+/**
  * 1つのセル（枠）の定義（GameElementDefinition.md 7.2節）。スロットは中身を直接持たず、セルの並びを
  * 持つ——「板の枠が1つ、棒の枠が1つ（4本まで）」のように、枠ごとに違う要件を書けるようにするため。
  *
@@ -107,6 +113,11 @@ export class SlotDef {
     this.autoPlacement = autoPlacement;
     this.manualPlacement = manualPlacement;
     this.putInDuration = putInDuration;
+  }
+
+  /** placementの走査（7.7節）に参加する枠か。 */
+  allows(placement: Placement): boolean {
+    return placement === 'auto' ? this.autoPlacement : this.manualPlacement;
   }
 
   /**

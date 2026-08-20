@@ -1110,6 +1110,31 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     ).toHaveLength(1);
   });
 
+  it('炉を薪へ重ねてもくべられる（宣言は片側だけでよい）', () => {
+    // 宣言しているのは炉だけ（fire.yamlのadd_fuel）だが、逆向きに運んでも同じ宣言が動く
+    // （CardInteraction.md 2節）。**起きることは向きで変わらない**——selfは宣言している炉のまま。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const hearth = game.session.spawn(codex.objectNames.getId('campfire'));
+    expect(hearth.moveToSlot(game.startLocation.instance, codex.slotNames.getId('fixtures'))).toBeUndefined();
+    const branch = game.session.spawn(codex.objectNames.getId('thick_branch'));
+    expect(branch.moveToSlot(game.player.instance, codex.slotNames.getId('hand'))).toBeUndefined();
+
+    const view = fromGameSession(game, codex, locale);
+    const hearthCard = lane(view, game, 'fixtures').find((card) => card.objects[0] === hearth)!;
+    const branchCard = handCells(view, game).find((card) => card?.objects[0] === branch)!;
+
+    const reversed = view.combinationOf(hearthCard, branchCard);
+    expect(reversed?.name, '薪を炉へ運んだときと同じ組み合わせ').toBe(
+      view.combinationOf(branchCard, hearthCard)?.name,
+    );
+    expect(reversed?.movedIds, '動くのは指が運んだ炉の札').toEqual([hearth.instanceId]);
+
+    reversed?.execute();
+
+    expect(hearth.tryGetProperty(codex.propertyNames.getId('fuel'))?.getEffectiveValue()).toBe(20);
+    expect(branch.parent, '薪は消える').toBeUndefined();
+  });
+
   it('コンテナのカードは中身を映す場所を持ち、そこへ出し入れできる', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const handSlotId = codex.slotNames.getId('hand');

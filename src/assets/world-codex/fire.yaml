@@ -50,8 +50,7 @@ traits:
 
   # 炉。薪と火力を持ち、火にかけた物を子として加熱する。
   #
-  # fuel/heatのrangeとfireスロットの枠は炉ごとに違うので、ここでは宣言しない。fuel_capacityは
-  # 満杯の炉へくべさせないための上限で、fuelのrange.maxと同じ値をその炉が2度書く（同11節の未決事項）。
+  # fuel/heatのrangeとfireスロットの枠は炉ごとに違うので、ここでは宣言しない。
   hearth:
     tags: [fixture, hearth]
     # 火にかけている物のスロット（同1.1節）。押せば開き、重ねれば入る。
@@ -60,7 +59,6 @@ traits:
     # 火力で絵が差し替わる（CardView.md 5.1節）。絵は消えている・種火・ついているの3つ（heat参照）。
     art_by_stage: heat
     props:
-      fuel_capacity: {}
       # くべた薪。カードにバーで見せる（同3節、CardView.md 8節のgaugeタグ）。段は火力の育ちを決める——
       # 薪が多いほど火は速く育ち、その炉の上限（heatのrange.max）まで上がる。薪が少なければ、
       # 上がりきる前に燃え尽きる。
@@ -143,14 +141,12 @@ traits:
       # 薪をくべる。燃料が持つfuelを炉のfuelへ移し、燃料そのものは消す（同2節）。
       # transferの後にdestroyが走るので、移した分が失われることはない。
       #
-      # 束ねた薪はまとめてくべられる（allow_multiple、GameElementDefinition.md 12.4節）。何本入るかは
-      # fuelのrangeの残りからエンジンが数えるので、ここには書かない。
+      # 束ねた薪はまとめてくべられる（allow_multiple、GameElementDefinition.md 12.4節）。何本入るかも、
+      # 満杯の炉を拒むことも、fuelのrangeの残りからエンジンが決めるので、ここには書かない。
       add_fuel:
         with: {tag: fuel}
         duration: 1
         allow_multiple: true
-        conditions:
-          - {reason: hearth_full, prop: fuel, lt: {subject: self, prop: fuel_capacity}}
         transfer:
           amount: 999
           from: dragged
@@ -224,7 +220,6 @@ object_defs:
               - {object: twig, count: 3, consume: true}
             duration: 15
     props:
-      fuel_capacity: {value: 30}
       fuel:
         value: 0
         range: {min: 0, max: 30}
@@ -260,7 +255,6 @@ object_defs:
   three_stone_hearth:
     traits: [hearth]
     props:
-      fuel_capacity: {value: 30}
       fuel:
         value: 0
         range: {min: 0, max: 30}
@@ -296,7 +290,6 @@ object_defs:
   stone_hearth:
     traits: [hearth]
     props:
-      fuel_capacity: {value: 120}
       fuel:
         value: 0
         range: {min: 0, max: 120}

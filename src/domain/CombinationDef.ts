@@ -39,16 +39,20 @@ export class CombinationDef extends InteractionDef {
   }
 
   /**
-   * draggedたちを先頭から順に重ねたとき、続けて実行できる個数。まとめてよいと宣言していなければ1で、
-   * 宣言していても効果が数を答えられなければ1。
+   * draggedたちを先頭から順に重ねたとき、続けて実行できる個数。効果が数を答えられなければ1で、
+   * まとめてよいと宣言していなければ（allow_multiple）、数えられても1までにする。
+   *
+   * **0は「重ねても何も起きない」ではなく「起こしてはいけない」。** 器へ入らないまま相手を消す効果
+   * （満杯の炉へ薪をくべる）が、黙って薪だけ失う結果になるのを防ぐ。
    */
   acceptedCount(
     self: WorldObject,
     candidates: readonly WorldObject[],
     actor: WorldObject | undefined,
   ): number {
-    if (!this.allowMultiple) return 1;
-    return Math.max(1, this.acceptedCountOf(self, candidates, actor) ?? 1);
+    const counted = this.acceptedCountOf(self, candidates, actor);
+    if (counted === undefined) return 1;
+    return this.allowMultiple ? counted : Math.min(1, counted);
   }
 
   protected describeTrigger(names: DefNames, out: DescriptionWriter): void {
