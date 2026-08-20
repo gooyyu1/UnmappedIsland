@@ -57,7 +57,7 @@ export class Slot {
 
   /**
    * move_to_slot（7.1節）が候補オブジェクトを受け入れられるか（枠の型・枠の空き・capacity、
-   * 7.2〜7.3節）。force=trueの場合は呼び出し側がこの判定自体をスキップする。
+   * 7.2〜7.3節）。
    *
    * 戻り値: 受け入れ可能ならundefined、拒否する場合はその理由。
    */
@@ -155,11 +155,6 @@ export class Slot {
     return this.hasFixedCells ? undefined : this._cells.length;
   }
 
-  private indexOfFirstEmptyCell(): number | undefined {
-    const index = this._cells.indexOf(undefined);
-    return index < 0 ? undefined : index;
-  }
-
   /**
    * candidateが合流できる枠の位置（無ければundefined）。合流には、その型が束ねられること
    * （ObjectDef.stackable）・代表チェーンが一致すること・その枠のmaxに空きがあることが要る。
@@ -195,9 +190,8 @@ export class Slot {
   addInternal(obj: WorldObject): void {
     if (this.tryMergeIntoMatchingStack(obj)) return;
 
-    // 型の合う枠が無いのは、canAcceptを飛ばすforce配置（9.4節）でのみ起きうる。その場合は型を問わず
-    // 空いている枠へ、それも無ければ末尾へ足して受け止める。
-    const at = this.findCellFor(obj) ?? this.indexOfFirstEmptyCell();
+    // 受け入れ判定（canAccept）を通った後にだけ呼ばれるので、枠数を決めたスロットにも必ず置ける枠がある。
+    const at = this.findCellFor(obj);
     const stack = new ObjectStack(obj);
     if (at !== undefined && at < this._cells.length) this._cells[at] = stack;
     else this._cells.push(stack);

@@ -90,7 +90,7 @@ export function spawnInProgressObject(
   inProgressDefGlobalId: number,
 ): WorldObject {
   const spawned = session.spawn(inProgressDefGlobalId);
-  if (!spawned.moveIntoFirstAcceptingSlot(location)) spawned.moveIntoFirstAcceptingSlot(location, true);
+  spawned.spillTo(location);
   return spawned;
 }
 

@@ -503,18 +503,6 @@ npm run stats:balance
   - `water_liquid.drink`（hydration +10.00）
 - **tea_liquid** — 1経路を塞いでいる
   - `tea_liquid.drink`（hydration +10.00、wakefulness +2.00）
-- **canteen__content_water_liquid** — 1経路を塞いでいる
-  - `canteen__content_water_liquid.drink`（hydration +10.00）
-- **canteen__content_tea_liquid** — 1経路を塞いでいる
-  - `canteen__content_tea_liquid.drink`（hydration +10.00、wakefulness +2.00）
-- **pot__content_water_liquid** — 1経路を塞いでいる
-  - `pot__content_water_liquid.drink`（hydration +10.00）
-- **pot__content_tea_liquid** — 1経路を塞いでいる
-  - `pot__content_tea_liquid.drink`（hydration +10.00、wakefulness +2.00）
-- **bottle__content_water_liquid** — 1経路を塞いでいる
-  - `bottle__content_water_liquid.drink`（hydration +10.00）
-- **bottle__content_tea_liquid** — 1経路を塞いでいる
-  - `bottle__content_tea_liquid.drink`（hydration +10.00、wakefulness +2.00）
 - **jar__content_water_liquid** — 1経路を塞いでいる
   - `jar__content_water_liquid.drink`（hydration +10.00）
 - **jar__content_tea_liquid** — 1経路を塞いでいる
@@ -543,9 +531,6 @@ npm run stats:balance
 | --- | --- |
 | three_stone_hearth | 作る工程が無い |
 | stone_hearth | 作る工程が無い |
-| canteen | 作る工程が無い |
-| pot | 作る工程が無い |
-| bottle | 作る工程が無い |
 | water_liquid | 作る工程が無い |
 | tea_liquid | 作る工程が無い |
 | oil_liquid | 作る工程が無い |
@@ -865,30 +850,6 @@ npm run stats:balance
 | rawhide_sail | sewn | recipe | 420 | 420 | rawhide_sail ×1.00 | — |
 | palm_frond | weave | interaction | 90 | 90 | woven_leaf ×1.00 | — |
 | palm_frond | split_and_weave | interaction | 60 | 60 | woven_leaf ×2.00 | — |
-| canteen__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
-| canteen__content_water_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
-| canteen__content_water_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| canteen__content_tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
-| canteen__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
-| canteen__content_tea_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| canteen__content_oil_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
-| canteen__content_oil_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| pot__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
-| pot__content_water_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
-| pot__content_water_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| pot__content_tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
-| pot__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
-| pot__content_tea_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| pot__content_oil_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
-| pot__content_oil_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| bottle__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
-| bottle__content_water_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
-| bottle__content_water_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| bottle__content_tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
-| bottle__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
-| bottle__content_tea_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| bottle__content_oil_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
-| bottle__content_oil_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 | jar__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
 | jar__content_water_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | jar__content_water_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |

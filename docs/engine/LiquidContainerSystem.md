@@ -14,16 +14,16 @@
 
 ## 1. 中身入りの容器は、容器の変種
 
-**「水入りの水筒」は、水筒と水の親子2つではなく1つの型です。** 容器が「中身」の軸を宣言し、その軸の
+**「水入りの甕」は、甕と水の親子2つではなく1つの型です。** 容器が「中身」の軸を宣言し、その軸の
 値ごとの型がロード時に生成されます（[`GameElementDefinition.md`](./GameElementDefinition.md) 3.5 節）。
 
 ```yaml
-canteen:
-  traits: [liquid_container, sealed_container]
+jar:
+  traits: [liquid_container, narrow_open_container]
   props:
     fill:
       value: 0
-      range: {min: 0, max: 1000}          # この容器の容量（mL）
+      range: {min: 0, max: 4000}          # この容器の容量（mL）
       on_min: {become: {content: none}}   # 尽きたら中身の軸を落とす＝空へ戻る
   variation_axes:
     content: {of: {tag: liquid}}
@@ -45,12 +45,12 @@ canteen:
 
 ## 2. 役割分担: 上限は容器、量も種類も振る舞いも中身
 
-- **容器**（`canteen`・`pot`・`bottle`・`jar`・`coconut_bowl`）: 抱えられる量（`fill`）と、何を抱えられるか
+- **容器**（`jar`・`coconut_bowl`）: 抱えられる量（`fill`）と、何を抱えられるか
   （`variation_axes` の `content`）を宣言する。絵と名前の骨格も容器のもの。
 - **中身の trait**（`liquid`・`water_liquid`・`evaporating_liquid`・`rain_filled_liquid` 等）:
   密度（`density`）・色（`color`）・種類タグ・飲用 `actions`・注ぎ `combinations`・蒸発 `passives` を持つ。
 
-**量そのものが容器側なのは、同じ水が水筒（1L）にも甕（4L）にも入るためです。** 上限も、尽きたときに
+**量そのものが容器側なのは、同じ水がヤシの殻（250mL）にも甕（4L）にも入るためです。** 上限も、尽きたときに
 空へ戻ることも、`fill` を持つ容器自身が宣言します——中身の軸を持っているのも容器なので、両方が
 同じ場所にあります。
 
@@ -229,7 +229,7 @@ water_liquid:
 
 - 異種液体の混合（水＋茶）は表現できない（軸が1本しかない、が現状の仕様）
 - 図鑑（`src/codex-viewer`）に中身入りの容器のページが無い。生成された型は一覧に載せていないので、
-  「水入りの水筒」を名指しで開く道がない
+  「水入りの甕」を名指しで開く道がない
 - `density` の差（油は 0.92）を実際に効かせるか、全液体を水と同じ 1 に揃えるか
 - 空の容器同士を重ねたときに何も起きないことを、UI 側でどう見せるか
 - 蒸発量は現実（口径 10cm の器で炎天下 40〜60mL/日程度）の 4〜5 倍に置いている。「開けっ放しの器は
