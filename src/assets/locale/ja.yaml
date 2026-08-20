@@ -620,15 +620,6 @@ object_texts:
     description: 地面から湧き出す水。汲めば飲み水になる。
 
   # 液体容器とその中身（liquid_containers.yaml）。
-  canteen:
-    display_name: 水筒
-    description: 蓋の閉まる携帯用の容器。中身は蒸発しない。
-  pot:
-    display_name: 鍋
-    description: 火にかけられる蓋付きの容器。
-  bottle:
-    display_name: 瓶
-    description: 口を塞げる容器。水筒より多く入る。
   jar:
     display_name: 甕
     description: 口の狭い大きな容器。据え置いて水を溜めておける。

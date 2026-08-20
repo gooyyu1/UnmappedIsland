@@ -26,6 +26,9 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     loadYamlFile(loader, worldCodexPath('core.yaml'));
     loadYamlDirectory(loader, worldCodexPath('characters'));
     loadYamlFile(loader, worldCodexPath('liquid_containers.yaml'));
+    // 容器を世界の下へ置くための土地（placeUnderWorld）。天候・日射を持つのは世界なので、
+    // 容器はその下に居ないと蒸発も雨も成立しない。locations.yamlは依存が広いので最小のものを立てる。
+    loader.load('test_ground.yaml', 'object_defs:\n  test_ground:\n    traits: [location]\n');
     codex = loader.build();
 
     hydrationId = codex.propertyNames.getId('hydration');
@@ -82,10 +85,16 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     return world;
   }
 
-  function spawnEmptyUnderWorld(containerName: string, world: WorldObject): WorldObject {
-    const container = spawn(containerName);
-    container.moveToSlot(world.getSlot(locationsSlotId), true);
+  /** 天候・日射は世界が持つので、容器は世界の下——土地のアイテム枠——へ置く。 */
+  function placeUnderWorld(container: WorldObject, world: WorldObject): WorldObject {
+    const land = spawn('test_ground');
+    expect(land.moveToSlot(world.getSlot(locationsSlotId))).toBeUndefined();
+    expect(container.moveIntoFirstAcceptingSlot(land)).toBe(true);
     return container;
+  }
+
+  function spawnEmptyUnderWorld(containerName: string, world: WorldObject): WorldObject {
+    return placeUnderWorld(spawn(containerName), world);
   }
 
   function spawnContainerUnderWorld(
@@ -94,28 +103,29 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     size: number,
     world: WorldObject,
   ): WorldObject {
-    const container = spawnContainer(containerName, liquidKind, size);
-    container.moveToSlot(world.getSlot(locationsSlotId), true);
-    return container;
+    return placeUnderWorld(spawnContainer(containerName, liquidKind, size), world);
   }
 
   it('空の容器は中身の宣言を一切持たず、中身入りは同じ型に畳まれている', () => {
-    const canteen = codex.objects.get(codex.objectNames.getId('canteen'));
-    const filled = codex.objects.get(codex.objectNames.getId('canteen__content_water_liquid'));
+    const jar = codex.objects.get(codex.objectNames.getId('jar'));
+    const filled = codex.objects.get(codex.objectNames.getId('jar__content_water_liquid'));
 
-    expect(canteen.actions, '空の容器は中身の行動を持たない').toHaveLength(0);
-    expect(canteen.combinations, '注ぎ移しを宣言するのは中身の側').toHaveLength(0);
+    expect(
+      jar.actions.map((action) => action.name),
+      '空の容器が持つのは容器自身の行動だけ（中身のdrinkは無い）',
+    ).toEqual(['collect_rain']);
+    expect(jar.combinations, '注ぎ移しを宣言するのは中身の側').toHaveLength(0);
     // volumeは容器自身の外寸のかさで、抱えている量はfillが持つ（LiquidContainerSystem.md 5節）。
     // **空の容器もfillを持つ**——空とは量が0であることで、増やせるのは中身のtraitを配られた変種だけ。
-    expect(canteen.getPropertyDef(fillId)?.range?.max, '空の容器も上限を持つ').toBe(1000);
-    expect(canteen.getPropertyDef(codex.propertyNames.getId('density')), '密度も中身のもの').toBeUndefined();
+    expect(jar.getPropertyDef(fillId)?.range?.max, '空の容器も上限を持つ').toBe(4000);
+    expect(jar.getPropertyDef(codex.propertyNames.getId('density')), '密度も中身のもの').toBeUndefined();
 
-    expect(codex.baseOf(filled), '中身入りは容器の変種').toBe(canteen);
+    expect(codex.baseOf(filled), '中身入りは容器の変種').toBe(jar);
     expect(
       filled.actions.map((action) => action.name),
-      '中身のdrinkが自分の行動になる',
-    ).toEqual(['drink']);
-    expect(filled.getPropertyDef(fillId)?.range?.max, '上限は素の型から引き継ぐ').toBe(1000);
+      '中身のdrinkが、容器自身の行動に続いて自分の行動になる',
+    ).toEqual(['collect_rain', 'drink']);
+    expect(filled.getPropertyDef(fillId)?.range?.max, '上限は素の型から引き継ぐ').toBe(4000);
   });
 
   it('中身入りの容器の重さは、容器の自重と水の重さの和になる', () => {
@@ -137,23 +147,20 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   it('容量は軸の宣言が変種へ渡すfillのrangeが決める', () => {
     expect(capacityOf('coconut_bowl'), 'ヤシの器は250mL').toBe(250);
-    expect(capacityOf('canteen'), '水筒は1L').toBe(1000);
-    expect(capacityOf('bottle'), '瓶は2L').toBe(2000);
     expect(capacityOf('jar'), '甕は4L').toBe(4000);
   });
 
   it('水を飲むと中身のvolumeからactorのhydrationへ移る', () => {
     const actor = spawn(SAMPLE_CHARACTER);
     actor.getProperty(hydrationId).init(0);
-    const canteen = spawnContainer('canteen', 'water', 1000);
+    const jar = spawnContainer('jar', 'water', 1000);
 
-    expect(
-      canteen.tryGetAction('drink', actor)?.tryExecute() === true,
-      '容器への操作は中身へ委譲される',
-    ).toBe(true);
+    expect(jar.tryGetAction('drink', actor)?.tryExecute() === true, '容器への操作は中身へ委譲される').toBe(
+      true,
+    );
 
     expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '250mLは10 tick分（to_amount、9.5節）').toBe(10);
-    expect(amountIn(canteen), '減るのは液体の単位（mL）のまま').toBe(750);
+    expect(amountIn(jar), '減るのは液体の単位（mL）のまま').toBe(750);
   });
 
   it('水分が満水だと飲めず、理由not_thirstyを返す', () => {
@@ -163,11 +170,11 @@ describe('liquid_containers.yamlの液体容器定義', () => {
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
       .getPropertyDef(hydrationId)!.range!.max;
     actor.getProperty(hydrationId).init(hydrationMax);
-    const canteen = spawnContainer('canteen', 'water', 1000);
+    const jar = spawnContainer('jar', 'water', 1000);
 
-    expect(canteen.tryGetAction('drink', actor)?.unmetRequirement()?.reasonName).toBe('not_thirsty');
-    expect(canteen.tryGetAction('drink', actor)?.tryExecute() === true).toBe(false);
-    expect(amountIn(canteen), '実行されないので量は変わらない').toBe(1000);
+    expect(jar.tryGetAction('drink', actor)?.unmetRequirement()?.reasonName).toBe('not_thirsty');
+    expect(jar.tryGetAction('drink', actor)?.tryExecute() === true).toBe(false);
+    expect(amountIn(jar), '実行されないので量は変わらない').toBe(1000);
   });
 
   it('水分が満水の一歩手前なら飲め、入る分だけが移る', () => {
@@ -176,36 +183,36 @@ describe('liquid_containers.yamlの液体容器定義', () => {
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
       .getPropertyDef(hydrationId)!.range!.max;
     actor.getProperty(hydrationId).init(hydrationMax - 4);
-    const canteen = spawnContainer('canteen', 'water', 1000);
+    const jar = spawnContainer('jar', 'water', 1000);
 
-    expect(canteen.tryGetAction('drink', actor)?.unmetRequirement()).toBeUndefined();
-    expect(canteen.tryGetAction('drink', actor)?.tryExecute() === true).toBe(true);
+    expect(jar.tryGetAction('drink', actor)?.unmetRequirement()).toBeUndefined();
+    expect(jar.tryGetAction('drink', actor)?.tryExecute() === true).toBe(true);
 
     expect(actor.tryGetProperty(hydrationId)?.number ?? 0, 'あふれる分は飲まない').toBe(hydrationMax);
     // 空きは4 tick分。移送元の単位へ割り戻すと 4 × 250 / 10 = 100mL しか出ない（9.5節）。
-    expect(amountIn(canteen), '入る分だけ減る').toBe(900);
+    expect(amountIn(jar), '入る分だけ減る').toBe(900);
   });
 
   it('残りを飲み切ると、中身のインスタンスごと消えて空の容器へ戻る', () => {
     const actor = spawn(SAMPLE_CHARACTER);
     actor.getProperty(hydrationId).init(0);
-    const canteen = spawnContainer('canteen', 'water', 100); // 1回分(250)より少ない
+    const jar = spawnContainer('jar', 'water', 100); // 1回分(250)より少ない
 
-    expect(canteen.tryGetAction('drink', actor)?.tryExecute() === true).toBe(true);
+    expect(jar.tryGetAction('drink', actor)?.tryExecute() === true).toBe(true);
 
     expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '残っている分だけ飲む（100mL = 4 tick分）').toBe(
       4,
     );
-    expect(contentOf(canteen), 'tickを待たずに空へ戻る（0mLの水は存在しない）').toBeUndefined();
+    expect(contentOf(jar), 'tickを待たずに空へ戻る（0mLの水は存在しない）').toBeUndefined();
   });
 
   it('お茶を飲むと追加の効果も適用できる', () => {
     const actor = spawn(SAMPLE_CHARACTER);
     actor.getProperty(hydrationId).init(0);
     actor.getProperty(wakefulnessId).init(0);
-    const canteen = spawnContainer('canteen', 'tea', 1000);
+    const jar = spawnContainer('jar', 'tea', 1000);
 
-    expect(canteen.tryGetAction('drink', actor)?.tryExecute() === true).toBe(true);
+    expect(jar.tryGetAction('drink', actor)?.tryExecute() === true).toBe(true);
 
     expect(actor.tryGetProperty(hydrationId)?.number ?? 0).toBe(10);
     expect(actor.tryGetProperty(wakefulnessId)?.number ?? 0).toBe(2);
@@ -215,9 +222,9 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const actor = spawn(SAMPLE_CHARACTER);
     actor.getProperty(hydrationId).init(0);
     actor.getProperty(wakefulnessId).init(0);
-    const canteen = spawnContainer('canteen', 'tea', 125); // 1回分(250)の半分しか無い
+    const jar = spawnContainer('jar', 'tea', 125); // 1回分(250)の半分しか無い
 
-    expect(canteen.tryGetAction('drink', actor)?.tryExecute() === true).toBe(true);
+    expect(jar.tryGetAction('drink', actor)?.tryExecute() === true).toBe(true);
 
     expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '在庫の分だけ飲む（125mL = 5 tick分）').toBe(5);
     expect(actor.tryGetProperty(wakefulnessId)?.number ?? 0, 'linked_addは実際に移った量に比例する').toBe(1);
@@ -225,12 +232,11 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   it('油にはdrinkアクションが無い', () => {
     const actor = spawn(SAMPLE_CHARACTER);
-    const canteen = spawnContainer('canteen', 'oil', 1000);
+    const jar = spawnContainer('jar', 'oil', 1000);
 
-    expect(
-      canteen.tryGetAction('drink', actor)?.tryExecute() === true,
-      '飲用不可の液体はdrinkを持たない',
-    ).toBe(false);
+    expect(jar.tryGetAction('drink', actor)?.tryExecute() === true, '飲用不可の液体はdrinkを持たない').toBe(
+      false,
+    );
   });
 
   /**
@@ -345,15 +351,6 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(amountIn(jar)).toBe(100 + expectedDelta);
   });
 
-  it.each(['canteen', 'pot', 'bottle'])('密閉容器(%s)には雨が溜まらない', (objectName) => {
-    const world = spawnWorld('storm');
-    const container = spawnContainerUnderWorld(objectName, 'water', 100, world);
-
-    container.tick();
-
-    expect(amountIn(container)).toBe(100);
-  });
-
   it('雨で増えるのは水だけで、茶の入った容器は開いていても増えない', () => {
     const world = spawnWorld('storm');
     const bowl = spawnContainerUnderWorld('coconut_bowl', 'tea', 100, world);
@@ -415,24 +412,6 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(amountIn(bowl), '溜まり続けるのはpassiveの仕事で、操作は要らない').toBe(100);
   });
 
-  it.each(['canteen', 'pot', 'bottle'])('密閉容器(%s)は雨を貯めるアクション自体を持たない', (name) => {
-    const actor = spawn(SAMPLE_CHARACTER);
-    const world = spawnWorld('storm');
-    const container = spawnEmptyUnderWorld(name, world);
-
-    expect(container.tryGetAction('collect_rain', actor)?.tryExecute() === true).toBe(false);
-    expect(contentOf(container)).toBeUndefined();
-  });
-
-  it.each(['canteen', 'pot', 'bottle'])('密閉容器(%s)は蒸発しない', (objectName) => {
-    const world = spawnWorld('scorching');
-    const container = spawnContainerUnderWorld(objectName, 'water', 100, world);
-
-    container.tick();
-
-    expect(amountIn(container)).toBe(100);
-  });
-
   it('蒸発で量が尽きると中身のインスタンスごと消える', () => {
     const world = spawnWorld('clear');
     const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 1, world);
@@ -452,7 +431,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   });
 
   it('空の容器へ注ぐと、注ぎ先がその液体の変種になる', () => {
-    const empty = spawn('canteen');
+    const empty = spawn('jar');
     const jar = spawnContainer('jar', 'water', 800);
 
     // 宣言を持つのは中身入りの側だけなので、selfは注ぎ元・draggedは空の容器（12.3節）。
@@ -468,18 +447,18 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   });
 
   it('同じ種類の中身が入った容器へ注ぐと継ぎ足される', () => {
-    const canteen = spawnContainer('canteen', 'water', 400);
-    const jar = spawnContainer('jar', 'water', 500);
+    const from = spawnContainer('jar', 'water', 400);
+    const to = spawnContainer('jar', 'water', 500);
 
     expect(
-      canteen
-        .combinationsWith(jar, undefined)
+      to
+        .combinationsWith(from, undefined)
         .find((c) => c.name === 'pour_into_filled')
         ?.tryExecute() === true,
     ).toBe(true);
 
-    expect(amountIn(canteen)).toBe(900);
-    expect(jar.def.name, '注ぎ切った側は空の容器へ戻る').toBe('jar');
+    expect(amountIn(to)).toBe(900);
+    expect(from.def.name, '注ぎ切った側は空の容器へ戻る').toBe('jar');
   });
 
   it('capacityに入りきらない量は注ぎ元に残る', () => {
@@ -498,16 +477,16 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   });
 
   it('異なる種類の中身が入った容器へは注げない', () => {
-    const canteen = spawnContainer('canteen', 'tea', 400);
-    const jar = spawnContainer('jar', 'water', 500);
+    const tea = spawnContainer('jar', 'tea', 400);
+    const water = spawnContainer('jar', 'water', 500);
 
-    expect(canteen.combinationsWith(jar, undefined), '混ぜる組み合わせがそもそも現れない').toEqual([]);
-    canteen
-      .combinationsWith(jar, undefined)
+    expect(water.combinationsWith(tea, undefined), '混ぜる組み合わせがそもそも現れない').toEqual([]);
+    water
+      .combinationsWith(tea, undefined)
       .find((c) => c.name === 'pour_into_filled')
       ?.tryExecute();
 
-    expect(amountIn(canteen), '混ざらない（種類ごとのタグに合致しない）').toBe(400);
-    expect(amountIn(jar)).toBe(500);
+    expect(amountIn(tea), '混ざらない（種類ごとのタグに合致しない）').toBe(400);
+    expect(amountIn(water)).toBe(500);
   });
 });

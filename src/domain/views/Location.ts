@@ -1,5 +1,6 @@
 import type { NameRegistry } from '../NameRegistry';
 import type { WorldCodex } from '../WorldCodex';
+import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
 import type { WorldSession } from '../WorldSession';
 import { Animal } from './Animal';
@@ -76,23 +77,18 @@ export class Location {
   /**
    * アイテムスロットへ受け入れる。受け入れられなければ（枠の型・容量）false。
    *
-   * gapIndexは並びの隙間の番号（0=先頭の前）で、渡すとその位置へ入れる（Slot.tryInsertAtGap）。
-   * 省略すると末尾（合流できる同種があればそのスタック）へ入る。
+   * atは並びの中の位置（SlotPosition）。省略すると末尾（合流できる同種があればそのスタック）へ入る。
    */
-  receiveItem(item: WorldObject, session: WorldSession, gapIndex?: number): boolean {
-    const failure =
-      gapIndex === undefined
-        ? item.moveToSlot(this.instance.getSlot(this.itemsSlotId))
-        : item.moveToSlotAtGap(this.instance.getSlot(this.itemsSlotId), gapIndex);
-    return failure === undefined;
+  receiveItem(item: WorldObject, session: WorldSession, at?: SlotPosition): boolean {
+    return item.moveToSlot(this.instance.getSlot(this.itemsSlotId), at) === undefined;
   }
 
   /**
-   * アイテムスロットの中で並び替える。memberが属するスタックを丸ごと、指定した隙間（0=先頭の前）へ
-   * 入れ直す（WorldObject.reorderInParentSlot）。並び替えられなければfalse。
+   * アイテムスロットの中で並び替える。memberが属するスタックを丸ごとatへ入れ直す
+   * （WorldObject.reorderInParentSlot）。並び替えられなければfalse。
    */
-  reorderItems(member: WorldObject, gapIndex: number): boolean {
-    return member.reorderInParentSlot(gapIndex);
+  reorderItems(member: WorldObject, at: SlotPosition): boolean {
+    return member.reorderInParentSlot(at);
   }
 
   /** 設置物（道・木・建築物・家具・洞窟入口など、持ち歩けないもの）スロットの中身。 */
@@ -117,8 +113,8 @@ export class Location {
    * 設置物スロットの中で並び替える。プレイヤーが地形をどう捉えているかで並べ方が変わるため、
    * 持ち出せない設置物にも並び替えだけは許す（reorderItemsと同じ扱い）。
    */
-  reorderFixtures(member: WorldObject, gapIndex: number): boolean {
-    return member.reorderInParentSlot(gapIndex);
+  reorderFixtures(member: WorldObject, at: SlotPosition): boolean {
+    return member.reorderInParentSlot(at);
   }
 
   /** キャラクタスロットの中身。 */

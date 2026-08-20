@@ -142,7 +142,7 @@ slot_texts:
 object_texts:
   default:
     variation_names:
-      content: '{value}入りの{base}'   # 水筒 + 水 → 水入りの水筒
+      content: '{value}入りの{base}'   # 甕 + 水 → 水入りの甕
       recipe: '{base}'                 # 作りかけの斧も「石斧」（CardView.md 10節）
 ```
 
@@ -271,7 +271,7 @@ location_texts:
 ```ts
 locale.object('coconut').displayName          // 'ヤシの実'
 locale.object('coconut').description          // '硬い殻に覆われた実。' / 未定義ならundefined
-locale.object('canteen').displayNameWithContent('水')   // '水入りの水筒'
+locale.object('jar').displayNameWithContent('水')   // '水入りの甕'
 locale.object('coconut').action('eat').displayName
 locale.object('coconut').prop('freshness').displayName
 locale.object('captain').prop('hydration').icon          // '💧' / 宣言が無ければundefined

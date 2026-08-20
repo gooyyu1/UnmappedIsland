@@ -13,6 +13,7 @@ import { IN_PROGRESS_TAG } from './RecipeDef';
 import type { PropertyDef } from './PropertyDef';
 import { PropertyValue } from './PropertyValue';
 import { Slot } from './Slot';
+import type { SlotPosition } from './SlotPosition';
 import type { WorldSession } from './WorldSession';
 
 /** rangeを持つプロパティなら、その両端へ丸めた値。rangeが無ければそのまま（becomeType参照）。 */
@@ -261,12 +262,14 @@ export class WorldObject {
    * スロット移動を行う唯一の汎用操作（7.1節の`move_to_slot`）。枠の要件・capacityの検証は対象Slot
    * 自身（Slot.canAccept）に委ねる。
    *
-   * force=trueは検証を飛ばして必ず配置を成功させる（spawnのフォールバック、9.4節専用）。
+   * atを渡すと枠の中の位置まで指定する（SlotPosition参照）。**指した位置に置けなければ失敗**で、
+   * 位置を無視して入れることはしない——プレイヤーが示した場所と違う所へ入るくらいなら、入らないほうが
+   * 分かる。gapとcellの読み替えはSlot自身が行うので、呼び出し側はどちらのスロットかを知らなくてよい。
    *
    * 戻り値: 成功時はundefined、失敗時はその理由。
    */
-  moveToSlot(slot: Slot, force = false): string | undefined {
-    return this.attachToSlot(slot, undefined, force);
+  moveToSlot(slot: Slot, at?: SlotPosition): string | undefined {
+    return this.attachToSlot(slot, at === undefined ? undefined : (target) => target.insertAt(this, at));
   }
 
   /**
@@ -274,54 +277,24 @@ export class WorldObject {
    * fixedPositionsで空きが作れず配置できない場合はエラーを返す（＝呼び出し側でfallbackへ委ねる）。
    */
   insertSameSlot(slot: Slot, placement: SameSlotPlacement): string | undefined {
-    return this.attachToSlot(
-      slot,
-      (target) => target.placeSameSlot(this, placement.originCellIndex, placement.kindRemains),
-      false,
+    return this.attachToSlot(slot, (target) =>
+      target.placeSameSlot(this, placement.originCellIndex, placement.kindRemains),
     );
   }
 
   /**
-   * プレイヤーが隙間を指定して入れる手動配置（Slot.tryInsertAtGap参照）。fixedPositionsのスロットで
-   * 既存のセルをずらして場所を作れない場合はエラーを返す。
-   */
-  moveToSlotAtGap(slot: Slot, gapIndex: number): string | undefined {
-    return this.attachToSlot(slot, (target) => target.tryInsertAtGap(this, gapIndex), false);
-  }
-
-  /**
-   * プレイヤーが空きセルを指定して入れる手動配置（Slot.tryInsertAtCell参照）。fixedPositionsのスロット
-   * 専用で、そのセルが空いていない場合はエラーを返す。
-   */
-  moveToSlotAtCell(slot: Slot, cellIndex: number): string | undefined {
-    return this.attachToSlot(slot, (target) => target.tryInsertAtCell(this, cellIndex), false);
-  }
-
-  /**
-   * プレイヤーによる手動並び替え（Slot.tryMoveStackToGap参照）。今いるスロットの中で、自分が属する
-   * スタックを丸ごと指定した隙間へ入れ直す。どこにも属していない場合はfalse。
+   * 今いるスロットの中での並び替え（Slot.moveStackTo参照）。どこにも属していない場合はfalse。
    *
-   * 「どのスロットに居るか」を呼び出し側に持たせないための入口。1個ずつではなくスタックごと動かす
-   * 理由はSlot側にある。
+   * 「どのスロットに居るか」を呼び出し側に持たせないための入口。**moveToSlotで同じ枠を指すのとは
+   * 別物**——付け替えはいったん抜いてから入れるので、抜いた時点でセルが詰まって指した位置の意味が
+   * ずれる。動かすのも1個ではなくスタック丸ごとで、理由はSlot側にある。
    */
-  reorderInParentSlot(gapIndex: number): boolean {
+  reorderInParentSlot(at: SlotPosition): boolean {
     const slot = this._parentSlot;
     if (slot === undefined) return false;
 
     const stack = slot.findStackContaining(this);
-    return stack !== undefined && slot.tryMoveStackToGap(stack, gapIndex);
-  }
-
-  /**
-   * プレイヤーによる手動並び替えのうち、行き先を空きセルで指定するもの（Slot.trySetManualPosition参照）。
-   * fixedPositionsのスロット専用。
-   */
-  moveToCellInParentSlot(cellIndex: number): boolean {
-    const slot = this._parentSlot;
-    if (slot === undefined) return false;
-
-    const stack = slot.findStackContaining(this);
-    return stack !== undefined && slot.trySetManualPosition(stack, cellIndex);
+    return stack !== undefined && slot.moveStackTo(stack, at);
   }
 
   /**
@@ -331,11 +304,8 @@ export class WorldObject {
    * 何が移せないかを画面側が場所ごとに覚えていると、ワールド側の宣言と食い違う（設置物のかごを
    * 持ち歩けるようにしたのに、画面がそのレーンを読み取り専用のままにしている、など）。
    */
-  rejectionForMoveTo(slot: Slot, force = false): string | undefined {
-    const rejection = this.rejectionBeforeSlot(slot);
-    if (rejection !== undefined) return rejection;
-
-    return force ? undefined : slot.canAccept(this);
+  rejectionForMoveTo(slot: Slot): string | undefined {
+    return this.rejectionForLoopOrDetach(slot) ?? slot.canAccept(this);
   }
 
   /**
@@ -349,7 +319,7 @@ export class WorldObject {
   acceptedCountForMoveTo(followers: readonly WorldObject[], slot: Slot): number {
     const candidates: WorldObject[] = [];
     for (const candidate of [this as WorldObject, ...followers]) {
-      if (candidate.rejectionBeforeSlot(slot) !== undefined) break;
+      if (candidate.rejectionForLoopOrDetach(slot) !== undefined) break;
       candidates.push(candidate);
     }
     if (candidates.length === 0) return 0;
@@ -357,17 +327,18 @@ export class WorldObject {
     return slot.acceptedCount(candidates);
   }
 
-  /** 枠の空き（Slot.canAccept）を見るまでもなく移れない理由。移れる個数を数えるときも1つずつ見る。 */
-  private rejectionBeforeSlot(slot: Slot): string | undefined {
+  /**
+   * 枠が受け入れるかを見るまでもなく成立しない移動の理由（移れるならundefined）。**枠の空きではなく
+   * 所属ツリーの形の話**なので、移れる個数を数えるときも1つずつこちらだけを見る。
+   */
+  private rejectionForLoopOrDetach(slot: Slot): string | undefined {
     // 入れ物を自分自身や自分の中身の中へ入れると、ツリーから切り離された輪ができる（7.1節）。
-    // forceでも許さない——forceが省くのは枠の要件・capacityの判定であって、木構造の不変条件ではない。
     if (this.contains(slot.owner)) {
       return `'${this.def.name}' を自分自身の中へは入れられません。`;
     }
 
     // 単独で在れない物は、いったん持ち主に付いたら別の持ち主へは移せない（7.9節）。捻挫は身体から
-    // 剥がせないし、道は繋がる土地から外せない。forceでも許さない——枠の要件・capacityの判定ではなく、
-    // 「その物がどう存在するか」の不変条件だから。生まれた直後（親を持たない間）の配置は通す。
+    // 剥がせないし、道は繋がる土地から外せない。生まれた直後（親を持たない間）の配置は通す。
     if (this.def.boundToOwner && this._parent !== undefined && this._parent !== slot.owner) {
       return `'${this.def.name}' は '${this._parent.def.name}' から離せません。`;
     }
@@ -382,12 +353,8 @@ export class WorldObject {
    * **配置を伴う変化の唯一の関門**なので、ここが出入りを記録する（WorldChange）。移動前の居場所は
    * 切り離す前に控える——切り離した後では、どこから来たのかを誰も知らない。
    */
-  private attachToSlot(
-    targetSlot: Slot,
-    place: ((slot: Slot) => boolean) | undefined,
-    force: boolean,
-  ): string | undefined {
-    const rejection = this.rejectionForMoveTo(targetSlot, force);
+  private attachToSlot(targetSlot: Slot, place: ((slot: Slot) => boolean) | undefined): string | undefined {
+    const rejection = this.rejectionForMoveTo(targetSlot);
     if (rejection !== undefined) return rejection;
 
     const newParent = targetSlot.owner;
@@ -507,11 +474,11 @@ export class WorldObject {
 
   /**
    * 新しい型が受け取れなかった中身を送り出す（becomeType参照）。行き先はdestroyのこぼし先と同じ
-   * 自分の親で、単独で在れない子（7.9節）は移せる先が無いのでそこで失われる。
+   * 自分の親からで、単独で在れない子（7.9節）は移せる先が無いのでそこで失われる。
    */
   private evict(child: WorldObject): void {
-    if (child.def.boundToOwner || this._parent === undefined) child.destroy();
-    else child.moveIntoFirstAcceptingSlot(this._parent, true);
+    if (child.def.boundToOwner) child.destroy();
+    else child.spillTo(this._parent);
   }
 
   /**
@@ -519,14 +486,14 @@ export class WorldObject {
    * 自分にぶら下がったまま道連れにする——ただしその子の中身については同じことを行う（怪我が治れば、
    * 当てていた包帯は身体の親である土地へこぼれる）。
    *
-   * 行き先が受け入れられなくても押し込む（force）。既に世界に在る物なので、置き場所が無いことを
-   * 理由に消すわけにはいかない（spawnの伝播と同じ扱い、9.4節）。
+   * 送り出した先が受け取れなければ、さらにその親へと落ちていく（spillTo）。どこにも入らなければ、
+   * その子もそこで失われる。
    */
   private spillContentsTo(destination: WorldObject | undefined): void {
     for (const slot of this.slots) {
       for (const child of [...slot.contents]) {
         if (child.def.boundToOwner) child.spillContentsTo(destination);
-        else if (destination !== undefined) child.moveIntoFirstAcceptingSlot(destination, true);
+        else child.spillTo(destination);
       }
     }
   }
@@ -663,16 +630,32 @@ export class WorldObject {
   /**
    * targetの自動配置スロット（ObjectDef.placementSlotDefs）を宣言順に走査し、最初に受け入れられた
    * スロットへ自分自身を移動する（著者がスロット名を知らなくてよい規約。spawnのintoとmoveが共用、
-   * 9.4節）。force=trueは受け入れ判定を飛ばすため、自動配置スロットが1つでもあれば必ず成功する。
+   * 9.4節）。
    *
    * **札を重ねたドロップ（putInSlotFor）と同じ規約の、別の入口。** 走査する枠の並びは1箇所が
    * 答える（placementSlotDefs）。
    */
-  moveIntoFirstAcceptingSlot(target: WorldObject, force = false): boolean {
+  moveIntoFirstAcceptingSlot(target: WorldObject): boolean {
     for (const slotDef of target.def.placementSlotDefs('auto'))
-      if (this.moveToSlot(target.getSlot(slotDef.globalId), force) === undefined) return true;
+      if (this.attachToSlot(target.getSlot(slotDef.globalId), undefined) === undefined) return true;
 
     return false;
+  }
+
+  /**
+   * 行き場を失った物を落ち着かせる（7.1節）。hostから始めて、受け入れてもらえなければその親、さらに
+   * その親…と遡り、**どこにも入らなければ世界から消える**。
+   *
+   * 枠が受け入れないものを押し込むことはしない。器に入らない物は器の外——手に持てなければ足元へ、
+   * 足元にも置けなければ失われる、という順で落ちていくだけで、どの段でも枠の宣言はそのまま効く。
+   *
+   * 消えるときも中身は道連れにしない（destroy参照）ので、中身はそこからまた同じように落ちていく。
+   */
+  spillTo(host: WorldObject | undefined): void {
+    for (let candidate = host; candidate !== undefined; candidate = candidate.parent)
+      if (this.moveIntoFirstAcceptingSlot(candidate)) return;
+
+    this.destroy();
   }
 
   /**
@@ -895,8 +878,8 @@ export class WorldObject {
   /**
    * spawnした側は配置先のスロット名を書かない。same_slotなら捕捉しておいた位置へ配置する
    * （EffectSite.placeReplacementへ委ねる）。self/actor/childなら対象のスロットを宣言順に走査し、最初に配置できた
-   * スロットへ入れる。配置に失敗した場合は起点自身の親へ伝播し、枠の要件・capacityを無視して強制配置する。
-   * 伝播先の親も無ければ何もしない。
+   * スロットへ入れる。**配置に失敗した場合は起点自身の親へこぼれ、そこも受け取らなければさらに上へ**
+   * （spillTo）。どこにも入らなければ、生まれた物はそのまま失われる。
    */
   private place(
     spawned: WorldObject,
@@ -922,10 +905,7 @@ export class WorldObject {
       placed = spawned.moveIntoFirstAcceptingSlot(primaryTarget);
     }
 
-    if (placed) return;
-    if (primaryTarget.parent === undefined) return;
-
-    spawned.moveIntoFirstAcceptingSlot(primaryTarget.parent, true);
+    if (!placed) spawned.spillTo(primaryTarget.parent);
   }
 
   /**

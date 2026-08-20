@@ -1,4 +1,5 @@
 import type { SlotDef } from './SlotDef';
+import type { SlotPosition } from './SlotPosition';
 import { ObjectStack } from './ObjectStack';
 import type { WorldObject } from './WorldObject';
 
@@ -56,7 +57,7 @@ export class Slot {
 
   /**
    * move_to_slot（7.1節）が候補オブジェクトを受け入れられるか（枠の型・枠の空き・capacity、
-   * 7.2〜7.3節）。force=trueの場合は呼び出し側がこの判定自体をスキップする。
+   * 7.2〜7.3節）。
    *
    * 戻り値: 受け入れ可能ならundefined、拒否する場合はその理由。
    */
@@ -154,11 +155,6 @@ export class Slot {
     return this.hasFixedCells ? undefined : this._cells.length;
   }
 
-  private indexOfFirstEmptyCell(): number | undefined {
-    const index = this._cells.indexOf(undefined);
-    return index < 0 ? undefined : index;
-  }
-
   /**
    * candidateが合流できる枠の位置（無ければundefined）。合流には、その型が束ねられること
    * （ObjectDef.stackable）・代表チェーンが一致すること・その枠のmaxに空きがあることが要る。
@@ -194,9 +190,8 @@ export class Slot {
   addInternal(obj: WorldObject): void {
     if (this.tryMergeIntoMatchingStack(obj)) return;
 
-    // 型の合う枠が無いのは、canAcceptを飛ばすforce配置（9.4節）でのみ起きうる。その場合は型を問わず
-    // 空いている枠へ、それも無ければ末尾へ足して受け止める。
-    const at = this.findCellFor(obj) ?? this.indexOfFirstEmptyCell();
+    // 受け入れ判定（canAccept）を通った後にだけ呼ばれるので、枠数を決めたスロットにも必ず置ける枠がある。
+    const at = this.findCellFor(obj);
     const stack = new ObjectStack(obj);
     if (at !== undefined && at < this._cells.length) this._cells[at] = stack;
     else this._cells.push(stack);
@@ -319,6 +314,24 @@ export class Slot {
     for (let i = emptyAt; i !== target; i -= step) this._cells[i] = this._cells[i - step];
     this._cells[target] = stack;
     return true;
+  }
+
+  /**
+   * 位置を指定して入れる（SlotPosition参照）。**枠を指せるのは枠数を決めたスロットだけ**なので、
+   * 前詰めスロットではその位置の隙間として扱う——空き枠は末尾の受け皿だけで、枠の位置がそのまま
+   * 並びの終わりを指すため。指す側がどちらのスロットかを知らなくて済むよう、読み替えはここで行う。
+   */
+  insertAt(obj: WorldObject, at: SlotPosition): boolean {
+    return at.kind === 'cell' && this.hasFixedCells
+      ? this.tryInsertAtCell(obj, at.index)
+      : this.tryInsertAtGap(obj, at.index);
+  }
+
+  /** 位置を指定して並び替える（insertAtと同じ読み替え）。動くのは1個ではなくスタック丸ごと。 */
+  moveStackTo(stack: ObjectStack, at: SlotPosition): boolean {
+    return at.kind === 'cell' && this.hasFixedCells
+      ? this.trySetManualPosition(stack, at.index)
+      : this.tryMoveStackToGap(stack, at.index);
   }
 
   /**

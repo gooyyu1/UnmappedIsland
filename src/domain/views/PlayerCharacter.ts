@@ -1,5 +1,6 @@
 import type { NameRegistry } from '../NameRegistry';
 import type { WorldCodex } from '../WorldCodex';
+import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
 import type { WorldSession } from '../WorldSession';
 import { Location } from './Location';
@@ -85,47 +86,27 @@ export class PlayerCharacter {
   /**
    * アイテムを手持ちスロットへ入れる。手持ちが受け入れられなければ（枠の型・枠数の上限）false。
    *
-   * gapIndexは枠と枠の隙間の番号（0=先頭の枠の前）で、渡すとその位置へ既存の枠を押し出して入れる
-   * （Slot.tryInsertAtGap）。省略すると最初の空き枠へ入る。
+   * atは枠の中の位置（SlotPosition）。隙間を指せばその位置へ既存の枠を押し出して入れ、空き枠を指せば
+   * その枠へ入る（埋まっていればfalse）。省略すると最初の空き枠へ入る。
    */
-  take(item: WorldObject, session: WorldSession, gapIndex?: number): boolean {
-    const failure =
-      gapIndex === undefined
-        ? item.moveToSlot(this.instance.getSlot(this.handSlotId))
-        : item.moveToSlotAtGap(this.instance.getSlot(this.handSlotId), gapIndex);
-    return failure === undefined;
+  take(item: WorldObject, session: WorldSession, at?: SlotPosition): boolean {
+    return item.moveToSlot(this.instance.getSlot(this.handSlotId), at) === undefined;
   }
 
   /**
-   * アイテムを手持ちの空き枠（cellIndex）へ入れる。埋まっている枠を指した場合や、手持ちが受け入れ
-   * られない場合はfalse（Slot.tryInsertAtCell）。
+   * 手持ちの枠を並び替える。memberが属するスタックを丸ごとatへ入れ直す
+   * （WorldObject.reorderInParentSlot）。並び替えられなければfalse。
    */
-  takeIntoCell(item: WorldObject, session: WorldSession, cellIndex: number): boolean {
-    return item.moveToSlotAtCell(this.instance.getSlot(this.handSlotId), cellIndex) === undefined;
-  }
-
-  /**
-   * 手持ちの枠を並び替える。memberが属するスタックを丸ごと、指定した隙間（gapIndexは0が先頭の枠の前）へ
-   * 入れ直す（WorldObject.reorderInParentSlot）。並び替えられなければfalse。
-   */
-  reorderHand(member: WorldObject, gapIndex: number): boolean {
-    return member.reorderInParentSlot(gapIndex);
-  }
-
-  /**
-   * 手持ちの枠を、指定した番号の枠（cellIndex）と入れ替える。空き枠を指せば、他の枠を動かさずに
-   * そこへ移る（WorldObject.moveToCellInParentSlot）。動かせなければfalse。
-   */
-  moveHandToCell(member: WorldObject, cellIndex: number): boolean {
-    return member.moveToCellInParentSlot(cellIndex);
+  reorderHand(member: WorldObject, at: SlotPosition): boolean {
+    return member.reorderInParentSlot(at);
   }
 
   /**
    * 手持ちのアイテムを今いる土地へ置く。土地に居ない・土地が受け入れられないならfalse。
-   * gapIndexを渡すと、土地のアイテムの並びのその隙間へ入る（Location.receiveItem）。
+   * atを渡すと、土地のアイテムの並びのその位置へ入る（Location.receiveItem）。
    */
-  drop(item: WorldObject, session: WorldSession, gapIndex?: number): boolean {
-    return this.location?.receiveItem(item, session, gapIndex) ?? false;
+  drop(item: WorldObject, session: WorldSession, at?: SlotPosition): boolean {
+    return this.location?.receiveItem(item, session, at) ?? false;
   }
 
   /**

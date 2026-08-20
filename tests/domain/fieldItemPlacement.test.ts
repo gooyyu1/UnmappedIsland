@@ -60,7 +60,7 @@ object_defs:
   it('並び替えはスタックを丸ごと、指定した隙間へ動かす', () => {
     const [a] = fill('a', 'b', 'c', 'a');
 
-    expect(location.reorderItems(a, 3), 'cの右へ動かす').toBe(true);
+    expect(location.reorderItems(a, { kind: 'gap', index: 3 }), 'cの右へ動かす').toBe(true);
 
     expect(items()).toEqual(['b×1', 'c×1', 'a×2']);
   });
@@ -68,7 +68,7 @@ object_defs:
   it('左向きの並び替えでは、落とした隙間の右へ入る', () => {
     const [, , c] = fill('a', 'b', 'c');
 
-    expect(location.reorderItems(c, 1), 'aとbの隙間へ動かす').toBe(true);
+    expect(location.reorderItems(c, { kind: 'gap', index: 1 }), 'aとbの隙間へ動かす').toBe(true);
 
     expect(items()).toEqual(['a×1', 'c×1', 'b×1']);
   });
@@ -76,8 +76,8 @@ object_defs:
   it('自分の両隣の隙間へ落としても並びは変わらない', () => {
     const [, b] = fill('a', 'b', 'c');
 
-    expect(location.reorderItems(b, 1)).toBe(true);
-    expect(location.reorderItems(b, 2)).toBe(true);
+    expect(location.reorderItems(b, { kind: 'gap', index: 1 })).toBe(true);
+    expect(location.reorderItems(b, { kind: 'gap', index: 2 })).toBe(true);
 
     expect(items()).toEqual(['a×1', 'b×1', 'c×1']);
   });
@@ -85,7 +85,7 @@ object_defs:
   it('位置を指定した受け入れは、その隙間へ入る（前詰めなので押し出しは要らない）', () => {
     fill('a', 'b');
 
-    expect(location.receiveItem(item('c'), session, 1)).toBe(true);
+    expect(location.receiveItem(item('c'), session, { kind: 'gap', index: 1 })).toBe(true);
 
     expect(items()).toEqual(['a×1', 'c×1', 'b×1']);
   });
@@ -93,7 +93,7 @@ object_defs:
   it('位置を指定しても、同種のアイテムは既存スタックへ合流する', () => {
     fill('a', 'b');
 
-    expect(location.receiveItem(item('b'), session, 0)).toBe(true);
+    expect(location.receiveItem(item('b'), session, { kind: 'gap', index: 0 })).toBe(true);
 
     expect(items()).toEqual(['a×1', 'b×2']);
   });

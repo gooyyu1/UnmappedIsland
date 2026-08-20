@@ -176,17 +176,9 @@ export function cardOperationsOf(
       // まとめて運んできたぶんも、1つずつ入れるのと同じことをする（時間も個数ぶんかかる）。
       // 入る個数を超えて頼まれても、超えたぶんは枠が断るだけ。
       const carried = carriedOf(stack, count);
+      // 位置の指定が効くのは1つ目だけ。残りは同じ束へ合流するか、空いている枠へ入る。
       const put = (item: WorldObject, first: boolean): void => {
-        // 位置の指定が効くのは1つ目だけ。残りは同じ束へ合流するか、空いている枠へ入る。
-        if (at === undefined || !first) {
-          item.moveToSlot(place);
-        } else if (at.kind === 'cell' && place.hasFixedCells) {
-          item.moveToSlotAtCell(place, at.index);
-        } else {
-          // 前詰めスロットの空き枠は末尾の受け皿だけなので、その位置の隙間へ落としたものとして扱う
-          // （枠の位置がそのまま並びの終わりを指す）。
-          item.moveToSlotAtGap(place, at.index);
-        }
+        item.moveToSlot(place, first ? at : undefined);
       };
 
       const texts = locale.slot(place.def.name).putIn;
@@ -258,18 +250,12 @@ export function cardOperationsOf(
   /** itemを同じ場所の中で動かす操作（動かせない位置ならundefined）。今いるスロットの中だけで完結する。 */
   const reorderIn =
     (item: WorldObject) =>
-    (at: CardPlacement): (() => void) | undefined => {
-      const parent = item.parent;
-      const fixed = parent !== undefined && item.parentSlot?.hasFixedCells === true;
-      if (at.kind === 'cell' && fixed) {
-        return () => {
-          item.moveToCellInParentSlot(at.index);
-        };
-      }
-      return () => {
-        item.reorderInParentSlot(at.index);
-      };
-    };
+    (at: CardPlacement): (() => void) | undefined =>
+      item.parent === undefined
+        ? undefined
+        : () => {
+            item.reorderInParentSlot(at);
+          };
 
   return {
     forStack: (stack, place) => ({
