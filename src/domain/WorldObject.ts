@@ -104,45 +104,7 @@ export class WorldObject {
     def.passives.registerRelation(this, 'self', true);
   }
 
-  /**
-   * tryGetSlotと同じ引き方で、持っていないことを許さない版（getPropertyと同じ対）。名指しした枠が
-   * 必ずあるはずの場所——生成・シナリオ・ビューが自分の型の枠を引くとき——に使う。
-   */
-  getSlot(globalSlotId: number): Slot {
-    const slot = this.tryGetSlot(globalSlotId);
-    if (slot === undefined) {
-      throw new Error(this.missing('スロット', this.session.codex.slotNames, globalSlotId));
-    }
-    return slot;
-  }
-
-  tryGetSlot(globalSlotId: number): Slot | undefined {
-    const local = this.def.slotLayout.toLocal(globalSlotId);
-    if (local === LocalIndexMap.missing) return undefined;
-    return this.slots[local];
-  }
-
-  /**
-   * 今この物の中に入っている物すべて（スロットの区別なく、直下の1段だけ）。**どのスロットに
-   * 入っているかを問わない見方**なので、スロット名を知らない側——「中に何かこういう物があるか」
-   * だけを見たい側——が使う。
-   */
-  *children(): IterableIterator<WorldObject> {
-    for (const slot of this.slots) for (const child of slot.contents) yield child;
-  }
-
-  /** 自分の中に入っている物すべて（自分自身は含まず、何段でも下まで）。 */
-  *descendants(): IterableIterator<WorldObject> {
-    for (const child of this.children()) {
-      yield child;
-      yield* child.descendants();
-    }
-  }
-
-  private setParent(parent: WorldObject | undefined, parentSlot: Slot | undefined): void {
-    this._parent = parent;
-    this._parentSlot = parentSlot;
-  }
+  // ---- プロパティを引く（6節） ----
 
   tryGetProperty(globalPropertyId: number): PropertyValue | undefined {
     const local = this.def.propertyLayout.toLocal(globalPropertyId);
@@ -177,6 +139,8 @@ export class WorldObject {
       : `'${this.def.name}' は${kind} '${name}' を持ちません。`;
   }
 
+  // ---- 全プロパティに跨る問い ----
+
   /**
    * `art_by_stage`（6.4節）が指すプロパティの、今の段が宣言しているart接尾辞。`art_by_stage`を
    * 持たない型、対象プロパティを持たないインスタンス、宣言の無い段では、いずれもundefined
@@ -186,42 +150,6 @@ export class WorldObject {
     const propertyGlobalId = this.def.artByStagePropertyGlobalId;
     if (propertyGlobalId === undefined) return undefined;
     return this.tryGetProperty(propertyGlobalId)?.artSuffix();
-  }
-
-  /**
-   * itemを自分の中へ入れるなら、どの枠か（GameElementDefinition.md 7.8節）。プレイヤーが手で入れられる
-   * 枠（`placement: manual`、7.7節）のうち、**宣言順で最初に今itemを受け取れるもの**。どこにも入らな
-   * ければundefined。
-   *
-   * 型が合うかではなく今入るかで選ぶので、先の枠が埋まっていれば次の枠が答えになる。**今itemが居る枠は
-   * 答えない**——同じ枠へ入れ直すのは入れる操作ではない。
-   */
-  putInSlotFor(item: WorldObject): Slot | undefined {
-    const from = item.parent === this ? item.parentSlot : undefined;
-    return this.def
-      .placementSlotDefs('manual')
-      .map((slotDef) => this.getSlot(slotDef.globalId))
-      .find((slot) => slot !== from && item.rejectionForMoveTo(slot) === undefined);
-  }
-
-  /**
-   * 入れ物としての詰まり具合（0〜1）。入れ物として名乗っていない型（`storage`、7.12節）と、
-   * 上限（capacity）を持つスロットが1つも無い型ではundefined。
-   *
-   * **最も詰まっているスロットを返す。** バーが答えるのは「あとどれだけ入るか」なので、先に一杯に
-   * なる側を映す——合計で割ると、片方が満杯でも半分に見える。
-   *
-   * fillRatioInParentSlotと表裏で、こちらは入れ物の側から自分の詰まり具合を見る。
-   */
-  storageFillRatio(): number | undefined {
-    if (!this.def.isStorage) return undefined;
-
-    let fullest: number | undefined;
-    for (const slotDef of this.def.slotDefs) {
-      const ratio = this.tryGetSlot(slotDef.globalId)?.fillRatio(this.wellKnown.volumeId);
-      if (ratio !== undefined) fullest = Math.max(fullest ?? 0, ratio);
-    }
-    return fullest;
   }
 
   /**
@@ -257,6 +185,129 @@ export class WorldObject {
   propertiesWithTag(tagGlobalId: number): readonly PropertyValue[] {
     return this.properties.filter((property) => property.def.hasTag(tagGlobalId));
   }
+
+  // ---- スロットを引く・中を見る（7節） ----
+
+  /**
+   * tryGetSlotと同じ引き方で、持っていないことを許さない版（getPropertyと同じ対）。名指しした枠が
+   * 必ずあるはずの場所——生成・シナリオ・ビューが自分の型の枠を引くとき——に使う。
+   */
+  getSlot(globalSlotId: number): Slot {
+    const slot = this.tryGetSlot(globalSlotId);
+    if (slot === undefined) {
+      throw new Error(this.missing('スロット', this.session.codex.slotNames, globalSlotId));
+    }
+    return slot;
+  }
+
+  tryGetSlot(globalSlotId: number): Slot | undefined {
+    const local = this.def.slotLayout.toLocal(globalSlotId);
+    if (local === LocalIndexMap.missing) return undefined;
+    return this.slots[local];
+  }
+
+  /**
+   * 今この物の中に入っている物すべて（スロットの区別なく、直下の1段だけ）。**どのスロットに
+   * 入っているかを問わない見方**なので、スロット名を知らない側——「中に何かこういう物があるか」
+   * だけを見たい側——が使う。
+   */
+  *children(): IterableIterator<WorldObject> {
+    for (const slot of this.slots) for (const child of slot.contents) yield child;
+  }
+
+  /** 自分の中に入っている物すべて（自分自身は含まず、何段でも下まで）。 */
+  *descendants(): IterableIterator<WorldObject> {
+    for (const child of this.children()) {
+      yield child;
+      yield* child.descendants();
+    }
+  }
+
+  /**
+   * 入れ物としての詰まり具合（0〜1）。入れ物として名乗っていない型（`storage`、7.12節）と、
+   * 上限（capacity）を持つスロットが1つも無い型ではundefined。
+   *
+   * **最も詰まっているスロットを返す。** バーが答えるのは「あとどれだけ入るか」なので、先に一杯に
+   * なる側を映す——合計で割ると、片方が満杯でも半分に見える。
+   *
+   * fillRatioInParentSlotと表裏で、こちらは入れ物の側から自分の詰まり具合を見る。
+   */
+  storageFillRatio(): number | undefined {
+    if (!this.def.isStorage) return undefined;
+
+    let fullest: number | undefined;
+    for (const slotDef of this.def.slotDefs) {
+      const ratio = this.tryGetSlot(slotDef.globalId)?.fillRatio(this.wellKnown.volumeId);
+      if (ratio !== undefined) fullest = Math.max(fullest ?? 0, ratio);
+    }
+    return fullest;
+  }
+
+  // ---- 所属ツリーを辿る（7.1節） ----
+
+  /** otherが自分自身か、自分の中に入っているか。入れ物を自分の中へ入れる操作を弾くのに使う。 */
+  contains(other: WorldObject): boolean {
+    for (let node: WorldObject | undefined = other; node !== undefined; node = node._parent) {
+      if (node === this) return true;
+    }
+    return false;
+  }
+
+  /**
+   * 自分の直接の親から遡り、指定したプロパティを定義している最初の祖先を探す（無ければundefined）。
+   * inherit・Target=Ancestor・conditions/weightのAncestor起点が共有する、唯一の祖先探索ロジック。
+   */
+  findAncestorWithProperty(propertyGlobalId: number): WorldObject | undefined {
+    let current = this._parent;
+    while (current !== undefined) {
+      if (current.def.propertyLayout.toLocal(propertyGlobalId) !== LocalIndexMap.missing) return current;
+      current = current.parent;
+    }
+    return undefined;
+  }
+
+  /** 自分から親を遡った、所属ツリーの根（通常はworld。未配置なら自分自身）。 */
+  findRoot(): WorldObject {
+    return this._parent === undefined ? this : this._parent.findRoot();
+  }
+
+  /**
+   * 自分自身を含む子孫から、指定したinstanceIdを持つWorldObjectを探す（深さ優先、無ければundefined）。
+   * 「世界に存在する＝worldツリーに繋がっている」という前提（7.1節）のもと、別途のインスタンス一覧を持たず
+   * ツリー走査だけで解決する。
+   */
+  findDescendantByInstanceId(instanceId: number): WorldObject | undefined {
+    if (this.instanceId === instanceId) return this;
+
+    for (const slot of this.slots) {
+      for (const child of slot.contents) {
+        const found = child.findDescendantByInstanceId(instanceId);
+        if (found !== undefined) return found;
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
+   * 自分自身を含む子孫から、その型のインスタンスを探す（深さ優先、無ければundefined）。
+   * 世界にただ1つ在る型（`singleton`、15節）を名前で指す`move`の`to_object`（9.6節）が使う。
+   * 同じ型が複数在れば最初に見つかったものを返す。
+   */
+  findDescendantOfDef(objectDefGlobalId: number): WorldObject | undefined {
+    if (this.def.globalId === objectDefGlobalId) return this;
+
+    for (const slot of this.slots) {
+      for (const child of slot.contents) {
+        const found = child.findDescendantOfDef(objectDefGlobalId);
+        if (found !== undefined) return found;
+      }
+    }
+
+    return undefined;
+  }
+
+  // ---- スロット移動（7.1節のmove_to_slot） ----
 
   /**
    * スロット移動を行う唯一の汎用操作（7.1節の`move_to_slot`）。枠の要件・capacityの検証は対象Slot
@@ -347,7 +398,7 @@ export class WorldObject {
   }
 
   /**
-   * placeは位置を指定する配置（上記のinsertSameSlot・moveToSlotAt*）専用。省略すると通常の追加
+   * placeは位置を指定する配置（moveToSlotのat・insertSameSlot）専用。省略すると通常の追加
    * （Slot.addInternal）になる。
    *
    * **配置を伴う変化の唯一の関門**なので、ここが出入りを記録する（WorldChange）。移動前の居場所は
@@ -383,6 +434,99 @@ export class WorldObject {
     return undefined;
   }
 
+  private detachFromParent(): void {
+    const oldParent = this._parent;
+    const oldSlot = this._parentSlot;
+    if (oldParent === undefined || oldSlot === undefined) return;
+
+    // 祖先対象の登録解除は、トポロジが変わる前（旧祖先がまだ辿れるうち）に行う（registerAncestorTargetedRecursively
+    // 参照。再登録はattachToSlot側）。
+    this.registerAncestorTargetedRecursively(false);
+
+    oldSlot.removeInternal(this);
+    this.registerEdgeWith(oldParent, false);
+    this.setParent(undefined, undefined);
+  }
+
+  private setParent(parent: WorldObject | undefined, parentSlot: Slot | undefined): void {
+    this._parent = parent;
+    this._parentSlot = parentSlot;
+  }
+
+  /**
+   * 親子のエッジが形成/解消された契機を、双方の効果（modify/add、8節）へ伝える（register=trueで登録、
+   * falseで解除）。親側だけ子thisを明示的に渡すのは、親からどの子かを一意に辿れないため。target=selfは
+   * コンストラクタで登録済みのため、ここでは扱わない。
+   */
+  private registerEdgeWith(parent: WorldObject, register: boolean): void {
+    this.def.passives.registerRelation(this, 'parent', register);
+    parent.def.passives.registerChild(parent, this, register);
+  }
+
+  /**
+   * 自分自身と、すべての子孫について、target=ancestorのpassivesを現在の祖先へ登録/解除する。親が変わると子孫
+   * 全員の祖先チェーンも変わるため、再帰で全員分を扱う。トポロジ変化前に解除・変化後に登録する順序を守ることで、
+   * いずれの時点でも祖先はownerから辿れ、前回の登録先を憶える必要がない。
+   */
+  private registerAncestorTargetedRecursively(register: boolean): void {
+    this.def.passives.registerRelation(this, 'ancestor', register);
+
+    for (const slot of this.slots) {
+      for (const child of [...slot.contents]) child.registerAncestorTargetedRecursively(register);
+    }
+  }
+
+  // ---- 枠を名指ししない行き先（7.7〜7.8節・9.4節） ----
+
+  /**
+   * itemを自分の中へ入れるなら、どの枠か（GameElementDefinition.md 7.8節）。プレイヤーが手で入れられる
+   * 枠（`placement: manual`、7.7節）のうち、**宣言順で最初に今itemを受け取れるもの**。どこにも入らな
+   * ければundefined。
+   *
+   * 型が合うかではなく今入るかで選ぶので、先の枠が埋まっていれば次の枠が答えになる。**今itemが居る枠は
+   * 答えない**——同じ枠へ入れ直すのは入れる操作ではない。
+   */
+  putInSlotFor(item: WorldObject): Slot | undefined {
+    const from = item.parent === this ? item.parentSlot : undefined;
+    return this.def
+      .placementSlotDefs('manual')
+      .map((slotDef) => this.getSlot(slotDef.globalId))
+      .find((slot) => slot !== from && item.rejectionForMoveTo(slot) === undefined);
+  }
+
+  /**
+   * targetの自動配置スロット（ObjectDef.placementSlotDefs）を宣言順に走査し、最初に受け入れられた
+   * スロットへ自分自身を移動する（著者がスロット名を知らなくてよい規約。spawnのintoとmoveが共用、
+   * 9.4節）。
+   *
+   * **札を重ねたドロップ（putInSlotFor）と同じ規約の、別の入口。** 走査する枠の並びは1箇所が
+   * 答える（placementSlotDefs）。
+   */
+  moveIntoFirstAcceptingSlot(target: WorldObject): boolean {
+    for (const slotDef of target.def.placementSlotDefs('auto'))
+      if (this.attachToSlot(target.getSlot(slotDef.globalId), undefined) === undefined) return true;
+
+    return false;
+  }
+
+  /**
+   * 行き場を失った物を落ち着かせる（7.1節）。hostから始めて、受け入れてもらえなければその親、さらに
+   * その親…と遡り、**どこにも入らなければ世界から消える**。
+   *
+   * 枠が受け入れないものを押し込むことはしない。器に入らない物は器の外——手に持てなければ足元へ、
+   * 足元にも置けなければ失われる、という順で落ちていくだけで、どの段でも枠の宣言はそのまま効く。
+   *
+   * 消えるときも中身は道連れにしない（destroy参照）ので、中身はそこからまた同じように落ちていく。
+   */
+  spillTo(host: WorldObject | undefined): void {
+    for (let candidate = host; candidate !== undefined; candidate = candidate.parent)
+      if (this.moveIntoFirstAcceptingSlot(candidate)) return;
+
+    this.destroy();
+  }
+
+  // ---- 世界から出る・型が変わる（9.3節・9.9節） ----
+
   /**
    * 現在の親から切り離す（destroy、9.3節）。切り離された時点でworldツリーから到達不能になり、tickの対象からも
    * 自然に外れる。既に親を持たない場合は何もしない（繰り返し実行しても安全、6.3節）。
@@ -396,6 +540,23 @@ export class WorldObject {
     const from = this._parentSlot;
     this.detachFromParent();
     this.session.recordChange(this, from, undefined);
+  }
+
+  /**
+   * 消えるときに中身を送り出す（destroy参照）。単独で在れない子（怪我・液体・道）は送り出さず、
+   * 自分にぶら下がったまま道連れにする——ただしその子の中身については同じことを行う（怪我が治れば、
+   * 当てていた包帯は身体の親である土地へこぼれる）。
+   *
+   * 送り出した先が受け取れなければ、さらにその親へと落ちていく（spillTo）。どこにも入らなければ、
+   * その子もそこで失われる。
+   */
+  private spillContentsTo(destination: WorldObject | undefined): void {
+    for (const slot of this.slots) {
+      for (const child of [...slot.contents]) {
+        if (child.def.boundToOwner) child.spillContentsTo(destination);
+        else child.spillTo(destination);
+      }
+    }
   }
 
   /**
@@ -481,36 +642,7 @@ export class WorldObject {
     else child.spillTo(this._parent);
   }
 
-  /**
-   * 消えるときに中身を送り出す（destroy参照）。単独で在れない子（怪我・液体・道）は送り出さず、
-   * 自分にぶら下がったまま道連れにする——ただしその子の中身については同じことを行う（怪我が治れば、
-   * 当てていた包帯は身体の親である土地へこぼれる）。
-   *
-   * 送り出した先が受け取れなければ、さらにその親へと落ちていく（spillTo）。どこにも入らなければ、
-   * その子もそこで失われる。
-   */
-  private spillContentsTo(destination: WorldObject | undefined): void {
-    for (const slot of this.slots) {
-      for (const child of [...slot.contents]) {
-        if (child.def.boundToOwner) child.spillContentsTo(destination);
-        else child.spillTo(destination);
-      }
-    }
-  }
-
-  private detachFromParent(): void {
-    const oldParent = this._parent;
-    const oldSlot = this._parentSlot;
-    if (oldParent === undefined || oldSlot === undefined) return;
-
-    // 祖先対象の登録解除は、トポロジが変わる前（旧祖先がまだ辿れるうち）に行う（registerAncestorTargetedRecursively
-    // 参照。再登録はattachToSlot側）。
-    this.registerAncestorTargetedRecursively(false);
-
-    oldSlot.removeInternal(this);
-    this.registerEdgeWith(oldParent, false);
-    this.setParent(undefined, undefined);
-  }
+  // ---- 中身から受ける寄与（ContainerSystem.md 1〜2節） ----
 
   /**
    * ContainerSystem.md 1〜2節: weight/load は実効値として読むたびに導出する。自分のプロパティのうち
@@ -565,121 +697,7 @@ export class WorldObject {
       : this.containerContributionTo(this.wellKnown.weightId);
   }
 
-  /**
-   * 自分の直接の親から遡り、指定したプロパティを定義している最初の祖先を探す（無ければundefined）。
-   * inherit・Target=Ancestor・conditions/weightのAncestor起点が共有する、唯一の祖先探索ロジック。
-   */
-  findAncestorWithProperty(propertyGlobalId: number): WorldObject | undefined {
-    let current = this._parent;
-    while (current !== undefined) {
-      if (current.def.propertyLayout.toLocal(propertyGlobalId) !== LocalIndexMap.missing) return current;
-      current = current.parent;
-    }
-    return undefined;
-  }
-
-  /** 自分から親を遡った、所属ツリーの根（通常はworld。未配置なら自分自身）。 */
-  findRoot(): WorldObject {
-    return this._parent === undefined ? this : this._parent.findRoot();
-  }
-
-  /**
-   * 自分自身を含む子孫から、指定したinstanceIdを持つWorldObjectを探す（深さ優先、無ければundefined）。
-   * 「世界に存在する＝worldツリーに繋がっている」という前提（7.1節）のもと、別途のインスタンス一覧を持たず
-   * ツリー走査だけで解決する。
-   */
-  findDescendantByInstanceId(instanceId: number): WorldObject | undefined {
-    if (this.instanceId === instanceId) return this;
-
-    for (const slot of this.slots) {
-      for (const child of slot.contents) {
-        const found = child.findDescendantByInstanceId(instanceId);
-        if (found !== undefined) return found;
-      }
-    }
-
-    return undefined;
-  }
-
-  /**
-   * 自分自身を含む子孫から、その型のインスタンスを探す（深さ優先、無ければundefined）。
-   * 世界にただ1つ在る型（`singleton`、15節）を名前で指す`move`の`to_object`（9.6節）が使う。
-   * 同じ型が複数在れば最初に見つかったものを返す。
-   */
-  findDescendantOfDef(objectDefGlobalId: number): WorldObject | undefined {
-    if (this.def.globalId === objectDefGlobalId) return this;
-
-    for (const slot of this.slots) {
-      for (const child of slot.contents) {
-        const found = child.findDescendantOfDef(objectDefGlobalId);
-        if (found !== undefined) return found;
-      }
-    }
-
-    return undefined;
-  }
-
-  /** otherが自分自身か、自分の中に入っているか。入れ物を自分の中へ入れる操作を弾くのに使う。 */
-  contains(other: WorldObject): boolean {
-    for (let node: WorldObject | undefined = other; node !== undefined; node = node._parent) {
-      if (node === this) return true;
-    }
-    return false;
-  }
-
-  /**
-   * targetの自動配置スロット（ObjectDef.placementSlotDefs）を宣言順に走査し、最初に受け入れられた
-   * スロットへ自分自身を移動する（著者がスロット名を知らなくてよい規約。spawnのintoとmoveが共用、
-   * 9.4節）。
-   *
-   * **札を重ねたドロップ（putInSlotFor）と同じ規約の、別の入口。** 走査する枠の並びは1箇所が
-   * 答える（placementSlotDefs）。
-   */
-  moveIntoFirstAcceptingSlot(target: WorldObject): boolean {
-    for (const slotDef of target.def.placementSlotDefs('auto'))
-      if (this.attachToSlot(target.getSlot(slotDef.globalId), undefined) === undefined) return true;
-
-    return false;
-  }
-
-  /**
-   * 行き場を失った物を落ち着かせる（7.1節）。hostから始めて、受け入れてもらえなければその親、さらに
-   * その親…と遡り、**どこにも入らなければ世界から消える**。
-   *
-   * 枠が受け入れないものを押し込むことはしない。器に入らない物は器の外——手に持てなければ足元へ、
-   * 足元にも置けなければ失われる、という順で落ちていくだけで、どの段でも枠の宣言はそのまま効く。
-   *
-   * 消えるときも中身は道連れにしない（destroy参照）ので、中身はそこからまた同じように落ちていく。
-   */
-  spillTo(host: WorldObject | undefined): void {
-    for (let candidate = host; candidate !== undefined; candidate = candidate.parent)
-      if (this.moveIntoFirstAcceptingSlot(candidate)) return;
-
-    this.destroy();
-  }
-
-  /**
-   * 親子のエッジが形成/解消された契機を、双方の効果（modify/add、8節）へ伝える（register=trueで登録、
-   * falseで解除）。親側だけ子thisを明示的に渡すのは、親からどの子かを一意に辿れないため。target=selfは
-   * コンストラクタで登録済みのため、ここでは扱わない。
-   */
-  private registerEdgeWith(parent: WorldObject, register: boolean): void {
-    this.def.passives.registerRelation(this, 'parent', register);
-    parent.def.passives.registerChild(parent, this, register);
-  }
-
-  /**
-   * 自分自身と、すべての子孫について、target=ancestorのpassivesを現在の祖先へ登録/解除する。親が変わると子孫
-   * 全員の祖先チェーンも変わるため、再帰で全員分を扱う。トポロジ変化前に解除・変化後に登録する順序を守ることで、
-   * いずれの時点でも祖先はownerから辿れ、前回の登録先を憶える必要がない。
-   */
-  private registerAncestorTargetedRecursively(register: boolean): void {
-    this.def.passives.registerRelation(this, 'ancestor', register);
-
-    for (const slot of this.slots) {
-      for (const child of [...slot.contents]) child.registerAncestorTargetedRecursively(register);
-    }
-  }
+  // ---- 影響の読み取り（Windows.md 8節） ----
 
   /**
    * 名指しした1つのプロパティが、他と交わしている影響（docs/ui/Windows.md 8節）。
@@ -737,6 +755,8 @@ export class WorldObject {
     return target === undefined ? [] : [target];
   }
 
+  // ---- プレイヤーが起こせる操作（11節・12節） ----
+
   /**
    * actorがこのカードへ起こせる操作（11節、宣言順）。画面のボタンに出すかは呼び出し側が
    * showMenuで絞る（11.1節）。
@@ -776,6 +796,8 @@ export class WorldObject {
       .map((c) => new Combination(c, this, dragged, actor));
   }
 
+  // ---- 時間の経過（8.4節） ----
+
   /**
    * 全プロパティのtick処理（passivesのaddの反映とrangeイベント判定、PropertyValue.tick参照）を行った後、子
    * （すべてのスロットの中身）へ再帰する。すべてのオブジェクトはworldの下にぶら下がるため、worldへ1回呼ぶだけで
@@ -793,6 +815,8 @@ export class WorldObject {
       for (const child of [...slot.contents]) child.tick();
     }
   }
+
+  // ---- 能動効果とspawn（9.2〜9.4節） ----
 
   /**
    * このオブジェクトをselfとして、set/add/destroy/spawnを実行する（9.2〜9.4節）。rangeイベント（6節）と
