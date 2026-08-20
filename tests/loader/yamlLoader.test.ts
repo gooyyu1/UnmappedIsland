@@ -598,9 +598,9 @@ object_defs:
     const appleInstance = new WorldObject(1, apple, session);
     const player = new WorldObject(2, codex.objects.get(codex.objectNames.getId('player')), session);
 
-    expect(appleInstance.tryExecuteAction('eat', player)).toBe(false); // actor.satiety=100 は lt 100 を満たさない
+    expect(appleInstance.tryGetAction('eat', player)?.tryExecute() === true).toBe(false); // actor.satiety=100 は lt 100 を満たさない
     player.tryGetProperty(satietyId)?.setNumber(99);
-    expect(appleInstance.tryExecuteAction('eat', player)).toBe(true); // actor.satiety=99 は lt 100 を満たす
+    expect(appleInstance.tryGetAction('eat', player)?.tryExecute() === true).toBe(true); // actor.satiety=99 は lt 100 を満たす
   });
 
   it('andでdragged対象を持つcombinationをパースできる', () => {
@@ -633,9 +633,19 @@ object_defs:
     const axe = new WorldObject(2, codex.objects.get(codex.objectNames.getId('axe_tool')), session);
 
     axe.tryGetProperty(durabilityId)?.setNumber(0);
-    expect(woodInstance.tryExecuteCombination(axe, undefined, 'chop')).toBe(false); // dragged.durability=0 のとき条件 gt 0 を満たさない
+    expect(
+      woodInstance
+        .combinationsWith(axe, undefined)
+        .find((c) => c.name === 'chop')
+        ?.tryExecute() === true,
+    ).toBe(false); // dragged.durability=0 のとき条件 gt 0 を満たさない
     axe.tryGetProperty(durabilityId)?.setNumber(10);
-    expect(woodInstance.tryExecuteCombination(axe, undefined, 'chop')).toBe(true); // dragged.durability=10 のとき条件 gt 0 を満たす
+    expect(
+      woodInstance
+        .combinationsWith(axe, undefined)
+        .find((c) => c.name === 'chop')
+        ?.tryExecute() === true,
+    ).toBe(true); // dragged.durability=10 のとき条件 gt 0 を満たす
     expect(axe.tryGetProperty(durabilityId)?.number ?? 0).toBe(9); // add: dragged.durability: -1 が適用される
     expect(woodInstance.parent).toBeUndefined(); // destroy: self が適用される
   });
@@ -738,9 +748,9 @@ object_defs:
     const session = new WorldSession(codex);
     const thingInstance = new WorldObject(1, thing, session);
 
-    expect(thingInstance.tryExecuteAction('use', undefined)).toBe(true); // object/op省略時は self.mode == 1 の等価比較として成立する
+    expect(thingInstance.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true); // object/op省略時は self.mode == 1 の等価比較として成立する
     thingInstance.tryGetProperty(modeId)?.setNumber(2);
-    expect(thingInstance.tryExecuteAction('use', undefined)).toBe(false); // self.mode != 1 では不成立
+    expect(thingInstance.tryGetAction('use', undefined)?.tryExecute() === true).toBe(false); // self.mode != 1 では不成立
   });
 
   it('conditionでin_slotとpropを同時に指定するとエラーになる', () => {
@@ -802,15 +812,15 @@ object_defs:
     const temperature = codex.propertyNames.getId('temperature');
 
     const inRange = new WorldObject(1, thingDef, session);
-    expect(inRange.tryExecuteAction('use', undefined), '20以上30未満').toBe(true);
+    expect(inRange.tryGetAction('use', undefined)?.tryExecute() === true, '20以上30未満').toBe(true);
 
     const tooHot = new WorldObject(2, thingDef, session);
     tooHot.tryGetProperty(temperature)?.setNumber(30);
-    expect(tooHot.tryExecuteAction('use', undefined), '上限は含まない').toBe(false);
+    expect(tooHot.tryGetAction('use', undefined)?.tryExecute() === true, '上限は含まない').toBe(false);
 
     const tooCold = new WorldObject(3, thingDef, session);
     tooCold.tryGetProperty(temperature)?.setNumber(19);
-    expect(tooCold.tryExecuteAction('use', undefined)).toBe(false);
+    expect(tooCold.tryGetAction('use', undefined)?.tryExecute() === true).toBe(false);
   });
 
   it('in_stageは、値が今その段にいるときだけ真になる', () => {
@@ -835,11 +845,11 @@ object_defs:
     const load = codex.propertyNames.getId('load');
 
     const light = new WorldObject(1, thingDef, session);
-    expect(light.tryExecuteAction('use', undefined)).toBe(true);
+    expect(light.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true);
 
     const heavy = new WorldObject(2, thingDef, session);
     heavy.tryGetProperty(load)?.setNumber(100);
-    expect(heavy.tryExecuteAction('use', undefined), '段に入ると実行できない').toBe(false);
+    expect(heavy.tryGetAction('use', undefined)?.tryExecute() === true, '段に入ると実行できない').toBe(false);
   });
 
   it('満たしていない要件のreasonを、実行前に引ける', () => {
@@ -861,7 +871,7 @@ object_defs:
     const thing = new WorldObject(1, codex.objects.get(codex.objectNames.getId('thing')), session);
 
     // 宣言順で最初に落ちるのはreasonを持たないin_slot判定なので、理由は出さない。
-    expect(thing.actionUnmetRequirement('use', undefined)?.reasonName).toBeUndefined();
+    expect(thing.tryGetAction('use', undefined)?.unmetRequirement()?.reasonName).toBeUndefined();
   });
 
   it('スロット中身判定はタグ付きの子がスロットに居るときだけ真になる', () => {
@@ -889,7 +899,7 @@ object_defs:
     const redMarker = new WorldObject(2, codex.objects.get(codex.objectNames.getId('red_marker')), session);
     redMarker.moveToSlot(box, contentSlotId);
 
-    expect(box.tryExecuteAction('use', undefined)).toBe(true); // contentスロットにredタグのマーカーがあるので実行される
+    expect(box.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true); // contentスロットにredタグのマーカーがあるので実行される
   });
 
   it('スロット中身判定はタグが異なる、または空のときは偽になる', () => {
@@ -912,7 +922,7 @@ object_defs:
 
     const session = new WorldSession(codex);
     const box = new WorldObject(1, codex.objects.get(codex.objectNames.getId('box2')), session);
-    expect(box.tryExecuteAction('use', undefined)).toBe(false); // contentスロットが空なので実行されない
+    expect(box.tryGetAction('use', undefined)?.tryExecute() === true).toBe(false); // contentスロットが空なので実行されない
 
     const blueMarker = new WorldObject(
       2,
@@ -920,7 +930,7 @@ object_defs:
       session,
     );
     blueMarker.moveToSlot(box, contentSlotId);
-    expect(box.tryExecuteAction('use', undefined)).toBe(false); // contentスロットの中身がredタグを持たない(blueタグ)ので実行されない
+    expect(box.tryGetAction('use', undefined)?.tryExecute() === true).toBe(false); // contentスロットの中身がredタグを持たない(blueタグ)ので実行されない
   });
 
   it('conditionのslotにmatchesを指定しないとエラーになる', () => {
@@ -951,7 +961,7 @@ object_defs:
     const session = new WorldSession(codex);
     const thing = new WorldObject(1, codex.objects.get(codex.objectNames.getId('thing')), session);
 
-    expect(thing.tryExecuteAction('use', undefined)).toBe(true);
+    expect(thing.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true);
   });
 
   it('matchesはobject指定でも書ける（枠のacceptと同じ二択）', () => {
@@ -980,12 +990,12 @@ object_defs:
     const altar = spawn('altar', 1);
     const sapphire = spawn('sapphire', 2);
     expect(sapphire.moveToSlot(altar, offeringSlotId)).toBeUndefined();
-    expect(altar.tryExecuteAction('use', undefined), '同じタグの別の型では偽').toBe(false);
+    expect(altar.tryGetAction('use', undefined)?.tryExecute() === true, '同じタグの別の型では偽').toBe(false);
 
     sapphire.destroy();
     const ruby = spawn('ruby', 3);
     expect(ruby.moveToSlot(altar, offeringSlotId)).toBeUndefined();
-    expect(altar.tryExecuteAction('use', undefined)).toBe(true);
+    expect(altar.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true);
   });
 
   it('slot・in_slot判定はsubjectが指すオブジェクトを見る（selfとは限らない）', () => {
@@ -1020,10 +1030,21 @@ object_defs:
     const ground = spawn('ground', 4);
     expect(box.moveToSlot(ground, codex.slotNames.getId('items'))).toBeUndefined();
 
-    expect(altar.tryExecuteCombination(box, undefined, 'offer'), 'draggedの中身が空なら偽').toBe(false);
+    expect(
+      altar
+        .combinationsWith(box, undefined)
+        .find((c) => c.name === 'offer')
+        ?.tryExecute() === true,
+      'draggedの中身が空なら偽',
+    ).toBe(false);
 
     expect(gem.moveToSlot(box, codex.slotNames.getId('content'))).toBeUndefined();
-    expect(altar.tryExecuteCombination(box, undefined, 'offer')).toBe(true);
+    expect(
+      altar
+        .combinationsWith(box, undefined)
+        .find((c) => c.name === 'offer')
+        ?.tryExecute() === true,
+    ).toBe(true);
   });
 
   it('conditionのvalueをプロパティ参照にすると、2つの動的プロパティを比較できる', () => {
@@ -1055,11 +1076,21 @@ object_defs:
       session,
     );
 
-    expect(bottle.tryExecuteCombination(sameContent, undefined, 'pour_in')).toBe(false); // self(empty)とdragged(water)のcontentが異なるので不成立
+    expect(
+      bottle
+        .combinationsWith(sameContent, undefined)
+        .find((c) => c.name === 'pour_in')
+        ?.tryExecute() === true,
+    ).toBe(false); // self(empty)とdragged(water)のcontentが異なるので不成立
 
     const contentId = codex.propertyNames.getId('content');
     bottle.getProperty(contentId).init(codex.symbolNames.getId('water'));
-    expect(bottle.tryExecuteCombination(sameContent, undefined, 'pour_in')).toBe(true); // selfとdraggedのcontentが同じ(water)なので成立
+    expect(
+      bottle
+        .combinationsWith(sameContent, undefined)
+        .find((c) => c.name === 'pour_in')
+        ?.tryExecute() === true,
+    ).toBe(true); // selfとdraggedのcontentが同じ(water)なので成立
   });
 
   it('プロパティ参照のvalueにinを指定するとエラーになる', () => {
@@ -1126,9 +1157,9 @@ object_defs:
 
     falseCase.tryGetProperty(hpId)?.setNumber(99);
     falseCase.tryGetProperty(mpId)?.setNumber(4);
-    expect(falseCase.tryExecuteAction('use', undefined)).toBe(false); // hp(99)もmp(4)も条件を満たさないため不成立
+    expect(falseCase.tryGetAction('use', undefined)?.tryExecute() === true).toBe(false); // hp(99)もmp(4)も条件を満たさないため不成立
 
-    expect(trueCase.tryExecuteAction('use', undefined)).toBe(true); // hp(5)はgte 100を満たさないが、mp(5)がgte 5を満たすのでanyとして成立する
+    expect(trueCase.tryGetAction('use', undefined)?.tryExecute() === true).toBe(true); // hp(5)はgte 100を満たさないが、mp(5)がgte 5を満たすのでanyとして成立する
   });
 
   it('notコンビネータは内側の葉を反転する', () => {
@@ -1149,7 +1180,7 @@ object_defs:
     const session = new WorldSession(codex);
     const thingInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('thing')), session);
 
-    expect(thingInstance.tryExecuteAction('use', undefined)).toBe(false); // locked(1)がprop:1と一致するため、not: {...}は偽になる
+    expect(thingInstance.tryGetAction('use', undefined)?.tryExecute() === true).toBe(false); // locked(1)がprop:1と一致するため、not: {...}は偽になる
   });
 
   it('stageによる強制ゲートとconditionsは併用でき、両方を満たす間だけ有効になる', () => {
@@ -1224,11 +1255,11 @@ object_defs:
     const tallyDef = codex.objects.get(codex.objectNames.getId('tally'));
 
     const addThenSet = new WorldObject(1, tallyDef, session);
-    expect(addThenSet.tryExecuteAction('add_then_set', undefined)).toBe(true);
+    expect(addThenSet.tryGetAction('add_then_set', undefined)?.tryExecute() === true).toBe(true);
     expect(addThenSet.tryGetProperty(nId)?.number ?? 0).toBe(5);
 
     const setThenAdd = new WorldObject(2, tallyDef, session);
-    expect(setThenAdd.tryExecuteAction('set_then_add', undefined)).toBe(true);
+    expect(setThenAdd.tryGetAction('set_then_add', undefined)?.tryExecute() === true).toBe(true);
     expect(setThenAdd.tryGetProperty(nId)?.number ?? 0).toBe(6);
   });
 
@@ -1251,7 +1282,7 @@ object_defs:
     const session = new WorldSession(codex);
     const worker = new WorldObject(1, codex.objects.get(codex.objectNames.getId('worker')), session);
 
-    expect(worker.tryExecuteAction('turn', undefined)).toBe(true);
+    expect(worker.tryGetAction('turn', undefined)?.tryExecute() === true).toBe(true);
     expect(worker.tryGetProperty(codex.propertyNames.getId('fatigue'))?.number ?? 0).toBe(1);
     expect(worker.tryGetProperty(codex.propertyNames.getId('mark'))?.number ?? 0).toBe(7);
   });
@@ -1552,7 +1583,7 @@ object_defs:
     expect(characterInstance.moveToSlot(roomInstance, contentsSlotId)).toBeUndefined();
     expect(foodInstance.moveToSlot(characterInstance, pocketSlotId)).toBeUndefined();
 
-    expect(foodInstance.tryExecuteAction('check', undefined)).toBe(true); // characterはweatherを持たないため素通りし、roomのweather(1)と比較して真になる
+    expect(foodInstance.tryGetAction('check', undefined)?.tryExecute() === true).toBe(true); // characterはweatherを持たないため素通りし、roomのweather(1)と比較して真になる
   });
 
   it('destroyの対象にancestorを指定するとエラーになる', () => {

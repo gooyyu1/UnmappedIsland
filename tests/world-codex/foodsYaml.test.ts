@@ -43,7 +43,7 @@ describe('foods.yamlの食料定義', () => {
       // 在庫は体脂肪へ流れ続ける（characters/参照）ため、加算量だけを見たい。一旦0まで下げる。
       for (const id of [satietyId, nutrientId, vitaminId]) character.getProperty(id).init(0);
 
-      expect(food.tryExecuteAction('eat', character)).toBe(true);
+      expect(food.tryGetAction('eat', character)?.tryExecute() === true).toBe(true);
 
       expect(character.tryGetProperty(satietyId)?.number ?? 0, 'かさ').toBe(expectedBulk);
       expect(character.tryGetProperty(nutrientId)?.number ?? 0, '栄養素').toBe(expectedNutrient);
@@ -79,7 +79,7 @@ describe('foods.yamlの食料定義', () => {
     const satietyId = codex.propertyNames.getId('satiety');
     for (const id of [satietyId, ...nutrients]) character.getProperty(id).init(0);
 
-    expect(lump.tryExecuteAction('eat', character)).toBe(true);
+    expect(lump.tryGetAction('eat', character)?.tryExecute() === true).toBe(true);
 
     expect(character.tryGetProperty(satietyId)?.number ?? 0, 'かさは少し戻る').toBe(200);
     for (const id of nutrients)

@@ -79,13 +79,13 @@ function takeRest(
   const { player } = stand(character);
   const staminaId = codex.propertyNames.getId('stamina');
   const wakefulnessId = codex.propertyNames.getId('wakefulness');
-  const minutes = player.instance.actionMinutes(actionName, player.instance);
+  const minutes = player.instance.tryGetAction(actionName, player.instance)?.minutes() ?? 0;
   const spent = minutes / 15;
 
   player.instance.tryGetProperty(staminaId)?.setNumber(0);
   player.instance.tryGetProperty(wakefulnessId)?.setNumber(spent);
 
-  expect(player.instance.tryExecuteAction(actionName, player.instance)).toBe(true);
+  expect(player.instance.tryGetAction(actionName, player.instance)?.tryExecute() === true).toBe(true);
 
   return {
     minutes,
@@ -365,7 +365,7 @@ describe('プレイヤーキャラクタの定義', () => {
     it.each(RESTS)('休息「%s」を持ち、%i分かかる', (actionName, minutes) => {
       const { player } = stand(character);
 
-      expect(player.instance.actionMinutes(actionName, player.instance)).toBe(minutes);
+      expect(player.instance.tryGetAction(actionName, player.instance)?.minutes() ?? 0).toBe(minutes);
     });
 
     it('眠る休息だけが眠気を戻す', () => {

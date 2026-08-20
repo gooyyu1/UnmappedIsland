@@ -73,7 +73,7 @@ describe('injuries.yamlの怪我', () => {
   /** ヤシの実を採ろうとする。成否はopenへ渡したrollで決まっている。 */
   function pickCoconut(): void {
     const tree = spawnInto('palm_tree', beach, 'fixtures');
-    expect(tree.tryExecuteAction('pick_green_coconut', player)).toBe(true);
+    expect(tree.tryGetAction('pick_green_coconut', player)?.tryExecute() === true).toBe(true);
   }
 
   /**

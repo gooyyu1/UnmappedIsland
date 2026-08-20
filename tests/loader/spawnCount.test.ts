@@ -33,7 +33,7 @@ object_defs:
     const pile = new WorldObject(2, codex.objects.get(codex.objectNames.getId('pile')), session);
     pile.moveIntoFirstAcceptingSlot(ground, false);
 
-    pile.tryExecuteAction('scatter', undefined);
+    pile.tryGetAction('scatter', undefined)?.tryExecute();
 
     const slot = ground.tryGetSlot(codex.slotNames.getId('items'));
     return (slot?.contents ?? []).map((object) => object.def.name);

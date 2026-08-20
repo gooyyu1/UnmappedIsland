@@ -36,16 +36,28 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 `ActionDef` が `showMenu`、`CombinationDef` が `with` によるマッチングだけ。`dragged` はドラッグ型
 だけが持つ相手で、メニュー型では `undefined` のまま同じ経路を通る。
 
-実行時の入口は `WorldObject` の3メソッド。
+## 1.1 宣言と、相手の決まった操作
 
-- `TryExecuteAction(actionName, actor, session)`
-- `TryExecuteCombination(dragged, actor, combinationName, session)`
-- `combinationsWith(dragged, actor)` — ドラッグ中のハイライト等のために、**今成立する** `combinations` を
+宣言（`ActionDef`・`CombinationDef`）は `ObjectDef` のもので、**どの個体の話かを知らない**。実行にも
+所要時間の解決にも `self`（`dragged`・`actor`）が要るので、宣言へ直に頼むと呼び出し側がそれらを毎回
+渡し直すことになる。そこで `WorldObject` から引いた時点で相手を結び付け、`Action`・`Combination`
+（`Interaction.ts`）として返す。以降は名前も相手も渡さない。
+
+引く口は3つ。
+
+- `ActionsFor(actor)` — このカードへ起こせる操作を宣言順に。画面のボタンに出すかは `showMenu`
+  （11.1節）で絞る。
+- `TryGetAction(actionName, actor)` — 名指しで1つ。土地の `explore`、道の `travel`、動物の1手が使う。
+- `CombinationsWith(dragged, actor)` — ドラッグ中のハイライト等のために、**今成立する** `combinations` を
   宣言順に列挙する。`with` のマッチング（1）だけでなく `conditions`（2）まで見る——候補を選ぶ側と実行
   できる側が食い違うと、満杯の炉に薪を落とせるのに何も起きない、という形になるため。**どちらの札を
   `self` として引くか**（落とされた側が先、次に掴んだ側）と、
   複数マッチした場合にどれを実行するかの解決はUI層に委ねる
   （[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節、`PlayScreenView.combinationOf`）。
+
+まとめて重ねる操作（`allow_multiple`、12.4節）も `Combination` が持つ。`AcceptedCount(followers)` が
+落とす前に何枚ついてくるかを答え、`ExecuteWithFollowers(followers)` がその繰り返しを行う——**1つ
+実行するたびに世界が変わる**ので、都度まだ成立するかを見直し、成立しなくなった時点で止める。
 
 ## 2. 実行パイプライン
 

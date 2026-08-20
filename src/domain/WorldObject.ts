@@ -1,5 +1,5 @@
 import type { ActiveEffect, SpawnEffect, SpawnTargetRoot } from './ActiveEffect';
-import type { CombinationDef } from './CombinationDef';
+import { Action, Combination } from './Interaction';
 import { EffectSite } from './EffectSite';
 import type { SameSlotPlacement } from './EffectSite';
 import { LocalIndexMap } from './LocalIndexMap';
@@ -11,7 +11,6 @@ import { PropertyInfluences } from './PropertyInfluence';
 import { IN_PROGRESS_TAG } from './RecipeDef';
 import type { PropertyDef } from './PropertyDef';
 import { PropertyValue } from './PropertyValue';
-import type { Requirement } from './Requirement';
 import { Slot } from './Slot';
 import type { WorldPlace } from './WorldChange';
 import type { WorldSession } from './WorldSession';
@@ -756,47 +755,43 @@ export class WorldObject {
     return target === undefined ? [] : [target];
   }
 
-  tryExecuteAction(actionName: string, actor: WorldObject | undefined): boolean {
-    return this.def.tryExecuteAction(this, actor, actionName, this.session);
+  /**
+   * actorがこのカードへ起こせる操作（11節、宣言順）。画面のボタンに出すかは呼び出し側が
+   * showMenuで絞る（11.1節）。
+   */
+  actionsFor(actor: WorldObject | undefined): readonly Action[] {
+    return this.def.actions.map((action) => new Action(action, this, actor));
+  }
+
+  /** 名指しした操作（宣言が無ければundefined）。土地のexplore・道のtravel・動物の1手が使う。 */
+  tryGetAction(actionName: string, actor: WorldObject | undefined): Action | undefined {
+    const action = this.def.actions.find((a) => a.name === actionName);
+    return action === undefined ? undefined : new Action(action, this, actor);
   }
 
   /**
-   * actionNameを今実行できない理由（最初に落ちた要件、14節）。実行できるならundefined。
-   * ボタンを押せなくし、押せない理由を見せるために使う。
+   * draggedを重ねたときに**今**成立する組み合わせ（12節、宣言順）。相手として受け入れるかだけでなく、
+   * 要件（14節）を満たしているかまで見る——満杯の炉に薪をくべる組み合わせは、候補にならない。
+   *
+   * **要件まで見るのは、候補を選ぶ側と実行できる側を食い違わせないため。** 型だけで選ぶと、選んだ
+   * 先が実行できない場合に「落とせるのに何も起きない」になる。**行き先の座標に型が居ない組み合わせ**
+   * （`become`、9.9節）も同じ理由で候補にならない。
+   *
+   * **作りかけの物は相手にならない。** 製作中オブジェクトは完成品のタグを引き継ぐ
+   * （RecipeSystem.md 5節）ので、弾かなければ半分できた石斧で木を伐り、獣を殴れてしまう
+   * ——引き継ぎは枠のacceptへ入れるためのもので、道具として働けることまでは意味しない。
    */
-  actionUnmetRequirement(actionName: string, actor: WorldObject | undefined): Requirement | undefined {
-    return this.def.actionUnmetRequirement(this, actor, actionName);
-  }
-
-  /** actionNameの実行にかかるゲーム内時間（分）。実行前に所要時間を見せるために使う。 */
-  actionMinutes(actionName: string, actor: WorldObject | undefined): number {
-    return this.def.actionMinutes(this, actor, actionName);
-  }
-
-  tryExecuteCombination(
-    dragged: WorldObject,
-    actor: WorldObject | undefined,
-    combinationName: string,
-  ): boolean {
-    return this.def.tryExecuteCombination(this, dragged, actor, combinationName, this.session);
-  }
-
-  /** combinationNameの実行にかかるゲーム内時間（分）。 */
-  combinationMinutes(dragged: WorldObject, actor: WorldObject | undefined, combinationName: string): number {
-    return this.def.combinationMinutes(this, dragged, actor, combinationName);
-  }
-
-  /** combinationNameをまとめて実行できる個数（`allow_multiple`、GameElementDefinition.md 12.4節）。 */
-  combinationAcceptedCount(
-    candidates: readonly WorldObject[],
-    actor: WorldObject | undefined,
-    combinationName: string,
-  ): number {
-    return this.def.combinationAcceptedCount(this, candidates, actor, combinationName);
-  }
-
-  combinationsWith(dragged: WorldObject, actor: WorldObject | undefined): readonly CombinationDef[] {
-    return this.def.combinationsWith(this, dragged, actor);
+  combinationsWith(dragged: WorldObject, actor: WorldObject | undefined): readonly Combination[] {
+    if (dragged.isInProgress) return [];
+    return this.def.combinations
+      .filter(
+        (c) =>
+          c.matches(dragged.def) &&
+          c.unmetRequirement(this, dragged, actor) === undefined &&
+          c.acceptedCount(this, [dragged], actor) >= 1 &&
+          !c.unresolvable(this, dragged, actor),
+      )
+      .map((c) => new Combination(c, this, dragged, actor));
   }
 
   /**

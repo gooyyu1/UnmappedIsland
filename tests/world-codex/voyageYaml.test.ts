@@ -51,7 +51,9 @@ describe('筏と航海', () => {
   it('出航すると、プレイヤーごと筏が外洋へ移る', () => {
     const { game, raft } = ready();
 
-    expect(raft.tryExecuteAction('set_sail', game.player.instance), '出航できる').toBe(true);
+    expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute() === true, '出航できる').toBe(
+      true,
+    );
 
     expect(raft.parent?.def.name, '筏は外洋に居る').toBe('open_sea');
     expect(game.player.location?.instance, 'プレイヤーは筏の中に居る').toBe(raft);
@@ -70,7 +72,9 @@ describe('筏と航海', () => {
     const landing = game.world.instance.findDescendantByInstanceId(game.map.siteInstanceIds[inland!.index]);
     expect(raft.moveToSlot(landing!, codex.slotNames.getId('fixtures')), '筏を内陸へ運ぶ').toBeUndefined();
 
-    expect(raft.tryExecuteAction('set_sail', game.player.instance), '出航できない').toBe(false);
+    expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute() === true, '出航できない').toBe(
+      false,
+    );
     expect(raft.parent, '筏は内陸に残る').toBe(landing);
   });
 
@@ -100,7 +104,7 @@ describe('筏と航海', () => {
     const sailSpeedIn = (wind: string, withSail: boolean): number => {
       const { game, raft } = ready();
       if (withSail) rigSail(game, raft);
-      raft.tryExecuteAction('set_sail', game.player.instance);
+      raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
       for (const cargo of [...raft.children()]) {
         if (cargo !== game.player.instance && cargo.def.name !== 'rawhide_sail') cargo.destroy();
       }
@@ -129,7 +133,7 @@ describe('筏と航海', () => {
   it('風向きが1tickあたりの進みを決める（追い風＞横風＞向かい風）', () => {
     const advancePerTick = (wind: string): number => {
       const { game, raft } = ready();
-      raft.tryExecuteAction('set_sail', game.player.instance);
+      raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
       setWind(game, wind);
 
       const before = propertyOf(raft, 'voyage_progress');
@@ -148,7 +152,7 @@ describe('筏と航海', () => {
 
   it('積荷が重いほど遅い（捨てれば速くなる）', () => {
     const { game, raft } = ready();
-    raft.tryExecuteAction('set_sail', game.player.instance);
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
     setWind(game, 'crosswind');
 
     const laden = propertyOf(raft, 'sail_speed');
@@ -163,7 +167,7 @@ describe('筏と航海', () => {
 
   it('本土へ着くと、持ち帰った物ごと周回が終わる', () => {
     const { game, raft } = ready();
-    raft.tryExecuteAction('set_sail', game.player.instance);
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
     setWind(game, 'tailwind');
 
     // 距離の残り1つ手前まで詰めて、あと1tickで着く状態にする（航海そのものの長さは別の検査）。
@@ -188,7 +192,7 @@ describe('筏と航海', () => {
     // 渇きで死ぬが、筏はそのまま流されていく）。着いたかどうかは筏の居場所で読む。
     const sail = (wind: string, days: number): boolean => {
       const { game, raft } = ready();
-      raft.tryExecuteAction('set_sail', game.player.instance);
+      raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
 
       const ticksPerDay = (24 * 60) / game.world.minutesPerTick;
       for (let i = 0; i < days * ticksPerDay; i++) {

@@ -155,7 +155,7 @@ export class Location {
    * （ExplorationSystem.md 2節）。
    */
   explore(actor: WorldObject | undefined): boolean {
-    if (!this.instance.tryExecuteAction('explore', actor)) return false;
+    if (this.instance.tryGetAction('explore', actor)?.tryExecute() !== true) return false;
     this.revealDueFixtures();
     return true;
   }

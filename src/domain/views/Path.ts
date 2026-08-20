@@ -59,6 +59,6 @@ export class Path {
 
   /** この道を通って移動する（YAML側のtravelアクション: 未発見なら不成立、成功ならactorが移動先へ移り、travel_minutes分の時間が進む）。 */
   travel(actor: WorldObject | undefined): boolean {
-    return this.instance.tryExecuteAction('travel', actor);
+    return this.instance.tryGetAction('travel', actor)?.tryExecute() === true;
   }
 }

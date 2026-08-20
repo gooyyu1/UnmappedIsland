@@ -53,7 +53,7 @@ object_defs:
     const actor = spawn(codex, 'player');
     const canteen = spawn(codex, 'canteen');
 
-    const executed = canteen.tryExecuteAction('drink', actor);
+    const executed = canteen.tryGetAction('drink', actor)?.tryExecute() === true;
 
     expect(executed).toBe(true);
     expect(canteen.tryGetProperty(waterId)?.number ?? 0, 'amount(2000)だけ減る').toBe(3000);
@@ -88,7 +88,7 @@ object_defs:
     const actor = spawn(codex, 'player2');
     const canteen = spawn(codex, 'canteen2');
 
-    canteen.tryExecuteAction('drink', actor);
+    canteen.tryGetAction('drink', actor)?.tryExecute();
 
     expect(canteen.tryGetProperty(waterId)?.number ?? 0, '容器に実際に入っていた分(500)しか出せない').toBe(0);
     expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '実際に出せた分(500)しか回復しない').toBe(500);
@@ -134,7 +134,7 @@ object_defs:
     const actor = spawn(codex, 'player_multi');
     const canteen = spawn(codex, 'canteen_multi');
 
-    const executed = canteen.tryExecuteAction('drink', actor);
+    const executed = canteen.tryGetAction('drink', actor)?.tryExecute() === true;
 
     expect(executed).toBe(true);
     expect(canteen.tryGetProperty(waterId)?.number ?? 0).toBe(3000);
@@ -171,7 +171,7 @@ object_defs:
     const actor = spawn(codex, 'player3');
     const canteen = spawn(codex, 'canteen3');
 
-    canteen.tryExecuteAction('drink', actor);
+    canteen.tryGetAction('drink', actor)?.tryExecute();
 
     expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '残容量(100)分しか回復しない').toBe(28800);
     expect(
@@ -209,7 +209,7 @@ object_defs:
     const actor = spawn(codex, 'player4');
     const canteen = spawn(codex, 'canteen4');
 
-    canteen.tryExecuteAction('drink', actor);
+    canteen.tryGetAction('drink', actor)?.tryExecute();
 
     expect(canteen.tryGetProperty(waterId)?.number ?? 0, 'toの残容量を見ずにamount(2000)そのまま出す').toBe(
       3000,
@@ -244,7 +244,7 @@ object_defs:
 
     const cauldron = spawn(codex, 'cauldron');
 
-    const executed = cauldron.tryExecuteAction('pour_in', undefined);
+    const executed = cauldron.tryGetAction('pour_in', undefined)?.tryExecute() === true;
 
     expect(executed, 'from_object/to_objectを省略してもself同士で成立する').toBe(true);
     expect(cauldron.tryGetProperty(waterId)?.number ?? 0).toBe(2000);
@@ -286,7 +286,7 @@ object_defs:
     const actor = spawn(codex, 'player5');
     const canteen = spawn(codex, 'canteen5');
 
-    canteen.tryExecuteAction('drink', actor);
+    canteen.tryGetAction('drink', actor)?.tryExecute();
 
     expect(actor.tryGetProperty(hydrationId)?.number ?? 0, 'amount(1200)分を全量移送する').toBe(1200);
     expect(
@@ -331,7 +331,7 @@ object_defs:
     const actor = spawn(codex, 'player6');
     const canteen = spawn(codex, 'canteen6');
 
-    canteen.tryExecuteAction('drink', actor);
+    canteen.tryGetAction('drink', actor)?.tryExecute();
 
     expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '在庫(600)の分しか移送されない').toBe(600);
     expect(
@@ -372,7 +372,7 @@ object_defs:
       const actor = spawn(codex, 'drinker');
       const cup = spawn(codex, 'cup');
 
-      expect(cup.tryExecuteAction('drink', actor)).toBe(true);
+      expect(cup.tryGetAction('drink', actor)?.tryExecute() === true).toBe(true);
 
       return {
         water: cup.tryGetProperty(codex.propertyNames.getId('volume'))?.number ?? 0,

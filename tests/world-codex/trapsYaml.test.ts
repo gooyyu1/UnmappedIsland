@@ -204,7 +204,12 @@ describe('traps.yamlのくくり罠', () => {
     };
 
     const spinach = spawnInto('water_spinach', player, 'hand');
-    expect(snare.tryExecuteCombination(spinach, undefined, 'add_plant_bait')).toBe(true);
+    expect(
+      snare
+        .combinationsWith(spinach, undefined)
+        .find((c) => c.name === 'add_plant_bait')
+        ?.tryExecute() === true,
+    ).toBe(true);
 
     expect(snare.tryGetProperty(missWeightId)!.getEffectiveValue(), '何も寄って来ない回が減る').toBeLessThan(
       before.miss,
@@ -245,7 +250,12 @@ describe('traps.yamlのくくり罠', () => {
     prey.destroy();
 
     const knife = spawnInto('sharp_stone', player, 'hand');
-    expect(carcass.tryExecuteCombination(knife, player, 'butcher')).toBe(true);
+    expect(
+      carcass
+        .combinationsWith(knife, player)
+        .find((c) => c.name === 'butcher')
+        ?.tryExecute() === true,
+    ).toBe(true);
 
     expect(itemsOnGround()).toEqual(['snare', 'raw_meat', 'feather', 'small_bone']);
   });
@@ -264,7 +274,7 @@ describe('traps.yamlのくくり罠', () => {
     // 罠だけを起点に、刃物を1つも経由せず縫製の材料へ届く
     // （docs/world/SurvivalItems.md 1.2節の 繊維 → 罠 → 小動物 → 小骨 → 骨針）。
     const roasted = spawnInto('roasted_rat', player, 'hand');
-    expect(roasted.tryExecuteAction('eat', player)).toBe(true);
+    expect(roasted.tryGetAction('eat', player)?.tryExecute() === true).toBe(true);
 
     const inHand = player.tryGetSlot(codex.slotNames.getId('hand'))!.contents.map((o) => o.def.name);
     expect(inHand, '食べ終われば骨が残る').toContain('small_bone');

@@ -75,14 +75,19 @@ describe('coconut.yamlのヤシの実の加工', () => {
   /** 道具を手に取り、対象のカードへドラッグしてcombinationを1つ実行する。 */
   function combine(target: WorldObject, toolName: string, combinationName: string): void {
     const tool = spawnInto(toolName, player, 'hand');
-    expect(target.tryExecuteCombination(tool, player, combinationName)).toBe(true);
+    expect(
+      target
+        .combinationsWith(tool, player)
+        .find((c) => c.name === combinationName)
+        ?.tryExecute() === true,
+    ).toBe(true);
     expect(tool.parent, '道具は消費されない').toBe(player);
   }
 
   it('ヤシの木に登ると、手持ちに青い実が増える', () => {
     const tree = spawnInto('palm_tree', beach, 'fixtures');
 
-    expect(tree.tryExecuteAction('pick_green_coconut', player)).toBe(true);
+    expect(tree.tryGetAction('pick_green_coconut', player)?.tryExecute() === true).toBe(true);
 
     expect(handOf(player), '1回登ればまとめて採れる').toEqual(['green_coconut', 'green_coconut']);
     expect(tree.parent, 'ヤシの木は残る').toBe(beach);
@@ -96,7 +101,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     for (const name of ['stone', 'sharp_stone', 'twig', 'thick_branch', 'taro', 'water_spinach'])
       spawnInto(name, player, 'hand');
 
-    expect(tree.tryExecuteAction('pick_green_coconut', player)).toBe(true);
+    expect(tree.tryGetAction('pick_green_coconut', player)?.tryExecute() === true).toBe(true);
 
     expect(new PlayerCharacter(player, codex).equipmentStacks, '装備欄は自動配置の対象外（7.7節）').toEqual(
       [],
@@ -148,7 +153,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     player.getProperty(satietyId).init(16);
     player.getProperty(hydrationId).init(2);
 
-    expect(jelly.tryExecuteAction('eat', player)).toBe(true);
+    expect(jelly.tryGetAction('eat', player)?.tryExecute() === true).toBe(true);
 
     expect(player.tryGetProperty(hydrationId)?.number ?? 0).toBeCloseTo(6.2, 10);
     expect(player.tryGetProperty(satietyId)?.number ?? 0, '熟した果肉（200mL）より小さい').toBe(150);
@@ -162,7 +167,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
       // 1 tickぶんの減り（-1）を載せた2から測り、残る1を引いて増えた分だけを返す
       // （0まで減ると尽きて死ぬので、1を残す）。
       player.getProperty(hydrationId).init(2);
-      expect(target.tryExecuteAction(action, player)).toBe(true);
+      expect(target.tryGetAction(action, player)?.tryExecute() === true).toBe(true);
       return (player.tryGetProperty(hydrationId)?.number ?? 0) - 1;
     };
 
@@ -281,7 +286,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     player.getProperty(hydrationId).init(2);
     player.getProperty(lipidId).init(0);
 
-    expect(meat.tryExecuteAction('eat', player)).toBe(true);
+    expect(meat.tryGetAction('eat', player)?.tryExecute() === true).toBe(true);
 
     expect(player.tryGetProperty(satietyId)?.number ?? 0).toBe(200);
     expect(player.tryGetProperty(hydrationId)?.number ?? 0).toBe(7);
@@ -294,7 +299,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     (name) => {
       const raw = spawnInto(name, player, 'hand');
 
-      expect(raw.tryExecuteAction('eat', player)).toBe(false);
+      expect(raw.tryGetAction('eat', player)?.tryExecute() === true).toBe(false);
     },
   );
 });

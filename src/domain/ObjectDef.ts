@@ -1,5 +1,3 @@
-import type { WorldObject } from './WorldObject';
-import type { WorldSession } from './WorldSession';
 import type { ActionDef } from './ActionDef';
 import type { CombinationDef } from './CombinationDef';
 import type { EffectDeclaration } from './EffectReader';
@@ -12,7 +10,6 @@ import type { PassiveEffect } from './PassiveEffect';
 import { PassiveEffects } from './PassiveEffects';
 import type { PropertyDef } from './PropertyDef';
 import type { RecipeDef } from './RecipeDef';
-import type { Requirement } from './Requirement';
 import type { Placement, SlotDef } from './SlotDef';
 import type { StackOrderDef } from './StackOrderDef';
 
@@ -281,109 +278,6 @@ export class ObjectDef {
   placementSlotDefs(placement: Placement): readonly SlotDef[] {
     return this.placementSlots[placement];
   }
-
-  tryExecuteAction(
-    self: WorldObject,
-    actor: WorldObject | undefined,
-    actionName: string,
-    session: WorldSession,
-  ): boolean {
-    const action = this.actions.find((a) => a.name === actionName);
-    return action !== undefined && action.tryExecute(self, actor, session);
-  }
-
-  /**
-   * actionNameを今実行できない理由（最初に落ちた要件、14節）。実行できる・宣言が無い場合はundefined。
-   */
-  actionUnmetRequirement(
-    self: WorldObject,
-    actor: WorldObject | undefined,
-    actionName: string,
-  ): Requirement | undefined {
-    return this.actions.find((a) => a.name === actionName)?.unmetRequirement(self, actor);
-  }
-
-  /** actionNameの実行にかかるゲーム内時間（分）。宣言が無ければ0。 */
-  actionMinutes(self: WorldObject, actor: WorldObject | undefined, actionName: string): number {
-    return this.actions.find((a) => a.name === actionName)?.minutesFor(self, undefined, actor) ?? 0;
-  }
-
-  /** combinationNameの実行にかかるゲーム内時間（分）。宣言が無ければ0。 */
-  combinationMinutes(
-    self: WorldObject,
-    dragged: WorldObject,
-    actor: WorldObject | undefined,
-    combinationName: string,
-  ): number {
-    return this.combinations.find((c) => c.name === combinationName)?.minutesFor(self, dragged, actor) ?? 0;
-  }
-
-  /**
-   * combinationNameをまとめて実行できる個数（宣言が無ければ1）。candidatesは先頭から順に相手になる
-   * 個体で、先頭が指の掴んでいたもの。
-   */
-  combinationAcceptedCount(
-    self: WorldObject,
-    candidates: readonly WorldObject[],
-    actor: WorldObject | undefined,
-    combinationName: string,
-  ): number {
-    return (
-      this.combinations.find((c) => c.name === combinationName)?.acceptedCount(self, candidates, actor) ?? 1
-    );
-  }
-
-  tryExecuteCombination(
-    self: WorldObject,
-    dragged: WorldObject,
-    actor: WorldObject | undefined,
-    combinationName: string,
-    session: WorldSession,
-  ): boolean {
-    const combination = combinationsWith(self, dragged, actor).find((c) => c.name === combinationName);
-    return combination !== undefined && combination.tryExecute(self, dragged, actor, session);
-  }
-
-  /**
-   * selfへdraggedを重ねたときに**今**成立する組み合わせ（宣言順）。相手として受け入れるかだけでなく、
-   * 要件（14節）を満たしているかまで見る——満杯の炉に薪をくべる組み合わせは、候補にならない。
-   */
-  combinationsWith(
-    self: WorldObject,
-    dragged: WorldObject,
-    actor: WorldObject | undefined,
-  ): readonly CombinationDef[] {
-    return combinationsWith(self, dragged, actor);
-  }
-}
-
-/**
- * resolvedSelfが持つcombinationのうち、resolvedDraggedを相手（with、12.1節）として受け入れ、かつ
- * 今その要件（14節）を満たし、1つ以上受け取れるもの。
- *
- * **要件まで見るのは、候補を選ぶ側と実行できる側を食い違わせないため。** 型だけで選ぶと、選んだ
- * 先が実行できない場合に「落とせるのに何も起きない」になる。
- *
- * **行き先の座標に型が居ない組み合わせも候補にならない**（`become`、9.9節）。要件と同じ理由で、
- * 選んだ先が何も起こせない組み合わせを候補に出さない。
- *
- * **作りかけの物は相手にならない。** 製作中オブジェクトは完成品のタグを引き継ぐ
- * （RecipeSystem.md 5節）ので、弾かなければ半分できた石斧で木を伐り、獣を殴れてしまう
- * ——引き継ぎは枠のacceptへ入れるためのもので、道具として働けることまでは意味しない。
- */
-function combinationsWith(
-  resolvedSelf: WorldObject,
-  resolvedDragged: WorldObject,
-  actor: WorldObject | undefined,
-): readonly CombinationDef[] {
-  if (resolvedDragged.isInProgress) return [];
-  return resolvedSelf.def.combinations.filter(
-    (c) =>
-      c.matches(resolvedDragged.def) &&
-      c.unmetRequirement(resolvedSelf, resolvedDragged, actor) === undefined &&
-      c.acceptedCount(resolvedSelf, [resolvedDragged], actor) >= 1 &&
-      !c.unresolvable(resolvedSelf, resolvedDragged, actor),
-  );
 }
 
 /** ロード済みの全 ObjectDef を、グローバルIDをそのままindexとする配列で保持する。 */

@@ -77,7 +77,7 @@ object_defs:
     const campfire = session.spawn(codex.objectNames.getId('campfire'));
     campfire.moveToSlot(world.instance, codex.slotNames.getId('stuff'));
 
-    const executed = campfire.tryExecuteAction('rest', undefined);
+    const executed = campfire.tryGetAction('rest', undefined)?.tryExecute() === true;
 
     expect(executed).toBe(true);
     expect(
@@ -105,7 +105,7 @@ object_defs:
     const trail = session.spawn(codex.objectNames.getId('trail'));
     trail.moveToSlot(world.instance, codex.slotNames.getId('stuff'));
 
-    expect(trail.tryExecuteAction('travel', undefined)).toBe(true);
+    expect(trail.tryGetAction('travel', undefined)?.tryExecute() === true).toBe(true);
     expect(world.minute, 'self.travel_minutesの値だけ時間が進む').toBe(45);
   });
 
@@ -125,7 +125,7 @@ object_defs:
     const campfire = session.spawn(codex.objectNames.getId('campfire'));
     campfire.moveToSlot(world.instance, codex.slotNames.getId('stuff'));
 
-    expect(campfire.tryExecuteAction('rest', undefined)).toBe(false);
+    expect(campfire.tryGetAction('rest', undefined)?.tryExecute() === true).toBe(false);
     expect(world.minute, '条件不成立なら時間は進まない').toBe(0);
   });
 
@@ -150,7 +150,12 @@ object_defs:
     const hammer = session.spawn(codex.objectNames.getId('hammer'));
     nut.moveToSlot(world.instance, codex.slotNames.getId('stuff'));
 
-    expect(nut.tryExecuteCombination(hammer, undefined, 'crack')).toBe(true);
+    expect(
+      nut
+        .combinationsWith(hammer, undefined)
+        .find((c) => c.name === 'crack')
+        ?.tryExecute() === true,
+    ).toBe(true);
 
     expect(nut.tryGetProperty(codex.propertyNames.getId('cracked'))?.number ?? 0, '効果は適用される').toBe(1);
     expect(world.minute, 'duration分だけ時間が進む').toBe(20);
@@ -174,7 +179,12 @@ object_defs:
     const hammer = session.spawn(codex.objectNames.getId('blunt_hammer'));
     nut.moveToSlot(world.instance, codex.slotNames.getId('stuff'));
 
-    expect(nut.tryExecuteCombination(hammer, undefined, 'crack')).toBe(true);
+    expect(
+      nut
+        .combinationsWith(hammer, undefined)
+        .find((c) => c.name === 'crack')
+        ?.tryExecute() === true,
+    ).toBe(true);
     expect(world.minute, 'dragged.swing_minutesの値だけ時間が進む').toBe(35);
   });
 
@@ -201,7 +211,7 @@ object_defs:
     const oven = session.spawn(codex.objectNames.getId('oven'));
     oven.moveToSlot(world.instance, codex.slotNames.getId('stuff'));
 
-    expect(oven.tryExecuteAction('bake', undefined)).toBe(true);
+    expect(oven.tryGetAction('bake', undefined)?.tryExecute() === true).toBe(true);
 
     expect(
       world.instance.tryGetProperty(codex.propertyNames.getId('tick'))?.number ?? 0,
@@ -240,7 +250,7 @@ object_defs:
     const stuffSlotId = codex.slotNames.getId('stuff');
     stone.moveToSlot(world.instance, stuffSlotId);
 
-    expect(stone.tryExecuteAction('carve', undefined), '行動は成立しない').toBe(false);
+    expect(stone.tryGetAction('carve', undefined)?.tryExecute() === true, '行動は成立しない').toBe(false);
 
     expect(world.minute, '時間は経過している（1時間かけて道具が壊れた）').toBe(30);
     expect(stone.parent, '石は経過中に壊れて世界から外れている').toBeUndefined();
@@ -285,7 +295,12 @@ object_defs:
       expect(object.moveToSlot(world.instance, stuffSlotId)).toBeUndefined();
     }
 
-    expect(block.tryExecuteCombination(chisel, undefined, 'carve')).toBe(false);
+    expect(
+      block
+        .combinationsWith(chisel, undefined)
+        .find((c) => c.name === 'carve')
+        ?.tryExecute() === true,
+    ).toBe(false);
 
     expect(chisel.parent, 'ノミは経過中に壊れて世界から外れている').toBeUndefined();
     expect(block.tryGetProperty(codex.propertyNames.getId('carved'))?.number ?? 0, '彫りは入らない').toBe(0);
@@ -316,7 +331,7 @@ object_defs:
     const session = new WorldSession(codex);
     const campfire = session.spawn(codex.objectNames.getId('campfire'));
 
-    expect(campfire.tryExecuteAction('rest', undefined)).toBe(true);
+    expect(campfire.tryGetAction('rest', undefined)?.tryExecute() === true).toBe(true);
     expect(campfire.tryGetProperty(codex.propertyNames.getId('warmth'))?.number ?? 0).toBe(1);
   });
 });

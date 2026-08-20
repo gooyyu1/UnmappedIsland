@@ -147,18 +147,19 @@ export function cardOperationsOf(
    */
   const actionsOf = (instance: WorldObject): readonly CardAction[] => {
     const texts = locale.object(instance.def.name);
-    const fromDefinition = instance.def.actions
+    const fromDefinition = instance
+      .actionsFor(game.player.instance)
       .filter((action) => action.showMenu === 'always')
       .map((action) => {
         const declared = texts.interaction(action.name);
-        const unmet = instance.actionUnmetRequirement(action.name, game.player.instance);
+        const unmet = action.unmetRequirement();
         return {
           key: action.name,
           name: declared.displayName,
           description: declared.description,
-          minutes: instance.actionMinutes(action.name, game.player.instance),
+          minutes: action.minutes(),
           execute: () => {
-            instance.tryExecuteAction(action.name, game.player.instance);
+            action.tryExecute();
           },
           enabled: unmet === undefined,
           reason: unmet?.reasonName === undefined ? undefined : locale.reason(unmet.reasonName),
@@ -261,13 +262,11 @@ export function cardOperationsOf(
     return {
       name: texts.displayName,
       description: texts.description,
-      minutes: carried.length * self.combinationMinutes(dragged, game.player.instance, combination.name),
-      maxCount: self.combinationAcceptedCount(candidates, game.player.instance, combination.name),
+      minutes: carried.length * combination.minutes(),
+      maxCount: combination.acceptedCount(candidates.slice(1)),
       movedIds: carriedOf(moved, count).map((instance) => instance.instanceId),
       execute: () => {
-        for (const candidate of carried) {
-          if (!self.tryExecuteCombination(candidate, game.player.instance, combination.name)) break;
-        }
+        combination.executeWithFollowers(carried.slice(1));
       },
     };
   };
