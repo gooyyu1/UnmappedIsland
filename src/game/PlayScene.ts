@@ -30,7 +30,10 @@ import type { RecordedView, Recording } from './view/recording';
 import { recordChange } from './view/recording';
 import { noteOperation, setStateReporter } from './errorReport';
 import { ShownStatuses } from './view/ShownStatuses';
-import { TickProgress } from './view/tickProgress';
+import type { ElapseFrame } from './view/elapsePlayback';
+import { ElapsePlayback } from './view/elapsePlayback';
+import type { Activity } from './view/operationSteps';
+import { elapseSteps, elapsedSteps, isMidAction, runsOperation } from './view/operationSteps';
 import { Button, SLOT_BUTTON_PAPER_TEXTURE } from './ui/Button';
 import { EDGE_DIRECTIONS } from './ui/Card';
 import type { CardContent, CardEdgeAction } from './ui/Card';
@@ -181,12 +184,6 @@ const BRIGHTEN_MS = 320;
  * 落ちていく途中を見せたいため。移動にかかる時間がこれより短ければ、その分だけで落とし切る。
  */
 const DARKEN_MS = BRIGHTEN_MS * 2;
-
-/**
- * 画面が今見せている最中のこと（PlayScene.activity）。`idle`以外の間はワールドを変える操作を
- * 受け付けない。
- */
-type Activity = 'idle' | 'exploring' | 'elapsing' | 'transiting';
 
 /** エラー報告に載せる、演出中の呼び名（errorReport参照）。 */
 const ACTIVITY_NAMES: Readonly<Record<Activity, string>> = {
@@ -439,17 +436,14 @@ export class PlayScene extends ResponsiveScene {
    */
   private artWait = 0;
 
-  /** 演出を見せている最中か。この間はワールドを変える操作を受け付けない。 */
+  /** 演出を見せている最中か。この間はワールドを変える操作を受け付けない（runsOperation）。 */
   private get busy(): boolean {
-    return this.activity !== 'idle';
+    return !runsOperation(this.activity);
   }
 
-  /**
-   * 行動の途中の値を見せているか。画面にはまだ経過前・経過中の状態が出ているので、バーもカードも
-   * 減った分を縮めずに溜める（ProgressBar.setRatio）。
-   */
+  /** 行動の途中の値を見せているか（isMidAction）。 */
   private get midAction(): boolean {
-    return this.activity === 'elapsing' || this.activity === 'exploring';
+    return isMidAction(this.activity);
   }
 
   /**
@@ -1402,26 +1396,52 @@ export class PlayScene extends ResponsiveScene {
     const recorded = this.record(() => this.gameSession.player.explore());
     // 道が見つかっていたら、経過を見せている間に行き先の絵のロードを始める。
     this.requestLocationArt();
+    // 運ぶ順はワールドを変える操作と同じ（elapsedSteps）。探索だけの段はfoundが足す。
     this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
-      this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-      this.noteStatusChanges(statusesBefore, startedAt);
-      const found = this.foundSince(shownBefore);
-      this.shown.takeFound(found);
-      this.foundArriving = new Set(found.flatMap((card) => card.identity ?? []));
-      // 見つかったものを見せる面へ自分から移る（Windows.md 5節）。探索は必ず1個以上見つかるので、
-      // 押した結果がどのタブに出るかを覚えていなくてよい。
-      const ratio = this.view.currentLocationWindow.explorationRatio;
-      if (ratio !== undefined)
-        this.childWindow?.setExploration({
-          ratio,
-          found: this.shown.found.map((card) => ({ card, arriving: this.arrivingFound(card) })),
-        });
-      this.childWindow?.openTab(EXPLORATION_TAB);
-      this.showSignals(recorded.signals);
-      const context = this.motionOf(recorded.changes);
-      this.showView(context);
-      this.carryFound(context.origins);
+      for (const step of elapsedSteps({ moved: false, found: true })) {
+        switch (step) {
+          case 'refresh':
+            this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+            break;
+          case 'noteChanges':
+            this.noteStatusChanges(statusesBefore, startedAt);
+            break;
+          case 'found':
+            this.takeFound(shownBefore);
+            break;
+          case 'signals':
+            this.showSignals(recorded.signals);
+            break;
+          case 'view': {
+            const context = this.motionOf(recorded.changes);
+            this.showView(context);
+            this.carryFound(context.origins);
+            break;
+          }
+          case 'transit':
+            // 探索では土地を移らないので、elapsedStepsはこの段を返さない。
+            break;
+        }
+      }
     });
+  }
+
+  /**
+   * 見つかったものを発見物の枠へ引き取り、それを見せる面へ自分から移る（Windows.md 5節）。
+   * 探索は必ず1個以上見つかるので、押した結果がどのタブに出るかを覚えていなくてよい。
+   */
+  private takeFound(shownBefore: ReadonlySet<number>): void {
+    const found = this.foundSince(shownBefore);
+    this.shown.takeFound(found);
+    this.foundArriving = new Set(found.flatMap((card) => card.identity ?? []));
+
+    const ratio = this.view.currentLocationWindow.explorationRatio;
+    if (ratio !== undefined)
+      this.childWindow?.setExploration({
+        ratio,
+        found: this.shown.found.map((card) => ({ card, arriving: this.arrivingFound(card) })),
+      });
+    this.childWindow?.openTab(EXPLORATION_TAB);
   }
 
   /**
@@ -1490,11 +1510,10 @@ export class PlayScene extends ResponsiveScene {
 
   /**
    * fromMinutesからtoMinutesまで、ゲーム内時間の経過を実時間（realMsFor）で時計とドーナツグラフへ
-   * 映し、経過し切ったらonElapsedを呼ぶ。時間を消費しない操作なら待たずにそのまま進む。
+   * 映し、経過し切ったらonElapsedを呼ぶ。
    *
-   * 時計もドーナツグラフもtick境界で刻む（TickProgress参照）。時計はグラフが目盛りへ届いた瞬間に
-   * その時刻へ飛ぶので、両者が食い違って見えない。recordedの控えも同じ刻みで見せる——控えた時刻は
-   * tick境界そのものなので、目盛りに届いた瞬間がその変化が起きた瞬間になる。
+   * **何をどの順で運ぶかはelapseStepsが決める**（死んだら止める・粒は待たずに散らす・周回の終わりは
+   * 見せ終わってから）。ここが持つのは、その1つずつをどう見せるかだけ。
    *
    * **見せ終わった時点で演出中を降ろすのはここだけ**（activity）。何を見せている最中かは始めた側が
    * 既に立てているので（探索）、立っていなければ経過そのものとして立てる。
@@ -1505,35 +1524,56 @@ export class PlayScene extends ResponsiveScene {
     recording: Recording,
     onElapsed: () => void,
   ): void {
-    // 死んだら経過も結果も見せず、画面を死ぬ直前のまま止めてダイアログだけを出す（showDeath）。
-    // 演出中のまま止めるので、この先の操作も受け付けない。
-    if (this.gameSession.player.isDead) {
-      this.showDeath();
-      return;
-    }
+    const playback = new ElapsePlayback(
+      fromMinutes,
+      toMinutes,
+      this.gameSession.world.minutesPerTick,
+      recording.ticks,
+    );
+    const steps = elapseSteps({
+      isDead: this.gameSession.player.isDead,
+      minutes: playback.totalMinutes,
+      reachedMainland: this.gameSession.player.hasReachedMainland,
+    });
 
-    // 見せ終わってから周回の終わりを出す（showEscape）。死と違って画面を止める必要はない
-    // ——本土へ移ったのは筏で、プレイヤーはその中に居るまま（現在地は筏）なので、映し直しても
-    // 足元の物は入れ替わらない。
-    const finish = (): void => {
-      onElapsed();
-      if (this.gameSession.player.hasReachedMainland) this.showEscape();
+    // 再生だけ実時間がかかるので、続きは見せ切ってから運ぶ。
+    const runFrom = (from: number): void => {
+      for (let index = from; index < steps.length; index++) {
+        switch (steps[index]) {
+          case 'death':
+            this.showDeath();
+            return;
+          case 'gains':
+            this.showGains(
+              recording.gains,
+              playback.totalMinutes > 0 ? realMsFor(playback.totalMinutes) : INSTANT_GAIN_SPREAD_MS,
+            );
+            break;
+          case 'replay':
+            this.replayElapse(playback, () => runFrom(index + 1));
+            return;
+          case 'elapsed':
+            this.activity = 'idle';
+            onElapsed();
+            break;
+          case 'escape':
+            this.showEscape();
+            break;
+        }
+      }
     };
+    runFrom(0);
+  }
 
-    const minutes = toMinutes - fromMinutes;
-    // 粒は経過を見せている間いっぱいに散らす。効果が適用されるのは経過し切った時点だが、増えた量は
-    // 押した瞬間に決まっている（ワールドは先に進み切っている）ので、待たずに散らし始められる。
-    this.showGains(recording.gains, minutes > 0 ? realMsFor(minutes) : INSTANT_GAIN_SPREAD_MS);
-
-    const recorded = recording.ticks;
-    if (minutes <= 0) {
-      this.activity = 'idle';
-      finish();
-      return;
-    }
-
+  /**
+   * 控えを実時間で再生し、見せ切ったらonDoneを呼ぶ。
+   *
+   * 時計もドーナツグラフも控えもtick境界で刻む（ElapsePlayback）。**どれも同じ目盛りから導く**ので、
+   * 塗りが目盛りへ届いた瞬間が、時計の飛ぶ瞬間であり、その控えを見せる瞬間になる。
+   */
+  private replayElapse(playback: ElapsePlayback, onDone: () => void): void {
     if (this.activity === 'idle') this.activity = 'elapsing';
-    const progress = new TickProgress(fromMinutes, toMinutes, this.gameSession.world.minutesPerTick);
+
     const ring = new ProgressRing(
       this,
       this.metrics,
@@ -1541,27 +1581,24 @@ export class PlayScene extends ResponsiveScene {
       this.layout.fieldArea.y + this.layout.fieldArea.height / 2,
     ).setDepth(RING_DEPTH);
 
-    const clock = { minutes: fromMinutes };
-    let replayed = 0;
+    const clock = { elapsed: 0 };
+    const show = (frame: ElapseFrame): void => {
+      this.showClock(frame.minutes);
+      ring.setProgress(frame.ratio, frame.elapsedMinutes);
+      for (const recorded of frame.due) this.showRecorded(recorded);
+    };
+
     this.tweens.add({
       targets: clock,
-      minutes: toMinutes,
-      duration: realMsFor(minutes),
+      elapsed: playback.totalMinutes,
+      duration: realMsFor(playback.totalMinutes),
       ease: 'Linear',
-      onUpdate: () => {
-        const elapsed = clock.minutes - fromMinutes;
-        const stepped = fromMinutes + progress.steppedMinutesAt(elapsed);
-        this.showClock(stepped);
-        ring.setProgress(progress.ratioAt(elapsed), progress.steppedMinutesAt(elapsed));
-        while (replayed < recorded.length && recorded[replayed].minutes <= stepped) {
-          this.showRecorded(recorded[replayed]);
-          replayed += 1;
-        }
-      },
+      onUpdate: () => show(playback.frameAt(clock.elapsed)),
       onComplete: () => {
+        // 実時間の刻みが最後の目盛りちょうどに来るとは限らないので、締めで取りこぼしを拾う。
+        for (const recorded of playback.finish()) this.showRecorded(recorded);
         ring.destroy();
-        this.activity = 'idle';
-        finish();
+        onDone();
       },
     });
   }
@@ -1690,8 +1727,8 @@ export class PlayScene extends ResponsiveScene {
     change: (() => void) | undefined,
     released?: MotionContext['released'],
   ): void {
-    // 実行しないと決めるのはここ——何も起きない操作（changeが無い）と、演出中。**決めた側が後始末も
-    // する**ので、落とした札が離した場所に残っていれば飛ばさず元の枠へ返す。
+    // 実行しないと決めるのはここ——何も起きない操作（changeが無い）と、演出中（runsOperation）。
+    // **決めた側が後始末もする**ので、落とした札が離した場所に残っていれば飛ばさず元の枠へ返す。
     if (change === undefined || this.busy) {
       this.motion.settleFreed();
       return;
@@ -1715,17 +1752,28 @@ export class PlayScene extends ResponsiveScene {
     // 作り直すのは経過し切ってからなので、暗転はそれまでに終わっていなければならない。
     curtain?.darken(Math.min(DARKEN_MS, elapsedMs));
 
+    // 何をどの順で運ぶかはelapsedStepsが決める。ここが持つのは、その1つずつをどう見せるかだけ。
     this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
-      this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-      // 増減はステータスへ反映する前に控える（showInformationがこれを見て記号を出す）。
-      this.noteStatusChanges(statusesBefore, startedAt);
-      if (curtain !== undefined) {
-        // 土地を移った場合は出さない。出来事が起きた札は置いてきた土地の並びに居る。
-        this.transit(curtain);
-        return;
+      for (const step of elapsedSteps({ moved })) {
+        switch (step) {
+          case 'refresh':
+            this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+            break;
+          case 'noteChanges':
+            this.noteStatusChanges(statusesBefore, startedAt);
+            break;
+          case 'transit':
+            // movedのときだけ張った幕（elapsedStepsがtransitを返すのも同じとき）。
+            if (curtain !== undefined) this.transit(curtain);
+            break;
+          case 'signals':
+            this.showSignals(recorded.signals);
+            break;
+          case 'view':
+            this.showView({ ...this.motionOf(recorded.changes), released });
+            break;
+        }
       }
-      this.showSignals(recorded.signals);
-      this.showView({ ...this.motionOf(recorded.changes), released });
     });
   }
 
