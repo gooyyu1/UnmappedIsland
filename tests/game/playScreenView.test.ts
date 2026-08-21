@@ -154,7 +154,7 @@ object_defs:
     const materials = view.slotViewOf(mini.slot('materials', wip));
 
     expect(hand.key, 'タブの記憶の鍵はスロット名').toBe('hand');
-    expect(hand.cellCount, '手持ちは枠の数が決まっている').toBe(6);
+    expect(hand.cells, '手持ちは枠の数が決まっている').toBe(6);
     expect(hand.acceptsCards).toBe(true);
     expect(hand.background, 'レーンに敷く絵はスロットで引く').toEqual({
       owner: view.characterCard.art,
@@ -163,7 +163,7 @@ object_defs:
     expect(hand.materials, '製作中でなければ材料の枠は無い').toBeUndefined();
 
     const fixtures = view.slotViewOf(place(mini, 'fixtures'));
-    expect(fixtures.cellCount, '設置物は前詰めのスロット').toBeUndefined();
+    expect(fixtures.cells, '設置物は落とすたびに枠が増えるスロット').toBe('grows');
     expect(
       fixtures.acceptsCards,
       '据えられる物（itemとfixtureを兼ねる編み籠）があるので、末尾に受け皿の空枠が付く',

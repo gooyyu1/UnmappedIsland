@@ -28,8 +28,7 @@ import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
 import type { RecordedView, Recording } from './view/recording';
 import { recordChange } from './view/recording';
-import { materialCells } from './view/materialCells';
-import { plainCells, unboundedSlot } from './view/plainCells';
+import { slotCells } from './view/slotCells';
 import { noteOperation, setStateReporter } from './errorReport';
 import { ShownStatuses } from './view/ShownStatuses';
 import type { ElapseFrame } from './view/elapsePlayback';
@@ -793,24 +792,13 @@ export class PlayScene extends ResponsiveScene {
     return background === undefined ? undefined : laneTexture(background);
   }
 
-  /**
-   * その場所を映すレーン（3つのレーンも子ウィンドウのタブも）に並べる枠。**枠ごとの飾りを持つのは
-   * 製作中オブジェクトの材料スロットだけ**で（materialCells）、他はスロットの宣言どおりに並べる
-   * （plainCells）。
-   */
+  /** その場所を映すレーンに並べる枠（slotCells）。 */
   private cellsAt(place: CardPlace): readonly LaneCell[] {
     const stacks = this.shown.stacksAt(place);
-    const cards = this.laneCards(stacks);
     const slot = this.view.slotViewOf(place);
-    if (slot.materials === undefined) return plainCells(cards, slot.cellCount, slot.acceptsCards);
-
-    return materialCells({
-      materials: slot.materials,
-      stacks,
-      cards,
-      cycle: this.materialCycle,
-      cardOfType: (objectGlobalId) => this.view.cardOfType(objectGlobalId),
-    });
+    return slotCells(slot, stacks, this.laneCards(stacks), this.materialCycle, (objectGlobalId) =>
+      this.view.cardOfType(objectGlobalId),
+    );
   }
 
   /**
@@ -1183,7 +1171,7 @@ export class PlayScene extends ResponsiveScene {
           key: tab.key,
           title: slot.label,
           cells: this.cellsAt(tab.place),
-          unbounded: unboundedSlot(slot.cellCount),
+          grows: slot.cells === 'grows',
         };
       }),
       initialTab,
@@ -1359,7 +1347,7 @@ export class PlayScene extends ResponsiveScene {
     this.childWindow?.openTab(EXPLORATION_TAB);
   }
 
-  /** 現在地のレーンに出ているカード（設置物とアイテム）。どちらも前詰めなので空き枠は無い。 */
+  /** 現在地のレーンに出ているカード（設置物とアイテム）。空き枠は除く。 */
   private get locationCards(): readonly ObjectCardStack[] {
     return [...this.cardsAt(this.place('fixtures')), ...this.cardsAt(this.place('items'))].filter(
       (card): card is ObjectCardStack => card !== undefined,

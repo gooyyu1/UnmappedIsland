@@ -1,7 +1,7 @@
 /**
  * レーンに渡す枠の契約（LaneCell）と、**画面の寸法が枠の数を決める**もの。枠の数をワールドの宣言が
- * 決めるもの——スロットの`cell_count`から並べる枠（view/plainCells）と、レシピの要求から並べる枠
- * （view/materialCells）——は映しの側にある（Layers.md 4節）。
+ * 決めるもの——スロットの`cell_count`やレシピの要求から並べる枠（view/slotCells）——は映しの側に
+ * ある（Layers.md 4節）。
  */
 
 import type { CardContent } from './Card';

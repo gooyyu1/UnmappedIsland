@@ -45,14 +45,15 @@ export class Slot {
    * 空き枠を指したドロップを、枠そのものへ入れる操作として扱ってよいのはこちらだけ。
    */
   get hasFixedCells(): boolean {
-    return this.def.cellCount !== undefined;
+    return this.def.cellsToKeep !== 'grows';
   }
 
   constructor(def: SlotDef, owner: WorldObject) {
     this.def = def;
     this.owner = owner;
     // 枠数が決まっていれば、その長さの配列（全て空=undefined）として持つ。
-    for (let i = 0; i < (def.cellCount ?? 0); i++) this._cells.push(undefined);
+    const cells = def.cellsToKeep;
+    if (cells !== 'grows') for (let i = 0; i < cells; i++) this._cells.push(undefined);
   }
 
   /**
