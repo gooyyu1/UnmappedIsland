@@ -994,7 +994,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(stone.moveToSlot(game.player.instance.getSlot(equipment))).toBeUndefined();
 
     const live = fromGameSession(game, codex, locale);
-    const frozen = withFrozenCards(live, characterSlot(game, 'equipment'));
+    const frozen = withFrozenCards(live, [characterSlot(game, 'equipment')]);
 
     // 控えたあとでワールドが変わる（装備が外れる）。
     expect(stone.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
@@ -1016,7 +1016,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     const view = fromGameSession(game, codex, locale);
 
-    expect(withFrozenCards(view, undefined)).toBe(view);
+    expect(withFrozenCards(view, [])).toBe(view);
   });
 
   it('怪我は取り出せず、何も入れられない', () => {

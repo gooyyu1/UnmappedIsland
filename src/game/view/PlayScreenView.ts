@@ -292,16 +292,24 @@ export interface PlayScreenView {
 }
 
 /**
- * cardsInの答えをこの時点のものに固定したviewを返す（placeを開いていなければそのまま）。
+ * 挙げた場所について、cardsInの答えをこの時点のものに焼き付けたviewを返す。
  *
- * cardsInだけは呼んだ時点の生きたワールドを読むため、控えておいたviewをあとから表示すると、その部分に
- * 限って「今」の状態が出てしまう。過去の時点を映す用途（時間経過の再現、PlayScene参照）で使う。
+ * **cardsInは呼んだ時点の生きたワールドを読む。** 控えておいたviewをあとから表示する用途
+ * （時間経過の再現、PlayScene.passTime）では、それだと控えた時点ではなく「今」の並びが出てしまう
+ * ——45分の行動の結果が、経過を見せている途中の画面に先に現れる。
+ *
+ * **画面が引きうる場所を漏らさず渡すこと。** 焼き付けていない場所は生きたワールドのままなので、
+ * 渡し忘れた場所だけが未来を映す（recordChange参照）。
  */
-export function withFrozenCards(view: PlayScreenView, place: CardPlace | undefined): PlayScreenView {
-  if (place === undefined) return view;
+export function withFrozenCards(
+  view: PlayScreenView,
+  places: readonly (CardPlace | undefined)[],
+): PlayScreenView {
+  const frozen = new Map<CardPlace, readonly (ObjectCardStack | undefined)[]>();
+  for (const place of places) if (place !== undefined) frozen.set(place, view.cardsIn(place));
+  if (frozen.size === 0) return view;
 
-  const frozen = view.cardsIn(place);
-  return { ...view, cardsIn: (asked) => (asked === place ? frozen : view.cardsIn(asked)) };
+  return { ...view, cardsIn: (asked) => frozen.get(asked) ?? view.cardsIn(asked) };
 }
 
 /** 場所を映す札の仮のアイコン。土地は種別を持たない（物ではない）ので、種別ごとの表とは別に置く。 */
