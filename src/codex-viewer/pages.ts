@@ -1,4 +1,15 @@
-import { DescriptionWriter } from '../domain/Description';
+import { DescriptionWriter } from './describe/Description';
+import {
+  creates,
+  describeInfluencesOn,
+  describeObjectDef,
+  usesInRecipes,
+} from './describe/describeObjectDef';
+import { describePassive } from './describe/describePassive';
+import { describeInteraction } from './describe/describeInteraction';
+import { describeInitialValue, describeProperty } from './describe/describeProperty';
+import { describeRecipe } from './describe/describeRecipe';
+import { describeAccept, describePutInDuration } from './describe/describeSlot';
 import type { InteractionDef } from '../domain/InteractionDef';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { SlotDef } from '../domain/SlotDef';
@@ -56,13 +67,15 @@ export function renderObjectPage(view: CodexView, name: string): string {
     `</div></div>` +
     section(
       '型の性質',
-      view.describeHtml(name, (out) => def.describe(view.codex, out)),
+      view.describeHtml(name, (out) => describeObjectDef(def, view.names, out)),
     ) +
     section('props', propertiesHtml(view, def)) +
     section('slots', slotsHtml(view, def)) +
     section(
       'passives（持続効果）',
-      view.describeHtml(name, (out) => def.passives.describe(view.codex, out)),
+      view.describeHtml(name, (out) => {
+        for (const effect of def.passives.declarations) describePassive(effect, view.names, out);
+      }),
     ) +
     section('actions（メニューから選ぶ操作）', interactionsHtml(view, def, def.actions)) +
     section('combinations（カードを重ねる操作）', interactionsHtml(view, def, def.combinations)) +
@@ -71,11 +84,11 @@ export function renderObjectPage(view: CodexView, name: string): string {
     // 逆引きはどちらも、行き先の型を絵で並べるだけにする——どの操作・どの工程かはリンク先で分かる。
     section(
       'この型を生み出すもの',
-      objectGridOf(view, (other) => other.creates(def.globalId)),
+      objectGridOf(view, (other) => creates(other, def.globalId)),
     ) +
     section(
       'この型を材料・道具に使うもの',
-      objectGridOf(view, (other) => other.usesInRecipes(def)),
+      objectGridOf(view, (other) => usesInRecipes(other, def)),
     )
   );
 }
@@ -148,7 +161,7 @@ export function renderPropertyPage(view: CodexView, objectName: string, property
     (texts.description === undefined ? '' : `<p class="lead">${escapeHtml(texts.description)}</p>`) +
     section(
       '定義',
-      view.describeHtml(objectName, (out) => propertyDef.describe(view.codex, out)),
+      view.describeHtml(objectName, (out) => describeProperty(propertyDef, view.names, out)),
     ) +
     section('影響元', influencesHtml(view, def, propertyGlobalId)) +
     section('同じ名前のpropを持つ他の型', others === '' ? EMPTY_HTML : `<ul class="plain">${others}</ul>`)
@@ -277,12 +290,12 @@ function slotTableHtml(firstColumn: string, rows: string): string {
 /** スロット1つぶんのセル（1列目＝名前を除く）。 */
 function slotCellsHtml(view: CodexView, selfObjectName: string, slotDef: SlotDef): string {
   const notes: string[] = [];
-  const putIn = slotDef.describePutInDuration(view.codex);
+  const putIn = describePutInDuration(slotDef, view.names);
   if (putIn !== undefined) notes.push(`入れるのに${view.tokensHtml(putIn, selfObjectName)}分かかる`);
   if (!slotDef.autoPlacement) notes.push('自動配置の対象にしない（手で入れるか、名指しの移動でだけ入る）');
 
   return (
-    `<td>${view.describeHtml(selfObjectName, (out) => slotDef.describeAccept(view.codex, out))}</td>` +
+    `<td>${view.describeHtml(selfObjectName, (out) => describeAccept(slotDef, view.names, out))}</td>` +
     `<td>${slotDef.cellCount ?? ''}</td>` +
     `<td>${slotDef.capacity ?? ''}</td>` +
     `<td class="muted">${notes.join('<br>')}</td>`
@@ -389,7 +402,7 @@ function propertiesHtml(view: CodexView, def: ObjectDef): string {
         identifier +
         description +
         `</td>` +
-        `<td>${view.tokensHtml(propertyDef.describeInitialValue(view.codex), def.name)}</td>` +
+        `<td>${view.tokensHtml(describeInitialValue(propertyDef, view.names), def.name)}</td>` +
         `<td>${propertyDef.range === undefined ? '' : `${propertyDef.range.min} 〜 ${propertyDef.range.max}`}</td>` +
         `<td>${tags}</td></tr>`
       );
@@ -426,7 +439,7 @@ function interactionsHtml(view: CodexView, def: ObjectDef, interactions: readonl
       const label = view.interactionLabel(def.name, interaction.name);
       return card(
         escapeHtml(label) + headingIdentifier(label, interaction.name),
-        description + view.describeHtml(def.name, (out) => interaction.describe(view.codex, out)),
+        description + view.describeHtml(def.name, (out) => describeInteraction(interaction, view.names, out)),
       );
     })
     .join('');
@@ -438,7 +451,7 @@ function recipesHtml(view: CodexView, def: ObjectDef): string {
     .map((recipe) =>
       card(
         escapeHtml(recipe.name),
-        view.describeHtml(def.name, (out) => recipe.describe(view.codex, out)),
+        view.describeHtml(def.name, (out) => describeRecipe(recipe, view.names, out)),
       ),
     )
     .join('');
@@ -450,14 +463,14 @@ function recipesHtml(view: CodexView, def: ObjectDef): string {
  * 出すのは、「どれだけ動くのか」がこの節を見る目的そのものだから。
  *
  * すべての型に尋ね、1行でも書いた型だけを並べる。**尋ねるだけで宣言の中身は覗かない**——
- * 何をどう書き表すかは型の側（ObjectDef.describeInfluencesOn）が知っている。
+ * 何をどう書き表すかはdescribeInfluencesOnが知っている。
  */
 function influencesHtml(view: CodexView, owner: ObjectDef, propertyGlobalId: number): string {
   const groups = view
     .objectDefs()
     .map((def) => {
       const writer = new DescriptionWriter();
-      def.describeInfluencesOn(propertyGlobalId, def === owner, view.codex, writer);
+      describeInfluencesOn(def, propertyGlobalId, def === owner, view.names, writer);
       return { def, writer };
     })
     .filter(({ writer }) => !writer.isEmpty)

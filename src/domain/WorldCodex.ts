@@ -1,5 +1,3 @@
-import type { DefNames, DescriptionToken } from './Description';
-import { symbolRef, text } from './Description';
 import type { GenerationDefs } from './generation/GenerationDefs';
 import { GeneratedTypes } from './GeneratedTypes';
 import type { NameRegistry } from './NameRegistry';
@@ -14,10 +12,9 @@ import type { WorldVocabulary } from './WorldVocabulary';
  * symbolNamesはシンボル型props（6節）の値の名前空間。実行時状態（WorldObject）は含まない
  * （runtimeが担う）。
  *
- * 定義が自分を書き表す（`describe`、[`Description`](./Description.ts)）ときのグローバルID→識別子の
- * 引き当ても引き受ける（DefNames）。名前空間を6つとも持つのはここだけのため。
+ * グローバルID→識別子の引き当ても引き受ける。名前空間を6つとも持つのはここだけのため。
  */
-export class WorldCodex implements DefNames {
+export class WorldCodex {
   readonly objectNames: NameRegistry;
   readonly propertyNames: NameRegistry;
   readonly slotNames: NameRegistry;
@@ -99,18 +96,12 @@ export class WorldCodex implements DefNames {
   }
 
   /**
-   * プロパティの値1つの書き表し方（DefNames参照）。シンボル型（6.6節）と宣言しているプロパティの値だけ
-   * シンボル名へ戻す。シンボル型でも数値リテラルが書かれている箇所（未登録のIDになる）は数値のまま出す。
+   * シンボル型（6.6節）と宣言されたプロパティのグローバルID。同じ名前でも型ごとに宣言が違いうるので、
+   * 1つでもシンボル型として宣言していれば含める。
+   *
+   * **値をどう見せるかは読み手が決める**ので、ここが答えるのは「この値はシンボルか」だけ。
    */
-  propertyValue(propertyGlobalId: number, value: number): DescriptionToken {
-    if (!this.symbolicProperties.has(propertyGlobalId)) return text(String(value));
-    const name = this.symbolNames.getName(value);
-    return name === undefined ? text(String(value)) : symbolRef(name);
-  }
-
-  /** シンボル型と宣言されたプロパティのグローバルID。同じ名前でも型ごとに宣言が違いうるので、
-   * 1つでもシンボル型として宣言していれば含める。 */
-  private get symbolicProperties(): ReadonlySet<number> {
+  get symbolicProperties(): ReadonlySet<number> {
     if (this.symbolicPropertyIds === undefined) {
       const found = new Set<number>();
       for (let globalId = 0; globalId < this.objects.count; globalId++)

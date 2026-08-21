@@ -1,5 +1,3 @@
-import type { DefNames, DescriptionToken } from './Description';
-import { objectRef, tagRef, text } from './Description';
 import type { ObjectDef } from './ObjectDef';
 
 /** マッチングの基準（TypeMatchRule参照）。 */
@@ -44,13 +42,6 @@ export class TypeMatchRule {
     return this.kind === 'tag'
       ? candidateDef.tags.includes(this.target)
       : candidateDef.globalId === this.target;
-  }
-
-  /** この指定を書き表す（Description参照）。 */
-  describe(names: DefNames): readonly DescriptionToken[] {
-    return this.kind === 'tag'
-      ? [tagRef(names.tagName(this.target)), text('を持つ型')]
-      : [objectRef(names.objectName(this.target)), text('そのもの')];
   }
 
   /**

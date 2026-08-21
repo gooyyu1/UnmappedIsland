@@ -1,5 +1,6 @@
-import type { DescriptionLine, DescriptionToken } from '../domain/Description';
-import { DescriptionWriter } from '../domain/Description';
+import type { DefNames, DescriptionLine, DescriptionToken } from './describe/Description';
+import { DescriptionWriter } from './describe/Description';
+import { defNamesOf } from './describe/codexNames';
 import type { LocationTypeDef } from '../domain/generation/LocationTypeDef';
 import type { ObjectDef } from '../domain/ObjectDef';
 import { OBJECT_ART } from '../art/objectArt';
@@ -38,6 +39,8 @@ export class CodexView {
     this.source = source;
     this.namingMode = namingMode;
   }
+
+  private defNames: DefNames | undefined;
 
   get codex() {
     return this.source.codex;
@@ -306,6 +309,12 @@ export class CodexView {
 
   tokensHtml(tokens: readonly DescriptionToken[], selfObjectName: string | undefined): string {
     return tokens.map((token) => this.tokenHtml(token, selfObjectName)).join('');
+  }
+
+  /** グローバルIDを識別子へ戻す窓口（describeが使う）。 */
+  get names(): DefNames {
+    this.defNames ??= defNamesOf(this.codex);
+    return this.defNames;
   }
 
   /** 説明の行をリストへ。入れ子（pick候補・レシピの工程）は字下げで表す。 */

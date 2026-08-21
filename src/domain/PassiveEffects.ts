@@ -1,8 +1,6 @@
 import type { InfluenceWriter } from './PropertyInfluence';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
-import type { DefNames, DescriptionWriter } from './Description';
-import { describePassive, passiveWritesToProperty } from './describePassive';
 import type { PassiveEffect, TransferPassiveEffect } from './PassiveEffect';
 import type { ReferenceRoot } from './ReferenceRoot';
 
@@ -53,22 +51,5 @@ export class PassiveEffects {
   /** すべての効果が持つ影響の辺を書き出す（PassiveEffect.collectInfluences参照）。 */
   collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {
     for (const effect of this.effects) effect.collectInfluences(declarer, out);
-  }
-
-  /** すべての効果を宣言順に書き出す（Description参照）。 */
-  describe(names: DefNames, out: DescriptionWriter): void {
-    for (const effect of this.effects) describePassive(effect, names, out);
-  }
-
-  /** propertyGlobalIdを書き換えうる効果だけを書き出す（引数の意味はPassiveEffect.affects）。 */
-  describeAffecting(
-    propertyGlobalId: number,
-    ownedByDeclarer: boolean,
-    names: DefNames,
-    out: DescriptionWriter,
-  ): void {
-    for (const effect of this.effects)
-      if (passiveWritesToProperty(effect, propertyGlobalId, ownedByDeclarer))
-        describePassive(effect, names, out);
   }
 }

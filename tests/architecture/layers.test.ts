@@ -35,6 +35,13 @@ const PHASER_FREE = [
  */
 const ANALYSIS_FREE = ['src/domain', 'src/loader', 'src/locale', 'src/game', 'src/ui'];
 
+/**
+ * データベースビューア（`src/codex-viewer`）へ到達してはいけない置き場。宣言を**読める形へ書き出す**
+ * のはビューアの仕事で、ドメインは自分が何を宣言しているかを読み上げる口（`EffectReader`・
+ * `PassiveReader`・`ConditionReader`）を持つだけ。
+ */
+const VIEWER_FREE = ['src/domain', 'src/loader', 'src/locale', 'src/game', 'src/ui', 'src/analysis'];
+
 /** そのディレクトリ以下の.tsファイル（リポジトリ相対）。 */
 function sourcesIn(dir: string): string[] {
   const found: string[] = [];
@@ -135,9 +142,19 @@ describe('層の境界', () => {
     ).toEqual([]);
   });
 
+  it.each(VIEWER_FREE)('%s はデータベースビューアへ到達しない', (dir) => {
+    // **型として輸入するのも数える。** 守っているのは「表示の語彙がドメインの契約に混ざらないこと」
+    // ——`DescriptionWriter`を引数に取った時点で、その型は「どう見せるか」を知ってしまう。
+    expect(
+      routesFrom(dir, (target) => target.startsWith('src/codex-viewer/'), true),
+      'この経路のどこかで、宣言の見せ方を覗いている',
+    ).toEqual([]);
+  });
+
   it('検査対象の置き場が実在する', () => {
     // 引っ越しで置き場が消えたときに、検査が黙って空を通さないようにする。
     expect(PHASER_FREE.filter((dir) => !existsSync(join(ROOT, dir)))).toEqual([]);
+    expect(VIEWER_FREE.filter((dir) => !existsSync(join(ROOT, dir)))).toEqual([]);
     expect(ANALYSIS_FREE.filter((dir) => !existsSync(join(ROOT, dir)))).toEqual([]);
     expect(sourcesIn('src/analysis').length).toBeGreaterThan(3);
     expect(sourcesIn('src/game/view').length).toBeGreaterThan(5);

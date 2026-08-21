@@ -7,9 +7,9 @@ import type {
   PickCandidateReading,
   TransferReading,
   WeightReading,
-} from './EffectReader';
-import type { ObjectRefReading } from './ObjectRef';
-import type { ReferenceRoot } from './ReferenceRoot';
+} from '../../domain/EffectReader';
+import type { ObjectRefReading } from '../../domain/ObjectRef';
+import type { ReferenceRoot } from '../../domain/ReferenceRoot';
 
 /**
  * 効果の宣言（EffectReader）を、読める形へ書き出す（Description参照）。命令1つにつき1行で、

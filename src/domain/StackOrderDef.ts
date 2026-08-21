@@ -1,6 +1,12 @@
 import type { WorldObject } from './WorldObject';
-import type { DefNames, DescriptionToken } from './Description';
-import { propertyRef, text } from './Description';
+
+/** 「何の順に並ぶか」の読み上げ（StackOrderDef.reading参照）。 */
+export interface StackOrderReading {
+  readonly propertyGlobalId: number;
+
+  /** プロパティ値が増えるほどリスト内で後ろ（末尾側）に並ぶか。 */
+  readonly ascending: boolean;
+}
 
 /**
  * 同種オブジェクトがスタックとして並ぶ際の、型ごとの並び順（表示専用）。
@@ -22,12 +28,9 @@ export class StackOrderDef {
     this.ascending = ascending;
   }
 
-  /** この並び順を書き表す（Description参照）。 */
-  describe(names: DefNames): readonly DescriptionToken[] {
-    return [
-      propertyRef(names.propertyName(this.propertyGlobalId)),
-      text(this.ascending ? 'の昇順' : 'の降順'),
-    ];
+  /** この並び順の宣言そのもの（StackOrderReading参照）。 */
+  get reading(): StackOrderReading {
+    return { propertyGlobalId: this.propertyGlobalId, ascending: this.ascending };
   }
 
   /**

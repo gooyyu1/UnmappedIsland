@@ -1,14 +1,17 @@
+import type { ShowMenuMode } from './ActionDef';
+import type { TypeMatchReading } from './TypeMatchRule';
 import type { WorldObject } from './WorldObject';
+
+/** 何がこの操作のきっかけになるか（InteractionDef.triggerReading参照）。 */
+export type InteractionTriggerReading =
+  | { readonly kind: 'menu'; readonly showMenu: ShowMenuMode }
+  | { readonly kind: 'drag'; readonly with: TypeMatchReading };
 import type { WorldSession } from './WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
-import type { DefNames, DescriptionWriter } from './Description';
-import { text } from './Description';
-import { describeEffect, weightTokens } from './describeEffect';
 import type { EffectReader, WeightReading } from './EffectReader';
 import type { WeightSpec } from './PickEffect';
 import { resolveReferenceRoot } from './ReferenceRoot';
 import type { Requirement, Requirements } from './Requirement';
-import type { TypeMatchReading } from './TypeMatchRule';
 import { spendDuration } from './actionTime';
 
 /**
@@ -56,26 +59,13 @@ export abstract class InteractionDef {
     return this.duration === undefined ? 0 : Math.trunc(this.duration.resolve(self, actor, dragged));
   }
 
-  /**
-   * この操作を書き表す（Description参照）。きっかけ（メニュー/相手のタグ）→要件→所要時間→効果の順で、
-   * プレイヤーがカードを触ってから起こることの順番に並べる。
-   */
-  describe(names: DefNames, out: DescriptionWriter): void {
-    this.describeTrigger(names, out);
+  /** 何がこの操作のきっかけになるか（具象ごとに違う、ActionSystem.md 1節）。 */
+  abstract get triggerReading(): InteractionTriggerReading;
 
-    if (this.requirements !== undefined) {
-      out.write(text('conditions:'));
-      out.indented(() => this.requirements!.describe(names, out));
-    }
-
-    if (this.duration !== undefined)
-      out.write(text('所要時間: '), ...weightTokens(this.duration.reading, names), text('分'));
-
-    describeEffect(this, names, out);
+  /** 実行に必要な要件（14節）を宣言順に。conditionsを省いていれば空。 */
+  get requirementDeclarations(): readonly Requirement[] {
+    return this.requirements?.declarations ?? [];
   }
-
-  /** 何がこの操作のきっかけになるか（具象ごとに違う）。describeが先頭に書く。 */
-  protected abstract describeTrigger(names: DefNames, out: DescriptionWriter): void;
 
   /** この操作が何を起こすと宣言しているかを読み上げる（EffectReader参照）。 */
   read(reader: EffectReader): void {

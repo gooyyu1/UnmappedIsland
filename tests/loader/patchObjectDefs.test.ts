@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { ActionDef } from '../../src/domain/ActionDef';
-import { DescriptionWriter } from '../../src/domain/Description';
+import { DescriptionWriter } from '../../src/codex-viewer/describe/Description';
+import { defNamesOf } from '../../src/codex-viewer/describe/codexNames';
+import { describeInteraction } from '../../src/codex-viewer/describe/describeInteraction';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
@@ -45,7 +47,11 @@ function build(patchYaml: string, report?: LoadReport): WorldCodex {
 function describeExplore(codex: WorldCodex): string {
   const def = codex.objects.get(codex.objectNames.getId('ground'));
   const writer = new DescriptionWriter();
-  (def.actions.find((action) => action.name === 'explore') as ActionDef).describe(codex, writer);
+  describeInteraction(
+    def.actions.find((action) => action.name === 'explore') as ActionDef,
+    defNamesOf(codex),
+    writer,
+  );
   return writer.toPlainText();
 }
 

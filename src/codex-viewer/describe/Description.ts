@@ -1,4 +1,4 @@
-import type { ReferenceRoot } from './ReferenceRoot';
+import type { ReferenceRoot } from '../../domain/ReferenceRoot';
 
 /**
  * 定義（conditions・passives・active効果など）が自分自身を書き表した説明の断片。

@@ -1,8 +1,7 @@
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
-import type { DefNames, DescriptionWriter } from './Description';
-import { text } from './Description';
+import type { InteractionTriggerReading } from './InteractionDef';
 import { InteractionDef } from './InteractionDef';
 import type { ObjectDef } from './ObjectDef';
 import type { WeightSpec } from './PickEffect';
@@ -55,8 +54,8 @@ export class CombinationDef extends InteractionDef {
     return this.allowMultiple ? counted : Math.min(1, counted);
   }
 
-  protected describeTrigger(names: DefNames, out: DescriptionWriter): void {
-    out.write(text('with: '), ...this.with.describe(names), text('のカードのドロップ'));
+  get triggerReading(): InteractionTriggerReading {
+    return { kind: 'drag', with: this.with.reading };
   }
 
   override get draggedReading(): TypeMatchReading {
