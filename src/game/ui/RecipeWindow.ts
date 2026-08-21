@@ -4,9 +4,8 @@ import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { addTextButton } from './Button';
 import type { CardContent } from './Card';
 import { Card } from './Card';
-import { clipToRect } from '../../ui/clip';
 import { addLabel } from '../../ui/labels';
-import { wheelPixels } from '../../ui/scroll';
+import { ScrollArea } from '../../ui/scrollArea';
 import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
@@ -80,6 +79,9 @@ export class RecipeWindow {
 
   /** 1列に並ぶカードの枚数。窓の内寸から決まるので、狭い画面ではWINDOW_COLUMNSより少ない。 */
   private readonly columns: number;
+
+  /** 窓に収まらない分の送り（作れるものが1つも無ければ持たない）。 */
+  private scroll: ScrollArea | undefined;
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: RecipeWindowOptions) {
     this.scene = scene;
@@ -173,15 +175,20 @@ export class RecipeWindow {
       return;
     }
 
+    // ドラッグとホイールを受ける面は、**中身より先に**敷く（後に敷くとカードを押せなくなる）。
+    const area = { x: left, y: this.bodyTop, width: innerWidth, height: viewHeight };
+    const surface = addPanel(scene, area, COLOR.cardFace, 0);
+    this.objects.push(surface);
+
     // 中身は1つのコンテナへ入れて、窓の中だけに切り抜く。スクロールはこのコンテナを上下へ送る。
     const viewport = scene.add.container(0, 0);
-    const releaseClip = clipToRect(scene, viewport, {
-      x: left,
-      y: this.bodyTop,
-      width: innerWidth,
-      height: viewHeight,
-    });
     this.objects.push(viewport);
+    this.scroll = new ScrollArea(scene, {
+      axis: 'y',
+      content: viewport,
+      viewport: area,
+      surfaces: [surface],
+    });
 
     const cardWidth = metrics.px(SIZE.cardWidth);
     const cardHeight = metrics.px(SIZE.cardHeight);
@@ -213,52 +220,11 @@ export class RecipeWindow {
       top += Math.ceil(category.entries.length / this.columns) * (cardHeight + cardGap) - cardGap;
     });
 
-    this.addScrolling(viewport, top - this.bodyTop - viewHeight);
-    this.objects.push({ destroy: releaseClip } as unknown as Phaser.GameObjects.GameObject);
-  }
-
-  /** はみ出した高さぶんだけ、ホイールとドラッグで送れるようにする。 */
-  private addScrolling(viewport: Phaser.GameObjects.Container, overflow: number): void {
-    if (overflow <= 0) return;
-
-    const move = (delta: number) => {
-      viewport.y = Math.min(0, Math.max(-overflow, viewport.y + delta));
-    };
-
-    const onWheel = (pointer: Phaser.Input.Pointer, _over: unknown, deltaX: number, deltaY: number): void => {
-      move(-wheelPixels(pointer, deltaX, deltaY));
-    };
-    this.scene.input.on('wheel', onWheel);
-
-    let dragging = false;
-    let lastY = 0;
-    const onDown = (pointer: Phaser.Input.Pointer): void => {
-      dragging = true;
-      lastY = pointer.y;
-    };
-    const onMove = (pointer: Phaser.Input.Pointer): void => {
-      if (!dragging) return;
-      move(pointer.y - lastY);
-      lastY = pointer.y;
-    };
-    const onUp = (): void => {
-      dragging = false;
-    };
-    this.scene.input.on('pointerdown', onDown);
-    this.scene.input.on('pointermove', onMove);
-    this.scene.input.on('pointerup', onUp);
-
-    this.objects.push({
-      destroy: () => {
-        this.scene.input.off('wheel', onWheel);
-        this.scene.input.off('pointerdown', onDown);
-        this.scene.input.off('pointermove', onMove);
-        this.scene.input.off('pointerup', onUp);
-      },
-    } as unknown as Phaser.GameObjects.GameObject);
+    this.scroll.setContentLength(top - this.bodyTop);
   }
 
   destroy(): void {
+    this.scroll?.destroy();
     for (const object of this.objects) object.destroy();
     this.overlay.destroy();
   }

@@ -3,11 +3,11 @@ import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import type { Button } from './Button';
 import { addTextButton } from './Button';
-import { clipToRect } from '../../ui/clip';
-import { wheelPixels } from '../../ui/scroll';
+import { ScrollArea } from '../../ui/scrollArea';
 import type { StatusContent } from './StatusBar';
 import { StatusBar } from './StatusBar';
 import type { BoxStyle } from '../../ui/shapes';
+import { addPanel } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
 /** カテゴリの縦タブの幅と、タブ同士・行同士の間隔。 */
@@ -59,8 +59,10 @@ export class PropertiesPane {
   /** 今のカテゴリのバーだけ。切り替えのたびに捨てて作り直す。 */
   private rows: StatusBar[] = [];
   private viewport: Phaser.GameObjects.Container | undefined;
-  private releaseClip: (() => void) | undefined;
-  private stopScrolling: (() => void) | undefined;
+
+  /** はみ出した分の送りと、それを受ける面（並べ直すたびに作り直す）。 */
+  private scroll: ScrollArea | undefined;
+  private surface: Phaser.GameObjects.GameObject | undefined;
 
   constructor(
     scene: Phaser.Scene,
@@ -127,10 +129,9 @@ export class PropertiesPane {
     const { scene, metrics, area } = this;
     for (const row of this.rows) row.destroy();
     this.rows = [];
-    this.stopScrolling?.();
-    this.stopScrolling = undefined;
-    this.releaseClip?.();
-    this.releaseClip = undefined;
+    this.scroll?.destroy();
+    this.scroll = undefined;
+    this.surface?.destroy();
     this.viewport?.destroy();
 
     const left = area.x + metrics.px(CATEGORY_WIDTH) + metrics.px(CATEGORY_GAP);
@@ -138,9 +139,18 @@ export class PropertiesPane {
     const rowHeight = StatusBar.height(metrics);
     const rowGap = metrics.px(ROW_GAP);
 
+    // ドラッグとホイールを受ける面は、**行より先に**敷く（後に敷くと行を押せなくなる）。
+    const viewportRect = { x: left, y: area.y, width, height: area.height };
+    this.surface = addPanel(scene, viewportRect, COLOR.cardFace, 0);
+
     const viewport = scene.add.container(0, 0);
     this.viewport = viewport;
-    this.releaseClip = clipToRect(scene, viewport, { x: left, y: area.y, width, height: area.height });
+    this.scroll = new ScrollArea(scene, {
+      axis: 'y',
+      content: viewport,
+      viewport: viewportRect,
+      surfaces: [this.surface],
+    });
 
     const entries = this.categories[this.selected]?.entries ?? [];
     this.rows = entries.map((entry, index) => {
@@ -151,53 +161,14 @@ export class PropertiesPane {
       return row;
     });
 
-    const content = entries.length * (rowHeight + rowGap) - rowGap;
-    this.addScrolling(viewport, content - area.height);
-  }
-
-  /** はみ出した高さぶんだけ、ホイールとドラッグで送れるようにする。 */
-  private addScrolling(viewport: Phaser.GameObjects.Container, overflow: number): void {
-    if (overflow <= 0) return;
-
-    const move = (delta: number): void => {
-      viewport.y = Math.min(0, Math.max(-overflow, viewport.y + delta));
-    };
-    const onWheel = (pointer: Phaser.Input.Pointer, _over: unknown, deltaX: number, deltaY: number): void => {
-      move(-wheelPixels(pointer, deltaX, deltaY));
-    };
-    let dragging = false;
-    let lastY = 0;
-    const onDown = (pointer: Phaser.Input.Pointer): void => {
-      dragging = true;
-      lastY = pointer.y;
-    };
-    const onMove = (pointer: Phaser.Input.Pointer): void => {
-      if (!dragging) return;
-      move(pointer.y - lastY);
-      lastY = pointer.y;
-    };
-    const onUp = (): void => {
-      dragging = false;
-    };
-
-    const input = this.scene.input;
-    input.on('wheel', onWheel);
-    input.on('pointerdown', onDown);
-    input.on('pointermove', onMove);
-    input.on('pointerup', onUp);
-    this.stopScrolling = () => {
-      input.off('wheel', onWheel);
-      input.off('pointerdown', onDown);
-      input.off('pointermove', onMove);
-      input.off('pointerup', onUp);
-    };
+    this.scroll.setContentLength(entries.length * (rowHeight + rowGap) - rowGap);
   }
 
   destroy(): void {
     for (const row of this.rows) row.destroy();
     this.rows = [];
-    this.stopScrolling?.();
-    this.releaseClip?.();
+    this.scroll?.destroy();
+    this.surface?.destroy();
     this.viewport?.destroy();
     for (const object of this.objects) object.destroy();
     this.objects.length = 0;
