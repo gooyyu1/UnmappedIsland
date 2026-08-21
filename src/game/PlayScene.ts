@@ -1720,7 +1720,7 @@ export class PlayScene extends ResponsiveScene {
     const origins = withOrigins(context.origins, this.refreshChildWindow());
 
     this.motion.update(this.laneViews, { ...context, origins });
-    this.showChildWindowActions();
+    this.showChildWindowContents();
     this.showSky();
     this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
     this.showInformation();
@@ -1744,11 +1744,14 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 開いている子ウィンドウのボタンを、今のviewで引き直す。素材を入れれば「作業する」が押せるように
-   * なり、抜けば押せなくなる——**可否はボタンを作った時点で固まる**（ObjectWindow）ので、中身が
-   * 変わるたびに渡し直す必要がある。
+   * 開いている子ウィンドウの中身を、今のviewで引き直す。素材を入れれば「作業する」が押せるように
+   * なり、抜けば押せなくなる——**ボタンの可否もプロパティの行も、渡した時点で固まる**
+   * （ObjectWindow）ので、世界が変わるたびに渡し直す必要がある。
    */
-  private showChildWindowActions(): void {
+  private showChildWindowContents(): void {
+    // プロパティは映しているものによらずキャラクタのものなので、札が無くても渡す。
+    this.childWindow?.setProperties(this.status.tabs());
+
     const card = this.shown.windowStack;
     if (this.childWindow === undefined || card === undefined) return;
 

@@ -248,7 +248,7 @@ export class ShownCards {
   ): CardCombination | undefined {
     const fromStacks = this.stacksAt(from);
     const dragged = fromStacks[fromIndex];
-    const target = (sameSpot(from, to) ? fromStacks : this.stacksAt(to))[toIndex];
+    const target = (from === to ? fromStacks : this.stacksAt(to))[toIndex];
     if (dragged === undefined || target === undefined) return undefined;
     // 個体を1つも出していない札（帰りを待つ印）は、掴む相手にも重ねる相手にもならない。
     if (dragged.objects.length === 0 || target.objects.length === 0) return undefined;
@@ -286,7 +286,7 @@ export class ShownCards {
     if (drop.to === 'windowCard') return undefined;
 
     // 同じ場所の中は並び替え。位置が変わるだけなので、名乗るものも値段も無い。
-    if (sameSpot(drop.from, drop.to)) {
+    if (drop.from === drop.to) {
       const execute = dragged.reorder?.(drop.target);
       return execute === undefined
         ? undefined
@@ -393,10 +393,4 @@ function awaitingStack(stack: ObjectCardStack, awaited: readonly number[]): Obje
     objectGlobalId: stack.objectGlobalId,
     movedIds: () => [],
   };
-}
-
-/** 2つの場所が同じか。借りた1枚の枠はワールドの場所ではないので、名前そのもので見分ける。 */
-export function sameSpot(a: CardSpot, b: CardSpot): boolean {
-  if (a === 'windowCard' || b === 'windowCard') return a === b;
-  return a === b;
 }

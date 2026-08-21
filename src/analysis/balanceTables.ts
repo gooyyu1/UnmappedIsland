@@ -87,7 +87,7 @@ export interface ChainRoute {
   readonly deltas: readonly NamedAmount[];
 
   /** 待ち生産を含む経路なら、設備1つを保つのに要る1日あたりの労働（分）。含まないならundefined。 */
-  readonly deviceCount: number | undefined;
+  readonly deviceMaintenanceMinutesPerDay: number | undefined;
 
   readonly prerequisites: readonly RoutePrerequisite[];
 
@@ -641,7 +641,10 @@ function propertyRoute(route: ChainRoute, requirement: Requirement): PropertyRou
     perUnitMinutes,
     dailyMinutes,
     dailyShare: (dailyMinutes * 100) / MINUTES_PER_DAY,
-    deviceCount: route.deviceCount === undefined ? undefined : dailyMinutes / route.deviceCount,
+    deviceCount:
+      route.deviceMaintenanceMinutesPerDay === undefined
+        ? undefined
+        : dailyMinutes / route.deviceMaintenanceMinutesPerDay,
   };
 }
 
@@ -695,7 +698,7 @@ function buildRoute(
       name: codex.propertyName(propertyGlobalId),
       amount,
     })),
-    deviceCount: deviceMaintenancePerDay(acquisition, route),
+    deviceMaintenanceMinutesPerDay: deviceMaintenancePerDay(acquisition, route),
     prerequisites: [...prerequisites.values()],
     blocked: [...prerequisites.values()].some(({ minutes }) => minutes === undefined),
     needsImport: resolved.imported || [...prerequisites.values()].some(({ imported }) => imported),

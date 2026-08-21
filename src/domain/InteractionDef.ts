@@ -55,7 +55,7 @@ export abstract class InteractionDef {
    * 「今のself（とdragged）の状態から見て、どれだけかかるか」なので、時間を進める前に解決する
    * （切れ味の悪い刃物ほど時間がかかる、が書けるように）。実行前に画面へ見せる用途にも使う。
    */
-  minutesFor(self: WorldObject, dragged: WorldObject | undefined, actor: WorldObject | undefined): number {
+  minutesFor(self: WorldObject, actor: WorldObject | undefined, dragged: WorldObject | undefined): number {
     return this.duration === undefined ? 0 : Math.trunc(this.duration.resolve(self, actor, dragged));
   }
 
@@ -77,7 +77,7 @@ export abstract class InteractionDef {
    * 満たしていない要件（conditions）と違って理由を持たない——成立していないのは条件ではなく、
    * 行き先の型そのものだから。
    */
-  unresolvable(self: WorldObject, dragged: WorldObject | undefined, actor: WorldObject | undefined): boolean {
+  unresolvable(self: WorldObject, actor: WorldObject | undefined, dragged: WorldObject | undefined): boolean {
     return this.effect.unresolvable(self, actor, dragged);
   }
 
@@ -106,8 +106,8 @@ export abstract class InteractionDef {
    */
   protected firstUnmetRequirement(
     self: WorldObject,
-    dragged: WorldObject | undefined,
     actor: WorldObject | undefined,
+    dragged: WorldObject | undefined,
   ): Requirement | undefined {
     return this.requirements?.firstUnmet((root) => resolveReferenceRoot(root, self, actor, dragged));
   }
@@ -119,13 +119,13 @@ export abstract class InteractionDef {
    */
   protected apply(
     self: WorldObject,
-    dragged: WorldObject | undefined,
     actor: WorldObject | undefined,
+    dragged: WorldObject | undefined,
     session: WorldSession,
   ): boolean {
-    if (this.firstUnmetRequirement(self, dragged, actor) !== undefined) return false;
+    if (this.firstUnmetRequirement(self, actor, dragged) !== undefined) return false;
 
-    if (!spendDuration(this.minutesFor(self, dragged, actor), session, [self, dragged, actor])) return false;
+    if (!spendDuration(this.minutesFor(self, actor, dragged), session, [self, actor, dragged])) return false;
 
     // 時間を進め終えてから囲うので、経過中のtickが動かした値は「操作が増やしたもの」に入らない
     // （PropertyGain参照）。

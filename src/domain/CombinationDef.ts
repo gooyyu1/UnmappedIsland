@@ -70,18 +70,18 @@ export class CombinationDef extends InteractionDef {
   /** 今この組み合わせを実行できない理由（最初に落ちた要件、14節）。実行できるならundefined。 */
   unmetRequirement(
     self: WorldObject,
-    dragged: WorldObject,
     actor: WorldObject | undefined,
+    dragged: WorldObject,
   ): Requirement | undefined {
-    return this.firstUnmetRequirement(self, dragged, actor);
+    return this.firstUnmetRequirement(self, actor, dragged);
   }
 
   tryExecute(
     self: WorldObject,
-    dragged: WorldObject,
     actor: WorldObject | undefined,
+    dragged: WorldObject,
     session: WorldSession,
   ): boolean {
-    return this.matches(dragged.def) && this.apply(self, dragged, actor, session);
+    return this.matches(dragged.def) && this.apply(self, actor, dragged, session);
   }
 }
