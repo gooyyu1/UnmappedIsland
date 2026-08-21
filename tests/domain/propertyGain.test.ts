@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { InteractionGains } from '../../src/domain/PropertyGain';
 import { World } from '../../src/domain/views/World';
@@ -6,30 +6,110 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
- * 操作そのものが増やした値の観測（`WorldSession.observeGains`、docs/ui/CardInteraction.md 10.1節）を、
- * 実ファイルの定義だけで検証する。回復の粒を出す範囲がここで決まる。
+ * 操作そのものが増やした値の観測（`WorldSession.observeGains`、docs/ui/CardInteraction.md 10.1節）の
+ * 自動テスト。回復の粒を出す範囲がここで決まる。
+ *
+ * 流れるのは**効果が直に書いた分だけ**。同じ操作の経過中にtickが動かした分は、増加ではあっても
+ * 「その操作が与えたもの」ではないので出ない——それが見えるように、時間のかかる操作と、経過中に
+ * 動く値の両方を宣言してある。
  */
 describe('操作が増やした値の観測', () => {
+  const yaml = `
+traits:
+  liquid_container:
+    tags: [liquid_container]
+  liquid:
+    tags: [liquid]
+    props:
+      density: {value: 1}
+  water_liquid:
+    actions:
+      drink:
+        add: {actor: {hydration: 120}}
+        set: {self: {fill: 0}}
+
+object_defs:
+  world:
+    singleton: true
+    props:
+      minutes_per_tick: {value: 15}
+      minute: {value: 0, range: {min: 0, max: 60}, on_max: {add: {self: {minute: -60, hour: 1}}}}
+      hour: {value: 0, range: {min: 0, max: 24}, on_max: {add: {self: {hour: -24, day: 1}}}}
+    slots:
+      locations: {cell: {accept: {tag: place}}}
+
+  land:
+    tags: [place]
+    slots:
+      characters: {cell: {accept: {tag: character}}}
+
+  survivor:
+    tags: [character]
+    slots:
+      hand: {cell: {accept: {tag: item}}}
+    props:
+      stamina: {value: 100, range: {min: 0, max: 100}}
+      # 何もしなくても毎tick減る。休憩の経過中にも動くので、増加として流れないことが見える。
+      wakefulness:
+        value: 100
+        range: {min: 0, max: 100}
+        passives:
+          - add: {self: {wakefulness: -1}}
+      satiety: {value: 1000, range: {min: 0, max: 2000}}
+      # 在庫から遅れて増えるので、操作そのものが書いた先には現れない（DigestionSystem.md 3節）。
+      carbohydrate:
+        value: 100
+        range: {min: 0, max: 500}
+        passives:
+          - conditions: [{prop: carbohydrate, gt: 0}]
+            add: {self: {body_fat: 1}}
+      body_fat: {value: 0, range: {min: 0, max: 1000}}
+      hydration: {value: 100, range: {min: 0, max: 500}}
+    actions:
+      rest:
+        duration: 60
+        add: {self: {stamina: 10}}
+      wait:
+        duration: 15
+
+  roasted_taro:
+    tags: [item]
+    actions:
+      eat:
+        duration: 15
+        destroy: self
+        add: {actor: {satiety: 550, carbohydrate: 48}}
+
+  bowl:
+    tags: [item]
+    traits: [liquid_container]
+    props:
+      fill: {value: 0, range: {min: 0, max: 250}, on_min: {become: {content: none}}}
+    variation_axes:
+      content: {of: {tag: liquid}}
+
+  water_liquid:
+    traits: [liquid, water_liquid]
+`;
+
   let codex: WorldCodex;
   let session: WorldSession;
-  let world: WorldObject;
   let player: WorldObject;
 
-  beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
-  });
-
   beforeEach(() => {
+    const loader = new WorldCodexYamlLoader();
+    loader.load('gains.yaml', yaml);
+    codex = loader.build();
+
     session = new WorldSession(codex, undefined, fixedRng(0));
-    world = spawn('world');
+    const world = spawn('world');
     session.adoptWorld(new World(world, codex));
-    const beach = spawn('sandy_beach');
-    expect(beach.moveToSlot(world.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
-    player = spawn(SAMPLE_CHARACTER);
-    expect(player.moveToSlot(beach.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
+    const land = spawn('land');
+    expect(land.moveToSlot(world.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
+    player = spawn('survivor');
+    expect(player.moveToSlot(land.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
   });
 
   function spawn(objectName: string): WorldObject {
@@ -55,7 +135,7 @@ describe('操作が増やした値の観測', () => {
   it('効果が直に書いた値だけが現れ、経過中のtickが動かした分は現れない', () => {
     drain('stamina', 50);
 
-    // 休憩は60分（4 tick）かかり、その間に覚醒度が-1/tickずつ減る（characters/）。
+    // 休憩は60分（4 tick）かかり、その間に覚醒度が-1/tickずつ減る。
     const { amounts } = gainsDuring(() => {
       expect(player.tryGetAction('rest', player)?.tryExecute() === true).toBe(true);
     });
@@ -77,7 +157,7 @@ describe('操作が増やした値の観測', () => {
     expect(source, '発生源は操作を宣言していた札').toBe('roasted_taro');
     expect(amounts.get('satiety'), 'かさ（mL）').toBe(550);
     expect(amounts.get('carbohydrate'), '中身（tick）').toBe(48);
-    // 体脂肪は在庫から遅れて増えるので、操作そのものが書いた先には現れない（DigestionSystem.md 3節）。
+    // 体脂肪は在庫から遅れて増えるので、操作そのものが書いた先には現れない。
     expect(amounts.has('body_fat')).toBe(false);
   });
 
@@ -85,7 +165,7 @@ describe('操作が増やした値の観測', () => {
     // 中身入りの器は1つの型（3.5節）で、飲み干すと素の型（空の器）へ戻る。**変わるのは型だけで
     // 個体は続く**ので、湧かせる札は型が変わった後も同じ札のまま。
     drain('hydration', 100);
-    const bowl = spawn('coconut_bowl');
+    const bowl = spawn('bowl');
     expect(bowl.moveToSlot(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     bowl.becomeAlong(new Map([['content', 'water_liquid']]));
     bowl.tryGetProperty(codex.propertyNames.getId('fill'))?.setNumber(250);
@@ -98,11 +178,11 @@ describe('操作が増やした値の観測', () => {
       },
     );
 
-    expect(bowl.def.name, '飲み干した器は空へ戻っている').toBe('coconut_bowl');
+    expect(bowl.def.name, '飲み干した器は空へ戻っている').toBe('bowl');
     expect(observed[0].source.map((object) => object.def.name)).toEqual([
-      'coconut_bowl',
-      SAMPLE_CHARACTER,
-      'sandy_beach',
+      'bowl',
+      'survivor',
+      'land',
       'world',
     ]);
   });
