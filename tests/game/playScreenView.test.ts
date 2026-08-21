@@ -162,6 +162,13 @@ object_defs:
     });
     expect(hand.materials, '製作中でなければ材料の枠は無い').toBeUndefined();
 
+    const fixtures = view.slotViewOf(place(mini, 'fixtures'));
+    expect(fixtures.cellCount, '設置物は前詰めのスロット').toBeUndefined();
+    expect(
+      fixtures.acceptsCards,
+      '据えられる物（itemとfixtureを兼ねる編み籠）があるので、末尾に受け皿の空枠が付く',
+    ).toBe(true);
+
     expect(injuries.acceptsCards, '怪我は落とせる場所ではない').toBe(false);
     expect(materials.materials?.length, '製作中オブジェクトの材料は要求ごとに枠を持つ').toBeGreaterThan(0);
   });

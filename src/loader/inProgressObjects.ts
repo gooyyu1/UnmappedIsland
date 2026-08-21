@@ -123,7 +123,7 @@ function inProgressObjectDef(
       // 素材も道具も同じスロットへ入れる。何が何個要るかが、そのまま枠の形になる
       // （RecipeSystem.md 3節）。
       [MATERIALS_SLOT]: {
-        cells: materialCells(recipe, tagNames, objectNames),
+        cells: requirementCells(recipe, tagNames, objectNames),
         // 入れるのはプレイヤーの投入操作と自動補充だけ（7.7節）。終わった工程の枠は表示から消すので、
         // エンジンが勝手に選んで入れると取り出せなくなる。
         placement: ['manual'],
@@ -136,7 +136,7 @@ function inProgressObjectDef(
  * 全工程の要求を型ごとにまとめた枠の並び。同じ型を複数の工程が要求する場合は、合計を1つの枠の
  * `max`にする（枠は「置ける場所」なので、上限は要求の合計で足りる）。
  */
-function materialCells(
+function requirementCells(
   recipe: ObjectDef['recipes'][number],
   tagNames: NameRegistry,
   objectNames: NameRegistry,

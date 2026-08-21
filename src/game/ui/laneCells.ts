@@ -47,6 +47,7 @@ export function unboundedSlot(cellCount: number | undefined): boolean {
 
 /**
  * カードの並びから、レーンへ渡す枠の並びを作る。カードの入った枠を前から並べ、そのあとに空枠を足す。
+ * **クセの無い枠だけ**——縁の色も重ねる文字も持たない（持つのは材料の枠だけ、materialCells）。
  *
  * - **枠数の決まったスロットは、埋まるまで常にその数だけ枠を見せる。** 1枠しか無い治療具の並びに
  *   2枠目が出ると「もう1つ当てられる」と誤って伝わる。
@@ -57,17 +58,17 @@ export function unboundedSlot(cellCount: number | undefined): boolean {
  * cellCountはそのスロットが持つ枠の数（`cell_count`、SlotSystem.md 2節）。中身のかさの合計の
  * 上限（`capacity`）とは別物。
  */
-export function cellsFor(
+export function plainCells(
   cards: readonly (CardContent | undefined)[],
   cellCount: number | undefined,
   acceptsCards: boolean,
 ): readonly LaneCell[] {
   const cells: LaneCell[] = cards.map((card) => ({ card }));
-  for (let i = 0; i < emptyCellsFor(cards.length, cellCount, acceptsCards); i++) cells.push({});
+  for (let i = 0; i < emptyCells(cards.length, cellCount, acceptsCards); i++) cells.push({});
   return cells;
 }
 
-function emptyCellsFor(cards: number, cellCount: number | undefined, acceptsCards: boolean): number {
+function emptyCells(cards: number, cellCount: number | undefined, acceptsCards: boolean): number {
   if (!acceptsCards) return 0;
   if (unboundedSlot(cellCount)) return 1;
   return Math.max(0, (cellCount ?? 0) - cards);
