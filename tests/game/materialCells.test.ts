@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { COLOR } from '../../src/game/looks/theme';
 import type { CardContent } from '../../src/game/ui/Card';
 import type { CraftingMaterial } from '../../src/game/view/craftingView';
-import { materialLaneCells } from '../../src/game/view/materialLane';
+import { materialCells } from '../../src/game/view/materialCells';
 import type { ObjectCardStack } from '../../src/game/view/PlayScreenView';
 
 /**
- * 製作中オブジェクトの材料レーンの枠（materialLaneCells）の自動テスト。
+ * 製作中オブジェクトの材料レーンの枠（materialCells）の自動テスト。
  *
  * 要求の中身は見ない——何がどれだけ要るかを決めるのは世界側（craftingMaterials）で、ここで見るのは
  * **その要求を何枠にどう並べるか**だけ。
@@ -33,7 +33,7 @@ describe('材料レーンの枠', () => {
     stacks: readonly (ObjectCardStack | undefined)[];
     cycle?: number;
   }) =>
-    materialLaneCells({
+    materialCells({
       materials: options.materials,
       stacks: options.stacks,
       cards: options.stacks.map((held) => (held === undefined ? undefined : (held as CardContent))),

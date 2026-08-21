@@ -23,7 +23,7 @@ export function currentStep(recipe: RecipeDef, progress: number): RecipeStepDef 
 /**
  * まだ終わっていない工程が要求する型 → 残りの必要数の合計。
  *
- * 枠は型ごとにまとまっている（inProgressObjects.materialCells）ので、「この型はもう要らない」も
+ * 枠は型ごとにまとまっている（inProgressObjects.requirementCells）ので、「この型はもう要らない」も
  * 「あといくつ要る」も、この表だけで答えられる。
  */
 export function remainingRequirements(recipe: RecipeDef, progress: number): readonly RecipeRequirementDef[] {

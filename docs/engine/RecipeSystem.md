@@ -112,7 +112,7 @@ actions/combinations と同じで（[ActionSystem.md](ActionSystem.md) 2 節）�
 - 普通の箱（家具・コンテナ等）が枠の宣言をどこまで再利用できるか（型・trait・サイズベースの緩い制約への拡張。
   普通のコンテナの合計サイズ制限・重さは `ContainerSystem.md` で別途検討）
 - `steps.requires` をタグで書いたときの枠の見せ方（当てはまる型が 1 つに定まらないので、今は 1 秒ごとに
-  順に出している。`PlayScene.materialCells`）
+  順に出している。`materialCells`）
 - 枠から自動生成される `combinations` で、複数の素材が同時にマッチしうる場合の優先順位
   （`ActionSystem.md` の既存の未決事項と関連）
 - レシピの `icon`・完成品の `tags`（5 節）以外に、自動生成される型へ引き継ぐべき情報（名前、説明文など）の範囲

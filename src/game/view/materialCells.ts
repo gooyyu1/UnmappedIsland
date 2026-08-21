@@ -5,7 +5,8 @@ import type { CraftingMaterial } from './craftingView';
 import type { ObjectCardStack } from './PlayScreenView';
 
 /**
- * 製作中オブジェクトの材料レーンの枠（CardView.md 10.1節）。
+ * 製作中オブジェクトの材料スロットの枠（CardView.md 13節）。**クセの無い枠（plainCells）に対して、
+ * 縁の色と重ねる文字を持つのはこちらだけ。**
  *
  * **枠は要求ごとに1つ。** 何がどれだけ要るかを見せるのがこのレーンの役目なので、並ぶのは
  * 「入っている物」と「まだ入っていない要求」で、それ以外の空き枠は出さない。
@@ -14,7 +15,7 @@ import type { ObjectCardStack } from './PlayScreenView';
  * どの枠がどの要求のものかは中身からしか辿れず、空の枠では決められない。空の枠をそのまま並べると、
  * 透かしの入らない枠が要求の数だけ並び、その後ろに透かしの入った枠が続くことになる。
  */
-export function materialLaneCells(options: {
+export function materialCells(options: {
   /** 残りの工程が要求している型（要求の順、craftingMaterials）。 */
   readonly materials: readonly CraftingMaterial[];
   /** 材料スロットの枠の並び（空き枠はundefined）。 */

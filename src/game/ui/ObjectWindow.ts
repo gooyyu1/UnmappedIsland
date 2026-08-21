@@ -104,7 +104,7 @@ export interface ObjectWindowSlot {
   /** タブのラベル。スロットは必ず持ち主のものなので、持ち主込みの名前を呼び出し側が組み立てて渡す。 */
   readonly title: string;
 
-  /** 並べる枠（cellsFor）。カードも空き枠も枠の縁もこの1本が持ち、はみ出した分は横スクロールで送る。 */
+  /** 並べる枠（plainCells）。カードも空き枠も枠の縁もこの1本が持ち、はみ出した分は横スクロールで送る。 */
   readonly cells: readonly LaneCell[];
 
   /** 枠の数が決まっていないスロットか（unboundedSlot）。レーンは頭打ちの枠数まで広げる。 */

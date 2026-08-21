@@ -28,7 +28,8 @@ import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
 import type { RecordedView, Recording } from './view/recording';
 import { recordChange } from './view/recording';
-import { materialLaneCells } from './view/materialLane';
+import { materialCells } from './view/materialCells';
+import { plainCells, unboundedSlot } from './view/plainCells';
 import { noteOperation, setStateReporter } from './errorReport';
 import { ShownStatuses } from './view/ShownStatuses';
 import type { ElapseFrame } from './view/elapsePlayback';
@@ -38,14 +39,13 @@ import { elapseSteps, elapsedSteps, isMidAction, runsOperation } from './view/op
 import { Button, SLOT_BUTTON_PAPER_TEXTURE } from './ui/Button';
 import { EDGE_DIRECTIONS } from './ui/Card';
 import type { CardContent, CardEdgeAction } from './ui/Card';
-import type { CraftingMaterial } from './view/craftingView';
 import type { Card } from './ui/Card';
 import { borrowedFace, cardFace } from './ui/cardFace';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
 import type { LaneCell } from './ui/laneCells';
-import { cellsFor, foundCells as foundCellsOf, unboundedSlot } from './ui/laneCells';
+import { foundCells } from './ui/laneCells';
 import { Curtain } from './ui/Curtain';
 import { LocationArtLoader } from './ui/LocationArtLoader';
 import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from '../art/informationArt';
@@ -444,14 +444,14 @@ export class PlayScene extends ResponsiveScene {
     return isMidAction(this.activity);
   }
 
+  /** タグの要求の空き枠に出している型の番号（materialCells）。1秒ごとに1つ進む。 */
+  private materialCycle = 0;
+
   /**
    * 演出中は何もしないようにした操作を返す。演出中の画面は、経過中の過去の時点を再現していたり
    * （record）作り直しを暗幕で隠していたり（transit）するため、そこから今のワールドを覗く子ウィンドウを
    * 開かせない——並んでいるカードは既に古い対象を指しており、そのアクションを実行させるわけにいかない。
    */
-  /** タグの要求の空き枠に出している型の番号（materialCells）。1秒ごとに1つ進む。 */
-  private materialCycle = 0;
-
   private whileIdle(onTap: () => void): () => void {
     return () => {
       if (!this.busy) onTap();
@@ -695,8 +695,7 @@ export class PlayScene extends ResponsiveScene {
       this.metrics,
       fixtures,
       COLOR.fixtureLane,
-      // 設置物は持ち出せないので、手持ちへ送る端の操作は付けない（並び替えのドラッグだけ）。
-      this.plainCells(this.shown.stacksAt(this.place('fixtures'))),
+      this.cellsAt(this.place('fixtures')),
       {
         pinned: {
           ...this.view.currentLocationCard,
@@ -708,21 +707,21 @@ export class PlayScene extends ResponsiveScene {
         depth: FIELD_DEPTH,
       },
     );
-    this.itemLane = new CardLane(this, this.metrics, items, COLOR.itemLane, this.itemCells(), {
-      art: this.laneArt(this.place('items')),
-      depth: FIELD_DEPTH,
-    });
-    this.handLane = new CardLane(
+    this.itemLane = new CardLane(
       this,
       this.metrics,
-      hand,
-      COLOR.handLane,
-      this.plainCells(this.shown.stacksAt(this.place('hand'))),
+      items,
+      COLOR.itemLane,
+      this.cellsAt(this.place('items')),
       {
-        art: this.laneArt(this.place('hand')),
+        art: this.laneArt(this.place('items')),
         depth: FIELD_DEPTH,
       },
     );
+    this.handLane = new CardLane(this, this.metrics, hand, COLOR.handLane, this.cellsAt(this.place('hand')), {
+      art: this.laneArt(this.place('hand')),
+      depth: FIELD_DEPTH,
+    });
 
     // 陽炎はフィールドエリアの3レーンすべてに立てる（LaneHaze参照）。
     this.haze.setSurfaces([
@@ -786,10 +785,6 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 受け皿の空枠を持たないレーンの枠（設置物・手持ち）。設置物レーンは前詰めだが末尾に受け皿を
-   * 出さず、手持ちは固定枠なので空き枠そのものが常に見えている。
-   */
-  /**
    * レーンの全面に敷く絵（用意されていなければundefinedで、レーンは単色になる）。
    * どのスロットにどの絵を敷くかは画面側では決めず、絵のファイル名が名乗る（backgroundArt参照）。
    */
@@ -798,28 +793,24 @@ export class PlayScene extends ResponsiveScene {
     return background === undefined ? undefined : laneTexture(background);
   }
 
-  private plainCells(cards: readonly (ObjectCardStack | undefined)[]): readonly LaneCell[] {
-    return this.laneCards(cards).map((card) => ({ card }));
-  }
-
-  /** アイテムレーンの枠。前詰めのレーンなので、末尾に受け皿の空枠が付く（cellsFor）。 */
-  private itemCells(): readonly LaneCell[] {
-    const items = this.place('items');
-    const slot = this.view.slotViewOf(items);
-    return cellsFor(this.laneCards(this.shown.stacksAt(items)), slot.cellCount, slot.acceptsCards);
-  }
-
   /**
-   * 子ウィンドウが映すスロットの枠。製作中オブジェクトの材料だけは、枠ごとに縁の色と残りの数を持つ
-   * （materialCells）。
+   * その場所を映すレーン（3つのレーンも子ウィンドウのタブも）に並べる枠。**枠ごとの飾りを持つのは
+   * 製作中オブジェクトの材料スロットだけ**で（materialCells）、他はスロットの宣言どおりに並べる
+   * （plainCells）。
    */
-  private slotCells(place: CardPlace): readonly LaneCell[] {
+  private cellsAt(place: CardPlace): readonly LaneCell[] {
     const stacks = this.shown.stacksAt(place);
     const cards = this.laneCards(stacks);
     const slot = this.view.slotViewOf(place);
-    return (
-      this.materialCells(slot.materials, stacks, cards) ?? cellsFor(cards, slot.cellCount, slot.acceptsCards)
-    );
+    if (slot.materials === undefined) return plainCells(cards, slot.cellCount, slot.acceptsCards);
+
+    return materialCells({
+      materials: slot.materials,
+      stacks,
+      cards,
+      cycle: this.materialCycle,
+      cardOfType: (objectGlobalId) => this.view.cardOfType(objectGlobalId),
+    });
   }
 
   /**
@@ -901,9 +892,9 @@ export class PlayScene extends ResponsiveScene {
    */
   private get laneViews(): readonly LaneView[] {
     const views: LaneView[] = [
-      { lane: this.fixtureLane, cells: this.plainCells(this.shown.stacksAt(this.place('fixtures'))) },
-      { lane: this.itemLane, cells: this.itemCells() },
-      { lane: this.handLane, cells: this.plainCells(this.shown.stacksAt(this.place('hand'))) },
+      { lane: this.fixtureLane, cells: this.cellsAt(this.place('fixtures')) },
+      { lane: this.itemLane, cells: this.cellsAt(this.place('items')) },
+      { lane: this.handLane, cells: this.cellsAt(this.place('hand')) },
       { lane: this.portraitLane, cells: this.portraitCells() },
     ];
 
@@ -914,11 +905,11 @@ export class PlayScene extends ResponsiveScene {
     }
     const place = this.childWindowPlace;
     if (window?.lane !== undefined && place !== undefined) {
-      views.push({ lane: window.lane, cells: this.slotCells(place) });
+      views.push({ lane: window.lane, cells: this.cellsAt(place) });
     }
     // 発見物のレーン。借りている札はここに並び、返すと元の場所のレーンへ戻る（Windows.md 5.1節）。
     if (window?.foundLane !== undefined) {
-      views.push({ lane: window.foundLane, cells: this.foundCells() });
+      views.push({ lane: window.foundLane, cells: foundCells(this.shown.found) });
     }
     return views;
   }
@@ -1114,25 +1105,6 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 製作中オブジェクトの材料スロットの枠（materialLaneCells）。そうでないスロットではundefinedで、
-   * 呼び出し側が普通の枠の並べ方（cellsFor）へ落とす。
-   */
-  private materialCells(
-    materials: readonly CraftingMaterial[] | undefined,
-    stacks: readonly (ObjectCardStack | undefined)[],
-    cards: readonly (CardContent | undefined)[],
-  ): readonly LaneCell[] | undefined {
-    if (materials === undefined) return undefined;
-    return materialLaneCells({
-      materials,
-      stacks,
-      cards,
-      cycle: this.materialCycle,
-      cardOfType: (objectGlobalId) => this.view.cardOfType(objectGlobalId),
-    });
-  }
-
-  /**
    * タグの要求の空き枠に出す型を1つ進める（1秒ごと）。**出す型が1つしかないなら引き直さない**
    * ——見た目が変わらない差し替えを毎秒走らせる理由が無い。
    */
@@ -1210,7 +1182,7 @@ export class PlayScene extends ResponsiveScene {
         return {
           key: tab.key,
           title: slot.label,
-          cells: this.slotCells(tab.place),
+          cells: this.cellsAt(tab.place),
           unbounded: unboundedSlot(slot.cellCount),
         };
       }),
@@ -1385,14 +1357,6 @@ export class PlayScene extends ResponsiveScene {
     const ratio = this.view.currentLocationWindow.explorationRatio;
     if (ratio !== undefined) this.childWindow?.setExploration({ ratio });
     this.childWindow?.openTab(EXPLORATION_TAB);
-  }
-
-  /**
-   * 発見物のレーンに並べる枠。**借りている札そのもの**（Windows.md 5.1節）で、見つかっていない分は
-   * 空き枠のまま出す（foundCells）。
-   */
-  private foundCells(): readonly LaneCell[] {
-    return foundCellsOf(this.shown.found);
   }
 
   /** 現在地のレーンに出ているカード（設置物とアイテム）。どちらも前詰めなので空き枠は無い。 */

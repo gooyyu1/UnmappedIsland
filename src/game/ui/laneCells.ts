@@ -1,3 +1,9 @@
+/**
+ * レーンに渡す枠の契約（LaneCell）と、**画面の寸法が枠の数を決める**もの。枠の数をワールドの宣言が
+ * 決めるもの——スロットの`cell_count`から並べる枠（view/plainCells）と、レシピの要求から並べる枠
+ * （view/materialCells）——は映しの側にある（Layers.md 4節）。
+ */
+
 import type { CardContent } from './Card';
 
 /**
@@ -35,44 +41,6 @@ export interface LaneCell {
   readonly overlay?: string;
 }
 
-/**
- * 枠の数が決まっていないスロットか（前詰めで、末尾に受け皿の空枠を1つだけ添える）。
- *
- * 画面に一度に入る数（LANE_CELLS_MAX）とは無関係に判定する。入り切らない枠は横スクロールで送れるので、
- * 「あと何枠空いているか」は10枠のスロットでも見て取れる。
- */
-export function unboundedSlot(cellCount: number | undefined): boolean {
-  return cellCount === undefined;
-}
-
-/**
- * カードの並びから、レーンへ渡す枠の並びを作る。カードの入った枠を前から並べ、そのあとに空枠を足す。
- *
- * - **枠数の決まったスロットは、埋まるまで常にその数だけ枠を見せる。** 1枠しか無い治療具の並びに
- *   2枠目が出ると「もう1つ当てられる」と誤って伝わる。
- * - **無制限のスロットは末尾に1枠だけ添える。** 前詰めのレーンは中身が空だと何も描かれず、
- *   落とせる場所かどうかが見て分からないため。
- * - **受け入れないスロット（怪我）には添えない。** 出せば「落とせる」と誤って伝えることになる。
- *
- * cellCountはそのスロットが持つ枠の数（`cell_count`、SlotSystem.md 2節）。中身のかさの合計の
- * 上限（`capacity`）とは別物。
- */
-export function cellsFor(
-  cards: readonly (CardContent | undefined)[],
-  cellCount: number | undefined,
-  acceptsCards: boolean,
-): readonly LaneCell[] {
-  const cells: LaneCell[] = cards.map((card) => ({ card }));
-  for (let i = 0; i < emptyCellsFor(cards.length, cellCount, acceptsCards); i++) cells.push({});
-  return cells;
-}
-
-function emptyCellsFor(cards: number, cellCount: number | undefined, acceptsCards: boolean): number {
-  if (!acceptsCards) return 0;
-  if (unboundedSlot(cellCount)) return 1;
-  return Math.max(0, (cellCount ?? 0) - cards);
-}
-
 /** 発見物の枠の数（Windows.md 5.1節）。1枠はレーンのカードと同じ幅。 */
 export const FOUND_CELLS = 4;
 
@@ -81,7 +49,7 @@ export const FOUND_CELLS = 4;
  * して出すことで、そこが「見つかったものの居場所」だと分かる。収まらない分はレーンの横スクロールで
  * 送る（枠は縮めない、Windows.md 5.1節）。
  *
- * スロットの枠（cellsFor）と違い、受け皿の空枠という考え方は無い——ここはプレイヤーが落とせる場所
+ * スロットの枠（plainCells）と違い、受け皿の空枠という考え方は無い——ここはプレイヤーが落とせる場所
  * ではなく、見つかったものが**通り過ぎる**場所なので。
  */
 export function foundCells(found: readonly CardContent[]): readonly LaneCell[] {
