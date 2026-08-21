@@ -5,10 +5,8 @@ import type { CraftingStep } from './CraftingStep';
 import { collectOutputs } from './CraftingStep';
 import { rangeEventReadouts, ticksToRangeEnd } from './rangeEvents';
 import type { StaticValueResolver } from './staticValue';
+import { MINUTES_PER_TICK } from './balanceTables';
 import { staticResolverOf, staticValueOf } from './staticValue';
-
-/** 1 tickのゲーム内時間（分）。tick毎の増減から周期を分へ直すのに使う。 */
-const MINUTES_PER_TICK = 15;
 
 /**
  * 外から与えられるtick毎の増減。**焼くのも失血も、自分では動かない値を隣の物が動かす**——炉が

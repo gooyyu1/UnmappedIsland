@@ -1,7 +1,15 @@
 import type { YAMLMap } from 'yaml';
-import { asMap, entriesInOrder, tryGetBool, tryGetMap, tryGetScalar, tryGetSeq } from './yamlMapping';
+import {
+  asMap,
+  entriesInOrder,
+  tryGetBool,
+  tryGetMap,
+  tryGetNode,
+  tryGetScalar,
+  tryGetSeq,
+} from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseTypeMatchRule, tryGetNode } from './parseCommon';
+import { parseTypeMatchRule } from './parseCommon';
 import { parseActiveEffectBody, parseWeight } from './parseActiveEffects';
 import {
   ACTION_CONDITION_ROOTS,

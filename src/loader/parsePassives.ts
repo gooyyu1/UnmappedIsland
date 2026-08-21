@@ -1,7 +1,15 @@
 import type { YAMLMap } from 'yaml';
-import { asMap, asScalarText, entriesInOrder, tryGetMap, tryGetSeq } from './yamlMapping';
+import {
+  asMap,
+  asScalarText,
+  entriesInOrder,
+  requireKnownKeys,
+  tryGetMap,
+  tryGetNode,
+  tryGetSeq,
+} from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseNumberLiteral, tryGetNode } from './parseCommon';
+import { parseNumberLiteral } from './parseCommon';
 import { parseConditionsField, PASSIVE_CONDITION_ROOTS } from './parseConditions';
 import { parsePassiveTransfers } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
@@ -64,11 +72,7 @@ export function parsePassive(
 
   const knownKeys = new Set<string>(['conditions', 'modify', 'add', 'transfer']);
 
-  const unknownKeys = entriesInOrder(passiveMap)
-    .map(([key]) => key)
-    .filter((key) => !knownKeys.has(key));
-  if (unknownKeys.length > 0)
-    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+  requireKnownKeys(context, passiveMap, knownKeys);
 }
 
 /**

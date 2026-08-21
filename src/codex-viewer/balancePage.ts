@@ -7,14 +7,16 @@ import type {
   PropertyRoute,
 } from '../analysis/balanceTables';
 import {
-  buildBalanceTables,
-  menuFor,
   MINUTES_PER_DAY,
+  MINUTES_PER_TICK,
   TICKS_PER_DAY,
   WHOLE_ISLAND,
+  buildBalanceTables,
+  menuFor,
 } from '../analysis/balanceTables';
 import type { CodexView } from './CodexView';
 import { escapeHtml, inlineArtHtml } from './CodexView';
+import { objectLinkHtml } from './pages';
 
 /**
  * 収支のページ（`#/balance`）。1ページに全部を並べ、`#/balance/<場所>` で節の頭へ送る
@@ -71,7 +73,7 @@ function methodHtml(): string {
   return (
     `<details class="balance-method"><summary>計測方法</summary>` +
     `<ul>` +
-    `<li>1 tick = 15分、1日 = ${TICKS_PER_DAY} tick = ${MINUTES_PER_DAY}分。</li>` +
+    `<li>1 tick = ${MINUTES_PER_TICK}分、1日 = ${TICKS_PER_DAY} tick = ${MINUTES_PER_DAY}分。</li>` +
     `<li><code>pick</code> の分岐は <code>weight</code> から期待値を取る。</li>` +
     `<li><b>1つの工程が複数の値を返す場合、時間は按分せず全額を各値に計上する。</b>` +
     `按分には水と満腹の交換レートが要るが、それこそこの表が探しているもの。` +
@@ -370,7 +372,7 @@ function objectCostsHtml(view: CodexView, tables: BalanceTables): string {
     tableHtml(
       ['オブジェクト', '総労働', '探索', 'それ以外', '日数', '作り方', '前提'],
       buildable.map((cost) => [
-        objectLinkHtml(view, cost.objectName),
+        objectLinkHtml(view, cost.objectName, true),
         `${formatNumber(cost.minutes ?? 0)}分`,
         formatNumber(cost.exploreMinutes ?? 0),
         formatNumber(cost.craftMinutes ?? 0),
@@ -410,7 +412,8 @@ function blockedListHtml(
     costs
       .map(
         (cost) =>
-          `<li>${objectLinkHtml(view, cost.objectName)} ` + `<span class="muted">${reason(cost)}</span></li>`,
+          `<li>${objectLinkHtml(view, cost.objectName, true)} ` +
+          `<span class="muted">${reason(cost)}</span></li>`,
       )
       .join('') +
     `</ul>`
@@ -421,8 +424,8 @@ function devicesHtml(view: CodexView, tables: BalanceTables): string {
   const rows = tables.places.flatMap((place) =>
     place.devices.map((device) => [
       escapeHtml(placeLabel(view, place.name)),
-      objectLinkHtml(view, device.deviceName),
-      `${objectLinkHtml(view, device.productName)} ` +
+      objectLinkHtml(view, device.deviceName, true),
+      `${objectLinkHtml(view, device.productName, true)} ` +
         `<span class="muted">×${formatNumber(device.perCycle, 3)}</span>`,
       `${formatNumber(device.periodMinutes, 0)}分`,
       formatNumber(device.perDay, 2),
@@ -470,7 +473,7 @@ function consumptionHtml(view: CodexView, tables: BalanceTables): string {
 
 function supplyHtml(view: CodexView, tables: BalanceTables): string {
   const rows = tables.supply.map((row) => [
-    objectLinkHtml(view, row.ownerName),
+    objectLinkHtml(view, row.ownerName, true),
     `<code>${escapeHtml(row.stepName)}</code>` +
       (row.kind === 'periodic' ? ' <span class="muted">periodic</span>' : ''),
     `${formatNumber(row.laborMinutes, 0)}${row.unresolved ? ' <span class="warn" title="定義だけでは決まらない">?</span>' : ''}`,
@@ -480,7 +483,7 @@ function supplyHtml(view: CodexView, tables: BalanceTables): string {
       : row.spawns
           .map(
             ({ name, amount }) =>
-              `${objectLinkHtml(view, name)} <span class="muted">×${formatNumber(amount, 2)}</span>`,
+              `${objectLinkHtml(view, name, true)} <span class="muted">×${formatNumber(amount, 2)}</span>`,
           )
           .join(' '),
     [amountListHtml(row.actorDeltas), amountListHtml(row.selfDeltas, 'self')]
@@ -493,13 +496,6 @@ function supplyHtml(view: CodexView, tables: BalanceTables): string {
     `<p class="muted">何かを生むか、値を動かす工程すべて。産出は1回あたりの期待個数。` +
     `同じ宣言は各オブジェクトのページにもあるので、ここは横断して見比べるための一覧。</p>` +
     tableHtml(['宣言元', '工程', '労働', '周期', '期待産出', '値の増減'], rows)
-  );
-}
-
-function objectLinkHtml(view: CodexView, objectName: string): string {
-  return (
-    `<a href="${view.objectHref(objectName)}">${inlineArtHtml(objectName)}` +
-    `${escapeHtml(view.objectLabel(objectName))}</a>`
   );
 }
 

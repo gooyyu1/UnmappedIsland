@@ -28,29 +28,21 @@ export function staticResolverOf(
 ): StaticValueResolver {
   return (root, propertyGlobalId) => {
     if (root !== 'self') return outer?.(root, propertyGlobalId);
-    return declaredValueOf(def, propertyGlobalId, outer);
+    return staticValueOf(def, propertyGlobalId, outer);
   };
 }
 
-/** defが宣言しているプロパティの、定義だけから読める値。宣言していなければundefined。 */
+/**
+ * defが宣言しているプロパティの、定義だけから読める値。宣言していなければundefined。
+ *
+ * **抽選つきの初期値（`value: {min, max}`）はRNGを使わない生成と同じ扱い**で、下限がそのまま
+ * 答えになる（PropertyDef.initialValue）。inheritなら祖先の値も足す（6.5節）。祖先を辿れない
+ * 文脈ではundefined。
+ */
 export function staticValueOf(
   def: ObjectDef,
   propertyGlobalId: number,
   outer?: StaticValueResolver,
-): number | undefined {
-  return declaredValueOf(def, propertyGlobalId, outer);
-}
-
-/**
- * 宣言された初期値。**抽選つきの初期値（`value: {min, max}`）はRNGを使わない生成と同じ扱い**で、
- * 下限がそのまま答えになる（PropertyDef.initialValue）。
- *
- * inheritなら祖先の値も足す（6.5節）。祖先を辿れない文脈ではundefined。
- */
-function declaredValueOf(
-  def: ObjectDef,
-  propertyGlobalId: number,
-  outer: StaticValueResolver | undefined,
 ): number | undefined {
   const propertyDef = def.getPropertyDef(propertyGlobalId);
   if (propertyDef === undefined) return undefined;

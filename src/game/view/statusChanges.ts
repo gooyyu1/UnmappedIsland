@@ -1,9 +1,21 @@
 import type { PlayScreenView } from './PlayScreenView';
+import type { PropertyCategory as PropertyTab } from '../ui/PropertiesPane';
 import type { StatusChange, StatusContent } from '../ui/StatusBar';
 
-/** そのviewの全プロパティのステータス（タブの並び順）。 */
-function allEntries(view: PlayScreenView): readonly StatusContent[] {
-  return view.propertyCategories.flatMap((tab) => tab.entries);
+/**
+ * ステータスエリアの候補とプロパティの全カテゴリを、**重複は先勝ちで**1つの並びへ畳む。
+ * 行動の前後を比べるのも、バーを作るのも、この1つの畳み方を通す——別々に畳むと、控え
+ * （recordChange）と表示（ShownStatuses）が違う集合を答える。
+ */
+export function mergedStatuses(
+  statuses: readonly StatusContent[],
+  categories: readonly PropertyTab[],
+): readonly StatusContent[] {
+  const all = new Map<string, StatusContent>();
+  for (const status of [...statuses, ...categories.flatMap((tab) => tab.entries)]) {
+    if (!all.has(status.key)) all.set(status.key, status);
+  }
+  return [...all.values()];
 }
 
 /**
@@ -11,11 +23,7 @@ function allEntries(view: PlayScreenView): readonly StatusContent[] {
  * 出ている行だけで比べると、出ていない行の増減を取りこぼす。
  */
 export function allStatuses(view: PlayScreenView): readonly StatusContent[] {
-  const all = new Map<string, StatusContent>();
-  for (const status of [...view.statuses, ...allEntries(view)]) {
-    if (!all.has(status.key)) all.set(status.key, status);
-  }
-  return [...all.values()];
+  return mergedStatuses(view.statuses, view.propertyCategories);
 }
 
 /** 行動の前後で変わった1件分（StatusArea.md）。 */

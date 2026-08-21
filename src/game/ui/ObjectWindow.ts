@@ -11,7 +11,7 @@ import { ExplorationPane } from './ExplorationPane';
 import type { PropertyCategory } from './PropertiesPane';
 import { PropertiesPane } from './PropertiesPane';
 import type { LaneCell } from './laneCells';
-import { foundCells, LANE_CELLS_MAX } from './laneCells';
+import { foundCells, laneWidthForCells } from './laneCells';
 import {
   ACTION_GAP,
   ACTION_HEIGHT,
@@ -42,7 +42,6 @@ const MIN_WIDTH = 760;
  * 終わっているのか右へ送れるのかが分からない。カードの間隔（12u）より広く取って、覗いているのが
  * 隙間ではなくカードの縁だと分かるようにする。
  */
-const PEEK_WIDTH = 40;
 
 /** タブの行の高さ（u単位）。タブが1つだけのウィンドウでは行そのものを空けない。 */
 const TAB_HEIGHT = 64;
@@ -641,19 +640,11 @@ export class ObjectWindow {
 }
 
 /**
- * その中身を並べるのに要るレーンの幅。
- *
- * **枠の数は並べる枠そのもので決まり、LANE_CELLS_MAXで頭打ち**——1枠しか無い場所に4枠空けると
- * 「4つ入る」と誤って伝わる。頭打ちに掛かるときは、右にまだ続くことが分かるよう次の枠の頭を覗かせる。
- *
- * レーンの左右の余白（CardLaneのSIZE.margin）も足す。カードの幅だけで決めると最後の枠がはみ出す。
+ * そのスロットのタブが要るレーンの幅。**枠の数は並べる枠そのもので決まる**——1枠しか無い場所に
+ * 4枠空けると「4つ入る」と誤って伝わる。落とせば枠が増えるスロットは、増える前提で頭打ちまで取る。
  */
-function laneWidthFor(metrics: ScreenMetrics, contents: ObjectWindowSlot): number {
+function laneWidthFor(metrics: ScreenMetrics, slot: ObjectWindowSlot): number {
   // 枠を1つも並べないスロット（要求を満たし切った材料）でも、レーンは1枠ぶんの幅を保つ。
-  const wanted = contents.grows ? Number.POSITIVE_INFINITY : Math.max(1, contents.cells.length);
-  const slots = Math.min(LANE_CELLS_MAX, wanted);
-
-  const cards = slots * metrics.px(SIZE.cardWidth) + (slots - 1) * metrics.px(SIZE.gap);
-  const peek = wanted > LANE_CELLS_MAX ? metrics.px(PEEK_WIDTH) : 0;
-  return cards + peek + metrics.px(SIZE.margin) * 2;
+  const wanted = slot.grows ? Number.POSITIVE_INFINITY : Math.max(1, slot.cells.length);
+  return laneWidthForCells(metrics, wanted);
 }

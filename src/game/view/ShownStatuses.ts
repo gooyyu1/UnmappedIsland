@@ -1,5 +1,5 @@
 import type { StatusDelta } from './statusChanges';
-import { statusChangesAfter } from './statusChanges';
+import { mergedStatuses, statusChangesAfter } from './statusChanges';
 import { statusRows } from './statusRows';
 import type { PropertyCategory as PropertyTab } from '../ui/PropertiesPane';
 import type { StatusContent } from '../ui/StatusBar';
@@ -84,13 +84,16 @@ export class ShownStatuses {
     );
   }
 
-  /** 全プロパティの行（重複は先勝ち）。バーを作るときと、行動の前後を比べるときに使う。 */
+  /** プロパティウィンドウにだけ出る行も含めた全件（タブの並び順）。 */
+  private entries(): readonly StatusContent[] {
+    return this.source.categories().flatMap((tab) => tab.entries);
+  }
+
+  /** 全プロパティの行（重複は先勝ち、mergedStatuses）。バーを作るときと、行動の前後を比べるときに使う。 */
   all(): readonly StatusContent[] {
-    const all = new Map<string, StatusContent>();
-    for (const status of [...this.source.statuses(), ...this.entries()]) {
-      if (!all.has(status.key)) all.set(status.key, this.shown(status));
-    }
-    return [...all.values()];
+    return mergedStatuses(this.source.statuses(), this.source.categories()).map((status) =>
+      this.shown(status),
+    );
   }
 
   /** その1件（そのプロパティが無ければundefined）。 */
@@ -103,11 +106,6 @@ export class ShownStatuses {
     return this.source
       .categories()
       .map((tab) => ({ name: tab.name, entries: tab.entries.map((status) => this.shown(status)) }));
-  }
-
-  /** プロパティウィンドウにだけ出る行も含めた全件（タブの並び順）。 */
-  private entries(): readonly StatusContent[] {
-    return this.source.categories().flatMap((tab) => tab.entries);
   }
 
   /** 1行分の見え方。直前の行動での増減・固定表示・経過中かを添える。 */

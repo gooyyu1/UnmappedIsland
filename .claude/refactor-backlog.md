@@ -60,25 +60,27 @@ docコメントの取り残し 14件（全部直し、残り0を機械的に確�
 
 - [x] `tests/docs/docComments.test.ts`（docコメントが2連続していたら落ちる。壊して落ちることも確認済み）
 
-## PR 3: 二重化を1つに畳む
+## PR 3: 二重化を1つに畳む ✅ 完了
 
-- [ ] `tryGetNode` が `loader/parseCommon.ts` と `loader/yamlMapping.ts` に同名同シグネチャ
-      （「生のyaml APIを触るのはこのモジュールだけ」という宣言が破れている）
-- [ ] 「未知のキーを弾く」が `parseRecipes.rejectUnknownKeys` と `parseGeneration.checkUnknownKeys`
-      ＋直書き5箇所（`parseSlots`・`parsePassives`・`parseActiveEffects`×3）。本体は文字ごと同一
-- [ ] 時刻の分解（総分→日・時・分）が `PlayScene.showClock` と `PlayScene.clockText` に別々。
-      同じ時計へ `showInformation` からの経路も含めて3通りの入力がある（`looks/durationText` へ寄せる）
-- [ ] `view/statusChanges.allStatuses`（と `allEntries`）と `ShownStatuses.all()`（と `entries()`）が
-      同じ「先勝ちで畳む」を2実装
-- [ ] `MINUTES_PER_TICK` が `analysis/rangeCycles.ts` と `analysis/balanceTables.ts` に2つ
-      （`codex-viewer/balancePage.ts` には「1 tick = 15分」の直書きもある）
-- [ ] `ACTION_HEIGHT` が同名別値（`looks/childWindowLayout.ts`=`SIZE.iconButton` と `ui/ModalDialog.ts`=72）。
-      `RecipeWindow`・`ModalDialog` が共通の寸法トークンに乗っていない
-- [ ] レーンの幅の式が `ExplorationPane.width` と `ObjectWindow.laneWidthFor` に2つ
-- [ ] `objectLinkHtml` が `codex-viewer/pages.ts` と `codex-viewer/balancePage.ts` に2実装（差は絵の有無だけ）
-- [ ] `analysis/staticValue.ts` の `staticValueOf` が `declaredValueOf` への素通し
-- [ ] `PropertyValue.registerPassiveEffect` → `RegisteredPassiveEffect.registerInto` の2段中継
-- [ ] `inProgressObjectsYaml` と `axisVariantsYaml` の呼び元（`WorldCodexYamlLoader.build`）に同型14行のコピー
+- [x] `tryGetNode` の複製を消し、`yamlMapping` の1本へ寄せた（輸入元6モジュール）
+- [x] 「未知のキーを弾く」を `yamlMapping.requireKnownKeys` 1本へ。`rejectUnknownKeys`・
+      `checkUnknownKeys` と直書き12箇所を畳んだ（調査時の「直書き5箇所」は数え漏れで、実際は12）
+- [x] 時刻の分解を `looks/durationText.clockParts` へ。`showClock` と `clockText` が同じ1本を通る
+      （`showInformation` はワールドが持つ日・時・分を出す別経路なので触っていない）
+- [x] 「先勝ちで畳む」を `statusChanges.mergedStatuses` 1本へ（`allStatuses` と `ShownStatuses.all`）
+- [x] `MINUTES_PER_TICK` は `balanceTables` の1つに。`balancePage` の「1 tick = 15分」も定数から出す
+- [x] レーンの幅の式を `laneCells.laneWidthForCells` 1本へ（`ExplorationPane.width` と `laneWidthFor`）
+- [x] `objectLinkHtml` を `pages.ts` の1本に。絵を出すかは引数
+- [x] `staticValueOf` の素通しを畳み、`declaredValueOf` を消した
+- [x] `PropertyValue.registerPassiveEffect` → `RegisteredPassiveEffect.registerInto` の2段中継を外し、
+      `PassiveEffect.register` が対象のプロパティ値へ直接 `registerInto` する形にした
+- [x] 生成器2種を `GeneratedObjectDefs`（yamlと座標の組）で揃え、呼び元の同型14行を
+      `WorldCodexYamlLoader.loadGenerated` 1本へ。名前から座標を復元する経路（`inProgressCoordinateOf`）は不要になった
+- [x] `ACTION_HEIGHT` の同名衝突 — **畳まずに改名した。** `childWindowLayout` は自ら「子ウィンドウ
+      （探索・スロット・オブジェクト・プロパティ）で共通の寸法」と宣言していて、`ModalDialog` は
+      `StartScreen_Mock.html` に由来する別系統。値を揃えると見た目が変わるうえ、由来の違いが消える。
+      同名だけを解消し（`PLATE_*`・`BUTTON_*`）、台紙を指す `card` も `plate` へ改めた。
+      **共通トークンへ寄せるかどうかは仕様判断なので未着手**——やるならボタンの高さが 72 → 88 になる。
 
 ## PR 4: 兄弟の名前と引数を揃える
 

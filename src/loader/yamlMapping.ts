@@ -23,7 +23,11 @@ function scalarText(scalar: Scalar): string {
   return scalar.value === null || scalar.value === undefined ? '' : String(scalar.value);
 }
 
-/** キーの値をノードのまま返す（種類を問わない。patchのようにYAMLを直に触る側が使う）。 */
+/**
+ * キーの値をノードのまま返す（種類を問わない）。値がスカラー/マッピング/配列のいずれにもなりうる
+ * 場所（`value`参照、`not`、`transfer`等の多態フィールド）と、patchのようにYAMLを直に触る側が使う。
+ * 型検証はここでは行わず、呼び出し側が個々の分岐で判別する。
+ */
 export function tryGetNode(map: YAMLMap, key: string): YamlNode | undefined {
   return (map.get(key, true) ?? undefined) as YamlNode | undefined;
 }
@@ -126,4 +130,20 @@ export function asSeq(node: unknown, context: string): YAMLSeq {
 export function asScalarText(node: unknown, context: string): string {
   if (isScalar(node)) return scalarText(node);
   throw new YamlLoadError(`${context}: スカラー値である必要があります。`);
+}
+
+/**
+ * その文脈で認めていないキーが宣言されていればエラーにする（宣言の書き間違いを黙って捨てない）。
+ *
+ * **判定は「認めるキーの集合」だけで表す。** 呼び出し側ごとに数え上げを書き下すと、同じ文言が散り、
+ * メッセージを変えるのに全箇所を直すことになる。noteは理由を添えたい場所（主語によって使える演算子が
+ * 変わる、など）だけで使う。
+ */
+export function requireKnownKeys(context: string, node: YAMLMap, known: Iterable<string>, note = ''): void {
+  const allowed = new Set(known);
+  const unknown = entriesInOrder(node)
+    .map(([key]) => key)
+    .filter((key) => !allowed.has(key));
+  if (unknown.length > 0)
+    throw new YamlLoadError(`${context}: 未知のキー '${unknown.join(', ')}' です${note}。`);
 }

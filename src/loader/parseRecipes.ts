@@ -3,6 +3,7 @@ import type { YamlNode } from './yamlMapping';
 import {
   asMap,
   entriesInOrder,
+  requireKnownKeys,
   tryGetBool,
   tryGetInt,
   tryGetNumber,
@@ -19,21 +20,13 @@ const RECIPE_KEYS = ['icon', 'steps', 'conditions'];
 const STEP_KEYS = ['requires', 'duration'];
 const REQUIREMENT_KEYS = ['object', 'tag', 'count', 'consume'];
 
-/** 宣言されたキーのうち、その文脈で認めていないものがあればエラーにする。 */
-function rejectUnknownKeys(map: YAMLMap, allowed: readonly string[], context: string): void {
-  const unknown = entriesInOrder(map)
-    .map(([key]) => key)
-    .filter((key) => !allowed.includes(key));
-  if (unknown.length > 0) throw new YamlLoadError(`${context}: 未知のキー '${unknown.join(', ')}' です。`);
-}
-
 function parseRequirement(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YamlNode,
 ): RecipeRequirementDef {
   const map = asMap(node, context);
-  rejectUnknownKeys(map, REQUIREMENT_KEYS, context);
+  requireKnownKeys(context, map, REQUIREMENT_KEYS);
 
   const count = tryGetInt(map, 'count', context) ?? 1;
   if (count < 1) throw new YamlLoadError(`${context}: countは1以上である必要があります（値: ${count}）。`);
@@ -50,7 +43,7 @@ function parseRequirement(
 
 function parseStep(loader: WorldCodexYamlLoader, context: string, node: YamlNode): RecipeStepDef {
   const map = asMap(node, context);
-  rejectUnknownKeys(map, STEP_KEYS, context);
+  requireKnownKeys(context, map, STEP_KEYS);
 
   const requiresNode = tryGetSeq(map, 'requires', context);
   if (requiresNode === undefined || requiresNode.items.length === 0)
@@ -84,7 +77,7 @@ export function parseRecipes(
   for (const [name, node] of entriesInOrder(recipesNode)) {
     const context = `'${objectDefName}'.recipes.'${name}'`;
     const map = asMap(node, context);
-    rejectUnknownKeys(map, RECIPE_KEYS, context);
+    requireKnownKeys(context, map, RECIPE_KEYS);
 
     const stepsNode = tryGetSeq(map, 'steps', context);
     if (stepsNode === undefined || stepsNode.items.length === 0)
