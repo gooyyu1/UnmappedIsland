@@ -11,7 +11,7 @@ import { ExplorationPane } from './ExplorationPane';
 import type { PropertyCategory } from './PropertiesPane';
 import { PropertiesPane } from './PropertiesPane';
 import type { LaneCell } from './laneCells';
-import { LANE_CELLS_MAX } from './laneCells';
+import { foundCells, LANE_CELLS_MAX } from './laneCells';
 import {
   ACTION_GAP,
   ACTION_HEIGHT,
@@ -337,10 +337,15 @@ export class ObjectWindow {
     this.propertiesPane?.setCategories(properties);
   }
 
-  /** 探索のタブの中身を差し替える（開いていれば作り直す）。 */
+  /**
+   * 探索率を書き直す（探索のタブを開いていなければ、次に開いたときの値として控えるだけ）。
+   *
+   * **発見物の並びはここを通しません。** レーンなので、他のレーンと一緒に差し替えを通ります
+   * （PlayScene.laneViews）。
+   */
   setExploration(exploration: ExplorationContent): void {
     this.exploration = exploration;
-    if (this.selected === EXPLORATION_TAB) this.showTab(EXPLORATION_TAB);
+    this.explorationPane?.setRatio(exploration.ratio);
   }
 
   /**
@@ -351,14 +356,9 @@ export class ObjectWindow {
     this.select(tab);
   }
 
-  /** 発見物の枠（探索のタブを開いていなければundefined）。運んでくる先・返すときの出発点。 */
-  foundRect(index: number): Rect | undefined {
-    return this.explorationPane?.foundRect(index);
-  }
-
-  /** 運んできた1枚が発見物の枠に着いた。 */
-  showFound(index: number): void {
-    this.explorationPane?.showFound(index);
+  /** 発見物のレーン（探索のタブを開いていなければundefined）。 */
+  get foundLane(): CardLane | undefined {
+    return this.explorationPane?.lane;
   }
 
   /** タブの中身を置ける矩形（中段いっぱい）。 */
@@ -453,7 +453,14 @@ export class ObjectWindow {
     this.description.setVisible(slot === undefined && tab !== PROPERTIES_TAB && tab !== EXPLORATION_TAB);
 
     if (tab === EXPLORATION_TAB && this.exploration !== undefined) {
-      this.explorationPane = new ExplorationPane(scene, metrics, this.contentArea(), this.exploration);
+      this.explorationPane = new ExplorationPane(
+        scene,
+        metrics,
+        this.contentArea(),
+        this.exploration,
+        // 並ぶ札は差し替えが持ってくる（laneViews）。ここで置くのは休みの姿＝空の4枠だけ。
+        foundCells([]),
+      );
       return;
     }
 

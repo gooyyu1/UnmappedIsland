@@ -47,8 +47,9 @@ export interface ShownDrop {
  * 別々に数えると、画面に出ていない札を掴んだことにできてしまう（子ウィンドウへ貸した1枚を、手元に
  * 残っている札のつもりで打ち割る）。
  *
- * **枠の外に出ている札もここが持つ**——子ウィンドウが映している1枚（borrow〜returnBorrowed）と、
- * 探索ウィンドウが抱えている発見物（takeFound〜returnFound）。どこに出ているかの記録と並びの引き算を
+ * **枠の外に出ている札もここが持つ**——子ウィンドウが映している1枚（borrow）と、探索で見つかって
+ * 子ウィンドウの発見物の枠に居るもの（takeFound）。**どちらも借りているのは子ウィンドウ**なので、
+ * 窓が消えるときは1回で全部返る（returnBorrowed）。どこに出ているかの記録と並びの引き算を
  * 別の持ち主に分けると、片方だけ更新して食い違わせることができてしまう。
  *
  * Phaserを知らない——レーンでも矩形でもなく「場所（CardSpot）とその中の位置」で答えるので、
@@ -152,13 +153,17 @@ export class ShownCards {
   }
 
   /**
-   * 借りていた札を手放す。返ってくるのは手放したインスタンス。**次の差し替えから元の枠に並ぶ**ので、
-   * 呼び出し側はウィンドウの枠を出どころとして渡すだけでよい（MotionContext.origins）。
+   * **子ウィンドウが借りていたものを全部手放す**（映している1枚と、抱えている発見物）。窓が消えれば
+   * どちらも出る場所を失うので、片方だけ返すことはない——分けて持つと、閉じる道筋が増えたときに
+   * 片方を呼び忘れる（実際に発見物がレーンへ帰らなくなっていた）。
+   *
+   * 返ってくるのは手放したもの。**次の差し替えから元の枠に並ぶ**ので、呼び出し側は出どころ
+   * （それぞれが今居る枠）を渡すだけでよい（MotionContext.origins）。
    */
-  returnBorrowed(): readonly number[] {
-    const released = this.window?.card.identity ?? [];
+  returnBorrowed(): { readonly card: readonly number[]; readonly found: readonly CardContent[] } {
+    const card = this.window?.card.identity ?? [];
     this.window = undefined;
-    return released;
+    return { card, found: this.returnFound() };
   }
 
   /** 子ウィンドウが今出している1枚（出していなければundefined）。 */
@@ -218,7 +223,10 @@ export class ShownCards {
     return this.foundCards;
   }
 
-  /** 発見物を全部手放す。手放した札は次の差し替えから本来の枠に並ぶ。 */
+  /**
+   * 発見物だけを手放す（次の探索を始めるとき、Windows.md 5.1節）。**窓が消えるときはこちらではなく
+   * returnBorrowedを呼ぶ**——借りているものを1つずつ数える必要が無いように。
+   */
   returnFound(): readonly CardContent[] {
     const found = this.foundCards;
     this.foundCards = [];

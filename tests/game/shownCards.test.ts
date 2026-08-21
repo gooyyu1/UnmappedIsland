@@ -204,7 +204,10 @@ describe('貸し借りの流れ（Windows.md 1.1節）', () => {
     borrow(shown, stack(place('hand'), [1, 2]));
     expect(idsAt(shown, place('hand'), 0), '貸している間は手元のぶんだけ').toEqual([2]);
 
-    expect(shown.returnBorrowed(), '手放した1個を答える（帰りの出どころを決めるのに使う）').toEqual([1]);
+    expect(shown.returnBorrowed(), '手放した1個を答える（帰りの出どころを決めるのに使う）').toEqual({
+      card: [1],
+      found: [],
+    });
     expect(shown.windowCard).toBeUndefined();
     expect(idsAt(shown, place('hand'), 0), '束が全部戻っている').toEqual([1, 2]);
     expect(shown.stacksAt(place('hand'))[0]?.awaited, '待つものはもう無い').toBeUndefined();
@@ -212,7 +215,20 @@ describe('貸し借りの流れ（Windows.md 1.1節）', () => {
 
   it('借りていなければ、手放すものは無い', () => {
     const shown = screen({ hand: [stack(place('hand'), [1])] });
-    expect(shown.returnBorrowed()).toEqual([]);
+    expect(shown.returnBorrowed()).toEqual({ card: [], found: [] });
+  });
+
+  it('窓が消えるときは、映していた1枚も発見物も一緒に返る', () => {
+    // 借りているのはどちらも同じ子ウィンドウなので、返す口を分けない（片方の呼び忘れを作らない）。
+    const shown = screen({ hand: [stack(place('hand'), [1, 2])] });
+    borrow(shown, stack(place('hand'), [1, 2]));
+    shown.takeFound([{ icon: '🪵', name: '太い枝', identity: [7] }]);
+
+    const returned = shown.returnBorrowed();
+
+    expect(returned.card).toEqual([1]);
+    expect(returned.found.map((card) => card.identity)).toEqual([[7]]);
+    expect(shown.found, '抱えているものはもう無い').toEqual([]);
   });
 
   it('借りている1枚は、ワールドが変わったら引き直す', () => {

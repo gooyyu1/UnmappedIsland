@@ -73,3 +73,20 @@ function emptyCells(cards: number, cellCount: number | undefined, acceptsCards: 
   if (unboundedSlot(cellCount)) return 1;
   return Math.max(0, (cellCount ?? 0) - cards);
 }
+
+/** 発見物の枠の数（Windows.md 5.1節）。1枠はレーンのカードと同じ幅。 */
+export const FOUND_CELLS = 4;
+
+/**
+ * 見つかったものを並べる枠。**常にFOUND_CELLS個は空けておく**——見つかっていない分も破線の空枠と
+ * して出すことで、そこが「見つかったものの居場所」だと分かる。収まらない分はレーンの横スクロールで
+ * 送る（枠は縮めない、Windows.md 5.1節）。
+ *
+ * スロットの枠（plainCells）と違い、受け皿の空枠という考え方は無い——ここはプレイヤーが落とせる場所
+ * ではなく、見つかったものが**通り過ぎる**場所なので。
+ */
+export function foundCells(found: readonly CardContent[]): readonly LaneCell[] {
+  const cells: LaneCell[] = found.map((card) => ({ card }));
+  while (cells.length < FOUND_CELLS) cells.push({});
+  return cells;
+}
