@@ -9,6 +9,7 @@ import { World } from '../../src/domain/views/World';
 import { IslandMap } from '../../src/domain/generation/IslandMap';
 import { NewGameSession } from '../../src/domain/generation/NewGame';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { WORLD_TIME_YAML } from './worldYaml';
 
 /**
  * 層の責務だけを見る試験（単体試験）のための、**同梱のWorldCodexを読まない**ゲーム一式。
@@ -24,7 +25,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 /**
  * どの映しの試験にも要る最小の世界。ここに在るのは、映しが名前で引くもの（WorldVocabulary）だけ。
  *
- * - world: 時刻とtickの刻み、今の天気。時間を進める試験がこれを読む。
+ * - world: 時刻とtickの刻み、今の天気（WORLD_TIME_YAML）。
  * - land: 3つのレーンが映すスロット（items・fixtures）と、キャラクタの居場所。
  * - player: 手持ち・装備・怪我。プロパティを持つキャラクタが要る試験は、carrierを配った型を
  *   自分で宣言してplayerオプションで指す。
@@ -43,18 +44,6 @@ traits:
       injuries: {cell: {accept: {tag: injury}}}
 
 object_defs:
-  world:
-    singleton: true
-    props:
-      minutes_per_tick: {value: 15}
-      minute: {value: 0, range: {min: 0, max: 60}, on_max: {add: {self: {minute: -60, hour: 1}}}}
-      hour: {value: 0, range: {min: 0, max: 24}, on_max: {add: {self: {hour: -24, day: 1}}}}
-      day: {value: 1}
-      # 画面が識別子のまま読む（雨の演出が引くため、ScreenLayout.md 7.5.3節）。
-      weather: {value: clear, stages: [{name: clear}, {name: storm}]}
-    slots:
-      locations: {cell: {accept: {tag: location}}}
-
   land:
     tags: [location]
     slots:
@@ -94,6 +83,7 @@ export interface MiniGameOptions {
 /** 追加のYAML（試験が確かめたい型の宣言）を継ぎ足した世界を組み立てる。 */
 export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
   const loader = new WorldCodexYamlLoader();
+  loader.load('world.yaml', WORLD_TIME_YAML);
   loader.load('skeleton.yaml', SKELETON);
   if (yaml.trim() !== '') loader.load('test.yaml', yaml);
   const codex = loader.build();

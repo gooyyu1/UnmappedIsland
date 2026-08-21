@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { OBJECT_ART } from '../../src/art/objectArt';
 import { CodexSource } from '../../src/codex-viewer/CodexSource';
 import { CodexView } from '../../src/codex-viewer/CodexView';
 import {
@@ -9,29 +10,143 @@ import {
   renderSlotPage,
   renderTagListPage,
 } from '../../src/codex-viewer/pages';
-import { loadLocalization } from '../../src/locale/Localization';
+import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
- * ビューアのページ組み立てのテスト。同梱の定義・表示文字列をそのまま読み、
- * 「ゲームと同じ表示名・説明文・絵が出ること」と「識別子の見せ方を切り替えられること」を確かめる。
- * ページはDOMに触れず文字列を返すだけなので、ブラウザ無しで検証できる。
+ * ビューアのページ組み立てのテスト。ページはDOMに触れず文字列を返すだけなので、ブラウザ無しで
+ * 検証できる。
+ *
+ * **同梱の定義は読まない**。ここで見るのは「どの宣言がページのどこへ出るか」で、同梱のYAMLに
+ * 何が書いてあるかは関係しない。
  */
+
+/**
+ * 絵が用意されている型の識別子を2つ借りる（`src/assets/objects/<識別子>.png`）。
+ *
+ * **絵の在庫だけは借り物**——絵の有無で出し分ける規約（OBJECT_ART）を確かめるには、実在する
+ * ファイル名が要る。どれでもよいので、在庫の先頭から取る。
+ */
+const [DRAWN_ITEM, DRAWN_LAND] = [...OBJECT_ART.keys()].sort();
+
+const YAML = `
+object_defs:
+  world:
+    singleton: true
+    props:
+      sunlight: {value: 0, range: {min: 0, max: 20}}
+      hour:
+        value: 0
+        range: {min: 0, max: 24}
+        stages:
+          - name: night
+            passives:
+              - modify: {self: {sunlight: -5}}
+
+  ${DRAWN_LAND}:
+    tags: [location]
+    slots:
+      items: {cell: {accept: {tag: item}}}
+    actions:
+      explore:
+        duration: 30
+        spawn: {object: thick_branch}
+
+  thick_branch: {tags: [item]}
+  woven_leaf: {tags: [item]}
+  sharp_stone: {tags: [item, cutting_tool]}
+
+  ${DRAWN_ITEM}:
+    tags: [item]
+    combinations:
+      husk:
+        with: {tag: cutting_tool}
+        destroy: self
+        spawn: {object: husked_coconut}
+
+  husked_coconut:
+    tags: [item]
+    combinations:
+      crack:
+        with: {tag: cutting_tool}
+        destroy: self
+        # 割ると2つできる（spawnのcount、9.4節）。
+        spawn: {object: coconut_half, count: 2}
+
+  coconut_half: {tags: [item]}
+
+  woven_basket:
+    tags: [item]
+    storage: true
+    slots:
+      contents:
+        cell_count: 10
+        capacity: 20000
+        cell: {accept: {tag: item}}
+    recipes:
+      woven:
+        steps:
+          - requires: [{object: woven_leaf, count: 6, consume: true}]
+            duration: 120
+
+axes:
+  elevation:
+    range: {min: 0, max: 100}
+    generator:
+      blend:
+        - {type: distance_field, reference: edge, weight: 100}
+
+location_types:
+  ${DRAWN_LAND}:
+    object_def: ${DRAWN_LAND}
+    variants:
+      - {id: palm}
+      - {id: crab}
+    applicable_scopes: [island]
+    axis_preferences:
+      elevation: {ideal: 10, tolerance: 30, weight: 100}
+
+generation_scopes:
+  island:
+    site_count: {min: 10, max: 20}
+    coast_band: 15
+    hull_coast: true
+    interior_bias: 0.6
+`;
+
+const LOCALE = `
+object_texts:
+  ${DRAWN_ITEM}:
+    display_name: 熟したヤシの実
+    description: 厚い繊維の皮に覆われた実。
+    interactions:
+      husk:
+        display_name: 皮をはぐ
+location_texts:
+  ${DRAWN_LAND}:
+    display_name: 砂浜
+    variants:
+      palm: {display_name: ヤシの浜}
+`;
+
 describe('WorldCodexビューアのページ', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
-  const locale = loadLocalization(undefined);
-  const source = new CodexSource(codex, locale, ['coconut.yaml']);
+  const codex = new WorldCodexYamlLoader().load('viewer.yaml', YAML).build();
+  const locale = parseLocale('ja.yaml', LOCALE);
+  const source = new CodexSource(codex, locale, ['viewer.yaml']);
   const view = new CodexView(source, 'display');
   const identifierView = new CodexView(source, 'identifier');
 
   it('一覧はすべての型を、絵と表示名つきで並べる', () => {
     const html = renderObjectListPage(view);
 
-    expect(html).toContain('data-name="coconut"');
+    expect(html).toContain(`data-name="${DRAWN_ITEM}"`);
     expect(html).toContain('熟したヤシの実');
     // 絵はゲームと同じ画像を参照する（src/assets/objects/<識別子>.png）。
-    expect(html).toMatch(/<img class="art art-thumb" src="[^"]*coconut[^"]*"/);
+    expect(html).toMatch(new RegExp(`<img class="art art-thumb" src="[^"]*${DRAWN_ITEM}[^"]*"`));
+  });
+
+  it('絵が用意されていない型は、絵の場所を空けておく', () => {
+    expect(renderObjectListPage(view)).toContain('art-thumb art-missing');
   });
 
   it('製作中オブジェクトは一覧に出さない（完成品のrecipesに同じ内容が出ているため）', () => {
@@ -44,7 +159,7 @@ describe('WorldCodexビューアのページ', () => {
   });
 
   it('オブジェクトのページに表示名・説明文・定義の中身が出る', () => {
-    const html = renderObjectPage(view, 'coconut');
+    const html = renderObjectPage(view, DRAWN_ITEM);
 
     expect(html).toContain('熟したヤシの実');
     expect(html).toContain('厚い繊維の皮に覆われた実');
@@ -55,12 +170,12 @@ describe('WorldCodexビューアのページ', () => {
   });
 
   it('識別子モードでは参照が識別子で出る', () => {
-    expect(renderObjectPage(identifierView, 'coconut')).not.toContain('熟したヤシの実');
-    expect(renderObjectPage(identifierView, 'coconut')).toContain('<h1>coconut</h1>');
+    expect(renderObjectPage(identifierView, DRAWN_ITEM)).not.toContain('熟したヤシの実');
+    expect(renderObjectPage(identifierView, DRAWN_ITEM)).toContain(`<h1>${DRAWN_ITEM}</h1>`);
   });
 
   it('土地の型の表示名と亜種はlocation_textsから引く', () => {
-    const html = renderObjectPage(view, 'sandy_beach');
+    const html = renderObjectPage(view, DRAWN_LAND);
 
     expect(html).toContain('砂浜');
     expect(html).toContain('亜種（土地の名前）');
@@ -91,7 +206,6 @@ describe('WorldCodexビューアのページ', () => {
   });
 
   it('同じものを複数spawnする操作は×Nで出す', () => {
-    // 皮を剥いだ実を割ると、割れた実が2つできる（spawnのcount、9.4節）。
     expect(renderObjectPage(view, 'husked_coconut')).toContain('×2');
   });
 
@@ -99,12 +213,13 @@ describe('WorldCodexビューアのページ', () => {
     const html = renderTagListPage(view);
 
     expect(html).toContain('#/by-tag/item');
-    expect(html).toContain('item <span class="muted">(57)</span>');
+    // itemを名乗るのは、枝・葉・刃物・実・皮を剥いだ実・割れた実・籠の7つ。
+    expect(html).toContain('item <span class="muted">(7)</span>');
     // 製作中オブジェクトだけが持つタグは、行き先が空になるので出さない。
     expect(html).not.toContain('#/by-tag/wip');
     // 絵は、そのタグを持つ型のうち絵が用意されている最初のものを借りる。
     expect(html).toMatch(
-      /<img class="art art-thumb" src="[^"]*sandy_beach[^"]*"[^>]*>[^<]*<span[^>]*>location/,
+      new RegExp(`<img class="art art-thumb" src="[^"]*${DRAWN_LAND}[^"]*"[^>]*>[^<]*<span[^>]*>location`),
     );
     expect(html).not.toContain('#/object/');
   });
@@ -115,8 +230,8 @@ describe('WorldCodexビューアのページ', () => {
     expect(html).toContain('id="tag-item"');
     expect(html).toContain('id="tag-location"');
     // 節の中身は一覧と同じ絵つきのカード。
-    expect(html).toContain('data-name="coconut"');
-    expect(html).toMatch(/<img class="art art-thumb" src="[^"]*sandy_beach[^"]*"/);
+    expect(html).toContain(`data-name="${DRAWN_ITEM}"`);
+    expect(html).toMatch(new RegExp(`<img class="art art-thumb" src="[^"]*${DRAWN_LAND}[^"]*"`));
     // どの型もどこかの節に出るよう、タグを持たない型（world）もまとめて出す。
     expect(html).toContain('タグなし');
     expect(html).toContain('data-name="world"');
@@ -134,8 +249,8 @@ describe('WorldCodexビューアのページ', () => {
     const html = renderObjectPage(view, 'thick_branch');
 
     expect(html).toContain('この型を生み出すもの');
-    expect(html).toContain('#/object/sandy_beach');
-    expect(html).toMatch(/<img class="art art-thumb" src="[^"]*sandy_beach[^"]*"/);
+    expect(html).toContain(`#/object/${DRAWN_LAND}`);
+    expect(html).toMatch(new RegExp(`<img class="art art-thumb" src="[^"]*${DRAWN_LAND}[^"]*"`));
     // 行き先の型を並べるだけで、操作の名前も探索のpickの木（weightの並び）も持ち込まない。
     expect(html).not.toContain('探索する');
     expect(html).not.toContain('weight = ');
@@ -152,7 +267,7 @@ describe('WorldCodexビューアのページ', () => {
 
   it('存在しない型・プロパティはエラーとして出す', () => {
     expect(renderObjectPage(view, 'no_such_object')).toContain('見つかりません');
-    expect(renderPropertyPage(view, 'coconut', 'no_such_prop')).toContain('ありません');
+    expect(renderPropertyPage(view, DRAWN_ITEM, 'no_such_prop')).toContain('ありません');
   });
 
   it('識別子はHTMLとして解釈されないようエスケープする', () => {

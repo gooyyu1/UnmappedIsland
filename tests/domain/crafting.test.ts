@@ -10,7 +10,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { World } from '../../src/domain/views/World';
-import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
+import { WORLD_TIME_YAML } from '../support/worldYaml';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { RecipeDef } from '../../src/domain/RecipeDef';
@@ -90,9 +90,9 @@ object_defs:
   const progressId = () => codex.propertyNames.getId('progress');
 
   beforeEach(() => {
-    // 時間を進めるにはWorldを持つセッションが要るので、実物のcore.yamlを一緒に読む。
+    // 時間を進めるにはWorldを持つセッションが要るので、時計を持つworldを一緒に読む。
     const loader = new WorldCodexYamlLoader();
-    loadYamlFile(loader, worldCodexPath('core.yaml'));
+    loader.load('world.yaml', WORLD_TIME_YAML);
     codex = loader.load('crafting.yaml', YAML).build();
 
     session = new WorldSession(codex);
@@ -287,7 +287,7 @@ object_defs:
 
   beforeEach(() => {
     const loader = new WorldCodexYamlLoader();
-    loadYamlFile(loader, worldCodexPath('core.yaml'));
+    loader.load('world.yaml', WORLD_TIME_YAML);
     codex = loader.load('crafting.yaml', YAML).build();
 
     session = new WorldSession(codex);
