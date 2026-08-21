@@ -351,7 +351,6 @@ export class PlayScene extends ResponsiveScene {
     places: (screen) => this.place(screen),
   });
 
-  /** 開いているプロパティウィンドウ。探索の子ウィンドウと同じく、画面の作り直しをまたいで開いたままにする。 */
   /**
    * ステータスエリアに出ている行と、その見え方（ShownStatuses）。**行の選び方・増減・固定表示を
    * 混ぜた結果はここが答える**——画面はバーを並べる位置だけを決める。
@@ -733,18 +732,18 @@ export class PlayScene extends ResponsiveScene {
     this.setDragLanes();
   }
 
-  /**
-   * フィールドエリアだけを作り直す。移動で現在地が変わると、レーンの中身だけでなく現在地カードも
-   * 背景の絵も総取り替えになるので、差し替え（showView）では追いつかない。
-   *
-   * 他のエリアは現在地に依らないため触らない（時計とステータスの反映はshowInformationが行う）。
-   */
   /** 今の空を画面へ映し直す（ScreenLayout.md 7.5節 空の演出）。 */
   private showSky(): void {
     this.weatherOverlay.setWeather(this.view.weather);
     this.skyTint.setSunlight(this.view.sunlight);
   }
 
+  /**
+   * フィールドエリアだけを作り直す。移動で現在地が変わると、レーンの中身だけでなく現在地カードも
+   * 背景の絵も総取り替えになるので、差し替え（showView）では追いつかない。
+   *
+   * 他のエリアは現在地に依らないため触らない（時計とステータスの反映はshowInformationが行う）。
+   */
   private rebuildFieldArea(): void {
     this.motion.release();
     this.fieldPanel.destroy();
@@ -2170,10 +2169,6 @@ export class PlayScene extends ResponsiveScene {
     this.status.note(before, this.gameSession.world.totalMinutes > startedAt);
   }
 
-  /**
-   * キャラクターのプロパティをタグごとに見せるウィンドウ（ポートレイトカードのタップで開く）。
-   * ステータスエリアに出ていない分も含めて、ここで全部のカテゴリを見られる。
-   */
   /** 何を作るかを選ぶ一覧を開く。選ぶと製作中オブジェクトが現在地に生まれる。 */
   private openRecipeWindow(): void {
     noteOperation('レシピ一覧を開いた');

@@ -185,7 +185,10 @@ export class CodexView {
     return this.label(name, this.locale.signal(name));
   }
 
-  /** object_defのタグ（4.1節）は表示文字列を持たない（画面に出ない、データ側だけの語彙）。 */
+  /**
+   * object_defのタグ（4.1節）。**ここは識別子をそのまま出す**——`tag_texts`（Localization.tag）は
+   * 在るが、ビューアはタグを見出しではなく分類の鍵として並べるため、引き当てていない。
+   */
   tagLabel(name: string): string {
     return name;
   }
@@ -195,10 +198,6 @@ export class CodexView {
     if (declared !== undefined) return declared;
     const locationType = this.locationTypeOf(name);
     return locationType === undefined ? undefined : this.locale.location(locationType.name).description;
-  }
-
-  propertyDescription(objectName: string | undefined, propertyName: string): string | undefined {
-    return this.propertyTexts(objectName, propertyName).description;
   }
 
   /**

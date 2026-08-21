@@ -65,16 +65,8 @@ export class Location {
    *
    * atは並びの中の位置（SlotPosition）。省略すると末尾（合流できる同種があればそのスタック）へ入る。
    */
-  receiveItem(item: WorldObject, session: WorldSession, at?: SlotPosition): boolean {
+  receiveItem(item: WorldObject, at?: SlotPosition): boolean {
     return item.moveToSlot(this.instance.getSlot(this.itemsSlotId), at) === undefined;
-  }
-
-  /**
-   * アイテムスロットの中で並び替える。memberが属するスタックを丸ごとatへ入れ直す
-   * （WorldObject.reorderInParentSlot）。並び替えられなければfalse。
-   */
-  reorderItems(member: WorldObject, at: SlotPosition): boolean {
-    return member.reorderInParentSlot(at);
   }
 
   /** 設置物（道・木・建築物・家具・洞窟入口など、持ち歩けないもの）スロットの中身。 */
@@ -93,14 +85,6 @@ export class Location {
    */
   get undiscoveredFixtures(): readonly WorldObject[] {
     return this.slotContents(this.words.undiscoveredFixturesSlotId);
-  }
-
-  /**
-   * 設置物スロットの中で並び替える。プレイヤーが地形をどう捉えているかで並べ方が変わるため、
-   * 持ち出せない設置物にも並び替えだけは許す（reorderItemsと同じ扱い）。
-   */
-  reorderFixtures(member: WorldObject, at: SlotPosition): boolean {
-    return member.reorderInParentSlot(at);
   }
 
   /** キャラクタスロットの中身。 */

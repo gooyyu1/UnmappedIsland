@@ -412,14 +412,9 @@ export class Slot {
     return stack !== undefined && stack.members.length === 1 ? stack : undefined;
   }
 
-  /** candidateが合流できる既存のObjectStack（ObjectDef・代表ObjectDef列が一致するもの、無ければundefined）。 */
-  findMatchingStack(candidate: WorldObject): ObjectStack | undefined {
-    return this._cells.find((c) => c !== undefined && c.matches(candidate));
-  }
-
   /**
    * このObjectStackがセルの並びの何番目にあるか（＝位置。枠数固定のスロットでは固定番号）。属していなければ-1。
-   * 位置を知りたい呼び出し側は、対象の具体的なObjectStack（cells / findStackContaining / findMatchingStackで
+   * 位置を知りたい呼び出し側は、対象の具体的なObjectStack（cells / findStackContainingで
    * 得る）を渡す。型（ObjectDef）では引かない——束ねない型（stackable: false）は同じDefでも1個ずつ
    * 別スタックになるため、Defは位置を一意に決めない。
    */

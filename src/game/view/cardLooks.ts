@@ -131,12 +131,6 @@ export interface CardLooks {
 
   /** カードに映す絵の名前。 */
   readonly artOf: (def: ObjectDef, instance?: WorldObject) => string;
-
-  /** カードに出す印（血・手当て）。どちらでもなければundefined。 */
-  readonly markOf: (object: WorldObject) => string | undefined;
-
-  /** カードの桟に積むバー。 */
-  readonly gaugesOf: (object: WorldObject) => readonly CardGauge[];
 }
 
 /**
@@ -441,7 +435,5 @@ export function cardLooksOf(
     nameOf,
     iconOf,
     artOf,
-    markOf,
-    gaugesOf: gaugesOfCard,
   };
 }

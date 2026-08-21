@@ -408,10 +408,6 @@ export class Card extends Phaser.GameObjects.Container {
   private shownEdgeDirections = '';
 
   /**
-   * 状態を表すバー。値を持たない間は隠すだけで、作り直さない——作り直すと、変わった分を遅れて
-   * 追いつかせる動き（ProgressBar.setRatio）が途中で消えるため。
-   */
-  /**
    * バー（CardContent.gauges）。**本数も両端の見せ方も映すものによって変わる**ので、決め打ちで
    * 作らず鍵で引く。一度作ったバーは、そのカードが別のものを映すようになっても捨てない——同じものへ
    * 戻ったときに変化の帯が途切れないようにするため。

@@ -522,7 +522,6 @@ export function fromGameSession(
 
   const propertyCategories = propertiesOf(game.player.instance);
 
-  /** 束が映すもの（操作は持たない。それはcardOperationsが足す）。 */
   /**
    * その物が今いる場所。**世界が答える**ので、札を作る側が「どこの札か」を言い添える必要は無い
    * ——言い添えられると、実際に居る場所と食い違った札を作れてしまう。
@@ -535,6 +534,7 @@ export function fromGameSession(
     return slot;
   };
 
+  /** 束が映すもの（操作は持たない。それはcardOperationsが足す）。 */
   const stackOf = (
     instances: readonly WorldObject[],
     place: CardPlace,

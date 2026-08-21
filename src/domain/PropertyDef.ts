@@ -151,7 +151,6 @@ export class PropertyDef {
   /** value: {min, max} 記法による初期値のランダム範囲（6.2節、rollInitialValue参照）。無ければundefined。 */
   private readonly initialValueRange: PropertyRange | undefined;
 
-  /** 生成時に1回ロールされる初期値を持つか（6.2節）。量的オブジェクトでは禁止（7.6節）。 */
   /** 初期値の宣言（6.2節）。抽選つきならその範囲、そうでなければ固定値。 */
   get initialValueReading(): InitialValueReading {
     return this.initialValueRange !== undefined
@@ -159,6 +158,7 @@ export class PropertyDef {
       : { kind: 'fixed', value: this.initialValue };
   }
 
+  /** 生成時に1回ロールされる初期値を持つか（6.2節）。量的オブジェクトでは禁止（7.6節）。 */
   get hasInitialValueRoll(): boolean {
     return this.initialValueRange !== undefined;
   }
@@ -186,7 +186,6 @@ export class PropertyDef {
   /** on_min（6.3節）: on_maxの下限側の鏡像。値がrange.minに達したときにselfへ一度だけ適用する。 */
   private readonly onMin: ActiveEffect | undefined;
 
-  /** 順不同で構わない（resolveStage が min の値そのもので判定するため）。空なら stages なし。 */
   /** 宣言されている段（6.4節）を宣言順に。1つも宣言していなければ空。 */
   readonly stages: readonly PropertyStage[];
 

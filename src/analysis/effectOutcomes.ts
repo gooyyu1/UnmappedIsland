@@ -31,11 +31,6 @@ export function readEffect(declaration: Readable, resolve: StaticValueResolver):
   return reader;
 }
 
-/** 起こりうる結果だけが要るときの近道。 */
-export function outcomesOf(declaration: Readable, resolve: StaticValueResolver): readonly StepOutcome[] {
-  return readEffect(declaration, resolve).outcomes;
-}
-
 /** rootが指すオブジェクトを消す分岐があるか。 */
 export function destroysRoot(reading: EffectReading, root: ReferenceRoot): boolean {
   return reading.destroyed.some((ref) => ref.kind === 'root' && ref.root === root);
@@ -114,7 +109,7 @@ class OutcomeReader implements EffectReader {
    * 全候補の重みが0なら先頭の候補だけが起こる（PickEffect.selectWeighted）。
    *
    * 解けない重みは0として数える。そのぶん配分は歪むので、読み手が気付けるように、工程を組む側が
-   * 「確定しない」印を立てる（craftingStepsのtrack）。
+   * 「確定しない」印を立てる（craftingSteps、CraftingStep.hasUnresolvedReferences）。
    */
   pick(candidates: readonly PickCandidateReading[]): void {
     if (candidates.length === 0) return;

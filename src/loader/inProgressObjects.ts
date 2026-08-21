@@ -11,8 +11,6 @@ export const IN_PROGRESS_SOURCE = '<製作中オブジェクトの自動生成>'
 
 export { IN_PROGRESS_TAG } from '../domain/RecipeDef';
 
-import { FINISHED_STEPS_PROPERTY, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../domain/WorldVocabulary';
-
 /**
  * 製作中オブジェクトが持つ単語（宣言はWorldVocabulary）。
  *
@@ -22,6 +20,8 @@ import { FINISHED_STEPS_PROPERTY, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../d
  * （on_max）を起こす側なので、表示専用の割合をこちらへ分ける（時間の不揃いな工程では両者の割合が
  * 一致しないため）。
  */
+import { FINISHED_STEPS_PROPERTY, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../domain/WorldVocabulary';
+
 /**
  * 製作中オブジェクトの型の名前（RecipeSystem.md 1節）。人間もMOD作成者もこの型を直接書かないため、
  * 読みやすさより衝突しにくさを優先して完成品とレシピの両方を含める。著者が同じ名前を宣言していた
