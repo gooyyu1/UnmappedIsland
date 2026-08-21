@@ -28,6 +28,7 @@ import type { CardSpot, ShownDrop } from './view/ShownCards';
 import { ShownCards } from './view/ShownCards';
 import type { RecordedView, Recording } from './view/recording';
 import { recordChange } from './view/recording';
+import { materialLaneCells } from './view/materialLane';
 import { noteOperation, setStateReporter } from './errorReport';
 import { ShownStatuses } from './view/ShownStatuses';
 import type { ElapseFrame } from './view/elapsePlayback';
@@ -1114,14 +1115,8 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 製作中オブジェクトの材料スロットの枠（製作中でなければundefined＝通常の枠）。
-   *
-   * **枠は残りの工程が要求する型ごとに1つ**で、その型が入っていなければ空き枠になる。要求の合計数ぶん
-   * 空き枠を並べる代わりに、**あと何枚要るかは枠へ重ねた「今／要求数」で出す**（CardView.md 13節）。出番の終わった型の枠は並びから消える——こぼしたあとの空枠が
-   * 残っていると、まだ何か入れられるように見えてしまうため。
-   *
-   * どの枠を先に埋めればよいかは縁の色が示す（今の工程／後の工程）。塗りにしないのは、カードが
-   * 入った枠で隠れてしまうため。
+   * 製作中オブジェクトの材料スロットの枠（materialLaneCells）。そうでないスロットではundefinedで、
+   * 呼び出し側が普通の枠の並べ方（cellsFor）へ落とす。
    */
   private materialCells(
     materials: readonly CraftingMaterial[] | undefined,
@@ -1129,45 +1124,13 @@ export class PlayScene extends ResponsiveScene {
     cards: readonly (CardContent | undefined)[],
   ): readonly LaneCell[] | undefined {
     if (materials === undefined) return undefined;
-
-    // 枠に入っている物から、それがどの要求のものかを引く。**タグの要求は当てはまる型が複数ある**ので、
-    // 型からの逆引きは1対1にならない（先に書いた要求を採る、craftingのallocateと同じ順）。
-    const materialOf = (objectGlobalId: number | undefined): CraftingMaterial | undefined =>
-      objectGlobalId === undefined
-        ? undefined
-        : materials.find((material) => material.objectGlobalIds.includes(objectGlobalId));
-
-    const marksFor = (material: CraftingMaterial | undefined): LaneCell => {
-      // もう要求されない型は、取り出すための枠が残るだけで印は持たない。
-      if (material === undefined) return {};
-      return {
-        // 空き枠のうちに何を入れる枠なのかを見せる（EmptyCard）。
-        accepts: this.view.cardOfType(this.cyclingType(material)),
-        borderColor: material.inCurrentStep ? COLOR.cellCurrentStep : COLOR.cellLaterStep,
-        // 1つしか要らない枠に数を出しても、枠そのものが既に言っていることの繰り返しにしかならない。
-        overlay: material.needed >= 2 ? `${material.held}/${material.needed}` : undefined,
-      };
-    };
-
-    const shown = new Set(stacks.map((stack) => materialOf(stack?.objectGlobalId)));
-    const cells: LaneCell[] = cards.map((card, index) => ({
-      card,
-      ...marksFor(materialOf(stacks[index]?.objectGlobalId)),
-    }));
-    // まだ1つも入っていない要求の空き枠を、要求の順に足す。
-    for (const material of materials) {
-      if (!shown.has(material)) cells.push(marksFor(material));
-    }
-    return cells;
-  }
-
-  /**
-   * その要求の空き枠に、今出す型。**タグの要求は当てはまる型を1秒ごとに順に出す**——どれか1つを
-   * 選んで出すと、その型でなければ入らないように見えてしまう。
-   */
-  private cyclingType(material: CraftingMaterial): number {
-    const candidates = material.objectGlobalIds;
-    return candidates[this.materialCycle % candidates.length] ?? candidates[0];
+    return materialLaneCells({
+      materials,
+      stacks,
+      cards,
+      cycle: this.materialCycle,
+      cardOfType: (objectGlobalId) => this.view.cardOfType(objectGlobalId),
+    });
   }
 
   /**
