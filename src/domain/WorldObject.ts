@@ -774,9 +774,9 @@ export class WorldObject {
       .filter(
         (c) =>
           c.matches(dragged.def) &&
-          c.unmetRequirement(this, dragged, actor) === undefined &&
+          c.unmetRequirement(this, actor, dragged) === undefined &&
           c.acceptedCount(this, [dragged], actor) >= 1 &&
-          !c.unresolvable(this, dragged, actor),
+          !c.unresolvable(this, actor, dragged),
       )
       .map((c) => new Combination(c, this, dragged, actor));
   }

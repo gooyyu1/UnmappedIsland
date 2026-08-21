@@ -36,11 +36,11 @@ export class ActionDef extends InteractionDef {
   }
 
   tryExecute(self: WorldObject, actor: WorldObject | undefined, session: WorldSession): boolean {
-    return this.apply(self, undefined, actor, session);
+    return this.apply(self, actor, undefined, session);
   }
 
   /** 今このアクションを実行できない理由（最初に落ちた要件）。実行できるならundefined。 */
   unmetRequirement(self: WorldObject, actor: WorldObject | undefined): Requirement | undefined {
-    return this.firstUnmetRequirement(self, undefined, actor);
+    return this.firstUnmetRequirement(self, actor, undefined);
   }
 }

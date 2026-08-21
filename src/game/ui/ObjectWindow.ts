@@ -209,7 +209,7 @@ export class ObjectWindow {
   private readonly middle: { cardX: number; columnX: number; columnWidth: number; y: number; height: number };
 
   private readonly slots: readonly ObjectWindowSlot[];
-  private readonly properties: readonly PropertyCategory[];
+  private properties: readonly PropertyCategory[];
   private exploration: ExplorationContent | undefined;
   private readonly description: Phaser.GameObjects.Text;
   private readonly onTabChange: ((tab: string) => void) | undefined;
@@ -332,8 +332,13 @@ export class ObjectWindow {
     return this.selected;
   }
 
-  /** プロパティの行の内容を書き直す（プロパティのタブを開いていなければ何もしない）。 */
+  /**
+   * プロパティの行の内容を書き直す（プロパティのタブを開いていなければ、次に開いたときの値として
+   * 控えるだけ）。**控えないと、タブを切り替えた先に開いた時点の値が出る**——showTabはペインを
+   * 作り直すので、控えを持たない側は古い値で組み立てられる（setExplorationと同じ形）。
+   */
   setProperties(properties: readonly PropertyCategory[]): void {
+    this.properties = properties;
     this.propertiesPane?.setCategories(properties);
   }
 

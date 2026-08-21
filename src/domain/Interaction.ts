@@ -36,7 +36,7 @@ export class Action {
 
   /** 実行にかかるゲーム内時間（分）。durationを省いていれば0。実行前に見せる用途にも使う。 */
   minutes(): number {
-    return this.def.minutesFor(this.self, undefined, this.actor);
+    return this.def.minutesFor(this.self, this.actor, undefined);
   }
 
   /** 今実行できない理由（最初に落ちた要件、14節）。実行できるならundefined。 */
@@ -78,7 +78,7 @@ export class Combination {
 
   /** 1つぶんの所要時間（分）。まとめて実行すれば個数ぶんかかる。 */
   minutes(): number {
-    return this.def.minutesFor(this.self, this.dragged, this.actor);
+    return this.def.minutesFor(this.self, this.actor, this.dragged);
   }
 
   /**
@@ -93,7 +93,7 @@ export class Combination {
   }
 
   tryExecute(): boolean {
-    return this.def.tryExecute(this.self, this.dragged, this.actor, this.self.session);
+    return this.def.tryExecute(this.self, this.actor, this.dragged, this.self.session);
   }
 
   /**
