@@ -882,8 +882,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * その場所に今並んでいる束。レーンで常に見えている3つ（設置物・アイテム・手持ち）はviewが
-   * 並びとして持ち、子ウィンドウが映す場所だけcardsInで引く（PlayScreenView参照）。
+   * その場所に今並んでいる束。レーンも子ウィンドウも同じcardsInで引く（PlayScreenView参照）。
    *
    * **持ち出されている札を引く前の、ワールドがそう持っている並び。** 画面に出ている姿が要るなら
    * ShownCardsへ訊く。
