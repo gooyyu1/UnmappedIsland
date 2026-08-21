@@ -42,3 +42,16 @@ export function scrollThumbSpan(
   const progress = Math.min(1, Math.max(0, scrollX / minScrollX));
   return { x: (trackWidth - width) * progress, width };
 }
+
+/**
+ * 送れる下限（ScrollArea）。**0が先頭で、送るほど負**——中身を負の向きへずらして見せるため、
+ * 送り量はそのまま中身の位置の差になる。中身が可視域に収まるなら0（送る先が無い）。
+ */
+export function minScrollFor(viewportLength: number, contentLength: number): number {
+  return Math.min(0, viewportLength - contentLength);
+}
+
+/** 送り量を可動範囲（minScroll〜0）へ収める。 */
+export function clampScroll(offset: number, minScroll: number): number {
+  return Math.min(0, Math.max(minScroll, offset));
+}

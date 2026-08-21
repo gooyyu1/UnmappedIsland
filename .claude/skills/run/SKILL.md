@@ -93,7 +93,9 @@ node <project>/.claude/skills/run/scripts/screenshot.mjs \
 
 遊び始めてからでないと見えないもの（時間経過のドーナツグラフ、探索の結果、札のドラッグ）は
 こちら。`--steps`は`[押すx, 押すy, 待つミリ秒, 保存名]`の配列で、**xが負なら押さずに待って撮るだけ**
-——同じ画面の推移を続けて撮るのに使う。
+——同じ画面の推移を続けて撮るのに使う。末尾に`, dx, dy`を足すと、その点で押してから`(dx, dy)`
+だけ動かして離す（スクロールやカードのドラッグ）。**動きは細かく刻んで送らないとPhaserが
+ドラッグとして拾わない**ので、スクリプト側で8回に分けて`mouse.move`している。
 
 ```bash
 node <project>/.claude/skills/run/scripts/playthrough.mjs \

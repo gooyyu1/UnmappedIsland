@@ -15,6 +15,8 @@
 //     --steps '[[450,270,1500,"01-title"],[-1,0,400,"02-after"]]'
 //
 // stepsは [x, y, 待つミリ秒, 保存名] の配列。xが負なら押さずに待って撮るだけ。
+// [x, y, 待つミリ秒, 保存名, dx, dy] と6つ書くと、(x,y)から(dx,dy)だけドラッグする
+// （スクロールや札の移動を確かめるとき）。
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -64,8 +66,19 @@ const shoot = async (name) => {
 await page.goto(args.url, { waitUntil: 'load' });
 await page.waitForTimeout(Number(args.boot ?? 2500));
 
-for (const [x, y, wait, name] of steps) {
-  if (x >= 0) await page.mouse.click(x, y);
+for (const [x, y, wait, name, dx, dy] of steps) {
+  if (dx !== undefined || dy !== undefined) {
+    // 1回で動かすとPhaserがドラッグと認めないことがあるので、何度かに分けて動かす。
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    for (let step = 1; step <= 8; step++) {
+      await page.mouse.move(x + ((dx ?? 0) * step) / 8, y + ((dy ?? 0) * step) / 8);
+      await page.waitForTimeout(16);
+    }
+    await page.mouse.up();
+  } else if (x >= 0) {
+    await page.mouse.click(x, y);
+  }
   await page.waitForTimeout(wait);
   await shoot(name);
 }

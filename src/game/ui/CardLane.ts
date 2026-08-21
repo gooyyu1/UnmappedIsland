@@ -4,10 +4,9 @@ import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import type { CardContent } from './Card';
 import { Card, CellHighlight, CellOverlay, EmptyCard } from './Card';
 import type { LaneCell } from './laneCells';
-import { clipToRect } from '../../ui/clip';
+import { ScrollArea } from '../../ui/scrollArea';
 import { COLOR, SIZE } from '../looks/theme';
 import { addPanel, addTiledPanel } from '../../ui/shapes';
-import { wheelPixels } from '../../ui/scroll';
 import { ScrollIndicator } from './ScrollIndicator';
 import type { HazeSurface, HazeTarget } from './LaneHaze';
 
@@ -117,8 +116,8 @@ export class CardLane {
   private readonly originX: number;
   private readonly stripWidth: number;
 
-  /** スクロールできる下限（コンテンツが可視域に収まるなら0）。 */
-  private minScrollX = 0;
+  /** はみ出した分の送り（ScrollArea）。ドラッグもホイールも切り抜きもこれが持つ。 */
+  private readonly scroll: ScrollArea;
 
   /** 送り具合を示すスクロールバー。送る必要が無いときは自分で姿を消す。 */
   private readonly scrollIndicator: ScrollIndicator;
@@ -129,11 +128,6 @@ export class CardLane {
   private readonly cardHeight: number;
   private readonly cardY: number;
   private readonly insertMarkWidth: number;
-
-  private dragStartScrollX = 0;
-
-  /** はみ出しの切り抜きを解く後始末（clipのときだけ持つ、clip.ts参照）。 */
-  private readonly unclip: (() => void) | undefined;
 
   /**
    * stripに属さない表示物（背景板・ピン留め部分）。カードはstripごと消えるが、これらは
@@ -211,9 +205,6 @@ export class CardLane {
     );
     this.objects.push(this.scrollIndicator);
 
-    // カードはまだ作らない（作るのはCardTable）。枠の装飾と送り幅だけを整える。
-    this.applyCells(cells);
-
     this.pinnedRect =
       pinned === undefined
         ? undefined
@@ -223,20 +214,24 @@ export class CardLane {
         ? undefined
         : this.addPinnedSlot(scene, metrics, rect, background, options.art, cardY, pinned);
 
-    if (panel !== undefined) {
-      scene.input.setDraggable(panel);
-      panel.on('dragstart', () => this.beginScroll());
-      panel.on('drag', (pointer: Phaser.Input.Pointer) => this.scrollByDrag(pointer.x - pointer.downX));
-    }
+    // ピン留め部分は背景板が上に重なりレーン本体がホイールを受け取れないので、そちらも面に含める。
+    this.scroll = new ScrollArea(scene, {
+      axis: 'x',
+      content: this.strip,
+      viewport: { x: stripX, y: rect.y, width: this.stripWidth, height: rect.height },
+      surfaces: [panel, pinnedPanel].filter((target) => target !== undefined),
+      readout: this.scrollIndicator,
+      clip: options.clip === true,
+      // 背景の絵もカードと同じだけ送る（地面の上を送る見え方）。
+      onScroll: (offset) => {
+        // tilePositionXは絵の側の座標なので、敷くときにかけた倍率で割り戻す。
+        for (const tile of this.tiles) tile.tilePositionX = -offset / tile.tileScaleX;
+      },
+    });
 
-    // ピン留め部分は背景板が上に重なりレーン本体がホイールを受け取れないので、そちらにも同じ操作を付ける。
-    for (const target of [panel, pinnedPanel]) {
-      target?.on('wheel', (pointer: Phaser.Input.Pointer, deltaX: number, deltaY: number) => {
-        this.scrollTo(this.strip.x - this.originX - wheelPixels(pointer, deltaX, deltaY));
-      });
-    }
-
-    if (options.clip === true) this.unclip = clipToRect(scene, this.strip, rect);
+    // カードはまだ作らない（作るのはCardTable）。枠の装飾と送り幅だけを整える。
+    // **送りを組み立ててから**——枠の並びがそのまま送れる範囲になる（applyCells）。
+    this.applyCells(cells);
 
     // カードはstripの子なので、stripと自前の表示物を移せば並んでいるカードごと同じ層へ移る。
     if (options.depth !== undefined) {
@@ -250,7 +245,7 @@ export class CardLane {
     this.strip.destroy();
     for (const object of this.objects) object.destroy();
     this.objects.length = 0;
-    this.unclip?.();
+    this.scroll.destroy();
   }
 
   /**
@@ -293,8 +288,7 @@ export class CardLane {
 
     // 空き枠も送れる範囲に含める（画面外に置いたままでは受け皿にならない）。
     const contentWidth = cells.length === 0 ? 0 : cells.length * this.pitch - (this.pitch - this.cardWidth);
-    this.minScrollX = Math.min(0, this.stripWidth - contentWidth);
-    this.scrollTo(this.strip.x - this.originX);
+    this.scroll.setContentLength(contentWidth);
   }
 
   /** 居続けるカードを新しい位置へ滑らせる（既に所定の位置なら何もしない）。 */
@@ -342,21 +336,12 @@ export class CardLane {
    * ドラッグをスクロールとして扱う場合もここから入る（CardDragController参照）。
    */
   beginScroll(): void {
-    this.dragStartScrollX = this.strip.x - this.originX;
+    this.scroll.beginDrag();
   }
 
   /** beginScrollの時点からのポインタの移動量を、スクロール量へ反映する。 */
   scrollByDrag(deltaX: number): void {
-    this.scrollTo(this.dragStartScrollX + deltaX);
-  }
-
-  /** スクロール量を可動範囲へ収めて反映する。背景の絵もカードと同じだけ送る（地面の上を送る見え方）。 */
-  private scrollTo(scrollX: number): void {
-    const clamped = Phaser.Math.Clamp(scrollX, this.minScrollX, 0);
-    this.strip.x = this.originX + clamped;
-    // tilePositionXは絵の側の座標なので、敷くときにかけた倍率で割り戻す。
-    for (const tile of this.tiles) tile.tilePositionX = -clamped / tile.tileScaleX;
-    this.scrollIndicator.setScroll(clamped, this.minScrollX);
+    this.scroll.dragBy(deltaX);
   }
 
   /**
