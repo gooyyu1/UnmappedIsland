@@ -1,4 +1,5 @@
-import type { NameRegistry } from '../NameRegistry';
+import type { WorldCodex } from '../WorldCodex';
+import type { WorldRuleVocabulary } from '../WorldVocabulary';
 import type { WorldObject } from '../WorldObject';
 
 /**
@@ -11,37 +12,26 @@ import type { WorldObject } from '../WorldObject';
 export class Path {
   readonly instance: WorldObject;
 
-  private readonly travelMinutesId: number;
-  private readonly requiredProgressId: number;
-  private readonly destinationIdId: number;
-  private readonly returnPathIdId: number;
+  private readonly words: WorldRuleVocabulary;
 
-  constructor(instance: WorldObject, propertyNames: NameRegistry) {
+  constructor(instance: WorldObject, codex: WorldCodex) {
     this.instance = instance;
-    this.travelMinutesId = Path.idOrMissing(propertyNames, 'travel_minutes');
-    this.requiredProgressId = Path.idOrMissing(propertyNames, 'required_progress');
-    this.destinationIdId = Path.idOrMissing(propertyNames, 'destination_id');
-    this.returnPathIdId = Path.idOrMissing(propertyNames, 'return_path_id');
-  }
-
-  /** 未登録の名前は-1（LocalIndexMap.missing扱い）にする（理由はLocation.idOrMissing参照）。 */
-  private static idOrMissing(names: NameRegistry, name: string): number {
-    return names.tryGetId(name) ?? -1;
+    this.words = codex.vocabulary.world;
   }
 
   /** 移動時間（分）。 */
   get travelMinutes(): number {
-    return this.instance.tryGetProperty(this.travelMinutesId)?.getEffectiveValue() ?? 0;
+    return this.instance.tryGetProperty(this.words.travelMinutesId)?.getEffectiveValue() ?? 0;
   }
 
   /** 発見に必要な、親の土地の探索進捗。 */
   get requiredProgress(): number {
-    return this.instance.tryGetProperty(this.requiredProgressId)?.getEffectiveValue() ?? 0;
+    return this.instance.tryGetProperty(this.words.requiredProgressId)?.getEffectiveValue() ?? 0;
   }
 
   /** 移動先LocationのインスタンスID。 */
   get destinationInstanceId(): number {
-    return this.instance.tryGetProperty(this.destinationIdId)?.getEffectiveValue() ?? 0;
+    return this.instance.tryGetProperty(this.words.destinationIdId)?.getEffectiveValue() ?? 0;
   }
 
   /**
@@ -54,11 +44,11 @@ export class Path {
 
   /** 移動先の土地にある、こちらへ戻る道のインスタンスID（辺の両端の道は互いを指す）。 */
   get returnPathInstanceId(): number {
-    return this.instance.tryGetProperty(this.returnPathIdId)?.getEffectiveValue() ?? 0;
+    return this.instance.tryGetProperty(this.words.returnPathIdId)?.getEffectiveValue() ?? 0;
   }
 
   /** この道を通って移動する（YAML側のtravelアクション: 未発見なら不成立、成功ならactorが移動先へ移り、travel_minutes分の時間が進む）。 */
   travel(actor: WorldObject | undefined): boolean {
-    return this.instance.tryGetAction('travel', actor)?.tryExecute() === true;
+    return this.instance.tryGetAction(this.words.travelAction, actor)?.tryExecute() === true;
   }
 }

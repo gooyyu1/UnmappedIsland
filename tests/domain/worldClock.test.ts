@@ -55,7 +55,7 @@ object_defs:
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    return { codex, world: new World(instance, codex.propertyNames, codex.symbolNames) };
+    return { codex, world: new World(instance, codex) };
   }
 
   it('同一tick内の加算はtickを発火させずamountだけ加算する', () => {

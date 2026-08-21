@@ -1,3 +1,5 @@
+import type { WorldCodex } from '../WorldCodex';
+import type { WorldRuleVocabulary } from '../WorldVocabulary';
 import type { NameRegistry } from '../NameRegistry';
 import type { Rng } from '../Rng';
 import type { WorldObject } from '../WorldObject';
@@ -14,38 +16,25 @@ import { Location } from './Location';
 export class World {
   readonly instance: WorldObject;
 
-  private readonly dayId: number;
-  private readonly hourId: number;
-  private readonly minuteId: number;
-  private readonly minutesPerTickId: number;
-  /** 気候の語彙を持たないCodex（時間だけを扱うテスト用など）ではundefined。 */
-  private readonly weatherId: number | undefined;
-  private readonly sunlightId: number | undefined;
-  private readonly ambientTemperatureId: number | undefined;
+  private readonly words: WorldRuleVocabulary;
   private readonly symbolNames: NameRegistry;
 
-  constructor(instance: WorldObject, propertyNames: NameRegistry, symbolNames: NameRegistry) {
+  constructor(instance: WorldObject, codex: WorldCodex) {
     this.instance = instance;
-    this.dayId = propertyNames.getId('day');
-    this.hourId = propertyNames.getId('hour');
-    this.minuteId = propertyNames.getId('minute');
-    this.minutesPerTickId = propertyNames.getId('minutes_per_tick');
-    this.weatherId = propertyNames.tryGetId('weather');
-    this.sunlightId = propertyNames.tryGetId('sunlight');
-    this.ambientTemperatureId = propertyNames.tryGetId('ambient_temperature');
-    this.symbolNames = symbolNames;
+    this.words = codex.vocabulary.world;
+    this.symbolNames = codex.symbolNames;
   }
 
   get day(): number {
-    return this.instance.tryGetProperty(this.dayId)?.getEffectiveValue() ?? 0;
+    return this.instance.tryGetProperty(this.words.dayId)?.getEffectiveValue() ?? 0;
   }
 
   get hour(): number {
-    return this.instance.tryGetProperty(this.hourId)?.getEffectiveValue() ?? 0;
+    return this.instance.tryGetProperty(this.words.hourId)?.getEffectiveValue() ?? 0;
   }
 
   get minute(): number {
-    return this.instance.tryGetProperty(this.minuteId)?.getEffectiveValue() ?? 0;
+    return this.instance.tryGetProperty(this.words.minuteId)?.getEffectiveValue() ?? 0;
   }
 
   /**
@@ -58,37 +47,33 @@ export class World {
 
   /**
    * 今の天気の識別子（`light_rain`など、ClimateSystem.md 4.2節）。シンボル型プロパティ（6.6節）
-   * なので、実体は値の名前空間（symbolNames）が持つ名前を引き直したもの。天気の語彙を持たない
-   * Codexではundefined。
+   * なので、実体は値の名前空間（symbolNames）が持つ名前を引き直したもの。worldが天気を
+   * 持たなければundefined。
    */
   get weather(): string | undefined {
-    if (this.weatherId === undefined) return undefined;
-    return this.symbolNames.getName(this.instance.tryGetProperty(this.weatherId)?.getEffectiveValue() ?? 0);
+    const value = this.instance.tryGetProperty(this.words.weatherId)?.getEffectiveValue();
+    return value === undefined ? undefined : this.symbolNames.getName(value);
   }
 
   /**
    * 今の日射（ClimateSystem.md）。時間帯と天気の寄与が重なった実効値で、夜は天気によらず0になる。
-   * 日射の語彙を持たないCodexではundefined。
+   * worldが日射を持たなければundefined。
    */
   get sunlight(): number | undefined {
-    return this.sunlightId === undefined
-      ? undefined
-      : (this.instance.tryGetProperty(this.sunlightId)?.getEffectiveValue() ?? 0);
+    return this.instance.tryGetProperty(this.words.sunlightId)?.getEffectiveValue();
   }
 
   /**
    * 今の気温（ClimateSystem.md）。日射と季節の寄与が重なった実効値。体温ではない。
-   * 気温の語彙を持たないCodexではundefined。
+   * worldが気温を持たなければundefined。
    */
   get ambientTemperature(): number | undefined {
-    return this.ambientTemperatureId === undefined
-      ? undefined
-      : (this.instance.tryGetProperty(this.ambientTemperatureId)?.getEffectiveValue() ?? 0);
+    return this.instance.tryGetProperty(this.words.ambientTemperatureId)?.getEffectiveValue();
   }
 
   /** 1tickに相当するゲーム内時間（分）。実体値をそのまま返す（WorldSession.advanceWorldTime参照）。 */
   get minutesPerTick(): number {
-    return this.instance.tryGetProperty(this.minutesPerTickId)?.number ?? 0;
+    return this.instance.tryGetProperty(this.words.minutesPerTickId)?.number ?? 0;
   }
 
   /**
@@ -104,8 +89,8 @@ export class World {
     const lastStep = Math.trunc(latestMinutes / step);
     const minutes = rng.nextInt(firstStep, lastStep + 1) * step;
 
-    this.instance.tryGetProperty(this.hourId)?.setNumber(Math.trunc(minutes / 60));
-    this.instance.tryGetProperty(this.minuteId)?.setNumber(minutes % 60);
+    this.instance.tryGetProperty(this.words.hourId)?.setNumber(Math.trunc(minutes / 60));
+    this.instance.tryGetProperty(this.words.minuteId)?.setNumber(minutes % 60);
   }
 
   /**
@@ -114,13 +99,10 @@ export class World {
    * 配る先を「プレイヤーの居る土地」に絞らないのは、動物がプレイヤーを見ているわけではないから
    * ——放って出かけた先で罠に掛かった獲物が暴れ、目を離した拠点の物が持ち去られる。
    *
-   * 土地の語彙を持たないCodex（時間だけを扱うテスト用など）では何もしない。
+   * worldが土地の枠を持たなければ何もしない。
    */
   runAnimalTurns(session: WorldSession): void {
-    const locationsSlotId = session.codex.slotNames.tryGetId('locations');
-    if (locationsSlotId === undefined) return;
-
-    const slot = this.instance.tryGetSlot(locationsSlotId);
+    const slot = this.instance.tryGetSlot(this.words.locationsSlotId);
     if (slot === undefined) return;
 
     for (const land of [...slot.contents]) new Location(land, session.codex).runAnimalTurns(session);
@@ -128,6 +110,6 @@ export class World {
 
   /** minuteへamountを加減算する（WorldSession.advanceWorldTime専用。負の値も許容する）。繰り上げ（on_max）はtickを待たずその場で走る（PropertyValue.add参照）。 */
   addMinutes(amount: number): void {
-    this.instance.tryGetProperty(this.minuteId)?.add(amount);
+    this.instance.tryGetProperty(this.words.minuteId)?.add(amount);
   }
 }

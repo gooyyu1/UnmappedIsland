@@ -94,8 +94,12 @@ export function start(codex: WorldCodex, characterDefName: string, seed: number,
   // 必要で、World付きセッション自体がworldインスタンスを必要とするという相互依存を断つため
   // （WorldSession.adoptWorld）。**この順序にすると、worldインスタンスも他の物と同じセッションに属する。**
   const session = new WorldSession(codex, undefined, rng);
-  const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-  const world = new World(worldInstance, codex.propertyNames, codex.symbolNames);
+  const worldInstance = new WorldObject(
+    0,
+    codex.objects.get(codex.objectNames.getId(codex.vocabulary.world.worldObject)),
+    session,
+  );
+  const world = new World(worldInstance, codex);
   session.adoptWorld(world);
   world.rollTimeOfDay(START_TIME_EARLIEST_MINUTES, START_TIME_LATEST_MINUTES, session.rng);
 

@@ -157,7 +157,7 @@ describe('locations.yamlの土地・道定義', () => {
     // 実ファイルの定義だけで検証する（地形生成は使わず、道の配線はこのテストが手で行う）。
     const session = new WorldSession(codex, undefined, new SeededRng(42));
     const worldInstance = new WorldObject(0, def('world'), session);
-    const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
+    const worldView = new World(worldInstance, codex);
     session.adoptWorld(worldView);
 
     const grassland = session.spawn(codex.objectNames.getId('grassland'));
@@ -178,7 +178,7 @@ describe('locations.yamlの土地・道定義', () => {
     pathToForest.getProperty(codex.propertyNames.getId('destination_id')).init(forest.instanceId);
 
     const grasslandView = new Location(grassland, codex);
-    const pathView = new Path(pathToForest, codex.propertyNames);
+    const pathView = new Path(pathToForest, codex);
 
     // 進捗2までは道は見つからず、未発見の道は移動アクションも成立しない（in_slot: fixtures条件）。
     expect(grasslandView.explore(character)).toBe(true);

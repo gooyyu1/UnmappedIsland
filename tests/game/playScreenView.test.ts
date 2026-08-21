@@ -176,9 +176,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(lane(view, game, 'fixtures').map((card) => card.name)).toEqual(
       location.fixtureStacks.map((stack) =>
         stack[0].def.tags.includes(pathTagId)
-          ? locale.locationName(
-              game.map.nameOfInstance(new Path(stack[0], codex.propertyNames).destinationInstanceId)!,
-            )
+          ? locale.locationName(game.map.nameOfInstance(new Path(stack[0], codex).destinationInstanceId)!)
           : locale.object(stack[0].def.name).displayName,
       ),
     );
@@ -189,9 +187,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
     const paths = pathsIn(game.startLocation, codex);
-    const destinations = new Set(
-      paths.map((path) => new Path(path, codex.propertyNames).destinationInstanceId),
-    );
+    const destinations = new Set(paths.map((path) => new Path(path, codex).destinationInstanceId));
     expect(destinations.size, '行き先の違う道が2本以上ある土地で確かめる').toBeGreaterThan(1);
 
     const view = fromGameSession(game, codex, locale);
@@ -219,7 +215,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     expect(others.length).toBeGreaterThan(0);
 
     expect(paths.map((card) => card.art)).toEqual(
-      paths.map((card) => new Path(card.objects[0], codex.propertyNames).destination?.def.name),
+      paths.map((card) => new Path(card.objects[0], codex).destination?.def.name),
     );
     expect(
       paths.some((card) => card.art !== game.startLocation.instance.def.name),
@@ -1487,7 +1483,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     // 道のtravelのdurationは、その道のtravel_minutesを引く（locations.yaml）。
     const travel = lane(view, game, 'fixtures').find((card) => card.objects[0] === path)!.actions[0];
-    expect(travel.minutes).toBe(new Path(path, codex.propertyNames).travelMinutes);
+    expect(travel.minutes).toBe(new Path(path, codex).travelMinutes);
     expect(travel.minutes, '移動には時間がかかる').toBeGreaterThan(0);
     expect(handCells(view, game)[0]?.actions[0].minutes, 'eatはdurationを持つ').toBe(15);
     expect(handCells(view, game)[1]?.actions[0].minutes, 'collect_rainはdurationを持たない').toBe(0);
@@ -1511,7 +1507,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('道のカードのアクションで、現在地が行き先へ移る', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
-    const path = new Path(pathsIn(game.startLocation, codex)[0], codex.propertyNames);
+    const path = new Path(pathsIn(game.startLocation, codex)[0], codex);
 
     const view = fromGameSession(game, codex, locale);
     const card = lane(view, game, 'fixtures').find((fixture) => fixture.objects[0] === path.instance)!;
@@ -1696,7 +1692,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
 
     const currentSite = game.map.siteInstanceIds.indexOf(game.startLocation.instance.instanceId);
     const destinations = pathsIn(game.startLocation, codex).map((path) =>
-      game.map.siteInstanceIds.indexOf(new Path(path, codex.propertyNames).destinationInstanceId),
+      game.map.siteInstanceIds.indexOf(new Path(path, codex).destinationInstanceId),
     );
     expect(destinations.length, '道が見つかる土地で確かめる').toBeGreaterThan(0);
 
@@ -1740,7 +1736,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
     const before = fromGameSession(game, codex, locale);
-    const path = new Path(pathsIn(game.startLocation, codex)[0], codex.propertyNames);
+    const path = new Path(pathsIn(game.startLocation, codex)[0], codex);
     expect(path.travel(game.player.instance)).toBe(true);
 
     const view = fromGameSession(game, codex, locale);
@@ -1760,7 +1756,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   it('現在地は移動に追従する', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
     exploreToFull(game);
-    const path = new Path(pathsIn(game.startLocation, codex)[0], codex.propertyNames);
+    const path = new Path(pathsIn(game.startLocation, codex)[0], codex);
     expect(path.travel(game.player.instance)).toBe(true);
 
     const view = fromGameSession(game, codex, locale);

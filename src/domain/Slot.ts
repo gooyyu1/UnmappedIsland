@@ -62,15 +62,15 @@ export class Slot {
    * 戻り値: 受け入れ可能ならundefined、拒否する場合はその理由。
    */
   canAccept(candidate: WorldObject): string | undefined {
-    const wellKnown = this.owner.session.codex.wellKnown;
+    const engine = this.owner.session.codex.vocabulary.engine;
     const ownerName = this.owner.def.name;
     if (!this.def.acceptsAnywhere(candidate.def)) {
       return `'${ownerName}.${this.def.name}' は '${candidate.def.name}' を受け入れられません（枠の型が合いません）。`;
     }
 
     if (this.def.capacity !== undefined) {
-      const currentVolume = this.sumVolume(wellKnown.volumeId);
-      const addedVolume = candidate.tryGetProperty(wellKnown.volumeId)?.number ?? 0;
+      const currentVolume = this.sumVolume(engine.volumeId);
+      const addedVolume = candidate.tryGetProperty(engine.volumeId)?.number ?? 0;
       if (currentVolume + addedVolume > this.def.capacity) {
         return `'${ownerName}.${this.def.name}' の容量（${this.def.capacity}）を超えます。`;
       }
@@ -101,15 +101,15 @@ export class Slot {
    * 型だけで決まるので先頭の1つで代表して数え、かさ（volume）だけを1つずつ積み上げる。
    */
   acceptedCount(candidates: readonly WorldObject[]): number {
-    const wellKnown = this.owner.session.codex.wellKnown;
+    const engine = this.owner.session.codex.vocabulary.engine;
     if (candidates.length === 0 || !this.def.acceptsAnywhere(candidates[0].def)) return 0;
 
     const vacancy = this.vacancyFor(candidates[0]);
-    let volume = this.sumVolume(wellKnown.volumeId);
+    let volume = this.sumVolume(engine.volumeId);
     let count = 0;
     for (const candidate of candidates) {
       if (count >= vacancy) break;
-      volume += candidate.tryGetProperty(wellKnown.volumeId)?.number ?? 0;
+      volume += candidate.tryGetProperty(engine.volumeId)?.number ?? 0;
       if (this.def.capacity !== undefined && volume > this.def.capacity) break;
       count += 1;
     }

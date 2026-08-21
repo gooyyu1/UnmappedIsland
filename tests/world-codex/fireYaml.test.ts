@@ -47,7 +47,7 @@ describe('fire.yamlの火の連鎖', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
+    worldView = new World(worldInstance, codex);
     session = new WorldSession(codex, worldView, fixedRng(roll));
 
     land = spawnInto('grassland', worldInstance, 'locations');

@@ -32,7 +32,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
+    worldView = new World(worldInstance, codex);
     session = new WorldSession(codex, worldView, fixedRng(0));
 
     jungle = spawnInto('jungle', worldInstance, 'locations');

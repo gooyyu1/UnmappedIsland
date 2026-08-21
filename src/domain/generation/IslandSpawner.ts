@@ -25,14 +25,17 @@ export function populate(session: WorldSession, map: IslandMap): void {
 
   const codex = session.codex;
   const world = session.world.instance;
-  const locationsSlotId = codex.slotNames.getId('locations');
-  const undiscoveredFixturesSlotId = codex.slotNames.getId('undiscovered_fixtures');
-  const pathDefId = codex.objectNames.getId('path');
-  const progressId = codex.propertyNames.getId('exploration_progress');
-  const travelMinutesId = codex.propertyNames.getId('travel_minutes');
-  const requiredProgressId = codex.propertyNames.getId('required_progress');
-  const destinationIdId = codex.propertyNames.getId('destination_id');
-  const returnPathIdId = codex.propertyNames.getId('return_path_id');
+  const words = codex.vocabulary.world;
+  const {
+    locationsSlotId,
+    undiscoveredFixturesSlotId,
+    explorationProgressId: progressId,
+    travelMinutesId,
+    requiredProgressId,
+    destinationIdId,
+    returnPathIdId,
+  } = words;
+  const pathDefId = codex.objectNames.getId(words.pathObject);
 
   // 1. 土地の実体化。
   const locations = new Array<WorldObject>(map.sites.length);
@@ -123,7 +126,7 @@ export function placePlayerAt(
   if (location === undefined)
     throw new Error('開始地点の土地が実体化されていません（先にpopulateを呼んでください）。');
 
-  const error = character.moveToSlot(location.getSlot(codex.slotNames.getId('characters')));
+  const error = character.moveToSlot(location.getSlot(codex.vocabulary.world.charactersSlotId));
   if (error !== undefined) throw new Error(`プレイヤーを開始地点へ配置できません: ${error}`);
 
   return new Location(location, codex);

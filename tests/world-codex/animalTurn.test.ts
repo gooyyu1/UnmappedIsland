@@ -42,7 +42,7 @@ describe('動物の1手', () => {
   function open(roll: number): void {
     session = new WorldSession(codex, undefined, fixedRng(roll));
     world = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-    session.adoptWorld(new World(world, codex.propertyNames, codex.symbolNames));
+    session.adoptWorld(new World(world, codex));
     jungle = spawnInto('jungle', world, 'locations');
     grassland = spawnInto('grassland', world, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');

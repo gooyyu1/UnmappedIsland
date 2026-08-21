@@ -1,17 +1,9 @@
-import type { NameRegistry } from '../NameRegistry';
 import type { WorldCodex } from '../WorldCodex';
+import type { WorldRuleVocabulary } from '../WorldVocabulary';
 import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
 import type { WorldSession } from '../WorldSession';
 import { Location } from './Location';
-
-/**
- * 周回の終わりを読むために、画面ではなくこのビューが名前で知っているタグ（voyage.yaml・artifacts.yaml）。
- * 段の名前で死因を読むのと同じ分担で、しきい値も意味も宣言しているのはワールドの側だけになる
- * （docs/engine/VitalsSystem.md 6節）。
- */
-const MAINLAND_TAG = 'mainland';
-const ARTIFACT_TAG = 'artifact';
 
 /**
  * actor（プレイヤーキャラクター、GameElementDefinition.md 8.1節・11節）に対する、UI/ゲームロジック向けの型付き
@@ -24,33 +16,32 @@ export class PlayerCharacter {
 
   private readonly codex: WorldCodex;
 
-  private readonly hpId: number;
-  private readonly satietyId: number;
-  readonly handSlotId: number;
-  readonly equipmentSlotId: number;
-  readonly injuriesSlotId: number;
+  private readonly words: WorldRuleVocabulary;
 
   constructor(instance: WorldObject, codex: WorldCodex) {
     this.instance = instance;
     this.codex = codex;
-    this.hpId = PlayerCharacter.idOrMissing(codex.propertyNames, 'hp');
-    this.satietyId = PlayerCharacter.idOrMissing(codex.propertyNames, 'satiety');
-    this.handSlotId = PlayerCharacter.idOrMissing(codex.slotNames, 'hand');
-    this.equipmentSlotId = PlayerCharacter.idOrMissing(codex.slotNames, 'equipment');
-    this.injuriesSlotId = PlayerCharacter.idOrMissing(codex.slotNames, 'injuries');
+    this.words = codex.vocabulary.world;
   }
 
-  /** 未登録の名前は-1（LocalIndexMap.missing扱い）にする。キャラクタの定義（docs/world/Characters.md）がこのビューの知る全プロパティ・スロットを持つとは限らないため、「持っていなければ空として読む」姿勢に合わせる。 */
-  private static idOrMissing(names: NameRegistry, name: string): number {
-    return names.tryGetId(name) ?? -1;
+  get handSlotId(): number {
+    return this.words.handSlotId;
+  }
+
+  get equipmentSlotId(): number {
+    return this.words.equipmentSlotId;
+  }
+
+  get injuriesSlotId(): number {
+    return this.words.injuriesSlotId;
   }
 
   get hp(): number {
-    return this.instance.tryGetProperty(this.hpId)?.getEffectiveValue() ?? 0;
+    return this.instance.tryGetProperty(this.words.hpId)?.getEffectiveValue() ?? 0;
   }
 
   get satiety(): number {
-    return this.instance.tryGetProperty(this.satietyId)?.getEffectiveValue() ?? 0;
+    return this.instance.tryGetProperty(this.words.satietyId)?.getEffectiveValue() ?? 0;
   }
 
   /**
@@ -145,23 +136,19 @@ export class PlayerCharacter {
    */
   get broughtArtifacts(): readonly string[] {
     const mainland = this.mainland;
-    const artifactTagId = this.codex.tagNames.tryGetId(ARTIFACT_TAG);
-    if (mainland === undefined || artifactTagId === undefined) return [];
+    if (mainland === undefined) return [];
 
     const names: string[] = [];
     for (const object of mainland.descendants()) {
-      if (object.def.tags.includes(artifactTagId)) names.push(object.def.name);
+      if (object.def.tags.includes(this.words.artifactTagId)) names.push(object.def.name);
     }
     return names;
   }
 
   /** 自分が今その中に居る本土（居なければundefined）。 */
   private get mainland(): WorldObject | undefined {
-    const mainlandTagId = this.codex.tagNames.tryGetId(MAINLAND_TAG);
-    if (mainlandTagId === undefined) return undefined;
-
     for (let node = this.instance.parent; node !== undefined; node = node.parent) {
-      if (node.def.tags.includes(mainlandTagId)) return node;
+      if (node.def.tags.includes(this.words.mainlandTagId)) return node;
     }
     return undefined;
   }

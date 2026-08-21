@@ -83,7 +83,7 @@ describe('探索で見つかる物', () => {
   ): Finding[] {
     const session = new WorldSession(codex);
     const worldInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), session);
-    const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
+    const worldView = new World(worldInstance, codex);
     const explorer = new WorldSession(codex, worldView, new SeededRng(20250801));
 
     const instance = explorer.spawn(codex.objectNames.getId(landName));

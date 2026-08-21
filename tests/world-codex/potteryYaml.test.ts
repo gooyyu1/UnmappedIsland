@@ -6,7 +6,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/views/Location';
 import { World } from '../../src/domain/views/World';
-import { inProgressObjectName, MATERIALS_SLOT } from '../../src/loader/inProgressObjects';
+import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -45,7 +45,7 @@ describe('pottery.yamlの土器の連鎖', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
+    const worldView = new World(worldInstance, codex);
     session = new WorldSession(codex, worldView, fixedRng(roll));
 
     land = session.spawn(codex.objectNames.getId('grassland'));
@@ -73,7 +73,7 @@ describe('pottery.yamlの土器の連鎖', () => {
   /** 完成するまでレシピの工程を進める。各工程の要求を、そのつど材料スロットへ入れる。 */
   function craft(productName: string, recipeName: string, materials: readonly string[][]): void {
     const recipe = codex.objects.get(codex.objectNames.getId(productName)).recipes[0];
-    const materialsId = codex.slotNames.getId(MATERIALS_SLOT);
+    const materialsId = codex.vocabulary.engine.materialsSlotId;
     const wip = spawnInProgressObject(
       session,
       land,

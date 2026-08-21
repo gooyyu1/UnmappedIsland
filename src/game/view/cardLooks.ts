@@ -3,7 +3,6 @@ import type { ObjectDef } from '../../domain/ObjectDef';
 import type { WorldCodex } from '../../domain/WorldCodex';
 import type { WorldObject } from '../../domain/WorldObject';
 import { currentStep, stepSupplyRatio } from '../../domain/crafting';
-import { IN_PROGRESS_TAG, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../../loader/inProgressObjects';
 import type { Localization } from '../../locale/Localization';
 import { artNameFor } from '../../art/objectArt';
 import { typeDisplayName } from '../../locale/typeDisplayName';
@@ -209,7 +208,7 @@ export function cardLooksOf(
   };
 
   const colorPropertyId = codex.propertyNames.tryGetId(COLOR_PROPERTY);
-  const fillPropertyId = codex.wellKnown.fillId;
+  const fillPropertyId = codex.vocabulary.engine.fillId;
   /**
    * 中身のバー（LiquidContainerSystem.md 2節・4.1節）。
    *
@@ -243,8 +242,7 @@ export function cardLooksOf(
     return { key: BUILTIN_GAUGE_KEYS.capacity, ratio, atMin: 'good', atMax: 'bad', worsensUpward: true };
   };
 
-  const progressPropertyId = codex.propertyNames.tryGetId(PROGRESS_PROPERTY);
-  const materialsSlotId = codex.slotNames.tryGetId(MATERIALS_SLOT);
+  const { progressId, materialsSlotId } = codex.vocabulary.engine;
   /**
    * 製作中オブジェクトのカードに出す材料の充足バー（RecipeSystem.md、CardView.md 10.1節）。
    * 製作中でない物、今の工程が無い物ではundefined。
@@ -255,11 +253,11 @@ export function cardLooksOf(
    * ないため）。**満ちた＝作業できる**を緑で言い切れるよう、満ちる側がgood。
    */
   const materialGaugeOf = (object: WorldObject): CardGauge | undefined => {
-    if (progressPropertyId === undefined || materialsSlotId === undefined) return undefined;
+    if (progressId === undefined || materialsSlotId === undefined) return undefined;
     const recipe = recipeOf(object, codex);
     if (recipe === undefined) return undefined;
 
-    const step = currentStep(recipe, object.tryGetProperty(progressPropertyId)?.number ?? 0);
+    const step = currentStep(recipe, object.tryGetProperty(progressId)?.number ?? 0);
     if (step === undefined) return undefined;
     const ratio = stepSupplyRatio(object, materialsSlotId, step);
     return { key: BUILTIN_GAUGE_KEYS.material, ratio, atMin: 'bad', atMax: 'good', worsensUpward: false };
@@ -328,7 +326,6 @@ export function cardLooksOf(
   const containerTagId = codex.tagNames.tryGetId('container');
   const liquidContainerTagId = codex.tagNames.tryGetId('liquid_container');
   const toolTagId = codex.tagNames.tryGetId('tool');
-  const wipTagId = codex.tagNames.tryGetId(IN_PROGRESS_TAG);
 
   const typeNameOf = (def: ObjectDef): string => typeDisplayName(codex, locale, def);
 
@@ -372,7 +369,7 @@ export function cardLooksOf(
    * 作りかけの物か（RecipeSystem.md 5節のwipタグ）。**完成品のタグを引き継ぐ型なので、種別の判定より
    * 後から覆う**——作りかけの籠は入れ物の枠ではなく青写真の枠になる（CardView.md 10節）。
    */
-  const inProgressDef = (def: ObjectDef): boolean => wipTagId !== undefined && def.tags.includes(wipTagId);
+  const inProgressDef = (def: ObjectDef): boolean => def.isInProgress;
 
   /**
    * 絵がまだ無い物の代役アイコン。**型あての代役を先に、無ければ種別の代役**——キャラクタは絵が

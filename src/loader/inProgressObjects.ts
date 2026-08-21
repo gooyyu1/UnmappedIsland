@@ -11,21 +11,17 @@ export const IN_PROGRESS_SOURCE = '<製作中オブジェクトの自動生成>'
 
 export { IN_PROGRESS_TAG } from '../domain/RecipeDef';
 
-/** 進捗を持つプロパティ名。工程の所要時間の合計が上限になる。 */
-export const PROGRESS_PROPERTY = 'progress';
+import { FINISHED_STEPS_PROPERTY, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../domain/WorldVocabulary';
 
 /**
- * 終えた工程の数を持つプロパティ名（工程が2つ以上のレシピにだけ宣言する）。`progress`が工程の
- * 所要時間で動くのに対し、こちらは工程を1つ終えるたびに1増える純粋な回数なので、`range`に対する
- * 割合（`gauge`宣言、CardView.md 10.1節）がそのまま「終えた工程の数 ÷ 全工程数」になる。
- * `progress`と役割が重なるが、`progress`は所要時間で完成（on_max）を起こす側なので、
- * 表示専用の割合をここへ分ける（時間の不揃いな工程では両者の割合が一致しないため）。
+ * 製作中オブジェクトが持つ単語（宣言はWorldVocabulary）。
+ *
+ * `finished_steps`は工程が2つ以上のレシピにだけ宣言する。`progress`が工程の所要時間で動くのに対し、
+ * こちらは工程を1つ終えるたびに1増える純粋な回数なので、`range`に対する割合（`gauge`宣言、
+ * CardView.md 10.1節）がそのまま「終えた工程の数 ÷ 全工程数」になる。`progress`は所要時間で完成
+ * （on_max）を起こす側なので、表示専用の割合をこちらへ分ける（時間の不揃いな工程では両者の割合が
+ * 一致しないため）。
  */
-export const FINISHED_STEPS_PROPERTY = 'finished_steps';
-
-/** 素材と道具をまとめて入れるスロット名。 */
-export const MATERIALS_SLOT = 'materials';
-
 /**
  * 製作中オブジェクトの型の名前（RecipeSystem.md 1節）。人間もMOD作成者もこの型を直接書かないため、
  * 読みやすさより衝突しにくさを優先して完成品とレシピの両方を含める。著者が同じ名前を宣言していた

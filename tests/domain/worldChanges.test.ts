@@ -74,7 +74,7 @@ object_defs:
   function open(roll: number): void {
     session = new WorldSession(codex, undefined, fixedRng(roll));
     const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-    session.adoptWorld(new World(worldInstance, codex.propertyNames, codex.symbolNames));
+    session.adoptWorld(new World(worldInstance, codex));
     ground = spawn('ground');
     expect(ground.moveToSlot(worldInstance.getSlot(slot('locations')))).toBeUndefined();
     changes = [];
@@ -232,8 +232,7 @@ object_defs:
     // 2度目には、既にそのworldで動き出したオブジェクトが居るはず（WorldSession.adoptWorld）。
     const other = new World(
       new WorldObject(9, codex.objects.get(codex.objectNames.getId('world')), session),
-      codex.propertyNames,
-      codex.symbolNames,
+      codex,
     );
 
     expect(() => session.adoptWorld(other)).toThrow(/1度/);

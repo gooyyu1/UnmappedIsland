@@ -1,5 +1,5 @@
-import type { NameRegistry } from '../NameRegistry';
 import type { WorldCodex } from '../WorldCodex';
+import type { WorldRuleVocabulary } from '../WorldVocabulary';
 import { pickWeighted } from '../Rng';
 import type { Rng } from '../Rng';
 import type { WorldObject } from '../WorldObject';
@@ -7,8 +7,6 @@ import type { WorldSession } from '../WorldSession';
 import type { Location } from './Location';
 
 /** 動物の1手を宣言しているアクションの名前（animals.yamlのbeast trait）。 */
-const TURN_ACTION = 'turn';
-
 /**
  * 抽選にかける候補1つ。**重みと、選ばれたときにYAMLへ渡すインスタンスID**だけを持つ——
  * 何を候補にするか（足元の物か、道か）で拾い方は違うが、選び方は1つでよい。
@@ -29,40 +27,13 @@ interface TurnTarget {
 export class Animal {
   readonly instance: WorldObject;
 
-  private readonly nearbyCharactersId: number;
-  private readonly lootablesId: number;
-  private readonly lootTargetId: number;
-  private readonly spoilsTargetId: number;
-  private readonly smashablesId: number;
-  private readonly smashTargetId: number;
-  private readonly escapeRoutesId: number;
-  private readonly fleeToId: number;
+  private readonly words: WorldRuleVocabulary;
   private readonly volumeId: number;
-
-  private readonly quarryTagId: number;
-  private readonly fragileTagId: number;
-  private readonly spoilsSlotId: number;
 
   private constructor(instance: WorldObject, codex: WorldCodex) {
     this.instance = instance;
-    const props = codex.propertyNames;
-    this.nearbyCharactersId = Animal.idOrMissing(props, 'nearby_characters');
-    this.lootablesId = Animal.idOrMissing(props, 'lootables');
-    this.lootTargetId = Animal.idOrMissing(props, 'loot_target');
-    this.spoilsTargetId = Animal.idOrMissing(props, 'spoils_target');
-    this.smashablesId = Animal.idOrMissing(props, 'smashables');
-    this.smashTargetId = Animal.idOrMissing(props, 'smash_target');
-    this.escapeRoutesId = Animal.idOrMissing(props, 'escape_routes');
-    this.fleeToId = Animal.idOrMissing(props, 'flee_to');
-    this.volumeId = Animal.idOrMissing(props, 'volume');
-    this.quarryTagId = codex.tagNames.tryGetId('quarry') ?? -1;
-    this.fragileTagId = codex.tagNames.tryGetId('fragile') ?? -1;
-    this.spoilsSlotId = codex.slotNames.tryGetId('spoils') ?? -1;
-  }
-
-  /** 未登録の名前は-1（LocalIndexMap.missing扱い）にする（理由はLocation.idOrMissing参照）。 */
-  private static idOrMissing(names: NameRegistry, name: string): number {
-    return names.tryGetId(name) ?? -1;
+    this.words = codex.vocabulary.world;
+    this.volumeId = codex.vocabulary.engine.volumeId;
   }
 
   /**
@@ -71,7 +42,8 @@ export class Animal {
    * 宣言する（animals.yamlのbeast）。
    */
   static tryWrap(object: WorldObject, codex: WorldCodex): Animal | undefined {
-    if (!object.def.actions.some((action) => action.name === TURN_ACTION)) return undefined;
+    if (!object.def.actions.some((action) => action.name === codex.vocabulary.world.turnAction))
+      return undefined;
     return new Animal(object, codex);
   }
 
@@ -83,19 +55,19 @@ export class Animal {
    */
   takeTurn(location: Location, session: WorldSession): void {
     const characters = location.characters;
-    this.instance.getProperty(this.nearbyCharactersId).setNumber(characters.length);
+    this.instance.getProperty(this.words.nearbyCharactersId).setNumber(characters.length);
 
     // くわえている物（spoilsの先頭）。数は書かない——食べる候補のゲートはスロットの中身を
     // 直接見る（animals.yamlのbeast）ので、対象だけを毎ターン書き直す。
-    const held = this.instance.tryGetSlot(this.spoilsSlotId)?.contents.at(0);
-    this.instance.getProperty(this.spoilsTargetId).setNumber(held?.instanceId ?? 0);
+    const held = this.instance.tryGetSlot(this.words.spoilsSlotId)?.contents.at(0);
+    this.instance.getProperty(this.words.spoilsTargetId).setNumber(held?.instanceId ?? 0);
 
-    this.aim(this.lootablesId, this.lootTargetId, this.lootTargets(location), session.rng);
-    this.aim(this.smashablesId, this.smashTargetId, this.smashTargets(location), session.rng);
-    this.aim(this.escapeRoutesId, this.fleeToId, this.escapeTargets(location), session.rng);
+    this.aim(this.words.lootablesId, this.words.lootTargetId, this.lootTargets(location), session.rng);
+    this.aim(this.words.smashablesId, this.words.smashTargetId, this.smashTargets(location), session.rng);
+    this.aim(this.words.escapeRoutesId, this.words.fleeToId, this.escapeTargets(location), session.rng);
 
     // 襲う相手はプロパティではなくactorとして渡す（spawnのinto: actorが受け取る、5.1節）。
-    this.instance.tryGetAction(TURN_ACTION, characters.at(0))?.tryExecute();
+    this.instance.tryGetAction(this.words.turnAction, characters.at(0))?.tryExecute();
   }
 
   /**
@@ -114,7 +86,7 @@ export class Animal {
    * ここで外れる。
    */
   private lootTargets(location: Location): readonly TurnTarget[] {
-    return this.bumpableTargets(location, (object) => !object.def.tags.includes(this.quarryTagId));
+    return this.bumpableTargets(location, (object) => !object.def.tags.includes(this.words.quarryTagId));
   }
 
   /**
@@ -122,7 +94,7 @@ export class Animal {
    * 持つ物すべてにすると、置いておいた道具まで一撃で消える。
    */
   private smashTargets(location: Location): readonly TurnTarget[] {
-    return this.bumpableTargets(location, (object) => object.def.tags.includes(this.fragileTagId));
+    return this.bumpableTargets(location, (object) => object.def.tags.includes(this.words.fragileTagId));
   }
 
   /**

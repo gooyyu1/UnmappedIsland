@@ -956,8 +956,7 @@ function scaleCost(cost: Cost, factor: number): Cost {
  * 5節）ので、作りかけの筏まで土地として並んでしまう。
  */
 function isLocation(codex: WorldCodex, def: ObjectDef): boolean {
-  const locationTag = codex.tagNames.tryGetId('location');
-  if (locationTag === undefined || !def.tags.includes(locationTag)) return false;
+  if (!def.tags.includes(codex.vocabulary.world.locationTagId)) return false;
   return !codex.isGenerated(def);
 }
 
@@ -972,15 +971,13 @@ function allDefs(codex: WorldCodex): readonly ObjectDef[] {
  * ので何も産まず、空の節が並ぶだけになる。`explorable` trait が配る進捗の宣言で見分ける。
  */
 function explorableLocationsOf(codex: WorldCodex): readonly ObjectDef[] {
-  const progress = codex.propertyNames.tryGetId('exploration_progress');
-  if (progress === undefined) return [];
+  const progress = codex.vocabulary.world.explorationProgressId;
   return allDefs(codex).filter((def) => isLocation(codex, def) && def.getPropertyDef(progress) !== undefined);
 }
 
 /** プレイヤーが操作するキャラクタか（休息のように自分の値を自分で戻す工程の宣言元）。 */
 function isCharacter(codex: WorldCodex, def: ObjectDef): boolean {
-  const characterTag = codex.tagNames.tryGetId('character');
-  return characterTag !== undefined && def.tags.includes(characterTag);
+  return def.tags.includes(codex.vocabulary.world.characterTagId);
 }
 
 /**

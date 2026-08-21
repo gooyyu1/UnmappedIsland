@@ -28,7 +28,7 @@ describe('timber.yamlの伐採', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
+    const worldView = new World(worldInstance, codex);
     session = new WorldSession(codex, worldView, fixedRng(0));
 
     forest = spawnInto('forest', worldInstance, 'locations');

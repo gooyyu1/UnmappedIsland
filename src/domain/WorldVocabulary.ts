@@ -1,0 +1,193 @@
+import type { NameRegistry } from './NameRegistry';
+
+/**
+ * 製作中オブジェクト（RecipeSystem.md 1節）の進捗・工程数・材料枠の名前。
+ *
+ * **文字列のまま要るのはローダだけ**（inProgressObjects）。型の宣言を組み立てる時点ではまだCodexが無く、
+ * IDを引けないため。実行時に読む側はIDを使う（EngineVocabulary）ので、語はここに1度書くだけで済む。
+ */
+export const PROGRESS_PROPERTY = 'progress';
+export const FINISHED_STEPS_PROPERTY = 'finished_steps';
+export const MATERIALS_SLOT = 'materials';
+
+/**
+ * **コードがYAMLの単語へ寄せている依存の一覧。** ここに無い単語をコードが直に引いていたら、それは
+ * 一覧から漏れている——「この単語をYAMLから消したら何が壊れるか」を1箇所で答えられるようにするための表。
+ *
+ * ロード処理の最後、全ての名前のinternが終わったタイミングで1回だけ構築する。
+ *
+ * **IDはinternで取る（無ければ作る）。** 引いた名前を誰も宣言していなければ、そのIDを持つ物は世界に
+ * 1つも居ないので、「この物はそれを持つか」を訊けば自然に「持たない」が返る。**語彙の有無を分岐に
+ * 使わない**のはそのためで、`number | undefined`も「絶対マッチしないID」も要らない。
+ *
+ * **オブジェクト型の名前とアクション名は、IDではなく文字列で持つ。** 型のIDはObjectDefTableの添字に
+ * なるので、宣言されていない名前をinternすると範囲外を指す。アクションは元々名前で引く（tryGetAction）。
+ *
+ * **載せるのは、コード側にリテラルとして書かれている単語だけ。** シナリオYAMLやURLに書かれた名前を
+ * 引く箇所（Scenario・CodexView）はユーザーの語であって、コードの依存ではない。
+ *
+ * **見せ方だけを決める単語は載せない**（cardLooks・PlayScreenView）。あちらの名前は「この段に居たら
+ * 覆いを出す」「このタグならこの枠色」のように結果と対で意味を持つので、名前だけを引き剥がすと
+ * 規則が2箇所に割れる。消えても見た目が既定に落ちるだけで、ここに並ぶ単語とは壊れ方の重さが違う。
+ */
+export class WorldVocabulary {
+  readonly engine: EngineVocabulary;
+  readonly world: WorldRuleVocabulary;
+
+  constructor(propertyNames: NameRegistry, slotNames: NameRegistry, tagNames: NameRegistry) {
+    this.engine = new EngineVocabulary(propertyNames, slotNames);
+    this.world = new WorldRuleVocabulary(propertyNames, slotNames, tagNames);
+  }
+}
+
+/**
+ * エンジンの汎用ロジックが規約として直接読み書きする単語。**どんなYAMLを載せ替えても変わらない。**
+ *
+ * - volume: かさ（mL）。capacityの検証（Slot.canAccept）が使う。
+ * - fill: 中身入りの変種（3.5節）が抱えている量。0になった変種は素の型へ戻る。
+ * - weight: 物の重さ。子のweightをそのまま合算する（率はかけない）。
+ * - density: 単位量あたりの重さ（g/mL。水=1）。fill × density が中身の重さになる。
+ * - load: 担いだ人が感じる負荷。直接の子のweightに、その子のload_reduction_rateを効かせた分。
+ * - load_reduction_rate: 担ぎ方による体感の軽減率（0〜1、既定0）。
+ * - progress / finished_steps / materials: 製作中オブジェクトの進捗・工程数・材料枠（RecipeSystem.md）。
+ */
+export class EngineVocabulary {
+  readonly volumeId: number;
+  readonly fillId: number;
+  readonly weightId: number;
+  readonly densityId: number;
+  readonly loadId: number;
+  readonly loadReductionRateId: number;
+
+  readonly progressId: number;
+  readonly finishedStepsId: number;
+  readonly materialsSlotId: number;
+
+  constructor(propertyNames: NameRegistry, slotNames: NameRegistry) {
+    this.volumeId = propertyNames.intern('volume');
+    this.fillId = propertyNames.intern('fill');
+    this.weightId = propertyNames.intern('weight');
+    this.densityId = propertyNames.intern('density');
+    this.loadId = propertyNames.intern('load');
+    this.loadReductionRateId = propertyNames.intern('load_reduction_rate');
+
+    this.progressId = propertyNames.intern(PROGRESS_PROPERTY);
+    this.finishedStepsId = propertyNames.intern(FINISHED_STEPS_PROPERTY);
+    this.materialsSlotId = slotNames.intern(MATERIALS_SLOT);
+  }
+}
+
+/**
+ * この世界のルールが依存する単語（`src/assets/world-codex`）。エンジンの語と違い、**別の世界を書けば
+ * 変わりうる**——変わったときに何が動かなくなるかが、この一覧の中身そのもの。
+ *
+ * 使い手は `domain/views`・`domain/generation`・`analysis`。いずれも名前を「値や集合を引く鍵」として
+ * だけ使っていて、どの名前かに他の判断が依存しない。
+ */
+export class WorldRuleVocabulary {
+  // ---- 時間と気候（ClimateSystem.md、views/World） ----
+  readonly dayId: number;
+  readonly hourId: number;
+  readonly minuteId: number;
+  readonly minutesPerTickId: number;
+  readonly weatherId: number;
+  readonly sunlightId: number;
+  readonly ambientTemperatureId: number;
+
+  // ---- キャラクタ（docs/world/Characters.md、views/PlayerCharacter） ----
+  readonly hpId: number;
+  readonly satietyId: number;
+  readonly handSlotId: number;
+  readonly equipmentSlotId: number;
+  readonly injuriesSlotId: number;
+
+  // ---- 土地と道（ExplorationSystem.md、views/Location・views/Path・generation） ----
+  readonly explorationProgressId: number;
+  readonly requiredProgressId: number;
+  readonly destinationIdId: number;
+  readonly returnPathIdId: number;
+  readonly travelMinutesId: number;
+  readonly locationsSlotId: number;
+  readonly itemsSlotId: number;
+  readonly fixturesSlotId: number;
+  readonly charactersSlotId: number;
+  readonly undiscoveredFixturesSlotId: number;
+
+  /** 動物の1手（HuntingSystem.md 5節）が候補と対象を書き込む先。何が起こるかはYAML側のpickが決める。 */
+  readonly nearbyCharactersId: number;
+  readonly lootablesId: number;
+  readonly lootTargetId: number;
+  readonly spoilsTargetId: number;
+  readonly smashablesId: number;
+  readonly smashTargetId: number;
+  readonly escapeRoutesId: number;
+  readonly fleeToId: number;
+  readonly spoilsSlotId: number;
+
+  // ---- 種別を言うタグ ----
+  readonly locationTagId: number;
+  readonly characterTagId: number;
+  readonly pathTagId: number;
+  /** 動物がぶつかる相手を選り分ける（HuntingSystem.md 5.4節）。獲物は避け、割れ物は狙う。 */
+  readonly quarryTagId: number;
+  readonly fragileTagId: number;
+
+  /** 周回の終わりを読む（docs/concept/GameEndings.md）。本土へ渡り、持ち帰った秘宝を数える。 */
+  readonly mainlandTagId: number;
+  readonly artifactTagId: number;
+
+  // ---- 名前で指して実行するアクション（IDではなく名前で引く、ActionSystem.md 1節） ----
+  readonly exploreAction = 'explore';
+  readonly travelAction = 'travel';
+  readonly turnAction = 'turn';
+
+  // ---- 名指しで引くオブジェクト型（IDはObjectDefTableの添字なのでinternできない） ----
+  readonly worldObject = 'world';
+  readonly pathObject = 'path';
+
+  constructor(propertyNames: NameRegistry, slotNames: NameRegistry, tagNames: NameRegistry) {
+    this.dayId = propertyNames.intern('day');
+    this.hourId = propertyNames.intern('hour');
+    this.minuteId = propertyNames.intern('minute');
+    this.minutesPerTickId = propertyNames.intern('minutes_per_tick');
+    this.weatherId = propertyNames.intern('weather');
+    this.sunlightId = propertyNames.intern('sunlight');
+    this.ambientTemperatureId = propertyNames.intern('ambient_temperature');
+
+    this.hpId = propertyNames.intern('hp');
+    this.satietyId = propertyNames.intern('satiety');
+    this.handSlotId = slotNames.intern('hand');
+    this.equipmentSlotId = slotNames.intern('equipment');
+    this.injuriesSlotId = slotNames.intern('injuries');
+
+    this.explorationProgressId = propertyNames.intern('exploration_progress');
+    this.requiredProgressId = propertyNames.intern('required_progress');
+    this.destinationIdId = propertyNames.intern('destination_id');
+    this.returnPathIdId = propertyNames.intern('return_path_id');
+    this.travelMinutesId = propertyNames.intern('travel_minutes');
+    this.locationsSlotId = slotNames.intern('locations');
+    this.itemsSlotId = slotNames.intern('items');
+    this.fixturesSlotId = slotNames.intern('fixtures');
+    this.charactersSlotId = slotNames.intern('characters');
+    this.undiscoveredFixturesSlotId = slotNames.intern('undiscovered_fixtures');
+
+    this.nearbyCharactersId = propertyNames.intern('nearby_characters');
+    this.lootablesId = propertyNames.intern('lootables');
+    this.lootTargetId = propertyNames.intern('loot_target');
+    this.spoilsTargetId = propertyNames.intern('spoils_target');
+    this.smashablesId = propertyNames.intern('smashables');
+    this.smashTargetId = propertyNames.intern('smash_target');
+    this.escapeRoutesId = propertyNames.intern('escape_routes');
+    this.fleeToId = propertyNames.intern('flee_to');
+    this.spoilsSlotId = slotNames.intern('spoils');
+
+    this.locationTagId = tagNames.intern('location');
+    this.characterTagId = tagNames.intern('character');
+    this.pathTagId = tagNames.intern('path');
+    this.quarryTagId = tagNames.intern('quarry');
+    this.fragileTagId = tagNames.intern('fragile');
+
+    this.mainlandTagId = tagNames.intern('mainland');
+    this.artifactTagId = tagNames.intern('artifact');
+  }
+}

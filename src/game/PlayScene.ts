@@ -585,13 +585,12 @@ export class PlayScene extends ResponsiveScene {
 
   /** 設置物の並びに含まれる道の、行き先の土地のobject_defの識別子。 */
   private pathDestinationNames(fixtures: readonly WorldObject[]): readonly string[] {
-    const pathTagId = this.codex.tagNames.tryGetId('path');
-    if (pathTagId === undefined) return [];
+    const pathTagId = this.codex.vocabulary.world.pathTagId;
 
     const names: string[] = [];
     for (const fixture of fixtures) {
       if (!fixture.def.tags.includes(pathTagId)) continue;
-      const destination = new Path(fixture, this.codex.propertyNames).destination;
+      const destination = new Path(fixture, this.codex).destination;
       if (destination !== undefined) names.push(destination.def.name);
     }
     return names;
