@@ -5,6 +5,7 @@ import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import { Path } from '../../src/domain/views/Path';
 import type { PlayScreenView } from '../../src/game/view/PlayScreenView';
 import { fromGameSession } from '../../src/game/view/PlayScreenView';
+import { characterIcon } from '../../src/game/view/characterCard';
 import type { CardPlace, ScreenPlace } from '../../src/game/view/cardPlaces';
 import { cardPlacesOf } from '../../src/game/view/cardPlaces';
 import type { Localization } from '../../src/locale/Localization';
@@ -252,6 +253,41 @@ describe('探索と地図（世界→映し 通し）', () => {
 
     expect(view.currentLocationCard.name).toBe(
       locale.locationName(game.map.nameOfInstance(path.destinationInstanceId)!),
+    );
+  });
+
+  it('道のカードのアクションは、その道が持つ移動時間を出す', () => {
+    // travelのdurationはその道のtravel_minutesを引く（locations.yaml）。道は生成された繋がりに
+    // しか無いので、時間の出どころもここでしか確かめられない。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    exploreToFull(game);
+    const path = pathsIn(game.startLocation, codex)[0];
+
+    const view = fromGameSession(game, codex, locale);
+    const travel = lane(view, game, 'fixtures').find((card) => card.objects[0] === path)!.actions[0];
+
+    expect(travel.minutes).toBe(new Path(path, codex).travelMinutes);
+    expect(travel.minutes, '移動には時間がかかる').toBeGreaterThan(0);
+  });
+
+  it('キャラクタと土地の札も、他の札と同じ道で作る', () => {
+    // どちらもWorldObjectで、種別は物の型が名乗るタグ（character / location、core.yaml）から決まる。
+    // 札の作り方を対象ごとに分けると、印・バー・個体の識別子といった規約がそこにだけ届かなくなる。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const view = fromGameSession(game, codex, locale);
+
+    expect(view.characterCard.kind).toBe('character');
+    expect(view.characterCard.icon, 'キャラクタは型ごとの代役アイコンを持つ').toBe(
+      characterIcon(SAMPLE_CHARACTER),
+    );
+    expect(view.characterCard.identity, '貸し出した札が帰る先の鍵').toEqual([
+      game.player.instance.instanceId,
+    ]);
+
+    expect(view.currentLocationCard.kind).toBe('location');
+    expect(view.currentLocationCard.identity).toEqual([game.startLocation.instance.instanceId]);
+    expect(view.currentLocationCard.name, '個体に付いた名前は型の名前より優先される').toBe(
+      locale.locationName(game.map.nameOfInstance(game.startLocation.instance.instanceId)!),
     );
   });
 });
