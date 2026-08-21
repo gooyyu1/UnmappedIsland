@@ -1,39 +1,44 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import type { Localization } from '../../src/locale/Localization';
 import { parseLocale } from '../../src/locale/Localization';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { recordChange } from '../../src/game/view/recording';
-import { SeededRng } from '../support/SeededRng';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import type { MiniGame } from '../support/miniGame';
+import { miniGame } from '../support/miniGame';
 
 /**
  * ワールドを変える操作の、経過中のtickごとの控え（recordChange）の自動テスト。
  *
- * 経過し切ったあとの画面が正しくても、経過中のフレームが壊れていることはある（貸した札の枚数の
- * 引き算がその一例）。控えがtickごとに取れていること・各控えがその時点のワールドを映していることを、
- * 画面を作らずに確かめる。
+ * 経過し切ったあとの画面が正しくても、経過中のフレームが壊れていることはある。控えがtickごとに
+ * 取れていること・各控えがその時点のワールドを映していることを、画面を作らずに確かめる。
+ *
+ * **ワールドは直に動かす**（advanceWorldTime・destroy）。どの操作が何分かかるかは世界側の宣言の話で、
+ * 控える側の責務ではない。
  */
 describe('recordChange（経過中のtickごとの控え）', () => {
-  let codex: WorldCodex;
   let locale: Localization;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
     locale = parseLocale('ja.yaml', 'object_texts:\n  stone:\n    display_name: 石\n');
   });
 
-  it('時間のかかる操作は、経過中のtick境界ごとに表示内容を控える', () => {
-    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+  const setUp = (): MiniGame =>
+    miniGame(`
+object_defs:
+  stone:
+    tags: [item]
+`);
+
+  it('時間の経過は、tick境界ごとに表示内容を控える', () => {
+    const mini = setUp();
+    const game = mini.game;
     const before = game.world.totalMinutes;
 
-    const recording = recordChange(game, codex, locale, undefined, () => {
-      game.player.explore();
+    const recording = recordChange(game, mini.codex, locale, undefined, () => {
+      game.session.advanceWorldTime(60);
     });
 
     const after = game.world.totalMinutes;
-    expect(after, '探索はゲーム内時間を消費する').toBeGreaterThan(before);
+    expect(after, '60分ぶん進む').toBe(before + 60);
 
     // 経過し切った時刻の控えは持たない（その並びは行動の効果まで含めて呼び出し側が見せる）。
     for (const tick of recording.ticks) {
@@ -57,16 +62,14 @@ describe('recordChange（経過中のtickごとの控え）', () => {
   it('経過中の控えは、経過し切ってから起きた変化を映さない', () => {
     // 控えたviewは、あとから実時間をかけて見せる。cardsInは呼んだ時点の生きたワールドを読むので、
     // 控えるときに常に見えているレーンを焼き付けていないと、経過中の画面に未来が映る
-    // （withFrozenCards）。ここはワールド側を直に動かして、映し単独の責務だけを確かめる。
-    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
-    const hand = game.player.instance.getSlot(codex.vocabulary.world.handSlotId);
-    const stoneDefId = codex.objectNames.getId('stone');
-    const stone = game.session.spawn(stoneDefId);
+    // （withFrozenCards）。
+    const mini = setUp();
+    const hand = mini.slot('hand');
+    const stone = mini.spawn('stone', hand);
     const stoneId = stone.instanceId;
-    expect(stone.moveToSlot(hand)).toBeUndefined();
 
-    const recording = recordChange(game, codex, locale, undefined, () => {
-      game.session.advanceWorldTime(60);
+    const recording = recordChange(mini.game, mini.codex, locale, undefined, () => {
+      mini.game.session.advanceWorldTime(60);
       stone.destroy();
     });
 
@@ -75,7 +78,7 @@ describe('recordChange（経過中のtickごとの控え）', () => {
       expect(
         tick.view.cardsIn(hand).map((card) => card?.objectGlobalId),
         `tick@${tick.minutes}の手持ちには、まだ石がある`,
-      ).toContain(stoneDefId);
+      ).toContain(stone.def.globalId);
 
     expect(
       recording.changes.some((change) => change.object.instanceId === stoneId),
@@ -84,13 +87,11 @@ describe('recordChange（経過中のtickごとの控え）', () => {
   });
 
   it('時間を消費しない変更は、控えを持たずに出入りだけを返す', () => {
-    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const mini = setUp();
 
     let stoneId = -1;
-    const recording = recordChange(game, codex, locale, undefined, () => {
-      const stone = game.session.spawn(codex.objectNames.getId('stone'));
-      stoneId = stone.instanceId;
-      expect(stone.moveToSlot(game.player.instance.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+    const recording = recordChange(mini.game, mini.codex, locale, undefined, () => {
+      stoneId = mini.spawn('stone', mini.slot('hand')).instanceId;
     });
 
     expect(recording.ticks, '時間が経っていないのでtick境界を跨がない').toEqual([]);
