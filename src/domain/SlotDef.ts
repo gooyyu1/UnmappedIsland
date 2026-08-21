@@ -1,8 +1,6 @@
 import type { WorldObject } from './WorldObject';
-import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { weightTokens } from './describeEffect';
-import { text } from './Description';
 import type { ObjectDef } from './ObjectDef';
+import type { WeightReading } from './EffectReader';
 import type { WeightSpec } from './PickEffect';
 import type { TypeMatchRule } from './TypeMatchRule';
 
@@ -38,14 +36,12 @@ export class CellDef {
   accepts(candidateDef: ObjectDef): boolean {
     return this.accept === undefined || this.accept.matches(candidateDef);
   }
-
-  /** この枠を書き表す（Description参照）。 */
-  describe(names: DefNames): readonly DescriptionToken[] {
-    const tokens: DescriptionToken[] = [...(this.accept?.describe(names) ?? [text('どんな型でも')])];
-    if (this.max !== undefined) tokens.push(text(`（同種は${this.max}個まで）`));
-    return tokens;
-  }
 }
+
+/** 枠ごとの受け入れ宣言の読み上げ（SlotDef.cellsReading参照）。 */
+export type CellsReading =
+  | { readonly kind: 'uniform'; readonly cell: CellDef }
+  | { readonly kind: 'perCell'; readonly cells: readonly CellDef[] };
 
 /** どんな型でも無制限に積めるセル（`cell`も`cells`も書かれていないスロットの既定）。 */
 const ANY_CELL = new CellDef(undefined, undefined);
@@ -142,21 +138,18 @@ export class SlotDef {
   }
 
   /**
-   * このスロットが受け入れる型を書き出す（Description参照）。枠ごとに違う要件を書けるため、
-   * 枠の内訳は位置ごとに違うときだけ位置を添えて並べる（同じなら1行で足りる）。
+   * 枠ごとの受け入れ宣言（7.2節）。**枠の内訳が位置ごとに違うときだけ位置ごとに並ぶ**——全部同じなら
+   * 1つで足りるので、読み手は位置を添えるかどうかをこの形で見分ける。
    */
-  describeAccept(names: DefNames, out: DescriptionWriter): void {
-    if (this.cellDefs.every((cell) => cell === this.sharedCell)) {
-      out.write(...this.sharedCell.describe(names));
-      return;
-    }
-    for (const [index, cell] of this.cellDefs.entries())
-      out.write(text(`${index + 1}枠目: `), ...cell.describe(names));
+  get cellsReading(): CellsReading {
+    return this.cellDefs.every((cell) => cell === this.sharedCell)
+      ? { kind: 'uniform', cell: this.sharedCell }
+      : { kind: 'perCell', cells: this.cellDefs };
   }
 
-  /** ここへ物を入れるのにかかる時間（7.10節）の書き表し。宣言が無ければundefined（一瞬で入る）。 */
-  describePutInDuration(names: DefNames): readonly DescriptionToken[] | undefined {
-    return this.putInDuration === undefined ? undefined : weightTokens(this.putInDuration.reading, names);
+  /** ここへ物を入れるのにかかる時間（7.10節）の宣言。省いていればundefined（一瞬で入る）。 */
+  get putInDurationReading(): WeightReading | undefined {
+    return this.putInDuration?.reading;
   }
 
   /** index番目の枠の定義。枠数が決まっていないスロットではどの位置でも共通の定義。 */

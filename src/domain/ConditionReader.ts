@@ -1,0 +1,51 @@
+import type { ConditionNode, ConditionOp } from './ConditionNode';
+import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
+import type { TypeMatchReading } from './TypeMatchRule';
+
+/**
+ * conditions（14節）の木を**何が書かれているか**として読み上げる相手（ConditionNode.read）。
+ *
+ * 葉の種類ごとにメソッドを持つのは、種類を1つ足したときに読み手が黙って取りこぼさないようにするため
+ * （効果の読み上げ口（EffectReader）と同じ理由）。**kindごとに使うフィールドが引数で決まる**ので、
+ * 読み手の側に「このkindならこのフィールドがあるはず」という非nullの思い込みが要らない。
+ *
+ * 複合ノード（all/any/not）は子を木のまま渡す。入れ子をどう畳むかは読み手が決める。
+ */
+export interface ConditionReader {
+  /** `{subject, prop, <比較演算子>: value}`。値はリテラルの並びか、別のプロパティへの参照。 */
+  property(reading: PropertyConditionReading): void;
+
+  /** `{subject, prop, in_stage}`。propの実効値がその名前の段（6.4節）に該当しているか。 */
+  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string): void;
+
+  /** `{subject, in_slot}`。subjectが今まさに親のそのスロットに入っているか。 */
+  slotPosition(root: ReferenceRoot, slotGlobalId: number): void;
+
+  /** `{subject, slot, matches}`。subjectが持つスロットの中に、当てはまる子が1つでもあるか。 */
+  slotContent(root: ReferenceRoot, slotGlobalId: number, match: TypeMatchReading): void;
+
+  /** `{subject, matches}`。subject自身が当てはまるか。 */
+  objectMatches(root: ReferenceRoot, match: TypeMatchReading): void;
+
+  /** 子すべての論理積。 */
+  all(children: readonly ConditionNode[]): void;
+
+  /** 子のいずれかの論理和。 */
+  any(children: readonly ConditionNode[]): void;
+
+  /** 子（常に1つ）の否定。 */
+  not(child: ConditionNode): void;
+}
+
+/** プロパティ比較1つの宣言。valuesとvalueRefはどちらか一方だけを持つ。 */
+export interface PropertyConditionReading {
+  readonly root: ReferenceRoot;
+  readonly propertyGlobalId: number;
+  readonly op: ConditionOp;
+
+  /** リテラルとの比較。lt/lte/gt/gte/eq/neqは常に1要素、in/not_inは複数になりうる。 */
+  readonly values: readonly number[] | undefined;
+
+  /** 別のプロパティの実効値との比較（10.2節と同じ「リテラルか参照か」の二択）。 */
+  readonly valueRef: PropertyPath | undefined;
+}

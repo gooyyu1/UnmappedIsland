@@ -5,7 +5,9 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { samplePackPath } from '../support/samplePack';
 import type { ActionDef } from '../../src/domain/ActionDef';
-import { DescriptionWriter } from '../../src/domain/Description';
+import { DescriptionWriter } from '../../src/codex-viewer/describe/Description';
+import { defNamesOf } from '../../src/codex-viewer/describe/codexNames';
+import { describeInteraction } from '../../src/codex-viewer/describe/describeInteraction';
 import {
   loadYamlDirectory,
   loadYamlFile,
@@ -33,7 +35,7 @@ describe('サンプルアセットパックの薬', () => {
     const def = codex.objects.get(codex.objectNames.getId(objectName));
     const action = def.actions.find((candidate) => candidate.name === actionName);
     const writer = new DescriptionWriter();
-    (action as ActionDef).describe(codex, writer);
+    describeInteraction(action as ActionDef, defNamesOf(codex), writer);
     return writer.toPlainText();
   }
 

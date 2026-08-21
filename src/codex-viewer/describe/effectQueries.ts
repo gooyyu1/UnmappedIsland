@@ -1,6 +1,11 @@
-import type { EffectDeclaration, EffectReader, PickCandidateReading, TransferReading } from './EffectReader';
-import type { ObjectRefReading } from './ObjectRef';
-import type { ReferenceRoot } from './ReferenceRoot';
+import type {
+  EffectDeclaration,
+  EffectReader,
+  PickCandidateReading,
+  TransferReading,
+} from '../../domain/EffectReader';
+import type { ObjectRefReading } from '../../domain/ObjectRef';
+import type { ReferenceRoot } from '../../domain/ReferenceRoot';
 
 /**
  * 効果の宣言に対する逆引き（「このプロパティを書き換えるのは誰か」「これを生むのは誰か」）。

@@ -1,7 +1,5 @@
 import type { WorldObject } from './WorldObject';
 import type { ConditionNode } from './ConditionNode';
-import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { reasonRef, text } from './Description';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -21,21 +19,15 @@ export class Requirement {
     this.node = node;
     this.reasonName = reasonName;
   }
-
-  /** この要件を書き表す（Description参照）。理由を宣言していれば添える。 */
-  describe(names: DefNames): readonly DescriptionToken[] {
-    const tokens = [...this.node.describe(names)];
-    if (this.reasonName !== undefined) tokens.push(text('（理由: '), reasonRef(this.reasonName), text('）'));
-    return tokens;
-  }
 }
 
 /** 1つの操作を実行するために満たすべき要件一式（宣言順・暗黙のAND）。 */
 export class Requirements {
-  private readonly entries: readonly Requirement[];
+  /** 宣言順の要件（読み上げは呼び出し側が行う）。 */
+  readonly declarations: readonly Requirement[];
 
   constructor(entries: readonly Requirement[]) {
-    this.entries = entries;
+    this.declarations = entries;
   }
 
   /**
@@ -43,11 +35,6 @@ export class Requirements {
    * 実行可否と「なぜできないか」が同じ1回の評価から出るので、呼び出し側は2度評価しなくてよい。
    */
   firstUnmet(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): Requirement | undefined {
-    return this.entries.find((entry) => !entry.node.evaluate(resolveRoot));
-  }
-
-  /** 要件を宣言順に1件1行で書き出す（Description参照）。 */
-  describe(names: DefNames, out: DescriptionWriter): void {
-    for (const entry of this.entries) out.write(...entry.describe(names));
+    return this.declarations.find((entry) => !entry.node.evaluate(resolveRoot));
   }
 }

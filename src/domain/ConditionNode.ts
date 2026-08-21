@@ -1,23 +1,10 @@
 import type { WorldObject } from './WorldObject';
-import type { DefNames, DescriptionToken } from './Description';
-import { propertyRef, slotRef, stageRef, text } from './Description';
+import type { ConditionReader } from './ConditionReader';
 import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
 
 /** GameElementDefinition.md 14.1節の比較演算子。 */
 export type ConditionOp = 'lt' | 'lte' | 'gt' | 'gte' | 'eq' | 'neq' | 'in' | 'not_in';
-
-/** 比較演算子の書き表し方（describe用）。 */
-const OP_SYMBOLS: Readonly<Record<ConditionOp, string>> = {
-  lt: '<',
-  lte: '<=',
-  gt: '>',
-  gte: '>=',
-  eq: '==',
-  neq: '!=',
-  in: 'in',
-  not_in: 'not in',
-};
 
 type ConditionNodeKind =
   /** {subject, prop, <比較演算子>: value}形式のプロパティ比較。 */
@@ -159,75 +146,34 @@ export class ConditionNode {
   }
 
   /**
-   * この条件を読める形に書き表す（Description参照）。1つの式なので行に分けず、断片の並びを返す。
-   * 複合ノード（all/any/not）は括弧で包み、入れ子の切れ目が読み取れるようにする。
+   * この条件が何を書いているかを読み上げる（ConditionReader参照）。**kindごとに使うフィールドだけを
+   * 引数で渡す**ので、読み手はこのクラスの持ち方（単一クラス+kind）を知らなくてよい。
    */
-  describe(names: DefNames): readonly DescriptionToken[] {
+  read(reader: ConditionReader): void {
     switch (this.kind) {
       case 'property':
-        return this.describeProperty(names);
+        return reader.property({
+          root: this.root!,
+          propertyGlobalId: this.propertyGlobalId!,
+          op: this.op!,
+          values: this.values,
+          valueRef: this.valueRef,
+        });
       case 'property_stage':
-        return [
-          propertyRef(names.propertyName(this.propertyGlobalId!), this.root),
-          text('が段'),
-          stageRef(this.stageName!),
-          text('にある'),
-        ];
+        return reader.propertyStage(this.root!, this.propertyGlobalId!, this.stageName!);
       case 'slot_position':
-        return [
-          text(`${this.root}が`),
-          slotRef(names.slotName(this.slotGlobalId!)),
-          text('スロットに入っている'),
-        ];
+        return reader.slotPosition(this.root!, this.slotGlobalId!);
       case 'slot_content':
-        return [
-          text(`${this.root}の`),
-          slotRef(names.slotName(this.slotGlobalId!)),
-          text('スロットに'),
-          ...this.matchRule!.describe(names),
-          text('が入っている'),
-        ];
+        return reader.slotContent(this.root!, this.slotGlobalId!, this.matchRule!.reading);
       case 'object_matches':
-        return [text(`${this.root}が`), ...this.matchRule!.describe(names), text('である')];
+        return reader.objectMatches(this.root!, this.matchRule!.reading);
       case 'all':
-        return this.describeChildren(names, 'かつ');
+        return reader.all(this.children!);
       case 'any':
-        return this.describeChildren(names, 'または');
+        return reader.any(this.children!);
       default:
-        return [text('not '), ...this.children![0].describe(names)];
+        return reader.not(this.children![0]);
     }
-  }
-
-  private describeProperty(names: DefNames): readonly DescriptionToken[] {
-    const tokens: DescriptionToken[] = [
-      propertyRef(names.propertyName(this.propertyGlobalId!), this.root),
-      text(` ${OP_SYMBOLS[this.op!]} `),
-    ];
-
-    if (this.valueRef !== undefined) {
-      tokens.push(propertyRef(names.propertyName(this.valueRef.propertyGlobalId), this.valueRef.root));
-      return tokens;
-    }
-
-    const values = (this.values ?? []).map((value) => names.propertyValue(this.propertyGlobalId!, value));
-    const isList = this.op === 'in' || this.op === 'not_in';
-    if (isList) tokens.push(text('['));
-    for (const [index, value] of values.entries()) {
-      if (index > 0) tokens.push(text(', '));
-      tokens.push(value);
-    }
-    if (isList) tokens.push(text(']'));
-    return tokens;
-  }
-
-  private describeChildren(names: DefNames, conjunction: string): readonly DescriptionToken[] {
-    const tokens: DescriptionToken[] = [text('(')];
-    for (const [index, child] of this.children!.entries()) {
-      if (index > 0) tokens.push(text(` ${conjunction} `));
-      tokens.push(...child.describe(names));
-    }
-    tokens.push(text(')'));
-    return tokens;
   }
 
   evaluate(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {

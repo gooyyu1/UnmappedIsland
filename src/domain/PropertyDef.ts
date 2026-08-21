@@ -3,12 +3,9 @@ import type { Rng } from './Rng';
 import { INT32_MAX } from '../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
 import { ActiveEffects, SetEffect } from './ActiveEffect';
-import { describeEffect } from './describeEffect';
 import type { EffectDeclaration } from './EffectReader';
 import type { AlertLevel } from './AlertLevel';
 import { ALERT_LEVELS } from './AlertLevel';
-import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { propertyTagRef, stageRef, text } from './Description';
 
 /**
  * 値がどちらへ動くと悪いか（PropertyDef.alertDirection）。mixedは「両端が悪い」並びで、バーの
@@ -106,22 +103,12 @@ export class PropertyStage {
     this.alert = alert;
     this.art = art;
   }
-
-  /** この段を書き表す（Description参照）。propertyGlobalIdは、eqの値をシンボル名へ戻すために要る。 */
-  describe(names: DefNames, propertyGlobalId: number): readonly DescriptionToken[] {
-    const tokens: DescriptionToken[] = [stageRef(this.name)];
-    if (this.eq !== undefined) {
-      // シンボル型の段は、段の名前がそのまま比較する値（6.4節）。同じ名前を二度書かない。
-      const value = names.propertyValue(propertyGlobalId, this.eq);
-      if (value.kind !== 'symbol' || value.name !== this.name) tokens.push(text(': '), value, text('のとき'));
-    } else if (this.min !== undefined) tokens.push(text(`: ${this.min}以上`));
-    else tokens.push(text(': どの段にも該当しないとき'));
-
-    if (this.alert !== 'safe') tokens.push(text(`（alert: ${this.alert}）`));
-    if (this.art !== undefined) tokens.push(text(`（art: ${this.art}）`));
-    return tokens;
-  }
 }
+
+/** 初期値の宣言（PropertyDef.initialValueReading参照）。 */
+export type InitialValueReading =
+  | { readonly kind: 'fixed'; readonly value: number }
+  | { readonly kind: 'roll'; readonly min: number; readonly max: number };
 
 /** range系イベント（6.3節）の名前。 */
 export type RangeEventLabel = 'on_max' | 'on_min';
@@ -165,6 +152,13 @@ export class PropertyDef {
   private readonly initialValueRange: PropertyRange | undefined;
 
   /** 生成時に1回ロールされる初期値を持つか（6.2節）。量的オブジェクトでは禁止（7.6節）。 */
+  /** 初期値の宣言（6.2節）。抽選つきならその範囲、そうでなければ固定値。 */
+  get initialValueReading(): InitialValueReading {
+    return this.initialValueRange !== undefined
+      ? { kind: 'roll', min: this.initialValueRange.min, max: this.initialValueRange.max }
+      : { kind: 'fixed', value: this.initialValue };
+  }
+
   get hasInitialValueRoll(): boolean {
     return this.initialValueRange !== undefined;
   }
@@ -193,7 +187,8 @@ export class PropertyDef {
   private readonly onMin: ActiveEffect | undefined;
 
   /** 順不同で構わない（resolveStage が min の値そのもので判定するため）。空なら stages なし。 */
-  private readonly stages: readonly PropertyStage[];
+  /** 宣言されている段（6.4節）を宣言順に。1つも宣言していなければ空。 */
+  readonly stages: readonly PropertyStage[];
 
   /** stages中のフォールバック段（min:undefined・eq:undefined）。stagesは不変のため一度だけ求める。該当が無ければundefined。 */
   private readonly fallbackStage: PropertyStage | undefined;
@@ -307,66 +302,12 @@ export class PropertyDef {
   }
 
   /**
-   * 初期値の書き表し（Description参照）。一覧の表など、1行で済ませたい場所向けに断片で返す。
-   */
-  describeInitialValue(names: DefNames): readonly DescriptionToken[] {
-    if (this.initialValueRange !== undefined)
-      return [text(`${this.initialValueRange.min}〜${this.initialValueRange.max}（生成時に1回抽選）`)];
-    return [names.propertyValue(this.globalId, this.initialValue)];
-  }
-
-  /** このプロパティの定義を書き出す（Description参照）。 */
-  describe(names: DefNames, out: DescriptionWriter): void {
-    out.write(text('初期値: '), ...this.describeInitialValue(names));
-    if (this.range !== undefined) out.write(text(`range: ${this.range.min} 〜 ${this.range.max}`));
-    if (this.inherit) out.write(text('inherit: 同名プロパティを持つ最初の祖先の実効値を足す'));
-    if (this.gauge !== undefined)
-      out.write(text(`gauge: min=${this.gauge.atMin} / max=${this.gauge.atMax}（カードにバーで出す）`));
-    if (this.tags.length > 0)
-      out.write(
-        text('tags: '),
-        ...this.tags.map((tagGlobalId) => propertyTagRef(names.propertyTagName(tagGlobalId))),
-      );
-
-    if (this.stages.length > 0) {
-      out.write(text('stages:'));
-      out.indented(() => {
-        for (const stage of this.stages) out.write(...stage.describe(names, this.globalId));
-      });
-    }
-
-    this.describeRangeEvent('on_max', this.onMax, names, out);
-    this.describeRangeEvent('on_min', this.onMin, names, out);
-  }
-
-  private describeRangeEvent(
-    label: string,
-    effect: ActiveEffect | undefined,
-    names: DefNames,
-    out: DescriptionWriter,
-  ): void {
-    if (effect === undefined) return;
-    out.write(text(`${label}:`));
-    out.indented(() => describeEffect(effect, names, out));
-  }
-
-  /**
    * range系イベント（6.3節）に、matchesが真になる効果があるか（逆引きの絞り込み用）。
    * 効果そのものを渡すので、何を尋ねるか（どのプロパティを書き換えるか・どの型を生むか）は
    * 呼び出し側が決める。
    */
   hasRangeEventMatching(matches: (declaration: EffectDeclaration) => boolean): boolean {
     return this.rangeEvents().some(([, effect]) => matches(effect));
-  }
-
-  /** range系イベントのうち、matchesが真になるものだけを書き出す。 */
-  describeRangeEventsMatching(
-    matches: (declaration: EffectDeclaration) => boolean,
-    names: DefNames,
-    out: DescriptionWriter,
-  ): void {
-    for (const [label, effect] of this.rangeEvents())
-      if (matches(effect)) this.describeRangeEvent(label, effect, names, out);
   }
 
   /** 宣言されているrange系イベントとその名前（6.3節）。 */

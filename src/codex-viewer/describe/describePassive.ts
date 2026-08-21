@@ -1,8 +1,14 @@
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
+import { describeCondition } from './describeCondition';
 import { propertyRef, stageRef, text } from './Description';
 import { addTokens, linkedAddTokens, transferTokens } from './describeEffect';
-import type { TransferReading } from './EffectReader';
-import type { GateReading, PassiveDeclaration, PassivePropertyReading, PassiveReader } from './PassiveReader';
+import type { TransferReading } from '../../domain/EffectReader';
+import type {
+  GateReading,
+  PassiveDeclaration,
+  PassivePropertyReading,
+  PassiveReader,
+} from '../../domain/PassiveReader';
 
 /**
  * 持続効果の宣言（PassiveReader）を、読める形へ書き出す（Description参照）。1つにつき1行で、
@@ -40,7 +46,7 @@ function gateTokens(gate: GateReading, names: DefNames): readonly DescriptionTok
 
   if (gate.conditions !== undefined) {
     if (tokens.length > 0) tokens.push(text(' かつ '));
-    tokens.push(...gate.conditions.describe(names));
+    tokens.push(...describeCondition(gate.conditions, names));
   }
   return tokens;
 }

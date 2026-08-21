@@ -354,3 +354,14 @@
   無い。「非公開にできるか」を統合の判断基準にすると空回りする——実測では、統合で非公開にできる
   メンバは `ObjectDef`+`WorldObject` で2つ、`SlotDef`+`Slot` でゼロだった。何を公開する必要があるかは
   どんな画面を作るかで決まり、論理的な線は引けない（[Layers.md](./Layers.md) 3節）。
+
+- **宣言を書き表す仕組みを、定義クラスのメソッドとして持たせないこと。** かつては `describe` が23個、
+  10個の定義クラスに生えていた。呼ぶのはデータベースビューアだけ（ゲームは一度も呼ばない）で、
+  `ObjectDef.describeInfluencesOn(propertyGlobalId, ownedByThisDef, …)` の `ownedByThisDef` は
+  **ビューアのプロパティページの問いがそのままシグネチャになったもの**だった。害は2つで、定義が
+  「自分がどう見られるか」を知ってしまうことと、`import` に現れない依存になること
+  （`Description` を輸入しているだけなので、依存図にはビューアが出てこない）。
+  今は読み上げ口（`EffectReader`・`PassiveReader`・`ConditionReader`）だけを持ち、書き出しは
+  `src/codex-viewer/describe/` にある。向きは `tests/architecture/layers.test.ts` が見張る。
+  **読み上げ口にすると追従の強制が増える**のも効いた——`ConditionNode` に kind を足しても
+  `describe` の switch は素通りしていたが、`ConditionReader` なら実装が足りずコンパイルが止まる。

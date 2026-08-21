@@ -1,11 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { DescriptionWriter } from '../../src/domain/Description';
+import { DescriptionWriter } from '../../src/codex-viewer/describe/Description';
+import { defNamesOf } from '../../src/codex-viewer/describe/codexNames';
+import {
+  creates,
+  describeInfluencesOn,
+  describeObjectDef,
+  usesInRecipes,
+} from '../../src/codex-viewer/describe/describeObjectDef';
+import { describePassive } from '../../src/codex-viewer/describe/describePassive';
+import { describeInteraction } from '../../src/codex-viewer/describe/describeInteraction';
+import { describeProperty } from '../../src/codex-viewer/describe/describeProperty';
+import { describeRecipe } from '../../src/codex-viewer/describe/describeRecipe';
+import { describeAccept } from '../../src/codex-viewer/describe/describeSlot';
+import type { DefNames } from '../../src/codex-viewer/describe/Description';
+import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
- * 定義が自分自身を書き表す仕組み（`describe`、src/domain/Description.ts）のテスト。
+ * 宣言を読める形へ書き出す仕組み（src/codex-viewer/describe）のテスト。
  * 文言そのものより、**読み手が必要とする情報が落ちていないこと**（対象・量・条件・入れ子の深さ、
  * シンボル値が名前に戻ること）を確かめる。
  */
@@ -113,6 +127,10 @@ object_defs:
         move: {subject: self, to: parent}
 `;
 
+function describeAllPassives(def: ObjectDef, names: DefNames, out: DescriptionWriter): void {
+  for (const effect of def.passives.declarations) describePassive(effect, names, out);
+}
+
 function describeToText(codex: WorldCodex, body: (out: DescriptionWriter) => void): string {
   const writer = new DescriptionWriter();
   body(writer);
@@ -122,11 +140,12 @@ function describeToText(codex: WorldCodex, body: (out: DescriptionWriter) => voi
 describe('定義の自己記述（describe）', () => {
   const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).build();
   const objectDef = (name: string) => codex.objects.get(codex.objectNames.getId(name));
+  const names = defNamesOf(codex);
 
   it('プロパティの初期値・range・段・range系イベントを書き出す', () => {
     const world = objectDef('world');
     const hour = world.getPropertyDef(codex.propertyNames.getId('hour'))!;
-    const text = describeToText(codex, (out) => hour.describe(codex, out));
+    const text = describeToText(codex, (out) => describeProperty(hour, names, out));
 
     expect(text).toContain('初期値: 0');
     expect(text).toContain('range: 0 〜 24');
@@ -141,7 +160,7 @@ describe('定義の自己記述（describe）', () => {
   it('シンボル型プロパティの値はシンボル名に戻す', () => {
     const world = objectDef('world');
     const weather = world.getPropertyDef(codex.propertyNames.getId('weather'))!;
-    const text = describeToText(codex, (out) => weather.describe(codex, out));
+    const text = describeToText(codex, (out) => describeProperty(weather, names, out));
 
     // 値は実行時には数値だが、シンボル型と宣言されていれば名前に戻る（6.6節）。
     expect(text).toContain('初期値: clear');
@@ -150,7 +169,7 @@ describe('定義の自己記述（describe）', () => {
   });
 
   it('持続効果は対象・量・ゲートを書き出す', () => {
-    const text = describeToText(codex, (out) => objectDef('world').passives.describe(codex, out));
+    const text = describeToText(codex, (out) => describeAllPassives(objectDef('world'), names, out));
 
     expect(text).toContain('modify warmth -2');
     expect(text).toContain('hourが段nightにある');
@@ -160,7 +179,7 @@ describe('定義の自己記述（describe）', () => {
     const coconut = objectDef('coconut');
     const slot = coconut.getSlotDef(codex.slotNames.getId('contents'))!;
 
-    expect(describeToText(codex, (out) => slot.describeAccept(codex, out))).toBe(
+    expect(describeToText(codex, (out) => describeAccept(slot, names, out))).toBe(
       'foodを持つ型（同種は3個まで）',
     );
     expect(slot.cellCount).toBe(2);
@@ -169,7 +188,7 @@ describe('定義の自己記述（describe）', () => {
 
   it('アクションはきっかけ・要件・所要時間・効果をこの順で書き出す', () => {
     const eat = objectDef('coconut').actions[0];
-    const lines = describeToText(codex, (out) => eat.describe(codex, out)).split('\n');
+    const lines = describeToText(codex, (out) => describeInteraction(eat, names, out)).split('\n');
 
     expect(lines[0]).toBe('show_menu: always');
     expect(lines[1]).toBe('conditions:');
@@ -181,18 +200,18 @@ describe('定義の自己記述（describe）', () => {
   });
 
   it('効果の動詞は、対象と量を書き出す', () => {
-    const lines = describeToText(codex, (out) => objectDef('gourd').actions[0].describe(codex, out)).split(
-      '\n',
-    );
+    const lines = describeToText(codex, (out) =>
+      describeInteraction(objectDef('gourd').actions[0], names, out),
+    ).split('\n');
 
     expect(lines).toContain('transfer water → hydration（最大200 → 4）');
     expect(lines).toContain('set spilled = 1');
   });
 
   it('linked_addと、moveの両端を書き出す', () => {
-    const lines = describeToText(codex, (out) => objectDef('gourd').actions[1].describe(codex, out)).split(
-      '\n',
-    );
+    const lines = describeToText(codex, (out) =>
+      describeInteraction(objectDef('gourd').actions[1], names, out),
+    ).split('\n');
 
     expect(lines).toContain('transfer water → spilled（最大999）');
     expect(lines).toContain('  add spilled -1（実際に移した量に比例）');
@@ -206,9 +225,9 @@ describe('定義の自己記述（describe）', () => {
    */
   it('配置先・あふれ許可・出来事の対象は書かない', () => {
     const text = describeToText(codex, (out) => {
-      objectDef('gourd').actions[0].describe(codex, out);
-      objectDef('gourd').actions[1].describe(codex, out);
-      objectDef('coconut').combinations[0].describe(codex, out);
+      describeInteraction(objectDef('gourd').actions[0], names, out);
+      describeInteraction(objectDef('gourd').actions[1], names, out);
+      describeInteraction(objectDef('coconut').combinations[0], names, out);
     });
 
     expect(text).toContain('signal gulped');
@@ -219,7 +238,7 @@ describe('定義の自己記述（describe）', () => {
 
   it('combinationは相手のタグとpickの候補を書き出す', () => {
     const cut = objectDef('coconut').combinations[0];
-    const text = describeToText(codex, (out) => cut.describe(codex, out));
+    const text = describeToText(codex, (out) => describeInteraction(cut, names, out));
 
     expect(text).toContain('with: cutting_toolを持つ型のカードのドロップ');
     expect(text).toContain('pick:');
@@ -233,11 +252,12 @@ describe('定義の自己記述（describe）', () => {
 describe('プロパティの逆引き（describeInfluencesOn）', () => {
   const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).build();
   const objectDef = (name: string) => codex.objects.get(codex.objectNames.getId(name));
+  const names = defNamesOf(codex);
 
   function influences(fromObject: string, ownerObject: string, propertyName: string): string {
     const propertyGlobalId = codex.propertyNames.getId(propertyName);
     return describeToText(codex, (out) =>
-      objectDef(fromObject).describeInfluencesOn(propertyGlobalId, fromObject === ownerObject, codex, out),
+      describeInfluencesOn(objectDef(fromObject), propertyGlobalId, fromObject === ownerObject, names, out),
     );
   }
 
@@ -264,39 +284,41 @@ describe('生まれる側・材料側からの逆引き', () => {
 
   it('pickの奥にあるspawnも、生み出す型として数える', () => {
     // coconutのcutは、pickの候補の中でcoconut_halfをspawnする。
-    expect(objectDef('coconut').creates(codex.objectNames.getId('coconut_half'))).toBe(true);
+    expect(creates(objectDef('coconut'), codex.objectNames.getId('coconut_half'))).toBe(true);
   });
 
   it('生み出さない型には答えない', () => {
-    expect(objectDef('coconut').creates(codex.objectNames.getId('coconut'))).toBe(false);
-    expect(objectDef('bowl').creates(codex.objectNames.getId('coconut_half'))).toBe(false);
+    expect(creates(objectDef('coconut'), codex.objectNames.getId('coconut'))).toBe(false);
+    expect(creates(objectDef('bowl'), codex.objectNames.getId('coconut_half'))).toBe(false);
   });
 
   it('材料としても道具としても、使う型から完成品を辿れる', () => {
     const bowl = objectDef('bowl');
 
     const def = (name: string) => codex.objects.get(codex.objectNames.getId(name));
-    expect(bowl.usesInRecipes(def('coconut_half'))).toBe(true);
+    expect(usesInRecipes(bowl, def('coconut_half'))).toBe(true);
     // 消費しない道具（consume: false）も、そのレシピに関わる型として数える。
-    expect(bowl.usesInRecipes(def('sharp_stone'))).toBe(true);
-    expect(bowl.usesInRecipes(def('coconut'))).toBe(false);
+    expect(usesInRecipes(bowl, def('sharp_stone'))).toBe(true);
+    expect(usesInRecipes(bowl, def('coconut'))).toBe(false);
   });
 });
 
 describe('同梱のWorldCodex', () => {
   const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+  const names = defNamesOf(codex);
 
   it('すべての型・プロパティ・スロット・操作・レシピが書き出せる', () => {
     const writer = new DescriptionWriter();
     for (let globalId = 0; globalId < codex.objects.count; globalId++) {
       const def = codex.objects.get(globalId);
       if (def === undefined) continue;
-      def.describe(codex, writer);
-      def.passives.describe(codex, writer);
-      for (const propertyDef of def.enumeratePropertyDefs()) propertyDef.describe(codex, writer);
-      for (const slotDef of def.enumerateSlotDefs()) slotDef.describeAccept(codex, writer);
-      for (const interaction of [...def.actions, ...def.combinations]) interaction.describe(codex, writer);
-      for (const recipe of def.recipes) recipe.describe(codex, writer);
+      describeObjectDef(def, names, writer);
+      describeAllPassives(def, names, writer);
+      for (const propertyDef of def.enumeratePropertyDefs()) describeProperty(propertyDef, names, writer);
+      for (const slotDef of def.enumerateSlotDefs()) describeAccept(slotDef, names, writer);
+      for (const interaction of [...def.actions, ...def.combinations])
+        describeInteraction(interaction, names, writer);
+      for (const recipe of def.recipes) describeRecipe(recipe, names, writer);
     }
 
     // 空行（何も書かれていない行）が混ざっていないこと＝どの宣言も言い表せている。

@@ -1,10 +1,5 @@
 import type { ActionDef } from './ActionDef';
 import type { CombinationDef } from './CombinationDef';
-import type { EffectDeclaration } from './EffectReader';
-import { spawnsObject, writesToProperty } from './effectQueries';
-import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { actionRef, combinationRef, propertyRef, text } from './Description';
-import type { InteractionDef } from './InteractionDef';
 import { LocalIndexMap } from './LocalIndexMap';
 import type { PassiveEffect } from './PassiveEffect';
 import { PassiveEffects } from './PassiveEffects';
@@ -154,109 +149,14 @@ export class ObjectDef {
     this.isInProgress = isInProgress;
   }
 
-  /**
-   * この型そのものの性質（4節・7節の宣言）を書き出す（Description参照）。既定と同じ性質は書かない
-   * ——「特に断っていない」ことと同じ意味なので、並べても読み手の手掛かりにならないため。
-   */
-  describe(names: DefNames, out: DescriptionWriter): void {
-    if (this.isSingleton) out.write(text('singleton: 世界にただ1つだけ存在する'));
-    if (!this.stackable) out.write(text('stackable: false（同種でも1個ずつ別の枠に並ぶ）'));
-    if (this.boundToOwner) out.write(text('bound_to_owner: 入っていた親が消えるとき一緒に消える'));
-
-    if (this.stackOrder !== undefined) out.write(text('stack_order: '), ...this.stackOrder.describe(names));
-
-    if (this.artByStagePropertyGlobalId !== undefined)
-      out.write(
-        text('art_by_stage: '),
-        propertyRef(names.propertyName(this.artByStagePropertyGlobalId)),
-        text('の段が絵を切り替える'),
-      );
-  }
-
   /** art_by_stage（6.4節）が指すプロパティの、stagesが宣言しているart接尾辞の一覧。art_by_stageが無ければ空。 */
   artSuffixes(): readonly string[] {
     if (this.artByStagePropertyGlobalId === undefined) return [];
     return this.getPropertyDef(this.artByStagePropertyGlobalId)?.artSuffixes() ?? [];
   }
 
-  /**
-   * この型が、propertyGlobalIdのプロパティを書き換えうる箇所をすべて書き出す（プロパティ側からの
-   * 逆引き）。
-   *
-   * ownedByThisDefは、そのプロパティがこの型自身のものか。falseなら、他の型のプロパティを
-   * 書き換えうる宣言だけを書く（target=selfは常に宣言元自身のプロパティを指すため、
-   * 他の型の同名プロパティには届かない）。
-   */
-  describeInfluencesOn(
-    propertyGlobalId: number,
-    ownedByThisDef: boolean,
-    names: DefNames,
-    out: DescriptionWriter,
-  ): void {
-    this.passives.describeAffecting(propertyGlobalId, ownedByThisDef, names, out);
-
-    const matches = (declaration: EffectDeclaration): boolean =>
-      writesToProperty(declaration, propertyGlobalId, ownedByThisDef);
-
-    for (const propertyDef of this.propertyDefs) {
-      // 自分自身を値域へ丸めるon_max/on_minは、そのプロパティの定義を見れば分かる
-      // （「どこから影響されるか」を知りたい読み手には何も足さない）。
-      if (ownedByThisDef && propertyDef.globalId === propertyGlobalId) continue;
-      this.describeRangeEvents(propertyDef, matches, names, out);
-    }
-
-    for (const [token, interaction] of this.matchingInteractions(matches)) {
-      out.write(token, text(':'));
-      out.indented(() => interaction.describe(names, out));
-    }
-  }
-
-  /**
-   * この型が、objectGlobalIdの型を生み出しうるか（生まれる側からの逆引き）。生むのはspawn（9.4節）
-   * だけなので、探すのはactions・combinationsとrange系イベント。
-   *
-   * どの操作で生まれるかまでは返さない——「これはどこから手に入るのか」を知りたい読み手には、
-   * 生む側の型が答えで、その先はその型のページにある。
-   */
-  creates(objectGlobalId: number): boolean {
-    const matches = (declaration: EffectDeclaration): boolean => spawnsObject(declaration, objectGlobalId);
-    return (
-      this.propertyDefs.some((propertyDef) => propertyDef.hasRangeEventMatching(matches)) ||
-      this.matchingInteractions(matches).length > 0
-    );
-  }
-
-  /**
-   * この型のレシピが、candidateDefを素材か道具として要求しているか（材料側からの逆引き）。
-   * 「何になるのか」を知りたい読み手には完成品＝この型が答えなので、どの工程で使うかまでは返さない。
-   */
-  usesInRecipes(candidateDef: ObjectDef): boolean {
-    return this.recipes.some((recipe) => recipe.requires(candidateDef));
-  }
-
   /** 1つのプロパティのrange系イベントのうち、matchesが真になるものを、宣言元の名前を添えて書き出す。 */
-  private describeRangeEvents(
-    propertyDef: PropertyDef,
-    matches: (declaration: EffectDeclaration) => boolean,
-    names: DefNames,
-    out: DescriptionWriter,
-  ): void {
-    if (!propertyDef.hasRangeEventMatching(matches)) return;
-    out.write(propertyRef(propertyDef.name), text(':'));
-    out.indented(() => propertyDef.describeRangeEventsMatching(matches, names, out));
-  }
-
   /** matchesが真になる操作を、その名前を指す断片（actions/combinationsの区別つき）とともに集める。 */
-  private matchingInteractions(
-    matches: (declaration: EffectDeclaration) => boolean,
-  ): readonly (readonly [DescriptionToken, InteractionDef])[] {
-    const found: (readonly [DescriptionToken, InteractionDef])[] = [];
-    for (const action of this.actions) if (matches(action)) found.push([actionRef(action.name), action]);
-    for (const combination of this.combinations)
-      if (matches(combination)) found.push([combinationRef(combination.name), combination]);
-    return found;
-  }
-
   /** グローバルIDでこのObjectDefのPropertyDefを取得する。存在しない場合はundefined。 */
   getPropertyDef(globalPropertyId: number): PropertyDef | undefined {
     const local = this.propertyLayout.toLocal(globalPropertyId);

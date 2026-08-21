@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { spawnsObject } from '../../src/domain/effectQueries';
+import { spawnsObject } from '../../src/codex-viewer/describe/effectQueries';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { advanceCrafting, spawnInProgressObject } from '../../src/domain/crafting';
 import { WorldObject } from '../../src/domain/WorldObject';
