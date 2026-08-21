@@ -1,66 +1,90 @@
-import { beforeAll, describe, expect, it } from 'vitest';
-import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { start as startNewGame } from '../../src/domain/generation/NewGame';
+import { describe, expect, it } from 'vitest';
 import { recipeCategories } from '../../src/game/view/recipeList';
-import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
-import type { Localization } from '../../src/locale/Localization';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { SeededRng } from '../support/SeededRng';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { parseLocale } from '../../src/locale/Localization';
+import { miniGame } from '../support/miniGame';
 
 /**
  * レシピ一覧の棚の組み立て（Windows.md 9.2節）の自動テスト。**画面を作らずに確かめられる**——
  * 何が何番目の棚に載るかは、タグと`recipe_categories`だけで決まる。
+ *
+ * **同梱の定義は読まない**。棚の並びも「その他」への落とし方も、宣言をこの場で書けば全部言える。
  */
 describe('レシピ一覧の棚', () => {
-  let locale: Localization;
+  const locale = parseLocale(
+    'ja.yaml',
+    `
+tag_texts:
+  tool: 道具
+  weapon: 武器
+object_texts:
+  stone: {display_name: 石}
+  stone_axe: {display_name: 石斧}
+  charm: {display_name: お守り}
+`,
+  );
 
-  beforeAll(() => {
-    locale = parseLocale(LOCALE_FILE, bundledLocaleText());
-  });
+  /** 材料に石を1つ使うだけのレシピ。棚の話に要らない差は付けない。 */
+  const recipe = (name: string): string => `
+    recipes:
+      ${name}:
+        steps:
+          - requires: [{object: stone, count: 1, consume: true}]
+            duration: 30`;
 
-  /** 同梱の定義に、追加のYAMLを1枚だけ足して読む。 */
-  const load = (extra?: string): WorldCodex => {
-    const loader = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR);
-    if (extra !== undefined) loader.load('test.yaml', extra);
-    return loader.build();
-  };
+  /** その宣言のもとで棚を組み立てる（載る順に見出しと中身を返す）。 */
+  const shelves = (yaml: string) => {
+    const mini = miniGame(`
+recipe_categories: [tool, weapon]
 
-  const shelves = (codex: WorldCodex) => {
-    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
-    return recipeCategories(game, codex, locale, () => {});
+object_defs:
+  stone:
+    tags: [item]
+${yaml}
+`);
+    return recipeCategories(mini.game, mini.codex, locale, () => {}).map((shelf) => ({
+      label: shelf.label,
+      names: shelf.entries.map((entry) => entry.card.name),
+    }));
   };
 
   it('棚の見出しと並びは、recipe_categoriesの宣言順', () => {
-    expect(shelves(load()).map((shelf) => shelf.label)).toEqual(['道具', '入れ物', '設備', '持ち物']);
+    expect(
+      shelves(`
+  club:
+    tags: [item, weapon]${recipe('carved')}
+  digging_stick:
+    tags: [item, tool]${recipe('carved')}
+`).map((shelf) => shelf.label),
+      '宣言がtool・weaponの順なので、武器を先に宣言しても道具の棚が先',
+    ).toEqual(['道具', '武器']);
   });
 
   it('用途のタグを複数持つ物も、最初に一致した棚にだけ載る', () => {
-    const codex = load();
-    const found = shelves(codex).flatMap((shelf) => shelf.entries.map((entry) => entry.card.name));
-
-    // 石斧はitem・tool・cutting_tool・chopping_tool・weaponを持つが、並ぶのは道具の棚に1枚だけ。
-    const axe = locale.object('stone_axe').displayName;
-    expect(found.filter((name) => name === axe)).toEqual([axe]);
-    expect(new Set(found).size, '同じ完成品が複数の棚に出ない').toBe(found.length);
+    // 石斧は道具でも武器でもあるが、並ぶのは宣言順で先に当たる道具の棚に1枚だけ。
+    expect(
+      shelves(`
+  stone_axe:
+    tags: [item, tool, weapon]${recipe('knapped')}
+`),
+    ).toEqual([{ label: '道具', names: ['石斧'] }]);
   });
 
   it('どの棚のタグも持たない完成品は、その他へ落ちる', () => {
-    const codex = load(`
-object_defs:
-  mystery_charm:
-    tags: [charm]
-    recipes:
-      carved:
-        steps:
-          - requires: [{object: stone, count: 1, consume: true}]
-            duration: 30
-`);
-    const last = shelves(codex).at(-1);
+    expect(
+      shelves(`
+  charm:
+    tags: [item]${recipe('carved')}
+`),
+    ).toEqual([{ label: 'その他', names: ['お守り'] }]);
+  });
 
-    expect(last?.label).toBe('その他');
-    expect(last?.entries.map((entry) => entry.card.name)).toEqual([
-      locale.object('mystery_charm').displayName,
-    ]);
+  it('中身の無い棚は出さない', () => {
+    expect(
+      shelves(`
+  digging_stick:
+    tags: [item, tool]${recipe('carved')}
+`).map((shelf) => shelf.label),
+      '武器のレシピが1つも無ければ、武器の棚ごと出ない',
+    ).toEqual(['道具']);
   });
 });

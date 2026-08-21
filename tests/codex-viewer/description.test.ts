@@ -4,19 +4,16 @@ import { defNamesOf } from '../../src/codex-viewer/describe/codexNames';
 import {
   creates,
   describeInfluencesOn,
-  describeObjectDef,
   usesInRecipes,
 } from '../../src/codex-viewer/describe/describeObjectDef';
 import { describePassive } from '../../src/codex-viewer/describe/describePassive';
 import { describeInteraction } from '../../src/codex-viewer/describe/describeInteraction';
 import { describeProperty } from '../../src/codex-viewer/describe/describeProperty';
-import { describeRecipe } from '../../src/codex-viewer/describe/describeRecipe';
 import { describeAccept } from '../../src/codex-viewer/describe/describeSlot';
 import type { DefNames } from '../../src/codex-viewer/describe/Description';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
  * 宣言を読める形へ書き出す仕組み（src/codex-viewer/describe）のテスト。
@@ -300,29 +297,5 @@ describe('生まれる側・材料側からの逆引き', () => {
     // 消費しない道具（consume: false）も、そのレシピに関わる型として数える。
     expect(usesInRecipes(bowl, def('sharp_stone'))).toBe(true);
     expect(usesInRecipes(bowl, def('coconut'))).toBe(false);
-  });
-});
-
-describe('同梱のWorldCodex', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
-  const names = defNamesOf(codex);
-
-  it('すべての型・プロパティ・スロット・操作・レシピが書き出せる', () => {
-    const writer = new DescriptionWriter();
-    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const def = codex.objects.get(globalId);
-      if (def === undefined) continue;
-      describeObjectDef(def, names, writer);
-      describeAllPassives(def, names, writer);
-      for (const propertyDef of def.enumeratePropertyDefs()) describeProperty(propertyDef, names, writer);
-      for (const slotDef of def.enumerateSlotDefs()) describeAccept(slotDef, names, writer);
-      for (const interaction of [...def.actions, ...def.combinations])
-        describeInteraction(interaction, names, writer);
-      for (const recipe of def.recipes) describeRecipe(recipe, names, writer);
-    }
-
-    // 空行（何も書かれていない行）が混ざっていないこと＝どの宣言も言い表せている。
-    expect(writer.toLines().every((line) => line.toPlainText().length > 0)).toBe(true);
-    expect(writer.toLines().length).toBeGreaterThan(100);
   });
 });

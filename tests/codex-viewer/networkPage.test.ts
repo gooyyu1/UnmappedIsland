@@ -3,18 +3,82 @@ import { CodexSource } from '../../src/codex-viewer/CodexSource';
 import { CodexView } from '../../src/codex-viewer/CodexView';
 import { renderNetworkPage } from '../../src/codex-viewer/networkPage';
 import { renderObjectPage } from '../../src/codex-viewer/pages';
-import { loadLocalization } from '../../src/locale/Localization';
+import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
- * クラフトネットワークのページの検証。同梱の定義を読み、ユーザーが目で辿る形
- * （土地 → 探索 → 素材 → 道具タグ → 加工 → 成果物）がHTMLに現れることを確かめる。
+ * クラフトネットワークのページの検証。ユーザーが目で辿る形（土地 → 探索 → 素材 → 道具タグ →
+ * 加工 → 成果物）がHTMLに現れることを確かめる。
+ *
+ * **同梱の定義は読まない**。図に出るのは「何がどこから生まれ、何を道具に使うか」だけなので、
+ * その繋がりを1本その場に書けば足りる。
  */
+const YAML = `
+object_defs:
+  # クラフトに関わらない型。図に居ないので、ページからのリンクも出ない。
+  world:
+    singleton: true
+
+  sandy_beach:
+    tags: [location]
+    actions:
+      explore:
+        duration: 30
+        spawn: {object: coconut}
+
+  coconut:
+    tags: [item]
+    combinations:
+      # 刃物はdestroyされない＝消費されない入力（道具）。
+      husk:
+        with: {tag: cutting_tool}
+        destroy: self
+        spawn: {object: husked_coconut}
+
+  husked_coconut:
+    tags: [item]
+    combinations:
+      crack:
+        with: {tag: cutting_tool}
+        destroy: self
+        spawn: {object: coconut_half, count: 2}
+
+  coconut_half: {tags: [item]}
+  woven_leaf: {tags: [item]}
+
+  # 道具そのものも作られる物なので、図に並ぶ。
+  stone:
+    tags: [item]
+    combinations:
+      knap:
+        with: {object: stone}
+        destroy: self
+        spawn: {object: sharp_stone}
+
+  sharp_stone: {tags: [item, cutting_tool]}
+
+  # ヤシの実の繋がりの外に居る型。強調したときに薄まる側。
+  woven_basket:
+    tags: [item]
+    recipes:
+      woven:
+        steps:
+          - requires: [{object: woven_leaf, count: 6, consume: true}]
+            duration: 120
+`;
+
+const LOCALE = `
+object_texts:
+  sandy_beach:
+    interactions:
+      explore:
+        display_name: 探索する
+`;
+
 describe('クラフトネットワークのページ', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
-  const locale = loadLocalization(undefined);
-  const view = new CodexView(new CodexSource(codex, locale, ['test']), 'display');
+  const codex = new WorldCodexYamlLoader().load('network.yaml', YAML).build();
+  const locale = parseLocale('ja.yaml', LOCALE);
+  const view = new CodexView(new CodexSource(codex, locale, ['network.yaml']), 'display');
 
   it('型・工程・タグのノードが1枚のSVGに出る', () => {
     const html = renderNetworkPage(view);
@@ -38,7 +102,6 @@ describe('クラフトネットワークのページ', () => {
   });
 
   it('消費されない入力（道具）は破線になる', () => {
-    // 皮をはぐ（husk）の刃物はdestroyされない＝破線の入力。
     expect(renderNetworkPage(view)).toContain('net-input net-dashed');
   });
 

@@ -53,3 +53,24 @@
   （`it('rangeの下限に達するとon_minが発火する', …)`）。
 - 乱数に依存する挙動のテストは、実装のシード列に依存させず、意図した値列を返すスタブ `Rng` を渡して
   シナリオを明示する。「同じシード→同じ結果」の再現性だけを確認するテストはシード付き実装を使ってよい。
+
+### 3つの種類に分ける
+
+赤が出た瞬間に**どこを見に行くかが決まる**ように、テストは種類で置き場を分ける。境目は
+`tests/architecture/testKinds.test.ts` が見張る。
+
+| 種類 | 置き場 | 赤の意味 |
+| --- | --- | --- |
+| 層の責務 | 上記以外（`tests/domain`・`tests/game`・`tests/loader` ほか） | その層のコードが壊れた |
+| 通し | `tests/integration` | 層の繋ぎ目が壊れた |
+| 同梱の中身 | `tests/world-codex`・`tests/art`・`tests/asset-pack`・`tests/generation`・`tests/scenario` | 同梱のYAML・絵・対応表を直した副作用 |
+
+**層の責務のテストは同梱の定義（`src/assets/world-codex`）を読まない。** 読むと、YAMLを直しただけで
+その層が赤くなり、赤の読み方が決まらない。確かめたい形はそのテストの中にYAMLで宣言する——1つの
+テストが読むぶんだけを、そのテストの隣に書く（テスト間で1つの大きな定義を共有しない）。
+
+映しの層は入口が `NewGameSession` なので、[`tests/support/miniGame.ts`](../../tests/support/miniGame.ts)
+が地形生成を通さない一式を組み立てる。時間を進めるだけなら
+[`tests/support/worldYaml.ts`](../../tests/support/worldYaml.ts) の world を読む。
+
+通しのテストは実データとrngの引きに依存してよい。**何を前提にしているかは冒頭に書く。**
