@@ -104,11 +104,11 @@ export interface ObjectWindowSlot {
   /** タブのラベル。スロットは必ず持ち主のものなので、持ち主込みの名前を呼び出し側が組み立てて渡す。 */
   readonly title: string;
 
-  /** 並べる枠（plainCells）。カードも空き枠も枠の縁もこの1本が持ち、はみ出した分は横スクロールで送る。 */
+  /** 並べる枠（slotCells）。カードも空き枠も枠の縁もこの1本が持ち、はみ出した分は横スクロールで送る。 */
   readonly cells: readonly LaneCell[];
 
-  /** 枠の数が決まっていないスロットか（unboundedSlot）。レーンは頭打ちの枠数まで広げる。 */
-  readonly unbounded: boolean;
+  /** 落とせば枠が増えるスロットか（SlotView.cells）。増える前提で、レーンは頭打ちの枠数まで広げる。 */
+  readonly grows: boolean;
 }
 
 export interface ObjectWindowOptions {
@@ -643,7 +643,7 @@ export class ObjectWindow {
  */
 function laneWidthFor(metrics: ScreenMetrics, contents: ObjectWindowSlot): number {
   // 枠を1つも並べないスロット（要求を満たし切った材料）でも、レーンは1枠ぶんの幅を保つ。
-  const wanted = contents.unbounded ? Number.POSITIVE_INFINITY : Math.max(1, contents.cells.length);
+  const wanted = contents.grows ? Number.POSITIVE_INFINITY : Math.max(1, contents.cells.length);
   const slots = Math.min(LANE_CELLS_MAX, wanted);
 
   const cards = slots * metrics.px(SIZE.cardWidth) + (slots - 1) * metrics.px(SIZE.gap);

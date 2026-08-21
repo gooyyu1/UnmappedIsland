@@ -121,14 +121,14 @@ object_defs:
 
     const treatment = sprain.getSlot(mini.codex.slotNames.getId('treatment'));
     expect(sprainCard.visibleSlots, '治療具のタブが出る').toEqual([treatment]);
-    expect(view.slotViewOf(treatment).cellCount, '治療具の枠は1つだけ').toBe(1);
+    expect(view.slotViewOf(treatment).cells, '治療具の枠は1つだけ').toBe(1);
     // 行き先は重ねる物で変わる。怪我が受け取るのは治療具だけで、入れ物は受け取らない。
     expect(sprainCard.contentsFor(bandageCard), '包帯は治療具のスロットへ入る').toEqual(treatment);
     expect(sprainCard.contentsFor(crateCard), '入れ物は怪我に入らない').toBeUndefined();
 
     const contents = crate.getSlot(mini.codex.slotNames.getId('contents'));
     expect(crateCard.visibleSlots, '中身のタブが出る').toEqual([contents]);
-    expect(view.slotViewOf(contents).cellCount, '宣言した枠数がそのまま出る').toBe(10);
+    expect(view.slotViewOf(contents).cells, '宣言した枠数がそのまま出る').toBe(10);
     expect(crateCard.contentsFor(bandageCard), '入れ物は持ち物を受け取る').toEqual(contents);
   });
 

@@ -27,8 +27,8 @@ import type { StatusContent, StatusDetail, StatusInfluence } from '../ui/StatusB
  *
  * dropInto・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への反映（表示内容の
  * 作り直し）は呼び出し側の責務。dropIntoとreorderは「そこへ落とせるか」を、答えを返すか否かで示す。
- * 落とせない場所（持ち歩けない設置物、前詰めの場所の空き枠、出し入れできない怪我など）ではundefinedに
- * なるので、呼び出し側は落とし先の枠を出す前に問い合わせられる。
+ * 落とせない場所（持ち歩けない設置物、出し入れできない怪我など）ではundefinedになるので、呼び出し側は
+ * 落とし先の枠を出す前に問い合わせられる。
  */
 export interface ObjectCardStack extends CardContent {
   /**
@@ -153,11 +153,14 @@ export interface SlotView {
   readonly label: string;
 
   /**
-   * そのスロットが持つ枠の数（`cell_count`、SlotSystem.md 2節。決まっていなければundefined）。
-   * 空けておく枠の数を決めるのに使う——1枠しか無い場所に4枠空けると「4つ入る」と誤って伝わる。
+   * そのスロットが空けておく枠（`cell_count`、SlotSystem.md 3節）。1枠しか無い場所に4枠空けると
+   * 「4つ入る」と誤って伝わるので、数を宣言しているならその数。
+   *
+   * **枠数を宣言していないスロットは`'grows'`**——カードを落とすたびに枠が1つ増えるので、空けておく
+   * のは増える先の1つだけ（plainCells）で、レーンの幅も増える前提で取る（ObjectWindow.laneWidthFor）。
    * 中身のかさの合計の上限（`capacity`）とは別物。
    */
-  readonly cellCount: number | undefined;
+  readonly cells: number | 'grows';
 
   /**
    * カードを受け入れるか（怪我のような読み取り専用の場所はfalse）。中身が空でも「落とせる場所か
@@ -378,7 +381,7 @@ export function fromGameSession(
     return {
       key: name ?? String(place.owner.instanceId),
       label: name === undefined ? looks.nameOf(place.owner) : locale.slot(name).displayName,
-      cellCount: slotDef?.cellCount,
+      cells: slotDef?.cellCount ?? 'grows',
       acceptsCards: slotDef !== undefined && codex.admitsBroughtObjects(slotDef),
       background: slotDef === undefined ? undefined : { owner: place.owner.def.name, slot: slotDef.name },
       materials: craftingMaterials(place.owner, codex),
