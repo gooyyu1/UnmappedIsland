@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CardContent } from '../../src/game/ui/Card';
-import { LANE_CELLS_MAX, plainCells, unboundedSlot } from '../../src/game/ui/laneCells';
+import { LANE_CELLS_MAX } from '../../src/game/ui/laneCells';
+import { plainCells, unboundedSlot } from '../../src/game/view/plainCells';
 
 const card = (name: string): CardContent => ({ icon: '🪵', name });
 
