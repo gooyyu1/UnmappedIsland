@@ -6,7 +6,6 @@ import type { WorldObject } from '../WorldObject';
 import type { WorldSession } from '../WorldSession';
 import type { Location } from './Location';
 
-/** 動物の1手を宣言しているアクションの名前（animals.yamlのbeast trait）。 */
 /**
  * 抽選にかける候補1つ。**重みと、選ばれたときにYAMLへ渡すインスタンスID**だけを持つ——
  * 何を候補にするか（足元の物か、道か）で拾い方は違うが、選び方は1つでよい。

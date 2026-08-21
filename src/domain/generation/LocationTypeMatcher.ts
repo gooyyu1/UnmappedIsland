@@ -137,7 +137,7 @@ function pickNearest(
 }
 
 /** 正規化した重み付きユークリッド距離（3.2節）。言及した軸だけをΣweightで正規化する。 */
-export function normalizedDistance(type: LocationTypeDef, site: Site): number {
+function normalizedDistance(type: LocationTypeDef, site: Site): number {
   let sum = 0;
   let weightSum = 0;
   for (const preference of type.preferences) {

@@ -42,7 +42,6 @@ export class ObjectDef {
   /** グローバルなスロットID → このObjectDefにおけるローカルindex。 */
   readonly slotLayout: LocalIndexMap;
 
-  /** ローカルindexで並ぶ密配列。slotLayout と対になる。 */
   /** このobject_defが持つスロットの定義（宣言順）。 */
   readonly slotDefs: readonly SlotDef[];
 
@@ -155,8 +154,6 @@ export class ObjectDef {
     return this.getPropertyDef(this.artByStagePropertyGlobalId)?.artSuffixes() ?? [];
   }
 
-  /** 1つのプロパティのrange系イベントのうち、matchesが真になるものを、宣言元の名前を添えて書き出す。 */
-  /** matchesが真になる操作を、その名前を指す断片（actions/combinationsの区別つき）とともに集める。 */
   /** グローバルIDでこのObjectDefのPropertyDefを取得する。存在しない場合はundefined。 */
   getPropertyDef(globalPropertyId: number): PropertyDef | undefined {
     const local = this.propertyLayout.toLocal(globalPropertyId);

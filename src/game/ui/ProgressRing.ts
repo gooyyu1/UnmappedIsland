@@ -19,14 +19,14 @@ const FILL_ALPHA = 0.85;
 const ELAPSED_SIZE = 120;
 const ELAPSED_STROKE = 10;
 
+/** これより狭い扇形は塗らない（0%・100%のときの潰れた図形を避ける）。 */
+const MIN_SECTOR = 0.001;
+
 /**
  * 時間経過を見せるドーナツグラフ。全体を100%として、経過ぶんを真上から時計回りに塗る。
  *
  * 進捗バー（ProgressBar）と違い、画面の内容へ重ねて出すことを前提にした見た目にしている。
  */
-/** これより狭い扇形は塗らない（0%・100%のときの潰れた図形を避ける）。 */
-const MIN_SECTOR = 0.001;
-
 export class ProgressRing extends Phaser.GameObjects.Container {
   private readonly graphics: Phaser.GameObjects.Graphics;
 

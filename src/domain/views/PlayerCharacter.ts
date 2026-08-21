@@ -2,7 +2,6 @@ import type { WorldCodex } from '../WorldCodex';
 import type { WorldRuleVocabulary } from '../WorldVocabulary';
 import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
-import type { WorldSession } from '../WorldSession';
 import { Location } from './Location';
 
 /**
@@ -80,24 +79,8 @@ export class PlayerCharacter {
    * atは枠の中の位置（SlotPosition）。隙間を指せばその位置へ既存の枠を押し出して入れ、空き枠を指せば
    * その枠へ入る（埋まっていればfalse）。省略すると最初の空き枠へ入る。
    */
-  take(item: WorldObject, session: WorldSession, at?: SlotPosition): boolean {
+  take(item: WorldObject, at?: SlotPosition): boolean {
     return item.moveToSlot(this.instance.getSlot(this.handSlotId), at) === undefined;
-  }
-
-  /**
-   * 手持ちの枠を並び替える。memberが属するスタックを丸ごとatへ入れ直す
-   * （WorldObject.reorderInParentSlot）。並び替えられなければfalse。
-   */
-  reorderHand(member: WorldObject, at: SlotPosition): boolean {
-    return member.reorderInParentSlot(at);
-  }
-
-  /**
-   * 手持ちのアイテムを今いる土地へ置く。土地に居ない・土地が受け入れられないならfalse。
-   * atを渡すと、土地のアイテムの並びのその位置へ入る（Location.receiveItem）。
-   */
-  drop(item: WorldObject, session: WorldSession, at?: SlotPosition): boolean {
-    return this.location?.receiveItem(item, session, at) ?? false;
   }
 
   /**

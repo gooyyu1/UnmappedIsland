@@ -24,44 +24,41 @@
 「8件に入らなかったもの」を別に挙げている（下の「上限からこぼれた分」）。**下のPR 2〜4を終えても
 片付いたことにはならない**——終わったら「再チェック」の節に従ってもう一度調べる。
 
-## PR 2: 死んでいるものの削除と、docの取り残し
+## PR 2: 死んでいるものの削除と、docの取り残し ✅ 完了
 
-呼び元ゼロ（調査時に `rg` で確認済み）:
+呼び元ゼロ（削除前に `rg` で再確認済み）:
 
-- [ ] `Slot.findMatchingStack`（`indexOfStack` のdocからの言及も外す）
-- [ ] `analysis/effectOutcomes.outcomesOf`
-- [ ] `CodexView.propertyDescription`
-- [ ] `PlayerCharacter.drop`
-- [ ] `PlayerCharacter.take` / `drop` / `Location.receiveItem` が受け取る未使用の `session`
-- [ ] `Location.reorderItems` / `Location.reorderFixtures` / `PlayerCharacter.reorderHand`（3つとも本体は
-      `member.reorderInParentSlot(at)` の1行。本番の呼び元は0で、UIは `cardOperations` から直に呼ぶ）
-- [ ] `CardLooks.markOf` / `CardLooks.gaugesOf`（外部から0）
-- [ ] `LocationTypeMatcher.normalizedDistance`（export しているが外部から0）
+- [x] `Slot.findMatchingStack`（`indexOfStack` のdocからの言及も外した）
+- [x] `analysis/effectOutcomes.outcomesOf`
+- [x] `CodexView.propertyDescription`
+- [x] `PlayerCharacter.drop`
+- [x] `PlayerCharacter.take` / `Location.receiveItem` が受け取る未使用の `session`
+- [x] `Location.reorderItems` / `Location.reorderFixtures` / `PlayerCharacter.reorderHand`
+      （テストは `WorldObject.reorderInParentSlot` を直接呼ぶ形にした）
+- [x] `CardLooks.markOf` / `CardLooks.gaugesOf`（契約から外した。内側では今も使う）
+- [x] `LocationTypeMatcher.normalizedDistance`（`export` を外した。モジュール内では使う）
 
-docコメントが隙間なく2連続する箇所（機械的に14件。上の説明が直下の宣言と対応していない）:
+docコメントの取り残し 14件（全部直し、残り0を機械的に確認）:
 
-- [ ] `ObjectDef.ts`（3件。うち2件は今は無いメソッドの説明）
-- [ ] `PropertyDef.ts`（2件。1件は「順不同でよい」と「宣言順に」が矛盾）
-- [ ] `PassiveEffect.ts` / `views/Animal.ts` / `loader/inProgressObjects.ts`
-- [ ] `PlayScene.ts`（3件。消えたウィンドウの説明・`rebuildFieldArea` が無説明）
-- [ ] `ui/Card.ts`（バーの説明が「本数固定」だった頃のまま） / `ui/ProgressRing.ts`（クラスdocが定数に付いている）
-- [ ] `view/PlayScreenView.ts`（`stackOf` の説明が `placeOfObject` の上）
+- [x] `ObjectDef.ts` 3件 / `PropertyDef.ts` 2件 / `PassiveEffect.ts` / `views/Animal.ts` /
+      `loader/inProgressObjects.ts` / `PlayScene.ts` 3件 / `ui/Card.ts` / `ui/ProgressRing.ts` /
+      `view/PlayScreenView.ts`
 
-実在しないメンバーを指すdoc参照:
+実在しないメンバーを指すdoc参照 5件:
 
-- [ ] `ObjectWindow` の `decideHeight` / `ui/CardTable.ts` の `CardLane.adoptCard` /
-      `ui/CardDragController.ts` の `CardLane.setCards` / `ui/CardLane.ts` の `Card.identity` /
-      `analysis/effectOutcomes.ts` の `craftingSteps.track`
+- [x] `ObjectWindow` の `decideHeight` / `CardTable` の `CardLane.adoptCard` /
+      `CardDragController` の `CardLane.setCards` / `CardLane` の `Card.identity` /
+      `effectOutcomes` の `craftingSteps.track`
 
 現実とずれた説明:
 
-- [ ] `ObjectWindow` の「スロットのタブは右の段を使い切る」（実際は中段の全幅）と、`decideWidth` の
-      「領域いっぱいまで広げて見える枚数を増やす」（`LANE_CELLS_MAX` で4枠に頭打ち）
-- [ ] `CodexView.tagLabel` の「タグは表示文字列を持たない」（`tag_texts` は既にあり、ゲームは棚の見出しに使う）
+- [x] `ObjectWindow` の「スロットのタブは右の段を使い切る」と `decideWidth` の「見える枚数を増やす」
+- [x] `CodexView.tagLabel` の「タグは表示文字列を持たない」（`tag_texts` は在る、と書き直した。
+      **表示を識別子から表示名へ変えるかは仕様判断なので手を付けていない**——変えるなら別途）
 
 予防:
 
-- [ ] docコメントが2連続していないことを `tests/docs` で見張る（今回14件を機械的に見つけた方法）
+- [x] `tests/docs/docComments.test.ts`（docコメントが2連続していたら落ちる。壊して落ちることも確認済み）
 
 ## PR 3: 二重化を1つに畳む
 

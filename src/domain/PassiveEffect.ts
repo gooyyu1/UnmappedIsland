@@ -151,7 +151,6 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * 具象クラスに応じた側へ登録する。 */
   abstract registerInto(target: PropertyValue, registration: RegisteredPassiveEffect): void;
 
-  /** YAMLでの書き方の名前（modify/add）。describeが対象の前に置く。 */
   /** 可逆な寄与（modify、8.3節）か。影響の一覧が記号の形をこれで選ぶ（PropertyInfluence）。 */
   protected abstract get reversible(): boolean;
 

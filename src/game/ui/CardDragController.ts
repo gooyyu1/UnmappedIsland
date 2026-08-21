@@ -127,7 +127,7 @@ export class CardDragController {
 
   /**
    * ドラッグの受け口はカード個別ではなくシーンに置く。カードは画面の更新をまたいで生き残り、
-   * 属するレーンも並びの位置も変わる（CardLane.setCards）ため、掴まれた時点で引き直す。
+   * 属するレーンも並びの位置も変わる（CardLane.reconcile）ため、掴まれた時点で引き直す。
    */
   constructor(scene: Phaser.Scene, metrics: () => ScreenMetrics, handlers: CardDragHandlers) {
     this.scene = scene;
