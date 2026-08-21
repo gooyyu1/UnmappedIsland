@@ -153,7 +153,7 @@ export interface SlotView {
   readonly label: string;
 
   /**
-   * そのスロットが空けておく枠（`cell_count`、SlotSystem.md 3節）。1枠しか無い場所に4枠空けると
+   * そのスロットが空けておく枠（`SlotDef.cellsToKeep`、SlotSystem.md 3節）。1枠しか無い場所に4枠空けると
    * 「4つ入る」と誤って伝わるので、数を宣言しているならその数。
    *
    * **枠数を宣言していないスロットは`'grows'`**——カードを落とすたびに枠が1つ増えるので、空けておく
@@ -381,7 +381,7 @@ export function fromGameSession(
     return {
       key: name ?? String(place.owner.instanceId),
       label: name === undefined ? looks.nameOf(place.owner) : locale.slot(name).displayName,
-      cells: slotDef?.cellCount ?? 'grows',
+      cells: slotDef?.cellsToKeep ?? 'grows',
       acceptsCards: slotDef !== undefined && codex.admitsBroughtObjects(slotDef),
       background: slotDef === undefined ? undefined : { owner: place.owner.def.name, slot: slotDef.name },
       materials: craftingMaterials(place.owner, codex),

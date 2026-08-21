@@ -31,10 +31,14 @@ export function autoFillMaterials(
   const slot = inProgress.tryGetSlot(materialsSlotGlobalId);
   if (slot === undefined) return 0;
 
+  // 材料スロットは要求ごとの枠を持つ（inProgressObjects）ので、枠数は必ず決まっている。
+  const cells = slot.def.cellsToKeep;
+  if (cells === 'grows') return 0;
+
   const available = sources.flat();
   let moved = 0;
 
-  for (let index = 0; index < (slot.def.cellCount ?? 0); index += 1) {
+  for (let index = 0; index < cells; index += 1) {
     const cell = slot.def.cellAt(index);
     // 出番の終わった枠は埋めない。表示から消える枠なので、入れると取り出せなくなる。
     const candidates = chooseCandidates(cell, 1, available).filter(
