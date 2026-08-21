@@ -53,11 +53,7 @@ describe('traps.yamlのくくり罠', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    session = new WorldSession(
-      codex,
-      new World(worldInstance, codex.propertyNames, codex.symbolNames),
-      fixedRng(roll),
-    );
+    session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(roll));
     grassland = spawnInto(locationName, worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, grassland, 'characters');
     snare = spawnInto('snare', grassland, 'items');

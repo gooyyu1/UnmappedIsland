@@ -1,5 +1,5 @@
-import type { NameRegistry } from '../NameRegistry';
 import type { WorldCodex } from '../WorldCodex';
+import type { WorldRuleVocabulary } from '../WorldVocabulary';
 import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
 import type { WorldSession } from '../WorldSession';
@@ -14,46 +14,32 @@ import { Path } from './Path';
  * 自分で行い、呼び出し側に後続手順を持たせない。動物の手番（runAnimalTurns）も同じ形で、
  * 呼び出し側は「この土地に居る動物へ1手ずつ与えてほしい」と頼むだけになる。
  *
- * 名前解決はidOrMissingで行い、探索の語彙を持たないcodex（最小のテストフィクスチャ等）でも生成できるようにしている。
+ * 引く名前はWorldVocabularyが持つ。探索の宣言を持たない土地でも生成できる——「その名前を持つか」は
+ * 語彙ではなくインスタンスが答えるので、持たなければ空として読める。
  */
 export class Location {
   readonly instance: WorldObject;
 
-  /** 語彙を持たないcodex（最小のテストフィクスチャ等）で生成された場合はundefined。 */
-  private readonly codex: WorldCodex | undefined;
+  private readonly codex: WorldCodex;
+  private readonly words: WorldRuleVocabulary;
 
-  private readonly explorationProgressId: number = -1;
-  private readonly requiredProgressId: number = -1;
-  private readonly returnPathIdId: number = -1;
-  private readonly pathTagId: number = -1;
-  readonly itemsSlotId: number = -1;
-  readonly fixturesSlotId: number = -1;
-  private readonly charactersSlotId: number = -1;
-  private readonly undiscoveredFixturesSlotId: number = -1;
-
-  constructor(instance: WorldObject, codex?: WorldCodex) {
+  constructor(instance: WorldObject, codex: WorldCodex) {
     this.instance = instance;
     this.codex = codex;
-    if (codex !== undefined) {
-      this.pathTagId = codex.tagNames.tryGetId('path') ?? -1;
-      this.explorationProgressId = Location.idOrMissing(codex.propertyNames, 'exploration_progress');
-      this.requiredProgressId = Location.idOrMissing(codex.propertyNames, 'required_progress');
-      this.returnPathIdId = Location.idOrMissing(codex.propertyNames, 'return_path_id');
-      this.itemsSlotId = Location.idOrMissing(codex.slotNames, 'items');
-      this.fixturesSlotId = Location.idOrMissing(codex.slotNames, 'fixtures');
-      this.charactersSlotId = Location.idOrMissing(codex.slotNames, 'characters');
-      this.undiscoveredFixturesSlotId = Location.idOrMissing(codex.slotNames, 'undiscovered_fixtures');
-    }
+    this.words = codex.vocabulary.world;
   }
 
-  /** 未登録の名前は-1（LocalIndexMap.missing扱い）にする。tryGetId失敗時の0は別の名前の有効なIDになりうるため、そのままでは使えない。 */
-  private static idOrMissing(names: NameRegistry, name: string): number {
-    return names.tryGetId(name) ?? -1;
+  get itemsSlotId(): number {
+    return this.words.itemsSlotId;
+  }
+
+  get fixturesSlotId(): number {
+    return this.words.fixturesSlotId;
   }
 
   /** 現在の探索進捗（実効値）。 */
   get explorationProgress(): number {
-    return this.instance.tryGetProperty(this.explorationProgressId)?.getEffectiveValue() ?? 0;
+    return this.instance.tryGetProperty(this.words.explorationProgressId)?.getEffectiveValue() ?? 0;
   }
 
   /**
@@ -61,7 +47,7 @@ export class Location {
    * ここに達した後も探索は続けられる（ExplorationSystem.md 2節）。
    */
   get explorationProgressMax(): number {
-    return this.instance.def.getPropertyDef(this.explorationProgressId)?.range?.max ?? 0;
+    return this.instance.def.getPropertyDef(this.words.explorationProgressId)?.range?.max ?? 0;
   }
 
   /** アイテムスロットの中身。 */
@@ -106,7 +92,7 @@ export class Location {
    * 先読み（PlayScene.requestLocationArt）が発見前に行き先を知るために読む。
    */
   get undiscoveredFixtures(): readonly WorldObject[] {
-    return this.slotContents(this.undiscoveredFixturesSlotId);
+    return this.slotContents(this.words.undiscoveredFixturesSlotId);
   }
 
   /**
@@ -119,7 +105,7 @@ export class Location {
 
   /** キャラクタスロットの中身。 */
   get characters(): readonly WorldObject[] {
-    return this.slotContents(this.charactersSlotId);
+    return this.slotContents(this.words.charactersSlotId);
   }
 
   /**
@@ -127,11 +113,9 @@ export class Location {
    * 居るので含まれない——プレイヤーが見つけていない道は、動物にとっても逃げ道にならない。
    */
   get paths(): readonly Path[] {
-    if (this.codex === undefined) return [];
-    const names = this.codex.propertyNames;
     return this.fixtures
-      .filter((fixture) => fixture.def.tags.includes(this.pathTagId))
-      .map((fixture) => new Path(fixture, names));
+      .filter((fixture) => fixture.def.tags.includes(this.words.pathTagId))
+      .map((fixture) => new Path(fixture, this.codex));
   }
 
   /**
@@ -141,7 +125,6 @@ export class Location {
    * 手番の途中で動物が居なくなりうる（逃げる・仕留められる）ため、列挙前にスナップショットを取る。
    */
   runAnimalTurns(session: WorldSession): void {
-    if (this.codex === undefined) return;
     for (const item of [...this.items]) Animal.tryWrap(item, this.codex)?.takeTurn(this, session);
   }
 
@@ -151,7 +134,7 @@ export class Location {
    * （ExplorationSystem.md 2節）。
    */
   explore(actor: WorldObject | undefined): boolean {
-    if (this.instance.tryGetAction('explore', actor)?.tryExecute() !== true) return false;
+    if (this.instance.tryGetAction(this.words.exploreAction, actor)?.tryExecute() !== true) return false;
     this.revealDueFixtures();
     return true;
   }
@@ -161,12 +144,12 @@ export class Location {
    * 「発見」させる。冪等。進捗がYAML側の効果だけで動いた場合に備え、exploreを介さず単独でも呼べる。
    */
   revealDueFixtures(): void {
-    const hidden = this.instance.tryGetSlot(this.undiscoveredFixturesSlotId);
+    const hidden = this.instance.tryGetSlot(this.words.undiscoveredFixturesSlotId);
     if (hidden === undefined) return;
 
     const progress = this.explorationProgress;
     for (const fixture of [...hidden.contents]) {
-      if ((fixture.tryGetProperty(this.requiredProgressId)?.getEffectiveValue() ?? 0) <= progress)
+      if ((fixture.tryGetProperty(this.words.requiredProgressId)?.getEffectiveValue() ?? 0) <= progress)
         this.reveal(fixture);
     }
   }
@@ -179,7 +162,7 @@ export class Location {
   private reveal(fixture: WorldObject): void {
     this.revealInOwnLocation(fixture);
 
-    const returnPathId = fixture.tryGetProperty(this.returnPathIdId)?.getEffectiveValue() ?? 0;
+    const returnPathId = fixture.tryGetProperty(this.words.returnPathIdId)?.getEffectiveValue() ?? 0;
     if (returnPathId === 0) return;
 
     const returnPath = fixture.findRoot().findDescendantByInstanceId(returnPathId);
@@ -194,7 +177,7 @@ export class Location {
     const owner = fixture.parent;
     if (owner === undefined) return;
 
-    const hidden = owner.tryGetSlot(this.undiscoveredFixturesSlotId);
+    const hidden = owner.tryGetSlot(this.words.undiscoveredFixturesSlotId);
     if (hidden === undefined || !hidden.contents.includes(fixture)) return;
 
     fixture.moveToSlot(owner.getSlot(this.fixturesSlotId));

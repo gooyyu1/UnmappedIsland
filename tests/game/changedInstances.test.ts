@@ -57,7 +57,7 @@ object_defs:
     codex = new WorldCodexYamlLoader().load('origins.yaml', YAML).build();
     session = new WorldSession(codex, undefined, fixedRng(0.5));
     const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
-    session.adoptWorld(new World(worldInstance, codex.propertyNames, codex.symbolNames));
+    session.adoptWorld(new World(worldInstance, codex));
     ground = spawn('ground');
     expect(ground.moveToSlot(worldInstance.getSlot(slot('locations')))).toBeUndefined();
   });

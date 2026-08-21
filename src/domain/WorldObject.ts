@@ -6,10 +6,9 @@ import { LocalIndexMap } from './LocalIndexMap';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef } from './ObjectDef';
 import type { ReferenceRoot } from './ReferenceRoot';
-import type { WellKnownProperties } from './WellKnownProperties';
+import type { EngineVocabulary } from './WorldVocabulary';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
-import { IN_PROGRESS_TAG } from './RecipeDef';
 import type { PropertyDef } from './PropertyDef';
 import { PropertyValue } from './PropertyValue';
 import { Slot } from './Slot';
@@ -74,21 +73,9 @@ export class WorldObject {
    */
   readonly session: WorldSession;
 
-  /** weight/loadの実効値導出（containerContributionTo）が使う、規約で決まったプロパティ名のID。 */
-  private get wellKnown(): WellKnownProperties {
-    return this.session.codex.wellKnown;
-  }
-
-  /**
-   * 作りかけの物か（製作中オブジェクト、RecipeSystem.md 1節）。
-   *
-   * 製作中オブジェクトは完成品のタグを引き継ぐ（同5節）ので、**タグだけを見ると完成品と区別が
-   * 付かない**。引き継ぎの目的は枠のacceptに当てはまること1点なので、それ以外の
-   * 「その物であること」を問う場所はここで弾く。
-   */
-  get isInProgress(): boolean {
-    const wipTagId = this.session.codex.tagNames.tryGetId(IN_PROGRESS_TAG);
-    return wipTagId !== undefined && this._def.tags.includes(wipTagId);
+  /** 中身から受ける寄与（containerContributionTo）が使う、規約で決まったプロパティのID。 */
+  private get engine(): EngineVocabulary {
+    return this.session.codex.vocabulary.engine;
   }
 
   /** sessionは必須（value:{min,max}を持つプロパティの初期値ランダム化にsession.rngを使う）。 */
@@ -237,7 +224,7 @@ export class WorldObject {
 
     let fullest: number | undefined;
     for (const slotDef of this.def.slotDefs) {
-      const ratio = this.tryGetSlot(slotDef.globalId)?.fillRatio(this.wellKnown.volumeId);
+      const ratio = this.tryGetSlot(slotDef.globalId)?.fillRatio(this.engine.volumeId);
       if (ratio !== undefined) fullest = Math.max(fullest ?? 0, ratio);
     }
     return fullest;
@@ -656,25 +643,25 @@ export class WorldObject {
    * （ContainerSystem.md 2節）。
    */
   containerContributionTo(propertyGlobalId: number): number {
-    const wellKnown = this.wellKnown;
-    if (propertyGlobalId === wellKnown.weightId) {
+    const engine = this.engine;
+    if (propertyGlobalId === engine.weightId) {
       // 中身入りの変種は、抱えている量ぶんだけ自分が重い（fill × density = mL × g/mL = g）。
       // 空の容器はfillを持たないので0になり、器の自重だけが残る。
       let sum =
-        (this.tryGetProperty(wellKnown.fillId)?.number ?? 0) *
-        (this.tryGetProperty(wellKnown.densityId)?.number ?? 1);
+        (this.tryGetProperty(engine.fillId)?.number ?? 0) *
+        (this.tryGetProperty(engine.densityId)?.number ?? 1);
       for (const slot of this.slots) for (const child of slot.contents) sum += child.effectiveWeight();
       return sum;
     }
 
-    if (propertyGlobalId === wellKnown.loadId) {
+    if (propertyGlobalId === engine.loadId) {
       let sum = 0;
       for (const slot of this.slots) {
         for (const child of slot.contents) {
           // 1で「まったく感じない」。1を超える宣言は0扱いにするが、負の値は通す——抱えにくい物を
           // 「実際より重く感じる」向きへ書けるようにするため。
           const rate = Math.min(
-            child.tryGetProperty(wellKnown.loadReductionRateId)?.getEffectiveValue() ?? 0,
+            child.tryGetProperty(engine.loadReductionRateId)?.getEffectiveValue() ?? 0,
             1,
           );
           sum += child.effectiveWeight() * (1 - rate);
@@ -691,10 +678,8 @@ export class WorldObject {
    * 中身の重さは上へ伝わる（液体は volume × density が重さなので、weightを宣言する必要が無い）。
    */
   private effectiveWeight(): number {
-    const own = this.tryGetProperty(this.wellKnown.weightId);
-    return own !== undefined
-      ? own.getEffectiveValue()
-      : this.containerContributionTo(this.wellKnown.weightId);
+    const own = this.tryGetProperty(this.engine.weightId);
+    return own !== undefined ? own.getEffectiveValue() : this.containerContributionTo(this.engine.weightId);
   }
 
   // ---- 影響の読み取り（Windows.md 8節） ----
@@ -723,7 +708,7 @@ export class WorldObject {
    * 「何がこの値を押し上げているか」の答えは「中身」の1つだからで、宣言元は自分自身になる。
    */
   private collectContainerInfluence(propertyGlobalId: number, out: InfluenceWriter): void {
-    const { weightId, loadId } = this.wellKnown;
+    const { weightId, loadId } = this.engine;
     if (propertyGlobalId !== weightId && propertyGlobalId !== loadId) return;
 
     out.write({
@@ -784,7 +769,7 @@ export class WorldObject {
    * ——引き継ぎは枠のacceptへ入れるためのもので、道具として働けることまでは意味しない。
    */
   combinationsWith(dragged: WorldObject, actor: WorldObject | undefined): readonly Combination[] {
-    if (dragged.isInProgress) return [];
+    if (dragged.def.isInProgress) return [];
     return this.def.combinations
       .filter(
         (c) =>

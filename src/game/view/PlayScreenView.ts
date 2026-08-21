@@ -556,7 +556,7 @@ export function fromGameSession(
     return displayName === undefined || displayName === defName ? UNNAMED_LOCATION : displayName;
   };
 
-  const pathTagId = codex.tagNames.tryGetId('path');
+  const pathTagId = codex.vocabulary.world.pathTagId;
   /**
    * 道の設置物がカードに映すもの（道以外はundefinedで、設置物そのものの名前と絵をそのまま使う）。
    * 道は「どこへ繋がっているか」だけが意味を持つため、行き先の土地の名前と絵を出す。
@@ -564,9 +564,9 @@ export function fromGameSession(
   const destinationOf = (
     fixture: WorldObject,
   ): { icon: string; name: string; art: string | undefined; kind: CardKind; road: true } | undefined => {
-    if (pathTagId === undefined || !fixture.def.tags.includes(pathTagId)) return undefined;
+    if (!fixture.def.tags.includes(pathTagId)) return undefined;
 
-    const path = new Path(fixture, codex.propertyNames);
+    const path = new Path(fixture, codex);
     return {
       icon: LOCATION_ICON,
       name: locationNameOf(path.destinationInstanceId, path.destination?.def.name),
@@ -599,8 +599,8 @@ export function fromGameSession(
       const land = root.findDescendantByInstanceId(instanceId);
       if (land === undefined) continue;
       for (const fixture of new Location(land, codex).fixtures) {
-        if (pathTagId === undefined || !fixture.def.tags.includes(pathTagId)) continue;
-        const destination = siteOf.get(new Path(fixture, codex.propertyNames).destinationInstanceId);
+        if (!fixture.def.tags.includes(pathTagId)) continue;
+        const destination = siteOf.get(new Path(fixture, codex).destinationInstanceId);
         if (destination === undefined) continue;
         known.add(site);
         known.add(destination);

@@ -40,7 +40,7 @@ object_defs:
       new WorldSession(codex),
     );
 
-    const world = new World(instance, codex.propertyNames, codex.symbolNames);
+    const world = new World(instance, codex);
 
     expect(world.day).toBe(3);
     expect(world.hour).toBe(8);
@@ -75,7 +75,7 @@ object_defs:
       new WorldSession(codex),
     );
 
-    const world = new World(instance, codex.propertyNames, codex.symbolNames);
+    const world = new World(instance, codex);
 
     expect(world.minute).toBe(40);
     expect(world.weather, '天気の語彙を持たないCodex').toBeUndefined();
@@ -210,7 +210,7 @@ object_defs:
       new WorldSession(codex),
     );
 
-    const location = new Location(instance);
+    const location = new Location(instance, codex);
 
     expect(location.instance).toBe(instance);
   });

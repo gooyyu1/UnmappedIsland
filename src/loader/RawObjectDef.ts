@@ -18,6 +18,7 @@ import { parseActions, parseCombinations } from './parseActionsAndCombinations';
 import { parseRecipes } from './parseRecipes';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { RawTrait } from './RawTrait';
+import { IN_PROGRESS_TAG } from '../domain/RecipeDef';
 import { LocalIndexMap } from '../domain/LocalIndexMap';
 import { ObjectDef } from '../domain/ObjectDef';
 import type { PassiveEffect } from '../domain/PassiveEffect';
@@ -302,6 +303,7 @@ export class RawObjectDef {
       artByStagePropertyGlobalId,
       visibleSlotGlobalIds,
       isStorage,
+      tagIds.includes(loader.tagNames.intern(IN_PROGRESS_TAG)),
     );
   }
 }

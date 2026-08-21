@@ -143,7 +143,7 @@ export function advanceCrafting(
   codex: WorldCodex,
   session: WorldSession,
 ): boolean {
-  const progressGlobalId = codex.propertyNames.getId('progress');
+  const progressGlobalId = codex.vocabulary.engine.progressId;
   const step = currentStep(recipe, inProgress.tryGetProperty(progressGlobalId)?.number ?? 0);
   if (step === undefined) return false;
   if (!stepIsSupplied(inProgress, materialsSlotGlobalId, step)) return false;
@@ -167,10 +167,8 @@ export function advanceCrafting(
   inProgress.tryGetProperty(progressGlobalId)?.add(step.durationMinutes);
 
   // 工程の進捗バー（CardView.md 10.1節、inProgressObjects.FINISHED_STEPS_PROPERTY）が読む純粋な
-  // 回数。工程が1つのレシピにはそもそも宣言が無いので、addNumberは黙って何もしない
-  // （WorldObject.addNumber参照）。
-  const finishedStepsGlobalId = codex.propertyNames.tryGetId('finished_steps');
-  if (finishedStepsGlobalId !== undefined) inProgress.tryGetProperty(finishedStepsGlobalId)?.add(1);
+  // 回数。工程が1つのレシピにはそもそも宣言が無いので、持っていなければ何も起きない。
+  inProgress.tryGetProperty(codex.vocabulary.engine.finishedStepsId)?.add(1);
 
   spillUnneeded(inProgress, materialsSlotGlobalId, recipe, codex);
   return true;
@@ -196,7 +194,7 @@ function spillUnneeded(
 
   const stillNeeded = remainingRequirements(
     recipe,
-    inProgress.tryGetProperty(codex.propertyNames.getId('progress'))?.number ?? 0,
+    inProgress.tryGetProperty(codex.vocabulary.engine.progressId)?.number ?? 0,
   );
   const leftovers = (inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? []).filter(
     (object) => !stillNeeded.some((requirement) => requirement.requires(object.def)),

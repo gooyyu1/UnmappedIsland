@@ -159,7 +159,7 @@ object_defs:
     const { codex, weightId, make, put } = build();
     const sledge = make('sledge');
     const water = make('water');
-    water.tryGetProperty(codex.wellKnown.fillId)?.setNumber(1000);
+    water.tryGetProperty(codex.vocabulary.engine.fillId)?.setNumber(1000);
     put(water, sledge, 'cargo');
 
     expect(
@@ -167,7 +167,7 @@ object_defs:
       '自重1000 + 水1L(1000mL × 密度1 = 1000g)',
     ).toBe(2000);
 
-    water.tryGetProperty(codex.wellKnown.fillId)?.setNumber(500);
+    water.tryGetProperty(codex.vocabulary.engine.fillId)?.setNumber(500);
     expect(sledge.tryGetProperty(weightId)?.getEffectiveValue() ?? 0, '蒸発しても読み直せば正しい').toBe(
       1500,
     );

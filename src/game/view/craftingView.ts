@@ -3,7 +3,6 @@ import type { NewGameSession } from '../../domain/generation/NewGame';
 import type { WorldObject } from '../../domain/WorldObject';
 import { autoFillMaterials } from '../../domain/autoFill';
 import { advanceCrafting, currentStep, remainingRequirements, stepIsSupplied } from '../../domain/crafting';
-import { MATERIALS_SLOT, PROGRESS_PROPERTY } from '../../loader/inProgressObjects';
 import type { CardAction } from './cardOperations';
 import { recipeOf } from './recipeList';
 
@@ -43,7 +42,7 @@ export function craftingActions(
   const recipe = recipeOf(object, codex);
   if (recipe === undefined) return [];
 
-  const materialsSlotId = codex.slotNames.getId(MATERIALS_SLOT);
+  const materialsSlotId = codex.vocabulary.engine.materialsSlotId;
   const step = currentStep(recipe, progressOf(object, codex));
   const supplied = step !== undefined && stepIsSupplied(object, materialsSlotId, step);
 
@@ -58,7 +57,7 @@ export function craftingActions(
         autoFillMaterials(
           object,
           materialsSlotId,
-          [contentsOf(game.player.instance, codex, 'hand'), locationItems(game, codex)],
+          [contentsOf(game.player.instance, codex.vocabulary.world.handSlotId), locationItems(game, codex)],
           codex,
           remainingRequirements(recipe, progressOf(object, codex)),
         );
@@ -102,7 +101,7 @@ export function craftingMaterials(
 
   const progress = progressOf(container, codex);
   const inStep = new Set(currentStep(recipe, progress)?.requirements.map((r) => r.match.key));
-  const contents = contentsOf(container, codex, MATERIALS_SLOT);
+  const contents = contentsOf(container, codex.vocabulary.engine.materialsSlotId);
 
   return remainingRequirements(recipe, progress).map((requirement) => ({
     objectGlobalIds: requirement.match.candidates(codex.objects).map((def) => def.globalId),
@@ -113,14 +112,14 @@ export function craftingMaterials(
 }
 
 function progressOf(object: WorldObject, codex: WorldCodex): number {
-  return object.tryGetProperty(codex.propertyNames.getId(PROGRESS_PROPERTY))?.number ?? 0;
+  return object.tryGetProperty(codex.vocabulary.engine.progressId)?.number ?? 0;
 }
 
-function contentsOf(owner: WorldObject, codex: WorldCodex, slotName: string): readonly WorldObject[] {
-  return owner.tryGetSlot(codex.slotNames.getId(slotName))?.contents ?? [];
+function contentsOf(owner: WorldObject, slotGlobalId: number): readonly WorldObject[] {
+  return owner.tryGetSlot(slotGlobalId)?.contents ?? [];
 }
 
 function locationItems(game: NewGameSession, codex: WorldCodex): readonly WorldObject[] {
   const location = game.player.location?.instance;
-  return location === undefined ? [] : contentsOf(location, codex, 'items');
+  return location === undefined ? [] : contentsOf(location, codex.vocabulary.world.itemsSlotId);
 }

@@ -49,7 +49,7 @@ function decayPerTick(character: string, propertyName: string): number {
 function stand(character: string): { player: PlayerCharacter; session: WorldSession } {
   const session = new WorldSession(codex);
   const worldInstance = new WorldObject(0, def('world'), session);
-  session.adoptWorld(new World(worldInstance, codex.propertyNames, codex.symbolNames));
+  session.adoptWorld(new World(worldInstance, codex));
   const beach = session.spawn(codex.objectNames.getId('sandy_beach'));
   expect(beach.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
   const instance = session.spawn(codex.objectNames.getId(character));

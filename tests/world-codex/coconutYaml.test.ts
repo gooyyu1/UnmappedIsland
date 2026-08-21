@@ -35,7 +35,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
+    worldView = new World(worldInstance, codex);
     // 実採りは確率で捻挫する（injuries.yaml）。ここは加工の連鎖を見るテストなので、必ず成功する側を引く。
     session = new WorldSession(codex, worldView, fixedRng(0));
 

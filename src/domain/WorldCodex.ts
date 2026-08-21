@@ -5,12 +5,12 @@ import { GeneratedTypes } from './GeneratedTypes';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef, ObjectDefTable } from './ObjectDef';
 import type { SlotDef } from './SlotDef';
-import type { WellKnownProperties } from './WellKnownProperties';
+import type { WorldVocabulary } from './WorldVocabulary';
 
 /**
  * ロードされたYAMLファイル全体を表す集約オブジェクト（GameElementDefinition.md 3.1節）。
  * 本体データ（ObjectDefTable）、6種の独立した名前空間（object/property/slot/tag/property_tag/symbol）の
- * NameRegistry、およびWellKnownPropertiesを持つ。ロード完了後は不変として扱う。
+ * NameRegistry、およびWorldVocabularyを持つ。ロード完了後は不変として扱う。
  * symbolNamesはシンボル型props（6節）の値の名前空間。実行時状態（WorldObject）は含まない
  * （runtimeが担う）。
  *
@@ -32,7 +32,8 @@ export class WorldCodex implements DefNames {
   readonly symbolNames: NameRegistry;
 
   readonly objects: ObjectDefTable;
-  readonly wellKnown: WellKnownProperties;
+  /** コードがYAMLの単語へ寄せている依存の一覧（WorldVocabulary参照）。 */
+  readonly vocabulary: WorldVocabulary;
 
   /** 地形生成の定義一式（terrain_generation.yamlのaxes/location_types/generation_scopes）。
    * 生成定義を1つも含まないロードではundefined（地形生成を使わないCodexも成立する）。 */
@@ -59,7 +60,7 @@ export class WorldCodex implements DefNames {
     propertyTagNames: NameRegistry,
     symbolNames: NameRegistry,
     objects: ObjectDefTable,
-    wellKnown: WellKnownProperties,
+    vocabulary: WorldVocabulary,
     generation?: GenerationDefs,
     generatedTypes?: GeneratedTypes,
     recipeCategoryTagIds: readonly number[] = [],
@@ -73,7 +74,7 @@ export class WorldCodex implements DefNames {
     this.propertyTagNames = propertyTagNames;
     this.symbolNames = symbolNames;
     this.objects = objects;
-    this.wellKnown = wellKnown;
+    this.vocabulary = vocabulary;
     this.generation = generation;
   }
 

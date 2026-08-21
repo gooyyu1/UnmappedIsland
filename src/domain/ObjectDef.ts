@@ -29,6 +29,15 @@ export class ObjectDef {
    * タグ指定のマッチング（TypeMatchRule）はこのタグ集合だけを見る）。 */
   readonly tags: readonly number[];
 
+  /**
+   * 作りかけの物の型か（製作中オブジェクト、RecipeSystem.md 1節）。
+   *
+   * 製作中オブジェクトは完成品のタグを引き継ぐ（同5節）ので、**タグだけを見ると完成品と区別が
+   * 付かない**。引き継ぎの目的は枠のacceptに当てはまること1点なので、それ以外の「その物であること」を
+   * 問う場所はこれで弾く。判定はロード時に済ませる——型ごとに一度決まれば変わらない。
+   */
+  readonly isInProgress: boolean;
+
   /** グローバルなプロパティID → このObjectDefにおけるローカルindex。 */
   readonly propertyLayout: LocalIndexMap;
 
@@ -118,6 +127,7 @@ export class ObjectDef {
     artByStagePropertyGlobalId?: number,
     visibleSlotGlobalIds: readonly number[] = [],
     isStorage = false,
+    isInProgress = false,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -141,6 +151,7 @@ export class ObjectDef {
     this.artByStagePropertyGlobalId = artByStagePropertyGlobalId;
     this.visibleSlotGlobalIds = visibleSlotGlobalIds;
     this.isStorage = isStorage;
+    this.isInProgress = isInProgress;
   }
 
   /**

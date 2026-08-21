@@ -20,7 +20,7 @@ import { buildGenerationDefs, loadGenerationSections, resetGeneration } from './
 import { NameRegistry } from '../domain/NameRegistry';
 import type { ObjectDef } from '../domain/ObjectDef';
 import { ObjectDefTable } from '../domain/ObjectDef';
-import { WellKnownProperties } from '../domain/WellKnownProperties';
+import { WorldVocabulary } from '../domain/WorldVocabulary';
 import { IN_PROGRESS_SOURCE, inProgressCoordinateOf, inProgressObjectsYaml } from './inProgressObjects';
 import { GeneratedTypes } from '../domain/GeneratedTypes';
 import { AXIS_VARIANT_SOURCE, axisVariantsYaml } from './axisVariants';
@@ -207,7 +207,7 @@ export class WorldCodexYamlLoader {
     const defsByGlobalId = new Array<ObjectDef>(this.objectNames.count);
     for (const [globalId, def] of objectDefsByGlobalId) defsByGlobalId[globalId] = def;
 
-    const wellKnown = new WellKnownProperties(this.propertyNames);
+    const vocabulary = new WorldVocabulary(this.propertyNames, this.slotNames, this.tagNames);
     const generation = buildGenerationDefs(this, objectDefsByGlobalId);
     const codex = new WorldCodex(
       this.objectNames,
@@ -217,7 +217,7 @@ export class WorldCodexYamlLoader {
       this.propertyTagNames,
       this.symbolNames,
       new ObjectDefTable(defsByGlobalId),
-      wellKnown,
+      vocabulary,
       generation,
       generatedTypes,
       this.recipeCategoryTagIds,

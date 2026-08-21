@@ -5,7 +5,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/views/Location';
 import { World } from '../../src/domain/views/World';
-import { inProgressObjectName, MATERIALS_SLOT } from '../../src/loader/inProgressObjects';
+import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -92,7 +92,7 @@ describe('tools.yamlの道具定義', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
+    const worldView = new World(worldInstance, codex);
     const session = new WorldSession(codex, worldView);
 
     const beach = session.spawn(codex.objectNames.getId('sandy_beach'));
@@ -142,7 +142,7 @@ describe('石斧を作る', () => {
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
+    const worldView = new World(worldInstance, codex);
     const session = new WorldSession(codex, worldView);
 
     const field = session.spawn(codex.objectNames.getId('rocky_field'));
@@ -162,7 +162,7 @@ describe('石斧を作る', () => {
   it('太い枝・尖った石・紐から、2工程で石斧ができる', () => {
     const { session, field } = rockyField();
     const recipe = codex.objects.get(codex.objectNames.getId('stone_axe')).recipes[0];
-    const materialsId = codex.slotNames.getId(MATERIALS_SLOT);
+    const materialsId = codex.vocabulary.engine.materialsSlotId;
     const wip = startAxe(session, field);
     const put = (name: string) =>
       expect(

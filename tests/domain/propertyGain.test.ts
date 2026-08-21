@@ -25,7 +25,7 @@ describe('操作が増やした値の観測', () => {
   beforeEach(() => {
     session = new WorldSession(codex, undefined, fixedRng(0));
     world = spawn('world');
-    session.adoptWorld(new World(world, codex.propertyNames, codex.symbolNames));
+    session.adoptWorld(new World(world, codex));
     const beach = spawn('sandy_beach');
     expect(beach.moveToSlot(world.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
     player = spawn(SAMPLE_CHARACTER);

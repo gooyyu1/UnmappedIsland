@@ -3,7 +3,7 @@ import { autoFillMaterials } from '../../src/domain/autoFill';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { inProgressObjectName, MATERIALS_SLOT } from '../../src/loader/inProgressObjects';
+import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 
 /** 製作中オブジェクトへの自動補充（RecipeSystem.md 4節）。 */
@@ -58,13 +58,15 @@ object_defs:
 
   /** 製作中オブジェクトの材料スロットに入っている物の識別子。 */
   function inBox(): string[] {
-    return (wip.tryGetSlot(slotOf(MATERIALS_SLOT))?.contents ?? []).map((object) => object.def.name);
+    return (wip.tryGetSlot(codex.vocabulary.engine.materialsSlotId)?.contents ?? []).map(
+      (object) => object.def.name,
+    );
   }
 
   const fill = () =>
     autoFillMaterials(
       wip,
-      slotOf(MATERIALS_SLOT),
+      codex.vocabulary.engine.materialsSlotId,
       [player.tryGetSlot(slotOf('hand'))?.contents ?? [], ground.tryGetSlot(slotOf('items'))?.contents ?? []],
       codex,
     );

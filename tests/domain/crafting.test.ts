@@ -11,7 +11,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { World } from '../../src/domain/views/World';
 import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
-import { inProgressObjectName, MATERIALS_SLOT } from '../../src/loader/inProgressObjects';
+import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { RecipeDef } from '../../src/domain/RecipeDef';
 
@@ -86,7 +86,7 @@ object_defs:
   let recipe: RecipeDef;
 
   const idOf = (name: string) => codex.objectNames.getId(name);
-  const materialsId = () => codex.slotNames.getId(MATERIALS_SLOT);
+  const materialsId = () => codex.vocabulary.engine.materialsSlotId;
   const progressId = () => codex.propertyNames.getId('progress');
 
   beforeEach(() => {
@@ -97,7 +97,7 @@ object_defs:
 
     session = new WorldSession(codex);
     const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), session);
-    session.adoptWorld(new World(worldInstance, codex.propertyNames, codex.symbolNames));
+    session.adoptWorld(new World(worldInstance, codex));
     ground = session.spawn(idOf('crafting_ground'));
     ground.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')));
     wip = session.spawn(idOf(inProgressObjectName('axe', 'basic')));
@@ -292,7 +292,7 @@ object_defs:
 
     session = new WorldSession(codex);
     const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), session);
-    session.adoptWorld(new World(worldInstance, codex.propertyNames, codex.symbolNames));
+    session.adoptWorld(new World(worldInstance, codex));
     ground = session.spawn(idOf('crafting_ground'));
     ground.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')));
   });

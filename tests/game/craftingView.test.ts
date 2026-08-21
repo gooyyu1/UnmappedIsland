@@ -5,7 +5,7 @@ import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { craftingActions, craftingMaterials } from '../../src/game/view/craftingView';
-import { inProgressObjectName, MATERIALS_SLOT } from '../../src/loader/inProgressObjects';
+import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { SeededRng } from '../support/SeededRng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -42,7 +42,7 @@ describe('製作中オブジェクトの操作と材料の枠', () => {
   }
 
   const materialsIn = (wip: WorldObject): readonly WorldObject[] =>
-    wip.tryGetSlot(codex.slotNames.getId(MATERIALS_SLOT))?.contents ?? [];
+    wip.tryGetSlot(codex.vocabulary.engine.materialsSlotId)?.contents ?? [];
 
   it('製作中でない物は、操作も材料の枠も持たない', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));

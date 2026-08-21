@@ -89,7 +89,7 @@ describe('core.yamlのworld定義', () => {
     const dayId = codex.propertyNames.getId('day');
 
     const worldInstance = new WorldSession(codex).spawn(world.globalId);
-    const worldView = new World(worldInstance, codex.propertyNames, codex.symbolNames);
+    const worldView = new World(worldInstance, codex);
     const session = new WorldSession(codex, worldView);
 
     session.advanceWorldTime(60); // 60分 -> minuteが折り返し、hourへ+1
@@ -274,9 +274,15 @@ object_defs:
     expect(characters).toBeDefined();
     expect(characters?.cellCount, 'キャラクタスロットは1枠').toBe(1);
 
+    // 語彙（WorldVocabulary）は名前を先に登録するので、「Codexにその名前が無い」では確かめられない。
+    // 訊くべきは、この型がそのプロパティを持つかどうか。
     expect(
-      testCodex.propertyNames.tryGetId('exploration_progress'),
-      'explorableを実装していないため、探索進捗プロパティはこのCodexに一切登場しない',
+      hut.getPropertyDef(testCodex.vocabulary.world.explorationProgressId),
+      'explorableを実装していないため、探索進捗プロパティを持たない',
+    ).toBeUndefined();
+    expect(
+      hut.getSlotDef(testCodex.vocabulary.world.undiscoveredFixturesSlotId),
+      '未発見の設置物スロットも持たない',
     ).toBeUndefined();
   });
 });
