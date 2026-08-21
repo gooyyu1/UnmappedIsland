@@ -45,7 +45,7 @@ import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
 import type { LaneCell } from './ui/laneCells';
-import { cellsFor, unboundedSlot } from './ui/laneCells';
+import { cellsFor, foundCells as foundCellsOf, unboundedSlot } from './ui/laneCells';
 import { Curtain } from './ui/Curtain';
 import { LocationArtLoader } from './ui/LocationArtLoader';
 import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from '../art/informationArt';
@@ -424,9 +424,6 @@ export class PlayScene extends ResponsiveScene {
    */
   private activity: Activity = 'idle';
 
-  /** 発見物の枠へまだ飛んでいる途中の札（着くまでは枠に伏せておく）。 */
-  private foundArriving: ReadonlySet<number> = new Set();
-
   /** 土地の絵の遅延ロード。initで必ず設定される。 */
   private artLoader!: LocationArtLoader;
 
@@ -524,7 +521,6 @@ export class PlayScene extends ResponsiveScene {
 
     // 見せている最中だった演出は、それを終わらせるtweenごと消えている（終わったものとして始める）。
     this.activity = 'idle';
-    this.foundArriving = new Set();
     this.selectedFilter = 0;
   }
 
@@ -600,7 +596,6 @@ export class PlayScene extends ResponsiveScene {
     const openedStatus = this.statusDetailKey;
     const openedCard = this.shown.windowStack;
     // 運んでいる途中だった札は、表示物ごと捨てられている（着いたものとして作り直す）。
-    this.foundArriving = new Set();
     this.childWindow = undefined;
     this.shown.returnBorrowed();
     this.childWindowPlace = undefined;
@@ -921,13 +916,17 @@ export class PlayScene extends ResponsiveScene {
     if (window?.lane !== undefined && place !== undefined) {
       views.push({ lane: window.lane, cells: this.slotCells(place) });
     }
+    // 発見物のレーン。借りている札はここに並び、返すと元の場所のレーンへ戻る（Windows.md 5.1節）。
+    if (window?.foundLane !== undefined) {
+      views.push({ lane: window.foundLane, cells: this.foundCells() });
+    }
     return views;
   }
 
   /** 今画面に出ているレーン。札を探すため（cardShowing）のもので、並びは引き直さない。 */
   private get openLanes(): readonly CardLane[] {
     const lanes = [this.fixtureLane, this.itemLane, this.handLane, this.portraitLane];
-    for (const lane of [this.childWindow?.cardLane, this.childWindow?.lane]) {
+    for (const lane of [this.childWindow?.cardLane, this.childWindow?.lane, this.childWindow?.foundLane]) {
       if (lane !== undefined) lanes.push(lane);
     }
     return lanes;
@@ -1205,15 +1204,7 @@ export class PlayScene extends ResponsiveScene {
     this.childWindow = new ObjectWindow(this, this.metrics, {
       object: { card: window.card, description: window.description },
       properties: opened?.properties ?? window.properties,
-      // 発見物の枠は画面が覚えているもの（ワールドの場所ではない、Windows.md 1.1節）なので、
-      // ワールドから来た探索率へここで重ねる。
-      exploration:
-        window.explorationRatio === undefined
-          ? undefined
-          : {
-              ratio: window.explorationRatio,
-              found: this.shown.found.map((card) => ({ card, arriving: this.arrivingFound(card) })),
-            },
+      exploration: window.explorationRatio === undefined ? undefined : { ratio: window.explorationRatio },
       slots: this.childWindowTabs.map((tab) => {
         const slot = this.view.slotViewOf(tab.place);
         return {
@@ -1285,17 +1276,27 @@ export class PlayScene extends ResponsiveScene {
    * 並びの引き直しは呼び出し側——閉じるのは差し替えの途中のこともあるため。
    */
   private dropChildWindow(): ReadonlyMap<number, Rect> {
-    const from = this.childWindow?.cardRect;
-    const released = this.shown.returnBorrowed();
-    this.childWindow?.close();
+    // **枠を測るのは閉じる前**——閉じるとレーンごと消えるので、そのあとでは出どころを引けない。
+    const window = this.childWindow;
+    const cardRect = window?.cardRect;
+    const foundLane = window?.foundLane;
+
+    const returned = this.shown.returnBorrowed();
+    const origins = new Map<number, Rect>();
+    if (cardRect !== undefined) for (const id of returned.card) origins.set(id, cardRect);
+    returned.found.forEach((card, index) => {
+      const rect = foundLane?.slotRect(index);
+      if (rect === undefined) return;
+      for (const id of card.identity ?? []) origins.set(id, rect);
+    });
+
+    window?.close();
     this.childWindow = undefined;
     this.childWindowPlace = undefined;
     this.childWindowTabs = [];
     this.childWindowDef = undefined;
     this.setDragLanes();
 
-    const origins = new Map<number, Rect>();
-    if (from !== undefined) for (const id of released) origins.set(id, from);
     return origins;
   }
 
@@ -1310,28 +1311,16 @@ export class PlayScene extends ResponsiveScene {
     this.openChildWindow(this.view.currentLocationWindow, origins);
   }
 
-  /** その発見物が、まだ現在地の札から運ばれてくる途中か。 */
-  private arrivingFound(card: CardContent): boolean {
-    return card.identity?.some((id) => this.foundArriving.has(id)) === true;
-  }
-
   /**
    * 借りている発見物を、それぞれの本来の場所へ帰す（Windows.md 5.1節）。帰り先はレーンの並びが
    * 決めるので、借りるのをやめて差し替えれば、あとは通常の出どころの規則（origins）が飛ばす。
    */
   private returnFound(): void {
-    const found = this.shown.returnFound();
-    if (found.length === 0) return;
+    if (this.shown.returnFound().length === 0) return;
 
-    const origins = new Map<number, Rect>();
-    found.forEach((card, index) => {
-      const rect = this.childWindow?.foundRect(index);
-      if (rect === undefined) return;
-      for (const id of card.identity ?? []) origins.set(id, rect);
-    });
-
-    this.foundArriving = new Set();
-    this.showView({ origins });
+    // 出どころの表は要らない。借りるのをやめた札は発見物のレーンから居なくなるので、**差し替えが
+    // 「直前に居た枠」として憶えている**（CardTable.placedCards）。
+    this.showView();
   }
 
   /**
@@ -1375,12 +1364,9 @@ export class PlayScene extends ResponsiveScene {
           case 'signals':
             this.showSignals(recorded.signals);
             break;
-          case 'view': {
-            const context = this.motionOf(recorded.changes);
-            this.showView(context);
-            this.carryFound(context.origins);
+          case 'view':
+            this.showView(this.motionOf(recorded.changes));
             break;
-          }
           case 'transit':
             // 探索では土地を移らないので、elapsedStepsはこの段を返さない。
             break;
@@ -1394,43 +1380,19 @@ export class PlayScene extends ResponsiveScene {
    * 探索は必ず1個以上見つかるので、押した結果がどのタブに出るかを覚えていなくてよい。
    */
   private takeFound(shownBefore: ReadonlySet<number>): void {
-    const found = this.foundSince(shownBefore);
-    this.shown.takeFound(found);
-    this.foundArriving = new Set(found.flatMap((card) => card.identity ?? []));
+    this.shown.takeFound(this.foundSince(shownBefore));
 
     const ratio = this.view.currentLocationWindow.explorationRatio;
-    if (ratio !== undefined)
-      this.childWindow?.setExploration({
-        ratio,
-        found: this.shown.found.map((card) => ({ card, arriving: this.arrivingFound(card) })),
-      });
+    if (ratio !== undefined) this.childWindow?.setExploration({ ratio });
     this.childWindow?.openTab(EXPLORATION_TAB);
   }
 
   /**
-   * 見つかったものを、出どころ（現在地の札）から発見物の枠へ運ぶ。**着くまではどの枠にも居ない**
-   * ので、枠には伏せたまま置いておき、着いた時点で表に出す（CardInteraction.md 6.2節）。
+   * 発見物のレーンに並べる枠。**借りている札そのもの**（Windows.md 5.1節）で、見つかっていない分は
+   * 空き枠のまま出す（foundCells）。
    */
-  private carryFound(origins: ReadonlyMap<number, Rect> | undefined): void {
-    this.shown.found.forEach((card, index) => {
-      const ids = card.identity ?? [];
-      const from = ids.map((id) => origins?.get(id)).find((rect) => rect !== undefined);
-      const to = this.childWindow?.foundRect(index);
-      if (from === undefined || to === undefined) {
-        this.landFound(ids, index);
-        return;
-      }
-
-      this.motion.carry(card, from, to, () => this.landFound(ids, index));
-    });
-  }
-
-  /** 運んでいた1枚が発見物の枠に着いた。 */
-  private landFound(ids: readonly number[], index: number): void {
-    const arriving = new Set(this.foundArriving);
-    for (const id of ids) arriving.delete(id);
-    this.foundArriving = arriving;
-    this.childWindow?.showFound(index);
+  private foundCells(): readonly LaneCell[] {
+    return foundCellsOf(this.shown.found);
   }
 
   /** 現在地のレーンに出ているカード（設置物とアイテム）。どちらも前詰めなので空き枠は無い。 */
@@ -1639,7 +1601,6 @@ export class PlayScene extends ResponsiveScene {
   /** 前の土地に紐づいていたものを手放す。移動先へ持ち越すと、そこには無いものを見せてしまうため。 */
   private leaveLocation(): void {
     this.shown.returnFound();
-    this.foundArriving = new Set();
     // **自分自身のスロット以外は、移った先には無い。** 置いてきた入れ物の中身も、現在地に紐づく場所
     // （構造の部品）も開いたままにできない。手に持っている入れ物は持ち越せるが、開き直せば済むので
     // 持ち主で一律に決める。
