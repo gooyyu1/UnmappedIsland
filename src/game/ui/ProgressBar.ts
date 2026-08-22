@@ -2,14 +2,7 @@ import Phaser from 'phaser';
 import type { AlertLevel } from '../../domain/AlertLevel';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { drawBox } from '../../ui/shapes';
-import { COLOR, fadedFill, statusFillColorFor } from '../looks/theme';
-
-/** 域ごとの警戒の枠の色（明滅させない域はundefined）。 */
-function alertBorderColor(alert: AlertLevel): number | undefined {
-  if (alert === 'danger') return COLOR.statusAlertDanger;
-  if (alert === 'fatal') return COLOR.statusAlertFatal;
-  return undefined;
-}
+import { COLOR, alertBorderColorFor, fadedFill, statusFillColorFor } from '../looks/theme';
 
 /**
  * 変わった分を帯として残す時間と、それが追いつき切るまでの時間（StatusArea.md）。
@@ -263,7 +256,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     this.alert = alert;
     this.draw();
 
-    const color = this.steady ? undefined : alertBorderColor(alert);
+    const color = this.steady ? undefined : alertBorderColorFor(alert);
     if (color === undefined) {
       this.blinkTween?.stop();
       this.blinkTween = undefined;

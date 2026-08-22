@@ -261,6 +261,16 @@ export function statusFillColorFor(alert: AlertLevel): number {
   return mixColor(COLOR.statusBarFillSafe, COLOR.statusBarFillFatal, severity);
 }
 
+/**
+ * 域に応じた警戒の枠の色（StatusArea.md）。明滅させない域ではundefinedで、枠そのものを出さない。
+ * 塗り（statusFillColorFor）が深刻さを連続的に表すのに対し、枠は危険域から上でだけ立つ。
+ */
+export function alertBorderColorFor(alert: AlertLevel): number | undefined {
+  if (alert === 'danger') return COLOR.statusAlertDanger;
+  if (alert === 'fatal') return COLOR.statusAlertFatal;
+  return undefined;
+}
+
 /** 増えた分の帯を、塗りからどれだけトラック寄りへ薄めるか（fadedFill）。 */
 const BAND_FADE = 0.55;
 
