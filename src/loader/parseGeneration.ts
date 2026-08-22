@@ -5,11 +5,12 @@ import {
   asScalarText,
   entriesInOrder,
   requireInt,
+  requireKnownKeys,
   requireScalar,
   tryGetBool,
   tryGetInt,
-  tryGetNumber,
   tryGetMap,
+  tryGetNumber,
   tryGetSeq,
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
@@ -86,8 +87,8 @@ function parseAxis(name: string, node: YAMLMap): AxisDef {
     layers.push(parseGeneratorLayer(layerContext, layerNode));
   }
 
-  checkUnknownKeys(context, node, 'range', 'generator');
-  checkUnknownKeys(context, generatorNode, 'blend');
+  requireKnownKeys(context, node, ['range', 'generator']);
+  requireKnownKeys(context, generatorNode, ['blend']);
   return new AxisDef(name, range, layers);
 }
 
@@ -102,7 +103,7 @@ function parseGeneratorLayer(context: string, node: YAMLMap): GeneratorLayer {
         throw new YamlLoadError(
           `${context}: distance_fieldのreferenceは現時点で'edge'のみ対応しています（値: '${reference}'）。`,
         );
-      checkUnknownKeys(context, node, 'type', 'weight', 'reference');
+      requireKnownKeys(context, node, ['type', 'weight', 'reference']);
       return new GeneratorLayer('distance_field', weight);
     }
 
@@ -116,7 +117,7 @@ function parseGeneratorLayer(context: string, node: YAMLMap): GeneratorLayer {
       );
       if (layer.octaves < 1) throw new YamlLoadError(`${context}: octavesは1以上である必要があります。`);
       if (layer.frequency < 1) throw new YamlLoadError(`${context}: frequencyは1以上である必要があります。`);
-      checkUnknownKeys(context, node, 'type', 'weight', 'octaves', 'frequency', 'seed_offset');
+      requireKnownKeys(context, node, ['type', 'weight', 'octaves', 'frequency', 'seed_offset']);
       return layer;
     }
 
@@ -153,7 +154,7 @@ function parseVariants(loader: WorldCodexYamlLoader, context: string, node: YAML
         props.set(loader.propertyNames.intern(propName), value);
       }
 
-    checkUnknownKeys(variantContext, map, 'id', 'props');
+    requireKnownKeys(variantContext, map, ['id', 'props']);
     variants.push(new LocationVariantDef(variantId, props));
   }
 
@@ -190,7 +191,7 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
       if (tolerance < 1) throw new YamlLoadError(`${prefContext}: toleranceは1以上である必要があります。`);
       const weight = tryGetInt(prefMap, 'weight', prefContext) ?? 100;
       if (weight < 1) throw new YamlLoadError(`${prefContext}: weightは1以上である必要があります。`);
-      checkUnknownKeys(prefContext, prefMap, 'ideal', 'tolerance', 'weight');
+      requireKnownKeys(prefContext, prefMap, ['ideal', 'tolerance', 'weight']);
       preferences.push(
         new AxisPreference(axisName, requireInt(prefMap, 'ideal', prefContext), tolerance, weight),
       );
@@ -206,7 +207,7 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
       const max = tryGetInt(limitMap, 'max', limitContext);
       if (min === undefined && max === undefined)
         throw new YamlLoadError(`${limitContext}: 'min'または'max'のいずれかが必要です。`);
-      checkUnknownKeys(limitContext, limitMap, 'min', 'max');
+      requireKnownKeys(limitContext, limitMap, ['min', 'max']);
       hardLimits.push(new AxisLimit(axisName, min, max));
     }
 
@@ -216,9 +217,7 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
         `（通常の最近傍マッチングでは距離が定義できないため）。`,
     );
 
-  checkUnknownKeys(
-    context,
-    node,
+  requireKnownKeys(context, node, [
     'object_def',
     'variants',
     'applicable_scopes',
@@ -227,7 +226,7 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
     'priority',
     'axis_preferences',
     'hard_limits',
-  );
+  ]);
 
   return new LocationTypeDef(
     name,
@@ -280,7 +279,7 @@ function parseGenerationScope(name: string, node: YAMLMap): GenerationScopeDef {
       const count = tryGetInt(guaranteeNode, 'count', guaranteeContext) ?? 1;
       if (count < 1) throw new YamlLoadError(`${guaranteeContext}: countは1以上である必要があります。`);
 
-      checkUnknownKeys(guaranteeContext, guaranteeNode, 'location_type', 'count', 'axis', 'pick');
+      requireKnownKeys(guaranteeContext, guaranteeNode, ['location_type', 'count', 'axis', 'pick']);
       guarantees.push(
         new GuaranteeDef(
           requireScalar(guaranteeNode, 'location_type', guaranteeContext),
@@ -313,9 +312,7 @@ function parseGenerationScope(name: string, node: YAMLMap): GenerationScopeDef {
   if (scope.crowdingPenalty < 0)
     throw new YamlLoadError(`${context}: crowding_penaltyは0以上である必要があります（0で無効）。`);
 
-  checkUnknownKeys(
-    context,
-    node,
+  requireKnownKeys(context, node, [
     'site_count',
     'coast_band',
     'hull_coast',
@@ -325,7 +322,7 @@ function parseGenerationScope(name: string, node: YAMLMap): GenerationScopeDef {
     'max_sites_per_type',
     'crowding_penalty',
     'guarantees',
-  );
+  ]);
 
   return scope;
 }
@@ -396,12 +393,4 @@ export function resetGeneration(loader: WorldCodexYamlLoader): void {
   loader.generationAxes.clear();
   loader.generationLocationTypes.length = 0;
   loader.generationScopes.clear();
-}
-
-function checkUnknownKeys(context: string, node: YAMLMap, ...knownKeys: readonly string[]): void {
-  const unknownKeys = entriesInOrder(node)
-    .map(([key]) => key)
-    .filter((key) => !knownKeys.includes(key));
-  if (unknownKeys.length > 0)
-    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
 }

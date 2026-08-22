@@ -77,7 +77,7 @@ import { WeatherOverlay } from './ui/WeatherOverlay';
 import { ScreenSkyTint } from './ui/ScreenSkyTint';
 import { LaneHaze } from './ui/LaneHaze';
 import { heatHazeFor } from './looks/heatHaze';
-import { durationText } from './looks/durationText';
+import { clockParts, durationText } from './looks/durationText';
 import { addLabel } from '../ui/labels';
 import type { BoxStyle } from '../ui/shapes';
 import { addPanel, addTiledImage, addTiledImageVertical } from '../ui/shapes';
@@ -120,9 +120,6 @@ const REAL_MS_MAX = 90 * REAL_MS_PER_GAME_MINUTE;
 function realMsFor(minutes: number): number {
   return Math.min(minutes * REAL_MS_PER_GAME_MINUTE, REAL_MS_MAX);
 }
-
-/** 経過分から日付・時刻を組み立てるための1日の長さ。 */
-const MINUTES_PER_DAY = 24 * 60;
 
 /** ドーナツグラフは、飛んでいるカードも探索の子ウィンドウも越えて最前面に出す。 */
 const RING_DEPTH = 2;
@@ -1565,20 +1562,14 @@ export class PlayScene extends ResponsiveScene {
   private showClock(totalMinutes: number): void {
     if (this.situation.scene === undefined) return;
 
-    const whole = Math.trunc(totalMinutes);
-    this.situation.setTime(
-      Math.trunc(whole / MINUTES_PER_DAY),
-      Math.trunc((whole % MINUTES_PER_DAY) / 60),
-      whole % 60,
-    );
+    const { days, hour, minute } = clockParts(totalMinutes);
+    this.situation.setTime(days, hour, minute);
   }
 
   /** 今のワールド時刻（エラー報告と操作の記録に添える）。 */
   private clockText(): string {
-    const whole = Math.trunc(this.gameSession.world.totalMinutes);
-    const hour = Math.trunc((whole % MINUTES_PER_DAY) / 60);
-    const minute = whole % 60;
-    return `${Math.trunc(whole / MINUTES_PER_DAY)}日 ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    const { days, hour, minute } = clockParts(this.gameSession.world.totalMinutes);
+    return `${days}日 ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
   }
 
   /**

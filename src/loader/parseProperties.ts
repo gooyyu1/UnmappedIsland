@@ -3,18 +3,19 @@ import { isMap } from 'yaml';
 import {
   asMap,
   asScalarText,
-  entriesInOrder,
+  requireKnownKeys,
   requireNumber,
   requireScalar,
   tryGetBool,
   tryGetMap,
+  tryGetNode,
   tryGetNumber,
   tryGetScalar,
   tryGetSeq,
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseScalarNumber, tryGetNode } from './parseCommon';
+import { parseScalarNumber } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
 import { parsePassive } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
@@ -52,11 +53,7 @@ export function parseProp(
   const context = `'${objectDefName}'.props.'${propName}'`;
   const propertyGlobalId = loader.propertyNames.intern(propName);
 
-  const unknownKeys = entriesInOrder(node)
-    .map(([key]) => key)
-    .filter((key) => !KNOWN_PROP_KEYS.has(key));
-  if (unknownKeys.length > 0)
-    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+  requireKnownKeys(context, node, KNOWN_PROP_KEYS);
 
   const valueNode = tryGetNode(node, 'value');
   if (valueNode === undefined)
@@ -170,11 +167,7 @@ function parseGauge(context: string, node: YAMLMap, range: PropertyRange | undef
       `${context}: gaugeを使うには'range'が必須です（割合が定義できないとバーにできません）。`,
     );
 
-  const unknownKeys = entriesInOrder(gaugeNode)
-    .map(([key]) => key)
-    .filter((key) => key !== 'min' && key !== 'max');
-  if (unknownKeys.length > 0)
-    throw new YamlLoadError(`${context}.gauge: 未知のキー '${unknownKeys.join(', ')}' です。`);
+  requireKnownKeys(`${context}.gauge`, gaugeNode, ['min', 'max']);
 
   return new GaugeDef(gaugeEnd(context, gaugeNode, 'min'), gaugeEnd(context, gaugeNode, 'max'));
 }

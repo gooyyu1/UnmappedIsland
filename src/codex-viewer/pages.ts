@@ -16,7 +16,7 @@ import type { SlotDef } from '../domain/SlotDef';
 import { OBJECT_ART } from '../art/objectArt';
 import { isInCraftingNetwork } from './networkPage';
 import type { CodexView } from './CodexView';
-import { EMPTY_HTML, escapeHtml } from './CodexView';
+import { EMPTY_HTML, escapeHtml, inlineArtHtml } from './CodexView';
 
 /**
  * 1ページ分のHTMLを組み立てる関数群。DOMには触らず文字列を返すだけにして、描き込み（main.ts）と
@@ -336,8 +336,13 @@ export function renderNotFoundPage(): string {
 // 部品
 // ------------------------------------------------------------------
 
-function objectLinkHtml(view: CodexView, name: string): string {
-  return `<a href="${view.objectHref(name)}">${escapeHtml(view.objectLabel(name))}</a>`;
+/**
+ * オブジェクトのページへのリンク。**絵を出すかは呼び出し側が決める**——並びの中では絵があるほうが
+ * 早く引けるが、表の1セルでは行が高くなる。
+ */
+export function objectLinkHtml(view: CodexView, name: string, withArt = false): string {
+  const art = withArt ? inlineArtHtml(name) : '';
+  return `<a href="${view.objectHref(name)}">${art}${escapeHtml(view.objectLabel(name))}</a>`;
 }
 
 function objectGridHtml(view: CodexView, names: readonly string[]): string {

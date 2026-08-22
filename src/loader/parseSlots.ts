@@ -2,15 +2,16 @@ import type { YAMLMap } from 'yaml';
 import {
   asMap,
   asScalarText,
-  entriesInOrder,
+  requireKnownKeys,
   tryGetInt,
   tryGetMap,
+  tryGetNode,
   tryGetNumber,
   tryGetSeq,
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseTypeMatchRule, tryGetNode } from './parseCommon';
+import { parseTypeMatchRule } from './parseCommon';
 import { parseWeight } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { CellDef, SlotDef } from '../domain/SlotDef';
@@ -95,11 +96,7 @@ function parsePlacement(node: YAMLMap, context: string): readonly string[] {
 
 /** `put_in: {duration: ...}`（ここへ入れるのにかかる時間）を読む。出す側に時間は課さない。 */
 function parsePutIn(loader: WorldCodexYamlLoader, node: YAMLMap, context: string): WeightSpec {
-  const unknownKeys = entriesInOrder(node)
-    .map(([key]) => key)
-    .filter((key) => key !== 'duration');
-  if (unknownKeys.length > 0)
-    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+  requireKnownKeys(context, node, ['duration']);
 
   const durationNode = tryGetNode(node, 'duration');
   if (durationNode === undefined) throw new YamlLoadError(`${context}: 'duration'が必要です。`);

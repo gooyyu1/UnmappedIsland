@@ -2,7 +2,7 @@ import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { CardLane } from './CardLane';
 import type { LaneCell } from './laneCells';
-import { FOUND_CELLS } from './laneCells';
+import { FOUND_CELLS, laneWidthForCells } from './laneCells';
 import { CONTENT_GAP } from '../looks/childWindowLayout';
 import { ProgressBar } from './ProgressBar';
 import { addLabel } from '../../ui/labels';
@@ -34,8 +34,7 @@ export class ExplorationPane {
    * 枠は縮めない——レーンから来てレーンへ帰る札そのものなので、大きさが変わると別の札に見える。
    */
   static width(metrics: ScreenMetrics): number {
-    const cards = metrics.px(SIZE.cardWidth) * FOUND_CELLS + metrics.px(SIZE.gap) * (FOUND_CELLS - 1);
-    return cards + metrics.px(SIZE.margin) * 2;
+    return laneWidthForCells(metrics, FOUND_CELLS);
   }
 
   /** この面が要る高さ。窓の中段の高さは、最も高いタブに合わせて決まる（ObjectWindow）。 */

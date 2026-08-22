@@ -1,3 +1,20 @@
+const MINUTES_PER_DAY = 24 * 60;
+
+/**
+ * 総経過分を日・時・分へ分ける。**時計に出すのも、記録へ添える文字にするのも同じ分け方**——
+ * 別々に書くと、片方だけ直したときに時計とエラー報告の時刻がずれる。
+ *
+ * 日は0から数える（開始日が0日目）。
+ */
+export function clockParts(totalMinutes: number): { days: number; hour: number; minute: number } {
+  const whole = Math.trunc(totalMinutes);
+  return {
+    days: Math.trunc(whole / MINUTES_PER_DAY),
+    hour: Math.trunc((whole % MINUTES_PER_DAY) / 60),
+    minute: whole % 60,
+  };
+}
+
 /**
  * ゲーム内時間の長さの書き方（分を時間・分へ直す）。**止まっている文言の長さはすべてこの1つの形**——
  * 操作にかかる時間も、焼き上がるまでの残り時間も、同じ字面で読める。

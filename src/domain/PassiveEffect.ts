@@ -244,9 +244,10 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
     slotBearer: WorldObject,
   ): void {
     if (targetOwner === undefined) return;
-    targetOwner
-      .tryGetProperty(this.targetPropertyGlobalId)
-      ?.registerPassiveEffect(new RegisteredPassiveEffect(declarer, slotBearer, this));
+    const target = targetOwner.tryGetProperty(this.targetPropertyGlobalId);
+    // modify用と積分用のどちらへ入れるかは、具象クラスのregisterIntoが決める（8.3節）。
+    if (target !== undefined)
+      this.registerInto(target, new RegisteredPassiveEffect(declarer, slotBearer, this));
   }
 
   /** targetOwnerの対象プロパティから、declarerが宣言した登録を解除する。 */

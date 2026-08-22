@@ -11,12 +11,17 @@ import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 import { wrapByCharacter } from '../../ui/textLayout';
 
-/** モーダルの寸法（StartScreen_Mock.htmlの.modal-card/.modal-button）。 */
-const CARD_MAX_WIDTH = 520;
-const CARD_PADDING = 32;
-const CARD_GAP = 24;
-const ACTION_HEIGHT = 72;
-const ACTION_GAP = 16;
+/**
+ * モーダルの寸法（StartScreen_Mock.htmlの.modal-card/.modal-button）。**子ウィンドウの寸法
+ * （childWindowLayout）とは別の系統**で、値も揃わない——あちらはフィールドの上に開く窓、こちらは
+ * 画面を覆うモーダルで、由来するモックが違う。台紙をPLATEと呼ぶのは、ここでのcardが札ではなく
+ * モーダルの紙を指してしまうため。
+ */
+const PLATE_MAX_WIDTH = 520;
+const PLATE_PADDING = 32;
+const PLATE_GAP = 24;
+const BUTTON_HEIGHT = 72;
+const BUTTON_GAP = 16;
 
 /**
  * 見出しの上に置く札の高さ（u単位）。原寸（SIZE.cardHeight）では台紙の半分以上を占めてしまうので、
@@ -56,11 +61,11 @@ export class ModalDialog {
     const { width, height } = metrics;
     this.objects.push(addPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5));
 
-    const cardWidth = Math.min(metrics.px(CARD_MAX_WIDTH), width * 0.88);
-    const padding = metrics.px(CARD_PADDING);
-    const gap = metrics.px(CARD_GAP);
-    const actionHeight = metrics.px(ACTION_HEIGHT);
-    const contentWidth = cardWidth - padding * 2;
+    const plateWidth = Math.min(metrics.px(PLATE_MAX_WIDTH), width * 0.88);
+    const padding = metrics.px(PLATE_PADDING);
+    const gap = metrics.px(PLATE_GAP);
+    const actionHeight = metrics.px(BUTTON_HEIGHT);
+    const contentWidth = plateWidth - padding * 2;
 
     // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る札・文字より先に置く必要がある。
     const plate = scene.add.graphics();
@@ -78,29 +83,29 @@ export class ModalDialog {
       .setAlign('center');
     body.setWordWrapCallback(wrapByCharacter(contentWidth));
 
-    const cardHeight = padding * 2 + portraitHeight + title.height + gap + body.height + gap + actionHeight;
-    const cardX = (width - cardWidth) / 2;
-    const cardY = (height - cardHeight) / 2;
+    const plateHeight = padding * 2 + portraitHeight + title.height + gap + body.height + gap + actionHeight;
+    const plateX = (width - plateWidth) / 2;
+    const plateY = (height - plateHeight) / 2;
 
     drawBox(
       plate,
-      { x: cardX, y: cardY, width: cardWidth, height: cardHeight },
+      { x: plateX, y: plateY, width: plateWidth, height: plateHeight },
       { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) },
     );
 
     const portraitWidth = metrics.px((SIZE.cardWidth * PORTRAIT_HEIGHT) / SIZE.cardHeight);
-    portrait?.setPosition((width - portraitWidth) / 2, cardY + padding);
-    title.setPosition(width / 2, cardY + padding + portraitHeight);
-    body.setPosition(width / 2, cardY + padding + portraitHeight + title.height + gap);
+    portrait?.setPosition((width - portraitWidth) / 2, plateY + padding);
+    title.setPosition(width / 2, plateY + padding + portraitHeight);
+    body.setPosition(width / 2, plateY + padding + portraitHeight + title.height + gap);
     this.objects.push(title, body);
 
-    const actionGap = metrics.px(ACTION_GAP);
+    const actionGap = metrics.px(BUTTON_GAP);
     const actionWidth = (contentWidth - actionGap * (options.actions.length - 1)) / options.actions.length;
     options.actions.forEach((action, index) => {
       this.objects.push(
         this.addAction(scene, metrics, action, {
-          x: cardX + padding + index * (actionWidth + actionGap),
-          y: cardY + cardHeight - padding - actionHeight,
+          x: plateX + padding + index * (actionWidth + actionGap),
+          y: plateY + plateHeight - padding - actionHeight,
           width: actionWidth,
           height: actionHeight,
         }),

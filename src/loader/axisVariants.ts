@@ -1,6 +1,7 @@
 import { stringify } from 'yaml';
 import type { YAMLMap } from 'yaml';
 import type { GeneratedCoordinate } from '../domain/GeneratedTypes';
+import type { GeneratedObjectDefs } from './generatedObjectDefs';
 import type { ObjectDef } from '../domain/ObjectDef';
 import { parseTypeMatchRule } from './parseCommon';
 import type { RawObjectDef } from './RawObjectDef';
@@ -36,7 +37,7 @@ export function axisVariantsYaml(
   rawDefs: ReadonlyMap<string, RawObjectDef>,
   defs: readonly ObjectDef[],
   loader: WorldCodexYamlLoader,
-): { yaml: string; coordinates: ReadonlyMap<string, GeneratedCoordinate> } | undefined {
+): GeneratedObjectDefs | undefined {
   const objectDefs: Record<string, unknown> = {};
   const coordinates = new Map<string, GeneratedCoordinate>();
 

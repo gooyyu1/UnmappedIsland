@@ -5,6 +5,11 @@
  */
 
 import type { CardContent } from './Card';
+import type { ScreenMetrics } from '../looks/ScreenMetrics';
+import { SIZE } from '../looks/theme';
+
+/** 頭打ちに掛かるときに覗かせる、次の枠の頭の幅。隙間ではなくカードの縁だと分かる幅を取る。 */
+const PEEK_WIDTH = 40;
 
 /**
  * 1つのレーンに**一度に見せる**枠の数の上限（子ウィンドウの幅を決める、ObjectWindow.laneWidthFor）。
@@ -56,4 +61,17 @@ export function foundCells(found: readonly CardContent[]): readonly LaneCell[] {
   const cells: LaneCell[] = found.map((card) => ({ card }));
   while (cells.length < FOUND_CELLS) cells.push({});
   return cells;
+}
+
+/**
+ * その数の枠を並べるのに要るレーンの幅（左右の余白込み）。**一度に見せるのはLANE_CELLS_MAXまで**で、
+ * それを超える枠を持つ並びは、右にまだ続くことが分かるよう次の枠の頭を覗かせる。
+ *
+ * カードの幅だけで決めると最後の枠がはみ出すので、レーンの左右の余白（CardLaneのSIZE.margin）も足す。
+ */
+export function laneWidthForCells(metrics: ScreenMetrics, wanted: number): number {
+  const shown = Math.min(LANE_CELLS_MAX, wanted);
+  const cards = shown * metrics.px(SIZE.cardWidth) + (shown - 1) * metrics.px(SIZE.gap);
+  const peek = wanted > LANE_CELLS_MAX ? metrics.px(PEEK_WIDTH) : 0;
+  return cards + peek + metrics.px(SIZE.margin) * 2;
 }

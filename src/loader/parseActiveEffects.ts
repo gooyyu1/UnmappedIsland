@@ -5,16 +5,18 @@ import {
   asScalarText,
   asSeq,
   entriesInOrder,
+  requireKnownKeys,
   requireNumber,
   requireScalar,
   tryGetBool,
   tryGetMap,
+  tryGetNode,
   tryGetNumber,
   tryGetScalar,
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseNumberLiteral, parseScalarNumber, tryGetNode } from './parseCommon';
+import { parseNumberLiteral, parseScalarNumber } from './parseCommon';
 import { ACTION_CONDITION_ROOTS, COMBINATION_CONDITION_ROOTS, parseSubjectRoot } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
@@ -169,11 +171,7 @@ export function parseWeight(
     const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, allowedRoots) : 'self';
     const propName = requireScalar(node, 'prop', context);
 
-    const unknownKeys = entriesInOrder(node)
-      .map(([key]) => key)
-      .filter((key) => key !== 'subject' && key !== 'prop');
-    if (unknownKeys.length > 0)
-      throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+    requireKnownKeys(context, node, ['subject', 'prop']);
 
     return WeightSpec.fromPath(new PropertyPath(root, loader.propertyNames.intern(propName)));
   }
@@ -231,21 +229,16 @@ function parseTransfer(
       ? parseAdds(loader, `${context}.linked_add`, linkedAddMap, allowDragged, selfOnly)
       : [];
 
-  const unknownKeys = entriesInOrder(map)
-    .map(([key]) => key)
-    .filter(
-      (key) =>
-        key !== 'from' &&
-        key !== 'from_prop' &&
-        key !== 'to' &&
-        key !== 'to_prop' &&
-        key !== 'amount' &&
-        key !== 'to_amount' &&
-        key !== 'allow_overflow' &&
-        key !== 'linked_add',
-    );
-  if (unknownKeys.length > 0)
-    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+  requireKnownKeys(context, map, [
+    'from',
+    'from_prop',
+    'to',
+    'to_prop',
+    'amount',
+    'to_amount',
+    'allow_overflow',
+    'linked_add',
+  ]);
 
   return new TransferEffect(
     fromObject,
@@ -332,11 +325,7 @@ function parseSpawns(loader: WorldCodexYamlLoader, context: string, node: YamlNo
 function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): SpawnEffect {
   const into = tryGetScalar(map, 'into', context);
 
-  const unknownKeys = entriesInOrder(map)
-    .map(([key]) => key)
-    .filter((key) => !SPAWN_KEYS.has(key));
-  if (unknownKeys.length > 0)
-    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+  requireKnownKeys(context, map, SPAWN_KEYS);
 
   const count = tryGetNumber(map, 'count', context) ?? 1;
   if (!Number.isInteger(count) || count < 1)
@@ -431,11 +420,7 @@ function parseMove(
   map: YAMLMap,
   selfOnly: boolean,
 ): MoveEffect {
-  const unknownKeys = entriesInOrder(map)
-    .map(([key]) => key)
-    .filter((key) => !MOVE_KEYS.has(key));
-  if (unknownKeys.length > 0)
-    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+  requireKnownKeys(context, map, MOVE_KEYS);
 
   const subject = parseMoveSubject(loader, context, map);
   const destination = parseMoveDestination(loader, context, map);
@@ -597,11 +582,7 @@ function parseObjectRef(
     );
 
   const propName = requireScalar(node, 'prop', context);
-  const unknownKeys = entriesInOrder(node)
-    .map(([key]) => key)
-    .filter((key) => key !== 'prop');
-  if (unknownKeys.length > 0)
-    throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
+  requireKnownKeys(context, node, ['prop']);
 
   return ObjectRef.ofProperty(loader.propertyNames.intern(propName));
 }

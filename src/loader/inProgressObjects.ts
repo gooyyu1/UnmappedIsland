@@ -1,6 +1,7 @@
 import { stringify } from 'yaml';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { GeneratedCoordinate } from '../domain/GeneratedTypes';
+import type { GeneratedObjectDefs } from './generatedObjectDefs';
 import { NO_AXIS_VALUE } from '../domain/GeneratedTypes';
 import type { NameRegistry } from '../domain/NameRegistry';
 import { IN_PROGRESS_TAG, RECIPE_AXIS } from '../domain/RecipeDef';
@@ -31,21 +32,6 @@ export function inProgressObjectName(productName: string, recipeName: string): s
   return `${productName}${NAME_SEPARATOR}${recipeName}`;
 }
 
-/**
- * inProgressObjectNameで組み立てた名前から、その型が居る座標（GameElementDefinition.md 3.5節）を
- * 取り出す。素の型は完成品で、軸`recipe`の値がレシピの名前。
- */
-export function inProgressCoordinateOf(
-  inProgressName: string,
-  objectNames: NameRegistry,
-): GeneratedCoordinate {
-  const separator = inProgressName.lastIndexOf(NAME_SEPARATOR);
-  return {
-    baseGlobalId: objectNames.getId(inProgressName.slice(0, separator)),
-    axisValues: new Map([[RECIPE_AXIS, inProgressName.slice(separator + NAME_SEPARATOR.length)]]),
-  };
-}
-
 const NAME_SEPARATOR = '__';
 
 /**
@@ -59,20 +45,23 @@ export function inProgressObjectsYaml(
   defs: readonly ObjectDef[],
   tagNames: NameRegistry,
   objectNames: NameRegistry,
-): string | undefined {
+): GeneratedObjectDefs | undefined {
   const objectDefs: Record<string, unknown> = {};
+  const coordinates = new Map<string, GeneratedCoordinate>();
 
   for (const def of defs)
-    for (const recipe of def.recipes)
-      objectDefs[inProgressObjectName(def.name, recipe.name)] = inProgressObjectDef(
-        def,
-        recipe,
-        tagNames,
-        objectNames,
-      );
+    for (const recipe of def.recipes) {
+      const name = inProgressObjectName(def.name, recipe.name);
+      objectDefs[name] = inProgressObjectDef(def, recipe, tagNames, objectNames);
+      // 素の型は完成品で、軸`recipe`の値がレシピの名前（GameElementDefinition.md 3.5節）。
+      coordinates.set(name, {
+        baseGlobalId: def.globalId,
+        axisValues: new Map([[RECIPE_AXIS, recipe.name]]),
+      });
+    }
 
-  if (Object.keys(objectDefs).length === 0) return undefined;
-  return stringify({ object_defs: objectDefs });
+  if (coordinates.size === 0) return undefined;
+  return { yaml: stringify({ object_defs: objectDefs }), coordinates };
 }
 
 function inProgressObjectDef(

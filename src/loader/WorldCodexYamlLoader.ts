@@ -21,7 +21,8 @@ import { NameRegistry } from '../domain/NameRegistry';
 import type { ObjectDef } from '../domain/ObjectDef';
 import { ObjectDefTable } from '../domain/ObjectDef';
 import { WorldVocabulary } from '../domain/WorldVocabulary';
-import { IN_PROGRESS_SOURCE, inProgressCoordinateOf, inProgressObjectsYaml } from './inProgressObjects';
+import { IN_PROGRESS_SOURCE, inProgressObjectsYaml } from './inProgressObjects';
+import type { GeneratedObjectDefs } from './generatedObjectDefs';
 import { GeneratedTypes } from '../domain/GeneratedTypes';
 import { AXIS_VARIANT_SOURCE, axisVariantsYaml } from './axisVariants';
 import { WorldCodex } from '../domain/WorldCodex';
@@ -172,36 +173,22 @@ export class WorldCodexYamlLoader {
     // レシピを持つ型から製作中オブジェクトを生成する（RecipeSystem.md 1節）。build()の中でしか
     // 行えない——objectNames.countはこの直後に密配列の長さとして確定し、build()後に型を足すと
     // グローバルIDが配列からはみ出すため。
-    const generated = inProgressObjectsYaml(
-      [...objectDefsByGlobalId.values()],
-      this.tagNames,
-      this.objectNames,
-    );
     const generatedTypes = new GeneratedTypes();
-    if (generated !== undefined) {
-      const authored = new Set(this.globalObjectDefs.keys());
-      this.load(IN_PROGRESS_SOURCE, generated);
-      for (const [name, raw] of this.globalObjectDefs) {
-        if (authored.has(name)) continue;
-        const def = raw.resolve(this.globalTraits, this);
-        objectDefsByGlobalId.set(def.globalId, def);
-        generatedTypes.register(def.globalId, inProgressCoordinateOf(name, this.objectNames));
-      }
-    }
+    this.loadGenerated(
+      IN_PROGRESS_SOURCE,
+      inProgressObjectsYaml([...objectDefsByGlobalId.values()], this.tagNames, this.objectNames),
+      objectDefsByGlobalId,
+      generatedTypes,
+    );
 
     // 軸を宣言した型から変種を生成する（3.5節）。製作中オブジェクトの後に行うのは、素の型が持つ
     // recipesを変種へ写さないため（作れるのは空の容器のほう）。
-    const variants = axisVariantsYaml(this.globalObjectDefs, [...objectDefsByGlobalId.values()], this);
-    if (variants !== undefined) {
-      const authored = new Set(this.globalObjectDefs.keys());
-      this.load(AXIS_VARIANT_SOURCE, variants.yaml);
-      for (const [name, raw] of this.globalObjectDefs) {
-        if (authored.has(name)) continue;
-        const def = raw.resolve(this.globalTraits, this);
-        objectDefsByGlobalId.set(def.globalId, def);
-        generatedTypes.register(def.globalId, variants.coordinates.get(name)!);
-      }
-    }
+    this.loadGenerated(
+      AXIS_VARIANT_SOURCE,
+      axisVariantsYaml(this.globalObjectDefs, [...objectDefsByGlobalId.values()], this),
+      objectDefsByGlobalId,
+      generatedTypes,
+    );
 
     // 全object_defの走査が終わったこの時点で、objectNames.countが最終値として確定する。
     const defsByGlobalId = new Array<ObjectDef>(this.objectNames.count);
@@ -225,6 +212,34 @@ export class WorldCodexYamlLoader {
 
     this.reset();
     return codex;
+  }
+
+  /**
+   * 生成したobject_defsを読み込み、**新しく現れた型だけ**を解決して生成型として登録する。
+   *
+   * **どの生成器も手順は同じ**——違うのは何を生成するかと、型ごとの座標の出所だけなので、
+   * 生成器はYAMLと座標の組（GeneratedObjectDefs）で答え、ここは1本で足りる。生成が空ならしない。
+   */
+  private loadGenerated(
+    source: string,
+    generated: GeneratedObjectDefs | undefined,
+    objectDefsByGlobalId: Map<number, ObjectDef>,
+    generatedTypes: GeneratedTypes,
+  ): void {
+    if (generated === undefined) return;
+
+    const authored = new Set(this.globalObjectDefs.keys());
+    this.load(source, generated.yaml);
+    for (const [name, raw] of this.globalObjectDefs) {
+      if (authored.has(name)) continue;
+      const coordinate = generated.coordinates.get(name);
+      if (coordinate === undefined)
+        throw new YamlLoadError(`${source}: 生成した型'${name}'の座標がありません。`);
+
+      const def = raw.resolve(this.globalTraits, this);
+      objectDefsByGlobalId.set(def.globalId, def);
+      generatedTypes.register(def.globalId, coordinate);
+    }
   }
 
   private reset(): void {

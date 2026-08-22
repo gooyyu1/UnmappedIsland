@@ -4,14 +4,16 @@ import {
   asMap,
   asScalarText,
   entriesInOrder,
+  requireKnownKeys,
   requireScalar,
   tryGetMap,
+  tryGetNode,
   tryGetScalar,
   tryGetSeq,
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseScalarNumber, parseTypeMatchRule, tryGetNode } from './parseCommon';
+import { parseScalarNumber, parseTypeMatchRule } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import { PropertyPath } from '../domain/ReferenceRoot';
@@ -283,13 +285,7 @@ function parseConditionLeaf(
     }
   }
 
-  const unknownKeys = entriesInOrder(map)
-    .map(([key]) => key)
-    .filter((key) => !used.has(key));
-  if (unknownKeys.length > 0)
-    throw new YamlLoadError(
-      `${context}: 未知のキー '${unknownKeys.join(', ')}' です（この主語では使えない演算子です）。`,
-    );
+  requireKnownKeys(context, map, used, '（この主語では使えない演算子です）');
 
   if (nodes.length === 0)
     throw new YamlLoadError(`${context}: 演算子キーが1つもありません（比較する相手が決まりません）。`);
@@ -318,11 +314,7 @@ function parsePropertyComparison(
       refSubjectName !== undefined ? parseSubjectRoot(context, refSubjectName, allowedRoots) : 'self';
     const refPropName = requireScalar(valueNode, 'prop', context);
 
-    const unknownRefKeys = entriesInOrder(valueNode)
-      .map(([key]) => key)
-      .filter((key) => key !== 'subject' && key !== 'prop');
-    if (unknownRefKeys.length > 0)
-      throw new YamlLoadError(`${context}.${op}: 未知のキー '${unknownRefKeys.join(', ')}' です。`);
+    requireKnownKeys(`${context}.${op}`, valueNode, ['subject', 'prop']);
 
     const valueRef = new PropertyPath(refRoot, loader.propertyNames.intern(refPropName));
     return ConditionNode.property(root, propertyGlobalId, op, undefined, valueRef);

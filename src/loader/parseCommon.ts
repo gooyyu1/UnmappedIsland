@@ -1,6 +1,6 @@
 import type { YAMLMap } from 'yaml';
 import { tryGetScalar } from './yamlMapping';
-import type { YamlNode } from './yamlMapping';
+
 import { YamlLoadError } from './YamlLoadError';
 import { INT32_MAX, INT32_MIN } from '../util/int32';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
@@ -30,13 +30,6 @@ export function parseTypeMatchRule(
   return tagName !== undefined
     ? TypeMatchRule.tag(loader.tagNames.intern(tagName))
     : TypeMatchRule.object(loader.objectNames.intern(objectName!));
-}
-
-/** キーの値をノードの種類を問わず取り出す。値がスカラー/マッピング/配列のいずれになりうる場所
- * （`value`参照、`not`、`transfer`等の多態フィールド）でのみ使う。型検証はここでは行わず、
- * 呼び出し側が個々の分岐で判別する。 */
-export function tryGetNode(map: YAMLMap, key: string): YamlNode | undefined {
-  return map.get(key, true) as YamlNode | undefined;
 }
 
 /**

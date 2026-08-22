@@ -88,20 +88,12 @@ export class PropertyValue {
     this.add(value - this._number);
   }
 
-  /**
-   * 効果を登録する。modify用/積分用のどちらのリストへ入るかは効果自身が決めてregisterModify/
-   * registerAccumulateを呼び分ける。
-   */
-  registerPassiveEffect(effect: RegisteredPassiveEffect): void {
-    effect.registerInto(this);
-  }
-
-  /** modify効果としての登録先（RegisteredPassiveEffect.registerInto経由でのみ呼ばれる想定）。 */
+  /** modify効果としての登録先（PropertyPassiveEffect.registerInto経由でのみ呼ばれる想定）。 */
   registerModify(effect: RegisteredPassiveEffect): void {
     this.modifyEffects.push(effect);
   }
 
-  /** 積分効果（YAMLでは`add`）としての登録先（RegisteredPassiveEffect.registerInto経由でのみ呼ばれる想定）。 */
+  /** 積分効果（YAMLでは`add`）としての登録先（PropertyPassiveEffect.registerInto経由でのみ呼ばれる想定）。 */
   registerAccumulate(effect: RegisteredPassiveEffect): void {
     this.accumulateEffects.push(effect);
   }

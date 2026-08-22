@@ -1,5 +1,4 @@
 import type { PropertyPassiveEffect } from './PassiveEffect';
-import type { PropertyValue } from './PropertyValue';
 import type { WorldObject } from './WorldObject';
 
 /**
@@ -26,11 +25,6 @@ export class RegisteredPassiveEffect {
     this.declarer = declarer;
     this.slotBearer = slotBearer;
     this.def = def;
-  }
-
-  /** 対象プロパティ値のincoming（modify用/積分用）へこの登録を入れる。どちらに入るかはdefが決める。 */
-  registerInto(target: PropertyValue): void {
-    this.def.registerInto(target, this);
   }
 
   /** この効果が現在寄与している量。ゲート（8.2節）が有効ならAmount、無効なら0。 */
