@@ -11,6 +11,7 @@ import {
   tryGetSeq,
 } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
+import { built } from './parseCommon';
 import { parseProp } from './parseProperties';
 import { parseSlot } from './parseSlots';
 import { parsePassive } from './parsePassives';
@@ -234,13 +235,6 @@ export class RawObjectDef {
 
     // **操作の名前は1つの名前空間**（11節）。同じカードに同名の操作が2つ並ぶと、押して開く
     // メニューの「食べる」と重ねたときの「食べる」をプレイヤーが見分けられない。
-    const actionNames = new Set(actions.map((action) => action.name));
-    const clash = combinations.find((combination) => actionNames.has(combination.name));
-    if (clash !== undefined)
-      throw new YamlLoadError(
-        `'${this.name}': 同じ名前の actions と combinations があります（'${clash.name}'）。` +
-          '操作の名前は1つの名前空間なので、どちらかを別の名前にしてください。',
-      );
     const tagIds = [...new Set(tags.map((tag) => loader.tagNames.intern(tag)))];
 
     // visible_slots（7.11節）はタグと同じく足し合わせる。**並びが表示順**なので、trait由来を先に、
@@ -284,26 +278,30 @@ export class RawObjectDef {
             `段にartを書けるのはart_by_stageが指すプロパティだけです。`,
         );
 
-    return new ObjectDef(
-      this.globalId,
-      this.name,
-      this.isSingleton,
-      propertyLayout,
-      propertyDefs,
-      slotLayout,
-      slotDefs,
-      passives,
-      stackOrder,
-      tagIds,
-      actions,
-      combinations,
-      boundToOwner,
-      !notStackable,
-      parseRecipes(loader, this.name, this.recipes),
-      artByStagePropertyGlobalId,
-      visibleSlotGlobalIds,
-      isStorage,
-      tagIds.includes(loader.tagNames.intern(IN_PROGRESS_TAG)),
+    return built(
+      `'${this.name}'`,
+      () =>
+        new ObjectDef(
+          this.globalId,
+          this.name,
+          this.isSingleton,
+          propertyLayout,
+          propertyDefs,
+          slotLayout,
+          slotDefs,
+          passives,
+          stackOrder,
+          tagIds,
+          actions,
+          combinations,
+          boundToOwner,
+          !notStackable,
+          parseRecipes(loader, this.name, this.recipes),
+          artByStagePropertyGlobalId,
+          visibleSlotGlobalIds,
+          isStorage,
+          tagIds.includes(loader.tagNames.intern(IN_PROGRESS_TAG)),
+        ),
     );
   }
 }
