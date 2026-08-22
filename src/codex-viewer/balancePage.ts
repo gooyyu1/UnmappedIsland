@@ -557,7 +557,9 @@ export function wireBalanceMenu(): void {
         if (dailyNeed === undefined || chains === undefined) continue;
 
         const usable = chains.routes.filter((entry) => !entry.route.untimed && !entry.route.blocked);
-        const entry = usable.at(Number(select.value));
+        // 選択の値はDOM由来なので、並びの中を指しているときだけ採る（.atは負やNaNを端の要素へ丸める）。
+        const index = Number(select.value);
+        const entry = index >= 0 && index < usable.length ? usable[index] : undefined;
         if (entry !== undefined) chosen.set(dailyNeed.propertyGlobalId, entry.route);
       }
 
