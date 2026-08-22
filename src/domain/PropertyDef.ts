@@ -67,9 +67,7 @@ export class PropertyRange {
 
   /** 値をこの範囲内に収める（GameElementDefinition.md 6.3節）。 */
   clamp(value: number): number {
-    if (value < this.min) return this.min;
-    if (value > this.max) return this.max;
-    return value;
+    return value < this.min ? this.min : value > this.max ? this.max : value;
   }
 }
 

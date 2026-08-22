@@ -24,8 +24,7 @@ export function clockParts(totalMinutes: number): { days: number; hour: number; 
 export function minutesText(minutes: number): string {
   const hours = Math.trunc(minutes / 60);
   const rest = minutes % 60;
-  if (hours === 0) return `${rest}分`;
-  return rest === 0 ? `${hours}時間` : `${hours}時間${rest}分`;
+  return hours === 0 ? `${rest}分` : rest === 0 ? `${hours}時間` : `${hours}時間${rest}分`;
 }
 
 /**
@@ -33,8 +32,7 @@ export function minutesText(minutes: number): string {
  * 「かかる時間の行を出さない」を選べる——「0分かかる」と出しても意味が無いため。
  */
 export function durationText(minutes: number): string | undefined {
-  if (minutes <= 0) return undefined;
-  return `かかる時間 ${minutesText(minutes)}`;
+  return minutes <= 0 ? undefined : `かかる時間 ${minutesText(minutes)}`;
 }
 
 /**

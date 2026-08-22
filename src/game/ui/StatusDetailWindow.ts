@@ -497,6 +497,5 @@ function plateWidth(metrics: ScreenMetrics, label: Phaser.GameObjects.Text): num
  * **向きが増減**を表す（Windows.md 8節）。色は良し悪しで、記号を作る側が付ける。
  */
 function markOf(influence: StatusInfluence): string {
-  if (influence.reversible) return influence.increases ? '▲' : '▼';
-  return influence.increases ? '＋' : '−';
+  return influence.reversible ? (influence.increases ? '▲' : '▼') : influence.increases ? '＋' : '−';
 }

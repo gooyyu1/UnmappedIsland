@@ -152,8 +152,7 @@ export class CardLane {
    * 地面の絵が無いレーン（背景色だけ）には掛けようがないのでundefined。
    */
   get hazeSurface(): HazeSurface | undefined {
-    if (this.tiles.length === 0) return undefined;
-    return { objects: this.hazeTargets, rect: this.rect };
+    return this.tiles.length === 0 ? undefined : { objects: this.hazeTargets, rect: this.rect };
   }
 
   constructor(

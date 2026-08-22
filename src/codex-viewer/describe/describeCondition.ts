@@ -47,20 +47,18 @@ class ConditionDescriber implements ConditionReader {
       tokens.push(
         propertyRef(this.names.propertyName(reading.valueRef.propertyGlobalId), reading.valueRef.root),
       );
-      this.tokens = tokens;
-      return;
+    } else {
+      const values = (reading.values ?? []).map((value) =>
+        this.names.propertyValue(reading.propertyGlobalId, value),
+      );
+      const isList = reading.op === 'in' || reading.op === 'not_in';
+      if (isList) tokens.push(text('['));
+      for (const [index, value] of values.entries()) {
+        if (index > 0) tokens.push(text(', '));
+        tokens.push(value);
+      }
+      if (isList) tokens.push(text(']'));
     }
-
-    const values = (reading.values ?? []).map((value) =>
-      this.names.propertyValue(reading.propertyGlobalId, value),
-    );
-    const isList = reading.op === 'in' || reading.op === 'not_in';
-    if (isList) tokens.push(text('['));
-    for (const [index, value] of values.entries()) {
-      if (index > 0) tokens.push(text(', '));
-      tokens.push(value);
-    }
-    if (isList) tokens.push(text(']'));
     this.tokens = tokens;
   }
 

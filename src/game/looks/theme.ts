@@ -268,8 +268,7 @@ const GAUGE_HALF_RATIO = 0.5;
 
 /** ゲージの端の見せ方（GaugeEnd）に対応する色。 */
 function gaugeEndColor(end: GaugeEnd): number {
-  if (end === 'good') return COLOR.durabilityFull;
-  return end === 'bad' ? COLOR.durabilityEmpty : COLOR.gaugeNeutral;
+  return end === 'good' ? COLOR.durabilityFull : end === 'bad' ? COLOR.durabilityEmpty : COLOR.gaugeNeutral;
 }
 
 /**

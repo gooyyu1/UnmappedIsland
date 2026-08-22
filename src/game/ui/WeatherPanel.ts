@@ -107,19 +107,18 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
       const fallback = scene.add.graphics();
       drawBox(fallback, panel, { fill: COLOR.weatherPanel });
       this.add(fallback);
-      return;
+    } else {
+      const image = scene.add.image(panel.x + panel.width, panel.y, texture).setOrigin(1, 0);
+      const scale = Math.max(panel.width / image.width, panel.height / image.height);
+      image.setDisplaySize(image.width * scale, image.height * scale);
+
+      // **切り抜きは絵そのものを切り詰めて行う（setCrop）。** フィルタとしてのマスクはWebGL専用で、
+      // WebGLの無い環境（Canvasレンダラへ落ちる）では効かず、窓に収まらない絵が下の情報エリアへ
+      // かぶって出てしまう。切り詰める幅・高さは絵の原寸（拡大率で割り戻した窓の大きさ）で指定する。
+      const cropWidth = Math.min(image.width, panel.width / scale);
+      const cropHeight = Math.min(image.height, panel.height / scale);
+      image.setCrop(image.width - cropWidth, 0, cropWidth, cropHeight);
+      this.add(image);
     }
-
-    const image = scene.add.image(panel.x + panel.width, panel.y, texture).setOrigin(1, 0);
-    const scale = Math.max(panel.width / image.width, panel.height / image.height);
-    image.setDisplaySize(image.width * scale, image.height * scale);
-
-    // **切り抜きは絵そのものを切り詰めて行う（setCrop）。** フィルタとしてのマスクはWebGL専用で、
-    // WebGLの無い環境（Canvasレンダラへ落ちる）では効かず、窓に収まらない絵が下の情報エリアへ
-    // かぶって出てしまう。切り詰める幅・高さは絵の原寸（拡大率で割り戻した窓の大きさ）で指定する。
-    const cropWidth = Math.min(image.width, panel.width / scale);
-    const cropHeight = Math.min(image.height, panel.height / scale);
-    image.setCrop(image.width - cropWidth, 0, cropWidth, cropHeight);
-    this.add(image);
   }
 }

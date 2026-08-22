@@ -199,8 +199,7 @@ export class ObjectTexts {
   variationName(axis: string, baseName: string, valueName: string): string {
     const declared =
       this.entry?.own?.variationNames?.get(axis) ?? this.defaults?.own?.variationNames?.get(axis);
-    if (declared === undefined) return baseName;
-    return format(declared, { base: baseName, value: valueName });
+    return declared === undefined ? baseName : format(declared, { base: baseName, value: valueName });
   }
 
   prop(propertyName: string): Texts {
