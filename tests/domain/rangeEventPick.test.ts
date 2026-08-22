@@ -5,7 +5,7 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { StubRng } from '../support/StubRng';
-import { SeededRng } from '../support/SeededRng';
+import { seededRng } from '../../src/domain/Rng';
 
 // rangeイベント（on_min等）の直下にpickを書ける文法（GameElementDefinition.md 9.7節・10節）の
 // 自動テスト。気候システム（ClimateSystem.md）の「残り時間が0に達した瞬間、プロパティ参照の重みで
@@ -143,7 +143,7 @@ object_defs:
 `;
     const codex = load(yaml);
     // このテストにpickは無くrngは使われないが、原文のnew Random(1)をそのまま踏襲する。
-    const session = new WorldSession(codex, undefined, new SeededRng(1));
+    const session = new WorldSession(codex, undefined, seededRng(1));
     const sinker = instantiate(codex, 'sinker', session);
     const levelId = codex.propertyNames.getId('level');
 

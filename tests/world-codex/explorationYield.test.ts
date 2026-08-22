@@ -5,8 +5,8 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/views/Location';
 import { World } from '../../src/domain/views/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { SeededRng } from '../support/SeededRng';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { seededRng } from '../../src/domain/Rng';
 
 /**
  * 探索1回で見つかる物（locations.yamlのexploreのpickテーブル）を、実際に探索を繰り返して検証する。
@@ -84,7 +84,7 @@ describe('探索で見つかる物', () => {
     const session = new WorldSession(codex);
     const worldInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), session);
     const worldView = new World(worldInstance, codex);
-    const explorer = new WorldSession(codex, worldView, new SeededRng(20250801));
+    const explorer = new WorldSession(codex, worldView, seededRng(20250801));
 
     const instance = explorer.spawn(codex.objectNames.getId(landName));
     for (const [propertyGlobalId, value] of props) instance.getProperty(propertyGlobalId).init(value);

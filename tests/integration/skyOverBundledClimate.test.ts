@@ -4,8 +4,8 @@ import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import { heatHazeFor } from '../../src/game/looks/heatHaze';
 import { skyTintFor } from '../../src/game/looks/skyTint';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { SeededRng } from '../support/SeededRng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { seededRng } from '../../src/domain/Rng';
 
 /**
  * 空の演出（skyTint・heatHaze）を、世界・意匠を繋いだまま通す試験。
@@ -19,7 +19,7 @@ describe('空の演出（世界→意匠 通し）', () => {
 
   /** worldのプロパティを直接置いた状態で、日射と気温の実効値を読む。 */
   function skyWith(weather: string, hour: number, thermalLevel: number) {
-    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
     const world = game.world.instance;
     world.tryGetProperty(codex.propertyNames.getId('weather'))?.setNumber(codex.symbolNames.getId(weather));
     world.tryGetProperty(codex.propertyNames.getId('hour'))?.setNumber(hour);

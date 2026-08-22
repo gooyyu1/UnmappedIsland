@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { SeededRng } from '../support/SeededRng';
+import { seededRng } from '../../src/domain/Rng';
 
 // value: {min, max} 記法（GameElementDefinition.md 6.2節）による「初期値をレンジ内でランダムに決める」
 // 挙動の検証。spawn（WorldSession.rng経由）では[min,max]の一様乱数、RNGを渡さない直接生成では
@@ -24,7 +24,7 @@ object_defs:
     const codex = load();
     const qualityId = codex.propertyNames.getId('quality');
     const gemId = codex.objectNames.getId('gem');
-    const session = new WorldSession(codex, undefined, new SeededRng(12345));
+    const session = new WorldSession(codex, undefined, seededRng(12345));
 
     const seen = new Set<number>();
     for (let i = 0; i < 100; i++) {
@@ -45,8 +45,8 @@ object_defs:
 
     function firstSpawn(seed: number): number {
       return (
-        new WorldSession(codex, undefined, new SeededRng(seed)).spawn(gemId).tryGetProperty(qualityId)
-          ?.number ?? 0
+        new WorldSession(codex, undefined, seededRng(seed)).spawn(gemId).tryGetProperty(qualityId)?.number ??
+        0
       );
     }
 

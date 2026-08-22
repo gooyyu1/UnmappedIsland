@@ -8,15 +8,15 @@ import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { cardPlacesOf } from '../../src/game/view/cardPlaces';
 import { recordChange } from '../../src/game/view/recording';
-import { SeededRng } from '../support/SeededRng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { fixedRng } from '../support/rng';
 
 /**
  * 火起こしを、世界・映しの全段を繋いだまま通す試験。
  *
  * 各段が単体で正しくても、繋ぎ目で壊れることはある——ワールドは操作の実行時に一気に進み切り、画面は
  * その控えを実時間で追いかけるので、控える場所が1つでも漏れると「まだ起きていない結果」が経過中の
- * 画面に出る。ここはその噛み合わせだけを見るので、**実データ（fire.yaml）とrngの引きに依存する**。
+ * 画面に出る。ここはその噛み合わせだけを見るので、**実データ（fire.yaml）に依存する**。
  */
 describe('火起こし（世界→映し 通し）', () => {
   let codex: WorldCodex;
@@ -30,7 +30,9 @@ describe('火起こし（世界→映し 通し）', () => {
   it('経過中の控えは、行動の結果がまだ起きていない並びを映す', () => {
     // 行動の結果が、経過を見せている途中の画面に先に現れてはいけない。cardsInは呼んだ時点の
     // 生きたワールドを読むので、控えるときに焼き付けていないと未来が映る（withFrozenCards）。
-    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    // 火起こしは成否を抽選する（fire.yaml）。見たいのは成功したときの控えなので、
+    // シード任せにせず成功の枝を名指しで引く（fixedRng）。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, fixedRng(0));
     const player = game.player.instance;
     const land = game.player.location!.instance;
     const put = (name: string, slot: Slot): WorldObject => {

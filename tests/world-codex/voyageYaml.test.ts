@@ -5,8 +5,8 @@ import type { NewGameSession } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { applyScenario, bundledScenario } from '../../src/scenario/Scenario';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { SeededRng } from '../support/SeededRng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { seededRng } from '../../src/domain/Rng';
 
 /**
  * 島からの脱出（voyage.yaml、docs/world/Voyage.md）の検証。
@@ -26,7 +26,7 @@ describe('筏と航海', () => {
     const scenario = bundledScenario('voyage_ready');
     if (scenario === undefined) throw new Error('同梱シナリオ voyage_ready がありません。');
 
-    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
     applyScenario(game, scenario, codex);
 
     const raft = game.startLocation.fixtures.find((fixture) => fixture.def.name === 'raft');

@@ -41,14 +41,9 @@ export function randomRng(): Rng {
 }
 
 /**
- * シードから作る決定的な乱数源。地形生成のPcg32とは別インスタンスのため、地形レイアウトは
- * こちらの消費順序に影響されない（Pcg32のクラスコメント参照）。
+ * シードから作る決定的な乱数源。地形生成とは別の列なので（RandomPurpose）、地形レイアウトは
+ * こちらの消費順序に影響されない。
  */
 export function seededRng(seed: number): Rng {
-  const pcg = new Pcg32(seed);
-  return {
-    nextDouble: () => pcg.nextDouble(),
-    nextInt: (minInclusive, maxExclusive) =>
-      minInclusive + Math.trunc(pcg.nextDouble() * (maxExclusive - minInclusive)),
-  };
+  return Pcg32.forPurpose(seed, 'play');
 }

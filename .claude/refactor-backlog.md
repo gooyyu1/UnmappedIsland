@@ -256,9 +256,9 @@ docコメントの取り残し 14件（全部直し、残り0を機械的に確�
 
 - ✅ タブの記憶（並んでいるタブならどれでも復元する）／地図の黒枠の角丸（Cardへ揃えた）／
   `deviceCount` の式／型の絵の在庫表の改名／`RecipeWindow` の寸法の合流／天候の引き直し
-- ⏸ **`Pcg32.nextInt`（閉区間）と `Rng.nextInt`（半開区間）が同名で逆。** `seededRng` は Pcg32 を
-  包むのに委譲できず式を組み直している。改名だけなら安全、契約を揃えると地形のシード再現性が
-  変わる。**全部終わってからもう一度訊く**
+- ✅ **`Pcg32.nextInt` を半開区間へ揃え、乱数列を用途ごとに分けた**（`Pcg32.forPurpose`／
+  `RandomPurpose` = sites・names・play）。`seededRng` は委譲1行になり、`tests/support/SeededRng`
+  （同じ式の重複）は消えた。地形は変わる（相談のうえ許可済み）
 - ✅ `rangeCyclesOf` の「解けなかった印」が宣言順に依存していた（`staticValue.trackingResolverOf`
   へ寄せ、読み出し1回ぶんに閉じた）。`snare.durability.on_min` に誤って付いていた印が消えた
 

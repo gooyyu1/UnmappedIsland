@@ -31,7 +31,8 @@ const INTERIOR_MAX_RADIUS = 0.75;
 const CANDIDATES_PER_SITE = 10;
 
 export function place(scope: GenerationScopeDef, rng: Pcg32): Site[] {
-  const total = rng.nextInt(scope.siteCountMin, scope.siteCountMax);
+  // site_countのmaxは含む値なので、半開区間で引くために+1する。
+  const total = rng.nextInt(scope.siteCountMin, scope.siteCountMax + 1);
 
   // 海岸（外周リング）の個数: 全体の約35%、ただし「島を囲める最低限」として4個以上、
   // 「多くなりすぎない」上限として7個以下。内陸にも最低3個は残す（山+内陸2種の余地）。

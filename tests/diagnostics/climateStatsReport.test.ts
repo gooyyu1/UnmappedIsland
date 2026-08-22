@@ -7,9 +7,9 @@ import { World } from '../../src/domain/views/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { SeededRng } from '../support/SeededRng';
 import { Stat } from '../support/Stat';
 import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
+import { seededRng } from '../../src/domain/Rng';
 
 /**
  * 気候システム（ClimateSystem.md）の現在の実装について、季節の持続日数・気温・天気ごとの発生時間・
@@ -375,7 +375,7 @@ describe.runIf(process.env.RUN_CLIMATE_STATS === '1')('気候システム統計�
     const totalTicks = SIM_DAYS * 96;
 
     for (let seed = 1; seed <= SEED_COUNT; seed++) {
-      const session = new WorldSession(codex, undefined, new SeededRng(seed));
+      const session = new WorldSession(codex, undefined, seededRng(seed));
       const worldInstance = new WorldObject(1, worldDef, session);
       session.adoptWorld(new World(worldInstance, codex));
 
