@@ -105,7 +105,7 @@ export function stepSupplyRatio(
   materialsSlotGlobalId: number,
   step: RecipeStepDef,
 ): number {
-  const allocated = allocate(inProgress.contentsInSlot(materialsSlotGlobalId), step);
+  const allocated = allocate(inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [], step);
   let needed = 0;
   let held = 0;
   for (const requirement of step.requirements) {
@@ -158,7 +158,7 @@ export function advanceCrafting(
   if (!spendDuration(step.durationMinutes, session, [inProgress])) return false;
 
   // 消費が進捗より先なのは、進捗が上限を超えた瞬間に完成し、残っている物は親へこぼれてしまうため。
-  const allocated = allocate(inProgress.contentsInSlot(materialsSlotGlobalId), step);
+  const allocated = allocate(inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [], step);
   for (const requirement of step.requirements) {
     if (!requirement.consume) continue;
     for (const object of allocated.get(requirement) ?? []) object.destroy();
@@ -196,9 +196,9 @@ function spillUnneeded(
     recipe,
     inProgress.tryGetProperty(codex.vocabulary.engine.progressId)?.number ?? 0,
   );
-  const leftovers = inProgress
-    .contentsInSlot(materialsSlotGlobalId)
-    .filter((object) => !stillNeeded.some((requirement) => requirement.requires(object.def)));
+  const leftovers = (inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? []).filter(
+    (object) => !stillNeeded.some((requirement) => requirement.requires(object.def)),
+  );
 
   for (const object of leftovers) object.moveToSlot(parent.getSlot(parentSlot.globalId));
 }

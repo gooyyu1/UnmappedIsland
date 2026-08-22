@@ -52,12 +52,12 @@ export class Location {
 
   /** アイテムスロットの中身。 */
   get items(): readonly WorldObject[] {
-    return this.instance.contentsInSlot(this.itemsSlotId);
+    return this.slotContents(this.itemsSlotId);
   }
 
   /** アイテムスロットの中身を、積み重なっているまとまり（ObjectStack）ごとに分けたもの（先頭が代表）。 */
   get itemStacks(): readonly (readonly WorldObject[])[] {
-    return this.instance.stacksInSlot(this.itemsSlotId);
+    return this.stacksOf(this.itemsSlotId);
   }
 
   /**
@@ -71,12 +71,12 @@ export class Location {
 
   /** 設置物（道・木・建築物・家具・洞窟入口など、持ち歩けないもの）スロットの中身。 */
   get fixtures(): readonly WorldObject[] {
-    return this.instance.contentsInSlot(this.fixturesSlotId);
+    return this.slotContents(this.fixturesSlotId);
   }
 
   /** 設置物スロットの中身を、積み重なっているまとまりごとに分けたもの（itemStacksと同じ扱い）。 */
   get fixtureStacks(): readonly (readonly WorldObject[])[] {
-    return this.instance.stacksInSlot(this.fixturesSlotId);
+    return this.stacksOf(this.fixturesSlotId);
   }
 
   /**
@@ -84,12 +84,12 @@ export class Location {
    * 先読み（PlayScene.requestLocationArt）が発見前に行き先を知るために読む。
    */
   get undiscoveredFixtures(): readonly WorldObject[] {
-    return this.instance.contentsInSlot(this.words.undiscoveredFixturesSlotId);
+    return this.slotContents(this.words.undiscoveredFixturesSlotId);
   }
 
   /** キャラクタスロットの中身。 */
   get characters(): readonly WorldObject[] {
-    return this.instance.contentsInSlot(this.words.charactersSlotId);
+    return this.slotContents(this.words.charactersSlotId);
   }
 
   /**
@@ -165,5 +165,14 @@ export class Location {
     if (hidden === undefined || !hidden.contents.includes(fixture)) return;
 
     fixture.moveToSlot(owner.getSlot(this.fixturesSlotId));
+  }
+
+  private slotContents(slotGlobalId: number): readonly WorldObject[] {
+    const slot = this.instance.tryGetSlot(slotGlobalId);
+    return slot !== undefined ? slot.contents : [];
+  }
+
+  private stacksOf(slotGlobalId: number): readonly (readonly WorldObject[])[] {
+    return this.instance.tryGetSlot(slotGlobalId)?.stacks ?? [];
   }
 }

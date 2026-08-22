@@ -196,7 +196,7 @@ export function cardLooksOf(
    */
   const markOf = (object: WorldObject): string | undefined => {
     if (isBleeding(object) || [...object.children()].some(isBleeding)) return BLEEDING_MARK;
-    return treatmentSlotId !== undefined && object.contentsInSlot(treatmentSlotId).length > 0
+    return treatmentSlotId !== undefined && (object.tryGetSlot(treatmentSlotId)?.contents.length ?? 0) > 0
       ? TREATED_MARK
       : undefined;
   };

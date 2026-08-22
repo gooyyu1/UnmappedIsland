@@ -55,12 +55,16 @@ export class PlayerCharacter {
 
   /** 装備スロットの中身を、積み重なっているまとまりごとに分けたもの（前詰めなので空きセルは無い）。 */
   get equipmentStacks(): readonly (readonly WorldObject[])[] {
-    return this.instance.stacksInSlot(this.equipmentSlotId);
+    return this.stacksOf(this.equipmentSlotId);
   }
 
   /** 怪我スロットの中身を、積み重なっているまとまりごとに分けたもの。 */
   get injuryStacks(): readonly (readonly WorldObject[])[] {
-    return this.instance.stacksInSlot(this.injuriesSlotId);
+    return this.stacksOf(this.injuriesSlotId);
+  }
+
+  private stacksOf(slotGlobalId: number): readonly (readonly WorldObject[])[] {
+    return this.instance.tryGetSlot(slotGlobalId)?.stacks ?? [];
   }
 
   /** 手持ちスロットの各セルの代表インスタンス（空きセルはundefined）。 */

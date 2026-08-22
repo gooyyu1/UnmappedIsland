@@ -185,19 +185,6 @@ export class WorldObject {
   }
 
   /**
-   * 名指しした枠の中身。**その枠を持っていなければ空**——「枠が無い」と「枠が空」は、中身を見る
-   * 側にとっては同じことなので、持っているかどうかを呼び出し側に確かめさせない。
-   */
-  contentsInSlot(globalSlotId: number): readonly WorldObject[] {
-    return this.tryGetSlot(globalSlotId)?.contents ?? [];
-  }
-
-  /** 名指しした枠の中身を、積み重なっているまとまりごとに分けたもの（contentsInSlotと同じ扱い）。 */
-  stacksInSlot(globalSlotId: number): readonly (readonly WorldObject[])[] {
-    return this.tryGetSlot(globalSlotId)?.stacks ?? [];
-  }
-
-  /**
    * 今この物の中に入っている物すべて（スロットの区別なく、直下の1段だけ）。**どのスロットに
    * 入っているかを問わない見方**なので、スロット名を知らない側——「中に何かこういう物があるか」
    * だけを見たい側——が使う。

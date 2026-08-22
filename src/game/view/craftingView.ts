@@ -60,7 +60,7 @@ export function craftingActions(
           object,
           materialsSlotId,
           [
-            game.player.instance.contentsInSlot(codex.vocabulary.world.handSlotId),
+            game.player.instance.tryGetSlot(codex.vocabulary.world.handSlotId)?.contents ?? [],
             game.player.location?.items ?? [],
           ],
           codex,
@@ -106,7 +106,7 @@ export function craftingMaterials(
 
   const progress = progressOf(container, codex);
   const inStep = new Set(currentStep(recipe, progress)?.requirements.map((r) => r.match.key));
-  const contents = container.contentsInSlot(codex.vocabulary.engine.materialsSlotId);
+  const contents = container.tryGetSlot(codex.vocabulary.engine.materialsSlotId)?.contents ?? [];
 
   return remainingRequirements(recipe, progress).map((requirement) => ({
     objectGlobalIds: requirement.match.candidates(codex.objects).map((def) => def.globalId),
