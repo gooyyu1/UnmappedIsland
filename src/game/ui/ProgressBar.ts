@@ -3,6 +3,7 @@ import type { AlertLevel } from '../../domain/AlertLevel';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { drawBox } from '../../ui/shapes';
 import { COLOR, alertBorderColorFor, fadedFill, statusFillColorFor } from '../looks/theme';
+import { ALERT_BLINK_MS } from '../looks/alertBlink';
 
 /** バーの中の区間（0〜1）。今いる段が占める範囲を表す。 */
 export interface BarSpan {
@@ -31,8 +32,7 @@ const LAG_DURATION_MS = 700;
  */
 export const TRACK_BORDER_WIDTH = 2;
 
-/** 警戒を示す枠の明滅（片道の時間と、最も薄いときの濃さ）。 */
-const BLINK_DURATION_MS = 450;
+/** 警戒を示す枠の明滅で、最も薄いときの濃さ（片道の時間はlooks/alertBlink）。 */
 const BLINK_MIN_ALPHA = 0.15;
 
 /** 警戒を示す枠の太さ（通常の枠線より太くして、明滅していることが分かるようにする）。 */
@@ -333,7 +333,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
       this.blinkTween ??= this.scene.tweens.add({
         targets: this.alertFrame,
         alpha: BLINK_MIN_ALPHA,
-        duration: BLINK_DURATION_MS,
+        duration: ALERT_BLINK_MS,
         yoyo: true,
         repeat: -1,
       });

@@ -19,12 +19,7 @@ const MAX_ZOOM = 3;
 /** ホイール1目盛り（deltaY=100）でおよそ1.16倍になる拡大率の底。 */
 const WHEEL_ZOOM_BASE = 1.0015;
 
-/** 海図風の下地（羊皮紙の薄茶）と、島の輪郭のごく薄い線の色。 */
-const CHART_PAPER = 0xf3ead4;
-const CHART_LINE = 0xcdbb92;
-
-/** 道の点線のインクの色と、1点の半径・間隔（u単位）。 */
-const ROAD_INK = 0x8a6f4f;
+/** 道の点線の1点の半径・間隔（u単位。インクの色はCOLOR.roadInk）。 */
 const ROAD_DOT_RADIUS = 5;
 const ROAD_DOT_SPACING = 22;
 
@@ -100,7 +95,7 @@ export class MapWindow {
     const { width, height } = metrics;
     const padding = metrics.px(WINDOW_PADDING);
 
-    const surface = addPanel(scene, { x: 0, y: 0, width, height }, CHART_PAPER);
+    const surface = addPanel(scene, { x: 0, y: 0, width, height }, COLOR.chartPaper);
     this.objects.push(surface);
 
     this.outline = scene.add.graphics();
@@ -343,7 +338,7 @@ export class MapWindow {
   /** 発見済みの道を、カードの中心同士を結ぶ太めの点線の弧として描き直す。ドラッグ中も毎回呼ぶ。 */
   private drawRoads(): void {
     this.roadInk.clear();
-    this.roadInk.fillStyle(ROAD_INK, 0.85);
+    this.roadInk.fillStyle(COLOR.roadInk, 0.85);
     for (const road of this.roads) {
       const a = this.cards.get(road.a);
       const b = this.cards.get(road.b);
@@ -429,7 +424,7 @@ function drawIslandOutline(
   const centerY = (metrics.height / 2) * zoom + panY;
   const radius = Math.min(metrics.width, metrics.height) * 0.42 * zoom;
 
-  outline.lineStyle(metrics.linePx(3 * zoom), CHART_LINE, 0.7);
+  outline.lineStyle(metrics.linePx(3 * zoom), COLOR.chartLine, 0.7);
   outline.beginPath();
   const count = 128;
   for (let i = 0; i <= count; i++) {

@@ -283,3 +283,33 @@ tick の間で時間が進めば、加熱が進んでいなくても残り時間
 
 `errorReport` の「閉じる」だけは残した。起動より前（`installErrorReport`）に描かれるので、
 対応表がまだ無い。
+
+## 11. 段4 レーンA-2（部品1つぶんの意匠）
+
+段0の決定2をコードに落とした。**Candidates.md が「最大」と見積もった山は、段0の実測で消えていた**
+——`Card.ts` の44定数は「部品の中で閉じるのでそのままでよい」と決着済みだったので、
+残っていたのは5つの小さな作業だった。
+
+1. **色は例外なく `theme.ts`。** 唯一の例外だった `MapWindow` の `CHART_PAPER` / `CHART_LINE` /
+   `ROAD_INK` を回収。
+2. **死んだトークンを落とす。** `COLOR.weatherPanelBorder` / `COLOR.slotPortrait`。
+3. **複数箇所で一致すべき寸法・時間を出す。** 探すまでもなく、**3つのコメントが別ファイルを指して
+   「揃える」と書いていた**——`Button.HOLD_MS`（「カードの端を押し続けたときの1枚目と同じ」）、
+   `Card.ALERT_BLINK_DURATION_MS`（「ProgressBarの警戒の枠と揃える」）、
+   `SettingsScene.LIST_PADDING`（「テスト用シナリオの一覧と揃える」）。
+   - 長押しと見なすまでの時間 → `src/ui/holdRepeat.ts` から export（意匠ではなく操作の閾値なので、
+     `theme.ts` には置けない——`src/ui/` は意匠を知らない）
+   - 警戒の明滅の片道の時間 → `looks/alertBlink.ts`（`looks/cardFlight.ts` と同じ形。
+     最も薄いときの濃さは面積が違うので各々が持つ）
+   - 一覧の余白 → `looks/listScreen.ts`
+4. **`setShapeDefaults`。** `src/ui/shapes.ts` が抱えていた `SHADOW_LAYERS` / `DASH_LENGTH_RATIO` を
+   `theme.SHAPE_LOOK` へ出し、`main.ts` が `setLabelDefaults` の隣で入れる。
+   「ぼかせないので2枚重ねる」という判断も意匠側へ移した——汎用の図形が知っているのは
+   「重ねて濃さを落とす」までで、何枚どの濃さかは知らない。
+
+`PADDING`(24) は出さなかった。`Tooltip`（吹き出しの内側）・`ShelfScene`（棚の外周）・
+`networkLayout`（codex-viewer）で、**同じ数字だが一致していなければならない理由が無い**。
+段0が挙げていたが、実物を見ると別の概念だった。
+
+**B-6（`Button` / `Curtain` / `ScrollIndicator` を `src/ui/` へ）の阻害要因が外れた。**
+`setShapeDefaults` が入ったので、あとは色トークンの差し込み口の話だけになる。

@@ -7,6 +7,7 @@ import type { BoxStyle } from '../../ui/shapes';
 import { drawBox } from '../../ui/shapes';
 import { onPressRelease } from '../../ui/tap';
 import { COLOR, SIZE } from '../looks/theme';
+import { HOLD_MS } from '../../ui/holdRepeat';
 
 /**
  * 押下中の沈み込み表現。**暗い覆いを重ねる**（黒のこの濃さ）。
@@ -16,9 +17,6 @@ import { COLOR, SIZE } from '../looks/theme';
  * 固定すれば、地の色にも下地にもよらず「沈んだ」と読める。
  */
 const PRESSED_SHADE = 0.18;
-
-/** 長押しと見なすまでの時間（カードの端を押し続けたときの1枚目と同じ）。 */
-const HOLD_MS = 400;
 
 /**
  * 長押しの受け口。押している間だけ説明を見せる用途なので、始まりと終わりの両方を受け取る。
