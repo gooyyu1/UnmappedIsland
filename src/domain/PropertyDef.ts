@@ -458,13 +458,6 @@ export class PropertyDef {
   isExhausted(rawValue: number): boolean {
     return this.declaredOnMin !== undefined && this.range !== undefined && rawValue <= this.range.min;
   }
-
-  /** inherit（6節）による、祖先からownerの実効値へ加える寄与。inheritが無効、または該当する祖先が見つからない場合は0。 */
-  inheritedContribution(owner: WorldObject): number {
-    if (!this.inherit) return 0;
-    const ancestor = owner.findAncestorWithProperty(this.globalId);
-    return ancestor !== undefined ? (ancestor.tryGetProperty(this.globalId)?.getEffectiveValue() ?? 0) : 0;
-  }
 }
 
 /**

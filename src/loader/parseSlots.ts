@@ -15,7 +15,7 @@ import { parseTypeMatchRule } from './parseCommon';
 import { parseWeight } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { CellDef, SlotDef } from '../domain/SlotDef';
-import type { WeightSpec } from '../domain/PickEffect';
+import type { WeightSpec } from '../domain/WeightSpec';
 
 /** 廃止したキーと、その内容を今どこへ書くか。黙って無視すると、効いているつもりの宣言が通ってしまう。 */
 const RETIRED_KEYS: readonly (readonly [string, string])[] = [

@@ -6,7 +6,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 import { place } from '../../src/domain/generation/SitePlacer';
-import { Pcg32 } from '../../src/domain/generation/Pcg32';
+import { Pcg32 } from '../../src/domain/Pcg32';
 
 /** 不変条件の検証に使うシード群。特別な意味は無く、多様なレイアウトを試すための個数。 */
 const SEEDS = Array.from({ length: 25 }, (_, i) => i);

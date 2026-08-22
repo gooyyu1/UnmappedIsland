@@ -1,7 +1,7 @@
 import type { WorldObject } from './WorldObject';
 import type { ObjectDef } from './ObjectDef';
 import type { WeightReading } from './EffectReader';
-import type { WeightSpec } from './PickEffect';
+import type { WeightSpec } from './WeightSpec';
 import type { TypeMatchRule } from './TypeMatchRule';
 
 /**

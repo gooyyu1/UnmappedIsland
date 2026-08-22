@@ -9,7 +9,7 @@ export type InteractionTriggerReading =
 import type { WorldSession } from './WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
 import type { EffectReader, WeightReading } from './EffectReader';
-import type { WeightSpec } from './PickEffect';
+import type { WeightSpec } from './WeightSpec';
 import { resolveReferenceRoot } from './ReferenceRoot';
 import type { Requirement, Requirements } from './Requirement';
 import { spendDuration } from './actionTime';

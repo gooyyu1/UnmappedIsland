@@ -33,7 +33,8 @@ import type { ActiveEffect, SpawnTargetRoot } from '../domain/ActiveEffect';
 import { BecomeEffect } from '../domain/BecomeEffect';
 import { MoveEffect } from '../domain/MoveEffect';
 import { ObjectRef } from '../domain/ObjectRef';
-import { PickCandidateDef, PickEffect, WeightSpec } from '../domain/PickEffect';
+import { PickCandidateDef, PickEffect } from '../domain/PickEffect';
+import { WeightSpec } from '../domain/WeightSpec';
 import { SignalEffect } from '../domain/SignalEffect';
 
 /**

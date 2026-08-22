@@ -1,6 +1,6 @@
 import { LocationName } from './IslandMap';
 import type { Site } from './IslandMap';
-import type { Pcg32 } from './Pcg32';
+import type { Pcg32 } from '../Pcg32';
 
 /**
  * 命名処理（TerrainGeneration.md 3.6節）。同じLocationTypeが島に1つだけならその型を名前にし、

@@ -19,7 +19,7 @@ import {
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ActiveEffect } from '../domain/ActiveEffect';
 import type { Requirements } from '../domain/Requirement';
-import type { WeightSpec } from '../domain/PickEffect';
+import type { WeightSpec } from '../domain/WeightSpec';
 import { ActionDef } from '../domain/ActionDef';
 import { CombinationDef } from '../domain/CombinationDef';
 

@@ -1,4 +1,4 @@
-import { Pcg32 } from './generation/Pcg32';
+import { Pcg32 } from './Pcg32';
 
 /**
  * pickの重み付き抽選（10節）と初期値ロール（6.2節）に使う乱数源。
