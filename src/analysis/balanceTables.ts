@@ -349,7 +349,7 @@ function dailyNeedsOf(codex: WorldCodex, character: ObjectDef): readonly DailyNe
 
   return [...perTick].map(([propertyGlobalId, perTickAmount]) => ({
     propertyGlobalId,
-    name: codex.propertyName(propertyGlobalId),
+    name: codex.propertyNames.getName(propertyGlobalId),
     amount: -perTickAmount * TICKS_PER_DAY,
     suppliedBy: sinks.has(propertyGlobalId) ? sources : [propertyGlobalId],
     lethal: destroysWhenEmpty(character, propertyGlobalId),
@@ -407,7 +407,7 @@ function tickAmountsByName(codex: WorldCodex, def: ObjectDef): ReadonlyMap<strin
   const byKey = new Map<string, number>();
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== 'self') continue;
-    const key = `${codex.propertyName(delta.propertyGlobalId)}${KEY_SEPARATOR}${conditionLabel(codex, delta)}`;
+    const key = `${codex.propertyNames.getName(delta.propertyGlobalId)}${KEY_SEPARATOR}${conditionLabel(codex, delta)}`;
     byKey.set(key, (byKey.get(key) ?? 0) + delta.amount);
   }
   return byKey;
@@ -417,7 +417,7 @@ function tickAmountsByName(codex: WorldCodex, def: ObjectDef): ReadonlyMap<strin
 function conditionLabel(codex: WorldCodex, delta: TickDelta): string {
   const capped = delta.capped ? '（輸送・在庫がある間）' : '';
   if (delta.gate.stage !== undefined)
-    return `段 ${codex.propertyName(delta.gate.stage.propertyGlobalId)}=${delta.gate.stage.name}${capped}`;
+    return `段 ${codex.propertyNames.getName(delta.gate.stage.propertyGlobalId)}=${delta.gate.stage.name}${capped}`;
   return `${delta.gate.conditional ? '条件つき' : '常時'}${capped}`;
 }
 
@@ -436,13 +436,16 @@ function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly Supp
       laborMinutes: ref.step.laborMinutes,
       elapsedMinutes: ref.step.elapsedMinutes,
       unresolved: ref.step.hasUnresolvedReferences,
-      spawns: [...spawns].map(([globalId, amount]) => ({ name: codex.objectName(globalId), amount })),
+      spawns: [...spawns].map(([globalId, amount]) => ({
+        name: codex.objectNames.getName(globalId),
+        amount,
+      })),
       actorDeltas: [...actorDeltas].map(([globalId, amount]) => ({
-        name: codex.propertyName(globalId),
+        name: codex.propertyNames.getName(globalId),
         amount,
       })),
       selfDeltas: [...selfDeltas].map(([globalId, amount]) => ({
-        name: codex.propertyName(globalId),
+        name: codex.propertyNames.getName(globalId),
         amount,
       })),
     });
@@ -624,7 +627,7 @@ function propertyChains(
       lethal: dailyNeed.lethal,
       suppliedByNames: dailyNeed.suppliedBy
         .filter((propertyGlobalId) => propertyGlobalId !== dailyNeed.propertyGlobalId)
-        .map((propertyGlobalId) => codex.propertyName(propertyGlobalId)),
+        .map((propertyGlobalId) => codex.propertyNames.getName(propertyGlobalId)),
       routes: routes
         .filter((route) => (route.fills.get(dailyNeed.propertyGlobalId) ?? 0) > 0)
         .map((route) => propertyRoute(route, dailyNeed))
@@ -673,7 +676,7 @@ function prerequisitesOf(
         objectName:
           prerequisite.objectGlobalId === undefined
             ? undefined
-            : codex.objectName(prerequisite.objectGlobalId),
+            : codex.objectNames.getName(prerequisite.objectGlobalId),
         minutes: prerequisite.cost === undefined ? undefined : totalOf(prerequisite.cost),
         imported: prerequisite.imported,
       });
@@ -700,7 +703,7 @@ function buildRoute(
     craftMinutes: cost.craftMinutes,
     fills,
     deltas: [...deltas].map(([propertyGlobalId, amount]) => ({
-      name: codex.propertyName(propertyGlobalId),
+      name: codex.propertyNames.getName(propertyGlobalId),
       amount,
     })),
     devicePeriodMinutes: devicePeriodOf(route),
@@ -854,7 +857,7 @@ function deviceRows(
         deviceName: ref.def.name,
         stepName: ref.step.name,
         periodMinutes,
-        productName: codex.objectName(objectGlobalId),
+        productName: codex.objectNames.getName(objectGlobalId),
         perCycle,
         perDay: perCycle * cyclesPerDay,
         lifetimeDays,
@@ -1165,8 +1168,8 @@ class Acquisition {
       // タグ指定の入力は、そのタグを名乗ったうえで実際に使う型を添える（cutting_tool → sharp_stone）。
       const declared =
         input.kind === 'tag'
-          ? this.codex.tagName(input.tagGlobalId)
-          : this.codex.objectName(input.objectGlobalId);
+          ? this.codex.tagNames.getName(input.tagGlobalId)
+          : this.codex.objectNames.getName(input.objectGlobalId);
 
       const local = this.cheapestCandidate(input);
       // この土地で用意できなければ、他の土地で用意したものとして島全体から取る。
@@ -1177,7 +1180,7 @@ class Acquisition {
         continue;
       }
 
-      const chosen = this.codex.objectName(objectGlobalId);
+      const chosen = this.codex.objectNames.getName(objectGlobalId);
       found.push({
         label: chosen === declared ? chosen : `${declared} → ${chosen}`,
         objectGlobalId,
@@ -1207,8 +1210,8 @@ class Acquisition {
         if (this.importable(input) !== undefined) continue;
         missing.push(
           input.kind === 'tag'
-            ? this.codex.tagName(input.tagGlobalId)
-            : this.codex.objectName(input.objectGlobalId),
+            ? this.codex.tagNames.getName(input.tagGlobalId)
+            : this.codex.objectNames.getName(input.objectGlobalId),
         );
       }
       if (best === undefined || missing.length < best.length) best = missing;

@@ -10,11 +10,11 @@ import { symbolRef, text } from './Description';
  */
 export function defNamesOf(codex: WorldCodex): DefNames {
   return {
-    objectName: (globalId) => codex.objectName(globalId),
-    propertyName: (globalId) => codex.propertyName(globalId),
-    slotName: (globalId) => codex.slotName(globalId),
-    tagName: (globalId) => codex.tagName(globalId),
-    propertyTagName: (globalId) => codex.propertyTagName(globalId),
+    objectName: (globalId) => codex.objectNames.getName(globalId),
+    propertyName: (globalId) => codex.propertyNames.getName(globalId),
+    slotName: (globalId) => codex.slotNames.getName(globalId),
+    tagName: (globalId) => codex.tagNames.getName(globalId),
+    propertyTagName: (globalId) => codex.propertyTagNames.getName(globalId),
 
     /**
      * シンボル型（6.6節）と宣言しているプロパティの値だけシンボル名へ戻す。シンボル型でも数値リテラルが
