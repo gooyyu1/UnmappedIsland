@@ -519,7 +519,7 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/range/);
   });
 
-  it('on_minの対象にself以外を指定するとエラーになる', () => {
+  it('on_minの対象にactorを指定するとエラーになる（rangeイベントに操作者は居ない）', () => {
     const yaml = `
 object_defs:
   log:
@@ -528,9 +528,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 100}
         on_min:
-          destroy: parent
+          destroy: actor
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_min/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/actor/);
   });
 
   it('propの未知のキーはエラーになる', () => {
@@ -1431,7 +1431,7 @@ object_defs:
     expect(instance.tryGetProperty(codex.propertyNames.getId('hour'))?.number ?? 0).toBe(1);
   });
 
-  it('on_maxの対象にself以外を指定するとエラーになる', () => {
+  it('on_maxの対象にactorを指定するとエラーになる（rangeイベントに操作者は居ない）', () => {
     const yaml = `
 object_defs:
   clock:
@@ -1440,9 +1440,23 @@ object_defs:
         value: 0
         range: {min: 0, max: 60}
         on_max:
-          add: {parent: {minute: -60}}
+          add: {actor: {minute: -60}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_max/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/actor/);
+  });
+
+  it('on_maxの対象にparentを指定できる（遡る起点は自分なので解決先を持つ）', () => {
+    const yaml = `
+object_defs:
+  clock:
+    props:
+      minute:
+        value: 55
+        range: {min: 0, max: 60}
+        on_max:
+          add: {parent: {hour: 1}}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).not.toThrow();
   });
 
   it('on_maxを省略するとselfをmaxへクランプする既定効果になる', () => {
@@ -1485,7 +1499,7 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/range/);
   });
 
-  it('on_minの対象にself以外を指定するとエラーになる', () => {
+  it('on_minの対象にdraggedを指定するとエラーになる（rangeイベントに重ねる相手は居ない）', () => {
     const yaml = `
 object_defs:
   clock:
@@ -1494,9 +1508,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 60}
         on_min:
-          add: {parent: {minute: 60}}
+          add: {dragged: {minute: 60}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_min/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/dragged/);
   });
 
   it('on_minをパースし、実行時に適用する', () => {

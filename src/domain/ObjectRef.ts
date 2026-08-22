@@ -81,9 +81,4 @@ export class ObjectRef {
     if (this.objectGlobalId !== undefined) return { kind: 'object', objectGlobalId: this.objectGlobalId };
     return { kind: 'property', propertyGlobalId: this.propertyGlobalId! };
   }
-
-  /** 実行者（actor）や重ねた札（dragged）に依存する参照か（actorの居ない文脈で使えるかの判定用）。 */
-  needsInteraction(): boolean {
-    return this.root === 'actor' || this.root === 'dragged';
-  }
 }

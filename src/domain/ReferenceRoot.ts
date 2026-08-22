@@ -144,3 +144,92 @@ export class PropertyPath {
     return this.value(context)?.getEffectiveValue();
   }
 }
+
+/**
+ * 宣言が置かれた場所が、参照の解決に何を用意できるか（GameElementDefinition.md 14.1節）。
+ *
+ * **ロード時に弾く根拠と、実行時に組む`ReferenceContext`は同じ1つの事実。** actorが居ない場所で
+ * actorを指せてしまうと、書けたのに実行時は必ず空振りする。だから場所ごとに許すrootを数え上げるのでは
+ * なく、**場所は自分が何を持つかだけを宣言し、rootの側が何を要るかを言う**。両者の食い違いは、
+ * 一覧を書き写す代わりに導出で消える。
+ */
+export class ReferenceScope {
+  /** 宣言元の個体（self）が居るか。parent・ancestorもここから辿るので、無ければ揃って解けない。 */
+  private readonly hasSelf: boolean;
+
+  /** 操作している者（actor）が居るか。時間の側が起こす場面（rangeイベント・passives）には居ない。 */
+  private readonly hasActor: boolean;
+
+  /** 重ねられた相手（dragged）が居るか。combinationsの中だけ（12.2節）。 */
+  private readonly hasDragged: boolean;
+
+  /** 参照先のプロパティ名が決まっているか。ancestorはそれで祖先を探すので、無ければ解けない。 */
+  private readonly namesProperty: boolean;
+
+  /** 相手が1つに定まらなくてよいか。childを指せるのはここが真の場所だけ（8.1節のブロードキャスト登録）。 */
+  private readonly broadcasts: boolean;
+
+  private constructor(
+    hasSelf: boolean,
+    hasActor: boolean,
+    hasDragged: boolean,
+    namesProperty: boolean,
+    broadcasts: boolean,
+  ) {
+    this.hasSelf = hasSelf;
+    this.hasActor = hasActor;
+    this.hasDragged = hasDragged;
+    this.namesProperty = namesProperty;
+    this.broadcasts = broadcasts;
+  }
+
+  /** 宣言元の個体だけが居る場所（rangeイベント6.3節、passivesの8節）。誰かが操作しているとは限らない。 */
+  static readonly declaration = new ReferenceScope(true, false, false, true, false);
+
+  /** 誰かが操作している場所（actions、11節）。 */
+  static readonly action = new ReferenceScope(true, true, false, true, false);
+
+  /** 相手を重ねている場所（combinations、12節）。 */
+  static readonly combination = new ReferenceScope(true, true, true, true, false);
+
+  /**
+   * 成果物のインスタンスがまだ無い場所（レシピの解放条件、SkillSystem.md 4節）。
+   * 「このレシピを知っているか」の判定なので、居るのは操作者だけ。
+   */
+  static readonly recipeUnlock = new ReferenceScope(false, true, false, true, false);
+
+  /** プロパティ名を伴わず、オブジェクトそのものを指す場所（destroy・signal・move・in_slot判定）。 */
+  get objectOnly(): ReferenceScope {
+    return new ReferenceScope(this.hasSelf, this.hasActor, this.hasDragged, false, this.broadcasts);
+  }
+
+  /** 相手が1つに定まらなくてよい場所（passivesの対象。付いている子ごとに登録を配る、8.1節）。 */
+  get broadcasting(): ReferenceScope {
+    return new ReferenceScope(this.hasSelf, this.hasActor, this.hasDragged, this.namesProperty, true);
+  }
+
+  /**
+   * rootがこの場所で解決先を持たない理由（**この場所に何が無いか**）。持つならundefined。
+   * 呼び出し側は、どこの宣言かを添えてロード時エラーにする。
+   */
+  unresolvableReason(root: ReferenceRoot): string | undefined {
+    switch (root) {
+      case 'self':
+      case 'parent':
+        return this.hasSelf ? undefined : 'ここには宣言元の個体が居ません';
+      case 'actor':
+        return this.hasActor ? undefined : 'ここは誰かが操作している場面とは限りません';
+      case 'dragged':
+        return this.hasDragged ? undefined : "'dragged'はcombinationsの中でのみ使えます";
+      case 'ancestor':
+        if (!this.hasSelf) return 'ここには遡る起点になる個体が居ません';
+        return this.namesProperty
+          ? undefined
+          : 'ancestorはプロパティ名で祖先を探すので、オブジェクトそのものを指す場所では使えません';
+      case 'child':
+        return this.broadcasts
+          ? undefined
+          : "ここは相手が1つに決まる場所なので、どの子かが定まらない'child'は使えません";
+    }
+  }
+}

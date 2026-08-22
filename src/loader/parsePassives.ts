@@ -8,13 +8,11 @@ import {
   tryGetNode,
   tryGetSeq,
 } from './yamlMapping';
-import { YamlLoadError } from './YamlLoadError';
 import { parseNumberLiteral } from './parseCommon';
-import { parseConditionsField, PASSIVE_CONDITION_ROOTS } from './parseConditions';
+import { parseConditionsField, parseSubjectRoot } from './parseConditions';
 import { parsePassiveTransfers } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import type { ReferenceRoot } from '../domain/ReferenceRoot';
-import { PropertyPath } from '../domain/ReferenceRoot';
+import { PropertyPath, ReferenceScope } from '../domain/ReferenceRoot';
 import type { ConditionNode } from '../domain/ConditionNode';
 import {
   AccumulateEffect,
@@ -42,7 +40,7 @@ export function parsePassive(
   const context = `'${objectDefName}'.passives`;
 
   const conditionsNode = tryGetSeq(passiveMap, 'conditions', context);
-  const conditions = parseConditionsField(loader, context, conditionsNode, PASSIVE_CONDITION_ROOTS);
+  const conditions = parseConditionsField(loader, context, conditionsNode, ReferenceScope.declaration);
   const gate = buildGate(loader, conditions, forcedStageProperty, forcedStageName);
 
   parsePassiveOperationInto(
@@ -113,26 +111,11 @@ function parsePassiveOperationInto(
   const operationMap = tryGetMap(passiveMap, operationKey, context);
   if (operationMap === undefined) return;
 
-  for (const [targetName, bodyNode] of entriesInOrder(operationMap)) {
-    if (targetName === 'actor') continue; // 未対応（passiveのtargetにactorは無いため）
+  // 対象は付いている子ごとに登録を配れるので、childを指せる唯一の場所（8.1節）。
+  const scope = ReferenceScope.declaration.broadcasting;
 
-    let target: ReferenceRoot;
-    switch (targetName) {
-      case 'self':
-        target = 'self';
-        break;
-      case 'parent':
-        target = 'parent';
-        break;
-      case 'child':
-        target = 'child';
-        break;
-      case 'ancestor':
-        target = 'ancestor';
-        break;
-      default:
-        throw new YamlLoadError(`${context}.${operationKey}: 未知の対象キー '${targetName}' です。`);
-    }
+  for (const [targetName, bodyNode] of entriesInOrder(operationMap)) {
+    const target = parseSubjectRoot(`${context}.${operationKey}`, targetName, scope);
 
     const body = asMap(bodyNode, context);
     for (const [propName, amountNode] of entriesInOrder(body))

@@ -24,6 +24,7 @@ import { ALERT_LEVELS } from '../domain/AlertLevel';
 import type { ActiveEffect } from '../domain/ActiveEffect';
 import { GAUGE_ENDS, GaugeDef, PropertyDef, PropertyRange, PropertyStage } from '../domain/PropertyDef';
 import type { PassiveEffect } from '../domain/PassiveEffect';
+import { ReferenceScope } from '../domain/ReferenceRoot';
 
 /** props（6節）の1エントリが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。
  * unitは単位表記などの注記用で、ローダーは解釈しない（WorldCodex.schema.json参照）。 */
@@ -201,7 +202,7 @@ function parsePropertyTags(loader: WorldCodexYamlLoader, context: string, node: 
  * （既定のクランプを打ち消す）を意味し、空のActiveEffectsになる。
  */
 function parseRangeEventEffect(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): ActiveEffect {
-  return parseActiveEffectBody(loader, context, node, false, true);
+  return parseActiveEffectBody(loader, context, node, ReferenceScope.declaration);
 }
 
 /** 1つのstagesエントリを解釈する（6.4節）。数値型はmin（半開区間）、シンボル型はeq

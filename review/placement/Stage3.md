@@ -139,3 +139,28 @@ resolver を要するものはほとんど無い:
 レーン R とレーン D は同時に進めてよい。触る `src/domain` のファイルが重ならない
 （R: 効果・条件・参照／D: プロパティ・型表）。レーン D は個々が独立なので、途中で止めても
 それまでが有効。
+
+## 6. レーンRの結果
+
+実施済み。`ReferenceContext`（3つ組）・`PropertyPath` の解決の口・`ReferenceScope`（場所が何を
+用意できるか）の3つが入り、`resolveReferenceRoot` / `WorldObject.resolveEffectTarget` /
+`resolveEffectTargetOrAncestor` / `ConditionNode.resolvePropertyOwner` /
+`ObjectRef.needsInteraction` / 4つの `*_CONDITION_ROOTS` / `parseActiveTargetRoot` の switch /
+`parsePassives` の対象 switch / `in_slot` の ancestor 検査 / `parseMove` の `selfOnly` 検査が消えた。
+
+**着手前の前提のうち2つが、コードで確かめると崩れた。**
+
+- H-3 の「文脈ごとの許可」は、**一覧ではなく導出**で表せた。場所が持つもの（self・actor・
+  dragged・プロパティ名・相手が複数でよいか）を宣言し、rootの側が要るものを言うだけで、
+  既存10文脈のうち8つの許可集合が完全に一致した。
+- 残る2つ（rangeイベントの `selfOnly`、`move` の `subject` から `parent` を外していたこと）は
+  「解決できない」ではなく「まだ受けていない」だった。**`move` の方はコメントの誤り**——
+  「一度きりの命令に対してどれを動かすか」が当てはまるのは `child` だけで、`parent` は1つに
+  決まるうえ、同じ `move` の `to` では現に使えていた。
+
+どちらも導出に合わせて受け入れる形で決着（挙動が広がる）。`on_max`/`on_min` で `parent`・
+`ancestor` を、`move` の `subject` で `parent` を指せるようになった。テストは6件が新しい規則の
+言い方へ変わり、1件（rangeイベントで `parent` を指せる）が増えた。
+
+**副産物**: `slot`・`matches` の葉が `ancestor` を黙って偽にしていた（`in_slot` だけが弾いて
+いた）のが、プロパティ名を伴わない葉としてまとめて弾かれるようになった。
