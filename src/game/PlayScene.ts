@@ -1853,7 +1853,7 @@ export class PlayScene extends ResponsiveScene {
           radius: this.metrics.px(SIZE.radius),
         },
       );
-      button.addContent(addLabel(this, this.metrics, size / 2, size / 2, icon, { size: 28 }).setOrigin(0.5));
+      button.addCentered(addLabel(this, this.metrics, 0, 0, icon, { size: 28 }));
     });
   }
 
@@ -1925,11 +1925,9 @@ export class PlayScene extends ResponsiveScene {
       radius,
       shadow: this.metrics.px(PAPER_BUTTON_SHADOW),
     });
-    button.addContent(
-      ...this.slotButtonPaper(rect, index, radius, borderWidth),
-      // 絵文字は正方形なので、キャンバスの高さがそのまま大きさになる。
-      this.buttonIcon(spec, rect, SIZE.slotButtonIcon, SIZE.slotButtonIcon.height),
-    );
+    button.addContent(...this.slotButtonPaper(rect, index, radius, borderWidth));
+    // 絵文字は正方形なので、キャンバスの高さがそのまま大きさになる。
+    button.addCentered(this.buttonIcon(spec, SIZE.slotButtonIcon, SIZE.slotButtonIcon.height));
     button.on('pointerup', this.whileIdle(spec.onTap));
   }
 
@@ -1976,20 +1974,16 @@ export class PlayScene extends ResponsiveScene {
    */
   private buttonIcon(
     spec: { art?: IconName; icon: string },
-    rect: Rect,
     canvas: { width: number; height: number },
     glyphSize: number,
-  ): Phaser.GameObjects.GameObject {
-    const x = rect.width / 2;
-    const y = rect.height / 2;
+  ): Phaser.GameObjects.Image | Phaser.GameObjects.Text {
     const texture = spec.art === undefined ? undefined : iconTexture(spec.art);
     if (texture !== undefined && this.textures.exists(texture)) {
       return this.add
-        .image(x, y, texture)
-        .setOrigin(0.5)
+        .image(0, 0, texture)
         .setDisplaySize(this.metrics.px(canvas.width), this.metrics.px(canvas.height));
     }
-    return addLabel(this, this.metrics, x, y, spec.icon, { size: glyphSize }).setOrigin(0.5);
+    return addLabel(this, this.metrics, 0, 0, spec.icon, { size: glyphSize });
   }
 
   /**
@@ -2260,7 +2254,7 @@ export class PlayScene extends ResponsiveScene {
     // どの絵も同じ大きさで敷く。4つの役割に大小は無いので、物の大きさで差を付ける理由も無い。
     const button = new Button(this, rect, this.iconButtonStyle(active, border));
     const art = SIZE.iconButtonArt;
-    button.addContent(this.buttonIcon(spec, rect, { width: art, height: art }, ICON_BUTTON_GLYPH));
+    button.addCentered(this.buttonIcon(spec, { width: art, height: art }, ICON_BUTTON_GLYPH));
     return button;
   }
 

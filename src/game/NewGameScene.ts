@@ -273,7 +273,7 @@ export class NewGameScene extends ResponsiveScene {
       },
       onTap,
     );
-    button.addContent(addLabel(this, this.metrics, size / 2, size / 2, '🎲', { size: 32 }).setOrigin(0.5));
+    button.addCentered(addLabel(this, this.metrics, 0, 0, '🎲', { size: 32 }));
   }
 
   private addCharacterField(x: number, y: number, width: number): void {
@@ -430,9 +430,7 @@ export class NewGameScene extends ResponsiveScene {
       },
       onTap,
     );
-    button.addContent(
-      addLabel(this, this.metrics, width / 2, height / 2, label, { size: 28, bold: true }).setOrigin(0.5),
-    );
+    button.addCentered(addLabel(this, this.metrics, 0, 0, label, { size: 28, bold: true }));
   }
 
   private startGame(): void {

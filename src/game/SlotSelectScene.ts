@@ -113,7 +113,7 @@ export class SlotSelectScene extends ResponsiveScene {
       },
       () => this.confirmDelete(slotIndex, slot),
     );
-    button.addContent(addLabel(this, this.metrics, size / 2, size / 2, '🗑️', { size: 26 }).setOrigin(0.5));
+    button.addCentered(addLabel(this, this.metrics, 0, 0, '🗑️', { size: 26 }));
   }
 
   private confirmDelete(slotIndex: number, slot: SaveData): void {

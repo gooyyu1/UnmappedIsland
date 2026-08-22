@@ -36,6 +36,10 @@ export interface HoldHandlers {
  *
  * 子の座標はボタン左上を原点(0,0)とするローカル座標で指定する。
  */
+type CenteredContent = Phaser.GameObjects.GameObject &
+  Phaser.GameObjects.Components.Transform &
+  Phaser.GameObjects.Components.Origin;
+
 export class Button extends Phaser.GameObjects.Container {
   private readonly boxWidth: number;
   private readonly boxHeight: number;
@@ -119,9 +123,19 @@ export class Button extends Phaser.GameObjects.Container {
     drawBox(this.background, { x: 0, y: 0, width: this.boxWidth, height: this.boxHeight }, style);
   }
 
-  /** ボタンの中身を足す。 */
+  /** ボタンの中身を足す。子はボタン左上を原点(0,0)とするローカル座標で置く。 */
   addContent(...children: Phaser.GameObjects.GameObject[]): void {
     this.add(children);
+  }
+
+  /**
+   * 中身を1つ、ボタンの中央へ置く。**中央がどこかはボタンが知っている**ので、呼び出し側が
+   * 寸法から割り出さない。
+   */
+  addCentered(child: CenteredContent): void {
+    child.setPosition(this.boxWidth / 2, this.boxHeight / 2);
+    child.setOrigin(0.5);
+    this.add(child);
   }
 }
 
@@ -171,12 +185,6 @@ export function addTextButton(
     },
     hold,
   );
-  button.addContent(
-    addLabel(scene, metrics, rect.width / 2, rect.height / 2, label, {
-      size: 26,
-      bold: true,
-      color: style.textColor,
-    }).setOrigin(0.5),
-  );
+  button.addCentered(addLabel(scene, metrics, 0, 0, label, { size: 26, bold: true, color: style.textColor }));
   return button;
 }

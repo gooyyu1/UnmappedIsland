@@ -112,11 +112,12 @@ export class TitleScene extends ResponsiveScene {
           },
       onTap,
     );
-    const text = addLabel(this, this.metrics, width / 2, height / 2, label, {
-      size: 30,
-      bold: true,
-      color: primary ? COLOR.primaryButtonText : COLOR.textOnDark,
-    }).setOrigin(0.5);
-    button.addContent(text);
+    button.addCentered(
+      addLabel(this, this.metrics, 0, 0, label, {
+        size: 30,
+        bold: true,
+        color: primary ? COLOR.primaryButtonText : COLOR.textOnDark,
+      }),
+    );
   }
 }
