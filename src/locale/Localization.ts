@@ -272,6 +272,23 @@ class LocationTextsEntry {
 const DEFAULT_ORDINAL_SUFFIX = ' ({n})';
 
 /**
+ * 対応表の節（Localization.md）。**節ごとに名前で渡す**——どれも同じ形の対応表なので、並び順で渡すと
+ * 取り違えても型検査を通る。省いた節は空として扱う。
+ */
+export interface LocaleSections {
+  readonly objects: ReadonlyMap<string, ObjectTextsEntry>;
+  readonly propertyTags?: ReadonlyMap<string, DeclaredTexts>;
+  readonly symbols?: ReadonlyMap<string, DeclaredTexts>;
+  readonly locations?: ReadonlyMap<string, LocationTextsEntry>;
+  readonly reasons?: ReadonlyMap<string, string>;
+  readonly ordinalSuffix?: string;
+  readonly slots?: ReadonlyMap<string, SlotTextsEntry>;
+  readonly signals?: ReadonlyMap<string, string>;
+  readonly stages?: ReadonlyMap<string, string>;
+  readonly tags?: ReadonlyMap<string, string>;
+}
+
+/**
  * 識別子から表示文字列を引く対応表（Localization.md）。WorldCodexは識別子だけを持ち、
  * 画面に出す文字列はこちらが持つ。
  */
@@ -287,28 +304,17 @@ export class Localization {
   private readonly stages: ReadonlyMap<string, string>;
   private readonly tags: ReadonlyMap<string, string>;
 
-  constructor(
-    objects: ReadonlyMap<string, ObjectTextsEntry>,
-    propertyTags: ReadonlyMap<string, DeclaredTexts> = new Map(),
-    symbols: ReadonlyMap<string, DeclaredTexts> = new Map(),
-    locations: ReadonlyMap<string, LocationTextsEntry> = new Map(),
-    reasons: ReadonlyMap<string, string> = new Map(),
-    ordinalSuffix: string = DEFAULT_ORDINAL_SUFFIX,
-    slots: ReadonlyMap<string, SlotTextsEntry> = new Map(),
-    signals: ReadonlyMap<string, string> = new Map(),
-    stages: ReadonlyMap<string, string> = new Map(),
-    tags: ReadonlyMap<string, string> = new Map(),
-  ) {
-    this.objects = objects;
-    this.propertyTags = propertyTags;
-    this.symbols = symbols;
-    this.locations = locations;
-    this.reasons = reasons;
-    this.ordinalSuffix = ordinalSuffix;
-    this.slots = slots;
-    this.signals = signals;
-    this.stages = stages;
-    this.tags = tags;
+  constructor(sections: LocaleSections) {
+    this.objects = sections.objects;
+    this.propertyTags = sections.propertyTags ?? new Map();
+    this.symbols = sections.symbols ?? new Map();
+    this.locations = sections.locations ?? new Map();
+    this.reasons = sections.reasons ?? new Map();
+    this.ordinalSuffix = sections.ordinalSuffix ?? DEFAULT_ORDINAL_SUFFIX;
+    this.slots = sections.slots ?? new Map();
+    this.signals = sections.signals ?? new Map();
+    this.stages = sections.stages ?? new Map();
+    this.tags = sections.tags ?? new Map();
   }
 
   /** 1つの土地の型の表示文字列。未登録の型でも、識別子へフォールバックする窓口として必ず返る。 */
@@ -413,23 +419,24 @@ export class Localization {
    * いればそちらを採る（既定のままなら重複ではない）。
    */
   mergedWith(other: Localization, label: string): Localization {
-    return new Localization(
-      merged(this.objects, other.objects, label, 'object_texts'),
-      merged(this.propertyTags, other.propertyTags, label, 'property_tag_texts'),
-      merged(this.symbols, other.symbols, label, 'symbol_texts'),
-      merged(this.locations, other.locations, label, 'location_texts'),
-      merged(this.reasons, other.reasons, label, 'reason_texts'),
-      other.ordinalSuffix === DEFAULT_ORDINAL_SUFFIX ? this.ordinalSuffix : other.ordinalSuffix,
-      merged(this.slots, other.slots, label, 'slot_texts'),
-      merged(this.signals, other.signals, label, 'signal_texts'),
-      merged(this.stages, other.stages, label, 'stage_texts'),
-      merged(this.tags, other.tags, label, 'tag_texts'),
-    );
+    return new Localization({
+      objects: merged(this.objects, other.objects, label, 'object_texts'),
+      propertyTags: merged(this.propertyTags, other.propertyTags, label, 'property_tag_texts'),
+      symbols: merged(this.symbols, other.symbols, label, 'symbol_texts'),
+      locations: merged(this.locations, other.locations, label, 'location_texts'),
+      reasons: merged(this.reasons, other.reasons, label, 'reason_texts'),
+      ordinalSuffix:
+        other.ordinalSuffix === DEFAULT_ORDINAL_SUFFIX ? this.ordinalSuffix : other.ordinalSuffix,
+      slots: merged(this.slots, other.slots, label, 'slot_texts'),
+      signals: merged(this.signals, other.signals, label, 'signal_texts'),
+      stages: merged(this.stages, other.stages, label, 'stage_texts'),
+      tags: merged(this.tags, other.tags, label, 'tag_texts'),
+    });
   }
 
   /** 表示文字列を1つも持たない対応表（表示文字列を必要としないテスト用）。 */
   static empty(): Localization {
-    return new Localization(new Map());
+    return new Localization({ objects: new Map() });
   }
 }
 
@@ -551,7 +558,7 @@ export function parseLocale(label: string, yamlText: string): Localization {
     for (const [name, node] of entriesInOrder(tagTextSection))
       tags.set(name, asScalarText(node, `${label}.tag_texts.'${name}'`));
 
-  return new Localization(
+  return new Localization({
     objects,
     propertyTags,
     symbols,
@@ -562,7 +569,7 @@ export function parseLocale(label: string, yamlText: string): Localization {
     signals,
     stages,
     tags,
-  );
+  });
 }
 
 function parseEntry(node: YAMLMap, context: string): ObjectTextsEntry {

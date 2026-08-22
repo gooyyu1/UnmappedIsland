@@ -6,6 +6,7 @@ import { Card } from './Card';
 import { cardFace } from './cardFace';
 import type { CardLane } from './CardLane';
 import { FLY_EASE_OUT, FLY_MS } from '../looks/cardFlight';
+import { SCREEN_DEPTH } from '../looks/screenDepth';
 import { DustPuff } from './DustPuff';
 import type { PlacedCard } from '../view/cardMotionPlan';
 import { planMotion } from '../view/cardMotionPlan';
@@ -99,7 +100,8 @@ interface FreedCard {
  * 場に出ているカードの実体すべて（CardInteraction.md 6節 カードの移動アニメーション）。
  *
  * どの札がどこからどこへ飛ぶのかの解釈は計画（cardMotionPlan）が行う。このクラスは実体の札を
- * 所有し、レーンの枠に置き（CardLane.reconcile）、枠の外に在る間は最前面の層で目標へ向かわせる。
+ * 所有し、レーンの枠に置き（CardLane.reconcile）、枠の外に在る間は自前の層（SCREEN_DEPTH.flyingCard）で
+ * 目標へ向かわせる。
  *
  * **飛ぶのは常に実体の札そのもの**で、運んでいるインスタンス（ID）を載せている。枠の札は自分に
  * 在るIDの集合を知っていて（Card.setPresence）、枚数はそこからの導出値。便が着くとIDセットが
@@ -108,7 +110,7 @@ interface FreedCard {
  * 飛んでいる途中に世界が変わったら、便は着かされるのではなく**向き直る**（plan.landings）。
  * 差し替えと便の開始に順序の契約は無い。
  *
- * 最前面の層に置くのは、レーンからはみ出したカードは隣接エリアの背景板に隠れる設計
+ * 自前の層に置くのは、レーンからはみ出したカードは隣接エリアの背景板に隠れる設計
  * （CardLane参照）のため、レーンの中に置いたままでは境界をまたげないから。
  */
 export class CardTable {
@@ -123,7 +125,7 @@ export class CardTable {
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics) {
     this.scene = scene;
     this.metrics = metrics;
-    this.layer = scene.add.container(0, 0).setDepth(1);
+    this.layer = scene.add.container(0, 0).setDepth(SCREEN_DEPTH.flyingCard);
     this.dust = new DustPuff(scene);
     scene.events.on('update', this.step, this);
     scene.events.once('shutdown', () => scene.events.off('update', this.step, this));

@@ -111,12 +111,12 @@ export class MapWindow {
 
     for (const land of options.lands) {
       this.placements.set(land.site, this.openingPlacement(land.site, options.positions));
-      this.addCard(scene, land, options.onPlace);
+      this.addCard(land, options.onPlace);
     }
     this.applyTransform();
 
-    this.addPan(scene, surface);
-    this.addZoom(scene);
+    this.addPan(surface);
+    this.addZoom();
 
     const title = addLabel(scene, metrics, padding, padding, '地図', { size: 34, bold: true });
     this.objects.push(
@@ -195,13 +195,13 @@ export class MapWindow {
     };
   }
 
-  private addCard(scene: Phaser.Scene, land: MapLandView, onPlace: MapWindowOptions['onPlace']): void {
-    const card = new Card(scene, this.metrics, 0, 0, { ...cardFace(land.card), draggable: true });
+  private addCard(land: MapLandView, onPlace: MapWindowOptions['onPlace']): void {
+    const card = new Card(this.scene, this.metrics, 0, 0, { ...cardFace(land.card), draggable: true });
 
     // 現在地は太い黒枠で囲んで目立たせる。枠は紙の輪郭（Card.paperRect）にそのまま重ね、
     // カードの子にすることでドラッグ・ズームへそのまま追従させる。
     if (land.current) {
-      const highlight = scene.add.graphics();
+      const highlight = this.scene.add.graphics();
       drawBox(highlight, paperRect(this.metrics, card.cardWidth, card.cardHeight), {
         border: COLOR.cardBorder,
         borderWidth: this.metrics.px(CURRENT_BORDER_WIDTH),
@@ -211,7 +211,7 @@ export class MapWindow {
     }
 
     // 掴んだカードは他のカードより手前へ出す（重なりの下へ潜ったまま動くと掴んでいる実感が無い）。
-    card.on('dragstart', () => scene.children.bringToTop(card));
+    card.on('dragstart', () => this.scene.children.bringToTop(card));
     card.on('drag', (_pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
       const clamped = this.clampTopLeft(dragX, dragY, this.zoom);
       card.setPosition(clamped.x, clamped.y);
@@ -246,8 +246,8 @@ export class MapWindow {
   }
 
   /** 背景のドラッグで見る範囲を動かす（等倍では動く余地が無いので実質ズーム中だけ）。 */
-  private addPan(scene: Phaser.Scene, surface: Phaser.GameObjects.Rectangle): void {
-    scene.input.setDraggable(surface);
+  private addPan(surface: Phaser.GameObjects.Rectangle): void {
+    this.scene.input.setDraggable(surface);
     surface.on('dragstart', (pointer: Phaser.Input.Pointer) => {
       this.panLast = new Phaser.Math.Vector2(pointer.x, pointer.y);
     });
@@ -271,16 +271,16 @@ export class MapWindow {
    * 倍率だけを変える。ピンチはシーン全体の入力で見る——2本目の指はカードや背景のどれを押して
    * いるか分からないため、オブジェクト単位のイベントでは追えない。
    */
-  private addZoom(scene: Phaser.Scene): void {
+  private addZoom(): void {
     // ピンチには2本目のタッチポインタが要る（Phaserの既定はタッチ1本）。既にあれば足さない。
-    if (scene.input.pointer2 === undefined) scene.input.addPointer(1);
+    if (this.scene.input.pointer2 === undefined) this.scene.input.addPointer(1);
 
     const onWheel = (pointer: Phaser.Input.Pointer): void => {
       this.zoomAt(Math.pow(WHEEL_ZOOM_BASE, -pointer.deltaY), pointer.x, pointer.y);
     };
     const onPinch = (): void => {
-      const first = scene.input.pointer1;
-      const second = scene.input.pointer2;
+      const first = this.scene.input.pointer1;
+      const second = this.scene.input.pointer2;
       if (first === undefined || second === undefined || !first.isDown || !second.isDown) {
         this.pinchDistance = undefined;
         this.pinchMid = undefined;
@@ -297,14 +297,14 @@ export class MapWindow {
       }
     };
 
-    this.listenScene(scene, 'wheel', onWheel);
-    this.listenScene(scene, 'pointermove', onPinch);
-    this.listenScene(scene, 'pointerup', onPinch);
-    this.listenScene(scene, 'pointerdown', onPinch);
+    this.listenScene('wheel', onWheel);
+    this.listenScene('pointermove', onPinch);
+    this.listenScene('pointerup', onPinch);
+    this.listenScene('pointerdown', onPinch);
   }
 
-  private listenScene(scene: Phaser.Scene, event: string, handler: (...args: never[]) => void): void {
-    scene.input.on(event, handler);
+  private listenScene(event: string, handler: (...args: never[]) => void): void {
+    this.scene.input.on(event, handler);
     this.sceneListeners.push({ event, handler });
   }
 

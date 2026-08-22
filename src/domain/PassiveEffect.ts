@@ -19,43 +19,40 @@ import { resolveReferenceRoot } from './ReferenceRoot';
  */
 export class PassiveEffectGate {
   private readonly conditions: ConditionNode | undefined;
-  private readonly propertyGlobalId: number | undefined;
-  private readonly stageName: string | undefined;
 
-  constructor(conditions: ConditionNode | undefined, propertyGlobalId?: number, stageName?: string) {
+  /**
+   * 見ている段（8.2節）。**プロパティと段の名前は組で1つ**——片方だけでは「どのプロパティのどの段か」
+   * を言えないので、分けて持たない。段で縛っていないゲートではundefined。
+   */
+  private readonly stage: { readonly propertyGlobalId: number; readonly name: string } | undefined;
+
+  constructor(
+    conditions: ConditionNode | undefined,
+    stage?: { readonly propertyGlobalId: number; readonly name: string },
+  ) {
     this.conditions = conditions;
-    this.propertyGlobalId = propertyGlobalId;
-    this.stageName = stageName;
+    this.stage = stage;
   }
 
   /**
-   * このゲートが見ている段（8.2節）のプロパティ。段で縛っていないゲートではundefined。
+   * このゲートが見ている段のプロパティ。段で縛っていないゲートではundefined。
    * 「このステータスが何を動かしているか」（PropertyInfluences）は、これを原因として辿る。
    */
   get stagePropertyGlobalId(): number | undefined {
-    return this.stageName === undefined ? undefined : this.propertyGlobalId;
+    return this.stage?.propertyGlobalId;
   }
 
   /** このゲートの宣言そのもの（GateReading参照）。 */
   get reading(): GateReading {
-    const stagePropertyGlobalId = this.stagePropertyGlobalId;
-    return {
-      stage:
-        stagePropertyGlobalId === undefined
-          ? undefined
-          : { propertyGlobalId: stagePropertyGlobalId, name: this.stageName! },
-      conditions: this.conditions,
-    };
+    return { stage: this.stage, conditions: this.conditions };
   }
 
   isSatisfied(declarer: WorldObject, slotBearer: WorldObject): boolean {
-    if (this.stageName !== undefined) {
-      if (
-        this.propertyGlobalId === undefined ||
-        !(declarer.tryGetProperty(this.propertyGlobalId)?.isInStage(this.stageName) ?? false)
-      )
-        return false;
-    }
+    if (
+      this.stage !== undefined &&
+      !(declarer.tryGetProperty(this.stage.propertyGlobalId)?.isInStage(this.stage.name) ?? false)
+    )
+      return false;
 
     if (
       this.conditions !== undefined &&

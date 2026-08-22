@@ -1,4 +1,4 @@
-import type { EffectReader, PickCandidateReading, TransferReading } from '../domain/EffectReader';
+import type { AddReading, EffectReader, PickCandidateReading, TransferReading } from '../domain/EffectReader';
 import type { ObjectRefReading } from '../domain/ObjectRef';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { StepOutcome } from './CraftingStep';
@@ -62,10 +62,8 @@ class OutcomeReader implements EffectReader {
     ]);
   }
 
-  add(target: ReferenceRoot, propertyGlobalId: number, amount: number): void {
-    this.combine([
-      { probability: 1, spawns: [], deltas: [{ target, propertyGlobalId, amount }], assignments: [] },
-    ]);
+  add(reading: AddReading): void {
+    this.combine([{ probability: 1, spawns: [], deltas: [reading], assignments: [] }]);
   }
 
   spawn(objectGlobalId: number, count: number): void {

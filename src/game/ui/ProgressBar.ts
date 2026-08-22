@@ -188,32 +188,32 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 満たされ具合を、変化を見せずに今の値にする。目で追えなかった変化（バーが出ていない間に
-   * 進んだ分）に使う（StatusBar.show参照）。
-   */
-  resetRatio(ratio: number): void {
-    this.stopChasing();
-    this.holding = false;
-
-    this.ratio = Phaser.Math.Clamp(ratio, 0, 1);
-    this.shownRatio = this.ratio;
-    this.draw();
-  }
-
-  /**
-   * 満たされ具合を変える。**変わった分は帯として残し、少し遅れて追いつかせる**（格闘ゲームの体力バーと
-   * 同じで、どれだけ変わったのかを目で追えるようにするため）。動くのは常に変化前の値の側で、今の値の側は
-   * すぐそこへ移る——値そのものは待たせず、変化の量だけを目で追わせる。結果として、増えたときは帯が先に
-   * 伸びて塗りが後から満ち、減ったときは塗りが先に縮んで帯が後から追いつく。
+   * 満たされ具合を変える。**変わった分を帯として見せるかは、このバーが決める**——showChangeを立てて
+   * あっても、差し替える前から見えていなかったバーには出さない。見えていなかった間に進んだ分を今この
+   * 瞬間の変化として出してしまうため（安全域から現れた行が、満タンからいきなり減ったように見えていた）。
    *
-   * 良し悪しを表すのは帯の色だけ（悪化なら赤、好転なら塗りを薄めた色）。増えると悪いバーでは、増えた分の
-   * 帯が赤くなる。
+   * 帯は**変わった分を残し、少し遅れて追いつかせる**（格闘ゲームの体力バーと同じで、どれだけ変わったのかを
+   * 目で追えるようにするため）。動くのは常に変化前の値の側で、今の値の側はすぐそこへ移る——値そのものは
+   * 待たせず、変化の量だけを目で追わせる。結果として、増えたときは帯が先に伸びて塗りが後から満ち、
+   * 減ったときは塗りが先に縮んで帯が後から追いつく。良し悪しを表すのは帯の色だけ（悪化なら赤、好転なら
+   * 塗りを薄めた色）。
    *
    * holdは「まだ値が動き続けている最中か」。trueの間は追いつかせず、帯を動き始めの位置に残したままに
    * するので、何度かに分けて変わった分が合計として読める（StatusArea.md）。
    * holdをfalseに戻した時点から動き始めるため、値が変わらないtrue→falseの呼び出しにも意味がある。
    */
-  setRatio(ratio: number, hold = false): void {
+  setRatio(ratio: number, options: { showChange?: boolean; hold?: boolean } = {}): void {
+    if (options.showChange !== true || !this.visible) {
+      this.stopChasing();
+      this.holding = false;
+
+      this.ratio = Phaser.Math.Clamp(ratio, 0, 1);
+      this.shownRatio = this.ratio;
+      this.draw();
+      return;
+    }
+
+    const hold = options.hold ?? false;
     const next = Phaser.Math.Clamp(ratio, 0, 1);
     if (next === this.ratio && hold === this.holding) return;
 

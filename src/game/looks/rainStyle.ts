@@ -63,3 +63,47 @@ const RAIN_STYLES: Readonly<Record<string, RainStyle>> = {
 export function rainStyleFor(weather: string | undefined): RainStyle | undefined {
   return weather === undefined ? undefined : RAIN_STYLES[weather];
 }
+
+/** 風の筋の、雨粒に対する長さ・太さ・濃さ・速さの倍率。 */
+const GUST_LENGTH_SCALE = 5;
+const GUST_THICKNESS_SCALE = 2.2;
+const GUST_ALPHA_SCALE = 0.35;
+const GUST_SPEED_SCALE = 0.55;
+
+/** 同じ向き・同じ速さで落ちる筋のひと組。降らせる側（WeatherOverlay）はこれを1層として敷く。 */
+export interface RainLayer {
+  /** 1周期ぶんの帯に見えている筋の数。 */
+  readonly count: number;
+  readonly slantDegrees: number;
+  readonly length: number;
+  readonly thickness: number;
+  readonly alpha: number;
+  readonly fallMs: number;
+}
+
+/**
+ * その見え方を、奥から順に敷く層へ分ける。風の筋は雨粒と同じ向き・同じ形で、長さ・太さ・濃さ・
+ * 速さだけが違う——同じ層の作り方に倍率を掛けたものとして出す。
+ */
+export function rainLayersOf(style: RainStyle): readonly RainLayer[] {
+  const drops: RainLayer = {
+    count: style.drops,
+    slantDegrees: style.slantDegrees,
+    length: style.length,
+    thickness: style.thickness,
+    alpha: style.alpha,
+    fallMs: style.fallMs,
+  };
+  if (style.gusts <= 0) return [drops];
+  return [
+    drops,
+    {
+      count: style.gusts,
+      slantDegrees: style.slantDegrees,
+      length: style.length * GUST_LENGTH_SCALE,
+      thickness: style.thickness * GUST_THICKNESS_SCALE,
+      alpha: style.alpha * GUST_ALPHA_SCALE,
+      fallMs: style.fallMs * GUST_SPEED_SCALE,
+    },
+  ];
+}

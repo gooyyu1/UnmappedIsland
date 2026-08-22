@@ -4,7 +4,7 @@ import type { EffectSite } from './EffectSite';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 import type { ObjectRef } from './ObjectRef';
-import type { EffectReader, LinkedAddReading, TransferReading } from './EffectReader';
+import type { AddReading, EffectReader, TransferReading } from './EffectReader';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
@@ -204,11 +204,11 @@ export class AddEffect extends ActiveEffect {
   }
 
   read(reader: EffectReader): void {
-    reader.add(this.target, this.propertyGlobalId, this.amount);
+    reader.add(this.reading);
   }
 
-  /** transferのlinked_addが、自分を1件として名乗るための読み上げ（LinkedAddReading参照）。 */
-  get linkedReading(): LinkedAddReading {
+  /** 自分を1件として名乗る読み上げ（AddReading参照）。transferのlinked_addもこの形で並ぶ。 */
+  get reading(): AddReading {
     return { target: this.target, propertyGlobalId: this.propertyGlobalId, amount: this.amount };
   }
 }
@@ -393,7 +393,7 @@ export class TransferEffect extends ActiveEffect {
       toPropertyGlobalId: this.toPropertyGlobalId,
       amount: this.amount,
       toAmount: this.toAmount,
-      linked: this.linkedAdd.map((linked) => linked.linkedReading),
+      linked: this.linkedAdd.map((linked) => linked.reading),
     };
   }
 

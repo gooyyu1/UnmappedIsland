@@ -86,10 +86,13 @@ function buildGate(
   stagePropertyName: string | undefined,
   stageName: string | undefined,
 ): PassiveEffectGate {
-  let propertyGlobalId: number | undefined;
-  if (stagePropertyName !== undefined) propertyGlobalId = loader.propertyNames.intern(stagePropertyName);
+  // プロパティと段の名前は組で1つ（どちらか片方だけでは段を指せない）。
+  const stage =
+    stagePropertyName === undefined || stageName === undefined
+      ? undefined
+      : { propertyGlobalId: loader.propertyNames.intern(stagePropertyName), name: stageName };
 
-  return new PassiveEffectGate(conditions, propertyGlobalId, stageName);
+  return new PassiveEffectGate(conditions, stage);
 }
 
 /**

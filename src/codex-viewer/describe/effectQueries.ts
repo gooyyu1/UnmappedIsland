@@ -1,4 +1,5 @@
 import type {
+  AddReading,
   EffectDeclaration,
   EffectReader,
   PickCandidateReading,
@@ -54,7 +55,7 @@ abstract class Finder implements EffectReader {
   found = false;
 
   set(_target: ReferenceRoot, _propertyGlobalId: number, _value: number): void {}
-  add(_target: ReferenceRoot, _propertyGlobalId: number, _amount: number): void {}
+  add(_reading: AddReading): void {}
   spawn(_objectGlobalId: number, _count: number): void {}
   destroy(_target: ObjectRefReading): void {}
   become(_subject: ObjectRefReading, _axisValues: ReadonlyMap<string, string>): void {}
@@ -82,8 +83,8 @@ class PropertyWriterFinder extends Finder {
     this.check(target, propertyGlobalId);
   }
 
-  override add(target: ReferenceRoot, propertyGlobalId: number): void {
-    this.check(target, propertyGlobalId);
+  override add(reading: AddReading): void {
+    this.check(reading.target, reading.propertyGlobalId);
   }
 
   override transfer(reading: TransferReading): void {

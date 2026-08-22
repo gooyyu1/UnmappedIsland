@@ -56,7 +56,7 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
   ) {
     super(scene, x, y);
 
-    this.contentWidth = this.build(scene, metrics);
+    this.contentWidth = this.build(metrics);
     this.setTime(elapsedDays, hour, minute);
 
     // サイズを設定しない理由はButtonのヒット領域についてのコメントを参照。
@@ -84,26 +84,25 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
    * 日数の側に単位のラベルは置かない。日数の桁は時刻の桁より大きく、時刻の側だけが「:」を持つので、
    * 大小と区切りだけで読み分けられる——文字を持たなければ翻訳も要らず、幅も設計値だけで決まる。
    */
-  private build(scene: Phaser.Scene, metrics: ScreenMetrics): number {
+  private build(metrics: ScreenMetrics): number {
     const height = metrics.px(DAY_DIGIT.height);
     let cursor = 0;
 
     for (let i = 0; i < 3; i++) {
-      this.addDigit(scene, metrics, cursor, height, DAY_DIGIT);
+      this.addDigit(metrics, cursor, height, DAY_DIGIT);
       cursor += metrics.px(DAY_DIGIT.width + DIGIT_GAP);
     }
 
     cursor += metrics.px(BLOCK_GAP);
     for (let i = 0; i < 4; i++) {
-      this.addDigit(scene, metrics, cursor, height, TIME_DIGIT);
+      this.addDigit(metrics, cursor, height, TIME_DIGIT);
       cursor += metrics.px(TIME_DIGIT.width + DIGIT_GAP);
-      if (i === 1) cursor += this.addColon(scene, metrics, cursor, height);
+      if (i === 1) cursor += this.addColon(metrics, cursor, height);
     }
     return cursor - metrics.px(DIGIT_GAP);
   }
 
   private addDigit(
-    scene: Phaser.Scene,
     metrics: ScreenMetrics,
     x: number,
     blockHeight: number,
@@ -115,9 +114,9 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     // 小さい時刻の桁が宙に浮いて見える。
     const top = blockHeight - height;
 
-    const paper = createDigitPaper(scene, metrics, x, top, width, height);
+    const paper = createDigitPaper(this.scene, metrics, x, top, width, height);
 
-    const text = scene.add
+    const text = this.scene.add
       .text(x + width / 2, top + height / 2, '', {
         fontFamily: FONT_FAMILY,
         fontSize: `${metrics.fontPx(size.fontSize)}px`,
@@ -134,9 +133,9 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
    * 時・分の間の「:」。確保した幅（COLON_WIDTH）の中央へ置き、占有した幅（後ろの間隔込み）を返す。
    * 高さは時刻の桁の中央に合わせる（桁は下端で揃うので、ブロックの中央とは一致しない）。
    */
-  private addColon(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, blockHeight: number): number {
+  private addColon(metrics: ScreenMetrics, x: number, blockHeight: number): number {
     const width = metrics.px(COLON_WIDTH);
-    const text = scene.add
+    const text = this.scene.add
       .text(x + width / 2, blockHeight - metrics.px(TIME_DIGIT.height) / 2, ':', {
         fontFamily: FONT_FAMILY,
         fontSize: `${metrics.fontPx(32)}px`,

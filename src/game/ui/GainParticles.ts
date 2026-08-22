@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { FONT_FAMILY } from '../looks/theme';
+import { SCREEN_DEPTH } from '../looks/screenDepth';
 
 /** 粒の大きさ。 */
 const PARTICLE_SIZE = 80;
@@ -68,10 +69,9 @@ export function emitGainParticles(
     readonly to: Rect;
     /** 湧き出しを散らす時間。行動の経過を見せている間いっぱいに散らす。 */
     readonly spreadMs: number;
-    readonly depth: number;
   },
 ): void {
-  const { icon, count, from, to, spreadMs, depth } = options;
+  const { icon, count, from, to, spreadMs } = options;
   const size = metrics.fontPx(PARTICLE_SIZE);
   const scatter = metrics.px(ARRIVAL_SCATTER);
   const arcFixed = metrics.px(ARC_FIXED);
@@ -88,7 +88,7 @@ export function emitGainParticles(
     const particle = scene.add
       .text(start.x, start.y, icon, { fontFamily: FONT_FAMILY, fontSize: `${size}px` })
       .setOrigin(0.5)
-      .setDepth(depth)
+      .setDepth(SCREEN_DEPTH.gainParticle)
       .setAlpha(0);
 
     const flight = { t: 0 };

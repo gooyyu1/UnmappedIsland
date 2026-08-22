@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { Rect } from '../ui/Rect';
 import { DISPLAY_PADDING, PlayScreenLayout } from './looks/PlayScreenLayout';
+import { SCREEN_DEPTH } from './looks/screenDepth';
 import { ResponsiveScene } from './ResponsiveScene';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
 import type { WorldCodex } from '../domain/WorldCodex';
@@ -121,46 +122,12 @@ function realMsFor(minutes: number): number {
   return Math.min(minutes * REAL_MS_PER_GAME_MINUTE, REAL_MS_MAX);
 }
 
-/** ドーナツグラフは、飛んでいるカードも探索の子ウィンドウも越えて最前面に出す。 */
-const RING_DEPTH = 2;
-
-/**
- * 札の上に浮かぶ出来事の文字（signalLabel）は、ドーナツグラフより手前。一瞬しか出ないので、
- * たまたま重なった物の陰に入ってはならない。致命的域の枠だけはさらに手前に残す。
- */
-const SIGNAL_DEPTH = 2.5;
-
-/** 致命的域を伝える画面全体の枠は、そのドーナツグラフよりもさらに手前に出す。 */
-const ALERT_FRAME_DEPTH = 3;
-
-/**
- * フィールドエリアの表示物を置く層。既定の層（0）より奥へ置くことで、フィールドエリアだけを
- * 作り直しても（rebuildFieldArea）、はみ出したカードを隠す隣接エリアの背景板より奥に居ることを
- * 保証する——描画順に頼ると、作り直したぶんが背景板より手前へ入ってしまう。
- */
-const FIELD_DEPTH = -1;
-
-/**
- * 雨の演出は、フィールドエリアの表示物（FIELD_DEPTH）より手前・隣接エリアの背景板（既定の層）より奥。
- * カードの上に降らせつつ、はみ出したカードを隠す背景板の上には出さないため。
- */
-const WEATHER_DEPTH = -0.5;
-
 /**
  * タグで書かれた要求の空き枠に、当てはまる型を出し替える間隔（ms）。
  *
  * **速すぎると読めず、遅すぎると1つの型に見える。** 1秒は、札の名前を読み終えて次が来る間隔。
  */
 const MATERIAL_CYCLE_MS = 1000;
-
-/**
- * 日射に応じた翳り・輝きは画面全体にかぶるので、飛んでいるカードの層（CardTable）より手前。
- * ドーナツグラフと致命的域の枠だけは更に手前に残す——暗い時間帯でも変わらず読めている必要がある。
- */
-const SKY_TINT_DEPTH = 1.5;
-
-/** 回復の粒は翳りより手前（同じ明るさで読める）・ドーナツグラフより奥（経過時間を隠さない）。 */
-const GAIN_PARTICLE_DEPTH = 1.75;
 
 /**
  * 満タンぶんの増加を何粒で表すか（CardInteraction.md 10.2節）。**比例ではなく平方根**なので、
@@ -602,15 +569,15 @@ export class PlayScene extends ResponsiveScene {
     // 手前から奥への重なりに合わせて組み立てる。レーンからはみ出したカードは切り抜かず、
     // 後から描く背景板で隠す設計のため、順序そのものに意味がある。
     this.buildFieldArea(layout);
-    // 雨は自前の層（WEATHER_DEPTH）に居るので、順序ではなく深度でカードの手前・背景板の奥に入る。
+    // 雨は自前の層（SCREEN_DEPTH.weather）に居るので、順序ではなく深度でカードの手前・背景板の奥に入る。
     this.weatherOverlay = new WeatherOverlay(
       this,
       this.metrics,
       layout.fieldArea,
       this.view.weather,
-    ).setDepth(WEATHER_DEPTH);
+    ).setDepth(SCREEN_DEPTH.weather);
     // 翳り・輝きは画面全体にかぶるので、組み立ての順序ではなく深度で最前面近くへ出す。
-    this.skyTint = new ScreenSkyTint(this, this.metrics, this.view.sunlight).setDepth(SKY_TINT_DEPTH);
+    this.skyTint = new ScreenSkyTint(this, this.metrics, this.view.sunlight).setDepth(SCREEN_DEPTH.skyTint);
     // 飛んでいるカードの層はフィールドエリアの作り直しでは捨てないので、そちらには含めない。
     this.motion = new CardTable(this, this.metrics);
     // タグで書かれた要求の空き枠に、当てはまる型を順に出すための拍（materialCells）。
@@ -682,7 +649,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   private buildFieldArea(layout: PlayScreenLayout): void {
-    this.fieldPanel = addPanel(this, layout.fieldArea, COLOR.fieldArea).setDepth(FIELD_DEPTH);
+    this.fieldPanel = addPanel(this, layout.fieldArea, COLOR.fieldArea).setDepth(SCREEN_DEPTH.field);
     const [fixtures, items, hand] = layout.lanes;
 
     this.fixtureLane = new CardLane(
@@ -699,7 +666,7 @@ export class PlayScene extends ResponsiveScene {
           onTap: this.whileIdle(() => this.openLocationWindow()),
         },
         art: this.laneArt(this.place('fixtures')),
-        depth: FIELD_DEPTH,
+        depth: SCREEN_DEPTH.field,
       },
     );
     this.itemLane = new CardLane(
@@ -710,12 +677,12 @@ export class PlayScene extends ResponsiveScene {
       this.cellsAt(this.place('items')),
       {
         art: this.laneArt(this.place('items')),
-        depth: FIELD_DEPTH,
+        depth: SCREEN_DEPTH.field,
       },
     );
     this.handLane = new CardLane(this, this.metrics, hand, COLOR.handLane, this.cellsAt(this.place('hand')), {
       art: this.laneArt(this.place('hand')),
-      depth: FIELD_DEPTH,
+      depth: SCREEN_DEPTH.field,
     });
 
     // 陽炎はフィールドエリアの3レーンすべてに立てる（LaneHaze参照）。
@@ -1429,7 +1396,7 @@ export class PlayScene extends ResponsiveScene {
       this.metrics,
       this.layout.fieldArea.x + this.layout.fieldArea.width / 2,
       this.layout.fieldArea.y + this.layout.fieldArea.height / 2,
-    ).setDepth(RING_DEPTH);
+    ).setDepth(SCREEN_DEPTH.ring);
 
     const clock = { elapsed: 0 };
     const show = (frame: ElapseFrame): void => {
@@ -1483,7 +1450,6 @@ export class PlayScene extends ResponsiveScene {
           from,
           to: portrait,
           spreadMs,
-          depth: GAIN_PARTICLE_DEPTH,
         });
       }
     }
@@ -1519,7 +1485,9 @@ export class PlayScene extends ResponsiveScene {
     for (const signal of signals) {
       const rect = this.rectOfInstance(signal.object.instanceId);
       if (rect === undefined) continue;
-      floatSignalLabel(this, this.metrics, this.locale.signal(signal.name), rect).setDepth(SIGNAL_DEPTH);
+      floatSignalLabel(this, this.metrics, this.locale.signal(signal.name), rect).setDepth(
+        SCREEN_DEPTH.signal,
+      );
     }
   }
 
@@ -2035,7 +2003,7 @@ export class PlayScene extends ResponsiveScene {
     this.statusRowGap = this.metrics.px(this.metrics.isLandscape ? 10 : 16);
 
     // 致命的域を伝える画面全体の枠。飛んでいるカードや子ウィンドウにも隠されないよう最前面へ出す。
-    this.alertFrame = new ScreenAlertFrame(this, this.metrics).setDepth(ALERT_FRAME_DEPTH);
+    this.alertFrame = new ScreenAlertFrame(this, this.metrics).setDepth(SCREEN_DEPTH.alertFrame);
 
     const bars = new Map<string, StatusBar>();
     for (const status of this.status.all()) {
