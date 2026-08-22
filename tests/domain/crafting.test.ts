@@ -9,7 +9,7 @@ import {
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { World } from '../../src/domain/views/World';
+import { World } from '../../src/domain/wrappers/World';
 import { WORLD_TIME_YAML } from '../support/worldYaml';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import type { WorldCodex } from '../../src/domain/WorldCodex';

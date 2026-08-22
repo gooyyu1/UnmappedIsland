@@ -3,7 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { Rng } from '../../src/domain/Rng';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/views/World';
+import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**

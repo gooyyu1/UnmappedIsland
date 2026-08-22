@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { Location } from '../../src/domain/views/Location';
-import { PlayerCharacter } from '../../src/domain/views/PlayerCharacter';
-import { World } from '../../src/domain/views/World';
+import { Location } from '../../src/domain/wrappers/Location';
+import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
+import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**

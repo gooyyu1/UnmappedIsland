@@ -17,7 +17,7 @@ import { Settings } from '../save/Settings';
 import { Shelf } from '../save/Shelf';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
-import { Path } from '../domain/views/Path';
+import { Path } from '../domain/wrappers/Path';
 import type { InteractionGains } from '../domain/PropertyGain';
 import type { WorldChange } from '../domain/WorldChange';
 import type { WorldSignal } from '../domain/WorldSignal';

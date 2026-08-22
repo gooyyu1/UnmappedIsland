@@ -169,7 +169,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 - **`placePlayer(session, map, character)`**: 開始地点を `sandy_beach` 優先、無ければ `Site.onCoastRing`、
   それも無ければ `map.sites[0]` の順で選び、`WorldObject.findDescendantByInstanceId`（`WorldObject` 自身の
   汎用メソッド）で実体を解決し、`characters` スロットへ `moveToSlot` した上で
-  `Location`（`src/domain/views/Location.ts`）を返します。
+  `Location`（`src/domain/wrappers/Location.ts`）を返します。
 
 ## 5. データの流れ（型で見る3層）
 
@@ -177,7 +177,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 |---|---|---|
 | 定義（ロード後不変） | `GenerationDefs`（`AxisDef`/`LocationTypeDef`/`GenerationScopeDef`、`src/domain/generation/`） | `WorldCodex.generation` として1つだけ存在。YAMLの内容そのもの |
 | 生成の中間・最終結果（純粋計算） | `Site`/`IslandEdge`/`IslandMap`（`src/domain/generation/IslandMap.ts`） | `WorldObject` を一切含まない。`generate`（`TerrainGenerator.ts`）が返す。座標・軸値・確定した `LocationTypeDef`・命名・辺を持つだけの、ただのデータ |
-| 実体化後（実行時状態） | `WorldObject`（`Location`/`Path` でラップ、`src/domain/views/`） | `IslandSpawner` が `Site`/`IslandEdge` を読んで生成する、実際にゲームが動かす対象 |
+| 実体化後（実行時状態） | `WorldObject`（`Location`/`Path` でラップ、`src/domain/wrappers/`） | `IslandSpawner` が `Site`/`IslandEdge` を読んで生成する、実際にゲームが動かす対象 |
 
 `IslandMap`（中間層）を経由することで、`generate`（`TerrainGenerator.ts`）は完全に決定的な純粋関数として単体テスト
 でき（`tests/generation/terrainGenerator.test.ts`）、`IslandSpawner` 以降の実体化のテスト
@@ -215,9 +215,9 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
   `mover.moveIntoFirstAcceptingSlot(destination, ...)` で配置します。`findRoot`/
   `findDescendantByInstanceId`/`moveIntoFirstAcceptingSlot` はいずれも `WorldObject`
   （`src/domain/WorldObject.ts`）に定義した汎用メソッドです。
-- **道の発見・移動の入口**: `Location.explore(actor, session)`（`src/domain/views/Location.ts`）が
+- **道の発見・移動の入口**: `Location.explore(actor, session)`（`src/domain/wrappers/Location.ts`）が
   `explore` アクションの実行と `revealDueFixtures`（`undiscovered_fixtures` → `fixtures` の移動）を1回の呼び出しに
-  まとめています。`Path.travel(actor, session)`（`src/domain/views/Path.ts`）が `travel` アクション
+  まとめています。`Path.travel(actor, session)`（`src/domain/wrappers/Path.ts`）が `travel` アクション
   を実行します。
 
 ## 8. ファイル一覧（索引）
@@ -243,8 +243,8 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 | `src/domain/generation/NewGame.ts` | ゲーム開始の入口（`start`）・`NewGameSession` |
 | `src/domain/MoveEffect.ts` | 7節: `move` 効果動詞 |
 | `src/domain/ActionDef.ts` | 7節: `duration` フィールド |
-| `src/domain/views/Location.ts` | 7節: 探索の入口（`explore`/`revealDueFixtures`） |
-| `src/domain/views/Path.ts` | 7節: 道のビュー（`travel`） |
+| `src/domain/wrappers/Location.ts` | 7節: 探索の入口（`explore`/`revealDueFixtures`） |
+| `src/domain/wrappers/Path.ts` | 7節: 道のビュー（`travel`） |
 
 対応するテストは以下のとおりです。
 

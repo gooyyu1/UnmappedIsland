@@ -1,7 +1,7 @@
 import type { Slot } from '../../domain/Slot';
 import type { SlotPosition } from '../../domain/SlotPosition';
-import type { Location } from '../../domain/views/Location';
-import type { PlayerCharacter } from '../../domain/views/PlayerCharacter';
+import type { Location } from '../../domain/wrappers/Location';
+import type { PlayerCharacter } from '../../domain/wrappers/PlayerCharacter';
 
 /**
  * レーンの中でカードを置く場所。**ワールド側の位置の指し方そのもの**（SlotPosition）で、

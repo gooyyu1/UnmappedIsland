@@ -1,7 +1,7 @@
 import type { WorldCodex } from '../../domain/WorldCodex';
 import type { NewGameSession } from '../../domain/generation/NewGame';
-import { Location } from '../../domain/views/Location';
-import { Path } from '../../domain/views/Path';
+import { Location } from '../../domain/wrappers/Location';
+import { Path } from '../../domain/wrappers/Path';
 import type { PropertyInfluence } from '../../domain/PropertyInfluence';
 import type { PropertyValue } from '../../domain/PropertyValue';
 import type { WorldObject } from '../../domain/WorldObject';

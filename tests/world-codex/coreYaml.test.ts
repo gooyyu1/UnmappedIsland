@@ -3,7 +3,7 @@ import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { PropertyDef } from '../../src/domain/PropertyDef';
 import type { SlotDef } from '../../src/domain/SlotDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { World } from '../../src/domain/views/World';
+import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';

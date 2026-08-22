@@ -4,7 +4,7 @@ import type { WorldChange } from '../../src/domain/WorldChange';
 import type { WorldSignal } from '../../src/domain/WorldSignal';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/views/World';
+import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { fixedRng } from '../support/rng';

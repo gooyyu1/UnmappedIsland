@@ -1,7 +1,7 @@
 import type { WorldCodex } from './WorldCodex';
 import { randomRng } from './Rng';
 import type { Rng } from './Rng';
-import type { World } from './views/World';
+import type { World } from './wrappers/World';
 import type { PropertyDef } from './PropertyDef';
 import type { InteractionGains, PropertyGain } from './PropertyGain';
 import type { Slot } from './Slot';

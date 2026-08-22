@@ -3,7 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldChange } from '../../src/domain/WorldChange';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { World } from '../../src/domain/views/World';
+import { World } from '../../src/domain/wrappers/World';
 import { bornInstances, originInstances, vanishedInstances } from '../../src/game/view/changedInstances';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
