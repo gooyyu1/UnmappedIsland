@@ -98,7 +98,7 @@ export class PlayerCharacter {
    * （Localization.stage）ので、死因を名乗るのはワールドの側だけになる。
    */
   get causeOfDeath(): string | undefined {
-    return this.isDead ? this.instance.exhaustedStage() : undefined;
+    return this.isDead ? this.instance.exhaustedStage : undefined;
   }
 
   /**

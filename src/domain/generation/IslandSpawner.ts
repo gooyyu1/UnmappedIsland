@@ -62,7 +62,7 @@ export function populate(session: WorldSession, map: IslandMap): void {
       .sort((x, y) => x.other - y.other);
     if (touching.length === 0) continue;
 
-    const progressMax = locations[site.index].def.getPropertyDef(progressId)!.range!.max;
+    const progressMax = locations[site.index].def.tryGetPropertyDef(progressId)!.range!.max;
     const lastPathProgress = progressMax - 1;
 
     for (let i = 0; i < touching.length; i++) {

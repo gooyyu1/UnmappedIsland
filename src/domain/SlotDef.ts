@@ -144,7 +144,7 @@ export class SlotDef {
   }
 
   /** itemをownerのこのスロットへ入れるのにかかる分数（宣言が無ければ0）。 */
-  putInMinutes(owner: WorldObject, item: WorldObject, actor: WorldObject | undefined): number {
+  putInMinutes(owner: WorldObject, actor: WorldObject | undefined, item: WorldObject): number {
     return this.putInDuration === undefined ? 0 : Math.trunc(this.putInDuration.resolve(owner, actor, item));
   }
 

@@ -151,17 +151,17 @@ export class ObjectDef {
   /** art_by_stage（6.4節）が指すプロパティの、stagesが宣言しているart接尾辞の一覧。art_by_stageが無ければ空。 */
   artSuffixes(): readonly string[] {
     if (this.artByStagePropertyGlobalId === undefined) return [];
-    return this.getPropertyDef(this.artByStagePropertyGlobalId)?.artSuffixes() ?? [];
+    return this.tryGetPropertyDef(this.artByStagePropertyGlobalId)?.artSuffixes() ?? [];
   }
 
   /** グローバルIDでこのObjectDefのPropertyDefを取得する。存在しない場合はundefined。 */
-  getPropertyDef(globalPropertyId: number): PropertyDef | undefined {
+  tryGetPropertyDef(globalPropertyId: number): PropertyDef | undefined {
     const local = this.propertyLayout.toLocal(globalPropertyId);
     return local === LocalIndexMap.missing ? undefined : this.propertyDefs[local];
   }
 
   /** グローバルIDでこのObjectDefのSlotDefを取得する。存在しない場合はundefined。 */
-  getSlotDef(globalSlotId: number): SlotDef | undefined {
+  tryGetSlotDef(globalSlotId: number): SlotDef | undefined {
     const local = this.slotLayout.toLocal(globalSlotId);
     return local === LocalIndexMap.missing ? undefined : this.slotDefs[local];
   }

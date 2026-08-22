@@ -125,7 +125,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
     const green = spawnInto('green_coconut', beach, 'items');
     const hydrationMax = codex.objects
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
-      .getPropertyDef(hydrationId)!.range!.max;
+      .tryGetPropertyDef(hydrationId)!.range!.max;
     player.getProperty(hydrationId).init(hydrationMax);
 
     combine(green, 'sharp_stone', 'bore');

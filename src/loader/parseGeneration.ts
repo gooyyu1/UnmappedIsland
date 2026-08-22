@@ -87,8 +87,8 @@ function parseAxis(name: string, node: YAMLMap): AxisDef {
     layers.push(parseGeneratorLayer(layerContext, layerNode));
   }
 
-  requireKnownKeys(context, node, ['range', 'generator']);
-  requireKnownKeys(context, generatorNode, ['blend']);
+  requireKnownKeys(node, ['range', 'generator'], context);
+  requireKnownKeys(generatorNode, ['blend'], context);
   return new AxisDef(name, range, layers);
 }
 
@@ -103,7 +103,7 @@ function parseGeneratorLayer(context: string, node: YAMLMap): GeneratorLayer {
         throw new YamlLoadError(
           `${context}: distance_fieldのreferenceは現時点で'edge'のみ対応しています（値: '${reference}'）。`,
         );
-      requireKnownKeys(context, node, ['type', 'weight', 'reference']);
+      requireKnownKeys(node, ['type', 'weight', 'reference'], context);
       return new GeneratorLayer('distance_field', weight);
     }
 
@@ -117,7 +117,7 @@ function parseGeneratorLayer(context: string, node: YAMLMap): GeneratorLayer {
       );
       if (layer.octaves < 1) throw new YamlLoadError(`${context}: octavesは1以上である必要があります。`);
       if (layer.frequency < 1) throw new YamlLoadError(`${context}: frequencyは1以上である必要があります。`);
-      requireKnownKeys(context, node, ['type', 'weight', 'octaves', 'frequency', 'seed_offset']);
+      requireKnownKeys(node, ['type', 'weight', 'octaves', 'frequency', 'seed_offset'], context);
       return layer;
     }
 
@@ -154,7 +154,7 @@ function parseVariants(loader: WorldCodexYamlLoader, context: string, node: YAML
         props.set(loader.propertyNames.intern(propName), value);
       }
 
-    requireKnownKeys(variantContext, map, ['id', 'props']);
+    requireKnownKeys(map, ['id', 'props'], variantContext);
     variants.push(new LocationVariantDef(variantId, props));
   }
 
@@ -178,7 +178,7 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
 
   const moveCost = tryGetNumber(node, 'move_cost', context) ?? 1;
   if (moveCost <= 0) throw new YamlLoadError(`${context}: move_costは正の数である必要があります。`);
-  const isFallback = tryGetBool(node, 'is_fallback', context, false);
+  const isFallback = tryGetBool(node, 'is_fallback', context) ?? false;
   const priority = tryGetInt(node, 'priority', context) ?? 0;
 
   const preferences: AxisPreference[] = [];
@@ -191,7 +191,7 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
       if (tolerance < 1) throw new YamlLoadError(`${prefContext}: toleranceは1以上である必要があります。`);
       const weight = tryGetInt(prefMap, 'weight', prefContext) ?? 100;
       if (weight < 1) throw new YamlLoadError(`${prefContext}: weightは1以上である必要があります。`);
-      requireKnownKeys(prefContext, prefMap, ['ideal', 'tolerance', 'weight']);
+      requireKnownKeys(prefMap, ['ideal', 'tolerance', 'weight'], prefContext);
       preferences.push(
         new AxisPreference(axisName, requireInt(prefMap, 'ideal', prefContext), tolerance, weight),
       );
@@ -207,7 +207,7 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
       const max = tryGetInt(limitMap, 'max', limitContext);
       if (min === undefined && max === undefined)
         throw new YamlLoadError(`${limitContext}: 'min'または'max'のいずれかが必要です。`);
-      requireKnownKeys(limitContext, limitMap, ['min', 'max']);
+      requireKnownKeys(limitMap, ['min', 'max'], limitContext);
       hardLimits.push(new AxisLimit(axisName, min, max));
     }
 
@@ -217,16 +217,20 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
         `（通常の最近傍マッチングでは距離が定義できないため）。`,
     );
 
-  requireKnownKeys(context, node, [
-    'object_def',
-    'variants',
-    'applicable_scopes',
-    'move_cost',
-    'is_fallback',
-    'priority',
-    'axis_preferences',
-    'hard_limits',
-  ]);
+  requireKnownKeys(
+    node,
+    [
+      'object_def',
+      'variants',
+      'applicable_scopes',
+      'move_cost',
+      'is_fallback',
+      'priority',
+      'axis_preferences',
+      'hard_limits',
+    ],
+    context,
+  );
 
   return new LocationTypeDef(
     name,
@@ -279,7 +283,7 @@ function parseGenerationScope(name: string, node: YAMLMap): GenerationScopeDef {
       const count = tryGetInt(guaranteeNode, 'count', guaranteeContext) ?? 1;
       if (count < 1) throw new YamlLoadError(`${guaranteeContext}: countは1以上である必要があります。`);
 
-      requireKnownKeys(guaranteeContext, guaranteeNode, ['location_type', 'count', 'axis', 'pick']);
+      requireKnownKeys(guaranteeNode, ['location_type', 'count', 'axis', 'pick'], guaranteeContext);
       guarantees.push(
         new GuaranteeDef(
           requireScalar(guaranteeNode, 'location_type', guaranteeContext),
@@ -296,7 +300,7 @@ function parseGenerationScope(name: string, node: YAMLMap): GenerationScopeDef {
     siteCountMin,
     siteCountMax,
     tryGetInt(node, 'coast_band', context) ?? 0,
-    tryGetBool(node, 'hull_coast', context, false),
+    tryGetBool(node, 'hull_coast', context) ?? false,
     tryGetNumber(node, 'interior_bias', context) ?? 0,
     tryGetNumber(node, 'extra_edge_detour_factor', context) ?? 1.5,
     tryGetInt(node, 'base_minutes_per_distance', context) ?? 1,
@@ -312,17 +316,21 @@ function parseGenerationScope(name: string, node: YAMLMap): GenerationScopeDef {
   if (scope.crowdingPenalty < 0)
     throw new YamlLoadError(`${context}: crowding_penaltyは0以上である必要があります（0で無効）。`);
 
-  requireKnownKeys(context, node, [
-    'site_count',
-    'coast_band',
-    'hull_coast',
-    'interior_bias',
-    'extra_edge_detour_factor',
-    'base_minutes_per_distance',
-    'max_sites_per_type',
-    'crowding_penalty',
-    'guarantees',
-  ]);
+  requireKnownKeys(
+    node,
+    [
+      'site_count',
+      'coast_band',
+      'hull_coast',
+      'interior_bias',
+      'extra_edge_detour_factor',
+      'base_minutes_per_distance',
+      'max_sites_per_type',
+      'crowding_penalty',
+      'guarantees',
+    ],
+    context,
+  );
 
   return scope;
 }
@@ -363,7 +371,7 @@ export function buildGenerationDefs(
     const objectDef = objectDefsByGlobalId.get(type.objectDefGlobalId)!;
     for (const variant of type.variants)
       for (const propertyGlobalId of variant.props.keys())
-        if (objectDef.getPropertyDef(propertyGlobalId) === undefined)
+        if (objectDef.tryGetPropertyDef(propertyGlobalId) === undefined)
           throw new YamlLoadError(
             `location_types '${type.name}' の亜種 '${variant.id}' が上書きするプロパティ ` +
               `'${loader.propertyNames.getName(propertyGlobalId)}' を、object_def '${objectDef.name}' が持っていません。`,

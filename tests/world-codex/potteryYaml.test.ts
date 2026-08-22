@@ -86,7 +86,7 @@ describe('pottery.yamlの土器の連鎖', () => {
           session.spawn(codex.objectNames.getId(name)).moveToSlot(wip.getSlot(materialsId)),
         ).toBeUndefined();
       }
-      expect(advanceCrafting(wip, recipe, materialsId, codex, session), `${productName}の工程`).toBe(true);
+      expect(advanceCrafting(wip, materialsId, recipe, codex, session), `${productName}の工程`).toBe(true);
     }
   }
 

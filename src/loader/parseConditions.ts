@@ -285,7 +285,7 @@ function parseConditionLeaf(
     }
   }
 
-  requireKnownKeys(context, map, used, '（この主語では使えない演算子です）');
+  requireKnownKeys(map, used, context, '（この主語では使えない演算子です）');
 
   if (nodes.length === 0)
     throw new YamlLoadError(`${context}: 演算子キーが1つもありません（比較する相手が決まりません）。`);
@@ -314,7 +314,7 @@ function parsePropertyComparison(
       refSubjectName !== undefined ? parseSubjectRoot(context, refSubjectName, allowedRoots) : 'self';
     const refPropName = requireScalar(valueNode, 'prop', context);
 
-    requireKnownKeys(`${context}.${op}`, valueNode, ['subject', 'prop']);
+    requireKnownKeys(valueNode, ['subject', 'prop'], `${context}.${op}`);
 
     const valueRef = new PropertyPath(refRoot, loader.propertyNames.intern(refPropName));
     return ConditionNode.property(root, propertyGlobalId, op, undefined, valueRef);

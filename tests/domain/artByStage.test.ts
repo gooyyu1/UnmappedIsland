@@ -25,7 +25,7 @@ object_defs:
     const session = new WorldSession(codex);
     const rock = instantiate(codex, 'rock', session);
 
-    expect(rock.artSuffix()).toBeUndefined();
+    expect(rock.artSuffix).toBeUndefined();
   });
 
   it('今の段がartを宣言していなければundefined、宣言していればその値', () => {
@@ -45,13 +45,13 @@ object_defs:
     const campfire = instantiate(codex, 'campfire', session);
     const heatId = codex.propertyNames.getId('heat');
 
-    expect(campfire.artSuffix(), 'outの段はartを宣言していない').toBeUndefined();
+    expect(campfire.artSuffix, 'outの段はartを宣言していない').toBeUndefined();
 
     campfire.tryGetProperty(heatId)?.setNumber(20);
-    expect(campfire.artSuffix(), 'litの段はart: litを宣言している').toBe('lit');
+    expect(campfire.artSuffix, 'litの段はart: litを宣言している').toBe('lit');
 
     campfire.tryGetProperty(heatId)?.setNumber(0);
-    expect(campfire.artSuffix(), 'outへ戻れば絵も戻る').toBeUndefined();
+    expect(campfire.artSuffix, 'outへ戻れば絵も戻る').toBeUndefined();
   });
 
   it('複数の段が同じartを宣言していれば、どちらの段でも同じ値になる', () => {
@@ -73,9 +73,9 @@ object_defs:
     const heatId = codex.propertyNames.getId('heat');
 
     campfire.tryGetProperty(heatId)?.setNumber(1);
-    expect(campfire.artSuffix()).toBe('lit');
+    expect(campfire.artSuffix).toBe('lit');
 
     campfire.tryGetProperty(heatId)?.setNumber(60);
-    expect(campfire.artSuffix()).toBe('lit');
+    expect(campfire.artSuffix).toBe('lit');
   });
 });

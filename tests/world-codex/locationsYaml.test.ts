@@ -49,7 +49,7 @@ describe('locations.yamlの土地・道定義', () => {
       const land = def(name);
       for (const slotName of ['items', 'fixtures', 'characters', 'undiscovered_fixtures'])
         expect(
-          land.getSlotDef(codex.slotNames.getId(slotName)),
+          land.tryGetSlotDef(codex.slotNames.getId(slotName)),
           `${name} は ${slotName} スロットを持つ`,
         ).toBeDefined();
 
@@ -61,11 +61,11 @@ describe('locations.yamlの土地・道定義', () => {
         `${name}: fixturesはundiscovered_fixturesより先に宣言されている`,
       ).toBeLessThan(slotNames.indexOf('undiscovered_fixtures'));
 
-      const characters = land.getSlotDef(codex.slotNames.getId('characters'));
+      const characters = land.tryGetSlotDef(codex.slotNames.getId('characters'));
       expect(characters?.cellCount, `${name} のキャラクタスロットは1枠`).toBe(1);
 
-      const items = land.getSlotDef(codex.slotNames.getId('items'));
-      const fixtures = land.getSlotDef(codex.slotNames.getId('fixtures'));
+      const items = land.tryGetSlotDef(codex.slotNames.getId('items'));
+      const fixtures = land.tryGetSlotDef(codex.slotNames.getId('fixtures'));
       expect(items?.capacity, `${name} のアイテムスロットにサイズ制限は無い`).toBeUndefined();
       expect(fixtures?.capacity, `${name} の設置物スロットにサイズ制限は無い`).toBeUndefined();
     }
@@ -74,7 +74,7 @@ describe('locations.yamlの土地・道定義', () => {
   it('すべての土地の探索率100%までの回数は10〜20の範囲に収まる', () => {
     const progressId = codex.propertyNames.getId('exploration_progress');
     for (const name of LAND_NAMES) {
-      const progress = def(name).getPropertyDef(progressId);
+      const progress = def(name).tryGetPropertyDef(progressId);
       expect(progress, `${name} は探索進捗プロパティを持つ`).toBeDefined();
       expect(progress?.range, `${name} の探索進捗はrangeを持つ`).toBeDefined();
       const max = progress?.range?.max ?? 0;
@@ -91,7 +91,7 @@ describe('locations.yamlの土地・道定義', () => {
 
     for (const name of LAND_NAMES) {
       const land = session.spawn(codex.objectNames.getId(name));
-      const max = land.def.getPropertyDef(progressId)?.range?.max ?? 0;
+      const max = land.def.tryGetPropertyDef(progressId)?.range?.max ?? 0;
 
       land.getProperty(progressId).init(max - 1);
       expect(land.tryGetAction('explore', undefined)?.tryExecute() === true, `${name}: 探索できる`).toBe(

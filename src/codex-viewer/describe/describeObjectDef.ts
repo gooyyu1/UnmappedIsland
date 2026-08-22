@@ -6,7 +6,7 @@ import type { DefNames, DescriptionToken, DescriptionWriter } from './Descriptio
 import { actionRef, combinationRef, propertyRef, text } from './Description';
 import { describeInteraction } from './describeInteraction';
 import { describeRangeEvent } from './describeProperty';
-import { stackOrderTokens } from './describeStackOrder';
+import { stackOrderTokens } from './stackOrderTokens';
 import { describePassive, passiveWritesToProperty } from './describePassive';
 import { spawnsObject, writesToProperty } from './effectQueries';
 

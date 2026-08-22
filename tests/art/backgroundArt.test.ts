@@ -71,7 +71,7 @@ describe('背景画像', () => {
       if (slotId === undefined) continue;
 
       expect(
-        codex.objects.get(globalId).getSlotDef(slotId),
+        codex.objects.get(globalId).tryGetSlotDef(slotId),
         `'${name}.png' の '${parts.owner}' は '${parts.slot}' スロットを持たない`,
       ).toBeDefined();
       checked += 1;

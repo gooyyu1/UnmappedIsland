@@ -379,7 +379,7 @@ export function cardLooksOf(
    * （CardView.md 5.1節）。型だけのカード（instance無し）は個体の状態を持たないので常に型自身の絵。
    */
   const artOf = (def: ObjectDef, instance?: WorldObject): string =>
-    artNameFor(codex.baseOf(def).name, instance?.artSuffix());
+    artNameFor(codex.baseOf(def).name, instance?.artSuffix);
 
   /**
    * そのオブジェクトが今在るスロット（カードの地を引く先。CardView.md 7節）。

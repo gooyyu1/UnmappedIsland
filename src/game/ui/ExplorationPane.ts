@@ -92,7 +92,7 @@ export class ExplorationPane implements ObjectWindowPane {
     this.objects.push(this.bar, this.percent);
 
     cursorY += barHeight + gap;
-    this.note = addLabel(scene, metrics, centerX, cursorY, noteFor(ratio), {
+    this.note = addLabel(scene, metrics, centerX, cursorY, noteOf(ratio), {
       size: 24,
       color: COLOR.textMuted,
     })
@@ -107,7 +107,7 @@ export class ExplorationPane implements ObjectWindowPane {
     const ratio = this.content().ratio;
     this.bar.setRatio(ratio);
     this.percent.setText(percentOf(ratio));
-    this.note.setText(noteFor(ratio));
+    this.note.setText(noteOf(ratio));
   }
 
   destroy(): void {
@@ -125,7 +125,7 @@ function percentOf(ratio: number): string {
   return `${Math.min(100, Math.trunc(ratio * 100))}%`;
 }
 
-function noteFor(ratio: number): string {
+function noteOf(ratio: number): string {
   return ratio >= 1
     ? 'この土地に隠された道はすべて見つけた。探索を続ければ、まだ何かは見つかる。'
     : '探索を続けると、アイテムや他の土地へ続く道が見つかる。';

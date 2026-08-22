@@ -308,7 +308,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
    * 今この瞬間の変化として出てしまう（安全域から現れた行が、満タンからいきなり減ったように見えていた）。
    * 内容と位置を1つの操作にしているのは、呼び出し側が「出す前に中身を入れる」順序を覚えなくて済むよう。
    */
-  show(y: number, content: StatusContent): void {
+  show(content: StatusContent, y: number): void {
     if (this.visible) {
       this.setContent(content);
       this.slideTo(y);

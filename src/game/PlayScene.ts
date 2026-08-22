@@ -318,7 +318,7 @@ export class PlayScene extends ResponsiveScene {
    * 開いたままにするために持つ。**
    *
    * `childWindowPlace`は**今開いているタブが映している場所**（説明のタブではundefined）。中身を
-   * 映している間は、その場所が手持ちの「隣」になる（laneCards・cardsOf参照）。
+   * 映している間は、その場所が手持ちの「隣」になる（laneCards・stacksOf参照）。
    */
   private childWindow: ObjectWindow | undefined;
   private childWindowPlace: CardPlace | undefined;
@@ -842,7 +842,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /** そのレーンに出ている束（ShownCards）。掴める札もタップできる札も、この並びの中にしかない。 */
-  private cardsOf(lane: CardLane): readonly (ObjectCardStack | undefined)[] {
+  private stacksOf(lane: CardLane): readonly (ObjectCardStack | undefined)[] {
     return this.shown.stacksAt(this.spotOf(lane));
   }
 
@@ -1000,12 +1000,12 @@ export class PlayScene extends ResponsiveScene {
 
   /** そのドロップを、再現手順として読める言葉にする（errorReport参照）。 */
   private dropLabel(drop: CardDrop): string {
-    const dragged = this.cardsOf(drop.from)[drop.fromIndex]?.name ?? '?';
+    const dragged = this.stacksOf(drop.from)[drop.fromIndex]?.name ?? '?';
     const count = drop.count > 1 ? ` ×${drop.count}` : '';
     const to = this.placeText(this.placeOf(drop.to));
     if (drop.target.kind !== 'combine') return `カードを落とした: ${dragged}${count} → ${to}`;
 
-    const onto = this.cardsOf(drop.to)[drop.target.index]?.name ?? '?';
+    const onto = this.stacksOf(drop.to)[drop.target.index]?.name ?? '?';
     const combination = this.shown.dropCombination(this.dropOf(drop));
     return combination !== undefined
       ? `カードを重ねた: ${dragged} → ${onto}（${combination.name}）`
@@ -1060,7 +1060,7 @@ export class PlayScene extends ResponsiveScene {
    * それを決めるのはこのウィンドウではなく世界の変化——アクションを宣言しているのがこのカードの
    * オブジェクトだから、主体としてそれが付く（originRectsOf）。
    */
-  private openObjectWindow(card: ObjectCardStack, from?: Rect, opensPlace = false): void {
+  private openObjectWindow(card: ObjectCardStack, from?: Rect, opensFirstSlot = false): void {
     // 前のウィンドウが映していた札を先に手放してから借りる（同じ1枚が2箇所に出ないため）。
     const origins = new Map(this.dropChildWindow());
     const borrowed = this.shown.firstOf(card);
@@ -1069,7 +1069,7 @@ export class PlayScene extends ResponsiveScene {
     if (from !== undefined) for (const id of borrowed.identity ?? []) origins.set(id, from);
     this.openChildWindow(this.view.windowOf(borrowed.objects[0]), origins, {
       stack: borrowed,
-      opensPlace: opensPlace ? borrowed.visibleSlots[0] : undefined,
+      opensPlace: opensFirstSlot ? borrowed.visibleSlots[0] : undefined,
     });
   }
 
@@ -1434,7 +1434,7 @@ export class PlayScene extends ResponsiveScene {
     const clock = { elapsed: 0 };
     const show = (frame: ElapseFrame): void => {
       this.showClock(frame.minutes);
-      ring.setProgress(frame.ratio, frame.elapsedMinutes);
+      ring.setRatio(frame.ratio, frame.elapsedMinutes);
       for (const recorded of frame.due) this.showRecorded(recorded);
     };
 
@@ -2074,7 +2074,7 @@ export class PlayScene extends ResponsiveScene {
       const bar = this.statusBars.get(row.key);
       if (bar === undefined) return;
       shown.add(row.key);
-      bar.show(this.statusRowsY + index * (rowHeight + this.statusRowGap), row);
+      bar.show(row, this.statusRowsY + index * (rowHeight + this.statusRowGap));
     });
     for (const [key, bar] of this.statusBars) if (!shown.has(key)) bar.hide();
 

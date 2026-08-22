@@ -170,11 +170,11 @@ describe('石斧を作る', () => {
       ).toBeUndefined();
 
     put('thick_branch');
-    expect(advanceCrafting(wip, recipe, materialsId, codex, session), '柄を削り出す').toBe(true);
+    expect(advanceCrafting(wip, materialsId, recipe, codex, session), '柄を削り出す').toBe(true);
 
     put('sharp_stone');
     put('cord');
-    expect(advanceCrafting(wip, recipe, materialsId, codex, session), '刃を据えて縛る').toBe(true);
+    expect(advanceCrafting(wip, materialsId, recipe, codex, session), '刃を据えて縛る').toBe(true);
 
     expect(
       new Location(field, codex).items.map((item) => item.def.name),

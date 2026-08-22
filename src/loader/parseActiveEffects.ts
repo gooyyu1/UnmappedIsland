@@ -171,7 +171,7 @@ export function parseWeight(
     const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, allowedRoots) : 'self';
     const propName = requireScalar(node, 'prop', context);
 
-    requireKnownKeys(context, node, ['subject', 'prop']);
+    requireKnownKeys(node, ['subject', 'prop'], context);
 
     return WeightSpec.ofPath(new PropertyPath(root, loader.propertyNames.intern(propName)));
   }
@@ -209,19 +209,19 @@ function parseTransfer(
 ): TransferEffect {
   const fromRaw = tryGetScalar(map, 'from', context);
   const fromObject =
-    fromRaw !== undefined ? parseActiveTargetKey(context, fromRaw, allowDragged, selfOnly) : 'self';
+    fromRaw !== undefined ? parseActiveTargetRoot(context, fromRaw, allowDragged, selfOnly) : 'self';
   const fromProp = loader.propertyNames.intern(requireScalar(map, 'from_prop', context));
 
   const toRaw = tryGetScalar(map, 'to', context);
   const toObject =
-    toRaw !== undefined ? parseActiveTargetKey(context, toRaw, allowDragged, selfOnly) : 'self';
+    toRaw !== undefined ? parseActiveTargetRoot(context, toRaw, allowDragged, selfOnly) : 'self';
   const toProp = loader.propertyNames.intern(requireScalar(map, 'to_prop', context));
 
   const amount = requireNumber(map, 'amount', context);
   // 単位が同じなら省略できる（1対1）。0では移送先が増えないうえ割り戻しが割れないため弾く。
   const toAmount = tryGetNumber(map, 'to_amount', context) ?? amount;
   if (toAmount <= 0) throw new YamlLoadError(`${context}: 'to_amount' は正の数である必要があります。`);
-  const allowOverflow = tryGetBool(map, 'allow_overflow', context, false);
+  const allowOverflow = tryGetBool(map, 'allow_overflow', context) ?? false;
 
   const linkedAddMap = tryGetMap(map, 'linked_add', context);
   const linkedAdd =
@@ -229,16 +229,11 @@ function parseTransfer(
       ? parseAdds(loader, `${context}.linked_add`, linkedAddMap, allowDragged, selfOnly)
       : [];
 
-  requireKnownKeys(context, map, [
-    'from',
-    'from_prop',
-    'to',
-    'to_prop',
-    'amount',
-    'to_amount',
-    'allow_overflow',
-    'linked_add',
-  ]);
+  requireKnownKeys(
+    map,
+    ['from', 'from_prop', 'to', 'to_prop', 'amount', 'to_amount', 'allow_overflow', 'linked_add'],
+    context,
+  );
 
   return new TransferEffect(
     fromObject,
@@ -262,7 +257,7 @@ function parseSets(
 ): SetEffect[] {
   const sets: SetEffect[] = [];
   for (const [targetName, targetBody] of entriesInOrder(map)) {
-    const target = parseActiveTargetKey(context, targetName, allowDragged, selfOnly);
+    const target = parseActiveTargetRoot(context, targetName, allowDragged, selfOnly);
     for (const [propName, valueNode] of entriesInOrder(asMap(targetBody, `${context}.'${targetName}'`)))
       sets.push(
         parseSetEffect(
@@ -288,7 +283,7 @@ function parseAdds(
 ): AddEffect[] {
   const adds: AddEffect[] = [];
   for (const [targetName, targetBody] of entriesInOrder(map)) {
-    const target = parseActiveTargetKey(context, targetName, allowDragged, selfOnly);
+    const target = parseActiveTargetRoot(context, targetName, allowDragged, selfOnly);
     for (const [propName, amountNode] of entriesInOrder(asMap(targetBody, `${context}.'${targetName}'`)))
       adds.push(
         new AddEffect(
@@ -325,7 +320,7 @@ function parseSpawns(loader: WorldCodexYamlLoader, context: string, node: YamlNo
 function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): SpawnEffect {
   const into = tryGetScalar(map, 'into', context);
 
-  requireKnownKeys(context, map, SPAWN_KEYS);
+  requireKnownKeys(map, SPAWN_KEYS, context);
 
   const count = tryGetNumber(map, 'count', context) ?? 1;
   if (!Number.isInteger(count) || count < 1)
@@ -420,7 +415,7 @@ function parseMove(
   map: YAMLMap,
   selfOnly: boolean,
 ): MoveEffect {
-  requireKnownKeys(context, map, MOVE_KEYS);
+  requireKnownKeys(map, MOVE_KEYS, context);
 
   const subject = parseMoveSubject(loader, context, map);
   const destination = parseMoveDestination(loader, context, map);
@@ -495,7 +490,7 @@ function parseMoveDestination(loader: WorldCodexYamlLoader, context: string, map
  * childは「どの子か」を一意に絞る規約が無いため未対応。selfOnly（rangeイベント）は
  * self以外を一律エラーにする。
  */
-function parseActiveTargetKey(
+function parseActiveTargetRoot(
   context: string,
   key: string,
   allowDragged: boolean,
@@ -544,7 +539,7 @@ function parseSignals(
   if (!isMap(node)) return [new SignalEffect(asScalarText(node, context), 'self')];
 
   return entriesInOrder(node).map(([targetName, nameNode]) => {
-    const target = parseObjectTargetKey(context, targetName, allowDragged, selfOnly);
+    const target = parseObjectTargetRoot(context, targetName, allowDragged, selfOnly);
     return new SignalEffect(asScalarText(nameNode, `${context}.'${targetName}'`), target);
   });
 }
@@ -578,11 +573,11 @@ function parseObjectRef(
 ): ObjectRef {
   if (!isMap(node))
     return ObjectRef.ofRoot(
-      parseObjectTargetKey(context, asScalarText(node, context), allowDragged, selfOnly),
+      parseObjectTargetRoot(context, asScalarText(node, context), allowDragged, selfOnly),
     );
 
   const propName = requireScalar(node, 'prop', context);
-  requireKnownKeys(context, node, ['prop']);
+  requireKnownKeys(node, ['prop'], context);
 
   return ObjectRef.ofProperty(loader.propertyNames.intern(propName));
 }
@@ -620,13 +615,13 @@ function parseBecome(
  * オブジェクトそのものを指す対象（destroy・signal）。ancestorはプロパティ名が無いと解決先が
  * 決まらないため、ここでは使えない。
  */
-function parseObjectTargetKey(
+function parseObjectTargetRoot(
   context: string,
   key: string,
   allowDragged: boolean,
   selfOnly: boolean,
 ): ReferenceRoot {
-  const root = parseActiveTargetKey(context, key, allowDragged, selfOnly);
+  const root = parseActiveTargetRoot(context, key, allowDragged, selfOnly);
   if (root === 'ancestor')
     throw new YamlLoadError(
       `${context}: 対象'ancestor'は未対応です（プロパティではなくオブジェクトそのものを指すため）。`,

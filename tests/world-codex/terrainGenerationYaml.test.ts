@@ -53,7 +53,7 @@ describe('terrain_generation.yamlの地形生成定義', () => {
     const referencedDefIds = new Set(generation.locationTypes.map((t) => t.objectDefGlobalId));
     for (let id = 0; id < codex.objects.count; id++) {
       const def = codex.objects.get(id);
-      if (def === undefined || def.getPropertyDef(progressId) === undefined) continue;
+      if (def === undefined || def.tryGetPropertyDef(progressId) === undefined) continue;
       expect(
         referencedDefIds.has(id),
         `探索できる土地 '${def.name}' はいずれかのlocation_typeから参照される`,

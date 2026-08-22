@@ -153,7 +153,7 @@ describe('foods.yamlの食料定義', () => {
   }
 
   function propOf(def: ObjectDef, propertyName: string): PropertyDef {
-    const prop = def.getPropertyDef(codex.propertyNames.getId(propertyName));
+    const prop = def.tryGetPropertyDef(codex.propertyNames.getId(propertyName));
     if (prop === undefined) throw new Error(`'${def.name}' はプロパティ'${propertyName}'を持ちません。`);
     return prop;
   }

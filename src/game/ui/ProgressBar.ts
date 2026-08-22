@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { AlertLevel } from '../../domain/AlertLevel';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { drawBox } from '../../ui/shapes';
-import { COLOR, fadedFill, fillColorFor } from '../looks/theme';
+import { COLOR, fadedFill, statusFillColorFor } from '../looks/theme';
 
 /** 域ごとの警戒の枠の色（明滅させない域はundefined）。 */
 function alertBorderColor(alert: AlertLevel): number | undefined {
@@ -40,7 +40,7 @@ export interface ProgressBarOptions {
   readonly worsensUpward?: boolean;
 
   /**
-   * 今の満たされ具合から塗りの色を引く。省略すると域（alert）から引く（fillColorFor）。
+   * 今の満たされ具合から塗りの色を引く。省略すると域（alert）から引く（statusFillColorFor）。
    * 域を持たない量——耐久度・液体の残量——を映すバーだけが渡す。
    */
   readonly fillColor?: (ratio: number) => number;
@@ -255,7 +255,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 今どの域にいるかを伝える。塗りの色（fillColorFor）が変わり、危険域・致命的域では枠が明滅する
+   * 今どの域にいるかを伝える。塗りの色（statusFillColorFor）が変わり、危険域・致命的域では枠が明滅する
    * （StatusArea.md）。域を持たないバー（探索率）は安全域のままで、緑の塗りになる。
    */
   setAlert(alert: AlertLevel): void {
@@ -298,7 +298,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     this.bar.clear();
     drawBox(this.bar, { x: 0, y: 0, width, height }, { fill: COLOR.statusBarTrack, radius });
 
-    const fill = this.fillColor?.(this.ratio) ?? fillColorFor(this.alert);
+    const fill = this.fillColor?.(this.ratio) ?? statusFillColorFor(this.alert);
     const bandWidth = width * Math.max(this.ratio, this.shownRatio);
     if (bandWidth > 0) {
       // 失った分は赤、これから満ちる分は塗りを淡くした色（何が増える途中なのかが色で分かる）。

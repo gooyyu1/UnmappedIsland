@@ -46,7 +46,7 @@ object_defs:
     const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
     const def = codex.objects.get(codex.objectNames.getId('pond'));
     const moistureId = codex.propertyNames.getId('moisture');
-    const prop = def.getPropertyDef(moistureId)!;
+    const prop = def.tryGetPropertyDef(moistureId)!;
 
     expect(prop.range).toEqual({ min: -1.5, max: 2.25 });
     expect(prop.isInStage(1.75, 'deep'), '段の閾値も小数で刻める').toBe(true);
@@ -192,7 +192,7 @@ object_defs:
     const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
     const prop = codex.objects
       .get(codex.objectNames.getId('character'))
-      .getPropertyDef(codex.propertyNames.getId('hydration'))!;
+      .tryGetPropertyDef(codex.propertyNames.getId('hydration'))!;
 
     expect(prop.alertOf(100), 'alert未指定の段は安全域').toBe('safe');
     expect(prop.alertOf(20)).toBe('caution');
@@ -231,7 +231,7 @@ object_defs:
     const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
     const prop = codex.objects
       .get(codex.objectNames.getId('character'))
-      .getPropertyDef(codex.propertyNames.getId('body_temperature'))!;
+      .tryGetPropertyDef(codex.propertyNames.getId('body_temperature'))!;
 
     expect(prop.alertDirection).toBe('mixed');
   });
@@ -258,7 +258,7 @@ object_defs:
     const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
     const objectDef = codex.objects.get(codex.objectNames.getId('character'));
     const directionOf = (name: string) =>
-      objectDef.getPropertyDef(codex.propertyNames.getId(name))!.alertDirection;
+      objectDef.tryGetPropertyDef(codex.propertyNames.getId(name))!.alertDirection;
 
     expect(directionOf('load')).toBe('up');
     expect(directionOf('satiety')).toBe('down');

@@ -132,7 +132,7 @@ export class WorldObject {
    * 持たない型、対象プロパティを持たないインスタンス、宣言の無い段では、いずれもundefined
    * （呼び出し側はその型自身の絵をそのまま使う）。
    */
-  artSuffix(): string | undefined {
+  get artSuffix(): string | undefined {
     const propertyGlobalId = this.def.artByStagePropertyGlobalId;
     return propertyGlobalId === undefined ? undefined : this.tryGetProperty(propertyGlobalId)?.artSuffix;
   }
@@ -144,7 +144,7 @@ export class WorldObject {
    * 尽きた瞬間に自分を消すプロパティ（on_minのdestroy、6.3節）は尽きた値のまま静止するので、
    * **世界から出たあとでも「何が尽きて消えたのか」を答えられる**（VitalsSystem.md 6節の死因）。
    */
-  exhaustedStage(): string | undefined {
+  get exhaustedStage(): string | undefined {
     for (const property of this.properties) {
       const stage = property.exhaustedStage;
       if (stage !== undefined) return stage;

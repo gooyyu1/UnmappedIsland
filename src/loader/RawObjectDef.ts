@@ -95,16 +95,16 @@ export class RawObjectDef {
   readFields(): void {
     const context = `object_defs.'${this.name}'`;
 
-    this.isSingleton = tryGetBool(this.node, 'singleton', context, false);
+    this.isSingleton = tryGetBool(this.node, 'singleton', context) ?? false;
     this.props = tryGetMap(this.node, 'props', context);
     this.slots = tryGetMap(this.node, 'slots', context);
     this.passives = tryGetSeq(this.node, 'passives', context);
     this.stackOrder = tryGetMap(this.node, 'stack_order', context);
     this.visibleSlots = namesIn(tryGetSeq(this.node, 'visible_slots', context), `${context}.visible_slots`);
-    this.isStorage = tryGetBool(this.node, 'storage', context, false);
+    this.isStorage = tryGetBool(this.node, 'storage', context) ?? false;
     this.artByStage = tryGetScalar(this.node, 'art_by_stage', context);
-    this.boundToOwner = tryGetBool(this.node, 'bound_to_owner', context, false);
-    this.notStackable = !tryGetBool(this.node, 'stackable', context, true);
+    this.boundToOwner = tryGetBool(this.node, 'bound_to_owner', context) ?? false;
+    this.notStackable = !(tryGetBool(this.node, 'stackable', context) ?? true);
     this.actions = tryGetMap(this.node, 'actions', context);
     this.combinations = tryGetMap(this.node, 'combinations', context);
     this.recipes = tryGetMap(this.node, 'recipes', context);
@@ -225,7 +225,7 @@ export class RawObjectDef {
       const context = `'${this.name}'.stack_order`;
       stackOrder = new StackOrderDef(
         loader.propertyNames.intern(requireScalar(stackOrderNode, 'property', context)),
-        tryGetBool(stackOrderNode, 'ascending', context, false),
+        tryGetBool(stackOrderNode, 'ascending', context) ?? false,
       );
     }
 

@@ -338,7 +338,7 @@ export class TransferPassiveEffect extends PassiveEffect {
   }
 
   override collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {
-    this.transfer.collectInfluences(declarer, this.gate.isSatisfied(declarer, declarer), out);
+    this.transfer.collectTransferInfluences(declarer, this.gate.isSatisfied(declarer, declarer), out);
   }
 
   read(reader: PassiveReader): void {

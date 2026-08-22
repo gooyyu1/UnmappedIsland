@@ -72,7 +72,7 @@ export class CodexView {
   }
 
   /** タグ（4.1節）を持つobject_defの識別子（宣言順）。一覧に出さない型は含まない（objectDefs参照）。 */
-  objectNamesWithTag(tagName: string): readonly string[] {
+  objectsWithTag(tagName: string): readonly string[] {
     const tagId = this.codex.tagNames.tryGetId(tagName);
     if (tagId === undefined) return [];
     return this.objectDefs()
@@ -84,7 +84,7 @@ export class CodexView {
   hasProperty(objectName: string, propertyName: string): boolean {
     const globalId = this.codex.propertyNames.tryGetId(propertyName);
     if (globalId === undefined) return false;
-    return this.objectDef(objectName)?.getPropertyDef(globalId) !== undefined;
+    return this.objectDef(objectName)?.tryGetPropertyDef(globalId) !== undefined;
   }
 
   objectDef(name: string): ObjectDef | undefined {
@@ -105,7 +105,7 @@ export class CodexView {
     const globalId = this.codex.propertyNames.tryGetId(propertyName);
     if (globalId === undefined) return [];
     return this.objectDefs()
-      .filter((def) => def.getPropertyDef(globalId) !== undefined)
+      .filter((def) => def.tryGetPropertyDef(globalId) !== undefined)
       .map((def) => def.name);
   }
 
@@ -114,7 +114,7 @@ export class CodexView {
     const globalId = this.codex.slotNames.tryGetId(slotName);
     if (globalId === undefined) return [];
     return this.objectDefs()
-      .filter((def) => def.getSlotDef(globalId) !== undefined)
+      .filter((def) => def.tryGetSlotDef(globalId) !== undefined)
       .map((def) => def.name);
   }
 

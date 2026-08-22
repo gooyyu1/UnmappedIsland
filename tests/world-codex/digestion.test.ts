@@ -139,7 +139,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   });
 
   it('食べ続けても際限なく太らない（基礎代謝が体格で上がる）', () => {
-    const stout = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER)).getPropertyDef(bodyFatId)!;
+    const stout = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER)).tryGetPropertyDef(bodyFatId)!;
 
     // 段が上がるほど速く減る。ここが単調でないと、太るほど痩せやすいという裏返りが起きる。
     const rates = [0, 96, 480, 2880, 4320].map((fat) => {
@@ -163,6 +163,6 @@ describe('消化（かさ・栄養素・蓄え）', () => {
 
     tick(DAY);
     expect(player.parent, '18日目には世界から外れる').toBeUndefined();
-    expect(player.exhaustedStage()).toBe('starved');
+    expect(player.exhaustedStage).toBe('starved');
   });
 });

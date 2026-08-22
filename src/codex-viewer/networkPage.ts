@@ -211,15 +211,7 @@ function nodeHtml(
 
   if (node.kind === 'object') return objectNodeHtml(view, node.objectName, position, state);
   if (node.kind === 'step') return stepNodeHtml(view, node, position, state);
-  return pillNodeHtml(
-    `#/by-tag/${encodeURIComponent(node.tagName)}`,
-    node.tagName,
-    node.tagName,
-    TAG_NODE,
-    'net-tag',
-    position,
-    state,
-  );
+  return tagNodeHtml(node.tagName, position, state);
 }
 
 function objectNodeHtml(
@@ -272,26 +264,15 @@ function stepNodeHtml(
   );
 }
 
-function pillNodeHtml(
-  href: string,
-  label: string,
-  identifier: string,
-  size: { width: number; height: number },
-  kindClass: string,
-  position: { x: number; y: number },
-  state: string,
-): string {
+/** タグのノード。型と工程より小さい丸みの帯で、押すとそのタグの一覧へ飛ぶ。 */
+function tagNodeHtml(tagName: string, position: { x: number; y: number }, state: string): string {
+  const { width, height } = TAG_NODE;
   return (
-    `<a class="net-node ${kindClass}${state}" href="${href}">` +
+    `<a class="net-node net-tag${state}" href="#/by-tag/${encodeURIComponent(tagName)}">` +
     `<rect class="net-node-box" x="${position.x}" y="${position.y}" ` +
-    `width="${size.width}" height="${size.height}" rx="${size.height / 2}"/>` +
-    `<title>${escapeHtml(identifier)}</title>` +
-    svgText(
-      label,
-      position.x + size.width / 2,
-      position.y + size.height / 2 + FONT_SIZE / 2 - 1,
-      size.width - 14,
-    ) +
+    `width="${width}" height="${height}" rx="${height / 2}"/>` +
+    `<title>${escapeHtml(tagName)}</title>` +
+    svgText(tagName, position.x + width / 2, position.y + height / 2 + FONT_SIZE / 2 - 1, width - 14) +
     `</a>`
   );
 }

@@ -376,7 +376,7 @@ export function fromGameSession(
    * 枠は無いものとして扱う。
    */
   const slotViewOf = (place: CardPlace): SlotView => {
-    const slotDef = place.owner.def.getSlotDef(place.def.globalId);
+    const slotDef = place.owner.def.tryGetSlotDef(place.def.globalId);
     const name = slotDef === undefined ? undefined : codex.slotNames.getName(place.def.globalId);
     return {
       key: name ?? String(place.owner.instanceId),

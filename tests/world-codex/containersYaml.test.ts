@@ -37,7 +37,7 @@ describe('固形物のかさと入れ物の容量', () => {
     // 宣言し忘れた物はかさ0として扱われ、入れ物へ無限に入ってしまう。数が増えても気付けるよう、
     // ここで全数を検査する（絵の名前を検査するobjectArt.test.tsと同じ理由）。
     const missing = itemDefs()
-      .filter((def) => def.getPropertyDef(volumeId) === undefined)
+      .filter((def) => def.tryGetPropertyDef(volumeId) === undefined)
       .map((def) => def.name);
 
     expect(missing, 'volumeを持たないitem').toEqual([]);

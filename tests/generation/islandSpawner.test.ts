@@ -62,7 +62,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
 
     for (const site of map.sites) {
       const location = game.world.instance.findDescendantByInstanceId(map.siteInstanceIds[site.index])!;
-      const progressMax = location.def.getPropertyDef(progressId)!.range!.max;
+      const progressMax = location.def.tryGetPropertyDef(progressId)!.range!.max;
       const hidden = location.tryGetSlot(codex.slotNames.getId('undiscovered_fixtures'))!;
 
       const neighborInstanceIds = new Set(

@@ -137,7 +137,7 @@ function apply(patch: RawPatch, defs: ReadonlyMap<string, RawObjectDef>, replace
       addKey(descendToMap(def.node, defName, rest.slice(0, -1)), rest[rest.length - 1], patch);
       break;
     case 'append':
-      seqAt(def.node, defName, rest).items.push(patch.value);
+      descendToSeq(def.node, defName, rest).items.push(patch.value);
       break;
     case 'set':
       setValue(def, defName, rest, patch);
@@ -162,7 +162,7 @@ function addKey(parent: YAMLMap, key: string, patch: RawPatch): void {
 /** `set`: 配列の要素（where付き）か、既にあるキーの値。 */
 function setValue(def: RawObjectDef, defName: string, rest: readonly string[], patch: RawPatch): void {
   if (patch.where !== undefined) {
-    const seq = seqAt(def.node, defName, rest);
+    const seq = descendToSeq(def.node, defName, rest);
     seq.items[indexOfMatch(seq, patch)] = patch.value;
   } else {
     const parent = descendToMap(def.node, defName, rest.slice(0, -1));
@@ -176,7 +176,7 @@ function setValue(def: RawObjectDef, defName: string, rest: readonly string[], p
 /** `remove`: 配列の要素（where付き）か、既にあるキー。 */
 function removeValue(def: RawObjectDef, defName: string, rest: readonly string[], patch: RawPatch): void {
   if (patch.where !== undefined) {
-    const seq = seqAt(def.node, defName, rest);
+    const seq = descendToSeq(def.node, defName, rest);
     seq.items.splice(indexOfMatch(seq, patch), 1);
   } else {
     const parent = descendToMap(def.node, defName, rest.slice(0, -1));
@@ -240,7 +240,7 @@ function descendToMap(node: YAMLMap, defName: string, steps: readonly string[]):
 }
 
 /** パスを辿って配列へ降りる。 */
-function seqAt(node: YAMLMap, defName: string, steps: readonly string[]): YAMLSeq {
+function descendToSeq(node: YAMLMap, defName: string, steps: readonly string[]): YAMLSeq {
   const parent = descendToMap(node, defName, steps.slice(0, -1));
   const key = steps[steps.length - 1];
   const target = tryGetNode(parent, key);

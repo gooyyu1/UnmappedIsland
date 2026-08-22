@@ -47,7 +47,7 @@ export class Location {
    * ここに達した後も探索は続けられる（ExplorationSystem.md 2節）。
    */
   get explorationProgressMax(): number {
-    return this.instance.def.getPropertyDef(this.words.explorationProgressId)?.range?.max ?? 0;
+    return this.instance.def.tryGetPropertyDef(this.words.explorationProgressId)?.range?.max ?? 0;
   }
 
   /** アイテムスロットの中身。 */

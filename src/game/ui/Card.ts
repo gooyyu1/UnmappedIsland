@@ -132,7 +132,7 @@ const STACK_COUNT_SIZE = 24;
  * 半分であり、レーンの左右の余白（SIZE.margin）とも同じ——をちょうど埋める。
  *
  * **カードの外側へ出すことで、カードが入っても隠れない。** カードより手前へ上げる手もあるが、それだと
- * 縁がスタック数の丸（addStackBadge）を横切る。数字はそのカードが何個かを表すもので、枠がどれかより
+ * 縁がスタック数の丸（createStackBadge）を横切る。数字はそのカードが何個かを表すもので、枠がどれかより
  * 先に読めるべきなので、縁の方が下がる。
  */
 const CELL_HIGHLIGHT_WIDTH = SIZE.gap / 2;
@@ -517,7 +517,7 @@ export class Card extends Phaser.GameObjects.Container {
         color: cssColor(COLOR.text),
       })
       .setOrigin(0.5);
-    this.stackBadge = this.addStackBadge(scene, metrics, width, height);
+    this.stackBadge = this.createStackBadge(scene, metrics, width, height);
     this.add(this.stackBadge);
 
     // 状態の印もスタック数と同じく、端の操作エリアより後に足して隠れないようにする。
@@ -998,7 +998,7 @@ export class Card extends Phaser.GameObjects.Container {
    * スタック数を囲む丸。数字はスタックが増減しても位置が動かないよう、丸の中心へ固定する。
    * 絵の右上の角からわざと少しはみ出させる（カードに載せ切るより、札束の厚みとして目に付くため）。
    */
-  private addStackBadge(
+  private createStackBadge(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
     width: number,

@@ -76,7 +76,7 @@ object_defs:
 
     expect(visibleNamesOf(codex, 'raft'), '外から見えるのは帆だけ').toEqual(['structure']);
     expect(
-      raft.getSlotDef(codex.slotNames.getId('items'))?.acceptsAnywhere(crate),
+      raft.tryGetSlotDef(codex.slotNames.getId('items'))?.acceptsAnywhere(crate),
       '見えなくても積荷は受け取る',
     ).toBe(true);
   });
@@ -92,7 +92,7 @@ object_defs:
       sealed: {cell: {accept: {tag: item}}, placement: []}
 `);
     const monkey = codex.objects.get(codex.objectNames.getId('monkey'));
-    const slot = (name: string) => monkey.getSlotDef(codex.slotNames.getId(name))!;
+    const slot = (name: string) => monkey.tryGetSlotDef(codex.slotNames.getId(name))!;
 
     expect([slot('injuries').autoPlacement, slot('injuries').manualPlacement], '既定は両方').toEqual([
       true,

@@ -1,5 +1,5 @@
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { conditionTokens } from './describeCondition';
+import { conditionTokens } from './conditionTokens';
 import { propertyRef, stageRef, text } from './Description';
 import { addTokens, linkedAddTokens, transferTokens } from './describeEffect';
 import type { TransferReading } from '../../domain/EffectReader';
@@ -80,7 +80,7 @@ class PassiveDescriber implements PassiveReader {
   }
 
   private writeProperty(reading: PassivePropertyReading, verb: string): void {
-    const tokens = [...addTokens(reading.target, reading.propertyGlobalId, reading.amount, this.names, verb)];
+    const tokens = [...addTokens(reading.target, reading.propertyGlobalId, reading.amount, verb, this.names)];
     const gate = gateTokens(reading.gate, this.names);
     if (gate.length > 0) tokens.push(text('（'), ...gate, text('間）'));
     this.out.write(...tokens);

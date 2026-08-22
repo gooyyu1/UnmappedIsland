@@ -175,7 +175,7 @@ describe('筏と航海', () => {
 
     // 距離の残り1つ手前まで詰めて、あと1tickで着く状態にする（航海そのものの長さは別の検査）。
     const progressId = codex.propertyNames.getId('voyage_progress');
-    const distance = raft.def.getPropertyDef(progressId)!.range!.max;
+    const distance = raft.def.tryGetPropertyDef(progressId)!.range!.max;
     raft.getProperty(progressId).init(distance - 1);
 
     tick(game);

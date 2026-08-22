@@ -82,7 +82,7 @@ describe('object_defごとの絵', () => {
     for (const animal of animals.filter((animal) => drawn.has(animal))) {
       const objectDef = codex.objects.get(codex.objectNames.getId(animal));
       const suffix = objectDef
-        .getPropertyDef(codex.propertyNames.getId('consciousness'))
+        .tryGetPropertyDef(codex.propertyNames.getId('consciousness'))
         ?.artSuffixOf(0 /* 気を失っている */);
       expect(suffix, `'${animal}' の気絶した段が絵を宣言していない`).toBeDefined();
 

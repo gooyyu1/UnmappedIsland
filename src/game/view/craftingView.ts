@@ -72,7 +72,7 @@ export function craftingActions(
       enabled: supplied,
       reason: supplied ? undefined : '素材が足りない。',
       execute: () => {
-        advanceCrafting(object, recipe, materialsSlotId, codex, game.session);
+        advanceCrafting(object, materialsSlotId, recipe, codex, game.session);
       },
     },
     {

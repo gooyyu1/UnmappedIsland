@@ -57,7 +57,7 @@ export class ProgressRing extends Phaser.GameObjects.Container {
       .setStroke(cssColor(COLOR.progressRingElapsedOutline), metrics.px(ELAPSED_STROKE));
     this.add(this.elapsed);
 
-    this.setProgress(0, 0);
+    this.setRatio(0, 0);
 
     scene.add.existing(this);
   }
@@ -68,7 +68,7 @@ export class ProgressRing extends Phaser.GameObjects.Container {
    * 割合と経過分を1つの操作で受けるのは、輪と数字が同じ瞬間を指していなければならないため
    * ——別々に渡せるようにすると、呼ぶ側が片方だけ更新できてしまう。
    */
-  setProgress(ratio: number, elapsedMinutes: number): void {
+  setRatio(ratio: number, elapsedMinutes: number): void {
     if (this.scene === undefined) return;
 
     this.graphics.clear();

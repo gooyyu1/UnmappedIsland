@@ -456,7 +456,7 @@ export class TransferEffect extends ActiveEffect {
    * **両端は互いの原因になる。** 受け取る側が増えるのは出す側の在庫があるからで、出す側が減るのは
    * 受け取る側へ持っていかれるから——1本の輸送が、どちらの端から見ても相手のせいで動いて見える。
    */
-  collectInfluences(declarer: WorldObject, active: boolean, out: InfluenceWriter): void {
+  collectTransferInfluences(declarer: WorldObject, active: boolean, out: InfluenceWriter): void {
     const from = declarer.resolveInfluenceTargets(this.fromObject, this.fromPropertyGlobalId)[0];
     const to = declarer.resolveInfluenceTargets(this.toObject, this.toPropertyGlobalId)[0];
     if (from === undefined || to === undefined) return;

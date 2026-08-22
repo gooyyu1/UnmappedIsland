@@ -77,7 +77,7 @@ export function installErrorReport(): void {
 function receive(error: unknown, fallback: string): void {
   try {
     const message = messageOf(error, fallback);
-    const stack = stackOf(error);
+    const stack = stackTraceOf(error);
     // 同じ場所から出た同じ文言なら同じエラー。呼び出し元が違えばスタックの先頭行が変わる。
     const key = `${message}\n${stack.split('\n')[0] ?? ''}`;
 
@@ -142,7 +142,7 @@ function messageOf(error: unknown, fallback: string): string {
   return typeof error === 'string' ? error : fallback;
 }
 
-function stackOf(error: unknown): string {
+function stackTraceOf(error: unknown): string {
   const stack = error instanceof Error ? error.stack : undefined;
   return stack === undefined ? '  （スタックトレースなし）' : stack;
 }

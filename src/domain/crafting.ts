@@ -138,8 +138,8 @@ export function stepIsSupplied(
  */
 export function advanceCrafting(
   inProgress: WorldObject,
-  recipe: RecipeDef,
   materialsSlotGlobalId: number,
+  recipe: RecipeDef,
   codex: WorldCodex,
   session: WorldSession,
 ): boolean {

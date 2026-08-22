@@ -141,7 +141,7 @@ describe('定義の自己記述（describe）', () => {
 
   it('プロパティの初期値・range・段・range系イベントを書き出す', () => {
     const world = objectDef('world');
-    const hour = world.getPropertyDef(codex.propertyNames.getId('hour'))!;
+    const hour = world.tryGetPropertyDef(codex.propertyNames.getId('hour'))!;
     const text = describeToText(codex, (out) => describeProperty(hour, names, out));
 
     expect(text).toContain('初期値: 0');
@@ -156,7 +156,7 @@ describe('定義の自己記述（describe）', () => {
 
   it('シンボル型プロパティの値はシンボル名に戻す', () => {
     const world = objectDef('world');
-    const weather = world.getPropertyDef(codex.propertyNames.getId('weather'))!;
+    const weather = world.tryGetPropertyDef(codex.propertyNames.getId('weather'))!;
     const text = describeToText(codex, (out) => describeProperty(weather, names, out));
 
     // 値は実行時には数値だが、シンボル型と宣言されていれば名前に戻る（6.6節）。
@@ -174,7 +174,7 @@ describe('定義の自己記述（describe）', () => {
 
   it('スロットは受け入れる型を書き出す（枠数・容量は数そのものが答えるので持たない）', () => {
     const coconut = objectDef('coconut');
-    const slot = coconut.getSlotDef(codex.slotNames.getId('contents'))!;
+    const slot = coconut.tryGetSlotDef(codex.slotNames.getId('contents'))!;
 
     expect(describeToText(codex, (out) => describeAccept(slot, names, out))).toBe(
       'foodを持つ型（同種は3個まで）',
