@@ -6,9 +6,8 @@
  * 別の出来事に見える。
  */
 export const FLY_MS = 260;
-export const FLY_EASE = 'Quad.easeOut';
 
-/** FLY_EASEと同じ形の関数（自前で進める便はtweenを使わないため）。 */
+/** 加速の形（自前で進める便はtweenを使わないので、イージング名ではなく関数で持つ）。 */
 export function FLY_EASE_OUT(t: number): number {
   return 1 - (1 - t) * (1 - t);
 }

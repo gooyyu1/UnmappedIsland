@@ -6,7 +6,7 @@ import { collectOutputs } from './CraftingStep';
 import { rangeEventReadouts, ticksToRangeEnd } from './rangeEvents';
 import type { StaticValueResolver } from './staticValue';
 import { MINUTES_PER_TICK } from './balanceTables';
-import { staticResolverOf, staticValueOf } from './staticValue';
+import { staticValueOf, trackingResolverOf } from './staticValue';
 
 /**
  * 外から与えられるtick毎の増減。**焼くのも失血も、自分では動かない値を隣の物が動かす**——炉が
@@ -70,13 +70,6 @@ export function rangeCyclesOf(
   outer?: StaticValueResolver,
   external: readonly ExternalTickDelta[] = [],
 ): readonly RangeCycle[] {
-  let unresolved = false;
-  const resolve: StaticValueResolver = (root, propertyGlobalId) => {
-    const value = staticResolverOf(def, outer)(root, propertyGlobalId);
-    if (value === undefined) unresolved = true;
-    return value;
-  };
-
   const cycles: RangeCycle[] = [];
   for (const propertyDef of def.enumeratePropertyDefs()) {
     const own = tickAmountsOf(def, propertyDef.globalId);
@@ -97,7 +90,10 @@ export function rangeCyclesOf(
       // 失血で死ぬが、血の多い獲物は傷が固まるほうが先になる。
       if (driver?.maxTotal !== undefined && ticks * Math.abs(driver.slowest) > driver.maxTotal) continue;
 
-      for (const readout of rangeEventReadouts(propertyDef, resolve)) {
+      // 印はこの読み出し1回ぶんに閉じる（craftingStepsが操作1つに閉じているのと同じ）。関数全体で
+      // 1つにすると、先に積んだ周期には付かず後の周期だけに付く——プロパティの宣言順で答えが変わる。
+      const tracking = trackingResolverOf(def, outer);
+      for (const readout of rangeEventReadouts(propertyDef, tracking.resolve)) {
         if (readout.label === (slowest < 0 ? 'on_max' : 'on_min')) continue;
 
         // 値が戻るなら、次の発火までは戻った量ぶん——初回だけが初期値からの距離になる。
@@ -135,7 +131,7 @@ export function rangeCyclesOf(
             laborMinutes: 0,
             elapsedMinutes: period * MINUTES_PER_TICK,
             outcomes: readout.outcomes,
-            hasUnresolvedReferences: unresolved,
+            hasUnresolvedReferences: tracking.unresolved,
           },
         });
       }
@@ -189,10 +185,7 @@ export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): 
  * ので、最も遅い場合（条件つきのうち最小の1つだけが効く）と最も速い場合（全部が重なる）の両方を返す。
  * 罠の耐久がこれで、地面にある間の-1と獲物を抱えている間の-10は足しっぱなしにすると寿命が1/11になる。
  */
-export function tickAmountsOf(
-  def: ObjectDef,
-  propertyGlobalId: number,
-): { slowest: number; fastest: number } {
+function tickAmountsOf(def: ObjectDef, propertyGlobalId: number): { slowest: number; fastest: number } {
   let unconditional = 0;
   const conditional: number[] = [];
   for (const delta of tickDeltasOf(def)) {

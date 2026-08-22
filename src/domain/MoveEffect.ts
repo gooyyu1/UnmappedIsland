@@ -12,8 +12,8 @@ import type { ObjectRef } from './ObjectRef';
  * 定義時点で決まっている相手（対象キー）と実行時に確定する個体（プロパティ）の二択になる。
  *
  * 解決できない・どのスロットも受け入れない場合は何もしない（「解決できない適用は無視」の既存規約）。
- * 行き先のスロットを名指ししなければ moveIntoFirstAcceptingSlot（spawn の into と同じ宣言順走査、
- * force なし）で、名指しすれば（`to_slot`）そのスロットだけを試す。
+ * 行き先のスロットを名指ししなければ moveIntoFirstAcceptingSlot（spawn の into と同じ宣言順走査）で、
+ * 名指しすれば（`to_slot`）そのスロットだけを試す。
  */
 export class MoveEffect extends ActiveEffect {
   private readonly subject: ObjectRef;

@@ -264,9 +264,9 @@ export type SpawnTargetRoot =
   | 'child';
 
 /**
- * spawn（9.4節）の1命令。Into への配置に失敗した場合は必ず起点の親へ伝播し、枠の要件・capacityを無視して
- * 強制配置する（オブジェクトは必ずどこかの親に属す必要があるため。YAML側に選択の余地はない）。
- * 伝播先の親も無い場合、spawnしたオブジェクトは配置されないまま消える。
+ * spawn（9.4節）の1命令。intoへの配置に失敗した場合は起点の親へこぼれ、そこも受け取らなければさらに
+ * 上へ遡る（WorldObject.spillTo）。**どの段でも枠の宣言はそのまま効く**ので、どこにも入らなければ
+ * spawnしたオブジェクトは配置されないまま消える。
  */
 export class SpawnEffect extends ActiveEffect {
   readonly objectGlobalId: number;

@@ -3,7 +3,7 @@ import { DescriptionWriter } from './describe/Description';
 import { defNamesOf } from './describe/codexNames';
 import type { LocationTypeDef } from '../domain/generation/LocationTypeDef';
 import type { ObjectDef } from '../domain/ObjectDef';
-import { OBJECT_ART } from '../art/objectArt';
+import { ART_BY_OBJECT_NAME } from '../art/objectArt';
 import type { Texts } from '../locale/Localization';
 import { typeDisplayName } from '../locale/typeDisplayName';
 import type { CodexSource } from './CodexSource';
@@ -353,6 +353,6 @@ export class CodexView {
 
 /** 文中に置く型の絵（1文字ぶんの高さ）。絵が用意されていなければ何も置かない。 */
 export function inlineArtHtml(objectName: string): string {
-  const url = OBJECT_ART.get(objectName);
+  const url = ART_BY_OBJECT_NAME.get(objectName);
   return url === undefined ? '' : `<img class="ref-art" src="${url}" alt="">`;
 }

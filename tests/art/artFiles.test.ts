@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { BACKGROUND_ART } from '../../src/art/backgroundArt';
-import { OBJECT_ART } from '../../src/art/objectArt';
+import { ART_BY_OBJECT_NAME } from '../../src/art/objectArt';
 import {
   commonArtFiles,
   locationArtFiles,
@@ -63,7 +63,7 @@ describe('土地の絵の単位分け', () => {
     expect(new Set(all).size, '同じ絵が両方に入っている').toBe(all.length);
 
     const covered = new Set(all);
-    for (const name of OBJECT_ART.keys()) {
+    for (const name of ART_BY_OBJECT_NAME.keys()) {
       expect(covered.has(`object:${name}`), `'${name}' の絵がどちらにも入っていない`).toBe(true);
     }
     for (const key of BACKGROUND_ART.keys()) {

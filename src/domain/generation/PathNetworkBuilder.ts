@@ -12,7 +12,7 @@ const MIN_TRAVEL_MINUTES = 15;
  *
  * 1. 最小全域木（MST、Kruskal法）を必ず残す — 全土地への到達性の保証
  * 2. MST以外のDelaunay辺を距離の短い順に走査し、「現在のグラフでの2点間最短距離が
- *    直結距離のextraEdgeDetourFactor%を超える」（＝大回りを強いられている）辺だけを
+ *    直結距離のextraEdgeDetourFactor倍を超える」（＝大回りを強いられている）辺だけを
  *    近道・分岐として復活させる
  *
  * の2段で間引く。復活辺もDelaunay辺の部分集合であるため、グラフは常に交差なし（平面）のまま。

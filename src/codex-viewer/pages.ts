@@ -13,7 +13,7 @@ import { describeAccept, putInDurationTokens } from './describe/describeSlot';
 import type { InteractionDef } from '../domain/InteractionDef';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { SlotDef } from '../domain/SlotDef';
-import { OBJECT_ART } from '../art/objectArt';
+import { ART_BY_OBJECT_NAME } from '../art/objectArt';
 import { isInCraftingNetwork } from './networkPage';
 import type { CodexView } from './CodexView';
 import { EMPTY_HTML, escapeHtml, inlineArtHtml } from './CodexView';
@@ -199,7 +199,7 @@ export function renderTagListPage(view: CodexView): string {
 
 /** タグの見出しに使う絵。そのタグを持つ型のうち、絵が用意されている最初のものを借りる。 */
 function tagArtHtml(view: CodexView, names: readonly string[]): string {
-  const def = view.objectDef(names.find((name) => OBJECT_ART.has(name)) ?? names[0] ?? '');
+  const def = view.objectDef(names.find((name) => ART_BY_OBJECT_NAME.has(name)) ?? names[0] ?? '');
   return def === undefined
     ? '<span class="art art-thumb art-missing" aria-hidden="true"></span>'
     : artHtml(view, def, 'thumb');
@@ -369,7 +369,7 @@ function objectCardHtml(view: CodexView, def: ObjectDef): string {
 
 /** カードの絵（`src/assets/objects/<識別子>.png`）。ゲームが使うのと同じ絵をそのまま出す。 */
 function artHtml(view: CodexView, def: ObjectDef, size: 'thumb' | 'large'): string {
-  const url = OBJECT_ART.get(def.name);
+  const url = ART_BY_OBJECT_NAME.get(def.name);
   if (url === undefined) return `<span class="art art-${size} art-missing" aria-hidden="true"></span>`;
   return `<img class="art art-${size}" src="${url}" alt="${escapeHtml(view.objectLabel(def.name))}">`;
 }

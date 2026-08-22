@@ -6,7 +6,7 @@ import type { WorldObject } from '../WorldObject';
  * 道（locations.yamlのpath object_def）に対する、UI/ゲームロジック向けの型付きビュー。Worldと同じ理由で継承では
  * なくラップにしている。
  *
- * travel_minutes/required_progress/destination_idは生成時（IslandSpawner）にインスタンスごとへ上書きされる値。
+ * インスタンスごとの値（行き先・所要時間・要る進捗・戻る道）は生成時にIslandSpawnerが書き込む。
  * 移動そのもの（actorの所属差し替え・時間消費）はYAML側のtravelアクションが担う。
  */
 export class Path {

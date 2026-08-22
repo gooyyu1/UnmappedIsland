@@ -35,13 +35,19 @@ export interface WeatherPanelContent {
  */
 export class WeatherPanel extends Phaser.GameObjects.Container {
   private readonly calendar: FlipCalendar;
+  private readonly panel: Rect;
+  /** 今敷いている空（絵か単色の板）。天気が変われば作り直す。 */
+  private sky: Phaser.GameObjects.GameObject | undefined;
+  /** 天候名。天気の語彙を持たないCodexでは作られない。 */
+  private label: Phaser.GameObjects.Text | undefined;
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, area: Rect, content: WeatherPanelContent) {
     super(scene, 0, 0);
 
     const panel: Rect = area;
+    this.panel = panel;
 
-    this.addSky(scene, panel, content.weather);
+    this.showSky(content.weather);
 
     const padding = metrics.isLandscape ? CONTENT_PADDING_LANDSCAPE : CONTENT_PADDING_PORTRAIT;
     const padX = metrics.px(padding.x);
@@ -84,6 +90,7 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
         label.setOrigin(1, 0).setPosition(panel.x + panel.width - padX, baseline);
       }
       this.add(label);
+      this.label = label;
     }
 
     scene.add.existing(this);
@@ -95,18 +102,31 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
   }
 
   /**
+   * 天気を差し替える（空の絵と名前）。**日時と違い、変わったときにだけ呼ぶ**——絵を作り直すので、
+   * 経過を見せている間に毎フレーム呼ぶものではない。
+   *
+   * 天気の語彙を持たないCodexでは名前のラベルが無いので、名前は捨てる（組み立て時と同じ扱い）。
+   */
+  setWeather(weather: string | undefined, weatherLabel: string | undefined): void {
+    this.showSky(weather);
+    if (weatherLabel !== undefined) this.label?.setText(weatherLabel);
+  }
+
+  /**
    * 空の絵。**右上の角を合わせて、はみ出す側（左・下）を切り落とす**——絵の主題は右上に描かれる
    * 約束なので、中央で合わせると縦横で切り出しが変わったときに主題ごと落ちてしまう。
    *
    * 絵がまだ無い天気では単色の板になる（絵は少しずつ増える前提、weatherArt参照）。
    */
-  private addSky(scene: Phaser.Scene, panel: Rect, weather: string | undefined): void {
+  private showSky(weather: string | undefined): void {
+    const { scene, panel } = this;
     const texture = weatherTexture(weather);
+    this.sky?.destroy();
 
     if (texture === undefined || !scene.textures.exists(texture)) {
       const fallback = scene.add.graphics();
       drawBox(fallback, panel, { fill: COLOR.weatherPanel });
-      this.add(fallback);
+      this.addSky(fallback);
     } else {
       const image = scene.add.image(panel.x + panel.width, panel.y, texture).setOrigin(1, 0);
       const scale = Math.max(panel.width / image.width, panel.height / image.height);
@@ -118,7 +138,14 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
       const cropWidth = Math.min(image.width, panel.width / scale);
       const cropHeight = Math.min(image.height, panel.height / scale);
       image.setCrop(image.width - cropWidth, 0, cropWidth, cropHeight);
-      this.add(image);
+      this.addSky(image);
     }
+  }
+
+  /** 空は載せ物より奥へ入れる（後から作り直しても、日時と天候名がその下へ潜らない）。 */
+  private addSky(sky: Phaser.GameObjects.GameObject): void {
+    this.sky = sky;
+    this.add(sky);
+    this.sendToBack(sky);
   }
 }

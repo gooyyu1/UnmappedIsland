@@ -82,7 +82,7 @@ export class LocationTypeDef {
   /** この型が適用される生成スコープ名（3.7節）。空なら全スコープに適用される。 */
   readonly applicableScopes: readonly string[];
 
-  /** 移動コスト（100=等倍）。道のtravel_minutesの係数になる。 */
+  /** 移動コストの倍率（1=等倍）。道のtravel_minutesの係数になる。 */
   readonly moveCost: number;
 
   /** どの型もhard_limitsで弾かれたサイトの受け皿か（3.3節のフォールバック）。 */

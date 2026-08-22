@@ -35,7 +35,7 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
-    // 読み込めなくてもカードは図形で描かれる（Card.addFrame）ため、失敗しても起動は止めない。
+    // 読み込めなくてもカードは図形で描かれる（Card.tsのcreatePaper）ため、失敗しても起動は止めない。
     this.load.image(CARD_FRAME_TEXTURE, cardFrameUrl);
     // 日時のフリップカードの紙。こちらも読み込めなければ図形で描かれる（FlipCalendar）。
     this.load.image(FLIP_DIGIT_TEXTURE, flipDigitUrl);

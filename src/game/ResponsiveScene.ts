@@ -34,8 +34,8 @@ export abstract class ResponsiveScene extends Phaser.Scene {
   protected abstract build(): void;
 
   /**
-   * 画面を作り直す。リサイズのほか、表示内容が変わったとき（プレイ画面のアクション実行後など）にも
-   * 呼ぶ。開いている子ウィンドウも消えるため、buildは「今開いているもの」を毎回組み立て直す。
+   * 画面を作り直す。リサイズのほか、設定の変更のように画面全体を組み直したいときに呼ぶ
+   * （表示内容の変化は、プレイ画面では差し替えで反映する。PlayScene.showView）。
    */
   protected rebuild(): void {
     // 画面の組み立ては、操作と同じくらい壊れる場所（向きを変えた直後だけ出る不具合等）。

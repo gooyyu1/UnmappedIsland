@@ -46,7 +46,7 @@ object_defs:
   });
 
   it('PropertyValueを直に書き換えても、rangeイベントは同じように判定される', () => {
-    // 値を変えた後に何を判定すべきかを知っているのはPropertyValue自身なので、WorldObject.addNumberを
+    // 値を変えた後に何を判定すべきかを知っているのはPropertyValue自身なので、addの効果（ActiveEffect）を
     // 通したかどうかで挙動が変わってはいけない。
     const yaml = `
 object_defs:
@@ -322,7 +322,7 @@ object_defs:
   });
 
   it('on_maxの加算先プロパティをこのobject_defが持たない場合は黙って無視される', () => {
-    // add（WorldObject.addNumber）の通常の規約と同じ: このobject_defが持たないプロパティへの
+    // add（ActiveEffect）の通常の規約と同じ: このobject_defが持たないプロパティへの
     // 加算は、たとえ同名のプロパティを別のobject_defが持っていて名前自体は登録されていても、
     // 黙って無視される（エラーにしない）。
     const yaml = `

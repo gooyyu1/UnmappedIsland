@@ -3,7 +3,7 @@ import type { StatusContent } from '../ui/StatusBar';
 /**
  * ステータスエリアに並べる行を、出すものだけ表示順に選ぶ（StatusArea.md）。
  *
- * taggedはstatusタグが付いたもの（常に候補）、othersはプロパティウィンドウにだけ出るもので、
+ * taggedはstatusタグが付いたもの（常に候補）、othersはプロパティのタブにだけ出るもので、
  * 固定表示にされたものだけが候補に加わる。安全域は固定表示でなければ出さない。
  *
  * ただし安全域へ戻ったばかりの行は、その変化を見せ終わるまで残す（isShowingChange）。ここで即座に

@@ -85,7 +85,7 @@ export const COMBINATION_CONDITION_ROOTS: ReadonlySet<ReferenceRoot> = new Set([
 export const RECIPE_CONDITION_ROOTS: ReadonlySet<ReferenceRoot> = new Set(['actor']);
 
 /** passivesのゲートで使えるsubject。selfはSlotBearer、parentはその1つ上
- * （RegisteredPassiveEffect参照）、ancestorは祖先探索（WorldObject.FindAncestorWithProperty参照）。
+ * （RegisteredPassiveEffect参照）、ancestorは祖先探索（WorldObject.findAncestorWithProperty参照）。
  * actor/draggedは持続的な関係に紐づかないため未対応。 */
 export const PASSIVE_CONDITION_ROOTS: ReadonlySet<ReferenceRoot> = new Set(['self', 'parent', 'ancestor']);
 

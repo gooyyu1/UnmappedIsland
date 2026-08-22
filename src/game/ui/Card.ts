@@ -35,8 +35,8 @@ const EMPTIED_ALPHA = 0.3;
  * 角の半径は20px。カードの実寸は絵の半分なので、u単位へは1/2で直せる
  * （tools/comfyui/card_frame.py の MARGIN / RADIUS、card_art.py の PAPER_RADIUS と揃えること）。
  */
-const FRAME_INSET = 2.5;
-const FRAME_RADIUS = 10;
+export const PAPER_INSET = 2.5;
+export const PAPER_RADIUS = 10;
 
 /** 枠と、その内側の窓の縁をなぞる線の太さ（u単位）。 */
 const BORDER_WIDTH = 1.5;
@@ -930,7 +930,7 @@ export class Card extends Phaser.GameObjects.Container {
       paper.y + side / 2,
       paper.width - side,
       paper.height - side,
-      metrics.px(FRAME_RADIUS) - side / 2,
+      metrics.px(PAPER_RADIUS) - side / 2,
     );
     // 下の桟のうち、なぞった線からはみ出す分。角の丸みは下端から10uまでなので、ここは矩形でよい。
     if (rail.height > side) {
@@ -1154,7 +1154,7 @@ export class Card extends Phaser.GameObjects.Container {
     const paper = paperRect(metrics, width, height);
     const edgeHeight = paper.height * EDGE_RATIO;
     const top = up ? paper.y : paper.y + paper.height - edgeHeight;
-    const radius = metrics.px(FRAME_RADIUS);
+    const radius = metrics.px(PAPER_RADIUS);
 
     const overlay = scene.add.graphics();
     overlay.fillStyle(COLOR.cardEdgeOverlay, EDGE_OVERLAY_ALPHA);
@@ -1270,7 +1270,7 @@ export class CellHighlight extends Phaser.GameObjects.Graphics {
       {
         border: color,
         borderWidth: width,
-        radius: metrics.px(FRAME_INSET + FRAME_RADIUS + CELL_HIGHLIGHT_WIDTH / 2),
+        radius: metrics.px(PAPER_INSET + PAPER_RADIUS + CELL_HIGHLIGHT_WIDTH / 2),
       },
     );
 
@@ -1398,7 +1398,7 @@ function createPaper(
     fillAlpha: empty ? 0.35 : 0.85,
     border: COLOR.cardBorder,
     borderWidth: metrics.linePx(2),
-    radius: metrics.px(FRAME_RADIUS),
+    radius: metrics.px(PAPER_RADIUS),
     dashed: empty,
   });
   return face;
@@ -1455,7 +1455,7 @@ function createInProgressVeil(
   drawBox(veil, paperRect(metrics, width, height), {
     fill: COLOR.cardInProgress,
     fillAlpha: IN_PROGRESS_VEIL_ALPHA,
-    radius: metrics.px(FRAME_RADIUS),
+    radius: metrics.px(PAPER_RADIUS),
   });
   return veil.setVisible(false);
 }
@@ -1474,7 +1474,7 @@ function createCookingVeil(
   drawBox(veil, paperRect(metrics, width, height), {
     fill: COLOR.cardCooking,
     fillAlpha: COOKING_VEIL_ALPHA,
-    radius: metrics.px(FRAME_RADIUS),
+    radius: metrics.px(PAPER_RADIUS),
   });
   return veil.setVisible(false);
 }
@@ -1496,9 +1496,12 @@ function createIconText(
     .setAlpha(0.95);
 }
 
-/** カードの矩形の中で、絵の紙が占める範囲（FRAME_INSET参照）。 */
-function paperRect(metrics: ScreenMetrics, width: number, height: number): Rect {
-  const inset = metrics.px(FRAME_INSET);
+/**
+ * カードの矩形の中で、絵の紙が占める範囲（PAPER_INSET参照）。**紙の輪郭に何かを重ねる側もここから
+ * 引く**——値を写すと、絵を差し替えたときに片方だけずれる（MapWindowの現在地の枠）。
+ */
+export function paperRect(metrics: ScreenMetrics, width: number, height: number): Rect {
+  const inset = metrics.px(PAPER_INSET);
   return { x: inset, y: inset, width: width - inset * 2, height: height - inset * 2 };
 }
 
@@ -1599,6 +1602,6 @@ function paperStroke(
       width: paper.width - lineWidth,
       height: paper.height - lineWidth,
     },
-    radius: Math.max(0, metrics.px(FRAME_RADIUS) - inset),
+    radius: Math.max(0, metrics.px(PAPER_RADIUS) - inset),
   };
 }

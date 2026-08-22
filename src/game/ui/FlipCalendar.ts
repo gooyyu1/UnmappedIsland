@@ -151,7 +151,7 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
 
 /**
  * 桁の紙と留具。画像（FLIP_DIGIT_TEXTURE）があればそれを貼り、無ければ図形で描く
- * （Card.addFrameと同じ流儀）。画像には留具の穴・リング・落ち影まで描き込まれていて、
+ * （Card.tsのcreatePaperと同じ流儀）。画像には留具の穴・リング・落ち影まで描き込まれていて、
  * 紙の部分が指定の矩形に一致し、リングはその上へはみ出す。
  */
 function addCardPaper(

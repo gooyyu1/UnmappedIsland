@@ -180,8 +180,8 @@ export class ObjectDef {
    * その走査（`placement`、7.7節）で宛先候補になるSlotDefを宣言順に列挙する。**行き先を宣言順に探す
    * 規約は1つで、入口が2つあるだけ**——`auto`はspawn/moveが、`manual`は札を重ねたドロップが辿る。
    *
-   * 走査から外したスロットは、強制配置（force）で行う場合も候補にならない——forceが省くのは受け入れ
-   * 判定であって、「そもそも自動では入らない」という宣言ではないため。
+   * 走査から外したスロットは、こぼれ落ちる先を探すとき（WorldObject.spillTo）にも候補にならない
+   * ——「そもそも自動では入らない」という宣言だから。
    */
   placementSlotDefs(placement: Placement): readonly SlotDef[] {
     return this.placementSlots[placement];

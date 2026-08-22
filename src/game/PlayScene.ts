@@ -313,10 +313,9 @@ export class PlayScene extends ResponsiveScene {
   private selectedFilter = 0;
   private filterButtons: Button[] = [];
 
-  /** 開いている探索の子ウィンドウ。画面の作り直しをまたいで開いたままにするために持つ。 */
-
   /**
-   * 開いている子ウィンドウ（ObjectWindow）と、それが映しているもの。
+   * 開いている子ウィンドウ（ObjectWindow）と、それが映しているもの。**画面の作り直しをまたいで
+   * 開いたままにするために持つ。**
    *
    * `childWindowPlace`は**今開いているタブが映している場所**（説明のタブではundefined）。中身を
    * 映している間は、その場所が手持ちの「隣」になる（laneCards・cardsOf参照）。
@@ -520,8 +519,8 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 画面の区画（レーン・装備/怪我のボタン）が今映している場所。**土地を移れば別の場所を指す**ので、
-   * その都度ビューへ訊く（cardPlaces）。
+   * 常に見えている3つのレーンが今映している場所。**土地を移れば別の場所を指す**ので、その都度
+   * ビューへ訊く（cardPlaces）。
    */
   private place(screen: ScreenPlace): CardPlace {
     return this.view.places(screen);
@@ -1006,7 +1005,7 @@ export class PlayScene extends ResponsiveScene {
   private dropLabel(drop: CardDrop): string {
     const dragged = this.cardsOf(drop.from)[drop.fromIndex]?.name ?? '?';
     const count = drop.count > 1 ? ` ×${drop.count}` : '';
-    const to = this.placeOf(drop.to);
+    const to = this.placeText(this.placeOf(drop.to));
     if (drop.target.kind !== 'combine') return `カードを落とした: ${dragged}${count} → ${to}`;
 
     const onto = this.cardsOf(drop.to)[drop.target.index]?.name ?? '?';
@@ -1143,8 +1142,6 @@ export class PlayScene extends ResponsiveScene {
     // 型ごとの記憶の鍵。束が無いウィンドウ（装備・怪我）は覚えない——映しているのは場所であって、
     // 「この型を次に開いたときどうするか」の話にならない。
     this.childWindowDef = opened?.stack?.objects[0]?.def.name;
-    const initialTab = this.initialTab(opened?.opensPlace);
-    this.childWindowPlace = this.placeOfTab(initialTab);
 
     this.childWindow = new ObjectWindow(this, this.metrics, {
       object: { card: window.card, description: window.description },
@@ -1159,7 +1156,7 @@ export class PlayScene extends ResponsiveScene {
           grows: slot.cells === 'grows',
         };
       }),
-      initialTab,
+      initialTab: this.initialTab(opened?.opensPlace),
       actions: this.actionButtons(window.actions, window.card.name),
       area: this.layout.slotWindowArea,
       onTabChange: (tab) => this.changeWindowTab(tab),
@@ -1168,26 +1165,28 @@ export class PlayScene extends ResponsiveScene {
     // 借りるのはタブによらない。**説明のタブでだけ描かれる**が、借りている間その札は元の枠に
     // 印だけを残す（Windows.md 1.1節）——タブを行き来するたびに札を飛ばさないため。
     this.shown.borrow(window.card, opened?.stack);
-    this.rememberTab(initialTab);
+    // 開いたタブはウィンドウが決める（並んでいないタブは説明へ落ちる）。
+    this.childWindowPlace = this.placeOfTab(this.childWindow.openedTab);
+    this.rememberTab(this.childWindow.openedTab);
     this.setDragLanes();
     // 借りた1枚がウィンドウの枠へ移り、手持ちの端が指す先も変わる（laneCards・neighbourOf参照）。
     this.showView({ origins });
   }
 
   /**
-   * 最初に開くタブ。**プログラムの指定 ＞ 型ごとの記憶 ＞ 説明**（Windows.md 1.2節）。
+   * 最初に開きたいタブ。**プログラムの指定 ＞ 型ごとの記憶 ＞ 説明**（Windows.md 1.2節）。
    *
    * 指定するのは、開いた文脈がそのスロットを見に来たと分かっている場合だけ——装備・怪我のボタンと、
-   * 作り始めた直後の製作中オブジェクト。それ以外は覚えているものに従う。
+   * 作り始めた直後の製作中オブジェクト。それ以外は覚えているものに従う。**覚えているのはスロットの
+   * タブとは限らない**（プロパティ・踏査のタブも同じように覚える）ので、並んでいるかどうかの判定は
+   * ウィンドウに任せる。
    */
   private initialTab(opensPlace: CardPlace | undefined): string {
     const named = opensPlace === undefined ? undefined : this.view.slotViewOf(opensPlace).key;
-    if (named !== undefined && this.placeOfTab(named) !== undefined) return named;
+    if (named !== undefined) return named;
     const remembered =
       this.childWindowDef === undefined ? undefined : this.settings.openedTab(this.childWindowDef);
-    return remembered !== undefined && this.placeOfTab(remembered) !== undefined
-      ? remembered
-      : DESCRIPTION_TAB;
+    return remembered ?? DESCRIPTION_TAB;
   }
 
   /** タブの識別子が指す場所（説明のタブではundefined）。 */
@@ -1339,7 +1338,7 @@ export class PlayScene extends ResponsiveScene {
     );
   }
 
-  /** 今フィールドとロケーションのレーンに出ているインスタンスのID。 */
+  /** 今、設置物レーンとアイテムレーンに出ているインスタンスのID。 */
   private shownInstanceIds(): ReadonlySet<number> {
     return new Set(this.locationCards.flatMap((card) => card.identity ?? []));
   }
@@ -1730,11 +1729,12 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 情報エリアの表示を今のthis.viewへ合わせる。日時とステータスだけを引き直す——天候・条件・装備の
-   * アイコンはまだ固定値（PlayScreenView参照）で、行動しても変わらないため。
+   * 情報エリアの表示を今のthis.viewへ合わせる。条件と装備のアイコンはまだ固定値なので引き直さない
+   * （PlayScreenView参照）。
    */
   private showInformation(): void {
     this.situation.setTime(this.view.elapsedDays, this.view.hour, this.view.minute);
+    this.situation.setWeather(this.view.weather, this.view.weatherLabel);
     this.showStatuses();
   }
 
@@ -2088,7 +2088,7 @@ export class PlayScene extends ResponsiveScene {
    * バーをタップしたときに開く、そのステータスの詳細（Windows.md 8節）。開き直しでも同じ経路を
    * 通せるよう、受け取るのは中身ではなくプロパティの識別子で、中身は今のviewから引き直す。
    *
-   * ステータスエリアからもプロパティウィンドウの行からも開くため、既に開いていれば入れ替える。
+   * ステータスエリアからもプロパティのタブの行からも開くため、既に開いていれば入れ替える。
    */
   private openStatusDetail(key: string): void {
     const content = this.status.contentOf(key);
@@ -2288,17 +2288,14 @@ export class PlayScene extends ResponsiveScene {
    * スロットボタンと同じく紙として置かれるので、同じ影を落とす（addSlotButton参照）。
    */
   private addIconButton(rect: Rect, spec: BarIcon, active: boolean, border: number): Button {
+    // どの絵も同じ大きさで敷く。4つの役割に大小は無いので、物の大きさで差を付ける理由も無い。
     const button = new Button(this, rect, this.iconButtonStyle(active, border));
     const art = SIZE.iconButtonArt;
     button.addContent(this.buttonIcon(spec, rect, { width: art, height: art }, ICON_BUTTON_GLYPH));
     return button;
   }
 
-  /**
-   * 絵があればそれを、無ければ絵文字を、ボタンの中央へ置く（slotButtonIconと同じ扱い）。
-   *
-   * **どの絵も同じ大きさで敷く。** 4つの役割に大小は無いので、物の大きさで差を付ける理由も無い。
-   */
+  /** バーのアイコンボタンの台紙（選択中は塗りを反転し、枠線の色は置かれるバーが決める）。 */
   private iconButtonStyle(active: boolean, border: number): BoxStyle {
     return {
       fill: active ? COLOR.buttonActive : COLOR.button,
