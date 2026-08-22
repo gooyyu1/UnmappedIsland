@@ -4,6 +4,7 @@ import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import type { Button } from './Button';
 import { addTextButton } from './Button';
 import { ScrollArea } from '../../ui/scrollArea';
+import type { ObjectWindowLane, ObjectWindowPane } from './ObjectWindowPane';
 import type { StatusContent } from './StatusBar';
 import { StatusBar } from './StatusBar';
 import type { BoxStyle } from '../../ui/shapes';
@@ -40,16 +41,20 @@ export interface PropertyCategory {
  * **プロパティの数で窓の寸法は変わりません。** 収まらない分は縦にスクロールして送ります——カテゴリを
  * 切り替えるたびに枠が伸び縮みすると、どのカテゴリを見ているかより枠の動きのほうが目に付きます。
  */
-export class PropertiesPane {
+export class PropertiesPane implements ObjectWindowPane {
   /** この面が要る高さ。窓の中段の高さは、最も高いタブに合わせて決まる（ObjectWindow）。 */
   static height(metrics: ScreenMetrics): number {
     return ROWS_SHOWN * StatusBar.height(metrics) + (ROWS_SHOWN - 1) * metrics.px(ROW_GAP);
   }
 
+  /** バーはレーンではないので、この面はレーンを持たない。 */
+  readonly lanes: readonly ObjectWindowLane[] = [];
+
   private readonly scene: Phaser.Scene;
   private readonly metrics: ScreenMetrics;
   private readonly area: Rect;
 
+  private readonly source: () => readonly PropertyCategory[];
   private categories: readonly PropertyCategory[];
   private selected = 0;
 
@@ -68,11 +73,13 @@ export class PropertiesPane {
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
     area: Rect,
-    categories: readonly PropertyCategory[],
+    source: () => readonly PropertyCategory[],
   ) {
     this.scene = scene;
     this.metrics = metrics;
     this.area = area;
+    this.source = source;
+    const categories = source();
     this.categories = categories;
 
     const height = metrics.px(CATEGORY_HEIGHT);
@@ -95,11 +102,11 @@ export class PropertiesPane {
   }
 
   /**
-   * 行の内容を書き換える（固定表示の印や値が変わるため）。並ぶ項目はそのオブジェクトのプロパティで
+   * 行の内容を読み直す（固定表示の印や値が変わるため）。並ぶ項目はそのオブジェクトのプロパティで
    * 決まり増減しないので、行は作り直さず中身だけ差し替える。
    */
-  setCategories(categories: readonly PropertyCategory[]): void {
-    this.categories = categories;
+  refresh(): void {
+    this.categories = this.source();
     const entries = this.categories[this.selected]?.entries ?? [];
     this.rows.forEach((row, index) => {
       const entry = entries[index];
