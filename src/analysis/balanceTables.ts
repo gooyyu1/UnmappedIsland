@@ -944,10 +944,6 @@ function addCost(a: Cost, b: Cost): Cost {
   };
 }
 
-function divideCost(cost: Cost, divisor: number): Cost {
-  return { exploreMinutes: cost.exploreMinutes / divisor, craftMinutes: cost.craftMinutes / divisor };
-}
-
 function scaleCost(cost: Cost, factor: number): Cost {
   return { exploreMinutes: cost.exploreMinutes * factor, craftMinutes: cost.craftMinutes * factor };
 }
@@ -1313,7 +1309,7 @@ class Acquisition {
 
         for (const [objectGlobalId, count] of expectedSpawns(ref.step)) {
           if (count <= 0) continue;
-          const candidate = divideCost(resolved.cost, count);
+          const candidate = scaleCost(resolved.cost, 1 / count);
           const known = this.costByObject.get(objectGlobalId);
           if (known !== undefined && totalOf(known) <= totalOf(candidate) + EPSILON) continue;
 

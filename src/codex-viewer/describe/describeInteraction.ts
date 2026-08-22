@@ -2,7 +2,7 @@ import type { InteractionDef } from '../../domain/InteractionDef';
 import type { DefNames, DescriptionWriter } from './Description';
 import { text } from './Description';
 import { describeEffect, weightTokens } from './describeEffect';
-import { requirementTokens } from './describeRequirement';
+import { describeRequirements } from './describeRequirement';
 import { typeMatchTokens } from './typeMatchTokens';
 
 /**
@@ -21,9 +21,7 @@ export function describeInteraction(
   const requirements = interaction.requirementDeclarations;
   if (requirements.length > 0) {
     out.write(text('conditions:'));
-    out.indented(() => {
-      for (const entry of requirements) out.write(...requirementTokens(entry, names));
-    });
+    out.indented(() => describeRequirements(requirements, names, out));
   }
 
   const duration = interaction.durationReading;

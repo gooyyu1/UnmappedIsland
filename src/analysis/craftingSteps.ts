@@ -172,8 +172,8 @@ function selfMovesOf(
 
 /** ドラッグ型の相手（withが指す型）。メニュー型には無い。消費されるかはdraggedへのdestroyで決まる。 */
 function draggedInputOf(interaction: InteractionDef, reading: EffectReading): readonly CraftingInput[] {
-  const dragged = interaction.draggedReading;
-  return dragged === undefined ? [] : [inputOf(dragged, destroysRoot(reading, 'dragged'), 1)];
+  const trigger = interaction.triggerReading;
+  return trigger.kind === 'drag' ? [inputOf(trigger.with, destroysRoot(reading, 'dragged'), 1)] : [];
 }
 
 /** 型の指定（タグか型そのもの）を、工程の入力1件へ直す。 */

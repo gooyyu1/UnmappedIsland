@@ -8,7 +8,7 @@ import { typeMatchTokens } from './typeMatchTokens';
 export function describeRecipe(recipe: RecipeDef, names: DefNames, out: DescriptionWriter): void {
   if (recipe.unlock !== undefined) {
     out.write(text('解放条件:'));
-    out.indented(() => describeRequirements(recipe.unlock!, names, out));
+    out.indented(() => describeRequirements(recipe.unlock!.declarations, names, out));
   }
   for (const [index, step] of recipe.steps.entries()) describeRecipeStep(step, index + 1, names, out);
 }

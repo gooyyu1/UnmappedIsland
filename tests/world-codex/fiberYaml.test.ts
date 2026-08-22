@@ -173,6 +173,6 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
     expect(requirement.consume).toBe(true);
 
     // 繊維・編みスキルが未実装なので、今は誰でも作れる（fiber.yamlのコメント参照）。
-    expect(recipe.isUnlocked(() => undefined)).toBe(true);
+    expect(recipe.unmetUnlockRequirement(() => undefined)).toBeUndefined();
   });
 });

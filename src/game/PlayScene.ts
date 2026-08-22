@@ -994,7 +994,7 @@ export class PlayScene extends ResponsiveScene {
    * 逆向きに成立したなら掴んだ札）を、世界の変化が出どころとして答える（originRectsOf）。
    */
   private applyDrop(drop: CardDrop, releasedRect: Rect): void {
-    const action = this.shown.dropAction(this.dropOf(drop));
+    const action = this.shown.dropEffect(this.dropOf(drop))?.execute;
     this.applyToWorld(this.dropLabel(drop), action, this.releasedBy(drop, releasedRect));
   }
 

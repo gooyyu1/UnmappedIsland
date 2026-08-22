@@ -250,7 +250,7 @@ export class CardDragController {
           from: gesture.lane,
           fromIndex: gesture.index,
           to: lane,
-          target: cardTarget(index),
+          target: { kind: 'combine', index } as const,
           count: 1,
         };
         if (this.handlers.describeDrop(drop) === undefined) return;
@@ -410,9 +410,4 @@ function sameTarget(previous: CarryTarget | undefined, drop: CardDrop | undefine
     previous.target.kind === drop.target.kind &&
     previous.target.index === drop.target.index
   );
-}
-
-/** レーンの添字のカードに重ねるドロップ先。 */
-function cardTarget(index: number): LaneDropTarget {
-  return { kind: 'combine', index };
 }

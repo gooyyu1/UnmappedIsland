@@ -333,7 +333,7 @@ describe('ドロップの意味', () => {
       target: { kind: 'cell', index: 0 },
       count: 1,
     } as const;
-    expect(shown.dropAction(drop)).toBeUndefined();
+    expect(shown.dropEffect(drop)?.execute).toBeUndefined();
     expect(shown.multiDropLimit(drop)).toBe(1);
   });
 
@@ -439,26 +439,30 @@ describe('ドロップの意味', () => {
       items: [stack(place('items'), [2])],
     });
 
-    shown.dropAction({
-      from: place('hand'),
-      fromIndex: 0,
-      to: place('hand'),
-      target: { kind: 'gap', index: 1 },
-      count: 1,
-    })?.();
+    shown
+      .dropEffect({
+        from: place('hand'),
+        fromIndex: 0,
+        to: place('hand'),
+        target: { kind: 'gap', index: 1 },
+        count: 1,
+      })
+      ?.execute();
     expect(moves.at(-1), '並び替えは束ごと').toEqual({
       ids: [1],
       to: place('hand'),
       at: { kind: 'gap', index: 1 },
     });
 
-    shown.dropAction({
-      from: place('hand'),
-      fromIndex: 0,
-      to: place('items'),
-      target: { kind: 'cell', index: 1 },
-      count: 1,
-    })?.();
+    shown
+      .dropEffect({
+        from: place('hand'),
+        fromIndex: 0,
+        to: place('items'),
+        target: { kind: 'cell', index: 1 },
+        count: 1,
+      })
+      ?.execute();
     expect(moves.at(-1)).toEqual({ ids: [1], to: place('items'), at: { kind: 'cell', index: 1 } });
   });
 
@@ -489,7 +493,7 @@ describe('ドロップの意味', () => {
       target: { kind: 'combine', index: 0 },
       count: 2,
     } as const;
-    noCombination.dropAction(drop)?.();
+    noCombination.dropEffect(drop)?.execute();
 
     expect(moves.at(-1), '2枚まとめて中へ').toEqual({ ids: [1, 2], to: inside, at: undefined });
     expect(noCombination.multiDropLimit(drop), '入る枚数は枠の宣言（CardDrop.maxCount）').toBe(2);

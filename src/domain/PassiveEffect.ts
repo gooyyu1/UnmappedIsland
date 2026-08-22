@@ -7,6 +7,7 @@ import type { ConditionNode } from './ConditionNode';
 import type { GateReading, PassivePropertyReading, PassiveReader } from './PassiveReader';
 import type { InfluenceWriter } from './PropertyInfluence';
 import type { ReferenceRoot } from './ReferenceRoot';
+import { resolveReferenceRoot } from './ReferenceRoot';
 
 /**
  * 効果の発動条件。判別子は持たず、各フィールドの有無が「何をチェックすべきか」を表す
@@ -58,22 +59,12 @@ export class PassiveEffectGate {
 
     if (
       this.conditions !== undefined &&
-      !this.conditions.evaluate((root) => PassiveEffectGate.resolve(root, slotBearer))
+      // ゲートはactor/draggedを持たない文脈で評価する（誰かが操作しているとは限らない）。
+      !this.conditions.evaluate((root) => resolveReferenceRoot(root, slotBearer, undefined, undefined))
     )
       return false;
 
     return true;
-  }
-
-  private static resolve(root: ReferenceRoot, slotBearer: WorldObject): WorldObject | undefined {
-    switch (root) {
-      case 'self':
-        return slotBearer;
-      case 'parent':
-        return slotBearer.parent;
-      default:
-        return undefined;
-    }
   }
 }
 
@@ -134,7 +125,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
   private readonly amount: number;
   private readonly gate: PassiveEffectGate;
 
-  protected constructor(
+  constructor(
     target: ReferenceRoot,
     targetPropertyGlobalId: number,
     amount: number,
@@ -261,15 +252,6 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
  * 書き換えない。PropertyValueのmodify用incomingへ登録され、WorldObject.getEffectiveValueが走査する。
  */
 export class ModifyEffect extends PropertyPassiveEffect {
-  constructor(
-    target: ReferenceRoot,
-    targetPropertyGlobalId: number,
-    amount: number,
-    gate: PassiveEffectGate,
-  ) {
-    super(target, targetPropertyGlobalId, amount, gate);
-  }
-
   read(reader: PassiveReader): void {
     reader.modify(this.reading);
   }
@@ -288,15 +270,6 @@ export class ModifyEffect extends PropertyPassiveEffect {
  * PropertyValueの積分用incomingへ登録され、WorldObject.tickが走査する。
  */
 export class AccumulateEffect extends PropertyPassiveEffect {
-  constructor(
-    target: ReferenceRoot,
-    targetPropertyGlobalId: number,
-    amount: number,
-    gate: PassiveEffectGate,
-  ) {
-    super(target, targetPropertyGlobalId, amount, gate);
-  }
-
   read(reader: PassiveReader): void {
     reader.accumulate(this.reading);
   }

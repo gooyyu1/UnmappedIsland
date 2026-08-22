@@ -37,7 +37,7 @@ export function loadGenerationSections(loader: WorldCodexYamlLoader, label: stri
   if (axes !== undefined)
     for (const [name, node] of entriesInOrder(axes)) {
       if (loader.generationAxes.has(name)) throw new YamlLoadError(`axes '${name}' が重複しています。`);
-      loader.generationAxes.set(name, parseAxis(name, asMap(node, `axes.'${name}'`)));
+      loader.generationAxes.set(name, parseAxis(name, node));
     }
 
   const locationTypes = tryGetMap(root, 'location_types', label);
@@ -45,9 +45,7 @@ export function loadGenerationSections(loader: WorldCodexYamlLoader, label: stri
     for (const [name, node] of entriesInOrder(locationTypes)) {
       if (loader.generationLocationTypes.some((type) => type.name === name))
         throw new YamlLoadError(`location_types '${name}' が重複しています。`);
-      loader.generationLocationTypes.push(
-        parseLocationType(loader, name, asMap(node, `location_types.'${name}'`)),
-      );
+      loader.generationLocationTypes.push(parseLocationType(loader, name, node));
     }
 
   const scopes = tryGetMap(root, 'generation_scopes', label);
@@ -55,15 +53,13 @@ export function loadGenerationSections(loader: WorldCodexYamlLoader, label: stri
     for (const [name, node] of entriesInOrder(scopes)) {
       if (loader.generationScopes.has(name))
         throw new YamlLoadError(`generation_scopes '${name}' が重複しています。`);
-      loader.generationScopes.set(
-        name,
-        parseGenerationScope(name, asMap(node, `generation_scopes.'${name}'`)),
-      );
+      loader.generationScopes.set(name, parseGenerationScope(name, node));
     }
 }
 
-function parseAxis(name: string, node: YAMLMap): AxisDef {
+function parseAxis(name: string, raw: YamlNode): AxisDef {
   const context = `axes.'${name}'`;
+  const node = asMap(raw, context);
 
   const rangeNode = tryGetMap(node, 'range', context);
   if (rangeNode === undefined) throw new YamlLoadError(`${context}: 'range'は必須です。`);
@@ -164,8 +160,9 @@ function parseVariants(loader: WorldCodexYamlLoader, context: string, node: YAML
   return variants;
 }
 
-function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAMLMap): LocationTypeDef {
+function parseLocationType(loader: WorldCodexYamlLoader, name: string, raw: YamlNode): LocationTypeDef {
   const context = `location_types.'${name}'`;
+  const node = asMap(raw, context);
 
   // object_defの実在検証はbuildGenerationDefsまで遅延する（別ファイルで後から定義されうるため）。
   const objectDefGlobalId = loader.objectNames.intern(requireScalar(node, 'object_def', context));
@@ -245,8 +242,9 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, node: YAM
   );
 }
 
-function parseGenerationScope(name: string, node: YAMLMap): GenerationScopeDef {
+function parseGenerationScope(name: string, raw: YamlNode): GenerationScopeDef {
   const context = `generation_scopes.'${name}'`;
+  const node = asMap(raw, context);
 
   const siteCountNode = tryGetMap(node, 'site_count', context);
   if (siteCountNode === undefined) throw new YamlLoadError(`${context}: 'site_count'は必須です。`);

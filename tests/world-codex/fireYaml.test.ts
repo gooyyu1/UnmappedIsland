@@ -112,7 +112,7 @@ describe('fire.yamlの火の連鎖', () => {
     expect(requires('thick_branch')).toBe(true);
     expect(requires('twig')).toBe(true);
     // 火スキルが未実装なので、今は誰でも作れる（きりもみ式は道具も紐も要らない）。
-    expect(drill.recipes[0].isUnlocked(() => undefined)).toBe(true);
+    expect(drill.recipes[0].unmetUnlockRequirement(() => undefined)).toBeUndefined();
   });
 
   it('火口に火起こし具を重ねると火種ができ、火口は消える', () => {

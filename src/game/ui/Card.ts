@@ -464,9 +464,16 @@ export class Card extends Phaser.GameObjects.Container {
     this.multiplyLayer = scene.add.container(0, 0);
     // 青は絵までを覆い、名前と状態のバーには掛けない。何が出来つつあるのかと、それが今どういう
     // 状態なのかは、覆いの下へ沈めずに読めるままにする。枠より先に置くので、覆いは窓の中だけに残る。
-    this.inProgressVeil = createInProgressVeil(scene, metrics, width, height);
+    this.inProgressVeil = createVeil(
+      scene,
+      metrics,
+      width,
+      height,
+      COLOR.cardInProgress,
+      IN_PROGRESS_VEIL_ALPHA,
+    );
     // 加熱の覆いも同じ層。窓からはみ出した分は、青と同じく枠が隠す。
-    this.cookingVeil = createCookingVeil(scene, metrics, width, height);
+    this.cookingVeil = createVeil(scene, metrics, width, height, COLOR.cardCooking, COOKING_VEIL_ALPHA);
     // 枠は絵より後。**絵の上に枠が乗る**のがトレーディングカードの構造で、窓からはみ出した絵は
     // 枠が隠す（CardView.md 1節 カードの枠）。
     this.frame = scene.add.graphics();
@@ -1442,38 +1449,21 @@ function createNameText(
 }
 
 /**
- * 製作中オブジェクトのカードにかぶせる青（IN_PROGRESS_VEIL_ALPHA参照）。紙の輪郭に合わせて角を
- * 丸め、枠の線の内側へ収める。
+ * カードにかぶせる覆い（製作中の青・加熱の熾）。**紙いっぱいに引く**——紙の輪郭に合わせて角を丸め、
+ * 窓からはみ出す分は枠が隠す。出すかどうかは差し替えが決めるので、作った時点では見せない。
  */
-function createInProgressVeil(
+function createVeil(
   scene: Phaser.Scene,
   metrics: ScreenMetrics,
   width: number,
   height: number,
+  fill: number,
+  fillAlpha: number,
 ): Phaser.GameObjects.Graphics {
   const veil = scene.add.graphics();
   drawBox(veil, paperRect(metrics, width, height), {
-    fill: COLOR.cardInProgress,
-    fillAlpha: IN_PROGRESS_VEIL_ALPHA,
-    radius: metrics.px(PAPER_RADIUS),
-  });
-  return veil.setVisible(false);
-}
-
-/**
- * 加熱されているカードにかぶせる熾の色（COOKING_VEIL_ALPHA参照）。青写真の覆いと同じく紙いっぱいに
- * 引き、窓からはみ出す分は枠が隠す。
- */
-function createCookingVeil(
-  scene: Phaser.Scene,
-  metrics: ScreenMetrics,
-  width: number,
-  height: number,
-): Phaser.GameObjects.Graphics {
-  const veil = scene.add.graphics();
-  drawBox(veil, paperRect(metrics, width, height), {
-    fill: COLOR.cardCooking,
-    fillAlpha: COOKING_VEIL_ALPHA,
+    fill,
+    fillAlpha,
     radius: metrics.px(PAPER_RADIUS),
   });
   return veil.setVisible(false);

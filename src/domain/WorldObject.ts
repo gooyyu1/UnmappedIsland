@@ -6,20 +6,14 @@ import { LocalIndexMap } from './LocalIndexMap';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef } from './ObjectDef';
 import type { ReferenceRoot } from './ReferenceRoot';
+import { resolveReferenceRoot } from './ReferenceRoot';
 import type { EngineVocabulary } from './WorldVocabulary';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
-import type { PropertyDef } from './PropertyDef';
 import { PropertyValue } from './PropertyValue';
 import { Slot } from './Slot';
 import type { SlotPosition } from './SlotPosition';
 import type { WorldSession } from './WorldSession';
-
-/** rangeを持つプロパティなら、その両端へ丸めた値。rangeが無ければそのまま（becomeType参照）。 */
-function clampToRange(def: PropertyDef, value: number): number {
-  const range = def.range;
-  return range === undefined ? value : Math.min(range.max, Math.max(range.min, value));
-}
 
 /**
  * 実行時のオブジェクト実体（ObjectDefのインスタンス）。
@@ -606,7 +600,8 @@ export class WorldObject {
 
     for (const property of this.properties) {
       const carried = carriedValues.get(property.def.globalId);
-      if (carried !== undefined) property.init(clampToRange(property.def, carried));
+      // 型が変わるとrangeも変わるので、運んだ値は新しい両端へ丸める。
+      if (carried !== undefined) property.init(property.def.range?.clamp(carried) ?? carried);
     }
 
     this._def.passives.registerRelation(this, 'self', true);
@@ -826,24 +821,13 @@ export class WorldObject {
     session.withSubject(this, () => effect.apply(this, session, actor, dragged, effectSite));
   }
 
-  /** 効果の対象キー(self/parent/actor/dragged)を解決する。ancestorはプロパティごとに解決先が変わりうるため扱わない（resolveEffectTargetOrAncestor参照）。 */
+  /** 効果の対象キー(self/parent/actor/dragged)を、自分をselfとして解決する（resolveReferenceRoot）。 */
   resolveEffectTarget(
     root: ReferenceRoot,
     actor: WorldObject | undefined,
     dragged: WorldObject | undefined,
   ): WorldObject | undefined {
-    switch (root) {
-      case 'self':
-        return this;
-      case 'parent':
-        return this._parent;
-      case 'actor':
-        return actor;
-      case 'dragged':
-        return dragged;
-      default:
-        return undefined;
-    }
+    return resolveReferenceRoot(root, this, actor, dragged);
   }
 
   /** resolveEffectTargetに加えancestorも解決する（propertyGlobalIdはancestor解決にのみ使う）。 */

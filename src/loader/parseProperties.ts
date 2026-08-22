@@ -3,6 +3,7 @@ import { isMap } from 'yaml';
 import {
   asMap,
   asScalarText,
+  oneOf,
   requireKnownKeys,
   requireNumber,
   requireScalar,
@@ -19,11 +20,9 @@ import { parseScalarNumber } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
 import { parsePassive } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import type { AlertLevel } from '../domain/AlertLevel';
 import { ALERT_LEVELS } from '../domain/AlertLevel';
 import type { ActiveEffect } from '../domain/ActiveEffect';
 import { GAUGE_ENDS, GaugeDef, PropertyDef, PropertyRange, PropertyStage } from '../domain/PropertyDef';
-import type { GaugeEnd } from '../domain/PropertyDef';
 import type { PassiveEffect } from '../domain/PassiveEffect';
 
 /** props（6節）の1エントリが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。
@@ -169,18 +168,11 @@ function parseGauge(context: string, node: YAMLMap, range: PropertyRange | undef
 
   requireKnownKeys(gaugeNode, ['min', 'max'], `${context}.gauge`);
 
-  return new GaugeDef(gaugeEnd(context, gaugeNode, 'min'), gaugeEnd(context, gaugeNode, 'max'));
-}
-
-/** gaugeの片端の見せ方。綴り間違いをロード時に捕まえるため一覧と突き合わせる。 */
-function gaugeEnd(context: string, gaugeNode: YAMLMap, key: 'min' | 'max'): GaugeEnd {
-  const text = requireScalar(gaugeNode, key, `${context}.gauge`);
-  const end = GAUGE_ENDS.find((candidate) => candidate === text);
-  if (end === undefined)
-    throw new YamlLoadError(
-      `${context}.gauge.${key}: 未知の見せ方 '${text}' です（${GAUGE_ENDS.join(' / ')} のいずれかを指定してください）。`,
-    );
-  return end;
+  const gaugeContext = `${context}.gauge`;
+  return new GaugeDef(
+    oneOf(gaugeNode, 'min', gaugeContext, GAUGE_ENDS),
+    oneOf(gaugeNode, 'max', gaugeContext, GAUGE_ENDS),
+  );
 }
 
 /**
@@ -225,7 +217,7 @@ function parseStage(
   stageMap: YAMLMap,
 ): PropertyStage {
   const stageName = requireScalar(stageMap, 'name', context);
-  const alert = parseAlertLevel(context, stageMap);
+  const alert = oneOf(stageMap, 'alert', context, ALERT_LEVELS, 'safe');
   // 段が宣言するart接尾辞（6.4節）。art_by_stageが指すプロパティの段だけがこれを持てるが、
   // その検証は object_def 全体を見渡せる RawObjectDef.resolve が行う（ここでは持たない）。
   const art = tryGetScalar(stageMap, 'art', context);
@@ -249,19 +241,6 @@ function parseStage(
       parsePassive(loader, passives, objectDefName, asMap(passiveNode, context), propName, stageName);
 
   return stage;
-}
-
-/** stagesエントリのalert（6.4節）。未指定は安全域。綴り間違いをロード時に捕まえるため一覧と突き合わせる。 */
-function parseAlertLevel(context: string, stageMap: YAMLMap): AlertLevel {
-  const text = tryGetScalar(stageMap, 'alert', context);
-  if (text === undefined) return 'safe';
-
-  const level = ALERT_LEVELS.find((candidate) => candidate === text);
-  if (level === undefined)
-    throw new YamlLoadError(
-      `${context}: 未知のalert '${text}' です（${ALERT_LEVELS.join(' / ')} のいずれかを指定してください）。`,
-    );
-  return level;
 }
 
 /** labelのrangeイベント（6.3節）が書かれていればその中身。書かれていなければundefined。 */

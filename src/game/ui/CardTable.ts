@@ -186,7 +186,7 @@ export class CardTable {
         identity: [flight.id],
       });
       this.layer.add(card);
-      this.startFlight({
+      this.flights.push({
         card,
         ids: [flight.id],
         to: flight.to,
@@ -251,7 +251,7 @@ export class CardTable {
         freed.card.destroy();
         continue;
       }
-      this.startFlight({
+      this.flights.push({
         card: freed.card,
         ids: freed.ids,
         to: landing.to,
@@ -264,30 +264,6 @@ export class CardTable {
         puffs: false,
       });
     }
-  }
-
-  /**
-   * 見た目だけの札を1枚、fromからtoへ運ぶ（探索の発見物）。着いたらonArriveを呼んで消える
-   * ——発見物の枠はレーンではないので、受け取る側が自分の札を出す。
-   *
-   * **枠から枠への移動にこれを使ってはいけない。** レーンに並ぶ札の運びは、並びの差し替えが
-   * そのまま見せる（update）。
-   */
-  carry(face: CardContent, from: Rect, to: Rect, onArrive: () => void): void {
-    const card = new Card(this.scene, this.metrics, from.x, from.y, cardFace(face));
-    this.layer.add(card);
-    this.startFlight({
-      card,
-      ids: [],
-      to,
-      into: undefined,
-      onArrive,
-      fromX: from.x,
-      fromY: from.y,
-      elapsed: 0,
-      delay: 0,
-      puffs: false,
-    });
   }
 
   /**
@@ -322,7 +298,13 @@ export class CardTable {
     return new CarriedCard(this.scene, this.metrics, this, this.layer, source, home);
   }
 
-  /** 指へ向かうなど、目標が動き続ける便（CarriedCard用）。 */
+  /**
+   * 札を1枚、今いる場所から目標へ飛ばす（CarriedCard用）。**目標は毎フレーム引き直す**ので、
+   * 指のように動き続ける先へも向かえる。着いたらonArriveを呼んで消える。
+   *
+   * **枠から枠への移動にこれを使ってはいけない。** レーンに並ぶ札の運びは、並びの差し替えが
+   * そのまま見せる（update）。
+   */
   flyTo(card: Card, target: () => Rect, onArrive: () => void): CarryHandle {
     this.layer.add(card);
     const flight: Flight & { tracked?: () => Rect } = {
@@ -338,16 +320,12 @@ export class CardTable {
       puffs: false,
     };
     this.tracked.set(flight, target);
-    this.startFlight(flight);
+    this.flights.push(flight);
     return { cancel: () => this.dropFlight(flight) };
   }
 
   /** 目標が動き続ける便の、目標の引き直し先。 */
   private readonly tracked = new Map<Flight, () => Rect>();
-
-  private startFlight(flight: Flight): void {
-    this.flights.push(flight);
-  }
 
   /** 便を打ち切って札を消す（着いた扱いにはしない）。 */
   private dropFlight(flight: Flight): void {
@@ -509,12 +487,14 @@ export class CarriedCard {
     const returned = this.ids.slice(keep);
     this.ids = this.ids.slice(0, keep);
     this.card.setContent({ ...this.card.content, identity: this.ids, count: this.ids.length });
-    this.table.carry(
-      { ...cardFace(this.source.content), count: returned.length },
-      this.rect,
-      this.home(),
-      () => this.returnToSource(returned),
-    );
+
+    // あふれた分は、今いる場所から元の枠へ飛んで帰る（addOneの逆向き）。
+    const at = this.rect;
+    const spilled = new Card(this.scene, this.metrics, at.x, at.y, {
+      ...cardFace(this.source.content),
+      count: returned.length,
+    });
+    this.table.flyTo(spilled, this.home, () => this.returnToSource(returned));
     return true;
   }
 

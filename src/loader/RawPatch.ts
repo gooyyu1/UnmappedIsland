@@ -2,7 +2,7 @@ import { isMap, isScalar, isSeq, Scalar } from 'yaml';
 import type { YAMLMap, YAMLSeq } from 'yaml';
 import type { LoadReport } from './LoadReport';
 import type { RawObjectDef } from './RawObjectDef';
-import { asMap, asScalarText, entriesInOrder, tryGetNode } from './yamlMapping';
+import { asMap, asScalarText, entriesInOrder, keysOf, tryGetNode } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { messageOf } from './errorMessage';
@@ -134,7 +134,7 @@ function apply(patch: RawPatch, defs: ReadonlyMap<string, RawObjectDef>, replace
 
   switch (patch.verb) {
     case 'add':
-      addKey(descendToMap(def.node, defName, rest.slice(0, -1)), rest[rest.length - 1], patch);
+      addValue(def, defName, rest, patch);
       break;
     case 'append':
       descendToSeq(def.node, defName, rest).items.push(patch.value);
@@ -152,7 +152,8 @@ function apply(patch: RawPatch, defs: ReadonlyMap<string, RawObjectDef>, replace
 }
 
 /** `add`: パスの末尾は、まだ無いキー。 */
-function addKey(parent: YAMLMap, key: string, patch: RawPatch): void {
+function addValue(def: RawObjectDef, defName: string, rest: readonly string[], patch: RawPatch): void {
+  const { parent, key } = descendToKey(def, defName, rest);
   if (tryGetNode(parent, key) !== undefined)
     throw new YamlLoadError(`'${patch.path}' は既にあります（差し替えるなら'set'です）。`);
   // キーはScalarノードとして入れる（生の文字列のままだと、読む側の走査が拾えない）。
@@ -164,13 +165,13 @@ function setValue(def: RawObjectDef, defName: string, rest: readonly string[], p
   if (patch.where !== undefined) {
     const seq = descendToSeq(def.node, defName, rest);
     seq.items[indexOfMatch(seq, patch)] = patch.value;
-  } else {
-    const parent = descendToMap(def.node, defName, rest.slice(0, -1));
-    const key = rest[rest.length - 1];
-    if (tryGetNode(parent, key) === undefined)
-      throw new YamlLoadError(`'${patch.path}' がありません（新しく作るなら'add'です）。`);
-    parent.set(new Scalar(key), patch.value);
+    return;
   }
+
+  const { parent, key } = descendToKey(def, defName, rest);
+  if (tryGetNode(parent, key) === undefined)
+    throw new YamlLoadError(`'${patch.path}' がありません（新しく作るなら'add'です）。`);
+  parent.set(new Scalar(key), patch.value);
 }
 
 /** `remove`: 配列の要素（where付き）か、既にあるキー。 */
@@ -178,12 +179,24 @@ function removeValue(def: RawObjectDef, defName: string, rest: readonly string[]
   if (patch.where !== undefined) {
     const seq = descendToSeq(def.node, defName, rest);
     seq.items.splice(indexOfMatch(seq, patch), 1);
-  } else {
-    const parent = descendToMap(def.node, defName, rest.slice(0, -1));
-    const key = rest[rest.length - 1];
-    if (tryGetNode(parent, key) === undefined) throw new YamlLoadError(`'${patch.path}' がありません。`);
-    parent.delete(key);
+    return;
   }
+
+  const { parent, key } = descendToKey(def, defName, rest);
+  if (tryGetNode(parent, key) === undefined) throw new YamlLoadError(`'${patch.path}' がありません。`);
+  parent.delete(key);
+}
+
+/** パスの手前まで降り、末尾のキーを添えて返す（add/set/removeが書き換える場所）。 */
+function descendToKey(
+  def: RawObjectDef,
+  defName: string,
+  rest: readonly string[],
+): { readonly parent: YAMLMap; readonly key: string } {
+  return {
+    parent: descendToMap(def.node, defName, rest.slice(0, -1)),
+    key: rest[rest.length - 1],
+  };
 }
 
 /** whereに当てはまる要素の位置。0件でも2件以上でもエラー（どれを指すのか決まらない）。 */
@@ -231,7 +244,7 @@ function descendToMap(node: YAMLMap, defName: string, steps: readonly string[]):
     if (!isMap(at)) throw new YamlLoadError(`'${walked}' はマップではありません。`);
     const next: YamlNode | undefined = tryGetNode(at as YAMLMap, step);
     if (next === undefined)
-      throw new YamlLoadError(`'${walked}.${step}' がありません。${keysOf(at as YAMLMap)}`);
+      throw new YamlLoadError(`'${walked}.${step}' がありません。${keyHint(at as YAMLMap)}`);
     at = next;
     walked = `${walked}.${step}`;
   }
@@ -245,13 +258,13 @@ function descendToSeq(node: YAMLMap, defName: string, steps: readonly string[]):
   const key = steps[steps.length - 1];
   const target = tryGetNode(parent, key);
   if (target === undefined)
-    throw new YamlLoadError(`'${[defName, ...steps].join('.')}' がありません。${keysOf(parent)}`);
+    throw new YamlLoadError(`'${[defName, ...steps].join('.')}' がありません。${keyHint(parent)}`);
   if (!isSeq(target)) throw new YamlLoadError(`'${[defName, ...steps].join('.')}' は配列ではありません。`);
   return target as YAMLSeq;
 }
 
 /** 打ち間違いを見つけやすいよう、その場所が持っているキーを添える。 */
-function keysOf(map: YAMLMap): string {
-  const keys = [...entriesInOrder(map)].map(([key]) => key);
+function keyHint(map: YAMLMap): string {
+  const keys = keysOf(map);
   return keys.length === 0 ? '' : `（持っているキー: ${keys.join('・')}）`;
 }

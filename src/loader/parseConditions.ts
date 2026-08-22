@@ -3,7 +3,7 @@ import { isMap, isSeq } from 'yaml';
 import {
   asMap,
   asScalarText,
-  entriesInOrder,
+  keysOf,
   requireKnownKeys,
   requireScalar,
   tryGetMap,
@@ -163,9 +163,7 @@ function parseConditionNode(
     return ConditionNode.any(parseCombinatorChildren(loader, context, 'any', anyNode, allowedRoots));
 
   if (notNode !== undefined) {
-    const unknown = entriesInOrder(map)
-      .map(([key]) => key)
-      .filter((key) => key !== 'not' && key !== extraKey);
+    const unknown = keysOf(map).filter((key) => key !== 'not' && key !== extraKey);
     if (unknown.length > 0)
       throw new YamlLoadError(`${context}: 'not'は他のキーと同居できません（値: '${unknown.join(', ')}'）。`);
 

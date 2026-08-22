@@ -22,17 +22,6 @@ export function describePassive(
   declaration.read(new PassiveDescriber(names, out));
 }
 
-/** その持続効果がpropertyGlobalIdのプロパティを書き換えうるか（writesToProperty の持続効果版）。 */
-export function passiveWritesToProperty(
-  declaration: PassiveDeclaration,
-  propertyGlobalId: number,
-  ownedByDeclarer: boolean,
-): boolean {
-  const reader = new PassivePropertyWriterFinder(propertyGlobalId, ownedByDeclarer);
-  declaration.read(reader);
-  return reader.found;
-}
-
 /** ゲートの書き表し。常時有効なら空（条件が無いことを書き足さない）。 */
 function gateTokens(gate: GateReading, names: DefNames): readonly DescriptionToken[] {
   const tokens: DescriptionToken[] = [];
@@ -84,36 +73,5 @@ class PassiveDescriber implements PassiveReader {
     const gate = gateTokens(reading.gate, this.names);
     if (gate.length > 0) tokens.push(text('（'), ...gate, text('間）'));
     this.out.write(...tokens);
-  }
-}
-
-class PassivePropertyWriterFinder implements PassiveReader {
-  found = false;
-
-  private readonly propertyGlobalId: number;
-  private readonly ownedByDeclarer: boolean;
-
-  constructor(propertyGlobalId: number, ownedByDeclarer: boolean) {
-    this.propertyGlobalId = propertyGlobalId;
-    this.ownedByDeclarer = ownedByDeclarer;
-  }
-
-  modify(reading: PassivePropertyReading): void {
-    this.check(reading.target, reading.propertyGlobalId);
-  }
-
-  accumulate(reading: PassivePropertyReading): void {
-    this.check(reading.target, reading.propertyGlobalId);
-  }
-
-  transfer(reading: TransferReading): void {
-    this.check(reading.from, reading.fromPropertyGlobalId);
-    this.check(reading.to, reading.toPropertyGlobalId);
-    for (const linked of reading.linked) this.check(linked.target, linked.propertyGlobalId);
-  }
-
-  private check(target: string, propertyGlobalId: number): void {
-    if (propertyGlobalId !== this.propertyGlobalId) return;
-    if (this.ownedByDeclarer || target !== 'self') this.found = true;
   }
 }

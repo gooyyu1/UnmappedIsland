@@ -64,8 +64,7 @@ export class PlayerCharacter {
   }
 
   private stacksOf(slotGlobalId: number): readonly (readonly WorldObject[])[] {
-    const slot = this.instance.tryGetSlot(slotGlobalId);
-    return slot === undefined ? [] : slot.cells.flatMap((cell) => (cell === undefined ? [] : [cell.members]));
+    return this.instance.tryGetSlot(slotGlobalId)?.stacks ?? [];
   }
 
   /** 手持ちスロットの各セルの代表インスタンス（空きセルはundefined）。 */
