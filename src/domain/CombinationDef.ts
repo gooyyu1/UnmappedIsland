@@ -49,7 +49,7 @@ export class CombinationDef extends InteractionDef {
     candidates: readonly WorldObject[],
     actor: WorldObject | undefined,
   ): number {
-    const counted = this.acceptedCountOf(self, candidates, actor);
+    const counted = this.effect.acceptedCount(self, candidates, actor);
     if (counted === undefined) return 1;
     return this.allowMultiple ? counted : Math.min(1, counted);
   }

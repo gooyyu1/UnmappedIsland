@@ -1,5 +1,5 @@
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { describeCondition } from './describeCondition';
+import { conditionTokens } from './describeCondition';
 import { propertyRef, stageRef, text } from './Description';
 import { addTokens, linkedAddTokens, transferTokens } from './describeEffect';
 import type { TransferReading } from '../../domain/EffectReader';
@@ -46,7 +46,7 @@ function gateTokens(gate: GateReading, names: DefNames): readonly DescriptionTok
 
   if (gate.conditions !== undefined) {
     if (tokens.length > 0) tokens.push(text(' かつ '));
-    tokens.push(...describeCondition(gate.conditions, names));
+    tokens.push(...conditionTokens(gate.conditions, names));
   }
   return tokens;
 }

@@ -2,7 +2,7 @@ import type { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../../domai
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { text } from './Description';
 import { describeRequirements } from './describeRequirement';
-import { describeTypeMatch } from './describeTypeMatch';
+import { typeMatchTokens } from './describeTypeMatch';
 
 /** レシピ1つ（13節）を書き出す。 */
 export function describeRecipe(recipe: RecipeDef, names: DefNames, out: DescriptionWriter): void {
@@ -22,18 +22,18 @@ export function describeRecipeStep(
 ): void {
   out.write(text(`工程${stepNumber}（${step.durationMinutes}分）:`));
   out.indented(() => {
-    for (const requirement of step.requirements) out.write(...describeRecipeRequirement(requirement, names));
+    for (const requirement of step.requirements) out.write(...recipeRequirementTokens(requirement, names));
   });
 }
 
 /** 工程が要求する素材・道具1つを書き表す。 */
-export function describeRecipeRequirement(
+export function recipeRequirementTokens(
   requirement: RecipeRequirementDef,
   names: DefNames,
 ): readonly DescriptionToken[] {
   return [
     text(requirement.consume ? '素材: ' : '道具: '),
-    ...describeTypeMatch(requirement.match.reading, names),
+    ...typeMatchTokens(requirement.match.reading, names),
     text(` ×${requirement.count}`),
   ];
 }

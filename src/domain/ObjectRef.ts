@@ -34,16 +34,16 @@ export class ObjectRef {
   private readonly propertyGlobalId: number | undefined;
 
   /** 型で指す参照ならそのobject_defのグローバルID、それ以外はundefined。 */
-  private readonly objectDefGlobalId: number | undefined;
+  private readonly objectGlobalId: number | undefined;
 
   private constructor(
     root: ReferenceRoot | undefined,
     propertyGlobalId: number | undefined,
-    objectDefGlobalId?: number,
+    objectGlobalId?: number,
   ) {
     this.root = root;
     this.propertyGlobalId = propertyGlobalId;
-    this.objectDefGlobalId = objectDefGlobalId;
+    this.objectGlobalId = objectGlobalId;
   }
 
   static ofRoot(root: ReferenceRoot): ObjectRef {
@@ -54,8 +54,8 @@ export class ObjectRef {
     return new ObjectRef(undefined, propertyGlobalId);
   }
 
-  static ofObjectDef(objectDefGlobalId: number): ObjectRef {
-    return new ObjectRef(undefined, undefined, objectDefGlobalId);
+  static ofObjectDef(objectGlobalId: number): ObjectRef {
+    return new ObjectRef(undefined, undefined, objectGlobalId);
   }
 
   /**
@@ -70,8 +70,7 @@ export class ObjectRef {
   ): WorldObject | undefined {
     if (this.root !== undefined) return owner.resolveEffectTarget(this.root, actor, dragged);
 
-    if (this.objectDefGlobalId !== undefined)
-      return owner.findRoot().findDescendantOfDef(this.objectDefGlobalId);
+    if (this.objectGlobalId !== undefined) return owner.findRoot().findDescendantOfDef(this.objectGlobalId);
 
     const property = owner.tryGetProperty(this.propertyGlobalId!);
     if (property === undefined) return undefined;
@@ -81,8 +80,7 @@ export class ObjectRef {
   /** この参照の宣言そのもの（ObjectRefReading参照）。 */
   get reading(): ObjectRefReading {
     if (this.root !== undefined) return { kind: 'root', root: this.root };
-    if (this.objectDefGlobalId !== undefined)
-      return { kind: 'object', objectGlobalId: this.objectDefGlobalId };
+    if (this.objectGlobalId !== undefined) return { kind: 'object', objectGlobalId: this.objectGlobalId };
     return { kind: 'property', propertyGlobalId: this.propertyGlobalId! };
   }
 

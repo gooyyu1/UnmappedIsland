@@ -154,7 +154,10 @@ export class RecipeWindow {
         },
         '閉じる',
         { fill: COLOR.button },
-        this.options.onClose,
+        () => {
+          this.close();
+          this.options.onClose();
+        },
       ),
     );
   }
@@ -223,9 +226,11 @@ export class RecipeWindow {
     this.scroll.setContentLength(top - this.bodyTop);
   }
 
-  destroy(): void {
+  /** 窓を畳む。**2度呼ばれても壊れない**——「閉じる」ボタンからと、呼び元の後片付けからの2回通る。 */
+  close(): void {
     this.scroll?.destroy();
     for (const object of this.objects) object.destroy();
+    this.objects.length = 0;
     this.overlay.destroy();
   }
 }

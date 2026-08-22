@@ -232,7 +232,7 @@ export class CardDragController {
     // 運んでいる札より奥（指が運んでいるカードは常に見えている必要がある）、説明だけが手前。
     this.showAcceptingCards(gesture);
     gesture.indicator = this.scene.add.graphics();
-    gesture.carried = this.handlers.grab(gesture.card, () => gesture.lane.slotRect(gesture.index));
+    gesture.carried = this.handlers.grab(gesture.card, () => gesture.lane.cellRect(gesture.index));
     gesture.tooltip = new Tooltip(this.scene, this.metrics());
     gesture.carryHold = new HoldRepeat(this.scene);
     this.follow(pointer);
@@ -255,7 +255,7 @@ export class CardDragController {
         };
         if (this.handlers.describeDrop(drop) === undefined) return;
 
-        const rect = lane.slotRect(index);
+        const rect = lane.cellRect(index);
         for (const layer of GLOW_LAYERS) {
           glow.lineStyle(this.metrics().px(layer.border), COLOR.cardDropAccept, layer.alpha);
           glow.strokeRoundedRect(rect.x, rect.y, rect.width, rect.height, this.metrics().px(SIZE.radius));

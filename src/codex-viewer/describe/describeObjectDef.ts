@@ -6,7 +6,7 @@ import type { DefNames, DescriptionToken, DescriptionWriter } from './Descriptio
 import { actionRef, combinationRef, propertyRef, text } from './Description';
 import { describeInteraction } from './describeInteraction';
 import { describeRangeEvent } from './describeProperty';
-import { describeStackOrder } from './describeStackOrder';
+import { stackOrderTokens } from './describeStackOrder';
 import { describePassive, passiveWritesToProperty } from './describePassive';
 import { spawnsObject, writesToProperty } from './effectQueries';
 
@@ -20,7 +20,7 @@ export function describeObjectDef(def: ObjectDef, names: DefNames, out: Descript
   if (def.boundToOwner) out.write(text('bound_to_owner: 入っていた親が消えるとき一緒に消える'));
 
   if (def.stackOrder !== undefined)
-    out.write(text('stack_order: '), ...describeStackOrder(def.stackOrder.reading, names));
+    out.write(text('stack_order: '), ...stackOrderTokens(def.stackOrder.reading, names));
 
   if (def.artByStagePropertyGlobalId !== undefined)
     out.write(

@@ -28,7 +28,7 @@ export abstract class InteractionDef {
   private readonly requirements: Requirements | undefined;
 
   /** 条件成立時に適用する効果。何も書かれていなければ空の合成（ActiveEffects）で、適用しても何も起きない。 */
-  private readonly effect: ActiveEffect;
+  protected readonly effect: ActiveEffect;
 
   /**
    * 実行にかかるゲーム内時間（分）。リテラルか{subject, prop}参照（weightの10.2節と同じ二択）。
@@ -79,15 +79,6 @@ export abstract class InteractionDef {
    */
   unresolvable(self: WorldObject, actor: WorldObject | undefined, dragged: WorldObject | undefined): boolean {
     return this.effect.unresolvable(self, actor, dragged);
-  }
-
-  /** まとめて実行するときの回数の上限を効果に訊く（ActiveEffect.acceptedCount）。 */
-  protected acceptedCountOf(
-    self: WorldObject,
-    candidates: readonly WorldObject[],
-    actor: WorldObject | undefined,
-  ): number | undefined {
-    return this.effect.acceptedCount(self, candidates, actor);
   }
 
   /** 所要時間の宣言（WeightReading参照）。durationを省いていればundefined＝時間を消費しない。 */

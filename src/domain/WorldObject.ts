@@ -136,7 +136,7 @@ export class WorldObject {
   artSuffix(): string | undefined {
     const propertyGlobalId = this.def.artByStagePropertyGlobalId;
     if (propertyGlobalId === undefined) return undefined;
-    return this.tryGetProperty(propertyGlobalId)?.artSuffix();
+    return this.tryGetProperty(propertyGlobalId)?.artSuffix;
   }
 
   /**
@@ -148,7 +148,7 @@ export class WorldObject {
    */
   exhaustedStage(): string | undefined {
     for (const property of this.properties) {
-      const stage = property.exhaustedStage();
+      const stage = property.exhaustedStage;
       if (stage !== undefined) return stage;
     }
     return undefined;

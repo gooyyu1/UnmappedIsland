@@ -235,8 +235,8 @@ describe('プレイヤーキャラクタの定義', () => {
         // 端数は丸める（96の80%は76.8なので77）。段の閾値は人が読む数字なので小数にしない。
         const threshold = Math.round(maxOf(character, propertyName) * 0.8);
 
-        expect(prop.alertLevelOf(threshold), '80%ちょうどはまだ安全域').toBe('safe');
-        expect(prop.alertLevelOf(threshold - 1)).not.toBe('safe');
+        expect(prop.alertOf(threshold), '80%ちょうどはまだ安全域').toBe('safe');
+        expect(prop.alertOf(threshold - 1)).not.toBe('safe');
       },
     );
 
@@ -254,10 +254,10 @@ describe('プレイヤーキャラクタの定義', () => {
       const prop = propOf(def(character), propertyName);
       const max = maxOf(character, propertyName);
 
-      expect(prop.alertLevelOf(0), '0は安全域').toBe('safe');
-      expect(prop.alertLevelOf(Math.trunc(max / 4)), '1/4で留意域').toBe('watch');
-      expect(prop.alertLevelOf(Math.trunc(max / 2)), '1/2で要注意域').toBe('caution');
-      expect(prop.alertLevelOf(Math.trunc((max * 5) / 6)), '5/6で危険域').toBe('danger');
+      expect(prop.alertOf(0), '0は安全域').toBe('safe');
+      expect(prop.alertOf(Math.trunc(max / 4)), '1/4で留意域').toBe('watch');
+      expect(prop.alertOf(Math.trunc(max / 2)), '1/2で要注意域').toBe('caution');
+      expect(prop.alertOf(Math.trunc((max * 5) / 6)), '5/6で危険域').toBe('danger');
     });
 
     it('荷重の危険域の段だけがtoo_heavyという名前を持つ', () => {
@@ -280,22 +280,22 @@ describe('プレイヤーキャラクタの定義', () => {
       const prop = propOf(def(character), propertyName);
       const perHour = decayPerTick(character, propertyName) * 4;
 
-      expect(prop.alertLevelOf(perHour * 3), '残り3時間').toBe('caution');
-      expect(prop.alertLevelOf(perHour * 3 - 1)).toBe('danger');
-      expect(prop.alertLevelOf(perHour * 12), '残り12時間').toBe('watch');
-      expect(prop.alertLevelOf(perHour * 12 - 1)).toBe('caution');
+      expect(prop.alertOf(perHour * 3), '残り3時間').toBe('caution');
+      expect(prop.alertOf(perHour * 3 - 1)).toBe('danger');
+      expect(prop.alertOf(perHour * 12), '残り12時間').toBe('watch');
+      expect(prop.alertOf(perHour * 12 - 1)).toBe('caution');
     });
 
     it('水分の域は残り時間で切られ、尽きると致命的域に入る', () => {
       const prop = propOf(def(character), 'hydration');
       const perHour = decayPerTick(character, 'hydration') * 4;
 
-      expect(prop.alertLevelOf(perHour * 6), '残り6時間').toBe('danger');
-      expect(prop.alertLevelOf(perHour * 6 - 1)).toBe('fatal');
-      expect(prop.alertLevelOf(perHour * 24), '残り1日').toBe('caution');
-      expect(prop.alertLevelOf(perHour * 24 - 1)).toBe('danger');
-      expect(prop.alertLevelOf(perHour * 48), '残り2日').toBe('watch');
-      expect(prop.alertLevelOf(perHour * 48 - 1)).toBe('caution');
+      expect(prop.alertOf(perHour * 6), '残り6時間').toBe('danger');
+      expect(prop.alertOf(perHour * 6 - 1)).toBe('fatal');
+      expect(prop.alertOf(perHour * 24), '残り1日').toBe('caution');
+      expect(prop.alertOf(perHour * 24 - 1)).toBe('danger');
+      expect(prop.alertOf(perHour * 48), '残り2日').toBe('watch');
+      expect(prop.alertOf(perHour * 48 - 1)).toBe('caution');
     });
 
     it('体力の域は最大値に対する割合で切られる', () => {
@@ -303,10 +303,10 @@ describe('プレイヤーキャラクタの定義', () => {
       const prop = propOf(def(character), 'stamina');
       const max = maxOf(character, 'stamina');
 
-      expect(prop.alertLevelOf(Math.trunc(max * 0.6))).toBe('watch');
-      expect(prop.alertLevelOf(Math.trunc(max * 0.6) - 1)).toBe('caution');
-      expect(prop.alertLevelOf(Math.trunc(max * 0.2))).toBe('caution');
-      expect(prop.alertLevelOf(Math.trunc(max * 0.2) - 1)).toBe('danger');
+      expect(prop.alertOf(Math.trunc(max * 0.6))).toBe('watch');
+      expect(prop.alertOf(Math.trunc(max * 0.6) - 1)).toBe('caution');
+      expect(prop.alertOf(Math.trunc(max * 0.2))).toBe('caution');
+      expect(prop.alertOf(Math.trunc(max * 0.2) - 1)).toBe('danger');
     });
 
     it('血は自分で戻り、満タンで頭打ちになる', () => {
@@ -334,7 +334,7 @@ describe('プレイヤーキャラクタの定義', () => {
 
       const fatal = instance
         .propertiesWithTag(codex.propertyTagNames.getId('status'))
-        .filter((property) => property.def.alertLevelOf(0) === 'fatal');
+        .filter((property) => property.def.alertOf(0) === 'fatal');
 
       expect(fatal.map((property) => property.def.name)).toEqual(['blood', 'hydration']);
     });

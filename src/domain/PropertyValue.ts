@@ -182,7 +182,7 @@ export class PropertyValue {
   }
 
   /** 今の実効値が該当する段（6.4節）が宣言しているart接尾辞（`art_by_stage`専用）。宣言が無ければundefined。 */
-  artSuffix(): string | undefined {
+  get artSuffix(): string | undefined {
     return this.def.artSuffixOf(this.getEffectiveValue());
   }
 
@@ -193,7 +193,7 @@ export class PropertyValue {
    * 尽きた瞬間に自分を消すプロパティ（on_minのdestroy、6.3節）は既定のクランプを持たないため、
    * 尽きた値のまま静止する。「何が尽きたのか」はそこから読める。
    */
-  exhaustedStage(): string | undefined {
+  get exhaustedStage(): string | undefined {
     if (!this.def.isExhausted(this._number)) return undefined;
     return this.def.stageNameOf(this.getEffectiveValue());
   }
@@ -205,7 +205,7 @@ export class PropertyValue {
 
   /** 今の値がどの域にあるか（6.4節のalert）。出すか・明滅させるかの判断はUI側（StatusArea.md 2節）。 */
   get alert(): AlertLevel {
-    return this.def.alertLevelOf(this.getEffectiveValue());
+    return this.def.alertOf(this.getEffectiveValue());
   }
 
   /** 今いる段（6.4節）。段を宣言していないプロパティはundefined。 */

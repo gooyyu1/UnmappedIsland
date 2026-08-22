@@ -4,7 +4,7 @@ import type { ReferenceRoot } from '../../domain/ReferenceRoot';
 import type { TypeMatchReading } from '../../domain/TypeMatchRule';
 import type { DefNames, DescriptionToken } from './Description';
 import { propertyRef, slotRef, stageRef, text } from './Description';
-import { describeTypeMatch } from './describeTypeMatch';
+import { typeMatchTokens } from './describeTypeMatch';
 
 /** 比較演算子の書き表し方。 */
 const OP_SYMBOLS: Readonly<Record<ConditionOp, string>> = {
@@ -22,7 +22,7 @@ const OP_SYMBOLS: Readonly<Record<ConditionOp, string>> = {
  * 条件（14節）を読める形に書き表す。1つの式なので行に分けず、断片の並びを返す。
  * 複合ノード（all/any/not）は括弧で包み、入れ子の切れ目が読み取れるようにする。
  */
-export function describeCondition(node: ConditionNode, names: DefNames): readonly DescriptionToken[] {
+export function conditionTokens(node: ConditionNode, names: DefNames): readonly DescriptionToken[] {
   const describer = new ConditionDescriber(names);
   node.read(describer);
   return describer.tokens;
@@ -86,13 +86,13 @@ class ConditionDescriber implements ConditionReader {
       text(`${root}の`),
       slotRef(this.names.slotName(slotGlobalId)),
       text('スロットに'),
-      ...describeTypeMatch(match, this.names),
+      ...typeMatchTokens(match, this.names),
       text('が入っている'),
     ];
   }
 
   objectMatches(root: ReferenceRoot, match: TypeMatchReading): void {
-    this.tokens = [text(`${root}が`), ...describeTypeMatch(match, this.names), text('である')];
+    this.tokens = [text(`${root}が`), ...typeMatchTokens(match, this.names), text('である')];
   }
 
   all(children: readonly ConditionNode[]): void {
@@ -104,14 +104,14 @@ class ConditionDescriber implements ConditionReader {
   }
 
   not(child: ConditionNode): void {
-    this.tokens = [text('not '), ...describeCondition(child, this.names)];
+    this.tokens = [text('not '), ...conditionTokens(child, this.names)];
   }
 
   private joined(children: readonly ConditionNode[], conjunction: string): readonly DescriptionToken[] {
     const tokens: DescriptionToken[] = [text('(')];
     for (const [index, child] of children.entries()) {
       if (index > 0) tokens.push(text(` ${conjunction} `));
-      tokens.push(...describeCondition(child, this.names));
+      tokens.push(...conditionTokens(child, this.names));
     }
     tokens.push(text(')'));
     return tokens;

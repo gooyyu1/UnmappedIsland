@@ -455,7 +455,7 @@ export class Card extends Phaser.GameObjects.Container {
     this.metrics = metrics;
     this.edgeRepeat = new HoldRepeat(scene);
 
-    const paper = addPaper(scene, metrics, width, height, false);
+    const paper = createPaper(scene, metrics, width, height, false);
     // 地は絵より先に敷く。用意されていなければ紙がそのまま地になる。
     this.backgroundLayer = scene.add.container(0, 0);
     this.artLayer = scene.add.container(0, 0);
@@ -647,9 +647,13 @@ export class Card extends Phaser.GameObjects.Container {
     this.showArt(content);
     this.showBars(bars, rail, colors, showChange, content.midAction === true);
     this.showEdge(content);
-    this.showStackCount();
-    this.showMark(content, rail);
-    this.showCooking(content.cooking, rail, showChange, content.midAction === true);
+    this.showStackCount(content);
+    // 印と覆いは窓の同じ矩形を使う。桟の高さで窓の下端が動くので、ここで1度だけ決めて両方へ渡す。
+    const inner = windowRect(this.metrics, this.cardWidth, this.cardHeight, rail.height);
+    const margin = this.metrics.px(MARK_MARGIN);
+    this.showMark(content, inner, margin);
+    this.showOverlay(content, inner, margin);
+    this.showCooking(content, rail, showChange, content.midAction === true);
     this.inProgressVeil.setVisible(content.inProgress === true);
   }
 
@@ -660,12 +664,8 @@ export class Card extends Phaser.GameObjects.Container {
    * 残り時間とバーは窓の中央へ縦に積む。**桟の高さで窓の下端が動く**ので、置き場所は印（showMark）と
    * 同じく差し替えのたびに決め直す。入り切らない文字は幅に合わせて縮める（showOverlayと同じ）。
    */
-  private showCooking(
-    cooking: CardCooking | undefined,
-    rail: RailMetrics,
-    showChange: boolean,
-    hold: boolean,
-  ): void {
+  private showCooking(content: CardContent, rail: RailMetrics, showChange: boolean, hold: boolean): void {
+    const cooking = content.cooking;
     this.cookingVeil.setVisible(cooking !== undefined);
     this.cookingText.setVisible(cooking !== undefined);
     const wasVisible = this.cookingBar.visible;
@@ -746,7 +746,7 @@ export class Card extends Phaser.GameObjects.Container {
       this.shownBackground = background;
       this.backgroundLayer.removeAll(true);
       if (background !== undefined && scene.textures.exists(background)) {
-        this.backgroundLayer.add(placeArt(scene, background, this.cardWidth, this.cardHeight));
+        this.backgroundLayer.add(createArtImage(scene, this.cardWidth, this.cardHeight, background));
       }
     }
 
@@ -761,18 +761,20 @@ export class Card extends Phaser.GameObjects.Container {
     this.multiplyLayer.removeAll(true);
     if (multiply !== undefined && scene.textures.exists(multiply)) {
       this.multiplyLayer.add(
-        placeArt(scene, multiply, this.cardWidth, this.cardHeight).setBlendMode(Phaser.BlendModes.MULTIPLY),
+        createArtImage(scene, this.cardWidth, this.cardHeight, multiply).setBlendMode(
+          Phaser.BlendModes.MULTIPLY,
+        ),
       );
     }
 
     if (art !== undefined && scene.textures.exists(art)) {
-      this.artLayer.add(placeArt(scene, art, this.cardWidth, this.cardHeight));
+      this.artLayer.add(createArtImage(scene, this.cardWidth, this.cardHeight, art));
       return;
     }
     // 乗算の絵だけで成り立つもの（痣のような、肌の変色そのもの）には絵がもう在る。絵文字は
     // 「まだ一枚も無い」ことの代用なので出さない。
     if (multiply === undefined) {
-      this.artLayer.add(createIconText(scene, this.metrics, content.icon, this.cardWidth, this.cardHeight));
+      this.artLayer.add(createIconText(scene, this.metrics, this.cardWidth, this.cardHeight, content.icon));
     }
     if (art !== undefined) this.swapArtWhenLoaded(scene, art);
   }
@@ -787,7 +789,7 @@ export class Card extends Phaser.GameObjects.Container {
       // 待っている間に映すものが変わっていれば、届いた絵はもうこのカードのものではない。
       if (this.shownArt !== texture) return;
       this.artLayer.removeAll(true);
-      this.artLayer.add(placeArt(scene, texture, this.cardWidth, this.cardHeight));
+      this.artLayer.add(createArtImage(scene, this.cardWidth, this.cardHeight, texture));
     };
     scene.textures.once(event, swap);
     this.once(Phaser.GameObjects.Events.DESTROY, () => scene.textures.off(event, swap));
@@ -1016,18 +1018,15 @@ export class Card extends Phaser.GameObjects.Container {
     return scene.add.container(paper.x + paper.width - offset, paper.y + offset, [circle, this.stackCount]);
   }
 
-  private showStackCount(): void {
-    const count = this._content.count ?? 1;
+  private showStackCount(content: CardContent): void {
+    const count = content.count ?? 1;
     this.stackBadge.setVisible(count >= 2);
     this.stackCount.setText(String(count));
   }
 
-  /** 状態の印。窓の左下へ置く（桟の高さで窓の下端が動くので、差し替えのたびに決め直す）。 */
-  private showMark(content: CardContent, rail: RailMetrics): void {
-    const inner = windowRect(this.metrics, this.cardWidth, this.cardHeight, rail.height);
-    const margin = this.metrics.px(MARK_MARGIN);
+  /** 状態の印。窓の左下へ置く。 */
+  private showMark(content: CardContent, inner: Rect, margin: number): void {
     this.mark.setPosition(inner.x + margin, inner.y + inner.height - margin).setText(content.mark ?? '');
-    this.showOverlay(content.overlay ?? '', inner, margin);
   }
 
   /**
@@ -1040,7 +1039,8 @@ export class Card extends Phaser.GameObjects.Container {
    * **入り切らない文言は縮めて収める。** 言語によって長さが大きく違う（「気絶」と `unconscious`）ので、
    * 幅からその場で倍率を決める。
    */
-  private showOverlay(text: string, inner: Rect, margin: number): void {
+  private showOverlay(content: CardContent, inner: Rect, margin: number): void {
+    const text = content.overlay ?? '';
     const appeared = text !== '' && text !== this.overlayText;
     this.overlayText = text;
     this.overlay.setText(text).setVisible(text !== '');
@@ -1235,10 +1235,10 @@ export class EmptyCard extends Phaser.GameObjects.Container {
     const height = metrics.px(SIZE.cardHeight);
 
     if (accepts === undefined) {
-      this.add(addPaper(scene, metrics, width, height, true));
+      this.add(createPaper(scene, metrics, width, height, true));
     } else {
       this.add(new Card(scene, metrics, 0, 0, cardFace(accepts)).setAlpha(EMPTY_FRAME_ALPHA));
-      this.add(emptyOutline(scene, metrics, width, height));
+      this.add(createEmptyOutline(scene, metrics, width, height));
     }
 
     scene.add.existing(this);
@@ -1349,7 +1349,7 @@ function createAlertOutline(
 }
 
 /** 空き枠であることを示す破線。薄く敷いたもの（紙・受け入れる物のカード）の上へ、薄めずに重ねる。 */
-function emptyOutline(
+function createEmptyOutline(
   scene: Phaser.Scene,
   metrics: ScreenMetrics,
   width: number,
@@ -1373,7 +1373,7 @@ function emptyOutline(
  *
  * emptyは中身の無い枠（EmptyCard）。画像なら薄く敷き、図形なら破線で描く。
  */
-function addPaper(
+function createPaper(
   scene: Phaser.Scene,
   metrics: ScreenMetrics,
   width: number,
@@ -1387,7 +1387,7 @@ function addPaper(
     // 空き枠は紙を薄く敷いたうえに破線を重ねる。薄いだけだと明るい下地（子ウィンドウの台紙）で
     // ほとんど見えず、「枠がいくつあるか」が伝わらないため。
     image.setAlpha(EMPTY_FRAME_ALPHA);
-    return scene.add.container(0, 0, [image, emptyOutline(scene, metrics, width, height)]);
+    return scene.add.container(0, 0, [image, createEmptyOutline(scene, metrics, width, height)]);
   }
 
   const face = scene.add.graphics();
@@ -1408,11 +1408,11 @@ function addPaper(
  * 絵の大きさは画像そのものの寸法で決まる（CARD_ART_WIDTH参照）。小石は小さい画像、地形はカードと
  * 同じ縦横比の大きい画像で、どちらもこの一つの規則で正しい大きさになる。
  */
-function placeArt(
+function createArtImage(
   scene: Phaser.Scene,
-  texture: string,
   width: number,
   height: number,
+  texture: string,
 ): Phaser.GameObjects.Image {
   const image = scene.add.image(width / 2, height / 2, texture).setOrigin(0.5);
   const scale = width / CARD_ART_WIDTH;
@@ -1481,9 +1481,9 @@ function createCookingVeil(
 function createIconText(
   scene: Phaser.Scene,
   metrics: ScreenMetrics,
-  icon: string,
   width: number,
   height: number,
+  icon: string,
 ): Phaser.GameObjects.Text {
   return scene.add
     .text(width / 2, height / 2, icon, {

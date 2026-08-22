@@ -29,11 +29,11 @@ export class TypeMatchRule {
     this.target = target;
   }
 
-  static tag(tagGlobalId: number): TypeMatchRule {
+  static ofTag(tagGlobalId: number): TypeMatchRule {
     return new TypeMatchRule('tag', tagGlobalId);
   }
 
-  static object(objectGlobalId: number): TypeMatchRule {
+  static ofObjectDef(objectGlobalId: number): TypeMatchRule {
     return new TypeMatchRule('object', objectGlobalId);
   }
 

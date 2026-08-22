@@ -392,7 +392,7 @@ export class PropertyDef {
    * 実効値effectiveValueのとき、値がどの域にあるか（6.4節のalert）。該当する段が無い場合と、
    * 該当した段がalertを宣言していない場合は安全域。
    */
-  alertLevelOf(effectiveValue: number): AlertLevel {
+  alertOf(effectiveValue: number): AlertLevel {
     return this.resolveStage(effectiveValue)?.alert ?? 'safe';
   }
 
@@ -470,8 +470,8 @@ export class PropertyDef {
    * （on_min、6.3節）を持つプロパティだけが尽きうる——下限に居るだけの値（痛みの0など）は
    * 尽きたのではなく、単に何も起きていない。
    */
-  isExhausted(number: number): boolean {
-    return this.declaredOnMin !== undefined && this.range !== undefined && number <= this.range.min;
+  isExhausted(rawValue: number): boolean {
+    return this.declaredOnMin !== undefined && this.range !== undefined && rawValue <= this.range.min;
   }
 
   /** inherit（6節）による、祖先からownerの実効値へ加える寄与。inheritが無効、または該当する祖先が見つからない場合は0。 */

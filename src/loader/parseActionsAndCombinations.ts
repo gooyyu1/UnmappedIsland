@@ -111,7 +111,7 @@ export function parseCombinations(
         `${context}: 必須フィールド 'with' がありません（{tag: ...}か{object: ...}）。`,
       );
 
-    const withRule = parseTypeMatchRule(loader, withNode, `${context}.with`);
+    const withRule = parseTypeMatchRule(loader, `${context}.with`, withNode);
     const body = parseInteractionBody(loader, context, map, true, COMBINATION_RESERVED_KEYS);
     const allowMultiple = tryGetBool(map, 'allow_multiple', context, false);
 

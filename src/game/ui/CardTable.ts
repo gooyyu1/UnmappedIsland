@@ -157,7 +157,7 @@ export class CardTable {
     for (const { lane, cells } of views) {
       const update = lane.reconcile(cells, (content) => this.makeCard(content));
       for (const entered of update.entered) {
-        arriving.push({ card: entered.card, ids: idsOf(entered.card), rect: lane.slotRect(entered.index) });
+        arriving.push({ card: entered.card, ids: idsOf(entered.card), rect: lane.cellRect(entered.index) });
       }
       for (const card of update.left) left.push({ card, ids: idsOf(card) });
     }
@@ -565,7 +565,7 @@ function placedCards(lanes: readonly CardLane[]): PlacedCard<Card, Rect>[] {
   const placed: PlacedCard<Card, Rect>[] = [];
   for (const lane of lanes) {
     lane.cardObjects.forEach((card, index) => {
-      if (card !== undefined) placed.push({ card, ids: idsOf(card), rect: lane.slotRect(index) });
+      if (card !== undefined) placed.push({ card, ids: idsOf(card), rect: lane.cellRect(index) });
     });
   }
   return placed;

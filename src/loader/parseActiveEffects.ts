@@ -162,7 +162,7 @@ export function parseWeight(
     const literal = Number(raw);
     if (raw.trim() === '' || Number.isNaN(literal))
       throw new YamlLoadError(`${context}: ${fieldName}は数値である必要があります（値: '${raw}'）。`);
-    return WeightSpec.fromLiteral(literal);
+    return WeightSpec.ofLiteral(literal);
   }
 
   if (isMap(node)) {
@@ -173,7 +173,7 @@ export function parseWeight(
 
     requireKnownKeys(context, node, ['subject', 'prop']);
 
-    return WeightSpec.fromPath(new PropertyPath(root, loader.propertyNames.intern(propName)));
+    return WeightSpec.ofPath(new PropertyPath(root, loader.propertyNames.intern(propName)));
   }
 
   throw new YamlLoadError(

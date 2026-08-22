@@ -7,9 +7,9 @@ import {
 } from './describe/describeObjectDef';
 import { describePassive } from './describe/describePassive';
 import { describeInteraction } from './describe/describeInteraction';
-import { describeInitialValue, describeProperty } from './describe/describeProperty';
+import { initialValueTokens, describeProperty } from './describe/describeProperty';
 import { describeRecipe } from './describe/describeRecipe';
-import { describeAccept, describePutInDuration } from './describe/describeSlot';
+import { describeAccept, putInDurationTokens } from './describe/describeSlot';
 import type { InteractionDef } from '../domain/InteractionDef';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { SlotDef } from '../domain/SlotDef';
@@ -290,7 +290,7 @@ function slotTableHtml(firstColumn: string, rows: string): string {
 /** スロット1つぶんのセル（1列目＝名前を除く）。 */
 function slotCellsHtml(view: CodexView, selfObjectName: string, slotDef: SlotDef): string {
   const notes: string[] = [];
-  const putIn = describePutInDuration(slotDef, view.names);
+  const putIn = putInDurationTokens(slotDef, view.names);
   if (putIn !== undefined) notes.push(`入れるのに${view.tokensHtml(putIn, selfObjectName)}分かかる`);
   if (!slotDef.autoPlacement) notes.push('自動配置の対象にしない（手で入れるか、名指しの移動でだけ入る）');
 
@@ -407,7 +407,7 @@ function propertiesHtml(view: CodexView, def: ObjectDef): string {
         identifier +
         description +
         `</td>` +
-        `<td>${view.tokensHtml(describeInitialValue(propertyDef, view.names), def.name)}</td>` +
+        `<td>${view.tokensHtml(initialValueTokens(propertyDef, view.names), def.name)}</td>` +
         `<td>${propertyDef.range === undefined ? '' : `${propertyDef.range.min} 〜 ${propertyDef.range.max}`}</td>` +
         `<td>${tags}</td></tr>`
       );

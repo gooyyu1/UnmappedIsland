@@ -52,13 +52,13 @@ export function installPackBackgroundArt(art: ReadonlyMap<string, string>, packN
 }
 
 /** レーンの全面に敷く絵。用意されていなければundefinedを返し、呼び出し側は単色の背景板へ落とす。 */
-export function laneTexture(at: SlotRef): string | undefined {
-  return textureOf(at, 'lane');
+export function laneBackgroundTexture(at: SlotRef): string | undefined {
+  return backgroundTexture(at, 'lane');
 }
 
 /** カードの地に敷く絵。用意されていなければundefinedを返し、呼び出し側は紙のままにする。 */
 export function cardBackgroundTexture(at: SlotRef): string | undefined {
-  return textureOf(at, 'card');
+  return backgroundTexture(at, 'card');
 }
 
 /**
@@ -70,7 +70,7 @@ export function backgroundTexturesOf(owner: string): readonly string[] {
 }
 
 /** 持ち主ごとの絵、無ければスロット共通の絵。 */
-function textureOf(at: SlotRef, use: Use): string | undefined {
+function backgroundTexture(at: SlotRef, use: Use): string | undefined {
   return found(`${at.owner}_${at.slot}_${use}`) ?? found(`${at.slot}_${use}`);
 }
 

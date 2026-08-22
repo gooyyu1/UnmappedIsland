@@ -34,7 +34,7 @@ import { ShownStatuses } from './view/ShownStatuses';
 import type { ElapseFrame } from './view/elapsePlayback';
 import { ElapsePlayback } from './view/elapsePlayback';
 import type { Activity } from './view/operationSteps';
-import { elapseSteps, elapsedSteps, isMidAction, runsOperation } from './view/operationSteps';
+import { playbackSteps, afterPlaybackSteps, isMidAction, runsOperation } from './view/operationSteps';
 import { Button, SLOT_BUTTON_PAPER_TEXTURE } from './ui/Button';
 import { EDGE_DIRECTIONS } from './ui/Card';
 import type { CardContent, CardEdgeAction } from './ui/Card';
@@ -49,7 +49,7 @@ import { Curtain } from './ui/Curtain';
 import { LocationArtLoader } from './ui/LocationArtLoader';
 import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from '../art/informationArt';
 import { addNineSlice } from '../ui/nineSlice';
-import { laneTexture } from '../art/backgroundArt';
+import { laneBackgroundTexture } from '../art/backgroundArt';
 import { SEPARATOR_TEXTURE } from '../art/separatorArt';
 import type { LaneView, MotionContext } from './ui/CardTable';
 import { CardTable } from './ui/CardTable';
@@ -341,11 +341,11 @@ export class PlayScene extends ResponsiveScene {
    * 控えを持たせると古い並びを答えることになる。
    */
   private readonly shown = new ShownCards({
-    stacksIn: (place) => this.cardsAt(place),
+    stacksIn: (...asked) => this.view.cardsIn(...asked),
     cardOfObjects: (...asked) => this.view.cardOfObjects(...asked),
     combinationOf: (...asked) => this.view.combinationOf(...asked),
     windowPlace: () => this.childWindowPlace,
-    places: (screen) => this.place(screen),
+    places: (...asked) => this.view.places(...asked),
   });
 
   /**
@@ -539,10 +539,12 @@ export class PlayScene extends ResponsiveScene {
       `現在地: ${this.view.currentLocationCard.name}`,
       `演出中: ${ACTIVITY_NAMES[this.activity]}`,
       `子ウィンドウ: ${this.childWindowPlace === undefined ? 'なし' : this.placeText(this.childWindowPlace)}`,
-      `手持ち: ${this.cardsAt(this.place('hand'))
+      `手持ち: ${this.view
+        .cardsIn(this.place('hand'))
         .map((card) => card?.name ?? '空き')
         .join(' / ')}`,
-      `アイテム: ${this.cardsAt(this.place('items'))
+      `アイテム: ${this.view
+        .cardsIn(this.place('items'))
         .map((card) => card?.name)
         .join(' / ')}`,
     ];
@@ -647,7 +649,7 @@ export class PlayScene extends ResponsiveScene {
     // 子ウィンドウは最初の差し替えより先に開き直す。**借りた1枚はウィンドウの枠に並ぶ**ので、
     // 開いてから出せば、既にそこに在ったものとしてその場に現れる（運んで見せない）。
     if (openedCard !== undefined) this.openObjectWindow(openedCard);
-    else if (openedPlace !== undefined) this.openSlotWindow(openedPlace);
+    else if (openedPlace !== undefined) this.openCharacterWindow(openedPlace);
     // レーンはカードを作らない（CardTable参照）ので、組み上がったところで最初の差し替えを通して
     // 札を出す。作り直しの直後は出どころが無いので、飛ばずその場に現れる。
     this.showView();
@@ -785,7 +787,7 @@ export class PlayScene extends ResponsiveScene {
    */
   private laneArt(place: CardPlace): string | undefined {
     const background = this.view.slotViewOf(place).background;
-    return background === undefined ? undefined : laneTexture(background);
+    return background === undefined ? undefined : laneBackgroundTexture(background);
   }
 
   /** その場所を映すレーンに並べる枠（slotCells）。 */
@@ -846,16 +848,6 @@ export class PlayScene extends ResponsiveScene {
     return this.shown.stacksAt(this.spotOf(lane));
   }
 
-  /**
-   * その場所に今並んでいる束。レーンも子ウィンドウも同じcardsInで引く（PlayScreenView参照）。
-   *
-   * **持ち出されている札を引く前の、ワールドがそう持っている並び。** 画面に出ている姿が要るなら
-   * ShownCardsへ訊く。
-   */
-  private cardsAt(place: CardPlace): readonly (ObjectCardStack | undefined)[] {
-    return this.view.cardsIn(place);
-  }
-
   /** レーンが映している場所。 */
   private placeOf(lane: CardLane): CardPlace {
     if (lane === this.handLane) return this.place('hand');
@@ -888,8 +880,8 @@ export class PlayScene extends ResponsiveScene {
       views.push({ lane: window.cardLane, cells: [{ card: borrowedFace(borrowed) }] });
     }
     const place = this.childWindowPlace;
-    if (window?.lane !== undefined && place !== undefined) {
-      views.push({ lane: window.lane, cells: this.cellsAt(place) });
+    if (window?.contentLane !== undefined && place !== undefined) {
+      views.push({ lane: window.contentLane, cells: this.cellsAt(place) });
     }
     // 発見物のレーン。借りている札はここに並び、返すと元の場所のレーンへ戻る（Windows.md 5.1節）。
     if (window?.foundLane !== undefined) {
@@ -901,7 +893,11 @@ export class PlayScene extends ResponsiveScene {
   /** 今画面に出ているレーン。札を探すため（cardShowing）のもので、並びは引き直さない。 */
   private get openLanes(): readonly CardLane[] {
     const lanes = [this.fixtureLane, this.itemLane, this.handLane, this.portraitLane];
-    for (const lane of [this.childWindow?.cardLane, this.childWindow?.lane, this.childWindow?.foundLane]) {
+    for (const lane of [
+      this.childWindow?.cardLane,
+      this.childWindow?.contentLane,
+      this.childWindow?.foundLane,
+    ]) {
       if (lane !== undefined) lanes.push(lane);
     }
     return lanes;
@@ -926,7 +922,7 @@ export class PlayScene extends ResponsiveScene {
 
     // 借りた札の枠も落とし先に含める。石を打ち割るには、手持ちからウィンドウの中の石へ重ねられる
     // 必要がある（借りた1枚はもうレーンには居ない、Windows.md 1.1節）。
-    return [this.childWindow.cardLane, this.childWindow.lane, this.handLane].filter(
+    return [this.childWindow.cardLane, this.childWindow.contentLane, this.handLane].filter(
       (lane): lane is CardLane => lane !== undefined,
     );
   }
@@ -979,7 +975,7 @@ export class PlayScene extends ResponsiveScene {
         (object) => object?.content.identity?.includes(instanceId) === true,
       );
       const card = index < 0 ? undefined : lane.cardObjects[index];
-      if (card !== undefined) return { card, rect: lane.slotRect(index) };
+      if (card !== undefined) return { card, rect: lane.cellRect(index) };
     }
     return undefined;
   }
@@ -1032,27 +1028,22 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 装備・怪我のボタンから開く子ウィンドウ。**キャラクタ自身の窓そのもの**で、押したボタンが
-   * 名指ししているスロットのタブから開くだけの違いしかない（記憶より優先する、Windows.md 1.2節）。
-   *
-   * 休息のアクションは並べない——ボタンが指しているのは持ち物であって、本人の過ごし方ではない。
-   */
-  private openSlotWindow(place: CardPlace): void {
-    const origins = this.dropChildWindow();
-    this.openChildWindow({ ...this.view.characterWindow, actions: [] }, origins, {
-      opensPlace: place,
-      properties: this.status.tabs(),
-    });
-  }
-
-  /**
    * 日時とポートレイトを押すと開く、キャラクタ自身の子ウィンドウ（Windows.md 4節）。休息のアクション
    * （Characters.md 休息節）が並ぶ。**カードのウィンドウと同じ経路**——映しているのは自分の札で、
    * ボタンはそのオブジェクトが宣言しているアクションそのもの。
    */
-  private openCharacterWindow(): void {
+  /**
+   * キャラクタ自身の子ウィンドウ。opensPlaceを渡すと**そのスロットのタブから開き**（記憶より優先
+   * する、Windows.md 1.2節）、**休息のアクションは並べない**——装備・怪我のボタンが指しているのは
+   * 持ち物であって、本人の過ごし方ではない。
+   */
+  private openCharacterWindow(opensPlace?: CardPlace): void {
+    const character = this.view.characterWindow;
     const origins = this.dropChildWindow();
-    this.openChildWindow(this.view.characterWindow, origins, { properties: this.status.tabs() });
+    this.openChildWindow(opensPlace === undefined ? character : { ...character, actions: [] }, origins, {
+      opensPlace,
+      properties: this.status.tabs(),
+    });
   }
 
   /**
@@ -1241,7 +1232,7 @@ export class PlayScene extends ResponsiveScene {
     const origins = new Map<number, Rect>();
     if (cardRect !== undefined) for (const id of returned.card) origins.set(id, cardRect);
     returned.found.forEach((card, index) => {
-      const rect = foundLane?.slotRect(index);
+      const rect = foundLane?.cellRect(index);
       if (rect === undefined) return;
       for (const id of card.identity ?? []) origins.set(id, rect);
     });
@@ -1260,7 +1251,7 @@ export class PlayScene extends ResponsiveScene {
    * 現在地そのものを映す子ウィンドウ（探索できない場所の札を押したとき）。
    *
    * **場所の札は借りない。** 現在地の札は設置物レーンに固定された枠で、他の札のように並びから
-   * 抜けて戻る先が無い（openSlotWindowと同じ扱い）。
+   * 抜けて戻る先が無い（キャラクタの窓をスロットのタブから開くのと同じ扱い）。
    */
   private openLocationWindow(): void {
     const origins = this.dropChildWindow();
@@ -1304,9 +1295,9 @@ export class PlayScene extends ResponsiveScene {
     const recorded = this.record(() => this.gameSession.player.explore());
     // 道が見つかっていたら、経過を見せている間に行き先の絵のロードを始める。
     this.requestLocationArt();
-    // 運ぶ順はワールドを変える操作と同じ（elapsedSteps）。探索だけの段はfoundが足す。
+    // 運ぶ順はワールドを変える操作と同じ（afterPlaybackSteps）。探索だけの段はfoundが足す。
     this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
-      for (const step of elapsedSteps({ moved: false, found: true })) {
+      for (const step of afterPlaybackSteps({ moved: false, found: true })) {
         switch (step) {
           case 'refresh':
             this.view = fromGameSession(this.gameSession, this.codex, this.locale);
@@ -1324,7 +1315,7 @@ export class PlayScene extends ResponsiveScene {
             this.showView(this.motionOf(recorded.changes));
             break;
           case 'transit':
-            // 探索では土地を移らないので、elapsedStepsはこの段を返さない。
+            // 探索では土地を移らないので、afterPlaybackStepsはこの段を返さない。
             break;
         }
       }
@@ -1345,7 +1336,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 現在地のレーンに出ているカード（設置物とアイテム）。空き枠は除く。 */
   private get locationCards(): readonly ObjectCardStack[] {
-    return [...this.cardsAt(this.place('fixtures')), ...this.cardsAt(this.place('items'))].filter(
+    return [...this.view.cardsIn(this.place('fixtures')), ...this.view.cardsIn(this.place('items'))].filter(
       (card): card is ObjectCardStack => card !== undefined,
     );
   }
@@ -1385,7 +1376,7 @@ export class PlayScene extends ResponsiveScene {
    * fromMinutesからtoMinutesまで、ゲーム内時間の経過を実時間（realMsFor）で時計とドーナツグラフへ
    * 映し、経過し切ったらonElapsedを呼ぶ。
    *
-   * **何をどの順で運ぶかはelapseStepsが決める**（死んだら止める・粒は待たずに散らす・周回の終わりは
+   * **何をどの順で運ぶかはplaybackStepsが決める**（死んだら止める・粒は待たずに散らす・周回の終わりは
    * 見せ終わってから）。ここが持つのは、その1つずつをどう見せるかだけ。
    *
    * **見せ終わった時点で演出中を降ろすのはここだけ**（activity）。何を見せている最中かは始めた側が
@@ -1403,7 +1394,7 @@ export class PlayScene extends ResponsiveScene {
       this.gameSession.world.minutesPerTick,
       recording.ticks,
     );
-    const steps = elapseSteps({
+    const steps = playbackSteps({
       isDead: this.gameSession.player.isDead,
       minutes: playback.totalMinutes,
       reachedMainland: this.gameSession.player.hasReachedMainland,
@@ -1618,9 +1609,9 @@ export class PlayScene extends ResponsiveScene {
     // 作り直すのは経過し切ってからなので、暗転はそれまでに終わっていなければならない。
     curtain?.darken(Math.min(DARKEN_MS, elapsedMs));
 
-    // 何をどの順で運ぶかはelapsedStepsが決める。ここが持つのは、その1つずつをどう見せるかだけ。
+    // 何をどの順で運ぶかはafterPlaybackStepsが決める。ここが持つのは、その1つずつをどう見せるかだけ。
     this.passTime(startedAt, this.gameSession.world.totalMinutes, recorded, () => {
-      for (const step of elapsedSteps({ moved })) {
+      for (const step of afterPlaybackSteps({ moved })) {
         switch (step) {
           case 'refresh':
             this.view = fromGameSession(this.gameSession, this.codex, this.locale);
@@ -1629,7 +1620,7 @@ export class PlayScene extends ResponsiveScene {
             this.noteStatusChanges(statusesBefore, startedAt);
             break;
           case 'transit':
-            // movedのときだけ張った幕（elapsedStepsがtransitを返すのも同じとき）。
+            // movedのときだけ張った幕（afterPlaybackStepsがtransitを返すのも同じとき）。
             if (curtain !== undefined) this.transit(curtain);
             break;
           case 'signals':
@@ -1797,7 +1788,7 @@ export class PlayScene extends ResponsiveScene {
   /**
    * 情報エリアの中を仕切る区切り線。背景が1枚の紙になり、エリアごとの塗り分けが無くなったため、
    * 意味のまとまり（キャラクター／ステータス）の境目だけを線で示す。見た目は現在地カードの右の
-   * 区切り線と同じ（CardLane.addPinnedSlot）。
+   * 区切り線と同じ（CardLane.addPinnedCell）。
    *
    * 状況エリアとの境目には引かない。空のパネルが自分の縁を持っていて、それが境目を兼ねるため。
    */
@@ -1919,7 +1910,7 @@ export class PlayScene extends ResponsiveScene {
     // ワールドが決める——窓のタブと同じ並びが、そのままボタンになる。
     const characterSlots = this.view.characterWindow.slots.flatMap((place) => {
       const looks = CHARACTER_SLOT_BUTTONS[this.view.slotViewOf(place).key];
-      return looks === undefined ? [] : [{ ...looks, onTap: () => this.openSlotWindow(place) }];
+      return looks === undefined ? [] : [{ ...looks, onTap: () => this.openCharacterWindow(place) }];
     });
     const buttons = [
       {
@@ -1978,7 +1969,8 @@ export class PlayScene extends ResponsiveScene {
     });
     button.addContent(
       ...this.slotButtonPaper(rect, index, radius, borderWidth),
-      this.slotButtonIcon(spec, rect),
+      // 絵文字は正方形なので、キャンバスの高さがそのまま大きさになる。
+      this.buttonIcon(spec, rect, SIZE.slotButtonIcon, SIZE.slotButtonIcon.height),
     );
     button.on('pointerup', this.whileIdle(spec.onTap));
   }
@@ -2022,19 +2014,27 @@ export class PlayScene extends ResponsiveScene {
    * Tシャツ > 巻いた包帯——のとおり描き分けてある（card_art.pyの--canvas）。UIが物の大きさを測って
    * 揃えると、その差が消えてしまう。周りは透けているので、ボタンの地の色が下に出る。
    */
-  private slotButtonIcon(spec: { art: IconName; icon: string }, rect: Rect): Phaser.GameObjects.GameObject {
+  /**
+   * ボタンの中央へ置く絵。**絵があればそれを、無ければ絵文字を**置く。canvasは絵を敷く寸法、
+   * glyphSizeは絵文字の大きさ——スロットのボタンと桟のアイコンの違いはこの2値だけなので、
+   * 仕組みは分けない。
+   */
+  private buttonIcon(
+    spec: { art?: IconName; icon: string },
+    rect: Rect,
+    canvas: { width: number; height: number },
+    glyphSize: number,
+  ): Phaser.GameObjects.GameObject {
     const x = rect.width / 2;
     const y = rect.height / 2;
-    const canvas = SIZE.slotButtonIcon;
-    const texture = iconTexture(spec.art);
+    const texture = spec.art === undefined ? undefined : iconTexture(spec.art);
     if (texture !== undefined && this.textures.exists(texture)) {
       return this.add
         .image(x, y, texture)
         .setOrigin(0.5)
         .setDisplaySize(this.metrics.px(canvas.width), this.metrics.px(canvas.height));
     }
-    // 絵文字は正方形なので、キャンバスの高さがそのまま大きさになる。
-    return addLabel(this, this.metrics, x, y, spec.icon, { size: canvas.height }).setOrigin(0.5);
+    return addLabel(this, this.metrics, x, y, spec.icon, { size: glyphSize }).setOrigin(0.5);
   }
 
   /**
@@ -2163,7 +2163,7 @@ export class PlayScene extends ResponsiveScene {
   /** 何を作るかを選ぶ一覧を開く。選ぶと製作中オブジェクトが現在地に生まれる。 */
   private openRecipeWindow(): void {
     noteOperation('レシピ一覧を開いた');
-    this.recipeWindow?.destroy();
+    this.recipeWindow?.close();
     this.recipeWindow = new RecipeWindow(this, this.metrics, {
       title: '作るもの',
       categories: recipeCategories(this.gameSession, this.codex, this.locale, (defGlobalId, origin) => {
@@ -2176,7 +2176,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   private closeRecipeWindow(): void {
-    this.recipeWindow?.destroy();
+    this.recipeWindow?.close();
     this.recipeWindow = undefined;
   }
 
@@ -2303,7 +2303,8 @@ export class PlayScene extends ResponsiveScene {
    */
   private addIconButton(rect: Rect, spec: BarIcon, active: boolean, border: number): Button {
     const button = new Button(this, rect, this.iconButtonStyle(active, border));
-    button.addContent(this.barIcon(spec, rect));
+    const art = SIZE.iconButtonArt;
+    button.addContent(this.buttonIcon(spec, rect, { width: art, height: art }, ICON_BUTTON_GLYPH));
     return button;
   }
 
@@ -2312,17 +2313,6 @@ export class PlayScene extends ResponsiveScene {
    *
    * **どの絵も同じ大きさで敷く。** 4つの役割に大小は無いので、物の大きさで差を付ける理由も無い。
    */
-  private barIcon(spec: BarIcon, rect: Rect): Phaser.GameObjects.GameObject {
-    const x = rect.width / 2;
-    const y = rect.height / 2;
-    const texture = spec.art === undefined ? undefined : iconTexture(spec.art);
-    if (texture !== undefined && this.textures.exists(texture)) {
-      const size = this.metrics.px(SIZE.iconButtonArt);
-      return this.add.image(x, y, texture).setOrigin(0.5).setDisplaySize(size, size);
-    }
-    return addLabel(this, this.metrics, x, y, spec.icon, { size: ICON_BUTTON_GLYPH }).setOrigin(0.5);
-  }
-
   private iconButtonStyle(active: boolean, border: number): BoxStyle {
     return {
       fill: active ? COLOR.buttonActive : COLOR.button,

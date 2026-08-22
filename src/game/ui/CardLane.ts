@@ -137,7 +137,7 @@ export class CardLane {
 
   /**
    * 絵を敷いた背景板のうち、カードと同じだけ横へ送るもの（背景色だけのレーンでは空）。スクロールの
-   * たびに敷き位置を更新する。ピン留め部分の背景板は固定なので含めない（addPinnedSlot参照）。
+   * たびに敷き位置を更新する。ピン留め部分の背景板は固定なので含めない（addPinnedCell参照）。
    */
   private readonly tiles: Phaser.GameObjects.TileSprite[] = [];
 
@@ -212,7 +212,7 @@ export class CardLane {
     const pinnedPanel =
       pinned === undefined
         ? undefined
-        : this.addPinnedSlot(scene, metrics, rect, background, options.art, cardY, pinned);
+        : this.addPinnedCell(scene, metrics, rect, background, options.art, cardY, pinned);
 
     // ピン留め部分は背景板が上に重なりレーン本体がホイールを受け取れないので、そちらも面に含める。
     this.scroll = new ScrollArea(scene, {
@@ -322,7 +322,7 @@ export class CardLane {
   }
 
   /** 添字の位置の枠の、画面上の矩形。 */
-  slotRect(index: number): Rect {
+  cellRect(index: number): Rect {
     return {
       x: this.strip.x + index * this.pitch,
       y: this.cardY,
@@ -389,7 +389,7 @@ export class CardLane {
 
   /** ドロップ先を示す枠の位置（カード・空き枠ならその枠そのもの、隙間なら細い縦帯）。 */
   dropIndicatorRect(target: LaneDropTarget): Rect {
-    if (target.kind !== 'gap') return this.slotRect(target.index);
+    if (target.kind !== 'gap') return this.cellRect(target.index);
 
     // 隙間の中心は「右隣のカードの左端 - ギャップの半分」。両端の隙間はレーンからはみ出すので収める。
     const center = this.strip.x + target.index * this.pitch - (this.pitch - this.cardWidth) / 2;
@@ -429,7 +429,7 @@ export class CardLane {
    * 背景板もカードと一緒に固定する（scrollToの対象から外す）。スクロール量0では下のレーン背景と
    * 同じ位置に敷かれるため1枚の絵として繋がり、送っている間だけ区切り線を境に地面が分かれて見える。
    */
-  private addPinnedSlot(
+  private addPinnedCell(
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
     rect: Rect,
