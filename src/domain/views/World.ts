@@ -51,7 +51,7 @@ export class World {
    */
   get weather(): string | undefined {
     const value = this.instance.tryGetProperty(this.words.weatherId)?.getEffectiveValue();
-    return value === undefined ? undefined : this.codex.symbolName(value);
+    return value === undefined ? undefined : this.codex.symbolNames.getName(value);
   }
 
   /**

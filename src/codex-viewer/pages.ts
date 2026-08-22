@@ -377,7 +377,7 @@ function artHtml(view: CodexView, def: ObjectDef, size: 'thumb' | 'large'): stri
 function tagChipsHtml(view: CodexView, def: ObjectDef): string {
   if (def.tags.length === 0) return '<span class="muted">（タグなし）</span>';
   return def.tags
-    .map((tagGlobalId) => view.codex.tagName(tagGlobalId))
+    .map((tagGlobalId) => view.codex.tagNames.getName(tagGlobalId))
     .map((tag) => `<a class="chip" href="${view.tagHref(tag)}">${escapeHtml(tag)}</a>`)
     .join(' ');
 }
@@ -390,7 +390,7 @@ function propertiesHtml(view: CodexView, def: ObjectDef): string {
       const description =
         texts.description === undefined ? '' : `<div class="muted">${escapeHtml(texts.description)}</div>`;
       const tags = propertyDef.tags
-        .map((tagGlobalId) => view.propertyTagLabel(view.codex.propertyTagName(tagGlobalId)))
+        .map((tagGlobalId) => view.propertyTagLabel(view.codex.propertyTagNames.getName(tagGlobalId)))
         .map((tag) => `<span class="chip chip-property-tag">${escapeHtml(tag)}</span>`)
         .join(' ');
 

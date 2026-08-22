@@ -75,30 +75,6 @@ export class WorldCodex {
     this.generation = generation;
   }
 
-  objectName(globalId: number): string {
-    return this.objectNames.getName(globalId);
-  }
-
-  propertyName(globalId: number): string {
-    return this.propertyNames.getName(globalId);
-  }
-
-  slotName(globalId: number): string {
-    return this.slotNames.getName(globalId);
-  }
-
-  tagName(globalId: number): string {
-    return this.tagNames.getName(globalId);
-  }
-
-  propertyTagName(globalId: number): string {
-    return this.propertyTagNames.getName(globalId);
-  }
-
-  symbolName(globalId: number): string {
-    return this.symbolNames.getName(globalId);
-  }
-
   /**
    * シンボル型（6.6節）と宣言されたプロパティのグローバルID。同じ名前でも型ごとに宣言が違いうるので、
    * 1つでもシンボル型として宣言していれば含める。

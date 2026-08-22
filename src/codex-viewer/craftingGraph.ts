@@ -62,7 +62,7 @@ export function buildCraftingNetwork(defs: readonly ObjectDef[], codex: WorldCod
   const usedTagIds = new Set<number>();
 
   const objectNode = (globalId: number): string => {
-    const name = codex.objectName(globalId);
+    const name = codex.objectNames.getName(globalId);
     const id = objectNodeId(name);
     if (!nodes.has(id)) nodes.set(id, { kind: 'object', id, objectName: name });
     return id;
@@ -92,7 +92,7 @@ export function buildCraftingNetwork(defs: readonly ObjectDef[], codex: WorldCod
         } else {
           usedTagIds.add(input.tagGlobalId);
           edges.push({
-            from: tagNodeId(codex.tagName(input.tagGlobalId)),
+            from: tagNodeId(codex.tagNames.getName(input.tagGlobalId)),
             to: stepId,
             kind: 'input',
             consumed: input.consumed,
@@ -113,7 +113,7 @@ export function buildCraftingNetwork(defs: readonly ObjectDef[], codex: WorldCod
   // タグのノードと所属の線。線を引くのはネットワークに既に居る型だけ——タグを持つだけでクラフトに
   // 関わらない型まで引き込むと、タグの周りだけ肥大するため。
   for (const tagGlobalId of usedTagIds) {
-    const tagName = codex.tagName(tagGlobalId);
+    const tagName = codex.tagNames.getName(tagGlobalId);
     const id = tagNodeId(tagName);
     nodes.set(id, { kind: 'tag', id, tagName });
     for (const def of defs) {
