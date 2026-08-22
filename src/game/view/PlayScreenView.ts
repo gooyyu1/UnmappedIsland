@@ -157,7 +157,7 @@ export interface SlotView {
    * 「4つ入る」と誤って伝わるので、数を宣言しているならその数。
    *
    * **枠数を宣言していないスロットは`'grows'`**——カードを落とすたびに枠が1つ増えるので、空けておく
-   * のは増える先の1つだけ（plainCells）で、レーンの幅も増える前提で取る（ObjectWindow.laneWidthFor）。
+   * のは増える先の1つだけ（plainCells）で、レーンの幅も増える前提で取る（SlotPane.width）。
    * 中身のかさの合計の上限（`capacity`）とは別物。
    */
   readonly cells: number | 'grows';

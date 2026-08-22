@@ -16,8 +16,10 @@
 **ウィンドウに出るオブジェクトのカードは写しではなく、元の枠から借りてきた札そのものです**
 （1.1 節）。同じものを映す札が画面に 2 枚出ることはありません。
 
-実装は `src/game/ui/ObjectWindow.ts`（タブの中身は `ExplorationPane.ts`・`PropertiesPane.ts`）・
-`MapWindow.ts`・`StatusDetailWindow.ts`・`RecipeWindow.ts` で、実装済みです。
+実装は `src/game/ui/ObjectWindow.ts`・`MapWindow.ts`・`StatusDetailWindow.ts`・`RecipeWindow.ts` で、
+実装済みです。**タブの中身は 1 つの契約（`ObjectWindowPane.ts`）に載る面が丸ごと持ち**、窓は面を
+捨てて作るだけで中身を知りません。面は `DescriptionPane.ts`・`SlotPane.ts`・`ExplorationPane.ts`・
+`PropertiesPane.ts` です。
 
 ## 1. 子ウィンドウの共通構造 (Object Window)
 
