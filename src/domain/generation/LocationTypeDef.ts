@@ -14,6 +14,9 @@ export class AxisPreference {
   readonly weight: number;
 
   constructor(axis: string, ideal: number, tolerance: number, weight: number) {
+    if (tolerance < 1) throw new Error(`軸'${axis}': toleranceは1以上である必要があります。`);
+    if (weight < 1) throw new Error(`軸'${axis}': weightは1以上である必要があります。`);
+
     this.axis = axis;
     this.ideal = ideal;
     this.tolerance = tolerance;
@@ -28,6 +31,9 @@ export class AxisLimit {
   readonly max: number | undefined;
 
   constructor(axis: string, min: number | undefined, max: number | undefined) {
+    if (min === undefined && max === undefined)
+      throw new Error(`軸'${axis}': 'min'または'max'のいずれかが必要です。`);
+
     this.axis = axis;
     this.min = min;
     this.max = max;
@@ -105,6 +111,13 @@ export class LocationTypeDef {
     preferences: readonly AxisPreference[],
     hardLimits: readonly AxisLimit[],
   ) {
+    if (moveCost <= 0) throw new Error(`'${name}': move_costは正の数である必要があります。`);
+    // 全軸に無関心な型は最近傍マッチングで距離が定義できないので、受け皿としてしか置けない。
+    if (preferences.length === 0 && !isFallback)
+      throw new Error(
+        `'${name}': axis_preferencesが空の（全軸に無関心な）型はis_fallback: trueにしてください。`,
+      );
+
     this.name = name;
     this.objectDefGlobalId = objectDefGlobalId;
     this.variants = variants;

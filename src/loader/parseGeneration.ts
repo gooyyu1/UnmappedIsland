@@ -15,6 +15,7 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
+import { built } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { PropertyRange } from '../domain/PropertyDef';
 import type { ObjectDef } from '../domain/ObjectDef';
@@ -70,12 +71,8 @@ function parseAxis(name: string, raw: YamlNode): AxisDef {
 
   const generatorNode = tryGetMap(node, 'generator', context);
   if (generatorNode === undefined) throw new YamlLoadError(`${context}: 'generator'は必須です。`);
-  const blendNode = tryGetSeq(generatorNode, 'blend', context);
-  if (blendNode === undefined || blendNode.items.length === 0)
-    throw new YamlLoadError(`${context}: generator.blendには1つ以上の層が必要です。`);
-
   const layers: GeneratorLayer[] = [];
-  const blendItems = blendNode.items as YamlNode[];
+  const blendItems = (tryGetSeq(generatorNode, 'blend', context)?.items ?? []) as YamlNode[];
   for (let i = 0; i < blendItems.length; i++) {
     const layerContext = `${context}.generator.blend[${i}]`;
     const layerNode = blendItems[i];
@@ -104,15 +101,17 @@ function parseGeneratorLayer(context: string, node: YAMLMap): GeneratorLayer {
     }
 
     case 'layered_noise': {
-      const layer = new GeneratorLayer(
-        'layered_noise',
-        weight,
-        requireInt(node, 'octaves', context),
-        requireInt(node, 'frequency', context),
-        requireInt(node, 'seed_offset', context),
+      const layer = built(
+        context,
+        () =>
+          new GeneratorLayer(
+            'layered_noise',
+            weight,
+            requireInt(node, 'octaves', context),
+            requireInt(node, 'frequency', context),
+            requireInt(node, 'seed_offset', context),
+          ),
       );
-      if (layer.octaves < 1) throw new YamlLoadError(`${context}: octavesは1以上である必要があります。`);
-      if (layer.frequency < 1) throw new YamlLoadError(`${context}: frequencyは1以上である必要があります。`);
       requireKnownKeys(node, ['type', 'weight', 'octaves', 'frequency', 'seed_offset'], context);
       return layer;
     }
@@ -174,7 +173,6 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, raw: Yaml
     for (const scope of scopesNode.items as YamlNode[]) scopes.push(asScalarText(scope, context));
 
   const moveCost = tryGetNumber(node, 'move_cost', context) ?? 1;
-  if (moveCost <= 0) throw new YamlLoadError(`${context}: move_costは正の数である必要があります。`);
   const isFallback = tryGetBool(node, 'is_fallback', context) ?? false;
   const priority = tryGetInt(node, 'priority', context) ?? 0;
 
@@ -184,13 +182,18 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, raw: Yaml
     for (const [axisName, prefNode] of entriesInOrder(preferencesNode)) {
       const prefContext = `${context}.axis_preferences.'${axisName}'`;
       const prefMap = asMap(prefNode, prefContext);
-      const tolerance = requireInt(prefMap, 'tolerance', prefContext);
-      if (tolerance < 1) throw new YamlLoadError(`${prefContext}: toleranceは1以上である必要があります。`);
-      const weight = tryGetInt(prefMap, 'weight', prefContext) ?? 100;
-      if (weight < 1) throw new YamlLoadError(`${prefContext}: weightは1以上である必要があります。`);
       requireKnownKeys(prefMap, ['ideal', 'tolerance', 'weight'], prefContext);
       preferences.push(
-        new AxisPreference(axisName, requireInt(prefMap, 'ideal', prefContext), tolerance, weight),
+        built(
+          prefContext,
+          () =>
+            new AxisPreference(
+              axisName,
+              requireInt(prefMap, 'ideal', prefContext),
+              requireInt(prefMap, 'tolerance', prefContext),
+              tryGetInt(prefMap, 'weight', prefContext) ?? 100,
+            ),
+        ),
       );
     }
 
@@ -200,19 +203,19 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, raw: Yaml
     for (const [axisName, limitNode] of entriesInOrder(limitsNode)) {
       const limitContext = `${context}.hard_limits.'${axisName}'`;
       const limitMap = asMap(limitNode, limitContext);
-      const min = tryGetInt(limitMap, 'min', limitContext);
-      const max = tryGetInt(limitMap, 'max', limitContext);
-      if (min === undefined && max === undefined)
-        throw new YamlLoadError(`${limitContext}: 'min'または'max'のいずれかが必要です。`);
       requireKnownKeys(limitMap, ['min', 'max'], limitContext);
-      hardLimits.push(new AxisLimit(axisName, min, max));
+      hardLimits.push(
+        built(
+          limitContext,
+          () =>
+            new AxisLimit(
+              axisName,
+              tryGetInt(limitMap, 'min', limitContext),
+              tryGetInt(limitMap, 'max', limitContext),
+            ),
+        ),
+      );
     }
-
-  if (preferences.length === 0 && !isFallback)
-    throw new YamlLoadError(
-      `${context}: axis_preferencesが空の（全軸に無関心な）型はis_fallback: trueにしてください` +
-        `（通常の最近傍マッチングでは距離が定義できないため）。`,
-    );
 
   requireKnownKeys(
     node,
@@ -250,8 +253,6 @@ function parseGenerationScope(name: string, raw: YamlNode): GenerationScopeDef {
   if (siteCountNode === undefined) throw new YamlLoadError(`${context}: 'site_count'は必須です。`);
   const siteCountMin = requireInt(siteCountNode, 'min', context);
   const siteCountMax = requireInt(siteCountNode, 'max', context);
-  if (siteCountMin < 1 || siteCountMax < siteCountMin)
-    throw new YamlLoadError(`${context}: site_countは1 <= min <= maxである必要があります。`);
 
   const guarantees: GuaranteeDef[] = [];
   const guaranteesNode = tryGetSeq(node, 'guarantees', context);
@@ -278,41 +279,39 @@ function parseGenerationScope(name: string, raw: YamlNode): GenerationScopeDef {
           );
       }
 
-      const count = tryGetInt(guaranteeNode, 'count', guaranteeContext) ?? 1;
-      if (count < 1) throw new YamlLoadError(`${guaranteeContext}: countは1以上である必要があります。`);
-
       requireKnownKeys(guaranteeNode, ['location_type', 'count', 'axis', 'pick'], guaranteeContext);
       guarantees.push(
-        new GuaranteeDef(
-          requireScalar(guaranteeNode, 'location_type', guaranteeContext),
-          count,
-          requireScalar(guaranteeNode, 'axis', guaranteeContext),
-          pick,
+        built(
+          guaranteeContext,
+          () =>
+            new GuaranteeDef(
+              requireScalar(guaranteeNode, 'location_type', guaranteeContext),
+              tryGetInt(guaranteeNode, 'count', guaranteeContext) ?? 1,
+              requireScalar(guaranteeNode, 'axis', guaranteeContext),
+              pick,
+            ),
         ),
       );
     }
   }
 
-  const scope = new GenerationScopeDef(
-    name,
-    siteCountMin,
-    siteCountMax,
-    tryGetInt(node, 'coast_band', context) ?? 0,
-    tryGetBool(node, 'hull_coast', context) ?? false,
-    tryGetNumber(node, 'interior_bias', context) ?? 0,
-    tryGetNumber(node, 'extra_edge_detour_factor', context) ?? 1.5,
-    tryGetInt(node, 'base_minutes_per_distance', context) ?? 1,
-    tryGetInt(node, 'max_sites_per_type', context) ?? 0,
-    tryGetNumber(node, 'crowding_penalty', context) ?? 0,
-    guarantees,
+  const scope = built(
+    context,
+    () =>
+      new GenerationScopeDef(
+        name,
+        siteCountMin,
+        siteCountMax,
+        tryGetInt(node, 'coast_band', context) ?? 0,
+        tryGetBool(node, 'hull_coast', context) ?? false,
+        tryGetNumber(node, 'interior_bias', context) ?? 0,
+        tryGetNumber(node, 'extra_edge_detour_factor', context) ?? 1.5,
+        tryGetInt(node, 'base_minutes_per_distance', context) ?? 1,
+        tryGetInt(node, 'max_sites_per_type', context) ?? 0,
+        tryGetNumber(node, 'crowding_penalty', context) ?? 0,
+        guarantees,
+      ),
   );
-
-  if (scope.interiorBias < 0 || scope.interiorBias > 1)
-    throw new YamlLoadError(`${context}: interior_biasは0〜1である必要があります。`);
-  if (scope.maxSitesPerType < 0)
-    throw new YamlLoadError(`${context}: max_sites_per_typeは0以上である必要があります（0で無制限）。`);
-  if (scope.crowdingPenalty < 0)
-    throw new YamlLoadError(`${context}: crowding_penaltyは0以上である必要があります（0で無効）。`);
 
   requireKnownKeys(
     node,

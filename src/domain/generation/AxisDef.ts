@@ -27,6 +27,11 @@ export class GeneratorLayer {
   readonly seedOffset: number;
 
   constructor(type: GeneratorLayerType, weight: number, octaves = 0, frequency = 0, seedOffset = 0) {
+    if (type === 'layered_noise') {
+      if (octaves < 1) throw new Error(`octavesは1以上である必要があります（値: ${octaves}）。`);
+      if (frequency < 1) throw new Error(`frequencyは1以上である必要があります（値: ${frequency}）。`);
+    }
+
     this.type = type;
     this.weight = weight;
     this.octaves = octaves;
@@ -50,6 +55,8 @@ export class AxisDef {
   readonly layers: readonly GeneratorLayer[];
 
   constructor(name: string, range: PropertyRange, layers: readonly GeneratorLayer[]) {
+    if (layers.length === 0) throw new Error(`軸'${name}': generator.blendには1つ以上の層が必要です。`);
+
     this.name = name;
     this.range = range;
     this.layers = layers;
