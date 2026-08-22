@@ -15,7 +15,7 @@ import {
   menuFor,
 } from '../analysis/balanceTables';
 import type { CodexView } from './CodexView';
-import { escapeHtml, inlineArtHtml } from './CodexView';
+import { escapeHtml, inlineArtHtml } from './html';
 import { objectLinkHtml } from './pages';
 
 /**

@@ -2,7 +2,7 @@ import { ART_BY_OBJECT_NAME } from '../art/objectArt';
 import type { CraftingNetwork, NetworkEdge, NetworkNode } from './craftingGraph';
 import { buildCraftingNetwork, objectNodeId } from './craftingGraph';
 import type { CodexView } from './CodexView';
-import { escapeHtml } from './CodexView';
+import { escapeHtml } from './html';
 import type { LayoutNode } from './networkLayout';
 import { layoutLayered } from './networkLayout';
 

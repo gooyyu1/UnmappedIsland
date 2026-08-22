@@ -3,7 +3,8 @@ import { installSampleAssetPack } from '../asset-pack/install';
 import type { CodexSource } from './CodexSource';
 import { loadCodexSource } from './CodexSource';
 import type { NamingMode } from './CodexView';
-import { CodexView, escapeHtml } from './CodexView';
+import { CodexView } from './CodexView';
+import { escapeHtml } from './html';
 import { balanceSectionId, renderBalancePage, wireBalanceMenu } from './balancePage';
 import { networkNodeId, renderNetworkPage } from './networkPage';
 import {
