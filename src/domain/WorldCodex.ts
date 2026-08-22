@@ -84,8 +84,8 @@ export class WorldCodex {
   get symbolicProperties(): ReadonlySet<number> {
     if (this.symbolicPropertyIds === undefined) {
       const found = new Set<number>();
-      for (let globalId = 0; globalId < this.objects.count; globalId++)
-        for (const propertyDef of this.objects.get(globalId).enumeratePropertyDefs())
+      for (const objectDef of this.objects)
+        for (const propertyDef of objectDef.enumeratePropertyDefs())
           if (propertyDef.isSymbolic) found.add(propertyDef.globalId);
       this.symbolicPropertyIds = found;
     }
@@ -139,10 +139,7 @@ export class WorldCodex {
     if (tagId === undefined) return [];
 
     const names: string[] = [];
-    for (let globalId = 0; globalId < this.objects.count; globalId++) {
-      const objectDef = this.objects.get(globalId);
-      if (objectDef.tags.includes(tagId)) names.push(objectDef.name);
-    }
+    for (const objectDef of this.objects) if (objectDef.hasTag(tagId)) names.push(objectDef.name);
     return names;
   }
 
@@ -154,9 +151,7 @@ export class WorldCodex {
    */
   singletonGlobalIds(): readonly number[] {
     const ids: number[] = [];
-    for (let globalId = 0; globalId < this.objects.count; globalId++) {
-      if (this.objects.get(globalId).isSingleton) ids.push(globalId);
-    }
+    for (const objectDef of this.objects) if (objectDef.isSingleton) ids.push(objectDef.globalId);
     return ids;
   }
 
@@ -166,11 +161,8 @@ export class WorldCodex {
    * 画面はこれを見て「落とせる場所」の空枠を出すかを決める。
    */
   admitsBroughtObjects(slotDef: SlotDef): boolean {
-    for (let globalId = 0; globalId < this.objects.count; globalId++) {
-      const objectDef = this.objects.get(globalId);
-      if (objectDef.boundToOwner) continue;
-      if (slotDef.acceptsAnywhere(objectDef)) return true;
-    }
-    return false;
+    return [...this.objects].some(
+      (objectDef) => !objectDef.boundToOwner && slotDef.acceptsAnywhere(objectDef),
+    );
   }
 }

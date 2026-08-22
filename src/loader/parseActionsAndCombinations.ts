@@ -11,17 +11,14 @@ import {
 import { YamlLoadError } from './YamlLoadError';
 import { parseTypeMatchRule } from './parseCommon';
 import { parseActiveEffectBody, parseWeight } from './parseActiveEffects';
-import {
-  ACTION_CONDITION_ROOTS,
-  COMBINATION_CONDITION_ROOTS,
-  parseRequirementsField,
-} from './parseConditions';
+import { parseRequirementsField } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ActiveEffect } from '../domain/ActiveEffect';
 import type { Requirements } from '../domain/Requirement';
 import type { WeightSpec } from '../domain/WeightSpec';
 import { ActionDef } from '../domain/ActionDef';
 import { CombinationDef } from '../domain/CombinationDef';
+import { ReferenceScope } from '../domain/ReferenceRoot';
 
 /** actionエントリが持つ、効果以外の兄弟キー。 */
 const ACTION_RESERVED_KEYS = ['showMenu', 'conditions', 'duration'] as const;
@@ -44,22 +41,17 @@ function parseInteractionBody(
   loader: WorldCodexYamlLoader,
   context: string,
   map: YAMLMap,
-  allowDragged: boolean,
+  scope: ReferenceScope,
   reservedKeys: readonly string[],
 ): InteractionBody {
-  const requirements = parseRequirementsField(
-    loader,
-    context,
-    tryGetSeq(map, 'conditions', context),
-    allowDragged ? COMBINATION_CONDITION_ROOTS : ACTION_CONDITION_ROOTS,
-  );
-  const effect = parseActiveEffectBody(loader, context, map, allowDragged, false, reservedKeys);
+  const requirements = parseRequirementsField(loader, context, tryGetSeq(map, 'conditions', context), scope);
+  const effect = parseActiveEffectBody(loader, context, map, scope, reservedKeys);
 
   // duration: 実行にかかるゲーム内時間（分）。省略時は時間を消費しない。
   const durationNode = tryGetNode(map, 'duration');
   const duration =
     durationNode !== undefined
-      ? parseWeight(loader, `${context}.duration`, durationNode, allowDragged, 'duration')
+      ? parseWeight(loader, `${context}.duration`, durationNode, scope, 'duration')
       : undefined;
 
   return { requirements, effect, duration };
@@ -85,7 +77,7 @@ export function parseActions(
         `${context}: showMenuは'always'か'never'のみ対応しています（値: '${showMenuRaw}'）。`,
       );
 
-    const body = parseInteractionBody(loader, context, map, false, ACTION_RESERVED_KEYS);
+    const body = parseInteractionBody(loader, context, map, ReferenceScope.action, ACTION_RESERVED_KEYS);
     result.push(new ActionDef(name, showMenuRaw, body.requirements, body.effect, body.duration));
   }
 
@@ -112,7 +104,13 @@ export function parseCombinations(
       );
 
     const withRule = parseTypeMatchRule(loader, `${context}.with`, withNode);
-    const body = parseInteractionBody(loader, context, map, true, COMBINATION_RESERVED_KEYS);
+    const body = parseInteractionBody(
+      loader,
+      context,
+      map,
+      ReferenceScope.combination,
+      COMBINATION_RESERVED_KEYS,
+    );
     const allowMultiple = tryGetBool(map, 'allow_multiple', context) ?? false;
 
     // 何個受け取れるかを答えられる形かは、宣言だけで決まる。許可したのに答えられない宣言は、

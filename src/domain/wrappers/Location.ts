@@ -82,7 +82,7 @@ export class Location extends ObjectWrapper {
    */
   get paths(): readonly Path[] {
     return this.fixtures
-      .filter((fixture) => fixture.def.tags.includes(this.words.pathTagId))
+      .filter((fixture) => fixture.def.hasTag(this.words.pathTagId))
       .map((fixture) => new Path(fixture, this.codex));
   }
 

@@ -17,9 +17,10 @@ import {
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { built, parseNumberLiteral, parseScalarNumber } from './parseCommon';
-import { ACTION_CONDITION_ROOTS, COMBINATION_CONDITION_ROOTS, parseSubjectRoot } from './parseConditions';
+import { parseSubjectRoot, requireResolvable } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
+import { ReferenceScope } from '../domain/ReferenceRoot';
 import { PropertyPath } from '../domain/ReferenceRoot';
 import {
   ActiveEffects,
@@ -50,8 +51,7 @@ export function parseActiveEffectBody(
   loader: WorldCodexYamlLoader,
   context: string,
   bodyNode: YAMLMap,
-  allowDragged: boolean,
-  selfOnly: boolean,
+  scope: ReferenceScope,
   reservedKeys?: ReadonlyArray<string>,
 ): ActiveEffects {
   const operations: ActiveEffect[] = [];
@@ -61,42 +61,32 @@ export function parseActiveEffectBody(
     const keyContext = `${context}.${key}`;
     switch (key) {
       case 'set':
-        operations.push(
-          ...parseSets(loader, keyContext, asMap(valueNode, keyContext), allowDragged, selfOnly),
-        );
+        operations.push(...parseSets(loader, keyContext, asMap(valueNode, keyContext), scope));
         break;
       case 'add':
-        operations.push(
-          ...parseAdds(loader, keyContext, asMap(valueNode, keyContext), allowDragged, selfOnly),
-        );
+        operations.push(...parseAdds(loader, keyContext, asMap(valueNode, keyContext), scope));
         break;
       case 'transfer':
-        operations.push(...parseTransfers(loader, keyContext, valueNode, allowDragged, selfOnly));
+        operations.push(...parseTransfers(loader, keyContext, valueNode, scope));
         break;
       case 'move':
-        operations.push(...parseMoves(loader, keyContext, valueNode, selfOnly));
+        operations.push(...parseMoves(loader, keyContext, valueNode, scope));
         break;
       case 'destroy':
-        for (const target of parseDestroyTargets(loader, keyContext, valueNode, allowDragged, selfOnly))
+        for (const target of parseDestroyTargets(loader, keyContext, valueNode, scope))
           operations.push(new DestroyEffect(target));
         break;
       case 'spawn':
         operations.push(...parseSpawns(loader, keyContext, valueNode));
         break;
       case 'become':
-        operations.push(
-          parseBecome(loader, keyContext, asMap(valueNode, keyContext), allowDragged, selfOnly),
-        );
+        operations.push(parseBecome(loader, keyContext, asMap(valueNode, keyContext), scope));
         break;
       case 'signal':
-        operations.push(...parseSignals(keyContext, valueNode, allowDragged, selfOnly));
+        operations.push(...parseSignals(keyContext, valueNode, scope));
         break;
       case 'pick':
-        operations.push(
-          new PickEffect(
-            parsePickList(loader, context, asSeq(valueNode, keyContext), allowDragged, selfOnly),
-          ),
-        );
+        operations.push(new PickEffect(parsePickList(loader, context, asSeq(valueNode, keyContext), scope)));
         break;
       default:
         if (reservedKeys === undefined || !reservedKeys.includes(key)) unknownKeys.push(key);
@@ -117,9 +107,7 @@ function parsePickList(
   loader: WorldCodexYamlLoader,
   context: string,
   pickNode: YAMLSeq,
-  allowDragged: boolean,
-  // selfOnly（on_min等のrangeイベント内のpick）は、ネストした候補にもそのまま引き継ぐ。
-  selfOnly = false,
+  scope: ReferenceScope,
 ): PickCandidateDef[] {
   const result: PickCandidateDef[] = [];
 
@@ -129,17 +117,10 @@ function parsePickList(
 
     const weightNode = tryGetNode(map, 'weight');
     if (weightNode === undefined) throw new YamlLoadError(`${candidateContext}: 'weight'は必須です。`);
-    const weight = parseWeight(loader, candidateContext, weightNode, allowDragged);
+    const weight = parseWeight(loader, candidateContext, weightNode, scope);
 
     // weightだけの候補は「選ばれても何も起きない回」（外した回・寄って来なかった回）を表す。
-    const effect = parseActiveEffectBody(
-      loader,
-      candidateContext,
-      map,
-      allowDragged,
-      selfOnly,
-      PICK_CANDIDATE_RESERVED_KEYS,
-    );
+    const effect = parseActiveEffectBody(loader, candidateContext, map, scope, PICK_CANDIDATE_RESERVED_KEYS);
 
     result.push(new PickCandidateDef(weight, effect));
   }
@@ -155,7 +136,7 @@ export function parseWeight(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YamlNode,
-  allowDragged: boolean,
+  scope: ReferenceScope,
   fieldName = 'weight',
 ): WeightSpec {
   if (isScalar(node)) {
@@ -167,9 +148,8 @@ export function parseWeight(
   }
 
   if (isMap(node)) {
-    const allowedRoots = allowDragged ? COMBINATION_CONDITION_ROOTS : ACTION_CONDITION_ROOTS;
     const subjectName = tryGetScalar(node, 'subject', context);
-    const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, allowedRoots) : 'self';
+    const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, scope) : 'self';
     const propName = requireScalar(node, 'prop', context);
 
     requireKnownKeys(node, ['subject', 'prop'], context);
@@ -191,7 +171,7 @@ function parseSetEffect(
   valueNode: YamlNode,
 ): SetEffect {
   const [value] = parseScalarNumber(loader, context, asScalarText(valueNode, context));
-  return new SetEffect(target, propertyGlobalId, value);
+  return new SetEffect(new PropertyPath(target, propertyGlobalId), value);
 }
 
 /**
@@ -205,17 +185,14 @@ function parseTransfer(
   loader: WorldCodexYamlLoader,
   context: string,
   map: YAMLMap,
-  allowDragged: boolean,
-  selfOnly: boolean,
+  scope: ReferenceScope,
 ): TransferEffect {
   const fromRaw = tryGetScalar(map, 'from', context);
-  const fromObject =
-    fromRaw !== undefined ? parseActiveTargetRoot(context, fromRaw, allowDragged, selfOnly) : 'self';
+  const fromObject = fromRaw !== undefined ? parseActiveTargetRoot(context, fromRaw, scope) : 'self';
   const fromProp = loader.propertyNames.intern(requireScalar(map, 'from_prop', context));
 
   const toRaw = tryGetScalar(map, 'to', context);
-  const toObject =
-    toRaw !== undefined ? parseActiveTargetRoot(context, toRaw, allowDragged, selfOnly) : 'self';
+  const toObject = toRaw !== undefined ? parseActiveTargetRoot(context, toRaw, scope) : 'self';
   const toProp = loader.propertyNames.intern(requireScalar(map, 'to_prop', context));
 
   const amount = requireNumber(map, 'amount', context);
@@ -225,9 +202,7 @@ function parseTransfer(
 
   const linkedAddMap = tryGetMap(map, 'linked_add', context);
   const linkedAdd =
-    linkedAddMap !== undefined
-      ? parseAdds(loader, `${context}.linked_add`, linkedAddMap, allowDragged, selfOnly)
-      : [];
+    linkedAddMap !== undefined ? parseAdds(loader, `${context}.linked_add`, linkedAddMap, scope) : [];
 
   requireKnownKeys(
     map,
@@ -238,7 +213,14 @@ function parseTransfer(
   return built(
     context,
     () =>
-      new TransferEffect(fromObject, fromProp, toObject, toProp, amount, allowOverflow, linkedAdd, toAmount),
+      new TransferEffect(
+        new PropertyPath(fromObject, fromProp),
+        new PropertyPath(toObject, toProp),
+        amount,
+        allowOverflow,
+        linkedAdd,
+        toAmount,
+      ),
   );
 }
 
@@ -247,12 +229,11 @@ function parseSets(
   loader: WorldCodexYamlLoader,
   context: string,
   map: YAMLMap,
-  allowDragged: boolean,
-  selfOnly: boolean,
+  scope: ReferenceScope,
 ): SetEffect[] {
   const sets: SetEffect[] = [];
   for (const [targetName, targetBody] of entriesInOrder(map)) {
-    const target = parseActiveTargetRoot(context, targetName, allowDragged, selfOnly);
+    const target = parseActiveTargetRoot(context, targetName, scope);
     for (const [propName, valueNode] of entriesInOrder(asMap(targetBody, `${context}.'${targetName}'`)))
       sets.push(
         parseSetEffect(
@@ -273,17 +254,15 @@ function parseAdds(
   loader: WorldCodexYamlLoader,
   context: string,
   map: YAMLMap,
-  allowDragged: boolean,
-  selfOnly: boolean,
+  scope: ReferenceScope,
 ): AddEffect[] {
   const adds: AddEffect[] = [];
   for (const [targetName, targetBody] of entriesInOrder(map)) {
-    const target = parseActiveTargetRoot(context, targetName, allowDragged, selfOnly);
+    const target = parseActiveTargetRoot(context, targetName, scope);
     for (const [propName, amountNode] of entriesInOrder(asMap(targetBody, `${context}.'${targetName}'`)))
       adds.push(
         new AddEffect(
-          target,
-          loader.propertyNames.intern(propName),
+          new PropertyPath(target, loader.propertyNames.intern(propName)),
           parseNumberLiteral(context, asScalarText(amountNode, context)),
         ),
       );
@@ -326,27 +305,16 @@ export function parsePassiveTransfers(
   context: string,
   node: YamlNode,
 ): TransferEffect[] {
-  for (const map of isSeq(node) ? (node.items as YamlNode[]) : [node]) {
-    if (!isMap(map)) continue;
-    for (const key of ['from', 'to'])
-      if (tryGetScalar(map, key, context) === 'actor')
-        throw new YamlLoadError(
-          `${context}.${key}: passivesの対象に'actor'は使えません（持続的な関係に紐づかないため）。`,
-        );
-  }
-  return parseTransfers(loader, context, node, false, false);
+  return parseTransfers(loader, context, node, ReferenceScope.declaration);
 }
 
 function parseTransfers(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YamlNode,
-  allowDragged: boolean,
-  selfOnly: boolean,
+  scope: ReferenceScope,
 ): TransferEffect[] {
-  return oneOrMany(context, node, (itemContext, map) =>
-    parseTransfer(loader, itemContext, map, allowDragged, selfOnly),
-  );
+  return oneOrMany(context, node, (itemContext, map) => parseTransfer(loader, itemContext, map, scope));
 }
 
 /** move（1つ、またはその配列）。同じ一手で2つ動かす（乗り込んでから漕ぎ出す）ために並べられる。 */
@@ -354,9 +322,9 @@ function parseMoves(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YamlNode,
-  selfOnly: boolean,
+  scope: ReferenceScope,
 ): MoveEffect[] {
-  return oneOrMany(context, node, (itemContext, map) => parseMove(loader, itemContext, map, selfOnly));
+  return oneOrMany(context, node, (itemContext, map) => parseMove(loader, itemContext, map, scope));
 }
 
 /**
@@ -390,16 +358,12 @@ function parseMove(
   loader: WorldCodexYamlLoader,
   context: string,
   map: YAMLMap,
-  selfOnly: boolean,
+  scope: ReferenceScope,
 ): MoveEffect {
   requireKnownKeys(map, MOVE_KEYS, context);
 
-  const subject = parseMoveSubject(loader, context, map);
-  const destination = parseMoveDestination(loader, context, map);
-  if (selfOnly && (subject.needsInteraction() || destination.needsInteraction()))
-    throw new YamlLoadError(
-      `${context}: on_max/on_minのmoveでは、actor・draggedを指せません（存在しないため）。`,
-    );
+  const subject = parseMoveSubject(loader, context, map, scope);
+  const destination = parseMoveDestination(loader, context, map, scope);
 
   const slotName = tryGetScalar(map, 'to_slot', context);
   return new MoveEffect(
@@ -415,11 +379,15 @@ const MOVE_KEYS = new Set(['subject', 'subject_prop', 'to', 'to_prop', 'to_objec
 /**
  * moveの動かす物（subject か subject_prop のどちらか一方）。
  *
- * 対象キーは`self`（moveを宣言したオブジェクト自身）・`actor`（アクション実行者）・`dragged`
- * （combinationsでドラッグされてきたカード）のみ対応する。`parent`/`ancestor`/`child`は
- * 「一度きりの命令に対してどれを動かすか」の意味論が未確定のため未対応。
+ * `subject`はオブジェクトそのものを指すので、解決先を持つrootはその宣言が置かれた場所が決める
+ * （ReferenceScope）。**動かす相手は1つに決まる必要がある**ので、childはどの場所でも指せない。
  */
-function parseMoveSubject(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): ObjectRef {
+function parseMoveSubject(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  map: YAMLMap,
+  scope: ReferenceScope,
+): ObjectRef {
   const subject = tryGetScalar(map, 'subject', context);
   const subjectProp = tryGetScalar(map, 'subject_prop', context);
 
@@ -430,11 +398,7 @@ function parseMoveSubject(loader: WorldCodexYamlLoader, context: string, map: YA
 
   if (subjectProp !== undefined) return ObjectRef.ofProperty(loader.propertyNames.intern(subjectProp));
 
-  if (subject !== 'self' && subject !== 'actor' && subject !== 'dragged')
-    throw new YamlLoadError(
-      `${context}: moveのsubjectは'self'/'actor'/'dragged'のみ対応しています（値: '${subject}'）。`,
-    );
-  return ObjectRef.ofRoot(subject);
+  return ObjectRef.ofRoot(parseObjectTargetRoot(`${context}.subject`, subject!, scope));
 }
 
 /**
@@ -443,7 +407,12 @@ function parseMoveSubject(loader: WorldCodexYamlLoader, context: string, map: YA
  * `to_object`は、世界にただ1つ在る型（`singleton`、15節）をその名前で指す。生成時に確定する個体を
  * 指すto_propと違い、**定義の時点で名前の分かっている行き先**（外洋・本土）のためのもの。
  */
-function parseMoveDestination(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): ObjectRef {
+function parseMoveDestination(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  map: YAMLMap,
+  scope: ReferenceScope,
+): ObjectRef {
   const to = tryGetScalar(map, 'to', context);
   const toProp = tryGetScalar(map, 'to_prop', context);
   const toObject = tryGetScalar(map, 'to_object', context);
@@ -457,41 +426,19 @@ function parseMoveDestination(loader: WorldCodexYamlLoader, context: string, map
   if (toProp !== undefined) return ObjectRef.ofProperty(loader.propertyNames.intern(toProp));
   if (toObject !== undefined) return ObjectRef.ofObjectDef(loader.objectNames.intern(toObject));
 
-  if (to !== 'self' && to !== 'parent')
-    throw new YamlLoadError(`${context}: moveのtoは'self'か'parent'のみ対応しています（値: '${to}'）。`);
-  return ObjectRef.ofRoot(to);
+  return ObjectRef.ofRoot(parseObjectTargetRoot(`${context}.to`, to!, scope));
 }
 
-/**
- * activeの対象キー（self/parent/ancestor/actor、combinations内はdraggedも）を解決する。
- * childは「どの子か」を一意に絞る規約が無いため未対応。selfOnly（rangeイベント）は
- * self以外を一律エラーにする。
- */
-function parseActiveTargetRoot(
-  context: string,
-  key: string,
-  allowDragged: boolean,
-  selfOnly: boolean,
-): ReferenceRoot {
-  if (selfOnly && key !== 'self')
-    throw new YamlLoadError(`${context}: 現時点でselfのみ対応しています（未対応: '${key}'）。`);
-
+/** activeの対象キー。解決先を持つrootかどうかは、その宣言が置かれた場所が決める（ReferenceScope）。 */
+function parseActiveTargetRoot(context: string, key: string, scope: ReferenceScope): ReferenceRoot {
   switch (key) {
     case 'self':
-      return 'self';
     case 'parent':
-      return 'parent';
     case 'ancestor':
-      return 'ancestor';
     case 'actor':
-      return 'actor';
     case 'dragged':
-      if (!allowDragged) throw new YamlLoadError(`${context}: 'dragged'はcombinationsの中でのみ使えます。`);
-      return 'dragged';
     case 'child':
-      throw new YamlLoadError(
-        `${context}: activeの対象'child'は未対応です（一度きりの命令に対して『どの子か』の意味が確定していないため）。`,
-      );
+      return requireResolvable(context, key, scope);
     default:
       throw new YamlLoadError(`${context}: 未知の対象キー '${key}' です。`);
   }
@@ -504,19 +451,14 @@ function parseActiveTargetRoot(
  * 省略形を持つのは、告げる相手が効果を宣言した側そのものである場合が大半だから（動物のカードへ
  * 武器を重ねる、9.8節）。対象を書くのは、宣言した側と起きた側が違うときだけになる。
  */
-function parseSignals(
-  context: string,
-  node: YamlNode,
-  allowDragged: boolean,
-  selfOnly: boolean,
-): SignalEffect[] {
+function parseSignals(context: string, node: YamlNode, scope: ReferenceScope): SignalEffect[] {
   if (isSeq(node))
     throw new YamlLoadError(`${context}: 出来事の識別子か、対象ごとの識別子である必要があります。`);
 
   if (!isMap(node)) return [new SignalEffect(asScalarText(node, context), 'self')];
 
   return entriesInOrder(node).map(([targetName, nameNode]) => {
-    const target = parseObjectTargetRoot(context, targetName, allowDragged, selfOnly);
+    const target = parseObjectTargetRoot(context, targetName, scope);
     return new SignalEffect(asScalarText(nameNode, `${context}.'${targetName}'`), target);
   });
 }
@@ -526,13 +468,11 @@ function parseDestroyTargets(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YamlNode,
-  allowDragged: boolean,
-  selfOnly: boolean,
+  scope: ReferenceScope,
 ): ObjectRef[] {
-  if (isSeq(node))
-    return (node.items as YamlNode[]).map((n) => parseObjectRef(loader, context, n, allowDragged, selfOnly));
+  if (isSeq(node)) return (node.items as YamlNode[]).map((n) => parseObjectRef(loader, context, n, scope));
 
-  return [parseObjectRef(loader, context, node, allowDragged, selfOnly)];
+  return [parseObjectRef(loader, context, node, scope)];
 }
 
 /**
@@ -545,13 +485,10 @@ function parseObjectRef(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YamlNode,
-  allowDragged: boolean,
-  selfOnly: boolean,
+  scope: ReferenceScope,
 ): ObjectRef {
   if (!isMap(node))
-    return ObjectRef.ofRoot(
-      parseObjectTargetRoot(context, asScalarText(node, context), allowDragged, selfOnly),
-    );
+    return ObjectRef.ofRoot(parseObjectTargetRoot(context, asScalarText(node, context), scope));
 
   const propName = requireScalar(node, 'prop', context);
   requireKnownKeys(node, ['prop'], context);
@@ -568,15 +505,14 @@ function parseBecome(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YAMLMap,
-  allowDragged: boolean,
-  selfOnly: boolean,
+  scope: ReferenceScope,
 ): BecomeEffect {
   let subject: ObjectRef | undefined;
   const axisValues = new Map<string, string>();
 
   for (const [key, valueNode] of entriesInOrder(node)) {
     if (key === 'subject') {
-      subject = parseObjectRef(loader, `${context}.subject`, valueNode, allowDragged, selfOnly);
+      subject = parseObjectRef(loader, `${context}.subject`, valueNode, scope);
       continue;
     }
     axisValues.set(key, asScalarText(valueNode, `${context}.${key}`));
@@ -588,22 +524,9 @@ function parseBecome(
   return new BecomeEffect(subject ?? ObjectRef.ofRoot('self'), axisValues);
 }
 
-/**
- * オブジェクトそのものを指す対象（destroy・signal）。ancestorはプロパティ名が無いと解決先が
- * 決まらないため、ここでは使えない。
- */
-function parseObjectTargetRoot(
-  context: string,
-  key: string,
-  allowDragged: boolean,
-  selfOnly: boolean,
-): ReferenceRoot {
-  const root = parseActiveTargetRoot(context, key, allowDragged, selfOnly);
-  if (root === 'ancestor')
-    throw new YamlLoadError(
-      `${context}: 対象'ancestor'は未対応です（プロパティではなくオブジェクトそのものを指すため）。`,
-    );
-  return root;
+/** オブジェクトそのものを指す対象（destroy・signal・move）。プロパティ名を伴わない場所になる。 */
+function parseObjectTargetRoot(context: string, key: string, scope: ReferenceScope): ReferenceRoot {
+  return parseActiveTargetRoot(context, key, scope.objectOnly);
 }
 
 function parseSpawnTargetRoot(context: string, raw: string | undefined): SpawnTargetRoot {

@@ -17,8 +17,8 @@ export type NamingMode = 'display' | 'identifier';
 /**
  * 読み込んだ定義を人間向けのHTMLに変換する窓口。
  *
- * 定義の中身をどう言い表すかは定義自身（`describe`、domain/Description.ts）が知っているので、
- * ここが担うのは**見せ方**だけ——表示名を引く、リンクを張る、識別子と表示名を切り替える。
+ * 定義の中身をどう言い表すかは`describe*`（describe/）が知っているので、ここが担うのは**見せ方**
+ * だけ——表示名を引く、リンクを張る、識別子と表示名を切り替える。
  */
 export class CodexView {
   readonly source: CodexSource;
@@ -65,7 +65,7 @@ export class CodexView {
     const tagId = this.codex.tagNames.tryGetId(tagName);
     if (tagId === undefined) return [];
     return this.objectDefs()
-      .filter((def) => def.tags.includes(tagId))
+      .filter((def) => def.hasTag(tagId))
       .map((def) => def.name);
   }
 

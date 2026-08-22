@@ -1,6 +1,5 @@
 import type { InfluenceWriter } from './PropertyInfluence';
 import type { WorldObject } from './WorldObject';
-import type { WorldSession } from './WorldSession';
 import type { PassiveEffect, TransferPassiveEffect } from './PassiveEffect';
 import type { ReferenceRoot } from './ReferenceRoot';
 
@@ -28,8 +27,8 @@ export class PassiveEffects {
    * 輸送を並べても在庫が二重に動くことはなく、直列に繋いだ輸送の緩衝は**速度の差**が作る
    * （上流を速くすれば、その差が中間に溜まる。8.4.1節）。
    */
-  applyTickTransfers(owner: WorldObject, session: WorldSession): void {
-    for (const transfer of this.transfers) transfer.applyTick(owner, session);
+  applyTickTransfers(owner: WorldObject): void {
+    for (const transfer of this.transfers) transfer.applyTick(owner);
   }
 
   /** owner自身から辿れる関係（self/parent/ancestor）が変わった契機を全effectへ伝える

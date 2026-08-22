@@ -1,5 +1,5 @@
 import type { WorldObject } from './WorldObject';
-import type { ReferenceRoot } from './ReferenceRoot';
+import type { ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 
 /**
  * オブジェクトを1つ指す参照の宣言（ObjectRef参照）。指し方の3通りをそのまま表す。
@@ -63,13 +63,11 @@ export class ObjectRef {
    * 持つ子孫を探す（`move`の`to_prop`が移動先を引くのと同じ引き方）。型で指す参照は、同じ根から
    * その型のインスタンスを探す。
    */
-  resolve(
-    owner: WorldObject,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): WorldObject | undefined {
-    if (this.root !== undefined) return owner.resolveEffectTarget(this.root, actor, dragged);
+  resolve(context: ReferenceContext): WorldObject | undefined {
+    if (this.root !== undefined) return context.objectAt(this.root);
 
+    const owner = context.self;
+    if (owner === undefined) return undefined;
     if (this.objectGlobalId !== undefined) return owner.findRoot().findDescendantOfDef(this.objectGlobalId);
 
     const property = owner.tryGetProperty(this.propertyGlobalId!);
@@ -82,10 +80,5 @@ export class ObjectRef {
     if (this.root !== undefined) return { kind: 'root', root: this.root };
     if (this.objectGlobalId !== undefined) return { kind: 'object', objectGlobalId: this.objectGlobalId };
     return { kind: 'property', propertyGlobalId: this.propertyGlobalId! };
-  }
-
-  /** 実行者（actor）や重ねた札（dragged）に依存する参照か（actorの居ない文脈で使えるかの判定用）。 */
-  needsInteraction(): boolean {
-    return this.root === 'actor' || this.root === 'dragged';
   }
 }

@@ -318,7 +318,7 @@ object_defs:
     expect(character.parent, '指す先が居なければ何も起きない').toBe(meadow);
   });
 
-  it('moveのsubjectにself/actor/dragged以外を指定するとロードエラーになる', () => {
+  it('moveのsubjectにchildを指定するとロードエラーになる（どれを動かすかが決まらない）', () => {
     const loadBad = (): WorldCodex =>
       new WorldCodexYamlLoader()
         .load(
@@ -332,14 +332,14 @@ object_defs:
     actions:
       travel:
         move:
-          subject: parent
+          subject: child
           to_prop: destination_id
 `,
         )
         .build();
 
     expect(loadBad).toThrow(YamlLoadError);
-    expect(loadBad).toThrowError(/'self'\/'actor'\/'dragged'/);
+    expect(loadBad).toThrowError(/child/);
   });
 
   it('moveの動かす物をsubjectとsubject_propの両方で指定するとロードエラーになる', () => {
@@ -394,7 +394,7 @@ object_defs:
     expect(loadBad).toThrowError(/どれか1つ/);
   });
 
-  it('moveのtoにself/parent以外を指定するとロードエラーになる', () => {
+  it('moveのtoにancestorを指定するとロードエラーになる（プロパティ名を伴わないため）', () => {
     const loadBad = (): WorldCodex =>
       new WorldCodexYamlLoader()
         .load(
@@ -410,7 +410,7 @@ object_defs:
         .build();
 
     expect(loadBad).toThrow(YamlLoadError);
-    expect(loadBad).toThrowError(/'self'か'parent'/);
+    expect(loadBad).toThrowError(/ancestor/);
   });
 
   it('to: parentは、宣言元ではなくその親の中へ移す', () => {

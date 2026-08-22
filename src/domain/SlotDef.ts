@@ -2,6 +2,7 @@ import type { WorldObject } from './WorldObject';
 import type { ObjectDef } from './ObjectDef';
 import type { WeightReading } from './EffectReader';
 import type { WeightSpec } from './WeightSpec';
+import { ReferenceContext } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
 
 /**
@@ -145,7 +146,9 @@ export class SlotDef {
 
   /** itemをownerのこのスロットへ入れるのにかかる分数（宣言が無ければ0）。 */
   putInMinutes(owner: WorldObject, actor: WorldObject | undefined, item: WorldObject): number {
-    return this.putInDuration === undefined ? 0 : Math.trunc(this.putInDuration.resolve(owner, actor, item));
+    return this.putInDuration === undefined
+      ? 0
+      : Math.trunc(this.putInDuration.resolve(ReferenceContext.acting(owner, actor, item)));
   }
 
   /**

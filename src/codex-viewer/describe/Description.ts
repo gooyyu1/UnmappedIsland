@@ -100,9 +100,9 @@ export class DescriptionLine {
 }
 
 /**
- * 説明の書き込み先。`describe`を持つ定義は、自分の内容をここへ行単位で書き出す。
+ * 説明の書き込み先。`describe*`（describeObjectDef等）が、定義の内容をここへ行単位で書き出す。
  *
- * 行の組み立て（どの語をどう並べるか）は定義自身が、行の見せ方（HTML・リンク・表示名）は
+ * 行の組み立て（どの語をどう並べるか）は書き出す側が、行の見せ方（HTML・リンク・表示名）は
  * 受け取った側が担う。
  */
 export class DescriptionWriter {
@@ -140,10 +140,10 @@ export class DescriptionWriter {
 }
 
 /**
- * グローバルIDを識別子へ戻す窓口（`describe`が使う）。実装は[`WorldCodex`](./WorldCodex.ts)。
+ * グローバルIDを識別子へ戻す窓口（`describe*`が使う）。実装は[`codexNames`](./codexNames.ts)。
  *
- * 定義はグローバルIDだけを持ち、名前空間そのものは持たないため、自分を書き表すには
- * 「IDから名前へ戻す係」を渡してもらう必要がある。
+ * 定義はグローバルIDだけを持ち、名前空間そのものは持たないため、書き表す側は
+ * 「IDから名前へ戻す係」を別に受け取る必要がある。
  */
 export interface DefNames {
   objectName(globalId: number): string;

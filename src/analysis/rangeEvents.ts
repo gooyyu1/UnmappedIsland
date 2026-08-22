@@ -53,11 +53,9 @@ export function rangeEventAt(
   value: number,
   resolve: StaticValueResolver,
 ): RangeEventReadout | undefined {
-  const range = propertyDef.range;
-  if (range === undefined) return undefined;
-
-  const label: RangeEventLabel | undefined =
-    value >= range.max ? 'on_max' : value <= range.min ? 'on_min' : undefined;
+  // どちらの端に達したかはプロパティ自身が答える（PropertyDef.rangeEventsAt）。ここが読むのは、
+  // その端で何が起こるかだけ。
+  const label = propertyDef.rangeEventsAt(value).at(0)?.[0];
   if (label === undefined) return undefined;
   return rangeEventReadouts(propertyDef, resolve).find((readout) => readout.label === label);
 }

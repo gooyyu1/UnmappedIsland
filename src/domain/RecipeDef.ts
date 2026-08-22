@@ -2,6 +2,7 @@ import type { WorldObject } from './WorldObject';
 import type { ObjectDef } from './ObjectDef';
 import type { TypeMatchRule } from './TypeMatchRule';
 import type { Requirement, Requirements } from './Requirement';
+import { ReferenceContext } from './ReferenceRoot';
 
 /**
  * 製作中オブジェクト（RecipeSystem.md 1節）を生成するときの軸名（GameElementDefinition.md 3.5節）。
@@ -115,8 +116,8 @@ export class RecipeDef {
    * （Requirements.firstUnmet と同じ理由）。
    */
   unmetUnlockRequirement(actor: WorldObject | undefined): Requirement | undefined {
-    // 参照できるのはactorだけ（13.3節）。まだ成果物のインスタンスが無いので、self・parent・ancestorは
-    // 解決先を持たない。
-    return this.unlock?.firstUnmet((root) => (root === 'actor' ? actor : undefined));
+    // 参照できるのはactorだけ（13.3節）。まだ成果物のインスタンスが無いので、selfを持たない文脈で
+    // 評価する——self・parent・ancestorはそのまま解決先を持たない。
+    return this.unlock?.firstUnmet(ReferenceContext.acting(undefined, actor, undefined));
   }
 }

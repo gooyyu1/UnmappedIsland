@@ -117,7 +117,7 @@ export function buildCraftingNetwork(defs: readonly ObjectDef[], codex: WorldCod
     const id = tagNodeId(tagName);
     nodes.set(id, { kind: 'tag', id, tagName });
     for (const def of defs) {
-      if (!def.tags.includes(tagGlobalId)) continue;
+      if (!def.hasTag(tagGlobalId)) continue;
       if (!nodes.has(objectNodeId(def.name))) continue;
       edges.push({ from: objectNodeId(def.name), to: id, kind: 'membership' });
     }

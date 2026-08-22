@@ -15,7 +15,7 @@ import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { parseScalarNumber, parseTypeMatchRule } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import type { ReferenceRoot } from '../domain/ReferenceRoot';
+import type { ReferenceRoot, ReferenceScope } from '../domain/ReferenceRoot';
 import { PropertyPath } from '../domain/ReferenceRoot';
 import { ConditionNode } from '../domain/ConditionNode';
 import type { ConditionOp } from '../domain/ConditionNode';
@@ -25,11 +25,7 @@ import { Requirement, Requirements } from '../domain/Requirement';
  * conditions（14節）・passivesのゲート（8節）が共通で使う`subject`（主語）の参照キー。
  * worldはシングルトンインスタンスの実行時追跡が無いため未対応（ancestorで代替できる）。
  */
-export function parseSubjectRoot(
-  context: string,
-  raw: string,
-  allowedRoots: ReadonlySet<ReferenceRoot>,
-): ReferenceRoot {
+export function parseSubjectRoot(context: string, raw: string, scope: ReferenceScope): ReferenceRoot {
   let root: ReferenceRoot;
   switch (raw) {
     case 'self':
@@ -47,6 +43,9 @@ export function parseSubjectRoot(
     case 'dragged':
       root = 'dragged';
       break;
+    case 'child':
+      root = 'child';
+      break;
     case 'world':
       throw new YamlLoadError(
         `${context}: subject 'world' は未対応です（worldシングルトンインスタンスの実行時追跡が未実装のため）。`,
@@ -55,39 +54,20 @@ export function parseSubjectRoot(
       throw new YamlLoadError(`${context}: 未知のsubject '${raw}' です。`);
   }
 
-  if (!allowedRoots.has(root))
-    throw new YamlLoadError(`${context}: この文脈でsubject '${raw}' は使えません。`);
-
-  return root;
+  return requireResolvable(context, root, scope);
 }
 
-export const ACTION_CONDITION_ROOTS: ReadonlySet<ReferenceRoot> = new Set([
-  'self',
-  'parent',
-  'ancestor',
-  'actor',
-]);
-
-export const COMBINATION_CONDITION_ROOTS: ReadonlySet<ReferenceRoot> = new Set([
-  'self',
-  'parent',
-  'ancestor',
-  'actor',
-  'dragged',
-]);
-
-/**
- * レシピの解放条件（SkillSystem.md 4節）で使えるsubject。**actorのみ**。
- *
- * 解放条件は「このレシピを知っているか」の判定で、評価する時点では成果物のインスタンスがまだ無い。
- * self/parent/ancestorはいずれも解決先を持たないため使えない（ancestorはselfから遡るので同様）。
- */
-export const RECIPE_CONDITION_ROOTS: ReadonlySet<ReferenceRoot> = new Set(['actor']);
-
-/** passivesのゲートで使えるsubject。selfはSlotBearer、parentはその1つ上
- * （RegisteredPassiveEffect参照）、ancestorは祖先探索（WorldObject.findAncestorWithProperty参照）。
- * actor/draggedは持続的な関係に紐づかないため未対応。 */
-export const PASSIVE_CONDITION_ROOTS: ReadonlySet<ReferenceRoot> = new Set(['self', 'parent', 'ancestor']);
+/** その場所で解決先を持たないrootを弾く。理由（何が無いか）は場所が答える。 */
+export function requireResolvable(
+  context: string,
+  root: ReferenceRoot,
+  scope: ReferenceScope,
+): ReferenceRoot {
+  const reason = scope.unresolvableReason(root);
+  if (reason !== undefined)
+    throw new YamlLoadError(`${context}: subject '${root}' は使えません（${reason}）。`);
+  return root;
+}
 
 /** conditionsの要素にだけ書ける、満たさなかったときの理由の識別子（Requirement参照）。 */
 const REASON_KEY = 'reason';
@@ -100,15 +80,13 @@ export function parseConditionsField(
   loader: WorldCodexYamlLoader,
   context: string,
   conditionsNode: YAMLSeq | undefined,
-  allowedRoots: ReadonlySet<ReferenceRoot>,
+  scope: ReferenceScope,
 ): ConditionNode | undefined {
   if (conditionsNode === undefined) return undefined;
 
   const children: ConditionNode[] = [];
   for (const node of conditionsNode.items as YamlNode[])
-    children.push(
-      parseConditionNode(loader, `${context}.conditions[${children.length}]`, node, allowedRoots),
-    );
+    children.push(parseConditionNode(loader, `${context}.conditions[${children.length}]`, node, scope));
 
   return ConditionNode.all(children);
 }
@@ -122,7 +100,7 @@ export function parseRequirementsField(
   loader: WorldCodexYamlLoader,
   context: string,
   conditionsNode: YAMLSeq | undefined,
-  allowedRoots: ReadonlySet<ReferenceRoot>,
+  scope: ReferenceScope,
 ): Requirements | undefined {
   if (conditionsNode === undefined) return undefined;
 
@@ -131,7 +109,7 @@ export function parseRequirementsField(
     const entryContext = `${context}.conditions[${entries.length}]`;
     const reasonName = tryGetScalar(asMap(node, entryContext), REASON_KEY, entryContext);
     entries.push(
-      new Requirement(parseConditionNode(loader, entryContext, node, allowedRoots, REASON_KEY), reasonName),
+      new Requirement(parseConditionNode(loader, entryContext, node, scope, REASON_KEY), reasonName),
     );
   }
 
@@ -144,7 +122,7 @@ function parseConditionNode(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YamlNode,
-  allowedRoots: ReadonlySet<ReferenceRoot>,
+  scope: ReferenceScope,
   extraKey?: string,
 ): ConditionNode {
   const map = asMap(node, context);
@@ -158,19 +136,19 @@ function parseConditionNode(
   if (combinatorCount > 1) throw new YamlLoadError(`${context}: all/any/notは同時に指定できません。`);
 
   if (allNode !== undefined)
-    return ConditionNode.all(parseCombinatorChildren(loader, context, 'all', allNode, allowedRoots));
+    return ConditionNode.all(parseCombinatorChildren(loader, context, 'all', allNode, scope));
   if (anyNode !== undefined)
-    return ConditionNode.any(parseCombinatorChildren(loader, context, 'any', anyNode, allowedRoots));
+    return ConditionNode.any(parseCombinatorChildren(loader, context, 'any', anyNode, scope));
 
   if (notNode !== undefined) {
     const unknown = keysOf(map).filter((key) => key !== 'not' && key !== extraKey);
     if (unknown.length > 0)
       throw new YamlLoadError(`${context}: 'not'は他のキーと同居できません（値: '${unknown.join(', ')}'）。`);
 
-    return ConditionNode.not(parseConditionNode(loader, `${context}.not`, notNode, allowedRoots));
+    return ConditionNode.not(parseConditionNode(loader, `${context}.not`, notNode, scope));
   }
 
-  return parseConditionLeaf(loader, context, map, allowedRoots, extraKey);
+  return parseConditionLeaf(loader, context, map, scope, extraKey);
 }
 
 function parseCombinatorChildren(
@@ -178,11 +156,11 @@ function parseCombinatorChildren(
   context: string,
   key: string,
   seq: YAMLSeq,
-  allowedRoots: ReadonlySet<ReferenceRoot>,
+  scope: ReferenceScope,
 ): ConditionNode[] {
   const children: ConditionNode[] = [];
   for (const node of seq.items as YamlNode[])
-    children.push(parseConditionNode(loader, `${context}.${key}[${children.length}]`, node, allowedRoots));
+    children.push(parseConditionNode(loader, `${context}.${key}[${children.length}]`, node, scope));
   return children;
 }
 
@@ -218,16 +196,19 @@ function parseConditionLeaf(
   loader: WorldCodexYamlLoader,
   context: string,
   map: YAMLMap,
-  allowedRoots: ReadonlySet<ReferenceRoot>,
+  scope: ReferenceScope,
   extraKey?: string,
 ): ConditionNode {
-  const subjectName = tryGetScalar(map, 'subject', context);
-  const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, allowedRoots) : 'self';
-
   const propName = tryGetScalar(map, 'prop', context);
   const slotName = tryGetScalar(map, 'slot', context);
   if (propName !== undefined && slotName !== undefined)
     throw new YamlLoadError(`${context}: 'prop'と'slot'は同時に指定できません（主語は1つです）。`);
+
+  // propを伴わない葉（in_slot・slot・matches）は主語のオブジェクトそのものを見るので、
+  // プロパティ名で祖先を探すancestorはそこでは解決先を持たない。
+  const subjectName = tryGetScalar(map, 'subject', context);
+  const leafScope = propName !== undefined ? scope : scope.objectOnly;
+  const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, leafScope) : 'self';
 
   /** 主語を絞るキーと、読み取った演算子キー。残ったキーは綴り間違いか、この主語では使えない演算子。 */
   const used = new Set<string>(['subject', 'prop', 'slot']);
@@ -241,9 +222,7 @@ function parseConditionLeaf(
       const valueNode = tryGetNode(map, op);
       if (valueNode === undefined) continue;
       used.add(op);
-      nodes.push(
-        parsePropertyComparison(loader, context, root, propertyGlobalId, op, valueNode, allowedRoots),
-      );
+      nodes.push(parsePropertyComparison(loader, context, root, propertyGlobalId, op, valueNode, scope));
     }
 
     const stageName = tryGetScalar(map, IN_STAGE_KEY, context);
@@ -266,10 +245,6 @@ function parseConditionLeaf(
   } else {
     const inSlotName = tryGetScalar(map, 'in_slot', context);
     if (inSlotName !== undefined) {
-      if (root === 'ancestor')
-        throw new YamlLoadError(
-          `${context}: in_slot判定でsubject 'ancestor'は未対応です（ancestorはプロパティ名で祖先を探すため、探すプロパティを持たないin_slot判定とは噛み合いません）。`,
-        );
       used.add('in_slot');
       nodes.push(ConditionNode.slotPosition(root, loader.slotNames.intern(inSlotName)));
     }
@@ -299,7 +274,7 @@ function parsePropertyComparison(
   propertyGlobalId: number,
   op: ConditionOp,
   valueNode: YamlNode,
-  allowedRoots: ReadonlySet<ReferenceRoot>,
+  scope: ReferenceScope,
 ): ConditionNode {
   if (isMap(valueNode)) {
     if (op === 'in' || op === 'not_in')
@@ -308,8 +283,7 @@ function parsePropertyComparison(
       );
 
     const refSubjectName = tryGetScalar(valueNode, 'subject', context);
-    const refRoot =
-      refSubjectName !== undefined ? parseSubjectRoot(context, refSubjectName, allowedRoots) : 'self';
+    const refRoot = refSubjectName !== undefined ? parseSubjectRoot(context, refSubjectName, scope) : 'self';
     const refPropName = requireScalar(valueNode, 'prop', context);
 
     requireKnownKeys(valueNode, ['subject', 'prop'], `${context}.${op}`);

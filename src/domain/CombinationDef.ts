@@ -4,6 +4,7 @@ import type { ActiveEffect } from './ActiveEffect';
 import type { InteractionTriggerReading } from './InteractionDef';
 import { InteractionDef } from './InteractionDef';
 import type { ObjectDef } from './ObjectDef';
+import type { ReferenceContext } from './ReferenceRoot';
 import type { WeightSpec } from './WeightSpec';
 import type { Requirements } from './Requirement';
 import type { TypeMatchRule } from './TypeMatchRule';
@@ -44,12 +45,8 @@ export class CombinationDef extends InteractionDef {
    * **0は「重ねても何も起きない」ではなく「起こしてはいけない」。** 器へ入らないまま相手を消す効果
    * （満杯の炉へ薪をくべる）が、黙って薪だけ失う結果になるのを防ぐ。
    */
-  acceptedCount(
-    self: WorldObject,
-    candidates: readonly WorldObject[],
-    actor: WorldObject | undefined,
-  ): number {
-    const counted = this.effect.acceptedCount(self, candidates, actor);
+  acceptedCount(context: ReferenceContext, candidates: readonly WorldObject[]): number {
+    const counted = this.effect.acceptedCount(context, candidates);
     return counted === undefined ? 1 : this.allowMultiple ? counted : Math.min(1, counted);
   }
 
@@ -66,13 +63,9 @@ export class CombinationDef extends InteractionDef {
    * 相手の型も実行の時点で引き直す。候補に選ばれてから落とされるまでに、相手が別の型になっている
    * ことがある（`become`、9.9節）——基底が要件を引き直すのと同じ理由。
    */
-  override execute(
-    self: WorldObject,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-    session: WorldSession,
-  ): boolean {
+  override execute(context: ReferenceContext, session: WorldSession): boolean {
+    const dragged = context.dragged;
     if (dragged === undefined || !this.acceptsDragged(dragged.def)) return false;
-    return super.execute(self, actor, dragged, session);
+    return super.execute(context, session);
   }
 }

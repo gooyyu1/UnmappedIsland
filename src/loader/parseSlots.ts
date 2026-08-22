@@ -16,6 +16,7 @@ import { parseWeight } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { CellDef, SlotDef } from '../domain/SlotDef';
 import type { WeightSpec } from '../domain/WeightSpec';
+import { ReferenceScope } from '../domain/ReferenceRoot';
 
 /** 廃止したキーと、その内容を今どこへ書くか。黙って無視すると、効いているつもりの宣言が通ってしまう。 */
 const RETIRED_KEYS: readonly (readonly [string, string])[] = [
@@ -100,7 +101,7 @@ function parsePutIn(loader: WorldCodexYamlLoader, context: string, node: YAMLMap
 
   const durationNode = tryGetNode(node, 'duration');
   if (durationNode === undefined) throw new YamlLoadError(`${context}: 'duration'が必要です。`);
-  return parseWeight(loader, `${context}.duration`, durationNode, true, 'duration');
+  return parseWeight(loader, `${context}.duration`, durationNode, ReferenceScope.combination, 'duration');
 }
 
 /** 1つの枠の定義（`{accept: {tag|object}, max: N}`）を読む。 */

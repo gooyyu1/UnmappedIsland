@@ -1,7 +1,5 @@
-import type { WorldObject } from './WorldObject';
 import type { WeightReading } from './EffectReader';
-import { resolveReferenceRoot } from './ReferenceRoot';
-import type { PropertyPath } from './ReferenceRoot';
+import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
 
 /**
  * 宣言に書かれた1つの数値（GameElementDefinition.md 10.2節）。リテラル定数か、既存propsへのパス参照の
@@ -29,17 +27,9 @@ export class WeightSpec {
     return new WeightSpec(true, 0, path);
   }
 
-  resolve(self: WorldObject, actor: WorldObject | undefined, dragged: WorldObject | undefined): number {
-    if (!this.isPathRef) return this.literal;
-
-    const path = this.path!;
-    const target =
-      path.root === 'ancestor'
-        ? self.findAncestorWithProperty(path.propertyGlobalId)
-        : resolveReferenceRoot(path.root, self, actor, dragged);
-    return target !== undefined
-      ? (target.tryGetProperty(path.propertyGlobalId)?.getEffectiveValue() ?? 0)
-      : 0;
+  /** 参照が解決できなければ0（宣言はされているので、値が無いこととは区別しない）。 */
+  resolve(context: ReferenceContext): number {
+    return this.isPathRef ? (this.path!.number(context) ?? 0) : this.literal;
   }
 
   /** この値の宣言そのもの（WeightReading参照）。数値へ解くのは、文脈を知っている読み手の側。 */

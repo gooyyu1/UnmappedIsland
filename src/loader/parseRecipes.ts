@@ -11,10 +11,11 @@ import {
   tryGetSeq,
 } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { RECIPE_CONDITION_ROOTS, parseRequirementsField } from './parseConditions';
+import { parseRequirementsField } from './parseConditions';
 import { built, parseTypeMatchRule } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../domain/RecipeDef';
+import { ReferenceScope } from '../domain/ReferenceRoot';
 
 const RECIPE_KEYS = ['icon', 'steps', 'conditions'];
 const STEP_KEYS = ['requires', 'duration'];
@@ -80,7 +81,7 @@ export function parseRecipes(
       loader,
       context,
       tryGetSeq(map, 'conditions', context),
-      RECIPE_CONDITION_ROOTS,
+      ReferenceScope.recipeUnlock,
     );
 
     result.push(new RecipeDef(name, steps, tryGetScalar(map, 'icon', context), unlock));
