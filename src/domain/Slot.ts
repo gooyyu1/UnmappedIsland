@@ -49,7 +49,7 @@ export class Slot {
    * 枠の数が決まっているスロットか（＝空セルを残して位置を安定させるか、SlotSystem.md 3節）。
    * 空き枠を指したドロップを、枠そのものへ入れる操作として扱ってよいのはこちらだけ。
    */
-  get hasFixedCells(): boolean {
+  private get hasFixedCells(): boolean {
     return this.def.cellsToKeep !== 'grows';
   }
 
@@ -347,7 +347,7 @@ export class Slot {
    *
    * 合流が指定位置に優先することはtryMergeIntoMatchingStack参照。
    */
-  tryInsertAtGap(obj: WorldObject, gapIndex: number): boolean {
+  private tryInsertAtGap(obj: WorldObject, gapIndex: number): boolean {
     if (this.tryMergeIntoMatchingStack(obj)) return true;
 
     const stack = new ObjectStack(obj);
@@ -362,7 +362,7 @@ export class Slot {
    * プレイヤーが空きセルを指定して入れる手動配置（枠数固定のスロット専用）。指定したセルが空いていなければ
    * false。合流できる既存スタックの優先はtryInsertAtGapと同じ。
    */
-  tryInsertAtCell(obj: WorldObject, cellIndex: number): boolean {
+  private tryInsertAtCell(obj: WorldObject, cellIndex: number): boolean {
     if (!this.hasFixedCells) return false;
 
     if (this.tryMergeIntoMatchingStack(obj)) return true;
@@ -380,7 +380,7 @@ export class Slot {
    * 遠くのセルを動かさずに済む。自分の両隣の隙間へ落とした場合は、跡がそのまま行き先になるので
    * 何も動かさない。前詰めスロットは抜いて入れ直すだけ。
    */
-  tryMoveStackToGap(stack: ObjectStack, gapIndex: number): boolean {
+  private tryMoveStackToGap(stack: ObjectStack, gapIndex: number): boolean {
     const from = this._cells.indexOf(stack);
     if (from < 0) return false;
     if (gapIndex === from || gapIndex === from + 1) return true;
@@ -429,7 +429,7 @@ export class Slot {
    * 枠数の決まったスロットの並び替え（moveStackToの片割れ）。**指した枠と入れ替える**——相手が空なら
    * 実質の移動になり、元の枠が空く。詰めないので単純な2者間のswapで足りる。
    */
-  tryMoveStackToCell(stack: ObjectStack, cellIndex: number): boolean {
+  private tryMoveStackToCell(stack: ObjectStack, cellIndex: number): boolean {
     if (!this.hasFixedCells) return false;
     const from = this._cells.indexOf(stack);
     if (from < 0) return false;

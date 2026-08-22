@@ -154,7 +154,7 @@ export class PropertyValue {
    * tickが足すのと同じ寄与を、足さずに数えたもの。**この場で結果を見に行かずに、これから何が
    * 起きるかを言える唯一の手掛かり**で、値の出入り（WorldChange）には現れない。
    */
-  changePerTick(): number {
+  private changePerTick(): number {
     let sum = 0;
     for (const c of this.accumulateEffects) sum += c.activeAmount();
     return sum;

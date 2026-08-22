@@ -276,7 +276,7 @@ const DEFAULT_ORDINAL_SUFFIX = ' ({n})';
  * 対応表の節（Localization.md）。**節ごとに名前で渡す**——どれも同じ形の対応表なので、並び順で渡すと
  * 取り違えても型検査を通る。省いた節は空として扱う。
  */
-export interface LocaleSections {
+interface LocaleSections {
   readonly objects: ReadonlyMap<string, ObjectTextsEntry>;
   readonly propertyTags?: ReadonlyMap<string, DeclaredTexts>;
   readonly symbols?: ReadonlyMap<string, DeclaredTexts>;

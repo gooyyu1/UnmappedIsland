@@ -10,7 +10,6 @@ import type { TypeMatchRule } from '../domain/TypeMatchRule';
 /** 生成した定義の出所として、エラーメッセージに出す名前。 */
 export const IN_PROGRESS_SOURCE = '<製作中オブジェクトの自動生成>';
 
-export { IN_PROGRESS_TAG } from '../domain/RecipeDef';
 
 /**
  * 製作中オブジェクトが持つ単語（宣言はWorldVocabulary）。

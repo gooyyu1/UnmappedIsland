@@ -303,7 +303,7 @@ export class WorldObject {
 
   /**
    * same_slot専用。置き換えオブジェクトを、originが居たセルを基準に配置する（Slot.placeSameSlot参照）。
-   * 枠数の決まったスロット（Slot.hasFixedCells）で空きが作れず配置できない場合はエラーを返す
+   * 枠数の決まったスロットで空きが作れず配置できない場合はエラーを返す
    * （＝呼び出し側でfallbackへ委ねる）。
    */
   insertSameSlot(slot: Slot, placement: SameSlotPlacement): string | undefined {
