@@ -30,8 +30,8 @@ export function characterIcon(characterDefName: string): string {
 }
 
 /**
- * キャラクタ1人をカードで見せるときの内容。開始画面（キャラクター選択・セーブスロット一覧）と
- * プレイ中のポートレイトで、同じ札が同じ姿で出るようにするための1か所。
+ * 開始画面（キャラクター選択・セーブスロット一覧）で出す、キャラクタ1人の札の内容。**インスタンスを
+ * 持たない姿**なので、値のバーも印も持たない（プレイ中のポートレイトはcardLooks.contentOfが作る）。
  * 絵が無いあいだ絵文字で代用するのはCard側の役目。
  */
 export function characterCardContent(characterDefName: string, locale: Localization): CardContent {

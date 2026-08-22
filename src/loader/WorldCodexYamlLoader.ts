@@ -2,6 +2,7 @@ import { parseDocument } from 'yaml';
 import type { YamlNode } from './yamlMapping';
 import { asMap, asScalarText, entriesInOrder, tryGetMap, tryGetSeq } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
+import { messageOf } from './errorMessage';
 import { RawObjectDef } from './RawObjectDef';
 import type { LoadReport } from './LoadReport';
 import type { RawPatch } from './RawPatch';
@@ -24,11 +25,11 @@ import type { LocationTypeDef } from '../domain/generation/LocationTypeDef';
 /**
  * YAMLファイル群からWorldCodexを組み立てるロード処理の入口（GameElementDefinition.md 3節）。
  *
- * パース全般をこのクラスが担い、5種のNameRegistryを保持する。「trait解決込みでobject_defを
+ * パース全般をこのクラスが担い、名前空間ごとのNameRegistryを保持する（objectNames以下のゲッター参照）。「trait解決込みでobject_defを
  * 組み立てる」責務はRawObjectDef.resolveが担う。props/slots/actions/combinationsはフィールド
  * 単位のtrait上書きマージ対象のため、深い意味解釈とprop/slot名等のInternはload時点ではなく
- * resolveまで遅延する。object_def自身のglobalIdのみtrait解決に依存しないため、parseObjectDefの
- * 時点で確定する。
+ * resolveまで遅延する。object_def自身のglobalIdのみtrait解決に依存しないため、RawObjectDefを
+ * 作る時点で確定する。
  *
  * load系メソッドは何度でも呼べ、呼ぶたびにこのインスタンスへ追記する（thisを返すため
  * `new WorldCodexYamlLoader().load(label, text).build()`と書ける）。
@@ -136,11 +137,7 @@ export class WorldCodexYamlLoader {
         } catch (error) {
           // 書き方そのものの誤りも、報告先があればその1件を捨てて続ける（AssetPack.md 6.1節）。
           if (report === undefined) throw error;
-          report.add(
-            label,
-            `patch_object_defs[${index}]`,
-            error instanceof Error ? error.message : String(error),
-          );
+          report.add(label, `patch_object_defs[${index}]`, messageOf(error));
         }
       });
 

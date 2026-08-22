@@ -54,6 +54,8 @@ export function craftingActions(
       enabled: true,
       reason: undefined,
       execute: () => {
+        // 探す順は手持ち → 足元。入れ物（かご）の中までは探さない——探すと、しまった物が勝手に
+        // 出ていくことになり、しまうという操作の意味が無くなる。
         autoFillMaterials(
           object,
           materialsSlotId,

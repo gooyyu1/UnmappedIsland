@@ -61,12 +61,6 @@ const START_TIME_EARLIEST_MINUTES = 8 * 60;
 const START_TIME_LATEST_MINUTES = 12 * 60;
 
 /**
- * 新しいゲームの開始一式（world/プレイヤーの生成 → 地形生成 → 島の実体化 → プレイヤー配置）を
- * 1回の呼び出しに閉じ込める入口。呼び出し側（Phaser側のシーン等）は「Codexとシードを渡す」
- * だけでよく、生成と配置の手順・順序を知らなくてよい（自分のことは自分でする、CLAUDE.md参照）。
- */
-
-/**
  * 選べるプレイヤーキャラクタ（characterタグを持つobject_def）の識別子を宣言順で返す
  * （docs/world/Characters.md）。
  */
@@ -84,7 +78,10 @@ export function resolveCharacterDefName(codex: WorldCodex, savedCharacterId: str
 }
 
 /**
- * 新しいゲームを開始する。characterDefNameは操作するキャラクタのobject_defの識別子
+ * 新しいゲームを開始する。**開始一式（world/プレイヤーの生成 → 地形生成 → 島の実体化 → プレイヤー
+ * 配置）を1回の呼び出しに閉じ込める入口**で、呼び出し側は生成と配置の手順・順序を知らなくてよい。
+ *
+ * characterDefNameは操作するキャラクタのobject_defの識別子
  * （characterDefNames参照）。rngはpick抽選・初期値ロール・開始時刻用のWorldSession.rng（省略時は非決定。
  * 地形レイアウト自体はseedのみで決まり、rngには依存しない）。
  */

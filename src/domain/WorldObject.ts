@@ -217,7 +217,7 @@ export class WorldObject {
    * **最も詰まっているスロットを返す。** バーが答えるのは「あとどれだけ入るか」なので、先に一杯に
    * なる側を映す——合計で割ると、片方が満杯でも半分に見える。
    *
-   * fillRatioInParentSlotと表裏で、こちらは入れ物の側から自分の詰まり具合を見る。
+   * Slot.fillRatioと表裏で、こちらは入れ物の側から自分の詰まり具合を見る。
    */
   storageFillRatio(): number | undefined {
     if (!this.def.isStorage) return undefined;
@@ -312,7 +312,8 @@ export class WorldObject {
 
   /**
    * same_slot専用。置き換えオブジェクトを、originが居たセルを基準に配置する（Slot.placeSameSlot参照）。
-   * fixedPositionsで空きが作れず配置できない場合はエラーを返す（＝呼び出し側でfallbackへ委ねる）。
+   * 枠数の決まったスロット（Slot.hasFixedCells）で空きが作れず配置できない場合はエラーを返す
+   * （＝呼び出し側でfallbackへ委ねる）。
    */
   insertSameSlot(slot: Slot, placement: SameSlotPlacement): string | undefined {
     return this.attachToSlot(slot, (target) =>
@@ -402,7 +403,7 @@ export class WorldObject {
 
     if (place !== undefined) {
       if (!place(targetSlot)) {
-        // fixedPositionsで空きが作れず配置できなかった（呼び出し側でfallbackへ）。既に旧親から切り離し済みの
+        // 枠数の決まったスロットで空きが作れず配置できなかった（呼び出し側でfallbackへ）。既に旧親から切り離し済みの
         // ため、この場合は未配置（どこにも属さない）で戻す。
         this.session.recordChange(this, from, undefined);
         return `'${newParent.def.name}.${targetSlot.def.name}' に指定した位置の空きがありません。`;
@@ -809,7 +810,7 @@ export class WorldObject {
    * 対象が解決できない場合（parentが無い、actor/draggedがこの実行文脈に無い）は、その対象への適用のみ無視する。
    *
    * destroyをspawnより先に行う（9.3節・9.4節）: 置き換え後のオブジェクトが破棄されるオブジェクトの位置を
-   * 引き継げるよう、destroyで実際に位置が空いてから通常の（force無しの）配置を行う。
+   * 引き継げるよう、destroyで実際に位置が空いてから配置を行う。
    *
    * **ここが「誰の仕業か」の境界**でもある。この中で起きた物の出入りは、すべてselfを主体として記録される
    * （WorldChange.subject）。どの`pick`の候補が選ばれたかによらず1つに決まるので、観測する側は分岐を
@@ -872,8 +873,8 @@ export class WorldObject {
   }
 
   /**
-   * spawn（9.4節）を実行する。intoへの配置に失敗した場合は起点自身の親へ伝播し、枠の要件・capacityを無視して
-   * 強制配置する（place参照）。伝播先の親も無ければ、生成したオブジェクトはworldツリーに繋がらないまま消える。
+   * spawn（9.4節）を実行する。intoへの配置に失敗した場合は起点自身の親へこぼれ、そこも受け取らなければ
+   * さらに上へ遡る（place・spillTo参照）。どこにも入らなければ、生成したオブジェクトはそのまま消える。
    */
   executeSpawn(
     effect: SpawnEffect,

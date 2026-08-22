@@ -98,10 +98,11 @@ export interface StatusDetailWindowOptions {
 
 /**
  * ステータス1件の意味と、他のステータスとのやり取りを見せる子ウィンドウ
- * （[`Windows.md`](../../../docs/ui/Windows.md) 8節）。ステータスエリアとプロパティウィンドウの
+ * （[`Windows.md`](../../../docs/ui/Windows.md) 8節）。ステータスエリアとプロパティのタブの
  * バーをタップすると開く。
  *
- * 中身を出し入れしない読み取り専用のウィンドウなので、覆いは画面全体に敷く（プロパティウィンドウと同じ）。
+ * 中身を出し入れしない読み取り専用のウィンドウなので、覆いは画面全体に敷く（後ろのカードを掴めなく
+ * しても、掴む対象がこの窓の外にしか無い）。
  */
 export class StatusDetailWindow {
   private readonly objects: Phaser.GameObjects.GameObject[] = [];

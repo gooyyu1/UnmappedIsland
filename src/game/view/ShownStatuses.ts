@@ -9,7 +9,7 @@ export interface StatusSource {
   /** ステータスタグが付いた行（常に候補、PlayScreenView.statuses）。 */
   readonly statuses: () => readonly StatusContent[];
   /**
-   * プロパティウィンドウのタブ（PlayScreenView.propertyCategories）。ここにしか出ない行は、
+   * プロパティのタブ（PlayScreenView.propertyCategories）。ここにしか出ない行は、
    * 固定表示にされたときだけステータスエリアの候補に加わる。
    */
   readonly categories: () => readonly PropertyTab[];
@@ -84,7 +84,7 @@ export class ShownStatuses {
     );
   }
 
-  /** プロパティウィンドウにだけ出る行も含めた全件（タブの並び順）。 */
+  /** プロパティのタブにだけ出る行も含めた全件（タブの並び順）。 */
   private entries(): readonly StatusContent[] {
     return this.source.categories().flatMap((tab) => tab.entries);
   }
@@ -101,7 +101,7 @@ export class ShownStatuses {
     return this.all().find((status) => status.key === key);
   }
 
-  /** プロパティウィンドウに渡すタブ。行の見え方はステータスエリアと同じ。 */
+  /** プロパティのタブに渡すタブ。行の見え方はステータスエリアと同じ。 */
   tabs(): readonly PropertyTab[] {
     return this.source
       .categories()

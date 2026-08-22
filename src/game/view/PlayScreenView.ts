@@ -241,8 +241,8 @@ export interface PlayScreenView {
   /** 現在地を映す札。設置物レーンの左端にピン留めされる1枚と、現在地の子ウィンドウが同じ姿で出す。 */
   readonly currentLocationCard: CardContent;
   /**
-   * 画面の区画（レーン・装備/怪我のボタン）が今映しているスロット。**画面が名前で指せるのはこの5つ
-   * だけ**で、それ以外の場所はカードや現在地が名乗る`visible_slots`から来る（cardPlaces参照）。
+   * 常に見えている3つのレーンが今映しているスロット。**画面が自分で名指しするのはこの3つだけ**で、
+   * それ以外の場所はカードや現在地が名乗る`visible_slots`から来る（cardPlaces参照）。
    */
   readonly places: ScreenPlaces;
 

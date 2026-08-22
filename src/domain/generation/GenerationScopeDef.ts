@@ -37,11 +37,11 @@ export class GenerationScopeDef {
   /** 凸包上（外周）のサイトのcoastal_distanceを海岸帯へクランプするか（島が必ず海岸で囲まれることの保証）。 */
   readonly hullCoast: boolean;
 
-  /** サイト配置の内陸バイアス（0=一様、100=最大）。外周に張り付くサイトを減らし、海岸が多くなりすぎないようにする。 */
+  /** サイト配置の内陸バイアス（0=一様、1=最大。範囲はparseGenerationが検証する）。外周に張り付くサイトを減らし、海岸が多くなりすぎないようにする。 */
   readonly interiorBias: number;
 
-  /** MST以外のDelaunay辺を復活させる迂回率の閾値（%）。現グラフでの2点間最短距離が
-   * 直結距離のこの割合を超えるなら、その辺を近道として復活させる。 */
+  /** MST以外のDelaunay辺を復活させる迂回率の閾値（倍率）。現グラフでの2点間最短距離が
+   * 直結距離のこの倍を超えるなら、その辺を近道として復活させる。 */
   readonly extraEdgeDetourFactor: number;
 
   /** 抽象座標の距離1あたりの基準移動時間（分）。 */
@@ -54,7 +54,7 @@ export class GenerationScopeDef {
   readonly maxSitesPerType: number;
 
   /**
-   * 同じ型が1個増えるごとにマッチング距離へ乗せる割増（%、0で無効）。上限に当たる前から
+   * 同じ型が1個増えるごとにマッチング距離へ乗せる割増（率、0で無効）。上限に当たる前から
    * 他の型へ譲らせて、上限での打ち切りが「よくある結末」にならないようにする。
    */
   readonly crowdingPenalty: number;

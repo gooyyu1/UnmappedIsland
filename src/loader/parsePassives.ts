@@ -25,7 +25,7 @@ import type { PassiveEffect } from '../domain/PassiveEffect';
 
 /**
  * passivesの1ブロック（"passives:"配列の1要素。conditions/modify/add/transferのみを持つ）を読み、
- * PassiveEffectへ変換してoutputへ追加する。forcedStageProperty（非undefinedならstage内）と
+ * PassiveEffectへ変換してpassivesへ追加する。forcedStageProperty（非undefinedならstage内）と
  * "conditions"は独立に併用できる（例:「装備している間、かつ耐久値がintactステージの間だけ」）。
  * conditionsはブロック全体で1つ（対象ごとには持たない。RegisteredPassiveEffect参照）。
  * RawObjectDef.resolveから（object/trait直下・props内・stages内のいずれからも）呼ばれる。
@@ -94,7 +94,7 @@ function buildGate(
 
 /**
  * passiveの1操作(modify/add)を読み、対象(self/parent/child/ancestor、actorは未対応のため
- * スキップ)ごとにPassiveEffectへ変換してoutputへ追加する。具象型はmakeEffectファクトリで受け取り、
+ * スキップ)ごとにPassiveEffectへ変換してpassivesへ追加する。具象型はmakeEffectファクトリで受け取り、
  * 同じpassiveブロック内のgateを全効果で共有する。
  */
 function parsePassiveOperationInto(

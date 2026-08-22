@@ -313,10 +313,9 @@ export class PlayScene extends ResponsiveScene {
   private selectedFilter = 0;
   private filterButtons: Button[] = [];
 
-  /** 開いている探索の子ウィンドウ。画面の作り直しをまたいで開いたままにするために持つ。 */
-
   /**
-   * 開いている子ウィンドウ（ObjectWindow）と、それが映しているもの。
+   * 開いている子ウィンドウ（ObjectWindow）と、それが映しているもの。**画面の作り直しをまたいで
+   * 開いたままにするために持つ。**
    *
    * `childWindowPlace`は**今開いているタブが映している場所**（説明のタブではundefined）。中身を
    * 映している間は、その場所が手持ちの「隣」になる（laneCards・cardsOf参照）。
@@ -520,8 +519,8 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 画面の区画（レーン・装備/怪我のボタン）が今映している場所。**土地を移れば別の場所を指す**ので、
-   * その都度ビューへ訊く（cardPlaces）。
+   * 常に見えている3つのレーンが今映している場所。**土地を移れば別の場所を指す**ので、その都度
+   * ビューへ訊く（cardPlaces）。
    */
   private place(screen: ScreenPlace): CardPlace {
     return this.view.places(screen);
@@ -1007,7 +1006,7 @@ export class PlayScene extends ResponsiveScene {
   private dropLabel(drop: CardDrop): string {
     const dragged = this.cardsOf(drop.from)[drop.fromIndex]?.name ?? '?';
     const count = drop.count > 1 ? ` ×${drop.count}` : '';
-    const to = this.placeOf(drop.to);
+    const to = this.placeText(this.placeOf(drop.to));
     if (drop.target.kind !== 'combine') return `カードを落とした: ${dragged}${count} → ${to}`;
 
     const onto = this.cardsOf(drop.to)[drop.target.index]?.name ?? '?';
@@ -1340,7 +1339,7 @@ export class PlayScene extends ResponsiveScene {
     );
   }
 
-  /** 今フィールドとロケーションのレーンに出ているインスタンスのID。 */
+  /** 今、設置物レーンとアイテムレーンに出ているインスタンスのID。 */
   private shownInstanceIds(): ReadonlySet<number> {
     return new Set(this.locationCards.flatMap((card) => card.identity ?? []));
   }
@@ -1731,8 +1730,9 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 情報エリアの表示を今のthis.viewへ合わせる。日時とステータスだけを引き直す——天候・条件・装備の
-   * アイコンはまだ固定値（PlayScreenView参照）で、行動しても変わらないため。
+   * 情報エリアの表示を今のthis.viewへ合わせる。**引き直すのは日時とステータスだけ**——空の絵と
+   * 天候の名前は組み立て時に決まり（WeatherPanelに差し替え口が無い）、条件と装備のアイコンは
+   * まだ固定値（PlayScreenView参照）。
    */
   private showInformation(): void {
     this.situation.setTime(this.view.elapsedDays, this.view.hour, this.view.minute);
@@ -2090,7 +2090,7 @@ export class PlayScene extends ResponsiveScene {
    * バーをタップしたときに開く、そのステータスの詳細（Windows.md 8節）。開き直しでも同じ経路を
    * 通せるよう、受け取るのは中身ではなくプロパティの識別子で、中身は今のviewから引き直す。
    *
-   * ステータスエリアからもプロパティウィンドウの行からも開くため、既に開いていれば入れ替える。
+   * ステータスエリアからもプロパティのタブの行からも開くため、既に開いていれば入れ替える。
    */
   private openStatusDetail(key: string): void {
     const content = this.status.contentOf(key);
@@ -2290,17 +2290,14 @@ export class PlayScene extends ResponsiveScene {
    * スロットボタンと同じく紙として置かれるので、同じ影を落とす（addSlotButton参照）。
    */
   private addIconButton(rect: Rect, spec: BarIcon, active: boolean, border: number): Button {
+    // どの絵も同じ大きさで敷く。4つの役割に大小は無いので、物の大きさで差を付ける理由も無い。
     const button = new Button(this, rect, this.iconButtonStyle(active, border));
     const art = SIZE.iconButtonArt;
     button.addContent(this.buttonIcon(spec, rect, { width: art, height: art }, ICON_BUTTON_GLYPH));
     return button;
   }
 
-  /**
-   * 絵があればそれを、無ければ絵文字を、ボタンの中央へ置く（slotButtonIconと同じ扱い）。
-   *
-   * **どの絵も同じ大きさで敷く。** 4つの役割に大小は無いので、物の大きさで差を付ける理由も無い。
-   */
+  /** バーのアイコンボタンの台紙（選択中は塗りを反転し、枠線の色は置かれるバーが決める）。 */
   private iconButtonStyle(active: boolean, border: number): BoxStyle {
     return {
       fill: active ? COLOR.buttonActive : COLOR.button,

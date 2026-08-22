@@ -37,12 +37,6 @@ import type { TooltipContent } from './Tooltip';
  */
 const MIN_WIDTH = 760;
 
-/**
- * 4枠に収まらないスロットで、**次の枠の頭を覗かせる幅**（u単位）。ちょうど4枠ぶんで切ると、そこで
- * 終わっているのか右へ送れるのかが分からない。カードの間隔（12u）より広く取って、覗いているのが
- * 隙間ではなくカードの縁だと分かるようにする。
- */
-
 /** タブの行の高さ（u単位）。タブが1つだけのウィンドウでは行そのものを空けない。 */
 const TAB_HEIGHT = 64;
 
@@ -163,9 +157,6 @@ export class ObjectWindow {
 
   /** 開いている間ずっと在るもの（台紙・見出し・タブ）。 */
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
-
-  /** タブの中身。切り替えのたびに作り直す。 */
-  private tabObjects: Phaser.GameObjects.GameObject[] = [];
 
   /** 中身の並び（説明のタブではundefined）。ドラッグの対象として呼び出し側（PlayScene）が受け取る。 */
   private lane: CardLane | undefined;
@@ -328,11 +319,6 @@ export class ObjectWindow {
     return this.ownLane;
   }
 
-  /** 今開いているタブの識別子。 */
-  get openedTab(): string {
-    return this.selected;
-  }
-
   /**
    * プロパティの行の内容を書き直す（プロパティのタブを開いていなければ、次に開いたときの値として
    * 控えるだけ）。**控えないと、タブを切り替えた先に開いた時点の値が出る**——showTabはペインを
@@ -385,7 +371,7 @@ export class ObjectWindow {
 
   /**
    * 出すタブを並び順で返す。説明 → スロット（宣言順）→ 踏査 → プロパティ。**タブの行を作るのも、
-   * 今どれが選ばれているかを塗るのも、この並びが唯一の根拠。**
+   * 今どれが選ばれているかを塗るのも、この並びが根拠**（行は組み立て時に1度だけ作る）。
    */
   private tabs(): readonly { readonly key: string; readonly title: string }[] {
     return [
@@ -425,8 +411,8 @@ export class ObjectWindow {
   }
 
   /**
-   * タブの中身を差し替える。**説明のタブだけがオブジェクト自身のカードを出す**——スロットのタブは
-   * 右の段を並びで使い切る。借りた札はタブによらず借りたままで、描かれないだけ。
+   * タブの中身を差し替える（どのタブが何を出すかはクラスのdoc参照）。借りた札はタブによらず
+   * 借りたままで、描かれないだけ。
    */
   private showTab(tab: string): void {
     const { scene, metrics, middle } = this;
@@ -440,9 +426,6 @@ export class ObjectWindow {
     this.propertiesPane = undefined;
     this.explorationPane?.destroy();
     this.explorationPane = undefined;
-    for (const object of this.tabObjects) object.destroy();
-    this.tabObjects = [];
-
     const tabs = this.tabs();
     this.tabButtons.forEach((button, index) =>
       button.setBoxStyle({
@@ -630,9 +613,8 @@ export class ObjectWindow {
     this.propertiesPane?.destroy();
     this.explorationPane?.destroy();
     this.tooltip.destroy();
-    for (const object of [...this.objects, ...this.tabObjects, ...this.actionObjects]) object.destroy();
+    for (const object of [...this.objects, ...this.actionObjects]) object.destroy();
     this.objects.length = 0;
-    this.tabObjects = [];
     this.actionObjects = [];
   }
 }

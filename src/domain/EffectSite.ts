@@ -28,7 +28,8 @@ export class EffectSite {
   /** 捕捉時にself(origin)が属していたObjectStack。 */
   private readonly originStack: ObjectStack;
 
-  /** 捕捉時のoriginStackのセル位置。空セルが除去される非fixedPositionsでは、同種が消えた後はindexOfStackで引けなくなるため捕捉値が要る。 */
+  /** 捕捉時のoriginStackのセル位置。枠数を決めていないスロットは空セルを詰めるので、同種が消えた後は
+   * indexOfStackで引けなくなる（そのための捕捉値）。 */
   private readonly stackIndexAtCapture: number;
 
   /** 次の1つを「その隣」へ並べる基準になるスタック。直前にセルを消費して置いた置き換えオブジェクトが入る（まだ誰も消費していなければundefined＝originの位置が基準）。 */
