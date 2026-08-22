@@ -1,8 +1,7 @@
 import type Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import type { Button } from './Button';
-import { addTextButton, tabBoxStyle } from './Button';
+import { TabButtons, addTextButton } from './Button';
 import { ScrollArea } from '../../ui/scrollArea';
 import type { ObjectWindowLane, ObjectWindowPane } from './ObjectWindowPane';
 import type { StatusContent } from './StatusBar';
@@ -57,7 +56,7 @@ export class PropertiesPane implements ObjectWindowPane {
   private categories: readonly PropertyCategory[];
   private selected = 0;
 
-  private readonly tabButtons: Button[] = [];
+  private readonly tabs: TabButtons;
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
 
   /** 今のカテゴリのバーだけ。切り替えのたびに捨てて作り直す。 */
@@ -77,6 +76,7 @@ export class PropertiesPane implements ObjectWindowPane {
     this.scene = scene;
     this.metrics = metrics;
     this.area = area;
+    this.tabs = new TabButtons(metrics);
     this.source = source;
     const categories = source();
     this.categories = categories;
@@ -92,10 +92,10 @@ export class PropertiesPane implements ObjectWindowPane {
         { fill: COLOR.button },
         () => this.select(index),
       );
-      button.setBoxStyle(tabBoxStyle(this.metrics, index === this.selected));
-      this.tabButtons.push(button);
+      this.tabs.add(button);
       this.objects.push(button);
     });
+    this.tabs.select(this.selected);
 
     this.buildRows();
   }
@@ -117,7 +117,7 @@ export class PropertiesPane implements ObjectWindowPane {
     if (index === this.selected) return;
 
     this.selected = index;
-    this.tabButtons.forEach((button, i) => button.setBoxStyle(tabBoxStyle(this.metrics, i === index)));
+    this.tabs.select(index);
     this.buildRows();
   }
 

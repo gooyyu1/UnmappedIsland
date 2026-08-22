@@ -160,8 +160,34 @@ function textButtonBoxStyle(metrics: ScreenMetrics, style: TextButtonStyle): Box
 }
 
 /** 選ばれているかで塗りを変える、タブの台紙（子ウィンドウのタブ・プロパティのカテゴリ）。 */
-export function tabBoxStyle(metrics: ScreenMetrics, active: boolean): BoxStyle {
+function tabBoxStyle(metrics: ScreenMetrics, active: boolean): BoxStyle {
   return textButtonBoxStyle(metrics, { fill: active ? COLOR.buttonActive : COLOR.button });
+}
+
+/**
+ * ちょうど1つが選ばれているボタンの並び（子ウィンドウのタブ、プロパティのカテゴリ）。
+ *
+ * **選び直したときに並び全部を塗り替えるのはここの仕事**で、呼び出し側は「何番目を選ぶか」を
+ * 言うだけ。どれが選ばれているかは呼び出し側が持つ——タブの意味（開いている面・並べる行）は
+ * 並びの外にあり、ここは見た目だけを揃える。
+ */
+export class TabButtons {
+  private readonly metrics: ScreenMetrics;
+  private readonly buttons: Button[] = [];
+
+  constructor(metrics: ScreenMetrics) {
+    this.metrics = metrics;
+  }
+
+  /** 並びの末尾へ足す。並べ方（位置と幅）は呼び出し側が決める。 */
+  add(button: Button): void {
+    this.buttons.push(button);
+  }
+
+  /** 何番目を選ぶか。**選ばれた1つだけ**が選択中の見た目になる。 */
+  select(index: number): void {
+    this.buttons.forEach((button, i) => button.setBoxStyle(tabBoxStyle(this.metrics, i === index)));
+  }
 }
 
 /** ラベルを中央に置いた押しボタン。ダイアログ・子ウィンドウの操作ボタンはこの形で揃える。 */
