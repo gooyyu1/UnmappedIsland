@@ -68,7 +68,7 @@ export function linkedAddTokens(linked: AddReading, names: DefNames): readonly D
 }
 
 /** オブジェクトを指す参照の書き表し（`destroy`の対象・`move`の両端）。 */
-export function objectRefTokens(reading: ObjectRefReading, names: DefNames): readonly DescriptionToken[] {
+function objectRefTokens(reading: ObjectRefReading, names: DefNames): readonly DescriptionToken[] {
   switch (reading.kind) {
     case 'root':
       return [text(reading.root)];

@@ -5,7 +5,7 @@ import { weightTokens } from './describeEffect';
 import { typeMatchTokens } from './typeMatchTokens';
 
 /** 枠1つが受け入れる型（7.2節）を書き表す。 */
-export function cellTokens(cell: CellDef, names: DefNames): readonly DescriptionToken[] {
+function cellTokens(cell: CellDef, names: DefNames): readonly DescriptionToken[] {
   const tokens: DescriptionToken[] = [
     ...(cell.accept === undefined ? [text('どんな型でも')] : typeMatchTokens(cell.accept.reading, names)),
   ];

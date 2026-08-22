@@ -35,7 +35,7 @@ const EMPTIED_ALPHA = 0.3;
  * 角の半径は20px。カードの実寸は絵の半分なので、u単位へは1/2で直せる
  * （tools/comfyui/card_frame.py の MARGIN / RADIUS、card_art.py の PAPER_RADIUS と揃えること）。
  */
-export const PAPER_INSET = 2.5;
+const PAPER_INSET = 2.5;
 export const PAPER_RADIUS = 10;
 
 /** 枠と、その内側の窓の縁をなぞる線の太さ（u単位）。 */

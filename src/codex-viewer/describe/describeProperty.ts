@@ -36,7 +36,7 @@ export function describeProperty(def: PropertyDef, names: DefNames, out: Descrip
 }
 
 /** 段1つ（6.4節）を書き表す。propertyGlobalIdは、eqの値をシンボル名へ戻すために要る。 */
-export function stageTokens(
+function stageTokens(
   stage: PropertyStage,
   propertyGlobalId: number,
   names: DefNames,

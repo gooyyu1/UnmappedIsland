@@ -14,7 +14,7 @@ export function describeRecipe(recipe: RecipeDef, names: DefNames, out: Descript
 }
 
 /** 工程1つ（13.1節）を書き出す。stepNumberは1始まりの見出し用の番号。 */
-export function describeRecipeStep(
+function describeRecipeStep(
   step: RecipeStepDef,
   stepNumber: number,
   names: DefNames,
@@ -27,7 +27,7 @@ export function describeRecipeStep(
 }
 
 /** 工程が要求する素材・道具1つを書き表す。 */
-export function recipeRequirementTokens(
+function recipeRequirementTokens(
   requirement: RecipeRequirementDef,
   names: DefNames,
 ): readonly DescriptionToken[] {
