@@ -1,6 +1,14 @@
 # 段0の決定案
 
-[`Plan.md`](./Plan.md) の段0（コードを書かずに決める）の案。**合意を取るためのもので、まだ実装しない。**
+[`Plan.md`](./Plan.md) の段0（コードを書かずに決める）の案。**採用済み。**
+
+反映したもの:
+
+- `docs/engine/Layers.md` — 決定2・3・4と、`Button` の判定例の訂正、`src/domain/views/` の注記
+- `scripts/declarationInventory.mjs`（`npm run stats:declarations`）— 宣言の一覧を再生成して
+  移動を差分で追うためのもの。抽出結果4,178件はレビュー時と一致する
+
+決定1（画面のことば）は locale とウィンドウのコードに触るため、段2の ui レーンで実装する。
 
 調べた結果、**4件のうち2件は「新しい概念は要らない」という結論**になった。
 [`Candidates.md`](./Candidates.md) A-11・A-12 の見立てを訂正する。
