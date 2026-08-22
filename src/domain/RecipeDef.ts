@@ -31,6 +31,8 @@ export class RecipeRequirementDef {
   readonly consume: boolean;
 
   constructor(match: TypeMatchRule, count: number, consume: boolean) {
+    if (count < 1) throw new Error(`要求の個数は1以上である必要があります（値: ${count}）。`);
+
     this.match = match;
     this.count = count;
     this.consume = consume;
@@ -50,6 +52,10 @@ export class RecipeStepDef {
   readonly durationMinutes: number;
 
   constructor(requirements: readonly RecipeRequirementDef[], durationMinutes: number) {
+    if (requirements.length === 0) throw new Error('工程には要求が1件以上必要です。');
+    if (durationMinutes <= 0)
+      throw new Error(`工程の所要時間は正の数である必要があります（値: ${durationMinutes}）。`);
+
     this.requirements = requirements;
     this.durationMinutes = durationMinutes;
   }
@@ -84,6 +90,8 @@ export class RecipeDef {
     icon: string | undefined,
     unlock: Requirements | undefined,
   ) {
+    if (steps.length === 0) throw new Error(`レシピ'${name}'には工程が1件以上必要です。`);
+
     this.name = name;
     this.steps = steps;
     this.icon = icon;
