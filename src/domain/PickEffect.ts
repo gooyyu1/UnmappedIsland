@@ -1,9 +1,9 @@
 import { pickWeighted } from './Rng';
 import type { EffectSite } from './EffectSite';
-import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 import { ActiveEffect } from './ActiveEffect';
 import type { EffectReader, PickCandidateReading } from './EffectReader';
+import type { ReferenceContext } from './ReferenceRoot';
 import type { WeightSpec } from './WeightSpec';
 
 /**
@@ -18,16 +18,9 @@ export class PickEffect extends ActiveEffect {
     this.candidates = candidates;
   }
 
-  apply(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-    effectSite: EffectSite | undefined,
-  ): void {
+  apply(context: ReferenceContext, session: WorldSession, effectSite: EffectSite | undefined): void {
     if (this.candidates.length === 0) return;
-    const chosen = this.selectWeighted(owner, session, actor, dragged);
-    chosen.effect.apply(owner, session, actor, dragged, effectSite);
+    this.selectWeighted(context, session).effect.apply(context, session, effectSite);
   }
 
   read(reader: EffectReader): void {
@@ -45,15 +38,10 @@ export class PickEffect extends ActiveEffect {
    * **全候補の重みが0なら先頭の候補が選ばれる。** 何も起きない手番を作らないための規約で、
    * 「起こりうることが1つも無い」ときに何を選ぶかは抽選（pickWeighted）ではなくこちらが決める。
    */
-  private selectWeighted(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): PickCandidateDef {
+  private selectWeighted(context: ReferenceContext, session: WorldSession): PickCandidateDef {
     const chosen = pickWeighted(
       this.candidates,
-      (candidate) => candidate.weight.resolve(owner, actor, dragged),
+      (candidate) => candidate.weight.resolve(context),
       session.rng,
     );
     return chosen ?? this.candidates[0];

@@ -1,8 +1,7 @@
-import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 import { ActiveEffect } from './ActiveEffect';
 import type { EffectReader } from './EffectReader';
-import type { ReferenceRoot } from './ReferenceRoot';
+import type { ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 
 /**
  * signal（9.8節）の1命令: 世界の形を何も変えず、**出来事が起きたことだけ**を告げる効果。
@@ -27,13 +26,8 @@ export class SignalEffect extends ActiveEffect {
   }
 
   /** 対象が解決できなければ何も告げない（他の命令が対象を解決できないときと同じ扱い）。 */
-  apply(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): void {
-    const resolved = owner.resolveEffectTarget(this.target, actor, dragged);
+  apply(context: ReferenceContext, session: WorldSession): void {
+    const resolved = context.objectAt(this.target);
     if (resolved !== undefined) session.recordSignal(resolved, this.name);
   }
 

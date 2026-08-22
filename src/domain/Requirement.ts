@@ -1,6 +1,5 @@
-import type { WorldObject } from './WorldObject';
 import type { ConditionNode } from './ConditionNode';
-import type { ReferenceRoot } from './ReferenceRoot';
+import type { ReferenceContext } from './ReferenceRoot';
 
 /**
  * actions/combinationsの`conditions`（14節）の要素1つ。
@@ -34,7 +33,7 @@ export class Requirements {
    * 宣言順で最初に満たしていない要件。すべて満たしていればundefined（＝実行できる）。
    * 実行可否と「なぜできないか」が同じ1回の評価から出るので、呼び出し側は2度評価しなくてよい。
    */
-  firstUnmet(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): Requirement | undefined {
-    return this.declarations.find((entry) => !entry.node.evaluate(resolveRoot));
+  firstUnmet(context: ReferenceContext): Requirement | undefined {
+    return this.declarations.find((entry) => !entry.node.evaluate(context));
   }
 }

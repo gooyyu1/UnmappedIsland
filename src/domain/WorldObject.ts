@@ -5,8 +5,8 @@ import type { SameSlotPlacement } from './EffectSite';
 import { LocalIndexMap } from './LocalIndexMap';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef } from './ObjectDef';
-import type { ReferenceRoot } from './ReferenceRoot';
-import { resolveReferenceRoot } from './ReferenceRoot';
+import type { PropertyPath } from './ReferenceRoot';
+import { ReferenceContext } from './ReferenceRoot';
 import type { EngineVocabulary } from './WorldVocabulary';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
@@ -735,9 +735,9 @@ export class WorldObject {
    * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（registerChild）。
    * actor/draggedはpassivesに現れない（parsePassiveTransfers）ため空になる。
    */
-  resolveInfluenceTargets(root: ReferenceRoot, propertyGlobalId: number): readonly WorldObject[] {
-    if (root === 'child') return [...this.children()];
-    const target = this.resolveEffectTargetOrAncestor(root, propertyGlobalId, undefined, undefined);
+  resolveInfluenceTargets(path: PropertyPath): readonly WorldObject[] {
+    if (path.root === 'child') return [...this.children()];
+    const target = path.owner(ReferenceContext.of(this));
     return target === undefined ? [] : [target];
   }
 
@@ -771,13 +771,14 @@ export class WorldObject {
    */
   combinationsWith(dragged: WorldObject, actor: WorldObject | undefined): readonly Combination[] {
     if (dragged.def.isInProgress) return [];
+    const context = ReferenceContext.acting(this, actor, dragged);
     return this.def.combinations
       .filter(
         (c) =>
           c.acceptsDragged(dragged.def) &&
-          c.unmetRequirement(this, actor, dragged) === undefined &&
-          c.acceptedCount(this, [dragged], actor) >= 1 &&
-          !c.unresolvable(this, actor, dragged),
+          c.unmetRequirement(context) === undefined &&
+          c.acceptedCount(context, [dragged]) >= 1 &&
+          !c.unresolvable(context),
       )
       .map((c) => new Combination(c, this, dragged, actor));
   }
@@ -795,7 +796,7 @@ export class WorldObject {
   tick(): void {
     for (const property of this.properties) property.tick();
     // 輸送は、この物のプロパティが積分され切ってから走らせる（8.4節）。
-    this.def.passives.applyTickTransfers(this, this.session);
+    this.def.passives.applyTickTransfers(this);
 
     for (const slot of this.slots) {
       for (const child of [...slot.contents]) child.tick();
@@ -826,28 +827,8 @@ export class WorldObject {
     // 参照）。
     const effectSite = this.captureEffectSite();
     const session = this.session;
-    session.withSubject(this, () => effect.apply(this, session, actor, dragged, effectSite));
-  }
-
-  /** 効果の対象キー(self/parent/actor/dragged)を、自分をselfとして解決する（resolveReferenceRoot）。 */
-  resolveEffectTarget(
-    root: ReferenceRoot,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): WorldObject | undefined {
-    return resolveReferenceRoot(root, this, actor, dragged);
-  }
-
-  /** resolveEffectTargetに加えancestorも解決する（propertyGlobalIdはancestor解決にのみ使う）。 */
-  resolveEffectTargetOrAncestor(
-    root: ReferenceRoot,
-    propertyGlobalId: number,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): WorldObject | undefined {
-    return root === 'ancestor'
-      ? this.findAncestorWithProperty(propertyGlobalId)
-      : this.resolveEffectTarget(root, actor, dragged);
+    const context = ReferenceContext.acting(this, actor, dragged);
+    session.withSubject(this, () => effect.apply(context, session, effectSite));
   }
 
   /** same_slotの置き換えのために、selfが今占めている位置を捕捉する。「これから消えるか」の予測は織り込まず、置き換え位置の判断は配置時にEffectSite自身が行う。parentが無ければ位置が無いのでundefined。 */

@@ -5,7 +5,7 @@ import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 import type { ObjectRef } from './ObjectRef';
 import type { AddReading, EffectReader, TransferReading } from './EffectReader';
-import type { ReferenceRoot } from './ReferenceRoot';
+import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
 
 /**
  * 「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。対象の解決と適用まで自分で行う。
@@ -18,13 +18,7 @@ import type { ReferenceRoot } from './ReferenceRoot';
  * 配置時に見て置き換え位置を決める（他の効果は無視してよく、destroyが何かを書き込む必要もない）。
  */
 export abstract class ActiveEffect {
-  abstract apply(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-    effectSite: EffectSite | undefined,
-  ): void;
+  abstract apply(context: ReferenceContext, session: WorldSession, effectSite: EffectSite | undefined): void;
 
   /**
    * この効果が何を宣言しているかを読み上げる（EffectReader参照）。**抽象なのは取りこぼしを防ぐため**
@@ -51,11 +45,7 @@ export abstract class ActiveEffect {
    * **既定はfalse＝妨げない。** countableVesselsと同じく、取りこぼしても安全側（操作は出る）に
    * 倒れるので抽象にしない。
    */
-  unresolvable(
-    _owner: WorldObject,
-    _actor: WorldObject | undefined,
-    _dragged: WorldObject | undefined,
-  ): boolean {
+  unresolvable(_context: ReferenceContext): boolean {
     return false;
   }
 
@@ -63,11 +53,7 @@ export abstract class ActiveEffect {
    * candidatesを先頭から順に、この効果を続けて何回適用できるか。undefinedは「答えられない」。
    * 各candidateはdraggedの役で、器（countableVessels）を持つ効果だけが答える。
    */
-  acceptedCount(
-    _owner: WorldObject,
-    _candidates: readonly WorldObject[],
-    _actor: WorldObject | undefined,
-  ): number | undefined {
+  acceptedCount(_context: ReferenceContext, _candidates: readonly WorldObject[]): number | undefined {
     return undefined;
   }
 }
@@ -87,14 +73,8 @@ export class ActiveEffects extends ActiveEffect {
     this.operations = operations;
   }
 
-  apply(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-    effectSite: EffectSite | undefined,
-  ): void {
-    for (const operation of this.operations) operation.apply(owner, session, actor, dragged, effectSite);
+  apply(context: ReferenceContext, session: WorldSession, effectSite: EffectSite | undefined): void {
+    for (const operation of this.operations) operation.apply(context, session, effectSite);
   }
 
   read(reader: EffectReader): void {
@@ -102,12 +82,8 @@ export class ActiveEffects extends ActiveEffect {
   }
 
   /** 1つでも成立しない子があれば、合成も成立しない（並べた命令はすべて起こる約束のため）。 */
-  override unresolvable(
-    owner: WorldObject,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): boolean {
-    return this.operations.some((operation) => operation.unresolvable(owner, actor, dragged));
+  override unresolvable(context: ReferenceContext): boolean {
+    return this.operations.some((operation) => operation.unresolvable(context));
   }
 
   /** 子の合計。1つでも数えられない子（pick）があれば、合成も数えられない。 */
@@ -122,13 +98,9 @@ export class ActiveEffects extends ActiveEffect {
   }
 
   /** 器を持つ子（ちょうど1つであることはロード時に確かめてある）に訊く。 */
-  override acceptedCount(
-    owner: WorldObject,
-    candidates: readonly WorldObject[],
-    actor: WorldObject | undefined,
-  ): number | undefined {
+  override acceptedCount(context: ReferenceContext, candidates: readonly WorldObject[]): number | undefined {
     for (const operation of this.operations) {
-      const count = operation.acceptedCount(owner, candidates, actor);
+      const count = operation.acceptedCount(context, candidates);
       if (count !== undefined) return count;
     }
     return undefined;
@@ -137,70 +109,47 @@ export class ActiveEffects extends ActiveEffect {
 
 /** set の1命令（対象プロパティへリテラルの絶対値を代入する、9.2節）。 */
 export class SetEffect extends ActiveEffect {
-  private readonly target: ReferenceRoot;
-  private readonly propertyGlobalId: number;
+  private readonly target: PropertyPath;
   private readonly value: number;
 
-  constructor(target: ReferenceRoot, propertyGlobalId: number, value: number) {
+  constructor(target: PropertyPath, value: number) {
     super();
     this.target = target;
-    this.propertyGlobalId = propertyGlobalId;
     this.value = value;
   }
 
-  apply(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): void {
-    const resolved = owner.resolveEffectTargetOrAncestor(this.target, this.propertyGlobalId, actor, dragged);
-    resolved?.tryGetProperty(this.propertyGlobalId)?.setNumber(this.value);
+  apply(context: ReferenceContext): void {
+    this.target.value(context)?.setNumber(this.value);
   }
 
   read(reader: EffectReader): void {
-    reader.set(this.target, this.propertyGlobalId, this.value);
+    reader.set(this.target.root, this.target.propertyGlobalId, this.value);
   }
 }
 
 /** add の1命令（対象プロパティへ加減算する）。 */
 export class AddEffect extends ActiveEffect {
-  private readonly target: ReferenceRoot;
-  private readonly propertyGlobalId: number;
+  private readonly target: PropertyPath;
   private readonly amount: number;
 
-  constructor(target: ReferenceRoot, propertyGlobalId: number, amount: number) {
+  constructor(target: PropertyPath, amount: number) {
     super();
     this.target = target;
-    this.propertyGlobalId = propertyGlobalId;
     this.amount = amount;
   }
 
-  apply(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): void {
-    this.applyScaled(owner, session, actor, dragged, 1, 1);
+  apply(context: ReferenceContext): void {
+    this.applyScaled(context, 1, 1);
   }
 
   /**
    * transfer（9.5節）のlinked_add用: amount*numerator/denominatorにスケールした量を加減算する。
    * スケール後が0なら何もしない。
    */
-  applyScaled(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-    numerator: number,
-    denominator: number,
-  ): void {
+  applyScaled(context: ReferenceContext, numerator: number, denominator: number): void {
     const scaled = (this.amount * numerator) / denominator;
     if (scaled === 0) return;
-    const resolved = owner.resolveEffectTargetOrAncestor(this.target, this.propertyGlobalId, actor, dragged);
-    resolved?.tryGetProperty(this.propertyGlobalId)?.add(scaled);
+    this.target.value(context)?.add(scaled);
   }
 
   read(reader: EffectReader): void {
@@ -209,7 +158,11 @@ export class AddEffect extends ActiveEffect {
 
   /** 自分を1件として名乗る読み上げ（AddReading参照）。transferのlinked_addもこの形で並ぶ。 */
   get reading(): AddReading {
-    return { target: this.target, propertyGlobalId: this.propertyGlobalId, amount: this.amount };
+    return {
+      target: this.target.root,
+      propertyGlobalId: this.target.propertyGlobalId,
+      amount: this.amount,
+    };
   }
 }
 
@@ -225,14 +178,8 @@ export class DestroyEffect extends ActiveEffect {
     this.target = target;
   }
 
-  apply(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): void {
-    const victim = this.target.resolve(owner, actor, dragged);
-    victim?.destroy();
+  apply(context: ReferenceContext): void {
+    this.target.resolve(context)?.destroy();
   }
 
   read(reader: EffectReader): void {
@@ -288,14 +235,9 @@ export class SpawnEffect extends ActiveEffect {
     this.count = count;
   }
 
-  apply(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-    effectSite: EffectSite | undefined,
-  ): void {
-    for (let i = 0; i < this.count; i++) owner.executeSpawn(this, actor, effectSite);
+  apply(context: ReferenceContext, session: WorldSession, effectSite: EffectSite | undefined): void {
+    for (let i = 0; i < this.count; i++)
+      context.self?.executeSpawn(this, context.objectAt('actor'), effectSite);
   }
 
   read(reader: EffectReader): void {
@@ -312,20 +254,16 @@ export class SpawnEffect extends ActiveEffect {
  * どれだけ増えるかを`to_amount`が持つ。**換算率をエンジンは知らず、移送する側が宣言する**。
  */
 export class TransferEffect extends ActiveEffect {
-  private readonly fromObject: ReferenceRoot;
-  private readonly fromPropertyGlobalId: number;
-  private readonly toObject: ReferenceRoot;
-  private readonly toPropertyGlobalId: number;
+  private readonly from: PropertyPath;
+  private readonly to: PropertyPath;
   private readonly amount: number;
   private readonly toAmount: number;
   private readonly allowOverflow: boolean;
   private readonly linkedAdd: readonly AddEffect[];
 
   constructor(
-    fromObject: ReferenceRoot,
-    fromPropertyGlobalId: number,
-    toObject: ReferenceRoot,
-    toPropertyGlobalId: number,
+    from: PropertyPath,
+    to: PropertyPath,
     amount: number,
     allowOverflow: boolean,
     linkedAdd: readonly AddEffect[] = [],
@@ -335,10 +273,8 @@ export class TransferEffect extends ActiveEffect {
     // 受け取る量が0以下だと、出した分がどこにも入らない（9.5節）。
     if (toAmount <= 0) throw new Error(`'to_amount' は正の数である必要があります（値: ${toAmount}）。`);
 
-    this.fromObject = fromObject;
-    this.fromPropertyGlobalId = fromPropertyGlobalId;
-    this.toObject = toObject;
-    this.toPropertyGlobalId = toPropertyGlobalId;
+    this.from = from;
+    this.to = to;
     this.amount = amount;
     this.toAmount = toAmount;
     this.allowOverflow = allowOverflow;
@@ -353,22 +289,9 @@ export class TransferEffect extends ActiveEffect {
    * linked_add（9.5節）は実際に出した量に比例（amount * actual_moved / Amount）してスケール適用する。
    * from/toが解決できない・対象がそのプロパティを持たない場合は何もしない。
    */
-  apply(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): void {
-    const from = owner.resolveEffectTargetOrAncestor(
-      this.fromObject,
-      this.fromPropertyGlobalId,
-      actor,
-      dragged,
-    );
-    const to = owner.resolveEffectTargetOrAncestor(this.toObject, this.toPropertyGlobalId, actor, dragged);
-    if (from === undefined || to === undefined) return;
-    const fromValue: PropertyValue | undefined = from.tryGetProperty(this.fromPropertyGlobalId);
-    const toValue: PropertyValue | undefined = to.tryGetProperty(this.toPropertyGlobalId);
+  apply(context: ReferenceContext): void {
+    const fromValue: PropertyValue | undefined = this.from.value(context);
+    const toValue: PropertyValue | undefined = this.to.value(context);
     if (fromValue === undefined || toValue === undefined) return;
 
     let taken = Math.min(this.amount, fromValue.availableToTransferOut());
@@ -378,11 +301,10 @@ export class TransferEffect extends ActiveEffect {
     }
     if (taken <= 0) return;
 
-    from.tryGetProperty(this.fromPropertyGlobalId)?.add(-taken);
-    to.tryGetProperty(this.toPropertyGlobalId)?.add((taken * this.toAmount) / this.amount);
+    fromValue.add(-taken);
+    toValue.add((taken * this.toAmount) / this.amount);
 
-    for (const linked of this.linkedAdd)
-      linked.applyScaled(owner, session, actor, dragged, taken, this.amount);
+    for (const linked of this.linkedAdd) linked.applyScaled(context, taken, this.amount);
   }
 
   /**
@@ -393,10 +315,10 @@ export class TransferEffect extends ActiveEffect {
    */
   get reading(): TransferReading {
     return {
-      from: this.fromObject,
-      fromPropertyGlobalId: this.fromPropertyGlobalId,
-      to: this.toObject,
-      toPropertyGlobalId: this.toPropertyGlobalId,
+      from: this.from.root,
+      fromPropertyGlobalId: this.from.propertyGlobalId,
+      to: this.to.root,
+      toPropertyGlobalId: this.to.propertyGlobalId,
       amount: this.amount,
       toAmount: this.toAmount,
       linked: this.linkedAdd.map((linked) => linked.reading),
@@ -408,40 +330,24 @@ export class TransferEffect extends ActiveEffect {
    * 別なので回数の上限を決めない（0）。
    */
   override countableVessels(): number | undefined {
-    return this.toObject === 'dragged' ? 0 : 1;
+    return this.to.root === 'dragged' ? 0 : 1;
   }
 
   /**
    * 移送先の残り（PropertyValue.remainingTransferCapacity）が尽きるまでに、何個ぶん移せるか。
    * 移送先・移送元が解決できなければ、そこで打ち切る。
    */
-  override acceptedCount(
-    owner: WorldObject,
-    candidates: readonly WorldObject[],
-    actor: WorldObject | undefined,
-  ): number | undefined {
-    if (this.toObject === 'dragged' || candidates.length === 0) return undefined;
+  override acceptedCount(context: ReferenceContext, candidates: readonly WorldObject[]): number | undefined {
+    if (this.to.root === 'dragged' || candidates.length === 0) return undefined;
 
-    const to = owner.resolveEffectTargetOrAncestor(
-      this.toObject,
-      this.toPropertyGlobalId,
-      actor,
-      candidates[0],
-    );
-    const toValue = to?.tryGetProperty(this.toPropertyGlobalId);
+    const toValue = this.to.value(context.withDragged(candidates[0]));
     if (toValue === undefined) return undefined;
 
     let room = toValue.remainingTransferCapacity();
     let count = 0;
     for (const candidate of candidates) {
       if (room <= 0) break;
-      const from = owner.resolveEffectTargetOrAncestor(
-        this.fromObject,
-        this.fromPropertyGlobalId,
-        actor,
-        candidate,
-      );
-      const fromValue = from?.tryGetProperty(this.fromPropertyGlobalId);
+      const fromValue = this.from.value(context.withDragged(candidate));
       if (fromValue === undefined) break;
 
       const taken = Math.min(this.amount, fromValue.availableToTransferOut());
@@ -463,24 +369,24 @@ export class TransferEffect extends ActiveEffect {
    * 受け取る側へ持っていかれるから——1本の輸送が、どちらの端から見ても相手のせいで動いて見える。
    */
   collectTransferInfluences(declarer: WorldObject, active: boolean, out: InfluenceWriter): void {
-    const from = declarer.resolveInfluenceTargets(this.fromObject, this.fromPropertyGlobalId).at(0);
-    const to = declarer.resolveInfluenceTargets(this.toObject, this.toPropertyGlobalId).at(0);
+    const from = declarer.resolveInfluenceTargets(this.from).at(0);
+    const to = declarer.resolveInfluenceTargets(this.to).at(0);
     if (from === undefined || to === undefined) return;
 
     out.write({
       causeObject: from,
-      causePropertyGlobalId: this.fromPropertyGlobalId,
+      causePropertyGlobalId: this.from.propertyGlobalId,
       target: to,
-      targetPropertyGlobalId: this.toPropertyGlobalId,
+      targetPropertyGlobalId: this.to.propertyGlobalId,
       reversible: false,
       increases: true,
       active,
     });
     out.write({
       causeObject: to,
-      causePropertyGlobalId: this.toPropertyGlobalId,
+      causePropertyGlobalId: this.to.propertyGlobalId,
       target: from,
-      targetPropertyGlobalId: this.fromPropertyGlobalId,
+      targetPropertyGlobalId: this.from.propertyGlobalId,
       reversible: false,
       increases: false,
       active,

@@ -3,6 +3,7 @@ import type { CombinationDef } from './CombinationDef';
 import type { InteractionDef } from './InteractionDef';
 import type { Requirement } from './Requirement';
 import type { WorldObject } from './WorldObject';
+import { ReferenceContext } from './ReferenceRoot';
 
 /**
  * 起こす相手が決まった操作1つ（ActionSystem.md 1節）。
@@ -17,20 +18,21 @@ import type { WorldObject } from './WorldObject';
 abstract class Interaction<D extends InteractionDef, T extends WorldObject | undefined> {
   protected readonly def: D;
 
-  /** この操作を宣言している側の個体（self）。 */
-  protected readonly self: WorldObject;
-
-  /** 操作する本人。時間の側が起こす操作（showMenu: never）ではundefinedになりうる。 */
-  protected readonly actor: WorldObject | undefined;
+  /** 誰がこの操作をしていて、誰に、何を重ねているか。宣言へ問うときはこれを渡す。 */
+  protected readonly context: ReferenceContext;
 
   /** 重ねられた相手。メニュー型の操作には居ない（型引数がundefinedになる）。 */
   protected readonly dragged: T;
 
   protected constructor(def: D, self: WorldObject, actor: WorldObject | undefined, dragged: T) {
     this.def = def;
-    this.self = self;
-    this.actor = actor;
+    this.context = ReferenceContext.acting(self, actor, dragged);
     this.dragged = dragged;
+  }
+
+  /** この操作を宣言している側の個体（self）。**引いた時点で必ず居る**ので、文脈のselfは空にならない。 */
+  protected get self(): WorldObject {
+    return this.context.self!;
   }
 
   get name(): string {
@@ -39,16 +41,16 @@ abstract class Interaction<D extends InteractionDef, T extends WorldObject | und
 
   /** 実行にかかるゲーム内時間（分）。durationを省いていれば0。実行前に見せる用途にも使う。 */
   minutes(): number {
-    return this.def.minutesFor(this.self, this.actor, this.dragged);
+    return this.def.minutesFor(this.context);
   }
 
   /** 今実行できない理由（最初に落ちた要件、14節）。実行できるならundefined。 */
   unmetRequirement(): Requirement | undefined {
-    return this.def.unmetRequirement(this.self, this.actor, this.dragged);
+    return this.def.unmetRequirement(this.context);
   }
 
   tryExecute(): boolean {
-    return this.def.execute(this.self, this.actor, this.dragged, this.self.session);
+    return this.def.execute(this.context, this.self.session);
   }
 }
 
@@ -83,7 +85,7 @@ export class Combination extends Interaction<CombinationDef, WorldObject> {
    * WorldObject.acceptedCountForMoveToと同じ形。
    */
   acceptedCount(followers: readonly WorldObject[]): number {
-    return this.def.acceptedCount(this.self, [this.dragged, ...followers], this.actor);
+    return this.def.acceptedCount(this.context, [this.dragged, ...followers]);
   }
 
   /**
@@ -97,7 +99,7 @@ export class Combination extends Interaction<CombinationDef, WorldObject> {
   executeWithFollowers(followers: readonly WorldObject[]): number {
     let done = 0;
     for (const dragged of [this.dragged, ...followers]) {
-      const now = this.self.combinationsWith(dragged, this.actor).find((c) => c.def === this.def);
+      const now = this.self.combinationsWith(dragged, this.context.actor).find((c) => c.def === this.def);
       if (now === undefined || !now.tryExecute()) break;
       done++;
     }

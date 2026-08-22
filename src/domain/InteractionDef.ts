@@ -1,6 +1,5 @@
 import type { ShowMenuMode } from './ActionDef';
 import type { TypeMatchReading } from './TypeMatchRule';
-import type { WorldObject } from './WorldObject';
 
 /** 何がこの操作のきっかけになるか（InteractionDef.triggerReading参照）。 */
 export type InteractionTriggerReading =
@@ -10,7 +9,7 @@ import type { WorldSession } from './WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
 import type { EffectReader, WeightReading } from './EffectReader';
 import type { WeightSpec } from './WeightSpec';
-import { resolveReferenceRoot } from './ReferenceRoot';
+import type { ReferenceContext } from './ReferenceRoot';
 import type { Requirement, Requirements } from './Requirement';
 import { spendDuration } from './actionTime';
 
@@ -55,8 +54,8 @@ export abstract class InteractionDef {
    * 「今のself（とdragged）の状態から見て、どれだけかかるか」なので、時間を進める前に解決する
    * （切れ味の悪い刃物ほど時間がかかる、が書けるように）。実行前に画面へ見せる用途にも使う。
    */
-  minutesFor(self: WorldObject, actor: WorldObject | undefined, dragged: WorldObject | undefined): number {
-    return this.duration === undefined ? 0 : Math.trunc(this.duration.resolve(self, actor, dragged));
+  minutesFor(context: ReferenceContext): number {
+    return this.duration === undefined ? 0 : Math.trunc(this.duration.resolve(context));
   }
 
   /** 何がこの操作のきっかけになるか（具象ごとに違う、ActionSystem.md 1節）。 */
@@ -77,8 +76,8 @@ export abstract class InteractionDef {
    * 満たしていない要件（conditions）と違って理由を持たない——成立していないのは条件ではなく、
    * 行き先の型そのものだから。
    */
-  unresolvable(self: WorldObject, actor: WorldObject | undefined, dragged: WorldObject | undefined): boolean {
-    return this.effect.unresolvable(self, actor, dragged);
+  unresolvable(context: ReferenceContext): boolean {
+    return this.effect.unresolvable(context);
   }
 
   /** 所要時間の宣言（WeightReading参照）。durationを省いていればundefined＝時間を消費しない。 */
@@ -90,12 +89,8 @@ export abstract class InteractionDef {
    * 宣言順で最初に満たしていない要件（14節）。すべて満たしていればundefined＝今この操作を実行できる。
    * 実行できない理由をUIへ見せるためにも使う（Windows.md 1節 オブジェクトの子ウィンドウ）。
    */
-  unmetRequirement(
-    self: WorldObject,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): Requirement | undefined {
-    return this.requirements?.firstUnmet((root) => resolveReferenceRoot(root, self, actor, dragged));
+  unmetRequirement(context: ReferenceContext): Requirement | undefined {
+    return this.requirements?.firstUnmet(context);
   }
 
   /**
@@ -106,19 +101,18 @@ export abstract class InteractionDef {
    * **要件は選んだ時点ではなく実行の時点で引き直す**（候補を作ってから落とすまでに世界は変わる）。
    * 相手の型も変わりうるので、そちらの引き直しはCombinationDefが足す。
    */
-  execute(
-    self: WorldObject,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-    session: WorldSession,
-  ): boolean {
-    if (this.unmetRequirement(self, actor, dragged) !== undefined) return false;
+  execute(context: ReferenceContext, session: WorldSession): boolean {
+    const self = context.self!;
+    if (this.unmetRequirement(context) !== undefined) return false;
 
-    if (!spendDuration(this.minutesFor(self, actor, dragged), session, [self, actor, dragged])) return false;
+    const involved = [self, context.actor, context.dragged];
+    if (!spendDuration(this.minutesFor(context), session, involved)) return false;
 
     // 時間を進め終えてから囲うので、経過中のtickが動かした値は「操作が増やしたもの」に入らない
     // （PropertyGain参照）。
-    session.withInteractionEffect(self, () => self.applyActiveEffect(this.effect, actor, dragged));
+    session.withInteractionEffect(self, () =>
+      self.applyActiveEffect(this.effect, context.actor, context.dragged),
+    );
     return true;
   }
 }

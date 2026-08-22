@@ -14,6 +14,7 @@ import { parseConditionsField, PASSIVE_CONDITION_ROOTS } from './parseConditions
 import { parsePassiveTransfers } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
+import { PropertyPath } from '../domain/ReferenceRoot';
 import type { ConditionNode } from '../domain/ConditionNode';
 import {
   AccumulateEffect,
@@ -50,7 +51,7 @@ export function parsePassive(
     context,
     passiveMap,
     'modify',
-    (target, propId, amount, g) => new ModifyEffect(target, propId, amount, g),
+    (target, amount, g) => new ModifyEffect(target, amount, g),
     gate,
   );
   parsePassiveOperationInto(
@@ -59,7 +60,7 @@ export function parsePassive(
     context,
     passiveMap,
     'add',
-    (target, propId, amount, g) => new AccumulateEffect(target, propId, amount, g),
+    (target, amount, g) => new AccumulateEffect(target, amount, g),
     gate,
   );
 
@@ -106,12 +107,7 @@ function parsePassiveOperationInto(
   context: string,
   passiveMap: YAMLMap,
   operationKey: string,
-  makeEffect: (
-    target: ReferenceRoot,
-    propertyGlobalId: number,
-    amount: number,
-    gate: PassiveEffectGate,
-  ) => PassiveEffect,
+  makeEffect: (target: PropertyPath, amount: number, gate: PassiveEffectGate) => PassiveEffect,
   gate: PassiveEffectGate,
 ): void {
   const operationMap = tryGetMap(passiveMap, operationKey, context);
@@ -142,8 +138,7 @@ function parsePassiveOperationInto(
     for (const [propName, amountNode] of entriesInOrder(body))
       passives.push(
         makeEffect(
-          target,
-          loader.propertyNames.intern(propName),
+          new PropertyPath(target, loader.propertyNames.intern(propName)),
           parseNumberLiteral(context, asScalarText(amountNode, context)),
           gate,
         ),

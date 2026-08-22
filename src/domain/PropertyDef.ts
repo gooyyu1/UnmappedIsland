@@ -3,6 +3,7 @@ import type { Rng } from './Rng';
 import { INT32_MAX } from '../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
 import { ActiveEffects, SetEffect } from './ActiveEffect';
+import { PropertyPath } from './ReferenceRoot';
 import type { EffectDeclaration } from './EffectReader';
 import type { AlertLevel } from './AlertLevel';
 import { ALERT_LEVELS } from './AlertLevel';
@@ -485,5 +486,7 @@ function defaultClampTo(
   isMax: boolean,
 ): ActiveEffect | undefined {
   if (range === undefined) return undefined;
-  return new ActiveEffects([new SetEffect('self', propertyGlobalId, isMax ? range.max : range.min)]);
+  return new ActiveEffects([
+    new SetEffect(new PropertyPath('self', propertyGlobalId), isMax ? range.max : range.min),
+  ]);
 }

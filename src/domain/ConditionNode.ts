@@ -1,6 +1,5 @@
-import type { WorldObject } from './WorldObject';
 import type { ConditionReader } from './ConditionReader';
-import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
+import type { PropertyPath, ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
 
 /** GameElementDefinition.md 14.1節の比較演算子。 */
@@ -176,31 +175,31 @@ export class ConditionNode {
     }
   }
 
-  evaluate(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
+  evaluate(context: ReferenceContext): boolean {
     switch (this.kind) {
       case 'property':
-        return this.evaluateProperty(resolveRoot);
+        return this.evaluateProperty(context);
       case 'property_stage':
-        return this.evaluatePropertyStage(resolveRoot);
+        return this.evaluatePropertyStage(context);
       case 'slot_position':
-        return this.evaluateSlotPosition(resolveRoot);
+        return this.evaluateSlotPosition(context);
       case 'slot_content':
-        return this.evaluateSlotContent(resolveRoot);
+        return this.evaluateSlotContent(context);
       case 'object_matches':
-        return this.evaluateObjectMatches(resolveRoot);
+        return this.evaluateObjectMatches(context);
       case 'all':
-        return this.children!.every((child) => child.evaluate(resolveRoot));
+        return this.children!.every((child) => child.evaluate(context));
       case 'any':
-        return this.children!.some((child) => child.evaluate(resolveRoot));
+        return this.children!.some((child) => child.evaluate(context));
       case 'not':
-        return !this.children![0].evaluate(resolveRoot);
+        return !this.children![0].evaluate(context);
       default:
         return false;
     }
   }
 
-  private evaluateProperty(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
-    const currentValue = this.resolvePropertyEffectiveValue(this.root!, this.propertyGlobalId!, resolveRoot);
+  private evaluateProperty(context: ReferenceContext): boolean {
+    const currentValue = this.effectiveValueAt(this.root!, this.propertyGlobalId!, context);
     if (currentValue === undefined) return false;
     const current = currentValue;
 
@@ -209,11 +208,7 @@ export class ConditionNode {
 
     let compare: number;
     if (this.valueRef !== undefined) {
-      const resolved = this.resolvePropertyEffectiveValue(
-        this.valueRef.root,
-        this.valueRef.propertyGlobalId,
-        resolveRoot,
-      );
+      const resolved = this.valueRef.number(context);
       if (resolved === undefined) return false;
       compare = resolved;
     } else {
@@ -242,48 +237,39 @@ export class ConditionNode {
    * 段（6.4節）に該当しているか。プロパティを持たない・解決できない場合は偽で、他の葉と揃える
    * （解決できない葉は偽、否定したければnotで包む）。
    */
-  private evaluatePropertyStage(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
-    const owner = this.resolvePropertyOwner(this.root!, this.propertyGlobalId!, resolveRoot);
+  private evaluatePropertyStage(context: ReferenceContext): boolean {
+    const owner = context.ownerOfProperty(this.root!, this.propertyGlobalId!);
     return (
       owner !== undefined &&
       (owner.tryGetProperty(this.propertyGlobalId!)?.isInStage(this.stageName!) ?? false)
     );
   }
 
-  private resolvePropertyEffectiveValue(
+  /** rootが指す相手のpropertyGlobalIdの実効値。相手が解決できない・持たない場合はundefined。 */
+  private effectiveValueAt(
     root: ReferenceRoot,
     propertyGlobalId: number,
-    resolveRoot: (root: ReferenceRoot) => WorldObject | undefined,
+    context: ReferenceContext,
   ): number | undefined {
-    const target = this.resolvePropertyOwner(root, propertyGlobalId, resolveRoot);
-    const value = target?.tryGetProperty(propertyGlobalId);
-    return value !== undefined ? value.getEffectiveValue() : undefined;
+    return context
+      .ownerOfProperty(root, propertyGlobalId)
+      ?.tryGetProperty(propertyGlobalId)
+      ?.getEffectiveValue();
   }
 
-  /** そのプロパティを読む相手。ancestorだけは「そのプロパティを定義している最初の祖先」を探す（8.6節）。 */
-  private resolvePropertyOwner(
-    root: ReferenceRoot,
-    propertyGlobalId: number,
-    resolveRoot: (root: ReferenceRoot) => WorldObject | undefined,
-  ): WorldObject | undefined {
-    return root === 'ancestor'
-      ? resolveRoot('self')?.findAncestorWithProperty(propertyGlobalId)
-      : resolveRoot(root);
-  }
-
-  private evaluateSlotPosition(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
-    const target = resolveRoot(this.root!);
+  private evaluateSlotPosition(context: ReferenceContext): boolean {
+    const target = context.objectAt(this.root!);
     return target?.parent !== undefined && target.parentSlot?.def.globalId === this.slotGlobalId;
   }
 
-  private evaluateSlotContent(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
-    const target = resolveRoot(this.root!);
+  private evaluateSlotContent(context: ReferenceContext): boolean {
+    const target = context.objectAt(this.root!);
     const slot = target?.tryGetSlot(this.slotGlobalId!);
     return slot !== undefined && slot.contents.some((child) => this.matchRule!.matches(child.def));
   }
 
-  private evaluateObjectMatches(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
-    const target = resolveRoot(this.root!);
+  private evaluateObjectMatches(context: ReferenceContext): boolean {
+    const target = context.objectAt(this.root!);
     return target !== undefined && this.matchRule!.matches(target.def);
   }
 }

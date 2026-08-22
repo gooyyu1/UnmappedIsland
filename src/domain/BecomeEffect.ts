@@ -1,8 +1,7 @@
 import { ActiveEffect } from './ActiveEffect';
 import type { EffectReader } from './EffectReader';
 import type { ObjectRef } from './ObjectRef';
-import type { WorldObject } from './WorldObject';
-import type { WorldSession } from './WorldSession';
+import type { ReferenceContext } from './ReferenceRoot';
 
 /**
  * become の1命令（同じ個体のまま型を差し替える、GameElementDefinition.md 9.9節）。
@@ -23,13 +22,8 @@ export class BecomeEffect extends ActiveEffect {
     this.axisValues = axisValues;
   }
 
-  apply(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): void {
-    this.subject.resolve(owner, actor, dragged)?.becomeAlong(this.axisValues);
+  apply(context: ReferenceContext): void {
+    this.subject.resolve(context)?.becomeAlong(this.axisValues);
   }
 
   /**
@@ -37,12 +31,8 @@ export class BecomeEffect extends ActiveEffect {
    * （9.9節）。対象そのものが解決できない場合は、他の命令と同じく「その適用を無視する」だけなので
    * 操作は止めない。
    */
-  override unresolvable(
-    owner: WorldObject,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): boolean {
-    const target = this.subject.resolve(owner, actor, dragged);
+  override unresolvable(context: ReferenceContext): boolean {
+    const target = this.subject.resolve(context);
     return target !== undefined && !target.canBecomeAlong(this.axisValues);
   }
 

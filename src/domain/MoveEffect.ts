@@ -1,8 +1,7 @@
-import type { WorldObject } from './WorldObject';
-import type { WorldSession } from './WorldSession';
 import { ActiveEffect } from './ActiveEffect';
 import type { EffectReader } from './EffectReader';
 import type { ObjectRef } from './ObjectRef';
+import type { ReferenceContext } from './ReferenceRoot';
 
 /**
  * move の1命令。既に世界に存在するオブジェクト（subject）を、移動先のオブジェクトの中へ移動する。
@@ -30,16 +29,11 @@ export class MoveEffect extends ActiveEffect {
     this.slotGlobalId = slotGlobalId;
   }
 
-  apply(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-  ): void {
-    const mover = this.subject.resolve(owner, actor, dragged);
+  apply(context: ReferenceContext): void {
+    const mover = this.subject.resolve(context);
     if (mover === undefined) return;
 
-    const destination = this.destination.resolve(owner, actor, dragged);
+    const destination = this.destination.resolve(context);
     if (destination === undefined) return;
 
     if (this.slotGlobalId === undefined) {

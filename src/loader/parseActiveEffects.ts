@@ -191,7 +191,7 @@ function parseSetEffect(
   valueNode: YamlNode,
 ): SetEffect {
   const [value] = parseScalarNumber(loader, context, asScalarText(valueNode, context));
-  return new SetEffect(target, propertyGlobalId, value);
+  return new SetEffect(new PropertyPath(target, propertyGlobalId), value);
 }
 
 /**
@@ -238,7 +238,14 @@ function parseTransfer(
   return built(
     context,
     () =>
-      new TransferEffect(fromObject, fromProp, toObject, toProp, amount, allowOverflow, linkedAdd, toAmount),
+      new TransferEffect(
+        new PropertyPath(fromObject, fromProp),
+        new PropertyPath(toObject, toProp),
+        amount,
+        allowOverflow,
+        linkedAdd,
+        toAmount,
+      ),
   );
 }
 
@@ -282,8 +289,7 @@ function parseAdds(
     for (const [propName, amountNode] of entriesInOrder(asMap(targetBody, `${context}.'${targetName}'`)))
       adds.push(
         new AddEffect(
-          target,
-          loader.propertyNames.intern(propName),
+          new PropertyPath(target, loader.propertyNames.intern(propName)),
           parseNumberLiteral(context, asScalarText(amountNode, context)),
         ),
       );
