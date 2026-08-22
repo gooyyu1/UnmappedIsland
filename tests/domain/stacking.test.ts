@@ -32,7 +32,7 @@ describe('StackingTests', () => {
   // テスト補助: 固定スロット内で、指定した型(ObjectDef)のアイテムを持つスタックとその番号を引く。
   // スタック側のDefではなく各メンバーのDef(WorldObject.def)で引く。
   function stackOfType(slot: Slot, objectDefGlobalId: number): ObjectStack | undefined {
-    return slot.cells.find((s) => s !== undefined && s.members[0].def.globalId === objectDefGlobalId);
+    return slot.cells.find((cell) => cell.stack?.members[0].def.globalId === objectDefGlobalId)?.stack;
   }
 
   function gridIndexOfType(slot: Slot, objectDefGlobalId: number): number | undefined {
@@ -106,13 +106,13 @@ object_defs:
     rock1.moveToSlot(groundInstance.getSlot(pileSlotId));
 
     const pile = groundInstance.tryGetSlot(pileSlotId)!;
-    const stacks = pile.cells;
+    const stacks = pile.stacks;
 
     expect(stacks).toHaveLength(2);
-    expect(stacks[0]!.members[0].def.name).toBe('wood');
-    expect(stacks[0]!.members).toHaveLength(2);
-    expect(stacks[1]!.members[0].def.name).toBe('rock');
-    expect(stacks[1]!.members).toHaveLength(1);
+    expect(stacks[0]![0].def.name).toBe('wood');
+    expect(stacks[0]!).toHaveLength(2);
+    expect(stacks[1]![0].def.name).toBe('rock');
+    expect(stacks[1]!).toHaveLength(1);
   });
 
   // ------------------------------------------------------------------
@@ -369,7 +369,7 @@ object_defs:
 
     const hand11 = handInstance.tryGetSlot(handSlotId)!;
     // 前提を「meat(0) _(1) half(2) _(3)」に合わせる。
-    expect(hand11.moveStackTo(hand11.cells[1]!, { kind: 'cell', index: 2 })).toBe(true);
+    expect(hand11.moveStackTo(hand11.cells[1].stack!, { kind: 'cell', index: 2 })).toBe(true);
 
     handInstance.tick();
 
@@ -476,7 +476,7 @@ object_defs:
 
     const pile = locInstance.tryGetSlot(pileSlotId)!;
     expect(
-      pile.cells.map((c) => c?.members.map((o) => o.def.name)),
+      pile.cells.map((cell) => cell.stack?.members.map((o) => o.def.name)),
       'Dは2個で1スタックのまま、新しいスタックは生まれない',
     ).toEqual([['d_item4', 'd_item4'], ['a_item4']]);
   });

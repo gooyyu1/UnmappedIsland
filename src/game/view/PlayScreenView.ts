@@ -338,7 +338,7 @@ const STATUS_TAG = 'status';
  */
 function stacksIn(place: CardPlace): readonly (readonly WorldObject[] | undefined)[] {
   const slot = place.owner.tryGetSlot(place.def.globalId);
-  return slot === undefined ? [] : slot.cells.map((cell) => cell?.members);
+  return slot === undefined ? [] : slot.cells.map((cell) => cell.stack?.members);
 }
 
 /**

@@ -190,16 +190,10 @@ object_defs:
     axe.moveToSlot(ground.getSlot(itemsId()));
     const wip = wipOn('axe');
     const items = ground.tryGetSlot(itemsId())!;
-    expect(
-      items.cells.filter((cell) => cell !== undefined),
-      '作りかけは別の枠に並ぶ',
-    ).toHaveLength(2);
+    expect(items.stacks, '作りかけは別の枠に並ぶ').toHaveLength(2);
 
     wip.becomeAlong(toBase);
 
-    expect(
-      items.cells.filter((cell) => cell !== undefined),
-      '完成品になったので既にある斧と同じ枠へまとまる',
-    ).toHaveLength(1);
+    expect(items.stacks, '完成品になったので既にある斧と同じ枠へまとまる').toHaveLength(1);
   });
 });

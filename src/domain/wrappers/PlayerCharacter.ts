@@ -37,7 +37,7 @@ export class PlayerCharacter extends ObjectWrapper {
    */
   get handStacks(): readonly (readonly WorldObject[])[] {
     const slot = this.instance.tryGetSlot(this.handSlotId);
-    return slot === undefined ? [] : slot.cells.map((cell) => cell?.members ?? []);
+    return slot === undefined ? [] : slot.cells.map((cell) => cell.stack?.members ?? []);
   }
 
   /** 装備スロットの中身を、積み重なっているまとまりごとに分けたもの（前詰めなので空きセルは無い）。 */
