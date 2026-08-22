@@ -213,6 +213,20 @@ object_defs:
     expect(hearth.tryGetSlot(mini.codex.slotNames.getId('fire'))?.contents).toContain(meat);
   });
 
+  it('tick境界の外で時間が進めば、加熱が進まなくても残り時間は減る', () => {
+    // 焼き上がるのはtickが回る瞬間だけなので、残り時間はその瞬間までの分数（CardView.md 15節）。
+    // 5分の行動を挟んでも加熱は1つも進まないが、焼き上がる時刻は変わらないので残りは5分減る。
+    const mini = setUp();
+    const { meat } = placeCookingHearth(mini);
+    const cookingId = mini.codex.propertyNames.getId('cooking_progress');
+    const before = meat.tryGetProperty(cookingId)?.number;
+
+    mini.game.session.advanceWorldTime(5);
+
+    expect(meat.tryGetProperty(cookingId)?.number, '加熱は1つも進んでいない').toBe(before);
+    expect(cardOf(mini, meat).cooking?.minutes).toBe(115);
+  });
+
   it('火から出した物のカードには、加熱の覆いが出ない', () => {
     // 出すかどうかは場所ではなく「今その値が進んでいるか」で決まる（CardView.md 15節）。
     const mini = setUp();

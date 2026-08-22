@@ -222,10 +222,10 @@ export class WorldSession {
   }
 
   /**
-   * ゲーム内時間をamount分だけ進める。tick境界（minute % minutesPerTickが0に戻る瞬間）を跨ぐたびに、その境界まで
-   * minuteを進めてtick()を1回実行する。
+   * ゲーム内時間をamount分だけ進める。tick境界（World.minutesUntilTick）を跨ぐたびに、その境界まで
+   * 時計を進めてtick()を1回実行する。
    *
-   * 呼び出しを刻んでも結果は変わらない（tick内経過分をminuteから読み直すため）。UI層はこれを利用して、
+   * 呼び出しを刻んでも結果は変わらない（次の境界までを時計から読み直すため）。UI層はこれを利用して、
    * 一括で進めた経過をあとから刻んで見せる。
    */
   advanceWorldTime(amount: number): void {
@@ -235,23 +235,23 @@ export class WorldSession {
 
     const world = this.world;
     const minutesPerTick = world.minutesPerTick;
-    const minuteOfTick = world.minute % minutesPerTick;
-    const total = minuteOfTick + amount;
-    const ticksToRun = Math.trunc(total / minutesPerTick);
+    const untilFirstTick = world.minutesUntilTick(1);
 
-    if (ticksToRun === 0) {
+    if (amount < untilFirstTick) {
       world.addMinutes(amount);
-    } else {
-      world.addMinutes(minutesPerTick - minuteOfTick);
-      this.runTick(world);
-
-      for (let i = 1; i < ticksToRun; i++) {
-        world.addMinutes(minutesPerTick);
-        this.runTick(world);
-      }
-
-      world.addMinutes(total % minutesPerTick);
+      return;
     }
+
+    const ticksToRun = 1 + Math.trunc((amount - untilFirstTick) / minutesPerTick);
+    world.addMinutes(untilFirstTick);
+    this.runTick(world);
+
+    for (let i = 1; i < ticksToRun; i++) {
+      world.addMinutes(minutesPerTick);
+      this.runTick(world);
+    }
+
+    world.addMinutes(amount - untilFirstTick - (ticksToRun - 1) * minutesPerTick);
   }
 
   /**

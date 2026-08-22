@@ -2,6 +2,7 @@ import type { AlertLevel } from '../../domain/AlertLevel';
 import type { ObjectDef } from '../../domain/ObjectDef';
 import type { WorldCodex } from '../../domain/WorldCodex';
 import type { WorldObject } from '../../domain/WorldObject';
+import type { World } from '../../domain/wrappers/World';
 import { currentStep, stepSupplyRatio } from '../../domain/crafting';
 import type { Localization } from '../../locale/Localization';
 import { artNameFor } from '../../art/objectArt';
@@ -134,7 +135,8 @@ export interface CardLooks {
 }
 
 /**
- * そのCodexと対応表での札の見た目を引けるようにする。minutesPerTickは加熱の残り時間に使う。
+ * そのCodexと対応表での札の見た目を引けるようにする。worldは加熱の残り時間に使う（今の時刻から
+ * 次のtickまでが要る）ので、**時刻が動いたら作り直す**（PlayScreenView.fromGameSession）。
  *
  * instanceNameは、ワールドが**個体に**付けた名前を引く手段（土地の命名、IslandMap）。付いていない
  * 個体ではundefinedを返す。
@@ -142,7 +144,7 @@ export interface CardLooks {
 export function cardLooksOf(
   codex: WorldCodex,
   locale: Localization,
-  minutesPerTick: number,
+  world: World,
   instanceName: (instanceId: number) => string | undefined,
 ): CardLooks {
   /**
@@ -270,8 +272,11 @@ export function cardLooksOf(
     const ticks = object.tryGetProperty(cookingPropertyId)?.ticksUntilMax();
     if (ticks === undefined) return undefined;
 
+    // **焼き上がるのはtickが回る瞬間だけ**なので、残り時間はその瞬間までの分数そのもの（World参照）。
+    // tick内で時間が進めば、加熱が進んでいなくても残り時間は減る——同じ瞬間に焼き上がるのだから、
+    // 先に入れた物と後から入れた物の残り時間が揃うのが正しい。
     const ratio = object.tryGetProperty(cookingPropertyId)?.ratio;
-    return ratio === undefined ? undefined : { ratio, minutes: ticks * minutesPerTick };
+    return ratio === undefined ? undefined : { ratio, minutes: world.minutesUntilTick(ticks) };
   };
 
   /**
