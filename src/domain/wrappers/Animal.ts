@@ -86,7 +86,7 @@ export class Animal {
    * ここで外れる。
    */
   private lootTargets(location: Location): readonly TurnTarget[] {
-    return this.bumpableTargets(location, (object) => !object.def.tags.includes(this.words.quarryTagId));
+    return this.bumpableTargets(location, (object) => !object.def.hasTag(this.words.quarryTagId));
   }
 
   /**
@@ -94,7 +94,7 @@ export class Animal {
    * 持つ物すべてにすると、置いておいた道具まで一撃で消える。
    */
   private smashTargets(location: Location): readonly TurnTarget[] {
-    return this.bumpableTargets(location, (object) => object.def.tags.includes(this.words.fragileTagId));
+    return this.bumpableTargets(location, (object) => object.def.hasTag(this.words.fragileTagId));
   }
 
   /**

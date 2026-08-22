@@ -547,7 +547,7 @@ export class PlayScene extends ResponsiveScene {
 
     const names: string[] = [];
     for (const fixture of fixtures) {
-      if (!fixture.def.tags.includes(pathTagId)) continue;
+      if (!fixture.def.hasTag(pathTagId)) continue;
       const destination = new Path(fixture, this.codex).destination;
       if (destination !== undefined) names.push(destination.def.name);
     }

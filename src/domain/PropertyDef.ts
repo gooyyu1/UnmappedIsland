@@ -84,7 +84,11 @@ export class PropertyStage {
   /** 下限。undefinedは最下段（それより下の残り全ての値を拾う、6.4節）、またはeq指定時。 */
   readonly min: number | undefined;
 
-  /** 完全一致判定の対象値。undefinedは未指定（minまたはフォールバックとして扱う）。 */
+  /**
+   * 完全一致判定の対象値。**持ち主がシンボル型（6.6節）のときに限り、段名そのもののシンボルIDが入る**
+   * （parseProperty）。数値型の段は持たないので、**シンボル型かどうかを訊きたい側はこれではなく
+   * `PropertyDef.isSymbolic` を見る**。
+   */
   readonly eq: number | undefined;
 
   /** この段にいる間、値がどの域にあると見なすか（6.4節のalert）。 */
@@ -102,6 +106,22 @@ export class PropertyStage {
     this.eq = eq;
     this.alert = alert;
     this.art = art;
+  }
+
+  /**
+   * その値がこの段に該当するか。**受け皿はどの値にも該当しない**——どれにも該当しなかったときに
+   * 選ばれるものなので、自分から名乗り出ない（選ぶのは PropertyDef.stageAt）。
+   */
+  matches(value: number): boolean {
+    return this.eq !== undefined ? value === this.eq : this.min !== undefined && value >= this.min;
+  }
+
+  /**
+   * 値の並びの上でのこの段の下端。**持たない段がある**——完全一致で決まる段（シンボル型、6.6節）は
+   * 値の並びの上に位置を持たず、受け皿は下端が range の下限そのものなので段の側では決まらない。
+   */
+  get lowerBound(): number | undefined {
+    return this.eq !== undefined ? undefined : this.min;
   }
 }
 
@@ -254,7 +274,8 @@ export class PropertyDef {
     gauge: GaugeDef | undefined = undefined,
   ) {
     // シンボル型の段は名前そのものが比較対象なので、下限を持てない（6.6・6.4節）。**型と段の両方を
-    // 見て初めて言えること**なので、段1つでは判定できない。
+    // 見て初めて言えること**なので、段1つでは判定できない。**書かれたminを直に見る**——lowerBoundは
+    // シンボル型の段では常にundefinedなので、ここでは検査したいものが見えない。
     if (isSymbolic && stages.some((stage) => stage.min !== undefined))
       throw new Error(
         `プロパティ'${name}'はシンボル型なので、段に'min'は書けません（段の'name'自体がそのまま比較対象になります）。`,
@@ -282,8 +303,10 @@ export class PropertyDef {
     this.isSymbolic = isSymbolic;
     this.gauge = gauge;
 
-    this.fallbackStage = stages.find((stage) => stage.eq === undefined && stage.min === undefined);
-    this.alertDirection = PropertyDef.deriveAlertDirection(stages);
+    // 受け皿（どの段にも該当しない値の行き先、6.4節）。**シンボル型は持ちえない**——段名がそのまま
+    // 比較対象なので、どの段も必ず特定の値を名乗る。
+    this.fallbackStage = isSymbolic ? undefined : stages.find((stage) => stage.min === undefined);
+    this.alertDirection = PropertyDef.deriveAlertDirection(stages, isSymbolic);
     this.hasStageArt = stages.some((stage) => stage.art !== undefined);
   }
 
@@ -292,10 +315,11 @@ export class PropertyDef {
    * ため除く）。単調に上がるならup、単調に下がるならdown、どちらでもなければmixed。
    * 深刻さが動かない（段が無い・全段が同じ域）場合は、満タンが良いという既定に合わせてdown。
    */
-  private static deriveAlertDirection(stages: readonly PropertyStage[]): AlertDirection {
-    const severities = stages
-      .filter((stage) => stage.eq === undefined)
-      .sort((a, b) => (a.min ?? Number.NEGATIVE_INFINITY) - (b.min ?? Number.NEGATIVE_INFINITY))
+  private static deriveAlertDirection(stages: readonly PropertyStage[], isSymbolic: boolean): AlertDirection {
+    if (isSymbolic) return 'down';
+
+    const severities = [...stages]
+      .sort((a, b) => (a.lowerBound ?? Number.NEGATIVE_INFINITY) - (b.lowerBound ?? Number.NEGATIVE_INFINITY))
       .map((stage) => ALERT_LEVELS.indexOf(stage.alert));
 
     let rises = false;
@@ -355,45 +379,49 @@ export class PropertyDef {
   }
 
   /**
-   * number（変更直後の実体値）に対してon_max・on_min（6.3節）を判定し、該当するものを
-   * owner自身へ適用する。rangeが未定義なら何もしない。
+   * その値が端へ達したことで起こるrange系イベント（6.3節）。達していなければ空。
+   *
+   * **「どちらの端に達したか」を答えるのはここだけ。** 実行時に適用する側（checkRangeEvents）と、
+   * 実行時のオブジェクトを持たずに読む側（analysis/rangeEvents）が、同じ判定をここから引く。
+   */
+  rangeEventsAt(value: number): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
+    const range = this.range;
+    if (range === undefined) return [];
+
+    return this.rangeEvents().filter(([label]) =>
+      label === 'on_max' ? value >= range.max : value <= range.min,
+    );
+  }
+
+  /**
+   * number（変更直後の実体値）が端へ達していれば、そのイベントをowner自身へ適用する。
    *
    * 適用はowner側のadd/setNumberを通って本メソッドを再帰的に呼ぶため、1回の呼び出しの中で
    * 複数span分の溢れや繰り上げ先自身のさらなる溢れ（分→時→日の連鎖）が解決される。
    */
   checkRangeEvents(number: number, owner: WorldObject): void {
-    if (this.range === undefined) return;
-    const range = this.range;
-
-    if (this.onMax !== undefined && number >= range.max)
-      owner.applyActiveEffect(this.onMax, undefined, undefined);
-
-    if (this.onMin !== undefined && number <= range.min)
-      owner.applyActiveEffect(this.onMin, undefined, undefined);
+    for (const [, effect] of this.rangeEventsAt(number))
+      owner.applyActiveEffect(effect, undefined, undefined);
   }
 
   /**
    * その値が該当する段（6.4節）。**「今どの段に居るか」を答えるのはここだけ**で、段の宣言から
    * 引ける事柄（alert・art・名前）は、この段を読んで得る。
    *
-   * eq指定（完全一致、一致した時点で即返してよい）が優先、次にmin指定（最も高いminを採用するため
-   * 全段を走査）、どちらも該当しなければfallbackStage。段の判定はリスト中の位置に依存しない。
-   * fallbackが無ければundefinedを返し得る。
+   * 該当する段が複数あれば**下端が最も高いもの**を採る（下限だけを書く半開区間なので、上の段ほど
+   * 狭い）。下端を持たない段（完全一致、6.6節）は重ならないので、この比較に加わらない。
+   * どれにも該当しなければfallbackStage。段の判定はリスト中の位置に依存しない。
    */
   stageAt(currentValue: number): PropertyStage | undefined {
     let best: PropertyStage | undefined;
+    let bestBound = Number.NEGATIVE_INFINITY;
 
     for (const stage of this.stages) {
-      if (stage.eq !== undefined) {
-        if (currentValue === stage.eq) return stage;
-        continue;
-      }
-      if (
-        stage.min !== undefined &&
-        currentValue >= stage.min &&
-        (best === undefined || stage.min > best.min!)
-      )
-        best = stage;
+      if (!stage.matches(currentValue)) continue;
+      const bound = stage.lowerBound ?? Number.NEGATIVE_INFINITY;
+      if (best !== undefined && bound <= bestBound) continue;
+      best = stage;
+      bestBound = bound;
     }
 
     return best ?? this.fallbackStage;
@@ -430,8 +458,8 @@ export class PropertyDef {
   private stageBoundaries(): readonly number[] {
     const boundaries: number[] = [];
     for (const stage of this.stages) {
-      if (stage.min === undefined || stage.eq !== undefined) continue;
-      const ratio = this.ratioOf(stage.min);
+      if (stage.lowerBound === undefined) continue;
+      const ratio = this.ratioOf(stage.lowerBound);
       if (ratio !== undefined && ratio > 0 && ratio < 1) boundaries.push(ratio);
     }
     return boundaries.sort((a, b) => a - b);
@@ -445,12 +473,14 @@ export class PropertyDef {
    * 完全一致（eq）で決まる段はシンボル型（6.6節）のもので、値の並びの上に幅を持たないためundefined。
    */
   private spanOf(stage: PropertyStage): StageSpan | undefined {
-    if (this.range === undefined || stage.eq !== undefined) return undefined;
+    if (this.range === undefined || this.isSymbolic) return undefined;
 
-    const start = stage.min ?? this.range.min;
+    const start = stage.lowerBound ?? this.range.min;
     let end = this.range.max;
-    for (const other of this.stages)
-      if (other.min !== undefined && other.min > start && other.min < end) end = other.min;
+    for (const other of this.stages) {
+      const bound = other.lowerBound;
+      if (bound !== undefined && bound > start && bound < end) end = bound;
+    }
 
     const startRatio = this.ratioOf(start);
     const endRatio = this.ratioOf(end);

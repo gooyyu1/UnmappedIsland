@@ -164,3 +164,49 @@ resolver を要するものはほとんど無い:
 
 **副産物**: `slot`・`matches` の葉が `ancestor` を黙って偽にしていた（`in_slot` だけが弾いて
 いた）のが、プロパティ名を伴わない葉としてまとめて弾かれるようになった。
+
+## 7. レーンDの結果
+
+D-1・D-2・D-4・D-5 を実施。D-3 は取り下げ。**D-6（`ticksUntilMax`）は保留**（下記）。
+
+### 着手前の前提から変わったところ
+
+- **D-1**: `PropertyStage.eq` が入るのは「持ち主がシンボル型（6.6節）のとき」だけで、値は常に段名の
+  シンボルID。つまり `stage.eq !== undefined` は**「私はシンボル型か」の言い換え**で、`PropertyDef`
+  は5箇所で遠いほうを読んでいた。段には `matches` / `lowerBound` を持たせ、シンボル型かどうかは
+  `this.isSymbolic` で訊くように分けた。副次的に「シンボル型に受け皿の段は存在しえない」ことが
+  コードに現れた（以前は `eq` が必ず入る結果として偶然そうなっていただけ）。
+- **D-2**: `PropertyRange.remainingToward`（端までの距離）は**入れないと決めた**。実行時側の
+  `PropertyValue.ticksUntilMax` と解析側の `ticksToRangeEnd` は、向き・端数・最低1の3点で規則が違い、
+  共有できるのは距離の1行だけ。移すと片方の規則を他方へ押し付けることになる。
+- **D-3**: 取り下げ。`destroysWhenEmpty` の述語は `readEffect`（解析の近似）を通した結果なので、
+  domain へ持たせるとその近似が契約になる。D-2 の `rangeEventsAt` で `on_min` を選べれば足りる。
+- **D-4**: 「反復を持たない」という診断が誤りだっただけでなく、**在る反復のほうが壊れていた**。
+  `ObjectDefTable` の中身は疎になりうる（参照だけされて定義が無い型のところが穴）のに、
+  `[Symbol.iterator]` の宣言型は `Iterator<ObjectDef>` で、`WorldCodex` の4つの添字ループは
+  `get()` を呼ぶので穴があれば例外になる。実際に穴は作れる（`accept: {object: 未定義の型}` で再現）。
+  同梱データ（112型）には現在穴が無いので誰も踏んでいない。**型を実態へ合わせ（`ObjectDef | undefined`）、
+  反復は穴を飛ばす**ようにした。
+- 併せて `ObjectDef.hasTag` を足した（`PropertyDef` には在って `ObjectDef` には無かった）。
+  `src/` にあった生の `tags.includes` 15箇所がここへ揃う。
+
+### やらなかったこと・見つけた宿題
+
+- **`ObjectDefTable.withTag` は足さなかった。** 呼び手が1つしか無く、`filter(d => d.hasTag(id))` の
+  1行で足りる。呼び手と同じ数だけ口を足しても何も畳めない。
+- **`cardLooks` の10個のタグ名引き直し**（`codex.tagNames.tryGetId('character')` 等）は触っていない。
+  `WorldVocabulary` に在るのは `location` と `character` の2つだけで、**2つだけを語彙経由に変えると
+  残り8つと不揃いになる**。「10個すべてを語彙へ入れるか、1つも入れないか」を決める話なので、
+  独立した指摘として残す。
+- **`isLocation` のコメントと実装のずれ**（`balanceTables`）。コメントは「製作中オブジェクトは除く」
+  と言うが、実装は `codex.isGenerated(def)`（生成型＝変種を含む）を見ている。集合が一致しない。
+- **D-6: `PropertyValue.ticksUntilMax` の `Math.max(1, …)`**（保留）。`Math.ceil` は表示の丸めではなく
+  「何tick目に `on_max` が起きるか」の答えそのものなので残すべき。表示側の都合なのは `Math.max(1, …)`
+  だけで、これが効くのは「もうmaxに居るのに正の寄与が続く」ときだけ——そこで0ではなく1を返すため、
+  **「もう着いている」と「あと1tick」が区別できない**。`on_max: {}`（打ち消し、6.3節）を書いた値は
+  「あと1tick」を出し続ける。
+- **`cardLooks` が実効値と実体値を組にしている**（保留・D-6と同じ場所）。`PropertyValue` は表示用の読み
+  （`ratio` `stage` `alert` `stageOnBar`）をすべて実効値で引くのに、`ticksUntilMax` だけ実体値で測る。
+  どちらも単体では正しい（`checkRangeEvents` は実体値で発火する）が、`ownCookingOf` は両方を組にして
+  1枚の札へ出しており、**バーの位置と残り時間が別の値から出ている**。`cooking_progress` に `modify` が
+  無いので今は一致する。

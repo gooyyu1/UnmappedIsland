@@ -53,7 +53,7 @@ export function recipeCategories(
     const product = codex.objects.get(globalId);
     if (product.recipes.length === 0) continue;
 
-    const shelfTagId = codex.recipeCategoryTagIds.find((tagId) => product.tags.includes(tagId));
+    const shelfTagId = codex.recipeCategoryTagIds.find((tagId) => product.hasTag(tagId));
 
     for (const recipe of product.recipes) {
       const unmet = recipe.unmetUnlockRequirement(game.player.instance);

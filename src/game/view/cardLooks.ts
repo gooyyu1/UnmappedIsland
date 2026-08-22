@@ -340,7 +340,7 @@ export function cardLooksOf(
    * だけで別の物に見えては困る。持ち歩けるかどうかを先に見るのはそのため。
    */
   const kindOf = (def: ObjectDef): CardKind => {
-    const has = (tagId: number | undefined): boolean => tagId !== undefined && def.tags.includes(tagId);
+    const has = (tagId: number | undefined): boolean => tagId !== undefined && def.hasTag(tagId);
     // 人と場所は物の用途の並びに入らない（どちらも持ち歩く対象ではない）ので、先に見る。
     if (has(characterTagId)) return 'character';
     if (has(locationTagId)) return 'location';

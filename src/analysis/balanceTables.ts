@@ -299,7 +299,7 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
     // 供給表は島全体の文脈で出す。罠の重みは土地が入れるので、土地を決めないと候補が全部0になる。
     supply: supplyRows(
       codex,
-      allSteps(codex, withBestDragged(allDefs(codex), bestAncestorContext(explorableLocationsOf(codex)))),
+      allSteps(codex, withBestDragged([...codex.objects], bestAncestorContext(explorableLocationsOf(codex)))),
     ),
     places,
   };
@@ -463,7 +463,7 @@ function placeBalances(
   readonly islandWide: Acquisition;
 } {
   const locations = explorableLocationsOf(codex);
-  const defs = allDefs(codex);
+  const defs = [...codex.objects];
 
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
   const islandContext = withBestDragged(defs, bestAncestorContext(locations));
@@ -508,7 +508,7 @@ function objectCosts(
   surplusMinutes: number,
 ): readonly ObjectCost[] {
   const rows: ObjectCost[] = [];
-  for (const def of allDefs(codex)) {
+  for (const def of [...codex.objects]) {
     if (def.isSingleton || def.boundToOwner) continue;
     if (codex.isGenerated(def)) continue;
     // 土地は生成されるもので、手に入れるものではない。**ただし作れる土地は対象**——筏は乗り込む
@@ -956,13 +956,12 @@ function scaleCost(cost: Cost, factor: number): Cost {
  * 5節）ので、作りかけの筏まで土地として並んでしまう。
  */
 function isLocation(codex: WorldCodex, def: ObjectDef): boolean {
-  return def.tags.includes(codex.vocabulary.world.locationTagId) && !codex.isGenerated(def);
+  return def.hasTag(codex.vocabulary.world.locationTagId) && !codex.isGenerated(def);
 }
 
-function allDefs(codex: WorldCodex): readonly ObjectDef[] {
-  const defs: ObjectDef[] = [];
-  for (let globalId = 0; globalId < codex.objects.count; globalId++) defs.push(codex.objects.get(globalId));
-  return defs;
+/** プレイヤーが操作するキャラクタか（休息のように自分の値を自分で戻す工程の宣言元）。 */
+function isCharacter(codex: WorldCodex, def: ObjectDef): boolean {
+  return def.hasTag(codex.vocabulary.world.characterTagId);
 }
 
 /**
@@ -971,14 +970,9 @@ function allDefs(codex: WorldCodex): readonly ObjectDef[] {
  */
 function explorableLocationsOf(codex: WorldCodex): readonly ObjectDef[] {
   const progress = codex.vocabulary.world.explorationProgressId;
-  return allDefs(codex).filter(
+  return [...codex.objects].filter(
     (def) => isLocation(codex, def) && def.tryGetPropertyDef(progress) !== undefined,
   );
-}
-
-/** プレイヤーが操作するキャラクタか（休息のように自分の値を自分で戻す工程の宣言元）。 */
-function isCharacter(codex: WorldCodex, def: ObjectDef): boolean {
-  return def.tags.includes(codex.vocabulary.world.characterTagId);
 }
 
 /**
@@ -989,7 +983,7 @@ function isCharacter(codex: WorldCodex, def: ObjectDef): boolean {
  * 宣言するので（`inherit`）、これが無いと候補が全部0になる。
  */
 function allSteps(codex: WorldCodex, outer?: StaticValueResolver): readonly StepRef[] {
-  const defs = allDefs(codex);
+  const defs = [...codex.objects];
   return defs.flatMap((def) => {
     const cycles = rangeCyclesOf(def, outer, externalTickDeltasOn(def, defs));
     const lifetimeMinutes = lifetimeOf(cycles);
@@ -1298,8 +1292,7 @@ class Acquisition {
     if (input.kind === 'object') return [input.objectGlobalId];
 
     const found: number[] = [];
-    for (let globalId = 0; globalId < this.codex.objects.count; globalId++)
-      if (this.codex.objects.get(globalId).tags.includes(input.tagGlobalId)) found.push(globalId);
+    for (const def of this.codex.objects) if (def.hasTag(input.tagGlobalId)) found.push(def.globalId);
     return found;
   }
 

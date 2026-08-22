@@ -179,7 +179,8 @@ export class WorldCodexYamlLoader {
     );
 
     // 全object_defの走査が終わったこの時点で、objectNames.countが最終値として確定する。
-    const defsByGlobalId = new Array<ObjectDef>(this.objectNames.count);
+    // 参照だけされた型のところは埋まらない（ObjectDefTable参照）。
+    const defsByGlobalId = new Array<ObjectDef | undefined>(this.objectNames.count);
     for (const [globalId, def] of objectDefsByGlobalId) defsByGlobalId[globalId] = def;
 
     const vocabulary = new WorldVocabulary(this.propertyNames, this.slotNames, this.tagNames);

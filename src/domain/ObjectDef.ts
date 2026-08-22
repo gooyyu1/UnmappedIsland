@@ -157,6 +157,11 @@ export class ObjectDef {
     this.isInProgress = isInProgress;
   }
 
+  /** この型にタグ（5節）が付いているか（PropertyDef.hasTagと同じ揃え）。 */
+  hasTag(tagGlobalId: number): boolean {
+    return this.tags.includes(tagGlobalId);
+  }
+
   /** art_by_stage（6.4節）が指すプロパティの、stagesが宣言しているart接尾辞の一覧。art_by_stageが無ければ空。 */
   artSuffixes(): readonly string[] {
     if (this.artByStagePropertyGlobalId === undefined) return [];
@@ -197,11 +202,16 @@ export class ObjectDef {
   }
 }
 
-/** ロード済みの全 ObjectDef を、グローバルIDをそのままindexとする配列で保持する。 */
+/**
+ * ロード済みの全 ObjectDef を、グローバルIDをそのままindexとする配列で保持する。
+ *
+ * **並びには穴が空く。** 名前だけが登録されていて定義が無いID（参照だけされた型）がありうるので、
+ * 添字で辿る側はそれを踏む——型がundefinedを含むのはそのため。
+ */
 export class ObjectDefTable {
-  private readonly byGlobalId: readonly ObjectDef[];
+  private readonly byGlobalId: readonly (ObjectDef | undefined)[];
 
-  constructor(byGlobalId: readonly ObjectDef[]) {
+  constructor(byGlobalId: readonly (ObjectDef | undefined)[]) {
     this.byGlobalId = byGlobalId;
   }
 
@@ -219,13 +229,13 @@ export class ObjectDefTable {
     return def;
   }
 
-  /** そのIDの型。定義が無ければundefined（添字は範囲外を返しうるので、型はundefinedを含む）。 */
+  /** そのIDの型。定義が無ければundefined（範囲外・穴のどちらも同じ扱い）。 */
   tryGet(globalId: number): ObjectDef | undefined {
-    return this.byGlobalId[globalId] as ObjectDef | undefined;
+    return this.byGlobalId[globalId];
   }
 
-  /** 全ての型を宣言順に。タグに当てはまる型を挙げる用途（TypeMatchRule.candidates）で使う。 */
-  [Symbol.iterator](): Iterator<ObjectDef> {
-    return this.byGlobalId[Symbol.iterator]();
+  /** **定義のある型**を宣言順に。穴は飛ばす。 */
+  *[Symbol.iterator](): IterableIterator<ObjectDef> {
+    for (const def of this.byGlobalId) if (def !== undefined) yield def;
   }
 }

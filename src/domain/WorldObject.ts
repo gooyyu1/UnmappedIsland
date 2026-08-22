@@ -247,7 +247,7 @@ export class WorldObject {
   /** 名指しのタグを持つ最も近い祖先。自分自身は見ない（findAncestorWithPropertyと同じ扱い）。 */
   findAncestorWithTag(tagGlobalId: number): WorldObject | undefined {
     for (let node = this._parent; node !== undefined; node = node.parent) {
-      if (node.def.tags.includes(tagGlobalId)) return node;
+      if (node.def.hasTag(tagGlobalId)) return node;
     }
     return undefined;
   }

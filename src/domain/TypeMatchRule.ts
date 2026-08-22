@@ -39,9 +39,7 @@ export class TypeMatchRule {
 
   /** タグならcandidateがそのタグを持てば真、object_defならまさにその型であれば真。 */
   matches(candidateDef: ObjectDef): boolean {
-    return this.kind === 'tag'
-      ? candidateDef.tags.includes(this.target)
-      : candidateDef.globalId === this.target;
+    return this.kind === 'tag' ? candidateDef.hasTag(this.target) : candidateDef.globalId === this.target;
   }
 
   /**

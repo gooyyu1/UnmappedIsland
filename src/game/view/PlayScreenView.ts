@@ -568,7 +568,7 @@ export function fromGameSession(
   const destinationOf = (
     fixture: WorldObject,
   ): { icon: string; name: string; art: string | undefined; kind: CardKind; road: true } | undefined => {
-    if (!fixture.def.tags.includes(pathTagId)) return undefined;
+    if (!fixture.def.hasTag(pathTagId)) return undefined;
 
     const path = new Path(fixture, codex);
     return {
@@ -603,7 +603,7 @@ export function fromGameSession(
       const land = root.findDescendantByInstanceId(instanceId);
       if (land === undefined) continue;
       for (const fixture of new Location(land, codex).fixtures) {
-        if (!fixture.def.tags.includes(pathTagId)) continue;
+        if (!fixture.def.hasTag(pathTagId)) continue;
         const destination = siteOf.get(new Path(fixture, codex).destinationInstanceId);
         if (destination === undefined) continue;
         known.add(site);

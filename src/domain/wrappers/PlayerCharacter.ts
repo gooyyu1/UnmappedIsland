@@ -105,7 +105,7 @@ export class PlayerCharacter extends ObjectWrapper {
 
     const names: string[] = [];
     for (const object of mainland.descendants()) {
-      if (object.def.tags.includes(this.words.artifactTagId)) names.push(object.def.name);
+      if (object.def.hasTag(this.words.artifactTagId)) names.push(object.def.name);
     }
     return names;
   }
