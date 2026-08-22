@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { AlertLevel } from '../../domain/AlertLevel';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { ProgressBar } from './ProgressBar';
+import type { BarSpan } from './ProgressBar';
 import { onPressRelease } from '../../ui/tap';
 import { cssColor } from '../../util/cssColor';
 import { COLOR, FONT_FAMILY } from '../looks/theme';
@@ -83,8 +84,8 @@ export interface StatusStage {
   /** 今いる段の表示名。 */
   readonly name: string;
 
-  /** 今いる段がバーの中で占める区間（0〜1）。持たない段では囲みも名札も出さない。 */
-  readonly span: { readonly start: number; readonly end: number } | undefined;
+  /** 今いる段がバーの中で占める区間。持たない段では囲みも名札も出さない。 */
+  readonly span: BarSpan | undefined;
 
   /** 段の境目（0〜1、昇順）。バーに刻む目盛りになる。 */
   readonly boundaries: readonly number[];

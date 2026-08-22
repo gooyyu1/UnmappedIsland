@@ -4,6 +4,20 @@ import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { drawBox } from '../../ui/shapes';
 import { COLOR, alertBorderColorFor, fadedFill, statusFillColorFor } from '../looks/theme';
 
+/** バーの中の区間（0〜1）。今いる段が占める範囲を表す。 */
+export interface BarSpan {
+  readonly start: number;
+  readonly end: number;
+}
+
+/** 段の目盛りと、今いる段の囲みの太さ。 */
+const STAGE_TICK_WIDTH = 2;
+const STAGE_BOX_WIDTH = 4;
+
+/** 目盛りの薄さと、今いる段をバーの上でどれだけ明るく塗るか（囲みの中だけ）。 */
+const STAGE_TICK_ALPHA = 0.35;
+const STAGE_FACE_ALPHA = 0.3;
+
 /**
  * 変わった分を帯として残す時間と、それが追いつき切るまでの時間（StatusArea.md）。
  * 溜めを置いてから動かすのは、変化に気付く前に消えてしまわないようにするため。
@@ -87,6 +101,11 @@ export class ProgressBar extends Phaser.GameObjects.Container {
 
   /** 警戒を示す枠。明滅は濃さのtweenだけで見せ、毎フレーム描き直さない。 */
   private readonly alertFrame: Phaser.GameObjects.Graphics;
+
+  /** 段の目盛りと囲みを描く面。バーの上へ重ねる。 */
+  private readonly marks: Phaser.GameObjects.Graphics;
+  private readonly tickWidth: number;
+  private readonly stageBoxWidth: number;
   private blinkTween: Phaser.Tweens.Tween | undefined;
 
   /** 今の域。塗りの色と、警戒の枠を出すかどうかの両方がこれで決まる。 */
@@ -132,6 +151,8 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     this.borderWidth = metrics.linePx(TRACK_BORDER_WIDTH);
     this.alertBorderWidth = metrics.linePx(ALERT_BORDER_WIDTH);
     this.alertOutlineWidth = this.alertBorderWidth + metrics.linePx(ALERT_OUTLINE_EXTRA_WIDTH);
+    this.tickWidth = metrics.linePx(STAGE_TICK_WIDTH);
+    this.stageBoxWidth = metrics.linePx(STAGE_BOX_WIDTH);
     this.radius = height / 4;
     this.ratio = Phaser.Math.Clamp(ratio, 0, 1);
     this.shownRatio = this.ratio;
@@ -144,6 +165,10 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     this.alertFrame = scene.add.graphics().setVisible(false);
     this.add(this.alertFrame);
 
+    // 段の刻みは、塗りにも警戒の枠にも重ねる（いちばん後に作る＝いちばん手前）。
+    this.marks = scene.add.graphics();
+    this.add(this.marks);
+
     // 動いている途中で画面を作り直されることがある。止めないと、捨てられたバーを動かし続ける。
     this.once(Phaser.GameObjects.Events.DESTROY, () => {
       this.lagTween?.stop();
@@ -151,6 +176,37 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     });
 
     scene.add.existing(this);
+  }
+
+  /**
+   * 段の境目を刻み、今いる段を囲む（[`Windows.md`](../../../docs/ui/Windows.md) 8.1節）。
+   * **全部の段を刻む**のは、次の段までの距離だけでなく「このステータスは全部で何段あって、自分は
+   * 何番目か」も読めるようにするため。段を持たないバーでは呼ばれない。
+   */
+  markStages(boundaries: readonly number[], span: BarSpan | undefined): void {
+    const { barWidth: width, barHeight: height, radius } = this;
+    this.marks.clear();
+
+    this.marks.lineStyle(this.tickWidth, COLOR.cardBorder, STAGE_TICK_ALPHA);
+    for (const boundary of boundaries) {
+      const x = width * boundary;
+      this.marks.lineBetween(x, 0, x, height);
+    }
+
+    if (span === undefined) return;
+
+    // 囲みはバーと同じ丸みで、バーの縁にぴたりと重ねる。
+    const boxX = width * span.start;
+    const boxWidth = width * (span.end - span.start);
+    this.marks.fillStyle(COLOR.textOnDark, STAGE_FACE_ALPHA);
+    this.marks.fillRoundedRect(boxX, 0, boxWidth, height, radius);
+    this.marks.lineStyle(this.stageBoxWidth, COLOR.cardBorder, 1);
+    this.marks.strokeRoundedRect(boxX, 0, boxWidth, height, radius);
+  }
+
+  /** 割合（0〜1）がバーの中で置かれる画面上のx。段の名札を指す先へ向けるために使う。 */
+  xAt(ratio: number): number {
+    return this.x + this.barWidth * ratio;
   }
 
   /**
