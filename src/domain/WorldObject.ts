@@ -95,8 +95,7 @@ export class WorldObject {
 
   tryGetProperty(globalPropertyId: number): PropertyValue | undefined {
     const local = this.def.propertyLayout.toLocal(globalPropertyId);
-    if (local === LocalIndexMap.missing) return undefined;
-    return this.properties[local];
+    return local === LocalIndexMap.missing ? undefined : this.properties[local];
   }
 
   /**
@@ -135,8 +134,7 @@ export class WorldObject {
    */
   artSuffix(): string | undefined {
     const propertyGlobalId = this.def.artByStagePropertyGlobalId;
-    if (propertyGlobalId === undefined) return undefined;
-    return this.tryGetProperty(propertyGlobalId)?.artSuffix;
+    return propertyGlobalId === undefined ? undefined : this.tryGetProperty(propertyGlobalId)?.artSuffix;
   }
 
   /**
@@ -189,8 +187,7 @@ export class WorldObject {
 
   tryGetSlot(globalSlotId: number): Slot | undefined {
     const local = this.def.slotLayout.toLocal(globalSlotId);
-    if (local === LocalIndexMap.missing) return undefined;
-    return this.slots[local];
+    return local === LocalIndexMap.missing ? undefined : this.slots[local];
   }
 
   /**

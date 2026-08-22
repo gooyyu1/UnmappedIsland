@@ -394,6 +394,5 @@ function concatSeqs(base: YamlNode | undefined, overlay: YamlNode): YamlNode {
 
 /** `traits`・`tags`・`visible_slots` のような、識別子を並べただけの配列を読む。 */
 export function namesIn(seq: YAMLSeq | undefined, context: string): string[] {
-  if (seq === undefined) return [];
-  return (seq.items as YamlNode[]).map((item) => asScalarText(item, context));
+  return seq === undefined ? [] : (seq.items as YamlNode[]).map((item) => asScalarText(item, context));
 }

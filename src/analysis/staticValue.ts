@@ -27,8 +27,7 @@ export function staticResolverOf(
   outer: StaticValueResolver | undefined,
 ): StaticValueResolver {
   return (root, propertyGlobalId) => {
-    if (root !== 'self') return outer?.(root, propertyGlobalId);
-    return staticValueOf(def, propertyGlobalId, outer);
+    return root === 'self' ? staticValueOf(def, propertyGlobalId, outer) : outer?.(root, propertyGlobalId);
   };
 }
 

@@ -26,12 +26,11 @@ export class ScreenSkyTint extends Phaser.GameObjects.Rectangle {
     const tint = skyTintFor(sunlight);
     if (tint === undefined) {
       this.setVisible(false);
-      return;
+    } else {
+      this.setVisible(true)
+        .setFillStyle(tint.color, 1)
+        .setAlpha(tint.alpha)
+        .setBlendMode(tint.additive ? Phaser.BlendModes.ADD : Phaser.BlendModes.NORMAL);
     }
-
-    this.setVisible(true)
-      .setFillStyle(tint.color, 1)
-      .setAlpha(tint.alpha)
-      .setBlendMode(tint.additive ? Phaser.BlendModes.ADD : Phaser.BlendModes.NORMAL);
   }
 }

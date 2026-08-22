@@ -50,8 +50,7 @@ export class CombinationDef extends InteractionDef {
     actor: WorldObject | undefined,
   ): number {
     const counted = this.effect.acceptedCount(self, candidates, actor);
-    if (counted === undefined) return 1;
-    return this.allowMultiple ? counted : Math.min(1, counted);
+    return counted === undefined ? 1 : this.allowMultiple ? counted : Math.min(1, counted);
   }
 
   get triggerReading(): InteractionTriggerReading {

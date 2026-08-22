@@ -284,18 +284,17 @@ export class MapWindow {
       if (first === undefined || second === undefined || !first.isDown || !second.isDown) {
         this.pinchDistance = undefined;
         this.pinchMid = undefined;
-        return;
+      } else {
+        const distance = Phaser.Math.Distance.Between(first.x, first.y, second.x, second.y);
+        const mid = new Phaser.Math.Vector2((first.x + second.x) / 2, (first.y + second.y) / 2);
+        if (this.pinchDistance !== undefined && this.pinchMid !== undefined && this.pinchDistance > 0) {
+          this.panX += mid.x - this.pinchMid.x;
+          this.panY += mid.y - this.pinchMid.y;
+          this.zoomAt(distance / this.pinchDistance, mid.x, mid.y);
+        }
+        this.pinchDistance = distance;
+        this.pinchMid = mid;
       }
-
-      const distance = Phaser.Math.Distance.Between(first.x, first.y, second.x, second.y);
-      const mid = new Phaser.Math.Vector2((first.x + second.x) / 2, (first.y + second.y) / 2);
-      if (this.pinchDistance !== undefined && this.pinchMid !== undefined && this.pinchDistance > 0) {
-        this.panX += mid.x - this.pinchMid.x;
-        this.panY += mid.y - this.pinchMid.y;
-        this.zoomAt(distance / this.pinchDistance, mid.x, mid.y);
-      }
-      this.pinchDistance = distance;
-      this.pinchMid = mid;
     };
 
     this.listenScene(scene, 'wheel', onWheel);

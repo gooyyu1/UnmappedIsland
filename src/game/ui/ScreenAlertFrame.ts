@@ -37,16 +37,15 @@ export class ScreenAlertFrame extends Phaser.GameObjects.Graphics {
       this.blinkTween?.stop();
       this.blinkTween = undefined;
       this.setVisible(false).setAlpha(1);
-      return;
+    } else {
+      this.setVisible(true);
+      this.blinkTween = this.scene.tweens.add({
+        targets: this,
+        alpha: BLINK_MIN_ALPHA,
+        duration: BLINK_DURATION_MS,
+        yoyo: true,
+        repeat: -1,
+      });
     }
-
-    this.setVisible(true);
-    this.blinkTween = this.scene.tweens.add({
-      targets: this,
-      alpha: BLINK_MIN_ALPHA,
-      duration: BLINK_DURATION_MS,
-      yoyo: true,
-      repeat: -1,
-    });
   }
 }

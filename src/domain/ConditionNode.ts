@@ -273,16 +273,13 @@ export class ConditionNode {
 
   private evaluateSlotPosition(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
     const target = resolveRoot(this.root!);
-    if (target?.parent === undefined) return false;
-
-    return target.parentSlot?.def.globalId === this.slotGlobalId;
+    return target?.parent !== undefined && target.parentSlot?.def.globalId === this.slotGlobalId;
   }
 
   private evaluateSlotContent(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
     const target = resolveRoot(this.root!);
     const slot = target?.tryGetSlot(this.slotGlobalId!);
-    if (slot === undefined) return false;
-    return slot.contents.some((child) => this.matchRule!.matches(child.def));
+    return slot !== undefined && slot.contents.some((child) => this.matchRule!.matches(child.def));
   }
 
   private evaluateObjectMatches(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {

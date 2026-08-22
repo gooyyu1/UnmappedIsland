@@ -455,15 +455,9 @@ export class ObjectWindow {
         // 並ぶ札は差し替えが持ってくる（laneViews）。ここで置くのは休みの姿＝空の4枠だけ。
         foundCells([]),
       );
-      return;
-    }
-
-    if (tab === PROPERTIES_TAB) {
+    } else if (tab === PROPERTIES_TAB) {
       this.propertiesPane = new PropertiesPane(scene, metrics, this.contentArea(), this.properties);
-      return;
-    }
-
-    if (slot === undefined) {
+    } else if (slot === undefined) {
       const cardHeight = metrics.px(SIZE.cardHeight);
       this.ownLane = new CardLane(
         scene,
@@ -479,27 +473,29 @@ export class ObjectWindow {
         { bare: true },
       );
       this.description.setPosition(middle.columnX, middle.y + (middle.height - this.description.height) / 2);
-      return;
+    } else {
+      // 枠数の決まっているスロットは、レーンを枠の数まで縮めて中央へ寄せる。幅いっぱいのレーンに
+      // 1枠だけ左詰めで置くと、どこへ落とすのかが読み取りにくい。
+      const laneWidth = Math.min(
+        middle.columnWidth + metrics.px(SIZE.cardWidth),
+        laneWidthFor(metrics, slot),
+      );
+      const laneHeight = metrics.px(SIZE.laneHeight);
+      const contentWidth = middle.columnX + middle.columnWidth - middle.cardX;
+      this.lane = new CardLane(
+        scene,
+        metrics,
+        {
+          x: middle.cardX + (contentWidth - laneWidth) / 2,
+          y: middle.y + (middle.height - laneHeight) / 2,
+          width: laneWidth,
+          height: laneHeight,
+        },
+        COLOR.slotWindowLane,
+        slot.cells,
+        { clip: true },
+      );
     }
-
-    // 枠数の決まっているスロットは、レーンを枠の数まで縮めて中央へ寄せる。幅いっぱいのレーンに
-    // 1枠だけ左詰めで置くと、どこへ落とすのかが読み取りにくい。
-    const laneWidth = Math.min(middle.columnWidth + metrics.px(SIZE.cardWidth), laneWidthFor(metrics, slot));
-    const laneHeight = metrics.px(SIZE.laneHeight);
-    const contentWidth = middle.columnX + middle.columnWidth - middle.cardX;
-    this.lane = new CardLane(
-      scene,
-      metrics,
-      {
-        x: middle.cardX + (contentWidth - laneWidth) / 2,
-        y: middle.y + (middle.height - laneHeight) / 2,
-        width: laneWidth,
-        height: laneHeight,
-      },
-      COLOR.slotWindowLane,
-      slot.cells,
-      { clip: true },
-    );
   }
 
   /**

@@ -802,14 +802,14 @@ function addEntry(entries: MenuEntry[], route: ChainRoute, repetitions: number):
   const existing = entries.find((entry) => entry.route === route);
   if (existing === undefined) {
     entries.push({ route, repetitions, minutes: repetitions * route.executionMinutes });
-    return;
+  } else {
+    const merged = existing.repetitions + repetitions;
+    entries[entries.indexOf(existing)] = {
+      route,
+      repetitions: merged,
+      minutes: merged * route.executionMinutes,
+    };
   }
-  const merged = existing.repetitions + repetitions;
-  entries[entries.indexOf(existing)] = {
-    route,
-    repetitions: merged,
-    minutes: merged * route.executionMinutes,
-  };
 }
 
 /**
@@ -960,8 +960,7 @@ function scaleCost(cost: Cost, factor: number): Cost {
  * 5節）ので、作りかけの筏まで土地として並んでしまう。
  */
 function isLocation(codex: WorldCodex, def: ObjectDef): boolean {
-  if (!def.tags.includes(codex.vocabulary.world.locationTagId)) return false;
-  return !codex.isGenerated(def);
+  return def.tags.includes(codex.vocabulary.world.locationTagId) && !codex.isGenerated(def);
 }
 
 function allDefs(codex: WorldCodex): readonly ObjectDef[] {

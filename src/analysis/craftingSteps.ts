@@ -194,6 +194,5 @@ function totalMinutesOf(recipe: RecipeDef): number {
  */
 function minutesOf(interaction: InteractionDef, resolve: StaticValueResolver): number {
   const reading = interaction.durationReading;
-  if (reading === undefined) return 0;
-  return Math.trunc(resolveWeight(reading, resolve) ?? 0);
+  return reading === undefined ? 0 : Math.trunc(resolveWeight(reading, resolve) ?? 0);
 }

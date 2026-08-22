@@ -178,8 +178,14 @@ export class RecipeWindow {
       this.objects.push(
         addLabel(scene, metrics, left, this.bodyTop, this.options.emptyText, { size: HEADING_SIZE }),
       );
-      return;
+    } else {
+      this.fillCategories(left, innerWidth, viewHeight);
     }
+  }
+
+  /** 棚ごとの見出しとカードを、送れるコンテナへ積む。 */
+  private fillCategories(left: number, innerWidth: number, viewHeight: number): void {
+    const { scene, metrics } = this;
 
     // ドラッグとホイールを受ける面は、**中身より先に**敷く（後に敷くとカードを押せなくなる）。
     const area = { x: left, y: this.bodyTop, width: innerWidth, height: viewHeight };
