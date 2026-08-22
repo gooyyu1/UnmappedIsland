@@ -1143,8 +1143,6 @@ export class PlayScene extends ResponsiveScene {
     // 型ごとの記憶の鍵。束が無いウィンドウ（装備・怪我）は覚えない——映しているのは場所であって、
     // 「この型を次に開いたときどうするか」の話にならない。
     this.childWindowDef = opened?.stack?.objects[0]?.def.name;
-    const initialTab = this.initialTab(opened?.opensPlace);
-    this.childWindowPlace = this.placeOfTab(initialTab);
 
     this.childWindow = new ObjectWindow(this, this.metrics, {
       object: { card: window.card, description: window.description },
@@ -1159,7 +1157,7 @@ export class PlayScene extends ResponsiveScene {
           grows: slot.cells === 'grows',
         };
       }),
-      initialTab,
+      initialTab: this.initialTab(opened?.opensPlace),
       actions: this.actionButtons(window.actions, window.card.name),
       area: this.layout.slotWindowArea,
       onTabChange: (tab) => this.changeWindowTab(tab),
@@ -1168,26 +1166,28 @@ export class PlayScene extends ResponsiveScene {
     // 借りるのはタブによらない。**説明のタブでだけ描かれる**が、借りている間その札は元の枠に
     // 印だけを残す（Windows.md 1.1節）——タブを行き来するたびに札を飛ばさないため。
     this.shown.borrow(window.card, opened?.stack);
-    this.rememberTab(initialTab);
+    // 開いたタブはウィンドウが決める（並んでいないタブは説明へ落ちる）。
+    this.childWindowPlace = this.placeOfTab(this.childWindow.openedTab);
+    this.rememberTab(this.childWindow.openedTab);
     this.setDragLanes();
     // 借りた1枚がウィンドウの枠へ移り、手持ちの端が指す先も変わる（laneCards・neighbourOf参照）。
     this.showView({ origins });
   }
 
   /**
-   * 最初に開くタブ。**プログラムの指定 ＞ 型ごとの記憶 ＞ 説明**（Windows.md 1.2節）。
+   * 最初に開きたいタブ。**プログラムの指定 ＞ 型ごとの記憶 ＞ 説明**（Windows.md 1.2節）。
    *
    * 指定するのは、開いた文脈がそのスロットを見に来たと分かっている場合だけ——装備・怪我のボタンと、
-   * 作り始めた直後の製作中オブジェクト。それ以外は覚えているものに従う。
+   * 作り始めた直後の製作中オブジェクト。それ以外は覚えているものに従う。**覚えているのはスロットの
+   * タブとは限らない**（プロパティ・踏査のタブも同じように覚える）ので、並んでいるかどうかの判定は
+   * ウィンドウに任せる。
    */
   private initialTab(opensPlace: CardPlace | undefined): string {
     const named = opensPlace === undefined ? undefined : this.view.slotViewOf(opensPlace).key;
-    if (named !== undefined && this.placeOfTab(named) !== undefined) return named;
+    if (named !== undefined) return named;
     const remembered =
       this.childWindowDef === undefined ? undefined : this.settings.openedTab(this.childWindowDef);
-    return remembered !== undefined && this.placeOfTab(remembered) !== undefined
-      ? remembered
-      : DESCRIPTION_TAB;
+    return remembered ?? DESCRIPTION_TAB;
   }
 
   /** タブの識別子が指す場所（説明のタブではundefined）。 */
@@ -1730,12 +1730,12 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 情報エリアの表示を今のthis.viewへ合わせる。**引き直すのは日時とステータスだけ**——空の絵と
-   * 天候の名前は組み立て時に決まり（WeatherPanelに差し替え口が無い）、条件と装備のアイコンは
-   * まだ固定値（PlayScreenView参照）。
+   * 情報エリアの表示を今のthis.viewへ合わせる。条件と装備のアイコンはまだ固定値なので引き直さない
+   * （PlayScreenView参照）。
    */
   private showInformation(): void {
     this.situation.setTime(this.view.elapsedDays, this.view.hour, this.view.minute);
+    this.situation.setWeather(this.view.weather, this.view.weatherLabel);
     this.showStatuses();
   }
 

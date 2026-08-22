@@ -120,7 +120,7 @@ export interface ObjectWindowOptions {
    */
   readonly properties?: readonly PropertyCategory[];
 
-  /** 最初に開くタブの識別子。知らない識別子と省略はどちらも説明のタブになる。 */
+  /** 最初に開くタブの識別子（並んでいるどのタブでもよい）。知らない識別子と省略はどちらも説明のタブになる。 */
   readonly initialTab?: string;
 
   /** 横並びにする操作。「閉じる」はこの下にもう1行取るので、空なら最下段が閉じるだけになる。 */
@@ -304,9 +304,16 @@ export class ObjectWindow {
 
     // 最初のタブは呼び出し側が決める（プログラムの指定＞記憶＞説明、Windows.md 1.2節）。知らない
     // 識別子は説明へ落とす。ここではonTabChangeを呼ばない——呼び出し側はまだこのウィンドウを持っていない。
-    this.showTab(
-      this.slots.some((slot) => slot.key === options.initialTab) ? options.initialTab! : DESCRIPTION_TAB,
-    );
+    const wanted = this.tabs().find((tab) => tab.key === options.initialTab);
+    this.showTab(wanted?.key ?? DESCRIPTION_TAB);
+  }
+
+  /**
+   * 今開いているタブの識別子。**呼び出し側の指定がそのまま通るとは限らない**（並んでいないタブは
+   * 説明へ落ちる）ので、覚えるのも場所を引くのもこちらを見る。
+   */
+  get openedTab(): string {
+    return this.selected;
   }
 
   /** 中身の並び（説明のタブではundefined）。 */

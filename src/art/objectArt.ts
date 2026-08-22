@@ -26,8 +26,11 @@ const ART = new Map<string, string>(
   Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.png$/, '$1'), url]),
 );
 
-/** object_defの識別子 → 画像のURL。 */
-export const OBJECT_ART: ReadonlyMap<string, string> = ART;
+/**
+ * object_defの識別子 → 画像のURL。**鍵はテクスチャキーではない**ので、他の在庫表（BACKGROUND_ART
+ * ほか）と同じ`*_ART`とは名乗らない——読み込む側はobjectTextureを掛けてから鍵にする（artFiles）。
+ */
+export const ART_BY_OBJECT_NAME: ReadonlyMap<string, string> = ART;
 
 /** アセットパックの型の絵を在庫表へ重ねる（起動時に1回、installAssetPackから）。 */
 export function installPackObjectArt(art: ReadonlyMap<string, string>, packName: string): void {
@@ -52,7 +55,7 @@ export const CARD_ART_WIDTH = 410;
 export function artNameFor(objectName: string, stageArtSuffix: string | undefined): string {
   if (stageArtSuffix === undefined) return objectName;
   const stageArtName = `${objectName}_${stageArtSuffix}`;
-  return OBJECT_ART.has(stageArtName) ? stageArtName : objectName;
+  return ART_BY_OBJECT_NAME.has(stageArtName) ? stageArtName : objectName;
 }
 
 /** object_defの識別子に対応するテクスチャキー（他のテクスチャと名前が衝突しないよう前置きする）。 */
@@ -78,5 +81,5 @@ const MULTIPLY_SUFFIX = '_multiply';
 /** 通常の絵に重ねる、乗算の絵のテクスチャキー（用意されていなければundefined）。 */
 export function objectMultiplyTexture(objectName: string): string | undefined {
   const fileName = `${objectName}${MULTIPLY_SUFFIX}`;
-  return OBJECT_ART.has(fileName) ? objectTexture(fileName) : undefined;
+  return ART_BY_OBJECT_NAME.has(fileName) ? objectTexture(fileName) : undefined;
 }

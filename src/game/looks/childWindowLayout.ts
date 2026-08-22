@@ -16,6 +16,22 @@ export const ACTION_HEIGHT = SIZE.iconButton;
 export const ACTION_MAX_WIDTH = 420;
 export const ACTION_GAP = 24;
 
+/**
+ * 最下段の「閉じる」の行。**窓の下端に置き、幅は上限つきで中央寄せ**——どの子ウィンドウでも同じ
+ * 場所・同じ大きさで閉じられるようにする。
+ */
+export function closeRow(metrics: ScreenMetrics, window: Rect): Rect {
+  const padding = metrics.px(WINDOW_PADDING);
+  const height = metrics.px(ACTION_HEIGHT);
+  const width = Math.min(metrics.px(ACTION_MAX_WIDTH), window.width - padding * 2);
+  return {
+    x: window.x + (window.width - width) / 2,
+    y: window.y + window.height - padding - height,
+    width,
+    height,
+  };
+}
+
 /** 子ウィンドウを領域の中央へ置いた矩形。領域に収まらない大きさでも、画面の外へは出さない。 */
 export function centerWindow(metrics: ScreenMetrics, area: Rect, width: number, height: number): Rect {
   return {

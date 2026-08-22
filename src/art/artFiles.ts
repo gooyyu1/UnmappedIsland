@@ -1,6 +1,6 @@
 import type { WorldCodex } from '../domain/WorldCodex';
 import { BACKGROUND_ART, backgroundTexturesOf } from './backgroundArt';
-import { OBJECT_ART, objectTexture } from './objectArt';
+import { ART_BY_OBJECT_NAME, objectTexture } from './objectArt';
 
 /**
  * 土地の絵の遅延ロードの単位分け。
@@ -22,7 +22,7 @@ export interface ArtFile {
  * 未発見の道の行き先ぶんはこれだけを先に読む（LocationArtLoader.requestCardArt）。
  */
 export function locationCardArtFiles(location: string): readonly ArtFile[] {
-  const url = OBJECT_ART.get(location);
+  const url = ART_BY_OBJECT_NAME.get(location);
   return url === undefined ? [] : [{ key: objectTexture(location), url }];
 }
 
@@ -40,7 +40,7 @@ export function locationArtFiles(location: string): readonly ArtFile[] {
 export function commonArtFiles(locations: readonly string[]): readonly ArtFile[] {
   const locationKeys = new Set(locations.flatMap((l) => locationArtFiles(l).map((file) => file.key)));
   const files: ArtFile[] = [];
-  for (const [name, url] of OBJECT_ART) {
+  for (const [name, url] of ART_BY_OBJECT_NAME) {
     const key = objectTexture(name);
     if (!locationKeys.has(key)) files.push({ key, url });
   }

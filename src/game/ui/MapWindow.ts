@@ -2,9 +2,9 @@ import Phaser from 'phaser';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import type { MapLandView, MapRoadView } from '../view/PlayScreenView';
 import { addTextButton } from './Button';
-import { Card } from './Card';
+import { Card, PAPER_RADIUS, paperRect } from './Card';
 import { cardFace } from './cardFace';
-import { ACTION_HEIGHT, ACTION_MAX_WIDTH, WINDOW_PADDING } from '../looks/childWindowLayout';
+import { ACTION_HEIGHT, WINDOW_PADDING, closeRow } from '../looks/childWindowLayout';
 import { addLabel } from '../../ui/labels';
 import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
@@ -32,10 +32,6 @@ const ROAD_BEND_RATIO = 0.18;
 
 /** 現在地のカードを囲む黒枠の太さ（u単位。カードの縮尺がかかる前の値）。 */
 const CURRENT_BORDER_WIDTH = 12;
-
-/** カードの絵の紙の範囲（Card.tsのFRAME_INSET/FRAME_RADIUSと同じ値）。黒枠を紙の輪郭に重ねる。 */
-const FRAME_INSET = 2.5;
-const FRAME_RADIUS = 16;
 
 /** 地図上のカードの置き場所（画面に対する0〜1の正規化座標、カード中心）。 */
 export interface MapPlacement {
@@ -138,18 +134,11 @@ export class MapWindow {
       ),
     );
 
-    const actionHeight = metrics.px(ACTION_HEIGHT);
-    const actionWidth = Math.min(metrics.px(ACTION_MAX_WIDTH), width - padding * 2);
     this.objects.push(
       addTextButton(
         scene,
         metrics,
-        {
-          x: (width - actionWidth) / 2,
-          y: height - padding - actionHeight,
-          width: actionWidth,
-          height: actionHeight,
-        },
+        closeRow(metrics, { x: 0, y: 0, width, height }),
         '閉じる',
         { fill: COLOR.button },
         () => {
@@ -209,25 +198,15 @@ export class MapWindow {
   private addCard(scene: Phaser.Scene, land: MapLandView, onPlace: MapWindowOptions['onPlace']): void {
     const card = new Card(scene, this.metrics, 0, 0, { ...cardFace(land.card), draggable: true });
 
-    // 現在地は太い黒枠で囲んで目立たせる。枠は紙の輪郭（Card.tsのpaperRectと同じ矩形）に重ね、
+    // 現在地は太い黒枠で囲んで目立たせる。枠は紙の輪郭（Card.paperRect）にそのまま重ね、
     // カードの子にすることでドラッグ・ズームへそのまま追従させる。
     if (land.current) {
-      const inset = this.metrics.px(FRAME_INSET);
       const highlight = scene.add.graphics();
-      drawBox(
-        highlight,
-        {
-          x: inset,
-          y: inset,
-          width: card.cardWidth - inset * 2,
-          height: card.cardHeight - inset * 2,
-        },
-        {
-          border: COLOR.cardBorder,
-          borderWidth: this.metrics.px(CURRENT_BORDER_WIDTH),
-          radius: this.metrics.px(FRAME_RADIUS),
-        },
-      );
+      drawBox(highlight, paperRect(this.metrics, card.cardWidth, card.cardHeight), {
+        border: COLOR.cardBorder,
+        borderWidth: this.metrics.px(CURRENT_BORDER_WIDTH),
+        radius: this.metrics.px(PAPER_RADIUS),
+      });
       card.add(highlight);
     }
 

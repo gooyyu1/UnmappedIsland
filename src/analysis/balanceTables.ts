@@ -86,8 +86,8 @@ export interface ChainRoute {
   /** 1回の実行で動く値すべて。時間を按分していないので、これらを縦に足すと二重計上になる。 */
   readonly deltas: readonly NamedAmount[];
 
-  /** 待ち生産を含む経路なら、設備1つを保つのに要る1日あたりの労働（分）。含まないならundefined。 */
-  readonly deviceMaintenanceMinutesPerDay: number | undefined;
+  /** 待ち生産を含む経路なら、1回の実行で設備が回っている時間（分）。含まないならundefined。 */
+  readonly devicePeriodMinutes: number | undefined;
 
   readonly prerequisites: readonly RoutePrerequisite[];
 
@@ -164,7 +164,10 @@ export interface PropertyRoute {
   readonly dailyMinutes: number;
   readonly dailyShare: number;
 
-  /** 待ち生産の経路で、1日ぶんを賄うのに同時に要る設備の数。含まないならundefined。 */
+  /**
+   * 待ち生産の経路で、1日ぶんを賄うのに同時に要る設備の数（1日に回す回数 × 周期 ÷ 1日）。
+   * 含まないならundefined。
+   */
   readonly deviceCount: number | undefined;
 }
 
@@ -642,9 +645,9 @@ function propertyRoute(route: ChainRoute, requirement: Requirement): PropertyRou
     dailyMinutes,
     dailyShare: (dailyMinutes * 100) / MINUTES_PER_DAY,
     deviceCount:
-      route.deviceMaintenanceMinutesPerDay === undefined
+      route.devicePeriodMinutes === undefined
         ? undefined
-        : dailyMinutes / route.deviceMaintenanceMinutesPerDay,
+        : ((requirement.dailyNeed / gain) * route.devicePeriodMinutes) / MINUTES_PER_DAY,
   };
 }
 
@@ -698,7 +701,7 @@ function buildRoute(
       name: codex.propertyName(propertyGlobalId),
       amount,
     })),
-    deviceMaintenanceMinutesPerDay: deviceMaintenancePerDay(acquisition, route),
+    devicePeriodMinutes: devicePeriodOf(route),
     prerequisites: [...prerequisites.values()],
     blocked: [...prerequisites.values()].some(({ minutes }) => minutes === undefined),
     needsImport: resolved.imported || [...prerequisites.values()].some(({ imported }) => imported),
@@ -810,20 +813,18 @@ function addEntry(entries: MenuEntry[], route: ChainRoute, repetitions: number):
 }
 
 /**
- * その経路が使う設備を保つのに要る、1日あたりの労働（分）。待ち生産を含まないならundefined。
+ * その経路を1回実行する間に、設備が回っている時間（分）。待ち生産を含まないならundefined。
  *
- * 設備は寿命の間に朽ちるので、使い続けるには作り直し続けることになる。1日ぶんの労働をこれで割れば
- * 「同時に何個要るか」が出る——**待ち時間が労働へ跳ね返る場所がここ**で、周期が長いほど数が要る。
+ * **同時に何個要るかはここから出る**（deviceCount）——1日に回す回数 × この時間が1日を超えるなら、
+ * 1つでは間に合わないということ。周期が長いほど数が要る。
  */
-function deviceMaintenancePerDay(acquisition: Acquisition, route: readonly StepRef[]): number | undefined {
-  let perDay = 0;
+function devicePeriodOf(route: readonly StepRef[]): number | undefined {
+  let periodMinutes = 0;
   for (const ref of route) {
-    if (!(ref.cycle?.repeats === true) || ref.cycle.lifetimeMinutes === undefined) continue;
-    const deviceCost = acquisition.costByObject.get(ref.def.globalId);
-    if (deviceCost === undefined) continue;
-    perDay += totalOf(deviceCost) / (ref.cycle.lifetimeMinutes / MINUTES_PER_DAY);
+    if (ref.cycle?.repeats !== true) continue;
+    periodMinutes += ref.cycle.periodMinutes;
   }
-  return perDay === 0 ? undefined : perDay;
+  return periodMinutes === 0 ? undefined : periodMinutes;
 }
 
 function deviceRows(
