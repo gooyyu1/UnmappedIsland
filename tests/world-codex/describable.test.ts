@@ -31,7 +31,7 @@ describe('同梱のWorldCodex', () => {
   it('すべての型・プロパティ・スロット・操作・レシピが書き出せる', () => {
     const writer = new DescriptionWriter();
     for (let globalId = 0; globalId < codex.objects.count; globalId++) {
-      const def = codex.objects.get(globalId);
+      const def = codex.objects.tryGet(globalId);
       if (def === undefined) continue;
       describeObjectDef(def, names, writer);
       describeAllPassives(def, names, writer);

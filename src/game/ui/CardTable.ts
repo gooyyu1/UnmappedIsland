@@ -11,6 +11,7 @@ import { DustPuff } from './DustPuff';
 import type { PlacedCard } from '../view/cardMotionPlan';
 import { planMotion } from '../view/cardMotionPlan';
 import { REPEAT_MIN_MS } from '../../ui/holdRepeat';
+import { isAlive } from '../../ui/lifetime';
 import type { LaneCell } from './laneCells';
 
 /** 出現元が分からないカードが、その場で現れる時間（ミリ秒）。 */
@@ -179,7 +180,7 @@ export class CardTable {
     });
 
     for (const { card, present, emptied } of plan.shown) {
-      if (card.scene !== undefined) card.setPresence(present, emptied);
+      if (isAlive(card)) card.setPresence(present, emptied);
     }
     for (const rect of plan.puffs) this.dust.burst(rect);
     for (const flight of plan.flights) {
@@ -282,7 +283,7 @@ export class CardTable {
   /** 置いたままの札を、飛ばさずに元の枠へ返す（実行しないと決めた操作の後始末）。 */
   settleFreed(): void {
     for (const freed of this.freed.splice(0)) {
-      if (freed.source !== undefined && freed.source.scene !== undefined) {
+      if (freed.source !== undefined && isAlive(freed.source)) {
         freed.source.absorb(freed.ids);
       }
       freed.card.destroy();
@@ -365,7 +366,7 @@ export class CardTable {
     this.flights.splice(index, 1);
     this.tracked.delete(flight);
     if (flight.puffs) this.dust.burst(flight.to);
-    if (flight.into !== undefined && flight.into.scene !== undefined) flight.into.absorb(flight.ids);
+    if (flight.into !== undefined && isAlive(flight.into)) flight.into.absorb(flight.ids);
     flight.onArrive?.();
     flight.card.destroy();
   }
@@ -454,7 +455,7 @@ export class CarriedCard {
 
   /** 1枚ついてくる。元の枠から指の下へ飛んできて合流する（数字が増える）。 */
   addOne(): void {
-    const next = this.rest[0];
+    const next = this.rest.at(0);
     if (next === undefined) return;
 
     this.rest = this.rest.slice(1);
@@ -538,7 +539,7 @@ export class CarriedCard {
 
   /** 帰ってきた個体を元の札へ合流させる。画面を作り直していれば、元の札はもう無い。 */
   private returnToSource(ids: readonly number[]): void {
-    if (this.source.scene !== undefined) this.source.absorb(ids);
+    if (isAlive(this.source)) this.source.absorb(ids);
   }
 }
 

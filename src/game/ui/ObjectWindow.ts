@@ -66,7 +66,7 @@ export interface ObjectWindowAction {
 export const DESCRIPTION_TAB = 'description';
 
 /** 組み込みのタブの識別子。スロット名と衝突しないよう、スロットに使えない文字を頭に付ける。 */
-export const PROPERTIES_TAB = '@properties';
+const PROPERTIES_TAB = '@properties';
 export const EXPLORATION_TAB = '@exploration';
 
 /** ウィンドウが映しているオブジェクト。 */

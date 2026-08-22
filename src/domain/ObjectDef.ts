@@ -200,8 +200,19 @@ export class ObjectDefTable {
     return this.byGlobalId.length;
   }
 
+  /**
+   * そのIDの型。**名前だけが登録されていて定義が無いIDがありうる**（参照だけされた型）ので、
+   * 在るか分からないIDを引くときはtryGetを使う（NameRegistryのgetId/tryGetIdと同じ揃え）。
+   */
   get(globalId: number): ObjectDef {
-    return this.byGlobalId[globalId];
+    const def = this.tryGet(globalId);
+    if (def === undefined) throw new Error(`グローバルID ${globalId} の型は登録されていません。`);
+    return def;
+  }
+
+  /** そのIDの型。定義が無ければundefined（添字は範囲外を返しうるので、型はundefinedを含む）。 */
+  tryGet(globalId: number): ObjectDef | undefined {
+    return this.byGlobalId[globalId] as ObjectDef | undefined;
   }
 
   /** 全ての型を宣言順に。タグに当てはまる型を挙げる用途（TypeMatchRule.candidates）で使う。 */

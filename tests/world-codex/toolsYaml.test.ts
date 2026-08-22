@@ -103,7 +103,7 @@ describe('tools.yamlの道具定義', () => {
     const hammer = session.spawn(codex.objectNames.getId('stone'));
     expect(target.moveToSlot(beach.getSlot(itemsSlotId))).toBeUndefined();
 
-    const [combination] = target.combinationsWith(hammer, undefined);
+    const combination = target.combinationsWith(hammer, undefined).at(0);
     expect(combination?.name, '石は石とのcombinationにマッチする').toBe('knap');
 
     expect(

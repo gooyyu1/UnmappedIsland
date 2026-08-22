@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
+import { isAlive } from '../../ui/lifetime';
 import type { HeatHaze } from '../looks/heatHaze';
 
 /** 変位マップの一辺（px）と、テクスチャマネージャへ入れるキー。 */
@@ -87,7 +88,7 @@ export class LaneHaze {
     this.tweens = [];
     // 画面を作り直した後は、前のレーンはもう破棄されている（sceneを失う）。
     for (const { target, filter } of this.applied) {
-      if (target.scene !== undefined) target.filters?.internal.remove(filter);
+      if (isAlive(target)) target.filters?.internal.remove(filter);
     }
     this.applied = [];
 

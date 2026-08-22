@@ -89,7 +89,7 @@ describe('traps.yamlのくくり罠', () => {
   function tickUntilCaught(limit = 40): WorldObject {
     for (let i = 0; i < limit; i++) {
       tick(1);
-      const [first] = caught();
+      const first = caught().at(0);
       if (first !== undefined) return first;
     }
     throw new Error('罠に何も掛からなかった');

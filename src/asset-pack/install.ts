@@ -25,7 +25,7 @@ export function installedAssetPack(): AssetPack | undefined {
 }
 
 /** アセットパックを入れる。絵は在庫表へ重ね、定義と表示文字列は読み込み側が起動時に読む。 */
-export function installAssetPack(pack: AssetPack): void {
+function installAssetPack(pack: AssetPack): void {
   if (installed !== undefined)
     throw new Error(`アセットパックは1つしか入れられません（'${installed.name}' が入っています）。`);
 

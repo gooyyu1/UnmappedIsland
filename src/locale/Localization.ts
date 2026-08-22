@@ -6,7 +6,7 @@ import { YamlLoadError } from '../loader/YamlLoadError';
 import type { LocationName } from '../domain/generation/IslandMap';
 
 /** 表示文字列を引く言語。切り替えの入口はまだ無いため、日本語で固定（Localization.md）。 */
-export const LANGUAGE = 'ja';
+const LANGUAGE = 'ja';
 
 /** ゲーム本体に同梱される表示文字列ファイル（src/assets/locale/、ビルド時に中身が埋め込まれる）。 */
 export const LOCALE_FILE = `locale/${LANGUAGE}.yaml`;
@@ -16,7 +16,8 @@ const LOCALE_TEXTS = import.meta.glob('../assets/locale/*.yaml', {
   eager: true,
   query: '?raw',
   import: 'default',
-}) as Record<string, string>;
+  // 何が同梱されているかはビルド時のファイル次第なので、どのキーも在るとは限らない。
+}) as Record<string, string | undefined>;
 
 /** LOCALE_FILEの中身。 */
 export function bundledLocaleText(): string {

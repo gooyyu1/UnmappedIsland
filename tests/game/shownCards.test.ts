@@ -100,7 +100,7 @@ function screen(
       );
     },
     combinationOf: (dragged, target, count = 1) => {
-      const [first] = target.objects;
+      const first = target.objects.at(0);
       const carried = dragged === target ? target.objects.slice(1) : dragged.objects;
       return carried.length === 0 || first === undefined
         ? undefined
@@ -385,7 +385,7 @@ describe('ドロップの意味', () => {
       for (let fromIndex = 0; fromIndex < shown.stacksAt(from).length; fromIndex++) {
         for (const to of spots) {
           for (let toIndex = 0; toIndex < shown.stacksAt(to).length; toIndex++) {
-            const [held] = shown.combinationAt(from, fromIndex, to, toIndex)?.movedIds ?? [];
+            const held = shown.combinationAt(from, fromIndex, to, toIndex)?.movedIds.at(0);
             if (held === undefined) continue;
 
             expect(

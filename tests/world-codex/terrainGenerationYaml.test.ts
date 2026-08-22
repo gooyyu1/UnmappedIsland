@@ -52,7 +52,7 @@ describe('terrain_generation.yamlの地形生成定義', () => {
     const progressId = codex.propertyNames.getId('exploration_progress');
     const referencedDefIds = new Set(generation.locationTypes.map((t) => t.objectDefGlobalId));
     for (let id = 0; id < codex.objects.count; id++) {
-      const def = codex.objects.get(id);
+      const def = codex.objects.tryGet(id);
       if (def === undefined || def.tryGetPropertyDef(progressId) === undefined) continue;
       expect(
         referencedDefIds.has(id),

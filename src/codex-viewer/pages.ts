@@ -199,7 +199,7 @@ export function renderTagListPage(view: CodexView): string {
 
 /** タグの見出しに使う絵。そのタグを持つ型のうち、絵が用意されている最初のものを借りる。 */
 function tagArtHtml(view: CodexView, names: readonly string[]): string {
-  const def = view.objectDef(names.find((name) => ART_BY_OBJECT_NAME.has(name)) ?? names[0] ?? '');
+  const def = view.objectDef(names.find((name) => ART_BY_OBJECT_NAME.has(name)) ?? names.at(0) ?? '');
   return def === undefined
     ? '<span class="art art-thumb art-missing" aria-hidden="true"></span>'
     : artHtml(view, def, 'thumb');

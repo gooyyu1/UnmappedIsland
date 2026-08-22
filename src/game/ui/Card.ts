@@ -16,6 +16,7 @@ import { noteOperation } from '../errorReport';
 import { minutesText } from '../looks/durationText';
 import { HoldRepeat } from '../../ui/holdRepeat';
 import { onPressRelease } from '../../ui/tap';
+import { isAlive } from '../../ui/lifetime';
 import { cardFace } from './cardFace';
 
 /**
@@ -35,7 +36,7 @@ const EMPTIED_ALPHA = 0.3;
  * 角の半径は20px。カードの実寸は絵の半分なので、u単位へは1/2で直せる
  * （tools/comfyui/card_frame.py の MARGIN / RADIUS、card_art.py の PAPER_RADIUS と揃えること）。
  */
-export const PAPER_INSET = 2.5;
+const PAPER_INSET = 2.5;
 export const PAPER_RADIUS = 10;
 
 /** 枠と、その内側の窓の縁をなぞる線の太さ（u単位）。 */
@@ -501,7 +502,7 @@ export class Card extends Phaser.GameObjects.Container {
     if (content.onTap !== undefined || content.draggable === true) this.makeInteractive(width, height);
     if (content.onTap !== undefined) this.makeTappable(width, height);
     // ドラッグはレーンの横スクロールと同じPhaserのdrag機構で受ける。重なった対象は最前面の1つだけが
-    // 入力を受け取る（InputPlugin.topOnly）ため、カードを掴んでいる間レーンはスクロールしない。
+    // 入力を受け取る（Phaserの入力の既定、topOnly）ため、カードを掴んでいる間レーンはスクロールしない。
     // 端の操作エリア（addEdge）はカードより手前にあってドラッグ対象ではないので、そこからは始まらない。
     if (content.draggable === true) scene.input.setDraggable(this);
 
@@ -1145,7 +1146,7 @@ export class Card extends Phaser.GameObjects.Container {
    * 押し続けて既に動き出しているなら、離したぶんをもう1枚足すことにはならない。
    *
    * ヒット領域はカード本体の後に足す。重なった対象のうち描画順が最前面の1つだけが入力を受け取る
-   * （InputPlugin.topOnly）ため、これで端はカード全体の操作もドラッグも横取りする。透明でも描画される
+   * （Phaserの入力の既定、topOnly）ため、これで端はカード全体の操作もドラッグも横取りする。透明でも描画される
    * Rectangleを使うのは、Zoneが描画リストへ載らず前後関係が決まらないため。
    */
   private addEdge(width: number, height: number, direction: CardEdgeDirection): void {
@@ -1212,7 +1213,7 @@ export class Card extends Phaser.GameObjects.Container {
       this.edgeRepeated = true;
       edge.onTap();
       // 送った結果このカードが空になっていれば、破棄されていてもう続けられない。
-      return this.scene !== undefined;
+      return isAlive(this);
     });
   }
 

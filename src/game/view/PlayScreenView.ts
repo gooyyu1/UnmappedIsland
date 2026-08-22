@@ -712,7 +712,7 @@ export function fromGameSession(
       // 組み合わせる（石と石のように、自分自身とcombinationできる場合）。
       const [first] = target.objects;
       const carried = dragged === target ? target.objects.slice(1) : dragged.objects;
-      const held = carried[0];
+      const held = carried.at(0);
       if (held === undefined) return undefined;
 
       // 落とされた側を先に、次に掴んだ側を見る（CardInteraction.md 2節）。素材側に1つ書けば、
