@@ -519,6 +519,41 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/range/);
   });
 
+  it('modifyで書き換えられるプロパティにon_minを書くとエラーになる', () => {
+    // 端のイベントは実体値で発火し、段やバーは実効値で読む（GameElementDefinition.md 6.3節）。
+    // 両方を持つと見えている値と起きることがずれるが、そのときの挙動をまだ決めていない。
+    const yaml = `
+object_defs:
+  beast:
+    props:
+      blood:
+        value: 100
+        range: {min: 0, max: 100}
+        on_min:
+          destroy: self
+  charm:
+    passives:
+      - modify: {parent: {blood: 50}}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/charm/);
+  });
+
+  it('inheritするプロパティにon_maxを書くとエラーになる', () => {
+    // 祖先から受け取る値も実効値にしか乗らないので、modifyと同じ理由で噛み合わない。
+    const yaml = `
+object_defs:
+  thing:
+    props:
+      warmth:
+        value: 0
+        inherit: true
+        range: {min: 0, max: 10}
+        on_max:
+          destroy: self
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/inherit/);
+  });
+
   it('on_minの対象にactorを指定するとエラーになる（rangeイベントに操作者は居ない）', () => {
     const yaml = `
 object_defs:

@@ -100,15 +100,20 @@ object_defs:
     expect(ground.tryGetSlot(itemsId())!.contents).toEqual([wip]);
   });
 
-  it('同じ名前のプロパティは値を引き継ぎ、新しいrangeの外はクランプするだけで反応させない', () => {
+  it('同じ名前のプロパティは、新しいrangeの外でも値をそのまま引き継ぎ、その場では反応させない', () => {
     const wip = wipOn('axe');
     const progressId = codex.propertyNames.getId('progress');
     wip.getProperty(progressId).init(30);
 
     wip.becomeAlong(toBase);
 
-    expect(wip.tryGetProperty(progressId)?.number ?? 0, '完成品のrange（0〜5）の上端へ丸める').toBe(5);
-    expect(wip.parent, 'クランプでon_maxは起きない（器が変わっただけ）').toBe(ground);
+    // rangeは実効値の端なので、実体値は丸めない（GameElementDefinition.md 6.3節）。
+    expect(wip.tryGetProperty(progressId)?.number ?? 0, '実体値はそのまま').toBe(30);
+    expect(
+      wip.tryGetProperty(progressId)?.getEffectiveValue(),
+      '実効値は完成品のrange（0〜5）で切られる',
+    ).toBe(5);
+    expect(wip.parent, '器が変わっただけなのでon_maxは起きない').toBe(ground);
   });
 
   it('新しい型にしか無いプロパティは初期値から始まる', () => {

@@ -21,6 +21,7 @@ import { WorldCodex } from '../domain/WorldCodex';
 import type { AxisDef } from '../domain/generation/AxisDef';
 import type { GenerationScopeDef } from '../domain/generation/GenerationScopeDef';
 import type { LocationTypeDef } from '../domain/generation/LocationTypeDef';
+import { built } from './parseCommon';
 
 /**
  * YAMLファイル群からWorldCodexを組み立てるロード処理の入口（GameElementDefinition.md 3節）。
@@ -185,18 +186,23 @@ export class WorldCodexYamlLoader {
 
     const vocabulary = new WorldVocabulary(this.propertyNames, this.slotNames, this.tagNames);
     const generation = buildGenerationDefs(this, objectDefsByGlobalId);
-    const codex = new WorldCodex(
-      this.objectNames,
-      this.propertyNames,
-      this.slotNames,
-      this.tagNames,
-      this.propertyTagNames,
-      this.symbolNames,
-      new ObjectDefTable(defsByGlobalId),
-      vocabulary,
-      generation,
-      generatedTypes,
-      this.recipeCategoryTagIds,
+    // 世界全体を見て初めて言える矛盾（型をまたぐ宣言どうしの噛み合わせ）は、両方を持つWorldCodexが見る。
+    const codex = built(
+      '世界全体',
+      () =>
+        new WorldCodex(
+          this.objectNames,
+          this.propertyNames,
+          this.slotNames,
+          this.tagNames,
+          this.propertyTagNames,
+          this.symbolNames,
+          new ObjectDefTable(defsByGlobalId),
+          vocabulary,
+          generation,
+          generatedTypes,
+          this.recipeCategoryTagIds,
+        ),
     );
 
     this.reset();
