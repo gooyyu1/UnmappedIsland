@@ -1,5 +1,3 @@
-import type { WorldObject } from './WorldObject';
-import type { WorldSession } from './WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
 import type { InteractionTriggerReading } from './InteractionDef';
 import { InteractionDef } from './InteractionDef';
@@ -33,9 +31,5 @@ export class ActionDef extends InteractionDef {
 
   get triggerReading(): InteractionTriggerReading {
     return { kind: 'menu', showMenu: this.showMenu };
-  }
-
-  tryExecute(self: WorldObject, actor: WorldObject | undefined, session: WorldSession): boolean {
-    return this.apply(self, actor, undefined, session);
   }
 }
