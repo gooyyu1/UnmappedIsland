@@ -83,7 +83,7 @@ describe('object_defごとの絵', () => {
       const objectDef = codex.objects.get(codex.objectNames.getId(animal));
       const suffix = objectDef
         .tryGetPropertyDef(codex.propertyNames.getId('consciousness'))
-        ?.artSuffixOf(0 /* 気を失っている */);
+        ?.stageAt(0 /* 気を失っている */)?.art;
       expect(suffix, `'${animal}' の気絶した段が絵を宣言していない`).toBeDefined();
 
       const carcass = `${animal}_${suffix}`;

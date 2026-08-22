@@ -364,7 +364,7 @@ function inInitialStage(def: ObjectDef, delta: TickDelta): boolean {
   const propertyDef = def.tryGetPropertyDef(stage.propertyGlobalId);
   const value = staticValueOf(def, stage.propertyGlobalId);
   if (propertyDef === undefined || value === undefined) return false;
-  return propertyDef.stageOf(value)?.name === stage.name;
+  return propertyDef.isInStage(value, stage.name);
 }
 
 /** そのプロパティが尽きたとき、持ち主ごと消えるか（`on_min: destroy self`）。 */

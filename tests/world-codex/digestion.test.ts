@@ -150,7 +150,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
       return before - valueOf(bodyFatId);
     });
 
-    expect(stout.stageNameOf(0)).toBe('starved');
+    expect(stout.stageAt(0)?.name).toBe('starved');
     rates.forEach((rate, index) => expect(rate).toBeCloseTo([0.5, 0.7, 1, 1.3, 1.6][index], 10));
   });
 

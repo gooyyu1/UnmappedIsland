@@ -1,5 +1,5 @@
 import type { AlertLevel } from './AlertLevel';
-import type { PropertyDef, StageReading } from './PropertyDef';
+import type { PropertyDef, PropertyStage, StageReading } from './PropertyDef';
 import { INT32_MAX } from '../util/int32';
 import { removeWhere } from '../util/arrays';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
@@ -173,17 +173,25 @@ export class PropertyValue {
     return Math.max(1, Math.ceil((range.max - this._number) / perTick));
   }
 
-  /**
-   * 今まさに指定した名前のstage（6.4節）に該当しているか（WhenOwnStageゲート専用、8節）。生の値ではなく
-   * 実効値で判定する（modifyだけで決まる派生プロパティ自身のstagesも判定できるようにするため）。
-   */
+  /** 今まさに指定した名前のstage（6.4節）に該当しているか（WhenOwnStageゲート専用、8節）。 */
   isInStage(stageName: string): boolean {
-    return this.def.isInStage(this.getEffectiveValue(), stageName);
+    return this.stage?.name === stageName;
+  }
+
+  /**
+   * 今いる段（6.4節）。段を宣言していない・どれにも該当しないならundefined。**段から引ける事柄
+   * （alert・art・名前）は、この1つを読んで得る。**
+   *
+   * 生の値ではなく実効値で引く（modifyだけで決まる派生プロパティ自身のstagesも判定できるように
+   * するため）。
+   */
+  get stage(): PropertyStage | undefined {
+    return this.def.stageAt(this.getEffectiveValue());
   }
 
   /** 今の実効値が該当する段（6.4節）が宣言しているart接尾辞（`art_by_stage`専用）。宣言が無ければundefined。 */
   get artSuffix(): string | undefined {
-    return this.def.artSuffixOf(this.getEffectiveValue());
+    return this.stage?.art;
   }
 
   /**
@@ -194,7 +202,7 @@ export class PropertyValue {
    * 尽きた値のまま静止する。「何が尽きたのか」はそこから読める。
    */
   get exhaustedStage(): string | undefined {
-    return this.def.isExhausted(this._number) ? this.def.stageNameOf(this.getEffectiveValue()) : undefined;
+    return this.def.isExhausted(this._number) ? this.stage?.name : undefined;
   }
 
   /** rangeの中での位置（0〜1）。rangeを持たないプロパティはundefinedで、バーではなく数値で見せる。 */
@@ -207,9 +215,9 @@ export class PropertyValue {
     return this.def.alertOf(this.getEffectiveValue());
   }
 
-  /** 今いる段（6.4節）。段を宣言していないプロパティはundefined。 */
-  get stage(): StageReading | undefined {
-    return this.def.stageOf(this.getEffectiveValue());
+  /** 今いる段を、バーへ刻んで見せるための読み（6.4節）。段を宣言していないプロパティはundefined。 */
+  get stageOnBar(): StageReading | undefined {
+    return this.def.stageOnBarAt(this.getEffectiveValue());
   }
 
   /** transfer（9.5節）でこのプロパティから出せる量の上限。rangeがあればrange.minを下限とみなし、無ければ現在値そのまま。 */

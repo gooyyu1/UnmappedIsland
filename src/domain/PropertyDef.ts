@@ -118,7 +118,7 @@ export interface StageSpan {
 }
 
 /**
- * 段（6.4節）の刻みと、その中で今どこにいるか（PropertyDef.stageOf）。
+ * 段（6.4節）の刻みと、その中で今どこにいるか（PropertyDef.stageOnBarAt）。
  * nameは識別子であり表示名ではない（表示名はLocalization.stageが引く）。
  */
 export interface StageReading {
@@ -357,12 +357,14 @@ export class PropertyDef {
   }
 
   /**
-   * 現在値が該当する段階を返す。eq指定（完全一致、一致した時点で即返してよい）が優先、次にmin指定
-   * （最も高いminを採用するため全段を走査）、どちらも該当しなければfallbackStage（6.4節）。
-   * 段の判定はリスト中の位置に依存しない。fallbackが無ければundefinedを返し得るため、
-   * 呼び出し側（isInStage等）は常にundefinedチェックする前提。
+   * その値が該当する段（6.4節）。**「今どの段に居るか」を答えるのはここだけ**で、段の宣言から
+   * 引ける事柄（alert・art・名前）は、この段を読んで得る。
+   *
+   * eq指定（完全一致、一致した時点で即返してよい）が優先、次にmin指定（最も高いminを採用するため
+   * 全段を走査）、どちらも該当しなければfallbackStage。段の判定はリスト中の位置に依存しない。
+   * fallbackが無ければundefinedを返し得る。
    */
-  private resolveStage(currentValue: number): PropertyStage | undefined {
+  stageAt(currentValue: number): PropertyStage | undefined {
     let best: PropertyStage | undefined;
 
     for (const stage of this.stages) {
@@ -386,26 +388,21 @@ export class PropertyDef {
    * 該当した段がalertを宣言していない場合は安全域。
    */
   alertOf(effectiveValue: number): AlertLevel {
-    return this.resolveStage(effectiveValue)?.alert ?? 'safe';
+    return this.stageAt(effectiveValue)?.alert ?? 'safe';
   }
 
   /** 実効値effectiveValueのとき、このプロパティが名前stageNameの段（6.4節）に該当しているか。 */
   isInStage(effectiveValue: number, stageName: string): boolean {
-    const stage = this.resolveStage(effectiveValue);
-    return stage !== undefined && stage.name === stageName;
-  }
-
-  /** 実効値effectiveValueのときに該当する段（6.4節）の名前。該当する段が無ければundefined。 */
-  stageNameOf(effectiveValue: number): string | undefined {
-    return this.resolveStage(effectiveValue)?.name;
+    return this.stageAt(effectiveValue)?.name === stageName;
   }
 
   /**
-   * 実効値effectiveValueのときに該当する段（6.4節）を、表示側が要る形だけ切り出したもの。
-   * 該当する段が無ければundefined。
+   * 実効値effectiveValueのときに該当する段を、**バーへ刻んで見せるための読み**にしたもの。
+   * 該当する段が無ければundefined。名前やalertだけが要るなら段そのものを読む（stageAt）——
+   * こちらは段の区間と境目を毎回組み立てる。
    */
-  stageOf(effectiveValue: number): StageReading | undefined {
-    const stage = this.resolveStage(effectiveValue);
+  stageOnBarAt(effectiveValue: number): StageReading | undefined {
+    const stage = this.stageAt(effectiveValue);
     if (stage === undefined) return undefined;
     return { name: stage.name, span: this.spanOf(stage), boundaries: this.stageBoundaries() };
   }
@@ -427,7 +424,7 @@ export class PropertyDef {
   /**
    * 段がrangeの中で占める区間（0〜1）。**下端はその段のmin**（最下段はrangeの下限）、**上端は
    * それより上で最も近い段のmin**（無ければrangeの上限）で、段の宣言順ではなくminの大小だけで決まる
-   * （resolveStageと同じ見方）。
+   * （stageAtと同じ見方）。
    *
    * 完全一致（eq）で決まる段はシンボル型（6.6節）のもので、値の並びの上に幅を持たないためundefined。
    */
@@ -444,11 +441,6 @@ export class PropertyDef {
     return startRatio === undefined || endRatio === undefined
       ? undefined
       : { start: startRatio, end: endRatio };
-  }
-
-  /** 実効値effectiveValueのとき、今いる段が宣言しているart接尾辞（PropertyStage.art、6.4節）。宣言が無ければundefined。 */
-  artSuffixOf(effectiveValue: number): string | undefined {
-    return this.resolveStage(effectiveValue)?.art;
   }
 
   /** stagesが宣言しているart接尾辞の一覧（重複なし、宣言順）。絵のファイル名検査（objectArt.test.ts）に使う。 */
