@@ -443,6 +443,12 @@ export function fromGameSession(
     };
   };
 
+  /** バーへ刻む段の読みに、表示名を入れたもの。段を宣言していないプロパティではundefined。 */
+  const stageOnBarOf = (property: PropertyValue): StatusDetail['stage'] => {
+    const stage = property.stageOnBar;
+    return stage === undefined ? undefined : { ...stage, name: locale.stage(stage.name) };
+  };
+
   /**
    * そのプロパティ1件の詳細（意味・今いる段・影響の出入り）。**持ち主から読む**——同じ名前の
    * プロパティを別の物が持っていても、値も影響もその物のもの。
@@ -451,14 +457,7 @@ export function fromGameSession(
     const influences = object.readInfluences(codex.propertyNames.getId(property.def.name));
     return {
       description: locale.object(object.def.name).prop(property.def.name).description,
-      stage:
-        property.stage === undefined
-          ? undefined
-          : {
-              name: locale.stage(property.stage.name),
-              span: property.stage.span,
-              boundaries: property.stage.boundaries,
-            },
+      stage: stageOnBarOf(property),
       // 与えている影響で動くのは相手、受けている影響で動くのは自分（influenceOfのmoved）。
       given: influences.given.map((influence) =>
         influenceOf(object, influence, movedByGiven(object, influence)),
