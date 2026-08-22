@@ -124,12 +124,11 @@ class OutcomeReader implements EffectReader {
 
     if (total <= 0) {
       this.combine(readings[0].outcomes);
-      return;
+    } else {
+      this.combine(
+        readings.flatMap((reading, index) => scaleOutcomes(reading.outcomes, weights[index] / total)),
+      );
     }
-
-    this.combine(
-      readings.flatMap((reading, index) => scaleOutcomes(reading.outcomes, weights[index] / total)),
-    );
   }
 
   private combine(outcomes: readonly StepOutcome[]): void {

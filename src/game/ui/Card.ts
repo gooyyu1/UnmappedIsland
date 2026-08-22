@@ -707,17 +707,16 @@ export class Card extends Phaser.GameObjects.Container {
       this.alertBlink?.stop();
       this.alertBlink = undefined;
       this.alertOutline.setVisible(false).setAlpha(1);
-      return;
+    } else {
+      this.alertOutline.setVisible(true);
+      this.alertBlink = this.scene.tweens.add({
+        targets: this.alertOutline,
+        alpha: ALERT_BLINK_MIN_ALPHA,
+        duration: ALERT_BLINK_DURATION_MS,
+        yoyo: true,
+        repeat: -1,
+      });
     }
-
-    this.alertOutline.setVisible(true);
-    this.alertBlink = this.scene.tweens.add({
-      targets: this.alertOutline,
-      alpha: ALERT_BLINK_MIN_ALPHA,
-      duration: ALERT_BLINK_DURATION_MS,
-      yoyo: true,
-      repeat: -1,
-    });
   }
 
   /**
@@ -769,14 +768,14 @@ export class Card extends Phaser.GameObjects.Container {
 
     if (art !== undefined && scene.textures.exists(art)) {
       this.artLayer.add(createArtImage(scene, this.cardWidth, this.cardHeight, art));
-      return;
+    } else {
+      // 乗算の絵だけで成り立つもの（痣のような、肌の変色そのもの）には絵がもう在る。絵文字は
+      // 「まだ一枚も無い」ことの代用なので出さない。
+      if (multiply === undefined) {
+        this.artLayer.add(createIconText(scene, this.metrics, this.cardWidth, this.cardHeight, content.icon));
+      }
+      if (art !== undefined) this.swapArtWhenLoaded(scene, art);
     }
-    // 乗算の絵だけで成り立つもの（痣のような、肌の変色そのもの）には絵がもう在る。絵文字は
-    // 「まだ一枚も無い」ことの代用なので出さない。
-    if (multiply === undefined) {
-      this.artLayer.add(createIconText(scene, this.metrics, this.cardWidth, this.cardHeight, content.icon));
-    }
-    if (art !== undefined) this.swapArtWhenLoaded(scene, art);
   }
 
   /**
@@ -1047,9 +1046,13 @@ export class Card extends Phaser.GameObjects.Container {
     if (text === '') {
       this.overlayTween?.stop();
       this.overlayTween = undefined;
-      return;
+    } else {
+      this.settleOverlay(appeared, inner, margin);
     }
+  }
 
+  /** 出ている文言を、収まる位置・倍率へ落ち着かせる。現れた瞬間だけは大きく出してから寄せる。 */
+  private settleOverlay(appeared: boolean, inner: Rect, margin: number): void {
     // 言語で長さが大きく違う（「気絶」と`unconscious`）ので、倍率は幅から決める。
     const maxScale = (inner.width - margin * 2) / Math.max(1, this.overlay.width);
     const restScale = Math.min(1, maxScale);
@@ -1060,25 +1063,24 @@ export class Card extends Phaser.GameObjects.Container {
     if (!appeared) {
       // 動いている最中なら行き先を奪わない（着けば自分でrestに着く）。
       if (this.overlayTween === undefined) this.overlay.setPosition(rest.x, rest.y).setScale(restScale);
-      return;
+    } else {
+      this.overlay
+        .setPosition(inner.x + inner.width / 2, inner.y + inner.height / 2)
+        .setScale(Math.min(OVERLAY_BURST_SCALE * restScale, maxScale));
+      this.overlayTween?.stop();
+      this.overlayTween = this.scene.tweens.add({
+        targets: this.overlay,
+        x: rest.x,
+        y: rest.y,
+        scale: restScale,
+        delay: OVERLAY_HOLD_MS,
+        duration: OVERLAY_SETTLE_MS,
+        ease: 'Quad.easeInOut',
+        onComplete: () => {
+          this.overlayTween = undefined;
+        },
+      });
     }
-
-    this.overlay
-      .setPosition(inner.x + inner.width / 2, inner.y + inner.height / 2)
-      .setScale(Math.min(OVERLAY_BURST_SCALE * restScale, maxScale));
-    this.overlayTween?.stop();
-    this.overlayTween = this.scene.tweens.add({
-      targets: this.overlay,
-      x: rest.x,
-      y: rest.y,
-      scale: restScale,
-      delay: OVERLAY_HOLD_MS,
-      duration: OVERLAY_SETTLE_MS,
-      ease: 'Quad.easeInOut',
-      onComplete: () => {
-        this.overlayTween = undefined;
-      },
-    });
   }
 
   /** Containerのdisplay originによるヒット領域のずれを避ける理由はButtonと同じ（サイズを設定しない）。 */

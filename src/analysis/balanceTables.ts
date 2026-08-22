@@ -799,14 +799,14 @@ function addEntry(entries: MenuEntry[], route: ChainRoute, repetitions: number):
   const existing = entries.find((entry) => entry.route === route);
   if (existing === undefined) {
     entries.push({ route, repetitions, minutes: repetitions * route.executionMinutes });
-    return;
+  } else {
+    const merged = existing.repetitions + repetitions;
+    entries[entries.indexOf(existing)] = {
+      route,
+      repetitions: merged,
+      minutes: merged * route.executionMinutes,
+    };
   }
-  const merged = existing.repetitions + repetitions;
-  entries[entries.indexOf(existing)] = {
-    route,
-    repetitions: merged,
-    minutes: merged * route.executionMinutes,
-  };
 }
 
 /**

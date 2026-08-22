@@ -68,24 +68,23 @@ export class ScrollIndicator extends Phaser.GameObjects.Container {
   setScroll(offset: number, minOffset: number): void {
     if (minOffset >= 0) {
       this.setVisible(false);
-      return;
-    }
+    } else {
+      const span = scrollThumbSpan(this.trackWidth, offset, minOffset, this.minThumbLength);
+      if (span.width !== this.thumbWidth) {
+        this.thumbWidth = span.width;
+        this.thumb.clear();
+        drawBox(this.thumb, this.boxOf(span.width), {
+          fill: COLOR.scrollBarThumb,
+          fillAlpha: THUMB_ALPHA,
+          radius: this.barHeight / 2,
+        });
+      }
 
-    const span = scrollThumbSpan(this.trackWidth, offset, minOffset, this.minThumbLength);
-    if (span.width !== this.thumbWidth) {
-      this.thumbWidth = span.width;
-      this.thumb.clear();
-      drawBox(this.thumb, this.boxOf(span.width), {
-        fill: COLOR.scrollBarThumb,
-        fillAlpha: THUMB_ALPHA,
-        radius: this.barHeight / 2,
-      });
+      const moved = span.x !== this.thumb.x || !this.visible;
+      this.thumb.x = span.x;
+      this.setVisible(true);
+      if (moved) this.highlight();
     }
-
-    const moved = span.x !== this.thumb.x || !this.visible;
-    this.thumb.x = span.x;
-    this.setVisible(true);
-    if (moved) this.highlight();
   }
 
   /** 送っている間は濃くし、止まったら控えめな濃さへ戻す。 */

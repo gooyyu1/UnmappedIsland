@@ -94,14 +94,13 @@ export class ProgressRing extends Phaser.GameObjects.Container {
     if (span > Math.PI) {
       this.fillSector(color, alpha, from, from + span / 2);
       this.fillSector(color, alpha, from + span / 2, to);
-      return;
+    } else {
+      this.graphics.fillStyle(color, alpha);
+      this.graphics.beginPath();
+      this.graphics.arc(0, 0, this.outer, from, to, false);
+      this.graphics.arc(0, 0, this.inner, to, from, true);
+      this.graphics.closePath();
+      this.graphics.fillPath();
     }
-
-    this.graphics.fillStyle(color, alpha);
-    this.graphics.beginPath();
-    this.graphics.arc(0, 0, this.outer, from, to, false);
-    this.graphics.arc(0, 0, this.inner, to, from, true);
-    this.graphics.closePath();
-    this.graphics.fillPath();
   }
 }

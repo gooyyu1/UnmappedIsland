@@ -241,18 +241,17 @@ export class WorldSession {
 
     if (ticksToRun === 0) {
       world.addMinutes(amount);
-      return;
-    }
-
-    world.addMinutes(minutesPerTick - minuteOfTick);
-    this.runTick(world);
-
-    for (let i = 1; i < ticksToRun; i++) {
-      world.addMinutes(minutesPerTick);
+    } else {
+      world.addMinutes(minutesPerTick - minuteOfTick);
       this.runTick(world);
-    }
 
-    world.addMinutes(total % minutesPerTick);
+      for (let i = 1; i < ticksToRun; i++) {
+        world.addMinutes(minutesPerTick);
+        this.runTick(world);
+      }
+
+      world.addMinutes(total % minutesPerTick);
+    }
   }
 
   /**

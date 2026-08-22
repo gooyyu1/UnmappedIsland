@@ -674,13 +674,12 @@ export class PlayScene extends ResponsiveScene {
     if (this.locationArtLoaded) {
       // 場面転換の途中で作り直された場合、その転換の明転はもう起きない。busyのまま固まらないよう戻す。
       this.activity = 'idle';
-      return;
+    } else {
+      this.activity = 'transiting';
+      const curtain = new Curtain(this, this.layout.fieldArea);
+      curtain.darken(0);
+      this.revealWhenLocationArtLoaded(curtain);
     }
-
-    this.activity = 'transiting';
-    const curtain = new Curtain(this, this.layout.fieldArea);
-    curtain.darken(0);
-    this.revealWhenLocationArtLoaded(curtain);
   }
 
   private buildFieldArea(layout: PlayScreenLayout): void {
@@ -1796,15 +1795,14 @@ export class PlayScene extends ResponsiveScene {
         width: Math.max(0, layout.informationContent.width - padding * 2),
         height: thickness,
       });
-      return;
+    } else {
+      this.addDivider({
+        x: layout.statusArea.x - thickness / 2,
+        y: layout.statusArea.y + padding,
+        width: thickness,
+        height: Math.max(0, layout.statusArea.height - padding * 2),
+      });
     }
-
-    this.addDivider({
-      x: layout.statusArea.x - thickness / 2,
-      y: layout.statusArea.y + padding,
-      width: thickness,
-      height: Math.max(0, layout.statusArea.height - padding * 2),
-    });
   }
 
   private addDivider(rect: Rect): void {

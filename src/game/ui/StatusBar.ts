@@ -312,14 +312,13 @@ export class StatusBar extends Phaser.GameObjects.Container {
     if (this.visible) {
       this.setContent(content);
       this.slideTo(y);
-      return;
+    } else {
+      const before = content.ratioBefore;
+      if (before !== undefined) this.bar?.resetRatio(before);
+      this.applyContent(content, before !== undefined);
+      this.stopMoving();
+      this.setVisible(true).setY(y);
     }
-
-    const before = content.ratioBefore;
-    if (before !== undefined) this.bar?.resetRatio(before);
-    this.applyContent(content, before !== undefined);
-    this.stopMoving();
-    this.setVisible(true).setY(y);
   }
 
   /**
@@ -388,14 +387,13 @@ export class StatusBar extends Phaser.GameObjects.Container {
   private showChange(change: StatusChange | undefined): void {
     if (change === undefined) {
       this.changeMark.setText('');
-      return;
+    } else {
+      const increased = change === 'increased';
+      const worsened = increased === this.worsensUpward;
+      this.changeMark
+        .setText(increased ? '▲' : '▼')
+        .setColor(cssColor(worsened ? COLOR.statusDecreased : COLOR.statusIncreased));
     }
-
-    const increased = change === 'increased';
-    const worsened = increased === this.worsensUpward;
-    this.changeMark
-      .setText(increased ? '▲' : '▼')
-      .setColor(cssColor(worsened ? COLOR.statusDecreased : COLOR.statusIncreased));
   }
 }
 

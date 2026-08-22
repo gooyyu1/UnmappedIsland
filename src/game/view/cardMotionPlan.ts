@@ -186,20 +186,19 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
 
     if (sources.length === 0) {
       if (arriving && held === 0) fadeIns.push(to.card);
-      return;
-    }
-
-    let stagger = 0;
-    for (const source of sources) {
-      flights.push({
-        id: source.id,
-        face: to.card,
-        into: to.card,
-        from: source.rect,
-        to: to.rect,
-        delaySteps: source.appeared ? appeared++ : stagger++,
-        puffs: source.puffs,
-      });
+    } else {
+      let stagger = 0;
+      for (const source of sources) {
+        flights.push({
+          id: source.id,
+          face: to.card,
+          into: to.card,
+          from: source.rect,
+          to: to.rect,
+          delaySteps: source.appeared ? appeared++ : stagger++,
+          puffs: source.puffs,
+        });
+      }
     }
   };
 

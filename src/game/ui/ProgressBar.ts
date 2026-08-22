@@ -268,28 +268,27 @@ export class ProgressBar extends Phaser.GameObjects.Container {
       this.blinkTween?.stop();
       this.blinkTween = undefined;
       this.alertFrame.setVisible(false).setAlpha(1);
-      return;
+    } else {
+      // 明るい枠は、濃い塗りの上では沈む。必ず暗い線を先に敷き、その上へ載せて輪郭を保つ。
+      const box = { x: 0, y: 0, width: this.barWidth, height: this.barHeight };
+      const width = Math.max(this.borderWidth, this.alertBorderWidth);
+      this.alertFrame.clear();
+      drawBox(this.alertFrame, box, {
+        border: COLOR.statusAlertOutline,
+        borderWidth: this.alertOutlineWidth,
+        radius: this.radius,
+      });
+      drawBox(this.alertFrame, box, { border: color, borderWidth: width, radius: this.radius });
+      this.alertFrame.setVisible(true);
+
+      this.blinkTween ??= this.scene.tweens.add({
+        targets: this.alertFrame,
+        alpha: BLINK_MIN_ALPHA,
+        duration: BLINK_DURATION_MS,
+        yoyo: true,
+        repeat: -1,
+      });
     }
-
-    // 明るい枠は、濃い塗りの上では沈む。必ず暗い線を先に敷き、その上へ載せて輪郭を保つ。
-    const box = { x: 0, y: 0, width: this.barWidth, height: this.barHeight };
-    const width = Math.max(this.borderWidth, this.alertBorderWidth);
-    this.alertFrame.clear();
-    drawBox(this.alertFrame, box, {
-      border: COLOR.statusAlertOutline,
-      borderWidth: this.alertOutlineWidth,
-      radius: this.radius,
-    });
-    drawBox(this.alertFrame, box, { border: color, borderWidth: width, radius: this.radius });
-    this.alertFrame.setVisible(true);
-
-    this.blinkTween ??= this.scene.tweens.add({
-      targets: this.alertFrame,
-      alpha: BLINK_MIN_ALPHA,
-      duration: BLINK_DURATION_MS,
-      yoyo: true,
-      repeat: -1,
-    });
   }
 
   /** トラック → 変化の帯 → 塗り → 枠線の順に重ねる。帯は塗りより広い側なので、はみ出した分だけが見える。 */

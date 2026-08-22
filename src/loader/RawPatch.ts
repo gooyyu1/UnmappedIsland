@@ -164,14 +164,13 @@ function setValue(def: RawObjectDef, defName: string, rest: readonly string[], p
   if (patch.where !== undefined) {
     const seq = seqAt(def.node, defName, rest);
     seq.items[indexOfMatch(seq, patch)] = patch.value;
-    return;
+  } else {
+    const parent = descendToMap(def.node, defName, rest.slice(0, -1));
+    const key = rest[rest.length - 1];
+    if (tryGetNode(parent, key) === undefined)
+      throw new YamlLoadError(`'${patch.path}' がありません（新しく作るなら'add'です）。`);
+    parent.set(new Scalar(key), patch.value);
   }
-
-  const parent = descendToMap(def.node, defName, rest.slice(0, -1));
-  const key = rest[rest.length - 1];
-  if (tryGetNode(parent, key) === undefined)
-    throw new YamlLoadError(`'${patch.path}' がありません（新しく作るなら'add'です）。`);
-  parent.set(new Scalar(key), patch.value);
 }
 
 /** `remove`: 配列の要素（where付き）か、既にあるキー。 */
@@ -179,13 +178,12 @@ function removeValue(def: RawObjectDef, defName: string, rest: readonly string[]
   if (patch.where !== undefined) {
     const seq = seqAt(def.node, defName, rest);
     seq.items.splice(indexOfMatch(seq, patch), 1);
-    return;
+  } else {
+    const parent = descendToMap(def.node, defName, rest.slice(0, -1));
+    const key = rest[rest.length - 1];
+    if (tryGetNode(parent, key) === undefined) throw new YamlLoadError(`'${patch.path}' がありません。`);
+    parent.delete(key);
   }
-
-  const parent = descendToMap(def.node, defName, rest.slice(0, -1));
-  const key = rest[rest.length - 1];
-  if (tryGetNode(parent, key) === undefined) throw new YamlLoadError(`'${patch.path}' がありません。`);
-  parent.delete(key);
 }
 
 /** whereに当てはまる要素の位置。0件でも2件以上でもエラー（どれを指すのか決まらない）。 */

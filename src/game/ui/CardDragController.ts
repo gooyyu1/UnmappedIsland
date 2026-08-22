@@ -287,21 +287,20 @@ export class CardDragController {
     if (this.trackCarry(gesture, found, pointer)) found = this.dropAt(gesture, pointer);
     if (found === undefined) {
       gesture.tooltip?.hide();
-      return;
+    } else {
+      const { drop, info } = found;
+      const rect = drop.to.dropIndicatorRect(drop.target);
+      drawBox(gesture.indicator, rect, {
+        fill: COLOR.cardDropTarget,
+        fillAlpha: INDICATOR_FILL_ALPHA,
+        border: COLOR.cardDropTarget,
+        borderWidth: this.metrics().px(INDICATOR_BORDER),
+        radius: this.metrics().px(SIZE.radius),
+      });
+
+      if (info.tooltip === undefined) gesture.tooltip?.hide();
+      else gesture.tooltip?.show(info.tooltip, gesture.carried.rect);
     }
-
-    const { drop, info } = found;
-    const rect = drop.to.dropIndicatorRect(drop.target);
-    drawBox(gesture.indicator, rect, {
-      fill: COLOR.cardDropTarget,
-      fillAlpha: INDICATOR_FILL_ALPHA,
-      border: COLOR.cardDropTarget,
-      borderWidth: this.metrics().px(INDICATOR_BORDER),
-      radius: this.metrics().px(SIZE.radius),
-    });
-
-    if (info.tooltip === undefined) gesture.tooltip?.hide();
-    else gesture.tooltip?.show(info.tooltip, gesture.carried.rect);
   }
 
   /** 今のポインタ位置で成立するドロップと、そこで起きること（何も起きないものはundefined）。 */
@@ -380,14 +379,13 @@ export class CardDragController {
       gesture.carried?.disband();
       gesture.carried = undefined;
       this.cancel();
-      return;
+    } else {
+      // 落とした札は自由な札として離した場所に残り、行き先は世界の差し替えが決める（CardTable.freed）。
+      const releasedRect = gesture.carried.rect;
+      gesture.carried.release();
+      this.cancel();
+      this.handlers.onDrop(found.drop, releasedRect);
     }
-
-    // 落とした札は自由な札として離した場所に残り、行き先は世界の差し替えが決める（CardTable.freed）。
-    const releasedRect = gesture.carried.rect;
-    gesture.carried.release();
-    this.cancel();
-    this.handlers.onDrop(found.drop, releasedRect);
   }
 
   private cancel(): void {
