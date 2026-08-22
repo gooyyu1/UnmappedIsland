@@ -72,7 +72,7 @@ export class RecipeStepDef {
  *
  * `conditions`は**このレシピを知っているか**を判定するもので、素材が揃っているかとは別物
  * （素材の充足は`steps.requires`が持つ）。判定できる対象はactorだけで、まだ存在しない成果物を
- * 指すself/parent/ancestorは使えない（RECIPE_CONDITION_ROOTS参照）。
+ * 指すself/parent/ancestorは使えない（ReferenceScope.recipeUnlock参照）。
  */
 export class RecipeDef {
   readonly name: string;
