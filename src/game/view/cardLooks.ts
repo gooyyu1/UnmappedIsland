@@ -359,12 +359,6 @@ export function cardLooksOf(
   };
 
   /**
-   * 作りかけの物か（RecipeSystem.md 5節のwipタグ）。**完成品のタグを引き継ぐ型なので、種別の判定より
-   * 後から覆う**——作りかけの籠は入れ物の枠ではなく青写真の枠になる（CardView.md 10節）。
-   */
-  const inProgressDef = (def: ObjectDef): boolean => def.isInProgress;
-
-  /**
    * 絵がまだ無い物の代役アイコン。**型あての代役を先に、無ければ種別の代役**——キャラクタは絵が
    * 入るまで一人ずつ見分けたいので、型ごとの表（characterCard.ts）を持っている。
    */
@@ -405,7 +399,7 @@ export function cardLooksOf(
       name: typeNameOf(def),
       art: artOf(def),
       kind: kindOf(def),
-      inProgress: inProgressDef(def),
+      inProgress: def.isInProgress,
     };
   };
 
@@ -418,7 +412,7 @@ export function cardLooksOf(
     kind: kindOf(object.def),
     // 作りかけかどうかは物の型が決める。設置物として地面に据わっていても手に持っていても、
     // 同じ「まだ物になっていない」カードとして出す。
-    inProgress: inProgressDef(object.def),
+    inProgress: object.def.isInProgress,
     art: artOf(object.def, object),
     background: slotOfObject(object),
     gauges: gaugesOf(object),

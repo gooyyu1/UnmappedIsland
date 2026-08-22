@@ -4,6 +4,7 @@ import type {
   PickCandidateReading,
   TransferReading,
 } from '../../domain/EffectReader';
+import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../../domain/PassiveReader';
 import type { ObjectRefReading } from '../../domain/ObjectRef';
 import type { ReferenceRoot } from '../../domain/ReferenceRoot';
 
@@ -26,6 +27,17 @@ export function writesToProperty(
   ownedByDeclarer: boolean,
 ): boolean {
   const reader = new PropertyWriterFinder(propertyGlobalId, ownedByDeclarer);
+  declaration.read(reader);
+  return reader.found;
+}
+
+/** その持続効果がpropertyGlobalIdのプロパティを書き換えうるか（writesToPropertyの持続効果版）。 */
+export function passiveWritesToProperty(
+  declaration: PassiveDeclaration,
+  propertyGlobalId: number,
+  ownedByDeclarer: boolean,
+): boolean {
+  const reader = new PassivePropertyWriterFinder(propertyGlobalId, ownedByDeclarer);
   declaration.read(reader);
   return reader.found;
 }
@@ -81,9 +93,52 @@ class PropertyWriterFinder extends Finder {
   }
 
   private check(target: ReferenceRoot, propertyGlobalId: number): void {
-    if (propertyGlobalId !== this.propertyGlobalId) return;
-    if (this.ownedByDeclarer || target !== 'self') this.found = true;
+    if (writesTo(target, propertyGlobalId, this.propertyGlobalId, this.ownedByDeclarer)) this.found = true;
   }
+}
+
+/** 持続効果の読み手版（PropertyWriterFinderと同じ問いに、PassiveReaderの受け口で答える）。 */
+class PassivePropertyWriterFinder implements PassiveReader {
+  found = false;
+
+  private readonly propertyGlobalId: number;
+  private readonly ownedByDeclarer: boolean;
+
+  constructor(propertyGlobalId: number, ownedByDeclarer: boolean) {
+    this.propertyGlobalId = propertyGlobalId;
+    this.ownedByDeclarer = ownedByDeclarer;
+  }
+
+  modify(reading: PassivePropertyReading): void {
+    this.check(reading.target, reading.propertyGlobalId);
+  }
+
+  accumulate(reading: PassivePropertyReading): void {
+    this.check(reading.target, reading.propertyGlobalId);
+  }
+
+  transfer(reading: TransferReading): void {
+    this.check(reading.from, reading.fromPropertyGlobalId);
+    this.check(reading.to, reading.toPropertyGlobalId);
+    for (const linked of reading.linked) this.check(linked.target, linked.propertyGlobalId);
+  }
+
+  private check(target: ReferenceRoot, propertyGlobalId: number): void {
+    if (writesTo(target, propertyGlobalId, this.propertyGlobalId, this.ownedByDeclarer)) this.found = true;
+  }
+}
+
+/**
+ * その書き込みが探しているプロパティに当たるか。**target=selfの効果は宣言元自身のプロパティしか
+ * 書き換えない**ので、他の型が持つ同名のプロパティは対象にならない。
+ */
+function writesTo(
+  target: ReferenceRoot,
+  propertyGlobalId: number,
+  wanted: number,
+  ownedByDeclarer: boolean,
+): boolean {
+  return propertyGlobalId === wanted && (ownedByDeclarer || target !== 'self');
 }
 
 class SpawnFinder extends Finder {

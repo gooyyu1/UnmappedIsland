@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import { addTextButton } from './Button';
+import { addTextButton, tabBoxStyle } from './Button';
 import type { Button, HoldHandlers } from './Button';
 import type { CardContent } from './Card';
 import type { CardLane } from './CardLane';
@@ -19,6 +19,7 @@ import {
   ACTION_HEIGHT,
   ACTION_MAX_WIDTH,
   CONTENT_GAP,
+  MIN_WINDOW_WIDTH,
   WINDOW_PADDING,
   centerWindow,
 } from '../looks/childWindowLayout';
@@ -31,15 +32,6 @@ import { Tooltip } from './Tooltip';
 import type { TooltipContent } from './Tooltip';
 
 export type { ObjectWindowSlot } from './SlotPane';
-
-/**
- * オブジェクトウィンドウの**最低の横幅**（ステータス詳細のウィンドウと揃える）。中身の並びを持たない
- * ——説明文を出す——ウィンドウは、ちょうどこの幅になる。狭い画面では中身ごと縮める。
- *
- * **枠の少ないスロットでも、これより狭くしない。** 幅は最下段の操作のボタンの幅でもあるので、
- * 中身の少なさに合わせて詰めると、映しているものとは関係のない都合でボタンが窮屈になる。
- */
-const MIN_WIDTH = 760;
 
 /** タブの行の高さ（u単位）。タブが1つだけのウィンドウでは行そのものを空けない。 */
 const TAB_HEIGHT = 64;
@@ -427,12 +419,7 @@ export class ObjectWindow {
     this.selected = tab;
 
     this.tabButtons.forEach((button, index) =>
-      button.setBoxStyle({
-        fill: this.tabSpecs[index]?.key === tab ? COLOR.buttonActive : COLOR.button,
-        border: COLOR.buttonBorder,
-        borderWidth: this.metrics.linePx(2),
-        radius: this.metrics.px(SIZE.radius),
-      }),
+      button.setBoxStyle(tabBoxStyle(this.metrics, this.tabSpecs[index]?.key === tab)),
     );
 
     this.pane = (this.tabSpecs.find((candidate) => candidate.key === tab) ?? this.tabSpecs[0]).create(
@@ -550,11 +537,11 @@ export class ObjectWindow {
 /**
  * ウィンドウの横幅。**最も広いタブに合わせて固定**する（切り替えで枠を伸び縮みさせない）。
  *
- * **どのウィンドウもMIN_WIDTHより狭くはしない。** 説明のタブはちょうどその幅で、幅を要求しない
+ * **どのウィンドウもMIN_WINDOW_WIDTHより狭くはしない。** 説明のタブはちょうどその幅で、幅を要求しない
  * タブしか無いウィンドウもそこまで広げる。
  */
 function decideWidth(metrics: ScreenMetrics, area: Rect, tabs: readonly TabSpec[], padding: number): number {
   const limit = Math.min(area.width, metrics.width * 0.92);
   const wanted = tabs.map((tab) => tab.width + padding * 2);
-  return Math.min(Math.max(metrics.px(MIN_WIDTH), ...wanted), limit);
+  return Math.min(Math.max(metrics.px(MIN_WINDOW_WIDTH), ...wanted), limit);
 }

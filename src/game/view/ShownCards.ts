@@ -302,11 +302,6 @@ export class ShownCards {
     return dragged.dropInto?.(drop.to, drop.target, drop.count);
   }
 
-  /** そのドロップを起こす手段（何も起きないならundefined）。 */
-  dropAction(drop: ShownDrop): (() => void) | undefined {
-    return this.dropEffect(drop)?.execute;
-  }
-
   /**
    * そのドロップでまとめて動かせる最大枚数（1ならついてこない）。**combinationは常に1**——
    * 条件は世界のどこでも見られ、1回実行するたびに世界が変わるので、2回目が成立するかは

@@ -107,8 +107,4 @@ export class RecipeDef {
   ): Requirement | undefined {
     return this.unlock?.firstUnmet(resolveRoot);
   }
-
-  isUnlocked(resolveRoot: (root: ReferenceRoot) => WorldObject | undefined): boolean {
-    return this.unmetUnlockRequirement(resolveRoot) === undefined;
-  }
 }

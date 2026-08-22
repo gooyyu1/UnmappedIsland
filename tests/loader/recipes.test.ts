@@ -112,7 +112,7 @@ object_defs:
             duration: 5
 `);
 
-    expect(recipesOf(codex, 'stick')[0].isUnlocked(() => undefined)).toBe(true);
+    expect(recipesOf(codex, 'stick')[0].unmetUnlockRequirement(() => undefined)).toBeUndefined();
   });
 
   it('conditionsはactorのスキルの段で解放を判定する', () => {
@@ -144,10 +144,10 @@ object_defs:
     const recipe = recipesOf(codex, 'basket')[0];
     const skillId = codex.propertyNames.getId('skill_cordage');
 
-    expect(recipe.isUnlocked(resolveRoot)).toBe(false);
+    expect(recipe.unmetUnlockRequirement(resolveRoot)).toBeDefined();
 
     actor.tryGetProperty(skillId)?.setNumber(60);
-    expect(recipe.isUnlocked(resolveRoot)).toBe(true);
+    expect(recipe.unmetUnlockRequirement(resolveRoot)).toBeUndefined();
   });
 
   it('満たしていない解放条件はreasonつきで取り出せる', () => {

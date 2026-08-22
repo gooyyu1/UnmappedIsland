@@ -105,6 +105,33 @@ export function tryGetBool(map: YAMLMap, key: string, context: string): boolean 
   throw new YamlLoadError(`${context}: '${key}' は真偽値である必要があります（値: '${raw}'）。`);
 }
 
+/**
+ * 候補の一覧と突き合わせて1つ選ぶ。**綴り間違いをその場で捕まえる**ため、外れた値は候補を添えて
+ * 弾く。fallbackを渡した場所は省略でき、渡さなければ必須。
+ */
+export function oneOf<T extends string>(
+  map: YAMLMap,
+  key: string,
+  context: string,
+  candidates: readonly T[],
+  fallback?: T,
+): T {
+  const text = fallback === undefined ? requireScalar(map, key, context) : tryGetScalar(map, key, context);
+  if (text === undefined) return fallback!;
+
+  const chosen = candidates.find((candidate) => candidate === text);
+  if (chosen === undefined)
+    throw new YamlLoadError(
+      `${context}.${key}: 未知の '${text}' です（${candidates.join(' / ')} のいずれかを指定してください）。`,
+    );
+  return chosen;
+}
+
+/** そのマッピングが宣言しているキー名を、YAML上の順で。 */
+export function keysOf(map: YAMLMap): readonly string[] {
+  return entriesInOrder(map).map(([key]) => key);
+}
+
 /** マッピングの子を、YAML上の宣言順のまま (キー文字列, 値ノード) の列として返す。 */
 export function entriesInOrder(map: YAMLMap): ReadonlyArray<[string, YamlNode]> {
   return map.items.map((pair) => {
@@ -140,9 +167,7 @@ export function asScalarText(node: unknown, context: string): string {
  */
 export function requireKnownKeys(node: YAMLMap, known: Iterable<string>, context: string, note = ''): void {
   const allowed = new Set(known);
-  const unknown = entriesInOrder(node)
-    .map(([key]) => key)
-    .filter((key) => !allowed.has(key));
+  const unknown = keysOf(node).filter((key) => !allowed.has(key));
   if (unknown.length > 0)
     throw new YamlLoadError(`${context}: 未知のキー '${unknown.join(', ')}' です${note}。`);
 }

@@ -1,4 +1,4 @@
-import type { Requirement, Requirements } from '../../domain/Requirement';
+import type { Requirement } from '../../domain/Requirement';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { reasonRef, text } from './Description';
 import { conditionTokens } from './conditionTokens';
@@ -11,11 +11,11 @@ export function requirementTokens(requirement: Requirement, names: DefNames): re
   return tokens;
 }
 
-/** 要件一式を宣言順に1件1行で書き出す。 */
+/** 要件を宣言順に1件1行で書き出す。 */
 export function describeRequirements(
-  requirements: Requirements,
+  requirements: readonly Requirement[],
   names: DefNames,
   out: DescriptionWriter,
 ): void {
-  for (const entry of requirements.declarations) out.write(...requirementTokens(entry, names));
+  for (const entry of requirements) out.write(...requirementTokens(entry, names));
 }

@@ -156,11 +156,6 @@ export class PropertyDef {
       : { kind: 'fixed', value: this.initialValue };
   }
 
-  /** 生成時に1回ロールされる初期値を持つか（6.2節）。量的オブジェクトでは禁止（7.6節）。 */
-  get hasInitialValueRoll(): boolean {
-    return this.initialValueRange !== undefined;
-  }
-
   /** 取りうる値域（6.3節）。on_max/on_minを使う場合は必須。使わない場合はundefined。 */
   readonly range: PropertyRange | undefined;
 

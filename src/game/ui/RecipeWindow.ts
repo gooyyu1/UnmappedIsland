@@ -78,7 +78,6 @@ export class RecipeWindow {
   /** 開いている間ずっと出ているもの（背景・見出し・カード・閉じる）。 */
   private readonly objects: Phaser.GameObjects.GameObject[] = [];
 
-  private readonly overlay: Phaser.GameObjects.GameObject;
   private readonly area: Rect;
   private readonly bodyTop: number;
 
@@ -93,11 +92,9 @@ export class RecipeWindow {
     this.metrics = metrics;
     this.options = options;
 
-    this.overlay = addPanel(
-      scene,
-      { x: 0, y: 0, width: metrics.width, height: metrics.height },
-      COLOR.modalOverlay,
-      0.5,
+    // 覆いも他の表示物と同じ後片付けに載せる（closeで一括して捨てる）。
+    this.objects.push(
+      addPanel(scene, { x: 0, y: 0, width: metrics.width, height: metrics.height }, COLOR.modalOverlay, 0.5),
     );
 
     const padding = metrics.px(WINDOW_PADDING);
@@ -240,6 +237,5 @@ export class RecipeWindow {
     this.scroll?.destroy();
     for (const object of this.objects) object.destroy();
     this.objects.length = 0;
-    this.overlay.destroy();
   }
 }

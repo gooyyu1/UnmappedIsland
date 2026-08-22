@@ -9,7 +9,7 @@ import { fromGameSession, withFrozenCards } from './PlayScreenView';
 import type { CardPlace } from './cardPlaces';
 import { cardPlacesOf } from './cardPlaces';
 import type { StatusDelta } from './statusChanges';
-import { allStatuses, statusChangesBetween } from './statusChanges';
+import { mergedStatuses, statusChangesBetween } from './statusChanges';
 
 /**
  * ワールドを変えている途中の、あるtick境界での表示内容（recordChange）。
@@ -81,7 +81,9 @@ export function recordChange(
   windowPlace: CardPlace | undefined,
   change: () => void,
 ): Recording {
-  const statusesBefore = allStatuses(fromGameSession(game, codex, locale));
+  const before = fromGameSession(game, codex, locale);
+  // 出ていない行の増減も取りこぼさないよう、比べる元は全ステータス（重複は先勝ち）。
+  const statusesBefore = mergedStatuses(before.statuses, before.propertyCategories);
   const recorded: RecordedView[] = [];
   let changes: WorldChange[] = [];
   let signals: WorldSignal[] = [];
@@ -104,7 +106,10 @@ export function recordChange(
                 recorded.push({
                   minutes: game.world.totalMinutes,
                   view,
-                  statusChanges: statusChangesBetween(statusesBefore, allStatuses(view)),
+                  statusChanges: statusChangesBetween(
+                    statusesBefore,
+                    mergedStatuses(view.statuses, view.propertyCategories),
+                  ),
                   changes,
                   signals,
                 });

@@ -41,7 +41,7 @@ export class Action {
 
   /** 今実行できない理由（最初に落ちた要件、14節）。実行できるならundefined。 */
   unmetRequirement(): Requirement | undefined {
-    return this.def.unmetRequirement(this.self, this.actor);
+    return this.def.unmetRequirement(this.self, this.actor, undefined);
   }
 
   tryExecute(): boolean {

@@ -1,5 +1,4 @@
 import { stringify } from 'yaml';
-import type { YAMLMap } from 'yaml';
 import type { GeneratedCoordinate } from '../domain/GeneratedTypes';
 import type { GeneratedObjectDefs } from './generatedObjectDefs';
 import type { ObjectDef } from '../domain/ObjectDef';
@@ -7,7 +6,7 @@ import { parseTypeMatchRule } from './parseCommon';
 import type { RawObjectDef } from './RawObjectDef';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { YamlLoadError } from './YamlLoadError';
-import { asMap, entriesInOrder, tryGetMap } from './yamlMapping';
+import { asMap, entriesInOrder, keysOf, tryGetMap } from './yamlMapping';
 
 /** 生成した定義の出所として、エラーメッセージに出す名前。 */
 export const AXIS_VARIANT_SOURCE = '<軸による変種の自動生成>';
@@ -107,15 +106,11 @@ function valueTraitNames(value: ObjectDef, rawDefs: ReadonlyMap<string, RawObjec
   const raw = rawDefs.get(value.name);
   if (raw === undefined) throw new YamlLoadError(`軸の値 '${value.name}' の宣言が見つかりません。`);
 
-  const declared = declaredKeys(raw.node).filter((key) => key !== 'traits');
+  const declared = keysOf(raw.node).filter((key) => key !== 'traits');
   if (declared.length > 0)
     throw new YamlLoadError(
       `'${value.name}': 軸の値になる型は 'traits' だけを宣言できます（'${declared.join("', '")}' は配れません）。`,
     );
 
   return raw.traitNames;
-}
-
-function declaredKeys(node: YAMLMap): string[] {
-  return entriesInOrder(node).map(([key]) => key);
 }

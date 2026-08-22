@@ -86,16 +86,11 @@ export abstract class InteractionDef {
     return this.duration?.reading;
   }
 
-  /** 重ねる相手の指定（12.1節）。メニュー型は相手を取らないのでundefined。 */
-  get draggedReading(): TypeMatchReading | undefined {
-    return undefined;
-  }
-
   /**
    * 宣言順で最初に満たしていない要件（14節）。すべて満たしていればundefined＝今この操作を実行できる。
    * 実行できない理由をUIへ見せるためにも使う（Windows.md 1節 オブジェクトの子ウィンドウ）。
    */
-  protected firstUnmetRequirement(
+  unmetRequirement(
     self: WorldObject,
     actor: WorldObject | undefined,
     dragged: WorldObject | undefined,
@@ -114,7 +109,7 @@ export abstract class InteractionDef {
     dragged: WorldObject | undefined,
     session: WorldSession,
   ): boolean {
-    if (this.firstUnmetRequirement(self, actor, dragged) !== undefined) return false;
+    if (this.unmetRequirement(self, actor, dragged) !== undefined) return false;
 
     if (!spendDuration(this.minutesFor(self, actor, dragged), session, [self, actor, dragged])) return false;
 

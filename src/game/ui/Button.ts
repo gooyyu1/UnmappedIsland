@@ -50,8 +50,8 @@ export interface HoldHandlers {
  * 子の座標はボタン左上を原点(0,0)とするローカル座標で指定する。
  */
 export class Button extends Phaser.GameObjects.Container {
-  readonly boxWidth: number;
-  readonly boxHeight: number;
+  private readonly boxWidth: number;
+  private readonly boxHeight: number;
 
   private readonly background: Phaser.GameObjects.Graphics;
   /** 押下中だけ見せる暗い覆い。中身より手前へ出すので、押すたびに最前面へ持ち上げる。 */
@@ -145,6 +145,24 @@ export interface TextButtonStyle {
   readonly textColor?: number;
 }
 
+/**
+ * 文字のボタンの台紙（addTextButtonが敷くのと同じ形）。**選んだ/選んでいないで塗り替える側も
+ * これを通す**——生のBoxStyleを組み直すと、縁の色も角の丸みも呼び出し側ごとに散る。
+ */
+export function textButtonBoxStyle(metrics: ScreenMetrics, style: TextButtonStyle): BoxStyle {
+  return {
+    fill: style.fill,
+    border: style.border ?? COLOR.buttonBorder,
+    borderWidth: metrics.linePx(2),
+    radius: metrics.px(SIZE.radius),
+  };
+}
+
+/** 選ばれているかで塗りを変える、タブの台紙（子ウィンドウのタブ・プロパティのカテゴリ）。 */
+export function tabBoxStyle(metrics: ScreenMetrics, active: boolean): BoxStyle {
+  return textButtonBoxStyle(metrics, { fill: active ? COLOR.buttonActive : COLOR.button });
+}
+
 /** ラベルを中央に置いた押しボタン。ダイアログ・子ウィンドウの操作ボタンはこの形で揃える。 */
 export function addTextButton(
   scene: Phaser.Scene,
@@ -158,12 +176,7 @@ export function addTextButton(
   const button = new Button(
     scene,
     rect,
-    {
-      fill: style.fill,
-      border: style.border ?? COLOR.buttonBorder,
-      borderWidth: metrics.linePx(2),
-      radius: metrics.px(SIZE.radius),
-    },
+    textButtonBoxStyle(metrics, style),
     () => {
       // ラベルがそのまま「何を押したか」になる（errorReport参照）。絵だけのボタンは押した結果の側で控える。
       noteOperation(`ボタンを押した: ${label}`);

@@ -115,6 +115,6 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
     expect(requirement.consume).toBe(true);
 
     // 繊維・編みスキルが未実装なので、今は誰でも作れる（containers.yamlのコメント参照）。
-    expect(recipe.isUnlocked(() => undefined)).toBe(true);
+    expect(recipe.unmetUnlockRequirement(() => undefined)).toBeUndefined();
   });
 });

@@ -1,4 +1,3 @@
-import type { PlayScreenView } from './PlayScreenView';
 import type { PropertyCategory as PropertyTab } from '../ui/PropertiesPane';
 import type { StatusChange, StatusContent } from '../ui/StatusBar';
 
@@ -16,14 +15,6 @@ export function mergedStatuses(
     if (!all.has(status.key)) all.set(status.key, status);
   }
   return [...all.values()];
-}
-
-/**
- * そのviewの全ステータス（重複は先勝ち）。行動の前後を比べる元になる——ステータスエリアに
- * 出ている行だけで比べると、出ていない行の増減を取りこぼす。
- */
-export function allStatuses(view: PlayScreenView): readonly StatusContent[] {
-  return mergedStatuses(view.statuses, view.propertyCategories);
 }
 
 /** 行動の前後で変わった1件分（StatusArea.md）。 */

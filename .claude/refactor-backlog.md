@@ -213,26 +213,29 @@ docコメントの取り残し 14件（全部直し、残り0を機械的に確�
   `parse*TargetKey` → `parse*TargetRoot`／`axisVariantsYaml`・`readAxes` の `loader` を先頭へ／
   `tryGetBool` の必須fallbackを外し、既定値は呼び元の `?? false` に統一
 
-### PR 8: 畳む（同じ仕組みを1本へ）
+### PR 8: 畳む ✅ 完了
 
-- `CardTable.carry` を `flyTo` へ（札の作り方・行き先の型・戻り値の3点で割れている。docも「発見物」の
-  ままだが、発見物は今はレーン）
-- `Location.stacksOf` と `PlayerCharacter.stacksOf` が完全に同じ本体 → domain 側の問いへ
-- 対象キーの解決が3箇所（`resolveReferenceRoot`・`WorldObject.resolveEffectTarget`・`PassiveEffectGate.resolve`）
-- `WorldObject.clampToRange` は `PropertyRange.clamp` の書き直し
-- `ActionDef`/`CombinationDef` の `unmetRequirement` を基底の public 1本へ
+- `CardTable.carry` を `flyTo` へ（あふれた札の帰りも、ついてくる札と同じ1本の便で飛ぶ）
+- `Location.stacksOf`/`PlayerCharacter.stacksOf` の同一実装を `Slot.stacks` へ
+- 対象キーの解決3箇所（`resolveReferenceRoot`・`WorldObject.resolveEffectTarget`・
+  `PassiveEffectGate.resolve`）を1本へ。ゲートは actor/dragged を持たない文脈として同じ関数を通る
+- `WorldObject.clampToRange` を消して `PropertyRange.clamp` へ
+- `unmetRequirement` を基底の public 1本に（`ActionDef`/`CombinationDef` の派生2つを削除）
 - 呼び元ゼロ・素通しの削除: `statusChanges.allStatuses`・`PlayScreenView.contentsOf`・
   `cardLooks.inProgressDef`・`ShownCards.dropAction`・`RecipeDef.isUnlocked`・
-  `PropertyDef.hasInitialValueRoll`・`InteractionDef.draggedReading`・`PickEffect` の転送2本・
-  `ModifyEffect`/`AccumulateEffect` の素通しコンストラクタ・`Button.boxWidth`/`boxHeight` を private へ
-- `Card` の veil 2本・outline 2本、`CardTable.startFlight`、`CardDragController.cardTarget`
-- `writesToProperty` と `passiveWritesToProperty` の二重実装（`check` を共有）
-- `describeRequirements` の引数を `readonly Requirement[]` に（`describeInteraction` も乗る）
-- `divideCost` → `scaleCost(1/n)`／`declaredKeys` → `yamlMapping.keysOf` 1本
-- loader: `parseSpawns`/`parseTransfers`/`parseMoves` の「1件か配列か」／`gaugeEnd`・`parseAlertLevel` の
-  「候補と突き合わせる」／`parseGeneration` の context 二重組み立て／`RawPatch` の add/set/remove
-- ウィンドウ: 「閉じるの行」の寸法3通り／`Button` の既定補完（`textButtonBoxStyle`）と選択中の塗り3箇所／
-  760 の相互参照 → `childWindowLayout` へ／`RecipeWindow` の `overlay` を後片付けへ
+  `PropertyDef.hasInitialValueRoll`・`InteractionDef.draggedReading`（`triggerReading` から読む）・
+  `PickEffect` の転送2本・`Modify`/`AccumulateEffect` の素通しコンストラクタ・`CardTable.startFlight`・
+  `CardDragController.cardTarget`。`Button.boxWidth`/`boxHeight` は private へ
+- `Card` の veil 2本を `createVeil` 1本へ
+- `writesToProperty`/`passiveWritesToProperty` の二重実装を `effectQueries` の1モジュールへ（判定も共有）
+- `describeRequirements` を `readonly Requirement[]` 受けにして `describeInteraction` も乗せた
+- `divideCost` → `scaleCost(1/n)`／キー名の列挙を `yamlMapping.keysOf` 1本へ（4箇所）
+- loader: 「1件か配列か」を `oneOrMany` 1本へ（spawn・transfer・move）／「候補と突き合わせる」を
+  `yamlMapping.oneOf` 1本へ（gauge・alert）／`parseGeneration` の context 二重組み立て（3組）／
+  `RawPatch` の add/set/remove が同じ `descendToKey` を通る
+- ウィンドウ: 「閉じるの行」を `closeRow` 1本へ（ステータス詳細も合流）／`Button.textButtonBoxStyle`・
+  `tabBoxStyle` で既定の補完と選択中の塗りを1箇所に／760 の相互参照を
+  `childWindowLayout.MIN_WINDOW_WIDTH` へ／`RecipeWindow` の覆いを後片付けの並びへ
 
 ### PR 9: 自分のことは自分でする（構造）
 

@@ -389,13 +389,6 @@ export function fromGameSession(
   };
 
   /**
-   * そのカードへ重ねたdraggedの行き先（受け取れるスロットが無ければundefined）。**どの枠かを決めるのは
-   * ワールドの側**（WorldObject.putInSlotFor、GameElementDefinition.md 7.8節）で、画面は場所へ直すだけ。
-   */
-  const contentsOf = (object: WorldObject, dragged: WorldObject): CardPlace | undefined =>
-    object.putInSlotFor(dragged);
-
-  /**
    * その物の子ウィンドウにタブとして並ぶスロット（`visible_slots`、GameElementDefinition.md
    * 7.11節）。宣言順がそのまま並び順で、名乗らない物では空。
    */
@@ -549,7 +542,8 @@ export function fromGameSession(
     objectGlobalId: instances[0].def.globalId,
     description: locale.object(instances[0].def.name).description,
     place,
-    contentsFor: (dragged) => contentsOf(instances[0], dragged.objects[0]),
+    // 重ねたdraggedの行き先を決めるのはワールドの側（GameElementDefinition.md 7.8節）。
+    contentsFor: (dragged) => instances[0].putInSlotFor(dragged.objects[0]),
     visibleSlots: visiblePlacesOf(instances[0]),
   });
 

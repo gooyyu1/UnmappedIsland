@@ -40,6 +40,11 @@ export class Slot {
     return this.liveStacks.flatMap((s) => s.members);
   }
 
+  /** 中身を、積み重なっているまとまりごとに分けたもの（空セルは含まない。先頭が代表）。 */
+  get stacks(): readonly (readonly WorldObject[])[] {
+    return this.liveStacks.map((stack) => stack.members);
+  }
+
   /**
    * 枠の数が決まっているスロットか（＝空セルを残して位置を安定させるか、SlotSystem.md 3節）。
    * 空き枠を指したドロップを、枠そのものへ入れる操作として扱ってよいのはこちらだけ。

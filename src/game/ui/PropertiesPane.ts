@@ -2,12 +2,11 @@ import type Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import type { Button } from './Button';
-import { addTextButton } from './Button';
+import { addTextButton, tabBoxStyle } from './Button';
 import { ScrollArea } from '../../ui/scrollArea';
 import type { ObjectWindowLane, ObjectWindowPane } from './ObjectWindowPane';
 import type { StatusContent } from './StatusBar';
 import { StatusBar } from './StatusBar';
-import type { BoxStyle } from '../../ui/shapes';
 import { addPanel } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
@@ -93,7 +92,7 @@ export class PropertiesPane implements ObjectWindowPane {
         { fill: COLOR.button },
         () => this.select(index),
       );
-      button.setBoxStyle(this.categoryStyle(index === this.selected));
+      button.setBoxStyle(tabBoxStyle(this.metrics, index === this.selected));
       this.tabButtons.push(button);
       this.objects.push(button);
     });
@@ -118,17 +117,8 @@ export class PropertiesPane implements ObjectWindowPane {
     if (index === this.selected) return;
 
     this.selected = index;
-    this.tabButtons.forEach((button, i) => button.setBoxStyle(this.categoryStyle(i === index)));
+    this.tabButtons.forEach((button, i) => button.setBoxStyle(tabBoxStyle(this.metrics, i === index)));
     this.buildRows();
-  }
-
-  private categoryStyle(active: boolean): BoxStyle {
-    return {
-      fill: active ? COLOR.buttonActive : COLOR.button,
-      border: COLOR.buttonBorder,
-      borderWidth: this.metrics.linePx(2),
-      radius: this.metrics.px(SIZE.radius),
-    };
   }
 
   /** 選ばれているカテゴリのバーを並べ直す。窓に収まらない分はスクロールで送る。 */

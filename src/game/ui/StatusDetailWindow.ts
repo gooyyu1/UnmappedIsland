@@ -4,10 +4,11 @@ import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { addTextButton } from './Button';
 import {
   ACTION_HEIGHT,
-  ACTION_MAX_WIDTH,
   CONTENT_GAP,
+  MIN_WINDOW_WIDTH,
   WINDOW_PADDING,
   centerWindow,
+  closeRow,
 } from '../looks/childWindowLayout';
 import { addLabel } from '../../ui/labels';
 import { objectTexture } from '../../art/objectArt';
@@ -17,9 +18,6 @@ import { onPressRelease } from '../../ui/tap';
 import type { StatusContent, StatusInfluence } from './StatusBar';
 import { wrapByCharacter } from '../../ui/textLayout';
 import { COLOR, SIZE } from '../looks/theme';
-
-/** ウィンドウの横幅（オブジェクトウィンドウの最低の幅と揃える）。狭い画面では領域いっぱいまで縮む。 */
-const WINDOW_WIDTH = 760;
 
 /** 見出しの絵と表示名。 */
 const HEADER_ICON_SIZE = 52;
@@ -123,7 +121,7 @@ export class StatusDetailWindow {
     const { width, height } = metrics;
     this.objects.push(addPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5));
 
-    const windowWidth = Math.min(metrics.px(WINDOW_WIDTH), options.area.width, width * 0.92);
+    const windowWidth = Math.min(metrics.px(MIN_WINDOW_WIDTH), options.area.width, width * 0.92);
     const contentWidth = windowWidth - padding * 2;
 
     // 台紙と段の名札は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に
@@ -242,26 +240,12 @@ export class StatusDetailWindow {
     given.place(left, y);
     y += given.height + gap;
     received.place(left, y);
-    y += received.height + gap;
 
-    const actionWidth = Math.min(metrics.px(ACTION_MAX_WIDTH), contentWidth);
     this.objects.push(
-      addTextButton(
-        scene,
-        metrics,
-        {
-          x: window.x + windowWidth / 2 - actionWidth / 2,
-          y,
-          width: actionWidth,
-          height: actionHeight,
-        },
-        '閉じる',
-        { fill: COLOR.button },
-        () => {
-          this.close();
-          options.onClose();
-        },
-      ),
+      addTextButton(scene, metrics, closeRow(metrics, window), '閉じる', { fill: COLOR.button }, () => {
+        this.close();
+        options.onClose();
+      }),
     );
   }
 

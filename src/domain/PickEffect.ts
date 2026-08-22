@@ -28,7 +28,7 @@ export class PickEffect extends ActiveEffect {
   ): void {
     if (this.candidates.length === 0) return;
     const chosen = this.selectWeighted(owner, session, actor, dragged);
-    chosen.apply(owner, session, actor, dragged, effectSite);
+    chosen.effect.apply(owner, session, actor, dragged, effectSite);
   }
 
   read(reader: EffectReader): void {
@@ -54,7 +54,7 @@ export class PickEffect extends ActiveEffect {
   ): PickCandidateDef {
     const chosen = pickWeighted(
       this.candidates,
-      (candidate) => candidate.resolveWeight(owner, actor, dragged),
+      (candidate) => candidate.weight.resolve(owner, actor, dragged),
       session.rng,
     );
     return chosen ?? this.candidates[0];
@@ -107,30 +107,14 @@ export class WeightSpec {
  */
 export class PickCandidateDef {
   /** 抽選の重み（10.2節）。 */
-  private readonly weight: WeightSpec;
+  readonly weight: WeightSpec;
 
   /** この候補が選ばれたときに適用する効果。 */
-  private readonly effect: ActiveEffect;
+  readonly effect: ActiveEffect;
 
   constructor(weight: WeightSpec, effect: ActiveEffect) {
     this.weight = weight;
     this.effect = effect;
-  }
-
-  /** この候補の抽選重みを、現在の文脈で解決する（PickEffectのweight抽選が使う）。 */
-  resolveWeight(self: WorldObject, actor: WorldObject | undefined, dragged: WorldObject | undefined): number {
-    return this.weight.resolve(self, actor, dragged);
-  }
-
-  /** この候補が選ばれたときに、自分の効果を適用する（PickEffectが選択後に呼ぶ）。 */
-  apply(
-    owner: WorldObject,
-    session: WorldSession,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
-    effectSite: EffectSite | undefined,
-  ): void {
-    this.effect.apply(owner, session, actor, dragged, effectSite);
   }
 
   /** この候補の宣言（PickCandidateReading参照）。PickEffect.readが読み手へ渡す。 */

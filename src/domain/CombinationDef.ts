@@ -5,8 +5,8 @@ import type { InteractionTriggerReading } from './InteractionDef';
 import { InteractionDef } from './InteractionDef';
 import type { ObjectDef } from './ObjectDef';
 import type { WeightSpec } from './PickEffect';
-import type { Requirement, Requirements } from './Requirement';
-import type { TypeMatchReading, TypeMatchRule } from './TypeMatchRule';
+import type { Requirements } from './Requirement';
+import type { TypeMatchRule } from './TypeMatchRule';
 
 /**
  * ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。素材側のobject_defに1つだけ定義し、
@@ -57,22 +57,9 @@ export class CombinationDef extends InteractionDef {
     return { kind: 'drag', with: this.with.reading };
   }
 
-  override get draggedReading(): TypeMatchReading {
-    return this.with.reading;
-  }
-
   /** draggedDefがこのcombinationのwithに当てはまれば真（12.1節）。 */
   matches(draggedDef: ObjectDef): boolean {
     return this.with.matches(draggedDef);
-  }
-
-  /** 今この組み合わせを実行できない理由（最初に落ちた要件、14節）。実行できるならundefined。 */
-  unmetRequirement(
-    self: WorldObject,
-    actor: WorldObject | undefined,
-    dragged: WorldObject,
-  ): Requirement | undefined {
-    return this.firstUnmetRequirement(self, actor, dragged);
   }
 
   tryExecute(

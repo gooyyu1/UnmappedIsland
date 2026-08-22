@@ -301,20 +301,7 @@ function parseAdds(
 const SPAWN_KEYS = new Set(['object', 'into', 'count']);
 
 function parseSpawns(loader: WorldCodexYamlLoader, context: string, node: YamlNode): SpawnEffect[] {
-  if (isMap(node)) return [parseSpawn(loader, context, node)];
-
-  if (isSeq(node)) {
-    const result: SpawnEffect[] = [];
-    const items = node.items as YamlNode[];
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (!isMap(item)) throw new YamlLoadError(`${context}[${i}]: 各要素はmappingである必要があります。`);
-      result.push(parseSpawn(loader, `${context}[${i}]`, item));
-    }
-    return result;
-  }
-
-  throw new YamlLoadError(`${context}: mappingかmappingの配列である必要があります。`);
+  return oneOrMany(context, node, (itemContext, map) => parseSpawn(loader, itemContext, map));
 }
 
 function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): SpawnEffect {
@@ -360,20 +347,9 @@ function parseTransfers(
   allowDragged: boolean,
   selfOnly: boolean,
 ): TransferEffect[] {
-  if (isMap(node)) return [parseTransfer(loader, context, node, allowDragged, selfOnly)];
-
-  if (isSeq(node)) {
-    const result: TransferEffect[] = [];
-    const items = node.items as YamlNode[];
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (!isMap(item)) throw new YamlLoadError(`${context}[${i}]: 各要素はmappingである必要があります。`);
-      result.push(parseTransfer(loader, `${context}[${i}]`, item, allowDragged, selfOnly));
-    }
-    return result;
-  }
-
-  throw new YamlLoadError(`${context}: mappingかmappingの配列である必要があります。`);
+  return oneOrMany(context, node, (itemContext, map) =>
+    parseTransfer(loader, itemContext, map, allowDragged, selfOnly),
+  );
 }
 
 /** move（1つ、またはその配列）。同じ一手で2つ動かす（乗り込んでから漕ぎ出す）ために並べられる。 */
@@ -383,17 +359,21 @@ function parseMoves(
   node: YamlNode,
   selfOnly: boolean,
 ): MoveEffect[] {
-  if (isMap(node)) return [parseMove(loader, context, node, selfOnly)];
+  return oneOrMany(context, node, (itemContext, map) => parseMove(loader, itemContext, map, selfOnly));
+}
 
-  if (isSeq(node)) {
-    const items = node.items as YamlNode[];
-    return items.map((item, i) => {
-      if (!isMap(item)) throw new YamlLoadError(`${context}[${i}]: 各要素はmappingである必要があります。`);
-      return parseMove(loader, `${context}[${i}]`, item, selfOnly);
-    });
-  }
+/**
+ * 「1つ、またはその配列」で書ける宣言を読む（spawn・transfer・move）。**どちらで書いても同じ**なので、
+ * 1件だけのときに配列を強いない。要素ごとのcontextには添字が付く。
+ */
+function oneOrMany<T>(context: string, node: YamlNode, parseOne: (context: string, map: YAMLMap) => T): T[] {
+  if (isMap(node)) return [parseOne(context, node)];
+  if (!isSeq(node)) throw new YamlLoadError(`${context}: mappingかmappingの配列である必要があります。`);
 
-  throw new YamlLoadError(`${context}: mappingかmappingの配列である必要があります。`);
+  return (node.items as YamlNode[]).map((item, index) => {
+    if (!isMap(item)) throw new YamlLoadError(`${context}[${index}]: 各要素はmappingである必要があります。`);
+    return parseOne(`${context}[${index}]`, item);
+  });
 }
 
 /**
