@@ -8,12 +8,6 @@ import { inProgressObjectName } from '../../loader/inProgressObjects';
 import type { Rect } from '../../ui/Rect';
 import type { RecipeCategory, RecipeEntry } from '../ui/RecipeWindow';
 
-/** 解放条件に理由（reason、14.6節）が書かれていないときに出す、代わりの1行。 */
-const LOCKED = 'まだ作り方が分からない';
-
-/** どの棚のタグも持たない完成品を集める、最後の棚の見出し。 */
-const OTHER = 'その他';
-
 /** 完成品のカードの絵が無いときに代わりに出す絵文字。 */
 const PRODUCT_ICON = '📦';
 
@@ -69,7 +63,8 @@ export function recipeCategories(
         lockedReason:
           unmet === undefined
             ? undefined
-            : ((unmet.reasonName === undefined ? undefined : locale.reason(unmet.reasonName)) ?? LOCKED),
+            : ((unmet.reasonName === undefined ? undefined : locale.reason(unmet.reasonName)) ??
+              locale.uiText('recipe_locked')),
         onSelect: (origin) => onSelect(inProgressId, origin),
       };
 
@@ -87,5 +82,7 @@ export function recipeCategories(
     .map((tagId) => ({ label: locale.tag(codex.tagNames.getName(tagId)), entries: byShelf.get(tagId) ?? [] }))
     .filter((shelf) => shelf.entries.length > 0);
 
-  return others.length === 0 ? shelves : [...shelves, { label: OTHER, entries: others }];
+  return others.length === 0
+    ? shelves
+    : [...shelves, { label: locale.uiText('recipe_other'), entries: others }];
 }

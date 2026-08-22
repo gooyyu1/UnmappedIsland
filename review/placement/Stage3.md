@@ -267,3 +267,19 @@ tick の間で時間が進めば、加熱が進んでいなくても残り時間
 
 **残っている論点は書いていない。** 実効値で発火させる案（強心剤のように `modify` で借りて、切れた
 瞬間に死ぬ）には議論の余地があり、既定路線と誤解されないよう仕様には書かない。
+
+## 10. 段4 レーンA-1（画面のことば）
+
+段0の決定1をコードに落とした。`ui_texts` 節・`Localization.uiText`・`setUiTexts`/`uiText`。
+
+**段0の記述と1つ違った。** 注入するのは `main.ts` ではなく `BootScene.create()`——localeが読まれるのは
+そこだから（`loadDefinitions`）。`main.ts` の `setLabelDefaults` は意匠の値なので定数から入れられるが、
+ことばはアセットパックの差し替えを経るので、読み終わるまで入れられない。
+
+**引き方を2つにしたのは意図的。** `Localization` を持てる側（`PlayScreenView`・`recipeList`）は
+`locale.uiText` を直に呼ぶ——同じ行で `locale.reason(...)` を呼んでいるのに、片方だけモジュール変数を
+経由するのは読み手を惑わせる。窓は持てないので注入された `uiText` を使う。**答えを決めるのは
+`Localization.uiText` の1箇所**なので、規則は割れていない。
+
+`errorReport` の「閉じる」だけは残した。起動より前（`installErrorReport`）に描かれるので、
+対応表がまだ無い。

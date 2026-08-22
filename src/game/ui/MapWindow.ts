@@ -8,6 +8,7 @@ import { ACTION_HEIGHT, WINDOW_PADDING, closeRow } from '../looks/childWindowLay
 import { addLabel } from '../../ui/labels';
 import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
+import { uiText } from '../../locale/uiTexts';
 
 /** 地図上のカードの縮尺（レーンのカードに対する比）。一覧性を優先して小さめにする。 */
 const CARD_SCALE = 0.5;
@@ -118,7 +119,7 @@ export class MapWindow {
     this.addPan(surface);
     this.addZoom();
 
-    const title = addLabel(scene, metrics, padding, padding, '地図', { size: 34, bold: true });
+    const title = addLabel(scene, metrics, padding, padding, uiText('map'), { size: 34, bold: true });
     this.objects.push(
       title,
       addLabel(
@@ -139,7 +140,7 @@ export class MapWindow {
         scene,
         metrics,
         closeRow(metrics, { x: 0, y: 0, width, height }),
-        '閉じる',
+        uiText('close'),
         { fill: COLOR.button },
         () => {
           this.close();

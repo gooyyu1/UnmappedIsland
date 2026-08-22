@@ -22,6 +22,7 @@ import { COLOR, FONT_FAMILY } from './looks/theme';
 import { loadDefinitions } from '../loader/loadDefinitions';
 import { LOAD_REPORT } from '../loader/LoadReport';
 import { installedAssetPack } from '../asset-pack/install';
+import { setUiTexts } from '../locale/uiTexts';
 
 /** 組み立て済みWorldCodex・表示文字列をレジストリへ置くときのキー。 */
 export const WORLD_CODEX_KEY = 'worldCodex';
@@ -75,6 +76,9 @@ export class BootScene extends Phaser.Scene {
 
     this.registry.set(WORLD_CODEX_KEY, codex);
     this.registry.set(LOCALIZATION_KEY, localization);
+
+    // 窓はLocalizationを持たないので、画面の地の文はここで1度だけ入れる（src/locale/uiTexts.ts）。
+    setUiTexts(localization);
 
     // 土地の絵はここではロードせず、プレイ中に必要になった土地からロードする（artFiles参照）。
     // それ以外の絵（キャラクター・アイテム・共通の背景）は開始時点の画面に出うるため、ここで読み切る。

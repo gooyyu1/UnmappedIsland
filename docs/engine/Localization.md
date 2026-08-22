@@ -263,6 +263,33 @@ location_texts:
 `ordinal_suffix` が使われるのは亜種が足りないときだけで、これが画面に出たら
 `terrain_generation.yaml` へ亜種を足すべき合図です。
 
+## ui_texts: 画面そのもののことば
+
+ここまでの節はすべて**WorldCodexの識別子**に文字列を与えるものですが、画面には
+**ワールド定義に由来しないことば**もあります——「閉じる」「地図」「今はできない。」のように、
+どんなYAMLを載せ替えても画面が言う語です。これを `ui_texts` に置きます。
+
+```yaml
+ui_texts:
+  close: 閉じる
+  map: 地図
+  cannot_do_now: 今はできない。
+```
+
+**キーはWorldCodexの識別子ではなく、画面側が名指しする名前です。** コードが名指しする名前の一覧は
+`src/locale/uiTexts.ts` の `UiTextName` に並びます——「この語をlocaleから消したら何が変わるか」を
+1箇所で答えられるようにするためで、`WorldVocabulary` と同じ考え方です。
+
+**引き方が2つあります。**
+
+- `Localization` を持っている側（映し・組み立て）は `locale.uiText('close')` を直に呼びます。
+- **窓（`src/game/ui/`）は `Localization` を持ちません。** 持たせると12ファイルのコンストラクタ引数が
+  増え、組み立てが全部へ配ることになります。そこで、書体と文字色（`setLabelDefaults`）と同じく
+  起動時に1度だけ入れ（`setUiTexts`）、`uiText('close')` を呼びます。答えを決めるのは
+  どちらも `Localization.uiText` の1箇所です。
+
+起動より前に描かれるもの（`errorReport` の「閉じる」）は、まだ対応表が読まれていないため対象外です。
+
 ## 引き方と欠落時の扱い
 
 `Localization`（`src/locale/Localization.ts`）が対応表を保持します。`object(識別子)` で1つの

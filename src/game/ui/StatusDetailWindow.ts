@@ -17,6 +17,7 @@ import { addPanel, drawBox } from '../../ui/shapes';
 import { onPressRelease } from '../../ui/tap';
 import type { StatusContent, StatusInfluence } from './StatusBar';
 import { COLOR, SIZE } from '../looks/theme';
+import { uiText } from '../../locale/uiTexts';
 
 /** 見出しの絵と表示名。 */
 const HEADER_ICON_SIZE = 52;
@@ -27,7 +28,6 @@ const DESCRIPTION_SIZE = 26;
 const DESCRIPTION_LINE_GAP = 6;
 
 /** 説明がまだ用意されていないステータスに出す、代わりの1行。 */
-const NO_DESCRIPTION = 'これについて分かっていることはまだ無い。';
 
 const BAR_HEIGHT = 52;
 
@@ -61,9 +61,6 @@ const TILE_MARK_WIDTH = 30;
 
 /** 絵を持たない相手に代わりに出す名前（StatusArea.md 3節と同じ扱い）。 */
 const TILE_NAME_SIZE = 18;
-
-/** 影響が1件も無い一覧に出す1行。 */
-const NO_INFLUENCE = '無し';
 
 /** 条件が成立していない影響の薄さ。 */
 const INACTIVE_ALPHA = 0.4;
@@ -135,18 +132,24 @@ export class StatusDetailWindow {
     const plateHeight = stage === undefined ? 0 : stage.height + metrics.px(STAGE_PLATE_PADDING_Y) * 2;
     const stageHeight = stage === undefined ? 0 : plateHeight + metrics.px(STAGE_TAIL_HEIGHT);
 
-    const description = addLabel(scene, metrics, 0, 0, detail?.description ?? NO_DESCRIPTION, {
+    const description = addLabel(scene, metrics, 0, 0, detail?.description ?? uiText('no_description'), {
       size: DESCRIPTION_SIZE,
       color: detail?.description === undefined ? COLOR.textMuted : COLOR.text,
       wrapWidth: contentWidth,
       lineGap: DESCRIPTION_LINE_GAP,
     });
 
-    const given = this.buildSection(scene, metrics, '与えている影響', detail?.given ?? [], contentWidth);
+    const given = this.buildSection(
+      scene,
+      metrics,
+      uiText('given_influence'),
+      detail?.given ?? [],
+      contentWidth,
+    );
     const received = this.buildSection(
       scene,
       metrics,
-      '受けている影響',
+      uiText('received_influence'),
       detail?.received ?? [],
       contentWidth,
     );
@@ -229,10 +232,17 @@ export class StatusDetailWindow {
     received.place(left, y);
 
     this.objects.push(
-      addTextButton(scene, metrics, closeRow(metrics, window), '閉じる', { fill: COLOR.button }, () => {
-        this.close();
-        options.onClose();
-      }),
+      addTextButton(
+        scene,
+        metrics,
+        closeRow(metrics, window),
+        uiText('close'),
+        { fill: COLOR.button },
+        () => {
+          this.close();
+          options.onClose();
+        },
+      ),
     );
   }
 
@@ -268,7 +278,7 @@ export class StatusDetailWindow {
       (Math.max(rows, MIN_TILE_ROWS) - 1) * tileGap;
 
     if (influences.length === 0) {
-      const empty = addLabel(scene, metrics, 0, 0, NO_INFLUENCE, {
+      const empty = addLabel(scene, metrics, 0, 0, uiText('no_influence'), {
         size: TILE_NAME_SIZE,
         color: COLOR.textMuted,
       });
