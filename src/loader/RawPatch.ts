@@ -2,7 +2,7 @@ import { isMap, isScalar, isSeq, Scalar } from 'yaml';
 import type { YAMLMap, YAMLSeq } from 'yaml';
 import type { LoadReport } from './LoadReport';
 import type { RawObjectDef } from './RawObjectDef';
-import { asMap, entriesInOrder, tryGetNode } from './yamlMapping';
+import { asMap, asScalarText, entriesInOrder, tryGetNode } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { messageOf } from './errorMessage';
@@ -83,7 +83,7 @@ export function parsePatch(
     if (!VERBS.includes(key as Verb) && !MATERIAL_KEYS.includes(key as (typeof MATERIAL_KEYS)[number]))
       throw new YamlLoadError(`${context}: '${key}'は書けません。`);
 
-  const path = scalarText(tryGetNode(map, verb), `${context}.${verb}`);
+  const path = asScalarText(tryGetNode(map, verb), `${context}.${verb}`);
   if (!/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(path))
     throw new YamlLoadError(
       `${context}.${verb}: '${path}'はパスとして読めません（'型の識別子.以下の場所'をドット区切りで書きます）。`,
@@ -256,10 +256,4 @@ function seqAt(node: YAMLMap, defName: string, steps: readonly string[]): YAMLSe
 function keysOf(map: YAMLMap): string {
   const keys = [...entriesInOrder(map)].map(([key]) => key);
   return keys.length === 0 ? '' : `（持っているキー: ${keys.join('・')}）`;
-}
-
-function scalarText(node: YamlNode | undefined, context: string): string {
-  if (node === undefined || !isScalar(node) || typeof node.value !== 'string')
-    throw new YamlLoadError(`${context}: 文字列で書いてください。`);
-  return node.value;
 }

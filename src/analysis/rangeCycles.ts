@@ -189,10 +189,7 @@ export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): 
  * ので、最も遅い場合（条件つきのうち最小の1つだけが効く）と最も速い場合（全部が重なる）の両方を返す。
  * 罠の耐久がこれで、地面にある間の-1と獲物を抱えている間の-10は足しっぱなしにすると寿命が1/11になる。
  */
-export function tickAmountsOf(
-  def: ObjectDef,
-  propertyGlobalId: number,
-): { slowest: number; fastest: number } {
+function tickAmountsOf(def: ObjectDef, propertyGlobalId: number): { slowest: number; fastest: number } {
   let unconditional = 0;
   const conditional: number[] = [];
   for (const delta of tickDeltasOf(def)) {

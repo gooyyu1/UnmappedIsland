@@ -724,7 +724,7 @@ function buildRoute(
  * 毎回、まだ足りない分を最も速く埋める経路を選ぶ。速さは「1分あたりに埋まる需要の割合」で測る
  * ——プロパティごとに単位が違うので、必要量に対する割合へ直さないと足し合わせられない。
  */
-export function greedyMenu(requirements: readonly Requirement[], routes: readonly ChainRoute[]): DailyMenu {
+function greedyMenu(requirements: readonly Requirement[], routes: readonly ChainRoute[]): DailyMenu {
   const usable = routes.filter((route) => !route.blocked && !route.untimed && route.executionMinutes > 0);
   const remaining = new Map(requirements.map((r) => [r.propertyGlobalId, r.dailyNeed]));
   const chosen = new Map<number, ChainRoute>();
@@ -1062,7 +1062,7 @@ function bestAncestorContext(locations: readonly ObjectDef[]): StaticValueResolv
  * 扱う**（bestAncestorContextと同じ見方）。
  *
  * これが無いと、相手の値を見る重み——一撃がどう入るかは武器が決める（HuntingSystem.md 1.2節）——が
- * 全て0になり、宣言順で最初の候補だけが起こることになる（PickEffect.collectOutcomes）。
+ * 全て0になり、宣言順で最初の候補だけが起こることになる（PickEffect.selectWeighted）。
  * 分岐ごとに最も良い武器を選べる前提の配分なので、**どれか1つの武器で出る配分ではない**。
  */
 function withBestDragged(defs: readonly ObjectDef[], ancestor: StaticValueResolver): StaticValueResolver {

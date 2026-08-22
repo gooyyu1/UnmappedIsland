@@ -47,7 +47,7 @@ function tagNodeId(tagName: string): string {
 }
 
 /**
- * 全型の工程（ObjectDef.craftingSteps）からネットワークを組み立てる。
+ * 全型の工程（craftingStepsOf）からネットワークを組み立てる。
  *
  * 描くのは**何かを生み出す工程だけ**。食べる・休むといった、値を返すだけでオブジェクトを生まない
  * 工程は「入力 → 工程 → 出力」の線を持てず、線の無い結節点が増えるだけのため。

@@ -12,7 +12,7 @@ import type { WorldSession } from './WorldSession';
  * 世界の組み立て（シナリオ・地形生成）は操作ではないので通さない。
  *
  * 時間と効果の順序、経過中に関与オブジェクトが失われたときの扱いはactions/combinationsと同じ
- * （ActionSystem.md 2節）。placeは入れ方そのもので、位置を指定する入れ方（WorldObject.moveToSlotAt*）
+ * （ActionSystem.md 2節）。placeは入れ方そのもので、位置を指定する入れ方（WorldObject.moveToSlotのat）
  * も同じ扱いになる。
  */
 export function putIntoSlot(

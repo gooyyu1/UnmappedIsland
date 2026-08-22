@@ -51,7 +51,7 @@ describe('tools.yamlの道具定義', () => {
       codex.propertyNames.getId(name),
     );
     // 製作中オブジェクトは完成品のタグを引き継ぐ（RecipeSystem.md 5節）ので weapon タグを持つが、
-    // 相手として指名されない（ObjectDef.combinationsAccepting）ため配分も持たない。
+    // 相手として指名されない（CombinationDef.matches）ため配分も持たない。
     const weapons = codex
       .objectDefNamesWithTag('weapon')
       .filter((name) => !codex.isGenerated(codex.objects.get(codex.objectNames.getId(name))));

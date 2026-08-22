@@ -209,7 +209,7 @@ export class MapWindow {
   private addCard(scene: Phaser.Scene, land: MapLandView, onPlace: MapWindowOptions['onPlace']): void {
     const card = new Card(scene, this.metrics, 0, 0, { ...cardFace(land.card), draggable: true });
 
-    // 現在地は太い黒枠で囲んで目立たせる。枠は紙の輪郭（Card.addFrameの図形と同じ矩形）に重ね、
+    // 現在地は太い黒枠で囲んで目立たせる。枠は紙の輪郭（Card.tsのpaperRectと同じ矩形）に重ね、
     // カードの子にすることでドラッグ・ズームへそのまま追従させる。
     if (land.current) {
       const inset = this.metrics.px(FRAME_INSET);

@@ -112,7 +112,7 @@ export function parseActiveEffectBody(
 const PICK_CANDIDATE_RESERVED_KEYS = ['weight'] as const;
 
 /** pick（10節）の候補リストを読む。候補の中身は9節の命令と同じで、さらにpickを入れ子にできる。 */
-export function parsePickList(
+function parsePickList(
   loader: WorldCodexYamlLoader,
   context: string,
   pickNode: YAMLSeq,

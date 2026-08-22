@@ -52,7 +52,7 @@ object_defs:
     });
 
     it('同じObjectDefから複数spawnしても、プロパティの状態は独立している', () => {
-      // PropertyDef.defaultValueは全WorldObjectで共有されるテンプレートのため、cloneし忘れると
+      // PropertyDef.initialValueは全WorldObjectで共有されるテンプレートのため、cloneし忘れると
       // 片方への加算・効果登録がもう片方へ漏れる。2体spawnし、互いに影響しないことを確認する。
       const yaml = `
 object_defs:
