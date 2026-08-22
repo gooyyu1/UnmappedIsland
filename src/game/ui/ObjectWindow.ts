@@ -162,8 +162,8 @@ export class ObjectWindow {
   /** タブのボタン（選択中だけ塗りを変えるので、作り直さず塗りだけ差し替える）。 */
   private readonly tabButtons: Button[] = [];
 
-  /** 今開いているタブの識別子。 */
-  private selected: string = DESCRIPTION_TAB;
+  /** 今開いているタブの識別子（replacePaneが、実際に開いた面のものを入れる）。 */
+  private opened: string = DESCRIPTION_TAB;
 
   /** 最下段のボタン。setActionsで丸ごと作り直すので、他の表示物とは分けて持つ。 */
   private actionObjects: Phaser.GameObjects.GameObject[] = [];
@@ -262,10 +262,10 @@ export class ObjectWindow {
     // 吹き出しはボタンより後に作る（表示順は生成順で決まるため、ボタンの上に出す必要がある）。
     this.tooltip = new Tooltip(scene, metrics);
 
-    // 最初のタブは呼び出し側が決める（プログラムの指定＞記憶＞説明、Windows.md 1.2節）。知らない
-    // 識別子は説明へ落とす。ここではonTabChangeを呼ばない——呼び出し側はまだこのウィンドウを持っていない。
-    const wanted = this.tabSpecs.find((tab) => tab.key === options.initialTab);
-    this.showTab(wanted?.key ?? DESCRIPTION_TAB);
+    // 最初のタブは呼び出し側が決める（プログラムの指定＞記憶＞説明、Windows.md 1.2節）。
+    // openTabではなくこちらを呼ぶのは、onTabChangeを鳴らさないため——呼び出し側はまだこの
+    // ウィンドウを持っていないので、開いたことを知らせる相手が居ない。
+    this.replacePane(options.initialTab);
   }
 
   /** 今開いている面が持つレーン（役割つき）。面がレーンを持たなければ空。 */
@@ -283,7 +283,7 @@ export class ObjectWindow {
    * 説明へ落ちる）ので、覚えるのも場所を引くのもこちらを見る。
    */
   get openedTab(): string {
-    return this.selected;
+    return this.opened;
   }
 
   /** 借りた札の枠。運んでくる先・返すときの出発点で、**別のタブへ移っても最後の枠を覚えている**。 */
@@ -312,17 +312,21 @@ export class ObjectWindow {
   }
 
   /**
-   * プログラムからタブを開く。**記憶と同じ扱いで覚える**（呼び出し側がonTabChangeを受ける）
-   * ——最後に見えていたものが次も見える、を破らないため。
+   * タブを開く（タブのボタンも、プログラムからの指定もここを通る）。**記憶と同じ扱いで覚える**
+   * （呼び出し側がonTabChangeを受ける）——最後に見えていたものが次も見える、を破らないため。
+   *
+   * 既に開いているタブなら何もしない。面を作り直すと、そこに借りている札ごと捨てることになる。
    */
   openTab(tab: string): void {
-    this.select(tab);
+    if (tab === this.opened) return;
+    this.replacePane(tab);
+    this.onTabChange?.(this.opened);
   }
 
   /**
    * 出すタブを並び順に組み立てる。説明 → スロット（宣言順）→ 探索 → プロパティ。
    *
-   * **説明のタブは必ず在る**ので、知らない識別子はここへ落ちる（showTab）。
+   * **説明のタブは必ず在り、必ず先頭**なので、知らない識別子はここへ落ちる（replacePane）。
    */
   private buildTabs(options: ObjectWindowOptions): readonly TabSpec[] {
     const { scene, metrics } = this;
@@ -391,37 +395,35 @@ export class ObjectWindow {
         { x: row.x + index * (width + gap), y: row.y, width, height: row.height },
         tab.title,
         { fill: COLOR.button },
-        () => this.select(tab.key),
+        () => this.openTab(tab.key),
       );
       this.tabButtons.push(button);
       this.objects.push(button);
     });
   }
 
-  private select(tab: string): void {
-    if (tab === this.selected) return;
-    this.showTab(tab);
-    this.onTabChange?.(tab);
-  }
-
   /**
    * 開いている面を捨てて、そのタブの面を作る。**窓が中身に触れるのはここだけ**で、触れ方は
    * 「捨てて作る」しかない。借りた札はタブによらず借りたままで、描かれないだけ。
+   *
+   * **並んでいないタブと省略は説明の面へ落とし、落とした先を開いたタブとして覚える**（openedTab）。
+   * 要求のほうを覚えると、出ていないタブを記憶に書き、その場所を引こうとすることになる。
    */
-  private showTab(tab: string): void {
+  private replacePane(tab: string | undefined): void {
     // 札の枠は面と一緒に消えるので、消える前に位置を控える（cardRect）。
     const card = this.laneOf('card');
     if (card !== undefined) this.lastCardRect = card.cellRect(0);
     this.pane?.destroy();
-    this.selected = tab;
+
+    // 説明のタブは必ず在り、必ず先頭（buildTabs）。
+    const spec = this.tabSpecs.find((candidate) => candidate.key === tab) ?? this.tabSpecs[0];
+    this.opened = spec.key;
 
     this.tabButtons.forEach((button, index) =>
-      button.setBoxStyle(tabBoxStyle(this.metrics, this.tabSpecs[index]?.key === tab)),
+      button.setBoxStyle(tabBoxStyle(this.metrics, this.tabSpecs[index]?.key === spec.key)),
     );
 
-    this.pane = (this.tabSpecs.find((candidate) => candidate.key === tab) ?? this.tabSpecs[0]).create(
-      this.content,
-    );
+    this.pane = spec.create(this.content);
   }
 
   /**
