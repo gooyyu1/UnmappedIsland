@@ -1,14 +1,9 @@
 import Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
+import { SCREEN_DEPTH } from '../looks/screenDepth';
 
 /** 砂埃の粒の画像のテクスチャキー（実体は src/assets/ui/dust_puff.png、BootSceneが読む）。 */
 export const DUST_PUFF_TEXTURE = 'dust_puff';
-
-/**
- * 砂埃を置く層。飛んでいる札（CardTable）より手前で、空の翳り（PlayScene.SKY_TINT_DEPTH）
- * よりは奥——埃は場に舞うものなので、時間帯の明るさはカードと同じだけ受ける。
- */
-const DEPTH = 1.2;
 
 /** 1回に散らす粒の数。 */
 const GRAINS = 7;
@@ -48,7 +43,7 @@ export class DustPuff {
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
-    this.layer = scene.add.container(0, 0).setDepth(DEPTH);
+    this.layer = scene.add.container(0, 0).setDepth(SCREEN_DEPTH.dust);
   }
 
   /**

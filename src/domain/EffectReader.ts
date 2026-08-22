@@ -22,7 +22,7 @@ export interface EffectReader {
   set(target: ReferenceRoot, propertyGlobalId: number, value: number): void;
 
   /** `add`（9.2節）。加減算する。 */
-  add(target: ReferenceRoot, propertyGlobalId: number, amount: number): void;
+  add(reading: AddReading): void;
 
   /** `spawn`（9.4節）。配置先（into）は読み上げない——どこへ入るかは世界の形の話で、宣言の意味ではない。 */
   spawn(objectGlobalId: number, count: number): void;
@@ -90,11 +90,14 @@ export interface TransferReading {
   readonly toPropertyGlobalId: number;
   readonly amount: number;
   readonly toAmount: number;
-  readonly linked: readonly LinkedAddReading[];
+  readonly linked: readonly AddReading[];
 }
 
-/** `linked_add`（9.5節）1件の読み上げ。 */
-export interface LinkedAddReading {
+/**
+ * 「どの対象の、どのプロパティを、いくつ」——`add`（9.2節）そのものと、輸送に連れて動く
+ * `linked_add`（9.5節）1件が、同じ三つ組で読める。
+ */
+export interface AddReading {
   readonly target: ReferenceRoot;
   readonly propertyGlobalId: number;
   readonly amount: number;

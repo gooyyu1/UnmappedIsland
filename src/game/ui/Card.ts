@@ -499,7 +499,7 @@ export class Card extends Phaser.GameObjects.Container {
     // 入力の配線だけは構築時に一度きり。押したときに何が起きるかは実行時に_contentから読む
     // （onTap・edges[].onTap）ので、差し替えで変わりうるのは「押せるかどうか」だけになる。
     if (content.onTap !== undefined || content.draggable === true) this.makeInteractive(width, height);
-    if (content.onTap !== undefined) this.makeTappable(scene, metrics, width, height);
+    if (content.onTap !== undefined) this.makeTappable(width, height);
     // ドラッグはレーンの横スクロールと同じPhaserのdrag機構で受ける。重なった対象は最前面の1つだけが
     // 入力を受け取る（InputPlugin.topOnly）ため、カードを掴んでいる間レーンはスクロールしない。
     // 端の操作エリア（addEdge）はカードより手前にあってドラッグ対象ではないので、そこからは始まらない。
@@ -524,7 +524,7 @@ export class Card extends Phaser.GameObjects.Container {
         color: cssColor(COLOR.text),
       })
       .setOrigin(0.5);
-    this.stackBadge = this.createStackBadge(scene, metrics, width, height);
+    this.stackBadge = this.createStackBadge(width, height);
     this.add(this.stackBadge);
 
     // 状態の印もスタック数と同じく、端の操作エリアより後に足して隠れないようにする。
@@ -675,9 +675,10 @@ export class Card extends Phaser.GameObjects.Container {
     const cooking = content.cooking;
     this.cookingVeil.setVisible(cooking !== undefined);
     this.cookingText.setVisible(cooking !== undefined);
-    const wasVisible = this.cookingBar.visible;
-    this.cookingBar.setVisible(cooking !== undefined);
-    if (cooking === undefined) return;
+    if (cooking === undefined) {
+      this.cookingBar.setVisible(false);
+      return;
+    }
 
     const metrics = this.metrics;
     const inner = windowRect(metrics, this.cardWidth, this.cardHeight, rail.height);
@@ -693,9 +694,9 @@ export class Card extends Phaser.GameObjects.Container {
     const top = inner.y + (inner.height - (textHeight + gap + barHeight)) / 2;
     this.cookingText.setPosition(inner.x + inner.width / 2, top + textHeight / 2);
     this.cookingBar.setY(top + textHeight + gap);
-    // 現れたばかりのバーに変化の帯を出すと、見えていなかった間の進みが今の変化として出てしまう。
-    if (showChange && wasVisible) this.cookingBar.setRatio(cooking.ratio, hold);
-    else this.cookingBar.resetRatio(cooking.ratio);
+    // 値を先に差し替える。現れたばかりのバーへ帯を出さない判断はバー自身が持つ（setRatio）。
+    this.cookingBar.setRatio(cooking.ratio, { showChange, hold });
+    this.cookingBar.setVisible(true);
   }
 
   /**
@@ -781,7 +782,7 @@ export class Card extends Phaser.GameObjects.Container {
       if (multiply === undefined) {
         this.artLayer.add(createIconText(scene, this.metrics, this.cardWidth, this.cardHeight, content.icon));
       }
-      if (art !== undefined) this.swapArtWhenLoaded(scene, art);
+      if (art !== undefined) this.swapArtWhenLoaded(art);
     }
   }
 
@@ -789,7 +790,8 @@ export class Card extends Phaser.GameObjects.Container {
    * 絵文字で代用中の絵が後から届いたら、自分で貼り替える。道のカードは行き先の土地の絵の
    * ロード完了（LocationArtLoader）を待たずに現れうるため。
    */
-  private swapArtWhenLoaded(scene: Phaser.Scene, texture: string): void {
+  private swapArtWhenLoaded(texture: string): void {
+    const { scene } = this;
     const event = Phaser.Textures.Events.ADD_KEY + texture;
     const swap = (): void => {
       // 待っている間に映すものが変わっていれば、届いた絵はもうこのカードのものではない。
@@ -828,7 +830,7 @@ export class Card extends Phaser.GameObjects.Container {
     const key = gauge.key;
     let bar = this.gaugeBars.get(key);
     if (bar === undefined) {
-      bar = this.addRailBar(this.scene, this.metrics, {
+      bar = this.addRailBar({
         fillColor: (ratio) => {
           const shown = this.shownGauges.get(key);
           if (shown === undefined) return COLOR.cardFillUnknown;
@@ -855,9 +857,7 @@ export class Card extends Phaser.GameObjects.Container {
     bars.forEach(({ bar, ratio }, index) => {
       bar.setY(rail.barTop + rail.barPitch * index);
       bar.setBorderColor(colors.line);
-      // 隠れていたバーが現れるときは、見えていなかった間の増減を今の変化として見せない。
-      if (showChange && bar.visible) bar.setRatio(ratio, hold);
-      else bar.resetRatio(ratio);
+      bar.setRatio(ratio, { showChange, hold });
       bar.setVisible(true);
     });
   }
@@ -876,7 +876,7 @@ export class Card extends Phaser.GameObjects.Container {
     this.cancelEdgeRepeat();
     this.edgeLayer.removeAll(true);
     for (const direction of directions) {
-      this.addEdge(this.scene, this.metrics, this.cardWidth, this.cardHeight, direction);
+      this.addEdge(this.cardWidth, this.cardHeight, direction);
     }
   }
 
@@ -895,7 +895,8 @@ export class Card extends Phaser.GameObjects.Container {
    * バーの枠線は経路の上へ太さの半分ずつ広がるので、その分だけ内側へ寄せて、**枠線の外周が窓の縁と
    * 重なる**ようにする（窓の縁の線も同じ寄せ方をしている。drawFrame参照）。
    */
-  private addRailBar(scene: Phaser.Scene, metrics: ScreenMetrics, options: ProgressBarOptions): ProgressBar {
+  private addRailBar(options: ProgressBarOptions): ProgressBar {
+    const { scene, metrics } = this;
     const span = windowSpan(metrics, this.cardWidth, this.cardHeight);
     const line = metrics.linePx(TRACK_BORDER_WIDTH);
     const bar = new ProgressBar(
@@ -1005,12 +1006,8 @@ export class Card extends Phaser.GameObjects.Container {
    * スタック数を囲む丸。数字はスタックが増減しても位置が動かないよう、丸の中心へ固定する。
    * 絵の右上の角からわざと少しはみ出させる（カードに載せ切るより、札束の厚みとして目に付くため）。
    */
-  private createStackBadge(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    width: number,
-    height: number,
-  ): Phaser.GameObjects.Container {
+  private createStackBadge(width: number, height: number): Phaser.GameObjects.Container {
+    const { scene, metrics } = this;
     const paper = paperRect(metrics, width, height);
     const radius = metrics.px(STACK_BADGE_SIZE) / 2;
     const offset = radius - metrics.px(STACK_BADGE_OVERHANG);
@@ -1096,8 +1093,9 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /** 押下中は紙の縁を黒枠でなぞる。枠は紙の内側へ収める（paperStroke参照）。 */
-  private makeTappable(scene: Phaser.Scene, metrics: ScreenMetrics, width: number, height: number): void {
-    const highlight = scene.add.graphics().setVisible(false);
+  private makeTappable(width: number, height: number): void {
+    const { metrics } = this;
+    const highlight = this.scene.add.graphics().setVisible(false);
     const lineWidth = metrics.px(PRESSED_BORDER_WIDTH);
     const { rect, radius } = paperStroke(metrics, width, height, lineWidth);
     drawBox(highlight, rect, {
@@ -1150,13 +1148,8 @@ export class Card extends Phaser.GameObjects.Container {
    * （InputPlugin.topOnly）ため、これで端はカード全体の操作もドラッグも横取りする。透明でも描画される
    * Rectangleを使うのは、Zoneが描画リストへ載らず前後関係が決まらないため。
    */
-  private addEdge(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    width: number,
-    height: number,
-    direction: CardEdgeDirection,
-  ): void {
+  private addEdge(width: number, height: number, direction: CardEdgeDirection): void {
+    const { scene, metrics } = this;
     const up = direction === 'up';
     const paper = paperRect(metrics, width, height);
     const edgeHeight = paper.height * EDGE_RATIO;
@@ -1295,7 +1288,7 @@ export class CellOverlay extends Phaser.GameObjects.Container {
 
     const width = metrics.px(SIZE.cardWidth);
     const height = metrics.px(SIZE.cardHeight);
-    this.add(this.makeBadge(scene, metrics, paperRect(metrics, width, height), overlay));
+    this.add(this.makeBadge(metrics, paperRect(metrics, width, height), overlay));
 
     scene.add.existing(this);
   }
@@ -1304,12 +1297,8 @@ export class CellOverlay extends Phaser.GameObjects.Container {
    * 重ねる文字。**暗い板に明るい文字**を載せる——下に来るのは絵のあるカードとも空き枠とも決まって
    * いないので、地の明るさによらず読める組み合わせにする。板の幅は文字に合わせて決める。
    */
-  private makeBadge(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    paper: Rect,
-    overlay: string,
-  ): Phaser.GameObjects.Container {
+  private makeBadge(metrics: ScreenMetrics, paper: Rect, overlay: string): Phaser.GameObjects.Container {
+    const { scene } = this;
     const text = scene.add
       .text(0, 0, overlay, {
         fontFamily: FONT_FAMILY,

@@ -52,7 +52,7 @@ export interface CardLaneOptions {
   readonly clip?: boolean;
   /**
    * 表示物を置く層（省略すると既定の0）。レーンだけを作り直しても描画順を保ちたい場合に、
-   * 周りより奥の層を指定する（PlayScene.FIELD_DEPTH）。
+   * 周りより奥の層を指定する（SCREEN_DEPTH.field）。
    */
   readonly depth?: number;
   /**
@@ -171,14 +171,14 @@ export class CardLane {
     const dividerWidth = metrics.px(4);
     const cardY = rect.y + (rect.height - metrics.px(SIZE.cardHeight)) / 2;
 
-    const panel = bare ? undefined : this.addBackground(scene, rect, background, options.art);
-
-    const pinnedWidth = pinned === undefined ? 0 : cardWidth + gap + dividerWidth + gap;
-    const stripX = rect.x + margin + pinnedWidth;
-
     this.scene = scene;
     this.metrics = metrics;
     this.rect = rect;
+
+    const panel = bare ? undefined : this.addBackground(rect, background, options.art);
+
+    const pinnedWidth = pinned === undefined ? 0 : cardWidth + gap + dividerWidth + gap;
+    const stripX = rect.x + margin + pinnedWidth;
     this.pitch = cardWidth + gap;
     this.cardWidth = cardWidth;
     this.cardHeight = metrics.px(SIZE.cardHeight);
@@ -209,9 +209,7 @@ export class CardLane {
         ? undefined
         : { x: rect.x + margin, y: cardY, width: cardWidth, height: this.cardHeight };
     const pinnedPanel =
-      pinned === undefined
-        ? undefined
-        : this.addPinnedCell(scene, metrics, rect, background, options.art, cardY, pinned);
+      pinned === undefined ? undefined : this.addPinnedCell(rect, background, options.art, cardY, pinned);
 
     // ピン留め部分は背景板が上に重なりレーン本体がホイールを受け取れないので、そちらも面に含める。
     this.scroll = new ScrollArea(scene, {
@@ -406,12 +404,12 @@ export class CardLane {
    * 置いた板は自分で片付ける（objects）。scrollsWithCardsを倒すと、絵をスクロールで送る対象から外す。
    */
   private addBackground(
-    scene: Phaser.Scene,
     rect: Rect,
     background: number,
     art: string | undefined,
     scrollsWithCards = true,
   ): Phaser.GameObjects.Rectangle | Phaser.GameObjects.TileSprite {
+    const { scene } = this;
     // 絵が用意されていても届いていなければ（遅延ロードの失敗時）背景色へ落とす（Cardの絵文字代用と同じ姿勢）。
     const texture = art !== undefined && scene.textures.exists(art) ? art : undefined;
     const panel =
@@ -429,21 +427,19 @@ export class CardLane {
    * 同じ位置に敷かれるため1枚の絵として繋がり、送っている間だけ区切り線を境に地面が分かれて見える。
    */
   private addPinnedCell(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
     rect: Rect,
     background: number,
     art: string | undefined,
     cardY: number,
     pinned: CardContent,
   ): Phaser.GameObjects.Rectangle | Phaser.GameObjects.TileSprite {
+    const { scene, metrics } = this;
     const margin = metrics.px(SIZE.margin);
     const gap = metrics.px(SIZE.gap);
     const cardWidth = metrics.px(SIZE.cardWidth);
     const dividerWidth = metrics.px(4);
 
     const panel = this.addBackground(
-      scene,
       { ...rect, width: margin + cardWidth + gap + dividerWidth },
       background,
       art,

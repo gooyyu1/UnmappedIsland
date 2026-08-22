@@ -125,17 +125,17 @@ export class NewGameScene extends ResponsiveScene {
       this.addTextFields(paddingX, y, fieldWidth);
       this.addCharacterField(paddingX + fieldWidth + columnGap, y, characterWidth);
     } else {
-      const used = this.addTextFields(paddingX, top, contentWidth);
+      this.addTextFields(paddingX, top, contentWidth);
+      const used = this.textFieldsHeight();
       this.addCharacterField(paddingX, top + used + this.metrics.px(FIELD_GAP), contentWidth);
     }
 
     this.addFooter();
   }
 
-  /** 島の名前と乱数シードを縦に並べ、占有した高さを返す。 */
-  private addTextFields(x: number, y: number, width: number): number {
-    let cursorY = y;
-    cursorY += this.addTextField(x, cursorY, width, '島の名前', {
+  /** 島の名前と乱数シードを縦に並べる。占有する高さはtextFieldsHeightが答える。 */
+  private addTextFields(x: number, y: number, width: number): void {
+    this.addTextField(x, y, width, '島の名前', {
       value: this.islandName,
       placeholder: '例: 霧深い孤島',
       maxLength: ISLAND_NAME_MAX_LENGTH,
@@ -151,8 +151,8 @@ export class NewGameScene extends ResponsiveScene {
       },
     });
 
-    cursorY += this.metrics.px(FIELD_GAP);
-    cursorY += this.addTextField(x, cursorY, width, '乱数シード', {
+    const seedY = y + this.textFieldHeight() + this.metrics.px(FIELD_GAP);
+    this.addTextField(x, seedY, width, '乱数シード', {
       value: this.seedText,
       placeholder: '例: 1837462519',
       maxLength: String(SEED_MAX).length,
@@ -168,8 +168,6 @@ export class NewGameScene extends ResponsiveScene {
         this.seedInput?.setValue(this.seedText);
       },
     });
-
-    return cursorY - y;
   }
 
   /** 札を原寸で並べたときのキャラクター選択の幅。左右に分けるときはこの幅をそのまま右の列に使う。 */
@@ -178,10 +176,14 @@ export class NewGameScene extends ResponsiveScene {
     return option * this.characters.length + this.metrics.px(SIZE.gap) * (this.characters.length - 1);
   }
 
+  /** 入力欄1つぶんの高さ（ラベルの行 → 間隔 → 入力欄）。置く側も見積もる側もこれを使う。 */
+  private textFieldHeight(): number {
+    return this.labelHeight() + this.metrics.px(LABEL_GAP) + this.metrics.px(INPUT_HEIGHT);
+  }
+
   /** 入力欄2つぶんの高さ。 */
   private textFieldsHeight(): number {
-    const row = this.labelHeight() + this.metrics.px(LABEL_GAP) + this.metrics.px(INPUT_HEIGHT);
-    return row * 2 + this.metrics.px(FIELD_GAP);
+    return this.textFieldHeight() * 2 + this.metrics.px(FIELD_GAP);
   }
 
   /** キャラクター選択（ラベルの行・札の行・説明）の高さ。 */
@@ -233,9 +235,11 @@ export class NewGameScene extends ResponsiveScene {
       keep: (input: TextInput) => void;
       onRandom: () => void;
     },
-  ): number {
-    const labelText = addLabel(this, this.metrics, x, y, label, { size: FIELD_LABEL_SIZE, bold: true });
-    const rowY = y + labelText.height + this.metrics.px(LABEL_GAP);
+  ): void {
+    addLabel(this, this.metrics, x, y, label, { size: FIELD_LABEL_SIZE, bold: true });
+    // 入力欄の位置も見積もり（textFieldHeight）と同じ高さから出す。実測とばらつくと、
+    // 2つ目の欄とキャラクター選択の間だけがずれる。
+    const rowY = y + this.labelHeight() + this.metrics.px(LABEL_GAP);
     const inputHeight = this.metrics.px(INPUT_HEIGHT);
     const buttonSize = this.metrics.px(RANDOM_BUTTON_SIZE);
     const inputWidth = width - buttonSize - this.metrics.px(SIZE.gap);
@@ -255,8 +259,6 @@ export class NewGameScene extends ResponsiveScene {
       ),
     );
     this.addRandomButton(x + inputWidth + this.metrics.px(SIZE.gap), rowY, field.onRandom);
-
-    return labelText.height + this.metrics.px(LABEL_GAP) + inputHeight;
   }
 
   private addRandomButton(x: number, y: number, onTap: () => void): void {

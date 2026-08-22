@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import type { RainStyle } from '../looks/rainStyle';
-import { rainStyleFor } from '../looks/rainStyle';
+import type { RainLayer, RainStyle } from '../looks/rainStyle';
+import { rainLayersOf, rainStyleFor } from '../looks/rainStyle';
 import { cssColor } from '../../util/cssColor';
 import { COLOR } from '../looks/theme';
 
@@ -11,12 +11,6 @@ import { COLOR } from '../looks/theme';
  * 継ぎ目が並んで見えることはない。u単位なので、この大きさは画面の解像度によらない。
  */
 const RAIN_TILE = 1024;
-
-/** 風の筋の、雨粒に対する長さ・太さ・濃さ・速さの倍率。 */
-const GUST_LENGTH_SCALE = 5;
-const GUST_THICKNESS_SCALE = 2.2;
-const GUST_ALPHA_SCALE = 0.35;
-const GUST_SPEED_SCALE = 0.55;
 
 /** 雨粒の長さの散らばり。この割合から等倍までの間で、1本ずつ長さを変える。 */
 const LENGTH_JITTER_MIN = 0.6;
@@ -64,17 +58,7 @@ export class WeatherOverlay extends Phaser.GameObjects.Container {
     this.style = style;
     if (style === undefined || weather === undefined) return;
 
-    this.addLayer(weather, style, style.drops, style.length, style.thickness, style.alpha, style.fallMs);
-    if (style.gusts > 0)
-      this.addLayer(
-        weather,
-        style,
-        style.gusts,
-        style.length * GUST_LENGTH_SCALE,
-        style.thickness * GUST_THICKNESS_SCALE,
-        style.alpha * GUST_ALPHA_SCALE,
-        style.fallMs * GUST_SPEED_SCALE,
-      );
+    for (const layer of rainLayersOf(style)) this.addLayer(weather, layer);
   }
 
   /**
@@ -84,21 +68,13 @@ export class WeatherOverlay extends Phaser.GameObjects.Container {
    * 戻った瞬間も見た目は変わらない。縦横の周期を別々に取ることで、絵の縦横比によらず、
    * 落ちる向きを筋の傾きへ合わせられる。
    */
-  private addLayer(
-    weather: string,
-    style: RainStyle,
-    visibleCount: number,
-    lengthUnits: number,
-    thicknessUnits: number,
-    alpha: number,
-    fallMs: number,
-  ): void {
+  private addLayer(weather: string, layer: RainLayer): void {
     const key = `rain-${weather}-${this.layers.length}`;
-    const slant = Math.tan(Phaser.Math.DegToRad(style.slantDegrees));
+    const slant = Math.tan(Phaser.Math.DegToRad(layer.slantDegrees));
     // 画面に見えている本数が指定どおりになるよう、絵1枚が受け持つ面積のぶんだけ散らす。
     const unitArea = (this.rect.width * this.rect.height) / this.metrics.u ** 2;
-    const count = Math.max(1, Math.round((visibleCount * RAIN_TILE ** 2) / unitArea));
-    if (!this.drawTile(key, count, slant, lengthUnits, thicknessUnits, alpha)) return;
+    const count = Math.max(1, Math.round((layer.count * RAIN_TILE ** 2) / unitArea));
+    if (!this.drawTile(key, count, slant, layer)) return;
 
     const tile = this.scene.add
       .tileSprite(this.rect.width / 2, this.rect.height / 2, this.rect.width, this.rect.height, key)
@@ -109,7 +85,7 @@ export class WeatherOverlay extends Phaser.GameObjects.Container {
 
     // 落ちる速さは「フィールドエリアの高さぶんをfallMsで」。絵を送る量へ直すと、絵の大きさぶんを
     // 送る時間になる。横は同じ速さに傾きを掛けたもの。
-    const fallPerTile = (fallMs * RAIN_TILE * this.metrics.u) / this.rect.height;
+    const fallPerTile = (layer.fallMs * RAIN_TILE * this.metrics.u) / this.rect.height;
     this.tweens.push(
       this.scene.tweens.add({
         targets: tile,
@@ -133,16 +109,9 @@ export class WeatherOverlay extends Phaser.GameObjects.Container {
 
   /**
    * 敷き詰める絵を1枚描く。**上下左右で繋がるように、同じ筋を隣の位置にも描く**（端をまたぐ筋が
-   * 反対側へ続く）。描けなければfalse。
+   * 反対側へ続く）。countは絵1枚に描く本数（層の見えている本数ではない）。描けなければfalse。
    */
-  private drawTile(
-    key: string,
-    count: number,
-    slant: number,
-    lengthUnits: number,
-    thicknessUnits: number,
-    alpha: number,
-  ): boolean {
+  private drawTile(key: string, count: number, slant: number, layer: RainLayer): boolean {
     if (this.scene.textures.exists(key)) return true;
 
     const canvas = this.scene.textures.createCanvas(key, RAIN_TILE, RAIN_TILE);
@@ -150,8 +119,8 @@ export class WeatherOverlay extends Phaser.GameObjects.Container {
 
     const context = canvas.context;
     context.strokeStyle = cssColor(COLOR.rain);
-    context.globalAlpha = alpha;
-    context.lineWidth = Math.max(1, thicknessUnits);
+    context.globalAlpha = layer.alpha;
+    context.lineWidth = Math.max(1, layer.thickness);
     context.lineCap = 'round';
 
     const travel = Math.hypot(slant, 1);
@@ -161,7 +130,7 @@ export class WeatherOverlay extends Phaser.GameObjects.Container {
       const x = random() * RAIN_TILE;
       const y = random() * RAIN_TILE;
       // 長さを散らす。すべて同じ長さだと、降っているというより破線が並んでいるように見える。
-      const length = lengthUnits * (LENGTH_JITTER_MIN + random() * (1 - LENGTH_JITTER_MIN));
+      const length = layer.length * (LENGTH_JITTER_MIN + random() * (1 - LENGTH_JITTER_MIN));
       const tipX = (length * slant) / travel;
       const tipY = length / travel;
       for (const dx of [-RAIN_TILE, 0]) {

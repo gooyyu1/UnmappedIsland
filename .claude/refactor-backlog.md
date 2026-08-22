@@ -237,20 +237,20 @@ docコメントの取り残し 14件（全部直し、残り0を機械的に確�
   `tabBoxStyle` で既定の補完と選択中の塗りを1箇所に／760 の相互参照を
   `childWindowLayout.MIN_WINDOW_WIDTH` へ／`RecipeWindow` の覆いを後片付けの並びへ
 
-### PR 9: 自分のことは自分でする（構造）
+### PR 9: 自分のことは自分でする（構造）✅ 完了
 
-- **`ProgressBar.setRatio`/`resetRatio` の呼び分けを、呼び元3箇所が同じ手順で覚えている**
-  （`if (showChange && 見えていた) setRatio else resetRatio`）→ バー自身が決める
-- `CardDragController` の private 7本で `gesture` を渡す/引き直すが割れている
-- `MapWindow`・`ObjectWindow`・`WeatherPanel`・`FlipCalendar` が、持っている `scene`/`metrics` を
-  private メソッドへ渡している
-- `StatusBar.createLabel` が metrics から引ける数値3つを受け取る
-- `PassiveEffectGate` の `propertyGlobalId`/`stageName` を1つの `stage` に（`!` が消える）
-- `EffectReader.add` の三つ組を `LinkedAddReading` に寄せる（同じファイルに同じ形の型が在る）
-- `Localization` のコンストラクタ10引数（同型4つ）→ 節のオブジェクト1つ
-- `zip.contentOf` の末尾4数値 → 中央ディレクトリ1エントリの型
-- `NewGameScene` の高さが2通りに計算されている／`WeatherOverlay.addLayer` が style の5値を別引数で上書き
-- 層（depth）の階梯が `PlayScene`・`DustPuff`・`CardTable`（無名の1）に散っている
+- `ProgressBar.setRatio(ratio, { showChange, hold })` 1本に統合（「見えていなかったバーには帯を出さない」
+  規則はバー自身が持つ）／`resetRatio` は消えた
+- `CardDragController` の private は `gesture` を受け取る形に揃えた
+- 持っている `scene`/`metrics` を private へ渡していた箇所を全部落とした
+  （`MapWindow`・`ObjectWindow`・`FlipCalendar`・`Card`・`CardLane`・`CellOverlay`）
+- `StatusBar.createLabel` は metrics から自分で引く
+- `PassiveEffectGate` の `stage` は1組（`!` が消えた）／`EffectReader.add` は `AddReading` 1つ
+- `Localization` は `LocaleSections` 1つ／`zip.contentOf` は `ZipEntry` 1つ
+- `NewGameScene.textFieldHeight` が行の高さの唯一の出どころ／`WeatherOverlay.addLayer` は
+  `rainStyle.rainLayersOf` が返す層1つを受け取る（風の筋の倍率は見え方の側へ）
+- 層（depth）の階梯を `looks/screenDepth.ts` の `SCREEN_DEPTH` 1箇所へ。`CardTable` の無名の1は
+  `flyingCard` になり、「最前面の層」という誤った説明も直した
 
 ### 相談した8件（PR 6 で7件を反映済み）
 

@@ -48,41 +48,45 @@ export async function readZip(archive: ArrayBuffer): Promise<ReadonlyMap<string,
       throw new ZipReadError(`中央ディレクトリの${index + 1}件目が壊れています。`);
 
     const flags = view.getUint16(at + 8, true);
-    const method = view.getUint16(at + 10, true);
-    const compressedSize = view.getUint32(at + 20, true);
-    const uncompressedSize = view.getUint32(at + 24, true);
     const nameLength = view.getUint16(at + 28, true);
     const extraLength = view.getUint16(at + 30, true);
     const commentLength = view.getUint16(at + 32, true);
-    const localOffset = view.getUint32(at + 42, true);
-    const name = new TextDecoder().decode(bytes.subarray(at + 46, at + 46 + nameLength));
+    const entry: ZipEntry = {
+      name: new TextDecoder().decode(bytes.subarray(at + 46, at + 46 + nameLength)),
+      method: view.getUint16(at + 10, true),
+      compressedSize: view.getUint32(at + 20, true),
+      uncompressedSize: view.getUint32(at + 24, true),
+      localOffset: view.getUint32(at + 42, true),
+    };
 
-    if ((flags & ENCRYPTED_FLAG) !== 0) throw new ZipReadError(`'${name}' は暗号化されています。`);
-    if (compressedSize === ZIP64_MARKER || uncompressedSize === ZIP64_MARKER || localOffset === ZIP64_MARKER)
-      throw new ZipReadError(`'${name}' がZIP64の形式です。対応していません。`);
+    if ((flags & ENCRYPTED_FLAG) !== 0) throw new ZipReadError(`'${entry.name}' は暗号化されています。`);
+    if (
+      entry.compressedSize === ZIP64_MARKER ||
+      entry.uncompressedSize === ZIP64_MARKER ||
+      entry.localOffset === ZIP64_MARKER
+    )
+      throw new ZipReadError(`'${entry.name}' がZIP64の形式です。対応していません。`);
 
     // ディレクトリの項目は中身を持たない（名前が`/`で終わる）。在庫表は実ファイルだけでよい。
-    if (!name.endsWith('/'))
-      files.set(
-        name,
-        await contentOf(view, bytes, name, localOffset, method, compressedSize, uncompressedSize),
-      );
+    if (!entry.name.endsWith('/')) files.set(entry.name, await contentOf(view, bytes, entry));
 
     at += 46 + nameLength + extraLength + commentLength;
   }
   return files;
 }
 
+/** 中央ディレクトリが1ファイルについて記している、中身を取り出すのに要ること。 */
+interface ZipEntry {
+  readonly name: string;
+  readonly method: number;
+  readonly compressedSize: number;
+  readonly uncompressedSize: number;
+  readonly localOffset: number;
+}
+
 /** 1エントリの中身。無圧縮ならアーカイブの一部をそのまま指し、deflateなら展開して返す。 */
-async function contentOf(
-  view: DataView,
-  bytes: Uint8Array,
-  name: string,
-  localOffset: number,
-  method: number,
-  compressedSize: number,
-  uncompressedSize: number,
-): Promise<Uint8Array> {
+async function contentOf(view: DataView, bytes: Uint8Array, entry: ZipEntry): Promise<Uint8Array> {
+  const { name, method, compressedSize, uncompressedSize, localOffset } = entry;
   if (view.getUint32(localOffset, true) !== LOCAL_FILE_HEADER)
     throw new ZipReadError(`'${name}' の位置が中央ディレクトリの記載と合いません。`);
 

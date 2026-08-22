@@ -240,8 +240,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
       .setOrigin(0.5);
     this.add(this.pinMark);
 
-    for (const text of createLabel(scene, metrics, content, label, pinWidth, iconWidth, height))
-      this.add(text);
+    for (const text of createLabel(scene, metrics, content, label)) this.add(text);
 
     // 見出しは小さすぎてタップしにくいため、印の欄と見出しの欄いっぱいの当たり判定を別に置く。
     const togglePin = content.onTogglePin;
@@ -314,7 +313,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
       this.slideTo(y);
     } else {
       const before = content.ratioBefore;
-      if (before !== undefined) this.bar?.resetRatio(before);
+      if (before !== undefined) this.bar?.setRatio(before);
       this.applyContent(content, before !== undefined);
       this.stopMoving();
       this.setVisible(true).setY(y);
@@ -350,8 +349,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
   /** showChangeがfalseなら、変化の帯を出さずに値を今の状態にする（show参照）。 */
   private applyContent(content: StatusContent, showChange: boolean): void {
     if (content.ratio !== undefined) {
-      if (showChange) this.bar?.setRatio(content.ratio, content.midAction === true);
-      else this.bar?.resetRatio(content.ratio);
+      this.bar?.setRatio(content.ratio, { showChange, hold: content.midAction === true });
     }
     this.valueText?.setText(String(content.value));
     this.showContent(content);
@@ -408,10 +406,10 @@ function createLabel(
   metrics: ScreenMetrics,
   content: StatusContent,
   label: StatusLabel,
-  x: number,
-  iconWidth: number,
-  height: number,
 ): readonly Phaser.GameObjects.Text[] {
+  const x = metrics.px(PIN_WIDTH);
+  const iconWidth = metrics.px(ICON_WIDTH);
+  const height = metrics.px(BAR_HEIGHT);
   const texts: Phaser.GameObjects.Text[] = [];
 
   if (content.icon !== undefined) {

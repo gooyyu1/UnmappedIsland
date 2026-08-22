@@ -199,7 +199,7 @@ export class ObjectWindow {
     this.onTabChange = options.onTabChange;
     this.properties = options.properties ?? [];
     this.exploration = options.exploration;
-    this.tabSpecs = this.buildTabs(scene, metrics, options);
+    this.tabSpecs = this.buildTabs(options);
 
     const padding = metrics.px(WINDOW_PADDING);
     const gap = metrics.px(CONTENT_GAP);
@@ -324,11 +324,8 @@ export class ObjectWindow {
    *
    * **説明のタブは必ず在る**ので、知らない識別子はここへ落ちる（showTab）。
    */
-  private buildTabs(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    options: ObjectWindowOptions,
-  ): readonly TabSpec[] {
+  private buildTabs(options: ObjectWindowOptions): readonly TabSpec[] {
+    const { scene, metrics } = this;
     const { card, description } = options.object;
     const exploration = options.exploration;
 

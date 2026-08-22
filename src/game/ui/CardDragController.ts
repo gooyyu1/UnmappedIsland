@@ -198,7 +198,7 @@ export class CardDragController {
 
     if (gesture.kind === 'pending') this.decide(gesture, pointer);
     if (gesture.kind === 'scrolling') gesture.lane.scrollByDrag(pointer.x - pointer.downX);
-    else if (gesture.kind === 'dragging') this.follow(pointer);
+    else if (gesture.kind === 'dragging') this.follow(gesture, pointer);
   }
 
   /**
@@ -211,7 +211,7 @@ export class CardDragController {
     if (Math.hypot(dx, dy) < this.metrics().px(MOVE_THRESHOLD)) return;
 
     if (gesture.lane.isCardBody(gesture.startX, gesture.startY, gesture.index)) {
-      this.startDragging(pointer);
+      this.startDragging(gesture, pointer);
       return;
     }
 
@@ -219,10 +219,7 @@ export class CardDragController {
     gesture.card.cancelTap();
   }
 
-  private startDragging(pointer: Phaser.Input.Pointer): void {
-    const gesture = this.gesture;
-    if (gesture === undefined) return;
-
+  private startDragging(gesture: Gesture, pointer: Phaser.Input.Pointer): void {
     gesture.kind = 'dragging';
     noteOperation(`カードを掴んだ: ${gesture.card.content.name}`);
     // 掴んで動かす操作になったので、掴んだカードの上で指を離してもタップにはしない（Card.cancelTap）。
@@ -235,7 +232,7 @@ export class CardDragController {
     gesture.carried = this.handlers.grab(gesture.card, () => gesture.lane.cellRect(gesture.index));
     gesture.tooltip = new Tooltip(this.scene, this.metrics());
     gesture.carryHold = new HoldRepeat(this.scene);
-    this.follow(pointer);
+    this.follow(gesture, pointer);
   }
 
   /** 今掴んでいるカードを受け入れられるカードすべてのふちを光らせる。 */
@@ -274,9 +271,8 @@ export class CardDragController {
   }
 
   /** 運んでいる札をポインタの中心へ置き、今の位置で成立するドロップ先を枠で示す。 */
-  private follow(pointer: Phaser.Input.Pointer): void {
-    const gesture = this.gesture;
-    if (gesture?.carried === undefined || gesture.indicator === undefined) return;
+  private follow(gesture: Gesture, pointer: Phaser.Input.Pointer): void {
+    if (gesture.carried === undefined || gesture.indicator === undefined) return;
 
     gesture.pointer = pointer;
     gesture.carried.follow(pointer.x, pointer.y);
@@ -361,7 +357,7 @@ export class CardDragController {
   /** ついてくる札を1枚増やす。入る枚数まで数えたら止まる（それ以上はついてこない）。 */
   private carryOne(gesture: Gesture, max: number): boolean {
     gesture.carried?.addOne();
-    if (gesture.pointer !== undefined) this.follow(gesture.pointer);
+    if (gesture.pointer !== undefined) this.follow(gesture, gesture.pointer);
     return (gesture.carried?.count ?? max) < max;
   }
 

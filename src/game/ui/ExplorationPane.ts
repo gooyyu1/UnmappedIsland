@@ -105,7 +105,7 @@ export class ExplorationPane implements ObjectWindowPane {
   /** 探索率だけを読み直す。**発見物のレーンは触らない**——並びの差し替えはCardTableが受け持つ。 */
   refresh(): void {
     const ratio = this.content().ratio;
-    this.bar.setRatio(ratio);
+    this.bar.setRatio(ratio, { showChange: true });
     this.percent.setText(percentOf(ratio));
     this.note.setText(noteOf(ratio));
   }
