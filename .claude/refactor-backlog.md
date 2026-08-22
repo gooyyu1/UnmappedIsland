@@ -1,6 +1,6 @@
 # 兄弟の不揃い・薄いラッパーの棚卸し（作業中の控え）
 
-リポジトリ全体（`src/` 約37,000行）を調べて出た指摘を、4つのPRに割ったもの。**全部終わったらこの
+リポジトリ全体（`src/` 約37,000行）を調べて出た指摘を、5つのPRに割ったもの。**全部終わったらこの
 ファイルごと消す。** 次にやることを訊かれたら、上から順に未完のものへ着手する。
 
 見つけ方は3種類——**兄弟なのに名前・引数が揃っていない**／**存在意義の薄いラッパー**／**docが現実と
@@ -21,8 +21,8 @@
 ## この一覧は「上位だけ」であること
 
 **6つの調査を上限8件で打ち切ったため、48件はその上限そのもの。** 6人全員が上限に達し、各自が
-「8件に入らなかったもの」を別に挙げている（下の「上限からこぼれた分」）。**下のPR 2〜4を終えても
-片付いたことにはならない**——終わったら「再チェック」の節に従ってもう一度調べる。
+「8件に入らなかったもの」を別に挙げていた（PR 5 で片付けた分）。**PR 1〜5を終えても
+片付いたことにはならない**——「再チェック」の節に従ってもう一度調べる。
 
 ## PR 2: 死んでいるものの削除と、docの取り残し ✅ 完了
 
@@ -123,55 +123,57 @@ docコメントの取り残し 14件（全部直し、残り0を機械的に確�
 - `ConditionNode` の裸の名詞のファクトリ（`property`・`all`・`not` ほか）。数が多く、宣言の語彙と
   1対1で対応している
 
-## 上限からこぼれた分（未着手。再チェックの起点にする）
+## PR 5: 上限からこぼれた分 ✅ 完了
 
-調査時に各担当が「重要度で8件に入らなかった」として挙げたもの。**証拠の確認まではしていない**ので、
-着手前に本体と呼び元を見ること。
+調査時に各担当が「重要度で8件に入らなかった」として挙げた22件。**着手前に本体と呼び元を全部
+自分で見た**——数の食い違いも含め、下は確認した後の姿。
 
-### domain
+直したもの:
 
-- `matches` が定義引き（`TypeMatchRule.matches(ObjectDef)`）と個体引き（`ObjectStack.matches(WorldObject)`）の
-  両方に使われる。さらに「受け入れるか」が `CellDef.accepts` / `SlotDef.acceptsAnywhere` / `Slot.canAccept` の3語
+- [x] `messageOf` の3重定義を `loader/errorMessage.ts` 1本へ（`loadDefinitions`・`RawPatch`）。
+      `game/errorReport` の同名は引数も戻りも別物なので触っていない
+- [x] `WorldCodexYamlLoader.parseObjectDef` を唯一の呼び元へインライン化（`new RawObjectDef` するだけだった）
+- [x] `WorldCodexYamlLoader.parseTrait` を削除し、11キーの読み取りを `RawTrait.readFields` へ移した
+      （`RawObjectDef` と同じく「自分のことは自分でする」形になった）
+- [x] passives を溜める配列の名前を `output` → `passives` に揃えた（`parsePassive` / `parseProp`）
+- [x] `ValueNoise.sample` → `noiseAt`（`AxisSampler` の別名輸入 `sampleNoise` が消えた）。
+      1オクターブ側も `sampleSingle` → `octaveAt` へ
+- [x] `Slot.canAccept` → `rejectionFor`。理由を返す関数が `WorldObject.rejectionForMoveTo` /
+      `rejectionForLoopOrDetach` と語形で揃った（`can*` は真偽を返すように読める）
+- [x] `CardDragController` の `released: Rect` → `releasedRect`（`MotionContext.released` は
+      「放した個体一式」で別物。同じ呼び出し連鎖に2つの意味の `released` が居た）
+- [x] `ScrollIndicator.setScroll(scrollX, minScrollX)` → `(offset, minOffset)`。実装している契約
+      `ScrollReadout` と同じ語彙にし、`ui/scroll.ts` 側（`scrollThumbSpan`・`clampScroll`）も揃えた
+- [x] `MapWindow.placementOf` が `centerPointOf` を呼ぶようにした（同じ2行を書いていた）
+- [x] `ObjectWindow` のタブの並びを `tabs()` 1本に。`tabKeys()` と `addTabs()` の2箇所が持っていた
+      「並びと出す条件」が1箇所になり、`showTab` の添字の一致も同じ並びから出る
+- [x] `TitleScene.addMenuButton` の引数 `content` → `label`（`NewGameScene.addFooterButton` と同型）
+- [x] `CardLooks.typeContentOf` → `cardOfType`、`gaugesOfCard` → `gaugesOf`。
+      1つの概念が3つの名前で受け渡されていたのが1つになった
+- [x] `codex-viewer/main.ts` の `scrollTo*` 3本を `scrollToSection(parts, route, domId, options?)` 1本へ。
+      `networkNodeDomId` → `networkNodeId` で id 生成側の語形も揃えた
+- [x] `PlayScene.record()` の doc から、`recording.recordChange` と逐語で重なる2段落を落として参照にした
+- [x] `Math.max(1, metrics.px(n))` 35箇所 → `ScreenMetrics.linePx(n)`。「線は1px未満にすると消える」を
+      寸法を知っている側が持つ（`fontPx` の隣）
+- [x] 一覧の行の台紙を `looks/theme.rowPlateStyle(metrics)` 1本へ（シナリオ選択・保存スロット2箇所・設定）
 
-### loader / generation
+**直さなかったもの（理由つき）**
 
-- 生成の段関数の粒度が不揃い（`place`/`sample`/`build` と `assignTypes`/`assignNames`/`triangulate`）
-- `AxisSampler.sample` と `ValueNoise.sample` の同名衝突が、`TerrainGenerator` での別名輸入（`sampleNoise`）を強いる
-- 共通引数の順が揃わない（`sample(axes, sites, seed, scope)` / `assignTypes(defs, scope, sites)` / `build(sites, edges, scope)`）
-- `WorldCodexYamlLoader.parseObjectDef`（呼び元1、引数を並べ替えて `new RawObjectDef` するだけ）
-- `parseProperties.parseRangeEventEffect`（呼び元1、`parseActiveEffectBody` にフラグを2つ足すだけ）
-- `messageOf` が3重定義（`loadDefinitions` と `RawPatch` は同一、`game/errorReport` は別シグネチャ）
-- passives を溜める配列の受け渡しが `parsePassive(loader, output, …)` と `parseProp(loader, …, passives)` で名前も位置も違う
-- `RawObjectDef.readFields()` と `WorldCodexYamlLoader.parseTrait()` が同じ11キーを別々に読む
+- `matches` が定義引き（`TypeMatchRule`）と個体引き（`ObjectStack`）の両方に居るのは、どちらも
+  「この鍵に合うか」で問いが同じ。`CellDef.accepts` / `SlotDef.acceptsAnywhere` / `Slot.rejectionFor` の
+  3語も、訊いている相手（この枠／どれかの枠／今この個体）が違う
+- `parseProperties.parseRangeEventEffect`（呼び元1）。`parseActiveEffectBody` に真偽2つを足すだけだが、
+  その2つに名前を与えているのがこの関数の値打ち
+- `ObjectWindow.openTab`（`select` への1行）。外から押す入口と内部の選択を分けている
+- `CardLane.beginScroll` / `scrollByDrag`（`ScrollArea` への1行委譲）。`ScrollArea` は private なので、
+  これを外すと呼び元が中身を知ることになる
+- `newGameInput.parseSeed` と `normalizeIslandName`。parse は型が変わり、normalize は同じ型のまま
+  整えるので、動詞が違うのは差そのもの
+- 生成の段関数の粒度と引数順（`place`/`sample`/`build` と `assignTypes`/`assignNames`/`triangulate`）。
+  段ごとに要る材料が違い、揃えると使わない引数を配ることになる
+- `balanceTables.tickAmountsByName` の連結キーと `splitKey`。規約は1モジュールの中で閉じている
 
-### カード・レーン
-
-- `released` が「手を離した矩形」と「放したインスタンス一式」の2つの意味で同じ呼び出し連鎖に出る
-- `CardLane.beginScroll`/`scrollByDrag` が `ScrollArea.beginDrag`/`dragBy` への1行委譲で、対の語彙が入れ替わる
-- `ScrollIndicator.setScroll(scrollX, minScrollX)` が実装する契約 `ScrollReadout.setScroll(offset, minOffset)` と引数名がずれる
-
-### ウィンドウ
-
-- `MapWindow.placementOf` が `centerPointOf` と同じ2行を書いてから正規化している（畳める）
-- `ObjectWindow.tabKeys()` と `addTabs()` の labels が、タブの並びと条件を2箇所に持ち、`showTab` が添字の一致を暗黙に前提にする
-- `ObjectWindow.openTab` は `this.select(tab)` だけの1行。`addButtonRow` が `close` を受け取るのは同一性比較のためだけ
-
-### Scene / view / looks
-
-- `TitleScene.addMenuButton` と `NewGameScene.addFooterButton` が同型で、同じものを `content`/`label` と呼び分ける
-- 同じ行スタイルが `ScenarioSelectScene`・`SlotSelectScene`（2箇所）・`SettingsScene` に写され、
-  `Math.max(1, metrics.px(2))` は `src/game` 全体で14箇所（置き場は `looks/theme.ts`）
-- 1つの概念に3つの名前: `cardOfType` → `CardLooks.typeContentOf` → `PlayScreenView.cardOfType`。`gaugesOfCard` → `gaugesOf` も同型
-- `PlayScene.record()` の doc 冒頭2段落が `view/recording.recordChange` の doc とほぼ逐語で重複
-
-### analysis / codex-viewer
-
-- `codex-viewer/main.ts` の `scrollToTagSection`/`scrollToNetworkNode`/`scrollToBalanceSection` が同形3本で、
-  対応する id 生成も `tagSectionId`/`balanceSectionId`/`networkNodeDomId` と語形が不揃い
-- `newGameInput.ts` の `parseSeed` と `normalizeIslandName` が同じ役目に別の動詞
-- `balanceTables.tickAmountsByName` が `プロパティ名 :: 条件` の連結キーを返し、`splitKey` で分解する暗黙の規約が2箇所にある
-
-## 再チェック（PR 2〜4 を終えてから）
+## 再チェック（PR 1〜5 を終えてから。**次はここ**）
 
 **目的**: 上限で打ち切られた分と、そもそも6人の目に留まらなかった分を拾う。
 

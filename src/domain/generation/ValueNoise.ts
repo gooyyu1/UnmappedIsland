@@ -9,7 +9,7 @@ import { ISLAND_RADIUS } from './SitePlacer';
  * [0, 1) のノイズ値。座標はSitePlacer.ISLAND_RADIUSで正規化してから周波数を掛ける
  * （frequency=島の直径あたりの起伏の数の目安）。octavesは周波数2倍・振幅1/2で重ねる。
  */
-export function sample(seed: number, x: number, y: number, octaves: number, frequency: number): number {
+export function noiseAt(seed: number, x: number, y: number, octaves: number, frequency: number): number {
   let total = 0;
   let amplitude = 1;
   let amplitudeSum = 0;
@@ -17,7 +17,7 @@ export function sample(seed: number, x: number, y: number, octaves: number, freq
 
   for (let octave = 0; octave < octaves; octave++) {
     total +=
-      amplitude * sampleSingle(seed + octave * 101, (x / ISLAND_RADIUS) * freq, (y / ISLAND_RADIUS) * freq);
+      amplitude * octaveAt(seed + octave * 101, (x / ISLAND_RADIUS) * freq, (y / ISLAND_RADIUS) * freq);
     amplitudeSum += amplitude;
     amplitude *= 0.5;
     freq *= 2;
@@ -26,7 +26,7 @@ export function sample(seed: number, x: number, y: number, octaves: number, freq
   return total / amplitudeSum;
 }
 
-function sampleSingle(seed: number, u: number, v: number): number {
+function octaveAt(seed: number, u: number, v: number): number {
   const u0 = Math.floor(u);
   const v0 = Math.floor(v);
   const fu = smoothStep(u - u0);

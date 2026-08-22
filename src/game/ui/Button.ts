@@ -161,7 +161,7 @@ export function addTextButton(
     {
       fill: style.fill,
       border: style.border ?? COLOR.buttonBorder,
-      borderWidth: Math.max(1, metrics.px(2)),
+      borderWidth: metrics.linePx(2),
       radius: metrics.px(SIZE.radius),
     },
     () => {

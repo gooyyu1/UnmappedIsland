@@ -28,7 +28,7 @@ export class TextInput {
       `width: ${rect.width}px`,
       `height: ${rect.height}px`,
       `padding: 0 ${metrics.px(16)}px`,
-      `border: ${Math.max(1, metrics.px(2))}px solid ${cssColor(COLOR.buttonBorder)}`,
+      `border: ${metrics.linePx(2)}px solid ${cssColor(COLOR.buttonBorder)}`,
       `border-radius: ${metrics.px(SIZE.radius)}px`,
       `background: ${cssColor(COLOR.cardFace)}`,
       `color: ${cssColor(COLOR.text)}`,

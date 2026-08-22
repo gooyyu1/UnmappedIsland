@@ -6,7 +6,7 @@ import { ScreenHeader } from './ui/ScreenHeader';
 import { noteOperation } from './errorReport';
 import { addLabel } from '../ui/labels';
 import { addPanel, drawBox } from '../ui/shapes';
-import { COLOR, SIZE } from './looks/theme';
+import { COLOR, rowPlateStyle } from './looks/theme';
 
 /** 一覧の外周パディングと、設定1件ぶんの高さ（テスト用シナリオの一覧と揃える）。 */
 const LIST_PADDING = 20;
@@ -76,20 +76,10 @@ export class SettingsScene extends ResponsiveScene {
     value: boolean,
     onChange: (value: boolean) => void,
   ): void {
-    const button = new Button(
-      this,
-      rect,
-      {
-        fill: COLOR.cardFace,
-        border: COLOR.cardBorder,
-        borderWidth: Math.max(1, this.metrics.px(2)),
-        radius: this.metrics.px(SIZE.radius),
-      },
-      () => {
-        noteOperation(`設定を切り替えた: ${title} → ${label(!value)}`);
-        onChange(!value);
-      },
-    );
+    const button = new Button(this, rect, rowPlateStyle(this.metrics), () => {
+      noteOperation(`設定を切り替えた: ${title} → ${label(!value)}`);
+      onChange(!value);
+    });
 
     const left = this.metrics.px(ITEM_PADDING_X);
     button.addContent(
@@ -112,7 +102,7 @@ export class SettingsScene extends ResponsiveScene {
     drawBox(face, switchRect, {
       fill: value ? COLOR.primaryButton : COLOR.buttonDisabled,
       border: COLOR.buttonBorder,
-      borderWidth: Math.max(1, this.metrics.px(2)),
+      borderWidth: this.metrics.linePx(2),
       radius: switchHeight / 2,
     });
     button.addContent(

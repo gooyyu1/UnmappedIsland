@@ -19,7 +19,7 @@ export class ScreenAlertFrame extends Phaser.GameObjects.Graphics {
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics) {
     super(scene);
 
-    const width = Math.max(1, metrics.px(FRAME_WIDTH));
+    const width = metrics.linePx(FRAME_WIDTH);
     // 線の中心を内側へ寄せて、枠が画面の内周に収まるように描く。
     this.lineStyle(width, COLOR.statusAlertFatal, 1);
     this.strokeRect(width / 2, width / 2, metrics.width - width, metrics.height - width);

@@ -94,7 +94,7 @@ export class TitleScene extends ResponsiveScene {
     y: number,
     width: number,
     height: number,
-    content: string,
+    label: string,
     primary: boolean,
     onTap?: () => void,
   ): void {
@@ -107,16 +107,16 @@ export class TitleScene extends ResponsiveScene {
             fill: COLOR.textOnDark,
             fillAlpha: 0.12,
             border: COLOR.textOnDark,
-            borderWidth: Math.max(1, this.metrics.px(2)),
+            borderWidth: this.metrics.linePx(2),
             radius: height / 2,
           },
       onTap,
     );
-    const label = addLabel(this, this.metrics, width / 2, height / 2, content, {
+    const text = addLabel(this, this.metrics, width / 2, height / 2, label, {
       size: 30,
       bold: true,
       color: primary ? COLOR.primaryButtonText : COLOR.textOnDark,
     }).setOrigin(0.5);
-    button.addContent(label);
+    button.addContent(text);
   }
 }

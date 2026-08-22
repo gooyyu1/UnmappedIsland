@@ -136,9 +136,9 @@ export class ProgressBar extends Phaser.GameObjects.Container {
 
     this.barWidth = width;
     this.barHeight = height;
-    this.borderWidth = Math.max(1, metrics.px(TRACK_BORDER_WIDTH));
-    this.alertBorderWidth = Math.max(1, metrics.px(ALERT_BORDER_WIDTH));
-    this.alertOutlineWidth = this.alertBorderWidth + Math.max(1, metrics.px(ALERT_OUTLINE_EXTRA_WIDTH));
+    this.borderWidth = metrics.linePx(TRACK_BORDER_WIDTH);
+    this.alertBorderWidth = metrics.linePx(ALERT_BORDER_WIDTH);
+    this.alertOutlineWidth = this.alertBorderWidth + metrics.linePx(ALERT_OUTLINE_EXTRA_WIDTH);
     this.radius = height / 4;
     this.ratio = Phaser.Math.Clamp(ratio, 0, 1);
     this.shownRatio = this.ratio;

@@ -5,7 +5,7 @@ import { Button } from './ui/Button';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { addLabel } from '../ui/labels';
 import { addPanel } from '../ui/shapes';
-import { COLOR, SIZE } from './looks/theme';
+import { COLOR, SIZE, rowPlateStyle } from './looks/theme';
 
 /** 一覧の外周パディングと、シナリオ1件ぶんの高さ。 */
 const LIST_PADDING = 20;
@@ -44,16 +44,8 @@ export class ScenarioSelectScene extends ResponsiveScene {
     const scenario = bundledScenario(name);
     if (scenario === undefined) return;
 
-    const button = new Button(
-      this,
-      { x, y, width, height },
-      {
-        fill: COLOR.cardFace,
-        border: COLOR.cardBorder,
-        borderWidth: Math.max(1, this.metrics.px(2)),
-        radius: this.metrics.px(SIZE.radius),
-      },
-      () => this.scene.start('play', scenarioPlayData(scenario)),
+    const button = new Button(this, { x, y, width, height }, rowPlateStyle(this.metrics), () =>
+      this.scene.start('play', scenarioPlayData(scenario)),
     );
 
     const left = this.metrics.px(ITEM_PADDING_X);

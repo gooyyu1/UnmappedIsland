@@ -179,7 +179,7 @@ function addCardPaper(
     {
       fill: COLOR.flipDigit,
       border: COLOR.flipDigitRing,
-      borderWidth: Math.max(1, metrics.px(1)),
+      borderWidth: metrics.linePx(1),
       radius: metrics.px(6),
     },
   );

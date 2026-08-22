@@ -267,7 +267,7 @@ export class NewGameScene extends ResponsiveScene {
       {
         fill: COLOR.randomButton,
         border: COLOR.buttonBorder,
-        borderWidth: Math.max(1, this.metrics.px(2)),
+        borderWidth: this.metrics.linePx(2),
         radius: this.metrics.px(SIZE.radius),
       },
       onTap,
@@ -423,7 +423,7 @@ export class NewGameScene extends ResponsiveScene {
       {
         fill: primary ? COLOR.primaryButton : COLOR.button,
         border: COLOR.buttonBorder,
-        borderWidth: Math.max(1, this.metrics.px(2)),
+        borderWidth: this.metrics.linePx(2),
         radius: this.metrics.px(SIZE.radius),
       },
       onTap,

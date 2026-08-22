@@ -62,16 +62,16 @@ export class ScrollIndicator extends Phaser.GameObjects.Container {
   }
 
   /**
-   * 送れる量と今の送り量を反映する（どちらもCardLaneのスクロール量と同じ符号で、minScrollXが右端）。
-   * 中身が可視域に収まっていればminScrollXは0で、そのときはバーを出さない。
+   * 送れる量と今の送り量を反映する（どちらも中身をずらす向きが負で、minOffsetが末尾）。
+   * 中身が可視域に収まっていればminOffsetは0で、そのときはバーを出さない。
    */
-  setScroll(scrollX: number, minScrollX: number): void {
-    if (minScrollX >= 0) {
+  setScroll(offset: number, minOffset: number): void {
+    if (minOffset >= 0) {
       this.setVisible(false);
       return;
     }
 
-    const span = scrollThumbSpan(this.trackWidth, scrollX, minScrollX, this.minThumbLength);
+    const span = scrollThumbSpan(this.trackWidth, offset, minOffset, this.minThumbLength);
     if (span.width !== this.thumbWidth) {
       this.thumbWidth = span.width;
       this.thumb.clear();

@@ -500,7 +500,7 @@ export class PlayScene extends ResponsiveScene {
   private startVisit(): void {
     this.drag = new CardDragController(this, () => this.metrics, {
       describeDrop: (drop) => this.describeDrop(drop),
-      onDrop: (drop, released) => this.applyDrop(drop, released),
+      onDrop: (drop, releasedRect) => this.applyDrop(drop, releasedRect),
       grab: (card, home) => this.motion.grab(card, home),
     });
     this.haze = new LaneHaze(this);
@@ -998,9 +998,9 @@ export class PlayScene extends ResponsiveScene {
    * combinationの成果物がどこから出るかは渡さない。効果を宣言している側の札（重ねた相手か、
    * 逆向きに成立したなら掴んだ札）を、世界の変化が出どころとして答える（originRectsOf）。
    */
-  private applyDrop(drop: CardDrop, released: Rect): void {
+  private applyDrop(drop: CardDrop, releasedRect: Rect): void {
     const action = this.shown.dropAction(this.dropOf(drop));
-    this.applyToWorld(this.dropLabel(drop), action, this.releasedBy(drop, released));
+    this.applyToWorld(this.dropLabel(drop), action, this.releasedBy(drop, releasedRect));
   }
 
   /** そのドロップを、再現手順として読める言葉にする（errorReport参照）。 */
@@ -1358,15 +1358,7 @@ export class PlayScene extends ResponsiveScene {
     });
   }
 
-  /**
-   * ワールドを変える操作を実行し、経過中の各tick時点の表示内容を控えて返す（RecordedView）。
-   *
-   * ワールドはこの中で進み切る。経過中のtickは物を腐らせたり道具を壊したりするので、その変化が
-   * 「45分の行動の15分目に起きた」と分かるよう、tickごとの表示内容を控えて実時間で再生する（passTime）。
-   *
-   * **控えと並べて、そのtickで起きた出入りも運ぶ**（WorldChange）。控えだけでは絵になるが誰の仕業か
-   * 分からず、出入りだけでは絵にならない（HuntingSystem.md 6.1節）。
-   */
+  /** ワールドを変える操作を実行し、経過の控えを取る（recordChange）。実時間での再生はpassTime。 */
   private record(change: () => void): Recording {
     return recordChange(this.gameSession, this.codex, this.locale, this.childWindowPlace, change);
   }
@@ -1890,7 +1882,7 @@ export class PlayScene extends ResponsiveScene {
         {
           fill: COLOR.button,
           border: COLOR.buttonBorder,
-          borderWidth: Math.max(1, this.metrics.px(2)),
+          borderWidth: this.metrics.linePx(2),
           radius: this.metrics.px(SIZE.radius),
         },
       );
@@ -1958,7 +1950,7 @@ export class PlayScene extends ResponsiveScene {
     index: number,
   ): void {
     const radius = this.metrics.px(SIZE.radius);
-    const borderWidth = Math.max(1, this.metrics.px(2));
+    const borderWidth = this.metrics.linePx(2);
     const button = new Button(this, rect, {
       fill: spec.fill,
       border: COLOR.paperButtonBorder,
@@ -2313,7 +2305,7 @@ export class PlayScene extends ResponsiveScene {
     return {
       fill: active ? COLOR.buttonActive : COLOR.button,
       border,
-      borderWidth: Math.max(1, this.metrics.px(2)),
+      borderWidth: this.metrics.linePx(2),
       radius: this.metrics.px(SIZE.radius),
       shadow: this.metrics.px(PAPER_BUTTON_SHADOW),
     };

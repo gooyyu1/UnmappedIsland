@@ -272,7 +272,7 @@ export class ObjectWindow {
       this.properties.length === 0 ? 0 : PropertiesPane.height(metrics),
       options.exploration === undefined ? 0 : ExplorationPane.height(metrics),
     );
-    const tabsHeight = this.tabKeys().length <= 1 ? 0 : metrics.px(TAB_HEIGHT) + gap;
+    const tabsHeight = this.tabs().length <= 1 ? 0 : metrics.px(TAB_HEIGHT) + gap;
     // 最下段は「操作の行」と「閉じるの行」の2段。操作を持たないウィンドウでは1段（閉じるだけ）。
     const actionRows = options.actions.length === 0 ? 1 : 2;
     const actionsHeight = actionHeight * actionRows + gap * (actionRows - 1);
@@ -383,24 +383,22 @@ export class ObjectWindow {
     return this.ownLane?.cellRect(0) ?? this.lastCardRect;
   }
 
-  /** タブの識別子を並び順で返す。説明 → スロット（宣言順）→ プロパティ。 */
-  private tabKeys(): readonly string[] {
+  /**
+   * 出すタブを並び順で返す。説明 → スロット（宣言順）→ 踏査 → プロパティ。**タブの行を作るのも、
+   * 今どれが選ばれているかを塗るのも、この並びが唯一の根拠。**
+   */
+  private tabs(): readonly { readonly key: string; readonly title: string }[] {
     return [
-      DESCRIPTION_TAB,
-      ...this.slots.map((slot) => slot.key),
-      ...(this.exploration === undefined ? [] : [EXPLORATION_TAB]),
-      ...(this.properties.length === 0 ? [] : [PROPERTIES_TAB]),
+      { key: DESCRIPTION_TAB, title: DESCRIPTION_LABEL },
+      ...this.slots.map((slot) => ({ key: slot.key, title: slot.title })),
+      ...(this.exploration === undefined ? [] : [{ key: EXPLORATION_TAB, title: EXPLORATION_LABEL }]),
+      ...(this.properties.length === 0 ? [] : [{ key: PROPERTIES_TAB, title: PROPERTIES_LABEL }]),
     ];
   }
 
   /** タブの行。タブが1つ（＝説明しか無い）ウィンドウでは出さない。 */
   private addTabs(row: Rect): void {
-    const labels = [
-      { key: DESCRIPTION_TAB, title: DESCRIPTION_LABEL },
-      ...this.slots,
-      ...(this.exploration === undefined ? [] : [{ key: EXPLORATION_TAB, title: EXPLORATION_LABEL }]),
-      ...(this.properties.length === 0 ? [] : [{ key: PROPERTIES_TAB, title: PROPERTIES_LABEL }]),
-    ];
+    const labels = this.tabs();
     if (labels.length <= 1) return;
 
     const gap = this.metrics.px(8);
@@ -445,12 +443,12 @@ export class ObjectWindow {
     for (const object of this.tabObjects) object.destroy();
     this.tabObjects = [];
 
-    const tabs = this.tabKeys();
+    const tabs = this.tabs();
     this.tabButtons.forEach((button, index) =>
       button.setBoxStyle({
-        fill: tabs[index] === tab ? COLOR.buttonActive : COLOR.button,
+        fill: tabs[index]?.key === tab ? COLOR.buttonActive : COLOR.button,
         border: COLOR.buttonBorder,
-        borderWidth: Math.max(1, metrics.px(2)),
+        borderWidth: metrics.linePx(2),
         radius: metrics.px(SIZE.radius),
       }),
     );

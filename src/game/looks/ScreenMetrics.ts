@@ -32,6 +32,11 @@ export class ScreenMetrics {
     return units * this.u;
   }
 
+  /** 線の太さ。**1px未満にすると線が消える**ので、縮んだ画面でも下限を切る。 */
+  linePx(units: number): number {
+    return Math.max(1, units * this.u);
+  }
+
   /** フォントサイズはサブピクセルにすると描画が滲むため整数へ丸める。1px未満にはしない。 */
   fontPx(units: number): number {
     return Math.max(1, Math.round(units * this.u));

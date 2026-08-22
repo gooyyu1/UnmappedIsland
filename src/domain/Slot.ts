@@ -57,12 +57,10 @@ export class Slot {
   }
 
   /**
-   * move_to_slot（7.1節）が候補オブジェクトを受け入れられるか（枠の型・枠の空き・capacity、
-   * 7.2〜7.3節）。
-   *
-   * 戻り値: 受け入れ可能ならundefined、拒否する場合はその理由。
+   * この候補オブジェクトを受け入れない理由（受け入れるならundefined）。見るのは枠の型・枠の空き・
+   * capacity（move_to_slot、7.1〜7.3節）。
    */
-  canAccept(candidate: WorldObject): string | undefined {
+  rejectionFor(candidate: WorldObject): string | undefined {
     const engine = this.owner.session.codex.vocabulary.engine;
     const ownerName = this.owner.def.name;
     if (!this.def.acceptsAnywhere(candidate.def)) {
@@ -95,7 +93,7 @@ export class Slot {
   /**
    * candidatesを先頭から順に入れていったとき、続けて受け取れる個数（1つ目で断るなら0）。
    *
-   * 1つずつcanAcceptを訊いても答えは出ない——2つ目が入るかは、1つ目が入った後の空きで決まるため。
+   * 1つずつrejectionForを訊いても答えは出ない——2つ目が入るかは、1つ目が入った後の空きで決まるため。
    * まとめて入れる操作が「何個まで入るか」を、実際に動かす前に問うための入口。
    *
    * candidatesは同じ束の仲間（同じ型・同じ代表チェーン）であることを前提にする。置ける枠の数は
@@ -191,7 +189,7 @@ export class Slot {
   addInternal(obj: WorldObject): void {
     if (this.tryMergeIntoMatchingStack(obj)) return;
 
-    // 受け入れ判定（canAccept）を通った後にだけ呼ばれるので、枠数を決めたスロットにも必ず置ける枠がある。
+    // 受け入れ判定（rejectionFor）を通った後にだけ呼ばれるので、枠数を決めたスロットにも必ず置ける枠がある。
     const at = this.findCellFor(obj);
     const stack = new ObjectStack(obj);
     if (at !== undefined && at < this._cells.length) this._cells[at] = stack;

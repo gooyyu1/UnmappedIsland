@@ -298,7 +298,7 @@ export class WorldObject {
 
   /**
    * スロット移動を行う唯一の汎用操作（7.1節の`move_to_slot`）。枠の要件・capacityの検証は対象Slot
-   * 自身（Slot.canAccept）に委ねる。
+   * 自身（Slot.rejectionFor）に委ねる。
    *
    * atを渡すと枠の中の位置まで指定する（SlotPosition参照）。**指した位置に置けなければ失敗**で、
    * 位置を無視して入れることはしない——プレイヤーが示した場所と違う所へ入るくらいなら、入らないほうが
@@ -343,7 +343,7 @@ export class WorldObject {
    * 持ち歩けるようにしたのに、画面がそのレーンを読み取り専用のままにしている、など）。
    */
   rejectionForMoveTo(slot: Slot): string | undefined {
-    return this.rejectionForLoopOrDetach(slot) ?? slot.canAccept(this);
+    return this.rejectionForLoopOrDetach(slot) ?? slot.rejectionFor(this);
   }
 
   /**
@@ -582,7 +582,7 @@ export class WorldObject {
       const slotLocalId = newDef.slotLayout.toLocal(slot.def.globalId);
       for (const child of [...slot.contents]) {
         const destination = slotLocalId === LocalIndexMap.missing ? undefined : newSlots[slotLocalId];
-        if (destination === undefined || destination.canAccept(child) !== undefined) {
+        if (destination === undefined || destination.rejectionFor(child) !== undefined) {
           this.evict(child);
           continue;
         }

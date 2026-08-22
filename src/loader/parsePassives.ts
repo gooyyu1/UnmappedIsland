@@ -32,7 +32,7 @@ import type { PassiveEffect } from '../domain/PassiveEffect';
  */
 export function parsePassive(
   loader: WorldCodexYamlLoader,
-  output: PassiveEffect[],
+  passives: PassiveEffect[],
   objectDefName: string,
   passiveMap: YAMLMap,
   forcedStageProperty: string | undefined,
@@ -46,7 +46,7 @@ export function parsePassive(
 
   parsePassiveOperationInto(
     loader,
-    output,
+    passives,
     context,
     passiveMap,
     'modify',
@@ -55,7 +55,7 @@ export function parsePassive(
   );
   parsePassiveOperationInto(
     loader,
-    output,
+    passives,
     context,
     passiveMap,
     'add',
@@ -68,7 +68,7 @@ export function parsePassive(
   const transferNode = tryGetNode(passiveMap, 'transfer');
   if (transferNode !== undefined)
     for (const transfer of parsePassiveTransfers(loader, `${context}.transfer`, transferNode))
-      output.push(new TransferPassiveEffect(transfer, gate));
+      passives.push(new TransferPassiveEffect(transfer, gate));
 
   const knownKeys = new Set<string>(['conditions', 'modify', 'add', 'transfer']);
 
@@ -99,7 +99,7 @@ function buildGate(
  */
 function parsePassiveOperationInto(
   loader: WorldCodexYamlLoader,
-  output: PassiveEffect[],
+  passives: PassiveEffect[],
   context: string,
   passiveMap: YAMLMap,
   operationKey: string,
@@ -137,7 +137,7 @@ function parsePassiveOperationInto(
 
     const body = asMap(bodyNode, context);
     for (const [propName, amountNode] of entriesInOrder(body))
-      output.push(
+      passives.push(
         makeEffect(
           target,
           loader.propertyNames.intern(propName),

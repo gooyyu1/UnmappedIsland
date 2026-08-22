@@ -5,6 +5,7 @@ import type { RawObjectDef } from './RawObjectDef';
 import { asMap, entriesInOrder, tryGetNode } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
+import { messageOf } from './errorMessage';
 
 /**
  * 既存のobject_defへの変更（`patch_object_defs`、GameElementDefinition.md 3.4節）。
@@ -261,8 +262,4 @@ function scalarText(node: YamlNode | undefined, context: string): string {
   if (node === undefined || !isScalar(node) || typeof node.value !== 'string')
     throw new YamlLoadError(`${context}: 文字列で書いてください。`);
   return node.value;
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

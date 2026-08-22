@@ -24,7 +24,7 @@ const ART_SIZE = 56;
 const FONT_SIZE = 11;
 
 /** ハイライトしたノードのDOM id（main.tsがスクロール先に使う）。 */
-export function networkNodeDomId(objectName: string): string {
+export function networkNodeId(objectName: string): string {
   return `net-${objectNodeId(objectName)}`;
 }
 
@@ -245,7 +245,7 @@ function objectNodeHtml(
     : `#/network/${encodeURIComponent(objectName)}`;
 
   return (
-    `<a class="net-node net-object${state}" id="${networkNodeDomId(objectName)}" href="${href}">` +
+    `<a class="net-node net-object${state}" id="${networkNodeId(objectName)}" href="${href}">` +
     `<rect class="net-node-box" x="${position.x}" y="${position.y}" width="${width}" height="${height}" rx="8"/>` +
     `<title>${escapeHtml(objectName)}</title>` +
     art +

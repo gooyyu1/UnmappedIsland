@@ -4,6 +4,7 @@ import type { Localization } from '../locale/Localization';
 import { loadLocalization } from '../locale/Localization';
 import type { LoadReport } from './LoadReport';
 import { loadWorldCodex, WORLD_CODEX_TEXTS } from './loadWorldCodex';
+import { messageOf } from './errorMessage';
 
 /** 読み込めた定義一式。 */
 export interface Definitions {
@@ -36,8 +37,4 @@ export function loadDefinitions(pack: AssetPack | undefined, report: LoadReport)
     report.add(pack.name, undefined, `読み込めないので、このパックを外しました: ${messageOf(error)}`);
     return loadDefinitions(undefined, report);
   }
-}
-
-function messageOf(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
