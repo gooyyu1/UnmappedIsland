@@ -120,4 +120,24 @@ export class LocationTypeDef {
     if (this.applicableScopes.length === 0) return true;
     return this.applicableScopes.some((scope) => scope === scopeName);
   }
+
+  /** hard_limitsをすべて満たすか。1つでも外れていればその地点には置けない。 */
+  allows(axisValues: ReadonlyMap<string, number>): boolean {
+    return this.hardLimits.every((limit) => limit.allows(axisValues.get(limit.axis)!));
+  }
+
+  /**
+   * 希望する軸の値からの隔たり（重み付き、許容幅で正規化）。0が理想ぴったりで、大きいほど遠い。
+   * 型どうしを比べるための尺度なので、軸の単位には依存しない。
+   */
+  normalizedDistanceFrom(axisValues: ReadonlyMap<string, number>): number {
+    let sum = 0;
+    let weightSum = 0;
+    for (const preference of this.preferences) {
+      const deviation = (axisValues.get(preference.axis)! - preference.ideal) / preference.tolerance;
+      sum += preference.weight * deviation * deviation;
+      weightSum += preference.weight;
+    }
+    return Math.sqrt(sum / weightSum);
+  }
 }

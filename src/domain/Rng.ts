@@ -12,6 +12,16 @@ export interface Rng {
   nextInt(minInclusive: number, maxExclusive: number): number;
 }
 
+/** Fisher-Yatesの一様シャッフル。元の配列は変えない。 */
+export function shuffled<T>(values: readonly T[], rng: Rng): T[] {
+  const result = [...values];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = rng.nextInt(0, i + 1);
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 /**
  * 重み付き抽選で1つ選ぶ。負の重みは0として扱う（選ばれない）。候補が空、あるいは重みの合計が0なら
  * 選べないのでundefined——「1つも引けなかったときにどうするか」は、抽選ではなく呼び出し側の決めごと。

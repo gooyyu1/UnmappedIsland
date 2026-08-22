@@ -2,7 +2,6 @@ import type { WorldCodex } from '../../domain/WorldCodex';
 import type { NewGameSession } from '../../domain/generation/NewGame';
 import type { RecipeDef } from '../../domain/RecipeDef';
 import { RECIPE_AXIS } from '../../domain/RecipeDef';
-import type { ReferenceRoot } from '../../domain/ReferenceRoot';
 import type { WorldObject } from '../../domain/WorldObject';
 import type { Localization } from '../../locale/Localization';
 import { inProgressObjectName } from '../../loader/inProgressObjects';
@@ -46,8 +45,6 @@ export function recipeCategories(
   locale: Localization,
   onSelect: (inProgressDefGlobalId: number, origin: Rect) => void,
 ): readonly RecipeCategory[] {
-  const resolveRoot = actorOnly(game.player.instance);
-
   /** 棚のタグのグローバルID → その棚に載るレシピ。どの棚にも載らないものはothersへ。 */
   const byShelf = new Map<number, RecipeEntry[]>();
   const others: RecipeEntry[] = [];
@@ -59,7 +56,7 @@ export function recipeCategories(
     const shelfTagId = codex.recipeCategoryTagIds.find((tagId) => product.tags.includes(tagId));
 
     for (const recipe of product.recipes) {
-      const unmet = recipe.unmetUnlockRequirement(resolveRoot);
+      const unmet = recipe.unmetUnlockRequirement(game.player.instance);
       const inProgressId = codex.objectNames.tryGetId(inProgressObjectName(product.name, recipe.name));
       if (inProgressId === undefined) continue;
 
@@ -91,12 +88,4 @@ export function recipeCategories(
     .filter((shelf) => shelf.entries.length > 0);
 
   return others.length === 0 ? shelves : [...shelves, { label: OTHER, entries: others }];
-}
-
-/**
- * 解放条件が参照できるのはactorだけ（GameElementDefinition.md 13.3節）。まだ成果物の
- * インスタンスが無いため、self/parent/ancestorは解決先を持たない。
- */
-function actorOnly(actor: WorldObject): (root: ReferenceRoot) => WorldObject | undefined {
-  return (root) => (root === 'actor' ? actor : undefined);
 }

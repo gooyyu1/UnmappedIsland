@@ -55,16 +55,12 @@ export class PlayerCharacter {
 
   /** 装備スロットの中身を、積み重なっているまとまりごとに分けたもの（前詰めなので空きセルは無い）。 */
   get equipmentStacks(): readonly (readonly WorldObject[])[] {
-    return this.stacksOf(this.equipmentSlotId);
+    return this.instance.stacksInSlot(this.equipmentSlotId);
   }
 
   /** 怪我スロットの中身を、積み重なっているまとまりごとに分けたもの。 */
   get injuryStacks(): readonly (readonly WorldObject[])[] {
-    return this.stacksOf(this.injuriesSlotId);
-  }
-
-  private stacksOf(slotGlobalId: number): readonly (readonly WorldObject[])[] {
-    return this.instance.tryGetSlot(slotGlobalId)?.stacks ?? [];
+    return this.instance.stacksInSlot(this.injuriesSlotId);
   }
 
   /** 手持ちスロットの各セルの代表インスタンス（空きセルはundefined）。 */
@@ -129,10 +125,7 @@ export class PlayerCharacter {
 
   /** 自分が今その中に居る本土（居なければundefined）。 */
   private get mainland(): WorldObject | undefined {
-    for (let node = this.instance.parent; node !== undefined; node = node.parent) {
-      if (node.def.tags.includes(this.words.mainlandTagId)) return node;
-    }
-    return undefined;
+    return this.instance.findAncestorWithTag(this.words.mainlandTagId);
   }
 
   /** 今いる土地（自分が入っているcharactersスロットの持ち主）。未配置ならundefined。 */

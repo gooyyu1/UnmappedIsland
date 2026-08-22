@@ -1,7 +1,6 @@
 import type { WorldObject } from './WorldObject';
 import type { ObjectDef } from './ObjectDef';
 import type { TypeMatchRule } from './TypeMatchRule';
-import type { ReferenceRoot } from './ReferenceRoot';
 import type { Requirement, Requirements } from './Requirement';
 
 /**
@@ -107,9 +106,9 @@ export class RecipeDef {
    * 未解放のレシピも解放条件とともに一覧へ出すため、可否と理由を1回の評価から得る
    * （Requirements.firstUnmet と同じ理由）。
    */
-  unmetUnlockRequirement(
-    resolveRoot: (root: ReferenceRoot) => WorldObject | undefined,
-  ): Requirement | undefined {
-    return this.unlock?.firstUnmet(resolveRoot);
+  unmetUnlockRequirement(actor: WorldObject | undefined): Requirement | undefined {
+    // 参照できるのはactorだけ（13.3節）。まだ成果物のインスタンスが無いので、self・parent・ancestorは
+    // 解決先を持たない。
+    return this.unlock?.firstUnmet((root) => (root === 'actor' ? actor : undefined));
   }
 }

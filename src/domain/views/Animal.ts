@@ -58,7 +58,7 @@ export class Animal {
 
     // くわえている物（spoilsの先頭）。数は書かない——食べる候補のゲートはスロットの中身を
     // 直接見る（animals.yamlのbeast）ので、対象だけを毎ターン書き直す。
-    const held = this.instance.tryGetSlot(this.words.spoilsSlotId)?.contents.at(0);
+    const held = this.instance.contentsInSlot(this.words.spoilsSlotId).at(0);
     this.instance.getProperty(this.words.spoilsTargetId).setNumber(held?.instanceId ?? 0);
 
     this.aim(this.words.lootablesId, this.words.lootTargetId, this.lootTargets(location), session.rng);

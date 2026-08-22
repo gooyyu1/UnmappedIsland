@@ -1,5 +1,6 @@
 import { LocationName } from './IslandMap';
 import type { Site } from './IslandMap';
+import { shuffled } from '../Rng';
 import type { Pcg32 } from '../Pcg32';
 
 /**
@@ -38,14 +39,4 @@ export function assignNames(sites: readonly Site[], rng: Pcg32): void {
           : new LocationName(type.name, variant.id);
     });
   }
-}
-
-/** Fisher-Yatesの一様シャッフル。元の配列は変えない。 */
-function shuffled<T>(values: readonly T[], rng: Pcg32): T[] {
-  const result = [...values];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = rng.nextInt(0, i + 1);
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
 }

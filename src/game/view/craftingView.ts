@@ -59,7 +59,10 @@ export function craftingActions(
         autoFillMaterials(
           object,
           materialsSlotId,
-          [contentsOf(game.player.instance, codex.vocabulary.world.handSlotId), locationItems(game, codex)],
+          [
+            game.player.instance.contentsInSlot(codex.vocabulary.world.handSlotId),
+            game.player.location?.items ?? [],
+          ],
           codex,
           remainingRequirements(recipe, progressOf(object, codex)),
         );
@@ -103,7 +106,7 @@ export function craftingMaterials(
 
   const progress = progressOf(container, codex);
   const inStep = new Set(currentStep(recipe, progress)?.requirements.map((r) => r.match.key));
-  const contents = contentsOf(container, codex.vocabulary.engine.materialsSlotId);
+  const contents = container.contentsInSlot(codex.vocabulary.engine.materialsSlotId);
 
   return remainingRequirements(recipe, progress).map((requirement) => ({
     objectGlobalIds: requirement.match.candidates(codex.objects).map((def) => def.globalId),
@@ -115,13 +118,4 @@ export function craftingMaterials(
 
 function progressOf(object: WorldObject, codex: WorldCodex): number {
   return object.tryGetProperty(codex.vocabulary.engine.progressId)?.number ?? 0;
-}
-
-function contentsOf(owner: WorldObject, slotGlobalId: number): readonly WorldObject[] {
-  return owner.tryGetSlot(slotGlobalId)?.contents ?? [];
-}
-
-function locationItems(game: NewGameSession, codex: WorldCodex): readonly WorldObject[] {
-  const location = game.player.location?.instance;
-  return location === undefined ? [] : contentsOf(location, codex.vocabulary.world.itemsSlotId);
 }
