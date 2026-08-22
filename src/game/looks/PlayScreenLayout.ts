@@ -49,15 +49,6 @@ function characterDisplayHeight(bottomPadding: number): number {
 /** 縦型のキャラクター表示エリア幅。ポートレイト205 + 地図・装備・怪我の列 + ギャップ・パディング。 */
 const CHARACTER_DISPLAY_WIDTH_PORTRAIT = 460;
 
-/**
- * 横型のダッシュボード列幅・右サイドバー幅（ScreenLayout.md 10節 横型レイアウト）。
- *
- * 列幅は日時のフリップカード（406u）が背景のページの紙の内側に収まる幅で決まる。左右パディング
- * 20u×2と、フィールドエリア側の紙の余白（INFORMATION_PAPER_INSET.field）を足した幅が下限。
- */
-const DASHBOARD_WIDTH_LANDSCAPE = 478;
-const SIDEBAR_WIDTH_LANDSCAPE = 120;
-
 /** 横型のオプションバー高（アイコンボタン4個の縦積み + 上下パディング16×2）。 */
 const OPTIONS_HEIGHT_LANDSCAPE = SIZE.iconButton * 4 + SIZE.barGap * 3 + 32;
 
@@ -141,8 +132,8 @@ export class PlayScreenLayout {
     const { width, height } = metrics;
 
     if (metrics.isLandscape) {
-      const sidebarWidth = Math.min(u(SIDEBAR_WIDTH_LANDSCAPE), width);
-      const dashboardWidth = Math.min(u(DASHBOARD_WIDTH_LANDSCAPE), width - sidebarWidth);
+      const sidebarWidth = Math.min(u(SIZE.sidebar), width);
+      const dashboardWidth = Math.min(u(SIZE.dashboardColumn), width - sidebarWidth);
       const optionsHeight = Math.min(u(OPTIONS_HEIGHT_LANDSCAPE), height);
 
       this.optionsBar = { x: width - sidebarWidth, y: 0, width: sidebarWidth, height: optionsHeight };
@@ -289,7 +280,10 @@ export class PlayScreenLayout {
 
   private buildLanes(): readonly Rect[] {
     const margin = this.metrics.px(SIZE.margin);
-    const laneHeight = this.metrics.px(SIZE.laneHeight);
+    // レーンはフィールドエリアの高さを3等分する。設計寸法（352u）より高くなるのは、幅に合わせてuを
+    // 縮めた横型（ScreenMetrics）で高さが余るときだけ。**余りはレーンが吸収する**——外に残すと、
+    // 区切りの帯で囲った枠が画面の端から離れ、フィールドエリアの下に地の色の帯が見える。
+    const laneHeight = (this.fieldArea.height - margin * 4) / 3;
     const lanes: Rect[] = [];
     for (let i = 0; i < 3; i++) {
       lanes.push({
