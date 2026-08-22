@@ -557,7 +557,7 @@ export function wireBalanceMenu(): void {
         if (dailyNeed === undefined || chains === undefined) continue;
 
         const usable = chains.routes.filter((entry) => !entry.route.untimed && !entry.route.blocked);
-        const entry = usable[Number(select.value)];
+        const entry = usable.at(Number(select.value));
         if (entry !== undefined) chosen.set(dailyNeed.propertyGlobalId, entry.route);
       }
 

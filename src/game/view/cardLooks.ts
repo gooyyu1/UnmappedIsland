@@ -247,7 +247,6 @@ export function cardLooksOf(
    * ないため）。**満ちた＝作業できる**を緑で言い切れるよう、満ちる側がgood。
    */
   const materialGaugeOf = (object: WorldObject): CardGauge | undefined => {
-    if (progressId === undefined || materialsSlotId === undefined) return undefined;
     const recipe = recipeOf(object, codex);
     if (recipe === undefined) return undefined;
 

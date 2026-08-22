@@ -227,10 +227,10 @@ export function cardOperationsOf(
     moved: readonly WorldObject[],
     count = 1,
   ): CardCombination | undefined => {
-    const dragged = candidates[0];
+    const dragged = candidates.at(0);
     if (dragged === undefined) return undefined;
 
-    const [combination] = self.combinationsWith(dragged, game.player.instance);
+    const combination = self.combinationsWith(dragged, game.player.instance).at(0);
     if (combination === undefined) return undefined;
 
     const texts = locale.object(self.def.name).interaction(combination.name);

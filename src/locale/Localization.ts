@@ -16,7 +16,8 @@ const LOCALE_TEXTS = import.meta.glob('../assets/locale/*.yaml', {
   eager: true,
   query: '?raw',
   import: 'default',
-}) as Record<string, string>;
+  // 何が同梱されているかはビルド時のファイル次第なので、どのキーも在るとは限らない。
+}) as Record<string, string | undefined>;
 
 /** LOCALE_FILEの中身。 */
 export function bundledLocaleText(): string {

@@ -64,7 +64,7 @@ export class CodexView {
   objectDefs(): readonly ObjectDef[] {
     const defs: ObjectDef[] = [];
     for (let globalId = 0; globalId < this.codex.objects.count; globalId++) {
-      const def: ObjectDef | undefined = this.codex.objects.get(globalId);
+      const def = this.codex.objects.tryGet(globalId);
       // 名前だけが登録されて定義が無いグローバルID（参照だけされた型）は飛ばす。
       if (def !== undefined && !this.codex.isGenerated(def)) defs.push(def);
     }

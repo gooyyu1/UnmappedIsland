@@ -155,12 +155,15 @@ describe('ドキュメントの参照', () => {
       let lastNamedEnd = -1;
       let prevRef: { base: string | null; end: number } | null = null;
       for (const match of text.matchAll(tokenPattern)) {
-        const [whole, namedBase, dou, num, rangeEnd] = match;
+        const whole = match[0];
+        // 捕獲グループは**マッチしなければundefined**になるが、TSの型は string[] と言っている。
+        const [namedBase, dou, num, rangeEnd] = match.slice(1) as (string | undefined)[];
         if (namedBase !== undefined) {
           lastNamedBase = namedBase;
           lastNamedEnd = match.index + whole.length;
           continue;
         }
+        if (num === undefined) continue;
         const nums = rangeEnd === undefined ? [num] : [num, rangeEnd];
         const gap = text.slice(lastNamedEnd, match.index);
         const sincePrev = prevRef === null ? null : text.slice(prevRef.end, match.index);

@@ -273,14 +273,14 @@ export class MapWindow {
    */
   private addZoom(): void {
     // ピンチには2本目のタッチポインタが要る（Phaserの既定はタッチ1本）。既にあれば足さない。
-    if (this.scene.input.pointer2 === undefined) this.scene.input.addPointer(1);
+    if (touchPointer(this.scene.input, 2) === undefined) this.scene.input.addPointer(1);
 
     const onWheel = (pointer: Phaser.Input.Pointer): void => {
       this.zoomAt(Math.pow(WHEEL_ZOOM_BASE, -pointer.deltaY), pointer.x, pointer.y);
     };
     const onPinch = (): void => {
-      const first = this.scene.input.pointer1;
-      const second = this.scene.input.pointer2;
+      const first = touchPointer(this.scene.input, 1);
+      const second = touchPointer(this.scene.input, 2);
       if (first === undefined || second === undefined || !first.isDown || !second.isDown) {
         this.pinchDistance = undefined;
         this.pinchMid = undefined;
@@ -445,4 +445,12 @@ function drawIslandOutline(
   }
   outline.closePath();
   outline.strokePath();
+}
+
+/**
+ * 何本目かのタッチポインタ。**addPointerするまで存在しないが、Phaserの型は非省略可と言っている**
+ * ので、その嘘をここで受ける（2本目はピンチのために自分で足す、addZoom参照）。
+ */
+function touchPointer(input: Phaser.Input.InputPlugin, index: 1 | 2): Phaser.Input.Pointer | undefined {
+  return (index === 1 ? input.pointer1 : input.pointer2) as Phaser.Input.Pointer | undefined;
 }

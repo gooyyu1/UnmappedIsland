@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { Rect } from '../ui/Rect';
 import { DISPLAY_PADDING, PlayScreenLayout } from './looks/PlayScreenLayout';
+import { isAlive } from '../ui/lifetime';
 import { SCREEN_DEPTH } from './looks/screenDepth';
 import { ResponsiveScene } from './ResponsiveScene';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
@@ -181,7 +182,9 @@ const SLOT_BUTTON_ICONS = { map: '🗺️', equipment: '👕', injuries: '🩹',
  * 姿を用意していないスロットにはボタンを出さない——染めは絵に焼いてあり（COLOR参照）、絵と色の
  * 両方を用意して初めてこの列に並べられる。ボタンが無くても、キャラクタの窓のタブからは開ける。
  */
-const CHARACTER_SLOT_BUTTONS: Readonly<Record<string, { art: IconName; icon: string; fill: number }>> = {
+const CHARACTER_SLOT_BUTTONS: Readonly<
+  Partial<Record<string, { art: IconName; icon: string; fill: number }>>
+> = {
   equipment: { art: 'equipment', icon: SLOT_BUTTON_ICONS.equipment, fill: COLOR.equipmentButton },
   injuries: { art: 'injury', icon: SLOT_BUTTON_ICONS.injuries, fill: COLOR.injuryButton },
 };
@@ -1505,7 +1508,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 経過分を日数・時刻へ直して時計に出す。画面を作り直した直後はまだ時計が無いことがある。 */
   private showClock(totalMinutes: number): void {
-    if (this.situation.scene === undefined) return;
+    if (!isAlive(this.situation)) return;
 
     const { days, hour, minute } = clockParts(totalMinutes);
     this.situation.setTime(days, hour, minute);

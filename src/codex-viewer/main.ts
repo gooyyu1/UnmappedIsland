@@ -110,22 +110,23 @@ function scrollToSection(
   domId: (name: string) => string,
   options?: ScrollIntoViewOptions,
 ): void {
-  if (parts[0] !== route || parts[1] === undefined) return;
-  document.getElementById(domId(parts[1]))?.scrollIntoView(options);
+  const name = parts.at(1);
+  if (parts.at(0) !== route || name === undefined) return;
+  document.getElementById(domId(name))?.scrollIntoView(options);
 }
 
 function renderRoute(view: CodexView, parts: readonly string[]): string {
-  if (parts.length === 0) return renderObjectListPage(view);
-  if (parts[0] === 'object' && parts[1] !== undefined) return renderObjectPage(view, parts[1]);
-  if (parts[0] === 'property' && parts[1] !== undefined && parts[2] !== undefined)
-    return renderPropertyPage(view, parts[1], parts[2]);
-  if (parts[0] === 'prop-candidates' && parts[1] !== undefined)
-    return renderPropertyCandidatesPage(view, parts[1]);
-  if (parts[0] === 'tags') return renderTagListPage(view);
-  if (parts[0] === 'by-tag') return renderObjectsByTagPage(view);
-  if (parts[0] === 'network') return renderNetworkPage(view, parts[1]);
-  if (parts[0] === 'balance') return renderBalancePage(view);
-  if (parts[0] === 'slot' && parts[1] !== undefined) return renderSlotPage(view, parts[1]);
+  const [route, first, second] = [parts.at(0), parts.at(1), parts.at(2)];
+  if (route === undefined) return renderObjectListPage(view);
+  if (route === 'object' && first !== undefined) return renderObjectPage(view, first);
+  if (route === 'property' && first !== undefined && second !== undefined)
+    return renderPropertyPage(view, first, second);
+  if (route === 'prop-candidates' && first !== undefined) return renderPropertyCandidatesPage(view, first);
+  if (route === 'tags') return renderTagListPage(view);
+  if (route === 'by-tag') return renderObjectsByTagPage(view);
+  if (route === 'network') return renderNetworkPage(view, first);
+  if (route === 'balance') return renderBalancePage(view);
+  if (route === 'slot' && first !== undefined) return renderSlotPage(view, first);
   return renderNotFoundPage();
 }
 

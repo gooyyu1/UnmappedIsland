@@ -317,8 +317,9 @@ export class ShownCards {
    * 画面が飛ばすものを食い違わせないため。
    */
   movedBy(drop: ShownDrop): { readonly grabbed: number; readonly followers: readonly number[] } | undefined {
-    const [grabbed, ...followers] = this.dropEffect(drop)?.movedIds ?? [];
-    return grabbed === undefined ? undefined : { grabbed, followers };
+    const moved = this.dropEffect(drop)?.movedIds ?? [];
+    const grabbed = moved.at(0);
+    return grabbed === undefined ? undefined : { grabbed, followers: moved.slice(1) };
   }
 
   /** カードに重ねたとき、そのカードが中身を映す場所（入れ物でなければundefined）。 */

@@ -108,7 +108,7 @@ export class PropertiesPane implements ObjectWindowPane {
     this.categories = this.source();
     const entries = this.categories[this.selected]?.entries ?? [];
     this.rows.forEach((row, index) => {
-      const entry = entries[index];
+      const entry = entries.at(index);
       if (entry !== undefined) row.setContent(entry);
     });
   }

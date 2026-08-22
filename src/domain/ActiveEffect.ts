@@ -457,8 +457,8 @@ export class TransferEffect extends ActiveEffect {
    * 受け取る側へ持っていかれるから——1本の輸送が、どちらの端から見ても相手のせいで動いて見える。
    */
   collectTransferInfluences(declarer: WorldObject, active: boolean, out: InfluenceWriter): void {
-    const from = declarer.resolveInfluenceTargets(this.fromObject, this.fromPropertyGlobalId)[0];
-    const to = declarer.resolveInfluenceTargets(this.toObject, this.toPropertyGlobalId)[0];
+    const from = declarer.resolveInfluenceTargets(this.fromObject, this.fromPropertyGlobalId).at(0);
+    const to = declarer.resolveInfluenceTargets(this.toObject, this.toPropertyGlobalId).at(0);
     if (from === undefined || to === undefined) return;
 
     out.write({

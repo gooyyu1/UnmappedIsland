@@ -114,27 +114,27 @@ function withTriggeredRangeEvents(
 ): CraftingStep {
   const resolve = staticResolverOf(def, outer);
 
-  let triggered = false;
   let destroyedProbability = 0;
-  const outcomes = step.outcomes.map((outcome) => {
-    let expanded: readonly StepOutcome[] = [outcome];
+  const expanded = step.outcomes.map((outcome) => {
+    let outcomes: readonly StepOutcome[] = [outcome];
     let destroysSelf = false;
+    let triggered = false;
 
     for (const [propertyGlobalId, value] of selfMovesOf(def, outcome, outer)) {
       const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
       const readout = propertyDef === undefined ? undefined : rangeEventAt(propertyDef, value, resolve);
       if (readout === undefined) continue;
       // 分岐の確率は積で畳まれる（rangeイベントの分岐の和は1）ので、掛け直さなくてよい。
-      expanded = combineOutcomes(expanded, readout.outcomes);
+      outcomes = combineOutcomes(outcomes, readout.outcomes);
       destroysSelf ||= readout.destroysSelf;
       triggered = true;
     }
     if (destroysSelf) destroyedProbability += outcome.probability;
-    return expanded;
+    return { outcomes, triggered };
   });
 
-  if (!triggered) return step;
-  const flattened = outcomes.flat();
+  if (!expanded.some((entry) => entry.triggered)) return step;
+  const flattened = expanded.flatMap((entry) => entry.outcomes);
   return {
     ...step,
     inputs: step.inputs.map((input) =>

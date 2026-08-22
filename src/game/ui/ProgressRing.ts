@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { elapsedText } from '../looks/durationText';
 import { cssColor } from '../../util/cssColor';
+import { isAlive } from '../../ui/lifetime';
 import { COLOR, FONT_FAMILY } from '../looks/theme';
 
 /** ドーナツの外半径と輪の太さ（u単位）。 */
@@ -69,7 +70,7 @@ export class ProgressRing extends Phaser.GameObjects.Container {
    * ——別々に渡せるようにすると、呼ぶ側が片方だけ更新できてしまう。
    */
   setRatio(ratio: number, elapsedMinutes: number): void {
-    if (this.scene === undefined) return;
+    if (!isAlive(this)) return;
 
     this.graphics.clear();
 

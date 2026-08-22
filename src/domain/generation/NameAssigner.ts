@@ -30,11 +30,12 @@ export function assignNames(sites: readonly Site[], rng: Pcg32): void {
     // 亜種は引いた順に配り、足りない分は通し番号で埋める（足りないのは想定外の状態）。
     const variants = shuffled(type.variants, rng);
     group.forEach((site, index) => {
-      site.variant = variants[index];
+      const variant = variants.at(index);
+      site.variant = variant;
       site.name =
-        variants[index] === undefined
+        variant === undefined
           ? new LocationName(type.name, undefined, index + 1)
-          : new LocationName(type.name, variants[index].id);
+          : new LocationName(type.name, variant.id);
     });
   }
 }

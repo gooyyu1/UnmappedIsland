@@ -77,5 +77,5 @@ function chooseCandidates(
   }
 
   const groups = [...byDef.values()];
-  return groups.find((group) => group.length >= needed) ?? groups[0] ?? [];
+  return groups.find((group) => group.length >= needed) ?? groups.at(0) ?? [];
 }
