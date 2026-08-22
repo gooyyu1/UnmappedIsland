@@ -34,9 +34,9 @@ interface AxisDecl {
  * （inProgressObjectsと同じ）。
  */
 export function axisVariantsYaml(
+  loader: WorldCodexYamlLoader,
   rawDefs: ReadonlyMap<string, RawObjectDef>,
   defs: readonly ObjectDef[],
-  loader: WorldCodexYamlLoader,
 ): GeneratedObjectDefs | undefined {
   const objectDefs: Record<string, unknown> = {};
   const coordinates = new Map<string, GeneratedCoordinate>();
@@ -44,7 +44,7 @@ export function axisVariantsYaml(
   for (const raw of rawDefs.values()) {
     if (raw.variationAxes === undefined) continue;
 
-    for (const [axisName, axis] of readAxes(raw, defs, loader)) {
+    for (const [axisName, axis] of readAxes(loader, raw, defs)) {
       for (const value of axis.values) {
         const name = variantName(raw.name, axisName, value.name);
         objectDefs[name] = variantBody(raw, value, rawDefs);
@@ -64,9 +64,9 @@ export function axisVariantsYaml(
 
 /** `variation_axes`の各エントリを読む。軸の名前は著者が付け、値になれる型は`of`が選ぶ。 */
 function readAxes(
+  loader: WorldCodexYamlLoader,
   raw: RawObjectDef,
   defs: readonly ObjectDef[],
-  loader: WorldCodexYamlLoader,
 ): Array<[string, AxisDecl]> {
   const context = `object_defs.'${raw.name}'.variation_axes`;
 

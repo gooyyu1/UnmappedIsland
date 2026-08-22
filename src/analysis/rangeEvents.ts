@@ -69,8 +69,8 @@ export function rangeEventAt(
  */
 export function ticksToRangeEnd(
   propertyDef: PropertyDef,
-  perTick: number,
   value: number | undefined,
+  perTick: number,
 ): number | undefined {
   const range = propertyDef.range;
   if (range === undefined || perTick === 0 || value === undefined) return undefined;

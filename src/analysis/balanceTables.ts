@@ -276,7 +276,7 @@ export interface BalanceTables {
   readonly gaps: readonly Gap[];
 
   /** 代表キャラクタが1日に賄わなければならない値。 */
-  readonly requirements: readonly Requirement[];
+  readonly dailyNeeds: readonly DailyNeed[];
 
   readonly consumption: readonly ConsumptionRow[];
   readonly supply: readonly SupplyRow[];
@@ -287,12 +287,12 @@ export interface BalanceTables {
 export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): BalanceTables {
   const characterNames = codex.objectDefNamesWithTag('character');
   const character = codex.objects.get(codex.objectNames.getId(sampleCharacter));
-  const requirements = requirementsOf(codex, character);
-  const { places, gaps, islandWide } = placeBalances(codex, character, requirements);
+  const dailyNeeds = dailyNeedsOf(codex, character);
+  const { places, gaps, islandWide } = placeBalances(codex, character, dailyNeeds);
 
   return {
     characterNames,
-    requirements,
+    dailyNeeds,
     gaps,
     objectCosts: objectCosts(codex, islandWide, MINUTES_PER_DAY - places[0].menu.totalMinutes),
     consumption: consumptionRows(codex, characterNames),
@@ -313,10 +313,12 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
  * （`body_fat`）の減りだけで、三大栄養素はそこへ注ぐ原資（DigestionSystem.md 3節）。
  * 流量を要求量として数えると、必要な3.5倍を食べさせることになる。
  */
-export interface Requirement {
+export interface DailyNeed {
   readonly propertyGlobalId: number;
   readonly name: string;
-  readonly dailyNeed: number;
+
+  /** 1日に賄う量。 */
+  readonly amount: number;
 
   /** この需要を埋められるプロパティ。体脂肪は三大栄養素が原資なので、そちらの増分で埋まる。 */
   readonly suppliedBy: readonly number[];
@@ -331,7 +333,7 @@ export interface Requirement {
  * 段で減る速さが変わる値（体脂肪）は、**初期値が入る段**の速さを採る。段ごとに違う数字を足すと、
  * どの段にも当てはまらない量になる。
  */
-function requirementsOf(codex: WorldCodex, character: ObjectDef): readonly Requirement[] {
+function dailyNeedsOf(codex: WorldCodex, character: ObjectDef): readonly DailyNeed[] {
   const deltas = tickDeltasOf(character).filter((delta) => delta.target === 'self');
 
   // 輸送の両端。負の側（三大栄養素）が原資で、正の側（体脂肪）が受け皿。
@@ -345,10 +347,10 @@ function requirementsOf(codex: WorldCodex, character: ObjectDef): readonly Requi
     perTick.set(delta.propertyGlobalId, (perTick.get(delta.propertyGlobalId) ?? 0) + delta.amount);
   }
 
-  return [...perTick].map(([propertyGlobalId, amount]) => ({
+  return [...perTick].map(([propertyGlobalId, perTickAmount]) => ({
     propertyGlobalId,
     name: codex.propertyName(propertyGlobalId),
-    dailyNeed: -amount * TICKS_PER_DAY,
+    amount: -perTickAmount * TICKS_PER_DAY,
     suppliedBy: sinks.has(propertyGlobalId) ? sources : [propertyGlobalId],
     lethal: destroysWhenEmpty(character, propertyGlobalId),
   }));
@@ -359,7 +361,7 @@ function inInitialStage(def: ObjectDef, delta: TickDelta): boolean {
   const stage = delta.gate.stage;
   if (stage === undefined) return true;
 
-  const propertyDef = def.getPropertyDef(stage.propertyGlobalId);
+  const propertyDef = def.tryGetPropertyDef(stage.propertyGlobalId);
   const value = staticValueOf(def, stage.propertyGlobalId);
   if (propertyDef === undefined || value === undefined) return false;
   return propertyDef.stageOf(value)?.name === stage.name;
@@ -367,7 +369,7 @@ function inInitialStage(def: ObjectDef, delta: TickDelta): boolean {
 
 /** そのプロパティが尽きたとき、持ち主ごと消えるか（`on_min: destroy self`）。 */
 function destroysWhenEmpty(def: ObjectDef, propertyGlobalId: number): boolean {
-  const propertyDef = def.getPropertyDef(propertyGlobalId);
+  const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
   if (propertyDef === undefined) return false;
   return rangeEventReadouts(propertyDef, () => undefined).some(
     (readout) => readout.label === 'on_min' && readout.destroysSelf,
@@ -451,7 +453,7 @@ function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly Supp
 function placeBalances(
   codex: WorldCodex,
   character: ObjectDef,
-  requirements: readonly Requirement[],
+  dailyNeeds: readonly DailyNeed[],
 ): {
   readonly places: readonly PlaceBalance[];
   readonly gaps: readonly Gap[];
@@ -471,7 +473,7 @@ function placeBalances(
     const steps =
       location === undefined ? allSteps(codex, context) : stepsAt(codex, allSteps(codex, context), location);
     const acquisition = location === undefined ? islandWide : new Acquisition(codex, steps, islandWide);
-    const routes = routeCandidates(codex, character, acquisition, steps, requirements, location);
+    const routes = routeCandidates(codex, character, acquisition, steps, dailyNeeds, location);
 
     if (location === undefined) islandRoutes = routes;
 
@@ -480,8 +482,8 @@ function placeBalances(
     const usable = routes.filter((route) => route.rootedHere && !route.blocked);
     return {
       name: location?.name ?? WHOLE_ISLAND,
-      properties: propertyChains(codex, requirements, usable),
-      menu: greedyMenu(requirements, usable),
+      properties: propertyChains(codex, dailyNeeds, usable),
+      menu: greedyMenu(dailyNeeds, usable),
       devices: deviceRows(codex, acquisition, steps),
     };
   });
@@ -556,14 +558,14 @@ function routeCandidates(
   character: ObjectDef,
   acquisition: Acquisition,
   steps: readonly StepRef[],
-  requirements: readonly Requirement[],
+  dailyNeeds: readonly DailyNeed[],
   place: ObjectDef | undefined,
 ): readonly ChainRoute[] {
   const suppliers = new Map<number, number[]>();
-  for (const requirement of requirements)
-    for (const propertyGlobalId of requirement.suppliedBy) {
+  for (const dailyNeed of dailyNeeds)
+    for (const propertyGlobalId of dailyNeed.suppliedBy) {
       const list = suppliers.get(propertyGlobalId) ?? [];
-      list.push(requirement.propertyGlobalId);
+      list.push(dailyNeed.propertyGlobalId);
       suppliers.set(propertyGlobalId, list);
     }
 
@@ -611,21 +613,21 @@ function gainsOf(codex: WorldCodex, ref: StepRef): ReadonlyMap<number, number> {
  */
 function propertyChains(
   codex: WorldCodex,
-  requirements: readonly Requirement[],
+  dailyNeeds: readonly DailyNeed[],
   routes: readonly ChainRoute[],
 ): readonly PropertyChains[] {
-  return requirements
-    .map((requirement) => ({
-      propertyGlobalId: requirement.propertyGlobalId,
-      propertyName: requirement.name,
-      dailyNeed: requirement.dailyNeed,
-      lethal: requirement.lethal,
-      suppliedByNames: requirement.suppliedBy
-        .filter((propertyGlobalId) => propertyGlobalId !== requirement.propertyGlobalId)
+  return dailyNeeds
+    .map((dailyNeed) => ({
+      propertyGlobalId: dailyNeed.propertyGlobalId,
+      propertyName: dailyNeed.name,
+      dailyNeed: dailyNeed.amount,
+      lethal: dailyNeed.lethal,
+      suppliedByNames: dailyNeed.suppliedBy
+        .filter((propertyGlobalId) => propertyGlobalId !== dailyNeed.propertyGlobalId)
         .map((propertyGlobalId) => codex.propertyName(propertyGlobalId)),
       routes: routes
-        .filter((route) => (route.fills.get(requirement.propertyGlobalId) ?? 0) > 0)
-        .map((route) => propertyRoute(route, requirement))
+        .filter((route) => (route.fills.get(dailyNeed.propertyGlobalId) ?? 0) > 0)
+        .map((route) => propertyRoute(route, dailyNeed))
         // 数えられない経路は末尾へ。数字は出すが、最安として混ぜない。
         .sort(
           (a, b) => Number(a.route.untimed) - Number(b.route.untimed) || a.perUnitMinutes - b.perUnitMinutes,
@@ -634,10 +636,10 @@ function propertyChains(
     .filter((chains) => chains.routes.length > 0);
 }
 
-function propertyRoute(route: ChainRoute, requirement: Requirement): PropertyRoute {
-  const gain = route.fills.get(requirement.propertyGlobalId)!;
+function propertyRoute(route: ChainRoute, dailyNeed: DailyNeed): PropertyRoute {
+  const gain = route.fills.get(dailyNeed.propertyGlobalId)!;
   const perUnitMinutes = route.executionMinutes / gain;
-  const dailyMinutes = perUnitMinutes * requirement.dailyNeed;
+  const dailyMinutes = perUnitMinutes * dailyNeed.amount;
   return {
     route,
     gain,
@@ -647,7 +649,7 @@ function propertyRoute(route: ChainRoute, requirement: Requirement): PropertyRou
     deviceCount:
       route.devicePeriodMinutes === undefined
         ? undefined
-        : ((requirement.dailyNeed / gain) * route.devicePeriodMinutes) / MINUTES_PER_DAY,
+        : ((dailyNeed.amount / gain) * route.devicePeriodMinutes) / MINUTES_PER_DAY,
   };
 }
 
@@ -727,22 +729,22 @@ function buildRoute(
  * 毎回、まだ足りない分を最も速く埋める経路を選ぶ。速さは「1分あたりに埋まる需要の割合」で測る
  * ——プロパティごとに単位が違うので、必要量に対する割合へ直さないと足し合わせられない。
  */
-function greedyMenu(requirements: readonly Requirement[], routes: readonly ChainRoute[]): DailyMenu {
+function greedyMenu(dailyNeeds: readonly DailyNeed[], routes: readonly ChainRoute[]): DailyMenu {
   const usable = routes.filter((route) => !route.blocked && !route.untimed && route.executionMinutes > 0);
-  const remaining = new Map(requirements.map((r) => [r.propertyGlobalId, r.dailyNeed]));
+  const remaining = new Map(dailyNeeds.map((need) => [need.propertyGlobalId, need.amount]));
   const chosen = new Map<number, ChainRoute>();
 
   // **menuForと同じ順序で、同じ数え方で選ぶ。** 「どの需要を先に満たしたか」で経路を割り当てると、
   // その経路がその需要を丸ごと賄うことになり、得意でない値を1つで埋めさせてしまう
   // （水20を返す青い実で、満腹1536を賄う類）。
-  for (const requirement of requirements) {
-    const left = remaining.get(requirement.propertyGlobalId) ?? 0;
+  for (const dailyNeed of dailyNeeds) {
+    const left = remaining.get(dailyNeed.propertyGlobalId) ?? 0;
     if (left <= 0) continue;
 
     let best: ChainRoute | undefined;
     let bestMinutes = Number.POSITIVE_INFINITY;
     for (const route of usable) {
-      const gain = route.fills.get(requirement.propertyGlobalId) ?? 0;
+      const gain = route.fills.get(dailyNeed.propertyGlobalId) ?? 0;
       if (gain <= 0) continue;
       const minutes = (left / gain) * route.executionMinutes;
       if (minutes < bestMinutes) {
@@ -752,13 +754,13 @@ function greedyMenu(requirements: readonly Requirement[], routes: readonly Chain
     }
     if (best === undefined) continue;
 
-    chosen.set(requirement.propertyGlobalId, best);
-    const repetitions = left / best.fills.get(requirement.propertyGlobalId)!;
+    chosen.set(dailyNeed.propertyGlobalId, best);
+    const repetitions = left / best.fills.get(dailyNeed.propertyGlobalId)!;
     for (const [propertyGlobalId, filled] of best.fills)
       remaining.set(propertyGlobalId, (remaining.get(propertyGlobalId) ?? 0) - filled * repetitions);
   }
 
-  return menuFor(requirements, chosen);
+  return menuFor(dailyNeeds, chosen);
 }
 
 /**
@@ -767,18 +769,18 @@ function greedyMenu(requirements: readonly Requirement[], routes: readonly Chain
  * どちらが正か分からなくなる。
  */
 export function menuFor(
-  requirements: readonly Requirement[],
+  dailyNeeds: readonly DailyNeed[],
   chosen: ReadonlyMap<number, ChainRoute>,
 ): DailyMenu {
-  const remaining = new Map(requirements.map((r) => [r.propertyGlobalId, r.dailyNeed]));
+  const remaining = new Map(dailyNeeds.map((need) => [need.propertyGlobalId, need.amount]));
   const entries: MenuEntry[] = [];
 
-  for (const requirement of requirements) {
-    const route = chosen.get(requirement.propertyGlobalId);
-    const left = remaining.get(requirement.propertyGlobalId) ?? 0;
+  for (const dailyNeed of dailyNeeds) {
+    const route = chosen.get(dailyNeed.propertyGlobalId);
+    const left = remaining.get(dailyNeed.propertyGlobalId) ?? 0;
     if (route === undefined || left <= 0) continue;
 
-    const gain = route.fills.get(requirement.propertyGlobalId) ?? 0;
+    const gain = route.fills.get(dailyNeed.propertyGlobalId) ?? 0;
     if (gain <= 0) continue;
 
     const repetitions = left / gain;
@@ -790,9 +792,9 @@ export function menuFor(
   return {
     entries,
     totalMinutes: entries.reduce((sum, entry) => sum + entry.minutes, 0),
-    unmet: requirements
-      .filter((requirement) => (remaining.get(requirement.propertyGlobalId) ?? 0) > 0)
-      .map((requirement) => requirement.name),
+    unmet: dailyNeeds
+      .filter((dailyNeed) => (remaining.get(dailyNeed.propertyGlobalId) ?? 0) > 0)
+      .map((dailyNeed) => dailyNeed.name),
     chosen,
   };
 }
@@ -923,11 +925,6 @@ interface StepCost {
   readonly imported: boolean;
 }
 
-interface ImportedCost {
-  readonly cost: Cost;
-  readonly imported: boolean;
-}
-
 /** 工程を実行するのに要る、消費されない入力1件。costがundefinedなら、島のどこにも入手経路が無い。 */
 interface Prerequisite {
   readonly label: string;
@@ -975,7 +972,9 @@ function allDefs(codex: WorldCodex): readonly ObjectDef[] {
  */
 function explorableLocationsOf(codex: WorldCodex): readonly ObjectDef[] {
   const progress = codex.vocabulary.world.explorationProgressId;
-  return allDefs(codex).filter((def) => isLocation(codex, def) && def.getPropertyDef(progress) !== undefined);
+  return allDefs(codex).filter(
+    (def) => isLocation(codex, def) && def.tryGetPropertyDef(progress) !== undefined,
+  );
 }
 
 /** プレイヤーが操作するキャラクタか（休息のように自分の値を自分で戻す工程の宣言元）。 */
@@ -1285,7 +1284,7 @@ class Acquisition {
    * 島全体の値段を使う——**入手できるかの判定は島全体でだけ行う**（issue #562）。島のどこにも
    * 無ければundefined。
    */
-  private inputCost(input: CraftingStep['inputs'][number]): ImportedCost | undefined {
+  private inputCost(input: CraftingStep['inputs'][number]): StepCost | undefined {
     const local = this.cheapestCandidate(input);
     if (local !== undefined) {
       const cost = this.costByObject.get(local);

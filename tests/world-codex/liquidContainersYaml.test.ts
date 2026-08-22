@@ -117,15 +117,15 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(jar.combinations, '注ぎ移しを宣言するのは中身の側').toHaveLength(0);
     // volumeは容器自身の外寸のかさで、抱えている量はfillが持つ（LiquidContainerSystem.md 5節）。
     // **空の容器もfillを持つ**——空とは量が0であることで、増やせるのは中身のtraitを配られた変種だけ。
-    expect(jar.getPropertyDef(fillId)?.range?.max, '空の容器も上限を持つ').toBe(4000);
-    expect(jar.getPropertyDef(codex.propertyNames.getId('density')), '密度も中身のもの').toBeUndefined();
+    expect(jar.tryGetPropertyDef(fillId)?.range?.max, '空の容器も上限を持つ').toBe(4000);
+    expect(jar.tryGetPropertyDef(codex.propertyNames.getId('density')), '密度も中身のもの').toBeUndefined();
 
     expect(codex.baseOf(filled), '中身入りは容器の変種').toBe(jar);
     expect(
       filled.actions.map((action) => action.name),
       '中身のdrinkが、容器自身の行動に続いて自分の行動になる',
     ).toEqual(['collect_rain', 'drink']);
-    expect(filled.getPropertyDef(fillId)?.range?.max, '上限は素の型から引き継ぐ').toBe(4000);
+    expect(filled.tryGetPropertyDef(fillId)?.range?.max, '上限は素の型から引き継ぐ').toBe(4000);
   });
 
   it('中身入りの容器の重さは、容器の自重と水の重さの和になる', () => {
@@ -168,7 +168,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const actor = spawn(SAMPLE_CHARACTER);
     const hydrationMax = codex.objects
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
-      .getPropertyDef(hydrationId)!.range!.max;
+      .tryGetPropertyDef(hydrationId)!.range!.max;
     actor.getProperty(hydrationId).init(hydrationMax);
     const jar = spawnContainer('jar', 'water', 1000);
 
@@ -181,7 +181,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const actor = spawn(SAMPLE_CHARACTER);
     const hydrationMax = codex.objects
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
-      .getPropertyDef(hydrationId)!.range!.max;
+      .tryGetPropertyDef(hydrationId)!.range!.max;
     actor.getProperty(hydrationId).init(hydrationMax - 4);
     const jar = spawnContainer('jar', 'water', 1000);
 

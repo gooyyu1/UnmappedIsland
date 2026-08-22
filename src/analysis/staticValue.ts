@@ -43,7 +43,7 @@ export function staticValueOf(
   propertyGlobalId: number,
   outer?: StaticValueResolver,
 ): number | undefined {
-  const propertyDef = def.getPropertyDef(propertyGlobalId);
+  const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
   if (propertyDef === undefined) return undefined;
   if (!propertyDef.inherit) return propertyDef.initialValue;
 

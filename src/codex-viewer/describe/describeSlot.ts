@@ -2,7 +2,7 @@ import type { CellDef, SlotDef } from '../../domain/SlotDef';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { text } from './Description';
 import { weightTokens } from './describeEffect';
-import { typeMatchTokens } from './describeTypeMatch';
+import { typeMatchTokens } from './typeMatchTokens';
 
 /** 枠1つが受け入れる型（7.2節）を書き表す。 */
 export function cellTokens(cell: CellDef, names: DefNames): readonly DescriptionToken[] {

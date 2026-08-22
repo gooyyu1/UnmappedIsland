@@ -21,13 +21,13 @@ describe('core.yamlのworld定義', () => {
   });
 
   function propOf(def: ObjectDef, propertyName: string): PropertyDef {
-    const prop = def.getPropertyDef(codex.propertyNames.getId(propertyName));
+    const prop = def.tryGetPropertyDef(codex.propertyNames.getId(propertyName));
     if (prop === undefined) throw new Error(`'${def.name}' はプロパティ'${propertyName}'を持ちません。`);
     return prop;
   }
 
   function slotOf(def: ObjectDef, slotName: string): SlotDef {
-    const slot = def.getSlotDef(codex.slotNames.getId(slotName));
+    const slot = def.tryGetSlotDef(codex.slotNames.getId(slotName));
     if (slot === undefined) throw new Error(`'${def.name}' はスロット'${slotName}'を持ちません。`);
     return slot;
   }
@@ -267,21 +267,21 @@ object_defs:
 
     const hut = testCodex.objects.get(testCodex.objectNames.getId('test_hut'));
 
-    expect(hut.getSlotDef(testCodex.slotNames.getId('items'))).toBeDefined();
-    expect(hut.getSlotDef(testCodex.slotNames.getId('fixtures'))).toBeDefined();
+    expect(hut.tryGetSlotDef(testCodex.slotNames.getId('items'))).toBeDefined();
+    expect(hut.tryGetSlotDef(testCodex.slotNames.getId('fixtures'))).toBeDefined();
 
-    const characters = hut.getSlotDef(testCodex.slotNames.getId('characters'));
+    const characters = hut.tryGetSlotDef(testCodex.slotNames.getId('characters'));
     expect(characters).toBeDefined();
     expect(characters?.cellCount, 'キャラクタスロットは1枠').toBe(1);
 
     // 語彙（WorldVocabulary）は名前を先に登録するので、「Codexにその名前が無い」では確かめられない。
     // 訊くべきは、この型がそのプロパティを持つかどうか。
     expect(
-      hut.getPropertyDef(testCodex.vocabulary.world.explorationProgressId),
+      hut.tryGetPropertyDef(testCodex.vocabulary.world.explorationProgressId),
       'explorableを実装していないため、探索進捗プロパティを持たない',
     ).toBeUndefined();
     expect(
-      hut.getSlotDef(testCodex.vocabulary.world.undiscoveredFixturesSlotId),
+      hut.tryGetSlotDef(testCodex.vocabulary.world.undiscoveredFixturesSlotId),
       '未発見の設置物スロットも持たない',
     ).toBeUndefined();
   });

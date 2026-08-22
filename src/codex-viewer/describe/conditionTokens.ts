@@ -4,7 +4,7 @@ import type { ReferenceRoot } from '../../domain/ReferenceRoot';
 import type { TypeMatchReading } from '../../domain/TypeMatchRule';
 import type { DefNames, DescriptionToken } from './Description';
 import { propertyRef, slotRef, stageRef, text } from './Description';
-import { typeMatchTokens } from './describeTypeMatch';
+import { typeMatchTokens } from './typeMatchTokens';
 
 /** 比較演算子の書き表し方。 */
 const OP_SYMBOLS: Readonly<Record<ConditionOp, string>> = {

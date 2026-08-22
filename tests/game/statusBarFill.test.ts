@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COLOR, fadedFill, fillColorFor } from '../../src/game/looks/theme';
+import { COLOR, fadedFill, statusFillColorFor } from '../../src/game/looks/theme';
 
 /** 色を成分に分ける（塗りの色が緑寄りか茶寄りかを見るため）。 */
 function channels(color: number): { red: number; green: number; blue: number } {
@@ -12,13 +12,13 @@ function channels(color: number): { red: number; green: number; blue: number } {
  */
 describe('ステータスバーの塗りの色', () => {
   it('安全域は緑、致命的域は茶で、両端は定義した色そのものになる', () => {
-    expect(fillColorFor('safe')).toBe(COLOR.statusBarFillSafe);
-    expect(fillColorFor('fatal')).toBe(COLOR.statusBarFillFatal);
+    expect(statusFillColorFor('safe')).toBe(COLOR.statusBarFillSafe);
+    expect(statusFillColorFor('fatal')).toBe(COLOR.statusBarFillFatal);
   });
 
   it('域が深刻になるほど、緑から茶へ寄っていく', () => {
     const greens = (['safe', 'watch', 'caution', 'danger', 'fatal'] as const).map(
-      (alert) => channels(fillColorFor(alert)).green,
+      (alert) => channels(statusFillColorFor(alert)).green,
     );
 
     // 緑成分が単調に減る＝深刻になるほど緑から離れる。
@@ -44,6 +44,6 @@ describe('ステータスバーの塗りの色', () => {
 
   it('満たされ具合は色に影響しない（同じ域なら同じ色）', () => {
     // 値の位置ではなく域から引く。まだ安全域なら、満タンでなくても緑のまま。
-    expect(fillColorFor('caution')).toBe(fillColorFor('caution'));
+    expect(statusFillColorFor('caution')).toBe(statusFillColorFor('caution'));
   });
 });

@@ -121,7 +121,7 @@ object_defs:
     expect(
       codex.objects
         .get(codex.objectNames.getId('character'))
-        .getPropertyDef(codex.propertyNames.getId('stamina'))?.range?.max,
+        .tryGetPropertyDef(codex.propertyNames.getId('stamina'))?.range?.max,
     ).toBe(100);
   });
 
@@ -145,7 +145,7 @@ object_defs:
     );
     const stamina = codex.objects
       .get(codex.objectNames.getId('character'))
-      .getPropertyDef(codex.propertyNames.getId('stamina'));
+      .tryGetPropertyDef(codex.propertyNames.getId('stamina'));
 
     expect(stamina?.tags).toHaveLength(2);
   });

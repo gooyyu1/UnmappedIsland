@@ -189,27 +189,29 @@ docコメントの取り残し 14件（全部直し、残り0を機械的に確�
   errorReport の行き先が `[object Object]` になっていた不具合、`docComments.test.ts` の判定を
   「空行を挟んだ2連続」まで拡張
 
-### PR 7: 名前と引数順を揃える（挙動は変えない）
+### PR 7: 名前と引数順を揃える ✅ 完了
 
 - **domain**: `ObjectDef.getPropertyDef`/`getSlotDef` → `tryGet*`（`WorldObject` 側の `get`=投げる、
-  `tryGet`=undefined の規約に合わせる）／`Slot.trySetManualPosition` → `tryMoveStackToCell`（兄弟3本は
-  `AtCell`/`AtGap`）／`WorldObject.artSuffix()`・`exhaustedStage()` をゲッターへ（`PropertyValue` 側と対）／
-  `WorldCodex.symbolName` を足す（6つの名前空間のうち1つだけ短縮口が無い）／
+  `tryGet`=undefined の規約に揃えた）／`Slot.trySetManualPosition` → `tryMoveStackToCell`／
+  `WorldObject.artSuffix`・`exhaustedStage` をゲッターへ／`WorldCodex.symbolName` を足した／
   `WorldSession.recordSignal(object, name)`／`PickEffect.selectWeighted(owner, session, actor, dragged)`／
-  `crafting.advanceCrafting` の `(recipe, slotId)` 逆転／**`SlotDef.putInMinutes(owner, item, actor)`**
-  （PR 1 で潰した `(self, actor, dragged)` の割れの残り）／`TransferEffect.collectInfluences` の同名別物
-- **game**: `ProgressRing.setProgress` → `setRatio`（`ProgressBar`・`ExplorationPane` と同じ問い）／
-  `StatusBar.show(content, y)`／`PlayScene.cardsOf` → `stacksOf`（返すのは束）／
-  `theme.fillColorFor` → `statusFillColorFor`／`errorReport.stackOf` → `stackTraceOf`／
-  `FlipCalendar.addCardPaper` → `createDigitPaper`（`card` は札の語）／`Card.addStackBadge` → `create*`／
-  `MapWindow.traySlot` → `trayCell`（`slot` はワールドの語）／`separatorAt` → `horizontalSeparatorAt`／
-  `ExplorationPane.percentOf`/`noteFor`／`openObjectWindow` の `opensPlace`（boolean と CardPlace に割れている）
-- **codex-viewer / analysis**: `CodexView.objectNamesWithTag` → `objectsWithTag`／`objectGridOf` → `*Html`／
-  `identifierLine` の引数順／`pillNodeHtml` → `tagNodeHtml`／`describeCondition.ts`ほか3ファイル名 → `*Tokens.ts`／
-  `balanceSectionId` の引数名（場所限定ではない）／`addTokens` の `names` 位置／`ticksToRangeEnd` の引数順／
-  `balanceTables.Requirement` → `DailyNeed`（domain の `Requirement` と衝突）／`StepCost`/`ImportedCost` の重複
-- **loader**: `requireKnownKeys(node, known, context)`／`descendToMap`/`seqAt` → `descendTo*`／
-  対象キーの4本を `parse*Root` へ／`axisVariants` の `loader` を先頭へ／`tryGetBool` の必須fallbackを外す
+  `crafting.advanceCrafting(inProgress, materialsSlotGlobalId, recipe, …)`／
+  `SlotDef.putInMinutes(owner, actor, item)`・`Slot.putInMinutes(actor, item)`（PR 1 の残り）／
+  `TransferEffect.collectInfluences` → `collectTransferInfluences`
+- **game**: `ProgressRing.setProgress` → `setRatio`／`StatusBar.show(content, y)`／
+  `PlayScene.cardsOf` → `stacksOf`／`theme.fillColorFor` → `statusFillColorFor`／
+  `errorReport.stackOf` → `stackTraceOf`／`FlipCalendar.addCardPaper` → `createDigitPaper`／
+  `Card.addStackBadge` → `createStackBadge`／`MapWindow.traySlot` → `trayCell`／
+  `separatorAt` → `horizontalSeparatorAt`（3つ目の引数名も両方 `thickness` へ）／
+  `ExplorationPane.noteFor` → `noteOf`／`openObjectWindow` の `opensPlace` → `opensFirstSlot`
+- **codex-viewer / analysis**: `CodexView.objectNamesWithTag` → `objectsWithTag`／
+  `objectGridOf` → `matchingObjectsHtml`／`identifierLine` の引数順を `headingIdentifier` へ揃えた／
+  `pillNodeHtml` → `tagNodeHtml`（引数7つ→3つ）／`describeCondition.ts`ほか3ファイルを `*Tokens.ts` へ／
+  `balanceSectionId` の引数名／`addTokens` の `names` を末尾へ／`ticksToRangeEnd(propertyDef, value, perTick)`／
+  `balanceTables.Requirement` → `DailyNeed`（`.dailyNeed` は `.amount` へ）／`ImportedCost` を `StepCost` へ
+- **loader**: `requireKnownKeys(node, known, context, note?)`（24箇所）／`seqAt` → `descendToSeq`／
+  `parse*TargetKey` → `parse*TargetRoot`／`axisVariantsYaml`・`readAxes` の `loader` を先頭へ／
+  `tryGetBool` の必須fallbackを外し、既定値は呼び元の `?? false` に統一
 
 ### PR 8: 畳む（同じ仕組みを1本へ）
 

@@ -82,8 +82,8 @@ export function rangeCyclesOf(
     for (const driver of drivers) {
       const slowest = own.slowest + (driver?.slowest ?? 0);
       const fastest = own.fastest + (driver?.fastest ?? 0);
-      const ticks = ticksToRangeEnd(propertyDef, slowest, value);
-      const shortestTicks = ticksToRangeEnd(propertyDef, fastest, value);
+      const ticks = ticksToRangeEnd(propertyDef, value, slowest);
+      const shortestTicks = ticksToRangeEnd(propertyDef, value, fastest);
       if (ticks === undefined || shortestTicks === undefined) continue;
 
       // 外からの増減が止まる前に端へ届かないなら、その仕掛けは成立しない——小さな獲物は罠の傷でも

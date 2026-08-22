@@ -183,7 +183,7 @@ export function cardOperationsOf(
 
       const texts = locale.slot(place.def.name).putIn;
       const minutes = carried.reduce(
-        (total, item) => total + place.putInMinutes(item, game.player.instance),
+        (total, item) => total + place.putInMinutes(game.player.instance, item),
         0,
       );
 

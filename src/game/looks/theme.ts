@@ -245,7 +245,7 @@ export const COLOR = {
  * **色が良し悪しを表すのは、塗りの長さでは表せないため。** 満タンが良いステータス（満腹度）と悪い
  * ステータス（荷重）が同じ画面に並ぶので、長さだけでは良し悪しが読めません（StatusArea.md 7節）。深刻さを引くのは値の位置ではなく域なので、まだ安全域なら満タンでなくても緑のままです。
  */
-export function fillColorFor(alert: AlertLevel): number {
+export function statusFillColorFor(alert: AlertLevel): number {
   const severity = ALERT_LEVELS.indexOf(alert) / (ALERT_LEVELS.length - 1);
   return mixColor(COLOR.statusBarFillSafe, COLOR.statusBarFillFatal, severity);
 }

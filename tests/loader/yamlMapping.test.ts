@@ -67,10 +67,10 @@ items:
     expect(() => tryGetNumber(map, 'name', 'ctx')).toThrowError(/'name' は数値/);
   });
 
-  it('tryGetBoolは真偽値を解釈し、無いキーはfallback', () => {
-    expect(tryGetBool(map, 'flag', 'ctx', false)).toBe(true);
-    expect(tryGetBool(map, 'missing', 'ctx', true)).toBe(true);
-    expect(() => tryGetBool(map, 'name', 'ctx', false)).toThrowError(/'name' は真偽値/);
+  it('tryGetBoolは真偽値を解釈し、無いキーはundefined（既定値は呼び出し側が書く）', () => {
+    expect(tryGetBool(map, 'flag', 'ctx')).toBe(true);
+    expect(tryGetBool(map, 'missing', 'ctx')).toBeUndefined();
+    expect(() => tryGetBool(map, 'name', 'ctx')).toThrowError(/'name' は真偽値/);
   });
 
   it('tryGetMap/tryGetSeqは型の合わないノードをエラーにする', () => {

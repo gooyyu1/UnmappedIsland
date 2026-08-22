@@ -2,7 +2,7 @@ import type { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../../domai
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { text } from './Description';
 import { describeRequirements } from './describeRequirement';
-import { typeMatchTokens } from './describeTypeMatch';
+import { typeMatchTokens } from './typeMatchTokens';
 
 /** レシピ1つ（13節）を書き出す。 */
 export function describeRecipe(recipe: RecipeDef, names: DefNames, out: DescriptionWriter): void {

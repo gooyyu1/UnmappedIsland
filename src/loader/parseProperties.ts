@@ -53,7 +53,7 @@ export function parseProp(
   const context = `'${objectDefName}'.props.'${propName}'`;
   const propertyGlobalId = loader.propertyNames.intern(propName);
 
-  requireKnownKeys(context, node, KNOWN_PROP_KEYS);
+  requireKnownKeys(node, KNOWN_PROP_KEYS, context);
 
   const valueNode = tryGetNode(node, 'value');
   if (valueNode === undefined)
@@ -111,7 +111,7 @@ export function parseProp(
     for (const passiveNode of propPassives.items as YamlNode[])
       parsePassive(loader, passives, objectDefName, asMap(passiveNode, context), undefined, undefined);
 
-  const inherit = tryGetBool(node, 'inherit', context, false);
+  const inherit = tryGetBool(node, 'inherit', context) ?? false;
   const tags = parsePropertyTags(loader, context, node);
   const gauge = parseGauge(context, node, range);
 
@@ -167,7 +167,7 @@ function parseGauge(context: string, node: YAMLMap, range: PropertyRange | undef
       `${context}: gaugeを使うには'range'が必須です（割合が定義できないとバーにできません）。`,
     );
 
-  requireKnownKeys(`${context}.gauge`, gaugeNode, ['min', 'max']);
+  requireKnownKeys(gaugeNode, ['min', 'max'], `${context}.gauge`);
 
   return new GaugeDef(gaugeEnd(context, gaugeNode, 'min'), gaugeEnd(context, gaugeNode, 'max'));
 }

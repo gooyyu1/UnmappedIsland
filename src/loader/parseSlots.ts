@@ -96,7 +96,7 @@ function parsePlacement(context: string, node: YAMLMap): readonly string[] {
 
 /** `put_in: {duration: ...}`（ここへ入れるのにかかる時間）を読む。出す側に時間は課さない。 */
 function parsePutIn(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): WeightSpec {
-  requireKnownKeys(context, node, ['duration']);
+  requireKnownKeys(node, ['duration'], context);
 
   const durationNode = tryGetNode(node, 'duration');
   if (durationNode === undefined) throw new YamlLoadError(`${context}: 'duration'が必要です。`);

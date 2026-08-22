@@ -64,9 +64,9 @@ function placeLabel(view: CodexView, name: string): string {
   return name === WHOLE_ISLAND ? name : view.objectLabel(name);
 }
 
-/** 場所の節のid（main.tsが`#/balance/<場所>`で使う）。 */
-export function balanceSectionId(place: string): string {
-  return `balance-${place}`;
+/** 収支ページの節のid（土地の名前か、節名の定数。main.tsが`#/balance/<節>`で使う）。 */
+export function balanceSectionId(section: string): string {
+  return `balance-${section}`;
 }
 
 function methodHtml(): string {
@@ -552,16 +552,16 @@ export function wireBalanceMenu(): void {
     const update = (): void => {
       const chosen = new Map<number, ChainRoute>();
       for (const select of selects) {
-        const requirement = tables.requirements.find((r) => r.name === select.dataset.menuProperty);
+        const dailyNeed = tables.dailyNeeds.find((r) => r.name === select.dataset.menuProperty);
         const chains = place.properties.find((c) => c.propertyName === select.dataset.menuProperty);
-        if (requirement === undefined || chains === undefined) continue;
+        if (dailyNeed === undefined || chains === undefined) continue;
 
         const usable = chains.routes.filter((entry) => !entry.route.untimed && !entry.route.blocked);
         const entry = usable[Number(select.value)];
-        if (entry !== undefined) chosen.set(requirement.propertyGlobalId, entry.route);
+        if (entry !== undefined) chosen.set(dailyNeed.propertyGlobalId, entry.route);
       }
 
-      const result = menuFor(tables.requirements, chosen);
+      const result = menuFor(tables.dailyNeeds, chosen);
       const total = menu.querySelector<HTMLElement>('[data-menu-total]');
       const share = menu.querySelector<HTMLElement>('[data-menu-share]');
       if (total !== null) total.textContent = formatNumber(result.totalMinutes, 0);

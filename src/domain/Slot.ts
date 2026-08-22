@@ -86,8 +86,8 @@ export class Slot {
    * この枠へitemを入れるのにかかるゲーム内時間（分、SlotDef.putInMinutes）。宣言が無ければ0。
    * 値段は枠が決めるので、どの経路で入れても同じだけかかる（slotEntry参照）。
    */
-  putInMinutes(item: WorldObject, actor: WorldObject | undefined): number {
-    return this.def.putInMinutes(this.owner, item, actor);
+  putInMinutes(actor: WorldObject | undefined, item: WorldObject): number {
+    return this.def.putInMinutes(this.owner, actor, item);
   }
 
   /**
@@ -329,7 +329,7 @@ export class Slot {
   /** 位置を指定して並び替える（insertAtと同じ読み替え）。動くのは1個ではなくスタック丸ごと。 */
   moveStackTo(stack: ObjectStack, at: SlotPosition): boolean {
     return at.kind === 'cell' && this.hasFixedCells
-      ? this.trySetManualPosition(stack, at.index)
+      ? this.tryMoveStackToCell(stack, at.index)
       : this.tryMoveStackToGap(stack, at.index);
   }
 
@@ -421,19 +421,18 @@ export class Slot {
   }
 
   /**
-   * プレイヤーによる手動並び替え（枠数固定のスロット専用）。対象のスタックを、指定した番号のセルと入れ替える
-   * （相手が空セルなら実質移動になり、元のセルが空く）。前詰めしない前提のため、単純な2者間のswap。対象は
-   * 具体的なObjectStackで受け取る（型では一意に定まらないため。indexOfStack参照）。
+   * 枠数の決まったスロットの並び替え（moveStackToの片割れ）。**指した枠と入れ替える**——相手が空なら
+   * 実質の移動になり、元の枠が空く。詰めないので単純な2者間のswapで足りる。
    */
-  trySetManualPosition(stack: ObjectStack, newGridIndex: number): boolean {
+  tryMoveStackToCell(stack: ObjectStack, cellIndex: number): boolean {
     if (!this.hasFixedCells) return false;
-    const cur = this._cells.indexOf(stack);
-    if (cur < 0) return false;
-    if (newGridIndex < 0 || newGridIndex >= this._cells.length) return false;
+    const from = this._cells.indexOf(stack);
+    if (from < 0) return false;
+    if (cellIndex < 0 || cellIndex >= this._cells.length) return false;
 
-    const tmp = this._cells[newGridIndex];
-    this._cells[newGridIndex] = this._cells[cur];
-    this._cells[cur] = tmp;
+    const swapped = this._cells[cellIndex];
+    this._cells[cellIndex] = this._cells[from];
+    this._cells[from] = swapped;
     return true;
   }
 }

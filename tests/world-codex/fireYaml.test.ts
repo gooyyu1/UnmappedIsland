@@ -379,7 +379,7 @@ describe('fire.yamlの火の連鎖', () => {
 
   it('炉の段が上がるほど、火にかけられる枠が増える', () => {
     const cellCount = (hearthName: string): number | undefined =>
-      codex.objects.get(codex.objectNames.getId(hearthName)).getSlotDef(codex.slotNames.getId('fire'))
+      codex.objects.get(codex.objectNames.getId(hearthName)).tryGetSlotDef(codex.slotNames.getId('fire'))
         ?.cellCount;
 
     // 焚き火の2枠は焼く物だけ。三石は器の枠が1つ、石囲いは2つ増える（1.1節）。
@@ -391,7 +391,7 @@ describe('fire.yamlの火の連鎖', () => {
   it('火の中の枠は、丸焼きの鎖に並ぶ物だけを受け入れる', () => {
     const fireSlot = codex.objects
       .get(codex.objectNames.getId('campfire'))
-      .getSlotDef(codex.slotNames.getId('fire'));
+      .tryGetSlotDef(codex.slotNames.getId('fire'));
     const accepts = (objectName: string): boolean =>
       fireSlot?.acceptsAnywhere(codex.objects.get(codex.objectNames.getId(objectName))) === true;
 

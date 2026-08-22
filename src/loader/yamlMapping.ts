@@ -96,9 +96,9 @@ export function tryGetNumber(map: YAMLMap, key: string, context: string): number
   return value;
 }
 
-export function tryGetBool(map: YAMLMap, key: string, context: string, fallback: boolean): boolean {
+export function tryGetBool(map: YAMLMap, key: string, context: string): boolean | undefined {
   const raw = tryGetScalar(map, key, context);
-  if (raw === undefined) return fallback;
+  if (raw === undefined) return undefined;
   const lowered = raw.toLowerCase();
   if (lowered === 'true') return true;
   if (lowered === 'false') return false;
@@ -138,7 +138,7 @@ export function asScalarText(node: unknown, context: string): string {
  * メッセージを変えるのに全箇所を直すことになる。noteは理由を添えたい場所（主語によって使える演算子が
  * 変わる、など）だけで使う。
  */
-export function requireKnownKeys(context: string, node: YAMLMap, known: Iterable<string>, note = ''): void {
+export function requireKnownKeys(node: YAMLMap, known: Iterable<string>, context: string, note = ''): void {
   const allowed = new Set(known);
   const unknown = entriesInOrder(node)
     .map(([key]) => key)

@@ -19,7 +19,7 @@ function def(name: string): ObjectDef {
 }
 
 function propOf(objectDef: ObjectDef, propertyName: string): PropertyDef {
-  const prop = objectDef.getPropertyDef(codex.propertyNames.getId(propertyName));
+  const prop = objectDef.tryGetPropertyDef(codex.propertyNames.getId(propertyName));
   if (prop === undefined) throw new Error(`'${objectDef.name}' はプロパティ'${propertyName}'を持ちません。`);
   return prop;
 }
@@ -117,7 +117,7 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     it('固定枠の手持ちスロットと、装備・怪我のスロットを持つ', () => {
-      const hand = def(character).getSlotDef(codex.slotNames.getId('hand'));
+      const hand = def(character).tryGetSlotDef(codex.slotNames.getId('hand'));
 
       expect(hand, '手持ちスロットを持つ').toBeDefined();
       // 枠数は個体差にしてよいが、ハンドレーンに収まる範囲に留める（ScreenLayout.md 7.3節）。数を決めて
@@ -127,7 +127,7 @@ describe('プレイヤーキャラクタの定義', () => {
 
       for (const slotName of ['equipment', 'injuries'])
         expect(
-          def(character).getSlotDef(codex.slotNames.getId(slotName)),
+          def(character).tryGetSlotDef(codex.slotNames.getId(slotName)),
           `${slotName} スロットを持つ`,
         ).toBeDefined();
     });

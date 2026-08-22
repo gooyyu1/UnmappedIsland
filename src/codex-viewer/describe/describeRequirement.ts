@@ -1,7 +1,7 @@
 import type { Requirement, Requirements } from '../../domain/Requirement';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { reasonRef, text } from './Description';
-import { conditionTokens } from './describeCondition';
+import { conditionTokens } from './conditionTokens';
 
 /** 要件1つを書き表す。理由（14.6節）を宣言していれば添える。 */
 export function requirementTokens(requirement: Requirement, names: DefNames): readonly DescriptionToken[] {

@@ -34,8 +34,8 @@ export function addTokens(
   target: ReferenceRoot,
   propertyGlobalId: number,
   amount: number,
+  verb: string,
   names: DefNames,
-  verb = 'add',
 ): readonly DescriptionToken[] {
   return [
     text(`${verb} `),
@@ -62,7 +62,7 @@ export function transferTokens(reading: TransferReading, names: DefNames): reado
 /** `linked_add`の1行（輸送の下に字下げして並べる）。 */
 export function linkedAddTokens(linked: LinkedAddReading, names: DefNames): readonly DescriptionToken[] {
   return [
-    ...addTokens(linked.target, linked.propertyGlobalId, linked.amount, names),
+    ...addTokens(linked.target, linked.propertyGlobalId, linked.amount, 'add', names),
     text('（実際に移した量に比例）'),
   ];
 }
@@ -106,7 +106,7 @@ class EffectDescriber implements EffectReader {
   }
 
   add(target: ReferenceRoot, propertyGlobalId: number, amount: number): void {
-    this.out.write(...addTokens(target, propertyGlobalId, amount, this.names));
+    this.out.write(...addTokens(target, propertyGlobalId, amount, 'add', this.names));
   }
 
   /** 配置先（`into`）は書かない——どこの枠へ入るかは、何が起きたかの説明には要らない。 */

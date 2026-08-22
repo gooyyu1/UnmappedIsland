@@ -115,7 +115,7 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
     // 小さい時刻の桁が宙に浮いて見える。
     const top = blockHeight - height;
 
-    const card = addCardPaper(scene, metrics, x, top, width, height);
+    const paper = createDigitPaper(scene, metrics, x, top, width, height);
 
     const text = scene.add
       .text(x + width / 2, top + height / 2, '', {
@@ -126,7 +126,7 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
       })
       .setOrigin(0.5);
 
-    this.add([card, text]);
+    this.add([paper, text]);
     this.digits.push(text);
   }
 
@@ -154,7 +154,7 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
  * （Card.tsのcreatePaperと同じ流儀）。画像には留具の穴・リング・落ち影まで描き込まれていて、
  * 紙の部分が指定の矩形に一致し、リングはその上へはみ出す。
  */
-function addCardPaper(
+function createDigitPaper(
   scene: Phaser.Scene,
   metrics: ScreenMetrics,
   x: number,

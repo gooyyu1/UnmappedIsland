@@ -25,7 +25,7 @@ export function putIntoSlot(
   // 入らないと分かっているなら時間も取らない。時間だけ取られて何も入らない、が起きないようにする。
   if (item.rejectionForMoveTo(slot) !== undefined) return;
 
-  if (!spendDuration(slot.putInMinutes(item, actor), session, [item, slot.owner])) return;
+  if (!spendDuration(slot.putInMinutes(actor, item), session, [item, slot.owner])) return;
 
   place();
 }

@@ -72,7 +72,7 @@ export function parsePassive(
 
   const knownKeys = new Set<string>(['conditions', 'modify', 'add', 'transfer']);
 
-  requireKnownKeys(context, passiveMap, knownKeys);
+  requireKnownKeys(passiveMap, knownKeys, context);
 }
 
 /**

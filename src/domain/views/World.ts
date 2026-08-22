@@ -1,6 +1,5 @@
 import type { WorldCodex } from '../WorldCodex';
 import type { WorldRuleVocabulary } from '../WorldVocabulary';
-import type { NameRegistry } from '../NameRegistry';
 import type { Rng } from '../Rng';
 import type { WorldObject } from '../WorldObject';
 import type { WorldSession } from '../WorldSession';
@@ -17,12 +16,12 @@ export class World {
   readonly instance: WorldObject;
 
   private readonly words: WorldRuleVocabulary;
-  private readonly symbolNames: NameRegistry;
+  private readonly codex: WorldCodex;
 
   constructor(instance: WorldObject, codex: WorldCodex) {
     this.instance = instance;
     this.words = codex.vocabulary.world;
-    this.symbolNames = codex.symbolNames;
+    this.codex = codex;
   }
 
   get day(): number {
@@ -52,7 +51,7 @@ export class World {
    */
   get weather(): string | undefined {
     const value = this.instance.tryGetProperty(this.words.weatherId)?.getEffectiveValue();
-    return value === undefined ? undefined : this.symbolNames.getName(value);
+    return value === undefined ? undefined : this.codex.symbolName(value);
   }
 
   /**

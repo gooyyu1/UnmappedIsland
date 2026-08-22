@@ -173,7 +173,7 @@ export class WorldCodexYamlLoader {
     // recipesを変種へ写さないため（作れるのは空の容器のほう）。
     this.loadGenerated(
       AXIS_VARIANT_SOURCE,
-      axisVariantsYaml(this.globalObjectDefs, [...objectDefsByGlobalId.values()], this),
+      axisVariantsYaml(this, this.globalObjectDefs, [...objectDefsByGlobalId.values()]),
       objectDefsByGlobalId,
       generatedTypes,
     );

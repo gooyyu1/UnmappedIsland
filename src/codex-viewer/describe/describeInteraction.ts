@@ -3,7 +3,7 @@ import type { DefNames, DescriptionWriter } from './Description';
 import { text } from './Description';
 import { describeEffect, weightTokens } from './describeEffect';
 import { requirementTokens } from './describeRequirement';
-import { typeMatchTokens } from './describeTypeMatch';
+import { typeMatchTokens } from './typeMatchTokens';
 
 /**
  * 操作1つ（11節・12節）を書き出す。きっかけ（メニュー/相手のタグ）→要件→所要時間→効果の順で、

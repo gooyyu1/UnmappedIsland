@@ -56,10 +56,10 @@ export class RawTrait {
     this.passives = tryGetSeq(node, 'passives', context);
     this.stackOrder = tryGetMap(node, 'stack_order', context);
     this.visibleSlots = namesIn(tryGetSeq(node, 'visible_slots', context), `${context}.visible_slots`);
-    this.isStorage = tryGetBool(node, 'storage', context, false);
+    this.isStorage = tryGetBool(node, 'storage', context) ?? false;
     this.artByStage = tryGetScalar(node, 'art_by_stage', context);
-    this.boundToOwner = tryGetBool(node, 'bound_to_owner', context, false);
-    this.notStackable = !tryGetBool(node, 'stackable', context, true);
+    this.boundToOwner = tryGetBool(node, 'bound_to_owner', context) ?? false;
+    this.notStackable = !(tryGetBool(node, 'stackable', context) ?? true);
     this.actions = tryGetMap(node, 'actions', context);
     this.combinations = tryGetMap(node, 'combinations', context);
 

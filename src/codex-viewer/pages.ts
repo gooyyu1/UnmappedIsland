@@ -54,7 +54,7 @@ export function renderObjectPage(view: CodexView, name: string): string {
     artHtml(view, def, 'large') +
     `<div>` +
     `<h1>${escapeHtml(view.objectLabel(name))}</h1>` +
-    identifierLine(view, name, view.objectLabel(name), view.objectDisplayName(name)) +
+    identifierLine(view, view.objectLabel(name), name, view.objectDisplayName(name)) +
     (description === undefined ? '' : `<p class="lead">${escapeHtml(description)}</p>`) +
     `<p>${tagChipsHtml(view, def)}</p>` +
     (base === undefined
@@ -84,17 +84,17 @@ export function renderObjectPage(view: CodexView, name: string): string {
     // 逆引きはどちらも、行き先の型を絵で並べるだけにする——どの操作・どの工程かはリンク先で分かる。
     section(
       'この型を生み出すもの',
-      objectGridOf(view, (other) => creates(other, def.globalId)),
+      matchingObjectsHtml(view, (other) => creates(other, def.globalId)),
     ) +
     section(
       'この型を材料・道具に使うもの',
-      objectGridOf(view, (other) => usesInRecipes(other, def)),
+      matchingObjectsHtml(view, (other) => usesInRecipes(other, def)),
     )
   );
 }
 
 /** 条件に当てはまる型を、一覧と同じ絵つきのカードで並べる。 */
-function objectGridOf(view: CodexView, matches: (def: ObjectDef) => boolean): string {
+function matchingObjectsHtml(view: CodexView, matches: (def: ObjectDef) => boolean): string {
   return objectGridHtml(
     view,
     view
@@ -137,7 +137,7 @@ export function renderPropertyPage(view: CodexView, objectName: string, property
   if (def === undefined) return errorPage(`object_def '${escapeHtml(objectName)}' が見つかりません。`);
 
   const propertyGlobalId = view.codex.propertyNames.tryGetId(propertyName);
-  const propertyDef = propertyGlobalId === undefined ? undefined : def.getPropertyDef(propertyGlobalId);
+  const propertyDef = propertyGlobalId === undefined ? undefined : def.tryGetPropertyDef(propertyGlobalId);
   if (propertyDef === undefined || propertyGlobalId === undefined)
     return errorPage(`'${escapeHtml(objectName)}' に '${escapeHtml(propertyName)}' というpropはありません。`);
 
@@ -169,14 +169,14 @@ export function renderPropertyPage(view: CodexView, objectName: string, property
 }
 
 /**
- * タグの一覧。タグは型のグループを指す唯一の手段（`CodexView.objectNamesWithTag`）なので、
+ * タグの一覧。タグは型のグループを指す唯一の手段（`CodexView.objectsWithTag`）なので、
  * 「どんなまとまりがあるか」を見渡す入口になる。一覧に出す型が1つも無いタグ（製作中オブジェクト
  * だけが持つwipなど）は、行き先が空になるので出さない。
  */
 export function renderTagListPage(view: CodexView): string {
   const cards = view
     .tagNames()
-    .map((tag) => ({ tag, owners: view.objectNamesWithTag(tag) }))
+    .map((tag) => ({ tag, owners: view.objectsWithTag(tag) }))
     .filter(({ owners }) => owners.length > 0)
     .map(
       ({ tag, owners }) =>
@@ -214,7 +214,7 @@ function tagArtHtml(view: CodexView, names: readonly string[]): string {
 export function renderObjectsByTagPage(view: CodexView): string {
   const sections = view
     .tagNames()
-    .map((tag) => ({ tag, names: view.objectNamesWithTag(tag) }))
+    .map((tag) => ({ tag, names: view.objectsWithTag(tag) }))
     .filter(({ names }) => names.length > 0)
     .map(({ tag, names }) => tagSectionHtml(view, tag, escapeHtml(tag), names))
     .join('');
@@ -261,7 +261,7 @@ export function renderSlotPage(view: CodexView, slotName: string): string {
   const rows = view
     .objectsWithSlot(slotName)
     .map((owner) => {
-      const slotDef = globalId === undefined ? undefined : view.objectDef(owner)?.getSlotDef(globalId);
+      const slotDef = globalId === undefined ? undefined : view.objectDef(owner)?.tryGetSlotDef(globalId);
       return slotDef === undefined
         ? ''
         : `<tr><td>${objectLinkHtml(view, owner)}</td>${slotCellsHtml(view, owner, slotDef)}</tr>`;
@@ -271,7 +271,7 @@ export function renderSlotPage(view: CodexView, slotName: string): string {
   return (
     `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
     `<h1>${escapeHtml(view.slotLabel(slotName))}</h1>` +
-    identifierLine(view, slotName, view.slotLabel(slotName), texts.displayName) +
+    identifierLine(view, view.slotLabel(slotName), slotName, texts.displayName) +
     (texts.putIn?.description === undefined
       ? ''
       : `<p class="lead">${escapeHtml(texts.putIn.description)}</p>`) +
@@ -508,7 +508,7 @@ function headingIdentifier(label: string, identifier: string): string {
  * 見出しの下に置く識別子の行。見出しがすでに識別子そのものを出しているとき（識別子表示モード、
  * または未翻訳）は繰り返さない。
  */
-function identifierLine(view: CodexView, identifier: string, label: string, displayName: string): string {
+function identifierLine(view: CodexView, label: string, identifier: string, displayName: string): string {
   const code = label === identifier ? '' : `<code>${escapeHtml(identifier)}</code>`;
   const badge = untranslatedBadge(view, identifier, displayName);
   return code === '' && badge === '' ? '' : `<p class="identifier">${code}${badge}</p>`;

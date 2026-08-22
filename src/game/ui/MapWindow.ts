@@ -155,7 +155,7 @@ export class MapWindow {
    * 画面座標のクランプを正規化座標へそのまま書き戻せる。
    */
   private openingPlacement(site: number, saved: ReadonlyMap<number, MapPlacement>): MapPlacement {
-    const at = saved.get(site) ?? this.traySlot(this.unplacedCount(saved));
+    const at = saved.get(site) ?? this.trayCell(this.unplacedCount(saved));
     const clamped = this.clampTopLeft(
       at.x * this.metrics.width - (this.metrics.px(SIZE.cardWidth) * CARD_SCALE) / 2,
       at.y * this.metrics.height - (this.metrics.px(SIZE.cardHeight) * CARD_SCALE) / 2,
@@ -178,7 +178,7 @@ export class MapWindow {
    * まだ置かれていないカードの初期位置。閉じるボタンにかからないよう、その上の帯へ左から並べ、
    * 入りきらない分は上の行へ折り返す。ここはあくまで待機列で、位置はドラッグで置くまで保存しない。
    */
-  private traySlot(index: number): MapPlacement {
+  private trayCell(index: number): MapPlacement {
     const { width, height } = this.metrics;
     const padding = this.metrics.px(WINDOW_PADDING);
     const gap = this.metrics.px(SIZE.gap);

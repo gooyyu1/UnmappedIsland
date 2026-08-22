@@ -257,11 +257,19 @@ export class PlayScreenLayout {
     // 接していない）。
     this.optionsBarSeparator = metrics.isLandscape
       ? undefined
-      : separatorAt(this.optionsBar.y + this.optionsBar.height, this.optionsBar, separatorThickness);
+      : horizontalSeparatorAt(
+          this.optionsBar.y + this.optionsBar.height,
+          this.optionsBar,
+          separatorThickness,
+        );
     // 状況エリアと本の境目（縦型のみ。横型では両者が上下に並ばない）。
     this.situationSeparator = metrics.isLandscape
       ? undefined
-      : separatorAt(this.situationArea.y + this.situationArea.height, this.situationArea, separatorThickness);
+      : horizontalSeparatorAt(
+          this.situationArea.y + this.situationArea.height,
+          this.situationArea,
+          separatorThickness,
+        );
     // フィールドエリアの左右の辺（横型のみ）。左は状況エリアと本、右は右サイドバーと接する。
     this.fieldLeftSeparator = metrics.isLandscape
       ? verticalSeparatorAt(this.fieldArea.x, this.fieldArea, separatorThickness)
@@ -307,7 +315,7 @@ export class PlayScreenLayout {
       this.lanes[0].y - margin / 2,
       ...this.lanes.map((lane) => lane.y + lane.height + margin / 2),
     ];
-    return centers.map((center) => separatorAt(center, this.fieldArea, height));
+    return centers.map((center) => horizontalSeparatorAt(center, this.fieldArea, height));
   }
 }
 
@@ -315,7 +323,7 @@ export class PlayScreenLayout {
  * 境目の線に対して上下対称に置く帯。絵は中央半分だけが区切りそのもので、上下1/4ずつは隣のエリアへ
  * かぶせる前提で描かれている（ScreenLayout.md 7.6節）。
  */
-function separatorAt(center: number, span: Rect, height: number): Rect {
+function horizontalSeparatorAt(center: number, span: Rect, height: number): Rect {
   return { x: span.x, y: center - height / 2, width: span.width, height };
 }
 

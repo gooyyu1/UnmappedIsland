@@ -95,6 +95,10 @@ export class WorldCodex {
     return this.propertyTagNames.getName(globalId);
   }
 
+  symbolName(globalId: number): string {
+    return this.symbolNames.getName(globalId);
+  }
+
   /**
    * シンボル型（6.6節）と宣言されたプロパティのグローバルID。同じ名前でも型ごとに宣言が違いうるので、
    * 1つでもシンボル型として宣言していれば含める。

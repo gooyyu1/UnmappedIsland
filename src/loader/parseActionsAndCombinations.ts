@@ -113,7 +113,7 @@ export function parseCombinations(
 
     const withRule = parseTypeMatchRule(loader, `${context}.with`, withNode);
     const body = parseInteractionBody(loader, context, map, true, COMBINATION_RESERVED_KEYS);
-    const allowMultiple = tryGetBool(map, 'allow_multiple', context, false);
+    const allowMultiple = tryGetBool(map, 'allow_multiple', context) ?? false;
 
     // 何個受け取れるかを答えられる形かは、宣言だけで決まる。許可したのに答えられない宣言は、
     // 黙って1枚ずつになるとプレイヤーには理由が分からないので、ここで弾く（GameElementDefinition.md 12.4節）。

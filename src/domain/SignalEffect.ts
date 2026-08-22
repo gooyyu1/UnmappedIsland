@@ -34,7 +34,7 @@ export class SignalEffect extends ActiveEffect {
     dragged: WorldObject | undefined,
   ): void {
     const resolved = owner.resolveEffectTarget(this.target, actor, dragged);
-    if (resolved !== undefined) session.recordSignal(this.name, resolved);
+    if (resolved !== undefined) session.recordSignal(resolved, this.name);
   }
 
   read(reader: EffectReader): void {

@@ -217,7 +217,7 @@ export class WorldSession {
    * 指した対象**で、物の出入りの主体（今適用中の効果、recordChange）とは別に決まる——殴って外した
    * 出来事は、殴った側ではなく殴られた側の上のことになる。
    */
-  recordSignal(name: string, object: WorldObject): void {
+  recordSignal(object: WorldObject, name: string): void {
     this.signalObserver?.({ name, object });
   }
 

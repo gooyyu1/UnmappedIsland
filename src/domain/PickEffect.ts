@@ -27,7 +27,7 @@ export class PickEffect extends ActiveEffect {
     effectSite: EffectSite | undefined,
   ): void {
     if (this.candidates.length === 0) return;
-    const chosen = this.selectWeighted(owner, actor, dragged, session);
+    const chosen = this.selectWeighted(owner, session, actor, dragged);
     chosen.apply(owner, session, actor, dragged, effectSite);
   }
 
@@ -47,14 +47,14 @@ export class PickEffect extends ActiveEffect {
    * 「起こりうることが1つも無い」ときに何を選ぶかは抽選（pickWeighted）ではなくこちらが決める。
    */
   private selectWeighted(
-    self: WorldObject,
+    owner: WorldObject,
+    session: WorldSession,
     actor: WorldObject | undefined,
     dragged: WorldObject | undefined,
-    session: WorldSession,
   ): PickCandidateDef {
     const chosen = pickWeighted(
       this.candidates,
-      (candidate) => candidate.resolveWeight(self, actor, dragged),
+      (candidate) => candidate.resolveWeight(owner, actor, dragged),
       session.rng,
     );
     return chosen ?? this.candidates[0];
