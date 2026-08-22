@@ -247,19 +247,17 @@ docコメントの取り残し 14件（全部直し、残り0を機械的に確�
 - `NewGameScene` の高さが2通りに計算されている／`WeatherOverlay.addLayer` が style の5値を別引数で上書き
 - 層（depth）の階梯が `PlayScene`・`DustPuff`・`CardTable`（無名の1）に散っている
 
-### 着手前に相談すること（挙動・仕様が変わる）
+### 相談した8件（PR 6 で7件を反映済み）
 
-1. **`Pcg32.nextInt`（閉区間）と `Rng.nextInt`（半開区間）が同名で逆。** `seededRng` は Pcg32 を包むのに
-   委譲できず式を組み直している。改名だけなら安全、契約を揃えると地形のシード再現性が変わる
-2. **`ObjectWindow.initialTab` がスロットのタブしか受け付けない。** プロパティ・探索のタブは
-   `Settings` に記憶されても復元されない（Windows.md 1.2節の記憶が効いていない）
-3. **`MapWindow.FRAME_RADIUS`(16) と `Card.FRAME_RADIUS`(10)。** docは「同じ値」と言うが違う。
-   揃えると現在地の黒枠の見た目が変わる
-4. **`PropertyRoute.deviceCount` の式**（労働全体 ÷ 設備1つの維持労働）が設備数を水増しする
-5. **`rangeCyclesOf` の「解けなかった印」が宣言順に依存する**（`craftingStepsOf` は工程ごとに閉じている）
-6. `OBJECT_ART` だけ鍵が識別子（他4つはテクスチャキー）
-7. `RecipeWindow` の寸法トークンが3系統目（PR 3 で据え置いた共通トークン化の判断に合流）
-8. `showInformation` が天候を引き直さない（`WeatherPanel` に差し替え口が無い）
+- ✅ タブの記憶（並んでいるタブならどれでも復元する）／地図の黒枠の角丸（Cardへ揃えた）／
+  `deviceCount` の式／型の絵の在庫表の改名／`RecipeWindow` の寸法の合流／天候の引き直し
+- ⏸ **`Pcg32.nextInt`（閉区間）と `Rng.nextInt`（半開区間）が同名で逆。** `seededRng` は Pcg32 を
+  包むのに委譲できず式を組み直している。改名だけなら安全、契約を揃えると地形のシード再現性が
+  変わる。**全部終わってからもう一度訊く**
+- ❓ **`rangeCyclesOf` の「解けなかった印」が宣言順に依存する。** 印（`CraftingStep.
+  hasUnresolvedReferences`）は「この工程の所要時間・確率は、定義だけからは確定しない参照を含む」の
+  意味。`craftingStepsOf` は操作1つごとに閉じているが、`rangeCyclesOf` は関数全体で1つ持つので、
+  先に積んだ周期には付かず後の周期に付く。**直すなら周期ごとに閉じる**（回答待ち）
 
 ### 調査のやり方（次に繰り返すとき）
 
