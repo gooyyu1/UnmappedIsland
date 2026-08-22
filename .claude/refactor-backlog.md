@@ -1,6 +1,6 @@
 # 兄弟の不揃い・薄いラッパーの棚卸し（作業中の控え）
 
-リポジトリ全体（`src/` 約37,000行）を調べて出た指摘を、5つのPRに割ったもの。**全部終わったらこの
+リポジトリ全体（`src/` 約37,000行）を調べて出た指摘を、PRに割ったもの。**全部終わったらこの
 ファイルごと消す。** 次にやることを訊かれたら、上から順に未完のものへ着手する。
 
 見つけ方は3種類——**兄弟なのに名前・引数が揃っていない**／**存在意義の薄いラッパー**／**docが現実と
@@ -21,8 +21,8 @@
 ## この一覧は「上位だけ」であること
 
 **6つの調査を上限8件で打ち切ったため、48件はその上限そのもの。** 6人全員が上限に達し、各自が
-「8件に入らなかったもの」を別に挙げていた（PR 5 で片付けた分）。**PR 1〜5を終えても
-片付いたことにはならない**——「再チェック」の節に従ってもう一度調べる。
+「8件に入らなかったもの」を別に挙げていた（PR 5 で片付けた分）。**上限を外した再チェックで、
+さらに約150件が出た**（下の「再チェック」）。
 
 ## PR 2: 死んでいるものの削除と、docの取り残し ✅ 完了
 
@@ -173,40 +173,97 @@ docコメントの取り残し 14件（全部直し、残り0を機械的に確�
   段ごとに要る材料が違い、揃えると使わない引数を配ることになる
 - `balanceTables.tickAmountsByName` の連結キーと `splitKey`。規約は1モジュールの中で閉じている
 
-## 再チェック（PR 1〜5 を終えてから。**次はここ**）
+## 再チェック ✅ 調査完了（PR 6 で一部着手）
 
-**目的**: 上限で打ち切られた分と、そもそも6人の目に留まらなかった分を拾う。
+**やったこと**: 機械的な全数出し（数え上げ）→ 6分割のエージェント調査（上限なし・既出は除外）。
+挙がったのは約150件で、**PR 6 では「機械的な分」と「docが現実とずれている分」だけを直した**。
+残りは下の PR 7〜9 に割ってある。着手前に必ず本体と呼び元を自分で見ること（報告の数え間違いが実際にあった）。
 
-### 1. まず機械的に全数を出す（エージェントより先にこちら）
+### PR 6 で直した分 ✅
 
-数え上げで済むものは、意見ではなく全数が出る。スクリプトは `scripts/` へ置き、続くものは
-`tests/docs` の見張りにする。
+- 数え上げ: コメントが指す今は無い名前8件（`tests/docs/docMemberReferences.test.ts` で見張る）、
+  モジュール内でしか使わない export 3件、死んでいた `FLY_EASE`、`scalarText` の重複
+- docの現実合わせ: spawnの「強制配置（force）」4箇所（実装は親へこぼれて消える）、生成の宣言の
+  スケール4件、今は無い名前を指す説明6件、「画面が名前で指せる5つ」→3つ、`autoFillMaterials` の
+  探索順の決めごとを呼び元へ、`tabObjects`/`openedTab` の削除、
+  errorReport の行き先が `[object Object]` になっていた不具合、`docComments.test.ts` の判定を
+  「空行を挟んだ2連続」まで拡張
 
-- **docコメントの2連続**——`*/` で終わる行の直後に `/**` が来る箇所。初回は14件（PR 2 でテスト化）
-- **export しているのに外部から呼ばれていない関数**——初回はこれで4件見つかった（`findMatchingStack`・
-  `outcomesOf`・`propertyDescription`・`normalizedDistance`）
-- **doc 中の `Xxx.yyy` 参照のうち、その名前が存在しないもの**——初回は5件
-- **1行委譲の一覧**（本体が `return 何か(...)` 1文だけの関数）＋その呼び元数。呼び元1〜2のものが候補
-- **同じ関数名が複数モジュールで定義されているもの**——`tryGetNode`・`objectLinkHtml`・`messageOf` がこれで出る
-- **同じ型の引数が2つ以上並ぶ関数**（`WorldObject | undefined` が2つ、など）——取り違えても
-  型検査を通る場所の一覧。PR 1 の `unresolvable` はここに居た
+### PR 7: 名前と引数順を揃える（挙動は変えない）
 
-### 2. そのうえで、残りをエージェントで見る
+- **domain**: `ObjectDef.getPropertyDef`/`getSlotDef` → `tryGet*`（`WorldObject` 側の `get`=投げる、
+  `tryGet`=undefined の規約に合わせる）／`Slot.trySetManualPosition` → `tryMoveStackToCell`（兄弟3本は
+  `AtCell`/`AtGap`）／`WorldObject.artSuffix()`・`exhaustedStage()` をゲッターへ（`PropertyValue` 側と対）／
+  `WorldCodex.symbolName` を足す（6つの名前空間のうち1つだけ短縮口が無い）／
+  `WorldSession.recordSignal(object, name)`／`PickEffect.selectWeighted(owner, session, actor, dragged)`／
+  `crafting.advanceCrafting` の `(recipe, slotId)` 逆転／**`SlotDef.putInMinutes(owner, item, actor)`**
+  （PR 1 で潰した `(self, actor, dragged)` の割れの残り）／`TransferEffect.collectInfluences` の同名別物
+- **game**: `ProgressRing.setProgress` → `setRatio`（`ProgressBar`・`ExplorationPane` と同じ問い）／
+  `StatusBar.show(content, y)`／`PlayScene.cardsOf` → `stacksOf`（返すのは束）／
+  `theme.fillColorFor` → `statusFillColorFor`／`errorReport.stackOf` → `stackTraceOf`／
+  `FlipCalendar.addCardPaper` → `createDigitPaper`（`card` は札の語）／`Card.addStackBadge` → `create*`／
+  `MapWindow.traySlot` → `trayCell`（`slot` はワールドの語）／`separatorAt` → `horizontalSeparatorAt`／
+  `ExplorationPane.percentOf`/`noteFor`／`openObjectWindow` の `opensPlace`（boolean と CardPlace に割れている）
+- **codex-viewer / analysis**: `CodexView.objectNamesWithTag` → `objectsWithTag`／`objectGridOf` → `*Html`／
+  `identifierLine` の引数順／`pillNodeHtml` → `tagNodeHtml`／`describeCondition.ts`ほか3ファイル名 → `*Tokens.ts`／
+  `balanceSectionId` の引数名（場所限定ではない）／`addTokens` の `names` 位置／`ticksToRangeEnd` の引数順／
+  `balanceTables.Requirement` → `DailyNeed`（domain の `Requirement` と衝突）／`StepCost`/`ImportedCost` の重複
+- **loader**: `requireKnownKeys(node, known, context)`／`descendToMap`/`seqAt` → `descendTo*`／
+  対象キーの4本を `parse*Root` へ／`axisVariants` の `loader` を先頭へ／`tryGetBool` の必須fallbackを外す
 
-初回と同じ6分割（`domain` トップ／`domain` 配下＋`loader`／`game/ui` カード・レーン系＋`ui`＋`art`／
-`game/ui` ウィンドウ系／`game/*.ts`＋`view`＋`looks`／`analysis`＋`codex-viewer`＋その他）。
-探すのは4種類——兄弟なのに名前・引数が揃っていない／存在意義の薄いラッパー／同名だが別物・同概念に別名／
-docが現実とずれている。
+### PR 8: 畳む（同じ仕組みを1本へ）
 
-初回との違いとして次を指示する。
+- `CardTable.carry` を `flyTo` へ（札の作り方・行き先の型・戻り値の3点で割れている。docも「発見物」の
+  ままだが、発見物は今はレーン）
+- `Location.stacksOf` と `PlayerCharacter.stacksOf` が完全に同じ本体 → domain 側の問いへ
+- 対象キーの解決が3箇所（`resolveReferenceRoot`・`WorldObject.resolveEffectTarget`・`PassiveEffectGate.resolve`）
+- `WorldObject.clampToRange` は `PropertyRange.clamp` の書き直し
+- `ActionDef`/`CombinationDef` の `unmetRequirement` を基底の public 1本へ
+- 呼び元ゼロ・素通しの削除: `statusChanges.allStatuses`・`PlayScreenView.contentsOf`・
+  `cardLooks.inProgressDef`・`ShownCards.dropAction`・`RecipeDef.isUnlocked`・
+  `PropertyDef.hasInitialValueRoll`・`InteractionDef.draggedReading`・`PickEffect` の転送2本・
+  `ModifyEffect`/`AccumulateEffect` の素通しコンストラクタ・`Button.boxWidth`/`boxHeight` を private へ
+- `Card` の veil 2本・outline 2本、`CardTable.startFlight`、`CardDragController.cardTarget`
+- `writesToProperty` と `passiveWritesToProperty` の二重実装（`check` を共有）
+- `describeRequirements` の引数を `readonly Requirement[]` に（`describeInteraction` も乗る）
+- `divideCost` → `scaleCost(1/n)`／`declaredKeys` → `yamlMapping.keysOf` 1本
+- loader: `parseSpawns`/`parseTransfers`/`parseMoves` の「1件か配列か」／`gaugeEnd`・`parseAlertLevel` の
+  「候補と突き合わせる」／`parseGeneration` の context 二重組み立て／`RawPatch` の add/set/remove
+- ウィンドウ: 「閉じるの行」の寸法3通り／`Button` の既定補完（`textButtonBoxStyle`）と選択中の塗り3箇所／
+  760 の相互参照 → `childWindowLayout` へ／`RecipeWindow` の `overlay` を後片付けへ
 
-- **上限を外す**（または「上位8件」ではなく「全部挙げ、重要度を付ける」に変える）
-- **このファイルに載っている項目は除外**して、新しいものだけ挙げさせる
-- 呼び元の数は必ず `rg` で数え、本体を読んでから書く（推測で書かない）
-- 除外してよいもの: Phaser を持ち込まずに試験するための切り出し、`(...asked) => this.view.f(...asked)`
-  形の転送、契約を定めるだけの型、`src/ui` が汎用ゆえの語彙の違い
+### PR 9: 自分のことは自分でする（構造）
 
-### 3. 報告は鵜呑みにしない
+- **`ProgressBar.setRatio`/`resetRatio` の呼び分けを、呼び元3箇所が同じ手順で覚えている**
+  （`if (showChange && 見えていた) setRatio else resetRatio`）→ バー自身が決める
+- `CardDragController` の private 7本で `gesture` を渡す/引き直すが割れている
+- `MapWindow`・`ObjectWindow`・`WeatherPanel`・`FlipCalendar` が、持っている `scene`/`metrics` を
+  private メソッドへ渡している
+- `StatusBar.createLabel` が metrics から引ける数値3つを受け取る
+- `PassiveEffectGate` の `propertyGlobalId`/`stageName` を1つの `stage` に（`!` が消える）
+- `EffectReader.add` の三つ組を `LinkedAddReading` に寄せる（同じファイルに同じ形の型が在る）
+- `Localization` のコンストラクタ10引数（同型4つ）→ 節のオブジェクト1つ
+- `zip.contentOf` の末尾4数値 → 中央ディレクトリ1エントリの型
+- `NewGameScene` の高さが2通りに計算されている／`WeatherOverlay.addLayer` が style の5値を別引数で上書き
+- 層（depth）の階梯が `PlayScene`・`DustPuff`・`CardTable`（無名の1）に散っている
 
-初回も、実装してみると指摘が不完全だったものがあった（プロパティのタブは「控えを持たせる」だけでは
-直らず、世界が変わるたびに渡し直す必要があった）。**着手前に必ず本体と呼び元を自分で見る。**
+### 着手前に相談すること（挙動・仕様が変わる）
+
+1. **`Pcg32.nextInt`（閉区間）と `Rng.nextInt`（半開区間）が同名で逆。** `seededRng` は Pcg32 を包むのに
+   委譲できず式を組み直している。改名だけなら安全、契約を揃えると地形のシード再現性が変わる
+2. **`ObjectWindow.initialTab` がスロットのタブしか受け付けない。** プロパティ・探索のタブは
+   `Settings` に記憶されても復元されない（Windows.md 1.2節の記憶が効いていない）
+3. **`MapWindow.FRAME_RADIUS`(16) と `Card.FRAME_RADIUS`(10)。** docは「同じ値」と言うが違う。
+   揃えると現在地の黒枠の見た目が変わる
+4. **`PropertyRoute.deviceCount` の式**（労働全体 ÷ 設備1つの維持労働）が設備数を水増しする
+5. **`rangeCyclesOf` の「解けなかった印」が宣言順に依存する**（`craftingStepsOf` は工程ごとに閉じている）
+6. `OBJECT_ART` だけ鍵が識別子（他4つはテクスチャキー）
+7. `RecipeWindow` の寸法トークンが3系統目（PR 3 で据え置いた共通トークン化の判断に合流）
+8. `showInformation` が天候を引き直さない（`WeatherPanel` に差し替え口が無い）
+
+### 調査のやり方（次に繰り返すとき）
+
+数え上げ → 6分割のエージェント（`domain`直下／`domain`配下＋`loader`／カード・レーン＋`ui`＋`art`／
+ウィンドウ／`game`直下＋`view`＋`looks`／`analysis`＋`codex-viewer`ほか）。**上限を付けない・
+このファイルの既出を除外・呼び元は必ず `rg` で数える**を指示に入れる。報告は鵜呑みにしない
+（今回も件数の食い違いと、誤検出が複数あった）。
