@@ -87,7 +87,8 @@ start(codex, seed, rng)                                   src/domain/generation/
 
 座標だけを決めます（軸値はまだ持ちません）。
 
-- サイト総数を `rng.nextInt(scope.siteCountMin, scope.siteCountMax)` で抽選。
+- サイト総数を `rng.nextInt(scope.siteCountMin, scope.siteCountMax + 1)` で抽選（`nextInt` は半開区間、
+  `site_count` の `max` は含む値）。
 - 外周リング配置: `coastCount`（総数の約35%、4〜7個にクランプ）個のサイトを、半径
   `COAST_RING_MIN_RADIUS`〜`COAST_RING_MAX_RADIUS`（`ISLAND_RADIUS` 比）の円環へ、角度を均等割りして
   ジッタを加えながら配置（`Site.onCoastRing = true`）。
@@ -143,8 +144,8 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 組み合わせで、文字列にするのは `Localization.locationName`（`Localization.md`）です。亜種の `props` を
 実体へ書き込むのは `IslandSpawner`（4 節）です。
 
-`rng` は生成の他の段と同じ `Pcg32` で、命名は最後の段なので、名前の抽選が他の段の乱数列を動かすことは
-ありません。
+`rng` は配置とは別の列（`Pcg32.forPurpose(seed, 'names')`）です。配置の引く回数を変えても、命名の
+結果は動きません。
 
 ## 4. 実体化: `IslandSpawner`
 
@@ -182,21 +183,24 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 でき（`tests/generation/terrainGenerator.test.ts`）、`IslandSpawner` 以降の実体化のテスト
 （`tests/generation/islandSpawner.test.ts`）と関心事が分離されています。
 
-## 6. 決定性の仕組み: 2つの乱数源
+## 6. 決定性の仕組み: 用途ごとの乱数列
 
-- **`Pcg32`**（`src/domain/generation/Pcg32.ts`、`seed` から決定的に生成）: `place`（`SitePlacer.ts`）の座標決定に
-  のみ使われます。`AxisSampler` のノイズは `Pcg32` を経由せず、`seed` を直接 `ValueNoise.sample` へ渡します
-  （`ValueNoise` は状態を持たない純関数のハッシュベースノイズです）。`LocationTypeMatcher`・
-  `DelaunayTriangulator`・`PathNetworkBuilder`・`NameAssigner` は乱数を一切使いません（`Site` の座標・
-  軸値が決まった時点で結果は一意に決まります）。
-- **`WorldSession.rng`**（`Rng` インターフェース、`src/domain/Rng.ts`）: `session.spawn` した
-  `WorldObject` の初期値ロール（`value: {min,max}`）や、探索の発見物を選ぶ `pick`（`explore` アクション）の
-  抽選に使われます。**島のレイアウト（座標・軸値・型・辺・名前）には一切影響しません。**
+1つの `seed` から、用途ごとに独立した列を作ります（`Pcg32.forPurpose`、`RandomPurpose`）。
 
-この2つの乱数源が分離されているため、「同じ `seed` なら `WorldSession.rng` に何を渡しても島のレイアウトは
-変わらない」という契約が成り立ちます（`tests/generation/islandSpawner.test.ts` の「同じシードなら、
-WorldSession.rngのシードが異なっても同じ島レイアウトになる」が、異なる `Rng` を渡しても `IslandMap` が
-一致することを検証しています）。
+| 用途 | 引く場所 | 何を決めるか |
+| --- | --- | --- |
+| `sites` | `place`（`SitePlacer.ts`） | サイト総数と座標 |
+| `names` | `assignNames`（`NameAssigner.ts`） | 亜種の配り方 |
+| `play` | `WorldSession.rng`（`Rng.seededRng`） | 初期値ロール・`pick` の抽選・開始時刻 |
+
+`AxisSampler` は列を引かず、`seed` を直接 `ValueNoise` のハッシュへ渡します（状態を持たない純関数）。
+`LocationTypeMatcher`・`DelaunayTriangulator`・`PathNetworkBuilder` は乱数を一切使いません（`Site` の
+座標・軸値が決まった時点で結果は一意に決まります）。
+
+列を分けて守れるのは「**他の用途が何回引いたか**」の変化に対してだけです。**上流が出した値が変われば
+下流は動きます**——`place` を変えれば、軸のノイズを別に引いていても軸値は変わり、型も名前も変わります。
+`play` の列だけは下流を持たないので、「同じ `seed` なら `WorldSession.rng` に何を渡しても島のレイアウトは
+変わらない」という契約が成り立ちます（`tests/generation/islandSpawner.test.ts` が検証しています）。
 
 ## 7. エンジン拡張との接点
 
@@ -225,7 +229,7 @@ WorldSession.rngのシードが異なっても同じ島レイアウトになる�
 | `src/domain/generation/GenerationScopeDef.ts` | `GenerationScopeDef`・`GuaranteeDef`・`GuaranteePick` |
 | `src/domain/generation/GenerationDefs.ts` | `GenerationDefs`（上記3つの束、`WorldCodex.generation` の中身） |
 | `src/loader/parseGeneration.ts` | YAML → 上記Defsのパース（2節） |
-| `src/domain/generation/Pcg32.ts` | 生成専用の決定的RNG |
+| `src/domain/generation/Pcg32.ts` | 用途ごとの列を作る決定的RNG |
 | `src/domain/generation/ValueNoise.ts` | シード付き格子値ノイズ |
 | `src/domain/generation/IslandMap.ts` | `Site`・`IslandEdge`・`IslandMap`（生成結果のデータ） |
 | `src/domain/generation/SitePlacer.ts` | 3.1節: 座標配置 |

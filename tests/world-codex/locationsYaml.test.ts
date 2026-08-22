@@ -8,8 +8,8 @@ import { Path } from '../../src/domain/views/Path';
 import { pathsIn } from '../support/paths';
 import { World } from '../../src/domain/views/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { SeededRng } from '../support/SeededRng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { seededRng } from '../../src/domain/Rng';
 
 /** locations.yamlが定義する全土地。 */
 const LAND_NAMES = [
@@ -87,7 +87,7 @@ describe('locations.yamlの土地・道定義', () => {
     // 探索率100%（進捗=range.max）で探索が止まらないこと（ExplorationSystem.md 2節）を振る舞いで
     // 検証する。上限を超えた分はrangeの既定のクランプで吸収され、進捗はmaxに張り付く。
     const progressId = codex.propertyNames.getId('exploration_progress');
-    const session = new WorldSession(codex, undefined, new SeededRng(1));
+    const session = new WorldSession(codex, undefined, seededRng(1));
 
     for (const name of LAND_NAMES) {
       const land = session.spawn(codex.objectNames.getId(name));
@@ -115,7 +115,7 @@ describe('locations.yamlの土地・道定義', () => {
   it('探索で見つかったものはitems/fixturesスロットへ正しく振り分けられる', () => {
     // 発見物のspawn（into: self）が、item/fixtureタグのacceptsによってitems/fixturesスロットへ
     // 正しく振り分けられることを、探索を回し切って確認する。
-    const session = new WorldSession(codex, undefined, new SeededRng(7));
+    const session = new WorldSession(codex, undefined, seededRng(7));
     const land = session.spawn(codex.objectNames.getId('grassland'));
     const view = new Location(land, codex);
 
@@ -138,7 +138,7 @@ describe('locations.yamlの土地・道定義', () => {
   it('金の聖杯は、同じ土地からは二度と見つからない', () => {
     // 見つかった候補が自分の重みを0にする（chalice_find、artifacts.yaml）。有限のアーティファクトが
     // 1つの土地から何個も出ないことを、重みを大きくして必ず当たる状態で確かめる。
-    const session = new WorldSession(codex, undefined, new SeededRng(11));
+    const session = new WorldSession(codex, undefined, seededRng(11));
     const land = session.spawn(codex.objectNames.getId('cliff_coast'));
     land.getProperty(codex.propertyNames.getId('chalice_find')).init(10000);
     const view = new Location(land, codex);
@@ -155,7 +155,7 @@ describe('locations.yamlの土地・道定義', () => {
   it('探索→道の発見→移動が一連の流れとして機能する', () => {
     // 探索 → 進捗が必要値に達した道の発見（隠しスロット→公開スロット） → 移動、の一連の流れを
     // 実ファイルの定義だけで検証する（地形生成は使わず、道の配線はこのテストが手で行う）。
-    const session = new WorldSession(codex, undefined, new SeededRng(42));
+    const session = new WorldSession(codex, undefined, seededRng(42));
     const worldInstance = new WorldObject(0, def('world'), session);
     const worldView = new World(worldInstance, codex);
     session.adoptWorld(worldView);

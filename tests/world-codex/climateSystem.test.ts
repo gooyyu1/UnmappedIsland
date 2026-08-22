@@ -3,8 +3,8 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { SeededRng } from '../support/SeededRng';
 import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
+import { seededRng } from '../../src/domain/Rng';
 
 const TICKS_PER_DAY = 96;
 const SIM_DAYS = 170; // 初回サイクル90日 + 2周目の季節2つが最長(36日×2)でも完了する長さ
@@ -69,7 +69,7 @@ describe.runIf(process.env.RUN_CLIMATE_TESTS === '1')('気候システム(Climat
 
     traces = [];
     for (let seed = SEED_START; seed < SEED_START + SEED_COUNT; seed++) {
-      const session = new WorldSession(codex, undefined, new SeededRng(seed));
+      const session = new WorldSession(codex, undefined, seededRng(seed));
       const world = new WorldObject(1, worldDef, session);
       const trace: Trace = {
         seed,

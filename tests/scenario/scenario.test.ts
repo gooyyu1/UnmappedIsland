@@ -4,8 +4,8 @@ import { start as startNewGame } from '../../src/domain/generation/NewGame';
 import { heatHazeFor } from '../../src/game/looks/heatHaze';
 import { applyScenario, bundledScenario, parseScenario, scenarioNames } from '../../src/scenario/Scenario';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { SeededRng } from '../support/SeededRng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { seededRng } from '../../src/domain/Rng';
 
 /**
  * テスト用シナリオ（SaveDataManagement.md）の自動テスト。
@@ -34,14 +34,14 @@ describe('テスト用シナリオ', () => {
     for (const name of names) {
       const scenario = load(name);
       expect(scenario.title, `${name} に表示名が無い`).not.toBe('');
-      const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+      const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
       expect(() => applyScenario(game, scenario, codex), `${name} を適用できない`).not.toThrow();
     }
   });
 
   it('basket_and_stonesは、編み籠を持ち石と流木が落ちている状態にする', () => {
     const scenario = load('basket_and_stones');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
     applyScenario(game, scenario, codex);
 
@@ -59,7 +59,7 @@ describe('テスト用シナリオ', () => {
     // ステータスエリアの色分け（StatusArea.md 7節）を確かめるためのシナリオなので、狙った域に
     // 入っていること自体がこのファイルの中身の意味。段のしきい値を刻み直したら必ずここで落ちる。
     const scenario = load('failing_status');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
     applyScenario(game, scenario, codex);
 
@@ -75,7 +75,7 @@ describe('テスト用シナリオ', () => {
   it('sprained_ankleは、怪我を負い痛みを感じている状態から始める', () => {
     // 負う契機は確率（coconut.yamlのpick_green_coconut）なので、見た目を確かめるにはここから始める。
     const scenario = load('sprained_ankle');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
     applyScenario(game, scenario, codex);
 
@@ -87,7 +87,7 @@ describe('テスト用シナリオ', () => {
 
   it('jungle_startは、漂着地ではなく密林から始める', () => {
     const scenario = load('jungle_start');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
     applyScenario(game, scenario, codex);
 
@@ -99,7 +99,7 @@ describe('テスト用シナリオ', () => {
     // 陽炎（ScreenLayout.md 7.5節 空の演出）を目で確かめるためのシナリオなので、開始直後だけでなく
     // しばらく見ていられる必要がある。calmのままだと1tickで暑い季節を外れて消えてしまう。
     const scenario = load('scorching_haze');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
     applyScenario(game, scenario, codex);
 
@@ -113,7 +113,7 @@ describe('テスト用シナリオ', () => {
   it('stormは嵐から始まり、天気が選び直されても雨系のままになる', () => {
     // 嵐の演出を目で確かめるためのシナリオなので、見ている途中で晴れては困る。
     const scenario = load('storm');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
     applyScenario(game, scenario, codex);
 
@@ -129,7 +129,7 @@ describe('テスト用シナリオ', () => {
 
   it('土地の指定があると、置いたものはその土地に乗る', () => {
     const scenario = parseScenario('jungle.yaml', 'seed: 7\nlocation:\n  type: jungle\n  items: [stone]\n');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
     applyScenario(game, scenario, codex);
 
@@ -139,7 +139,7 @@ describe('テスト用シナリオ', () => {
   it('指定した土地が島に無ければエラーになる（違う地形で始めない）', () => {
     // シード5は密林の出ない島（地形の分布はTerrainStats.md）。
     const scenario = parseScenario('nojungle.yaml', 'seed: 5\nlocation:\n  type: jungle\n');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
     expect(() => applyScenario(game, scenario, codex)).toThrow(/jungle/);
   });
@@ -152,7 +152,7 @@ describe('テスト用シナリオ', () => {
 
   it('many_stonesは、100個の石を1つのスタックとして持たせる', () => {
     const scenario = load('many_stones');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
     applyScenario(game, scenario, codex);
 
@@ -166,7 +166,7 @@ describe('テスト用シナリオ', () => {
 
   it('object_defの名前が違えばエラーになる（黙って違う状態で始めない）', () => {
     const scenario = parseScenario('bad.yaml', 'seed: 1\nplayer:\n  hand: [no_such_item]\n');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, 1, new SeededRng(1));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 1, seededRng(1));
 
     expect(() => applyScenario(game, scenario, codex)).toThrow(/no_such_item/);
   });
@@ -174,14 +174,14 @@ describe('テスト用シナリオ', () => {
   it('受け入れられない置き方はエラーになる（手持ちの枠を超える）', () => {
     const names = ['stone', 'twig', 'thick_branch', 'coconut', 'taro', 'water_spinach', 'woven_basket'];
     const scenario = parseScenario('over.yaml', `seed: 1\nplayer:\n  hand: [${names.join(', ')}]\n`);
-    const game = startNewGame(codex, SAMPLE_CHARACTER, 1, new SeededRng(1));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 1, seededRng(1));
 
     expect(() => applyScenario(game, scenario, codex)).toThrow(/woven_basket/);
   });
 
   it('propsはキャラクターのプロパティを上書きする', () => {
     const scenario = parseScenario('props.yaml', 'seed: 1\nplayer:\n  props:\n    hydration: 12\n');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, 1, new SeededRng(1));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 1, seededRng(1));
 
     applyScenario(game, scenario, codex);
 
@@ -190,7 +190,7 @@ describe('テスト用シナリオ', () => {
 
   it('world.propsはシンボル型のプロパティも上書きできる（天候はシードで選べない）', () => {
     const scenario = parseScenario('weather.yaml', 'seed: 1\nworld:\n  props:\n    weather: storm\n');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, 1, new SeededRng(1));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 1, seededRng(1));
 
     applyScenario(game, scenario, codex);
 
@@ -200,7 +200,7 @@ describe('テスト用シナリオ', () => {
 
   it('シンボル名が違えばエラーになる（一生降らない雨を待たせない）', () => {
     const scenario = parseScenario('bad.yaml', 'seed: 1\nworld:\n  props:\n    weather: rainy\n');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, 1, new SeededRng(1));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 1, seededRng(1));
 
     expect(() => applyScenario(game, scenario, codex)).toThrow(/rainy/);
   });
@@ -210,7 +210,7 @@ describe('テスト用シナリオ', () => {
     // 獲物と、配分の違う武器が同時に手元にある**ことがこのファイルの中身の意味。始めた時点で
     // どれでも殴れて、輪郭が明滅している（＝警戒が安全域を外れている）必要がある。
     const scenario = load('hunting_ground');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
     applyScenario(game, scenario, codex);
 
@@ -242,7 +242,7 @@ describe('テスト用シナリオ', () => {
 
   it('rain_collectingは、雨の中で空のヤシの殻を持たせる', () => {
     const scenario = load('rain_collecting');
-    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, new SeededRng(scenario.seed));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, scenario.seed, seededRng(scenario.seed));
 
     applyScenario(game, scenario, codex);
 

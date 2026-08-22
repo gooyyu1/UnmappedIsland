@@ -1,9 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { generate as generateTerrain } from '../../src/domain/generation/TerrainGenerator';
 import type { IslandEdge, IslandMap } from '../../src/domain/generation/IslandMap';
+import type { GenerationScopeDef } from '../../src/domain/generation/GenerationScopeDef';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { place } from '../../src/domain/generation/SitePlacer';
+import { Pcg32 } from '../../src/domain/generation/Pcg32';
 
 /** 不変条件の検証に使うシード群。特別な意味は無く、多様なレイアウトを試すための個数。 */
 const SEEDS = Array.from({ length: 25 }, (_, i) => i);
@@ -26,6 +29,10 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
     return generateTerrain(codex.generation, 'island', seed);
   }
 
+  function scope(): GenerationScopeDef {
+    return codex.generation!.scopes.get('island')!;
+  }
+
   it('同じシードなら同じ島を生成する（決定性）', () => {
     for (const seed of [0, 7, 12345]) {
       const first = fingerprint(generate(seed));
@@ -40,12 +47,20 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
     );
   });
 
-  it('土地数は10〜20の範囲に収まる', () => {
+  it('土地数は10〜20の範囲に収まり、両端まで出る', () => {
     for (const [seed, map] of islands) {
       const count = map.sites.length;
       expect(count, `シード${seed}`).toBeGreaterThanOrEqual(10);
       expect(count, `シード${seed}`).toBeLessThanOrEqual(20);
     }
+
+    // site_countのmaxは含む値。抽選は半開区間（Pcg32.nextInt）なので+1して引いており、
+    // それを落とすと上端の島が一度も出なくなる——配置だけを100シード引いて両端を確かめる。
+    const counts = new Set(
+      Array.from({ length: 100 }, (_, seed) => place(scope(), Pcg32.forPurpose(seed, 'sites')).length),
+    );
+    expect(counts, '下端の島が出る').toContain(10);
+    expect(counts, '上端の島が出る').toContain(20);
   });
 
   it('島には必ず山(mountain_peak)が1つ以上ある', () => {

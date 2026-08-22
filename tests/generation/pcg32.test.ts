@@ -23,15 +23,26 @@ describe('Pcg32', () => {
     }
   });
 
-  it('nextIntは[min, max]の両端を含む値を返す', () => {
+  it('nextIntは[min, max)の下端を含み上端を含まない', () => {
     const rng = new Pcg32(7);
     const seen = new Set<number>();
     for (let i = 0; i < 1000; i++) {
-      const value = rng.nextInt(1, 3);
+      const value = rng.nextInt(1, 4);
       expect(value).toBeGreaterThanOrEqual(1);
-      expect(value).toBeLessThanOrEqual(3);
+      expect(value).toBeLessThan(4);
       seen.add(value);
     }
     expect(seen).toEqual(new Set([1, 2, 3]));
+  });
+
+  it('用途が違えば無関係な列になる（同じ種でも）', () => {
+    const seed = 12345;
+    const sites = Pcg32.forPurpose(seed, 'sites');
+    const names = Pcg32.forPurpose(seed, 'names');
+    const drawn = (rng: Pcg32): number[] => Array.from({ length: 5 }, () => rng.nextUint());
+
+    expect(drawn(sites)).not.toEqual(drawn(names));
+    // 同じ種と用途なら何度作っても同じ列（再現性の土台）。
+    expect(drawn(Pcg32.forPurpose(seed, 'sites'))).toEqual(drawn(Pcg32.forPurpose(seed, 'sites')));
   });
 });

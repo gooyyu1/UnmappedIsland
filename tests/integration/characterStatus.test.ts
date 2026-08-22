@@ -9,8 +9,8 @@ import { cardPlacesOf } from '../../src/game/view/cardPlaces';
 import type { Localization } from '../../src/locale/Localization';
 import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { SeededRng } from '../support/SeededRng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { seededRng } from '../../src/domain/Rng';
 
 /**
  * 同梱のキャラクタ定義（`characters/`）が作る値が、そのまま画面の説明として読めることを通しで見る試験。
@@ -45,7 +45,7 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
   it('ステータスの詳細には、意味・今いる段・影響の出入りが揃う', () => {
     // ステータス詳細ウィンドウ（Windows.md 8節）。UIはどのステータスが何に効くかを知らず、
     // 持続効果の宣言（characters/）から導いたものをそのまま並べる。
-    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
 
     const view = fromGameSession(game, codex, locale);
     const bodyFat = view.propertyCategories
@@ -70,7 +70,7 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
 
   it('荷が重すぎると移動のアクションが押せなくなり、理由の文言が付く', () => {
     // ContainerSystem.md 5節: 危険域（too_heavy）に入ると道のtravelのconditionsが落ちる。
-    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, new SeededRng(1234));
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
     exploreToFull(game);
     const localeWithReason = parseLocale('ja.yaml', 'reason_texts:\n  too_heavy: 荷が重すぎて歩けない。\n');
     const pathTagId = codex.tagNames.getId('path');

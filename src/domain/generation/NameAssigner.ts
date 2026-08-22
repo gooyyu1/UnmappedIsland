@@ -43,7 +43,7 @@ export function assignNames(sites: readonly Site[], rng: Pcg32): void {
 function shuffled<T>(values: readonly T[], rng: Pcg32): T[] {
   const result = [...values];
   for (let i = result.length - 1; i > 0; i--) {
-    const j = rng.nextInt(0, i);
+    const j = rng.nextInt(0, i + 1);
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result;
