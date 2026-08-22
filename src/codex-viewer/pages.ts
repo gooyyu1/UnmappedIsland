@@ -492,8 +492,7 @@ function influencesHtml(view: CodexView, owner: ObjectDef, propertyGlobalId: num
 
 /** 中身が無い節は見出しごと出さない（「（なし）」の並びは、読み手に何も伝えないため）。 */
 function section(title: string, body: string): string {
-  if (body === '' || body === EMPTY_HTML) return '';
-  return `<h2>${escapeHtml(title)}</h2>${body}`;
+  return body === '' || body === EMPTY_HTML ? '' : `<h2>${escapeHtml(title)}</h2>${body}`;
 }
 
 function card(heading: string, body: string): string {
@@ -512,8 +511,7 @@ function headingIdentifier(label: string, identifier: string): string {
 function identifierLine(view: CodexView, identifier: string, label: string, displayName: string): string {
   const code = label === identifier ? '' : `<code>${escapeHtml(identifier)}</code>`;
   const badge = untranslatedBadge(view, identifier, displayName);
-  if (code === '' && badge === '') return '';
-  return `<p class="identifier">${code}${badge}</p>`;
+  return code === '' && badge === '' ? '' : `<p class="identifier">${code}${badge}</p>`;
 }
 
 function untranslatedBadge(view: CodexView, identifier: string, displayName: string): string {

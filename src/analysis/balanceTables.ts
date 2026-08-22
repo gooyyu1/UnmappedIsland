@@ -959,8 +959,7 @@ function scaleCost(cost: Cost, factor: number): Cost {
  * 5節）ので、作りかけの筏まで土地として並んでしまう。
  */
 function isLocation(codex: WorldCodex, def: ObjectDef): boolean {
-  if (!def.tags.includes(codex.vocabulary.world.locationTagId)) return false;
-  return !codex.isGenerated(def);
+  return def.tags.includes(codex.vocabulary.world.locationTagId) && !codex.isGenerated(def);
 }
 
 function allDefs(codex: WorldCodex): readonly ObjectDef[] {

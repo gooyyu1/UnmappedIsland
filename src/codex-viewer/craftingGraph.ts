@@ -129,6 +129,5 @@ export function buildCraftingNetwork(defs: readonly ObjectDef[], codex: WorldCod
 /** 個数が一定なら「×N」、候補ごとにばらつく出力なら付けない（誤解を招く数字を出さない）。 */
 function countLabelOf(counts: readonly number[]): string | undefined {
   const first = counts[0] ?? 1;
-  if (counts.some((count) => count !== first)) return undefined;
-  return first > 1 ? `×${first}` : undefined;
+  return counts.every((count) => count === first) && first > 1 ? `×${first}` : undefined;
 }

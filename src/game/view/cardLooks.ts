@@ -332,8 +332,7 @@ export function cardLooksOf(
     // 個体に名前が付いていればそれ（土地の命名）。型の名前より優先する——同じ地形の土地が2つあっても
     // 別の場所として呼ばれる。
     const named = instanceName(object.instanceId);
-    if (named !== undefined) return named;
-    return typeNameOf(object.def);
+    return named ?? typeNameOf(object.def);
   };
 
   /**

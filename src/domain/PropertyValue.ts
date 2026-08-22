@@ -194,8 +194,7 @@ export class PropertyValue {
    * 尽きた値のまま静止する。「何が尽きたのか」はそこから読める。
    */
   get exhaustedStage(): string | undefined {
-    if (!this.def.isExhausted(this._number)) return undefined;
-    return this.def.stageNameOf(this.getEffectiveValue());
+    return this.def.isExhausted(this._number) ? this.def.stageNameOf(this.getEffectiveValue()) : undefined;
   }
 
   /** rangeの中での位置（0〜1）。rangeを持たないプロパティはundefinedで、バーではなく数値で見せる。 */

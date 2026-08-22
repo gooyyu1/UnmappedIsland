@@ -329,8 +329,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
    * 見せない変化なので、バーが持っている値との差を変化として数えてはいけない。
    */
   isShowingChange(content: StatusContent): boolean {
-    if (!this.visible || content.ratio === undefined) return false;
-    return this.bar?.isBehind(content.ratio) === true;
+    return this.visible && content.ratio !== undefined && this.bar?.isBehind(content.ratio) === true;
   }
 
   /** 並びから外れた行にする（変化を見せ終わった、固定表示を外した）。 */

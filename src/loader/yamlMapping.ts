@@ -74,8 +74,7 @@ export function requireInt(map: YAMLMap, key: string, context: string): number {
 
 export function tryGetInt(map: YAMLMap, key: string, context: string): number | undefined {
   const raw = tryGetScalar(map, key, context);
-  if (raw === undefined) return undefined;
-  return parseIntStrict(raw, key, context);
+  return raw === undefined ? undefined : parseIntStrict(raw, key, context);
 }
 
 /**
