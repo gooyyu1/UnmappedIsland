@@ -13,8 +13,14 @@ describe('ScreenMetrics', () => {
     // 短辺基準のままだと縦に積み切れず、3レーンが収まらない（PlayScreenLayoutの縦型の積み上げ）。
     expect(new ScreenMetrics(1080, 1440).u, '3:4').toBe(1440 / 1920);
     expect(new ScreenMetrics(1536, 2048).u, '3:4のタブレット').toBe(2048 / 1920);
-    // 横型は短辺が高さそのものなので、正方形に近くても短辺基準のまま。
-    expect(new ScreenMetrics(1440, 1080).u, '4:3の横型').toBe(1);
+  });
+
+  it('16:9より正方形に近い横型は、uを縮めて設計上の幅1683uを確保する', () => {
+    // 短辺基準のままだと横に3列（ダッシュボード478 + カード5枚ぶん1085 + サイドバー120）が並ばない。
+    expect(new ScreenMetrics(1440, 1080).u, '4:3').toBe(1440 / 1683);
+    expect(new ScreenMetrics(1080, 1080).u, '正方形').toBe(1080 / 1683);
+    // 16:9以上に横長なら幅は余るので、短辺基準のまま。
+    expect(new ScreenMetrics(2560, 1080).u, '21:9').toBe(1);
   });
 
   it('正方形は横型として扱う', () => {
@@ -195,6 +201,45 @@ describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
     const portrait = new PlayScreenLayout(new ScreenMetrics(1080, 1920));
     expect(portrait.fieldLeftSeparator).toBeUndefined();
     expect(portrait.sidebarSeparator).toBeUndefined();
+  });
+
+  it('どの画面比でもレーンにカードが5枚見える', () => {
+    // 5枚見えていないと、場に何があるかを見比べるより先に送る操作が要る（ScreenLayout.md 3.1節）。
+    // レーンは外周マージン（6u）の内側から送る。横型はその外側の左右に区切りの帯がかぶるので、
+    // 見えるのは送り幅だけ。縦型の右端は画面の端そのもので、はみ出したカードもそのまま見える。
+    const cards = 205 * 5 + 12 * 4;
+    for (const [width, height] of [
+      [1080, 1920], // 9:16（縦型の基準）
+      [1080, 1440], // 3:4
+      [1920, 1080], // 16:9（横型の基準）
+      [1440, 1080], // 4:3
+      [1152, 1080], // 16:15
+      [1080, 1080], // 正方形
+      [2560, 1080], // 21:9
+    ]) {
+      const layout = new PlayScreenLayout(new ScreenMetrics(width, height));
+      const hidden = layout.metrics.isLandscape ? 12 : 6;
+      const visible = layout.fieldArea.width / layout.metrics.u - hidden;
+      // 1u未満の差はuを掛けて割り戻す途中の丸め。
+      expect(visible, `${width}×${height}`).toBeGreaterThan(cards - 1);
+    }
+  });
+
+  it('横型で高さが余ったら、レーンが背を伸ばしてフィールドエリアを埋める', () => {
+    // 幅に合わせてuを縮めた横型（ScreenMetrics）では、3レーン分（1080u）より高さが余る。余りを
+    // 外に残すと、区切りの帯で囲った枠が画面の端から離れて見える。
+    const layout = new PlayScreenLayout(new ScreenMetrics(1440, 1080));
+    const { u } = layout.metrics;
+
+    expect(layout.fieldArea.height / u, 'フィールドエリアは画面高そのもの').toBeCloseTo(1262.25);
+    for (const lane of layout.lanes) expect(lane.height / u).toBeCloseTo((1262.25 - 24) / 3);
+    expect((layout.lanes[0].y - layout.fieldArea.y) / u, '上端の外周マージン').toBeCloseTo(6);
+    expect(
+      (layout.fieldArea.y + layout.fieldArea.height - layout.lanes[2].y - layout.lanes[2].height) / u,
+      '下端の外周マージン',
+    ).toBeCloseTo(6);
+    // カードはレーンの中央に並ぶので（CardLane）、伸びた分は上下の余白になる。
+    expect(layout.lanes[0].height / u).toBeGreaterThan(320);
   });
 
   it('どの縦型でもフィールドエリアは3レーン分（1080u）を確保する', () => {
