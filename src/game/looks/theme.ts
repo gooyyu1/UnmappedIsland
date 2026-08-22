@@ -1,4 +1,6 @@
 import type { AlertLevel } from '../../domain/AlertLevel';
+import type { BoxStyle } from '../../ui/shapes';
+import type { ScreenMetrics } from './ScreenMetrics';
 import { ALERT_LEVELS } from '../../domain/AlertLevel';
 import type { GaugeEnd } from '../../domain/PropertyDef';
 
@@ -382,3 +384,16 @@ export function cardFrameColors(kind: CardFrameKind): CardFrameColors {
 }
 
 export const FONT_FAMILY = '"Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", sans-serif';
+
+/**
+ * 一覧の行として押せる台紙の見た目（シナリオ選択・保存スロット・設定）。**画面をまたいで同じ行に
+ * 見えていること自体が意匠**なので、色も縁も1箇所で決める。破線や薄さを足す行は、これを広げて使う。
+ */
+export function rowPlateStyle(metrics: ScreenMetrics): BoxStyle {
+  return {
+    fill: COLOR.cardFace,
+    border: COLOR.cardBorder,
+    borderWidth: metrics.linePx(2),
+    radius: metrics.px(SIZE.radius),
+  };
+}

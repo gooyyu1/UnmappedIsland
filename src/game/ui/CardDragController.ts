@@ -64,8 +64,8 @@ export interface CardDragHandlers {
    * 説明の吹き出しは、いずれもこの答えだけを見て決める。
    */
   readonly describeDrop: (drop: CardDrop) => CardDropInfo | undefined;
-  /** releasedは手を離した時点で札が居た矩形。落とした後の動きの出発点になる（CardTable参照）。 */
-  readonly onDrop: (drop: CardDrop, released: Rect) => void;
+  /** releasedRectは手を離した時点で札が居た矩形。落とした後の動きの出発点になる（CardTable参照）。 */
+  readonly onDrop: (drop: CardDrop, releasedRect: Rect) => void;
   /** 掴んだ札を指の運ぶ実体の札にする（CardTable.grab）。 */
   readonly grab: (card: Card, home: () => Rect) => CarriedCard;
 }
@@ -384,10 +384,10 @@ export class CardDragController {
     }
 
     // 落とした札は自由な札として離した場所に残り、行き先は世界の差し替えが決める（CardTable.freed）。
-    const released = gesture.carried.rect;
+    const releasedRect = gesture.carried.rect;
     gesture.carried.release();
     this.cancel();
-    this.handlers.onDrop(found.drop, released);
+    this.handlers.onDrop(found.drop, releasedRect);
   }
 
   private cancel(): void {

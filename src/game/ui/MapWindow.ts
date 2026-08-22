@@ -259,11 +259,10 @@ export class MapWindow {
 
   /** 画面上のカードの位置から、変換を逆に辿って正規化座標を求める。 */
   private placementOf(card: Card): MapPlacement {
-    const centerX = card.x + (card.cardWidth * CARD_SCALE * this.zoom) / 2;
-    const centerY = card.y + (card.cardHeight * CARD_SCALE * this.zoom) / 2;
+    const center = this.centerPointOf(card);
     return {
-      x: (centerX - this.panX) / (this.metrics.width * this.zoom),
-      y: (centerY - this.panY) / (this.metrics.height * this.zoom),
+      x: (center.x - this.panX) / (this.metrics.width * this.zoom),
+      y: (center.y - this.panY) / (this.metrics.height * this.zoom),
     };
   }
 
@@ -377,6 +376,7 @@ export class MapWindow {
     }
   }
 
+  /** 画面上のカードの中心。 */
   private centerPointOf(card: Card): Phaser.Math.Vector2 {
     return new Phaser.Math.Vector2(
       card.x + (card.cardWidth * CARD_SCALE * this.zoom) / 2,
@@ -450,7 +450,7 @@ function drawIslandOutline(
   const centerY = (metrics.height / 2) * zoom + panY;
   const radius = Math.min(metrics.width, metrics.height) * 0.42 * zoom;
 
-  outline.lineStyle(Math.max(1, metrics.px(3) * zoom), CHART_LINE, 0.7);
+  outline.lineStyle(metrics.linePx(3 * zoom), CHART_LINE, 0.7);
   outline.beginPath();
   const count = 128;
   for (let i = 0; i <= count; i++) {

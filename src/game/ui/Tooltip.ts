@@ -126,7 +126,7 @@ export class Tooltip {
         fill: COLOR.cardEdgeOverlay,
         fillAlpha: 0.94,
         border: COLOR.textOnDark,
-        borderWidth: Math.max(1, this.metrics.px(2)),
+        borderWidth: this.metrics.linePx(2),
         radius: this.metrics.px(SIZE.radius),
       },
     );

@@ -891,7 +891,7 @@ export class Card extends Phaser.GameObjects.Container {
    */
   private addRailBar(scene: Phaser.Scene, metrics: ScreenMetrics, options: ProgressBarOptions): ProgressBar {
     const span = windowSpan(metrics, this.cardWidth, this.cardHeight);
-    const line = Math.max(1, metrics.px(TRACK_BORDER_WIDTH));
+    const line = metrics.linePx(TRACK_BORDER_WIDTH);
     const bar = new ProgressBar(
       scene,
       metrics,
@@ -919,7 +919,7 @@ export class Card extends Phaser.GameObjects.Container {
     const side = metrics.px(FRAME_SIDE);
     const head = metrics.px(FRAME_HEAD);
     const radius = metrics.px(WINDOW_RADIUS);
-    const line = Math.max(1, metrics.px(BORDER_WIDTH));
+    const line = metrics.linePx(BORDER_WIDTH);
 
     const frame = this.frame;
     frame.clear();
@@ -990,7 +990,7 @@ export class Card extends Phaser.GameObjects.Container {
     ].map(([x, y]) => new Phaser.Math.Vector2(x, y));
 
     this.frame.fillStyle(COLOR.cardFace, 1);
-    this.frame.lineStyle(Math.max(1, metrics.px(ROAD_ARROW_STROKE)), colors.line, 1);
+    this.frame.lineStyle(metrics.linePx(ROAD_ARROW_STROKE), colors.line, 1);
     this.frame.fillPoints(points, true);
     this.frame.strokePoints(points, true);
   }
@@ -1012,7 +1012,7 @@ export class Card extends Phaser.GameObjects.Container {
     const circle = scene.add.graphics();
     circle.fillStyle(COLOR.cardFace, 1);
     circle.fillCircle(0, 0, radius);
-    circle.lineStyle(Math.max(1, metrics.px(STACK_BADGE_BORDER)), COLOR.cardBorder, 1);
+    circle.lineStyle(metrics.linePx(STACK_BADGE_BORDER), COLOR.cardBorder, 1);
     circle.strokeCircle(0, 0, radius);
 
     return scene.add.container(paper.x + paper.width - offset, paper.y + offset, [circle, this.stackCount]);
@@ -1253,7 +1253,7 @@ export class CellHighlight extends Phaser.GameObjects.Graphics {
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, x: number, y: number, color: number) {
     super(scene, { x, y });
 
-    const width = Math.max(1, metrics.px(CELL_HIGHLIGHT_WIDTH));
+    const width = metrics.linePx(CELL_HIGHLIGHT_WIDTH);
     // 線は経路の上に太さの半分ずつ広がるので、経路をカードの矩形から半分だけ外へ出すと、線は
     // カードに一切かからずその外側だけを埋める。角の丸みも紙の輪郭と同心になるよう外へ足す。
     const inset = width / 2;
@@ -1341,7 +1341,7 @@ function createAlertOutline(
   height: number,
 ): Phaser.GameObjects.Graphics {
   const outline = scene.add.graphics();
-  const lineWidth = Math.max(1, metrics.px(ALERT_OUTLINE_WIDTH));
+  const lineWidth = metrics.linePx(ALERT_OUTLINE_WIDTH);
   const { rect, radius } = paperStroke(metrics, width, height, lineWidth);
   outline.lineStyle(lineWidth, COLOR.statusAlertFatal, 1);
   outline.strokeRoundedRect(rect.x, rect.y, rect.width, rect.height, radius);
@@ -1356,7 +1356,7 @@ function createEmptyOutline(
   height: number,
 ): Phaser.GameObjects.Graphics {
   const outline = scene.add.graphics();
-  const lineWidth = Math.max(1, metrics.px(2));
+  const lineWidth = metrics.linePx(2);
   const { rect, radius } = paperStroke(metrics, width, height, lineWidth);
   drawBox(outline, rect, {
     border: COLOR.cardBorder,
@@ -1395,7 +1395,7 @@ function createPaper(
     fill: COLOR.cardFace,
     fillAlpha: empty ? 0.35 : 0.85,
     border: COLOR.cardBorder,
-    borderWidth: Math.max(1, metrics.px(2)),
+    borderWidth: metrics.linePx(2),
     radius: metrics.px(FRAME_RADIUS),
     dashed: empty,
   });

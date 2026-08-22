@@ -11,7 +11,7 @@ import { ScreenHeader } from './ui/ScreenHeader';
 import { characterCardContent } from './view/characterCard';
 import { addLabel } from '../ui/labels';
 import { addPanel } from '../ui/shapes';
-import { COLOR, SIZE } from './looks/theme';
+import { COLOR, SIZE, rowPlateStyle } from './looks/theme';
 import { truncateToWidth } from '../ui/textLayout';
 
 /** スロット一覧の外周パディングとカード間ギャップ（StartScreen_Mock.htmlの.slot-grid）。 */
@@ -63,17 +63,8 @@ export class SlotSelectScene extends ResponsiveScene {
   }
 
   private addSavedSlot(cell: Rect, slotIndex: number, slot: SaveData): void {
-    const borderWidth = Math.max(1, this.metrics.px(2));
-    const button = new Button(
-      this,
-      cell,
-      {
-        fill: COLOR.cardFace,
-        border: COLOR.cardBorder,
-        borderWidth,
-        radius: this.metrics.px(SIZE.radius),
-      },
-      () => this.scene.start('play', { save: slot, slotIndex }),
+    const button = new Button(this, cell, rowPlateStyle(this.metrics), () =>
+      this.scene.start('play', { save: slot, slotIndex }),
     );
 
     const padding = this.metrics.px(SLOT_PADDING);
@@ -117,7 +108,7 @@ export class SlotSelectScene extends ResponsiveScene {
       {
         fill: COLOR.slotDelete,
         border: COLOR.cardBorder,
-        borderWidth: Math.max(1, this.metrics.px(2)),
+        borderWidth: this.metrics.linePx(2),
         radius: this.metrics.px(SIZE.radius),
       },
       () => this.confirmDelete(slotIndex, slot),
@@ -147,14 +138,8 @@ export class SlotSelectScene extends ResponsiveScene {
     const button = new Button(
       this,
       cell,
-      {
-        fill: COLOR.cardFace,
-        fillAlpha: 0.5,
-        border: COLOR.cardBorder,
-        borderWidth: Math.max(1, this.metrics.px(2)),
-        radius: this.metrics.px(SIZE.radius),
-        dashed: true,
-      },
+      // まだ中身の無い行は、薄く破線で「押せるが空」と見せる。
+      { ...rowPlateStyle(this.metrics), fillAlpha: 0.5, dashed: true },
       () => this.scene.start('newgame', { slotIndex }),
     );
 

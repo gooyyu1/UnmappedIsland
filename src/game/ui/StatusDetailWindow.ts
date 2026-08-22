@@ -386,7 +386,7 @@ export class StatusDetailWindow {
           {
             fill: COLOR.cardFace,
             border: COLOR.cardBorder,
-            borderWidth: Math.max(1, metrics.px(2)),
+            borderWidth: metrics.linePx(2),
             radius: metrics.px(SIZE.radius) / 2,
           },
         );
@@ -408,7 +408,7 @@ export class StatusDetailWindow {
     bar: Rect,
     boundaries: readonly number[],
   ): void {
-    marks.lineStyle(Math.max(1, metrics.px(STAGE_TICK_WIDTH)), COLOR.cardBorder, 0.35);
+    marks.lineStyle(metrics.linePx(STAGE_TICK_WIDTH), COLOR.cardBorder, 0.35);
     for (const boundary of boundaries) {
       const x = bar.x + bar.width * boundary;
       marks.lineBetween(x, bar.y, x, bar.y + bar.height);
@@ -420,7 +420,7 @@ export class StatusDetailWindow {
     const radius = box.height / 4;
     marks.fillStyle(COLOR.textOnDark, STAGE_FACE_ALPHA);
     marks.fillRoundedRect(box.x, box.y, box.width, box.height, radius);
-    marks.lineStyle(Math.max(1, metrics.px(STAGE_BOX_WIDTH)), COLOR.cardBorder, 1);
+    marks.lineStyle(metrics.linePx(STAGE_BOX_WIDTH), COLOR.cardBorder, 1);
     marks.strokeRoundedRect(box.x, box.y, box.width, box.height, radius);
   }
 
@@ -443,7 +443,7 @@ export class StatusDetailWindow {
       {
         fill: COLOR.optionsBar,
         border: COLOR.cardBorder,
-        borderWidth: Math.max(1, metrics.px(2)),
+        borderWidth: metrics.linePx(2),
         radius: metrics.px(SIZE.radius),
       },
     );

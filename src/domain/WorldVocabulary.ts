@@ -43,7 +43,7 @@ export class WorldVocabulary {
 /**
  * エンジンの汎用ロジックが規約として直接読み書きする単語。**どんなYAMLを載せ替えても変わらない。**
  *
- * - volume: かさ（mL）。capacityの検証（Slot.canAccept）が使う。
+ * - volume: かさ（mL）。capacityの検証（Slot.rejectionFor）が使う。
  * - fill: 中身入りの変種（3.5節）が抱えている量。0になった変種は素の型へ戻る。
  * - weight: 物の重さ。子のweightをそのまま合算する（率はかけない）。
  * - density: 単位量あたりの重さ（g/mL。水=1）。fill × density が中身の重さになる。

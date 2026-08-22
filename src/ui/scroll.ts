@@ -23,23 +23,23 @@ export interface ThumbSpan {
 }
 
 /**
- * 送り具合を、つまみの位置と長さに直す。scrollXは0が左端・minScrollXが右端（左へずらすので
- * 負の値）で、送る必要が無ければminScrollXは0になる。
+ * 送り具合を、つまみの位置と長さに直す。offsetは0が先頭・minOffsetが末尾（負の値）で、送る必要が
+ * 無ければminOffsetは0になる。
  *
  * 長さは中身に対する可視域の割合そのものだが、中身が長いと1ピクセル未満まで痩せて見失うため、
  * minLengthで下限を切る。トラックの中でつまみが動ける幅もそのぶん縮み、両端は必ず端に着く。
  */
 export function scrollThumbSpan(
   trackWidth: number,
-  scrollX: number,
-  minScrollX: number,
+  offset: number,
+  minOffset: number,
   minLength: number,
 ): ThumbSpan {
-  if (minScrollX >= 0) return { x: 0, width: trackWidth };
+  if (minOffset >= 0) return { x: 0, width: trackWidth };
 
-  const contentWidth = trackWidth - minScrollX;
+  const contentWidth = trackWidth - minOffset;
   const width = Math.min(trackWidth, Math.max(minLength, (trackWidth * trackWidth) / contentWidth));
-  const progress = Math.min(1, Math.max(0, scrollX / minScrollX));
+  const progress = Math.min(1, Math.max(0, offset / minOffset));
   return { x: (trackWidth - width) * progress, width };
 }
 
@@ -51,7 +51,7 @@ export function minScrollFor(viewportLength: number, contentLength: number): num
   return Math.min(0, viewportLength - contentLength);
 }
 
-/** 送り量を可動範囲（minScroll〜0）へ収める。 */
-export function clampScroll(offset: number, minScroll: number): number {
-  return Math.min(0, Math.max(minScroll, offset));
+/** 送り量を可動範囲（minOffset〜0）へ収める。 */
+export function clampScroll(offset: number, minOffset: number): number {
+  return Math.min(0, Math.max(minOffset, offset));
 }

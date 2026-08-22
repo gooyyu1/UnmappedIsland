@@ -28,7 +28,7 @@ export class ScreenHeader {
       {
         fill: COLOR.button,
         border: COLOR.buttonBorder,
-        borderWidth: Math.max(1, metrics.px(2)),
+        borderWidth: metrics.linePx(2),
         radius: metrics.px(SIZE.radius),
       },
       onBack,

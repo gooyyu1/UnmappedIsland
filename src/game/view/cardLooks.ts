@@ -121,7 +121,7 @@ export interface CardLooks {
    * 型そのものを表す札。インスタンスを持たないので、まだ在るとは限らない物——枠が受け入れる素材
    * （LaneCell.accepts）——を見せるのに使う。
    */
-  readonly typeContentOf: (objectGlobalId: number) => CardContent;
+  readonly cardOfType: (objectGlobalId: number) => CardContent;
 
   /** そのオブジェクトの表示名。 */
   readonly nameOf: (object: WorldObject) => string;
@@ -302,7 +302,7 @@ export function cardLooksOf(
    * 順は「材料 → プロパティの宣言順 → 中身 → 容量」。作りかけのカードでは材料が上、工程の進捗が下に
    * なる（同10.1節）。
    */
-  const gaugesOfCard = (object: WorldObject): readonly CardGauge[] =>
+  const gaugesOf = (object: WorldObject): readonly CardGauge[] =>
     [
       materialGaugeOf(object),
       ...declaredGaugesOf(object),
@@ -422,7 +422,7 @@ export function cardLooksOf(
     inProgress: inProgressDef(object.def),
     art: artOf(object.def, object),
     background: slotOfObject(object),
-    gauges: gaugesOfCard(object),
+    gauges: gaugesOf(object),
     overlay: overlayOf(object),
     alert: alertOf(object),
     mark: markOf(object),
@@ -431,7 +431,7 @@ export function cardLooksOf(
 
   return {
     contentOf,
-    typeContentOf: cardOfType,
+    cardOfType,
     nameOf,
     iconOf,
     artOf,

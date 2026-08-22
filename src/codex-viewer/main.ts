@@ -5,7 +5,7 @@ import { loadCodexSource } from './CodexSource';
 import type { NamingMode } from './CodexView';
 import { CodexView, escapeHtml } from './CodexView';
 import { balanceSectionId, renderBalancePage, wireBalanceMenu } from './balancePage';
-import { networkNodeDomId, renderNetworkPage } from './networkPage';
+import { networkNodeId, renderNetworkPage } from './networkPage';
 import {
   renderNotFoundPage,
   renderObjectListPage,
@@ -60,9 +60,10 @@ function render(): void {
   wireNetworkZoom();
   wireBalanceMenu();
   window.scrollTo(0, 0);
-  scrollToTagSection(parts);
-  scrollToNetworkNode(parts);
-  scrollToBalanceSection(parts);
+  scrollToSection(parts, 'by-tag', tagSectionId);
+  // 図は縦にも横にも広いので、ハイライトしたノードは中央へ寄せる。
+  scrollToSection(parts, 'network', networkNodeId, { block: 'center', inline: 'center' });
+  scrollToSection(parts, 'balance', balanceSectionId);
 }
 
 /**
@@ -98,25 +99,19 @@ function wireNetworkZoom(): void {
     });
 }
 
-/** クラフトネットワークのハイライト対象（#/network/<識別子>）を図の中央へ出す。 */
-function scrollToNetworkNode(parts: readonly string[]): void {
-  if (parts[0] !== 'network' || parts[1] === undefined) return;
-  document.getElementById(networkNodeDomId(parts[1]))?.scrollIntoView({ block: 'center', inline: 'center' });
-}
-
 /**
- * タグ別一覧（1ページに全タグが並ぶ）で、`#/by-tag/<タグ>` の節まで送る。ハッシュはルーティングに
- * 使っているので、ブラウザ任せのアンカー移動は使えない。
+ * 1ページに全部が並ぶページ（タグ別一覧・クラフトネットワーク・収支）で、`#/<route>/<名前>` が
+ * 名指しした節まで送る。**ハッシュはルーティングに使っている**ので、ブラウザ任せのアンカー移動は
+ * 使えない。domIdはその名前が付いた要素のid。
  */
-function scrollToTagSection(parts: readonly string[]): void {
-  if (parts[0] !== 'by-tag' || parts[1] === undefined) return;
-  document.getElementById(tagSectionId(parts[1]))?.scrollIntoView();
-}
-
-/** 収支のページ（1ページに全部が並ぶ）で、`#/balance/<場所>` の節まで送る。 */
-function scrollToBalanceSection(parts: readonly string[]): void {
-  if (parts[0] !== 'balance' || parts[1] === undefined) return;
-  document.getElementById(balanceSectionId(parts[1]))?.scrollIntoView();
+function scrollToSection(
+  parts: readonly string[],
+  route: string,
+  domId: (name: string) => string,
+  options?: ScrollIntoViewOptions,
+): void {
+  if (parts[0] !== route || parts[1] === undefined) return;
+  document.getElementById(domId(parts[1]))?.scrollIntoView(options);
 }
 
 function renderRoute(view: CodexView, parts: readonly string[]): string {

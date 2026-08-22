@@ -712,7 +712,7 @@ export function fromGameSession(
     mapRoads: discovered.roads,
     cardsIn: (place) =>
       stacksIn(place).map((stack) => (stack === undefined ? undefined : cardOfStack(stack))),
-    cardOfType: looks.typeContentOf,
+    cardOfType: looks.cardOfType,
     cardOfObjects: cardOfStack,
     combinationOf: (dragged, target, count = 1) => {
       // ドラッグが動かすのはスタックのうち1つなので、同じカードへ重ねたときはスタックの中の2つを

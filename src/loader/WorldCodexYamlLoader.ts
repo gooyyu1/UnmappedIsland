@@ -1,17 +1,8 @@
 import { parseDocument } from 'yaml';
-import type { YAMLMap } from 'yaml';
 import type { YamlNode } from './yamlMapping';
-import {
-  asMap,
-  asScalarText,
-  entriesInOrder,
-  tryGetBool,
-  tryGetMap,
-  tryGetScalar,
-  tryGetSeq,
-} from './yamlMapping';
+import { asMap, asScalarText, entriesInOrder, tryGetMap, tryGetSeq } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { namesIn, RawObjectDef } from './RawObjectDef';
+import { RawObjectDef } from './RawObjectDef';
 import type { LoadReport } from './LoadReport';
 import type { RawPatch } from './RawPatch';
 import { applyPatches, parsePatch } from './RawPatch';
@@ -122,7 +113,7 @@ export class WorldCodexYamlLoader {
         addUnique(
           this.globalObjectDefs,
           name,
-          this.parseObjectDef(name, asMap(node, `object_defs.'${name}'`), label),
+          new RawObjectDef(name, label, this.objectNames.intern(name), asMap(node, `object_defs.'${name}'`)),
           'object_defs',
         );
 
@@ -132,7 +123,7 @@ export class WorldCodexYamlLoader {
         addUnique(
           this.globalTraits,
           name,
-          this.parseTrait(name, asMap(node, `traits.'${name}'`), label),
+          new RawTrait(name, label, asMap(node, `traits.'${name}'`)),
           'traits',
         );
 
@@ -254,43 +245,6 @@ export class WorldCodexYamlLoader {
     this._tagNames = new NameRegistry();
     this._propertyTagNames = new NameRegistry();
     this._symbolNames = new NameRegistry();
-  }
-
-  /** object_defs.'name'の1エントリ。中身の取り出しはRawObjectDef自身が行う（patchで取り直すため）。
-   * globalIdのみここで確定させる。 */
-  private parseObjectDef(name: string, node: YAMLMap, source: string): RawObjectDef {
-    return new RawObjectDef(name, source, this.objectNames.intern(name), node);
-  }
-
-  /** traits.'name'の1エントリを浅く抽出する（parseObjectDefと同じく生YAMLノードのまま持つ）。
-   * traitは実行時に識別されないため、interning対象の識別子を持たない。 */
-  private parseTrait(name: string, node: YAMLMap, source: string): RawTrait {
-    const context = `traits.'${name}'`;
-
-    const raw = new RawTrait(name, source);
-    raw.props = tryGetMap(node, 'props', context);
-    raw.slots = tryGetMap(node, 'slots', context);
-    raw.passives = tryGetSeq(node, 'passives', context);
-    raw.stackOrder = tryGetMap(node, 'stack_order', context);
-    raw.visibleSlots = namesIn(tryGetSeq(node, 'visible_slots', context), `${context}.visible_slots`);
-    raw.isStorage = tryGetBool(node, 'storage', context, false);
-    raw.artByStage = tryGetScalar(node, 'art_by_stage', context);
-    raw.boundToOwner = tryGetBool(node, 'bound_to_owner', context, false);
-    raw.notStackable = !tryGetBool(node, 'stackable', context, true);
-    raw.actions = tryGetMap(node, 'actions', context);
-    raw.combinations = tryGetMap(node, 'combinations', context);
-
-    // レシピは成果物のobject_defへ埋め込むもの（RecipeSystem.md）なので、複数の型へ混ぜるtraitには
-    // 書けない（どれが成果物か決まらない）。読み飛ばすと黙って消えるため、ロード時に弾く。
-    if (tryGetMap(node, 'recipes', context) !== undefined)
-      throw new YamlLoadError(
-        `${context}: recipesはtraitに書けません（成果物のobject_defへ書いてください）。`,
-      );
-
-    const tags = tryGetSeq(node, 'tags', context);
-    if (tags !== undefined) for (const t of tags.items as YamlNode[]) raw.tags.push(asScalarText(t, context));
-
-    return raw;
   }
 }
 
