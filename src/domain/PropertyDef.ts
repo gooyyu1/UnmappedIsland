@@ -95,6 +95,11 @@ export class PropertyStage {
   readonly art: string | undefined;
 
   constructor(name: string, min: number | undefined, eq?: number, alert: AlertLevel = 'safe', art?: string) {
+    if (min !== undefined && eq !== undefined)
+      throw new Error(
+        `段'${name}'はminとeqを同時には持てません（eqを持つ段は'name'自体が比較対象で、下限ではありません、6.4節）。`,
+      );
+
     this.name = name;
     this.min = min;
     this.eq = eq;
@@ -251,6 +256,13 @@ export class PropertyDef {
     isSymbolic = false,
     gauge: GaugeDef | undefined = undefined,
   ) {
+    if (range === undefined) {
+      // 割合が定義できないとバーにできず、端が無ければ端のイベントも起こりえない（6.3・6.8節）。
+      if (gauge !== undefined) throw new Error(`プロパティ'${name}': gaugeを使うにはrangeが必要です。`);
+      if (onMax !== undefined) throw new Error(`プロパティ'${name}': on_maxを使うにはrangeが必要です。`);
+      if (onMin !== undefined) throw new Error(`プロパティ'${name}': on_minを使うにはrangeが必要です。`);
+    }
+
     this.globalId = globalId;
     this.name = name;
     this.initialValue = initialValue;
