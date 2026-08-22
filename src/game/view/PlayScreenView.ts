@@ -365,7 +365,7 @@ export function fromGameSession(
     return name === undefined ? undefined : locale.locationName(name);
   };
 
-  const looks = cardLooksOf(codex, locale, game.world.minutesPerTick, instanceName);
+  const looks = cardLooksOf(codex, locale, game.world, instanceName);
   const operations = cardOperationsOf(game, codex, locale);
 
   /**

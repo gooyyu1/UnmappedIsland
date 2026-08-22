@@ -61,6 +61,19 @@ export class World extends ObjectWrapper {
   }
 
   /**
+   * 今から数えてn回目のtickが回るまでの分数。**tickが回るのは通算分がminutes_per_tickの倍数になる
+   * 瞬間**なので、ちょうど境界の上に居るなら次の1回はまるまるminutes_per_tick分先になる。
+   *
+   * 時間を進める側（WorldSession.advanceWorldTime）も、tick境界でしか起きないことの残り時間を出す側
+   * （火にかけた物の焼き上がり、CardView.md 15節）も、この1つの答えから出す——**tickがいつ回るかの
+   * 決まりを2箇所に書くと、片方だけ変えても何も壊れない**。
+   */
+  minutesUntilTick(n: number): number {
+    const step = this.minutesPerTick;
+    return (n - 1) * step + (step - (this.totalMinutes % step));
+  }
+
+  /**
    * 現在時刻を、その日のearliestMinutes〜latestMinutes（0:00からの経過分、両端を含む）の中から
    * tick刻み（minutes_per_tick）で1つ選んで設定する（NewGame.start専用）。
    *

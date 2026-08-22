@@ -247,7 +247,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const colorId = codex.propertyNames.getId('color');
     // 中身入りの変種も液体のtraitを配られてliquidタグを持つので、配る側の束だけを見る。
     const liquids = codex
-      .objectDefNamesWithTag('liquid')
+      .objectDefNamesWithTag(codex.tagNames.getId('liquid'))
       .filter((name) => !codex.isGenerated(codex.objects.get(codex.objectNames.getId(name))));
     expect(liquids.length, '検査対象が無い（liquidタグが変わっていないか）').toBeGreaterThan(0);
 

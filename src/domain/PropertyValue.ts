@@ -172,6 +172,10 @@ export class PropertyValue {
   /**
    * 今の進み方が続いたとき、あと何tickでrange.maxへ届く（on_maxが起きる、6.3節）か。
    * 進んでいない（合計が0以下）・rangeを持たない場合はundefined。
+   *
+   * **切り上げるのは、届くのがtickの回る瞬間だからで、表示のための丸めではない。** 最低1を返すのも
+   * 同じ理由——既にmaxに居ても、溢れて`on_max`が起きるのは次のtickなので、0tick後ではない。
+   * 何分後かへ直すのは、tickがいつ回るかを知っている側（World.minutesUntilTick）。
    */
   ticksUntilMax(): number | undefined {
     const range = this.def.range;

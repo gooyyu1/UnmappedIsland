@@ -2,6 +2,8 @@ import type { GenerationDefs } from './generation/GenerationDefs';
 import { GeneratedTypes } from './GeneratedTypes';
 import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef, ObjectDefTable } from './ObjectDef';
+import type { PassiveReader } from './PassiveReader';
+import type { PropertyDef } from './PropertyDef';
 import type { SlotDef } from './SlotDef';
 import type { WorldVocabulary } from './WorldVocabulary';
 
@@ -73,6 +75,59 @@ export class WorldCodex {
     this.objects = objects;
     this.vocabulary = vocabulary;
     this.generation = generation;
+
+    this.requireRangeEventsOnUnmodifiedProperties();
+  }
+
+  /**
+   * 著者が書いた`on_max`/`on_min`（6.3節）を持てるのは、**実効値が実体値と一致するプロパティだけ**。
+   *
+   * 端のイベントは実体値で発火し（PropertyValue.add）、段・バー・conditionsは実効値で読む
+   * （getEffectiveValue）。両方が食い違いうるプロパティが端のイベントを持つと、「バーは満ちているのに
+   * 何も起きない」「まだ空でないのに尽きる」が起こりうる。**そのときの正しい挙動をまだ決めていない**ので、
+   * 決まるまでは書けないようにしておく。
+   *
+   * 食い違いの原因は3つ——`modify`（8.3節）・`inherit`（6.5節）・入れ物からの寄与（weight/load）。
+   * **`modify`されるかは型ひとつでは分からない**（宣言するのは他の型）ので、世界全体を持つここで見る。
+   */
+  private requireRangeEventsOnUnmodifiedProperties(): void {
+    const modifiedBy = new Map<number, string>();
+
+    for (const objectDef of this.objects) {
+      const reader: PassiveReader = {
+        modify: ({ propertyGlobalId }) => {
+          if (!modifiedBy.has(propertyGlobalId)) modifiedBy.set(propertyGlobalId, objectDef.name);
+        },
+        accumulate: () => {},
+        transfer: () => {},
+      };
+      for (const passive of objectDef.passives.declarations) passive.read(reader);
+    }
+
+    for (const objectDef of this.objects)
+      for (const propertyDef of objectDef.enumeratePropertyDefs()) {
+        if (!propertyDef.hasDeclaredRangeEvent) continue;
+
+        const cause = this.reasonEffectiveValueDiffers(propertyDef, modifiedBy);
+        if (cause !== undefined)
+          throw new Error(
+            `'${objectDef.name}'のプロパティ'${propertyDef.name}': ${cause}ため、on_max/on_minを書けません` +
+              `（端のイベントは実体値で発火し、段やバーは実効値で読むので、見えている値と起きることがずれます）。`,
+          );
+      }
+  }
+
+  /** 実効値が実体値と食い違いうる理由。一致するならundefined（requireRangeEventsOnUnmodifiedProperties参照）。 */
+  private reasonEffectiveValueDiffers(
+    propertyDef: PropertyDef,
+    modifiedBy: ReadonlyMap<number, string>,
+  ): string | undefined {
+    const modifier = modifiedBy.get(propertyDef.globalId);
+    if (modifier !== undefined) return `'${modifier}'のpassivesがmodifyで書き換える`;
+    if (propertyDef.inherit) return 'inheritで祖先の値を受け取る';
+    if (propertyDef.globalId === this.vocabulary.engine.weightId) return '中身のweightを受け取る';
+    if (propertyDef.globalId === this.vocabulary.engine.loadId) return '中身のloadを受け取る';
+    return undefined;
   }
 
   /**
@@ -130,16 +185,16 @@ export class WorldCodex {
   }
 
   /**
-   * タグ（4.1節）を持つobject_defの識別子を、宣言順（グローバルID順）で返す。未登録のタグでは空。
+   * タグ（4.1節）を持つobject_defの識別子を、宣言順（グローバルID順）で返す。誰も持たないタグでは空。
    * タグは型のグループを指す唯一の手段なので、「locationな型の一覧」「選べるキャラクタの一覧」は
    * いずれもこれで引く。
+   *
+   * **受け取るのは名前ではなくID**——コードが名指しするタグはWorldVocabularyに並んでいるので、
+   * ここで文字列から引き直すと同じ語が2箇所に書かれる。
    */
-  objectDefNamesWithTag(tagName: string): readonly string[] {
-    const tagId = this.tagNames.tryGetId(tagName);
-    if (tagId === undefined) return [];
-
+  objectDefNamesWithTag(tagGlobalId: number): readonly string[] {
     const names: string[] = [];
-    for (const objectDef of this.objects) if (objectDef.hasTag(tagId)) names.push(objectDef.name);
+    for (const objectDef of this.objects) if (objectDef.hasTag(tagGlobalId)) names.push(objectDef.name);
     return names;
   }
 

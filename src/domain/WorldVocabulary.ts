@@ -26,9 +26,14 @@ export const MATERIALS_SLOT = 'materials';
  * **載せるのは、コード側にリテラルとして書かれている単語だけ。** シナリオYAMLやURLに書かれた名前を
  * 引く箇所（Scenario・CodexView）はユーザーの語であって、コードの依存ではない。
  *
- * **見せ方だけを決める単語は載せない**（cardLooks・PlayScreenView）。あちらの名前は「この段に居たら
- * 覆いを出す」「このタグならこの枠色」のように結果と対で意味を持つので、名前だけを引き剥がすと
- * 規則が2箇所に割れる。消えても見た目が既定に落ちるだけで、ここに並ぶ単語とは壊れ方の重さが違う。
+ * **載せるのは単語であって、規則ではない。** 「このタグならこの枠色」「この段に居たら覆いを出す」の
+ * ような対応は読む側（cardLooks）に残る——ここが答えるのは「その語をYAMLから消したら何が壊れるか」
+ * だけで、消えた結果どう見えるかは知らない。
+ *
+ * **結果と対でしか意味を持たない名前は載せない**（cardLooks の `cooking_progress`・`treatment` など）。
+ * あれらは「その値が進んでいたら覆いを出す」という規則の一部で、名前だけを引き剥がすと規則が
+ * 2箇所に割れる。種別を言うタグ（item・animal など）はそうではなく、**この世界に何が居るかを言う語**
+ * なので、他の規約プロパティと同じくここに並ぶ。
  */
 export class WorldVocabulary {
   readonly engine: EngineVocabulary;
@@ -128,6 +133,20 @@ export class WorldRuleVocabulary {
   readonly locationTagId: number;
   readonly characterTagId: number;
   readonly pathTagId: number;
+
+  /**
+   * 物が何であるかを言うタグ。**兼ねる物がある**（動物はitemでもあり、編み籠はitemでもfixtureでもある）
+   * ので、どれを先に見るかは読む側が決める（cardLooks.kindOf）。
+   */
+  readonly itemTagId: number;
+  readonly fixtureTagId: number;
+  readonly injuryTagId: number;
+  readonly animalTagId: number;
+  readonly foodTagId: number;
+  readonly containerTagId: number;
+  readonly liquidContainerTagId: number;
+  readonly toolTagId: number;
+
   /** 動物がぶつかる相手を選り分ける（HuntingSystem.md 5.4節）。獲物は避け、割れ物は狙う。 */
   readonly quarryTagId: number;
   readonly fragileTagId: number;
@@ -184,6 +203,14 @@ export class WorldRuleVocabulary {
     this.locationTagId = tagNames.intern('location');
     this.characterTagId = tagNames.intern('character');
     this.pathTagId = tagNames.intern('path');
+    this.itemTagId = tagNames.intern('item');
+    this.fixtureTagId = tagNames.intern('fixture');
+    this.injuryTagId = tagNames.intern('injury');
+    this.animalTagId = tagNames.intern('animal');
+    this.foodTagId = tagNames.intern('food');
+    this.containerTagId = tagNames.intern('container');
+    this.liquidContainerTagId = tagNames.intern('liquid_container');
+    this.toolTagId = tagNames.intern('tool');
     this.quarryTagId = tagNames.intern('quarry');
     this.fragileTagId = tagNames.intern('fragile');
 

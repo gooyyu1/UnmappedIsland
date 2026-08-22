@@ -608,8 +608,9 @@ export class WorldObject {
 
     for (const property of this.properties) {
       const carried = carriedValues.get(property.def.globalId);
-      // 型が変わるとrangeも変わるので、運んだ値は新しい両端へ丸める。
-      if (carried !== undefined) property.init(property.def.range?.clamp(carried) ?? carried);
+      // **新しい型のrangeに収まらなくてもそのまま運ぶ。** rangeは実効値の端（6.3節）なので、
+      // 読むときに切られる。実体値を丸めるのはエンジンの仕事ではない。
+      if (carried !== undefined) property.init(carried);
     }
 
     this._def.passives.registerRelation(this, 'self', true);

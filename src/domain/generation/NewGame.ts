@@ -65,7 +65,7 @@ const START_TIME_LATEST_MINUTES = 12 * 60;
  * （docs/world/Characters.md）。
  */
 export function characterDefNames(codex: WorldCodex): readonly string[] {
-  return codex.objectDefNamesWithTag('character');
+  return codex.objectDefNamesWithTag(codex.vocabulary.world.characterTagId);
 }
 
 /**

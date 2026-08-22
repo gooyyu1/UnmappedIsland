@@ -350,6 +350,17 @@ export class PropertyDef {
     return events;
   }
 
+  /**
+   * 著者が`on_max`/`on_min`を書いているか（6.3節）。既定のクランプしか無いプロパティはfalse。
+   *
+   * **端のイベントは実体値で発火する**（checkRangeEvents）ので、実効値が実体値と食い違いうる
+   * プロパティがこれを持つと、見えている値と起きることがずれる。世界全体でその組み合わせを
+   * 弾くのはWorldCodex（両方を持つのはそちらだけ）。
+   */
+  get hasDeclaredRangeEvent(): boolean {
+    return this.declaredOnMax !== undefined || this.declaredOnMin !== undefined;
+  }
+
   /** このプロパティにタグ（6.7節）が付いているか。 */
   hasTag(tagGlobalId: number): boolean {
     return this.tags.includes(tagGlobalId);
