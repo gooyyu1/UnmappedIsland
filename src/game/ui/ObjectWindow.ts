@@ -27,7 +27,6 @@ import { durationText } from '../looks/durationText';
 import { addLabel } from '../../ui/labels';
 import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
-import { wrapByCharacter } from '../../ui/textLayout';
 import { Tooltip } from './Tooltip';
 import type { TooltipContent } from './Tooltip';
 
@@ -217,10 +216,13 @@ export class ObjectWindow {
     this.objects.push(board);
 
     // **見出しは常にオブジェクトの名前。** スロットの名前はタブのラベルが持つ。
-    const title = addLabel(scene, metrics, 0, 0, options.object.card.name, { size: 34, bold: true })
+    const title = addLabel(scene, metrics, 0, 0, options.object.card.name, {
+      size: 34,
+      bold: true,
+      wrapWidth: contentWidth,
+    })
       .setOrigin(0.5, 0)
       .setAlign('center');
-    title.setWordWrapCallback(wrapByCharacter(contentWidth));
 
     // 中段の高さは**最も高いタブに合わせて固定**する。
     const middleHeight = Math.max(...this.tabSpecs.map((tab) => tab.height(contentWidth)));

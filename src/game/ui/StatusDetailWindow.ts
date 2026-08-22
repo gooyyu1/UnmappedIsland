@@ -16,7 +16,6 @@ import { ProgressBar } from './ProgressBar';
 import { addPanel, drawBox } from '../../ui/shapes';
 import { onPressRelease } from '../../ui/tap';
 import type { StatusContent, StatusInfluence } from './StatusBar';
-import { wrapByCharacter } from '../../ui/textLayout';
 import { COLOR, SIZE } from '../looks/theme';
 
 /** 見出しの絵と表示名。 */
@@ -145,8 +144,9 @@ export class StatusDetailWindow {
     const description = addLabel(scene, metrics, 0, 0, detail?.description ?? NO_DESCRIPTION, {
       size: DESCRIPTION_SIZE,
       color: detail?.description === undefined ? COLOR.textMuted : COLOR.text,
-    }).setLineSpacing(metrics.px(DESCRIPTION_LINE_GAP));
-    description.setWordWrapCallback(wrapByCharacter(contentWidth));
+      wrapWidth: contentWidth,
+      lineGap: DESCRIPTION_LINE_GAP,
+    });
 
     const given = this.buildSection(scene, metrics, '与えている影響', detail?.given ?? [], contentWidth);
     const received = this.buildSection(
@@ -464,11 +464,12 @@ export class StatusDetailWindow {
     if (influence.icon !== undefined)
       return addLabel(scene, metrics, 0, 0, influence.icon, { size: TILE_ICON_SIZE }).setOrigin(0.5);
 
-    const name = addLabel(scene, metrics, 0, 0, influence.name, { size: TILE_NAME_SIZE })
+    return addLabel(scene, metrics, 0, 0, influence.name, {
+      size: TILE_NAME_SIZE,
+      wrapWidth: width,
+    })
       .setOrigin(0.5)
       .setAlign('center');
-    name.setWordWrapCallback(wrapByCharacter(width));
-    return name;
   }
 }
 

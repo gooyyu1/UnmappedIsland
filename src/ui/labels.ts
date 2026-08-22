@@ -1,15 +1,28 @@
 import type Phaser from 'phaser';
 import { cssColor } from '../util/cssColor';
+import { wrapByCharacter } from './textLayout';
 
-/** 文字の見た目。sizeはu単位のフォントサイズ。 */
+/** 文字の見た目。 */
 export interface LabelStyle {
+  /** フォントサイズ（u単位）。 */
   readonly size: number;
+
   readonly color?: number;
   readonly bold?: boolean;
+
+  /**
+   * **この幅で文字単位に折り返す**（textLayout.wrapByCharacter）。省略すると折り返さない。
+   * 単位はピクセル——収める矩形の幅をそのまま渡すため。
+   */
+  readonly wrapWidth?: number;
+
+  /** 行間（u単位）。省略すると行間を足さない。 */
+  readonly lineGap?: number;
 }
 
 /** u単位の大きさをピクセルへ直せる相手（ScreenMetrics）。 */
 export interface FontScale {
+  px(units: number): number;
   fontPx(units: number): number;
 }
 
@@ -38,10 +51,14 @@ export function addLabel(
   content: string,
   style: LabelStyle,
 ): Phaser.GameObjects.Text {
-  return scene.add.text(x, y, content, {
+  const text = scene.add.text(x, y, content, {
     fontFamily: defaults.fontFamily,
     fontSize: `${metrics.fontPx(style.size)}px`,
     fontStyle: style.bold === true ? 'bold' : '',
     color: cssColor(style.color ?? defaults.color),
   });
+
+  if (style.lineGap !== undefined) text.setLineSpacing(metrics.px(style.lineGap));
+  if (style.wrapWidth !== undefined) text.setWordWrapCallback(wrapByCharacter(style.wrapWidth));
+  return text;
 }

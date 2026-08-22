@@ -23,7 +23,6 @@ import { ScreenHeader } from './ui/ScreenHeader';
 import { TextInput } from './ui/TextInput';
 import { addLabel } from '../ui/labels';
 import { addPanel } from '../ui/shapes';
-import { wrapByCharacter } from '../ui/textLayout';
 import { COLOR, SIZE } from './looks/theme';
 
 /** 本文の余白と項目間の間隔（StartScreen_Mock.htmlの.newgame-body）。横型は左右を広く取る。 */
@@ -329,7 +328,7 @@ export class NewGameScene extends ResponsiveScene {
         cardScale,
       ),
     );
-    this.refreshCharacterDescription(this.characterOptionsOrigin.y + height + gap, lineSpacing);
+    this.refreshCharacterDescription(this.characterOptionsOrigin.y + height + gap);
   }
 
   private addCharacterOption(
@@ -366,15 +365,16 @@ export class NewGameScene extends ResponsiveScene {
    * 選んでいる人物の説明を、選択肢の下へ出す。札には名前しか載らないので、どういう人物なのかは
    * ここで見せる。まだ選んでいない間は空にする。
    */
-  private refreshCharacterDescription(y: number, lineSpacing: number): void {
+  private refreshCharacterDescription(y: number): void {
     this.characterDescription?.destroy();
 
     const description =
       this.characterId === undefined ? '' : (this.locale.object(this.characterId).description ?? '');
     this.characterDescription = addLabel(this, this.metrics, this.characterOptionsOrigin.x, y, description, {
       size: CHARACTER_DESCRIPTION_SIZE,
-    }).setLineSpacing(lineSpacing);
-    this.characterDescription.setWordWrapCallback(wrapByCharacter(this.characterOptionsOrigin.width));
+      wrapWidth: this.characterOptionsOrigin.width,
+      lineGap: LABEL_GAP,
+    });
   }
 
   /** 説明のために常に空けておく高さ（CHARACTER_DESCRIPTION_LINES行ぶん）。 */

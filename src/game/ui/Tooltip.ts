@@ -1,14 +1,16 @@
 import Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import { cssColor } from '../../util/cssColor';
-import { COLOR, FONT_FAMILY, SIZE } from '../looks/theme';
+import { COLOR, SIZE } from '../looks/theme';
 import { drawBox } from '../../ui/shapes';
-import { wrapByCharacter } from '../../ui/textLayout';
+import { addLabel } from '../../ui/labels';
 
 /** 内側の余白と、行間・カードとの間隔（u単位）。 */
 const PADDING = 24;
 const LINE_GAP = 10;
+
+/** 1つの文の中の行間（折り返した行どうし）。行と行の間隔（LINE_GAP）より狭い。 */
+const TEXT_LINE_GAP = 4;
 const CARD_GAP = 16;
 
 /** 文字の大きさ（u単位）。指で操作するゲームなので、カードの名前より大きく取る。 */
@@ -140,14 +142,12 @@ export class Tooltip {
   }
 
   private addText(value: string, size: number, bold: boolean, maxWidth: number): Phaser.GameObjects.Text {
-    const text = this.scene.add.text(0, 0, value, {
-      fontFamily: FONT_FAMILY,
-      fontSize: `${this.metrics.fontPx(size)}px`,
-      fontStyle: bold ? 'bold' : undefined,
-      color: cssColor(COLOR.textOnDark),
+    return addLabel(this.scene, this.metrics, 0, 0, value, {
+      size,
+      bold,
+      color: COLOR.textOnDark,
+      wrapWidth: maxWidth,
+      lineGap: TEXT_LINE_GAP,
     });
-    text.setLineSpacing(this.metrics.px(4));
-    text.setWordWrapCallback(wrapByCharacter(maxWidth));
-    return text;
   }
 }
