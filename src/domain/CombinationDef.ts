@@ -57,17 +57,22 @@ export class CombinationDef extends InteractionDef {
     return { kind: 'drag', with: this.with.reading };
   }
 
-  /** draggedDefがこのcombinationのwithに当てはまれば真（12.1節）。 */
-  matches(draggedDef: ObjectDef): boolean {
+  /** draggedDefをこの組み合わせの相手にできるか（withに当てはまるか、12.1節）。 */
+  acceptsDragged(draggedDef: ObjectDef): boolean {
     return this.with.matches(draggedDef);
   }
 
-  tryExecute(
+  /**
+   * 相手の型も実行の時点で引き直す。候補に選ばれてから落とされるまでに、相手が別の型になっている
+   * ことがある（`become`、9.9節）——基底が要件を引き直すのと同じ理由。
+   */
+  override execute(
     self: WorldObject,
     actor: WorldObject | undefined,
-    dragged: WorldObject,
+    dragged: WorldObject | undefined,
     session: WorldSession,
   ): boolean {
-    return this.matches(dragged.def) && this.apply(self, actor, dragged, session);
+    if (dragged === undefined || !this.acceptsDragged(dragged.def)) return false;
+    return super.execute(self, actor, dragged, session);
   }
 }

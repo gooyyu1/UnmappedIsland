@@ -1,5 +1,6 @@
 import type { ActionDef, ShowMenuMode } from './ActionDef';
 import type { CombinationDef } from './CombinationDef';
+import type { InteractionDef } from './InteractionDef';
 import type { Requirement } from './Requirement';
 import type { WorldObject } from './WorldObject';
 
@@ -9,76 +10,69 @@ import type { WorldObject } from './WorldObject';
  * 宣言（ActionDef・CombinationDef）はObjectDefのもので、**どの個体の話かを知らない**。だから宣言へ
  * 直に頼むと、所要時間を訊くにも実行するにも「誰の」「誰に」を毎回渡し直すことになる。引いた時点で
  * 相手を結び付けておけば、以降は名前も相手も渡さない。
+ *
+ * **重ねる相手（dragged）を持つかどうかだけが具象の差**なので、持たない側（Action）はundefinedを
+ * 1度だけここへ渡す。訊き方も実行の仕方も具象では変わらない。
  */
-export class Action {
-  private readonly def: ActionDef;
+abstract class Interaction<D extends InteractionDef, T extends WorldObject | undefined> {
+  protected readonly def: D;
 
   /** この操作を宣言している側の個体（self）。 */
-  private readonly self: WorldObject;
+  protected readonly self: WorldObject;
 
   /** 操作する本人。時間の側が起こす操作（showMenu: never）ではundefinedになりうる。 */
-  private readonly actor: WorldObject | undefined;
+  protected readonly actor: WorldObject | undefined;
 
-  constructor(def: ActionDef, self: WorldObject, actor: WorldObject | undefined) {
+  /** 重ねられた相手。メニュー型の操作には居ない（型引数がundefinedになる）。 */
+  protected readonly dragged: T;
+
+  protected constructor(def: D, self: WorldObject, actor: WorldObject | undefined, dragged: T) {
     this.def = def;
     this.self = self;
     this.actor = actor;
+    this.dragged = dragged;
   }
 
   get name(): string {
     return this.def.name;
+  }
+
+  /** 実行にかかるゲーム内時間（分）。durationを省いていれば0。実行前に見せる用途にも使う。 */
+  minutes(): number {
+    return this.def.minutesFor(this.self, this.actor, this.dragged);
+  }
+
+  /** 今実行できない理由（最初に落ちた要件、14節）。実行できるならundefined。 */
+  unmetRequirement(): Requirement | undefined {
+    return this.def.unmetRequirement(this.self, this.actor, this.dragged);
+  }
+
+  tryExecute(): boolean {
+    return this.def.execute(this.self, this.actor, this.dragged, this.self.session);
+  }
+}
+
+/** メニュー型の操作（GameElementDefinition.md 11節）。1枚のカードだけで完結するので、相手は居ない。 */
+export class Action extends Interaction<ActionDef, undefined> {
+  constructor(def: ActionDef, self: WorldObject, actor: WorldObject | undefined) {
+    super(def, self, actor, undefined);
   }
 
   /** 画面のボタンに出す操作か（11.1節）。 */
   get showMenu(): ShowMenuMode {
     return this.def.showMenu;
   }
-
-  /** 実行にかかるゲーム内時間（分）。durationを省いていれば0。実行前に見せる用途にも使う。 */
-  minutes(): number {
-    return this.def.minutesFor(this.self, this.actor, undefined);
-  }
-
-  /** 今実行できない理由（最初に落ちた要件、14節）。実行できるならundefined。 */
-  unmetRequirement(): Requirement | undefined {
-    return this.def.unmetRequirement(this.self, this.actor, undefined);
-  }
-
-  tryExecute(): boolean {
-    return this.def.tryExecute(this.self, this.actor, this.self.session);
-  }
 }
 
 /**
- * 相手（dragged）まで決まった組み合わせ1つ（GameElementDefinition.md 12節）。Actionと同じ理由で、
- * 宣言ではなくこちらへ頼む。
+ * 相手（dragged）まで決まった組み合わせ1つ（GameElementDefinition.md 12節）。
  *
  * **今成立するものしか作られない**（WorldObject.combinationsWith）ので、持っているだけで「重ねれば
  * 何かが起きる」と言える。
  */
-export class Combination {
-  private readonly def: CombinationDef;
-  private readonly self: WorldObject;
-
-  /** 重ねられた相手。まとめて実行するときは、この1つが先頭になる。 */
-  private readonly dragged: WorldObject;
-
-  private readonly actor: WorldObject | undefined;
-
+export class Combination extends Interaction<CombinationDef, WorldObject> {
   constructor(def: CombinationDef, self: WorldObject, dragged: WorldObject, actor: WorldObject | undefined) {
-    this.def = def;
-    this.self = self;
-    this.dragged = dragged;
-    this.actor = actor;
-  }
-
-  get name(): string {
-    return this.def.name;
-  }
-
-  /** 1つぶんの所要時間（分）。まとめて実行すれば個数ぶんかかる。 */
-  minutes(): number {
-    return this.def.minutesFor(this.self, this.actor, this.dragged);
+    super(def, self, actor, dragged);
   }
 
   /**
@@ -90,10 +84,6 @@ export class Combination {
    */
   acceptedCount(followers: readonly WorldObject[]): number {
     return this.def.acceptedCount(this.self, [this.dragged, ...followers], this.actor);
-  }
-
-  tryExecute(): boolean {
-    return this.def.tryExecute(this.self, this.actor, this.dragged, this.self.session);
   }
 
   /**

@@ -766,7 +766,7 @@ export class WorldObject {
     return this.def.combinations
       .filter(
         (c) =>
-          c.matches(dragged.def) &&
+          c.acceptsDragged(dragged.def) &&
           c.unmetRequirement(this, actor, dragged) === undefined &&
           c.acceptedCount(this, [dragged], actor) >= 1 &&
           !c.unresolvable(this, actor, dragged),

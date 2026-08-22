@@ -102,8 +102,11 @@ export abstract class InteractionDef {
    * conditionsを見て、時間を進め、効果を適用する（ActionSystem.md 2節）。順序に意味がある:
    * 所要時間は時間を進める前に解決し、時間は効果の適用より先に進める。経過中に関与オブジェクトが
    * 失われたら、その行動は成立しなかったものとして効果を適用しない（actionTime参照）。
+   *
+   * **要件は選んだ時点ではなく実行の時点で引き直す**（候補を作ってから落とすまでに世界は変わる）。
+   * 相手の型も変わりうるので、そちらの引き直しはCombinationDefが足す。
    */
-  protected apply(
+  execute(
     self: WorldObject,
     actor: WorldObject | undefined,
     dragged: WorldObject | undefined,
