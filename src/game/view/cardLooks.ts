@@ -314,17 +314,6 @@ export function cardLooksOf(
       capacityGaugeOf(object),
     ].filter((gauge): gauge is CardGauge => gauge !== undefined);
 
-  const characterTagId = codex.tagNames.tryGetId('character');
-  const locationTagId = codex.tagNames.tryGetId('location');
-  const itemTagId = codex.tagNames.tryGetId('item');
-  const fixtureTagId = codex.tagNames.tryGetId('fixture');
-  const injuryTagId = codex.tagNames.tryGetId('injury');
-  const animalTagId = codex.tagNames.tryGetId('animal');
-  const foodTagId = codex.tagNames.tryGetId('food');
-  const containerTagId = codex.tagNames.tryGetId('container');
-  const liquidContainerTagId = codex.tagNames.tryGetId('liquid_container');
-  const toolTagId = codex.tagNames.tryGetId('tool');
-
   const typeNameOf = (def: ObjectDef): string => typeDisplayName(codex, locale, def);
 
   /**
@@ -345,20 +334,20 @@ export function cardLooksOf(
    * だけで別の物に見えては困る。持ち歩けるかどうかを先に見るのはそのため。
    */
   const kindOf = (def: ObjectDef): CardKind => {
-    const has = (tagId: number | undefined): boolean => tagId !== undefined && def.hasTag(tagId);
+    const words = codex.vocabulary.world;
     // 人と場所は物の用途の並びに入らない（どちらも持ち歩く対象ではない）ので、先に見る。
-    if (has(characterTagId)) return 'character';
-    if (has(locationTagId)) return 'location';
-    if (has(injuryTagId)) return 'injury';
+    if (def.hasTag(words.characterTagId)) return 'character';
+    if (def.hasTag(words.locationTagId)) return 'location';
+    if (def.hasTag(words.injuryTagId)) return 'injury';
     // 動物はitemも兼ねる（HuntingSystem.md 1.1節）ので、itemより先に見る。
-    if (has(animalTagId)) return 'animal';
+    if (def.hasTag(words.animalTagId)) return 'animal';
     // アイテムの用途（CardView.md 2節）。**兼ねる物は、生存の時計に近いほうを先に見る**——中に水を
     // 抱えた青いヤシの実は入れ物ではなく食事で、水があることは中身のバーが青で言う。
-    if (has(foodTagId)) return 'food';
-    if (has(containerTagId) || has(liquidContainerTagId)) return 'container';
-    if (has(toolTagId)) return 'tool';
-    if (has(itemTagId)) return 'item';
-    if (has(fixtureTagId)) return 'fixture';
+    if (def.hasTag(words.foodTagId)) return 'food';
+    if (def.hasTag(words.containerTagId) || def.hasTag(words.liquidContainerTagId)) return 'container';
+    if (def.hasTag(words.toolTagId)) return 'tool';
+    if (def.hasTag(words.itemTagId)) return 'item';
+    if (def.hasTag(words.fixtureTagId)) return 'fixture';
     return 'item';
   };
 
