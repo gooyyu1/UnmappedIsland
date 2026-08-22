@@ -285,7 +285,7 @@ export interface BalanceTables {
 
 /** 収支表を丸ごと組み立てる。sampleCharacterは1日の必要量を取る代表キャラクタ。 */
 export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): BalanceTables {
-  const characterNames = codex.objectDefNamesWithTag('character');
+  const characterNames = codex.objectDefNamesWithTag(codex.vocabulary.world.characterTagId);
   const character = codex.objects.get(codex.objectNames.getId(sampleCharacter));
   const dailyNeeds = dailyNeedsOf(codex, character);
   const { places, gaps, islandWide } = placeBalances(codex, character, dailyNeeds);

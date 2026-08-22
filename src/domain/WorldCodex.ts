@@ -185,16 +185,16 @@ export class WorldCodex {
   }
 
   /**
-   * タグ（4.1節）を持つobject_defの識別子を、宣言順（グローバルID順）で返す。未登録のタグでは空。
+   * タグ（4.1節）を持つobject_defの識別子を、宣言順（グローバルID順）で返す。誰も持たないタグでは空。
    * タグは型のグループを指す唯一の手段なので、「locationな型の一覧」「選べるキャラクタの一覧」は
    * いずれもこれで引く。
+   *
+   * **受け取るのは名前ではなくID**——コードが名指しするタグはWorldVocabularyに並んでいるので、
+   * ここで文字列から引き直すと同じ語が2箇所に書かれる。
    */
-  objectDefNamesWithTag(tagName: string): readonly string[] {
-    const tagId = this.tagNames.tryGetId(tagName);
-    if (tagId === undefined) return [];
-
+  objectDefNamesWithTag(tagGlobalId: number): readonly string[] {
     const names: string[] = [];
-    for (const objectDef of this.objects) if (objectDef.hasTag(tagId)) names.push(objectDef.name);
+    for (const objectDef of this.objects) if (objectDef.hasTag(tagGlobalId)) names.push(objectDef.name);
     return names;
   }
 

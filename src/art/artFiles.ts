@@ -59,5 +59,7 @@ export function commonArtFiles(locations: readonly string[]): readonly ArtFile[]
  * **背景を持たない場所は遅らせる意味が無い**ので、そこで線を引く。
  */
 export function locationDefNames(codex: WorldCodex): readonly string[] {
-  return codex.objectDefNamesWithTag('location').filter((name) => backgroundTexturesOf(name).length > 0);
+  return codex
+    .objectDefNamesWithTag(codex.vocabulary.world.locationTagId)
+    .filter((name) => backgroundTexturesOf(name).length > 0);
 }

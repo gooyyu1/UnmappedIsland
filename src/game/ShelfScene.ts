@@ -11,7 +11,6 @@ import { addPanel } from '../ui/shapes';
 import { COLOR, SIZE } from './looks/theme';
 
 /** アーティファクトを指すタグ（artifacts.yaml）。棚の枠はこのタグを持つ型がそのまま決める。 */
-const ARTIFACT_TAG = 'artifact';
 
 /** 絵がまだ無いアーティファクトの、仮のアイコン。 */
 const ARTIFACT_ICON = '🏺';
@@ -59,7 +58,7 @@ export class ShelfScene extends ResponsiveScene {
     addPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
     new ScreenHeader(this, this.metrics, width, 'アーティファクトの棚', () => this.scene.start('title'));
 
-    const all = this.codex.objectDefNamesWithTag(ARTIFACT_TAG);
+    const all = this.codex.objectDefNamesWithTag(this.codex.vocabulary.world.artifactTagId);
     const held = new Set(new Shelf(localStorage).contents);
 
     const padding = this.metrics.px(PADDING);
