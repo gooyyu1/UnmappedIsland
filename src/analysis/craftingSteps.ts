@@ -93,8 +93,8 @@ function recipeStep(def: ObjectDef, recipe: RecipeDef): CraftingStep {
       ),
     ),
     outputs: collectOutputs(outcomes),
-    laborMinutes: totalMinutesOf(recipe),
-    elapsedMinutes: totalMinutesOf(recipe),
+    laborMinutes: recipe.totalMinutes,
+    elapsedMinutes: recipe.totalMinutes,
     outcomes,
     hasUnresolvedReferences: false,
   };
@@ -181,11 +181,6 @@ function inputOf(reading: TypeMatchReading, consumed: boolean, count: number): C
   return reading.kind === 'tag'
     ? { kind: 'tag', tagGlobalId: reading.tagGlobalId, consumed, count }
     : { kind: 'object', objectGlobalId: reading.objectGlobalId, consumed, count };
-}
-
-/** 全工程を通した所要時間（分）。工程の別は畳むので、時間も和で1つにする。 */
-function totalMinutesOf(recipe: RecipeDef): number {
-  return recipe.steps.reduce((sum, step) => sum + step.durationMinutes, 0);
 }
 
 /**

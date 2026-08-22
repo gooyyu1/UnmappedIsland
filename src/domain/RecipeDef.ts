@@ -91,6 +91,11 @@ export class RecipeDef {
     this.unlock = unlock;
   }
 
+  /** 全工程を通した所要時間（分）。完成までの進捗の上限そのもの。 */
+  get totalMinutes(): number {
+    return this.steps.reduce((sum, step) => sum + step.durationMinutes, 0);
+  }
+
   /** このレシピがcandidateDefを、どこかの工程で素材か道具として要求しているか。 */
   requires(candidateDef: ObjectDef): boolean {
     return this.steps.some((step) => step.requires(candidateDef));

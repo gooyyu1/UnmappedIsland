@@ -1,4 +1,10 @@
-import type { AddReading, EffectReader, PickCandidateReading, TransferReading } from '../domain/EffectReader';
+import type {
+  AddReading,
+  EffectDeclaration,
+  EffectReader,
+  PickCandidateReading,
+  TransferReading,
+} from '../domain/EffectReader';
 import type { ObjectRefReading } from '../domain/ObjectRef';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { StepOutcome } from './CraftingStep';
@@ -25,7 +31,7 @@ export interface EffectReading {
  * 行われるので、宣言値から出す確率はその代用でしかない。そして**分岐を直積で畳むこと**——
  * 宣言順に並んだ効果は順に起こるので、pickが2つ並べば枝は掛け算になる。
  */
-export function readEffect(declaration: Readable, resolve: StaticValueResolver): EffectReading {
+export function readEffect(declaration: EffectDeclaration, resolve: StaticValueResolver): EffectReading {
   const reader = new OutcomeReader(resolve);
   declaration.read(reader);
   return reader;
@@ -34,11 +40,6 @@ export function readEffect(declaration: Readable, resolve: StaticValueResolver):
 /** rootが指すオブジェクトを消す分岐があるか。 */
 export function destroysRoot(reading: EffectReading, root: ReferenceRoot): boolean {
   return reading.destroyed.some((ref) => ref.kind === 'root' && ref.root === root);
-}
-
-/** 自分が何を宣言しているかを読み上げられるもの（効果そのものと、それを抱える操作）。 */
-export interface Readable {
-  read(reader: EffectReader): void;
 }
 
 /**

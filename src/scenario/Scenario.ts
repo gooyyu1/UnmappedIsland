@@ -216,16 +216,16 @@ function resolveValue(codex: WorldCodex, propertyName: string, raw: string): num
   return symbolId;
 }
 
-/** 土地ではなくキャラクター自身が持つスロット（place参照）。 */
-const PLAYER_SLOTS = ['hand', 'equipment', 'injuries'];
-
 /** 名前で並べたobject_defを1つずつ生成し、そのスロットへ入れる。 */
 function place(game: NewGameSession, codex: WorldCodex, contents: SlotContents, slot: string): void {
   if (contents.length === 0) return;
 
-  // 手持ち・装備・怪我はキャラクターのスロット、それ以外は開始地点の土地のスロット。
-  const owner = PLAYER_SLOTS.includes(slot) ? game.player.instance : game.startLocation.instance;
   const slotId = slotIdOf(codex, slot);
+
+  // 手持ち・装備・怪我はキャラクター自身のスロット、それ以外は開始地点の土地のスロット。
+  const world = codex.vocabulary.world;
+  const ownedByCharacter = [world.handSlotId, world.equipmentSlotId, world.injuriesSlotId].includes(slotId);
+  const owner = ownedByCharacter ? game.player.instance : game.startLocation.instance;
 
   for (const name of contents) {
     const spawned = game.session.spawn(objectIdOf(codex, name));
