@@ -1,39 +1,24 @@
-import type { WorldCodex } from '../WorldCodex';
-import type { WorldRuleVocabulary } from '../WorldVocabulary';
+import { ObjectWrapper } from './ObjectWrapper';
 import type { Rng } from '../Rng';
-import type { WorldObject } from '../WorldObject';
 import type { WorldSession } from '../WorldSession';
 import { Location } from './Location';
 
 /**
- * world（唯一のシングルトン、GameElementDefinition.md 15節）に対する、UI/ゲームロジック向けの型付きビュー。
- * 継承（class World extends WorldObject）ではなくラップにしているのは、WorldCodexがtraitによる合成モデルを
- * 採用しており、クラス階層と噛み合わないため。
+ * world（唯一のシングルトン、GameElementDefinition.md 15節）の包み（ObjectWrapper）。
  *
  * worldがどのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みのものだけを実装している。
  */
-export class World {
-  readonly instance: WorldObject;
-
-  private readonly words: WorldRuleVocabulary;
-  private readonly codex: WorldCodex;
-
-  constructor(instance: WorldObject, codex: WorldCodex) {
-    this.instance = instance;
-    this.words = codex.vocabulary.world;
-    this.codex = codex;
-  }
-
+export class World extends ObjectWrapper {
   get day(): number {
-    return this.instance.tryGetProperty(this.words.dayId)?.getEffectiveValue() ?? 0;
+    return this.numberOf(this.words.dayId);
   }
 
   get hour(): number {
-    return this.instance.tryGetProperty(this.words.hourId)?.getEffectiveValue() ?? 0;
+    return this.numberOf(this.words.hourId);
   }
 
   get minute(): number {
-    return this.instance.tryGetProperty(this.words.minuteId)?.getEffectiveValue() ?? 0;
+    return this.numberOf(this.words.minuteId);
   }
 
   /**
@@ -50,7 +35,7 @@ export class World {
    * 持たなければundefined。
    */
   get weather(): string | undefined {
-    const value = this.instance.tryGetProperty(this.words.weatherId)?.getEffectiveValue();
+    const value = this.tryNumberOf(this.words.weatherId);
     return value === undefined ? undefined : this.codex.symbolNames.getName(value);
   }
 
@@ -59,7 +44,7 @@ export class World {
    * worldが日射を持たなければundefined。
    */
   get sunlight(): number | undefined {
-    return this.instance.tryGetProperty(this.words.sunlightId)?.getEffectiveValue();
+    return this.tryNumberOf(this.words.sunlightId);
   }
 
   /**
@@ -67,7 +52,7 @@ export class World {
    * worldが気温を持たなければundefined。
    */
   get ambientTemperature(): number | undefined {
-    return this.instance.tryGetProperty(this.words.ambientTemperatureId)?.getEffectiveValue();
+    return this.tryNumberOf(this.words.ambientTemperatureId);
   }
 
   /** 1tickに相当するゲーム内時間（分）。実体値をそのまま返す（WorldSession.advanceWorldTime参照）。 */

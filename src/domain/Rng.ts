@@ -1,4 +1,4 @@
-import { Pcg32 } from './generation/Pcg32';
+import { Pcg32 } from './Pcg32';
 
 /**
  * pickの重み付き抽選（10節）と初期値ロール（6.2節）に使う乱数源。
@@ -10,6 +10,16 @@ export interface Rng {
 
   /** [minInclusive, maxExclusive) の一様な整数。 */
   nextInt(minInclusive: number, maxExclusive: number): number;
+}
+
+/** Fisher-Yatesの一様シャッフル。元の配列は変えない。 */
+export function shuffled<T>(values: readonly T[], rng: Rng): T[] {
+  const result = [...values];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = rng.nextInt(0, i + 1);
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 }
 
 /**

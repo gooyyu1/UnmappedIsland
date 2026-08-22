@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { NewGameSession } from '../../src/domain/generation/NewGame';
 import { start as startNewGame } from '../../src/domain/generation/NewGame';
-import { Path } from '../../src/domain/views/Path';
+import { Path } from '../../src/domain/wrappers/Path';
 import type { PlayScreenView } from '../../src/game/view/PlayScreenView';
 import { fromGameSession } from '../../src/game/view/PlayScreenView';
 import { characterIcon } from '../../src/game/view/characterCard';

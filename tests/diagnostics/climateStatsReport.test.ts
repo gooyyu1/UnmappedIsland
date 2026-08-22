@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { World } from '../../src/domain/views/World';
+import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';

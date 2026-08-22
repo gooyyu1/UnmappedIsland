@@ -2,9 +2,9 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { Location } from '../../src/domain/views/Location';
-import { PlayerCharacter } from '../../src/domain/views/PlayerCharacter';
-import { World } from '../../src/domain/views/World';
+import { Location } from '../../src/domain/wrappers/Location';
+import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
+import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -173,6 +173,6 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
     expect(requirement.consume).toBe(true);
 
     // 繊維・編みスキルが未実装なので、今は誰でも作れる（fiber.yamlのコメント参照）。
-    expect(recipe.unmetUnlockRequirement(() => undefined)).toBeUndefined();
+    expect(recipe.unmetUnlockRequirement(undefined)).toBeUndefined();
   });
 });

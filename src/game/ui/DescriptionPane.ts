@@ -8,7 +8,6 @@ import type { ObjectWindowLane, ObjectWindowPane } from './ObjectWindowPane';
 import { CONTENT_GAP } from '../looks/childWindowLayout';
 import { addLabel } from '../../ui/labels';
 import { COLOR, SIZE } from '../looks/theme';
-import { wrapByCharacter } from '../../ui/textLayout';
 
 /** 説明文がまだ用意されていないオブジェクトに出す、代わりの1行。 */
 const NO_DESCRIPTION = 'これについて分かっていることはまだ無い。';
@@ -96,11 +95,11 @@ function addText(
   contentWidth: number,
   description: string | undefined,
 ): Phaser.GameObjects.Text {
-  const text = addLabel(scene, metrics, 0, 0, description ?? NO_DESCRIPTION, {
+  const columnWidth = contentWidth - metrics.px(SIZE.cardWidth) - metrics.px(CONTENT_GAP);
+  return addLabel(scene, metrics, 0, 0, description ?? NO_DESCRIPTION, {
     size: TEXT_SIZE,
     color: description === undefined ? COLOR.textMuted : COLOR.text,
-  }).setLineSpacing(metrics.px(LINE_SPACING));
-  const columnWidth = contentWidth - metrics.px(SIZE.cardWidth) - metrics.px(CONTENT_GAP);
-  text.setWordWrapCallback(wrapByCharacter(columnWidth));
-  return text;
+    wrapWidth: columnWidth,
+    lineGap: LINE_SPACING,
+  });
 }

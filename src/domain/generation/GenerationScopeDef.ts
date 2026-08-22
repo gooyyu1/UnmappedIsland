@@ -13,6 +13,8 @@ export class GuaranteeDef {
   readonly pick: GuaranteePick;
 
   constructor(locationType: string, count: number, axis: string, pick: GuaranteePick) {
+    if (count < 1) throw new Error(`'${locationType}'の保証: countは1以上である必要があります。`);
+
     this.locationType = locationType;
     this.count = count;
     this.axis = axis;
@@ -74,6 +76,15 @@ export class GenerationScopeDef {
     crowdingPenalty: number,
     guarantees: readonly GuaranteeDef[],
   ) {
+    if (siteCountMin < 1 || siteCountMax < siteCountMin)
+      throw new Error(`'${name}': site_countは1 <= min <= maxである必要があります。`);
+    if (interiorBias < 0 || interiorBias > 1)
+      throw new Error(`'${name}': interior_biasは0〜1である必要があります。`);
+    if (maxSitesPerType < 0)
+      throw new Error(`'${name}': max_sites_per_typeは0以上である必要があります（0で無制限）。`);
+    if (crowdingPenalty < 0)
+      throw new Error(`'${name}': crowding_penaltyは0以上である必要があります（0で無効）。`);
+
     this.name = name;
     this.siteCountMin = siteCountMin;
     this.siteCountMax = siteCountMax;

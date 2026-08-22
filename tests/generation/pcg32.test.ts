@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Pcg32 } from '../../src/domain/generation/Pcg32';
+import { Pcg32 } from '../../src/domain/Pcg32';
 
 describe('Pcg32', () => {
   // 期待値はPCG-XSH-RR 32bit（このクラスと同じ定数）の参照実装から得た固定値。

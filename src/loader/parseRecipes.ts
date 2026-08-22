@@ -4,15 +4,15 @@ import {
   asMap,
   entriesInOrder,
   requireKnownKeys,
+  requireNumber,
   tryGetBool,
   tryGetInt,
-  tryGetNumber,
   tryGetScalar,
   tryGetSeq,
 } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { RECIPE_CONDITION_ROOTS, parseRequirementsField } from './parseConditions';
-import { parseTypeMatchRule } from './parseCommon';
+import { built, parseTypeMatchRule } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../domain/RecipeDef';
 
@@ -28,16 +28,17 @@ function parseRequirement(
   const map = asMap(node, context);
   requireKnownKeys(map, REQUIREMENT_KEYS, context);
 
-  const count = tryGetInt(map, 'count', context) ?? 1;
-  if (count < 1) throw new YamlLoadError(`${context}: countは1以上である必要があります（値: ${count}）。`);
-
   if (tryGetScalar(map, 'consume', context) === undefined)
     throw new YamlLoadError(`${context}: consumeは省略できません（素材か道具かは既定値を置けないため）。`);
 
-  return new RecipeRequirementDef(
-    parseTypeMatchRule(loader, context, map),
-    count,
-    tryGetBool(map, 'consume', context) ?? true,
+  return built(
+    context,
+    () =>
+      new RecipeRequirementDef(
+        parseTypeMatchRule(loader, context, map),
+        tryGetInt(map, 'count', context) ?? 1,
+        tryGetBool(map, 'consume', context) ?? true,
+      ),
   );
 }
 
@@ -45,19 +46,11 @@ function parseStep(loader: WorldCodexYamlLoader, context: string, node: YamlNode
   const map = asMap(node, context);
   requireKnownKeys(map, STEP_KEYS, context);
 
-  const requiresNode = tryGetSeq(map, 'requires', context);
-  if (requiresNode === undefined || requiresNode.items.length === 0)
-    throw new YamlLoadError(`${context}: requiresは1件以上必要です。`);
-
-  const requirements = (requiresNode.items as YamlNode[]).map((item, index) =>
+  const requirements = ((tryGetSeq(map, 'requires', context)?.items ?? []) as YamlNode[]).map((item, index) =>
     parseRequirement(loader, `${context}.requires[${index}]`, item),
   );
 
-  const duration = tryGetNumber(map, 'duration', context);
-  if (duration === undefined || duration <= 0)
-    throw new YamlLoadError(`${context}: durationは正の数である必要があります。`);
-
-  return new RecipeStepDef(requirements, duration);
+  return built(context, () => new RecipeStepDef(requirements, requireNumber(map, 'duration', context)));
 }
 
 /**
@@ -79,11 +72,7 @@ export function parseRecipes(
     const map = asMap(node, context);
     requireKnownKeys(map, RECIPE_KEYS, context);
 
-    const stepsNode = tryGetSeq(map, 'steps', context);
-    if (stepsNode === undefined || stepsNode.items.length === 0)
-      throw new YamlLoadError(`${context}: stepsは1件以上必要です。`);
-
-    const steps = (stepsNode.items as YamlNode[]).map((item, index) =>
+    const steps = ((tryGetSeq(map, 'steps', context)?.items ?? []) as YamlNode[]).map((item, index) =>
       parseStep(loader, `${context}.steps[${index}]`, item),
     );
 

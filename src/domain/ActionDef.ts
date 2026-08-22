@@ -1,7 +1,7 @@
 import type { ActiveEffect } from './ActiveEffect';
 import type { InteractionTriggerReading } from './InteractionDef';
 import { InteractionDef } from './InteractionDef';
-import type { WeightSpec } from './PickEffect';
+import type { WeightSpec } from './WeightSpec';
 import type { Requirements } from './Requirement';
 
 /**

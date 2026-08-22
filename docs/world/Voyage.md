@@ -21,7 +21,7 @@
 在処は、定義が `src/assets/world-codex/voyage.yaml`（筏・外洋・本土）・`timber.yaml`（木と丸太）・
 `artifacts.yaml`（持ち帰る物）・`core.yaml`（風向き）、周回をまたぐ棚が `src/save/Shelf.ts` と
 `src/game/ShelfScene.ts`、到達したことの読み取りが
-`src/domain/views/PlayerCharacter.ts`、検証が `tests/world-codex/voyageYaml.test.ts` と
+`src/domain/wrappers/PlayerCharacter.ts`、検証が `tests/world-codex/voyageYaml.test.ts` と
 `tests/world-codex/timberYaml.test.ts`・`tests/save/shelf.test.ts` です。すぐ試せる開始状態として
 `src/assets/scenarios/voyage_ready.yaml` があります。
 

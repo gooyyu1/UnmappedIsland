@@ -16,7 +16,7 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseScalarNumber } from './parseCommon';
+import { built, parseScalarNumber } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
 import { parsePassive } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
@@ -86,8 +86,8 @@ export function parseProp(
     );
 
   // 未指定のときは渡さない。rangeを持つプロパティの既定のクランプはPropertyDef自身が組み立てる。
-  const onMax = parseOptionalRangeEvent(loader, context, node, range, 'on_max');
-  const onMin = parseOptionalRangeEvent(loader, context, node, range, 'on_min');
+  const onMax = parseOptionalRangeEvent(loader, context, node, 'on_max');
+  const onMin = parseOptionalRangeEvent(loader, context, node, 'on_min');
 
   const stages: PropertyStage[] = [];
   const stagesNode = tryGetSeq(node, 'stages', context);
@@ -112,21 +112,25 @@ export function parseProp(
 
   const inherit = tryGetBool(node, 'inherit', context) ?? false;
   const tags = parsePropertyTags(loader, context, node);
-  const gauge = parseGauge(context, node, range);
+  const gauge = parseGauge(context, node);
 
-  const def = new PropertyDef(
-    propertyGlobalId,
-    propName,
-    initialValue,
-    initialValueRange,
-    range,
-    onMax,
-    stages,
-    onMin,
-    inherit,
-    tags,
-    isSymbolProperty,
-    gauge,
+  const def = built(
+    context,
+    () =>
+      new PropertyDef(
+        propertyGlobalId,
+        propName,
+        initialValue,
+        initialValueRange,
+        range,
+        onMax,
+        stages,
+        onMin,
+        inherit,
+        tags,
+        isSymbolProperty,
+        gauge,
+      ),
   );
 
   // ゲージの向きとstagesのalertの向きは、同じ「どちらが危ないか」を二度言うことになる。食い違って
@@ -157,14 +161,9 @@ export function parseProp(
  *
  * rangeを必須にするのは、割合が定義できなければバーとして描きようがないため（同6.4節のratioOf）。
  */
-function parseGauge(context: string, node: YAMLMap, range: PropertyRange | undefined): GaugeDef | undefined {
+function parseGauge(context: string, node: YAMLMap): GaugeDef | undefined {
   const gaugeNode = tryGetMap(node, 'gauge', context);
   if (gaugeNode === undefined) return undefined;
-
-  if (range === undefined)
-    throw new YamlLoadError(
-      `${context}: gaugeを使うには'range'が必須です（割合が定義できないとバーにできません）。`,
-    );
 
   requireKnownKeys(gaugeNode, ['min', 'max'], `${context}.gauge`);
 
@@ -221,18 +220,12 @@ function parseStage(
   // 段が宣言するart接尾辞（6.4節）。art_by_stageが指すプロパティの段だけがこれを持てるが、
   // その検証は object_def 全体を見渡せる RawObjectDef.resolve が行う（ここでは持たない）。
   const art = tryGetScalar(stageMap, 'art', context);
-  let stage: PropertyStage;
 
-  if (isSymbolProperty) {
-    if (tryGetNode(stageMap, 'min') !== undefined)
-      throw new YamlLoadError(
-        `${context}: シンボル型プロパティのstageに'min'は使えません（'name'自体がそのまま比較対象になります）。`,
-      );
-    stage = new PropertyStage(stageName, undefined, loader.symbolNames.intern(stageName), alert, art);
-  } else {
-    const min = tryGetNumber(stageMap, 'min', context);
-    stage = new PropertyStage(stageName, min, undefined, alert, art);
-  }
+  // minはシンボル型でも読み取っておく。書いてはいけないことは PropertyDef が型と段の両方を見て言う。
+  const min = tryGetNumber(stageMap, 'min', context);
+  const stage = isSymbolProperty
+    ? new PropertyStage(stageName, min, loader.symbolNames.intern(stageName), alert, art)
+    : new PropertyStage(stageName, min, undefined, alert, art);
 
   // stage内のpassivesは常に配列（条件違いの複数ブロックを書けるようにするため）。
   const stagePassives = tryGetSeq(stageMap, 'passives', context);
@@ -248,11 +241,9 @@ function parseOptionalRangeEvent(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YAMLMap,
-  range: PropertyRange | undefined,
   label: 'on_max' | 'on_min',
 ): ActiveEffect | undefined {
   const eventNode = tryGetMap(node, label, context);
   if (eventNode === undefined) return undefined;
-  if (range === undefined) throw new YamlLoadError(`${context}: ${label}を使うには'range'が必須です。`);
   return parseRangeEventEffect(loader, `${context}.${label}`, eventNode);
 }

@@ -16,7 +16,7 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseNumberLiteral, parseScalarNumber } from './parseCommon';
+import { built, parseNumberLiteral, parseScalarNumber } from './parseCommon';
 import { ACTION_CONDITION_ROOTS, COMBINATION_CONDITION_ROOTS, parseSubjectRoot } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
@@ -33,7 +33,8 @@ import type { ActiveEffect, SpawnTargetRoot } from '../domain/ActiveEffect';
 import { BecomeEffect } from '../domain/BecomeEffect';
 import { MoveEffect } from '../domain/MoveEffect';
 import { ObjectRef } from '../domain/ObjectRef';
-import { PickCandidateDef, PickEffect, WeightSpec } from '../domain/PickEffect';
+import { PickCandidateDef, PickEffect } from '../domain/PickEffect';
+import { WeightSpec } from '../domain/WeightSpec';
 import { SignalEffect } from '../domain/SignalEffect';
 
 /**
@@ -220,7 +221,6 @@ function parseTransfer(
   const amount = requireNumber(map, 'amount', context);
   // 単位が同じなら省略できる（1対1）。0では移送先が増えないうえ割り戻しが割れないため弾く。
   const toAmount = tryGetNumber(map, 'to_amount', context) ?? amount;
-  if (toAmount <= 0) throw new YamlLoadError(`${context}: 'to_amount' は正の数である必要があります。`);
   const allowOverflow = tryGetBool(map, 'allow_overflow', context) ?? false;
 
   const linkedAddMap = tryGetMap(map, 'linked_add', context);
@@ -235,15 +235,10 @@ function parseTransfer(
     context,
   );
 
-  return new TransferEffect(
-    fromObject,
-    fromProp,
-    toObject,
-    toProp,
-    amount,
-    allowOverflow,
-    linkedAdd,
-    toAmount,
+  return built(
+    context,
+    () =>
+      new TransferEffect(fromObject, fromProp, toObject, toProp, amount, allowOverflow, linkedAdd, toAmount),
   );
 }
 
@@ -310,13 +305,15 @@ function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap)
   requireKnownKeys(map, SPAWN_KEYS, context);
 
   const count = tryGetNumber(map, 'count', context) ?? 1;
-  if (!Number.isInteger(count) || count < 1)
-    throw new YamlLoadError(`${context}: countは1以上の整数である必要があります（値: ${count}）。`);
 
-  return new SpawnEffect(
-    loader.objectNames.intern(requireScalar(map, 'object', context)),
-    parseSpawnTargetRoot(context, into),
-    count,
+  return built(
+    context,
+    () =>
+      new SpawnEffect(
+        loader.objectNames.intern(requireScalar(map, 'object', context)),
+        parseSpawnTargetRoot(context, into),
+        count,
+      ),
   );
 }
 

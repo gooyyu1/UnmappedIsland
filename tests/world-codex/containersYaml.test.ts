@@ -124,10 +124,7 @@ describe('固形物のかさと入れ物の容量', () => {
 
     const slot = basket.tryGetSlot(contentsId)!;
     expect(slot.contents, '20個すべて入る（かさ14L）').toHaveLength(20);
-    expect(
-      slot.cells.filter((cell) => cell !== undefined),
-      '使っている枠は1つだけ',
-    ).toHaveLength(1);
+    expect(slot.stacks, '使っている枠は1つだけ').toHaveLength(1);
   });
 
   it('ヤシの葉は1枚も籠に入らない', () => {

@@ -114,6 +114,30 @@ loader に住み続けている**。
 `src/main.ts` と `DeviceScreen` は、世界・映し・意匠・部品・組み立てのどれでもない。
 **表に区分が無いことが、置き場所が決まらない原因**になっている。
 
+### A-13. 周りの物を候補にする `pick`
+
+`src/domain/views/Animal.ts` は「動物に1手を与える」ための wrapper に見えるが、中身は
+**エンジンの表現力不足を肩代わりしたもの**。`takeTurn` が呼ぶ `aim` は
+「候補を作り、重み付きで1つ選び、その数と対象をプロパティへ書く」——**YAML の `pick` そのもの**で、
+TypeScript 側にあるのは `pick` が**周りの物（足元のアイテム、伸びている道）を候補として列挙できない**
+ため。
+
+3回の呼び出しの差は、突き詰めると**3つのパラメータだけ**だった。
+
+| | 出所 | 絞り込み | 重み |
+| ---- | ---- | -------- | ---- |
+| loot | `location.items` | `quarry` タグでない | `volume` |
+| smash | `location.items` | `fragile` タグ | `volume` |
+| escape | `location.paths` | なし | 一律 1 |
+
+`lootTargets` と `smashTargets` は既に `bumpableTargets(location, matches)` を共有していて、
+差は述語1つ。`lootables` / `smashables` / `escapeRoutes` という動物固有の名詞は
+**3つの種類ではなく、1つの仕組みの3つの引数**にあたる。
+
+汎用語彙の導入を保留した結果として動物に特化した名詞が入っているので、**語彙の汎用化のときに
+まとめて解く**。それまで `Animal` は wrapper の基底（`ObjectWrapper`）に乗せない——形は wrapper だが、
+中身は解体される予定のものなので、共通の親に取り込むと解体しにくくなる。
+
 ## B. 1つの阻害要因を外すと複数が動くもの
 
 ### B-1. `RawObjectDef` と `RawTrait` の宣言本体が二重 — 24件

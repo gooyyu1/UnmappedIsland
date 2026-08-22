@@ -32,7 +32,7 @@ describe('StackingTests', () => {
   // テスト補助: 固定スロット内で、指定した型(ObjectDef)のアイテムを持つスタックとその番号を引く。
   // スタック側のDefではなく各メンバーのDef(WorldObject.def)で引く。
   function stackOfType(slot: Slot, objectDefGlobalId: number): ObjectStack | undefined {
-    return slot.cells.find((s) => s !== undefined && s.members[0].def.globalId === objectDefGlobalId);
+    return slot.cells.find((cell) => cell.stack?.members[0].def.globalId === objectDefGlobalId)?.stack;
   }
 
   function gridIndexOfType(slot: Slot, objectDefGlobalId: number): number | undefined {
@@ -106,13 +106,13 @@ object_defs:
     rock1.moveToSlot(groundInstance.getSlot(pileSlotId));
 
     const pile = groundInstance.tryGetSlot(pileSlotId)!;
-    const stacks = pile.cells;
+    const stacks = pile.stacks;
 
     expect(stacks).toHaveLength(2);
-    expect(stacks[0]!.members[0].def.name).toBe('wood');
-    expect(stacks[0]!.members).toHaveLength(2);
-    expect(stacks[1]!.members[0].def.name).toBe('rock');
-    expect(stacks[1]!.members).toHaveLength(1);
+    expect(stacks[0]![0].def.name).toBe('wood');
+    expect(stacks[0]!).toHaveLength(2);
+    expect(stacks[1]![0].def.name).toBe('rock');
+    expect(stacks[1]!).toHaveLength(1);
   });
 
   // ------------------------------------------------------------------
@@ -369,7 +369,7 @@ object_defs:
 
     const hand11 = handInstance.tryGetSlot(handSlotId)!;
     // 前提を「meat(0) _(1) half(2) _(3)」に合わせる。
-    expect(hand11.tryMoveStackToCell(hand11.cells[1]!, 2)).toBe(true);
+    expect(hand11.moveStackTo(hand11.cells[1].stack!, { kind: 'cell', index: 2 })).toBe(true);
 
     handInstance.tick();
 
@@ -476,7 +476,7 @@ object_defs:
 
     const pile = locInstance.tryGetSlot(pileSlotId)!;
     expect(
-      pile.cells.map((c) => c?.members.map((o) => o.def.name)),
+      pile.cells.map((cell) => cell.stack?.members.map((o) => o.def.name)),
       'Dは2個で1スタックのまま、新しいスタックは生まれない',
     ).toEqual([['d_item4', 'd_item4'], ['a_item4']]);
   });
@@ -613,7 +613,7 @@ object_defs:
 
     const hand3 = handInstance.tryGetSlot(handSlotId)!;
 
-    expect(hand3.tryMoveStackToCell(stackOfType(hand3, typeAId)!, 1)).toBe(true);
+    expect(hand3.moveStackTo(stackOfType(hand3, typeAId)!, { kind: 'cell', index: 1 })).toBe(true);
     expect(gridIndexOfType(hand3, typeAId)).toBe(1);
     expect(gridIndexOfType(hand3, typeBId), '入れ替え先の型は元のtypeAの番号へ移る').toBe(0);
   });
@@ -780,7 +780,7 @@ object_defs:
     ).toBe(1);
 
     // 前提を「A _ B _」（A=0, B=2）に合わせるため、Bを手動で2番へ動かす。
-    expect(hand6.tryMoveStackToCell(stackOfType(hand6, bTypeId)!, 2)).toBe(true);
+    expect(hand6.moveStackTo(stackOfType(hand6, bTypeId)!, { kind: 'cell', index: 2 })).toBe(true);
     expect(gridIndexOfType(hand6, bTypeId)).toBe(2);
 
     // --- Cが生まれる: 期待 A(0) C(1) B(2) _(3) ---
@@ -910,8 +910,8 @@ object_defs:
 
     const hand8 = handInstance.tryGetSlot(handSlotId)!;
     // 前提を「_ _ A B」（A=2, B=3）に合わせる。
-    expect(hand8.tryMoveStackToCell(stackOfType(hand8, aTypeId)!, 2)).toBe(true);
-    expect(hand8.tryMoveStackToCell(stackOfType(hand8, bTypeId)!, 3)).toBe(true);
+    expect(hand8.moveStackTo(stackOfType(hand8, aTypeId)!, { kind: 'cell', index: 2 })).toBe(true);
+    expect(hand8.moveStackTo(stackOfType(hand8, bTypeId)!, { kind: 'cell', index: 3 })).toBe(true);
 
     // --- Cが生まれる: 期待 _ C A B ---
     aInstance.getProperty(spawnCId).init(0);
@@ -980,9 +980,9 @@ object_defs:
 
     const hand9 = handInstance.tryGetSlot(handSlotId)!;
     // 前提を「_ C(x2) A B」（C=1, A=2, B=3）に合わせる。
-    expect(hand9.tryMoveStackToCell(stackOfType(hand9, cTypeId)!, 1)).toBe(true);
-    expect(hand9.tryMoveStackToCell(stackOfType(hand9, aTypeId)!, 2)).toBe(true);
-    expect(hand9.tryMoveStackToCell(stackOfType(hand9, bTypeId)!, 3)).toBe(true);
+    expect(hand9.moveStackTo(stackOfType(hand9, cTypeId)!, { kind: 'cell', index: 1 })).toBe(true);
+    expect(hand9.moveStackTo(stackOfType(hand9, aTypeId)!, { kind: 'cell', index: 2 })).toBe(true);
+    expect(hand9.moveStackTo(stackOfType(hand9, bTypeId)!, { kind: 'cell', index: 3 })).toBe(true);
     expect(hand9.contents.filter((o) => o.def.globalId === cTypeId)).toHaveLength(2);
 
     // Bから(destroyなしで)Dが生まれる: 右(4番)は存在せず、左は「A(2)」で埋まっているため、

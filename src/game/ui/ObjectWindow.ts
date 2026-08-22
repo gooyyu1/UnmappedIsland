@@ -1,8 +1,8 @@
 import type Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import { addTextButton, tabBoxStyle } from './Button';
-import type { Button, HoldHandlers } from './Button';
+import { TabButtons, addTextButton } from './Button';
+import type { HoldHandlers } from './Button';
 import type { CardContent } from './Card';
 import type { CardLane } from './CardLane';
 import { DescriptionPane } from './DescriptionPane';
@@ -27,7 +27,6 @@ import { durationText } from '../looks/durationText';
 import { addLabel } from '../../ui/labels';
 import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
-import { wrapByCharacter } from '../../ui/textLayout';
 import { Tooltip } from './Tooltip';
 import type { TooltipContent } from './Tooltip';
 
@@ -160,7 +159,7 @@ export class ObjectWindow {
   private lastCardRect: Rect | undefined;
 
   /** タブのボタン（選択中だけ塗りを変えるので、作り直さず塗りだけ差し替える）。 */
-  private readonly tabButtons: Button[] = [];
+  private readonly tabs: TabButtons;
 
   /** 今開いているタブの識別子（replacePaneが、実際に開いた面のものを入れる）。 */
   private opened: string = DESCRIPTION_TAB;
@@ -199,6 +198,7 @@ export class ObjectWindow {
     this.onTabChange = options.onTabChange;
     this.properties = options.properties ?? [];
     this.exploration = options.exploration;
+    this.tabs = new TabButtons(metrics);
     this.tabSpecs = this.buildTabs(options);
 
     const padding = metrics.px(WINDOW_PADDING);
@@ -217,10 +217,13 @@ export class ObjectWindow {
     this.objects.push(board);
 
     // **見出しは常にオブジェクトの名前。** スロットの名前はタブのラベルが持つ。
-    const title = addLabel(scene, metrics, 0, 0, options.object.card.name, { size: 34, bold: true })
+    const title = addLabel(scene, metrics, 0, 0, options.object.card.name, {
+      size: 34,
+      bold: true,
+      wrapWidth: contentWidth,
+    })
       .setOrigin(0.5, 0)
       .setAlign('center');
-    title.setWordWrapCallback(wrapByCharacter(contentWidth));
 
     // 中段の高さは**最も高いタブに合わせて固定**する。
     const middleHeight = Math.max(...this.tabSpecs.map((tab) => tab.height(contentWidth)));
@@ -397,7 +400,7 @@ export class ObjectWindow {
         { fill: COLOR.button },
         () => this.openTab(tab.key),
       );
-      this.tabButtons.push(button);
+      this.tabs.add(button);
       this.objects.push(button);
     });
   }
@@ -419,9 +422,7 @@ export class ObjectWindow {
     const spec = this.tabSpecs.find((candidate) => candidate.key === tab) ?? this.tabSpecs[0];
     this.opened = spec.key;
 
-    this.tabButtons.forEach((button, index) =>
-      button.setBoxStyle(tabBoxStyle(this.metrics, this.tabSpecs[index]?.key === spec.key)),
-    );
+    this.tabs.select(this.tabSpecs.indexOf(spec));
 
     this.pane = spec.create(this.content);
   }

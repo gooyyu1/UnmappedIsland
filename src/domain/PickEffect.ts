@@ -3,9 +3,8 @@ import type { EffectSite } from './EffectSite';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 import { ActiveEffect } from './ActiveEffect';
-import type { EffectReader, PickCandidateReading, WeightReading } from './EffectReader';
-import { resolveReferenceRoot } from './ReferenceRoot';
-import type { PropertyPath } from './ReferenceRoot';
+import type { EffectReader, PickCandidateReading } from './EffectReader';
+import type { WeightSpec } from './WeightSpec';
 
 /**
  * pick（10節）: weightで1候補を選び、その候補の効果を適用する効果。候補の効果もActiveEffect
@@ -58,47 +57,6 @@ export class PickEffect extends ActiveEffect {
       session.rng,
     );
     return chosen ?? this.candidates[0];
-  }
-}
-
-/** pick候補のweight（10.2節）。リテラル定数か、既存propsへのパス参照のいずれか。 */
-export class WeightSpec {
-  private readonly isPathRef: boolean;
-  private readonly literal: number;
-  private readonly path: PropertyPath | undefined;
-
-  private constructor(isPathRef: boolean, literal: number, path: PropertyPath | undefined) {
-    this.isPathRef = isPathRef;
-    this.literal = literal;
-    this.path = path;
-  }
-
-  static ofLiteral(literal: number): WeightSpec {
-    return new WeightSpec(false, literal, undefined);
-  }
-
-  static ofPath(path: PropertyPath): WeightSpec {
-    return new WeightSpec(true, 0, path);
-  }
-
-  resolve(self: WorldObject, actor: WorldObject | undefined, dragged: WorldObject | undefined): number {
-    if (!this.isPathRef) return this.literal;
-
-    const path = this.path!;
-    const target =
-      path.root === 'ancestor'
-        ? self.findAncestorWithProperty(path.propertyGlobalId)
-        : resolveReferenceRoot(path.root, self, actor, dragged);
-    return target !== undefined
-      ? (target.tryGetProperty(path.propertyGlobalId)?.getEffectiveValue() ?? 0)
-      : 0;
-  }
-
-  /** この値の宣言そのもの（WeightReading参照）。数値へ解くのは、文脈を知っている読み手の側。 */
-  get reading(): WeightReading {
-    if (!this.isPathRef) return { kind: 'literal', value: this.literal };
-    const path = this.path!;
-    return { kind: 'property', subject: path.root, propertyGlobalId: path.propertyGlobalId };
   }
 }
 

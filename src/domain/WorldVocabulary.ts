@@ -81,11 +81,11 @@ export class EngineVocabulary {
  * この世界のルールが依存する単語（`src/assets/world-codex`）。エンジンの語と違い、**別の世界を書けば
  * 変わりうる**——変わったときに何が動かなくなるかが、この一覧の中身そのもの。
  *
- * 使い手は `domain/views`・`domain/generation`・`analysis`。いずれも名前を「値や集合を引く鍵」として
+ * 使い手は `domain/wrappers`・`domain/generation`・`analysis`。いずれも名前を「値や集合を引く鍵」として
  * だけ使っていて、どの名前かに他の判断が依存しない。
  */
 export class WorldRuleVocabulary {
-  // ---- 時間と気候（ClimateSystem.md、views/World） ----
+  // ---- 時間と気候（ClimateSystem.md、wrappers/World） ----
   readonly dayId: number;
   readonly hourId: number;
   readonly minuteId: number;
@@ -94,14 +94,14 @@ export class WorldRuleVocabulary {
   readonly sunlightId: number;
   readonly ambientTemperatureId: number;
 
-  // ---- キャラクタ（docs/world/Characters.md、views/PlayerCharacter） ----
+  // ---- キャラクタ（docs/world/Characters.md、wrappers/PlayerCharacter） ----
   readonly hpId: number;
   readonly satietyId: number;
   readonly handSlotId: number;
   readonly equipmentSlotId: number;
   readonly injuriesSlotId: number;
 
-  // ---- 土地と道（ExplorationSystem.md、views/Location・views/Path・generation） ----
+  // ---- 土地と道（ExplorationSystem.md、wrappers/Location・wrappers/Path・generation） ----
   readonly explorationProgressId: number;
   readonly requiredProgressId: number;
   readonly destinationIdId: number;

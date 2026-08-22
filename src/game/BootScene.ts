@@ -3,14 +3,17 @@ import type { WorldCodex } from '../domain/WorldCodex';
 import type { Localization } from '../locale/Localization';
 import cardFrameUrl from '../assets/ui/card_frame.png';
 import flipDigitUrl from '../assets/ui/flip_digit.png';
-import slotButtonPaperUrl from '../assets/ui/slot_button_paper.png';
 import dustPuffUrl from '../assets/ui/dust_puff.png';
 import { CARD_FRAME_TEXTURE } from './ui/Card';
 import { DUST_PUFF_TEXTURE } from './ui/DustPuff';
-import { SLOT_BUTTON_PAPER_FRAME, SLOT_BUTTON_PAPER_TEXTURE } from './ui/Button';
 import { FLIP_DIGIT_TEXTURE } from './ui/FlipCalendar';
 import { INFORMATION_ART } from '../art/informationArt';
 import { SEPARATOR_ART } from '../art/separatorArt';
+import {
+  SLOT_BUTTON_PAPER_ART,
+  SLOT_BUTTON_PAPER_FRAME,
+  SLOT_BUTTON_PAPER_TEXTURE,
+} from '../art/slotButtonArt';
 import { ICON_ART } from '../art/iconArt';
 import { WEATHER_ART } from '../art/weatherArt';
 import { commonArtFiles, locationDefNames } from '../art/artFiles';
@@ -40,7 +43,7 @@ export class BootScene extends Phaser.Scene {
     // 日時のフリップカードの紙。こちらも読み込めなければ図形で描かれる（FlipCalendar）。
     this.load.image(FLIP_DIGIT_TEXTURE, flipDigitUrl);
     // スロットボタンの地に敷く紙。ボタン1つぶんずつ縦に並んでいる（読めなければ地は平らな塗り）。
-    this.load.spritesheet(SLOT_BUTTON_PAPER_TEXTURE, slotButtonPaperUrl, {
+    this.load.spritesheet(SLOT_BUTTON_PAPER_TEXTURE, SLOT_BUTTON_PAPER_ART.get(SLOT_BUTTON_PAPER_TEXTURE)!, {
       frameWidth: SLOT_BUTTON_PAPER_FRAME.width,
       frameHeight: SLOT_BUTTON_PAPER_FRAME.height,
     });

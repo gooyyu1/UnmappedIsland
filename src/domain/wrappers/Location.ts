@@ -1,5 +1,4 @@
-import type { WorldCodex } from '../WorldCodex';
-import type { WorldRuleVocabulary } from '../WorldVocabulary';
+import { ObjectWrapper } from './ObjectWrapper';
 import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
 import type { WorldSession } from '../WorldSession';
@@ -7,28 +6,13 @@ import { Animal } from './Animal';
 import { Path } from './Path';
 
 /**
- * 土地（locations.yamlのexplorable trait実装オブジェクト）に対する、UI/ゲームロジック向けの型付きビュー。World
- * と同じ理由で継承ではなくラップにしている。
+ * 土地（locations.yamlのexplorable trait実装オブジェクト）の包み（ObjectWrapper）。
  *
  * 探索の入口はexploreに一本化: exploreアクションの実行に加え、設置物の公開（revealDueFixtures）まで
  * 自分で行い、呼び出し側に後続手順を持たせない。動物の手番（runAnimalTurns）も同じ形で、
  * 呼び出し側は「この土地に居る動物へ1手ずつ与えてほしい」と頼むだけになる。
- *
- * 引く名前はWorldVocabularyが持つ。探索の宣言を持たない土地でも生成できる——「その名前を持つか」は
- * 語彙ではなくインスタンスが答えるので、持たなければ空として読める。
  */
-export class Location {
-  readonly instance: WorldObject;
-
-  private readonly codex: WorldCodex;
-  private readonly words: WorldRuleVocabulary;
-
-  constructor(instance: WorldObject, codex: WorldCodex) {
-    this.instance = instance;
-    this.codex = codex;
-    this.words = codex.vocabulary.world;
-  }
-
+export class Location extends ObjectWrapper {
   get itemsSlotId(): number {
     return this.words.itemsSlotId;
   }
@@ -39,7 +23,7 @@ export class Location {
 
   /** 現在の探索進捗（実効値）。 */
   get explorationProgress(): number {
-    return this.instance.tryGetProperty(this.words.explorationProgressId)?.getEffectiveValue() ?? 0;
+    return this.numberOf(this.words.explorationProgressId);
   }
 
   /**
@@ -52,7 +36,7 @@ export class Location {
 
   /** アイテムスロットの中身。 */
   get items(): readonly WorldObject[] {
-    return this.slotContents(this.itemsSlotId);
+    return this.contentsOf(this.itemsSlotId);
   }
 
   /** アイテムスロットの中身を、積み重なっているまとまり（ObjectStack）ごとに分けたもの（先頭が代表）。 */
@@ -71,7 +55,7 @@ export class Location {
 
   /** 設置物（道・木・建築物・家具・洞窟入口など、持ち歩けないもの）スロットの中身。 */
   get fixtures(): readonly WorldObject[] {
-    return this.slotContents(this.fixturesSlotId);
+    return this.contentsOf(this.fixturesSlotId);
   }
 
   /** 設置物スロットの中身を、積み重なっているまとまりごとに分けたもの（itemStacksと同じ扱い）。 */
@@ -84,12 +68,12 @@ export class Location {
    * 先読み（PlayScene.requestLocationArt）が発見前に行き先を知るために読む。
    */
   get undiscoveredFixtures(): readonly WorldObject[] {
-    return this.slotContents(this.words.undiscoveredFixturesSlotId);
+    return this.contentsOf(this.words.undiscoveredFixturesSlotId);
   }
 
   /** キャラクタスロットの中身。 */
   get characters(): readonly WorldObject[] {
-    return this.slotContents(this.words.charactersSlotId);
+    return this.contentsOf(this.words.charactersSlotId);
   }
 
   /**
@@ -165,14 +149,5 @@ export class Location {
     if (hidden === undefined || !hidden.contents.includes(fixture)) return;
 
     fixture.moveToSlot(owner.getSlot(this.fixturesSlotId));
-  }
-
-  private slotContents(slotGlobalId: number): readonly WorldObject[] {
-    const slot = this.instance.tryGetSlot(slotGlobalId);
-    return slot !== undefined ? slot.contents : [];
-  }
-
-  private stacksOf(slotGlobalId: number): readonly (readonly WorldObject[])[] {
-    return this.instance.tryGetSlot(slotGlobalId)?.stacks ?? [];
   }
 }

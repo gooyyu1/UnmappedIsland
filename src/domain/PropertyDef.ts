@@ -72,7 +72,8 @@ export class PropertyRange {
 }
 
 /**
- * 6.4節の stages の1段。minとeqはいずれか一方のみ有効（ロード時に両方の指定を拒否する）。
+ * 6.4節の stages の1段。minとeqはいずれか一方のみ有効（どちらが有効かは持ち主の型で決まるので、
+ * 両方の指定は PropertyDef が型と段を突き合わせて拒否する）。
  * min: 下限のみの半開区間（数値プロパティ向け）。eq: 完全一致判定（シンボル型プロパティ（6.6節）向け）。
  * どちらも未指定ならフォールバック段（どの段にも該当しない場合の受け皿、6.4節）。
  */
@@ -251,6 +252,20 @@ export class PropertyDef {
     isSymbolic = false,
     gauge: GaugeDef | undefined = undefined,
   ) {
+    // シンボル型の段は名前そのものが比較対象なので、下限を持てない（6.6・6.4節）。**型と段の両方を
+    // 見て初めて言えること**なので、段1つでは判定できない。
+    if (isSymbolic && stages.some((stage) => stage.min !== undefined))
+      throw new Error(
+        `プロパティ'${name}'はシンボル型なので、段に'min'は書けません（段の'name'自体がそのまま比較対象になります）。`,
+      );
+
+    if (range === undefined) {
+      // 割合が定義できないとバーにできず、端が無ければ端のイベントも起こりえない（6.3・6.8節）。
+      if (gauge !== undefined) throw new Error(`プロパティ'${name}': gaugeを使うにはrangeが必要です。`);
+      if (onMax !== undefined) throw new Error(`プロパティ'${name}': on_maxを使うにはrangeが必要です。`);
+      if (onMin !== undefined) throw new Error(`プロパティ'${name}': on_minを使うにはrangeが必要です。`);
+    }
+
     this.globalId = globalId;
     this.name = name;
     this.initialValue = initialValue;
@@ -457,13 +472,6 @@ export class PropertyDef {
    */
   isExhausted(rawValue: number): boolean {
     return this.declaredOnMin !== undefined && this.range !== undefined && rawValue <= this.range.min;
-  }
-
-  /** inherit（6節）による、祖先からownerの実効値へ加える寄与。inheritが無効、または該当する祖先が見つからない場合は0。 */
-  inheritedContribution(owner: WorldObject): number {
-    if (!this.inherit) return 0;
-    const ancestor = owner.findAncestorWithProperty(this.globalId);
-    return ancestor !== undefined ? (ancestor.tryGetProperty(this.globalId)?.getEffectiveValue() ?? 0) : 0;
   }
 }
 

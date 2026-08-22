@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { Location } from '../../src/domain/views/Location';
+import { Location } from '../../src/domain/wrappers/Location';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**

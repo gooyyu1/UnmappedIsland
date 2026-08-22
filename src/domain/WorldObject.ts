@@ -244,6 +244,14 @@ export class WorldObject {
     return undefined;
   }
 
+  /** 名指しのタグを持つ最も近い祖先。自分自身は見ない（findAncestorWithPropertyと同じ扱い）。 */
+  findAncestorWithTag(tagGlobalId: number): WorldObject | undefined {
+    for (let node = this._parent; node !== undefined; node = node.parent) {
+      if (node.def.tags.includes(tagGlobalId)) return node;
+    }
+    return undefined;
+  }
+
   /** 自分から親を遡った、所属ツリーの根（通常はworld。未配置なら自分自身）。 */
   findRoot(): WorldObject {
     return this._parent === undefined ? this : this._parent.findRoot();
@@ -303,7 +311,7 @@ export class WorldObject {
 
   /**
    * same_slot専用。置き換えオブジェクトを、originが居たセルを基準に配置する（Slot.placeSameSlot参照）。
-   * 枠数の決まったスロット（Slot.hasFixedCells）で空きが作れず配置できない場合はエラーを返す
+   * 枠数の決まったスロットで空きが作れず配置できない場合はエラーを返す
    * （＝呼び出し側でfallbackへ委ねる）。
    */
   insertSameSlot(slot: Slot, placement: SameSlotPlacement): string | undefined {

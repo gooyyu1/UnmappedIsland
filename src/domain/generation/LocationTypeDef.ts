@@ -14,6 +14,9 @@ export class AxisPreference {
   readonly weight: number;
 
   constructor(axis: string, ideal: number, tolerance: number, weight: number) {
+    if (tolerance < 1) throw new Error(`軸'${axis}': toleranceは1以上である必要があります。`);
+    if (weight < 1) throw new Error(`軸'${axis}': weightは1以上である必要があります。`);
+
     this.axis = axis;
     this.ideal = ideal;
     this.tolerance = tolerance;
@@ -28,6 +31,9 @@ export class AxisLimit {
   readonly max: number | undefined;
 
   constructor(axis: string, min: number | undefined, max: number | undefined) {
+    if (min === undefined && max === undefined)
+      throw new Error(`軸'${axis}': 'min'または'max'のいずれかが必要です。`);
+
     this.axis = axis;
     this.min = min;
     this.max = max;
@@ -105,6 +111,13 @@ export class LocationTypeDef {
     preferences: readonly AxisPreference[],
     hardLimits: readonly AxisLimit[],
   ) {
+    if (moveCost <= 0) throw new Error(`'${name}': move_costは正の数である必要があります。`);
+    // 全軸に無関心な型は最近傍マッチングで距離が定義できないので、受け皿としてしか置けない。
+    if (preferences.length === 0 && !isFallback)
+      throw new Error(
+        `'${name}': axis_preferencesが空の（全軸に無関心な）型はis_fallback: trueにしてください。`,
+      );
+
     this.name = name;
     this.objectDefGlobalId = objectDefGlobalId;
     this.variants = variants;
@@ -119,5 +132,25 @@ export class LocationTypeDef {
   appliesTo(scopeName: string): boolean {
     if (this.applicableScopes.length === 0) return true;
     return this.applicableScopes.some((scope) => scope === scopeName);
+  }
+
+  /** hard_limitsをすべて満たすか。1つでも外れていればその地点には置けない。 */
+  allows(axisValues: ReadonlyMap<string, number>): boolean {
+    return this.hardLimits.every((limit) => limit.allows(axisValues.get(limit.axis)!));
+  }
+
+  /**
+   * 希望する軸の値からの隔たり（重み付き、許容幅で正規化）。0が理想ぴったりで、大きいほど遠い。
+   * 型どうしを比べるための尺度なので、軸の単位には依存しない。
+   */
+  normalizedDistanceFrom(axisValues: ReadonlyMap<string, number>): number {
+    let sum = 0;
+    let weightSum = 0;
+    for (const preference of this.preferences) {
+      const deviation = (axisValues.get(preference.axis)! - preference.ideal) / preference.tolerance;
+      sum += preference.weight * deviation * deviation;
+      weightSum += preference.weight;
+    }
+    return Math.sqrt(sum / weightSum);
   }
 }

@@ -1,5 +1,4 @@
-import type { WorldCodex } from '../WorldCodex';
-import type { WorldRuleVocabulary } from '../WorldVocabulary';
+import { ObjectWrapper } from './ObjectWrapper';
 import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
 import { Location } from './Location';
@@ -10,19 +9,7 @@ import { Location } from './Location';
  *
  * どのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みのものだけを実装している。
  */
-export class PlayerCharacter {
-  readonly instance: WorldObject;
-
-  private readonly codex: WorldCodex;
-
-  private readonly words: WorldRuleVocabulary;
-
-  constructor(instance: WorldObject, codex: WorldCodex) {
-    this.instance = instance;
-    this.codex = codex;
-    this.words = codex.vocabulary.world;
-  }
-
+export class PlayerCharacter extends ObjectWrapper {
   get handSlotId(): number {
     return this.words.handSlotId;
   }
@@ -36,11 +23,11 @@ export class PlayerCharacter {
   }
 
   get hp(): number {
-    return this.instance.tryGetProperty(this.words.hpId)?.getEffectiveValue() ?? 0;
+    return this.numberOf(this.words.hpId);
   }
 
   get satiety(): number {
-    return this.instance.tryGetProperty(this.words.satietyId)?.getEffectiveValue() ?? 0;
+    return this.numberOf(this.words.satietyId);
   }
 
   /**
@@ -50,7 +37,7 @@ export class PlayerCharacter {
    */
   get handStacks(): readonly (readonly WorldObject[])[] {
     const slot = this.instance.tryGetSlot(this.handSlotId);
-    return slot === undefined ? [] : slot.cells.map((cell) => cell?.members ?? []);
+    return slot === undefined ? [] : slot.cells.map((cell) => cell.stack?.members ?? []);
   }
 
   /** 装備スロットの中身を、積み重なっているまとまりごとに分けたもの（前詰めなので空きセルは無い）。 */
@@ -61,10 +48,6 @@ export class PlayerCharacter {
   /** 怪我スロットの中身を、積み重なっているまとまりごとに分けたもの。 */
   get injuryStacks(): readonly (readonly WorldObject[])[] {
     return this.stacksOf(this.injuriesSlotId);
-  }
-
-  private stacksOf(slotGlobalId: number): readonly (readonly WorldObject[])[] {
-    return this.instance.tryGetSlot(slotGlobalId)?.stacks ?? [];
   }
 
   /** 手持ちスロットの各セルの代表インスタンス（空きセルはundefined）。 */
@@ -129,10 +112,7 @@ export class PlayerCharacter {
 
   /** 自分が今その中に居る本土（居なければundefined）。 */
   private get mainland(): WorldObject | undefined {
-    for (let node = this.instance.parent; node !== undefined; node = node.parent) {
-      if (node.def.tags.includes(this.words.mainlandTagId)) return node;
-    }
-    return undefined;
+    return this.instance.findAncestorWithTag(this.words.mainlandTagId);
   }
 
   /** 今いる土地（自分が入っているcharactersスロットの持ち主）。未配置ならundefined。 */

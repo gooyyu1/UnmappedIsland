@@ -1,7 +1,6 @@
 import type { WorldObject } from './WorldObject';
 import type { ObjectDef } from './ObjectDef';
 import type { TypeMatchRule } from './TypeMatchRule';
-import type { ReferenceRoot } from './ReferenceRoot';
 import type { Requirement, Requirements } from './Requirement';
 
 /**
@@ -32,6 +31,8 @@ export class RecipeRequirementDef {
   readonly consume: boolean;
 
   constructor(match: TypeMatchRule, count: number, consume: boolean) {
+    if (count < 1) throw new Error(`要求の個数は1以上である必要があります（値: ${count}）。`);
+
     this.match = match;
     this.count = count;
     this.consume = consume;
@@ -51,6 +52,10 @@ export class RecipeStepDef {
   readonly durationMinutes: number;
 
   constructor(requirements: readonly RecipeRequirementDef[], durationMinutes: number) {
+    if (requirements.length === 0) throw new Error('工程のrequiresは1件以上必要です。');
+    if (durationMinutes <= 0)
+      throw new Error(`工程の所要時間は正の数である必要があります（値: ${durationMinutes}）。`);
+
     this.requirements = requirements;
     this.durationMinutes = durationMinutes;
   }
@@ -85,10 +90,17 @@ export class RecipeDef {
     icon: string | undefined,
     unlock: Requirements | undefined,
   ) {
+    if (steps.length === 0) throw new Error(`レシピ'${name}': stepsは1件以上必要です。`);
+
     this.name = name;
     this.steps = steps;
     this.icon = icon;
     this.unlock = unlock;
+  }
+
+  /** 全工程を通した所要時間（分）。完成までの進捗の上限そのもの。 */
+  get totalMinutes(): number {
+    return this.steps.reduce((sum, step) => sum + step.durationMinutes, 0);
   }
 
   /** このレシピがcandidateDefを、どこかの工程で素材か道具として要求しているか。 */
@@ -102,9 +114,9 @@ export class RecipeDef {
    * 未解放のレシピも解放条件とともに一覧へ出すため、可否と理由を1回の評価から得る
    * （Requirements.firstUnmet と同じ理由）。
    */
-  unmetUnlockRequirement(
-    resolveRoot: (root: ReferenceRoot) => WorldObject | undefined,
-  ): Requirement | undefined {
-    return this.unlock?.firstUnmet(resolveRoot);
+  unmetUnlockRequirement(actor: WorldObject | undefined): Requirement | undefined {
+    // 参照できるのはactorだけ（13.3節）。まだ成果物のインスタンスが無いので、self・parent・ancestorは
+    // 解決先を持たない。
+    return this.unlock?.firstUnmet((root) => (root === 'actor' ? actor : undefined));
   }
 }

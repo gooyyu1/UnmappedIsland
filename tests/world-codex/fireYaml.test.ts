@@ -2,8 +2,8 @@ import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { Location } from '../../src/domain/views/Location';
-import { World } from '../../src/domain/views/World';
+import { Location } from '../../src/domain/wrappers/Location';
+import { World } from '../../src/domain/wrappers/World';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
@@ -112,7 +112,7 @@ describe('fire.yamlの火の連鎖', () => {
     expect(requires('thick_branch')).toBe(true);
     expect(requires('twig')).toBe(true);
     // 火スキルが未実装なので、今は誰でも作れる（きりもみ式は道具も紐も要らない）。
-    expect(drill.recipes[0].unmetUnlockRequirement(() => undefined)).toBeUndefined();
+    expect(drill.recipes[0].unmetUnlockRequirement(undefined)).toBeUndefined();
   });
 
   it('火口に火起こし具を重ねると火種ができ、火口は消える', () => {

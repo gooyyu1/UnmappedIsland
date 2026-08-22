@@ -3,27 +3,16 @@ import { DescriptionWriter } from './describe/Description';
 import { defNamesOf } from './describe/codexNames';
 import type { LocationTypeDef } from '../domain/generation/LocationTypeDef';
 import type { ObjectDef } from '../domain/ObjectDef';
-import { ART_BY_OBJECT_NAME } from '../art/objectArt';
 import type { Texts } from '../locale/Localization';
 import { typeDisplayName } from '../locale/typeDisplayName';
 import type { CodexSource } from './CodexSource';
+import { EMPTY_HTML, escapeHtml, inlineArtHtml } from './html';
 
 /**
  * 参照（識別子）の見せ方。データを書く人は識別子で、遊ぶ人と訳す人は表示名で読みたいので、
  * どちらで読むかを画面上で切り替えられるようにする。
  */
 export type NamingMode = 'display' | 'identifier';
-
-/** 中身が1つも無いことを表すHTML。節ごと省くかの判断（pages.tsのsection）もこれを目印にする。 */
-export const EMPTY_HTML = '<p class="muted">（なし）</p>';
-
-/** HTMLへ文字列を埋め込む前の実体参照化。 */
-export function escapeHtml(value: string): string {
-  return value.replace(
-    /[&<>"']/g,
-    (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] as string,
-  );
-}
 
 /**
  * 読み込んだ定義を人間向けのHTMLに変換する窓口。
@@ -349,10 +338,4 @@ export class CodexView {
       ? `<span ${attributes}>${body}</span>`
       : `<a ${attributes} href="${href}">${body}</a>`;
   }
-}
-
-/** 文中に置く型の絵（1文字ぶんの高さ）。絵が用意されていなければ何も置かない。 */
-export function inlineArtHtml(objectName: string): string {
-  const url = ART_BY_OBJECT_NAME.get(objectName);
-  return url === undefined ? '' : `<img class="ref-art" src="${url}" alt="">`;
 }

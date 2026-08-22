@@ -114,9 +114,9 @@ YAML・表示文字列・シナリオはすべて `src/assets/` 以下に置き�
 | 解析 | `src/analysis/`（定義から数値を導く。6節） |
 | （層の外） | `src/game/errorReport.ts`（横断の道具）・`src/save/`・`src/scenario/`・`src/util/` |
 
-- **`src/domain/views/` は映しではありません。** 名前は似ていますが、中身は trait 合成モデルの
-  `WorldObject` に世界の語彙で名前を与えた型付きラッパで、`explore`・`travel` のように世界を
-  書き換えます。映しは `src/game/view/` だけです。
+- **`src/domain/wrappers/` は映しではありません。** 1つの `WorldObject` を世界の語彙で読み書きする
+  型付きの窓（`ObjectWrapper`）で、`explore`・`travel` のように世界を書き換えます。
+  映しは `src/game/view/` だけです。
 - **汎用の部品は意匠を引きません。** 既定値が要るものは自分で持ち、起動時に外から差し替えます
   （`src/ui/labels.ts` の `setLabelDefaults`）。引数で受け取れるものは引数で受け取ります。
 - **ウィンドウは部品と同じ場所に置きます。** 組み立てでありながらPhaserの表示物そのものでもあるため、

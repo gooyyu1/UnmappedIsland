@@ -62,8 +62,8 @@ function bestDistanceOf(types: readonly LocationTypeDef[], site: Site): number {
   let best = Number.MAX_VALUE;
   for (const type of types) {
     if (type.preferences.length === 0) continue;
-    if (!passesHardLimits(type, site)) continue;
-    best = Math.min(best, normalizedDistance(type, site));
+    if (!type.allows(site.axisValues)) continue;
+    best = Math.min(best, type.normalizedDistanceFrom(site.axisValues));
   }
   return best;
 }
@@ -83,8 +83,8 @@ function orderForGuarantee(
 
   // hard_limitsを満たすサイトを先に。
   return [
-    ...ordered.filter((s) => passesHardLimits(type, s)),
-    ...ordered.filter((s) => !passesHardLimits(type, s)),
+    ...ordered.filter((s) => type.allows(s.axisValues)),
+    ...ordered.filter((s) => !type.allows(s.axisValues)),
   ];
 }
 
@@ -111,12 +111,12 @@ function pickNearest(
 
   for (const type of types) {
     if (type.preferences.length === 0) continue; // 全軸無関心の型はフォールバック専用
-    if (!passesHardLimits(type, site)) continue;
+    if (!type.allows(site.axisValues)) continue;
 
     const count = counts.get(type.name) ?? 0;
     if (respectMax && scope.maxSitesPerType > 0 && count >= scope.maxSitesPerType) continue;
 
-    const distance = normalizedDistance(type, site) * (1 + scope.crowdingPenalty * count);
+    const distance = type.normalizedDistanceFrom(site.axisValues) * (1 + scope.crowdingPenalty * count);
     if (distance < bestDistance) {
       // 同点は宣言順で先の型が勝つ
       bestDistance = distance;
@@ -134,26 +134,6 @@ function pickNearest(
       `サイト${site.index}（${formatAxes(site)}）にマッチするlocation_typeが無く、is_fallbackの型もありません。`,
     );
   return fallback;
-}
-
-/** 正規化した重み付きユークリッド距離（3.2節）。言及した軸だけをΣweightで正規化する。 */
-function normalizedDistance(type: LocationTypeDef, site: Site): number {
-  let sum = 0;
-  let weightSum = 0;
-  for (const preference of type.preferences) {
-    const deviation = (site.axisValues.get(preference.axis)! - preference.ideal) / preference.tolerance;
-    sum += preference.weight * deviation * deviation;
-    weightSum += preference.weight;
-  }
-
-  return Math.sqrt(sum / weightSum);
-}
-
-function passesHardLimits(type: LocationTypeDef, site: Site): boolean {
-  for (const limit of type.hardLimits) {
-    if (!limit.allows(site.axisValues.get(limit.axis)!)) return false;
-  }
-  return true;
 }
 
 function formatAxes(site: Site): string {

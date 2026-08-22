@@ -9,7 +9,6 @@ import { cardFace } from './cardFace';
 import { addLabel } from '../../ui/labels';
 import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
-import { wrapByCharacter } from '../../ui/textLayout';
 
 /**
  * モーダルの寸法（StartScreen_Mock.htmlの.modal-card/.modal-button）。**子ウィンドウの寸法
@@ -74,14 +73,16 @@ export class ModalDialog {
     const portrait = options.card === undefined ? undefined : this.addPortrait(scene, metrics, options.card);
     const portraitHeight = portrait === undefined ? 0 : metrics.px(PORTRAIT_HEIGHT) + gap;
 
-    const title = addLabel(scene, metrics, 0, 0, options.title, { size: 28, bold: true })
+    const title = addLabel(scene, metrics, 0, 0, options.title, {
+      size: 28,
+      bold: true,
+      wrapWidth: contentWidth,
+    })
       .setOrigin(0.5, 0)
       .setAlign('center');
-    title.setWordWrapCallback(wrapByCharacter(contentWidth));
-    const body = addLabel(scene, metrics, 0, 0, options.body, { size: 24 })
+    const body = addLabel(scene, metrics, 0, 0, options.body, { size: 24, wrapWidth: contentWidth })
       .setOrigin(0.5, 0)
       .setAlign('center');
-    body.setWordWrapCallback(wrapByCharacter(contentWidth));
 
     const plateHeight = padding * 2 + portraitHeight + title.height + gap + body.height + gap + actionHeight;
     const plateX = (width - plateWidth) / 2;

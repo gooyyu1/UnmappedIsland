@@ -1,5 +1,5 @@
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import type { Location } from '../../src/domain/views/Location';
+import type { Location } from '../../src/domain/wrappers/Location';
 import type { WorldObject } from '../../src/domain/WorldObject';
 
 /**

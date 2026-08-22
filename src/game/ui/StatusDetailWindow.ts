@@ -16,7 +16,6 @@ import { ProgressBar } from './ProgressBar';
 import { addPanel, drawBox } from '../../ui/shapes';
 import { onPressRelease } from '../../ui/tap';
 import type { StatusContent, StatusInfluence } from './StatusBar';
-import { wrapByCharacter } from '../../ui/textLayout';
 import { COLOR, SIZE } from '../looks/theme';
 
 /** 見出しの絵と表示名。 */
@@ -30,13 +29,7 @@ const DESCRIPTION_LINE_GAP = 6;
 /** 説明がまだ用意されていないステータスに出す、代わりの1行。 */
 const NO_DESCRIPTION = 'これについて分かっていることはまだ無い。';
 
-/** バーと、そこに刻む段の目盛り・今いる段の囲みの太さ。 */
 const BAR_HEIGHT = 52;
-const STAGE_TICK_WIDTH = 2;
-const STAGE_BOX_WIDTH = 4;
-
-/** 今いる段を、バーの上でどれだけ明るく塗るか（囲みの中だけ）。 */
-const STAGE_FACE_ALPHA = 0.3;
 
 /**
  * 今いる段を指す名札（紙の板＋下向きのしっぽ）。**文字は見出しと同じ大きさ**にする——値そのものを
@@ -145,8 +138,9 @@ export class StatusDetailWindow {
     const description = addLabel(scene, metrics, 0, 0, detail?.description ?? NO_DESCRIPTION, {
       size: DESCRIPTION_SIZE,
       color: detail?.description === undefined ? COLOR.textMuted : COLOR.text,
-    }).setLineSpacing(metrics.px(DESCRIPTION_LINE_GAP));
-    description.setWordWrapCallback(wrapByCharacter(contentWidth));
+      wrapWidth: contentWidth,
+      lineGap: DESCRIPTION_LINE_GAP,
+    });
 
     const given = this.buildSection(scene, metrics, '与えている影響', detail?.given ?? [], contentWidth);
     const received = this.buildSection(
@@ -200,20 +194,13 @@ export class StatusDetailWindow {
       bar.setAlert(content.alert);
       this.objects.push(bar);
 
-      // 段の目盛りと今いる段の囲みは、バーの上へ重ねる（バーより後に作る＝手前へ出す）。
-      const marks = scene.add.graphics();
-      this.objects.push(marks);
-      const barRect = { x: left, y, width: contentWidth, height: barHeight };
-      this.drawStageTicks(marks, metrics, barRect, detail?.stage?.boundaries ?? []);
-
       const span = detail?.stage?.span;
+      bar.markStages(detail?.stage?.boundaries ?? [], span);
+
       if (span !== undefined) {
-        const boxX = left + contentWidth * span.start;
-        const boxWidth = contentWidth * (span.end - span.start);
-        this.drawStageBox(marks, metrics, { ...barRect, x: boxX, width: boxWidth });
         // 名札は囲みの中央へ。端の段では囲みからはみ出しても、ウィンドウの中には収める。
         const half = stage === undefined ? 0 : plateWidth(metrics, stage) / 2;
-        tailX = boxX + boxWidth / 2;
+        tailX = bar.xAt((span.start + span.end) / 2);
         plateCenterX = Math.min(Math.max(tailX, left + half), left + contentWidth - half);
       }
     } else {
@@ -226,7 +213,7 @@ export class StatusDetailWindow {
 
     // 名札の板としっぽは、文字より先に作ってある（板が文字を覆わないように）。
     if (stage !== undefined) {
-      this.drawStagePlate(plate, metrics, stage, {
+      drawStagePlate(plate, metrics, stage, {
         centerX: plateCenterX,
         tailX,
         top: y - stageHeight,
@@ -341,7 +328,7 @@ export class StatusDetailWindow {
     const art =
       texture !== undefined && scene.textures.exists(texture)
         ? scene.add.image(0, 0, texture).setOrigin(0.5).setDisplaySize(iconSize, iconSize)
-        : this.addTileLabel(scene, metrics, influence, width - padding * 2 - markWidth);
+        : addTileLabel(scene, metrics, influence, width - padding * 2 - markWidth);
     this.objects.push(art);
 
     const mark = addLabel(scene, metrics, 0, 0, influence.active ? markOf(influence) : '', {
@@ -384,92 +371,9 @@ export class StatusDetailWindow {
   }
 
   /**
-   * 段の境目をバーに刻む。**全部の段を刻む**のは、次の段までの距離だけでなく「このステータスは
-   * 全部で何段あって、自分は何番目か」も読めるようにするため（Windows.md 8.1節）。
-   */
-  private drawStageTicks(
-    marks: Phaser.GameObjects.Graphics,
-    metrics: ScreenMetrics,
-    bar: Rect,
-    boundaries: readonly number[],
-  ): void {
-    marks.lineStyle(metrics.linePx(STAGE_TICK_WIDTH), COLOR.cardBorder, 0.35);
-    for (const boundary of boundaries) {
-      const x = bar.x + bar.width * boundary;
-      marks.lineBetween(x, bar.y, x, bar.y + bar.height);
-    }
-  }
-
-  /** 今いる段を、明るい面と太い囲みで示す。囲みはバーと同じ丸みで、バーの縁にぴたりと重ねる。 */
-  private drawStageBox(marks: Phaser.GameObjects.Graphics, metrics: ScreenMetrics, box: Rect): void {
-    const radius = box.height / 4;
-    marks.fillStyle(COLOR.textOnDark, STAGE_FACE_ALPHA);
-    marks.fillRoundedRect(box.x, box.y, box.width, box.height, radius);
-    marks.lineStyle(metrics.linePx(STAGE_BOX_WIDTH), COLOR.cardBorder, 1);
-    marks.strokeRoundedRect(box.x, box.y, box.width, box.height, radius);
-  }
-
-  /**
-   * 段の名札（紙の板と、下向きのしっぽ）。板は名前の幅に合わせ、**しっぽは板の中央ではなく指す先
-   * （囲みの中央）から降ります**——端の段では板をウィンドウの中へ寄せるので、板の中央から降ろすと
-   * 指している場所がずれます。
-   */
-  private drawStagePlate(
-    plate: Phaser.GameObjects.Graphics,
-    metrics: ScreenMetrics,
-    label: Phaser.GameObjects.Text,
-    at: { centerX: number; tailX: number; top: number; height: number },
-  ): void {
-    const width = plateWidth(metrics, label);
-    const bottom = at.top + at.height;
-    drawBox(
-      plate,
-      { x: at.centerX - width / 2, y: at.top, width, height: at.height },
-      {
-        fill: COLOR.optionsBar,
-        border: COLOR.cardBorder,
-        borderWidth: metrics.linePx(2),
-        radius: metrics.px(SIZE.radius),
-      },
-    );
-
-    const tailWidth = metrics.px(STAGE_TAIL_WIDTH);
-    const tailHeight = metrics.px(STAGE_TAIL_HEIGHT);
-    // しっぽの根元は板の中に収める（板から離れた三角にしない）。
-    const tailX = Math.min(
-      Math.max(at.tailX, at.centerX - width / 2 + tailWidth),
-      at.centerX + width / 2 - tailWidth,
-    );
-    plate.fillStyle(COLOR.cardBorder, 1);
-    plate.fillTriangle(
-      tailX - tailWidth / 2,
-      bottom,
-      tailX + tailWidth / 2,
-      bottom,
-      tailX,
-      bottom + tailHeight,
-    );
-  }
-
-  /**
    * 絵を持たない相手の代わりに出す見出し。対応表の絵文字があればそれを、それも無ければ表示名を
    * 枠の幅で折り返して出す（StatusArea.md 3節と同じ代用）。
    */
-  private addTileLabel(
-    scene: Phaser.Scene,
-    metrics: ScreenMetrics,
-    influence: StatusInfluence,
-    width: number,
-  ): Phaser.GameObjects.Text {
-    if (influence.icon !== undefined)
-      return addLabel(scene, metrics, 0, 0, influence.icon, { size: TILE_ICON_SIZE }).setOrigin(0.5);
-
-    const name = addLabel(scene, metrics, 0, 0, influence.name, { size: TILE_NAME_SIZE })
-      .setOrigin(0.5)
-      .setAlign('center');
-    name.setWordWrapCallback(wrapByCharacter(width));
-    return name;
-  }
 }
 
 /** 段の名札の幅（名前に左右の余白を足したもの）。 */
@@ -483,4 +387,63 @@ function plateWidth(metrics: ScreenMetrics, label: Phaser.GameObjects.Text): num
  */
 function markOf(influence: StatusInfluence): string {
   return influence.reversible ? (influence.increases ? '▲' : '▼') : influence.increases ? '＋' : '−';
+}
+
+/**
+ * 段の名札（紙の板と、下向きのしっぽ）。板は名前の幅に合わせ、**しっぽは板の中央ではなく指す先
+ * （囲みの中央）から降ります**——端の段では板をウィンドウの中へ寄せるので、板の中央から降ろすと
+ * 指している場所がずれます。
+ */
+function drawStagePlate(
+  plate: Phaser.GameObjects.Graphics,
+  metrics: ScreenMetrics,
+  label: Phaser.GameObjects.Text,
+  at: { centerX: number; tailX: number; top: number; height: number },
+): void {
+  const width = plateWidth(metrics, label);
+  const bottom = at.top + at.height;
+  drawBox(
+    plate,
+    { x: at.centerX - width / 2, y: at.top, width, height: at.height },
+    {
+      fill: COLOR.optionsBar,
+      border: COLOR.cardBorder,
+      borderWidth: metrics.linePx(2),
+      radius: metrics.px(SIZE.radius),
+    },
+  );
+
+  const tailWidth = metrics.px(STAGE_TAIL_WIDTH);
+  const tailHeight = metrics.px(STAGE_TAIL_HEIGHT);
+  // しっぽの根元は板の中に収める（板から離れた三角にしない）。
+  const tailX = Math.min(
+    Math.max(at.tailX, at.centerX - width / 2 + tailWidth),
+    at.centerX + width / 2 - tailWidth,
+  );
+  plate.fillStyle(COLOR.cardBorder, 1);
+  plate.fillTriangle(
+    tailX - tailWidth / 2,
+    bottom,
+    tailX + tailWidth / 2,
+    bottom,
+    tailX,
+    bottom + tailHeight,
+  );
+}
+
+function addTileLabel(
+  scene: Phaser.Scene,
+  metrics: ScreenMetrics,
+  influence: StatusInfluence,
+  width: number,
+): Phaser.GameObjects.Text {
+  if (influence.icon !== undefined)
+    return addLabel(scene, metrics, 0, 0, influence.icon, { size: TILE_ICON_SIZE }).setOrigin(0.5);
+
+  return addLabel(scene, metrics, 0, 0, influence.name, {
+    size: TILE_NAME_SIZE,
+    wrapWidth: width,
+  })
+    .setOrigin(0.5)
+    .setAlign('center');
 }

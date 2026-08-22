@@ -127,7 +127,7 @@ export class PropertyValue {
 
       for (const c of this.modifyEffects) sum += c.activeAmount();
 
-      sum += this.def.inheritedContribution(this.owner);
+      sum += this.inheritedContribution();
 
       // weight/load は中身から寄与を受ける（ContainerSystem.md 1〜2節）。他のプロパティでは0。
       sum += this.owner.containerContributionTo(this.def.globalId);
@@ -136,6 +136,15 @@ export class PropertyValue {
     } finally {
       this.isComputingEffectiveValue = false;
     }
+  }
+
+  /** inherit（6節）による、祖先から実効値へ加える寄与。inheritが無効か、該当する祖先が無ければ0。 */
+  private inheritedContribution(): number {
+    if (!this.def.inherit) return 0;
+    const ancestor = this.owner.findAncestorWithProperty(this.def.globalId);
+    return ancestor !== undefined
+      ? (ancestor.tryGetProperty(this.def.globalId)?.getEffectiveValue() ?? 0)
+      : 0;
   }
 
   /**
@@ -154,7 +163,7 @@ export class PropertyValue {
    * tickが足すのと同じ寄与を、足さずに数えたもの。**この場で結果を見に行かずに、これから何が
    * 起きるかを言える唯一の手掛かり**で、値の出入り（WorldChange）には現れない。
    */
-  changePerTick(): number {
+  private changePerTick(): number {
     let sum = 0;
     for (const c of this.accumulateEffects) sum += c.activeAmount();
     return sum;

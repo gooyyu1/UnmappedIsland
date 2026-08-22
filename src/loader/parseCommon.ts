@@ -1,3 +1,4 @@
+import { messageOf } from './errorMessage';
 import type { YAMLMap } from 'yaml';
 import { tryGetScalar } from './yamlMapping';
 
@@ -9,6 +10,22 @@ import { TypeMatchRule } from '../domain/TypeMatchRule';
 /**
  * 複数の領域（props/conditions/active効果/pick）から使う小さなパースヘルパー。
  */
+
+/**
+ * 定義を組み立てるあいだに投げられた誤りへ、**YAML上のどこに書いてあったか**を添えて投げ直す。
+ *
+ * 成立条件（gaugeにはrangeが要る、minとeqは同時に持てない、など）は定義自身が持ち、
+ * loaderは文脈だけを足す。定義はYAMLの語彙を知らないので、この2つはここで初めて出会う。
+ */
+export function built<T>(context: string, build: () => T): T {
+  try {
+    return build();
+  } catch (error) {
+    // 既に文脈の付いた誤りは、外側の文脈で二重に飾らない。
+    if (error instanceof YamlLoadError) throw error;
+    throw new YamlLoadError(`${context}: ${messageOf(error)}`, { cause: error });
+  }
+}
 
 /**
  * 「どの型が当てはまるか」の指定（`{tag: ...}`か`{object: ...}`のいずれか一方）を読む。

@@ -112,7 +112,7 @@ object_defs:
             duration: 5
 `);
 
-    expect(recipesOf(codex, 'stick')[0].unmetUnlockRequirement(() => undefined)).toBeUndefined();
+    expect(recipesOf(codex, 'stick')[0].unmetUnlockRequirement(undefined)).toBeUndefined();
   });
 
   it('conditionsはactorのスキルの段で解放を判定する', () => {
@@ -139,15 +139,14 @@ object_defs:
 
     const session = new WorldSession(codex);
     const actor = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
-    const resolveRoot = (root: string) => (root === 'actor' ? actor : undefined);
 
     const recipe = recipesOf(codex, 'basket')[0];
     const skillId = codex.propertyNames.getId('skill_cordage');
 
-    expect(recipe.unmetUnlockRequirement(resolveRoot)).toBeDefined();
+    expect(recipe.unmetUnlockRequirement(actor)).toBeDefined();
 
     actor.tryGetProperty(skillId)?.setNumber(60);
-    expect(recipe.unmetUnlockRequirement(resolveRoot)).toBeUndefined();
+    expect(recipe.unmetUnlockRequirement(actor)).toBeUndefined();
   });
 
   it('満たしていない解放条件はreasonつきで取り出せる', () => {
@@ -174,9 +173,7 @@ object_defs:
     const session = new WorldSession(codex);
     const actor = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
 
-    const unmet = recipesOf(codex, 'basket')[0].unmetUnlockRequirement((root) =>
-      root === 'actor' ? actor : undefined,
-    );
+    const unmet = recipesOf(codex, 'basket')[0].unmetUnlockRequirement(actor);
 
     expect(unmet?.reasonName).toBe('needs_cordage_skill');
   });

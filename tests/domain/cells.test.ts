@@ -50,7 +50,7 @@ object_defs:
       expect(put('board'), '2枚目の板も入らない（棒の枠は板を受け入れない）').toBeDefined();
 
       const cells = bench.tryGetSlot(materialsId)?.cells ?? [];
-      expect(cells.map((cell) => cell?.members.length)).toEqual([1, 4]);
+      expect(cells.map((cell) => cell.stack?.members.length)).toEqual([1, 4]);
     });
 
     it('枠は宣言順に埋まらず、型の合う枠へ入る', () => {
@@ -59,8 +59,8 @@ object_defs:
       expect(put('stick')).toBeUndefined();
 
       const cells = bench.tryGetSlot(materialsId)?.cells ?? [];
-      expect(cells[0], '板の枠は空いたまま').toBeUndefined();
-      expect(cells[1]?.members.map((o) => o.def.name)).toEqual(['stick']);
+      expect(cells[0].isEmpty, '板の枠は空いたまま').toBe(true);
+      expect(cells[1].stack?.members.map((o) => o.def.name)).toEqual(['stick']);
     });
 
     it('宣言していない型はどの枠にも入らない', () => {

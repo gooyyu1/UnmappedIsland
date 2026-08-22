@@ -8,7 +8,6 @@ import { CONTENT_GAP } from '../looks/childWindowLayout';
 import { ProgressBar } from './ProgressBar';
 import { addLabel } from '../../ui/labels';
 import { COLOR, SIZE } from '../looks/theme';
-import { wrapByCharacter } from '../../ui/textLayout';
 
 /** 探索の進み具合を示すバーの高さ（ゲームの主操作なので、ステータスバーより大きく取る）。 */
 const BAR_HEIGHT = 72;
@@ -95,10 +94,10 @@ export class ExplorationPane implements ObjectWindowPane {
     this.note = addLabel(scene, metrics, centerX, cursorY, noteOf(ratio), {
       size: 24,
       color: COLOR.textMuted,
+      wrapWidth: area.width,
     })
       .setOrigin(0.5, 0)
       .setAlign('center');
-    this.note.setWordWrapCallback(wrapByCharacter(area.width));
     this.objects.push(this.note);
   }
 

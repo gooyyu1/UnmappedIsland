@@ -280,6 +280,9 @@ export class SpawnEffect extends ActiveEffect {
 
   constructor(objectGlobalId: number, into: SpawnTargetRoot, count = 1) {
     super();
+    if (!Number.isInteger(count) || count < 1)
+      throw new Error(`countは1以上の整数である必要があります（値: ${count}）。`);
+
     this.objectGlobalId = objectGlobalId;
     this.into = into;
     this.count = count;
@@ -329,6 +332,9 @@ export class TransferEffect extends ActiveEffect {
     toAmount: number = amount,
   ) {
     super();
+    // 受け取る量が0以下だと、出した分がどこにも入らない（9.5節）。
+    if (toAmount <= 0) throw new Error(`'to_amount' は正の数である必要があります（値: ${toAmount}）。`);
+
     this.fromObject = fromObject;
     this.fromPropertyGlobalId = fromPropertyGlobalId;
     this.toObject = toObject;

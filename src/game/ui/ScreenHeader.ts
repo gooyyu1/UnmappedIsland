@@ -33,9 +33,7 @@ export class ScreenHeader {
       },
       onBack,
     );
-    back.addContent(
-      addLabel(scene, metrics, buttonSize / 2, buttonSize / 2, '←', { size: 32 }).setOrigin(0.5),
-    );
+    back.addCentered(addLabel(scene, metrics, 0, 0, '←', { size: 32 }));
 
     addLabel(scene, metrics, left + buttonSize + metrics.px(16), height / 2, title, {
       size: 30,

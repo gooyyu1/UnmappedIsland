@@ -16,7 +16,7 @@ import type { SlotDef } from '../domain/SlotDef';
 import { ART_BY_OBJECT_NAME } from '../art/objectArt';
 import { isInCraftingNetwork } from './networkPage';
 import type { CodexView } from './CodexView';
-import { EMPTY_HTML, escapeHtml, inlineArtHtml } from './CodexView';
+import { EMPTY_HTML, escapeHtml, inlineArtHtml } from './html';
 
 /**
  * 1ページ分のHTMLを組み立てる関数群。DOMには触らず文字列を返すだけにして、描き込み（main.ts）と

@@ -31,25 +31,23 @@ export function autoFillMaterials(
   if (slot === undefined) return 0;
 
   // 材料スロットは要求ごとの枠を持つ（inProgressObjects）ので、枠数は必ず決まっている。
-  const cells = slot.def.cellsToKeep;
-  if (cells === 'grows') return 0;
+  if (slot.def.cellsToKeep === 'grows') return 0;
 
   const available = sources.flat();
   let moved = 0;
 
-  for (let index = 0; index < cells; index += 1) {
-    const cell = slot.def.cellAt(index);
+  for (const cell of slot.cells) {
     // 出番の終わった枠は埋めない。表示から消える枠なので、入れると取り出せなくなる。
-    const candidates = chooseCandidates(cell, 1, available).filter(
+    const candidates = chooseCandidates(cell.def, 1, available).filter(
       (object) =>
         stillNeeded === undefined || stillNeeded.some((requirement) => requirement.requires(object.def)),
     );
     if (candidates.length === 0) continue;
 
-    const needed = (cell.max ?? 1) - (slot.cells[index]?.members.length ?? 0);
+    const needed = (cell.def.max ?? 1) - (cell.stack?.members.length ?? 0);
     if (needed <= 0) continue;
 
-    for (const candidate of chooseCandidates(cell, needed, available).slice(0, needed)) {
+    for (const candidate of chooseCandidates(cell.def, needed, available).slice(0, needed)) {
       if (candidate.moveToSlot(inProgress.getSlot(materialsSlotGlobalId)) !== undefined) break;
       available.splice(available.indexOf(candidate), 1);
       moved += 1;

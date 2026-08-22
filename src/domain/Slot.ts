@@ -1,7 +1,74 @@
-import type { SlotDef } from './SlotDef';
+import type { CellDef, SlotDef } from './SlotDef';
 import type { SlotPosition } from './SlotPosition';
 import { ObjectStack } from './ObjectStack';
 import type { WorldObject } from './WorldObject';
+
+/**
+ * 枠1つ。**宣言（CellDef）と、今そこに入っているもの（ObjectStack）の組。**
+ *
+ * 枠の宣言は添字ではなく枠そのものに付く。**ずらしても動くのは中身だけ**で、宣言は元の位置に留まる
+ * （枠数を決めたスロットでは、`cells[2]` が受け入れる型は中身が入れ替わっても変わらない）。
+ *
+ * 中身を入れ替えるのはSlotだけ。枠はSlotの外へ単独では出ないので、TypeScriptのfriendの代わりに
+ * 名前で断っている。
+ */
+export class SlotCell {
+  readonly def: CellDef;
+
+  private _stack: ObjectStack | undefined;
+
+  constructor(def: CellDef, stack?: ObjectStack) {
+    this.def = def;
+    this._stack = stack;
+  }
+
+  get stack(): ObjectStack | undefined {
+    return this._stack;
+  }
+
+  get isEmpty(): boolean {
+    return this._stack === undefined;
+  }
+
+  /** この枠がcandidateを受け入れる型か（個数は見ない）。 */
+  accepts(candidateDef: WorldObject['def']): boolean {
+    return this.def.accepts(candidateDef);
+  }
+
+  /**
+   * 今入っているスタックへ合流できるか。束ねられる型で、代表チェーンが一致し、maxに空きがあること
+   * （GameElementDefinition.md 7.6節）。
+   */
+  canMerge(candidate: WorldObject): boolean {
+    if (!candidate.def.stackable || this._stack === undefined) return false;
+    if (!this._stack.matches(candidate)) return false;
+    return this.def.max === undefined || this._stack.members.length < this.def.max;
+  }
+
+  /**
+   * この枠にあと何個入るか。空き枠なら型が合えばmax個（束ねられない型は1個）、埋まっていれば
+   * 合流できる場合のmaxまでの残り。
+   */
+  roomFor(candidate: WorldObject): number {
+    const max = this.def.max ?? Number.POSITIVE_INFINITY;
+    if (this._stack === undefined) {
+      if (!this.accepts(candidate.def)) return 0;
+      return candidate.def.stackable ? max : 1;
+    }
+    if (!candidate.def.stackable || !this._stack.matches(candidate)) return 0;
+    return Math.max(0, max - this._stack.members.length);
+  }
+
+  /** 合流できるなら入れる。**maxを守るのはこの枠自身**（ObjectStackは自分の上限を知らない）。 */
+  tryInsert(obj: WorldObject): boolean {
+    return this.canMerge(obj) && this._stack!.tryInsert(obj);
+  }
+
+  /** 中身を入れ替える（Slot専用）。 */
+  hold(stack: ObjectStack | undefined): void {
+    this._stack = stack;
+  }
+}
 
 /**
  * 1つのWorldObjectが持つ、1つのスロットの実行時状態。中身を「セルの並び」として保持する。各セルは1つの
@@ -23,15 +90,15 @@ export class Slot {
    */
   readonly owner: WorldObject;
 
-  /** セルの並び。要素はObjectStackかundefined（空セル、枠数固定のスロットのみ）。位置＝添字。 */
-  private readonly _cells: (ObjectStack | undefined)[] = [];
+  /** セルの並び。位置＝添字で、枠数固定のスロットでは空になっても枠そのものは残る。 */
+  private readonly _cells: SlotCell[] = [];
 
   private get liveStacks(): readonly ObjectStack[] {
-    return this._cells.filter((c): c is ObjectStack => c !== undefined);
+    return this._cells.map((cell) => cell.stack).filter((s): s is ObjectStack => s !== undefined);
   }
 
-  /** セルの並びそのもの（空セルはundefined）。位置＝添字。 */
-  get cells(): readonly (ObjectStack | undefined)[] {
+  /** セルの並びそのもの。位置＝添字。 */
+  get cells(): readonly SlotCell[] {
     return [...this._cells];
   }
 
@@ -49,7 +116,7 @@ export class Slot {
    * 枠の数が決まっているスロットか（＝空セルを残して位置を安定させるか、SlotSystem.md 3節）。
    * 空き枠を指したドロップを、枠そのものへ入れる操作として扱ってよいのはこちらだけ。
    */
-  get hasFixedCells(): boolean {
+  private get hasFixedCells(): boolean {
     return this.def.cellsToKeep !== 'grows';
   }
 
@@ -58,7 +125,7 @@ export class Slot {
     this.owner = owner;
     // 枠数が決まっていれば、その長さの配列（全て空=undefined）として持つ。
     const cells = def.cellsToKeep;
-    if (cells !== 'grows') for (let i = 0; i < cells; i++) this._cells.push(undefined);
+    if (cells !== 'grows') for (let i = 0; i < cells; i++) this._cells.push(new SlotCell(def.cellAt(i)));
   }
 
   /**
@@ -130,15 +197,7 @@ export class Slot {
   private vacancyFor(candidate: WorldObject): number {
     if (!this.hasFixedCells) return Number.POSITIVE_INFINITY;
 
-    return this._cells.reduce((room, cell, index) => {
-      const max = this.def.cellAt(index).max ?? Number.POSITIVE_INFINITY;
-      if (cell === undefined) {
-        if (!this.def.cellAt(index).accepts(candidate.def)) return room;
-        return room + (candidate.def.stackable ? max : 1);
-      }
-      if (!candidate.def.stackable || !cell.matches(candidate)) return room;
-      return room + Math.max(0, max - cell.members.length);
-    }, 0);
+    return this._cells.reduce((room, cell) => room + cell.roomFor(candidate), 0);
   }
 
   /**
@@ -151,9 +210,7 @@ export class Slot {
     const mergeable = this.findMergeableCell(candidate);
     if (mergeable !== undefined) return mergeable;
 
-    const empty = this._cells.findIndex(
-      (cell, index) => cell === undefined && this.def.cellAt(index).accepts(candidate.def),
-    );
+    const empty = this._cells.findIndex((cell) => cell.isEmpty && cell.accepts(candidate.def));
     if (empty >= 0) return empty;
 
     return this.hasFixedCells ? undefined : this._cells.length;
@@ -164,13 +221,7 @@ export class Slot {
    * （ObjectDef.stackable）・代表チェーンが一致すること・その枠のmaxに空きがあることが要る。
    */
   private findMergeableCell(candidate: WorldObject): number | undefined {
-    if (!candidate.def.stackable) return undefined;
-
-    const index = this._cells.findIndex((cell, i) => {
-      if (cell === undefined || !cell.matches(candidate)) return false;
-      const max = this.def.cellAt(i).max;
-      return max === undefined || cell.members.length < max;
-    });
+    const index = this._cells.findIndex((cell) => cell.canMerge(candidate));
     return index < 0 ? undefined : index;
   }
 
@@ -197,8 +248,8 @@ export class Slot {
     // 受け入れ判定（rejectionFor）を通った後にだけ呼ばれるので、枠数を決めたスロットにも必ず置ける枠がある。
     const at = this.findCellFor(obj);
     const stack = new ObjectStack(obj);
-    if (at !== undefined && at < this._cells.length) this._cells[at] = stack;
-    else this._cells.push(stack);
+    if (at !== undefined && at < this._cells.length) this._cells[at].hold(stack);
+    else this._cells.push(new SlotCell(this.def.cellAt(this._cells.length), stack));
   }
 
   /**
@@ -210,18 +261,19 @@ export class Slot {
    */
   private tryMergeIntoMatchingStack(obj: WorldObject): boolean {
     const at = this.findMergeableCell(obj);
-    return at !== undefined && this._cells[at]!.tryInsert(obj);
+    return at !== undefined && this._cells[at].tryInsert(obj);
   }
 
   removeInternal(obj: WorldObject): void {
-    const idx = this._cells.findIndex((c) => c !== undefined && c.members.includes(obj));
+    const idx = this.indexOfCellContaining(obj);
     if (idx < 0) return;
 
-    this._cells[idx]!.remove(obj);
-    if (this._cells[idx]!.members.length > 0) return;
+    const stack = this._cells[idx].stack!;
+    stack.remove(obj);
+    if (stack.members.length > 0) return;
 
-    // 空になったセル: 枠数が決まっていれば空セル(undefined)として残し、そうでなければ前詰めする。
-    if (this.hasFixedCells) this._cells[idx] = undefined;
+    // 空になったセル: 枠数が決まっていれば空の枠として残し、そうでなければ前詰めする。
+    if (this.hasFixedCells) this._cells[idx].hold(undefined);
     else this._cells.splice(idx, 1);
   }
 
@@ -233,15 +285,15 @@ export class Slot {
   restack(obj: WorldObject): void {
     if (!obj.def.stackable) return;
 
-    const idx = this._cells.findIndex((c) => c !== undefined && c.members.includes(obj));
+    const idx = this.indexOfCellContaining(obj);
     if (idx < 0) return;
 
-    const current = this._cells[idx]!;
+    const current = this._cells[idx].stack!;
     if (current.matches(obj)) return; // まだ同じ識別子に合致：動かす必要は無い
 
     current.remove(obj);
     if (current.members.length === 0) {
-      if (this.hasFixedCells) this._cells[idx] = undefined;
+      if (this.hasFixedCells) this._cells[idx].hold(undefined);
       else this._cells.splice(idx, 1);
     }
 
@@ -264,7 +316,7 @@ export class Slot {
 
     if (!this.hasFixedCells) {
       const at = kindRemains ? originCellIndex + 1 : originCellIndex;
-      this._cells.splice(Math.min(Math.max(at, 0), this._cells.length), 0, new ObjectStack(obj));
+      this.insertGrownCell(Math.min(Math.max(at, 0), this._cells.length), new ObjectStack(obj));
       return true;
     }
 
@@ -276,9 +328,8 @@ export class Slot {
 
   /** 枠数固定のスロット: 空いているセル(cellIndex)をスタックで埋める（埋まっていれば失敗）。 */
   private tryFillCell(stack: ObjectStack, cellIndex: number): boolean {
-    if (cellIndex < 0 || cellIndex >= this._cells.length || this._cells[cellIndex] !== undefined)
-      return false;
-    this._cells[cellIndex] = stack;
+    if (cellIndex < 0 || cellIndex >= this._cells.length || !this._cells[cellIndex].isEmpty) return false;
+    this._cells[cellIndex].hold(stack);
     return true;
   }
 
@@ -306,17 +357,18 @@ export class Slot {
 
     let emptyAt = -1;
     for (let i = target; i >= 0 && i < this._cells.length; i += step) {
-      if (this._cells[i] === undefined) {
+      if (this._cells[i].isEmpty) {
         emptyAt = i;
         break;
       }
     }
     if (emptyAt === -1) return false;
 
-    // emptyからtargetへ、間のセルをstep方向へ1つずつずらす（targetを空ける）。押し出しはセル単位で行うため、
-    // 押し出されるスタック（同種複数個）の中身の相対順序は変わらない。
-    for (let i = emptyAt; i !== target; i -= step) this._cells[i] = this._cells[i - step];
-    this._cells[target] = stack;
+    // emptyからtargetへ、間の**中身**をstep方向へ1つずつずらす（targetを空ける）。枠の宣言は添字に
+    // 留まり、動くのは中身だけ。押し出しはセル単位で行うため、押し出されるスタック（同種複数個）の
+    // 中身の相対順序は変わらない。
+    for (let i = emptyAt; i !== target; i -= step) this._cells[i].hold(this._cells[i - step].stack);
+    this._cells[target].hold(stack);
     return true;
   }
 
@@ -347,12 +399,12 @@ export class Slot {
    *
    * 合流が指定位置に優先することはtryMergeIntoMatchingStack参照。
    */
-  tryInsertAtGap(obj: WorldObject, gapIndex: number): boolean {
+  private tryInsertAtGap(obj: WorldObject, gapIndex: number): boolean {
     if (this.tryMergeIntoMatchingStack(obj)) return true;
 
     const stack = new ObjectStack(obj);
     if (!this.hasFixedCells) {
-      this._cells.splice(clampIndex(gapIndex, this._cells.length), 0, stack);
+      this.insertGrownCell(clampIndex(gapIndex, this._cells.length), stack);
       return true;
     }
     return this.tryPlaceAtGap(stack, gapIndex, 1) || this.tryPlaceAtGap(stack, gapIndex, -1);
@@ -362,7 +414,7 @@ export class Slot {
    * プレイヤーが空きセルを指定して入れる手動配置（枠数固定のスロット専用）。指定したセルが空いていなければ
    * false。合流できる既存スタックの優先はtryInsertAtGapと同じ。
    */
-  tryInsertAtCell(obj: WorldObject, cellIndex: number): boolean {
+  private tryInsertAtCell(obj: WorldObject, cellIndex: number): boolean {
     if (!this.hasFixedCells) return false;
 
     if (this.tryMergeIntoMatchingStack(obj)) return true;
@@ -380,30 +432,42 @@ export class Slot {
    * 遠くのセルを動かさずに済む。自分の両隣の隙間へ落とした場合は、跡がそのまま行き先になるので
    * 何も動かさない。前詰めスロットは抜いて入れ直すだけ。
    */
-  tryMoveStackToGap(stack: ObjectStack, gapIndex: number): boolean {
-    const from = this._cells.indexOf(stack);
+  private tryMoveStackToGap(stack: ObjectStack, gapIndex: number): boolean {
+    const from = this.indexOfStack(stack);
     if (from < 0) return false;
     if (gapIndex === from || gapIndex === from + 1) return true;
 
     if (!this.hasFixedCells) {
       this._cells.splice(from, 1);
       // 抜いた跡の分だけ、右へ動かすときの行き先が1つ手前へずれる。
-      this._cells.splice(clampIndex(gapIndex > from ? gapIndex - 1 : gapIndex, this._cells.length), 0, stack);
+      this.insertGrownCell(clampIndex(gapIndex > from ? gapIndex - 1 : gapIndex, this._cells.length), stack);
       return true;
     }
 
-    this._cells[from] = undefined;
+    this._cells[from].hold(undefined);
     const toward: 1 | -1 = from < gapIndex ? -1 : 1;
     if (this.tryPlaceAtGap(stack, gapIndex, toward)) return true;
     if (this.tryPlaceAtGap(stack, gapIndex, toward === 1 ? -1 : 1)) return true;
 
-    this._cells[from] = stack;
+    this._cells[from].hold(stack);
     return false;
+  }
+
+  /**
+   * 前詰めスロットで枠を1つ増やす。**枠の宣言は共有の1つ**（cellsを宣言していないスロットなので、
+   * どの位置も同じ受け入れ方をする）。
+   */
+  private insertGrownCell(at: number, stack: ObjectStack): void {
+    this._cells.splice(at, 0, new SlotCell(this.def.cellAt(at), stack));
+  }
+
+  private indexOfCellContaining(obj: WorldObject): number {
+    return this._cells.findIndex((cell) => cell.stack?.members.includes(obj) === true);
   }
 
   /** objが現在属しているObjectStack（無ければundefined）。 */
   findStackContaining(obj: WorldObject): ObjectStack | undefined {
-    return this._cells.find((c) => c !== undefined && c.members.includes(obj));
+    return this._cells.find((cell) => cell.stack?.members.includes(obj) === true)?.stack;
   }
 
   /**
@@ -422,22 +486,23 @@ export class Slot {
    * 別スタックになるため、Defは位置を一意に決めない。
    */
   indexOfStack(stack: ObjectStack): number {
-    return this._cells.indexOf(stack);
+    return this._cells.findIndex((cell) => cell.stack === stack);
   }
 
   /**
    * 枠数の決まったスロットの並び替え（moveStackToの片割れ）。**指した枠と入れ替える**——相手が空なら
    * 実質の移動になり、元の枠が空く。詰めないので単純な2者間のswapで足りる。
    */
-  tryMoveStackToCell(stack: ObjectStack, cellIndex: number): boolean {
+  private tryMoveStackToCell(stack: ObjectStack, cellIndex: number): boolean {
     if (!this.hasFixedCells) return false;
-    const from = this._cells.indexOf(stack);
+    const from = this.indexOfStack(stack);
     if (from < 0) return false;
     if (cellIndex < 0 || cellIndex >= this._cells.length) return false;
 
-    const swapped = this._cells[cellIndex];
-    this._cells[cellIndex] = this._cells[from];
-    this._cells[from] = swapped;
+    // 入れ替えるのは中身だけ。枠の宣言はそれぞれの添字に留まる。
+    const swapped = this._cells[cellIndex].stack;
+    this._cells[cellIndex].hold(this._cells[from].stack);
+    this._cells[from].hold(swapped);
     return true;
   }
 }

@@ -123,6 +123,15 @@ export class ObjectDef {
     isStorage = false,
     isInProgress = false,
   ) {
+    // 操作の名前は1つの名前空間（actionsとcombinationsを名前で引くのは同じ問い）。
+    const actionNames = new Set(actions.map((action) => action.name));
+    const clash = combinations.find((combination) => actionNames.has(combination.name));
+    if (clash !== undefined)
+      throw new Error(
+        `同じ名前の actions と combinations があります（'${clash.name}'）。` +
+          '操作の名前は1つの名前空間なので、どちらかを別の名前にしてください。',
+      );
+
     this.globalId = globalId;
     this.name = name;
     this.isSingleton = isSingleton;

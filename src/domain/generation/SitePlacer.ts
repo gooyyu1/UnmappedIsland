@@ -1,5 +1,5 @@
 import type { GenerationScopeDef } from './GenerationScopeDef';
-import type { Pcg32 } from './Pcg32';
+import type { Pcg32 } from '../Pcg32';
 import { Site } from './IslandMap';
 
 /**

@@ -225,7 +225,7 @@ object_defs:
 
 ## 5. カプセル化: 探索の入口を1箇所にする
 
-`Location.explore(actor, session)`（`src/domain/views/Location.ts`）を、探索の唯一の入口としています。
+`Location.explore(actor, session)`（`src/domain/wrappers/Location.ts`）を、探索の唯一の入口としています。
 
 ```typescript
 explore(actor: WorldObject | undefined, session: WorldSession): boolean {
@@ -235,7 +235,7 @@ explore(actor: WorldObject | undefined, session: WorldSession): boolean {
 }
 ```
 
-プレイヤー側の入口も同じく1箇所です。`PlayerCharacter.explore(session)`（`views/PlayerCharacter.ts`）が
+プレイヤー側の入口も同じく1箇所です。`PlayerCharacter.explore(session)`（`wrappers/PlayerCharacter.ts`）が
 「今いる土地に自分を actor として渡す」という手順を引き受けるため、UI は自分の居場所を知らなくてよく、
 探索できない場所に居る場合は `false` が返ります。
 
