@@ -52,6 +52,34 @@ export function staticValueOf(
   return inherited === undefined ? undefined : propertyDef.initialValue + inherited;
 }
 
+/**
+ * 解けなかったことを覚える解決器。**印の有効範囲は呼ぶ側が決める**——1つの工程・1つの周期ごとに
+ * 作り直さないと、先に読んだものには付かず後に読んだものだけに付く印になる。
+ *
+ * 印が意味するのは「その工程の所要時間・確率は、定義だけからは確定しない参照を含む」
+ * （CraftingStep.hasUnresolvedReferences）。
+ */
+export function trackingResolverOf(def: ObjectDef, outer: StaticValueResolver | undefined): TrackingResolver {
+  const inner = staticResolverOf(def, outer);
+  let unresolved = false;
+  return {
+    resolve: (root, propertyGlobalId) => {
+      const value = inner(root, propertyGlobalId);
+      if (value === undefined) unresolved = true;
+      return value;
+    },
+    get unresolved() {
+      return unresolved;
+    },
+  };
+}
+
+/** 解決器と、そこまでに解けない参照へ当たったかどうか（trackingResolverOf）。 */
+export interface TrackingResolver {
+  readonly resolve: StaticValueResolver;
+  readonly unresolved: boolean;
+}
+
 /** 重み・所要時間の宣言（WeightReading）を数値へ解く。参照が解けなければundefined。 */
 export function resolveWeight(reading: WeightReading, resolve: StaticValueResolver): number | undefined {
   return reading.kind === 'literal' ? reading.value : resolve(reading.subject, reading.propertyGlobalId);

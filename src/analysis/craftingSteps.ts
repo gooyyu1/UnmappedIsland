@@ -8,7 +8,7 @@ import type { EffectReading } from './effectOutcomes';
 import { destroysRoot, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
 import type { StaticValueResolver } from './staticValue';
-import { resolveWeight, staticResolverOf, staticValueOf } from './staticValue';
+import { resolveWeight, staticResolverOf, staticValueOf, trackingResolverOf } from './staticValue';
 
 /**
  * 定義を「入力 → 工程 → 出力」の形へ均す（CraftingStep参照）。
@@ -43,15 +43,9 @@ function interactionStep(
   interaction: InteractionDef,
   outer: StaticValueResolver | undefined,
 ): CraftingStep {
-  let unresolved = false;
-  const resolve: StaticValueResolver = (root, propertyGlobalId) => {
-    const value = staticResolverOf(def, outer)(root, propertyGlobalId);
-    if (value === undefined) unresolved = true;
-    return value;
-  };
-
-  const reading = readEffect(interaction, resolve);
-  const minutes = minutesOf(interaction, resolve);
+  const tracking = trackingResolverOf(def, outer);
+  const reading = readEffect(interaction, tracking.resolve);
+  const minutes = minutesOf(interaction, tracking.resolve);
   return {
     kind: 'interaction',
     name: interaction.name,
@@ -70,7 +64,7 @@ function interactionStep(
     laborMinutes: minutes,
     elapsedMinutes: minutes,
     outcomes: reading.outcomes,
-    hasUnresolvedReferences: unresolved,
+    hasUnresolvedReferences: tracking.unresolved,
   };
 }
 

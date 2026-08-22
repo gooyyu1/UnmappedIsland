@@ -254,10 +254,8 @@ docコメントの取り残し 14件（全部直し、残り0を機械的に確�
 - ⏸ **`Pcg32.nextInt`（閉区間）と `Rng.nextInt`（半開区間）が同名で逆。** `seededRng` は Pcg32 を
   包むのに委譲できず式を組み直している。改名だけなら安全、契約を揃えると地形のシード再現性が
   変わる。**全部終わってからもう一度訊く**
-- ❓ **`rangeCyclesOf` の「解けなかった印」が宣言順に依存する。** 印（`CraftingStep.
-  hasUnresolvedReferences`）は「この工程の所要時間・確率は、定義だけからは確定しない参照を含む」の
-  意味。`craftingStepsOf` は操作1つごとに閉じているが、`rangeCyclesOf` は関数全体で1つ持つので、
-  先に積んだ周期には付かず後の周期に付く。**直すなら周期ごとに閉じる**（回答待ち）
+- ✅ `rangeCyclesOf` の「解けなかった印」が宣言順に依存していた（`staticValue.trackingResolverOf`
+  へ寄せ、読み出し1回ぶんに閉じた）。`snare.durability.on_min` に誤って付いていた印が消えた
 
 ### 調査のやり方（次に繰り返すとき）
 
