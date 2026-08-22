@@ -2,6 +2,7 @@ import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { CardLane } from './CardLane';
 import type { LaneCell } from './laneCells';
+import type { ObjectWindowLane, ObjectWindowPane } from './ObjectWindowPane';
 import { FOUND_CELLS, laneWidthForCells } from './laneCells';
 import { CONTENT_GAP } from '../looks/childWindowLayout';
 import { ProgressBar } from './ProgressBar';
@@ -28,7 +29,7 @@ export interface ExplorationContent {
  * **発見物の枠はレーンそのものです**（CardLane）。ここに並ぶのはレーンから来てレーンへ帰っていく
  * 札なので、枠の幾何も送りも、札の出入りの見せ方も、他のレーンと同じ道筋に乗ります。
  */
-export class ExplorationPane {
+export class ExplorationPane implements ObjectWindowPane {
   /**
    * この面が要る幅。**発見物の4枠ぶん**で、窓の幅はこれを下回らない（Windows.md 5節）。
    * 枠は縮めない——レーンから来てレーンへ帰る札そのものなので、大きさが変わると別の札に見える。
@@ -49,8 +50,10 @@ export class ExplorationPane {
   }
 
   /** 発見物のレーン。並びの差し替えは呼び出し側（PlayScene）が他のレーンと一緒に通す。 */
-  readonly lane: CardLane;
+  readonly lanes: readonly ObjectWindowLane[];
 
+  private readonly content: () => ExplorationContent;
+  private readonly lane: CardLane;
   private readonly bar: ProgressBar;
   private readonly percent: Phaser.GameObjects.Text;
   private readonly note: Phaser.GameObjects.Text;
@@ -60,9 +63,11 @@ export class ExplorationPane {
     scene: Phaser.Scene,
     metrics: ScreenMetrics,
     area: Rect,
-    content: ExplorationContent,
+    content: () => ExplorationContent,
     cells: readonly LaneCell[],
   ) {
+    this.content = content;
+    const ratio = content().ratio;
     const gap = metrics.px(CONTENT_GAP);
     const barHeight = metrics.px(BAR_HEIGHT);
     const laneHeight = metrics.px(SIZE.laneHeight);
@@ -76,17 +81,18 @@ export class ExplorationPane {
       cells,
       { clip: true },
     );
+    this.lanes = [{ role: 'found', lane: this.lane }];
 
     let cursorY = area.y + laneHeight + gap;
-    this.bar = new ProgressBar(scene, metrics, area.x, cursorY, area.width, barHeight, content.ratio);
-    this.percent = addLabel(scene, metrics, centerX, cursorY + barHeight / 2, percentOf(content.ratio), {
+    this.bar = new ProgressBar(scene, metrics, area.x, cursorY, area.width, barHeight, ratio);
+    this.percent = addLabel(scene, metrics, centerX, cursorY + barHeight / 2, percentOf(ratio), {
       size: 32,
       bold: true,
     }).setOrigin(0.5);
     this.objects.push(this.bar, this.percent);
 
     cursorY += barHeight + gap;
-    this.note = addLabel(scene, metrics, centerX, cursorY, noteOf(content.ratio), {
+    this.note = addLabel(scene, metrics, centerX, cursorY, noteOf(ratio), {
       size: 24,
       color: COLOR.textMuted,
     })
@@ -96,8 +102,9 @@ export class ExplorationPane {
     this.objects.push(this.note);
   }
 
-  /** 探索率だけを書き直す。**発見物のレーンは触らない**——並びの差し替えはCardTableが受け持つ。 */
-  setRatio(ratio: number): void {
+  /** 探索率だけを読み直す。**発見物のレーンは触らない**——並びの差し替えはCardTableが受け持つ。 */
+  refresh(): void {
+    const ratio = this.content().ratio;
     this.bar.setRatio(ratio);
     this.percent.setText(percentOf(ratio));
     this.note.setText(noteOf(ratio));

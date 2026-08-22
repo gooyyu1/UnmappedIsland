@@ -327,7 +327,7 @@ function horizontalSeparatorAt(center: number, span: Rect, height: number): Rect
   return { x: span.x, y: center - height / 2, width: span.width, height };
 }
 
-/** separatorAtの縦版。左右の境目に、絵を90度回して敷く（shapes.addTiledImageVertical）。 */
+/** horizontalSeparatorAtの縦版。左右の境目に、絵を90度回して敷く（shapes.addTiledImageVertical）。 */
 function verticalSeparatorAt(center: number, span: Rect, width: number): Rect {
   return { x: center - width / 2, y: span.y, width, height: span.height };
 }

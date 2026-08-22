@@ -856,7 +856,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** レーンが映している場所。借りた1枚の枠だけはワールドの場所ではない（CardSpot）。 */
   private spotOf(lane: CardLane): CardSpot {
-    return lane === this.childWindow?.cardLane ? 'windowCard' : this.placeOf(lane);
+    return lane === this.childWindow?.laneOf('card') ? 'windowCard' : this.placeOf(lane);
   }
 
   /**
@@ -873,17 +873,20 @@ export class PlayScene extends ResponsiveScene {
     ];
 
     const window = this.childWindow;
+    const card = window?.laneOf('card');
     const borrowed = this.shown.windowCard;
-    if (window?.cardLane !== undefined && borrowed !== undefined) {
-      views.push({ lane: window.cardLane, cells: [{ card: borrowedFace(borrowed) }] });
+    if (card !== undefined && borrowed !== undefined) {
+      views.push({ lane: card, cells: [{ card: borrowedFace(borrowed) }] });
     }
+    const content = window?.laneOf('content');
     const place = this.childWindowPlace;
-    if (window?.contentLane !== undefined && place !== undefined) {
-      views.push({ lane: window.contentLane, cells: this.cellsAt(place) });
+    if (content !== undefined && place !== undefined) {
+      views.push({ lane: content, cells: this.cellsAt(place) });
     }
     // 発見物のレーン。借りている札はここに並び、返すと元の場所のレーンへ戻る（Windows.md 5.1節）。
-    if (window?.foundLane !== undefined) {
-      views.push({ lane: window.foundLane, cells: foundCells(this.shown.found) });
+    const found = window?.laneOf('found');
+    if (found !== undefined) {
+      views.push({ lane: found, cells: foundCells(this.shown.found) });
     }
     return views;
   }
@@ -891,13 +894,7 @@ export class PlayScene extends ResponsiveScene {
   /** 今画面に出ているレーン。札を探すため（cardShowing）のもので、並びは引き直さない。 */
   private get openLanes(): readonly CardLane[] {
     const lanes = [this.fixtureLane, this.itemLane, this.handLane, this.portraitLane];
-    for (const lane of [
-      this.childWindow?.cardLane,
-      this.childWindow?.contentLane,
-      this.childWindow?.foundLane,
-    ]) {
-      if (lane !== undefined) lanes.push(lane);
-    }
+    for (const { lane } of this.childWindow?.lanes ?? []) lanes.push(lane);
     return lanes;
   }
 
@@ -920,7 +917,7 @@ export class PlayScene extends ResponsiveScene {
 
     // 借りた札の枠も落とし先に含める。石を打ち割るには、手持ちからウィンドウの中の石へ重ねられる
     // 必要がある（借りた1枚はもうレーンには居ない、Windows.md 1.1節）。
-    return [this.childWindow.cardLane, this.childWindow.contentLane, this.handLane].filter(
+    return [this.childWindow.laneOf('card'), this.childWindow.laneOf('content'), this.handLane].filter(
       (lane): lane is CardLane => lane !== undefined,
     );
   }
@@ -1223,7 +1220,7 @@ export class PlayScene extends ResponsiveScene {
     // **枠を測るのは閉じる前**——閉じるとレーンごと消えるので、そのあとでは出どころを引けない。
     const window = this.childWindow;
     const cardRect = window?.cardRect;
-    const foundLane = window?.foundLane;
+    const foundLane = window?.laneOf('found');
 
     const returned = this.shown.returnBorrowed();
     const origins = new Map<number, Rect>();
