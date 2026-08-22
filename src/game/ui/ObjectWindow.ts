@@ -168,7 +168,7 @@ export class ObjectWindow {
   private tabObjects: Phaser.GameObjects.GameObject[] = [];
 
   /** 中身の並び（説明のタブではundefined）。ドラッグの対象として呼び出し側（PlayScene）が受け取る。 */
-  private contentLane: CardLane | undefined;
+  private lane: CardLane | undefined;
 
   /**
    * 左に置く、そのオブジェクトのカードの枠（説明のタブでだけ持つ）。**枠1つのレーン**なので、
@@ -177,7 +177,7 @@ export class ObjectWindow {
    *
    * カードそのものは置かない（CardTableが並びの差し替えで置く）。
    */
-  private ownCardLane: CardLane | undefined;
+  private ownLane: CardLane | undefined;
 
   /** 借りた札が最後に居た枠。スロットのタブでは描かないので、閉じたときの出発点として控える。 */
   private lastCardRect: Rect | undefined;
@@ -319,13 +319,13 @@ export class ObjectWindow {
   }
 
   /** 中身の並び（説明のタブではundefined）。 */
-  get lane(): CardLane | undefined {
-    return this.contentLane;
+  get contentLane(): CardLane | undefined {
+    return this.lane;
   }
 
   /** 借りた札の枠（説明のタブでだけ在る）。 */
   get cardLane(): CardLane | undefined {
-    return this.ownCardLane;
+    return this.ownLane;
   }
 
   /** 今開いているタブの識別子。 */
@@ -380,7 +380,7 @@ export class ObjectWindow {
 
   /** 借りた札の枠。運んでくる先・返すときの出発点で、**別のタブへ移っても最後の枠を覚えている**。 */
   get cardRect(): Rect | undefined {
-    return this.ownCardLane?.slotRect(0) ?? this.lastCardRect;
+    return this.ownLane?.cellRect(0) ?? this.lastCardRect;
   }
 
   /** タブの識別子を並び順で返す。説明 → スロット（宣言順）→ プロパティ。 */
@@ -433,11 +433,11 @@ export class ObjectWindow {
   private showTab(tab: string): void {
     const { scene, metrics, middle } = this;
     this.selected = tab;
-    if (this.ownCardLane !== undefined) this.lastCardRect = this.ownCardLane.slotRect(0);
-    this.ownCardLane?.destroy();
-    this.ownCardLane = undefined;
-    this.contentLane?.destroy();
-    this.contentLane = undefined;
+    if (this.ownLane !== undefined) this.lastCardRect = this.ownLane.cellRect(0);
+    this.ownLane?.destroy();
+    this.ownLane = undefined;
+    this.lane?.destroy();
+    this.lane = undefined;
     this.propertiesPane?.destroy();
     this.propertiesPane = undefined;
     this.explorationPane?.destroy();
@@ -477,7 +477,7 @@ export class ObjectWindow {
 
     if (slot === undefined) {
       const cardHeight = metrics.px(SIZE.cardHeight);
-      this.ownCardLane = new CardLane(
+      this.ownLane = new CardLane(
         scene,
         metrics,
         {
@@ -499,7 +499,7 @@ export class ObjectWindow {
     const laneWidth = Math.min(middle.columnWidth + metrics.px(SIZE.cardWidth), laneWidthFor(metrics, slot));
     const laneHeight = metrics.px(SIZE.laneHeight);
     const contentWidth = middle.columnX + middle.columnWidth - middle.cardX;
-    this.contentLane = new CardLane(
+    this.lane = new CardLane(
       scene,
       metrics,
       {
@@ -627,8 +627,8 @@ export class ObjectWindow {
   }
 
   close(): void {
-    this.contentLane?.destroy();
-    this.ownCardLane?.destroy();
+    this.lane?.destroy();
+    this.ownLane?.destroy();
     this.propertiesPane?.destroy();
     this.explorationPane?.destroy();
     this.tooltip.destroy();

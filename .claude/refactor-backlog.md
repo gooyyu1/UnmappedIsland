@@ -82,38 +82,46 @@ docコメントの取り残し 14件（全部直し、残り0を機械的に確�
       同名だけを解消し（`PLATE_*`・`BUTTON_*`）、台紙を指す `card` も `plate` へ改めた。
       **共通トークンへ寄せるかどうかは仕様判断なので未着手**——やるならボタンの高さが 72 → 88 になる。
 
-## PR 4: 兄弟の名前と引数を揃える
+## PR 4: 兄弟の名前と引数を揃える ✅ 完了
 
-- [ ] loader のパーサが `(loader, context, node)` 30本に対し `(loader, node, context)` 5本
-      （`parseCommon.parseTypeMatchRule`・`parseSlots.parsePutIn`/`parseCell`/`parsePlacement`・`parseRecipes.rejectUnknownKeys`）
-- [ ] `codex-viewer/describe/` の `describe*` が「行を書く」12本と「断片を返す」9本の2契約に同じ接頭辞。
-      `*Tokens` 6本と役目が同じ。`describeStage` だけ対象固有の引数が `names` の後ろ
-- [ ] `ui/Card.ts` の `show*` が受け取り方4形（content全体／1フィールド／引数なし／計算済み配列）。
-      `showOverlay` が `applyContent` からではなく `showMark` の中から呼ばれている
-- [ ] `ui/Card.ts` のモジュール関数が `create*`/`add*`/`place*` の3系統（`createAlertOutline` と
-      `emptyOutline` は引数も戻り値も同型）
-- [ ] `ObjectWindow` の `lane` / `cardLane` / `foundLane`（並べて使うのに1つだけ無修飾。フィールド名とも不一致）
-- [ ] ウィンドウを畳むのが `close()` 4つに対し `RecipeWindow.destroy()`。「閉じる」ボタンの契約も
-      `RecipeWindow` だけ自分を畳まず呼び元に任せる
-- [ ] `PlayScene` のアイコンボタン4本（`addSlotButton`/`slotButtonPaper`/`slotButtonIcon`/`addIconButton`/
-      `barIcon`/`iconButtonStyle`）。`slotButtonIcon` と `barIcon` は本体もdocの1行目も同じで、差は寸法2値だけ
-- [ ] `PlayScene` の窓を開く3本（`openSlotWindow`/`openCharacterWindow`/`openLocationWindow`）。
-      前2つはどちらもキャラクタ自身の窓で、差は `actions: []` と `opensPlace` の2点
-- [ ] `view/operationSteps.ts` の `elapseSteps` と `elapsedSteps`（型も `ElapseStep`/`ElapsedStep`。
-      「d」1文字違いで、取り違えても型が同じ文字列配列）
-- [ ] 静的ファクトリが `ObjectRef.ofX` / `WeightSpec.fromX` / `TypeMatchRule.tag`・`object` の3流儀。
-      `ObjectRef.ofObjectDef` と `TypeMatchRule.object` は同じものを別語彙で呼ぶ
-- [ ] `acceptedCount` が `acceptedCount` / `acceptedCountOf` / `acceptedCountForMoveTo` の3流儀
-      （`InteractionDef.acceptedCountOf` は呼び元1・引数を並べ替えずに渡すだけ）
-- [ ] `PropertyValue` の派生読み6つがゲッターとメソッドに割れ、`PropertyDef` 側の語彙ともずれる
-      （`alert` ↔ `alertLevelOf`、`artSuffix()` ↔ `artSuffixOf`）
-- [ ] `CardLane.slotRect`（クラス全体は cell の語彙。`slot` はワールド側の別概念）と `addPinnedSlot`
-- [ ] `art/backgroundArt.ts` の `laneTexture` と `cardBackgroundTexture`（`Use` 列挙の2値ぶんを手書き）
-- [ ] `PlayScene.cardsAt` が `view.cardsIn` への1行委譲。`ShownCards` への受け口
-      `stacksIn: (place) => this.cardsAt(place)` / `places: (screen) => this.place(screen)` が
-      DesignNotes「層をまたぐ転送」の `(...asked)` 形になっていない
-- [ ] `views/Location.slotStacks` と `views/PlayerCharacter.stacksOf`（本体が同一で名前だけ違う）
-- [ ] `PlayScene.cellsAt` / `portraitCells` / `laneCells.foundCells` の3つの名前の作り
+- [x] loader のパーサ5本を多数派の `(loader, context, node)` へ寄せた
+- [x] `describe*` のうち**断片を返す9本を `*Tokens` へ改名**（`conditionTokens`・`typeMatchTokens`・
+      `cellTokens` ほか）。これで `describe*` は「行を書く」11本だけになり、名前から戻り値が読める。
+      `stageTokens` の引数順も他と同じ「対象固有の引数 → names」へ
+- [x] `ui/Card.ts` の `show*` を**全部 `content` 先頭**に揃え（`showStackCount`・`showCooking`）、
+      `showOverlay` を `showMark` の中からではなく `applyContent` から直接呼ぶようにした。
+      窓の矩形と余白は `applyContent` で1度だけ求めて両方へ渡す
+- [x] `ui/Card.ts` のモジュール関数を `create*` に統一（`createEmptyOutline`・`createPaper`・
+      `createArtImage`）。主題を末尾に置く引数順へ（`createIconText`・`createArtImage`）
+- [x] `ObjectWindow` のレーンを `contentLane` / `cardLane` / `foundLane` で揃え、フィールド名も一致させた
+- [x] `RecipeWindow.destroy` → `close`。「閉じる」ボタンも他の4つと同じく自分を畳んでから通知する
+      （2度呼ばれても壊れないようにした）
+- [x] `PlayScene` の `slotButtonIcon` と `barIcon` を `buttonIcon` 1本へ。差は敷く寸法と絵文字の
+      大きさの2値だけだった
+- [x] `openSlotWindow` を `openCharacterWindow(opensPlace?)` へ畳んだ（どちらもキャラクタ自身の窓で、
+      差は「そのタブから開くか」と「アクションを出すか」の2点）
+- [x] `elapseSteps` / `elapsedSteps` → `playbackSteps` / `afterPlaybackSteps`（型も同様）
+- [x] 静的ファクトリを `ofX` に統一（`TypeMatchRule.ofTag`/`ofObjectDef`・`WeightSpec.ofLiteral`/`ofPath`）。
+      `ObjectRef` の内部フィールドも `objectGlobalId` へ揃えた（読み上げのキーと同じ語彙）
+- [x] `InteractionDef.acceptedCountOf` を削除（`effect` を `protected` にして直に訊く）
+- [x] `PropertyValue` の派生読みをゲッターへ揃え（`artSuffix`・`exhaustedStage`）、`PropertyDef` 側も
+      `alertOf`（`alert` と語幹を一致）・`isExhausted(rawValue)` へ
+- [x] `CardLane.slotRect` → `cellRect`、`addPinnedSlot` → `addPinnedCell`（クラス全体の cell の語彙へ）
+- [x] `art/backgroundArt` を `laneBackgroundTexture` / `cardBackgroundTexture` の対に
+- [x] `PlayScene.cardsAt` を畳み、`ShownCards` への受け口を規約どおりの `(...asked)` 形にした
+- [x] `views/Location.slotStacks` を `stacksOf` へ（`PlayerCharacter` と同じ名前に）
+- [x] `cellsAt` / `portraitCells` / `foundCells` — **揃えなかった。** 前者はワールドの場所の枠、後の2つは
+      画面だけの置き場（ポートレイト・発見物）の枠で、答えている問いが違う。`xxxCells` と `cellsAt` の
+      作り分けはその違いを表している
+
+**畳まなかったもの（理由つき）**
+
+- `addSlotButton` と `addIconButton` の受け渡しの向き（片方は結線して捨てる、片方は `Button` を返す）。
+  返す側は呼び元がボタンを持ち続けて状態を切り替えるためで、差に理由がある
+- `WorldObject.acceptedCountForMoveTo` の名前。対になる `rejectionForMoveTo` と語形が揃っており、
+  組み合わせの `acceptedCount` とは訊いている相手が違う
+- `ConditionNode` の裸の名詞のファクトリ（`property`・`all`・`not` ほか）。数が多く、宣言の語彙と
+  1対1で対応している
 
 ## 上限からこぼれた分（未着手。再チェックの起点にする）
 

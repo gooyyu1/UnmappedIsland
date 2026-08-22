@@ -73,11 +73,11 @@ export class WeightSpec {
     this.path = path;
   }
 
-  static fromLiteral(literal: number): WeightSpec {
+  static ofLiteral(literal: number): WeightSpec {
     return new WeightSpec(false, literal, undefined);
   }
 
-  static fromPath(path: PropertyPath): WeightSpec {
+  static ofPath(path: PropertyPath): WeightSpec {
     return new WeightSpec(true, 0, path);
   }
 

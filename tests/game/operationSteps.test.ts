@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { elapseSteps, elapsedSteps, isMidAction, runsOperation } from '../../src/game/view/operationSteps';
+import {
+  playbackSteps,
+  afterPlaybackSteps,
+  isMidAction,
+  runsOperation,
+} from '../../src/game/view/operationSteps';
 
 /**
  * 操作1回の段取り（operationSteps）の自動テスト。
@@ -31,8 +36,8 @@ describe('操作1回の段取り', () => {
   });
 
   describe('経過を見せる手順', () => {
-    const steps = (options: Partial<Parameters<typeof elapseSteps>[0]> = {}) =>
-      elapseSteps({ isDead: false, minutes: 45, reachedMainland: false, ...options });
+    const steps = (options: Partial<Parameters<typeof playbackSteps>[0]> = {}) =>
+      playbackSteps({ isDead: false, minutes: 45, reachedMainland: false, ...options });
 
     it('死んだら、経過も結果も見せない', () => {
       expect(steps({ isDead: true })).toEqual(['death']);
@@ -70,17 +75,17 @@ describe('操作1回の段取り', () => {
   describe('経過し切った時点の手順', () => {
     it('移動しない操作は、出来事を出してから並びを差し替える', () => {
       // 効果がその物を消していれば、差し替えた後の画面にその札はもう無い。
-      expect(elapsedSteps({ moved: false })).toEqual(['refresh', 'noteChanges', 'signals', 'view']);
+      expect(afterPlaybackSteps({ moved: false })).toEqual(['refresh', 'noteChanges', 'signals', 'view']);
     });
 
     it('土地を移った操作は、作り直しへ進み、出来事は出さない', () => {
       // 出来事が起きた札は置いてきた土地の並びに居るので、指すべき札が無い。
-      expect(elapsedSteps({ moved: true })).toEqual(['refresh', 'noteChanges', 'transit']);
+      expect(afterPlaybackSteps({ moved: true })).toEqual(['refresh', 'noteChanges', 'transit']);
     });
 
     it('探索は、見つかったものを引き取ってから並びを差し替える', () => {
       // 出どころの矩形は今出ている並びの上にしか無い。
-      expect(elapsedSteps({ moved: false, found: true })).toEqual([
+      expect(afterPlaybackSteps({ moved: false, found: true })).toEqual([
         'refresh',
         'noteChanges',
         'found',
@@ -91,7 +96,7 @@ describe('操作1回の段取り', () => {
 
     it('ステータスの増減は、値を反映する前に控える', () => {
       for (const options of [{ moved: false }, { moved: true }, { moved: false, found: true }]) {
-        const shown = elapsedSteps(options);
+        const shown = afterPlaybackSteps(options);
         const reflects = shown.findIndex((step) => step === 'view' || step === 'transit');
         expect(shown.indexOf('noteChanges'), JSON.stringify(options)).toBeLessThan(reflects);
       }

@@ -57,7 +57,7 @@ export class Location {
 
   /** アイテムスロットの中身を、積み重なっているまとまり（ObjectStack）ごとに分けたもの（先頭が代表）。 */
   get itemStacks(): readonly (readonly WorldObject[])[] {
-    return this.slotStacks(this.itemsSlotId);
+    return this.stacksOf(this.itemsSlotId);
   }
 
   /**
@@ -76,7 +76,7 @@ export class Location {
 
   /** 設置物スロットの中身を、積み重なっているまとまりごとに分けたもの（itemStacksと同じ扱い）。 */
   get fixtureStacks(): readonly (readonly WorldObject[])[] {
-    return this.slotStacks(this.fixturesSlotId);
+    return this.stacksOf(this.fixturesSlotId);
   }
 
   /**
@@ -172,7 +172,7 @@ export class Location {
     return slot !== undefined ? slot.contents : [];
   }
 
-  private slotStacks(slotGlobalId: number): readonly (readonly WorldObject[])[] {
+  private stacksOf(slotGlobalId: number): readonly (readonly WorldObject[])[] {
     const slot = this.instance.tryGetSlot(slotGlobalId);
     return slot === undefined ? [] : slot.cells.flatMap((cell) => (cell === undefined ? [] : [cell.members]));
   }

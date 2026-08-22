@@ -5,7 +5,7 @@ import { propertyTagRef, stageRef, text } from './Description';
 import { describeEffect } from './describeEffect';
 
 /** 初期値の書き表し。一覧の表など、1行で済ませたい場所向けに断片で返す。 */
-export function describeInitialValue(def: PropertyDef, names: DefNames): readonly DescriptionToken[] {
+export function initialValueTokens(def: PropertyDef, names: DefNames): readonly DescriptionToken[] {
   const reading = def.initialValueReading;
   return reading.kind === 'roll'
     ? [text(`${reading.min}〜${reading.max}（生成時に1回抽選）`)]
@@ -14,7 +14,7 @@ export function describeInitialValue(def: PropertyDef, names: DefNames): readonl
 
 /** プロパティの定義（6節）を書き出す。 */
 export function describeProperty(def: PropertyDef, names: DefNames, out: DescriptionWriter): void {
-  out.write(text('初期値: '), ...describeInitialValue(def, names));
+  out.write(text('初期値: '), ...initialValueTokens(def, names));
   if (def.range !== undefined) out.write(text(`range: ${def.range.min} 〜 ${def.range.max}`));
   if (def.inherit) out.write(text('inherit: 同名プロパティを持つ最初の祖先の実効値を足す'));
   if (def.gauge !== undefined)
@@ -28,7 +28,7 @@ export function describeProperty(def: PropertyDef, names: DefNames, out: Descrip
   if (def.stages.length > 0) {
     out.write(text('stages:'));
     out.indented(() => {
-      for (const stage of def.stages) out.write(...describeStage(stage, names, def.globalId));
+      for (const stage of def.stages) out.write(...stageTokens(stage, def.globalId, names));
     });
   }
 
@@ -36,10 +36,10 @@ export function describeProperty(def: PropertyDef, names: DefNames, out: Descrip
 }
 
 /** 段1つ（6.4節）を書き表す。propertyGlobalIdは、eqの値をシンボル名へ戻すために要る。 */
-export function describeStage(
+export function stageTokens(
   stage: PropertyStage,
-  names: DefNames,
   propertyGlobalId: number,
+  names: DefNames,
 ): readonly DescriptionToken[] {
   const tokens: DescriptionToken[] = [stageRef(stage.name)];
   if (stage.eq !== undefined) {

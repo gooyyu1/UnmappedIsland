@@ -262,7 +262,7 @@ function parseConditionLeaf(
       ConditionNode.slotContent(
         root,
         loader.slotNames.intern(slotName),
-        parseTypeMatchRule(loader, matchNode, `${context}.${MATCHES_KEY}`),
+        parseTypeMatchRule(loader, `${context}.${MATCHES_KEY}`, matchNode),
       ),
     );
   } else {
@@ -280,7 +280,7 @@ function parseConditionLeaf(
     if (matchNode !== undefined) {
       used.add(MATCHES_KEY);
       nodes.push(
-        ConditionNode.objectMatches(root, parseTypeMatchRule(loader, matchNode, `${context}.${MATCHES_KEY}`)),
+        ConditionNode.objectMatches(root, parseTypeMatchRule(loader, `${context}.${MATCHES_KEY}`, matchNode)),
       );
     }
   }

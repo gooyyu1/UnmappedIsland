@@ -46,22 +46,22 @@ export function isMidAction(activity: Activity): boolean {
  *   だが、増えた量は押した瞬間に決まっている（ワールドは先に進み切っている）ので待たない。
  * - `replay`: 控えを実時間で再生する（ElapsePlayback）。**ここだけ時間がかかる**ので、続きは
  *   再生し切ってから運ぶ。
- * - `elapsed`: 経過し切った時点の並びを見せる（elapsedSteps）。
+ * - `elapsed`: 経過し切った時点の並びを見せる（afterPlaybackSteps）。
  * - `escape`: 周回の終わりを出す。**見せ終わってから**——死と違って画面を止める必要はない。
  *   本土へ渡ったのは筏で、プレイヤーはその中に居るまま（現在地は筏）なので、映し直しても足元の
  *   物は入れ替わらない。
  */
-export type ElapseStep = 'death' | 'gains' | 'replay' | 'elapsed' | 'escape';
+export type PlaybackStep = 'death' | 'gains' | 'replay' | 'elapsed' | 'escape';
 
 /** minutesは経過するゲーム内時間（分）。0なら実時間をかけずに結果まで進む。 */
-export function elapseSteps(options: {
+export function playbackSteps(options: {
   readonly isDead: boolean;
   readonly minutes: number;
   readonly reachedMainland: boolean;
-}): readonly ElapseStep[] {
+}): readonly PlaybackStep[] {
   if (options.isDead) return ['death'];
 
-  const steps: ElapseStep[] = options.minutes > 0 ? ['gains', 'replay', 'elapsed'] : ['gains', 'elapsed'];
+  const steps: PlaybackStep[] = options.minutes > 0 ? ['gains', 'replay', 'elapsed'] : ['gains', 'elapsed'];
   if (options.reachedMainland) steps.push('escape');
   return steps;
 }
@@ -79,18 +79,18 @@ export function elapseSteps(options: {
  *   いれば、差し替えた後の画面にその札はもう無い。
  * - `view`: 並びを差し替える。
  */
-export type ElapsedStep = 'refresh' | 'noteChanges' | 'found' | 'transit' | 'signals' | 'view';
+export type AfterPlaybackStep = 'refresh' | 'noteChanges' | 'found' | 'transit' | 'signals' | 'view';
 
 /**
  * - moved: 土地を移った操作か。移った場合は出来事を出さない——出来事が起きた札は置いてきた土地の
  *   並びに居るので、指すべき札が無い。
  * - found: 探索の結果を見せるか。探索は土地を移らないので、transitとは同時に起きない。
  */
-export function elapsedSteps(options: {
+export function afterPlaybackSteps(options: {
   readonly moved: boolean;
   readonly found?: boolean;
-}): readonly ElapsedStep[] {
-  const steps: ElapsedStep[] = ['refresh', 'noteChanges'];
+}): readonly AfterPlaybackStep[] {
+  const steps: AfterPlaybackStep[] = ['refresh', 'noteChanges'];
   if (options.found === true) steps.push('found');
   if (options.moved) steps.push('transit');
   else steps.push('signals', 'view');

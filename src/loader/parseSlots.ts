@@ -57,13 +57,13 @@ export function parseSlot(
     cellsNode === undefined
       ? undefined
       : (cellsNode.items as YamlNode[]).map((cellNode, index) =>
-          parseCell(loader, asMap(cellNode, context), `${context}.cells[${index}]`),
+          parseCell(loader, `${context}.cells[${index}]`, asMap(cellNode, context)),
         );
   const sharedCell =
-    sharedCellNode === undefined ? undefined : parseCell(loader, sharedCellNode, `${context}.cell`);
+    sharedCellNode === undefined ? undefined : parseCell(loader, `${context}.cell`, sharedCellNode);
 
   const putInNode = tryGetMap(node, 'put_in', context);
-  const placement = parsePlacement(node, context);
+  const placement = parsePlacement(context, node);
 
   return new SlotDef(
     slotGlobalId,
@@ -73,7 +73,7 @@ export function parseSlot(
     cellCount,
     tryGetNumber(node, 'capacity', context),
     placement.includes('auto'),
-    putInNode === undefined ? undefined : parsePutIn(loader, putInNode, `${context}.put_in`),
+    putInNode === undefined ? undefined : parsePutIn(loader, `${context}.put_in`, putInNode),
     placement.includes('manual'),
   );
 }
@@ -81,7 +81,7 @@ export function parseSlot(
 /** 誰がここへ物を入れてよいか（`placement`、7.7節）。省略すればエンジンもプレイヤーも入れられる。 */
 const PLACERS = ['auto', 'manual'] as const;
 
-function parsePlacement(node: YAMLMap, context: string): readonly string[] {
+function parsePlacement(context: string, node: YAMLMap): readonly string[] {
   const seq = tryGetSeq(node, 'placement', context);
   if (seq === undefined) return PLACERS;
 
@@ -95,7 +95,7 @@ function parsePlacement(node: YAMLMap, context: string): readonly string[] {
 }
 
 /** `put_in: {duration: ...}`（ここへ入れるのにかかる時間）を読む。出す側に時間は課さない。 */
-function parsePutIn(loader: WorldCodexYamlLoader, node: YAMLMap, context: string): WeightSpec {
+function parsePutIn(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): WeightSpec {
   requireKnownKeys(context, node, ['duration']);
 
   const durationNode = tryGetNode(node, 'duration');
@@ -104,10 +104,10 @@ function parsePutIn(loader: WorldCodexYamlLoader, node: YAMLMap, context: string
 }
 
 /** 1つの枠の定義（`{accept: {tag|object}, max: N}`）を読む。 */
-function parseCell(loader: WorldCodexYamlLoader, node: YAMLMap, context: string): CellDef {
+function parseCell(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): CellDef {
   const acceptNode = tryGetMap(node, 'accept', context);
   return new CellDef(
-    acceptNode === undefined ? undefined : parseTypeMatchRule(loader, acceptNode, `${context}.accept`),
+    acceptNode === undefined ? undefined : parseTypeMatchRule(loader, `${context}.accept`, acceptNode),
     tryGetInt(node, 'max', context),
   );
 }

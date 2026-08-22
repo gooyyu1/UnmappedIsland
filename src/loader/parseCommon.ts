@@ -16,8 +16,8 @@ import { TypeMatchRule } from '../domain/TypeMatchRule';
  */
 export function parseTypeMatchRule(
   loader: WorldCodexYamlLoader,
-  node: YAMLMap,
   context: string,
+  node: YAMLMap,
 ): TypeMatchRule {
   const tagName = tryGetScalar(node, 'tag', context);
   const objectName = tryGetScalar(node, 'object', context);
@@ -28,8 +28,8 @@ export function parseTypeMatchRule(
     throw new YamlLoadError(`${context}: 'tag'または'object'のいずれかが必要です。`);
 
   return tagName !== undefined
-    ? TypeMatchRule.tag(loader.tagNames.intern(tagName))
-    : TypeMatchRule.object(loader.objectNames.intern(objectName!));
+    ? TypeMatchRule.ofTag(loader.tagNames.intern(tagName))
+    : TypeMatchRule.ofObjectDef(loader.objectNames.intern(objectName!));
 }
 
 /**

@@ -35,7 +35,7 @@ function parseRequirement(
     throw new YamlLoadError(`${context}: consumeは省略できません（素材か道具かは既定値を置けないため）。`);
 
   return new RecipeRequirementDef(
-    parseTypeMatchRule(loader, map, context),
+    parseTypeMatchRule(loader, context, map),
     count,
     tryGetBool(map, 'consume', context, true),
   );

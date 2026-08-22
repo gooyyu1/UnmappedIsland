@@ -194,9 +194,9 @@ object_defs:
       .get(codex.objectNames.getId('character'))
       .getPropertyDef(codex.propertyNames.getId('hydration'))!;
 
-    expect(prop.alertLevelOf(100), 'alert未指定の段は安全域').toBe('safe');
-    expect(prop.alertLevelOf(20)).toBe('caution');
-    expect(prop.alertLevelOf(0)).toBe('fatal');
+    expect(prop.alertOf(100), 'alert未指定の段は安全域').toBe('safe');
+    expect(prop.alertOf(20)).toBe('caution');
+    expect(prop.alertOf(0)).toBe('fatal');
   });
 
   it('alertの深刻さは、rangeを持つプロパティでは下から上へ単調でなければならない', () => {
