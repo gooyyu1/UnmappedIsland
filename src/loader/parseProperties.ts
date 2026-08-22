@@ -221,16 +221,11 @@ function parseStage(
   // その検証は object_def 全体を見渡せる RawObjectDef.resolve が行う（ここでは持たない）。
   const art = tryGetScalar(stageMap, 'art', context);
 
-  // 「シンボル型に min は書けない」は作者が書いたYAMLの形についての話で、PropertyStage が持つ
-  // 「minとeqは同時に持てない」とは語彙が違う。作者へはこちらの言葉で返す。
-  if (isSymbolProperty && tryGetNode(stageMap, 'min') !== undefined)
-    throw new YamlLoadError(
-      `${context}: シンボル型プロパティのstageに'min'は使えません（'name'自体がそのまま比較対象になります）。`,
-    );
-
+  // minはシンボル型でも読み取っておく。書いてはいけないことは PropertyDef が型と段の両方を見て言う。
+  const min = tryGetNumber(stageMap, 'min', context);
   const stage = isSymbolProperty
-    ? new PropertyStage(stageName, undefined, loader.symbolNames.intern(stageName), alert, art)
-    : new PropertyStage(stageName, tryGetNumber(stageMap, 'min', context), undefined, alert, art);
+    ? new PropertyStage(stageName, min, loader.symbolNames.intern(stageName), alert, art)
+    : new PropertyStage(stageName, min, undefined, alert, art);
 
   // stage内のpassivesは常に配列（条件違いの複数ブロックを書けるようにするため）。
   const stagePassives = tryGetSeq(stageMap, 'passives', context);

@@ -52,7 +52,7 @@ export class RecipeStepDef {
   readonly durationMinutes: number;
 
   constructor(requirements: readonly RecipeRequirementDef[], durationMinutes: number) {
-    if (requirements.length === 0) throw new Error('工程には要求が1件以上必要です。');
+    if (requirements.length === 0) throw new Error('工程のrequiresは1件以上必要です。');
     if (durationMinutes <= 0)
       throw new Error(`工程の所要時間は正の数である必要があります（値: ${durationMinutes}）。`);
 
@@ -90,7 +90,7 @@ export class RecipeDef {
     icon: string | undefined,
     unlock: Requirements | undefined,
   ) {
-    if (steps.length === 0) throw new Error(`レシピ'${name}'には工程が1件以上必要です。`);
+    if (steps.length === 0) throw new Error(`レシピ'${name}': stepsは1件以上必要です。`);
 
     this.name = name;
     this.steps = steps;

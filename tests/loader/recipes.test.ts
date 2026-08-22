@@ -233,8 +233,7 @@ object_defs:
       woven:
         steps: []
 `;
-    // 成立条件は RecipeDef が持つので、文言は YAML のキー名ではなく工程の言葉になる。
-    expect(() => load(yaml)).toThrowError(/工程が1件以上/);
+    expect(() => load(yaml)).toThrowError(/steps/);
   });
 
   it('レシピの未知のキーはエラーになる', () => {
