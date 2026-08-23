@@ -85,14 +85,6 @@ import type { BoxStyle } from '../ui/shapes';
 import { addPanel, addTiledImage, addTiledImageVertical } from '../ui/shapes';
 import { COLOR, SIZE } from './looks/theme';
 
-/** オプションバー・フィルターバーの内側パディング（縦型は左右が広め）。 */
-const BAR_PADDING = 16;
-const OPTIONS_BAR_PADDING_X = 24;
-const FILTER_BAR_PADDING_X = 20;
-
-/** ステータスエリアの内側パディング（キャラクター表示エリア側はDISPLAY_PADDING）。 */
-const STATUS_PADDING = 24;
-
 /** 紙として置かれるボタン（スロットボタン・バーのアイコンボタン）が落とす影のずらし幅（u単位）。 */
 const PAPER_BUTTON_SHADOW = 1.5;
 
@@ -356,10 +348,7 @@ export class PlayScene extends ResponsiveScene {
   /** ポートレイトカードの枠。キャラクタ自身を映す札なので、回復の粒の行き先になる（showGains）。 */
   private portraitRect: Rect | undefined;
 
-  /** ステータスエリアの1行目の位置・幅と行の間隔（どのバーをどの行へ置くかは行動のたびに引き直す）。 */
-  private statusRowsX = 0;
-  private statusRowsY = 0;
-  private statusRowsWidth = 0;
+  /** ステータスエリアの行の間隔（どのバーをどの行へ置くかは行動のたびに引き直す）。 */
   private statusRowGap = 0;
 
   /** 致命的域のステータスがある間、画面全体の枠を明滅させる。 */
@@ -1733,36 +1722,6 @@ export class PlayScene extends ResponsiveScene {
     }
   }
 
-  /**
-   * 情報エリアの中を仕切る区切り線。背景が1枚の紙になり、エリアごとの塗り分けが無くなったため、
-   * 意味のまとまり（キャラクター／ステータス）の境目だけを線で示す。見た目は現在地カードの右の
-   * 区切り線と同じ（CardLane.addPinnedCell）。
-   *
-   * 状況エリアとの境目には引かない。空のパネルが自分の縁を持っていて、それが境目を兼ねるため。
-   */
-  private buildInformationDividers(layout: PlayScreenLayout): void {
-    const thickness = this.metrics.px(4);
-    const padding = this.metrics.px(STATUS_PADDING);
-
-    if (this.metrics.isLandscape) {
-      // 横型はキャラクター表示エリアとステータスエリアが上下に並ぶので、境目も横向き。
-      const x = layout.informationContent.x + padding;
-      this.addDivider({
-        x,
-        y: layout.statusArea.y - thickness / 2,
-        width: Math.max(0, layout.informationContent.width - padding * 2),
-        height: thickness,
-      });
-    } else {
-      this.addDivider({
-        x: layout.statusArea.x - thickness / 2,
-        y: layout.statusArea.y + padding,
-        width: thickness,
-        height: Math.max(0, layout.statusArea.height - padding * 2),
-      });
-    }
-  }
-
   private addDivider(rect: Rect): void {
     this.add.rectangle(
       rect.x + rect.width / 2,
@@ -1776,9 +1735,9 @@ export class PlayScene extends ResponsiveScene {
 
   private buildDashboard(layout: PlayScreenLayout): void {
     this.buildCharacterDisplay(layout.characterDisplay);
-    this.buildStatusArea(layout.statusArea);
+    this.buildStatusArea();
     this.buildSituationArea(layout.situationArea);
-    this.buildInformationDividers(layout);
+    this.addDivider(layout.informationDivider);
   }
 
   /**
@@ -1982,11 +1941,7 @@ export class PlayScene extends ResponsiveScene {
    * おき、以後は見せ方と位置だけを変える。あとから作ると、開いている子ウィンドウの覆いより手前へ
    * 出てしまうため（CardTable参照）。
    */
-  private buildStatusArea(area: Rect): void {
-    const padding = this.metrics.px(STATUS_PADDING);
-    this.statusRowsX = area.x + padding;
-    this.statusRowsY = area.y + padding;
-    this.statusRowsWidth = area.width - padding * 2;
+  private buildStatusArea(): void {
     this.statusRowGap = this.metrics.px(this.metrics.isLandscape ? 10 : 16);
 
     // 致命的域を伝える画面全体の枠。飛んでいるカードや子ウィンドウにも隠されないよう最前面へ出す。
@@ -1997,9 +1952,9 @@ export class PlayScene extends ResponsiveScene {
       const bar = new StatusBar(
         this,
         this.metrics,
-        this.statusRowsX,
-        this.statusRowsY,
-        this.statusRowsWidth,
+        this.layout.statusRows.x,
+        this.layout.statusRows.y,
+        this.layout.statusRows.width,
         status,
         // 変化を見せ終わった行を並びから外すには、引き直す機会がここにしか無い（showStatuses）。
         { onCaughtUp: () => this.showStatuses() },
@@ -2029,7 +1984,7 @@ export class PlayScene extends ResponsiveScene {
       const bar = this.statusBars.get(row.key);
       if (bar === undefined) return;
       shown.add(row.key);
-      bar.show(row, this.statusRowsY + index * (rowHeight + this.statusRowGap));
+      bar.show(row, this.layout.statusRows.y + index * (rowHeight + this.statusRowGap));
     });
     for (const [key, bar] of this.statusBars) if (!shown.has(key)) bar.hide();
 
@@ -2176,25 +2131,9 @@ export class PlayScene extends ResponsiveScene {
   private buildOptionsBar(area: Rect): void {
     addPanel(this, area, COLOR.optionsBar);
 
-    const size = this.metrics.px(SIZE.iconButton);
-    const gap = this.metrics.px(SIZE.barGap);
-    const span = OPTION_ICONS.length * size + (OPTION_ICONS.length - 1) * gap;
-
+    const rects = this.layout.optionsBarIcons(OPTION_ICONS.length);
     OPTION_ICONS.forEach((spec, index) => {
-      const rect = this.metrics.isLandscape
-        ? {
-            x: area.x + (area.width - size) / 2,
-            y: area.y + (area.height - span) / 2 + index * (size + gap),
-            width: size,
-            height: size,
-          }
-        : {
-            x: area.x + area.width - this.metrics.px(OPTIONS_BAR_PADDING_X) - span + index * (size + gap),
-            y: area.y + (area.height - size) / 2,
-            width: size,
-            height: size,
-          };
-      const button = this.addIconButton(rect, spec, false, COLOR.paperButtonBorder);
+      const button = this.addIconButton(rects[index], spec, false, COLOR.paperButtonBorder);
       if (spec === MENU_ICON) button.on('pointerup', () => this.confirmReturnToTitle());
     });
   }
@@ -2203,25 +2142,14 @@ export class PlayScene extends ResponsiveScene {
   private buildFilterBar(area: Rect): void {
     addPanel(this, area, COLOR.filterBar);
 
-    const size = this.metrics.px(SIZE.iconButton);
-    const gap = this.metrics.px(SIZE.barGap);
-    const padding = this.metrics.px(BAR_PADDING);
-
+    const rects = this.layout.filterBarIcons(FILTER_ICONS.length);
     this.filterButtons = FILTER_ICONS.map((spec, index) => {
-      const rect = this.metrics.isLandscape
-        ? {
-            x: area.x + (area.width - size) / 2,
-            y: area.y + padding + index * (size + gap),
-            width: size,
-            height: size,
-          }
-        : {
-            x: area.x + this.metrics.px(FILTER_BAR_PADDING_X) + index * (size + gap),
-            y: area.y + (area.height - size) / 2,
-            width: size,
-            height: size,
-          };
-      const button = this.addIconButton(rect, spec, index === this.selectedFilter, COLOR.filterButtonBorder);
+      const button = this.addIconButton(
+        rects[index],
+        spec,
+        index === this.selectedFilter,
+        COLOR.filterButtonBorder,
+      );
       button.on('pointerup', () => this.selectFilter(index));
       return button;
     });

@@ -6,6 +6,20 @@ import type { ScreenMetrics } from './ScreenMetrics';
 /** オプションバー・フィルターバーの厚み（アイコンボタン88 + 上下パディング16×2）。 */
 const BAR_THICKNESS = SIZE.iconButton + 32;
 
+/** オプションバー・フィルターバーの内側パディング（縦型は左右が広め）。 */
+const BAR_PADDING = 16;
+const OPTIONS_BAR_PADDING_X = 24;
+const FILTER_BAR_PADDING_X = 20;
+
+/** ステータスエリアの内側パディング（キャラクター表示エリア側はDISPLAY_PADDING）。 */
+const STATUS_PADDING = 24;
+
+/** 情報エリアの区切り線の太さ。 */
+const INFORMATION_DIVIDER_THICKNESS = 4;
+
+/** バーに並ぶアイコンの、並ぶ向きの中での寄せ方。 */
+type BarAlign = 'start' | 'center' | 'end';
+
 /** キャラクター表示エリアの内側余白（中身を置くPlaySceneと、高さを決めるここで共有する）。 */
 export const DISPLAY_PADDING = 16;
 
@@ -75,6 +89,18 @@ export class PlayScreenLayout {
 
   readonly characterDisplay: Rect;
   readonly statusArea: Rect;
+
+  /** ステータスエリアのうち、バーを並べる範囲（内側パディングを引いたもの）。 */
+  readonly statusRows: Rect;
+
+  /**
+   * 情報エリアの中を仕切る区切り線。背景が1枚の紙になり、エリアごとの塗り分けが無くなったため、
+   * 意味のまとまり（キャラクター／ステータス）の境目だけを線で示す。見た目は現在地カードの右の
+   * 区切り線と同じ（CardLane.addPinnedCell）。
+   *
+   * 状況エリアとの境目には引かない。空のパネルが自分の縁を持っていて、それが境目を兼ねるため。
+   */
+  readonly informationDivider: Rect;
 
   /**
    * 情報エリア。フィールドエリアの左（横型）・上（縦型）に置かれるキャラクターエリアの全体。
@@ -241,6 +267,30 @@ export class PlayScreenLayout {
       };
     }
 
+    const statusPadding = u(STATUS_PADDING);
+    this.statusRows = {
+      x: this.statusArea.x + statusPadding,
+      y: this.statusArea.y + statusPadding,
+      width: Math.max(0, this.statusArea.width - statusPadding * 2),
+      height: Math.max(0, this.statusArea.height - statusPadding * 2),
+    };
+
+    const dividerThickness = u(INFORMATION_DIVIDER_THICKNESS);
+    // 横型はキャラクター表示エリアとステータスエリアが上下に並ぶので、境目も横向き。
+    this.informationDivider = metrics.isLandscape
+      ? {
+          x: this.informationContent.x + statusPadding,
+          y: this.statusArea.y - dividerThickness / 2,
+          width: Math.max(0, this.informationContent.width - statusPadding * 2),
+          height: dividerThickness,
+        }
+      : {
+          x: this.statusArea.x - dividerThickness / 2,
+          y: this.statusRows.y,
+          width: dividerThickness,
+          height: this.statusRows.height,
+        };
+
     this.lanes = this.buildLanes();
     this.laneSeparators = this.buildLaneSeparators();
     const separatorThickness = u(SIZE.margin) * 2;
@@ -276,6 +326,40 @@ export class PlayScreenLayout {
       width: this.fieldArea.width,
       height: Math.max(0, handLane.y - this.fieldArea.y),
     };
+  }
+
+  /** オプションバーに並ぶアイコンボタンの位置。横型は高さいっぱいの中央へ、縦型は右端へ寄せる。 */
+  optionsBarIcons(count: number): readonly Rect[] {
+    return this.metrics.isLandscape
+      ? this.barIcons(this.optionsBar, count, 'center', 0)
+      : this.barIcons(this.optionsBar, count, 'end', this.metrics.px(OPTIONS_BAR_PADDING_X));
+  }
+
+  /** フィルターバーに並ぶアイコンボタンの位置。どちらの向きでも並びの先頭側へ寄せる。 */
+  filterBarIcons(count: number): readonly Rect[] {
+    const padding = this.metrics.isLandscape ? BAR_PADDING : FILTER_BAR_PADDING_X;
+    return this.barIcons(this.filterBar, count, 'start', this.metrics.px(padding));
+  }
+
+  /**
+   * バーの中に一列に並ぶアイコンボタンの位置。**並ぶ向きはバーの向きが決める**（横型は右サイドバーの
+   * 縦積み、縦型は帯の横並び）。交差する向きには常に中央へ置くので、バーごとの差は並ぶ向きの中での
+   * 寄せ方と余白だけ。
+   */
+  private barIcons(bar: Rect, count: number, align: BarAlign, padding: number): readonly Rect[] {
+    const size = this.metrics.px(SIZE.iconButton);
+    const gap = this.metrics.px(SIZE.barGap);
+    const span = count * size + (count - 1) * gap;
+    const along = this.metrics.isLandscape ? bar.height : bar.width;
+    const head =
+      align === 'center' ? (along - span) / 2 : align === 'start' ? padding : along - padding - span;
+
+    return Array.from({ length: count }, (_unused, index) => {
+      const at = head + index * (size + gap);
+      return this.metrics.isLandscape
+        ? { x: bar.x + (bar.width - size) / 2, y: bar.y + at, width: size, height: size }
+        : { x: bar.x + at, y: bar.y + (bar.height - size) / 2, width: size, height: size };
+    });
   }
 
   private buildLanes(): readonly Rect[] {
