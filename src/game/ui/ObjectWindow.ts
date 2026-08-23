@@ -300,7 +300,7 @@ export class ObjectWindow {
    * 探索率を書き直す。
    *
    * **発見物の並びはここを通しません。** レーンなので、他のレーンと一緒に差し替えを通ります
-   * （PlayScene.laneViews）。
+   * （PlayScene.shownLanes）。
    */
   setExploration(exploration: ExplorationContent): void {
     this.exploration = exploration;

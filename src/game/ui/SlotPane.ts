@@ -68,7 +68,7 @@ export class SlotPane implements ObjectWindowPane {
     this.lanes = [{ role: 'content', lane: this.lane }];
   }
 
-  /** 並ぶ札の差し替えはレーンが受け持つ（PlayScene.laneViews）ので、この面から読み直すものは無い。 */
+  /** 並ぶ札の差し替えはレーンが受け持つ（PlayScene.shownLanes）ので、この面から読み直すものは無い。 */
   refresh(): void {}
 
   destroy(): void {

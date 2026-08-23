@@ -53,7 +53,7 @@ import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX }
 import { addNineSlice } from '../ui/nineSlice';
 import { laneBackgroundTexture } from '../art/backgroundArt';
 import { SEPARATOR_TEXTURE } from '../art/separatorArt';
-import type { LaneView, MotionContext } from './ui/CardTable';
+import type { MotionContext } from './ui/CardTable';
 import { CardTable } from './ui/CardTable';
 import { bornInstances, originInstances, vanishedInstances } from './view/changedInstances';
 import { floatSignalLabel } from './ui/signalLabel';
@@ -202,6 +202,21 @@ export interface PlaySceneData {
   readonly slotIndex: number;
   /** テスト用シナリオ。渡すと、シードから作り直した世界へ開始状態を置いてから始める。 */
   readonly scenario?: Scenario;
+}
+
+/**
+ * 今画面に出ているレーン1本と、それが映しているもの。**レーンは表示物、場所は映しの語彙**で、
+ * その対を持てるのは両方を知っているこの画面だけ（PlayScene.shownLanes）。
+ */
+interface ShownLane {
+  readonly lane: CardLane;
+  /** 映している場所。ワールドの場所を映さない枠（ポートレイト・発見物）は持たない。 */
+  readonly spot: CardSpot | undefined;
+  /**
+   * そこへ並べる枠。**引くのは差し替えのときだけ**——どの場所を映しているかを訊くだけの呼び出し
+   * （ドラッグ中は指が動くたびに来る）で、全レーンぶんの札を組み立てないため。
+   */
+  readonly cells: () => readonly LaneCell[];
 }
 
 /** シナリオで動かすキャラクタ。開始状態の見え方を確かめるのが目的なので、基準どおりの体に固定する。 */
@@ -773,15 +788,16 @@ export class PlayScene extends ResponsiveScene {
     return edges;
   }
 
-  /** ドロップを、レーンを場所（CardSpot）に直した形へ（判断はShownCardsが行う）。 */
-  private dropOf(drop: CardDrop): ShownDrop {
-    return {
-      from: this.spotOf(drop.from),
-      fromIndex: drop.fromIndex,
-      to: this.spotOf(drop.to),
-      target: drop.target,
-      count: drop.count,
-    };
+  /**
+   * ドロップを、レーンを場所（CardSpot）に直した形へ（判断はShownCardsが行う）。どちらかの
+   * レーンがワールドの場所を映していなければ、落とし先の決まらない操作なのでundefined。
+   */
+  private dropOf(drop: CardDrop): ShownDrop | undefined {
+    const from = this.spotOf(drop.from);
+    const to = this.spotOf(drop.to);
+    if (from === undefined || to === undefined) return undefined;
+
+    return { from, fromIndex: drop.fromIndex, to, target: drop.target, count: drop.count };
   }
 
   /**
@@ -790,8 +806,8 @@ export class PlayScene extends ResponsiveScene {
    */
   private describeDrop(drop: CardDrop): CardDropInfo | undefined {
     const dropped = this.dropOf(drop);
-    const told = this.shown.dropEffect(dropped);
-    if (told === undefined) return undefined;
+    const told = dropped === undefined ? undefined : this.shown.dropEffect(dropped);
+    if (dropped === undefined || told === undefined) return undefined;
 
     const maxCount = this.shown.multiDropLimit(dropped);
     if (told.name === undefined) return { maxCount };
@@ -803,59 +819,55 @@ export class PlayScene extends ResponsiveScene {
 
   /** そのレーンに出ている束（ShownCards）。掴める札もタップできる札も、この並びの中にしかない。 */
   private stacksOf(lane: CardLane): readonly (ObjectCardStack | undefined)[] {
-    return this.shown.stacksAt(this.spotOf(lane));
+    const spot = this.spotOf(lane);
+    return spot === undefined ? [] : this.shown.stacksAt(spot);
   }
 
-  /** レーンが映している場所。 */
-  private placeOf(lane: CardLane): CardPlace {
-    if (lane === this.handLane) return this.place('hand');
-    if (lane === this.itemLane) return this.place('items');
-    if (lane === this.fixtureLane) return this.place('fixtures');
-    return this.childWindowPlace ?? this.place('items');
-  }
-
-  /** レーンが映している場所。借りた1枚の枠だけはワールドの場所ではない（CardSpot）。 */
-  private spotOf(lane: CardLane): CardSpot {
-    return lane === this.childWindow?.laneOf('card') ? 'windowCard' : this.placeOf(lane);
+  /** レーンが映している場所（ワールドの場所を映さない枠ならundefined）。 */
+  private spotOf(lane: CardLane): CardSpot | undefined {
+    return this.shownLanes.find((shown) => shown.lane === lane)?.spot;
   }
 
   /**
-   * 今カードが並んでいるレーンと、そこへ並べる枠（差し替えの入力そのもの、showView）。ポートレイトも
-   * 枠1つのレーンで、子ウィンドウを開いている間は**借りた札の枠も中身の並びも同じ差し替えに乗る**
-   * ——手持ちとの間でカードが行き来するため、外していると出ていったカードが現れない。
+   * 今カードが並んでいるレーンと、それが映しているもの。**レーンと場所の対を書くのはここだけ**
+   * ——別々に書くと、レーンがどこを映しているかの答えが場所ごとに食い違う。
+   *
+   * ポートレイトも枠1つのレーンで、子ウィンドウを開いている間は**借りた札の枠も中身の並びも同じ
+   * 差し替えに乗る**——手持ちとの間でカードが行き来するため、外していると出ていったカードが現れない。
    */
-  private get laneViews(): readonly LaneView[] {
-    const views: LaneView[] = [
-      { lane: this.fixtureLane, cells: this.cellsAt(this.place('fixtures')) },
-      { lane: this.itemLane, cells: this.cellsAt(this.place('items')) },
-      { lane: this.handLane, cells: this.cellsAt(this.place('hand')) },
-      { lane: this.portraitLane, cells: this.portraitCells() },
+  private get shownLanes(): readonly ShownLane[] {
+    const fixtures = this.place('fixtures');
+    const items = this.place('items');
+    const hand = this.place('hand');
+    const lanes: ShownLane[] = [
+      { lane: this.fixtureLane, spot: fixtures, cells: () => this.cellsAt(fixtures) },
+      { lane: this.itemLane, spot: items, cells: () => this.cellsAt(items) },
+      { lane: this.handLane, spot: hand, cells: () => this.cellsAt(hand) },
+      { lane: this.portraitLane, spot: undefined, cells: () => this.portraitCells() },
     ];
 
     const window = this.childWindow;
     const card = window?.laneOf('card');
     const borrowed = this.shown.windowCard;
     if (card !== undefined && borrowed !== undefined) {
-      views.push({ lane: card, cells: [{ card: borrowedFace(borrowed) }] });
+      lanes.push({ lane: card, spot: 'windowCard', cells: () => [{ card: borrowedFace(borrowed) }] });
     }
     const content = window?.laneOf('content');
     const place = this.childWindowPlace;
     if (content !== undefined && place !== undefined) {
-      views.push({ lane: content, cells: this.cellsAt(place) });
+      lanes.push({ lane: content, spot: place, cells: () => this.cellsAt(place) });
     }
     // 発見物のレーン。借りている札はここに並び、返すと元の場所のレーンへ戻る（Windows.md 5.1節）。
     const found = window?.laneOf('found');
     if (found !== undefined) {
-      views.push({ lane: found, cells: foundCells(this.shown.found) });
+      lanes.push({ lane: found, spot: undefined, cells: () => foundCells(this.shown.found) });
     }
-    return views;
+    return lanes;
   }
 
   /** 今画面に出ているレーン。札を探すため（rectOfInstance）のもので、並びは引き直さない。 */
   private get openLanes(): readonly CardLane[] {
-    const lanes = [this.fixtureLane, this.itemLane, this.handLane, this.portraitLane];
-    for (const { lane } of this.childWindow?.lanes ?? []) lanes.push(lane);
-    return lanes;
+    return this.shownLanes.map(({ lane }) => lane);
   }
 
   /**
@@ -944,7 +956,8 @@ export class PlayScene extends ResponsiveScene {
    * 逆向きに成立したなら掴んだ札）を、世界の変化が出どころとして答える（originRectsOf）。
    */
   private applyDrop(drop: CardDrop, releasedRect: Rect): void {
-    const action = this.shown.dropEffect(this.dropOf(drop))?.execute;
+    const dropped = this.dropOf(drop);
+    const action = dropped === undefined ? undefined : this.shown.dropEffect(dropped)?.execute;
     this.applyToWorld(this.dropLabel(drop), action, this.releasedBy(drop, releasedRect));
   }
 
@@ -952,11 +965,12 @@ export class PlayScene extends ResponsiveScene {
   private dropLabel(drop: CardDrop): string {
     const dragged = this.stacksOf(drop.from)[drop.fromIndex]?.name ?? '?';
     const count = drop.count > 1 ? ` ×${drop.count}` : '';
-    const to = this.placeText(this.placeOf(drop.to));
+    const dropped = this.dropOf(drop);
+    const to = dropped === undefined || dropped.to === 'windowCard' ? '?' : this.placeText(dropped.to);
     if (drop.target.kind !== 'combine') return `カードを落とした: ${dragged}${count} → ${to}`;
 
     const onto = this.stacksOf(drop.to)[drop.target.index]?.name ?? '?';
-    const combination = this.shown.dropCombination(this.dropOf(drop));
+    const combination = dropped === undefined ? undefined : this.shown.dropCombination(dropped);
     return combination !== undefined
       ? `カードを重ねた: ${dragged} → ${onto}（${combination.name}）`
       : `カードを入れた: ${dragged}${count} → ${onto}の中`;
@@ -968,7 +982,8 @@ export class PlayScene extends ResponsiveScene {
    * 限らない（CardCombination.held参照）。
    */
   private releasedBy(drop: CardDrop, rect: Rect): MotionContext['released'] {
-    const moved = this.shown.movedBy(this.dropOf(drop));
+    const dropped = this.dropOf(drop);
+    const moved = dropped === undefined ? undefined : this.shown.movedBy(dropped);
     return moved === undefined ? undefined : { grabbed: moved.grabbed, followers: moved.followers, rect };
   }
 
@@ -1636,7 +1651,8 @@ export class PlayScene extends ResponsiveScene {
     // 受け取り、この差し替えでウィンドウの枠から帰らせる。
     const origins = withOrigins(context.origins, this.refreshChildWindow());
 
-    this.motion.update(this.laneViews, { ...context, origins });
+    const views = this.shownLanes.map(({ lane, cells }) => ({ lane, cells: cells() }));
+    this.motion.update(views, { ...context, origins });
     this.showChildWindowContents();
     this.showSky();
     this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
