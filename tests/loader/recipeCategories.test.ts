@@ -7,11 +7,11 @@ describe('recipe_categories', () => {
   function build(...files: string[]): WorldCodex {
     const loader = new WorldCodexYamlLoader();
     files.forEach((yaml, index) => loader.load(`file${index}.yaml`, yaml));
-    return loader.build();
+    return loader.buildAndReset();
   }
 
   const namesOf = (codex: WorldCodex): string[] =>
-    codex.recipeCategoryTagIds.map((tagId) => codex.tagNames.getName(tagId));
+    codex.recipeCategoryTagIdsByPriority.map((tagId) => codex.tagNames.getName(tagId));
 
   it('宣言した順に並ぶ（タグを1つも使っていないファイルでも、名前は登録される）', () => {
     expect(namesOf(build('recipe_categories: [tool, container, item]'))).toEqual([
@@ -28,6 +28,6 @@ describe('recipe_categories', () => {
   });
 
   it('宣言が無ければ棚も無い（レシピ一覧は全部その他になる）', () => {
-    expect(build('object_defs:\n  stone: {}\n').recipeCategoryTagIds).toEqual([]);
+    expect(build('object_defs:\n  stone: {}\n').recipeCategoryTagIdsByPriority).toEqual([]);
   });
 });

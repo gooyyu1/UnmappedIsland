@@ -79,7 +79,7 @@ object_defs:
   let beast: WorldObject;
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('signals.yaml', YAML).build();
+    codex = new WorldCodexYamlLoader().load('signals.yaml', YAML).buildAndReset();
     open(HITS);
   });
 
@@ -88,15 +88,17 @@ object_defs:
     const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
     session.adoptWorld(new World(worldInstance, codex));
     ground = spawn('ground');
-    expect(ground.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
+    expect(
+      ground.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
+    ).toBeUndefined();
     beast = placeOnGround('beast', 'beasts');
   }
 
-  const spawn = (name: string): WorldObject => session.spawn(codex.objectNames.getId(name));
+  const spawn = (name: string): WorldObject => session.createObject(codex.objectNames.getId(name));
 
   function placeOnGround(name: string, slotName = 'items'): WorldObject {
     const object = spawn(name);
-    expect(object.moveToSlot(ground.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+    expect(object.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return object;
   }
 
@@ -259,7 +261,7 @@ object_defs:
         trigger: menu
         signal: ${signal}
 `;
-      return () => new WorldCodexYamlLoader().load('bad.yaml', yaml).build();
+      return () => new WorldCodexYamlLoader().load('bad.yaml', yaml).buildAndReset();
     };
 
     expect(load('{name: missed}'), '対象キーではない').toThrow(YamlLoadError);

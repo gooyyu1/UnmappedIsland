@@ -1,5 +1,5 @@
 import type { GenerationDefs } from './GenerationDefs';
-import type { GenerationScopeDef, GuaranteeDef } from './GenerationScopeDef';
+import type { GenerationScopeDef, CoverageGuaranteeDef } from './GenerationScopeDef';
 import type { LocationTypeDef } from './LocationTypeDef';
 import type { Site } from './IslandMap';
 
@@ -51,18 +51,20 @@ export function assignTypes(defs: GenerationDefs, scope: GenerationScopeDef, sit
   // 迷いの少ないサイト（最良距離が小さい＝その型らしさが濃い）から決める。後に回ったサイトほど、
   // 埋まった型を諦めて他の型へ回る側になる。同値はindex順で決定的に。
   const pending = sites.filter((s) => !forced.has(s));
-  const bestDistances = new Map<Site, number>(pending.map((s) => [s, bestDistanceOf(types, s)]));
+  const bestDistances = new Map<Site, number>(
+    pending.map((s) => [s, bestDistanceIgnoringCrowding(types, s)]),
+  );
   pending.sort((a, b) => bestDistances.get(a)! - bestDistances.get(b)! || a.index - b.index);
 
-  for (const site of pending) take(site, matchNearest(types, site, scope, counts));
+  for (const site of pending) take(site, nearestTypeAvoidingFull(types, site, scope, counts));
 }
 
 /** 混雑を無視した最良距離（決める順番だけに使う）。どの型もhard_limitsで弾くサイトは最後に回す。 */
-function bestDistanceOf(types: readonly LocationTypeDef[], site: Site): number {
+function bestDistanceIgnoringCrowding(types: readonly LocationTypeDef[], site: Site): number {
   let best = Number.MAX_VALUE;
   for (const type of types) {
     if (type.preferences.length === 0) continue;
-    if (!type.allows(site.axisValues)) continue;
+    if (!type.satisfiesHardLimits(site.axisValues)) continue;
     best = Math.min(best, type.normalizedDistanceFrom(site.axisValues));
   }
   return best;
@@ -70,7 +72,7 @@ function bestDistanceOf(types: readonly LocationTypeDef[], site: Site): number {
 
 function orderForGuarantee(
   candidates: readonly Site[],
-  guarantee: GuaranteeDef,
+  guarantee: CoverageGuaranteeDef,
   type: LocationTypeDef,
 ): Site[] {
   const ordered = [...candidates];
@@ -83,12 +85,12 @@ function orderForGuarantee(
 
   // hard_limitsを満たすサイトを先に。
   return [
-    ...ordered.filter((s) => type.allows(s.axisValues)),
-    ...ordered.filter((s) => !type.allows(s.axisValues)),
+    ...ordered.filter((s) => type.satisfiesHardLimits(s.axisValues)),
+    ...ordered.filter((s) => !type.satisfiesHardLimits(s.axisValues)),
   ];
 }
 
-function matchNearest(
+function nearestTypeAvoidingFull(
   types: readonly LocationTypeDef[],
   site: Site,
   scope: GenerationScopeDef,
@@ -96,10 +98,10 @@ function matchNearest(
 ): LocationTypeDef {
   // 上限まで埋まった型を避けて選ぶ。全滅したら上限を無視して選び直す——上限は「同じ地形を並べない」
   // ための強い希望であって、置けるかどうかの条件ではない（hard_limitsだけが絶対）。
-  return pickNearest(types, site, scope, counts, true) ?? pickNearest(types, site, scope, counts, false)!;
+  return nearestType(types, site, scope, counts, true) ?? nearestType(types, site, scope, counts, false)!;
 }
 
-function pickNearest(
+function nearestType(
   types: readonly LocationTypeDef[],
   site: Site,
   scope: GenerationScopeDef,
@@ -111,12 +113,13 @@ function pickNearest(
 
   for (const type of types) {
     if (type.preferences.length === 0) continue; // 全軸無関心の型はフォールバック専用
-    if (!type.allows(site.axisValues)) continue;
+    if (!type.satisfiesHardLimits(site.axisValues)) continue;
 
     const count = counts.get(type.name) ?? 0;
     if (respectMax && scope.maxSitesPerType > 0 && count >= scope.maxSitesPerType) continue;
 
-    const distance = type.normalizedDistanceFrom(site.axisValues) * (1 + scope.crowdingPenalty * count);
+    const distance =
+      type.normalizedDistanceFrom(site.axisValues) * (1 + scope.crowdingPenaltyPerDuplicate * count);
     if (distance < bestDistance) {
       // 同点は宣言順で先の型が勝つ
       bestDistance = distance;
@@ -127,7 +130,7 @@ function pickNearest(
   if (best !== undefined) return best;
   if (respectMax) return undefined;
 
-  const fallbacks = types.filter((t) => t.isFallback).sort((a, b) => b.priority - a.priority);
+  const fallbacks = types.filter((t) => t.isFallback).sort((a, b) => b.fallbackPriority - a.fallbackPriority);
   const fallback = fallbacks.length > 0 ? fallbacks[0] : undefined;
   if (fallback === undefined)
     throw new Error(

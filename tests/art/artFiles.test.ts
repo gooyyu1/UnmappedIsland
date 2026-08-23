@@ -20,7 +20,7 @@ describe('土地の絵の単位分け', () => {
   let locations: readonly string[];
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     locations = locationNamesWithBackgroundArt(codex);
   });
 

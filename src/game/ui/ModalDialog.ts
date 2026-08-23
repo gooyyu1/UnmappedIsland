@@ -7,7 +7,7 @@ import type { CardContent } from './Card';
 import { Card } from './Card';
 import { cardFace } from './cardFace';
 import { addLabel } from '../../ui/labels';
-import { addPanel, drawBox } from '../../ui/shapes';
+import { addInputBlockingPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
 /**
@@ -54,11 +54,13 @@ export interface ModalDialogOptions {
  * 取り消せない操作の確認は必須（StartScreen.md 設計原則「削除は確認必須」）。
  */
 export class ModalDialog {
-  private readonly objects: Phaser.GameObjects.GameObject[] = [];
+  private readonly ownedObjects: Phaser.GameObjects.GameObject[] = [];
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: ModalDialogOptions) {
     const { width, height } = metrics;
-    this.objects.push(addPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5));
+    this.ownedObjects.push(
+      addInputBlockingPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5),
+    );
 
     const plateWidth = Math.min(metrics.px(PLATE_MAX_WIDTH), width * 0.88);
     const padding = metrics.px(PLATE_PADDING);
@@ -68,7 +70,7 @@ export class ModalDialog {
 
     // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る札・文字より先に置く必要がある。
     const plate = scene.add.graphics();
-    this.objects.push(plate);
+    this.ownedObjects.push(plate);
 
     const portrait = options.card === undefined ? undefined : this.addPortrait(scene, metrics, options.card);
     const portraitHeight = portrait === undefined ? 0 : metrics.px(PORTRAIT_HEIGHT) + gap;
@@ -76,11 +78,11 @@ export class ModalDialog {
     const title = addLabel(scene, metrics, 0, 0, options.title, {
       size: 28,
       bold: true,
-      wrapWidth: contentWidth,
+      wrapWidthPx: contentWidth,
     })
       .setOrigin(0.5, 0)
       .setAlign('center');
-    const body = addLabel(scene, metrics, 0, 0, options.body, { size: 24, wrapWidth: contentWidth })
+    const body = addLabel(scene, metrics, 0, 0, options.body, { size: 24, wrapWidthPx: contentWidth })
       .setOrigin(0.5, 0)
       .setAlign('center');
 
@@ -91,19 +93,19 @@ export class ModalDialog {
     drawBox(
       plate,
       { x: plateX, y: plateY, width: plateWidth, height: plateHeight },
-      { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) },
+      { fillColor: COLOR.cardFace, radius: metrics.px(SIZE.radius) },
     );
 
     const portraitWidth = metrics.px((SIZE.cardWidth * PORTRAIT_HEIGHT) / SIZE.cardHeight);
     portrait?.setPosition((width - portraitWidth) / 2, plateY + padding);
     title.setPosition(width / 2, plateY + padding + portraitHeight);
     body.setPosition(width / 2, plateY + padding + portraitHeight + title.height + gap);
-    this.objects.push(title, body);
+    this.ownedObjects.push(title, body);
 
     const actionGap = metrics.px(BUTTON_GAP);
     const actionWidth = (contentWidth - actionGap * (options.actions.length - 1)) / options.actions.length;
     options.actions.forEach((action, index) => {
-      this.objects.push(
+      this.ownedObjects.push(
         this.addAction(scene, metrics, action, {
           x: plateX + padding + index * (actionWidth + actionGap),
           y: plateY + plateHeight - padding - actionHeight,
@@ -115,8 +117,8 @@ export class ModalDialog {
   }
 
   close(): void {
-    for (const object of this.objects) object.destroy();
-    this.objects.length = 0;
+    for (const object of this.ownedObjects) object.destroy();
+    this.ownedObjects.length = 0;
   }
 
   /** 見出しの上の札。位置は台紙の高さが決まってから与えるので、ここでは大きさだけを決める。 */
@@ -124,7 +126,7 @@ export class ModalDialog {
     const card = new Card(scene, metrics, 0, 0, cardFace(content)).setScale(
       PORTRAIT_HEIGHT / SIZE.cardHeight,
     );
-    this.objects.push(card);
+    this.ownedObjects.push(card);
     return card;
   }
 

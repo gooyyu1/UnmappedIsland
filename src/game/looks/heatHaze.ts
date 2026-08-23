@@ -3,7 +3,7 @@ export interface HeatHaze {
   /** ゆがみの量（Phaserの変位フィルタに渡す割合。画面幅の半分に対する比）。 */
   readonly strength: number;
   /** ゆらぎの片道の時間（ミリ秒）。 */
-  readonly swayMs: number;
+  readonly swayHalfCycleMs: number;
 }
 
 /**
@@ -24,7 +24,7 @@ const HAZE_MAX_TEMPERATURE = 31;
  * 薄い帯なので、比の見た目は小さく出る。触るときは何pxずれるかで確かめること。
  */
 const MAX_STRENGTH = 0.05;
-const SWAY_MS = 1400;
+const SWAY_HALF_CYCLE_MS = 1400;
 
 /** その気温のときの陽炎。立たない気温（と、気温が分からないとき）ならundefined。 */
 export function heatHazeFor(temperature: number | undefined): HeatHaze | undefined {
@@ -35,5 +35,5 @@ export function heatHazeFor(temperature: number | undefined): HeatHaze | undefin
     (temperature - HAZE_MIN_TEMPERATURE) / (HAZE_MAX_TEMPERATURE - HAZE_MIN_TEMPERATURE),
   );
   // 立ち始めから最大までを線形に結ぶが、立った瞬間に消えるほど弱くはしない。
-  return { strength: MAX_STRENGTH * (0.4 + 0.6 * heat), swayMs: SWAY_MS };
+  return { strength: MAX_STRENGTH * (0.4 + 0.6 * heat), swayHalfCycleMs: SWAY_HALF_CYCLE_MS };
 }

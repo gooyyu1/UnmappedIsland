@@ -1,6 +1,6 @@
 import type { InfluenceWriter } from './PropertyInfluence';
 import type { PropertyValue } from './PropertyValue';
-import type { EffectSite } from './EffectSite';
+import type { SameSlotSpawnSite } from './SameSlotSpawnSite';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 import type { ObjectRef } from './ObjectRef';
@@ -9,16 +9,20 @@ import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
 
 /**
  * 「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。対象の解決と適用まで自分で行う。
- * 具象は、単一の命令（Set/Add/Destroy/Spawn/Transfer、9節）、その宣言順合成（ActiveEffects）、
+ * 具象は、単一の命令（Set/Add/Destroy/Spawn/Transfer、9節）、その宣言順合成（ActiveEffectSequence）、
  * weightで1候補を選ぶpick（PickEffect、10節。候補もActiveEffectなので再帰しうる）の3種。
  * pickは9節の命令と対等な1つの効果なので、合成の中に他の命令と並べて置ける。
  *
- * effectSiteは、適用の入口（WorldObject.applyActiveEffect）で捕捉した「selfが今占めている位置」の
+ * sameSlotSpawnSiteは、適用の入口（WorldObject.applyActiveEffect）で捕捉した「selfが今占めている位置」の
  * スナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ同種を保持しているか」を
  * 配置時に見て置き換え位置を決める（他の効果は無視してよく、destroyが何かを書き込む必要もない）。
  */
 export abstract class ActiveEffect {
-  abstract apply(context: ReferenceContext, session: WorldSession, effectSite: EffectSite | undefined): void;
+  abstract apply(
+    context: ReferenceContext,
+    session: WorldSession,
+    sameSlotSpawnSite: SameSlotSpawnSite | undefined,
+  ): void;
 
   /**
    * この効果が何を宣言しているかを読み上げる（EffectReader参照）。**抽象なのは取りこぼしを防ぐため**
@@ -33,7 +37,7 @@ export abstract class ActiveEffect {
    * **既定は0＝数に影響しない。** 取りこぼしても「まとめられない」に倒れるだけで安全側なので、readと
    * 違い抽象にしない。数を決められるのは、単調に埋まる器へ入れる効果（transfer）だけ。
    */
-  repeatLimitingVessels(): number | undefined {
+  repeatLimitingVesselCount(): number | undefined {
     return 0;
   }
 
@@ -42,16 +46,16 @@ export abstract class ActiveEffect {
    * （`become` の座標が空、9.9節）。成立しない操作は候補に出さない——落とせるのに何も起きない、を
    * 作らないため。
    *
-   * **既定はfalse＝妨げない。** repeatLimitingVesselsと同じく、取りこぼしても安全側（操作は出る）に
+   * **既定はfalse＝妨げない。** repeatLimitingVesselCountと同じく、取りこぼしても安全側（操作は出る）に
    * 倒れるので抽象にしない。
    */
-  unresolvable(_context: ReferenceContext): boolean {
+  blocksOperation(_context: ReferenceContext): boolean {
     return false;
   }
 
   /**
    * candidatesを先頭から順に、この効果を続けて何回適用できるか。undefinedは「答えられない」。
-   * 各candidateはdraggedの役で、器（repeatLimitingVessels）を持つ効果だけが答える。
+   * 各candidateはdraggedの役で、器（repeatLimitingVesselCount）を持つ効果だけが答える。
    */
   acceptedCount(_context: ReferenceContext, _candidates: readonly WorldObject[]): number | undefined {
     return undefined;
@@ -64,33 +68,38 @@ export abstract class ActiveEffect {
  * 共用する。on_max/on_minはselfのみが有効な対象（パーサ側で強制する）。
  * 空（命令が1つも無い）なら、適用しても何も起きない。
  */
-export class ActiveEffects extends ActiveEffect {
+export class ActiveEffectSequence extends ActiveEffect {
   /** 効果の宣言順リスト。適用順はリスト順で、パーサはYAMLに書かれた順のまま渡す（9.7節）。 */
-  private readonly operations: readonly ActiveEffect[];
+  private readonly effectsInDeclarationOrder: readonly ActiveEffect[];
 
   constructor(operations: readonly ActiveEffect[]) {
     super();
-    this.operations = operations;
+    this.effectsInDeclarationOrder = operations;
   }
 
-  apply(context: ReferenceContext, session: WorldSession, effectSite: EffectSite | undefined): void {
-    for (const operation of this.operations) operation.apply(context, session, effectSite);
+  apply(
+    context: ReferenceContext,
+    session: WorldSession,
+    sameSlotSpawnSite: SameSlotSpawnSite | undefined,
+  ): void {
+    for (const operation of this.effectsInDeclarationOrder)
+      operation.apply(context, session, sameSlotSpawnSite);
   }
 
   read(reader: EffectReader): void {
-    for (const operation of this.operations) operation.read(reader);
+    for (const operation of this.effectsInDeclarationOrder) operation.read(reader);
   }
 
   /** 1つでも成立しない子があれば、合成も成立しない（並べた命令はすべて起こる約束のため）。 */
-  override unresolvable(context: ReferenceContext): boolean {
-    return this.operations.some((operation) => operation.unresolvable(context));
+  override blocksOperation(context: ReferenceContext): boolean {
+    return this.effectsInDeclarationOrder.some((operation) => operation.blocksOperation(context));
   }
 
   /** 子の合計。1つでも数えられない子（pick）があれば、合成も数えられない。 */
-  override repeatLimitingVessels(): number | undefined {
+  override repeatLimitingVesselCount(): number | undefined {
     let total = 0;
-    for (const operation of this.operations) {
-      const vessels = operation.repeatLimitingVessels();
+    for (const operation of this.effectsInDeclarationOrder) {
+      const vessels = operation.repeatLimitingVesselCount();
       if (vessels === undefined) return undefined;
       total += vessels;
     }
@@ -99,7 +108,7 @@ export class ActiveEffects extends ActiveEffect {
 
   /** 器を持つ子（ちょうど1つであることはロード時に確かめてある）に訊く。 */
   override acceptedCount(context: ReferenceContext, candidates: readonly WorldObject[]): number | undefined {
-    for (const operation of this.operations) {
+    for (const operation of this.effectsInDeclarationOrder) {
       const count = operation.acceptedCount(context, candidates);
       if (count !== undefined) return count;
     }
@@ -119,7 +128,7 @@ export class SetEffect extends ActiveEffect {
   }
 
   apply(context: ReferenceContext): void {
-    this.target.value(context)?.setNumber(this.value);
+    this.target.propertyValue(context)?.setNumber(this.value);
   }
 
   read(reader: EffectReader): void {
@@ -149,7 +158,7 @@ export class AddEffect extends ActiveEffect {
   applyScaled(context: ReferenceContext, numerator: number, denominator: number): void {
     const scaled = (this.amount * numerator) / denominator;
     if (scaled === 0) return;
-    this.target.value(context)?.add(scaled);
+    this.target.propertyValue(context)?.add(scaled);
   }
 
   read(reader: EffectReader): void {
@@ -168,7 +177,7 @@ export class AddEffect extends ActiveEffect {
 
 /**
  * destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。`destroy: [self, dragged]`は
- * 要素2つのDestroyEffectとして表す。same_slot spawnとの連携はeffectSite（ActiveEffect参照）が担う。
+ * 要素2つのDestroyEffectとして表す。same_slot spawnとの連携はsameSlotSpawnSite（ActiveEffect参照）が担う。
  */
 export class DestroyEffect extends ActiveEffect {
   private readonly target: ObjectRef;
@@ -237,9 +246,13 @@ export class SpawnEffect extends ActiveEffect {
     this.count = count;
   }
 
-  apply(context: ReferenceContext, session: WorldSession, effectSite: EffectSite | undefined): void {
+  apply(
+    context: ReferenceContext,
+    session: WorldSession,
+    sameSlotSpawnSite: SameSlotSpawnSite | undefined,
+  ): void {
     for (let i = 0; i < this.count; i++)
-      context.self?.executeSpawn(this.objectGlobalId, this.into, context, effectSite);
+      context.self?.executeSpawn(this.objectGlobalId, this.into, context, sameSlotSpawnSite);
   }
 
   read(reader: EffectReader): void {
@@ -292,8 +305,8 @@ export class TransferEffect extends ActiveEffect {
    * from/toが解決できない・対象がそのプロパティを持たない場合は何もしない。
    */
   apply(context: ReferenceContext): void {
-    const fromValue: PropertyValue | undefined = this.from.value(context);
-    const toValue: PropertyValue | undefined = this.to.value(context);
+    const fromValue: PropertyValue | undefined = this.from.propertyValue(context);
+    const toValue: PropertyValue | undefined = this.to.propertyValue(context);
     if (fromValue === undefined || toValue === undefined) return;
 
     let taken = Math.min(this.amount, fromValue.availableToTransferOut());
@@ -331,7 +344,7 @@ export class TransferEffect extends ActiveEffect {
    * 移送先が全candidatesで共通なら、その値が器になる（1つ）。移送先がdraggedなら、器はcandidateごとに
    * 別なので回数の上限を決めない（0）。
    */
-  override repeatLimitingVessels(): number | undefined {
+  override repeatLimitingVesselCount(): number | undefined {
     return this.to.root === 'dragged' ? 0 : 1;
   }
 
@@ -342,14 +355,14 @@ export class TransferEffect extends ActiveEffect {
   override acceptedCount(context: ReferenceContext, candidates: readonly WorldObject[]): number | undefined {
     if (this.to.root === 'dragged' || candidates.length === 0) return undefined;
 
-    const toValue = this.to.value(context.withDragged(candidates[0]));
+    const toValue = this.to.propertyValue(context.withDragged(candidates[0]));
     if (toValue === undefined) return undefined;
 
     let room = toValue.remainingTransferCapacity();
     let count = 0;
     for (const candidate of candidates) {
       if (room <= 0) break;
-      const fromValue = this.from.value(context.withDragged(candidate));
+      const fromValue = this.from.propertyValue(context.withDragged(candidate));
       if (fromValue === undefined) break;
 
       const taken = Math.min(this.amount, fromValue.availableToTransferOut());

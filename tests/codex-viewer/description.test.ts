@@ -137,7 +137,7 @@ function describeToText(codex: WorldCodex, body: (out: DescriptionWriter) => voi
 }
 
 describe('定義の自己記述（describe）', () => {
-  const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).build();
+  const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset();
   const objectDef = (name: string) => codex.objects.get(codex.objectNames.getId(name));
   const names = defNamesOf(codex);
 
@@ -249,7 +249,7 @@ describe('定義の自己記述（describe）', () => {
 });
 
 describe('プロパティの逆引き（describeInfluencesOn）', () => {
-  const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).build();
+  const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset();
   const objectDef = (name: string) => codex.objects.get(codex.objectNames.getId(name));
   const names = defNamesOf(codex);
 
@@ -278,7 +278,7 @@ describe('プロパティの逆引き（describeInfluencesOn）', () => {
 });
 
 describe('生まれる側・材料側からの逆引き', () => {
-  const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).build();
+  const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset();
   const objectDef = (name: string) => codex.objects.get(codex.objectNames.getId(name));
 
   it('pickの奥にあるspawnも、生み出す型として数える', () => {

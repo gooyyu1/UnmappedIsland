@@ -39,7 +39,7 @@ export function parseSeed(input: string): number | undefined {
 }
 
 /** 島の名前として使えるかどうか。前後の空白を落とした長さで判定する。 */
-export function normalizeIslandName(input: string): string | undefined {
+export function normalizedIslandNameOrUndefined(input: string): string | undefined {
   const name = input.trim();
   return name.length >= 1 && name.length <= ISLAND_NAME_MAX_LENGTH ? name : undefined;
 }

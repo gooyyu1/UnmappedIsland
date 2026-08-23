@@ -54,7 +54,7 @@ object_defs:
             duration: 60
 `;
 
-  const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).build();
+  const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset();
   const id = (name: string) => codex.objectNames.getId(name);
   const stepsOf = (name: string): readonly CraftingStep[] => craftingStepsOf(codex.objects.get(id(name)));
 
@@ -165,7 +165,7 @@ object_defs:
         on_min:
           destroy: self
 `;
-    const trapCodex = new WorldCodexYamlLoader().load('trap.yaml', YAML_TRAP).build();
+    const trapCodex = new WorldCodexYamlLoader().load('trap.yaml', YAML_TRAP).buildAndReset();
     const snare = trapCodex.objects.get(trapCodex.objectNames.getId('snare'));
     const cycles = rangeCyclesOf(snare);
 
@@ -292,7 +292,7 @@ object_defs:
   boar_carcass: {tags: [item]}
   club: {tags: [item, weapon]}
 `;
-    const huntCodex = new WorldCodexYamlLoader().load('hunt.yaml', YAML_HUNT).build();
+    const huntCodex = new WorldCodexYamlLoader().load('hunt.yaml', YAML_HUNT).buildAndReset();
     const huntId = (name: string) => huntCodex.objectNames.getId(name);
     const defOf = (name: string) => huntCodex.objects.get(huntId(name));
     const drivers = (source: string, root: 'parent' | 'child') => externalTickDeltasOf(defOf(source), root);

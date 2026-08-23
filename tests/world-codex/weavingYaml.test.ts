@@ -23,7 +23,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
   beforeAll(() => {
     // 葉を採るヤシの木（coconut.yaml）・刃物（tools.yaml）・土地（locations.yaml）への
     // ファイルをまたぐ参照があるため、ディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   beforeEach(() => {
@@ -41,8 +41,8 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
   });
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
-    const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
+    expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 
@@ -104,9 +104,9 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
   it('編み籠のレシピは編んだ葉を6枚要求し、解放条件を持たない', () => {
     const basket = codex.objects.get(codex.objectNames.getId('woven_basket'));
 
-    expect(basket.recipes).toHaveLength(1);
+    expect(basket.recipesProducingThis).toHaveLength(1);
 
-    const recipe = basket.recipes[0];
+    const recipe = basket.recipesProducingThis[0];
     expect(recipe.steps).toHaveLength(1);
 
     const [requirement] = recipe.steps[0].requirements;

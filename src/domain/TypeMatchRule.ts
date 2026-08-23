@@ -77,7 +77,7 @@ export class TypeMatchRule {
    * **否定形では絵にならない**（「そのタグを持たない型すべて」になる）。呼んでいるのはレシピの要求と
    * 変種の軸で、どちらも否定を書ける場所ではない。
    */
-  candidates(defs: Iterable<ObjectDef>): readonly ObjectDef[] {
+  matchingDefs(defs: Iterable<ObjectDef>): readonly ObjectDef[] {
     return [...defs].filter((def) => this.matches(def));
   }
 

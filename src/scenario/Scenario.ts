@@ -1,6 +1,6 @@
 import { parseDocument } from 'yaml';
 import type { WorldCodex } from '../domain/WorldCodex';
-import type { NewGameSession } from '../domain/generation/NewGame';
+import type { StartedGame } from '../domain/generation/NewGame';
 import { asMap, entriesInOrder, requireInt, tryGetMap, tryGetScalar, tryGetSeq } from '../loader/yamlMapping';
 import { YamlLoadError } from '../loader/YamlLoadError';
 import type { YamlNode } from '../loader/yamlMapping';
@@ -171,11 +171,11 @@ function propertyValues(
 /**
  * シードから作り直した世界へ、シナリオの開始状態を置く。
  *
- * 置き方は通常のスロット移動（WorldObject.moveToSlot）そのもので、シナリオ専用の抜け道は持たない。
+ * 置き方は通常のスロット移動（WorldObject.moveToSlotOrRejection）そのもので、シナリオ専用の抜け道は持たない。
  * 受け入れられない組み合わせ（手持ちの上限超過など）はその場でエラーにする——黙って落ちると、
  * テストしたかった状態と違う状態でゲームが始まってしまうため。
  */
-export function applyScenario(game: NewGameSession, scenario: Scenario, codex: WorldCodex): void {
+export function applyScenario(game: StartedGame, scenario: Scenario, codex: WorldCodex): void {
   // 置き場所は開始地点を基準にするため、地形の指定は中身を置く前に効かせる。
   if (scenario.locationType !== undefined && !game.startAt(objectIdOf(codex, scenario.locationType))) {
     throw new YamlLoadError(
@@ -221,7 +221,7 @@ function resolveValue(codex: WorldCodex, propertyName: string, raw: string): num
 }
 
 /** 名前で並べたobject_defを1つずつ生成し、そのスロットへ入れる。 */
-function place(game: NewGameSession, codex: WorldCodex, contents: SlotContents, slot: string): void {
+function place(game: StartedGame, codex: WorldCodex, contents: SlotContents, slot: string): void {
   if (contents.length === 0) return;
 
   const slotId = slotIdOf(codex, slot);
@@ -232,8 +232,8 @@ function place(game: NewGameSession, codex: WorldCodex, contents: SlotContents, 
   const owner = ownedByCharacter ? game.player.instance : game.startLocation.instance;
 
   for (const name of contents) {
-    const spawned = game.session.spawn(objectIdOf(codex, name));
-    const failure = spawned.moveToSlot(owner.getSlot(slotId));
+    const spawned = game.session.createObject(objectIdOf(codex, name));
+    const failure = spawned.moveToSlotOrRejection(owner.getSlot(slotId));
     if (failure !== undefined) {
       throw new YamlLoadError(`シナリオ: '${name}' を '${slot}' へ置けません: ${failure}`);
     }
@@ -247,11 +247,7 @@ function place(game: NewGameSession, codex: WorldCodex, contents: SlotContents, 
  * 入れる先が見つからない・受け入れられない（かさの上限を超える）場合はエラーにする——黙って
  * 落とすと、積んだつもりの物が地面に落ちた状態でゲームが始まってしまう。
  */
-function placeInside(
-  game: NewGameSession,
-  codex: WorldCodex,
-  inside: ReadonlyMap<string, SlotContents>,
-): void {
+function placeInside(game: StartedGame, codex: WorldCodex, inside: ReadonlyMap<string, SlotContents>): void {
   for (const [ownerName, contents] of inside) {
     const ownerDefId = objectIdOf(codex, ownerName);
     const owner = game.startLocation.fixtures.find((fixture) => fixture.def.globalId === ownerDefId);
@@ -261,7 +257,7 @@ function placeInside(
       );
 
     for (const name of contents) {
-      const spawned = game.session.spawn(objectIdOf(codex, name));
+      const spawned = game.session.createObject(objectIdOf(codex, name));
       if (!spawned.moveIntoFirstAcceptingSlot(owner))
         throw new YamlLoadError(`シナリオ: '${name}' を '${ownerName}' の中へ入れられません。`);
     }

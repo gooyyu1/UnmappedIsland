@@ -5,7 +5,7 @@ import type { DeclaredNumber } from './DeclaredNumber';
 import type { ReferenceContext } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
 import type { Requirement, Requirements } from './Requirement';
-import { spendDuration } from './actionTime';
+import { spendDurationAndReportParticipantsAlive } from './actionTime';
 
 /**
  * 操作1つの中身（ActionSystem.md 1節）——満たすべき要件・起こすこと・かかる時間。
@@ -20,7 +20,7 @@ export class InteractionDef {
   /** 実行するために満たすべき要件（14節）。undefinedなら常に真（conditions省略）。 */
   private readonly requirements: Requirements | undefined;
 
-  /** 条件成立時に適用する効果。何も書かれていなければ空の合成（ActiveEffects）で、適用しても何も起きない。 */
+  /** 条件成立時に適用する効果。何も書かれていなければ空の合成（ActiveEffectSequence）で、適用しても何も起きない。 */
   private readonly effect: ActiveEffect;
 
   /**
@@ -49,7 +49,7 @@ export class InteractionDef {
    * （切れ味の悪い刃物ほど時間がかかる、が書けるように）。実行前に画面へ見せる用途にも使う。
    */
   minutesFor(context: ReferenceContext): number {
-    return this.duration === undefined ? 0 : Math.trunc(this.duration.resolve(context));
+    return this.duration === undefined ? 0 : Math.trunc(this.duration.resolveOrZero(context));
   }
 
   /** 実行に必要な要件（14節）を宣言順に。conditionsを省いていれば空。 */
@@ -63,12 +63,12 @@ export class InteractionDef {
   }
 
   /**
-   * 今この文脈で、効果の行き先が無いために成立しない操作か（ActiveEffect.unresolvable、9.9節）。
+   * 今この文脈で、効果の行き先が無いために成立しない操作か（ActiveEffect.blocksOperation、9.9節）。
    * 満たしていない要件（conditions）と違って理由を持たない——成立していないのは条件ではなく、
    * 行き先の型そのものだから。
    */
-  unresolvable(context: ReferenceContext): boolean {
-    return this.effect.unresolvable(context);
+  blocksOperation(context: ReferenceContext): boolean {
+    return this.effect.blocksOperation(context);
   }
 
   /**
@@ -100,12 +100,12 @@ export class InteractionDef {
    * **要件は選んだ時点ではなく実行の時点で引き直す**（候補を作ってから落とすまでに世界は変わる）。
    * 相手の型も変わりうるので、そちらの引き直しは`Combination`が足す。
    */
-  execute(context: ReferenceContext, session: WorldSession): boolean {
+  tryExecute(context: ReferenceContext, session: WorldSession): boolean {
     const self = context.self!;
     if (this.unmetRequirement(context) !== undefined) return false;
 
     const involved = [self, context.actor, context.dragged];
-    if (!spendDuration(this.minutesFor(context), session, involved)) return false;
+    if (!spendDurationAndReportParticipantsAlive(this.minutesFor(context), session, involved)) return false;
 
     // 時間を進め終えてから囲うので、経過中のtickが動かした値は「操作が増やしたもの」に入らない
     // （PropertyGain参照）。

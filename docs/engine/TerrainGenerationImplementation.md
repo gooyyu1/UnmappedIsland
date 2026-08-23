@@ -154,7 +154,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 
 - **`populate(session, map)`**:
   1. `map.sites` を1つずつ `session.spawn(site.type.objectDefGlobalId)` し、`site.variant` があれば
-     その `props` を `setProperty` で書き込んでから、`world.locations` スロットへ `moveToSlot`。生成した
+     その `props` を `setProperty` で書き込んでから、`world.locations` スロットへ `moveToSlotOrRejection`。生成した
      インスタンスの `instanceId` を `map.siteInstanceIds[site.index]` へ書き込みます
      （これが `IslandMap` を書き換える唯一の箇所です）。
   2. `map.sites` を1つずつ、その `Site` に接続する `map.edges` を集め（`filter`/`map`）、
@@ -162,13 +162,13 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
      応じて `required_progress` を `[FIRST_PATH_PROGRESS(=2), progressMax - 1]` へ等間隔割当てする式
      （`FIRST_PATH_PROGRESS + (lastPathProgress - FIRST_PATH_PROGRESS) * i / (touching.length - 1)`）で計算します。
      `path` を `session.spawn` し、`setProperty` で `travel_minutes`/`required_progress`/`destination_id`
-     （接続相手の `instanceId`）を書き込み、`undiscovered_fixtures` スロットへ `moveToSlot` します。
+     （接続相手の `instanceId`）を書き込み、`undiscovered_fixtures` スロットへ `moveToSlotOrRejection` します。
   3. 生成した道を「どのサイトからどのサイトへ向かう道か」で引けるように控えておき、`map.edges` を1本ずつ
      辿って両端の道へ互いの `instanceId` を `return_path_id` として書き込みます（発見が両側同時になる、
      [`ExplorationSystem.md`](./ExplorationSystem.md) 3.1 節）。
 - **`placePlayer(session, map, character)`**: 開始地点を `sandy_beach` 優先、無ければ `Site.onCoastRing`、
-  それも無ければ `map.sites[0]` の順で選び、`WorldObject.findDescendantByInstanceId`（`WorldObject` 自身の
-  汎用メソッド）で実体を解決し、`characters` スロットへ `moveToSlot` した上で
+  それも無ければ `map.sites[0]` の順で選び、`WorldObject.findSelfOrDescendantByInstanceId`（`WorldObject` 自身の
+  汎用メソッド）で実体を解決し、`characters` スロットへ `moveToSlotOrRejection` した上で
   `Location`（`src/domain/wrappers/Location.ts`）を返します。
 
 ## 5. データの流れ（型で見る3層）
@@ -211,9 +211,9 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
   `duration` フィールドを持ち、実行時に自分で時間を進めます（順序は
   [`ActionSystem.md`](./ActionSystem.md) 2節）。
 - **`move`**: `MoveEffect`（`ActiveEffect` の一種）です。`apply` の中で
-  `owner.findRoot().findDescendantByInstanceId(destinationId)` で移動先を解決し、
+  `owner.findRoot().findSelfOrDescendantByInstanceId(destinationId)` で移動先を解決し、
   `mover.moveIntoFirstAcceptingSlot(destination, ...)` で配置します。`findRoot`/
-  `findDescendantByInstanceId`/`moveIntoFirstAcceptingSlot` はいずれも `WorldObject`
+  `findSelfOrDescendantByInstanceId`/`moveIntoFirstAcceptingSlot` はいずれも `WorldObject`
   （`src/domain/WorldObject.ts`）に定義した汎用メソッドです。
 - **道の発見・移動の入口**: `Location.explore(actor, session)`（`src/domain/wrappers/Location.ts`）が
   `explore` アクションの実行と `revealDueFixtures`（`undiscovered_fixtures` → `fixtures` の移動）を1回の呼び出しに
@@ -240,7 +240,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 | `src/domain/generation/NameAssigner.ts` | 3.6節: 命名 |
 | `src/domain/generation/TerrainGenerator.ts` | 3節全体のオーケストレータ（`generate`） |
 | `src/domain/generation/IslandSpawner.ts` | 4節: 実体化（`populate`/`placePlayer`） |
-| `src/domain/generation/NewGame.ts` | ゲーム開始の入口（`start`）・`NewGameSession` |
+| `src/domain/generation/NewGame.ts` | ゲーム開始の入口（`start`）・`StartedGame` |
 | `src/domain/MoveEffect.ts` | 7節: `move` 効果動詞 |
 | `src/domain/InteractionDef.ts` | 7節: `duration` フィールド |
 | `src/domain/wrappers/Location.ts` | 7節: 探索の入口（`explore`/`revealDueFixtures`） |

@@ -13,7 +13,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  */
 describe('World/PlayerCharacter/Locationビュー', () => {
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   it('Worldはday/hour/minute/weatherを公開する', () => {
@@ -118,8 +118,8 @@ object_defs:
     const codex = load(yaml);
     const session = new WorldSession(codex);
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
-    const stone = session.spawn(codex.objectNames.getId('stone'));
-    stone.moveToSlot(instance.getSlot(codex.slotNames.getId('hand')));
+    const stone = session.createObject(codex.objectNames.getId('stone'));
+    stone.moveToSlotOrRejection(instance.getSlot(codex.slotNames.getId('hand')));
 
     const actor = new PlayerCharacter(instance, codex);
 
@@ -153,13 +153,13 @@ object_defs:
 `;
     const codex = load(yaml);
     const session = new WorldSession(codex);
-    const clearing = session.spawn(codex.objectNames.getId('clearing'));
-    const instance = session.spawn(codex.objectNames.getId('character'));
+    const clearing = session.createObject(codex.objectNames.getId('clearing'));
+    const instance = session.createObject(codex.objectNames.getId('character'));
     const actor = new PlayerCharacter(instance, codex);
 
     expect(actor.location).toBeUndefined();
 
-    instance.moveToSlot(clearing.getSlot(codex.slotNames.getId('characters')));
+    instance.moveToSlotOrRejection(clearing.getSlot(codex.slotNames.getId('characters')));
 
     expect(actor.location?.instance).toBe(clearing);
   });
@@ -186,13 +186,13 @@ object_defs:
 `;
     const codex = load(yaml);
     const session = new WorldSession(codex);
-    const clearing = session.spawn(codex.objectNames.getId('clearing'));
-    const instance = session.spawn(codex.objectNames.getId('character'));
+    const clearing = session.createObject(codex.objectNames.getId('clearing'));
+    const instance = session.createObject(codex.objectNames.getId('character'));
     const actor = new PlayerCharacter(instance, codex);
 
     expect(actor.explore(), '土地に居なければ探索できない').toBe(false);
 
-    instance.moveToSlot(clearing.getSlot(codex.slotNames.getId('characters')));
+    instance.moveToSlotOrRejection(clearing.getSlot(codex.slotNames.getId('characters')));
 
     expect(actor.explore()).toBe(true);
     expect(new Location(clearing, codex).explorationProgress, '今いる土地の進捗が進む').toBe(1);

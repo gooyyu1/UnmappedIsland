@@ -23,7 +23,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
   beforeAll(() => {
     // 刃物（tools.yaml）・土地（locations.yaml）へのファイルをまたぐ参照があるため、
     // ディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   beforeEach(() => {
@@ -40,8 +40,8 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
   });
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
-    const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
+    expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 
@@ -162,9 +162,9 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
   it('ロープのレシピは紐を3本要求し、解放条件を持たない', () => {
     const rope = codex.objects.get(codex.objectNames.getId('rope'));
 
-    expect(rope.recipes).toHaveLength(1);
+    expect(rope.recipesProducingThis).toHaveLength(1);
 
-    const recipe = rope.recipes[0];
+    const recipe = rope.recipesProducingThis[0];
     expect(recipe.steps).toHaveLength(1);
 
     const [requirement] = recipe.steps[0].requirements;

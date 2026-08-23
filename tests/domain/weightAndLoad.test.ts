@@ -86,11 +86,11 @@ object_defs:
     make: (name: string) => WorldObject;
     put: (child: WorldObject, parent: WorldObject, slotName: string) => void;
   } {
-    const codex = new WorldCodexYamlLoader().load('weights.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('weights.yaml', yaml).buildAndReset();
     const session = new WorldSession(codex);
-    const make = (name: string): WorldObject => session.spawn(codex.objectNames.getId(name));
+    const make = (name: string): WorldObject => session.createObject(codex.objectNames.getId(name));
     const put = (child: WorldObject, parent: WorldObject, slotName: string): void => {
-      expect(child.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+      expect(child.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     };
     return {
       codex,

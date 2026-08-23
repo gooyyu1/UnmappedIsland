@@ -73,7 +73,7 @@
 その層が赤くなり、赤の読み方が決まらない。確かめたい形はそのテストの中にYAMLで宣言する——1つの
 テストが読むぶんだけを、そのテストの隣に書く（テスト間で1つの大きな定義を共有しない）。
 
-映しの層は入口が `NewGameSession` なので、[`tests/support/miniGame.ts`](../../tests/support/miniGame.ts)
+映しの層は入口が `StartedGame` なので、[`tests/support/miniGame.ts`](../../tests/support/miniGame.ts)
 が地形生成を通さない一式を組み立てる。時間を進めるだけなら
 [`tests/support/worldYaml.ts`](../../tests/support/worldYaml.ts) の world を読む。
 

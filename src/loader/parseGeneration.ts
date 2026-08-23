@@ -15,13 +15,13 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { built } from './parseCommon';
+import { withYamlContext } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { PropertyRange } from '../domain/PropertyDef';
 import type { ObjectDef } from '../domain/ObjectDef';
 import { AxisDef, GeneratorLayer } from '../domain/generation/AxisDef';
 import { GenerationDefs } from '../domain/generation/GenerationDefs';
-import { GenerationScopeDef, GuaranteeDef } from '../domain/generation/GenerationScopeDef';
+import { GenerationScopeDef, CoverageGuaranteeDef } from '../domain/generation/GenerationScopeDef';
 import type { GuaranteePick } from '../domain/generation/GenerationScopeDef';
 import {
   AxisLimit,
@@ -101,7 +101,7 @@ function parseGeneratorLayer(context: string, node: YAMLMap): GeneratorLayer {
     }
 
     case 'layered_noise': {
-      const layer = built(
+      const layer = withYamlContext(
         context,
         () =>
           new GeneratorLayer(
@@ -184,7 +184,7 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, raw: Yaml
       const prefMap = asMap(prefNode, prefContext);
       requireKnownKeys(prefMap, ['ideal', 'tolerance', 'weight'], prefContext);
       preferences.push(
-        built(
+        withYamlContext(
           prefContext,
           () =>
             new AxisPreference(
@@ -205,7 +205,7 @@ function parseLocationType(loader: WorldCodexYamlLoader, name: string, raw: Yaml
       const limitMap = asMap(limitNode, limitContext);
       requireKnownKeys(limitMap, ['min', 'max'], limitContext);
       hardLimits.push(
-        built(
+        withYamlContext(
           limitContext,
           () =>
             new AxisLimit(
@@ -254,7 +254,7 @@ function parseGenerationScope(name: string, raw: YamlNode): GenerationScopeDef {
   const siteCountMin = requireInt(siteCountNode, 'min', context);
   const siteCountMax = requireInt(siteCountNode, 'max', context);
 
-  const guarantees: GuaranteeDef[] = [];
+  const guarantees: CoverageGuaranteeDef[] = [];
   const guaranteesNode = tryGetSeq(node, 'guarantees', context);
   if (guaranteesNode !== undefined) {
     const items = guaranteesNode.items as YamlNode[];
@@ -281,10 +281,10 @@ function parseGenerationScope(name: string, raw: YamlNode): GenerationScopeDef {
 
       requireKnownKeys(guaranteeNode, ['location_type', 'count', 'axis', 'pick'], guaranteeContext);
       guarantees.push(
-        built(
+        withYamlContext(
           guaranteeContext,
           () =>
-            new GuaranteeDef(
+            new CoverageGuaranteeDef(
               requireScalar(guaranteeNode, 'location_type', guaranteeContext),
               tryGetInt(guaranteeNode, 'count', guaranteeContext) ?? 1,
               requireScalar(guaranteeNode, 'axis', guaranteeContext),
@@ -295,7 +295,7 @@ function parseGenerationScope(name: string, raw: YamlNode): GenerationScopeDef {
     }
   }
 
-  const scope = built(
+  const scope = withYamlContext(
     context,
     () =>
       new GenerationScopeDef(
@@ -366,7 +366,7 @@ export function buildGenerationDefs(
   }
 
   // ルートキーどうしの参照（軸・location_type）はGenerationDefs自身が確かめる。
-  return built(
+  return withYamlContext(
     'terrain_generation',
     () =>
       new GenerationDefs(

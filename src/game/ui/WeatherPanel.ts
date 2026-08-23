@@ -125,7 +125,7 @@ export class WeatherPanel extends Phaser.GameObjects.Container {
 
     if (texture === undefined || !scene.textures.exists(texture)) {
       const fallback = scene.add.graphics();
-      drawBox(fallback, panel, { fill: COLOR.weatherPanel });
+      drawBox(fallback, panel, { fillColor: COLOR.weatherPanel });
       this.addSky(fallback);
     } else {
       const image = scene.add.image(panel.x + panel.width, panel.y, texture).setOrigin(1, 0);

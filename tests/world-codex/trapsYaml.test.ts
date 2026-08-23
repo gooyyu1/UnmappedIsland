@@ -36,7 +36,7 @@ describe('traps.yamlのくくり罠', () => {
   let herbivoreWeightId: number;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     warinessId = codex.propertyNames.getId('wariness');
     vulnerabilityId = codex.propertyNames.getId('vulnerability');
     bloodId = codex.propertyNames.getId('blood');
@@ -60,8 +60,8 @@ describe('traps.yamlのくくり罠', () => {
   }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
-    const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
+    expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 
@@ -105,7 +105,7 @@ describe('traps.yamlのくくり罠', () => {
       onGround,
     );
 
-    expect(snare.moveToSlot(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+    expect(snare.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     const inHand = snare.tryGetProperty(catchRemainingId)!.getEffectiveValue();
     tick(1);
     expect(snare.tryGetProperty(catchRemainingId)!.getEffectiveValue(), '手に持てば止まる').toBe(inHand);
@@ -241,8 +241,8 @@ describe('traps.yamlのくくり罠', () => {
     // 使い道がまだ無いが、素材として溜まる（docs/world/Animals.md 10節）。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
-    const carcass = session.spawn(codex.objectNames.getId('junglefowl_carcass'));
-    expect(carcass.moveToSlot(grassland.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
+    const carcass = session.createObject(codex.objectNames.getId('junglefowl_carcass'));
+    expect(carcass.moveToSlotOrRejection(grassland.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
     prey.destroy();
 
     const knife = spawnInto('sharp_stone', player, 'hand');
@@ -283,7 +283,7 @@ describe('traps.yamlのくくり罠', () => {
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
 
-    expect(prey.moveToSlot(grassland.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
+    expect(prey.moveToSlotOrRejection(grassland.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
     expect(prey.tryGetProperty(warinessId)!.getEffectiveValue(), '掛かってすぐ出せば暴れる').toBeGreaterThan(
       0,
     );
@@ -296,7 +296,7 @@ describe('traps.yamlのくくり罠', () => {
     // 繊維だけを起点にした浅い経路（docs/world/SurvivalItems.md 1.2節）。刃物を要らないので、
     // 狩猟の入口そのものは塞がらない。
     const def = codex.objects.get(codex.objectNames.getId('snare'));
-    const [recipe] = def.recipes;
+    const [recipe] = def.recipesProducingThis;
     const [step] = recipe!.steps;
 
     expect(step!.requirements).toHaveLength(1);

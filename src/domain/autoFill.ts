@@ -31,19 +31,19 @@ export function autoFillMaterials(
   if (slot === undefined) return 0;
 
   // 材料スロットは要求ごとの枠を持つ（inProgressObjects）ので、枠数は必ず決まっている。
-  if (slot.def.cellsToKeep === 'grows') return 0;
+  if (slot.def.cellCountPolicy === 'grows') return 0;
 
   const available = sources.flat();
   let moved = 0;
 
   for (const [index, cell] of slot.cells.entries()) {
     // 出番の終わった枠は埋めない。表示から消える枠なので、入れると取り出せなくなる。
-    if (!stillWanted(cell, stillNeeded)) continue;
+    if (!hasRemainingRequirement(cell, stillNeeded)) continue;
 
-    for (const candidate of chooseCandidates(cell, available)) {
+    for (const candidate of chooseFillersForCell(cell, available)) {
       // 入れる先は選んだ枠そのもの。スロットに任せると、同じ型を受け入れる別の枠へ入りうる。
       const target = inProgress.getSlot(materialsSlotGlobalId);
-      if (candidate.moveToSlot(target, { kind: 'cell', index }) !== undefined) break;
+      if (candidate.moveToSlotOrRejection(target, { kind: 'cell', index }) !== undefined) break;
       available.splice(available.indexOf(candidate), 1);
       moved += 1;
     }
@@ -57,7 +57,10 @@ export function autoFillMaterials(
  * （inProgressObjects.requirementCells）ので、同じ指定の要求が残っていなければその枠の出番は
  * 終わっている。要求から作られていない枠（`accept`を持たない枠）は対応する要求を持たない。
  */
-function stillWanted(cell: SlotCell, stillNeeded: readonly RecipeRequirementDef[] | undefined): boolean {
+function hasRemainingRequirement(
+  cell: SlotCell,
+  stillNeeded: readonly RecipeRequirementDef[] | undefined,
+): boolean {
   if (stillNeeded === undefined) return true;
 
   const accept = cell.def.accept;
@@ -69,7 +72,7 @@ function stillWanted(cell: SlotCell, stillNeeded: readonly RecipeRequirementDef[
  * 空きの数だけ返す。埋められる型が無ければ、足りなくても最初に見つかった型を返す。
  * 空きが無い型（合流できない相手が入っている枠）は候補にしない。
  */
-function chooseCandidates(cell: SlotCell, available: readonly WorldObject[]): readonly WorldObject[] {
+function chooseFillersForCell(cell: SlotCell, available: readonly WorldObject[]): readonly WorldObject[] {
   const byDef = new Map<number, WorldObject[]>();
   for (const object of available) {
     if (!cell.accepts(object.def)) continue;
@@ -79,7 +82,7 @@ function chooseCandidates(cell: SlotCell, available: readonly WorldObject[]): re
   }
 
   const groups = [...byDef.values()]
-    .map((objects) => ({ objects, room: cell.roomFor(objects[0]) }))
+    .map((objects) => ({ objects, room: cell.vacancyForIgnoringVolume(objects[0]) }))
     .filter(({ room }) => room >= 1);
 
   const chosen = groups.find(({ objects, room }) => objects.length >= room) ?? groups.at(0);

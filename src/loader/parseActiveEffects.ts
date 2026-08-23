@@ -16,14 +16,14 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { built, parseNumberLiteral, parseNumberOrSymbol, parseTypeMatchRule } from './parseCommon';
+import { withYamlContext, parseNumberLiteral, parseNumberOrSymbol, parseTypeMatchRule } from './parseCommon';
 import { parseSubjectRoot, requireResolvable } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import { ReferenceScope } from '../domain/ReferenceRoot';
 import { PropertyPath } from '../domain/ReferenceRoot';
 import {
-  ActiveEffects,
+  ActiveEffectSequence,
   AddEffect,
   DestroyEffect,
   SetEffect,
@@ -54,7 +54,7 @@ export function parseActiveEffectBody(
   bodyNode: YAMLMap,
   scope: ReferenceScope,
   reservedKeys?: ReadonlyArray<string>,
-): ActiveEffects {
+): ActiveEffectSequence {
   const operations: ActiveEffect[] = [];
   const unknownKeys: string[] = [];
 
@@ -97,7 +97,7 @@ export function parseActiveEffectBody(
   if (unknownKeys.length > 0)
     throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
 
-  return new ActiveEffects(operations);
+  return new ActiveEffectSequence(operations);
 }
 
 /** pick候補が持つ、効果以外の兄弟キー。 */
@@ -124,7 +124,7 @@ function parsePickList(
     const amongNode = tryGetMap(map, 'among', candidateContext);
     const among =
       amongNode === undefined ? undefined : parseAmong(loader, candidateContext, amongNode, scope);
-    const bodyScope = among === undefined ? scope : scope.picking;
+    const bodyScope = among === undefined ? scope : scope.withPicked;
 
     // weightだけの候補は「選ばれても何も起きない回」（外した回・寄って来なかった回）を表す。
     const effect = parseActiveEffectBody(
@@ -164,7 +164,7 @@ function parseAmong(
   const root =
     subjectName === undefined
       ? 'self'
-      : parseSubjectRoot(amongContext, subjectName, scope.objectOnly.picking);
+      : parseSubjectRoot(amongContext, subjectName, scope.withoutPropertyName.withPicked);
 
   const slotName = tryGetScalar(node, 'slot', amongContext);
   if (slotName === undefined) throw new YamlLoadError(`${amongContext}: 'slot'は必須です。`);
@@ -177,7 +177,7 @@ function parseAmong(
   const weight =
     weightNode === undefined
       ? undefined
-      : parseWeight(loader, amongContext, weightNode, scope.picking, 'weight');
+      : parseWeight(loader, amongContext, weightNode, scope.withPicked, 'weight');
 
   return new AmongSpec(root, loader.slotNames.intern(slotName), match, weight);
 }
@@ -264,7 +264,7 @@ function parseTransfer(
     context,
   );
 
-  return built(
+  return withYamlContext(
     context,
     () =>
       new TransferEffect(
@@ -339,7 +339,7 @@ function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap)
 
   const count = tryGetNumber(map, 'count', context) ?? 1;
 
-  return built(
+  return withYamlContext(
     context,
     () =>
       new SpawnEffect(
@@ -586,7 +586,7 @@ function parseBecome(
 
 /** オブジェクトそのものを指す対象（destroy・signal・move）。プロパティ名を伴わない場所になる。 */
 function parseObjectTargetRoot(context: string, key: string, scope: ReferenceScope): ReferenceRoot {
-  return parseActiveTargetRoot(context, key, scope.objectOnly);
+  return parseActiveTargetRoot(context, key, scope.withoutPropertyName);
 }
 
 function parseSpawnTargetRoot(context: string, raw: string | undefined): SpawnTargetRoot {

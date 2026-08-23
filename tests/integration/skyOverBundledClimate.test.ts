@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { start as startNewGame } from '../../src/domain/generation/NewGame';
+import { startNewGame } from '../../src/domain/generation/NewGame';
 import { heatHazeFor } from '../../src/game/looks/heatHaze';
 import { skyTintFor } from '../../src/game/looks/skyTint';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -33,7 +33,7 @@ describe('空の演出（世界→意匠 通し）', () => {
   const HOT = 1920;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   it('夜は天気によらず日射が0になり、真夜中の快晴も明るくならない', () => {

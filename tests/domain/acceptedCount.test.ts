@@ -5,7 +5,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
- * 「まとめて何個入るか」の問い（WorldObject.acceptedCountForMoveTo）に対する自動テスト。
+ * 「まとめて何個入るか」の問い（WorldObject.acceptedCountForMoveToIncludingSelf）に対する自動テスト。
  *
  * 束をコンテナへまとめて落とす操作は、この答えをそのまま「ついてくる枚数」にする
  * （CardInteraction.md 2節 カードのドラッグ＆ドロップ）。入らないぶんは最初からついてこない、という
@@ -48,21 +48,23 @@ object_defs:
   stone: {}
 `,
     )
-    .build();
+    .buildAndReset();
 
   const contentsId = codex.slotNames.getId('contents');
 
   /** ownerNameの入れ物と、まだどこにも入っていないitemNameのcount個。 */
   function open(ownerName: string, itemName: string, count: number): [WorldObject, WorldObject[]] {
     const session = new WorldSession(codex);
-    const owner = session.spawn(codex.objectNames.getId(ownerName));
-    const items = Array.from({ length: count }, () => session.spawn(codex.objectNames.getId(itemName)));
+    const owner = session.createObject(codex.objectNames.getId(ownerName));
+    const items = Array.from({ length: count }, () =>
+      session.createObject(codex.objectNames.getId(itemName)),
+    );
     return [owner, items];
   }
 
   /** itemsのうち何個がownerのcontentsへ続けて入るか。 */
   function accepted(owner: WorldObject, items: readonly WorldObject[]): number {
-    return items[0].acceptedCountForMoveTo(items.slice(1), owner.getSlot(contentsId));
+    return items[0].acceptedCountForMoveToIncludingSelf(items.slice(1), owner.getSlot(contentsId));
   }
 
   it('枠のmaxと枠の数を掛けたところで頭打ちになる', () => {
@@ -73,7 +75,7 @@ object_defs:
 
   it('既に入っているぶんだけ減る', () => {
     const [basket, coconuts] = open('basket', 'coconut', 10);
-    expect(coconuts[0].moveToSlot(basket.getSlot(contentsId))).toBeUndefined();
+    expect(coconuts[0].moveToSlotOrRejection(basket.getSlot(contentsId))).toBeUndefined();
 
     expect(accepted(basket, coconuts.slice(1)), '1つ入れたので残りは5').toBe(5);
   });
@@ -106,7 +108,7 @@ object_defs:
   it('1個も入らないなら0で、1個だけ入るかを訊いた答えと食い違わない', () => {
     const [basket, coconuts] = open('basket', 'coconut', 7);
     for (const coconut of coconuts.slice(0, 6))
-      expect(coconut.moveToSlot(basket.getSlot(contentsId))).toBeUndefined();
+      expect(coconut.moveToSlotOrRejection(basket.getSlot(contentsId))).toBeUndefined();
 
     const last = coconuts[6];
     expect(accepted(basket, [last])).toBe(0);

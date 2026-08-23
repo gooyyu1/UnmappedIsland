@@ -104,7 +104,7 @@ function buildReport(): string {
   [...reported.values()].forEach((entry, index) => {
     lines.push(`【エラー ${index + 1}】${entry.message}`);
     lines.push(
-      `  起動から ${seconds(entry.at)} 秒${entry.count > 1 ? ` / 同じエラーが${entry.count}回` : ''}`,
+      `  起動から ${secondsText(entry.at)} 秒${entry.count > 1 ? ` / 同じエラーが${entry.count}回` : ''}`,
     );
     lines.push(entry.stack);
     lines.push('');
@@ -113,7 +113,7 @@ function buildReport(): string {
   lines.push('--- 直前の操作（古い順） ---');
   if (operations.length === 0) lines.push('（記録なし）');
   for (const operation of operations)
-    lines.push(`  ${seconds(operation.at).padStart(7)}秒  ${operation.text}`);
+    lines.push(`  ${secondsText(operation.at).padStart(7)}秒  ${operation.text}`);
   lines.push('');
 
   lines.push('--- 画面の状態 ---');
@@ -147,7 +147,7 @@ function stackTraceOf(error: unknown): string {
   return stack === undefined ? '  （スタックトレースなし）' : stack;
 }
 
-function seconds(at: number): string {
+function secondsText(at: number): string {
   return (at / 1000).toFixed(1);
 }
 

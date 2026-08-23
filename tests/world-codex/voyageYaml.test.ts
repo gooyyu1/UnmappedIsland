@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { start as startNewGame } from '../../src/domain/generation/NewGame';
-import type { NewGameSession } from '../../src/domain/generation/NewGame';
+import { startNewGame } from '../../src/domain/generation/NewGame';
+import type { StartedGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { applyScenario, bundledScenario } from '../../src/scenario/Scenario';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -18,11 +18,11 @@ describe('筏と航海', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   /** 出航のしたくシナリオの状態から始める（砂浜に積荷入りの筏があり、聖杯も積んである）。 */
-  function ready(): { game: NewGameSession; raft: WorldObject } {
+  function ready(): { game: StartedGame; raft: WorldObject } {
     const scenario = bundledScenario('voyage_ready');
     if (scenario === undefined) throw new Error('同梱シナリオ voyage_ready がありません。');
 
@@ -35,7 +35,7 @@ describe('筏と航海', () => {
   }
 
   /** 風向きを直接置く（8時間ごとの引き直しは天気と同じ仕組みなので、ここでは向きだけを固定する）。 */
-  function setWind(game: NewGameSession, wind: string): void {
+  function setWind(game: StartedGame, wind: string): void {
     game.world.instance
       .getProperty(codex.propertyNames.getId('wind'))
       .setNumberWithoutEvents(codex.symbolNames.getId(wind));
@@ -46,8 +46,8 @@ describe('筏と航海', () => {
   }
 
   /** 1tick（15分）進める。 */
-  function tick(game: NewGameSession): void {
-    game.session.advanceWorldTime(game.world.minutesPerTick);
+  function tick(game: StartedGame): void {
+    game.session.advanceWorldTime(game.world.rawMinutesPerTick);
   }
 
   it('出航すると、プレイヤーごと筏が外洋へ移る', () => {
@@ -71,9 +71,11 @@ describe('筏と航海', () => {
     const inland = game.map.sites.find((site) => site.type!.name === 'grassland');
     expect(inland, 'シード3の島に草原がある').toBeDefined();
 
-    const landing = game.world.instance.findDescendantByInstanceId(game.map.siteInstanceIds[inland!.index]);
+    const landing = game.world.instance.findSelfOrDescendantByInstanceId(
+      game.map.siteInstanceIds[inland!.index],
+    );
     expect(
-      raft.moveToSlot(landing!.getSlot(codex.slotNames.getId('fixtures'))),
+      raft.moveToSlotOrRejection(landing!.getSlot(codex.slotNames.getId('fixtures'))),
       '筏を内陸へ運ぶ',
     ).toBeUndefined();
 
@@ -84,9 +86,9 @@ describe('筏と航海', () => {
   });
 
   /** 帆を1枚作って、筏の構造スロットへ組み込む。 */
-  function rigSail(game: NewGameSession, raft: WorldObject): WorldObject {
-    const sail = game.session.spawn(codex.objectNames.getId('rawhide_sail'));
-    const failure = sail.moveToSlot(raft.getSlot(codex.slotNames.getId('structure')));
+  function rigSail(game: StartedGame, raft: WorldObject): WorldObject {
+    const sail = game.session.createObject(codex.objectNames.getId('rawhide_sail'));
+    const failure = sail.moveToSlotOrRejection(raft.getSlot(codex.slotNames.getId('structure')));
     if (failure !== undefined) throw new Error(`帆を組み込めません: ${failure}`);
     return sail;
   }
@@ -201,7 +203,7 @@ describe('筏と航海', () => {
       const { game, raft } = ready();
       raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
 
-      const ticksPerDay = (24 * 60) / game.world.minutesPerTick;
+      const ticksPerDay = (24 * 60) / game.world.rawMinutesPerTick;
       for (let i = 0; i < days * ticksPerDay; i++) {
         // 風は8時間ごとに引き直されるので、毎tick置き直して向きを固定する。
         setWind(game, wind);

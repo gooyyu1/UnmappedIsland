@@ -3,7 +3,7 @@ import {
   playbackSteps,
   afterPlaybackSteps,
   isMidAction,
-  runsOperation,
+  acceptsOperation,
 } from '../../src/game/view/operationSteps';
 
 /**
@@ -15,13 +15,13 @@ import {
 describe('操作1回の段取り', () => {
   describe('操作を受け付けるか', () => {
     it('何も見せていない間だけ受け付ける', () => {
-      expect(runsOperation('idle')).toBe(true);
+      expect(acceptsOperation('idle')).toBe(true);
     });
 
     it('見せている最中の画面は、今のワールドを映していないので受け付けない', () => {
       // 経過中は過去の時点を再現していて、場面転換中は作り直しを暗幕で隠している。
       for (const activity of ['exploring', 'elapsing', 'transiting'] as const)
-        expect(runsOperation(activity), activity).toBe(false);
+        expect(acceptsOperation(activity), activity).toBe(false);
     });
 
     it('行動の途中の値を見せているのは、経過中と探索中', () => {

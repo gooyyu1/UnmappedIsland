@@ -10,14 +10,14 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
 
 function load(yamlText: string): WorldCodex {
-  return new WorldCodexYamlLoader().load('core.yaml', yamlText).build();
+  return new WorldCodexYamlLoader().load('core.yaml', yamlText).buildAndReset();
 }
 
 describe('core.yamlのworld定義', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlFile(new WorldCodexYamlLoader(), worldCodexPath('core.yaml')).build();
+    codex = loadYamlFile(new WorldCodexYamlLoader(), worldCodexPath('core.yaml')).buildAndReset();
   });
 
   function propOf(def: ObjectDef, propertyName: string): PropertyDef {
@@ -45,7 +45,7 @@ describe('core.yamlのworld定義', () => {
     expect(world.isSingleton).toBe(true);
 
     // 初期値は実行時インスタンスの現在値として観測する（DefaultNumberは非公開）。
-    const instance = new WorldSession(codex).spawn(world.globalId);
+    const instance = new WorldSession(codex).createObject(world.globalId);
     expect(instance.tryGetProperty(codex.propertyNames.getId('tick'))?.number ?? 0).toBe(0);
     expect(instance.tryGetProperty(codex.propertyNames.getId('minutes_per_tick'))?.number ?? 0).toBe(15);
     expect(instance.tryGetProperty(codex.propertyNames.getId('minute'))?.number ?? 0).toBe(0);
@@ -88,7 +88,7 @@ describe('core.yamlのworld定義', () => {
     const hourId = codex.propertyNames.getId('hour');
     const dayId = codex.propertyNames.getId('day');
 
-    const worldInstance = new WorldSession(codex).spawn(world.globalId);
+    const worldInstance = new WorldSession(codex).createObject(world.globalId);
     const worldView = new World(worldInstance, codex);
     const session = new WorldSession(codex, worldView);
 
@@ -110,7 +110,7 @@ describe('core.yamlのworld定義', () => {
     const weatherId = codex.propertyNames.getId('weather');
     const ambientTemperatureId = codex.propertyNames.getId('ambient_temperature');
 
-    const worldInstance = new WorldSession(codex).spawn(world.globalId);
+    const worldInstance = new WorldSession(codex).createObject(world.globalId);
 
     function assertAmbientTemperatureAt(
       weather: string,
@@ -147,7 +147,7 @@ describe('core.yamlのworld定義', () => {
     const weatherId = codex.propertyNames.getId('weather');
     const sunlightId = codex.propertyNames.getId('sunlight');
 
-    const worldInstance = new WorldSession(codex).spawn(world.globalId);
+    const worldInstance = new WorldSession(codex).createObject(world.globalId);
 
     function assertSunlightAt(
       weather: string,
@@ -236,15 +236,15 @@ object_defs:
     );
 
     expect(
-      forestInstance.moveToSlot(worldInstance.getSlot(locationsSlotId)),
+      forestInstance.moveToSlotOrRejection(worldInstance.getSlot(locationsSlotId)),
       'traitを経由してlocationタグを持つオブジェクトは受け入れられる',
     ).toBeUndefined();
     expect(
-      beachInstance.moveToSlot(worldInstance.getSlot(locationsSlotId)),
+      beachInstance.moveToSlotOrRejection(worldInstance.getSlot(locationsSlotId)),
       'traitを介さず直接tagsでlocationタグを持つオブジェクトも、同一traitでなくても受け入れられる',
     ).toBeUndefined();
     expect(
-      rockInstance.moveToSlot(worldInstance.getSlot(locationsSlotId)),
+      rockInstance.moveToSlotOrRejection(worldInstance.getSlot(locationsSlotId)),
       'locationタグを持たないオブジェクトは拒否される',
     ).toBeDefined();
   });
@@ -263,7 +263,7 @@ object_defs:
     const loader = new WorldCodexYamlLoader();
     loadYamlFile(loader, worldCodexPath('core.yaml'));
     loader.load('hut.yaml', yaml);
-    const testCodex = loader.build();
+    const testCodex = loader.buildAndReset();
 
     const hut = testCodex.objects.get(testCodex.objectNames.getId('test_hut'));
 

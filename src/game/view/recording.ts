@@ -1,5 +1,5 @@
 import type { WorldCodex } from '../../domain/WorldCodex';
-import type { NewGameSession } from '../../domain/generation/NewGame';
+import type { StartedGame } from '../../domain/generation/NewGame';
 import type { InteractionGains } from '../../domain/PropertyGain';
 import type { WorldChange } from '../../domain/WorldChange';
 import type { WorldSignal } from '../../domain/WorldSignal';
@@ -12,7 +12,7 @@ import type { StatusDelta } from './statusChanges';
 import { mergedStatuses, statusChangesBetween } from './statusChanges';
 
 /**
- * ワールドを変えている途中の、あるtick境界での表示内容（recordChange）。
+ * ワールドを変えている途中の、あるtick境界での表示内容（runAndRecordChange）。
  *
  * ワールドは操作の実行時に一気に進み切るが、画面は実時間をかけて追いかける。経過中のtickで起きた変化を
  * その瞬間に見せるため、tickごとの表示内容を控えておいて再生する。
@@ -34,27 +34,27 @@ export interface RecordedView {
 }
 
 /**
- * ワールドを変えた経過の控え（recordChange）。
+ * ワールドを変えた経過の控え（runAndRecordChange）。
  *
  * 経過し切った時刻の控えは持たない（その並びは行動の効果まで含めてonElapsedが見せる）ため、
- * そこで起きた出入りだけが控えから漏れる。changesがその分を引き取る。
+ * そこで起きた出入りだけが控えから漏れる。changesAtEndがその分を引き取る。
  */
 export interface Recording {
   /** 経過中の各tick境界の控え（実時間をかけて再生する分）。 */
   readonly ticks: readonly RecordedView[];
   /** 経過し切った時点で見せる分の出入り。 */
-  readonly changes: readonly WorldChange[];
+  readonly changesAtEnd: readonly WorldChange[];
   /**
    * 同じく、経過し切った時点で見せる分の出来事。アクションの効果は時間が経ち切ってから適用される
    * （ActionSystem.md 2節）ので、**操作が告げる出来事は通常こちらに入る**。
    */
-  readonly signals: readonly WorldSignal[];
+  readonly signalsAtEnd: readonly WorldSignal[];
   /** 操作そのものが増やしたキャラクタの値（PropertyGain）。粒にして飛ばす（showGains）。 */
   readonly gains: readonly InteractionGains[];
 }
 
 /** 常に見えている3つのレーンが今映している場所（土地に居なければ手持ちだけ）。 */
-function shownPlacesOf(game: NewGameSession): readonly CardPlace[] {
+function shownPlacesOf(game: StartedGame): readonly CardPlace[] {
   const location = game.player.location;
   if (location === undefined) return [];
 
@@ -74,8 +74,8 @@ function shownPlacesOf(game: NewGameSession): readonly CardPlace[] {
  * **画面が引きうる場所の並びは控えた時点のものへ焼き付ける**（withFrozenCards）——3つのレーンと、
  * 開いている子ウィンドウ。焼き付けないと、経過を見せている途中の画面に行動の結果が先に現れる。
  */
-export function recordChange(
-  game: NewGameSession,
+export function runAndRecordChange(
+  game: StartedGame,
   codex: WorldCodex,
   locale: Localization,
   windowPlace: CardPlace | undefined,
@@ -127,8 +127,8 @@ export function recordChange(
   const ended = recorded.filter((snapshot) => snapshot.minutes >= endedAt);
   return {
     ticks: recorded.filter((snapshot) => snapshot.minutes < endedAt),
-    changes: [...ended.flatMap((snapshot) => snapshot.changes), ...changes],
-    signals: [...ended.flatMap((snapshot) => snapshot.signals), ...signals],
+    changesAtEnd: [...ended.flatMap((snapshot) => snapshot.changes), ...changes],
+    signalsAtEnd: [...ended.flatMap((snapshot) => snapshot.signals), ...signals],
     gains,
   };
 }

@@ -1,4 +1,4 @@
-import { spendDuration } from './actionTime';
+import { spendDurationAndReportParticipantsAlive } from './actionTime';
 import type { Slot } from './Slot';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
@@ -12,7 +12,7 @@ import type { WorldSession } from './WorldSession';
  * 世界の組み立て（シナリオ・地形生成）は操作ではないので通さない。
  *
  * 時間と効果の順序、経過中に関与オブジェクトが失われたときの扱いはactions/combinationsと同じ
- * （ActionSystem.md 2節）。placeは入れ方そのもので、位置を指定する入れ方（WorldObject.moveToSlotのat）
+ * （ActionSystem.md 2節）。placeは入れ方そのもので、位置を指定する入れ方（WorldObject.moveToSlotOrRejectionのat）
  * も同じ扱いになる。
  */
 export function putIntoSlot(
@@ -25,7 +25,8 @@ export function putIntoSlot(
   // 入らないと分かっているなら時間も取らない。時間だけ取られて何も入らない、が起きないようにする。
   if (item.rejectionForMoveTo(slot) !== undefined) return;
 
-  if (!spendDuration(slot.putInMinutes(actor, item), session, [item, slot.owner])) return;
+  if (!spendDurationAndReportParticipantsAlive(slot.putInMinutes(actor, item), session, [item, slot.owner]))
+    return;
 
   place();
 }

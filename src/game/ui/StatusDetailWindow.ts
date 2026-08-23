@@ -7,13 +7,13 @@ import {
   CONTENT_GAP,
   MIN_WINDOW_WIDTH,
   WINDOW_PADDING,
-  centerWindow,
+  centeredWindowRect,
   closeRow,
 } from '../looks/childWindowLayout';
 import { addLabel } from '../../ui/labels';
 import { objectTexture } from '../../art/objectArt';
 import { ProgressBar } from './ProgressBar';
-import { addPanel, drawBox } from '../../ui/shapes';
+import { addInputBlockingPanel, drawBox } from '../../ui/shapes';
 import { onPressRelease } from '../../ui/tap';
 import type { StatusContent, StatusInfluence } from './StatusBar';
 import { COLOR, SIZE } from '../looks/theme';
@@ -27,8 +27,7 @@ const TITLE_SIZE = 34;
 const DESCRIPTION_SIZE = 26;
 const DESCRIPTION_LINE_GAP = 6;
 
-/** 説明がまだ用意されていないステータスに出す、代わりの1行。 */
-
+/** 意味と段を見せるバーの高さ。 */
 const BAR_HEIGHT = 52;
 
 /**
@@ -104,7 +103,7 @@ export interface StatusDetailWindowOptions {
  * しても、掴む対象がこの窓の外にしか無い）。
  */
 export class StatusDetailWindow {
-  private readonly objects: Phaser.GameObjects.GameObject[] = [];
+  private readonly ownedObjects: Phaser.GameObjects.GameObject[] = [];
 
   /** 影響の枠から相手の詳細へ渡り歩く入口（枠を作るのは寸法が決まった後なので、先に控える）。 */
   private readonly onOpenStatus: (key: string) => void;
@@ -120,7 +119,9 @@ export class StatusDetailWindow {
     const barHeight = metrics.px(BAR_HEIGHT);
 
     const { width, height } = metrics;
-    this.objects.push(addPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5));
+    this.ownedObjects.push(
+      addInputBlockingPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5),
+    );
 
     const windowWidth = Math.min(metrics.px(MIN_WINDOW_WIDTH), options.area.width, width * 0.92);
     const contentWidth = windowWidth - padding * 2;
@@ -128,9 +129,9 @@ export class StatusDetailWindow {
     // 台紙と段の名札は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に
     // 置く必要がある（後から作ると、板が自分の上の文字を覆う）。
     const board = scene.add.graphics();
-    this.objects.push(board);
+    this.ownedObjects.push(board);
     const plate = scene.add.graphics();
-    this.objects.push(plate);
+    this.ownedObjects.push(plate);
 
     const title = addLabel(scene, metrics, 0, 0, content.name, { size: TITLE_SIZE, bold: true });
 
@@ -146,7 +147,7 @@ export class StatusDetailWindow {
     const description = addLabel(scene, metrics, 0, 0, detail?.description ?? uiText('no_description'), {
       size: DESCRIPTION_SIZE,
       color: detail?.description === undefined ? COLOR.textMuted : COLOR.text,
-      wrapWidth: contentWidth,
+      wrapWidthPx: contentWidth,
       lineGap: DESCRIPTION_LINE_GAP,
     });
 
@@ -180,8 +181,8 @@ export class StatusDetailWindow {
       received.height +
       gap +
       actionHeight;
-    const window = centerWindow(metrics, options.area, windowWidth, windowHeight);
-    drawBox(board, window, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
+    const window = centeredWindowRect(metrics, options.area, windowWidth, windowHeight);
+    drawBox(board, window, { fillColor: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
 
     const left = window.x + padding;
     let y = window.y + padding;
@@ -190,12 +191,12 @@ export class StatusDetailWindow {
     const icon = addLabel(scene, metrics, left, y + headerHeight / 2, content.icon ?? '', {
       size: HEADER_ICON_SIZE,
     }).setOrigin(0, 0.5);
-    this.objects.push(icon);
+    this.ownedObjects.push(icon);
     title.setPosition(left + icon.width + metrics.px(12), y + (headerHeight - title.height) / 2);
-    this.objects.push(title);
+    this.ownedObjects.push(title);
     y += headerHeight + gap;
     description.setPosition(left, y);
-    this.objects.push(description);
+    this.ownedObjects.push(description);
 
     y += description.height + gap + stageHeight;
     // 名札の中央と、しっぽが指す先。囲みがあればその中央、無ければバーの左端に揃える。
@@ -206,7 +207,7 @@ export class StatusDetailWindow {
         worsensUpward: content.worsensUpward,
       });
       bar.setAlert(content.alert);
-      this.objects.push(bar);
+      this.ownedObjects.push(bar);
 
       const span = detail?.stage?.span;
       bar.markStages(detail?.stage?.boundaries ?? [], span);
@@ -218,7 +219,7 @@ export class StatusDetailWindow {
         plateCenterX = Math.min(Math.max(tailX, left + half), left + contentWidth - half);
       }
     } else {
-      this.objects.push(
+      this.ownedObjects.push(
         addLabel(scene, metrics, left, y + barHeight / 2, String(content.value), {
           size: 30,
         }).setOrigin(0, 0.5),
@@ -234,7 +235,7 @@ export class StatusDetailWindow {
         height: plateHeight,
       });
       stage.setPosition(plateCenterX, y - stageHeight + plateHeight / 2);
-      this.objects.push(stage);
+      this.ownedObjects.push(stage);
     }
 
     y += barHeight + gap;
@@ -242,7 +243,7 @@ export class StatusDetailWindow {
     y += given.height + gap;
     received.place(left, y);
 
-    this.objects.push(
+    this.ownedObjects.push(
       addTextButton(
         scene,
         metrics,
@@ -258,8 +259,8 @@ export class StatusDetailWindow {
   }
 
   close(): void {
-    for (const object of this.objects) object.destroy();
-    this.objects.length = 0;
+    for (const object of this.ownedObjects) object.destroy();
+    this.ownedObjects.length = 0;
   }
 
   /**
@@ -274,7 +275,7 @@ export class StatusDetailWindow {
     width: number,
   ): { readonly height: number; readonly place: (x: number, y: number) => void } {
     const heading = addLabel(scene, metrics, 0, 0, title, { size: SECTION_SIZE, bold: true });
-    this.objects.push(heading);
+    this.ownedObjects.push(heading);
 
     const sectionGap = metrics.px(SECTION_GAP);
     const tileWidth = metrics.px(TILE_WIDTH);
@@ -293,7 +294,7 @@ export class StatusDetailWindow {
         size: TILE_NAME_SIZE,
         color: COLOR.textMuted,
       });
-      this.objects.push(empty);
+      this.ownedObjects.push(empty);
       return {
         height: heightFor(0),
         place: (x, y) => {
@@ -343,21 +344,21 @@ export class StatusDetailWindow {
     const markWidth = metrics.px(TILE_MARK_WIDTH);
 
     const board = scene.add.graphics();
-    this.objects.push(board);
+    this.ownedObjects.push(board);
 
     const texture = influence.art === undefined ? undefined : objectTexture(influence.art);
     const art =
       texture !== undefined && scene.textures.exists(texture)
         ? scene.add.image(0, 0, texture).setOrigin(0.5).setDisplaySize(iconSize, iconSize)
         : addTileLabel(scene, metrics, influence, width - padding * 2 - markWidth);
-    this.objects.push(art);
+    this.ownedObjects.push(art);
 
     const mark = addLabel(scene, metrics, 0, 0, influence.active ? markOf(influence) : '', {
       size: TILE_MARK_SIZE,
       bold: true,
       color: influence.worsens ? COLOR.statusDecreased : COLOR.statusIncreased,
     }).setOrigin(0.5);
-    this.objects.push(mark);
+    this.ownedObjects.push(mark);
 
     // 畳んだ件数（1件なら出さない。カードの束と同じ、Card.showStackCount）。
     const badge = influence.count >= 2 ? this.buildCountBadge(scene, metrics, influence.count) : undefined;
@@ -371,7 +372,7 @@ export class StatusDetailWindow {
     let hitArea: Phaser.GameObjects.Zone | undefined;
     if (key !== undefined) {
       hitArea = scene.add.zone(0, 0, width, height).setOrigin(0).setInteractive({ useHandCursor: true });
-      this.objects.push(hitArea);
+      this.ownedObjects.push(hitArea);
       onPressRelease(hitArea, { onRelease: () => this.onOpenStatus(key) });
     }
 
@@ -381,8 +382,8 @@ export class StatusDetailWindow {
           board,
           { x, y, width, height },
           {
-            fill: COLOR.cardFace,
-            border: COLOR.cardBorder,
+            fillColor: COLOR.cardFace,
+            borderColor: COLOR.cardBorder,
             borderWidth: metrics.linePx(2),
             radius: metrics.px(SIZE.radius) / 2,
           },
@@ -418,7 +419,7 @@ export class StatusDetailWindow {
     }).setOrigin(0.5);
 
     const container = scene.add.container(0, 0, [circle, text]);
-    this.objects.push(container);
+    this.ownedObjects.push(container);
     return { container, offset: radius - metrics.px(TILE_COUNT_OVERHANG) };
   }
 
@@ -458,8 +459,8 @@ function drawStagePlate(
     plate,
     { x: at.centerX - width / 2, y: at.top, width, height: at.height },
     {
-      fill: COLOR.optionsBar,
-      border: COLOR.cardBorder,
+      fillColor: COLOR.optionsBar,
+      borderColor: COLOR.cardBorder,
       borderWidth: metrics.linePx(2),
       radius: metrics.px(SIZE.radius),
     },
@@ -494,7 +495,7 @@ function addTileLabel(
 
   return addLabel(scene, metrics, 0, 0, influence.name, {
     size: TILE_NAME_SIZE,
-    wrapWidth: width,
+    wrapWidthPx: width,
   })
     .setOrigin(0.5)
     .setAlign('center');

@@ -44,7 +44,7 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
   }
 
   /** 実行にかかるゲーム内時間（分）。durationを省いていれば0。実行前に見せる用途にも使う。 */
-  minutes(): number {
+  executionMinutes(): number {
     return this.def.minutesFor(this.context);
   }
 
@@ -54,7 +54,7 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
   }
 
   tryExecute(): boolean {
-    return this.def.execute(this.context, this.self.session);
+    return this.def.tryExecute(this.context, this.self.session);
   }
 }
 
@@ -81,9 +81,9 @@ export class Combination extends Interaction<DragTrigger, WorldObject> {
    * `allow_multiple`（12.4節）を宣言していなければ1までになる。
    *
    * 落とす前に「何枚ついてくるか」を決めるための問い。枠の受け入れ個数を訊く
-   * WorldObject.acceptedCountForMoveToと同じ形。
+   * WorldObject.acceptedCountForMoveToIncludingSelfと同じ形。
    */
-  acceptedCount(followers: readonly WorldObject[]): number {
+  acceptedCountIncludingSelf(followers: readonly WorldObject[]): number {
     return this.trigger.acceptedCount(this.context, [this.dragged, ...followers]);
   }
 

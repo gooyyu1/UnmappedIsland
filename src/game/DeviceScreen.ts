@@ -26,14 +26,14 @@ export class DeviceScreen {
   private readonly game: Phaser.Game;
 
   /** 直前に反映した物理ピクセルでの寸法。変化が無いのに画面を作り直さないために持つ。 */
-  private width: number;
-  private height: number;
+  private appliedWidth: number;
+  private appliedHeight: number;
 
   private constructor(parent: HTMLElement, config: GameConfigWithoutScale) {
     this.parent = parent;
     const size = this.deviceSize();
-    this.width = size.width;
-    this.height = size.height;
+    this.appliedWidth = size.width;
+    this.appliedHeight = size.height;
     this.game = new Phaser.Game({
       ...config,
       parent,
@@ -83,10 +83,10 @@ export class DeviceScreen {
     const zoom = 1 / pixelRatio();
     const size = this.deviceSize();
     const scale = this.game.scale;
-    if (size.width === this.width && size.height === this.height && zoom === scale.zoom) return;
+    if (size.width === this.appliedWidth && size.height === this.appliedHeight && zoom === scale.zoom) return;
 
-    this.width = size.width;
-    this.height = size.height;
+    this.appliedWidth = size.width;
+    this.appliedHeight = size.height;
     scale.resize(size.width, size.height);
     // 倍率が1のとき`resize`はキャンバスのCSS寸法を書き換えないため、倍率の変更は必ず`resize`の
     // 後に行う（`setZoom`が新しい倍率でCSS寸法を設定し直す）。

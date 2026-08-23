@@ -27,7 +27,7 @@ object_defs:
 
   /** 名前でアイテムを1つ生成する（まだどこにも属していない）。 */
   function item(name: string): WorldObject {
-    return session.spawn(codex.objectNames.getId(name));
+    return session.createObject(codex.objectNames.getId(name));
   }
 
   /** 並んでいるスタックをobject_defの名前で表す（同種2個なら'a×2'）。 */
@@ -45,9 +45,9 @@ object_defs:
   }
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('core.yaml', YAML).build();
+    codex = new WorldCodexYamlLoader().load('core.yaml', YAML).buildAndReset();
     session = new WorldSession(codex);
-    location = new Location(session.spawn(codex.objectNames.getId('clearing')), codex);
+    location = new Location(session.createObject(codex.objectNames.getId('clearing')), codex);
   });
 
   it('同種のアイテムは1つのスタックにまとまる', () => {

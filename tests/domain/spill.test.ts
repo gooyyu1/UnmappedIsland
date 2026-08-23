@@ -56,27 +56,27 @@ object_defs:
   const setUp = (): Fixture => {
     const loader = new WorldCodexYamlLoader();
     loader.load('spill.yaml', yaml);
-    const codex = loader.build();
+    const codex = loader.buildAndReset();
     const session = new WorldSession(codex);
-    const spawn = (name: string): WorldObject => session.spawn(codex.objectNames.getId(name));
+    const spawn = (name: string): WorldObject => session.createObject(codex.objectNames.getId(name));
 
     const world = spawn('world');
     const land = spawn('land');
-    expect(land.moveToSlot(world.getSlot(codex.slotNames.getId('places')))).toBeUndefined();
+    expect(land.moveToSlotOrRejection(world.getSlot(codex.slotNames.getId('places')))).toBeUndefined();
 
     const box = spawn('box');
-    expect(box.moveToSlot(land.getSlot(codex.slotNames.getId('ground')))).toBeUndefined();
+    expect(box.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('ground')))).toBeUndefined();
 
     const pouch = spawn('pouch');
-    expect(pouch.moveToSlot(box.getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
+    expect(pouch.moveToSlotOrRejection(box.getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
 
     return { land, box, pouch, codex, session };
   };
 
   const spawnInto = (fixture: Fixture, name: string, host: WorldObject): WorldObject => {
-    const object = fixture.session.spawn(fixture.codex.objectNames.getId(name));
+    const object = fixture.session.createObject(fixture.codex.objectNames.getId(name));
     expect(
-      object.moveToSlot(host.getSlot(fixture.codex.slotNames.getId('contents'))),
+      object.moveToSlotOrRejection(host.getSlot(fixture.codex.slotNames.getId('contents'))),
       `${name} を置けなかった`,
     ).toBeUndefined();
     return object;

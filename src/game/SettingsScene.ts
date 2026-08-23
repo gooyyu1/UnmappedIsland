@@ -1,11 +1,11 @@
 import { ResponsiveScene } from './ResponsiveScene';
-import { assetPackMatches } from '../asset-pack/install';
+import { assetPackInstallMatchesSetting } from '../asset-pack/install';
 import { Settings } from '../save/Settings';
 import { Button } from './ui/Button';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { noteOperation } from './errorReport';
 import { addLabel } from '../ui/labels';
-import { addPanel, drawBox } from '../ui/shapes';
+import { addInputBlockingPanel, drawBox } from '../ui/shapes';
 import { COLOR, rowPlateStyle } from './looks/theme';
 import { LIST_ITEM_PADDING_X, LIST_PADDING } from './looks/listScreen';
 
@@ -31,8 +31,8 @@ export class SettingsScene extends ResponsiveScene {
 
   protected build(): void {
     const { width, height } = this.metrics;
-    addPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
-    new ScreenHeader(this, this.metrics, width, '設定', () => this.leave());
+    addInputBlockingPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
+    new ScreenHeader(this, this.metrics, width, '設定', () => this.returnToTitle());
 
     const padding = this.metrics.px(LIST_PADDING);
     const itemHeight = this.metrics.px(ITEM_HEIGHT);
@@ -50,7 +50,7 @@ export class SettingsScene extends ResponsiveScene {
     );
 
     // 食い違っている間だけ出す。設定を変えたのに何も起きないまま画面が閉じる、を避ける。
-    if (!assetPackMatches(this.settings.loadsAssetPack)) {
+    if (!assetPackInstallMatchesSetting(this.settings.loadsAssetPack)) {
       addLabel(this, this.metrics, width / 2, top + itemHeight + padding, '「もどる」で読み込み直します。', {
         size: 22,
         color: COLOR.textMuted,
@@ -62,8 +62,8 @@ export class SettingsScene extends ResponsiveScene {
    * タイトルへ戻る。設定が今入っているものと食い違っていれば、読み込み直して反映する
    * （そのままではこの回のゲームに映らない）。読み込み直した先もタイトル画面になる。
    */
-  private leave(): void {
-    if (assetPackMatches(this.settings.loadsAssetPack)) this.scene.start('title');
+  private returnToTitle(): void {
+    if (assetPackInstallMatchesSetting(this.settings.loadsAssetPack)) this.scene.start('title');
     else location.reload();
   }
 
@@ -99,8 +99,8 @@ export class SettingsScene extends ResponsiveScene {
     };
     const face = this.add.graphics();
     drawBox(face, switchRect, {
-      fill: value ? COLOR.primaryButton : COLOR.buttonDisabled,
-      border: COLOR.buttonBorder,
+      fillColor: value ? COLOR.primaryButton : COLOR.buttonDisabled,
+      borderColor: COLOR.buttonBorder,
       borderWidth: this.metrics.linePx(2),
       radius: switchHeight / 2,
     });

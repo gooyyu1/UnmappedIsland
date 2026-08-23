@@ -65,7 +65,7 @@ export class Button extends Phaser.GameObjects.Container {
       this.shade,
       { x: 0, y: 0, width: rect.width, height: rect.height },
       {
-        fill: COLOR.pressedShade,
+        fillColor: COLOR.pressedShade,
         radius: style.radius,
       },
     );
@@ -151,8 +151,8 @@ export interface TextButtonStyle {
  */
 function textButtonBoxStyle(metrics: ScreenMetrics, style: TextButtonStyle): BoxStyle {
   return {
-    fill: style.fill,
-    border: style.border ?? COLOR.buttonBorder,
+    fillColor: style.fill,
+    borderColor: style.border ?? COLOR.buttonBorder,
     borderWidth: metrics.linePx(2),
     radius: metrics.px(SIZE.radius),
   };

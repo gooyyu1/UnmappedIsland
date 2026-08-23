@@ -30,14 +30,14 @@ function shadowRecorder(): {
 
 const shadowsOf = (): { offset: number; alpha: number }[] => {
   const { graphics, shadows } = shadowRecorder();
-  drawBox(graphics, { x: 0, y: 0, width: 100, height: 40 }, { fill: 0xffffff, shadow: 3 });
+  drawBox(graphics, { x: 0, y: 0, width: 100, height: 40 }, { fillColor: 0xffffff, shadowOffset: 3 });
   return shadows;
 };
 
 describe('図形の意匠の注入(setShapeDefaults)', () => {
   // モジュール変数なので、他のテストへ持ち越さないよう既定へ戻す。
   afterEach(() => {
-    setShapeDefaults({ shadowLayers: [[1, 0.3]], dashLengthRatio: 6 });
+    setShapeDefaults({ shadowLayers: [{ offsetScale: 1, alpha: 0.3 }], dashLengthRatio: 6 });
   });
 
   it('入れなければ、影は1枚だけ置かれる（意匠を持たない画面でも図形になる）', () => {

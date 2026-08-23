@@ -17,8 +17,8 @@ import type { GaugeEnd } from '../../domain/PropertyDef';
  */
 export const SHAPE_LOOK: ShapeDefaults = {
   shadowLayers: [
-    [1, 0.3],
-    [2, 0.12],
+    { offsetScale: 1, alpha: 0.3 },
+    { offsetScale: 2, alpha: 0.12 },
   ],
   dashLengthRatio: 6,
 };
@@ -211,7 +211,7 @@ export const COLOR = {
   // 満たされ具合の向きはステータスによって逆なので、塗りの長さではなく色が良し悪しを表す。
   statusBarFillSafe: 0x4caf50,
   statusBarFillFatal: 0x9c6b3f,
-  /** 減った分の帯（ProgressBar。増えた分はfadedFillが塗りから引く）。 */
+  /** 減った分の帯（ProgressBar。増えた分はgainBandFillが塗りから引く）。 */
   statusBarLag: 0xd93025,
 
   // ゲージの塗り（gaugeColorFor）。満ち足りた端の緑から尽きた端の赤へ、琥珀を経て寄せる。
@@ -290,8 +290,8 @@ export function alertBorderColorFor(alert: AlertLevel): number | undefined {
   return undefined;
 }
 
-/** 増えた分の帯を、塗りからどれだけトラック寄りへ薄めるか（fadedFill）。 */
-const BAND_FADE = 0.55;
+/** 増えた分の帯を、塗りからどれだけトラック寄りへ薄めるか（gainBandFill）。 */
+const GAIN_BAND_FADE = 0.55;
 
 /**
  * 増えた分の帯の色（StatusArea.md）。塗りそのものをトラック側へ薄めた色にするのは、
@@ -299,12 +299,12 @@ const BAND_FADE = 0.55;
  * 帯だけが同じ色になり、何が増える途中なのか読めなくなります。減った分の赤（statusBarLag）が塗りの色に
  * よらず同じなのは対照的ですが、失われたものはもう塗りではないので、こちらは色を共有しません。
  */
-export function fadedFill(fill: number): number {
-  return mixColor(fill, COLOR.statusBarTrack, BAND_FADE);
+export function gainBandFill(fill: number): number {
+  return mixColor(fill, COLOR.statusBarTrack, GAIN_BAND_FADE);
 }
 
 /** 琥珀へ寄せ切る位置。ここを境に、端の色→琥珀と琥珀→もう一方の端の2区間へ分ける。 */
-const GAUGE_HALF_RATIO = 0.5;
+const GAUGE_AMBER_RATIO = 0.5;
 
 /** ゲージの端の見せ方（GaugeEnd）に対応する色。 */
 function gaugeEndColor(end: GaugeEnd): number {
@@ -327,9 +327,9 @@ export function gaugeColorFor(ratio: number, atMin: GaugeEnd, atMax: GaugeEnd): 
   if (from === to) return from;
 
   const clamped = Math.min(1, Math.max(0, ratio));
-  return clamped < GAUGE_HALF_RATIO
-    ? mixColor(from, COLOR.durabilityHalf, clamped / GAUGE_HALF_RATIO)
-    : mixColor(COLOR.durabilityHalf, to, (clamped - GAUGE_HALF_RATIO) / (1 - GAUGE_HALF_RATIO));
+  return clamped < GAUGE_AMBER_RATIO
+    ? mixColor(from, COLOR.durabilityHalf, clamped / GAUGE_AMBER_RATIO)
+    : mixColor(COLOR.durabilityHalf, to, (clamped - GAUGE_AMBER_RATIO) / (1 - GAUGE_AMBER_RATIO));
 }
 
 /** 2色の間をtの割合で混ぜる（成分ごとの線形補間）。 */
@@ -365,7 +365,9 @@ export type CardKind =
 export type CardFrameKind = CardKind | 'blueprint';
 
 /** 分類ごとの枠の面と縁の色。タイトルの板と文字の色はここから引く（cardFrameColors）。 */
-const CARD_FRAME_FACE: Readonly<Record<CardFrameKind, { readonly face: number; readonly line: number }>> = {
+const CARD_FRAME_BASE_COLORS: Readonly<
+  Record<CardFrameKind, { readonly face: number; readonly line: number }>
+> = {
   // 場所を映す札（現在地と道）の琥珀。
   location: { face: 0xce943e, line: 0x7a5018 },
   fixture: { face: 0x68804e, line: 0x3a4a2a },
@@ -413,7 +415,7 @@ export interface CardFrameColors {
 }
 
 export function cardFrameColors(kind: CardFrameKind): CardFrameColors {
-  const { face, line } = CARD_FRAME_FACE[kind];
+  const { face, line } = CARD_FRAME_BASE_COLORS[kind];
   return {
     face,
     line,
@@ -430,8 +432,8 @@ export const FONT_FAMILY = '"Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic", san
  */
 export function rowPlateStyle(metrics: ScreenMetrics): BoxStyle {
   return {
-    fill: COLOR.cardFace,
-    border: COLOR.cardBorder,
+    fillColor: COLOR.cardFace,
+    borderColor: COLOR.cardBorder,
     borderWidth: metrics.linePx(2),
     radius: metrics.px(SIZE.radius),
   };

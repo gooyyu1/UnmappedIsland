@@ -49,15 +49,15 @@ object_defs:
   }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
-    const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
+    expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('core.yaml', YAML).build();
+    codex = new WorldCodexYamlLoader().load('core.yaml', YAML).buildAndReset();
     session = new WorldSession(codex);
-    clearing = session.spawn(codex.objectNames.getId('clearing'));
+    clearing = session.createObject(codex.objectNames.getId('clearing'));
     player = spawnInto('character', clearing, 'characters');
   });
 
@@ -80,7 +80,7 @@ object_defs:
   it('名指しの移動なら、自動配置の対象外のスロットにも入れられる', () => {
     const stone = spawnInto('stone', player, 'hand');
 
-    expect(stone.moveToSlot(player.getSlot(codex.slotNames.getId('equipment')))).toBeUndefined();
+    expect(stone.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('equipment')))).toBeUndefined();
 
     expect(contentsOf(player, 'equipment')).toEqual(['stone']);
   });

@@ -69,16 +69,14 @@ export interface MotionInput<C, R> {
 export interface PlannedFlight<C, R> {
   /** この便が運ぶインスタンス。実行側はこのIDを載せた実体の札を飛ばし、着いた枠で合流させる。 */
   readonly id: number;
-  /** 便の見た目を借りるカード（行き先のカード）。 */
-  readonly face: C;
-  /** その1枚が着く枠の札。着いた時点で、その枠に居る枚数が1つ増える。 */
+  /** その1枚が着く枠の札。着いた時点で、その枠に居る枚数が1つ増え、便はこの札の見た目を借りる。 */
   readonly into: C;
   readonly from: R;
   readonly to: R;
   /** 飛び立ちを遅らせる段数（1段＝送りの最短間隔。実時間にするのは実行側）。 */
   readonly delaySteps: number;
   /** 着いた時点で砂埃を立てるか（生まれたインスタンスを運ぶ便）。 */
-  readonly puffs: boolean;
+  readonly raisesDust: boolean;
 }
 
 /** 差し替えの直後に、その札の枠に在るインスタンス。枚数はここからの導出値。 */
@@ -162,7 +160,7 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
     // 生まれたのに出どころが分からないもの。飛ぶ便が無いので、着いた先で砂埃だけを立てる。
     let bornInPlace = false;
     const present: number[] = [];
-    const sources: { id: number; rect: R; appeared: boolean; puffs: boolean }[] = [];
+    const sources: { id: number; rect: R; appeared: boolean; raisesDust: boolean }[] = [];
     for (const id of to.ids) {
       if (aloft.has(id)) {
         held += 1;
@@ -172,7 +170,7 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
         if (source === undefined) {
           bornInPlace ||= bornIds.has(id);
           present.push(id);
-        } else sources.push({ id, ...source, puffs: bornIds.has(id) });
+        } else sources.push({ id, ...source, raisesDust: bornIds.has(id) });
       }
     }
     if (bornInPlace) puffs.push(to.rect);
@@ -191,12 +189,11 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
       for (const source of sources) {
         flights.push({
           id: source.id,
-          face: to.card,
           into: to.card,
           from: source.rect,
           to: to.rect,
           delaySteps: source.appeared ? appeared++ : stagger++,
-          puffs: source.puffs,
+          raisesDust: source.raisesDust,
         });
       }
     }

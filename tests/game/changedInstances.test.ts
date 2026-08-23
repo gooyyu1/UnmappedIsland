@@ -4,7 +4,11 @@ import type { WorldChange } from '../../src/domain/WorldChange';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
-import { bornInstances, originInstances, vanishedInstances } from '../../src/game/view/changedInstances';
+import {
+  bornInstances,
+  originInstanceByInstance,
+  vanishedInstances,
+} from '../../src/game/view/changedInstances';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 
@@ -54,21 +58,21 @@ object_defs:
   let ground: WorldObject;
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('origins.yaml', YAML).build();
+    codex = new WorldCodexYamlLoader().load('origins.yaml', YAML).buildAndReset();
     session = new WorldSession(codex, undefined, fixedRng(0.5));
     const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
     session.adoptWorld(new World(worldInstance, codex));
     ground = spawn('ground');
-    expect(ground.moveToSlot(worldInstance.getSlot(slot('locations')))).toBeUndefined();
+    expect(ground.moveToSlotOrRejection(worldInstance.getSlot(slot('locations')))).toBeUndefined();
   });
 
   const slot = (name: string): number => codex.slotNames.getId(name);
-  const spawn = (name: string): WorldObject => session.spawn(codex.objectNames.getId(name));
+  const spawn = (name: string): WorldObject => session.createObject(codex.objectNames.getId(name));
 
   /** その名前のオブジェクトを生成し、地面へ置く。 */
   function placeOnGround(name: string, slotName = 'items'): WorldObject {
     const object = spawn(name);
-    expect(object.moveToSlot(ground.getSlot(slot(slotName)))).toBeUndefined();
+    expect(object.moveToSlotOrRejection(ground.getSlot(slot(slotName)))).toBeUndefined();
     return object;
   }
 
@@ -76,7 +80,7 @@ object_defs:
   function originsOf(body: () => void): ReadonlyMap<number, number> {
     const changes: WorldChange[] = [];
     session.observeChanges((change) => changes.push(change), body);
-    return originInstances(changes);
+    return originInstanceByInstance(changes);
   }
 
   it('効果が動かした物は、その効果を宣言していた側の札から飛ぶ', () => {
@@ -126,7 +130,7 @@ object_defs:
     const hidden = placeOnGround('stone', 'undiscovered');
 
     const origins = originsOf(() => {
-      expect(hidden.moveToSlot(ground.getSlot(slot('items')))).toBeUndefined();
+      expect(hidden.moveToSlotOrRejection(ground.getSlot(slot('items')))).toBeUndefined();
     });
 
     expect(origins).toEqual(new Map([[hidden.instanceId, ground.instanceId]]));
@@ -137,7 +141,7 @@ object_defs:
     const stone = spawn('stone');
 
     const origins = originsOf(() => {
-      expect(stone.moveToSlot(ground.getSlot(slot('items')))).toBeUndefined();
+      expect(stone.moveToSlotOrRejection(ground.getSlot(slot('items')))).toBeUndefined();
     });
 
     expect(origins.size).toBe(0);
@@ -168,7 +172,7 @@ object_defs:
     it('生まれた物は世界に入ったものとして挙がる', () => {
       const moves = movesOf(() => {
         const stone = spawn('stone');
-        expect(stone.moveToSlot(ground.getSlot(slot('items')))).toBeUndefined();
+        expect(stone.moveToSlotOrRejection(ground.getSlot(slot('items')))).toBeUndefined();
       });
 
       expect(moves.born).toHaveLength(1);
@@ -181,7 +185,7 @@ object_defs:
       const stone = placeOnGround('stone');
 
       const moves = movesOf(() => {
-        expect(stone.moveToSlot(basket.getSlot(slot('contents')))).toBeUndefined();
+        expect(stone.moveToSlotOrRejection(basket.getSlot(slot('contents')))).toBeUndefined();
       });
 
       expect(moves).toEqual({ born: [], vanished: [] });
@@ -194,8 +198,8 @@ object_defs:
     const stone = spawn('stone');
 
     const origins = originsOf(() => {
-      expect(stone.moveToSlot(basket.getSlot(slot('contents')))).toBeUndefined();
-      expect(stone.moveToSlot(ground.getSlot(slot('items')))).toBeUndefined();
+      expect(stone.moveToSlotOrRejection(basket.getSlot(slot('contents')))).toBeUndefined();
+      expect(stone.moveToSlotOrRejection(ground.getSlot(slot('items')))).toBeUndefined();
     });
 
     // 1つ目は生まれた分（出どころ無し）なので、記録に残るのは2つ目のかごから。

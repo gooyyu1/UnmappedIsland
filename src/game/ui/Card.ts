@@ -13,12 +13,12 @@ import type { ProgressBarOptions } from './ProgressBar';
 import type { AlertLevel } from '../../domain/AlertLevel';
 import type { GaugeEnd } from '../../domain/PropertyDef';
 import { noteOperation } from '../errorReport';
-import { minutesText } from '../looks/durationText';
+import { hoursAndMinutesText } from '../looks/timeTexts';
 import { HoldRepeat } from '../../ui/holdRepeat';
 import { onPressRelease } from '../../ui/tap';
 import { isAlive } from '../../ui/lifetime';
 import { cardFace } from './cardFace';
-import { ALERT_BLINK_MS } from '../looks/alertBlink';
+import { ALERT_BLINK_HALF_CYCLE_MS } from '../looks/alertBlink';
 
 /**
  * カードの枠の画像のテクスチャキー（実体はsrc/assets/ui/card_frame.png、BootSceneが読む）。
@@ -277,7 +277,7 @@ export interface CardContent {
    * このカードが今在るスロット（backgroundArt参照）。**そのカードが何の上に在るか**——設置物なら
    * 土地の`fixtures`、怪我なら負った本人の`injuries`——を、地として絵の下に敷く。絵が無ければ紙のまま。
    */
-  readonly background?: SlotRef;
+  readonly backgroundSlot?: SlotRef;
   /** カード全体を押したときの動作。持たないカードは押せない（押すと子ウィンドウを開くロケーションカード等）。 */
   readonly onTap?: () => void;
   /**
@@ -513,7 +513,7 @@ export class Card extends Phaser.GameObjects.Container {
       this.nameText,
     ]);
 
-    // 状態のバーは映すものが決まってから枠より後に足す（gaugeBarFor）ので、ここでは何も作らない。
+    // 状態のバーは映すものが決まってから枠より後に足す（ensureGaugeBarFor）ので、ここでは何も作らない。
     this.edgeLayer = scene.add.container(0, 0);
     this.add(this.edgeLayer);
 
@@ -656,7 +656,7 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /** 宙に在った札がこの枠に帰り着いた（合流）。IDセットの和になり、枚数はそこから導かれる。 */
-  absorb(ids: readonly number[]): void {
+  absorbReturnedIds(ids: readonly number[]): void {
     const merged = new Set([...this.presentIds, ...ids]);
     this.setPresence([...merged], this.emptied);
   }
@@ -685,7 +685,7 @@ export class Card extends Phaser.GameObjects.Container {
     this._content = content;
     // 製作中オブジェクトは種別に関わらず青写真の枠になる（まだその物ではないため）。
     const colors = cardFrameColors(content.inProgress === true ? 'blueprint' : (content.kind ?? 'item'));
-    const bars = this.barsFor(content);
+    const bars = this.prepareRailBarsFor(content);
     const rail = railMetrics(
       this.metrics,
       this.cardWidth,
@@ -730,7 +730,7 @@ export class Card extends Phaser.GameObjects.Container {
     const gap = metrics.px(COOKING_BAR_GAP);
     const barHeight = metrics.px(COOKING_BAR_HEIGHT);
 
-    this.cookingText.setText(minutesText(cooking.minutes)).setScale(1);
+    this.cookingText.setText(hoursAndMinutesText(cooking.minutes)).setScale(1);
     const room = inner.width - metrics.px(COOKING_BAR_MARGIN) * 2;
     const scale = Math.min(1, room / Math.max(1, this.cookingText.width));
     this.cookingText.setScale(scale);
@@ -765,7 +765,7 @@ export class Card extends Phaser.GameObjects.Container {
       this.alertBlink = this.scene.tweens.add({
         targets: this.alertOutline,
         alpha: ALERT_BLINK_MIN_ALPHA,
-        duration: ALERT_BLINK_MS,
+        duration: ALERT_BLINK_HALF_CYCLE_MS,
         yoyo: true,
         repeat: -1,
       });
@@ -791,9 +791,9 @@ export class Card extends Phaser.GameObjects.Container {
   private showArt(content: CardContent): void {
     const scene = this.scene;
     const background =
-      content.background === undefined || content.inProgress === true
+      content.backgroundSlot === undefined || content.inProgress === true
         ? undefined
-        : cardBackgroundTexture(content.background);
+        : cardBackgroundTexture(content.backgroundSlot);
     if (background !== this.shownBackground) {
       this.shownBackground = background;
       this.backgroundLayer.removeAll(true);
@@ -852,7 +852,7 @@ export class Card extends Phaser.GameObjects.Container {
    * 桟へ積む状態バーを、上からの順に並べる。**値を持たないバーはここで隠して並びから外す**ので、
    * 桟の高さも積む位置も「今いくつ出ているか」だけで決まる。
    */
-  private barsFor(content: CardContent): readonly RailBar[] {
+  private prepareRailBarsFor(content: CardContent): readonly RailBar[] {
     const gauges = content.gauges ?? [];
     // 塗りの色と帯の向きは映すものが決めるので、割合より先に控えておく（gaugeBarForのfillColorが読む）。
     this.shownGauges = new Map(gauges.map((gauge) => [gauge.key, gauge]));
@@ -861,7 +861,7 @@ export class Card extends Phaser.GameObjects.Container {
     for (const [key, bar] of this.gaugeBars) {
       if (!this.shownGauges.has(key)) bar.setVisible(false);
     }
-    return gauges.map((gauge) => ({ bar: this.gaugeBarFor(gauge), ratio: gauge.ratio }));
+    return gauges.map((gauge) => ({ bar: this.ensureGaugeBarFor(gauge), ratio: gauge.ratio }));
   }
 
   /**
@@ -871,7 +871,7 @@ export class Card extends Phaser.GameObjects.Container {
    * 塗りの色も増減の向きも、映している内容（`shownGauges`）から毎回引き直す——中身は入れ替わる
    * （飲み干した水筒へ茶を注ぐ）し、同じプロパティでも向きは定義側の変更で変わりうるため。
    */
-  private gaugeBarFor(gauge: CardGauge): ProgressBar {
+  private ensureGaugeBarFor(gauge: CardGauge): ProgressBar {
     const key = gauge.key;
     let bar = this.gaugeBars.get(key);
     if (bar === undefined) {
@@ -1144,7 +1144,7 @@ export class Card extends Phaser.GameObjects.Container {
     const lineWidth = metrics.px(PRESSED_BORDER_WIDTH);
     const { rect, radius } = paperStroke(metrics, width, height, lineWidth);
     drawBox(highlight, rect, {
-      border: COLOR.cardBorder,
+      borderColor: COLOR.cardBorder,
       borderWidth: lineWidth,
       radius,
     });
@@ -1313,7 +1313,7 @@ export class CellHighlight extends Phaser.GameObjects.Graphics {
         height: metrics.px(SIZE.cardHeight) + width,
       },
       {
-        border: color,
+        borderColor: color,
         borderWidth: width,
         radius: metrics.px(PAPER_INSET + PAPER_RADIUS + CELL_HIGHLIGHT_WIDTH / 2),
       },
@@ -1360,7 +1360,7 @@ export class CellOverlay extends Phaser.GameObjects.Container {
     drawBox(
       plate,
       { x: -badgeWidth / 2, y: -badgeHeight / 2, width: badgeWidth, height: badgeHeight },
-      { fill: COLOR.cellOverlayPlate, fillAlpha: CELL_OVERLAY_PLATE_ALPHA, radius: badgeHeight / 2 },
+      { fillColor: COLOR.cellOverlayPlate, fillAlpha: CELL_OVERLAY_PLATE_ALPHA, radius: badgeHeight / 2 },
     );
 
     return scene.add.container(
@@ -1402,7 +1402,7 @@ function createEmptyOutline(
   const lineWidth = metrics.linePx(2);
   const { rect, radius } = paperStroke(metrics, width, height, lineWidth);
   drawBox(outline, rect, {
-    border: COLOR.cardBorder,
+    borderColor: COLOR.cardBorder,
     borderWidth: lineWidth,
     radius,
     dashed: true,
@@ -1435,9 +1435,9 @@ function createPaper(
 
   const face = scene.add.graphics();
   drawBox(face, paperRect(metrics, width, height), {
-    fill: COLOR.cardFace,
+    fillColor: COLOR.cardFace,
     fillAlpha: empty ? 0.35 : 0.85,
-    border: COLOR.cardBorder,
+    borderColor: COLOR.cardBorder,
     borderWidth: metrics.linePx(2),
     radius: metrics.px(PAPER_RADIUS),
     dashed: empty,
@@ -1496,7 +1496,7 @@ function createVeil(
 ): Phaser.GameObjects.Graphics {
   const veil = scene.add.graphics();
   drawBox(veil, paperRect(metrics, width, height), {
-    fill,
+    fillColor: fill,
     fillAlpha,
     radius: metrics.px(PAPER_RADIUS),
   });

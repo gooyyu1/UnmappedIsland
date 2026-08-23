@@ -10,11 +10,11 @@ describe('プロパティのタグ', () => {
   function build(...files: string[]): WorldCodex {
     const loader = new WorldCodexYamlLoader();
     files.forEach((yaml, index) => loader.load(`file${index}.yaml`, yaml));
-    return loader.build();
+    return loader.buildAndReset();
   }
 
   function instanceOf(codex: WorldCodex, objectDefName: string): WorldObject {
-    return new WorldSession(codex).spawn(codex.objectNames.getId(objectDefName));
+    return new WorldSession(codex).createObject(codex.objectNames.getId(objectDefName));
   }
 
   function propertyNamesWithTag(codex: WorldCodex, object: WorldObject, tagName: string): string[] {

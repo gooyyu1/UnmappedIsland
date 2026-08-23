@@ -38,7 +38,7 @@ describe('角丸矩形の丸み(drawBox)', () => {
     // Phaserは右側の角の弧を x + width - radius を中心に描くため、抑えないと弧が左へ貫通する
     // （値がごく小さいときのステータスバーの塗り）。
     const { graphics, rounded } = recorder();
-    drawBox(graphics, { x: 0, y: 0, width: 6, height: 40 }, { fill: 0xffffff, radius: 10 });
+    drawBox(graphics, { x: 0, y: 0, width: 6, height: 40 }, { fillColor: 0xffffff, radius: 10 });
 
     expect(rounded).toEqual([{ x: 0, width: 6, radius: 3 }]);
   });
@@ -66,7 +66,7 @@ describe('角丸矩形の丸み(drawBox)', () => {
 
   it('辺が丸みに対して十分あれば、指定した丸みのまま描く', () => {
     const { graphics, rounded } = recorder();
-    drawBox(graphics, { x: 0, y: 0, width: 200, height: 40 }, { fill: 0xffffff, radius: 10 });
+    drawBox(graphics, { x: 0, y: 0, width: 200, height: 40 }, { fillColor: 0xffffff, radius: 10 });
 
     expect(rounded).toEqual([{ x: 0, width: 200, radius: 10 }]);
   });

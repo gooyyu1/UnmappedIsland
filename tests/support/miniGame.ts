@@ -7,14 +7,14 @@ import { Location } from '../../src/domain/wrappers/Location';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { IslandMap } from '../../src/domain/generation/IslandMap';
-import { NewGameSession } from '../../src/domain/generation/NewGame';
+import { StartedGame } from '../../src/domain/generation/NewGame';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { WORLD_TIME_YAML } from './worldYaml';
 
 /**
  * 層の責務だけを見る試験（単体試験）のための、**同梱のWorldCodexを読まない**ゲーム一式。
  *
- * 映しの層は入口がNewGameSessionなので、素直に組み立てようとすると地形生成まで通ることになり、
+ * 映しの層は入口がStartedGameなので、素直に組み立てようとすると地形生成まで通ることになり、
  * 実データ一式が前提に入る。そうすると、YAMLの宣言を変えただけで層の試験が赤くなり、赤を見て
  * どこを直すかが決まらない——それは通しの試験（tests/integration）と実データの試験
  * （tests/world-codex）の役目。ここは生成を通さず、世界・キャラクタ・土地を直に置く。
@@ -58,7 +58,7 @@ object_defs:
 /** miniGameが組み立てた一式。 */
 export interface MiniGame {
   readonly codex: WorldCodex;
-  readonly game: NewGameSession;
+  readonly game: StartedGame;
 
   /** 操作するキャラクタ。手持ち・装備・怪我を持つ。 */
   readonly player: WorldObject;
@@ -69,7 +69,7 @@ export interface MiniGame {
   slot(name: string, host?: WorldObject): Slot;
 
   /** その型を1つ湧かせ、intoへ入れる（入らなければ投げる）。 */
-  spawn(defName: string, into?: Slot): WorldObject;
+  createObject(defName: string, into?: Slot): WorldObject;
 }
 
 /** miniGameの組み立て方を変えたいときだけ渡すもの。 */
@@ -86,7 +86,7 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
   loader.load('world.yaml', WORLD_TIME_YAML);
   loader.load('skeleton.yaml', SKELETON);
   if (yaml.trim() !== '') loader.load('test.yaml', yaml);
-  const codex = loader.build();
+  const codex = loader.buildAndReset();
 
   // NewGame.startと同じ順序で組み立てる（worldインスタンスもセッションに属させるため）。
   const session = new WorldSession(codex, undefined, options.rng);
@@ -94,15 +94,21 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
   const world = new World(worldInstance, codex);
   session.adoptWorld(world);
 
-  const landInstance = session.spawn(codex.objectNames.getId('land'));
-  if (landInstance.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations'))) !== undefined)
+  const landInstance = session.createObject(codex.objectNames.getId('land'));
+  if (
+    landInstance.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))) !==
+    undefined
+  )
     throw new Error('landをworldへ置けませんでした。');
 
-  const playerInstance = session.spawn(codex.objectNames.getId(options.player ?? 'player'));
-  if (playerInstance.moveToSlot(landInstance.getSlot(codex.slotNames.getId('characters'))) !== undefined)
+  const playerInstance = session.createObject(codex.objectNames.getId(options.player ?? 'player'));
+  if (
+    playerInstance.moveToSlotOrRejection(landInstance.getSlot(codex.slotNames.getId('characters'))) !==
+    undefined
+  )
     throw new Error('playerをlandへ置けませんでした。');
 
-  const game = new NewGameSession(
+  const game = new StartedGame(
     session,
     world,
     new PlayerCharacter(playerInstance, codex),
@@ -116,9 +122,9 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
     player: playerInstance,
     land: landInstance,
     slot: (name, host = playerInstance) => host.getSlot(codex.slotNames.getId(name)),
-    spawn: (defName, into) => {
-      const object = session.spawn(codex.objectNames.getId(defName));
-      if (into !== undefined && object.moveToSlot(into) !== undefined)
+    createObject: (defName, into) => {
+      const object = session.createObject(codex.objectNames.getId(defName));
+      if (into !== undefined && object.moveToSlotOrRejection(into) !== undefined)
         throw new Error(`${defName}を置けませんでした。`);
       return object;
     },

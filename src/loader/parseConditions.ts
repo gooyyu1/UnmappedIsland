@@ -210,7 +210,7 @@ function parseConditionLeaf(
   // propを伴わない葉（in_slot・slot・matches）は主語のオブジェクトそのものを見るので、
   // プロパティ名で祖先を探すancestorはそこでは解決先を持たない。
   const subjectName = tryGetScalar(map, 'subject', context);
-  const leafScope = propName !== undefined ? scope : scope.objectOnly;
+  const leafScope = propName !== undefined ? scope : scope.withoutPropertyName;
   const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, leafScope) : 'self';
 
   /** 主語を絞るキーと、読み取った演算子キー。残ったキーは綴り間違いか、この主語では使えない演算子。 */

@@ -1,8 +1,8 @@
 import type { ActiveEffect, SpawnTargetRoot } from './ActiveEffect';
 import { Action, Combination } from './Interaction';
-import { EffectSite } from './EffectSite';
-import type { SameSlotPlacement } from './EffectSite';
-import { LocalIndexMap } from './LocalIndexMap';
+import { SameSlotSpawnSite } from './SameSlotSpawnSite';
+import type { SameSlotPlacement } from './SameSlotSpawnSite';
+import { LocalIndexByGlobalId } from './LocalIndexByGlobalId';
 import type { ObjectDef } from './ObjectDef';
 import type { PropertyPath } from './ReferenceRoot';
 import { ReferenceContext } from './ReferenceRoot';
@@ -27,7 +27,7 @@ type MemberKind = 'プロパティ' | 'スロット';
  * 検証は対象Slot自身へ委ねる。持続効果（modify/add）の登録・解除は、生成・エッジ形成/解消・トポロジ変化の
  * 契機で、Defが宣言する効果一式（PassiveEffects）へ「登録/解除してほしい」と依頼するだけで、どのtargetが
  * どこへ紐付くかは効果自身が知る。能動効果（set/add/destroy/spawn/transfer・actions/combinations・tick）は、
- * 適用の入口（applyActiveEffect）と対象解決、same_slot spawnの位置捕捉（EffectSite）・配置（place）を持つが、
+ * 適用の入口（applyActiveEffect）と対象解決、same_slot spawnの位置捕捉（SameSlotSpawnSite）・配置（place）を持つが、
  * 値の変更そのものは対象のPropertyValueへ、条件判定・抽選はDef側の効果へ委ねる。
  *
  * **セッションは自分で持つ。** 何かを頼む側がWorldSessionを渡すことはない（sessionフィールド参照）。
@@ -64,7 +64,7 @@ export class WorldObject {
 
   /**
    * このオブジェクトが生きるセッション。**生成したセッションと、その後この物が居るセッションは同じ**
-   * ——だからこの物へ何かを頼む側は、セッションを渡さない。配置の関門（attachToSlot・destroy）も、
+   * ——だからこの物へ何かを頼む側は、セッションを渡さない。配置の関門（attachToSlotOrRejection・destroy）も、
    * プロパティの値の変更（PropertyValue.add）も、ここから辿って自分で記録・判定する。
    */
   readonly session: WorldSession;
@@ -84,14 +84,14 @@ export class WorldObject {
     this.slots = def.enumerateSlotDefs().map((sd) => new Slot(sd, this));
 
     // 生成時はまだトポロジが無いため、Self関係のみ登録する。Parent/Child/Ancestorはmove_to_slot以降に登録される。
-    def.passives.registerRelation(this, 'self', true);
+    def.passives.setRelationRegistered(this, 'self', true);
   }
 
   // ---- プロパティを引く（6節） ----
 
   tryGetProperty(globalPropertyId: number): PropertyValue | undefined {
-    const local = this.def.propertyLayout.toLocal(globalPropertyId);
-    return local === LocalIndexMap.missing ? undefined : this.properties[local];
+    const local = this.def.propertyIndexByGlobalId.toLocal(globalPropertyId);
+    return local === LocalIndexByGlobalId.missing ? undefined : this.properties[local];
   }
 
   /**
@@ -186,8 +186,8 @@ export class WorldObject {
   }
 
   tryGetSlot(globalSlotId: number): Slot | undefined {
-    const local = this.def.slotLayout.toLocal(globalSlotId);
-    return local === LocalIndexMap.missing ? undefined : this.slots[local];
+    const local = this.def.slotIndexByGlobalId.toLocal(globalSlotId);
+    return local === LocalIndexByGlobalId.missing ? undefined : this.slots[local];
   }
 
   /**
@@ -216,7 +216,7 @@ export class WorldObject {
    *
    * Slot.fillRatioと表裏で、こちらは入れ物の側から自分の詰まり具合を見る。
    */
-  storageFillRatio(): number | undefined {
+  fullestSlotFillRatio(): number | undefined {
     if (!this.def.isStorage) return undefined;
 
     let fullest: number | undefined;
@@ -230,7 +230,7 @@ export class WorldObject {
   // ---- 所属ツリーを辿る（7.1節） ----
 
   /** otherが自分自身か、自分の中に入っているか。入れ物を自分の中へ入れる操作を弾くのに使う。 */
-  contains(other: WorldObject): boolean {
+  containsOrIs(other: WorldObject): boolean {
     for (let node: WorldObject | undefined = other; node !== undefined; node = node._parent) {
       if (node === this) return true;
     }
@@ -244,7 +244,8 @@ export class WorldObject {
   findAncestorWithProperty(propertyGlobalId: number): WorldObject | undefined {
     let current = this._parent;
     while (current !== undefined) {
-      if (current.def.propertyLayout.toLocal(propertyGlobalId) !== LocalIndexMap.missing) return current;
+      if (current.def.propertyIndexByGlobalId.toLocal(propertyGlobalId) !== LocalIndexByGlobalId.missing)
+        return current;
       current = current.parent;
     }
     return undefined;
@@ -268,12 +269,12 @@ export class WorldObject {
    * 「世界に存在する＝worldツリーに繋がっている」という前提（7.1節）のもと、別途のインスタンス一覧を持たず
    * ツリー走査だけで解決する。
    */
-  findDescendantByInstanceId(instanceId: number): WorldObject | undefined {
+  findSelfOrDescendantByInstanceId(instanceId: number): WorldObject | undefined {
     if (this.instanceId === instanceId) return this;
 
     for (const slot of this.slots) {
       for (const child of slot.contents) {
-        const found = child.findDescendantByInstanceId(instanceId);
+        const found = child.findSelfOrDescendantByInstanceId(instanceId);
         if (found !== undefined) return found;
       }
     }
@@ -286,12 +287,12 @@ export class WorldObject {
    * 世界にただ1つ在る型（`singleton`、15節）を名前で指す`move`の`to_object`（9.6節）が使う。
    * 同じ型が複数在れば最初に見つかったものを返す。
    */
-  findDescendantOfDef(objectDefGlobalId: number): WorldObject | undefined {
+  findSelfOrDescendantOfDef(objectDefGlobalId: number): WorldObject | undefined {
     if (this.def.globalId === objectDefGlobalId) return this;
 
     for (const slot of this.slots) {
       for (const child of slot.contents) {
-        const found = child.findDescendantOfDef(objectDefGlobalId);
+        const found = child.findSelfOrDescendantOfDef(objectDefGlobalId);
         if (found !== undefined) return found;
       }
     }
@@ -311,8 +312,11 @@ export class WorldObject {
    *
    * 戻り値: 成功時はundefined、失敗時はその理由。
    */
-  moveToSlot(slot: Slot, at?: SlotPosition): string | undefined {
-    return this.attachToSlot(slot, at === undefined ? undefined : (target) => target.insertAt(this, at));
+  moveToSlotOrRejection(slot: Slot, at?: SlotPosition): string | undefined {
+    return this.attachToSlotOrRejection(
+      slot,
+      at === undefined ? undefined : (target) => target.insertAt(this, at),
+    );
   }
 
   /**
@@ -320,16 +324,16 @@ export class WorldObject {
    * 枠数の決まったスロットで空きが作れず配置できない場合はエラーを返す
    * （＝呼び出し側でfallbackへ委ねる）。
    */
-  insertSameSlot(slot: Slot, placement: SameSlotPlacement): string | undefined {
-    return this.attachToSlot(slot, (target) =>
-      target.placeSameSlot(this, placement.originCellIndex, placement.kindRemains),
+  insertSameSlotOrRejection(slot: Slot, placement: SameSlotPlacement): string | undefined {
+    return this.attachToSlotOrRejection(slot, (target) =>
+      target.placeSameSlot(this, placement.originCellIndex, placement.sameKindStillInCell),
     );
   }
 
   /**
    * 今いるスロットの中での並び替え（Slot.moveStackTo参照）。どこにも属していない場合はfalse。
    *
-   * 「どのスロットに居るか」を呼び出し側に持たせないための入口。**moveToSlotで同じ枠を指すのとは
+   * 「どのスロットに居るか」を呼び出し側に持たせないための入口。**moveToSlotOrRejectionで同じ枠を指すのとは
    * 別物**——付け替えはいったん抜いてから入れるので、抜いた時点でセルが詰まって指した位置の意味が
    * ずれる。動かすのも1個ではなくスタック丸ごとで、理由はSlot側にある。
    */
@@ -360,7 +364,7 @@ export class WorldObject {
    * 決まるため（Slot.acceptedCount）。**束をまとめて落とす操作が、落とす前に「何枚ついてくるか」を
    * 決めるための問い**で、ついてきた枚数はそのまま「これだけ入る」という約束になる。
    */
-  acceptedCountForMoveTo(followers: readonly WorldObject[], slot: Slot): number {
+  acceptedCountForMoveToIncludingSelf(followers: readonly WorldObject[], slot: Slot): number {
     const candidates: WorldObject[] = [];
     for (const candidate of [this as WorldObject, ...followers]) {
       if (candidate.rejectionForLoopOrDetach(slot) !== undefined) break;
@@ -377,7 +381,7 @@ export class WorldObject {
    */
   private rejectionForLoopOrDetach(slot: Slot): string | undefined {
     // 入れ物を自分自身や自分の中身の中へ入れると、ツリーから切り離された輪ができる（7.1節）。
-    if (this.contains(slot.owner)) {
+    if (this.containsOrIs(slot.owner)) {
       return `'${this.def.name}' を自分自身の中へは入れられません。`;
     }
 
@@ -391,13 +395,16 @@ export class WorldObject {
   }
 
   /**
-   * placeは位置を指定する配置（moveToSlotのat・insertSameSlot）専用。省略すると通常の追加
-   * （Slot.addInternal）になる。
+   * placeは位置を指定する配置（moveToSlotOrRejectionのat・insertSameSlotOrRejection）専用。省略すると通常の追加
+   * （Slot.addWithoutParentLink）になる。
    *
    * **配置を伴う変化の唯一の関門**なので、ここが出入りを記録する（WorldChange）。移動前の居場所は
    * 切り離す前に控える——切り離した後では、どこから来たのかを誰も知らない。
    */
-  private attachToSlot(targetSlot: Slot, place: ((slot: Slot) => boolean) | undefined): string | undefined {
+  private attachToSlotOrRejection(
+    targetSlot: Slot,
+    place: ((slot: Slot) => boolean) | undefined,
+  ): string | undefined {
     const rejection = this.rejectionForMoveTo(targetSlot);
     if (rejection !== undefined) return rejection;
 
@@ -410,19 +417,19 @@ export class WorldObject {
       if (!place(targetSlot)) {
         // 枠数の決まったスロットで空きが作れず配置できなかった（呼び出し側でfallbackへ）。既に旧親から切り離し済みの
         // ため、この場合は未配置（どこにも属さない）で戻す。
-        this.session.recordChange(this, from, undefined);
+        this.session.runAndRecordChange(this, from, undefined);
         return `'${newParent.def.name}.${targetSlot.def.name}' に指定した位置の空きがありません。`;
       }
     } else {
-      targetSlot.addInternal(this);
+      targetSlot.addWithoutParentLink(this);
     }
 
-    this.session.recordChange(this, from, targetSlot);
+    this.session.runAndRecordChange(this, from, targetSlot);
     this.setParent(newParent, targetSlot);
-    this.registerEdgeWith(newParent, true);
+    this.setEdgeRegistered(newParent, true);
     // 祖先対象の登録は、新しい親チェーンが確定した後に行う（detachFromParentでの解除と対、
     // registerAncestorTargetedRecursively参照）。
-    this.registerAncestorTargetedRecursively(true);
+    this.setAncestorTargetsRegistered(true);
 
     return undefined;
   }
@@ -432,12 +439,12 @@ export class WorldObject {
     const oldSlot = this._parentSlot;
     if (oldParent === undefined || oldSlot === undefined) return;
 
-    // 祖先対象の登録解除は、トポロジが変わる前（旧祖先がまだ辿れるうち）に行う（registerAncestorTargetedRecursively
-    // 参照。再登録はattachToSlot側）。
-    this.registerAncestorTargetedRecursively(false);
+    // 祖先対象の登録解除は、トポロジが変わる前（旧祖先がまだ辿れるうち）に行う（setAncestorTargetsRegistered
+    // 参照。再登録はattachToSlotOrRejection側）。
+    this.setAncestorTargetsRegistered(false);
 
-    oldSlot.removeInternal(this);
-    this.registerEdgeWith(oldParent, false);
+    oldSlot.removeWithoutParentLink(this);
+    this.setEdgeRegistered(oldParent, false);
     this.setParent(undefined, undefined);
   }
 
@@ -451,9 +458,9 @@ export class WorldObject {
    * falseで解除）。親側だけ子thisを明示的に渡すのは、親からどの子かを一意に辿れないため。target=selfは
    * コンストラクタで登録済みのため、ここでは扱わない。
    */
-  private registerEdgeWith(parent: WorldObject, register: boolean): void {
-    this.def.passives.registerRelation(this, 'parent', register);
-    parent.def.passives.registerChild(parent, this, register);
+  private setEdgeRegistered(parent: WorldObject, register: boolean): void {
+    this.def.passives.setRelationRegistered(this, 'parent', register);
+    parent.def.passives.setChildRegistered(parent, this, register);
   }
 
   /**
@@ -461,11 +468,11 @@ export class WorldObject {
    * 全員の祖先チェーンも変わるため、再帰で全員分を扱う。トポロジ変化前に解除・変化後に登録する順序を守ることで、
    * いずれの時点でも祖先はownerから辿れ、前回の登録先を憶える必要がない。
    */
-  private registerAncestorTargetedRecursively(register: boolean): void {
-    this.def.passives.registerRelation(this, 'ancestor', register);
+  private setAncestorTargetsRegistered(register: boolean): void {
+    this.def.passives.setRelationRegistered(this, 'ancestor', register);
 
     for (const slot of this.slots) {
-      for (const child of [...slot.contents]) child.registerAncestorTargetedRecursively(register);
+      for (const child of [...slot.contents]) child.setAncestorTargetsRegistered(register);
     }
   }
 
@@ -479,7 +486,7 @@ export class WorldObject {
    * 型が合うかではなく今入るかで選ぶので、先の枠が埋まっていれば次の枠が答えになる。**今itemが居る枠は
    * 答えない**——同じ枠へ入れ直すのは入れる操作ではない。
    */
-  putInSlotFor(item: WorldObject): Slot | undefined {
+  slotForPutIn(item: WorldObject): Slot | undefined {
     const from = item.parent === this ? item.parentSlot : undefined;
     return this.def
       .placementSlotDefs('manual')
@@ -492,12 +499,13 @@ export class WorldObject {
    * スロットへ自分自身を移動する（著者がスロット名を知らなくてよい規約。spawnのintoとmoveが共用、
    * 9.4節）。
    *
-   * **札を重ねたドロップ（putInSlotFor）と同じ規約の、別の入口。** 走査する枠の並びは1箇所が
+   * **札を重ねたドロップ（slotForPutIn）と同じ規約の、別の入口。** 走査する枠の並びは1箇所が
    * 答える（placementSlotDefs）。
    */
   moveIntoFirstAcceptingSlot(target: WorldObject): boolean {
     for (const slotDef of target.def.placementSlotDefs('auto'))
-      if (this.attachToSlot(target.getSlot(slotDef.globalId), undefined) === undefined) return true;
+      if (this.attachToSlotOrRejection(target.getSlot(slotDef.globalId), undefined) === undefined)
+        return true;
 
     return false;
   }
@@ -532,7 +540,7 @@ export class WorldObject {
     this.spillContentsTo(this._parent);
     const from = this._parentSlot;
     this.detachFromParent();
-    this.session.recordChange(this, from, undefined);
+    this.session.runAndRecordChange(this, from, undefined);
   }
 
   /**
@@ -585,24 +593,24 @@ export class WorldObject {
     const newSlots = newDef.enumerateSlotDefs().map((slotDef) => new Slot(slotDef, this));
     const rehomed: Array<{ child: WorldObject; slot: Slot }> = [];
     for (const slot of this.slots) {
-      const slotLocalId = newDef.slotLayout.toLocal(slot.def.globalId);
+      const slotLocalId = newDef.slotIndexByGlobalId.toLocal(slot.def.globalId);
       for (const child of [...slot.contents]) {
-        const destination = slotLocalId === LocalIndexMap.missing ? undefined : newSlots[slotLocalId];
+        const destination = slotLocalId === LocalIndexByGlobalId.missing ? undefined : newSlots[slotLocalId];
         if (destination === undefined || destination.rejectionFor(child) !== undefined) {
           this.evict(child);
           continue;
         }
-        destination.addInternal(child);
+        destination.addWithoutParentLink(child);
         rehomed.push({ child, slot: destination });
       }
     }
 
     const parent = this._parent;
 
-    this.registerAncestorTargetedRecursively(false);
-    this._def.passives.registerRelation(this, 'self', false);
-    if (parent !== undefined) this.registerEdgeWith(parent, false);
-    for (const { child } of rehomed) child.registerEdgeWith(this, false);
+    this.setAncestorTargetsRegistered(false);
+    this._def.passives.setRelationRegistered(this, 'self', false);
+    if (parent !== undefined) this.setEdgeRegistered(parent, false);
+    for (const { child } of rehomed) child.setEdgeRegistered(this, false);
 
     const carriedValues = new Map<number, number>();
     for (const property of this.properties) carriedValues.set(property.def.globalId, property.number);
@@ -619,10 +627,10 @@ export class WorldObject {
       if (carried !== undefined) property.setNumberWithoutEvents(carried);
     }
 
-    this._def.passives.registerRelation(this, 'self', true);
-    if (parent !== undefined) this.registerEdgeWith(parent, true);
-    for (const { child } of rehomed) child.registerEdgeWith(this, true);
-    this.registerAncestorTargetedRecursively(true);
+    this._def.passives.setRelationRegistered(this, 'self', true);
+    if (parent !== undefined) this.setEdgeRegistered(parent, true);
+    for (const { child } of rehomed) child.setEdgeRegistered(this, true);
+    this.setAncestorTargetsRegistered(true);
 
     // 型が変われば同種の判定も変わる（7.6節）ので、所属スタックを判定し直させる。
     this._parentSlot?.restack(this);
@@ -662,12 +670,12 @@ export class WorldObject {
 
   /**
    * 持続効果の対象（8.1節）を、影響の一覧のために解決する。**childは今入っている子を全部**返す
-   * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（registerChild）。
+   * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（setChildRegistered）。
    * actor/draggedはpassivesに現れない（parsePassiveTransfers）ため空になる。
    */
   resolveInfluenceTargets(path: PropertyPath): readonly WorldObject[] {
     if (path.root === 'child') return [...this.children()];
-    const target = path.owner(ReferenceContext.of(this));
+    const target = path.owner(ReferenceContext.forSelf(this));
     return target === undefined ? [] : [target];
   }
 
@@ -711,7 +719,7 @@ export class WorldObject {
           trigger.acceptsDragged(dragged.def) &&
           trigger.interaction.unmetRequirement(context) === undefined &&
           trigger.acceptedCount(context, [dragged]) >= 1 &&
-          !trigger.interaction.unresolvable(context),
+          !trigger.interaction.blocksOperation(context),
       )
       .map((trigger) => new Combination(trigger, this, dragged, actor));
   }
@@ -782,23 +790,23 @@ export class WorldObject {
     dragged: WorldObject | undefined,
   ): void {
     // same_slot spawnのために「selfが今占めている位置」を、まだ何も起きていないこの入口で捕捉する。destroyが
-    // selfを消した後でも、spawnはこのアンカーと配置時のスロットの状態から置き換え位置を決められる（EffectSite
+    // selfを消した後でも、spawnはこのアンカーと配置時のスロットの状態から置き換え位置を決められる（SameSlotSpawnSite
     // 参照）。
-    const effectSite = this.captureEffectSite();
+    const sameSlotSpawnSite = this.captureSameSlotSpawnSite();
     const session = this.session;
     const context = ReferenceContext.acting(this, actor, dragged);
-    session.withSubject(this, () => effect.apply(context, session, effectSite));
+    session.withSubject(this, () => effect.apply(context, session, sameSlotSpawnSite));
   }
 
-  /** same_slotの置き換えのために、selfが今占めている位置を捕捉する。「これから消えるか」の予測は織り込まず、置き換え位置の判断は配置時にEffectSite自身が行う。parentが無ければ位置が無いのでundefined。 */
-  private captureEffectSite(): EffectSite | undefined {
+  /** same_slotの置き換えのために、selfが今占めている位置を捕捉する。「これから消えるか」の予測は織り込まず、置き換え位置の判断は配置時にSameSlotSpawnSite自身が行う。parentが無ければ位置が無いのでundefined。 */
+  private captureSameSlotSpawnSite(): SameSlotSpawnSite | undefined {
     const slot = this._parentSlot;
     if (this._parent === undefined || slot === undefined) return undefined;
 
     const originStack = slot.findStackContaining(this);
     if (originStack === undefined) return undefined;
 
-    return new EffectSite(this._parent, slot, originStack, slot.indexOfStack(originStack));
+    return new SameSlotSpawnSite(this._parent, slot, originStack, slot.indexOfStack(originStack));
   }
 
   /**
@@ -809,15 +817,15 @@ export class WorldObject {
     objectGlobalId: number,
     into: SpawnTargetRoot,
     context: ReferenceContext,
-    effectSite: EffectSite | undefined,
+    sameSlotSpawnSite: SameSlotSpawnSite | undefined,
   ): void {
-    const spawned = this.session.spawn(objectGlobalId);
-    this.place(spawned, into, context, into === 'same_slot' ? effectSite : undefined);
+    const spawned = this.session.createObject(objectGlobalId);
+    this.place(spawned, into, context, into === 'same_slot' ? sameSlotSpawnSite : undefined);
   }
 
   /**
    * spawnした側は配置先のスロット名を書かない。same_slotなら捕捉しておいた位置へ配置する
-   * （EffectSite.placeReplacementへ委ねる）。self/actor/picked/childなら対象のスロットを宣言順に走査し、最初に配置できた
+   * （SameSlotSpawnSite.placeReplacementへ委ねる）。self/actor/picked/childなら対象のスロットを宣言順に走査し、最初に配置できた
    * スロットへ入れる。**配置に失敗した場合は起点自身の親へこぼれ、そこも受け取らなければさらに上へ**
    * （spillTo）。どこにも入らなければ、生まれた物はそのまま失われる。
    */
@@ -825,7 +833,7 @@ export class WorldObject {
     spawned: WorldObject,
     into: SpawnTargetRoot,
     context: ReferenceContext,
-    site: EffectSite | undefined,
+    site: SameSlotSpawnSite | undefined,
   ): void {
     let primaryTarget: WorldObject;
     let placed: boolean;

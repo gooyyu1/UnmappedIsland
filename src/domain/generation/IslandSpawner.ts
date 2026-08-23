@@ -20,8 +20,9 @@ const FIRST_PATH_PROGRESS = 2;
  * 「探索の進捗が最大へ達する前に、その土地のすべての道が見つかる」という要求を、
  * データの丸め方ではなく生成の不変条件として保証する（テストで検証する）。
  */
-export function populate(session: WorldSession, map: IslandMap): void {
-  if (session.world === undefined) throw new Error('populate には World を持つ WorldSession が必要です。');
+export function spawnIslandIntoWorld(session: WorldSession, map: IslandMap): void {
+  if (session.world === undefined)
+    throw new Error('spawnIslandIntoWorld には World を持つ WorldSession が必要です。');
 
   const codex = session.codex;
   const world = session.world.instance;
@@ -40,12 +41,12 @@ export function populate(session: WorldSession, map: IslandMap): void {
   // 1. 土地の実体化。
   const locations = new Array<WorldObject>(map.sites.length);
   for (const site of map.sites) {
-    const location = session.spawn(site.type!.objectDefGlobalId);
+    const location = session.createObject(site.type!.objectDefGlobalId);
     // 亜種の個体差は、探索の抽選がweightとして読むプロパティ（TerrainGeneration.md 3.6節）。
     if (site.variant !== undefined)
       for (const [propertyGlobalId, value] of site.variant.props)
         location.getProperty(propertyGlobalId).setNumberWithoutEvents(value);
-    const error = location.moveToSlot(world.getSlot(locationsSlotId));
+    const error = location.moveToSlotOrRejection(world.getSlot(locationsSlotId));
     if (error !== undefined) throw new Error(`土地 '${site.type!.name}' を配置できません: ${error}`);
     locations[site.index] = location;
     map.siteInstanceIds[site.index] = location.instanceId;
@@ -73,11 +74,11 @@ export function populate(session: WorldSession, map: IslandMap): void {
           : FIRST_PATH_PROGRESS +
             Math.trunc(((lastPathProgress - FIRST_PATH_PROGRESS) * i) / (touching.length - 1));
 
-      const path = session.spawn(pathDefId);
+      const path = session.createObject(pathDefId);
       path.getProperty(travelMinutesId).setNumberWithoutEvents(edge.travelMinutes);
       path.getProperty(requiredProgressId).setNumberWithoutEvents(requiredProgress);
       path.getProperty(destinationIdId).setNumberWithoutEvents(locations[other].instanceId);
-      const error = path.moveToSlot(locations[site.index].getSlot(undiscoveredFixturesSlotId));
+      const error = path.moveToSlotOrRejection(locations[site.index].getSlot(undiscoveredFixturesSlotId));
       if (error !== undefined) throw new Error(`道を配置できません: ${error}`);
       pathsByEnds.set(endsKey(site.index, other), path);
     }
@@ -122,11 +123,11 @@ export function placePlayerAt(
   site: Site,
 ): Location {
   const codex = session.codex;
-  const location = session.world!.instance.findDescendantByInstanceId(map.siteInstanceIds[site.index]);
+  const location = session.world!.instance.findSelfOrDescendantByInstanceId(map.siteInstanceIds[site.index]);
   if (location === undefined)
-    throw new Error('開始地点の土地が実体化されていません（先にpopulateを呼んでください）。');
+    throw new Error('開始地点の土地が実体化されていません（先にspawnIslandIntoWorldを呼んでください）。');
 
-  const error = character.moveToSlot(location.getSlot(codex.vocabulary.world.charactersSlotId));
+  const error = character.moveToSlotOrRejection(location.getSlot(codex.vocabulary.world.charactersSlotId));
   if (error !== undefined) throw new Error(`プレイヤーを開始地点へ配置できません: ${error}`);
 
   return new Location(location, codex);

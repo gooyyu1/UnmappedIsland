@@ -8,7 +8,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 // （WorldObject.artSuffix）に対する自動テスト。YAML文法そのもの（ロード時検証）はyamlLoader.test.tsが持つ。
 describe('WorldObject.artSuffix', () => {
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('test.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('test.yaml', yaml).buildAndReset();
   }
 
   function instantiate(codex: WorldCodex, objectDefName: string, session: WorldSession): WorldObject {

@@ -21,7 +21,7 @@ export function clockParts(totalMinutes: number): { days: number; hour: number; 
  *
  * 動きながら出る長さ（時間経過の演出）だけはelapsedTextが別の形を持つ。理由はそちらに書く。
  */
-export function minutesText(minutes: number): string {
+export function hoursAndMinutesText(minutes: number): string {
   const hours = Math.trunc(minutes / 60);
   const rest = minutes % 60;
   return hours === 0 ? `${rest}分` : rest === 0 ? `${hours}時間` : `${hours}時間${rest}分`;
@@ -31,14 +31,14 @@ export function minutesText(minutes: number): string {
  * 操作にかかるゲーム内時間の表示。時間を消費しない操作（0分）はundefinedで、呼び出し側は
  * 「かかる時間の行を出さない」を選べる——「0分かかる」と出しても意味が無いため。
  */
-export function durationText(minutes: number): string | undefined {
-  return minutes <= 0 ? undefined : `かかる時間 ${minutesText(minutes)}`;
+export function timeCostLine(minutes: number): string | undefined {
+  return minutes <= 0 ? undefined : `かかる時間 ${hoursAndMinutesText(minutes)}`;
 }
 
 /**
  * 時間経過の演出に出す「開始から何分経ったか」（CardInteraction.md 7節）。
  *
- * minutesTextと形を分けているのは、これが**動きながら大きく出る数字**だから——「1時間30分」と
+ * hoursAndMinutesTextと形を分けているのは、これが**動きながら大きく出る数字**だから——「1時間30分」と
  * 「45分」では字数が違い、値が変わるたびに文字の幅が踊る。時分を桁で揃えた形なら踊らない。
  * 頭の`+`は、同じ画面に出ている時計の絶対時刻（11:00）と見分けるため。
  */

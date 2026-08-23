@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { PropertyDef } from '../../src/domain/PropertyDef';
-import { characterDefNames, resolveCharacterDefName } from '../../src/domain/generation/NewGame';
+import { characterDefNames, resolveCharacterDefNameOrFirst } from '../../src/domain/generation/NewGame';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
@@ -11,7 +11,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 // describe.eachへ渡すため、beforeAllではなく読み込み時にCodexを組み立てる。
-const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
 const characters = characterDefNames(codex);
 
 function def(name: string): ObjectDef {
@@ -50,10 +50,12 @@ function stand(character: string): { player: PlayerCharacter; session: WorldSess
   const session = new WorldSession(codex);
   const worldInstance = new WorldObject(0, def('world'), session);
   session.adoptWorld(new World(worldInstance, codex));
-  const beach = session.spawn(codex.objectNames.getId('sandy_beach'));
-  expect(beach.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
-  const instance = session.spawn(codex.objectNames.getId(character));
-  expect(instance.moveToSlot(beach.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
+  const beach = session.createObject(codex.objectNames.getId('sandy_beach'));
+  expect(
+    beach.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
+  ).toBeUndefined();
+  const instance = session.createObject(codex.objectNames.getId(character));
+  expect(instance.moveToSlotOrRejection(beach.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
   return { player: new PlayerCharacter(instance, codex), session };
 }
 
@@ -79,7 +81,7 @@ function takeRest(
   const { player } = stand(character);
   const staminaId = codex.propertyNames.getId('stamina');
   const wakefulnessId = codex.propertyNames.getId('wakefulness');
-  const minutes = player.instance.tryGetAction(actionName, player.instance)?.minutes() ?? 0;
+  const minutes = player.instance.tryGetAction(actionName, player.instance)?.executionMinutes() ?? 0;
   const spent = minutes / 15;
 
   player.instance.tryGetProperty(staminaId)?.setNumber(0);
@@ -106,8 +108,8 @@ describe('プレイヤーキャラクタの定義', () => {
   });
 
   it('セーブに残っていた識別子が未知でも、先頭のキャラクタで開ける', () => {
-    expect(resolveCharacterDefName(codex, characters[1])).toBe(characters[1]);
-    expect(resolveCharacterDefName(codex, 'いなくなったキャラクタ')).toBe(characters[0]);
+    expect(resolveCharacterDefNameOrFirst(codex, characters[1])).toBe(characters[1]);
+    expect(resolveCharacterDefNameOrFirst(codex, 'いなくなったキャラクタ')).toBe(characters[0]);
   });
 
   describe.each(characters)('%s', (character) => {
@@ -163,7 +165,7 @@ describe('プレイヤーキャラクタの定義', () => {
 
     it('ステータスエリアに出るのは7件で、並び順も揃っている', () => {
       // propertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（StatusArea.md 3節）。
-      const instance = new WorldSession(codex).spawn(def(character).globalId);
+      const instance = new WorldSession(codex).createObject(def(character).globalId);
       const status = instance.propertiesWithTag(codex.propertyTagNames.getId('status'));
 
       expect(status.map((property) => property.def.name)).toEqual([
@@ -205,7 +207,7 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     it('水分は安全域のやや下、覚醒度と体力は満タン、体脂肪は最大値の1/4から始まる', () => {
-      const instance = new WorldSession(codex).spawn(def(character).globalId);
+      const instance = new WorldSession(codex).createObject(def(character).globalId);
 
       // 開始直後からステータスバーに出るよう、安全域の境目（80%）のやや下の75%から始める（Characters.md）。
       expect(
@@ -330,7 +332,7 @@ describe('プレイヤーキャラクタの定義', () => {
     it('ステータスエリアに出るもののうち、致命的域を持つのは水分と血だけ', () => {
       // 3つ目の死に方（飢え）はbody_fatが持つが、statusタグが無いのでここには現れない
       // （画面に出る飢えの兆しは満腹度、docs/world/Characters.md）。
-      const instance = new WorldSession(codex).spawn(def(character).globalId);
+      const instance = new WorldSession(codex).createObject(def(character).globalId);
 
       const fatal = instance
         .propertiesWithTag(codex.propertyTagNames.getId('status'))
@@ -365,7 +367,9 @@ describe('プレイヤーキャラクタの定義', () => {
     it.each(RESTS)('休息「%s」を持ち、%i分かかる', (actionName, minutes) => {
       const { player } = stand(character);
 
-      expect(player.instance.tryGetAction(actionName, player.instance)?.minutes() ?? 0).toBe(minutes);
+      expect(player.instance.tryGetAction(actionName, player.instance)?.executionMinutes() ?? 0).toBe(
+        minutes,
+      );
     });
 
     it('眠る休息だけが眠気を戻す', () => {

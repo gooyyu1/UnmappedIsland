@@ -24,11 +24,11 @@ export class PlayerCharacter extends ObjectWrapper {
   }
 
   get hp(): number {
-    return this.numberOf(this.words.hpId);
+    return this.effectiveNumberOf(this.words.hpId);
   }
 
   get satiety(): number {
-    return this.numberOf(this.words.satietyId);
+    return this.effectiveNumberOf(this.words.satietyId);
   }
 
   /**
@@ -63,7 +63,7 @@ export class PlayerCharacter extends ObjectWrapper {
    * その枠へ入る（埋まっていればfalse）。省略すると最初の空き枠へ入る。
    */
   take(item: WorldObject, at?: SlotPosition): boolean {
-    return item.moveToSlot(this.instance.getSlot(this.handSlotId), at) === undefined;
+    return item.moveToSlotOrRejection(this.instance.getSlot(this.handSlotId), at) === undefined;
   }
 
   /** この周回の決着（Ending参照）。 */

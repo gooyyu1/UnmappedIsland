@@ -33,10 +33,10 @@ export type ScreenPlace = 'fixtures' | 'items' | 'hand';
  * 指す**——移動をまたいで持ち越した場所は、移った先の同じ名前のスロットではなく、元のスロットを
  * 指し続ける（cardPlacesOfを作り直しても、前の土地のインスタンスを掴んだ場所は変わらない）。
  */
-export type ScreenPlaces = (screen: ScreenPlace) => CardPlace;
+export type ScreenPlaceResolver = (screen: ScreenPlace) => CardPlace;
 
 /** 今のプレイヤーと現在地について、画面の区画が映す先を解決できるようにする。 */
-export function cardPlacesOf(player: PlayerCharacter, location: Location): ScreenPlaces {
+export function cardPlacesOf(player: PlayerCharacter, location: Location): ScreenPlaceResolver {
   return (screen) => {
     switch (screen) {
       case 'items':

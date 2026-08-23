@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
-  advanceCrafting,
+  tryAdvanceCrafting,
   currentStep,
   spawnInProgressObject,
   stepIsSupplied,
@@ -93,20 +93,21 @@ object_defs:
     // 時間を進めるにはWorldを持つセッションが要るので、時計を持つworldを一緒に読む。
     const loader = new WorldCodexYamlLoader();
     loader.load('world.yaml', WORLD_TIME_YAML);
-    codex = loader.load('crafting.yaml', YAML).build();
+    codex = loader.load('crafting.yaml', YAML).buildAndReset();
 
     session = new WorldSession(codex);
     const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), session);
     session.adoptWorld(new World(worldInstance, codex));
-    ground = session.spawn(idOf('crafting_ground'));
-    ground.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')));
-    wip = session.spawn(idOf(inProgressObjectName('axe', 'basic')));
-    wip.moveToSlot(ground.getSlot(codex.slotNames.getId('items')));
-    recipe = codex.objects.get(idOf('axe')).recipes[0];
+    ground = session.createObject(idOf('crafting_ground'));
+    ground.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations')));
+    wip = session.createObject(idOf(inProgressObjectName('axe', 'basic')));
+    wip.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId('items')));
+    recipe = codex.objects.get(idOf('axe')).recipesProducingThis[0];
   });
 
   function put(objectName: string, count: number): void {
-    for (let i = 0; i < count; i += 1) session.spawn(idOf(objectName)).moveToSlot(wip.getSlot(materialsId()));
+    for (let i = 0; i < count; i += 1)
+      session.createObject(idOf(objectName)).moveToSlotOrRejection(wip.getSlot(materialsId()));
   }
 
   const boxContents = () =>
@@ -135,10 +136,11 @@ object_defs:
 
   it('要求数を超えて入っている分は、充足率を進めない', () => {
     // 枠の上限は全工程の合計なので、1工程目の要求を超えて入れられる。
-    const raftWip = session.spawn(idOf(inProgressObjectName('raft', 'basic')));
-    raftWip.moveToSlot(ground.getSlot(codex.slotNames.getId('items')));
-    const raft = codex.objects.get(idOf('raft')).recipes[0];
-    for (let i = 0; i < 3; i += 1) session.spawn(idOf('wood')).moveToSlot(raftWip.getSlot(materialsId()));
+    const raftWip = session.createObject(idOf(inProgressObjectName('raft', 'basic')));
+    raftWip.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId('items')));
+    const raft = codex.objects.get(idOf('raft')).recipesProducingThis[0];
+    for (let i = 0; i < 3; i += 1)
+      session.createObject(idOf('wood')).moveToSlotOrRejection(raftWip.getSlot(materialsId()));
 
     expect(stepSupplyRatio(raftWip, materialsId(), raft.steps[0]), '1工程目は1つで足りる').toBe(1);
   });
@@ -151,7 +153,7 @@ object_defs:
 
     put('wood', 2);
     put('knife', 1);
-    expect(advanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(true);
+    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(true);
 
     expect(wip.tryGetProperty(finishedStepsId)?.number ?? 0, '1工程終えるごとに1増える').toBe(1);
     expect(wip.tryGetProperty(finishedStepsId)?.ratio, '2工程中1工程＝0.5').toBe(0.5);
@@ -163,8 +165,8 @@ object_defs:
     const finishedStepsId = codex.propertyNames.tryGetId('finished_steps');
     expect(finishedStepsId, '2工程以上のレシピ（axe）があるので識別子自体は存在する').toBeDefined();
 
-    const spearWip = session.spawn(idOf(inProgressObjectName('spear', 'basic')));
-    spearWip.moveToSlot(ground.getSlot(codex.slotNames.getId('items')));
+    const spearWip = session.createObject(idOf(inProgressObjectName('spear', 'basic')));
+    spearWip.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId('items')));
 
     expect(spearWip.tryGetProperty(finishedStepsId!)).toBeUndefined();
   });
@@ -174,7 +176,7 @@ object_defs:
     put('knife', 1);
 
     expect(stepIsSupplied(wip, materialsId(), recipe.steps[0])).toBe(false);
-    expect(advanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(false);
+    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(false);
     expect(wip.tryGetProperty(progressId())?.number ?? 0).toBe(0);
   });
 
@@ -182,7 +184,7 @@ object_defs:
     put('wood', 2);
     put('knife', 1);
 
-    expect(advanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(true);
+    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(true);
     // 木は消費される。刃物は2工程目が要求しないので、箱に留めず親へ返す。
     expect(boxContents()).toEqual([]);
     expect(onGround().sort()).toEqual([inProgressObjectName('axe', 'basic'), 'knife']);
@@ -194,7 +196,7 @@ object_defs:
     put('knife', 1);
     const before = session.world!.totalMinutes;
 
-    advanceCrafting(wip, materialsId(), recipe, codex, session);
+    tryAdvanceCrafting(wip, materialsId(), recipe, codex, session);
 
     expect(session.world!.totalMinutes - before).toBe(30);
   });
@@ -206,7 +208,7 @@ object_defs:
     const duringTicks: string[][] = [];
     session.observeTicks(
       () => duringTicks.push(boxContents()),
-      () => advanceCrafting(wip, materialsId(), recipe, codex, session),
+      () => tryAdvanceCrafting(wip, materialsId(), recipe, codex, session),
     );
 
     expect(duringTicks.length, '30分＝2tick').toBe(2);
@@ -216,13 +218,13 @@ object_defs:
 
   // 在庫確認は開始時に一度だけで、経過中の再判定はしない（ActionSystem.md 6.1節）。
   it('経過中に素材が失われても、始めた工程は成立する', () => {
-    const spear = codex.objects.get(idOf('spear')).recipes[0];
-    const spearWip = session.spawn(idOf(inProgressObjectName('spear', 'basic')));
-    spearWip.moveToSlot(ground.getSlot(codex.slotNames.getId('items')));
-    const rotting = session.spawn(idOf('crumbling_wood'));
-    rotting.moveToSlot(spearWip.getSlot(materialsId()));
+    const spear = codex.objects.get(idOf('spear')).recipesProducingThis[0];
+    const spearWip = session.createObject(idOf(inProgressObjectName('spear', 'basic')));
+    spearWip.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId('items')));
+    const rotting = session.createObject(idOf('crumbling_wood'));
+    rotting.moveToSlotOrRejection(spearWip.getSlot(materialsId()));
 
-    expect(advanceCrafting(spearWip, materialsId(), spear, codex, session)).toBe(true);
+    expect(tryAdvanceCrafting(spearWip, materialsId(), spear, codex, session)).toBe(true);
 
     expect(rotting.parent, '素材は経過中に壊れて世界から外れている').toBeUndefined();
     expect(spearWip.def.name, 'それでも工程は成立し、同じ個体が完成品になる').toBe('spear');
@@ -233,13 +235,13 @@ object_defs:
     put('knife', 1);
     put('rope', 1);
 
-    expect(advanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(true);
+    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(true);
     expect(onGround().sort(), '途中はまだ製作中。用済みの刃物は先にこぼれる').toEqual([
       inProgressObjectName('axe', 'basic'),
       'knife',
     ]);
 
-    expect(advanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(true);
+    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(true);
     expect(onGround().sort()).toEqual(['axe', 'knife']);
   });
 });
@@ -288,13 +290,13 @@ object_defs:
   beforeEach(() => {
     const loader = new WorldCodexYamlLoader();
     loader.load('world.yaml', WORLD_TIME_YAML);
-    codex = loader.load('crafting.yaml', YAML).build();
+    codex = loader.load('crafting.yaml', YAML).buildAndReset();
 
     session = new WorldSession(codex);
     const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), session);
     session.adoptWorld(new World(worldInstance, codex));
-    ground = session.spawn(idOf('crafting_ground'));
-    ground.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')));
+    ground = session.createObject(idOf('crafting_ground'));
+    ground.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations')));
   });
 
   it('製作中オブジェクトは、完成品のタグが通るスロットへ入る', () => {

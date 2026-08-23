@@ -22,7 +22,7 @@ const FILES = import.meta.glob('../assets/objects/*.png', {
  * object_defの識別子 → 画像のURL。同梱ぶんを土台に、起動時にアセットパックのぶんが重なる。
  * 重なった後は変わらない。
  */
-const ART = new Map<string, string>(
+const MUTABLE_ART_BY_OBJECT_NAME = new Map<string, string>(
   Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.png$/, '$1'), url]),
 );
 
@@ -30,11 +30,11 @@ const ART = new Map<string, string>(
  * object_defの識別子 → 画像のURL。**鍵はテクスチャキーではない**ので、他の在庫表（BACKGROUND_ART
  * ほか）と同じ`*_ART`とは名乗らない——読み込む側はobjectTextureを掛けてから鍵にする（artFiles）。
  */
-export const ART_BY_OBJECT_NAME: ReadonlyMap<string, string> = ART;
+export const ART_BY_OBJECT_NAME: ReadonlyMap<string, string> = MUTABLE_ART_BY_OBJECT_NAME;
 
 /** アセットパックの型の絵を在庫表へ重ねる（起動時に1回、installAssetPackから）。 */
 export function installPackObjectArt(art: ReadonlyMap<string, string>, packName: string): void {
-  addPackArt(ART, art, packName, '型の絵');
+  addPackArt(MUTABLE_ART_BY_OBJECT_NAME, art, packName, '型の絵');
 }
 
 /**

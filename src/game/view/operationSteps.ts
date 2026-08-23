@@ -22,10 +22,10 @@ export type Activity = 'idle' | 'exploring' | 'elapsing' | 'transiting';
  * ワールドを変える操作を受け付けるか。
  *
  * **見せている最中の画面は、今のワールドを映していない**——経過中は過去の時点を再現していて
- * （recordChange）、場面転換中は作り直しを暗幕で隠している。並んでいる札は既に古い対象を指して
+ * （runAndRecordChange）、場面転換中は作り直しを暗幕で隠している。並んでいる札は既に古い対象を指して
  * いるので、そこからの操作を受け付けると、見えているものと起きることが食い違う。
  */
-export function runsOperation(activity: Activity): boolean {
+export function acceptsOperation(activity: Activity): boolean {
   return activity === 'idle';
 }
 

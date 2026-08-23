@@ -12,7 +12,7 @@ describe('WorldObjectのactions/combinations実行', () => {
   });
 
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   /** 1つのcodexから作る物は同じセッションに属する（WorldObject.session）。 */
@@ -22,7 +22,7 @@ describe('WorldObjectのactions/combinations実行', () => {
       session = new WorldSession(codex);
       sessions.set(codex, session);
     }
-    return session.spawn(codex.objectNames.getId(objectName));
+    return session.createObject(codex.objectNames.getId(objectName));
   }
 
   // ------------------------------------------------------------------
@@ -150,7 +150,7 @@ object_defs:
 
     const basketInstance = spawn(codex, 'basket');
     const rockInstance = spawn(codex, 'rock_item');
-    expect(rockInstance.moveToSlot(basketInstance.getSlot(itemsSlotId))).toBeUndefined();
+    expect(rockInstance.moveToSlotOrRejection(basketInstance.getSlot(itemsSlotId))).toBeUndefined();
 
     const executed = rockInstance.tryGetAction('use', undefined)?.tryExecute() === true;
 
@@ -200,8 +200,8 @@ object_defs:
     const ground = spawn(codex, 'ground');
     const boar = spawn(codex, 'boar');
     const basket = spawn(codex, 'basket');
-    expect(boar.moveToSlot(ground.getSlot(itemsSlotId))).toBeUndefined();
-    expect(basket.moveToSlot(ground.getSlot(itemsSlotId))).toBeUndefined();
+    expect(boar.moveToSlotOrRejection(ground.getSlot(itemsSlotId))).toBeUndefined();
+    expect(basket.moveToSlotOrRejection(ground.getSlot(itemsSlotId))).toBeUndefined();
 
     boar.getProperty(smashTargetId).setNumberWithoutEvents(9999);
     expect(boar.tryGetAction('trample', undefined)?.tryExecute() === true).toBe(true);

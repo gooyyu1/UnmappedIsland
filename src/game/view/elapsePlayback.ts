@@ -4,10 +4,10 @@ import { TickProgress } from './tickProgress';
 /** 経過を見せている、ある瞬間の画面（ElapsePlayback.frameAt）。 */
 export interface ElapseFrame {
   /** 時計に出す時刻（ゲーム内の総経過分）。目盛りに届くまでは手前の目盛りのまま。 */
-  readonly minutes: number;
+  readonly clockMinutes: number;
 
   /**
-   * ドーナツグラフの真ん中に出す、開始からの経過分。**minutesと同じ目盛りから導く**ので、
+   * ドーナツグラフの真ん中に出す、開始からの経過分。**clockMinutesと同じ目盛りから導く**ので、
    * 輪の数字と時計が別々の瞬間を指すことはない。
    */
   readonly elapsedMinutes: number;
@@ -27,20 +27,25 @@ export interface ElapseFrame {
  * 経過中の画面に現れる。
  *
  * **同じ控えは2度出さない。** フレームが飛んで目盛りを何本か跨いでも、飛ばした控えは控えた順に
- * まとめて出す（見せ落としを残さない、finish）。
+ * まとめて出す（見せ落としを残さない、takeRemaining）。
  */
 export class ElapsePlayback {
   private readonly fromMinutes: number;
   private readonly progress: TickProgress;
-  private readonly ticks: readonly RecordedView[];
+  private readonly recordedTicks: readonly RecordedView[];
 
   /** ここまで出した控えの数。控えは控えた時刻の順に並んでいるので、位置ひとつで足りる。 */
-  private shown = 0;
+  private shownCount = 0;
 
-  constructor(fromMinutes: number, toMinutes: number, tickMinutes: number, ticks: readonly RecordedView[]) {
+  constructor(
+    fromMinutes: number,
+    toMinutes: number,
+    tickMinutes: number,
+    recordedTicks: readonly RecordedView[],
+  ) {
     this.fromMinutes = fromMinutes;
     this.progress = new TickProgress(fromMinutes, toMinutes, tickMinutes);
-    this.ticks = ticks;
+    this.recordedTicks = recordedTicks;
   }
 
   /** 経過し切るまでのゲーム内時間（分）。0なら実時間をかけずに済む。 */
@@ -51,12 +56,12 @@ export class ElapsePlayback {
   /** 開始からelapsedMinutes進んだ瞬間に見せるもの。 */
   frameAt(elapsedMinutes: number): ElapseFrame {
     const stepped = this.progress.steppedMinutesAt(elapsedMinutes);
-    const minutes = this.fromMinutes + stepped;
+    const clockMinutes = this.fromMinutes + stepped;
     return {
-      minutes,
+      clockMinutes,
       elapsedMinutes: stepped,
       ratio: this.progress.ratioAt(elapsedMinutes),
-      due: this.dueAt(minutes),
+      due: this.dueAt(clockMinutes),
     };
   }
 
@@ -66,16 +71,19 @@ export class ElapsePlayback {
    * 実時間の刻みが最後の目盛りちょうどに来るとは限らないので、**最後の1枚が出ないまま終わりうる**。
    * 経過し切った並びは呼び出し側が改めて見せるが、その手前で起きた変化はここでしか出ない。
    */
-  finish(): readonly RecordedView[] {
+  takeRemaining(): readonly RecordedView[] {
     return this.dueAt(Number.POSITIVE_INFINITY);
   }
 
   /** その時刻までに控えられていて、まだ出していないもの。 */
   private dueAt(minutes: number): readonly RecordedView[] {
     const due: RecordedView[] = [];
-    while (this.shown < this.ticks.length && this.ticks[this.shown].minutes <= minutes) {
-      due.push(this.ticks[this.shown]);
-      this.shown += 1;
+    while (
+      this.shownCount < this.recordedTicks.length &&
+      this.recordedTicks[this.shownCount].minutes <= minutes
+    ) {
+      due.push(this.recordedTicks[this.shownCount]);
+      this.shownCount += 1;
     }
     return due;
   }

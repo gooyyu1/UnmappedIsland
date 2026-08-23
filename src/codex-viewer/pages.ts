@@ -55,7 +55,7 @@ function renderObjectPage(view: CodexView, name: string): string {
     artHtml(view, def, 'large') +
     `<div>` +
     `<h1>${escapeHtml(view.objectLabel(name))}</h1>` +
-    identifierLine(view, view.objectLabel(name), name, view.objectDisplayName(name)) +
+    identifierLineHtml(view, view.objectLabel(name), name, view.objectDisplayName(name)) +
     (description === undefined ? '' : `<p class="lead">${escapeHtml(description)}</p>`) +
     `<p>${tagChipsHtml(view, def)}</p>` +
     (base === undefined
@@ -66,13 +66,13 @@ function renderObjectPage(view: CodexView, name: string): string {
       ? `<p><a href="#/network/${encodeURIComponent(name)}">クラフトネットワークで見る</a></p>`
       : '') +
     `</div></div>` +
-    section(
+    sectionHtmlOrEmpty(
       '型の性質',
       view.describeHtml(name, (out) => describeObjectDef(def, view.names, out)),
     ) +
-    section('props', propertiesHtml(view, def)) +
-    section('slots', slotsHtml(view, def)) +
-    section(
+    sectionHtmlOrEmpty('props', propertiesHtml(view, def)) +
+    sectionHtmlOrEmpty('slots', slotsHtml(view, def)) +
+    sectionHtmlOrEmpty(
       'passives（持続効果）',
       view.describeHtml(name, (out) => {
         for (const effect of def.passives.declarations) describePassive(effect, view.names, out);
@@ -80,15 +80,15 @@ function renderObjectPage(view: CodexView, name: string): string {
     ) +
     // きっかけで節を分けない——宣言が1つの並びなので、ここも宣言順のまま出す（各操作が自分の
     // きっかけを名乗る、describeInteraction）。
-    section('interactions（操作）', interactionsHtml(view, def, def.triggers)) +
-    section('recipes', recipesHtml(view, def)) +
-    variantsSection(view, name) +
+    sectionHtmlOrEmpty('interactions（操作）', interactionsHtml(view, def, def.triggers)) +
+    sectionHtmlOrEmpty('recipes', recipesHtml(view, def)) +
+    variantsSectionHtml(view, name) +
     // 逆引きはどちらも、行き先の型を絵で並べるだけにする——どの操作・どの工程かはリンク先で分かる。
-    section(
+    sectionHtmlOrEmpty(
       'この型を生み出すもの',
       matchingObjectsHtml(view, (other) => createsObject(other, def.globalId)),
     ) +
-    section(
+    sectionHtmlOrEmpty(
       'この型を材料・道具に使うもの',
       matchingObjectsHtml(view, (other) => usesInRecipes(other, def)),
     )
@@ -110,7 +110,7 @@ function matchingObjectsHtml(view: CodexView, matches: (def: ObjectDef) => boole
  * 土地の型の亜種（TerrainGeneration.md 3.6節）。亜種の名前は型の名前を置き換える——
  * 「砂浜のヤシの浜」ではなく「ヤシの浜」（Localization.md）。
  */
-function variantsSection(view: CodexView, objectName: string): string {
+function variantsSectionHtml(view: CodexView, objectName: string): string {
   const locationType = view.locationTypeOf(objectName);
   if (locationType === undefined || locationType.variants.length === 0) return '';
 
@@ -120,14 +120,14 @@ function variantsSection(view: CodexView, objectName: string): string {
       const variantTexts = texts.variant(variant.id);
       return (
         `<tr><td>${escapeHtml(variantTexts.displayName)}` +
-        `${untranslatedBadge(view, variant.id, variantTexts.displayName)}</td>` +
+        `${untranslatedBadgeHtml(view, variant.id, variantTexts.displayName)}</td>` +
         `<td><code>${escapeHtml(variant.id)}</code></td>` +
         `<td>${escapeHtml(variantTexts.description ?? '')}</td></tr>`
       );
     })
     .join('');
 
-  return section(
+  return sectionHtmlOrEmpty(
     '亜種（土地の名前）',
     `<table><thead><tr><th>名前</th><th>識別子</th><th>説明</th></tr></thead><tbody>${rows}</tbody></table>`,
   );
@@ -159,14 +159,17 @@ function renderPropertyPage(view: CodexView, objectName: string, propertyName: s
     `${escapeHtml(view.objectLabel(objectName))}</a></p>` +
     `<h1>${escapeHtml(view.propertyLabel(objectName, propertyName))}</h1>` +
     `<p class="identifier"><code>${escapeHtml(objectName)}.${escapeHtml(propertyName)}</code>` +
-    `${untranslatedBadge(view, propertyName, texts.displayName)}</p>` +
+    `${untranslatedBadgeHtml(view, propertyName, texts.displayName)}</p>` +
     (texts.description === undefined ? '' : `<p class="lead">${escapeHtml(texts.description)}</p>`) +
-    section(
+    sectionHtmlOrEmpty(
       '定義',
       view.describeHtml(objectName, (out) => describeProperty(propertyDef, view.names, out)),
     ) +
-    section('影響元', influencesHtml(view, def, propertyGlobalId)) +
-    section('同じ名前のpropを持つ他の型', others === '' ? EMPTY_HTML : `<ul class="plain">${others}</ul>`)
+    sectionHtmlOrEmpty('影響元', influencesHtml(view, def, propertyGlobalId)) +
+    sectionHtmlOrEmpty(
+      '同じ名前のpropを持つ他の型',
+      others === '' ? EMPTY_HTML : `<ul class="plain">${others}</ul>`,
+    )
   );
 }
 
@@ -273,11 +276,11 @@ function renderSlotPage(view: CodexView, slotName: string): string {
   return (
     `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
     `<h1>${escapeHtml(view.slotLabel(slotName))}</h1>` +
-    identifierLine(view, view.slotLabel(slotName), slotName, texts.displayName) +
+    identifierLineHtml(view, view.slotLabel(slotName), slotName, texts.displayName) +
     (texts.putIn?.description === undefined
       ? ''
       : `<p class="lead">${escapeHtml(texts.putIn.description)}</p>`) +
-    section('このスロットを持つ型', rows === '' ? EMPTY_HTML : slotTableHtml('型', rows))
+    sectionHtmlOrEmpty('このスロットを持つ型', rows === '' ? EMPTY_HTML : slotTableHtml('型', rows))
   );
 }
 
@@ -496,7 +499,7 @@ function propertiesHtml(view: CodexView, def: ObjectDef): string {
       // 表示名が識別子のままなら、同じ文字列を2行並べても意味が無いので印だけを添える。
       const untranslated = view.isUntranslated(propertyDef.name, texts.displayName);
       const identifier = untranslated
-        ? untranslatedBadge(view, propertyDef.name, texts.displayName)
+        ? untranslatedBadgeHtml(view, propertyDef.name, texts.displayName)
         : `<div class="identifier"><code>${escapeHtml(propertyDef.name)}</code></div>`;
 
       return (
@@ -527,7 +530,7 @@ function slotsHtml(view: CodexView, def: ObjectDef): string {
       (slotDef) =>
         `<tr><td><a href="${view.slotHref(slotDef.name)}">` +
         `${escapeHtml(view.slotLabel(slotDef.name))}</a>` +
-        `${headingIdentifier(view.slotLabel(slotDef.name), slotDef.name)}</td>` +
+        `${headingIdentifierHtml(view.slotLabel(slotDef.name), slotDef.name)}</td>` +
         `${slotCellsHtml(view, def.name, slotDef)}</tr>`,
     )
     .join('');
@@ -542,8 +545,8 @@ function interactionsHtml(view: CodexView, def: ObjectDef, triggers: readonly In
       const description =
         texts.description === undefined ? '' : `<p class="muted">${escapeHtml(texts.description)}</p>`;
       const label = view.interactionLabel(def.name, interaction.name);
-      return card(
-        escapeHtml(label) + headingIdentifier(label, interaction.name),
+      return cardHtml(
+        escapeHtml(label) + headingIdentifierHtml(label, interaction.name),
         description + view.describeHtml(def.name, (out) => describeInteraction(trigger, view.names, out)),
       );
     })
@@ -552,9 +555,9 @@ function interactionsHtml(view: CodexView, def: ObjectDef, triggers: readonly In
 }
 
 function recipesHtml(view: CodexView, def: ObjectDef): string {
-  const cards = def.recipes
+  const cards = def.recipesProducingThis
     .map((recipe) =>
-      card(
+      cardHtml(
         escapeHtml(recipe.name),
         view.describeHtml(def.name, (out) => describeRecipe(recipe, view.names, out)),
       ),
@@ -580,7 +583,7 @@ function influencesHtml(view: CodexView, owner: ObjectDef, propertyGlobalId: num
     })
     .filter(({ writer }) => !writer.isEmpty)
     .map(({ def, writer }) =>
-      card(
+      cardHtml(
         `<a href="${view.objectHref(def.name)}">${escapeHtml(view.objectLabel(def.name))}</a>`,
         view.linesHtml(writer.toLines(), def.name),
       ),
@@ -591,16 +594,16 @@ function influencesHtml(view: CodexView, owner: ObjectDef, propertyGlobalId: num
 }
 
 /** 中身が無い節は見出しごと出さない（「（なし）」の並びは、読み手に何も伝えないため）。 */
-function section(title: string, body: string): string {
+function sectionHtmlOrEmpty(title: string, body: string): string {
   return body === '' || body === EMPTY_HTML ? '' : `<h2>${escapeHtml(title)}</h2>${body}`;
 }
 
-function card(heading: string, body: string): string {
+function cardHtml(heading: string, body: string): string {
   return `<div class="card"><h4>${heading}</h4>${body}</div>`;
 }
 
 /** 見出しの脇に小さく添える識別子。見出しがすでに識別子そのものなら何も足さない。 */
-function headingIdentifier(label: string, identifier: string): string {
+function headingIdentifierHtml(label: string, identifier: string): string {
   return label === identifier ? '' : ` <code>${escapeHtml(identifier)}</code>`;
 }
 
@@ -608,13 +611,13 @@ function headingIdentifier(label: string, identifier: string): string {
  * 見出しの下に置く識別子の行。見出しがすでに識別子そのものを出しているとき（識別子表示モード、
  * または未翻訳）は繰り返さない。
  */
-function identifierLine(view: CodexView, label: string, identifier: string, displayName: string): string {
+function identifierLineHtml(view: CodexView, label: string, identifier: string, displayName: string): string {
   const code = label === identifier ? '' : `<code>${escapeHtml(identifier)}</code>`;
-  const badge = untranslatedBadge(view, identifier, displayName);
+  const badge = untranslatedBadgeHtml(view, identifier, displayName);
   return code === '' && badge === '' ? '' : `<p class="identifier">${code}${badge}</p>`;
 }
 
-function untranslatedBadge(view: CodexView, identifier: string, displayName: string): string {
+function untranslatedBadgeHtml(view: CodexView, identifier: string, displayName: string): string {
   return view.isUntranslated(identifier, displayName)
     ? '<span class="badge badge-untranslated">未翻訳</span>'
     : '';

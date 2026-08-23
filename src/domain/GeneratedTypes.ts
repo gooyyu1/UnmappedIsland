@@ -54,7 +54,10 @@ export class GeneratedTypes {
    *
    * 値が {@link NO_AXIS_VALUE} の軸は落とす。軸を1つも持たない座標へ着いたら素の型そのもの。
    */
-  tryResolve(def: ObjectDef, axisValues: ReadonlyMap<string, string>): number | undefined {
+  tryResolveTypeAtMovedCoordinate(
+    def: ObjectDef,
+    axisValues: ReadonlyMap<string, string>,
+  ): number | undefined {
     const current = this.coordinateOf(def);
     const moved = new Map(current.axisValues);
     for (const [axis, value] of axisValues) {

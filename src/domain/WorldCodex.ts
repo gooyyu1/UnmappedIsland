@@ -49,7 +49,7 @@ export class WorldCodex {
    * レシピ一覧の棚に使うタグ（`recipe_categories`、Windows.md 9節）のグローバルID。
    * **並びが優先順位**で、完成品は最初に一致した棚にだけ載る。
    */
-  readonly recipeCategoryTagIds: readonly number[];
+  readonly recipeCategoryTagIdsByPriority: readonly number[];
 
   constructor(
     objectNames: NameRegistry,
@@ -62,11 +62,11 @@ export class WorldCodex {
     vocabulary: WorldVocabulary,
     generation?: GenerationDefs,
     generatedTypes?: GeneratedTypes,
-    recipeCategoryTagIds: readonly number[] = [],
+    recipeCategoryTagIdsByPriority: readonly number[] = [],
     requiredPropsByTag: ReadonlyMap<number, readonly number[]> = new Map(),
   ) {
     this.generatedTypes = generatedTypes ?? new GeneratedTypes();
-    this.recipeCategoryTagIds = recipeCategoryTagIds;
+    this.recipeCategoryTagIdsByPriority = recipeCategoryTagIdsByPriority;
     this.objectNames = objectNames;
     this.propertyNames = propertyNames;
     this.slotNames = slotNames;
@@ -204,7 +204,7 @@ export class WorldCodex {
    * 居なければundefined＝そこへは変われない。
    */
   tryResolveBecome(def: ObjectDef, axisValues: ReadonlyMap<string, string>): ObjectDef | undefined {
-    const globalId = this.generatedTypes.tryResolve(def, axisValues);
+    const globalId = this.generatedTypes.tryResolveTypeAtMovedCoordinate(def, axisValues);
     return globalId === undefined ? undefined : this.objects.get(globalId);
   }
 

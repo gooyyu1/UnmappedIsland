@@ -1,5 +1,5 @@
 import type { WorldCodex } from '../../domain/WorldCodex';
-import type { NewGameSession } from '../../domain/generation/NewGame';
+import type { StartedGame } from '../../domain/generation/NewGame';
 import type { WorldObject } from '../../domain/WorldObject';
 import { putIntoSlot } from '../../domain/slotEntry';
 import type { Localization } from '../../locale/Localization';
@@ -87,7 +87,7 @@ export interface CardOperations {
   readonly actions: readonly CardAction[];
   readonly movedIds: (count: number) => readonly number[];
   readonly dropInto: (place: CardPlace, at?: CardPlacement, count?: number) => CardDrop | undefined;
-  readonly reorder: (at: CardPlacement) => (() => void) | undefined;
+  readonly reorderActionAt: (at: CardPlacement) => (() => void) | undefined;
 }
 
 /**
@@ -123,7 +123,7 @@ export interface CardOperationsFactory {
 
 /** 今のゲームでの札の操作を作れるようにする。 */
 export function cardOperationsOf(
-  game: NewGameSession,
+  game: StartedGame,
   codex: WorldCodex,
   locale: Localization,
 ): CardOperationsFactory {
@@ -145,7 +145,7 @@ export function cardOperationsOf(
         key: action.name,
         name: declared.displayName,
         description: declared.description,
-        minutes: action.minutes(),
+        minutes: action.executionMinutes(),
         execute: () => {
           action.tryExecute();
         },
@@ -175,7 +175,7 @@ export function cardOperationsOf(
       const carried = carriedOf(stack, count);
       // 位置の指定が効くのは1つ目だけ。残りは同じ束へ合流するか、空いている枠へ入る。
       const put = (item: WorldObject, first: boolean): void => {
-        item.moveToSlot(place, first ? at : undefined);
+        item.moveToSlotOrRejection(place, first ? at : undefined);
       };
 
       const texts = locale.slot(place.def.name).putIn;
@@ -197,7 +197,7 @@ export function cardOperationsOf(
         name: told?.name,
         description: told?.description,
         minutes,
-        maxCount: stack[0].acceptedCountForMoveTo(stack.slice(1), place),
+        maxCount: stack[0].acceptedCountForMoveToIncludingSelf(stack.slice(1), place),
         movedIds: carried.map((item) => item.instanceId),
         // 時間のかかる枠（手当てなど）はここで時間を進める。どの経路で入れても同じ値段になる。
         execute: () => {
@@ -235,8 +235,8 @@ export function cardOperationsOf(
     return {
       name: texts.displayName,
       description: texts.description,
-      minutes: carried.length * combination.minutes(),
-      maxCount: combination.acceptedCount(candidates.slice(1)),
+      minutes: carried.length * combination.executionMinutes(),
+      maxCount: combination.acceptedCountIncludingSelf(candidates.slice(1)),
       movedIds: carriedOf(moved, count).map((instance) => instance.instanceId),
       execute: () => {
         combination.executeWithFollowers(carried.slice(1));
@@ -259,7 +259,7 @@ export function cardOperationsOf(
       actions: actionsOf(stack[0]),
       movedIds: (count) => carriedOf(stack, count).map((instance) => instance.instanceId),
       dropInto: dropInto(stack, place),
-      reorder: reorderIn(stack[0]),
+      reorderActionAt: reorderIn(stack[0]),
     }),
     actionsOf,
     combinationWith,

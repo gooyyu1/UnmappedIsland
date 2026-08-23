@@ -112,7 +112,7 @@ export function applyPatches(patches: readonly RawPatch[], defs: ReadonlyMap<str
 
   for (const patch of patches) {
     try {
-      apply(patch, defs, replaced);
+      applyPatch(patch, defs, replaced);
     } catch (error) {
       if (patch.report === undefined) throw error;
       patch.report.addDiscarded(patch.source, patch.description, messageOf(error));
@@ -120,7 +120,7 @@ export function applyPatches(patches: readonly RawPatch[], defs: ReadonlyMap<str
   }
 }
 
-function apply(patch: RawPatch, defs: ReadonlyMap<string, RawObjectDef>, replaced: Set<string>): void {
+function applyPatch(patch: RawPatch, defs: ReadonlyMap<string, RawObjectDef>, replaced: Set<string>): void {
   const [defName, ...rest] = patch.path.split('.');
   const def = defs.get(defName);
   if (def === undefined) throw new YamlLoadError(`object_def '${defName}' がありません。`);
@@ -202,7 +202,7 @@ function descendToKey(
 function indexOfMatch(seq: YAMLSeq, patch: RawPatch): number {
   const found = (seq.items as YamlNode[])
     .map((item, index) => ({ item, index }))
-    .filter(({ item }) => matches(item, patch.where as YamlNode));
+    .filter(({ item }) => matchesWhere(item, patch.where as YamlNode));
 
   if (found.length === 0) throw new YamlLoadError(`'${patch.path}' に'where'の当てはまる要素がありません。`);
   if (found.length > 1)
@@ -214,14 +214,14 @@ function indexOfMatch(seq: YAMLSeq, patch: RawPatch): number {
  * whereの当てはめ。**書いたキーだけを見る部分一致**で、書いていないキーは何であってもよい。
  * 配列だけは、書いた通りの並びと個数であることを求める（一部だけ書けても意味が決まらないため）。
  */
-function matches(target: YamlNode, where: YamlNode): boolean {
+function matchesWhere(target: YamlNode, where: YamlNode): boolean {
   if (isScalar(where)) return isScalar(target) && target.value === where.value;
 
   if (isMap(where)) {
     if (!isMap(target)) return false;
     for (const [key, node] of entriesInOrder(where)) {
       const found = tryGetNode(target as YAMLMap, key);
-      if (found === undefined || !matches(found, node)) return false;
+      if (found === undefined || !matchesWhere(found, node)) return false;
     }
     return true;
   }
@@ -229,7 +229,7 @@ function matches(target: YamlNode, where: YamlNode): boolean {
   if (isSeq(where)) {
     if (!isSeq(target) || target.items.length !== where.items.length) return false;
     return (where.items as YamlNode[]).every((node, index) =>
-      matches((target.items as YamlNode[])[index], node),
+      matchesWhere((target.items as YamlNode[])[index], node),
     );
   }
   return false;

@@ -1,17 +1,17 @@
 import type { YAMLMap } from 'yaml';
 import { asMap, entriesInOrder, requireScalar, tryGetBool, tryGetMap, tryGetSeq } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { built } from './parseCommon';
-import { parseProp } from './parseProperties';
+import { withYamlContext } from './parseCommon';
+import { parsePropAppendingPassives } from './parseProperties';
 import { parseSlot } from './parseSlots';
-import { parsePassive } from './parsePassives';
+import { parsePassiveInto } from './parsePassives';
 import { parseInteractions } from './parseInteractions';
 import { parseRecipes } from './parseRecipes';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { RawTrait } from './RawTrait';
 import { RawDeclarationBody, namesIn } from './RawDeclarationBody';
 import { IN_PROGRESS_TAG } from '../domain/RecipeDef';
-import { LocalIndexMap } from '../domain/LocalIndexMap';
+import { LocalIndexByGlobalId } from '../domain/LocalIndexByGlobalId';
 import { ObjectDef } from '../domain/ObjectDef';
 import { containerPropagationPassives } from '../domain/containerPropagation';
 import type { PassiveEffect } from '../domain/PassiveEffect';
@@ -68,7 +68,7 @@ export class RawObjectDef {
   readFields(): void {
     const context = `object_defs.'${this.name}'`;
 
-    this.body.read(this.node, context);
+    this.body.readFields(this.node, context);
     this.isSingleton = tryGetBool(this.node, 'singleton', context) ?? false;
     this.recipes = tryGetMap(this.node, 'recipes', context);
     this.variationAxes = tryGetMap(this.node, 'variation_axes', context);
@@ -106,7 +106,7 @@ export class RawObjectDef {
     if (merged.props !== undefined)
       for (const [propName, propValueNode] of entriesInOrder(merged.props))
         propertyDefs.push(
-          parseProp(
+          parsePropAppendingPassives(
             loader,
             this.name,
             propName,
@@ -114,7 +114,7 @@ export class RawObjectDef {
             passives,
           ),
         );
-    const propertyLayout = new LocalIndexMap(
+    const propertyIndexByGlobalId = new LocalIndexByGlobalId(
       loader.propertyNames.count,
       propertyDefs.map((p) => p.globalId),
     );
@@ -125,13 +125,13 @@ export class RawObjectDef {
         slotDefs.push(
           parseSlot(loader, this.name, slotName, asMap(slotValueNode, `'${this.name}'.slots.'${slotName}'`)),
         );
-    const slotLayout = new LocalIndexMap(
+    const slotIndexByGlobalId = new LocalIndexByGlobalId(
       loader.slotNames.count,
       slotDefs.map((s) => s.globalId),
     );
 
     for (const passiveNode of merged.passives)
-      parsePassive(loader, passives, this.name, passiveNode, undefined, undefined);
+      parsePassiveInto(loader, passives, this.name, passiveNode, undefined, undefined);
 
     // 中身の重さの伝播は著者に書かせず、エンジンが同じ`modify`の形で生やす（containerPropagation）。
     passives.push(...containerPropagationPassives(this.name, propertyDefs, loader.engine));
@@ -174,16 +174,16 @@ export class RawObjectDef {
         );
     }
 
-    return built(
+    return withYamlContext(
       `'${this.name}'`,
       () =>
         new ObjectDef(
           this.globalId,
           this.name,
           this.isSingleton,
-          propertyLayout,
+          propertyIndexByGlobalId,
           propertyDefs,
-          slotLayout,
+          slotIndexByGlobalId,
           slotDefs,
           passives,
           stackOrder,

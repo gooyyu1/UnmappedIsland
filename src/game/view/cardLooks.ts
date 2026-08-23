@@ -233,7 +233,7 @@ export function cardLooksOf(
    * （LiquidContainerSystem.md 2節）。
    */
   const capacityGaugeOf = (object: WorldObject): CardGauge | undefined => {
-    const ratio = object.storageFillRatio();
+    const ratio = object.fullestSlotFillRatio();
     if (ratio === undefined) return undefined;
     return { key: BUILTIN_GAUGE_KEYS.capacity, ratio, atMin: 'good', atMax: 'bad', worsensUpward: true };
   };
@@ -407,7 +407,7 @@ export function cardLooksOf(
     // 同じ「まだ物になっていない」カードとして出す。
     inProgress: object.def.isInProgress,
     art: artOf(object.def, object),
-    background: slotOfObject(object),
+    backgroundSlot: slotOfObject(object),
     gauges: gaugesOf(object),
     overlay: overlayOf(object),
     alert: alertOf(object),

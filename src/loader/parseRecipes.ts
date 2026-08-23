@@ -12,7 +12,7 @@ import {
 } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { parseRequirementsField } from './parseConditions';
-import { built, parseTypeMatchRule } from './parseCommon';
+import { withYamlContext, parseTypeMatchRule } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../domain/RecipeDef';
 import { ReferenceScope } from '../domain/ReferenceRoot';
@@ -32,7 +32,7 @@ function parseRequirement(
   if (tryGetScalar(map, 'consume', context) === undefined)
     throw new YamlLoadError(`${context}: consumeは省略できません（素材か道具かは既定値を置けないため）。`);
 
-  return built(
+  return withYamlContext(
     context,
     () =>
       new RecipeRequirementDef(
@@ -51,7 +51,10 @@ function parseStep(loader: WorldCodexYamlLoader, context: string, node: YamlNode
     parseRequirement(loader, `${context}.requires[${index}]`, item),
   );
 
-  return built(context, () => new RecipeStepDef(requirements, requireNumber(map, 'duration', context)));
+  return withYamlContext(
+    context,
+    () => new RecipeStepDef(requirements, requireNumber(map, 'duration', context)),
+  );
 }
 
 /**

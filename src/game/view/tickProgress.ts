@@ -43,7 +43,7 @@ export class TickProgress {
 
   constructor(fromMinutes: number, toMinutes: number, tickMinutes: number) {
     this.totalMinutes = Math.max(0, toMinutes - fromMinutes);
-    this.marks = TickProgress.markUpTo(this.totalMinutes, fromMinutes, tickMinutes);
+    this.marks = TickProgress.marksUpTo(this.totalMinutes, fromMinutes, tickMinutes);
   }
 
   /** 経過した分に対する、ドーナツグラフの塗り（0〜1）。 */
@@ -82,7 +82,7 @@ export class TickProgress {
    * 次のtick境界から順に、経過し切るまでの目盛りを並べる（末尾は経過し切る位置そのもの）。
    * 開始時刻が境界に乗っていれば最初の目盛りはtickMinutes後、乗っていなければ端数の残りだけ後。
    */
-  private static markUpTo(totalMinutes: number, fromMinutes: number, tickMinutes: number): number[] {
+  private static marksUpTo(totalMinutes: number, fromMinutes: number, tickMinutes: number): number[] {
     if (tickMinutes <= 0) return [totalMinutes];
 
     const marks: number[] = [];

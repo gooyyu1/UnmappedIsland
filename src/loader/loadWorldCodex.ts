@@ -33,5 +33,5 @@ export function loadWorldCodex(pack: AssetPack | undefined, report: LoadReport):
   // 同梱ぶんは報告先を渡さない＝patchの誤りも投げる（AssetPack.md 6.1節）。
   for (const [file, text] of WORLD_CODEX_TEXTS) loader.load(file, text);
   if (pack !== undefined) for (const [file, text] of pack.worldCodexTexts()) loader.load(file, text, report);
-  return loader.build();
+  return loader.buildAndReset();
 }

@@ -59,7 +59,7 @@ export interface SupplyRow {
   readonly elapsedMinutes: number;
 
   /** 所要時間か分岐の重みが、定義だけでは決まらない工程か。 */
-  readonly unresolved: boolean;
+  readonly hasUnresolvedReferences: boolean;
 
   readonly spawns: readonly NamedAmount[];
   readonly actorDeltas: readonly NamedAmount[];
@@ -168,7 +168,7 @@ export interface PropertyRoute {
    * 待ち生産の経路で、1日ぶんを賄うのに同時に要る設備の数（1日に回す回数 × 周期 ÷ 1日）。
    * 含まないならundefined。
    */
-  readonly deviceCount: number | undefined;
+  readonly simultaneousDeviceCount: number | undefined;
 }
 
 /** 1日を賄う献立の1行。 */
@@ -299,7 +299,13 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
     // 供給表は島全体の文脈で出す。罠の重みは土地が入れるので、土地を決めないと候補が全部0になる。
     supply: supplyRows(
       codex,
-      allSteps(codex, withBestDragged([...codex.objects], bestAncestorContext(explorableLocationsOf(codex)))),
+      allSteps(
+        codex,
+        withBestDragged(
+          [...codex.objects],
+          highestDeclaredAncestorValueResolver(explorableLocationsOf(codex)),
+        ),
+      ),
     ),
     places,
   };
@@ -435,7 +441,7 @@ function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly Supp
       kind: ref.step.kind,
       laborMinutes: ref.step.laborMinutes,
       elapsedMinutes: ref.step.elapsedMinutes,
-      unresolved: ref.step.hasUnresolvedReferences,
+      hasUnresolvedReferences: ref.step.hasUnresolvedReferences,
       spawns: [...spawns].map(([globalId, amount]) => ({
         name: codex.objectNames.getName(globalId),
         amount,
@@ -466,13 +472,14 @@ function placeBalances(
   const defs = [...codex.objects];
 
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
-  const islandContext = withBestDragged(defs, bestAncestorContext(locations));
+  const islandContext = withBestDragged(defs, highestDeclaredAncestorValueResolver(locations));
   const islandWide = new Acquisition(codex, allSteps(codex, islandContext));
 
   let islandRoutes: readonly ChainRoute[] = [];
   const places = [undefined, ...locations].map((location) => {
     // 罠が掛ける動物の重みは土地が宣言する（inherit）ので、土地を決めてから工程を組み立てる。
-    const context = location === undefined ? islandContext : withBestDragged(defs, ancestorContext(location));
+    const context =
+      location === undefined ? islandContext : withBestDragged(defs, ancestorValueResolver(location));
     const steps =
       location === undefined ? allSteps(codex, context) : stepsAt(codex, allSteps(codex, context), location);
     const acquisition = location === undefined ? islandWide : new Acquisition(codex, steps, islandWide);
@@ -649,7 +656,7 @@ function propertyRoute(route: ChainRoute, dailyNeed: DailyNeed): PropertyRoute {
     perUnitMinutes,
     dailyMinutes,
     dailyShare: (dailyMinutes * 100) / MINUTES_PER_DAY,
-    deviceCount:
+    simultaneousDeviceCount:
       route.devicePeriodMinutes === undefined
         ? undefined
         : ((dailyNeed.amount / gain) * route.devicePeriodMinutes) / MINUTES_PER_DAY,
@@ -820,7 +827,7 @@ function addEntry(entries: MenuEntry[], route: ChainRoute, repetitions: number):
 /**
  * その経路を1回実行する間に、設備が回っている時間（分）。待ち生産を含まないならundefined。
  *
- * **同時に何個要るかはここから出る**（deviceCount）——1日に回す回数 × この時間が1日を超えるなら、
+ * **同時に何個要るかはここから出る**（simultaneousDeviceCount）——1日に回す回数 × この時間が1日を超えるなら、
  * 1つでは間に合わないということ。周期が長いほど数が要る。
  */
 function devicePeriodOf(route: readonly StepRef[]): number | undefined {
@@ -986,7 +993,7 @@ function allSteps(codex: WorldCodex, outer?: StaticValueResolver): readonly Step
   const defs = [...codex.objects];
   return defs.flatMap((def) => {
     const cycles = rangeCyclesOf(def, outer, externalTickDeltasOn(def, defs));
-    const lifetimeMinutes = lifetimeOf(cycles);
+    const lifetimeMinutes = decayLifetimeOf(cycles);
     return [
       ...craftingStepsOf(def, outer).map((step) => ({ def, step, cycle: undefined })),
       // 繰り返す周期は設備（罠）。1回で終わる周期は、外から押されて初めて起こる作り替え
@@ -1025,7 +1032,7 @@ function externalTickDeltasOn(def: ObjectDef, defs: readonly ObjectDef[]): reado
  * 外から押されて消える周期（焼き上がり・失血死）は数えない——**置いておくだけでは起こらない**ので、
  * それを寿命と呼ぶと、火にかけていない肉まで勝手に焼け落ちることになる。
  */
-function lifetimeOf(cycles: readonly RangeCycle[]): number | undefined {
+function decayLifetimeOf(cycles: readonly RangeCycle[]): number | undefined {
   const ends = cycles
     .filter((cycle) => cycle.destroysSelf && !cycle.repeats && cycle.drivenBy === undefined)
     .map((cycle) => cycle.minutes);
@@ -1033,13 +1040,13 @@ function lifetimeOf(cycles: readonly RangeCycle[]): number | undefined {
 }
 
 /** 祖先（置かれている土地）の宣言値を答える手立て。宣言していないプロパティは寄与0。 */
-function ancestorContext(location: ObjectDef): StaticValueResolver {
+function ancestorValueResolver(location: ObjectDef): StaticValueResolver {
   return (root, propertyGlobalId) =>
     root === 'ancestor' ? (staticValueOf(location, propertyGlobalId) ?? 0) : undefined;
 }
 
 /** どの土地に置いてもよい前提での祖先の値。最も高く宣言している土地に置いたものとして扱う。 */
-function bestAncestorContext(locations: readonly ObjectDef[]): StaticValueResolver {
+function highestDeclaredAncestorValueResolver(locations: readonly ObjectDef[]): StaticValueResolver {
   return (root, propertyGlobalId) => {
     if (root !== 'ancestor') return undefined;
     const declared = locations
@@ -1051,7 +1058,7 @@ function bestAncestorContext(locations: readonly ObjectDef[]): StaticValueResolv
 
 /**
  * ancestorに、重ねる相手（dragged）の値を足した文脈。**最も高く宣言している型を重ねたものとして
- * 扱う**（bestAncestorContextと同じ見方）。
+ * 扱う**（highestDeclaredAncestorValueResolverと同じ見方）。
  *
  * これが無いと、相手の値を見る重み——一撃がどう入るかは武器が決める（HuntingSystem.md 1.2節）——が
  * 全て0になり、宣言順で最初の候補だけが起こることになる（PickEffect.selectWeighted）。
@@ -1115,7 +1122,7 @@ class Acquisition {
     this.islandWide = islandWide;
     for (const ref of steps)
       for (const objectGlobalId of expectedSpawns(ref.step).keys()) this.producedObjects.add(objectGlobalId);
-    this.relax();
+    this.lowerCostsUntilStable();
   }
 
   /**
@@ -1167,7 +1174,7 @@ class Acquisition {
 
       const local = this.cheapestCandidate(input);
       // この土地で用意できなければ、他の土地で用意したものとして島全体から取る。
-      const imported = local === undefined ? this.importable(input) : undefined;
+      const imported = local === undefined ? this.importedInputCost(input) : undefined;
       const objectGlobalId = local ?? imported?.objectGlobalId;
       if (objectGlobalId === undefined) {
         found.push({ label: declared, objectGlobalId: undefined, cost: undefined, imported: false });
@@ -1201,7 +1208,7 @@ class Acquisition {
       for (const input of ref.step.inputs) {
         if (input.kind === 'object' && this.isAlwaysAtHand(input.objectGlobalId)) continue;
         if (this.cheapestCandidate(input) !== undefined) continue;
-        if (this.importable(input) !== undefined) continue;
+        if (this.importedInputCost(input) !== undefined) continue;
         missing.push(
           input.kind === 'tag'
             ? this.codex.tagNames.getName(input.tagGlobalId)
@@ -1236,7 +1243,7 @@ class Acquisition {
    *
    * 島全体の文脈そのものではundefined（自分が答えなので、持ち込むという概念が無い）。
    */
-  private importable(
+  private importedInputCost(
     input: CraftingStep['inputs'][number],
   ): { readonly objectGlobalId: number; readonly cost: Cost } | undefined {
     const island = this.islandWide;
@@ -1283,7 +1290,7 @@ class Acquisition {
       const cost = this.costByObject.get(local);
       if (cost !== undefined) return { cost, imported: this.importedByObject.get(local) === true };
     }
-    const imported = this.importable(input);
+    const imported = this.importedInputCost(input);
     return imported === undefined ? undefined : { cost: imported.cost, imported: true };
   }
 
@@ -1296,7 +1303,7 @@ class Acquisition {
     return found;
   }
 
-  private relax(): void {
+  private lowerCostsUntilStable(): void {
     for (let pass = 0; pass <= this.codex.objects.count; pass++) {
       let improved = false;
       for (const ref of this.steps) {

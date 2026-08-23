@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import type { IslandMap } from '../../src/domain/generation/IslandMap';
-import { generate as generateTerrain } from '../../src/domain/generation/TerrainGenerator';
+import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -174,11 +174,11 @@ function buildReport(stats: TerrainStats): string {
 
 describe.runIf(process.env.RUN_TERRAIN_STATS === '1')('地形生成統計レポート', () => {
   it(`${SEED_COUNT}シード分の島を生成してTerrainStats.mdを再生成する`, () => {
-    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
 
     const stats = createStats(codex.generation!.locationTypes.map((type) => type.name));
     for (let seed = 0; seed < SEED_COUNT; seed++) {
-      collect(stats, generateTerrain(codex.generation, 'island', seed));
+      collect(stats, generateIsland(codex.generation, 'island', seed));
     }
 
     const report = buildReport(stats);

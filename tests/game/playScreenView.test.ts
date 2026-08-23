@@ -94,7 +94,7 @@ object_defs:
   /** 手持ちの6枠を、すべて違う種類で埋める。 */
   const fillHand = (mini: MiniGame): void => {
     for (const name of ['stone', 'twig', 'leaf', 'shell', 'bone', 'feather'])
-      mini.spawn(name, mini.slot('hand'));
+      mini.createObject(name, mini.slot('hand'));
   };
 
   it('天気は、worldの今の天気の識別子をそのまま映す', () => {
@@ -112,7 +112,7 @@ object_defs:
 
   it('手持ちは固定6枠ぶん並び、空きセルはundefinedになる', () => {
     const mini = setUp();
-    mini.spawn('stone', mini.slot('hand'));
+    mini.createObject('stone', mini.slot('hand'));
 
     const view = viewOf(mini);
 
@@ -134,7 +134,7 @@ object_defs:
     // 製作中の型はレシピから自動生成される（RecipeSystem.md）ので、その型あての絵は用意できない。
     // 完成品の絵を映せば、絵文字の代用に落ちずに「何が出来つつあるのか」が見える。
     const mini = setUp();
-    mini.spawn(inProgressObjectName('basket', 'woven'), mini.slot('items', mini.land));
+    mini.createObject(inProgressObjectName('basket', 'woven'), mini.slot('items', mini.land));
 
     const card = lane(viewOf(mini), mini, 'items')[0];
 
@@ -146,7 +146,7 @@ object_defs:
     // 見出し・記憶の鍵・枠の数・落とせるか・敷く絵・製作の材料は、どれも同じスロットの宣言から出る。
     // ばらばらに訊くと、場所を映す先を足すたびに訊く手順も増える（Windows.md 1節）。
     const mini = setUp();
-    const wip = mini.spawn(inProgressObjectName('basket', 'woven'), mini.slot('items', mini.land));
+    const wip = mini.createObject(inProgressObjectName('basket', 'woven'), mini.slot('items', mini.land));
 
     const view = viewOf(mini);
     const hand = view.slotViewOf(place(mini, 'hand'));
@@ -175,7 +175,7 @@ object_defs:
 
   it('アイテムのmoveで手持ちへ移り、手持ちのmoveでフィールドへ戻る', () => {
     const mini = setUp();
-    const picked = mini.spawn('stone', mini.slot('items', mini.land));
+    const picked = mini.createObject('stone', mini.slot('items', mini.land));
 
     lane(viewOf(mini), mini, 'items')[0].dropInto?.(place(mini, 'hand'))?.execute();
 
@@ -190,7 +190,7 @@ object_defs:
 
   it('設置物のカードは移せないが、同じレーンの中でなら並び替えられる', () => {
     const mini = setUp();
-    mini.spawn('tree', mini.slot('fixtures', mini.land));
+    mini.createObject('tree', mini.slot('fixtures', mini.land));
 
     const view = viewOf(mini);
 
@@ -203,7 +203,7 @@ object_defs:
       '地面へも下ろせない',
     ).toBeUndefined();
     expect(
-      lane(view, mini, 'fixtures')[0].reorder,
+      lane(view, mini, 'fixtures')[0].reorderActionAt,
       '並び方はプレイヤーが決めるので並び替えはできる',
     ).toBeTypeOf('function');
   });
@@ -212,7 +212,7 @@ object_defs:
     // 端の▲▼が出るかは「そこへ移せるか」で決まる（PlayScene.cardEdges）ので、両方のタグを持つ
     // 籠は設置物レーンで▼、アイテムレーンで▲を出す。画面側に場所ごとの決まりは無い。
     const mini = setUp();
-    mini.spawn('basket', mini.slot('items', mini.land));
+    mini.createObject('basket', mini.slot('items', mini.land));
 
     lane(viewOf(mini), mini, 'items')[0].dropInto?.(place(mini, 'fixtures'))?.execute();
 
@@ -233,22 +233,22 @@ object_defs:
 
   it('カードは、自分が今在るスロットを地の引き先として持つ', () => {
     const mini = setUp();
-    mini.spawn('tree', mini.slot('fixtures', mini.land));
-    mini.spawn('twig', mini.slot('items', mini.land));
-    mini.spawn('stone', mini.slot('hand'));
+    mini.createObject('tree', mini.slot('fixtures', mini.land));
+    mini.createObject('twig', mini.slot('items', mini.land));
+    mini.createObject('stone', mini.slot('hand'));
 
     const view = viewOf(mini);
     const land = view.currentLocationCard.art;
 
     expect(
-      lane(view, mini, 'fixtures').map((card) => card.background),
+      lane(view, mini, 'fixtures').map((card) => card.backgroundSlot),
       'このレーンのカードはすべて土地のfixturesに在る',
     ).toEqual([{ owner: land, slot: 'fixtures' }]);
     expect(
-      lane(view, mini, 'items').map((card) => card.background),
+      lane(view, mini, 'items').map((card) => card.backgroundSlot),
       '同じ土地でもスロットが違えば別の地を引く（絵が在るかはファイル側の話）',
     ).toEqual([{ owner: land, slot: 'items' }]);
-    expect(handCells(view, mini).find((card) => card !== undefined)?.background).toEqual({
+    expect(handCells(view, mini).find((card) => card !== undefined)?.backgroundSlot).toEqual({
       owner: view.characterCard.art,
       slot: 'hand',
     });
@@ -283,7 +283,7 @@ object_defs:
     // 手持ちに同種が居るアイテムは、枠が埋まっていても既存のスタックへ合流できてしまう
     // （枠を数える単位は種類、SlotSystem.md 4節）。埋まっていることを確かめたいので、
     // 手持ちに無い種類のカードで試す。
-    const dropped = mini.spawn('branch', mini.slot('items', mini.land));
+    const dropped = mini.createObject('branch', mini.slot('items', mini.land));
 
     const view = viewOf(mini);
     expect(
@@ -298,8 +298,8 @@ object_defs:
 
   it('カードの識別子は、そのカードが映しているインスタンスのID一式になる', () => {
     const mini = setUp();
-    const stones = [0, 1].map(() => mini.spawn('stone', mini.slot('hand')));
-    mini.spawn('twig', mini.slot('items', mini.land));
+    const stones = [0, 1].map(() => mini.createObject('stone', mini.slot('hand')));
+    mini.createObject('twig', mini.slot('items', mini.land));
 
     const view = viewOf(mini);
 
@@ -315,7 +315,7 @@ object_defs:
 
   it('手持ちのカードは装備へ移せる（装備固有の経路ではなく、場所を指すだけ）', () => {
     const mini = setUp();
-    const stone = mini.spawn('stone', mini.slot('hand'));
+    const stone = mini.createObject('stone', mini.slot('hand'));
     const equipment = mini.slot('equipment');
 
     handCells(viewOf(mini), mini)[0]?.dropInto?.(equipment)?.execute();
@@ -338,13 +338,13 @@ object_defs:
     // 生きたワールドを読むため、固定しないとその部分に限って「今」の状態が出てしまう。
     const mini = setUp();
     const equipment = mini.slot('equipment');
-    const stone = mini.spawn('stone', equipment);
+    const stone = mini.createObject('stone', equipment);
 
     const live = viewOf(mini);
     const frozen = withFrozenCards(live, [equipment]);
 
     // 控えたあとでワールドが変わる（装備が外れる）。
-    expect(stone.moveToSlot(mini.slot('hand'))).toBeUndefined();
+    expect(stone.moveToSlotOrRejection(mini.slot('hand'))).toBeUndefined();
 
     expect(
       frozen.cardsIn(equipment).map((card) => card?.objects[0]),
@@ -367,8 +367,8 @@ object_defs:
     // 怪我を手に持つこともない。画面側は場所ごとの読み取り専用フラグを持たない。
     const mini = setUp();
     const injuries = mini.slot('injuries');
-    mini.spawn('sprain', injuries);
-    mini.spawn('stone', mini.slot('hand'));
+    mini.createObject('sprain', injuries);
+    mini.createObject('stone', mini.slot('hand'));
 
     const view = viewOf(mini);
 
@@ -389,10 +389,10 @@ object_defs:
     // 世界は枠の位置を保つ（SlotSystem.md 3節）ので、画面もそこを動かさない。詰めて答えると、
     // 落とした枠と札が出る枠が食い違う（空き枠へ落とすと moveToSlotAtCell が枠の番号で入れる）。
     const mini = setUp();
-    const basket = mini.spawn('basket', mini.slot('hand'));
+    const basket = mini.createObject('basket', mini.slot('hand'));
     const contents = mini.slot('contents', basket);
-    const stone = mini.spawn('stone');
-    expect(stone.moveToSlot(contents, { kind: 'cell', index: 3 })).toBeUndefined();
+    const stone = mini.createObject('stone');
+    expect(stone.moveToSlotOrRejection(contents, { kind: 'cell', index: 3 })).toBeUndefined();
 
     const cells = viewOf(mini).cardsIn(contents);
 
@@ -404,8 +404,8 @@ object_defs:
   it('束ねられない物は、2つ持てば2枚のカードとして並ぶ', () => {
     // 束ねると代表の中身しか開けない（SlotSystem.md 4節）ので、籠はstackable: falseを名乗る。
     const mini = setUp();
-    const baskets = [0, 1].map(() => mini.spawn('basket', mini.slot('hand')));
-    const stone = mini.spawn('stone', mini.slot('contents', baskets[0]));
+    const baskets = [0, 1].map(() => mini.createObject('basket', mini.slot('hand')));
+    const stone = mini.createObject('stone', mini.slot('contents', baskets[0]));
 
     const view = viewOf(mini);
     const cards = handCells(view, mini).filter((card) => card !== undefined);
@@ -426,8 +426,8 @@ object_defs:
 
   it('コンテナのカードは中身を映す場所を持ち、そこへ出し入れできる', () => {
     const mini = setUp();
-    const basket = mini.spawn('basket', mini.slot('hand'));
-    const stone = mini.spawn('stone', mini.slot('hand'));
+    const basket = mini.createObject('basket', mini.slot('hand'));
+    const stone = mini.createObject('stone', mini.slot('hand'));
 
     const first = viewOf(mini);
     const opened = cardOf(first, basket).contentsFor(cardOf(first, stone));
@@ -459,7 +459,7 @@ object_defs:
   it('重ねる先の枠は、型が合うだけでなく今その物が入るかで選ぶ', () => {
     const mini = setUp();
     fillHand(mini);
-    const branch = mini.spawn('branch', mini.slot('items', mini.land));
+    const branch = mini.createObject('branch', mini.slot('items', mini.land));
 
     const view = viewOf(mini);
     expect(
@@ -474,7 +474,7 @@ object_defs:
 
   it('コンテナを自分自身の中へは入れられない', () => {
     const mini = setUp();
-    const basket = mini.spawn('basket', mini.slot('hand'));
+    const basket = mini.createObject('basket', mini.slot('hand'));
 
     const card = cardOf(viewOf(mini), basket);
 
@@ -483,14 +483,14 @@ object_defs:
 
   it('viewを作った後にワールドの束が空になっても、カードの操作の試し打ちは壊れない', () => {
     const mini = setUp();
-    const stone = mini.spawn('stone', mini.slot('items', mini.land));
+    const stone = mini.createObject('stone', mini.slot('items', mini.land));
 
     const view = viewOf(mini);
     const card = cardOf(view, stone);
 
     // 経過の途中経過（RecordedView）を再生する頃には、ワールド側の束は空になり得る。
     // カードは作った時点の中身を写し取っているので、端の表示の試し打ち（moveTo）は壊れない。
-    expect(stone.moveToSlot(mini.slot('hand'))).toBeUndefined();
+    expect(stone.moveToSlotOrRejection(mini.slot('hand'))).toBeUndefined();
     expect(() => card.dropInto?.(place(mini, 'hand'))).not.toThrow();
     expect(card.movedIds(1)).toEqual([stone.instanceId]);
   });

@@ -48,7 +48,7 @@ describe.runIf(process.env.RUN_CLIMATE_TESTS === '1')('気候システム(Climat
   let traces: Trace[];
 
   beforeAll(() => {
-    const codex = loadYamlFile(new WorldCodexYamlLoader(), worldCodexPath('core.yaml')).build();
+    const codex = loadYamlFile(new WorldCodexYamlLoader(), worldCodexPath('core.yaml')).buildAndReset();
 
     calmId = codex.symbolNames.intern('calm');
     wetId = codex.symbolNames.intern('wet');

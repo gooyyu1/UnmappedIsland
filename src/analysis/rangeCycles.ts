@@ -97,13 +97,13 @@ export function rangeCyclesOf(
         if (readout.label === (slowest < 0 ? 'on_max' : 'on_min')) continue;
 
         // 値が戻るなら、次の発火までは戻った量ぶん——初回だけが初期値からの距離になる。
-        const repeats = readout.returnedToSelf > 0;
-        const period = repeats ? readout.returnedToSelf / Math.abs(slowest) : ticks;
+        const repeats = readout.expectedReturnToSelf > 0;
+        const period = repeats ? readout.expectedReturnToSelf / Math.abs(slowest) : ticks;
         cycles.push({
           propertyGlobalId: propertyDef.globalId,
           minutes: period * MINUTES_PER_TICK,
           shortestMinutes:
-            (repeats ? readout.returnedToSelf / Math.abs(fastest) : shortestTicks) * MINUTES_PER_TICK,
+            (repeats ? readout.expectedReturnToSelf / Math.abs(fastest) : shortestTicks) * MINUTES_PER_TICK,
           repeats,
           destroysSelf: readout.destroysSelf,
           drivenBy: driver?.sourceGlobalId,
@@ -131,7 +131,7 @@ export function rangeCyclesOf(
             laborMinutes: 0,
             elapsedMinutes: period * MINUTES_PER_TICK,
             outcomes: readout.outcomes,
-            hasUnresolvedReferences: tracking.unresolved,
+            hasUnresolvedReferences: tracking.hitUnresolvedReference,
           },
         });
       }

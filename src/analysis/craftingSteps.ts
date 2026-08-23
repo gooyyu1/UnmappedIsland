@@ -31,7 +31,7 @@ export function craftingStepsOf(def: ObjectDef, outer?: StaticValueResolver): re
   const steps: CraftingStep[] = [];
   for (const trigger of def.triggers)
     steps.push(withTriggeredRangeEvents(def, interactionStep(def, trigger, outer), outer));
-  for (const recipe of def.recipes) steps.push(recipeStep(def, recipe));
+  for (const recipe of def.recipesProducingThis) steps.push(recipeStep(def, recipe));
   return steps;
 }
 
@@ -66,7 +66,7 @@ function interactionStep(
     laborMinutes: minutes,
     elapsedMinutes: minutes,
     outcomes: reading.outcomes,
-    hasUnresolvedReferences: tracking.unresolved,
+    hasUnresolvedReferences: tracking.hitUnresolvedReference,
   };
 }
 
@@ -122,7 +122,7 @@ function withTriggeredRangeEvents(
     let destroysSelf = false;
     let triggered = false;
 
-    for (const [propertyGlobalId, value] of selfMovesOf(def, outcome, outer)) {
+    for (const [propertyGlobalId, value] of selfPropertyValuesAfterOf(def, outcome, outer)) {
       const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
       const readout = propertyDef === undefined ? undefined : rangeEventAt(propertyDef, value, resolve);
       if (readout === undefined) continue;
@@ -156,7 +156,7 @@ function withTriggeredRangeEvents(
  * 1つの分岐が、自分のどのプロパティをどこへ動かすか。**増減は今の値からの差、代入はそのものが
  * 行き先**なので、range系イベントを問う前に「動かした先」へ均す。
  */
-function selfMovesOf(
+function selfPropertyValuesAfterOf(
   def: ObjectDef,
   outcome: StepOutcome,
   outer: StaticValueResolver | undefined,

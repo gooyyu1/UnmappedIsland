@@ -13,7 +13,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  */
 describe('WorldSession.advanceWorldTimeによる時間進行', () => {
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   function buildWorld(minutesPerTick = 15): { codex: WorldCodex; world: World } {
@@ -81,7 +81,7 @@ object_defs:
 
     expect(world.instance.tryGetProperty(tickId)?.number ?? 0, '5+20=25分 -> 15分境界を1回だけ跨ぐ').toBe(1);
     expect(world.minute, 'minuteはtickの回数によらずamountの合計をそのまま反映する').toBe(25);
-    expect(world.minute % world.minutesPerTick, 'tick内経過分は10になる').toBe(10);
+    expect(world.minute % world.rawMinutesPerTick, 'tick内経過分は10になる').toBe(10);
   });
 
   it('1回あたりがtick未満の量でも、複数回の呼び出しの累積で境界越えを検知する', () => {
@@ -96,7 +96,7 @@ object_defs:
 
     expect(world.instance.tryGetProperty(tickId)?.number ?? 0).toBe(1);
     expect(world.minute).toBe(20);
-    expect(world.minute % world.minutesPerTick).toBe(5);
+    expect(world.minute % world.rawMinutesPerTick).toBe(5);
   });
 
   it('大きな量を一度に進めると複数tickが発火し、hour・dayまで繰り上がる', () => {
@@ -105,7 +105,7 @@ object_defs:
     const tickId = codex.propertyNames.getId('tick');
     const dayId = codex.propertyNames.getId('day');
 
-    const minutesPerTick = world.minutesPerTick;
+    const minutesPerTick = world.rawMinutesPerTick;
 
     session.advanceWorldTime(60 * 25); // 25時間分を1回で進める
 
@@ -128,7 +128,7 @@ object_defs:
       world.instance.tryGetProperty(tickId)?.number ?? 0,
       'minutes_per_tickが20なら25分で1tick跨ぐ',
     ).toBe(1);
-    expect(world.minute % world.minutesPerTick).toBe(5);
+    expect(world.minute % world.rawMinutesPerTick).toBe(5);
   });
 
   describe('World.rollTimeOfDayによる開始時刻の抽選', () => {
@@ -171,7 +171,7 @@ object_defs:
       const tickId = codex.propertyNames.getId('tick');
 
       world.rollTimeOfDay(8 * 60, 12 * 60, pickSecondCandidate([]));
-      session.advanceWorldTime(world.minutesPerTick - 1);
+      session.advanceWorldTime(world.rawMinutesPerTick - 1);
       expect(world.instance.tryGetProperty(tickId)?.number ?? 0, '1tickに1分足りなければまだ回らない').toBe(
         0,
       );

@@ -132,7 +132,7 @@ export class SlotDef {
    * **「枠数が固定か」と「前詰めか」は同じ1つの問い**なので、別々には答えない（同節）。読む側が
    * `cellCount`の有無から組み立てると、その judgment が読む側の数だけ増える。
    */
-  get cellsToKeep(): number | 'grows' {
+  get cellCountPolicy(): number | 'grows' {
     return this.cellCount ?? 'grows';
   }
 
@@ -148,7 +148,7 @@ export class SlotDef {
   putInMinutes(owner: WorldObject, actor: WorldObject | undefined, item: WorldObject): number {
     return this.putInDuration === undefined
       ? 0
-      : Math.trunc(this.putInDuration.resolve(ReferenceContext.acting(owner, actor, item)));
+      : Math.trunc(this.putInDuration.resolveOrZero(ReferenceContext.acting(owner, actor, item)));
   }
 
   /**

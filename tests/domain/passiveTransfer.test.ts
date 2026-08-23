@@ -22,7 +22,7 @@ describe('passivesのtransfer', () => {
   });
 
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   function spawn(codex: WorldCodex, objectName: string): WorldObject {
@@ -283,7 +283,7 @@ object_defs:
       codex.objects.get(codex.objectNames.getId('drip')),
       session,
     );
-    expect(drip.moveToSlot(vessel.getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
+    expect(drip.moveToSlotOrRejection(vessel.getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
 
     vessel.tick();
 

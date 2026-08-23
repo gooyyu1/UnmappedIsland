@@ -111,9 +111,9 @@ object_defs:
   it('中身を持つカードは、それを映す場所と、空けておく枠の数の元になる容量を持つ', () => {
     // 中身を見せるかはタグではなくスロットで決める（Windows.md 1節 子ウィンドウ）。
     const mini = setUp();
-    const sprain = mini.spawn('sprain', mini.slot('injuries'));
-    const crate = mini.spawn('crate', mini.slot('hand'));
-    const bandage = mini.spawn('bandage', mini.slot('hand'));
+    const sprain = mini.createObject('sprain', mini.slot('injuries'));
+    const crate = mini.createObject('crate', mini.slot('hand'));
+    const bandage = mini.createObject('bandage', mini.slot('hand'));
 
     const view = viewOf(mini);
     const sprainCard = cardOf(view, sprain);
@@ -137,7 +137,7 @@ object_defs:
     // 窓が映すのは1個ぶんなので、束かどうかもどの枠に居るかも要らない。キャラクタ・現在地は
     // 画面から名前で開く入口で、答えは同じ経路（windowOf）から来る。
     const mini = setUp();
-    const stone = mini.spawn('stone', mini.slot('hand'));
+    const stone = mini.createObject('stone', mini.slot('hand'));
 
     const view = viewOf(mini);
 
@@ -151,7 +151,7 @@ object_defs:
     // 呼び出し側（PlayScene）がばらばらのメンバーから組み立てると、窓を足すたびに組み立ての手順も
     // 増える。1つの窓に要るものは1つの問い合わせで揃う（Windows.md 1節）。
     const mini = setUp();
-    const crate = mini.spawn('crate', mini.slot('hand'));
+    const crate = mini.createObject('crate', mini.slot('hand'));
 
     const view = viewOf(mini);
     const crateWindow = view.windowOf(crate);
@@ -171,7 +171,7 @@ object_defs:
   it('液体の容器は中身を開かない（水を単独で取り出させない）', () => {
     // 中身は容器自身のfillなので、そもそも開く先が無い（LiquidContainerSystem.md 2節）。
     const mini = setUp();
-    const bowl = mini.spawn('bowl', mini.slot('hand'));
+    const bowl = mini.createObject('bowl', mini.slot('hand'));
     bowl.becomeAlong(new Map([['content', 'water_liquid']]));
     bowl.tryGetProperty(mini.codex.propertyNames.getId('fill'))?.setNumber(100);
 
@@ -200,8 +200,8 @@ object_defs:
 `,
       { player: 'survivor' },
     );
-    const charm = mini.spawn('charm', mini.slot('hand'));
-    mini.spawn('sprain', mini.slot('injuries'));
+    const charm = mini.createObject('charm', mini.slot('hand'));
+    mini.createObject('sprain', mini.slot('injuries'));
 
     const view = viewOf(mini);
     const painIn = (window: ObjectWindowView) =>
@@ -266,7 +266,7 @@ object_defs:
   it('痛みの詳細には、負っている怪我が影響元として並ぶ', () => {
     // 痛みはステータスからは一切影響を受けない（怪我のmodifyだけが押し上げる）。
     const mini = setUp();
-    mini.spawn('sprain', mini.slot('injuries'));
+    mini.createObject('sprain', mini.slot('injuries'));
 
     const view = viewOf(mini);
     const pain = view.statuses.find((status) => status.key === 'pain')?.detail;

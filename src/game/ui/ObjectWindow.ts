@@ -21,11 +21,11 @@ import {
   CONTENT_GAP,
   MIN_WINDOW_WIDTH,
   WINDOW_PADDING,
-  centerWindow,
+  centeredWindowRect,
 } from '../looks/childWindowLayout';
-import { durationText } from '../looks/durationText';
+import { timeCostLine } from '../looks/timeTexts';
 import { addLabel } from '../../ui/labels';
-import { addPanel, drawBox } from '../../ui/shapes';
+import { addInputBlockingPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 import { Tooltip } from './Tooltip';
 import type { TooltipContent } from './Tooltip';
@@ -140,7 +140,7 @@ interface TabSpec {
  */
 export class ObjectWindow {
   /** 開いている間ずっと在るもの（台紙・見出し・タブ）。 */
-  private readonly objects: Phaser.GameObjects.GameObject[] = [];
+  private readonly ownedObjects: Phaser.GameObjects.GameObject[] = [];
 
   /** 出せるタブ（並び順）。**タブの行を作るのも、今どれが選ばれているかを塗るのも、この並びが唯一の根拠。** */
   private readonly tabSpecs: readonly TabSpec[];
@@ -155,7 +155,7 @@ export class ObjectWindow {
   private readonly tabs: TabButtons;
 
   /** 今開いているタブの識別子（replacePaneが、実際に開いた面のものを入れる）。 */
-  private opened: string = DESCRIPTION_TAB;
+  private openedTabKey: string = DESCRIPTION_TAB;
 
   /** 最下段のボタン。setActionsで丸ごと作り直すので、他の表示物とは分けて持つ。 */
   private actionObjects: Phaser.GameObjects.GameObject[] = [];
@@ -200,20 +200,20 @@ export class ObjectWindow {
 
     // 覆いは領域の中だけに敷く。画面全体を覆うと、開いている間も操作できるはずの手持ちが覆いに
     // 入力を吸われる——借りた札へ手持ちから物を重ねられる以上、どのウィンドウも読み取り専用ではない。
-    this.objects.push(addPanel(scene, options.area, COLOR.modalOverlay, 0.5));
+    this.ownedObjects.push(addInputBlockingPanel(scene, options.area, COLOR.modalOverlay, 0.5));
 
     const windowWidth = decideWidth(metrics, options.area, this.tabSpecs, padding);
     const contentWidth = windowWidth - padding * 2;
 
     // 台紙は寸法が決まる前に作る。表示順は生成順で決まるため、後から作る文字より先に置く必要がある。
     const board = scene.add.graphics();
-    this.objects.push(board);
+    this.ownedObjects.push(board);
 
     // **見出しは常にオブジェクトの名前。** スロットの名前はタブのラベルが持つ。
     const title = addLabel(scene, metrics, 0, 0, options.object.card.name, {
       size: 34,
       bold: true,
-      wrapWidth: contentWidth,
+      wrapWidthPx: contentWidth,
     })
       .setOrigin(0.5, 0)
       .setAlign('center');
@@ -225,11 +225,11 @@ export class ObjectWindow {
     const actionRows = options.actions.length === 0 ? 1 : 2;
     const actionsHeight = actionHeight * actionRows + gap * (actionRows - 1);
     const windowHeight = padding * 2 + title.height + gap + tabsHeight + middleHeight + gap + actionsHeight;
-    const window = centerWindow(metrics, options.area, windowWidth, windowHeight);
-    drawBox(board, window, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
+    const window = centeredWindowRect(metrics, options.area, windowWidth, windowHeight);
+    drawBox(board, window, { fillColor: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
 
     title.setPosition(window.x + windowWidth / 2, window.y + padding);
-    this.objects.push(title);
+    this.ownedObjects.push(title);
 
     const tabsY = window.y + padding + title.height + gap;
     this.addTabs({
@@ -279,7 +279,7 @@ export class ObjectWindow {
    * 説明へ落ちる）ので、覚えるのも場所を引くのもこちらを見る。
    */
   get openedTab(): string {
-    return this.opened;
+    return this.openedTabKey;
   }
 
   /** 借りた札の枠。運んでくる先・返すときの出発点で、**別のタブへ移っても最後の枠を覚えている**。 */
@@ -314,9 +314,9 @@ export class ObjectWindow {
    * 既に開いているタブなら何もしない。面を作り直すと、そこに借りている札ごと捨てることになる。
    */
   openTab(tab: string): void {
-    if (tab === this.opened) return;
+    if (tab === this.openedTabKey) return;
     this.replacePane(tab);
-    this.onTabChange?.(this.opened);
+    this.onTabChange?.(this.openedTabKey);
   }
 
   /**
@@ -394,7 +394,7 @@ export class ObjectWindow {
         () => this.openTab(tab.key),
       );
       this.tabs.add(button);
-      this.objects.push(button);
+      this.ownedObjects.push(button);
     });
   }
 
@@ -413,7 +413,7 @@ export class ObjectWindow {
 
     // 説明のタブは必ず在り、必ず先頭（buildTabs）。
     const spec = this.tabSpecs.find((candidate) => candidate.key === tab) ?? this.tabSpecs[0];
-    this.opened = spec.key;
+    this.openedTabKey = spec.key;
 
     this.tabs.select(this.tabSpecs.indexOf(spec));
 
@@ -508,7 +508,7 @@ export class ObjectWindow {
   private tooltipHandlers(action: ObjectWindowAction, rect: Rect, disabled: boolean): HoldHandlers {
     const content: TooltipContent = disabled
       ? { title: action.label, body: action.reason ?? uiText('cannot_do_now') }
-      : { title: action.label, body: action.description, note: durationText(action.minutes) };
+      : { title: action.label, body: action.description, note: timeCostLine(action.minutes) };
 
     return {
       onStart: () => this.tooltip.show(content, rect),
@@ -521,8 +521,8 @@ export class ObjectWindow {
     this.pane?.destroy();
     this.pane = undefined;
     this.tooltip.destroy();
-    for (const object of [...this.objects, ...this.actionObjects]) object.destroy();
-    this.objects.length = 0;
+    for (const object of [...this.ownedObjects, ...this.actionObjects]) object.destroy();
+    this.ownedObjects.length = 0;
     this.actionObjects = [];
   }
 }

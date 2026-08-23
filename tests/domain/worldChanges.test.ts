@@ -66,7 +66,7 @@ object_defs:
   let changes: WorldChange[];
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('changes.yaml', YAML).build();
+    codex = new WorldCodexYamlLoader().load('changes.yaml', YAML).buildAndReset();
     open(SMASHES);
   });
 
@@ -76,17 +76,17 @@ object_defs:
     const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
     session.adoptWorld(new World(worldInstance, codex));
     ground = spawn('ground');
-    expect(ground.moveToSlot(worldInstance.getSlot(slot('locations')))).toBeUndefined();
+    expect(ground.moveToSlotOrRejection(worldInstance.getSlot(slot('locations')))).toBeUndefined();
     changes = [];
   }
 
   const slot = (name: string): number => codex.slotNames.getId(name);
-  const spawn = (name: string): WorldObject => session.spawn(codex.objectNames.getId(name));
+  const spawn = (name: string): WorldObject => session.createObject(codex.objectNames.getId(name));
 
   /** その名前のオブジェクトを生成し、地面へ置く。 */
   function placeOnGround(name: string, slotName = 'items'): WorldObject {
     const object = spawn(name);
-    expect(object.moveToSlot(ground.getSlot(slot(slotName)))).toBeUndefined();
+    expect(object.moveToSlotOrRejection(ground.getSlot(slot(slotName)))).toBeUndefined();
     return object;
   }
 
@@ -105,7 +105,7 @@ object_defs:
     const stone = spawn('stone');
 
     const seen = observe(() => {
-      expect(stone.moveToSlot(ground.getSlot(slot('items')))).toBeUndefined();
+      expect(stone.moveToSlotOrRejection(ground.getSlot(slot('items')))).toBeUndefined();
     });
 
     expect(seen).toEqual(['—: stone — → ground.items']);
@@ -193,7 +193,7 @@ object_defs:
     const beast = placeOnGround('beast', 'beasts');
     const basket = placeOnGround('basket');
     const stone = spawn('stone');
-    expect(stone.moveToSlot(basket.getSlot(slot('contents')))).toBeUndefined();
+    expect(stone.moveToSlotOrRejection(basket.getSlot(slot('contents')))).toBeUndefined();
 
     const seen = observe(() => {
       expect(

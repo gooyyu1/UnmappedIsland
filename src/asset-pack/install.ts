@@ -50,6 +50,6 @@ export async function installSampleAssetPack(): Promise<void> {
  * 食い違っているなら、設定を反映する手はページを読み込み直すことしかない——絵の在庫表もWorldCodexも
  * 起動時に1回だけ組み立てて以後不変（AssetPack.md 4節）だから。
  */
-export function assetPackMatches(loadsAssetPack: boolean): boolean {
+export function assetPackInstallMatchesSetting(loadsAssetPack: boolean): boolean {
   return (installed !== undefined) === loadsAssetPack;
 }

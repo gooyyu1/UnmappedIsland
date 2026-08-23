@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { start as startNewGame } from '../../src/domain/generation/NewGame';
+import { startNewGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { Location } from '../../src/domain/wrappers/Location';
 import { Path } from '../../src/domain/wrappers/Path';
@@ -14,7 +14,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   it('全サイトが土地として実体化され、辺1本につき両端へ1個ずつ道が作られる', () => {
@@ -25,7 +25,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     const locations = game.world.instance.tryGetSlot(locationsSlotId);
     expect(locations).toBeDefined();
     // 島の外に最初から在る場所（外洋・本土、voyage.yaml）もworldのlocationsに居るので、
-    // サイトの数ぴったりにはならない（NewGame.spawnSingletons）。
+    // サイトの数ぴったりにはならない（NewGame.spawnSingletonsAcceptedByWorld）。
     const locationTag = codex.tagNames.getId('location');
     const singletonLocations = codex
       .singletonGlobalIds()
@@ -36,7 +36,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
 
     let totalPaths = 0;
     for (const site of map.sites) {
-      const location = game.world.instance.findDescendantByInstanceId(map.siteInstanceIds[site.index]);
+      const location = game.world.instance.findSelfOrDescendantByInstanceId(map.siteInstanceIds[site.index]);
       expect(location, `サイト${site.index}の土地が世界に居る`).toBeDefined();
       expect(
         location!.def.globalId,
@@ -61,7 +61,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     const progressId = codex.propertyNames.getId('exploration_progress');
 
     for (const site of map.sites) {
-      const location = game.world.instance.findDescendantByInstanceId(map.siteInstanceIds[site.index])!;
+      const location = game.world.instance.findSelfOrDescendantByInstanceId(map.siteInstanceIds[site.index])!;
       const progressMax = location.def.tryGetPropertyDef(progressId)!.range!.max;
       const hidden = location.tryGetSlot(codex.slotNames.getId('undiscovered_fixtures'))!;
 
@@ -95,11 +95,13 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     const hiddenSlotId = codex.slotNames.getId('undiscovered_fixtures');
 
     for (const site of map.sites) {
-      const location = game.world.instance.findDescendantByInstanceId(map.siteInstanceIds[site.index])!;
+      const location = game.world.instance.findSelfOrDescendantByInstanceId(map.siteInstanceIds[site.index])!;
 
       for (const pathInstance of location.tryGetSlot(hiddenSlotId)!.contents) {
         const path = new Path(pathInstance, codex);
-        const returnInstance = game.world.instance.findDescendantByInstanceId(path.returnPathInstanceId);
+        const returnInstance = game.world.instance.findSelfOrDescendantByInstanceId(
+          path.returnPathInstanceId,
+        );
         expect(returnInstance, `サイト${site.index}: 帰り道が世界に居る`).toBeDefined();
 
         const back = new Path(returnInstance!, codex);
@@ -202,7 +204,9 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
     expect(withProps.length, 'propsを持つ亜種が出るシードで確かめる').toBeGreaterThan(0);
 
     for (const site of withProps) {
-      const location = game.world.instance.findDescendantByInstanceId(game.map.siteInstanceIds[site.index])!;
+      const location = game.world.instance.findSelfOrDescendantByInstanceId(
+        game.map.siteInstanceIds[site.index],
+      )!;
       for (const [propertyGlobalId, value] of site.variant!.props)
         expect(location.tryGetProperty(propertyGlobalId)?.getEffectiveValue() ?? 0, `${site.name}`).toBe(
           value,
@@ -218,7 +222,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
       expect(world.day, '開始は1日目').toBe(1);
       expect(minutes, `シード${seed}の開始時刻は8:00以降`).toBeGreaterThanOrEqual(8 * 60);
       expect(minutes, `シード${seed}の開始時刻は12:00以前`).toBeLessThanOrEqual(12 * 60);
-      expect(minutes % world.minutesPerTick, `シード${seed}の開始時刻はtick刻み`).toBe(0);
+      expect(minutes % world.rawMinutesPerTick, `シード${seed}の開始時刻はtick刻み`).toBe(0);
     }
   });
 

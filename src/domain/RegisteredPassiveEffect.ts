@@ -14,7 +14,7 @@ import type { WorldObject } from './WorldObject';
 export class RegisteredPassiveEffect {
   /**
    * この効果を宣言したオブジェクト。解除時の同定と、「このプロパティに何が効いているか」のUI表示
-   * （PropertyValue.incoming）のため公開する。
+   * （PropertyValue.registeredContributions）のため公開する。
    */
   readonly declarer: WorldObject;
 

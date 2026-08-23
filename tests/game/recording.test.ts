@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { Localization } from '../../src/locale/Localization';
 import { parseLocale } from '../../src/locale/Localization';
-import { recordChange } from '../../src/game/view/recording';
+import { runAndRecordChange } from '../../src/game/view/recording';
 import type { MiniGame } from '../support/miniGame';
 import { miniGame } from '../support/miniGame';
 
 /**
- * ワールドを変える操作の、経過中のtickごとの控え（recordChange）の自動テスト。
+ * ワールドを変える操作の、経過中のtickごとの控え（runAndRecordChange）の自動テスト。
  *
  * 経過し切ったあとの画面が正しくても、経過中のフレームが壊れていることはある。控えがtickごとに
  * 取れていること・各控えがその時点のワールドを映していることを、画面を作らずに確かめる。
@@ -14,7 +14,7 @@ import { miniGame } from '../support/miniGame';
  * **ワールドは直に動かす**（advanceWorldTime・destroy）。どの操作が何分かかるかは世界側の宣言の話で、
  * 控える側の責務ではない。
  */
-describe('recordChange（経過中のtickごとの控え）', () => {
+describe('runAndRecordChange（経過中のtickごとの控え）', () => {
   let locale: Localization;
 
   beforeAll(() => {
@@ -33,7 +33,7 @@ object_defs:
     const game = mini.game;
     const before = game.world.totalMinutes;
 
-    const recording = recordChange(game, mini.codex, locale, undefined, () => {
+    const recording = runAndRecordChange(game, mini.codex, locale, undefined, () => {
       game.session.advanceWorldTime(60);
     });
 
@@ -54,7 +54,7 @@ object_defs:
     for (const tick of recording.ticks) {
       const minutes = tick.view.elapsedDays * 24 * 60 + tick.view.hour * 60 + tick.view.minute;
       expect(minutes, '控えたviewはそのtick時点のワールドから作られている').toBe(
-        Math.trunc(tick.minutes) - (Math.trunc(tick.minutes) % game.world.minutesPerTick),
+        Math.trunc(tick.minutes) - (Math.trunc(tick.minutes) % game.world.rawMinutesPerTick),
       );
     }
   });
@@ -65,10 +65,10 @@ object_defs:
     // （withFrozenCards）。
     const mini = setUp();
     const hand = mini.slot('hand');
-    const stone = mini.spawn('stone', hand);
+    const stone = mini.createObject('stone', hand);
     const stoneId = stone.instanceId;
 
-    const recording = recordChange(mini.game, mini.codex, locale, undefined, () => {
+    const recording = runAndRecordChange(mini.game, mini.codex, locale, undefined, () => {
       mini.game.session.advanceWorldTime(60);
       stone.destroy();
     });
@@ -81,7 +81,7 @@ object_defs:
       ).toContain(stone.def.globalId);
 
     expect(
-      recording.changes.some((change) => change.object.instanceId === stoneId),
+      recording.changesAtEnd.some((change) => change.object.instanceId === stoneId),
       '石が消えるのは、経過し切った時点',
     ).toBe(true);
   });
@@ -90,13 +90,15 @@ object_defs:
     const mini = setUp();
 
     let stoneId = -1;
-    const recording = recordChange(mini.game, mini.codex, locale, undefined, () => {
-      stoneId = mini.spawn('stone', mini.slot('hand')).instanceId;
+    const recording = runAndRecordChange(mini.game, mini.codex, locale, undefined, () => {
+      stoneId = mini.createObject('stone', mini.slot('hand')).instanceId;
     });
 
     expect(recording.ticks, '時間が経っていないのでtick境界を跨がない').toEqual([]);
     expect(
-      recording.changes.some((change) => change.object.instanceId === stoneId && change.from === undefined),
+      recording.changesAtEnd.some(
+        (change) => change.object.instanceId === stoneId && change.from === undefined,
+      ),
       '生まれた石の出入りは、経過し切った時点で見せる分に入る',
     ).toBe(true);
   });

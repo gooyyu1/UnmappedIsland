@@ -97,7 +97,7 @@ function addText(
   return addLabel(scene, metrics, 0, 0, description ?? uiText('no_description'), {
     size: TEXT_SIZE,
     color: description === undefined ? COLOR.textMuted : COLOR.text,
-    wrapWidth: columnWidth,
+    wrapWidthPx: columnWidth,
     lineGap: LINE_SPACING,
   });
 }

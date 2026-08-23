@@ -29,7 +29,7 @@ describe('動物の1手', () => {
   let biteId: number;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     warinessId = codex.propertyNames.getId('wariness');
     fleeId = codex.propertyNames.getId('flee');
     biteId = codex.propertyNames.getId('bite');
@@ -58,8 +58,8 @@ describe('動物の1手', () => {
   }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
-    const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
+    expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 
@@ -168,7 +168,7 @@ describe('動物の1手', () => {
     boar.getProperty(warinessId).setNumberWithoutEvents(0);
     const basket = release('woven_basket');
     const stone = release('sharp_stone');
-    expect(stone.moveToSlot(basket.getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
+    expect(stone.moveToSlotOrRejection(basket.getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
 
     passTurn();
 
@@ -249,7 +249,9 @@ describe('動物の1手', () => {
     expect(injuriesOf(player), '同じ土地に居るうちは突かれる').toEqual(['gore_wound']);
     expect(boar.tryGetProperty(goreId)?.getEffectiveValue() ?? 0).toBeGreaterThan(0);
 
-    expect(player.moveToSlot(grassland.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
+    expect(
+      player.moveToSlotOrRejection(grassland.getSlot(codex.slotNames.getId('characters'))),
+    ).toBeUndefined();
     for (let i = 0; i < 5; i++) passTurn();
 
     // **重みは配分のまま**（打ち消しの寄与は無い）。相手が1つも居ない候補が抽選に出ないのは、
@@ -262,7 +264,9 @@ describe('動物の1手', () => {
     // 動物は探索が際限なく湧かせるので、消える口が無いと島に溜まり続ける（HuntingSystem.md 5.6節）。
     open(0.0);
     const rat = release('rat');
-    expect(player.moveToSlot(grassland.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
+    expect(
+      player.moveToSlotOrRejection(grassland.getSlot(codex.slotNames.getId('characters'))),
+    ).toBeUndefined();
 
     passTurn(95);
     expect(rat.parent, '残り1（下限）までは居る').toBe(jungle);
@@ -291,7 +295,9 @@ describe('動物の1手', () => {
     const stayId = codex.propertyNames.getId('stay_remaining');
     const snare = release('snare');
     const fowl = spawnInto('junglefowl', snare, 'catch');
-    expect(player.moveToSlot(grassland.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
+    expect(
+      player.moveToSlotOrRejection(grassland.getSlot(codex.slotNames.getId('characters'))),
+    ).toBeUndefined();
 
     passTurn(60);
 
@@ -310,7 +316,9 @@ describe('動物の1手', () => {
     passTurn();
     expect(spoilsOf(monkey), '道具は食べずにくわえたまま').toEqual(['sharp_stone']);
 
-    expect(player.moveToSlot(grassland.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
+    expect(
+      player.moveToSlotOrRejection(grassland.getSlot(codex.slotNames.getId('characters'))),
+    ).toBeUndefined();
     passTurn(96);
 
     expect(monkey.parent, '本体は立ち去って消える').toBeUndefined();
@@ -337,7 +345,7 @@ describe('動物の1手', () => {
    * 意識まで落とさないため——気を失った動物は警戒も消えるので、逃げるかどうかの話にならない。
    */
   function wound(animal: WorldObject): void {
-    const injury = session.spawn(codex.objectNames.getId('laceration'));
-    expect(injury.moveToSlot(animal.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
+    const injury = session.createObject(codex.objectNames.getId('laceration'));
+    expect(injury.moveToSlotOrRejection(animal.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
   }
 });

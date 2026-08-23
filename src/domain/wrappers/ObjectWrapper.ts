@@ -30,12 +30,12 @@ export abstract class ObjectWrapper {
   }
 
   /** 名指しのプロパティの実効値。宣言していなければ0。 */
-  protected numberOf(propertyGlobalId: number): number {
+  protected effectiveNumberOf(propertyGlobalId: number): number {
     return this.instance.tryGetProperty(propertyGlobalId)?.getEffectiveValue() ?? 0;
   }
 
   /** 名指しのプロパティの実効値。**宣言していなければundefined**——0と区別したい問いだけが使う。 */
-  protected tryNumberOf(propertyGlobalId: number): number | undefined {
+  protected tryEffectiveNumberOf(propertyGlobalId: number): number | undefined {
     return this.instance.tryGetProperty(propertyGlobalId)?.getEffectiveValue();
   }
 

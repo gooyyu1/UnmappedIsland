@@ -148,7 +148,7 @@ location_texts:
 `;
 
 describe('WorldCodexビューアのページ', () => {
-  const codex = new WorldCodexYamlLoader().load('viewer.yaml', YAML).build();
+  const codex = new WorldCodexYamlLoader().load('viewer.yaml', YAML).buildAndReset();
   const locale = parseLocale('ja.yaml', LOCALE);
   const source = new CodexSource(codex, locale, ['viewer.yaml']);
   const view = new CodexView(source, 'display');

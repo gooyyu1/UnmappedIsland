@@ -30,7 +30,7 @@ const INTERIOR_MAX_RADIUS = 0.75;
 /** ベストキャンディデート法の1点あたりの候補数。 */
 const CANDIDATES_PER_SITE = 10;
 
-export function place(scope: GenerationScopeDef, rng: Pcg32): Site[] {
+export function placeSites(scope: GenerationScopeDef, rng: Pcg32): Site[] {
   // site_countのmaxは含む値なので、半開区間で引くために+1する。
   const total = rng.nextInt(scope.siteCountMin, scope.siteCountMax + 1);
 

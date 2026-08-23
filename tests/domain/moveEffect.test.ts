@@ -94,20 +94,22 @@ object_defs:
     character: WorldObject;
     path: WorldObject;
   } {
-    const codex = new WorldCodexYamlLoader().load('island.yaml', islandYaml).build();
+    const codex = new WorldCodexYamlLoader().load('island.yaml', islandYaml).buildAndReset();
     const session = new WorldSession(codex);
 
-    const world = session.spawn(codex.objectNames.getId('world'));
-    const meadow = session.spawn(codex.objectNames.getId('meadow'));
-    const hilltop = session.spawn(codex.objectNames.getId('hilltop'));
-    const character = session.spawn(codex.objectNames.getId('character'));
-    const path = session.spawn(codex.objectNames.getId('path'));
+    const world = session.createObject(codex.objectNames.getId('world'));
+    const meadow = session.createObject(codex.objectNames.getId('meadow'));
+    const hilltop = session.createObject(codex.objectNames.getId('hilltop'));
+    const character = session.createObject(codex.objectNames.getId('character'));
+    const path = session.createObject(codex.objectNames.getId('path'));
 
     const locationsId = codex.slotNames.getId('locations');
-    expect(meadow.moveToSlot(world.getSlot(locationsId))).toBeUndefined();
-    expect(hilltop.moveToSlot(world.getSlot(locationsId))).toBeUndefined();
-    expect(character.moveToSlot(meadow.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
-    expect(path.moveToSlot(meadow.getSlot(codex.slotNames.getId('stuff')))).toBeUndefined();
+    expect(meadow.moveToSlotOrRejection(world.getSlot(locationsId))).toBeUndefined();
+    expect(hilltop.moveToSlotOrRejection(world.getSlot(locationsId))).toBeUndefined();
+    expect(
+      character.moveToSlotOrRejection(meadow.getSlot(codex.slotNames.getId('characters'))),
+    ).toBeUndefined();
+    expect(path.moveToSlotOrRejection(meadow.getSlot(codex.slotNames.getId('stuff')))).toBeUndefined();
 
     return { codex, session, world, meadow, hilltop, character, path };
   }
@@ -150,7 +152,7 @@ object_defs:
     expect(character.parent, 'actorはpathの中へ入る').toBe(path);
     expect(path.parent, 'pathは型で指した行き先へ移る').toBe(hilltop);
     expect(
-      character.findRoot().findDescendantOfDef(codex.objectNames.getId('character')),
+      character.findRoot().findSelfOrDescendantOfDef(codex.objectNames.getId('character')),
       '中の物も一緒に運ばれる',
     ).toBe(character);
   });
@@ -199,15 +201,15 @@ object_defs:
         cell: {accept: {tag: item}}
 `,
       )
-      .build();
+      .buildAndReset();
 
     const session = new WorldSession(codex);
-    const world = session.spawn(codex.objectNames.getId('world'));
+    const world = session.createObject(codex.objectNames.getId('world'));
     const stuffSlot = codex.slotNames.getId('stuff');
-    const basket = session.spawn(codex.objectNames.getId('basket'));
-    const stone = session.spawn(codex.objectNames.getId('stone'));
+    const basket = session.createObject(codex.objectNames.getId('basket'));
+    const stone = session.createObject(codex.objectNames.getId('stone'));
     for (const item of [basket, stone]) {
-      expect(item.moveToSlot(world.getSlot(stuffSlot))).toBeUndefined();
+      expect(item.moveToSlotOrRejection(world.getSlot(stuffSlot))).toBeUndefined();
     }
 
     expect(
@@ -246,15 +248,15 @@ object_defs:
         cell: {accept: {tag: item}}
 `,
       )
-      .build();
+      .buildAndReset();
 
     const session = new WorldSession(codex);
-    const world = session.spawn(codex.objectNames.getId('world'));
+    const world = session.createObject(codex.objectNames.getId('world'));
     const stuffSlot = codex.slotNames.getId('stuff');
-    const outer = session.spawn(codex.objectNames.getId('basket'));
-    const inner = session.spawn(codex.objectNames.getId('basket'));
-    expect(outer.moveToSlot(world.getSlot(stuffSlot))).toBeUndefined();
-    expect(inner.moveToSlot(world.getSlot(stuffSlot))).toBeUndefined();
+    const outer = session.createObject(codex.objectNames.getId('basket'));
+    const inner = session.createObject(codex.objectNames.getId('basket'));
+    expect(outer.moveToSlotOrRejection(world.getSlot(stuffSlot))).toBeUndefined();
+    expect(inner.moveToSlotOrRejection(world.getSlot(stuffSlot))).toBeUndefined();
 
     // かご同士も入れ子にできる。
     expect(
@@ -342,7 +344,7 @@ object_defs:
           to_prop: destination_id
 `,
         )
-        .build();
+        .buildAndReset();
 
     expect(loadBad).toThrow(YamlLoadError);
     expect(loadBad).toThrowError(/child/);
@@ -370,7 +372,7 @@ object_defs:
           to_prop: destination_id
 `,
         )
-        .build();
+        .buildAndReset();
 
     expect(loadBad).toThrow(YamlLoadError);
     expect(loadBad).toThrowError(/どちらか一方/);
@@ -396,7 +398,7 @@ object_defs:
           to_prop: destination_id
 `,
         )
-        .build();
+        .buildAndReset();
 
     expect(loadBad).toThrow(YamlLoadError);
     expect(loadBad).toThrowError(/どれか1つ/);
@@ -416,7 +418,7 @@ object_defs:
         move: {subject: actor, to: ancestor}
 `,
         )
-        .build();
+        .buildAndReset();
 
     expect(loadBad).toThrow(YamlLoadError);
     expect(loadBad).toThrowError(/ancestor/);
@@ -440,14 +442,14 @@ object_defs:
         move: {subject: dragged, to: parent}
 `,
       )
-      .build();
+      .buildAndReset();
     const session = new WorldSession(codex);
 
-    const jar = session.spawn(codex.objectNames.getId('jar'));
-    const receiver = session.spawn(codex.objectNames.getId('water'));
-    const poured = session.spawn(codex.objectNames.getId('water'));
+    const jar = session.createObject(codex.objectNames.getId('jar'));
+    const receiver = session.createObject(codex.objectNames.getId('water'));
+    const poured = session.createObject(codex.objectNames.getId('water'));
     const contentId = codex.slotNames.getId('content');
-    expect(receiver.moveToSlot(jar.getSlot(contentId))).toBeUndefined();
+    expect(receiver.moveToSlotOrRejection(jar.getSlot(contentId))).toBeUndefined();
 
     expect(
       receiver
@@ -479,7 +481,7 @@ object_defs:
           into: characters
 `,
         )
-        .build();
+        .buildAndReset();
 
     expect(loadBad).toThrow(YamlLoadError);
     expect(loadBad).toThrowError(/未知のキー/);
@@ -503,7 +505,7 @@ object_defs:
             to_prop: fuse
 `,
         )
-        .build();
+        .buildAndReset();
 
     expect(loadBad).toThrow(YamlLoadError);
   });

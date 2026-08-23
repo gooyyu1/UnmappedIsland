@@ -25,7 +25,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
   beforeAll(() => {
     // 刃物（tools.yaml）・土地（locations.yaml）・殻の容器（liquid_containers.yaml）への
     // ファイルをまたぐ参照があるため、ディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     hydrationId = codex.propertyNames.getId('hydration');
   });
 
@@ -44,8 +44,8 @@ describe('coconut.yamlのヤシの実の加工', () => {
   });
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
-    const spawned = session.spawn(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
+    expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 

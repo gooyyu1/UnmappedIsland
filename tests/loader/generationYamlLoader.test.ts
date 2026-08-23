@@ -46,7 +46,7 @@ generation_scopes:
 `;
 
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('terrain_generation.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('terrain_generation.yaml', yaml).buildAndReset();
   }
 
   it('妥当なaxes/location_types/generation_scopesからGenerationDefsを組み立てる', () => {
@@ -88,8 +88,8 @@ generation_scopes:
     if (island === undefined) return;
     expect(island.siteCountMin).toBe(10);
     expect(island.siteCountMax).toBe(20);
-    expect(island.coastBand).toBe(15);
-    expect(island.hullCoast).toBe(true);
+    expect(island.coastBandMaxDistance).toBe(15);
+    expect(island.clampsHullSitesToCoast).toBe(true);
     expect(island.interiorBias).toBe(0.6);
     expect(island.guarantees).toHaveLength(1);
     expect(island.guarantees[0].locationType).toBe('peak');
@@ -130,7 +130,7 @@ location_types:
       elevation: {ideal: 30, tolerance: 25}
 `,
       )
-      .build();
+      .buildAndReset();
 
     expect(codex.generation).toBeDefined();
     expect(codex.generation?.axes.has('elevation')).toBe(true);

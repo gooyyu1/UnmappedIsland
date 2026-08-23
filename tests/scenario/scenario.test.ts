@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { start as startNewGame } from '../../src/domain/generation/NewGame';
+import { startNewGame } from '../../src/domain/generation/NewGame';
 import { heatHazeFor } from '../../src/game/looks/heatHaze';
 import { applyScenario, bundledScenario, parseScenario, scenarioNames } from '../../src/scenario/Scenario';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -18,7 +18,7 @@ describe('テスト用シナリオ', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   function load(name: string) {
@@ -105,7 +105,7 @@ describe('テスト用シナリオ', () => {
 
     expect(heatHazeFor(game.world.ambientTemperature), '開始時点で陽炎が立つ').toBeDefined();
 
-    game.session.advanceWorldTime(game.world.minutesPerTick * 4);
+    game.session.advanceWorldTime(game.world.rawMinutesPerTick * 4);
 
     expect(heatHazeFor(game.world.ambientTemperature), '数tick経っても立ったまま').toBeDefined();
   });
@@ -120,7 +120,7 @@ describe('テスト用シナリオ', () => {
     expect(game.world.weather).toBe('storm');
 
     // weather_remaining（初期20tick）が尽きて選び直されるまで進める。
-    game.session.advanceWorldTime(game.world.minutesPerTick * 24);
+    game.session.advanceWorldTime(game.world.rawMinutesPerTick * 24);
 
     expect(['storm', 'heavy_rain', 'light_rain'], '飽和した大気では晴れ系が選ばれない').toContain(
       game.world.weather,

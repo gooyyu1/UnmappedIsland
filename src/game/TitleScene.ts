@@ -102,11 +102,11 @@ export class TitleScene extends ResponsiveScene {
       this,
       { x, y, width, height },
       primary
-        ? { fill: COLOR.primaryButton, radius: height / 2 }
+        ? { fillColor: COLOR.primaryButton, radius: height / 2 }
         : {
-            fill: COLOR.textOnDark,
+            fillColor: COLOR.textOnDark,
             fillAlpha: 0.12,
-            border: COLOR.textOnDark,
+            borderColor: COLOR.textOnDark,
             borderWidth: this.metrics.linePx(2),
             radius: height / 2,
           },

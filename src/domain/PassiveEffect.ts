@@ -58,7 +58,7 @@ export class PassiveEffectGate {
     if (
       this.conditions !== undefined &&
       // ゲートはactor/draggedを持たない文脈で評価する（誰かが操作しているとは限らない）。
-      !this.conditions.evaluate(ReferenceContext.of(slotBearer))
+      !this.conditions.evaluate(ReferenceContext.forSelf(slotBearer))
     )
       return false;
 
@@ -91,10 +91,10 @@ export abstract class PassiveEffect {
   abstract collectInfluences(declarer: WorldObject, out: InfluenceWriter): void;
 
   /** 関係（self/parent/ancestor）が変わった契機。登録を持たない効果は何もしない。 */
-  registerRelation(_owner: WorldObject, _relation: ReferenceRoot, _register: boolean): void {}
+  setRelationRegistered(_owner: WorldObject, _relation: ReferenceRoot, _register: boolean): void {}
 
   /** 子が付く/離れる契機。登録を持たない効果は何もしない。 */
-  registerChild(_owner: WorldObject, _child: WorldObject, _register: boolean): void {}
+  setChildRegistered(_owner: WorldObject, _child: WorldObject, _register: boolean): void {}
 
   /**
    * tick毎に走る輸送（8.4節）ならそれ自身。寄与として登録される効果（modify/add）ではundefined。
@@ -138,7 +138,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
 
   /**
    * 対象へ届く辺を書き出す。**対象がchildのときは今入っている子の数だけ辺を書く**——寄与の登録
-   * （registerChild）が子ごとに1件ずつ作られるのと同じで、「どの子か」は1つに決まらない。
+   * （setChildRegistered）が子ごとに1件ずつ作られるのと同じで、「どの子か」は1つに決まらない。
    */
   override collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {
     for (const target of declarer.resolveInfluenceTargets(this.target)) {
@@ -150,7 +150,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
         target,
         targetPropertyGlobalId: this.target.propertyGlobalId,
         reversible: this.reversible,
-        increases: this.amount.of(declarer) >= 0,
+        increases: this.amount.amountFor(declarer) >= 0,
         active: this.gate.isSatisfied(declarer, slotBearer),
       });
     }
@@ -169,7 +169,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
   /** declarer/slotBearerの現在の文脈でゲート（8.2節）が有効ならamountを、無効なら0を返す。
    * modifyでもaddでも同じ量。 */
   activeAmount(declarer: WorldObject, slotBearer: WorldObject): number {
-    return this.gate.isSatisfied(declarer, slotBearer) ? this.amount.of(declarer) : 0;
+    return this.gate.isSatisfied(declarer, slotBearer) ? this.amount.amountFor(declarer) : 0;
   }
 
   /**
@@ -177,23 +177,23 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * 解決するため、呼び出し側がrelationとrelatedに矛盾した組を渡す余地が無い。
    *
    * ancestorは、ツリー構造が変わる前に解除・変わった後に登録という順序を呼び出し側
-   * （WorldObject.registerAncestorTargetedRecursively）が守る前提で、「今この瞬間の祖先」を毎回辿るだけで
+   * （WorldObject.setAncestorTargetsRegistered）が守る前提で、「今この瞬間の祖先」を毎回辿るだけで
    * よく、前回の登録先を憶えない。
    *
    * childは相手（どの子か）がownerから一意に辿れないため、ここでは扱わずregisterChildを使う。
    */
-  override registerRelation(owner: WorldObject, relation: ReferenceRoot, register: boolean): void {
+  override setRelationRegistered(owner: WorldObject, relation: ReferenceRoot, register: boolean): void {
     if (this.target.root !== relation) return;
-    this.registerResolvedRelation(owner, this.target.owner(ReferenceContext.of(owner)), register);
+    this.setResolvedRelationRegistered(owner, this.target.owner(ReferenceContext.forSelf(owner)), register);
   }
 
   /**
    * childがparentに付く/離れる際に、parent（owner）側のtarget=child効果を、その付いた/離れた子(child)へ
    * 登録/解除する。childは相手がownerから一意に辿れない唯一の関係のため、childを明示的に受け取る。
    */
-  override registerChild(owner: WorldObject, child: WorldObject, register: boolean): void {
+  override setChildRegistered(owner: WorldObject, child: WorldObject, register: boolean): void {
     if (this.target.root !== 'child') return;
-    this.registerResolvedRelation(owner, child, register);
+    this.setResolvedRelationRegistered(owner, child, register);
   }
 
   /**
@@ -201,7 +201,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * gateのself（＝slotBearer）はエッジの子側（child対象なら子=related、それ以外はowner）。
    * relationとrelatedに矛盾した組を外部から渡せないよう非公開。
    */
-  private registerResolvedRelation(
+  private setResolvedRelationRegistered(
     owner: WorldObject,
     related: WorldObject | undefined,
     register: boolean,
@@ -290,7 +290,7 @@ export class TransferPassiveEffect extends PassiveEffect {
   /** ゲートが開いている間、1 tick分の輸送を走らせる（activeの輸送と同じ経路をそのまま通る）。 */
   applyTick(owner: WorldObject): void {
     if (!this.gate.isSatisfied(owner, owner)) return;
-    this.transfer.apply(ReferenceContext.of(owner));
+    this.transfer.apply(ReferenceContext.forSelf(owner));
   }
 
   override collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {

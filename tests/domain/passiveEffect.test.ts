@@ -14,7 +14,7 @@ describe('PassiveEffect', () => {
   });
 
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   /** 1つのcodexから作る物は同じセッションに属する（WorldObject.session）。 */
@@ -24,7 +24,7 @@ describe('PassiveEffect', () => {
       session = new WorldSession(codex);
       sessions.set(codex, session);
     }
-    return session.spawn(codex.objectNames.getId(objectName));
+    return session.createObject(codex.objectNames.getId(objectName));
   }
 
   // ------------------------------------------------------------------
@@ -52,7 +52,7 @@ object_defs:
     });
 
     it('同じObjectDefから複数spawnしても、プロパティの状態は独立している', () => {
-      // PropertyDef.initialValueは全WorldObjectで共有されるテンプレートのため、cloneし忘れると
+      // PropertyDef.initialValueWithoutRollは全WorldObjectで共有されるテンプレートのため、cloneし忘れると
       // 片方への加算・効果登録がもう片方へ漏れる。2体spawnし、互いに影響しないことを確認する。
       const yaml = `
 object_defs:
@@ -128,10 +128,10 @@ object_defs:
 
       expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(10); // 装備前はボーナスなし
 
-      expect(armorInstance.moveToSlot(characterInstance.getSlot(equipSlotId))).toBeUndefined();
+      expect(armorInstance.moveToSlotOrRejection(characterInstance.getSlot(equipSlotId))).toBeUndefined();
       expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(15); // equipに入っている間はボーナスが乗る
 
-      expect(armorInstance.moveToSlot(characterInstance.getSlot(inventorySlotId))).toBeUndefined();
+      expect(armorInstance.moveToSlotOrRejection(characterInstance.getSlot(inventorySlotId))).toBeUndefined();
       expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(10); // 同じ親のままequip以外へ移すとボーナスが外れる
     });
 
@@ -164,10 +164,10 @@ object_defs:
       const chestInstance = spawn(codex, 'chest');
       const armorInstance = spawn(codex, 'armor');
 
-      expect(armorInstance.moveToSlot(characterInstance.getSlot(equipSlotId))).toBeUndefined();
+      expect(armorInstance.moveToSlotOrRejection(characterInstance.getSlot(equipSlotId))).toBeUndefined();
       expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(15);
 
-      expect(armorInstance.moveToSlot(chestInstance.getSlot(storageSlotId))).toBeUndefined();
+      expect(armorInstance.moveToSlotOrRejection(chestInstance.getSlot(storageSlotId))).toBeUndefined();
       expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(10); // 別の親へ移動したら元の親からの登録は消える
     });
 
@@ -197,7 +197,7 @@ object_defs:
 
       expect(foodInstance.tryGetProperty(decayRateId)?.getEffectiveValue() ?? 0).toBe(3); // 格納前は影響なし
 
-      expect(foodInstance.moveToSlot(containerInstance.getSlot(storageSlotId))).toBeUndefined();
+      expect(foodInstance.moveToSlotOrRejection(containerInstance.getSlot(storageSlotId))).toBeUndefined();
       expect(foodInstance.tryGetProperty(decayRateId)?.getEffectiveValue() ?? 0).toBe(2); // storageに入っている間は腐敗速度が下がる
     });
 
@@ -264,8 +264,8 @@ object_defs:
       const helmetInstance = spawn(codex, 'helmet');
       const armorInstance = spawn(codex, 'armor');
 
-      expect(helmetInstance.moveToSlot(characterInstance.getSlot(equipSlotId))).toBeUndefined();
-      expect(armorInstance.moveToSlot(characterInstance.getSlot(equipSlotId))).toBeUndefined();
+      expect(helmetInstance.moveToSlotOrRejection(characterInstance.getSlot(equipSlotId))).toBeUndefined();
+      expect(armorInstance.moveToSlotOrRejection(characterInstance.getSlot(equipSlotId))).toBeUndefined();
 
       expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(18);
     });
@@ -295,7 +295,7 @@ object_defs:
       const characterInstance = spawn(codex, 'character');
       const armorInstance = spawn(codex, 'armor');
 
-      expect(armorInstance.moveToSlot(characterInstance.getSlot(equipSlotId))).toBeUndefined();
+      expect(armorInstance.moveToSlotOrRejection(characterInstance.getSlot(equipSlotId))).toBeUndefined();
 
       expect(characterInstance.tryGetProperty(defenseId)?.getEffectiveValue() ?? 0).toBe(100);
     });
@@ -383,11 +383,13 @@ object_defs:
       characterInstance.tick();
       expect(characterInstance.tryGetProperty(hydrationId)?.getEffectiveValue() ?? 0).toBe(100); // 装着前はtickしても変化なし
 
-      expect(bleedingInstance.moveToSlot(characterInstance.getSlot(conditionsSlotId))).toBeUndefined();
+      expect(
+        bleedingInstance.moveToSlotOrRejection(characterInstance.getSlot(conditionsSlotId)),
+      ).toBeUndefined();
       characterInstance.tick();
       expect(characterInstance.tryGetProperty(hydrationId)?.getEffectiveValue() ?? 0).toBe(95); // conditionsに入っている間はtick毎に減る
 
-      expect(bleedingInstance.moveToSlot(trashInstance.getSlot(storageSlotId))).toBeUndefined();
+      expect(bleedingInstance.moveToSlotOrRejection(trashInstance.getSlot(storageSlotId))).toBeUndefined();
       characterInstance.tick();
       expect(characterInstance.tryGetProperty(hydrationId)?.getEffectiveValue() ?? 0).toBe(95); // 取り除いた後はtickしても変化しない
     });
@@ -423,7 +425,9 @@ object_defs:
       const characterInstance = spawn(codex, 'character');
       const infectionInstance = spawn(codex, 'infection');
 
-      expect(infectionInstance.moveToSlot(characterInstance.getSlot(conditionsSlotId))).toBeUndefined();
+      expect(
+        infectionInstance.moveToSlotOrRejection(characterInstance.getSlot(conditionsSlotId)),
+      ).toBeUndefined();
 
       characterInstance.tick();
       expect(characterInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(36); // progressがnoneの間は上がらない
@@ -465,8 +469,10 @@ object_defs:
       const bootsInstance = spawn(codex, 'boots');
       const exhaustionInstance = spawn(codex, 'exhaustion');
 
-      expect(bootsInstance.moveToSlot(characterInstance.getSlot(equipSlotId))).toBeUndefined();
-      expect(exhaustionInstance.moveToSlot(characterInstance.getSlot(equipSlotId))).toBeUndefined();
+      expect(bootsInstance.moveToSlotOrRejection(characterInstance.getSlot(equipSlotId))).toBeUndefined();
+      expect(
+        exhaustionInstance.moveToSlotOrRejection(characterInstance.getSlot(equipSlotId)),
+      ).toBeUndefined();
 
       expect(characterInstance.tryGetProperty(staminaId)?.getEffectiveValue() ?? 0).toBe(60); // modifyだけが都度加味される（実体値は50のまま）
 
@@ -474,7 +480,7 @@ object_defs:
       expect(characterInstance.tryGetProperty(staminaId)?.getEffectiveValue() ?? 0).toBe(59); // tickでpassivesのaddだけが実体値へ入る(50-1+10=59)
     });
 
-    it('PropertyValue.incomingはmodify/addの種別を問わず全件を返す', () => {
+    it('PropertyValue.registeredContributionsはmodify/addの種別を問わず全件を返す', () => {
       const yaml = `
 object_defs:
   character:
@@ -506,10 +512,12 @@ object_defs:
       const bootsInstance = spawn(codex, 'boots');
       const exhaustionInstance = spawn(codex, 'exhaustion');
 
-      expect(bootsInstance.moveToSlot(characterInstance.getSlot(equipSlotId))).toBeUndefined();
-      expect(exhaustionInstance.moveToSlot(characterInstance.getSlot(equipSlotId))).toBeUndefined();
+      expect(bootsInstance.moveToSlotOrRejection(characterInstance.getSlot(equipSlotId))).toBeUndefined();
+      expect(
+        exhaustionInstance.moveToSlotOrRejection(characterInstance.getSlot(equipSlotId)),
+      ).toBeUndefined();
 
-      const incoming = characterInstance.tryGetProperty(staminaId)?.incoming ?? [];
+      const incoming = characterInstance.tryGetProperty(staminaId)?.registeredContributions ?? [];
 
       // 種別（modify/add）はPassiveEffectの内部事情で外から見えないため、declarerで両方の
       // 効果が種別を問わず1つの一覧に載ることを確認する（bootsはmodify、exhaustionはpassivesのadd）。
@@ -542,7 +550,7 @@ object_defs:
 
       const containerInstance = spawn(codex, 'holder');
       const bombInstance = spawn(codex, 'bomb');
-      expect(bombInstance.moveToSlot(containerInstance.getSlot(itemsSlotId))).toBeUndefined();
+      expect(bombInstance.moveToSlotOrRejection(containerInstance.getSlot(itemsSlotId))).toBeUndefined();
 
       containerInstance.tick();
 
@@ -570,7 +578,7 @@ object_defs:
 
       const containerInstance = spawn(codex, 'holder');
       const tankInstance = spawn(codex, 'tank');
-      expect(tankInstance.moveToSlot(containerInstance.getSlot(itemsSlotId))).toBeUndefined();
+      expect(tankInstance.moveToSlotOrRejection(containerInstance.getSlot(itemsSlotId))).toBeUndefined();
 
       containerInstance.tick();
 
@@ -598,7 +606,7 @@ object_defs:
 
       const containerInstance = spawn(codex, 'backpack');
       const batteryInstance = spawn(codex, 'power_cell');
-      expect(batteryInstance.moveToSlot(containerInstance.getSlot(itemsSlotId))).toBeUndefined();
+      expect(batteryInstance.moveToSlotOrRejection(containerInstance.getSlot(itemsSlotId))).toBeUndefined();
 
       containerInstance.tick();
 
@@ -624,7 +632,7 @@ object_defs:
 
       const containerInstance = spawn(codex, 'lantern_holder');
       const torchInstance = spawn(codex, 'torch');
-      expect(torchInstance.moveToSlot(containerInstance.getSlot(itemsSlotId))).toBeUndefined();
+      expect(torchInstance.moveToSlotOrRejection(containerInstance.getSlot(itemsSlotId))).toBeUndefined();
 
       containerInstance.tick();
 
@@ -683,7 +691,7 @@ object_defs:
 
       const locationInstance = spawn(codex, 'clearing2');
       const wetLogInstance = spawn(codex, 'wet_log');
-      expect(wetLogInstance.moveToSlot(locationInstance.getSlot(groundSlotId))).toBeUndefined();
+      expect(wetLogInstance.moveToSlotOrRejection(locationInstance.getSlot(groundSlotId))).toBeUndefined();
 
       locationInstance.tick();
 
@@ -725,7 +733,7 @@ object_defs:
 
       const boxInstance = spawn(codex, 'small_box');
       const geodeInstance = spawn(codex, 'geode');
-      expect(geodeInstance.moveToSlot(boxInstance.getSlot(shelfSlotId))).toBeUndefined();
+      expect(geodeInstance.moveToSlotOrRejection(boxInstance.getSlot(shelfSlotId))).toBeUndefined();
 
       boxInstance.tick();
 
@@ -765,7 +773,7 @@ object_defs:
 
       const caveInstance = spawn(codex, 'cave');
       const veinInstance = spawn(codex, 'vein');
-      expect(veinInstance.moveToSlot(caveInstance.getSlot(floorSlotId))).toBeUndefined();
+      expect(veinInstance.moveToSlotOrRejection(caveInstance.getSlot(floorSlotId))).toBeUndefined();
 
       caveInstance.tick();
 
@@ -802,11 +810,11 @@ object_defs:
       const saltInstance = spawn(codex, 'salt');
 
       // objectで指定した'raw_meat'そのものは受け入れられる
-      expect(meatInstance.moveToSlot(stewInstance.getSlot(ingredientsSlotId))).toBeUndefined();
+      expect(meatInstance.moveToSlotOrRejection(stewInstance.getSlot(ingredientsSlotId))).toBeUndefined();
       // 'raw_meat'とは異なる型であり、tagも持たないため拒否される
-      expect(fishInstance.moveToSlot(stewInstance.getSlot(ingredientsSlotId))).toBeDefined();
+      expect(fishInstance.moveToSlotOrRejection(stewInstance.getSlot(ingredientsSlotId))).toBeDefined();
       // objectとは別に、tagのルールも同じaccepts内で併用できる
-      expect(saltInstance.moveToSlot(stewInstance.getSlot(ingredientsSlotId))).toBeUndefined();
+      expect(saltInstance.moveToSlotOrRejection(stewInstance.getSlot(ingredientsSlotId))).toBeUndefined();
     });
 
     it('起点への配置が失敗し伝播先の親も無ければ、spawnは何もしない', () => {
@@ -864,7 +872,7 @@ object_defs:
 
       const locationInstance = spawn(codex, 'clearing3');
       const bushInstance = spawn(codex, 'bush');
-      expect(bushInstance.moveToSlot(locationInstance.getSlot(groundSlotId))).toBeUndefined();
+      expect(bushInstance.moveToSlotOrRejection(locationInstance.getSlot(groundSlotId))).toBeUndefined();
 
       locationInstance.tick();
 
@@ -895,9 +903,9 @@ object_defs:
       const junk2 = spawn(codex, 'junk');
       const junk3 = spawn(codex, 'junk');
 
-      expect(junk1.moveToSlot(containerInstance.getSlot(contentsSlotId))).toBeUndefined();
-      expect(junk2.moveToSlot(containerInstance.getSlot(contentsSlotId))).toBeUndefined();
-      expect(junk3.moveToSlot(containerInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(junk1.moveToSlotOrRejection(containerInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(junk2.moveToSlotOrRejection(containerInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(junk3.moveToSlotOrRejection(containerInstance.getSlot(contentsSlotId))).toBeUndefined();
 
       containerInstance.tick(); // 例外を投げればテスト自体が失敗する
 
@@ -921,7 +929,7 @@ object_defs:
 
       const boxInstance = spawn(codex, 'box');
       const itemInstance = spawn(codex, 'trinket');
-      expect(itemInstance.moveToSlot(boxInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(itemInstance.moveToSlotOrRejection(boxInstance.getSlot(contentsSlotId))).toBeUndefined();
 
       itemInstance.destroy();
       expect(itemInstance.parent).toBeUndefined();
@@ -967,8 +975,8 @@ object_defs:
       const innerInstance = spawn(codex, 'inner_box');
       const batteryInstance = spawn(codex, 'cell');
 
-      expect(innerInstance.moveToSlot(outerInstance.getSlot(itemsSlotId))).toBeUndefined();
-      expect(batteryInstance.moveToSlot(innerInstance.getSlot(itemsSlotId))).toBeUndefined();
+      expect(innerInstance.moveToSlotOrRejection(outerInstance.getSlot(itemsSlotId))).toBeUndefined();
+      expect(batteryInstance.moveToSlotOrRejection(innerInstance.getSlot(itemsSlotId))).toBeUndefined();
 
       outerInstance.tick();
 
@@ -1083,8 +1091,8 @@ object_defs:
 
       expect(foodInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(-2); // 未接続の間は祖先が見つからず寄与0
 
-      expect(characterInstance.moveToSlot(roomInstance.getSlot(contentsSlotId))).toBeUndefined();
-      expect(foodInstance.moveToSlot(characterInstance.getSlot(inventorySlotId))).toBeUndefined();
+      expect(characterInstance.moveToSlotOrRejection(roomInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(foodInstance.moveToSlotOrRejection(characterInstance.getSlot(inventorySlotId))).toBeUndefined();
 
       // characterはtemperatureを持たないため素通りし、roomの実効値(20)に自分のオフセット(-2)を加算する
       expect(foodInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(18);
@@ -1119,8 +1127,8 @@ object_defs:
       const tentInstance = spawn(codex, 'tent');
       const foodInstance = spawn(codex, 'food');
 
-      expect(tentInstance.moveToSlot(roomInstance.getSlot(contentsSlotId))).toBeUndefined();
-      expect(foodInstance.moveToSlot(tentInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(tentInstance.moveToSlotOrRejection(roomInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(foodInstance.moveToSlotOrRejection(tentInstance.getSlot(contentsSlotId))).toBeUndefined();
 
       // tent自身がtemperatureを定義しているため、そこで探索が止まりroom(20)までは遡らない
       expect(foodInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(5);
@@ -1156,7 +1164,7 @@ object_defs:
 
       expect(roomInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(20); // 暖炉を置く前は補正なし
 
-      expect(fireplaceInstance.moveToSlot(roomInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(fireplaceInstance.moveToSlotOrRejection(roomInstance.getSlot(contentsSlotId))).toBeUndefined();
       expect(roomInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(25); // 暖炉を置くと部屋の気温が+5される
 
       fireplaceInstance.destroy();
@@ -1189,8 +1197,8 @@ object_defs:
       const cartInstance = spawn(codex, 'cart');
       const fireplaceInstance = spawn(codex, 'fireplace');
 
-      expect(cartInstance.moveToSlot(roomInstance.getSlot(contentsSlotId))).toBeUndefined();
-      expect(fireplaceInstance.moveToSlot(cartInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(cartInstance.moveToSlotOrRejection(roomInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(fireplaceInstance.moveToSlotOrRejection(cartInstance.getSlot(contentsSlotId))).toBeUndefined();
 
       // cartはtemperatureを持たないため素通りし、roomへ直接効果が及ぶ
       expect(roomInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(25);
@@ -1223,14 +1231,14 @@ object_defs:
       const cartInstance = spawn(codex, 'cart');
       const fireplaceInstance = spawn(codex, 'fireplace');
 
-      expect(cartInstance.moveToSlot(room1Instance.getSlot(contentsSlotId))).toBeUndefined();
-      expect(fireplaceInstance.moveToSlot(cartInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(cartInstance.moveToSlotOrRejection(room1Instance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(fireplaceInstance.moveToSlotOrRejection(cartInstance.getSlot(contentsSlotId))).toBeUndefined();
 
       expect(room1Instance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(25); // room1に置かれたcartの中の暖炉がroom1を温める
       expect(room2Instance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(20); // room2にはまだ何も影響していない
 
       // 暖炉自身ではなく、暖炉を運ぶcart(祖先)がroom2へ移動する。
-      expect(cartInstance.moveToSlot(room2Instance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(cartInstance.moveToSlotOrRejection(room2Instance.getSlot(contentsSlotId))).toBeUndefined();
 
       // cartが立ち去ったのでroom1への補正は消える（再帰的な再解決が効いている証拠）
       expect(room1Instance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(20);
@@ -1260,7 +1268,7 @@ object_defs:
       const roomInstance = spawn(codex, 'room');
       const fireplaceInstance = spawn(codex, 'fireplace');
 
-      expect(fireplaceInstance.moveToSlot(roomInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(fireplaceInstance.moveToSlotOrRejection(roomInstance.getSlot(contentsSlotId))).toBeUndefined();
 
       roomInstance.tick();
       roomInstance.tick();

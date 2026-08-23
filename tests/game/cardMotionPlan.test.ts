@@ -63,7 +63,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     );
 
     expect(plan.flights).toHaveLength(1);
-    expect(plan.flights[0]).toMatchObject({ face: '地の石', into: '地の石', from: 0, to: 500 });
+    expect(plan.flights[0]).toMatchObject({ into: '地の石', from: 0, to: 500 });
     // 飛んでいる1個は着くまで合流先に居ない（3個のうち2個だけが見えている）。
     expect(plan.shown).toContainEqual({ card: '地の石', present: [3], emptied: true });
     expect(plan.shown).toContainEqual({ card: '手の石', present: [1], emptied: true });
@@ -80,7 +80,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     );
 
     const flight = plan.flights.find((f) => f.from === 300);
-    expect(flight).toMatchObject({ to: 500, face: '地の石' });
+    expect(flight).toMatchObject({ to: 500, into: '地の石' });
   });
 
   it('ついてきて一緒に落とされたぶんも、指を離した場所から動き出す', () => {
@@ -126,7 +126,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
     expect(plan.flights.map((flight) => flight.delaySteps)).toEqual([0, 1]);
     for (const flight of plan.flights) {
       // 便の見た目は行き先のカードから借りる（居なくなったカードは既に無いものとして扱う）。
-      expect(flight).toMatchObject({ face: '手の石', from: 0, to: 500 });
+      expect(flight).toMatchObject({ into: '手の石', from: 0, to: 500 });
     }
   });
 
@@ -284,7 +284,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
 
     expect(plan.fadeIns).toEqual(['枝']);
     expect(plan.flights).toHaveLength(1);
-    expect(plan.flights[0]).toMatchObject({ face: '実', from: 0, to: 500 });
+    expect(plan.flights[0]).toMatchObject({ into: '実', from: 0, to: 500 });
   });
 
   it('identityを持たないカードは、出どころを引く手がかりが無いので浮かび上がる', () => {
@@ -315,7 +315,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
         }),
       );
       expect(plan.puffs).toEqual([]);
-      expect(plan.flights.map((flight) => flight.puffs)).toEqual([false]);
+      expect(plan.flights.map((flight) => flight.raisesDust)).toEqual([false]);
     });
 
     it('束が丸ごと消えても、砂埃は札1枚につき1回', () => {
@@ -341,7 +341,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
       );
 
       expect(plan.puffs).toEqual([]);
-      expect(plan.flights.map((flight) => flight.puffs)).toEqual([true]);
+      expect(plan.flights.map((flight) => flight.raisesDust)).toEqual([true]);
     });
 
     it('既に居る束へ合流する生まれも、着いた先で立つ', () => {
@@ -354,7 +354,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
         }),
       );
 
-      expect(plan.flights.map((flight) => flight.puffs)).toEqual([true]);
+      expect(plan.flights.map((flight) => flight.raisesDust)).toEqual([true]);
     });
 
     it('出どころの分からない生まれは、浮かび上がるその場で立つ', () => {

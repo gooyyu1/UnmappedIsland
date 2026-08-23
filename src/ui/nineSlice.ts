@@ -22,7 +22,7 @@ export function addNineSlice(
   border: number,
 ): Phaser.GameObjects.Container {
   const source = scene.textures.get(key).source[0];
-  addSliceFrames(scene, key, source.width, source.height, border);
+  ensureSliceFrames(scene, key, source.width, source.height, border);
 
   const columns = sliceSpans(width, border);
   const rows = sliceSpans(height, border);
@@ -68,7 +68,7 @@ export function sliceSpans(total: number, border: number): readonly SliceSpan[] 
  * **フレームを足すと、フレーム名を省いた参照が最初に足したフレームへ向くようになる**
  * （DesignNotes.md「Phaserのテクスチャ」）。9patchで敷く絵は、他の用途と共有しないこと。
  */
-function addSliceFrames(
+function ensureSliceFrames(
   scene: Phaser.Scene,
   key: string,
   sourceWidth: number,

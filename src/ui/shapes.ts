@@ -3,15 +3,15 @@ import type { Rect } from './Rect';
 
 /** 角丸矩形の塗り・枠線の指定。枠線を省くと塗りだけを描く。 */
 export interface BoxStyle {
-  readonly fill?: number;
+  readonly fillColor?: number;
   readonly fillAlpha?: number;
-  readonly border?: number;
+  readonly borderColor?: number;
   readonly borderWidth?: number;
   readonly radius?: number;
   /** 「まだ中身が無い」枠を破線で描く（CSSのborder-style: dashedにあたる）。 */
   readonly dashed?: boolean;
   /** 下地から浮いて見せる落ち影の、ずらし幅（px）。濃さと広がりはdrawBoxが決める。 */
-  readonly shadow?: number;
+  readonly shadowOffset?: number;
 }
 
 /**
@@ -20,7 +20,7 @@ export interface BoxStyle {
  * **背景板は必ず入力を遮る。** はみ出した表示物を切り抜かずに背景板で覆って隠す使い方があり、
  * 遮らないと、隠れているはずのものがタップに反応してしまう。
  */
-export function addPanel(
+export function addInputBlockingPanel(
   scene: Phaser.Scene,
   rect: Rect,
   color: number,
@@ -75,9 +75,9 @@ export function addTiledImageVertical(
 }
 
 /**
- * 背景板を絵で敷く（addPanelの絵版。入力を遮る役目も同じ）。敷いた絵を送るのは呼び出し側。
+ * 背景板を絵で敷く（addInputBlockingPanelの絵版。入力を遮る役目も同じ）。敷いた絵を送るのは呼び出し側。
  */
-export function addTiledPanel(
+export function addInputBlockingTiledPanel(
   scene: Phaser.Scene,
   rect: Rect,
   texture: string,
@@ -85,10 +85,19 @@ export function addTiledPanel(
   return addTiledImage(scene, rect, texture).setInteractive();
 }
 
+/** 落ち影1枚の置き方。 */
+export interface ShadowLayer {
+  /** ずらし幅の何倍の位置に置くか。 */
+  readonly offsetScale: number;
+
+  /** その枚の不透明度。 */
+  readonly alpha: number;
+}
+
 /** 図形の意匠の既定（setShapeDefaults）。 */
 export interface ShapeDefaults {
-  /** 落ち影の各枚（ずらし幅の何倍の位置に、どの不透明度で置くか）。 */
-  readonly shadowLayers: readonly (readonly [number, number])[];
+  /** 落ち影の各枚。手前から順に重ねる。 */
+  readonly shadowLayers: readonly ShadowLayer[];
 
   /** 破線1本分の長さを線の太さの何倍にするか（線と空きは同じ長さ）。 */
   readonly dashLengthRatio: number;
@@ -99,7 +108,7 @@ export interface ShapeDefaults {
  * 入れなくても形になる値を持つので、意匠を持たない画面でも図形が消えることはない——影は1枚、
  * 破線は太さの6倍で刻む。
  */
-let defaults: ShapeDefaults = { shadowLayers: [[1, 0.3]], dashLengthRatio: 6 };
+let defaults: ShapeDefaults = { shadowLayers: [{ offsetScale: 1, alpha: 0.3 }], dashLengthRatio: 6 };
 
 export function setShapeDefaults(next: ShapeDefaults): void {
   defaults = next;
@@ -120,21 +129,21 @@ export function drawBox(graphics: Phaser.GameObjects.Graphics, rect: Rect, style
   // 影は塗りより先に敷き、塗りで覆う。**ぼかせないので重ねて濃さを落とす**——何枚どの濃さで置くかは
   // 意匠が決める（setShapeDefaults）。色は黒に固定する。下地の明るさによらず、暗い側へ倒すほうが
   // 浮いて見えるため。
-  if (style.shadow !== undefined) {
-    for (const [distance, alpha] of defaults.shadowLayers) {
+  if (style.shadowOffset !== undefined) {
+    for (const { offsetScale, alpha } of defaults.shadowLayers) {
       graphics.fillStyle(0x000000, alpha);
-      const offset = style.shadow * distance;
+      const offset = style.shadowOffset * offsetScale;
       graphics.fillRoundedRect(rect.x + offset, rect.y + offset, rect.width, rect.height, radius);
     }
   }
-  if (style.fill !== undefined) {
-    graphics.fillStyle(style.fill, style.fillAlpha ?? 1);
+  if (style.fillColor !== undefined) {
+    graphics.fillStyle(style.fillColor, style.fillAlpha ?? 1);
     graphics.fillRoundedRect(rect.x, rect.y, rect.width, rect.height, radius);
   }
-  if (style.border === undefined) return;
+  if (style.borderColor === undefined) return;
 
   const borderWidth = style.borderWidth ?? 1;
-  graphics.lineStyle(borderWidth, style.border, 1);
+  graphics.lineStyle(borderWidth, style.borderColor, 1);
   if (style.dashed) strokeDashedBox(graphics, rect, radius, borderWidth * defaults.dashLengthRatio);
   else graphics.strokeRoundedRect(rect.x, rect.y, rect.width, rect.height, radius);
 }

@@ -31,7 +31,7 @@ import type { PassiveEffect } from '../domain/PassiveEffect';
  * conditionsはブロック全体で1つ（対象ごとには持たない。RegisteredPassiveEffect参照）。
  * RawObjectDef.resolveから（object/trait直下・props内・stages内のいずれからも）呼ばれる。
  */
-export function parsePassive(
+export function parsePassiveInto(
   loader: WorldCodexYamlLoader,
   passives: PassiveEffect[],
   objectDefName: string,
@@ -114,7 +114,7 @@ function parsePassiveOperationInto(
   if (operationMap === undefined) return;
 
   // 対象は付いている子ごとに登録を配れるので、childを指せる唯一の場所（8.1節）。
-  const scope = ReferenceScope.declaration.broadcasting;
+  const scope = ReferenceScope.declaration.withBroadcast;
 
   for (const [targetName, bodyNode] of entriesInOrder(operationMap)) {
     const target = parseSubjectRoot(`${context}.${operationKey}`, targetName, scope);

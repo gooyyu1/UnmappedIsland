@@ -1,8 +1,13 @@
 import type { WorldCodex } from '../../domain/WorldCodex';
-import type { NewGameSession } from '../../domain/generation/NewGame';
+import type { StartedGame } from '../../domain/generation/NewGame';
 import type { WorldObject } from '../../domain/WorldObject';
 import { autoFillMaterials } from '../../domain/autoFill';
-import { advanceCrafting, currentStep, remainingRequirements, stepIsSupplied } from '../../domain/crafting';
+import {
+  tryAdvanceCrafting,
+  currentStep,
+  remainingRequirements,
+  stepIsSupplied,
+} from '../../domain/crafting';
 import type { CardAction } from './cardOperations';
 import { recipeOf } from './recipeList';
 
@@ -37,7 +42,7 @@ export interface CraftingMaterial {
 export function craftingActions(
   object: WorldObject,
   codex: WorldCodex,
-  game: NewGameSession,
+  game: StartedGame,
 ): readonly CardAction[] {
   const recipe = recipeOf(object, codex);
   if (recipe === undefined) return [];
@@ -75,7 +80,7 @@ export function craftingActions(
       enabled: supplied,
       reason: supplied ? undefined : '素材が足りない。',
       execute: () => {
-        advanceCrafting(object, materialsSlotId, recipe, codex, game.session);
+        tryAdvanceCrafting(object, materialsSlotId, recipe, codex, game.session);
       },
     },
     {
@@ -109,7 +114,7 @@ export function craftingMaterials(
   const contents = container.tryGetSlot(codex.vocabulary.engine.materialsSlotId)?.contents ?? [];
 
   return remainingRequirements(recipe, progress).map((requirement) => ({
-    objectGlobalIds: requirement.match.candidates(codex.objects).map((def) => def.globalId),
+    objectGlobalIds: requirement.match.matchingDefs(codex.objects).map((def) => def.globalId),
     needed: requirement.count,
     held: contents.filter((object) => requirement.requires(object.def)).length,
     inCurrentStep: inStep.has(requirement.match.key),

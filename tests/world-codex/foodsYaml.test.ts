@@ -13,7 +13,7 @@ describe('foods.yamlの食料定義', () => {
   beforeAll(() => {
     // 焼き上がりの焦げた先（animals.yamlのcharred_lump）へファイルをまたぐ参照があるため、
     // ディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   function spawn(objectName: string, instanceId: number): WorldObject {
@@ -90,7 +90,7 @@ describe('foods.yamlの食料定義', () => {
   it('characterはエネルギーの在庫を3本持ち、速さが栄養素ごとに違う', () => {
     // 速いものから 糖質 → たんぱく質 → 脂質（DigestionSystem.md 3節）。
     const character = codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER));
-    const instance = new WorldSession(codex).spawn(character.globalId);
+    const instance = new WorldSession(codex).createObject(character.globalId);
 
     for (const [name, expectedRate] of [
       ['carbohydrate', 2],

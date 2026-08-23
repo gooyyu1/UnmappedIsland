@@ -106,19 +106,19 @@ object_defs:
   beforeEach(() => {
     const loader = new WorldCodexYamlLoader();
     loader.load('gains.yaml', yaml);
-    codex = loader.build();
+    codex = loader.buildAndReset();
 
     session = new WorldSession(codex, undefined, fixedRng(0));
     const world = spawn('world');
     session.adoptWorld(new World(world, codex));
     const land = spawn('land');
-    expect(land.moveToSlot(world.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
+    expect(land.moveToSlotOrRejection(world.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
     player = spawn('survivor');
-    expect(player.moveToSlot(land.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
+    expect(player.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
   });
 
   function spawn(objectName: string): WorldObject {
-    return session.spawn(codex.objectNames.getId(objectName));
+    return session.createObject(codex.objectNames.getId(objectName));
   }
 
   /** bodyの間に観測された増加を、プロパティ名から量で引ける形にする。 */
@@ -153,7 +153,7 @@ object_defs:
     drain('carbohydrate', 0);
     drain('satiety', 0);
     const taro = spawn('roasted_taro');
-    expect(taro.moveToSlot(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+    expect(taro.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     const { source, amounts } = gainsDuring(() => {
       expect(taro.tryGetAction('eat', player)?.tryExecute() === true).toBe(true);
@@ -171,7 +171,7 @@ object_defs:
     // 個体は続く**ので、湧かせる札は型が変わった後も同じ札のまま。
     drain('hydration', 100);
     const bowl = spawn('bowl');
-    expect(bowl.moveToSlot(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+    expect(bowl.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
     bowl.becomeAlong(new Map([['content', 'water_liquid']]));
     bowl.tryGetProperty(codex.propertyNames.getId('fill'))?.setNumber(250);
 

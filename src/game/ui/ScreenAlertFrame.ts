@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { COLOR } from '../looks/theme';
-import { ALERT_BLINK_MS } from '../looks/alertBlink';
+import { ALERT_BLINK_HALF_CYCLE_MS } from '../looks/alertBlink';
 
 /** 枠の太さと、明滅で最も薄いときの濃さ（片道の時間はlooks/alertBlink）。 */
 const FRAME_WIDTH = 20;
@@ -42,7 +42,7 @@ export class ScreenAlertFrame extends Phaser.GameObjects.Graphics {
       this.blinkTween = this.scene.tweens.add({
         targets: this,
         alpha: BLINK_MIN_ALPHA,
-        duration: ALERT_BLINK_MS,
+        duration: ALERT_BLINK_HALF_CYCLE_MS,
         yoyo: true,
         repeat: -1,
       });

@@ -1,5 +1,5 @@
 import type { WorldCodex } from '../../domain/WorldCodex';
-import type { NewGameSession } from '../../domain/generation/NewGame';
+import type { StartedGame } from '../../domain/generation/NewGame';
 import { Location } from '../../domain/wrappers/Location';
 import { Path } from '../../domain/wrappers/Path';
 import type { PropertyInfluence } from '../../domain/PropertyInfluence';
@@ -11,7 +11,7 @@ import { craftingMaterials } from './craftingView';
 import { cardLooksOf } from './cardLooks';
 import type { CardAction, CardCombination, CardDrop, CardOperations } from './cardOperations';
 import { cardOperationsOf } from './cardOperations';
-import type { CardPlace, CardPlacement, ScreenPlaces } from './cardPlaces';
+import type { CardPlace, CardPlacement, ScreenPlaceResolver } from './cardPlaces';
 import { cardPlacesOf } from './cardPlaces';
 import type { SlotRef } from '../../art/backgroundArt';
 import type { CardContent } from '../ui/Card';
@@ -25,8 +25,8 @@ import type { StatusContent, StatusDetail, StatusInfluence } from '../ui/StatusB
  * スタックのメンバーはobjectsに全部入っていて、束ねているだけの表示上の都合で1枚に見えている
  * （CardContent.identityも全メンバーのID）。1枚しか無い束もこの形で表す。
  *
- * dropInto・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への反映（表示内容の
- * 作り直し）は呼び出し側の責務。dropIntoとreorderは「そこへ落とせるか」を、答えを返すか否かで示す。
+ * dropInto・reorderActionAt・combinationOfが返す操作はワールドを変えるだけで、画面への反映（表示内容の
+ * 作り直し）は呼び出し側の責務。dropIntoとreorderActionAtは「そこへ落とせるか」を、答えを返すか否かで示す。
  * 落とせない場所（持ち歩けない設置物、出し入れできない怪我など）ではundefinedになるので、呼び出し側は
  * 落とし先の枠を出す前に問い合わせられる。
  */
@@ -81,7 +81,7 @@ export interface ObjectCardStack extends CardContent {
    * 同じ場所の中で位置を変える操作。こちらは束ごと動かす（1つずつでは元の束へ合流して戻ってしまうため、
    * SlotSystem.md 3節）。
    */
-  readonly reorder?: (at: CardPlacement) => (() => void) | undefined;
+  readonly reorderActionAt?: (at: CardPlacement) => (() => void) | undefined;
 }
 
 /**
@@ -153,7 +153,7 @@ export interface SlotView {
   readonly label: string;
 
   /**
-   * そのスロットが空けておく枠（`SlotDef.cellsToKeep`、SlotSystem.md 3節）。1枠しか無い場所に4枠空けると
+   * そのスロットが空けておく枠（`SlotDef.cellCountPolicy`、SlotSystem.md 3節）。1枠しか無い場所に4枠空けると
    * 「4つ入る」と誤って伝わるので、数を宣言しているならその数。
    *
    * **枠数を宣言していないスロットは`'grows'`**——カードを落とすたびに枠が1つ増えるので、空けておく
@@ -244,7 +244,7 @@ export interface PlayScreenView {
    * 常に見えている3つのレーンが今映しているスロット。**画面が自分で名指しするのはこの3つだけ**で、
    * それ以外の場所はカードや現在地が名乗る`visible_slots`から来る（cardPlaces参照）。
    */
-  readonly places: ScreenPlaces;
+  readonly places: ScreenPlaceResolver;
 
   /** その場所を並びとして見せるのに要るもの。**場所ごとに変わる**ので、値ではなく問い合わせ。 */
   readonly slotViewOf: (place: CardPlace) => SlotView;
@@ -302,7 +302,7 @@ export interface PlayScreenView {
  * ——45分の行動の結果が、経過を見せている途中の画面に先に現れる。
  *
  * **画面が引きうる場所を漏らさず渡すこと。** 焼き付けていない場所は生きたワールドのままなので、
- * 渡し忘れた場所だけが未来を映す（recordChange参照）。
+ * 渡し忘れた場所だけが未来を映す（runAndRecordChange参照）。
  */
 export function withFrozenCards(
   view: PlayScreenView,
@@ -368,11 +368,7 @@ function collapsed(looks: readonly InfluenceLook[]): readonly StatusInfluence[] 
  * カードの語彙は3つに分かれている。場所とスロットの対応（cardPlaces）・札の見た目（cardLooks）・
  * 札の上の操作（cardOperations）で、ここはそれを束ねて画面の区画へ配る。
  */
-export function fromGameSession(
-  game: NewGameSession,
-  codex: WorldCodex,
-  locale: Localization,
-): PlayScreenView {
+export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Localization): PlayScreenView {
   const location = game.player.location ?? game.startLocation;
   const places = cardPlacesOf(game.player, location);
 
@@ -398,7 +394,7 @@ export function fromGameSession(
     return {
       key: name ?? String(place.owner.instanceId),
       label: name === undefined ? looks.nameOf(place.owner) : locale.slot(name).displayName,
-      cells: slotDef?.cellsToKeep ?? 'grows',
+      cells: slotDef?.cellCountPolicy ?? 'grows',
       acceptsCards: slotDef !== undefined && codex.anyTypeCanBeBroughtInto(slotDef),
       background: slotDef === undefined ? undefined : { owner: place.owner.def.name, slot: slotDef.name },
       materials: craftingMaterials(place.owner, codex),
@@ -559,7 +555,7 @@ export function fromGameSession(
     description: locale.object(instances[0].def.name).description,
     place,
     // 重ねたdraggedの行き先を決めるのはワールドの側（GameElementDefinition.md 7.8節）。
-    contentsFor: (dragged) => instances[0].putInSlotFor(dragged.objects[0]),
+    contentsFor: (dragged) => instances[0].slotForPutIn(dragged.objects[0]),
     visibleSlots: visiblePlacesOf(instances[0]),
   });
 
@@ -619,7 +615,7 @@ export function fromGameSession(
 
     const roads = new Map<string, MapRoadView>();
     for (const [instanceId, site] of siteOf) {
-      const land = root.findDescendantByInstanceId(instanceId);
+      const land = root.findSelfOrDescendantByInstanceId(instanceId);
       if (land === undefined) continue;
       for (const fixture of new Location(land, codex).fixtures) {
         if (!fixture.def.hasTag(pathTagId)) continue;
@@ -641,7 +637,7 @@ export function fromGameSession(
           card: {
             icon: LOCATION_ICON,
             name: locationNameOf(instanceId),
-            art: root.findDescendantByInstanceId(instanceId)?.def.name,
+            art: root.findSelfOrDescendantByInstanceId(instanceId)?.def.name,
             kind: 'location',
           },
           current: site === currentSite,

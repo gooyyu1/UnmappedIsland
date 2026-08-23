@@ -37,7 +37,7 @@ object_defs:
   const build = (): WorldCodex => {
     const loader = new WorldCodexYamlLoader();
     loader.load('bound.yaml', yaml);
-    return loader.build();
+    return loader.buildAndReset();
   };
 
   interface Fixture {
@@ -57,19 +57,19 @@ object_defs:
     const roadsId = codex.slotNames.getId('roads');
     const stuffId = codex.slotNames.getId('stuff');
 
-    const world = session.spawn(codex.objectNames.getId('world'));
+    const world = session.createObject(codex.objectNames.getId('world'));
     const lands = [0, 1].map(() => {
-      const land = session.spawn(codex.objectNames.getId('land'));
-      expect(land.moveToSlot(world.getSlot(placesId))).toBeUndefined();
+      const land = session.createObject(codex.objectNames.getId('land'));
+      expect(land.moveToSlotOrRejection(world.getSlot(placesId))).toBeUndefined();
       return land;
     });
     const [here, there] = lands as [WorldObject, WorldObject];
 
-    const road = session.spawn(codex.objectNames.getId('road'));
-    expect(road.moveToSlot(here.getSlot(roadsId)), '生まれた直後の配置は通る').toBeUndefined();
+    const road = session.createObject(codex.objectNames.getId('road'));
+    expect(road.moveToSlotOrRejection(here.getSlot(roadsId)), '生まれた直後の配置は通る').toBeUndefined();
 
-    const stone = session.spawn(codex.objectNames.getId('stone'));
-    expect(stone.moveToSlot(road.getSlot(stuffId))).toBeUndefined();
+    const stone = session.createObject(codex.objectNames.getId('stone'));
+    expect(stone.moveToSlotOrRejection(road.getSlot(stuffId))).toBeUndefined();
 
     return { codex, world, here, there, road, stone };
   };
@@ -78,7 +78,7 @@ object_defs:
     const { codex, there, road } = setUp();
     const roadsId = codex.slotNames.getId('roads');
 
-    expect(road.moveToSlot(there.getSlot(roadsId))).toContain('離せません');
+    expect(road.moveToSlotOrRejection(there.getSlot(roadsId))).toContain('離せません');
     expect(road.parent?.def.name, '元の持ち主に留まる').toBe('land');
     expect(there.tryGetSlot(roadsId)?.contents).toEqual([]);
   });
@@ -86,7 +86,7 @@ object_defs:
   it('弾くのは持ち主が変わるときだけで、同じ持ち主の中では動かせる', () => {
     const { codex, here, road } = setUp();
 
-    expect(road.moveToSlot(here.getSlot(codex.slotNames.getId('roads')))).toBeUndefined();
+    expect(road.moveToSlotOrRejection(here.getSlot(codex.slotNames.getId('roads')))).toBeUndefined();
   });
 
   it('持ち主が消えれば道連れになるが、中身は道連れにならない', () => {

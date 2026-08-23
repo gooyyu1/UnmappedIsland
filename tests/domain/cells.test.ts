@@ -9,7 +9,8 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  * 「何が」は枠のaccept、「その枠に何個」は枠のmax、「枠がいくつ」はcell_count/cellsの長さが答える。
  */
 describe('枠ごとの要件', () => {
-  const build = (yaml: string): WorldCodex => new WorldCodexYamlLoader().load('cells.yaml', yaml).build();
+  const build = (yaml: string): WorldCodex =>
+    new WorldCodexYamlLoader().load('cells.yaml', yaml).buildAndReset();
 
   describe('cells（枠ごとに違う要件）', () => {
     // 椅子のレシピ: 板が1枚と、棒が4本。板の枠に棒は入らないし、その逆も入らない。
@@ -33,10 +34,13 @@ object_defs:
 
     const setUp = (): Bench => {
       const session = new WorldSession(codex);
-      const bench = session.spawn(codex.objectNames.getId('chair_in_progress'));
+      const bench = session.createObject(codex.objectNames.getId('chair_in_progress'));
       return {
         bench,
-        put: (name) => session.spawn(codex.objectNames.getId(name)).moveToSlot(bench.getSlot(materialsId)),
+        put: (name) =>
+          session
+            .createObject(codex.objectNames.getId(name))
+            .moveToSlotOrRejection(bench.getSlot(materialsId)),
       };
     };
 
@@ -86,9 +90,9 @@ object_defs:
 
     const fill = (name: string, count: number): (string | undefined)[] => {
       const session = new WorldSession(codex);
-      const shelf = session.spawn(codex.objectNames.getId('shelf'));
+      const shelf = session.createObject(codex.objectNames.getId('shelf'));
       return Array.from({ length: count }, () =>
-        session.spawn(codex.objectNames.getId(name)).moveToSlot(shelf.getSlot(thingsId)),
+        session.createObject(codex.objectNames.getId(name)).moveToSlotOrRejection(shelf.getSlot(thingsId)),
       );
     };
 

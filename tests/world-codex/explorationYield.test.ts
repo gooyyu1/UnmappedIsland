@@ -67,7 +67,7 @@ describe('探索で見つかる物', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   /**
@@ -86,10 +86,12 @@ describe('探索で見つかる物', () => {
     const worldView = new World(worldInstance, codex);
     const explorer = new WorldSession(codex, worldView, seededRng(20250801));
 
-    const instance = explorer.spawn(codex.objectNames.getId(landName));
+    const instance = explorer.createObject(codex.objectNames.getId(landName));
     for (const [propertyGlobalId, value] of props)
       instance.getProperty(propertyGlobalId).setNumberWithoutEvents(value);
-    expect(instance.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
+    expect(
+      instance.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
+    ).toBeUndefined();
     const location = new Location(instance, codex);
 
     const findings: Finding[] = [];

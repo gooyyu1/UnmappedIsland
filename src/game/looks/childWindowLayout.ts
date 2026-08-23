@@ -42,7 +42,7 @@ export function closeRow(metrics: ScreenMetrics, window: Rect): Rect {
 }
 
 /** 子ウィンドウを領域の中央へ置いた矩形。領域に収まらない大きさでも、画面の外へは出さない。 */
-export function centerWindow(metrics: ScreenMetrics, area: Rect, width: number, height: number): Rect {
+export function centeredWindowRect(metrics: ScreenMetrics, area: Rect, width: number, height: number): Rect {
   return {
     x: Math.max(0, Math.min(area.x + (area.width - width) / 2, metrics.width - width)),
     y: Math.max(0, Math.min(area.y + (area.height - height) / 2, metrics.height - height)),

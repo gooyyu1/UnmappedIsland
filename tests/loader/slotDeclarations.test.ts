@@ -8,7 +8,8 @@ import { YamlLoadError } from '../../src/loader/YamlLoadError';
  * 誰が入れてよいか（`placement`、同 7.7節）・入れ物であること（`storage`、同 7.12節）のロード。
  */
 describe('visible_slots', () => {
-  const load = (yaml: string): WorldCodex => new WorldCodexYamlLoader().load('test.yaml', yaml).build();
+  const load = (yaml: string): WorldCodex =>
+    new WorldCodexYamlLoader().load('test.yaml', yaml).buildAndReset();
 
   const visibleNamesOf = (codex: WorldCodex, objectName: string): string[] =>
     codex.objects

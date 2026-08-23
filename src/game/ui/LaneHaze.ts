@@ -76,7 +76,8 @@ export class LaneHaze {
 
   /** 今の陽炎。undefinedなら立てない。 */
   setHaze(haze: HeatHaze | undefined): void {
-    if (haze?.strength === this.haze?.strength && haze?.swayMs === this.haze?.swayMs) return;
+    if (haze?.strength === this.haze?.strength && haze?.swayHalfCycleMs === this.haze?.swayHalfCycleMs)
+      return;
     this.stop();
     this.haze = haze;
     this.apply();
@@ -144,7 +145,7 @@ export class LaneHaze {
       this.scene.tweens.add({
         targets: filters,
         y: haze.strength * 0.3,
-        duration: haze.swayMs,
+        duration: haze.swayHalfCycleMs,
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut',
@@ -152,7 +153,7 @@ export class LaneHaze {
       this.scene.tweens.add({
         targets: filters,
         x: -haze.strength * HORIZONTAL_RATIO,
-        duration: Math.round(haze.swayMs * 1.6),
+        duration: Math.round(haze.swayHalfCycleMs * 1.6),
         yoyo: true,
         repeat: -1,
         ease: 'Sine.easeInOut',

@@ -17,7 +17,7 @@ object_defs:
 `;
 
   function load(): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   it('spawnした初期値はrangeの範囲内に収まり、複数の値が現れる', () => {
@@ -28,7 +28,7 @@ object_defs:
 
     const seen = new Set<number>();
     for (let i = 0; i < 100; i++) {
-      const v = session.spawn(gemId).tryGetProperty(qualityId)?.number ?? 0;
+      const v = session.createObject(gemId).tryGetProperty(qualityId)?.number ?? 0;
       expect(v).toBeGreaterThanOrEqual(10); // 初期値は[min,max]の閉区間に収まる
       expect(v).toBeLessThanOrEqual(20);
       seen.add(v);
@@ -45,8 +45,8 @@ object_defs:
 
     function firstSpawn(seed: number): number {
       return (
-        new WorldSession(codex, undefined, seededRng(seed)).spawn(gemId).tryGetProperty(qualityId)?.number ??
-        0
+        new WorldSession(codex, undefined, seededRng(seed)).createObject(gemId).tryGetProperty(qualityId)
+          ?.number ?? 0
       );
     }
 

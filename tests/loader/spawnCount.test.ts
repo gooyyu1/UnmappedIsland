@@ -28,7 +28,7 @@ object_defs:
 `;
 
   function itemsOnGround(yaml: string): readonly string[] {
-    const codex = new WorldCodexYamlLoader().load('test.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('test.yaml', yaml).buildAndReset();
     const session = new WorldSession(codex);
     const ground = new WorldObject(1, codex.objects.get(codex.objectNames.getId('ground')), session);
     const pile = new WorldObject(2, codex.objects.get(codex.objectNames.getId('pile')), session);

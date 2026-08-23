@@ -75,7 +75,7 @@ function readAxes(
     const ofNode = tryGetMap(map, 'of', axisContext);
     if (ofNode === undefined) throw new YamlLoadError(`${axisContext}: 'of'は必須です。`);
     const rule = parseTypeMatchRule(loader, `${axisContext}.of`, ofNode);
-    return [axisName, { values: rule.candidates(defs) }];
+    return [axisName, { values: rule.matchingDefs(defs) }];
   });
 }
 

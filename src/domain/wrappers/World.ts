@@ -8,15 +8,15 @@ import type { Rng } from '../Rng';
  */
 export class World extends ObjectWrapper {
   get day(): number {
-    return this.numberOf(this.words.dayId);
+    return this.effectiveNumberOf(this.words.dayId);
   }
 
   get hour(): number {
-    return this.numberOf(this.words.hourId);
+    return this.effectiveNumberOf(this.words.hourId);
   }
 
   get minute(): number {
-    return this.numberOf(this.words.minuteId);
+    return this.effectiveNumberOf(this.words.minuteId);
   }
 
   /**
@@ -33,7 +33,7 @@ export class World extends ObjectWrapper {
    * 持たなければundefined。
    */
   get weather(): string | undefined {
-    const value = this.tryNumberOf(this.words.weatherId);
+    const value = this.tryEffectiveNumberOf(this.words.weatherId);
     return value === undefined ? undefined : this.codex.symbolNames.getName(value);
   }
 
@@ -42,7 +42,7 @@ export class World extends ObjectWrapper {
    * worldが日射を持たなければundefined。
    */
   get sunlight(): number | undefined {
-    return this.tryNumberOf(this.words.sunlightId);
+    return this.tryEffectiveNumberOf(this.words.sunlightId);
   }
 
   /**
@@ -50,11 +50,11 @@ export class World extends ObjectWrapper {
    * worldが気温を持たなければundefined。
    */
   get ambientTemperature(): number | undefined {
-    return this.tryNumberOf(this.words.ambientTemperatureId);
+    return this.tryEffectiveNumberOf(this.words.ambientTemperatureId);
   }
 
   /** 1tickに相当するゲーム内時間（分）。実体値をそのまま返す（WorldSession.advanceWorldTime参照）。 */
-  get minutesPerTick(): number {
+  get rawMinutesPerTick(): number {
     return this.instance.tryGetProperty(this.words.minutesPerTickId)?.number ?? 0;
   }
 
@@ -67,7 +67,7 @@ export class World extends ObjectWrapper {
    * 決まりを2箇所に書くと、片方だけ変えても何も壊れない**。
    */
   minutesUntilTick(n: number): number {
-    const step = this.minutesPerTick;
+    const step = this.rawMinutesPerTick;
     return (n - 1) * step + (step - (this.totalMinutes % step));
   }
 
@@ -79,7 +79,7 @@ export class World extends ObjectWrapper {
    * 刻みに乗らない時刻から始めると、以後ずっとtick境界が半端な時刻へずれる。
    */
   rollTimeOfDay(earliestMinutes: number, latestMinutes: number, rng: Rng): void {
-    const step = this.minutesPerTick;
+    const step = this.rawMinutesPerTick;
     const firstStep = Math.ceil(earliestMinutes / step);
     const lastStep = Math.trunc(latestMinutes / step);
     const minutes = rng.nextInt(firstStep, lastStep + 1) * step;
