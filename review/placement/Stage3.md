@@ -747,3 +747,105 @@ UIが作る隙間番号は常に範囲内なので差は出ない。
 **`?? 1` は仕様と食い違っていた。** `max` は省略で無制限（GameElementDefinition.md 7.2節）で、
 1個だけ置きたいなら `max: 1` と書ける。材料スロットの枠は `requirementCells` が必ず `max` を
 入れるので到達しない分岐だったが、読む側が別の既定を置くと、宣言できるはずのことが宣言できなくなる。
+
+## 22. 札とレーンの口（H-8・H-9／B-4）
+
+`Card` に `identity` / `rect` / `appear` / `slideToX` を足し、`setPresence` が破棄済みの札を自分で
+弾くようにした。周りが代わりに書いていた `CardTable` のモジュール関数 `idsOf` / `rectOf`、private の
+`fadeIn`、`CardLane.slideTo`、`CarriedCard.returnToSource`、`isAlive` の前置き4箇所が消えた。
+
+`CardLane` には `placements`（添字・札・矩形の組）と `indexOf` を足し、`cardObjects` の公開をやめた。
+指摘どおり `CardTable.placedCards`・`CardDragController.locate`/`begin`/`showAcceptingCards`・
+`PlayScene.cardShowing` の5箇所が消えた。`cardShowing` は返した `card` を誰も読んでいなかったので、
+`rectOfInstance` へ畳んだ。
+
+### B-4 の診断は逆向き
+
+**取り下げる。** 挙げられた6メソッドはいずれも外から実際に呼ばれていて、未参照の public は1つも無い。
+`dropTargetAt` / `isCardBody` / `dropIndicatorRect` はレーンの幾何そのもの、`beginScroll` /
+`scrollByDrag` は自分が持つ `ScrollArea` への委譲、`hazeSurface` は自分に見えているものの列挙で、
+**どれもレーン自身の問い**。「内部座標系・`ScrollArea`・表示物リストを公開すればこれらは消える」という
+打ち手は、カプセル化を開ける方向になる。
+
+実在する不足は H-9 の側だけだった——生の配列と暗黙の添字規約が漏れていたこと。
+
+## 23. 区画の中の位置（H-17）
+
+`PlayScreenLayout` に `informationDivider`（6種類目の仕切り線）・`statusRows`（バーを並べる範囲）・
+`optionsBarIcons` / `filterBarIcons` を持たせた。`BAR_PADDING` / `OPTIONS_BAR_PADDING_X` /
+`FILTER_BAR_PADDING_X` / `STATUS_PADDING` も `PlayScene` から移った。
+
+バーのアイコンの位置は、縦横×2バーで**4通りの式**が `PlayScene` に散っていた。差は2つだけ。
+
+| バー | 並ぶ向きの中での寄せ方 | 余白 |
+| ---- | ---------------------- | ---- |
+| オプション（横型） | 中央 | — |
+| オプション（縦型） | 末尾 | 24 |
+| フィルター（横型・縦型） | 先頭 | 16 / 20 |
+
+交差する向きは4通りとも中央なので、`barIcons(bar, count, align, padding)` 1本に畳んだ。
+
+**挙動は保存。** 6通りの画面寸法（横型3・縦型3）で移設前後の矩形が一致することを確かめた
+（差は倍精度の丸め順のみ）。
+
+## 24. レーンと場所の対（H-16）
+
+`Helpers.md` の「`===` 連鎖が7箇所」は言い方がずれていて、`helpers/game-core.md` のほうが正確だった
+——**7つのメンバーが乗っていて、同じ対応表が3箇所**（`placeOf` の `===` 連鎖、`laneViews` の並び、
+`openLanes` の並び）。
+
+`ShownLane`（レーン・映している場所・並べる枠）を導入し、対を書く場所を `shownLanes` 1つにした。
+`placeOf` は消え、`spotOf` / `openLanes` / 差し替えの入力はすべてこの表を引く。
+
+**枠（cells）は遅延で持たせた。** `spotOf` はドラッグ中に指が動くたびに呼ばれるので、場所を訊くだけの
+呼び出しで全レーンぶんの札を組み立てさせないため。
+
+**挙動が1つ変わる。** `placeOf` の末尾の `?? this.place('items')` が無くなった。借りた1枚の枠
+（説明タブ）へ落としたときの `errorReport` の記録は、これまで**実在しない落とし先「アイテムスロット」**を
+書いていた——説明タブが開いている＝`childWindowPlace` が undefined なので、必ずフォールバックしていた。
+`?` になる（同じ関数の「札の名前が引けないとき」と同じ書き方）。
+
+## 25. 宣言の不変条件（B-8）
+
+**阻害要因は既に外れていた。** 段2のH-1で入った `built(context, () => new X(...))` が素の `Error` へ
+YAMLの文脈を被せて `YamlLoadError` へ変えるので、「エラー文言にYAMLの文脈文字列と節番号が要る」は
+理由にならない。`PropertyDef` は現にこの形で4件throwしていて、gauge/alert の2件だけが呼び出し側に
+取り残されていた。
+
+移したもの:
+
+| 移した先 | 検査 |
+| -------- | ---- |
+| `PropertyDef` | gaugeの向きとstagesのalertの向きの一致、`range` と mixed の両立不可 |
+| `ObjectDef` | 段のartを書けるのは `art_by_stage` が指すプロパティだけ |
+| `GenerationDefs` | `location_types` の `axis_preferences` / `hard_limits` と `generation_scopes` の `guarantees` が実在の軸・location_type を指すか |
+
+**移さなかったものがある。** `visible_slots` / `art_by_stage` が指すプロパティ / `location_types` の
+`object_def` / 亜種の上書きプロパティ。いずれも文言に**解決できなかった名前**が要るが、その名前は
+組み上がった宣言の中に無い——`ObjectDef` は自分の持たないプロパティの名前を言えず、`GenerationDefs` は
+`NameRegistry` も object_def の表も持たない。**名前の解決は loader の仕事**という線で分かれる。
+
+B-8 が挙げた「`ObjectDef` の名前衝突」は既に無い。`actions`/`combinations` を `interactions` へ
+統合した（19節）ことで、同名の操作は YAML のマップのキーとして書けなくなり、trait をまたぐ重複は
+`RawDeclarationBody.mergeIdentifierMaps` が弾くようになっていた。検査が消えた後も
+「操作の名前は1つの名前空間（11節）」というコメントだけが無関係な行の上に残っていたので消した。
+
+移した4件はいずれもテストが無かったので、回帰テストを足した。
+
+## 26. 効果クラスの歪み（B-7）
+
+**4件のうち3件は判定を取り下げる。** 4件は形としては確かに同型で、いずれも「内部を非公開に保つため、
+状態ではなく振る舞いを公開している」。しかしそれは歪みではなく、CLAUDE.md の「自分のことは自分でする」
+そのもの。各件に添えられた移動先は、**どれも相手のフィールドを公開しないと成り立たない**。
+
+| 件 | 添えられた移動先 | 再採点 |
+| -- | ---------------- | ------ |
+| `AddEffect.applyScaled` | `TransferEffect` が按分した `AddEffect` を作る | `AddEffect` の `target`/`amount` を公開することになる。**判定1** |
+| `TransferEffect.collectTransferInfluences` | `TransferPassiveEffect` が辺を組み立てる | `TransferEffect` の from/to 4フィールドを公開することになる。**判定1** |
+| `PropertyPassiveEffect.activeAmount` | `RegisteredPassiveEffect` が計算する | `gate`/`amount` を公開することになる。**判定1** |
+| `SpawnEffect` の公開3フィールド | `executeSpawn(objectGlobalId, into, …)` の引数へ | **判定4のまま。** 唯一、状態を公開して自分を丸ごと渡している |
+
+`SpawnEffect` だけ性質が違う——他の3件は「振る舞いを1つ公開する」で閉じているが、こちらは
+`objectGlobalId` / `into` / `count` を読める状態にしたうえで `executeSpawn(this, …)` と自分を渡し、
+`WorldObject` が中身を取り出している。`executeSpawn` が2値を受け取る形にして、3フィールドとも
+private にした。
