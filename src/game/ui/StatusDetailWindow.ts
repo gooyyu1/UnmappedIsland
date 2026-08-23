@@ -62,6 +62,17 @@ const TILE_MARK_WIDTH = 30;
 /** 絵を持たない相手に代わりに出す名前（StatusArea.md 3節と同じ扱い）。 */
 const TILE_NAME_SIZE = 18;
 
+/**
+ * 畳んだ件数の丸バッジ（カードの束と同じ姿、Card.createStackBadge）。枠の右上角へ、縁へ食い込ませて
+ * 置く——記号の欄は枠の高さいっぱいを使うので、中に重ねる余地が無い。
+ */
+const TILE_COUNT_SIZE = 26;
+const TILE_COUNT_OVERHANG = 6;
+const TILE_COUNT_BORDER = 2;
+
+/** 丸に対する数字の大きさは、カードの束のバッジと同じ比に取る（3桁でちょうど収まる）。 */
+const TILE_COUNT_TEXT_SIZE = 15;
+
 /** 条件が成立していない影響の薄さ。 */
 const INACTIVE_ALPHA = 0.4;
 
@@ -348,8 +359,12 @@ export class StatusDetailWindow {
     }).setOrigin(0.5);
     this.objects.push(mark);
 
+    // 畳んだ件数（1件なら出さない。カードの束と同じ、Card.showStackCount）。
+    const badge = influence.count >= 2 ? this.buildCountBadge(scene, metrics, influence.count) : undefined;
+
     const alpha = influence.active ? 1 : INACTIVE_ALPHA;
     for (const object of [board, art, mark]) object.setAlpha(alpha);
+    badge?.container.setAlpha(alpha);
 
     // 相手がステータスなら、その枠から相手の詳細へ渡り歩ける（オブジェクトには詳細が無い）。
     const key = influence.key;
@@ -375,9 +390,36 @@ export class StatusDetailWindow {
         // 絵は記号の欄を除いた残りの中央へ。記号の有無で絵の位置が動かないよう、欄は常に空ける。
         art.setPosition(x + (width - markWidth) / 2, y + height / 2);
         mark.setPosition(x + width - padding - markWidth / 2, y + height / 2);
+        badge?.container.setPosition(x + width - badge.offset, y + badge.offset);
         hitArea?.setPosition(x, y);
       },
     };
+  }
+
+  /**
+   * 畳んだ件数を出す丸バッジ。offsetは枠の右上角からの寄せ幅で、縁へ食い込む分だけ半径より小さい。
+   */
+  private buildCountBadge(
+    scene: Phaser.Scene,
+    metrics: ScreenMetrics,
+    count: number,
+  ): { readonly container: Phaser.GameObjects.Container; readonly offset: number } {
+    const radius = metrics.px(TILE_COUNT_SIZE) / 2;
+
+    const circle = scene.add.graphics();
+    circle.fillStyle(COLOR.cardFace, 1);
+    circle.fillCircle(0, 0, radius);
+    circle.lineStyle(metrics.linePx(TILE_COUNT_BORDER), COLOR.cardBorder, 1);
+    circle.strokeCircle(0, 0, radius);
+
+    const text = addLabel(scene, metrics, 0, 0, String(count), {
+      size: TILE_COUNT_TEXT_SIZE,
+      bold: true,
+    }).setOrigin(0.5);
+
+    const container = scene.add.container(0, 0, [circle, text]);
+    this.objects.push(container);
+    return { container, offset: radius - metrics.px(TILE_COUNT_OVERHANG) };
   }
 
   /**

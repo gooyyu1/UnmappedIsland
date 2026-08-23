@@ -338,6 +338,26 @@ function stacksIn(place: CardPlace): readonly (readonly WorldObject[] | undefine
   return slot === undefined ? [] : slot.cells.map((cell) => cell.stack?.members);
 }
 
+/** 影響1件の見え方（件数を除いたStatusInfluence）。**これが等しい影響は同じ枠に描かれる。** */
+type InfluenceLook = Omit<StatusInfluence, 'count'>;
+
+/**
+ * 同じに描かれる影響を1つの枠へ畳み、件数をcountに入れる（Windows.md 8節）。並び順は最初に現れた
+ * 位置を保つ。
+ *
+ * **畳む鍵は描かれる内容そのもの**（countを除く全フィールド）。相手の型で畳むと、段によって絵が
+ * 変わる物（art_by_stage）が同じ枠に混ざり、出ている絵と件数が食い違う。
+ */
+function collapsed(looks: readonly InfluenceLook[]): readonly StatusInfluence[] {
+  const byLook = new Map<string, StatusInfluence>();
+  for (const look of looks) {
+    const key = JSON.stringify(look);
+    const found = byLook.get(key);
+    byLook.set(key, found === undefined ? { ...look, count: 1 } : { ...found, count: found.count + 1 });
+  }
+  return [...byLook.values()];
+}
+
 /**
  * 生成済みのゲーム一式から画面の表示内容を作る。設置物レーン・アイテムレーン・ハンドレーンは
  * 現在地とキャラクターのスロットの中身をそのまま映す。
@@ -416,7 +436,7 @@ export function fromGameSession(
     object: WorldObject,
     influence: PropertyInfluence,
     moved: PropertyValue | undefined,
-  ): StatusInfluence => {
+  ): InfluenceLook => {
     const counterpart = influence.counterpart;
     const shown =
       counterpart.kind === 'object'
@@ -456,10 +476,10 @@ export function fromGameSession(
       description: locale.object(object.def.name).prop(property.def.name).description,
       stage: stageOnBarOf(property),
       // 与えている影響で動くのは相手、受けている影響で動くのは自分（influenceOfのmoved）。
-      given: influences.given.map((influence) =>
-        influenceOf(object, influence, movedByGiven(object, influence)),
+      given: collapsed(
+        influences.given.map((influence) => influenceOf(object, influence, movedByGiven(object, influence))),
       ),
-      received: influences.received.map((influence) => influenceOf(object, influence, property)),
+      received: collapsed(influences.received.map((influence) => influenceOf(object, influence, property))),
     };
   };
 

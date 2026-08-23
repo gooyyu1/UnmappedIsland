@@ -956,7 +956,7 @@ function scaleCost(cost: Cost, factor: number): Cost {
  * 5節）ので、作りかけの筏まで土地として並んでしまう。
  */
 function isLocation(codex: WorldCodex, def: ObjectDef): boolean {
-  return def.hasTag(codex.vocabulary.world.locationTagId) && !codex.isGenerated(def);
+  return def.hasTag(codex.vocabulary.world.locationTagId) && !def.isInProgress;
 }
 
 /** プレイヤーが操作するキャラクタか（休息のように自分の値を自分で戻す工程の宣言元）。 */

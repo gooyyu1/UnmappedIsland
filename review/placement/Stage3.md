@@ -849,3 +849,55 @@ B-8 が挙げた「`ObjectDef` の名前衝突」は既に無い。`actions`/`co
 `objectGlobalId` / `into` / `count` を読める状態にしたうえで `executeSpawn(this, …)` と自分を渡し、
 `WorldObject` が中身を取り出している。`executeSpawn` が2値を受け取る形にして、3フィールドとも
 private にした。
+
+## 27. `balanceTables.isLocation` のコメントと実装のずれ
+
+**コメントが正しい。** 実装を `!codex.isGenerated(def)` から `!def.isInProgress` に寄せた。
+
+`isLocation` が答えているのは「立って作業できる土地か」で、5箇所の呼び手はいずれもそれを訊いている
+（その土地に立っているときの工程か、用意しなくてよい入力か）。作りかけの筏には立てないので除くのが
+正しく、変種であること自体は「立てるか」と関わらない——土地が `variation_axes` を宣言すれば、その変種も
+立てる土地のまま `isGenerated` に落とされる。
+
+**`isGenerated` の関心は既に別に処理されていた。** `objectCosts` のループは `isLocation` を呼ぶ前の行で
+`if (codex.isGenerated(def)) continue;` と全変種を落としている。同じ関心を2箇所で二重に見ていた。
+
+同梱データでは挙動が変わらないことを確かめた（土地の型13件がどちらの基準でも一致）。`location` タグを
+配るのは `core.yaml` の `location` trait だけで、それを使う型は `variation_axes` を1つも宣言していない
+（宣言しているのは液体容器2種）ため、土地の変種は recipe 軸＝製作中のものしか存在しない。
+
+## 28. `cardLooks` のタグ名10個 — 既に解消していた
+
+7節が「`WorldVocabulary` に在るのは `location` と `character` の2つだけ」と書いた状態は、その後の
+レーンで変わっていた。今の `WorldRuleVocabulary` は種別タグを13個持ち、`cardLooks.kindOf` が読む10個
+（character / location / injury / animal / food / container / liquid_container / tool / item / fixture）は
+すべてそこから引いている。`src` で `tagNames.tryGetId` を使っているのは `CodexView`（URLに書かれた
+ユーザーの語）1箇所だけで、これは `WorldVocabulary` の説明が明示的に対象外としているもの。
+
+**「10個すべて入れる」側で決着済み。** 決めることは残っていない。
+
+## 29. 影響の一覧の縮退表示
+
+**同じに描かれる枠を1つに畳み、件数を右上の丸数字で出す**ようにした（`docs/ui/Windows.md` 8.2節）。
+カードのスタック数（CardView.md 6節）と同じ姿・同じ規則で、2件以上のときだけ数字を出す。
+
+- 畳むのは映し（`PlayScreenView`）、数字を描くのは意匠（`StatusDetailWindow`）。カードの束が
+  `ShownCards` → `Card.count` で分かれているのと同じ分担。
+- **畳む鍵は「その枠が同じに描かれるか」そのもの**（`InfluenceLook` ＝ `count` を除く全フィールド）。
+  相手の型で畳むと、段で絵が変わる物（`art_by_stage`）が同じ枠に混ざる。
+- **条件が成立している枠と薄い枠は畳まない。** まとめると、効いていないものまで効いているように読める。
+
+### domain 側に既に在るまとめとは別のもの
+
+`PropertyInfluences.add` が「相手も記号も同じ辺は1件にまとめる」を既に行っていたが、鍵は
+**相手のインスタンスID**なので、100個の石は100本のまま残る。あちらは「同じ相手が段ごとに何度も宣言
+している」を1件に戻すもので、`active` を OR で畳む。こちらは「別々の相手が同じに描かれる」を数字に
+するもので、`active` は畳まない。**問いが違うので2層のまま**にした（8.3節にその区別を書き足した）。
+
+### 確かめたこと
+
+テスト用シナリオ「石100個」で、荷重の「受けている影響」が石1枠＋丸数字100になることを実ブラウザで
+確認した（以前は100枠が並んでいた）。回帰テストは `tests/integration/characterStatus.test.ts` に、
+装備へ石を40個積む既存のテストの隣へ足した。
+
+丸に対する数字の大きさは、カードのバッジと同じ比に取った（3桁でちょうど収まる）。
