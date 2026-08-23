@@ -45,8 +45,10 @@ object_defs:
       # 積むほど重くなる。**積むほど遅い**のは段が sail_speed を削るから（GameEndings.md 4節）。
       # 海の上で積荷を捨てれば段が下がり、そのぶん速くなる——専用の仕組みは要らない。
       #
-      # **段の境目は自重＋積荷で書く。** 段が見るのは実効値なので、積荷の量で言い表すには自重を
-      # 足した値になる。自重を変えるときは境目も一緒に動かすこと（動かさないと積める量が変わる）。
+      # **段の境目は自重＋乗員＋積荷で書く。** 段が見るのは実効値なので、積荷の量で言い表すには
+      # 自重を足した値になる。**乗員1人（65kg）も足す**——航海中は必ず乗っているので、乗員を
+      # 見込まないと積める量がそのぶん減る（characters/player_character.yaml）。自重や乗員の重さを
+      # 変えるときは境目も一緒に動かすこと。
       weight:
         value: 122400
         stages:
@@ -54,17 +56,17 @@ object_defs:
           - name: light
           # 80〜160kg。
           - name: laden
-            min: 202400
+            min: 267400
             passives:
               - modify: {self: {sail_speed: -1}}
           # 160〜240kg。
           - name: heavy
-            min: 282400
+            min: 347400
             passives:
               - modify: {self: {sail_speed: -3}}
           # 240kg超。追い風でようやく進む。
           - name: overladen
-            min: 362400
+            min: 427400
             passives:
               - modify: {self: {sail_speed: -6}}
       # 浮いているか。外洋が子へ配る（open_sea の modify）ので、海に出ている間だけ1になる。

@@ -157,6 +157,30 @@ describe('筏と航海', () => {
     expect(head, '向かい風では進まない').toBe(0);
   });
 
+  it('据えた炉の中身も、乗員が手に持った物も、筏の重さに効く', () => {
+    // 中身の重さは**直接の親へ**積み上がるので、間に居る物が重さを名乗っていないとそこで消える
+    // （ContainerSystem.md 1節）。炉と乗員が名乗っていなかった頃は、荷物を手に持って乗るだけで
+    // 積載が0になり、「積むほど遅い」（GameEndings.md 4節）を素通りできた。
+    const { game, raft } = ready();
+    // 出航すると乗員は筏の中へ入る（この検査が見たいのはそこから先）。
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    const weightOfRaft = (): number => propertyOf(raft, 'weight');
+    const put = (objectName: string, into: WorldObject, slotName: string): WorldObject => {
+      const spawned = game.session.createObject(codex.objectNames.getId(objectName));
+      expect(spawned.moveToSlotOrRejection(into.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+      return spawned;
+    };
+
+    const beforeHearth = weightOfRaft();
+    const hearth = put('campfire', raft, 'fixtures');
+    put('roasted_meat', hearth, 'fire');
+    expect(weightOfRaft() - beforeHearth, '炉とその中身のぶん重くなる').toBe(propertyOf(hearth, 'weight'));
+
+    const beforeCarrying = weightOfRaft();
+    const log = put('log', game.player.instance, 'hand');
+    expect(weightOfRaft() - beforeCarrying, '手に持った丸太のぶん重くなる').toBe(propertyOf(log, 'weight'));
+  });
+
   it('積荷が重いほど遅い（捨てれば速くなる）', () => {
     const { game, raft } = ready();
     raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();

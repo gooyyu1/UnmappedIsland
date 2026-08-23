@@ -64,6 +64,10 @@ object_texts:
         display_name: 移動時間
       required_progress:
         display_name: 発見に必要な探索の進み具合
+      weight:
+        display_name: 重さ
+        icon: ⚖️
+        description: その物と、中に入れている物とを合わせた目方。
       load:
         display_name: 荷重
         icon: 🎒
