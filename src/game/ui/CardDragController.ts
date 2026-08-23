@@ -277,9 +277,9 @@ export class CardDragController {
     gesture.carried.follow(pointer.x, pointer.y);
 
     gesture.indicator.clear();
-    let found = this.dropAt(gesture, pointer);
+    let found = this.dropCandidateAt(gesture, pointer);
     // 数え直したなら運ぶ枚数が変わったので、そのドロップが何をするのかも引き直す。
-    if (this.trackCarry(gesture, found, pointer)) found = this.dropAt(gesture, pointer);
+    if (this.trackCarry(gesture, found, pointer)) found = this.dropCandidateAt(gesture, pointer);
     if (found === undefined) {
       gesture.tooltip?.hide();
     } else {
@@ -299,7 +299,7 @@ export class CardDragController {
   }
 
   /** 今のポインタ位置で成立するドロップと、そこで起きること（何も起きないものはundefined）。 */
-  private dropAt(
+  private dropCandidateAt(
     gesture: Gesture,
     pointer: Phaser.Input.Pointer,
   ): { drop: CardDrop; info: CardDropInfo } | undefined {
@@ -365,13 +365,13 @@ export class CardDragController {
     const gesture = this.gesture;
     if (gesture === undefined) return;
 
-    const found = gesture.kind === 'dragging' ? this.dropAt(gesture, pointer) : undefined;
+    const found = gesture.kind === 'dragging' ? this.dropCandidateAt(gesture, pointer) : undefined;
     if (found === undefined || gesture.carried === undefined) {
       // 落とさなかったので、運んでいた札は元の枠へ飛んで帰る（帰り着いた時点で元の束に合流する）。
       if (gesture.kind === 'dragging') {
         noteOperation(`カードを離した: ${gesture.card.content.name}（落とし先なし）`);
       }
-      gesture.carried?.disband();
+      gesture.carried?.flyBackToSource();
       gesture.carried = undefined;
       this.cancel();
     } else {
@@ -388,7 +388,7 @@ export class CardDragController {
     if (gesture === undefined) return;
 
     gesture.carryHold?.stop();
-    gesture.carried?.dissolve();
+    gesture.carried?.mergeBackImmediately();
     gesture.indicator?.destroy();
     gesture.glowPulse?.remove();
     gesture.glow?.destroy();

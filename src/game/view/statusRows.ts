@@ -6,7 +6,7 @@ import type { StatusContent } from '../ui/StatusBar';
  * taggedはstatusタグが付いたもの（常に候補）、othersはプロパティのタブにだけ出るもので、
  * 固定表示にされたものだけが候補に加わる。安全域は固定表示でなければ出さない。
  *
- * ただし安全域へ戻ったばかりの行は、その変化を見せ終わるまで残す（isShowingChange）。ここで即座に
+ * ただし安全域へ戻ったばかりの行は、その変化を見せ終わるまで残す（wouldShowChangeFor）。ここで即座に
  * 落とすと、良くなった分の帯が動く前にバーごと消えてしまい、何がどれだけ良くなったのかが見えない。
  *
  * 並び順は「固定表示 → 危険域・致命的域 → 留意域・要注意域 → 安全域（消える途中）」で、同じまとまりの
@@ -15,7 +15,7 @@ import type { StatusContent } from '../ui/StatusBar';
 export function statusRows(
   tagged: readonly StatusContent[],
   others: readonly StatusContent[],
-  isShowingChange: (status: StatusContent) => boolean,
+  wouldShowChangeFor: (status: StatusContent) => boolean,
 ): readonly StatusContent[] {
   // 同じプロパティが複数のタブに現れるため（満腹度はstatusでありnutritionでもある）、識別子で束ねる。
   const candidates = new Map<string, StatusContent>();
@@ -24,7 +24,7 @@ export function statusRows(
     if (status.pinned === true && !candidates.has(status.key)) candidates.set(status.key, status);
 
   return [...candidates.values()]
-    .filter((status) => status.pinned === true || status.alert !== 'safe' || isShowingChange(status))
+    .filter((status) => status.pinned === true || status.alert !== 'safe' || wouldShowChangeFor(status))
     .sort((a, b) => groupOf(a) - groupOf(b));
 }
 

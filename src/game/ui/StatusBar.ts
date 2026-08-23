@@ -183,7 +183,7 @@ export interface StatusBarOptions {
 
   /**
    * 変化を見せ終わったときに呼ぶ。安全域へ戻った行はそれまで並びに残しているため、外す機会が
-   * ここにしか無い（isShowingChange・statusRows）。
+   * ここにしか無い（wouldShowChangeFor・statusRows）。
    */
   readonly onCaughtUp?: () => void;
 }
@@ -299,7 +299,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
       })
       .setOrigin(0.5);
     this.add(this.changeMark);
-    this.showContent(content);
+    this.showAlertAndMarks(content);
 
     this.once(Phaser.GameObjects.Events.DESTROY, () => this.moveTween?.stop());
     scene.add.existing(this);
@@ -335,7 +335,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
    * 出ていない行は動かさずに現れる（show参照）ので、残す理由が無い——出ていない間に進んだ分は
    * 見せない変化なので、バーが持っている値との差を変化として数えてはいけない。
    */
-  isShowingChange(content: StatusContent): boolean {
+  wouldShowChangeFor(content: StatusContent): boolean {
     return this.visible && content.ratio !== undefined && this.bar?.isBehind(content.ratio) === true;
   }
 
@@ -360,7 +360,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
       this.bar?.setRatio(content.ratio, { showChange, hold: content.midAction === true });
     }
     this.valueText?.setText(String(content.value));
-    this.showContent(content);
+    this.showAlertAndMarks(content);
   }
 
   /** 位置が変わったぶんを動きとして見せる。 */
@@ -381,7 +381,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
     this.moveTween = undefined;
   }
 
-  private showContent(content: StatusContent): void {
+  private showAlertAndMarks(content: StatusContent): void {
     this.content = content;
     this.bar?.setAlert(content.alert);
     this.pinMark.setText(content.pinned === true ? PIN_MARK : '');
@@ -427,7 +427,7 @@ function createLabel(
         fontSize: `${metrics.fontPx(ICON_SIZE)}px`,
       })
       .setOrigin(0.5);
-    texts.push(shrunkToWidth(icon, iconWidth));
+    texts.push(shrinkToWidth(icon, iconWidth));
   }
 
   const named = label.kind === 'withName';
@@ -440,14 +440,14 @@ function createLabel(
         color: cssColor(COLOR.text),
       })
       .setOrigin(0, 0.5);
-    texts.push(shrunkToWidth(name, label.kind === 'withName' ? metrics.px(label.width) : iconWidth));
+    texts.push(shrinkToWidth(name, label.kind === 'withName' ? metrics.px(label.width) : iconWidth));
   }
 
   return texts;
 }
 
 /** 欄に収まらないものは縮めて収める（はみ出すとバーに重なって読めなくなるため）。 */
-function shrunkToWidth(text: Phaser.GameObjects.Text, width: number): Phaser.GameObjects.Text {
+function shrinkToWidth(text: Phaser.GameObjects.Text, width: number): Phaser.GameObjects.Text {
   if (text.width > width) text.setScale(width / text.width);
   return text;
 }

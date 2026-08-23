@@ -717,7 +717,7 @@ export class PlayScene extends ResponsiveScene {
    * 他のエリアは現在地に依らないため触らない（時計とステータスの反映はshowInformationが行う）。
    */
   private rebuildFieldArea(): void {
-    this.motion.release();
+    this.motion.destroyLooseCards();
     this.fieldPanel.destroy();
     for (const lane of [this.fixtureLane, this.itemLane, this.handLane]) lane.destroy();
     this.buildFieldArea(this.layout);
@@ -874,7 +874,7 @@ export class PlayScene extends ResponsiveScene {
    * 今ドラッグの相手にできるレーンを、**画面で手前に重なっているものから**。
    *
    * 子ウィンドウは設置物とアイテムのレーンを覆っているので、開いている間その2つは外す。残すと
-   * ドロップ先の判定（重なりを見ず「最初に当たったレーン」、CardDragController.dropAt）で
+   * ドロップ先の判定（重なりを見ず「最初に当たったレーン」、CardDragController.dropCandidateAt）で
    * 覆われている側が先に当たり、ウィンドウの中のカードへ落とせないうえ、隠れているはずの枠に
    * 「ここへ落とせる」という印が出る。手持ちはウィンドウの外なので残る（slotWindowArea）。
    *
@@ -1545,7 +1545,7 @@ export class PlayScene extends ResponsiveScene {
     noteOperation(`${label}（${this.clockText()}）`);
 
     // 掴んで離したカードは、経過し切るまで離した場所に置いたままにする（使っている道具はそこに在る）。
-    if (released !== undefined) this.motion.hold(released);
+    if (released !== undefined) this.motion.confirmHeldIds(released);
 
     const startedAt = this.gameSession.world.totalMinutes;
     const locationBefore = this.gameSession.player.location?.instance;
@@ -1991,7 +1991,7 @@ export class PlayScene extends ResponsiveScene {
    */
   private showStatuses(): void {
     const rows = this.status.rows(
-      (status) => this.statusBars.get(status.key)?.isShowingChange(status) === true,
+      (status) => this.statusBars.get(status.key)?.wouldShowChangeFor(status) === true,
     );
     const rowHeight = StatusBar.height(this.metrics);
 

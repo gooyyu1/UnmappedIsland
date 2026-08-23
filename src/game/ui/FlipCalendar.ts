@@ -56,7 +56,7 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
   ) {
     super(scene, x, y);
 
-    this.contentWidth = this.build(metrics);
+    this.contentWidth = this.layOutDigits(metrics);
     this.setTime(elapsedDays, hour, minute);
 
     // サイズを設定しない理由はButtonのヒット領域についてのコメントを参照。
@@ -84,7 +84,7 @@ export class FlipCalendar extends Phaser.GameObjects.Container {
    * 日数の側に単位のラベルは置かない。日数の桁は時刻の桁より大きく、時刻の側だけが「:」を持つので、
    * 大小と区切りだけで読み分けられる——文字を持たなければ翻訳も要らず、幅も設計値だけで決まる。
    */
-  private build(metrics: ScreenMetrics): number {
+  private layOutDigits(metrics: ScreenMetrics): number {
     const height = metrics.px(DAY_DIGIT.height);
     let cursor = 0;
 

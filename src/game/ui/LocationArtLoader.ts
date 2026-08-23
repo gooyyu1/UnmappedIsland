@@ -29,10 +29,10 @@ export class LocationArtLoader {
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
-    scene.load.on(Phaser.Loader.Events.FILE_COMPLETE, (key: string) => this.settle(key));
+    scene.load.on(Phaser.Loader.Events.FILE_COMPLETE, (key: string) => this.onFileSettled(key));
     scene.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, (file: Phaser.Loader.File) => {
       this.failed.add(file.key);
-      this.settle(file.key);
+      this.onFileSettled(file.key);
     });
     scene.load.on(Phaser.Loader.Events.COMPLETE, () => this.pump());
   }
@@ -88,7 +88,7 @@ export class LocationArtLoader {
   }
 
   /** 1枚の完了・失敗を受けて、揃った待ちを呼ぶ。 */
-  private settle(key: string): void {
+  private onFileSettled(key: string): void {
     this.inFlight.delete(key);
     for (let i = this.waiters.length - 1; i >= 0; i--) {
       if (!this.loaded(this.waiters[i].location)) continue;

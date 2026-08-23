@@ -76,11 +76,11 @@ export class ShownStatuses {
    * ステータスエリアに並べる行を、出すものだけ表示順に（statusRows）。isShowingChangeは、その行の
    * バーがまだ変化を見せている途中か——安全域へ戻ったばかりの行を、見せ終わるまで残すのに使う。
    */
-  rows(isShowingChange: (status: StatusContent) => boolean): readonly StatusContent[] {
+  rows(wouldShowChangeFor: (status: StatusContent) => boolean): readonly StatusContent[] {
     return statusRows(
       this.source.statuses().map((status) => this.shown(status)),
       this.entries().map((status) => this.shown(status)),
-      isShowingChange,
+      wouldShowChangeFor,
     );
   }
 

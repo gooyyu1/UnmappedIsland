@@ -151,13 +151,13 @@ export class CardLane {
    * stripに属さない表示物（背景板・ピン留め部分）。カードはstripごと消えるが、これらは
    * 個別に破棄しないと残ってしまう（背景板は入力も吸い続ける）。
    */
-  private readonly objects: (Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Depth)[] = [];
+  private readonly ownedObjects: (Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Depth)[] = [];
 
   /**
    * 絵を敷いた背景板のうち、カードと同じだけ横へ送るもの（背景色だけのレーンでは空）。スクロールの
    * たびに敷き位置を更新する。ピン留め部分の背景板は固定なので含めない（addPinnedCell参照）。
    */
-  private readonly tiles: Phaser.GameObjects.TileSprite[] = [];
+  private readonly scrollingBackgroundTiles: Phaser.GameObjects.TileSprite[] = [];
 
   /**
    * 陽炎を掛ける表示物（LaneHaze参照）。ピン留め部分の背景板・現在地カード・区切り線も含めて、
@@ -170,7 +170,9 @@ export class CardLane {
    * 地面の絵が無いレーン（背景色だけ）には掛けようがないのでundefined。
    */
   get hazeSurface(): HazeSurface | undefined {
-    return this.tiles.length === 0 ? undefined : { objects: this.hazeTargets, rect: this.rect };
+    return this.scrollingBackgroundTiles.length === 0
+      ? undefined
+      : { objects: this.hazeTargets, rect: this.rect };
   }
 
   constructor(
@@ -220,7 +222,7 @@ export class CardLane {
       cardY + this.cardHeight + metrics.px(SIZE.scrollBarGap),
       this.stripWidth,
     );
-    this.objects.push(this.scrollIndicator);
+    this.ownedObjects.push(this.scrollIndicator);
 
     this.pinnedRect =
       pinned === undefined
@@ -240,7 +242,7 @@ export class CardLane {
       // 背景の絵もカードと同じだけ送る（地面の上を送る見え方）。
       onScroll: (offset) => {
         // tilePositionXは絵の側の座標なので、敷くときにかけた倍率で割り戻す。
-        for (const tile of this.tiles) tile.tilePositionX = -offset / tile.tileScaleX;
+        for (const tile of this.scrollingBackgroundTiles) tile.tilePositionX = -offset / tile.tileScaleX;
       },
     });
 
@@ -251,15 +253,15 @@ export class CardLane {
     // カードはstripの子なので、stripと自前の表示物を移せば並んでいるカードごと同じ層へ移る。
     if (options.depth !== undefined) {
       this.strip.setDepth(options.depth);
-      for (const object of this.objects) object.setDepth(options.depth);
+      for (const object of this.ownedObjects) object.setDepth(options.depth);
     }
   }
 
   /** レーンごと片付ける（子ウィンドウを閉じるとき）。カード自体はstripの破棄でまとめて消える。 */
   destroy(): void {
     this.strip.destroy();
-    for (const object of this.objects) object.destroy();
-    this.objects.length = 0;
+    for (const object of this.ownedObjects) object.destroy();
+    this.ownedObjects.length = 0;
     this.scroll.destroy();
   }
 
@@ -411,7 +413,7 @@ export class CardLane {
 
   /**
    * 背景板を1枚置く。絵があれば敷き、無ければ背景色で塗る。どちらも入力を遮る（addPanel参照）。
-   * 置いた板は自分で片付ける（objects）。scrollsWithCardsを倒すと、絵をスクロールで送る対象から外す。
+   * 置いた板は自分で片付ける（ownedObjects）。scrollsWithCardsを倒すと、絵をスクロールで送る対象から外す。
    */
   private addBackground(
     rect: Rect,
@@ -424,9 +426,10 @@ export class CardLane {
     const texture = art !== undefined && scene.textures.exists(art) ? art : undefined;
     const panel =
       texture === undefined ? addPanel(scene, rect, background) : addTiledPanel(scene, rect, texture);
-    if (panel instanceof Phaser.GameObjects.TileSprite && scrollsWithCards) this.tiles.push(panel);
+    if (panel instanceof Phaser.GameObjects.TileSprite && scrollsWithCards)
+      this.scrollingBackgroundTiles.push(panel);
     if (panel instanceof Phaser.GameObjects.TileSprite) this.hazeTargets.push(panel);
-    this.objects.push(panel);
+    this.ownedObjects.push(panel);
     return panel;
   }
 
@@ -456,7 +459,7 @@ export class CardLane {
       false,
     );
     const pinnedCard = new Card(scene, metrics, rect.x + margin, cardY, pinned);
-    this.objects.push(pinnedCard);
+    this.ownedObjects.push(pinnedCard);
     this.hazeTargets.push(pinnedCard);
 
     const cardHeight = metrics.px(SIZE.cardHeight);
@@ -468,7 +471,7 @@ export class CardLane {
       COLOR.laneDivider,
       0.35,
     );
-    this.objects.push(divider);
+    this.ownedObjects.push(divider);
     this.hazeTargets.push(divider);
     return panel;
   }

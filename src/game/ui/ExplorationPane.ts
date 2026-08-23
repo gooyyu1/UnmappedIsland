@@ -51,12 +51,12 @@ export class ExplorationPane implements ObjectWindowPane {
   /** 発見物のレーン。並びの差し替えは呼び出し側（PlayScene）が他のレーンと一緒に通す。 */
   readonly lanes: readonly ObjectWindowLane[];
 
-  private readonly content: () => ExplorationContent;
+  private readonly readContent: () => ExplorationContent;
   private readonly lane: CardLane;
   private readonly bar: ProgressBar;
   private readonly percent: Phaser.GameObjects.Text;
   private readonly note: Phaser.GameObjects.Text;
-  private readonly objects: Phaser.GameObjects.GameObject[] = [];
+  private readonly ownedObjects: Phaser.GameObjects.GameObject[] = [];
 
   constructor(
     scene: Phaser.Scene,
@@ -65,7 +65,7 @@ export class ExplorationPane implements ObjectWindowPane {
     content: () => ExplorationContent,
     cells: readonly LaneCell[],
   ) {
-    this.content = content;
+    this.readContent = content;
     const ratio = content().ratio;
     const gap = metrics.px(CONTENT_GAP);
     const barHeight = metrics.px(BAR_HEIGHT);
@@ -88,7 +88,7 @@ export class ExplorationPane implements ObjectWindowPane {
       size: 32,
       bold: true,
     }).setOrigin(0.5);
-    this.objects.push(this.bar, this.percent);
+    this.ownedObjects.push(this.bar, this.percent);
 
     cursorY += barHeight + gap;
     this.note = addLabel(scene, metrics, centerX, cursorY, noteOf(ratio), {
@@ -98,12 +98,12 @@ export class ExplorationPane implements ObjectWindowPane {
     })
       .setOrigin(0.5, 0)
       .setAlign('center');
-    this.objects.push(this.note);
+    this.ownedObjects.push(this.note);
   }
 
   /** 探索率だけを読み直す。**発見物のレーンは触らない**——並びの差し替えはCardTableが受け持つ。 */
   refresh(): void {
-    const ratio = this.content().ratio;
+    const ratio = this.readContent().ratio;
     this.bar.setRatio(ratio, { showChange: true });
     this.percent.setText(percentOf(ratio));
     this.note.setText(noteOf(ratio));
@@ -111,8 +111,8 @@ export class ExplorationPane implements ObjectWindowPane {
 
   destroy(): void {
     this.lane.destroy();
-    for (const object of this.objects) object.destroy();
-    this.objects.length = 0;
+    for (const object of this.ownedObjects) object.destroy();
+    this.ownedObjects.length = 0;
   }
 }
 

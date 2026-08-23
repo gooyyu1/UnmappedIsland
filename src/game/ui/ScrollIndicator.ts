@@ -83,12 +83,12 @@ export class ScrollIndicator extends Phaser.GameObjects.Container {
       const moved = span.x !== this.thumb.x || !this.visible;
       this.thumb.x = span.x;
       this.setVisible(true);
-      if (moved) this.highlight();
+      if (moved) this.highlightThenFade();
     }
   }
 
   /** 送っている間は濃くし、止まったら控えめな濃さへ戻す。 */
-  private highlight(): void {
+  private highlightThenFade(): void {
     this.fadeTween?.stop();
     this.setAlpha(ACTIVE_ALPHA);
     this.fadeTween = this.scene.tweens.add({

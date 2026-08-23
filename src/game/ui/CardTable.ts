@@ -56,7 +56,7 @@ export interface MotionContext {
 }
 
 /** 飛んでいる途中の便を外から止める手立て（運んでいた札を掴み直したときなど）。 */
-export interface CarryHandle {
+export interface FlightHandle {
   /** 便を打ち切り、札をその場で消す。 */
   cancel(): void;
 }
@@ -80,7 +80,7 @@ interface Flight {
   elapsed: number;
   /** 飛び立ちまでの残り時間（複数生まれたぶんは出どころに積まれ、順に飛び立つ）。 */
   delay: number;
-  puffs: boolean;
+  raisesDust: boolean;
 }
 
 /** レーンの枠に居ない自由な札（落とした札・時間のかかる操作の間そこに置いたままの札）。 */
@@ -102,7 +102,7 @@ interface FreedCard {
  *
  * **飛ぶのは常に実体の札そのもの**で、運んでいるインスタンス（ID）を載せている。枠の札は自分に
  * 在るIDの集合を知っていて（Card.setPresence）、枚数はそこからの導出値。便が着くとIDセットが
- * 合流する（Card.absorb）——分身と枚数の台帳は持たない。
+ * 合流する（Card.absorbReturnedIds）——分身と枚数の台帳は持たない。
  *
  * 飛んでいる途中に世界が変わったら、便は着かされるのではなく**向き直る**（plan.landings）。
  * 差し替えと便の開始に順序の契約は無い。
@@ -129,7 +129,7 @@ export class CardTable {
   }
 
   /** 枠の外に出している札をすべて片付ける。画面を作り直すときは、レーンごと捨てられる前にここを通す。 */
-  release(): void {
+  destroyLooseCards(): void {
     for (const flight of this.flights) flight.card.destroy();
     this.flights.length = 0;
     for (const freed of this.freed) freed.card.destroy();
@@ -197,7 +197,7 @@ export class CardTable {
         fromY: flight.from.y,
         elapsed: 0,
         delay: flight.delaySteps * GAP_MS,
-        puffs: flight.puffs,
+        raisesDust: flight.raisesDust,
       });
     }
     for (const card of plan.fadeIns) card.appear(firstShow);
@@ -224,7 +224,7 @@ export class CardTable {
         if (flight.ids.some((id) => context.vanished?.includes(id) === true)) {
           this.dust.burst(flight.card.rect);
         }
-        this.dropFlight(flight);
+        this.abortFlight(flight);
         continue;
       }
       if (landing.to.x === flight.to.x && landing.to.y === flight.to.y && landing.into === flight.into) {
@@ -262,7 +262,7 @@ export class CardTable {
         fromY: freed.card.y,
         elapsed: 0,
         delay: 0,
-        puffs: false,
+        raisesDust: false,
       });
     }
   }
@@ -272,7 +272,7 @@ export class CardTable {
    * 使っている道具はそこに在る）。運ぶインスタンスはここで確定する（掴んだ時点の見込みと、実際に
    * 世界が動かす個体は違いうる——combinationは束の2つ目を使う）。
    */
-  hold(released: NonNullable<MotionContext['released']>): void {
+  confirmHeldIds(released: NonNullable<MotionContext['released']>): void {
     const freed = this.freed.find((entry) => entry.waiting);
     if (freed === undefined) return;
     freed.ids = [released.grabbed, ...released.followers];
@@ -281,7 +281,7 @@ export class CardTable {
   /** 置いたままの札を、飛ばさずに元の枠へ返す（実行しないと決めた操作の後始末）。 */
   settleFreed(): void {
     for (const freed of this.freed.splice(0)) {
-      freed.source?.absorb(freed.ids);
+      freed.source?.absorbReturnedIds(freed.ids);
       freed.card.destroy();
     }
   }
@@ -304,7 +304,7 @@ export class CardTable {
    * **枠から枠への移動にこれを使ってはいけない。** レーンに並ぶ札の運びは、並びの差し替えが
    * そのまま見せる（update）。
    */
-  flyTo(card: Card, target: () => Rect, onArrive: () => void): CarryHandle {
+  flyTo(card: Card, target: () => Rect, onArrive: () => void): FlightHandle {
     this.layer.add(card);
     const flight: Flight & { tracked?: () => Rect } = {
       card,
@@ -316,18 +316,18 @@ export class CardTable {
       fromY: card.y,
       elapsed: 0,
       delay: 0,
-      puffs: false,
+      raisesDust: false,
     };
     this.tracked.set(flight, target);
     this.flights.push(flight);
-    return { cancel: () => this.dropFlight(flight) };
+    return { cancel: () => this.abortFlight(flight) };
   }
 
   /** 目標が動き続ける便の、目標の引き直し先。 */
   private readonly tracked = new Map<Flight, () => Rect>();
 
   /** 便を打ち切って札を消す（着いた扱いにはしない）。 */
-  private dropFlight(flight: Flight): void {
+  private abortFlight(flight: Flight): void {
     const index = this.flights.indexOf(flight);
     if (index < 0) return;
     this.flights.splice(index, 1);
@@ -361,8 +361,8 @@ export class CardTable {
 
     this.flights.splice(index, 1);
     this.tracked.delete(flight);
-    if (flight.puffs) this.dust.burst(flight.to);
-    flight.into?.absorb(flight.ids);
+    if (flight.raisesDust) this.dust.burst(flight.to);
+    flight.into?.absorbReturnedIds(flight.ids);
     flight.onArrive?.();
     flight.card.destroy();
   }
@@ -393,9 +393,9 @@ export class CarriedCard {
   /** 運んでいる個体（見込み。実際に世界が動かす個体はhold（落とした後）で確定する）。 */
   private ids: number[];
   /** 元の枠に残っている個体。 */
-  private rest: number[];
+  private remainingIds: number[];
   /** まだ指へ向かって飛んでいる札の便。 */
-  private readonly inbound: CarryHandle[] = [];
+  private readonly inbound: FlightHandle[] = [];
   private state: 'carrying' | 'released' | 'gone' = 'carrying';
 
   constructor(
@@ -414,7 +414,7 @@ export class CarriedCard {
 
     const present = source.presentIds;
     this.ids = present.slice(0, 1);
-    this.rest = present.slice(1);
+    this.remainingIds = present.slice(1);
     const at = home();
     this.card = new Card(scene, metrics, at.x, at.y, {
       ...cardFace(source.content),
@@ -423,7 +423,7 @@ export class CarriedCard {
     });
     layer.add(this.card);
     // 手に取った1枚は、もう元の枠には居ない。全部持ち出しても、そこは帰ってくる枠なので印が残る。
-    source.setPresence(this.rest, true);
+    source.setPresence(this.remainingIds, true);
   }
 
   /** 運んでいる枚数（そのままCardDrop.countになる）。 */
@@ -443,12 +443,12 @@ export class CarriedCard {
 
   /** 1枚ついてくる。元の枠から指の下へ飛んできて合流する（数字が増える）。 */
   addOne(): void {
-    const next = this.rest.at(0);
+    const next = this.remainingIds.at(0);
     if (next === undefined) return;
 
-    this.rest = this.rest.slice(1);
+    this.remainingIds = this.remainingIds.slice(1);
     this.ids = [...this.ids, next];
-    this.source.setPresence(this.rest, true);
+    this.source.setPresence(this.remainingIds, true);
     this.card.setContent({ ...this.card.content, identity: this.ids, count: this.ids.length });
 
     const from = this.home();
@@ -485,12 +485,12 @@ export class CarriedCard {
       ...cardFace(this.source.content),
       count: returned.length,
     });
-    this.table.flyTo(spilled, this.home, () => this.source.absorb(returned));
+    this.table.flyTo(spilled, this.home, () => this.source.absorbReturnedIds(returned));
     return true;
   }
 
   /** 落とさずに離した。札は元の枠へ飛んで帰り、着いた時点で合流して消える。 */
-  disband(): void {
+  flyBackToSource(): void {
     if (this.state !== 'carrying') return;
     this.state = 'gone';
 
@@ -500,7 +500,7 @@ export class CarriedCard {
       this.card,
       () => this.home(),
       () => {
-        this.source.absorb(ids);
+        this.source.absorbReturnedIds(ids);
         this.card.destroy();
       },
     );
@@ -516,12 +516,12 @@ export class CarriedCard {
   }
 
   /** その場で解散する（画面の作り直しで続けられない）。表示物を片付け、元の束の見え方を掴む前へ戻す。 */
-  dissolve(): void {
+  mergeBackImmediately(): void {
     if (this.state !== 'carrying') return;
     this.state = 'gone';
 
     for (const handle of this.inbound.splice(0)) handle.cancel();
-    this.source.absorb(this.ids);
+    this.source.absorbReturnedIds(this.ids);
     this.card.destroy();
   }
 }

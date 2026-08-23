@@ -315,7 +315,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
         }),
       );
       expect(plan.puffs).toEqual([]);
-      expect(plan.flights.map((flight) => flight.puffs)).toEqual([false]);
+      expect(plan.flights.map((flight) => flight.raisesDust)).toEqual([false]);
     });
 
     it('束が丸ごと消えても、砂埃は札1枚につき1回', () => {
@@ -341,7 +341,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
       );
 
       expect(plan.puffs).toEqual([]);
-      expect(plan.flights.map((flight) => flight.puffs)).toEqual([true]);
+      expect(plan.flights.map((flight) => flight.raisesDust)).toEqual([true]);
     });
 
     it('既に居る束へ合流する生まれも、着いた先で立つ', () => {
@@ -354,7 +354,7 @@ describe('planMotion（CardInteraction.md 6節 カードの移動アニメーシ
         }),
       );
 
-      expect(plan.flights.map((flight) => flight.puffs)).toEqual([true]);
+      expect(plan.flights.map((flight) => flight.raisesDust)).toEqual([true]);
     });
 
     it('出どころの分からない生まれは、浮かび上がるその場で立つ', () => {

@@ -78,7 +78,7 @@ export interface PlannedFlight<C, R> {
   /** 飛び立ちを遅らせる段数（1段＝送りの最短間隔。実時間にするのは実行側）。 */
   readonly delaySteps: number;
   /** 着いた時点で砂埃を立てるか（生まれたインスタンスを運ぶ便）。 */
-  readonly puffs: boolean;
+  readonly raisesDust: boolean;
 }
 
 /** 差し替えの直後に、その札の枠に在るインスタンス。枚数はここからの導出値。 */
@@ -162,7 +162,7 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
     // 生まれたのに出どころが分からないもの。飛ぶ便が無いので、着いた先で砂埃だけを立てる。
     let bornInPlace = false;
     const present: number[] = [];
-    const sources: { id: number; rect: R; appeared: boolean; puffs: boolean }[] = [];
+    const sources: { id: number; rect: R; appeared: boolean; raisesDust: boolean }[] = [];
     for (const id of to.ids) {
       if (aloft.has(id)) {
         held += 1;
@@ -172,7 +172,7 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
         if (source === undefined) {
           bornInPlace ||= bornIds.has(id);
           present.push(id);
-        } else sources.push({ id, ...source, puffs: bornIds.has(id) });
+        } else sources.push({ id, ...source, raisesDust: bornIds.has(id) });
       }
     }
     if (bornInPlace) puffs.push(to.rect);
@@ -196,7 +196,7 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
           from: source.rect,
           to: to.rect,
           delaySteps: source.appeared ? appeared++ : stagger++,
-          puffs: source.puffs,
+          raisesDust: source.raisesDust,
         });
       }
     }

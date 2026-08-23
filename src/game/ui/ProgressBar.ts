@@ -211,7 +211,7 @@ export class ProgressBar extends Phaser.GameObjects.Container {
 
   /**
    * 渡した値に対して、帯がまだ追いついていないか（＝そこへ動かすとまだ見せる変化が残るか）。
-   * 見せ終わるまで消したくない側が、消す前に訊く（StatusBar.isShowingChange）。
+   * 見せ終わるまで消したくない側が、消す前に訊く（StatusBar.wouldShowChangeFor）。
    */
   isBehind(ratio: number): boolean {
     return Phaser.Math.Clamp(ratio, 0, 1) !== this.shownRatio;

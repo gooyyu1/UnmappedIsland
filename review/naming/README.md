@@ -38,12 +38,16 @@ B・Cで、そのときも第一手はコメントではなく改名。
 
 ## 進捗
 
-| 範囲 | 説明なし | 説明あり | 状態 |
-| ---- | -------- | -------- | ---- |
-| `src/domain` | 295 | — | 説明なしのみ済 |
-| `src/loader`・`src/domain/generation`・`src/domain/wrappers`・`src/scenario`・`src/util`・`src/art`・`src/asset-pack` | 165 | — | 説明なしのみ済 |
-| 上記以外（`src/game*`・`src/analysis`・`src/codex-viewer`・`src/locale`・`src/ui`・`src/save`） | 977 | — | 未 |
-| 全域の「説明あり」2,748件 | — | 2,748 | 未 |
+**全4,185件の採点を終えた。** 領域別の明細は [`areas/`](./areas/) にある。
 
-**4,185件中460件（11%）を見た時点。** 説明のある2,748件は手つかずで、定義位置レビューの27件は
-そちら側から出ていたので、**残りのほうが収穫は大きい見込み**。
+| 範囲 | 件数 | A | B | C |
+| ---- | ---- | -- | -- | -- |
+| `src/domain`・`generation`・`wrappers` の説明なし ＋ `loader` ほか | 460 | 449 | 9 | 1 |
+| [`areas/domain-doc.md`](./areas/domain-doc.md) `src/domain` 系の説明あり | 772 | 686 | 64 | 22 |
+| [`areas/game-ui.md`](./areas/game-ui.md) `src/game/ui` 全件 | 1,012 | 981 | 23 | 8 |
+| [`areas/game-rest.md`](./areas/game-rest.md) `src/game`・`view`・`looks`・`src/ui` 全件 | 855 | 782 | 66 | 7 |
+| [`areas/analysis-codex.md`](./areas/analysis-codex.md) `analysis`・`codex-viewer`・`locale`・`save` ほか | 1,086 | 1,051 | 34 | 1 |
+| **合計** | **4,185** | **3,949（94%）** | **196** | **39** |
+
+**94%がA**——名前が責務を言い切っている。指摘は235件で、修正の状況は
+[`Findings.md`](./Findings.md) に書く。

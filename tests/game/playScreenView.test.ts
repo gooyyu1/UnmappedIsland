@@ -241,14 +241,14 @@ object_defs:
     const land = view.currentLocationCard.art;
 
     expect(
-      lane(view, mini, 'fixtures').map((card) => card.background),
+      lane(view, mini, 'fixtures').map((card) => card.backgroundSlot),
       'このレーンのカードはすべて土地のfixturesに在る',
     ).toEqual([{ owner: land, slot: 'fixtures' }]);
     expect(
-      lane(view, mini, 'items').map((card) => card.background),
+      lane(view, mini, 'items').map((card) => card.backgroundSlot),
       '同じ土地でもスロットが違えば別の地を引く（絵が在るかはファイル側の話）',
     ).toEqual([{ owner: land, slot: 'items' }]);
-    expect(handCells(view, mini).find((card) => card !== undefined)?.background).toEqual({
+    expect(handCells(view, mini).find((card) => card !== undefined)?.backgroundSlot).toEqual({
       owner: view.characterCard.art,
       slot: 'hand',
     });

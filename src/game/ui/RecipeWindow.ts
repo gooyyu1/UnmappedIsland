@@ -77,7 +77,7 @@ export class RecipeWindow {
   private readonly options: RecipeWindowOptions;
 
   /** 開いている間ずっと出ているもの（背景・見出し・カード・閉じる）。 */
-  private readonly objects: Phaser.GameObjects.GameObject[] = [];
+  private readonly ownedObjects: Phaser.GameObjects.GameObject[] = [];
 
   private readonly area: Rect;
   private readonly bodyTop: number;
@@ -94,7 +94,7 @@ export class RecipeWindow {
     this.options = options;
 
     // 覆いも他の表示物と同じ後片付けに載せる（closeで一括して捨てる）。
-    this.objects.push(
+    this.ownedObjects.push(
       addPanel(scene, { x: 0, y: 0, width: metrics.width, height: metrics.height }, COLOR.modalOverlay, 0.5),
     );
 
@@ -140,9 +140,9 @@ export class RecipeWindow {
 
     const box = scene.add.graphics();
     drawBox(box, this.area, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
-    this.objects.push(box);
+    this.ownedObjects.push(box);
 
-    this.objects.push(
+    this.ownedObjects.push(
       addLabel(scene, metrics, this.area.x + padding, this.area.y + padding, this.options.title, {
         size: TITLE_SIZE,
       }),
@@ -150,7 +150,7 @@ export class RecipeWindow {
 
     this.fillBody();
 
-    this.objects.push(
+    this.ownedObjects.push(
       addTextButton(
         scene,
         metrics,
@@ -180,7 +180,7 @@ export class RecipeWindow {
       this.bodyTop;
 
     if (this.options.categories.length === 0) {
-      this.objects.push(
+      this.ownedObjects.push(
         addLabel(scene, metrics, left, this.bodyTop, this.options.emptyText, { size: HEADING_SIZE }),
       );
     } else {
@@ -195,11 +195,11 @@ export class RecipeWindow {
     // ドラッグとホイールを受ける面は、**中身より先に**敷く（後に敷くとカードを押せなくなる）。
     const area = { x: left, y: this.bodyTop, width: innerWidth, height: viewHeight };
     const surface = addPanel(scene, area, COLOR.cardFace, 0);
-    this.objects.push(surface);
+    this.ownedObjects.push(surface);
 
     // 中身は1つのコンテナへ入れて、窓の中だけに切り抜く。スクロールはこのコンテナを上下へ送る。
     const viewport = scene.add.container(0, 0);
-    this.objects.push(viewport);
+    this.ownedObjects.push(viewport);
     this.scroll = new ScrollArea(scene, {
       axis: 'y',
       content: viewport,
@@ -243,7 +243,7 @@ export class RecipeWindow {
   /** 窓を畳む。**2度呼ばれても壊れない**——「閉じる」ボタンからと、呼び元の後片付けからの2回通る。 */
   close(): void {
     this.scroll?.destroy();
-    for (const object of this.objects) object.destroy();
-    this.objects.length = 0;
+    for (const object of this.ownedObjects) object.destroy();
+    this.ownedObjects.length = 0;
   }
 }
