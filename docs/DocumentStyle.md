@@ -14,7 +14,7 @@
 | リファレンス | `GameElementDefinition.md`、`Localization.md` | 位置づけ＋項目の網羅＋対象外。概要は要らない |
 | カタログ | `Animals.md`、`Containers.md` | 分類の軸＋一覧＋住み分け＋未決事項 |
 | 実装ガイド | `TerrainGenerationImplementation.md` | 呼び出し関係＋索引。設計理由は書かず設計文書へリンク |
-| 教訓集 | `DesignNotes.md` | 結論を見出しにした項目の列挙 |
+| 教訓集 | `DesignNotes.md`、`DesignPrinciples.md` | 結論を見出しにした項目の列挙 |
 | 測定 | `docs/diagnostics/` | [`diagnostics/README.md`](./diagnostics/README.md) に従う |
 
 ## 2. 設計文書の概要は 5 つの問いに答える
