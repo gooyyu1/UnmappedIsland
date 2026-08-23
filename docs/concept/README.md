@@ -7,6 +7,7 @@
 
 - [ゲームコンセプト](./GameConcept.md)
 - [ゲームの終わり方](./GameEndings.md)
+- [ゲーム内容の判断基準](./DesignPrinciples.md)
 
 ## 含まれるドキュメント例
 
