@@ -8,7 +8,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 /**
  * actions/combinationsのduration（実行にかかるゲーム内時間・分）に対する自動テスト。durationを持つ操作を
  * 実行すると、効果の適用に**先立って**WorldSession.advanceWorldTimeで相当分だけ時間が進む（tick境界を
- * 跨げばpassivesも動く）。時間進行まで含めて定義側（ActionDef/CombinationDef）が行うため、呼び出し側
+ * 跨げばpassivesも動く）。時間進行まで含めて定義側（InteractionDef）が行うため、呼び出し側
  * （UI等）は実行後に別途時間を進める必要がない。順序と、経過中に関与オブジェクトが失われた場合の
  * 扱いはActionSystem.mdを参照。
  */

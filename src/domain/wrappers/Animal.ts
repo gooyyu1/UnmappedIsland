@@ -42,8 +42,7 @@ export class Animal {
    * 宣言する（animals.yamlのbeast）。
    */
   static tryWrap(object: WorldObject, codex: WorldCodex): Animal | undefined {
-    if (!object.def.actions.some((action) => action.name === codex.vocabulary.world.turnAction))
-      return undefined;
+    if (!object.def.declaresInteraction(codex.vocabulary.world.turnAction)) return undefined;
     return new Animal(object, codex);
   }
 

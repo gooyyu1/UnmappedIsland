@@ -186,7 +186,7 @@ describe('定義の自己記述（describe）', () => {
   });
 
   it('アクションはきっかけ・要件・所要時間・効果をこの順で書き出す', () => {
-    const eat = objectDef('coconut').actions[0];
+    const eat = objectDef('coconut').menuTriggers[0];
     const lines = describeToText(codex, (out) => describeInteraction(eat, names, out)).split('\n');
 
     expect(lines[0]).toBe('trigger: menu');
@@ -200,7 +200,7 @@ describe('定義の自己記述（describe）', () => {
 
   it('効果の動詞は、対象と量を書き出す', () => {
     const lines = describeToText(codex, (out) =>
-      describeInteraction(objectDef('gourd').actions[0], names, out),
+      describeInteraction(objectDef('gourd').menuTriggers[0], names, out),
     ).split('\n');
 
     expect(lines).toContain('transfer water → hydration（最大200 → 4）');
@@ -209,7 +209,7 @@ describe('定義の自己記述（describe）', () => {
 
   it('linked_addと、moveの両端を書き出す', () => {
     const lines = describeToText(codex, (out) =>
-      describeInteraction(objectDef('gourd').actions[1], names, out),
+      describeInteraction(objectDef('gourd').menuTriggers[1], names, out),
     ).split('\n');
 
     expect(lines).toContain('transfer water → spilled（最大999）');
@@ -224,9 +224,9 @@ describe('定義の自己記述（describe）', () => {
    */
   it('配置先・あふれ許可・出来事の対象は書かない', () => {
     const text = describeToText(codex, (out) => {
-      describeInteraction(objectDef('gourd').actions[0], names, out);
-      describeInteraction(objectDef('gourd').actions[1], names, out);
-      describeInteraction(objectDef('coconut').combinations[0], names, out);
+      describeInteraction(objectDef('gourd').menuTriggers[0], names, out);
+      describeInteraction(objectDef('gourd').menuTriggers[1], names, out);
+      describeInteraction(objectDef('coconut').dragTriggers[0], names, out);
     });
 
     expect(text).toContain('signal gulped');
@@ -236,7 +236,7 @@ describe('定義の自己記述（describe）', () => {
   });
 
   it('combinationは相手のタグとpickの候補を書き出す', () => {
-    const cut = objectDef('coconut').combinations[0];
+    const cut = objectDef('coconut').dragTriggers[0];
     const text = describeToText(codex, (out) => describeInteraction(cut, names, out));
 
     expect(text).toContain('trigger: cutting_toolを持つ型のカードのドロップ');

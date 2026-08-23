@@ -263,7 +263,7 @@ describe('traps.yamlのくくり罠', () => {
     const carcass = tickUntilCaught();
     expect(carcass.def.name).toBe('rat_carcass');
     expect(
-      carcass.def.combinations.map((combination) => combination.name),
+      carcass.def.dragTriggers.map((trigger) => trigger.interaction.name),
       '解体はできない',
     ).toEqual([]);
 

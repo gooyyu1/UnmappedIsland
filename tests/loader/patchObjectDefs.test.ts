@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { ActionDef } from '../../src/domain/ActionDef';
 import { DescriptionWriter } from '../../src/codex-viewer/describe/Description';
 import { defNamesOf } from '../../src/codex-viewer/describe/codexNames';
 import { describeInteraction } from '../../src/codex-viewer/describe/describeInteraction';
@@ -48,7 +47,7 @@ function describeExplore(codex: WorldCodex): string {
   const def = codex.objects.get(codex.objectNames.getId('ground'));
   const writer = new DescriptionWriter();
   describeInteraction(
-    def.actions.find((action) => action.name === 'explore') as ActionDef,
+    def.menuTriggers.find((trigger) => trigger.interaction.name === 'explore')!,
     defNamesOf(codex),
     writer,
   );
@@ -80,10 +79,9 @@ patch_object_defs:
       add: {self: {find_stone: 1}}
 `);
 
-    expect(codex.objects.get(codex.objectNames.getId('ground')).actions.map((a) => a.name)).toEqual([
-      'explore',
-      'rest',
-    ]);
+    expect(
+      codex.objects.get(codex.objectNames.getId('ground')).triggers.map((t) => t.interaction.name),
+    ).toEqual(['explore', 'rest']);
   });
 
   it('set: 既にある値を差し替える', () => {
@@ -135,13 +133,13 @@ patch_object_defs:
   - remove: ground.interactions.explore
 `);
 
-    expect(codex.objects.get(codex.objectNames.getId('ground')).actions).toEqual([]);
+    expect(codex.objects.get(codex.objectNames.getId('ground')).triggers).toEqual([]);
   });
 });
 
 describe('patch_object_defsの誤り', () => {
   it.each([
-    ['対象の型が無い', '  - append: swamp.actions.explore.pick\n    value: {weight: 1}'],
+    ['対象の型が無い', '  - append: swamp.interactions.explore.pick\n    value: {weight: 1}'],
     ['配列でないものへappend', '  - append: ground.props.find_stone\n    value: {weight: 1}'],
     ['既にあるキーへadd', '  - add: ground.props.find_stone\n    value: {value: 1}'],
     ['無いキーへset', '  - set: ground.props.find_gold.value\n    value: 1'],

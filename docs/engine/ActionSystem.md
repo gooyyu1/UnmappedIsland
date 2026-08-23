@@ -7,47 +7,53 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 入口（アクションの行・ドラッグ＆ドロップ）は [`../ui/Windows.md`](../ui/Windows.md) 4 節・
 [`../ui/CardInteraction.md`](../ui/CardInteraction.md) が扱います。
 
-**入口は2種でも、実行は1本です。** メニュー型（`trigger: menu`）とドラッグ型（`trigger: {drag: ...}`）は
-「どう選ばれるか」だけが違い、どちらも `InteractionDef` を基底として、同じ実行パイプライン
+**入口は3種でも、実行は1本です。** きっかけ（`trigger: menu` / `tick` / `{drag: ...}`）が違うだけで、
+中身は同じ `InteractionDef` 1つ。どれも同じ実行パイプライン
 （マッチング → `conditions` → `duration` の解決 → 時間進行 → 生存確認 → 効果の適用、2 節）を通ります。
 起きたことは分岐名ではなく世界に起きた変化として観測します（7 節）。操作専用の新しい文法はありません。
 
-実装は `src/domain/InteractionDef.ts`（`ActionDef`・`CombinationDef` の基底）と
+実装は `src/domain/InteractionDef.ts`（操作の中身）と `src/domain/InteractionTrigger.ts`（きっかけ）、
 `src/domain/WorldObject.ts`・`WorldSession.ts`、検証は `tests/domain/interaction.test.ts`・
 `actionDuration.test.ts`・`worldChanges.test.ts` です。本書は実装済みの仕組みの記述で、
 未決事項は 8 節に整理しています。
 
-## 1. 2つの入口: actions と combinations
+## 1. 3つの入口: menu・tick・drag
 
-プレイヤー操作の入口は2種類だけで、どちらも `object_def` に宣言的に定義される。
+操作の入口はきっかけの数だけで、どれも `object_def` に宣言的に定義される。
 
-- **メニュー型（`trigger: menu`、`ActionDef`）**: 1枚のカード（`self`）だけで完結する操作。
+- **メニュー型（`trigger: menu`、`MenuTrigger`）**: 1枚のカード（`self`）だけで完結する操作。
   カード選択時にボタンとして表示され、クリックで実行される。`actor`（プレイヤーキャラクター）は
   常に暗黙的に参加する。
-- **ドラッグ型（`trigger: {drag: ...}`、`CombinationDef`）**: カードを別のカードへ
+- **時間が起こすもの（`trigger: tick`、`TickTrigger`）**: プレイヤーが押す機会を持たない操作
+  （動物の1手、[`HuntingSystem.md`](./HuntingSystem.md) 5 節）。ボタンには出ず、名前で指して実行される。
+- **ドラッグ型（`trigger: {drag: ...}`、`DragTrigger`）**: カードを別のカードへ
   ドラッグ＆ドロップする操作。組み合わせを宣言している側が `self`、相手が `dragged` で、
   きっかけ `{drag: ...}`（タグかobject_defのidで書く型の指定、12.1節）が `dragged` とのマッチング条件になる。宣言は**素材の側**に1つだけ置き
   （12.3節）、どちらの札をどちらへ運んでも同じ宣言が実行される——**どちらを `self` として試すかの順序は
   UI層が決める**（[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
 
-2種が違うのは**きっかけだけ**なので、宣言はYAML上も1つの節（`interactions`）で、どちらも
-`InteractionDef` を継承する。選ばれた後の実行（2節）と所要時間の解決はその基底クラスが1箇所で持つ。
-派生が足すのは、`ActionDef` が `trigger`（`menu`/`tick`）、`CombinationDef` が相手のマッチングと
-`allow_multiple` だけ。`dragged` はドラッグ型だけが持つ相手で、メニュー型では `undefined` のまま
-同じ経路を通る。
+**違うのはきっかけだけなので、差はきっかけの側に集める。** 宣言はYAML上も1つの節（`interactions`）で、
+中身（要件・効果・所要時間・実行、2節）は `InteractionDef` 1クラスが持つ。**きっかけが宣言を
+ぶら下げる**（`InteractionTrigger.interaction`）ので、差を足すのは派生の `DragTrigger` だけ
+——相手のマッチングと `allow_multiple`。
+
+`ObjectDef` は**きっかけ別に束ねて**持つ（`menuTriggers`・`tickTriggers`・`dragTriggers`）。
+ボタンを並べる側も時間の側も自分に関わるものだけを受け取るので、種類を見分ける必要がない。
+どの束に入るかはきっかけ自身が答える（`addTo`）ので、種類を足したら実装しないとコンパイルが通らない。
 
 ## 1.1 宣言と、相手の決まった操作
 
-宣言（`ActionDef`・`CombinationDef`）は `ObjectDef` のもので、**どの個体の話かを知らない**。実行にも
+きっかけと、それがぶら下げている宣言は `ObjectDef` のもので、**どの個体の話かを知らない**。実行にも
 所要時間の解決にも `self`（`dragged`・`actor`）が要るので、宣言へ直に頼むと呼び出し側がそれらを毎回
 渡し直すことになる。そこで `WorldObject` から引いた時点で相手を結び付け、`Action`・`Combination`
 （`Interaction.ts`）として返す。以降は名前も相手も渡さない。
 
 引く口は3つ。
 
-- `ActionsFor(actor)` — このカードへ起こせる操作を宣言順に。画面のボタンに出すかは `trigger`
-  （11.1節、出るのは `menu` だけ）で絞る。
+- `MenuActionsFor(actor)` — このカードへ起こせる、**画面のボタンに出る**操作を宣言順に
+  （`menuTriggers`。絞り込みは要らない）。
 - `TryGetAction(actionName, actor)` — 名指しで1つ。土地の `explore`、道の `travel`、動物の1手が使う。
+  探すのは相手を伴わないきっかけ（`menu`・`tick`）だけ。
 - `CombinationsWith(dragged, actor)` — ドラッグ中のハイライト等のために、**今成立する**重ねる操作を
   宣言順に列挙する。相手のマッチング（1）だけでなく `conditions`（2）まで見る——候補を選ぶ側と実行
   できる側が食い違うと、満杯の炉に薪を落とせるのに何も起きない、という形になるため。**どちらの札を
@@ -62,7 +68,7 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 ## 2. 実行パイプライン
 
 実行は次の順に進み、途中で失敗すると `false` を返して何も適用しない。順序に意味があるため、
-実装は `InteractionDef` に1つだけ置く（`with` マッチングだけは `CombinationDef` が先に見る）。
+実装は `InteractionDef` に1つだけ置く（相手のマッチングだけは `Combination` が先に見る）。
 
 1. `with` マッチング（combinations のみ）: `dragged` の型が `with` の指定に当てはまるか
    （`TypeMatchRule`。タグならそのタグを持つか、object_defならその型そのものか）。

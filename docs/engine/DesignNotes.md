@@ -387,7 +387,7 @@
 ## 定義と実行時状態（`src/domain/`、[Layers.md](./Layers.md) 3節）
 
 - **定義を受動的なデータとして扱い、外の実行器が読んで手順を組み立てる形へ戻さないこと。**
-  かつては `InteractionExecutor` が `ActionDef` の条件と効果を外から読んで実行し、
+  かつては `InteractionExecutor` が操作の宣言の条件と効果を外から読んで実行し、
   `ConditionEvaluator` が `ConditionNode` を外から読んで判定していた。「この定義をどう実行するか」が
   所有者の外にあるため、定義を1つ足すたびに実行器の分岐が増え、実行器から見たい内部を定義側で
   広く公開する必要もあった。今は定義自身が判定・実行を持つ（`ConditionNode.isSatisfied`・

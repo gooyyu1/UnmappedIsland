@@ -138,24 +138,21 @@ export function cardOperationsOf(
    */
   const actionsOf = (instance: WorldObject): readonly CardAction[] => {
     const texts = locale.object(instance.def.name);
-    const fromDefinition = instance
-      .actionsFor(game.player.instance)
-      .filter((action) => action.trigger === 'menu')
-      .map((action) => {
-        const declared = texts.interaction(action.name);
-        const unmet = action.unmetRequirement();
-        return {
-          key: action.name,
-          name: declared.displayName,
-          description: declared.description,
-          minutes: action.minutes(),
-          execute: () => {
-            action.tryExecute();
-          },
-          enabled: unmet === undefined,
-          reason: unmet?.reasonName === undefined ? undefined : locale.reason(unmet.reasonName),
-        };
-      });
+    const fromDefinition = instance.menuActionsFor(game.player.instance).map((action) => {
+      const declared = texts.interaction(action.name);
+      const unmet = action.unmetRequirement();
+      return {
+        key: action.name,
+        name: declared.displayName,
+        description: declared.description,
+        minutes: action.minutes(),
+        execute: () => {
+          action.tryExecute();
+        },
+        enabled: unmet === undefined,
+        reason: unmet?.reasonName === undefined ? undefined : locale.reason(unmet.reasonName),
+      };
+    });
     return [...craftingActions(instance, codex, game), ...fromDefinition];
   };
 

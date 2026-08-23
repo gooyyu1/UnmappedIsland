@@ -37,8 +37,7 @@ describe('同梱のWorldCodex', () => {
       describeAllPassives(def, names, writer);
       for (const propertyDef of def.enumeratePropertyDefs()) describeProperty(propertyDef, names, writer);
       for (const slotDef of def.enumerateSlotDefs()) describeAccept(slotDef, names, writer);
-      for (const interaction of [...def.actions, ...def.combinations])
-        describeInteraction(interaction, names, writer);
+      for (const trigger of def.triggers) describeInteraction(trigger, names, writer);
       for (const recipe of def.recipes) describeRecipe(recipe, names, writer);
     }
 

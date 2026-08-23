@@ -6,9 +6,9 @@ import { parseTypeMatchRule } from './parseCommon';
 import { parseActiveEffectBody, parseWeight } from './parseActiveEffects';
 import { parseRequirementsField } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
-import type { InteractionDef } from '../domain/InteractionDef';
-import { ActionDef } from '../domain/ActionDef';
-import { CombinationDef } from '../domain/CombinationDef';
+import { InteractionDef } from '../domain/InteractionDef';
+import type { InteractionTrigger } from '../domain/InteractionTrigger';
+import { DragTrigger, MenuTrigger, TickTrigger } from '../domain/InteractionTrigger';
 import { ReferenceScope } from '../domain/ReferenceRoot';
 
 /** 操作のエントリが持つ、効果以外の兄弟キー。 */
@@ -27,8 +27,8 @@ export function parseInteractions(
   loader: WorldCodexYamlLoader,
   objectDefName: string,
   interactionsNode: YAMLMap | undefined,
-): InteractionDef[] {
-  const result: InteractionDef[] = [];
+): InteractionTrigger[] {
+  const result: InteractionTrigger[] = [];
   if (interactionsNode === undefined) return result;
 
   for (const [name, node] of entriesInOrder(interactionsNode)) {
@@ -45,7 +45,7 @@ function parseInteraction(
   context: string,
   name: string,
   map: YAMLMap,
-): InteractionDef {
+): InteractionTrigger {
   const triggerNode = tryGetNode(map, 'trigger');
   if (triggerNode === undefined)
     throw new YamlLoadError(`${context}: 必須フィールド 'trigger' がありません（menu・tick・{drag: ...}）。`);
@@ -63,6 +63,8 @@ function parseInteraction(
       ? parseWeight(loader, `${context}.duration`, durationNode, scope, 'duration')
       : undefined;
 
+  const interaction = new InteractionDef(name, requirements, effect, duration);
+
   if (drag !== undefined) {
     // 何個受け取れるかを答えられる形かは、宣言だけで決まる。許可したのに答えられない宣言は、
     // 黙って1枚ずつになるとプレイヤーには理由が分からないので、ここで弾く（12.4節）。
@@ -72,20 +74,15 @@ function parseInteraction(
           '（値域を持つプロパティへのtransferが1つ。pickを含むもの・器が複数あるものは数えられません）。',
       );
 
-    return new CombinationDef(name, drag.with, requirements, effect, duration, drag.allowMultiple);
+    return new DragTrigger(interaction, drag.with, drag.allowMultiple);
   }
 
-  return new ActionDef(name, parseActionTrigger(context, triggerNode), requirements, effect, duration);
-}
-
-/** `trigger: menu` / `trigger: tick`。 */
-function parseActionTrigger(context: string, triggerNode: unknown): 'menu' | 'tick' {
   const raw = isScalar(triggerNode) ? String(triggerNode.value) : undefined;
-  if (raw !== 'menu' && raw !== 'tick')
-    throw new YamlLoadError(
-      `${context}: triggerは'menu'・'tick'か、{drag: ...}のみ対応しています（値: '${raw ?? '?'}'）。`,
-    );
-  return raw;
+  if (raw === 'menu') return new MenuTrigger(interaction);
+  if (raw === 'tick') return new TickTrigger(interaction);
+  throw new YamlLoadError(
+    `${context}: triggerは'menu'・'tick'か、{drag: ...}のみ対応しています（値: '${raw ?? '?'}'）。`,
+  );
 }
 
 /**

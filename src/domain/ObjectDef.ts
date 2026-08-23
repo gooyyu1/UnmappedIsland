@@ -1,6 +1,10 @@
-import { ActionDef } from './ActionDef';
-import { CombinationDef } from './CombinationDef';
-import type { InteractionDef } from './InteractionDef';
+import type {
+  DragTrigger,
+  InteractionTrigger,
+  MenuTrigger,
+  TickTrigger,
+  TriggerGroups,
+} from './InteractionTrigger';
 import { LocalIndexMap } from './LocalIndexMap';
 import type { PassiveEffect } from './PassiveEffect';
 import { PassiveEffects } from './PassiveEffects';
@@ -97,14 +101,20 @@ export class ObjectDef {
    */
   readonly stackable: boolean;
 
-  /** このObjectDefが宣言している操作（11節・12節）。宣言順で、きっかけは混ざっている。 */
-  readonly interactions: readonly InteractionDef[];
+  /**
+   * このObjectDefが宣言している操作のきっかけ（11節・12節）。宣言順で、種類は混ざっている
+   * ——ページに並べるときと名前で引くときだけ、この並びを見る。
+   */
+  readonly triggers: readonly InteractionTrigger[];
 
-  /** 相手を伴わない操作（11節）。 */
-  readonly actions: readonly ActionDef[];
+  /** 画面のボタンに出る操作（11.1節）。 */
+  readonly menuTriggers: readonly MenuTrigger[];
 
-  /** このObjectDefが（selfとして）持つドラッグ型操作（12節）。 */
-  readonly combinations: readonly CombinationDef[];
+  /** 時間が起こす操作（11.1節）。 */
+  readonly tickTriggers: readonly TickTrigger[];
+
+  /** このObjectDefが（selfとして）持つ、カードを重ねて起こす操作（12節）。 */
+  readonly dragTriggers: readonly DragTrigger[];
 
   constructor(
     globalId: number,
@@ -117,7 +127,7 @@ export class ObjectDef {
     passives: readonly PassiveEffect[],
     stackOrder?: StackOrderDef,
     tags: readonly number[] = [],
-    interactions: readonly InteractionDef[] = [],
+    triggers: readonly InteractionTrigger[] = [],
     boundToOwner = false,
     stackable = true,
     recipes: readonly RecipeDef[] = [],
@@ -140,11 +150,13 @@ export class ObjectDef {
     this.passives = new PassiveEffects(passives);
     this.stackOrder = stackOrder;
     this.tags = tags;
-    this.interactions = interactions;
-    this.actions = interactions.filter((entry): entry is ActionDef => entry instanceof ActionDef);
-    this.combinations = interactions.filter(
-      (entry): entry is CombinationDef => entry instanceof CombinationDef,
-    );
+    this.triggers = triggers;
+    // どの束に入るかはきっかけ自身が知っている（InteractionTrigger.addTo）。
+    const groups: TriggerGroups = { menu: [], tick: [], drag: [] };
+    for (const trigger of triggers) trigger.addTo(groups);
+    this.menuTriggers = groups.menu;
+    this.tickTriggers = groups.tick;
+    this.dragTriggers = groups.drag;
     this.boundToOwner = boundToOwner;
     this.stackable = stackable;
     this.recipes = recipes;
@@ -152,6 +164,11 @@ export class ObjectDef {
     this.visibleSlotGlobalIds = visibleSlotGlobalIds;
     this.isStorage = isStorage;
     this.isInProgress = isInProgress;
+  }
+
+  /** その名前の操作を宣言しているか（きっかけは問わない）。 */
+  declaresInteraction(name: string): boolean {
+    return this.triggers.some((trigger) => trigger.interaction.name === name);
   }
 
   /** この型にタグ（5節）が付いているか（PropertyDef.hasTagと同じ揃え）。 */

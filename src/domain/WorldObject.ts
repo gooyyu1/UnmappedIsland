@@ -667,18 +667,21 @@ export class WorldObject {
 
   // ---- プレイヤーが起こせる操作（11節・12節） ----
 
-  /**
-   * actorがこのカードへ起こせる操作（11節、宣言順）。画面のボタンに出すかは呼び出し側が
-   * triggerで絞る（11.1節、出るのは`menu`だけ）。
-   */
-  actionsFor(actor: WorldObject | undefined): readonly Action[] {
-    return this.def.actions.map((action) => new Action(action, this, actor));
+  /** actorがこのカードへ起こせる、**画面のボタンに出る**操作（11.1節、宣言順）。 */
+  menuActionsFor(actor: WorldObject | undefined): readonly Action[] {
+    return this.def.menuTriggers.map((trigger) => new Action(trigger, this, actor));
   }
 
-  /** 名指しした操作（宣言が無ければundefined）。土地のexplore・道のtravel・動物の1手が使う。 */
+  /**
+   * 名指しした操作（宣言が無ければundefined）。土地のexplore・道のtravelが使う。
+   *
+   * 探すのは相手を伴わないきっかけ（menu・tick）だけ——重ねる操作は相手が決まらないと引けない。
+   */
   tryGetAction(actionName: string, actor: WorldObject | undefined): Action | undefined {
-    const action = this.def.actions.find((a) => a.name === actionName);
-    return action === undefined ? undefined : new Action(action, this, actor);
+    const trigger = [...this.def.menuTriggers, ...this.def.tickTriggers].find(
+      (candidate) => candidate.interaction.name === actionName,
+    );
+    return trigger === undefined ? undefined : new Action(trigger, this, actor);
   }
 
   /**
@@ -696,15 +699,15 @@ export class WorldObject {
   combinationsWith(dragged: WorldObject, actor: WorldObject | undefined): readonly Combination[] {
     if (dragged.def.isInProgress) return [];
     const context = ReferenceContext.acting(this, actor, dragged);
-    return this.def.combinations
+    return this.def.dragTriggers
       .filter(
-        (c) =>
-          c.acceptsDragged(dragged.def) &&
-          c.unmetRequirement(context) === undefined &&
-          c.acceptedCount(context, [dragged]) >= 1 &&
-          !c.unresolvable(context),
+        (trigger) =>
+          trigger.acceptsDragged(dragged.def) &&
+          trigger.interaction.unmetRequirement(context) === undefined &&
+          trigger.acceptedCount(context, [dragged]) >= 1 &&
+          !trigger.interaction.unresolvable(context),
       )
-      .map((c) => new Combination(c, this, dragged, actor));
+      .map((trigger) => new Combination(trigger, this, dragged, actor));
   }
 
   // ---- 時間の経過（8.4節） ----

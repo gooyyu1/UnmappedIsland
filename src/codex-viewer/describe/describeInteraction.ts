@@ -1,4 +1,4 @@
-import type { InteractionDef } from '../../domain/InteractionDef';
+import type { InteractionTrigger } from '../../domain/InteractionTrigger';
 import type { DefNames, DescriptionWriter } from './Description';
 import { text } from './Description';
 import { describeEffect, weightTokens } from './describeEffect';
@@ -10,18 +10,19 @@ import { typeMatchTokens } from './typeMatchTokens';
  * プレイヤーがカードを触ってから起こることの順番に並べる。
  */
 export function describeInteraction(
-  interaction: InteractionDef,
+  trigger: InteractionTrigger,
   names: DefNames,
   out: DescriptionWriter,
 ): void {
-  const trigger = interaction.triggerReading;
-  if (trigger.kind === 'drag')
+  const interaction = trigger.interaction;
+  const reading = trigger.reading;
+  if (reading.kind === 'drag')
     out.write(
       text('trigger: '),
-      ...typeMatchTokens(trigger.with, names),
-      text(`のカードのドロップ${trigger.allowMultiple ? '（まとめて可）' : ''}`),
+      ...typeMatchTokens(reading.with, names),
+      text(`のカードのドロップ${reading.allowMultiple ? '（まとめて可）' : ''}`),
     );
-  else out.write(text(`trigger: ${trigger.kind}`));
+  else out.write(text(`trigger: ${reading.kind}`));
 
   const requirements = interaction.requirementDeclarations;
   if (requirements.length > 0) {

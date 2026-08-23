@@ -10,7 +10,7 @@ import { describeInteraction } from './describe/describeInteraction';
 import { initialValueTokens, describeProperty } from './describe/describeProperty';
 import { describeRecipe } from './describe/describeRecipe';
 import { describeAccept, putInDurationTokens } from './describe/describeSlot';
-import type { InteractionDef } from '../domain/InteractionDef';
+import type { InteractionTrigger } from '../domain/InteractionTrigger';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { SlotDef } from '../domain/SlotDef';
 import { ART_BY_OBJECT_NAME } from '../art/objectArt';
@@ -80,7 +80,7 @@ function renderObjectPage(view: CodexView, name: string): string {
     ) +
     // きっかけで節を分けない——宣言が1つの並びなので、ここも宣言順のまま出す（各操作が自分の
     // きっかけを名乗る、describeInteraction）。
-    section('interactions（操作）', interactionsHtml(view, def, def.interactions)) +
+    section('interactions（操作）', interactionsHtml(view, def, def.triggers)) +
     section('recipes', recipesHtml(view, def)) +
     variantsSection(view, name) +
     // 逆引きはどちらも、行き先の型を絵で並べるだけにする——どの操作・どの工程かはリンク先で分かる。
@@ -534,16 +534,17 @@ function slotsHtml(view: CodexView, def: ObjectDef): string {
   return rows === '' ? EMPTY_HTML : slotTableHtml('スロット', rows);
 }
 
-function interactionsHtml(view: CodexView, def: ObjectDef, interactions: readonly InteractionDef[]): string {
-  const cards = interactions
-    .map((interaction) => {
+function interactionsHtml(view: CodexView, def: ObjectDef, triggers: readonly InteractionTrigger[]): string {
+  const cards = triggers
+    .map((trigger) => {
+      const interaction = trigger.interaction;
       const texts = view.interactionTexts(def.name, interaction.name);
       const description =
         texts.description === undefined ? '' : `<p class="muted">${escapeHtml(texts.description)}</p>`;
       const label = view.interactionLabel(def.name, interaction.name);
       return card(
         escapeHtml(label) + headingIdentifier(label, interaction.name),
-        description + view.describeHtml(def.name, (out) => describeInteraction(interaction, view.names, out)),
+        description + view.describeHtml(def.name, (out) => describeInteraction(trigger, view.names, out)),
       );
     })
     .join('');
