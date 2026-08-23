@@ -1,8 +1,8 @@
 import type { GenerationDefs } from './GenerationDefs';
 import { Pcg32 } from '../Pcg32';
 import { IslandMap } from './IslandMap';
-import { place } from './SitePlacer';
-import { sample } from './AxisSampler';
+import { placeSites } from './SitePlacer';
+import { assignAxisValues } from './AxisSampler';
 import { assignTypes } from './LocationTypeMatcher';
 import { triangulate } from './DelaunayTriangulator';
 import { build } from './PathNetworkBuilder';
@@ -29,8 +29,8 @@ export function generate(defs: GenerationDefs | undefined, scopeName: string, se
   const scope = defs.scopes.get(scopeName);
   if (scope === undefined) throw new Error(`生成スコープ '${scopeName}' が定義されていません。`);
 
-  const sites = place(scope, Pcg32.forPurpose(seed, 'sites'));
-  sample(defs.axes, sites, seed, scope);
+  const sites = placeSites(scope, Pcg32.forPurpose(seed, 'sites'));
+  assignAxisValues(defs.axes, sites, seed, scope);
   assignTypes(defs, scope, sites);
   const delaunayEdges = triangulate(sites);
   const edges = build(sites, delaunayEdges, scope);

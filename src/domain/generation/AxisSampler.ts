@@ -15,7 +15,7 @@ import { ISLAND_RADIUS } from './SitePlacer';
  * この名前の軸が定義されていなければ、海岸帯クランプは単に何もしない。 */
 const COASTAL_DISTANCE_AXIS_NAME = 'coastal_distance';
 
-export function sample(
+export function assignAxisValues(
   axes: ReadonlyMap<string, AxisDef>,
   sites: readonly Site[],
   seed: number,

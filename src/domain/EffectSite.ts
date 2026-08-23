@@ -2,14 +2,14 @@ import type { ObjectStack } from './ObjectStack';
 import type { Slot } from './Slot';
 import type { WorldObject } from './WorldObject';
 
-/** same_slot置き換えの配置指示: originが居たセルの位置と、そのセルに同種が残っているか。 */
+/** same_slot置き換え（9.4節）で、生まれた物をどこへ置くかの指示。 */
 export class SameSlotPlacement {
   readonly originCellIndex: number;
-  readonly kindRemains: boolean;
+  readonly sameKindStillInCell: boolean;
 
-  constructor(originCellIndex: number, kindRemains: boolean) {
+  constructor(originCellIndex: number, sameKindStillInCell: boolean) {
     this.originCellIndex = originCellIndex;
-    this.kindRemains = kindRemains;
+    this.sameKindStillInCell = sameKindStillInCell;
   }
 }
 

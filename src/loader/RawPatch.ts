@@ -112,7 +112,7 @@ export function applyPatches(patches: readonly RawPatch[], defs: ReadonlyMap<str
 
   for (const patch of patches) {
     try {
-      apply(patch, defs, replaced);
+      applyPatch(patch, defs, replaced);
     } catch (error) {
       if (patch.report === undefined) throw error;
       patch.report.addDiscarded(patch.source, patch.description, messageOf(error));
@@ -120,7 +120,7 @@ export function applyPatches(patches: readonly RawPatch[], defs: ReadonlyMap<str
   }
 }
 
-function apply(patch: RawPatch, defs: ReadonlyMap<string, RawObjectDef>, replaced: Set<string>): void {
+function applyPatch(patch: RawPatch, defs: ReadonlyMap<string, RawObjectDef>, replaced: Set<string>): void {
   const [defName, ...rest] = patch.path.split('.');
   const def = defs.get(defName);
   if (def === undefined) throw new YamlLoadError(`object_def '${defName}' がありません。`);

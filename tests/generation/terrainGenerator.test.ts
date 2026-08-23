@@ -5,7 +5,7 @@ import type { GenerationScopeDef } from '../../src/domain/generation/GenerationS
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
-import { place } from '../../src/domain/generation/SitePlacer';
+import { placeSites } from '../../src/domain/generation/SitePlacer';
 import { Pcg32 } from '../../src/domain/Pcg32';
 
 /** 不変条件の検証に使うシード群。特別な意味は無く、多様なレイアウトを試すための個数。 */
@@ -57,7 +57,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
     // site_countのmaxは含む値。抽選は半開区間（Pcg32.nextInt）なので+1して引いており、
     // それを落とすと上端の島が一度も出なくなる——配置だけを100シード引いて両端を確かめる。
     const counts = new Set(
-      Array.from({ length: 100 }, (_, seed) => place(scope(), Pcg32.forPurpose(seed, 'sites')).length),
+      Array.from({ length: 100 }, (_, seed) => placeSites(scope(), Pcg32.forPurpose(seed, 'sites')).length),
     );
     expect(counts, '下端の島が出る').toContain(10);
     expect(counts, '上端の島が出る').toContain(20);

@@ -54,7 +54,7 @@ export function assignTypes(defs: GenerationDefs, scope: GenerationScopeDef, sit
   const bestDistances = new Map<Site, number>(pending.map((s) => [s, bestDistanceOf(types, s)]));
   pending.sort((a, b) => bestDistances.get(a)! - bestDistances.get(b)! || a.index - b.index);
 
-  for (const site of pending) take(site, matchNearest(types, site, scope, counts));
+  for (const site of pending) take(site, nearestTypeAvoidingFull(types, site, scope, counts));
 }
 
 /** 混雑を無視した最良距離（決める順番だけに使う）。どの型もhard_limitsで弾くサイトは最後に回す。 */
@@ -88,7 +88,7 @@ function orderForGuarantee(
   ];
 }
 
-function matchNearest(
+function nearestTypeAvoidingFull(
   types: readonly LocationTypeDef[],
   site: Site,
   scope: GenerationScopeDef,
@@ -96,10 +96,10 @@ function matchNearest(
 ): LocationTypeDef {
   // 上限まで埋まった型を避けて選ぶ。全滅したら上限を無視して選び直す——上限は「同じ地形を並べない」
   // ための強い希望であって、置けるかどうかの条件ではない（hard_limitsだけが絶対）。
-  return pickNearest(types, site, scope, counts, true) ?? pickNearest(types, site, scope, counts, false)!;
+  return nearestType(types, site, scope, counts, true) ?? nearestType(types, site, scope, counts, false)!;
 }
 
-function pickNearest(
+function nearestType(
   types: readonly LocationTypeDef[],
   site: Site,
   scope: GenerationScopeDef,

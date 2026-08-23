@@ -103,7 +103,7 @@ export class CellLayout {
     return this.def.cellsToKeep !== 'grows';
   }
 
-  private get liveStacks(): readonly ObjectStack[] {
+  private get stacksInFilledCells(): readonly ObjectStack[] {
     return this._cells.map((cell) => cell.stack).filter((s): s is ObjectStack => s !== undefined);
   }
 
@@ -114,12 +114,12 @@ export class CellLayout {
 
   /** スタックの区別を畳み込んだ、中身全部のビュー。 */
   get contents(): readonly WorldObject[] {
-    return this.liveStacks.flatMap((s) => s.members);
+    return this.stacksInFilledCells.flatMap((s) => s.members);
   }
 
   /** 中身を、積み重なっているまとまりごとに分けたもの（空セルは含まない。先頭が代表）。 */
   get stacks(): readonly (readonly WorldObject[])[] {
-    return this.liveStacks.map((stack) => stack.members);
+    return this.stacksInFilledCells.map((stack) => stack.members);
   }
 
   /**
@@ -180,16 +180,16 @@ export class CellLayout {
    * スタックとして、originが居たセル(originCellIndex)を基準に配置する（EffectSite参照）。自動整列は行わない
    * （同種はObjectStack内で整列されるため、スタック間の位置は著者が見た位置を保つ）。
    *
-   * - kindRemains（originの同種がまだ残る＝selfが生き残る/同種の兄弟が残る）: 置き換え先はoriginの隣。
+   * - sameKindStillInCell（originの同種がまだ残る＝selfが生き残る/同種の兄弟が残る）: 置き換え先はoriginの隣。
    *   originの右隣（無ければ左隣）へ、最寄りの空きセルをずらして場所を作って入れる。空きが無ければ
    *   配置失敗（false→呼び出し側でfallback）。
-   * - !kindRemains（originの同種が全て消えた）: 空いた元の位置へ。
+   * - !sameKindStillInCell（originの同種が全て消えた）: 空いた元の位置へ。
    */
-  placeSameSlot(obj: WorldObject, originCellIndex: number, kindRemains: boolean): boolean {
+  placeSameSlot(obj: WorldObject, originCellIndex: number, sameKindStillInCell: boolean): boolean {
     if (this.tryMergeIntoMatchingStack(obj)) return true;
 
     const stack = new ObjectStack(obj);
-    return kindRemains
+    return sameKindStillInCell
       ? this.tryPlaceAtGap(stack, originCellIndex + 1, 1) || this.tryPlaceAtGap(stack, originCellIndex, -1)
       : this.tryPlaceAt(stack, { kind: 'cell', index: originCellIndex });
   }

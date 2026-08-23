@@ -115,11 +115,11 @@ export class Slot {
     return Math.min(1, this.sumVolume(volumePropertyGlobalId) / this.def.capacity);
   }
 
-  addInternal(obj: WorldObject): void {
+  addWithoutParentLink(obj: WorldObject): void {
     this.layout.add(obj);
   }
 
-  removeInternal(obj: WorldObject): void {
+  removeWithoutParentLink(obj: WorldObject): void {
     this.layout.remove(obj);
   }
 
@@ -129,8 +129,8 @@ export class Slot {
   }
 
   /** same_slotによる置き換えの配置（CellLayout.placeSameSlot）。 */
-  placeSameSlot(obj: WorldObject, originCellIndex: number, kindRemains: boolean): boolean {
-    return this.layout.placeSameSlot(obj, originCellIndex, kindRemains);
+  placeSameSlot(obj: WorldObject, originCellIndex: number, sameKindStillInCell: boolean): boolean {
+    return this.layout.placeSameSlot(obj, originCellIndex, sameKindStillInCell);
   }
 
   /** 位置を指定して入れる（CellLayout.insertAt）。 */

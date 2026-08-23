@@ -322,7 +322,7 @@ export class WorldObject {
    */
   insertSameSlot(slot: Slot, placement: SameSlotPlacement): string | undefined {
     return this.attachToSlot(slot, (target) =>
-      target.placeSameSlot(this, placement.originCellIndex, placement.kindRemains),
+      target.placeSameSlot(this, placement.originCellIndex, placement.sameKindStillInCell),
     );
   }
 
@@ -392,7 +392,7 @@ export class WorldObject {
 
   /**
    * placeは位置を指定する配置（moveToSlotのat・insertSameSlot）専用。省略すると通常の追加
-   * （Slot.addInternal）になる。
+   * （Slot.addWithoutParentLink）になる。
    *
    * **配置を伴う変化の唯一の関門**なので、ここが出入りを記録する（WorldChange）。移動前の居場所は
    * 切り離す前に控える——切り離した後では、どこから来たのかを誰も知らない。
@@ -414,7 +414,7 @@ export class WorldObject {
         return `'${newParent.def.name}.${targetSlot.def.name}' に指定した位置の空きがありません。`;
       }
     } else {
-      targetSlot.addInternal(this);
+      targetSlot.addWithoutParentLink(this);
     }
 
     this.session.recordChange(this, from, targetSlot);
@@ -436,7 +436,7 @@ export class WorldObject {
     // 参照。再登録はattachToSlot側）。
     this.registerAncestorTargetedRecursively(false);
 
-    oldSlot.removeInternal(this);
+    oldSlot.removeWithoutParentLink(this);
     this.registerEdgeWith(oldParent, false);
     this.setParent(undefined, undefined);
   }
@@ -592,7 +592,7 @@ export class WorldObject {
           this.evict(child);
           continue;
         }
-        destination.addInternal(child);
+        destination.addWithoutParentLink(child);
         rehomed.push({ child, slot: destination });
       }
     }
