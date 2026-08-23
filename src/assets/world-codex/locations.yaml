@@ -46,6 +46,9 @@ object_defs:
     # 行き先が個体ごとに違うので束ねない。束ねると代表の行き先しかカードに出せなくなる（4節）。
     stackable: false
     props:
+      # 道は地形そのものなので目方を持たない（cave_entranceと同じ、ContainerSystem.md 1節）。
+      # 筏から岸への道のように、重さを持つ物へ繋ぐ道もありうるため、0を明示する。
+      weight: {value: 0}
       travel_minutes:
         value: 60
       required_progress:
@@ -126,14 +129,23 @@ object_defs:
   # ベリーの茂み。定期的に実を付ける採取ポイントになる想定。
   berry_bush:
     tags: [fixture]
+    props:
+      # 根の張った低木1株ぶん。
+      weight: {value: 15000}
 
   # 洞窟の入口。内部に子Locationグラフを持つ構造物（TerrainGeneration.md 3.7節）の入口となる想定。
   cave_entrance:
     tags: [fixture]
+    props:
+      # **地形そのものなので、運べる目方を持たない。** 0は宣言漏れではなく、そう決めた印である
+      # （ContainerSystem.md 1節）。以下の湧き水・道も同じ。
+      weight: {value: 0}
 
   # 湧き水。飲用・補水ポイントになる想定。
   spring:
     tags: [fixture]
+    props:
+      weight: {value: 0}
 
   # ------------------------------------------------------------------
   # 土地。すべて traits: [location, explorable]。

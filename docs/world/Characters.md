@@ -30,7 +30,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | `singleton` | `true`（同時に存在するプレイヤーキャラクタは1体） |
 | タグ | `character` |
 | スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
-| プロパティ | `pain` / `blood` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` |
+| プロパティ | `weight` / `pain` / `blood` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` |
 | アクション | 休息の4つ（`wait` / `rest` / `nap` / `sleep`。下の[休息](#休息)節。`player_character` trait が配る） |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterCard.ts`。絵が入るまでの繋ぎ） |
 
@@ -88,6 +88,9 @@ props より前に並ぶため（`RawObjectDef.resolve`）。**栄養素の在�
 - **`pain`（痛み）**: 負っている怪我（[`InjurySystem.md`](../engine/InjurySystem.md)）が `modify` で押し上げる値。自分では
   動かないので `value` は 0 のまま、`max` は「これ以上は耐えられない」点。痛みの感じ方は食の好みではなく
   身体の仕組みなので、栄養バランスと同じく個体差を持たせず `player_character` trait が配る。
+- **`weight`（体重、g）**: 65,000（下の `blood` が体重のおよそ1/13という関係から、5,000mLがちょうど
+  65kg）。**担ぐ側も担がれる側になる**——筏に乗れば自分と手持ちが積載として効く
+  （[`ContainerSystem.md`](../engine/ContainerSystem.md) 1.1 節）。個体差はまだ持たせず trait が配る。
 - **`blood`（血液量、mL）**: `max` が体格そのもの（体重のおよそ1/13）で、満タンから始まる。**唯一、
   自分で戻るステータス**（`+2/tick` ＝ 1日およそ200mL、赤血球が作られる実際の速さ）。削るのは出血する
   怪我だけなので、**削られるのは一瞬でも戻るのは桁違いに遅い**——失った1,000mLに5日かかる。尽きた段の
