@@ -106,6 +106,25 @@ function visibilityOf(modifiers, name) {
   return 'public';
 }
 
+/**
+ * その宣言に付いているドキュメントコメントの中身（1行に畳んだもの）。付いていなければ空。
+ *
+ * **見るのは直前の `/** ... *\/` 1つだけ。** 離れた場所の説明は、その宣言のものとは限らない。
+ */
+function docOf(source, node) {
+  const text = source.getFullText();
+  const ranges = ts.getLeadingCommentRanges(text, node.getFullStart()) ?? [];
+  const last = [...ranges].reverse().find((range) => text.slice(range.pos, range.pos + 3) === '/**');
+  if (last === undefined) return '';
+  return text
+    .slice(last.pos + 3, last.end - 2)
+    .split('\n')
+    .map((line) => line.replace(/^\s*\*?/, '').trim())
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function memberKindOf(member) {
   if (ts.isPropertyDeclaration(member) || ts.isPropertySignature(member)) return 'field';
   if (ts.isMethodDeclaration(member) || ts.isMethodSignature(member)) return 'method';
@@ -130,6 +149,7 @@ function collectMembers(source, file, owner, members, into) {
       modifiers,
       line: source.getLineAndCharacterOfPosition(member.getStart(source)).line + 1,
       signature: signatureOf(source, member),
+      doc: docOf(source, member),
     });
 
     // 引数プロパティ（constructor(private readonly x: T)）はフィールドなので、同じ粒で並べる。
@@ -149,6 +169,7 @@ function collectMembers(source, file, owner, members, into) {
         modifiers: parameterModifiers,
         line: source.getLineAndCharacterOfPosition(parameter.getStart(source)).line + 1,
         signature: signatureOf(source, parameter),
+        doc: docOf(source, parameter),
       });
     }
   }
@@ -168,6 +189,7 @@ function collect(file) {
       modifiers,
       line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1,
       signature: signatureOf(source, node),
+      doc: docOf(source, node),
     });
   };
 
@@ -203,6 +225,8 @@ function collect(file) {
           modifiers,
           line: source.getLineAndCharacterOfPosition(declaration.getStart(source)).line + 1,
           signature: signatureOf(source, declaration),
+          // 説明は文（`const X = ...`）の上に書かれるので、宣言ではなく文の側から取る。
+          doc: docOf(source, node),
         });
       }
     }
