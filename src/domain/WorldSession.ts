@@ -220,15 +220,16 @@ export class WorldSession {
   }
 
   /**
-   * 1 tick分の世界の進行。値の積分（WorldObject.tick）のあとに動物の1手を配る
-   * （HuntingSystem.md 5.2節）——動物が動くのは時間が経ったからで、その tick の値が出そろった後になる。
+   * 1 tick分の世界の進行。値の積分（WorldObject.tick）のあとに、時間が起こす操作を配る
+   * （`trigger: tick`、WorldObject.runTickActions）——動物が動くのは時間が経ったからで、
+   * そのtickの値が出そろった後になる（HuntingSystem.md 5.2節）。
    *
    * 観測口（observeTicks）へ知らせるのは両方を終えてから。「そのtick境界の世界」には、
    * 動物がしたことも含まれている。
    */
   private runTick(world: World): void {
     world.instance.tick();
-    world.runAnimalTurns(this);
+    world.instance.runTickActions();
     this.tickObserver.current?.();
   }
 }

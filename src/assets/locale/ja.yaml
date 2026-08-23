@@ -120,33 +120,9 @@ object_texts:
       flee:
         display_name: 逃走
         description: 1手の重み配分のうち、隣の土地へ逃げる回の重み。深手を負うほど太くなる。
-      nearby_characters:
-        display_name: 近くの人
-        description: 同じ土地に居る人の数。手番のたびに数え直される。
-      lootables:
-        display_name: 持ち去れる物
-        description: 同じ土地にある、持ち去れる物の数。手番のたびに数え直される。
-      loot_target:
-        display_name: 持ち去る相手
-        description: 次の手番で持ち去る物。手番のたびに選び直される。
-      spoils_target:
-        display_name: くわえている物
-        description: 今くわえている物。食べ物なら、いずれ食べられてしまう。
       stay_remaining:
         display_name: 立ち去りまで
         description: この場に留まる残り。誰も居ない土地でだけ減っていき、尽きた動物はどこかへ行ってしまう。
-      smashables:
-        display_name: 壊せる物
-        description: 同じ土地にある、ぶつかって壊せる物の数。手番のたびに数え直される。
-      smash_target:
-        display_name: ぶつかる相手
-        description: 次の手番でぶつかる物。手番のたびに選び直される。
-      escape_routes:
-        display_name: 逃げ道
-        description: この土地から出ている、見つかっている道の本数。1本も無ければ逃げられない。
-      flee_to:
-        display_name: 逃げ込む先
-        description: 次の手番で逃げ込む土地。手番のたびに選び直される。
       wariness:
         display_name: 警戒
         description: この動物がどれだけ気を立てているか。傷を負わされれば上がり、放っておけば下がる。

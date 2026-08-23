@@ -132,24 +132,6 @@ traits:
       devour: {}
       flee: {}
 
-      # 以下は手番を与える側（Animal.takeTurn）が毎ターン上書きするプレースホルダ（5.2節）。
-      # **数と対象は必ず同時に書き込まれる**ので、数が0の候補の対象は絶対に読まれない。値は毎ターン
-      # 上書きされるため、0へ戻す後始末は要らない。
-      #
-      # 同じ土地に居るキャラクタの数。0なら襲う相手が居ない。
-      nearby_characters: {value: 0}
-      # 持ち去れる物の数と、そのうち選ばれた1つのインスタンスID。
-      lootables: {value: 0}
-      loot_target: {value: 0}
-      # くわえている物（spoilsの先頭）のインスタンスID。空なら0。数は書かない——食べる候補の
-      # ゲートはスロットの中身（食べ物かどうか）を直接見る（下のpassives）。
-      spoils_target: {value: 0}
-      # ぶつかって壊せる物の数と、そのうち選ばれた1つのインスタンスID。
-      smashables: {value: 0}
-      smash_target: {value: 0}
-      # 発見済みの道の本数と、そのうち選ばれた1本の行き先（土地のインスタンスID）。
-      escape_routes: {value: 0}
-      flee_to: {value: 0}
       # 意識（VitalsSystem.md 2節）。自分では動かず、痛み・衝撃・失血の段が押し下げる。常にカードに
       # バーが出る（CardView.md 8節のgauge宣言）。unconsciousの段の名前は固定（同6節）。
       consciousness:
@@ -190,29 +172,12 @@ traits:
       # 荒ぶっている間は物どころではない。逃げるか、向かってくるかの二択になる。
       - conditions: [{prop: wariness, in_stage: enraged}]
         modify: {self: {snatch: -1000, smash: -1000}}
-      # 同じ土地にキャラクタが居なければ襲えない。
-      - conditions: [{prop: nearby_characters, lt: 1}]
-        modify: {self: {bite: -1000, gore: -1000}}
-      # 手を出せる物が無ければ、持ち去りも体当たりも起こらない。
-      - conditions: [{prop: lootables, lt: 1}]
-        modify: {self: {snatch: -1000}}
-      - conditions: [{prop: smashables, lt: 1}]
-        modify: {self: {smash: -1000}}
       # 既に1つくわえていれば、次は持てない（spoilsは1枠）。
       - conditions: [{slot: spoils, matches: {tag: item}}]
         modify: {self: {snatch: -1000}}
-      # くわえた食べ物が無ければ、食べる手は起こらない。**食べ物でない物は食べない**——盗まれた
-      # 道具は立ち去り（stay_remaining）までくわえたまま残り、取り返しが付く（HuntingSystem.md 5.6節）。
-      - conditions:
-          - not: {slot: spoils, matches: {tag: food}}
-        modify: {self: {devour: -1000}}
-      # 逃げ道が無ければ逃げられない。**追い詰められた獣は逃げずに襲う**（5.3節）が、専用の条件を
-      # 1つも書かずに成立する。おまけに「開けた土地ほど逃げやすい」は道の本数が言う。
-      - conditions: [{prop: escape_routes, lt: 1}]
-        modify: {self: {flee: -1000}}
     interactions:
       # 動物の1手（HuntingSystem.md 5節）。**プレイヤーが押すものではない**ので画面のボタンには
-      # 出さず（trigger: tick、11.1節）、tickの後処理が1手ずつ与える（Animal.takeTurn）。
+      # 出さず（trigger: tick、11.1節）、tickの後処理が1手ずつ与える（WorldObject.runTickActions）。
       # 15分の行動は1手、90分の行動は6手ぶんの時間になる（同2節）。
       #
       # どの回もsignal（9.8節）で結果を告げる。刺さった傷は相手の怪我スロットの中に入り、持ち去りは
@@ -226,28 +191,51 @@ traits:
           # 逃げ道も相手も無い土地でそれが起きてしまう。
           - weight: {prop: lurk}
           # 噛みついた回。小さい獣が持てる唯一の攻め手で、浅いが血は流れる。
+          # 相手は同じ土地に居る人（10.3節のamong）。誰も居なければこの候補は抽選に出ない。
           - weight: {prop: bite}
-            spawn: {object: bite_wound, into: actor}
+            among: {subject: parent, slot: characters, matches: {tag: character}}
+            spawn: {object: bite_wound, into: picked}
             signal: bit
           # 牙を突き上げた回。大型だけが持つ一撃で、深く刺さって血が速く流れる。
           - weight: {prop: gore}
-            spawn: {object: gore_wound, into: actor}
+            among: {subject: parent, slot: characters, matches: {tag: character}}
+            spawn: {object: gore_wound, into: picked}
             signal: gored
           # 足元の物をくわえた回。倒せば地面へこぼれる（9.3節）ので、追えば取り返せる。
+          # **かさが大きい物ほど狙われる**——地面に大きな物を広げていると危ない（5.4節）。
+          # 獲物（quarry）は持ち去るものではないので外す（動物と死体、そして自分自身）。
           - weight: {prop: snatch}
-            move: {subject_prop: loot_target, to: self}
+            among:
+              subject: parent
+              slot: items
+              matches: {not: {tag: quarry}}
+              weight: {subject: picked, prop: volume}
+            move: {subject: picked, to: self}
             signal: snatched
           # ぶつかって壊した回。中身は地面に散らばる（同）ので、壊された籠の中の物は残る。
+          # **壊れうると著者が明示した物だけ**を候補にする（5.4節）——durabilityを持つ物すべてに
+          # すると、置いておいた道具まで一撃で消える。
           - weight: {prop: smash}
-            destroy: {prop: smash_target}
+            among:
+              subject: parent
+              slot: items
+              matches: {tag: fragile}
+              weight: {subject: picked, prop: volume}
+            destroy: picked
             signal: smashed
           # くわえていた食べ物を食べてしまった回。取り返しの道はここで断たれる。
+          # **食べ物でない物は食べない**——盗まれた道具は立ち去り（stay_remaining）まで
+          # くわえたまま残り、取り返しが付く（HuntingSystem.md 5.6節）。
           - weight: {prop: devour}
-            destroy: {prop: spoils_target}
+            among: {slot: spoils, matches: {tag: food}}
+            destroy: picked
             signal: devoured
           # 隣の土地へ逃げた回。くわえている物も一緒に運ばれる（中身は親に付いて動く）。
+          # 発見済みの道1本につき1つで、どれも同じ確からしさ——気まぐれに選ぶので近い遠いを見ない。
+          # 1本も無ければ候補が空になり、逃走が抽選から外れる（追い詰められた獣は逃げずに襲う、5.3節）。
           - weight: {prop: flee}
-            move: {subject: self, to_prop: flee_to}
+            among: {subject: parent, slot: fixtures, matches: {tag: path}}
+            move: {subject: self, to: {subject: picked, prop: destination_id}}
             signal: fled
       # 武器を重ねて殴る（HuntingSystem.md 1.2節）。**候補は「一撃がどう入ったか」の型**で、どれを
       # 引くかは武器が宣言する重み配分（tools.yamlのweapon trait）が決める。動物の側は体格

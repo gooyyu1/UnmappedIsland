@@ -43,6 +43,9 @@ export function parseSubjectRoot(context: string, raw: string, scope: ReferenceS
     case 'dragged':
       root = 'dragged';
       break;
+    case 'picked':
+      root = 'picked';
+      break;
     case 'child':
       root = 'child';
       break;

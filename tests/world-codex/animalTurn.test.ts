@@ -248,13 +248,12 @@ describe('動物の1手', () => {
     expect(boar.tryGetProperty(goreId)?.getEffectiveValue() ?? 0).toBeGreaterThan(0);
 
     expect(player.moveToSlot(grassland.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
-    passTurn();
+    for (let i = 0; i < 5; i++) passTurn();
 
-    expect(injuriesOf(player), '離れれば増えない').toEqual(['gore_wound']);
-    expect(
-      boar.tryGetProperty(goreId)?.getEffectiveValue() ?? 0,
-      '相手が居なければ抽選から外れる',
-    ).toBeLessThanOrEqual(0);
+    // **重みは配分のまま**（打ち消しの寄与は無い）。相手が1つも居ない候補が抽選に出ないのは、
+    // amongが集合を見るからで、著者は「相手が居なければ起こらない」を書いていない（10.3節）。
+    expect(boar.tryGetProperty(goreId)?.getEffectiveValue() ?? 0).toBeGreaterThan(0);
+    expect(injuriesOf(player), '相手が居なければ、襲う候補は抽選に出ない').toEqual(['gore_wound']);
   });
 
   it('誰も見ていない土地の動物は、丸1日で立ち去る', () => {

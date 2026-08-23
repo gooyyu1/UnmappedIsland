@@ -609,3 +609,49 @@ YAML から `actions` / `combinations` の語が消えたのに、宣言のク�
 同梱YAML 13ファイル（`actions:` 29・`combinations:` 26 → `interactions:` 51。4つの型は両方の節を
 持っていたので1つへ寄せた）、サンプルパック1ファイル（ZIPも固め直し）、テストのフィクスチャ20ファイル、
 docs 12ファイルとJSONスキーマ。パッチのパス（`x.actions.y`）も `interactions` へ。
+
+## 20. 段4 レーンA-13（周りの物を候補にする `pick`）
+
+設計は [`PickAmong.md`](./PickAmong.md)。`Animal.ts` は**丸ごと消えた**。
+
+### 入った語彙
+
+- **`among`**（10.3節）: `pick` の候補に「周りから相手を1つ選ぶ」を書ける。集合の指し方は条件の
+  `{subject, slot, matches}`（14.4節）と同じ3つのキーで、足したのは候補ごとの重みだけ。
+  選ばれた相手は参照ルート `picked` で指す。
+- **`matches` の否定**（`{not: ...}`）: `TypeMatchRule` が `tag | object | not` の3形に。
+  `accept`・`with`・`slot_content`・`object_matches` すべてで使える。
+- **`picked` を指せる先**: 条件・効果の対象・`spawn` の `into`・`destroy`・`move`。
+
+`move` の `to`／`subject` が**マップ形も受けるようになった**（`{subject: picked, prop: destination_id}`）。
+`ObjectRef` のプロパティ参照は self 固定だったが、`PropertyPath`（root + プロパティ）を持つ形にした
+——`to_prop`/`subject_prop` の短い書き方はそのまま残る。
+
+### 消えたもの
+
+`animals.yaml` から**プロパティ8つ**（`nearby_characters` `lootables` `loot_target` `spoils_target`
+`smashables` `smash_target` `escape_routes` `flee_to`）と、**ゲートの passives 5つ**。
+ロケールの説明文も8つ消えた。`WorldVocabulary` からは11の識別子が消えた
+（上の8つ＋`spoils`・`quarry`・`fragile`。エンジンが名前で引く必要がなくなった）。
+
+`src/domain/wrappers/Animal.ts` は消滅。`World.runAnimalTurns` と `Location.runAnimalTurns`
+（スロットの名前を知っているだけの中継）も一緒に消えた。
+
+### 手番を配るのは `WorldObject.runTickActions`
+
+[`PickAmong.md`](./PickAmong.md) 9節のとおり、tick の後の2周目にした。
+`WorldSession.runTick` は `tick()` → `runTickActions()` の2行のまま。
+
+**集めてから配る。** 走査しながら配ると、逃げてまだ回っていない土地へ移った動物へ二度手番が回る
+——これは**既存の不具合**で（`Location.runAnimalTurns` が土地ごとに遅れてスナップショットを取る）、
+集める形にして消えた。手番の途中で消えた個体は、根が変わることで飛ばされる。
+
+配る範囲は「島の土地の items」から**世界全体**になった。罠の中でも手番は回るが、周りに相手が
+居なければ候補が全部外れて様子見になるだけ——**何ができるかを決めるのは世界の側**。
+
+### 挙動が変わったところ
+
+- **襲う相手が抽選になった。** 今までは `characters.at(0)` 固定。人が2人以上居る場面が無いので差は出ない。
+- **かさ0の物は狙われない。** 旧実装の `Math.max(1, volume)` の下限は設けなかった（PickAmong 6節）。
+- 「人が居なければ襲えない」を確かめていたテストが、**重みが0に潰れること**を見ていた。重みは配分の
+  ままになったので、観測できる事実（怪我が増えない）で確かめる形へ直した。

@@ -730,6 +730,32 @@ export class WorldObject {
     }
   }
 
+  /**
+   * この物から下（すべてのスロットの中身）へ、**時間が起こす操作**（`trigger: tick`、11.1節）を
+   * 1手ずつ与える。値の積分（tick）を終えてから呼ぶ——動物が動くのは時間が経ったからで、
+   * そのtickの値が出そろった後になる（WorldSession.runTick）。
+   *
+   * **配る前に集める。** 手番は物を増減させ、逃げれば別の枝へ移るので、走査しながら配ると同じ個体へ
+   * 二度回りうる。集めてから配れば、1 tickに1手だけになる。
+   */
+  runTickActions(): void {
+    const pending: WorldObject[] = [];
+    this.collectTickActors(pending);
+
+    for (const actor of pending) {
+      // 手番の途中で消えた個体は飛ばす——世界から外れると、辿り着く根が変わる。
+      if (actor.findRoot() !== this) continue;
+      for (const trigger of actor.def.tickTriggers) new Action(trigger, actor, undefined).tryExecute();
+    }
+  }
+
+  private collectTickActors(into: WorldObject[]): void {
+    if (this.def.tickTriggers.length > 0) into.push(this);
+    for (const slot of this.slots) {
+      for (const child of [...slot.contents]) child.collectTickActors(into);
+    }
+  }
+
   // ---- 能動効果とspawn（9.2〜9.4節） ----
 
   /**
@@ -773,25 +799,21 @@ export class WorldObject {
    * spawn（9.4節）を実行する。intoへの配置に失敗した場合は起点自身の親へこぼれ、そこも受け取らなければ
    * さらに上へ遡る（place・spillTo参照）。どこにも入らなければ、生成したオブジェクトはそのまま消える。
    */
-  executeSpawn(
-    effect: SpawnEffect,
-    actor: WorldObject | undefined,
-    effectSite: EffectSite | undefined,
-  ): void {
+  executeSpawn(effect: SpawnEffect, context: ReferenceContext, effectSite: EffectSite | undefined): void {
     const spawned = this.session.spawn(effect.objectGlobalId);
-    this.place(spawned, effect.into, actor, effect.into === 'same_slot' ? effectSite : undefined);
+    this.place(spawned, effect.into, context, effect.into === 'same_slot' ? effectSite : undefined);
   }
 
   /**
    * spawnした側は配置先のスロット名を書かない。same_slotなら捕捉しておいた位置へ配置する
-   * （EffectSite.placeReplacementへ委ねる）。self/actor/childなら対象のスロットを宣言順に走査し、最初に配置できた
+   * （EffectSite.placeReplacementへ委ねる）。self/actor/picked/childなら対象のスロットを宣言順に走査し、最初に配置できた
    * スロットへ入れる。**配置に失敗した場合は起点自身の親へこぼれ、そこも受け取らなければさらに上へ**
    * （spillTo）。どこにも入らなければ、生まれた物はそのまま失われる。
    */
   private place(
     spawned: WorldObject,
     into: SpawnTargetRoot,
-    actor: WorldObject | undefined,
+    context: ReferenceContext,
     site: EffectSite | undefined,
   ): void {
     let primaryTarget: WorldObject;
@@ -806,7 +828,7 @@ export class WorldObject {
       primaryTarget = this; // eslint-disable-line @typescript-eslint/no-this-alias -- 伝播先の起点として使うだけ
       placed = this.tryFirstAcceptingChild(spawned);
     } else {
-      const target = into === 'self' ? this : actor;
+      const target = context.objectAt(into);
       if (target === undefined) return;
       primaryTarget = target;
       placed = spawned.moveIntoFirstAcceptingSlot(primaryTarget);

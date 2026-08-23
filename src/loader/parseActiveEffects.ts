@@ -16,7 +16,7 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { built, parseNumberLiteral, parseScalarNumber } from './parseCommon';
+import { built, parseNumberLiteral, parseScalarNumber, parseTypeMatchRule } from './parseCommon';
 import { parseSubjectRoot, requireResolvable } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
@@ -34,6 +34,7 @@ import type { ActiveEffect, SpawnTargetRoot } from '../domain/ActiveEffect';
 import { BecomeEffect } from '../domain/BecomeEffect';
 import { MoveEffect } from '../domain/MoveEffect';
 import { ObjectRef } from '../domain/ObjectRef';
+import { AmongSpec } from '../domain/AmongSpec';
 import { PickCandidateDef, PickEffect } from '../domain/PickEffect';
 import { WeightSpec } from '../domain/WeightSpec';
 import { SignalEffect } from '../domain/SignalEffect';
@@ -100,7 +101,7 @@ export function parseActiveEffectBody(
 }
 
 /** pick候補が持つ、効果以外の兄弟キー。 */
-const PICK_CANDIDATE_RESERVED_KEYS = ['weight'] as const;
+const PICK_CANDIDATE_RESERVED_KEYS = ['weight', 'among'] as const;
 
 /** pick（10節）の候補リストを読む。候補の中身は9節の命令と同じで、さらにpickを入れ子にできる。 */
 function parsePickList(
@@ -119,13 +120,66 @@ function parsePickList(
     if (weightNode === undefined) throw new YamlLoadError(`${candidateContext}: 'weight'は必須です。`);
     const weight = parseWeight(loader, candidateContext, weightNode, scope);
 
-    // weightだけの候補は「選ばれても何も起きない回」（外した回・寄って来なかった回）を表す。
-    const effect = parseActiveEffectBody(loader, candidateContext, map, scope, PICK_CANDIDATE_RESERVED_KEYS);
+    // amongを書いた候補の中だけがpickedを指せる（10.3節）。重みも効果も同じ場所として読む。
+    const amongNode = tryGetMap(map, 'among', candidateContext);
+    const among =
+      amongNode === undefined ? undefined : parseAmong(loader, candidateContext, amongNode, scope);
+    const bodyScope = among === undefined ? scope : scope.picking;
 
-    result.push(new PickCandidateDef(weight, effect));
+    // weightだけの候補は「選ばれても何も起きない回」（外した回・寄って来なかった回）を表す。
+    const effect = parseActiveEffectBody(
+      loader,
+      candidateContext,
+      map,
+      bodyScope,
+      PICK_CANDIDATE_RESERVED_KEYS,
+    );
+
+    result.push(new PickCandidateDef(weight, effect, among));
   }
 
   return result;
+}
+
+/** `among`が持てるキー。 */
+const AMONG_KEYS = ['subject', 'slot', 'matches', 'weight'] as const;
+
+/**
+ * `among: {subject, slot, matches, weight}`（10.3節）を読む。集合の指し方は条件の
+ * `{subject, slot, matches}`（14.4節）と同じで、足しているのは候補ごとの重みだけ。
+ *
+ * **重みの参照は候補自身を指す**ので `{subject: picked, prop: ...}` と書く——`subject`の既定が
+ * `self`である規則はここでも変えない。
+ */
+function parseAmong(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YAMLMap,
+  scope: ReferenceScope,
+): AmongSpec {
+  const amongContext = `${context}.among`;
+  requireKnownKeys(node, AMONG_KEYS, amongContext);
+
+  const subjectName = tryGetScalar(node, 'subject', amongContext);
+  const root =
+    subjectName === undefined
+      ? 'self'
+      : parseSubjectRoot(amongContext, subjectName, scope.objectOnly.picking);
+
+  const slotName = tryGetScalar(node, 'slot', amongContext);
+  if (slotName === undefined) throw new YamlLoadError(`${amongContext}: 'slot'は必須です。`);
+
+  const matchNode = tryGetMap(node, 'matches', amongContext);
+  const match =
+    matchNode === undefined ? undefined : parseTypeMatchRule(loader, `${amongContext}.matches`, matchNode);
+
+  const weightNode = tryGetNode(node, 'weight');
+  const weight =
+    weightNode === undefined
+      ? undefined
+      : parseWeight(loader, amongContext, weightNode, scope.picking, 'weight');
+
+  return new AmongSpec(root, loader.slotNames.intern(slotName), match, weight);
 }
 
 /**
@@ -381,6 +435,7 @@ const MOVE_KEYS = new Set(['subject', 'subject_prop', 'to', 'to_prop', 'to_objec
  *
  * `subject`はオブジェクトそのものを指すので、解決先を持つrootはその宣言が置かれた場所が決める
  * （ReferenceScope）。**動かす相手は1つに決まる必要がある**ので、childはどの場所でも指せない。
+ * `{subject: picked, prop: ...}`の形で、他の個体が持つインスタンスIDも指せる（ObjectRef）。
  */
 function parseMoveSubject(
   loader: WorldCodexYamlLoader,
@@ -388,17 +443,18 @@ function parseMoveSubject(
   map: YAMLMap,
   scope: ReferenceScope,
 ): ObjectRef {
-  const subject = tryGetScalar(map, 'subject', context);
+  const subjectNode = tryGetNode(map, 'subject');
   const subjectProp = tryGetScalar(map, 'subject_prop', context);
 
-  if ((subject === undefined) === (subjectProp === undefined))
+  if ((subjectNode === undefined) === (subjectProp === undefined))
     throw new YamlLoadError(
       `${context}: moveの動かす物はsubjectかsubject_propのどちらか一方で指定してください。`,
     );
 
-  if (subjectProp !== undefined) return ObjectRef.ofProperty(loader.propertyNames.intern(subjectProp));
+  if (subjectProp !== undefined)
+    return ObjectRef.ofProperty(new PropertyPath('self', loader.propertyNames.intern(subjectProp)));
 
-  return ObjectRef.ofRoot(parseObjectTargetRoot(`${context}.subject`, subject!, scope));
+  return parseObjectRef(loader, `${context}.subject`, subjectNode!, scope);
 }
 
 /**
@@ -413,20 +469,21 @@ function parseMoveDestination(
   map: YAMLMap,
   scope: ReferenceScope,
 ): ObjectRef {
-  const to = tryGetScalar(map, 'to', context);
+  const toNode = tryGetNode(map, 'to');
   const toProp = tryGetScalar(map, 'to_prop', context);
   const toObject = tryGetScalar(map, 'to_object', context);
 
-  const given = [to, toProp, toObject].filter((value) => value !== undefined);
+  const given = [toNode, toProp, toObject].filter((value) => value !== undefined);
   if (given.length !== 1)
     throw new YamlLoadError(
       `${context}: moveの移動先はto・to_prop・to_objectのどれか1つで指定してください。`,
     );
 
-  if (toProp !== undefined) return ObjectRef.ofProperty(loader.propertyNames.intern(toProp));
+  if (toProp !== undefined)
+    return ObjectRef.ofProperty(new PropertyPath('self', loader.propertyNames.intern(toProp)));
   if (toObject !== undefined) return ObjectRef.ofObjectDef(loader.objectNames.intern(toObject));
 
-  return ObjectRef.ofRoot(parseObjectTargetRoot(`${context}.to`, to!, scope));
+  return parseObjectRef(loader, `${context}.to`, toNode!, scope);
 }
 
 /** activeの対象キー。解決先を持つrootかどうかは、その宣言が置かれた場所が決める（ReferenceScope）。 */
@@ -437,6 +494,7 @@ function parseActiveTargetRoot(context: string, key: string, scope: ReferenceSco
     case 'ancestor':
     case 'actor':
     case 'dragged':
+    case 'picked':
     case 'child':
       return requireResolvable(context, key, scope);
     default:
@@ -477,7 +535,7 @@ function parseDestroyTargets(
 
 /**
  * オブジェクトそのものを1つ指す参照（ObjectRef）を読む。対象キー（`self`）か、インスタンスIDを
- * 持つプロパティ（`{prop: smash_target}`）のいずれか。
+ * 持つプロパティ（`{subject, prop}`、subject省略時はself）のいずれか。
  *
  * ancestorはプロパティ名が無いと解決先が決まらないため、オブジェクトを指す文脈では使えない。
  */
@@ -491,9 +549,11 @@ function parseObjectRef(
     return ObjectRef.ofRoot(parseObjectTargetRoot(context, asScalarText(node, context), scope));
 
   const propName = requireScalar(node, 'prop', context);
-  requireKnownKeys(node, ['prop'], context);
+  requireKnownKeys(node, ['subject', 'prop'], context);
 
-  return ObjectRef.ofProperty(loader.propertyNames.intern(propName));
+  const subjectName = tryGetScalar(node, 'subject', context);
+  const root = subjectName === undefined ? 'self' : parseSubjectRoot(context, subjectName, scope);
+  return ObjectRef.ofProperty(new PropertyPath(root, loader.propertyNames.intern(propName)));
 }
 
 /**
@@ -538,11 +598,13 @@ function parseSpawnTargetRoot(context: string, raw: string | undefined): SpawnTa
       return 'self';
     case 'actor':
       return 'actor';
+    case 'picked':
+      return 'picked';
     case 'child':
       return 'child';
     default:
       throw new YamlLoadError(
-        `${context}: spawn.intoは 'same_slot'/'self'/'actor'/'child' のいずれかである必要があります（値: '${raw}'）。`,
+        `${context}: spawn.intoは 'same_slot'/'self'/'actor'/'picked'/'child' のいずれかである必要があります（値: '${raw}'）。`,
       );
   }
 }

@@ -1,8 +1,6 @@
 import { ObjectWrapper } from './ObjectWrapper';
 import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
-import type { WorldSession } from '../WorldSession';
-import { Animal } from './Animal';
 import { Path } from './Path';
 
 /**
@@ -84,16 +82,6 @@ export class Location extends ObjectWrapper {
     return this.fixtures
       .filter((fixture) => fixture.def.hasTag(this.words.pathTagId))
       .map((fixture) => new Path(fixture, this.codex));
-  }
-
-  /**
-   * この土地に居る動物へ、1手ずつ与える（HuntingSystem.md 5.2節）。tickの後処理として呼ばれる
-   * （WorldSession.advanceWorldTime → World.runAnimalTurns）。
-   *
-   * 手番の途中で動物が居なくなりうる（逃げる・仕留められる）ため、列挙前にスナップショットを取る。
-   */
-  runAnimalTurns(session: WorldSession): void {
-    for (const item of [...this.items]) Animal.tryWrap(item, this.codex)?.takeTurn(this, session);
   }
 
   /**

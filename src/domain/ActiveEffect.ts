@@ -203,6 +203,8 @@ export type SpawnTargetRoot =
   | 'self'
   /** actor が持つスロットを宣言順に走査する。 */
   | 'actor'
+  /** `among`（10.3節）が選んだ相手が持つスロットを宣言順に走査する。 */
+  | 'picked'
   /**
    * selfの子を順に走査し、最初に受け取れた子のスロットへ入れる。intoが既に持つ「宣言順に走査して最初に
    * 配置できた所へ」という決め方が、1階層下へ伸びるだけ（docs/engine/TrapSystem.md 5.3節）。
@@ -236,8 +238,7 @@ export class SpawnEffect extends ActiveEffect {
   }
 
   apply(context: ReferenceContext, session: WorldSession, effectSite: EffectSite | undefined): void {
-    for (let i = 0; i < this.count; i++)
-      context.self?.executeSpawn(this, context.objectAt('actor'), effectSite);
+    for (let i = 0; i < this.count; i++) context.self?.executeSpawn(this, context, effectSite);
   }
 
   read(reader: EffectReader): void {

@@ -1,3 +1,4 @@
+import type { AmongReading } from './AmongSpec';
 import type { ObjectRefReading } from './ObjectRef';
 import type { ReferenceRoot } from './ReferenceRoot';
 
@@ -68,6 +69,14 @@ export interface PickCandidateReading {
 
   /** この候補が起こすこと。`read`でさらに読み下げる。 */
   readonly effect: EffectDeclaration;
+
+  /**
+   * 周りから相手を1つ選ぶ宣言（`among`、10.3節）。書いていなければundefined。
+   *
+   * **どれが選ばれるかは渡さない**——集合も重みも実行時の世界で決まるので、定義だけからは
+   * 「どこから、どういう絞り込みで、どんな重みで選ぶか」しか言えない。
+   */
+  readonly among: AmongReading | undefined;
 }
 
 /**

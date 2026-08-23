@@ -120,17 +120,6 @@ export class WorldRuleVocabulary {
   readonly charactersSlotId: number;
   readonly undiscoveredFixturesSlotId: number;
 
-  /** 動物の1手（HuntingSystem.md 5節）が候補と対象を書き込む先。何が起こるかはYAML側のpickが決める。 */
-  readonly nearbyCharactersId: number;
-  readonly lootablesId: number;
-  readonly lootTargetId: number;
-  readonly spoilsTargetId: number;
-  readonly smashablesId: number;
-  readonly smashTargetId: number;
-  readonly escapeRoutesId: number;
-  readonly fleeToId: number;
-  readonly spoilsSlotId: number;
-
   // ---- 種別を言うタグ ----
   readonly locationTagId: number;
   readonly characterTagId: number;
@@ -149,10 +138,6 @@ export class WorldRuleVocabulary {
   readonly liquidContainerTagId: number;
   readonly toolTagId: number;
 
-  /** 動物がぶつかる相手を選り分ける（HuntingSystem.md 5.4節）。獲物は避け、割れ物は狙う。 */
-  readonly quarryTagId: number;
-  readonly fragileTagId: number;
-
   /** 周回の終わりを読む（docs/concept/GameEndings.md）。本土へ渡り、持ち帰った秘宝を数える。 */
   readonly mainlandTagId: number;
   readonly artifactTagId: number;
@@ -160,7 +145,6 @@ export class WorldRuleVocabulary {
   // ---- 名前で指して実行するアクション（IDではなく名前で引く、ActionSystem.md 1節） ----
   readonly exploreAction = 'explore';
   readonly travelAction = 'travel';
-  readonly turnAction = 'turn';
 
   // ---- 名指しで引くオブジェクト型（IDはObjectDefTableの添字なのでinternできない） ----
   readonly worldObject = 'world';
@@ -192,16 +176,6 @@ export class WorldRuleVocabulary {
     this.charactersSlotId = slotNames.intern('characters');
     this.undiscoveredFixturesSlotId = slotNames.intern('undiscovered_fixtures');
 
-    this.nearbyCharactersId = propertyNames.intern('nearby_characters');
-    this.lootablesId = propertyNames.intern('lootables');
-    this.lootTargetId = propertyNames.intern('loot_target');
-    this.spoilsTargetId = propertyNames.intern('spoils_target');
-    this.smashablesId = propertyNames.intern('smashables');
-    this.smashTargetId = propertyNames.intern('smash_target');
-    this.escapeRoutesId = propertyNames.intern('escape_routes');
-    this.fleeToId = propertyNames.intern('flee_to');
-    this.spoilsSlotId = slotNames.intern('spoils');
-
     this.locationTagId = tagNames.intern('location');
     this.characterTagId = tagNames.intern('character');
     this.pathTagId = tagNames.intern('path');
@@ -213,8 +187,6 @@ export class WorldRuleVocabulary {
     this.containerTagId = tagNames.intern('container');
     this.liquidContainerTagId = tagNames.intern('liquid_container');
     this.toolTagId = tagNames.intern('tool');
-    this.quarryTagId = tagNames.intern('quarry');
-    this.fragileTagId = tagNames.intern('fragile');
 
     this.mainlandTagId = tagNames.intern('mainland');
     this.artifactTagId = tagNames.intern('artifact');

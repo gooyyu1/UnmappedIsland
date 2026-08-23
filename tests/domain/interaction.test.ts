@@ -177,7 +177,7 @@ object_defs:
 
   it('destroyの対象を、インスタンスIDを持つプロパティで指せる', () => {
     // 定義時点では決まらず実行時に確定する個体を消す形（動物がぶつかって壊す1手、
-    // docs/engine/HuntingSystem.md 5節）。指す先が居なければ何も起きない。
+    // 生成時に確定する個体を指す形（ExplorationSystem.md 3節）。指す先が居なければ何も起きない。
     const yaml = `
 object_defs:
   ground:
