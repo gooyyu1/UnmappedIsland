@@ -507,7 +507,8 @@ function placeBalances(
  *
  * 並びは宣言順にする。値で並べ替えると、数値を触るたびに行が入れ替わって差分が読めなくなる。
  * 対象から外すのは、手に入れるという言い方が成り立たないもの——土地・キャラクタ・世界（singleton）、
- * 単独で存在できない物（怪我・道）、レシピが自動生成する製作中オブジェクト。
+ * 単独で存在できない物（怪我・道）、レシピが自動生成する製作中オブジェクト、そして軸の値の型
+ * （axisValueGlobalIds参照）。
  */
 function objectCosts(
   codex: WorldCodex,
@@ -515,9 +516,10 @@ function objectCosts(
   surplusMinutes: number,
 ): readonly ObjectCost[] {
   const rows: ObjectCost[] = [];
+  const axisValues = axisValueGlobalIds(codex);
   for (const def of [...codex.objects]) {
     if (def.isSingleton || def.boundToOwner) continue;
-    if (codex.isGenerated(def)) continue;
+    if (codex.isGenerated(def) || axisValues.has(def.globalId)) continue;
     // 土地は生成されるもので、手に入れるものではない。**ただし作れる土地は対象**——筏は乗り込む
     // 場所であると同時に、丸太と縄から組み上げる物でもある。
     if (isLocation(codex, def) && !islandWide.producedObjects.has(def.globalId)) continue;
@@ -983,19 +985,39 @@ function explorableLocationsOf(codex: WorldCodex): readonly ObjectDef[] {
 }
 
 /**
+ * 軸の値としてしか現れない型（3.5節）。液体の種類（`water_liquid`）がこれで、**世界に現れるのは
+ * 中身入りの容器という変種のほう**——この型そのもののインスタンスは作られない。宣言している操作
+ * （`drink`）も、変種が受け取って初めて起こるもので、この型が持っていても誰も起こせない。
+ *
+ * 軸の値の識別子は生成器が決める名前だが、`variation_axes` の軸では値の型の名前そのもの
+ * （axisVariants）。レシピの軸の値はレシピ名なので、型として引けたものだけを見る。
+ */
+function axisValueGlobalIds(codex: WorldCodex): ReadonlySet<number> {
+  const ids = new Set<number>();
+  for (const def of codex.objects)
+    for (const value of codex.variationsOf(def).values()) {
+      const globalId = codex.objectNames.tryGetId(value);
+      if (globalId !== undefined && codex.objects.tryGet(globalId) !== undefined) ids.add(globalId);
+    }
+  return ids;
+}
+
+/**
  * 全型の全工程。宣言順（型のグローバルID順、型の中は宣言順）。プレイヤーが起こす工程に続けて、
- * 時間で回る工程（罠の判定）も並べる。
+ * 時間で回る工程（罠の判定）も並べる。軸の値の型は飛ばす（axisValueGlobalIds参照）。
  *
  * outerは、祖先（＝置かれている土地）が入れる値を解く手立て。罠が掛ける動物の重みは土地が
  * 宣言するので（`inherit`）、これが無いと候補が全部0になる。
  */
 function allSteps(codex: WorldCodex, outer?: StaticValueResolver): readonly StepRef[] {
   const defs = [...codex.objects];
+  const axisValues = axisValueGlobalIds(codex);
   return defs.flatMap((def) => {
+    if (axisValues.has(def.globalId)) return [];
     const cycles = rangeCyclesOf(def, outer, externalTickDeltasOn(def, defs));
     const lifetimeMinutes = decayLifetimeOf(cycles);
     return [
-      ...craftingStepsOf(def, outer).map((step) => ({ def, step, cycle: undefined })),
+      ...craftingStepsOf(codex, def, outer).map((step) => ({ def, step, cycle: undefined })),
       // 繰り返す周期は設備（罠）。1回で終わる周期は、外から押されて初めて起こる作り替え
       // （火にかけた肉が焼ける・失血した獲物が死体になる）。朽ちるだけの周期は工程ではない。
       ...cycles
