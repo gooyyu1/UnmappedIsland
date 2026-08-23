@@ -232,9 +232,9 @@ object_defs:
     expect(shown(codex, pain.received), '影響元が別々の個体なので畳まない').toEqual(['sprain▲', 'sprain▲']);
   });
 
-  it('中身の重さは、持続効果ではないが1件の影響として並ぶ', () => {
-    // ContainerSystem.md 2節: loadは中身から寄与を受ける。読むたびに導出される可逆な押し上げ
-    // なので、記号はmodifyと同じ（Windows.md 8.4節）。
+  it('担いだ物の重さは、その物自身を影響元として並ぶ', () => {
+    // ContainerSystem.md 2節: 中身の重さの伝播はエンジンが生やす`modify`（containerPropagation）
+    // なので、記号もmodifyと同じで、影響元は押し上げている当人になる（Windows.md 8.4節）。
     const codex = load(`
 object_defs:
   person:
@@ -253,15 +253,20 @@ object_defs:
     const session = new WorldSession(codex);
     const person = spawn(codex, 'person', session);
     const loadId = codex.propertyNames.getId('load');
+    const hand = person.getSlot(codex.slotNames.getId('hand'));
 
-    expect(shown(codex, person.readInfluences(loadId).received), '空身では押し上げていない').toEqual([
-      'load▲(休)',
-    ]);
+    expect(shown(codex, person.readInfluences(loadId).received), '空身では押し上げる物が居ない').toEqual([]);
 
     const stone = spawn(codex, 'stone', session);
-    expect(stone.moveToSlot(person.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+    expect(stone.moveToSlot(hand)).toBeUndefined();
+    expect(shown(codex, person.readInfluences(loadId).received), '担いだ石が影響元').toEqual(['stone▲']);
 
-    expect(shown(codex, person.readInfluences(loadId).received), '担げば効いている').toEqual(['load▲']);
+    const another = spawn(codex, 'stone', session);
+    expect(another.moveToSlot(hand)).toBeUndefined();
+    expect(shown(codex, person.readInfluences(loadId).received), '影響元が別々の個体なので畳まない').toEqual([
+      'stone▲',
+      'stone▲',
+    ]);
   });
 
   it('怪我が外れれば、その影響も一覧から消える', () => {

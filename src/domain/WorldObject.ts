@@ -631,59 +631,6 @@ export class WorldObject {
     else child.spillTo(this._parent);
   }
 
-  // ---- 中身から受ける寄与（ContainerSystem.md 1〜2節） ----
-
-  /**
-   * ContainerSystem.md 1〜2節: weight/load は実効値として読むたびに導出する。自分のプロパティのうち
-   * weight と load だけが、中身から寄与を受ける。
-   *
-   * - weight: 物の重さ。子の weight をそのまま足す（率はかけない）。量的オブジェクト（7.6節）は
-   *   自分の volume × density が自分の重さになる（mL × g/mL = g。換算定数は要らない）。
-   * - load: 担いだ人が感じる負荷。直接の子の weight に、その子の load_reduction_rate（率）を効かせた分だけ。
-   *
-   * 率をスロットではなく子（アイテム）が持つのは、同じ入れ物でも背負うか手に提げるかで体感が変わるため
-   * （ContainerSystem.md 2節）。
-   */
-  containerContributionTo(propertyGlobalId: number): number {
-    const engine = this.engine;
-    if (propertyGlobalId === engine.weightId) {
-      // 中身入りの変種は、抱えている量ぶんだけ自分が重い（fill × density = mL × g/mL = g）。
-      // 空の容器はfillを持たないので0になり、器の自重だけが残る。
-      let sum =
-        (this.tryGetProperty(engine.fillId)?.number ?? 0) *
-        (this.tryGetProperty(engine.densityId)?.number ?? 1);
-      for (const slot of this.slots) for (const child of slot.contents) sum += child.effectiveWeight();
-      return sum;
-    }
-
-    if (propertyGlobalId === engine.loadId) {
-      let sum = 0;
-      for (const slot of this.slots) {
-        for (const child of slot.contents) {
-          // 1で「まったく感じない」。1を超える宣言は0扱いにするが、負の値は通す——抱えにくい物を
-          // 「実際より重く感じる」向きへ書けるようにするため。
-          const rate = Math.min(
-            child.tryGetProperty(engine.loadReductionRateId)?.getEffectiveValue() ?? 0,
-            1,
-          );
-          sum += child.effectiveWeight() * (1 - rate);
-        }
-      }
-      return sum;
-    }
-
-    return 0;
-  }
-
-  /**
-   * 中身と、量的オブジェクトなら自分の量を含めた重さ。weightプロパティを宣言していないオブジェクトでも、
-   * 中身の重さは上へ伝わる（液体は volume × density が重さなので、weightを宣言する必要が無い）。
-   */
-  private effectiveWeight(): number {
-    const own = this.tryGetProperty(this.engine.weightId);
-    return own !== undefined ? own.getEffectiveValue() : this.containerContributionTo(this.engine.weightId);
-  }
-
   // ---- 影響の読み取り（Windows.md 8節） ----
 
   /**
@@ -698,31 +645,7 @@ export class WorldObject {
     this.collectInfluencesRecursively(influences);
     for (let ancestor = this._parent; ancestor !== undefined; ancestor = ancestor._parent)
       ancestor.def.passives.collectInfluences(ancestor, influences);
-    this.collectContainerInfluence(propertyGlobalId, influences);
     return influences;
-  }
-
-  /**
-   * 中身から受ける寄与（weight/load、ContainerSystem.md 1〜2節）を1本の辺として書き出す。
-   *
-   * 持続効果ではないが、**読むたびに導出される可逆な押し上げ**なので modify と同じ形になる。
-   * 中身1つずつではなく1本にまとめるのは、担いでいる物の数だけ辺が増えても、読み手が知りたい
-   * 「何がこの値を押し上げているか」の答えは「中身」の1つだからで、宣言元は自分自身になる。
-   */
-  private collectContainerInfluence(propertyGlobalId: number, out: InfluenceWriter): void {
-    const { weightId, loadId } = this.engine;
-    if (propertyGlobalId !== weightId && propertyGlobalId !== loadId) return;
-
-    out.write({
-      causeObject: this,
-      causePropertyGlobalId: undefined,
-      target: this,
-      targetPropertyGlobalId: propertyGlobalId,
-      reversible: true,
-      increases: true,
-      // 空身なら押し上げていない（条件が成立していない効果と同じ扱いで、薄く記号無しになる）。
-      active: this.containerContributionTo(propertyGlobalId) !== 0,
-    });
   }
 
   /** 自分と、自分の中に入っている物すべてが宣言する持続効果の辺を書き出す。 */

@@ -31,11 +31,11 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 1000}
-      load_reduction_rate:
-        value: 0
+      load_rate:
+        value: 1
         passives:
           - conditions: [{in_slot: hand}]
-            modify: {self: {load_reduction_rate: 0.9}}
+            modify: {self: {load_rate: -0.9}}
     slots:
       cargo:
         cell: {accept: {tag: item}}
@@ -45,11 +45,11 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 15000}
-      load_reduction_rate:
-        value: 0
+      load_rate:
+        value: 1
         passives:
           - conditions: [{in_slot: hand}]
-            modify: {self: {load_reduction_rate: 0.95}}
+            modify: {self: {load_rate: -0.95}}
     slots:
       cargo:
         cell: {accept: {tag: item}}
@@ -59,11 +59,11 @@ object_defs:
     tags: [item]
     props:
       weight: {value: 500}
-      load_reduction_rate:
-        value: 0
+      load_rate:
+        value: 1
         passives:
           - conditions: [{in_slot: equipment}]
-            modify: {self: {load_reduction_rate: 0.5}}
+            modify: {self: {load_rate: -0.5}}
     slots:
       contents:
         cell: {accept: {tag: item}}
@@ -72,6 +72,8 @@ object_defs:
   water:
     tags: [item]
     props:
+      # 量そのものが重さなので、器としての自重は持たない（fill × density が載る先）。
+      weight: {value: 0}
       fill: {value: 0}
       density: {value: 1}
 `;
@@ -117,10 +119,7 @@ object_defs:
 
     expect(sledge.tryGetProperty(weightId)?.getEffectiveValue() ?? 0).toBe(1100);
     expect(character.tryGetProperty(weightId)?.getEffectiveValue() ?? 0, '自重70000 + そり1100').toBe(71100);
-    expect(character.tryGetProperty(loadId)?.getEffectiveValue() ?? 0, '1100 × (1 - 0.9)').toBeCloseTo(
-      110,
-      6,
-    );
+    expect(character.tryGetProperty(loadId)?.getEffectiveValue() ?? 0, '1100 × 0.1').toBeCloseTo(110, 6);
   });
 
   it('そりを台車に積むと、台車の重さはそりの重さをそのまま加えたものになる', () => {
@@ -134,11 +133,11 @@ object_defs:
 
     expect(
       cart.tryGetProperty(weightId)?.getEffectiveValue() ?? 0,
-      '自重15000 + そり1100。そりの軽減率は効かない',
+      '自重15000 + そり1100。そりの体感率は効かない',
     ).toBe(16100);
     expect(
       character.tryGetProperty(loadId)?.getEffectiveValue() ?? 0,
-      '効くのは引いている台車の率だけ: 16100 × (1 - 0.95)',
+      '効くのは引いている台車の率だけ: 16100 × 0.05',
     ).toBeCloseTo(805, 6);
   });
 

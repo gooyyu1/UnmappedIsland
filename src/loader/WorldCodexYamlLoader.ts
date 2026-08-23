@@ -12,7 +12,7 @@ import { buildGenerationDefs, loadGenerationSections, resetGeneration } from './
 import { NameRegistry } from '../domain/NameRegistry';
 import type { ObjectDef } from '../domain/ObjectDef';
 import { ObjectDefTable } from '../domain/ObjectDef';
-import { WorldVocabulary } from '../domain/WorldVocabulary';
+import { EngineVocabulary, WorldVocabulary } from '../domain/WorldVocabulary';
 import { IN_PROGRESS_SOURCE, inProgressObjectsYaml } from './inProgressObjects';
 import type { GeneratedObjectDefs } from './generatedObjectDefs';
 import { GeneratedTypes } from '../domain/GeneratedTypes';
@@ -61,6 +61,17 @@ export class WorldCodexYamlLoader {
   private _tagNames = new NameRegistry();
   private _propertyTagNames = new NameRegistry();
   private _symbolNames = new NameRegistry();
+
+  /**
+   * エンジンが規約として直接読み書きする単語（EngineVocabulary）。**世界を組み立てる前から要る**
+   * ——中身の重さの伝播（containerPropagation）を型へ生やすのに、resolveの時点でIDが要るため。
+   * どんなYAMLを載せても変わらないので、著者の宣言を1つも見ずに作れる。
+   */
+  private _engine = new EngineVocabulary(this._propertyNames, this._slotNames);
+
+  get engine(): EngineVocabulary {
+    return this._engine;
+  }
 
   /** 6種の名前空間（object/property/slot/tag/property_tag/symbol）のNameRegistry。 */
   get objectNames(): NameRegistry {
@@ -274,6 +285,7 @@ export class WorldCodexYamlLoader {
     this._tagNames = new NameRegistry();
     this._propertyTagNames = new NameRegistry();
     this._symbolNames = new NameRegistry();
+    this._engine = new EngineVocabulary(this._propertyNames, this._slotNames);
   }
 }
 

@@ -1,3 +1,4 @@
+import type { AmountReading } from './PassiveAmount';
 import type { ConditionNode } from './ConditionNode';
 import type { TransferReading } from './EffectReader';
 import type { ReferenceRoot } from './ReferenceRoot';
@@ -24,7 +25,7 @@ export interface PassiveReader {
 export interface PassivePropertyReading {
   readonly target: ReferenceRoot;
   readonly propertyGlobalId: number;
-  readonly amount: number;
+  readonly amount: AmountReading;
   readonly gate: GateReading;
 }
 

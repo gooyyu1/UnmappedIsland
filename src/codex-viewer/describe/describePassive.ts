@@ -22,6 +22,32 @@ export function describePassive(
   declaration.read(new PassiveDescriber(names, out));
 }
 
+/**
+ * 寄与の1行。量が定数なら`+40`、宣言元自身のプロパティの積（PassiveAmount）なら
+ * `重さ × 体感率 ぶん`と書く。
+ */
+function amountTokens(
+  reading: PassivePropertyReading,
+  verb: string,
+  names: DefNames,
+): readonly DescriptionToken[] {
+  if (reading.amount.kind === 'fixed')
+    return addTokens(reading.target, reading.propertyGlobalId, reading.amount.value, verb, names);
+
+  const factors: DescriptionToken[] = [];
+  for (const globalId of reading.amount.factorPropertyGlobalIds) {
+    if (factors.length > 0) factors.push(text(' × '));
+    factors.push(propertyRef(names.propertyName(globalId)));
+  }
+  return [
+    text(`${verb} `),
+    propertyRef(names.propertyName(reading.propertyGlobalId), reading.target),
+    text(' '),
+    ...factors,
+    text(' ぶん'),
+  ];
+}
+
 /** ゲートの書き表し。常時有効なら空（条件が無いことを書き足さない）。 */
 function gateTokens(gate: GateReading, names: DefNames): readonly DescriptionToken[] {
   const tokens: DescriptionToken[] = [];
@@ -69,7 +95,7 @@ class PassiveDescriber implements PassiveReader {
   }
 
   private writeProperty(reading: PassivePropertyReading, verb: string): void {
-    const tokens = [...addTokens(reading.target, reading.propertyGlobalId, reading.amount, verb, this.names)];
+    const tokens = [...amountTokens(reading, verb, this.names)];
     const gate = gateTokens(reading.gate, this.names);
     if (gate.length > 0) tokens.push(text('（'), ...gate, text('間）'));
     this.out.write(...tokens);

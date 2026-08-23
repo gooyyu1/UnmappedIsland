@@ -554,6 +554,34 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/inherit/);
   });
 
+  it('fillを宣言する型がweightを持たないとエラーになる', () => {
+    // 抱えている量の重さ（fill × density）を載せる先が要る（ContainerSystem.md 1節）。
+    const yaml = `
+object_defs:
+  puddle:
+    props:
+      fill: {value: 100}
+      density: {value: 1}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/weight/);
+  });
+
+  it('weightにon_maxを書くとエラーになる（中身の伝播がmodifyだから）', () => {
+    // 伝播はエンジンが生やすmodify（containerPropagation）なので、modifyされるプロパティに
+    // 端のイベントを書けないという一般の規則がそのまま効く（6.3節）。
+    const yaml = `
+object_defs:
+  crate:
+    props:
+      weight:
+        value: 0
+        range: {min: 0, max: 100}
+        on_max:
+          destroy: self
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_max/);
+  });
+
   it('required_propsが要求するプロパティを持たない型はエラーになる', () => {
     // タグを名乗った以上、そのタグに要る値は揃っているはず（GameElementDefinition.md 4.2節）。
     const yaml = `

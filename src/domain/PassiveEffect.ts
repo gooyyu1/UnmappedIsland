@@ -8,6 +8,7 @@ import type { InfluenceWriter } from './PropertyInfluence';
 import type { ReferenceRoot } from './ReferenceRoot';
 import { ReferenceContext } from './ReferenceRoot';
 import type { PropertyPath } from './ReferenceRoot';
+import type { PassiveAmount } from './PassiveAmount';
 
 /**
  * 効果の発動条件。判別子は持たず、各フィールドの有無が「何をチェックすべきか」を表す
@@ -118,10 +119,10 @@ export abstract class PassiveEffect {
  */
 export abstract class PropertyPassiveEffect extends PassiveEffect {
   private readonly target: PropertyPath;
-  private readonly amount: number;
+  private readonly amount: PassiveAmount;
   private readonly gate: PassiveEffectGate;
 
-  constructor(target: PropertyPath, amount: number, gate: PassiveEffectGate) {
+  constructor(target: PropertyPath, amount: PassiveAmount, gate: PassiveEffectGate) {
     super();
     this.target = target;
     this.amount = amount;
@@ -149,7 +150,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
         target,
         targetPropertyGlobalId: this.target.propertyGlobalId,
         reversible: this.reversible,
-        increases: this.amount >= 0,
+        increases: this.amount.of(declarer) >= 0,
         active: this.gate.isSatisfied(declarer, slotBearer),
       });
     }
@@ -160,7 +161,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
     return {
       target: this.target.root,
       propertyGlobalId: this.target.propertyGlobalId,
-      amount: this.amount,
+      amount: this.amount.reading,
       gate: this.gate.reading,
     };
   }
@@ -168,7 +169,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
   /** declarer/slotBearerの現在の文脈でゲート（8.2節）が有効ならamountを、無効なら0を返す。
    * modifyでもaddでも同じ量。 */
   activeAmount(declarer: WorldObject, slotBearer: WorldObject): number {
-    return this.gate.isSatisfied(declarer, slotBearer) ? this.amount : 0;
+    return this.gate.isSatisfied(declarer, slotBearer) ? this.amount.of(declarer) : 0;
   }
 
   /**
