@@ -969,12 +969,9 @@ function scaleCost(cost: Cost, factor: number): Cost {
   return { exploreMinutes: cost.exploreMinutes * factor, craftMinutes: cost.craftMinutes * factor };
 }
 
-/**
- * 立って作業できる土地か。**製作中オブジェクトは除く**——完成品のタグを引き継ぐ（RecipeSystem.md
- * 5節）ので、作りかけの筏まで土地として並んでしまう。
- */
+/** 立って作業できる土地か。 */
 function isLocation(codex: WorldCodex, def: ObjectDef): boolean {
-  return def.hasTag(codex.vocabulary.world.locationTagId) && !def.isInProgress;
+  return def.hasTag(codex.vocabulary.world.locationTagId);
 }
 
 /** プレイヤーが操作するキャラクタか（休息のように自分の値を自分で戻す工程の宣言元）。 */

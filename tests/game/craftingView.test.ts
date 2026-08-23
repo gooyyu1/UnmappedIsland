@@ -15,6 +15,7 @@ import { miniGame } from '../support/miniGame';
 describe('製作中オブジェクトの操作と材料の枠', () => {
   /** 葉6枚を120分編むと籠になる、1工程だけのレシピ。 */
   const WORLD = `
+in_progress_tags: [item]
 object_defs:
   leaf: {tags: [item]}
   basket:
@@ -123,6 +124,7 @@ object_defs:
 
   it('後の工程が要求する型も枠を持つが、今の工程のものとは区別する', () => {
     const mini = miniGame(`
+in_progress_tags: [item]
 object_defs:
   post: {tags: [item]}
   leaf: {tags: [item]}

@@ -46,6 +46,7 @@ const NAME_SEPARATOR = '__';
  */
 export function inProgressObjectsYaml(
   defs: readonly ObjectDef[],
+  inheritedTagIds: ReadonlySet<number>,
   tagNames: NameRegistry,
   objectNames: NameRegistry,
   propertyNames: NameRegistry,
@@ -56,7 +57,14 @@ export function inProgressObjectsYaml(
   for (const def of defs)
     for (const recipe of def.recipesProducingThis) {
       const name = inProgressObjectName(def.name, recipe.name);
-      objectDefs[name] = inProgressObjectDef(def, recipe, tagNames, objectNames, propertyNames);
+      objectDefs[name] = inProgressObjectDef(
+        def,
+        recipe,
+        inheritedTagIds,
+        tagNames,
+        objectNames,
+        propertyNames,
+      );
       // 素の型は完成品で、軸`recipe`の値がレシピの名前（GameElementDefinition.md 3.5節）。
       coordinates.set(name, {
         baseGlobalId: def.globalId,
@@ -71,6 +79,7 @@ export function inProgressObjectsYaml(
 function inProgressObjectDef(
   product: ObjectDef,
   recipe: ObjectDef['recipesProducingThis'][number],
+  inheritedTagIds: ReadonlySet<number>,
   tagNames: NameRegistry,
   objectNames: NameRegistry,
   propertyNames: NameRegistry,
@@ -78,9 +87,12 @@ function inProgressObjectDef(
   const totalMinutes = recipe.steps.reduce((sum, step) => sum + step.durationMinutes, 0);
 
   return {
-    // 完成品のタグを引き継ぐ（RecipeSystem.md 5節）。枠のacceptがタグで書かれている場所へ、
-    // 完成させる前に置けるようにするため。機能しているかの判定はwipタグで除外する。
-    tags: [...product.tags.map((id) => tagNames.getName(id)), IN_PROGRESS_TAG],
+    // 完成品から引き継ぐのは、**置き場所を言うタグ**（in_progress_tags）だけ（RecipeSystem.md 5節）。
+    // 働きを言うタグまで引き継ぐと、作りかけの斧が刃物の枠にも操作の相手にも当てはまってしまう。
+    tags: [
+      ...product.tags.filter((id) => inheritedTagIds.has(id)).map((id) => tagNames.getName(id)),
+      IN_PROGRESS_TAG,
+    ],
     // 個体ごとに進捗も中身も違うので束ねない（SlotSystem.md 4節）。
     stackable: false,
     // カードを押したとき、材料スロットの中身をレーンに並べる（7.8節）。

@@ -189,6 +189,19 @@ describe('pottery.yamlの土器の連鎖', () => {
     ).toBeDefined();
   });
 
+  it('捏ねかけの壺は、焼く枠へ入らない', () => {
+    // 作りかけが引き継ぐのは置き場所を言うタグだけ（RecipeSystem.md 5節）で、potteryは名乗らない。
+    // 名乗れば、まだ形になっていないものが窯へ入って甕になれてしまう。
+    const kiln = spawnInto('earth_kiln', land, 'fixtures');
+    const wip = spawnInProgressObject(
+      session,
+      land,
+      codex.objectNames.getId(inProgressObjectName('unfired_jar', 'coiled')),
+    );
+
+    expect(wip.moveToSlotOrRejection(kiln.getSlot(codex.slotNames.getId('fire')))).toBeDefined();
+  });
+
   it('石囲いの炉では土器を焼けない', () => {
     const hearth = spawnInto('stone_hearth', land, 'fixtures');
     const greenware = spawnInto('unfired_jar', land, 'items');

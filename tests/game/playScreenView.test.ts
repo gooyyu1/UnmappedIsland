@@ -26,6 +26,7 @@ describe('PlayScreenView(ゲーム状態から画面の表示内容を作る)', 
   );
 
   const WORLD = `
+in_progress_tags: [item]
 object_defs:
   stone:
     tags: [item]

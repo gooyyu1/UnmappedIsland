@@ -29,6 +29,11 @@ required_props:
   # 担いだ物の重さを受け取る口（同2節）。担ぐのはキャラクタだけ。
   character: [load]
 
+# 製作中オブジェクトが完成品から引き継ぐタグ（docs/engine/RecipeSystem.md 5節）。挙げてよいのは
+# **どこに置けるかを言うタグ**だけで、何ができるかを言うタグ（tool・weapon・sail・pottery）は
+# 挙げない——作りかけはまだその物ではないので、道具の枠にも操作の相手にも当てはまってはいけない。
+in_progress_tags: [item, fixture]
+
 traits:
   # あらゆる「場所」が探索の可否によらず共通して持つ構造（ExplorationSystem.md参照）。
   # worldのlocationsスロットの受け入れ判定用のタグ（GameElementDefinition.md 4.1節・7.2節）もこのtraitが配る。

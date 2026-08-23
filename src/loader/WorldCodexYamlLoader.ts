@@ -55,6 +55,12 @@ export class WorldCodexYamlLoader {
   /** タグが宣言を義務づけるプロパティ（required_props、4.2節）。タグID → プロパティIDの並び。 */
   private requiredPropsByTag = new Map<number, number[]>();
 
+  /**
+   * 製作中オブジェクトが完成品から引き継ぐタグ（in_progress_tags、RecipeSystem.md 5節）。
+   * 引き継ぐかどうかを問うだけなので、並び順は持たない。
+   */
+  private inProgressTagIds = new Set<number>();
+
   private _objectNames = new NameRegistry();
   private _propertyNames = new NameRegistry();
   private _slotNames = new NameRegistry();
@@ -139,6 +145,13 @@ export class WorldCodexYamlLoader {
         this.requiredPropsByTag.set(tagId, required);
       }
 
+    // 製作中オブジェクトが完成品から引き継ぐタグ（RecipeSystem.md 5節）。既にあるタグを挙げるだけ
+    // なので、複数のファイルが同じタグを挙げても書き間違いではない（パックが自分の置き場所を足す）。
+    const inProgressTags = tryGetSeq(root, 'in_progress_tags', label);
+    if (inProgressTags !== undefined)
+      for (const node of inProgressTags.items as YamlNode[])
+        this.inProgressTagIds.add(this._tagNames.intern(asScalarText(node, `${label}.in_progress_tags`)));
+
     const objectDefs = tryGetMap(root, 'object_defs', label);
     if (objectDefs !== undefined)
       for (const [name, node] of entriesInOrder(objectDefs))
@@ -197,6 +210,7 @@ export class WorldCodexYamlLoader {
       IN_PROGRESS_SOURCE,
       inProgressObjectsYaml(
         [...objectDefsByGlobalId.values()],
+        this.inProgressTagIds,
         this.tagNames,
         this.objectNames,
         this.propertyNames,
@@ -279,6 +293,7 @@ export class WorldCodexYamlLoader {
     this.patches = [];
     this.recipeCategoryTagIdsByPriority = [];
     this.requiredPropsByTag = new Map();
+    this.inProgressTagIds = new Set();
     resetGeneration(this);
     this._objectNames = new NameRegistry();
     this._propertyNames = new NameRegistry();

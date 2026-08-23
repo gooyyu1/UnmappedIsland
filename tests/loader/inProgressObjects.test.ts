@@ -10,6 +10,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
  */
 describe('製作中オブジェクトの自動生成', () => {
   const AXE = `
+in_progress_tags: [item]
 object_defs:
   ground:
     slots:
@@ -35,15 +36,24 @@ object_defs:
 
   const load = (yaml: string) => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
 
-  it('レシピごとに1つ生成され、完成品のタグとwipを持つ', () => {
+  it('レシピごとに1つ生成され、置き場所のタグとwipだけを持つ', () => {
     const codex = load(AXE);
     const def = codex.objects.get(codex.objectNames.getId(inProgressObjectName('axe', 'basic')));
 
     const tagNames = def.tags.map((id) => codex.tagNames.getName(id));
-    expect(tagNames, '完成品のタグを引き継ぐ（枠のacceptを通るため）').toContain('item');
-    expect(tagNames).toContain('tool');
-    expect(tagNames, '機能判定で除外できるようwipが付く').toContain('wip');
+    expect(tagNames, 'in_progress_tagsのタグは引き継ぐ（枠のacceptを通るため）').toContain('item');
+    expect(tagNames, '働きを言うタグは引き継がない').not.toContain('tool');
+    expect(tagNames, '作りかけであることの印').toContain('wip');
     expect(def.stackable, '進捗も中身も個体ごとに違うので束ねない').toBe(false);
+  });
+
+  it('in_progress_tagsを宣言しない世界では、どのタグも引き継がない', () => {
+    // 引き継ぐタグは**その世界が挙げる**（RecipeSystem.md 5節）。挙げていない世界で勝手に引き継ぐと、
+    // 置き場所を言うタグと働きを言うタグの区別が付かないまま全部が付く。
+    const codex = load(AXE.replace('in_progress_tags: [item]\n', ''));
+    const def = codex.objects.get(codex.objectNames.getId(inProgressObjectName('axe', 'basic')));
+
+    expect(def.tags.map((id) => codex.tagNames.getName(id))).toEqual(['wip']);
   });
 
   it('重さは0で、かさは完成品のものを写す', () => {
