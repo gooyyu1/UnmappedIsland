@@ -76,6 +76,11 @@ npm run stats:balance
   重み）ので、重ねる相手を決めないと配分が決まらない。ここでは**その値を最も高く宣言して
   いる型を重ねた**として読むため、配分は「分岐ごとに最も良い武器を選べる場合」のものになる
   ——1本の武器では出ない配分で、仕留めの確率は実際より低く出る。
+- **実行時にしか決まらない条件。** 起こりえない工程は立てないが、偽と判定できるのは
+  `subject: self` のプロパティが**その型の取りうる範囲**（`range`。端に達した瞬間に
+  その型でなくなるなら、その端を除く）から外れる条件だけ。祖先の天候・重ねる相手・
+  スロットの中身を見る条件は真偽を決めずに素通しするので、それだけで弾かれる操作は
+  工程として残る。
 
 ### 何を「1日に要る量」と数えるか
 
@@ -886,26 +891,20 @@ npm run stats:balance
 | rawhide_sail | sewn | recipe | 420 | 420 | rawhide_sail ×1.00 | — |
 | palm_frond | weave | interaction | 90 | 90 | woven_leaf ×1.00 | — |
 | palm_frond | split_and_weave | interaction | 60 | 60 | woven_leaf ×2.00 | — |
-| jar__content_water_liquid | collect_rain | interaction | 0 | 0 | jar__content_water_liquid ×1.00 | — |
 | jar__content_water_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | jar__content_water_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 | jar__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
-| jar__content_tea_liquid | collect_rain | interaction | 0 | 0 | jar__content_water_liquid ×1.00 | — |
 | jar__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | jar__content_tea_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 | jar__content_tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
-| jar__content_oil_liquid | collect_rain | interaction | 0 | 0 | jar__content_water_liquid ×1.00 | — |
 | jar__content_oil_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | jar__content_oil_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| coconut_bowl__content_water_liquid | collect_rain | interaction | 0 | 0 | coconut_bowl__content_water_liquid ×1.00 | — |
 | coconut_bowl__content_water_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | coconut_bowl__content_water_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 | coconut_bowl__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
-| coconut_bowl__content_tea_liquid | collect_rain | interaction | 0 | 0 | coconut_bowl__content_water_liquid ×1.00 | — |
 | coconut_bowl__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | coconut_bowl__content_tea_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 | coconut_bowl__content_tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
-| coconut_bowl__content_oil_liquid | collect_rain | interaction | 0 | 0 | coconut_bowl__content_water_liquid ×1.00 | — |
 | coconut_bowl__content_oil_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | coconut_bowl__content_oil_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 
