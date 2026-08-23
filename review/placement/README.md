@@ -68,6 +68,7 @@
 | [`Phase0.md`](./Phase0.md) | **段0の決定案。** 未合意。4件のうち2件は新しい概念が要らないという結論 |
 | [`Plan.md`](./Plan.md) | **進め方の提案。** 段0〜段4の順序、並列できるレーン、各段の検証 |
 | [`Candidates.md`](./Candidates.md) | **リファクタリングに使うのはこれ。** 判定4・5を打ち手の単位でまとめ直したもの |
+| [`PickAmong.md`](./PickAmong.md) | **A-13 の設計案。** 未合意。周りの物を候補にする `pick`（エンジンの機能追加になるので、他のレーンと分けた） |
 | [`Architecture.md`](./Architecture.md) | `docs/engine/Layers.md` との突き合わせ。方針を優先して捨てた指摘と、方針側へ返すべき指摘 |
 | [`Helpers.md`](./Helpers.md) | 判定3の再点検。「B の機能が足りないから A が private ヘルパーで補っている」もの。private ヘルパー671本のうち **320本は主語が自クラスではなかった** |
 | [`CrossCutting.md`](./CrossCutting.md) | 横断チェック。テスト専用の公開、未参照の export、同じ概念の分散、名前の衝突 |

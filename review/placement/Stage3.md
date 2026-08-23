@@ -517,3 +517,49 @@ private の `mainland` を抱えていた。**この4つはキャラクタの性
 
 `render` は**引数が足りなければ undefined**を返し、`main.ts` がそれを「見つかりません」に倒す。
 旧実装の `route === 'object' && first !== undefined` という条件が、ページ側の1箇所へ移った形。
+
+## 18. 段4 レーンA-7（実体化された島）——保留。問題の中身
+
+**着手していない。** ここに書くのは「何が問題か」だけで、直し方は決めていない。
+
+`IslandMap`（`src/domain/generation/IslandMap.ts`）の doc は自分をこう名乗っている:
+
+> 地形生成の結果（サイト・型・命名・パスネットワーク）を表す**不変のデータ**。
+> TerrainGenerator.generateの出力であり、**WorldObjectには一切触れない純粋な計算結果**。
+
+同じクラスがそのすぐ下でこう持っている:
+
+```ts
+/** サイトindex→実体化されたLocationのWorldObject.instanceId（IslandSpawnerが埋める。未実体化なら0）。 */
+readonly siteInstanceIds: number[];
+```
+
+`readonly` が付いているのはフィールドの再代入だけで、**中身は書き換わる**。実際
+`IslandSpawner.populate` が `map.siteInstanceIds[site.index] = location.instanceId` と後から書き込む。
+
+**1つのオブジェクトが2つの生涯を兼ねている。**
+
+| | 純粋な生成結果 | 実体化後の対応表 |
+| -- | -------------- | ---------------- |
+| いつ在るか | 種から計算した直後 | `populate` を通った後 |
+| 不変か | 不変 | 書き換わる |
+| 何を知るか | サイト・辺・命名 | どのサイトがどの `WorldObject` になったか |
+
+そこから出ている具体的な傷が3つ:
+
+1. **「まだ実体化していない」を 0 という番人で表している。** `nameOfInstance` は
+   「instanceIdの発行は1始まりなので、0は必ず該当なし」というコメント付きで0を弾く。2つの生涯が
+   同じ配列を共有しているからで、対応表が実体化と同時に生まれるなら、そもそも空の状態が無い。
+2. **不変を名乗っているのに渡せない。** 受け取った側は誰でも `siteInstanceIds` へ書き込める。
+   純粋な計算結果として共有・比較・キャッシュできるという性質が、実際には無い。
+3. **読む側が「サイト index → instanceId → WorldObject」を毎回自分で辿っている。**
+   `IslandSpawner.placePlayerAt` は `findDescendantByInstanceId(map.siteInstanceIds[site.index])`、
+   `PlayScreenView` も `game.map.siteInstanceIds[site]` を直に引いている。テスト4本も同じ形。
+
+なお、セーブは対応表を保存していない。保存するのは種（`SaveData.seed`）とサイト index だけで、
+読み込み時に**同じ種から生成し直して `populate` をやり直す**（`NewGame.ts`）。
+つまり対応表は毎回作り直されるものなので、**生成結果と寿命が違う**ことは保存側からも見える。
+
+決める必要があるのは「2つに割るか」と、割るなら**対応表を誰が持つか**（`populate` の戻り値か、
+`NewGameSession` のような抱える側か）。`map.siteInstanceIds` を直に読んでいる呼び出し側が
+`PlayScreenView` とテスト4本あるので、割るとそこの書き換えが要る。
