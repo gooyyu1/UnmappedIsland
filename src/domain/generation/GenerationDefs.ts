@@ -23,5 +23,31 @@ export class GenerationDefs {
     this.axes = axes;
     this.locationTypes = locationTypes;
     this.scopes = scopes;
+
+    // 3つのルートキーは互いを名前で指す。**指した先が無ければ黙って効かない**（軸が無ければ好みも
+    // 上限も評価されず、location_typeが無ければ保証だけが満たされない）ので、組み上がった時点で弾く。
+    for (const type of locationTypes)
+      for (const [key, entries] of [
+        ['axis_preferences', type.preferences],
+        ['hard_limits', type.hardLimits],
+      ] as const)
+        for (const { axis } of entries)
+          if (!axes.has(axis))
+            throw new Error(
+              `location_types '${type.name}' の${key}が参照する軸 '${axis}' が見つかりません。`,
+            );
+
+    for (const scope of scopes.values())
+      for (const guarantee of scope.guarantees) {
+        if (!axes.has(guarantee.axis))
+          throw new Error(
+            `generation_scopes '${scope.name}' のguaranteesが参照する軸 '${guarantee.axis}' が見つかりません。`,
+          );
+        if (!locationTypes.some((type) => type.name === guarantee.locationType))
+          throw new Error(
+            `generation_scopes '${scope.name}' のguaranteesが参照するlocation_type ` +
+              `'${guarantee.locationType}' が見つかりません。`,
+          );
+      }
   }
 }

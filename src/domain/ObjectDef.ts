@@ -164,6 +164,20 @@ export class ObjectDef {
     this.visibleSlotGlobalIds = visibleSlotGlobalIds;
     this.isStorage = isStorage;
     this.isInProgress = isInProgress;
+
+    // 段のartを宣言できるのはart_by_stageが指すプロパティだけ（1オブジェクト1絵の原則、6.4節）。
+    // 他のプロパティの段が黙って無視されるのを避けるため、組み立てた時点で弾く。
+    const artByStage =
+      artByStagePropertyGlobalId === undefined
+        ? undefined
+        : this.tryGetPropertyDef(artByStagePropertyGlobalId);
+    for (const propertyDef of propertyDefs)
+      if (propertyDef.hasStageArt && propertyDef.globalId !== artByStagePropertyGlobalId)
+        throw new Error(
+          `プロパティ '${propertyDef.name}' の段がartを宣言していますが、` +
+            `art_by_stage は${artByStage === undefined ? '未指定' : `'${artByStage.name}'`}です。` +
+            `段にartを書けるのはart_by_stageが指すプロパティだけです。`,
+        );
   }
 
   /** その名前の操作を宣言しているか（きっかけは問わない）。 */

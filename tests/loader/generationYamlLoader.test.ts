@@ -224,6 +224,28 @@ location_types:
     ).toThrowError(/no_such_axis/);
   });
 
+  it('hard_limitsが未知の軸を参照するとエラーになる', () => {
+    expect(() =>
+      load(`
+object_defs:
+  meadow: {}
+axes:
+  elevation:
+    range: {min: 0, max: 100}
+    generator:
+      blend:
+        - {type: distance_field, reference: edge, weight: 100}
+location_types:
+  meadow:
+    object_def: meadow
+    axis_preferences:
+      elevation: {ideal: 30, tolerance: 25}
+    hard_limits:
+      no_such_axis: {max: 50}
+`),
+    ).toThrowError(/no_such_axis/);
+  });
+
   it('guaranteesが未知のlocation_typeを参照するとエラーになる', () => {
     expect(() =>
       load(`

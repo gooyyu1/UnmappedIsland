@@ -148,11 +148,11 @@ export class CardDragController {
     this.lanes.push(...lanes);
   }
 
-  /** 掴まれたものが、管理下のレーンに並ぶカードならその居場所。 */
-  private locate(object: Phaser.GameObjects.GameObject): { lane: CardLane; index: number } | undefined {
+  /** 掴まれた札が、管理下のレーンに並んでいるならその居場所。 */
+  private locate(card: Card): { lane: CardLane; index: number } | undefined {
     for (const lane of this.lanes) {
-      const index = lane.cardObjects.indexOf(object as Card);
-      if (index >= 0) return { lane, index };
+      const index = lane.indexOf(card);
+      if (index !== undefined) return { lane, index };
     }
     return undefined;
   }
@@ -165,9 +165,10 @@ export class CardDragController {
   private begin(object: Phaser.GameObjects.GameObject, pointer: Phaser.Input.Pointer): void {
     this.cancel();
 
-    const found = this.locate(object);
+    const card = object as Card;
+    const found = this.locate(card);
     // 0枚の枠に在るのは札ではなく、帰ってくる場所を示す印なので掴めない（Card.holdsCard）。
-    if (found === undefined || !found.lane.cardObjects[found.index]?.holdsCard) return;
+    if (found === undefined || !card.holdsCard) return;
 
     const { lane, index } = found;
     lane.beginScroll();
@@ -175,7 +176,7 @@ export class CardDragController {
     const gesture: Gesture = {
       lane,
       index,
-      card: object as Card,
+      card,
       startX: pointer.x,
       startY: pointer.y,
       kind: 'pending',
@@ -241,8 +242,7 @@ export class CardDragController {
     gesture.glow = glow;
 
     for (const lane of this.lanes) {
-      lane.cardObjects.forEach((card, index) => {
-        if (card === undefined) return;
+      for (const { index, rect } of lane.placements) {
         const drop = {
           from: gesture.lane,
           fromIndex: gesture.index,
@@ -250,14 +250,13 @@ export class CardDragController {
           target: { kind: 'combine', index } as const,
           count: 1,
         };
-        if (this.handlers.describeDrop(drop) === undefined) return;
+        if (this.handlers.describeDrop(drop) === undefined) continue;
 
-        const rect = lane.cellRect(index);
         for (const layer of GLOW_LAYERS) {
           glow.lineStyle(this.metrics().px(layer.border), COLOR.cardDropAccept, layer.alpha);
           glow.strokeRoundedRect(rect.x, rect.y, rect.width, rect.height, this.metrics().px(SIZE.radius));
         }
-      });
+      }
     }
 
     gesture.glowPulse = this.scene.tweens.add({

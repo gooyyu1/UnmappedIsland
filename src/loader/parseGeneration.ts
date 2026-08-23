@@ -345,23 +345,13 @@ export function buildGenerationDefs(
   )
     return undefined;
 
+  // 型の一覧を名前で引くのはここだけの仕事。**指した名前がグローバルIDへ解決できるか**は
+  // 生成の宣言だけでは答えられない（GenerationDefsはobject_defの表もNameRegistryも持たない）。
   for (const type of loader.generationLocationTypes) {
     if (!objectDefsByGlobalId.has(type.objectDefGlobalId))
       throw new YamlLoadError(
         `location_types '${type.name}' が参照するobject_def '${loader.objectNames.getName(type.objectDefGlobalId)}' が見つかりません。`,
       );
-
-    for (const preference of type.preferences)
-      if (!loader.generationAxes.has(preference.axis))
-        throw new YamlLoadError(
-          `location_types '${type.name}' のaxis_preferencesが参照する軸 '${preference.axis}' が見つかりません。`,
-        );
-
-    for (const limit of type.hardLimits)
-      if (!loader.generationAxes.has(limit.axis))
-        throw new YamlLoadError(
-          `location_types '${type.name}' のhard_limitsが参照する軸 '${limit.axis}' が見つかりません。`,
-        );
 
     // 亜種が上書きするプロパティは、その土地のobject_defが持っていなければならない（持たない
     // プロパティへの書き込みは黙って消えるため、書き間違いをここで止める）。
@@ -375,22 +365,15 @@ export function buildGenerationDefs(
           );
   }
 
-  for (const scope of loader.generationScopes.values())
-    for (const guarantee of scope.guarantees) {
-      if (!loader.generationAxes.has(guarantee.axis))
-        throw new YamlLoadError(
-          `generation_scopes '${scope.name}' のguaranteesが参照する軸 '${guarantee.axis}' が見つかりません。`,
-        );
-      if (!loader.generationLocationTypes.some((type) => type.name === guarantee.locationType))
-        throw new YamlLoadError(
-          `generation_scopes '${scope.name}' のguaranteesが参照するlocation_type '${guarantee.locationType}' が見つかりません。`,
-        );
-    }
-
-  return new GenerationDefs(
-    new Map(loader.generationAxes),
-    [...loader.generationLocationTypes],
-    new Map(loader.generationScopes),
+  // ルートキーどうしの参照（軸・location_type）はGenerationDefs自身が確かめる。
+  return built(
+    'terrain_generation',
+    () =>
+      new GenerationDefs(
+        new Map(loader.generationAxes),
+        [...loader.generationLocationTypes],
+        new Map(loader.generationScopes),
+      ),
   );
 }
 

@@ -308,6 +308,24 @@ export class PropertyDef {
     this.fallbackStage = isSymbolic ? undefined : stages.find((stage) => stage.min === undefined);
     this.alertDirection = PropertyDef.deriveAlertDirection(stages, isSymbolic);
     this.hasStageArt = stages.some((stage) => stage.art !== undefined);
+
+    // ゲージの向きとstagesのalertの向きは、同じ「どちらが危ないか」を二度言うことになる。食い違って
+    // いると片方だけが正しく見えて原因が分からなくなる（6.8節）。
+    if (gauge?.hasDirection === true && this.alertDirection !== 'mixed' && stages.length > 0)
+      if ((this.alertDirection === 'up') !== gauge.worsensUpward)
+        throw new Error(
+          `プロパティ'${name}': gaugeの向き（max: ${gauge.atMax}）とstagesのalertの向きが食い違っています。` +
+            'どちらの端が危ないかは1つに揃えてください。',
+        );
+
+    // rangeを持つプロパティはバーとして描かれる（6.4節）。上下どちらの端も悪い並びでは、塗りの向きが
+    // 「良い方へ伸びる」とも「悪い方へ伸びる」とも決められない。両側が悪い量（体温など）は、値そのもの
+    // ではなく片側だけの度合い（熱中症・低体温症）を別のプロパティとして見せる。
+    if (range !== undefined && this.alertDirection === 'mixed')
+      throw new Error(
+        `プロパティ'${name}': stagesのalertが上下どちらの端でも深刻になっています。rangeを持つプロパティは` +
+          'バーとして描かれるため、深刻さは下から上へ単調でなければなりません。',
+      );
   }
 
   /**

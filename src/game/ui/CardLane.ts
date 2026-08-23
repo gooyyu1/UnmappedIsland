@@ -32,10 +32,6 @@ const CARD_EDGE_RATIO = 1 / 4;
 /** 隙間を示す帯の幅（u単位）。 */
 const INSERT_MARK_WIDTH = 10;
 
-/** 並びが変わったカードが、新しい位置へ滑る時間（ミリ秒）と加速の形。 */
-const SLIDE_MS = 220;
-const SLIDE_EASE = 'Quad.easeOut';
-
 /** レーンの見た目の選択肢。既定（省略）はフィールドエリアの3レーン。 */
 export interface CardLaneOptions {
   /** 左端にピン留めするカード（ロケーションレーンの現在地）。 */
@@ -61,6 +57,16 @@ export interface CardLaneOptions {
    * スクロールはできないが、そもそも送る先が無い場所のためのもの。
    */
   readonly bare?: boolean;
+}
+
+/**
+ * レーンの枠に居る札1枚と、その居場所。**添字と矩形は枠の並びから導かれる**ので、レーンの外で
+ * 添字から矩形を引き直す（cellRect）必要は無い。
+ */
+export interface LanePlacement {
+  readonly index: number;
+  readonly card: Card;
+  readonly rect: Rect;
 }
 
 /** レーンの内容を差し替えた結果。出入りするカードの見せ方は呼び出し側（CardTable）が決める。 */
@@ -108,8 +114,20 @@ export class CardLane {
 
   /** 並んでいるカードの表示物。空き枠はundefined。位置＝添字（_cellsと対応）。 */
   private _cardObjects: (Card | undefined)[] = [];
-  get cardObjects(): readonly (Card | undefined)[] {
-    return this._cardObjects;
+
+  /** 今このレーンの枠に居る札を、居場所付きで挙げる（空き枠は飛ばす）。 */
+  get placements(): readonly LanePlacement[] {
+    const placed: LanePlacement[] = [];
+    this._cardObjects.forEach((card, index) => {
+      if (card !== undefined) placed.push({ index, card, rect: this.cellRect(index) });
+    });
+    return placed;
+  }
+
+  /** その札が居る枠の添字（このレーンに居なければundefined）。 */
+  indexOf(card: Card): number | undefined {
+    const index = this._cardObjects.indexOf(card);
+    return index < 0 ? undefined : index;
   }
 
   /** スクロール量0のときのstripの位置と、可視域の幅。 */
@@ -268,7 +286,7 @@ export class CardLane {
 
       const [card] = reusable.splice(found, 1);
       card.setContent(content);
-      this.slideTo(card, index);
+      card.slideToX(index * this.pitch);
       return card;
     });
 
@@ -286,14 +304,6 @@ export class CardLane {
     // 空き枠も送れる範囲に含める（画面外に置いたままでは受け皿にならない）。
     const contentWidth = cells.length === 0 ? 0 : cells.length * this.pitch - (this.pitch - this.cardWidth);
     this.scroll.setContentLength(contentWidth);
-  }
-
-  /** 居続けるカードを新しい位置へ滑らせる（既に所定の位置なら何もしない）。 */
-  private slideTo(card: Card, index: number): void {
-    const x = index * this.pitch;
-    if (card.x === x) return;
-
-    this.scene.tweens.add({ targets: card, x, duration: SLIDE_MS, ease: SLIDE_EASE });
   }
 
   /**

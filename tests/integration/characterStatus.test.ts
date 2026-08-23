@@ -99,4 +99,22 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
       game.startLocation.instance.instanceId,
     );
   });
+
+  it('同じに描かれる影響は1つの枠へ畳まれ、件数が付く', () => {
+    // Windows.md 8節: 中身の子N個は同じ絵・同じ記号になるので、並べても数えるしかない。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
+    const equipmentId = codex.slotNames.getId('equipment');
+    for (let i = 0; i < 40; i++)
+      game.session
+        .spawn(codex.objectNames.getId('stone'))
+        .moveToSlot(game.player.instance.getSlot(equipmentId));
+
+    const load = fromGameSession(game, codex, locale)
+      .propertyCategories.flatMap((tab) => tab.entries)
+      .find((entry) => entry.key === 'load')?.detail;
+
+    const fromStones = load?.received.filter((influence) => influence.name === '石');
+    expect(fromStones?.length, '40個の石は1枠').toBe(1);
+    expect(fromStones?.[0].count).toBe(40);
+  });
 });

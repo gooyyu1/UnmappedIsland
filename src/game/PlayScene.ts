@@ -41,7 +41,6 @@ import { Button } from './ui/Button';
 import { SLOT_BUTTON_PAPER_TEXTURE } from '../art/slotButtonArt';
 import { EDGE_DIRECTIONS } from './ui/Card';
 import type { CardContent, CardEdgeAction } from './ui/Card';
-import type { Card } from './ui/Card';
 import { borrowedFace, cardFace } from './ui/cardFace';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
@@ -54,7 +53,7 @@ import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX }
 import { addNineSlice } from '../ui/nineSlice';
 import { laneBackgroundTexture } from '../art/backgroundArt';
 import { SEPARATOR_TEXTURE } from '../art/separatorArt';
-import type { LaneView, MotionContext } from './ui/CardTable';
+import type { MotionContext } from './ui/CardTable';
 import { CardTable } from './ui/CardTable';
 import { bornInstances, originInstances, vanishedInstances } from './view/changedInstances';
 import { floatSignalLabel } from './ui/signalLabel';
@@ -85,14 +84,6 @@ import { addLabel } from '../ui/labels';
 import type { BoxStyle } from '../ui/shapes';
 import { addPanel, addTiledImage, addTiledImageVertical } from '../ui/shapes';
 import { COLOR, SIZE } from './looks/theme';
-
-/** オプションバー・フィルターバーの内側パディング（縦型は左右が広め）。 */
-const BAR_PADDING = 16;
-const OPTIONS_BAR_PADDING_X = 24;
-const FILTER_BAR_PADDING_X = 20;
-
-/** ステータスエリアの内側パディング（キャラクター表示エリア側はDISPLAY_PADDING）。 */
-const STATUS_PADDING = 24;
 
 /** 紙として置かれるボタン（スロットボタン・バーのアイコンボタン）が落とす影のずらし幅（u単位）。 */
 const PAPER_BUTTON_SHADOW = 1.5;
@@ -211,6 +202,21 @@ export interface PlaySceneData {
   readonly slotIndex: number;
   /** テスト用シナリオ。渡すと、シードから作り直した世界へ開始状態を置いてから始める。 */
   readonly scenario?: Scenario;
+}
+
+/**
+ * 今画面に出ているレーン1本と、それが映しているもの。**レーンは表示物、場所は映しの語彙**で、
+ * その対を持てるのは両方を知っているこの画面だけ（PlayScene.shownLanes）。
+ */
+interface ShownLane {
+  readonly lane: CardLane;
+  /** 映している場所。ワールドの場所を映さない枠（ポートレイト・発見物）は持たない。 */
+  readonly spot: CardSpot | undefined;
+  /**
+   * そこへ並べる枠。**引くのは差し替えのときだけ**——どの場所を映しているかを訊くだけの呼び出し
+   * （ドラッグ中は指が動くたびに来る）で、全レーンぶんの札を組み立てないため。
+   */
+  readonly cells: () => readonly LaneCell[];
 }
 
 /** シナリオで動かすキャラクタ。開始状態の見え方を確かめるのが目的なので、基準どおりの体に固定する。 */
@@ -357,10 +363,7 @@ export class PlayScene extends ResponsiveScene {
   /** ポートレイトカードの枠。キャラクタ自身を映す札なので、回復の粒の行き先になる（showGains）。 */
   private portraitRect: Rect | undefined;
 
-  /** ステータスエリアの1行目の位置・幅と行の間隔（どのバーをどの行へ置くかは行動のたびに引き直す）。 */
-  private statusRowsX = 0;
-  private statusRowsY = 0;
-  private statusRowsWidth = 0;
+  /** ステータスエリアの行の間隔（どのバーをどの行へ置くかは行動のたびに引き直す）。 */
   private statusRowGap = 0;
 
   /** 致命的域のステータスがある間、画面全体の枠を明滅させる。 */
@@ -785,15 +788,16 @@ export class PlayScene extends ResponsiveScene {
     return edges;
   }
 
-  /** ドロップを、レーンを場所（CardSpot）に直した形へ（判断はShownCardsが行う）。 */
-  private dropOf(drop: CardDrop): ShownDrop {
-    return {
-      from: this.spotOf(drop.from),
-      fromIndex: drop.fromIndex,
-      to: this.spotOf(drop.to),
-      target: drop.target,
-      count: drop.count,
-    };
+  /**
+   * ドロップを、レーンを場所（CardSpot）に直した形へ（判断はShownCardsが行う）。どちらかの
+   * レーンがワールドの場所を映していなければ、落とし先の決まらない操作なのでundefined。
+   */
+  private dropOf(drop: CardDrop): ShownDrop | undefined {
+    const from = this.spotOf(drop.from);
+    const to = this.spotOf(drop.to);
+    if (from === undefined || to === undefined) return undefined;
+
+    return { from, fromIndex: drop.fromIndex, to, target: drop.target, count: drop.count };
   }
 
   /**
@@ -802,8 +806,8 @@ export class PlayScene extends ResponsiveScene {
    */
   private describeDrop(drop: CardDrop): CardDropInfo | undefined {
     const dropped = this.dropOf(drop);
-    const told = this.shown.dropEffect(dropped);
-    if (told === undefined) return undefined;
+    const told = dropped === undefined ? undefined : this.shown.dropEffect(dropped);
+    if (dropped === undefined || told === undefined) return undefined;
 
     const maxCount = this.shown.multiDropLimit(dropped);
     if (told.name === undefined) return { maxCount };
@@ -815,59 +819,55 @@ export class PlayScene extends ResponsiveScene {
 
   /** そのレーンに出ている束（ShownCards）。掴める札もタップできる札も、この並びの中にしかない。 */
   private stacksOf(lane: CardLane): readonly (ObjectCardStack | undefined)[] {
-    return this.shown.stacksAt(this.spotOf(lane));
+    const spot = this.spotOf(lane);
+    return spot === undefined ? [] : this.shown.stacksAt(spot);
   }
 
-  /** レーンが映している場所。 */
-  private placeOf(lane: CardLane): CardPlace {
-    if (lane === this.handLane) return this.place('hand');
-    if (lane === this.itemLane) return this.place('items');
-    if (lane === this.fixtureLane) return this.place('fixtures');
-    return this.childWindowPlace ?? this.place('items');
-  }
-
-  /** レーンが映している場所。借りた1枚の枠だけはワールドの場所ではない（CardSpot）。 */
-  private spotOf(lane: CardLane): CardSpot {
-    return lane === this.childWindow?.laneOf('card') ? 'windowCard' : this.placeOf(lane);
+  /** レーンが映している場所（ワールドの場所を映さない枠ならundefined）。 */
+  private spotOf(lane: CardLane): CardSpot | undefined {
+    return this.shownLanes.find((shown) => shown.lane === lane)?.spot;
   }
 
   /**
-   * 今カードが並んでいるレーンと、そこへ並べる枠（差し替えの入力そのもの、showView）。ポートレイトも
-   * 枠1つのレーンで、子ウィンドウを開いている間は**借りた札の枠も中身の並びも同じ差し替えに乗る**
-   * ——手持ちとの間でカードが行き来するため、外していると出ていったカードが現れない。
+   * 今カードが並んでいるレーンと、それが映しているもの。**レーンと場所の対を書くのはここだけ**
+   * ——別々に書くと、レーンがどこを映しているかの答えが場所ごとに食い違う。
+   *
+   * ポートレイトも枠1つのレーンで、子ウィンドウを開いている間は**借りた札の枠も中身の並びも同じ
+   * 差し替えに乗る**——手持ちとの間でカードが行き来するため、外していると出ていったカードが現れない。
    */
-  private get laneViews(): readonly LaneView[] {
-    const views: LaneView[] = [
-      { lane: this.fixtureLane, cells: this.cellsAt(this.place('fixtures')) },
-      { lane: this.itemLane, cells: this.cellsAt(this.place('items')) },
-      { lane: this.handLane, cells: this.cellsAt(this.place('hand')) },
-      { lane: this.portraitLane, cells: this.portraitCells() },
+  private get shownLanes(): readonly ShownLane[] {
+    const fixtures = this.place('fixtures');
+    const items = this.place('items');
+    const hand = this.place('hand');
+    const lanes: ShownLane[] = [
+      { lane: this.fixtureLane, spot: fixtures, cells: () => this.cellsAt(fixtures) },
+      { lane: this.itemLane, spot: items, cells: () => this.cellsAt(items) },
+      { lane: this.handLane, spot: hand, cells: () => this.cellsAt(hand) },
+      { lane: this.portraitLane, spot: undefined, cells: () => this.portraitCells() },
     ];
 
     const window = this.childWindow;
     const card = window?.laneOf('card');
     const borrowed = this.shown.windowCard;
     if (card !== undefined && borrowed !== undefined) {
-      views.push({ lane: card, cells: [{ card: borrowedFace(borrowed) }] });
+      lanes.push({ lane: card, spot: 'windowCard', cells: () => [{ card: borrowedFace(borrowed) }] });
     }
     const content = window?.laneOf('content');
     const place = this.childWindowPlace;
     if (content !== undefined && place !== undefined) {
-      views.push({ lane: content, cells: this.cellsAt(place) });
+      lanes.push({ lane: content, spot: place, cells: () => this.cellsAt(place) });
     }
     // 発見物のレーン。借りている札はここに並び、返すと元の場所のレーンへ戻る（Windows.md 5.1節）。
     const found = window?.laneOf('found');
     if (found !== undefined) {
-      views.push({ lane: found, cells: foundCells(this.shown.found) });
+      lanes.push({ lane: found, spot: undefined, cells: () => foundCells(this.shown.found) });
     }
-    return views;
+    return lanes;
   }
 
-  /** 今画面に出ているレーン。札を探すため（cardShowing）のもので、並びは引き直さない。 */
+  /** 今画面に出ているレーン。札を探すため（rectOfInstance）のもので、並びは引き直さない。 */
   private get openLanes(): readonly CardLane[] {
-    const lanes = [this.fixtureLane, this.itemLane, this.handLane, this.portraitLane];
-    for (const { lane } of this.childWindow?.lanes ?? []) lanes.push(lane);
-    return lanes;
+    return this.shownLanes.map(({ lane }) => lane);
   }
 
   /**
@@ -927,24 +927,14 @@ export class PlayScene extends ResponsiveScene {
    * 探索で見つかった物が現在地から飛んでくるのはこの1行による。
    */
   private rectOfInstance(instanceId: number): Rect | undefined {
-    const shown = this.cardShowing(instanceId);
-    if (shown !== undefined) return shown.rect;
+    for (const lane of this.openLanes) {
+      const shown = lane.placements.find(({ card }) => card.identity.includes(instanceId));
+      if (shown !== undefined) return shown.rect;
+    }
 
     return this.gameSession.player.location?.instance.instanceId === instanceId
       ? this.fixtureLane.pinnedRect
       : undefined;
-  }
-
-  /** そのインスタンスを今映している札と、その枠（どのレーンにも出ていなければundefined）。 */
-  private cardShowing(instanceId: number): { card: Card; rect: Rect } | undefined {
-    for (const lane of this.openLanes) {
-      const index = lane.cardObjects.findIndex(
-        (object) => object?.content.identity?.includes(instanceId) === true,
-      );
-      const card = index < 0 ? undefined : lane.cardObjects[index];
-      if (card !== undefined) return { card, rect: lane.cellRect(index) };
-    }
-    return undefined;
   }
 
   /**
@@ -966,7 +956,8 @@ export class PlayScene extends ResponsiveScene {
    * 逆向きに成立したなら掴んだ札）を、世界の変化が出どころとして答える（originRectsOf）。
    */
   private applyDrop(drop: CardDrop, releasedRect: Rect): void {
-    const action = this.shown.dropEffect(this.dropOf(drop))?.execute;
+    const dropped = this.dropOf(drop);
+    const action = dropped === undefined ? undefined : this.shown.dropEffect(dropped)?.execute;
     this.applyToWorld(this.dropLabel(drop), action, this.releasedBy(drop, releasedRect));
   }
 
@@ -974,11 +965,12 @@ export class PlayScene extends ResponsiveScene {
   private dropLabel(drop: CardDrop): string {
     const dragged = this.stacksOf(drop.from)[drop.fromIndex]?.name ?? '?';
     const count = drop.count > 1 ? ` ×${drop.count}` : '';
-    const to = this.placeText(this.placeOf(drop.to));
+    const dropped = this.dropOf(drop);
+    const to = dropped === undefined || dropped.to === 'windowCard' ? '?' : this.placeText(dropped.to);
     if (drop.target.kind !== 'combine') return `カードを落とした: ${dragged}${count} → ${to}`;
 
     const onto = this.stacksOf(drop.to)[drop.target.index]?.name ?? '?';
-    const combination = this.shown.dropCombination(this.dropOf(drop));
+    const combination = dropped === undefined ? undefined : this.shown.dropCombination(dropped);
     return combination !== undefined
       ? `カードを重ねた: ${dragged} → ${onto}（${combination.name}）`
       : `カードを入れた: ${dragged}${count} → ${onto}の中`;
@@ -990,7 +982,8 @@ export class PlayScene extends ResponsiveScene {
    * 限らない（CardCombination.held参照）。
    */
   private releasedBy(drop: CardDrop, rect: Rect): MotionContext['released'] {
-    const moved = this.shown.movedBy(this.dropOf(drop));
+    const dropped = this.dropOf(drop);
+    const moved = dropped === undefined ? undefined : this.shown.movedBy(dropped);
     return moved === undefined ? undefined : { grabbed: moved.grabbed, followers: moved.followers, rect };
   }
 
@@ -1658,7 +1651,8 @@ export class PlayScene extends ResponsiveScene {
     // 受け取り、この差し替えでウィンドウの枠から帰らせる。
     const origins = withOrigins(context.origins, this.refreshChildWindow());
 
-    this.motion.update(this.laneViews, { ...context, origins });
+    const views = this.shownLanes.map(({ lane, cells }) => ({ lane, cells: cells() }));
+    this.motion.update(views, { ...context, origins });
     this.showChildWindowContents();
     this.showSky();
     this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
@@ -1744,36 +1738,6 @@ export class PlayScene extends ResponsiveScene {
     }
   }
 
-  /**
-   * 情報エリアの中を仕切る区切り線。背景が1枚の紙になり、エリアごとの塗り分けが無くなったため、
-   * 意味のまとまり（キャラクター／ステータス）の境目だけを線で示す。見た目は現在地カードの右の
-   * 区切り線と同じ（CardLane.addPinnedCell）。
-   *
-   * 状況エリアとの境目には引かない。空のパネルが自分の縁を持っていて、それが境目を兼ねるため。
-   */
-  private buildInformationDividers(layout: PlayScreenLayout): void {
-    const thickness = this.metrics.px(4);
-    const padding = this.metrics.px(STATUS_PADDING);
-
-    if (this.metrics.isLandscape) {
-      // 横型はキャラクター表示エリアとステータスエリアが上下に並ぶので、境目も横向き。
-      const x = layout.informationContent.x + padding;
-      this.addDivider({
-        x,
-        y: layout.statusArea.y - thickness / 2,
-        width: Math.max(0, layout.informationContent.width - padding * 2),
-        height: thickness,
-      });
-    } else {
-      this.addDivider({
-        x: layout.statusArea.x - thickness / 2,
-        y: layout.statusArea.y + padding,
-        width: thickness,
-        height: Math.max(0, layout.statusArea.height - padding * 2),
-      });
-    }
-  }
-
   private addDivider(rect: Rect): void {
     this.add.rectangle(
       rect.x + rect.width / 2,
@@ -1787,9 +1751,9 @@ export class PlayScene extends ResponsiveScene {
 
   private buildDashboard(layout: PlayScreenLayout): void {
     this.buildCharacterDisplay(layout.characterDisplay);
-    this.buildStatusArea(layout.statusArea);
+    this.buildStatusArea();
     this.buildSituationArea(layout.situationArea);
-    this.buildInformationDividers(layout);
+    this.addDivider(layout.informationDivider);
   }
 
   /**
@@ -1993,11 +1957,7 @@ export class PlayScene extends ResponsiveScene {
    * おき、以後は見せ方と位置だけを変える。あとから作ると、開いている子ウィンドウの覆いより手前へ
    * 出てしまうため（CardTable参照）。
    */
-  private buildStatusArea(area: Rect): void {
-    const padding = this.metrics.px(STATUS_PADDING);
-    this.statusRowsX = area.x + padding;
-    this.statusRowsY = area.y + padding;
-    this.statusRowsWidth = area.width - padding * 2;
+  private buildStatusArea(): void {
     this.statusRowGap = this.metrics.px(this.metrics.isLandscape ? 10 : 16);
 
     // 致命的域を伝える画面全体の枠。飛んでいるカードや子ウィンドウにも隠されないよう最前面へ出す。
@@ -2008,9 +1968,9 @@ export class PlayScene extends ResponsiveScene {
       const bar = new StatusBar(
         this,
         this.metrics,
-        this.statusRowsX,
-        this.statusRowsY,
-        this.statusRowsWidth,
+        this.layout.statusRows.x,
+        this.layout.statusRows.y,
+        this.layout.statusRows.width,
         status,
         // 変化を見せ終わった行を並びから外すには、引き直す機会がここにしか無い（showStatuses）。
         { onCaughtUp: () => this.showStatuses() },
@@ -2040,7 +2000,7 @@ export class PlayScene extends ResponsiveScene {
       const bar = this.statusBars.get(row.key);
       if (bar === undefined) return;
       shown.add(row.key);
-      bar.show(row, this.statusRowsY + index * (rowHeight + this.statusRowGap));
+      bar.show(row, this.layout.statusRows.y + index * (rowHeight + this.statusRowGap));
     });
     for (const [key, bar] of this.statusBars) if (!shown.has(key)) bar.hide();
 
@@ -2187,25 +2147,9 @@ export class PlayScene extends ResponsiveScene {
   private buildOptionsBar(area: Rect): void {
     addPanel(this, area, COLOR.optionsBar);
 
-    const size = this.metrics.px(SIZE.iconButton);
-    const gap = this.metrics.px(SIZE.barGap);
-    const span = OPTION_ICONS.length * size + (OPTION_ICONS.length - 1) * gap;
-
+    const rects = this.layout.optionsBarIcons(OPTION_ICONS.length);
     OPTION_ICONS.forEach((spec, index) => {
-      const rect = this.metrics.isLandscape
-        ? {
-            x: area.x + (area.width - size) / 2,
-            y: area.y + (area.height - span) / 2 + index * (size + gap),
-            width: size,
-            height: size,
-          }
-        : {
-            x: area.x + area.width - this.metrics.px(OPTIONS_BAR_PADDING_X) - span + index * (size + gap),
-            y: area.y + (area.height - size) / 2,
-            width: size,
-            height: size,
-          };
-      const button = this.addIconButton(rect, spec, false, COLOR.paperButtonBorder);
+      const button = this.addIconButton(rects[index], spec, false, COLOR.paperButtonBorder);
       if (spec === MENU_ICON) button.on('pointerup', () => this.confirmReturnToTitle());
     });
   }
@@ -2214,25 +2158,14 @@ export class PlayScene extends ResponsiveScene {
   private buildFilterBar(area: Rect): void {
     addPanel(this, area, COLOR.filterBar);
 
-    const size = this.metrics.px(SIZE.iconButton);
-    const gap = this.metrics.px(SIZE.barGap);
-    const padding = this.metrics.px(BAR_PADDING);
-
+    const rects = this.layout.filterBarIcons(FILTER_ICONS.length);
     this.filterButtons = FILTER_ICONS.map((spec, index) => {
-      const rect = this.metrics.isLandscape
-        ? {
-            x: area.x + (area.width - size) / 2,
-            y: area.y + padding + index * (size + gap),
-            width: size,
-            height: size,
-          }
-        : {
-            x: area.x + this.metrics.px(FILTER_BAR_PADDING_X) + index * (size + gap),
-            y: area.y + (area.height - size) / 2,
-            width: size,
-            height: size,
-          };
-      const button = this.addIconButton(rect, spec, index === this.selectedFilter, COLOR.filterButtonBorder);
+      const button = this.addIconButton(
+        rects[index],
+        spec,
+        index === this.selectedFilter,
+        COLOR.filterButtonBorder,
+      );
       button.on('pointerup', () => this.selectFilter(index));
       return button;
     });

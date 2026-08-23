@@ -75,6 +75,13 @@ export interface StatusInfluence {
 
   /** 今その条件が成立しているか。成立していない影響は薄く、記号を出さずに並べる。 */
   readonly active: boolean;
+
+  /**
+   * この枠がまとめている件数（1以上）。**同じに描かれる影響は1つの枠に畳む**——中身の子や同じ怪我は
+   * いくつあっても同じ絵と同じ記号になるので、並べても数えるしかない。2以上のときだけ数字を出す
+   * （カードの束と同じ、CardContent.count）。
+   */
+  readonly count: number;
 }
 
 /**

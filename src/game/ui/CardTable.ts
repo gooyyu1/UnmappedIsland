@@ -11,11 +11,7 @@ import { DustPuff } from './DustPuff';
 import type { PlacedCard } from '../view/cardMotionPlan';
 import { planMotion } from '../view/cardMotionPlan';
 import { REPEAT_MIN_MS } from '../../ui/holdRepeat';
-import { isAlive } from '../../ui/lifetime';
 import type { LaneCell } from './laneCells';
-
-/** 出現元が分からないカードが、その場で現れる時間（ミリ秒）。 */
-const FADE_MS = 200;
 
 /**
  * 1枚ずつ間を置いて飛び立つときの間隔（ミリ秒）。
@@ -160,9 +156,13 @@ export class CardTable {
     for (const { lane, cells } of views) {
       const update = lane.reconcile(cells, (content) => this.makeCard(content));
       for (const entered of update.entered) {
-        arriving.push({ card: entered.card, ids: idsOf(entered.card), rect: lane.cellRect(entered.index) });
+        arriving.push({
+          card: entered.card,
+          ids: entered.card.identity,
+          rect: lane.cellRect(entered.index),
+        });
       }
-      for (const card of update.left) left.push({ card, ids: idsOf(card) });
+      for (const card of update.left) left.push({ card, ids: card.identity });
     }
     const arrivingCards = new Set(arriving.map(({ card }) => card));
     const staying = placedCards(views.map(({ lane }) => lane)).filter(({ card }) => !arrivingCards.has(card));
@@ -179,9 +179,7 @@ export class CardTable {
       born: context.born,
     });
 
-    for (const { card, present, emptied } of plan.shown) {
-      if (isAlive(card)) card.setPresence(present, emptied);
-    }
+    for (const { card, present, emptied } of plan.shown) card.setPresence(present, emptied);
     for (const rect of plan.puffs) this.dust.burst(rect);
     for (const flight of plan.flights) {
       const card = new Card(this.scene, this.metrics, flight.from.x, flight.from.y, {
@@ -202,7 +200,7 @@ export class CardTable {
         puffs: flight.puffs,
       });
     }
-    for (const card of plan.fadeIns) this.fadeIn(card, firstShow);
+    for (const card of plan.fadeIns) card.appear(firstShow);
     for (const { card } of left) card.destroy();
 
     // 飛んでいる途中の便と置いてある札は、行き先を引き直す（世界が変わって帰り先も変わりうる）。
@@ -224,7 +222,7 @@ export class CardTable {
       if (landing === undefined) {
         // もう帰る枠が無い（世界から出たか、画面に出ない場所へ入った）。その場で消える。
         if (flight.ids.some((id) => context.vanished?.includes(id) === true)) {
-          this.dust.burst(rectOf(flight.card));
+          this.dust.burst(flight.card.rect);
         }
         this.dropFlight(flight);
         continue;
@@ -249,7 +247,7 @@ export class CardTable {
       if (landing === undefined) {
         // 運んでいたインスタンスはもう世界に無い（使い切った・壊れた）か、画面の外へ入った。
         if (freed.ids.some((id) => context.vanished?.includes(id) === true)) {
-          this.dust.burst(rectOf(freed.card));
+          this.dust.burst(freed.card.rect);
         }
         freed.card.destroy();
         continue;
@@ -283,9 +281,7 @@ export class CardTable {
   /** 置いたままの札を、飛ばさずに元の枠へ返す（実行しないと決めた操作の後始末）。 */
   settleFreed(): void {
     for (const freed of this.freed.splice(0)) {
-      if (freed.source !== undefined && isAlive(freed.source)) {
-        freed.source.absorb(freed.ids);
-      }
+      freed.source?.absorb(freed.ids);
       freed.card.destroy();
     }
   }
@@ -366,17 +362,9 @@ export class CardTable {
     this.flights.splice(index, 1);
     this.tracked.delete(flight);
     if (flight.puffs) this.dust.burst(flight.to);
-    if (flight.into !== undefined && isAlive(flight.into)) flight.into.absorb(flight.ids);
+    flight.into?.absorb(flight.ids);
     flight.onArrive?.();
     flight.card.destroy();
-  }
-
-  /** 出どころの無いカードを、その場で出す。作り直した直後は飛びも浮かびもせず、既に在ったものとして出す。 */
-  private fadeIn(card: Card, instant: boolean): void {
-    card.setVisible(true);
-    if (instant) return;
-    card.setAlpha(0);
-    this.scene.tweens.add({ targets: card, alpha: 1, duration: FADE_MS });
   }
 
   /** レーンの枠に置く札を作る（CardLane.reconcileから呼ばれる。置き場所はレーンが決める）。 */
@@ -445,7 +433,7 @@ export class CarriedCard {
 
   /** 札が今いる矩形。ドロップの出発点とツールチップの位置決めに使う。 */
   get rect(): Rect {
-    return rectOf(this.card);
+    return this.card.rect;
   }
 
   /** 札をポインタの中心へ置く。 */
@@ -497,7 +485,7 @@ export class CarriedCard {
       ...cardFace(this.source.content),
       count: returned.length,
     });
-    this.table.flyTo(spilled, this.home, () => this.returnToSource(returned));
+    this.table.flyTo(spilled, this.home, () => this.source.absorb(returned));
     return true;
   }
 
@@ -512,7 +500,7 @@ export class CarriedCard {
       this.card,
       () => this.home(),
       () => {
-        this.returnToSource(ids);
+        this.source.absorb(ids);
         this.card.destroy();
       },
     );
@@ -533,25 +521,16 @@ export class CarriedCard {
     this.state = 'gone';
 
     for (const handle of this.inbound.splice(0)) handle.cancel();
-    this.returnToSource(this.ids);
+    this.source.absorb(this.ids);
     this.card.destroy();
-  }
-
-  /** 帰ってきた個体を元の札へ合流させる。画面を作り直していれば、元の札はもう無い。 */
-  private returnToSource(ids: readonly number[]): void {
-    if (isAlive(this.source)) this.source.absorb(ids);
   }
 }
 
 /** レーンに並んでいるカードを、位置とインスタンスのID付きで挙げる（計画の入力）。 */
 function placedCards(lanes: readonly CardLane[]): PlacedCard<Card, Rect>[] {
-  const placed: PlacedCard<Card, Rect>[] = [];
-  for (const lane of lanes) {
-    lane.cardObjects.forEach((card, index) => {
-      if (card !== undefined) placed.push({ card, ids: idsOf(card), rect: lane.cellRect(index) });
-    });
-  }
-  return placed;
+  return lanes.flatMap((lane) =>
+    lane.placements.map(({ card, rect }) => ({ card, ids: card.identity, rect })),
+  );
 }
 
 /** 手から放したインスタンス全部を、計画のreleased（離した場所から動き出すもの）に直す。 */
@@ -561,12 +540,4 @@ function releasedIdsOf(
   return released === undefined
     ? undefined
     : { ids: [released.grabbed, ...released.followers], rect: released.rect };
-}
-
-function idsOf(card: Card): readonly number[] {
-  return card.content.identity ?? [];
-}
-
-function rectOf(card: Card): Rect {
-  return { x: card.x, y: card.y, width: card.cardWidth, height: card.cardHeight };
 }

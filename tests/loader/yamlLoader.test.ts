@@ -398,6 +398,61 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/art_by_stage/);
   });
 
+  it('art_by_stageが指さないプロパティの段がartを宣言しているとエラーになる', () => {
+    // 1オブジェクト1絵（GameElementDefinition.md 6.4節）。黙って無視すると、書いたartが効いている
+    // つもりのまま出ない。
+    const yaml = `
+object_defs:
+  campfire:
+    art_by_stage: heat
+    props:
+      heat: {value: 0, stages: [{name: out}]}
+      fuel: {value: 0, stages: [{name: none, art: empty}]}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrow(YamlLoadError);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+      /段にartを書けるのは/,
+    );
+  });
+
+  it('gaugeの向きとstagesのalertの向きが食い違うとエラーになる', () => {
+    // 「どちらが危ないか」を二度言うことになるので、食い違いを許すと片方だけが正しく見える（6.8節）。
+    const yaml = `
+object_defs:
+  torch:
+    props:
+      fuel:
+        value: 30
+        range: {min: 0, max: 30}
+        gauge: {min: good, max: bad}
+        stages:
+          - {name: full, min: 20, alert: safe}
+          - {name: low, min: 0, alert: fatal}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrow(YamlLoadError);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/gaugeの向き/);
+  });
+
+  it('rangeを持つプロパティのalertが上下どちらの端でも深刻だとエラーになる', () => {
+    // バーの塗りの向きが決められない（6.4節）。両側が悪い量は、片側だけの度合いを別のプロパティにする。
+    const yaml = `
+object_defs:
+  body:
+    props:
+      temperature:
+        value: 37
+        range: {min: 30, max: 42}
+        stages:
+          - {name: cold, min: 30, alert: fatal}
+          - {name: normal, min: 36, alert: safe}
+          - {name: hot, min: 39, alert: fatal}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrow(YamlLoadError);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+      /上下どちらの端でも深刻/,
+    );
+  });
+
   it('廃止したスロットのキーは、書き換え先を示して落とす', () => {
     // 黙って無視すると、制約が効いているつもりの宣言が通ってしまう（SlotSystem.md 2節）。
     const retired: readonly (readonly [string, RegExp])[] = [
