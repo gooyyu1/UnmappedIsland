@@ -418,3 +418,49 @@ observe*が行う）。**どれも4つ全部の性質**なのでクラスのコ�
 
 影響の一覧が溢れる（子N個 → N行）。既存の怪我（切り傷3つ → `pain` に3行）と同じ形なので、縮退表示の
 規則は両方まとめて決める。
+
+## 14. 段4 レーンA-5（入れ子を読み上げる語彙）
+
+### Candidates.md の見立ては2点ずれていた
+
+**「3箇所」ではなく6箇所で、うち3つは再帰と関係なかった。** 木のクラスが domain の外へ渡る口を
+全部数えると、条件側が `ConditionReader.all`/`any`/`not`・`GateReading.conditions`・
+**`Requirement.node`**、効果側が `PickCandidateReading.effect`・**`PropertyDef.rangeEvents()`**・
+**`PropertyDef.rangeEventsAt()`**。太字の3つはただの受け渡しで、再帰する箇所だけ直すと同じ穴が残る。
+
+**「語彙が無い」のは条件側だけだった。** 効果側には `EffectDeclaration` が既に在り、
+`readEffect`・`spawnsObject`・`PropertyDef.hasRangeEventMatching` が使っている。`PropertyDef` では
+狭い型を使う `hasRangeEventMatching` と、木を素で返す `rangeEvents` が隣り合っていた。
+
+漏れていたのは、`ActiveEffect` に付いてくる `apply`（世界を書き換える）と、`ConditionNode` に
+付いてくる `evaluate`。読み手は全員 `read` で読み下しているだけなので、実害ではなく口の広さの問題。
+
+### 6箇所を「読み下せる宣言」に揃えた
+
+`ConditionDeclaration` を足し、6箇所すべてを `EffectDeclaration` / `ConditionDeclaration` にした。
+`ConditionOp` は `PropertyConditionReading.op` の語彙なので `ConditionReader.ts` へ移した
+（読み手が `ConditionNode.ts` を輸入する理由がこれで無くなる）。
+
+内部で木そのものが要る2箇所は、自分で持つ形へ:
+
+- `Requirement.node` は private にし、`condition`（読み下し用）と `isMet(context)` を公開。
+  `Requirements.firstUnmet` が `entry.node.evaluate(...)` を呼んでいたのをやめた。
+- `PropertyDef.rangeEventsAt` は private に落とし、外へは `rangeEventLabelsAt` を出す。外の唯一の
+  利用（`analysis/rangeEvents`）はラベルしか読んでいなかった。「どちらの端に達したか」を答えるのが
+  1箇所という約束は private 側に残っている。
+
+### `collectWatchedProperties` を消した
+
+`ConditionNode` は「見ているプロパティを集める」独自の再帰を持っていて、`tickDeltas` だけが
+呼んでいた。読み下す口を1つに揃えるため、`tickDeltas` 側の `ConditionReader` 実装
+（`WatchedSelfProperties`）へ移した。**取りこぼしが塞がるのが実利**——旧実装は
+`propertyGlobalId !== undefined` というフィールドの有無で葉を判定していたので、葉の種類を足しても
+黙って素通りする。読み上げ口が動詞ごとにメソッドを分けているのは、まさにそれを防ぐため。
+`valueRef`（比較の相手側）を数えない挙動はそのまま移した。
+
+### 方針を機械で保つ
+
+`tests/architecture/layers.test.ts` に1件足した——`src/analysis` と `src/codex-viewer` は
+`ActiveEffect.ts` / `ConditionNode.ts` を輸入しない。ここだけ**直接の輸入**を見る（読み手が輸入する
+定義クラスの先には木が居るので、到達可能性では見られない）。`docs/engine/Layers.md` 6節に
+「入れ子も、読み下せる宣言として渡す」を足し、規則はそこ1箇所に書いた。

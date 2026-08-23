@@ -1,4 +1,5 @@
 import type { ConditionNode } from './ConditionNode';
+import type { ConditionDeclaration } from './ConditionReader';
 import type { ReferenceContext } from './ReferenceRoot';
 
 /**
@@ -9,7 +10,7 @@ import type { ReferenceContext } from './ReferenceRoot';
  * どの言語でも自然な文にする一般的な方法が無いため（文言はlocaleが持つ、Localization.md）。
  */
 export class Requirement {
-  readonly node: ConditionNode;
+  private readonly node: ConditionNode;
 
   /** localeのreason_textsを引く識別子。宣言が無ければundefined（理由を出さない要件）。 */
   readonly reasonName: string | undefined;
@@ -17,6 +18,16 @@ export class Requirement {
   constructor(node: ConditionNode, reasonName: string | undefined) {
     this.node = node;
     this.reasonName = reasonName;
+  }
+
+  /** この要件が書いている条件（ConditionReader参照）。 */
+  get condition(): ConditionDeclaration {
+    return this.node;
+  }
+
+  /** 今この文脈でこの要件を満たしているか。 */
+  isMet(context: ReferenceContext): boolean {
+    return this.node.evaluate(context);
   }
 }
 
@@ -34,6 +45,6 @@ export class Requirements {
    * 実行可否と「なぜできないか」が同じ1回の評価から出るので、呼び出し側は2度評価しなくてよい。
    */
   firstUnmet(context: ReferenceContext): Requirement | undefined {
-    return this.declarations.find((entry) => !entry.node.evaluate(context));
+    return this.declarations.find((entry) => !entry.isMet(context));
   }
 }

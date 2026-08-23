@@ -343,7 +343,12 @@ export class PropertyDef {
   }
 
   /** 宣言されているrange系イベントとその名前（6.3節）。 */
-  rangeEvents(): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
+  rangeEvents(): readonly (readonly [RangeEventLabel, EffectDeclaration])[] {
+    return this.rangeEventEffects();
+  }
+
+  /** rangeEventsの、適用できる形。適用するのはこのクラス自身だけ（checkRangeEvents）。 */
+  private rangeEventEffects(): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
     const events: (readonly [RangeEventLabel, ActiveEffect])[] = [];
     if (this.onMax !== undefined) events.push(['on_max', this.onMax]);
     if (this.onMin !== undefined) events.push(['on_min', this.onMin]);
@@ -390,16 +395,20 @@ export class PropertyDef {
   }
 
   /**
-   * その値が端へ達したことで起こるrange系イベント（6.3節）。達していなければ空。
+   * その値が端へ達したことで起こるrange系イベント（6.3節）の名前。達していなければ空。
    *
    * **「どちらの端に達したか」を答えるのはここだけ。** 実行時に適用する側（checkRangeEvents）と、
    * 実行時のオブジェクトを持たずに読む側（analysis/rangeEvents）が、同じ判定をここから引く。
    */
-  rangeEventsAt(value: number): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
+  rangeEventLabelsAt(value: number): readonly RangeEventLabel[] {
+    return this.rangeEventsAt(value).map(([label]) => label);
+  }
+
+  private rangeEventsAt(value: number): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
     const range = this.range;
     if (range === undefined) return [];
 
-    return this.rangeEvents().filter(([label]) =>
+    return this.rangeEventEffects().filter(([label]) =>
       label === 'on_max' ? value >= range.max : value <= range.min,
     );
   }

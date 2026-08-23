@@ -170,3 +170,14 @@ import を辿って見張ります。**型として輸入するのも数えま�
 
 読み上げのメソッドは動詞ごとに分かれていて、`read` は抽象です。**動詞を1つ足したときに読み手が
 黙って取りこぼさない**ようにするためで、実装を書かない効果はコンパイルが通りません。
+
+#### 入れ子も、読み下せる宣言として渡す
+
+`pick` の候補や `all`/`any`/`not` の子のように、読み上げの途中でさらに読み下すものがあります。
+ここで木のクラス（`ActiveEffect`・`ConditionNode`）を渡すと、読み手は読むだけでなく**適用**（`apply`）や
+**評価**（`evaluate`）までできてしまいます。渡すのは `read` だけを持つ宣言
+（`EffectDeclaration`・`ConditionDeclaration`）で、**入れ子をどう畳むかは読み手が決めます**。
+
+木そのものを組み立てるのはドメインとローダーだけで、
+[`tests/architecture/layers.test.ts`](../../tests/architecture/layers.test.ts) が
+`src/analysis` と `src/codex-viewer` からの輸入を見張ります。

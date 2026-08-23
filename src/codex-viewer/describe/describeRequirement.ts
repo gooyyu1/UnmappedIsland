@@ -5,7 +5,7 @@ import { conditionTokens } from './conditionTokens';
 
 /** 要件1つを書き表す。理由（14.6節）を宣言していれば添える。 */
 function requirementTokens(requirement: Requirement, names: DefNames): readonly DescriptionToken[] {
-  const tokens = [...conditionTokens(requirement.node, names)];
+  const tokens = [...conditionTokens(requirement.condition, names)];
   if (requirement.reasonName !== undefined)
     tokens.push(text('（理由: '), reasonRef(requirement.reasonName), text('）'));
   return tokens;

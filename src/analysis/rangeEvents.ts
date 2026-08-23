@@ -53,9 +53,9 @@ export function rangeEventAt(
   value: number,
   resolve: StaticValueResolver,
 ): RangeEventReadout | undefined {
-  // どちらの端に達したかはプロパティ自身が答える（PropertyDef.rangeEventsAt）。ここが読むのは、
+  // どちらの端に達したかはプロパティ自身が答える（PropertyDef.rangeEventLabelsAt）。ここが読むのは、
   // その端で何が起こるかだけ。
-  const label = propertyDef.rangeEventsAt(value).at(0)?.[0];
+  const label = propertyDef.rangeEventLabelsAt(value).at(0);
   if (label === undefined) return undefined;
   return rangeEventReadouts(propertyDef, resolve).find((readout) => readout.label === label);
 }

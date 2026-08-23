@@ -1,5 +1,9 @@
-import type { ConditionNode, ConditionOp } from '../../domain/ConditionNode';
-import type { ConditionReader, PropertyConditionReading } from '../../domain/ConditionReader';
+import type {
+  ConditionDeclaration,
+  ConditionOp,
+  ConditionReader,
+  PropertyConditionReading,
+} from '../../domain/ConditionReader';
 import type { ReferenceRoot } from '../../domain/ReferenceRoot';
 import type { TypeMatchReading } from '../../domain/TypeMatchRule';
 import type { DefNames, DescriptionToken } from './Description';
@@ -22,7 +26,7 @@ const OP_SYMBOLS: Readonly<Record<ConditionOp, string>> = {
  * 条件（14節）を読める形に書き表す。1つの式なので行に分けず、断片の並びを返す。
  * 複合ノード（all/any/not）は括弧で包み、入れ子の切れ目が読み取れるようにする。
  */
-export function conditionTokens(node: ConditionNode, names: DefNames): readonly DescriptionToken[] {
+export function conditionTokens(node: ConditionDeclaration, names: DefNames): readonly DescriptionToken[] {
   const describer = new ConditionDescriber(names);
   node.read(describer);
   return describer.tokens;
@@ -93,19 +97,22 @@ class ConditionDescriber implements ConditionReader {
     this.tokens = [text(`${root}が`), ...typeMatchTokens(match, this.names), text('である')];
   }
 
-  all(children: readonly ConditionNode[]): void {
+  all(children: readonly ConditionDeclaration[]): void {
     this.tokens = this.joined(children, 'かつ');
   }
 
-  any(children: readonly ConditionNode[]): void {
+  any(children: readonly ConditionDeclaration[]): void {
     this.tokens = this.joined(children, 'または');
   }
 
-  not(child: ConditionNode): void {
+  not(child: ConditionDeclaration): void {
     this.tokens = [text('not '), ...conditionTokens(child, this.names)];
   }
 
-  private joined(children: readonly ConditionNode[], conjunction: string): readonly DescriptionToken[] {
+  private joined(
+    children: readonly ConditionDeclaration[],
+    conjunction: string,
+  ): readonly DescriptionToken[] {
     const tokens: DescriptionToken[] = [text('(')];
     for (const [index, child] of children.entries()) {
       if (index > 0) tokens.push(text(` ${conjunction} `));

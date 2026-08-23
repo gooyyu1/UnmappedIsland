@@ -1,8 +1,10 @@
-import type { ActiveEffect } from './ActiveEffect';
 import type { ObjectRefReading } from './ObjectRef';
 import type { ReferenceRoot } from './ReferenceRoot';
 
-/** 自分が何を宣言しているかを読み上げられるもの（効果そのものと、それを抱える操作）。 */
+/**
+ * 自分が何を宣言しているかを読み上げられるもの（効果そのものと、それを抱える操作）。入れ子の候補も
+ * この形で渡す（docs/engine/Layers.md 6節「読み下せる宣言だけを外へ出す」）。
+ */
 export interface EffectDeclaration {
   read(reader: EffectReader): void;
 }
@@ -65,7 +67,7 @@ export interface PickCandidateReading {
   readonly weight: WeightReading;
 
   /** この候補が起こすこと。`read`でさらに読み下げる。 */
-  readonly effect: ActiveEffect;
+  readonly effect: EffectDeclaration;
 }
 
 /**

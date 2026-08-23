@@ -1,3 +1,8 @@
+import type {
+  ConditionDeclaration,
+  ConditionReader,
+  PropertyConditionReading,
+} from '../domain/ConditionReader';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { TransferReading } from '../domain/EffectReader';
 import type {
@@ -81,7 +86,47 @@ class TickDeltaCollector implements PassiveReader {
 
 /** ゲートの宣言を、増減がいつまで効くかを見積もれる形へ読み下す。 */
 function tickGateOf(gate: GateReading): TickGate {
-  const watched: number[] = [];
-  gate.conditions?.collectWatchedProperties('self', (propertyGlobalId) => watched.push(propertyGlobalId));
-  return { stage: gate.stage, conditional: gate.conditions !== undefined, watchedSelfProperties: watched };
+  const watched = new WatchedSelfProperties();
+  gate.conditions?.read(watched);
+  return {
+    stage: gate.stage,
+    conditional: gate.conditions !== undefined,
+    watchedSelfProperties: watched.properties,
+  };
+}
+
+/**
+ * 条件が見ている、宣言元自身（self）のプロパティを集める。**その条件がいつまで成り立つか**を
+ * 見積もる手掛かりで、出血は `bleeding` が尽きるまでしか効かない。
+ *
+ * 比較の相手側（valueRef）は数えない——尽きて条件が外れるのは、見ている側の値が動いたときだから。
+ */
+class WatchedSelfProperties implements ConditionReader {
+  readonly properties: number[] = [];
+
+  property(reading: PropertyConditionReading): void {
+    if (reading.root === 'self') this.properties.push(reading.propertyGlobalId);
+  }
+
+  propertyStage(root: ReferenceRoot, propertyGlobalId: number): void {
+    if (root === 'self') this.properties.push(propertyGlobalId);
+  }
+
+  slotPosition(): void {}
+
+  slotContent(): void {}
+
+  objectMatches(): void {}
+
+  all(children: readonly ConditionDeclaration[]): void {
+    for (const child of children) child.read(this);
+  }
+
+  any(children: readonly ConditionDeclaration[]): void {
+    for (const child of children) child.read(this);
+  }
+
+  not(child: ConditionDeclaration): void {
+    child.read(this);
+  }
 }
