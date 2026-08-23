@@ -12,7 +12,7 @@ describe('recipes', () => {
   const load = (yaml: string) => new WorldCodexYamlLoader().load('core.yaml', yaml).build();
 
   const recipesOf = (codex: ReturnType<typeof load>, objectName: string) =>
-    codex.objects.get(codex.objectNames.getId(objectName)).recipes;
+    codex.objects.get(codex.objectNames.getId(objectName)).recipesProducingThis;
 
   it('requiresはタグでも書ける（道具は用途で求める）', () => {
     const codex = load(`

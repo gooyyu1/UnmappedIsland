@@ -50,7 +50,7 @@ export class WorldCodexYamlLoader {
   private patches: RawPatch[] = [];
 
   /** レシピ一覧の棚に使うタグ（recipe_categories、Windows.md 9節）。宣言順がそのまま優先順位。 */
-  private recipeCategoryTagIds: number[] = [];
+  private recipeCategoryTagIdsByPriority: number[] = [];
 
   /** タグが宣言を義務づけるプロパティ（required_props、4.2節）。タグID → プロパティIDの並び。 */
   private requiredPropsByTag = new Map<number, number[]>();
@@ -120,7 +120,8 @@ export class WorldCodexYamlLoader {
     if (recipeCategories !== undefined)
       for (const node of recipeCategories.items as YamlNode[]) {
         const tagId = this._tagNames.intern(asScalarText(node, `${label}.recipe_categories`));
-        if (!this.recipeCategoryTagIds.includes(tagId)) this.recipeCategoryTagIds.push(tagId);
+        if (!this.recipeCategoryTagIdsByPriority.includes(tagId))
+          this.recipeCategoryTagIdsByPriority.push(tagId);
       }
 
     // タグが宣言を義務づけるプロパティ（4.2節）。同じタグへ複数のファイルが足せる（パックが
@@ -235,7 +236,7 @@ export class WorldCodexYamlLoader {
           vocabulary,
           generation,
           generatedTypes,
-          this.recipeCategoryTagIds,
+          this.recipeCategoryTagIdsByPriority,
           this.requiredPropsByTag,
         ),
     );
@@ -276,7 +277,7 @@ export class WorldCodexYamlLoader {
     this.globalObjectDefs.clear();
     this.globalTraits.clear();
     this.patches = [];
-    this.recipeCategoryTagIds = [];
+    this.recipeCategoryTagIdsByPriority = [];
     this.requiredPropsByTag = new Map();
     resetGeneration(this);
     this._objectNames = new NameRegistry();

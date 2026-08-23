@@ -56,7 +56,7 @@ describe('fire.yamlの火の連鎖', () => {
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.createObject(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+    expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 
@@ -64,7 +64,7 @@ describe('fire.yamlの火の連鎖', () => {
     return new Location(location, codex).items.map((object) => object.def.name);
   }
 
-  function numberOf(object: WorldObject, propertyName: string): number {
+  function effectiveNumberOf(object: WorldObject, propertyName: string): number {
     return object.tryGetProperty(codex.propertyNames.getId(propertyName))?.number ?? 0;
   }
 
@@ -104,15 +104,15 @@ describe('fire.yamlの火の連鎖', () => {
   it('火起こし具は小枝と太い枝から作れて、解放条件を持たない', () => {
     const drill = codex.objects.get(codex.objectNames.getId('fire_drill'));
 
-    expect(drill.recipes).toHaveLength(1);
-    const [step] = drill.recipes[0].steps;
+    expect(drill.recipesProducingThis).toHaveLength(1);
+    const [step] = drill.recipesProducingThis[0].steps;
     const requires = (name: string): boolean =>
       step.requirements.some((r) => r.requires(codex.objects.get(codex.objectNames.getId(name))));
     expect(step.requirements).toHaveLength(2);
     expect(requires('thick_branch')).toBe(true);
     expect(requires('twig')).toBe(true);
     // 火スキルが未実装なので、今は誰でも作れる（きりもみ式は道具も紐も要らない）。
-    expect(drill.recipes[0].unmetUnlockRequirement(undefined)).toBeUndefined();
+    expect(drill.recipesProducingThis[0].unmetUnlockRequirement(undefined)).toBeUndefined();
   });
 
   it('火口に火起こし具を重ねると火種ができ、火口は消える', () => {
@@ -194,7 +194,7 @@ describe('fire.yamlの火の連鎖', () => {
 
     stoke(hearth, 'thick_branch');
 
-    expect(numberOf(hearth, 'fuel'), '太い枝1本ぶん').toBe(20);
+    expect(effectiveNumberOf(hearth, 'fuel'), '太い枝1本ぶん').toBe(20);
     expect(itemsOn(land), '燃料は消える').toEqual([]);
   });
 
@@ -205,7 +205,7 @@ describe('fire.yamlの火の連鎖', () => {
     session.advanceWorldTime(60 * 4);
 
     expect(heatIs(hearth, 'out'), '火は消えたまま').toBe(true);
-    expect(numberOf(hearth, 'fuel'), '火がつくまで薪は減らない').toBe(20);
+    expect(effectiveNumberOf(hearth, 'fuel'), '火がつくまで薪は減らない').toBe(20);
   });
 
   it('薪の無い炉には火種を落とせない', () => {
@@ -238,7 +238,7 @@ describe('fire.yamlの火の連鎖', () => {
     // 太い枝1本（20）を炎（-1.5/tick）で食い尽くし、そこから冷めきるまで進める。
     session.advanceWorldTime(60 * 12);
 
-    expect(numberOf(hearth, 'fuel')).toBe(0);
+    expect(effectiveNumberOf(hearth, 'fuel')).toBe(0);
     expect(heatIs(hearth, 'out'), '薪も種火も尽きた').toBe(true);
   });
 
@@ -247,7 +247,7 @@ describe('fire.yamlの火の連鎖', () => {
     stoke(hearth, 'thick_branch'); // 上限の30まで積む
     session.advanceWorldTime(60 * 3);
 
-    expect(numberOf(hearth, 'heat'), '火力の上限で頭打ちになる').toBe(30);
+    expect(effectiveNumberOf(hearth, 'heat'), '火力の上限で頭打ちになる').toBe(30);
     expect(heatIs(hearth, 'flame'), '開いた焚き火は炎まで').toBe(true);
     expect(heatIs(hearth, 'blaze'), '高温には届かない').toBe(false);
   });
@@ -255,7 +255,7 @@ describe('fire.yamlの火の連鎖', () => {
   it('石囲いの炉は薪を多く積めるので、高温へ届く', () => {
     const hearth = spawnInto('stone_hearth', land, 'fixtures');
     for (let i = 0; i < 6; i++) stoke(hearth, 'thick_branch');
-    expect(numberOf(hearth, 'fuel')).toBe(120);
+    expect(effectiveNumberOf(hearth, 'fuel')).toBe(120);
 
     hearth.tryGetProperty(codex.propertyNames.getId('heat'))?.setNumber(1);
     session.advanceWorldTime(60 * 6);
@@ -276,7 +276,7 @@ describe('fire.yamlの火の連鎖', () => {
       hearth
         .combinationsWith(branches[0], player)
         .find((c) => c.name === 'add_fuel')
-        ?.acceptedCount(branches.slice(1)) ?? 1,
+        ?.acceptedCountIncludingSelf(branches.slice(1)) ?? 1,
     ).toBe(2);
 
     for (const branch of branches.slice(0, 2))
@@ -287,7 +287,7 @@ describe('fire.yamlの火の連鎖', () => {
           ?.tryExecute() === true,
       ).toBe(true);
 
-    expect(numberOf(hearth, 'fuel'), '溢れた分は捨てられる（量の器は部分的に受け取る）').toBe(30);
+    expect(effectiveNumberOf(hearth, 'fuel'), '溢れた分は捨てられる（量の器は部分的に受け取る）').toBe(30);
     expect(itemsOn(land), 'くべた2本は残らない').toEqual(['thick_branch']);
   });
 
@@ -295,7 +295,7 @@ describe('fire.yamlの火の連鎖', () => {
     const hearth = spawnInto('campfire', land, 'fixtures');
     stoke(hearth, 'thick_branch');
     stoke(hearth, 'thick_branch');
-    expect(numberOf(hearth, 'fuel')).toBe(30);
+    expect(effectiveNumberOf(hearth, 'fuel')).toBe(30);
 
     const extra = spawnInto('thick_branch', land, 'items');
     expect(
@@ -314,7 +314,7 @@ describe('fire.yamlの火の連鎖', () => {
   it('火にかけた生肉は焼けた肉になり、放っておくと焦げる', () => {
     const hearth = litCampfire();
     const meat = spawnInto('raw_meat', land, 'items');
-    expect(meat.moveToSlot(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
+    expect(meat.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
 
     session.advanceWorldTime(60 * 3);
     expect(new Location(land, codex).fixtures[0].def.name).toBe('campfire');
@@ -333,7 +333,7 @@ describe('fire.yamlの火の連鎖', () => {
     const meat = spawnInto('raw_meat', land, 'items');
     expect(meat.tryGetProperty(cookingId)?.ticksUntilMax(), '火の外では進まない').toBeUndefined();
 
-    expect(meat.moveToSlot(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
+    expect(meat.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
     // 24 ÷ 3 = 8tickでmaxちょうどに乗り、そのtickでon_maxが起きる。
     expect(meat.tryGetProperty(cookingId)?.ticksUntilMax()).toBe(8);
 
@@ -405,7 +405,7 @@ describe('fire.yamlの火の連鎖', () => {
 
     const hearth = litCampfire();
     const stone = spawnInto('stone', land, 'items');
-    expect(stone.moveToSlot(hearth.getSlot(codex.slotNames.getId('fire')))).toBeDefined();
+    expect(stone.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeDefined();
     expect(stone.parent, '入らなかった石は手元に残る').toBe(land);
   });
 });

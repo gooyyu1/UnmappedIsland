@@ -19,7 +19,7 @@ export class SameSlotPlacement {
  * スロットの状態から行う（originKindRemains参照）。1つの効果が複数のオブジェクトを生む場合、2個目以降の位置も
  * ここが決めるため（placeReplacement）、置いた場所を覚えている。
  */
-export class EffectSite {
+export class SameSlotSpawnSite {
   readonly parent: WorldObject;
 
   /** 捕捉時にself(origin)が入っていた枠。 */
@@ -52,7 +52,7 @@ export class EffectSite {
    */
   placeReplacement(spawned: WorldObject): boolean {
     const slot = this.slot;
-    const placed = spawned.insertSameSlot(slot, this.nextPlacement(slot)) === undefined;
+    const placed = spawned.insertSameSlotOrRejection(slot, this.nextPlacement(slot)) === undefined;
 
     // 既存スタックへ合流したもの（findOwnStackがundefined）はセルを消費しないため基準にしない——originの
     // 位置はまだ誰も引き継いでおらず、次の1つのために空けておく。配置に失敗したものも同じ扱いになる。

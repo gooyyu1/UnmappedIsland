@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { PropertyDef } from '../../src/domain/PropertyDef';
-import { characterDefNames, resolveCharacterDefName } from '../../src/domain/generation/NewGame';
+import { characterDefNames, resolveCharacterDefNameOrFirst } from '../../src/domain/generation/NewGame';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
@@ -51,9 +51,11 @@ function stand(character: string): { player: PlayerCharacter; session: WorldSess
   const worldInstance = new WorldObject(0, def('world'), session);
   session.adoptWorld(new World(worldInstance, codex));
   const beach = session.createObject(codex.objectNames.getId('sandy_beach'));
-  expect(beach.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
+  expect(
+    beach.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
+  ).toBeUndefined();
   const instance = session.createObject(codex.objectNames.getId(character));
-  expect(instance.moveToSlot(beach.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
+  expect(instance.moveToSlotOrRejection(beach.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
   return { player: new PlayerCharacter(instance, codex), session };
 }
 
@@ -79,7 +81,7 @@ function takeRest(
   const { player } = stand(character);
   const staminaId = codex.propertyNames.getId('stamina');
   const wakefulnessId = codex.propertyNames.getId('wakefulness');
-  const minutes = player.instance.tryGetAction(actionName, player.instance)?.minutes() ?? 0;
+  const minutes = player.instance.tryGetAction(actionName, player.instance)?.executionMinutes() ?? 0;
   const spent = minutes / 15;
 
   player.instance.tryGetProperty(staminaId)?.setNumber(0);
@@ -106,8 +108,8 @@ describe('プレイヤーキャラクタの定義', () => {
   });
 
   it('セーブに残っていた識別子が未知でも、先頭のキャラクタで開ける', () => {
-    expect(resolveCharacterDefName(codex, characters[1])).toBe(characters[1]);
-    expect(resolveCharacterDefName(codex, 'いなくなったキャラクタ')).toBe(characters[0]);
+    expect(resolveCharacterDefNameOrFirst(codex, characters[1])).toBe(characters[1]);
+    expect(resolveCharacterDefNameOrFirst(codex, 'いなくなったキャラクタ')).toBe(characters[0]);
   });
 
   describe.each(characters)('%s', (character) => {
@@ -365,7 +367,9 @@ describe('プレイヤーキャラクタの定義', () => {
     it.each(RESTS)('休息「%s」を持ち、%i分かかる', (actionName, minutes) => {
       const { player } = stand(character);
 
-      expect(player.instance.tryGetAction(actionName, player.instance)?.minutes() ?? 0).toBe(minutes);
+      expect(player.instance.tryGetAction(actionName, player.instance)?.executionMinutes() ?? 0).toBe(
+        minutes,
+      );
     });
 
     it('眠る休息だけが眠気を戻す', () => {

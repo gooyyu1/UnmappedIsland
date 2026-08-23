@@ -84,7 +84,7 @@ export function createsObject(def: ObjectDef, objectGlobalId: number): boolean {
  * 「何になるのか」を知りたい読み手には完成品＝この型が答えなので、どの工程で使うかまでは返さない。
  */
 export function usesInRecipes(def: ObjectDef, candidateDef: ObjectDef): boolean {
-  return def.recipes.some((recipe) => recipe.requires(candidateDef));
+  return def.recipesProducingThis.some((recipe) => recipe.requires(candidateDef));
 }
 
 /** 1つのプロパティのrange系イベントのうち、matchesが真になるものを、宣言元の名前を添えて書き出す。 */

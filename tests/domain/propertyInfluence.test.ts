@@ -197,8 +197,8 @@ object_defs:
     const person = spawn(codex, 'person', session);
     const sprain = spawn(codex, 'sprain', session);
     const bandage = spawn(codex, 'bandage', session);
-    expect(sprain.moveToSlot(person.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
-    expect(bandage.moveToSlot(sprain.getSlot(codex.slotNames.getId('treatment')))).toBeUndefined();
+    expect(sprain.moveToSlotOrRejection(person.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
+    expect(bandage.moveToSlotOrRejection(sprain.getSlot(codex.slotNames.getId('treatment')))).toBeUndefined();
 
     const pain = person.readInfluences(codex.propertyNames.getId('pain'));
 
@@ -225,7 +225,7 @@ object_defs:
     const session = new WorldSession(codex);
     const person = spawn(codex, 'person', session);
     for (const injury of [spawn(codex, 'sprain', session), spawn(codex, 'sprain', session)])
-      expect(injury.moveToSlot(person.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
+      expect(injury.moveToSlotOrRejection(person.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
 
     const pain = person.readInfluences(codex.propertyNames.getId('pain'));
 
@@ -258,11 +258,11 @@ object_defs:
     expect(shown(codex, person.readInfluences(loadId).received), '空身では押し上げる物が居ない').toEqual([]);
 
     const stone = spawn(codex, 'stone', session);
-    expect(stone.moveToSlot(hand)).toBeUndefined();
+    expect(stone.moveToSlotOrRejection(hand)).toBeUndefined();
     expect(shown(codex, person.readInfluences(loadId).received), '担いだ石が影響元').toEqual(['stone▲']);
 
     const another = spawn(codex, 'stone', session);
-    expect(another.moveToSlot(hand)).toBeUndefined();
+    expect(another.moveToSlotOrRejection(hand)).toBeUndefined();
     expect(shown(codex, person.readInfluences(loadId).received), '影響元が別々の個体なので畳まない').toEqual([
       'stone▲',
       'stone▲',
@@ -293,8 +293,8 @@ object_defs:
     const person = spawn(codex, 'person', session);
     const ground = spawn(codex, 'ground', session);
     const sprain = spawn(codex, 'sprain', session);
-    expect(sprain.moveToSlot(person.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
-    expect(sprain.moveToSlot(ground.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
+    expect(sprain.moveToSlotOrRejection(person.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
+    expect(sprain.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
 
     const pain = person.readInfluences(codex.propertyNames.getId('pain'));
 

@@ -21,7 +21,7 @@ import { PropertyRange } from '../domain/PropertyDef';
 import type { ObjectDef } from '../domain/ObjectDef';
 import { AxisDef, GeneratorLayer } from '../domain/generation/AxisDef';
 import { GenerationDefs } from '../domain/generation/GenerationDefs';
-import { GenerationScopeDef, GuaranteeDef } from '../domain/generation/GenerationScopeDef';
+import { GenerationScopeDef, CoverageGuaranteeDef } from '../domain/generation/GenerationScopeDef';
 import type { GuaranteePick } from '../domain/generation/GenerationScopeDef';
 import {
   AxisLimit,
@@ -254,7 +254,7 @@ function parseGenerationScope(name: string, raw: YamlNode): GenerationScopeDef {
   const siteCountMin = requireInt(siteCountNode, 'min', context);
   const siteCountMax = requireInt(siteCountNode, 'max', context);
 
-  const guarantees: GuaranteeDef[] = [];
+  const guarantees: CoverageGuaranteeDef[] = [];
   const guaranteesNode = tryGetSeq(node, 'guarantees', context);
   if (guaranteesNode !== undefined) {
     const items = guaranteesNode.items as YamlNode[];
@@ -284,7 +284,7 @@ function parseGenerationScope(name: string, raw: YamlNode): GenerationScopeDef {
         built(
           guaranteeContext,
           () =>
-            new GuaranteeDef(
+            new CoverageGuaranteeDef(
               requireScalar(guaranteeNode, 'location_type', guaranteeContext),
               tryGetInt(guaranteeNode, 'count', guaranteeContext) ?? 1,
               requireScalar(guaranteeNode, 'axis', guaranteeContext),

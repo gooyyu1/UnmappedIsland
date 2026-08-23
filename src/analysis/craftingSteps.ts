@@ -31,7 +31,7 @@ export function craftingStepsOf(def: ObjectDef, outer?: StaticValueResolver): re
   const steps: CraftingStep[] = [];
   for (const trigger of def.triggers)
     steps.push(withTriggeredRangeEvents(def, interactionStep(def, trigger, outer), outer));
-  for (const recipe of def.recipes) steps.push(recipeStep(def, recipe));
+  for (const recipe of def.recipesProducingThis) steps.push(recipeStep(def, recipe));
   return steps;
 }
 

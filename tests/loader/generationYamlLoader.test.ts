@@ -88,8 +88,8 @@ generation_scopes:
     if (island === undefined) return;
     expect(island.siteCountMin).toBe(10);
     expect(island.siteCountMax).toBe(20);
-    expect(island.coastBand).toBe(15);
-    expect(island.hullCoast).toBe(true);
+    expect(island.coastBandMaxDistance).toBe(15);
+    expect(island.clampsHullSitesToCoast).toBe(true);
     expect(island.interiorBias).toBe(0.6);
     expect(island.guarantees).toHaveLength(1);
     expect(island.guarantees[0].locationType).toBe('peak');

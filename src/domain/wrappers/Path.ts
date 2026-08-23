@@ -10,17 +10,17 @@ import type { WorldObject } from '../WorldObject';
 export class Path extends ObjectWrapper {
   /** 移動時間（分）。 */
   get travelMinutes(): number {
-    return this.numberOf(this.words.travelMinutesId);
+    return this.effectiveNumberOf(this.words.travelMinutesId);
   }
 
   /** 発見に必要な、親の土地の探索進捗。 */
   get requiredProgress(): number {
-    return this.numberOf(this.words.requiredProgressId);
+    return this.effectiveNumberOf(this.words.requiredProgressId);
   }
 
   /** 移動先LocationのインスタンスID。 */
   get destinationInstanceId(): number {
-    return this.numberOf(this.words.destinationIdId);
+    return this.effectiveNumberOf(this.words.destinationIdId);
   }
 
   /**
@@ -28,12 +28,12 @@ export class Path extends ObjectWrapper {
    * 呼び出し側はインスタンスIDから実体を辿る手順を知らなくてよい。まだ実体化していなければundefined。
    */
   get destination(): WorldObject | undefined {
-    return this.instance.findRoot().findDescendantByInstanceId(this.destinationInstanceId);
+    return this.instance.findRoot().findSelfOrDescendantByInstanceId(this.destinationInstanceId);
   }
 
   /** 移動先の土地にある、こちらへ戻る道のインスタンスID（辺の両端の道は互いを指す）。 */
   get returnPathInstanceId(): number {
-    return this.numberOf(this.words.returnPathIdId);
+    return this.effectiveNumberOf(this.words.returnPathIdId);
   }
 
   /** この道を通って移動する（YAML側のtravelアクション: 未発見なら不成立、成功ならactorが移動先へ移り、travel_minutes分の時間が進む）。 */

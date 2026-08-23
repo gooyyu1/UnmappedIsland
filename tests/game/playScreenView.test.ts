@@ -344,7 +344,7 @@ object_defs:
     const frozen = withFrozenCards(live, [equipment]);
 
     // 控えたあとでワールドが変わる（装備が外れる）。
-    expect(stone.moveToSlot(mini.slot('hand'))).toBeUndefined();
+    expect(stone.moveToSlotOrRejection(mini.slot('hand'))).toBeUndefined();
 
     expect(
       frozen.cardsIn(equipment).map((card) => card?.objects[0]),
@@ -392,7 +392,7 @@ object_defs:
     const basket = mini.createObject('basket', mini.slot('hand'));
     const contents = mini.slot('contents', basket);
     const stone = mini.createObject('stone');
-    expect(stone.moveToSlot(contents, { kind: 'cell', index: 3 })).toBeUndefined();
+    expect(stone.moveToSlotOrRejection(contents, { kind: 'cell', index: 3 })).toBeUndefined();
 
     const cells = viewOf(mini).cardsIn(contents);
 
@@ -490,7 +490,7 @@ object_defs:
 
     // 経過の途中経過（RecordedView）を再生する頃には、ワールド側の束は空になり得る。
     // カードは作った時点の中身を写し取っているので、端の表示の試し打ち（moveTo）は壊れない。
-    expect(stone.moveToSlot(mini.slot('hand'))).toBeUndefined();
+    expect(stone.moveToSlotOrRejection(mini.slot('hand'))).toBeUndefined();
     expect(() => card.dropInto?.(place(mini, 'hand'))).not.toThrow();
     expect(card.movedIds(1)).toEqual([stone.instanceId]);
   });

@@ -104,10 +104,12 @@ object_defs:
     const path = session.createObject(codex.objectNames.getId('path'));
 
     const locationsId = codex.slotNames.getId('locations');
-    expect(meadow.moveToSlot(world.getSlot(locationsId))).toBeUndefined();
-    expect(hilltop.moveToSlot(world.getSlot(locationsId))).toBeUndefined();
-    expect(character.moveToSlot(meadow.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
-    expect(path.moveToSlot(meadow.getSlot(codex.slotNames.getId('stuff')))).toBeUndefined();
+    expect(meadow.moveToSlotOrRejection(world.getSlot(locationsId))).toBeUndefined();
+    expect(hilltop.moveToSlotOrRejection(world.getSlot(locationsId))).toBeUndefined();
+    expect(
+      character.moveToSlotOrRejection(meadow.getSlot(codex.slotNames.getId('characters'))),
+    ).toBeUndefined();
+    expect(path.moveToSlotOrRejection(meadow.getSlot(codex.slotNames.getId('stuff')))).toBeUndefined();
 
     return { codex, session, world, meadow, hilltop, character, path };
   }
@@ -150,7 +152,7 @@ object_defs:
     expect(character.parent, 'actorはpathの中へ入る').toBe(path);
     expect(path.parent, 'pathは型で指した行き先へ移る').toBe(hilltop);
     expect(
-      character.findRoot().findDescendantOfDef(codex.objectNames.getId('character')),
+      character.findRoot().findSelfOrDescendantOfDef(codex.objectNames.getId('character')),
       '中の物も一緒に運ばれる',
     ).toBe(character);
   });
@@ -207,7 +209,7 @@ object_defs:
     const basket = session.createObject(codex.objectNames.getId('basket'));
     const stone = session.createObject(codex.objectNames.getId('stone'));
     for (const item of [basket, stone]) {
-      expect(item.moveToSlot(world.getSlot(stuffSlot))).toBeUndefined();
+      expect(item.moveToSlotOrRejection(world.getSlot(stuffSlot))).toBeUndefined();
     }
 
     expect(
@@ -253,8 +255,8 @@ object_defs:
     const stuffSlot = codex.slotNames.getId('stuff');
     const outer = session.createObject(codex.objectNames.getId('basket'));
     const inner = session.createObject(codex.objectNames.getId('basket'));
-    expect(outer.moveToSlot(world.getSlot(stuffSlot))).toBeUndefined();
-    expect(inner.moveToSlot(world.getSlot(stuffSlot))).toBeUndefined();
+    expect(outer.moveToSlotOrRejection(world.getSlot(stuffSlot))).toBeUndefined();
+    expect(inner.moveToSlotOrRejection(world.getSlot(stuffSlot))).toBeUndefined();
 
     // かご同士も入れ子にできる。
     expect(
@@ -447,7 +449,7 @@ object_defs:
     const receiver = session.createObject(codex.objectNames.getId('water'));
     const poured = session.createObject(codex.objectNames.getId('water'));
     const contentId = codex.slotNames.getId('content');
-    expect(receiver.moveToSlot(jar.getSlot(contentId))).toBeUndefined();
+    expect(receiver.moveToSlotOrRejection(jar.getSlot(contentId))).toBeUndefined();
 
     expect(
       receiver

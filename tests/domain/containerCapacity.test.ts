@@ -51,20 +51,22 @@ object_defs:
     return {
       container,
       put: (name: string): string | undefined =>
-        session.createObject(codex.objectNames.getId(name)).moveToSlot(container.getSlot(contentsId)),
+        session
+          .createObject(codex.objectNames.getId(name))
+          .moveToSlotOrRejection(container.getSlot(contentsId)),
     };
   };
 
   it('入れた物のかさが上限を占めるぶんだけ増える', () => {
     const { container, put } = setUp('basket');
 
-    expect(container.storageFillRatio(), '空の入れ物は0（バーは出るが空）').toBe(0);
+    expect(container.fullestSlotFillRatio(), '空の入れ物は0（バーは出るが空）').toBe(0);
 
     expect(put('stone')).toBeUndefined();
-    expect(container.storageFillRatio()).toBeCloseTo(0.3, 5);
+    expect(container.fullestSlotFillRatio()).toBeCloseTo(0.3, 5);
 
     expect(put('stone')).toBeUndefined();
-    expect(container.storageFillRatio()).toBeCloseTo(0.6, 5);
+    expect(container.fullestSlotFillRatio()).toBeCloseTo(0.6, 5);
   });
 
   it('上限を超える物は入らないので、割合は1を超えない', () => {
@@ -72,7 +74,7 @@ object_defs:
     for (let i = 0; i < 3; i++) expect(put('stone'), `${i + 1}個目`).toBeUndefined();
 
     expect(put('stone'), '4個目は容量を超えるので弾かれる').toContain('容量');
-    expect(container.storageFillRatio()).toBeCloseTo(0.9, 5);
+    expect(container.fullestSlotFillRatio()).toBeCloseTo(0.9, 5);
   });
 
   it('かさを宣言していない物を入れても増えない', () => {
@@ -82,7 +84,7 @@ object_defs:
 
     expect(put('feather')).toBeUndefined();
 
-    expect(container.storageFillRatio()).toBe(0);
+    expect(container.fullestSlotFillRatio()).toBe(0);
   });
 
   it('上限を持たない入れ物は、詰まり具合そのものを持たない', () => {
@@ -90,11 +92,11 @@ object_defs:
 
     expect(put('stone')).toBeUndefined();
 
-    expect(container.storageFillRatio()).toBeUndefined();
+    expect(container.fullestSlotFillRatio()).toBeUndefined();
   });
 
   it('中身を持たない物は、詰まり具合そのものを持たない', () => {
-    expect(spawn('stone').object.storageFillRatio()).toBeUndefined();
+    expect(spawn('stone').object.fullestSlotFillRatio()).toBeUndefined();
   });
 
   it('入れ物と名乗らない型は、上限つきのスロットを持っていてもバーの出所にならない', () => {
@@ -116,7 +118,7 @@ object_defs:
     const session = new WorldSession(withoutStorage);
 
     expect(
-      session.createObject(withoutStorage.objectNames.getId('canteen')).storageFillRatio(),
+      session.createObject(withoutStorage.objectNames.getId('canteen')).fullestSlotFillRatio(),
     ).toBeUndefined();
   });
 });

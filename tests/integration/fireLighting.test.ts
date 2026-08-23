@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { Slot } from '../../src/domain/Slot';
 import type { WorldObject } from '../../src/domain/WorldObject';
-import { start as startNewGame } from '../../src/domain/generation/NewGame';
+import { startNewGame } from '../../src/domain/generation/NewGame';
 import type { Localization } from '../../src/locale/Localization';
 import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -37,7 +37,7 @@ describe('火起こし（世界→映し 通し）', () => {
     const land = game.player.location!.instance;
     const put = (name: string, slot: Slot): WorldObject => {
       const object = game.session.createObject(codex.objectNames.getId(name));
-      expect(object.moveToSlot(slot)).toBeUndefined();
+      expect(object.moveToSlotOrRejection(slot)).toBeUndefined();
       return object;
     };
 

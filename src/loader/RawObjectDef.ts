@@ -11,7 +11,7 @@ import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { RawTrait } from './RawTrait';
 import { RawDeclarationBody, namesIn } from './RawDeclarationBody';
 import { IN_PROGRESS_TAG } from '../domain/RecipeDef';
-import { LocalIndexMap } from '../domain/LocalIndexMap';
+import { LocalIndexByGlobalId } from '../domain/LocalIndexByGlobalId';
 import { ObjectDef } from '../domain/ObjectDef';
 import { containerPropagationPassives } from '../domain/containerPropagation';
 import type { PassiveEffect } from '../domain/PassiveEffect';
@@ -114,7 +114,7 @@ export class RawObjectDef {
             passives,
           ),
         );
-    const propertyLayout = new LocalIndexMap(
+    const propertyIndexByGlobalId = new LocalIndexByGlobalId(
       loader.propertyNames.count,
       propertyDefs.map((p) => p.globalId),
     );
@@ -125,7 +125,7 @@ export class RawObjectDef {
         slotDefs.push(
           parseSlot(loader, this.name, slotName, asMap(slotValueNode, `'${this.name}'.slots.'${slotName}'`)),
         );
-    const slotLayout = new LocalIndexMap(
+    const slotIndexByGlobalId = new LocalIndexByGlobalId(
       loader.slotNames.count,
       slotDefs.map((s) => s.globalId),
     );
@@ -181,9 +181,9 @@ export class RawObjectDef {
           this.globalId,
           this.name,
           this.isSingleton,
-          propertyLayout,
+          propertyIndexByGlobalId,
           propertyDefs,
-          slotLayout,
+          slotIndexByGlobalId,
           slotDefs,
           passives,
           stackOrder,

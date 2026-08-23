@@ -57,13 +57,13 @@ object_defs:
     ground = new WorldObject(0, codex.objects.get(idOf('ground')), session);
     player = session.createObject(idOf('character'));
     wip = session.createObject(idOf(inProgressObjectName('basket', 'woven')));
-    wip.moveToSlot(ground.getSlot(slotOf('items')));
+    wip.moveToSlotOrRejection(ground.getSlot(slotOf('items')));
   });
 
   /** 素材をn個、指定の親のスロットへ置く。 */
   function place(objectName: string, count: number, parent: WorldObject, slotName: string): void {
     for (let i = 0; i < count; i += 1)
-      session.createObject(idOf(objectName)).moveToSlot(parent.getSlot(slotOf(slotName)));
+      session.createObject(idOf(objectName)).moveToSlotOrRejection(parent.getSlot(slotOf(slotName)));
   }
 
   /** 製作中オブジェクトの材料スロットに入っている物の識別子。 */
@@ -115,7 +115,7 @@ object_defs:
   it('入れ物の中までは探さない', () => {
     // かごを手に持ち、その中に素材を入れておく。手持ちの直下ではないので対象外。
     const basket = session.createObject(idOf('basket'));
-    basket.moveToSlot(player.getSlot(slotOf('hand')));
+    basket.moveToSlotOrRejection(player.getSlot(slotOf('hand')));
     place('woven_leaf', 3, ground, 'items');
 
     expect(fill(), '足元のぶんだけが入る').toBe(3);
@@ -139,7 +139,7 @@ object_defs:
 
     /** 1つ目の工程（reed×2）が済んだところから、残りの要求だけを渡して自動補充する。 */
     function fillRemaining(): number {
-      const recipe = codex.objects.get(idOf('torch')).recipes[0];
+      const recipe = codex.objects.get(idOf('torch')).recipesProducingThis[0];
       return autoFillMaterials(
         torch,
         codex.vocabulary.engine.materialsSlotId,
@@ -160,7 +160,7 @@ object_defs:
 
     beforeEach(() => {
       torch = session.createObject(idOf(inProgressObjectName('torch', 'lit')));
-      torch.moveToSlot(ground.getSlot(slotOf('items')));
+      torch.moveToSlotOrRejection(ground.getSlot(slotOf('items')));
     });
 
     it('済んだ工程の枠は、その型を受け入れても埋めない', () => {

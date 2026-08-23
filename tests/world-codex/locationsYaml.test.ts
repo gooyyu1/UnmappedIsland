@@ -166,11 +166,13 @@ describe('locations.yamlの土地・道定義', () => {
     const pathToForest = session.createObject(codex.objectNames.getId('path'));
 
     const locationsSlotId = codex.slotNames.getId('locations');
-    expect(grassland.moveToSlot(worldInstance.getSlot(locationsSlotId))).toBeUndefined();
-    expect(forest.moveToSlot(worldInstance.getSlot(locationsSlotId))).toBeUndefined();
-    expect(character.moveToSlot(grassland.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
+    expect(grassland.moveToSlotOrRejection(worldInstance.getSlot(locationsSlotId))).toBeUndefined();
+    expect(forest.moveToSlotOrRejection(worldInstance.getSlot(locationsSlotId))).toBeUndefined();
     expect(
-      pathToForest.moveToSlot(grassland.getSlot(codex.slotNames.getId('undiscovered_fixtures'))),
+      character.moveToSlotOrRejection(grassland.getSlot(codex.slotNames.getId('characters'))),
+    ).toBeUndefined();
+    expect(
+      pathToForest.moveToSlotOrRejection(grassland.getSlot(codex.slotNames.getId('undiscovered_fixtures'))),
     ).toBeUndefined();
 
     pathToForest.getProperty(codex.propertyNames.getId('required_progress')).setNumberWithoutEvents(3);

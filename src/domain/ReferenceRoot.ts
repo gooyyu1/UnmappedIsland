@@ -68,7 +68,7 @@ export class ReferenceContext {
    * selfだけが決まっている文脈。actor/draggedは解決先を持たない——誰かが操作しているとは限らない
    * 場面（持続効果のゲート、影響の一覧）で使う。
    */
-  static of(self: WorldObject | undefined): ReferenceContext {
+  static forSelf(self: WorldObject | undefined): ReferenceContext {
     return new ReferenceContext(self, undefined, undefined, undefined);
   }
 

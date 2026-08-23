@@ -1,7 +1,7 @@
 import type { WorldCodex } from './WorldCodex';
 import { RecipeRequirementDef } from './RecipeDef';
 import type { RecipeDef, RecipeStepDef } from './RecipeDef';
-import { spendDuration } from './actionTime';
+import { spendDurationAndReportParticipantsAlive } from './actionTime';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 
@@ -57,7 +57,7 @@ export function remainingRequirements(recipe: RecipeDef, progress: number): read
  * **1つの物を2つの要求で二重に数えない。** 要求はタグでも書けるので、尖った石1つが
  * `cutting_tool`の要求にも`sharp_stone`の要求にも当てはまりうる。先に書いた要求から取る。
  */
-function allocate(
+function allocateContentsToRequirements(
   contents: readonly WorldObject[],
   step: RecipeStepDef,
 ): ReadonlyMap<RecipeRequirementDef, readonly WorldObject[]> {
@@ -105,7 +105,10 @@ export function stepSupplyRatio(
   materialsSlotGlobalId: number,
   step: RecipeStepDef,
 ): number {
-  const allocated = allocate(inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [], step);
+  const allocated = allocateContentsToRequirements(
+    inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [],
+    step,
+  );
   let needed = 0;
   let held = 0;
   for (const requirement of step.requirements) {
@@ -136,7 +139,7 @@ export function stepIsSupplied(
  * @returns 進めたら true。素材が足りない、全工程を終えている、経過中に製作中オブジェクト自身が
  *   失われたなら false。最後の場合だけは時間が経過している（actionTime参照）。
  */
-export function advanceCrafting(
+export function tryAdvanceCrafting(
   inProgress: WorldObject,
   materialsSlotGlobalId: number,
   recipe: RecipeDef,
@@ -155,10 +158,13 @@ export function advanceCrafting(
   // 生存を見るのは製作中オブジェクトだけ（actionsのselfにあたる）。これを失うと進捗の行き先も
   // 完成品の生まれる場所も無くなり、黙って何も起きない結果になる。素材は違う——経過中に失われても
   // 打ち切らない。それは開始時に済ませた在庫確認（stepIsSupplied）の再判定にあたる（同6.1節）。
-  if (!spendDuration(step.durationMinutes, session, [inProgress])) return false;
+  if (!spendDurationAndReportParticipantsAlive(step.durationMinutes, session, [inProgress])) return false;
 
   // 消費が進捗より先なのは、進捗が上限を超えた瞬間に完成し、残っている物は親へこぼれてしまうため。
-  const allocated = allocate(inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [], step);
+  const allocated = allocateContentsToRequirements(
+    inProgress.tryGetSlot(materialsSlotGlobalId)?.contents ?? [],
+    step,
+  );
   for (const requirement of step.requirements) {
     if (!requirement.consume) continue;
     for (const object of allocated.get(requirement) ?? []) object.destroy();
@@ -200,5 +206,5 @@ function spillUnneeded(
     (object) => !stillNeeded.some((requirement) => requirement.requires(object.def)),
   );
 
-  for (const object of leftovers) object.moveToSlot(parent.getSlot(parentSlot.globalId));
+  for (const object of leftovers) object.moveToSlotOrRejection(parent.getSlot(parentSlot.globalId));
 }

@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import type { NewGameSession } from '../../src/domain/generation/NewGame';
-import { start as startNewGame } from '../../src/domain/generation/NewGame';
+import type { StartedGame } from '../../src/domain/generation/NewGame';
+import { startNewGame } from '../../src/domain/generation/NewGame';
 import { Path } from '../../src/domain/wrappers/Path';
 import type { PlayScreenView } from '../../src/game/view/PlayScreenView';
 import { fromGameSession } from '../../src/game/view/PlayScreenView';
@@ -32,17 +32,17 @@ describe('探索と地図（世界→映し 通し）', () => {
   });
 
   /** その区画のレーンに並んでいる札（空き枠を除いたもの）。 */
-  function lane(view: PlayScreenView, game: NewGameSession, screen: ScreenPlace) {
+  function lane(view: PlayScreenView, game: StartedGame, screen: ScreenPlace) {
     return view.cardsIn(place(game, screen)).filter((card) => card !== undefined);
   }
 
   /** 画面の区画（3つのレーン）が今映している場所。 */
-  function place(game: NewGameSession, screen: ScreenPlace): CardPlace {
+  function place(game: StartedGame, screen: ScreenPlace): CardPlace {
     return cardPlacesOf(game.player, game.player.location ?? game.startLocation)(screen);
   }
 
   /** 現在地を探索率100%まで探索する。100%到達後も探索は続けられるため、回数で止める。 */
-  function exploreToFull(game: NewGameSession): void {
+  function exploreToFull(game: StartedGame): void {
     const location = game.player.location ?? game.startLocation;
     for (let i = 0; i < location.explorationProgressMax; i++) game.player.explore();
   }
@@ -216,7 +216,7 @@ describe('探索と地図（世界→映し 通し）', () => {
       const instanceId = game.map.siteInstanceIds[land.site];
       expect(land.card.name).toBe(locale.locationName(game.map.nameOfInstance(instanceId)!));
       expect(land.card.art, '絵は土地のobject_defの識別子で引く').toBe(
-        root.findDescendantByInstanceId(instanceId)?.def.name,
+        root.findSelfOrDescendantByInstanceId(instanceId)?.def.name,
       );
       expect(land.card.art).toBeDefined();
     }

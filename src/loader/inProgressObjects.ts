@@ -54,7 +54,7 @@ export function inProgressObjectsYaml(
   const coordinates = new Map<string, GeneratedCoordinate>();
 
   for (const def of defs)
-    for (const recipe of def.recipes) {
+    for (const recipe of def.recipesProducingThis) {
       const name = inProgressObjectName(def.name, recipe.name);
       objectDefs[name] = inProgressObjectDef(def, recipe, tagNames, objectNames, propertyNames);
       // 素の型は完成品で、軸`recipe`の値がレシピの名前（GameElementDefinition.md 3.5節）。
@@ -70,7 +70,7 @@ export function inProgressObjectsYaml(
 
 function inProgressObjectDef(
   product: ObjectDef,
-  recipe: ObjectDef['recipes'][number],
+  recipe: ObjectDef['recipesProducingThis'][number],
   tagNames: NameRegistry,
   objectNames: NameRegistry,
   propertyNames: NameRegistry,
@@ -150,7 +150,7 @@ function declaredVolume(product: ObjectDef, propertyNames: NameRegistry): Record
  * `max`にする（枠は「置ける場所」なので、上限は要求の合計で足りる）。
  */
 function requirementCells(
-  recipe: ObjectDef['recipes'][number],
+  recipe: ObjectDef['recipesProducingThis'][number],
   tagNames: NameRegistry,
   objectNames: NameRegistry,
 ): Array<Record<string, unknown>> {

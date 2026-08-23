@@ -231,7 +231,7 @@ object_defs:
     // 出すかどうかは場所ではなく「今その値が進んでいるか」で決まる（CardView.md 15節）。
     const mini = setUp();
     const { meat } = placeCookingHearth(mini);
-    expect(meat.moveToSlot(mini.slot('items', mini.land))).toBeUndefined();
+    expect(meat.moveToSlotOrRejection(mini.slot('items', mini.land))).toBeUndefined();
 
     expect(cardOf(mini, meat).cooking).toBeUndefined();
   });

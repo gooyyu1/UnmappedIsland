@@ -6,11 +6,11 @@ import { World } from '../wrappers/World';
 import { PlayerCharacter } from '../wrappers/PlayerCharacter';
 import type { Location } from '../wrappers/Location';
 import type { IslandMap } from './IslandMap';
-import { generate } from './TerrainGenerator';
-import { populate, placePlayer, placePlayerAt } from './IslandSpawner';
+import { generateIsland } from './TerrainGenerator';
+import { spawnIslandIntoWorld, placePlayer, placePlayerAt } from './IslandSpawner';
 
-/** NewGame.startが組み立てた、開始直後のゲーム一式。 */
-export class NewGameSession {
+/** NewGame.startNewGameが組み立てた、開始直後のゲーム一式。 */
+export class StartedGame {
   readonly session: WorldSession;
   readonly world: World;
   readonly player: PlayerCharacter;
@@ -72,7 +72,7 @@ export function characterDefNames(codex: WorldCodex): readonly string[] {
  * セーブに残っている識別子から、実際に動かすキャラクタを決める。未知の識別子（識別子の改名・旧セーブ）は
  * 先頭のキャラクタで代替し、セーブが開けなくなることを避ける。
  */
-export function resolveCharacterDefName(codex: WorldCodex, savedCharacterId: string): string {
+export function resolveCharacterDefNameOrFirst(codex: WorldCodex, savedCharacterId: string): string {
   const names = characterDefNames(codex);
   return names.includes(savedCharacterId) ? savedCharacterId : names[0];
 }
@@ -85,8 +85,13 @@ export function resolveCharacterDefName(codex: WorldCodex, savedCharacterId: str
  * （characterDefNames参照）。rngはpick抽選・初期値ロール・開始時刻用のWorldSession.rng（省略時は非決定。
  * 地形レイアウト自体はseedのみで決まり、rngには依存しない）。
  */
-export function start(codex: WorldCodex, characterDefName: string, seed: number, rng?: Rng): NewGameSession {
-  // worldはinstanceId 0で直接生成する（WorldSession.spawnの発行IDは1始まりのため衝突しない）。
+export function startNewGame(
+  codex: WorldCodex,
+  characterDefName: string,
+  seed: number,
+  rng?: Rng,
+): StartedGame {
+  // worldはinstanceId 0で直接生成する（WorldSession.createObjectの発行IDは1始まりのため衝突しない）。
   // セッションを先に作ってworldを後から結び付けるのは、WorldObjectの生成にsession（初期値ロール文脈）が
   // 必要で、World付きセッション自体がworldインスタンスを必要とするという相互依存を断つため
   // （WorldSession.adoptWorld）。**この順序にすると、worldインスタンスも他の物と同じセッションに属する。**
@@ -100,15 +105,15 @@ export function start(codex: WorldCodex, characterDefName: string, seed: number,
   session.adoptWorld(world);
   world.rollTimeOfDay(START_TIME_EARLIEST_MINUTES, START_TIME_LATEST_MINUTES, session.rng);
 
-  spawnSingletons(session, worldInstance);
+  spawnSingletonsAcceptedByWorld(session, worldInstance);
 
   const character = session.createObject(codex.objectNames.getId(characterDefName));
 
-  const map = generate(codex.generation, 'island', seed);
-  populate(session, map);
+  const map = generateIsland(codex.generation, 'island', seed);
+  spawnIslandIntoWorld(session, map);
   const startLocation = placePlayer(session, map, character);
 
-  return new NewGameSession(session, world, new PlayerCharacter(character, codex), startLocation, map);
+  return new StartedGame(session, world, new PlayerCharacter(character, codex), startLocation, map);
 }
 
 /**
@@ -120,7 +125,7 @@ export function start(codex: WorldCodex, characterDefName: string, seed: number,
  * 型の名前を1つも知らない。キャラクタもsingletonだが、worldのどのスロットにも入らない（土地の
  * charactersスロットに入る物なので）ため、ここでは湧かない。
  */
-function spawnSingletons(session: WorldSession, worldInstance: WorldObject): void {
+function spawnSingletonsAcceptedByWorld(session: WorldSession, worldInstance: WorldObject): void {
   for (const globalId of session.codex.singletonGlobalIds()) {
     if (globalId === worldInstance.def.globalId) continue;
 

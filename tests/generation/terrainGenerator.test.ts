@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { generate as generateTerrain } from '../../src/domain/generation/TerrainGenerator';
+import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import type { IslandEdge, IslandMap } from '../../src/domain/generation/IslandMap';
 import type { GenerationScopeDef } from '../../src/domain/generation/GenerationScopeDef';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -26,7 +26,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   });
 
   function generate(seed: number): IslandMap {
-    return generateTerrain(codex.generation, 'island', seed);
+    return generateIsland(codex.generation, 'island', seed);
   }
 
   function scope(): GenerationScopeDef {

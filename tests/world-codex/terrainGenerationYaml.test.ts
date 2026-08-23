@@ -66,8 +66,11 @@ describe('terrain_generation.yamlの地形生成定義', () => {
 
     expect(island.siteCountMin, '生成される土地は10〜20個(要求)').toBe(10);
     expect(island.siteCountMax).toBe(20);
-    expect(island.hullCoast, '外周のサイトを海岸帯へ寄せ、島が海岸に囲まれることを保証する').toBe(true);
-    expect(island.coastBand).toBeGreaterThan(0);
+    expect(
+      island.clampsHullSitesToCoast,
+      '外周のサイトを海岸帯へ寄せ、島が海岸に囲まれることを保証する',
+    ).toBe(true);
+    expect(island.coastBandMaxDistance).toBeGreaterThan(0);
 
     const mountain = singleOrUndefined(island.guarantees, (g) => g.locationType === 'mountain_peak');
     expect(mountain).toBeDefined();
@@ -86,11 +89,11 @@ describe('terrain_generation.yamlの地形生成定義', () => {
 
       if (coastalTypes.includes(type.name))
         expect(coastal?.max, `海岸型 ${type.name} は海岸帯(coast_band以下)にしか出ない`).toBe(
-          island.coastBand,
+          island.coastBandMaxDistance,
         );
       else
         expect(coastal?.min, `内陸型 ${type.name} は海岸帯には出ない(海岸過多の防止)`).toBe(
-          island.coastBand + 1,
+          island.coastBandMaxDistance + 1,
         );
     }
   });

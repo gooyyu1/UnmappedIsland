@@ -37,7 +37,7 @@ describe('timber.yamlの伐採', () => {
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.createObject(codex.objectNames.getId(objectName));
-    expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+    expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
 
@@ -85,7 +85,7 @@ describe('timber.yamlの伐採', () => {
     const log = spawnInto('log', forest, 'items');
     const loadId = codex.propertyNames.getId('load');
 
-    expect(log.moveToSlot(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+    expect(log.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
 
     // 1本担いだだけで、荷重の段が「軽い」を外れる（2本目は運べない、docs/world/Voyage.md 1節）。
     expect(player.tryGetProperty(loadId)?.isInStage('light') ?? false, '1本担いだだけで軽い段を外れる').toBe(

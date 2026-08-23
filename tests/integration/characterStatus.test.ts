@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import type { NewGameSession } from '../../src/domain/generation/NewGame';
-import { start as startNewGame } from '../../src/domain/generation/NewGame';
+import type { StartedGame } from '../../src/domain/generation/NewGame';
+import { startNewGame } from '../../src/domain/generation/NewGame';
 import type { PlayScreenView } from '../../src/game/view/PlayScreenView';
 import { fromGameSession } from '../../src/game/view/PlayScreenView';
 import type { CardPlace, ScreenPlace } from '../../src/game/view/cardPlaces';
@@ -28,16 +28,16 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
   });
 
   /** その区画のレーンに並んでいる札（空き枠を除いたもの）。 */
-  function lane(view: PlayScreenView, game: NewGameSession, screen: ScreenPlace) {
+  function lane(view: PlayScreenView, game: StartedGame, screen: ScreenPlace) {
     return view.cardsIn(place(game, screen)).filter((card) => card !== undefined);
   }
 
-  function place(game: NewGameSession, screen: ScreenPlace): CardPlace {
+  function place(game: StartedGame, screen: ScreenPlace): CardPlace {
     return cardPlacesOf(game.player, game.player.location ?? game.startLocation)(screen);
   }
 
   /** 現在地を探索率100%まで探索する。100%到達後も探索は続けられるため、回数で止める。 */
-  function exploreToFull(game: NewGameSession): void {
+  function exploreToFull(game: StartedGame): void {
     const location = game.player.location ?? game.startLocation;
     for (let i = 0; i < location.explorationProgressMax; i++) game.player.explore();
   }
@@ -84,7 +84,7 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
     for (let i = 0; i < 40; i++)
       game.session
         .createObject(codex.objectNames.getId('stone'))
-        .moveToSlot(game.player.instance.getSlot(equipmentId));
+        .moveToSlotOrRejection(game.player.instance.getSlot(equipmentId));
     expect(
       game.player.instance.tryGetProperty(codex.propertyNames.getId('load'))?.getEffectiveValue() ?? 0,
       '装備の重さがそのまま負荷になる',
@@ -107,7 +107,7 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
     for (let i = 0; i < 40; i++)
       game.session
         .createObject(codex.objectNames.getId('stone'))
-        .moveToSlot(game.player.instance.getSlot(equipmentId));
+        .moveToSlotOrRejection(game.player.instance.getSlot(equipmentId));
 
     const load = fromGameSession(game, codex, locale)
       .propertyCategories.flatMap((tab) => tab.entries)

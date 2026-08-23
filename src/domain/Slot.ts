@@ -62,7 +62,7 @@ export class Slot {
       }
     }
 
-    if (this.layout.vacancyFor(candidate) < 1) {
+    if (this.layout.vacancyForIgnoringVolume(candidate) < 1) {
       return `'${ownerName}.${this.def.name}' に '${candidate.def.name}' を置ける枠が空いていません。`;
     }
 
@@ -90,7 +90,7 @@ export class Slot {
     const engine = this.owner.session.codex.vocabulary.engine;
     if (candidates.length === 0 || !this.def.acceptsAnywhere(candidates[0].def)) return 0;
 
-    const vacancy = this.layout.vacancyFor(candidates[0]);
+    const vacancy = this.layout.vacancyForIgnoringVolume(candidates[0]);
     let volume = this.sumVolume(engine.volumeId);
     let count = 0;
     for (const candidate of candidates) {

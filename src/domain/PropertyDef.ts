@@ -2,7 +2,7 @@ import type { WorldObject } from './WorldObject';
 import type { Rng } from './Rng';
 import { INT32_MAX } from '../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
-import { ActiveEffects, SetEffect } from './ActiveEffect';
+import { ActiveEffectSequence, SetEffect } from './ActiveEffect';
 import { PropertyPath } from './ReferenceRoot';
 import type { EffectDeclaration } from './EffectReader';
 import type { AlertLevel } from './AlertLevel';
@@ -143,7 +143,7 @@ export interface StageSpan {
  * 段（6.4節）の刻みと、その中で今どこにいるか（PropertyDef.stageReadingAt）。
  * nameは識別子であり表示名ではない（表示名はLocalization.stageが引く）。
  */
-export interface StageReading {
+export interface CurrentStageReading {
   /** 今いる段の名前。 */
   readonly name: string;
 
@@ -165,8 +165,8 @@ export class PropertyDef {
   readonly globalId: number;
   readonly name: string;
 
-  /** 初期値（スカラー）。initialValueRangeを持つ場合は、RNGを使わない生成でのフォールバック（= range.min）。 */
-  readonly initialValue: number;
+  /** 抽選を経ない初期値（スカラー）。initialValueRangeを持つ場合は、RNGを使わない生成でのフォールバック（= range.min）。 */
+  readonly initialValueWithoutRoll: number;
 
   /** value: {min, max} 記法による初期値のランダム範囲（6.2節、rollInitialValue参照）。無ければundefined。 */
   private readonly initialValueRange: PropertyRange | undefined;
@@ -175,7 +175,7 @@ export class PropertyDef {
   get initialValueReading(): InitialValueReading {
     return this.initialValueRange !== undefined
       ? { kind: 'roll', min: this.initialValueRange.min, max: this.initialValueRange.max }
-      : { kind: 'fixed', value: this.initialValue };
+      : { kind: 'fixed', value: this.initialValueWithoutRoll };
   }
 
   /** 取りうる値域（6.3節）。on_max/on_minを使う場合は必須。使わない場合はundefined。 */
@@ -290,14 +290,14 @@ export class PropertyDef {
 
     this.globalId = globalId;
     this.name = name;
-    this.initialValue = initialValue;
+    this.initialValueWithoutRoll = initialValue;
     this.initialValueRange = initialValueRange;
     this.range = range;
     this.declaredOnMax = onMax;
     this.declaredOnMin = onMin;
-    this.onMax = onMax ?? defaultClampTo(range, globalId, true);
+    this.onMax = onMax ?? defaultClampEffect(range, globalId, true);
     this.stages = stages;
-    this.onMin = onMin ?? defaultClampTo(range, globalId, false);
+    this.onMin = onMin ?? defaultClampEffect(range, globalId, false);
     this.inherit = inherit;
     this.tags = tags;
     this.isSymbolic = isSymbolic;
@@ -402,10 +402,10 @@ export class PropertyDef {
 
   /**
    * 生成時の初期値（6.2節）。initialValueRangeを持つプロパティは[min,max]の一様乱数を1回引き、
-   * 持たない場合は決定的なinitialValueになる。
+   * 持たない場合は決定的なinitialValueWithoutRollになる。
    */
   rollInitialValue(rng: Rng): number {
-    if (this.initialValueRange === undefined) return this.initialValue;
+    if (this.initialValueRange === undefined) return this.initialValueWithoutRoll;
 
     const { min, max } = this.initialValueRange;
     // nextIntの上限は排他なので+1して[min,max]の閉区間にする（max==INT32_MAXのみ桁あふれ回避）。
@@ -483,7 +483,7 @@ export class PropertyDef {
    * 該当する段が無ければundefined。名前やalertだけが要るなら段そのものを読む（stageAt）——
    * こちらは段の区間と境目を毎回組み立てる。
    */
-  stageReadingAt(effectiveValue: number): StageReading | undefined {
+  stageReadingAt(effectiveValue: number): CurrentStageReading | undefined {
     const stage = this.stageAt(effectiveValue);
     if (stage === undefined) return undefined;
     return { name: stage.name, span: this.spanOf(stage), boundaries: this.stageBoundaries() };
@@ -548,13 +548,13 @@ export class PropertyDef {
  * on_max/on_min未指定時の既定動作、「自分自身をrangeの境界（isMax指定側）へsetする」効果。
  * rangeを持たないプロパティには境界が無いのでundefined。
  */
-function defaultClampTo(
+function defaultClampEffect(
   range: PropertyRange | undefined,
   propertyGlobalId: number,
   isMax: boolean,
 ): ActiveEffect | undefined {
   if (range === undefined) return undefined;
-  return new ActiveEffects([
+  return new ActiveEffectSequence([
     new SetEffect(new PropertyPath('self', propertyGlobalId), isMax ? range.max : range.min),
   ]);
 }

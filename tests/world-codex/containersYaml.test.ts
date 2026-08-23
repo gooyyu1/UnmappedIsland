@@ -67,7 +67,7 @@ describe('固形物のかさと入れ物の容量', () => {
     const outer = session.createObject(basket.globalId);
     const inner = session.createObject(basket.globalId);
 
-    expect(inner.moveToSlot(outer.getSlot(codex.slotNames.getId('contents')))).toContain('容量');
+    expect(inner.moveToSlotOrRejection(outer.getSlot(codex.slotNames.getId('contents')))).toContain('容量');
   });
 
   it('編み籠には熟したヤシの実が5個入り、6個は入らない', () => {
@@ -76,7 +76,9 @@ describe('固形物のかさと入れ物の容量', () => {
     const basket = session.createObject(codex.objectNames.getId('woven_basket'));
     const contentsId = codex.slotNames.getId('contents');
     const put = (): string | undefined =>
-      session.createObject(codex.objectNames.getId('coconut')).moveToSlot(basket.getSlot(contentsId));
+      session
+        .createObject(codex.objectNames.getId('coconut'))
+        .moveToSlotOrRejection(basket.getSlot(contentsId));
 
     for (let i = 0; i < 5; i++) expect(put(), `${i + 1}個目`).toBeUndefined();
 
@@ -102,7 +104,7 @@ describe('固形物のかさと入れ物の容量', () => {
     const basket = session.createObject(codex.objectNames.getId('woven_basket'));
     const contentsId = codex.slotNames.getId('contents');
     const put = (name: string): string | undefined =>
-      session.createObject(codex.objectNames.getId(name)).moveToSlot(basket.getSlot(contentsId));
+      session.createObject(codex.objectNames.getId(name)).moveToSlotOrRejection(basket.getSlot(contentsId));
 
     expect(kinds.length, '手持ちの6枠を上回る').toBeGreaterThan(6);
     for (const name of kinds) expect(put(name), name).toBeUndefined();
@@ -118,7 +120,9 @@ describe('固形物のかさと入れ物の容量', () => {
 
     for (let i = 0; i < 20; i++)
       expect(
-        session.createObject(codex.objectNames.getId('stone')).moveToSlot(basket.getSlot(contentsId)),
+        session
+          .createObject(codex.objectNames.getId('stone'))
+          .moveToSlotOrRejection(basket.getSlot(contentsId)),
         `${i + 1}個目の石`,
       ).toBeUndefined();
 
@@ -133,6 +137,6 @@ describe('固形物のかさと入れ物の容量', () => {
     const basket = session.createObject(codex.objectNames.getId('woven_basket'));
     const frond = session.createObject(codex.objectNames.getId('palm_frond'));
 
-    expect(frond.moveToSlot(basket.getSlot(codex.slotNames.getId('contents')))).toContain('容量');
+    expect(frond.moveToSlotOrRejection(basket.getSlot(codex.slotNames.getId('contents')))).toContain('容量');
   });
 });

@@ -35,7 +35,7 @@ export function staticResolverOf(
  * defが宣言しているプロパティの、定義だけから読める値。宣言していなければundefined。
  *
  * **抽選つきの初期値（`value: {min, max}`）はRNGを使わない生成と同じ扱い**で、下限がそのまま
- * 答えになる（PropertyDef.initialValue）。inheritなら祖先の値も足す（6.5節）。祖先を辿れない
+ * 答えになる（PropertyDef.initialValueWithoutRoll）。inheritなら祖先の値も足す（6.5節）。祖先を辿れない
  * 文脈ではundefined。
  */
 export function staticValueOf(
@@ -45,10 +45,10 @@ export function staticValueOf(
 ): number | undefined {
   const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
   if (propertyDef === undefined) return undefined;
-  if (!propertyDef.inherit) return propertyDef.initialValue;
+  if (!propertyDef.inherit) return propertyDef.initialValueWithoutRoll;
 
   const inherited = outer?.('ancestor', propertyGlobalId);
-  return inherited === undefined ? undefined : propertyDef.initialValue + inherited;
+  return inherited === undefined ? undefined : propertyDef.initialValueWithoutRoll + inherited;
 }
 
 /**

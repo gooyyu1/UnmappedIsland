@@ -86,7 +86,7 @@ describe('サンプルアセットパックの薬', () => {
     const character = spawn(SAMPLE_CHARACTER, 1);
     const handId = codex.slotNames.getId('hand');
     const potion = spawn(objectName, 2);
-    expect(potion.moveToSlot(character.getSlot(handId))).toBeUndefined();
+    expect(potion.moveToSlotOrRejection(character.getSlot(handId))).toBeUndefined();
 
     expect(potion.tryGetAction('drink', character)?.tryExecute() === true).toBe(true);
 

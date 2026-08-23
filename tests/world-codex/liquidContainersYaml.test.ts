@@ -88,7 +88,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   /** 天候・日射は世界が持つので、容器は世界の下——土地のアイテム枠——へ置く。 */
   function placeUnderWorld(container: WorldObject, world: WorldObject): WorldObject {
     const land = spawn('test_ground');
-    expect(land.moveToSlot(world.getSlot(locationsSlotId))).toBeUndefined();
+    expect(land.moveToSlotOrRejection(world.getSlot(locationsSlotId))).toBeUndefined();
     expect(container.moveIntoFirstAcceptingSlot(land)).toBe(true);
     return container;
   }

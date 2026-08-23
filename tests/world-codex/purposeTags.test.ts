@@ -49,12 +49,12 @@ describe('用途のタグ', () => {
   it('レシピを持つ物には、レシピ一覧の棚のタグが1つは付いている', () => {
     // 棚に載らない完成品は画面で「その他」へ落ちる（Windows.md 9.2節）。UIは落ちても壊れないが、
     // 同梱データでそれが起きるのは棚（recipe_categories）の付け忘れなので、ここで捕まえる。
-    const craftable = defs.filter((def) => def.recipes.length > 0);
+    const craftable = defs.filter((def) => def.recipesProducingThis.length > 0);
 
     expect(craftable.length).toBeGreaterThan(0);
     expect(
       craftable
-        .filter((def) => !codex.recipeCategoryTagIds.some((tagId) => def.tags.includes(tagId)))
+        .filter((def) => !codex.recipeCategoryTagIdsByPriority.some((tagId) => def.tags.includes(tagId)))
         .map((def) => def.name),
     ).toEqual([]);
   });

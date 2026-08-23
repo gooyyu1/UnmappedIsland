@@ -34,7 +34,8 @@ interface ConditionNodeFields {
   readonly values?: readonly number[];
   readonly valueRef?: PropertyPath;
   readonly stageName?: string;
-  readonly slotGlobalId?: number;
+  readonly containerSlotGlobalId?: number;
+  readonly ownedSlotGlobalId?: number;
   readonly matchRule?: TypeMatchRule;
   readonly children?: readonly ConditionNode[];
 }
@@ -68,9 +69,11 @@ export class ConditionNode {
   /** property_stage葉のみ有効。段は宣言したPropertyDefごとの名前なので、internせず文字列で持つ。 */
   private readonly stageName: string | undefined;
 
-  /** slot_position/slot_content葉のみ有効。slot_positionではsubjectの親の中の位置、
-   * slot_contentではsubject自身が持つスロットを指す（向きが異なる）。 */
-  private readonly slotGlobalId: number | undefined;
+  /** slot_position葉のみ有効。subjectがその枠に入っているかを見る、subjectの親の側のスロット。 */
+  private readonly containerSlotGlobalId: number | undefined;
+
+  /** slot_content葉のみ有効。中身を見る、subject自身が持つスロット。 */
+  private readonly ownedSlotGlobalId: number | undefined;
 
   /** slot_content/object_matches葉のみ有効。 */
   private readonly matchRule: TypeMatchRule | undefined;
@@ -86,7 +89,8 @@ export class ConditionNode {
     this.values = fields.values;
     this.valueRef = fields.valueRef;
     this.stageName = fields.stageName;
-    this.slotGlobalId = fields.slotGlobalId;
+    this.containerSlotGlobalId = fields.containerSlotGlobalId;
+    this.ownedSlotGlobalId = fields.ownedSlotGlobalId;
     this.matchRule = fields.matchRule;
     this.children = fields.children;
   }
@@ -105,12 +109,16 @@ export class ConditionNode {
     return new ConditionNode('property_stage', { root, propertyGlobalId, stageName });
   }
 
-  static slotPosition(root: ReferenceRoot, slotGlobalId: number): ConditionNode {
-    return new ConditionNode('slot_position', { root, slotGlobalId });
+  static slotPosition(root: ReferenceRoot, containerSlotGlobalId: number): ConditionNode {
+    return new ConditionNode('slot_position', { root, containerSlotGlobalId });
   }
 
-  static slotContent(root: ReferenceRoot, slotGlobalId: number, matchRule: TypeMatchRule): ConditionNode {
-    return new ConditionNode('slot_content', { root, slotGlobalId, matchRule });
+  static slotContent(
+    root: ReferenceRoot,
+    ownedSlotGlobalId: number,
+    matchRule: TypeMatchRule,
+  ): ConditionNode {
+    return new ConditionNode('slot_content', { root, ownedSlotGlobalId, matchRule });
   }
 
   static objectMatches(root: ReferenceRoot, matchRule: TypeMatchRule): ConditionNode {
@@ -146,9 +154,9 @@ export class ConditionNode {
       case 'property_stage':
         return reader.propertyStage(this.root!, this.propertyGlobalId!, this.stageName!);
       case 'slot_position':
-        return reader.slotPosition(this.root!, this.slotGlobalId!);
+        return reader.slotPosition(this.root!, this.containerSlotGlobalId!);
       case 'slot_content':
-        return reader.slotContent(this.root!, this.slotGlobalId!, this.matchRule!.reading);
+        return reader.slotContent(this.root!, this.ownedSlotGlobalId!, this.matchRule!.reading);
       case 'object_matches':
         return reader.objectMatches(this.root!, this.matchRule!.reading);
       case 'all':
@@ -244,12 +252,12 @@ export class ConditionNode {
 
   private evaluateSlotPosition(context: ReferenceContext): boolean {
     const target = context.objectAt(this.root!);
-    return target?.parent !== undefined && target.parentSlot?.def.globalId === this.slotGlobalId;
+    return target?.parent !== undefined && target.parentSlot?.def.globalId === this.containerSlotGlobalId;
   }
 
   private evaluateSlotContent(context: ReferenceContext): boolean {
     const target = context.objectAt(this.root!);
-    const slot = target?.tryGetSlot(this.slotGlobalId!);
+    const slot = target?.tryGetSlot(this.ownedSlotGlobalId!);
     return slot !== undefined && slot.contents.some((child) => this.matchRule!.matches(child.def));
   }
 

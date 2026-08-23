@@ -6,8 +6,8 @@ import { SCREEN_DEPTH } from './looks/screenDepth';
 import { ResponsiveScene } from './ResponsiveScene';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
 import type { WorldCodex } from '../domain/WorldCodex';
-import type { NewGameSession } from '../domain/generation/NewGame';
-import { resolveCharacterDefName, start } from '../domain/generation/NewGame';
+import type { StartedGame } from '../domain/generation/NewGame';
+import { resolveCharacterDefNameOrFirst, startNewGame } from '../domain/generation/NewGame';
 import { seededRng } from '../domain/Rng';
 import type { Localization } from '../locale/Localization';
 import type { SaveData } from '../save/SaveData';
@@ -255,7 +255,7 @@ export class PlayScene extends ResponsiveScene {
   /** いずれもinitで必ず設定される（Phaserはinit→createの順に呼ぶ）。 */
   private codex!: WorldCodex;
   private locale!: Localization;
-  private gameSession!: NewGameSession;
+  private gameSession!: StartedGame;
   private view!: PlayScreenView;
 
   /** カードを並べるレーンと、その内容の差し替えを動きとして見せる層。buildのたびに作り直される。 */
@@ -445,8 +445,8 @@ export class PlayScene extends ResponsiveScene {
     this.mapPositions = new Map(
       data.save.mapCardPositions.map((position) => [position.site, { x: position.x, y: position.y }]),
     );
-    const character = resolveCharacterDefName(this.codex, data.save.characterId);
-    this.gameSession = start(this.codex, character, data.save.seed, seededRng(data.save.seed));
+    const character = resolveCharacterDefNameOrFirst(this.codex, data.save.characterId);
+    this.gameSession = startNewGame(this.codex, character, data.save.seed, seededRng(data.save.seed));
     if (data.scenario !== undefined) applyScenario(this.gameSession, data.scenario, this.codex);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
     this.artLoader = new LocationArtLoader(this);
@@ -1342,7 +1342,7 @@ export class PlayScene extends ResponsiveScene {
     const playback = new ElapsePlayback(
       fromMinutes,
       toMinutes,
-      this.gameSession.world.minutesPerTick,
+      this.gameSession.world.rawMinutesPerTick,
       recording.ticks,
     );
     const steps = playbackSteps({

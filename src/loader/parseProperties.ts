@@ -177,7 +177,7 @@ function parsePropertyTags(loader: WorldCodexYamlLoader, context: string, node: 
 /**
  * rangeイベント（on_max・on_min、6.3節）の中身を読む。対象はselfのみで、
  * pick候補の中の効果にも引き継ぐ。空のmapping（`on_min: {}`）は「宣言だけして何もしない」
- * （既定のクランプを打ち消す）を意味し、空のActiveEffectsになる。
+ * （既定のクランプを打ち消す）を意味し、空のActiveEffectSequenceになる。
  */
 function parseRangeEventEffect(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): ActiveEffect {
   return parseActiveEffectBody(loader, context, node, ReferenceScope.declaration);

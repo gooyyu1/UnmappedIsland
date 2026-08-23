@@ -14,7 +14,7 @@ export type AmountReading =
  */
 export abstract class PassiveAmount {
   /** declarerの今の状態で寄与する量。ゲートの判定は呼び出し側（PropertyPassiveEffect）が行う。 */
-  abstract of(declarer: WorldObject): number;
+  abstract amountFor(declarer: WorldObject): number;
 
   /** この量の宣言そのもの（読み上げ・解析用）。 */
   abstract get reading(): AmountReading;
@@ -29,7 +29,7 @@ export class FixedAmount extends PassiveAmount {
     this.value = value;
   }
 
-  of(): number {
+  amountFor(): number {
     return this.value;
   }
 
@@ -53,7 +53,7 @@ export class ProductAmount extends PassiveAmount {
     this.factorPropertyGlobalIds = factorPropertyGlobalIds;
   }
 
-  of(declarer: WorldObject): number {
+  amountFor(declarer: WorldObject): number {
     let product = 1;
     // 因子は宣言元自身のObjectDefから採ったものなので、必ず持っている。
     for (const globalId of this.factorPropertyGlobalIds)

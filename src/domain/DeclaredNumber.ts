@@ -28,7 +28,7 @@ export class DeclaredNumber {
   }
 
   /** 参照が解決できなければ0（宣言はされているので、値が無いこととは区別しない）。 */
-  resolve(context: ReferenceContext): number {
+  resolveOrZero(context: ReferenceContext): number {
     return this.isPathRef ? (this.path!.effectiveNumber(context) ?? 0) : this.literal;
   }
 

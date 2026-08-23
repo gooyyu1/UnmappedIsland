@@ -12,7 +12,7 @@ import { Scoped } from '../util/scoped';
 
 /**
  * 1セッション分の実行時状態。WorldCodexはロード後不変な定義の集合であり続けるため、instance IDの発行という
- * 可変な状態はここに持たせる。スロット移動はWorldObject.moveToSlotが自分自身の責務として行うため、ここでは
+ * 可変な状態はここに持たせる。スロット移動はWorldObject.moveToSlotOrRejectionが自分自身の責務として行うため、ここでは
  * 仲介しない。
  *
  * **観測口（observe*）はどれも同じ約束を持つ。**
@@ -49,7 +49,7 @@ export class WorldSession {
    * 今、操作の効果を適用している最中か（withInteractionEffect）。ここに居る間の書き込みだけを
    * 溜める。undefinedなら溜めない＝経過中のtickや、rangeイベントから走る効果は入らない。
    */
-  private readonly gathered = new Scoped<Map<string, PropertyGain>>();
+  private readonly gainsBeingGathered = new Scoped<Map<string, PropertyGain>>();
 
   /** 今どのオブジェクトの効果を適用しているか（withSubject）。記録する変化の主体になる。 */
   private readonly subject = new Scoped<WorldObject>();
@@ -72,7 +72,7 @@ export class WorldSession {
     this._world = world;
   }
 
-  /** 指定したObjectDefの新しいWorldObjectを生成する（spawn、9.4節）。まだどこにも配置されていないため、呼び出し側がmoveToSlotで配置する。 */
+  /** 指定したObjectDefの新しいWorldObjectを生成する（spawn、9.4節）。まだどこにも配置されていないため、呼び出し側がmoveToSlotOrRejectionで配置する。 */
   createObject(objectDefGlobalId: number): WorldObject {
     const def = this.codex.objects.get(objectDefGlobalId);
     return new WorldObject(this.nextInstanceId++, def, this);
@@ -134,7 +134,7 @@ export class WorldSession {
     // 受け取った側がこの中で世界を読むときに、まだ内側の溜め場を指したままになる。
     const gathered = new Map<string, PropertyGain>();
     try {
-      this.gathered.during(gathered, body);
+      this.gainsBeingGathered.during(gathered, body);
     } finally {
       const gains = [...gathered.values()].filter((gain) => gain.amount > 0);
       if (gains.length > 0) this.gainObserver.current?.({ sourceAndAncestors: chain, gains });
@@ -146,7 +146,7 @@ export class WorldSession {
    * （withInteractionEffect）でなければ何もしない。
    */
   recordGain(object: WorldObject, property: PropertyDef, delta: number): void {
-    const gathered = this.gathered.current;
+    const gathered = this.gainsBeingGathered.current;
     if (gathered === undefined) return;
 
     const key = `${object.instanceId}:${property.globalId}`;
@@ -199,7 +199,7 @@ export class WorldSession {
     }
 
     const world = this.world;
-    const minutesPerTick = world.minutesPerTick;
+    const minutesPerTick = world.rawMinutesPerTick;
     const untilFirstTick = world.minutesUntilTick(1);
 
     if (amount < untilFirstTick) {

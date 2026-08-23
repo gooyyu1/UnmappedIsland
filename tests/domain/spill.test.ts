@@ -62,13 +62,13 @@ object_defs:
 
     const world = spawn('world');
     const land = spawn('land');
-    expect(land.moveToSlot(world.getSlot(codex.slotNames.getId('places')))).toBeUndefined();
+    expect(land.moveToSlotOrRejection(world.getSlot(codex.slotNames.getId('places')))).toBeUndefined();
 
     const box = spawn('box');
-    expect(box.moveToSlot(land.getSlot(codex.slotNames.getId('ground')))).toBeUndefined();
+    expect(box.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('ground')))).toBeUndefined();
 
     const pouch = spawn('pouch');
-    expect(pouch.moveToSlot(box.getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
+    expect(pouch.moveToSlotOrRejection(box.getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
 
     return { land, box, pouch, codex, session };
   };
@@ -76,7 +76,7 @@ object_defs:
   const spawnInto = (fixture: Fixture, name: string, host: WorldObject): WorldObject => {
     const object = fixture.session.createObject(fixture.codex.objectNames.getId(name));
     expect(
-      object.moveToSlot(host.getSlot(fixture.codex.slotNames.getId('contents'))),
+      object.moveToSlotOrRejection(host.getSlot(fixture.codex.slotNames.getId('contents'))),
       `${name} を置けなかった`,
     ).toBeUndefined();
     return object;

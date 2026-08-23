@@ -1,5 +1,5 @@
 import type { WorldCodex } from '../../domain/WorldCodex';
-import type { NewGameSession } from '../../domain/generation/NewGame';
+import type { StartedGame } from '../../domain/generation/NewGame';
 import type { InteractionGains } from '../../domain/PropertyGain';
 import type { WorldChange } from '../../domain/WorldChange';
 import type { WorldSignal } from '../../domain/WorldSignal';
@@ -54,7 +54,7 @@ export interface Recording {
 }
 
 /** 常に見えている3つのレーンが今映している場所（土地に居なければ手持ちだけ）。 */
-function shownPlacesOf(game: NewGameSession): readonly CardPlace[] {
+function shownPlacesOf(game: StartedGame): readonly CardPlace[] {
   const location = game.player.location;
   if (location === undefined) return [];
 
@@ -75,7 +75,7 @@ function shownPlacesOf(game: NewGameSession): readonly CardPlace[] {
  * 開いている子ウィンドウ。焼き付けないと、経過を見せている途中の画面に行動の結果が先に現れる。
  */
 export function recordChange(
-  game: NewGameSession,
+  game: StartedGame,
   codex: WorldCodex,
   locale: Localization,
   windowPlace: CardPlace | undefined,

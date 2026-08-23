@@ -5,7 +5,7 @@ import type {
   TickTrigger,
   TriggerGroups,
 } from './InteractionTrigger';
-import { LocalIndexMap } from './LocalIndexMap';
+import { LocalIndexByGlobalId } from './LocalIndexByGlobalId';
 import type { PassiveEffect } from './PassiveEffect';
 import { PassiveEffects } from './PassiveEffects';
 import type { PropertyDef } from './PropertyDef';
@@ -39,13 +39,13 @@ export class ObjectDef {
   readonly isInProgress: boolean;
 
   /** グローバルなプロパティID → このObjectDefにおけるローカルindex。 */
-  readonly propertyLayout: LocalIndexMap;
+  readonly propertyIndexByGlobalId: LocalIndexByGlobalId;
 
-  /** ローカルindexで並ぶ密配列。propertyLayout と対になる。 */
+  /** ローカルindexで並ぶ密配列。propertyIndexByGlobalId と対になる。 */
   private readonly propertyDefs: readonly PropertyDef[];
 
   /** グローバルなスロットID → このObjectDefにおけるローカルindex。 */
-  readonly slotLayout: LocalIndexMap;
+  readonly slotIndexByGlobalId: LocalIndexByGlobalId;
 
   /** このobject_defが持つスロットの定義（宣言順）。 */
   readonly slotDefs: readonly SlotDef[];
@@ -57,7 +57,7 @@ export class ObjectDef {
   readonly passives: PassiveEffects;
 
   /** この型を成果物とするレシピ（13節）。宣言順。 */
-  readonly recipes: readonly RecipeDef[];
+  readonly recipesProducingThis: readonly RecipeDef[];
 
   /** スタック内での並び順（表示専用）。undefined なら並び順は未定義で、常にスタックの末尾へ
    * 追加される（新規インスタンス同士の相対順序＝挿入順）。 */
@@ -120,9 +120,9 @@ export class ObjectDef {
     globalId: number,
     name: string,
     isSingleton: boolean,
-    propertyLayout: LocalIndexMap,
+    propertyIndexByGlobalId: LocalIndexByGlobalId,
     propertyDefs: readonly PropertyDef[],
-    slotLayout: LocalIndexMap,
+    slotIndexByGlobalId: LocalIndexByGlobalId,
     slotDefs: readonly SlotDef[],
     passives: readonly PassiveEffect[],
     stackOrder?: StackOrderDef,
@@ -130,7 +130,7 @@ export class ObjectDef {
     triggers: readonly InteractionTrigger[] = [],
     boundToOwner = false,
     stackable = true,
-    recipes: readonly RecipeDef[] = [],
+    recipesProducingThis: readonly RecipeDef[] = [],
     artByStagePropertyGlobalId?: number,
     visibleSlotGlobalIds: readonly number[] = [],
     isStorage = false,
@@ -139,9 +139,9 @@ export class ObjectDef {
     this.globalId = globalId;
     this.name = name;
     this.isSingleton = isSingleton;
-    this.propertyLayout = propertyLayout;
+    this.propertyIndexByGlobalId = propertyIndexByGlobalId;
     this.propertyDefs = propertyDefs;
-    this.slotLayout = slotLayout;
+    this.slotIndexByGlobalId = slotIndexByGlobalId;
     this.slotDefs = slotDefs;
     this.placementSlots = {
       auto: slotDefs.filter((slotDef) => slotDef.allows('auto')),
@@ -159,7 +159,7 @@ export class ObjectDef {
     this.dragTriggers = groups.drag;
     this.boundToOwner = boundToOwner;
     this.stackable = stackable;
-    this.recipes = recipes;
+    this.recipesProducingThis = recipesProducingThis;
     this.artByStagePropertyGlobalId = artByStagePropertyGlobalId;
     this.visibleSlotGlobalIds = visibleSlotGlobalIds;
     this.isStorage = isStorage;
@@ -198,14 +198,14 @@ export class ObjectDef {
 
   /** グローバルIDでこのObjectDefのPropertyDefを取得する。存在しない場合はundefined。 */
   tryGetPropertyDef(globalPropertyId: number): PropertyDef | undefined {
-    const local = this.propertyLayout.toLocal(globalPropertyId);
-    return local === LocalIndexMap.missing ? undefined : this.propertyDefs[local];
+    const local = this.propertyIndexByGlobalId.toLocal(globalPropertyId);
+    return local === LocalIndexByGlobalId.missing ? undefined : this.propertyDefs[local];
   }
 
   /** グローバルIDでこのObjectDefのSlotDefを取得する。存在しない場合はundefined。 */
   tryGetSlotDef(globalSlotId: number): SlotDef | undefined {
-    const local = this.slotLayout.toLocal(globalSlotId);
-    return local === LocalIndexMap.missing ? undefined : this.slotDefs[local];
+    const local = this.slotIndexByGlobalId.toLocal(globalSlotId);
+    return local === LocalIndexByGlobalId.missing ? undefined : this.slotDefs[local];
   }
 
   /** 全PropertyDefを列挙する。 */

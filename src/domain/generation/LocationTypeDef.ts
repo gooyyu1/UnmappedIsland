@@ -95,7 +95,7 @@ export class LocationTypeDef {
   readonly isFallback: boolean;
 
   /** フォールバックが複数あるときの優先度（大きいほど優先）。 */
-  readonly priority: number;
+  readonly fallbackPriority: number;
 
   readonly preferences: readonly AxisPreference[];
   readonly hardLimits: readonly AxisLimit[];
@@ -107,7 +107,7 @@ export class LocationTypeDef {
     applicableScopes: readonly string[],
     moveCost: number,
     isFallback: boolean,
-    priority: number,
+    fallbackPriority: number,
     preferences: readonly AxisPreference[],
     hardLimits: readonly AxisLimit[],
   ) {
@@ -124,7 +124,7 @@ export class LocationTypeDef {
     this.applicableScopes = applicableScopes;
     this.moveCost = moveCost;
     this.isFallback = isFallback;
-    this.priority = priority;
+    this.fallbackPriority = fallbackPriority;
     this.preferences = preferences;
     this.hardLimits = hardLimits;
   }
@@ -135,7 +135,7 @@ export class LocationTypeDef {
   }
 
   /** hard_limitsをすべて満たすか。1つでも外れていればその地点には置けない。 */
-  allows(axisValues: ReadonlyMap<string, number>): boolean {
+  satisfiesHardLimits(axisValues: ReadonlyMap<string, number>): boolean {
     return this.hardLimits.every((limit) => limit.allows(axisValues.get(limit.axis)!));
   }
 

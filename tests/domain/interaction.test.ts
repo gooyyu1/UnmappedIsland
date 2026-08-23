@@ -150,7 +150,7 @@ object_defs:
 
     const basketInstance = spawn(codex, 'basket');
     const rockInstance = spawn(codex, 'rock_item');
-    expect(rockInstance.moveToSlot(basketInstance.getSlot(itemsSlotId))).toBeUndefined();
+    expect(rockInstance.moveToSlotOrRejection(basketInstance.getSlot(itemsSlotId))).toBeUndefined();
 
     const executed = rockInstance.tryGetAction('use', undefined)?.tryExecute() === true;
 
@@ -200,8 +200,8 @@ object_defs:
     const ground = spawn(codex, 'ground');
     const boar = spawn(codex, 'boar');
     const basket = spawn(codex, 'basket');
-    expect(boar.moveToSlot(ground.getSlot(itemsSlotId))).toBeUndefined();
-    expect(basket.moveToSlot(ground.getSlot(itemsSlotId))).toBeUndefined();
+    expect(boar.moveToSlotOrRejection(ground.getSlot(itemsSlotId))).toBeUndefined();
+    expect(basket.moveToSlotOrRejection(ground.getSlot(itemsSlotId))).toBeUndefined();
 
     boar.getProperty(smashTargetId).setNumberWithoutEvents(9999);
     expect(boar.tryGetAction('trample', undefined)?.tryExecute() === true).toBe(true);

@@ -1,5 +1,5 @@
 import type { WorldCodex } from '../../domain/WorldCodex';
-import type { NewGameSession } from '../../domain/generation/NewGame';
+import type { StartedGame } from '../../domain/generation/NewGame';
 import { Location } from '../../domain/wrappers/Location';
 import { Path } from '../../domain/wrappers/Path';
 import type { PropertyInfluence } from '../../domain/PropertyInfluence';
@@ -153,7 +153,7 @@ export interface SlotView {
   readonly label: string;
 
   /**
-   * そのスロットが空けておく枠（`SlotDef.cellsToKeep`、SlotSystem.md 3節）。1枠しか無い場所に4枠空けると
+   * そのスロットが空けておく枠（`SlotDef.cellCountPolicy`、SlotSystem.md 3節）。1枠しか無い場所に4枠空けると
    * 「4つ入る」と誤って伝わるので、数を宣言しているならその数。
    *
    * **枠数を宣言していないスロットは`'grows'`**——カードを落とすたびに枠が1つ増えるので、空けておく
@@ -368,11 +368,7 @@ function collapsed(looks: readonly InfluenceLook[]): readonly StatusInfluence[] 
  * カードの語彙は3つに分かれている。場所とスロットの対応（cardPlaces）・札の見た目（cardLooks）・
  * 札の上の操作（cardOperations）で、ここはそれを束ねて画面の区画へ配る。
  */
-export function fromGameSession(
-  game: NewGameSession,
-  codex: WorldCodex,
-  locale: Localization,
-): PlayScreenView {
+export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Localization): PlayScreenView {
   const location = game.player.location ?? game.startLocation;
   const places = cardPlacesOf(game.player, location);
 
@@ -398,7 +394,7 @@ export function fromGameSession(
     return {
       key: name ?? String(place.owner.instanceId),
       label: name === undefined ? looks.nameOf(place.owner) : locale.slot(name).displayName,
-      cells: slotDef?.cellsToKeep ?? 'grows',
+      cells: slotDef?.cellCountPolicy ?? 'grows',
       acceptsCards: slotDef !== undefined && codex.anyTypeCanBeBroughtInto(slotDef),
       background: slotDef === undefined ? undefined : { owner: place.owner.def.name, slot: slotDef.name },
       materials: craftingMaterials(place.owner, codex),
@@ -619,7 +615,7 @@ export function fromGameSession(
 
     const roads = new Map<string, MapRoadView>();
     for (const [instanceId, site] of siteOf) {
-      const land = root.findDescendantByInstanceId(instanceId);
+      const land = root.findSelfOrDescendantByInstanceId(instanceId);
       if (land === undefined) continue;
       for (const fixture of new Location(land, codex).fixtures) {
         if (!fixture.def.hasTag(pathTagId)) continue;
@@ -641,7 +637,7 @@ export function fromGameSession(
           card: {
             icon: LOCATION_ICON,
             name: locationNameOf(instanceId),
-            art: root.findDescendantByInstanceId(instanceId)?.def.name,
+            art: root.findSelfOrDescendantByInstanceId(instanceId)?.def.name,
             kind: 'location',
           },
           current: site === currentSite,

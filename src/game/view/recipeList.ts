@@ -1,5 +1,5 @@
 import type { WorldCodex } from '../../domain/WorldCodex';
-import type { NewGameSession } from '../../domain/generation/NewGame';
+import type { StartedGame } from '../../domain/generation/NewGame';
 import type { RecipeDef } from '../../domain/RecipeDef';
 import { RECIPE_AXIS } from '../../domain/RecipeDef';
 import type { WorldObject } from '../../domain/WorldObject';
@@ -20,7 +20,7 @@ const PRODUCT_ICON = '📦';
 export function recipeOf(target: WorldObject, codex: WorldCodex): RecipeDef | undefined {
   const recipeName = codex.variationsOf(target.def).get(RECIPE_AXIS);
   if (recipeName === undefined) return undefined;
-  return codex.baseOf(target.def).recipes.find((candidate) => candidate.name === recipeName);
+  return codex.baseOf(target.def).recipesProducingThis.find((candidate) => candidate.name === recipeName);
 }
 
 /**
@@ -34,7 +34,7 @@ export function recipeOf(target: WorldObject, codex: WorldCodex): RecipeDef | un
  * 棚を採り、どれにも当たらない物は「その他」へ落とす。
  */
 export function recipeCategories(
-  game: NewGameSession,
+  game: StartedGame,
   codex: WorldCodex,
   locale: Localization,
   onSelect: (inProgressDefGlobalId: number, origin: Rect) => void,
@@ -45,11 +45,11 @@ export function recipeCategories(
 
   for (let globalId = 0; globalId < codex.objects.count; globalId++) {
     const product = codex.objects.get(globalId);
-    if (product.recipes.length === 0) continue;
+    if (product.recipesProducingThis.length === 0) continue;
 
-    const shelfTagId = codex.recipeCategoryTagIds.find((tagId) => product.hasTag(tagId));
+    const shelfTagId = codex.recipeCategoryTagIdsByPriority.find((tagId) => product.hasTag(tagId));
 
-    for (const recipe of product.recipes) {
+    for (const recipe of product.recipesProducingThis) {
       const unmet = recipe.unmetUnlockRequirement(game.player.instance);
       const inProgressId = codex.objectNames.tryGetId(inProgressObjectName(product.name, recipe.name));
       if (inProgressId === undefined) continue;
@@ -78,7 +78,7 @@ export function recipeCategories(
     }
   }
 
-  const shelves = codex.recipeCategoryTagIds
+  const shelves = codex.recipeCategoryTagIdsByPriority
     .map((tagId) => ({ label: locale.tag(codex.tagNames.getName(tagId)), entries: byShelf.get(tagId) ?? [] }))
     .filter((shelf) => shelf.entries.length > 0);
 

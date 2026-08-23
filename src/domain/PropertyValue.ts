@@ -1,5 +1,5 @@
 import type { AlertLevel } from './AlertLevel';
-import type { PropertyDef, PropertyStage, StageReading } from './PropertyDef';
+import type { PropertyDef, PropertyStage, CurrentStageReading } from './PropertyDef';
 import { INT32_MAX } from '../util/int32';
 import { removeWhere } from '../util/arrays';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
@@ -45,7 +45,7 @@ export class PropertyValue {
   }
 
   /**
-   * **まだ世界のルールを走らせてはいけない時点で**値を置く。登録済みのincoming（modify/add）は
+   * **まだ世界のルールを走らせてはいけない時点で**値を置く。登録済みの寄与（modify/add）は
    * そのまま、値の中身だけを差し替え、rangeイベント（6.3節）もgainの記録（PropertyGain）も行わない。
    *
    * 途中の状態が世界から見えてはいけない場面のための入口:
@@ -104,7 +104,7 @@ export class PropertyValue {
   }
 
   /** 現在登録されている全寄与（modify/add両方）。UI表示用。 */
-  get incoming(): readonly RegisteredPassiveEffect[] {
+  get registeredContributions(): readonly RegisteredPassiveEffect[] {
     return [...this.modifyEffects, ...this.accumulateEffects];
   }
 
@@ -226,7 +226,7 @@ export class PropertyValue {
   }
 
   /** 今いる段を、バーへ刻んで見せるための読み（6.4節）。段を宣言していないプロパティはundefined。 */
-  get stageReading(): StageReading | undefined {
+  get stageReading(): CurrentStageReading | undefined {
     return this.def.stageReadingAt(this.getEffectiveValue());
   }
 

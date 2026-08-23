@@ -58,7 +58,7 @@ export class PassiveEffectGate {
     if (
       this.conditions !== undefined &&
       // ゲートはactor/draggedを持たない文脈で評価する（誰かが操作しているとは限らない）。
-      !this.conditions.evaluate(ReferenceContext.of(slotBearer))
+      !this.conditions.evaluate(ReferenceContext.forSelf(slotBearer))
     )
       return false;
 
@@ -150,7 +150,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
         target,
         targetPropertyGlobalId: this.target.propertyGlobalId,
         reversible: this.reversible,
-        increases: this.amount.of(declarer) >= 0,
+        increases: this.amount.amountFor(declarer) >= 0,
         active: this.gate.isSatisfied(declarer, slotBearer),
       });
     }
@@ -169,7 +169,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
   /** declarer/slotBearerの現在の文脈でゲート（8.2節）が有効ならamountを、無効なら0を返す。
    * modifyでもaddでも同じ量。 */
   activeAmount(declarer: WorldObject, slotBearer: WorldObject): number {
-    return this.gate.isSatisfied(declarer, slotBearer) ? this.amount.of(declarer) : 0;
+    return this.gate.isSatisfied(declarer, slotBearer) ? this.amount.amountFor(declarer) : 0;
   }
 
   /**
@@ -184,7 +184,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    */
   override setRelationRegistered(owner: WorldObject, relation: ReferenceRoot, register: boolean): void {
     if (this.target.root !== relation) return;
-    this.setResolvedRelationRegistered(owner, this.target.owner(ReferenceContext.of(owner)), register);
+    this.setResolvedRelationRegistered(owner, this.target.owner(ReferenceContext.forSelf(owner)), register);
   }
 
   /**
@@ -290,7 +290,7 @@ export class TransferPassiveEffect extends PassiveEffect {
   /** ゲートが開いている間、1 tick分の輸送を走らせる（activeの輸送と同じ経路をそのまま通る）。 */
   applyTick(owner: WorldObject): void {
     if (!this.gate.isSatisfied(owner, owner)) return;
-    this.transfer.apply(ReferenceContext.of(owner));
+    this.transfer.apply(ReferenceContext.forSelf(owner));
   }
 
   override collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {

@@ -283,7 +283,7 @@ object_defs:
       codex.objects.get(codex.objectNames.getId('drip')),
       session,
     );
-    expect(drip.moveToSlot(vessel.getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
+    expect(drip.moveToSlotOrRejection(vessel.getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
 
     vessel.tick();
 

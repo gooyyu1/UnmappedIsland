@@ -21,7 +21,7 @@ export class Location extends ObjectWrapper {
 
   /** 現在の探索進捗（実効値）。 */
   get explorationProgress(): number {
-    return this.numberOf(this.words.explorationProgressId);
+    return this.effectiveNumberOf(this.words.explorationProgressId);
   }
 
   /**
@@ -48,7 +48,7 @@ export class Location extends ObjectWrapper {
    * atは並びの中の位置（SlotPosition）。省略すると末尾（合流できる同種があればそのスタック）へ入る。
    */
   receiveItem(item: WorldObject, at?: SlotPosition): boolean {
-    return item.moveToSlot(this.instance.getSlot(this.itemsSlotId), at) === undefined;
+    return item.moveToSlotOrRejection(this.instance.getSlot(this.itemsSlotId), at) === undefined;
   }
 
   /** 設置物（道・木・建築物・家具・洞窟入口など、持ち歩けないもの）スロットの中身。 */
@@ -78,7 +78,7 @@ export class Location extends ObjectWrapper {
    * この土地から出ている、**発見済みの**道（ExplorationSystem.md 1.2節）。未発見の道は隠しスロットに
    * 居るので含まれない——プレイヤーが見つけていない道は、動物にとっても逃げ道にならない。
    */
-  get paths(): readonly Path[] {
+  get discoveredPaths(): readonly Path[] {
     return this.fixtures
       .filter((fixture) => fixture.def.hasTag(this.words.pathTagId))
       .map((fixture) => new Path(fixture, this.codex));
@@ -121,7 +121,7 @@ export class Location extends ObjectWrapper {
     const returnPathId = fixture.tryGetProperty(this.words.returnPathIdId)?.getEffectiveValue() ?? 0;
     if (returnPathId === 0) return;
 
-    const returnPath = fixture.findRoot().findDescendantByInstanceId(returnPathId);
+    const returnPath = fixture.findRoot().findSelfOrDescendantByInstanceId(returnPathId);
     if (returnPath !== undefined) this.revealInOwnLocation(returnPath);
   }
 
@@ -136,6 +136,6 @@ export class Location extends ObjectWrapper {
     const hidden = owner.tryGetSlot(this.words.undiscoveredFixturesSlotId);
     if (hidden === undefined || !hidden.contents.includes(fixture)) return;
 
-    fixture.moveToSlot(owner.getSlot(this.fixturesSlotId));
+    fixture.moveToSlotOrRejection(owner.getSlot(this.fixturesSlotId));
   }
 }

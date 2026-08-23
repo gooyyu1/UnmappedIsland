@@ -552,7 +552,7 @@ function interactionsHtml(view: CodexView, def: ObjectDef, triggers: readonly In
 }
 
 function recipesHtml(view: CodexView, def: ObjectDef): string {
-  const cards = def.recipes
+  const cards = def.recipesProducingThis
     .map((recipe) =>
       card(
         escapeHtml(recipe.name),

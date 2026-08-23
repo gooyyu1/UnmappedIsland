@@ -76,7 +76,7 @@ object_defs:
             warmth: 1
 `);
     const campfire = session.createObject(codex.objectNames.getId('campfire'));
-    campfire.moveToSlot(world.instance.getSlot(codex.slotNames.getId('stuff')));
+    campfire.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     const executed = campfire.tryGetAction('rest', undefined)?.tryExecute() === true;
 
@@ -105,7 +105,7 @@ object_defs:
         duration: {prop: travel_minutes}
 `);
     const trail = session.createObject(codex.objectNames.getId('trail'));
-    trail.moveToSlot(world.instance.getSlot(codex.slotNames.getId('stuff')));
+    trail.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(trail.tryGetAction('travel', undefined)?.tryExecute() === true).toBe(true);
     expect(world.minute, 'self.travel_minutesの値だけ時間が進む').toBe(45);
@@ -126,7 +126,7 @@ object_defs:
           - {prop: warmth, gt: 10}
 `);
     const campfire = session.createObject(codex.objectNames.getId('campfire'));
-    campfire.moveToSlot(world.instance.getSlot(codex.slotNames.getId('stuff')));
+    campfire.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(campfire.tryGetAction('rest', undefined)?.tryExecute() === true).toBe(false);
     expect(world.minute, '条件不成立なら時間は進まない').toBe(0);
@@ -151,7 +151,7 @@ object_defs:
 `);
     const nut = session.createObject(codex.objectNames.getId('nut'));
     const hammer = session.createObject(codex.objectNames.getId('hammer'));
-    nut.moveToSlot(world.instance.getSlot(codex.slotNames.getId('stuff')));
+    nut.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(
       nut
@@ -180,7 +180,7 @@ object_defs:
 `);
     const nut = session.createObject(codex.objectNames.getId('nut'));
     const hammer = session.createObject(codex.objectNames.getId('blunt_hammer'));
-    nut.moveToSlot(world.instance.getSlot(codex.slotNames.getId('stuff')));
+    nut.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(
       nut
@@ -213,7 +213,7 @@ object_defs:
       output: {}
 `);
     const oven = session.createObject(codex.objectNames.getId('oven'));
-    oven.moveToSlot(world.instance.getSlot(codex.slotNames.getId('stuff')));
+    oven.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(oven.tryGetAction('bake', undefined)?.tryExecute() === true).toBe(true);
 
@@ -253,7 +253,7 @@ object_defs:
 `);
     const stone = session.createObject(codex.objectNames.getId('crumbling_stone'));
     const stuffSlotId = codex.slotNames.getId('stuff');
-    stone.moveToSlot(world.instance.getSlot(stuffSlotId));
+    stone.moveToSlotOrRejection(world.instance.getSlot(stuffSlotId));
 
     expect(stone.tryGetAction('carve', undefined)?.tryExecute() === true, '行動は成立しない').toBe(false);
 
@@ -297,7 +297,7 @@ object_defs:
     const chisel = session.createObject(codex.objectNames.getId('crumbling_chisel'));
     const stuffSlotId = codex.slotNames.getId('stuff');
     for (const object of [block, chisel]) {
-      expect(object.moveToSlot(world.instance.getSlot(stuffSlotId))).toBeUndefined();
+      expect(object.moveToSlotOrRejection(world.instance.getSlot(stuffSlotId))).toBeUndefined();
     }
 
     expect(

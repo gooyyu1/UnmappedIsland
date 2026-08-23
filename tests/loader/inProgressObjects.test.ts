@@ -66,8 +66,8 @@ object_defs:
 `);
     const def = codex.objects.get(codex.objectNames.getId(inProgressObjectName('axe', 'basic')));
 
-    expect(def.tryGetPropertyDef(codex.propertyNames.getId('weight'))!.initialValue).toBe(0);
-    expect(def.tryGetPropertyDef(codex.propertyNames.getId('volume'))!.initialValue).toBe(6000);
+    expect(def.tryGetPropertyDef(codex.propertyNames.getId('weight'))!.initialValueWithoutRoll).toBe(0);
+    expect(def.tryGetPropertyDef(codex.propertyNames.getId('volume'))!.initialValueWithoutRoll).toBe(6000);
   });
 
   it('素材と道具が同じスロットに並び、枠の上限は全工程の要求の合計になる', () => {
@@ -93,7 +93,7 @@ object_defs:
     const ground = new WorldObject(0, codex.objects.get(codex.objectNames.getId('ground')), session);
 
     const wip = session.createObject(codex.objectNames.getId(inProgressObjectName('axe', 'basic')));
-    expect(wip.moveToSlot(ground.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
+    expect(wip.moveToSlotOrRejection(ground.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
 
     // 工程の合計は30 + 10 = 40分。超えた瞬間にon_maxが発火する。
     wip.tryGetProperty(codex.propertyNames.getId('progress'))?.setNumber(41);

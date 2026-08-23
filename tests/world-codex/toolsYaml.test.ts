@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { advanceCrafting, spawnInProgressObject } from '../../src/domain/crafting';
+import { tryAdvanceCrafting, spawnInProgressObject } from '../../src/domain/crafting';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
@@ -96,12 +96,14 @@ describe('tools.yamlの道具定義', () => {
     const session = new WorldSession(codex, worldView);
 
     const beach = session.createObject(codex.objectNames.getId('sandy_beach'));
-    expect(beach.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
+    expect(
+      beach.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
+    ).toBeUndefined();
 
     const itemsSlotId = codex.slotNames.getId('items');
     const target = session.createObject(codex.objectNames.getId('stone'));
     const hammer = session.createObject(codex.objectNames.getId('stone'));
-    expect(target.moveToSlot(beach.getSlot(itemsSlotId))).toBeUndefined();
+    expect(target.moveToSlotOrRejection(beach.getSlot(itemsSlotId))).toBeUndefined();
 
     const combination = target.combinationsWith(hammer, undefined).at(0);
     expect(combination?.name, '石は石とのcombinationにマッチする').toBe('knap');
@@ -146,7 +148,9 @@ describe('石斧を作る', () => {
     const session = new WorldSession(codex, worldView);
 
     const field = session.createObject(codex.objectNames.getId('rocky_field'));
-    expect(field.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
+    expect(
+      field.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
+    ).toBeUndefined();
     return { session, field };
   }
 
@@ -161,20 +165,20 @@ describe('石斧を作る', () => {
 
   it('太い枝・尖った石・紐から、2工程で石斧ができる', () => {
     const { session, field } = rockyField();
-    const recipe = codex.objects.get(codex.objectNames.getId('stone_axe')).recipes[0];
+    const recipe = codex.objects.get(codex.objectNames.getId('stone_axe')).recipesProducingThis[0];
     const materialsId = codex.vocabulary.engine.materialsSlotId;
     const wip = startAxe(session, field);
     const put = (name: string) =>
       expect(
-        session.createObject(codex.objectNames.getId(name)).moveToSlot(wip.getSlot(materialsId)),
+        session.createObject(codex.objectNames.getId(name)).moveToSlotOrRejection(wip.getSlot(materialsId)),
       ).toBeUndefined();
 
     put('thick_branch');
-    expect(advanceCrafting(wip, materialsId, recipe, codex, session), '柄を削り出す').toBe(true);
+    expect(tryAdvanceCrafting(wip, materialsId, recipe, codex, session), '柄を削り出す').toBe(true);
 
     put('sharp_stone');
     put('cord');
-    expect(advanceCrafting(wip, materialsId, recipe, codex, session), '刃を据えて縛る').toBe(true);
+    expect(tryAdvanceCrafting(wip, materialsId, recipe, codex, session), '刃を据えて縛る').toBe(true);
 
     expect(
       new Location(field, codex).items.map((item) => item.def.name),
@@ -189,7 +193,7 @@ describe('石斧を作る', () => {
     const wip = startAxe(session, field);
 
     const stem = session.createObject(codex.objectNames.getId('banana_stem'));
-    expect(stem.moveToSlot(field.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
+    expect(stem.moveToSlotOrRejection(field.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
     expect(wip.def.tags, 'タグの上では刃物').toContain(codex.tagNames.getId('cutting_tool'));
 
     expect(stem.combinationsWith(wip, undefined), '作りかけは相手にならない').toEqual([]);

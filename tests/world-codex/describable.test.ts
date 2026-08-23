@@ -38,7 +38,7 @@ describe('同梱のWorldCodex', () => {
       for (const propertyDef of def.enumeratePropertyDefs()) describeProperty(propertyDef, names, writer);
       for (const slotDef of def.enumerateSlotDefs()) describeAccept(slotDef, names, writer);
       for (const trigger of def.triggers) describeInteraction(trigger, names, writer);
-      for (const recipe of def.recipes) describeRecipe(recipe, names, writer);
+      for (const recipe of def.recipesProducingThis) describeRecipe(recipe, names, writer);
     }
 
     // 空行（何も書かれていない行）が混ざっていないこと＝どの宣言も言い表せている。

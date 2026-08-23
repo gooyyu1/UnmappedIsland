@@ -127,7 +127,7 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
 
 - `set`/`add` の値・`pick` の `weight` は「リテラルか `{subject, prop}` 参照か」の二択で統一されている。
 - `spawn` の配置先は `same_slot`（既定）/ `self` / `actor`。`same_slot` は、適用の入口で捕捉した
-  「self が占めていた位置」のスナップショット（`WorldObject.EffectSite`）を使い、destroy で self が
+  「self が占めていた位置」のスナップショット（`WorldObject.SameSlotSpawnSite`）を使い、destroy で self が
   消えた後でもその位置を引き継げる。配置に失敗した場合は起点の親、さらにその親…とこぼれ落ち、
   どこにも入らなければ世界から消える（9.4 節）。どの段でも枠の宣言はそのまま効く。
 - `transfer`（9.5節）は「出せる量」と（`allow_overflow: false` なら）「受け取れる量」で実移動量を決め、
@@ -188,7 +188,7 @@ UI が演出のために「誰が何をしたか」を要る（[`HuntingSystem.m
 
 ### 7.2 記録するのは配置の関門
 
-出入りを記録するのは**配置を行う関門そのもの**（`attachToSlot`・`destroy`）です。呼び出し側が「動かしたら
+出入りを記録するのは**配置を行う関門そのもの**（`attachToSlotOrRejection`・`destroy`）です。呼び出し側が「動かしたら
 記録する」手順を覚える形は採りません——覚える側が増えるほど、記録し忘れた経路ができます。
 
 移動前の居場所は切り離す前に控えます。切り離した後では、どこから来たのかを誰も知りません。

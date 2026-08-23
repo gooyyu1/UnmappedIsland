@@ -10,7 +10,7 @@ import { miniGame } from '../support/miniGame';
  * カードの下端に積むバー（CardView.md 8節）の自動テスト。
  *
  * 見るのは**どのカードがどのバーを出し、両端をどちら向きに見せるか**だけ。割合そのものの計算は
- * 世界側（PropertyValue.ratio・storageFillRatio）が受け持つ。
+ * 世界側（PropertyValue.ratio・fullestSlotFillRatio）が受け持つ。
  */
 describe('カードのバー', () => {
   const locale = parseLocale('ja.yaml', 'object_texts:\n  stone:\n    display_name: 石\n');

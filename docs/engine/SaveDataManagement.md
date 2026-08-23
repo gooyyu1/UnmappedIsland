@@ -112,7 +112,7 @@ world:
 試すシナリオは `world.props` で直接置く。置いた天候はそのまま続くわけではなく、`weather_remaining` が
 尽きた時点で通常の遷移（`ClimateSystem.md` 4節）に戻る。
 
-配置は通常のスロット移動（`WorldObject.moveToSlot`）そのもので、シナリオ専用の抜け道は
+配置は通常のスロット移動（`WorldObject.moveToSlotOrRejection`）そのもので、シナリオ専用の抜け道は
 持たない。受け入れられない指定（手持ちの上限超過、綴り違いのobject_def）はその場でエラーに
 する——黙って落とすと、試したかった状態と違う状態でゲームが始まってしまうため。
 同梱シナリオが実際に適用できることは `tests/scenario/scenario.test.ts` が担保する。選択画面が

@@ -37,7 +37,9 @@ object_defs:
       return {
         bench,
         put: (name) =>
-          session.createObject(codex.objectNames.getId(name)).moveToSlot(bench.getSlot(materialsId)),
+          session
+            .createObject(codex.objectNames.getId(name))
+            .moveToSlotOrRejection(bench.getSlot(materialsId)),
       };
     };
 
@@ -89,7 +91,7 @@ object_defs:
       const session = new WorldSession(codex);
       const shelf = session.createObject(codex.objectNames.getId('shelf'));
       return Array.from({ length: count }, () =>
-        session.createObject(codex.objectNames.getId(name)).moveToSlot(shelf.getSlot(thingsId)),
+        session.createObject(codex.objectNames.getId(name)).moveToSlotOrRejection(shelf.getSlot(thingsId)),
       );
     };
 

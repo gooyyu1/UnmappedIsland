@@ -69,11 +69,12 @@ export class ObjectRef {
 
     const owner = context.self;
     if (owner === undefined) return undefined;
-    if (this.objectGlobalId !== undefined) return owner.findRoot().findDescendantOfDef(this.objectGlobalId);
+    if (this.objectGlobalId !== undefined)
+      return owner.findRoot().findSelfOrDescendantOfDef(this.objectGlobalId);
 
     const instanceId = this.path!.effectiveNumber(context);
     if (instanceId === undefined) return undefined;
-    return owner.findRoot().findDescendantByInstanceId(instanceId);
+    return owner.findRoot().findSelfOrDescendantByInstanceId(instanceId);
   }
 
   /** この参照の宣言そのもの（ObjectRefReading参照）。 */

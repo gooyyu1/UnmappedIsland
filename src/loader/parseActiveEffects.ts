@@ -23,7 +23,7 @@ import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import { ReferenceScope } from '../domain/ReferenceRoot';
 import { PropertyPath } from '../domain/ReferenceRoot';
 import {
-  ActiveEffects,
+  ActiveEffectSequence,
   AddEffect,
   DestroyEffect,
   SetEffect,
@@ -54,7 +54,7 @@ export function parseActiveEffectBody(
   bodyNode: YAMLMap,
   scope: ReferenceScope,
   reservedKeys?: ReadonlyArray<string>,
-): ActiveEffects {
+): ActiveEffectSequence {
   const operations: ActiveEffect[] = [];
   const unknownKeys: string[] = [];
 
@@ -97,7 +97,7 @@ export function parseActiveEffectBody(
   if (unknownKeys.length > 0)
     throw new YamlLoadError(`${context}: 未知のキー '${unknownKeys.join(', ')}' です。`);
 
-  return new ActiveEffects(operations);
+  return new ActiveEffectSequence(operations);
 }
 
 /** pick候補が持つ、効果以外の兄弟キー。 */

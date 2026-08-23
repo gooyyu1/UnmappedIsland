@@ -16,7 +16,7 @@ import type { WorldSession } from './WorldSession';
  * 戻り値は「このまま効果を適用してよいか」。falseでも時間は既に経過している（1時間かけて道具が
  * 壊れ、何も得られなかった、という結果になる）。
  */
-export function spendDuration(
+export function spendDurationAndReportParticipantsAlive(
   minutes: number,
   session: WorldSession,
   participants: readonly (WorldObject | undefined)[],
@@ -29,9 +29,9 @@ export function spendDuration(
   // オブジェクト（時間を持たない文脈で作った一時的なもの等）は、失われたわけではない。
   const present = participants.filter(
     (participant): participant is WorldObject =>
-      participant !== undefined && world.instance.contains(participant),
+      participant !== undefined && world.instance.containsOrIs(participant),
   );
 
   session.advanceWorldTime(minutes);
-  return present.every((participant) => world.instance.contains(participant));
+  return present.every((participant) => world.instance.containsOrIs(participant));
 }

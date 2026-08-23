@@ -54,7 +54,7 @@ object_defs:
     for (const tick of recording.ticks) {
       const minutes = tick.view.elapsedDays * 24 * 60 + tick.view.hour * 60 + tick.view.minute;
       expect(minutes, '控えたviewはそのtick時点のワールドから作られている').toBe(
-        Math.trunc(tick.minutes) - (Math.trunc(tick.minutes) % game.world.minutesPerTick),
+        Math.trunc(tick.minutes) - (Math.trunc(tick.minutes) % game.world.rawMinutesPerTick),
       );
     }
   });
