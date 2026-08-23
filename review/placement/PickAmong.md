@@ -1,7 +1,8 @@
 # A-13 設計案: 周りの物を候補にする `pick`
 
 **未合意の設計案。** 実装はしていない。段4の他のレーンと桁が違う（エンジンの機能追加になる）ため、
-着手の可否を決めるための材料として書いた。
+着手の可否を決めるための材料として書いた。5節（`matches` の否定）と6節（重みの下限）だけは
+方針が決まっている。
 
 ## 1. 何が欠けているか
 
@@ -88,25 +89,71 @@ conditions の `{subject, slot, matches}`（`slot_content`、14節）が「そ�
 そのぶん `Animal` は「YAMLが表せないことの肩代わり」ではなくなるので、Candidates.md が保留していた
 「`ObjectWrapper` に乗せるか」もそこで決められる。
 
-## 5. 一緒に決める必要がある2点
+## 5. `matches` の否定と、conditions の `not` の関係
 
-**(a) `matches` に否定が要る。** `lootables` は「`items` のうち `quarry` でないもの」で、
-`TypeMatchRule` は今 `tag` と `object` の肯定形しか持たない。`{not: {tag: quarry}}` を足すと、
-同じ語彙を使う**枠の `accept`（7.2節）と `with`（12.1節）にも否定が書けるようになる**。
-それを許すかどうかが判断点。避けるなら「持ち去れる物」に肯定のタグを新設することになるが、
-`item` を持つ物すべてに付けて回る opt-in の一覧が増えるので、こちらは薦めない。
+`lootables` は「`items` のうち `quarry` でないもの」なので、`among` の絞り込みに否定が要る。
+`TypeMatchRule` は今 `tag` と `object` の肯定形しか持たない。**conditions の否定は流用できない**
+——別の対象に掛かる別物だから。
 
-**(b) 重みの下限。** 今は `Math.max(1, volume)` で「かさを宣言していない物も候補から漏れない」よう
-にしている。`weight: {prop: volume}` にすると、かさ0の物は（他に候補がある限り）選ばれなくなる。
-A-4 のレーンで `item` タグに `volume` を必須化したので**宣言漏れは無くなった**が、`volume: 0` を
-明示している物（製作中オブジェクト）は地面に置ける。挙動を保つなら重みに下限の語彙が要り、
-保たないなら「かさ0の物はぶつからない」を仕様として引き受ける。**後者を推す**——`volume` が0の物は
-そこに嵩が無いという宣言なので、ぶつからないほうが読める。
+| | 何を否定するか | 書き方 | 使える場所 |
+| -- | -------------- | ------ | ---------- |
+| `ConditionNode.not` | **条件**（真偽） | `not: <1ノード>`（他のキーと同居不可） | conditions（14節） |
+| `matches` の否定（新設） | **型の指定** | `matches: {not: {tag: quarry}}` | `accept`・`with`・`slot_content`・`object_matches` |
+
+**`object_matches` では、綴りが2通りになるだけで意味は同じ。**
+`not: {subject: self, matches: {tag: quarry}}` と `{subject: self, matches: {not: {tag: quarry}}}` は
+どちらも「self は quarry でない」。
+
+**`slot_content` では意味が違う。** ここが整合性で一番気を付ける点:
+
+- `not: {slot: items, matches: {tag: quarry}}` — items に quarry が**1つも無い**
+- `{slot: items, matches: {not: {tag: quarry}}}` — items に quarry **でない物が1つはある**
+
+見た目が近く、意味が違う。ただしこれは足すことで生まれる混乱ではなく、**後者が今どうやっても
+書けない**ことの裏返し——`lootables >= 1` というゲートを TypeScript が数を数えて作っているのは、
+まさにこの形が条件で書けないから。`accept` と `with` は候補1つに対する述語なので、この食い違いは
+起きない。
+
+**採る形。** `not` は語としては1つのまま、**掛かる先が「条件」か「型の指定」か**で読み分ける。
+`TypeMatchRule` を `tag | object | not` の3形にし、否定の意味は `TypeMatchRule` の1箇所に書く。
+`slot_content` での2通りの読み分けは `GameElementDefinition.md` 14節に1度だけ書く。
+
+実装の当たり所が2つある。
+
+- `TypeMatchRule.acceptSpec` は `Record<string, string>` を返している（`inProgressObjects` が
+  レシピの要求から枠の宣言をYAMLへ戻すのに使う）。否定が入ると値が入れ子になるので戻り値の型が変わる。
+- `TypeMatchRule.candidates`（当てはまる型を全部挙げる）は、否定形では「quarry 以外の全部」になる。
+  使っているのはレシピ要求の絵出し（`craftingView`）と `axisVariants` の2箇所で、**どちらも否定を
+  書ける場所ではない**ので実害は無い。「1つに定まらない指定を絵で見せる」という前提が否定形では
+  成り立たないことだけ、doc に書いておく。
+
+### 採らなかった案: 絞り込みを conditions にする
+
+`among` の絞り込みを `matches` ではなく条件式にすれば（`where: [not: {subject: picked, matches:
+{tag: quarry}}]`）、否定は既存の1つで済み、`{subject: picked, prop: volume, gt: 0}` のような比較まで
+書けるようになる。採らない理由は2つ。
+
+- **同じ「集合の絞り込み」が2つの語彙に割れる。** `slot_content` は `{subject, slot, matches}` で、
+  `among` は `{subject, slot, where}` になる。`among` を `matches` で書けば、集合の指定は
+  `slot_content` と**同じ3つのキー**で揃う。
+- 5件の絞り込みは**すべて型の述語だけ**で足りる（`¬quarry` / `fragile` / `path` / `character` /
+  `food`）。比較まで要る例が1つも無いうちに条件式を持ち込むと、要らない自由度が先に入る。
+- 加えて、この案では `accept`・`with` に否定が入らない。
+
+## 6. 重みの下限は設けない
+
+今は `Math.max(1, volume)` で「かさを宣言していない物も候補から漏れない」ようにしているが、
+`weight: {prop: volume}` にすると、かさ0の物は（他に候補がある限り）選ばれなくなる。**その挙動を
+引き受ける**——`volume` が0の物はそこに嵩が無いという宣言なので、ぶつからないほうが読める。
+下限の語彙は作らない。
+
+A-4 のレーンで `item` タグに `volume` を必須化したので宣言漏れは無く、`volume: 0` を明示している
+のは製作中オブジェクトだけ。
 
 副次の挙動差がもう1つある。`bite`/`gore` の相手は今 `characters.at(0)` 固定だが、`among` にすると
 一律の重みで抽選になる。キャラクタが2人以上居る場面が無い今は差が出ない。
 
-## 6. 採らなかった案
+## 7. 採らなかった案
 
 - **外側の `pick` を N 個へ展開する**（「持ち去れる物1つにつき候補1つ」）。`snatch` の確率が候補の
   数に比例してしまい、「配分の合計は動物によらず100」（`animals.yaml`）が崩れる。
@@ -115,9 +162,9 @@ A-4 のレーンで `item` タグに `volume` を必須化したので**宣言�
 - **数と対象のプロパティを残したまま、書き込む側だけ整理する。** 5件を1つのヘルパーへ畳めるが、
   「エンジンの表現力不足を肩代わりしている」という中身は変わらない。名前が減るだけで穴は残る。
 
-## 7. 段取り（実施するなら）
+## 8. 段取り（実施するなら）
 
-1. `matches` の否定（5(a)）。単独で入る。
+1. `matches` の否定（5節）。単独で入る。
 2. `ReferenceRoot.picked` と `ReferenceContext.withPicked`。
 3. `among`（パーサ・`PickCandidateDef`・`unresolvable`・読み上げ）。
 4. `animals.yaml` の書き換えと、プロパティ・passives の削除。
