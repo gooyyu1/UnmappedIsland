@@ -38,14 +38,14 @@ export function autoFillMaterials(
 
   for (const cell of slot.cells) {
     // 出番の終わった枠は埋めない。表示から消える枠なので、入れると取り出せなくなる。
-    const candidates = chooseCandidates(cell.def, 1, available).filter(
+    const wanted = chooseCandidates(cell.def, 1, available).find(
       (object) =>
         stillNeeded === undefined || stillNeeded.some((requirement) => requirement.requires(object.def)),
     );
-    if (candidates.length === 0) continue;
+    if (wanted === undefined) continue;
 
-    const needed = (cell.def.max ?? 1) - (cell.stack?.members.length ?? 0);
-    if (needed <= 0) continue;
+    const needed = cell.roomFor(wanted);
+    if (needed < 1) continue;
 
     for (const candidate of chooseCandidates(cell.def, needed, available).slice(0, needed)) {
       if (candidate.moveToSlot(inProgress.getSlot(materialsSlotGlobalId)) !== undefined) break;

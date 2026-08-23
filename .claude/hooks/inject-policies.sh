@@ -1,8 +1,8 @@
 #!/bin/bash
-# SessionStart hook: 記録済みの判断を、セッションの文脈へ無条件に流し込む。
+# SessionStart hook: 記録済みの価値観を、セッションの文脈へ無条件に流し込む。
 #
 # 「必要なら読め」では機能しない。参照すべき場面だと気づけないことこそが記録を残す動機なので、
-# 気づきに依存しない形で入れる。進め方の判断（.claude/policies.md）は全文、ゲーム内容の判断基準
+# 気づきに依存しない形で入れる。進め方の価値観（.claude/policies.md）は全文、ゲーム内容の判断基準
 # （docs/concept/DesignPrinciples.md）は見出し（＝結論）だけを入れ、詳細は必要なときに読ませる。
 #
 # 冪等・非対話。web/CLIどちらのセッションでも動く（依存の導入を行う session-start.sh とは別に
@@ -16,7 +16,7 @@ PRINCIPLES="$REPO_DIR/docs/concept/DesignPrinciples.md"
 context=""
 
 if [ -f "$POLICIES" ]; then
-  context+="過去のセッションで記録した、ユーザーの判断。同種の場面では訊き直さずこれに従う。"
+  context+="過去のセッションで記録した、ユーザーの価値観。A・Bどちらもあり得る場面ではこれに従い、訊き直さない。"
   context+=$'\n\n'
   context+="$(cat "$POLICIES")"
   context+=$'\n\n'

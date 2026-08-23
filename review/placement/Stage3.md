@@ -564,6 +564,39 @@ readonly siteInstanceIds: number[];
 `NewGameSession` のような抱える側か）。`map.siteInstanceIds` を直に読んでいる呼び出し側が
 `PlayScreenView` とテスト4本あるので、割るとそこの書き換えが要る。
 
+### 追記: セーブが世界を保存するようになると、答えが変わる
+
+18節は「セーブは対応表を保存せず、種から作り直す」を前提に書いたが、**それは暫定処置**で、最終的には
+生成された世界そのものが保存・ロードされ、生成アルゴリズムは新規ゲームでしか動かなくなる。
+この前提で調べ直すと、2つ変わる。
+
+**1. 「寿命が違う」が具体的になる。** 今は両方とも毎回まとめて作り直されるので、寿命の違いは
+理屈の上の話でしかなかった。世界を保存するようになると、**世界（インスタンス）はセーブから、
+生成結果（サイト・辺・命名）は種から**来る。対応表は種からは復元できない——instanceIdは
+spawn のときに決まるものだから。derived な値ではなく**保存される状態**になる。
+
+**2. 行き先が変わる。対応表そのものが要らなくなる可能性が高い。** 生成が終わった後に `IslandMap` を
+読んでいるのは2箇所だけで、どちらも `sites`/`edges` を見ていない。
+
+| 読む側 | 何のために |
+| ------ | ---------- |
+| `PlayScreenView.locationNameOf` | `nameOfInstance`（`LocationName` ＝ 型の識別子・亜種の識別子・通し番号） |
+| `PlayScreenView.discoveredMap` | サイトindex ↔ instanceId の翻訳だけ。道も既知の土地も**世界から**導いている |
+
+- `LocationName` の型名は**インスタンスの `def` がすでに知っている**。残るのは亜種の識別子と通し番号で、
+  どちらも個体ごとの事実なので、世界を保存するなら**土地のインスタンスが持つのが自然**。
+- サイトindexは「土地を指す恒久キー」としてしか使われていない（地図画面のカード位置、`SaveData`）。
+  ところが**世界を保存するなら instanceId がすでにその恒久キー**である——`path` の `destination_id` が
+  instanceId を持っている以上、セーブは instanceId を保たなければ壊れる。
+
+つまり行き先は「純粋な生成結果と対応表の2つに割る」ではなく、**実体化のときに命名を土地へ書き込み、
+`IslandMap` は生成の中だけで完結して捨てられる**、になりそう。18節が作ろうとしていた「実体化された島」
+という概念は、いま作ると後で消すことになる。
+
+**なので A-7 は開けたままにする。** 直し方はセーブの形式が決まってから決める。そのとき決める必要が
+あるのは「**土地を指す恒久キーは何か**」の1点で、`SaveData.MapCardPosition.site` のコメント
+（「同じシードなら同じ土地を指し続ける恒久キー」）は、まさに暫定処置のほうを前提にしている。
+
 ## 19. 操作のきっかけと、`actions`/`combinations` の統合
 
 設計は [`InteractionTrigger.md`](./InteractionTrigger.md)。YAMLの2つの節を `interactions` 1つにし、
@@ -655,3 +688,62 @@ docs 12ファイルとJSONスキーマ。パッチのパス（`x.actions.y`）�
 - **かさ0の物は狙われない。** 旧実装の `Math.max(1, volume)` の下限は設けなかった（PickAmong 6節）。
 - 「人が居なければ襲えない」を確かめていたテストが、**重みが0に潰れること**を見ていた。重みは配分の
   ままになったので、観測できる事実（怪我が増えない）で確かめる形へ直した。
+
+## 21. 枠の並び（`CellLayout`）
+
+`Slot` の3つの責務（受け入れ判定・中身の保持・置き場所を作る配置）のうち、後ろ2つを
+`src/domain/CellLayout.ts` へ移した。`SlotCell` も一緒に移っている。`Slot` に残ったのは、owner と
+`SlotDef` を見て答える問い合わせ（`rejectionFor` `acceptedCount` `putInMinutes` `fillRatio`）だけ。
+公開APIは変えていないので、`WorldObject` 側は何も知らない。
+
+### 分けたのは責務ではなく、分岐が散っていたこと
+
+11メソッドを移すだけなら場所が変わるだけで終わる。`Slot` が読みにくかった本体は
+**「枠数を決めたスロット / 前詰めのスロット」の分岐が10箇所に散っていた**ことで、
+`vacancyFor` `findCellFor` `removeInternal` `restack` `placeSameSlot` `insertAt` `tryInsertAtGap`
+`tryInsertAtCell` `tryMoveStackToGap` `tryMoveStackToCell` がそれぞれ自前で二股に分かれていた。
+
+**この2つは別のアルゴリズムではない。** 前詰めのスロットは枠の宣言が共有の1つなので、
+
+- 挿入の `splice` は「末尾に空き枠を1つ生やして、そこから右へ中身をずらす」と結果が同じ。
+- 並び替えの「抜いて入れ直す」は「抜いた跡を空き枠として残し、そこへ向けてずらす」と結果が同じ。
+
+差は次の3つに畳めて、それぞれ1箇所でしか効かない。
+
+| 規則 | 効く場所 |
+| ---- | -------- |
+| 空き枠が無いとき末尾に枠を足せるか | `tryGrowCell` |
+| 空になった枠を残すか | `emptyCell` |
+| 位置の指定が枠を直接指せるか | `pointsCell` |
+
+`hasFixedCells` を見るのは、この3つと `vacancyFor`（増える枠に上限が無いこと）の4箇所だけになった。
+`tryInsertAtGap` / `tryInsertAtCell` / `tryMoveStackToGap` / `tryMoveStackToCell` / `findCellFor` /
+`insertGrownCell` / `tryPlaceAdjacent` は消え、置き方は
+`tryPlaceAt`（位置の指定→枠 or 隙間）→ `tryPlaceAtGap` → `tryPlaceShifted` の一本になった。
+
+**却下した案**: 抽象 `CellLayout` ＋ 固定/前詰めの2実装。差が宣言 `cellsToKeep` 1つに畳める以上、
+型を2つに割る根拠が無い（仕組みの数が既存のケース数と同じになり、何も畳めていない）。
+
+### 挙動
+
+保存。`tests/domain/stacking.test.ts`（21件。左シフトのフォールバックと押し出し順まで見ている）と
+`fieldItemPlacement` / `handPlacement` / `cells` / `slotCells` がそのまま通る。
+
+隙間の指定を並びの範囲へ収める（`clampIndex`）のは、前詰めのスロットだけの処理だったのを両方に
+広げた。範囲外の隙間を枠数固定のスロットへ指すと、今までは失敗し、今は端として扱う。
+UIが作る隙間番号は常に範囲内なので差は出ない。
+
+新しく足したのは、**前詰めのスロットにはどの操作の後にも空き枠が残らない**ことを確かめるテスト1件
+（`fieldItemPlacement`）。ずらしで場所を作る形にしたので、生やした枠が使われずに残らないことが
+不変条件になった。
+
+### 「枠1つの不在」の残り（`autoFill`）
+
+`helpers/domain-state-gen.md` が「消えない」としていた `autoFill.chooseCandidates` 周りは、
+`SlotCell` ができたことで消えた。`autoFill` は「この枠にあと何個入るか」を
+`(cell.def.max ?? 1) - (cell.stack?.members.length ?? 0)` と自前で計算していたが、これは
+`SlotCell.roomFor` そのもので、`cell.roomFor(wanted)` に置き換わった。
+
+**`?? 1` は仕様と食い違っていた。** `max` は省略で無制限（GameElementDefinition.md 7.2節）で、
+1個だけ置きたいなら `max: 1` と書ける。材料スロットの枠は `requirementCells` が必ず `max` を
+入れるので到達しない分岐だったが、読む側が別の既定を置くと、宣言できるはずのことが宣言できなくなる。
