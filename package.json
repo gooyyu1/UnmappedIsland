@@ -17,6 +17,7 @@
     "stats:balance": "RUN_BALANCE_STATS=1 vitest run tests/diagnostics/balanceStatsReport.test.ts",
     "stats:climate": "RUN_CLIMATE_STATS=1 vitest run tests/diagnostics/climateStatsReport.test.ts",
     "stats:declarations": "node scripts/declarationInventory.mjs",
+    "stats:docs": "node scripts/docStatus.mjs",
     "stats:lines": "node scripts/countLines.mjs",
     "stats:terrain": "RUN_TERRAIN_STATS=1 vitest run tests/diagnostics/terrainStatsReport.test.ts",
     "test": "vitest run",
