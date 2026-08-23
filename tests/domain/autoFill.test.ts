@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { autoFillMaterials } from '../../src/domain/autoFill';
+import { remainingRequirements } from '../../src/domain/crafting';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -28,6 +29,15 @@ object_defs:
       woven:
         steps:
           - requires: [{object: woven_leaf, count: 3, consume: true}]
+            duration: 60
+  torch:
+    tags: [item]
+    recipes:
+      lit:
+        steps:
+          - requires: [{object: reed, count: 2, consume: true}]
+            duration: 60
+          - requires: [{tag: item, count: 1, consume: true}]
             duration: 60
 `;
 
@@ -118,5 +128,60 @@ object_defs:
 
     expect(fill(), '2度押しても増えない').toBe(0);
     expect(inBox()).toHaveLength(3);
+  });
+
+  /**
+   * 工程が進むと、済んだ工程の枠は表示から消える。そこへ入れた物は取り出せなくなるので、残りの
+   * 工程が要求する枠だけを埋める。`reed`は`item`タグを持つので、2つの工程の枠がどちらも受け入れる。
+   */
+  describe('残りの工程が要求する枠だけ埋める', () => {
+    let torch: WorldObject;
+
+    /** 1つ目の工程（reed×2）が済んだところから、残りの要求だけを渡して自動補充する。 */
+    function fillRemaining(): number {
+      const recipe = codex.objects.get(idOf('torch')).recipes[0];
+      return autoFillMaterials(
+        torch,
+        codex.vocabulary.engine.materialsSlotId,
+        [player.tryGetSlot(slotOf('hand'))?.contents ?? []],
+        codex,
+        remainingRequirements(recipe, recipe.steps[0].durationMinutes),
+      );
+    }
+
+    /** 材料スロットの枠ごとの中身を'reed×2'の形で（空き枠はundefined）。 */
+    function cells(): (string | undefined)[] {
+      return (torch.tryGetSlot(codex.vocabulary.engine.materialsSlotId)?.cells ?? []).map((cell) =>
+        cell.stack === undefined
+          ? undefined
+          : `${cell.stack.members[0].def.name}×${cell.stack.members.length}`,
+      );
+    }
+
+    beforeEach(() => {
+      torch = session.spawn(idOf(inProgressObjectName('torch', 'lit')));
+      torch.moveToSlot(ground.getSlot(slotOf('items')));
+    });
+
+    it('済んだ工程の枠は、その型を受け入れても埋めない', () => {
+      place('reed', 3, player, 'hand');
+
+      expect(fillRemaining(), '残っているのはitem×1の工程だけ').toBe(1);
+      expect(cells(), 'reedの枠は空のまま、itemの枠に1つ').toEqual([undefined, 'reed×1']);
+    });
+
+    it('残りの要求を渡さなければ、全ての枠を埋める', () => {
+      place('reed', 3, player, 'hand');
+
+      const moved = autoFillMaterials(
+        torch,
+        codex.vocabulary.engine.materialsSlotId,
+        [player.tryGetSlot(slotOf('hand'))?.contents ?? []],
+        codex,
+      );
+
+      expect(moved).toBe(3);
+      expect(cells(), '選んだ枠へ入る（reedの枠に2つ、itemの枠に1つ）').toEqual(['reed×2', 'reed×1']);
+    });
   });
 });
