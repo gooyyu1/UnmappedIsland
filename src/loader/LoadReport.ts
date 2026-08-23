@@ -1,3 +1,13 @@
+/** 読み込みで捨てた1件——どこの、何を、なぜ行えなかったか。 */
+export interface LoadProblem {
+  /** 出所（パック名つきのファイル名など）。 */
+  readonly source: string;
+  /** 行おうとしたこと（patchの1操作など）。無ければ出所全体の話。 */
+  readonly attempted: string | undefined;
+  /** 行えなかった理由。 */
+  readonly reason: string;
+}
+
 /**
  * 読み込み中に見つかった、**致命ではない問題**の記録（AssetPack.md 6.1節）。
  *
@@ -8,15 +18,6 @@
  * **黙って捨てはしない。** 記録は必ずコンソールへも出す。読める画面を用意するまでの間、
  * 書いた本人が気付ける経路をこれで確保する。
  */
-export interface LoadProblem {
-  /** 出所（パック名つきのファイル名など）。 */
-  readonly source: string;
-  /** 行おうとしたこと（patchの1操作など）。無ければ出所全体の話。 */
-  readonly attempted: string | undefined;
-  /** 行えなかった理由。 */
-  readonly reason: string;
-}
-
 export class LoadReport {
   private readonly entries: LoadProblem[] = [];
 
