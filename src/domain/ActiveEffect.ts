@@ -218,14 +218,14 @@ export type SpawnTargetRoot =
  * spawnしたオブジェクトは配置されないまま消える。
  */
 export class SpawnEffect extends ActiveEffect {
-  readonly objectGlobalId: number;
-  readonly into: SpawnTargetRoot;
+  private readonly objectGlobalId: number;
+  private readonly into: SpawnTargetRoot;
 
   /**
    * 生む個数（9.4節、既定1）。同じ宣言を並べるのと同じ意味で、1個ずつ順に生んで配置する
    * ——「2個見つかる」を書くのに同じ行を2度書かせない。
    */
-  readonly count: number;
+  private readonly count: number;
 
   constructor(objectGlobalId: number, into: SpawnTargetRoot, count = 1) {
     super();
@@ -238,7 +238,8 @@ export class SpawnEffect extends ActiveEffect {
   }
 
   apply(context: ReferenceContext, session: WorldSession, effectSite: EffectSite | undefined): void {
-    for (let i = 0; i < this.count; i++) context.self?.executeSpawn(this, context, effectSite);
+    for (let i = 0; i < this.count; i++)
+      context.self?.executeSpawn(this.objectGlobalId, this.into, context, effectSite);
   }
 
   read(reader: EffectReader): void {

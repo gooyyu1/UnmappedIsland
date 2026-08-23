@@ -1,4 +1,4 @@
-import type { ActiveEffect, SpawnEffect, SpawnTargetRoot } from './ActiveEffect';
+import type { ActiveEffect, SpawnTargetRoot } from './ActiveEffect';
 import { Action, Combination } from './Interaction';
 import { EffectSite } from './EffectSite';
 import type { SameSlotPlacement } from './EffectSite';
@@ -799,9 +799,14 @@ export class WorldObject {
    * spawn（9.4節）を実行する。intoへの配置に失敗した場合は起点自身の親へこぼれ、そこも受け取らなければ
    * さらに上へ遡る（place・spillTo参照）。どこにも入らなければ、生成したオブジェクトはそのまま消える。
    */
-  executeSpawn(effect: SpawnEffect, context: ReferenceContext, effectSite: EffectSite | undefined): void {
-    const spawned = this.session.spawn(effect.objectGlobalId);
-    this.place(spawned, effect.into, context, effect.into === 'same_slot' ? effectSite : undefined);
+  executeSpawn(
+    objectGlobalId: number,
+    into: SpawnTargetRoot,
+    context: ReferenceContext,
+    effectSite: EffectSite | undefined,
+  ): void {
+    const spawned = this.session.spawn(objectGlobalId);
+    this.place(spawned, into, context, into === 'same_slot' ? effectSite : undefined);
   }
 
   /**
