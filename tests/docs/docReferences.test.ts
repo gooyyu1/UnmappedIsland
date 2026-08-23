@@ -9,6 +9,7 @@ import { githubSlugs } from '../../scripts/githubSlugs.mjs';
  * - Markdownリンク（ファイル・アンカー）が実在すること
  * - コード・YAML・ドキュメント中の「Foo.md N節」「Foo.md 〇〇節」が実在の節を指すこと
  * - 見出しの【未実装: 識別子】ラベルが、実装後に剥がし忘れられていないこと
+ * - 確定度の印が、印として働く形で付いていること（DocumentStyle.md 6節）
  *
  * アンカーの照合には、公開サイトが実際にIDを振るのと同じ {@link githubSlugs} を使う。
  */
@@ -31,6 +32,12 @@ function listFiles(dir: string, exts: readonly string[]): string[] {
 
 const DOC_FILES = listFiles('docs', ['.md']);
 
+/** 確定度の印（DocumentStyle.md 6節）。付くのは節の見出しだけ。 */
+const CONFIRMED_LABEL = '【確定】';
+
+/** 既定である暫定の側に印を付ける語。使わない。 */
+const PROVISIONAL_LABELS = ['【未確定】', '【暫定】'];
+
 /** 参照を検査する対象。ドキュメント自身と、節番号でドキュメントを指すコード・データ。 */
 const REF_FILES = [
   ...DOC_FILES,
@@ -40,19 +47,25 @@ const REF_FILES = [
   ...listFiles('tools', ['.md', '.json']),
 ].filter((rel) => !rel.startsWith(join('tests', 'docs'))); // 本テスト自身の例・正規表現は対象外
 
-/** インラインコード・コードフェンスを除いた本文（例示のリンクや参照を検査対象から外す）。 */
+/**
+ * インラインコード・コードフェンスを除いた各行と、原文での行番号
+ * （例示のリンク・参照・印を検査対象から外す）。
+ */
+function textLines(markdown: string): { line: number; text: string }[] {
+  const kept: { line: number; text: string }[] = [];
+  let inFence = false;
+  markdown.split('\n').forEach((raw, index) => {
+    if (/^\s*```/.test(raw)) inFence = !inFence;
+    else if (!inFence) kept.push({ line: index + 1, text: raw.replace(/`[^`]*`/g, '') });
+  });
+  return kept;
+}
+
+/** インラインコード・コードフェンスを除いた本文。 */
 function withoutCode(markdown: string): string {
-  return markdown
-    .split('\n')
-    .reduce<{ lines: string[]; inFence: boolean }>(
-      (state, line) => {
-        if (/^\s*```/.test(line)) return { lines: state.lines, inFence: !state.inFence };
-        if (!state.inFence) state.lines.push(line.replace(/`[^`]*`/g, ''));
-        return state;
-      },
-      { lines: [], inFence: false },
-    )
-    .lines.join('\n');
+  return textLines(markdown)
+    .map(({ text }) => text)
+    .join('\n');
 }
 
 function read(rel: string): string {
@@ -231,6 +244,36 @@ describe('ドキュメントの参照', () => {
       stale,
       `実装済みの疑いがある【未実装】ラベル（ドキュメント側の剥がし忘れ？）:\n` +
         stale.map(({ doc, ident }) => `${doc}: ${ident}`).join('\n'),
+    ).toEqual([]);
+  });
+
+  it('【確定】が見出しにだけ付いている（DocumentStyle.md 6節）', () => {
+    const misplaced: string[] = [];
+    for (const [rel, text] of docByPath) {
+      for (const { line, text: body } of textLines(text)) {
+        if (body.includes(CONFIRMED_LABEL) && !/^#{1,6}\s/.test(body)) {
+          misplaced.push(`${rel}:${line}`);
+        }
+      }
+    }
+    expect(
+      misplaced,
+      `見出し以外の${CONFIRMED_LABEL}（本文に書いても印として働かない）:\n${misplaced.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('暫定の側に印を付けていない（DocumentStyle.md 6節）', () => {
+    const found: string[] = [];
+    for (const [rel, text] of docByPath) {
+      for (const { line, text: body } of textLines(text)) {
+        for (const label of PROVISIONAL_LABELS) {
+          if (body.includes(label)) found.push(`${rel}:${line}: ${label}`);
+        }
+      }
+    }
+    expect(
+      found,
+      `暫定は既定なので印を付けない（印が多数側に付くと背景になって読めない）:\n${found.join('\n')}`,
     ).toEqual([]);
   });
 });
