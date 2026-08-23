@@ -68,6 +68,23 @@ object_defs:
   sprain:
     tags: [injury]
     bound_to_owner: true
+
+  # 設置物でありながら場所でもあるもの（筏・住居）。中にプレイヤーが入るので土地と同じ枠を持ち、
+  # 土地の設置物スロットに置かれる——つまり現在地がさらに別の場所の中にある形になる。
+  vessel:
+    tags: [fixture]
+    stackable: false
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 4}}
+    slots:
+      items: {cell: {accept: {tag: item}}}
+      fixtures: {cell: {accept: {tag: fixture}}}
+      characters: {cell_count: 1, cell: {accept: {tag: character}}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 15
+        add: {self: {exploration_progress: 1}}
 `;
 
   const setUp = (): MiniGame => miniGame(WORLD);
@@ -356,11 +373,18 @@ object_defs:
     expect(frozen.characterCard, 'cardsIn以外は元のviewのまま').toBe(live.characterCard);
   });
 
-  it('withFrozenCardsは、開いている場所が無ければviewをそのまま返す', () => {
+  it('withFrozenCardsは、常に見えているレーンを渡されなくても焼き付ける', () => {
+    // 3つのレーンは必ず画面に出ているので、数え上げは呼び出し側に持たせない（withFrozenCards）。
     const mini = setUp();
-    const view = viewOf(mini);
+    const stone = mini.createObject('stone', mini.slot('items', mini.land));
 
-    expect(withFrozenCards(view, [])).toBe(view);
+    const frozen = withFrozenCards(viewOf(mini), []);
+    expect(stone.moveToSlotOrRejection(mini.slot('hand'))).toBeUndefined();
+
+    expect(
+      frozen.cardsIn(place(mini, 'items')).map((card) => card?.objects[0]),
+      '渡していないアイテムレーンも控えた時点のまま',
+    ).toEqual([stone]);
   });
 
   it('怪我は取り出せず、何も入れられない', () => {
@@ -494,5 +518,83 @@ object_defs:
     expect(stone.moveToSlotOrRejection(mini.slot('hand'))).toBeUndefined();
     expect(() => card.dropInto?.(place(mini, 'hand'))).not.toThrow();
     expect(card.movedIds(1)).toEqual([stone.instanceId]);
+  });
+
+  describe('入れ子になった場所（ScreenLayout.md 7.1.1節）', () => {
+    /** 土地の上に入れ物としての場所を置き、その中へプレイヤーを移す（筏に乗り込んだ形）。 */
+    const boardVessel = (mini: MiniGame): WorldObject => {
+      const vessel = mini.createObject('vessel', mini.slot('fixtures', mini.land));
+      expect(mini.player.moveToSlotOrRejection(mini.slot('characters', vessel))).toBeUndefined();
+      return vessel;
+    };
+
+    it('外側の場所を持たない土地では、映せる場所は現在地だけ', () => {
+      const mini = setUp();
+
+      const nested = viewOf(mini).nestedLocations;
+
+      expect(nested, '陸に居る間は切り替える先が無い').toHaveLength(1);
+      expect(nested[0].fixtures, '今までどおり現在地の設置物スロットを引く').toBe(place(mini, 'fixtures'));
+    });
+
+    it('現在地がさらに別の場所の中にあると、外側の設置物スロットも引ける', () => {
+      const mini = setUp();
+      const vessel = boardVessel(mini);
+      const tree = mini.createObject('tree', mini.slot('fixtures', mini.land));
+
+      const view = viewOf(mini);
+      const nested = view.nestedLocations;
+
+      expect(nested, '現在地と、それを含む場所の2件').toHaveLength(2);
+      expect(nested[0].fixtures, '先頭は現在地（入れ物の中）').toBe(
+        vessel.getSlot(mini.codex.slotNames.getId('fixtures')),
+      );
+      expect(
+        view.cardsIn(nested[1].fixtures).map((card) => card?.objects[0]),
+        '外側の設置物が引ける（乗っている入れ物自身も外側から見れば設置物）',
+      ).toEqual([vessel, tree]);
+    });
+
+    it('切り替える先があっても、アイテムと手持ちが映す場所は現在地とプレイヤーのまま', () => {
+      // 切り替わるのは設置物レーンだけ（ScreenLayout.md 7.1.1節）。
+      const mini = setUp();
+      const vessel = boardVessel(mini);
+
+      const view = viewOf(mini);
+
+      expect(view.places('items')).toBe(vessel.getSlot(mini.codex.slotNames.getId('items')));
+      expect(view.places('hand')).toBe(mini.slot('hand'));
+      expect(view.currentLocationCard.identity, '現在地の札は入れ物のまま').toEqual([vessel.instanceId]);
+    });
+
+    it('探索は、その場所ごとに別々に効く', () => {
+      const mini = setUp();
+      const vessel = boardVessel(mini);
+
+      const nested = viewOf(mini).nestedLocations;
+
+      expect(nested[1].explore(), '外側の土地は探索を宣言していない').toBe(false);
+      expect(nested[0].explore(), '現在地（入れ物）は探索できる').toBe(true);
+      expect(
+        vessel.getProperty(mini.codex.propertyNames.getId('exploration_progress')).getEffectiveValue(),
+        '進んだのは探索した側だけ',
+      ).toBe(1);
+    });
+
+    it('withFrozenCardsは、外側の場所の設置物も焼き付ける', () => {
+      // 経過を見せている間に外側を映していても、そこだけが未来を映すことがないように。
+      const mini = setUp();
+      const vessel = boardVessel(mini);
+      const tree = mini.createObject('tree', mini.slot('fixtures', mini.land));
+
+      const frozen = withFrozenCards(viewOf(mini), []);
+      // 控えたあとでワールドが変わる（外側に在った木が、入れ物の中へ移る）。
+      expect(tree.moveToSlotOrRejection(mini.slot('fixtures', vessel))).toBeUndefined();
+
+      expect(
+        frozen.cardsIn(frozen.nestedLocations[1].fixtures).map((card) => card?.objects[0]),
+        '外側の設置物レーンも控えた時点のまま',
+      ).toEqual([vessel, tree]);
+    });
   });
 });

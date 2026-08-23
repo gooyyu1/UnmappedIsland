@@ -12,7 +12,7 @@ import { cardLooksOf } from './cardLooks';
 import type { CardAction, CardCombination, CardDrop, CardOperations } from './cardOperations';
 import { cardOperationsOf } from './cardOperations';
 import type { CardPlace, CardPlacement, ScreenPlaceResolver } from './cardPlaces';
-import { cardPlacesOf } from './cardPlaces';
+import { cardPlacesOf, nestedFixturePlacesOf } from './cardPlaces';
 import type { SlotRef } from '../../art/backgroundArt';
 import type { CardContent } from '../ui/Card';
 import type { CardKind } from '../looks/theme';
@@ -132,6 +132,24 @@ export interface ObjectWindowView {
 }
 
 /**
+ * 設置物レーンが映せる場所1件（PlayScreenView.nestedLocations）。**現在地も外側の場所も同じ形で
+ * 答える**ので、画面はどちらを映しているかだけを持てばよく、外側かどうかで手順が分かれない。
+ */
+export interface NestedLocationView {
+  /** 設置物レーンが映すスロット。 */
+  readonly fixtures: CardPlace;
+
+  /** レーンの左端にピン留めする札と、そこから開く子ウィンドウ（札はwindow.card）。 */
+  readonly window: ObjectWindowView;
+
+  /**
+   * その場所を1回探索する（探索できない場所ではfalse）。**映している場所を探索する**ので、
+   * 外側を映している間に押した探索は外側に効く。
+   */
+  readonly explore: () => boolean;
+}
+
+/**
  * その場所を1つの並び（レーン・子ウィンドウのタブ）として見せるのに要るもの一式。**1つの場所に
  * ついて知りたいことは1つの問い合わせで揃う**——ばらばらに訊くと、場所を映す先を足すたびに
  * 訊く手順も増える（Windows.md 1節、ObjectWindowViewと同じ形）。
@@ -200,8 +218,12 @@ export interface PlayScreenView {
   /** キャラクタ自身の子ウィンドウ（ポートレイト・日時・装備/怪我のボタンから開く）。 */
   readonly characterWindow: ObjectWindowView;
 
-  /** 現在地そのものの子ウィンドウ（現在地の札から開く）。 */
-  readonly currentLocationWindow: ObjectWindowView;
+  /**
+   * 設置物レーンが映せる場所（内側から外側へ。先頭が現在地で、必ず1件以上）。**現在地がそれ自体
+   * さらに別の場所の中にあるときだけ2件以上**になる——筏で海に出ている間、住居の中に居る間。
+   * 今どれを映しているかは画面が持つ（ScreenLayout.md 7.1.1節）。
+   */
+  readonly nestedLocations: readonly NestedLocationView[];
 
   /**
    * その物の子ウィンドウ。**物ごとに変わる**ので、値ではなく問い合わせで答える。キャラクタと現在地は
@@ -238,11 +260,16 @@ export interface PlayScreenView {
    * 区別できないため、名前は必ず出す（ScreenLayout.md 5節）。天気の語彙を持たないCodexではundefined。
    */
   readonly weatherLabel: string | undefined;
-  /** 現在地を映す札。設置物レーンの左端にピン留めされる1枚と、現在地の子ウィンドウが同じ姿で出す。 */
+  /**
+   * 現在地を映す札（`nestedLocations`の先頭の札）。**プレイヤーが今どこに居るか**を言う口で、
+   * 設置物レーンにピン留めされる札とは別物——レーンは外側の場所を映していることがある。
+   */
   readonly currentLocationCard: CardContent;
   /**
-   * 常に見えている3つのレーンが今映しているスロット。**画面が自分で名指しするのはこの3つだけ**で、
-   * それ以外の場所はカードや現在地が名乗る`visible_slots`から来る（cardPlaces参照）。
+   * 常に見えている3つのレーンが、**現在地について**映しているスロット。**画面が自分で名指しするのは
+   * この3つだけ**で、それ以外の場所はカードや現在地が名乗る`visible_slots`から来る（cardPlaces参照）。
+   *
+   * 設置物レーンが実際に映しているのはここではなく`nestedLocations`のどれか1件。
    */
   readonly places: ScreenPlaceResolver;
 
@@ -301,16 +328,22 @@ export interface PlayScreenView {
  * （時間経過の再現、PlayScene.passTime）では、それだと控えた時点ではなく「今」の並びが出てしまう
  * ——45分の行動の結果が、経過を見せている途中の画面に先に現れる。
  *
- * **画面が引きうる場所を漏らさず渡すこと。** 焼き付けていない場所は生きたワールドのままなので、
- * 渡し忘れた場所だけが未来を映す（runAndRecordChange参照）。
+ * **常に見えている場所は自分で焼き付ける**——3つのレーンぶんと、設置物レーンが映せる外側の場所ぶん
+ * （nestedLocations）。呼び出し側が渡すのはそれ以外に画面へ出ている場所（開いている子ウィンドウ）
+ * だけでよい。焼き付けていない場所は生きたワールドのままなので、数え上げを呼び出し側に持たせると、
+ * 場所が増えたときに渡し忘れた1つだけが未来を映す（runAndRecordChange参照）。
  */
 export function withFrozenCards(
   view: PlayScreenView,
   places: readonly (CardPlace | undefined)[],
 ): PlayScreenView {
+  const shown = [
+    ...view.nestedLocations.map((nested) => nested.fixtures),
+    view.places('items'),
+    view.places('hand'),
+  ];
   const frozen = new Map<CardPlace, readonly (ObjectCardStack | undefined)[]>();
-  for (const place of places) if (place !== undefined) frozen.set(place, view.cardsIn(place));
-  if (frozen.size === 0) return view;
+  for (const place of [...shown, ...places]) if (place !== undefined) frozen.set(place, view.cardsIn(place));
 
   return { ...view, cardsIn: (asked) => frozen.get(asked) ?? view.cardsIn(asked) };
 }
@@ -694,12 +727,21 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
   });
 
   const characterWindow = windowOf(game.player.instance);
-  const currentLocationWindow = windowOf(location.instance);
+
+  /**
+   * 設置物レーンが映せる場所（内側から外側へ）。**場所そのものはスロットの持ち主から引く**ので、
+   * どこまでを場所と見なすかを決めるのはnestedFixturePlacesOfの1箇所だけになる。
+   */
+  const nestedLocations: readonly NestedLocationView[] = nestedFixturePlacesOf(location).map((fixtures) => ({
+    fixtures,
+    window: windowOf(fixtures.owner),
+    explore: () => new Location(fixtures.owner, codex).explore(game.player.instance),
+  }));
 
   return {
     characterCard: characterWindow.card,
     characterWindow,
-    currentLocationWindow,
+    nestedLocations,
     windowOf,
     conditions: ['💭', '🥶', '😪', '🍽️'],
     statuses: entriesWithTag(game.player.instance, codex.propertyTagNames.tryGetId(STATUS_TAG)),
@@ -713,7 +755,7 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
     ambientTemperature: game.world.ambientTemperature,
     weatherLabel:
       game.world.weather === undefined ? undefined : locale.symbol(game.world.weather).displayName,
-    currentLocationCard: currentLocationWindow.card,
+    currentLocationCard: nestedLocations[0].window.card,
     places,
     slotViewOf,
     mapLands: discovered.lands,

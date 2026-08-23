@@ -132,19 +132,19 @@ describe('探索と地図（世界→映し 通し）', () => {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
 
     expect(
-      fromGameSession(game, codex, locale).currentLocationWindow.explorationRatio,
+      fromGameSession(game, codex, locale).nestedLocations[0].window.explorationRatio,
       '開始直後は未探索',
     ).toBe(0);
 
     exploreToFull(game);
     expect(
-      fromGameSession(game, codex, locale).currentLocationWindow.explorationRatio,
+      fromGameSession(game, codex, locale).nestedLocations[0].window.explorationRatio,
       '探索し切れば100%',
     ).toBe(1);
 
     // 100%到達後も探索は続けられる（ExplorationSystem.md 2節）が、探索率は100%のまま。
     expect(game.player.explore()).toBe(true);
-    expect(fromGameSession(game, codex, locale).currentLocationWindow.explorationRatio).toBe(1);
+    expect(fromGameSession(game, codex, locale).nestedLocations[0].window.explorationRatio).toBe(1);
   });
 
   it('道のカードのアクションで、現在地が行き先へ移る', () => {

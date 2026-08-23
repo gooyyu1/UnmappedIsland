@@ -25,7 +25,10 @@ export interface CardSource {
   ) => CardCombination | undefined;
   /** 子ウィンドウが映しているスロット（映していなければundefined）。端の行き先の候補に入る。 */
   readonly windowPlace: () => CardPlace | undefined;
-  /** 画面の区画が映しているスロット（PlayScreenView.places）。端の行き先はレーンの並びで決まる。 */
+  /**
+   * 画面の区画が**今映している**スロット。端の行き先はレーンの並びで決まるので、設置物レーンが
+   * 外側の場所を映していれば、上へ送る先もその外側になる（ScreenLayout.md 7.1.1節）。
+   */
   readonly places: ScreenPlaceResolver;
 }
 

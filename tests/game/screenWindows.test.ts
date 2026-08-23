@@ -142,7 +142,7 @@ object_defs:
     const view = viewOf(mini);
 
     expect(view.characterWindow.card, 'ポートレイトと同じ1枚').toBe(view.characterCard);
-    expect(view.currentLocationWindow.card).toBe(view.currentLocationCard);
+    expect(view.nestedLocations[0].window.card).toBe(view.currentLocationCard);
     expect(view.windowOf(stone).explorationRatio, '石は探索できない').toBeUndefined();
     expect(view.windowOf(stone).card.name, '押した札が映す物の姿を出す').toBe(cardOf(view, stone).name);
   });
