@@ -1,6 +1,6 @@
 import { DescriptionWriter } from './describe/Description';
 import {
-  creates,
+  createsObject,
   describeInfluencesOn,
   describeObjectDef,
   usesInRecipes,
@@ -26,7 +26,7 @@ import { EMPTY_HTML, escapeHtml, inlineArtHtml } from './html';
 
 /** オブジェクト一覧（入口のページ）。 */
 function renderObjectListPage(view: CodexView): string {
-  const defs = [...view.objectDefs()].sort((a, b) => (a.name < b.name ? -1 : 1));
+  const defs = [...view.listedObjectDefs()].sort((a, b) => (a.name < b.name ? -1 : 1));
   const cards = defs.map((def) => objectCardHtml(view, def)).join('');
 
   return (
@@ -86,7 +86,7 @@ function renderObjectPage(view: CodexView, name: string): string {
     // 逆引きはどちらも、行き先の型を絵で並べるだけにする——どの操作・どの工程かはリンク先で分かる。
     section(
       'この型を生み出すもの',
-      matchingObjectsHtml(view, (other) => creates(other, def.globalId)),
+      matchingObjectsHtml(view, (other) => createsObject(other, def.globalId)),
     ) +
     section(
       'この型を材料・道具に使うもの',
@@ -100,7 +100,7 @@ function matchingObjectsHtml(view: CodexView, matches: (def: ObjectDef) => boole
   return objectGridHtml(
     view,
     view
-      .objectDefs()
+      .listedObjectDefs()
       .filter(matches)
       .map((def) => def.name),
   );
@@ -221,7 +221,7 @@ function renderObjectsByTagPage(view: CodexView): string {
     .map(({ tag, names }) => tagSectionHtml(view, tag, escapeHtml(tag), names))
     .join('');
 
-  const untagged = view.objectDefs().filter((def) => def.tags.length === 0);
+  const untagged = view.listedObjectDefs().filter((def) => def.tags.length === 0);
   const untaggedSection =
     untagged.length === 0
       ? ''
@@ -572,7 +572,7 @@ function recipesHtml(view: CodexView, def: ObjectDef): string {
  */
 function influencesHtml(view: CodexView, owner: ObjectDef, propertyGlobalId: number): string {
   const groups = view
-    .objectDefs()
+    .listedObjectDefs()
     .map((def) => {
       const writer = new DescriptionWriter();
       describeInfluencesOn(def, propertyGlobalId, def === owner, view.names, writer);

@@ -34,7 +34,11 @@ export function loadDefinitions(pack: AssetPack | undefined, report: LoadReport)
   } catch (error) {
     if (pack === undefined) throw error;
 
-    report.add(pack.name, undefined, `読み込めないので、このパックを外しました: ${messageOf(error)}`);
+    report.addDiscarded(
+      pack.name,
+      undefined,
+      `読み込めないので、このパックを外しました: ${messageOf(error)}`,
+    );
     return loadDefinitions(undefined, report);
   }
 }

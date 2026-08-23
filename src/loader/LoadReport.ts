@@ -21,7 +21,7 @@ export class LoadReport {
   private readonly entries: LoadProblem[] = [];
 
   /** 捨てた1件を記録する。 */
-  add(source: string, attempted: string | undefined, reason: string): void {
+  addDiscarded(source: string, attempted: string | undefined, reason: string): void {
     this.entries.push({ source, attempted, reason });
     console.warn(
       `[アセットパック] ${source}${attempted === undefined ? '' : `: ${attempted}`}\n  → ${reason}`,

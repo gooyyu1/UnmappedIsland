@@ -82,7 +82,7 @@ describe('injuries.yamlの怪我', () => {
     const held = vital.map((id) => player.tryGetProperty(id)?.number ?? 0);
     for (let i = 0; i < count; i++) {
       player.tick();
-      vital.forEach((id, index) => player.getProperty(id).init(held[index]));
+      vital.forEach((id, index) => player.getProperty(id).setNumberWithoutEvents(held[index]));
     }
   }
 

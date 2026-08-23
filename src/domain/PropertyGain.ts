@@ -32,7 +32,7 @@ export interface InteractionGains {
    * **効果を適用する前に控える。** 飲み干した水のように、適用し終えた時点では世界から出ていて
    * 親を辿れない物がある。
    */
-  readonly source: readonly WorldObject[];
+  readonly sourceAndAncestors: readonly WorldObject[];
 
   readonly gains: readonly PropertyGain[];
 }

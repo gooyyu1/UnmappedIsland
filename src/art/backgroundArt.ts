@@ -71,10 +71,10 @@ export function backgroundTexturesOf(owner: string): readonly string[] {
 
 /** 持ち主ごとの絵、無ければスロット共通の絵。 */
 function backgroundTexture(at: SlotRef, use: Use): string | undefined {
-  return found(`${at.owner}_${at.slot}_${use}`) ?? found(`${at.slot}_${use}`);
+  return registeredTextureKey(`${at.owner}_${at.slot}_${use}`) ?? registeredTextureKey(`${at.slot}_${use}`);
 }
 
-function found(fileName: string): string | undefined {
+function registeredTextureKey(fileName: string): string | undefined {
   const key = `background:${fileName}`;
   return BACKGROUND_ART.has(key) ? key : undefined;
 }

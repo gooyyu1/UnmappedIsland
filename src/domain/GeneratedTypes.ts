@@ -67,7 +67,7 @@ export class GeneratedTypes {
   }
 
   /** defが軸axisの値を持つ生成型なら、その素の型のグローバルID。そうでなければundefined。 */
-  baseAlong(def: ObjectDef, axis: string): number | undefined {
+  baseGlobalIdIfVariantOn(def: ObjectDef, axis: string): number | undefined {
     const coordinate = this.coordinates.get(def.globalId);
     return coordinate?.axisValues.has(axis) === true ? coordinate.baseGlobalId : undefined;
   }

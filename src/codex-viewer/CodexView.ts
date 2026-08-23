@@ -50,7 +50,7 @@ export class CodexView {
    * 中身は完成品のrecipesの節にそのまま出ている——一覧に並べても、作りかけの姿という同じ物の
    * 別の顔が増えるだけで、読み手には重複にしか見えない。識別子で名指しすれば個別のページは開ける。
    */
-  objectDefs(): readonly ObjectDef[] {
+  listedObjectDefs(): readonly ObjectDef[] {
     const defs: ObjectDef[] = [];
     for (let globalId = 0; globalId < this.codex.objects.count; globalId++) {
       const def = this.codex.objects.tryGet(globalId);
@@ -60,11 +60,11 @@ export class CodexView {
     return defs;
   }
 
-  /** タグ（4.1節）を持つobject_defの識別子（宣言順）。一覧に出さない型は含まない（objectDefs参照）。 */
+  /** タグ（4.1節）を持つobject_defの識別子（宣言順）。一覧に出さない型は含まない（listedObjectDefs参照）。 */
   objectsWithTag(tagName: string): readonly string[] {
     const tagId = this.codex.tagNames.tryGetId(tagName);
     if (tagId === undefined) return [];
-    return this.objectDefs()
+    return this.listedObjectDefs()
       .filter((def) => def.hasTag(tagId))
       .map((def) => def.name);
   }
@@ -93,7 +93,7 @@ export class CodexView {
   objectsWithProperty(propertyName: string): readonly string[] {
     const globalId = this.codex.propertyNames.tryGetId(propertyName);
     if (globalId === undefined) return [];
-    return this.objectDefs()
+    return this.listedObjectDefs()
       .filter((def) => def.tryGetPropertyDef(globalId) !== undefined)
       .map((def) => def.name);
   }
@@ -102,7 +102,7 @@ export class CodexView {
   objectsWithSlot(slotName: string): readonly string[] {
     const globalId = this.codex.slotNames.tryGetId(slotName);
     if (globalId === undefined) return [];
-    return this.objectDefs()
+    return this.listedObjectDefs()
       .filter((def) => def.tryGetSlotDef(globalId) !== undefined)
       .map((def) => def.name);
   }
@@ -178,7 +178,7 @@ export class CodexView {
    * object_defのタグ（4.1節）。**ここは識別子をそのまま出す**——`tag_texts`（Localization.tag）は
    * 在るが、ビューアはタグを見出しではなく分類の鍵として並べるため、引き当てていない。
    */
-  tagLabel(name: string): string {
+  tagIdentifier(name: string): string {
     return name;
   }
 
@@ -273,7 +273,7 @@ export class CodexView {
       case 'slot':
         return this.refHtml('slot', token.name, this.slotLabel(token.name), this.slotHref(token.name));
       case 'tag':
-        return this.refHtml('tag', token.name, this.tagLabel(token.name), this.tagHref(token.name));
+        return this.refHtml('tag', token.name, this.tagIdentifier(token.name), this.tagHref(token.name));
       case 'symbol':
         return this.refHtml('symbol', token.name, this.symbolLabel(token.name), undefined);
       case 'property_tag':

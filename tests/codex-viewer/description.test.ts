@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DescriptionWriter } from '../../src/codex-viewer/describe/Description';
 import { defNamesOf } from '../../src/codex-viewer/describe/codexNames';
 import {
-  creates,
+  createsObject,
   describeInfluencesOn,
   usesInRecipes,
 } from '../../src/codex-viewer/describe/describeObjectDef';
@@ -283,12 +283,12 @@ describe('生まれる側・材料側からの逆引き', () => {
 
   it('pickの奥にあるspawnも、生み出す型として数える', () => {
     // coconutのcutは、pickの候補の中でcoconut_halfをspawnする。
-    expect(creates(objectDef('coconut'), codex.objectNames.getId('coconut_half'))).toBe(true);
+    expect(createsObject(objectDef('coconut'), codex.objectNames.getId('coconut_half'))).toBe(true);
   });
 
   it('生み出さない型には答えない', () => {
-    expect(creates(objectDef('coconut'), codex.objectNames.getId('coconut'))).toBe(false);
-    expect(creates(objectDef('bowl'), codex.objectNames.getId('coconut_half'))).toBe(false);
+    expect(createsObject(objectDef('coconut'), codex.objectNames.getId('coconut'))).toBe(false);
+    expect(createsObject(objectDef('bowl'), codex.objectNames.getId('coconut_half'))).toBe(false);
   });
 
   it('材料としても道具としても、使う型から完成品を辿れる', () => {

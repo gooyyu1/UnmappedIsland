@@ -3,7 +3,6 @@ import { Action, Combination } from './Interaction';
 import { EffectSite } from './EffectSite';
 import type { SameSlotPlacement } from './EffectSite';
 import { LocalIndexMap } from './LocalIndexMap';
-import type { NameRegistry } from './NameRegistry';
 import type { ObjectDef } from './ObjectDef';
 import type { PropertyPath } from './ReferenceRoot';
 import { ReferenceContext } from './ReferenceRoot';
@@ -14,6 +13,9 @@ import { PropertyValue } from './PropertyValue';
 import { Slot } from './Slot';
 import type { SlotPosition } from './SlotPosition';
 import type { WorldSession } from './WorldSession';
+
+/** 引けなかったものの呼び名（notFoundMessage）。どの名前空間で引くかもこれが決める。 */
+type MemberKind = 'プロパティ' | 'スロット';
 
 /**
  * 実行時のオブジェクト実体（ObjectDefのインスタンス）。
@@ -100,7 +102,7 @@ export class WorldObject {
   getProperty(globalPropertyId: number): PropertyValue {
     const property = this.tryGetProperty(globalPropertyId);
     if (property === undefined) {
-      throw new Error(this.missing('プロパティ', this.session.codex.propertyNames, globalPropertyId));
+      throw new Error(this.notFoundMessage('プロパティ', globalPropertyId));
     }
     return property;
   }
@@ -111,9 +113,13 @@ export class WorldObject {
    *
    * codexがそのIDを知らない場合だけIDのまま見せる——名前を出せないこと自体が、名前で引けなかった
    * （NameRegistryに登録の無い名前を使った）という手掛かりになる。
+   *
+   * **どの名前空間で引くかはkindが決める。** 呼ぶ側にNameRegistryも渡させると、2つが噛み合って
+   * いなければならない決まりが呼び出しごとに増える。
    */
-  private missing(kind: string, names: NameRegistry, globalId: number): string {
-    const name = names.tryGetName(globalId);
+  private notFoundMessage(kind: MemberKind, globalId: number): string {
+    const { propertyNames, slotNames } = this.session.codex;
+    const name = (kind === 'プロパティ' ? propertyNames : slotNames).tryGetName(globalId);
     return name === undefined
       ? `'${this.def.name}' は${kind}(id=${globalId})を持ちません。`
       : `'${this.def.name}' は${kind} '${name}' を持ちません。`;
@@ -174,7 +180,7 @@ export class WorldObject {
   getSlot(globalSlotId: number): Slot {
     const slot = this.tryGetSlot(globalSlotId);
     if (slot === undefined) {
-      throw new Error(this.missing('スロット', this.session.codex.slotNames, globalSlotId));
+      throw new Error(this.notFoundMessage('スロット', globalSlotId));
     }
     return slot;
   }
@@ -610,7 +616,7 @@ export class WorldObject {
       const carried = carriedValues.get(property.def.globalId);
       // **新しい型のrangeに収まらなくてもそのまま運ぶ。** rangeは実効値の端（6.3節）なので、
       // 読むときに切られる。実体値を丸めるのはエンジンの仕事ではない。
-      if (carried !== undefined) property.init(carried);
+      if (carried !== undefined) property.setNumberWithoutEvents(carried);
     }
 
     this._def.passives.registerRelation(this, 'self', true);

@@ -427,7 +427,7 @@ function createLabel(
         fontSize: `${metrics.fontPx(ICON_SIZE)}px`,
       })
       .setOrigin(0.5);
-    texts.push(fitted(icon, iconWidth));
+    texts.push(shrunkToWidth(icon, iconWidth));
   }
 
   const named = label.kind === 'withName';
@@ -440,14 +440,14 @@ function createLabel(
         color: cssColor(COLOR.text),
       })
       .setOrigin(0, 0.5);
-    texts.push(fitted(name, label.kind === 'withName' ? metrics.px(label.width) : iconWidth));
+    texts.push(shrunkToWidth(name, label.kind === 'withName' ? metrics.px(label.width) : iconWidth));
   }
 
   return texts;
 }
 
 /** 欄に収まらないものは縮めて収める（はみ出すとバーに重なって読めなくなるため）。 */
-function fitted(text: Phaser.GameObjects.Text, width: number): Phaser.GameObjects.Text {
+function shrunkToWidth(text: Phaser.GameObjects.Text, width: number): Phaser.GameObjects.Text {
   if (text.width > width) text.setScale(width / text.width);
   return text;
 }

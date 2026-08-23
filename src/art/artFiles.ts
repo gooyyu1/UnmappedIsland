@@ -58,7 +58,7 @@ export function commonArtFiles(locations: readonly string[]): readonly ArtFile[]
  * 遅延にする理由は常駐量——1つの土地が背景を何枚も持ち、それが土地の数だけ在ることにある。
  * **背景を持たない場所は遅らせる意味が無い**ので、そこで線を引く。
  */
-export function locationDefNames(codex: WorldCodex): readonly string[] {
+export function locationNamesWithBackgroundArt(codex: WorldCodex): readonly string[] {
   return codex
     .objectDefNamesWithTag(codex.vocabulary.world.locationTagId)
     .filter((name) => backgroundTexturesOf(name).length > 0);

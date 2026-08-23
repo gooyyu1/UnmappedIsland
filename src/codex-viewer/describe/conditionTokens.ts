@@ -53,7 +53,7 @@ class ConditionDescriber implements ConditionReader {
       );
     } else {
       const values = (reading.values ?? []).map((value) =>
-        this.names.propertyValue(reading.propertyGlobalId, value),
+        this.names.propertyValueToken(reading.propertyGlobalId, value),
       );
       const isList = reading.op === 'in' || reading.op === 'not_in';
       if (isList) tokens.push(text('['));

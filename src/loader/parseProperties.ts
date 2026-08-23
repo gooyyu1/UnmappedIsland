@@ -16,7 +16,7 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { built, parseScalarNumber } from './parseCommon';
+import { built, parseNumberOrSymbol } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
 import { parsePassive } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
@@ -75,7 +75,7 @@ export function parseProp(
     initialValue = initRange.min;
     isSymbolProperty = false;
   } else {
-    [initialValue, isSymbolProperty] = parseScalarNumber(loader, context, asScalarText(valueNode, context));
+    [initialValue, isSymbolProperty] = parseNumberOrSymbol(loader, context, asScalarText(valueNode, context));
   }
 
   let range: PropertyRange | undefined;

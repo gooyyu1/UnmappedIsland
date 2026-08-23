@@ -167,7 +167,7 @@ export class WorldCodexYamlLoader {
         } catch (error) {
           // 書き方そのものの誤りも、報告先があればその1件を捨てて続ける（AssetPack.md 6.1節）。
           if (report === undefined) throw error;
-          report.add(label, `patch_object_defs[${index}]`, messageOf(error));
+          report.addDiscarded(label, `patch_object_defs[${index}]`, messageOf(error));
         }
       });
 

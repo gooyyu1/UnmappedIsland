@@ -1419,7 +1419,7 @@ export class PlayScene extends ResponsiveScene {
 
   /**
    * 操作そのものが増やしたキャラクタの値を、粒にして飛ばす（CardInteraction.md 10節）。
-   * 発生源はその操作を宣言していた札（InteractionGains.source）で、行き先はポートレイト。
+   * 発生源はその操作を宣言していた札（InteractionGains.sourceAndAncestors）で、行き先はポートレイト。
    *
    * 絵を持たないプロパティと、rangeを持たず割合を言えないプロパティは出さない——飛ばす絵が無く、
    * 「満タンのどれだけか」も数えられないため。
@@ -1430,8 +1430,8 @@ export class PlayScene extends ResponsiveScene {
 
     const character = this.gameSession.player.instance;
     const texts = this.locale.object(character.def.name);
-    for (const { source, gains: gained } of gains) {
-      const from = this.rectShowing(source);
+    for (const { sourceAndAncestors, gains: gained } of gains) {
+      const from = this.rectShowing(sourceAndAncestors);
       if (from === undefined) continue;
 
       for (const gain of gained) {

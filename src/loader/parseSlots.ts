@@ -15,7 +15,7 @@ import { parseTypeMatchRule } from './parseCommon';
 import { parseWeight } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { CellDef, SlotDef } from '../domain/SlotDef';
-import type { WeightSpec } from '../domain/WeightSpec';
+import type { DeclaredNumber } from '../domain/DeclaredNumber';
 import { ReferenceScope } from '../domain/ReferenceRoot';
 
 /** 廃止したキーと、その内容を今どこへ書くか。黙って無視すると、効いているつもりの宣言が通ってしまう。 */
@@ -96,7 +96,7 @@ function parsePlacement(context: string, node: YAMLMap): readonly string[] {
 }
 
 /** `put_in: {duration: ...}`（ここへ入れるのにかかる時間）を読む。出す側に時間は課さない。 */
-function parsePutIn(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): WeightSpec {
+function parsePutIn(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): DeclaredNumber {
   requireKnownKeys(node, ['duration'], context);
 
   const durationNode = tryGetNode(node, 'duration');

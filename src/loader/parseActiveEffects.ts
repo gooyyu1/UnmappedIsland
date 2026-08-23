@@ -16,7 +16,7 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { built, parseNumberLiteral, parseScalarNumber, parseTypeMatchRule } from './parseCommon';
+import { built, parseNumberLiteral, parseNumberOrSymbol, parseTypeMatchRule } from './parseCommon';
 import { parseSubjectRoot, requireResolvable } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
@@ -36,7 +36,7 @@ import { MoveEffect } from '../domain/MoveEffect';
 import { ObjectRef } from '../domain/ObjectRef';
 import { AmongSpec } from '../domain/AmongSpec';
 import { PickCandidateDef, PickEffect } from '../domain/PickEffect';
-import { WeightSpec } from '../domain/WeightSpec';
+import { DeclaredNumber } from '../domain/DeclaredNumber';
 import { SignalEffect } from '../domain/SignalEffect';
 
 /**
@@ -192,13 +192,13 @@ export function parseWeight(
   node: YamlNode,
   scope: ReferenceScope,
   fieldName = 'weight',
-): WeightSpec {
+): DeclaredNumber {
   if (isScalar(node)) {
     const raw = asScalarText(node, context);
     const literal = Number(raw);
     if (raw.trim() === '' || Number.isNaN(literal))
       throw new YamlLoadError(`${context}: ${fieldName}は数値である必要があります（値: '${raw}'）。`);
-    return WeightSpec.ofLiteral(literal);
+    return DeclaredNumber.ofLiteral(literal);
   }
 
   if (isMap(node)) {
@@ -208,7 +208,7 @@ export function parseWeight(
 
     requireKnownKeys(node, ['subject', 'prop'], context);
 
-    return WeightSpec.ofPath(new PropertyPath(root, loader.propertyNames.intern(propName)));
+    return DeclaredNumber.ofPath(new PropertyPath(root, loader.propertyNames.intern(propName)));
   }
 
   throw new YamlLoadError(
@@ -224,7 +224,7 @@ function parseSetEffect(
   propertyGlobalId: number,
   valueNode: YamlNode,
 ): SetEffect {
-  const [value] = parseScalarNumber(loader, context, asScalarText(valueNode, context));
+  const [value] = parseNumberOrSymbol(loader, context, asScalarText(valueNode, context));
   return new SetEffect(new PropertyPath(target, propertyGlobalId), value);
 }
 

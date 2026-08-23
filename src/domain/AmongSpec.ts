@@ -2,8 +2,8 @@ import { pickWeighted } from './Rng';
 import type { Rng } from './Rng';
 import type { ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchReading, TypeMatchRule } from './TypeMatchRule';
-import type { WeightReading } from './EffectReader';
-import type { WeightSpec } from './WeightSpec';
+import type { DeclaredNumberReading } from './EffectReader';
+import type { DeclaredNumber } from './DeclaredNumber';
 import type { WorldObject } from './WorldObject';
 
 /** `among`の宣言（AmongSpec参照）。 */
@@ -15,7 +15,7 @@ export interface AmongReading {
   readonly match: TypeMatchReading | undefined;
 
   /** 候補ごとの重み。省略していればundefined＝一律。 */
-  readonly weight: WeightReading | undefined;
+  readonly weight: DeclaredNumberReading | undefined;
 }
 
 /**
@@ -41,13 +41,13 @@ export class AmongSpec {
    * 候補ごとの重み。undefinedなら一律（どれも同じ確からしさ）。
    * **参照は候補自身を指す**ので、`{subject: picked, prop: volume}` のように書く。
    */
-  private readonly weight: WeightSpec | undefined;
+  private readonly weight: DeclaredNumber | undefined;
 
   constructor(
     root: ReferenceRoot,
     slotGlobalId: number,
     match: TypeMatchRule | undefined,
-    weight: WeightSpec | undefined,
+    weight: DeclaredNumber | undefined,
   ) {
     this.root = root;
     this.slotGlobalId = slotGlobalId;

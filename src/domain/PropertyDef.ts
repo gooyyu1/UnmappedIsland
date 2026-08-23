@@ -140,7 +140,7 @@ export interface StageSpan {
 }
 
 /**
- * 段（6.4節）の刻みと、その中で今どこにいるか（PropertyDef.stageOnBarAt）。
+ * 段（6.4節）の刻みと、その中で今どこにいるか（PropertyDef.stageReadingAt）。
  * nameは識別子であり表示名ではない（表示名はLocalization.stageが引く）。
  */
 export interface StageReading {
@@ -249,7 +249,7 @@ export class PropertyDef {
 
   /**
    * 値がシンボル（6.6節。天気の`clear`、季節の`dry`）か。実行時の値は数値なので、シンボル名へ
-   * 戻せるかどうかはこの宣言だけが知っている（`WorldCodex.propertyValue`が使う）。
+   * 戻せるかどうかはこの宣言だけが知っている（`DefNames.propertyValueToken`が使う）。
    */
   readonly isSymbolic: boolean;
 
@@ -483,7 +483,7 @@ export class PropertyDef {
    * 該当する段が無ければundefined。名前やalertだけが要るなら段そのものを読む（stageAt）——
    * こちらは段の区間と境目を毎回組み立てる。
    */
-  stageOnBarAt(effectiveValue: number): StageReading | undefined {
+  stageReadingAt(effectiveValue: number): StageReading | undefined {
     const stage = this.stageAt(effectiveValue);
     if (stage === undefined) return undefined;
     return { name: stage.name, span: this.spanOf(stage), boundaries: this.stageBoundaries() };

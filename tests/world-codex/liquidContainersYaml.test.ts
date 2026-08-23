@@ -57,7 +57,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
    */
   function spawnContainer(containerName: string, liquidKind: string, size: number): WorldObject {
     const container = spawn(`${containerName}__content_${liquidKind}_liquid`);
-    container.getProperty(fillId).init(size);
+    container.getProperty(fillId).setNumberWithoutEvents(size);
     return container;
   }
 
@@ -80,8 +80,8 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   /** hourは既定で昼（10-17時のdayステージ）。sunlightはhourとweatherの寄与の和で決まる。 */
   function spawnWorld(weather: string, hour = 12): WorldObject {
     const world = spawn('world');
-    world.getProperty(weatherId).init(codex.symbolNames.intern(weather));
-    world.getProperty(hourId).init(hour);
+    world.getProperty(weatherId).setNumberWithoutEvents(codex.symbolNames.intern(weather));
+    world.getProperty(hourId).setNumberWithoutEvents(hour);
     return world;
   }
 
@@ -152,7 +152,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   it('水を飲むと中身のvolumeからactorのhydrationへ移る', () => {
     const actor = spawn(SAMPLE_CHARACTER);
-    actor.getProperty(hydrationId).init(0);
+    actor.getProperty(hydrationId).setNumberWithoutEvents(0);
     const jar = spawnContainer('jar', 'water', 1000);
 
     expect(jar.tryGetAction('drink', actor)?.tryExecute() === true, '容器への操作は中身へ委譲される').toBe(
@@ -169,7 +169,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const hydrationMax = codex.objects
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
       .tryGetPropertyDef(hydrationId)!.range!.max;
-    actor.getProperty(hydrationId).init(hydrationMax);
+    actor.getProperty(hydrationId).setNumberWithoutEvents(hydrationMax);
     const jar = spawnContainer('jar', 'water', 1000);
 
     expect(jar.tryGetAction('drink', actor)?.unmetRequirement()?.reasonName).toBe('not_thirsty');
@@ -182,7 +182,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const hydrationMax = codex.objects
       .get(codex.objectNames.getId(SAMPLE_CHARACTER))
       .tryGetPropertyDef(hydrationId)!.range!.max;
-    actor.getProperty(hydrationId).init(hydrationMax - 4);
+    actor.getProperty(hydrationId).setNumberWithoutEvents(hydrationMax - 4);
     const jar = spawnContainer('jar', 'water', 1000);
 
     expect(jar.tryGetAction('drink', actor)?.unmetRequirement()).toBeUndefined();
@@ -195,7 +195,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   it('残りを飲み切ると、中身のインスタンスごと消えて空の容器へ戻る', () => {
     const actor = spawn(SAMPLE_CHARACTER);
-    actor.getProperty(hydrationId).init(0);
+    actor.getProperty(hydrationId).setNumberWithoutEvents(0);
     const jar = spawnContainer('jar', 'water', 100); // 1回分(250)より少ない
 
     expect(jar.tryGetAction('drink', actor)?.tryExecute() === true).toBe(true);
@@ -208,8 +208,8 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   it('お茶を飲むと追加の効果も適用できる', () => {
     const actor = spawn(SAMPLE_CHARACTER);
-    actor.getProperty(hydrationId).init(0);
-    actor.getProperty(wakefulnessId).init(0);
+    actor.getProperty(hydrationId).setNumberWithoutEvents(0);
+    actor.getProperty(wakefulnessId).setNumberWithoutEvents(0);
     const jar = spawnContainer('jar', 'tea', 1000);
 
     expect(jar.tryGetAction('drink', actor)?.tryExecute() === true).toBe(true);
@@ -220,8 +220,8 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   it('お茶のwakefulness効果は飲んだ量に比例する', () => {
     const actor = spawn(SAMPLE_CHARACTER);
-    actor.getProperty(hydrationId).init(0);
-    actor.getProperty(wakefulnessId).init(0);
+    actor.getProperty(hydrationId).setNumberWithoutEvents(0);
+    actor.getProperty(wakefulnessId).setNumberWithoutEvents(0);
     const jar = spawnContainer('jar', 'tea', 125); // 1回分(250)の半分しか無い
 
     expect(jar.tryGetAction('drink', actor)?.tryExecute() === true).toBe(true);

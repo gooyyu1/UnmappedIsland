@@ -239,7 +239,7 @@ export class WorldCodex {
    * しか受け付けないスロットは、持ち主の中で生まれる以外に入りようがない——怪我のスロットがこれ。
    * 画面はこれを見て「落とせる場所」の空枠を出すかを決める。
    */
-  admitsBroughtObjects(slotDef: SlotDef): boolean {
+  anyTypeCanBeBroughtInto(slotDef: SlotDef): boolean {
     return [...this.objects].some(
       (objectDef) => !objectDef.boundToOwner && slotDef.acceptsAnywhere(objectDef),
     );

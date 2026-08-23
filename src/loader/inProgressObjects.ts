@@ -167,5 +167,5 @@ function requirementCells(
     objectName: (globalId: number) => objectNames.getName(globalId),
     tagName: (globalId: number) => tagNames.getName(globalId),
   };
-  return [...totals.values()].map(({ match, max }) => ({ accept: match.acceptSpec(names), max }));
+  return [...totals.values()].map(({ match, max }) => ({ accept: match.toAcceptSpec(names), max }));
 }

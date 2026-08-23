@@ -116,7 +116,7 @@ export function applyPatches(patches: readonly RawPatch[], defs: ReadonlyMap<str
       apply(patch, defs, replaced);
     } catch (error) {
       if (patch.report === undefined) throw error;
-      patch.report.add(patch.source, patch.description, messageOf(error));
+      patch.report.addDiscarded(patch.source, patch.description, messageOf(error));
     }
   }
 }

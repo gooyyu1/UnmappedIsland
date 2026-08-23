@@ -114,7 +114,7 @@ object_defs:
 
   it('actorを移動先のcharactersスロットへ移す', () => {
     const { codex, meadow, hilltop, character, path } = build();
-    path.getProperty(codex.propertyNames.getId('destination_id')).init(hilltop.instanceId);
+    path.getProperty(codex.propertyNames.getId('destination_id')).setNumberWithoutEvents(hilltop.instanceId);
 
     expect(path.tryGetAction('travel', character)?.tryExecute() === true).toBe(true);
 
@@ -131,7 +131,7 @@ object_defs:
 
   it('to_slotは、宣言順の走査ではなく名指しした枠へ入れる', () => {
     const { codex, hilltop, character, path } = build();
-    path.getProperty(codex.propertyNames.getId('destination_id')).init(hilltop.instanceId);
+    path.getProperty(codex.propertyNames.getId('destination_id')).setNumberWithoutEvents(hilltop.instanceId);
 
     expect(path.tryGetAction('shove', character)?.tryExecute() === true).toBe(true);
 
@@ -157,7 +157,7 @@ object_defs:
 
   it('移動先が解決できない場合は何もしない', () => {
     const { codex, meadow, character, path } = build();
-    path.getProperty(codex.propertyNames.getId('destination_id')).init(9999);
+    path.getProperty(codex.propertyNames.getId('destination_id')).setNumberWithoutEvents(9999);
 
     expect(path.tryGetAction('travel', character)?.tryExecute() === true, 'アクション自体は成立する').toBe(
       true,
@@ -167,7 +167,7 @@ object_defs:
 
   it('actorがいない場合は何もしない', () => {
     const { codex, meadow, hilltop, character, path } = build();
-    path.getProperty(codex.propertyNames.getId('destination_id')).init(hilltop.instanceId);
+    path.getProperty(codex.propertyNames.getId('destination_id')).setNumberWithoutEvents(hilltop.instanceId);
 
     expect(path.tryGetAction('travel', undefined)?.tryExecute() === true).toBe(true);
     expect(character.parent, 'actorがいない文脈では何も起きない').toBe(meadow);
@@ -288,7 +288,7 @@ object_defs:
   it('selfを移動先へ移す（動物が隣の土地へ逃げる1手）', () => {
     // 動かす物が「この効果を宣言したオブジェクト自身」になる形（HuntingSystem.md 5節）。
     const { codex, meadow, hilltop, path } = build();
-    path.getProperty(codex.propertyNames.getId('destination_id')).init(hilltop.instanceId);
+    path.getProperty(codex.propertyNames.getId('destination_id')).setNumberWithoutEvents(hilltop.instanceId);
 
     expect(path.tryGetAction('walk_away', undefined)?.tryExecute() === true).toBe(true);
 
@@ -302,7 +302,7 @@ object_defs:
   it('プロパティが指す個体を移す（動物が足元の物をくわえる1手）', () => {
     // 動かす物も、移動先と同じく「実行時に初めて確定する個体」を指せる（HuntingSystem.md 5節）。
     const { codex, meadow, character, path } = build();
-    path.getProperty(codex.propertyNames.getId('loot_target')).init(character.instanceId);
+    path.getProperty(codex.propertyNames.getId('loot_target')).setNumberWithoutEvents(character.instanceId);
 
     expect(path.tryGetAction('snatch', undefined)?.tryExecute() === true).toBe(true);
 
@@ -315,7 +315,7 @@ object_defs:
 
   it('subject_propが指す個体が居なければ何もしない', () => {
     const { codex, meadow, character, path } = build();
-    path.getProperty(codex.propertyNames.getId('loot_target')).init(9999);
+    path.getProperty(codex.propertyNames.getId('loot_target')).setNumberWithoutEvents(9999);
 
     expect(path.tryGetAction('snatch', undefined)?.tryExecute() === true, 'アクション自体は成立する').toBe(
       true,

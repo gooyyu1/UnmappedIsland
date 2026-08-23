@@ -901,3 +901,70 @@ private にした。
 装備へ石を40個積む既存のテストの隣へ足した。
 
 丸に対する数字の大きさは、カードのバッジと同じ比に取った（3桁でちょうど収まる）。
+
+## 30. 名前不一致（`areas/*.md` の最終列）
+
+**このレーンは段0の計画に入っていなかった。** 「名前不一致」は `areas/*.md` の各表の最終列にだけ
+立っていて、`Plan.md` にも `Candidates.md` にも持ち上げられていなかった。段0〜段4のどのレーンも
+名前を作業対象にしておらず、入ったリネームは別の作業の副産物2件だけだった
+（`WorldSession.runTick`→`runAnimalTurns`、`load_reduction_rate`→`load_rate`）。
+
+フラグが立っていたのは27件。うち2件は移動の副産物で消えていた——`SaveSlots.keyOf` は A-10 で
+`StorageArea` の private になり文脈で読めるようになり、`craftingView.contentsOf` は宣言ごと消えた。
+
+### 直した23件
+
+| 旧 | 新 | 名前から読めなかったこと |
+| -- | -- | ------------------------ |
+| `WorldObject.missing` | `notFoundMessage` | 述語ではなく、エラーの**文面**を返す |
+| `PropertyValue.init` | `setNumberWithoutEvents` | 構築時の初期化ではなく、イベントもgainも起こさずに書く経路 |
+| `PropertyValue.stageOnBar` / `PropertyDef.stageOnBarAt` | `stageReading` / `stageReadingAt` | 返すのは `StageReading` |
+| `InteractionGains.source` | `sourceAndAncestors` | 単数の名前で祖先の連なりを運んでいた |
+| `WeightSpec` / `WeightReading` | `DeclaredNumber` / `DeclaredNumberReading` | 重み専用ではなく、所要時間も `put_in` も通る「宣言に書かれた1つの数値」 |
+| `resolveWeight` / `weightTokens` | `resolveDeclaredNumber` / `declaredNumberTokens` | 同上（語彙を揃えた） |
+| `ActiveEffect.countableVessels` | `repeatLimitingVessels` | 繰り返しの上限を決める器の数 |
+| `ValueNoise.noiseAt` | `noiseAtIslandPoint` | 島の座標を渡す（`ISLAND_RADIUS` で正規化する）ことが署名に無かった |
+| `WeatherOverlay.scatter` | `seededRandomNumbers` | 雨粒を散らすのではなく乱数列を返す |
+| `StatusBar.fitted` | `shrunkToWidth` | 収めるのではなく**縮めて**収める（`truncateToWidth` と対） |
+| `SettingsScene.label` | `onOffText` | 何のラベルかが出ない |
+| `Scenario.names` | `readSlotContents` | 名前の列ではなくスロットの中身を読む |
+| `DefNames.propertyValue` | `propertyValueToken` | 値ではなく**書き表し方**（`DescriptionToken`）を返す |
+| `describeObjectDef.creates` | `createsObject` | 何を作るのかが出ない |
+| `CodexView.objectDefs` | `listedObjectDefs` | 全部ではなく一覧に出す型だけ |
+| `CodexView.tagLabel` | `tagIdentifier` | 兄弟（`slotLabel` 等）と違い引き当てず識別子をそのまま返す |
+| `WorldCodex.admitsBroughtObjects` | `anyTypeCanBeBroughtInto` | 主語が codex に読める |
+| `TypeMatchRule.acceptSpec` | `toAcceptSpec` | フィールドではなく変換 |
+| `GeneratedTypes.baseAlong` | `baseGlobalIdIfVariantOn` | 返すのが素の型のグローバルIDであることも、条件付きであることも出ない |
+| `parseCommon.parseScalarNumber` | `parseNumberOrSymbol` | 真偽値もシンボル名も通り、2番目の戻り値がシンボルかどうかを言う |
+| `LoadReport.add` | `addDiscarded` | 何を足すのかが出ない |
+| `artFiles.locationDefNames` | `locationNamesWithBackgroundArt` | 背景の絵を持つ土地だけに絞っている |
+| `backgroundArt.found` | `registeredTextureKey` | 述語ではなくテクスチャキーを返す |
+| `MapWindow.unplacedCount` | `nextTrayCellIndex` | 呼び手が要るのは件数ではなく次の枠番号 |
+
+**`private` かどうかは基準にしていない。** 外から呼ばれないぶん壊れる範囲は狭いが、読む人を
+誤解させる量は変わらない（`.claude/policies.md`「名前の付け方」）。
+
+**名前に書くのは呼び手への契約だけ**にした。`setNumberWithoutEvents` の「イベントが起きない」は
+知らないと誤用する約束なので名前に出すが、内部で何を使っているか（`scatter` の mulberry32 など）は
+名前に出さない——漏らすと、変えられるはずの中身が名前ごと契約になる。
+
+### 併せて直した1件
+
+`notFoundMessage` は `kind`（'プロパティ'/'スロット'）と `NameRegistry` を両方受け取っていて、
+**2つが噛み合っていなければならない決まりが呼び出しごとに増えていた**。`kind` から名前空間を
+自分で選ぶようにして、引数を1つ落とした。
+
+### 取り下げた2件
+
+- **`Ending.broughtArtifacts`。** 第1波は「持ち帰ったと言いながら本土に在る物すべてを数える」と
+  したが、これは A-8 で `PlayerCharacter` から `Ending` へ移った後、**「渡り切った側に在ることが
+  持ち帰った条件」という規則そのもの**になっている（GameEndings.md 6節の語）。本土
+  （`voyage.yaml` の `mainland`）は空のsingletonで、置かれる物はすべてプレイヤーが渡した結果。
+- **`Localization.empty()`。** 表に印だけが付いていたが、名前は中身と一致している。
+
+### 検証
+
+`lint` / `typecheck` / `test`（1520件）/ `format:check` に加え、`npm run build` と
+`build:codex` の両方が通ることを確認した。コメントが指す名前の切れは
+`tests/docs/docMemberReferences.test.ts` が2件捕まえたので直した。実ブラウザで、改名が触れた画面
+（ステータス欄・ステータス詳細・地図ウィンドウの待機列・設定のオン/オフ・天候）を確認した。

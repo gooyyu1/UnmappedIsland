@@ -1,7 +1,7 @@
 import type { WorldObject } from './WorldObject';
 import type { ObjectDef } from './ObjectDef';
-import type { WeightReading } from './EffectReader';
-import type { WeightSpec } from './WeightSpec';
+import type { DeclaredNumberReading } from './EffectReader';
+import type { DeclaredNumber } from './DeclaredNumber';
 import { ReferenceContext } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
 
@@ -87,7 +87,7 @@ export class SlotDef {
    * という非対称の方が普通のため。値の解決はcombinationのdurationと同じ形で、`self`が枠の持ち主、
    * `dragged`が入れる物（putInMinutes参照）。
    */
-  private readonly putInDuration: WeightSpec | undefined;
+  private readonly putInDuration: DeclaredNumber | undefined;
 
   constructor(
     globalId: number,
@@ -97,7 +97,7 @@ export class SlotDef {
     cellCount: number | undefined,
     capacity: number | undefined,
     autoPlacement = true,
-    putInDuration: WeightSpec | undefined = undefined,
+    putInDuration: DeclaredNumber | undefined = undefined,
     manualPlacement = true,
   ) {
     this.globalId = globalId;
@@ -162,7 +162,7 @@ export class SlotDef {
   }
 
   /** ここへ物を入れるのにかかる時間（7.10節）の宣言。省いていればundefined（一瞬で入る）。 */
-  get putInDurationReading(): WeightReading | undefined {
+  get putInDurationReading(): DeclaredNumberReading | undefined {
     return this.putInDuration?.reading;
   }
 

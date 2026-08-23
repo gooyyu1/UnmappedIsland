@@ -399,7 +399,7 @@ export function fromGameSession(
       key: name ?? String(place.owner.instanceId),
       label: name === undefined ? looks.nameOf(place.owner) : locale.slot(name).displayName,
       cells: slotDef?.cellsToKeep ?? 'grows',
-      acceptsCards: slotDef !== undefined && codex.admitsBroughtObjects(slotDef),
+      acceptsCards: slotDef !== undefined && codex.anyTypeCanBeBroughtInto(slotDef),
       background: slotDef === undefined ? undefined : { owner: place.owner.def.name, slot: slotDef.name },
       materials: craftingMaterials(place.owner, codex),
     };
@@ -461,8 +461,8 @@ export function fromGameSession(
   };
 
   /** バーへ刻む段の読みに、表示名を入れたもの。段を宣言していないプロパティではundefined。 */
-  const stageOnBarOf = (property: PropertyValue): StatusDetail['stage'] => {
-    const stage = property.stageOnBar;
+  const stageReadingOf = (property: PropertyValue): StatusDetail['stage'] => {
+    const stage = property.stageReading;
     return stage === undefined ? undefined : { ...stage, name: locale.stage(stage.name) };
   };
 
@@ -474,7 +474,7 @@ export function fromGameSession(
     const influences = object.readInfluences(codex.propertyNames.getId(property.def.name));
     return {
       description: locale.object(object.def.name).prop(property.def.name).description,
-      stage: stageOnBarOf(property),
+      stage: stageReadingOf(property),
       // 与えている影響で動くのは相手、受けている影響で動くのは自分（influenceOfのmoved）。
       given: collapsed(
         influences.given.map((influence) => influenceOf(object, influence, movedByGiven(object, influence))),
