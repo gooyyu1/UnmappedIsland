@@ -1,5 +1,5 @@
 import type { AlertLevel } from '../../domain/AlertLevel';
-import type { BoxStyle } from '../../ui/shapes';
+import type { BoxStyle, ShapeDefaults } from '../../ui/shapes';
 import type { ScreenMetrics } from './ScreenMetrics';
 import { ALERT_LEVELS } from '../../domain/AlertLevel';
 import type { GaugeEnd } from '../../domain/PropertyDef';
@@ -8,6 +8,20 @@ import type { GaugeEnd } from '../../domain/PropertyDef';
  * docs/ui のモック（ScreenLayout_Mock.html・StartScreen_Mock.html）のCSSに対応する
  * 配色・寸法トークン。モック側の値を変えたときはここも合わせる。
  */
+
+/**
+ * 汎用の図形（src/ui/shapes）へ起動時に入れる意匠（main.ts）。
+ *
+ * **落ち影は2枚重ねる。** ぼかせないので1枚だと輪郭がそのまま出て貼り絵に見える。ずらし幅の1倍と
+ * 2倍の位置に、濃さを落としながら置く。
+ */
+export const SHAPE_LOOK: ShapeDefaults = {
+  shadowLayers: [
+    [1, 0.3],
+    [2, 0.12],
+  ],
+  dashLengthRatio: 6,
+};
 
 /** カードのアスペクト比は58:89（ポーカーサイズ）。寸法は全てu単位（ScreenLayout.md 2節 寸法トークン）。 */
 export const SIZE = {
@@ -178,7 +192,13 @@ export const COLOR = {
    * 白い桁の紙がどちらも読める暗さにする（絵が入れば空の暗さがその役目を引き継ぐ）。
    */
   weatherPanel: 0x7d94a4,
-  weatherPanelBorder: 0x000000,
+
+  /** 海図風の下地（羊皮紙の薄茶）と、島の輪郭のごく薄い線（MapWindow）。 */
+  chartPaper: 0xf3ead4,
+  chartLine: 0xcdbb92,
+
+  /** 地図に引く道のインク（MapWindow）。 */
+  roadInk: 0x8a6f4f,
 
   /** 雨の筋と、日射に応じてフィールドエリアへかぶせる翳り・輝き（WeatherOverlay）。 */
   rain: 0xe8f2ff,
@@ -227,7 +247,6 @@ export const COLOR = {
   progressRingElapsedOutline: 0x1b3a4b,
 
   headerBar: 0xf5e9d5,
-  slotPortrait: 0xffe5d1,
   slotDelete: 0xfff0f0,
   randomButton: 0xfff2e0,
   primaryButton: 0xffd77a,

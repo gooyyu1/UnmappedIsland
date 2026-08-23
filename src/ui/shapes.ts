@@ -85,11 +85,25 @@ export function addTiledPanel(
   return addTiledImage(scene, rect, texture).setInteractive();
 }
 
-/** 落ち影の2枚の濃さ（ずらし幅の何倍の位置に、どの不透明度で置くか）。 */
-const SHADOW_LAYERS = [
-  [1, 0.3],
-  [2, 0.12],
-] as const;
+/** 図形の意匠の既定（setShapeDefaults）。 */
+export interface ShapeDefaults {
+  /** 落ち影の各枚（ずらし幅の何倍の位置に、どの不透明度で置くか）。 */
+  readonly shadowLayers: readonly (readonly [number, number])[];
+
+  /** 破線1本分の長さを線の太さの何倍にするか（線と空きは同じ長さ）。 */
+  readonly dashLengthRatio: number;
+}
+
+/**
+ * 影の重ね方と破線の刻み。**意匠は起動時に外から入れる**（setShapeDefaults、labels.tsと同じ形）。
+ * 入れなくても形になる値を持つので、意匠を持たない画面でも図形が消えることはない——影は1枚、
+ * 破線は太さの6倍で刻む。
+ */
+let defaults: ShapeDefaults = { shadowLayers: [[1, 0.3]], dashLengthRatio: 6 };
+
+export function setShapeDefaults(next: ShapeDefaults): void {
+  defaults = next;
+}
 
 /**
  * 角の丸みが辺に収まる大きさへ丸める。**丸みは辺の半分を超えられない**——Phaserのfill/strokeRoundedRectは
@@ -103,10 +117,11 @@ function fittingRadius(rect: Rect, radius: number): number {
 /** 角丸矩形を描く。座標はgraphicsのローカル座標。 */
 export function drawBox(graphics: Phaser.GameObjects.Graphics, rect: Rect, style: BoxStyle): void {
   const radius = fittingRadius(rect, style.radius ?? 0);
-  // 影は塗りより先に敷き、塗りで覆う。**ぼかせないので2枚重ねる**——1枚だと輪郭がそのまま出て
-  // 貼り絵に見える。色は黒に固定する。下地の明るさによらず、暗い側へ倒すほうが浮いて見えるため。
+  // 影は塗りより先に敷き、塗りで覆う。**ぼかせないので重ねて濃さを落とす**——何枚どの濃さで置くかは
+  // 意匠が決める（setShapeDefaults）。色は黒に固定する。下地の明るさによらず、暗い側へ倒すほうが
+  // 浮いて見えるため。
   if (style.shadow !== undefined) {
-    for (const [distance, alpha] of SHADOW_LAYERS) {
+    for (const [distance, alpha] of defaults.shadowLayers) {
       graphics.fillStyle(0x000000, alpha);
       const offset = style.shadow * distance;
       graphics.fillRoundedRect(rect.x + offset, rect.y + offset, rect.width, rect.height, radius);
@@ -120,12 +135,9 @@ export function drawBox(graphics: Phaser.GameObjects.Graphics, rect: Rect, style
 
   const borderWidth = style.borderWidth ?? 1;
   graphics.lineStyle(borderWidth, style.border, 1);
-  if (style.dashed) strokeDashedBox(graphics, rect, radius, borderWidth * DASH_LENGTH_RATIO);
+  if (style.dashed) strokeDashedBox(graphics, rect, radius, borderWidth * defaults.dashLengthRatio);
   else graphics.strokeRoundedRect(rect.x, rect.y, rect.width, rect.height, radius);
 }
-
-/** 破線1本分の長さを線の太さの何倍にするか（線と空きは同じ長さ）。 */
-const DASH_LENGTH_RATIO = 6;
 
 /** 角丸矩形の枠を破線で描く。角の丸みは短いので実線のまま繋ぐ。 */
 function strokeDashedBox(

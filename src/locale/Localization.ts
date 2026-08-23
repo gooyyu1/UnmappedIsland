@@ -4,6 +4,7 @@ import type { YAMLMap } from 'yaml';
 import { asMap, asScalarText, entriesInOrder, tryGetMap, tryGetScalar } from '../loader/yamlMapping';
 import { YamlLoadError } from '../loader/YamlLoadError';
 import type { LocationName } from '../domain/generation/IslandMap';
+import type { UiTextName } from './uiTexts';
 
 /** 表示文字列を引く言語。切り替えの入口はまだ無いため、日本語で固定（Localization.md）。 */
 const LANGUAGE = 'ja';
@@ -287,6 +288,7 @@ interface LocaleSections {
   readonly signals?: ReadonlyMap<string, string>;
   readonly stages?: ReadonlyMap<string, string>;
   readonly tags?: ReadonlyMap<string, string>;
+  readonly uiTexts?: ReadonlyMap<string, string>;
 }
 
 /**
@@ -305,6 +307,9 @@ export class Localization {
   private readonly stages: ReadonlyMap<string, string>;
   private readonly tags: ReadonlyMap<string, string>;
 
+  /** 画面の地の文（`ui_texts`）。読むのはuiText——直に引くのは、注入する側（uiTexts.ts）だけ。 */
+  readonly uiTexts: ReadonlyMap<string, string>;
+
   constructor(sections: LocaleSections) {
     this.objects = sections.objects;
     this.propertyTags = sections.propertyTags ?? new Map();
@@ -316,6 +321,15 @@ export class Localization {
     this.signals = sections.signals ?? new Map();
     this.stages = sections.stages ?? new Map();
     this.tags = sections.tags ?? new Map();
+    this.uiTexts = sections.uiTexts ?? new Map();
+  }
+
+  /**
+   * 画面の地の文（`ui_texts`）。**対応表に無ければ名前そのものが出る**——localeファイルの他の節と
+   * 同じ扱いで（ja.yaml冒頭）、書き忘れても画面は壊れず、どの語が欠けているかがその場に出る。
+   */
+  uiText(name: UiTextName): string {
+    return this.uiTexts.get(name) ?? name;
   }
 
   /** 1つの土地の型の表示文字列。未登録の型でも、識別子へフォールバックする窓口として必ず返る。 */
@@ -431,6 +445,7 @@ export class Localization {
       slots: merged(this.slots, other.slots, label, 'slot_texts'),
       signals: merged(this.signals, other.signals, label, 'signal_texts'),
       stages: merged(this.stages, other.stages, label, 'stage_texts'),
+      uiTexts: merged(this.uiTexts, other.uiTexts, label, 'ui_texts'),
       tags: merged(this.tags, other.tags, label, 'tag_texts'),
     });
   }
@@ -559,6 +574,12 @@ export function parseLocale(label: string, yamlText: string): Localization {
     for (const [name, node] of entriesInOrder(tagTextSection))
       tags.set(name, asScalarText(node, `${label}.tag_texts.'${name}'`));
 
+  const uiTexts = new Map<string, string>();
+  const uiTextSection = tryGetMap(root, 'ui_texts', label);
+  if (uiTextSection !== undefined)
+    for (const [name, node] of entriesInOrder(uiTextSection))
+      uiTexts.set(name, asScalarText(node, `${label}.ui_texts.'${name}'`));
+
   return new Localization({
     objects,
     propertyTags,
@@ -570,6 +591,7 @@ export function parseLocale(label: string, yamlText: string): Localization {
     signals,
     stages,
     tags,
+    uiTexts,
   });
 }
 

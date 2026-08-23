@@ -1,7 +1,8 @@
 import type { NameRegistry } from './NameRegistry';
 
 /**
- * 製作中オブジェクト（RecipeSystem.md 1節）の進捗・工程数・材料枠の名前。
+ * 製作中オブジェクト（RecipeSystem.md 1節）を組み立てるのに要る語——自分で持つ進捗・工程数・材料枠と、
+ * 完成品から写すかさ（volume）。
  *
  * **文字列のまま要るのはローダだけ**（inProgressObjects）。型の宣言を組み立てる時点ではまだCodexが無く、
  * IDを引けないため。実行時に読む側はIDを使う（EngineVocabulary）ので、語はここに1度書くだけで済む。
@@ -9,6 +10,7 @@ import type { NameRegistry } from './NameRegistry';
 export const PROGRESS_PROPERTY = 'progress';
 export const FINISHED_STEPS_PROPERTY = 'finished_steps';
 export const MATERIALS_SLOT = 'materials';
+export const VOLUME_PROPERTY = 'volume';
 
 /**
  * **コードがYAMLの単語へ寄せている依存の一覧。** ここに無い単語をコードが直に引いていたら、それは
@@ -52,8 +54,8 @@ export class WorldVocabulary {
  * - fill: 中身入りの変種（3.5節）が抱えている量。0になった変種は素の型へ戻る。
  * - weight: 物の重さ。子のweightをそのまま合算する（率はかけない）。
  * - density: 単位量あたりの重さ（g/mL。水=1）。fill × density が中身の重さになる。
- * - load: 担いだ人が感じる負荷。直接の子のweightに、その子のload_reduction_rateを効かせた分。
- * - load_reduction_rate: 担ぎ方による体感の軽減率（0〜1、既定0）。
+ * - load: 担いだ人が感じる負荷。直接の子のweightに、その子のload_rateを効かせた分。
+ * - load_rate: 担ぎ方による体感の割合（宣言しなければ素の重さがそのまま効く）。
  * - progress / finished_steps / materials: 製作中オブジェクトの進捗・工程数・材料枠（RecipeSystem.md）。
  */
 export class EngineVocabulary {
@@ -62,19 +64,19 @@ export class EngineVocabulary {
   readonly weightId: number;
   readonly densityId: number;
   readonly loadId: number;
-  readonly loadReductionRateId: number;
+  readonly loadRateId: number;
 
   readonly progressId: number;
   readonly finishedStepsId: number;
   readonly materialsSlotId: number;
 
   constructor(propertyNames: NameRegistry, slotNames: NameRegistry) {
-    this.volumeId = propertyNames.intern('volume');
+    this.volumeId = propertyNames.intern(VOLUME_PROPERTY);
     this.fillId = propertyNames.intern('fill');
     this.weightId = propertyNames.intern('weight');
     this.densityId = propertyNames.intern('density');
     this.loadId = propertyNames.intern('load');
-    this.loadReductionRateId = propertyNames.intern('load_reduction_rate');
+    this.loadRateId = propertyNames.intern('load_rate');
 
     this.progressId = propertyNames.intern(PROGRESS_PROPERTY);
     this.finishedStepsId = propertyNames.intern(FINISHED_STEPS_PROPERTY);

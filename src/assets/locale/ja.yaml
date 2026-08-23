@@ -952,3 +952,25 @@ signal_texts:
   pierced: 深手
   smashed: 踏み壊し
   snatched: 持ち去り
+
+# 画面の地の文（src/locale/uiTexts.ts）。**ワールド定義に由来しない、画面そのものの語**なので、
+# キーはWorldCodexの識別子ではなく画面側の名前。ここに無いキーは、そのままキーが表示される。
+ui_texts:
+  close: 閉じる
+  map: 地図
+  # オブジェクトの子ウィンドウのタブ（Windows.md 1節）。
+  description: 説明
+  properties: 状態
+  exploration: 探索
+  # 実行できない操作を押したときに、理由（reason）が宣言されていない場合の文。
+  cannot_do_now: 今はできない。
+  no_description: これについて分かっていることはまだ無い。
+  # ステータスの詳細窓（StatusArea.md）。寄与が1つも無いときに出す。
+  no_influence: 無し
+  given_influence: 与えている影響
+  received_influence: 受けている影響
+  # 名前の付いていない土地（IslandMapが個体名を持たない場合）。
+  unnamed_location: 名もなき土地
+  # レシピ一覧（Windows.md 9節）。未解放の理由が宣言されていない場合と、棚に載らないレシピの見出し。
+  recipe_locked: まだ作り方が分からない
+  recipe_other: その他

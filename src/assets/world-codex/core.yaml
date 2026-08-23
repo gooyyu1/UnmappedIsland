@@ -16,6 +16,19 @@ property_tags:
 # （tests/world-codex/purposeTags.test.tsが同梱データにそれが無いことを見張る）。
 recipe_categories: [tool, container, fixture, item]
 
+# タグが名乗った以上、それに要るプロパティは宣言されていなければならない
+# （GameElementDefinition.md 4.2節）。**この世界の約束**であって、エンジンの規則ではない。
+required_props:
+  # 持ち歩ける物（docs/world/SurvivalItems.md）。担いだ人の負荷は重さから積み上がり、入れ物の
+  # 容量はかさで決まる（ContainerSystem.md）。**どちらも書き忘れると静かに効く**——重さ0の物は
+  # 無限に持ち運べ、かさ0の物は容量のある入れ物へ無限に詰め込める。
+  item: [weight, volume]
+  # 傷それ自体に目方は無いが、当てた治療具を抱える入れ物なので、中身の重さを負った本人へ渡す口が
+  # 要る（ContainerSystem.md 1節）。
+  injury: [weight]
+  # 担いだ物の重さを受け取る口（同2節）。担ぐのはキャラクタだけ。
+  character: [load]
+
 traits:
   # あらゆる「場所」が探索の可否によらず共通して持つ構造（ExplorationSystem.md参照）。
   # worldのlocationsスロットの受け入れ判定用のタグ（GameElementDefinition.md 4.1節・7.2節）もこのtraitが配る。

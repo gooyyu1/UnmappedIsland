@@ -7,11 +7,10 @@ import { noteOperation } from './errorReport';
 import { addLabel } from '../ui/labels';
 import { addPanel, drawBox } from '../ui/shapes';
 import { COLOR, rowPlateStyle } from './looks/theme';
+import { LIST_ITEM_PADDING_X, LIST_PADDING } from './looks/listScreen';
 
-/** 一覧の外周パディングと、設定1件ぶんの高さ（テスト用シナリオの一覧と揃える）。 */
-const LIST_PADDING = 20;
+/** 設定1件ぶんの高さ（外周と左右の余白はlooks/listScreen）。 */
 const ITEM_HEIGHT = 120;
-const ITEM_PADDING_X = 24;
 
 /** 入・切のつまみ。行の右端に置く。 */
 const SWITCH_WIDTH = 116;
@@ -81,7 +80,7 @@ export class SettingsScene extends ResponsiveScene {
       onChange(!value);
     });
 
-    const left = this.metrics.px(ITEM_PADDING_X);
+    const left = this.metrics.px(LIST_ITEM_PADDING_X);
     button.addContent(
       addLabel(this, this.metrics, left, rect.height / 2, title, { size: 30, bold: true }).setOrigin(0, 1),
       addLabel(this, this.metrics, left, rect.height / 2, detail, {

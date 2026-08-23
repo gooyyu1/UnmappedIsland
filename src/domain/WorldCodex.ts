@@ -63,6 +63,7 @@ export class WorldCodex {
     generation?: GenerationDefs,
     generatedTypes?: GeneratedTypes,
     recipeCategoryTagIds: readonly number[] = [],
+    requiredPropsByTag: ReadonlyMap<number, readonly number[]> = new Map(),
   ) {
     this.generatedTypes = generatedTypes ?? new GeneratedTypes();
     this.recipeCategoryTagIds = recipeCategoryTagIds;
@@ -77,6 +78,30 @@ export class WorldCodex {
     this.generation = generation;
 
     this.requireRangeEventsOnUnmodifiedProperties();
+    this.requirePropsRequiredByTags(requiredPropsByTag);
+  }
+
+  /**
+   * `required_props`（4.2節）の約束を果たしているか。タグを名乗った以上、そのタグが要求する
+   * プロパティは宣言されていなければならない。
+   *
+   * **宣言漏れは静かに効く**——weightを書き忘れた道具は0gとして持ち運べ、loadを書き忘れた
+   * キャラクタは何を担いでも平気になる。テストではなくロード時に落とすのは、**パックの定義も同じ
+   * 約束の下に置く**ため（テストは同梱のYAMLしか通らない）。
+   *
+   * 何をどのタグに要求するかはエンジンではなく世界が決める（要求を1つも書かない世界も成立する）。
+   */
+  private requirePropsRequiredByTags(requiredPropsByTag: ReadonlyMap<number, readonly number[]>): void {
+    for (const objectDef of this.objects)
+      for (const [tagGlobalId, propertyGlobalIds] of requiredPropsByTag) {
+        if (!objectDef.hasTag(tagGlobalId)) continue;
+        for (const propertyGlobalId of propertyGlobalIds)
+          if (objectDef.tryGetPropertyDef(propertyGlobalId) === undefined)
+            throw new Error(
+              `'${objectDef.name}'は'${this.tagNames.getName(tagGlobalId)}'のタグを持つので、` +
+                `'${this.propertyNames.getName(propertyGlobalId)}'を宣言しなければなりません（required_props）。`,
+            );
+      }
   }
 
   /**
@@ -87,7 +112,8 @@ export class WorldCodex {
    * 何も起きない」「まだ空でないのに尽きる」が起こりうる。**そのときの正しい挙動をまだ決めていない**ので、
    * 決まるまでは書けないようにしておく。
    *
-   * 食い違いの原因は3つ——`modify`（8.3節）・`inherit`（6.5節）・入れ物からの寄与（weight/load）。
+   * 食い違いの原因は2つ——`modify`（8.3節）と`inherit`（6.5節）。中身の重さの伝播もエンジンが生やす
+   * `modify`なので、前者に含まれる（containerPropagation）。
    * **`modify`されるかは型ひとつでは分からない**（宣言するのは他の型）ので、世界全体を持つここで見る。
    */
   private requireRangeEventsOnUnmodifiedProperties(): void {
@@ -125,8 +151,6 @@ export class WorldCodex {
     const modifier = modifiedBy.get(propertyDef.globalId);
     if (modifier !== undefined) return `'${modifier}'のpassivesがmodifyで書き換える`;
     if (propertyDef.inherit) return 'inheritで祖先の値を受け取る';
-    if (propertyDef.globalId === this.vocabulary.engine.weightId) return '中身のweightを受け取る';
-    if (propertyDef.globalId === this.vocabulary.engine.loadId) return '中身のloadを受け取る';
     return undefined;
   }
 

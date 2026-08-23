@@ -54,10 +54,14 @@ class TickDeltaCollector implements PassiveReader {
   modify(): void {}
 
   accumulate(reading: PassivePropertyReading): void {
+    // 導出される量（PassiveAmount）を持つのは中身の重さの伝播だけで、それは可逆な寄与
+    // （modify）なのでここへは来ない。1 tickの増減として数えられるのは定数だけ。
+    if (reading.amount.kind !== 'fixed') return;
+
     this.deltas.push({
       target: reading.target,
       propertyGlobalId: reading.propertyGlobalId,
-      amount: reading.amount,
+      amount: reading.amount.value,
       gate: tickGateOf(reading.gate),
       capped: false,
     });

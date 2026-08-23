@@ -18,6 +18,7 @@ import { HoldRepeat } from '../../ui/holdRepeat';
 import { onPressRelease } from '../../ui/tap';
 import { isAlive } from '../../ui/lifetime';
 import { cardFace } from './cardFace';
+import { ALERT_BLINK_MS } from '../looks/alertBlink';
 
 /**
  * カードの枠の画像のテクスチャキー（実体はsrc/assets/ui/card_frame.png、BootSceneが読む）。
@@ -43,11 +44,10 @@ export const PAPER_RADIUS = 10;
 const BORDER_WIDTH = 1.5;
 
 /**
- * 警戒を知らせる輪郭の太さ（u単位）と、明滅の片道の時間・最も薄いときの濃さ。
- * 枠の縁の線より太くして、明滅していることが形からも読めるようにする（値はProgressBarの警戒の枠と揃える）。
+ * 警戒を知らせる輪郭の太さ（u単位）と、明滅で最も薄いときの濃さ。枠の縁の線より太くして、
+ * 明滅していることが形からも読めるようにする（片道の時間はlooks/alertBlink）。
  */
 const ALERT_OUTLINE_WIDTH = 5;
-const ALERT_BLINK_DURATION_MS = 450;
 const ALERT_BLINK_MIN_ALPHA = 0.15;
 
 /**
@@ -721,7 +721,7 @@ export class Card extends Phaser.GameObjects.Container {
       this.alertBlink = this.scene.tweens.add({
         targets: this.alertOutline,
         alpha: ALERT_BLINK_MIN_ALPHA,
-        duration: ALERT_BLINK_DURATION_MS,
+        duration: ALERT_BLINK_MS,
         yoyo: true,
         repeat: -1,
       });

@@ -16,6 +16,8 @@ describe('レシピ一覧の棚', () => {
 tag_texts:
   tool: 道具
   weapon: 武器
+ui_texts:
+  recipe_other: その他
 object_texts:
   stone: {display_name: 石}
   stone_axe: {display_name: 石斧}

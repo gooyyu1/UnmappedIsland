@@ -13,6 +13,7 @@ import { RawDeclarationBody, namesIn } from './RawDeclarationBody';
 import { IN_PROGRESS_TAG } from '../domain/RecipeDef';
 import { LocalIndexMap } from '../domain/LocalIndexMap';
 import { ObjectDef } from '../domain/ObjectDef';
+import { containerPropagationPassives } from '../domain/containerPropagation';
 import type { PassiveEffect } from '../domain/PassiveEffect';
 import type { PropertyDef } from '../domain/PropertyDef';
 import type { SlotDef } from '../domain/SlotDef';
@@ -131,6 +132,9 @@ export class RawObjectDef {
 
     for (const passiveNode of merged.passives)
       parsePassive(loader, passives, this.name, passiveNode, undefined, undefined);
+
+    // 中身の重さの伝播は著者に書かせず、エンジンが同じ`modify`の形で生やす（containerPropagation）。
+    passives.push(...containerPropagationPassives(this.name, propertyDefs, loader.engine));
 
     let stackOrder: StackOrderDef | undefined;
     if (merged.stackOrder !== undefined) {

@@ -73,6 +73,7 @@ object_defs:
     tags: [item]
     traits: [liquid_container]
     props:
+      weight: {value: 200}
       fill: {value: 0, range: {min: 0, max: 250}, on_min: {become: {content: none}}}
       volume: {value: 200}
     variation_axes:

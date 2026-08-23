@@ -13,13 +13,16 @@ import { ShelfScene } from './game/ShelfScene';
 import { PlayScene } from './game/PlayScene';
 import { cssColor } from './util/cssColor';
 import { setLabelDefaults } from './ui/labels';
-import { COLOR, FONT_FAMILY } from './game/looks/theme';
+import { COLOR, FONT_FAMILY, SHAPE_LOOK } from './game/looks/theme';
+import { setShapeDefaults } from './ui/shapes';
 
 // ゲームを組み立てる前に張る（組み立ての最中に投げられたものも受けたい）。
 installErrorReport();
 
-// 汎用の部品は意匠を知らないので、この画面の書体と文字色をここで入れる（src/ui/labels）。
+// 汎用の部品は意匠を知らないので、この画面の書体・文字色と、図形の影・破線の刻みをここで入れる
+// （src/ui/labels・src/ui/shapes）。
 setLabelDefaults({ fontFamily: FONT_FAMILY, color: COLOR.text });
+setShapeDefaults(SHAPE_LOOK);
 
 // アセットパックは、定義も絵も読み込まれる前に入れる（AssetPack.md 4節）。読むかどうかはスタート
 // 画面の設定が決める（StartScreen.md 画面構成 4）。取得に失敗したら起動しない——あるはずの物が

@@ -2,6 +2,21 @@
 # 種類ごとの値の決め方は docs/engine/InjurySystem.md 2節 参照。
 
 traits:
+  # 負った怪我そのもの。**身体の一部として振る舞う**——本人から剥がせず、束ねられず、それ自体には
+  # 重さが無い。種類ごとに違うのは残る長さと血の流れ方だけ（docs/engine/InjurySystem.md 2節）。
+  injury:
+    tags: [injury]
+    # 身体から離れた「捻挫」は存在しない（7.9節）。負った本人から剥がせず、本人が消えれば
+    # 一緒に消える。当てていた治療具は道連れにならず、こぼれ出る。
+    bound_to_owner: true
+    # 同じ怪我を2つ負っても束ねない。手当ては1つずつ当てるものなので、束ねると代表の1つにしか
+    # 治療具を当てられなくなる（かごと同じ理由。SlotSystem.md 4節）。
+    stackable: false
+    props:
+      # 傷そのものに目方は無い。それでも宣言が要るのは、当てた治療具の重さを負った本人へ渡す口に
+      # なるため（ContainerSystem.md 1節）——実効値は中身から来るので、実体値は0のまま。
+      weight: {value: 0}
+
   # 手当てのできる怪我。治療具（treatments.yaml）を1つだけ当てておける。
   treatable:
     # 怪我を代表する物のスロット（7.8節）。カードを押すと治療具が並ぶ——付け外しの唯一の経路。
@@ -21,14 +36,7 @@ traits:
 object_defs:
   # 足首の捻挫。ヤシの木から降りそこねたときに負う（coconut.yamlのpick_green_coconut）。
   sprained_ankle:
-    tags: [injury]
-    traits: [treatable]
-    # 身体から離れた「捻挫」は存在しない（7.9節）。負った本人から剥がせず、本人が消えれば
-    # 一緒に消える。当てていた治療具は道連れにならず、こぼれ出る。
-    bound_to_owner: true
-    # 同じ怪我を2つ負っても束ねない。手当ては1つずつ当てるものなので、束ねると代表の1つにしか
-    # 治療具を当てられなくなる（かごと同じ理由。SlotSystem.md 4節）。
-    stackable: false
+    traits: [injury, treatable]
     props:
       # 残っている傷の重さ。自然に治る速さを基準レートに置き（-1/tick、6.0節）、maxが「その速さで
       # 何tickぶんか」＝ 960 tick（10日）を表す。
@@ -62,10 +70,7 @@ object_defs:
   # キャラクタと動物が同じ物を負う（docs/engine/HuntingSystem.md 3節）ので、負わせる側
   # （animals.yamlのstrike）は相手がどちらかを知らない。
   laceration:
-    tags: [injury]
-    traits: [treatable]
-    bound_to_owner: true
-    stackable: false
+    traits: [injury, treatable]
     props:
       # 自然に治るまで480 tick（5日）。捻挫より浅い傷なので、同じ-1/tickでも早く引く。
       severity:
@@ -125,10 +130,7 @@ object_defs:
   # 衝撃（shock）はほとんど生まれないので、**突かれた獲物はその場では倒れない**。深手を負ったまま
   # 逃げる相手を追うことになる。
   puncture_wound:
-    tags: [injury]
-    traits: [treatable]
-    bound_to_owner: true
-    stackable: false
+    traits: [injury, treatable]
     props:
       # 自然に治るまで720 tick（7.5日）。裂傷より深いぶん、捻挫と同じ桁まで長引く。
       severity:
@@ -172,10 +174,7 @@ object_defs:
   # どちらを引きやすいかだけが動物ごとに違う（重み配分）——武器の側が威力ではなく当たり所の配分だけを
   # 宣言するのと同じ形（同1.2節）。
   bite_wound:
-    tags: [injury]
-    traits: [treatable]
-    bound_to_owner: true
-    stackable: false
+    traits: [injury, treatable]
     props:
       # 自然に治るまで360 tick（3.75日）。裂傷（480）より浅い。
       severity:
@@ -217,10 +216,7 @@ object_defs:
   # 下から突き上げる牙が深部を裂くので、**刺し傷と同じ桁で血が流れる**（injuries.yamlの中で
   # puncture_woundと並ぶ2つだけ）。手当てが間に合わなければ、その場を離れても倒れる。
   gore_wound:
-    tags: [injury]
-    traits: [treatable]
-    bound_to_owner: true
-    stackable: false
+    traits: [injury, treatable]
     props:
       # 自然に治るまで720 tick（7.5日）。刺し傷と同じ深さの傷として扱う。
       severity:
@@ -263,10 +259,7 @@ object_defs:
   # **掛かり方の深さを生成時に1回だけロールする**（6.2節）。同じ罠でも、浅く掛かれば生き延び、
   # 深く食い込めば死ぬ——1kgのヤケイ（血80mL）がちょうど分かれ目になる。
   snare_laceration:
-    tags: [injury]
-    traits: [treatable]
-    bound_to_owner: true
-    stackable: false
+    traits: [injury, treatable]
     props:
       # 自然に治るまで240〜480 tick（2.5〜5日）。深く食い込んだ個体ほど長く残る。
       severity:

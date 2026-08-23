@@ -8,6 +8,7 @@ import { addLabel } from '../../ui/labels';
 import { ScrollArea } from '../../ui/scrollArea';
 import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
+import { uiText } from '../../locale/uiTexts';
 import {
   ACTION_HEIGHT,
   CONTENT_GAP,
@@ -150,10 +151,17 @@ export class RecipeWindow {
     this.fillBody();
 
     this.objects.push(
-      addTextButton(scene, metrics, closeRow(metrics, this.area), '閉じる', { fill: COLOR.button }, () => {
-        this.close();
-        this.options.onClose();
-      }),
+      addTextButton(
+        scene,
+        metrics,
+        closeRow(metrics, this.area),
+        uiText('close'),
+        { fill: COLOR.button },
+        () => {
+          this.close();
+          this.options.onClose();
+        },
+      ),
     );
   }
 

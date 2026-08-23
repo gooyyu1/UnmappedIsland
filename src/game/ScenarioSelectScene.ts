@@ -6,11 +6,10 @@ import { ScreenHeader } from './ui/ScreenHeader';
 import { addLabel } from '../ui/labels';
 import { addPanel } from '../ui/shapes';
 import { COLOR, SIZE, rowPlateStyle } from './looks/theme';
+import { LIST_ITEM_PADDING_X, LIST_PADDING } from './looks/listScreen';
 
-/** 一覧の外周パディングと、シナリオ1件ぶんの高さ。 */
-const LIST_PADDING = 20;
+/** シナリオ1件ぶんの高さ（外周と左右の余白はlooks/listScreen）。 */
 const ITEM_HEIGHT = 96;
-const ITEM_PADDING_X = 24;
 
 /**
  * テスト用シナリオの選択画面（SaveDataManagement.md「テスト用シナリオ」節）。
@@ -48,7 +47,7 @@ export class ScenarioSelectScene extends ResponsiveScene {
       this.scene.start('play', scenarioPlayData(scenario)),
     );
 
-    const left = this.metrics.px(ITEM_PADDING_X);
+    const left = this.metrics.px(LIST_ITEM_PADDING_X);
     const title = addLabel(this, this.metrics, left, height / 2, scenario.title, {
       size: 30,
       bold: true,

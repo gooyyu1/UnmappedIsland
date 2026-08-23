@@ -29,19 +29,12 @@ import { addPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 import { Tooltip } from './Tooltip';
 import type { TooltipContent } from './Tooltip';
+import { uiText } from '../../locale/uiTexts';
 
 export type { ObjectWindowSlot } from './SlotPane';
 
 /** タブの行の高さ（u単位）。タブが1つだけのウィンドウでは行そのものを空けない。 */
 const TAB_HEIGHT = 64;
-
-/** 組み込みのタブのラベル。 */
-const DESCRIPTION_LABEL = '説明';
-const PROPERTIES_LABEL = '状態';
-const EXPLORATION_LABEL = '探索';
-
-/** 実行できない理由（reason、14.6節）が宣言されていないアクションに出す、代わりの1行。 */
-const CANNOT_DO_NOW = '今はできない。';
 
 /** ボタンとして並べる1つの操作。説明文とかかる時間は、ボタンの長押しで吹き出しに出す。 */
 export interface ObjectWindowAction {
@@ -339,7 +332,7 @@ export class ObjectWindow {
     return [
       {
         key: DESCRIPTION_TAB,
-        title: DESCRIPTION_LABEL,
+        title: uiText('description'),
         width: 0,
         height: (contentWidth) => DescriptionPane.height(scene, metrics, contentWidth, description),
         create: (area) => new DescriptionPane(scene, metrics, area, card, description),
@@ -356,7 +349,7 @@ export class ObjectWindow {
         : [
             {
               key: EXPLORATION_TAB,
-              title: EXPLORATION_LABEL,
+              title: uiText('exploration'),
               width: ExplorationPane.width(metrics),
               height: () => ExplorationPane.height(metrics),
               create: (area: Rect) =>
@@ -375,7 +368,7 @@ export class ObjectWindow {
         : [
             {
               key: PROPERTIES_TAB,
-              title: PROPERTIES_LABEL,
+              title: uiText('properties'),
               width: 0,
               height: () => PropertiesPane.height(metrics),
               create: (area: Rect) => new PropertiesPane(scene, metrics, area, () => this.properties),
@@ -456,7 +449,7 @@ export class ObjectWindow {
    */
   private addActions(actions: readonly ObjectWindowAction[]): void {
     const close: ObjectWindowAction = {
-      label: '閉じる',
+      label: uiText('close'),
       description: undefined,
       minutes: 0,
       onTap: () => {
@@ -514,7 +507,7 @@ export class ObjectWindow {
    */
   private tooltipHandlers(action: ObjectWindowAction, rect: Rect, disabled: boolean): HoldHandlers {
     const content: TooltipContent = disabled
-      ? { title: action.label, body: action.reason ?? CANNOT_DO_NOW }
+      ? { title: action.label, body: action.reason ?? uiText('cannot_do_now') }
       : { title: action.label, body: action.description, note: durationText(action.minutes) };
 
     return {

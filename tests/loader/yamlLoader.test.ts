@@ -554,6 +554,78 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/inherit/);
   });
 
+  it('fillを宣言する型がweightを持たないとエラーになる', () => {
+    // 抱えている量の重さ（fill × density）を載せる先が要る（ContainerSystem.md 1節）。
+    const yaml = `
+object_defs:
+  puddle:
+    props:
+      fill: {value: 100}
+      density: {value: 1}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/weight/);
+  });
+
+  it('weightにon_maxを書くとエラーになる（中身の伝播がmodifyだから）', () => {
+    // 伝播はエンジンが生やすmodify（containerPropagation）なので、modifyされるプロパティに
+    // 端のイベントを書けないという一般の規則がそのまま効く（6.3節）。
+    const yaml = `
+object_defs:
+  crate:
+    props:
+      weight:
+        value: 0
+        range: {min: 0, max: 100}
+        on_max:
+          destroy: self
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_max/);
+  });
+
+  it('required_propsが要求するプロパティを持たない型はエラーになる', () => {
+    // タグを名乗った以上、そのタグに要る値は揃っているはず（GameElementDefinition.md 4.2節）。
+    const yaml = `
+required_props:
+  item: [weight]
+object_defs:
+  stone:
+    tags: [item]
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/weight/);
+  });
+
+  it('required_propsの要求は複数のファイルから足せる', () => {
+    // パックが自分のタグの約束を書き足す。後から現れた宣言は上書きではなく合流する（4.2節）。
+    const base = `
+required_props:
+  item: [weight]
+object_defs:
+  stone:
+    tags: [item]
+    props:
+      weight: {value: 500}
+`;
+    const pack = `
+required_props:
+  item: [volume]
+`;
+    expect(() =>
+      new WorldCodexYamlLoader().load('core.yaml', base).load('pack.yaml', pack).build(),
+    ).toThrowError(/volume/);
+  });
+
+  it('required_propsのタグを持たない型は何も要求されない', () => {
+    const yaml = `
+required_props:
+  item: [weight]
+object_defs:
+  cloud:
+    props:
+      height: {value: 1000}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).not.toThrow();
+  });
+
   it('on_minの対象にactorを指定するとエラーになる（rangeイベントに操作者は居ない）', () => {
     const yaml = `
 object_defs:

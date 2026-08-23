@@ -318,9 +318,6 @@ export function withFrozenCards(
 /** 場所を映す札の仮のアイコン。土地は種別を持たない（物ではない）ので、種別ごとの表とは別に置く。 */
 const LOCATION_ICON = '🗺️';
 
-/** 命名処理が名前を付けていない土地（テスト用の最小Codex等）の代替表示。 */
-const UNNAMED_LOCATION = '名もなき土地';
-
 /** 探索アクションの名前（locations.yaml）。持っているかどうかで、現在地を探索できるかが決まる。 */
 export const EXPLORE_ACTION = 'explore';
 
@@ -557,7 +554,9 @@ export function fromGameSession(
     // 名前を付けるのは地形生成だけ（IslandMap）なので、島の外の場所——筏・外洋・本土
     // （voyage.yaml）——はそこに載っていない。そういう場所は型の表示名がそのまま名前になる。
     const displayName = defName === undefined ? undefined : locale.object(defName).displayName;
-    return displayName === undefined || displayName === defName ? UNNAMED_LOCATION : displayName;
+    return displayName === undefined || displayName === defName
+      ? locale.uiText('unnamed_location')
+      : displayName;
   };
 
   const pathTagId = codex.vocabulary.world.pathTagId;

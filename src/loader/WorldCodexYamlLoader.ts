@@ -12,7 +12,7 @@ import { buildGenerationDefs, loadGenerationSections, resetGeneration } from './
 import { NameRegistry } from '../domain/NameRegistry';
 import type { ObjectDef } from '../domain/ObjectDef';
 import { ObjectDefTable } from '../domain/ObjectDef';
-import { WorldVocabulary } from '../domain/WorldVocabulary';
+import { EngineVocabulary, WorldVocabulary } from '../domain/WorldVocabulary';
 import { IN_PROGRESS_SOURCE, inProgressObjectsYaml } from './inProgressObjects';
 import type { GeneratedObjectDefs } from './generatedObjectDefs';
 import { GeneratedTypes } from '../domain/GeneratedTypes';
@@ -52,12 +52,26 @@ export class WorldCodexYamlLoader {
   /** レシピ一覧の棚に使うタグ（recipe_categories、Windows.md 9節）。宣言順がそのまま優先順位。 */
   private recipeCategoryTagIds: number[] = [];
 
+  /** タグが宣言を義務づけるプロパティ（required_props、4.2節）。タグID → プロパティIDの並び。 */
+  private requiredPropsByTag = new Map<number, number[]>();
+
   private _objectNames = new NameRegistry();
   private _propertyNames = new NameRegistry();
   private _slotNames = new NameRegistry();
   private _tagNames = new NameRegistry();
   private _propertyTagNames = new NameRegistry();
   private _symbolNames = new NameRegistry();
+
+  /**
+   * エンジンが規約として直接読み書きする単語（EngineVocabulary）。**世界を組み立てる前から要る**
+   * ——中身の重さの伝播（containerPropagation）を型へ生やすのに、resolveの時点でIDが要るため。
+   * どんなYAMLを載せても変わらないので、著者の宣言を1つも見ずに作れる。
+   */
+  private _engine = new EngineVocabulary(this._propertyNames, this._slotNames);
+
+  get engine(): EngineVocabulary {
+    return this._engine;
+  }
 
   /** 6種の名前空間（object/property/slot/tag/property_tag/symbol）のNameRegistry。 */
   get objectNames(): NameRegistry {
@@ -107,6 +121,21 @@ export class WorldCodexYamlLoader {
       for (const node of recipeCategories.items as YamlNode[]) {
         const tagId = this._tagNames.intern(asScalarText(node, `${label}.recipe_categories`));
         if (!this.recipeCategoryTagIds.includes(tagId)) this.recipeCategoryTagIds.push(tagId);
+      }
+
+    // タグが宣言を義務づけるプロパティ（4.2節）。同じタグへ複数のファイルが足せる（パックが
+    // 自分のタグの約束を書き足す）ので、後から現れた宣言は上書きではなく合流させる。
+    const requiredProps = tryGetMap(root, 'required_props', label);
+    if (requiredProps !== undefined)
+      for (const [tagName] of entriesInOrder(requiredProps)) {
+        const context = `${label}.required_props.'${tagName}'`;
+        const tagId = this._tagNames.intern(tagName);
+        const required = this.requiredPropsByTag.get(tagId) ?? [];
+        for (const node of (tryGetSeq(requiredProps, tagName, context)?.items ?? []) as YamlNode[]) {
+          const propertyId = this._propertyNames.intern(asScalarText(node, context));
+          if (!required.includes(propertyId)) required.push(propertyId);
+        }
+        this.requiredPropsByTag.set(tagId, required);
       }
 
     const objectDefs = tryGetMap(root, 'object_defs', label);
@@ -165,7 +194,12 @@ export class WorldCodexYamlLoader {
     const generatedTypes = new GeneratedTypes();
     this.loadGenerated(
       IN_PROGRESS_SOURCE,
-      inProgressObjectsYaml([...objectDefsByGlobalId.values()], this.tagNames, this.objectNames),
+      inProgressObjectsYaml(
+        [...objectDefsByGlobalId.values()],
+        this.tagNames,
+        this.objectNames,
+        this.propertyNames,
+      ),
       objectDefsByGlobalId,
       generatedTypes,
     );
@@ -202,6 +236,7 @@ export class WorldCodexYamlLoader {
           generation,
           generatedTypes,
           this.recipeCategoryTagIds,
+          this.requiredPropsByTag,
         ),
     );
 
@@ -242,6 +277,7 @@ export class WorldCodexYamlLoader {
     this.globalTraits.clear();
     this.patches = [];
     this.recipeCategoryTagIds = [];
+    this.requiredPropsByTag = new Map();
     resetGeneration(this);
     this._objectNames = new NameRegistry();
     this._propertyNames = new NameRegistry();
@@ -249,6 +285,7 @@ export class WorldCodexYamlLoader {
     this._tagNames = new NameRegistry();
     this._propertyTagNames = new NameRegistry();
     this._symbolNames = new NameRegistry();
+    this._engine = new EngineVocabulary(this._propertyNames, this._slotNames);
   }
 }
 

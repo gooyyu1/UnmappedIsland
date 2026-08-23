@@ -6,7 +6,7 @@ import type Phaser from 'phaser';
  *
  * MINが最高速度で、50ミリ秒＝秒間20回。100個を送り切るのに10秒はかからない。
  */
-const HOLD_MS = 400;
+export const HOLD_MS = 400;
 const REPEAT_MS = 300;
 export const REPEAT_MIN_MS = 50;
 const REPEAT_DECAY = 0.8;
