@@ -410,3 +410,9 @@
   `src/codex-viewer/describe/` にある。向きは `tests/architecture/layers.test.ts` が見張る。
   **読み上げ口にすると追従の強制が増える**のも効いた——`ConditionNode` に kind を足しても
   `describe` の switch は素通りしていたが、`ConditionReader` なら実装が足りずコンパイルが止まる。
+
+## 閉じた腔の圧（[VitalsSystem.md](./VitalsSystem.md) 4 節）
+
+- **頭蓋内・胸腔だけを「溜まった圧」で表す案は採らない。** 失った量では書けないので、時間とともに
+  `severity` が増える傷（今の怪我は治る方向にしか動かない）を新たに立てることになる。出血と仕留めで
+  狩りは成立しており、先に入れると「治らない傷」の扱いを同時に決めることになる。
