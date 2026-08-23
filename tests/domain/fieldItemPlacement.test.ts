@@ -97,4 +97,23 @@ object_defs:
 
     expect(items()).toEqual(['a×1', 'b×2']);
   });
+
+  it('前詰めのスロットには、どの操作の後にも空き枠が残らない', () => {
+    /** 空になっている枠の数（前詰めのスロットでは常に0）。 */
+    function empties(): number {
+      return location.instance.getSlot(location.itemsSlotId).cells.filter((cell) => cell.isEmpty).length;
+    }
+
+    const [a, b] = fill('a', 'b', 'c');
+    expect(empties(), '末尾へ足した後').toBe(0);
+
+    expect(location.receiveItem(item('a'), { kind: 'gap', index: 2 })).toBe(true);
+    expect(empties(), '隙間を指して足した後').toBe(0);
+
+    expect(a.reorderInParentSlot({ kind: 'gap', index: 3 })).toBe(true);
+    expect(empties(), '並び替えた後').toBe(0);
+
+    b.destroy();
+    expect(empties(), '取り除いた後').toBe(0);
+  });
 });

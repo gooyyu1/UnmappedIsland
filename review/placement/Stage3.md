@@ -688,3 +688,51 @@ docs 12ファイルとJSONスキーマ。パッチのパス（`x.actions.y`）�
 - **かさ0の物は狙われない。** 旧実装の `Math.max(1, volume)` の下限は設けなかった（PickAmong 6節）。
 - 「人が居なければ襲えない」を確かめていたテストが、**重みが0に潰れること**を見ていた。重みは配分の
   ままになったので、観測できる事実（怪我が増えない）で確かめる形へ直した。
+
+## 21. 枠の並び（`CellLayout`）
+
+`Slot` の3つの責務（受け入れ判定・中身の保持・置き場所を作る配置）のうち、後ろ2つを
+`src/domain/CellLayout.ts` へ移した。`SlotCell` も一緒に移っている。`Slot` に残ったのは、owner と
+`SlotDef` を見て答える問い合わせ（`rejectionFor` `acceptedCount` `putInMinutes` `fillRatio`）だけ。
+公開APIは変えていないので、`WorldObject` 側は何も知らない。
+
+### 分けたのは責務ではなく、分岐が散っていたこと
+
+11メソッドを移すだけなら場所が変わるだけで終わる。`Slot` が読みにくかった本体は
+**「枠数を決めたスロット / 前詰めのスロット」の分岐が10箇所に散っていた**ことで、
+`vacancyFor` `findCellFor` `removeInternal` `restack` `placeSameSlot` `insertAt` `tryInsertAtGap`
+`tryInsertAtCell` `tryMoveStackToGap` `tryMoveStackToCell` がそれぞれ自前で二股に分かれていた。
+
+**この2つは別のアルゴリズムではない。** 前詰めのスロットは枠の宣言が共有の1つなので、
+
+- 挿入の `splice` は「末尾に空き枠を1つ生やして、そこから右へ中身をずらす」と結果が同じ。
+- 並び替えの「抜いて入れ直す」は「抜いた跡を空き枠として残し、そこへ向けてずらす」と結果が同じ。
+
+差は次の3つに畳めて、それぞれ1箇所でしか効かない。
+
+| 規則 | 効く場所 |
+| ---- | -------- |
+| 空き枠が無いとき末尾に枠を足せるか | `tryGrowCell` |
+| 空になった枠を残すか | `emptyCell` |
+| 位置の指定が枠を直接指せるか | `pointsCell` |
+
+`hasFixedCells` を見るのは、この3つと `vacancyFor`（増える枠に上限が無いこと）の4箇所だけになった。
+`tryInsertAtGap` / `tryInsertAtCell` / `tryMoveStackToGap` / `tryMoveStackToCell` / `findCellFor` /
+`insertGrownCell` / `tryPlaceAdjacent` は消え、置き方は
+`tryPlaceAt`（位置の指定→枠 or 隙間）→ `tryPlaceAtGap` → `tryPlaceShifted` の一本になった。
+
+**却下した案**: 抽象 `CellLayout` ＋ 固定/前詰めの2実装。差が宣言 `cellsToKeep` 1つに畳める以上、
+型を2つに割る根拠が無い（仕組みの数が既存のケース数と同じになり、何も畳めていない）。
+
+### 挙動
+
+保存。`tests/domain/stacking.test.ts`（21件。左シフトのフォールバックと押し出し順まで見ている）と
+`fieldItemPlacement` / `handPlacement` / `cells` / `slotCells` がそのまま通る。
+
+隙間の指定を並びの範囲へ収める（`clampIndex`）のは、前詰めのスロットだけの処理だったのを両方に
+広げた。範囲外の隙間を枠数固定のスロットへ指すと、今までは失敗し、今は端として扱う。
+UIが作る隙間番号は常に範囲内なので差は出ない。
+
+新しく足したのは、**前詰めのスロットにはどの操作の後にも空き枠が残らない**ことを確かめるテスト1件
+（`fieldItemPlacement`）。ずらしで場所を作る形にしたので、生やした枠が使われずに残らないことが
+不変条件になった。
