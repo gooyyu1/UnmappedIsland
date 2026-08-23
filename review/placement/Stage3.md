@@ -313,3 +313,37 @@ tick の間で時間が進めば、加熱が進んでいなくても残り時間
 
 **B-6（`Button` / `Curtain` / `ScrollIndicator` を `src/ui/` へ）の阻害要因が外れた。**
 `setShapeDefaults` が入ったので、あとは色トークンの差し込み口の話だけになる。
+
+## 12. 段4 レーンA-3（観測の器）
+
+`WorldSession` に**同じ形が5回**あった（`observeTicks` / `observeChanges` / `observeSignals` /
+`observeGains` / `withSubject`。`withInteractionEffect` も同じ形の上に「抜けるときに流す」を足したもの）。
+
+```ts
+const outer = this.xxx;
+this.xxx = next;
+try { body(); } finally { this.xxx = outer; }
+```
+
+A-2 のときと同じ証拠があった——**3つの doc が互いを指していた**（「observeTicksと同じく」
+「observeChangesと同じく」×2）。「必ず元へ戻る」が5箇所に書かれ、3箇所は隣を指して済ませていた。
+
+**`src/util/scoped.ts` の `Scoped<T>`**（bodyの実行中だけ差し替わる値）へ畳んだ。
+
+### 「26宣言中15」という見積もりは粗かった
+
+`Candidates.md` A-3 は「種類が増えるたびに2宣言ずつ太る」を欠陥として挙げ、汎用の登録口
+（`session.observe('tick', cb, body)`）を示唆していた。**採らなかった。**
+
+4つの doc の中身を読むと、太っているのは宣言ではなく**チャンネル固有の知識**のほうだった
+——なぜ signal と change を分けるのか（混ぜると受け取る側が毎回選り分ける）、なぜ gains は
+1回ぶんまとめるのか（同じ値へ複数回書く効果がある）。汎用の登録口にすると、この判断を書く場所が
+消える。**公開メソッドは4つのまま残し、畳んだのは仕組みだけ。**
+
+### 併せて、記述の重複も畳んだ
+
+4つの doc が同じ約束を繰り返していた（bodyの実行中だけ・溜め置きしない・読み取り専用・解除は
+observe*が行う）。**どれも4つ全部の性質**なのでクラスのコメントへ1度だけ書き、各メソッドには
+「何を運ぶか」だけを残した。
+
+結果 269行 → 234行（＋`scoped.ts` 28行）。減ったのは実装と記述の重複で、公開メソッドの数は変えていない。
