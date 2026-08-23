@@ -30,9 +30,9 @@
 
 - **影響の一覧の縮退表示。** 中身の子N個で N行、同じ怪我3つで `pain` に3行。**同じ形なので両方まとめて
   決める**（Stage3.md 13節）。
-- **`on_max`/`on_min` を実効値で動かす案2。** 議論が残る論点なので、既定路線と誤解されないよう
-  意図的に書いていない（同 9節）。
 - **`balanceTables.isLocation` のコメントと実装のずれ**（同 5節）。
+- **`cardLooks` のタグ名10個の引き直し**（同 5節）。「10個すべてを `WorldVocabulary` へ入れるか、
+  1つも入れないか」を決める話。
 - H-8（`Card` の getter）・H-9/B-4（`CardLane.cardObjects`）・H-16（`LaneView` の置き場）・
   H-17（`PlayScreenLayout`）・B-7（段3の後で再採点が要る）・B-8（状態未確認）。
 
