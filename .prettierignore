@@ -1,5 +1,6 @@
 dist/
 node_modules/
+.claude/worktrees/
 src/assets/world-codex/
 sample-pack/world-codex/
 docs/
