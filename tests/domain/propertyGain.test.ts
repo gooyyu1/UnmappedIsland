@@ -118,7 +118,7 @@ object_defs:
   });
 
   function spawn(objectName: string): WorldObject {
-    return session.spawn(codex.objectNames.getId(objectName));
+    return session.createObject(codex.objectNames.getId(objectName));
   }
 
   /** bodyの間に観測された増加を、プロパティ名から量で引ける形にする。 */

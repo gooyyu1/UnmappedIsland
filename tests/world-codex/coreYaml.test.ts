@@ -45,7 +45,7 @@ describe('core.yamlのworld定義', () => {
     expect(world.isSingleton).toBe(true);
 
     // 初期値は実行時インスタンスの現在値として観測する（DefaultNumberは非公開）。
-    const instance = new WorldSession(codex).spawn(world.globalId);
+    const instance = new WorldSession(codex).createObject(world.globalId);
     expect(instance.tryGetProperty(codex.propertyNames.getId('tick'))?.number ?? 0).toBe(0);
     expect(instance.tryGetProperty(codex.propertyNames.getId('minutes_per_tick'))?.number ?? 0).toBe(15);
     expect(instance.tryGetProperty(codex.propertyNames.getId('minute'))?.number ?? 0).toBe(0);
@@ -88,7 +88,7 @@ describe('core.yamlのworld定義', () => {
     const hourId = codex.propertyNames.getId('hour');
     const dayId = codex.propertyNames.getId('day');
 
-    const worldInstance = new WorldSession(codex).spawn(world.globalId);
+    const worldInstance = new WorldSession(codex).createObject(world.globalId);
     const worldView = new World(worldInstance, codex);
     const session = new WorldSession(codex, worldView);
 
@@ -110,7 +110,7 @@ describe('core.yamlのworld定義', () => {
     const weatherId = codex.propertyNames.getId('weather');
     const ambientTemperatureId = codex.propertyNames.getId('ambient_temperature');
 
-    const worldInstance = new WorldSession(codex).spawn(world.globalId);
+    const worldInstance = new WorldSession(codex).createObject(world.globalId);
 
     function assertAmbientTemperatureAt(
       weather: string,
@@ -147,7 +147,7 @@ describe('core.yamlのworld定義', () => {
     const weatherId = codex.propertyNames.getId('weather');
     const sunlightId = codex.propertyNames.getId('sunlight');
 
-    const worldInstance = new WorldSession(codex).spawn(world.globalId);
+    const worldInstance = new WorldSession(codex).createObject(world.globalId);
 
     function assertSunlightAt(
       weather: string,

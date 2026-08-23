@@ -22,7 +22,7 @@ describe('transfer効果（WorldObject.applyActiveEffect）の実行', () => {
       session = new WorldSession(codex);
       sessions.set(codex, session);
     }
-    return session.spawn(codex.objectNames.getId(objectName));
+    return session.createObject(codex.objectNames.getId(objectName));
   }
 
   it('sourceとdestinationの双方に十分な余裕があればamount分だけ移動する', () => {

@@ -75,7 +75,7 @@ object_defs:
           self:
             warmth: 1
 `);
-    const campfire = session.spawn(codex.objectNames.getId('campfire'));
+    const campfire = session.createObject(codex.objectNames.getId('campfire'));
     campfire.moveToSlot(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     const executed = campfire.tryGetAction('rest', undefined)?.tryExecute() === true;
@@ -104,7 +104,7 @@ object_defs:
         trigger: menu
         duration: {prop: travel_minutes}
 `);
-    const trail = session.spawn(codex.objectNames.getId('trail'));
+    const trail = session.createObject(codex.objectNames.getId('trail'));
     trail.moveToSlot(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(trail.tryGetAction('travel', undefined)?.tryExecute() === true).toBe(true);
@@ -125,7 +125,7 @@ object_defs:
         conditions:
           - {prop: warmth, gt: 10}
 `);
-    const campfire = session.spawn(codex.objectNames.getId('campfire'));
+    const campfire = session.createObject(codex.objectNames.getId('campfire'));
     campfire.moveToSlot(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(campfire.tryGetAction('rest', undefined)?.tryExecute() === true).toBe(false);
@@ -149,8 +149,8 @@ object_defs:
           self:
             cracked: 1
 `);
-    const nut = session.spawn(codex.objectNames.getId('nut'));
-    const hammer = session.spawn(codex.objectNames.getId('hammer'));
+    const nut = session.createObject(codex.objectNames.getId('nut'));
+    const hammer = session.createObject(codex.objectNames.getId('hammer'));
     nut.moveToSlot(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(
@@ -178,8 +178,8 @@ object_defs:
         trigger: {drag: {tag: hammer}}
         duration: {subject: dragged, prop: swing_minutes}
 `);
-    const nut = session.spawn(codex.objectNames.getId('nut'));
-    const hammer = session.spawn(codex.objectNames.getId('blunt_hammer'));
+    const nut = session.createObject(codex.objectNames.getId('nut'));
+    const hammer = session.createObject(codex.objectNames.getId('blunt_hammer'));
     nut.moveToSlot(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(
@@ -212,7 +212,7 @@ object_defs:
     slots:
       output: {}
 `);
-    const oven = session.spawn(codex.objectNames.getId('oven'));
+    const oven = session.createObject(codex.objectNames.getId('oven'));
     oven.moveToSlot(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(oven.tryGetAction('bake', undefined)?.tryExecute() === true).toBe(true);
@@ -251,7 +251,7 @@ object_defs:
         duration: 30
         spawn: {object: statue}
 `);
-    const stone = session.spawn(codex.objectNames.getId('crumbling_stone'));
+    const stone = session.createObject(codex.objectNames.getId('crumbling_stone'));
     const stuffSlotId = codex.slotNames.getId('stuff');
     stone.moveToSlot(world.instance.getSlot(stuffSlotId));
 
@@ -293,8 +293,8 @@ object_defs:
           self:
             carved: 1
 `);
-    const block = session.spawn(codex.objectNames.getId('block'));
-    const chisel = session.spawn(codex.objectNames.getId('crumbling_chisel'));
+    const block = session.createObject(codex.objectNames.getId('block'));
+    const chisel = session.createObject(codex.objectNames.getId('crumbling_chisel'));
     const stuffSlotId = codex.slotNames.getId('stuff');
     for (const object of [block, chisel]) {
       expect(object.moveToSlot(world.instance.getSlot(stuffSlotId))).toBeUndefined();
@@ -335,7 +335,7 @@ object_defs:
       )
       .build();
     const session = new WorldSession(codex);
-    const campfire = session.spawn(codex.objectNames.getId('campfire'));
+    const campfire = session.createObject(codex.objectNames.getId('campfire'));
 
     expect(campfire.tryGetAction('rest', undefined)?.tryExecute() === true).toBe(true);
     expect(campfire.tryGetProperty(codex.propertyNames.getId('warmth'))?.number ?? 0).toBe(1);

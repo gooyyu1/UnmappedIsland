@@ -26,7 +26,7 @@ describe('StackingTests', () => {
       session = new WorldSession(codex);
       sessions.set(codex, session);
     }
-    return session.spawn(codex.objectNames.getId(objectName));
+    return session.createObject(codex.objectNames.getId(objectName));
   }
 
   // テスト補助: 固定スロット内で、指定した型(ObjectDef)のアイテムを持つスタックとその番号を引く。

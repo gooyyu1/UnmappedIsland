@@ -124,7 +124,7 @@ function parsePickList(
     const amongNode = tryGetMap(map, 'among', candidateContext);
     const among =
       amongNode === undefined ? undefined : parseAmong(loader, candidateContext, amongNode, scope);
-    const bodyScope = among === undefined ? scope : scope.picking;
+    const bodyScope = among === undefined ? scope : scope.withPicked;
 
     // weightだけの候補は「選ばれても何も起きない回」（外した回・寄って来なかった回）を表す。
     const effect = parseActiveEffectBody(
@@ -164,7 +164,7 @@ function parseAmong(
   const root =
     subjectName === undefined
       ? 'self'
-      : parseSubjectRoot(amongContext, subjectName, scope.objectOnly.picking);
+      : parseSubjectRoot(amongContext, subjectName, scope.withoutPropertyName.withPicked);
 
   const slotName = tryGetScalar(node, 'slot', amongContext);
   if (slotName === undefined) throw new YamlLoadError(`${amongContext}: 'slot'は必須です。`);
@@ -177,7 +177,7 @@ function parseAmong(
   const weight =
     weightNode === undefined
       ? undefined
-      : parseWeight(loader, amongContext, weightNode, scope.picking, 'weight');
+      : parseWeight(loader, amongContext, weightNode, scope.withPicked, 'weight');
 
   return new AmongSpec(root, loader.slotNames.intern(slotName), match, weight);
 }
@@ -586,7 +586,7 @@ function parseBecome(
 
 /** オブジェクトそのものを指す対象（destroy・signal・move）。プロパティ名を伴わない場所になる。 */
 function parseObjectTargetRoot(context: string, key: string, scope: ReferenceScope): ReferenceRoot {
-  return parseActiveTargetRoot(context, key, scope.objectOnly);
+  return parseActiveTargetRoot(context, key, scope.withoutPropertyName);
 }
 
 function parseSpawnTargetRoot(context: string, raw: string | undefined): SpawnTargetRoot {

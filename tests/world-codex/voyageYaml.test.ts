@@ -85,7 +85,7 @@ describe('筏と航海', () => {
 
   /** 帆を1枚作って、筏の構造スロットへ組み込む。 */
   function rigSail(game: NewGameSession, raft: WorldObject): WorldObject {
-    const sail = game.session.spawn(codex.objectNames.getId('rawhide_sail'));
+    const sail = game.session.createObject(codex.objectNames.getId('rawhide_sail'));
     const failure = sail.moveToSlot(raft.getSlot(codex.slotNames.getId('structure')));
     if (failure !== undefined) throw new Error(`帆を組み込めません: ${failure}`);
     return sail;

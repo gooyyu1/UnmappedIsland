@@ -129,8 +129,8 @@ object_defs:
   it('まとめて重ねると、宣言が許した個数ぶん実行される', () => {
     // fuelは0〜30で1本20なので、3本運んでも入るのは2本。
     const mini = setUp();
-    const hearth = mini.spawn('hearth', mini.slot('fixtures', mini.land));
-    const branches = [0, 1, 2].map(() => mini.spawn('branch', mini.slot('hand')));
+    const hearth = mini.createObject('hearth', mini.slot('fixtures', mini.land));
+    const branches = [0, 1, 2].map(() => mini.createObject('branch', mini.slot('hand')));
 
     const view = viewOf(mini);
     const combination = view.combinationOf(cardOf(view, branches[0]), cardOf(view, hearth));
@@ -153,8 +153,8 @@ object_defs:
     // 宣言しているのは炉だけだが、逆向きに運んでも同じ宣言が動く（CardInteraction.md 2節）。
     // **起きることは向きで変わらない**——selfは宣言している炉のまま。
     const mini = setUp();
-    const hearth = mini.spawn('hearth', mini.slot('fixtures', mini.land));
-    const branch = mini.spawn('branch', mini.slot('hand'));
+    const hearth = mini.createObject('hearth', mini.slot('fixtures', mini.land));
+    const branch = mini.createObject('branch', mini.slot('hand'));
 
     const view = viewOf(mini);
     const reversed = view.combinationOf(cardOf(view, hearth), cardOf(view, branch));
@@ -175,7 +175,7 @@ object_defs:
     const view = viewOf(mini);
     // 札は場所に居なくてよい（combinationOfが見るのは映している物だけ）。
     const cardFor = (defName: string) => {
-      const objects = [mini.spawn(defName)];
+      const objects = [mini.createObject(defName)];
       return {
         icon: '',
         name: defName,
@@ -199,8 +199,8 @@ object_defs:
 
   it('combinationOfは、落とされた側に組み合わせが無ければ掴んだ側の組み合わせを返す', () => {
     const mini = setUp();
-    const vine = mini.spawn('vine', mini.slot('fixtures', mini.land));
-    const knife = mini.spawn('sharp_stone', mini.slot('hand'));
+    const vine = mini.createObject('vine', mini.slot('fixtures', mini.land));
+    const knife = mini.createObject('sharp_stone', mini.slot('hand'));
 
     const view = viewOf(mini);
     const dropped = view.combinationOf(cardOf(view, knife), cardOf(view, vine));
@@ -219,10 +219,10 @@ object_defs:
 
   it('空の器を水入りの器へ重ねると、注ぎ移しが逆向きに成立する', () => {
     const mini = setUp();
-    const filled = mini.spawn('bowl', mini.slot('hand'));
+    const filled = mini.createObject('bowl', mini.slot('hand'));
     filled.becomeAlong(new Map([['content', 'water_liquid']]));
     filled.tryGetProperty(mini.codex.propertyNames.getId('fill'))?.setNumber(100);
-    const empty = mini.spawn('bowl', mini.slot('hand'));
+    const empty = mini.createObject('bowl', mini.slot('hand'));
 
     const view = viewOf(mini);
     view.combinationOf(cardOf(view, empty), cardOf(view, filled))?.execute();
@@ -233,7 +233,7 @@ object_defs:
 
   it('同じカードへ重ねたときは、スタックの中の2つを組み合わせる', () => {
     const mini = setUp();
-    for (const name of ['stone', 'stone', 'branch']) mini.spawn(name, mini.slot('items', mini.land));
+    for (const name of ['stone', 'stone', 'branch']) mini.createObject(name, mini.slot('items', mini.land));
 
     const view = viewOf(mini);
     const laneCards = view.cardsIn(mini.slot('items', mini.land)).filter((card) => card !== undefined);
@@ -264,7 +264,7 @@ object_defs:
 `,
     );
     const mini = setUp();
-    for (let i = 0; i < 2; i++) mini.spawn('stone', mini.slot('items', mini.land));
+    for (let i = 0; i < 2; i++) mini.createObject('stone', mini.slot('items', mini.land));
 
     const view = viewOf(mini, texts);
     const stones = view
@@ -279,7 +279,7 @@ object_defs:
 
   it('combinationもかかる時間を持つ', () => {
     const mini = setUp();
-    for (let i = 0; i < 2; i++) mini.spawn('stone', mini.slot('items', mini.land));
+    for (let i = 0; i < 2; i++) mini.createObject('stone', mini.slot('items', mini.land));
 
     const view = viewOf(mini);
     const stones = view
@@ -303,7 +303,7 @@ object_defs:
 `,
     );
     const mini = setUp();
-    const fruit = mini.spawn('fruit', mini.slot('hand'));
+    const fruit = mini.createObject('fruit', mini.slot('hand'));
     const satietyId = mini.codex.propertyNames.getId('satiety');
 
     const card = cardOf(viewOf(mini, texts), fruit);
@@ -319,7 +319,7 @@ object_defs:
 
   it('アクションを持たないオブジェクトのカードは、アクションが空になる', () => {
     const mini = setUp();
-    const branch = mini.spawn('branch', mini.slot('hand'));
+    const branch = mini.createObject('branch', mini.slot('hand'));
 
     const card = cardOf(viewOf(mini), branch);
 
@@ -329,8 +329,8 @@ object_defs:
 
   it('アクションはかかる時間を持つ（durationを持たなければ0）', () => {
     const mini = setUp();
-    const fruit = mini.spawn('fruit', mini.slot('hand'));
-    const bowl = mini.spawn('bowl', mini.slot('hand'));
+    const fruit = mini.createObject('fruit', mini.slot('hand'));
+    const bowl = mini.createObject('bowl', mini.slot('hand'));
 
     const view = viewOf(mini);
 
@@ -342,7 +342,7 @@ object_defs:
     // 水入りの器は1つの型なので、中身のtraitが配ったdrinkがそのまま自分のアクションになる
     // （容器自身のcollect_rainに続く）。
     const mini = setUp();
-    const bowl = mini.spawn('bowl', mini.slot('hand'));
+    const bowl = mini.createObject('bowl', mini.slot('hand'));
     bowl.becomeAlong(new Map([['content', 'water_liquid']]));
     bowl.tryGetProperty(mini.codex.propertyNames.getId('fill'))?.setNumber(250);
     const hydrationId = mini.codex.propertyNames.getId('hydration');
@@ -375,7 +375,7 @@ object_defs:
 `,
     );
     const mini = setUp();
-    const bowl = mini.spawn('bowl', mini.slot('hand'));
+    const bowl = mini.createObject('bowl', mini.slot('hand'));
 
     expect(cardOf(viewOf(mini, texts), bowl).name, '空なら入れ物の名前だけ').toBe('器');
 

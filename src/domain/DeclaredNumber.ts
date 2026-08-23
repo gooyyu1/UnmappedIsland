@@ -29,7 +29,7 @@ export class DeclaredNumber {
 
   /** 参照が解決できなければ0（宣言はされているので、値が無いこととは区別しない）。 */
   resolve(context: ReferenceContext): number {
-    return this.isPathRef ? (this.path!.number(context) ?? 0) : this.literal;
+    return this.isPathRef ? (this.path!.effectiveNumber(context) ?? 0) : this.literal;
   }
 
   /** この値の宣言そのもの（DeclaredNumberReading参照）。数値へ解くのは、文脈を知っている読み手の側。 */

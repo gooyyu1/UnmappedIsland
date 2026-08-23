@@ -24,7 +24,7 @@ describe('PassiveEffect', () => {
       session = new WorldSession(codex);
       sessions.set(codex, session);
     }
-    return session.spawn(codex.objectNames.getId(objectName));
+    return session.createObject(codex.objectNames.getId(objectName));
   }
 
   // ------------------------------------------------------------------

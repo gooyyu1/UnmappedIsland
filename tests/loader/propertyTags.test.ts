@@ -14,7 +14,7 @@ describe('プロパティのタグ', () => {
   }
 
   function instanceOf(codex: WorldCodex, objectDefName: string): WorldObject {
-    return new WorldSession(codex).spawn(codex.objectNames.getId(objectDefName));
+    return new WorldSession(codex).createObject(codex.objectNames.getId(objectDefName));
   }
 
   function propertyNamesWithTag(codex: WorldCodex, object: WorldObject, tagName: string): string[] {

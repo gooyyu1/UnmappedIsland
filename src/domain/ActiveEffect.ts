@@ -45,7 +45,7 @@ export abstract class ActiveEffect {
    * **既定はfalse＝妨げない。** repeatLimitingVesselsと同じく、取りこぼしても安全側（操作は出る）に
    * 倒れるので抽象にしない。
    */
-  unresolvable(_context: ReferenceContext): boolean {
+  blocksOperation(_context: ReferenceContext): boolean {
     return false;
   }
 
@@ -82,8 +82,8 @@ export class ActiveEffects extends ActiveEffect {
   }
 
   /** 1つでも成立しない子があれば、合成も成立しない（並べた命令はすべて起こる約束のため）。 */
-  override unresolvable(context: ReferenceContext): boolean {
-    return this.operations.some((operation) => operation.unresolvable(context));
+  override blocksOperation(context: ReferenceContext): boolean {
+    return this.operations.some((operation) => operation.blocksOperation(context));
   }
 
   /** 子の合計。1つでも数えられない子（pick）があれば、合成も数えられない。 */
@@ -119,7 +119,7 @@ export class SetEffect extends ActiveEffect {
   }
 
   apply(context: ReferenceContext): void {
-    this.target.value(context)?.setNumber(this.value);
+    this.target.propertyValue(context)?.setNumber(this.value);
   }
 
   read(reader: EffectReader): void {
@@ -149,7 +149,7 @@ export class AddEffect extends ActiveEffect {
   applyScaled(context: ReferenceContext, numerator: number, denominator: number): void {
     const scaled = (this.amount * numerator) / denominator;
     if (scaled === 0) return;
-    this.target.value(context)?.add(scaled);
+    this.target.propertyValue(context)?.add(scaled);
   }
 
   read(reader: EffectReader): void {
@@ -292,8 +292,8 @@ export class TransferEffect extends ActiveEffect {
    * from/toが解決できない・対象がそのプロパティを持たない場合は何もしない。
    */
   apply(context: ReferenceContext): void {
-    const fromValue: PropertyValue | undefined = this.from.value(context);
-    const toValue: PropertyValue | undefined = this.to.value(context);
+    const fromValue: PropertyValue | undefined = this.from.propertyValue(context);
+    const toValue: PropertyValue | undefined = this.to.propertyValue(context);
     if (fromValue === undefined || toValue === undefined) return;
 
     let taken = Math.min(this.amount, fromValue.availableToTransferOut());
@@ -342,14 +342,14 @@ export class TransferEffect extends ActiveEffect {
   override acceptedCount(context: ReferenceContext, candidates: readonly WorldObject[]): number | undefined {
     if (this.to.root === 'dragged' || candidates.length === 0) return undefined;
 
-    const toValue = this.to.value(context.withDragged(candidates[0]));
+    const toValue = this.to.propertyValue(context.withDragged(candidates[0]));
     if (toValue === undefined) return undefined;
 
     let room = toValue.remainingTransferCapacity();
     let count = 0;
     for (const candidate of candidates) {
       if (room <= 0) break;
-      const fromValue = this.from.value(context.withDragged(candidate));
+      const fromValue = this.from.propertyValue(context.withDragged(candidate));
       if (fromValue === undefined) break;
 
       const taken = Math.min(this.amount, fromValue.availableToTransferOut());

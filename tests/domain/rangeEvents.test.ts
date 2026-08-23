@@ -76,7 +76,7 @@ object_defs:
   it('on_max省略時の既定合成（自身をrange.maxへset）は無限再帰を起こさない', () => {
     // on_maxを省略した場合の既定合成（「自分自身をrange.maxへset」）は、値がちょうど境界に
     // 着地した後は同じ値への再setになる（差分0）。addNumberが差分0を何もしないことで、
-    // checkRangeEvents→applyActiveEffect→setNumber→addNumberという無限再帰を防いでいることを確認する。
+    // applyRangeEventsAt→applyActiveEffect→setNumber→addNumberという無限再帰を防いでいることを確認する。
     const yaml = `
 object_defs:
   tank_immediate:

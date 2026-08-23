@@ -27,7 +27,7 @@ object_defs:
     )
     .build();
 
-  const spawn = (name: string) => new WorldSession(codex).spawn(codex.objectNames.getId(name));
+  const spawn = (name: string) => new WorldSession(codex).createObject(codex.objectNames.getId(name));
 
   it('持たないものはtryGet系ならundefined', () => {
     const stone = spawn('stone');

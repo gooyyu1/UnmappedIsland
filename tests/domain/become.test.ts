@@ -77,7 +77,7 @@ object_defs:
 
   /** groundの上に置いた、そのレシピの製作中オブジェクト。 */
   const wipOn = (product: string): WorldObject => {
-    const wip = session.spawn(idOf(inProgressObjectName(product, 'basic')));
+    const wip = session.createObject(idOf(inProgressObjectName(product, 'basic')));
     wip.moveToSlot(ground.getSlot(itemsId()));
     return wip;
   };
@@ -85,7 +85,7 @@ object_defs:
   beforeEach(() => {
     codex = new WorldCodexYamlLoader().load('become.test', YAML).build();
     session = new WorldSession(codex);
-    ground = session.spawn(idOf('ground'));
+    ground = session.createObject(idOf('ground'));
   });
 
   it('個体も居場所も変わらず、型だけが変わる', () => {
@@ -130,7 +130,7 @@ object_defs:
 
   it('同じ名前のスロットの中身はそのまま残る', () => {
     const wip = wipOn('axe');
-    const material = session.spawn(idOf('stick'));
+    const material = session.createObject(idOf('stick'));
     material.moveToSlot(wip.getSlot(materialsId()));
 
     wip.becomeAlong(toBase);
@@ -140,7 +140,7 @@ object_defs:
 
   it('新しい型が持たないスロットの中身は親へこぼれる', () => {
     const wip = wipOn('torch');
-    const material = session.spawn(idOf('stick'));
+    const material = session.createObject(idOf('stick'));
     material.moveToSlot(wip.getSlot(materialsId()));
 
     wip.becomeAlong(toBase);
@@ -151,8 +151,8 @@ object_defs:
 
   it('引き継いだスロットの枠に入りきらない中身も、同じ規則で親へこぼれる', () => {
     const wip = wipOn('spear');
-    const kept = session.spawn(idOf('stick'));
-    const overflowing = session.spawn(idOf('stick'));
+    const kept = session.createObject(idOf('stick'));
+    const overflowing = session.createObject(idOf('stick'));
     kept.moveToSlot(wip.getSlot(materialsId()));
     overflowing.moveToSlot(wip.getSlot(materialsId()));
 
@@ -174,7 +174,7 @@ object_defs:
   });
 
   it('素の型は、軸を落とした座標では自分自身のまま', () => {
-    const stick = session.spawn(idOf('stick'));
+    const stick = session.createObject(idOf('stick'));
 
     stick.becomeAlong(toBase);
 
@@ -182,16 +182,16 @@ object_defs:
   });
 
   it('行き先の座標に型が居ない組み合わせは、候補にならない', () => {
-    const stick = session.spawn(idOf('stick'));
+    const stick = session.createObject(idOf('stick'));
     stick.moveToSlot(ground.getSlot(itemsId()));
-    const other = session.spawn(idOf('stick'));
+    const other = session.createObject(idOf('stick'));
     other.moveToSlot(ground.getSlot(itemsId()));
 
     expect(stick.combinationsWith(other, undefined)).toEqual([]);
   });
 
   it('型が変われば、同種のまとまりも判定し直される', () => {
-    const axe = session.spawn(idOf('axe'));
+    const axe = session.createObject(idOf('axe'));
     axe.moveToSlot(ground.getSlot(itemsId()));
     const wip = wipOn('axe');
     const items = ground.tryGetSlot(itemsId())!;

@@ -89,16 +89,16 @@ object_defs:
 
   /** 炎を上げている炉を据え、その火の中へ生肉を1切れ入れる。 */
   function placeCookingHearth(mini: MiniGame): { readonly hearth: WorldObject; readonly meat: WorldObject } {
-    const hearth = mini.spawn('hearth', mini.slot('fixtures', mini.land));
+    const hearth = mini.createObject('hearth', mini.slot('fixtures', mini.land));
     hearth.tryGetProperty(mini.codex.propertyNames.getId('heat'))?.setNumber(30);
-    const meat = mini.spawn('raw_meat', mini.slot('fire', hearth));
+    const meat = mini.createObject('raw_meat', mini.slot('fire', hearth));
     return { hearth, meat };
   }
 
   it('動物のカードは、アイテムではなく動物として枠の色が決まる', () => {
     // 動物はitemも兼ねるので、種別を決める順序が効いている（CardView.md 2節 枠の色は種別で変える）。
     const mini = setUp();
-    const monkey = mini.spawn('monkey', mini.slot('items', mini.land));
+    const monkey = mini.createObject('monkey', mini.slot('items', mini.land));
 
     expect(cardOf(mini, monkey).kind).toBe('animal');
   });
@@ -106,7 +106,7 @@ object_defs:
   it('警戒している動物のカードだけが、輪郭を明滅させる域を持つ', () => {
     // 安全域を外れている間だけ明滅する（CardView.md 3節 警戒している動物は輪郭を明滅させる）。
     const mini = setUp();
-    const monkey = mini.spawn('monkey', mini.slot('items', mini.land));
+    const monkey = mini.createObject('monkey', mini.slot('items', mini.land));
 
     expect(cardOf(mini, monkey).alert, '現れた時点で警戒している').toBe('caution');
 
@@ -117,14 +117,14 @@ object_defs:
 
   it('警戒を持たないカードは、明滅させる域を持たない', () => {
     const mini = setUp();
-    const stone = mini.spawn('stone', mini.slot('items', mini.land));
+    const stone = mini.createObject('stone', mini.slot('items', mini.land));
 
     expect(cardOf(mini, stone).alert).toBeUndefined();
   });
 
   it('動物のカードは、今の意識をゲージとして持つ', () => {
     const mini = setUp();
-    const monkey = mini.spawn('monkey', mini.slot('items', mini.land));
+    const monkey = mini.createObject('monkey', mini.slot('items', mini.land));
     const gauge = () => cardOf(mini, monkey).gauges?.find((g) => g.key === 'consciousness');
 
     expect(gauge(), '起きていれば意識は満タン').toEqual({
@@ -143,11 +143,11 @@ object_defs:
   it('治療具を当てた怪我のカードだけが、手当て済みの印を持つ', () => {
     // 手当ての有無で絵は差し替えない（CardView.md 9節 カードの印）。
     const mini = setUp();
-    const bruise = mini.spawn('bruise', mini.slot('injuries'));
+    const bruise = mini.createObject('bruise', mini.slot('injuries'));
 
     expect(cardOf(mini, bruise).mark).toBeUndefined();
 
-    mini.spawn('bandage', mini.slot('treatment', bruise));
+    mini.createObject('bandage', mini.slot('treatment', bruise));
 
     expect(cardOf(mini, bruise).mark).toBe('🩹');
   });
@@ -156,8 +156,8 @@ object_defs:
     // 当ててあってもまだ流れているなら、伝えるべきは「当ててある」ではなく「止まっていない」
     // （VitalsSystem.md 9節）。
     const mini = setUp();
-    const cut = mini.spawn('cut', mini.slot('injuries'));
-    mini.spawn('bandage', mini.slot('treatment', cut));
+    const cut = mini.createObject('cut', mini.slot('injuries'));
+    mini.createObject('bandage', mini.slot('treatment', cut));
 
     expect(cardOf(mini, cut).mark).toBe('🩸');
 
@@ -174,7 +174,7 @@ object_defs:
 
     expect(characterMark(), '無傷なら何も出ない').toBeUndefined();
 
-    const cut = mini.spawn('cut', mini.slot('injuries'));
+    const cut = mini.createObject('cut', mini.slot('injuries'));
 
     expect(characterMark()).toBe('🩸');
 
@@ -186,8 +186,8 @@ object_defs:
   it('手当て済みの印は、負っている本人までは上がらない', () => {
     // 上げるのは出血だけ。手当て済みは「もう手を打った」を言うもので、急がせる必要がない。
     const mini = setUp();
-    const bruise = mini.spawn('bruise', mini.slot('injuries'));
-    mini.spawn('bandage', mini.slot('treatment', bruise));
+    const bruise = mini.createObject('bruise', mini.slot('injuries'));
+    mini.createObject('bandage', mini.slot('treatment', bruise));
 
     expect(fromGameSession(mini.game, mini.codex, locale).characterCard.mark).toBeUndefined();
   });
@@ -195,11 +195,11 @@ object_defs:
   it('血が流れている傷を負った動物は、そのカードに出血の印を出す', () => {
     // 傷は動物のinjuriesスロットの中なので、レーンに並ぶ1枚を見ているだけでは分からない。
     const mini = setUp();
-    const monkey = mini.spawn('monkey', mini.slot('items', mini.land));
+    const monkey = mini.createObject('monkey', mini.slot('items', mini.land));
 
     expect(cardOf(mini, monkey).mark, '無傷なら何も出ない').toBeUndefined();
 
-    mini.spawn('cut', mini.slot('injuries', monkey));
+    mini.createObject('cut', mini.slot('injuries', monkey));
 
     expect(cardOf(mini, monkey).mark).toBe('🩸');
   });
@@ -249,7 +249,7 @@ object_defs:
     // 火にかけた物は炉を開くまで見えないので、開かずに焦げへ気付けるようにする（CardView.md 15節）。
     const mini = setUp();
     const { hearth } = placeCookingHearth(mini);
-    mini.spawn('small_fish', mini.slot('fire', hearth));
+    mini.createObject('small_fish', mini.slot('fire', hearth));
 
     // 小魚は6 ÷ 3 = 2tickで30分。生肉の120分より先に変わるので、こちらが上がる。
     expect(cardOf(mini, hearth).cooking?.minutes).toBe(30);

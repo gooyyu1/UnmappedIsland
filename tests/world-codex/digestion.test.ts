@@ -46,7 +46,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   });
 
   function spawn(objectName: string): WorldObject {
-    return session.spawn(codex.objectNames.getId(objectName));
+    return session.createObject(codex.objectNames.getId(objectName));
   }
 
   function valueOf(propertyId: number): number {

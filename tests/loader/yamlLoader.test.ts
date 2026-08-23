@@ -53,7 +53,7 @@ object_defs:
     expect(prop.isInStage(1.74, 'deep')).toBe(false);
 
     const session = new WorldSession(codex);
-    const pond = session.spawn(codex.objectNames.getId('pond'));
+    const pond = session.createObject(codex.objectNames.getId('pond'));
     expect(pond.tryGetProperty(moistureId)?.number ?? 0, '初期値も小数').toBe(0.5);
 
     pond.tick();

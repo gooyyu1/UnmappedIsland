@@ -49,7 +49,7 @@ object_defs:
   }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
-    const spawned = session.spawn(codex.objectNames.getId(objectName));
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
     expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
@@ -57,7 +57,7 @@ object_defs:
   beforeEach(() => {
     codex = new WorldCodexYamlLoader().load('core.yaml', YAML).build();
     session = new WorldSession(codex);
-    clearing = session.spawn(codex.objectNames.getId('clearing'));
+    clearing = session.createObject(codex.objectNames.getId('clearing'));
     player = spawnInto('character', clearing, 'characters');
   });
 

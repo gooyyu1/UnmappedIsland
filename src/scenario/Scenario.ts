@@ -232,7 +232,7 @@ function place(game: NewGameSession, codex: WorldCodex, contents: SlotContents, 
   const owner = ownedByCharacter ? game.player.instance : game.startLocation.instance;
 
   for (const name of contents) {
-    const spawned = game.session.spawn(objectIdOf(codex, name));
+    const spawned = game.session.createObject(objectIdOf(codex, name));
     const failure = spawned.moveToSlot(owner.getSlot(slotId));
     if (failure !== undefined) {
       throw new YamlLoadError(`シナリオ: '${name}' を '${slot}' へ置けません: ${failure}`);
@@ -261,7 +261,7 @@ function placeInside(
       );
 
     for (const name of contents) {
-      const spawned = game.session.spawn(objectIdOf(codex, name));
+      const spawned = game.session.createObject(objectIdOf(codex, name));
       if (!spawned.moveIntoFirstAcceptingSlot(owner))
         throw new YamlLoadError(`シナリオ: '${name}' を '${ownerName}' の中へ入れられません。`);
     }

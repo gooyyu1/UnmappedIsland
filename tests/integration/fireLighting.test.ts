@@ -36,7 +36,7 @@ describe('火起こし（世界→映し 通し）', () => {
     const player = game.player.instance;
     const land = game.player.location!.instance;
     const put = (name: string, slot: Slot): WorldObject => {
-      const object = game.session.spawn(codex.objectNames.getId(name));
+      const object = game.session.createObject(codex.objectNames.getId(name));
       expect(object.moveToSlot(slot)).toBeUndefined();
       return object;
     };

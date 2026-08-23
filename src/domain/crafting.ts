@@ -89,7 +89,7 @@ export function spawnInProgressObject(
   location: WorldObject,
   inProgressDefGlobalId: number,
 ): WorldObject {
-  const spawned = session.spawn(inProgressDefGlobalId);
+  const spawned = session.createObject(inProgressDefGlobalId);
   spawned.spillTo(location);
   return spawned;
 }

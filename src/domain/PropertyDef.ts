@@ -365,7 +365,7 @@ export class PropertyDef {
     return this.rangeEventEffects();
   }
 
-  /** rangeEventsの、適用できる形。適用するのはこのクラス自身だけ（checkRangeEvents）。 */
+  /** rangeEventsの、適用できる形。適用するのはこのクラス自身だけ（applyRangeEventsAt）。 */
   private rangeEventEffects(): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
     const events: (readonly [RangeEventLabel, ActiveEffect])[] = [];
     if (this.onMax !== undefined) events.push(['on_max', this.onMax]);
@@ -376,7 +376,7 @@ export class PropertyDef {
   /**
    * 著者が`on_max`/`on_min`を書いているか（6.3節）。既定のクランプしか無いプロパティはfalse。
    *
-   * **端のイベントは実体値で発火する**（checkRangeEvents）ので、実効値が実体値と食い違いうる
+   * **端のイベントは実体値で発火する**（applyRangeEventsAt）ので、実効値が実体値と食い違いうる
    * プロパティがこれを持つと、見えている値と起きることがずれる。世界全体でその組み合わせを
    * 弾くのはWorldCodex（両方を持つのはそちらだけ）。
    */
@@ -415,7 +415,7 @@ export class PropertyDef {
   /**
    * その値が端へ達したことで起こるrange系イベント（6.3節）の名前。達していなければ空。
    *
-   * **「どちらの端に達したか」を答えるのはここだけ。** 実行時に適用する側（checkRangeEvents）と、
+   * **「どちらの端に達したか」を答えるのはここだけ。** 実行時に適用する側（applyRangeEventsAt）と、
    * 実行時のオブジェクトを持たずに読む側（analysis/rangeEvents）が、同じ判定をここから引く。
    */
   rangeEventLabelsAt(value: number): readonly RangeEventLabel[] {
@@ -437,7 +437,7 @@ export class PropertyDef {
    * 適用はowner側のadd/setNumberを通って本メソッドを再帰的に呼ぶため、1回の呼び出しの中で
    * 複数span分の溢れや繰り上げ先自身のさらなる溢れ（分→時→日の連鎖）が解決される。
    */
-  checkRangeEvents(number: number, owner: WorldObject): void {
+  applyRangeEventsAt(number: number, owner: WorldObject): void {
     for (const [, effect] of this.rangeEventsAt(number))
       owner.applyActiveEffect(effect, undefined, undefined);
   }

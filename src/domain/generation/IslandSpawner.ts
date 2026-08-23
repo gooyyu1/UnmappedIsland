@@ -40,7 +40,7 @@ export function populate(session: WorldSession, map: IslandMap): void {
   // 1. 土地の実体化。
   const locations = new Array<WorldObject>(map.sites.length);
   for (const site of map.sites) {
-    const location = session.spawn(site.type!.objectDefGlobalId);
+    const location = session.createObject(site.type!.objectDefGlobalId);
     // 亜種の個体差は、探索の抽選がweightとして読むプロパティ（TerrainGeneration.md 3.6節）。
     if (site.variant !== undefined)
       for (const [propertyGlobalId, value] of site.variant.props)
@@ -73,7 +73,7 @@ export function populate(session: WorldSession, map: IslandMap): void {
           : FIRST_PATH_PROGRESS +
             Math.trunc(((lastPathProgress - FIRST_PATH_PROGRESS) * i) / (touching.length - 1));
 
-      const path = session.spawn(pathDefId);
+      const path = session.createObject(pathDefId);
       path.getProperty(travelMinutesId).setNumberWithoutEvents(edge.travelMinutes);
       path.getProperty(requiredProgressId).setNumberWithoutEvents(requiredProgress);
       path.getProperty(destinationIdId).setNumberWithoutEvents(locations[other].instanceId);

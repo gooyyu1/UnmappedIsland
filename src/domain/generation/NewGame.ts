@@ -102,7 +102,7 @@ export function start(codex: WorldCodex, characterDefName: string, seed: number,
 
   spawnSingletons(session, worldInstance);
 
-  const character = session.spawn(codex.objectNames.getId(characterDefName));
+  const character = session.createObject(codex.objectNames.getId(characterDefName));
 
   const map = generate(codex.generation, 'island', seed);
   populate(session, map);
@@ -124,7 +124,7 @@ function spawnSingletons(session: WorldSession, worldInstance: WorldObject): voi
   for (const globalId of session.codex.singletonGlobalIds()) {
     if (globalId === worldInstance.def.globalId) continue;
 
-    const instance = session.spawn(globalId);
+    const instance = session.createObject(globalId);
     if (!instance.moveIntoFirstAcceptingSlot(worldInstance)) instance.destroy();
   }
 }

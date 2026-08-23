@@ -57,18 +57,18 @@ object_defs:
     const roadsId = codex.slotNames.getId('roads');
     const stuffId = codex.slotNames.getId('stuff');
 
-    const world = session.spawn(codex.objectNames.getId('world'));
+    const world = session.createObject(codex.objectNames.getId('world'));
     const lands = [0, 1].map(() => {
-      const land = session.spawn(codex.objectNames.getId('land'));
+      const land = session.createObject(codex.objectNames.getId('land'));
       expect(land.moveToSlot(world.getSlot(placesId))).toBeUndefined();
       return land;
     });
     const [here, there] = lands as [WorldObject, WorldObject];
 
-    const road = session.spawn(codex.objectNames.getId('road'));
+    const road = session.createObject(codex.objectNames.getId('road'));
     expect(road.moveToSlot(here.getSlot(roadsId)), '生まれた直後の配置は通る').toBeUndefined();
 
-    const stone = session.spawn(codex.objectNames.getId('stone'));
+    const stone = session.createObject(codex.objectNames.getId('stone'));
     expect(stone.moveToSlot(road.getSlot(stuffId))).toBeUndefined();
 
     return { codex, world, here, there, road, stone };

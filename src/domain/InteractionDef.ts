@@ -63,12 +63,12 @@ export class InteractionDef {
   }
 
   /**
-   * 今この文脈で、効果の行き先が無いために成立しない操作か（ActiveEffect.unresolvable、9.9節）。
+   * 今この文脈で、効果の行き先が無いために成立しない操作か（ActiveEffect.blocksOperation、9.9節）。
    * 満たしていない要件（conditions）と違って理由を持たない——成立していないのは条件ではなく、
    * 行き先の型そのものだから。
    */
-  unresolvable(context: ReferenceContext): boolean {
-    return this.effect.unresolvable(context);
+  blocksOperation(context: ReferenceContext): boolean {
+    return this.effect.blocksOperation(context);
   }
 
   /**

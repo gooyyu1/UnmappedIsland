@@ -64,8 +64,8 @@ describe('固形物のかさと入れ物の容量', () => {
     // 「別の籠なら入る」を止めているのはかさと容量で、そこに専用の禁止規則は要らない。
     const basket = codex.objects.get(codex.objectNames.getId('woven_basket'));
     const session = new WorldSession(codex);
-    const outer = session.spawn(basket.globalId);
-    const inner = session.spawn(basket.globalId);
+    const outer = session.createObject(basket.globalId);
+    const inner = session.createObject(basket.globalId);
 
     expect(inner.moveToSlot(outer.getSlot(codex.slotNames.getId('contents')))).toContain('容量');
   });
@@ -73,10 +73,10 @@ describe('固形物のかさと入れ物の容量', () => {
   it('編み籠には熟したヤシの実が5個入り、6個は入らない', () => {
     // 20Lの籠に3.8Lの実。大きい物は実占有体積で見るので、隙間ぶんの割り増しは乗らない。
     const session = new WorldSession(codex);
-    const basket = session.spawn(codex.objectNames.getId('woven_basket'));
+    const basket = session.createObject(codex.objectNames.getId('woven_basket'));
     const contentsId = codex.slotNames.getId('contents');
     const put = (): string | undefined =>
-      session.spawn(codex.objectNames.getId('coconut')).moveToSlot(basket.getSlot(contentsId));
+      session.createObject(codex.objectNames.getId('coconut')).moveToSlot(basket.getSlot(contentsId));
 
     for (let i = 0; i < 5; i++) expect(put(), `${i + 1}個目`).toBeUndefined();
 
@@ -99,10 +99,10 @@ describe('固形物のかさと入れ物の容量', () => {
       'coconut_bowl',
     ];
     const session = new WorldSession(codex);
-    const basket = session.spawn(codex.objectNames.getId('woven_basket'));
+    const basket = session.createObject(codex.objectNames.getId('woven_basket'));
     const contentsId = codex.slotNames.getId('contents');
     const put = (name: string): string | undefined =>
-      session.spawn(codex.objectNames.getId(name)).moveToSlot(basket.getSlot(contentsId));
+      session.createObject(codex.objectNames.getId(name)).moveToSlot(basket.getSlot(contentsId));
 
     expect(kinds.length, '手持ちの6枠を上回る').toBeGreaterThan(6);
     for (const name of kinds) expect(put(name), name).toBeUndefined();
@@ -113,12 +113,12 @@ describe('固形物のかさと入れ物の容量', () => {
   it('同じ種類なら1枠で、入るだけ重ねられる', () => {
     // 枠が制限するのは種類の数。同種はスタックにまとまるので、止めるのはかさと重さだけ。
     const session = new WorldSession(codex);
-    const basket = session.spawn(codex.objectNames.getId('woven_basket'));
+    const basket = session.createObject(codex.objectNames.getId('woven_basket'));
     const contentsId = codex.slotNames.getId('contents');
 
     for (let i = 0; i < 20; i++)
       expect(
-        session.spawn(codex.objectNames.getId('stone')).moveToSlot(basket.getSlot(contentsId)),
+        session.createObject(codex.objectNames.getId('stone')).moveToSlot(basket.getSlot(contentsId)),
         `${i + 1}個目の石`,
       ).toBeUndefined();
 
@@ -130,8 +130,8 @@ describe('固形物のかさと入れ物の容量', () => {
   it('ヤシの葉は1枚も籠に入らない', () => {
     // 葉のかさ（22L）は籠の容量（20L）を超える。持ち歩くなら手に持つほかない。
     const session = new WorldSession(codex);
-    const basket = session.spawn(codex.objectNames.getId('woven_basket'));
-    const frond = session.spawn(codex.objectNames.getId('palm_frond'));
+    const basket = session.createObject(codex.objectNames.getId('woven_basket'));
+    const frond = session.createObject(codex.objectNames.getId('palm_frond'));
 
     expect(frond.moveToSlot(basket.getSlot(codex.slotNames.getId('contents')))).toContain('容量');
   });

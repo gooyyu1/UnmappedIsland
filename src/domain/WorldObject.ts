@@ -84,7 +84,7 @@ export class WorldObject {
     this.slots = def.enumerateSlotDefs().map((sd) => new Slot(sd, this));
 
     // 生成時はまだトポロジが無いため、Self関係のみ登録する。Parent/Child/Ancestorはmove_to_slot以降に登録される。
-    def.passives.registerRelation(this, 'self', true);
+    def.passives.setRelationRegistered(this, 'self', true);
   }
 
   // ---- プロパティを引く（6節） ----
@@ -419,10 +419,10 @@ export class WorldObject {
 
     this.session.recordChange(this, from, targetSlot);
     this.setParent(newParent, targetSlot);
-    this.registerEdgeWith(newParent, true);
+    this.setEdgeRegistered(newParent, true);
     // 祖先対象の登録は、新しい親チェーンが確定した後に行う（detachFromParentでの解除と対、
     // registerAncestorTargetedRecursively参照）。
-    this.registerAncestorTargetedRecursively(true);
+    this.setAncestorTargetsRegistered(true);
 
     return undefined;
   }
@@ -432,12 +432,12 @@ export class WorldObject {
     const oldSlot = this._parentSlot;
     if (oldParent === undefined || oldSlot === undefined) return;
 
-    // 祖先対象の登録解除は、トポロジが変わる前（旧祖先がまだ辿れるうち）に行う（registerAncestorTargetedRecursively
+    // 祖先対象の登録解除は、トポロジが変わる前（旧祖先がまだ辿れるうち）に行う（setAncestorTargetsRegistered
     // 参照。再登録はattachToSlot側）。
-    this.registerAncestorTargetedRecursively(false);
+    this.setAncestorTargetsRegistered(false);
 
     oldSlot.removeWithoutParentLink(this);
-    this.registerEdgeWith(oldParent, false);
+    this.setEdgeRegistered(oldParent, false);
     this.setParent(undefined, undefined);
   }
 
@@ -451,9 +451,9 @@ export class WorldObject {
    * falseで解除）。親側だけ子thisを明示的に渡すのは、親からどの子かを一意に辿れないため。target=selfは
    * コンストラクタで登録済みのため、ここでは扱わない。
    */
-  private registerEdgeWith(parent: WorldObject, register: boolean): void {
-    this.def.passives.registerRelation(this, 'parent', register);
-    parent.def.passives.registerChild(parent, this, register);
+  private setEdgeRegistered(parent: WorldObject, register: boolean): void {
+    this.def.passives.setRelationRegistered(this, 'parent', register);
+    parent.def.passives.setChildRegistered(parent, this, register);
   }
 
   /**
@@ -461,11 +461,11 @@ export class WorldObject {
    * 全員の祖先チェーンも変わるため、再帰で全員分を扱う。トポロジ変化前に解除・変化後に登録する順序を守ることで、
    * いずれの時点でも祖先はownerから辿れ、前回の登録先を憶える必要がない。
    */
-  private registerAncestorTargetedRecursively(register: boolean): void {
-    this.def.passives.registerRelation(this, 'ancestor', register);
+  private setAncestorTargetsRegistered(register: boolean): void {
+    this.def.passives.setRelationRegistered(this, 'ancestor', register);
 
     for (const slot of this.slots) {
-      for (const child of [...slot.contents]) child.registerAncestorTargetedRecursively(register);
+      for (const child of [...slot.contents]) child.setAncestorTargetsRegistered(register);
     }
   }
 
@@ -479,7 +479,7 @@ export class WorldObject {
    * 型が合うかではなく今入るかで選ぶので、先の枠が埋まっていれば次の枠が答えになる。**今itemが居る枠は
    * 答えない**——同じ枠へ入れ直すのは入れる操作ではない。
    */
-  putInSlotFor(item: WorldObject): Slot | undefined {
+  slotForPutIn(item: WorldObject): Slot | undefined {
     const from = item.parent === this ? item.parentSlot : undefined;
     return this.def
       .placementSlotDefs('manual')
@@ -492,7 +492,7 @@ export class WorldObject {
    * スロットへ自分自身を移動する（著者がスロット名を知らなくてよい規約。spawnのintoとmoveが共用、
    * 9.4節）。
    *
-   * **札を重ねたドロップ（putInSlotFor）と同じ規約の、別の入口。** 走査する枠の並びは1箇所が
+   * **札を重ねたドロップ（slotForPutIn）と同じ規約の、別の入口。** 走査する枠の並びは1箇所が
    * 答える（placementSlotDefs）。
    */
   moveIntoFirstAcceptingSlot(target: WorldObject): boolean {
@@ -599,10 +599,10 @@ export class WorldObject {
 
     const parent = this._parent;
 
-    this.registerAncestorTargetedRecursively(false);
-    this._def.passives.registerRelation(this, 'self', false);
-    if (parent !== undefined) this.registerEdgeWith(parent, false);
-    for (const { child } of rehomed) child.registerEdgeWith(this, false);
+    this.setAncestorTargetsRegistered(false);
+    this._def.passives.setRelationRegistered(this, 'self', false);
+    if (parent !== undefined) this.setEdgeRegistered(parent, false);
+    for (const { child } of rehomed) child.setEdgeRegistered(this, false);
 
     const carriedValues = new Map<number, number>();
     for (const property of this.properties) carriedValues.set(property.def.globalId, property.number);
@@ -619,10 +619,10 @@ export class WorldObject {
       if (carried !== undefined) property.setNumberWithoutEvents(carried);
     }
 
-    this._def.passives.registerRelation(this, 'self', true);
-    if (parent !== undefined) this.registerEdgeWith(parent, true);
-    for (const { child } of rehomed) child.registerEdgeWith(this, true);
-    this.registerAncestorTargetedRecursively(true);
+    this._def.passives.setRelationRegistered(this, 'self', true);
+    if (parent !== undefined) this.setEdgeRegistered(parent, true);
+    for (const { child } of rehomed) child.setEdgeRegistered(this, true);
+    this.setAncestorTargetsRegistered(true);
 
     // 型が変われば同種の判定も変わる（7.6節）ので、所属スタックを判定し直させる。
     this._parentSlot?.restack(this);
@@ -662,7 +662,7 @@ export class WorldObject {
 
   /**
    * 持続効果の対象（8.1節）を、影響の一覧のために解決する。**childは今入っている子を全部**返す
-   * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（registerChild）。
+   * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（setChildRegistered）。
    * actor/draggedはpassivesに現れない（parsePassiveTransfers）ため空になる。
    */
   resolveInfluenceTargets(path: PropertyPath): readonly WorldObject[] {
@@ -711,7 +711,7 @@ export class WorldObject {
           trigger.acceptsDragged(dragged.def) &&
           trigger.interaction.unmetRequirement(context) === undefined &&
           trigger.acceptedCount(context, [dragged]) >= 1 &&
-          !trigger.interaction.unresolvable(context),
+          !trigger.interaction.blocksOperation(context),
       )
       .map((trigger) => new Combination(trigger, this, dragged, actor));
   }
@@ -811,7 +811,7 @@ export class WorldObject {
     context: ReferenceContext,
     effectSite: EffectSite | undefined,
   ): void {
-    const spawned = this.session.spawn(objectGlobalId);
+    const spawned = this.session.createObject(objectGlobalId);
     this.place(spawned, into, context, into === 'same_slot' ? effectSite : undefined);
   }
 

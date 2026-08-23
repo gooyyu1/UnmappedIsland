@@ -58,7 +58,7 @@ describe('動物の1手', () => {
   }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
-    const spawned = session.spawn(codex.objectNames.getId(objectName));
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
     expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
@@ -337,7 +337,7 @@ describe('動物の1手', () => {
    * 意識まで落とさないため——気を失った動物は警戒も消えるので、逃げるかどうかの話にならない。
    */
   function wound(animal: WorldObject): void {
-    const injury = session.spawn(codex.objectNames.getId('laceration'));
+    const injury = session.createObject(codex.objectNames.getId('laceration'));
     expect(injury.moveToSlot(animal.getSlot(codex.slotNames.getId('injuries')))).toBeUndefined();
   }
 });

@@ -29,13 +29,13 @@ object_defs:
   /** 籠を作りかけの状態で足元に置いた世界。 */
   function startWeaving(): { readonly mini: MiniGame; readonly wip: WorldObject } {
     const mini = miniGame(WORLD);
-    const wip = mini.spawn(inProgressObjectName('basket', 'woven'), mini.slot('items', mini.land));
+    const wip = mini.createObject(inProgressObjectName('basket', 'woven'), mini.slot('items', mini.land));
     return { mini, wip };
   }
 
   /** 葉をcount枚、手持ちへ入れる。 */
   function leavesInHand(mini: MiniGame, count: number): void {
-    for (let i = 0; i < count; i += 1) mini.spawn('leaf', mini.slot('hand'));
+    for (let i = 0; i < count; i += 1) mini.createObject('leaf', mini.slot('hand'));
   }
 
   const materialsIn = (mini: MiniGame, wip: WorldObject): readonly WorldObject[] =>
@@ -45,7 +45,7 @@ object_defs:
 
   it('製作中でない物は、操作も材料の枠も持たない', () => {
     const mini = miniGame(WORLD);
-    const leaf = mini.spawn('leaf');
+    const leaf = mini.createObject('leaf');
 
     expect(actionsOn(mini, leaf)).toEqual([]);
     expect(craftingMaterials(leaf, mini.codex)).toBeUndefined();
@@ -136,7 +136,7 @@ object_defs:
           - requires: [{object: leaf, count: 3, consume: true}]
             duration: 60
 `);
-    const wip = mini.spawn(inProgressObjectName('hut', 'built'));
+    const wip = mini.createObject(inProgressObjectName('hut', 'built'));
 
     const materials = craftingMaterials(wip, mini.codex);
 

@@ -98,7 +98,7 @@ export class ReferenceContext {
 
   /**
    * rootが指すオブジェクト。解決先を持たないrootはundefined——childは相手が1つに定まらず
-   * （PassiveEffect.registerChild）、ancestorは探すプロパティが要る（ownerOfProperty）。
+   * （PassiveEffect.setChildRegistered）、ancestorは探すプロパティが要る（ownerOfProperty）。
    */
   objectAt(root: ReferenceRoot): WorldObject | undefined {
     switch (root) {
@@ -152,13 +152,13 @@ export class PropertyPath {
   }
 
   /** この参照が指すプロパティ値。解決先がそのプロパティを持たなければundefined。 */
-  value(context: ReferenceContext): PropertyValue | undefined {
+  propertyValue(context: ReferenceContext): PropertyValue | undefined {
     return this.owner(context)?.tryGetProperty(this.propertyGlobalId);
   }
 
   /** この参照が指すプロパティの実効値。解決できなければundefined（0とは区別する）。 */
-  number(context: ReferenceContext): number | undefined {
-    return this.value(context)?.getEffectiveValue();
+  effectiveNumber(context: ReferenceContext): number | undefined {
+    return this.propertyValue(context)?.getEffectiveValue();
   }
 }
 
@@ -221,7 +221,7 @@ export class ReferenceScope {
   static readonly recipeUnlock = new ReferenceScope(false, true, false, false, true, false);
 
   /** プロパティ名を伴わず、オブジェクトそのものを指す場所（destroy・signal・move・in_slot判定）。 */
-  get objectOnly(): ReferenceScope {
+  get withoutPropertyName(): ReferenceScope {
     return new ReferenceScope(
       this.hasSelf,
       this.hasActor,
@@ -233,7 +233,7 @@ export class ReferenceScope {
   }
 
   /** amongが選んだ相手を指せる場所（10.3節）。amongを書いた候補の重みと効果だけがこれになる。 */
-  get picking(): ReferenceScope {
+  get withPicked(): ReferenceScope {
     return new ReferenceScope(
       this.hasSelf,
       this.hasActor,
@@ -245,7 +245,7 @@ export class ReferenceScope {
   }
 
   /** 相手が1つに定まらなくてよい場所（passivesの対象。付いている子ごとに登録を配る、8.1節）。 */
-  get broadcasting(): ReferenceScope {
+  get withBroadcast(): ReferenceScope {
     return new ReferenceScope(
       this.hasSelf,
       this.hasActor,

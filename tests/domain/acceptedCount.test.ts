@@ -55,8 +55,10 @@ object_defs:
   /** ownerNameの入れ物と、まだどこにも入っていないitemNameのcount個。 */
   function open(ownerName: string, itemName: string, count: number): [WorldObject, WorldObject[]] {
     const session = new WorldSession(codex);
-    const owner = session.spawn(codex.objectNames.getId(ownerName));
-    const items = Array.from({ length: count }, () => session.spawn(codex.objectNames.getId(itemName)));
+    const owner = session.createObject(codex.objectNames.getId(ownerName));
+    const items = Array.from({ length: count }, () =>
+      session.createObject(codex.objectNames.getId(itemName)),
+    );
     return [owner, items];
   }
 

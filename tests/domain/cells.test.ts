@@ -33,10 +33,11 @@ object_defs:
 
     const setUp = (): Bench => {
       const session = new WorldSession(codex);
-      const bench = session.spawn(codex.objectNames.getId('chair_in_progress'));
+      const bench = session.createObject(codex.objectNames.getId('chair_in_progress'));
       return {
         bench,
-        put: (name) => session.spawn(codex.objectNames.getId(name)).moveToSlot(bench.getSlot(materialsId)),
+        put: (name) =>
+          session.createObject(codex.objectNames.getId(name)).moveToSlot(bench.getSlot(materialsId)),
       };
     };
 
@@ -86,9 +87,9 @@ object_defs:
 
     const fill = (name: string, count: number): (string | undefined)[] => {
       const session = new WorldSession(codex);
-      const shelf = session.spawn(codex.objectNames.getId('shelf'));
+      const shelf = session.createObject(codex.objectNames.getId('shelf'));
       return Array.from({ length: count }, () =>
-        session.spawn(codex.objectNames.getId(name)).moveToSlot(shelf.getSlot(thingsId)),
+        session.createObject(codex.objectNames.getId(name)).moveToSlot(shelf.getSlot(thingsId)),
       );
     };
 

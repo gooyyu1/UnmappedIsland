@@ -118,7 +118,7 @@ object_defs:
     const codex = load(yaml);
     const session = new WorldSession(codex);
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
-    const stone = session.spawn(codex.objectNames.getId('stone'));
+    const stone = session.createObject(codex.objectNames.getId('stone'));
     stone.moveToSlot(instance.getSlot(codex.slotNames.getId('hand')));
 
     const actor = new PlayerCharacter(instance, codex);
@@ -153,8 +153,8 @@ object_defs:
 `;
     const codex = load(yaml);
     const session = new WorldSession(codex);
-    const clearing = session.spawn(codex.objectNames.getId('clearing'));
-    const instance = session.spawn(codex.objectNames.getId('character'));
+    const clearing = session.createObject(codex.objectNames.getId('clearing'));
+    const instance = session.createObject(codex.objectNames.getId('character'));
     const actor = new PlayerCharacter(instance, codex);
 
     expect(actor.location).toBeUndefined();
@@ -186,8 +186,8 @@ object_defs:
 `;
     const codex = load(yaml);
     const session = new WorldSession(codex);
-    const clearing = session.spawn(codex.objectNames.getId('clearing'));
-    const instance = session.spawn(codex.objectNames.getId('character'));
+    const clearing = session.createObject(codex.objectNames.getId('clearing'));
+    const instance = session.createObject(codex.objectNames.getId('character'));
     const actor = new PlayerCharacter(instance, codex);
 
     expect(actor.explore(), '土地に居なければ探索できない').toBe(false);

@@ -73,7 +73,7 @@ export class WorldSession {
   }
 
   /** 指定したObjectDefの新しいWorldObjectを生成する（spawn、9.4節）。まだどこにも配置されていないため、呼び出し側がmoveToSlotで配置する。 */
-  spawn(objectDefGlobalId: number): WorldObject {
+  createObject(objectDefGlobalId: number): WorldObject {
     const def = this.codex.objects.get(objectDefGlobalId);
     return new WorldObject(this.nextInstanceId++, def, this);
   }

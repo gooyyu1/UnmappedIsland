@@ -92,7 +92,7 @@ object_defs:
     beast = placeOnGround('beast', 'beasts');
   }
 
-  const spawn = (name: string): WorldObject => session.spawn(codex.objectNames.getId(name));
+  const spawn = (name: string): WorldObject => session.createObject(codex.objectNames.getId(name));
 
   function placeOnGround(name: string, slotName = 'items'): WorldObject {
     const object = spawn(name);

@@ -83,7 +83,7 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
     const equipmentId = codex.slotNames.getId('equipment');
     for (let i = 0; i < 40; i++)
       game.session
-        .spawn(codex.objectNames.getId('stone'))
+        .createObject(codex.objectNames.getId('stone'))
         .moveToSlot(game.player.instance.getSlot(equipmentId));
     expect(
       game.player.instance.tryGetProperty(codex.propertyNames.getId('load'))?.getEffectiveValue() ?? 0,
@@ -106,7 +106,7 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
     const equipmentId = codex.slotNames.getId('equipment');
     for (let i = 0; i < 40; i++)
       game.session
-        .spawn(codex.objectNames.getId('stone'))
+        .createObject(codex.objectNames.getId('stone'))
         .moveToSlot(game.player.instance.getSlot(equipmentId));
 
     const load = fromGameSession(game, codex, locale)

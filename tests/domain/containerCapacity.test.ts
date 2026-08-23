@@ -42,7 +42,7 @@ object_defs:
 
   const spawn = (name: string): { session: WorldSession; object: WorldObject } => {
     const session = new WorldSession(codex);
-    return { session, object: session.spawn(codex.objectNames.getId(name)) };
+    return { session, object: session.createObject(codex.objectNames.getId(name)) };
   };
 
   /** 入れ物と、そこへ物を入れる手段。 */
@@ -51,7 +51,7 @@ object_defs:
     return {
       container,
       put: (name: string): string | undefined =>
-        session.spawn(codex.objectNames.getId(name)).moveToSlot(container.getSlot(contentsId)),
+        session.createObject(codex.objectNames.getId(name)).moveToSlot(container.getSlot(contentsId)),
     };
   };
 
@@ -115,6 +115,8 @@ object_defs:
       .build();
     const session = new WorldSession(withoutStorage);
 
-    expect(session.spawn(withoutStorage.objectNames.getId('canteen')).storageFillRatio()).toBeUndefined();
+    expect(
+      session.createObject(withoutStorage.objectNames.getId('canteen')).storageFillRatio(),
+    ).toBeUndefined();
   });
 });

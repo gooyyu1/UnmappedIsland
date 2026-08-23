@@ -90,7 +90,7 @@ describe('locations.yamlの土地・道定義', () => {
     const session = new WorldSession(codex, undefined, seededRng(1));
 
     for (const name of LAND_NAMES) {
-      const land = session.spawn(codex.objectNames.getId(name));
+      const land = session.createObject(codex.objectNames.getId(name));
       const max = land.def.tryGetPropertyDef(progressId)?.range?.max ?? 0;
 
       land.getProperty(progressId).setNumberWithoutEvents(max - 1);
@@ -116,7 +116,7 @@ describe('locations.yamlの土地・道定義', () => {
     // 発見物のspawn（into: self）が、item/fixtureタグのacceptsによってitems/fixturesスロットへ
     // 正しく振り分けられることを、探索を回し切って確認する。
     const session = new WorldSession(codex, undefined, seededRng(7));
-    const land = session.spawn(codex.objectNames.getId('grassland'));
+    const land = session.createObject(codex.objectNames.getId('grassland'));
     const view = new Location(land, codex);
 
     // 100%到達後も探索は続けられるため、回数を数えて探索率100%で止める。
@@ -139,7 +139,7 @@ describe('locations.yamlの土地・道定義', () => {
     // 見つかった候補が自分の重みを0にする（chalice_find、artifacts.yaml）。有限のアーティファクトが
     // 1つの土地から何個も出ないことを、重みを大きくして必ず当たる状態で確かめる。
     const session = new WorldSession(codex, undefined, seededRng(11));
-    const land = session.spawn(codex.objectNames.getId('cliff_coast'));
+    const land = session.createObject(codex.objectNames.getId('cliff_coast'));
     land.getProperty(codex.propertyNames.getId('chalice_find')).setNumberWithoutEvents(10000);
     const view = new Location(land, codex);
 
@@ -160,10 +160,10 @@ describe('locations.yamlの土地・道定義', () => {
     const worldView = new World(worldInstance, codex);
     session.adoptWorld(worldView);
 
-    const grassland = session.spawn(codex.objectNames.getId('grassland'));
-    const forest = session.spawn(codex.objectNames.getId('forest'));
-    const character = session.spawn(codex.objectNames.getId(SAMPLE_CHARACTER));
-    const pathToForest = session.spawn(codex.objectNames.getId('path'));
+    const grassland = session.createObject(codex.objectNames.getId('grassland'));
+    const forest = session.createObject(codex.objectNames.getId('forest'));
+    const character = session.createObject(codex.objectNames.getId(SAMPLE_CHARACTER));
+    const pathToForest = session.createObject(codex.objectNames.getId('path'));
 
     const locationsSlotId = codex.slotNames.getId('locations');
     expect(grassland.moveToSlot(worldInstance.getSlot(locationsSlotId))).toBeUndefined();

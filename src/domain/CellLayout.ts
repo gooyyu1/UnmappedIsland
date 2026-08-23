@@ -221,7 +221,7 @@ export class CellLayout {
     const from = this.indexOfStack(stack);
     if (from < 0) return false;
 
-    if (this.pointsCell(at)) return this.trySwapCells(from, at.index);
+    if (this.pointsCell(at)) return this.trySwapCellContents(from, at.index);
 
     const gapIndex = clampIndex(at.index, this._cells.length);
     if (gapIndex === from || gapIndex === from + 1) return true;
@@ -344,7 +344,7 @@ export class CellLayout {
   }
 
   /** 枠を指した並び替え。中身だけを入れ替える（枠の宣言はそれぞれの添字に留まる）。 */
-  private trySwapCells(from: number, cellIndex: number): boolean {
+  private trySwapCellContents(from: number, cellIndex: number): boolean {
     if (cellIndex < 0 || cellIndex >= this._cells.length) return false;
 
     const swapped = this._cells[cellIndex].stack;

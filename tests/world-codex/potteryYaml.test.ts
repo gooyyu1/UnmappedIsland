@@ -48,12 +48,12 @@ describe('pottery.yamlの土器の連鎖', () => {
     const worldView = new World(worldInstance, codex);
     session = new WorldSession(codex, worldView, fixedRng(roll));
 
-    land = session.spawn(codex.objectNames.getId('grassland'));
+    land = session.createObject(codex.objectNames.getId('grassland'));
     expect(land.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
   }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
-    const spawned = session.spawn(codex.objectNames.getId(objectName));
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
     expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
@@ -83,7 +83,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     for (const step of materials) {
       for (const name of step) {
         expect(
-          session.spawn(codex.objectNames.getId(name)).moveToSlot(wip.getSlot(materialsId)),
+          session.createObject(codex.objectNames.getId(name)).moveToSlot(wip.getSlot(materialsId)),
         ).toBeUndefined();
       }
       expect(advanceCrafting(wip, materialsId, recipe, codex, session), `${productName}の工程`).toBe(true);

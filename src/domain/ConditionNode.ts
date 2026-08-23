@@ -193,7 +193,7 @@ export class ConditionNode {
 
     let compare: number;
     if (this.valueRef !== undefined) {
-      const resolved = this.valueRef.number(context);
+      const resolved = this.valueRef.effectiveNumber(context);
       if (resolved === undefined) return false;
       compare = resolved;
     } else {

@@ -8,7 +8,7 @@ import type { WorldObject } from './WorldObject';
 /**
  * props の実行時の値。数値（32bit整数、6節）のみを扱う。PassiveEffectの影響先は「プロパティ」であるため、
  * 登録済み効果の一覧・tick毎の反映・実効値の算出はWorldObjectではなくこの値自身が持つ。値の変更後のrangeイベント
- * 判定（どのon_*をいつ発火するか）は自分のPropertyDef（checkRangeEvents）へ委譲し、呼び出し側は変更後に何を
+ * 判定（どのon_*をいつ発火するか）は自分のPropertyDef（applyRangeEventsAt）へ委譲し、呼び出し側は変更後に何を
  * 判定すべきかを知らなくてよい。
  *
  * 見せ方に関わる問い（ratio・alert・stage）は実効値（8.3節）で答える。画面に出るのは「今そう見えている値」
@@ -71,7 +71,7 @@ export class PropertyValue {
    * **どこから呼ばれても判定は走る**ので、呼び出し側は変更後に何をすべきかを覚えなくてよい。
    *
    * deltaが0の場合は何もしない。on_max等の既定の補正（rangeの境界へのset）が境界に着地した後の再setで、
-   * add→checkRangeEvents→applyActiveEffect→setNumber→addが無限に連鎖するのを防ぐガード。
+   * add→applyRangeEventsAt→applyActiveEffect→setNumber→addが無限に連鎖するのを防ぐガード。
    */
   add(delta: number): void {
     if (delta === 0) return;
@@ -80,7 +80,7 @@ export class PropertyValue {
 
     // 操作が直に動かした値はここだけを通る（毎tickの積分はtick()が直に足す、PropertyGain参照）。
     this.owner.session.recordGain(this.owner, this.def, delta);
-    this.def.checkRangeEvents(this._number, this.owner);
+    this.def.applyRangeEventsAt(this._number, this.owner);
   }
 
   /** 絶対値代入（set）。差分をaddへ委譲するため、range判定はadd側に一本化される。 */
@@ -151,7 +151,7 @@ export class PropertyValue {
   tick(): void {
     for (const c of this.accumulateEffects) this._number += c.activeAmount();
 
-    this.def.checkRangeEvents(this._number, this.owner);
+    this.def.applyRangeEventsAt(this._number, this.owner);
   }
 
   /**

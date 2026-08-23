@@ -69,7 +69,7 @@ export interface MiniGame {
   slot(name: string, host?: WorldObject): Slot;
 
   /** その型を1つ湧かせ、intoへ入れる（入らなければ投げる）。 */
-  spawn(defName: string, into?: Slot): WorldObject;
+  createObject(defName: string, into?: Slot): WorldObject;
 }
 
 /** miniGameの組み立て方を変えたいときだけ渡すもの。 */
@@ -94,11 +94,11 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
   const world = new World(worldInstance, codex);
   session.adoptWorld(world);
 
-  const landInstance = session.spawn(codex.objectNames.getId('land'));
+  const landInstance = session.createObject(codex.objectNames.getId('land'));
   if (landInstance.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations'))) !== undefined)
     throw new Error('landをworldへ置けませんでした。');
 
-  const playerInstance = session.spawn(codex.objectNames.getId(options.player ?? 'player'));
+  const playerInstance = session.createObject(codex.objectNames.getId(options.player ?? 'player'));
   if (playerInstance.moveToSlot(landInstance.getSlot(codex.slotNames.getId('characters'))) !== undefined)
     throw new Error('playerをlandへ置けませんでした。');
 
@@ -116,8 +116,8 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
     player: playerInstance,
     land: landInstance,
     slot: (name, host = playerInstance) => host.getSlot(codex.slotNames.getId(name)),
-    spawn: (defName, into) => {
-      const object = session.spawn(codex.objectNames.getId(defName));
+    createObject: (defName, into) => {
+      const object = session.createObject(codex.objectNames.getId(defName));
       if (into !== undefined && object.moveToSlot(into) !== undefined)
         throw new Error(`${defName}を置けませんでした。`);
       return object;

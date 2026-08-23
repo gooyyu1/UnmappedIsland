@@ -71,7 +71,7 @@ export class ObjectRef {
     if (owner === undefined) return undefined;
     if (this.objectGlobalId !== undefined) return owner.findRoot().findDescendantOfDef(this.objectGlobalId);
 
-    const instanceId = this.path!.number(context);
+    const instanceId = this.path!.effectiveNumber(context);
     if (instanceId === undefined) return undefined;
     return owner.findRoot().findDescendantByInstanceId(instanceId);
   }

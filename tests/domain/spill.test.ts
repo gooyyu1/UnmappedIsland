@@ -58,7 +58,7 @@ object_defs:
     loader.load('spill.yaml', yaml);
     const codex = loader.build();
     const session = new WorldSession(codex);
-    const spawn = (name: string): WorldObject => session.spawn(codex.objectNames.getId(name));
+    const spawn = (name: string): WorldObject => session.createObject(codex.objectNames.getId(name));
 
     const world = spawn('world');
     const land = spawn('land');
@@ -74,7 +74,7 @@ object_defs:
   };
 
   const spawnInto = (fixture: Fixture, name: string, host: WorldObject): WorldObject => {
-    const object = fixture.session.spawn(fixture.codex.objectNames.getId(name));
+    const object = fixture.session.createObject(fixture.codex.objectNames.getId(name));
     expect(
       object.moveToSlot(host.getSlot(fixture.codex.slotNames.getId('contents'))),
       `${name} を置けなかった`,

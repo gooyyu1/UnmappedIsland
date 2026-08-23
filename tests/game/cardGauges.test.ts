@@ -100,8 +100,8 @@ object_defs:
 
   it('gauge宣言を持つプロパティだけが、その残りの割合をバーにする', () => {
     const mini = setUp();
-    const chisel = mini.spawn('chisel', mini.slot('hand'));
-    const stone = mini.spawn('stone', mini.slot('hand'));
+    const chisel = mini.createObject('chisel', mini.slot('hand'));
+    const stone = mini.createObject('stone', mini.slot('hand'));
 
     expect(gaugeOf(mini, chisel, 'durability'), '作りたては満タン').toEqual({
       key: 'durability',
@@ -119,7 +119,7 @@ object_defs:
 
   it('炉は残っている薪の割合をバーとして持つ', () => {
     const mini = setUp();
-    const hearth = mini.spawn('hearth', mini.slot('fixtures', mini.land));
+    const hearth = mini.createObject('hearth', mini.slot('fixtures', mini.land));
     const fuelId = mini.codex.propertyNames.getId('fuel');
 
     expect(gaugeOf(mini, hearth, 'fuel')?.ratio, '薪が無ければ0').toBe(0);
@@ -131,7 +131,7 @@ object_defs:
 
   it('怪我のカードのバーは、耐久度とは両端が逆になる（減るほど良い）', () => {
     const mini = setUp();
-    const bruise = mini.spawn('bruise', mini.slot('injuries'));
+    const bruise = mini.createObject('bruise', mini.slot('injuries'));
 
     expect(gaugeOf(mini, bruise, 'severity')).toEqual({
       key: 'severity',
@@ -149,8 +149,8 @@ object_defs:
 
   it('上限を持つ入れ物のカードだけが、容量の詰まり具合を持つ', () => {
     const mini = setUp();
-    const crate = mini.spawn('crate', mini.slot('hand'));
-    const stone = mini.spawn('stone', mini.slot('hand'));
+    const crate = mini.createObject('crate', mini.slot('hand'));
+    const stone = mini.createObject('stone', mini.slot('hand'));
 
     expect(gaugeOf(mini, crate, '@capacity'), 'contentsが容量を宣言している').toEqual({
       key: '@capacity',
@@ -165,7 +165,7 @@ object_defs:
 
   it('液体容器のカードは、中身の割合と液体の色をバーにする', () => {
     const mini = setUp();
-    const bowl = mini.spawn('bowl', mini.slot('hand'));
+    const bowl = mini.createObject('bowl', mini.slot('hand'));
 
     expect(
       gaugeOf(mini, bowl, '@fill')?.ratio,
@@ -195,7 +195,7 @@ object_defs:
     // 上限は同じcapacityでも、量を持つのは中身の液体自身なので、映すのは中身の色のバー1本だけ。
     // 2本出ると同じ位置に重なる。
     const mini = setUp();
-    const bowl = mini.spawn('bowl', mini.slot('hand'));
+    const bowl = mini.createObject('bowl', mini.slot('hand'));
     fill(mini, bowl, 100);
 
     expect(gaugeOf(mini, bowl, '@capacity')).toBeUndefined();
@@ -204,7 +204,7 @@ object_defs:
 
   it('液体を入れられないカードは、中身のバーを持たない', () => {
     const mini = setUp();
-    const crate = mini.spawn('crate', mini.slot('hand'));
+    const crate = mini.createObject('crate', mini.slot('hand'));
 
     expect(gaugeOf(mini, crate, '@fill'), '量で満たされるものではないのでバーは出さない').toBeUndefined();
   });

@@ -31,7 +31,7 @@ export class BecomeEffect extends ActiveEffect {
    * （9.9節）。対象そのものが解決できない場合は、他の命令と同じく「その適用を無視する」だけなので
    * 操作は止めない。
    */
-  override unresolvable(context: ReferenceContext): boolean {
+  override blocksOperation(context: ReferenceContext): boolean {
     const target = this.subject.resolve(context);
     return target !== undefined && !target.canBecomeAlong(this.axisValues);
   }

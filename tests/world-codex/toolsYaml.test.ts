@@ -35,7 +35,7 @@ describe('tools.yamlの道具定義', () => {
 
   it('尖った石は、満タンから始まる耐久度を持つ', () => {
     const session = new WorldSession(codex);
-    const sharpStone = session.spawn(codex.objectNames.getId('sharp_stone'));
+    const sharpStone = session.createObject(codex.objectNames.getId('sharp_stone'));
 
     const durability = sharpStone.tryGetProperty(codex.propertyNames.getId('durability'));
     expect(durability?.ratio, '打ち出したばかりの刃は減っていない').toBe(1);
@@ -58,7 +58,7 @@ describe('tools.yamlの道具定義', () => {
 
     expect(weapons.length, '検査対象が無い（weaponタグが変わっていないか）').toBeGreaterThan(0);
     for (const name of weapons) {
-      const weapon = session.spawn(codex.objectNames.getId(name));
+      const weapon = session.createObject(codex.objectNames.getId(name));
       const total = shares.reduce((sum, id) => sum + (weapon.tryGetProperty(id)?.number ?? 0), 0);
       expect(total, `'${name}' の配分の合計`).toBe(100);
     }
@@ -68,8 +68,8 @@ describe('tools.yamlの道具定義', () => {
     // 上位の武器2つは、同じ配分の目盛りの上で性格が分かれる（tools.yaml）。石斧は解体にも使えるが、
     // 槍は穂先が柄に固定されているので刃物にならない。
     const session = new WorldSession(codex);
-    const axe = session.spawn(codex.objectNames.getId('stone_axe'));
-    const spear = session.spawn(codex.objectNames.getId('spear'));
+    const axe = session.createObject(codex.objectNames.getId('stone_axe'));
+    const spear = session.createObject(codex.objectNames.getId('spear'));
 
     expect(
       axe.tryGetProperty(codex.propertyNames.getId('heavy_blow'))?.number ?? 0,
@@ -95,12 +95,12 @@ describe('tools.yamlの道具定義', () => {
     const worldView = new World(worldInstance, codex);
     const session = new WorldSession(codex, worldView);
 
-    const beach = session.spawn(codex.objectNames.getId('sandy_beach'));
+    const beach = session.createObject(codex.objectNames.getId('sandy_beach'));
     expect(beach.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
 
     const itemsSlotId = codex.slotNames.getId('items');
-    const target = session.spawn(codex.objectNames.getId('stone'));
-    const hammer = session.spawn(codex.objectNames.getId('stone'));
+    const target = session.createObject(codex.objectNames.getId('stone'));
+    const hammer = session.createObject(codex.objectNames.getId('stone'));
     expect(target.moveToSlot(beach.getSlot(itemsSlotId))).toBeUndefined();
 
     const combination = target.combinationsWith(hammer, undefined).at(0);
@@ -145,7 +145,7 @@ describe('石斧を作る', () => {
     const worldView = new World(worldInstance, codex);
     const session = new WorldSession(codex, worldView);
 
-    const field = session.spawn(codex.objectNames.getId('rocky_field'));
+    const field = session.createObject(codex.objectNames.getId('rocky_field'));
     expect(field.moveToSlot(worldInstance.getSlot(codex.slotNames.getId('locations')))).toBeUndefined();
     return { session, field };
   }
@@ -166,7 +166,7 @@ describe('石斧を作る', () => {
     const wip = startAxe(session, field);
     const put = (name: string) =>
       expect(
-        session.spawn(codex.objectNames.getId(name)).moveToSlot(wip.getSlot(materialsId)),
+        session.createObject(codex.objectNames.getId(name)).moveToSlot(wip.getSlot(materialsId)),
       ).toBeUndefined();
 
     put('thick_branch');
@@ -188,7 +188,7 @@ describe('石斧を作る', () => {
     const { session, field } = rockyField();
     const wip = startAxe(session, field);
 
-    const stem = session.spawn(codex.objectNames.getId('banana_stem'));
+    const stem = session.createObject(codex.objectNames.getId('banana_stem'));
     expect(stem.moveToSlot(field.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
     expect(wip.def.tags, 'タグの上では刃物').toContain(codex.tagNames.getId('cutting_tool'));
 
@@ -201,7 +201,7 @@ describe('石斧を作る', () => {
       '名指しでも実行できない',
     ).toBe(false);
 
-    const sharpStone = session.spawn(codex.objectNames.getId('sharp_stone'));
+    const sharpStone = session.createObject(codex.objectNames.getId('sharp_stone'));
     expect(
       stem.combinationsWith(sharpStone, undefined).map((combination) => combination.name),
       '出来上がった刃物でなら成立する',

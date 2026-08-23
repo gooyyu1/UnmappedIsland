@@ -55,15 +55,15 @@ object_defs:
     session = new WorldSession(codex);
 
     ground = new WorldObject(0, codex.objects.get(idOf('ground')), session);
-    player = session.spawn(idOf('character'));
-    wip = session.spawn(idOf(inProgressObjectName('basket', 'woven')));
+    player = session.createObject(idOf('character'));
+    wip = session.createObject(idOf(inProgressObjectName('basket', 'woven')));
     wip.moveToSlot(ground.getSlot(slotOf('items')));
   });
 
   /** 素材をn個、指定の親のスロットへ置く。 */
   function place(objectName: string, count: number, parent: WorldObject, slotName: string): void {
     for (let i = 0; i < count; i += 1)
-      session.spawn(idOf(objectName)).moveToSlot(parent.getSlot(slotOf(slotName)));
+      session.createObject(idOf(objectName)).moveToSlot(parent.getSlot(slotOf(slotName)));
   }
 
   /** 製作中オブジェクトの材料スロットに入っている物の識別子。 */
@@ -114,7 +114,7 @@ object_defs:
 
   it('入れ物の中までは探さない', () => {
     // かごを手に持ち、その中に素材を入れておく。手持ちの直下ではないので対象外。
-    const basket = session.spawn(idOf('basket'));
+    const basket = session.createObject(idOf('basket'));
     basket.moveToSlot(player.getSlot(slotOf('hand')));
     place('woven_leaf', 3, ground, 'items');
 
@@ -159,7 +159,7 @@ object_defs:
     }
 
     beforeEach(() => {
-      torch = session.spawn(idOf(inProgressObjectName('torch', 'lit')));
+      torch = session.createObject(idOf(inProgressObjectName('torch', 'lit')));
       torch.moveToSlot(ground.getSlot(slotOf('items')));
     });
 

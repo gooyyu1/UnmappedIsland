@@ -559,7 +559,7 @@ export function fromGameSession(
     description: locale.object(instances[0].def.name).description,
     place,
     // 重ねたdraggedの行き先を決めるのはワールドの側（GameElementDefinition.md 7.8節）。
-    contentsFor: (dragged) => instances[0].putInSlotFor(dragged.objects[0]),
+    contentsFor: (dragged) => instances[0].slotForPutIn(dragged.objects[0]),
     visibleSlots: visiblePlacesOf(instances[0]),
   });
 

@@ -34,7 +34,7 @@ object_defs:
 
   /** 名前でアイテムを1つ生成する（まだどこにも属していない）。 */
   function item(name: string): WorldObject {
-    return session.spawn(codex.objectNames.getId(name));
+    return session.createObject(codex.objectNames.getId(name));
   }
 
   /** 手持ちの中身をobject_defの名前で並べる（空き枠は'_'）。 */
@@ -54,7 +54,7 @@ object_defs:
   beforeEach(() => {
     codex = new WorldCodexYamlLoader().load('core.yaml', YAML).build();
     session = new WorldSession(codex);
-    player = new PlayerCharacter(session.spawn(codex.objectNames.getId('character')), codex);
+    player = new PlayerCharacter(session.createObject(codex.objectNames.getId('character')), codex);
   });
 
   it('gapIndexを省略すると最初の空き枠へ入る', () => {

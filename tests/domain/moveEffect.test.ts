@@ -97,11 +97,11 @@ object_defs:
     const codex = new WorldCodexYamlLoader().load('island.yaml', islandYaml).build();
     const session = new WorldSession(codex);
 
-    const world = session.spawn(codex.objectNames.getId('world'));
-    const meadow = session.spawn(codex.objectNames.getId('meadow'));
-    const hilltop = session.spawn(codex.objectNames.getId('hilltop'));
-    const character = session.spawn(codex.objectNames.getId('character'));
-    const path = session.spawn(codex.objectNames.getId('path'));
+    const world = session.createObject(codex.objectNames.getId('world'));
+    const meadow = session.createObject(codex.objectNames.getId('meadow'));
+    const hilltop = session.createObject(codex.objectNames.getId('hilltop'));
+    const character = session.createObject(codex.objectNames.getId('character'));
+    const path = session.createObject(codex.objectNames.getId('path'));
 
     const locationsId = codex.slotNames.getId('locations');
     expect(meadow.moveToSlot(world.getSlot(locationsId))).toBeUndefined();
@@ -202,10 +202,10 @@ object_defs:
       .build();
 
     const session = new WorldSession(codex);
-    const world = session.spawn(codex.objectNames.getId('world'));
+    const world = session.createObject(codex.objectNames.getId('world'));
     const stuffSlot = codex.slotNames.getId('stuff');
-    const basket = session.spawn(codex.objectNames.getId('basket'));
-    const stone = session.spawn(codex.objectNames.getId('stone'));
+    const basket = session.createObject(codex.objectNames.getId('basket'));
+    const stone = session.createObject(codex.objectNames.getId('stone'));
     for (const item of [basket, stone]) {
       expect(item.moveToSlot(world.getSlot(stuffSlot))).toBeUndefined();
     }
@@ -249,10 +249,10 @@ object_defs:
       .build();
 
     const session = new WorldSession(codex);
-    const world = session.spawn(codex.objectNames.getId('world'));
+    const world = session.createObject(codex.objectNames.getId('world'));
     const stuffSlot = codex.slotNames.getId('stuff');
-    const outer = session.spawn(codex.objectNames.getId('basket'));
-    const inner = session.spawn(codex.objectNames.getId('basket'));
+    const outer = session.createObject(codex.objectNames.getId('basket'));
+    const inner = session.createObject(codex.objectNames.getId('basket'));
     expect(outer.moveToSlot(world.getSlot(stuffSlot))).toBeUndefined();
     expect(inner.moveToSlot(world.getSlot(stuffSlot))).toBeUndefined();
 
@@ -443,9 +443,9 @@ object_defs:
       .build();
     const session = new WorldSession(codex);
 
-    const jar = session.spawn(codex.objectNames.getId('jar'));
-    const receiver = session.spawn(codex.objectNames.getId('water'));
-    const poured = session.spawn(codex.objectNames.getId('water'));
+    const jar = session.createObject(codex.objectNames.getId('jar'));
+    const receiver = session.createObject(codex.objectNames.getId('water'));
+    const poured = session.createObject(codex.objectNames.getId('water'));
     const contentId = codex.slotNames.getId('content');
     expect(receiver.moveToSlot(jar.getSlot(contentId))).toBeUndefined();
 

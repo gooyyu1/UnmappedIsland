@@ -60,7 +60,7 @@ describe('traps.yamlのくくり罠', () => {
   }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
-    const spawned = session.spawn(codex.objectNames.getId(objectName));
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
     expect(spawned.moveToSlot(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
     return spawned;
   }
@@ -241,7 +241,7 @@ describe('traps.yamlのくくり罠', () => {
     // 使い道がまだ無いが、素材として溜まる（docs/world/Animals.md 10節）。
     open(CATCHES_FOWL);
     const prey = tickUntilCaught();
-    const carcass = session.spawn(codex.objectNames.getId('junglefowl_carcass'));
+    const carcass = session.createObject(codex.objectNames.getId('junglefowl_carcass'));
     expect(carcass.moveToSlot(grassland.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
     prey.destroy();
 

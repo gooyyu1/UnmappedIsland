@@ -114,7 +114,7 @@ function parsePassiveOperationInto(
   if (operationMap === undefined) return;
 
   // 対象は付いている子ごとに登録を配れるので、childを指せる唯一の場所（8.1節）。
-  const scope = ReferenceScope.declaration.broadcasting;
+  const scope = ReferenceScope.declaration.withBroadcast;
 
   for (const [targetName, bodyNode] of entriesInOrder(operationMap)) {
     const target = parseSubjectRoot(`${context}.${operationKey}`, targetName, scope);

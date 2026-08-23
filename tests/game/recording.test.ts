@@ -65,7 +65,7 @@ object_defs:
     // （withFrozenCards）。
     const mini = setUp();
     const hand = mini.slot('hand');
-    const stone = mini.spawn('stone', hand);
+    const stone = mini.createObject('stone', hand);
     const stoneId = stone.instanceId;
 
     const recording = recordChange(mini.game, mini.codex, locale, undefined, () => {
@@ -91,7 +91,7 @@ object_defs:
 
     let stoneId = -1;
     const recording = recordChange(mini.game, mini.codex, locale, undefined, () => {
-      stoneId = mini.spawn('stone', mini.slot('hand')).instanceId;
+      stoneId = mini.createObject('stone', mini.slot('hand')).instanceId;
     });
 
     expect(recording.ticks, '時間が経っていないのでtick境界を跨がない').toEqual([]);
