@@ -172,3 +172,79 @@ A-4 のレーンで `item` タグに `volume` を必須化したので宣言漏�
 
 1〜3 はエンジンの機能追加なので、`docs/engine/GameElementDefinition.md` 10節と
 `docs/engine/HuntingSystem.md` 5節の書き換えを伴う。
+
+## 9. 手番を配る仕組みの置き場（未合意）
+
+`among` が入っても「`turn` を宣言している物に、tick ごとに1手を与える」側は残る（4節）。その置き場の検討。
+
+**結論: `WorldObject` で合っている。ただし2点ずらす。**
+
+### なぜ `WorldObject` か
+
+- **セッションを自分で持っている。** `WorldObject.session` があるので、手番を実行するのに外から
+  何も渡さなくてよい。今 `Animal.takeTurn(location, session)` が session を受け取っているのは、
+  包みが session を持たないからでしかない。
+- **tick が active 効果を起こす前例が既にある。** `PropertyValue.tick` → `checkRangeEvents` →
+  `applyActiveEffect` の経路で、`stay_remaining` の `on_min: destroy: self` は tick から走っている。
+  「tick は `modify`/`add`/`transfer` に閉じる」（8.4節）のは**持続効果の動詞**の話で、tick が
+  行動を起こさないという決まりではない。
+- **ツリー全体へ配る再帰が既にある。** 今は `World.runAnimalTurns`（locationsスロットを知っている）
+  → `Location.runAnimalTurns`（itemsスロットを知っている）→ `Animal` という中継を挟んでいるが、
+  この2つの wrapper が持っているのは**スロットの名前だけ**。`WorldObject` の再帰に載せれば両方消える。
+
+### ずらす点1: `tick()` の中ではなく、tick の後の2周目
+
+`WorldSession.runTick` は今こう書いている——「値の積分（`WorldObject.tick`）のあとに動物の1手を配る
+——動物が動くのは時間が経ったからで、**その tick の値が出そろった後**になる」。
+
+`tick()` の再帰の中で手番も実行すると、この保証が消える。手番は `destroy`/`move`/`spawn` を起こすので、
+**まだ tick していない物を壊せる**——籠を `smash` された中身は、その tick の `add`（腐敗など）を1回
+飛ばす。今は全部の積分が終わってから手番なので起きない。
+
+なので `WorldObject` に2周目の口を足す。`runTick` は2行のまま:
+
+```ts
+world.instance.tick();
+world.instance.runTickActions();  // ← World.runAnimalTurns の置き換え
+```
+
+**集めてから配る。** 2周目は「引く物を集める」→「順に引く」の2段にする。これで既存の不具合が1つ直る
+（下記）。消えた個体（`parent === undefined`）は配る前に落とす。
+
+### ずらす点2: 引き金を「`turn` という名前」で引かない
+
+`WorldObject` が見てよいのは**エンジンの語彙だけ**（`WorldObject.engine` は
+`vocabulary.engine` を返す private getter で、`vocabulary.world` へは行かない）。`turnAction` は
+世界の語彙なので、`WorldObject` が `turn` という名前を知るのは層の破り。
+
+引き金は**宣言側**へ移す。`InteractionTriggerReading` が既に「何がこの操作のきっかけか」を持って
+いる（`menu` / `drag`）ので、そこへ `tick` を足すのが素直。
+
+今の `showMenu: 'always' | 'never'` は「画面のボタンに出すか」だけを言っていて、**誰が起こすかを
+言っていない**。`ActionDef` の doc は「`never` は画面のボタンには出さない操作で、**起こすのは時間の
+側になる**」と書いているのに、時間の側にはそれを起こす仕組みが無く、`Animal` が名前で引いている
+——宣言と実装がずれている。同梱の世界で `showMenu: never` を書いているのは `turn` **1件だけ**なので、
+2値をきっかけの宣言へ置き換えても失うものが無い。
+
+### ついでに直る既存の不具合: 逃げた動物が同じ tick に2回手番を取る
+
+`World.runAnimalTurns` は土地を順に回り、`Location.runAnimalTurns` が**その土地に着いてから**
+items のスナップショットを取る。動物が `flee` でまだ回っていない土地（サイトindexが後ろの土地）へ
+移ると、その土地の番でもう一度手番が回る。集めてから配る形にすると消える。
+
+*コードから読んだだけで、再現テストは書いていない。* 実施するなら最初に確かめる。
+
+### 決めてほしいこと: 配る範囲
+
+今は**島の土地の `items` に居る動物**だけ。ツリーの再帰にすると**世界のどこに居ても**回る。
+
+- 罠に掛かった獲物、入れ物の中、筏の上の動物にも回る。
+- ただし `among` が入っていれば、周りに何も無ければ候補が全部外れて `lurk` になるだけ
+  （3節）。**何ができるかを決めるのは世界の側**になる。
+
+「地面に居る動物だけが動く」を engine 側の絞り込みとして残すか、世界に決めさせるか。**後者を推す**
+——今の絞り込みは `Location.items` という世界の語彙をエンジン側に置いているのと同じで、
+`among` が入れば同じことを宣言で言える。
+
+セーブ互換の心配は無い。`SaveData` は世界の状態を持たない（種とキャラクタと表示の記憶だけ）ので、
+手番の順序が変わっても読めなくなるものが無い。
