@@ -49,5 +49,5 @@ B・Cで、そのときも第一手はコメントではなく改名。
 | [`areas/analysis-codex.md`](./areas/analysis-codex.md) `analysis`・`codex-viewer`・`locale`・`save` ほか | 1,086 | 1,051 | 34 | 1 |
 | **合計** | **4,185** | **3,949（94%）** | **196** | **39** |
 
-**94%がA**——名前が責務を言い切っている。指摘は235件で、修正の状況は
-[`Findings.md`](./Findings.md) に書く。
+**94%がA**——名前が責務を言い切っている。指摘は235件で、**いずれも適用済み**。
+領域ごとの状況は [`Findings.md`](./Findings.md) に書く。
