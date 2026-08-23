@@ -7,7 +7,7 @@ import { Card, EmptyCard } from './ui/Card';
 import type { CardContent } from './ui/Card';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { addLabel } from '../ui/labels';
-import { addPanel } from '../ui/shapes';
+import { addInputBlockingPanel } from '../ui/shapes';
 import { COLOR, SIZE } from './looks/theme';
 
 /** アーティファクトを指すタグ（artifacts.yaml）。棚の枠はこのタグを持つ型がそのまま決める。 */
@@ -55,7 +55,7 @@ export class ShelfScene extends ResponsiveScene {
 
   protected build(): void {
     const { width, height } = this.metrics;
-    addPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
+    addInputBlockingPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
     new ScreenHeader(this, this.metrics, width, 'アーティファクトの棚', () => this.scene.start('title'));
 
     const all = this.codex.objectDefNamesWithTag(this.codex.vocabulary.world.artifactTagId);
@@ -64,12 +64,18 @@ export class ShelfScene extends ResponsiveScene {
     const padding = this.metrics.px(PADDING);
     let y = ScreenHeader.height(this.metrics) + padding;
 
-    y += this.addCaption(padding, y, width - padding * 2, all.length, held.size);
+    y += this.addCaptionReturningUsedHeight(padding, y, width - padding * 2, all.length, held.size);
     this.addCards(padding, y, width - padding * 2, all, held);
   }
 
   /** 棚の上に置く一行。何が収まったか（到達直後）と、埋まり具合を言う。 */
-  private addCaption(x: number, y: number, width: number, total: number, held: number): number {
+  private addCaptionReturningUsedHeight(
+    x: number,
+    y: number,
+    width: number,
+    total: number,
+    held: number,
+  ): number {
     const lines = [`${total} のうち ${held} が棚に並んでいる。`];
     if (this.added.length > 0) {
       const names = this.added.map((name) => this.locale.object(name).displayName).join('、');

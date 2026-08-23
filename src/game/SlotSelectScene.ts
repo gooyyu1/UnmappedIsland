@@ -10,7 +10,7 @@ import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { characterCardContent } from './view/characterCard';
 import { addLabel } from '../ui/labels';
-import { addPanel } from '../ui/shapes';
+import { addInputBlockingPanel } from '../ui/shapes';
 import { COLOR, SIZE, rowPlateStyle } from './looks/theme';
 import { truncateToWidth } from '../ui/textLayout';
 
@@ -38,7 +38,7 @@ export class SlotSelectScene extends ResponsiveScene {
     this.locale = this.registry.get(LOCALIZATION_KEY) as Localization;
     const slots = new SaveSlots(localStorage).readAll();
 
-    addPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
+    addInputBlockingPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
     new ScreenHeader(this, this.metrics, width, 'セーブデータを選択', () => this.scene.start('title'));
 
     const headerHeight = ScreenHeader.height(this.metrics);
@@ -106,8 +106,8 @@ export class SlotSelectScene extends ResponsiveScene {
       this,
       { x: cell.x + cell.width - size - inset, y: cell.y + inset, width: size, height: size },
       {
-        fill: COLOR.slotDelete,
-        border: COLOR.cardBorder,
+        fillColor: COLOR.slotDelete,
+        borderColor: COLOR.cardBorder,
         borderWidth: this.metrics.linePx(2),
         radius: this.metrics.px(SIZE.radius),
       },

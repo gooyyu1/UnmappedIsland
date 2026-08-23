@@ -11,7 +11,7 @@ const BAR_PADDING = 16;
 const OPTIONS_BAR_PADDING_X = 24;
 const FILTER_BAR_PADDING_X = 20;
 
-/** ステータスエリアの内側パディング（キャラクター表示エリア側はDISPLAY_PADDING）。 */
+/** ステータスエリアの内側パディング（キャラクター表示エリア側はCHARACTER_DISPLAY_PADDING）。 */
 const STATUS_PADDING = 24;
 
 /** 情報エリアの区切り線の太さ。 */
@@ -21,7 +21,7 @@ const INFORMATION_DIVIDER_THICKNESS = 4;
 type BarAlign = 'start' | 'center' | 'end';
 
 /** キャラクター表示エリアの内側余白（中身を置くPlaySceneと、高さを決めるここで共有する）。 */
-export const DISPLAY_PADDING = 16;
+export const CHARACTER_DISPLAY_PADDING = 16;
 
 /**
  * 状況エリア（＝空の帯）の高さ。日時も天候名もこの帯の中に載る。
@@ -39,7 +39,7 @@ const SITUATION_HEIGHT_LANDSCAPE = 184;
  * 状況エリアを本の外へ出したことで、ページの上辺が画面の途中に来た。左右と同じだけ縁を見せないと、
  * 帯の下からいきなり紙が始まって、本の上端に見えない。
  */
-const PAGE_TOP_PORTRAIT = INFORMATION_PAPER_INSET.edge;
+const PAGE_TOP_EDGE_WIDTH_PORTRAIT = INFORMATION_PAPER_INSET.edge;
 
 /**
  * キャラクター表示エリア高。パディング16 + ポートレイト320 + ギャップ12 + 条件の行48 + 下の余白。
@@ -54,10 +54,10 @@ const PAGE_TOP_PORTRAIT = INFORMATION_PAPER_INSET.edge;
  */
 const CHARACTER_DISPLAY_BOTTOM_PADDING_PORTRAIT = 48;
 const CHARACTER_DISPLAY_HEIGHT_PORTRAIT = characterDisplayHeight(CHARACTER_DISPLAY_BOTTOM_PADDING_PORTRAIT);
-const CHARACTER_DISPLAY_HEIGHT_LANDSCAPE = characterDisplayHeight(DISPLAY_PADDING);
+const CHARACTER_DISPLAY_HEIGHT_LANDSCAPE = characterDisplayHeight(CHARACTER_DISPLAY_PADDING);
 
 function characterDisplayHeight(bottomPadding: number): number {
-  return DISPLAY_PADDING + SIZE.cardHeight + SIZE.gap + SIZE.conditionButton + bottomPadding;
+  return CHARACTER_DISPLAY_PADDING + SIZE.cardHeight + SIZE.gap + SIZE.conditionButton + bottomPadding;
 }
 
 /** 縦型のキャラクター表示エリア幅。ポートレイト205 + 地図・装備・怪我の列 + ギャップ・パディング。 */
@@ -68,7 +68,7 @@ const OPTIONS_HEIGHT_LANDSCAPE = SIZE.iconButton * 4 + SIZE.barGap * 3 + 32;
 
 /** 縦型でフィールドエリアを縮めてでも確保する高さ（状況エリア + ページの上辺 + キャラクター表示エリアの内容量）。 */
 const DASHBOARD_MIN_HEIGHT_PORTRAIT =
-  SITUATION_HEIGHT_PORTRAIT + PAGE_TOP_PORTRAIT + CHARACTER_DISPLAY_HEIGHT_PORTRAIT;
+  SITUATION_HEIGHT_PORTRAIT + PAGE_TOP_EDGE_WIDTH_PORTRAIT + CHARACTER_DISPLAY_HEIGHT_PORTRAIT;
 
 /**
  * プレイ中の画面（ScreenLayout.md）の各エリアの位置・大きさ。
@@ -91,7 +91,7 @@ export class PlayScreenLayout {
   readonly statusArea: Rect;
 
   /** ステータスエリアのうち、バーを並べる範囲（内側パディングを引いたもの）。 */
-  readonly statusRows: Rect;
+  readonly statusRowsArea: Rect;
 
   /**
    * 情報エリアの中を仕切る区切り線。背景が1枚の紙になり、エリアごとの塗り分けが無くなったため、
@@ -221,7 +221,7 @@ export class PlayScreenLayout {
       // オプションバーの上の余白（画面外として塗り潰す）にする。上端は指が届きにくく、使い切る価値が薄いため。
       const available = Math.max(0, height - barHeight * 2 - fieldHeight);
       const situationHeight = Math.min(u(SITUATION_HEIGHT_PORTRAIT), available);
-      const pageTop = Math.min(u(PAGE_TOP_PORTRAIT), available - situationHeight);
+      const pageTop = Math.min(u(PAGE_TOP_EDGE_WIDTH_PORTRAIT), available - situationHeight);
       const displayHeight = Math.min(
         u(CHARACTER_DISPLAY_HEIGHT_PORTRAIT),
         available - situationHeight - pageTop,
@@ -268,7 +268,7 @@ export class PlayScreenLayout {
     }
 
     const statusPadding = u(STATUS_PADDING);
-    this.statusRows = {
+    this.statusRowsArea = {
       x: this.statusArea.x + statusPadding,
       y: this.statusArea.y + statusPadding,
       width: Math.max(0, this.statusArea.width - statusPadding * 2),
@@ -286,9 +286,9 @@ export class PlayScreenLayout {
         }
       : {
           x: this.statusArea.x - dividerThickness / 2,
-          y: this.statusRows.y,
+          y: this.statusRowsArea.y,
           width: dividerThickness,
-          height: this.statusRows.height,
+          height: this.statusRowsArea.height,
         };
 
     this.lanes = this.buildLanes();

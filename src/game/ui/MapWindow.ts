@@ -6,7 +6,7 @@ import { Card, PAPER_RADIUS, paperRect } from './Card';
 import { cardFace } from './cardFace';
 import { ACTION_HEIGHT, WINDOW_PADDING, closeRow } from '../looks/childWindowLayout';
 import { addLabel } from '../../ui/labels';
-import { addPanel, drawBox } from '../../ui/shapes';
+import { addInputBlockingPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 import { uiText } from '../../locale/uiTexts';
 
@@ -95,7 +95,7 @@ export class MapWindow {
     const { width, height } = metrics;
     const padding = metrics.px(WINDOW_PADDING);
 
-    const surface = addPanel(scene, { x: 0, y: 0, width, height }, COLOR.chartPaper);
+    const surface = addInputBlockingPanel(scene, { x: 0, y: 0, width, height }, COLOR.chartPaper);
     this.ownedObjects.push(surface);
 
     this.outline = scene.add.graphics();
@@ -199,7 +199,7 @@ export class MapWindow {
     if (land.current) {
       const highlight = this.scene.add.graphics();
       drawBox(highlight, paperRect(this.metrics, card.cardWidth, card.cardHeight), {
-        border: COLOR.cardBorder,
+        borderColor: COLOR.cardBorder,
         borderWidth: this.metrics.px(CURRENT_BORDER_WIDTH),
         radius: this.metrics.px(PAPER_RADIUS),
       });

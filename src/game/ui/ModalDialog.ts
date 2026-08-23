@@ -7,7 +7,7 @@ import type { CardContent } from './Card';
 import { Card } from './Card';
 import { cardFace } from './cardFace';
 import { addLabel } from '../../ui/labels';
-import { addPanel, drawBox } from '../../ui/shapes';
+import { addInputBlockingPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
 /**
@@ -58,7 +58,9 @@ export class ModalDialog {
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: ModalDialogOptions) {
     const { width, height } = metrics;
-    this.ownedObjects.push(addPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5));
+    this.ownedObjects.push(
+      addInputBlockingPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5),
+    );
 
     const plateWidth = Math.min(metrics.px(PLATE_MAX_WIDTH), width * 0.88);
     const padding = metrics.px(PLATE_PADDING);
@@ -76,11 +78,11 @@ export class ModalDialog {
     const title = addLabel(scene, metrics, 0, 0, options.title, {
       size: 28,
       bold: true,
-      wrapWidth: contentWidth,
+      wrapWidthPx: contentWidth,
     })
       .setOrigin(0.5, 0)
       .setAlign('center');
-    const body = addLabel(scene, metrics, 0, 0, options.body, { size: 24, wrapWidth: contentWidth })
+    const body = addLabel(scene, metrics, 0, 0, options.body, { size: 24, wrapWidthPx: contentWidth })
       .setOrigin(0.5, 0)
       .setAlign('center');
 
@@ -91,7 +93,7 @@ export class ModalDialog {
     drawBox(
       plate,
       { x: plateX, y: plateY, width: plateWidth, height: plateHeight },
-      { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) },
+      { fillColor: COLOR.cardFace, radius: metrics.px(SIZE.radius) },
     );
 
     const portraitWidth = metrics.px((SIZE.cardWidth * PORTRAIT_HEIGHT) / SIZE.cardHeight);

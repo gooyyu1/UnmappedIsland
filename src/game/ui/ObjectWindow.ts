@@ -21,11 +21,11 @@ import {
   CONTENT_GAP,
   MIN_WINDOW_WIDTH,
   WINDOW_PADDING,
-  centerWindow,
+  centeredWindowRect,
 } from '../looks/childWindowLayout';
-import { durationText } from '../looks/durationText';
+import { timeCostLine } from '../looks/timeTexts';
 import { addLabel } from '../../ui/labels';
-import { addPanel, drawBox } from '../../ui/shapes';
+import { addInputBlockingPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 import { Tooltip } from './Tooltip';
 import type { TooltipContent } from './Tooltip';
@@ -200,7 +200,7 @@ export class ObjectWindow {
 
     // 覆いは領域の中だけに敷く。画面全体を覆うと、開いている間も操作できるはずの手持ちが覆いに
     // 入力を吸われる——借りた札へ手持ちから物を重ねられる以上、どのウィンドウも読み取り専用ではない。
-    this.ownedObjects.push(addPanel(scene, options.area, COLOR.modalOverlay, 0.5));
+    this.ownedObjects.push(addInputBlockingPanel(scene, options.area, COLOR.modalOverlay, 0.5));
 
     const windowWidth = decideWidth(metrics, options.area, this.tabSpecs, padding);
     const contentWidth = windowWidth - padding * 2;
@@ -213,7 +213,7 @@ export class ObjectWindow {
     const title = addLabel(scene, metrics, 0, 0, options.object.card.name, {
       size: 34,
       bold: true,
-      wrapWidth: contentWidth,
+      wrapWidthPx: contentWidth,
     })
       .setOrigin(0.5, 0)
       .setAlign('center');
@@ -225,8 +225,8 @@ export class ObjectWindow {
     const actionRows = options.actions.length === 0 ? 1 : 2;
     const actionsHeight = actionHeight * actionRows + gap * (actionRows - 1);
     const windowHeight = padding * 2 + title.height + gap + tabsHeight + middleHeight + gap + actionsHeight;
-    const window = centerWindow(metrics, options.area, windowWidth, windowHeight);
-    drawBox(board, window, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
+    const window = centeredWindowRect(metrics, options.area, windowWidth, windowHeight);
+    drawBox(board, window, { fillColor: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
 
     title.setPosition(window.x + windowWidth / 2, window.y + padding);
     this.ownedObjects.push(title);
@@ -508,7 +508,7 @@ export class ObjectWindow {
   private tooltipHandlers(action: ObjectWindowAction, rect: Rect, disabled: boolean): HoldHandlers {
     const content: TooltipContent = disabled
       ? { title: action.label, body: action.reason ?? uiText('cannot_do_now') }
-      : { title: action.label, body: action.description, note: durationText(action.minutes) };
+      : { title: action.label, body: action.description, note: timeCostLine(action.minutes) };
 
     return {
       onStart: () => this.tooltip.show(content, rect),

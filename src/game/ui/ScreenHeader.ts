@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { Button } from './Button';
 import { addLabel } from '../../ui/labels';
-import { addPanel } from '../../ui/shapes';
+import { addInputBlockingPanel } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
 /** 戻るボタンの一辺と、バーの上下・左右パディング（StartScreen_Mock.htmlの.screen-header）。 */
@@ -18,7 +18,7 @@ export class ScreenHeader {
 
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, width: number, title: string, onBack: () => void) {
     const height = ScreenHeader.height(metrics);
-    addPanel(scene, { x: 0, y: 0, width, height }, COLOR.headerBar);
+    addInputBlockingPanel(scene, { x: 0, y: 0, width, height }, COLOR.headerBar);
 
     const buttonSize = metrics.px(BUTTON_SIZE);
     const left = metrics.px(HORIZONTAL_PADDING);
@@ -26,8 +26,8 @@ export class ScreenHeader {
       scene,
       { x: left, y: metrics.px(VERTICAL_PADDING), width: buttonSize, height: buttonSize },
       {
-        fill: COLOR.button,
-        border: COLOR.buttonBorder,
+        fillColor: COLOR.button,
+        borderColor: COLOR.buttonBorder,
         borderWidth: metrics.linePx(2),
         radius: metrics.px(SIZE.radius),
       },

@@ -39,7 +39,7 @@ interface Moved {
   readonly at: CardPlacement | undefined;
 }
 
-/** その個体たちを1枚に束ねた札。dropInto・reorderは、実行されたら記録だけを残す。 */
+/** その個体たちを1枚に束ねた札。dropInto・reorderActionAtは、実行されたら記録だけを残す。 */
 function stack(
   place: CardPlace,
   ids: readonly number[],
@@ -67,7 +67,7 @@ function stack(
         options.moves?.push({ ids: ids.slice(0, count ?? 1), to, at });
       },
     }),
-    reorder: (at) => () => {
+    reorderActionAt: (at) => () => {
       options.moves?.push({ ids, to: place, at });
     },
   } as ObjectCardStack;
@@ -171,9 +171,10 @@ describe('画面に出ている札', () => {
     expect(shown.stacksAt(place('hand'))).toHaveLength(1);
     expect(idsAt(shown, place('hand'), 0), '個体は1つも出ていない').toEqual([]);
     expect(mark?.awaited, '待っているのは貸した1個').toEqual([1]);
-    expect([mark?.dropInto, mark?.reorder], '印は操作を持たない——掴む相手にも重ねる相手にもならない').toEqual(
-      [undefined, undefined],
-    );
+    expect(
+      [mark?.dropInto, mark?.reorderActionAt],
+      '印は操作を持たない——掴む相手にも重ねる相手にもならない',
+    ).toEqual([undefined, undefined]);
   });
 
   it('探索が抱えている札は並びに入らず、後ろの札が繰り上がる', () => {
@@ -238,7 +239,7 @@ describe('貸し借りの流れ（Windows.md 1.1節）', () => {
 
     // ワールドが変わった（束の並びが組み直された）が、その個体は残っている。
     stones[0] = stack(place('hand'), [2, 1]);
-    const card = shown.restackWindow();
+    const card = shown.reborrowedCard();
 
     expect(
       card?.objects.map((entry) => entry.instanceId),
@@ -253,7 +254,7 @@ describe('貸し借りの流れ（Windows.md 1.1節）', () => {
     borrow(shown, stones[0]);
 
     stones[0] = stack(place('hand'), [2]);
-    expect(shown.restackWindow(), '映すものが無い＝ウィンドウを閉じる合図').toBeUndefined();
+    expect(shown.reborrowedCard(), '映すものが無い＝ウィンドウを閉じる合図').toBeUndefined();
   });
 });
 
@@ -362,7 +363,7 @@ describe('ドロップの意味', () => {
 
     expect(combination?.movedIds).toEqual([2]);
     expect(
-      shown.movedBy({
+      shown.releasedBy({
         from: place('hand'),
         fromIndex: 0,
         to: 'windowCard',

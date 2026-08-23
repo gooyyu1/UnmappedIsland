@@ -53,21 +53,21 @@ describe('経過の再生', () => {
     const shown = replay(playback, 3);
 
     // 実時間の刻みが最後の目盛りちょうどに来るとは限らないので、締めで取りこぼしを拾う。
-    expect([...shown, ...playback.finish().map((view) => view.minutes)]).toEqual([15, 30, 45]);
+    expect([...shown, ...playback.takeRemaining().map((view) => view.minutes)]).toEqual([15, 30, 45]);
   });
 
   it('締めを2度呼んでも、出し切った控えは繰り返さない', () => {
     const playback = playbackOf([tick(15)]);
 
-    expect(playback.finish().map((view) => view.minutes)).toEqual([15]);
-    expect(playback.finish()).toEqual([]);
+    expect(playback.takeRemaining().map((view) => view.minutes)).toEqual([15]);
+    expect(playback.takeRemaining()).toEqual([]);
   });
 
   it('控えが無くても、時計と塗りは進む', () => {
     const playback = playbackOf([]);
 
     expect(playback.frameAt(0).due).toEqual([]);
-    expect(playback.frameAt(60).minutes, '経過し切った時刻を指す').toBe(60);
+    expect(playback.frameAt(60).clockMinutes, '経過し切った時刻を指す').toBe(60);
     expect(playback.frameAt(60).ratio).toBe(1);
   });
 
@@ -75,7 +75,7 @@ describe('経過の再生', () => {
     const playback = new ElapsePlayback(0, 0, 15, []);
 
     expect(playback.totalMinutes).toBe(0);
-    expect(playback.frameAt(0)).toMatchObject({ minutes: 0, elapsedMinutes: 0, ratio: 1, due: [] });
+    expect(playback.frameAt(0)).toMatchObject({ clockMinutes: 0, elapsedMinutes: 0, ratio: 1, due: [] });
   });
 
   it('時計と、輪に出す経過分は、同じ目盛りを指す', () => {
@@ -84,7 +84,7 @@ describe('経過の再生', () => {
 
     for (const elapsed of [0, 3, 5, 12, 20]) {
       const frame = playback.frameAt(elapsed);
-      expect(frame.minutes - frame.elapsedMinutes, `${elapsed}分`).toBe(430);
+      expect(frame.clockMinutes - frame.elapsedMinutes, `${elapsed}分`).toBe(430);
     }
   });
 
@@ -92,11 +92,11 @@ describe('経過の再生', () => {
     // 開始が目盛りに乗っていなければ、最初の目盛りだけ短くなる（07:10から20分＝430分から）。
     const playback = new ElapsePlayback(430, 450, 15, [tick(435)]);
 
-    expect(playback.frameAt(0).minutes, '始まった瞬間は開始時刻のまま').toBe(430);
+    expect(playback.frameAt(0).clockMinutes, '始まった瞬間は開始時刻のまま').toBe(430);
 
     const jumped = playback.frameAt(5);
 
-    expect(jumped.minutes, '最初のtick境界へ飛ぶ').toBe(435);
+    expect(jumped.clockMinutes, '最初のtick境界へ飛ぶ').toBe(435);
     expect(
       jumped.due.map((view) => view.minutes),
       '飛んだ瞬間に控えが出る',

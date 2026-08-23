@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 
 /** deltaModeがピクセル・行・ページのときの、delta1あたりのピクセル数。 */
-const WHEEL_DELTA_PIXELS = [1, 16, 400];
+const PIXELS_PER_DELTA_BY_MODE = [1, 16, 400];
 
 /**
  * ホイールの回転量をスクロールするピクセル数に直す。
@@ -13,7 +13,7 @@ const WHEEL_DELTA_PIXELS = [1, 16, 400];
 export function wheelPixels(pointer: Phaser.Input.Pointer, deltaX: number, deltaY: number): number {
   const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
   const mode = pointer.event instanceof WheelEvent ? pointer.event.deltaMode : 0;
-  return delta * (WHEEL_DELTA_PIXELS[mode] ?? 1) * pointer.manager.scaleManager.displayScale.x;
+  return delta * (PIXELS_PER_DELTA_BY_MODE[mode] ?? 1) * pointer.manager.scaleManager.displayScale.x;
 }
 
 /** スクロールバーのつまみが占める範囲（トラックの左端からの位置と長さ、ピクセル）。 */

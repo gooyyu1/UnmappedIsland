@@ -22,7 +22,7 @@ import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { TextInput } from './ui/TextInput';
 import { addLabel } from '../ui/labels';
-import { addPanel } from '../ui/shapes';
+import { addInputBlockingPanel } from '../ui/shapes';
 import { COLOR, SIZE } from './looks/theme';
 
 /** 本文の余白と項目間の間隔（StartScreen_Mock.htmlの.newgame-body）。横型は左右を広く取る。 */
@@ -69,7 +69,7 @@ export class NewGameScene extends ResponsiveScene {
   private slotIndex = 0;
   private islandName = '';
   private seedText = '';
-  private characterId: string | undefined;
+  private characterDefName: string | undefined;
 
   /** いずれもinitで必ず設定される（Phaserはinit→createの順に呼ぶ）。 */
   private locale!: Localization;
@@ -79,7 +79,7 @@ export class NewGameScene extends ResponsiveScene {
   private seedInput: TextInput | undefined;
 
   /** キャラクター選択肢は選択状態が変わるたびに描き直すため、置き場所と生成物を覚えておく。 */
-  private characterOptionsOrigin: Rect = { x: 0, y: 0, width: 0, height: 0 };
+  private characterOptionsArea: Rect = { x: 0, y: 0, width: 0, height: 0 };
   private characterOptions: Button[] = [];
 
   /** 選んだ人物の説明。選択肢と一緒に作り直す。 */
@@ -94,13 +94,13 @@ export class NewGameScene extends ResponsiveScene {
     this.characters = characterDefNames(this.registry.get(WORLD_CODEX_KEY) as WorldCodex);
     this.slotIndex = data.slotIndex;
     this.islandName = '';
-    this.characterId = undefined;
+    this.characterDefName = undefined;
     this.seedText = String(randomSeed(randomRng()));
   }
 
   protected build(): void {
     const { width, height } = this.metrics;
-    addPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
+    addInputBlockingPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
     new ScreenHeader(this, this.metrics, width, '新規ゲーム作成', () => this.scene.start('slots'));
 
     const paddingX = this.metrics.px(this.metrics.isLandscape ? BODY_PADDING_LANDSCAPE_X : BODY_PADDING);
@@ -134,7 +134,7 @@ export class NewGameScene extends ResponsiveScene {
 
   /** 島の名前と乱数シードを縦に並べる。占有する高さはtextFieldsHeightが答える。 */
   private addTextFields(x: number, y: number, width: number): void {
-    this.addTextField(x, y, width, '島の名前', {
+    this.addTextFieldReturningUsedHeight(x, y, width, '島の名前', {
       value: this.islandName,
       placeholder: '例: 霧深い孤島',
       maxLength: ISLAND_NAME_MAX_LENGTH,
@@ -151,7 +151,7 @@ export class NewGameScene extends ResponsiveScene {
     });
 
     const seedY = y + this.textFieldHeight() + this.metrics.px(FIELD_GAP);
-    this.addTextField(x, seedY, width, '乱数シード', {
+    this.addTextFieldReturningUsedHeight(x, seedY, width, '乱数シード', {
       value: this.seedText,
       placeholder: '例: 1837462519',
       maxLength: String(SEED_MAX).length,
@@ -220,7 +220,7 @@ export class NewGameScene extends ResponsiveScene {
   }
 
   /** ラベル＋入力欄＋ランダムボタンの1項目を置き、占有した高さを返す。 */
-  private addTextField(
+  private addTextFieldReturningUsedHeight(
     x: number,
     y: number,
     width: number,
@@ -266,8 +266,8 @@ export class NewGameScene extends ResponsiveScene {
       this,
       { x, y, width: size, height: size },
       {
-        fill: COLOR.randomButton,
-        border: COLOR.buttonBorder,
+        fillColor: COLOR.randomButton,
+        borderColor: COLOR.buttonBorder,
         borderWidth: this.metrics.linePx(2),
         radius: this.metrics.px(SIZE.radius),
       },
@@ -284,11 +284,11 @@ export class NewGameScene extends ResponsiveScene {
     });
     labelText.setY(y + (buttonSize - labelText.height) / 2);
     this.addRandomButton(x + width - buttonSize, y, () => {
-      this.characterId = randomCharacter(randomRng(), this.characters);
+      this.characterDefName = randomCharacter(randomRng(), this.characters);
       this.refreshCharacterOptions();
     });
 
-    this.characterOptionsOrigin = {
+    this.characterOptionsArea = {
       x,
       y: y + buttonSize + this.metrics.px(LABEL_GAP),
       width,
@@ -309,10 +309,10 @@ export class NewGameScene extends ResponsiveScene {
     const descriptionHeight = this.characterDescriptionHeight(lineSpacing);
     // 説明とフッターに使う分を除いた、選択肢の1行が使える高さ。
     const room =
-      this.metrics.height - this.footerHeight() - descriptionHeight - gap - this.characterOptionsOrigin.y;
+      this.metrics.height - this.footerHeight() - descriptionHeight - gap - this.characterOptionsArea.y;
     // 横は原寸まで（characterOptionWidth）、縦は説明の下がフッターへ潜り込まないところまで縮める。
     const optionWidth = Math.min(
-      this.characterOptionWidth(this.characterOptionsOrigin.width),
+      this.characterOptionWidth(this.characterOptionsArea.width),
       ((room - padding * 2) / cardHeight) * cardWidth + padding * 2,
     );
     const cardScale = (optionWidth - padding * 2) / cardWidth;
@@ -320,15 +320,15 @@ export class NewGameScene extends ResponsiveScene {
 
     this.characterOptions = this.characters.map((character, index) =>
       this.addCharacterOption(
-        this.characterOptionsOrigin.x + index * (optionWidth + gap),
-        this.characterOptionsOrigin.y,
+        this.characterOptionsArea.x + index * (optionWidth + gap),
+        this.characterOptionsArea.y,
         optionWidth,
         height,
         character,
         cardScale,
       ),
     );
-    this.refreshCharacterDescription(this.characterOptionsOrigin.y + height + gap);
+    this.refreshCharacterDescription(this.characterOptionsArea.y + height + gap);
   }
 
   private addCharacterOption(
@@ -339,18 +339,18 @@ export class NewGameScene extends ResponsiveScene {
     character: string,
     cardScale: number,
   ): Button {
-    const selected = character === this.characterId;
+    const selected = character === this.characterDefName;
     const button = new Button(
       this,
       { x, y, width, height },
       {
-        fill: selected ? COLOR.selectedOptionFace : COLOR.cardFace,
-        border: selected ? COLOR.selectedOptionBorder : COLOR.cardFace,
+        fillColor: selected ? COLOR.selectedOptionFace : COLOR.cardFace,
+        borderColor: selected ? COLOR.selectedOptionBorder : COLOR.cardFace,
         borderWidth: this.metrics.px(2),
         radius: this.metrics.px(SIZE.radius),
       },
       () => {
-        this.characterId = character;
+        this.characterDefName = character;
         this.refreshCharacterOptions();
       },
     );
@@ -369,10 +369,12 @@ export class NewGameScene extends ResponsiveScene {
     this.characterDescription?.destroy();
 
     const description =
-      this.characterId === undefined ? '' : (this.locale.object(this.characterId).description ?? '');
-    this.characterDescription = addLabel(this, this.metrics, this.characterOptionsOrigin.x, y, description, {
+      this.characterDefName === undefined
+        ? ''
+        : (this.locale.object(this.characterDefName).description ?? '');
+    this.characterDescription = addLabel(this, this.metrics, this.characterOptionsArea.x, y, description, {
       size: CHARACTER_DESCRIPTION_SIZE,
-      wrapWidth: this.characterOptionsOrigin.width,
+      wrapWidthPx: this.characterOptionsArea.width,
       lineGap: LABEL_GAP,
     });
   }
@@ -397,7 +399,11 @@ export class NewGameScene extends ResponsiveScene {
     const paddingX = this.metrics.px(BODY_PADDING);
     const paddingY = this.metrics.px(FOOTER_PADDING_Y);
     const footerHeight = this.footerHeight();
-    addPanel(this, { x: 0, y: height - footerHeight, width, height: footerHeight }, COLOR.footerBar);
+    addInputBlockingPanel(
+      this,
+      { x: 0, y: height - footerHeight, width, height: footerHeight },
+      COLOR.footerBar,
+    );
 
     const gap = this.metrics.px(16);
     const buttonWidth = (width - paddingX * 2 - gap) / 2;
@@ -423,8 +429,8 @@ export class NewGameScene extends ResponsiveScene {
       this,
       { x, y, width, height },
       {
-        fill: primary ? COLOR.primaryButton : COLOR.button,
-        border: COLOR.buttonBorder,
+        fillColor: primary ? COLOR.primaryButton : COLOR.button,
+        borderColor: COLOR.buttonBorder,
         borderWidth: this.metrics.linePx(2),
         radius: this.metrics.px(SIZE.radius),
       },
@@ -446,12 +452,12 @@ export class NewGameScene extends ResponsiveScene {
       return;
     }
 
-    if (this.characterId === undefined) {
+    if (this.characterDefName === undefined) {
       this.showNotice('キャラクターを選択してください');
       return;
     }
 
-    const save = createSaveData(islandName, seed, this.characterId, Date.now());
+    const save = createSaveData(islandName, seed, this.characterDefName, Date.now());
     new SaveSlots(localStorage).write(this.slotIndex, save);
     this.scene.start('play', { save, slotIndex: this.slotIndex });
   }

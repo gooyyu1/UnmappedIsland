@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import { elapsedText } from '../looks/durationText';
+import { elapsedText } from '../looks/timeTexts';
 import { cssColor } from '../../util/cssColor';
 import { isAlive } from '../../ui/lifetime';
 import { COLOR, FONT_FAMILY } from '../looks/theme';

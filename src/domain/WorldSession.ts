@@ -90,7 +90,7 @@ export class WorldSession {
    * bodyの実行中に物が出入りするたび、その1件ずつをonChangeへ流す（WorldChange参照）。
    *
    * **これは「何が起きたか」だけを運ぶ。** 起きた結果どう見えるかは、そのtick境界の世界を読み直す側
-   * （PlayScene.record）の仕事で、両方が要る——ログだけでは絵にならず、絵だけでは誰がやったか分からない。
+   * （PlayScene.runAndRecord）の仕事で、両方が要る——ログだけでは絵にならず、絵だけでは誰がやったか分からない。
    */
   observeChanges(onChange: (change: WorldChange) => void, body: () => void): void {
     this.changeObserver.during(onChange, body);
@@ -171,7 +171,7 @@ export class WorldSession {
    *
    * 観測していなければ何もしない。世界に出入りが無い呼び出し（未配置のまま消えた物）も流さない。
    */
-  recordChange(object: WorldObject, from: Slot | undefined, to: Slot | undefined): void {
+  runAndRecordChange(object: WorldObject, from: Slot | undefined, to: Slot | undefined): void {
     const observer = this.changeObserver.current;
     if (observer === undefined || (from === undefined && to === undefined)) return;
     observer({ object, subject: this.subject.current, from, to });
@@ -179,7 +179,7 @@ export class WorldSession {
 
   /**
    * 形を変えない出来事1件を観測口へ流す（SignalEffectからのみ呼ぶ）。**誰の身に起きたかは効果が
-   * 指した対象**で、物の出入りの主体（今適用中の効果、recordChange）とは別に決まる——殴って外した
+   * 指した対象**で、物の出入りの主体（今適用中の効果、runAndRecordChange）とは別に決まる——殴って外した
    * 出来事は、殴った側ではなく殴られた側の上のことになる。
    */
   recordSignal(object: WorldObject, name: string): void {

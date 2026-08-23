@@ -87,7 +87,7 @@ export interface CardOperations {
   readonly actions: readonly CardAction[];
   readonly movedIds: (count: number) => readonly number[];
   readonly dropInto: (place: CardPlace, at?: CardPlacement, count?: number) => CardDrop | undefined;
-  readonly reorder: (at: CardPlacement) => (() => void) | undefined;
+  readonly reorderActionAt: (at: CardPlacement) => (() => void) | undefined;
 }
 
 /**
@@ -259,7 +259,7 @@ export function cardOperationsOf(
       actions: actionsOf(stack[0]),
       movedIds: (count) => carriedOf(stack, count).map((instance) => instance.instanceId),
       dropInto: dropInto(stack, place),
-      reorder: reorderIn(stack[0]),
+      reorderActionAt: reorderIn(stack[0]),
     }),
     actionsOf,
     combinationWith,

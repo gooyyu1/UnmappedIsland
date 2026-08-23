@@ -176,8 +176,8 @@ function createDigitPaper(
     card,
     { x, y: top, width, height },
     {
-      fill: COLOR.flipDigit,
-      border: COLOR.flipDigitRing,
+      fillColor: COLOR.flipDigit,
+      borderColor: COLOR.flipDigitRing,
       borderWidth: metrics.linePx(1),
       radius: metrics.px(6),
     },

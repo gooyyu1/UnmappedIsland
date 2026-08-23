@@ -27,7 +27,7 @@ export interface ScrollAreaOptions {
    * 面を渡さなければ送れない（送る必要が無い場所のため）。**シーン全体の入力は見ない**——外で
    * 始めたドラッグまで拾うと、覆っていない場所を触っただけで中身が動く。
    */
-  readonly surfaces?: readonly Phaser.GameObjects.GameObject[];
+  readonly inputSurfaces?: readonly Phaser.GameObjects.GameObject[];
 
   /** 送り具合を映す先。省略すると出さない。 */
   readonly readout?: ScrollReadout;
@@ -46,12 +46,12 @@ export interface ScrollAreaOptions {
  * **中身は持ちません。** 送るのは渡された1つの表示物の位置だけで、その中に何をどう並べるかは
  * 呼び出し側が決めます——1行に並べるレーンも、折り返して積む一覧も、これに乗ります。
  *
- * ドラッグは**始めた時点を基準に**測ります（`beginDrag`→`dragBy`）。カードの上から始めたドラッグを
+ * ドラッグは**始めた時点を基準に**測ります（`beginDrag`→`dragTo`）。カードの上から始めたドラッグを
  * 途中から送りに変える場合も、外から同じ2つを呼べば同じように動きます（CardDragController）。
  */
 export class ScrollArea {
-  /** 送り量0のときの中身の位置。 */
-  private readonly origin: number;
+  /** 送り量0のときの中身の位置（座標）。 */
+  private readonly contentPositionAtScrollZero: number;
 
   private readonly axis: 'x' | 'y';
   private readonly content: Phaser.GameObjects.Container;
@@ -69,17 +69,17 @@ export class ScrollArea {
   constructor(scene: Phaser.Scene, options: ScrollAreaOptions) {
     this.axis = options.axis;
     this.content = options.content;
-    this.origin = options.axis === 'x' ? options.content.x : options.content.y;
+    this.contentPositionAtScrollZero = options.axis === 'x' ? options.content.x : options.content.y;
     this.viewportLength = options.axis === 'x' ? options.viewport.width : options.viewport.height;
     this.readout = options.readout;
     this.onScroll = options.onScroll;
     this.unclip = options.clip === false ? undefined : clipToRect(scene, options.content, options.viewport);
 
-    for (const surface of options.surfaces ?? []) {
+    for (const surface of options.inputSurfaces ?? []) {
       scene.input.setDraggable(surface);
       surface.on('dragstart', () => this.beginDrag());
       surface.on('drag', (pointer: Phaser.Input.Pointer) =>
-        this.dragBy(this.axis === 'x' ? pointer.x - pointer.downX : pointer.y - pointer.downY),
+        this.dragTo(this.axis === 'x' ? pointer.x - pointer.downX : pointer.y - pointer.downY),
       );
       surface.on('wheel', (pointer: Phaser.Input.Pointer, deltaX: number, deltaY: number) =>
         this.scrollTo(this.offset - wheelPixels(pointer, deltaX, deltaY)),
@@ -89,7 +89,7 @@ export class ScrollArea {
 
   /** 今の送り量（0が先頭、送るほど負）。 */
   get offset(): number {
-    return (this.axis === 'x' ? this.content.x : this.content.y) - this.origin;
+    return (this.axis === 'x' ? this.content.x : this.content.y) - this.contentPositionAtScrollZero;
   }
 
   /**
@@ -104,8 +104,8 @@ export class ScrollArea {
   /** 送り量を可動範囲へ収めて反映する。 */
   scrollTo(offset: number): void {
     const clamped = clampScroll(offset, this.minOffset);
-    if (this.axis === 'x') this.content.x = this.origin + clamped;
-    else this.content.y = this.origin + clamped;
+    if (this.axis === 'x') this.content.x = this.contentPositionAtScrollZero + clamped;
+    else this.content.y = this.contentPositionAtScrollZero + clamped;
 
     this.onScroll?.(clamped);
     this.readout?.setScroll(clamped, this.minOffset);
@@ -116,9 +116,9 @@ export class ScrollArea {
     this.dragStart = this.offset;
   }
 
-  /** beginDragの時点からのポインタの移動量を、送り量へ反映する。 */
-  dragBy(delta: number): void {
-    this.scrollTo(this.dragStart + delta);
+  /** beginDragの時点から測ったポインタの移動量（増分ではなく累積）を、送り量へ反映する。 */
+  dragTo(distanceFromDragStart: number): void {
+    this.scrollTo(this.dragStart + distanceFromDragStart);
   }
 
   destroy(): void {

@@ -7,13 +7,13 @@ import {
   CONTENT_GAP,
   MIN_WINDOW_WIDTH,
   WINDOW_PADDING,
-  centerWindow,
+  centeredWindowRect,
   closeRow,
 } from '../looks/childWindowLayout';
 import { addLabel } from '../../ui/labels';
 import { objectTexture } from '../../art/objectArt';
 import { ProgressBar } from './ProgressBar';
-import { addPanel, drawBox } from '../../ui/shapes';
+import { addInputBlockingPanel, drawBox } from '../../ui/shapes';
 import { onPressRelease } from '../../ui/tap';
 import type { StatusContent, StatusInfluence } from './StatusBar';
 import { COLOR, SIZE } from '../looks/theme';
@@ -119,7 +119,9 @@ export class StatusDetailWindow {
     const barHeight = metrics.px(BAR_HEIGHT);
 
     const { width, height } = metrics;
-    this.ownedObjects.push(addPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5));
+    this.ownedObjects.push(
+      addInputBlockingPanel(scene, { x: 0, y: 0, width, height }, COLOR.modalOverlay, 0.5),
+    );
 
     const windowWidth = Math.min(metrics.px(MIN_WINDOW_WIDTH), options.area.width, width * 0.92);
     const contentWidth = windowWidth - padding * 2;
@@ -145,7 +147,7 @@ export class StatusDetailWindow {
     const description = addLabel(scene, metrics, 0, 0, detail?.description ?? uiText('no_description'), {
       size: DESCRIPTION_SIZE,
       color: detail?.description === undefined ? COLOR.textMuted : COLOR.text,
-      wrapWidth: contentWidth,
+      wrapWidthPx: contentWidth,
       lineGap: DESCRIPTION_LINE_GAP,
     });
 
@@ -179,8 +181,8 @@ export class StatusDetailWindow {
       received.height +
       gap +
       actionHeight;
-    const window = centerWindow(metrics, options.area, windowWidth, windowHeight);
-    drawBox(board, window, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
+    const window = centeredWindowRect(metrics, options.area, windowWidth, windowHeight);
+    drawBox(board, window, { fillColor: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
 
     const left = window.x + padding;
     let y = window.y + padding;
@@ -380,8 +382,8 @@ export class StatusDetailWindow {
           board,
           { x, y, width, height },
           {
-            fill: COLOR.cardFace,
-            border: COLOR.cardBorder,
+            fillColor: COLOR.cardFace,
+            borderColor: COLOR.cardBorder,
             borderWidth: metrics.linePx(2),
             radius: metrics.px(SIZE.radius) / 2,
           },
@@ -457,8 +459,8 @@ function drawStagePlate(
     plate,
     { x: at.centerX - width / 2, y: at.top, width, height: at.height },
     {
-      fill: COLOR.optionsBar,
-      border: COLOR.cardBorder,
+      fillColor: COLOR.optionsBar,
+      borderColor: COLOR.cardBorder,
       borderWidth: metrics.linePx(2),
       radius: metrics.px(SIZE.radius),
     },
@@ -493,7 +495,7 @@ function addTileLabel(
 
   return addLabel(scene, metrics, 0, 0, influence.name, {
     size: TILE_NAME_SIZE,
-    wrapWidth: width,
+    wrapWidthPx: width,
   })
     .setOrigin(0.5)
     .setAlign('center');

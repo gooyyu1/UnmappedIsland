@@ -63,7 +63,7 @@ export class ShownStatuses {
    * timePassedは、その操作がゲーム内時間を消費したか。**記号が消えるのは時間が経過してなお値が
    * 動かなかったときだけ**なので、消費しない操作（箱へ入れる・並べ替える）では前の記号が残る。
    */
-  note(before: readonly StatusContent[], timePassed: boolean): void {
+  noteChangesSince(before: readonly StatusContent[], timePassed: boolean): void {
     this.changes = statusChangesAfter(this.changes, before, this.all(), timePassed);
   }
 
@@ -78,21 +78,21 @@ export class ShownStatuses {
    */
   rows(wouldShowChangeFor: (status: StatusContent) => boolean): readonly StatusContent[] {
     return statusRows(
-      this.source.statuses().map((status) => this.shown(status)),
-      this.entries().map((status) => this.shown(status)),
+      this.source.statuses().map((status) => this.shownRowOf(status)),
+      this.categoryRows().map((status) => this.shownRowOf(status)),
       wouldShowChangeFor,
     );
   }
 
   /** プロパティのタブにだけ出る行も含めた全件（タブの並び順）。 */
-  private entries(): readonly StatusContent[] {
+  private categoryRows(): readonly StatusContent[] {
     return this.source.categories().flatMap((tab) => tab.entries);
   }
 
   /** 全プロパティの行（重複は先勝ち、mergedStatuses）。バーを作るときと、行動の前後を比べるときに使う。 */
   all(): readonly StatusContent[] {
     return mergedStatuses(this.source.statuses(), this.source.categories()).map((status) =>
-      this.shown(status),
+      this.shownRowOf(status),
     );
   }
 
@@ -105,11 +105,11 @@ export class ShownStatuses {
   tabs(): readonly PropertyTab[] {
     return this.source
       .categories()
-      .map((tab) => ({ name: tab.name, entries: tab.entries.map((status) => this.shown(status)) }));
+      .map((tab) => ({ name: tab.name, entries: tab.entries.map((status) => this.shownRowOf(status)) }));
   }
 
   /** 1行分の見え方。直前の行動での増減・固定表示・経過中かを添える。 */
-  private shown(status: StatusContent): StatusContent {
+  private shownRowOf(status: StatusContent): StatusContent {
     const delta = this.changes.get(status.key);
     return {
       ...status,

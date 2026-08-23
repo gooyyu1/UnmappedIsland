@@ -8,4 +8,4 @@
  * **最も薄いときの濃さは各々が持つ。** 面積が違えば同じ濃さでも目に入る量が違うので、そちらは
  * 揃える意味が無い（画面全体の枠だけ薄い）。
  */
-export const ALERT_BLINK_MS = 450;
+export const ALERT_BLINK_HALF_CYCLE_MS = 450;

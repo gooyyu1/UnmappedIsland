@@ -1,7 +1,7 @@
 import type { WorldObject } from '../../domain/WorldObject';
 import type { ObjectCardStack } from './PlayScreenView';
 import type { CardCombination, CardDrop } from './cardOperations';
-import type { CardPlace, CardPlacement, ScreenPlaces } from './cardPlaces';
+import type { CardPlace, CardPlacement, ScreenPlaceResolver } from './cardPlaces';
 import type { CardContent, CardEdgeDirection } from '../ui/Card';
 import { cardFace } from '../ui/cardFace';
 
@@ -26,7 +26,7 @@ export interface CardSource {
   /** 子ウィンドウが映しているスロット（映していなければundefined）。端の行き先の候補に入る。 */
   readonly windowPlace: () => CardPlace | undefined;
   /** 画面の区画が映しているスロット（PlayScreenView.places）。端の行き先はレーンの並びで決まる。 */
-  readonly places: ScreenPlaces;
+  readonly places: ScreenPlaceResolver;
 }
 
 /** ドラッグしたカードを落とした先（CardDropの、レーンを場所に直した形）。 */
@@ -92,7 +92,7 @@ export class ShownCards {
     if (aloft.size === 0) return stacks;
 
     return stacks.flatMap<ObjectCardStack | undefined>((stack) =>
-      stack === undefined ? [undefined] : this.showing(stack, aloft),
+      stack === undefined ? [undefined] : this.shownStacksOf(stack, aloft),
     );
   }
 
@@ -114,7 +114,7 @@ export class ShownCards {
    * **出ている個体だけを名乗る**（identity）。よそに出ているぶんはawaitedとして枠が待つので、
    * 同じ個体の札が画面に2枚出ることはなく、掴める札・重ねられる札もここに在るものだけになる。
    */
-  private showing(
+  private shownStacksOf(
     stack: ObjectCardStack,
     aloft: ReadonlyMap<number, 'awaited' | 'unplaced'>,
   ): readonly ObjectCardStack[] {
@@ -124,7 +124,7 @@ export class ShownCards {
     const awaited = stack.objects
       .filter((object) => aloft.get(object.instanceId) === 'awaited')
       .map((object) => object.instanceId);
-    if (rest.length === 0) return awaited.length === 0 ? [] : [awaitingStack(stack, awaited)];
+    if (rest.length === 0) return awaited.length === 0 ? [] : [stackWithAwaitingMark(stack, awaited)];
 
     const shown = this.source.cardOfObjects(rest);
     return [awaited.length === 0 ? shown : { ...shown, awaited }];
@@ -187,7 +187,7 @@ export class ShownCards {
     if (awaited.length === 0) return card;
 
     const rest = ids.filter((id) => !borrowed.has(id));
-    return rest.length === 0 ? awaitingMark(card, awaited) : { ...card, identity: rest, awaited };
+    return rest.length === 0 ? cardWithAwaitingMark(card, awaited) : { ...card, identity: rest, awaited };
   }
 
   /**
@@ -195,7 +195,7 @@ export class ShownCards {
    * ——ウィンドウが映しているのも、ボタンの操作が効くのもその1個だけ。引き直せたら、映す束も
    * 返すときの姿もその新しい札になる。
    */
-  restackWindow(): ObjectCardStack | undefined {
+  reborrowedCard(): ObjectCardStack | undefined {
     const opened = this.window?.stack;
     const id = opened?.identity?.[0];
     if (opened === undefined || id === undefined) return undefined;
@@ -287,7 +287,7 @@ export class ShownCards {
 
     // 同じ場所の中は並び替え。位置が変わるだけなので、名乗るものも値段も無い。
     if (drop.from === drop.to) {
-      const execute = dragged.reorder?.(drop.target);
+      const execute = dragged.reorderActionAt?.(drop.target);
       return execute === undefined
         ? undefined
         : {
@@ -316,7 +316,9 @@ export class ShownCards {
    * どの個体が動くのかは、起きることの側が答える（CardDrop.movedIds）——ワールドが動かすものと
    * 画面が飛ばすものを食い違わせないため。
    */
-  movedBy(drop: ShownDrop): { readonly grabbed: number; readonly followers: readonly number[] } | undefined {
+  releasedBy(
+    drop: ShownDrop,
+  ): { readonly grabbed: number; readonly followers: readonly number[] } | undefined {
     const moved = this.dropEffect(drop)?.movedIds ?? [];
     const grabbed = moved.at(0);
     return grabbed === undefined ? undefined : { grabbed, followers: moved.slice(1) };
@@ -335,7 +337,7 @@ export class ShownCards {
   // ---- カードの端の移動 ----
 
   /** 端を押したときの移動（その向きへ移せないならundefined）。行き先は「空いている場所」なので位置は指定しない。 */
-  edgeMove(card: ObjectCardStack, direction: CardEdgeDirection): (() => void) | undefined {
+  edgeMoveAction(card: ObjectCardStack, direction: CardEdgeDirection): (() => void) | undefined {
     for (const place of this.edgeTargets(card.place, direction)) {
       const dropped = card.dropInto?.(place);
       if (dropped !== undefined) return dropped.execute;
@@ -372,15 +374,15 @@ export class ShownCards {
  * 何も持たない**——掴めないだけでなく、重ねる相手にも入れ物にもならない。そこに在るのは札ではなく、
  * 借りた1枚が帰ってくる場所の目印だから。
  */
-function awaitingMark(card: CardContent, awaited: readonly number[]): CardContent {
+function cardWithAwaitingMark(card: CardContent, awaited: readonly number[]): CardContent {
   // 個体を映す札ではあるが、今そこに在るのは0個（識別子を持たない札＝個体を映さない札とは別物）。
   return { ...cardFace(card), identity: [], awaited };
 }
 
 /** 束の枠に残る印。操作を持たないだけでなく、個体を1つも出していない（掴めず、重ねる相手にもならない）。 */
-function awaitingStack(stack: ObjectCardStack, awaited: readonly number[]): ObjectCardStack {
+function stackWithAwaitingMark(stack: ObjectCardStack, awaited: readonly number[]): ObjectCardStack {
   return {
-    ...awaitingMark(stack, awaited),
+    ...cardWithAwaitingMark(stack, awaited),
     objects: [],
     actions: [],
     visibleSlots: [],

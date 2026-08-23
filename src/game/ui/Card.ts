@@ -13,12 +13,12 @@ import type { ProgressBarOptions } from './ProgressBar';
 import type { AlertLevel } from '../../domain/AlertLevel';
 import type { GaugeEnd } from '../../domain/PropertyDef';
 import { noteOperation } from '../errorReport';
-import { minutesText } from '../looks/durationText';
+import { hoursAndMinutesText } from '../looks/timeTexts';
 import { HoldRepeat } from '../../ui/holdRepeat';
 import { onPressRelease } from '../../ui/tap';
 import { isAlive } from '../../ui/lifetime';
 import { cardFace } from './cardFace';
-import { ALERT_BLINK_MS } from '../looks/alertBlink';
+import { ALERT_BLINK_HALF_CYCLE_MS } from '../looks/alertBlink';
 
 /**
  * カードの枠の画像のテクスチャキー（実体はsrc/assets/ui/card_frame.png、BootSceneが読む）。
@@ -730,7 +730,7 @@ export class Card extends Phaser.GameObjects.Container {
     const gap = metrics.px(COOKING_BAR_GAP);
     const barHeight = metrics.px(COOKING_BAR_HEIGHT);
 
-    this.cookingText.setText(minutesText(cooking.minutes)).setScale(1);
+    this.cookingText.setText(hoursAndMinutesText(cooking.minutes)).setScale(1);
     const room = inner.width - metrics.px(COOKING_BAR_MARGIN) * 2;
     const scale = Math.min(1, room / Math.max(1, this.cookingText.width));
     this.cookingText.setScale(scale);
@@ -765,7 +765,7 @@ export class Card extends Phaser.GameObjects.Container {
       this.alertBlink = this.scene.tweens.add({
         targets: this.alertOutline,
         alpha: ALERT_BLINK_MIN_ALPHA,
-        duration: ALERT_BLINK_MS,
+        duration: ALERT_BLINK_HALF_CYCLE_MS,
         yoyo: true,
         repeat: -1,
       });
@@ -1144,7 +1144,7 @@ export class Card extends Phaser.GameObjects.Container {
     const lineWidth = metrics.px(PRESSED_BORDER_WIDTH);
     const { rect, radius } = paperStroke(metrics, width, height, lineWidth);
     drawBox(highlight, rect, {
-      border: COLOR.cardBorder,
+      borderColor: COLOR.cardBorder,
       borderWidth: lineWidth,
       radius,
     });
@@ -1313,7 +1313,7 @@ export class CellHighlight extends Phaser.GameObjects.Graphics {
         height: metrics.px(SIZE.cardHeight) + width,
       },
       {
-        border: color,
+        borderColor: color,
         borderWidth: width,
         radius: metrics.px(PAPER_INSET + PAPER_RADIUS + CELL_HIGHLIGHT_WIDTH / 2),
       },
@@ -1360,7 +1360,7 @@ export class CellOverlay extends Phaser.GameObjects.Container {
     drawBox(
       plate,
       { x: -badgeWidth / 2, y: -badgeHeight / 2, width: badgeWidth, height: badgeHeight },
-      { fill: COLOR.cellOverlayPlate, fillAlpha: CELL_OVERLAY_PLATE_ALPHA, radius: badgeHeight / 2 },
+      { fillColor: COLOR.cellOverlayPlate, fillAlpha: CELL_OVERLAY_PLATE_ALPHA, radius: badgeHeight / 2 },
     );
 
     return scene.add.container(
@@ -1402,7 +1402,7 @@ function createEmptyOutline(
   const lineWidth = metrics.linePx(2);
   const { rect, radius } = paperStroke(metrics, width, height, lineWidth);
   drawBox(outline, rect, {
-    border: COLOR.cardBorder,
+    borderColor: COLOR.cardBorder,
     borderWidth: lineWidth,
     radius,
     dashed: true,
@@ -1435,9 +1435,9 @@ function createPaper(
 
   const face = scene.add.graphics();
   drawBox(face, paperRect(metrics, width, height), {
-    fill: COLOR.cardFace,
+    fillColor: COLOR.cardFace,
     fillAlpha: empty ? 0.35 : 0.85,
-    border: COLOR.cardBorder,
+    borderColor: COLOR.cardBorder,
     borderWidth: metrics.linePx(2),
     radius: metrics.px(PAPER_RADIUS),
     dashed: empty,
@@ -1496,7 +1496,7 @@ function createVeil(
 ): Phaser.GameObjects.Graphics {
   const veil = scene.add.graphics();
   drawBox(veil, paperRect(metrics, width, height), {
-    fill,
+    fillColor: fill,
     fillAlpha,
     radius: metrics.px(PAPER_RADIUS),
   });

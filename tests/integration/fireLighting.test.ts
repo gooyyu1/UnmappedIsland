@@ -7,7 +7,7 @@ import type { Localization } from '../../src/locale/Localization';
 import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { cardPlacesOf } from '../../src/game/view/cardPlaces';
-import { recordChange } from '../../src/game/view/recording';
+import { runAndRecordChange } from '../../src/game/view/recording';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 import { fixedRng } from '../support/rng';
 
@@ -48,7 +48,7 @@ describe('火起こし（世界→映し 通し）', () => {
     const drill = put('fire_drill', handSlot);
     const grass = put('dry_grass', itemsSlot);
 
-    const recording = recordChange(game, codex, locale, undefined, () => {
+    const recording = runAndRecordChange(game, codex, locale, undefined, () => {
       const light = grass.combinationsWith(drill, player).find((c) => c.name === 'light');
       expect(light?.tryExecute(), '火起こしが成立する').toBe(true);
     });
@@ -63,7 +63,7 @@ describe('火起こし（世界→映し 通し）', () => {
       );
     }
     expect(
-      recording.changes.map((change) => change.object.def.name),
+      recording.changesAtEnd.map((change) => change.object.def.name),
       '火口が消えて火種が生まれるのは、経過し切った時点',
     ).toEqual(['dry_grass', 'burning_tinder']);
   });

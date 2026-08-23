@@ -4,7 +4,11 @@ import type { WorldChange } from '../../src/domain/WorldChange';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
-import { bornInstances, originInstances, vanishedInstances } from '../../src/game/view/changedInstances';
+import {
+  bornInstances,
+  originInstanceByInstance,
+  vanishedInstances,
+} from '../../src/game/view/changedInstances';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 
@@ -76,7 +80,7 @@ object_defs:
   function originsOf(body: () => void): ReadonlyMap<number, number> {
     const changes: WorldChange[] = [];
     session.observeChanges((change) => changes.push(change), body);
-    return originInstances(changes);
+    return originInstanceByInstance(changes);
   }
 
   it('効果が動かした物は、その効果を宣言していた側の札から飛ぶ', () => {

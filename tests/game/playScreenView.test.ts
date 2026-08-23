@@ -203,7 +203,7 @@ object_defs:
       '地面へも下ろせない',
     ).toBeUndefined();
     expect(
-      lane(view, mini, 'fixtures')[0].reorder,
+      lane(view, mini, 'fixtures')[0].reorderActionAt,
       '並び方はプレイヤーが決めるので並び替えはできる',
     ).toBeTypeOf('function');
   });

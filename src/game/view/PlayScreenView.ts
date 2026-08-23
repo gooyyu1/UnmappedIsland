@@ -11,7 +11,7 @@ import { craftingMaterials } from './craftingView';
 import { cardLooksOf } from './cardLooks';
 import type { CardAction, CardCombination, CardDrop, CardOperations } from './cardOperations';
 import { cardOperationsOf } from './cardOperations';
-import type { CardPlace, CardPlacement, ScreenPlaces } from './cardPlaces';
+import type { CardPlace, CardPlacement, ScreenPlaceResolver } from './cardPlaces';
 import { cardPlacesOf } from './cardPlaces';
 import type { SlotRef } from '../../art/backgroundArt';
 import type { CardContent } from '../ui/Card';
@@ -25,8 +25,8 @@ import type { StatusContent, StatusDetail, StatusInfluence } from '../ui/StatusB
  * スタックのメンバーはobjectsに全部入っていて、束ねているだけの表示上の都合で1枚に見えている
  * （CardContent.identityも全メンバーのID）。1枚しか無い束もこの形で表す。
  *
- * dropInto・reorder・combinationOfが返す操作はワールドを変えるだけで、画面への反映（表示内容の
- * 作り直し）は呼び出し側の責務。dropIntoとreorderは「そこへ落とせるか」を、答えを返すか否かで示す。
+ * dropInto・reorderActionAt・combinationOfが返す操作はワールドを変えるだけで、画面への反映（表示内容の
+ * 作り直し）は呼び出し側の責務。dropIntoとreorderActionAtは「そこへ落とせるか」を、答えを返すか否かで示す。
  * 落とせない場所（持ち歩けない設置物、出し入れできない怪我など）ではundefinedになるので、呼び出し側は
  * 落とし先の枠を出す前に問い合わせられる。
  */
@@ -81,7 +81,7 @@ export interface ObjectCardStack extends CardContent {
    * 同じ場所の中で位置を変える操作。こちらは束ごと動かす（1つずつでは元の束へ合流して戻ってしまうため、
    * SlotSystem.md 3節）。
    */
-  readonly reorder?: (at: CardPlacement) => (() => void) | undefined;
+  readonly reorderActionAt?: (at: CardPlacement) => (() => void) | undefined;
 }
 
 /**
@@ -244,7 +244,7 @@ export interface PlayScreenView {
    * 常に見えている3つのレーンが今映しているスロット。**画面が自分で名指しするのはこの3つだけ**で、
    * それ以外の場所はカードや現在地が名乗る`visible_slots`から来る（cardPlaces参照）。
    */
-  readonly places: ScreenPlaces;
+  readonly places: ScreenPlaceResolver;
 
   /** その場所を並びとして見せるのに要るもの。**場所ごとに変わる**ので、値ではなく問い合わせ。 */
   readonly slotViewOf: (place: CardPlace) => SlotView;
@@ -302,7 +302,7 @@ export interface PlayScreenView {
  * ——45分の行動の結果が、経過を見せている途中の画面に先に現れる。
  *
  * **画面が引きうる場所を漏らさず渡すこと。** 焼き付けていない場所は生きたワールドのままなので、
- * 渡し忘れた場所だけが未来を映す（recordChange参照）。
+ * 渡し忘れた場所だけが未来を映す（runAndRecordChange参照）。
  */
 export function withFrozenCards(
   view: PlayScreenView,

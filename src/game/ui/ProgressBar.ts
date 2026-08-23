@@ -2,8 +2,8 @@ import Phaser from 'phaser';
 import type { AlertLevel } from '../../domain/AlertLevel';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { drawBox } from '../../ui/shapes';
-import { COLOR, alertBorderColorFor, fadedFill, statusFillColorFor } from '../looks/theme';
-import { ALERT_BLINK_MS } from '../looks/alertBlink';
+import { COLOR, alertBorderColorFor, gainBandFill, statusFillColorFor } from '../looks/theme';
+import { ALERT_BLINK_HALF_CYCLE_MS } from '../looks/alertBlink';
 
 /** バーの中の区間（0〜1）。今いる段が占める範囲を表す。 */
 export interface BarSpan {
@@ -323,17 +323,17 @@ export class ProgressBar extends Phaser.GameObjects.Container {
       const width = Math.max(this.borderWidth, this.alertBorderWidth);
       this.alertFrame.clear();
       drawBox(this.alertFrame, box, {
-        border: COLOR.statusAlertOutline,
+        borderColor: COLOR.statusAlertOutline,
         borderWidth: this.alertOutlineWidth,
         radius: this.radius,
       });
-      drawBox(this.alertFrame, box, { border: color, borderWidth: width, radius: this.radius });
+      drawBox(this.alertFrame, box, { borderColor: color, borderWidth: width, radius: this.radius });
       this.alertFrame.setVisible(true);
 
       this.blinkTween ??= this.scene.tweens.add({
         targets: this.alertFrame,
         alpha: BLINK_MIN_ALPHA,
-        duration: ALERT_BLINK_MS,
+        duration: ALERT_BLINK_HALF_CYCLE_MS,
         yoyo: true,
         repeat: -1,
       });
@@ -345,25 +345,25 @@ export class ProgressBar extends Phaser.GameObjects.Container {
     const { barWidth: width, barHeight: height, radius } = this;
 
     this.bar.clear();
-    drawBox(this.bar, { x: 0, y: 0, width, height }, { fill: COLOR.statusBarTrack, radius });
+    drawBox(this.bar, { x: 0, y: 0, width, height }, { fillColor: COLOR.statusBarTrack, radius });
 
     const fill = this.fillColor?.(this.ratio) ?? statusFillColorFor(this.alert);
     const bandWidth = width * Math.max(this.ratio, this.shownRatio);
     if (bandWidth > 0) {
       // 失った分は赤、これから満ちる分は塗りを淡くした色（何が増える途中なのかが色で分かる）。
-      const band = this.improving ? fadedFill(fill) : COLOR.statusBarLag;
-      drawBox(this.bar, { x: 0, y: 0, width: bandWidth, height }, { fill: band, radius });
+      const band = this.improving ? gainBandFill(fill) : COLOR.statusBarLag;
+      drawBox(this.bar, { x: 0, y: 0, width: bandWidth, height }, { fillColor: band, radius });
     }
 
     const fillWidth = width * Math.min(this.ratio, this.shownRatio);
     if (fillWidth > 0) {
-      drawBox(this.bar, { x: 0, y: 0, width: fillWidth, height }, { fill, radius });
+      drawBox(this.bar, { x: 0, y: 0, width: fillWidth, height }, { fillColor: fill, radius });
     }
 
     drawBox(
       this.bar,
       { x: 0, y: 0, width, height },
-      { border: this.borderColor, borderWidth: this.borderWidth, radius },
+      { borderColor: this.borderColor, borderWidth: this.borderWidth, radius },
     );
   }
 }

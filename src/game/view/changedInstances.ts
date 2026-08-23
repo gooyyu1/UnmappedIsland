@@ -2,7 +2,7 @@ import type { WorldChange } from '../../domain/WorldChange';
 
 /**
  * 世界に起きた変化（WorldChange）を、カードの動きの言葉へ直す——どこから飛び立つか
- * （originInstances）と、どのインスタンスが世界に出入りしたか（bornInstances / vanishedInstances）。
+ * （originInstanceByInstance）と、どのインスタンスが世界に出入りしたか（bornInstances / vanishedInstances）。
  *
  * **世界の出入りは、画面の出入りでは代われない。** 別のレーンへ移っただけのカードも、レーンから
  * 見れば消えて現れる。壊れた・生まれたことを知っているのは変化のログだけ。
@@ -19,7 +19,7 @@ import type { WorldChange } from '../../domain/WorldChange';
  * 同じインスタンスが一度の差し替えの間に何度も動いても、見せる飛びは1回なので最初の出どころを採る。
  * 世界から出た物（to === undefined）は何も現れないので持たない。
  */
-export function originInstances(changes: readonly WorldChange[]): ReadonlyMap<number, number> {
+export function originInstanceByInstance(changes: readonly WorldChange[]): ReadonlyMap<number, number> {
   const origins = new Map<number, number>();
   for (const change of changes) {
     if (change.to === undefined) continue;

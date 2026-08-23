@@ -6,7 +6,7 @@ import { ScrollArea } from '../../ui/scrollArea';
 import type { ObjectWindowLane, ObjectWindowPane } from './ObjectWindowPane';
 import type { StatusContent } from './StatusBar';
 import { StatusBar } from './StatusBar';
-import { addPanel } from '../../ui/shapes';
+import { addInputBlockingPanel } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 
 /** カテゴリの縦タブの幅と、タブ同士・行同士の間隔。 */
@@ -138,7 +138,7 @@ export class PropertiesPane implements ObjectWindowPane {
 
     // ドラッグとホイールを受ける面は、**行より先に**敷く（後に敷くと行を押せなくなる）。
     const viewportRect = { x: left, y: area.y, width, height: area.height };
-    this.surface = addPanel(scene, viewportRect, COLOR.cardFace, 0);
+    this.surface = addInputBlockingPanel(scene, viewportRect, COLOR.cardFace, 0);
 
     const viewport = scene.add.container(0, 0);
     this.viewport = viewport;
@@ -146,7 +146,7 @@ export class PropertiesPane implements ObjectWindowPane {
       axis: 'y',
       content: viewport,
       viewport: viewportRect,
-      surfaces: [this.surface],
+      inputSurfaces: [this.surface],
     });
 
     const entries = this.categories[this.selected]?.entries ?? [];

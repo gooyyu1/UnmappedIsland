@@ -4,7 +4,7 @@ import type { StatusChange, StatusContent } from '../ui/StatusBar';
 /**
  * ステータスエリアの候補とプロパティの全カテゴリを、**重複は先勝ちで**1つの並びへ畳む。
  * 行動の前後を比べるのも、バーを作るのも、この1つの畳み方を通す——別々に畳むと、控え
- * （recordChange）と表示（ShownStatuses）が違う集合を答える。
+ * （runAndRecordChange）と表示（ShownStatuses）が違う集合を答える。
  */
 export function mergedStatuses(
   statuses: readonly StatusContent[],

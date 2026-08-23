@@ -69,9 +69,7 @@ export interface MotionInput<C, R> {
 export interface PlannedFlight<C, R> {
   /** この便が運ぶインスタンス。実行側はこのIDを載せた実体の札を飛ばし、着いた枠で合流させる。 */
   readonly id: number;
-  /** 便の見た目を借りるカード（行き先のカード）。 */
-  readonly face: C;
-  /** その1枚が着く枠の札。着いた時点で、その枠に居る枚数が1つ増える。 */
+  /** その1枚が着く枠の札。着いた時点で、その枠に居る枚数が1つ増え、便はこの札の見た目を借りる。 */
   readonly into: C;
   readonly from: R;
   readonly to: R;
@@ -191,7 +189,6 @@ export function planMotion<C, R>(input: MotionInput<C, R>): MotionPlan<C, R> {
       for (const source of sources) {
         flights.push({
           id: source.id,
-          face: to.card,
           into: to.card,
           from: source.rect,
           to: to.rect,

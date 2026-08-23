@@ -103,7 +103,7 @@ describe('ステータスエリアに出ている行', () => {
     const before = shown.all();
 
     world.statuses = [status('hunger', 70, 'danger')];
-    shown.note(before, true);
+    shown.noteChangesSince(before, true);
 
     expect(shown.rows(settled)[0]).toMatchObject({ change: 'increased', ratioBefore: 0.4 });
     expect(shown.contentOf('hunger'), '詳細も同じ見え方').toMatchObject({ change: 'increased' });
@@ -115,14 +115,14 @@ describe('ステータスエリアに出ている行', () => {
 
     const before = shown.all();
     world.statuses = [status('hunger', 70, 'danger')];
-    shown.note(before, true);
+    shown.noteChangesSince(before, true);
 
     // 箱へ入れる・並べ替えるといった、時間の経たない操作。値も動かない。
-    shown.note(shown.all(), false);
+    shown.noteChangesSince(shown.all(), false);
     expect(shown.rows(settled)[0].change, '前の行動の記号はまだ出ている').toBe('increased');
 
     // 時間が経ってなお動かなければ、そこで消える。
-    shown.note(shown.all(), true);
+    shown.noteChangesSince(shown.all(), true);
     expect(shown.rows(settled)[0].change).toBeUndefined();
   });
 
@@ -143,7 +143,7 @@ describe('ステータスエリアに出ている行', () => {
     const { shown } = screen(world, ['hunger']);
     const before = shown.all();
     world.statuses = [status('hunger', 70, 'danger')];
-    shown.note(before, true);
+    shown.noteChangesSince(before, true);
 
     shown.reset([]);
 

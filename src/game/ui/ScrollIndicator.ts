@@ -47,7 +47,7 @@ export class ScrollIndicator extends Phaser.GameObjects.Container {
 
     const track = scene.add.graphics();
     drawBox(track, this.boxOf(width), {
-      fill: COLOR.scrollBarTrack,
+      fillColor: COLOR.scrollBarTrack,
       fillAlpha: TRACK_ALPHA,
       radius: this.barHeight / 2,
     });
@@ -74,7 +74,7 @@ export class ScrollIndicator extends Phaser.GameObjects.Container {
         this.thumbWidth = span.width;
         this.thumb.clear();
         drawBox(this.thumb, this.boxOf(span.width), {
-          fill: COLOR.scrollBarThumb,
+          fillColor: COLOR.scrollBarThumb,
           fillAlpha: THUMB_ALPHA,
           radius: this.barHeight / 2,
         });

@@ -94,7 +94,7 @@ export class ExplorationPane implements ObjectWindowPane {
     this.note = addLabel(scene, metrics, centerX, cursorY, noteOf(ratio), {
       size: 24,
       color: COLOR.textMuted,
-      wrapWidth: area.width,
+      wrapWidthPx: area.width,
     })
       .setOrigin(0.5, 0)
       .setAlign('center');

@@ -6,7 +6,7 @@ import { Card, CellHighlight, CellOverlay, EmptyCard } from './Card';
 import type { LaneCell } from './laneCells';
 import { ScrollArea } from '../../ui/scrollArea';
 import { COLOR, SIZE } from '../looks/theme';
-import { addPanel, addTiledPanel } from '../../ui/shapes';
+import { addInputBlockingPanel, addInputBlockingTiledPanel } from '../../ui/shapes';
 import { ScrollIndicator } from './ScrollIndicator';
 import type { HazeSurface, HazeTarget } from './LaneHaze';
 
@@ -236,7 +236,7 @@ export class CardLane {
       axis: 'x',
       content: this.strip,
       viewport: { x: stripX, y: rect.y, width: this.stripWidth, height: rect.height },
-      surfaces: [panel, pinnedPanel].filter((target) => target !== undefined),
+      inputSurfaces: [panel, pinnedPanel].filter((target) => target !== undefined),
       readout: this.scrollIndicator,
       clip: options.clip === true,
       // 背景の絵もカードと同じだけ送る（地面の上を送る見え方）。
@@ -350,7 +350,7 @@ export class CardLane {
 
   /** beginScrollの時点からのポインタの移動量を、スクロール量へ反映する。 */
   scrollByDrag(deltaX: number): void {
-    this.scroll.dragBy(deltaX);
+    this.scroll.dragTo(deltaX);
   }
 
   /**
@@ -412,7 +412,7 @@ export class CardLane {
   }
 
   /**
-   * 背景板を1枚置く。絵があれば敷き、無ければ背景色で塗る。どちらも入力を遮る（addPanel参照）。
+   * 背景板を1枚置く。絵があれば敷き、無ければ背景色で塗る。どちらも入力を遮る（addInputBlockingPanel参照）。
    * 置いた板は自分で片付ける（ownedObjects）。scrollsWithCardsを倒すと、絵をスクロールで送る対象から外す。
    */
   private addBackground(
@@ -425,7 +425,9 @@ export class CardLane {
     // 絵が用意されていても届いていなければ（遅延ロードの失敗時）背景色へ落とす（Cardの絵文字代用と同じ姿勢）。
     const texture = art !== undefined && scene.textures.exists(art) ? art : undefined;
     const panel =
-      texture === undefined ? addPanel(scene, rect, background) : addTiledPanel(scene, rect, texture);
+      texture === undefined
+        ? addInputBlockingPanel(scene, rect, background)
+        : addInputBlockingTiledPanel(scene, rect, texture);
     if (panel instanceof Phaser.GameObjects.TileSprite && scrollsWithCards)
       this.scrollingBackgroundTiles.push(panel);
     if (panel instanceof Phaser.GameObjects.TileSprite) this.hazeTargets.push(panel);

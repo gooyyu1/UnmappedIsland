@@ -183,7 +183,7 @@ export class CardTable {
     for (const rect of plan.puffs) this.dust.burst(rect);
     for (const flight of plan.flights) {
       const card = new Card(this.scene, this.metrics, flight.from.x, flight.from.y, {
-        ...cardFace(flight.face.content),
+        ...cardFace(flight.into.content),
         identity: [flight.id],
       });
       this.layer.add(card);

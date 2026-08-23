@@ -286,9 +286,9 @@ export class CardDragController {
       const { drop, info } = found;
       const rect = drop.to.dropIndicatorRect(drop.target);
       drawBox(gesture.indicator, rect, {
-        fill: COLOR.cardDropTarget,
+        fillColor: COLOR.cardDropTarget,
         fillAlpha: INDICATOR_FILL_ALPHA,
-        border: COLOR.cardDropTarget,
+        borderColor: COLOR.cardDropTarget,
         borderWidth: this.metrics().px(INDICATOR_BORDER),
         radius: this.metrics().px(SIZE.radius),
       });

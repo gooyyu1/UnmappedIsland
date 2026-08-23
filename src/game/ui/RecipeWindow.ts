@@ -6,14 +6,14 @@ import type { CardContent } from './Card';
 import { Card } from './Card';
 import { addLabel } from '../../ui/labels';
 import { ScrollArea } from '../../ui/scrollArea';
-import { addPanel, drawBox } from '../../ui/shapes';
+import { addInputBlockingPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 import { uiText } from '../../locale/uiTexts';
 import {
   ACTION_HEIGHT,
   CONTENT_GAP,
   WINDOW_PADDING,
-  centerWindow,
+  centeredWindowRect,
   closeRow,
 } from '../looks/childWindowLayout';
 
@@ -95,7 +95,12 @@ export class RecipeWindow {
 
     // 覆いも他の表示物と同じ後片付けに載せる（closeで一括して捨てる）。
     this.ownedObjects.push(
-      addPanel(scene, { x: 0, y: 0, width: metrics.width, height: metrics.height }, COLOR.modalOverlay, 0.5),
+      addInputBlockingPanel(
+        scene,
+        { x: 0, y: 0, width: metrics.width, height: metrics.height },
+        COLOR.modalOverlay,
+        0.5,
+      ),
     );
 
     const padding = metrics.px(WINDOW_PADDING);
@@ -109,7 +114,7 @@ export class RecipeWindow {
     const chrome = padding * 2 + metrics.px(TITLE_SIZE) + gap * 2 + metrics.px(ACTION_HEIGHT);
     const height = Math.min(metrics.height * 0.92, chrome + this.contentHeight());
 
-    this.area = centerWindow(
+    this.area = centeredWindowRect(
       metrics,
       { x: 0, y: 0, width: metrics.width, height: metrics.height },
       width,
@@ -139,7 +144,7 @@ export class RecipeWindow {
     const padding = metrics.px(WINDOW_PADDING);
 
     const box = scene.add.graphics();
-    drawBox(box, this.area, { fill: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
+    drawBox(box, this.area, { fillColor: COLOR.cardFace, radius: metrics.px(SIZE.radius) });
     this.ownedObjects.push(box);
 
     this.ownedObjects.push(
@@ -194,7 +199,7 @@ export class RecipeWindow {
 
     // ドラッグとホイールを受ける面は、**中身より先に**敷く（後に敷くとカードを押せなくなる）。
     const area = { x: left, y: this.bodyTop, width: innerWidth, height: viewHeight };
-    const surface = addPanel(scene, area, COLOR.cardFace, 0);
+    const surface = addInputBlockingPanel(scene, area, COLOR.cardFace, 0);
     this.ownedObjects.push(surface);
 
     // 中身は1つのコンテナへ入れて、窓の中だけに切り抜く。スクロールはこのコンテナを上下へ送る。
@@ -204,7 +209,7 @@ export class RecipeWindow {
       axis: 'y',
       content: viewport,
       viewport: area,
-      surfaces: [surface],
+      inputSurfaces: [surface],
     });
 
     const cardWidth = metrics.px(SIZE.cardWidth);

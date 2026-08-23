@@ -417,14 +417,14 @@ export class WorldObject {
       if (!place(targetSlot)) {
         // 枠数の決まったスロットで空きが作れず配置できなかった（呼び出し側でfallbackへ）。既に旧親から切り離し済みの
         // ため、この場合は未配置（どこにも属さない）で戻す。
-        this.session.recordChange(this, from, undefined);
+        this.session.runAndRecordChange(this, from, undefined);
         return `'${newParent.def.name}.${targetSlot.def.name}' に指定した位置の空きがありません。`;
       }
     } else {
       targetSlot.addWithoutParentLink(this);
     }
 
-    this.session.recordChange(this, from, targetSlot);
+    this.session.runAndRecordChange(this, from, targetSlot);
     this.setParent(newParent, targetSlot);
     this.setEdgeRegistered(newParent, true);
     // 祖先対象の登録は、新しい親チェーンが確定した後に行う（detachFromParentでの解除と対、
@@ -540,7 +540,7 @@ export class WorldObject {
     this.spillContentsTo(this._parent);
     const from = this._parentSlot;
     this.detachFromParent();
-    this.session.recordChange(this, from, undefined);
+    this.session.runAndRecordChange(this, from, undefined);
   }
 
   /**

@@ -14,14 +14,14 @@ export interface LabelStyle {
    * **この幅で文字単位に折り返す**（textLayout.wrapByCharacter）。省略すると折り返さない。
    * 単位はピクセル——収める矩形の幅をそのまま渡すため。
    */
-  readonly wrapWidth?: number;
+  readonly wrapWidthPx?: number;
 
   /** 行間（u単位）。省略すると行間を足さない。 */
   readonly lineGap?: number;
 }
 
-/** u単位の大きさをピクセルへ直せる相手（ScreenMetrics）。 */
-export interface FontScale {
+/** u単位の長さをピクセルへ直せる相手（ScreenMetrics）。 */
+export interface UnitScale {
   px(units: number): number;
   fontPx(units: number): number;
 }
@@ -45,7 +45,7 @@ export function setLabelDefaults(next: LabelDefaults): void {
 /** 画面共通のフォント設定でテキストを置く。原点の指定は呼び出し側で行う。 */
 export function addLabel(
   scene: Phaser.Scene,
-  metrics: FontScale,
+  metrics: UnitScale,
   x: number,
   y: number,
   content: string,
@@ -59,6 +59,6 @@ export function addLabel(
   });
 
   if (style.lineGap !== undefined) text.setLineSpacing(metrics.px(style.lineGap));
-  if (style.wrapWidth !== undefined) text.setWordWrapCallback(wrapByCharacter(style.wrapWidth));
+  if (style.wrapWidthPx !== undefined) text.setWordWrapCallback(wrapByCharacter(style.wrapWidthPx));
   return text;
 }

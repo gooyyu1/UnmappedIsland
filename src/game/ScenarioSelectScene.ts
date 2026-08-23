@@ -4,7 +4,7 @@ import { scenarioPlayData } from './PlayScene';
 import { Button } from './ui/Button';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { addLabel } from '../ui/labels';
-import { addPanel } from '../ui/shapes';
+import { addInputBlockingPanel } from '../ui/shapes';
 import { COLOR, SIZE, rowPlateStyle } from './looks/theme';
 import { LIST_ITEM_PADDING_X, LIST_PADDING } from './looks/listScreen';
 
@@ -24,7 +24,7 @@ export class ScenarioSelectScene extends ResponsiveScene {
 
   protected build(): void {
     const { width, height } = this.metrics;
-    addPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
+    addInputBlockingPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
     new ScreenHeader(this, this.metrics, width, 'テスト用シナリオ', () => this.scene.start('title'));
 
     const padding = this.metrics.px(LIST_PADDING);

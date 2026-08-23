@@ -125,9 +125,9 @@ export class Tooltip {
       face,
       { x: 0, y: 0, width: this.width, height: this.height },
       {
-        fill: COLOR.cardEdgeOverlay,
+        fillColor: COLOR.cardEdgeOverlay,
         fillAlpha: 0.94,
-        border: COLOR.textOnDark,
+        borderColor: COLOR.textOnDark,
         borderWidth: this.metrics.linePx(2),
         radius: this.metrics.px(SIZE.radius),
       },
@@ -146,7 +146,7 @@ export class Tooltip {
       size,
       bold,
       color: COLOR.textOnDark,
-      wrapWidth: maxWidth,
+      wrapWidthPx: maxWidth,
       lineGap: TEXT_LINE_GAP,
     });
   }
