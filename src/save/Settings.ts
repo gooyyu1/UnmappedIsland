@@ -1,4 +1,4 @@
-const KEY_PREFIX = 'unmapped-island:settings:';
+import { StorageArea } from './StorageArea';
 
 /** アセットパックを読むかどうかの記憶先。 */
 const ASSET_PACK = 'asset-pack';
@@ -13,10 +13,10 @@ const OPENED_TAB = 'opened-tab:';
  * （SaveSlotsと同じ）。
  */
 export class Settings {
-  private readonly storage: Storage;
+  private readonly area: StorageArea;
 
   constructor(storage: Storage) {
-    this.storage = storage;
+    this.area = new StorageArea(storage, 'settings');
   }
 
   /**
@@ -40,19 +40,19 @@ export class Settings {
    * セーブデータではなく設定に置くのは、これがプレイヤーの好みであってこの島の出来事ではないため。
    */
   openedTab(defName: string): string | undefined {
-    return this.storage.getItem(KEY_PREFIX + OPENED_TAB + defName) ?? undefined;
+    return this.area.readText(OPENED_TAB + defName);
   }
 
   rememberOpenedTab(defName: string, tab: string): void {
-    this.storage.setItem(KEY_PREFIX + OPENED_TAB + defName, tab);
+    this.area.writeText(tab, OPENED_TAB + defName);
   }
 
   /** 未設定も、他タブや手動編集で壊れた値も、既定側（false）として読む。 */
   private readFlag(name: string): boolean {
-    return this.storage.getItem(KEY_PREFIX + name) === 'true';
+    return this.area.readText(name) === 'true';
   }
 
   private writeFlag(name: string, value: boolean): void {
-    this.storage.setItem(KEY_PREFIX + name, String(value));
+    this.area.writeText(String(value), name);
   }
 }

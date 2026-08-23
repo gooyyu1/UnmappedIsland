@@ -1,5 +1,4 @@
-/** 棚の保存先のキー（セーブスロットとは別領域、SaveDataManagement.md 棚節）。 */
-const KEY = 'unmapped-island:shelf';
+import { StorageArea } from './StorageArea';
 
 /**
  * 持ち帰ったアーティファクトの棚（docs/concept/GameEndings.md 6節）。
@@ -14,24 +13,15 @@ const KEY = 'unmapped-island:shelf';
  * （SaveSlots・Settingsと同じ）。
  */
 export class Shelf {
-  private readonly storage: Storage;
+  private readonly area: StorageArea;
 
   constructor(storage: Storage) {
-    this.storage = storage;
+    this.area = new StorageArea(storage, 'shelf');
   }
 
   /** 棚に収まっているアーティファクトのobject_defの識別子（収めた順、重複なし）。 */
   get contents(): readonly string[] {
-    const raw = this.storage.getItem(KEY);
-    if (raw === null) return [];
-
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      // 他タブや手動編集で壊れた値は「まだ何も無い」として読む（SaveSlotsの壊れたスロットと同じ）。
-      return [];
-    }
+    const parsed = this.area.readJson();
     if (!Array.isArray(parsed)) return [];
     return [...new Set(parsed.filter((name): name is string => typeof name === 'string'))];
   }
@@ -45,7 +35,7 @@ export class Shelf {
     const added = names.filter((name) => !before.includes(name));
     if (added.length === 0) return [];
 
-    this.storage.setItem(KEY, JSON.stringify([...before, ...new Set(added)]));
+    this.area.writeJson([...before, ...new Set(added)]);
     return [...new Set(added)];
   }
 }

@@ -464,3 +464,20 @@ observe*が行う）。**どれも4つ全部の性質**なのでクラスのコ�
 `ActiveEffect.ts` / `ConditionNode.ts` を輸入しない。ここだけ**直接の輸入**を見る（読み手が輸入する
 定義クラスの先には木が居るので、到達可能性では見られない）。`docs/engine/Layers.md` 6節に
 「入れ子も、読み下せる宣言として渡す」を足し、規則はそこ1箇所に書いた。
+
+## 15. 段4 レーンA-10（保存領域のキー名前空間）
+
+`SaveSlots` / `Settings` / `Shelf` が `unmapped-island:` を各自で書き、壊れたJSONの扱いも各自で
+実装していた。**接頭辞の定数を1つ置くだけでは畳めていない**（3クラスが各自でキーを組む形は
+変わらない）ので、`StorageArea` に「領域1つ」として持たせた。
+
+- 領域を挙げるのは `StorageAreaName`（`save` / `settings` / `shelf`）の1箇所だけ。型なので、
+  4つめを勝手に足せない。
+- キーは `unmapped-island:{領域}[:{名前}]`。名前を省くと領域そのもの1件になる（`shelf`）。
+  **今のキーと1文字も変わらない**——既に保存されているものが読めなくなるので、ここは動かせない。
+  テストがキー文字列を直に書いているので、そのまま検証になった。
+- 壊れた値を未設定として読むのは `readJson` の中1箇所。`Shelf` と `SaveSlots` の try/catch が消え、
+  `SaveSlots.read` は `toSaveData(this.area.readJson(...))` の1行になった。
+
+`Settings` だけ JSON ではなく素の文字列を読み書きする（`'true'` / タブ名）ので、
+`readText` / `writeText` も置いた。値の形が違うだけで、キーの組み立てと領域は共通。

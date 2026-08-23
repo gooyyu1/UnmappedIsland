@@ -1,11 +1,10 @@
 import type { SaveData } from './SaveData';
 import { toSaveData } from './SaveData';
 import { SaveSlotIndexError } from './SaveSlotIndexError';
+import { StorageArea } from './StorageArea';
 
 /** スロット数は4固定（SaveDataManagement.md スロットの空き・削除節）。 */
 export const SLOT_COUNT = 4;
-
-const KEY_PREFIX = 'unmapped-island:save:';
 
 /**
  * 4スロット固定のセーブデータ置き場。
@@ -17,10 +16,10 @@ const KEY_PREFIX = 'unmapped-island:save:';
  * 保存先はコンストラクタで受け取る。ブラウザではlocalStorage、テストではメモリ上の実装を渡す。
  */
 export class SaveSlots {
-  private readonly storage: Storage;
+  private readonly area: StorageArea;
 
   constructor(storage: Storage) {
-    this.storage = storage;
+    this.area = new StorageArea(storage, 'save');
   }
 
   /** 全スロットを添字順に読む。空きスロット・壊れたデータはundefinedになる。 */
@@ -32,31 +31,22 @@ export class SaveSlots {
 
   /** スロットを読む。空き・壊れたデータ（他タブや手動編集で壊れうる）はundefined。 */
   read(slotIndex: number): SaveData | undefined {
-    const raw = this.storage.getItem(SaveSlots.keyOf(slotIndex));
-    if (raw === null) return undefined;
-
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return undefined;
-    }
-    return toSaveData(parsed);
+    return toSaveData(this.area.readJson(SaveSlots.nameOf(slotIndex)));
   }
 
   write(slotIndex: number, data: SaveData): void {
-    this.storage.setItem(SaveSlots.keyOf(slotIndex), JSON.stringify(data));
+    this.area.writeJson(data, SaveSlots.nameOf(slotIndex));
   }
 
   /** 削除は該当スロットのキーを消すだけで、他スロットに影響しない。 */
   delete(slotIndex: number): void {
-    this.storage.removeItem(SaveSlots.keyOf(slotIndex));
+    this.area.remove(SaveSlots.nameOf(slotIndex));
   }
 
-  private static keyOf(slotIndex: number): string {
+  private static nameOf(slotIndex: number): string {
     if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= SLOT_COUNT) {
       throw new SaveSlotIndexError(`スロット番号 ${slotIndex} は 0〜${SLOT_COUNT - 1} の範囲外です。`);
     }
-    return `${KEY_PREFIX}${slotIndex}`;
+    return String(slotIndex);
   }
 }
