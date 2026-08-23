@@ -37,15 +37,11 @@ describe('操作1回の段取り', () => {
 
   describe('経過を見せる手順', () => {
     const steps = (options: Partial<Parameters<typeof playbackSteps>[0]> = {}) =>
-      playbackSteps({ isDead: false, minutes: 45, reachedMainland: false, ...options });
+      playbackSteps({ ending: undefined, minutes: 45, ...options });
 
     it('死んだら、経過も結果も見せない', () => {
-      expect(steps({ isDead: true })).toEqual(['death']);
-      expect(steps({ isDead: true, minutes: 0 }), '時間を消費しない操作で死んでも同じ').toEqual(['death']);
-      expect(
-        steps({ isDead: true, reachedMainland: true }),
-        '本土に着いていても、死が先に画面を止める',
-      ).toEqual(['death']);
+      expect(steps({ ending: 'death' })).toEqual(['death']);
+      expect(steps({ ending: 'death', minutes: 0 }), '時間を消費しない操作で死んでも同じ').toEqual(['death']);
     });
 
     it('時間を消費するなら、控えを再生してから結果へ進む', () => {
@@ -63,8 +59,8 @@ describe('操作1回の段取り', () => {
     });
 
     it('本土に着いたら、見せ終わってから出す', () => {
-      expect(steps({ reachedMainland: true })).toEqual(['gains', 'replay', 'elapsed', 'escape']);
-      expect(steps({ minutes: 0, reachedMainland: true })).toEqual(['gains', 'elapsed', 'escape']);
+      expect(steps({ ending: 'escape' })).toEqual(['gains', 'replay', 'elapsed', 'escape']);
+      expect(steps({ minutes: 0, ending: 'escape' })).toEqual(['gains', 'elapsed', 'escape']);
     });
 
     it('着いていなければ周回の終わりは出さない', () => {

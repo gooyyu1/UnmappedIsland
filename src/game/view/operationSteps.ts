@@ -6,6 +6,8 @@
  * 増減はステータスへ反映する前——をここへ集めて、画面を作らずに確かめられるようにする。
  */
 
+import type { EndingKind } from '../../domain/wrappers/Ending';
+
 /**
  * 画面が今見せている最中のこと（PlayScene.activity）。
  *
@@ -53,16 +55,18 @@ export function isMidAction(activity: Activity): boolean {
  */
 export type PlaybackStep = 'death' | 'gains' | 'replay' | 'elapsed' | 'escape';
 
-/** minutesは経過するゲーム内時間（分）。0なら実時間をかけずに結果まで進む。 */
+/**
+ * minutesは経過するゲーム内時間（分）。0なら実時間をかけずに結果まで進む。
+ * endingは周回の決着（Ending.kind）で、まだ終わっていなければundefined。
+ */
 export function playbackSteps(options: {
-  readonly isDead: boolean;
+  readonly ending: EndingKind | undefined;
   readonly minutes: number;
-  readonly reachedMainland: boolean;
 }): readonly PlaybackStep[] {
-  if (options.isDead) return ['death'];
+  if (options.ending === 'death') return ['death'];
 
   const steps: PlaybackStep[] = options.minutes > 0 ? ['gains', 'replay', 'elapsed'] : ['gains', 'elapsed'];
-  if (options.reachedMainland) steps.push('escape');
+  if (options.ending === 'escape') steps.push('escape');
   return steps;
 }
 

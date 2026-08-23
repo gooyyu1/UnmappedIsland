@@ -481,3 +481,18 @@ observe*が行う）。**どれも4つ全部の性質**なのでクラスのコ�
 
 `Settings` だけ JSON ではなく素の文字列を読み書きする（`'true'` / タブ名）ので、
 `readText` / `writeText` も置いた。値の形が違うだけで、キーの組み立てと領域は共通。
+
+## 16. 段4 レーンA-8（決着＝Ending）
+
+`PlayerCharacter` が `isDead` / `causeOfDeath` / `hasReachedMainland` / `broughtArtifacts` と
+private の `mainland` を抱えていた。**この4つはキャラクタの性質ではなく周回の終わり方**なので、
+`domain/wrappers/Ending.ts` へ移し、`PlayerCharacter.ending` から取る形にした。
+
+**2つの真偽値を1つの `kind` にできた。** 死と脱出は同時に起こらない（死ねば世界の中に居らず、
+本土の中にも居ない）——旧実装はそれを2つの真偽値で表し、`playbackSteps` が
+「`isDead` が先」という優先順位を書いて排他を作り直していた。`EndingKind`（`'death' | 'escape'`、
+未決着は undefined）にすると、その順位が要らなくなる。**「本土に着いていても死が先」を確かめる
+テストも消えた**——起こりえない入力を確かめていたので、型で消える。
+
+旗を持たない（居場所がそのまま答える）という決まりはそのまま。`Ending` はプレイヤーの
+`WorldObject` を包む `ObjectWrapper` で、`Location` や `Animal` と同じ形。

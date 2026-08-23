@@ -1,6 +1,7 @@
 import { ObjectWrapper } from './ObjectWrapper';
 import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
+import { Ending } from './Ending';
 import { Location } from './Location';
 
 /**
@@ -65,54 +66,9 @@ export class PlayerCharacter extends ObjectWrapper {
     return item.moveToSlot(this.instance.getSlot(this.handSlotId), at) === undefined;
   }
 
-  /**
-   * 死んでいるか（VitalsSystem.md 6節）。命を絶つ値は尽きた瞬間に自分を消す
-   * （`on_min`の`destroy`）ので、**世界の中に居ないことがそのまま死んでいること**になる。
-   * 死んだかどうかを覚えておく旗は要らない。
-   */
-  get isDead(): boolean {
-    return this.instance.parent === undefined;
-  }
-
-  /**
-   * 命を奪った値が居る段の名前（生きていればundefined）。渇き・飢え・失血のどれで死んだかは、
-   * 尽きた値のまま残っている段が答える（WorldObject.exhaustedStage）。表示文言は段の名前から引く
-   * （Localization.stage）ので、死因を名乗るのはワールドの側だけになる。
-   */
-  get causeOfDeath(): string | undefined {
-    return this.isDead ? this.instance.exhaustedStage : undefined;
-  }
-
-  /**
-   * 島から脱出したか（docs/concept/GameEndings.md 3節）。死と同じく旗は持たず、**本土（mainland
-   * タグを持つ場所）の中に居ることがそのまま到達を表す**——筏ごと本土へ移った（voyage.yaml）結果として、
-   * 自分もその中に居る。
-   */
-  get hasReachedMainland(): boolean {
-    return this.mainland !== undefined;
-  }
-
-  /**
-   * 持ち帰ったアーティファクト（`artifact`タグ、GameEndings.md 6節）のobject_defの識別子。
-   * 着いていなければ空。
-   *
-   * **本土に着いた物すべてが対象**で、筏の積荷か手持ちかは問わない——渡り切った側に在ることだけが
-   * 持ち帰った条件なので、置き場所ごとの数え方を持たない。
-   */
-  get broughtArtifacts(): readonly string[] {
-    const mainland = this.mainland;
-    if (mainland === undefined) return [];
-
-    const names: string[] = [];
-    for (const object of mainland.descendants()) {
-      if (object.def.hasTag(this.words.artifactTagId)) names.push(object.def.name);
-    }
-    return names;
-  }
-
-  /** 自分が今その中に居る本土（居なければundefined）。 */
-  private get mainland(): WorldObject | undefined {
-    return this.instance.findAncestorWithTag(this.words.mainlandTagId);
+  /** この周回の決着（Ending参照）。 */
+  get ending(): Ending {
+    return new Ending(this.instance, this.codex);
   }
 
   /** 今いる土地（自分が入っているcharactersスロットの持ち主）。未配置ならundefined。 */
