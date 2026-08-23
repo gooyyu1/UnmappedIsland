@@ -554,6 +554,50 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/inherit/);
   });
 
+  it('required_propsが要求するプロパティを持たない型はエラーになる', () => {
+    // タグを名乗った以上、そのタグに要る値は揃っているはず（GameElementDefinition.md 4.2節）。
+    const yaml = `
+required_props:
+  item: [weight]
+object_defs:
+  stone:
+    tags: [item]
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/weight/);
+  });
+
+  it('required_propsの要求は複数のファイルから足せる', () => {
+    // パックが自分のタグの約束を書き足す。後から現れた宣言は上書きではなく合流する（4.2節）。
+    const base = `
+required_props:
+  item: [weight]
+object_defs:
+  stone:
+    tags: [item]
+    props:
+      weight: {value: 500}
+`;
+    const pack = `
+required_props:
+  item: [volume]
+`;
+    expect(() =>
+      new WorldCodexYamlLoader().load('core.yaml', base).load('pack.yaml', pack).build(),
+    ).toThrowError(/volume/);
+  });
+
+  it('required_propsのタグを持たない型は何も要求されない', () => {
+    const yaml = `
+required_props:
+  item: [weight]
+object_defs:
+  cloud:
+    props:
+      height: {value: 1000}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).not.toThrow();
+  });
+
   it('on_minの対象にactorを指定するとエラーになる（rangeイベントに操作者は居ない）', () => {
     const yaml = `
 object_defs:

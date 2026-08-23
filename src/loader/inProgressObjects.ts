@@ -80,6 +80,10 @@ function inProgressObjectDef(
     // 素材の枠は外から見える（7.11節）。何がどれだけ入っているかが、作りかけの札の存在意義そのもの。
     visible_slots: [MATERIALS_SLOT],
     props: {
+      // 作りかけそのものには目方が無く、**重さは材料スロットに入っている物がそのまま持つ**
+      // （ContainerSystem.md 1節）。完成品のweightを引き継がないのは、まだその形になっていない
+      // ため——投入した材料の重さを担ぐことになる。
+      weight: { value: 0 },
       [PROGRESS_PROPERTY]: {
         value: 0,
         // 完成は進捗が上限（＝工程の所要時間の合計）に達した瞬間に起こす。stagesのpassivesには

@@ -63,6 +63,7 @@ export class WorldCodex {
     generation?: GenerationDefs,
     generatedTypes?: GeneratedTypes,
     recipeCategoryTagIds: readonly number[] = [],
+    requiredPropsByTag: ReadonlyMap<number, readonly number[]> = new Map(),
   ) {
     this.generatedTypes = generatedTypes ?? new GeneratedTypes();
     this.recipeCategoryTagIds = recipeCategoryTagIds;
@@ -77,6 +78,30 @@ export class WorldCodex {
     this.generation = generation;
 
     this.requireRangeEventsOnUnmodifiedProperties();
+    this.requirePropsRequiredByTags(requiredPropsByTag);
+  }
+
+  /**
+   * `required_props`（4.2節）の約束を果たしているか。タグを名乗った以上、そのタグが要求する
+   * プロパティは宣言されていなければならない。
+   *
+   * **宣言漏れは静かに効く**——weightを書き忘れた道具は0gとして持ち運べ、loadを書き忘れた
+   * キャラクタは何を担いでも平気になる。テストではなくロード時に落とすのは、**パックの定義も同じ
+   * 約束の下に置く**ため（テストは同梱のYAMLしか通らない）。
+   *
+   * 何をどのタグに要求するかはエンジンではなく世界が決める（要求を1つも書かない世界も成立する）。
+   */
+  private requirePropsRequiredByTags(requiredPropsByTag: ReadonlyMap<number, readonly number[]>): void {
+    for (const objectDef of this.objects)
+      for (const [tagGlobalId, propertyGlobalIds] of requiredPropsByTag) {
+        if (!objectDef.hasTag(tagGlobalId)) continue;
+        for (const propertyGlobalId of propertyGlobalIds)
+          if (objectDef.tryGetPropertyDef(propertyGlobalId) === undefined)
+            throw new Error(
+              `'${objectDef.name}'は'${this.tagNames.getName(tagGlobalId)}'のタグを持つので、` +
+                `'${this.propertyNames.getName(propertyGlobalId)}'を宣言しなければなりません（required_props）。`,
+            );
+      }
   }
 
   /**
