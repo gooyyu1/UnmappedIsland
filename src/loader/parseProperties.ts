@@ -115,7 +115,7 @@ export function parseProp(
   const tags = parsePropertyTags(loader, context, node);
   const gauge = parseGauge(context, node);
 
-  const def = built(
+  return built(
     context,
     () =>
       new PropertyDef(
@@ -133,28 +133,6 @@ export function parseProp(
         gauge,
       ),
   );
-
-  // ゲージの向きとstagesのalertの向きは、同じ「どちらが危ないか」を二度言うことになる。食い違って
-  // いると片方だけが正しく見えて原因が分からなくなるので、ここで一致を確かめる（6.8節）。
-  if (gauge !== undefined && gauge.hasDirection && def.alertDirection !== 'mixed') {
-    const stagesWorsenUpward = def.alertDirection === 'up';
-    if (stages.length > 0 && stagesWorsenUpward !== gauge.worsensUpward)
-      throw new YamlLoadError(
-        `${context}: gaugeの向き（max: ${gauge.atMax}）とstagesのalertの向きが食い違っています。` +
-          'どちらの端が危ないかは1つに揃えてください。',
-      );
-  }
-
-  // rangeを持つプロパティはバーとして描かれる（6.4節）。上下どちらの端も悪い並びでは、塗りの向きが
-  // 「良い方へ伸びる」とも「悪い方へ伸びる」とも決められない。両側が悪い量（体温など）は、値そのもの
-  // ではなく片側だけの度合い（熱中症・低体温症）を別のプロパティとして見せる。
-  if (range !== undefined && def.alertDirection === 'mixed')
-    throw new YamlLoadError(
-      `${context}: stagesのalertが上下どちらの端でも深刻になっています。rangeを持つプロパティは` +
-        `バーとして描かれるため、深刻さは下から上へ単調でなければなりません。`,
-    );
-
-  return def;
 }
 
 /**

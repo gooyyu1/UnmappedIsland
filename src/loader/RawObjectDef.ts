@@ -147,8 +147,6 @@ export class RawObjectDef {
 
     const interactions = parseInteractions(loader, this.name, merged.interactions);
 
-    // **操作の名前は1つの名前空間**（11節）。同じカードに同名の操作が2つ並ぶと、押して開く
-    // メニューの「食べる」と重ねたときの「食べる」をプレイヤーが見分けられない。
     const tagIds = [...new Set(merged.tags.map((tag) => loader.tagNames.intern(tag)))];
 
     // visible_slots（7.11節）はタグと同じく足し合わせる。**並びが表示順**なので、trait由来を先に、
@@ -175,15 +173,6 @@ export class RawObjectDef {
           `'${this.name}': art_by_stage が指すプロパティ '${artByStageName}' はstagesを持ちません。`,
         );
     }
-    // 段のartを宣言できるのはart_by_stageが指すプロパティだけ（1オブジェクト1絵の原則、6.4節）。
-    // 他のプロパティの段が黙って無視されるのを避けるため、ロード時に弾く。
-    for (const propertyDef of propertyDefs)
-      if (propertyDef.hasStageArt && propertyDef.globalId !== artByStagePropertyGlobalId)
-        throw new YamlLoadError(
-          `'${this.name}': プロパティ '${propertyDef.name}' の段がartを宣言していますが、` +
-            `art_by_stage は${artByStageName !== undefined ? `'${artByStageName}'` : '未指定'}です。` +
-            `段にartを書けるのはart_by_stageが指すプロパティだけです。`,
-        );
 
     return built(
       `'${this.name}'`,
