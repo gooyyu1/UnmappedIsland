@@ -32,10 +32,6 @@ const CARD_EDGE_RATIO = 1 / 4;
 /** 隙間を示す帯の幅（u単位）。 */
 const INSERT_MARK_WIDTH = 10;
 
-/** 並びが変わったカードが、新しい位置へ滑る時間（ミリ秒）と加速の形。 */
-const SLIDE_MS = 220;
-const SLIDE_EASE = 'Quad.easeOut';
-
 /** レーンの見た目の選択肢。既定（省略）はフィールドエリアの3レーン。 */
 export interface CardLaneOptions {
   /** 左端にピン留めするカード（ロケーションレーンの現在地）。 */
@@ -268,7 +264,7 @@ export class CardLane {
 
       const [card] = reusable.splice(found, 1);
       card.setContent(content);
-      this.slideTo(card, index);
+      card.slideToX(index * this.pitch);
       return card;
     });
 
@@ -286,14 +282,6 @@ export class CardLane {
     // 空き枠も送れる範囲に含める（画面外に置いたままでは受け皿にならない）。
     const contentWidth = cells.length === 0 ? 0 : cells.length * this.pitch - (this.pitch - this.cardWidth);
     this.scroll.setContentLength(contentWidth);
-  }
-
-  /** 居続けるカードを新しい位置へ滑らせる（既に所定の位置なら何もしない）。 */
-  private slideTo(card: Card, index: number): void {
-    const x = index * this.pitch;
-    if (card.x === x) return;
-
-    this.scene.tweens.add({ targets: card, x, duration: SLIDE_MS, ease: SLIDE_EASE });
   }
 
   /**

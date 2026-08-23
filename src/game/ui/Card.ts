@@ -32,6 +32,13 @@ const EMPTY_FRAME_ALPHA = 0.35;
 /** 中身を持ち出されて、帰ってくる場所を示すだけになった姿の濃さ（CardInteraction.md 2節）。 */
 const EMPTIED_ALPHA = 0.3;
 
+/** 出どころが分からない札が、その場で現れる時間（ミリ秒）。 */
+const FADE_MS = 200;
+
+/** 並びが変わった札が、新しい位置へ滑る時間（ミリ秒）と加速の形。 */
+const SLIDE_MS = 220;
+const SLIDE_EASE = 'Quad.easeOut';
+
 /**
  * カードの絵の中で紙そのものが占める範囲（u単位）。絵は410x640pxで、紙は周囲に5pxの余白を空け、
  * 角の半径は20px。カードの実寸は絵の半分なので、u単位へは1/2で直せる
@@ -345,9 +352,22 @@ export class Card extends Phaser.GameObjects.Container {
     return this._content;
   }
 
+  /**
+   * この札が映しているインスタンス（`CardContent.identity`）。今そこに在るぶんだけを訊きたいときは
+   * `presentIds`——手に在るぶん・運ばれている最中のぶんは、映してはいてもそこには居ない。
+   */
+  get identity(): readonly number[] {
+    return this._content.identity ?? [];
+  }
+
   /** カードの実寸。指が運ぶ札やドロップ先の枠を同じ大きさで描くために公開する。 */
   readonly cardWidth: number;
   readonly cardHeight: number;
+
+  /** 札が今いる矩形。飛び立つ先・砂埃を立てる場所・吹き出しの位置決めに使う。 */
+  get rect(): Rect {
+    return { x: this.x, y: this.y, width: this.cardWidth, height: this.cardHeight };
+  }
 
   /** スタック数の表示。個数は差し替えのたびに変わるので、作り直さず書き換える。 */
   private readonly stackBadge: Phaser.GameObjects.Container;
@@ -591,14 +611,38 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
+   * 出どころの無い札が、その場で現れる。`instant`のときは飛びも浮かびもせず、既に在ったものとして
+   * 出す（画面を作り直した直後）。
+   */
+  appear(instant: boolean): void {
+    this.setVisible(true);
+    if (instant) return;
+
+    this.setAlpha(0);
+    this.scene.tweens.add({ targets: this, alpha: 1, duration: FADE_MS });
+  }
+
+  /** 並びの中の新しい位置へ滑る（既にそこに居れば何もしない）。 */
+  slideToX(x: number): void {
+    if (this.x === x) return;
+
+    this.scene.tweens.add({ targets: this, x, duration: SLIDE_MS, ease: SLIDE_EASE });
+  }
+
+  /**
    * この枠に今在るインスタンスを言う（CardInteraction.md 2節・5節）。手に在るぶんも運ばれている
    * 最中のぶんもまだここには居ないので、呼ぶ側はそれを除いた集合を渡す。数字を書き換えるのか、
    * 札そのものを出さないのかはここが決める。
    *
    * 0枚の枠に札は出ない。**emptiedの枠だけは薄い印を残す**——そこに在るのは札ではなく、持ち出した
    * 札が帰ってくる場所を示す印なので、数字のバッジも出ない。
+   *
+   * 破棄済みの札に言っても何も起きない。宙に在る札の着地や次の差し替えは破棄より後に来うるので、
+   * まだ生きているかを確かめるのは呼ぶ側ではなくここの仕事（lifetime.isAlive）。
    */
   setPresence(ids: readonly number[], emptied: boolean): void {
+    if (!isAlive(this)) return;
+
     this.present = ids;
     this.emptied = emptied;
     if ((this._content.count ?? 1) !== ids.length) this.setContent({ ...this._content, count: ids.length });
