@@ -12,6 +12,9 @@ object_defs:
   # ヤシの木（coconut.yaml）は幹が繊維の束で丸太にならないため、こちらは別の物として置く。
   broadleaf_tree:
     tags: [fixture]
+    props:
+      # 立ち木1本ぶん。倒して採れるのは丸太2本と太枝3本（43kg）で、残りは根と梢と枝葉。
+      weight: {value: 150000}
     interactions:
       # 根元を斧で断つ。倒した幹を運べる長さに玉切りするところまでを1つの作業として扱う。
       fell:

@@ -25,6 +25,9 @@ object_defs:
   # アバカ（マニラ麻）。バナナによく似た草だが、実は種ばかりで食べられない。
   abaca:
     tags: [fixture]
+    props:
+      # 株ひとつぶん。切り分けて採れる茎5本（15kg）に、葉と根を足した重さ。
+      weight: {value: 25000}
     interactions:
       # 根元を刃物で断ち、運べる長さに切り分ける。株立ちなので1株から何本も採れる。
       fell:
@@ -36,6 +39,9 @@ object_defs:
   # バナナの株。実った房を採るには切り倒すしかないので、実と茎が一度に手に入る。
   banana_plant:
     tags: [fixture]
+    props:
+      # 株ひとつぶん。茎2本（6kg）と房2つのほかは、葉と根。
+      weight: {value: 20000}
     interactions:
       fell:
         trigger: {drag: {tag: cutting_tool}}

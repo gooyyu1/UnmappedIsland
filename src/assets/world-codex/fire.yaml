@@ -219,6 +219,8 @@ object_defs:
               - {object: twig, count: 3, consume: true}
             duration: 15
     props:
+      # 組んだ小枝3本ぶん。据えた炉も、筏に載せれば積荷として効く（ContainerSystem.md 1節）。
+      weight: {value: 900}
       fuel:
         value: 0
         range: {min: 0, max: 30}
@@ -254,6 +256,8 @@ object_defs:
   three_stone_hearth:
     traits: [hearth]
     props:
+      # 焚き火（900）に石3つ（1,000×3）。
+      weight: {value: 3900}
       fuel:
         value: 0
         range: {min: 0, max: 30}
@@ -289,6 +293,8 @@ object_defs:
   stone_hearth:
     traits: [hearth]
     props:
+      # 三石のかまど（3,900）に石8つ。囲いごと運ぶ物ではないが、重さは名乗る。
+      weight: {value: 11900}
       fuel:
         value: 0
         range: {min: 0, max: 120}

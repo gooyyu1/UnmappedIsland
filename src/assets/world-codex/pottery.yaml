@@ -115,6 +115,8 @@ object_defs:
               - {object: clay, count: 3, consume: true}
             duration: 90
     props:
+      # かぶせた粘土3個ぶん（800×3）。
+      weight: {value: 2400}
       # 丸太1本（fuel 200）でちょうど満ちる。太い枝なら10本——斧を持たない経路でも焚ける。
       fuel:
         value: 0
