@@ -435,13 +435,14 @@ export class WorldObject {
   }
 
   private detachFromParent(): void {
+    // 祖先対象の登録解除は、トポロジが変わる前（旧祖先がまだ辿れるうち）に行う（setAncestorTargetsRegistered
+    // 参照。再登録はattachToSlotOrRejection側）。**親が居なくても解除する**——自分の中に居る子孫は、
+    // この部分木の中で祖先を見つけて既に登録しているので、外さないまま再登録すると二重に効く。
+    this.setAncestorTargetsRegistered(false);
+
     const oldParent = this._parent;
     const oldSlot = this._parentSlot;
     if (oldParent === undefined || oldSlot === undefined) return;
-
-    // 祖先対象の登録解除は、トポロジが変わる前（旧祖先がまだ辿れるうち）に行う（setAncestorTargetsRegistered
-    // 参照。再登録はattachToSlotOrRejection側）。
-    this.setAncestorTargetsRegistered(false);
 
     oldSlot.removeWithoutParentLink(this);
     this.setEdgeRegistered(oldParent, false);

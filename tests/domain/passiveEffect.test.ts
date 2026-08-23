@@ -1204,6 +1204,43 @@ object_defs:
       expect(roomInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(25);
     });
 
+    it('中の祖先に効いている物ごと移動しても、寄与は二重にならない', () => {
+      // 親を持たないうちに中へ入れた子は、その部分木の中で祖先を見つけて既に登録している。移動の
+      // たびに登録し直す仕組みなので、解除を伴わずに再登録すると寄与が積み増さる。
+      const yaml = `
+object_defs:
+  room:
+    slots:
+      contents: {}
+  stove:
+    props:
+      temperature:
+        value: 20
+    slots:
+      contents: {}
+  fire:
+    passives:
+      - modify:
+          ancestor:
+            temperature: 5
+`;
+      const codex = load(yaml);
+      const temperatureId = codex.propertyNames.getId('temperature');
+      const contentsSlotId = codex.slotNames.getId('contents');
+
+      const roomInstance = spawn(codex, 'room');
+      const stoveInstance = spawn(codex, 'stove');
+      const fireInstance = spawn(codex, 'fire');
+
+      // 竈はまだどこにも置かれていない。火は竈の中に祖先を見つける。
+      expect(fireInstance.moveToSlotOrRejection(stoveInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(stoveInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(25);
+
+      // 火から見た祖先は竈のままなので、竈を部屋へ運んでも温度は変わらない。
+      expect(stoveInstance.moveToSlotOrRejection(roomInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(stoveInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(25);
+    });
+
     it('祖先自身が移動すると、ancestorへのmodifyは再帰的に解決し直される', () => {
       const yaml = `
 object_defs:
