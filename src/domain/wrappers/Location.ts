@@ -1,7 +1,6 @@
 import { ObjectWrapper } from './ObjectWrapper';
 import type { SlotPosition } from '../SlotPosition';
 import type { WorldObject } from '../WorldObject';
-import { Path } from './Path';
 
 /**
  * 土地（locations.yamlのexplorable trait実装オブジェクト）の包み（ObjectWrapper）。
@@ -72,16 +71,6 @@ export class Location extends ObjectWrapper {
   /** キャラクタスロットの中身。 */
   get characters(): readonly WorldObject[] {
     return this.contentsOf(this.words.charactersSlotId);
-  }
-
-  /**
-   * この土地から出ている、**発見済みの**道（ExplorationSystem.md 1.2節）。未発見の道は隠しスロットに
-   * 居るので含まれない——プレイヤーが見つけていない道は、動物にとっても逃げ道にならない。
-   */
-  get discoveredPaths(): readonly Path[] {
-    return this.fixtures
-      .filter((fixture) => fixture.def.hasTag(this.words.pathTagId))
-      .map((fixture) => new Path(fixture, this.codex));
   }
 
   /**
