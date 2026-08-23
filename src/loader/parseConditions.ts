@@ -18,7 +18,7 @@ import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot, ReferenceScope } from '../domain/ReferenceRoot';
 import { PropertyPath } from '../domain/ReferenceRoot';
 import { ConditionNode } from '../domain/ConditionNode';
-import type { ConditionOp } from '../domain/ConditionNode';
+import type { ConditionOp } from '../domain/ConditionReader';
 import { Requirement, Requirements } from '../domain/Requirement';
 
 /**
@@ -42,6 +42,9 @@ export function parseSubjectRoot(context: string, raw: string, scope: ReferenceS
       break;
     case 'dragged':
       root = 'dragged';
+      break;
+    case 'picked':
+      root = 'picked';
       break;
     case 'child':
       root = 'child';

@@ -19,10 +19,10 @@ object_defs:
         cell: {accept: {tag: item}}
   stick:
     tags: [item]
-    combinations:
+    interactions:
       # 行き先の座標に型が居ない宣言。候補にならないことの確認用。
       nowhere:
-        with: {tag: item}
+        trigger: {drag: {tag: item}}
         become: {subject: dragged, recipe: missing}
   # 作りかけと同じ名前のプロパティ・スロットを持つ完成品。値も中身も引き継がれる。
   axe:

@@ -683,9 +683,9 @@ object_defs:
     props:
       freshness:
         value: 5
-    actions:
+    interactions:
       eat:
-        showMenu: always
+        trigger: menu
         conditions:
           - {subject: actor, prop: satiety, lt: 100}
         add:
@@ -714,9 +714,9 @@ object_defs:
     const yaml = `
 object_defs:
   wood:
-    combinations:
+    interactions:
       chop:
-        with: {tag: axe_tool}
+        trigger: {drag: {tag: axe_tool}}
         conditions:
           - {subject: dragged, prop: durability, gt: 0}
         spawn: {object: logs}
@@ -761,12 +761,14 @@ object_defs:
     const yaml = `
 traits:
   trait_a:
-    actions:
+    interactions:
       use:
+        trigger: menu
         destroy: self
   trait_b:
-    actions:
+    interactions:
       use:
+        trigger: menu
         destroy: self
 object_defs:
   thing:
@@ -779,8 +781,9 @@ object_defs:
     const yaml = `
 object_defs:
   thing:
-    actions:
+    interactions:
       use:
+        trigger: menu
         destroy: dragged
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/dragged/);
@@ -790,31 +793,57 @@ object_defs:
     const yaml = `
 object_defs:
   thing:
-    actions:
+    interactions:
       use:
+        trigger: menu
         destroy: child
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/child/);
   });
 
-  it('showMenuに未対応の値を指定するとエラーになる', () => {
+  it('triggerに未対応の値を指定するとエラーになる', () => {
     const yaml = `
 object_defs:
   thing:
-    actions:
+    interactions:
       use:
-        showMenu: sometimes
+        trigger: sometimes
         destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/showMenu/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/trigger/);
+  });
+
+  it('triggerを書かないとエラーになる（何が起こすか分からない操作を作らない）', () => {
+    const yaml = `
+object_defs:
+  thing:
+    interactions:
+      use:
+        destroy: self
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/trigger/);
+  });
+
+  it('きっかけがdragでないのにallow_multipleを書くと未知のキーになる', () => {
+    const yaml = `
+object_defs:
+  thing:
+    interactions:
+      use:
+        trigger: menu
+        allow_multiple: true
+        destroy: self
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/allow_multiple/);
   });
 
   it('objectにworldを指定するとエラーになる', () => {
     const yaml = `
 object_defs:
   thing:
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {subject: world, prop: day, gt: 0}
         destroy: self
@@ -826,8 +855,9 @@ object_defs:
     const yaml = `
 object_defs:
   thing:
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {subject: actor, prop: satiety, lt: max}
         destroy: self
@@ -842,8 +872,9 @@ object_defs:
     props:
       mode:
         value: 1
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {prop: mode, eq: 1}
         destroy: self
@@ -864,8 +895,9 @@ object_defs:
     const yaml = `
 object_defs:
   thing:
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {in_slot: equip, prop: hp, eq: 1}
         destroy: self
@@ -877,8 +909,9 @@ object_defs:
     const yaml = `
 object_defs:
   thing:
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {in_slot: equip, lt: 5}
         destroy: self
@@ -892,8 +925,9 @@ object_defs:
   thing:
     props:
       durability: {value: 10}
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {prop: durability}
         destroy: self
@@ -907,8 +941,9 @@ object_defs:
   thing:
     props:
       temperature: {value: 25}
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {prop: temperature, gte: 20, lt: 30}
         destroy: self
@@ -940,8 +975,9 @@ object_defs:
         stages:
           - {name: light}
           - {name: too_heavy, min: 100}
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - not: {prop: load, in_stage: too_heavy}
         destroy: self
@@ -965,8 +1001,9 @@ object_defs:
   thing:
     props:
       durability: {value: 0}
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {in_slot: hand}
           - reason: broken
@@ -988,8 +1025,9 @@ object_defs:
     slots:
       content:
         cell: {accept: {tag: marker}}
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {slot: content, matches: {tag: red}}
         destroy: self
@@ -1016,8 +1054,9 @@ object_defs:
     slots:
       content:
         cell: {accept: {tag: marker}}
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {slot: content, matches: {tag: red}}
         destroy: self
@@ -1044,8 +1083,9 @@ object_defs:
     const yaml = `
 object_defs:
   thing:
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {slot: content}
         destroy: self
@@ -1058,8 +1098,9 @@ object_defs:
 object_defs:
   thing:
     tags: [red]
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {matches: {tag: red}}
         destroy: self
@@ -1078,8 +1119,9 @@ object_defs:
     slots:
       offering:
         cell: {accept: {tag: gem}}
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {slot: offering, matches: {object: ruby}}
         destroy: self
@@ -1109,9 +1151,9 @@ object_defs:
     const yaml = `
 object_defs:
   altar2:
-    combinations:
+    interactions:
       offer:
-        with: {tag: box_tag}
+        trigger: {drag: {tag: box_tag}}
         conditions:
           - {subject: dragged, slot: content, matches: {tag: gem_tag}}
           - {subject: dragged, in_slot: items}
@@ -1161,9 +1203,9 @@ object_defs:
     props:
       content:
         value: empty
-    combinations:
+    interactions:
       pour_in:
-        with: {tag: liquid_container}
+        trigger: {drag: {tag: liquid_container}}
         conditions:
           - {prop: content, eq: {subject: dragged, prop: content}}
         destroy: self
@@ -1204,8 +1246,9 @@ object_defs:
     const yaml = `
 object_defs:
   thing:
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {prop: content, in: {subject: dragged, prop: content}}
         destroy: self
@@ -1220,9 +1263,9 @@ object_defs:
     props:
       content:
         value: empty
-    combinations:
+    interactions:
       pour_in:
-        with: {tag: liquid_container2}
+        trigger: {drag: {tag: liquid_container2}}
         set:
           self:
             content: {subject: dragged, prop: content}
@@ -1245,8 +1288,9 @@ object_defs:
         value: 5
       mp:
         value: 5
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - any:
               - {prop: hp, gte: 100}
@@ -1276,8 +1320,9 @@ object_defs:
     props:
       locked:
         value: 1
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - not: {prop: locked, eq: 1}
         destroy: self
@@ -1348,11 +1393,13 @@ object_defs:
   tally:
     props:
       n: {value: 0}
-    actions:
+    interactions:
       add_then_set:
+        trigger: menu
         add: {self: {n: 1}}
         set: {self: {n: 5}}
       set_then_add:
+        trigger: menu
         set: {self: {n: 5}}
         add: {self: {n: 1}}
 `;
@@ -1378,8 +1425,9 @@ object_defs:
     props:
       fatigue: {value: 0}
       mark: {value: 0}
-    actions:
+    interactions:
       turn:
+        trigger: menu
         add: {self: {fatigue: 1}}
         pick:
           - weight: 1
@@ -1429,9 +1477,9 @@ object_defs:
     const yaml = `
 object_defs:
   hearth3:
-    combinations:
+    interactions:
       ignite:
-        with: {tag: tinder, object: burning_tinder3}
+        trigger: {drag: {tag: tinder, object: burning_tinder3}}
         destroy: dragged
   burning_tinder3: {}
 `;
@@ -1440,13 +1488,13 @@ object_defs:
     );
   });
 
-  it('combinationsのwithをスカラーで書くとエラーになる（acceptと同じ{tag|object}の形）', () => {
+  it('ドラッグのきっかけの相手をスカラーで書くとエラーになる（acceptと同じ{tag|object}の形）', () => {
     const yaml = `
 object_defs:
   hearth4:
-    combinations:
+    interactions:
       ignite:
-        with: tinder
+        trigger: {drag: tinder}
         destroy: dragged
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
@@ -1458,10 +1506,9 @@ object_defs:
     const yaml = `
 object_defs:
   altar:
-    combinations:
+    interactions:
       offer:
-        with: {tag: offering}
-        allow_multiple: true
+        trigger: {drag: {tag: offering}, allow_multiple: true}
         destroy: dragged
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
@@ -1477,10 +1524,9 @@ object_defs:
       offerings:
         value: 0
         range: {min: 0, max: 10}
-    combinations:
+    interactions:
       offer:
-        with: {tag: offering}
-        allow_multiple: true
+        trigger: {drag: {tag: offering}, allow_multiple: true}
         transfer: {amount: 1, from: dragged, from_prop: weight, to_prop: offerings}
         pick:
           - weight: 1
@@ -1682,8 +1728,9 @@ object_defs:
     slots:
       pocket: {}
   food:
-    actions:
+    interactions:
       check:
+        trigger: menu
         conditions:
           - {subject: ancestor, prop: weather, eq: 1}
         destroy: self
@@ -1711,8 +1758,9 @@ object_defs:
     const yaml = `
 object_defs:
   thing:
-    actions:
+    interactions:
       use:
+        trigger: menu
         destroy: ancestor
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/ancestor/);
@@ -1722,8 +1770,9 @@ object_defs:
     const yaml = `
 object_defs:
   thing:
-    actions:
+    interactions:
       use:
+        trigger: menu
         conditions:
           - {subject: ancestor, in_slot: somewhere}
         destroy: self

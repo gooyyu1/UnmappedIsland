@@ -43,9 +43,9 @@ object_defs:
     tags: [beast]
     slots:
       loot: {cell: {accept: {tag: item}}}
-    combinations:
+    interactions:
       grab:
-        with: {tag: item}
+        trigger: {drag: {tag: item}}
         move: {subject: dragged, to: self}
 `;
 

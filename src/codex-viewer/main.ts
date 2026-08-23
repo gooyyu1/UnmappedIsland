@@ -5,18 +5,18 @@ import { loadCodexSource } from './CodexSource';
 import type { NamingMode } from './CodexView';
 import { CodexView } from './CodexView';
 import { escapeHtml } from './html';
-import { balanceSectionId, renderBalancePage, wireBalanceMenu } from './balancePage';
-import { networkNodeId, renderNetworkPage } from './networkPage';
+import type { CodexPage } from './CodexPage';
+import { BalancePage } from './balancePage';
+import { NetworkPage } from './networkPage';
 import {
+  ObjectListPage,
+  ObjectPage,
+  ObjectsByTagPage,
+  PropertyCandidatesPage,
+  PropertyPage,
+  SlotPage,
+  TagListPage,
   renderNotFoundPage,
-  renderObjectListPage,
-  renderObjectPage,
-  renderObjectsByTagPage,
-  renderPropertyCandidatesPage,
-  renderPropertyPage,
-  renderSlotPage,
-  renderTagListPage,
-  tagSectionId,
 } from './pages';
 
 /**
@@ -26,6 +26,22 @@ import {
  * ゲーム本体と同じYAMLを同じローダーで読み、同じ表示文字列・同じ絵で見せる。ここが持つのは
  * ルーティングと描き込みだけで、内容の組み立てはpages.ts、見せ方の判断はCodexViewにある。
  */
+
+/**
+ * 辿れるページはこれで全部。**1つずつ作って使い回す**ので、開き直しても残るもの（図の倍率、
+ * 描いた表）はページ自身が持てる。routeが合わなければ「見つかりません」。
+ */
+const PAGES: readonly CodexPage[] = [
+  new ObjectListPage(),
+  new ObjectPage(),
+  new PropertyPage(),
+  new PropertyCandidatesPage(),
+  new TagListPage(),
+  new ObjectsByTagPage(),
+  new NetworkPage(),
+  new BalancePage(),
+  new SlotPage(),
+];
 
 /** 参照の見せ方（表示名/識別子）の記憶先。読む人ごとに好みが変わるので、次に開いたときも保たれるようにする。 */
 const NAMING_MODE_KEY = 'worldCodexViewer.namingMode';
@@ -54,101 +70,20 @@ function render(): void {
 
   const view = new CodexView(source, namingMode);
   const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean).map(decodeURIComponent);
+  const args = parts.slice(1);
 
-  app.innerHTML = renderRoute(view, parts);
+  const page = PAGES.find((candidate) => candidate.route === (parts.at(0) ?? ''));
+  const html = page?.render(view, args);
+  // 出せなかった道筋には配線も節も無いので、実際に出したページだけに続きを頼む。
+  const shown = html === undefined ? undefined : page;
+
+  app.innerHTML = html ?? renderNotFoundPage();
   updateNamingToggle();
-  wireObjectFilter();
-  wireNetworkZoom();
-  wireBalanceMenu();
+  shown?.wire();
   window.scrollTo(0, 0);
-  scrollToSection(parts, 'by-tag', tagSectionId);
-  // 図は縦にも横にも広いので、ハイライトしたノードは中央へ寄せる。
-  scrollToSection(parts, 'network', networkNodeId, { block: 'center', inline: 'center' });
-  scrollToSection(parts, 'balance', balanceSectionId);
-}
 
-/**
- * クラフトネットワークの拡大・縮小。倍率はSVGの表示寸法（style）だけで変え、図の組み立ては
- * 触らない。ページを離れて戻っても倍率が保たれるよう、モジュール変数に持つ。
- */
-let networkZoom = 1;
-
-function wireNetworkZoom(): void {
-  const svg = document.querySelector<SVGSVGElement>('svg.network');
-  if (svg === null) return;
-
-  const naturalWidth = Number(svg.getAttribute('width'));
-  const naturalHeight = Number(svg.getAttribute('height'));
-  const apply = (): void => {
-    svg.style.width = `${naturalWidth * networkZoom}px`;
-    svg.style.height = `${naturalHeight * networkZoom}px`;
-    for (const level of document.querySelectorAll<HTMLElement>('[data-network-zoom-level]'))
-      level.textContent = `${Math.round(networkZoom * 100)}%`;
-  };
-  apply();
-
-  for (const button of document.querySelectorAll<HTMLElement>('[data-network-zoom]'))
-    button.addEventListener('click', () => {
-      const direction = button.dataset.networkZoom;
-      networkZoom =
-        direction === 'in'
-          ? Math.min(2, networkZoom * 1.25)
-          : direction === 'out'
-            ? Math.max(0.25, networkZoom / 1.25)
-            : 1;
-      apply();
-    });
-}
-
-/**
- * 1ページに全部が並ぶページ（タグ別一覧・クラフトネットワーク・収支）で、`#/<route>/<名前>` が
- * 名指しした節まで送る。**ハッシュはルーティングに使っている**ので、ブラウザ任せのアンカー移動は
- * 使えない。domIdはその名前が付いた要素のid。
- */
-function scrollToSection(
-  parts: readonly string[],
-  route: string,
-  domId: (name: string) => string,
-  options?: ScrollIntoViewOptions,
-): void {
-  const name = parts.at(1);
-  if (parts.at(0) !== route || name === undefined) return;
-  document.getElementById(domId(name))?.scrollIntoView(options);
-}
-
-function renderRoute(view: CodexView, parts: readonly string[]): string {
-  const [route, first, second] = [parts.at(0), parts.at(1), parts.at(2)];
-  if (route === undefined) return renderObjectListPage(view);
-  if (route === 'object' && first !== undefined) return renderObjectPage(view, first);
-  if (route === 'property' && first !== undefined && second !== undefined)
-    return renderPropertyPage(view, first, second);
-  if (route === 'prop-candidates' && first !== undefined) return renderPropertyCandidatesPage(view, first);
-  if (route === 'tags') return renderTagListPage(view);
-  if (route === 'by-tag') return renderObjectsByTagPage(view);
-  if (route === 'network') return renderNetworkPage(view, first);
-  if (route === 'balance') return renderBalancePage(view);
-  if (route === 'slot' && first !== undefined) return renderSlotPage(view, first);
-  return renderNotFoundPage();
-}
-
-/** 一覧ページの絞り込み。並べ替えずに隠すだけなので、入力のたびに組み立て直さない。 */
-function wireObjectFilter(): void {
-  const input = document.getElementById('object-filter') as HTMLInputElement | null;
-  if (input === null) return;
-
-  const cards = [...document.querySelectorAll<HTMLElement>('.object-card')];
-  const empty = document.getElementById('object-filter-empty');
-  input.addEventListener('input', () => {
-    const query = input.value.trim().toLowerCase();
-    let shown = 0;
-    for (const cardElement of cards) {
-      const haystack = `${cardElement.dataset.name ?? ''} ${cardElement.dataset.label ?? ''}`;
-      const matches = query === '' || haystack.toLowerCase().includes(query);
-      cardElement.hidden = !matches;
-      if (matches) shown++;
-    }
-    if (empty !== null) empty.hidden = shown > 0;
-  });
+  const name = args.at(0);
+  if (name !== undefined) shown?.scrollToSection(name);
 }
 
 function updateNamingToggle(): void {

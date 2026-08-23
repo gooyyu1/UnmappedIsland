@@ -1,8 +1,11 @@
-import type { ActiveEffect } from './ActiveEffect';
+import type { AmongReading } from './AmongSpec';
 import type { ObjectRefReading } from './ObjectRef';
 import type { ReferenceRoot } from './ReferenceRoot';
 
-/** 自分が何を宣言しているかを読み上げられるもの（効果そのものと、それを抱える操作）。 */
+/**
+ * 自分が何を宣言しているかを読み上げられるもの（効果そのものと、それを抱える操作）。入れ子の候補も
+ * この形で渡す（docs/engine/Layers.md 6節「読み下せる宣言だけを外へ出す」）。
+ */
 export interface EffectDeclaration {
   read(reader: EffectReader): void;
 }
@@ -65,7 +68,15 @@ export interface PickCandidateReading {
   readonly weight: WeightReading;
 
   /** この候補が起こすこと。`read`でさらに読み下げる。 */
-  readonly effect: ActiveEffect;
+  readonly effect: EffectDeclaration;
+
+  /**
+   * 周りから相手を1つ選ぶ宣言（`among`、10.3節）。書いていなければundefined。
+   *
+   * **どれが選ばれるかは渡さない**——集合も重みも実行時の世界で決まるので、定義だけからは
+   * 「どこから、どういう絞り込みで、どんな重みで選ぶか」しか言えない。
+   */
+  readonly among: AmongReading | undefined;
 }
 
 /**

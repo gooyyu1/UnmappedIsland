@@ -15,8 +15,9 @@ describe('クラフト工程の抽出（craftingSteps）', () => {
 object_defs:
   beach:
     tags: [location]
-    actions:
+    interactions:
       explore:
+        trigger: menu
         duration: 15
         pick:
           - weight: 3
@@ -25,13 +26,13 @@ object_defs:
             spawn:
               - {object: coconut, into: self}
               - {object: twig, into: self}
-      rest: {}
+      rest: {trigger: menu}
 
   coconut:
     tags: [item]
-    combinations:
+    interactions:
       husk:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         destroy: self
         spawn:
           - {object: husked_coconut}
@@ -278,9 +279,9 @@ object_defs:
         on_min:
           destroy: self
           spawn: {object: boar_carcass}
-    combinations:
+    interactions:
       strike:
-        with: {tag: weapon}
+        trigger: {drag: {tag: weapon}}
         duration: 15
         pick:
           - weight: 19

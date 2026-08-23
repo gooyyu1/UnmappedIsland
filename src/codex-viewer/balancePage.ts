@@ -14,6 +14,7 @@ import {
   buildBalanceTables,
   menuFor,
 } from '../analysis/balanceTables';
+import { CodexPage } from './CodexPage';
 import type { CodexView } from './CodexView';
 import { escapeHtml, inlineArtHtml } from './html';
 import { objectLinkHtml } from './pages';
@@ -30,16 +31,29 @@ import { objectLinkHtml } from './pages';
 /** 1日の必要量を取る代表キャラクタ（docs/world/Characters.md）。 */
 const SAMPLE_CHARACTER = 'medic';
 
-/**
- * 最後に描いた表。献立の選び替え（wireBalanceMenu）が、描き直さずに合計だけ計算し直すために持つ。
- * 一覧の絞り込み（wireObjectFilter）と同じ形。
- */
-let lastTables: BalanceTables | undefined;
+/** 収支のページ（`#/balance`、`#/balance/<場所>` でその節まで送る）。 */
+export class BalancePage extends CodexPage {
+  readonly route = 'balance';
 
-export function renderBalancePage(view: CodexView): string {
-  const tables = buildBalanceTables(view.codex, SAMPLE_CHARACTER);
-  lastTables = tables;
+  /** 最後に描いた表。献立の選び替えが、描き直さずに合計だけ計算し直すために持つ。 */
+  private tables: BalanceTables | undefined;
 
+  render(view: CodexView): string {
+    this.tables = buildBalanceTables(view.codex, SAMPLE_CHARACTER);
+    return renderBalancePage(view, this.tables);
+  }
+
+  override wire(): void {
+    wireImportFilter();
+    if (this.tables !== undefined) wireBalanceMenu(this.tables);
+  }
+
+  protected override sectionId(name: string): string {
+    return balanceSectionId(name);
+  }
+}
+
+function renderBalancePage(view: CodexView, tables: BalanceTables): string {
   return (
     `<div class="balance">` +
     `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
@@ -64,8 +78,8 @@ function placeLabel(view: CodexView, name: string): string {
   return name === WHOLE_ISLAND ? name : view.objectLabel(name);
 }
 
-/** 収支ページの節のid（土地の名前か、節名の定数。main.tsが`#/balance/<節>`で使う）。 */
-export function balanceSectionId(section: string): string {
+/** 収支ページの節のid（土地の名前か、節名の定数）。 */
+function balanceSectionId(section: string): string {
   return `balance-${section}`;
 }
 
@@ -538,12 +552,7 @@ function signed(amount: number): string {
  * 献立の選び替え。合計の計算は balanceTables の menuFor に委ね、ここは選択を集めて表示を差し替える
  * だけにする（同じ数字を2箇所で計算しない）。
  */
-export function wireBalanceMenu(): void {
-  wireImportFilter();
-
-  const tables = lastTables;
-  if (tables === undefined) return;
-
+function wireBalanceMenu(tables: BalanceTables): void {
   for (const menu of document.querySelectorAll<HTMLElement>('[data-menu-place]')) {
     const place = tables.places.find((candidate) => candidate.name === menu.dataset.menuPlace);
     if (place === undefined) continue;

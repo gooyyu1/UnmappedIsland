@@ -1,5 +1,5 @@
 import type { AmountReading } from './PassiveAmount';
-import type { ConditionNode } from './ConditionNode';
+import type { ConditionDeclaration } from './ConditionReader';
 import type { TransferReading } from './EffectReader';
 import type { ReferenceRoot } from './ReferenceRoot';
 
@@ -30,15 +30,15 @@ export interface PassivePropertyReading {
 }
 
 /**
- * ゲート（8.2節）の宣言。**条件は木のまま渡す**——「いつまで成り立つか」を見積もるのも、読める形へ
- * 書き出すのも、木を辿らないとできない（`destroy`が`ObjectRef`をそのまま渡すのと同じ）。
+ * ゲート（8.2節）の宣言。**条件は読み下せる形で渡す**——「いつまで成り立つか」を見積もるのも、
+ * 読める形へ書き出すのも、入れ子を辿らないとできない。
  */
 export interface GateReading {
   /** 段で縛られているならその段。常時効くならundefined。 */
   readonly stage: { readonly propertyGlobalId: number; readonly name: string } | undefined;
 
   /** 段以外の条件。無ければundefined。 */
-  readonly conditions: ConditionNode | undefined;
+  readonly conditions: ConditionDeclaration | undefined;
 }
 
 /** 自分が何を宣言しているかを読み上げられる持続効果。 */

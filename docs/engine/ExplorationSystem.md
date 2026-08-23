@@ -7,7 +7,7 @@
 配置されるか」は `TerrainGeneration.md` の関心事、「1つの土地に立ったプレイヤーが何をできるか（探索する・道を
 見つける・移動する）」は本書の関心事、と役割を分けています。
 
-[`GameElementDefinition.md`](./GameElementDefinition.md) の既存文法（`traits`・`slots`・`props`・`actions`・
+[`GameElementDefinition.md`](./GameElementDefinition.md) の既存文法（`traits`・`slots`・`props`・`interactions`・
 `pick`）と、汎用拡張 `duration`（同 11.3 節）・`move`（同 9.6 節）だけで組み立てており、探索・道専用の
 新しい文法は導入していません。
 
@@ -94,9 +94,9 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 12}   # 探索率100%に達するまでの探索回数
-    actions:
+    interactions:
       explore:
-        showMenu: always
+        trigger: menu
         duration: 15
         add: {self: {exploration_progress: 1}}   # 何が見つかっても進捗は1つ進む
         pick:
@@ -161,9 +161,9 @@ object_defs:
         value: 0           # 同上（移動先LocationのインスタンスID）
       return_path_id:
         value: 0           # 同上（移動先にある、こちらへ戻る道のインスタンスID）
-    actions:
+    interactions:
       travel:
-        showMenu: always
+        trigger: menu
         conditions:
           - {in_slot: fixtures}   # 発見済み（fixturesスロット）の間だけ実行できる
         duration: {prop: travel_minutes}
@@ -213,7 +213,7 @@ object_defs:
 
 ## 4. エンジン拡張（`duration`・`move`）
 
-`duration`・`move` は地形・探索専用ではなく、どんな `actions`/`combinations`/`pick` からも使える汎用の
+`duration`・`move` は地形・探索専用ではなく、どんな `interactions`/`pick` からも使える汎用の
 文法拡張です。
 
 - **`duration`**（`GameElementDefinition.md` 11.3 節）: アクションの実行にかかるゲーム内時間（分）。

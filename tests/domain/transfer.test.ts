@@ -38,8 +38,9 @@ object_defs:
       water_amount:
         value: 5000
         range: {min: 0, max: 5000}
-    actions:
+    interactions:
       drink:
+        trigger: menu
         transfer:
           amount: 2000
           from_prop: water_amount
@@ -73,8 +74,9 @@ object_defs:
       water_amount:
         value: 500
         range: {min: 0, max: 4800}
-    actions:
+    interactions:
       drink:
+        trigger: menu
         transfer:
           amount: 2000
           from_prop: water_amount
@@ -113,8 +115,9 @@ object_defs:
       juice_amount:
         value: 3000
         range: {min: 0, max: 5000}
-    actions:
+    interactions:
       drink:
+        trigger: menu
         transfer:
           - amount: 2000
             from_prop: water_amount
@@ -156,8 +159,9 @@ object_defs:
       water_amount:
         value: 5000
         range: {min: 0, max: 5000}
-    actions:
+    interactions:
       drink:
+        trigger: menu
         transfer:
           amount: 2000
           from_prop: water_amount
@@ -193,8 +197,9 @@ object_defs:
       water_amount:
         value: 5000
         range: {min: 0, max: 5000}
-    actions:
+    interactions:
       drink:
+        trigger: menu
         transfer:
           amount: 2000
           from_prop: water_amount
@@ -231,8 +236,9 @@ object_defs:
       broth_amount:
         value: 0
         range: {min: 0, max: 4800}
-    actions:
+    interactions:
       pour_in:
+        trigger: menu
         transfer:
           amount: 1000
           from_prop: water_amount
@@ -267,8 +273,9 @@ object_defs:
       tea_amount:
         value: 5000
         range: {min: 0, max: 5000}
-    actions:
+    interactions:
       drink:
+        trigger: menu
         transfer:
           amount: 1200
           from_prop: tea_amount
@@ -312,8 +319,9 @@ object_defs:
       tea_amount:
         value: 600
         range: {min: 0, max: 5000}
-    actions:
+    interactions:
       drink:
+        trigger: menu
         transfer:
           amount: 1200
           from_prop: tea_amount
@@ -356,8 +364,9 @@ object_defs:
       volume:
         value: ${water}
         range: {min: 0, max: 250}
-    actions:
+    interactions:
       drink:
+        trigger: menu
         transfer:
           amount: 250
           to_amount: ${toAmount}

@@ -1,6 +1,6 @@
 import { messageOf } from './errorMessage';
 import type { YAMLMap } from 'yaml';
-import { tryGetScalar } from './yamlMapping';
+import { keysOf, tryGetMap, tryGetScalar } from './yamlMapping';
 
 import { YamlLoadError } from './YamlLoadError';
 import { INT32_MAX, INT32_MIN } from '../util/int32';
@@ -28,21 +28,29 @@ export function built<T>(context: string, build: () => T): T {
 }
 
 /**
- * 「どの型が当てはまるか」の指定（`{tag: ...}`か`{object: ...}`のいずれか一方）を読む。
- * 枠の`accept`（7.2節）とcombinationsの`with`（12.1節）が同じ形を共有する。
+ * 「どの型が当てはまるか」の指定（`{tag: ...}`・`{object: ...}`・`{not: ...}`のいずれか1つ）を読む。
+ * 枠の`accept`（7.2節）と重ねる操作の相手（12.1節）が同じ形を共有する。
  */
 export function parseTypeMatchRule(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YAMLMap,
 ): TypeMatchRule {
+  const notNode = tryGetMap(node, 'not', context);
+  if (notNode !== undefined) {
+    const others = keysOf(node).filter((key) => key !== 'not');
+    if (others.length > 0)
+      throw new YamlLoadError(`${context}: 'not'は他のキーと同居できません（値: '${others.join(', ')}'）。`);
+    return TypeMatchRule.not(parseTypeMatchRule(loader, `${context}.not`, notNode));
+  }
+
   const tagName = tryGetScalar(node, 'tag', context);
   const objectName = tryGetScalar(node, 'object', context);
 
   if (tagName !== undefined && objectName !== undefined)
     throw new YamlLoadError(`${context}: 'tag'と'object'は同時に指定できません。`);
   if (tagName === undefined && objectName === undefined)
-    throw new YamlLoadError(`${context}: 'tag'または'object'のいずれかが必要です。`);
+    throw new YamlLoadError(`${context}: 'tag'・'object'・'not'のいずれかが必要です。`);
 
   return tagName !== undefined
     ? TypeMatchRule.ofTag(loader.tagNames.intern(tagName))

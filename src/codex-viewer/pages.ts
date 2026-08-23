@@ -10,21 +10,22 @@ import { describeInteraction } from './describe/describeInteraction';
 import { initialValueTokens, describeProperty } from './describe/describeProperty';
 import { describeRecipe } from './describe/describeRecipe';
 import { describeAccept, putInDurationTokens } from './describe/describeSlot';
-import type { InteractionDef } from '../domain/InteractionDef';
+import type { InteractionTrigger } from '../domain/InteractionTrigger';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { SlotDef } from '../domain/SlotDef';
 import { ART_BY_OBJECT_NAME } from '../art/objectArt';
 import { isInCraftingNetwork } from './networkPage';
+import { CodexPage } from './CodexPage';
 import type { CodexView } from './CodexView';
 import { EMPTY_HTML, escapeHtml, inlineArtHtml } from './html';
 
 /**
- * 1ページ分のHTMLを組み立てる関数群。DOMには触らず文字列を返すだけにして、描き込み（main.ts）と
- * 組み立てを分けている。
+ * 型・プロパティ・スロット・タグを辿るページ（CodexPage参照）。組み立てはDOMに触らず文字列を返す
+ * だけにして、描き込み（main.ts）と分けている。
  */
 
 /** オブジェクト一覧（入口のページ）。 */
-export function renderObjectListPage(view: CodexView): string {
+function renderObjectListPage(view: CodexView): string {
   const defs = [...view.objectDefs()].sort((a, b) => (a.name < b.name ? -1 : 1));
   const cards = defs.map((def) => objectCardHtml(view, def)).join('');
 
@@ -41,7 +42,7 @@ export function renderObjectListPage(view: CodexView): string {
 }
 
 /** オブジェクトの詳細。 */
-export function renderObjectPage(view: CodexView, name: string): string {
+function renderObjectPage(view: CodexView, name: string): string {
   const def = view.objectDef(name);
   if (def === undefined) return errorPage(`object_def '${escapeHtml(name)}' が見つかりません。`);
 
@@ -77,8 +78,9 @@ export function renderObjectPage(view: CodexView, name: string): string {
         for (const effect of def.passives.declarations) describePassive(effect, view.names, out);
       }),
     ) +
-    section('actions（メニューから選ぶ操作）', interactionsHtml(view, def, def.actions)) +
-    section('combinations（カードを重ねる操作）', interactionsHtml(view, def, def.combinations)) +
+    // きっかけで節を分けない——宣言が1つの並びなので、ここも宣言順のまま出す（各操作が自分の
+    // きっかけを名乗る、describeInteraction）。
+    section('interactions（操作）', interactionsHtml(view, def, def.triggers)) +
     section('recipes', recipesHtml(view, def)) +
     variantsSection(view, name) +
     // 逆引きはどちらも、行き先の型を絵で並べるだけにする——どの操作・どの工程かはリンク先で分かる。
@@ -132,7 +134,7 @@ function variantsSection(view: CodexView, objectName: string): string {
 }
 
 /** プロパティの詳細。プロパティの定義はobject_defごとに違いうるので、型とセットでのみ一意に決まる。 */
-export function renderPropertyPage(view: CodexView, objectName: string, propertyName: string): string {
+function renderPropertyPage(view: CodexView, objectName: string, propertyName: string): string {
   const def = view.objectDef(objectName);
   if (def === undefined) return errorPage(`object_def '${escapeHtml(objectName)}' が見つかりません。`);
 
@@ -173,7 +175,7 @@ export function renderPropertyPage(view: CodexView, objectName: string, property
  * 「どんなまとまりがあるか」を見渡す入口になる。一覧に出す型が1つも無いタグ（製作中オブジェクト
  * だけが持つwipなど）は、行き先が空になるので出さない。
  */
-export function renderTagListPage(view: CodexView): string {
+function renderTagListPage(view: CodexView): string {
   const cards = view
     .tagNames()
     .map((tag) => ({ tag, owners: view.objectsWithTag(tag) }))
@@ -211,7 +213,7 @@ function tagArtHtml(view: CodexView, names: readonly string[]): string {
  *
  * どの型もどこかの節には出るよう、タグを持たない型は最後にまとめる。
  */
-export function renderObjectsByTagPage(view: CodexView): string {
+function renderObjectsByTagPage(view: CodexView): string {
   const sections = view
     .tagNames()
     .map((tag) => ({ tag, names: view.objectsWithTag(tag) }))
@@ -249,12 +251,12 @@ function tagSectionHtml(view: CodexView, tag: string, heading: string, names: re
 }
 
 /** タグ別一覧の中の、そのタグの節のid。 */
-export function tagSectionId(tag: string): string {
+function tagSectionId(tag: string): string {
   return `tag-${tag}`;
 }
 
 /** スロットを持つobject_defの一覧と、それぞれの受け入れ方。 */
-export function renderSlotPage(view: CodexView, slotName: string): string {
+function renderSlotPage(view: CodexView, slotName: string): string {
   const globalId = view.codex.slotNames.tryGetId(slotName);
   const texts = view.locale.slot(slotName);
 
@@ -303,7 +305,7 @@ function slotCellsHtml(view: CodexView, selfObjectName: string, slotDef: SlotDef
 }
 
 /** 同名のpropを持つobject_defの候補一覧（参照先が1つに絞れないときの行き先）。 */
-export function renderPropertyCandidatesPage(view: CodexView, propertyName: string): string {
+function renderPropertyCandidatesPage(view: CodexView, propertyName: string): string {
   const candidates = view.objectsWithProperty(propertyName);
   if (candidates.length === 0)
     return errorPage(`'${escapeHtml(propertyName)}' という名前のpropはどの型にもありません。`);
@@ -330,6 +332,103 @@ export function renderPropertyCandidatesPage(view: CodexView, propertyName: stri
 
 export function renderNotFoundPage(): string {
   return errorPage('ページが見つかりません。');
+}
+
+// ------------------------------------------------------------------
+// ページ
+// ------------------------------------------------------------------
+
+/** オブジェクト一覧（`#/`）。名前で絞り込める。 */
+export class ObjectListPage extends CodexPage {
+  readonly route = '';
+
+  render(view: CodexView): string {
+    return renderObjectListPage(view);
+  }
+
+  /** 並べ替えずに隠すだけなので、入力のたびに組み立て直さない。 */
+  override wire(): void {
+    const input = document.getElementById('object-filter') as HTMLInputElement | null;
+    if (input === null) return;
+
+    const cards = [...document.querySelectorAll<HTMLElement>('.object-card')];
+    const empty = document.getElementById('object-filter-empty');
+    input.addEventListener('input', () => {
+      const query = input.value.trim().toLowerCase();
+      let shown = 0;
+      for (const cardElement of cards) {
+        const haystack = `${cardElement.dataset.name ?? ''} ${cardElement.dataset.label ?? ''}`;
+        const matches = query === '' || haystack.toLowerCase().includes(query);
+        cardElement.hidden = !matches;
+        if (matches) shown++;
+      }
+      if (empty !== null) empty.hidden = shown > 0;
+    });
+  }
+}
+
+/** オブジェクト1つ（`#/object/<名前>`）。 */
+export class ObjectPage extends CodexPage {
+  readonly route = 'object';
+
+  render(view: CodexView, args: readonly string[]): string | undefined {
+    const name = args.at(0);
+    return name === undefined ? undefined : renderObjectPage(view, name);
+  }
+}
+
+/** ある型のプロパティ1つ（`#/property/<型>/<プロパティ>`）。 */
+export class PropertyPage extends CodexPage {
+  readonly route = 'property';
+
+  render(view: CodexView, args: readonly string[]): string | undefined {
+    const [objectName, propertyName] = [args.at(0), args.at(1)];
+    return objectName === undefined || propertyName === undefined
+      ? undefined
+      : renderPropertyPage(view, objectName, propertyName);
+  }
+}
+
+/** その名前のプロパティを宣言している型の一覧（`#/prop-candidates/<プロパティ>`）。 */
+export class PropertyCandidatesPage extends CodexPage {
+  readonly route = 'prop-candidates';
+
+  render(view: CodexView, args: readonly string[]): string | undefined {
+    const propertyName = args.at(0);
+    return propertyName === undefined ? undefined : renderPropertyCandidatesPage(view, propertyName);
+  }
+}
+
+/** タグの一覧（`#/tags`）。 */
+export class TagListPage extends CodexPage {
+  readonly route = 'tags';
+
+  render(view: CodexView): string {
+    return renderTagListPage(view);
+  }
+}
+
+/** タグ別のオブジェクト一覧（`#/by-tag`、`#/by-tag/<タグ>` でその節まで送る）。 */
+export class ObjectsByTagPage extends CodexPage {
+  readonly route = 'by-tag';
+
+  render(view: CodexView): string {
+    return renderObjectsByTagPage(view);
+  }
+
+  protected override sectionId(name: string): string {
+    return tagSectionId(name);
+  }
+}
+
+/** スロット1つを持つ型の一覧（`#/slot/<スロット>`）。 */
+export class SlotPage extends CodexPage {
+  readonly route = 'slot';
+
+  render(view: CodexView, args: readonly string[]): string | undefined {
+    const slotName = args.at(0);
+    return slotName === undefined ? undefined : renderSlotPage(view, slotName);
+  }
 }
 
 // ------------------------------------------------------------------
@@ -435,16 +534,17 @@ function slotsHtml(view: CodexView, def: ObjectDef): string {
   return rows === '' ? EMPTY_HTML : slotTableHtml('スロット', rows);
 }
 
-function interactionsHtml(view: CodexView, def: ObjectDef, interactions: readonly InteractionDef[]): string {
-  const cards = interactions
-    .map((interaction) => {
+function interactionsHtml(view: CodexView, def: ObjectDef, triggers: readonly InteractionTrigger[]): string {
+  const cards = triggers
+    .map((trigger) => {
+      const interaction = trigger.interaction;
       const texts = view.interactionTexts(def.name, interaction.name);
       const description =
         texts.description === undefined ? '' : `<p class="muted">${escapeHtml(texts.description)}</p>`;
       const label = view.interactionLabel(def.name, interaction.name);
       return card(
         escapeHtml(label) + headingIdentifier(label, interaction.name),
-        description + view.describeHtml(def.name, (out) => describeInteraction(interaction, view.names, out)),
+        description + view.describeHtml(def.name, (out) => describeInteraction(trigger, view.names, out)),
       );
     })
     .join('');

@@ -132,24 +132,6 @@ traits:
       devour: {}
       flee: {}
 
-      # 以下は手番を与える側（Animal.takeTurn）が毎ターン上書きするプレースホルダ（5.2節）。
-      # **数と対象は必ず同時に書き込まれる**ので、数が0の候補の対象は絶対に読まれない。値は毎ターン
-      # 上書きされるため、0へ戻す後始末は要らない。
-      #
-      # 同じ土地に居るキャラクタの数。0なら襲う相手が居ない。
-      nearby_characters: {value: 0}
-      # 持ち去れる物の数と、そのうち選ばれた1つのインスタンスID。
-      lootables: {value: 0}
-      loot_target: {value: 0}
-      # くわえている物（spoilsの先頭）のインスタンスID。空なら0。数は書かない——食べる候補の
-      # ゲートはスロットの中身（食べ物かどうか）を直接見る（下のpassives）。
-      spoils_target: {value: 0}
-      # ぶつかって壊せる物の数と、そのうち選ばれた1つのインスタンスID。
-      smashables: {value: 0}
-      smash_target: {value: 0}
-      # 発見済みの道の本数と、そのうち選ばれた1本の行き先（土地のインスタンスID）。
-      escape_routes: {value: 0}
-      flee_to: {value: 0}
       # 意識（VitalsSystem.md 2節）。自分では動かず、痛み・衝撃・失血の段が押し下げる。常にカードに
       # バーが出る（CardView.md 8節のgauge宣言）。unconsciousの段の名前は固定（同6節）。
       consciousness:
@@ -190,66 +172,71 @@ traits:
       # 荒ぶっている間は物どころではない。逃げるか、向かってくるかの二択になる。
       - conditions: [{prop: wariness, in_stage: enraged}]
         modify: {self: {snatch: -1000, smash: -1000}}
-      # 同じ土地にキャラクタが居なければ襲えない。
-      - conditions: [{prop: nearby_characters, lt: 1}]
-        modify: {self: {bite: -1000, gore: -1000}}
-      # 手を出せる物が無ければ、持ち去りも体当たりも起こらない。
-      - conditions: [{prop: lootables, lt: 1}]
-        modify: {self: {snatch: -1000}}
-      - conditions: [{prop: smashables, lt: 1}]
-        modify: {self: {smash: -1000}}
       # 既に1つくわえていれば、次は持てない（spoilsは1枠）。
       - conditions: [{slot: spoils, matches: {tag: item}}]
         modify: {self: {snatch: -1000}}
-      # くわえた食べ物が無ければ、食べる手は起こらない。**食べ物でない物は食べない**——盗まれた
-      # 道具は立ち去り（stay_remaining）までくわえたまま残り、取り返しが付く（HuntingSystem.md 5.6節）。
-      - conditions:
-          - not: {slot: spoils, matches: {tag: food}}
-        modify: {self: {devour: -1000}}
-      # 逃げ道が無ければ逃げられない。**追い詰められた獣は逃げずに襲う**（5.3節）が、専用の条件を
-      # 1つも書かずに成立する。おまけに「開けた土地ほど逃げやすい」は道の本数が言う。
-      - conditions: [{prop: escape_routes, lt: 1}]
-        modify: {self: {flee: -1000}}
-    actions:
+    interactions:
       # 動物の1手（HuntingSystem.md 5節）。**プレイヤーが押すものではない**ので画面のボタンには
-      # 出さず（showMenu: never、11.1節）、tickの後処理が1手ずつ与える（Animal.takeTurn）。
+      # 出さず（trigger: tick、11.1節）、tickの後処理が1手ずつ与える（WorldObject.runTickActions）。
       # 15分の行動は1手、90分の行動は6手ぶんの時間になる（同2節）。
       #
       # どの回もsignal（9.8節）で結果を告げる。刺さった傷は相手の怪我スロットの中に入り、持ち去りは
       # 自分の中へ入るので、**レーンの上では何も変わらない回がある**——告げなければ「何も起きなかった」
       # ように見える。様子をうかがった回だけは、実際に何も起きていないので告げない。
       turn:
-        showMenu: never
+        trigger: tick
         pick:
           # 様子をうかがった回。**必ず先頭に置く**——他の候補がすべて抽選から外れた回に選ばれるのが
           # これになる（全候補の重みが0なら先頭が選ばれる、10節）。逃走や攻撃を先頭に置くと、
           # 逃げ道も相手も無い土地でそれが起きてしまう。
           - weight: {prop: lurk}
           # 噛みついた回。小さい獣が持てる唯一の攻め手で、浅いが血は流れる。
+          # 相手は同じ土地に居る人（10.3節のamong）。誰も居なければこの候補は抽選に出ない。
           - weight: {prop: bite}
-            spawn: {object: bite_wound, into: actor}
+            among: {subject: parent, slot: characters, matches: {tag: character}}
+            spawn: {object: bite_wound, into: picked}
             signal: bit
           # 牙を突き上げた回。大型だけが持つ一撃で、深く刺さって血が速く流れる。
           - weight: {prop: gore}
-            spawn: {object: gore_wound, into: actor}
+            among: {subject: parent, slot: characters, matches: {tag: character}}
+            spawn: {object: gore_wound, into: picked}
             signal: gored
           # 足元の物をくわえた回。倒せば地面へこぼれる（9.3節）ので、追えば取り返せる。
+          # **かさが大きい物ほど狙われる**——地面に大きな物を広げていると危ない（5.4節）。
+          # 獲物（quarry）は持ち去るものではないので外す（動物と死体、そして自分自身）。
           - weight: {prop: snatch}
-            move: {subject_prop: loot_target, to: self}
+            among:
+              subject: parent
+              slot: items
+              matches: {not: {tag: quarry}}
+              weight: {subject: picked, prop: volume}
+            move: {subject: picked, to: self}
             signal: snatched
           # ぶつかって壊した回。中身は地面に散らばる（同）ので、壊された籠の中の物は残る。
+          # **壊れうると著者が明示した物だけ**を候補にする（5.4節）——durabilityを持つ物すべてに
+          # すると、置いておいた道具まで一撃で消える。
           - weight: {prop: smash}
-            destroy: {prop: smash_target}
+            among:
+              subject: parent
+              slot: items
+              matches: {tag: fragile}
+              weight: {subject: picked, prop: volume}
+            destroy: picked
             signal: smashed
           # くわえていた食べ物を食べてしまった回。取り返しの道はここで断たれる。
+          # **食べ物でない物は食べない**——盗まれた道具は立ち去り（stay_remaining）まで
+          # くわえたまま残り、取り返しが付く（HuntingSystem.md 5.6節）。
           - weight: {prop: devour}
-            destroy: {prop: spoils_target}
+            among: {slot: spoils, matches: {tag: food}}
+            destroy: picked
             signal: devoured
           # 隣の土地へ逃げた回。くわえている物も一緒に運ばれる（中身は親に付いて動く）。
+          # 発見済みの道1本につき1つで、どれも同じ確からしさ——気まぐれに選ぶので近い遠いを見ない。
+          # 1本も無ければ候補が空になり、逃走が抽選から外れる（追い詰められた獣は逃げずに襲う、5.3節）。
           - weight: {prop: flee}
-            move: {subject: self, to_prop: flee_to}
+            among: {subject: parent, slot: fixtures, matches: {tag: path}}
+            move: {subject: self, to: {subject: picked, prop: destination_id}}
             signal: fled
-    combinations:
       # 武器を重ねて殴る（HuntingSystem.md 1.2節）。**候補は「一撃がどう入ったか」の型**で、どれを
       # 引くかは武器が宣言する重み配分（tools.yamlのweapon trait）が決める。動物の側は体格
       # （shockのmax）だけを持ち、どんな武器が在るかを知らない——武器を足してもここは1行も変わらない。
@@ -266,7 +253,7 @@ traits:
       # **打撲の成分はshockが持ち、怪我としては表さない。** 一撃で「裂傷」と「打撲」の2枚を刺すと
       # 怪我スロットが溢れる。裂けた皮膚が傷（injuries.yaml）、殴られた揺れがshock、という分け方で足りる。
       strike:
-        with: {tag: weapon}
+        trigger: {drag: {tag: weapon}}
         duration: 15
         pick:
           # 打ち砕いた回。柄の遠心力が乗る武器（石斧）だけが引く。当たれば中型はその場で崩れ落ちる
@@ -398,13 +385,13 @@ object_defs:
     props:
       weight: {value: 5000}
       volume: {value: 12000}
-    combinations:
+    interactions:
       # 刃物を重ねて解体する（HuntingSystem.md 1.5節）。
       #
       # 5000gの内訳: 生肉500g×4 + 獣骨500g + 生皮600g = 3100g。残る1900gは血と内臓・頭で、
       # 使い道が無いのでカードにしない。値を変えるときはこの内訳を崩さないこと。
       butcher:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 60
         destroy: self
         spawn:
@@ -623,11 +610,11 @@ object_defs:
     props:
       weight: {value: 60000}
       volume: {value: 144000}
-    combinations:
+    interactions:
       # 大きいぶん時間がかかるが、1kgあたりで見ればサル（60分/5kg）より速い——同じ手数で
       # 大きく取れるため。
       butcher:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 240
         destroy: self
         spawn:
@@ -645,9 +632,9 @@ object_defs:
     props:
       weight: {value: 1000}
       volume: {value: 2400}
-    combinations:
+    interactions:
       butcher:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 20
         destroy: self
         spawn:
@@ -687,8 +674,9 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: charred_lump}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}
@@ -721,11 +709,11 @@ object_defs:
     props:
       weight: {value: 10}
       volume: {value: 15}
-    combinations:
+    interactions:
       # 削って針にする（tools.yamlのbone_needle）。刃物を当てる側（dragged）は残り、削られる骨だけが
       # 針へ置き換わる——石を打ち割って尖った石を作るのと同じ形（locations.yamlのknap）。
       whittle:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 40
         destroy: self
         spawn: {object: bone_needle}
@@ -753,8 +741,9 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: roasted_meat}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}
@@ -782,8 +771,9 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: charred_lump}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}
@@ -808,8 +798,9 @@ object_defs:
     props:
       weight: {value: 250}
       volume: {value: 300}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}

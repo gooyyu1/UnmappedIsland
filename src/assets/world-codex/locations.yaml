@@ -57,9 +57,9 @@ object_defs:
       # 渡った先から必ず戻れる（ExplorationSystem.md 3.1節）。
       return_path_id:
         value: 0
-    actions:
+    interactions:
       travel:
-        showMenu: always
+        trigger: menu
         conditions:
           - {in_slot: fixtures}   # 未発見（undiscovered_fixtures側）の間は実行できない
           # 荷が重すぎると動けない。段の名前で見るので、境目はキャラクタのloadのstagesだけが持つ
@@ -96,9 +96,9 @@ object_defs:
     props:
       weight: {value: 1000}
       volume: {value: 700}
-    combinations:
+    interactions:
       knap:
-        with: {object: stone}
+        trigger: {drag: {object: stone}}
         duration: 60
         destroy: self
         spawn: {object: sharp_stone}
@@ -179,9 +179,9 @@ object_defs:
       # 太い枝2本とヤシガニが見つかる候補の重み。
       driftwood_find:
         value: 12
-    actions:
+    interactions:
       explore:
-        showMenu: always
+        trigger: menu
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -238,9 +238,9 @@ object_defs:
       # ヤシガニが1匹だけ見つかる候補の重み。
       crab_find:
         value: 12
-    actions:
+    interactions:
       explore:
-        showMenu: always
+        trigger: menu
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -294,9 +294,9 @@ object_defs:
       # ——候補自身が自分の重みを0にする。島に幾つも転がっていては、持ち帰る意味が薄れる。
       chalice_find:
         value: 4
-    actions:
+    interactions:
       explore:
-        showMenu: always
+        trigger: menu
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -344,9 +344,9 @@ object_defs:
       # 湧き水が見つかる候補の重み。
       spring_find:
         value: 10
-    actions:
+    interactions:
       explore:
-        showMenu: always
+        trigger: menu
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -411,9 +411,9 @@ object_defs:
       # 斧で倒せる木が1本見つかる候補の重み（timber.yaml）。丸太の出どころなので、森を特徴づける。
       tree_find:
         value: 15
-    actions:
+    interactions:
       explore:
-        showMenu: always
+        trigger: menu
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -484,9 +484,9 @@ object_defs:
       # 斧で倒せる木が1本見つかる候補の重み（timber.yaml）。
       tree_find:
         value: 12
-    actions:
+    interactions:
       explore:
-        showMenu: always
+        trigger: menu
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -560,9 +560,9 @@ object_defs:
       # ——候補自身が自分の重みを0にする。島に幾つも転がっていては、持ち帰る意味が薄れる。
       chalice_find:
         value: 3
-    actions:
+    interactions:
       explore:
-        showMenu: always
+        trigger: menu
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -612,9 +612,9 @@ object_defs:
       # 小枝が1つだけ見つかる候補の重み。
       wood_find:
         value: 20
-    actions:
+    interactions:
       explore:
-        showMenu: always
+        trigger: menu
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -665,9 +665,9 @@ object_defs:
       # ——候補自身が自分の重みを0にする。島に幾つも転がっていては、持ち帰る意味が薄れる。
       chalice_find:
         value: 3
-    actions:
+    interactions:
       explore:
-        showMenu: always
+        trigger: menu
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -714,9 +714,9 @@ object_defs:
       rat_catch: {value: 4}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
       rat_find: {value: 2}
-    actions:
+    interactions:
       explore:
-        showMenu: always
+        trigger: menu
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:

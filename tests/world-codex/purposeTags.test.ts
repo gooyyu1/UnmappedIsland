@@ -30,10 +30,10 @@ describe('用途のタグ', () => {
     // 自分の操作が「自分以外」（＝食べる本人）の満腹度か水分を動かすなら、それは口に入る物
     // （writesToPropertyの第3引数がfalse＝宣言元の物のプロパティではない、effectQueries参照）。
     const feedsTheEater = (def: ObjectDef): boolean =>
-      [...def.actions, ...def.combinations].some(
-        (interaction) =>
-          writesToProperty(interaction, satietyId, false) ||
-          writesToProperty(interaction, hydrationId, false),
+      def.triggers.some(
+        (trigger) =>
+          writesToProperty(trigger.interaction, satietyId, false) ||
+          writesToProperty(trigger.interaction, hydrationId, false),
       );
     // カードとして並ぶ物だけを見る。**液体の容器は除く**——飲めるのは中身であって、枠の色が言うのは
     // その物が何であるか（器は器）。水入りの水筒は食べ物の枠では出ない（CardView.md 2.1節）。

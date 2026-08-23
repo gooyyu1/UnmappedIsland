@@ -111,10 +111,10 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     const filled = codex.objects.get(codex.objectNames.getId('jar__content_water_liquid'));
 
     expect(
-      jar.actions.map((action) => action.name),
+      jar.menuTriggers.map((trigger) => trigger.interaction.name),
       '空の容器が持つのは容器自身の行動だけ（中身のdrinkは無い）',
     ).toEqual(['collect_rain']);
-    expect(jar.combinations, '注ぎ移しを宣言するのは中身の側').toHaveLength(0);
+    expect(jar.dragTriggers, '注ぎ移しを宣言するのは中身の側').toHaveLength(0);
     // volumeは容器自身の外寸のかさで、抱えている量はfillが持つ（LiquidContainerSystem.md 5節）。
     // **空の容器もfillを持つ**——空とは量が0であることで、増やせるのは中身のtraitを配られた変種だけ。
     expect(jar.tryGetPropertyDef(fillId)?.range?.max, '空の容器も上限を持つ').toBe(4000);
@@ -122,7 +122,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
     expect(codex.baseOf(filled), '中身入りは容器の変種').toBe(jar);
     expect(
-      filled.actions.map((action) => action.name),
+      filled.menuTriggers.map((trigger) => trigger.interaction.name),
       '中身のdrinkが、容器自身の行動に続いて自分の行動になる',
     ).toEqual(['collect_rain', 'drink']);
     expect(filled.tryGetPropertyDef(fillId)?.range?.max, '上限は素の型から引き継ぐ').toBe(4000);

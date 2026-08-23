@@ -46,25 +46,26 @@ object_defs:
         range: {min: 0, max: 10}
         on_min:
           signal: weakened
-    combinations:
+    interactions:
       # 重ねてきた物の側について告げる（対象を書く形の検査）。
       shrug_off:
-        with: {tag: item}
+        trigger: {drag: {tag: item}}
         signal: {dragged: bounced}
       hit_me:
-        with: {tag: item}
+        trigger: {drag: {tag: item}}
         pick:
           - weight: 70
             destroy: dragged
             signal: hit
           - weight: 30
             signal: missed
-    actions:
       exhaust:
+        trigger: menu
         add:
           self: {stamina: -1}
       # actorを渡さずに実行すると、この対象は解決できない。
       roar:
+        trigger: menu
         signal: {actor: startled}
 `;
 
@@ -253,8 +254,9 @@ object_defs:
       const yaml = `
 object_defs:
   beast:
-    actions:
+    interactions:
       roar:
+        trigger: menu
         signal: ${signal}
 `;
       return () => new WorldCodexYamlLoader().load('bad.yaml', yaml).build();

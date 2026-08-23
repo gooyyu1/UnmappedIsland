@@ -8,7 +8,9 @@ import type {
   TransferReading,
   WeightReading,
 } from '../../domain/EffectReader';
+import type { AmongReading } from '../../domain/AmongSpec';
 import type { ObjectRefReading } from '../../domain/ObjectRef';
+import { typeMatchTokens } from './typeMatchTokens';
 import type { ReferenceRoot } from '../../domain/ReferenceRoot';
 
 /**
@@ -86,6 +88,19 @@ export function weightTokens(reading: WeightReading, names: DefNames): readonly 
     : [propertyRef(names.propertyName(reading.propertyGlobalId), reading.subject)];
 }
 
+/** `among`（10.3節）の1行。どこから・どう絞って・どんな重みで1つ選ぶか。 */
+function amongTokens(reading: AmongReading, names: DefNames): readonly DescriptionToken[] {
+  return [
+    text(`among ${reading.root}.`),
+    slotRef(names.slotName(reading.slotGlobalId)),
+    ...(reading.match === undefined ? [] : [text(' の '), ...typeMatchTokens(reading.match, names)]),
+    text(' から1つ'),
+    ...(reading.weight === undefined
+      ? [text('（一律）')]
+      : [text('（重み: '), ...weightTokens(reading.weight, names), text('）')]),
+  ];
+}
+
 /** 読み上げをそのまま行へ落とす読み手。 */
 class EffectDescriber implements EffectReader {
   private readonly names: DefNames;
@@ -156,7 +171,10 @@ class EffectDescriber implements EffectReader {
     this.out.indented(() => {
       for (const candidate of candidates) {
         this.out.write(text('weight = '), ...weightTokens(candidate.weight, this.names));
-        this.out.indented(() => describeEffect(candidate.effect, this.names, this.out));
+        this.out.indented(() => {
+          if (candidate.among !== undefined) this.out.write(...amongTokens(candidate.among, this.names));
+          describeEffect(candidate.effect, this.names, this.out);
+        });
       }
     });
   }

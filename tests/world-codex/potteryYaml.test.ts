@@ -134,7 +134,7 @@ describe('pottery.yamlの土器の連鎖', () => {
     const spawnsClay = (landName: string): boolean =>
       codex.objects
         .get(codex.objectNames.getId(landName))
-        .actions.some((action) => spawnsObject(action, clayId));
+        .triggers.some((trigger) => spawnsObject(trigger.interaction, clayId));
 
     for (const wet of ['grassland', 'forest', 'jungle']) expect(spawnsClay(wet), wet).toBe(true);
     for (const dry of ['sandy_beach', 'rocky_field', 'wasteland', 'mountain_peak'])

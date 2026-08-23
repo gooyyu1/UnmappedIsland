@@ -16,21 +16,21 @@ traits:
     #
     # 身体の仕組みなので個体差を持たせず、この trait が配る（痛み・血と同じ扱い）。回復量は
     # 一律なので、体力のmaxが大きいキャラクタほど1回の休息で戻る割合は小さい。
-    actions:
+    interactions:
       wait:
-        showMenu: always
+        trigger: menu
         duration: 15
         add: {self: {stamina: 2}}
       rest:
-        showMenu: always
+        trigger: menu
         duration: 60
         add: {self: {stamina: 10}}
       nap:
-        showMenu: always
+        trigger: menu
         duration: 180
         add: {self: {stamina: 36, wakefulness: 36}}
       sleep:
-        showMenu: always
+        trigger: menu
         duration: 360
         add: {self: {stamina: 90, wakefulness: 96}}
     # 外から見えるもの（7.11節）。**手持ちは入れない**——レーンに出ているので、タブにも出すと

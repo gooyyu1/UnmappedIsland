@@ -1,5 +1,5 @@
 import type { EffectDeclaration } from '../../domain/EffectReader';
-import type { InteractionDef } from '../../domain/InteractionDef';
+import type { InteractionTrigger } from '../../domain/InteractionTrigger';
 import type { ObjectDef } from '../../domain/ObjectDef';
 import type { PropertyDef } from '../../domain/PropertyDef';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
@@ -102,14 +102,16 @@ function describeMatchingRangeEvents(
   });
 }
 
-/** matchesが真になる操作を、その名前を指す断片（actions/combinationsの区別つき）とともに集める。 */
+/** matchesが真になる操作を、その名前を指す断片（きっかけの区別つき）とともに集める。 */
 function matchingInteractions(
   def: ObjectDef,
   matches: (declaration: EffectDeclaration) => boolean,
-): readonly (readonly [DescriptionToken, InteractionDef])[] {
-  const found: (readonly [DescriptionToken, InteractionDef])[] = [];
-  for (const action of def.actions) if (matches(action)) found.push([actionRef(action.name), action]);
-  for (const combination of def.combinations)
-    if (matches(combination)) found.push([combinationRef(combination.name), combination]);
+): readonly (readonly [DescriptionToken, InteractionTrigger])[] {
+  const found: (readonly [DescriptionToken, InteractionTrigger])[] = [];
+  for (const trigger of def.triggers) {
+    const name = trigger.interaction.name;
+    if (!matches(trigger.interaction)) continue;
+    found.push([trigger.reading.kind === 'drag' ? combinationRef(name) : actionRef(name), trigger]);
+  }
   return found;
 }

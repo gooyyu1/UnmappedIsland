@@ -4,7 +4,6 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { samplePackPath } from '../support/samplePack';
-import type { ActionDef } from '../../src/domain/ActionDef';
 import { DescriptionWriter } from '../../src/codex-viewer/describe/Description';
 import { defNamesOf } from '../../src/codex-viewer/describe/codexNames';
 import { describeInteraction } from '../../src/codex-viewer/describe/describeInteraction';
@@ -33,9 +32,9 @@ describe('サンプルアセットパックの薬', () => {
   /** 1つのアクションの書き出し（describe）。探索候補に載ったかを字面で確かめる。 */
   function describeAction(objectName: string, actionName: string): string {
     const def = codex.objects.get(codex.objectNames.getId(objectName));
-    const action = def.actions.find((candidate) => candidate.name === actionName);
+    const trigger = def.menuTriggers.find((candidate) => candidate.interaction.name === actionName);
     const writer = new DescriptionWriter();
-    describeInteraction(action as ActionDef, defNamesOf(codex), writer);
+    describeInteraction(trigger!, defNamesOf(codex), writer);
     return writer.toPlainText();
   }
 

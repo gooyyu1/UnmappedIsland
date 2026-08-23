@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CodexSource } from '../../src/codex-viewer/CodexSource';
 import { CodexView } from '../../src/codex-viewer/CodexView';
-import { renderNetworkPage } from '../../src/codex-viewer/networkPage';
-import { renderObjectPage } from '../../src/codex-viewer/pages';
+import { NetworkPage } from '../../src/codex-viewer/networkPage';
+import { ObjectPage } from '../../src/codex-viewer/pages';
 import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
@@ -13,6 +13,12 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  * **同梱の定義は読まない**。図に出るのは「何がどこから生まれ、何を道具に使うか」だけなので、
  * その繋がりを1本その場に書けば足りる。
  */
+
+const renderNetworkPage = (view: CodexView, highlight?: string): string =>
+  new NetworkPage().render(view, highlight === undefined ? [] : [highlight]);
+const renderObjectPage = (view: CodexView, name: string): string =>
+  new ObjectPage().render(view, [name]) ?? '';
+
 const YAML = `
 object_defs:
   # クラフトに関わらない型。図に居ないので、ページからのリンクも出ない。
@@ -21,25 +27,26 @@ object_defs:
 
   sandy_beach:
     tags: [location]
-    actions:
+    interactions:
       explore:
+        trigger: menu
         duration: 30
         spawn: {object: coconut}
 
   coconut:
     tags: [item]
-    combinations:
+    interactions:
       # 刃物はdestroyされない＝消費されない入力（道具）。
       husk:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         destroy: self
         spawn: {object: husked_coconut}
 
   husked_coconut:
     tags: [item]
-    combinations:
+    interactions:
       crack:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         destroy: self
         spawn: {object: coconut_half, count: 2}
 
@@ -49,9 +56,9 @@ object_defs:
   # 道具そのものも作られる物なので、図に並ぶ。
   stone:
     tags: [item]
-    combinations:
+    interactions:
       knap:
-        with: {object: stone}
+        trigger: {drag: {object: stone}}
         destroy: self
         spawn: {object: sharp_stone}
 

@@ -667,18 +667,21 @@ export class WorldObject {
 
   // ---- プレイヤーが起こせる操作（11節・12節） ----
 
-  /**
-   * actorがこのカードへ起こせる操作（11節、宣言順）。画面のボタンに出すかは呼び出し側が
-   * showMenuで絞る（11.1節）。
-   */
-  actionsFor(actor: WorldObject | undefined): readonly Action[] {
-    return this.def.actions.map((action) => new Action(action, this, actor));
+  /** actorがこのカードへ起こせる、**画面のボタンに出る**操作（11.1節、宣言順）。 */
+  menuActionsFor(actor: WorldObject | undefined): readonly Action[] {
+    return this.def.menuTriggers.map((trigger) => new Action(trigger, this, actor));
   }
 
-  /** 名指しした操作（宣言が無ければundefined）。土地のexplore・道のtravel・動物の1手が使う。 */
+  /**
+   * 名指しした操作（宣言が無ければundefined）。土地のexplore・道のtravelが使う。
+   *
+   * 探すのは相手を伴わないきっかけ（menu・tick）だけ——重ねる操作は相手が決まらないと引けない。
+   */
   tryGetAction(actionName: string, actor: WorldObject | undefined): Action | undefined {
-    const action = this.def.actions.find((a) => a.name === actionName);
-    return action === undefined ? undefined : new Action(action, this, actor);
+    const trigger = [...this.def.menuTriggers, ...this.def.tickTriggers].find(
+      (candidate) => candidate.interaction.name === actionName,
+    );
+    return trigger === undefined ? undefined : new Action(trigger, this, actor);
   }
 
   /**
@@ -696,15 +699,15 @@ export class WorldObject {
   combinationsWith(dragged: WorldObject, actor: WorldObject | undefined): readonly Combination[] {
     if (dragged.def.isInProgress) return [];
     const context = ReferenceContext.acting(this, actor, dragged);
-    return this.def.combinations
+    return this.def.dragTriggers
       .filter(
-        (c) =>
-          c.acceptsDragged(dragged.def) &&
-          c.unmetRequirement(context) === undefined &&
-          c.acceptedCount(context, [dragged]) >= 1 &&
-          !c.unresolvable(context),
+        (trigger) =>
+          trigger.acceptsDragged(dragged.def) &&
+          trigger.interaction.unmetRequirement(context) === undefined &&
+          trigger.acceptedCount(context, [dragged]) >= 1 &&
+          !trigger.interaction.unresolvable(context),
       )
-      .map((c) => new Combination(c, this, dragged, actor));
+      .map((trigger) => new Combination(trigger, this, dragged, actor));
   }
 
   // ---- 時間の経過（8.4節） ----
@@ -724,6 +727,32 @@ export class WorldObject {
 
     for (const slot of this.slots) {
       for (const child of [...slot.contents]) child.tick();
+    }
+  }
+
+  /**
+   * この物から下（すべてのスロットの中身）へ、**時間が起こす操作**（`trigger: tick`、11.1節）を
+   * 1手ずつ与える。値の積分（tick）を終えてから呼ぶ——動物が動くのは時間が経ったからで、
+   * そのtickの値が出そろった後になる（WorldSession.runTick）。
+   *
+   * **配る前に集める。** 手番は物を増減させ、逃げれば別の枝へ移るので、走査しながら配ると同じ個体へ
+   * 二度回りうる。集めてから配れば、1 tickに1手だけになる。
+   */
+  runTickActions(): void {
+    const pending: WorldObject[] = [];
+    this.collectTickActors(pending);
+
+    for (const actor of pending) {
+      // 手番の途中で消えた個体は飛ばす——世界から外れると、辿り着く根が変わる。
+      if (actor.findRoot() !== this) continue;
+      for (const trigger of actor.def.tickTriggers) new Action(trigger, actor, undefined).tryExecute();
+    }
+  }
+
+  private collectTickActors(into: WorldObject[]): void {
+    if (this.def.tickTriggers.length > 0) into.push(this);
+    for (const slot of this.slots) {
+      for (const child of [...slot.contents]) child.collectTickActors(into);
     }
   }
 
@@ -770,25 +799,21 @@ export class WorldObject {
    * spawn（9.4節）を実行する。intoへの配置に失敗した場合は起点自身の親へこぼれ、そこも受け取らなければ
    * さらに上へ遡る（place・spillTo参照）。どこにも入らなければ、生成したオブジェクトはそのまま消える。
    */
-  executeSpawn(
-    effect: SpawnEffect,
-    actor: WorldObject | undefined,
-    effectSite: EffectSite | undefined,
-  ): void {
+  executeSpawn(effect: SpawnEffect, context: ReferenceContext, effectSite: EffectSite | undefined): void {
     const spawned = this.session.spawn(effect.objectGlobalId);
-    this.place(spawned, effect.into, actor, effect.into === 'same_slot' ? effectSite : undefined);
+    this.place(spawned, effect.into, context, effect.into === 'same_slot' ? effectSite : undefined);
   }
 
   /**
    * spawnした側は配置先のスロット名を書かない。same_slotなら捕捉しておいた位置へ配置する
-   * （EffectSite.placeReplacementへ委ねる）。self/actor/childなら対象のスロットを宣言順に走査し、最初に配置できた
+   * （EffectSite.placeReplacementへ委ねる）。self/actor/picked/childなら対象のスロットを宣言順に走査し、最初に配置できた
    * スロットへ入れる。**配置に失敗した場合は起点自身の親へこぼれ、そこも受け取らなければさらに上へ**
    * （spillTo）。どこにも入らなければ、生まれた物はそのまま失われる。
    */
   private place(
     spawned: WorldObject,
     into: SpawnTargetRoot,
-    actor: WorldObject | undefined,
+    context: ReferenceContext,
     site: EffectSite | undefined,
   ): void {
     let primaryTarget: WorldObject;
@@ -803,7 +828,7 @@ export class WorldObject {
       primaryTarget = this; // eslint-disable-line @typescript-eslint/no-this-alias -- 伝播先の起点として使うだけ
       placed = this.tryFirstAcceptingChild(spawned);
     } else {
-      const target = into === 'self' ? this : actor;
+      const target = context.objectAt(into);
       if (target === undefined) return;
       primaryTarget = target;
       placed = spawned.moveIntoFirstAcceptingSlot(primaryTarget);

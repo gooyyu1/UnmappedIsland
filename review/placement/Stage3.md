@@ -418,3 +418,240 @@ observe*が行う）。**どれも4つ全部の性質**なのでクラスのコ�
 
 影響の一覧が溢れる（子N個 → N行）。既存の怪我（切り傷3つ → `pain` に3行）と同じ形なので、縮退表示の
 規則は両方まとめて決める。
+
+## 14. 段4 レーンA-5（入れ子を読み上げる語彙）
+
+### Candidates.md の見立ては2点ずれていた
+
+**「3箇所」ではなく6箇所で、うち3つは再帰と関係なかった。** 木のクラスが domain の外へ渡る口を
+全部数えると、条件側が `ConditionReader.all`/`any`/`not`・`GateReading.conditions`・
+**`Requirement.node`**、効果側が `PickCandidateReading.effect`・**`PropertyDef.rangeEvents()`**・
+**`PropertyDef.rangeEventsAt()`**。太字の3つはただの受け渡しで、再帰する箇所だけ直すと同じ穴が残る。
+
+**「語彙が無い」のは条件側だけだった。** 効果側には `EffectDeclaration` が既に在り、
+`readEffect`・`spawnsObject`・`PropertyDef.hasRangeEventMatching` が使っている。`PropertyDef` では
+狭い型を使う `hasRangeEventMatching` と、木を素で返す `rangeEvents` が隣り合っていた。
+
+漏れていたのは、`ActiveEffect` に付いてくる `apply`（世界を書き換える）と、`ConditionNode` に
+付いてくる `evaluate`。読み手は全員 `read` で読み下しているだけなので、実害ではなく口の広さの問題。
+
+### 6箇所を「読み下せる宣言」に揃えた
+
+`ConditionDeclaration` を足し、6箇所すべてを `EffectDeclaration` / `ConditionDeclaration` にした。
+`ConditionOp` は `PropertyConditionReading.op` の語彙なので `ConditionReader.ts` へ移した
+（読み手が `ConditionNode.ts` を輸入する理由がこれで無くなる）。
+
+内部で木そのものが要る2箇所は、自分で持つ形へ:
+
+- `Requirement.node` は private にし、`condition`（読み下し用）と `isMet(context)` を公開。
+  `Requirements.firstUnmet` が `entry.node.evaluate(...)` を呼んでいたのをやめた。
+- `PropertyDef.rangeEventsAt` は private に落とし、外へは `rangeEventLabelsAt` を出す。外の唯一の
+  利用（`analysis/rangeEvents`）はラベルしか読んでいなかった。「どちらの端に達したか」を答えるのが
+  1箇所という約束は private 側に残っている。
+
+### `collectWatchedProperties` を消した
+
+`ConditionNode` は「見ているプロパティを集める」独自の再帰を持っていて、`tickDeltas` だけが
+呼んでいた。読み下す口を1つに揃えるため、`tickDeltas` 側の `ConditionReader` 実装
+（`WatchedSelfProperties`）へ移した。**取りこぼしが塞がるのが実利**——旧実装は
+`propertyGlobalId !== undefined` というフィールドの有無で葉を判定していたので、葉の種類を足しても
+黙って素通りする。読み上げ口が動詞ごとにメソッドを分けているのは、まさにそれを防ぐため。
+`valueRef`（比較の相手側）を数えない挙動はそのまま移した。
+
+### 方針を機械で保つ
+
+`tests/architecture/layers.test.ts` に1件足した——`src/analysis` と `src/codex-viewer` は
+`ActiveEffect.ts` / `ConditionNode.ts` を輸入しない。ここだけ**直接の輸入**を見る（読み手が輸入する
+定義クラスの先には木が居るので、到達可能性では見られない）。`docs/engine/Layers.md` 6節に
+「入れ子も、読み下せる宣言として渡す」を足し、規則はそこ1箇所に書いた。
+
+## 15. 段4 レーンA-10（保存領域のキー名前空間）
+
+`SaveSlots` / `Settings` / `Shelf` が `unmapped-island:` を各自で書き、壊れたJSONの扱いも各自で
+実装していた。**接頭辞の定数を1つ置くだけでは畳めていない**（3クラスが各自でキーを組む形は
+変わらない）ので、`StorageArea` に「領域1つ」として持たせた。
+
+- 領域を挙げるのは `StorageAreaName`（`save` / `settings` / `shelf`）の1箇所だけ。型なので、
+  4つめを勝手に足せない。
+- キーは `unmapped-island:{領域}[:{名前}]`。名前を省くと領域そのもの1件になる（`shelf`）。
+  **今のキーと1文字も変わらない**——既に保存されているものが読めなくなるので、ここは動かせない。
+  テストがキー文字列を直に書いているので、そのまま検証になった。
+- 壊れた値を未設定として読むのは `readJson` の中1箇所。`Shelf` と `SaveSlots` の try/catch が消え、
+  `SaveSlots.read` は `toSaveData(this.area.readJson(...))` の1行になった。
+
+`Settings` だけ JSON ではなく素の文字列を読み書きする（`'true'` / タブ名）ので、
+`readText` / `writeText` も置いた。値の形が違うだけで、キーの組み立てと領域は共通。
+
+## 16. 段4 レーンA-8（決着＝Ending）
+
+`PlayerCharacter` が `isDead` / `causeOfDeath` / `hasReachedMainland` / `broughtArtifacts` と
+private の `mainland` を抱えていた。**この4つはキャラクタの性質ではなく周回の終わり方**なので、
+`domain/wrappers/Ending.ts` へ移し、`PlayerCharacter.ending` から取る形にした。
+
+**2つの真偽値を1つの `kind` にできた。** 死と脱出は同時に起こらない（死ねば世界の中に居らず、
+本土の中にも居ない）——旧実装はそれを2つの真偽値で表し、`playbackSteps` が
+「`isDead` が先」という優先順位を書いて排他を作り直していた。`EndingKind`（`'death' | 'escape'`、
+未決着は undefined）にすると、その順位が要らなくなる。**「本土に着いていても死が先」を確かめる
+テストも消えた**——起こりえない入力を確かめていたので、型で消える。
+
+旗を持たない（居場所がそのまま答える）という決まりはそのまま。`Ending` はプレイヤーの
+`WorldObject` を包む `ObjectWrapper` で、`Location` や `Animal` と同じ形。
+
+## 17. 段4 レーンA-6（描き替えを跨いで生き残るページ）
+
+ビューアのページは `render(view) => string` の関数だけだったので、描き替えを跨いで残る状態が
+モジュール変数になっていた（`balancePage.lastTables`、`main.ts` の `networkZoom`）。
+`CodexPage`（抽象）を置き、**ルートごとに1つだけ作って使い回す**形にした。
+
+ページが持つのは4つ: `route`、`render(view, args)`、`wire()`（描き込んだ後の配線。既定は何もしない）、
+`scrollToSection(name)`。最後のものは `sectionId(name)` と `scrollOptions` の2つをページが答えて、
+**送り方そのものは基底の1箇所**にある——旧実装は `main.ts` が3ルートぶん同じ形の呼び出しを並べ、
+差は「idの作り方」と「中央へ寄せるか」だけだった。
+
+`main.ts` から出ていったもの: `renderRoute` の9分岐、`wireObjectFilter`、`wireNetworkZoom` と
+`networkZoom`、`scrollToSection` の3回の呼び出し。残ったのは**ページの一覧1つ**と、
+名前の見せ方・読み込みだけ。ページを1枚足すときに `main.ts` を触るのは一覧への1行だけになる。
+
+`renderBalancePage` が書いていた `lastTables` は `BalancePage.tables` に、`wireBalanceMenu` は
+そのページの `wire()` になった（表を引数で受け取るので、モジュール変数を読み直さない）。
+
+`render` は**引数が足りなければ undefined**を返し、`main.ts` がそれを「見つかりません」に倒す。
+旧実装の `route === 'object' && first !== undefined` という条件が、ページ側の1箇所へ移った形。
+
+## 18. 段4 レーンA-7（実体化された島）——保留。問題の中身
+
+**着手していない。** ここに書くのは「何が問題か」だけで、直し方は決めていない。
+
+`IslandMap`（`src/domain/generation/IslandMap.ts`）の doc は自分をこう名乗っている:
+
+> 地形生成の結果（サイト・型・命名・パスネットワーク）を表す**不変のデータ**。
+> TerrainGenerator.generateの出力であり、**WorldObjectには一切触れない純粋な計算結果**。
+
+同じクラスがそのすぐ下でこう持っている:
+
+```ts
+/** サイトindex→実体化されたLocationのWorldObject.instanceId（IslandSpawnerが埋める。未実体化なら0）。 */
+readonly siteInstanceIds: number[];
+```
+
+`readonly` が付いているのはフィールドの再代入だけで、**中身は書き換わる**。実際
+`IslandSpawner.populate` が `map.siteInstanceIds[site.index] = location.instanceId` と後から書き込む。
+
+**1つのオブジェクトが2つの生涯を兼ねている。**
+
+| | 純粋な生成結果 | 実体化後の対応表 |
+| -- | -------------- | ---------------- |
+| いつ在るか | 種から計算した直後 | `populate` を通った後 |
+| 不変か | 不変 | 書き換わる |
+| 何を知るか | サイト・辺・命名 | どのサイトがどの `WorldObject` になったか |
+
+そこから出ている具体的な傷が3つ:
+
+1. **「まだ実体化していない」を 0 という番人で表している。** `nameOfInstance` は
+   「instanceIdの発行は1始まりなので、0は必ず該当なし」というコメント付きで0を弾く。2つの生涯が
+   同じ配列を共有しているからで、対応表が実体化と同時に生まれるなら、そもそも空の状態が無い。
+2. **不変を名乗っているのに渡せない。** 受け取った側は誰でも `siteInstanceIds` へ書き込める。
+   純粋な計算結果として共有・比較・キャッシュできるという性質が、実際には無い。
+3. **読む側が「サイト index → instanceId → WorldObject」を毎回自分で辿っている。**
+   `IslandSpawner.placePlayerAt` は `findDescendantByInstanceId(map.siteInstanceIds[site.index])`、
+   `PlayScreenView` も `game.map.siteInstanceIds[site]` を直に引いている。テスト4本も同じ形。
+
+なお、セーブは対応表を保存していない。保存するのは種（`SaveData.seed`）とサイト index だけで、
+読み込み時に**同じ種から生成し直して `populate` をやり直す**（`NewGame.ts`）。
+つまり対応表は毎回作り直されるものなので、**生成結果と寿命が違う**ことは保存側からも見える。
+
+決める必要があるのは「2つに割るか」と、割るなら**対応表を誰が持つか**（`populate` の戻り値か、
+`NewGameSession` のような抱える側か）。`map.siteInstanceIds` を直に読んでいる呼び出し側が
+`PlayScreenView` とテスト4本あるので、割るとそこの書き換えが要る。
+
+## 19. 操作のきっかけと、`actions`/`combinations` の統合
+
+設計は [`InteractionTrigger.md`](./InteractionTrigger.md)。YAMLの2つの節を `interactions` 1つにし、
+きっかけを `trigger` として宣言させた。
+
+```yaml
+interactions:
+  explore: {trigger: menu, ...}
+  turn: {trigger: tick, ...}
+  strike: {trigger: {drag: {tag: weapon}, allow_multiple: true}, ...}
+```
+
+### 設計案から変えたところ
+
+**JSONスキーマの `action_def` と `combination_def` が1つに畳めた。** 設計案では触れていなかったが、
+2つの `$defs` は効果の動詞（`set`/`add`/`destroy`/…）を丸ごと重複させていて、違いは
+`showMenu` と `with` の1キーだけだった。`interaction_def` 1つ＋`trigger` の `oneOf` になり、
+スキーマは78行減った。
+
+**codex-viewer は節を分けずに1つにした。** 宣言が1つの並びなので、ページも宣言順のまま出す
+（各操作が自分のきっかけを名乗る）。
+
+### 予告どおり消えたもの
+
+`ObjectDef` のコンストラクタにあった名前衝突の検査。節が2つあるせいで書いていたもので、
+1つの map になれば YAML の側で一意になる。`RawDeclarationBody` の trait 合成も2本から1本へ。
+
+### 実行時のクラスは分けたまま
+
+`Action` / `Combination`（`Interaction` の具象）は残した。`Combination` は dragged が必ず居ることを
+型引数で保証していて、統合すると「居るかもしれない」を実行時に見る形へ戻る。
+
+### 残した宿題: `ActionDef` / `CombinationDef` という名前
+
+YAML から `actions` / `combinations` の語が消えたのに、宣言のクラス名は残っている。`ActionDef` は
+今や「相手を伴わない操作（`menu` と `tick`）」で、YAML を grep しても `actions:` は見つからない。
+実行時の `Action` / `Combination` の対と揃えて残したが、**名前と現実はずれている**。
+きっかけを持つ小さなオブジェクト（`MenuTrigger`/`TickTrigger`/`DragTrigger`）へ畳んで
+`InteractionDef` 1クラスにできるかは、別の作業として見る。
+
+### 移行の規模
+
+同梱YAML 13ファイル（`actions:` 29・`combinations:` 26 → `interactions:` 51。4つの型は両方の節を
+持っていたので1つへ寄せた）、サンプルパック1ファイル（ZIPも固め直し）、テストのフィクスチャ20ファイル、
+docs 12ファイルとJSONスキーマ。パッチのパス（`x.actions.y`）も `interactions` へ。
+
+## 20. 段4 レーンA-13（周りの物を候補にする `pick`）
+
+設計は [`PickAmong.md`](./PickAmong.md)。`Animal.ts` は**丸ごと消えた**。
+
+### 入った語彙
+
+- **`among`**（10.3節）: `pick` の候補に「周りから相手を1つ選ぶ」を書ける。集合の指し方は条件の
+  `{subject, slot, matches}`（14.4節）と同じ3つのキーで、足したのは候補ごとの重みだけ。
+  選ばれた相手は参照ルート `picked` で指す。
+- **`matches` の否定**（`{not: ...}`）: `TypeMatchRule` が `tag | object | not` の3形に。
+  `accept`・`with`・`slot_content`・`object_matches` すべてで使える。
+- **`picked` を指せる先**: 条件・効果の対象・`spawn` の `into`・`destroy`・`move`。
+
+`move` の `to`／`subject` が**マップ形も受けるようになった**（`{subject: picked, prop: destination_id}`）。
+`ObjectRef` のプロパティ参照は self 固定だったが、`PropertyPath`（root + プロパティ）を持つ形にした
+——`to_prop`/`subject_prop` の短い書き方はそのまま残る。
+
+### 消えたもの
+
+`animals.yaml` から**プロパティ8つ**（`nearby_characters` `lootables` `loot_target` `spoils_target`
+`smashables` `smash_target` `escape_routes` `flee_to`）と、**ゲートの passives 5つ**。
+ロケールの説明文も8つ消えた。`WorldVocabulary` からは11の識別子が消えた
+（上の8つ＋`spoils`・`quarry`・`fragile`。エンジンが名前で引く必要がなくなった）。
+
+`src/domain/wrappers/Animal.ts` は消滅。`World.runAnimalTurns` と `Location.runAnimalTurns`
+（スロットの名前を知っているだけの中継）も一緒に消えた。
+
+### 手番を配るのは `WorldObject.runTickActions`
+
+[`PickAmong.md`](./PickAmong.md) 9節のとおり、tick の後の2周目にした。
+`WorldSession.runTick` は `tick()` → `runTickActions()` の2行のまま。
+
+**集めてから配る。** 走査しながら配ると、逃げてまだ回っていない土地へ移った動物へ二度手番が回る
+——これは**既存の不具合**で（`Location.runAnimalTurns` が土地ごとに遅れてスナップショットを取る）、
+集める形にして消えた。手番の途中で消えた個体は、根が変わることで飛ばされる。
+
+配る範囲は「島の土地の items」から**世界全体**になった。罠の中でも手番は回るが、周りに相手が
+居なければ候補が全部外れて様子見になるだけ——**何ができるかを決めるのは世界の側**。
+
+### 挙動が変わったところ
+
+- **襲う相手が抽選になった。** 今までは `characters.at(0)` 固定。人が2人以上居る場面が無いので差は出ない。
+- **かさ0の物は狙われない。** 旧実装の `Math.max(1, volume)` の下限は設けなかった（PickAmong 6節）。
+- 「人が居なければ襲えない」を確かめていたテストが、**重みが0に潰れること**を見ていた。重みは配分の
+  ままになったので、観測できる事実（怪我が増えない）で確かめる形へ直した。

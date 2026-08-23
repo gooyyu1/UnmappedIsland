@@ -181,8 +181,10 @@ describe('筏と航海', () => {
     tick(game);
 
     expect(raft.parent?.def.name, '筏は本土に着く').toBe('mainland');
-    expect(game.player.hasReachedMainland, 'プレイヤーは島を出た').toBe(true);
-    expect(game.player.broughtArtifacts, '積んでいたアーティファクトを持ち帰る').toEqual(['golden_chalice']);
+    expect(game.player.ending.kind, 'プレイヤーは島を出た').toBe('escape');
+    expect(game.player.ending.broughtArtifacts, '積んでいたアーティファクトを持ち帰る').toEqual([
+      'golden_chalice',
+    ]);
 
     // 着いた後は風も海流も効かないので、進みは止まったまま（同じ到達が二度起きない）。
     tick(game);

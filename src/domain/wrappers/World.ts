@@ -1,7 +1,5 @@
 import { ObjectWrapper } from './ObjectWrapper';
 import type { Rng } from '../Rng';
-import type { WorldSession } from '../WorldSession';
-import { Location } from './Location';
 
 /**
  * world（唯一のシングルトン、GameElementDefinition.md 15節）の包み（ObjectWrapper）。
@@ -88,21 +86,6 @@ export class World extends ObjectWrapper {
 
     this.instance.tryGetProperty(this.words.hourId)?.setNumber(Math.trunc(minutes / 60));
     this.instance.tryGetProperty(this.words.minuteId)?.setNumber(minutes % 60);
-  }
-
-  /**
-   * 島のすべての土地へ、動物の1手を配る（tickの後処理、HuntingSystem.md 5.2節）。
-   *
-   * 配る先を「プレイヤーの居る土地」に絞らないのは、動物がプレイヤーを見ているわけではないから
-   * ——放って出かけた先で罠に掛かった獲物が暴れ、目を離した拠点の物が持ち去られる。
-   *
-   * worldが土地の枠を持たなければ何もしない。
-   */
-  runAnimalTurns(session: WorldSession): void {
-    const slot = this.instance.tryGetSlot(this.words.locationsSlotId);
-    if (slot === undefined) return;
-
-    for (const land of [...slot.contents]) new Location(land, session.codex).runAnimalTurns(session);
   }
 
   /** minuteへamountを加減算する（WorldSession.advanceWorldTime専用。負の値も許容する）。繰り上げ（on_max）はtickを待たずその場で走る（PropertyValue.add参照）。 */

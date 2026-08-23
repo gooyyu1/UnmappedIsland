@@ -19,7 +19,7 @@
 （`src/assets/world-codex/animals.yaml` の4種と `injuries.yaml`・`tools.yaml` の武器3種、検証は
 `tests/world-codex/animalsYaml.test.ts`）。6 節の変化の観測と 6.3 節の告知も実装済みです
 （`WorldSession.observeChanges`・`observeSignals`）。5 節の動物の1手も実装済みで、時間が経てば
-2 節が述べる「動物の 6 手」がそのまま現れます（`Animal.takeTurn`、検証は
+2 節が述べる「動物の 6 手」がそのまま現れます（`WorldObject.runTickActions`、検証は
 `tests/world-codex/animalTurn.test.ts`）。**4 節だけが丸ごと未実装**で、見出しに【未実装】の印を
 付けています。新設が必要なエンジン拡張は 7 節、未決事項は 8 節にまとめています。
 
@@ -31,7 +31,7 @@
 並びます。`items`/`fixtures` の区別は「持ち運べるか」ではなく**動かせるか**なので、動物は前者です。持ち上げ
 られるかどうかは 4 節の `resists` が別に決めます。
 
-### 1.2 攻撃は `combinations`
+### 1.2 攻撃はドラッグ型の操作
 
 武器として使える道具を動物のカードへ重ねる操作です。ヤシの実を割る・怪我に治療具を当てるのと同じ、既存の
 中核動詞（[`GameElementDefinition.md`](./GameElementDefinition.md) 12 節）そのままで、新しい操作の語彙を
@@ -39,9 +39,9 @@
 
 ```yaml
 wild_boar:
-  combinations:
+  interactions:
     strike:
-      with: {tag: weapon}
+      trigger: {drag: {tag: weapon}}
       duration: 15
 ```
 
@@ -120,16 +120,16 @@ wild_boar:
 - **人へは同じ形を適用しません。** 動物の1手（5.1 節）がプレイヤーを気絶させて即死させられるのは
   理不尽なので、無防備さが重みになるのはプレイヤーが仕留める側の `pick` だけです
 
-### 1.5 解体も `combinations`
+### 1.5 解体もドラッグ型の操作
 
 **死体は素材の入った袋ではなく、刃物を重ねる1回の操作で肉・骨・生皮へ置き換わります。** 攻撃
 （1.2 節）・ヤシの実の加工と同じ中核動詞そのままで、解体専用の語彙を持ちません。
 
 ```yaml
 monkey_carcass:
-  combinations:
+  interactions:
     butcher:
-      with: {tag: cutting_tool}
+      trigger: {drag: {tag: cutting_tool}}
       duration: 60
       destroy: self
       spawn:
@@ -240,7 +240,7 @@ wild_boar:
 台車に積んだ動物の警戒が上がった場合、`resists` が成立した瞬間に最も近い土地へこぼれ出ます。`destroy` が
 中身を親へこぼす（同 9.3 節）のと同じ扱いで、**暴れて荷車から飛び出す**という見え方になります。
 
-捕まえる手間は枠が持ちます（`put_in: {duration: ...}`、同 7.10 節）。`combinations` に書くと、レーンへ直接
+捕まえる手間は枠が持ちます（`put_in: {duration: ...}`、同 7.10 節）。ドラッグ型の操作に書くと、レーンへ直接
 落とす経路だけが無料になります。
 
 ## 5. 1手は、動物ごとの重み配分1つで決まる
@@ -264,14 +264,13 @@ wild_boar:
 書けない（[`GameElementDefinition.md`](./GameElementDefinition.md) 9.2 節）以上、**体格から威力を読むことは
 できない**ので、1.2 節と同じく候補の側が量を持ちます。
 
-### 5.1 気まぐれな対象は、実行時に書き込むプロパティで指す
+### 5.1 気まぐれな相手は、候補が自分で選ぶ
 
 動物は、その場のアイテムに体当たりして壊し、足元の物をくわえ、逃げるときは行き先を気まぐれに選びます。
-いずれも「定義時点では決まらず、実行時に初めて確定する個体」を指す必要があります。
+いずれも「定義時点では決まらず、実行時に初めて確定する個体」を相手にします。
 
-これは道の移動先とまったく同じ問題で、既に作法が確立しています——**コードがインスタンスのプロパティへ
-書き込み、YAML はそれを読む**（[`ExplorationSystem.md`](./ExplorationSystem.md) 3 節。`path` の
-`destination_id` は `IslandSpawner` が `setProperty` で書き込み、`object_defs` の初期値はプレースホルダ）。
+**候補が `among`（[`GameElementDefinition.md`](./GameElementDefinition.md) 10.3 節）で自分の相手を選びます。**
+どこから・どう絞って・どんな重みで選ぶかを候補自身が書き、選ばれた相手は `picked` で指します。
 
 ```yaml
 beast:
@@ -281,31 +280,33 @@ beast:
     gore: {}
     smash: {}
     flee: {}
-    # いずれも実行時に上書きされるプレースホルダ（5.2節）。
-    smashables: {value: 0}
-    smash_target: {value: 0}
-    escape_routes: {value: 0}
-    flee_to: {value: 0}
-  actions:
+  interactions:
     turn:
       # プレイヤーが押すものではない（GameElementDefinition.md 11.1節）。
-      showMenu: never
+      trigger: tick
       pick:
         # 様子をうかがった回。必ず先頭に置く（5.3節）。
         - weight: {prop: lurk}
         - weight: {prop: gore}
-          spawn: {object: gore_wound, into: actor}
+          among: {subject: parent, slot: characters, matches: {tag: character}}
+          spawn: {object: gore_wound, into: picked}
           signal: gored
         - weight: {prop: smash}
-          destroy: {prop: smash_target}
+          among:
+            subject: parent
+            slot: items
+            matches: {tag: fragile}
+            weight: {subject: picked, prop: volume}
+          destroy: picked
           signal: smashed
         - weight: {prop: flee}
-          move: {subject: self, to_prop: flee_to}
+          among: {subject: parent, slot: fixtures, matches: {tag: path}}
+          move: {subject: self, to: {subject: picked, prop: destination_id}}
           signal: fled
 ```
 
-`spawn` の `into: actor` が成立するのは、動物の1手を実行する側（5.2 節）が同居しているキャラクタを `actor`
-として渡すからです。`passives` からは兄弟（同じ土地に居るキャラクタ）へ届かないため、この経路が必要です。
+**相手が1つも居ない候補は抽選に出ません。** 「同じ土地に人が居なければ襲えない」「逃げ道が無ければ
+逃げられない」を、条件でも重みの打ち消しでも書いていません（5.3 節）。
 
 **持ち去った物は動物の中へ入ります**（`spoils` スロット、枠は1つ）。倒せば中身として地面へこぼれる
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 9.3 節）ので、**追いつけば取り返せる**が追加の
@@ -316,40 +317,25 @@ beast:
 する）。取り返しの道はそこで断たれます。食べ物でない物は食べず、立ち去り（5.6 節）までくわえたまま
 残ります——盗まれたのが道具なら、時間が経っても物だけは回収できます。
 
-### 5.2 1手を与える側が書き込むもの
+### 5.2 1手を与える側
 
-tick の後処理として、島のすべての土地に居る動物へ1手ずつ与えます
-（`WorldSession.advanceWorldTime` → `World.runAnimalTurns` → `Location.runAnimalTurns` → `Animal.takeTurn`）。
-[`ExplorationSystem.md`](./ExplorationSystem.md) 5 節の `Location.explore` が `revealDueFixtures` を内側で
-呼んでいるのと同じ、入口を1箇所に閉じる形です。
+tick の後処理として、**世界のどこに居るものでも、`trigger: tick` を宣言していれば1手ずつ受け取ります**
+（`WorldSession.advanceWorldTime` → `WorldObject.runTickActions`）。値の積分（`WorldObject.tick`）を終えて
+から配るので、動物が動くのは「そのtickの値が出そろった後」になります。
 
-**配る先をプレイヤーの居る土地に絞りません。** 動物はプレイヤーを見ているわけではないので、目を離した
-拠点の物も持ち去られます。
+**配る先を絞りません。** 動物はプレイヤーを見ているわけではないので、目を離した拠点の物も持ち去られます。
+罠の中や入れ物の中に居ても手番は回りますが、周りに相手が居なければ候補が全部外れて様子見になるだけです
+——**何ができるかを決めるのは世界の側**（5.1 節の `among`）で、エンジンは「地面に居る動物だけ」のような
+絞り込みを持ちません。
 
-| プロパティ | 内容 |
-| --- | --- |
-| `nearby_characters` | 同じ土地に居るキャラクタの数 |
-| `loot_target` | 持ち去る相手のインスタンスID |
-| `lootables` | 持ち去れる物の数 |
-| `spoils_target` | くわえている物（`spoils` の先頭）のインスタンスID |
-| `smash_target` | ぶつかる相手のインスタンスID |
-| `smashables` | ぶつかれる物の数 |
-| `flee_to` | 逃げ込む土地のインスタンスID（発見済みの道から1本選ぶ） |
-| `escape_routes` | 発見済みの道の本数 |
-
-**重みと対象は必ず同時に書きます。** `smashables` が0なら `smash_target` は絶対に読まれない、という不変条件を
-1箇所に閉じるためです（2箇所が暗黙に一致すべき規約を分散させない）。襲う相手だけはプロパティではなく
-`actor` として渡すので、数（`nearby_characters`）だけを書きます。
-
-値は毎ターン上書きされるので、意味は常に「直前のターンで用意した候補」で確定し、古い値が残り続けません。
-**0へ戻す後始末は不要**です。万一消えた個体を指していても、解決に失敗した
-効果は何も起こしません（`GameElementDefinition.md` 9.6 節の `to_prop` と同じ規約）。
+**配る前に集めます。** 手番は物を増減させ、逃げれば別の土地へ移るので、走査しながら配ると同じ個体へ
+二度回りえます。集めてから配れば1 tickに1手だけになり、手番の途中で消えた個体は飛ばされます。
 
 ### 5.3 追い詰められた動物は逃げずに襲う
 
-`PickEffect` は重みを0でクランプするため、**逃げ道が無い土地（`escape_routes` = 0）では逃走候補が抽選から
-外れます**。専用の条件を書かずに「追い詰められた獣は反撃する」が成立し、おまけに「開けた土地ほど逃げやすい」
-（道が多い＝重みが大きい）も付いてきます。壊せる物が無い土地で暴れる候補が外れるのも同じ仕組みです。
+**逃げ道が1本も無ければ、逃走の候補はそもそも抽選に出ません**（`among` の候補が空、5.1 節）。専用の条件を
+書かずに「追い詰められた獣は反撃する」が成立し、おまけに「開けた土地ほど逃げやすい」（道が多い＝
+選ばれる先が多い）も付いてきます。壊せる物が無い土地で暴れる候補が外れるのも同じ仕組みです。
 
 **ただし全候補の重みが0になると先頭候補が選ばれます。** 様子見を先頭に置くことを規約にします——逃走や攻撃を
 先頭に置くと、逃げ道も相手も無い土地でそれが起きてしまいます。様子見だけはどの動物も正の重みを持つので、
@@ -357,10 +343,10 @@ tick の後処理として、島のすべての土地に居る動物へ1手ず�
 
 ### 5.4 何にぶつかるか、何をくわえるか
 
-「暴れまわって、たまたまぶつかった物が壊れた」を表します。選ぶのはコード側なので、次の2点を規約にします。
+「暴れまわって、たまたまぶつかった物が壊れた」を表します。選び方は候補の `among` が書きます（5.1 節）。
 
 - **かさ（`volume`）で重み付けする。** 大きい物にぶつかりやすい＝地面に大きな物を広げていると危ない、という
-  読める判断になります
+  読める判断になります。かさ0の物は選ばれません——そこに嵩が無いという宣言だからです
 - **壊れうる物だけを候補にする。** `durability` を持つ物すべてにすると大事な道具まで一撃で消えるため、
   `fragile` タグで著者が明示的に選びます（編み籠・くくり罠・編んだ葉・ヤシの器）
 
@@ -462,7 +448,7 @@ tick の後処理として、島のすべての土地に居る動物へ1手ず�
 
 | 現れたもの | 出どころ |
 | --- | --- |
-| `combinations` の成果物 | 効果を宣言している側の札（重ねた相手か、逆向きに成立したなら掴んだ札。それが主体） |
+| ドラッグ型の操作の成果物 | 効果を宣言している側の札（重ねた相手か、逆向きに成立したなら掴んだ札。それが主体） |
 | アクションで採ったもの | そのカード（ヤシの木から採った実は木から手元へ） |
 | 探索で見つけたもの | 現在地（`explore` の主体。設置物は移動前の親としても同じ土地を指す） |
 | tick の中で生まれたもの | それを起こしたオブジェクト |
@@ -510,7 +496,7 @@ strike:
 | `resists`（4 節、未実装） | `bound_to_owner` の対称形。条件が成立する間、土地以外の親へ移れない。成立した瞬間に土地へこぼれ出る |
 | オブジェクトを指す参照（`ObjectRef`） | 対象キー（`self`/`parent`/`actor`/`dragged`）と、インスタンスIDを保持するプロパティ（`{prop: ...}`）の二択。`destroy` の対象と `move` の `subject`・移動先が共有する（`GameElementDefinition.md` 9.3 節・9.6 節）。**動かす物と行き先を別々の仕組みで指さない**——どちらも「1つのオブジェクトを指す」という同じ役目だから |
 | `move` の `subject: self` | 現在は `actor`/`dragged` のみでロード時エラーだった（同 9.6 節）。`child` と違い `self` は一意なので曖昧さが無い |
-| `showMenu: never`（同 11.1 節） | 画面のボタンには出さない操作。起こすのはプレイヤーではなく時間の側になる |
+| `trigger: tick`（同 11.1 節） | 画面のボタンには出さない操作。起こすのはプレイヤーではなく時間の側になる |
 | `signal`（6.3 節） | 世界の形を変えず、出来事が起きたことだけを告げる。当たり外れに限らず、出入りを伴わない出来事すべてが使う |
 
 加えて、tick の後処理として動物へ1手与える箇所（5.2 節）が実装の中心です。変化の観測（6 節）は

@@ -34,8 +34,9 @@ traits:
   # 増えるのは自動（rain_filled_liquid）。中身入りの変種はfillを持つので条件で弾かれ、
   # 空の容器にだけボタンが出る。
   rain_catching_container:
-    actions:
+    interactions:
       collect_rain:
+        trigger: menu
         conditions:
           - reason: not_raining
             subject: ancestor
@@ -53,12 +54,12 @@ traits:
     tags: [water]
     props:
       color: {value: 0x2f86d8}
-    combinations:
+    interactions:
       # 空の容器へ注ぐ。**宣言はこちら側（中身入り）にしか無いので、どちらの札をどちらへ重ねても
       # selfは中身入り・draggedは空になる**（12.3節）。相手を水入りの変種にしてから移すので、
       # becomeをtransferより先に書く（transferは相手がfillを持たないと何もしない）。
       pour_into_empty:
-        with: {tag: liquid_container}
+        trigger: {drag: {tag: liquid_container}}
         conditions:
           - {reason: not_empty, subject: dragged, prop: fill, eq: 0}
         become: {subject: dragged, content: water_liquid}
@@ -71,14 +72,13 @@ traits:
       # 水入りの容器同士。入るだけ入り、入りきらない分は注ぎ元に残る（transferの両側のクランプ）。
       # 異種の液体はこのタグに合致しないので、混ぜる組み合わせがそもそも現れない。
       pour_into_filled:
-        with: {tag: water}
+        trigger: {drag: {tag: water}}
         transfer:
           amount: 999999
           from: dragged
           from_prop: fill
           to: self
           to_prop: fill
-    actions:
       # 1回の飲用 = 250mL。残量が足りなければ残っている分だけ飲む（transferの在庫クランプ）。
       # 満水では何も移らない操作になるため、実行自体をさせない。境目はキャラクターのhydrationの
       # full段が持つ（Characters.md）。
@@ -86,6 +86,7 @@ traits:
       # 水分はtick数で持つので（6.0節）、mLからの換算率はto_amountが持つ: 体は25mL/tickを失うため、
       # 250mLは10 tick分にあたる。寄与の小さい液体（酒）はこの比を小さくするだけで表せる。
       drink:
+        trigger: menu
         conditions:
           - reason: not_thirsty
             not: {subject: actor, prop: hydration, in_stage: full}
@@ -101,9 +102,9 @@ traits:
     tags: [tea]
     props:
       color: {value: 0x6f8f3c}
-    combinations:
+    interactions:
       pour_into_empty:
-        with: {tag: liquid_container}
+        trigger: {drag: {tag: liquid_container}}
         conditions:
           - {reason: not_empty, subject: dragged, prop: fill, eq: 0}
         become: {subject: dragged, content: tea_liquid}
@@ -114,15 +115,15 @@ traits:
           to: dragged
           to_prop: fill
       pour_into_filled:
-        with: {tag: tea}
+        trigger: {drag: {tag: tea}}
         transfer:
           amount: 999999
           from: dragged
           from_prop: fill
           to: self
           to_prop: fill
-    actions:
       drink:
+        trigger: menu
         conditions:
           - reason: not_thirsty
             not: {subject: actor, prop: hydration, in_stage: full}
@@ -142,9 +143,9 @@ traits:
     tags: [oil]
     props:
       color: {value: 0xe0b422}
-    combinations:
+    interactions:
       pour_into_empty:
-        with: {tag: liquid_container}
+        trigger: {drag: {tag: liquid_container}}
         conditions:
           - {reason: not_empty, subject: dragged, prop: fill, eq: 0}
         become: {subject: dragged, content: oil_liquid}
@@ -155,7 +156,7 @@ traits:
           to: dragged
           to_prop: fill
       pour_into_filled:
-        with: {tag: oil}
+        trigger: {drag: {tag: oil}}
         transfer:
           amount: 999999
           from: dragged

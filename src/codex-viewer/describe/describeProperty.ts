@@ -1,4 +1,4 @@
-import type { ActiveEffect } from '../../domain/ActiveEffect';
+import type { EffectDeclaration } from '../../domain/EffectReader';
 import type { PropertyDef, PropertyStage } from '../../domain/PropertyDef';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { propertyTagRef, stageRef, text } from './Description';
@@ -57,7 +57,7 @@ function stageTokens(
 /** range系イベント（6.3節）1つを、その名前を見出しにして書き出す。 */
 export function describeRangeEvent(
   label: string,
-  effect: ActiveEffect,
+  effect: EffectDeclaration,
   names: DefNames,
   out: DescriptionWriter,
 ): void {

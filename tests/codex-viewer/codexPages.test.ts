@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { ART_BY_OBJECT_NAME } from '../../src/art/objectArt';
 import { CodexSource } from '../../src/codex-viewer/CodexSource';
 import { CodexView } from '../../src/codex-viewer/CodexView';
+import type { CodexPage } from '../../src/codex-viewer/CodexPage';
 import {
-  renderObjectListPage,
-  renderObjectPage,
-  renderObjectsByTagPage,
-  renderPropertyPage,
-  renderSlotPage,
-  renderTagListPage,
+  ObjectListPage,
+  ObjectPage,
+  ObjectsByTagPage,
+  PropertyPage,
+  SlotPage,
+  TagListPage,
 } from '../../src/codex-viewer/pages';
 import { parseLocale } from '../../src/locale/Localization';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -29,6 +30,22 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  */
 const [DRAWN_ITEM, DRAWN_LAND] = [...ART_BY_OBJECT_NAME.keys()].sort();
 
+/** ページ1枚を組み立てる。引数が足りなければページはundefinedを返すので、ここで落とす。 */
+function pageHtml(page: CodexPage, view: CodexView, ...args: readonly string[]): string {
+  const html = page.render(view, args);
+  if (html === undefined) throw new Error(`${page.route}に渡した引数が足りない`);
+  return html;
+}
+
+const renderObjectListPage = (view: CodexView): string => pageHtml(new ObjectListPage(), view);
+const renderObjectPage = (view: CodexView, name: string): string => pageHtml(new ObjectPage(), view, name);
+const renderObjectsByTagPage = (view: CodexView): string => pageHtml(new ObjectsByTagPage(), view);
+const renderPropertyPage = (view: CodexView, objectName: string, propertyName: string): string =>
+  pageHtml(new PropertyPage(), view, objectName, propertyName);
+const renderSlotPage = (view: CodexView, slotName: string): string =>
+  pageHtml(new SlotPage(), view, slotName);
+const renderTagListPage = (view: CodexView): string => pageHtml(new TagListPage(), view);
+
 const YAML = `
 object_defs:
   world:
@@ -47,8 +64,9 @@ object_defs:
     tags: [location]
     slots:
       items: {cell: {accept: {tag: item}}}
-    actions:
+    interactions:
       explore:
+        trigger: menu
         duration: 30
         spawn: {object: thick_branch}
 
@@ -58,17 +76,17 @@ object_defs:
 
   ${DRAWN_ITEM}:
     tags: [item]
-    combinations:
+    interactions:
       husk:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         destroy: self
         spawn: {object: husked_coconut}
 
   husked_coconut:
     tags: [item]
-    combinations:
+    interactions:
       crack:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         destroy: self
         # 割ると2つできる（spawnのcount、9.4節）。
         spawn: {object: coconut_half, count: 2}

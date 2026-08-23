@@ -60,8 +60,9 @@ object_defs:
         cell_count: 2
         capacity: 500
         cell: {accept: {tag: food}, max: 3}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         duration: 10
         conditions:
           - reason: too_far
@@ -69,9 +70,8 @@ object_defs:
             gt: 0
         add: {actor: {satiety: 20}}
         destroy: self
-    combinations:
       cut:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         pick:
           - weight: 3
             spawn: {object: coconut_half, into: same_slot}
@@ -107,12 +107,14 @@ object_defs:
       water: {value: 500}
       hydration: {value: 0}
       spilled: {value: 0}
-    actions:
+    interactions:
       drink:
+        trigger: menu
         transfer: {from: self, from_prop: water, to: actor, to_prop: hydration, amount: 200, to_amount: 4}
         set: {self: {spilled: 1}}
         signal: {actor: gulped}
       tip_over:
+        trigger: menu
         transfer:
           from: self
           from_prop: water
@@ -184,10 +186,10 @@ describe('定義の自己記述（describe）', () => {
   });
 
   it('アクションはきっかけ・要件・所要時間・効果をこの順で書き出す', () => {
-    const eat = objectDef('coconut').actions[0];
+    const eat = objectDef('coconut').menuTriggers[0];
     const lines = describeToText(codex, (out) => describeInteraction(eat, names, out)).split('\n');
 
-    expect(lines[0]).toBe('show_menu: always');
+    expect(lines[0]).toBe('trigger: menu');
     expect(lines[1]).toBe('conditions:');
     expect(lines[2]).toContain('freshness > 0');
     expect(lines[2]).toContain('（理由: too_far）');
@@ -198,7 +200,7 @@ describe('定義の自己記述（describe）', () => {
 
   it('効果の動詞は、対象と量を書き出す', () => {
     const lines = describeToText(codex, (out) =>
-      describeInteraction(objectDef('gourd').actions[0], names, out),
+      describeInteraction(objectDef('gourd').menuTriggers[0], names, out),
     ).split('\n');
 
     expect(lines).toContain('transfer water → hydration（最大200 → 4）');
@@ -207,7 +209,7 @@ describe('定義の自己記述（describe）', () => {
 
   it('linked_addと、moveの両端を書き出す', () => {
     const lines = describeToText(codex, (out) =>
-      describeInteraction(objectDef('gourd').actions[1], names, out),
+      describeInteraction(objectDef('gourd').menuTriggers[1], names, out),
     ).split('\n');
 
     expect(lines).toContain('transfer water → spilled（最大999）');
@@ -222,9 +224,9 @@ describe('定義の自己記述（describe）', () => {
    */
   it('配置先・あふれ許可・出来事の対象は書かない', () => {
     const text = describeToText(codex, (out) => {
-      describeInteraction(objectDef('gourd').actions[0], names, out);
-      describeInteraction(objectDef('gourd').actions[1], names, out);
-      describeInteraction(objectDef('coconut').combinations[0], names, out);
+      describeInteraction(objectDef('gourd').menuTriggers[0], names, out);
+      describeInteraction(objectDef('gourd').menuTriggers[1], names, out);
+      describeInteraction(objectDef('coconut').dragTriggers[0], names, out);
     });
 
     expect(text).toContain('signal gulped');
@@ -234,10 +236,10 @@ describe('定義の自己記述（describe）', () => {
   });
 
   it('combinationは相手のタグとpickの候補を書き出す', () => {
-    const cut = objectDef('coconut').combinations[0];
+    const cut = objectDef('coconut').dragTriggers[0];
     const text = describeToText(codex, (out) => describeInteraction(cut, names, out));
 
-    expect(text).toContain('with: cutting_toolを持つ型のカードのドロップ');
+    expect(text).toContain('trigger: cutting_toolを持つ型のカードのドロップ');
     expect(text).toContain('pick:');
     // 候補の効果は候補（weight）より1段深い。
     expect(text).toContain('\n  weight = 3\n    spawn coconut_half');

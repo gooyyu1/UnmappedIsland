@@ -59,7 +59,7 @@ describe('foods.yamlの食料定義', () => {
 
     expect(raw.tags, '生は食べ物のタグを持たない').not.toContain(foodTagId);
     expect(
-      raw.actions.map((action) => action.name),
+      raw.menuTriggers.map((trigger) => trigger.interaction.name),
       '生を口に入れる操作は無い',
     ).not.toContain('eat');
     // 火の中の枠へ入れるためのタグ（docs/engine/FireSystem.md 1.1節）。

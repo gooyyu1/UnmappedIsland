@@ -25,8 +25,9 @@ traits:
     props:
       density: {value: 1}
   water_liquid:
-    actions:
+    interactions:
       drink:
+        trigger: menu
         add: {actor: {hydration: 120}}
         set: {self: {fill: 0}}
 
@@ -67,17 +68,20 @@ object_defs:
             add: {self: {body_fat: 1}}
       body_fat: {value: 0, range: {min: 0, max: 1000}}
       hydration: {value: 100, range: {min: 0, max: 500}}
-    actions:
+    interactions:
       rest:
+        trigger: menu
         duration: 60
         add: {self: {stamina: 10}}
       wait:
+        trigger: menu
         duration: 15
 
   roasted_taro:
     tags: [item]
-    actions:
+    interactions:
       eat:
+        trigger: menu
         duration: 15
         destroy: self
         add: {actor: {satiety: 550, carbohydrate: 48}}

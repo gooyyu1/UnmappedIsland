@@ -353,13 +353,13 @@ describe('プレイヤーキャラクタの定義', () => {
         .tryGetProperty(propertyId)
         ?.add(-((player.instance.tryGetProperty(propertyId)?.number ?? 0) - 1));
 
-      expect(player.isDead, '下限に達するまでは生きている').toBe(false);
-      expect(player.causeOfDeath).toBeUndefined();
+      expect(player.ending.kind, '下限に達するまでは生きている').toBeUndefined();
+      expect(player.ending.causeOfDeath).toBeUndefined();
 
       player.instance.tryGetProperty(propertyId)?.add(-1);
 
-      expect(player.isDead, '下限に達した時点で世界から外れる').toBe(true);
-      expect(player.causeOfDeath).toBe(stageName);
+      expect(player.ending.kind, '下限に達した時点で世界から外れる').toBe('death');
+      expect(player.ending.causeOfDeath).toBe(stageName);
     });
 
     it.each(RESTS)('休息「%s」を持ち、%i分かかる', (actionName, minutes) => {

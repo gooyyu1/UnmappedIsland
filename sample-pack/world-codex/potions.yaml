@@ -14,8 +14,9 @@ object_defs:
     props:
       weight: {value: 200}
       volume: {value: 250}
-    actions:
+    interactions:
       drink:
+        trigger: menu
         add:
           actor:
             blood: -9999
@@ -27,8 +28,9 @@ object_defs:
     props:
       weight: {value: 200}
       volume: {value: 250}
-    actions:
+    interactions:
       drink:
+        trigger: menu
         add:
           actor:
             blood: 9999
@@ -39,13 +41,13 @@ object_defs:
 # ここの2は「たまに見つかる漂着物」くらいの重さ。
 patch_object_defs:
   # 回復ポーションは砂浜へ流れ着く。
-  - append: sandy_beach.actions.explore.pick
+  - append: sandy_beach.interactions.explore.pick
     value:
       weight: 2
       spawn: {object: healing_potion, into: self}
 
   # 毒薬はジャングルの奥に落ちている。
-  - append: jungle.actions.explore.pick
+  - append: jungle.interactions.explore.pick
     value:
       weight: 2
       spawn: {object: poison_potion, into: self}

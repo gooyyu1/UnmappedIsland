@@ -44,8 +44,7 @@ export class RawDeclarationBody {
   /** stackable。同種と束ねてよい型か（既定true）。束ねない宣言が1つでもあれば束ねない。 */
   notStackable = false;
 
-  actions: YAMLMap | undefined;
-  combinations: YAMLMap | undefined;
+  interactions: YAMLMap | undefined;
 
   /** 宣言から各フィールドを取り直す。**読む側はここ1箇所**で、object_def と trait で分かれない。 */
   read(node: YAMLMap, context: string): void {
@@ -61,14 +60,13 @@ export class RawDeclarationBody {
     this.artByStage = tryGetScalar(node, 'art_by_stage', context);
     this.boundToOwner = tryGetBool(node, 'bound_to_owner', context) ?? false;
     this.notStackable = !(tryGetBool(node, 'stackable', context) ?? true);
-    this.actions = tryGetMap(node, 'actions', context);
-    this.combinations = tryGetMap(node, 'combinations', context);
+    this.interactions = tryGetMap(node, 'interactions', context);
   }
 
   /**
    * trait 由来の本体を宣言順に混ぜ、自分自身の宣言を最後に重ねた結果（5節）。
    *
-   * - props/slots/actions/combinations: 同名エントリが複数のtraitにあればエラー。自分自身が
+   * - props/slots/interactions: 同名エントリが複数のtraitにあればエラー。自分自身が
    *   同名を持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。
    * - passives・tags・visible_slots: 識別子で突き合わせようがないので、trait由来→自分自身の順に連結。
    *   **並びが表示順**（visible_slots）なので、混ぜる順序そのものに意味がある。
@@ -89,15 +87,10 @@ export class RawDeclarationBody {
       this.slots,
       `'${ownerName}'のslots`,
     );
-    result.actions = mergeIdentifierMaps(
-      traits.map(([name, body]) => [name, body.actions] as const),
-      this.actions,
-      `'${ownerName}'のactions`,
-    );
-    result.combinations = mergeIdentifierMaps(
-      traits.map(([name, body]) => [name, body.combinations] as const),
-      this.combinations,
-      `'${ownerName}'のcombinations`,
+    result.interactions = mergeIdentifierMaps(
+      traits.map(([name, body]) => [name, body.interactions] as const),
+      this.interactions,
+      `'${ownerName}'のinteractions`,
     );
 
     result.passives = [...traits.flatMap(([, body]) => body.passives), ...this.passives];

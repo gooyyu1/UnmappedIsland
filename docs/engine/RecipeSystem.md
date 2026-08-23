@@ -83,7 +83,7 @@ actions/combinations と同じで（[ActionSystem.md](ActionSystem.md) 2 節）�
 そのスロットへ入る**という、かごと共通の 1 つの動きです（[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。行き先は宣言順で最初に受け取れるスロット（`GameElementDefinition.md` 7.8 節）、入るか
 どうかは枠の `accept` と `max` が答えるので、レシピ側に宣言は要りません。
 
-素材が揃っているかの確認・消費・進捗更新（`actions.work` 相当）は、通常の `actions` の `conditions`/`active`
+素材が揃っているかの確認・消費・進捗更新（`interactions.work` 相当）は、通常の操作の `conditions`/`active`
 として表現しますが、「スロットの中身をまとめて検査し、条件を満たせば該当分だけ消費する」という具体的な処理は、
 レシピでしか使わない概念であるため、YAML の汎用語彙（`conditions`/`active`）を複雑化させず、プログラム側の
 専用ロジックとして実装します。
@@ -97,7 +97,7 @@ actions/combinations と同じで（[ActionSystem.md](ActionSystem.md) 2 節）�
 作るには、製作中の壁が `wall` タグを持っていなければ枠へ入りません。引き継がない場合は、枠の側が製作中
 オブジェクトも受け入れるよう個別に書く必要があり、枠の宣言が「置ける物」以外の知識を持つことになります。
 
-**引き継ぐのは置き場所だけで、働きは引き継ぎません。** 製作中オブジェクトは `combinations` の相手
+**引き継ぐのは置き場所だけで、働きは引き継ぎません。** 製作中オブジェクトはドラッグ型の操作の相手
 （`with`、[`GameElementDefinition.md`](./GameElementDefinition.md) 12.1 節）になりません
 （`ObjectDef.combinationsAccepting`）。石斧は `cutting_tool`・`chopping_tool`・`weapon` を持つので、
 弾かなければ**半分できた斧で木を伐り、獣を殴れて**しまいます——しかも製作中オブジェクトは完成品の
@@ -124,6 +124,6 @@ actions/combinations と同じで（[ActionSystem.md](ActionSystem.md) 2 節）�
   普通のコンテナの合計サイズ制限・重さは `ContainerSystem.md` で別途検討）
 - `steps.requires` をタグで書いたときの枠の見せ方（当てはまる型が 1 つに定まらないので、今は 1 秒ごとに
   順に出している。`materialCells`）
-- 枠から自動生成される `combinations` で、複数の素材が同時にマッチしうる場合の優先順位
+- 枠から自動生成されるドラッグ型の操作で、複数の素材が同時にマッチしうる場合の優先順位
   （`ActionSystem.md` の既存の未決事項と関連）
 - レシピの `icon`・完成品の `tags`（5 節）以外に、自動生成される型へ引き継ぐべき情報（名前、説明文など）の範囲

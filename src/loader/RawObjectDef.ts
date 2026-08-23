@@ -5,7 +5,7 @@ import { built } from './parseCommon';
 import { parseProp } from './parseProperties';
 import { parseSlot } from './parseSlots';
 import { parsePassive } from './parsePassives';
-import { parseActions, parseCombinations } from './parseActionsAndCombinations';
+import { parseInteractions } from './parseInteractions';
 import { parseRecipes } from './parseRecipes';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { RawTrait } from './RawTrait';
@@ -80,7 +80,7 @@ export class RawObjectDef {
    * 組み立てる（フェーズ2: loaderの各parse関数による意味解釈）。
    *
    * 合成規則（フェーズ1）:
-   * - props/slots/actions/combinations: 同名エントリが複数のtraitにあればエラー（5節）。
+   * - props/slots/interactions: 同名エントリが複数のtraitにあればエラー（5節）。
    *   object_def自身が同名エントリを持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。
    * - passives: 識別子を持たないため単純に連結（trait由来→自分自身の順）。
    * - stack_order/art_by_stage: 自分自身の指定を優先。無ければちょうど1つの
@@ -145,8 +145,7 @@ export class RawObjectDef {
       );
     }
 
-    const actions = parseActions(loader, this.name, merged.actions);
-    const combinations = parseCombinations(loader, this.name, merged.combinations);
+    const interactions = parseInteractions(loader, this.name, merged.interactions);
 
     // **操作の名前は1つの名前空間**（11節）。同じカードに同名の操作が2つ並ぶと、押して開く
     // メニューの「食べる」と重ねたときの「食べる」をプレイヤーが見分けられない。
@@ -200,8 +199,7 @@ export class RawObjectDef {
           passives,
           stackOrder,
           tagIds,
-          actions,
-          combinations,
+          interactions,
           merged.boundToOwner,
           !merged.notStackable,
           parseRecipes(loader, this.name, this.recipes),

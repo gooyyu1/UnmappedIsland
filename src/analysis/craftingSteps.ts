@@ -1,4 +1,5 @@
 import type { InteractionDef } from '../domain/InteractionDef';
+import type { InteractionTrigger } from '../domain/InteractionTrigger';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { RecipeDef } from '../domain/RecipeDef';
 import type { TypeMatchReading } from '../domain/TypeMatchRule';
@@ -28,8 +29,8 @@ import { resolveWeight, staticResolverOf, staticValueOf, trackingResolverOf } fr
  */
 export function craftingStepsOf(def: ObjectDef, outer?: StaticValueResolver): readonly CraftingStep[] {
   const steps: CraftingStep[] = [];
-  for (const interaction of [...def.actions, ...def.combinations])
-    steps.push(withTriggeredRangeEvents(def, interactionStep(def, interaction, outer), outer));
+  for (const trigger of def.triggers)
+    steps.push(withTriggeredRangeEvents(def, interactionStep(def, trigger, outer), outer));
   for (const recipe of def.recipes) steps.push(recipeStep(def, recipe));
   return steps;
 }
@@ -40,9 +41,10 @@ export function craftingStepsOf(def: ObjectDef, outer?: StaticValueResolver): re
  */
 function interactionStep(
   def: ObjectDef,
-  interaction: InteractionDef,
+  trigger: InteractionTrigger,
   outer: StaticValueResolver | undefined,
 ): CraftingStep {
+  const interaction = trigger.interaction;
   const tracking = trackingResolverOf(def, outer);
   const reading = readEffect(interaction, tracking.resolve);
   const minutes = minutesOf(interaction, tracking.resolve);
@@ -57,7 +59,7 @@ function interactionStep(
         consumed: destroysRoot(reading, 'self'),
         count: 1,
       },
-      ...draggedInputOf(interaction, reading),
+      ...draggedInputOf(trigger, reading),
     ],
     outputs: collectOutputs(reading.outcomes),
     // プレイヤーが手を止めている間に時間が進むので、払う時間と経過する時間は等しい。
@@ -88,9 +90,9 @@ function recipeStep(def: ObjectDef, recipe: RecipeDef): CraftingStep {
     name: recipe.name,
     ownerGlobalId: def.globalId,
     inputs: recipe.steps.flatMap((step) =>
-      step.requirements.map((requirement) =>
-        inputOf(requirement.match.reading, requirement.consume, requirement.count),
-      ),
+      step.requirements
+        .map((requirement) => inputOf(requirement.match.reading, requirement.consume, requirement.count))
+        .filter((input): input is CraftingInput => input !== undefined),
     ),
     outputs: collectOutputs(outcomes),
     laborMinutes: recipe.totalMinutes,
@@ -170,14 +172,22 @@ function selfMovesOf(
   return moves;
 }
 
-/** ドラッグ型の相手（withが指す型）。メニュー型には無い。消費されるかはdraggedへのdestroyで決まる。 */
-function draggedInputOf(interaction: InteractionDef, reading: EffectReading): readonly CraftingInput[] {
-  const trigger = interaction.triggerReading;
-  return trigger.kind === 'drag' ? [inputOf(trigger.with, destroysRoot(reading, 'dragged'), 1)] : [];
+/** ドラッグ型の相手（きっかけが指す型）。他のきっかけには無い。消費されるかはdraggedへのdestroyで決まる。 */
+function draggedInputOf(trigger: InteractionTrigger, effect: EffectReading): readonly CraftingInput[] {
+  const triggerReading = trigger.reading;
+  if (triggerReading.kind !== 'drag') return [];
+  const input = inputOf(triggerReading.with, destroysRoot(effect, 'dragged'), 1);
+  return input === undefined ? [] : [input];
 }
 
-/** 型の指定（タグか型そのもの）を、工程の入力1件へ直す。 */
-function inputOf(reading: TypeMatchReading, consumed: boolean, count: number): CraftingInput {
+/**
+ * 型の指定（タグか型そのもの）を、工程の入力1件へ直す。
+ *
+ * **否定形（`{not: ...}`、4.1節）は入力にならない。** 図のノードは1つの型かタグを指すもので、
+ * 「その型でないもの」を名指しできない。同梱の世界に否定を書いた相手は無い。
+ */
+function inputOf(reading: TypeMatchReading, consumed: boolean, count: number): CraftingInput | undefined {
+  if (reading.kind === 'not') return undefined;
   return reading.kind === 'tag'
     ? { kind: 'tag', tagGlobalId: reading.tagGlobalId, consumed, count }
     : { kind: 'object', objectGlobalId: reading.objectGlobalId, consumed, count };

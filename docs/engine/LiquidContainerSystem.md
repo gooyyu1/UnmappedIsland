@@ -48,7 +48,7 @@ jar:
 - **容器**（`jar`・`coconut_bowl`）: 抱えられる量（`fill`）と、何を抱えられるか
   （`variation_axes` の `content`）を宣言する。絵と名前の骨格も容器のもの。
 - **中身の trait**（`liquid`・`water_liquid`・`evaporating_liquid`・`rain_filled_liquid` 等）:
-  密度（`density`）・色（`color`）・種類タグ・飲用 `actions`・注ぎ `combinations`・蒸発 `passives` を持つ。
+  密度（`density`）・色（`color`）・種類タグ・飲用と注ぎの `interactions`・蒸発 `passives` を持つ。
 
 **量そのものが容器側なのは、同じ水がヤシの殻（250mL）にも甕（4L）にも入るためです。** 上限も、尽きたときに
 空へ戻ることも、`fill` を持つ容器自身が宣言します——中身の軸を持っているのも容器なので、両方が
@@ -75,18 +75,18 @@ jar:
 ```yaml
 water_liquid:
   tags: [water]
-  combinations:
+  interactions:
     # 相手が空の容器のとき。相手を水入りの変種にしてから移す（becomeが先、transferは相手が
     # fillを持たないと何もしない）。
     pour_into_empty:
-      with: {tag: liquid_container}
+      trigger: {drag: {tag: liquid_container}}
       conditions:
         - {reason: not_empty, not: {subject: dragged, prop: fill, gte: 1}}
       become: {subject: dragged, content: water_liquid}
       transfer: {amount: 999999, from: self, from_prop: fill, to: dragged, to_prop: fill}
     # 相手も水入りのとき。
     pour_into_filled:
-      with: {tag: water}
+      trigger: {drag: {tag: water}}
       transfer: {amount: 999999, from: dragged, from_prop: fill, to: self, to_prop: fill}
 ```
 
@@ -134,7 +134,7 @@ water_liquid:
 **250mL = 10 tick 分**です。3日分の `max` は 288 になります。**エンジンは換算率を知りません**——
 同じ 1 口でも水より寄与の小さい液体（酒）は、この比を小さくするだけで表せます。
 
-飲用は液体トレイト側の `actions`。`transfer` で自分の `fill` から 1回 250（＝250mL）出し、
+飲用は液体トレイト側のメニュー型の操作。`transfer` で自分の `fill` から 1回 250（＝250mL）出し、
 `actor.hydration` を 10 増やします。`transfer` の在庫クランプにより、残量が 250mL 未満なら残っている分だけ
 飲みます（増える水分もその比で減ります）。逆に `hydration` 側の空きが 10 tick 分未満なら入る分だけ飲み、
 あふれる分は容器に残ります（`allow_overflow` 既定の受け側クランプ。空きは mL へ割り戻して比べられます）。
@@ -190,7 +190,7 @@ water_liquid:
 
 **貯め始めるのは操作、増えるのは自動**という 2 段構えです。
 
-- **`collect_rain`（`rain_catching_container` トレイトの `actions`）**: 雨天のときだけ実行でき、
+- **`collect_rain`（`rain_catching_container` トレイトのメニュー型の操作）**: 雨天のときだけ実行でき、
   `spawn` で水を 1 つ生みます。**空の容器にしか出ません**——中身がいる容器の操作は代表（3 節）へ
   リダイレクトされ、水は `collect_rain` を持たないためで、条件は要りません。
 - **量（`rain_filled_liquid` トレイトの `passives`）**: 降っている間、毎 tick 自分の `fill` を増やします。

@@ -207,7 +207,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 地形生成の実装にあわせて `GameElementDefinition.md` へ追加した2つの汎用エンジン拡張（`duration`/`move`、
 `ExplorationSystem.md` 4節）は、以下のコードに対応します。
 
-- **`duration`**: `InteractionDef`（`ActionDef`/`CombinationDef` の基底）が `WeightSpec | undefined` 型の
+- **`duration`**: `InteractionDef`（操作の中身）が `WeightSpec | undefined` 型の
   `duration` フィールドを持ち、実行時に自分で時間を進めます（順序は
   [`ActionSystem.md`](./ActionSystem.md) 2節）。
 - **`move`**: `MoveEffect`（`ActiveEffect` の一種）です。`apply` の中で
@@ -242,7 +242,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 | `src/domain/generation/IslandSpawner.ts` | 4節: 実体化（`populate`/`placePlayer`） |
 | `src/domain/generation/NewGame.ts` | ゲーム開始の入口（`start`）・`NewGameSession` |
 | `src/domain/MoveEffect.ts` | 7節: `move` 効果動詞 |
-| `src/domain/ActionDef.ts` | 7節: `duration` フィールド |
+| `src/domain/InteractionDef.ts` | 7節: `duration` フィールド |
 | `src/domain/wrappers/Location.ts` | 7節: 探索の入口（`explore`/`revealDueFixtures`） |
 | `src/domain/wrappers/Path.ts` | 7節: 道のビュー（`travel`） |
 

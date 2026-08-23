@@ -26,7 +26,7 @@ interface AxisDecl {
  * `variation_axes`を宣言した型から、軸の値ごとの変種を`object_defs`のYAMLとして組み立てる
  * （GameElementDefinition.md 3.5節）。宣言が1つも無ければundefined。
  *
- * **変種は「素の型に、軸の値の型が持つtraitを配ったもの」です。** props・tags・actions・combinations・
+ * **変種は「素の型に、軸の値の型が持つtraitを配ったもの」です。** props・tags・interactions・
  * passivesの合成は既存のmixin（5節）がそのまま行うので、ここは trait 名を繋ぐだけで済む。**何が
  * 配られるかも、変種にだけ足すpropsが何を意味するかも、生成器は知りません**。
  * 生成した定義をYAMLへ戻してローダーへ食わせるのも、人が書いた定義とまったく同じ検証を通すため

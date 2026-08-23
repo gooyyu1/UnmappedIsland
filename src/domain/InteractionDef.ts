@@ -1,33 +1,27 @@
-import type { ShowMenuMode } from './ActionDef';
-import type { TypeMatchReading } from './TypeMatchRule';
-
-/** 何がこの操作のきっかけになるか（InteractionDef.triggerReading参照）。 */
-export type InteractionTriggerReading =
-  | { readonly kind: 'menu'; readonly showMenu: ShowMenuMode }
-  | { readonly kind: 'drag'; readonly with: TypeMatchReading };
 import type { WorldSession } from './WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
 import type { EffectReader, WeightReading } from './EffectReader';
 import type { WeightSpec } from './WeightSpec';
 import type { ReferenceContext } from './ReferenceRoot';
+import type { WorldObject } from './WorldObject';
 import type { Requirement, Requirements } from './Requirement';
 import { spendDuration } from './actionTime';
 
 /**
- * プレイヤーが起こせる操作1つ（ActionSystem.md 1節）。具象は入口が違うだけの2種——名前で指す
- * メニュー型（ActionDef）と、withタグで相手と噛み合うドラッグ型（CombinationDef）。
+ * 操作1つの中身（ActionSystem.md 1節）——満たすべき要件・起こすこと・かかる時間。
  *
- * 選ばれた後の実行手順（2節）は共通なのでここが持つ。draggedはドラッグ型だけが持つ相手で、
- * メニュー型ではundefined。条件の起点も効果の対象も所要時間の参照も、そのまま流せば同じ経路を通る。
+ * **何がこれを起こすかは持たない。** 操作どうしの違いは起こされ方だけなので、そちらは
+ * きっかけ（InteractionTrigger）が持ち、宣言をぶら下げる。選ばれた後の実行手順（2節）は
+ * きっかけによらず同じなので、ここが1箇所で持つ。
  */
-export abstract class InteractionDef {
+export class InteractionDef {
   readonly name: string;
 
   /** 実行するために満たすべき要件（14節）。undefinedなら常に真（conditions省略）。 */
   private readonly requirements: Requirements | undefined;
 
   /** 条件成立時に適用する効果。何も書かれていなければ空の合成（ActiveEffects）で、適用しても何も起きない。 */
-  protected readonly effect: ActiveEffect;
+  private readonly effect: ActiveEffect;
 
   /**
    * 実行にかかるゲーム内時間（分）。リテラルか{subject, prop}参照（weightの10.2節と同じ二択）。
@@ -36,7 +30,7 @@ export abstract class InteractionDef {
    */
   private readonly duration: WeightSpec | undefined;
 
-  protected constructor(
+  constructor(
     name: string,
     requirements: Requirements | undefined,
     effect: ActiveEffect,
@@ -58,9 +52,6 @@ export abstract class InteractionDef {
     return this.duration === undefined ? 0 : Math.trunc(this.duration.resolve(context));
   }
 
-  /** 何がこの操作のきっかけになるか（具象ごとに違う、ActionSystem.md 1節）。 */
-  abstract get triggerReading(): InteractionTriggerReading;
-
   /** 実行に必要な要件（14節）を宣言順に。conditionsを省いていれば空。 */
   get requirementDeclarations(): readonly Requirement[] {
     return this.requirements?.declarations ?? [];
@@ -78,6 +69,14 @@ export abstract class InteractionDef {
    */
   unresolvable(context: ReferenceContext): boolean {
     return this.effect.unresolvable(context);
+  }
+
+  /**
+   * candidatesを先頭から順に重ねたとき、効果が続けて何回受け取れるか（ActiveEffect.acceptedCount）。
+   * 答えられなければundefined。まとめてよいかまでを決めるのはきっかけの側（DragTrigger）。
+   */
+  acceptedCount(context: ReferenceContext, candidates: readonly WorldObject[]): number | undefined {
+    return this.effect.acceptedCount(context, candidates);
   }
 
   /** 所要時間の宣言（WeightReading参照）。durationを省いていればundefined＝時間を消費しない。 */
@@ -99,7 +98,7 @@ export abstract class InteractionDef {
    * 失われたら、その行動は成立しなかったものとして効果を適用しない（actionTime参照）。
    *
    * **要件は選んだ時点ではなく実行の時点で引き直す**（候補を作ってから落とすまでに世界は変わる）。
-   * 相手の型も変わりうるので、そちらの引き直しはCombinationDefが足す。
+   * 相手の型も変わりうるので、そちらの引き直しは`Combination`が足す。
    */
   execute(context: ReferenceContext, session: WorldSession): boolean {
     const self = context.self!;

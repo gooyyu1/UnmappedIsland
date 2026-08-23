@@ -5,7 +5,7 @@
 
 気候・地形生成・探索といった**仕組み**（プレイヤーの目に触れるモノではなく、それらを成り立たせている
 メカニズム）は含みません。そちらは [`../Engine/`](../engine/README.md) を参照してください。文法そのもの
-（`traits`/`props`/`slots`/`actions` 等）も同様に `Engine/` を参照してください。
+（`traits`/`props`/`slots`/`interactions` 等）も同様に `Engine/` を参照してください。
 
 ## 収録ドキュメント
 

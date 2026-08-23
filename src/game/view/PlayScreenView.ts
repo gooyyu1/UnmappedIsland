@@ -656,7 +656,7 @@ export function fromGameSession(
    * 持たないCodexでは上限が0になるため、0除算を避けて0%にする。
    */
   const explorationRatioOf = (object: WorldObject): number | undefined => {
-    if (!object.def.actions.some((action) => action.name === EXPLORE_ACTION)) return undefined;
+    if (!object.def.declaresInteraction(EXPLORE_ACTION)) return undefined;
 
     const explorable = new Location(object, codex);
     return explorable.explorationProgressMax === 0

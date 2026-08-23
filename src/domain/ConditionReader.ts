@@ -1,6 +1,8 @@
-import type { ConditionNode, ConditionOp } from './ConditionNode';
 import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchReading } from './TypeMatchRule';
+
+/** GameElementDefinition.md 14.1節の比較演算子。 */
+export type ConditionOp = 'lt' | 'lte' | 'gt' | 'gte' | 'eq' | 'neq' | 'in' | 'not_in';
 
 /**
  * conditions（14節）の木を**何が書かれているか**として読み上げる相手（ConditionNode.read）。
@@ -9,7 +11,8 @@ import type { TypeMatchReading } from './TypeMatchRule';
  * （効果の読み上げ口（EffectReader）と同じ理由）。**kindごとに使うフィールドが引数で決まる**ので、
  * 読み手の側に「このkindならこのフィールドがあるはず」という非nullの思い込みが要らない。
  *
- * 複合ノード（all/any/not）は子を木のまま渡す。入れ子をどう畳むかは読み手が決める。
+ * 複合ノード（all/any/not）は子を読み下せる形（ConditionDeclaration）で渡す。入れ子をどう畳むかは
+ * 読み手が決める。
  */
 export interface ConditionReader {
   /** `{subject, prop, <比較演算子>: value}`。値はリテラルの並びか、別のプロパティへの参照。 */
@@ -28,13 +31,21 @@ export interface ConditionReader {
   objectMatches(root: ReferenceRoot, match: TypeMatchReading): void;
 
   /** 子すべての論理積。 */
-  all(children: readonly ConditionNode[]): void;
+  all(children: readonly ConditionDeclaration[]): void;
 
   /** 子のいずれかの論理和。 */
-  any(children: readonly ConditionNode[]): void;
+  any(children: readonly ConditionDeclaration[]): void;
 
   /** 子（常に1つ）の否定。 */
-  not(child: ConditionNode): void;
+  not(child: ConditionDeclaration): void;
+}
+
+/**
+ * 自分が何を宣言しているかを読み上げられる条件。入れ子の子もこの形で渡す
+ * （docs/engine/Layers.md 6節「読み下せる宣言だけを外へ出す」）。
+ */
+export interface ConditionDeclaration {
+  read(reader: ConditionReader): void;
 }
 
 /** プロパティ比較1つの宣言。valuesとvalueRefはどちらか一方だけを持つ。 */

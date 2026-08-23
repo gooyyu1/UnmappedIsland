@@ -20,6 +20,11 @@ export type ReferenceRoot =
   /** combinations内でのみ意味を持つ、ドラッグされてきたカード（12.2節）。 */
   | 'dragged'
   /**
+   * `among`（10.3節）が周りから選んだ相手。**候補ごとに束ね直される**ので、重みを解くときは
+   * その候補、効果を当てるときは選ばれた1つを指す。amongを書いた候補の中でのみ意味を持つ。
+   */
+  | 'picked'
+  /**
    * selfの直接の親から遡り、参照先のプロパティを定義している最初の祖先（WorldObject.findAncestorWithProperty
    * 参照）。SlotPosition判定（{in_slot: ...}）では意味を持たないため未対応（ロード時エラー）。
    */
@@ -44,14 +49,19 @@ export class ReferenceContext {
   /** 重ねられてきた相手。combinationsの中でのみ相手を持つ（12.2節）。 */
   readonly dragged: WorldObject | undefined;
 
+  /** `among`が周りから選んだ相手。amongを書いた候補の中でのみ居る（10.3節）。 */
+  readonly picked: WorldObject | undefined;
+
   private constructor(
     self: WorldObject | undefined,
     actor: WorldObject | undefined,
     dragged: WorldObject | undefined,
+    picked: WorldObject | undefined,
   ) {
     this.self = self;
     this.actor = actor;
     this.dragged = dragged;
+    this.picked = picked;
   }
 
   /**
@@ -59,7 +69,7 @@ export class ReferenceContext {
    * 場面（持続効果のゲート、影響の一覧）で使う。
    */
   static of(self: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(self, undefined, undefined);
+    return new ReferenceContext(self, undefined, undefined, undefined);
   }
 
   /** 操作の文脈（誰が・何を重ねて）。draggedはcombinationsの中でのみ相手を持つ（12.2節）。 */
@@ -68,17 +78,22 @@ export class ReferenceContext {
     actor: WorldObject | undefined,
     dragged: WorldObject | undefined,
   ): ReferenceContext {
-    return new ReferenceContext(self, actor, dragged);
+    return new ReferenceContext(self, actor, dragged, undefined);
   }
 
   /** selfだけを差し替えた文脈。誰が操作しているかは変わらないまま、参照の起点が移る場面で使う。 */
   withSelf(self: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(self, this.actor, this.dragged);
+    return new ReferenceContext(self, this.actor, this.dragged, this.picked);
   }
 
   /** draggedだけを差し替えた文脈。同じ操作を候補ごとに引き直す場面で使う（TransferEffect.acceptedCount）。 */
   withDragged(dragged: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(this.self, this.actor, dragged);
+    return new ReferenceContext(this.self, this.actor, dragged, this.picked);
+  }
+
+  /** pickedだけを差し替えた文脈。amongが候補ごとに重みを引き、選んだ1つへ効果を当てるときに使う。 */
+  withPicked(picked: WorldObject | undefined): ReferenceContext {
+    return new ReferenceContext(this.self, this.actor, this.dragged, picked);
   }
 
   /**
@@ -95,6 +110,8 @@ export class ReferenceContext {
         return this.actor;
       case 'dragged':
         return this.dragged;
+      case 'picked':
+        return this.picked;
       default:
         return undefined;
     }
@@ -163,6 +180,9 @@ export class ReferenceScope {
   /** 重ねられた相手（dragged）が居るか。combinationsの中だけ（12.2節）。 */
   private readonly hasDragged: boolean;
 
+  /** amongが選んだ相手（picked）が居るか。amongを書いた候補の中だけ（10.3節）。 */
+  private readonly hasPicked: boolean;
+
   /** 参照先のプロパティ名が決まっているか。ancestorはそれで祖先を探すので、無ければ解けない。 */
   private readonly namesProperty: boolean;
 
@@ -173,39 +193,67 @@ export class ReferenceScope {
     hasSelf: boolean,
     hasActor: boolean,
     hasDragged: boolean,
+    hasPicked: boolean,
     namesProperty: boolean,
     broadcasts: boolean,
   ) {
     this.hasSelf = hasSelf;
     this.hasActor = hasActor;
     this.hasDragged = hasDragged;
+    this.hasPicked = hasPicked;
     this.namesProperty = namesProperty;
     this.broadcasts = broadcasts;
   }
 
   /** 宣言元の個体だけが居る場所（rangeイベント6.3節、passivesの8節）。誰かが操作しているとは限らない。 */
-  static readonly declaration = new ReferenceScope(true, false, false, true, false);
+  static readonly declaration = new ReferenceScope(true, false, false, false, true, false);
 
   /** 誰かが操作している場所（actions、11節）。 */
-  static readonly action = new ReferenceScope(true, true, false, true, false);
+  static readonly action = new ReferenceScope(true, true, false, false, true, false);
 
   /** 相手を重ねている場所（combinations、12節）。 */
-  static readonly combination = new ReferenceScope(true, true, true, true, false);
+  static readonly combination = new ReferenceScope(true, true, true, false, true, false);
 
   /**
    * 成果物のインスタンスがまだ無い場所（レシピの解放条件、SkillSystem.md 4節）。
    * 「このレシピを知っているか」の判定なので、居るのは操作者だけ。
    */
-  static readonly recipeUnlock = new ReferenceScope(false, true, false, true, false);
+  static readonly recipeUnlock = new ReferenceScope(false, true, false, false, true, false);
 
   /** プロパティ名を伴わず、オブジェクトそのものを指す場所（destroy・signal・move・in_slot判定）。 */
   get objectOnly(): ReferenceScope {
-    return new ReferenceScope(this.hasSelf, this.hasActor, this.hasDragged, false, this.broadcasts);
+    return new ReferenceScope(
+      this.hasSelf,
+      this.hasActor,
+      this.hasDragged,
+      this.hasPicked,
+      false,
+      this.broadcasts,
+    );
+  }
+
+  /** amongが選んだ相手を指せる場所（10.3節）。amongを書いた候補の重みと効果だけがこれになる。 */
+  get picking(): ReferenceScope {
+    return new ReferenceScope(
+      this.hasSelf,
+      this.hasActor,
+      this.hasDragged,
+      true,
+      this.namesProperty,
+      this.broadcasts,
+    );
   }
 
   /** 相手が1つに定まらなくてよい場所（passivesの対象。付いている子ごとに登録を配る、8.1節）。 */
   get broadcasting(): ReferenceScope {
-    return new ReferenceScope(this.hasSelf, this.hasActor, this.hasDragged, this.namesProperty, true);
+    return new ReferenceScope(
+      this.hasSelf,
+      this.hasActor,
+      this.hasDragged,
+      this.hasPicked,
+      this.namesProperty,
+      true,
+    );
   }
 
   /**
@@ -221,6 +269,8 @@ export class ReferenceScope {
         return this.hasActor ? undefined : 'ここは誰かが操作している場面とは限りません';
       case 'dragged':
         return this.hasDragged ? undefined : "'dragged'はcombinationsの中でのみ使えます";
+      case 'picked':
+        return this.hasPicked ? undefined : "'picked'はamongを書いた候補の中でのみ使えます";
       case 'ancestor':
         if (!this.hasSelf) return 'ここには遡る起点になる個体が居ません';
         return this.namesProperty

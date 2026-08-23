@@ -27,7 +27,7 @@ object_defs:
   # 木から採れるのは登って採る物だけで、落ちた熟した実は土地の探索が受け持つ。
   palm_tree:
     tags: [fixture]
-    actions:
+    interactions:
       # 青い実を採る。熟していない実は自分から落ちないので、幹を登って切り落とすしかない。
       # 足場の無い幹を登る以上、たまに踏み外す。失敗した回は何も採れない。
       #
@@ -35,7 +35,7 @@ object_defs:
       # 葉より数が少ないのは、水を抱えた青い実が重く、房から外すのに手間がかかるため
       # （採取ポイントの枯渇は今後の課題）。
       pick_green_coconut:
-        showMenu: always
+        trigger: menu
         duration: 30
         pick:
           - weight: 90
@@ -46,7 +46,7 @@ object_defs:
       # 葉を採る。枯れた葉は落ちる前に幹へ垂れ下がるので、刃物が無くても引き落とせる。
       # 実採りと同じく幹を登るため、同じだけ踏み外す。葉はweaving.yamlが定義する。
       pick_frond:
-        showMenu: always
+        trigger: menu
         duration: 30
         pick:
           - weight: 90
@@ -62,14 +62,14 @@ object_defs:
       weight: {value: 2200}
       # 湿った皮と500mLの水を抱えるので、乾いた熟した実より重く、少し大きい。
       volume: {value: 4900}
-    combinations:
+    interactions:
       # 穴を開けて、その場で水を飲む。開けた実の水は数時間で発酵するため、汲み置きはできない
       # ——だから水は液体（liquid_containers.yaml）として持たず、飲用をこの操作へ畳んでいる。
       #
       # 満水でも実行できる。飲みきれない分はhydrationのクランプに任せてこぼれる。条件で塞ぐと、
       # 満水の間だけ連鎖が進まなくなる。
       bore:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 15
         add:
           actor:
@@ -88,9 +88,9 @@ object_defs:
       weight: {value: 1600}
       # 水が抜けても外寸は変わらない。
       volume: {value: 4900}
-    combinations:
+    interactions:
       split:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 15
         destroy: self
         spawn: {object: coconut_jelly, count: 2}
@@ -101,8 +101,9 @@ object_defs:
     props:
       weight: {value: 150}
       volume: {value: 250}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}
@@ -123,9 +124,9 @@ object_defs:
     props:
       weight: {value: 1400}
       volume: {value: 3800}
-    combinations:
+    interactions:
       husk:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 30
         destroy: self
         spawn:
@@ -156,14 +157,14 @@ object_defs:
     props:
       weight: {value: 800}
       volume: {value: 900}
-    combinations:
+    interactions:
       crack:
-        with: {object: stone}
+        trigger: {drag: {object: stone}}
         duration: 15
         destroy: self
         spawn: {object: coconut_half, count: 2}
       pry_open:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 15
         destroy: self
         spawn: {object: coconut_half, count: 2}
@@ -174,9 +175,9 @@ object_defs:
     props:
       weight: {value: 300}
       volume: {value: 900}
-    combinations:
+    interactions:
       scrape:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 30
         destroy: self
         spawn:
@@ -190,8 +191,9 @@ object_defs:
     props:
       weight: {value: 200}
       volume: {value: 400}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}

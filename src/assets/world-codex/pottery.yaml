@@ -135,9 +135,10 @@ object_defs:
           - {prop: heat, in_stage: ember}
           - {prop: fuel, in_stage: none}
         add: {self: {heat: -0.5}}
-    actions:
+    interactions:
       # 覆いを壊して取り出す。中身は消える自分ではなく自分の親——炉が置かれた土地——へこぼれる
       # （9.3節）ので、焼き上がった壺は残る。
       break_open:
+        trigger: menu
         duration: 15
         destroy: self

@@ -42,6 +42,12 @@ const ANALYSIS_FREE = ['src/domain', 'src/loader', 'src/locale', 'src/game', 'sr
  */
 const VIEWER_FREE = ['src/domain', 'src/loader', 'src/locale', 'src/game', 'src/ui', 'src/analysis'];
 
+/** 効果と条件の木そのもの。組み立ててよいのはドメインと、YAMLから作るローダーだけ。 */
+const TREE_MODULES = ['src/domain/ActiveEffect.ts', 'src/domain/ConditionNode.ts'];
+
+/** 宣言を読み上げてもらう側の置き場（Layers.md 6節）。 */
+const TREE_READERS = ['src/analysis', 'src/codex-viewer'];
+
 /** そのディレクトリ以下の.tsファイル（リポジトリ相対）。 */
 function sourcesIn(dir: string): string[] {
   const found: string[] = [];
@@ -151,11 +157,23 @@ describe('層の境界', () => {
     ).toEqual([]);
   });
 
+  it.each(TREE_READERS)('%s は効果・条件の木そのものを輸入しない', (dir) => {
+    // ここだけ到達可能性ではなく**直接の輸入**を見る。読み手が輸入する定義クラスの先には木が居るが、
+    // 読み手の手に渡るのは読み下せる宣言（EffectDeclaration・ConditionDeclaration）だけで、
+    // 木を直に持てば読むだけでなく適用（apply）・評価（evaluate）までできてしまう。
+    const offenders = sourcesIn(dir).filter((rel) =>
+      importsOf(rel, true).some((target) => TREE_MODULES.includes(target)),
+    );
+    expect(offenders, 'このファイルが木そのものを輸入している').toEqual([]);
+  });
+
   it('検査対象の置き場が実在する', () => {
     // 引っ越しで置き場が消えたときに、検査が黙って空を通さないようにする。
     expect(PHASER_FREE.filter((dir) => !existsSync(join(ROOT, dir)))).toEqual([]);
     expect(VIEWER_FREE.filter((dir) => !existsSync(join(ROOT, dir)))).toEqual([]);
     expect(ANALYSIS_FREE.filter((dir) => !existsSync(join(ROOT, dir)))).toEqual([]);
+    expect(TREE_MODULES.filter((rel) => !existsSync(join(ROOT, rel)))).toEqual([]);
+    expect(TREE_READERS.filter((dir) => !existsSync(join(ROOT, dir)))).toEqual([]);
     expect(sourcesIn('src/analysis').length).toBeGreaterThan(3);
     expect(sourcesIn('src/game/view').length).toBeGreaterThan(5);
     expect(sourcesIn('src/ui').length).toBeGreaterThan(5);

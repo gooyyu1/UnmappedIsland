@@ -629,8 +629,9 @@ export class PlayScene extends ResponsiveScene {
     if (openedStatus !== undefined) this.openStatusDetail(openedStatus);
     this.coverUntilLocationArtLoaded();
     // 死も到達も取り消せないので、リサイズで表示物ごと捨てられたダイアログは出し直す（ResponsiveScene）。
-    if (this.gameSession.player.isDead) this.showDeath();
-    else if (this.gameSession.player.hasReachedMainland) this.showEscape();
+    const ending = this.gameSession.player.ending.kind;
+    if (ending === 'death') this.showDeath();
+    else if (ending === 'escape') this.showEscape();
   }
 
   /**
@@ -1352,9 +1353,8 @@ export class PlayScene extends ResponsiveScene {
       recording.ticks,
     );
     const steps = playbackSteps({
-      isDead: this.gameSession.player.isDead,
+      ending: this.gameSession.player.ending.kind,
       minutes: playback.totalMinutes,
-      reachedMainland: this.gameSession.player.hasReachedMainland,
     });
 
     // 再生だけ実時間がかかるので、続きは見せ切ってから運ぶ。
@@ -2277,7 +2277,7 @@ export class PlayScene extends ResponsiveScene {
    * 現在地も足元の物も別のものに入れ替わってしまう（fromGameSession）。
    */
   private showDeath(): void {
-    const cause = this.gameSession.player.causeOfDeath;
+    const cause = this.gameSession.player.ending.causeOfDeath;
     noteOperation(`死んだ: ${cause ?? '不明'}（${this.clockText()}）`);
 
     new ModalDialog(this, this.metrics, {
@@ -2300,7 +2300,7 @@ export class PlayScene extends ResponsiveScene {
    * ことだけ——その先の暮らしは周回の外にある。
    */
   private showEscape(): void {
-    const brought = this.gameSession.player.broughtArtifacts;
+    const brought = this.gameSession.player.ending.broughtArtifacts;
     noteOperation(`島を出た: 持ち帰り ${brought.length} 点（${this.clockText()}）`);
 
     new ModalDialog(this, this.metrics, {

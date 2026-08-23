@@ -118,13 +118,13 @@ object_defs:
 **寝床が自分で `nap`/`sleep` を持ち、キャラクタ側の同名アクションが基準線になります。**
 
 ```yaml
-    actions:
+    interactions:
       nap:
-        showMenu: always
+        trigger: menu
         duration: 180
         add: {actor: {stamina: 48, wakefulness: 48}}
       sleep:
-        showMenu: always
+        trigger: menu
         duration: 360
         add: {actor: {stamina: 120, wakefulness: 96}}
 ```

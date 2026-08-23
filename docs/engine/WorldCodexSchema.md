@@ -23,7 +23,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 - **不正な記述の拒否**: identifier の
   命名規則に反するキーを使う、未定義の比較演算子を使う、`set`/`add` に未対応の対象キー（`sibling`/`child` など)を
   使う、`destroy` の対象に `ancestor` を使う、枠の `accept` に `tag` と `object` を同時指定する（またはどちらも省略する）、
-  `combinations` に `with` を書き忘れる、廃止済みの `active:` 入れ子を使う、`passives` を配列でなく単一マッピングで
+  ドラッグ型の操作に `trigger` を書き忘れる、廃止済みの `active:` 入れ子を使う、`passives` を配列でなく単一マッピングで
   書く、`conditions` の葉に `slot` と `prop` を同時指定する、`conditions` の `value` に未対応の `max`/`min` を使う、
   `in`/`not_in` に配列でない `value` を渡す、`move` の `subject` に `actor` 以外を使う、といった誤った記述が
   拒否されることを確認
@@ -33,7 +33,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 ### 2.1 含めたもの
 
 `GameElementDefinition.md` の3〜14節が定める文法全体（ルート構造・`object_defs`/`traits`・`props`・rangeイベント・
-`passives`・`conditions`・`active`・`pick`・`actions`・`combinations`・`recipes`・`slots`）。
+`passives`・`conditions`・`active`・`pick`・`interactions`・`recipes`・`slots`）。
 例外は2.2節を参照。
 
 ### 2.2 対象だが中身を検証しないもの・ローダー未実装のもの
@@ -59,7 +59,7 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
   ない）ため、必須項目としました。`count` の省略時
   デフォルト（`RecipeSystem.md` 5節で未決定）はスキーマ上も任意項目のままにしています。
 - 枠（`slots.*.cells[]` / `slots.*.cell`）の `max` は省略可で、省略すると無制限です。
-- `actions.*.showMenu` の値は `always`（省略時）と `never` の2つです（ローダーも他の値をエラーにします）。
+- `interactions.*.trigger` は必須で、`menu`・`tick`・`{drag: ...}` の3つです（ローダーも他の値をエラーにします）。
 - シンボル型プロパティかどうかは `value` の形（識別子形の文字列）でしか判別できないため、「シンボル型の `stages` に
   `min` を書いたらエラー」「数値型の `value` にシンボルは書けない」といったプロパティ単位の整合はスキーマでは
   検証できず、ロード時チェックに委ねています（2.2節の文脈依存制約と同じ扱い）。
