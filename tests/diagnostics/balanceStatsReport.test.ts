@@ -329,8 +329,9 @@ function appendObjectCosts(append: (line?: string) => void, tables: BalanceTable
   append('「日数」は、生存に要る労働を引いた残り（1日の余剰時間）で割った日数。**目標までに');
   append('何日かかるか**がこれで出る。道具（前提）の時間は総コストに含めない（#550のまま）。');
   append();
-  append('土地・キャラクタ・単独で存在できない物（怪我・道）・製作中オブジェクトは、手に入れると');
-  append('いう言い方が成り立たないので対象外。');
+  append('土地・キャラクタ・単独で存在できない物（怪我・道）・製作中オブジェクト・軸の値の型');
+  append('（液体の種類。世界に現れるのは中身入りの容器という変種のほうで、`water_liquid` そのものの');
+  append('インスタンスは作られない）は、手に入れるという言い方が成り立たないので対象外。');
   append();
 
   const missing = tables.objectCosts.filter((cost) => cost.minutes === undefined);
@@ -479,5 +480,9 @@ describe.runIf(process.env.RUN_BALANCE_STATS === '1')('アイテム収支レポ�
 
     expect(report).toContain('# アイテム収支レポート');
     expect(tables.places[0].name).toBe(WHOLE_ISLAND);
+
+    // 雨で溜まる水は、時間を数えられていないだけで内容の穴ではない（issue #660）。
+    expect(report).toContain('### 数えられない経路');
+    expect(tables.gaps.filter((gap) => gap.label.includes('water_liquid'))).toEqual([]);
   }, 600_000);
 });

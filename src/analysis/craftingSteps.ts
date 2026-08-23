@@ -1,12 +1,14 @@
 import type { InteractionDef } from '../domain/InteractionDef';
 import type { InteractionTrigger } from '../domain/InteractionTrigger';
 import type { ObjectDef } from '../domain/ObjectDef';
+import type { ObjectRefReading } from '../domain/ObjectRef';
 import type { RecipeDef } from '../domain/RecipeDef';
 import type { TypeMatchReading } from '../domain/TypeMatchRule';
+import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingInput, CraftingStep, StepOutcome } from './CraftingStep';
 import { collectOutputs, combineOutcomes } from './CraftingStep';
-import type { EffectReading } from './effectOutcomes';
-import { destroysRoot, readEffect } from './effectOutcomes';
+import type { BecomeDestinationResolver, EffectReading } from './effectOutcomes';
+import { consumesRoot, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
 import type { StaticValueResolver } from './staticValue';
 import { resolveDeclaredNumber, staticResolverOf, staticValueOf, trackingResolverOf } from './staticValue';
@@ -27,10 +29,14 @@ import { resolveDeclaredNumber, staticResolverOf, staticValueOf, trackingResolve
  * outerは、self以外の起点（祖先が入れる値・重ねる相手の値）を定義だけから解く手立て。省くと、
  * それらを参照する工程に「確定しない」印が付く（CraftingStep.hasUnresolvedReferences）。
  */
-export function craftingStepsOf(def: ObjectDef, outer?: StaticValueResolver): readonly CraftingStep[] {
+export function craftingStepsOf(
+  codex: WorldCodex,
+  def: ObjectDef,
+  outer?: StaticValueResolver,
+): readonly CraftingStep[] {
   const steps: CraftingStep[] = [];
   for (const trigger of def.triggers)
-    steps.push(withTriggeredRangeEvents(def, interactionStep(def, trigger, outer), outer));
+    steps.push(withTriggeredRangeEvents(def, interactionStep(codex, def, trigger, outer), outer));
   for (const recipe of def.recipesProducingThis) steps.push(recipeStep(def, recipe));
   return steps;
 }
@@ -40,13 +46,14 @@ export function craftingStepsOf(def: ObjectDef, outer?: StaticValueResolver): re
  * 分かる。ドラッグ型は相手（withが指す型）も入力に並ぶ。
  */
 function interactionStep(
+  codex: WorldCodex,
   def: ObjectDef,
   trigger: InteractionTrigger,
   outer: StaticValueResolver | undefined,
 ): CraftingStep {
   const interaction = trigger.interaction;
   const tracking = trackingResolverOf(def, outer);
-  const reading = readEffect(interaction, tracking.resolve);
+  const reading = readEffect(interaction, tracking.resolve, becomeDestinationResolverOf(codex, def, trigger));
   const minutes = minutesOf(interaction, tracking.resolve);
   return {
     kind: 'interaction',
@@ -56,7 +63,7 @@ function interactionStep(
       {
         kind: 'object',
         objectGlobalId: def.globalId,
-        consumed: destroysRoot(reading, 'self'),
+        consumed: consumesRoot(reading, 'self'),
         count: 1,
       },
       ...draggedInputOf(trigger, reading),
@@ -172,12 +179,44 @@ function selfPropertyValuesAfterOf(
   return moves;
 }
 
-/** ドラッグ型の相手（きっかけが指す型）。他のきっかけには無い。消費されるかはdraggedへのdestroyで決まる。 */
+/** ドラッグ型の相手（きっかけが指す型）。他のきっかけには無い。消費されるかはdraggedの行方で決まる。 */
 function draggedInputOf(trigger: InteractionTrigger, effect: EffectReading): readonly CraftingInput[] {
   const triggerReading = trigger.reading;
   if (triggerReading.kind !== 'drag') return [];
-  const input = inputOf(triggerReading.with, destroysRoot(effect, 'dragged'), 1);
+  const input = inputOf(triggerReading.with, consumesRoot(effect, 'dragged'), 1);
   return input === undefined ? [] : [input];
+}
+
+/**
+ * この操作の中で`become`（9.9節）の行き先を解く手立て。答えられるのは**この工程が入力として
+ * 名指ししている相手**——self と、型そのもので指したドラッグの相手——だけで、タグで指した相手や
+ * 実行時にしか決まらない相手（`parent`・`actor`・プロパティ参照）は定義から型が定まらない。
+ */
+function becomeDestinationResolverOf(
+  codex: WorldCodex,
+  def: ObjectDef,
+  trigger: InteractionTrigger,
+): BecomeDestinationResolver {
+  return (subject, axisValues) => {
+    const subjectDef = subjectDefOf(codex, def, trigger, subject);
+    return subjectDef === undefined ? undefined : codex.tryResolveBecome(subjectDef, axisValues)?.globalId;
+  };
+}
+
+/** becomeの対象が指す型（becomeDestinationResolverOf参照）。定義から定まらなければundefined。 */
+function subjectDefOf(
+  codex: WorldCodex,
+  def: ObjectDef,
+  trigger: InteractionTrigger,
+  subject: ObjectRefReading,
+): ObjectDef | undefined {
+  if (subject.kind !== 'root') return undefined;
+  if (subject.root === 'self') return def;
+  if (subject.root !== 'dragged') return undefined;
+
+  const triggerReading = trigger.reading;
+  if (triggerReading.kind !== 'drag' || triggerReading.with.kind !== 'object') return undefined;
+  return codex.objects.tryGet(triggerReading.with.objectGlobalId);
 }
 
 /**

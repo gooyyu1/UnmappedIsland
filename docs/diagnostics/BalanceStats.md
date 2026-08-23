@@ -495,20 +495,40 @@ npm run stats:balance
 | medic.sleep | 3.75 | 0.00 | 3.75 | 360 | 25.0% | — | stamina +90.00、wakefulness +96.00 | — |
 | medic.nap | 5.00 | 0.00 | 5.00 | 480 | 33.3% | — | stamina +36.00、wakefulness +36.00 | — |
 
+### 数えられない経路
+
+労働0で値が返る経路。**上の表には混ぜていない**——時間を数えられていないだけで、
+本当にタダなわけではない（雨で水が溜まるのはtick毎の持続効果で、工程ではない）。
+
+| 場所 | 値 | 経路 | 同時に返す値 |
+| --- | --- | --- | --- |
+| 島全体 | hydration | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| 島全体 | hydration | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| sandy_beach | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| sandy_beach | hydration | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| rocky_coast | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| rocky_coast | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| cliff_coast | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| cliff_coast | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| grassland | hydration | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| forest | hydration | forest.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| jungle | hydration | jungle.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| jungle | hydration | jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| rocky_field | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| rocky_field | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| wasteland | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| wasteland | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| mountainside | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| mountainside | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| mountain_peak | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| mountain_peak | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+
 ### 島全体で入手経路が無いもの
 
 島のどこを探しても作れも見つかりもしないもの。定義の穴で、これが下の経路を塞いでいる。
 
-- **water_liquid** — 1経路を塞いでいる
-  - `water_liquid.drink`（hydration +10.00）
-- **tea_liquid** — 1経路を塞いでいる
-  - `tea_liquid.drink`（hydration +10.00、wakefulness +2.00）
-- **jar__content_water_liquid** — 1経路を塞いでいる
-  - `jar__content_water_liquid.drink`（hydration +10.00）
 - **jar__content_tea_liquid** — 1経路を塞いでいる
   - `jar__content_tea_liquid.drink`（hydration +10.00、wakefulness +2.00）
-- **coconut_bowl__content_water_liquid** — 1経路を塞いでいる
-  - `coconut_bowl__content_water_liquid.drink`（hydration +10.00）
 - **coconut_bowl__content_tea_liquid** — 1経路を塞いでいる
   - `coconut_bowl__content_tea_liquid.drink`（hydration +10.00、wakefulness +2.00）
 
@@ -520,8 +540,9 @@ npm run stats:balance
 「日数」は、生存に要る労働を引いた残り（1日の余剰時間）で割った日数。**目標までに
 何日かかるか**がこれで出る。道具（前提）の時間は総コストに含めない（#550のまま）。
 
-土地・キャラクタ・単独で存在できない物（怪我・道）・製作中オブジェクトは、手に入れると
-いう言い方が成り立たないので対象外。
+土地・キャラクタ・単独で存在できない物（怪我・道）・製作中オブジェクト・軸の値の型
+（液体の種類。世界に現れるのは中身入りの容器という変種のほうで、`water_liquid` そのものの
+インスタンスは作られない）は、手に入れるという言い方が成り立たないので対象外。
 
 ### 入手経路が無いもの
 
@@ -531,9 +552,6 @@ npm run stats:balance
 | --- | --- |
 | three_stone_hearth | 作る工程が無い |
 | stone_hearth | 作る工程が無い |
-| water_liquid | 作る工程が無い |
-| tea_liquid | 作る工程が無い |
-| oil_liquid | 作る工程が無い |
 | spear | 作る工程が無い |
 | bandage | 作る工程が無い |
 
@@ -817,14 +835,8 @@ npm run stats:balance
 | roasted_taro | cooking_progress.on_max | periodic | 0 | 225 | charred_lump ×1.00 | — |
 | roasted_taro | cooking_progress.on_max | periodic | 0 | 225 | charred_lump ×1.00 | — |
 | roasted_taro | cooking_progress.on_max | periodic | 0 | 225 | charred_lump ×1.00 | — |
-| water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
-| water_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
-| water_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
-| tea_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
-| tea_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| oil_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
-| oil_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
+| jar | collect_rain | interaction | 0 | 0 | jar__content_water_liquid ×1.00 | — |
+| coconut_bowl | collect_rain | interaction | 0 | 0 | coconut_bowl__content_water_liquid ×1.00 | — |
 | stone | knap | interaction | 60 | 60 | sharp_stone ×1.00 | — |
 | sandy_beach | explore | interaction | 15 | 15 | palm_tree ×0.12、woven_basket ×0.05、coconut_crab ×0.27、rat ×0.02、monkey ×0.04、coconut ×0.86、thick_branch ×0.63 | （self）exploration_progress +1.00 |
 | rocky_coast | explore | interaction | 15 | 15 | cave_entrance ×0.13、coconut_crab ×0.38、rat ×0.02、stone ×1.23、thick_branch ×0.27 | （self）exploration_progress +1.00 |
@@ -850,20 +862,26 @@ npm run stats:balance
 | rawhide_sail | sewn | recipe | 420 | 420 | rawhide_sail ×1.00 | — |
 | palm_frond | weave | interaction | 90 | 90 | woven_leaf ×1.00 | — |
 | palm_frond | split_and_weave | interaction | 60 | 60 | woven_leaf ×2.00 | — |
-| jar__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
+| jar__content_water_liquid | collect_rain | interaction | 0 | 0 | jar__content_water_liquid ×1.00 | — |
 | jar__content_water_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | jar__content_water_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| jar__content_tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
+| jar__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
+| jar__content_tea_liquid | collect_rain | interaction | 0 | 0 | jar__content_water_liquid ×1.00 | — |
 | jar__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | jar__content_tea_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
+| jar__content_tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
+| jar__content_oil_liquid | collect_rain | interaction | 0 | 0 | jar__content_water_liquid ×1.00 | — |
 | jar__content_oil_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | jar__content_oil_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| coconut_bowl__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
+| coconut_bowl__content_water_liquid | collect_rain | interaction | 0 | 0 | coconut_bowl__content_water_liquid ×1.00 | — |
 | coconut_bowl__content_water_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | coconut_bowl__content_water_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| coconut_bowl__content_tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
+| coconut_bowl__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
+| coconut_bowl__content_tea_liquid | collect_rain | interaction | 0 | 0 | coconut_bowl__content_water_liquid ×1.00 | — |
 | coconut_bowl__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | coconut_bowl__content_tea_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
+| coconut_bowl__content_tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
+| coconut_bowl__content_oil_liquid | collect_rain | interaction | 0 | 0 | coconut_bowl__content_water_liquid ×1.00 | — |
 | coconut_bowl__content_oil_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | coconut_bowl__content_oil_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 

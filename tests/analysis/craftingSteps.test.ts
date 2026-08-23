@@ -56,7 +56,8 @@ object_defs:
 
   const codex = new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset();
   const id = (name: string) => codex.objectNames.getId(name);
-  const stepsOf = (name: string): readonly CraftingStep[] => craftingStepsOf(codex.objects.get(id(name)));
+  const stepsOf = (name: string): readonly CraftingStep[] =>
+    craftingStepsOf(codex, codex.objects.get(id(name)));
 
   it('何も生み出さないアクションも工程になる', () => {
     const steps = stepsOf('beach');
@@ -329,7 +330,7 @@ object_defs:
     });
 
     it('一撃で値を端の外へ押す工程は、そこで起こることまで含めて1つの工程になる', () => {
-      const [strike] = craftingStepsOf(defOf('boar'));
+      const [strike] = craftingStepsOf(huntCodex, defOf('boar'));
 
       // 20回に1回しか仕留められないので、1回の実行で要る獲物もその確率ぶん。
       expect(strike.inputs).toEqual([
@@ -338,6 +339,55 @@ object_defs:
       ]);
       expect(strike.outputs).toEqual([{ objectGlobalId: huntId('boar_carcass'), counts: [1] }]);
       expect(strike.outcomes.find((outcome) => outcome.spawns.length > 0)?.probability).toBe(0.05);
+    });
+  });
+
+  /**
+   * 軸に沿って型が変わる工程（`become`、9.9節）の検証。同じ個体が続くので何も湧かないが、
+   * **変わった先の型はそこで手に入る**——雨を受け始めた空の容器は、そこで水入りの容器になる。
+   */
+  describe('軸に沿って型が変わる工程', () => {
+    const YAML_LIQUID = `
+traits:
+  liquid:
+    tags: [liquid]
+
+  water_liquid:
+    tags: [water]
+
+object_defs:
+  jar:
+    tags: [item]
+    props:
+      fill:
+        value: 0
+        range: {min: 0, max: 4000}
+      weight: {value: 1200}
+    variation_axes:
+      content: {of: {tag: liquid}}
+    interactions:
+      collect_rain:
+        trigger: menu
+        become: {content: water_liquid}
+        set: {self: {fill: 1}}
+
+  water_liquid:
+    traits: [liquid, water_liquid]
+`;
+    const liquidCodex = new WorldCodexYamlLoader().load('liquid.yaml', YAML_LIQUID).buildAndReset();
+    const liquidId = (name: string) => liquidCodex.objectNames.getId(name);
+
+    it('becomeの行き先が産出になり、変わる前の型は使い切られる', () => {
+      const [collectRain] = craftingStepsOf(liquidCodex, liquidCodex.objects.get(liquidId('jar')));
+
+      expect(collectRain.name).toBe('collect_rain');
+      expect(collectRain.outputs).toEqual([
+        { objectGlobalId: liquidId('jar__content_water_liquid'), counts: [1] },
+      ]);
+      // 空の容器はここで水入りの容器になるので、その型のままでは残らない。
+      expect(collectRain.inputs).toEqual([
+        { kind: 'object', objectGlobalId: liquidId('jar'), consumed: true, count: 1 },
+      ]);
     });
   });
 });

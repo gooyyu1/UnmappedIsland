@@ -69,7 +69,7 @@ export function buildCraftingNetwork(defs: readonly ObjectDef[], codex: WorldCod
   };
 
   for (const def of defs) {
-    for (const step of craftingStepsOf(def)) {
+    for (const step of craftingStepsOf(codex, def)) {
       if (step.outputs.length === 0) continue;
 
       const stepId = `s:${def.name}:${step.name}`;
