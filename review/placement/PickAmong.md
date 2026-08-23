@@ -217,14 +217,10 @@ world.instance.runTickActions();  // ← World.runAnimalTurns の置き換え
 `vocabulary.engine` を返す private getter で、`vocabulary.world` へは行かない）。`turnAction` は
 世界の語彙なので、`WorldObject` が `turn` という名前を知るのは層の破り。
 
-引き金は**宣言側**へ移す。`InteractionTriggerReading` が既に「何がこの操作のきっかけか」を持って
-いる（`menu` / `drag`）ので、そこへ `tick` を足すのが素直。
-
-今の `showMenu: 'always' | 'never'` は「画面のボタンに出すか」だけを言っていて、**誰が起こすかを
-言っていない**。`ActionDef` の doc は「`never` は画面のボタンには出さない操作で、**起こすのは時間の
-側になる**」と書いているのに、時間の側にはそれを起こす仕組みが無く、`Animal` が名前で引いている
-——宣言と実装がずれている。同梱の世界で `showMenu: never` を書いているのは `turn` **1件だけ**なので、
-2値をきっかけの宣言へ置き換えても失うものが無い。
+引き金は**宣言側**へ移す。その語彙（`trigger: menu | tick | drag`）と、それに伴う
+`actions`／`combinations` の統合は [`InteractionTrigger.md`](./InteractionTrigger.md) にまとめた。
+**このレーンはそれに依存する**——`tick` のきっかけが無いと、エンジンが `turn` という世界の語彙を
+知ることになる。
 
 ### ついでに直る既存の不具合: 逃げた動物が同じ tick に2回手番を取る
 
@@ -248,48 +244,3 @@ items のスナップショットを取る。動物が `flee` でまだ回って
 
 セーブ互換の心配は無い。`SaveData` は世界の状態を持たない（種とキャラクタと表示の記憶だけ）ので、
 手番の順序が変わっても読めなくなるものが無い。
-
-### きっかけのYAMLの書き方
-
-`actions:` の中のキーとして、`showMenu` を置き換える形。
-
-```yaml
-actions:
-  explore:
-    trigger: menu     # 既定。画面のボタンに出て、押されたら起きる
-  turn:
-    trigger: tick     # 時間が起こす。ボタンには出ない
-```
-
-**`showMenu` を残さない理由。** 「画面に出すか」は結果であって原因ではない。誰が起こすかを書けば
-出すかは決まる（`menu` だけが出る）が、逆は決まらない——現に `showMenu: never` は「出さない」しか
-言っていないのに、doc は「起こすのは時間の側」と読ませている。
-
-**当面は2値。** ただし**3つ目が要る**という見立ては正しい。今の `never` は
-「一覧に出ない」しか言っていないので、`tick` を作ると2つに割れる:
-
-| | 一覧に出る | 自分から起きる |
-| -- | -- | -- |
-| `menu` | ○ | プレイヤーが押したとき |
-| `tick` | × | 時間が経ったとき |
-| （3つ目） | × | **起きない**。他の宣言が名前で呼んだときだけ |
-
-3つ目を今作らないのは、**呼ぶ仕組みが無いから**。効果の中から別のアクションを名前で呼ぶ動詞
-（`run: <action名>` のようなもの）が入って初めて占有者ができる。値だけ先に作ると、
-**誰にも呼ばれないアクション**——ロードも通り、画面にも出ず、永久に起きない宣言——を書けてしまう。
-
-後から足すのは安全:
-
-- `InteractionTriggerReading` は閉じた union で、読み手は網羅で書いている。値を1つ足すと
-  実装していない読み手はコンパイルが止まる（読み上げ口と同じ守り方）。
-- YAML 側は値が増えるだけなので、既存の世界もMODも壊れない。
-- 「`menu` かつ `tick`」が要るようになったら、スカラかリストかを許す形へ広げられる
-  （`destroy` に前例がある——`parseActiveEffects` が「単一の対象か対象のリスト」を許容している）。
-
-**`combinations:` は `trigger` を持たない。** 節そのものが「ドラッグで起きる」を言っていて、
-相手は `with:` が宣言する。読み上げの `InteractionTriggerReading` が
-`menu | tick | drag` の1つの union に畳む形は今と変わらない。
-
-触る所: `ActionDef.showMenu`、`parseActionsAndCombinations`（値の検査）、
-`cardOperations` のボタン絞り込み1行、`describeInteraction`、`animals.yaml` 1件、
-`showMenu` を書いているテスト4ファイル。
