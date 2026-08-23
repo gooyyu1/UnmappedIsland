@@ -736,3 +736,14 @@ UIが作る隙間番号は常に範囲内なので差は出ない。
 新しく足したのは、**前詰めのスロットにはどの操作の後にも空き枠が残らない**ことを確かめるテスト1件
 （`fieldItemPlacement`）。ずらしで場所を作る形にしたので、生やした枠が使われずに残らないことが
 不変条件になった。
+
+### 「枠1つの不在」の残り（`autoFill`）
+
+`helpers/domain-state-gen.md` が「消えない」としていた `autoFill.chooseCandidates` 周りは、
+`SlotCell` ができたことで消えた。`autoFill` は「この枠にあと何個入るか」を
+`(cell.def.max ?? 1) - (cell.stack?.members.length ?? 0)` と自前で計算していたが、これは
+`SlotCell.roomFor` そのもので、`cell.roomFor(wanted)` に置き換わった。
+
+**`?? 1` は仕様と食い違っていた。** `max` は省略で無制限（GameElementDefinition.md 7.2節）で、
+1個だけ置きたいなら `max: 1` と書ける。材料スロットの枠は `requirementCells` が必ず `max` を
+入れるので到達しない分岐だったが、読む側が別の既定を置くと、宣言できるはずのことが宣言できなくなる。
