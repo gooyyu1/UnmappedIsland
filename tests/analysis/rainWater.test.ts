@@ -128,7 +128,7 @@ object_defs:
    * シミュレーションで、通常のテストスイートに置ける重さではないため。
    */
   describe('気候の実測値がClimateSystemStats.mdと一致する', () => {
-    const report = readFileSync(join('docs', 'diagnostics', 'ClimateSystemStats.md'), 'utf8').split('\n');
+    const report = readFileSync(join('docs', 'diagnostics', 'ClimateSystemStats.md'), 'utf8').split(/\r?\n/);
 
     it('季節の持続日数', () => {
       const section = sectionOf(report, '季節の持続日数');
