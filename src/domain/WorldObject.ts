@@ -705,13 +705,8 @@ export class WorldObject {
    * **要件まで見るのは、候補を選ぶ側と実行できる側を食い違わせないため。** 型だけで選ぶと、選んだ
    * 先が実行できない場合に「落とせるのに何も起きない」になる。**行き先の座標に型が居ない組み合わせ**
    * （`become`、9.9節）も同じ理由で候補にならない。
-   *
-   * **作りかけの物は相手にならない。** 製作中オブジェクトは完成品のタグを引き継ぐ
-   * （RecipeSystem.md 5節）ので、弾かなければ半分できた石斧で木を伐り、獣を殴れてしまう
-   * ——引き継ぎは枠のacceptへ入れるためのもので、道具として働けることまでは意味しない。
    */
   combinationsWith(dragged: WorldObject, actor: WorldObject | undefined): readonly Combination[] {
-    if (dragged.def.isInProgress) return [];
     const context = ReferenceContext.acting(this, actor, dragged);
     return this.def.dragTriggers
       .filter(

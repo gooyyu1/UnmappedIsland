@@ -131,8 +131,8 @@ describe('fire.yamlの火の連鎖', () => {
   });
 
   it('作りかけの火起こし具では火をつけられない', () => {
-    // 製作中オブジェクトは完成品のタグを引き継ぐ（RecipeSystem.md 5節）ので、lightがタグで
-    // 相手を探していると半分削っただけの棒で火が付いてしまう。withは型そのものを指す。
+    // 製作中オブジェクトは働きを言うタグを持たない（RecipeSystem.md 5節）。lightが相手に指す
+    // fire_drillは型そのものなので、作りかけの型（fire_drill__carved）は当てはまらない。
     const grass = spawnInto('dry_grass', land, 'items');
     const wipDrill = spawnInto(inProgressObjectName('fire_drill', 'carved'), player, 'hand');
 

@@ -50,11 +50,7 @@ describe('tools.yamlの道具定義', () => {
     const shares = ['heavy_blow', 'light_blow', 'thrust', 'whiff'].map((name) =>
       codex.propertyNames.getId(name),
     );
-    // 製作中オブジェクトは完成品のタグを引き継ぐ（RecipeSystem.md 5節）ので weapon タグを持つが、
-    // 相手として指名されない（DragTrigger.acceptsDragged）ため配分も持たない。
-    const weapons = codex
-      .objectDefNamesWithTag(codex.tagNames.getId('weapon'))
-      .filter((name) => !codex.isGenerated(codex.objects.get(codex.objectNames.getId(name))));
+    const weapons = codex.objectDefNamesWithTag(codex.tagNames.getId('weapon'));
 
     expect(weapons.length, '検査対象が無い（weaponタグが変わっていないか）').toBeGreaterThan(0);
     for (const name of weapons) {
@@ -187,14 +183,14 @@ describe('石斧を作る', () => {
   });
 
   it('作りかけの石斧は、刃物として使えない', () => {
-    // 製作中オブジェクトは完成品のタグ（cutting_tool等）を引き継ぐ（RecipeSystem.md 5節）。
-    // 引き継ぎの目的は枠のacceptに当てはまることだけなので、道具としては働かない。
+    // 製作中オブジェクトが引き継ぐのは置き場所を言うタグだけ（RecipeSystem.md 5節）。刃物である
+    // ことは完成品になって初めて名乗るので、重ねる操作の側に作りかけを弾く判定は要らない。
     const { session, field } = rockyField();
     const wip = startAxe(session, field);
 
     const stem = session.createObject(codex.objectNames.getId('banana_stem'));
     expect(stem.moveToSlotOrRejection(field.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
-    expect(wip.def.tags, 'タグの上では刃物').toContain(codex.tagNames.getId('cutting_tool'));
+    expect(wip.def.tags, 'タグの上でも刃物ではない').not.toContain(codex.tagNames.getId('cutting_tool'));
 
     expect(stem.combinationsWith(wip, undefined), '作りかけは相手にならない').toEqual([]);
     expect(

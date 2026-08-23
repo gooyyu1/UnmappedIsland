@@ -11,8 +11,8 @@ import { ReferenceContext } from './ReferenceRoot';
 export const RECIPE_AXIS = 'recipe';
 
 /**
- * 製作中であることを表すタグ（RecipeSystem.md 5節）。作りかけは完成品のタグを引き継ぐので、
- * **タグだけを見ると完成品と区別が付かない**——道具として働けるかを問う場所はこれで弾く。
+ * 製作中であることを表すタグ（RecipeSystem.md 5節）。生成した型はYAMLへ戻してから読み込む
+ * （inProgressObjectsYaml）ので、作りかけであることもYAMLに書ける印で運ぶ。
  */
 export const IN_PROGRESS_TAG = 'wip';
 

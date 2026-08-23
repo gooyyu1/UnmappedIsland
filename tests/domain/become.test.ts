@@ -11,6 +11,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
  */
 describe('become（同じ個体のまま型を差し替える）', () => {
   const YAML = `
+in_progress_tags: [item]
 object_defs:
   ground:
     tags: [location]

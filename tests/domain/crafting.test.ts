@@ -19,6 +19,7 @@ import type { RecipeDef } from '../../src/domain/RecipeDef';
 describe('工程を進める', () => {
   // 2工程のレシピ。1工程目は道具（消費しない）も要求する。
   const YAML = `
+in_progress_tags: [item]
 object_defs:
   # 経過中のtickは世界の木を辿って回るので、locationとして世界へ繋いでおく。
   crafting_ground:
@@ -250,6 +251,7 @@ object_defs:
 describe('製作を始める', () => {
   // 土地はアイテムと設置物で置き場所が分かれる（core.yamlのlocation traitと同じ形）。
   const YAML = `
+in_progress_tags: [item, fixture]
 object_defs:
   crafting_ground:
     tags: [location]
@@ -269,7 +271,7 @@ object_defs:
         steps:
           - requires: [{object: wood, count: 1, consume: true}]
             duration: 30
-  # 持ち歩けない完成品。製作中も設置物のタグを引き継ぐ（同5節）。
+  # 持ち歩けない完成品。作りかけも設置物として置かれる（同5節）。
   campfire:
     tags: [fixture]
     recipes:
@@ -299,7 +301,7 @@ object_defs:
     ground.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations')));
   });
 
-  it('製作中オブジェクトは、完成品のタグが通るスロットへ入る', () => {
+  it('製作中オブジェクトは、引き継いだ置き場所のタグが通るスロットへ入る', () => {
     const axe = spawnInProgressObject(session, ground, idOf(inProgressObjectName('axe', 'basic')));
     expect(axe.parent, 'アイテムはitemsへ').toBe(ground);
     expect(contentsOf('items')).toEqual([inProgressObjectName('axe', 'basic')]);
