@@ -47,7 +47,7 @@ export class RawDeclarationBody {
   interactions: YAMLMap | undefined;
 
   /** 宣言から各フィールドを取り直す。**読む側はここ1箇所**で、object_def と trait で分かれない。 */
-  read(node: YAMLMap, context: string): void {
+  readFields(node: YAMLMap, context: string): void {
     this.tags = namesIn(tryGetSeq(node, 'tags', context), context);
     this.props = tryGetMap(node, 'props', context);
     this.slots = tryGetMap(node, 'slots', context);

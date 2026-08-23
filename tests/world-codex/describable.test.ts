@@ -25,7 +25,7 @@ function describeAllPassives(def: ObjectDef, names: DefNames, out: DescriptionWr
 }
 
 describe('同梱のWorldCodex', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   const names = defNamesOf(codex);
 
   it('すべての型・プロパティ・スロット・操作・レシピが書き出せる', () => {

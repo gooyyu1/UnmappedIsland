@@ -51,7 +51,7 @@ object_defs:
   const slotOf = (name: string) => codex.slotNames.getId(name);
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('core.yaml', YAML).build();
+    codex = new WorldCodexYamlLoader().load('core.yaml', YAML).buildAndReset();
     session = new WorldSession(codex);
 
     ground = new WorldObject(0, codex.objects.get(idOf('ground')), session);

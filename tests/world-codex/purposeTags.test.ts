@@ -17,7 +17,7 @@ describe('用途のタグ', () => {
 
   beforeAll(() => {
     // 用途のタグはファイルをまたいで付くので、ディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     defs = Array.from({ length: codex.objects.count }, (_, globalId) => codex.objects.get(globalId));
   });
 

@@ -29,7 +29,7 @@ describe('動物の1手', () => {
   let biteId: number;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     warinessId = codex.propertyNames.getId('wariness');
     fleeId = codex.propertyNames.getId('flee');
     biteId = codex.propertyNames.getId('bite');

@@ -58,7 +58,7 @@ object_defs:
   let ground: WorldObject;
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('origins.yaml', YAML).build();
+    codex = new WorldCodexYamlLoader().load('origins.yaml', YAML).buildAndReset();
     session = new WorldSession(codex, undefined, fixedRng(0.5));
     const worldInstance = new WorldObject(0, codex.objects.get(codex.objectNames.getId('world')), session);
     session.adoptWorld(new World(worldInstance, codex));

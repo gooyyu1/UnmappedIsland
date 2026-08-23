@@ -257,7 +257,7 @@ function chainRow(entry: PropertyRoute): string {
     ` ${formatNumber(entry.route.exploreMinutes / entry.gain, 2)} |` +
     ` ${formatNumber(entry.route.craftMinutes / entry.gain, 2)} |` +
     ` ${formatNumber(entry.dailyMinutes, 0)} | ${formatNumber(entry.dailyShare, 1)}% |` +
-    ` ${entry.deviceCount === undefined ? '—' : formatNumber(entry.deviceCount, 1)} |` +
+    ` ${entry.simultaneousDeviceCount === undefined ? '—' : formatNumber(entry.simultaneousDeviceCount, 1)} |` +
     ` ${amountList(entry.route.deltas) || '—'} | ${prerequisites || '—'} |`
   );
 }
@@ -460,7 +460,7 @@ function appendSupply(append: (line?: string) => void, tables: BalanceTables): v
 
     append(
       `| ${row.ownerName} | ${row.stepName} | ${row.kind} |` +
-        ` ${formatNumber(row.laborMinutes, 0)}${row.unresolved ? ' ?' : ''} |` +
+        ` ${formatNumber(row.laborMinutes, 0)}${row.hasUnresolvedReferences ? ' ?' : ''} |` +
         ` ${formatNumber(row.elapsedMinutes, 0)} | ${spawnText || '—'} | ${deltaText || '—'} |`,
     );
   }
@@ -469,7 +469,7 @@ function appendSupply(append: (line?: string) => void, tables: BalanceTables): v
 
 describe.runIf(process.env.RUN_BALANCE_STATS === '1')('アイテム収支レポート', () => {
   it('定義から収支を計算してBalanceStats.mdを再生成する', () => {
-    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     const tables = buildBalanceTables(codex, SAMPLE_CHARACTER);
 
     const report = buildReport(tables);

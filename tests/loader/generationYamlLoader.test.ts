@@ -46,7 +46,7 @@ generation_scopes:
 `;
 
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('terrain_generation.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('terrain_generation.yaml', yaml).buildAndReset();
   }
 
   it('妥当なaxes/location_types/generation_scopesからGenerationDefsを組み立てる', () => {
@@ -130,7 +130,7 @@ location_types:
       elevation: {ideal: 30, tolerance: 25}
 `,
       )
-      .build();
+      .buildAndReset();
 
     expect(codex.generation).toBeDefined();
     expect(codex.generation?.axes.has('elevation')).toBe(true);

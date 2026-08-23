@@ -48,7 +48,7 @@ object_defs:
   stone: {}
 `,
     )
-    .build();
+    .buildAndReset();
 
   const contentsId = codex.slotNames.getId('contents');
 

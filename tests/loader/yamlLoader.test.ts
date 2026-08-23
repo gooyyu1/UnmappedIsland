@@ -21,8 +21,10 @@ object_defs:
       weather:
         value: "not a valid symbol!"
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrow(YamlLoadError);
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/シンボル名/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrow(YamlLoadError);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /シンボル名/,
+    );
   });
 
   it('プロパティの値・範囲・段・量は小数で書ける', () => {
@@ -43,7 +45,7 @@ object_defs:
               self:
                 moisture: -0.35
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const def = codex.objects.get(codex.objectNames.getId('pond'));
     const moistureId = codex.propertyNames.getId('moisture');
     const prop = def.tryGetPropertyDef(moistureId)!;
@@ -79,7 +81,10 @@ object_defs:
       freshness:
         value: 5
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', core).load('foods.yaml', foods).build();
+    const codex = new WorldCodexYamlLoader()
+      .load('core.yaml', core)
+      .load('foods.yaml', foods)
+      .buildAndReset();
 
     expect(codex.objectNames.tryGetId('ground')).toBeDefined();
     expect(codex.objectNames.tryGetId('apple')).toBeDefined();
@@ -94,7 +99,9 @@ object_defs:
 object_defs:
   rock: {}
 `;
-    expect(() => new WorldCodexYamlLoader().load('a.yaml', a).load('b.yaml', b).build()).toThrowError(/rock/);
+    expect(() => new WorldCodexYamlLoader().load('a.yaml', a).load('b.yaml', b).buildAndReset()).toThrowError(
+      /rock/,
+    );
   });
 
   // ------------------------------------------------------------------
@@ -118,7 +125,7 @@ object_defs:
         value: 999
 `;
     expect(() =>
-      new WorldCodexYamlLoader().load('base.yaml', baseYaml).load('mod.yaml', modYaml).build(),
+      new WorldCodexYamlLoader().load('base.yaml', baseYaml).load('mod.yaml', modYaml).buildAndReset(),
     ).toThrowError(/torch/);
   });
 
@@ -141,7 +148,7 @@ object_defs:
   thing:
     traits: [trait_a, trait_b]
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/shared/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/shared/);
   });
 
   it('存在しないtraitへの参照はエラーになる', () => {
@@ -150,7 +157,9 @@ object_defs:
   thing:
     traits: [does_not_exist]
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/does_not_exist/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /does_not_exist/,
+    );
   });
 
   // ------------------------------------------------------------------
@@ -168,8 +177,10 @@ object_defs:
           - name: bad
             min: 1
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/min/);
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/シンボル型/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/min/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /シンボル型/,
+    );
   });
 
   it('stagesのalertは、その段にいる間に値がどの域にあるかとして読み込まれる', () => {
@@ -189,7 +200,7 @@ object_defs:
           - name: hydrated
             min: 60
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const prop = codex.objects
       .get(codex.objectNames.getId('character'))
       .tryGetPropertyDef(codex.propertyNames.getId('hydration'))!;
@@ -213,7 +224,7 @@ object_defs:
           - {name: normal, min: 36}
           - {name: hyperthermia, min: 38, alert: danger}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/単調/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/単調/);
   });
 
   it('rangeを持たなければ、両端が深刻な段を宣言できる（バーにならないため）', () => {
@@ -228,7 +239,7 @@ object_defs:
           - {name: normal, min: 36}
           - {name: hyperthermia, min: 38, alert: danger}
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const prop = codex.objects
       .get(codex.objectNames.getId('character'))
       .tryGetPropertyDef(codex.propertyNames.getId('body_temperature'))!;
@@ -255,7 +266,7 @@ object_defs:
           - {name: starving, alert: danger}
           - {name: fed, min: 80}
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const objectDef = codex.objects.get(codex.objectNames.getId('character'));
     const directionOf = (name: string) =>
       objectDef.tryGetPropertyDef(codex.propertyNames.getId(name))!.alertDirection;
@@ -275,8 +286,8 @@ object_defs:
           - name: dry
             alert: deadly
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrow(YamlLoadError);
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/deadly/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrow(YamlLoadError);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/deadly/);
   });
 
   // ------------------------------------------------------------------
@@ -296,7 +307,7 @@ object_defs:
           - {name: ember, min: 1, art: lit}
           - {name: blaze, min: 60, art: lit}
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const def = codex.objects.get(codex.objectNames.getId('campfire'));
 
     expect(def.artByStagePropertyGlobalId).toBe(codex.propertyNames.getId('heat'));
@@ -313,7 +324,7 @@ object_defs:
       fuel:
         value: 0
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/heat/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/heat/);
   });
 
   it('art_by_stageが指すプロパティがstagesを持たないとエラーになる', () => {
@@ -325,7 +336,7 @@ object_defs:
       heat:
         value: 0
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/stages/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/stages/);
   });
 
   it('art_by_stageが指す以外のプロパティの段にartを書くとエラーになる（1オブジェクト1絵の原則）', () => {
@@ -343,7 +354,7 @@ object_defs:
         stages:
           - {name: calm, art: sleepy}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/wariness/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/wariness/);
   });
 
   it('art_by_stageを持たないobject_defの段にartを書くとエラーになる', () => {
@@ -356,7 +367,9 @@ object_defs:
         stages:
           - {name: unconscious, art: fainted}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/consciousness/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /consciousness/,
+    );
   });
 
   it('art_by_stageは、trait側の宣言も参照できる', () => {
@@ -374,7 +387,7 @@ object_defs:
   campfire:
     traits: [hearth]
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const def = codex.objects.get(codex.objectNames.getId('campfire'));
 
     expect(def.artByStagePropertyGlobalId).toBe(codex.propertyNames.getId('heat'));
@@ -395,7 +408,9 @@ object_defs:
   campfire:
     traits: [trait_a, trait_b]
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/art_by_stage/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /art_by_stage/,
+    );
   });
 
   it('art_by_stageが指さないプロパティの段がartを宣言しているとエラーになる', () => {
@@ -409,8 +424,8 @@ object_defs:
       heat: {value: 0, stages: [{name: out}]}
       fuel: {value: 0, stages: [{name: none, art: empty}]}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrow(YamlLoadError);
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrow(YamlLoadError);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
       /段にartを書けるのは/,
     );
   });
@@ -429,8 +444,10 @@ object_defs:
           - {name: full, min: 20, alert: safe}
           - {name: low, min: 0, alert: fatal}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrow(YamlLoadError);
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/gaugeの向き/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrow(YamlLoadError);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /gaugeの向き/,
+    );
   });
 
   it('rangeを持つプロパティのalertが上下どちらの端でも深刻だとエラーになる', () => {
@@ -447,8 +464,8 @@ object_defs:
           - {name: normal, min: 36, alert: safe}
           - {name: hot, min: 39, alert: fatal}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrow(YamlLoadError);
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrow(YamlLoadError);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
       /上下どちらの端でも深刻/,
     );
   });
@@ -469,7 +486,7 @@ object_defs:
       contents:
         ${line}
 `;
-      const load = (): unknown => new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+      const load = (): unknown => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
       expect(load, line).toThrow(YamlLoadError);
       expect(load, line).toThrowError(expected);
     }
@@ -485,7 +502,7 @@ object_defs:
         cells:
           - {accept: {tag: item}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/同時に/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/同時に/);
   });
 
   it('cellsを並べた数がそのまま枠の数なので、cell_countは併記できない', () => {
@@ -498,7 +515,9 @@ object_defs:
         cells:
           - {accept: {tag: item}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/cell_count/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /cell_count/,
+    );
   });
 
   it('passivesはマッピング形式を許容せず、常に配列である必要がある', () => {
@@ -513,7 +532,7 @@ object_defs:
             self:
               fuel: -1
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/配列/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/配列/);
   });
 
   it('条件の異なる複数のpassivesブロックはそれぞれ別のゲート付き効果になる', () => {
@@ -541,7 +560,7 @@ object_defs:
           parent:
             attack: 2
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const attackId = codex.propertyNames.getId('attack');
     const mainHandId = codex.slotNames.getId('main_hand');
     const offHandId = codex.slotNames.getId('off_hand');
@@ -571,7 +590,7 @@ object_defs:
         on_min:
           destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/range/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/range/);
   });
 
   it('modifyで書き換えられるプロパティにon_minを書くとエラーになる', () => {
@@ -590,7 +609,7 @@ object_defs:
     passives:
       - modify: {parent: {blood: 50}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/charm/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/charm/);
   });
 
   it('inheritするプロパティにon_maxを書くとエラーになる', () => {
@@ -606,7 +625,7 @@ object_defs:
         on_max:
           destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/inherit/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/inherit/);
   });
 
   it('fillを宣言する型がweightを持たないとエラーになる', () => {
@@ -618,7 +637,7 @@ object_defs:
       fill: {value: 100}
       density: {value: 1}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/weight/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/weight/);
   });
 
   it('weightにon_maxを書くとエラーになる（中身の伝播がmodifyだから）', () => {
@@ -634,7 +653,7 @@ object_defs:
         on_max:
           destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_max/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/on_max/);
   });
 
   it('required_propsが要求するプロパティを持たない型はエラーになる', () => {
@@ -646,7 +665,7 @@ object_defs:
   stone:
     tags: [item]
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/weight/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/weight/);
   });
 
   it('required_propsの要求は複数のファイルから足せる', () => {
@@ -665,7 +684,7 @@ required_props:
   item: [volume]
 `;
     expect(() =>
-      new WorldCodexYamlLoader().load('core.yaml', base).load('pack.yaml', pack).build(),
+      new WorldCodexYamlLoader().load('core.yaml', base).load('pack.yaml', pack).buildAndReset(),
     ).toThrowError(/volume/);
   });
 
@@ -678,7 +697,7 @@ object_defs:
     props:
       height: {value: 1000}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).not.toThrow();
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).not.toThrow();
   });
 
   it('on_minの対象にactorを指定するとエラーになる（rangeイベントに操作者は居ない）', () => {
@@ -692,7 +711,7 @@ object_defs:
         on_min:
           destroy: actor
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/actor/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/actor/);
   });
 
   it('propの未知のキーはエラーになる', () => {
@@ -706,8 +725,12 @@ object_defs:
         on_exhausted:
           destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/未知のキー/);
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/on_exhausted/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /未知のキー/,
+    );
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /on_exhausted/,
+    );
   });
 
   // ------------------------------------------------------------------
@@ -724,7 +747,7 @@ object_defs:
       life:
         value: 2
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrow(YamlLoadError);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrow(YamlLoadError);
   });
 
   // ------------------------------------------------------------------
@@ -752,7 +775,7 @@ object_defs:
       satiety:
         value: 100
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
 
     const apple = codex.objects.get(codex.objectNames.getId('apple'));
     const satietyId = codex.propertyNames.getId('satiety');
@@ -786,7 +809,7 @@ object_defs:
       durability:
         value: 10
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const durabilityId = codex.propertyNames.getId('durability');
 
     const wood = codex.objects.get(codex.objectNames.getId('wood'));
@@ -829,7 +852,7 @@ object_defs:
   thing:
     traits: [trait_a, trait_b]
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/use/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/use/);
   });
 
   it('actionsでdragged対象を指定するとエラーになる', () => {
@@ -841,7 +864,7 @@ object_defs:
         trigger: menu
         destroy: dragged
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/dragged/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/dragged/);
   });
 
   it('activeでchild対象を指定するとエラーになる', () => {
@@ -853,7 +876,7 @@ object_defs:
         trigger: menu
         destroy: child
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/child/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/child/);
   });
 
   it('triggerに未対応の値を指定するとエラーになる', () => {
@@ -865,7 +888,7 @@ object_defs:
         trigger: sometimes
         destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/trigger/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/trigger/);
   });
 
   it('triggerを書かないとエラーになる（何が起こすか分からない操作を作らない）', () => {
@@ -876,7 +899,7 @@ object_defs:
       use:
         destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/trigger/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/trigger/);
   });
 
   it('きっかけがdragでないのにallow_multipleを書くと未知のキーになる', () => {
@@ -889,7 +912,9 @@ object_defs:
         allow_multiple: true
         destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/allow_multiple/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /allow_multiple/,
+    );
   });
 
   it('objectにworldを指定するとエラーになる', () => {
@@ -903,7 +928,7 @@ object_defs:
           - {subject: world, prop: day, gt: 0}
         destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/world/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/world/);
   });
 
   it('conditionのvalueにmaxを指定するとエラーになる', () => {
@@ -917,7 +942,7 @@ object_defs:
           - {subject: actor, prop: satiety, lt: max}
         destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/max/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/max/);
   });
 
   it('conditionの葉はobject/opを省略するとself/eqとして扱われる', () => {
@@ -934,7 +959,7 @@ object_defs:
           - {prop: mode, eq: 1}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
 
     const thing = codex.objects.get(codex.objectNames.getId('thing'));
     const modeId = codex.propertyNames.getId('mode');
@@ -957,7 +982,7 @@ object_defs:
           - {in_slot: equip, prop: hp, eq: 1}
         destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/slot/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/slot/);
   });
 
   it('その主語では使えない演算子キーを書くとエラーになる', () => {
@@ -971,7 +996,9 @@ object_defs:
           - {in_slot: equip, lt: 5}
         destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/未知のキー/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /未知のキー/,
+    );
   });
 
   it('演算子キーを1つも書かないとエラーになる', () => {
@@ -987,7 +1014,9 @@ object_defs:
           - {prop: durability}
         destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/演算子キー/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /演算子キー/,
+    );
   });
 
   it('1つの葉に演算子キーを並べると、そのすべてを満たすときだけ真になる（暗黙のAND）', () => {
@@ -1003,7 +1032,7 @@ object_defs:
           - {prop: temperature, gte: 20, lt: 30}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const session = new WorldSession(codex);
     const thingDef = codex.objects.get(codex.objectNames.getId('thing'));
     const temperature = codex.propertyNames.getId('temperature');
@@ -1037,7 +1066,7 @@ object_defs:
           - not: {prop: load, in_stage: too_heavy}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const session = new WorldSession(codex);
     const thingDef = codex.objects.get(codex.objectNames.getId('thing'));
     const load = codex.propertyNames.getId('load');
@@ -1065,7 +1094,7 @@ object_defs:
             not: {prop: durability, lte: 0}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const session = new WorldSession(codex);
     const thing = new WorldObject(1, codex.objects.get(codex.objectNames.getId('thing')), session);
 
@@ -1091,7 +1120,7 @@ object_defs:
   blue_marker:
     tags: [marker, blue]
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const contentSlotId = codex.slotNames.getId('content');
 
     const session = new WorldSession(codex);
@@ -1118,7 +1147,7 @@ object_defs:
   blue_marker2:
     tags: [marker, blue]
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const contentSlotId = codex.slotNames.getId('content');
 
     const session = new WorldSession(codex);
@@ -1145,7 +1174,7 @@ object_defs:
           - {slot: content}
         destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/matches/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/matches/);
   });
 
   it('slotを伴わないmatchesは、subject自身への型判定としてパースされる', () => {
@@ -1160,7 +1189,7 @@ object_defs:
           - {matches: {tag: red}}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const session = new WorldSession(codex);
     const thing = new WorldObject(1, codex.objects.get(codex.objectNames.getId('thing')), session);
 
@@ -1185,7 +1214,7 @@ object_defs:
   sapphire:
     tags: [gem]
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const offeringSlotId = codex.slotNames.getId('offering');
     const session = new WorldSession(codex);
     const spawn = (name: string, id: number): WorldObject =>
@@ -1223,7 +1252,7 @@ object_defs:
     slots:
       items: {}
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const session = new WorldSession(codex);
     const spawn = (name: string, id: number): WorldObject =>
       new WorldObject(id, codex.objects.get(codex.objectNames.getId(name)), session);
@@ -1270,7 +1299,7 @@ object_defs:
       content:
         value: water
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
 
     const session = new WorldSession(codex);
     const bottle = new WorldObject(1, codex.objects.get(codex.objectNames.getId('bottle')), session);
@@ -1308,7 +1337,7 @@ object_defs:
           - {prop: content, in: {subject: dragged, prop: content}}
         destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/in/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/in/);
   });
 
   it('setのvalueにプロパティ参照を書くとエラーになる（リテラルのみ、9.2節）', () => {
@@ -1330,7 +1359,9 @@ object_defs:
       content:
         value: oil
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/スカラー値/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /スカラー値/,
+    );
   });
 
   it('anyコンビネータはいずれかの葉が真であれば一致する', () => {
@@ -1352,7 +1383,7 @@ object_defs:
               - {prop: mp, gte: 5}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
 
     const thing = codex.objects.get(codex.objectNames.getId('thing'));
     const session = new WorldSession(codex);
@@ -1382,7 +1413,7 @@ object_defs:
           - not: {prop: locked, eq: 1}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
 
     const session = new WorldSession(codex);
     const thingInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('thing')), session);
@@ -1417,7 +1448,7 @@ object_defs:
       warmth:
         value: 0
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const heatId = codex.propertyNames.getId('heat');
     const warmthId = codex.propertyNames.getId('warmth');
     const fuelSlotId = codex.slotNames.getId('fuel_slot');
@@ -1458,7 +1489,7 @@ object_defs:
         set: {self: {n: 5}}
         add: {self: {n: 1}}
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const session = new WorldSession(codex);
     const nId = codex.propertyNames.getId('n');
     const tallyDef = codex.objects.get(codex.objectNames.getId('tally'));
@@ -1488,7 +1519,7 @@ object_defs:
           - weight: 1
             set: {self: {mark: 7}}
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const session = new WorldSession(codex);
     const worker = new WorldObject(1, codex.objects.get(codex.objectNames.getId('worker')), session);
 
@@ -1510,7 +1541,7 @@ object_defs:
         cell: {accept: {tag: spice, object: raw_meat}}
   raw_meat: {}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
       /同時に指定できません/,
     );
   });
@@ -1523,7 +1554,7 @@ object_defs:
       ingredients:
         cell: {accept: {}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
       /いずれかが必要です/,
     );
   });
@@ -1538,7 +1569,7 @@ object_defs:
         destroy: dragged
   burning_tinder3: {}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
       /同時に指定できません/,
     );
   });
@@ -1552,7 +1583,7 @@ object_defs:
         trigger: {drag: tinder}
         destroy: dragged
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
       /マッピングである必要があります/,
     );
   });
@@ -1566,7 +1597,7 @@ object_defs:
         trigger: {drag: {tag: offering}, allow_multiple: true}
         destroy: dragged
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
       /器を1つだけ持つ効果です/,
     );
   });
@@ -1587,7 +1618,7 @@ object_defs:
           - weight: 1
             destroy: dragged
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
       /器を1つだけ持つ効果です/,
     );
   });
@@ -1609,7 +1640,7 @@ object_defs:
       hour:
         value: 0
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/range/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/range/);
   });
 
   it('on_maxをパースし、実行時に適用する', () => {
@@ -1626,7 +1657,7 @@ object_defs:
       hour:
         value: 0
 `;
-    const codex = new WorldCodexYamlLoader().load('clock.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('clock.yaml', yaml).buildAndReset();
 
     const clock = codex.objects.get(codex.objectNames.getId('clock'));
 
@@ -1650,7 +1681,7 @@ object_defs:
         on_max:
           add: {actor: {minute: -60}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/actor/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/actor/);
   });
 
   it('on_maxの対象にparentを指定できる（遡る起点は自分なので解決先を持つ）', () => {
@@ -1664,7 +1695,7 @@ object_defs:
         on_max:
           add: {parent: {hour: 1}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).not.toThrow();
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).not.toThrow();
   });
 
   it('on_maxを省略するとselfをmaxへクランプする既定効果になる', () => {
@@ -1678,7 +1709,7 @@ object_defs:
         value: 90
         range: {min: 0, max: 100}
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
 
     const gauge = codex.objects.get(codex.objectNames.getId('gauge'));
 
@@ -1704,7 +1735,7 @@ object_defs:
         on_min:
           set: {self: {minute: 0}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/range/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/range/);
   });
 
   it('on_minの対象にdraggedを指定するとエラーになる（rangeイベントに重ねる相手は居ない）', () => {
@@ -1718,7 +1749,7 @@ object_defs:
         on_min:
           add: {dragged: {minute: 60}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/dragged/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/dragged/);
   });
 
   it('on_minをパースし、実行時に適用する', () => {
@@ -1736,7 +1767,7 @@ object_defs:
       hour:
         value: 1
 `;
-    const codex = new WorldCodexYamlLoader().load('clock.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('clock.yaml', yaml).buildAndReset();
 
     const clock = codex.objects.get(codex.objectNames.getId('clock'));
 
@@ -1758,7 +1789,7 @@ object_defs:
         value: 10
         range: {min: 0, max: 100}
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
 
     const gauge = codex.objects.get(codex.objectNames.getId('gauge'));
 
@@ -1790,7 +1821,7 @@ object_defs:
           - {subject: ancestor, prop: weather, eq: 1}
         destroy: self
 `;
-    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     const contentsSlotId = codex.slotNames.getId('contents');
     const pocketSlotId = codex.slotNames.getId('pocket');
 
@@ -1818,7 +1849,7 @@ object_defs:
         trigger: menu
         destroy: ancestor
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/ancestor/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/ancestor/);
   });
 
   it('in_slot判定でobjectにancestorを指定するとエラーになる', () => {
@@ -1832,6 +1863,6 @@ object_defs:
           - {subject: ancestor, in_slot: somewhere}
         destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).build()).toThrowError(/ancestor/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/ancestor/);
   });
 });

@@ -31,7 +31,7 @@ describe('locations.yamlの土地・道定義', () => {
   beforeAll(() => {
     // 土地の発見物（foods.yamlの食料等）・キャラクタ（characters/）への参照があるため、
     // 単体ファイルではなくディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   function def(name: string): ObjectDef {

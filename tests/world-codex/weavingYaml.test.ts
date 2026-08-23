@@ -23,7 +23,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
   beforeAll(() => {
     // 葉を採るヤシの木（coconut.yaml）・刃物（tools.yaml）・土地（locations.yaml）への
     // ファイルをまたぐ参照があるため、ディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   beforeEach(() => {

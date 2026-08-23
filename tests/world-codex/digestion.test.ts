@@ -25,7 +25,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   let hydrationId: number;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     satietyId = codex.propertyNames.getId('satiety');
     carbohydrateId = codex.propertyNames.getId('carbohydrate');
     bodyFatId = codex.propertyNames.getId('body_fat');

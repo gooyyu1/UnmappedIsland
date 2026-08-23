@@ -60,15 +60,15 @@ export function staticValueOf(
  */
 export function trackingResolverOf(def: ObjectDef, outer: StaticValueResolver | undefined): TrackingResolver {
   const inner = staticResolverOf(def, outer);
-  let unresolved = false;
+  let hit = false;
   return {
     resolve: (root, propertyGlobalId) => {
       const value = inner(root, propertyGlobalId);
-      if (value === undefined) unresolved = true;
+      if (value === undefined) hit = true;
       return value;
     },
-    get unresolved() {
-      return unresolved;
+    get hitUnresolvedReference() {
+      return hit;
     },
   };
 }
@@ -76,7 +76,7 @@ export function trackingResolverOf(def: ObjectDef, outer: StaticValueResolver | 
 /** 解決器と、そこまでに解けない参照へ当たったかどうか（trackingResolverOf）。 */
 export interface TrackingResolver {
   readonly resolve: StaticValueResolver;
-  readonly unresolved: boolean;
+  readonly hitUnresolvedReference: boolean;
 }
 
 /** 宣言に書かれた1つの数値（重み・所要時間）を数値へ解く。参照が解けなければundefined。 */

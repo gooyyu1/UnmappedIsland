@@ -12,7 +12,7 @@ import { seededRng } from '../../src/domain/Rng';
 // 次の状態を抽選し、残り時間自体も再ロールする」パターンがこの文法に依存する。
 describe('rangeイベントのpick文法', () => {
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('test.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('test.yaml', yaml).buildAndReset();
   }
 
   function instantiate(codex: WorldCodex, objectDefName: string, session: WorldSession): WorldObject {

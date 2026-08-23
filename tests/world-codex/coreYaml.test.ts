@@ -10,14 +10,14 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
 
 function load(yamlText: string): WorldCodex {
-  return new WorldCodexYamlLoader().load('core.yaml', yamlText).build();
+  return new WorldCodexYamlLoader().load('core.yaml', yamlText).buildAndReset();
 }
 
 describe('core.yamlのworld定義', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlFile(new WorldCodexYamlLoader(), worldCodexPath('core.yaml')).build();
+    codex = loadYamlFile(new WorldCodexYamlLoader(), worldCodexPath('core.yaml')).buildAndReset();
   });
 
   function propOf(def: ObjectDef, propertyName: string): PropertyDef {
@@ -263,7 +263,7 @@ object_defs:
     const loader = new WorldCodexYamlLoader();
     loadYamlFile(loader, worldCodexPath('core.yaml'));
     loader.load('hut.yaml', yaml);
-    const testCodex = loader.build();
+    const testCodex = loader.buildAndReset();
 
     const hut = testCodex.objects.get(testCodex.objectNames.getId('test_hut'));
 

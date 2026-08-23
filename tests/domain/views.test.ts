@@ -13,7 +13,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  */
 describe('World/PlayerCharacter/Locationビュー', () => {
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   it('Worldはday/hour/minute/weatherを公開する', () => {

@@ -106,7 +106,7 @@ object_defs:
   beforeEach(() => {
     const loader = new WorldCodexYamlLoader();
     loader.load('gains.yaml', yaml);
-    codex = loader.build();
+    codex = loader.buildAndReset();
 
     session = new WorldSession(codex, undefined, fixedRng(0));
     const world = spawn('world');

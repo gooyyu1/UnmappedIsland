@@ -9,7 +9,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
  * 評価に対する自動テスト。
  */
 describe('recipes', () => {
-  const load = (yaml: string) => new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+  const load = (yaml: string) => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
 
   const recipesOf = (codex: ReturnType<typeof load>, objectName: string) =>
     codex.objects.get(codex.objectNames.getId(objectName)).recipesProducingThis;

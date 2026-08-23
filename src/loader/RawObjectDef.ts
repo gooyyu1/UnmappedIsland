@@ -1,10 +1,10 @@
 import type { YAMLMap } from 'yaml';
 import { asMap, entriesInOrder, requireScalar, tryGetBool, tryGetMap, tryGetSeq } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { built } from './parseCommon';
-import { parseProp } from './parseProperties';
+import { withYamlContext } from './parseCommon';
+import { parsePropAppendingPassives } from './parseProperties';
 import { parseSlot } from './parseSlots';
-import { parsePassive } from './parsePassives';
+import { parsePassiveInto } from './parsePassives';
 import { parseInteractions } from './parseInteractions';
 import { parseRecipes } from './parseRecipes';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
@@ -68,7 +68,7 @@ export class RawObjectDef {
   readFields(): void {
     const context = `object_defs.'${this.name}'`;
 
-    this.body.read(this.node, context);
+    this.body.readFields(this.node, context);
     this.isSingleton = tryGetBool(this.node, 'singleton', context) ?? false;
     this.recipes = tryGetMap(this.node, 'recipes', context);
     this.variationAxes = tryGetMap(this.node, 'variation_axes', context);
@@ -106,7 +106,7 @@ export class RawObjectDef {
     if (merged.props !== undefined)
       for (const [propName, propValueNode] of entriesInOrder(merged.props))
         propertyDefs.push(
-          parseProp(
+          parsePropAppendingPassives(
             loader,
             this.name,
             propName,
@@ -131,7 +131,7 @@ export class RawObjectDef {
     );
 
     for (const passiveNode of merged.passives)
-      parsePassive(loader, passives, this.name, passiveNode, undefined, undefined);
+      parsePassiveInto(loader, passives, this.name, passiveNode, undefined, undefined);
 
     // 中身の重さの伝播は著者に書かせず、エンジンが同じ`modify`の形で生やす（containerPropagation）。
     passives.push(...containerPropagationPassives(this.name, propertyDefs, loader.engine));
@@ -174,7 +174,7 @@ export class RawObjectDef {
         );
     }
 
-    return built(
+    return withYamlContext(
       `'${this.name}'`,
       () =>
         new ObjectDef(

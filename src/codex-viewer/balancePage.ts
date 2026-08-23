@@ -61,8 +61,8 @@ function renderBalancePage(view: CodexView, tables: BalanceTables): string {
     `<p class="muted">定義だけから計算した「時間あたりの収支」。時間はすべて<b>労働時間</b>で、` +
     `待ち時間（罠の周期など）は含まない。` +
     `同じ内容は <code>docs/diagnostics/BalanceStats.md</code> にも書き出される。</p>` +
-    methodHtml() +
-    indexHtml(view, tables) +
+    measurementMethodHtml() +
+    placeIndexHtml(view, tables) +
     chainsHtml(view, tables) +
     gapsHtml(view, tables) +
     objectCostsHtml(view, tables) +
@@ -83,7 +83,7 @@ function balanceSectionId(section: string): string {
   return `balance-${section}`;
 }
 
-function methodHtml(): string {
+function measurementMethodHtml(): string {
   return (
     `<details class="balance-method"><summary>計測方法</summary>` +
     `<ul>` +
@@ -109,7 +109,7 @@ function methodHtml(): string {
   );
 }
 
-function indexHtml(view: CodexView, tables: BalanceTables): string {
+function placeIndexHtml(view: CodexView, tables: BalanceTables): string {
   const places = tables.places
     .filter((place) => place.properties.length > 0)
     .map(
@@ -275,7 +275,9 @@ function routeHtml(view: CodexView, entry: PropertyRoute): string {
     `<dt>1単位あたり</dt><dd>${formatNumber(entry.perUnitMinutes, 2)}分` +
     `<span class="muted">（探索 ${formatNumber(route.exploreMinutes / entry.gain, 2)} ／ ` +
     `それ以外 ${formatNumber(route.craftMinutes / entry.gain, 2)}）</span></dd>` +
-    (entry.deviceCount === undefined ? '' : `<dt>設備数</dt><dd>${formatNumber(entry.deviceCount, 1)}</dd>`) +
+    (entry.simultaneousDeviceCount === undefined
+      ? ''
+      : `<dt>設備数</dt><dd>${formatNumber(entry.simultaneousDeviceCount, 1)}</dd>`) +
     `<dt>1回で返る値</dt><dd>${amountListHtml(route.deltas)}</dd>` +
     `<dt>前提</dt><dd>${prerequisitesHtml(view, route)}</dd>` +
     `<dt>工程</dt><dd class="route-steps">` +
@@ -490,7 +492,7 @@ function supplyHtml(view: CodexView, tables: BalanceTables): string {
     objectLinkHtml(view, row.ownerName, true),
     `<code>${escapeHtml(row.stepName)}</code>` +
       (row.kind === 'periodic' ? ' <span class="muted">periodic</span>' : ''),
-    `${formatNumber(row.laborMinutes, 0)}${row.unresolved ? ' <span class="warn" title="定義だけでは決まらない">?</span>' : ''}`,
+    `${formatNumber(row.laborMinutes, 0)}${row.hasUnresolvedReferences ? ' <span class="warn" title="定義だけでは決まらない">?</span>' : ''}`,
     row.elapsedMinutes === row.laborMinutes ? '—' : formatNumber(row.elapsedMinutes, 0),
     row.spawns.length === 0
       ? '—'

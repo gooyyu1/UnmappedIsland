@@ -33,7 +33,7 @@ describe('空の演出（世界→意匠 通し）', () => {
   const HOT = 1920;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   it('夜は天気によらず日射が0になり、真夜中の快晴も明るくならない', () => {

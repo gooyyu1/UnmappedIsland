@@ -16,7 +16,7 @@ describe('固形物のかさと入れ物の容量', () => {
   let itemTagId: number;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     volumeId = codex.propertyNames.getId('volume');
     itemTagId = codex.tagNames.getId('item');
   });

@@ -18,7 +18,7 @@ describe('テスト用シナリオ', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   function load(name: string) {

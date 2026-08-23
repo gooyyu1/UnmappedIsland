@@ -56,7 +56,7 @@ object_defs:
   const setUp = (): Fixture => {
     const loader = new WorldCodexYamlLoader();
     loader.load('spill.yaml', yaml);
-    const codex = loader.build();
+    const codex = loader.buildAndReset();
     const session = new WorldSession(codex);
     const spawn = (name: string): WorldObject => session.createObject(codex.objectNames.getId(name));
 

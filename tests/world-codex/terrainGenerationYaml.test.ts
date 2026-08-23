@@ -17,7 +17,7 @@ describe('terrain_generation.yamlの地形生成定義', () => {
   let generation: GenerationDefs;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     if (codex.generation === undefined) throw new Error('地形生成定義が読み込まれていません。');
     generation = codex.generation;
   });

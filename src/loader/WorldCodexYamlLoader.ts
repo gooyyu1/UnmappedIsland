@@ -21,7 +21,7 @@ import { WorldCodex } from '../domain/WorldCodex';
 import type { AxisDef } from '../domain/generation/AxisDef';
 import type { GenerationScopeDef } from '../domain/generation/GenerationScopeDef';
 import type { LocationTypeDef } from '../domain/generation/LocationTypeDef';
-import { built } from './parseCommon';
+import { withYamlContext } from './parseCommon';
 
 /**
  * YAMLファイル群からWorldCodexを組み立てるロード処理の入口（GameElementDefinition.md 3節）。
@@ -33,7 +33,7 @@ import { built } from './parseCommon';
  * 作る時点で確定する。
  *
  * load系メソッドは何度でも呼べ、呼ぶたびにこのインスタンスへ追記する（thisを返すため
- * `new WorldCodexYamlLoader().load(label, text).build()`と書ける）。
+ * `new WorldCodexYamlLoader().load(label, text).buildAndReset()`と書ける）。
  *
  * object_defs/trait名の重複は、呼び出し元・ファイル・ディレクトリを問わず常にエラー（3.3節の
  * 厳格モード）。「後勝ちで上書き」の規則は一切持たない（MODによる差し替えは専用のpatch文法で
@@ -180,7 +180,7 @@ export class WorldCodexYamlLoader {
 
   /** 蓄積したobject_defs/traitsから不変のWorldCodexを組み立てて返す。呼び終わると
    * このインスタンスの蓄積状態は初期化される。 */
-  build(): WorldCodex {
+  buildAndReset(): WorldCodex {
     applyPatches(this.patches, this.globalObjectDefs);
 
     const objectDefsByGlobalId = new Map<number, ObjectDef>();
@@ -222,7 +222,7 @@ export class WorldCodexYamlLoader {
     const vocabulary = new WorldVocabulary(this.propertyNames, this.slotNames, this.tagNames);
     const generation = buildGenerationDefs(this, objectDefsByGlobalId);
     // 世界全体を見て初めて言える矛盾（型をまたぐ宣言どうしの噛み合わせ）は、両方を持つWorldCodexが見る。
-    const codex = built(
+    const codex = withYamlContext(
       '世界全体',
       () =>
         new WorldCodex(

@@ -30,7 +30,7 @@ describe('pottery.yamlの土器の連鎖', () => {
   beforeAll(() => {
     // 粘土の湧き先（locations.yaml）・燃料（timber.yaml）・成果物の甕（liquid_containers.yaml）へ
     // ファイルをまたぐ参照があるため、ディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   beforeEach(() => {

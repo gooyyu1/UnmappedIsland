@@ -66,7 +66,7 @@ object_defs:
   let changes: WorldChange[];
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('changes.yaml', YAML).build();
+    codex = new WorldCodexYamlLoader().load('changes.yaml', YAML).buildAndReset();
     open(SMASHES);
   });
 

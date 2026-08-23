@@ -93,7 +93,7 @@ object_defs:
     // 時間を進めるにはWorldを持つセッションが要るので、時計を持つworldを一緒に読む。
     const loader = new WorldCodexYamlLoader();
     loader.load('world.yaml', WORLD_TIME_YAML);
-    codex = loader.load('crafting.yaml', YAML).build();
+    codex = loader.load('crafting.yaml', YAML).buildAndReset();
 
     session = new WorldSession(codex);
     const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), session);
@@ -290,7 +290,7 @@ object_defs:
   beforeEach(() => {
     const loader = new WorldCodexYamlLoader();
     loader.load('world.yaml', WORLD_TIME_YAML);
-    codex = loader.load('crafting.yaml', YAML).build();
+    codex = loader.load('crafting.yaml', YAML).buildAndReset();
 
     session = new WorldSession(codex);
     const worldInstance = new WorldObject(0, codex.objects.get(idOf('world')), session);

@@ -83,7 +83,7 @@ object_defs:
   };
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('become.test', YAML).build();
+    codex = new WorldCodexYamlLoader().load('become.test', YAML).buildAndReset();
     session = new WorldSession(codex);
     ground = session.createObject(idOf('ground'));
   });

@@ -16,7 +16,7 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { built, parseNumberLiteral, parseNumberOrSymbol, parseTypeMatchRule } from './parseCommon';
+import { withYamlContext, parseNumberLiteral, parseNumberOrSymbol, parseTypeMatchRule } from './parseCommon';
 import { parseSubjectRoot, requireResolvable } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
@@ -264,7 +264,7 @@ function parseTransfer(
     context,
   );
 
-  return built(
+  return withYamlContext(
     context,
     () =>
       new TransferEffect(
@@ -339,7 +339,7 @@ function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap)
 
   const count = tryGetNumber(map, 'count', context) ?? 1;
 
-  return built(
+  return withYamlContext(
     context,
     () =>
       new SpawnEffect(

@@ -112,7 +112,7 @@ export class CodexView {
   // ------------------------------------------------------------------
 
   objectLabel(name: string): string {
-    return this.label(name, this.objectDisplayName(name));
+    return this.identifierOrDisplayName(name, this.objectDisplayName(name));
   }
 
   /**
@@ -145,12 +145,15 @@ export class CodexView {
    * 持ち主が分かっていればそれを使い、分からなければdefaultエントリだけで引く。
    */
   propertyLabel(objectName: string | undefined, propertyName: string): string {
-    return this.label(propertyName, this.propertyTexts(objectName, propertyName).displayName);
+    return this.identifierOrDisplayName(
+      propertyName,
+      this.propertyTexts(objectName, propertyName).displayName,
+    );
   }
 
   /** 操作の表示名。オブジェクトのメンバーなので持ち主とセットで引く。 */
   interactionLabel(objectName: string, name: string): string {
-    return this.label(name, this.interactionTexts(objectName, name).displayName);
+    return this.identifierOrDisplayName(name, this.interactionTexts(objectName, name).displayName);
   }
 
   interactionTexts(objectName: string, name: string): Texts {
@@ -158,20 +161,20 @@ export class CodexView {
   }
 
   slotLabel(name: string): string {
-    return this.label(name, this.locale.slot(name).displayName);
+    return this.identifierOrDisplayName(name, this.locale.slot(name).displayName);
   }
 
   symbolLabel(name: string): string {
-    return this.label(name, this.locale.symbol(name).displayName);
+    return this.identifierOrDisplayName(name, this.locale.symbol(name).displayName);
   }
 
   propertyTagLabel(name: string): string {
-    return this.label(name, this.locale.propertyTag(name).displayName);
+    return this.identifierOrDisplayName(name, this.locale.propertyTag(name).displayName);
   }
 
   /** 告げる出来事（9.8節のsignal）の文言。札の上に出るのと同じ言葉。 */
   signalLabel(name: string): string {
-    return this.label(name, this.locale.signal(name));
+    return this.identifierOrDisplayName(name, this.locale.signal(name));
   }
 
   /**
@@ -203,7 +206,7 @@ export class CodexView {
     return this.locale.object(objectName ?? '').prop(propertyName);
   }
 
-  private label(identifier: string, displayName: string): string {
+  private identifierOrDisplayName(identifier: string, displayName: string): string {
     return this.namingMode === 'identifier' ? identifier : displayName;
   }
 

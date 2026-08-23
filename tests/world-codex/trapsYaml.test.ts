@@ -36,7 +36,7 @@ describe('traps.yamlのくくり罠', () => {
   let herbivoreWeightId: number;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     warinessId = codex.propertyNames.getId('wariness');
     vulnerabilityId = codex.propertyNames.getId('vulnerability');
     bloodId = codex.propertyNames.getId('blood');

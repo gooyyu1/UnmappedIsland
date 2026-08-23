@@ -23,7 +23,7 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
   beforeAll(() => {
     // 刃物（tools.yaml）・土地（locations.yaml）へのファイルをまたぐ参照があるため、
     // ディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   beforeEach(() => {

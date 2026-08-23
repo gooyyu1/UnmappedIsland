@@ -16,7 +16,7 @@ describe('空の絵', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   /** 絵はまだ1枚も無いことがある（ディレクトリごと存在しない）。 */

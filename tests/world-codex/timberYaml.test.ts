@@ -19,7 +19,7 @@ describe('timber.yamlの伐採', () => {
   let player: WorldObject;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   beforeEach(() => {

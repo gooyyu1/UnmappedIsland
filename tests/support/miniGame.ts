@@ -86,7 +86,7 @@ export function miniGame(yaml = '', options: MiniGameOptions = {}): MiniGame {
   loader.load('world.yaml', WORLD_TIME_YAML);
   loader.load('skeleton.yaml', SKELETON);
   if (yaml.trim() !== '') loader.load('test.yaml', yaml);
-  const codex = loader.build();
+  const codex = loader.buildAndReset();
 
   // NewGame.startと同じ順序で組み立てる（worldインスタンスもセッションに属させるため）。
   const session = new WorldSession(codex, undefined, options.rng);

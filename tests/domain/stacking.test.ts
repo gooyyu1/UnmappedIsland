@@ -16,7 +16,7 @@ describe('StackingTests', () => {
   });
 
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   /** 1つのcodexから作る物は同じセッションに属する（WorldObject.session）。 */

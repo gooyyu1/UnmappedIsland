@@ -32,7 +32,7 @@ describe('fire.yamlの火の連鎖', () => {
   beforeAll(() => {
     // 燃料（locations.yaml）・火口（coconut.yaml・fiber.yaml）・料理（animals.yaml）への
     // ファイルをまたぐ参照があるため、ディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   beforeEach(() => {

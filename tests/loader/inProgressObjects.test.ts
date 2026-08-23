@@ -33,7 +33,7 @@ object_defs:
             duration: 10
 `;
 
-  const load = (yaml: string) => new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+  const load = (yaml: string) => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
 
   it('レシピごとに1つ生成され、完成品のタグとwipを持つ', () => {
     const codex = load(AXE);

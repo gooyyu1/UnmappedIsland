@@ -129,14 +129,14 @@ object_defs:
   hut:
     tags: [item]
     recipes:
-      built:
+      withYamlContext:
         steps:
           - requires: [{object: post, count: 2, consume: true}]
             duration: 30
           - requires: [{object: leaf, count: 3, consume: true}]
             duration: 60
 `);
-    const wip = mini.createObject(inProgressObjectName('hut', 'built'));
+    const wip = mini.createObject(inProgressObjectName('hut', 'withYamlContext'));
 
     const materials = craftingMaterials(wip, mini.codex);
 

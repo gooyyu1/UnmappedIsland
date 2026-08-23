@@ -79,7 +79,7 @@ object_defs:
   let beast: WorldObject;
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('signals.yaml', YAML).build();
+    codex = new WorldCodexYamlLoader().load('signals.yaml', YAML).buildAndReset();
     open(HITS);
   });
 
@@ -261,7 +261,7 @@ object_defs:
         trigger: menu
         signal: ${signal}
 `;
-      return () => new WorldCodexYamlLoader().load('bad.yaml', yaml).build();
+      return () => new WorldCodexYamlLoader().load('bad.yaml', yaml).buildAndReset();
     };
 
     expect(load('{name: missed}'), '対象キーではない').toThrow(YamlLoadError);

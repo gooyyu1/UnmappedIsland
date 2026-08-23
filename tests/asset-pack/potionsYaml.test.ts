@@ -26,7 +26,7 @@ describe('サンプルアセットパックの薬', () => {
     // patchの当たる先（locations.yaml）が要るので、同梱ぶんを丸ごと読んだうえでパックを重ねる。
     const loader = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR);
     loadYamlFile(loader, samplePackPath('world-codex/potions.yaml'));
-    codex = loader.build();
+    codex = loader.buildAndReset();
   });
 
   /** 1つのアクションの書き出し（describe）。探索候補に載ったかを字面で確かめる。 */

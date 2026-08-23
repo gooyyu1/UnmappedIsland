@@ -14,7 +14,7 @@ object_defs:
 `;
 
   function load() {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   it('同じObjectDefのオブジェクトはスタックへ合流する', () => {

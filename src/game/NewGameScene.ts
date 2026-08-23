@@ -9,7 +9,7 @@ import { ISLAND_NAME_MAX_LENGTH, SEED_MAX } from '../save/SaveData';
 import { SaveSlots } from '../save/SaveSlots';
 import {
   createSaveData,
-  normalizeIslandName,
+  normalizedIslandNameOrUndefined,
   parseSeed,
   randomCharacter,
   randomIslandName,
@@ -440,7 +440,7 @@ export class NewGameScene extends ResponsiveScene {
   }
 
   private startGame(): void {
-    const islandName = normalizeIslandName(this.islandName);
+    const islandName = normalizedIslandNameOrUndefined(this.islandName);
     if (islandName === undefined) {
       this.showNotice('島の名前を入力してください（ランダムボタンでも入力できます）');
       return;

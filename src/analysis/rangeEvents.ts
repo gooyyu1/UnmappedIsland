@@ -6,13 +6,13 @@ import type { StaticValueResolver } from './staticValue';
 /**
  * range系イベント（6.3節）が端で何をするかを、実行時のオブジェクトを使わずに読んだもの。
  *
- * returnedToSelfが正なら、そのイベントは自分の値を戻す＝**繰り返す仕掛け**（罠の判定周期、
+ * expectedReturnToSelfが正なら、そのイベントは自分の値を戻す＝**繰り返す仕掛け**（罠の判定周期、
  * TrapSystem.md 2節）。destroysSelfなら、そこで自分が消える＝**寿命**（罠の朽ち、
  * DurabilitySystem.md 2節）。
  */
 export interface RangeEventReadout {
   readonly label: RangeEventLabel;
-  readonly returnedToSelf: number;
+  readonly expectedReturnToSelf: number;
   readonly destroysSelf: boolean;
   readonly outcomes: readonly StepOutcome[];
 }
@@ -25,15 +25,15 @@ export function rangeEventReadouts(
   const readouts: RangeEventReadout[] = [];
   for (const [label, effect] of propertyDef.rangeEvents()) {
     const reading = readEffect(effect, resolve);
-    let returnedToSelf = 0;
+    let expectedReturnToSelf = 0;
     for (const outcome of reading.outcomes)
       for (const delta of outcome.deltas)
         if (delta.target === 'self' && delta.propertyGlobalId === propertyDef.globalId)
-          returnedToSelf += outcome.probability * delta.amount;
+          expectedReturnToSelf += outcome.probability * delta.amount;
 
     readouts.push({
       label,
-      returnedToSelf,
+      expectedReturnToSelf,
       destroysSelf: destroysRoot(reading, 'self'),
       outcomes: reading.outcomes,
     });

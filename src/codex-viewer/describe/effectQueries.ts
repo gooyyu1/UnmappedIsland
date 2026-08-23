@@ -51,7 +51,7 @@ export function spawnsObject(declaration: EffectDeclaration, objectGlobalId: num
 }
 
 /** 動詞を1つも見ない読み手。探し物を持つ具象が、要る受け口だけを上書きする。 */
-abstract class Finder implements EffectReader {
+abstract class IgnoringEffectReader implements EffectReader {
   found = false;
 
   set(_target: ReferenceRoot, _propertyGlobalId: number, _value: number): void {}
@@ -69,7 +69,7 @@ abstract class Finder implements EffectReader {
   }
 }
 
-class PropertyWriterFinder extends Finder {
+class PropertyWriterFinder extends IgnoringEffectReader {
   private readonly propertyGlobalId: number;
   private readonly ownedByDeclarer: boolean;
 
@@ -80,20 +80,21 @@ class PropertyWriterFinder extends Finder {
   }
 
   override set(target: ReferenceRoot, propertyGlobalId: number): void {
-    this.check(target, propertyGlobalId);
+    this.markIfWritesToWantedProperty(target, propertyGlobalId);
   }
 
   override add(reading: AddReading): void {
-    this.check(reading.target, reading.propertyGlobalId);
+    this.markIfWritesToWantedProperty(reading.target, reading.propertyGlobalId);
   }
 
   override transfer(reading: TransferReading): void {
-    this.check(reading.from, reading.fromPropertyGlobalId);
-    this.check(reading.to, reading.toPropertyGlobalId);
-    for (const linked of reading.linked) this.check(linked.target, linked.propertyGlobalId);
+    this.markIfWritesToWantedProperty(reading.from, reading.fromPropertyGlobalId);
+    this.markIfWritesToWantedProperty(reading.to, reading.toPropertyGlobalId);
+    for (const linked of reading.linked)
+      this.markIfWritesToWantedProperty(linked.target, linked.propertyGlobalId);
   }
 
-  private check(target: ReferenceRoot, propertyGlobalId: number): void {
+  private markIfWritesToWantedProperty(target: ReferenceRoot, propertyGlobalId: number): void {
     if (writesTo(target, propertyGlobalId, this.propertyGlobalId, this.ownedByDeclarer)) this.found = true;
   }
 }
@@ -111,20 +112,21 @@ class PassivePropertyWriterFinder implements PassiveReader {
   }
 
   modify(reading: PassivePropertyReading): void {
-    this.check(reading.target, reading.propertyGlobalId);
+    this.markIfWritesToWantedProperty(reading.target, reading.propertyGlobalId);
   }
 
   accumulate(reading: PassivePropertyReading): void {
-    this.check(reading.target, reading.propertyGlobalId);
+    this.markIfWritesToWantedProperty(reading.target, reading.propertyGlobalId);
   }
 
   transfer(reading: TransferReading): void {
-    this.check(reading.from, reading.fromPropertyGlobalId);
-    this.check(reading.to, reading.toPropertyGlobalId);
-    for (const linked of reading.linked) this.check(linked.target, linked.propertyGlobalId);
+    this.markIfWritesToWantedProperty(reading.from, reading.fromPropertyGlobalId);
+    this.markIfWritesToWantedProperty(reading.to, reading.toPropertyGlobalId);
+    for (const linked of reading.linked)
+      this.markIfWritesToWantedProperty(linked.target, linked.propertyGlobalId);
   }
 
-  private check(target: ReferenceRoot, propertyGlobalId: number): void {
+  private markIfWritesToWantedProperty(target: ReferenceRoot, propertyGlobalId: number): void {
     if (writesTo(target, propertyGlobalId, this.propertyGlobalId, this.ownedByDeclarer)) this.found = true;
   }
 }
@@ -142,7 +144,7 @@ function writesTo(
   return propertyGlobalId === wanted && (ownedByDeclarer || target !== 'self');
 }
 
-class SpawnFinder extends Finder {
+class SpawnFinder extends IgnoringEffectReader {
   private readonly objectGlobalId: number;
 
   constructor(objectGlobalId: number) {

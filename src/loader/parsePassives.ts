@@ -31,7 +31,7 @@ import type { PassiveEffect } from '../domain/PassiveEffect';
  * conditionsはブロック全体で1つ（対象ごとには持たない。RegisteredPassiveEffect参照）。
  * RawObjectDef.resolveから（object/trait直下・props内・stages内のいずれからも）呼ばれる。
  */
-export function parsePassive(
+export function parsePassiveInto(
   loader: WorldCodexYamlLoader,
   passives: PassiveEffect[],
   objectDefName: string,

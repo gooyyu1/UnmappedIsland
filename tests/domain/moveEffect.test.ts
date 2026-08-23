@@ -94,7 +94,7 @@ object_defs:
     character: WorldObject;
     path: WorldObject;
   } {
-    const codex = new WorldCodexYamlLoader().load('island.yaml', islandYaml).build();
+    const codex = new WorldCodexYamlLoader().load('island.yaml', islandYaml).buildAndReset();
     const session = new WorldSession(codex);
 
     const world = session.createObject(codex.objectNames.getId('world'));
@@ -201,7 +201,7 @@ object_defs:
         cell: {accept: {tag: item}}
 `,
       )
-      .build();
+      .buildAndReset();
 
     const session = new WorldSession(codex);
     const world = session.createObject(codex.objectNames.getId('world'));
@@ -248,7 +248,7 @@ object_defs:
         cell: {accept: {tag: item}}
 `,
       )
-      .build();
+      .buildAndReset();
 
     const session = new WorldSession(codex);
     const world = session.createObject(codex.objectNames.getId('world'));
@@ -344,7 +344,7 @@ object_defs:
           to_prop: destination_id
 `,
         )
-        .build();
+        .buildAndReset();
 
     expect(loadBad).toThrow(YamlLoadError);
     expect(loadBad).toThrowError(/child/);
@@ -372,7 +372,7 @@ object_defs:
           to_prop: destination_id
 `,
         )
-        .build();
+        .buildAndReset();
 
     expect(loadBad).toThrow(YamlLoadError);
     expect(loadBad).toThrowError(/どちらか一方/);
@@ -398,7 +398,7 @@ object_defs:
           to_prop: destination_id
 `,
         )
-        .build();
+        .buildAndReset();
 
     expect(loadBad).toThrow(YamlLoadError);
     expect(loadBad).toThrowError(/どれか1つ/);
@@ -418,7 +418,7 @@ object_defs:
         move: {subject: actor, to: ancestor}
 `,
         )
-        .build();
+        .buildAndReset();
 
     expect(loadBad).toThrow(YamlLoadError);
     expect(loadBad).toThrowError(/ancestor/);
@@ -442,7 +442,7 @@ object_defs:
         move: {subject: dragged, to: parent}
 `,
       )
-      .build();
+      .buildAndReset();
     const session = new WorldSession(codex);
 
     const jar = session.createObject(codex.objectNames.getId('jar'));
@@ -481,7 +481,7 @@ object_defs:
           into: characters
 `,
         )
-        .build();
+        .buildAndReset();
 
     expect(loadBad).toThrow(YamlLoadError);
     expect(loadBad).toThrowError(/未知のキー/);
@@ -505,7 +505,7 @@ object_defs:
             to_prop: fuse
 `,
         )
-        .build();
+        .buildAndReset();
 
     expect(loadBad).toThrow(YamlLoadError);
   });

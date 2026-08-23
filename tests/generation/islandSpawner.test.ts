@@ -14,7 +14,7 @@ describe('IslandSpawner/NewGame(生成結果の世界への実体化)', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   it('全サイトが土地として実体化され、辺1本につき両端へ1個ずつ道が作られる', () => {

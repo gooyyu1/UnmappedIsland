@@ -22,7 +22,7 @@ describe('passivesのtransfer', () => {
   });
 
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   function spawn(codex: WorldCodex, objectName: string): WorldObject {

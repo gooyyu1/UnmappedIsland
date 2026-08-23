@@ -36,7 +36,7 @@ describe('animals.yamlの動物', () => {
   let bloodId: number;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     warinessId = codex.propertyNames.getId('wariness');
     painId = codex.propertyNames.getId('pain');
     shockId = codex.propertyNames.getId('shock');

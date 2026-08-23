@@ -17,7 +17,7 @@ describe('PropertyInfluence(プロパティが交わしている影響)', () => 
   });
 
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   function spawn(codex: WorldCodex, objectName: string, session = new WorldSession(codex)): WorldObject {

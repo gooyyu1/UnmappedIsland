@@ -347,7 +347,7 @@ function buildReport(
 
 describe.runIf(process.env.RUN_CLIMATE_STATS === '1')('気候システム統計レポート', () => {
   it('20シード×3600日をシミュレートしてClimateSystemStats.mdを再生成する', () => {
-    const codex = loadYamlFile(new WorldCodexYamlLoader(), worldCodexPath('core.yaml')).build();
+    const codex = loadYamlFile(new WorldCodexYamlLoader(), worldCodexPath('core.yaml')).buildAndReset();
 
     const calmId = codex.symbolNames.intern('calm');
     const wetId = codex.symbolNames.intern('wet');

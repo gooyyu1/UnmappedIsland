@@ -30,7 +30,7 @@ export class Shelf {
    * 持ち帰った物を棚へ収める。**既に在る物は増えない**ので、呼び出し側は重複を除かずに渡してよい。
    * 実際に新しく収まった識別子を返す（何が増えたかを見せる側が、差分を数え直さずに済む）。
    */
-  add(names: readonly string[]): readonly string[] {
+  addReturningNewlyAdded(names: readonly string[]): readonly string[] {
     const before = this.contents;
     const added = names.filter((name) => !before.includes(name));
     if (added.length === 0) return [];

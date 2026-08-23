@@ -23,7 +23,7 @@ describe('火起こし（世界→映し 通し）', () => {
   let locale: Localization;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     locale = parseLocale('ja.yaml', 'object_texts:\n  dry_grass:\n    display_name: 枯れ草\n');
   });
 

@@ -13,7 +13,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  */
 describe('WorldSession.advanceWorldTimeによる時間進行', () => {
   function load(yaml: string): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   function buildWorld(minutesPerTick = 15): { codex: WorldCodex; world: World } {

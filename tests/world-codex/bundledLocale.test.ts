@@ -70,7 +70,7 @@ describe('同梱の表示文字列ファイル', () => {
   let locale: Localization;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     locale = parseLocale(LOCALE_FILE, bundledLocaleText());
   });
 

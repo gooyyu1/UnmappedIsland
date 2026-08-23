@@ -1,5 +1,5 @@
 import { ResponsiveScene } from './ResponsiveScene';
-import { assetPackMatches } from '../asset-pack/install';
+import { assetPackInstallMatchesSetting } from '../asset-pack/install';
 import { Settings } from '../save/Settings';
 import { Button } from './ui/Button';
 import { ScreenHeader } from './ui/ScreenHeader';
@@ -50,7 +50,7 @@ export class SettingsScene extends ResponsiveScene {
     );
 
     // 食い違っている間だけ出す。設定を変えたのに何も起きないまま画面が閉じる、を避ける。
-    if (!assetPackMatches(this.settings.loadsAssetPack)) {
+    if (!assetPackInstallMatchesSetting(this.settings.loadsAssetPack)) {
       addLabel(this, this.metrics, width / 2, top + itemHeight + padding, '「もどる」で読み込み直します。', {
         size: 22,
         color: COLOR.textMuted,
@@ -63,7 +63,7 @@ export class SettingsScene extends ResponsiveScene {
    * （そのままではこの回のゲームに映らない）。読み込み直した先もタイトル画面になる。
    */
   private returnToTitle(): void {
-    if (assetPackMatches(this.settings.loadsAssetPack)) this.scene.start('title');
+    if (assetPackInstallMatchesSetting(this.settings.loadsAssetPack)) this.scene.start('title');
     else location.reload();
   }
 

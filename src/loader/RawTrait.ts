@@ -23,7 +23,7 @@ export class RawTrait {
     this.source = source;
 
     const context = `traits.'${name}'`;
-    this.body.read(node, context);
+    this.body.readFields(node, context);
 
     // レシピは成果物のobject_defへ埋め込むもの（RecipeSystem.md）なので、複数の型へ混ぜるtraitには
     // 書けない（どれが成果物か決まらない）。読み飛ばすと黙って消えるため、ロード時に弾く。

@@ -2270,7 +2270,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 持ち帰った物を棚へ収め、周回を終える（棚の画面へ移る）。 */
   private storeAndLeave(brought: readonly string[]): void {
-    const added = new Shelf(localStorage).add(brought);
+    const added = new Shelf(localStorage).addReturningNewlyAdded(brought);
     this.deleteSave();
     this.scene.start('shelf', { added });
   }

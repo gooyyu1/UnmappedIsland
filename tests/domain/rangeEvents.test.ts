@@ -8,7 +8,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 // YAMLパーサ経由のテストはyamlLoader.test.tsを参照。
 describe('rangeイベント', () => {
   function load(yaml: string) {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   it('sessionを渡してAddNumberを呼ぶと、Tick()を待たずにその場でon_maxが補正する', () => {

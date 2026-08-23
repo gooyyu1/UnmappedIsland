@@ -7,7 +7,7 @@ describe('recipe_categories', () => {
   function build(...files: string[]): WorldCodex {
     const loader = new WorldCodexYamlLoader();
     files.forEach((yaml, index) => loader.load(`file${index}.yaml`, yaml));
-    return loader.build();
+    return loader.buildAndReset();
   }
 
   const namesOf = (codex: WorldCodex): string[] =>

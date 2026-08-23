@@ -39,16 +39,21 @@ type Use = 'lane' | 'card';
  * テクスチャキー → 画像のURL。用意されている絵だけが並ぶ。同梱ぶんを土台に、起動時に
  * アセットパックのぶんが重なる。重なった後は変わらない。
  */
-const ART = new Map<string, string>(
+const MUTABLE_BACKGROUND_ART = new Map<string, string>(
   Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.png$/, 'background:$1'), url]),
 );
 
 /** テクスチャキー → 画像のURL。 */
-export const BACKGROUND_ART: ReadonlyMap<string, string> = ART;
+export const BACKGROUND_ART: ReadonlyMap<string, string> = MUTABLE_BACKGROUND_ART;
 
 /** アセットパックの背景の絵を在庫表へ重ねる（起動時に1回、installAssetPackから）。 */
 export function installPackBackgroundArt(art: ReadonlyMap<string, string>, packName: string): void {
-  addPackArt(ART, new Map([...art].map(([name, url]) => [`background:${name}`, url])), packName, '背景の絵');
+  addPackArt(
+    MUTABLE_BACKGROUND_ART,
+    new Map([...art].map(([name, url]) => [`background:${name}`, url])),
+    packName,
+    '背景の絵',
+  );
 }
 
 /** レーンの全面に敷く絵。用意されていなければundefinedを返し、呼び出し側は単色の背景板へ落とす。 */

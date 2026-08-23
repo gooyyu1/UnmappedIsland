@@ -52,7 +52,7 @@ object_defs:
   }
 
   beforeEach(() => {
-    codex = new WorldCodexYamlLoader().load('core.yaml', YAML).build();
+    codex = new WorldCodexYamlLoader().load('core.yaml', YAML).buildAndReset();
     session = new WorldSession(codex);
     player = new PlayerCharacter(session.createObject(codex.objectNames.getId('character')), codex);
   });

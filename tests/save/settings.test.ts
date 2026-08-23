@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Settings } from '../../src/save/Settings';
-import { assetPackMatches } from '../../src/asset-pack/install';
+import { assetPackInstallMatchesSetting } from '../../src/asset-pack/install';
 import { MemoryStorage } from '../support/MemoryStorage';
 
 /** ゲームを始める前にだけ変えられる設定（StartScreen.md 画面構成 4）。 */
@@ -47,10 +47,10 @@ describe('設定', () => {
  */
 describe('設定とアセットパックの照合', () => {
   it('読まない設定なら、入っていないことと一致する', () => {
-    expect(assetPackMatches(false)).toBe(true);
+    expect(assetPackInstallMatchesSetting(false)).toBe(true);
   });
 
   it('読む設定なのに入っていなければ、一致しない', () => {
-    expect(assetPackMatches(true)).toBe(false);
+    expect(assetPackInstallMatchesSetting(true)).toBe(false);
   });
 });

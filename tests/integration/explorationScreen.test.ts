@@ -27,7 +27,7 @@ describe('探索と地図（世界→映し 通し）', () => {
   let locale: Localization;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     locale = parseLocale('ja.yaml', 'object_texts:\n  stone:\n    display_name: 石\n');
   });
 

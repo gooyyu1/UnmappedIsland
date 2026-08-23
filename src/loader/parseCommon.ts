@@ -17,7 +17,7 @@ import { TypeMatchRule } from '../domain/TypeMatchRule';
  * 成立条件（gaugeにはrangeが要る、minとeqは同時に持てない、など）は定義自身が持ち、
  * loaderは文脈だけを足す。定義はYAMLの語彙を知らないので、この2つはここで初めて出会う。
  */
-export function built<T>(context: string, build: () => T): T {
+export function withYamlContext<T>(context: string, build: () => T): T {
   try {
     return build();
   } catch (error) {

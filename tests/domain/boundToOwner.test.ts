@@ -37,7 +37,7 @@ object_defs:
   const build = (): WorldCodex => {
     const loader = new WorldCodexYamlLoader();
     loader.load('bound.yaml', yaml);
-    return loader.build();
+    return loader.buildAndReset();
   };
 
   interface Fixture {

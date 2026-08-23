@@ -52,7 +52,7 @@ object_defs:
     const codex = new WorldCodexYamlLoader()
       .load('world.yaml', worldYaml)
       .load('extra.yaml', extraYaml)
-      .build();
+      .buildAndReset();
     const bootstrap = new WorldSession(codex);
     const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), bootstrap);
     const world = new World(instance, codex);
@@ -333,7 +333,7 @@ object_defs:
             warmth: 1
 `,
       )
-      .build();
+      .buildAndReset();
     const session = new WorldSession(codex);
     const campfire = session.createObject(codex.objectNames.getId('campfire'));
 

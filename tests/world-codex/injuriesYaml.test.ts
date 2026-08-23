@@ -26,7 +26,7 @@ describe('injuries.yamlの怪我', () => {
   let painId: number;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     painId = codex.propertyNames.getId('pain');
   });
 

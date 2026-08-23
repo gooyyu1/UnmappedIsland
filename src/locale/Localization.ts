@@ -435,18 +435,23 @@ export class Localization {
    */
   mergedWith(other: Localization, label: string): Localization {
     return new Localization({
-      objects: merged(this.objects, other.objects, label, 'object_texts'),
-      propertyTags: merged(this.propertyTags, other.propertyTags, label, 'property_tag_texts'),
-      symbols: merged(this.symbols, other.symbols, label, 'symbol_texts'),
-      locations: merged(this.locations, other.locations, label, 'location_texts'),
-      reasons: merged(this.reasons, other.reasons, label, 'reason_texts'),
+      objects: mergedRejectingDuplicates(this.objects, other.objects, label, 'object_texts'),
+      propertyTags: mergedRejectingDuplicates(
+        this.propertyTags,
+        other.propertyTags,
+        label,
+        'property_tag_texts',
+      ),
+      symbols: mergedRejectingDuplicates(this.symbols, other.symbols, label, 'symbol_texts'),
+      locations: mergedRejectingDuplicates(this.locations, other.locations, label, 'location_texts'),
+      reasons: mergedRejectingDuplicates(this.reasons, other.reasons, label, 'reason_texts'),
       ordinalSuffix:
         other.ordinalSuffix === DEFAULT_ORDINAL_SUFFIX ? this.ordinalSuffix : other.ordinalSuffix,
-      slots: merged(this.slots, other.slots, label, 'slot_texts'),
-      signals: merged(this.signals, other.signals, label, 'signal_texts'),
-      stages: merged(this.stages, other.stages, label, 'stage_texts'),
-      uiTexts: merged(this.uiTexts, other.uiTexts, label, 'ui_texts'),
-      tags: merged(this.tags, other.tags, label, 'tag_texts'),
+      slots: mergedRejectingDuplicates(this.slots, other.slots, label, 'slot_texts'),
+      signals: mergedRejectingDuplicates(this.signals, other.signals, label, 'signal_texts'),
+      stages: mergedRejectingDuplicates(this.stages, other.stages, label, 'stage_texts'),
+      uiTexts: mergedRejectingDuplicates(this.uiTexts, other.uiTexts, label, 'ui_texts'),
+      tags: mergedRejectingDuplicates(this.tags, other.tags, label, 'tag_texts'),
     });
   }
 
@@ -457,7 +462,7 @@ export class Localization {
 }
 
 /** 2つの節を重ねる。同じ識別子が両方にあれば、どちらが出るか決められないのでエラー。 */
-function merged<T>(
+function mergedRejectingDuplicates<T>(
   base: ReadonlyMap<string, T>,
   added: ReadonlyMap<string, T>,
   label: string,

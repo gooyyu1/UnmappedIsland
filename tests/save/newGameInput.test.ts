@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SEED_MAX } from '../../src/save/SaveData';
 import {
   createSaveData,
-  normalizeIslandName,
+  normalizedIslandNameOrUndefined,
   parseSeed,
   randomCharacter,
   randomIslandName,
@@ -37,10 +37,10 @@ describe('新規ゲームの入力(SaveDataManagement.md)', () => {
   });
 
   it('島の名前は前後の空白を落とし、空文字と21文字以上は受け付けない', () => {
-    expect(normalizeIslandName('  霧深い孤島  ')).toBe('霧深い孤島');
-    expect(normalizeIslandName('   ')).toBeUndefined();
-    expect(normalizeIslandName('あ'.repeat(20))).toBe('あ'.repeat(20));
-    expect(normalizeIslandName('あ'.repeat(21))).toBeUndefined();
+    expect(normalizedIslandNameOrUndefined('  霧深い孤島  ')).toBe('霧深い孤島');
+    expect(normalizedIslandNameOrUndefined('   ')).toBeUndefined();
+    expect(normalizedIslandNameOrUndefined('あ'.repeat(20))).toBe('あ'.repeat(20));
+    expect(normalizedIslandNameOrUndefined('あ'.repeat(21))).toBeUndefined();
   });
 
   it('作成直後のセーブデータの生存日数は0で、固定表示にしたステータスも無い', () => {

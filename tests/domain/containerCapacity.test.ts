@@ -36,7 +36,7 @@ object_defs:
     tags: [item]
 `,
     )
-    .build();
+    .buildAndReset();
 
   const contentsId = codex.slotNames.getId('contents');
 
@@ -114,7 +114,7 @@ object_defs:
         capacity: 100
 `,
       )
-      .build();
+      .buildAndReset();
     const session = new WorldSession(withoutStorage);
 
     expect(

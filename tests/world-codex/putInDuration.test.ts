@@ -19,7 +19,7 @@ describe('時間のかかる枠', () => {
   let defs: readonly ObjectDef[];
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     defs = Array.from({ length: codex.objects.count }, (_, globalId) => codex.objects.get(globalId));
   });
 

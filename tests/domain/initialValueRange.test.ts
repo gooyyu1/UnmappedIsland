@@ -17,7 +17,7 @@ object_defs:
 `;
 
   function load(): WorldCodex {
-    return new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    return new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
   }
 
   it('spawnした初期値はrangeの範囲内に収まり、複数の値が現れる', () => {

@@ -33,7 +33,7 @@ object_defs:
   let weightId: number;
 
   beforeAll(() => {
-    codex = new WorldCodexYamlLoader().load('core.yaml', yaml).build();
+    codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
     weightId = codex.propertyNames.getId('weight');
   });
 

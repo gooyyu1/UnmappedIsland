@@ -11,7 +11,7 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 // describe.eachへ渡すため、beforeAllではなく読み込み時にCodexを組み立てる。
-const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
 const characters = characterDefNames(codex);
 
 function def(name: string): ObjectDef {

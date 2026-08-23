@@ -21,7 +21,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   let islands: ReadonlyMap<number, IslandMap>;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     islands = new Map(SEEDS.map((seed) => [seed, generate(seed)]));
   });
 

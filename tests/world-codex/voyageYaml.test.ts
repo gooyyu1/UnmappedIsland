@@ -18,7 +18,7 @@ describe('筏と航海', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
   /** 出航のしたくシナリオの状態から始める（砂浜に積荷入りの筏があり、聖杯も積んである）。 */

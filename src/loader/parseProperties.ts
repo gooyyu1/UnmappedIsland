@@ -16,9 +16,9 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { built, parseNumberOrSymbol } from './parseCommon';
+import { withYamlContext, parseNumberOrSymbol } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
-import { parsePassive } from './parsePassives';
+import { parsePassiveInto } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { ALERT_LEVELS } from '../domain/AlertLevel';
 import type { ActiveEffect } from '../domain/ActiveEffect';
@@ -43,7 +43,7 @@ const KNOWN_PROP_KEYS = new Set<string>([
 
 /** props.'propName'エントリを1つ読む（GameElementDefinition.md 6節）。
  * trait合成済みのノードを渡すこと。 */
-export function parseProp(
+export function parsePropAppendingPassives(
   loader: WorldCodexYamlLoader,
   objectDefName: string,
   propName: string,
@@ -95,7 +95,7 @@ export function parseProp(
   if (stagesNode !== undefined)
     for (const stageNode of stagesNode.items as YamlNode[])
       stages.push(
-        parseStage(
+        parseStageAppendingPassives(
           loader,
           objectDefName,
           propName,
@@ -109,13 +109,13 @@ export function parseProp(
   const propPassives = tryGetSeq(node, 'passives', context);
   if (propPassives !== undefined)
     for (const passiveNode of propPassives.items as YamlNode[])
-      parsePassive(loader, passives, objectDefName, asMap(passiveNode, context), undefined, undefined);
+      parsePassiveInto(loader, passives, objectDefName, asMap(passiveNode, context), undefined, undefined);
 
   const inherit = tryGetBool(node, 'inherit', context) ?? false;
   const tags = parsePropertyTags(loader, context, node);
   const gauge = parseGauge(context, node);
 
-  return built(
+  return withYamlContext(
     context,
     () =>
       new PropertyDef(
@@ -185,7 +185,7 @@ function parseRangeEventEffect(loader: WorldCodexYamlLoader, context: string, no
 
 /** 1つのstagesエントリを解釈する（6.4節）。数値型はmin（半開区間）、シンボル型はeq
  * （nameが比較対象そのもの）を使う。stage内のpassivesも併せて解釈しpassivesへ追記する。 */
-function parseStage(
+function parseStageAppendingPassives(
   loader: WorldCodexYamlLoader,
   objectDefName: string,
   propName: string,
@@ -210,7 +210,7 @@ function parseStage(
   const stagePassives = tryGetSeq(stageMap, 'passives', context);
   if (stagePassives !== undefined)
     for (const passiveNode of stagePassives.items as YamlNode[])
-      parsePassive(loader, passives, objectDefName, asMap(passiveNode, context), propName, stageName);
+      parsePassiveInto(loader, passives, objectDefName, asMap(passiveNode, context), propName, stageName);
 
   return stage;
 }

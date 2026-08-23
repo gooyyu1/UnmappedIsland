@@ -83,7 +83,7 @@ object_texts:
 `;
 
 describe('クラフトネットワークのページ', () => {
-  const codex = new WorldCodexYamlLoader().load('network.yaml', YAML).build();
+  const codex = new WorldCodexYamlLoader().load('network.yaml', YAML).buildAndReset();
   const locale = parseLocale('ja.yaml', LOCALE);
   const view = new CodexView(new CodexSource(codex, locale, ['network.yaml']), 'display');
 
