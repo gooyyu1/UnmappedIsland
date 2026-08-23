@@ -7,6 +7,8 @@ import { craftingStepsOf } from './craftingSteps';
 import type { ExternalTickDelta, RangeCycle } from './rangeCycles';
 import { externalTickDeltasOf, rangeCyclesOf } from './rangeCycles';
 import { rangeEventReadouts } from './rangeEvents';
+import type { RainWaterRow } from './seasonalRain';
+import { rainWaterRows } from './seasonalRain';
 import type { StaticValueResolver } from './staticValue';
 import { staticValueOf } from './staticValue';
 
@@ -281,6 +283,12 @@ export interface BalanceTables {
   readonly consumption: readonly ConsumptionRow[];
   readonly supply: readonly SupplyRow[];
   readonly places: readonly PlaceBalance[];
+
+  /**
+   * 雨で溜まる水（seasonalRain）。**土地ごとには分けない**——降るのは島の外の天気で、どの土地に
+   * 置いた容器も同じだけ受ける。
+   */
+  readonly rainWater: readonly RainWaterRow[];
 }
 
 /** 収支表を丸ごと組み立てる。sampleCharacterは1日の必要量を取る代表キャラクタ。 */
@@ -308,6 +316,7 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
       ),
     ),
     places,
+    rainWater: rainWaterRows(codex),
   };
 }
 

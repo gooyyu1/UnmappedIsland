@@ -453,14 +453,46 @@ function devicesHtml(view: CodexView, tables: BalanceTables): string {
       device.laborPerUnit === undefined ? '—' : formatNumber(device.laborPerUnit, 2),
     ]),
   );
-  if (rows.length === 0) return '';
+  if (rows.length === 0 && tables.rainWater.length === 0) return '';
 
   return (
     `<h2 id="${balanceSectionId(DEVICES_SECTION)}">待ち生産</h2>` +
     `<p class="muted">仕掛けてから時間が経つと産物が返るもの。周期は単位あたりの労働に足していないので、` +
     `ここが代わりに周期とレートを出す。「生涯」は設備1つが朽ちるまでに返す総数で、これが並列度の上限。` +
     `場所で違うのは掛かる動物の重みだけなので、1つの表に並べる。</p>` +
-    tableHtml(['場所', '設備', '産物', '周期', '個/日', '寿命', '生涯', '製作', '分/個'], rows, true)
+    (rows.length === 0
+      ? ''
+      : tableHtml(['場所', '設備', '産物', '周期', '個/日', '寿命', '生涯', '製作', '分/個'], rows, true)) +
+    rainWaterHtml(view, tables)
+  );
+}
+
+/**
+ * 雨で溜まる水。設備ではないが、**仕掛けて待つと値が返る**点は待ち生産と同じで、しかも労働が要らない。
+ * 連鎖には乗らない（工程ではないので労働0分になる）ので、量が出るのはここだけ。
+ *
+ * **単一の平均は出さない。** 雨季とそれ以外では降る時間が1桁違い、平均はどの季節にも存在しない
+ * 中間の状態になる。読みたいのは差引の符号のほう。
+ */
+function rainWaterHtml(view: CodexView, tables: BalanceTables): string {
+  if (tables.rainWater.length === 0) return '';
+
+  const rows = tables.rainWater.map((row) => [
+    objectLinkHtml(view, row.containerName, true),
+    escapeHtml(row.seasonName),
+    formatNumber(row.capacity, 0),
+    formatNumber(row.rainPerDay, 0),
+    formatNumber(row.evaporationPerDay, 0),
+    `${row.netPerDay > 0 ? '+' : ''}${formatNumber(row.netPerDay, 0)}`,
+  ]);
+
+  return (
+    `<h3>雨で溜まる水</h3>` +
+    `<p class="muted">空けたまま置いた容器が1日に受ける水と失う水。降雨も蒸発も気候の実測値から。` +
+    `<b>雨だけで水を賄えるのは雨季だけ</b>で、それ以外の季節は置いておくだけでは減る。` +
+    `蒸発は中身がある間しか効かないので「失う水」は満杯を保った場合の上限、` +
+    `容量を超えて降った分は捨てられるので差引はその損失を含まない。</p>` +
+    tableHtml(['容器', '季節', '容量', '降雨', '蒸発', '差引'], rows, true)
   );
 }
 
