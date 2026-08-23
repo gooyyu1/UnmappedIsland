@@ -1,6 +1,7 @@
 import { ART_BY_OBJECT_NAME } from '../art/objectArt';
 import type { CraftingNetwork, NetworkEdge, NetworkNode } from './craftingGraph';
 import { buildCraftingNetwork, objectNodeId } from './craftingGraph';
+import { CodexPage } from './CodexPage';
 import type { CodexView } from './CodexView';
 import { escapeHtml } from './html';
 import type { LayoutNode } from './networkLayout';
@@ -23,12 +24,64 @@ const TAG_NODE = { width: 84, height: 24 };
 const ART_SIZE = 56;
 const FONT_SIZE = 11;
 
-/** ハイライトしたノードのDOM id（main.tsがスクロール先に使う）。 */
-export function networkNodeId(objectName: string): string {
+/** ハイライトしたノードのDOM id（スクロール先に使う）。 */
+function networkNodeId(objectName: string): string {
   return `net-${objectNodeId(objectName)}`;
 }
 
-export function renderNetworkPage(view: CodexView, highlightObjectName?: string): string {
+/**
+ * クラフトネットワークのページ（`#/network`、`#/network/<識別子>` でその型を強調して中央へ寄せる）。
+ *
+ * 拡大・縮小はSVGの表示寸法（style）だけで変え、図の組み立ては触らない。**倍率はページが持つ**
+ * ので、離れて戻っても保たれる。
+ */
+export class NetworkPage extends CodexPage {
+  readonly route = 'network';
+
+  private zoom = 1;
+
+  render(view: CodexView, args: readonly string[]): string {
+    return renderNetworkPage(view, args.at(0));
+  }
+
+  override wire(): void {
+    const svg = document.querySelector<SVGSVGElement>('svg.network');
+    if (svg === null) return;
+
+    const naturalWidth = Number(svg.getAttribute('width'));
+    const naturalHeight = Number(svg.getAttribute('height'));
+    const apply = (): void => {
+      svg.style.width = `${naturalWidth * this.zoom}px`;
+      svg.style.height = `${naturalHeight * this.zoom}px`;
+      for (const level of document.querySelectorAll<HTMLElement>('[data-network-zoom-level]'))
+        level.textContent = `${Math.round(this.zoom * 100)}%`;
+    };
+    apply();
+
+    for (const button of document.querySelectorAll<HTMLElement>('[data-network-zoom]'))
+      button.addEventListener('click', () => {
+        const direction = button.dataset.networkZoom;
+        this.zoom =
+          direction === 'in'
+            ? Math.min(2, this.zoom * 1.25)
+            : direction === 'out'
+              ? Math.max(0.25, this.zoom / 1.25)
+              : 1;
+        apply();
+      });
+  }
+
+  protected override sectionId(name: string): string {
+    return networkNodeId(name);
+  }
+
+  /** 図は縦にも横にも広いので、強調したノードは中央へ寄せる。 */
+  protected override get scrollOptions(): ScrollIntoViewOptions {
+    return { block: 'center', inline: 'center' };
+  }
+}
+
+function renderNetworkPage(view: CodexView, highlightObjectName?: string): string {
   const network = buildCraftingNetwork(view.objectDefs(), view.codex);
   const highlightId = highlightObjectName === undefined ? undefined : objectNodeId(highlightObjectName);
   const highlight =

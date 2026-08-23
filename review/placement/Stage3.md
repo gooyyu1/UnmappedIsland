@@ -496,3 +496,24 @@ private の `mainland` を抱えていた。**この4つはキャラクタの性
 
 旗を持たない（居場所がそのまま答える）という決まりはそのまま。`Ending` はプレイヤーの
 `WorldObject` を包む `ObjectWrapper` で、`Location` や `Animal` と同じ形。
+
+## 17. 段4 レーンA-6（描き替えを跨いで生き残るページ）
+
+ビューアのページは `render(view) => string` の関数だけだったので、描き替えを跨いで残る状態が
+モジュール変数になっていた（`balancePage.lastTables`、`main.ts` の `networkZoom`）。
+`CodexPage`（抽象）を置き、**ルートごとに1つだけ作って使い回す**形にした。
+
+ページが持つのは4つ: `route`、`render(view, args)`、`wire()`（描き込んだ後の配線。既定は何もしない）、
+`scrollToSection(name)`。最後のものは `sectionId(name)` と `scrollOptions` の2つをページが答えて、
+**送り方そのものは基底の1箇所**にある——旧実装は `main.ts` が3ルートぶん同じ形の呼び出しを並べ、
+差は「idの作り方」と「中央へ寄せるか」だけだった。
+
+`main.ts` から出ていったもの: `renderRoute` の9分岐、`wireObjectFilter`、`wireNetworkZoom` と
+`networkZoom`、`scrollToSection` の3回の呼び出し。残ったのは**ページの一覧1つ**と、
+名前の見せ方・読み込みだけ。ページを1枚足すときに `main.ts` を触るのは一覧への1行だけになる。
+
+`renderBalancePage` が書いていた `lastTables` は `BalancePage.tables` に、`wireBalanceMenu` は
+そのページの `wire()` になった（表を引数で受け取るので、モジュール変数を読み直さない）。
+
+`render` は**引数が足りなければ undefined**を返し、`main.ts` がそれを「見つかりません」に倒す。
+旧実装の `route === 'object' && first !== undefined` という条件が、ページ側の1箇所へ移った形。
