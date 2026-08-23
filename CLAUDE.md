@@ -128,3 +128,12 @@ Bashなどのツールを呼ぶときは `description` を省略しない。省�
 
 書くのはコマンドの言い換えではなく目的。`grep -n 'localize' src/**` に対しては
 「grepでlocalizeを検索」ではなく「Localizationの公開APIを調べる」と書く。
+
+## ファイルの編集は Edit / Write で行う
+
+Bashの `sed -i`・`python3` の置換スクリプト・`cat >>` でファイルを書き換えない。実行ログには
+コマンドが残るだけで、何をどう変えたのかが差分として見えなくなる。整形のPostToolUseフック
+（`.claude/hooks/format-after-edit.sh`）もWrite/Editにしか掛からない。
+
+例外は、多数のファイルへ同じ置換を機械的に掛ける場合。1ファイルずつのEditが現実的でないときは
+スクリプトでよい。ファイルを読むためのBash（`cat`・`grep`・`sed -n`）は制限しない。
