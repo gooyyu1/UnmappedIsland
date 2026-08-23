@@ -528,13 +528,9 @@ export class CarriedCard {
 
 /** レーンに並んでいるカードを、位置とインスタンスのID付きで挙げる（計画の入力）。 */
 function placedCards(lanes: readonly CardLane[]): PlacedCard<Card, Rect>[] {
-  const placed: PlacedCard<Card, Rect>[] = [];
-  for (const lane of lanes) {
-    lane.cardObjects.forEach((card, index) => {
-      if (card !== undefined) placed.push({ card, ids: card.identity, rect: lane.cellRect(index) });
-    });
-  }
-  return placed;
+  return lanes.flatMap((lane) =>
+    lane.placements.map(({ card, rect }) => ({ card, ids: card.identity, rect })),
+  );
 }
 
 /** 手から放したインスタンス全部を、計画のreleased（離した場所から動き出すもの）に直す。 */

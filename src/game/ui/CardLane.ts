@@ -59,6 +59,16 @@ export interface CardLaneOptions {
   readonly bare?: boolean;
 }
 
+/**
+ * レーンの枠に居る札1枚と、その居場所。**添字と矩形は枠の並びから導かれる**ので、レーンの外で
+ * 添字から矩形を引き直す（cellRect）必要は無い。
+ */
+export interface LanePlacement {
+  readonly index: number;
+  readonly card: Card;
+  readonly rect: Rect;
+}
+
 /** レーンの内容を差し替えた結果。出入りするカードの見せ方は呼び出し側（CardTable）が決める。 */
 export interface LaneUpdate {
   /** このレーンに新しく現れたカード。stripの所定の位置に居るが、まだ表示されていない。 */
@@ -104,8 +114,20 @@ export class CardLane {
 
   /** 並んでいるカードの表示物。空き枠はundefined。位置＝添字（_cellsと対応）。 */
   private _cardObjects: (Card | undefined)[] = [];
-  get cardObjects(): readonly (Card | undefined)[] {
-    return this._cardObjects;
+
+  /** 今このレーンの枠に居る札を、居場所付きで挙げる（空き枠は飛ばす）。 */
+  get placements(): readonly LanePlacement[] {
+    const placed: LanePlacement[] = [];
+    this._cardObjects.forEach((card, index) => {
+      if (card !== undefined) placed.push({ index, card, rect: this.cellRect(index) });
+    });
+    return placed;
+  }
+
+  /** その札が居る枠の添字（このレーンに居なければundefined）。 */
+  indexOf(card: Card): number | undefined {
+    const index = this._cardObjects.indexOf(card);
+    return index < 0 ? undefined : index;
   }
 
   /** スクロール量0のときのstripの位置と、可視域の幅。 */

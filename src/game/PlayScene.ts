@@ -41,7 +41,6 @@ import { Button } from './ui/Button';
 import { SLOT_BUTTON_PAPER_TEXTURE } from '../art/slotButtonArt';
 import { EDGE_DIRECTIONS } from './ui/Card';
 import type { CardContent, CardEdgeAction } from './ui/Card';
-import type { Card } from './ui/Card';
 import { borrowedFace, cardFace } from './ui/cardFace';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
@@ -863,7 +862,7 @@ export class PlayScene extends ResponsiveScene {
     return views;
   }
 
-  /** 今画面に出ているレーン。札を探すため（cardShowing）のもので、並びは引き直さない。 */
+  /** 今画面に出ているレーン。札を探すため（rectOfInstance）のもので、並びは引き直さない。 */
   private get openLanes(): readonly CardLane[] {
     const lanes = [this.fixtureLane, this.itemLane, this.handLane, this.portraitLane];
     for (const { lane } of this.childWindow?.lanes ?? []) lanes.push(lane);
@@ -927,24 +926,14 @@ export class PlayScene extends ResponsiveScene {
    * 探索で見つかった物が現在地から飛んでくるのはこの1行による。
    */
   private rectOfInstance(instanceId: number): Rect | undefined {
-    const shown = this.cardShowing(instanceId);
-    if (shown !== undefined) return shown.rect;
+    for (const lane of this.openLanes) {
+      const shown = lane.placements.find(({ card }) => card.identity.includes(instanceId));
+      if (shown !== undefined) return shown.rect;
+    }
 
     return this.gameSession.player.location?.instance.instanceId === instanceId
       ? this.fixtureLane.pinnedRect
       : undefined;
-  }
-
-  /** そのインスタンスを今映している札と、その枠（どのレーンにも出ていなければundefined）。 */
-  private cardShowing(instanceId: number): { card: Card; rect: Rect } | undefined {
-    for (const lane of this.openLanes) {
-      const index = lane.cardObjects.findIndex(
-        (object) => object?.content.identity?.includes(instanceId) === true,
-      );
-      const card = index < 0 ? undefined : lane.cardObjects[index];
-      if (card !== undefined) return { card, rect: lane.cellRect(index) };
-    }
-    return undefined;
   }
 
   /**
