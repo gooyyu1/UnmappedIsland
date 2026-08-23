@@ -137,20 +137,20 @@ object_defs:
           - requires:
               - {object: rope, count: 4, consume: true}
             duration: 180
-    actions:
+    interactions:
       # 乗り込む。**筏は場所なので、中の仕事は中に入らないとできない**——積荷を並べる・帆を張るは
       # 筏のスロットへの操作で、岸に立ったままでは届かない。
       #
       # 既に中に居るときは移動が空振りするだけなので、条件は置かない。そもそも中からは筏の札が
       # 見えない（現在地の札になる）ので、押す機会が無い。
       board:
-        showMenu: always
+        trigger: menu
         duration: 5
         move: {subject: actor, to: self}
 
       # 降りる。海の上では降りられない（泳いで戻る手はまだ無い）。
       disembark:
-        showMenu: always
+        trigger: menu
         conditions:
           - reason: at_sea
             not: {subject: parent, matches: {tag: sea}}
@@ -160,7 +160,7 @@ object_defs:
       # 航海に出る。乗り込むところまでを1手に含める——岸から直に出せるほうが手数が少なく、
       # 既に乗っていれば移動が空振りするだけで結果は同じになる。
       set_sail:
-        showMenu: always
+        trigger: menu
         conditions:
           - reason: not_on_coast
             subject: parent

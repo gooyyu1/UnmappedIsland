@@ -19,7 +19,7 @@ WorldCodexの編集を伴うと、パック作成者が新しい言語を足す�
 `display_name`/`description` と、メンバー（`props`・`interactions`）ごとの同じ組を持てます。
 いずれも省略可能です。
 
-**操作は `actions`（メニュー型）と `combinations`（ドラッグ型）を分けず、`interactions` に
+**操作はきっかけで分けず、`interactions` に
 まとめて書きます。** 操作の名前は元から1つの名前空間だからです
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 11節）。
 
@@ -177,7 +177,7 @@ tag_texts:
   tool: 道具
 ```
 
-**書くのは画面へ出るタグだけです。** タグの大半は枠の `accept` や `combinations` の相手を探すための
+**書くのは画面へ出るタグだけです。** タグの大半は枠の `accept` やドラッグ型の相手を探すための
 ものでプレイヤーの目に触れないので、網羅する必要はありません。今この節を読むのはレシピ一覧の棚の
 見出し（[`Windows.md`](../ui/Windows.md) 9.2節）だけです。
 

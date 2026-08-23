@@ -64,8 +64,9 @@ object_defs:
     tags: [location]
     slots:
       items: {cell: {accept: {tag: item}}}
-    actions:
+    interactions:
       explore:
+        trigger: menu
         duration: 30
         spawn: {object: thick_branch}
 
@@ -75,17 +76,17 @@ object_defs:
 
   ${DRAWN_ITEM}:
     tags: [item]
-    combinations:
+    interactions:
       husk:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         destroy: self
         spawn: {object: husked_coconut}
 
   husked_coconut:
     tags: [item]
-    combinations:
+    interactions:
       crack:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         destroy: self
         # 割ると2つできる（spawnのcount、9.4節）。
         spawn: {object: coconut_half, count: 2}

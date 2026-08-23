@@ -27,25 +27,26 @@ object_defs:
 
   sandy_beach:
     tags: [location]
-    actions:
+    interactions:
       explore:
+        trigger: menu
         duration: 30
         spawn: {object: coconut}
 
   coconut:
     tags: [item]
-    combinations:
+    interactions:
       # 刃物はdestroyされない＝消費されない入力（道具）。
       husk:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         destroy: self
         spawn: {object: husked_coconut}
 
   husked_coconut:
     tags: [item]
-    combinations:
+    interactions:
       crack:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         destroy: self
         spawn: {object: coconut_half, count: 2}
 
@@ -55,9 +56,9 @@ object_defs:
   # 道具そのものも作られる物なので、図に並ぶ。
   stone:
     tags: [item]
-    combinations:
+    interactions:
       knap:
-        with: {object: stone}
+        trigger: {drag: {object: stone}}
         destroy: self
         spawn: {object: sharp_stone}
 

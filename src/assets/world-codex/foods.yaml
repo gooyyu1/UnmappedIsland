@@ -21,8 +21,9 @@ object_defs:
       plant_bait: {value: 8}
       # 葉物の束も詰めて縮まないので、嵩そのままで見る。
       volume: {value: 3000}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}
@@ -71,8 +72,9 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: charred_lump}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}
@@ -120,8 +122,9 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: charred_lump}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}

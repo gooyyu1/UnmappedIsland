@@ -25,10 +25,10 @@ object_defs:
   # アバカ（マニラ麻）。バナナによく似た草だが、実は種ばかりで食べられない。
   abaca:
     tags: [fixture]
-    combinations:
+    interactions:
       # 根元を刃物で断ち、運べる長さに切り分ける。株立ちなので1株から何本も採れる。
       fell:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 20
         destroy: self
         spawn: {object: banana_stem, count: 5, into: actor}
@@ -36,9 +36,9 @@ object_defs:
   # バナナの株。実った房を採るには切り倒すしかないので、実と茎が一度に手に入る。
   banana_plant:
     tags: [fixture]
-    combinations:
+    interactions:
       fell:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 20
         destroy: self
         spawn:
@@ -51,8 +51,9 @@ object_defs:
     props:
       weight: {value: 400}
       volume: {value: 500}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}
@@ -71,10 +72,10 @@ object_defs:
       # 重さのほとんどは水。この重さのまま拠点へ運ぶより、その場で掻き取ったほうが軽い。
       weight: {value: 3000}
       volume: {value: 6000}
-    combinations:
+    interactions:
       # 葉鞘を1枚ずつ剥ぎ、刃を立てて引き抜いて肉を落とす。残る髄と水はその場に捨てる。
       strip:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 30
         destroy: self
         spawn: {object: plant_fiber, count: 2}
@@ -89,10 +90,10 @@ object_defs:
       weight: {value: 60}
       # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。
       volume: {value: 800}
-    combinations:
+    interactions:
       # 2束を手のひらで転がして1本に撚る。撚りに入りきらない短い屑は落ちる。
       spin:
-        with: {object: plant_fiber}
+        trigger: {drag: {object: plant_fiber}}
         duration: 20
         destroy: [self, dragged]
         spawn: {object: yarn}
@@ -103,10 +104,10 @@ object_defs:
     props:
       weight: {value: 100}
       volume: {value: 150}
-    combinations:
+    interactions:
       # 2本を撚りとは逆向きに撚り合わせる。互いの撚りが噛んで解けなくなり、太さと強さが出る。
       ply:
-        with: {object: yarn}
+        trigger: {drag: {object: yarn}}
         duration: 20
         destroy: [self, dragged]
         spawn: {object: cord}

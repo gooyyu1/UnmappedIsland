@@ -210,16 +210,16 @@ traits:
       # 1つも書かずに成立する。おまけに「開けた土地ほど逃げやすい」は道の本数が言う。
       - conditions: [{prop: escape_routes, lt: 1}]
         modify: {self: {flee: -1000}}
-    actions:
+    interactions:
       # 動物の1手（HuntingSystem.md 5節）。**プレイヤーが押すものではない**ので画面のボタンには
-      # 出さず（showMenu: never、11.1節）、tickの後処理が1手ずつ与える（Animal.takeTurn）。
+      # 出さず（trigger: tick、11.1節）、tickの後処理が1手ずつ与える（Animal.takeTurn）。
       # 15分の行動は1手、90分の行動は6手ぶんの時間になる（同2節）。
       #
       # どの回もsignal（9.8節）で結果を告げる。刺さった傷は相手の怪我スロットの中に入り、持ち去りは
       # 自分の中へ入るので、**レーンの上では何も変わらない回がある**——告げなければ「何も起きなかった」
       # ように見える。様子をうかがった回だけは、実際に何も起きていないので告げない。
       turn:
-        showMenu: never
+        trigger: tick
         pick:
           # 様子をうかがった回。**必ず先頭に置く**——他の候補がすべて抽選から外れた回に選ばれるのが
           # これになる（全候補の重みが0なら先頭が選ばれる、10節）。逃走や攻撃を先頭に置くと、
@@ -249,7 +249,6 @@ traits:
           - weight: {prop: flee}
             move: {subject: self, to_prop: flee_to}
             signal: fled
-    combinations:
       # 武器を重ねて殴る（HuntingSystem.md 1.2節）。**候補は「一撃がどう入ったか」の型**で、どれを
       # 引くかは武器が宣言する重み配分（tools.yamlのweapon trait）が決める。動物の側は体格
       # （shockのmax）だけを持ち、どんな武器が在るかを知らない——武器を足してもここは1行も変わらない。
@@ -266,7 +265,7 @@ traits:
       # **打撲の成分はshockが持ち、怪我としては表さない。** 一撃で「裂傷」と「打撲」の2枚を刺すと
       # 怪我スロットが溢れる。裂けた皮膚が傷（injuries.yaml）、殴られた揺れがshock、という分け方で足りる。
       strike:
-        with: {tag: weapon}
+        trigger: {drag: {tag: weapon}}
         duration: 15
         pick:
           # 打ち砕いた回。柄の遠心力が乗る武器（石斧）だけが引く。当たれば中型はその場で崩れ落ちる
@@ -398,13 +397,13 @@ object_defs:
     props:
       weight: {value: 5000}
       volume: {value: 12000}
-    combinations:
+    interactions:
       # 刃物を重ねて解体する（HuntingSystem.md 1.5節）。
       #
       # 5000gの内訳: 生肉500g×4 + 獣骨500g + 生皮600g = 3100g。残る1900gは血と内臓・頭で、
       # 使い道が無いのでカードにしない。値を変えるときはこの内訳を崩さないこと。
       butcher:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 60
         destroy: self
         spawn:
@@ -623,11 +622,11 @@ object_defs:
     props:
       weight: {value: 60000}
       volume: {value: 144000}
-    combinations:
+    interactions:
       # 大きいぶん時間がかかるが、1kgあたりで見ればサル（60分/5kg）より速い——同じ手数で
       # 大きく取れるため。
       butcher:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 240
         destroy: self
         spawn:
@@ -645,9 +644,9 @@ object_defs:
     props:
       weight: {value: 1000}
       volume: {value: 2400}
-    combinations:
+    interactions:
       butcher:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 20
         destroy: self
         spawn:
@@ -687,8 +686,9 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: charred_lump}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}
@@ -721,11 +721,11 @@ object_defs:
     props:
       weight: {value: 10}
       volume: {value: 15}
-    combinations:
+    interactions:
       # 削って針にする（tools.yamlのbone_needle）。刃物を当てる側（dragged）は残り、削られる骨だけが
       # 針へ置き換わる——石を打ち割って尖った石を作るのと同じ形（locations.yamlのknap）。
       whittle:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 40
         destroy: self
         spawn: {object: bone_needle}
@@ -753,8 +753,9 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: roasted_meat}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}
@@ -782,8 +783,9 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: charred_lump}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}
@@ -808,8 +810,9 @@ object_defs:
     props:
       weight: {value: 250}
       volume: {value: 300}
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - reason: too_full
             not: {subject: actor, prop: satiety, in_stage: full}

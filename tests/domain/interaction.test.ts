@@ -37,8 +37,9 @@ object_defs:
       satiety:
         value: 0
   apple:
-    actions:
+    interactions:
       eat:
+        trigger: menu
         add:
           actor:
             satiety: 10
@@ -65,8 +66,9 @@ object_defs:
       satiety:
         value: 100
   apple2:
-    actions:
+    interactions:
       eat:
+        trigger: menu
         conditions:
           - {subject: actor, prop: satiety, lt: 100}
         add:
@@ -91,8 +93,9 @@ object_defs:
   crate:
     slots:
       inside: {}
-    actions:
+    interactions:
       open:
+        trigger: menu
         spawn:
           - {object: apple_loot, into: self}
           - {object: berry_loot, into: self}
@@ -134,8 +137,9 @@ object_defs:
       weight_budget:
         value: 10
   rock_item:
-    actions:
+    interactions:
       use:
+        trigger: menu
         add:
           parent:
             weight_budget: -1
@@ -158,8 +162,9 @@ object_defs:
     const yaml = `
 object_defs:
   rock_item2:
-    actions:
+    interactions:
       use:
+        trigger: menu
         destroy: parent
 `;
     const codex = load(yaml);
@@ -182,8 +187,9 @@ object_defs:
     props:
       smash_target:
         value: 0
-    actions:
+    interactions:
       trample:
+        trigger: menu
         destroy: {prop: smash_target}
   basket: {}
 `;
@@ -218,8 +224,9 @@ object_defs:
       hp:
         value: 100
   sword:
-    actions:
+    interactions:
       attack:
+        trigger: menu
         pick:
           - weight: 100
             add:
@@ -258,8 +265,9 @@ object_defs:
       luck:
         value: 0
   bow:
-    actions:
+    interactions:
       shoot:
+        trigger: menu
         pick:
           - weight: {subject: actor, prop: luck}
             add:
@@ -294,9 +302,9 @@ object_defs:
     const yaml = `
 object_defs:
   wood:
-    combinations:
+    interactions:
       chop:
-        with: {tag: axe_tool}
+        trigger: {drag: {tag: axe_tool}}
         add:
           dragged:
             durability: -1
@@ -328,9 +336,9 @@ object_defs:
     const yaml = `
 object_defs:
   lever:
-    combinations:
+    interactions:
       operate:
-        with: {tag: marker_tag}
+        trigger: {drag: {tag: marker_tag}}
         add:
           dragged_parent:
             power: 3
@@ -344,9 +352,9 @@ object_defs:
     const yaml = `
 object_defs:
   wood2:
-    combinations:
+    interactions:
       chop:
-        with: {tag: axe_tool2}
+        trigger: {drag: {tag: axe_tool2}}
         destroy: self
   pebble3: {}
 `;
@@ -369,9 +377,9 @@ traits:
   sharp_tool: {tags: [sharp_tool]}
 object_defs:
   wood3:
-    combinations:
+    interactions:
       chop:
-        with: {tag: sharp_tool}
+        trigger: {drag: {tag: sharp_tool}}
         destroy: self
   axe_tool3:
     traits: [sharp_tool]
@@ -395,9 +403,9 @@ object_defs:
     const yaml = `
 object_defs:
   hearth2:
-    combinations:
+    interactions:
       ignite:
-        with: {object: burning_tinder2}
+        trigger: {drag: {object: burning_tinder2}}
         destroy: dragged
   burning_tinder2:
     tags: [tinder2]
@@ -429,11 +437,11 @@ object_defs:
     const yaml = `
 object_defs:
   wood4:
-    combinations:
+    interactions:
       chop:
-        with: {tag: axe_tool4}
+        trigger: {drag: {tag: axe_tool4}}
       sand:
-        with: {tag: sandpaper}
+        trigger: {drag: {tag: sandpaper}}
   axe_tool4:
     tags: [axe_tool4]
 `;
@@ -450,9 +458,9 @@ object_defs:
     const yaml = `
 object_defs:
   wood5:
-    combinations:
+    interactions:
       chop:
-        with: {tag: axe_tool5}
+        trigger: {drag: {tag: axe_tool5}}
         conditions:
           - {subject: dragged, prop: durability, gt: 0}
         destroy: self

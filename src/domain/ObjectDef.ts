@@ -1,5 +1,6 @@
-import type { ActionDef } from './ActionDef';
-import type { CombinationDef } from './CombinationDef';
+import { ActionDef } from './ActionDef';
+import { CombinationDef } from './CombinationDef';
+import type { InteractionDef } from './InteractionDef';
 import { LocalIndexMap } from './LocalIndexMap';
 import type { PassiveEffect } from './PassiveEffect';
 import { PassiveEffects } from './PassiveEffects';
@@ -96,7 +97,10 @@ export class ObjectDef {
    */
   readonly stackable: boolean;
 
-  /** このObjectDefが持つメニュー型操作（11節）。 */
+  /** このObjectDefが宣言している操作（11節・12節）。宣言順で、きっかけは混ざっている。 */
+  readonly interactions: readonly InteractionDef[];
+
+  /** 相手を伴わない操作（11節）。 */
   readonly actions: readonly ActionDef[];
 
   /** このObjectDefが（selfとして）持つドラッグ型操作（12節）。 */
@@ -113,8 +117,7 @@ export class ObjectDef {
     passives: readonly PassiveEffect[],
     stackOrder?: StackOrderDef,
     tags: readonly number[] = [],
-    actions: readonly ActionDef[] = [],
-    combinations: readonly CombinationDef[] = [],
+    interactions: readonly InteractionDef[] = [],
     boundToOwner = false,
     stackable = true,
     recipes: readonly RecipeDef[] = [],
@@ -123,15 +126,6 @@ export class ObjectDef {
     isStorage = false,
     isInProgress = false,
   ) {
-    // 操作の名前は1つの名前空間（actionsとcombinationsを名前で引くのは同じ問い）。
-    const actionNames = new Set(actions.map((action) => action.name));
-    const clash = combinations.find((combination) => actionNames.has(combination.name));
-    if (clash !== undefined)
-      throw new Error(
-        `同じ名前の actions と combinations があります（'${clash.name}'）。` +
-          '操作の名前は1つの名前空間なので、どちらかを別の名前にしてください。',
-      );
-
     this.globalId = globalId;
     this.name = name;
     this.isSingleton = isSingleton;
@@ -146,8 +140,11 @@ export class ObjectDef {
     this.passives = new PassiveEffects(passives);
     this.stackOrder = stackOrder;
     this.tags = tags;
-    this.actions = actions;
-    this.combinations = combinations;
+    this.interactions = interactions;
+    this.actions = interactions.filter((entry): entry is ActionDef => entry instanceof ActionDef);
+    this.combinations = interactions.filter(
+      (entry): entry is CombinationDef => entry instanceof CombinationDef,
+    );
     this.boundToOwner = boundToOwner;
     this.stackable = stackable;
     this.recipes = recipes;

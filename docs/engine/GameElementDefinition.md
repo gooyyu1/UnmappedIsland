@@ -3,8 +3,8 @@
 ## 1. 位置づけ
 
 本ドキュメントは、`WorldCodex`（ゲーム内のあらゆる要素を定義する YAML）の**文法そのもの**を体系的にまとめた、唯一の
-リファレンスです。`traits`・`object_defs`・`props`・`stages`・`slots`・`combinations`・`recipes`・`passives`・`active`・
-`modify`・`add`・`add`・`destroy`・`spawn`・`move`・`pick`・`actions`・`duration`・`conditions` など、YAML 上のキーワードの意味と
+リファレンスです。`traits`・`object_defs`・`props`・`stages`・`slots`・`interactions`・`trigger`・`recipes`・`passives`・`active`・
+`modify`・`add`・`destroy`・`spawn`・`move`・`pick`・`duration`・`conditions` など、YAML 上のキーワードの意味と
 書き方はすべてここに集約します。
 
 本書が定めるのは**文法**だけです。その文法で**具体的なゲーム内容をどう表現するか**は、以下の別ドキュメントを
@@ -14,7 +14,7 @@
 - [`SlotSystem.md`](./SlotSystem.md) — スロットの実行時実装（固定位置・受け入れ判定・スタック）
 - [`ContainerSystem.md`](./ContainerSystem.md) — コンテナの容量・重さ・保護
 - [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) — 液体容器（量・飲用・注ぎ移し・蒸発・降雨）
-- [`ActionSystem.md`](./ActionSystem.md) — アクション実行の設計（`actions`/`combinations` の実行時の仕組み）
+- [`ActionSystem.md`](./ActionSystem.md) — 操作の実行時の設計（`interactions` の実行時の仕組み）
 - [`ClimateSystem.md`](./ClimateSystem.md) — 季節・天候
 - [`TerrainGeneration.md`](./TerrainGeneration.md) — 島の地形生成（軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム）
 - [`ExplorationSystem.md`](./ExplorationSystem.md) — 生成された土地の構造と挙動（スロット・探索・道の発見と移動）
@@ -50,7 +50,7 @@
 
 ### 3.2 命名規則
 
-- 構造キーワード（`props`、`traits`、`actions` など）・型名・プロパティ名は、すべて **snake_case** で統一します。
+- 構造キーワード（`props`、`traits`、`interactions` など）・型名・プロパティ名は、すべて **snake_case** で統一します。
 - 識別子（型名・プロパティ名・トレイト名・アクション名・スロット名・タグ名に共通）は次の正規表現に従います。
 
   ```
@@ -210,7 +210,7 @@ object_defs:
 
 ここでいうタグは `object_def` に付くもので、プロパティに付けるタグ（6.7 節）とは別の名前空間です。
 
-**「どの型が当てはまるか」を書く場所——枠の `accept`（7.2 節）と `combinations` の `with`（12.1 節）——は、
+**「どの型が当てはまるか」を書く場所——枠の `accept`（7.2 節）と重ねる操作の相手の指定（12.1 節）——は、
 `{tag: ...}` と `{object: ...}` の二択で同じ形をしています。** タグで指せばそのタグを持つあらゆる型
 （パック追加分も含む）が、`object_defs` の id で指せばまさにその型だけが当てはまります。**trait 名では
 どちらの形でもマッチングしません**（trait は合成後に消える存在であり、外部から参照すべきではないため）。
@@ -269,7 +269,7 @@ object_defs:
         value: 7
 ```
 
-`props`（6 節）以外にも、`actions`・`combinations`・`recipes`・`slots`・`passives`・`tags`（4.1 節）を trait 経由で
+`props`（6 節）以外にも、`interactions`・`recipes`・`slots`・`passives`・`tags`（4.1 節）を trait 経由で
 まとめて配布できます。`value` を持たないプロパティは、5 節のルール通り空のマッピング（`{}`）として表現します。
 
 ## 6. props（プロパティ）
@@ -689,7 +689,7 @@ object_defs:
 
 - **`accept`**: その枠が受け入れる型。`tag` か `object` のどちらか一方を指定します（両方またはどちらも
   なしはエラー）。省略すると型を問いません。
-  書き方は `combinations` の `with`（12.1 節）と同じ二択です（4.1 節）。
+  書き方は重ねる操作の相手の指定（12.1 節）と同じ二択です（4.1 節）。
 - **`max`**: その枠に積める同種の個数（省略で無制限）。**束ねられる型にだけ効きます**——
   `stackable: false` な型（道・かご、7.6 節）は同種でも束ならないので、1 枠には必ず 1 個しか入りません。
 
@@ -967,7 +967,7 @@ object_defs:
 ### 7.10 put_in（入れるのにかかる時間）
 
 **`put_in: {duration: ...}`** を書くと、そのスロットへ物を入れるのにゲーム内時間がかかります（既定は一瞬）。
-`duration` は `combinations` のそれと同じ形（リテラルか `{subject, prop}` 参照、10.2 節）で、`self` が枠の
+`duration` は操作のそれと同じ形（リテラルか `{subject, prop}` 参照、10.2 節）で、`self` が枠の
 持ち主、`dragged` が入れる物です。
 
 ```yaml
@@ -982,7 +982,7 @@ slots:
 非対称の方が普通のためです。
 
 **値段は枠が持ち、経路は持ちません。** プレイヤーが物を入れる操作はカードへ重ねる・レーンへ落とす・端の
-矢印で送るの3通りありますが、どれも同じだけかかります。`combinations` に `duration` を書いて同じことを
+矢印で送るの3通りありますが、どれも同じだけかかります。重ねる操作に `duration` を書いて同じことを
 表そうとすると、**スロットへ直接落とす経路だけが無料**になり、同じことが経路で違う値段になります。
 
 離す前に値段を見せるのは画面の責務です（[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。操作の呼び名と説明は `slot_texts` の `put_in`（[Localization.md](Localization.md)）に書きます。
@@ -1109,7 +1109,7 @@ object_defs:
 毎 tick 減少）。`modify` と全く同じ登録・ゲートの仕組みを使い、違いは可逆か不可逆かだけです。
 
 **動詞が名乗るのは可逆性だけで、一度きりか tick 毎かは置き場所が決めます。** 同じ `add`（9.2 節）を
-`actions` の中に書けば実行の瞬間に 1 回、`passives` の中に書けば条件が真である tick 毎。`transfer`
+`interactions` の中に書けば実行の瞬間に 1 回、`passives` の中に書けば条件が真である tick 毎。`transfer`
 （9.5 節）も同じ 1 語で両方に置けます。動詞にも「一度きり／継続」を持たせると、ブロックと動詞という
 **必ず一致しなければならない 2 つの宣言**を書くことになり、一致しない組み合わせはロード時エラーにしか
 なりません（つまり動詞側は情報を足していません）。
@@ -1216,20 +1216,21 @@ object_defs:
 
 `active` という語自体は、YAML 上の専用キーとしては書きません。この節で説明する `set`・`add`・`destroy`・
 `spawn`・`transfer`・`move`・`signal` を、それが書ける場所（9.7 節）の中に、
-`showMenu`/`conditions`/`with`/`weight` と対等な兄弟キーとして直接書きます。確率分岐の `pick`（10 節）も
+`trigger`/`conditions`/`weight` と対等な兄弟キーとして直接書きます。確率分岐の `pick`（10 節）も
 これらと対等な兄弟キーで、**いくつでも並べて書け、書いた順に実行されます**（9.7 節）。
 
 ### 9.1 文法: 操作が上位、対象が下位
 
 `set`・`add`・`destroy`・`spawn` という操作をキーとして直接書きます。`set`/`add` の中には、`self`/`parent`/
 `ancestor`（8.6 節と同じ祖先探索。`self`の直接の親から遡り、対象プロパティを定義している最初の祖先へ
-書き込む）/`actor` を対象キーとする辞書がぶら下がります（`combinations`（12 節）の中では、これに加えて
+書き込む）/`actor` を対象キーとする辞書がぶら下がります（重ねる操作（12 節）の中では、これに加えて
 **`dragged`**（組み合わせる相手のカード、12.2 節）も使えます）。`destroy`はオブジェクトそのものを指す（プロパティを
 持たない）ため、`ancestor`は対象として使えません（未対応、ロード時エラー）。
 
 ```yaml
-actions:
+interactions:
   eat:
+    trigger: menu
     add:
       actor:
         satiety: 10
@@ -1347,8 +1348,9 @@ spawn: {object: item_coconut, count: 2, into: self}
 どちらの置き場所でも同じで、違うのは `actor` を対象にできるかだけです。
 
 ```yaml
-actions:
+interactions:
   drink:
+    trigger: menu
     transfer:
       amount: 2000
       from_prop: volume
@@ -1357,7 +1359,7 @@ actions:
 ```
 
 - **`from`**（省略可、既定値 `self`）・**`to`**（省略可、既定値 `self`）: 参照ルート。
-  `set`/`add` の対象キー（9.1 節）と同じ許可範囲（`self`/`parent`/`ancestor`/`actor`、`combinations` 内は
+  `set`/`add` の対象キー（9.1 節）と同じ許可範囲（`self`/`parent`/`ancestor`/`actor`、重ねる操作では
   `dragged` も）。
 - **`from_prop`**・**`to_prop`**: それぞれ移送元・移送先のプロパティ名。
 - **`amount`**: 一度に `from` から出すことを試みる量の上限。
@@ -1376,8 +1378,9 @@ actions:
   固定の `add` では表現できない「飲んだ量に比例した副効果」（例: お茶の眠気改善）を表すために使います。
 
 ```yaml
-actions:
+interactions:
   drink:
+    trigger: menu
     transfer:
       amount: 250            # 水を250mL出す
       to_amount: 10          # 飲みきると水分が10 tick分回復する
@@ -1401,8 +1404,9 @@ actions:
 オブジェクト自身の所属を移します。典型例は、土地と土地を繋ぐ道の移動アクション（`actor` を移動先の土地へ移す）です。
 
 ```yaml
-actions:
+interactions:
   travel:
+    trigger: menu
     move:
       subject: actor
       to_prop: destination_id
@@ -1411,7 +1415,7 @@ actions:
 - **動かす物**: `subject` と `subject_prop` の**どちらか一方**で指します（両方書く・どちらも書かないのは
   ロード時エラー）。
   - **`subject`**: オブジェクトそのものを指すので、指せるのは**その宣言が置かれた場所が用意できる相手**
-    です（14.1 節）——`actions` なら `self`・`parent`・`actor`、`combinations` ならさらに `dragged`、
+    です（14.1 節）——`menu`/`tick` なら `self`・`parent`・`actor`、`drag` ならさらに `dragged`、
     `on_max`/`on_min` なら `self`・`parent`。`child` は「一度きりの命令に対してどれを動かすか」が
     決まらないため、どの場所でも指せません。`ancestor` は探すプロパティ名を伴わないため同様です。
   - **`subject_prop`**: `self` が持つプロパティ名。`to_prop` と同じく実効値をインスタンスIDとして解釈します
@@ -1454,15 +1458,15 @@ move:
 ```yaml
 traits:
   liquid_container:
-    combinations:
+    interactions:
       pour_in:
-        with: {tag: liquid}
+        trigger: {drag: {tag: liquid}}
         move: {subject: dragged, to: self}
 ```
 
 **物を入れ物へしまうだけなら、これを書く必要はありません。** 受け取れるスロットを持つカード（
 7.8 節）へ重ねたらそのスロットへ入る、という動きが画面側にあります
-（[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。`combinations` を書くのは、
+（[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。重ねる操作を書くのは、
 入れる以上のこと（量として混ざる・時間がかかる・条件が要る）を起こしたいときだけです。
 
 移動先が移動対象自身か、その中身である場合（入れ物を自分の中へ入れる）は、ツリーから切り離された輪が
@@ -1473,7 +1477,7 @@ traits:
 最初に配置できたスロットへ入れます。ただし `spawn` と異なり、`move` には親へのこぼれ落ち（9.4 節）は
 **ありません**。移動対象は今いる場所から動かないだけで済むので、配置に失敗した場合は単に元の場所に留まります。
 
-`move` は `actions`/`combinations`/`pick` の各候補のいずれでも書けます。`on_max`/`on_min`
+`move` は `interactions`/`pick` の各候補のいずれでも書けます。`on_max`/`on_min`
 （6.3 節）でも書けますが、そこに実行者は居ないので **`actor`・`dragged` を指す形だけがロード時エラー**に
 なります（`self` と型・プロパティで書いた移動は成立します——距離が尽きた瞬間に本土へ着く、など)。
 
@@ -1482,7 +1486,7 @@ traits:
 この節の操作は次のいずれかの位置に、専用のラップを挟まず直接書きます。持続する条件を表す `conditions`/ゲートを
 持つ `passives` とは、書ける場所が構造上重ならないため、両者を混同する余地はありません。
 
-- `actions`/`combinations` の各エントリ（11 節・12 節）— `showMenu`/`conditions`/`duration`/`with` と
+- `interactions` の各エントリ（11 節・12 節）— `trigger`/`conditions`/`duration` と
   対等な兄弟キー
 - `pick` の各候補（10 節）— `weight` と対等な兄弟キー
 - `props` の `on_max`/`on_min`（6.3 節）— これらは専用のキーの直下にそのまま書きます
@@ -1493,8 +1497,9 @@ traits:
 （9.4 節）などです。
 
 ```yaml
-actions:
+interactions:
   turn:
+    trigger: menu
     add: {self: {fatigue: 1}}   # 分岐に関わらず必ず起こること
     pick:                       # 分岐する部分。共通処理を全候補へ複製しなくてよい
       - weight: 10
@@ -1508,9 +1513,9 @@ actions:
 **世界の形を何も変えず、出来事が起きたことだけを観測する側へ渡します。** 値は出来事の識別子です。
 
 ```yaml
-combinations:
+interactions:
   strike:
-    with: {tag: weapon}
+    trigger: {drag: {tag: weapon}}
     pick:
       - weight: 70
         spawn: {object: laceration, into: self}
@@ -1523,15 +1528,15 @@ combinations:
 `self` に起きたこととして告げます（宣言した型そのものに起きる場合が大半のため）。
 
 ```yaml
-combinations:
+interactions:
   strike:
-    with: {tag: weapon}
+    trigger: {drag: {tag: weapon}}
     signal: {dragged: chipped}   # 殴った側（重ねた武器）に起きたこととして告げる
 ```
 
-対象は `self`/`parent`/`actor`（`combinations` では `dragged` も）で、`destroy` と同じくオブジェクト
+対象は `self`/`parent`/`actor`（重ねる操作では `dragged` も）で、`destroy` と同じくオブジェクト
 そのものを指すため `ancestor` は使えません（未対応、ロード時エラー）。対象が解決できない実行文脈
-（`actor` を持たない `actions`）では、その告知だけが起きません。
+（`actor` を持たない操作）では、その告知だけが起きません。
 
 外した回に何も書かないと、その一手は「起きなかった手」と見分けが付きません。観測する側が読むのは
 世界に起きた物の出入り（[`ActionSystem.md`](./ActionSystem.md) 7 節）なので、**出入りを伴わない出来事は、
@@ -1553,9 +1558,9 @@ combinations:
 別物になります——札は消えて出直し、プロパティの値も移らず、スロットの中身は親へこぼれます。
 
 ```yaml
-combinations:
+interactions:
   collect_sap:
-    with: {tag: liquid_container}
+    trigger: {drag: {tag: liquid_container}}
     conditions:
       - {reason: not_empty, subject: dragged, prop: fill, eq: 0}
     duration: 4
@@ -1570,7 +1575,7 @@ combinations:
 どの型もどこかの座標に居なければなりません——液体容器なら、手で書いた空の容器が `content: none` に
 あたります。
 
-- **`subject`** は `destroy`（9.3 節）と同じ対象キー（`self`/`parent`/`actor`、`combinations` では
+- **`subject`** は `destroy`（9.3 節）と同じ対象キー（`self`/`parent`/`actor`、重ねる操作では
   `dragged`）で、省略すると `self` です。
 - **行き先の座標に型が居ない組み合わせは、候補になりません**（12 節）。落とせるのに何も起きない操作を
   出さないためで、`conditions` の不成立と違って `reason`（14.6 節）は持ちません——成立していないのは
@@ -1615,9 +1620,9 @@ combinations:
 兄弟キーとして直接持ちます。候補が1つしかない場合は、重みの値に関わらず必ずそれが選ばれます。
 
 ```yaml
-actions:
+interactions:
   attack:
-    showMenu: always
+    trigger: menu
     pick:
       - weight: 50
         destroy: self
@@ -1653,24 +1658,24 @@ pick:
 外部からの干渉（「戦闘スキルが高いほど命中しやすい」等）は、`weight` 自体に専用の補正記法を用意するのではなく、
 参照先のプロパティに対する通常の `modify` 効果として表現します。
 
-## 11. actions（メニュー型操作）
+## 11. interactions（操作）
 
-アクション（`eat`、`travel` など）は、条件（`conditions`）と実行結果（`set`/`add`/`destroy`/`spawn`/`transfer`/`move`、
-または `pick`）、および実行にかかるゲーム内時間（`duration`）を**1つの定義としてまとめて持ちます**。
-`object_defs`/`traits` の中に配置します（トップレベル独立キーにはしません）。
+操作（`eat`、`travel`、`chop` など）は、きっかけ（`trigger`）と条件（`conditions`）と実行結果
+（`set`/`add`/`destroy`/`spawn`/`transfer`/`move`、または `pick`）、および実行にかかるゲーム内時間
+（`duration`）を**1つの定義としてまとめて持ちます**。`object_defs`/`traits` の中に `interactions` として
+配置します（トップレベル独立キーにはしません）。
 
-**操作の名前は、`actions` と `combinations` で1つの名前空間です。** 同じオブジェクトが同名の
-`actions` と `combinations` を持つことはロードで弾きます——**同じカードに同名の操作が2つ並ぶと、
-プレイヤーが見分けられない**ためです。押して開くメニューにも「食べる」、そのカードへ何かを重ねても
-「食べる」では、どちらを指しているか言えません。表示文字列も1つの節へ書きます
-（[`Localization.md`](./Localization.md) 対応表の形式）。
+**操作は1つの節・1つの名前空間です。** 押して起こすものも、時間が起こすものも、カードを重ねて起こす
+ものも、違うのは**きっかけだけ**——条件・効果・所要時間の書き方は丸ごと同じです。同じカードに同名の
+操作が2つ並ぶとプレイヤーが見分けられないので、名前は1つの節の中で一意になります。表示文字列も
+1つの節へ書きます（[`Localization.md`](./Localization.md) 対応表の形式）。
 
 ```yaml
 traits:
   eatable:
-    actions:
+    interactions:
       eat:
-        showMenu: always
+        trigger: menu
         conditions:
           - {subject: actor, prop: satiety, lt: max}
         add:
@@ -1679,14 +1684,20 @@ traits:
         destroy: self
 ```
 
-### 11.1 showMenu
+### 11.1 trigger（きっかけ）
 
-メニューへの表示方法を制御します。省略時は `always`（そのカードの子ウィンドウにボタンとして並ぶ）です。
+**何がこの操作を起こすか**を宣言します。必須です。
 
-`never` は、**画面のボタンには出さない操作**です。起こすのはプレイヤーではなくゲーム側で、名前で指して
-実行される点だけがアクションと同じになります（時間の経過が配る動物の 1 手、
-[`HuntingSystem.md`](./HuntingSystem.md) 5 節）。宣言をアクションの外へ出さないのは、条件・効果・所要時間の
-書き方を丸ごと共有できるためで、違いは「誰が起こすか」だけだからです。
+| 書き方 | 起こすもの | 画面のボタン |
+| ------ | ---------- | ------------ |
+| `trigger: menu` | プレイヤーが押したとき | 出る |
+| `trigger: tick` | 時間が経ったとき | 出ない |
+| `trigger: {drag: ...}` | そのカードを重ねたとき（12 節） | 出ない（相手が要るため） |
+
+**画面に出すかは、きっかけから決まります。** ボタンとして並ぶのは `menu` だけです。
+
+`tick` は、**プレイヤーが押す機会の無い操作**です。名前で指して実行される点だけが `menu` と同じに
+なります（時間の経過が配る動物の 1 手、[`HuntingSystem.md`](./HuntingSystem.md) 5 節）。
 
 ### 11.2 conditions
 
@@ -1695,12 +1706,12 @@ traits:
 
 ### 11.3 duration（実行にかかるゲーム内時間）
 
-`duration` は、この操作を実行するのにかかるゲーム内時間（分）です。`showMenu`/`conditions`と対等な
+`duration` は、この操作を実行するのにかかるゲーム内時間（分）です。`trigger`/`conditions`と対等な
 兄弟キーとして直接書きます。省略すれば時間を消費しません（例: `eat`のような即座に終わる操作）。
-`combinations`（12 節）も同じキーを同じ意味で持てます。
+きっかけによらず同じキーを同じ意味で持ちます。
 
 ```yaml
-actions:
+interactions:
   explore:
     duration: 30          # 探索は1回30分かかる
     ...
@@ -1723,25 +1734,25 @@ actions:
 ### 11.4 active / pick
 
 このアクションが実行された瞬間に、`set`/`add`/`destroy`/`spawn`/`transfer`/`move`/`signal`（9 節、`active` の
-実体）と `pick`（10 節）が、書かれた順に1回ずつ適用されます（9.7 節）。`showMenu`/`conditions`/`duration`と
+実体）と `pick`（10 節）が、書かれた順に1回ずつ適用されます（9.7 節）。`trigger`/`conditions`/`duration`と
 対等な兄弟キーとして直接書き、専用の `active:` ラップは挟みません。1つも指定しなければ、条件成立時に
 何も起きないアクションになります。
 
-**`actor` はすべてのアクションに暗黙的に存在し、常にプレイヤーキャラクターを指します。** `parent`（木構造上の直接の
+**`actor` はすべての操作に暗黙的に存在し、常にプレイヤーキャラクターを指します。** `parent`（木構造上の直接の
 格納先）とは独立した参照です。
 
-## 12. combinations（ドラッグ型操作）
+## 12. trigger: drag（カードを重ねる操作）
 
-`combinations` は、**変化の本体と言えるオブジェクト**に定義します（どちらへドラッグしても成立するので、
-受け側かどうかで決めません。12.3 節）。`with`（相手のカードに求める型、4.1 節）でマッチング対象を指定し、
-宣言している側が `self`、相手が `dragged` になります。
+きっかけを `{drag: ...}` と書いた操作は、**変化の本体と言えるオブジェクト**に定義します（どちらへ
+ドラッグしても成立するので、受け側かどうかで決めません。12.3 節）。`drag` の値が相手のカードに求める型
+（4.1 節）で、宣言している側が `self`、相手が `dragged` になります。
 
 ```yaml
 object_defs:
   wood:
-    combinations:
+    interactions:
       chop:
-        with: {tag: axe_tool}
+        trigger: {drag: {tag: axe_tool}}
         conditions:
           - {subject: dragged, prop: durability, gt: 0}
         add:
@@ -1757,37 +1768,37 @@ object_defs:
         value: 10
 ```
 
-### 12.1 with
+### 12.1 相手の指定
 
 マッチング対象を、**枠の `accept`（7.2 節）と同じ `{tag: ...}` / `{object: ...}` の二択**で指定します
 （両方またはどちらもなしはエラー。4.1 節）。
 
 ```yaml
-combinations:
+interactions:
   chop:
-    with: {tag: axe_tool}          # そのタグを持つあらゆるカード
+    trigger: {drag: {tag: axe_tool}}          # そのタグを持つあらゆるカード
   ignite:
-    with: {object: burning_tinder} # その型そのものだけ
+    trigger: {drag: {object: burning_tinder}} # その型そのものだけ
 ```
 
 `{tag: ...}` は、そのタグを持つあらゆるカード（パック追加分・trait を介さず直接タグを宣言したカードも
 含む）と一致します。`{object: ...}` はその型だけと一致し、**相手が 1 種類しか無い組み合わせのために
 単発のタグを新設せずに済みます**。trait 名ではどちらの形でもマッチングしません（4.1 節）。
 
-`combinations` も `duration`（11.3 節）を持てます。`{subject, prop}` 参照では `dragged` も指せるため、
+重ねる操作も `duration`（11.3 節）を持てます。`{subject, prop}` 参照では `dragged` も指せるため、
 「使う道具側のプロパティが所要時間を決める」（切れ味の悪い刃物ほど時間がかかる、など）も書けます。
 
 ### 12.2 dragged
 
 `set`/`add`/`destroy`/`transfer`（9 節）の対象キー、および `conditions`/`weight` の `subject`（14 節・10.2 節）に、
 `self`/`parent`/`child`/`actor` に加えて **`dragged`**（組み合わせる相手のカード）を使えます。
-`combinations` の中でのみ意味を持つ、専用のキーです。**画面でどちらの札を掴んだかによらず**、
+きっかけが `drag` の操作の中でのみ意味を持つ、専用のキーです。**画面でどちらの札を掴んだかによらず**、
 `self` は宣言している側、`dragged` は相手を指します（12.3 節）。
 
 ### 12.3 どちらのオブジェクトに書くか
 
-**1 つの組み合わせは、片方のオブジェクトにだけ書きます。** 画面は、落とされた側の `combinations` を先に、
-無ければ掴んだ側の `combinations` を見るので（[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）、
+**1 つの組み合わせは、片方のオブジェクトにだけ書きます。** 画面は、落とされた側の宣言を先に、
+無ければ掴んだ側の宣言を見るので（[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）、
 **どちらの札をどちらへドラッグしても同じ 1 つの宣言が実行されます**。両側に書くと 2 つの宣言になり、
 同じ内容である保証がありません。
 
@@ -1799,9 +1810,9 @@ combinations:
 object_defs:
   # 槍の柄になる棒が本体。縄はそれを縛る側なので、宣言は棒にだけ置く。
   stick:
-    combinations:
+    interactions:
       craft_spear:
-        with: {tag: rope}
+        trigger: {drag: {tag: rope}}
         destroy: [self, dragged]
         spawn: {object: spear}
   rope:
@@ -1817,15 +1828,15 @@ object_defs:
 
 ### 12.4 allow_multiple（まとめて重ねる）
 
-**既定では、1 回のドロップで組み合わさるのは 1 枚だけです。** `allow_multiple: true` を書くと、束から
-まとめて運んできた枚数ぶんを続けて実行します。
+**既定では、1 回のドロップで組み合わさるのは 1 枚だけです。** きっかけの中に `allow_multiple: true` を
+書くと、束からまとめて運んできた枚数ぶんを続けて実行します。**きっかけの中に置くのは、重ねる操作
+以外では意味を持たないから**です——外に出すと、書けてしまうが効かないキーができます。
 
 ```yaml
-combinations:
+interactions:
   add_fuel:
-    with: {tag: fuel}
+    trigger: {drag: {tag: fuel}, allow_multiple: true}
     duration: 1
-    allow_multiple: true
     transfer: {amount: 999, from: dragged, from_prop: fuel, to_prop: fuel}
     destroy: dragged
 ```
@@ -1850,7 +1861,7 @@ combinations:
 枠へ入れる操作（7.8 節）はこの宣言を持ちません。効果も値段も枠の宣言で決まっていて、書いた人が
 選べる余地が無いためです。
 
-`combinations` の実行時の設計（マッチングの解決、キーの衝突の扱いなど）は `ActionSystem.md` を参照してください。
+重ねる操作の実行時の設計（マッチングの解決、キーの衝突の扱いなど）は `ActionSystem.md` を参照してください。
 
 ## 13. recipes（レシピ）
 
@@ -1884,7 +1895,7 @@ object_defs:
 - 最後の工程まで完了すると、目的のアイテムが生成されます。
 
 **要求する相手は、型そのものでもタグでも指せます**（`{object: ...}` / `{tag: ...}` のいずれか一方。
-枠の `accept`（7.2 節）・`combinations` の `with`（12.1 節）と同じ形）。道具は「その用途に使える物」で
+枠の `accept`（7.2 節）・重ねる操作の相手の指定（12.1 節）と同じ形）。道具は「その用途に使える物」で
 あって特定の型ではないので、刃物を `{tag: cutting_tool}` で求められます。
 
 ```yaml
@@ -1918,7 +1929,7 @@ recipes:
 **`subject` に使えるのは `actor` だけです**（他はロード時エラー）。解放条件を評価する時点では成果物の
 インスタンスがまだ存在せず、`self`/`parent`/`ancestor` のいずれも解決先を持たないためです。
 
-`actions`/`combinations` の `conditions` と同じく、要素ごとに `reason`（14.6 節）を書けます。未解放の
+`interactions` の `conditions` と同じく、要素ごとに `reason`（14.6 節）を書けます。未解放の
 レシピは解放条件とともに一覧へ出すため、可否と理由が同じ 1 回の評価から得られます。
 
 レシピの内部設計（製作中オブジェクトの自動生成、枠の要件との連携など）は `RecipeSystem.md` を参照してください。
@@ -1968,8 +1979,8 @@ conditions:
   | ------ | ---------- |
   | `self` / `parent` | 宣言元の個体が居る場所（レシピの解放条件だけは、成果物がまだ無いので指せません） |
   | `ancestor` | 上に加えて、`prop` のようにプロパティ名を伴う場所（オブジェクトそのものを指す `in_slot`・`destroy`・`move` では指せません） |
-  | `actor` | 誰かが操作している場所（`actions`・`combinations`。`on_max`/`on_min` と `passives` は時間の側が動かすので指せません） |
-  | `dragged` | `combinations` の中（12.2 節） |
+  | `actor` | 誰かが操作している場所（`interactions`。`on_max`/`on_min` と `passives` は時間の側が動かすので指せません） |
+  | `dragged` | 重ねる操作の中（12.2 節） |
   | `child` | `passives` の対象（付いている子ごとに登録を配る唯一の場所、8.1 節） |
 
   解決先を持たないルートを書くとロード時にエラーになり、**その場所に何が無いのか**が理由として出ます。
@@ -2049,8 +2060,9 @@ object_defs:
         cell_count: 1
         cell: {accept: {tag: liquid}}
         capacity: 4800
-    actions:
+    interactions:
       pour_out:
+        trigger: menu
         conditions:
           - {slot: content, matches: {object: water_liquid}}
         destroy: self
@@ -2086,13 +2098,14 @@ conditions:
 
 ### 14.6 reason（満たさなかったときに出す理由）
 
-`actions`/`combinations` の `conditions` の要素には、**満たさなかったときにプレイヤーへ出す理由**を
+`interactions` の `conditions` の要素には、**満たさなかったときにプレイヤーへ出す理由**を
 `reason`（識別子）で添えられます。文言は locale の `reason_texts` が持ちます
 （[`Localization.md`](./Localization.md)）。
 
 ```yaml
-actions:
+interactions:
   travel:
+    trigger: menu
     conditions:
       - {in_slot: fixtures}
       - reason: too_heavy
@@ -2153,7 +2166,7 @@ object_defs:
   採用し実装済みですが、フィールドの意味・軸空間マッチングのアルゴリズムは地形生成固有の内容であるため、
   本書には含めず [`TerrainGeneration.md`](./TerrainGeneration.md) に委ねます。地形生成によって作られた
   `Location` 自身の構造（スロット・探索・道の発見と移動）は [`ExplorationSystem.md`](./ExplorationSystem.md)
-  を参照してください（そちらは本書の `slots`・`props`・`actions`・`move`・`duration` の応用例です）。
+  を参照してください（そちらは本書の `slots`・`props`・`interactions`・`move`・`duration` の応用例です）。
 - **`derived`（導出値）**: 「他の props から計算される値」という概念自体、採否がまだ決まっていません（17 節）。
 - **表示文字列**: 画面に出す名前・説明文は WorldCodex に持たせません。`object_defs` のキーはあくまで
   識別子であり、表示名は言語ごとの対応表から引きます（[`Localization.md`](./Localization.md)）。
@@ -2183,6 +2196,6 @@ object_defs:
 - `weight` の合計が0（またはマイナス）になった場合のフォールバック候補の扱いは、宣言順で先頭の候補を選ぶ、と
   実装上決定した（YAML側にフォールバック候補を明示する記法は無い）
 - `slots` が character 専有の概念か、コンテナ全般で使い回す汎用概念か
-- `combinations` に関する未決事項一式（キーの衝突解決、パックによる拡張性など）は `ActionSystem.md` に整理
+- 重ねる操作に関する未決事項一式（キーの衝突解決、パックによる拡張性など）は `ActionSystem.md` に整理
 - レシピに関する未決事項一式は `RecipeSystem.md` に整理
 - コンテナの容量・重さに関する未決事項一式は `ContainerSystem.md` に整理

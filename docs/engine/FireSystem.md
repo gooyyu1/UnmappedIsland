@@ -85,9 +85,9 @@ slots:
 
 ```yaml
 # 炉の側が宣言する
-combinations:
+interactions:
   add_fuel:
-    with: {tag: fuel}
+    trigger: {drag: {tag: fuel}}
     duration: 1
     allow_multiple: true     # 束ねた薪はまとめてくべられる（GameElementDefinition.md 12.4節）
     transfer:
@@ -267,9 +267,9 @@ passives:
 
 ```yaml
 # 火口の側が宣言する。成否は天気とスキルの段が重みを動かす
-combinations:
+interactions:
   light:
-    with: {object: fire_drill}
+    trigger: {drag: {object: fire_drill}}
     duration: 30
     pick:
       - weight: {prop: ignition_chance}
@@ -287,9 +287,9 @@ combinations:
 
 ```yaml
 # 炉の側が宣言する
-combinations:
+interactions:
   ignite:
-    with: {object: burning_tinder}
+    trigger: {drag: {object: burning_tinder}}
     conditions:
       - {reason: no_fuel, prop: fuel, gt: 0}
     destroy: dragged
@@ -328,7 +328,7 @@ combinations:
 
 ### 3.3 火起こしの宣言は、火口の側に置く
 
-`combinations` は素材の側に宣言する（`GameElementDefinition.md` 12.3 節）ので、火起こし具ではなく
+ドラッグ型の操作は素材の側に宣言する（`GameElementDefinition.md` 12.3 節）ので、火起こし具ではなく
 火口が `light` を持ちます。宣言は 1 つで、火起こし具を火口へ重ねても火口を火起こし具へ重ねても同じ
 `light` が実行されます——成否の `pick` を 2 箇所へ書く必要はありません。
 
@@ -355,9 +355,9 @@ combinations:
 
 ```yaml
 # 焚き火の側が宣言する
-combinations:
+interactions:
   add_stone:
-    with: {object: stone}
+    trigger: {drag: {object: stone}}
     destroy: dragged
     add: {self: {stones: 1}}
 props:

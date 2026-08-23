@@ -67,8 +67,9 @@ object_defs:
     props:
       warmth:
         value: 0
-    actions:
+    interactions:
       rest:
+        trigger: menu
         duration: 30
         add:
           self:
@@ -98,8 +99,9 @@ object_defs:
     props:
       travel_minutes:
         value: 45
-    actions:
+    interactions:
       travel:
+        trigger: menu
         duration: {prop: travel_minutes}
 `);
     const trail = session.spawn(codex.objectNames.getId('trail'));
@@ -116,8 +118,9 @@ object_defs:
     props:
       warmth:
         value: 0
-    actions:
+    interactions:
       rest:
+        trigger: menu
         duration: 30
         conditions:
           - {prop: warmth, gt: 10}
@@ -138,9 +141,9 @@ object_defs:
     props:
       cracked:
         value: 0
-    combinations:
+    interactions:
       crack:
-        with: {tag: hammer}
+        trigger: {drag: {tag: hammer}}
         duration: 20
         add:
           self:
@@ -170,9 +173,9 @@ object_defs:
       swing_minutes:
         value: 35
   nut:
-    combinations:
+    interactions:
       crack:
-        with: {tag: hammer}
+        trigger: {drag: {tag: hammer}}
         duration: {subject: dragged, prop: swing_minutes}
 `);
     const nut = session.spawn(codex.objectNames.getId('nut'));
@@ -201,8 +204,9 @@ object_defs:
               self:
                 staleness: 1
   oven:
-    actions:
+    interactions:
       bake:
+        trigger: menu
         duration: 60
         spawn: {object: bread, into: self}
     slots:
@@ -241,8 +245,9 @@ object_defs:
           - add:
               self:
                 durability: -1
-    actions:
+    interactions:
       carve:
+        trigger: menu
         duration: 30
         spawn: {object: statue}
 `);
@@ -280,9 +285,9 @@ object_defs:
     props:
       carved:
         value: 0
-    combinations:
+    interactions:
       carve:
-        with: {tag: chisel}
+        trigger: {drag: {tag: chisel}}
         duration: 30
         add:
           self:
@@ -319,8 +324,9 @@ object_defs:
     props:
       warmth:
         value: 0
-    actions:
+    interactions:
       rest:
+        trigger: menu
         duration: 30
         add:
           self:

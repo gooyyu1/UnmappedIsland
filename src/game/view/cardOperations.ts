@@ -130,8 +130,8 @@ export function cardOperationsOf(
   /**
    * そのカードで実行できるアクション（ActionSystem.md 1節）。
    *
-   * `showMenu: never`のアクションはボタンにしない（GameElementDefinition.md 11.1節）。プレイヤーが
-   * 押す機会が無い操作——動物の1手のように時間の側が起こすもの——のための宣言。
+   * **ボタンにするのは`trigger: menu`だけ**（GameElementDefinition.md 11.1節）。時間の側が起こす
+   * 操作（動物の1手）は、プレイヤーが押す機会を持たない。
    *
    * 製作中オブジェクトの操作（craftingView）も同じ並びに入る。**宣言から来たものと画面の都合で
    * 足したものを分けない**——ボタンにする側は、どちらも同じ1つの並びとして受け取る。
@@ -140,7 +140,7 @@ export function cardOperationsOf(
     const texts = locale.object(instance.def.name);
     const fromDefinition = instance
       .actionsFor(game.player.instance)
-      .filter((action) => action.showMenu === 'always')
+      .filter((action) => action.trigger === 'menu')
       .map((action) => {
         const declared = texts.interaction(action.name);
         const unmet = action.unmetRequirement();

@@ -87,8 +87,9 @@ object_defs:
 消えないため、中の物とプレイヤーはその場に残ります。
 
 ```yaml
-actions:
+interactions:
   install_raised_floor:
+    trigger: menu
     duration: 480
     conditions:
       - not:

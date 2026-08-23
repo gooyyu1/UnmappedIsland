@@ -23,6 +23,7 @@
 | 段4 A-6 ページのインスタンス | 済（同 17節） |
 | 段4 A-13 周りの物を候補にする `pick` | 設計案のみ（[`PickAmong.md`](./PickAmong.md)）。**着手可否が未決** |
 | 段4 A-7 実体化された島 | **保留**（同 18節に問題の中身） |
+| 操作のきっかけ（`interactions` への統合） | 済（同 19節。[`InteractionTrigger.md`](./InteractionTrigger.md)） |
 
 ### 残っている宿題（レーンの外）
 

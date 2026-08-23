@@ -177,9 +177,9 @@ object_defs:
     slots:
       characters:
         cell: {accept: {tag: character}}
-    actions:
+    interactions:
       explore:
-        showMenu: always
+        trigger: menu
         add:
           self:
             exploration_progress: 1

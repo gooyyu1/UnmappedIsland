@@ -12,10 +12,10 @@ object_defs:
   # ヤシの木（coconut.yaml）は幹が繊維の束で丸太にならないため、こちらは別の物として置く。
   broadleaf_tree:
     tags: [fixture]
-    combinations:
+    interactions:
       # 根元を斧で断つ。倒した幹を運べる長さに玉切りするところまでを1つの作業として扱う。
       fell:
-        with: {tag: chopping_tool}
+        trigger: {drag: {tag: chopping_tool}}
         duration: 240
         conditions:
           - reason: too_worn

@@ -54,27 +54,32 @@ object_defs:
         value: 60
     slots:
       spoils: {}
-    actions:
+    interactions:
       travel:
+        trigger: menu
         move:
           subject: actor
           to_prop: destination_id
       walk_away:
+        trigger: menu
         move:
           subject: self
           to_prop: destination_id
       snatch:
+        trigger: menu
         move:
           subject_prop: loot_target
           to: self
       # 行き先の枠を名指しする（to_slot）。charactersが先に受け取れるが、そちらへは入らない。
       shove:
+        trigger: menu
         move:
           subject: actor
           to_prop: destination_id
           to_slot: stuff
       # 型で行き先を指す（to_object）。singletonなので、生成時に確定するIDを知らなくても指せる。
       sail:
+        trigger: menu
         move:
           - {subject: actor, to: self}
           - {subject: self, to_object: hilltop}
@@ -185,9 +190,9 @@ object_defs:
 
   basket:
     tags: [item]
-    combinations:
+    interactions:
       put_in:
-        with: {tag: item}
+        trigger: {drag: {tag: item}}
         move: {subject: dragged, to: self}
     slots:
       contents:
@@ -232,9 +237,9 @@ object_defs:
 
   basket:
     tags: [item]
-    combinations:
+    interactions:
       put_in:
-        with: {tag: item}
+        trigger: {drag: {tag: item}}
         move: {subject: dragged, to: self}
     slots:
       contents:
@@ -329,8 +334,9 @@ object_defs:
     props:
       destination_id:
         value: 0
-    actions:
+    interactions:
       travel:
+        trigger: menu
         move:
           subject: child
           to_prop: destination_id
@@ -355,8 +361,9 @@ object_defs:
         value: 0
       loot_target:
         value: 0
-    actions:
+    interactions:
       travel:
+        trigger: menu
         move:
           subject: actor
           subject_prop: loot_target
@@ -380,8 +387,9 @@ object_defs:
     props:
       destination_id:
         value: 0
-    actions:
+    interactions:
       travel:
+        trigger: menu
         move:
           subject: actor
           to: self
@@ -402,8 +410,9 @@ object_defs:
           `
 object_defs:
   basket:
-    actions:
+    interactions:
       travel:
+        trigger: menu
         move: {subject: actor, to: ancestor}
 `,
         )
@@ -425,9 +434,9 @@ object_defs:
         cell: {accept: {tag: liquid}}
   water:
     tags: [liquid]
-    combinations:
+    interactions:
       pour_in:
-        with: {tag: liquid}
+        trigger: {drag: {tag: liquid}}
         move: {subject: dragged, to: parent}
 `,
       )
@@ -461,8 +470,9 @@ object_defs:
     props:
       destination_id:
         value: 0
-    actions:
+    interactions:
       travel:
+        trigger: menu
         move:
           subject: actor
           to_prop: destination_id

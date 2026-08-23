@@ -1,4 +1,4 @@
-import type { ActionDef, ShowMenuMode } from './ActionDef';
+import type { ActionDef, ActionTrigger } from './ActionDef';
 import type { CombinationDef } from './CombinationDef';
 import type { InteractionDef } from './InteractionDef';
 import type { Requirement } from './Requirement';
@@ -54,15 +54,15 @@ abstract class Interaction<D extends InteractionDef, T extends WorldObject | und
   }
 }
 
-/** メニュー型の操作（GameElementDefinition.md 11節）。1枚のカードだけで完結するので、相手は居ない。 */
+/** 相手を伴わない操作（GameElementDefinition.md 11節）。1枚のカードだけで完結するので、相手は居ない。 */
 export class Action extends Interaction<ActionDef, undefined> {
   constructor(def: ActionDef, self: WorldObject, actor: WorldObject | undefined) {
     super(def, self, actor, undefined);
   }
 
-  /** 画面のボタンに出す操作か（11.1節）。 */
-  get showMenu(): ShowMenuMode {
-    return this.def.showMenu;
+  /** この操作を起こすもの（11.1節）。画面のボタンに出るのは`menu`だけ。 */
+  get trigger(): ActionTrigger {
+    return this.def.trigger;
   }
 }
 

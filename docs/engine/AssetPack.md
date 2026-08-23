@@ -11,7 +11,7 @@
 形式は [`Localization.md`](./Localization.md) が持ちます。
 
 **持ち込めるのはデータだけで、コードは持ち込めません**（1節）。ただしこのゲームのデータは
-振る舞いを含む——`props`・`actions`・`passives`・`recipes` はすべて定義YAMLに書かれるので、
+振る舞いを含む——`props`・`interactions`・`passives`・`recipes` はすべて定義YAMLに書かれるので、
 アセットパックは新しい物・新しい操作・新しいレシピを足せます。
 
 WorldCodexの文法は増やしません。増えるのは**配布物の中のディレクトリ構成**と、絵の在処を実行時に

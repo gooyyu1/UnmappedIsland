@@ -31,13 +31,13 @@ traits:
       # 1回の火起こしが成功する重み。失敗の重み（40）との比が成功率になる。
       # 天気とスキルの段で動かすのは今後の課題（同3.1節）。
       ignition_chance: {}
-    combinations:
+    interactions:
       # 火起こし具を重ねて火を移す。外した回も火口は失われる。
       #
       # どちらの回もsignal（9.8節）で結果を告げる。火口はどちらの回も同じように消えるので、
       # レーンの上では30分かけて札が1枚減っただけに見え、成否が付かない。
       light:
-        with: {object: fire_drill}
+        trigger: {drag: {object: fire_drill}}
         duration: 30
         pick:
           - weight: {prop: ignition_chance}
@@ -137,16 +137,15 @@ traits:
           - {subject: ancestor, prop: sheltered, neq: 1}
           - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
         add: {self: {heat: -4}}
-    combinations:
+    interactions:
       # 薪をくべる。燃料が持つfuelを炉のfuelへ移し、燃料そのものは消す（同2節）。
       # transferの後にdestroyが走るので、移した分が失われることはない。
       #
       # 束ねた薪はまとめてくべられる（allow_multiple、GameElementDefinition.md 12.4節）。何本入るかも、
       # 満杯の炉を拒むことも、fuelのrangeの残りからエンジンが決めるので、ここには書かない。
       add_fuel:
-        with: {tag: fuel}
+        trigger: {drag: {tag: fuel}, allow_multiple: true}
         duration: 1
-        allow_multiple: true
         transfer:
           amount: 999
           from: dragged
@@ -155,7 +154,7 @@ traits:
         destroy: dragged
       # 火種を落として着火する。置くのは種火1つぶんだけで、そこから先は薪が育てる。
       ignite:
-        with: {object: burning_tinder}
+        trigger: {drag: {object: burning_tinder}}
         conditions:
           - {reason: no_fuel, prop: fuel, gt: 0}
         destroy: dragged
@@ -244,9 +243,9 @@ object_defs:
           - {prop: heat, in_stage: ember}
           - {prop: fuel, in_stage: none}
         add: {self: {heat: -2}}
-    combinations:
+    interactions:
       add_stone:
-        with: {object: stone}
+        trigger: {drag: {object: stone}}
         duration: 5
         destroy: dragged
         add: {self: {stones: 1}}
@@ -279,9 +278,9 @@ object_defs:
           - {prop: heat, in_stage: ember}
           - {prop: fuel, in_stage: none}
         add: {self: {heat: -1}}
-    combinations:
+    interactions:
       add_stone:
-        with: {object: stone}
+        trigger: {drag: {object: stone}}
         duration: 5
         destroy: dragged
         add: {self: {stones: 1}}

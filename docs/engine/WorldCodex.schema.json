@@ -502,7 +502,7 @@
       "description": "新規オブジェクトを生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。destroyと同時に指定できる。"
     },
     "active_def": {
-      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/become/transfer/move/signal)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_max/on_min（6.3節）は、専用キー(on_min:等)の値としてこの形をそのまま持つ。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_min: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントには操作者が居ないので、対象にactor/draggedを指すとロード時エラーになる（14.1節。本スキーマでは場所ごとの制限までは表現しない）。actions/combinations/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（action_def/combination_def/pick_candidate参照）。",
+      "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/become/transfer/move/signal)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_max/on_min（6.3節）は、専用キー(on_min:等)の値としてこの形をそのまま持つ。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_min: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントには操作者が居ないので、対象にactor/draggedを指すとロード時エラーになる（14.1節。本スキーマでは場所ごとの制限までは表現しない）。interactions/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（interaction_def/pick_candidate参照）。",
       "type": "object",
       "properties": {
         "set": {
@@ -628,15 +628,36 @@
       },
       "minItems": 1
     },
-    "action_def": {
-      "description": "メニュー型の宣言的操作（11節）。conditionsと実行結果(set/add/destroy/spawn/transfer/move/signal・pick)を1つの定義としてまとめて持つ。専用の`active:`ラップは挟まず、showMenu/conditions/duration/pickと対等な兄弟キーとして直接持つ。",
+    "interaction_def": {
+      "description": "宣言的操作（11節・12節）。きっかけ（trigger）と条件と実行結果(set/add/destroy/spawn/transfer/move/signal・pick)を1つの定義としてまとめて持つ。専用の`active:`ラップは挟まず、trigger/conditions/duration/pickと対等な兄弟キーとして直接持つ。",
       "type": "object",
       "properties": {
-        "showMenu": {
-          "description": "メニューへの表示方法（11.1節）。省略時はalways。neverは画面のボタンには出さず、時間の側が起こす操作（動物の1手、HuntingSystem.md 5節）。",
-          "enum": [
-            "always",
-            "never"
+        "trigger": {
+          "description": "何がこの操作を起こすか（11.1節）。menuはプレイヤーが押したとき（画面のボタンに出る唯一のきっかけ）、tickは時間が経ったとき、{drag: ...}はそのカードを重ねたとき（12節）。",
+          "oneOf": [
+            {
+              "enum": [
+                "menu",
+                "tick"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "drag": {
+                  "$ref": "#/$defs/type_match_rule",
+                  "description": "重ねる相手のカード（dragged）に求める型。枠のacceptと同じ{tag}/{object}の二択（12.1節）。"
+                },
+                "allow_multiple": {
+                  "type": "boolean",
+                  "description": "束からまとめて運んできた枚数ぶんを続けて実行してよいか（12.4節）。既定はfalse。"
+                }
+              },
+              "required": [
+                "drag"
+              ],
+              "additionalProperties": false
+            }
           ]
         },
         "conditions": {
@@ -644,55 +665,7 @@
         },
         "duration": {
           "$ref": "#/$defs/weight_spec",
-          "description": "実行にかかるゲーム内時間（分）。weightと同じ「リテラルか{subject, prop}参照か」の二択（11.3節）。省略時は時間を消費しない。"
-        },
-        "set": {
-          "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",
-          "$ref": "#/$defs/set_operation_map"
-        },
-        "add": {
-          "description": "対象プロパティの実体値へ、その場で一度だけ不可逆に加減算する。",
-          "$ref": "#/$defs/add_operation_map"
-        },
-        "destroy": {
-          "$ref": "#/$defs/destroy_target_spec"
-        },
-        "spawn": {
-          "$ref": "#/$defs/spawn_spec"
-        },
-        "become": {
-          "description": "同じ個体のまま型を差し替える（9.9節）。",
-          "$ref": "#/$defs/become_spec"
-        },
-        "transfer": {
-          "$ref": "#/$defs/transfer_spec"
-        },
-        "move": {
-          "$ref": "#/$defs/move_spec"
-        },
-        "signal": {
-          "$ref": "#/$defs/signal_spec"
-        },
-        "pick": {
-          "$ref": "#/$defs/pick_list"
-        }
-      },
-      "additionalProperties": false
-    },
-    "combination_def": {
-      "description": "ドラッグ型のカード間相互作用（GameElementDefinition.md 12節）。キーはUIラベル用の名前であり、マッチング対象はwithで別途指定する。専用の`active:`ラップは挟まず、with/conditions/duration/pickと対等な兄弟キーとして直接持つ。",
-      "type": "object",
-      "properties": {
-        "with": {
-          "$ref": "#/$defs/type_match_rule",
-          "description": "組み合わせる相手のカード（dragged）に求める型。枠のacceptと同じ{tag}/{object}の二択（12.1節）。"
-        },
-        "conditions": {
-          "$ref": "#/$defs/conditions_list"
-        },
-        "duration": {
-          "$ref": "#/$defs/weight_spec",
-          "description": "実行にかかるゲーム内時間（分）。actionsのdurationと同じ（11.3節）。参照のsubjectにはdraggedも使える（12.2節）。省略時は時間を消費しない。"
+          "description": "実行にかかるゲーム内時間（分）。weightと同じ「リテラルか{subject, prop}参照か」の二択（11.3節）。参照のsubjectにdraggedを使えるのは、きっかけがdragの操作だけ（12.2節）。省略時は時間を消費しない。"
         },
         "set": {
           "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",
@@ -726,7 +699,7 @@
         }
       },
       "required": [
-        "with"
+        "trigger"
       ],
       "additionalProperties": false
     },
@@ -917,20 +890,11 @@
       },
       "additionalProperties": false
     },
-    "actions_map": {
+    "interactions_map": {
       "type": "object",
       "patternProperties": {
         "^[a-z][a-z0-9_]*$": {
-          "$ref": "#/$defs/action_def"
-        }
-      },
-      "additionalProperties": false
-    },
-    "combinations_map": {
-      "type": "object",
-      "patternProperties": {
-        "^[a-z][a-z0-9_]*$": {
-          "$ref": "#/$defs/combination_def"
+          "$ref": "#/$defs/interaction_def"
         }
       },
       "additionalProperties": false
@@ -971,11 +935,8 @@
         "props": {
           "$ref": "#/$defs/object_defs_map"
         },
-        "actions": {
-          "$ref": "#/$defs/actions_map"
-        },
-        "combinations": {
-          "$ref": "#/$defs/combinations_map"
+        "interactions": {
+          "$ref": "#/$defs/interactions_map"
         },
         "slots": {
           "$ref": "#/$defs/slots_map"
@@ -1033,11 +994,8 @@
         "props": {
           "$ref": "#/$defs/object_defs_map"
         },
-        "actions": {
-          "$ref": "#/$defs/actions_map"
-        },
-        "combinations": {
-          "$ref": "#/$defs/combinations_map"
+        "interactions": {
+          "$ref": "#/$defs/interactions_map"
         },
         "recipes": {
           "$ref": "#/$defs/recipes_map",

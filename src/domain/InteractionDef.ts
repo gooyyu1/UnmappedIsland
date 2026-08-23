@@ -1,10 +1,10 @@
-import type { ShowMenuMode } from './ActionDef';
 import type { TypeMatchReading } from './TypeMatchRule';
 
 /** 何がこの操作のきっかけになるか（InteractionDef.triggerReading参照）。 */
 export type InteractionTriggerReading =
-  | { readonly kind: 'menu'; readonly showMenu: ShowMenuMode }
-  | { readonly kind: 'drag'; readonly with: TypeMatchReading };
+  | { readonly kind: 'menu' }
+  | { readonly kind: 'tick' }
+  | { readonly kind: 'drag'; readonly with: TypeMatchReading; readonly allowMultiple: boolean };
 import type { WorldSession } from './WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
 import type { EffectReader, WeightReading } from './EffectReader';

@@ -5,31 +5,33 @@ import type { WeightSpec } from './WeightSpec';
 import type { Requirements } from './Requirement';
 
 /**
- * showMenuの値（11.1節）。`never`は**画面のボタンには出さない操作**で、起こすのは時間の側になる
- * ——動物の1手（docs/engine/HuntingSystem.md 5節）は名前で指して実行される点だけがアクションと
- * 同じで、プレイヤーが押す機会は無い。
+ * 相手を伴わない操作のきっかけ（GameElementDefinition.md 11.1節）。**画面のボタンに出るのは
+ * `menu` だけ**で、出すかどうかはきっかけから決まる。
+ *
+ * `tick`は時間が起こす操作（動物の1手、docs/engine/HuntingSystem.md 5節）。プレイヤーが押す機会は
+ * 無く、名前で指して実行される点だけが`menu`と同じ。
  */
-export type ShowMenuMode = 'always' | 'never';
+export type ActionTrigger = 'menu' | 'tick';
 
 /**
- * メニュー型の宣言的操作（GameElementDefinition.md 11節）。1枚のカード（self）だけで完結し、
+ * 相手を伴わない宣言的操作（GameElementDefinition.md 11節）。1枚のカード（self）だけで完結し、
  * 名前で指して実行される。actorは常に暗黙的に参加する。
  */
 export class ActionDef extends InteractionDef {
-  readonly showMenu: ShowMenuMode;
+  readonly trigger: ActionTrigger;
 
   constructor(
     name: string,
-    showMenu: ShowMenuMode,
+    trigger: ActionTrigger,
     requirements: Requirements | undefined,
     effect: ActiveEffect,
     duration?: WeightSpec,
   ) {
     super(name, requirements, effect, duration);
-    this.showMenu = showMenu;
+    this.trigger = trigger;
   }
 
   get triggerReading(): InteractionTriggerReading {
-    return { kind: 'menu', showMenu: this.showMenu };
+    return { kind: this.trigger };
   }
 }

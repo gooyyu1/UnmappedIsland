@@ -563,3 +563,49 @@ readonly siteInstanceIds: number[];
 決める必要があるのは「2つに割るか」と、割るなら**対応表を誰が持つか**（`populate` の戻り値か、
 `NewGameSession` のような抱える側か）。`map.siteInstanceIds` を直に読んでいる呼び出し側が
 `PlayScreenView` とテスト4本あるので、割るとそこの書き換えが要る。
+
+## 19. 操作のきっかけと、`actions`/`combinations` の統合
+
+設計は [`InteractionTrigger.md`](./InteractionTrigger.md)。YAMLの2つの節を `interactions` 1つにし、
+きっかけを `trigger` として宣言させた。
+
+```yaml
+interactions:
+  explore: {trigger: menu, ...}
+  turn: {trigger: tick, ...}
+  strike: {trigger: {drag: {tag: weapon}, allow_multiple: true}, ...}
+```
+
+### 設計案から変えたところ
+
+**JSONスキーマの `action_def` と `combination_def` が1つに畳めた。** 設計案では触れていなかったが、
+2つの `$defs` は効果の動詞（`set`/`add`/`destroy`/…）を丸ごと重複させていて、違いは
+`showMenu` と `with` の1キーだけだった。`interaction_def` 1つ＋`trigger` の `oneOf` になり、
+スキーマは78行減った。
+
+**codex-viewer は節を分けずに1つにした。** 宣言が1つの並びなので、ページも宣言順のまま出す
+（各操作が自分のきっかけを名乗る）。
+
+### 予告どおり消えたもの
+
+`ObjectDef` のコンストラクタにあった名前衝突の検査。節が2つあるせいで書いていたもので、
+1つの map になれば YAML の側で一意になる。`RawDeclarationBody` の trait 合成も2本から1本へ。
+
+### 実行時のクラスは分けたまま
+
+`Action` / `Combination`（`Interaction` の具象）は残した。`Combination` は dragged が必ず居ることを
+型引数で保証していて、統合すると「居るかもしれない」を実行時に見る形へ戻る。
+
+### 残した宿題: `ActionDef` / `CombinationDef` という名前
+
+YAML から `actions` / `combinations` の語が消えたのに、宣言のクラス名は残っている。`ActionDef` は
+今や「相手を伴わない操作（`menu` と `tick`）」で、YAML を grep しても `actions:` は見つからない。
+実行時の `Action` / `Combination` の対と揃えて残したが、**名前と現実はずれている**。
+きっかけを持つ小さなオブジェクト（`MenuTrigger`/`TickTrigger`/`DragTrigger`）へ畳んで
+`InteractionDef` 1クラスにできるかは、別の作業として見る。
+
+### 移行の規模
+
+同梱YAML 13ファイル（`actions:` 29・`combinations:` 26 → `interactions:` 51。4つの型は両方の節を
+持っていたので1つへ寄せた）、サンプルパック1ファイル（ZIPも固め直し）、テストのフィクスチャ20ファイル、
+docs 12ファイルとJSONスキーマ。パッチのパス（`x.actions.y`）も `interactions` へ。

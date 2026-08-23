@@ -27,8 +27,9 @@ object_defs:
       equipment:
         cell: {accept: {tag: item}}
         placement: [manual]
-    actions:
+    interactions:
       craft:
+        trigger: menu
         spawn: {object: knife, into: actor}
 
   knife: {tags: [item]}

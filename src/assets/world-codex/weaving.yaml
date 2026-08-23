@@ -17,18 +17,17 @@ object_defs:
       weight: {value: 4000}
       # かさは編み籠の容量を超える。葉は籠に入れず手で運ぶ。
       volume: {value: 22000}
-    actions:
+    interactions:
       # 素手で編む。中軸を残したまま左右の小葉を組むので、幅広のパネルが1枚できる。
       weave:
-        showMenu: always
+        trigger: menu
         duration: 90
         destroy: self
         spawn: {object: woven_leaf}
-    combinations:
       # 中軸で割ってから左右をそれぞれ編む。細長いパネルが2枚とれる。屋根を葺くときは
       # 軒から棟へ段を重ねるので、細長いほうが扱いやすい。
       split_and_weave:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         duration: 60
         destroy: self
         spawn: {object: woven_leaf, count: 2}

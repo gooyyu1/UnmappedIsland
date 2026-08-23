@@ -669,7 +669,7 @@ export class WorldObject {
 
   /**
    * actorがこのカードへ起こせる操作（11節、宣言順）。画面のボタンに出すかは呼び出し側が
-   * showMenuで絞る（11.1節）。
+   * triggerで絞る（11.1節、出るのは`menu`だけ）。
    */
   actionsFor(actor: WorldObject | undefined): readonly Action[] {
     return this.def.actions.map((action) => new Action(action, this, actor));

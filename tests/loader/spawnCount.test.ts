@@ -20,8 +20,9 @@ object_defs:
     tags: [item]
   pile:
     tags: [item]
-    actions:
+    interactions:
       scatter:
+        trigger: menu
         spawn: {object: stone, count: 3, into: same_slot}
         destroy: self
 `;

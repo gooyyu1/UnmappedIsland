@@ -15,8 +15,13 @@ export function describeInteraction(
   out: DescriptionWriter,
 ): void {
   const trigger = interaction.triggerReading;
-  if (trigger.kind === 'menu') out.write(text(`show_menu: ${trigger.showMenu}`));
-  else out.write(text('with: '), ...typeMatchTokens(trigger.with, names), text('のカードのドロップ'));
+  if (trigger.kind === 'drag')
+    out.write(
+      text('trigger: '),
+      ...typeMatchTokens(trigger.with, names),
+      text(`のカードのドロップ${trigger.allowMultiple ? '（まとめて可）' : ''}`),
+    );
+  else out.write(text(`trigger: ${trigger.kind}`));
 
   const requirements = interaction.requirementDeclarations;
   if (requirements.length > 0) {

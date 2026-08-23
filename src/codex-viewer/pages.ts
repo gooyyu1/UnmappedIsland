@@ -78,8 +78,9 @@ function renderObjectPage(view: CodexView, name: string): string {
         for (const effect of def.passives.declarations) describePassive(effect, view.names, out);
       }),
     ) +
-    section('actions（メニューから選ぶ操作）', interactionsHtml(view, def, def.actions)) +
-    section('combinations（カードを重ねる操作）', interactionsHtml(view, def, def.combinations)) +
+    // きっかけで節を分けない——宣言が1つの並びなので、ここも宣言順のまま出す（各操作が自分の
+    // きっかけを名乗る、describeInteraction）。
+    section('interactions（操作）', interactionsHtml(view, def, def.interactions)) +
     section('recipes', recipesHtml(view, def)) +
     variantsSection(view, name) +
     // 逆引きはどちらも、行き先の型を絵で並べるだけにする——どの操作・どの工程かはリンク先で分かる。

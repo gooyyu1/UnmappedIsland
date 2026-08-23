@@ -51,7 +51,7 @@ export class CombinationDef extends InteractionDef {
   }
 
   get triggerReading(): InteractionTriggerReading {
-    return { kind: 'drag', with: this.with.reading };
+    return { kind: 'drag', with: this.with.reading, allowMultiple: this.allowMultiple };
   }
 
   /** draggedDefをこの組み合わせの相手にできるか（withに当てはまるか、12.1節）。 */

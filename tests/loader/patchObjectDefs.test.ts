@@ -23,9 +23,9 @@ object_defs:
     tags: [location]
     props:
       find_stone: {value: 10}
-    actions:
+    interactions:
       explore:
-        showMenu: always
+        trigger: menu
         pick:
           - weight: {prop: find_stone}
             spawn: {object: stone, into: self}
@@ -60,7 +60,7 @@ describe('patch_object_defs', () => {
     const text = describeExplore(
       build(`
 patch_object_defs:
-  - append: ground.actions.explore.pick
+  - append: ground.interactions.explore.pick
     value:
       weight: 2
       spawn: {object: potion, into: self}
@@ -74,9 +74,9 @@ patch_object_defs:
   it('add: まだ無いキーを作る', () => {
     const codex = build(`
 patch_object_defs:
-  - add: ground.actions.rest
+  - add: ground.interactions.rest
     value:
-      showMenu: always
+      trigger: menu
       add: {self: {find_stone: 1}}
 `);
 
@@ -104,7 +104,7 @@ patch_object_defs:
     const text = describeExplore(
       build(`
 patch_object_defs:
-  - set: ground.actions.explore.pick
+  - set: ground.interactions.explore.pick
     where: {spawn: {object: twig, into: self}}
     value:
       weight: 40
@@ -120,7 +120,7 @@ patch_object_defs:
     const text = describeExplore(
       build(`
 patch_object_defs:
-  - remove: ground.actions.explore.pick
+  - remove: ground.interactions.explore.pick
     where: {spawn: {object: twig, into: self}}
 `),
     );
@@ -132,7 +132,7 @@ patch_object_defs:
   it('remove: キーごと消す', () => {
     const codex = build(`
 patch_object_defs:
-  - remove: ground.actions.explore
+  - remove: ground.interactions.explore
 `);
 
     expect(codex.objects.get(codex.objectNames.getId('ground')).actions).toEqual([]);
@@ -146,7 +146,10 @@ describe('patch_object_defsの誤り', () => {
     ['既にあるキーへadd', '  - add: ground.props.find_stone\n    value: {value: 1}'],
     ['無いキーへset', '  - set: ground.props.find_gold.value\n    value: 1'],
     ['無いものをremove', '  - remove: ground.props.find_gold'],
-    ['whereが当てはまらない', '  - remove: ground.actions.explore.pick\n    where: {spawn: {object: gold}}'],
+    [
+      'whereが当てはまらない',
+      '  - remove: ground.interactions.explore.pick\n    where: {spawn: {object: gold}}',
+    ],
     ['動詞が2つ', '  - add: ground.props.a\n    remove: ground.props.b\n    value: 1'],
     ['パスが型だけ', '  - remove: ground'],
   ])('同梱ぶんなら止まる: %s', (_name, operation) => {
@@ -159,9 +162,9 @@ describe('patch_object_defsの誤り', () => {
     const codex = build(
       `
 patch_object_defs:
-  - remove: ground.actions.explore.pick
+  - remove: ground.interactions.explore.pick
     where: {spawn: {object: gold, into: self}}
-  - append: ground.actions.explore.pick
+  - append: ground.interactions.explore.pick
     value:
       weight: 2
       spawn: {object: potion, into: self}
@@ -171,7 +174,7 @@ patch_object_defs:
 
     expect(describeExplore(codex), '後続の操作は当たる').toContain('potion');
     expect(report.problems).toHaveLength(1);
-    expect(report.problems[0].attempted).toBe('remove ground.actions.explore.pick');
+    expect(report.problems[0].attempted).toBe('remove ground.interactions.explore.pick');
     expect(report.problems[0].source).toBe('pack.yaml');
   });
 

@@ -3,12 +3,11 @@
 ## 概要
 
 プレイヤーがカードに対して行う操作が、実行時にどう実装されているかを記述する設計ドキュメントです。
-YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefinition.md)（`actions` は 11 節、
-`combinations` は 12 節、`active` は 9 節、`pick` は 10 節、`conditions` は 14 節）、操作の画面側の
+YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefinition.md)（`interactions` は 11 節・12 節、`active` は 9 節、`pick` は 10 節、`conditions` は 14 節）、操作の画面側の
 入口（アクションの行・ドラッグ＆ドロップ）は [`../ui/Windows.md`](../ui/Windows.md) 4 節・
 [`../ui/CardInteraction.md`](../ui/CardInteraction.md) が扱います。
 
-**入口は2種でも、実行は1本です。** メニュー型（`actions`）とドラッグ型（`combinations`）は
+**入口は2種でも、実行は1本です。** メニュー型（`trigger: menu`）とドラッグ型（`trigger: {drag: ...}`）は
 「どう選ばれるか」だけが違い、どちらも `InteractionDef` を基底として、同じ実行パイプライン
 （マッチング → `conditions` → `duration` の解決 → 時間進行 → 生存確認 → 効果の適用、2 節）を通ります。
 起きたことは分岐名ではなく世界に起きた変化として観測します（7 節）。操作専用の新しい文法はありません。
@@ -22,19 +21,20 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 
 プレイヤー操作の入口は2種類だけで、どちらも `object_def` に宣言的に定義される。
 
-- **`actions`（メニュー型、`ActionDef`）**: 1枚のカード（`self`）だけで完結する操作。
+- **メニュー型（`trigger: menu`、`ActionDef`）**: 1枚のカード（`self`）だけで完結する操作。
   カード選択時にボタンとして表示され、クリックで実行される。`actor`（プレイヤーキャラクター）は
   常に暗黙的に参加する。
-- **`combinations`（ドラッグ型、`CombinationDef`）**: カードを別のカードへ
+- **ドラッグ型（`trigger: {drag: ...}`、`CombinationDef`）**: カードを別のカードへ
   ドラッグ＆ドロップする操作。組み合わせを宣言している側が `self`、相手が `dragged` で、
-  `with`（タグかobject_defのidで書く型の指定、12.1節）が `dragged` とのマッチング条件になる。宣言は**素材の側**に1つだけ置き
+  きっかけ `{drag: ...}`（タグかobject_defのidで書く型の指定、12.1節）が `dragged` とのマッチング条件になる。宣言は**素材の側**に1つだけ置き
   （12.3節）、どちらの札をどちらへ運んでも同じ宣言が実行される——**どちらを `self` として試すかの順序は
   UI層が決める**（[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
 
-2種が違うのは**入口（どう選ばれるか）だけ**なので、どちらも `InteractionDef` を継承し、
-選ばれた後の実行（2節）と所要時間の解決はその基底クラスが1箇所で持つ。派生が足すのは、
-`ActionDef` が `showMenu`、`CombinationDef` が `with` によるマッチングだけ。`dragged` はドラッグ型
-だけが持つ相手で、メニュー型では `undefined` のまま同じ経路を通る。
+2種が違うのは**きっかけだけ**なので、宣言はYAML上も1つの節（`interactions`）で、どちらも
+`InteractionDef` を継承する。選ばれた後の実行（2節）と所要時間の解決はその基底クラスが1箇所で持つ。
+派生が足すのは、`ActionDef` が `trigger`（`menu`/`tick`）、`CombinationDef` が相手のマッチングと
+`allow_multiple` だけ。`dragged` はドラッグ型だけが持つ相手で、メニュー型では `undefined` のまま
+同じ経路を通る。
 
 ## 1.1 宣言と、相手の決まった操作
 
@@ -45,11 +45,11 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 
 引く口は3つ。
 
-- `ActionsFor(actor)` — このカードへ起こせる操作を宣言順に。画面のボタンに出すかは `showMenu`
-  （11.1節）で絞る。
+- `ActionsFor(actor)` — このカードへ起こせる操作を宣言順に。画面のボタンに出すかは `trigger`
+  （11.1節、出るのは `menu` だけ）で絞る。
 - `TryGetAction(actionName, actor)` — 名指しで1つ。土地の `explore`、道の `travel`、動物の1手が使う。
-- `CombinationsWith(dragged, actor)` — ドラッグ中のハイライト等のために、**今成立する** `combinations` を
-  宣言順に列挙する。`with` のマッチング（1）だけでなく `conditions`（2）まで見る——候補を選ぶ側と実行
+- `CombinationsWith(dragged, actor)` — ドラッグ中のハイライト等のために、**今成立する**重ねる操作を
+  宣言順に列挙する。相手のマッチング（1）だけでなく `conditions`（2）まで見る——候補を選ぶ側と実行
   できる側が食い違うと、満杯の炉に薪を落とせるのに何も起きない、という形になるため。**どちらの札を
   `self` として引くか**（落とされた側が先、次に掴んだ側）と、
   複数マッチした場合にどれを実行するかの解決はUI層に委ねる
@@ -135,8 +135,8 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
 
 ## 6. 時間の経過（duration）
 
-- `actions`/`combinations` の `duration` はゲーム内の**分**。リテラルか `{subject, prop}` 参照
-  （`weight` と同じ二択。`combinations` では `dragged` も指せる）で、省略時は時間を消費しない。
+- `interactions` の `duration` はゲーム内の**分**。リテラルか `{subject, prop}` 参照
+  （`weight` と同じ二択。ドラッグ型では `dragged` も指せる）で、省略時は時間を消費しない。
 - 時間進行は `InteractionDef` 自身が `WorldSession.AdvanceWorldTime(minutes)` を呼んで完結させる。
   呼び出し側（UI層）が実行後に別途時間を進める必要はない。解決した分数は実行前にも引ける
   （`MinutesFor`。UI層が実行前に所要時間を見せるため、[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
@@ -220,7 +220,7 @@ UI が演出のために「誰が何をしたか」を要る（[`HuntingSystem.m
 
 - 同じオブジェクト内で複数のキーが同じ `with` にマッチした場合の解決規則
   （現状は `FindMatchingCombinations` が宣言順に列挙し、選択はUI層に委ねている）
-- `combinations` を、`actor` の装備スロットを経由したパス参照（例: `actor.equip.tool`）を使う
-  `actions` の条件・効果として書き換えられないか
+- ドラッグ型の操作を、`actor` の装備スロットを経由したパス参照（例: `actor.equip.tool`）を使う
+  メニュー型の条件・効果として書き換えられないか
 - `with` で複数タグのAND条件を指定する必要があるか
 - ドラッグ中のハイライトで全カードの `conditions` を評価するコストの抑制

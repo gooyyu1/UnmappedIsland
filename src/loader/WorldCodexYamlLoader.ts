@@ -27,7 +27,7 @@ import { built } from './parseCommon';
  * YAMLファイル群からWorldCodexを組み立てるロード処理の入口（GameElementDefinition.md 3節）。
  *
  * パース全般をこのクラスが担い、名前空間ごとのNameRegistryを保持する（objectNames以下のゲッター参照）。「trait解決込みでobject_defを
- * 組み立てる」責務はRawObjectDef.resolveが担う。props/slots/actions/combinationsはフィールド
+ * 組み立てる」責務はRawObjectDef.resolveが担う。props/slots/interactionsはフィールド
  * 単位のtrait上書きマージ対象のため、深い意味解釈とprop/slot名等のInternはload時点ではなく
  * resolveまで遅延する。object_def自身のglobalIdのみtrait解決に依存しないため、RawObjectDefを
  * 作る時点で確定する。

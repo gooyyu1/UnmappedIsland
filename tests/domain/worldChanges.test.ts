@@ -46,9 +46,9 @@ object_defs:
     tags: [beast]
     slots:
       loot: {cell: {accept: {tag: item}}}
-    combinations:
+    interactions:
       rampage:
-        with: {tag: item}
+        trigger: {drag: {tag: item}}
         pick:
           - weight: 60
             destroy: dragged

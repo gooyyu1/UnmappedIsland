@@ -13,8 +13,8 @@
 ### YAML文法（WorldCodexの書き方そのもの）
 
 - [WorldCodex YAML 文法リファレンス](./GameElementDefinition.md) — `traits`/`object_defs`/`props`/`stages`/`slots`/
-  `passive`/`active`/`modify`/`add`/`add`/`destroy`/`spawn`/`move`/`pick`/`actions`/`duration`/
-  `combinations`/`recipes` 等、文法をここに集約
+  `passive`/`active`/`modify`/`add`/`destroy`/`spawn`/`move`/`pick`/`interactions`/`trigger`/
+  `duration`/`recipes` 等、文法をここに集約
 - [WorldCodex YAMLスキーマ定義](./WorldCodexSchema.md)（[JSON Schema本体](./WorldCodex.schema.json)） — 上記文法の
   機械的な検証
 

@@ -164,8 +164,9 @@ character:
 書き方は、道の `travel` に `actor` の `load` を見る条件を足すだけです。
 
 ```yaml
-actions:
+interactions:
   travel:
+    trigger: menu
     conditions:
       - {in_slot: fixtures}
       - not: {subject: actor, prop: load, in_stage: too_heavy}

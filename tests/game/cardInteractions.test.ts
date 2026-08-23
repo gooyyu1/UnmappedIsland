@@ -28,19 +28,19 @@ traits:
     tags: [water]
     props:
       color: {value: 0x2f86d8}
-    actions:
+    interactions:
       drink:
+        trigger: menu
         duration: 5
         add: {actor: {hydration: 10}}
-    combinations:
       # 宣言があるのは中身入りの側だけなので、どちらの札をどちらへ重ねてもselfは中身入りになる。
       pour_into_empty:
-        with: {tag: liquid_container}
+        trigger: {drag: {tag: liquid_container}}
         conditions: [{reason: not_empty, subject: dragged, prop: fill, eq: 0}]
         become: {subject: dragged, content: water_liquid}
         transfer: {amount: 999999, from: self, from_prop: fill, to: dragged, to_prop: fill}
       pour_into_filled:
-        with: {tag: water}
+        trigger: {drag: {tag: water}}
         transfer: {amount: 999999, from: dragged, from_prop: fill, to: self, to_prop: fill}
 
 object_defs:
@@ -53,9 +53,9 @@ object_defs:
 
   stone:
     tags: [item]
-    combinations:
+    interactions:
       knap:
-        with: {object: stone}
+        trigger: {drag: {object: stone}}
         duration: 60
         destroy: self
         spawn: {object: sharp_stone}
@@ -66,9 +66,9 @@ object_defs:
   # 刃物を重ねると切り倒せる。刃物の側は何も宣言していない。
   vine:
     tags: [fixture]
-    combinations:
+    interactions:
       cut_down:
-        with: {tag: cutting_tool}
+        trigger: {drag: {tag: cutting_tool}}
         destroy: self
 
   branch:
@@ -81,18 +81,18 @@ object_defs:
     tags: [fixture]
     props:
       fuel: {value: 0, range: {min: 0, max: 30}}
-    combinations:
+    interactions:
       add_fuel:
-        with: {object: branch}
+        trigger: {drag: {object: branch}, allow_multiple: true}
         duration: 1
-        allow_multiple: true
         transfer: {amount: 999, from: dragged, from_prop: fuel, to_prop: fuel}
         destroy: dragged
 
   fruit:
     tags: [item]
-    actions:
+    interactions:
       eat:
+        trigger: menu
         duration: 15
         destroy: self
         add: {actor: {satiety: 10}}
@@ -104,9 +104,10 @@ object_defs:
       weight: {value: 200}
       fill: {value: 0, range: {min: 0, max: 250}, on_min: {become: {content: none}}}
       volume: {value: 200}
-    actions:
+    interactions:
       # durationを宣言していない操作。
       collect_rain:
+        trigger: menu
         become: {content: water_liquid}
         set: {self: {fill: 1}}
     variation_axes:
