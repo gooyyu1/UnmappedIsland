@@ -22,7 +22,12 @@ import type { InteractionGains } from '../domain/PropertyGain';
 import type { WorldChange } from '../domain/WorldChange';
 import type { WorldSignal } from '../domain/WorldSignal';
 import type { WorldObject } from '../domain/WorldObject';
-import type { ObjectCardStack, ObjectWindowView, PlayScreenView } from './view/PlayScreenView';
+import type {
+  NestedLocationView,
+  ObjectCardStack,
+  ObjectWindowView,
+  PlayScreenView,
+} from './view/PlayScreenView';
 import type { CardAction } from './view/cardOperations';
 import { EXPLORE_ACTION, fromGameSession } from './view/PlayScreenView';
 import type { CardPlace, ScreenPlace } from './view/cardPlaces';
@@ -321,8 +326,15 @@ export class PlayScene extends ResponsiveScene {
     cardOfObjects: (...asked) => this.view.cardOfObjects(...asked),
     combinationOf: (...asked) => this.view.combinationOf(...asked),
     windowPlace: () => this.childWindowPlace,
-    places: (...asked) => this.view.places(...asked),
+    places: (...asked) => this.placeOfScreen(...asked),
   });
+
+  /**
+   * 設置物レーンが映している場所を、現在地から外側へ数えた段（0が現在地。ScreenLayout.md 7.1.1節）。
+   * **覚えるのは段であって場所そのものではない**——外側が無くなれば（筏から降りれば）自動的に
+   * 現在地へ戻り、外側を見ていたという記憶がどこにも残らない。
+   */
+  private shownLocationDepth = 0;
 
   /**
    * ステータスエリアに出ている行と、その見え方（ShownStatuses）。**行の選び方・増減・固定表示を
@@ -490,14 +502,31 @@ export class PlayScene extends ResponsiveScene {
     // 見せている最中だった演出は、それを終わらせるtweenごと消えている（終わったものとして始める）。
     this.activity = 'idle';
     this.selectedFilter = 0;
+    this.shownLocationDepth = 0;
+  }
+
+  /**
+   * 設置物レーンが今映している段。**映せる段が減っていたら内側へ引き戻す**ので、筏から降りた後に
+   * 「もう無い外側」を指し続けることがない。
+   */
+  private get shownDepth(): number {
+    return Math.min(this.shownLocationDepth, this.view.nestedLocations.length - 1);
+  }
+
+  /** 設置物レーンが今映している場所（PlayScreenView.nestedLocations）。 */
+  private get shownLocation(): NestedLocationView {
+    return this.view.nestedLocations[this.shownDepth];
   }
 
   /**
    * 常に見えている3つのレーンが今映している場所。**土地を移れば別の場所を指す**ので、その都度
    * ビューへ訊く（cardPlaces）。
+   *
+   * **設置物レーンだけは現在地の外側を映せる**（ScreenLayout.md 7.1.1節）。アイテムレーンと
+   * ハンドレーンは現在地とプレイヤーのものから動かない。
    */
   private placeOfScreen(screen: ScreenPlace): CardPlace {
-    return this.view.places(screen);
+    return screen === 'fixtures' ? this.shownLocation.fixtures : this.view.places(screen);
   }
 
   /** エラー報告に載せる、場所1つ。同じ型の入れ物が複数あっても見分けられるよう、持ち主も出す。 */
@@ -670,10 +699,11 @@ export class PlayScene extends ResponsiveScene {
       this.cellsAt(this.placeOfScreen('fixtures')),
       {
         pinned: {
-          ...this.view.currentLocationCard,
-          // 現在地そのものの子ウィンドウ。**中に入ると外の並びから札が消える**ので、探索する・
+          ...this.shownLocation.window.card,
+          // 映している場所そのものの子ウィンドウ。**中に入ると外の並びから札が消える**ので、探索する・
           // 降りる・出航する・部品を差し替えるはここからしか辿れない。
           onTap: this.whileIdle(() => this.openLocationWindow()),
+          edges: this.locationEdges(),
         },
         art: this.laneArt(this.placeOfScreen('fixtures')),
         depth: SCREEN_DEPTH.field,
@@ -801,6 +831,35 @@ export class PlayScene extends ResponsiveScene {
       }
     }
     return edges;
+  }
+
+  /**
+   * ピン留めした場所の札が出す端の操作——**上で1段外側の場所へ、下で内側へ**（ScreenLayout.md
+   * 7.1.1節）。外側の場所を持たない土地に居る間はどちらも出ないので、陸では札の見え方が変わらない。
+   */
+  private locationEdges(): readonly CardEdgeAction[] {
+    const edges: CardEdgeAction[] = [];
+    const depth = this.shownDepth;
+    if (depth + 1 < this.view.nestedLocations.length)
+      edges.push({ direction: 'up', onTap: () => this.showLocationAt(depth + 1) });
+    if (depth > 0) edges.push({ direction: 'down', onTap: () => this.showLocationAt(depth - 1) });
+    return edges;
+  }
+
+  /**
+   * 設置物レーンが映す場所を切り替える。ピン留めの札もレーンに敷く絵も総取り替えになるので、
+   * 差し替え（showView）ではなくフィールドエリアの作り直しで見せる——移動で現在地が変わったときと
+   * 同じ扱い。**ワールドは何も変わらない**ので、時間は経たない。
+   *
+   * 端の操作は押し続けている間くり返し届く（Card.addEdge）ので、**既に映している段なら何もしない**
+   * ——同じ場所のままフィールドエリアを作り直し続けることになる。
+   */
+  private showLocationAt(depth: number): void {
+    if (this.busy || depth === this.shownDepth) return;
+
+    this.shownLocationDepth = depth;
+    noteOperation(`設置物レーンの場所を切り替えた: ${this.shownLocation.window.card.name}`);
+    this.rebuildFieldArea();
   }
 
   /**
@@ -1222,14 +1281,14 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 現在地そのものを映す子ウィンドウ（探索できない場所の札を押したとき）。
+   * 設置物レーンが映している場所そのものを映す子ウィンドウ（探索できない場所の札を押したとき）。
    *
-   * **場所の札は借りない。** 現在地の札は設置物レーンに固定された枠で、他の札のように並びから
+   * **場所の札は借りない。** ピン留めの札は設置物レーンに固定された枠で、他の札のように並びから
    * 抜けて戻る先が無い（キャラクタの窓をスロットのタブから開くのと同じ扱い）。
    */
   private openLocationWindow(): void {
     const origins = this.closeChildWindowReturningOrigins();
-    this.openChildWindow(this.view.currentLocationWindow, origins);
+    this.openChildWindow(this.shownLocation.window, origins);
   }
 
   /**
@@ -1245,7 +1304,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 現在地を1回探索する。
+   * 設置物レーンが映している場所を1回探索する（外側を映していれば外側が探索の相手になる）。
    *
    * 探索はゲーム内時間を消費するアクションなので、その分だけ実時間をかけて進める。ワールド自体は
    * 先に変えてしまい、時計だけを実時間で動かして、結果（見つかったカード・探索率）は経過し切って
@@ -1262,11 +1321,14 @@ export class PlayScene extends ResponsiveScene {
     const statusesBefore = this.status.all();
     const startedAt = this.gameSession.world.totalMinutes;
 
-    noteOperation(`探索した: ${this.view.currentLocationCard.name}（${this.clockText()}）`);
+    const explored = this.shownLocation;
+    noteOperation(`探索した: ${explored.window.card.name}（${this.clockText()}）`);
     // 結果待ちはここから。降ろすのは経過を見せ切った時点（passTime）。
     this.activity = 'exploring';
 
-    const recorded = this.runAndRecord(() => this.gameSession.player.explore());
+    const recorded = this.runAndRecord(() => {
+      explored.explore();
+    });
     // 道が見つかっていたら、経過を見せている間に行き先の絵のロードを始める。
     this.requestLocationArt();
     // 運ぶ順はワールドを変える操作と同じ（afterPlaybackSteps）。探索だけの段はfoundが足す。
@@ -1303,12 +1365,12 @@ export class PlayScene extends ResponsiveScene {
   private takeFound(shownBefore: ReadonlySet<number>): void {
     this.shown.takeFound(this.foundSince(shownBefore));
 
-    const ratio = this.view.currentLocationWindow.explorationRatio;
+    const ratio = this.shownLocation.window.explorationRatio;
     if (ratio !== undefined) this.childWindow?.setExploration({ ratio });
     this.childWindow?.openTab(EXPLORATION_TAB);
   }
 
-  /** 現在地のレーンに出ているカード（設置物とアイテム）。空き枠は除く。 */
+  /** 設置物レーンとアイテムレーンに出ているカード。空き枠は除く。 */
   private get locationCards(): readonly ObjectCardStack[] {
     return [
       ...this.view.cardsIn(this.placeOfScreen('fixtures')),

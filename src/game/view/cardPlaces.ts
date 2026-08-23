@@ -32,6 +32,9 @@ export type ScreenPlace = 'fixtures' | 'items' | 'hand';
  * 画面の区画が今映しているスロット。**現在地とプレイヤーで解決するので、土地を移れば別のスロットを
  * 指す**——移動をまたいで持ち越した場所は、移った先の同じ名前のスロットではなく、元のスロットを
  * 指し続ける（cardPlacesOfを作り直しても、前の土地のインスタンスを掴んだ場所は変わらない）。
+ *
+ * **設置物レーンが映しているのは現在地とは限らない**（nestedFixturePlacesOf、ScreenLayout.md
+ * 7.1.1節）。ここが答えるのは現在地のぶんだけなので、今どこを映しているかは画面が持つ。
  */
 export type ScreenPlaceResolver = (screen: ScreenPlace) => CardPlace;
 
@@ -47,4 +50,22 @@ export function cardPlacesOf(player: PlayerCharacter, location: Location): Scree
         return player.instance.getSlot(player.handSlotId);
     }
   };
+}
+
+/**
+ * 現在地の設置物スロットと、**現在地を内側に含む場所**の設置物スロットを外側へ順に（先頭が現在地で、
+ * 必ず1つ以上）。設置物レーンはこのどれか1つを映す（ScreenLayout.md 7.1.1節）。
+ *
+ * **場所であることの証は設置物の枠を持つこと**で、型の名前は見ない——筏で海に出ている間も、住居や
+ * 避難所の中に居る間も同じ形になる。枠を持たない親（世界そのもの）に当たったところで打ち切る。
+ */
+export function nestedFixturePlacesOf(location: Location): readonly CardPlace[] {
+  const fixturesSlotId = location.fixturesSlotId;
+  const places = [location.instance.getSlot(fixturesSlotId)];
+  for (let outer = location.instance.parent; outer !== undefined; outer = outer.parent) {
+    const fixtures = outer.tryGetSlot(fixturesSlotId);
+    if (fixtures === undefined) break;
+    places.push(fixtures);
+  }
+  return places;
 }
