@@ -1,3 +1,4 @@
+import type { EffectDeclaration } from '../domain/EffectReader';
 import type { InteractionDef } from '../domain/InteractionDef';
 import type { InteractionTrigger } from '../domain/InteractionTrigger';
 import type { ObjectDef } from '../domain/ObjectDef';
@@ -8,10 +9,16 @@ import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingInput, CraftingStep, StepOutcome } from './CraftingStep';
 import { collectOutputs, combineOutcomes } from './CraftingStep';
 import type { BecomeDestinationResolver, EffectReading } from './effectOutcomes';
-import { consumesRoot, readEffect } from './effectOutcomes';
+import { consumesRoot, destroysRoot, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
-import type { StaticValueResolver } from './staticValue';
-import { resolveDeclaredNumber, staticResolverOf, staticValueOf, trackingResolverOf } from './staticValue';
+import type { StaticValueRange, StaticValueResolver } from './staticValue';
+import {
+  resolveDeclaredNumber,
+  staticConditionTruth,
+  staticResolverOf,
+  staticValueOf,
+  trackingResolverOf,
+} from './staticValue';
 
 /**
  * 定義を「入力 → 工程 → 出力」の形へ均す（CraftingStep参照）。
@@ -24,7 +31,8 @@ import { resolveDeclaredNumber, staticResolverOf, staticValueOf, trackingResolve
 /**
  * この型が関わる工程を宣言順に挙げる。**何も生み出さない操作も含む**——出力の有無で絞るのは
  * 受け取る側の都合（クラフトネットワークは出力のある工程だけを描き、収支表は食べる操作も
- * 終端の工程として数える）。
+ * 終端の工程として数える）。ただし**条件（14節）が定義だけから偽と分かる操作は挙げない**
+ * （conditionsNeverMet）。
  *
  * outerは、self以外の起点（祖先が入れる値・重ねる相手の値）を定義だけから解く手立て。省くと、
  * それらを参照する工程に「確定しない」印が付く（CraftingStep.hasUnresolvedReferences）。
@@ -35,10 +43,77 @@ export function craftingStepsOf(
   outer?: StaticValueResolver,
 ): readonly CraftingStep[] {
   const steps: CraftingStep[] = [];
-  for (const trigger of def.triggers)
+  for (const trigger of def.triggers) {
+    if (conditionsNeverMet(codex, def, trigger.interaction, outer)) continue;
     steps.push(withTriggeredRangeEvents(def, interactionStep(codex, def, trigger, outer), outer));
+  }
   for (const recipe of def.recipesProducingThis) steps.push(recipeStep(def, recipe));
   return steps;
+}
+
+/**
+ * その操作の条件（14節）に、定義だけから偽と分かるものがあるか。**分からない条件は素通しにする**
+ * ——祖先の天候のように実行時にしか決まらないものまで解こうとすると、収支を定義だけから出すという
+ * 目的が壊れる（BalanceStats.md「この表が数えていないもの」）。
+ */
+function conditionsNeverMet(
+  codex: WorldCodex,
+  def: ObjectDef,
+  interaction: InteractionDef,
+  outer: StaticValueResolver | undefined,
+): boolean {
+  const resolve = staticResolverOf(def, outer);
+  return interaction.requirementDeclarations.some(
+    (requirement) =>
+      staticConditionTruth(requirement.condition, (propertyGlobalId) =>
+        staticValueRangeOf(codex, def, propertyGlobalId, resolve),
+      ) === false,
+  );
+}
+
+/**
+ * defがそのプロパティに取りうる値の範囲（StaticValueRange）。rangeを宣言していなければundefined
+ * ——上下限が無ければ、どの値も取りうる。
+ */
+function staticValueRangeOf(
+  codex: WorldCodex,
+  def: ObjectDef,
+  propertyGlobalId: number,
+  resolve: StaticValueResolver,
+): StaticValueRange | undefined {
+  const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
+  const range = propertyDef?.range;
+  if (propertyDef === undefined || range === undefined) return undefined;
+
+  const endsLeavingThisType: number[] = [];
+  for (const [label, effect] of propertyDef.rangeEvents())
+    if (leavesThisType(codex, def, effect, resolve))
+      endsLeavingThisType.push(label === 'on_min' ? range.min : range.max);
+
+  return { min: range.min, max: range.max, endsLeavingThisType };
+}
+
+/**
+ * その効果がdefをこの型でなくすか——消える（`destroy`）か、別の型へ変わる（`become`）か。
+ * 行き先が定義から解けない`become`は「変わる」と言い切れないので偽を返す。
+ */
+function leavesThisType(
+  codex: WorldCodex,
+  def: ObjectDef,
+  effect: EffectDeclaration,
+  resolve: StaticValueResolver,
+): boolean {
+  const selfDestinations: (number | undefined)[] = [];
+  const reading = readEffect(effect, resolve, (subject, axisValues) => {
+    if (subject.kind !== 'root' || subject.root !== 'self') return undefined;
+    const destination = codex.tryResolveBecome(def, axisValues)?.globalId;
+    selfDestinations.push(destination);
+    return destination;
+  });
+  return (
+    selfDestinations.some((destination) => destination !== undefined && destination !== def.globalId) ||
+    destroysRoot(reading, 'self')
+  );
 }
 
 /**

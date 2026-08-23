@@ -390,4 +390,71 @@ object_defs:
       ]);
     });
   });
+
+  /**
+   * 条件（14節）が定義だけから偽と分かる操作を立てない検証。中身入りの容器が雨を受け始められない
+   * ことは、`fill`が0でその型でなくなる（空の容器へ戻る）ことから決まる——宣言された初期値は
+   * 空の容器と同じ0なので、初期値だけを見ても分からない。
+   */
+  describe('起こりえない操作', () => {
+    const YAML_CONDITIONS = `
+traits:
+  liquid:
+    tags: [liquid]
+
+  water_liquid:
+    tags: [water]
+
+object_defs:
+  jar:
+    tags: [item]
+    props:
+      fill:
+        value: 0
+        range: {min: 0, max: 4000}
+        on_min:
+          become: {content: none}
+      weight: {value: 1200}
+    variation_axes:
+      content: {of: {tag: liquid}}
+    interactions:
+      collect_rain:
+        trigger: menu
+        conditions:
+          - {subject: ancestor, prop: sunlight, lt: 5}
+          - {subject: self, prop: fill, eq: 0}
+        become: {content: water_liquid}
+        set: {self: {fill: 1}}
+      overflow:
+        trigger: menu
+        conditions:
+          - {subject: self, prop: fill, gt: 4000}
+        set: {self: {fill: 0}}
+
+  water_liquid:
+    traits: [liquid, water_liquid]
+`;
+    const conditionCodex = new WorldCodexYamlLoader()
+      .load('conditions.yaml', YAML_CONDITIONS)
+      .buildAndReset();
+    const stepNamesOf = (name: string): readonly string[] =>
+      craftingStepsOf(conditionCodex, conditionCodex.objects.get(conditionCodex.objectNames.getId(name))).map(
+        (step) => step.name,
+      );
+
+    it('range全体が外れる条件を持つ操作は立たない', () => {
+      // fillの上限が4000なので、4000より大きいことを求める操作はどの個体でも起こせない。
+      expect(stepNamesOf('jar')).not.toContain('overflow');
+    });
+
+    it('端でその型でなくなる値を求める操作は、その型では立たない', () => {
+      // 中身入りの容器はfillが0になった瞬間に空の容器へ戻るので、0であることを求められない。
+      expect(stepNamesOf('jar__content_water_liquid')).not.toContain('collect_rain');
+    });
+
+    it('同じ条件でも、その端に留まれる型では立つ', () => {
+      // 空の容器のon_minは自分自身へ戻るだけなので、fillが0のままでいられる。
+      expect(stepNamesOf('jar')).toContain('collect_rain');
+    });
+  });
 });
