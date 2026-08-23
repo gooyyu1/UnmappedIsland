@@ -20,7 +20,7 @@ export function defNamesOf(codex: WorldCodex): DefNames {
      * シンボル型（6.6節）と宣言しているプロパティの値だけシンボル名へ戻す。シンボル型でも数値リテラルが
      * 書かれている箇所（未登録のIDになる）は数値のまま出す。
      */
-    propertyValue: (propertyGlobalId: number, value: number): DescriptionToken => {
+    propertyValueToken: (propertyGlobalId: number, value: number): DescriptionToken => {
       if (!codex.symbolicProperties.has(propertyGlobalId)) return text(String(value));
       const name = codex.symbolNames.tryGetName(value);
       return name === undefined ? text(String(value)) : symbolRef(name);

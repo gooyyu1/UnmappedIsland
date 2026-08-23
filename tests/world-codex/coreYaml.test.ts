@@ -118,8 +118,8 @@ describe('core.yamlのworld定義', () => {
       expectedEffective: number,
       because: string,
     ): void {
-      worldInstance.getProperty(weatherId).init(codex.symbolNames.intern(weather));
-      worldInstance.getProperty(hourId).init(hour);
+      worldInstance.getProperty(weatherId).setNumberWithoutEvents(codex.symbolNames.intern(weather));
+      worldInstance.getProperty(hourId).setNumberWithoutEvents(hour);
       expect(worldInstance.tryGetProperty(ambientTemperatureId)?.getEffectiveValue() ?? 0, because).toBe(
         expectedEffective,
       );
@@ -155,8 +155,8 @@ describe('core.yamlのworld定義', () => {
       expectedEffective: number,
       because: string,
     ): void {
-      worldInstance.getProperty(weatherId).init(codex.symbolNames.intern(weather));
-      worldInstance.getProperty(hourId).init(hour);
+      worldInstance.getProperty(weatherId).setNumberWithoutEvents(codex.symbolNames.intern(weather));
+      worldInstance.getProperty(hourId).setNumberWithoutEvents(hour);
       expect(worldInstance.tryGetProperty(sunlightId)?.getEffectiveValue() ?? 0, because).toBe(
         expectedEffective,
       );

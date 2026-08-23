@@ -29,15 +29,16 @@ export interface HoldHandlers {
   readonly delayMs?: number;
 }
 
+/** 中央へ置ける中身（位置と原点を持つ表示物、Button.addCentered）。 */
+type CenteredContent = Phaser.GameObjects.GameObject &
+  Phaser.GameObjects.Components.Transform &
+  Phaser.GameObjects.Components.Origin;
+
 /**
  * 角丸矩形の押しボタン。中身（アイコン・ラベル）は呼び出し側がaddContentで足す。
  *
  * 子の座標はボタン左上を原点(0,0)とするローカル座標で指定する。
  */
-type CenteredContent = Phaser.GameObjects.GameObject &
-  Phaser.GameObjects.Components.Transform &
-  Phaser.GameObjects.Components.Origin;
-
 export class Button extends Phaser.GameObjects.Container {
   private readonly boxWidth: number;
   private readonly boxHeight: number;

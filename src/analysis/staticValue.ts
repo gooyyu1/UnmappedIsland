@@ -1,4 +1,4 @@
-import type { WeightReading } from '../domain/EffectReader';
+import type { DeclaredNumberReading } from '../domain/EffectReader';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
 
@@ -79,7 +79,10 @@ export interface TrackingResolver {
   readonly unresolved: boolean;
 }
 
-/** 重み・所要時間の宣言（WeightReading）を数値へ解く。参照が解けなければundefined。 */
-export function resolveWeight(reading: WeightReading, resolve: StaticValueResolver): number | undefined {
+/** 宣言に書かれた1つの数値（重み・所要時間）を数値へ解く。参照が解けなければundefined。 */
+export function resolveDeclaredNumber(
+  reading: DeclaredNumberReading,
+  resolve: StaticValueResolver,
+): number | undefined {
   return reading.kind === 'literal' ? reading.value : resolve(reading.subject, reading.propertyGlobalId);
 }

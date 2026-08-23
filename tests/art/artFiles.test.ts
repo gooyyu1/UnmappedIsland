@@ -7,7 +7,7 @@ import {
   commonArtFiles,
   locationArtFiles,
   locationCardArtFiles,
-  locationDefNames,
+  locationNamesWithBackgroundArt,
 } from '../../src/art/artFiles';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -21,7 +21,7 @@ describe('土地の絵の単位分け', () => {
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).build();
-    locations = locationDefNames(codex);
+    locations = locationNamesWithBackgroundArt(codex);
   });
 
   it('locationDefNamesは土地だけを返す（道・アイテムは含まない）', () => {

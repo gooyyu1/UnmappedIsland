@@ -156,5 +156,5 @@ export interface DefNames {
    * プロパティの値1つの書き表し方。シンボル型プロパティ（6.6節）の値はシンボル名へ戻し、
    * それ以外は数値のまま書く（型に関わらず実行時の値はどちらも数値なので、プロパティ側に尋ねる）。
    */
-  propertyValue(propertyGlobalId: number, value: number): DescriptionToken;
+  propertyValueToken(propertyGlobalId: number, value: number): DescriptionToken;
 }

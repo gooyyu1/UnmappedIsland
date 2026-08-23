@@ -1,7 +1,7 @@
 import type { AxisDef, GeneratorLayer } from './AxisDef';
 import type { GenerationScopeDef } from './GenerationScopeDef';
 import type { Site } from './IslandMap';
-import { noiseAt } from './ValueNoise';
+import { noiseAtIslandPoint } from './ValueNoise';
 import { ISLAND_RADIUS } from './SitePlacer';
 
 /**
@@ -54,7 +54,7 @@ function sampleLayer(layer: GeneratorLayer, site: Site, seed: number): number {
     }
 
     case 'layered_noise':
-      return noiseAt(seed + layer.seedOffset, site.x, site.y, layer.octaves, layer.frequency);
+      return noiseAtIslandPoint(seed + layer.seedOffset, site.x, site.y, layer.octaves, layer.frequency);
 
     default:
       throw new Error(`未知のジェネレータ層: ${layer.type as string}`);

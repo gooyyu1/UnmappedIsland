@@ -1,4 +1,4 @@
-import type { WeightReading } from './EffectReader';
+import type { DeclaredNumberReading } from './EffectReader';
 import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
 
 /**
@@ -8,7 +8,7 @@ import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
  * pickのweightだけでなく、行動・組み合わせ・レシピの所要時間、スロットの`put_in`の所要時間も
  * これで表す——**「その場で決まる数値」という点で同じもの**で、何を表す数値かは持ち主の側が決める。
  */
-export class WeightSpec {
+export class DeclaredNumber {
   private readonly isPathRef: boolean;
   private readonly literal: number;
   private readonly path: PropertyPath | undefined;
@@ -19,12 +19,12 @@ export class WeightSpec {
     this.path = path;
   }
 
-  static ofLiteral(literal: number): WeightSpec {
-    return new WeightSpec(false, literal, undefined);
+  static ofLiteral(literal: number): DeclaredNumber {
+    return new DeclaredNumber(false, literal, undefined);
   }
 
-  static ofPath(path: PropertyPath): WeightSpec {
-    return new WeightSpec(true, 0, path);
+  static ofPath(path: PropertyPath): DeclaredNumber {
+    return new DeclaredNumber(true, 0, path);
   }
 
   /** 参照が解決できなければ0（宣言はされているので、値が無いこととは区別しない）。 */
@@ -32,8 +32,8 @@ export class WeightSpec {
     return this.isPathRef ? (this.path!.number(context) ?? 0) : this.literal;
   }
 
-  /** この値の宣言そのもの（WeightReading参照）。数値へ解くのは、文脈を知っている読み手の側。 */
-  get reading(): WeightReading {
+  /** この値の宣言そのもの（DeclaredNumberReading参照）。数値へ解くのは、文脈を知っている読み手の側。 */
+  get reading(): DeclaredNumberReading {
     if (!this.isPathRef) return { kind: 'literal', value: this.literal };
     const path = this.path!;
     return { kind: 'property', subject: path.root, propertyGlobalId: path.propertyGlobalId };

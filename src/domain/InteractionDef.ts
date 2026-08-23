@@ -1,7 +1,7 @@
 import type { WorldSession } from './WorldSession';
 import type { ActiveEffect } from './ActiveEffect';
-import type { EffectReader, WeightReading } from './EffectReader';
-import type { WeightSpec } from './WeightSpec';
+import type { EffectReader, DeclaredNumberReading } from './EffectReader';
+import type { DeclaredNumber } from './DeclaredNumber';
 import type { ReferenceContext } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
 import type { Requirement, Requirements } from './Requirement';
@@ -28,13 +28,13 @@ export class InteractionDef {
    * undefinedなら時間を消費しない。時間進行（advanceWorldTime）までがこのクラスの責務で、
    * 呼び出し側が実行後に別途時間を進める必要はない。
    */
-  private readonly duration: WeightSpec | undefined;
+  private readonly duration: DeclaredNumber | undefined;
 
   constructor(
     name: string,
     requirements: Requirements | undefined,
     effect: ActiveEffect,
-    duration: WeightSpec | undefined,
+    duration: DeclaredNumber | undefined,
   ) {
     this.name = name;
     this.requirements = requirements;
@@ -79,8 +79,8 @@ export class InteractionDef {
     return this.effect.acceptedCount(context, candidates);
   }
 
-  /** 所要時間の宣言（WeightReading参照）。durationを省いていればundefined＝時間を消費しない。 */
-  get durationReading(): WeightReading | undefined {
+  /** 所要時間の宣言（DeclaredNumberReading参照）。durationを省いていればundefined＝時間を消費しない。 */
+  get durationReading(): DeclaredNumberReading | undefined {
     return this.duration?.reading;
   }
 

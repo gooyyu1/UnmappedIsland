@@ -103,7 +103,7 @@ object_defs:
   it('同じ名前のプロパティは、新しいrangeの外でも値をそのまま引き継ぎ、その場では反応させない', () => {
     const wip = wipOn('axe');
     const progressId = codex.propertyNames.getId('progress');
-    wip.getProperty(progressId).init(30);
+    wip.getProperty(progressId).setNumberWithoutEvents(30);
 
     wip.becomeAlong(toBase);
 

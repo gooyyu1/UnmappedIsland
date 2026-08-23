@@ -8,11 +8,9 @@ import { YamlLoadError } from './YamlLoadError';
 import { messageOf } from './errorMessage';
 
 /**
- * 既存のobject_defへの変更（`patch_object_defs`、GameElementDefinition.md 3.4節）。
- *
- * **動詞がパスの読み方を決める。** `add` のパスは「まだ無いキー」、`append` のパスは「既にある
- * 配列」を指す。1つの動詞にまとめると、配列名の打ち間違いが「新しいキーの作成」として通ってしまい、
- * 誤りが patch から遠い場所で表面化する。
+ * patchの動詞。**動詞がパスの読み方を決める。** `add` のパスは「まだ無いキー」、`append` のパスは
+ * 「既にある配列」を指す。1つの動詞にまとめると、配列名の打ち間違いが「新しいキーの作成」として
+ * 通ってしまい、誤りが patch から遠い場所で表面化する。
  */
 const VERBS = ['add', 'append', 'set', 'remove'] as const;
 type Verb = (typeof VERBS)[number];
@@ -20,6 +18,7 @@ type Verb = (typeof VERBS)[number];
 /** 動詞以外に書けるキー。 */
 const MATERIAL_KEYS = ['value', 'where'] as const;
 
+/** 既存のobject_defへの変更1つ（`patch_object_defs`、GameElementDefinition.md 3.4節）。 */
 export class RawPatch {
   readonly verb: Verb;
 
@@ -116,7 +115,7 @@ export function applyPatches(patches: readonly RawPatch[], defs: ReadonlyMap<str
       apply(patch, defs, replaced);
     } catch (error) {
       if (patch.report === undefined) throw error;
-      patch.report.add(patch.source, patch.description, messageOf(error));
+      patch.report.addDiscarded(patch.source, patch.description, messageOf(error));
     }
   }
 }

@@ -1,7 +1,7 @@
 import type { CellDef, SlotDef } from '../../domain/SlotDef';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { text } from './Description';
-import { weightTokens } from './describeEffect';
+import { declaredNumberTokens } from './describeEffect';
 import { typeMatchTokens } from './typeMatchTokens';
 
 /** 枠1つが受け入れる型（7.2節）を書き表す。 */
@@ -30,5 +30,5 @@ export function describeAccept(slot: SlotDef, names: DefNames, out: DescriptionW
 /** ここへ物を入れるのにかかる時間（7.10節）の書き表し。宣言が無ければundefined（一瞬で入る）。 */
 export function putInDurationTokens(slot: SlotDef, names: DefNames): readonly DescriptionToken[] | undefined {
   const reading = slot.putInDurationReading;
-  return reading === undefined ? undefined : weightTokens(reading, names);
+  return reading === undefined ? undefined : declaredNumberTokens(reading, names);
 }

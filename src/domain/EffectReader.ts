@@ -65,7 +65,7 @@ export interface EffectReader {
 
 /** `pick`の候補1つの読み上げ（EffectReader.pick参照）。 */
 export interface PickCandidateReading {
-  readonly weight: WeightReading;
+  readonly weight: DeclaredNumberReading;
 
   /** この候補が起こすこと。`read`でさらに読み下げる。 */
   readonly effect: EffectDeclaration;
@@ -85,7 +85,7 @@ export interface PickCandidateReading {
  * 参照の側を**数値へ解かずに**渡すのは、解ける値かどうかが文脈で決まるため——重ねる相手の値は
  * 「どれを重ねた場合か」を決めた側にしか答えられない。
  */
-export type WeightReading =
+export type DeclaredNumberReading =
   | { readonly kind: 'literal'; readonly value: number }
   | {
       readonly kind: 'property';

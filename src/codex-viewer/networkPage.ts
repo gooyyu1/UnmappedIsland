@@ -82,7 +82,7 @@ export class NetworkPage extends CodexPage {
 }
 
 function renderNetworkPage(view: CodexView, highlightObjectName?: string): string {
-  const network = buildCraftingNetwork(view.objectDefs(), view.codex);
+  const network = buildCraftingNetwork(view.listedObjectDefs(), view.codex);
   const highlightId = highlightObjectName === undefined ? undefined : objectNodeId(highlightObjectName);
   const highlight =
     highlightId !== undefined && network.nodes.some((node) => node.id === highlightId)
@@ -342,6 +342,6 @@ function svgText(text: string, centerX: number, baselineY: number, maxWidth: num
 
 /** objectNameがネットワークに居るか（型のページが「ネットワークで見る」リンクを出すかの判定）。 */
 export function isInCraftingNetwork(view: CodexView, objectName: string): boolean {
-  const network = buildCraftingNetwork(view.objectDefs(), view.codex);
+  const network = buildCraftingNetwork(view.listedObjectDefs(), view.codex);
   return network.nodes.some((node) => node.id === objectNodeId(objectName));
 }

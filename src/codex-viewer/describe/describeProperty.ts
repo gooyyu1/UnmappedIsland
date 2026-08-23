@@ -9,7 +9,7 @@ export function initialValueTokens(def: PropertyDef, names: DefNames): readonly 
   const reading = def.initialValueReading;
   return reading.kind === 'roll'
     ? [text(`${reading.min}〜${reading.max}（生成時に1回抽選）`)]
-    : [names.propertyValue(def.globalId, reading.value)];
+    : [names.propertyValueToken(def.globalId, reading.value)];
 }
 
 /** プロパティの定義（6節）を書き出す。 */
@@ -44,7 +44,7 @@ function stageTokens(
   const tokens: DescriptionToken[] = [stageRef(stage.name)];
   if (stage.eq !== undefined) {
     // シンボル型の段は、段の名前がそのまま比較する値（6.4節）。同じ名前を二度書かない。
-    const value = names.propertyValue(propertyGlobalId, stage.eq);
+    const value = names.propertyValueToken(propertyGlobalId, stage.eq);
     if (value.kind !== 'symbol' || value.name !== stage.name) tokens.push(text(': '), value, text('のとき'));
   } else if (stage.min !== undefined) tokens.push(text(`: ${stage.min}以上`));
   else tokens.push(text(': どの段にも該当しないとき'));

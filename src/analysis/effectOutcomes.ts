@@ -10,7 +10,7 @@ import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { StepOutcome } from './CraftingStep';
 import { UNCHANGED_OUTCOMES, combineOutcomes, scaleOutcomes } from './CraftingStep';
 import type { StaticValueResolver } from './staticValue';
-import { resolveWeight } from './staticValue';
+import { resolveDeclaredNumber } from './staticValue';
 
 /** 効果の宣言を1度読み下した結果。 */
 export interface EffectReading {
@@ -114,7 +114,7 @@ class OutcomeReader implements EffectReader {
     if (candidates.length === 0) return;
 
     const weights = candidates.map((candidate) =>
-      Math.max(0, resolveWeight(candidate.weight, this.resolve) ?? 0),
+      Math.max(0, resolveDeclaredNumber(candidate.weight, this.resolve) ?? 0),
     );
     const total = weights.reduce((sum, weight) => sum + weight, 0);
     const readings = candidates.map((candidate) => readEffect(candidate.effect, this.resolve));

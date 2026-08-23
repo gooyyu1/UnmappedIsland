@@ -124,7 +124,7 @@ export class WorldSession {
    * 溜めていた分を捨てないよう、差し替えて戻す形は他の観測口と揃える（Scoped）。
    */
   withInteractionEffect(source: WorldObject, body: () => void): void {
-    // 出どころは適用前に控える（InteractionGains.source）。飲み干した水は適用し終えた時点で
+    // 出どころは適用前に控える（InteractionGains.sourceAndAncestors）。飲み干した水は適用し終えた時点で
     // 世界から出ていて、そこからでは親を辿れない。
     const chain: WorldObject[] = [];
     for (let object: WorldObject | undefined = source; object !== undefined; object = object.parent)
@@ -137,7 +137,7 @@ export class WorldSession {
       this.gathered.during(gathered, body);
     } finally {
       const gains = [...gathered.values()].filter((gain) => gain.amount > 0);
-      if (gains.length > 0) this.gainObserver.current?.({ source: chain, gains });
+      if (gains.length > 0) this.gainObserver.current?.({ sourceAndAncestors: chain, gains });
     }
   }
 

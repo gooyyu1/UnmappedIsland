@@ -76,7 +76,7 @@ export class SettingsScene extends ResponsiveScene {
     onChange: (value: boolean) => void,
   ): void {
     const button = new Button(this, rect, rowPlateStyle(this.metrics), () => {
-      noteOperation(`設定を切り替えた: ${title} → ${label(!value)}`);
+      noteOperation(`設定を切り替えた: ${title} → ${onOffText(!value)}`);
       onChange(!value);
     });
 
@@ -106,7 +106,7 @@ export class SettingsScene extends ResponsiveScene {
     });
     button.addContent(
       face,
-      addLabel(this, this.metrics, switchRect.x + switchWidth / 2, rect.height / 2, label(value), {
+      addLabel(this, this.metrics, switchRect.x + switchWidth / 2, rect.height / 2, onOffText(value), {
         size: 26,
         bold: true,
         color: value ? COLOR.primaryButtonText : COLOR.textMuted,
@@ -115,6 +115,6 @@ export class SettingsScene extends ResponsiveScene {
   }
 }
 
-function label(value: boolean): string {
+function onOffText(value: boolean): string {
   return value ? 'オン' : 'オフ';
 }

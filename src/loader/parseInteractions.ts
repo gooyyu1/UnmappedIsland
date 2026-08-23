@@ -68,7 +68,7 @@ function parseInteraction(
   if (drag !== undefined) {
     // 何個受け取れるかを答えられる形かは、宣言だけで決まる。許可したのに答えられない宣言は、
     // 黙って1枚ずつになるとプレイヤーには理由が分からないので、ここで弾く（12.4節）。
-    if (drag.allowMultiple && effect.countableVessels() !== 1)
+    if (drag.allowMultiple && effect.repeatLimitingVessels() !== 1)
       throw new YamlLoadError(
         `${context}: allow_multipleを宣言できるのは、まとめた枚数の上限を決める器を1つだけ持つ効果です` +
           '（値域を持つプロパティへのtransferが1つ。pickを含むもの・器が複数あるものは数えられません）。',

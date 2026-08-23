@@ -1,7 +1,7 @@
 import type { InteractionTrigger } from '../../domain/InteractionTrigger';
 import type { DefNames, DescriptionWriter } from './Description';
 import { text } from './Description';
-import { describeEffect, weightTokens } from './describeEffect';
+import { describeEffect, declaredNumberTokens } from './describeEffect';
 import { describeRequirements } from './describeRequirement';
 import { typeMatchTokens } from './typeMatchTokens';
 
@@ -31,7 +31,8 @@ export function describeInteraction(
   }
 
   const duration = interaction.durationReading;
-  if (duration !== undefined) out.write(text('所要時間: '), ...weightTokens(duration, names), text('分'));
+  if (duration !== undefined)
+    out.write(text('所要時間: '), ...declaredNumberTokens(duration, names), text('分'));
 
   describeEffect(interaction, names, out);
 }

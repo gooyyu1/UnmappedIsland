@@ -151,7 +151,7 @@ export class MapWindow {
    * 画面座標のクランプを正規化座標へそのまま書き戻せる。
    */
   private openingPlacement(site: number, saved: ReadonlyMap<number, MapPlacement>): MapPlacement {
-    const at = saved.get(site) ?? this.trayCell(this.unplacedCount(saved));
+    const at = saved.get(site) ?? this.trayCell(this.nextTrayCellIndex(saved));
     const clamped = this.clampTopLeft(
       at.x * this.metrics.width - (this.metrics.px(SIZE.cardWidth) * CARD_SCALE) / 2,
       at.y * this.metrics.height - (this.metrics.px(SIZE.cardHeight) * CARD_SCALE) / 2,
@@ -164,7 +164,7 @@ export class MapWindow {
   }
 
   /** 保存済みの位置が無い土地のうち、これまでに待機列へ並べた数（次に使う待機列の枠番号）。 */
-  private unplacedCount(saved: ReadonlyMap<number, MapPlacement>): number {
+  private nextTrayCellIndex(saved: ReadonlyMap<number, MapPlacement>): number {
     let count = 0;
     for (const site of this.placements.keys()) if (!saved.has(site)) count++;
     return count;

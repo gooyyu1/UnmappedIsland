@@ -90,7 +90,7 @@ const SYMBOL_PATTERN = /^[a-z][a-z0-9_]*$/;
  * 数値→真偽値→シンボルで固定する。2番目の戻り値は、rawがシンボル名として登録された場合にtrueになる
  * （stagesの解釈分岐、6.4節）。
  */
-export function parseScalarNumber(
+export function parseNumberOrSymbol(
   loader: WorldCodexYamlLoader,
   context: string,
   raw: string,

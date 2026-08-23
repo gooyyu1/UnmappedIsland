@@ -15,7 +15,7 @@ export type TypeMatchReading =
   | { readonly kind: 'object'; readonly objectGlobalId: number }
   | { readonly kind: 'not'; readonly inner: TypeMatchReading };
 
-/** 枠の`accept`（7.2節）として書き出した形（TypeMatchRule.acceptSpec参照）。 */
+/** 枠の`accept`（7.2節）として書き出した形（TypeMatchRule.toAcceptSpec参照）。 */
 export type AcceptSpec =
   { readonly tag: string } | { readonly object: string } | { readonly not: AcceptSpec };
 
@@ -85,8 +85,11 @@ export class TypeMatchRule {
    * 枠の`accept`（7.2節）として書き出した形。レシピの要求から製作中オブジェクトの枠を組み立てる
    * （inProgressObjects）ときに、宣言をYAMLへ戻すために使う。
    */
-  acceptSpec(names: { objectName(globalId: number): string; tagName(globalId: number): string }): AcceptSpec {
-    if (this.kind === 'not') return { not: this.inner!.acceptSpec(names) };
+  toAcceptSpec(names: {
+    objectName(globalId: number): string;
+    tagName(globalId: number): string;
+  }): AcceptSpec {
+    if (this.kind === 'not') return { not: this.inner!.toAcceptSpec(names) };
     return this.kind === 'tag'
       ? { tag: names.tagName(this.target) }
       : { object: names.objectName(this.target) };

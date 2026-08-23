@@ -1288,7 +1288,7 @@ object_defs:
     ).toBe(false); // self(empty)とdragged(water)のcontentが異なるので不成立
 
     const contentId = codex.propertyNames.getId('content');
-    bottle.getProperty(contentId).init(codex.symbolNames.getId('water'));
+    bottle.getProperty(contentId).setNumberWithoutEvents(codex.symbolNames.getId('water'));
     expect(
       bottle
         .combinationsWith(sameContent, undefined)
@@ -1434,7 +1434,7 @@ object_defs:
     expect(logInstance.moveToSlot(campfireInstance.getSlot(fuelSlotId))).toBeUndefined();
     expect(logInstance.tryGetProperty(warmthId)?.getEffectiveValue() ?? 0).toBe(0); // fuel_slotには入っているが、heatがunlitステージのためボーナスなし
 
-    campfireInstance.getProperty(heatId).init(1);
+    campfireInstance.getProperty(heatId).setNumberWithoutEvents(1);
     expect(logInstance.tryGetProperty(warmthId)?.getEffectiveValue() ?? 0).toBe(5); // litステージかつfuel_slot条件の両方を満たすのでボーナスが乗る
 
     expect(logInstance.moveToSlot(campfireInstance.getSlot(storageSlotId))).toBeUndefined();
@@ -1632,7 +1632,7 @@ object_defs:
 
     const session = new WorldSession(codex);
     const instance = new WorldObject(1, clock, session);
-    instance.getProperty(codex.propertyNames.getId('minute')).init(60); // 手動で溢れさせる
+    instance.getProperty(codex.propertyNames.getId('minute')).setNumberWithoutEvents(60); // 手動で溢れさせる
     instance.tick(); // passivesのadd契機は無いが、既に溢れているのでon_maxだけが発火する
 
     expect(instance.tryGetProperty(codex.propertyNames.getId('minute'))?.number ?? 0).toBe(0);
@@ -1684,7 +1684,7 @@ object_defs:
 
     const session = new WorldSession(codex);
     const instance = new WorldObject(1, gauge, session);
-    instance.getProperty(codex.propertyNames.getId('value')).init(150);
+    instance.getProperty(codex.propertyNames.getId('value')).setNumberWithoutEvents(150);
     instance.tick();
 
     expect(instance.tryGetProperty(codex.propertyNames.getId('value'))?.number ?? 0).toBe(100); // 既定のon_maxにより100へクランプされる
@@ -1742,7 +1742,7 @@ object_defs:
 
     const session = new WorldSession(codex);
     const instance = new WorldObject(1, clock, session);
-    instance.getProperty(codex.propertyNames.getId('minute')).init(-10); // 手動で下回らせる
+    instance.getProperty(codex.propertyNames.getId('minute')).setNumberWithoutEvents(-10); // 手動で下回らせる
     instance.tick();
 
     expect(instance.tryGetProperty(codex.propertyNames.getId('minute'))?.number ?? 0).toBe(50);
@@ -1764,7 +1764,7 @@ object_defs:
 
     const session = new WorldSession(codex);
     const instance = new WorldObject(1, gauge, session);
-    instance.getProperty(codex.propertyNames.getId('value')).init(-50);
+    instance.getProperty(codex.propertyNames.getId('value')).setNumberWithoutEvents(-50);
     instance.tick();
 
     expect(instance.tryGetProperty(codex.propertyNames.getId('value'))?.number ?? 0).toBe(0); // 既定のon_minにより0へクランプされる

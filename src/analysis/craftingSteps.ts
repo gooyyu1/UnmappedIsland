@@ -9,7 +9,7 @@ import type { EffectReading } from './effectOutcomes';
 import { destroysRoot, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
 import type { StaticValueResolver } from './staticValue';
-import { resolveWeight, staticResolverOf, staticValueOf, trackingResolverOf } from './staticValue';
+import { resolveDeclaredNumber, staticResolverOf, staticValueOf, trackingResolverOf } from './staticValue';
 
 /**
  * 定義を「入力 → 工程 → 出力」の形へ均す（CraftingStep参照）。
@@ -199,5 +199,5 @@ function inputOf(reading: TypeMatchReading, consumed: boolean, count: number): C
  */
 function minutesOf(interaction: InteractionDef, resolve: StaticValueResolver): number {
   const reading = interaction.durationReading;
-  return reading === undefined ? 0 : Math.trunc(resolveWeight(reading, resolve) ?? 0);
+  return reading === undefined ? 0 : Math.trunc(resolveDeclaredNumber(reading, resolve) ?? 0);
 }

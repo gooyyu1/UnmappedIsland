@@ -129,7 +129,7 @@ object_defs:
     const amounts = new Map<string, number>();
     for (const { gains } of observed)
       for (const gain of gains) if (gain.object === player) amounts.set(gain.property.name, gain.amount);
-    return { source: observed[0]?.source[0].def.name ?? '', amounts };
+    return { source: observed[0]?.sourceAndAncestors[0].def.name ?? '', amounts };
   }
 
   /** 満タンだと足した分がそのまま戻されるので、増加を見るテストは先に減らしておく。 */
@@ -184,7 +184,7 @@ object_defs:
     );
 
     expect(bowl.def.name, '飲み干した器は空へ戻っている').toBe('bowl');
-    expect(observed[0].source.map((object) => object.def.name)).toEqual([
+    expect(observed[0].sourceAndAncestors.map((object) => object.def.name)).toEqual([
       'bowl',
       'survivor',
       'land',

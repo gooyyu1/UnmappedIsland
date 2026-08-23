@@ -124,7 +124,7 @@ export class WeatherOverlay extends Phaser.GameObjects.Container {
     context.lineCap = 'round';
 
     const travel = Math.hypot(slant, 1);
-    const random = scatter(SCATTER_SEED + count);
+    const random = seededRandomNumbers(SCATTER_SEED + count);
     context.beginPath();
     for (let i = 0; i < count; i++) {
       const x = random() * RAIN_TILE;
@@ -157,7 +157,7 @@ export class WeatherOverlay extends Phaser.GameObjects.Container {
 }
 
 /** 0以上1未満を返す、種から決まる乱数列（mulberry32）。 */
-function scatter(seed: number): () => number {
+function seededRandomNumbers(seed: number): () => number {
   let state = seed >>> 0;
   return () => {
     state = (state + 0x6d2b79f5) >>> 0;

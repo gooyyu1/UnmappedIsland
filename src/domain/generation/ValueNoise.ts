@@ -9,7 +9,13 @@ import { ISLAND_RADIUS } from './SitePlacer';
  * [0, 1) のノイズ値。座標はSitePlacer.ISLAND_RADIUSで正規化してから周波数を掛ける
  * （frequency=島の直径あたりの起伏の数の目安）。octavesは周波数2倍・振幅1/2で重ねる。
  */
-export function noiseAt(seed: number, x: number, y: number, octaves: number, frequency: number): number {
+export function noiseAtIslandPoint(
+  seed: number,
+  x: number,
+  y: number,
+  octaves: number,
+  frequency: number,
+): number {
   let total = 0;
   let amplitude = 1;
   let amplitudeSum = 0;

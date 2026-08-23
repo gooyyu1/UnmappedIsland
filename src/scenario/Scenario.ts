@@ -99,12 +99,12 @@ export function parseScenario(fileName: string, text: string): Scenario {
   return {
     title: tryGetScalar(root, 'title', fileName) ?? fileName.replace(/^.*\/(.+)\.yaml$/, '$1'),
     seed,
-    hand: names(player, 'hand', `${fileName}.player`),
-    equipment: names(player, 'equipment', `${fileName}.player`),
-    injuries: names(player, 'injuries', `${fileName}.player`),
+    hand: readSlotContents(player, 'hand', `${fileName}.player`),
+    equipment: readSlotContents(player, 'equipment', `${fileName}.player`),
+    injuries: readSlotContents(player, 'injuries', `${fileName}.player`),
     locationType: location === undefined ? undefined : tryGetScalar(location, 'type', `${fileName}.location`),
-    items: names(location, 'items', `${fileName}.location`),
-    fixtures: names(location, 'fixtures', `${fileName}.location`),
+    items: readSlotContents(location, 'items', `${fileName}.location`),
+    fixtures: readSlotContents(location, 'fixtures', `${fileName}.location`),
     inside: contentsByOwner(location, `${fileName}.location`),
     props: propertyValues(player, 'props', `${fileName}.player`),
     worldProps: propertyValues(world, 'props', `${fileName}.world`),
@@ -123,12 +123,12 @@ function contentsByOwner(
   if (map === undefined) return byOwner;
 
   for (const [owner] of entriesInOrder(map)) {
-    byOwner.set(owner, names(map, owner, `${context}.inside`));
+    byOwner.set(owner, readSlotContents(map, owner, `${context}.inside`));
   }
   return byOwner;
 }
 
-function names(parent: ReturnType<typeof tryGetMap>, key: string, context: string): SlotContents {
+function readSlotContents(parent: ReturnType<typeof tryGetMap>, key: string, context: string): SlotContents {
   if (parent === undefined) return [];
   const seq = tryGetSeq(parent, key, context);
   if (seq === undefined) return [];
@@ -191,10 +191,14 @@ export function applyScenario(game: NewGameSession, scenario: Scenario, codex: W
   placeInside(game, codex, scenario.inside);
 
   for (const [name, raw] of scenario.props) {
-    game.player.instance.getProperty(propertyIdOf(codex, name)).init(resolveValue(codex, name, raw));
+    game.player.instance
+      .getProperty(propertyIdOf(codex, name))
+      .setNumberWithoutEvents(resolveValue(codex, name, raw));
   }
   for (const [name, raw] of scenario.worldProps) {
-    game.world.instance.getProperty(propertyIdOf(codex, name)).init(resolveValue(codex, name, raw));
+    game.world.instance
+      .getProperty(propertyIdOf(codex, name))
+      .setNumberWithoutEvents(resolveValue(codex, name, raw));
   }
 }
 

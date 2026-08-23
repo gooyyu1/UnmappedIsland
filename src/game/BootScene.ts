@@ -16,7 +16,7 @@ import {
 } from '../art/slotButtonArt';
 import { ICON_ART } from '../art/iconArt';
 import { WEATHER_ART } from '../art/weatherArt';
-import { commonArtFiles, locationDefNames } from '../art/artFiles';
+import { commonArtFiles, locationNamesWithBackgroundArt } from '../art/artFiles';
 import { cssColor } from '../util/cssColor';
 import { COLOR, FONT_FAMILY } from './looks/theme';
 import { loadDefinitions } from '../loader/loadDefinitions';
@@ -83,7 +83,8 @@ export class BootScene extends Phaser.Scene {
     // 土地の絵はここではロードせず、プレイ中に必要になった土地からロードする（artFiles参照）。
     // それ以外の絵（キャラクター・アイテム・共通の背景）は開始時点の画面に出うるため、ここで読み切る。
     // どの絵が土地のものかはCodexが要る（locationタグ）ので、preloadではなくYAMLを読み終えた後に行う。
-    for (const { key, url } of commonArtFiles(locationDefNames(codex))) this.load.image(key, url);
+    for (const { key, url } of commonArtFiles(locationNamesWithBackgroundArt(codex)))
+      this.load.image(key, url);
     this.load.once(Phaser.Loader.Events.COMPLETE, () => this.scene.start('title'));
     this.load.start();
   }

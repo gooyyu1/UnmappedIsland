@@ -62,7 +62,7 @@ export class PropertyValue {
    * **出来上がったオブジェクトの値を動かすのには使わない。** そちらは add / setNumber で、
    * rangeイベントもgainも通常どおり働く。
    */
-  init(number: number): void {
+  setNumberWithoutEvents(number: number): void {
     this._number = number;
   }
 
@@ -226,8 +226,8 @@ export class PropertyValue {
   }
 
   /** 今いる段を、バーへ刻んで見せるための読み（6.4節）。段を宣言していないプロパティはundefined。 */
-  get stageOnBar(): StageReading | undefined {
-    return this.def.stageOnBarAt(this.getEffectiveValue());
+  get stageReading(): StageReading | undefined {
+    return this.def.stageReadingAt(this.getEffectiveValue());
   }
 
   /** transfer（9.5節）でこのプロパティから出せる量の上限。rangeがあればrange.minを下限とみなし、無ければ現在値そのまま。 */

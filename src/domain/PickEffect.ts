@@ -5,7 +5,7 @@ import type { WorldSession } from './WorldSession';
 import { ActiveEffect } from './ActiveEffect';
 import type { EffectReader, PickCandidateReading } from './EffectReader';
 import type { ReferenceContext } from './ReferenceRoot';
-import type { WeightSpec } from './WeightSpec';
+import type { DeclaredNumber } from './DeclaredNumber';
 
 /**
  * pick（10節）: weightで1候補を選び、その候補の効果を適用する効果。候補の効果もActiveEffect
@@ -34,7 +34,7 @@ export class PickEffect extends ActiveEffect {
   }
 
   /** **数えられない。** 引くたびに起きることが変わるので、2回目が何をするかは実行するまで分からない。 */
-  override countableVessels(): undefined {
+  override repeatLimitingVessels(): undefined {
     return undefined;
   }
 
@@ -60,7 +60,7 @@ export class PickEffect extends ActiveEffect {
  */
 export class PickCandidateDef {
   /** 抽選の重み（10.2節）。 */
-  readonly weight: WeightSpec;
+  readonly weight: DeclaredNumber;
 
   /** この候補が選ばれたときに適用する効果。 */
   private readonly effect: ActiveEffect;
@@ -68,7 +68,7 @@ export class PickCandidateDef {
   /** 周りから相手を1つ選ぶ宣言（10.3節）。書いていなければundefined。 */
   private readonly among: AmongSpec | undefined;
 
-  constructor(weight: WeightSpec, effect: ActiveEffect, among?: AmongSpec) {
+  constructor(weight: DeclaredNumber, effect: ActiveEffect, among?: AmongSpec) {
     this.weight = weight;
     this.effect = effect;
     this.among = among;

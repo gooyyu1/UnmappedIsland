@@ -44,7 +44,7 @@ export function populate(session: WorldSession, map: IslandMap): void {
     // 亜種の個体差は、探索の抽選がweightとして読むプロパティ（TerrainGeneration.md 3.6節）。
     if (site.variant !== undefined)
       for (const [propertyGlobalId, value] of site.variant.props)
-        location.getProperty(propertyGlobalId).init(value);
+        location.getProperty(propertyGlobalId).setNumberWithoutEvents(value);
     const error = location.moveToSlot(world.getSlot(locationsSlotId));
     if (error !== undefined) throw new Error(`土地 '${site.type!.name}' を配置できません: ${error}`);
     locations[site.index] = location;
@@ -74,9 +74,9 @@ export function populate(session: WorldSession, map: IslandMap): void {
             Math.trunc(((lastPathProgress - FIRST_PATH_PROGRESS) * i) / (touching.length - 1));
 
       const path = session.spawn(pathDefId);
-      path.getProperty(travelMinutesId).init(edge.travelMinutes);
-      path.getProperty(requiredProgressId).init(requiredProgress);
-      path.getProperty(destinationIdId).init(locations[other].instanceId);
+      path.getProperty(travelMinutesId).setNumberWithoutEvents(edge.travelMinutes);
+      path.getProperty(requiredProgressId).setNumberWithoutEvents(requiredProgress);
+      path.getProperty(destinationIdId).setNumberWithoutEvents(locations[other].instanceId);
       const error = path.moveToSlot(locations[site.index].getSlot(undiscoveredFixturesSlotId));
       if (error !== undefined) throw new Error(`道を配置できません: ${error}`);
       pathsByEnds.set(endsKey(site.index, other), path);
@@ -90,8 +90,8 @@ export function populate(session: WorldSession, map: IslandMap): void {
     if (forward === undefined || backward === undefined)
       throw new Error(`辺(${edge.a},${edge.b})の道が両端に揃っていません。`);
 
-    forward.getProperty(returnPathIdId).init(backward.instanceId);
-    backward.getProperty(returnPathIdId).init(forward.instanceId);
+    forward.getProperty(returnPathIdId).setNumberWithoutEvents(backward.instanceId);
+    backward.getProperty(returnPathIdId).setNumberWithoutEvents(forward.instanceId);
   }
 }
 

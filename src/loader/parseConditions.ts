@@ -13,7 +13,7 @@ import {
 } from './yamlMapping';
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseScalarNumber, parseTypeMatchRule } from './parseCommon';
+import { parseNumberOrSymbol, parseTypeMatchRule } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot, ReferenceScope } from '../domain/ReferenceRoot';
 import { PropertyPath } from '../domain/ReferenceRoot';
@@ -330,6 +330,6 @@ function parseConditionScalar(loader: WorldCodexYamlLoader, context: string, raw
       `${context}: value '${raw}' は未対応です（参照先プロパティのrangeの${raw}を指す規約がまだ確定していないため）。`,
     );
 
-  const [value] = parseScalarNumber(loader, context, raw);
+  const [value] = parseNumberOrSymbol(loader, context, raw);
   return value;
 }

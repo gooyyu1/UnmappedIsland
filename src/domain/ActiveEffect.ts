@@ -33,7 +33,7 @@ export abstract class ActiveEffect {
    * **既定は0＝数に影響しない。** 取りこぼしても「まとめられない」に倒れるだけで安全側なので、readと
    * 違い抽象にしない。数を決められるのは、単調に埋まる器へ入れる効果（transfer）だけ。
    */
-  countableVessels(): number | undefined {
+  repeatLimitingVessels(): number | undefined {
     return 0;
   }
 
@@ -42,7 +42,7 @@ export abstract class ActiveEffect {
    * （`become` の座標が空、9.9節）。成立しない操作は候補に出さない——落とせるのに何も起きない、を
    * 作らないため。
    *
-   * **既定はfalse＝妨げない。** countableVesselsと同じく、取りこぼしても安全側（操作は出る）に
+   * **既定はfalse＝妨げない。** repeatLimitingVesselsと同じく、取りこぼしても安全側（操作は出る）に
    * 倒れるので抽象にしない。
    */
   unresolvable(_context: ReferenceContext): boolean {
@@ -51,7 +51,7 @@ export abstract class ActiveEffect {
 
   /**
    * candidatesを先頭から順に、この効果を続けて何回適用できるか。undefinedは「答えられない」。
-   * 各candidateはdraggedの役で、器（countableVessels）を持つ効果だけが答える。
+   * 各candidateはdraggedの役で、器（repeatLimitingVessels）を持つ効果だけが答える。
    */
   acceptedCount(_context: ReferenceContext, _candidates: readonly WorldObject[]): number | undefined {
     return undefined;
@@ -87,10 +87,10 @@ export class ActiveEffects extends ActiveEffect {
   }
 
   /** 子の合計。1つでも数えられない子（pick）があれば、合成も数えられない。 */
-  override countableVessels(): number | undefined {
+  override repeatLimitingVessels(): number | undefined {
     let total = 0;
     for (const operation of this.operations) {
-      const vessels = operation.countableVessels();
+      const vessels = operation.repeatLimitingVessels();
       if (vessels === undefined) return undefined;
       total += vessels;
     }
@@ -331,7 +331,7 @@ export class TransferEffect extends ActiveEffect {
    * 移送先が全candidatesで共通なら、その値が器になる（1つ）。移送先がdraggedなら、器はcandidateごとに
    * 別なので回数の上限を決めない（0）。
    */
-  override countableVessels(): number | undefined {
+  override repeatLimitingVessels(): number | undefined {
     return this.to.root === 'dragged' ? 0 : 1;
   }
 

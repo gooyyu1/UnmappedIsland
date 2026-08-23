@@ -71,7 +71,7 @@ export function describeInfluencesOn(
  * どの操作で生まれるかまでは返さない——「これはどこから手に入るのか」を知りたい読み手には、生む側の型が
  * 答えで、その先はその型のページにある。
  */
-export function creates(def: ObjectDef, objectGlobalId: number): boolean {
+export function createsObject(def: ObjectDef, objectGlobalId: number): boolean {
   const matches = (declaration: EffectDeclaration): boolean => spawnsObject(declaration, objectGlobalId);
   return (
     def.enumeratePropertyDefs().some((propertyDef) => propertyDef.hasRangeEventMatching(matches)) ||

@@ -36,7 +36,9 @@ describe('筏と航海', () => {
 
   /** 風向きを直接置く（8時間ごとの引き直しは天気と同じ仕組みなので、ここでは向きだけを固定する）。 */
   function setWind(game: NewGameSession, wind: string): void {
-    game.world.instance.getProperty(codex.propertyNames.getId('wind')).init(codex.symbolNames.getId(wind));
+    game.world.instance
+      .getProperty(codex.propertyNames.getId('wind'))
+      .setNumberWithoutEvents(codex.symbolNames.getId(wind));
   }
 
   function propertyOf(object: WorldObject, name: string): number {
@@ -176,7 +178,7 @@ describe('筏と航海', () => {
     // 距離の残り1つ手前まで詰めて、あと1tickで着く状態にする（航海そのものの長さは別の検査）。
     const progressId = codex.propertyNames.getId('voyage_progress');
     const distance = raft.def.tryGetPropertyDef(progressId)!.range!.max;
-    raft.getProperty(progressId).init(distance - 1);
+    raft.getProperty(progressId).setNumberWithoutEvents(distance - 1);
 
     tick(game);
 

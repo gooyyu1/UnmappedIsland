@@ -6,7 +6,7 @@ import type {
   AddReading,
   PickCandidateReading,
   TransferReading,
-  WeightReading,
+  DeclaredNumberReading,
 } from '../../domain/EffectReader';
 import type { AmongReading } from '../../domain/AmongSpec';
 import type { ObjectRefReading } from '../../domain/ObjectRef';
@@ -82,7 +82,10 @@ function objectRefTokens(reading: ObjectRefReading, names: DefNames): readonly D
 }
 
 /** 重み・所要時間の書き表し。リテラルなら数値、参照ならプロパティ。 */
-export function weightTokens(reading: WeightReading, names: DefNames): readonly DescriptionToken[] {
+export function declaredNumberTokens(
+  reading: DeclaredNumberReading,
+  names: DefNames,
+): readonly DescriptionToken[] {
   return reading.kind === 'literal'
     ? [text(String(reading.value))]
     : [propertyRef(names.propertyName(reading.propertyGlobalId), reading.subject)];
@@ -97,7 +100,7 @@ function amongTokens(reading: AmongReading, names: DefNames): readonly Descripti
     text(' から1つ'),
     ...(reading.weight === undefined
       ? [text('（一律）')]
-      : [text('（重み: '), ...weightTokens(reading.weight, names), text('）')]),
+      : [text('（重み: '), ...declaredNumberTokens(reading.weight, names), text('）')]),
   ];
 }
 
@@ -116,7 +119,7 @@ class EffectDescriber implements EffectReader {
       text('set '),
       propertyRef(this.names.propertyName(propertyGlobalId), target),
       text(' = '),
-      this.names.propertyValue(propertyGlobalId, value),
+      this.names.propertyValueToken(propertyGlobalId, value),
     );
   }
 
@@ -170,7 +173,7 @@ class EffectDescriber implements EffectReader {
     this.out.write(text('pick:'));
     this.out.indented(() => {
       for (const candidate of candidates) {
-        this.out.write(text('weight = '), ...weightTokens(candidate.weight, this.names));
+        this.out.write(text('weight = '), ...declaredNumberTokens(candidate.weight, this.names));
         this.out.indented(() => {
           if (candidate.among !== undefined) this.out.write(...amongTokens(candidate.among, this.names));
           describeEffect(candidate.effect, this.names, this.out);
