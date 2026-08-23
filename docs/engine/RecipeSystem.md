@@ -101,8 +101,19 @@ actions/combinations と同じで（[ActionSystem.md](ActionSystem.md) 2 節）�
 （`with`、[`GameElementDefinition.md`](./GameElementDefinition.md) 12.1 節）になりません
 （`ObjectDef.combinationsAccepting`）。石斧は `cutting_tool`・`chopping_tool`・`weapon` を持つので、
 弾かなければ**半分できた斧で木を伐り、獣を殴れて**しまいます——しかも製作中オブジェクトは完成品の
-`props` を持たないため、一撃の重み配分（`HuntingSystem.md` 1.2 節）が全て0になり、
+働きに関わる `props` を持たないため、一撃の重み配分（`HuntingSystem.md` 1.2 節）が全て0になり、
 重みが全て0のときの規約（先頭の候補）で最も重い一撃が必ず出ます。
+
+### 5.1 引き継ぐ props は、置き場所が要求する 2 つだけ
+
+タグを引き継ぐ以上、そのタグが要求するプロパティ（`GameElementDefinition.md` 4.2 節）も揃っていなければ
+なりません。`item` を引き継いだ製作中オブジェクトには `weight` と `volume` が要ります。
+
+- **`weight` は 0。** 作りかけそのものに目方は無く、重さは材料スロットに入っている物がそのまま持ちます
+  （[`ContainerSystem.md`](./ContainerSystem.md) 1 節）。担ぐことになるのは投入した材料の重さです。
+- **`volume` は完成品のものを写します。** かさは重さと違って中身から導出されません（入れ物のかさは
+  外側の大きさで、中身を足しても膨らまない）。写さないと 0 になり、容量のある入れ物へ作りかけを
+  いくらでも詰め込めてしまいます。編みかけの籠は、編み上がった籠とほぼ同じ場所を取ります。
 
 ## 6. 未決事項・今後の検討課題
 

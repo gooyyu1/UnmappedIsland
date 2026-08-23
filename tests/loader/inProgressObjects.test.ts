@@ -46,6 +46,30 @@ object_defs:
     expect(def.stackable, '進捗も中身も個体ごとに違うので束ねない').toBe(false);
   });
 
+  it('重さは0で、かさは完成品のものを写す', () => {
+    // 重さは材料スロットの中身から導出されるが、かさは導出されない（入れ物のかさは外側の
+    // 大きさなので中身を足しても膨らまない）。写さないと容量のある入れ物へ無限に詰め込める。
+    const codex = load(`
+object_defs:
+  wood:
+    tags: [item]
+  axe:
+    tags: [item]
+    props:
+      weight: {value: 900}
+      volume: {value: 6000}
+    recipes:
+      basic:
+        steps:
+          - requires: [{object: wood, count: 2, consume: true}]
+            duration: 30
+`);
+    const def = codex.objects.get(codex.objectNames.getId(inProgressObjectName('axe', 'basic')));
+
+    expect(def.tryGetPropertyDef(codex.propertyNames.getId('weight'))!.initialValue).toBe(0);
+    expect(def.tryGetPropertyDef(codex.propertyNames.getId('volume'))!.initialValue).toBe(6000);
+  });
+
   it('素材と道具が同じスロットに並び、枠の上限は全工程の要求の合計になる', () => {
     const codex = load(AXE);
     const def = codex.objects.get(codex.objectNames.getId(inProgressObjectName('axe', 'basic')));

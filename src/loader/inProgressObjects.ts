@@ -19,7 +19,12 @@ export const IN_PROGRESS_SOURCE = '<製作中オブジェクトの自動生成>'
  * （on_max）を起こす側なので、表示専用の割合をこちらへ分ける（時間の不揃いな工程では両者の割合が
  * 一致しないため）。
  */
-import { FINISHED_STEPS_PROPERTY, MATERIALS_SLOT, PROGRESS_PROPERTY } from '../domain/WorldVocabulary';
+import {
+  FINISHED_STEPS_PROPERTY,
+  MATERIALS_SLOT,
+  PROGRESS_PROPERTY,
+  VOLUME_PROPERTY,
+} from '../domain/WorldVocabulary';
 
 /**
  * 製作中オブジェクトの型の名前（RecipeSystem.md 1節）。人間もMOD作成者もこの型を直接書かないため、
@@ -43,6 +48,7 @@ export function inProgressObjectsYaml(
   defs: readonly ObjectDef[],
   tagNames: NameRegistry,
   objectNames: NameRegistry,
+  propertyNames: NameRegistry,
 ): GeneratedObjectDefs | undefined {
   const objectDefs: Record<string, unknown> = {};
   const coordinates = new Map<string, GeneratedCoordinate>();
@@ -50,7 +56,7 @@ export function inProgressObjectsYaml(
   for (const def of defs)
     for (const recipe of def.recipes) {
       const name = inProgressObjectName(def.name, recipe.name);
-      objectDefs[name] = inProgressObjectDef(def, recipe, tagNames, objectNames);
+      objectDefs[name] = inProgressObjectDef(def, recipe, tagNames, objectNames, propertyNames);
       // 素の型は完成品で、軸`recipe`の値がレシピの名前（GameElementDefinition.md 3.5節）。
       coordinates.set(name, {
         baseGlobalId: def.globalId,
@@ -67,6 +73,7 @@ function inProgressObjectDef(
   recipe: ObjectDef['recipes'][number],
   tagNames: NameRegistry,
   objectNames: NameRegistry,
+  propertyNames: NameRegistry,
 ): Record<string, unknown> {
   const totalMinutes = recipe.steps.reduce((sum, step) => sum + step.durationMinutes, 0);
 
@@ -84,6 +91,10 @@ function inProgressObjectDef(
       // （ContainerSystem.md 1節）。完成品のweightを引き継がないのは、まだその形になっていない
       // ため——投入した材料の重さを担ぐことになる。
       weight: { value: 0 },
+      // **かさは完成品のものを写す。** 重さと違って中身から導出されない（入れ物のかさは外側の
+      // 大きさで、中身を足しても膨らまない）ので、写さないと0になり、容量のある入れ物へ
+      // 作りかけを無限に詰め込めてしまう。編みかけの籠は、編み上がった籠とほぼ同じ場所を取る。
+      ...declaredVolume(product, propertyNames),
       [PROGRESS_PROPERTY]: {
         value: 0,
         // 完成は進捗が上限（＝工程の所要時間の合計）に達した瞬間に起こす。stagesのpassivesには
@@ -119,6 +130,17 @@ function inProgressObjectDef(
         // エンジンが勝手に選んで入れると取り出せなくなる。
         placement: ['manual'],
       },
+    },
+  };
+}
+
+/** 完成品が宣言しているかさ（volume）を、そのままの形で写した`props`の断片。無ければ空。 */
+function declaredVolume(product: ObjectDef, propertyNames: NameRegistry): Record<string, unknown> {
+  const declared = product.tryGetPropertyDef(propertyNames.intern(VOLUME_PROPERTY))?.initialValueReading;
+  if (declared === undefined) return {};
+  return {
+    [VOLUME_PROPERTY]: {
+      value: declared.kind === 'fixed' ? declared.value : { min: declared.min, max: declared.max },
     },
   };
 }

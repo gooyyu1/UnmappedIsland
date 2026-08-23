@@ -24,6 +24,7 @@ object_defs:
     tags: [item, fixture]
     props:
       weight: {value: 4000}
+      volume: {value: 12000}
 `;
 
 describe('アセットパックの中身', () => {

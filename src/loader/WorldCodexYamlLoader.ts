@@ -183,7 +183,12 @@ export class WorldCodexYamlLoader {
     const generatedTypes = new GeneratedTypes();
     this.loadGenerated(
       IN_PROGRESS_SOURCE,
-      inProgressObjectsYaml([...objectDefsByGlobalId.values()], this.tagNames, this.objectNames),
+      inProgressObjectsYaml(
+        [...objectDefsByGlobalId.values()],
+        this.tagNames,
+        this.objectNames,
+        this.propertyNames,
+      ),
       objectDefsByGlobalId,
       generatedTypes,
     );

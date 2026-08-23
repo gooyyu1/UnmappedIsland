@@ -1,7 +1,8 @@
 import type { NameRegistry } from './NameRegistry';
 
 /**
- * 製作中オブジェクト（RecipeSystem.md 1節）の進捗・工程数・材料枠の名前。
+ * 製作中オブジェクト（RecipeSystem.md 1節）を組み立てるのに要る語——自分で持つ進捗・工程数・材料枠と、
+ * 完成品から写すかさ（volume）。
  *
  * **文字列のまま要るのはローダだけ**（inProgressObjects）。型の宣言を組み立てる時点ではまだCodexが無く、
  * IDを引けないため。実行時に読む側はIDを使う（EngineVocabulary）ので、語はここに1度書くだけで済む。
@@ -9,6 +10,7 @@ import type { NameRegistry } from './NameRegistry';
 export const PROGRESS_PROPERTY = 'progress';
 export const FINISHED_STEPS_PROPERTY = 'finished_steps';
 export const MATERIALS_SLOT = 'materials';
+export const VOLUME_PROPERTY = 'volume';
 
 /**
  * **コードがYAMLの単語へ寄せている依存の一覧。** ここに無い単語をコードが直に引いていたら、それは
@@ -69,7 +71,7 @@ export class EngineVocabulary {
   readonly materialsSlotId: number;
 
   constructor(propertyNames: NameRegistry, slotNames: NameRegistry) {
-    this.volumeId = propertyNames.intern('volume');
+    this.volumeId = propertyNames.intern(VOLUME_PROPERTY);
     this.fillId = propertyNames.intern('fill');
     this.weightId = propertyNames.intern('weight');
     this.densityId = propertyNames.intern('density');
