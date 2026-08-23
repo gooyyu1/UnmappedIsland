@@ -147,8 +147,9 @@ function appendMethod(append: (line?: string) => void): void {
   append('  設備を見回る時間もこれに含まれるので、必要設備数が多い経路ほど実際は不利になる。');
   append('- **餌の効果。** 餌は `modify`（実効値への可逆な寄与）で重みを押し上げるが、静的に読めるのは');
   append('  宣言値だけなので、罠のレートは**餌なし**の値。');
-  append('- **雨で溜まる水。** 量を増やすのは `rain_filled_liquid` のtick毎の持続効果で、工程ではない。');
-  append('  そのため水を汲む経路は労働0分になる——1節の「数えられない経路」へ分けてある。');
+  append('- **雨で溜まる水を汲む労働。** 量を増やすのは `rain_filled_liquid` のtick毎の持続効果で、');
+  append('  工程ではない。そのため水を汲む経路は労働0分になる——1節の「数えられない経路」へ分けて');
+  append('  ある。溜まる量そのものは3節に出す（労働ではなく、季節ごとの mL/日）。');
   append('- **採取ポイントの枯渇。** 同じ木から何度でも採れる前提で計算している。');
   append('- **炉の薪。** 焼くには火を保たなければならないが、そのぶんの薪は数えていない。炉は');
   append('  前提（道具）としてだけ出る。');
@@ -415,6 +416,40 @@ function appendDevices(append: (line?: string) => void, tables: BalanceTables): 
       );
     append();
   }
+
+  appendRainWater(append, tables);
+}
+
+/**
+ * 雨で溜まる水。設備ではないが、**仕掛けて待つと値が返る**点は待ち生産と同じで、しかも労働が
+ * 一切要らない。連鎖表には乗らない（工程ではないので労働0分になる）ので、量が出るのはここだけ。
+ */
+function appendRainWater(append: (line?: string) => void, tables: BalanceTables): void {
+  if (tables.rainWater.length === 0) return;
+
+  append('### 雨で溜まる水');
+  append();
+  append('空けたまま置いた容器が、1日に受ける水と失う水（`LiquidContainerSystem.md` 6・7節）。');
+  append('降雨も蒸発も気候の実測値から出している（`ClimateSystemStats.md`）。');
+  append();
+  append('**単一の平均は出さない。** 雨季とそれ以外では降る時間が1桁違い、平均するとどの季節にも');
+  append('存在しない中間の状態を測ることになる。読みたいのは差引の符号——**雨だけで水を賄えるのは');
+  append('雨季だけ**で、それ以外の季節は置いておくだけでは減る。');
+  append();
+  append('- **蒸発は中身がある間しか効かない。** 空になった容器は素の型へ戻って蒸発も止まるので、');
+  append('  この「1日に失う水」は満杯を保った場合の上限。実際の減りはこれより小さい。');
+  append('- **容量を超えた分は捨てられる。** 雨季のヤシの器は容量250mLに対して1日1300mL近く降るので、');
+  append('  汲み替えなければそのほとんどが失われる。差引はその損失を含まない。');
+  append();
+  append('| 容器 | 季節 | 容量（mL） | 降雨（mL/日） | 蒸発（mL/日） | 差引（mL/日） |');
+  append('| --- | --- | --- | --- | --- | --- |');
+  for (const row of tables.rainWater)
+    append(
+      `| ${row.containerName} | ${row.seasonName} | ${formatNumber(row.capacity, 0)} |` +
+        ` ${formatNumber(row.rainPerDay, 0)} | ${formatNumber(row.evaporationPerDay, 0)} |` +
+        ` ${row.netPerDay > 0 ? '+' : ''}${formatNumber(row.netPerDay, 0)} |`,
+    );
+  append();
 }
 
 function appendConsumption(append: (line?: string) => void, tables: BalanceTables): void {
@@ -484,5 +519,14 @@ describe.runIf(process.env.RUN_BALANCE_STATS === '1')('アイテム収支レポ�
     // 雨で溜まる水は、時間を数えられていないだけで内容の穴ではない（issue #660）。
     expect(report).toContain('### 数えられない経路');
     expect(tables.gaps.filter((gap) => gap.label.includes('water_liquid'))).toEqual([]);
+
+    // 汲む労働は数えられなくても、溜まる量は季節ごとに出る（issue #662）。**符号が結論**なので、
+    // 値ではなくこれを見る——雨だけで水を賄えるのは雨季だけで、それ以外の季節は置くだけでは減る。
+    expect(report).toContain('### 雨で溜まる水');
+    for (const row of tables.rainWater) {
+      const label = `${row.containerName} / ${row.seasonName}`;
+      if (row.seasonName === 'wet') expect(row.netPerDay, label).toBeGreaterThan(0);
+      else expect(row.netPerDay, label).toBeLessThan(0);
+    }
   }, 600_000);
 });
