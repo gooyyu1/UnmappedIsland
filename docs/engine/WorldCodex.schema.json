@@ -154,9 +154,8 @@
         "passives": {
           "$ref": "#/$defs/passives_list"
         },
-        "inherit": {
-          "type": "boolean",
-          "description": "祖先からの値の継承（6.5節）。同名プロパティを定義している最初の祖先の実効値を、自分の実効値に加算する。"
+        "base": {
+          "$ref": "#/$defs/base_ref"
         },
         "tags": {
           "type": "array",
@@ -1043,6 +1042,20 @@
         "actor",
         "dragged"
       ]
+    },
+    "base_ref": {
+      "description": "値の土台（6.5節）。指したプロパティの実効値の上へ、自分のvalueを加算する。指し方はprop_refと同じ{subject, prop}で、subjectは省略可（既定値self）。propも省略可で、省くと同名のプロパティを指す（ただしsubject: selfのときは必須。省略すると自分自身が土台になるため、ロード時エラー）。",
+      "type": "object",
+      "properties": {
+        "subject": {
+          "$ref": "#/$defs/subject_root"
+        },
+        "prop": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        }
+      },
+      "additionalProperties": false
     },
     "prop_ref": {
       "description": "他のプロパティの現在値への参照（{subject, prop}）。subjectは省略可で既定値self。",

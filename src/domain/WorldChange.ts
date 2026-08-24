@@ -4,7 +4,7 @@ import type { WorldObject } from './WorldObject';
 /**
  * 世界の形が変わった1件（`WorldSession.observeChanges`）。
  *
- * **記録するのは物の出入りだけで、値の増減は含まない。** 画面に出る値は実効値（modify・inheritを
+ * **記録するのは物の出入りだけで、値の増減は含まない。** 画面に出る値は実効値（modify・baseを
  * 加味した値、8.3節）で、実体値を誰も書かないまま動きうる——包帯を当てると痛みは下がるが、痛みの
  * 実体値は0のままで、押し上げていた寄与が減るだけ。書き込みを記録しても現れないので、値は前後の
  * 比較で見る（`statusChangesBetween`）。

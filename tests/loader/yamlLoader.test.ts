@@ -612,20 +612,53 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/charm/);
   });
 
-  it('inheritするプロパティにon_maxを書くとエラーになる', () => {
-    // 祖先から受け取る値も実効値にしか乗らないので、modifyと同じ理由で噛み合わない。
+  it('baseを持つプロパティにon_maxを書くとエラーになる', () => {
+    // 土台から受け取る値も実効値にしか乗らないので、modifyと同じ理由で噛み合わない。
     const yaml = `
 object_defs:
   thing:
     props:
       warmth:
         value: 0
-        inherit: true
+        base: {subject: ancestor}
         range: {min: 0, max: 10}
         on_max:
           destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/inherit/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/base/);
+  });
+
+  it('baseにsubject: selfを書いてpropを省くとエラーになる', () => {
+    // 省略時の既定は同名なので、自分自身が土台になってしまう（6.5節）。
+    const yaml = `
+object_defs:
+  thing:
+    props:
+      warmth: {value: 0, base: {subject: self}}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/prop/);
+  });
+
+  it('baseがselfを辿って自分へ戻るとエラーになる', () => {
+    const yaml = `
+object_defs:
+  thing:
+    props:
+      a: {value: 0, base: {subject: self, prop: b}}
+      b: {value: 0, base: {subject: self, prop: a}}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/base/);
+  });
+
+  it('baseのsubjectに、宣言元から辿れない相手は書けない', () => {
+    // propsの宣言は「誰かが操作している場面」とは限らない（ReferenceScope.declaration）。
+    const yaml = `
+object_defs:
+  thing:
+    props:
+      warmth: {value: 0, base: {subject: actor, prop: warmth}}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/actor/);
   });
 
   it('fillを宣言する型がweightを持たないとエラーになる', () => {

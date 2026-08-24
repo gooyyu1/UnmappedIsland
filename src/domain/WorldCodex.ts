@@ -112,7 +112,7 @@ export class WorldCodex {
    * 何も起きない」「まだ空でないのに尽きる」が起こりうる。**そのときの正しい挙動をまだ決めていない**ので、
    * 決まるまでは書けないようにしておく。
    *
-   * 食い違いの原因は2つ——`modify`（8.3節）と`inherit`（6.5節）。中身の重さの伝播もエンジンが生やす
+   * 食い違いの原因は2つ——`modify`（8.3節）と`base`（6.5節）。中身の重さの伝播もエンジンが生やす
    * `modify`なので、前者に含まれる（containerPropagation）。
    * **`modify`されるかは型ひとつでは分からない**（宣言するのは他の型）ので、世界全体を持つここで見る。
    */
@@ -150,7 +150,7 @@ export class WorldCodex {
   ): string | undefined {
     const modifier = modifiedBy.get(propertyDef.globalId);
     if (modifier !== undefined) return `'${modifier}'のpassivesがmodifyで書き換える`;
-    if (propertyDef.inherit) return 'inheritで祖先の値を受け取る';
+    if (propertyDef.base !== undefined) return 'baseで土台の値を受け取る';
     return undefined;
   }
 

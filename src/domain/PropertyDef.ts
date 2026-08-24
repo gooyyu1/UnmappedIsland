@@ -235,11 +235,10 @@ export class PropertyDef {
   }
 
   /**
-   * inherit: 同名プロパティを定義している最初の祖先（findAncestorWithProperty）の実効値を、自分の
-   * 実効値に加算するか。祖先が見つからなければ寄与0。parentではなくancestorなのは、直接の親が
-   * このプロパティを持たない場合に備えるため（例: ambient_temperatureは部屋が持つ）。
+   * base（6.5節）: 実効値の土台にする、他のプロパティへの参照。その実効値へ自分の値を加算する。
+   * 書かれていなければundefinedで、実効値は自分の値から始まる。土台を辿れなければ寄与0。
    */
-  readonly inherit: boolean;
+  readonly base: PropertyPath | undefined;
 
   /**
    * このプロパティに付いたタグのグローバルIDの一覧（6.7節）。object_defのタグ（4.1節）とは別の
@@ -268,7 +267,7 @@ export class PropertyDef {
     onMax: ActiveEffect | undefined,
     stages: readonly PropertyStage[],
     onMin?: ActiveEffect,
-    inherit = false,
+    base: PropertyPath | undefined = undefined,
     tags: readonly number[] = [],
     isSymbolic = false,
     gauge: GaugeDef | undefined = undefined,
@@ -298,7 +297,7 @@ export class PropertyDef {
     this.onMax = onMax ?? defaultClampEffect(range, globalId, true);
     this.stages = stages;
     this.onMin = onMin ?? defaultClampEffect(range, globalId, false);
-    this.inherit = inherit;
+    this.base = base;
     this.tags = tags;
     this.isSymbolic = isSymbolic;
     this.gauge = gauge;

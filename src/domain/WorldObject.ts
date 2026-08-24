@@ -240,7 +240,7 @@ export class WorldObject {
 
   /**
    * 自分の直接の親から遡り、指定したプロパティを定義している最初の祖先を探す（無ければundefined）。
-   * inherit・Target=Ancestor・conditions/weightのAncestor起点が共有する、唯一の祖先探索ロジック。
+   * base・Target=Ancestor・conditions/weightのAncestor起点が共有する、唯一の祖先探索ロジック。
    */
   findAncestorWithProperty(propertyGlobalId: number): WorldObject | undefined {
     let current = this._parent;

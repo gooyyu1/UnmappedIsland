@@ -116,6 +116,7 @@ export class RawObjectDef {
             passives,
           ),
         );
+    requireNoSelfBaseCycle(this.name, propertyDefs);
     const propertyIndexByGlobalId = new LocalIndexByGlobalId(
       loader.propertyNames.count,
       propertyDefs.map((p) => p.globalId),
@@ -210,5 +211,29 @@ export class RawObjectDef {
           resists,
         ),
     );
+  }
+}
+
+/**
+ * `base`（6.5節）が自分自身へ戻る循環を弾く。**辿るのは`subject: self`の辺だけ**——`parent`と
+ * `ancestor`は木を必ず上るので、1つの型の宣言だけからは循環になりえない。逆に`self`の循環は
+ * 同じ型の中で閉じるので、実行時を待たずにここで言える。
+ */
+function requireNoSelfBaseCycle(objectDefName: string, propertyDefs: readonly PropertyDef[]): void {
+  const byGlobalId = new Map(propertyDefs.map((propertyDef) => [propertyDef.globalId, propertyDef]));
+
+  for (const start of propertyDefs) {
+    const visited = new Set<number>([start.globalId]);
+    let current: PropertyDef = start;
+    while (current.base !== undefined && current.base.root === 'self') {
+      const next: PropertyDef | undefined = byGlobalId.get(current.base.propertyGlobalId);
+      if (next === undefined) break;
+      if (visited.has(next.globalId))
+        throw new YamlLoadError(
+          `'${objectDefName}'.props.'${start.name}': baseが辿った先から自分へ戻ってきます（6.5節）。`,
+        );
+      visited.add(next.globalId);
+      current = next;
+    }
   }
 }

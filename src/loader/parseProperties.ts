@@ -7,7 +7,6 @@ import {
   requireKnownKeys,
   requireNumber,
   requireScalar,
-  tryGetBool,
   tryGetMap,
   tryGetNode,
   tryGetNumber,
@@ -18,13 +17,14 @@ import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { withYamlContext, parseNumberOrSymbol } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
+import { parseSubjectRoot } from './parseConditions';
 import { parsePassiveInto } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { ALERT_LEVELS } from '../domain/AlertLevel';
 import type { ActiveEffect } from '../domain/ActiveEffect';
 import { GAUGE_ENDS, GaugeDef, PropertyDef, PropertyRange, PropertyStage } from '../domain/PropertyDef';
 import type { PassiveEffect } from '../domain/PassiveEffect';
-import { ReferenceScope } from '../domain/ReferenceRoot';
+import { PropertyPath, ReferenceScope } from '../domain/ReferenceRoot';
 
 /** props（6節）の1エントリが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。
  * unitは単位表記などの注記用で、ローダーは解釈しない（WorldCodex.schema.json参照）。 */
@@ -36,7 +36,7 @@ const KNOWN_PROP_KEYS = new Set<string>([
   'on_min',
   'stages',
   'passives',
-  'inherit',
+  'base',
   'tags',
   'gauge',
 ]);
@@ -111,7 +111,7 @@ export function parsePropAppendingPassives(
     for (const passiveNode of propPassives.items as YamlNode[])
       parsePassiveInto(loader, passives, objectDefName, asMap(passiveNode, context), undefined, undefined);
 
-  const inherit = tryGetBool(node, 'inherit', context) ?? false;
+  const base = parseBase(loader, context, node, propertyGlobalId);
   const tags = parsePropertyTags(loader, context, node);
   const gauge = parseGauge(context, node);
 
@@ -127,12 +127,49 @@ export function parsePropAppendingPassives(
         onMax,
         stages,
         onMin,
-        inherit,
+        base,
         tags,
         isSymbolProperty,
         gauge,
       ),
   );
+}
+
+/**
+ * props.'name'.base（6.5節）を読む。土台は`{subject, prop}`——`conditions`（14.1節）・`weight`
+ * （10.2節）・`duration`（11.3節）と同じ参照で、`subject`の既定も`self`で同じ。`prop`を省くと
+ * 同名のプロパティを指す（祖先の同じ値を土台にする、いちばん多い形）。
+ *
+ * `subject: self`で`prop`を省くと自分自身が土台になってしまうので、そこだけ`prop`を必須にする。
+ */
+function parseBase(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YAMLMap,
+  propertyGlobalId: number,
+): PropertyPath | undefined {
+  const baseNode = tryGetMap(node, 'base', context);
+  if (baseNode === undefined) return undefined;
+
+  const baseContext = `${context}.base`;
+  requireKnownKeys(baseNode, ['subject', 'prop'], baseContext);
+
+  const subjectName = tryGetScalar(baseNode, 'subject', baseContext);
+  const root =
+    subjectName === undefined
+      ? 'self'
+      : parseSubjectRoot(baseContext, subjectName, ReferenceScope.declaration);
+
+  const basePropName = tryGetScalar(baseNode, 'prop', baseContext);
+  if (basePropName === undefined) {
+    if (root === 'self')
+      throw new YamlLoadError(
+        `${baseContext}: subject 'self' のときは 'prop' が必要です（省略すると自分自身が土台になります）。`,
+      );
+    return new PropertyPath(root, propertyGlobalId);
+  }
+
+  return new PropertyPath(root, loader.propertyNames.intern(basePropName));
 }
 
 /**

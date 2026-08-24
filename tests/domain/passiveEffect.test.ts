@@ -1059,10 +1059,10 @@ object_defs:
   });
 
   // ------------------------------------------------------------------
-  // inherit: 自分の直接の親から遡り、同名プロパティを定義している最初の祖先の実効値を加算する。
+  // base: 土台にした相手の実効値へ、自分の値を加算する（6.5節）。
   // ------------------------------------------------------------------
-  describe('inherit: 自分の直接の親から遡り、同名プロパティを定義している最初の祖先の実効値を加算する。', () => {
-    it('inheritは同名プロパティを定義していない中間の祖先を素通りし、最も近い定義済み祖先の実効値を加算する', () => {
+  describe('base: 土台にした相手の実効値へ、自分の値を加算する（6.5節）。', () => {
+    it('baseは同名プロパティを定義していない中間の祖先を素通りし、最も近い定義済み祖先の実効値を土台にする', () => {
       const yaml = `
 object_defs:
   room:
@@ -1078,7 +1078,7 @@ object_defs:
     props:
       temperature:
         value: -2
-        inherit: true
+        base: {subject: ancestor}
 `;
       const codex = load(yaml);
       const temperatureId = codex.propertyNames.getId('temperature');
@@ -1098,7 +1098,7 @@ object_defs:
       expect(foodInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(18);
     });
 
-    it('inheritは同名プロパティを定義している最も近い祖先で探索を止める', () => {
+    it('baseは同名プロパティを定義している最も近い祖先で探索を止める', () => {
       const yaml = `
 object_defs:
   room:
@@ -1117,7 +1117,7 @@ object_defs:
     props:
       temperature:
         value: 0
-        inherit: true
+        base: {subject: ancestor}
 `;
       const codex = load(yaml);
       const temperatureId = codex.propertyNames.getId('temperature');
@@ -1132,6 +1132,70 @@ object_defs:
 
       // tent自身がtemperatureを定義しているため、そこで探索が止まりroom(20)までは遡らない
       expect(foodInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0).toBe(5);
+    });
+
+    it('baseは自分の別のプロパティも土台にできる（subject: self）', () => {
+      const yaml = `
+object_defs:
+  location:
+    props:
+      ambient_brightness:
+        value: -3
+      hand_brightness:
+        value: 2
+        base: {subject: self, prop: ambient_brightness}
+`;
+      const codex = load(yaml);
+      const handId = codex.propertyNames.getId('hand_brightness');
+
+      expect(spawn(codex, 'location').tryGetProperty(handId)?.getEffectiveValue()).toBe(-1);
+    });
+
+    it('baseは祖先の別名のプロパティも土台にできる（subject: ancestor, prop: 別名）', () => {
+      const yaml = `
+object_defs:
+  location:
+    props:
+      ambient_brightness:
+        value: -3
+    slots:
+      contents: {}
+  lantern:
+    props:
+      looking_brightness:
+        value: 4
+        base: {subject: ancestor, prop: ambient_brightness}
+`;
+      const codex = load(yaml);
+      const lookingId = codex.propertyNames.getId('looking_brightness');
+      const contentsSlotId = codex.slotNames.getId('contents');
+
+      const locationInstance = spawn(codex, 'location');
+      const lanternInstance = spawn(codex, 'lantern');
+
+      expect(lanternInstance.tryGetProperty(lookingId)?.getEffectiveValue()).toBe(4); // 未接続の間は土台が無く自分の値だけ
+
+      expect(lanternInstance.moveToSlotOrRejection(locationInstance.getSlot(contentsSlotId))).toBeUndefined();
+      expect(lanternInstance.tryGetProperty(lookingId)?.getEffectiveValue()).toBe(1);
+    });
+
+    it('baseが読むのは土台のクランプ済みの実効値', () => {
+      const yaml = `
+object_defs:
+  location:
+    props:
+      ambient_brightness:
+        value: -20
+        range: {min: -6, max: 17}
+      hand_brightness:
+        value: 1
+        base: {subject: self, prop: ambient_brightness}
+`;
+      const codex = load(yaml);
+      const handId = codex.propertyNames.getId('hand_brightness');
+
+      // 土台はrangeの下限(-6)で止まってから渡る（-20+1ではない）。
+      expect(spawn(codex, 'location').tryGetProperty(handId)?.getEffectiveValue()).toBe(-5);
     });
   });
 
