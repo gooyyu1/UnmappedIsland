@@ -14,20 +14,34 @@ import { tickDeltasOf } from './tickDeltas';
  * 差引の符号がそのまま答える。
  *
  * **気候の実測値を持つのはこのファイルだけ。** `src/analysis` の他はどこも季節も天候も知らない。
+ *
+ * **世界の定義から借りている語は、下の3つのユニオンに集めてある。** いずれも実測値の表の鍵として
+ * だけ使うので `WorldVocabulary` には載せない（理由はあちらのクラスコメント）。
  */
 
 const MINUTES_PER_HOUR = 60;
 
+/** 季節の識別子（`core.yaml` のシンボル）。 */
+export type SeasonName = 'calm' | 'wet' | 'dry';
+
+/** 雨の降り方の識別子（`core.yaml` のシンボル）。降らない天候は数えないので並ばない。 */
+export type RainWeatherName = 'light_rain' | 'heavy_rain' | 'storm';
+
+/** 口径を言うタグ（`liquid_containers.yaml`）。蒸発の速さはこれで決まる。 */
+type ApertureTagName = 'wide_open_container' | 'narrow_open_container';
+
+/** 季節 → 蒸発量（mL/tick）。季節を1つ足したら、口径ごとに測り直すまで型検査が通らない。 */
+type SeasonalEvaporation = Readonly<Record<SeasonName, number>>;
+
 /** 季節1つぶんの気候の実測値。 */
 export interface SeasonRain {
-  /** 季節の識別子（`core.yaml` のシンボル）。 */
-  readonly name: string;
+  readonly name: SeasonName;
 
   /** 季節1インスタンスの持続日数。 */
   readonly durationDays: number;
 
-  /** 雨の降り方の識別子 → 季節1インスタンスの間にその天候だった時間（h）。 */
-  readonly hoursByWeather: ReadonlyMap<string, number>;
+  /** 季節1インスタンスの間に、その降り方だった時間（h）。 */
+  readonly hoursByWeather: Readonly<Record<RainWeatherName, number>>;
 }
 
 /**
@@ -41,29 +55,17 @@ export const SEASON_RAIN: readonly SeasonRain[] = [
   {
     name: 'calm',
     durationDays: 29.81,
-    hoursByWeather: new Map([
-      ['light_rain', 59.68],
-      ['heavy_rain', 0.44],
-      ['storm', 0.01],
-    ]),
+    hoursByWeather: { light_rain: 59.68, heavy_rain: 0.44, storm: 0.01 },
   },
   {
     name: 'wet',
     durationDays: 29.81,
-    hoursByWeather: new Map([
-      ['light_rain', 236.48],
-      ['heavy_rain', 224.1],
-      ['storm', 77.1],
-    ]),
+    hoursByWeather: { light_rain: 236.48, heavy_rain: 224.1, storm: 77.1 },
   },
   {
     name: 'dry',
     durationDays: 29.83,
-    hoursByWeather: new Map([
-      ['light_rain', 10.58],
-      ['heavy_rain', 1.44],
-      ['storm', 0.74],
-    ]),
+    hoursByWeather: { light_rain: 10.58, heavy_rain: 1.44, storm: 0.74 },
   },
 ];
 
@@ -80,29 +82,15 @@ export const SEASON_RAIN: readonly SeasonRain[] = [
  * | ヤシの器（250mL） | 2.6日 | 10.1日 | 2.2日 |
  * | 甕（4000mL） | 17.1日 | 67.3日 | 14.1日 |
  */
-const EVAPORATION_PER_TICK: ReadonlyMap<string, ReadonlyMap<string, number>> = new Map([
-  [
-    'wide_open_container',
-    new Map([
-      ['calm', 1.0016],
-      ['wet', 0.2579],
-      ['dry', 1.1837],
-    ]),
-  ],
-  [
-    'narrow_open_container',
-    new Map([
-      ['calm', 2.4366],
-      ['wet', 0.6192],
-      ['dry', 2.9551],
-    ]),
-  ],
-]);
+const EVAPORATION_PER_TICK: Readonly<Record<ApertureTagName, SeasonalEvaporation>> = {
+  wide_open_container: { calm: 1.0016, wet: 0.2579, dry: 1.1837 },
+  narrow_open_container: { calm: 2.4366, wet: 0.6192, dry: 2.9551 },
+};
 
 /** 待ち生産表の1行（容器1種 × 季節1つ）。量はすべてmL。 */
 export interface RainWaterRow {
   readonly containerName: string;
-  readonly seasonName: string;
+  readonly seasonName: SeasonName;
 
   /** 容器が抱えられる量。これを超えて降った分はあふれて失われる。 */
   readonly capacity: number;
@@ -133,11 +121,14 @@ interface RainCatchingContainer {
   readonly name: string;
   readonly capacity: number;
 
-  /** 雨の降り方の識別子 → その天候の間に増える量（mL/tick）。 */
+  /**
+   * 雨の降り方の識別子 → その天候の間に増える量（mL/tick）。鍵は定義から読んだ名前そのものなので、
+   * 雨とは限らない天候も並びうる。
+   */
   readonly rainPerTick: ReadonlyMap<string, number>;
 
-  /** 季節 → 蒸発量（mL/tick）。口径のタグが選ぶ（EVAPORATION_PER_TICK）。 */
-  readonly evaporationPerTick: ReadonlyMap<string, number>;
+  /** 口径のタグが選んだ蒸発量（EVAPORATION_PER_TICK）。 */
+  readonly evaporationPerTick: SeasonalEvaporation;
 }
 
 /**
@@ -185,9 +176,9 @@ function rainPerTickOf(codex: WorldCodex, def: ObjectDef): ReadonlyMap<string, n
   return perWeather;
 }
 
-/** その型の口径が決める蒸発量（季節 → mL/tick）。実測値を持たない口径ならundefined。 */
-function evaporationPerTickOf(codex: WorldCodex, def: ObjectDef): ReadonlyMap<string, number> | undefined {
-  for (const [tagName, bySeason] of EVAPORATION_PER_TICK) {
+/** その型の口径が決める蒸発量。実測値を持たない口径ならundefined。 */
+function evaporationPerTickOf(codex: WorldCodex, def: ObjectDef): SeasonalEvaporation | undefined {
+  for (const [tagName, bySeason] of Object.entries(EVAPORATION_PER_TICK)) {
     const tagGlobalId = codex.tagNames.tryGetId(tagName);
     if (tagGlobalId !== undefined && def.hasTag(tagGlobalId)) return bySeason;
   }
@@ -196,13 +187,13 @@ function evaporationPerTickOf(codex: WorldCodex, def: ObjectDef): ReadonlyMap<st
 
 function rowOf(container: RainCatchingContainer, season: SeasonRain): RainWaterRow {
   let rainPerDay = 0;
-  for (const [weather, hours] of season.hoursByWeather) {
+  for (const [weather, hours] of Object.entries(season.hoursByWeather)) {
     const perTick = container.rainPerTick.get(weather) ?? 0;
     const ticksPerDay = (hours * MINUTES_PER_HOUR) / MINUTES_PER_TICK / season.durationDays;
     rainPerDay += perTick * ticksPerDay;
   }
 
-  const evaporationPerDay = (container.evaporationPerTick.get(season.name) ?? 0) * TICKS_PER_DAY;
+  const evaporationPerDay = container.evaporationPerTick[season.name] * TICKS_PER_DAY;
   return {
     containerName: container.name,
     seasonName: season.name,
