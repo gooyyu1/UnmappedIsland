@@ -98,6 +98,39 @@ traits:
           to: actor
           to_prop: hydration
 
+  # 沸かした湯。焼け石を落として作る（fire.yamlのhot_stone、docs/engine/FireSystem.md 9.1節）。
+  # **水とは別のタグを持つ**ので、湯へさらに焼け石は落とせず、水と混ぜて薄まることもない。
+  hot_water_liquid:
+    tags: [hot_water]
+    props:
+      color: {value: 0x8fc4ea}
+      # 器の中に残っている熱。抜け切れば普通の水に戻る。石の蓄熱（fire.yaml）と同じ名前だが、
+      # 溜める手段は持たない——湯が沸くのは石が熱を使い切る一度きり。
+      heat_soak:
+        value: 12
+        range: {min: 0, max: 12}
+        passives:
+          - add: {self: {heat_soak: -1}}
+        on_min:
+          become: {content: water_liquid}
+    # **注ぎ移しは持たない。** 注いだ先の湯が何度から始まるかを書けない——heat_soakは量ではなく
+    # 熱さそのもので、量に比例して移す transfer では表せず、注ぎ元の値を読んで代入する術も無い。
+    # 移せるようにすると、ぬるくなった湯を注ぎ分けるたびに沸かし直しになる
+    # （docs/engine/FireSystem.md 9.1節）。
+    interactions:
+      drink:
+        trigger: menu
+        conditions:
+          - reason: not_thirsty
+            not: {subject: actor, prop: hydration, in_stage: full}
+        duration: 3
+        transfer:
+          amount: 250
+          to_amount: 10
+          from_prop: fill
+          to: actor
+          to_prop: hydration
+
   tea_liquid:
     tags: [tea]
     props:
@@ -313,6 +346,11 @@ object_defs:
   # 開いていても雨で増えない。
   water_liquid:
     traits: [liquid, water_liquid, evaporating_liquid, rain_filled_liquid]
+
+  # 雨は水として降るので、rain_filled_liquidは持たない（茶・油と同じ）。開いた器に置けば
+  # 湯のまま蒸発する。
+  hot_water_liquid:
+    traits: [liquid, hot_water_liquid, evaporating_liquid]
 
   tea_liquid:
     traits: [liquid, tea_liquid, evaporating_liquid]

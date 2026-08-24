@@ -94,11 +94,19 @@ object_defs:
 
   # 石。石同士を打ち合わせると、片方が割れて尖った石（tools.yaml）になる。
   # 打ち合わせる相手（dragged）は槌として残り、割られる側（self）だけが尖った石へ置き換わる。
+  # 炉の火の中の枠へも入り、熱を溜め切ると焼け石（fire.yamlのhot_stone）になる
+  # （docs/engine/FireSystem.md 9.1節）。**炉の札へ重ねると石を積む操作になる**ので、火の中へ
+  # 入れるのは開いた枠へ落とす側（docs/ui/CardInteraction.md 2節）。
   stone:
     tags: [item]
+    traits: [heat_soaking]
     props:
       weight: {value: 1000}
       volume: {value: 700}
+      heat_soak:
+        on_max:
+          destroy: self
+          spawn: {object: hot_stone}
     interactions:
       knap:
         trigger: {drag: {object: stone}}

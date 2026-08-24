@@ -15,6 +15,9 @@
 #
 # 加熱は炉が子のcooking_progressを進めるだけで、何分で何になるかは料理側の型が持つ（同7節）。
 # 生肉→焼けた肉→焦げた塊の鎖はanimals.yamlにある。
+#
+# 炉が渡す熱にはもう1本の受け口があり、そちらは石が受ける。溜め切った石（hot_stone）は炉から
+# 持ち出せて、水を張った器へ落とせば器を焦がさずに湯が沸く（同9.1節）。
 
 traits:
   # 炉へくべられる物。fuelは「くべると炉のfuelへ移る量」で、値は物ごとに違う。
@@ -48,12 +51,35 @@ traits:
             destroy: self
             signal: not_lit
 
+  # 火の中で熱を溜められる物（docs/engine/FireSystem.md 9.1節）。溜めるのは炉で、速さは火力の段が
+  # 決める（下のhearthのheat）。炉の外では抜けていく。
+  #
+  # 溜め切って何になるか（on_max）と、抜け切って何に戻るか（on_min）は型ごとに違うので持たない。
+  heat_soaking:
+    tags: [roastable]
+    props:
+      heat_soak:
+        value: 0
+        # 炎（3/tick）なら4tick＝1時間、熾火（1/tick）なら3時間で溜まり切る。
+        range: {min: 0, max: 12}
+        stages:
+          # 湯を沸かすには、溜め切った石の半分が要る（hot_stoneのboil）。炉から出して30分が持ち時間。
+          - {name: cool}
+          - {name: searing, min: 6}
+        passives:
+          # 炉の外では冷める。**祖先に火力が無いとき＝どこにも火が無いときも冷ます**必要があるので、
+          # 否定形の演算子ではなくnotで包む（GameElementDefinition.md 14.1節）。炉に入れたまま火が
+          # 消えた場合も、同じこの1行で冷める。
+          - conditions:
+              - not: {subject: ancestor, prop: heat, gt: 0}
+            add: {self: {heat_soak: -3}}
+
   # 炉。薪と火力を持ち、火にかけた物を子として加熱する。
   #
   # fuel/heatのrangeとfireスロットの枠は炉ごとに違うので、ここでは宣言しない。
   hearth:
     tags: [fixture, hearth]
-    # 火にかけている物のスロット（同1.1節）。押せば開き、重ねれば入る。
+    # 火にかけている物のスロット（docs/engine/FireSystem.md 1.1節）。押せば開き、重ねれば入る。
     # 外から見えるもの（7.11節）。何が燃えているかは炎を見れば分かる。
     visible_slots: [fire]
     # 火力で絵が差し替わる（CardView.md 5.1節）。絵は消えている・種火・ついているの3つ（heat参照）。
@@ -106,9 +132,11 @@ traits:
             min: 5
             art: lit
             passives:
+              # 子へ渡す熱は2つ。料理は進み（cooking_progress、7節）として受け、石は蓄熱
+              # （heat_soak、9.1節）として受ける。持たない側では黙って捨てられる。
               - add:
                   self: {fuel: -0.5}
-                  child: {cooking_progress: 1}
+                  child: {cooking_progress: 1, heat_soak: 1}
               - conditions: [{prop: fuel, in_stage: none}]
                 add: {self: {heat: -2}}
           - name: flame
@@ -117,7 +145,7 @@ traits:
             passives:
               - add:
                   self: {fuel: -1.5}
-                  child: {cooking_progress: 3}
+                  child: {cooking_progress: 3, heat_soak: 3}
               - conditions: [{prop: fuel, in_stage: none}]
                 add: {self: {heat: -6}}
           - name: blaze
@@ -126,7 +154,7 @@ traits:
             passives:
               - add:
                   self: {fuel: -4}
-                  child: {cooking_progress: 5}
+                  child: {cooking_progress: 5, heat_soak: 5}
               - conditions: [{prop: fuel, in_stage: none}]
                 add: {self: {heat: -6}}
     passives:
@@ -207,6 +235,37 @@ object_defs:
           - add: {self: {life: -1}}
         on_min:
           destroy: self
+
+  # 焼け石。炉で熱を溜め切った石で、**炉から取り出せる唯一の産物**（docs/engine/FireSystem.md 9.1節）。
+  # 石そのものは locations.yaml が定義し、溜め切った瞬間にこの型へ置き換わる。
+  #
+  # 水を張った器へ落とせば、器に耐火性が無くても湯が沸く。器を持たない段階の煮炊きはこれで成立する
+  # （docs/world/SurvivalItems.md 4節）。
+  hot_stone:
+    tags: [item]
+    traits: [heat_soaking]
+    props:
+      weight: {value: 1000}
+      volume: {value: 700}
+      heat_soak:
+        # 焼き上がった時点で溜め切っている（置き換わりは値を運ばない、
+        # docs/engine/FireSystem.md 7.2節）。
+        value: 12
+        # 残りの熱が湯を沸かせるかを決める（searingの段）ので、バーで見せる。
+        gauge: {min: bad, max: good}
+        on_min:
+          destroy: self
+          spawn: {object: stone}
+    interactions:
+      # 水を張った器へ落として湯を沸かす。溜めた熱は一度に使い切るので、石はその場で冷めて普通の石へ
+      # 戻る（heat_soakのon_min）。器の側は何も宣言しない——沸くのに耐火性は要らない。
+      boil:
+        trigger: {drag: {tag: water}}
+        conditions:
+          - {reason: not_hot_enough, prop: heat_soak, in_stage: searing}
+        duration: 5
+        become: {subject: dragged, content: hot_water_liquid}
+        set: {self: {heat_soak: 0}}
 
   # 焚き火。枝を積んだだけの炉。器を載せる枠を持たず、種火は30分で死ぬ。
   campfire:

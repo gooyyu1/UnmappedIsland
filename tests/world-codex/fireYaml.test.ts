@@ -388,24 +388,116 @@ describe('fire.yamlの火の連鎖', () => {
     expect(cellCount('stone_hearth')).toBe(5);
   });
 
-  it('火の中の枠は、丸焼きの鎖に並ぶ物だけを受け入れる', () => {
+  it('火の中の枠は、丸焼きの鎖と焼ける石だけを受け入れる', () => {
     const fireSlot = codex.objects
       .get(codex.objectNames.getId('campfire'))
       .tryGetSlotDef(codex.slotNames.getId('fire'));
     const accepts = (objectName: string): boolean =>
       fireSlot?.acceptsAnywhere(codex.objects.get(codex.objectNames.getId(objectName))) === true;
 
-    // 焦げた塊は焼けないが、焦げた瞬間に枠を引き継ぐために入る（7.2節）。
+    // 焦げた塊は焼けないが、焦げた瞬間に枠を引き継ぐために入る（7.2節）。焼け石も同じ理由で入る
+    // ——溜め切った瞬間に石から置き換わる（9.1節）。
     for (const name of ['raw_meat', 'roasted_meat', 'charred_lump', 'rat_carcass', 'roasted_rat']) {
       expect(accepts(name), name).toBe(true);
     }
-    for (const name of ['stone', 'twig', 'fire_drill', 'dry_grass']) {
+    for (const name of ['stone', 'hot_stone']) {
+      expect(accepts(name), name).toBe(true);
+    }
+    for (const name of ['twig', 'fire_drill', 'dry_grass']) {
       expect(accepts(name), name).toBe(false);
     }
 
     const hearth = litCampfire();
+    const twig = spawnInto('twig', land, 'items');
+    expect(twig.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeDefined();
+    expect(twig.parent, '入らなかった小枝は手元に残る').toBe(land);
+  });
+
+  it('火の中の石は熱を溜めて焼け石になり、炉から出せば冷めて石に戻る', () => {
+    const hearth = litCampfire();
+    session.advanceWorldTime(60);
+    expect(heatIs(hearth, 'flame'), '炎（3/tick）で焼く').toBe(true);
+
     const stone = spawnInto('stone', land, 'items');
-    expect(stone.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeDefined();
-    expect(stone.parent, '入らなかった石は手元に残る').toBe(land);
+    expect(stone.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
+
+    // 12 ÷ 3 = 4tickでmaxちょうどに乗る。
+    session.advanceWorldTime(15 * 3);
+    expect(childNames(hearth), '3tickではまだ溜まり切らない').toEqual(['stone']);
+    session.advanceWorldTime(15);
+    expect(childNames(hearth), '4tick目に焼け石へ置き換わる').toEqual(['hot_stone']);
+
+    const hot = hearth.getSlot(codex.slotNames.getId('fire')).contents[0];
+    expect(effectiveNumberOf(hot, 'heat_soak'), '生まれた焼け石は溜め切っている').toBe(12);
+
+    // 炉から出すと冷める（-3/tick）。4tickで抜け切って普通の石に戻る。
+    expect(hot.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
+    session.advanceWorldTime(15 * 3);
+    expect(itemsOn(land), '3tickではまだ焼け石').toEqual(['hot_stone']);
+    session.advanceWorldTime(15);
+    expect(itemsOn(land), '抜け切れば普通の石').toEqual(['stone']);
+  });
+
+  it('炉の火が消えていれば、石は熱を溜めない', () => {
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    const stone = spawnInto('stone', land, 'items');
+    expect(stone.moveToSlotOrRejection(hearth.getSlot(codex.slotNames.getId('fire')))).toBeUndefined();
+
+    session.advanceWorldTime(60 * 4);
+
+    expect(effectiveNumberOf(stone, 'heat_soak'), '火が無ければ溜まらない').toBe(0);
+    expect(childNames(hearth), '石のまま').toEqual(['stone']);
+  });
+
+  /**
+   * 中身を満たしたヤシの殻。**空の変種は作れない**——量が0の器は中身の軸を落として空の容器へ戻る
+   * （fillのon_min）ので、生まれた瞬間に打ち消される。
+   */
+  function filledBowl(liquidName: string): WorldObject {
+    const bowl = spawnInto(`coconut_bowl__content_${liquidName}`, land, 'items');
+    bowl.getProperty(codex.propertyNames.getId('fill')).setNumberWithoutEvents(250);
+    return bowl;
+  }
+
+  it('焼け石を水を張った器へ落とすと、器に耐火性が無くても湯が沸く', () => {
+    // ヤシの殻は火にかければ焦げる器（cookwareを持たない）。焼け石の側は相手が何かを問わない。
+    const bowl = filledBowl('water_liquid');
+    const hot = spawnInto('hot_stone', land, 'items');
+
+    expect(
+      hot
+        .combinationsWith(bowl, player)
+        .find((c) => c.name === 'boil')
+        ?.tryExecute() === true,
+    ).toBe(true);
+
+    expect(bowl.def.name, '中身が湯になる').toBe('coconut_bowl__content_hot_water_liquid');
+    expect(itemsOn(land), '熱を使い切った石はその場で普通の石に戻る').toEqual([
+      'stone',
+      'coconut_bowl__content_hot_water_liquid',
+    ]);
+  });
+
+  it('冷めかけた焼け石では湯を沸かせない', () => {
+    const bowl = filledBowl('water_liquid');
+    const hot = spawnInto('hot_stone', land, 'items');
+
+    // 炉の外では-3/tick。3tick（45分）で3まで落ち、湯を沸かせる段（searing、6以上）から外れる。
+    session.advanceWorldTime(15 * 3);
+    expect(effectiveNumberOf(hot, 'heat_soak')).toBe(3);
+
+    expect(hot.combinationsWith(bowl, player), '候補にも挙がらない').toEqual([]);
+    expect(bowl.def.name, '水のまま').toBe('coconut_bowl__content_water_liquid');
+  });
+
+  it('沸かした湯は放っておくと冷めて水に戻る', () => {
+    const bowl = filledBowl('hot_water_liquid');
+
+    // 湯は-1/tick。12tick＝3時間で抜け切る。
+    session.advanceWorldTime(15 * 11);
+    expect(bowl.def.name, '11tickではまだ湯').toBe('coconut_bowl__content_hot_water_liquid');
+
+    session.advanceWorldTime(15);
+    expect(bowl.def.name, '抜け切れば水').toBe('coconut_bowl__content_water_liquid');
   });
 });
