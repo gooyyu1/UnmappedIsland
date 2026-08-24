@@ -15,7 +15,7 @@ const ITEM_HEIGHT = 96;
  * テスト用シナリオの選択画面（SaveDataManagement.md「テスト用シナリオ」節）。
  *
  * 同梱シナリオを名前順に並べるだけの簡易な一覧。選ぶとセーブスロットを使わずにプレイ画面へ入る。
- * 件数は数件を想定しているためスクロールは持たない。
+ * スクロールは持たず、縦に入り切らない分は右の列へ折り返す。
  */
 export class ScenarioSelectScene extends ResponsiveScene {
   constructor() {
@@ -30,12 +30,22 @@ export class ScenarioSelectScene extends ResponsiveScene {
     const padding = this.metrics.px(LIST_PADDING);
     const gap = this.metrics.px(SIZE.gap);
     const itemHeight = this.metrics.px(ITEM_HEIGHT);
-    let y = ScreenHeader.height(this.metrics) + padding;
+    const top = ScreenHeader.height(this.metrics) + padding;
+    const names = scenarioNames();
 
-    for (const name of scenarioNames()) {
-      this.addItem(padding, y, width - padding * 2, itemHeight, name);
-      y += itemHeight + gap;
-    }
+    // 縦に入る件数で折り返して列を増やす。件数が増えても末尾が画面の外へ出ないので、届かない
+    // シナリオが出ない（スクロールを持たない代わりの手当て）。
+    const rowsThatFit = Math.max(1, Math.floor((height - top - padding + gap) / (itemHeight + gap)));
+    const columns = Math.max(1, Math.ceil(names.length / rowsThatFit));
+    // 列数が決まったら、最後の列だけが極端に短くならないよう均して並べる。
+    const perColumn = Math.ceil(names.length / columns);
+    const itemWidth = (width - padding * 2 - gap * (columns - 1)) / columns;
+
+    names.forEach((name, index) => {
+      const x = padding + Math.floor(index / perColumn) * (itemWidth + gap);
+      const y = top + (index % perColumn) * (itemHeight + gap);
+      this.addItem(x, y, itemWidth, itemHeight, name);
+    });
   }
 
   private addItem(x: number, y: number, width: number, height: number, name: string): void {
