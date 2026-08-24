@@ -381,7 +381,19 @@ export class PropertyDef {
    * 弾くのはWorldCodex（両方を持つのはそちらだけ）。
    */
   get hasDeclaredRangeEvent(): boolean {
-    return this.declaredOnMax !== undefined || this.declaredOnMin !== undefined;
+    return this.hasDeclaredOnMax || this.declaredOnMin !== undefined;
+  }
+
+  /**
+   * 著者が`on_max`（6.3節）を書いているか。`range`を書いただけのプロパティはfalse——上限で走るのは
+   * 値を丸める既定のクランプだけで、**着いても何も起きない**。
+   *
+   * 「進み切ると何かが起きる値か」を上端だけについて問う口。両端のどちらでもよい問い
+   * （hasDeclaredRangeEvent）とは別物で、下端のイベントしか無い値は、上限へ向かって進んでいても
+   * 着いた先に何も無い。
+   */
+  get hasDeclaredOnMax(): boolean {
+    return this.declaredOnMax !== undefined;
   }
 
   /** このプロパティにタグ（6.7節）が付いているか。 */
