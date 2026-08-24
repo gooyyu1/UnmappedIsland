@@ -22,10 +22,9 @@
 **在処**: 定義は `src/assets/world-codex/core.yaml`（world）・`locations.yaml`（土地）と各光源の型。
 実装・検証はまだありません。
 
-**確定度と実装状況**: **本書の設計はすべて未実装**で、記述は暫定です（`【確定】` の節はありません）。
-6節の文法追加を採るかは
-[issue #656](https://github.com/gooyyu1/UnmappedIsland/issues/656) で確認待ちです。`core.yaml` の
-`sunlight` からの移し替え（9節）と、`GameElementDefinition.md` への文法の追記は別タスクです。
+**確定度と実装状況**: **本書の設計はすべて未実装**で、記述は6節を除いて暫定です。6節の文法追加
+（`base`）は #656 で採ると決まりました。`core.yaml` の `sunlight` からの移し替え（9節）と、
+`GameElementDefinition.md` への文法の追記は別タスクです。
 
 ## 1. 明るさはEV（照度の2を底とする対数）で持つ
 
@@ -183,7 +182,7 @@ path:
 ためです。`ContentSkeleton.md` 8.1.2節が未決としていた「道がどちらの明るさを採るか」への、本書側の答えが
 これです。
 
-## 6. 足りない文法: 値の土台を明示できること
+## 6. 足りない文法: 値の土台を明示できること【確定】
 
 **`inherit: true`（`GameElementDefinition.md` 6.5節）を廃し、土台を指せる `base` に置き換えます。**
 
