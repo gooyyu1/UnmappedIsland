@@ -41,6 +41,12 @@ export class RawDeclarationBody {
   /** bound_to_owner（7.9節）。単独では存在できない型か。 */
   boundToOwner = false;
 
+  /**
+   * resists（7.13節）。成立している間、土地以外の親へ移れなくなる条件の並び。宣言が無ければundefined。
+   * 条件の意味解釈はマージ後に行うので、ここでは生YAMLノードのまま持つ。
+   */
+  resists: YAMLSeq | undefined;
+
   /** stackable。同種と束ねてよい型か（既定true）。束ねない宣言が1つでもあれば束ねない。 */
   notStackable = false;
 
@@ -59,6 +65,7 @@ export class RawDeclarationBody {
     this.isStorage = tryGetBool(node, 'storage', context) ?? false;
     this.artByStage = tryGetScalar(node, 'art_by_stage', context);
     this.boundToOwner = tryGetBool(node, 'bound_to_owner', context) ?? false;
+    this.resists = tryGetSeq(node, 'resists', context);
     this.notStackable = !(tryGetBool(node, 'stackable', context) ?? true);
     this.interactions = tryGetMap(node, 'interactions', context);
   }
@@ -70,7 +77,9 @@ export class RawDeclarationBody {
    *   同名を持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。
    * - passives・tags・visible_slots: 識別子で突き合わせようがないので、trait由来→自分自身の順に連結。
    *   **並びが表示順**（visible_slots）なので、混ぜる順序そのものに意味がある。
-   * - stack_order/art_by_stage: 自分自身の指定を優先。無ければちょうど1つのtraitが指定していること。
+   * - stack_order/art_by_stage/resists: 自分自身の指定を優先。無ければちょうど1つのtraitが指定して
+   *   いること。`resists`の並びは暗黙のANDで結ばれた1つの条件木なので、連結すると書いた覚えのない
+   *   合わせ技になる——どれが効くかを混ぜる順序に頼らせない。
    * - 真偽値: 重複エラーにせずORで合成する（tagsと同じ扱い）。
    */
   merged(traits: readonly (readonly [string, RawDeclarationBody])[], ownerName: string): RawDeclarationBody {
@@ -114,6 +123,13 @@ export class RawDeclarationBody {
         traits.map(([name, body]) => [name, body.artByStage] as const),
         ownerName,
         'art_by_stage',
+      );
+    result.resists =
+      this.resists ??
+      onlyDeclaration(
+        traits.map(([name, body]) => [name, body.resists] as const),
+        ownerName,
+        'resists',
       );
 
     return result;
