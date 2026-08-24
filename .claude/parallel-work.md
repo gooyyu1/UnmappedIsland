@@ -170,16 +170,21 @@ issue で引く。** 畳む条件は3つ。
      ——先に作ると、道具が定義ではなく設計文書の数字を写すことになり、仕様の写しが2つできる。
    - **1周回の日数。** 8.3節の仮置き（屋外の割合・土地の配分・移動時間）が3段に積み重なって
      **90日と260日の間**としか言えていない。#699 が開始地点の側を測った続き。
-2. **鎖の外で走っているのは3件。** 担当がどれも離れているので並列でよい。
+2. **鎖の外で走っているのは4件。**
    - [#711](https://github.com/gooyyu1/UnmappedIsland/issues/711) 動物が `resists` を宣言していない。
    - [#710](https://github.com/gooyyu1/UnmappedIsland/issues/710) codexビューアが `resists` を出さない。
    - [#719](https://github.com/gooyyu1/UnmappedIsland/issues/719) `BalanceStats.md` が main で古い。
+   - [#673](https://github.com/gooyyu1/UnmappedIsland/issues/673) `seasonalRain.ts` が持つ単語が
+     `WorldVocabulary` に載っていない。**担当が #722 と1ファイル重なる**（`WorldVocabulary.ts`）。
 
-   **投入していないものが2件ある。**
-   [#675](https://github.com/gooyyu1/UnmappedIsland/issues/675)（洞窟内部の名前）は洞窟内部そのものが
-   段0で未仕分けなので、やらないことになれば issue ごと消える。
-   [#673](https://github.com/gooyyu1/UnmappedIsland/issues/673)（`seasonalRain.ts` が持つ単語）は
-   **表の鍵をどこへ置くかの判断が先**で、担当の `WorldVocabulary.ts` が #722 と重なる。
+   **投入していないのは
+   [#675](https://github.com/gooyyu1/UnmappedIsland/issues/675)**（洞窟内部の名前）だけ。洞窟内部
+   そのものが段0で未仕分けなので、やらないことになれば issue ごと消える。
+
+   **担当が1ファイル重なることは、直列にする理由にはしない。** #673 と #722 は同じ
+   `WorldVocabulary.ts` を触るが、変える箇所が別（一方は `sunlight` の登録、他方は表の鍵の置き場）
+   なので、**触らない箇所を指示で名指しして並列に流した**。重なりの度合いを見ずに直列へ落とすと、
+   鎖が伸びた分だけそのまま遅れになる。
 3. **段2（文法追加）は `base` で終わった。残っているのは1つ。** **海区から `items` スロットを落とす方法**
    （`GameEndings.md` 12.7節）で、海区を実装するまで要らない。「大きいほうを採る」合成は
    **要求そのものが取り下がった**（`IlluminationSystem.md` 1節。加算＋底で書けるようにした）。
