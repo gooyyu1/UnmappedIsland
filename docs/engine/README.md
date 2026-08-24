@@ -32,6 +32,8 @@
 - [耐久値システム設計](./DurabilitySystem.md) — 素材の屋外劣化と食料の腐敗を単一の durability で表す場合の減少量の目安
 - [アクションシステム設計](./ActionSystem.md) — actions / combinations の実行時の仕組み
 - [気候システム設計](./ClimateSystem.md) — 季節・天気を world のプロパティと貯水池モデルで駆動する方法
+- [明るさシステム設計](./IlluminationSystem.md) — 明るさをEVで持ち、空・手元・見回すの3つの値へ分けて、
+  行動ごとに要る明るさで線を引く方法
 - [火システム設計](./FireSystem.md) — 炉の組み立て・燃料・熾による保火と、その熱を料理へ渡す受け渡し口
 - [地形生成システム設計](./TerrainGeneration.md) — 島の座標・軸・LocationTypeマッチング・パスネットワーク生成のアルゴリズム
 - [探索・道システム設計](./ExplorationSystem.md) — 生成された土地のスロット構成・探索・道の発見と移動
