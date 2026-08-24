@@ -393,8 +393,9 @@ export class WorldObject {
     }
 
     // 抵抗している物は持ち主を持てない（7.13節）。土地だけは持ち主にならないので、そこへは普通に
-    // 置けるし、自分で隣の土地へ移るのも通る。
-    if (!slot.owner.isLand && this.isResisting) {
+    // 置けるし、自分で隣の土地へ移るのも通る。生まれた直後（親を持たない間）の配置は、bound_to_owner
+    // と同じく通す——罠が獲物を自分の中へ生むのは、誰かが持ち主になろうとする移動ではない。
+    if (!slot.owner.isLand && this._parent !== undefined && this.isResisting) {
       return `'${this.def.name}' は '${slot.owner.def.name}' に収まりません。`;
     }
 
