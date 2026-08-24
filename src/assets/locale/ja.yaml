@@ -186,6 +186,9 @@ object_texts:
       cooking_progress:
         display_name: 加熱の進み
         description: 火にかけられている度合い。火から出せば止まり、戻せば続きから進む。
+      heat_soak:
+        display_name: 蓄えた熱
+        description: 火の中で溜め込んだ熱。火から離せば抜けていき、抜け切れば元の姿に戻る。
       ignition_chance:
         display_name: 火の付きやすさ
       life:
@@ -555,6 +558,13 @@ object_texts:
   stone_hearth:
     display_name: 石囲いの炉
     description: 石で囲った炉。風を防ぎ、灰をかぶった種火が翌朝まで生きる。
+  hot_stone:
+    display_name: 焼け石
+    description: 炉で熱を溜め込んだ石。水を張った器へ落とせば、器を焦がさずに湯が沸く。冷めれば元の石に戻る。
+    interactions:
+      boil:
+        display_name: 湯を沸かす
+        description: 水を張った器へ落とし、溜めた熱を一度に渡す。石はその場で冷めて普通の石に戻る。
 
   # 土器づくり（pottery.yaml）。
   clay:
@@ -609,6 +619,9 @@ object_texts:
   water_liquid:
     display_name: 水
     description: 飲めばのどの渇きが癒える。
+  hot_water_liquid:
+    display_name: 湯
+    description: 焼け石で沸かした湯。放っておけば冷めて水に戻る。
   tea_liquid:
     display_name: お茶
     description: 葉を煮出した飲み物。渇きを癒し、眠気を覚ます。
@@ -852,6 +865,7 @@ reason_texts:
   not_on_coast: 海に面していない土地からは漕ぎ出せない。
   at_sea: 海の上では降りられない。
   too_worn: この道具はもう使いものにならない。
+  not_hot_enough: 石の熱が足りない。湯は沸かせない。
 
 # 段（GameElementDefinition.md 6.4節のstages）のうち、UIが名前を読んで画面に出すもの。カードの上へ
 # 覆いとして出る（CardView.md 9.1節）ほか、死亡ダイアログが死因として出し（VitalsSystem.md 6節）、
