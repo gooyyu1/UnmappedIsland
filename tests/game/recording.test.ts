@@ -18,7 +18,10 @@ describe('runAndRecordChange（経過中のtickごとの控え）', () => {
   let locale: Localization;
 
   beforeAll(() => {
-    locale = parseLocale('ja.yaml', 'object_texts:\n  stone:\n    display_name: 石\n');
+    locale = parseLocale(
+      'ja.yaml',
+      'object_texts:\n  stone:\n    display_name: 石\n  tree:\n    display_name: 木\n',
+    );
   });
 
   const setUp = (): MiniGame =>
@@ -26,6 +29,8 @@ describe('runAndRecordChange（経過中のtickごとの控え）', () => {
 object_defs:
   stone:
     tags: [item]
+  tree:
+    tags: [fixture]
 `);
 
   it('時間の経過は、tick境界ごとに表示内容を控える', () => {
@@ -61,29 +66,36 @@ object_defs:
 
   it('経過中の控えは、経過し切ってから起きた変化を映さない', () => {
     // 控えたviewは、あとから実時間をかけて見せる。cardsInは呼んだ時点の生きたワールドを読むので、
-    // 控えるときに常に見えているレーンを焼き付けていないと、経過中の画面に未来が映る
-    // （withFrozenCards）。
+    // 控えるときに常に見えている3つのレーンが焼き付いていないと、経過中の画面に未来が映る
+    // （withFrozenCards）。**焼き付けを頼むのは控える側の仕事ではない**ので、3つとも渡していない。
     const mini = setUp();
     const hand = mini.slot('hand');
-    const stone = mini.createObject('stone', hand);
-    const stoneId = stone.instanceId;
+    const items = mini.slot('items', mini.land);
+    const fixtures = mini.slot('fixtures', mini.land);
+    const shown = [
+      { name: '手持ち', lane: hand, object: mini.createObject('stone', hand) },
+      { name: 'アイテム', lane: items, object: mini.createObject('stone', items) },
+      { name: '設置物', lane: fixtures, object: mini.createObject('tree', fixtures) },
+    ].map((lane) => ({ ...lane, instanceId: lane.object.instanceId }));
 
     const recording = runAndRecordChange(mini.game, mini.codex, locale, undefined, () => {
       mini.game.session.advanceWorldTime(60);
-      stone.destroy();
+      for (const { object } of shown) object.destroy();
     });
 
     expect(recording.ticks.length, '60分ぶんのtick境界がある').toBeGreaterThan(0);
     for (const tick of recording.ticks)
-      expect(
-        tick.view.cardsIn(hand).map((card) => card?.objectGlobalId),
-        `tick@${tick.minutes}の手持ちには、まだ石がある`,
-      ).toContain(stone.def.globalId);
+      for (const { name, lane, object } of shown)
+        expect(
+          tick.view.cardsIn(lane).map((card) => card?.objectGlobalId),
+          `tick@${tick.minutes}の${name}レーンには、まだ物がある`,
+        ).toContain(object.def.globalId);
 
-    expect(
-      recording.changesAtEnd.some((change) => change.object.instanceId === stoneId),
-      '石が消えるのは、経過し切った時点',
-    ).toBe(true);
+    for (const { name, instanceId } of shown)
+      expect(
+        recording.changesAtEnd.some((change) => change.object.instanceId === instanceId),
+        `${name}レーンの物が消えるのは、経過し切った時点`,
+      ).toBe(true);
   });
 
   it('時間を消費しない変更は、控えを持たずに出入りだけを返す', () => {

@@ -7,7 +7,6 @@ import type { Localization } from '../../locale/Localization';
 import type { PlayScreenView } from './PlayScreenView';
 import { fromGameSession, withFrozenCards } from './PlayScreenView';
 import type { CardPlace } from './cardPlaces';
-import { cardPlacesOf } from './cardPlaces';
 import type { StatusDelta } from './statusChanges';
 import { mergedStatuses, statusChangesBetween } from './statusChanges';
 
@@ -53,15 +52,6 @@ export interface Recording {
   readonly gains: readonly InteractionGains[];
 }
 
-/** 常に見えている3つのレーンが今映している場所（土地に居なければ手持ちだけ）。 */
-function shownPlacesOf(game: StartedGame): readonly CardPlace[] {
-  const location = game.player.location;
-  if (location === undefined) return [];
-
-  const places = cardPlacesOf(game.player, location);
-  return [places('fixtures'), places('items'), places('hand')];
-}
-
 /**
  * ワールドを変える操作を実行し、経過中の各tick時点の表示内容を控えて返す（RecordedView）。
  *
@@ -71,8 +61,9 @@ function shownPlacesOf(game: StartedGame): readonly CardPlace[] {
  * 各tickの見え方を検査するテストがそのまま書ける。
  *
  * windowPlaceは、開いている子ウィンドウが映している場所。控えたviewをあとから表示するので、
- * **画面が引きうる場所の並びは控えた時点のものへ焼き付ける**（withFrozenCards）——3つのレーンと、
- * 開いている子ウィンドウ。焼き付けないと、経過を見せている途中の画面に行動の結果が先に現れる。
+ * **画面が引きうる場所の並びは控えた時点のものへ焼き付ける**（withFrozenCards）。焼き付けないと、
+ * 経過を見せている途中の画面に行動の結果が先に現れる。常に見えている場所はwithFrozenCards自身が
+ * 焼き付けるので、ここが渡すのは開いている子ウィンドウだけでよい。
  */
 export function runAndRecordChange(
   game: StartedGame,
@@ -99,10 +90,7 @@ export function runAndRecordChange(
             (signal) => signals.push(signal),
             () => {
               game.session.observeTicks(() => {
-                const view = withFrozenCards(fromGameSession(game, codex, locale), [
-                  ...shownPlacesOf(game),
-                  windowPlace,
-                ]);
+                const view = withFrozenCards(fromGameSession(game, codex, locale), [windowPlace]);
                 recorded.push({
                   minutes: game.world.totalMinutes,
                   view,
