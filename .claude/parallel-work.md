@@ -170,9 +170,16 @@ issue で引く。** 畳む条件は3つ。
      ——先に作ると、道具が定義ではなく設計文書の数字を写すことになり、仕様の写しが2つできる。
    - **1周回の日数。** 8.3節の仮置き（屋外の割合・土地の配分・移動時間）が3段に積み重なって
      **90日と260日の間**としか言えていない。#699 が開始地点の側を測った続き。
-2. **鎖の外に残っているのは
-   [#714](https://github.com/gooyyu1/UnmappedIsland/issues/714)**（炉の中の石の残り時間が出ない）
-   だけ。PRは出ていて、マージ待ち。
+2. **鎖の外で走っているのは3件。** 担当がどれも離れているので並列でよい。
+   - [#711](https://github.com/gooyyu1/UnmappedIsland/issues/711) 動物が `resists` を宣言していない。
+   - [#710](https://github.com/gooyyu1/UnmappedIsland/issues/710) codexビューアが `resists` を出さない。
+   - [#719](https://github.com/gooyyu1/UnmappedIsland/issues/719) `BalanceStats.md` が main で古い。
+
+   **投入していないものが2件ある。**
+   [#675](https://github.com/gooyyu1/UnmappedIsland/issues/675)（洞窟内部の名前）は洞窟内部そのものが
+   段0で未仕分けなので、やらないことになれば issue ごと消える。
+   [#673](https://github.com/gooyyu1/UnmappedIsland/issues/673)（`seasonalRain.ts` が持つ単語）は
+   **表の鍵をどこへ置くかの判断が先**で、担当の `WorldVocabulary.ts` が #722 と重なる。
 3. **段2（文法追加）は `base` で終わった。残っているのは1つ。** **海区から `items` スロットを落とす方法**
    （`GameEndings.md` 12.7節）で、海区を実装するまで要らない。「大きいほうを採る」合成は
    **要求そのものが取り下がった**（`IlluminationSystem.md` 1節。加算＋底で書けるようにした）。
@@ -212,3 +219,4 @@ issue で引く。** 畳む条件は3つ。
 - 明るさの設計はユーザーとの会話で畳み直された（#715）。要る値は2つ（手元・視界）＋導出用の環境光1つ、
   合成は加算のみ、足りない文法は `base` だけ。`ContentSkeleton.md` 8.1.3節の時間表は再計算待ち。
 - 段2は `base`（#716）で終わった。`inherit: true` は廃止済み。#656 の「確認待ち」は空。
+- 焼け石の絵（#713・ローカル）と炉の残り時間（#714）はマージ済み。
