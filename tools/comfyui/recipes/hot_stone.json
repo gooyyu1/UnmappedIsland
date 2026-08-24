@@ -1,0 +1,40 @@
+{
+  "_comment": [
+    "src/assets/objects/hot_stone.png を作り直すためのレシピ。build.py が読む。",
+    "炉で熱を溜め切った石（src/assets/world-codex/fire.yaml、docs/engine/FireSystem.md 9.1節）。",
+    "",
+    "**素の石（stone）の生データから派生させる。** 炉へ入れたのと同じ個体が熱を溜めた姿なので、",
+    "形も置き場所も素の石そのままでなければならない。生データには石が2つ描かれているので、",
+    "本文では両方を熱くさせる（残すのは左上の1つで、cardArt.crop は stone.json と同じ）。",
+    "",
+    "**割れ目から光らせない。** 「glowing cracks」と頼むと、割れ目の網が飾りになったゲームの溶岩石に",
+    "なる（3枚とも）。熱は割れ目ではなく石の色として出させ、鍛冶場から出した鉄に喩える。",
+    "",
+    "**熱の広がりは自分で決めない。** 「内側から光る」とだけ言うと、Qwenは縁のにじみ（下端だけ橙の",
+    "飴のような石）として描く。石のどこが暗くどこが熱いかまで本文で言う。",
+    "",
+    "**光を紙へこぼさせない。** にじんだ光は card_art.py の紙・物・影の分離で物として拾われ、",
+    "不透明な白い塊としてカードに乗る（実際に、にじみと煙の出た手は塊が石の倍の大きさになった）。",
+    "禁じるのではなく「背景には手を触れない・周りの空気は澄んでいる」と肯定形で言う。",
+    "",
+    "**炎・熾・煙は描かせない。** 出すと火口（burning_tinder）や熾火の炉と紛れる。熱いのは石だけ。",
+    "",
+    "段は素の石と同じ256。熱を溜めても石の大きさは変わらないので、並んだときに揃う。"
+  ],
+  "output": "src/assets/objects/hot_stone.png",
+  "edit": {
+    "source": "stone.json",
+    "prompt": "Both of these stones have just been lifted out of a fire and are still searing hot. Keep each stone exactly where it is, at exactly the same size and with exactly the same smooth rounded pebble shape: do not move, resize or reshape them, and do not add or remove stones. Each one is still plainly a stone, with its matte mottled surface still visible, and it is glowing with its own heat the way a bar of iron glows when it is taken out of a forge: a dull red orange incandescence coming up through the stone itself, spread broadly across the middle and the lower part of the stone and fading back to dark sooty grey at its rim and along its top. The stone is not broken open: there is no lava, no molten rock, no bright glowing veins, no cracks and no flame on it, and the heat shows only as colour in the stone. All of that light stays inside the outline of the stone. Everything else in the picture is untouched: the background stays exactly the same clean plain empty page it is now, the air around the stones is completely clear and empty, and the same soft grey shadow stays beneath each stone. Keep the same soft hand painted illustration style and the same flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 4
+  },
+  "cardArt": {
+    "_comment": "stone.json と同じ切り出し。生データの右下（y900から）にある2つ目の石を落とす。",
+    "size": "256",
+    "mode": "background",
+    "crop": [0, 0, 832, 900],
+    "tolerance": 60,
+    "edge": 4,
+    "shadow": 1,
+    "reach": 24
+  }
+}
