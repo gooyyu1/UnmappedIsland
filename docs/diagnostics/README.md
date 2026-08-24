@@ -20,6 +20,7 @@
 ```bash
 npm run stats:balance
 npm run stats:climate
+npm run stats:startup
 npm run stats:terrain
 ```
 
@@ -34,6 +35,11 @@ npm run stats:terrain
 - [気候システム統計レポート](./ClimateSystemStats.md) — 季節の持続日数・気温・天気ごとの持続時間・
   連続降雨/未降雨時間の平均/最小/最大/標準偏差（[`ClimateSystem.md`](../engine/ClimateSystem.md) 参照）。
   生成元: `tests/diagnostics/climateStatsReport.test.ts`
+- [開始地点の立ち上がりレポート](./StartupReachStats.md) — 最初の段を越えるのに要るもの6つが、
+  各サイトから何歩先にあるか（移動時間・道を見つける探索時間つき）と、島ごとに最も条件の良い
+  サイトの値の分布（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 2.3節参照）。
+  定義と生成された島だけから計算した値で、選抜やしきい値の判定は出さない。
+  生成元: `tests/diagnostics/startupReachStatsReport.test.ts`（計算は `src/analysis/startupReach.ts`）
 - [地形生成統計レポート](./TerrainStats.md) — 土地1つあたりの道の本数（連結数）と余分な道の本数の
   平均/最小/最大/標準偏差、次数の分布、道の移動時間
   （[`TerrainGeneration.md`](../engine/TerrainGeneration.md) 3.5節参照）。

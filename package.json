@@ -19,6 +19,7 @@
     "stats:declarations": "node scripts/declarationInventory.mjs",
     "stats:docs": "node scripts/docStatus.mjs",
     "stats:lines": "node scripts/countLines.mjs",
+    "stats:startup": "RUN_STARTUP_REACH_STATS=1 vitest run tests/diagnostics/startupReachStatsReport.test.ts",
     "stats:terrain": "RUN_TERRAIN_STATS=1 vitest run tests/diagnostics/terrainStatsReport.test.ts",
     "test": "vitest run",
     "test:climate": "RUN_CLIMATE_TESTS=1 vitest run tests/world-codex/climateSystem.test.ts",
