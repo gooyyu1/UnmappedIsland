@@ -20,10 +20,9 @@
 `tests/world-codex/animalsYaml.test.ts`）。6 節の変化の観測と 6.3 節の告知も実装済みです
 （`WorldSession.observeChanges`・`observeSignals`）。5 節の動物の1手も実装済みで、時間が経てば
 2 節が述べる「動物の 6 手」がそのまま現れます（`WorldObject.runTickActions`、検証は
-`tests/world-codex/animalTurn.test.ts`）。4 節の `resists` も文法として実装済みです
-（[`GameElementDefinition.md`](./GameElementDefinition.md) 7.13 節、検証は `tests/domain/resists.test.ts`）
-——**ただし、まだどの動物も宣言していません**。荒ぶる相手が手に持てなくなるのは、`animals.yaml` が
-`resists` を書いてからです。新設が必要なエンジン拡張は 7 節、未決事項は 8 節にまとめています。
+`tests/world-codex/animalTurn.test.ts`）。4 節の `resists` も実装済みで、4 種とも `beast` trait で宣言しているため、警戒している間は手にも
+入れ物にも入りません（[`GameElementDefinition.md`](./GameElementDefinition.md) 7.13 節、検証は
+`tests/domain/resists.test.ts`）。新設が必要なエンジン拡張は 7 節、未決事項は 8 節にまとめています。
 
 ## 1. 既存の操作に載せる
 
