@@ -76,8 +76,11 @@ export function requireResolvable(
 const REASON_KEY = 'reason';
 
 /**
- * conditions（14節）の値。常にYAML配列（暗黙のall）。要素は葉か、入れ子のall/any/notのいずれか。
+ * 条件の並び（14節）。常にYAML配列（暗黙のall）。要素は葉か、入れ子のall/any/notのいずれか。
  * conditionsNodeがundefinedなら省略（常に真）。
+ *
+ * **contextはその配列自身を指す**（要素には添字だけを足す）。並びが書かれるキーは`conditions`とは
+ * 限らない——`resists`（7.13節）も同じ形を共有するので、キー名は呼び出し側が答える。
  */
 export function parseConditionsField(
   loader: WorldCodexYamlLoader,
@@ -89,7 +92,7 @@ export function parseConditionsField(
 
   const children: ConditionNode[] = [];
   for (const node of conditionsNode.items as YamlNode[])
-    children.push(parseConditionNode(loader, `${context}.conditions[${children.length}]`, node, scope));
+    children.push(parseConditionNode(loader, `${context}[${children.length}]`, node, scope));
 
   return ConditionNode.all(children);
 }

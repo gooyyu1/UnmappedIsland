@@ -5,6 +5,7 @@ import type {
   TickTrigger,
   TriggerGroups,
 } from './InteractionTrigger';
+import type { ConditionNode } from './ConditionNode';
 import { LocalIndexByGlobalId } from './LocalIndexByGlobalId';
 import type { PassiveEffect } from './PassiveEffect';
 import { PassiveEffects } from './PassiveEffects';
@@ -90,6 +91,13 @@ export class ObjectDef {
   readonly boundToOwner: boolean;
 
   /**
+   * **持ち主を持てなくなる条件**（`resists`、7.13節）。宣言が無ければundefinedで、いつでも誰の下へでも
+   * 入れる。`bound_to_owner` の対称形で、あちらが「今の持ち主から離れられない」を言うのに対し、
+   * こちらは成立している間だけ「そもそも持ち主に付けない」を言う。
+   */
+  readonly resists: ConditionNode | undefined;
+
+  /**
    * **同種と束ねてよい型か**（既定true）。falseなら、同じ型でも1個ずつ別の枠に並ぶ。
    *
    * 束ねたくないのは、その個体を名指しで操作する必要があるとき。道は行き先が個体ごとに違い、かごは
@@ -132,6 +140,7 @@ export class ObjectDef {
     visibleSlotGlobalIds: readonly number[] = [],
     isStorage = false,
     isInProgress = false,
+    resists?: ConditionNode,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -155,6 +164,7 @@ export class ObjectDef {
     this.tickTriggers = groups.tick;
     this.dragTriggers = groups.drag;
     this.boundToOwner = boundToOwner;
+    this.resists = resists;
     this.stackable = stackable;
     this.recipesProducingThis = recipesProducingThis;
     this.artByStagePropertyGlobalId = artByStagePropertyGlobalId;

@@ -28,7 +28,8 @@ type MemberKind = 'プロパティ' | 'スロット';
  * 契機で、Defが宣言する効果一式（PassiveEffects）へ「登録/解除してほしい」と依頼するだけで、どのtargetが
  * どこへ紐付くかは効果自身が知る。能動効果（set/add/destroy/spawn/transfer・actions/combinations・tick）は、
  * 適用の入口（applyActiveEffect）と対象解決、same_slot spawnの位置捕捉（SameSlotSpawnSite）・配置（place）を持つが、
- * 値の変更そのものは対象のPropertyValueへ、条件判定・抽選はDef側の効果へ委ねる。
+ * 値の変更そのものは対象のPropertyValueへ、条件判定・抽選はDef側の効果へ委ねる。抵抗（`resists`、7.13節）が
+ * 成立したときに持ち主から離れるのも自分で行う——値を変えた側は、その後に何を確かめるべきかを知らない。
  *
  * **セッションは自分で持つ。** 何かを頼む側がWorldSessionを渡すことはない（sessionフィールド参照）。
  */
@@ -391,7 +392,52 @@ export class WorldObject {
       return `'${this.def.name}' は '${this._parent.def.name}' から離せません。`;
     }
 
+    // 抵抗している物は持ち主を持てない（7.13節）。土地だけは持ち主にならないので、そこへは普通に
+    // 置けるし、自分で隣の土地へ移るのも通る。
+    if (!slot.owner.isLand && this.isResisting) {
+      return `'${this.def.name}' は '${slot.owner.def.name}' に収まりません。`;
+    }
+
     return undefined;
+  }
+
+  /**
+   * 今この物が抵抗しているか（`resists`、7.13節）。宣言が無ければ常に偽。
+   *
+   * 読むのは実効値（`ConditionNode`）なので、外から与えられた寄与——罠の`modify`が警戒を打ち消すような
+   * ——もそのまま効く（docs/engine/TrapSystem.md 5節）。
+   */
+  private get isResisting(): boolean {
+    const resists = this.def.resists;
+    return resists !== undefined && resists.evaluate(ReferenceContext.forSelf(this));
+  }
+
+  /**
+   * この物が土地か（`location` タグ）。**土地だけが持ち主にならない親**で、抵抗している物が居られる
+   * のはそこだけ（HuntingSystem.md 4節）。
+   *
+   * エンジンの他の規則と違い、ここは世界の側の語をそのまま読む——「持ち主ではない置き場」を型の宣言
+   * から導く手掛かりが他に無いため（`WorldRuleVocabulary`）。
+   */
+  private get isLand(): boolean {
+    return this.def.hasTag(this.session.codex.vocabulary.world.locationTagId);
+  }
+
+  /**
+   * 抵抗しているのに持ち主の下に居るなら、その場で離れる（7.13節）。台車に積んだ動物の警戒が上がれば、
+   * 暴れて荷車から飛び出す。
+   *
+   * こぼれ先を名指ししないのは、土地以外の親が受け取らなくなる（rejectionForLoopOrDetach）ため
+   * ——上へ遡るうちに、最も近い土地が最初の受け取り手になる。
+   *
+   * **値を変えた側は、この後何を確かめるべきかを覚えなくてよい**（PropertyValue.add・tick・
+   * 配置の関門が、それぞれ自分で呼ぶ）。
+   */
+  spillOutIfResisting(): void {
+    const parent = this._parent;
+    if (parent === undefined || parent.isLand || !this.isResisting) return;
+
+    this.spillTo(parent);
   }
 
   /**
@@ -430,6 +476,10 @@ export class WorldObject {
     // 祖先対象の登録は、新しい親チェーンが確定した後に行う（detachFromParentでの解除と対、
     // registerAncestorTargetedRecursively参照）。
     this.setAncestorTargetsRegistered(true);
+
+    // 移った先で初めて抵抗が成立することがある（罠から手へ移した瞬間に、警戒を打ち消していた寄与が
+    // 消える）。実効値が移り終えた後の値になるのは、登録がすべて済んだこの時点。
+    this.spillOutIfResisting();
 
     return undefined;
   }
@@ -734,6 +784,9 @@ export class WorldObject {
     for (const property of this.properties) property.tick();
     // 輸送は、この物のプロパティが積分され切ってから走らせる（8.4節）。
     this.def.passives.applyTickTransfers(this);
+    // 抵抗の判定も積分の後（7.13節）。時間で動くのは実体値だけでなく、寄与の掛かり方も同じtickで
+    // 変わりうるので、値の変更を経ずに成立した抵抗はここが拾う。
+    this.spillOutIfResisting();
 
     for (const slot of this.slots) {
       for (const child of [...slot.contents]) child.tick();

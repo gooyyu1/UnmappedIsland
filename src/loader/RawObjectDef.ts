@@ -7,12 +7,14 @@ import { parseSlot } from './parseSlots';
 import { parsePassiveInto } from './parsePassives';
 import { parseInteractions } from './parseInteractions';
 import { parseRecipes } from './parseRecipes';
+import { parseConditionsField } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { RawTrait } from './RawTrait';
 import { RawDeclarationBody, namesIn } from './RawDeclarationBody';
 import { IN_PROGRESS_TAG } from '../domain/RecipeDef';
 import { LocalIndexByGlobalId } from '../domain/LocalIndexByGlobalId';
 import { ObjectDef } from '../domain/ObjectDef';
+import { ReferenceScope } from '../domain/ReferenceRoot';
 import { containerPropagationPassives } from '../domain/containerPropagation';
 import type { PassiveEffect } from '../domain/PassiveEffect';
 import type { PropertyDef } from '../domain/PropertyDef';
@@ -83,7 +85,7 @@ export class RawObjectDef {
    * - props/slots/interactions: 同名エントリが複数のtraitにあればエラー（5節）。
    *   object_def自身が同名エントリを持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。
    * - passives: 識別子を持たないため単純に連結（trait由来→自分自身の順）。
-   * - stack_order/art_by_stage: 自分自身の指定を優先。無ければちょうど1つの
+   * - stack_order/art_by_stage/resists: 自分自身の指定を優先。無ければちょうど1つの
    *   traitが指定している必要がある（複数ならエラー）。
    * - recipes: 成果物ごとの内容なので合成せず、自分自身の宣言だけを読む。
    * 未対応（Codex側にビルド先の型が無いため意図的にスキップ）: covers/layer。
@@ -147,6 +149,15 @@ export class RawObjectDef {
 
     const interactions = parseInteractions(loader, this.name, merged.interactions);
 
+    // resists（7.13節）が見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面
+    // （tick・こぼれ落ち）でも同じ判定が走る。
+    const resists = parseConditionsField(
+      loader,
+      `'${this.name}'.resists`,
+      merged.resists,
+      ReferenceScope.declaration,
+    );
+
     const tagIds = [...new Set(merged.tags.map((tag) => loader.tagNames.intern(tag)))];
 
     // visible_slots（7.11節）はタグと同じく足し合わせる。**並びが表示順**なので、trait由来を先に、
@@ -196,6 +207,7 @@ export class RawObjectDef {
           visibleSlotGlobalIds,
           merged.isStorage,
           tagIds.includes(loader.tagNames.intern(IN_PROGRESS_TAG)),
+          resists,
         ),
     );
   }

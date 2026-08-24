@@ -20,8 +20,10 @@
 `tests/world-codex/animalsYaml.test.ts`）。6 節の変化の観測と 6.3 節の告知も実装済みです
 （`WorldSession.observeChanges`・`observeSignals`）。5 節の動物の1手も実装済みで、時間が経てば
 2 節が述べる「動物の 6 手」がそのまま現れます（`WorldObject.runTickActions`、検証は
-`tests/world-codex/animalTurn.test.ts`）。**4 節だけが丸ごと未実装**で、見出しに【未実装】の印を
-付けています。新設が必要なエンジン拡張は 7 節、未決事項は 8 節にまとめています。
+`tests/world-codex/animalTurn.test.ts`）。4 節の `resists` も文法として実装済みです
+（[`GameElementDefinition.md`](./GameElementDefinition.md) 7.13 節、検証は `tests/domain/resists.test.ts`）
+——**ただし、まだどの動物も宣言していません**。荒ぶる相手が手に持てなくなるのは、`animals.yaml` が
+`resists` を書いてからです。新設が必要なエンジン拡張は 7 節、未決事項は 8 節にまとめています。
 
 ## 1. 既存の操作に載せる
 
@@ -205,7 +207,7 @@ monkey_carcass:
 （`-1/tick`、[`InjurySystem.md`](./InjurySystem.md) 2 節）なので待つより追い払うほうが速い、が
 値だけで成り立ちます。
 
-## 4. 抵抗する相手（`resists`）【確定】【未実装: resists】
+## 4. 抵抗する相手（`resists`）【確定】
 
 荒ぶっている動物を手持ちや入れ物へ入れることはできず、飼いならした後の小動物はかごへ、大型は台車へ
 入れられるようにします。
@@ -489,11 +491,11 @@ strike:
 
 ## 7. 新設が必要なエンジン拡張
 
-狩猟専用の文法は導入しません。次の5つはいずれも汎用の拡張です。`resists` 以外は実装済みです。
+狩猟専用の文法は導入しません。次の5つはいずれも汎用の拡張で、すべて実装済みです。
 
 | 拡張 | 内容 |
 | --- | --- |
-| `resists`（4 節、未実装） | `bound_to_owner` の対称形。条件が成立する間、土地以外の親へ移れない。成立した瞬間に土地へこぼれ出る |
+| `resists`（4 節） | `bound_to_owner` の対称形。条件が成立する間、土地以外の親へ移れない。成立した瞬間に土地へこぼれ出る（[`GameElementDefinition.md`](./GameElementDefinition.md) 7.13 節） |
 | オブジェクトを指す参照（`ObjectRef`） | 対象キー（`self`/`parent`/`actor`/`dragged`）と、インスタンスIDを保持するプロパティ（`{prop: ...}`）の二択。`destroy` の対象と `move` の `subject`・移動先が共有する（`GameElementDefinition.md` 9.3 節・9.6 節）。**動かす物と行き先を別々の仕組みで指さない**——どちらも「1つのオブジェクトを指す」という同じ役目だから |
 | `move` の `subject: self` | 現在は `actor`/`dragged` のみでロード時エラーだった（同 9.6 節）。`child` と違い `self` は一意なので曖昧さが無い |
 | `trigger: tick`（同 11.1 節） | 画面のボタンには出さない操作。起こすのはプレイヤーではなく時間の側になる |

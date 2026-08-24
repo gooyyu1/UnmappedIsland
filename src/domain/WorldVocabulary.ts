@@ -88,8 +88,9 @@ export class EngineVocabulary {
  * この世界のルールが依存する単語（`src/assets/world-codex`）。エンジンの語と違い、**別の世界を書けば
  * 変わりうる**——変わったときに何が動かなくなるかが、この一覧の中身そのもの。
  *
- * 使い手は `domain/wrappers`・`domain/generation`・`analysis`。いずれも名前を「値や集合を引く鍵」として
- * だけ使っていて、どの名前かに他の判断が依存しない。
+ * 使い手は `domain/wrappers`・`domain/generation`・`analysis` と、`WorldObject` の抵抗の判定
+ * （`resists`、GameElementDefinition.md 7.13節）。いずれも名前を「値や集合を引く鍵」としてだけ使っていて、
+ * どの名前かに他の判断が依存しない。
  */
 export class WorldRuleVocabulary {
   // ---- 時間と気候（ClimateSystem.md、wrappers/World） ----

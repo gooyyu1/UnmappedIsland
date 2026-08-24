@@ -8,8 +8,8 @@ import type { WorldObject } from './WorldObject';
 /**
  * props の実行時の値。数値（32bit整数、6節）のみを扱う。PassiveEffectの影響先は「プロパティ」であるため、
  * 登録済み効果の一覧・tick毎の反映・実効値の算出はWorldObjectではなくこの値自身が持つ。値の変更後のrangeイベント
- * 判定（どのon_*をいつ発火するか）は自分のPropertyDef（applyRangeEventsAt）へ委譲し、呼び出し側は変更後に何を
- * 判定すべきかを知らなくてよい。
+ * 判定（どのon_*をいつ発火するか）は自分のPropertyDef（applyRangeEventsAt）へ委譲し、値が変わったことは持ち主の
+ * WorldObjectへも伝える（抵抗の成立、7.13節）。いずれも呼び出し側は変更後に何を判定すべきかを知らなくてよい。
  *
  * 見せ方に関わる問い（ratio・alert・stage）は実効値（8.3節）で答える。画面に出るのは「今そう見えている値」
  * であり、実体値のまま出すと、包帯を当てても痛みが下がらないように見えるため。
@@ -81,6 +81,9 @@ export class PropertyValue {
     // 操作が直に動かした値はここだけを通る（毎tickの積分はtick()が直に足す、PropertyGain参照）。
     this.owner.session.recordGain(this.owner, this.def, delta);
     this.def.applyRangeEventsAt(this._number, this.owner);
+    // 値が動けば、持ち主の下に居られるかも変わりうる（resists、7.13節）。どう変わるかを知っているのは
+    // 持ち主の側なので、変わったことだけを伝える。
+    this.owner.spillOutIfResisting();
   }
 
   /** 絶対値代入（set）。差分をaddへ委譲するため、range判定はadd側に一本化される。 */

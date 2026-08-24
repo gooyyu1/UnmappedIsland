@@ -42,7 +42,12 @@ export function parsePassiveInto(
   const context = `'${objectDefName}'.passives`;
 
   const conditionsNode = tryGetSeq(passiveMap, 'conditions', context);
-  const conditions = parseConditionsField(loader, context, conditionsNode, ReferenceScope.declaration);
+  const conditions = parseConditionsField(
+    loader,
+    `${context}.conditions`,
+    conditionsNode,
+    ReferenceScope.declaration,
+  );
   const gate = buildGate(loader, conditions, forcedStageProperty, forcedStageName);
 
   parsePassiveOperationInto(
