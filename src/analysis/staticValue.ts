@@ -21,7 +21,7 @@ import type { ReferenceRoot } from '../domain/ReferenceRoot';
 /**
  * ReferenceRootが指すプロパティの値を、**定義だけから**解く手立て。
  *
- * 解けないものはundefinedを返す——祖先が入れる値（inherit）も、重ねる相手の値も、「どの文脈に
+ * 解けないものはundefinedを返す——祖先が土台に入れる値（base）も、重ねる相手の値も、「どの文脈に
  * 置いた場合の数字か」を決めた側にしか答えられない。0を返すと「そう宣言されている」と区別が付かない。
  */
 export type StaticValueResolver = (root: ReferenceRoot, propertyGlobalId: number) => number | undefined;
@@ -43,8 +43,8 @@ export function staticResolverOf(
  * defが宣言しているプロパティの、定義だけから読める値。宣言していなければundefined。
  *
  * **抽選つきの初期値（`value: {min, max}`）はRNGを使わない生成と同じ扱い**で、下限がそのまま
- * 答えになる（PropertyDef.initialValueWithoutRoll）。inheritなら祖先の値も足す（6.5節）。祖先を辿れない
- * 文脈ではundefined。
+ * 答えになる（PropertyDef.initialValueWithoutRoll）。`base`（6.5節）があれば土台の値も足す。
+ * 土台を辿れない文脈ではundefined。
  */
 export function staticValueOf(
   def: ObjectDef,
@@ -53,10 +53,12 @@ export function staticValueOf(
 ): number | undefined {
   const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
   if (propertyDef === undefined) return undefined;
-  if (!propertyDef.inherit) return propertyDef.initialValueWithoutRoll;
 
-  const inherited = outer?.('ancestor', propertyGlobalId);
-  return inherited === undefined ? undefined : propertyDef.initialValueWithoutRoll + inherited;
+  const base = propertyDef.base;
+  if (base === undefined) return propertyDef.initialValueWithoutRoll;
+
+  const baseValue = staticResolverOf(def, outer)(base.root, base.propertyGlobalId);
+  return baseValue === undefined ? undefined : propertyDef.initialValueWithoutRoll + baseValue;
 }
 
 /**

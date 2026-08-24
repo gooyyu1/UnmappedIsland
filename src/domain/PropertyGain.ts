@@ -5,7 +5,7 @@ import type { WorldObject } from './WorldObject';
  * 操作そのものが直に増やした値1件（`WorldSession.observeGains`）。
  *
  * **拾うのは効果が実体値へ書いた先だけ**——`add`の対象、`transfer`の`to_prop`、`linked_add`の対象。
- * `modify`・`inherit`で押し上げられた実効値は含まない。満腹度は誰も書かず、胃と腸の段が押し上げて
+ * `modify`・`base`で押し上げられた実効値は含まない。満腹度は誰も書かず、胃と腸の段が押し上げて
  * いるだけなので現れず、食べた操作が増やしたものとして現れるのは胃と栄養になる。
  *
  * **毎tickの積分（passivesの`add`）も含まない。** 時間進行はPropertyValue.tickが直に足しており、

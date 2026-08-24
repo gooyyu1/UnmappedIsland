@@ -3,6 +3,7 @@ import type { PropertyDef, PropertyStage, CurrentStageReading } from './Property
 import { INT32_MAX } from '../util/int32';
 import { removeWhere } from '../util/arrays';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
+import { ReferenceContext } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
 
 /**
@@ -112,7 +113,7 @@ export class PropertyValue {
   }
 
   /**
-   * modifyとinherit（祖先からの継承）を加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
+   * modifyとbase（土台にした値、6.5節）を加味した実効値（8.3節）。可逆な寄与であり、実体値そのものは書き換えない。
    * conditions（14節）がこの実効値を読むため再入（循環参照）が起こりうる。isComputingEffectiveValueで検出し、
    * スタックオーバーフローになる前にエラーを投げる。
    */
@@ -130,7 +131,7 @@ export class PropertyValue {
 
       for (const c of this.modifyEffects) sum += c.activeAmount();
 
-      sum += this.inheritedContribution();
+      sum += this.baseContribution();
 
       return this.def.range !== undefined ? this.def.range.clamp(sum) : sum;
     } finally {
@@ -138,13 +139,11 @@ export class PropertyValue {
     }
   }
 
-  /** inherit（6節）による、祖先から実効値へ加える寄与。inheritが無効か、該当する祖先が無ければ0。 */
-  private inheritedContribution(): number {
-    if (!this.def.inherit) return 0;
-    const ancestor = this.owner.findAncestorWithProperty(this.def.globalId);
-    return ancestor !== undefined
-      ? (ancestor.tryGetProperty(this.def.globalId)?.getEffectiveValue() ?? 0)
-      : 0;
+  /** base（6.5節）が指す土台の実効値。baseを持たないか、土台を辿れなければ0。 */
+  private baseContribution(): number {
+    const base = this.def.base;
+    if (base === undefined) return 0;
+    return base.effectiveNumber(ReferenceContext.forSelf(this.owner)) ?? 0;
   }
 
   /**

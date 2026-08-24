@@ -84,10 +84,10 @@ object_defs:
                     - {object: rat, into: self}
                     - {object: snare_laceration, into: child}
       # その土地でその動物が掛かる重み。素の値は0で、祖先（＝置かれている土地、locations.yaml）が
-      # 宣言していればその実効値が加わる（inherit、6.5節）。**宣言していない土地ではその候補が
+      # 宣言していればその実効値が土台になる（base、6.5節）。**宣言していない土地ではその候補が
       # 抽選から外れる**ので、罠の側は1行も書き換えずに「岩礁海岸にヤケイは掛からない」が決まる。
-      junglefowl_catch: {value: 0, inherit: true}
-      rat_catch: {value: 0, inherit: true}
+      junglefowl_catch: {value: 0, base: {subject: ancestor}}
+      rat_catch: {value: 0, base: {subject: ancestor}}
       # 食性の卓の重み。素は互角で、餌が片方を押し上げる（4節）。
       herbivore_weight: {value: 10, range: {min: 0, max: 35}}
       carnivore_weight: {value: 10, range: {min: 0, max: 35}}

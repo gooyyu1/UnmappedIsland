@@ -88,7 +88,7 @@ actions/combinations の一度きりの判定と、passives（8節）の持続�
 
 | 葉 | 形 | 判定 |
 | --- | --- | --- |
-| Property | `{object, prop, op, value}` | 参照先プロパティの**実効値**（modify・inherit込み）との比較 |
+| Property | `{object, prop, op, value}` | 参照先プロパティの**実効値**（modify・base込み）との比較 |
 | SlotPosition | `{object, in_slot}` | object が今、親のそのスロットに入っているか（外から見た位置） |
 | SlotContent | `{object, slot, tag}` | object 自身のスロットの中に、タグを持つ子が1つでもあるか（内側の中身） |
 | ObjectTag | `{object, tag}` | object 自身がタグを持つか |
@@ -179,7 +179,7 @@ UI が演出のために「誰が何をしたか」を要る（[`HuntingSystem.m
 | 値の増減 | **前後の比較**（`statusChangesBetween`） | 実効値は誰も書かないまま動くので、書き込みを記録しても現れない |
 | 形の変わらない出来事（空振り） | **起こした側が告げる**（`signal`、7.4 節） | 世界を読み直しても現れない |
 
-**値をログに寄せられないのは実効値の定義そのものが理由です。** 画面に出るのは `modify`・`inherit` を
+**値をログに寄せられないのは実効値の定義そのものが理由です。** 画面に出るのは `modify`・`base` を
 加味した値（[`GameElementDefinition.md`](./GameElementDefinition.md) 8.3 節）で、包帯を当てると痛みは
 下がりますが、痛みの実体値は 0 のままで、押し上げていた寄与が減るだけです。
 

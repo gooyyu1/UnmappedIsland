@@ -1,7 +1,7 @@
 import type { EffectDeclaration } from '../../domain/EffectReader';
 import type { PropertyDef, PropertyStage } from '../../domain/PropertyDef';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { propertyTagRef, stageRef, text } from './Description';
+import { propertyRef, propertyTagRef, stageRef, text } from './Description';
 import { describeEffect } from './describeEffect';
 
 /** 初期値の書き表し。一覧の表など、1行で済ませたい場所向けに断片で返す。 */
@@ -16,7 +16,12 @@ export function initialValueTokens(def: PropertyDef, names: DefNames): readonly 
 export function describeProperty(def: PropertyDef, names: DefNames, out: DescriptionWriter): void {
   out.write(text('初期値: '), ...initialValueTokens(def, names));
   if (def.range !== undefined) out.write(text(`range: ${def.range.min} 〜 ${def.range.max}`));
-  if (def.inherit) out.write(text('inherit: 同名プロパティを持つ最初の祖先の実効値を足す'));
+  if (def.base !== undefined)
+    out.write(
+      text('base: '),
+      propertyRef(names.propertyName(def.base.propertyGlobalId), def.base.root),
+      text('の実効値を土台にして足す'),
+    );
   if (def.gauge !== undefined)
     out.write(text(`gauge: min=${def.gauge.atMin} / max=${def.gauge.atMax}（カードにバーで出す）`));
   if (def.tags.length > 0)

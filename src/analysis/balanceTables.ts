@@ -486,7 +486,7 @@ function placeBalances(
 
   let islandRoutes: readonly ChainRoute[] = [];
   const places = [undefined, ...locations].map((location) => {
-    // 罠が掛ける動物の重みは土地が宣言する（inherit）ので、土地を決めてから工程を組み立てる。
+    // 罠が掛ける動物の重みは土地が宣言する（base）ので、土地を決めてから工程を組み立てる。
     const context =
       location === undefined ? islandContext : withBestDragged(defs, ancestorValueResolver(location));
     const steps =
@@ -1013,7 +1013,7 @@ function axisValueGlobalIds(codex: WorldCodex): ReadonlySet<number> {
  * 時間で回る工程（罠の判定）も並べる。軸の値の型は飛ばす（axisValueGlobalIds参照）。
  *
  * outerは、祖先（＝置かれている土地）が入れる値を解く手立て。罠が掛ける動物の重みは土地が
- * 宣言するので（`inherit`）、これが無いと候補が全部0になる。
+ * 宣言するので（`base`）、これが無いと候補が全部0になる。
  */
 function allSteps(codex: WorldCodex, outer?: StaticValueResolver): readonly StepRef[] {
   const defs = [...codex.objects];
