@@ -4,6 +4,7 @@ import type { ObjectDef } from '../../domain/ObjectDef';
 import type { PropertyDef } from '../../domain/PropertyDef';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { actionRef, combinationRef, propertyRef, text } from './Description';
+import { conditionTokens } from './conditionTokens';
 import { describeInteraction } from './describeInteraction';
 import { describeRangeEvent } from './describeProperty';
 import { stackOrderTokens } from './stackOrderTokens';
@@ -18,6 +19,13 @@ export function describeObjectDef(def: ObjectDef, names: DefNames, out: Descript
   if (def.isSingleton) out.write(text('singleton: 世界にただ1つだけ存在する'));
   if (!def.stackable) out.write(text('stackable: false（同種でも1個ずつ別の枠に並ぶ）'));
   if (def.boundToOwner) out.write(text('bound_to_owner: 入っていた親が消えるとき一緒に消える'));
+
+  if (def.resists !== undefined)
+    out.write(
+      text('resists: '),
+      ...conditionTokens(def.resists, names),
+      text('の間は土地以外の持ち主に付けない（入れ物の中で成立すればこぼれ出る）'),
+    );
 
   if (def.stackOrder !== undefined)
     out.write(text('stack_order: '), ...stackOrderTokens(def.stackOrder.reading, names));

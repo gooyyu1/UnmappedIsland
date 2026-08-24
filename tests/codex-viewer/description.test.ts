@@ -4,6 +4,7 @@ import { defNamesOf } from '../../src/codex-viewer/describe/codexNames';
 import {
   createsObject,
   describeInfluencesOn,
+  describeObjectDef,
   usesInRecipes,
 } from '../../src/codex-viewer/describe/describeObjectDef';
 import { describePassive } from '../../src/codex-viewer/describe/describePassive';
@@ -94,6 +95,13 @@ object_defs:
               - {object: coconut_half, count: 1, consume: true}
               - {object: sharp_stone, count: 1, consume: false}
             duration: 30
+
+  wild_boar:
+    tags: [item]
+    props:
+      wariness: {value: 0}
+    resists:
+      - {prop: wariness, gte: 1}
 
   sharp_stone:
     tags: [item, cutting_tool]
@@ -233,6 +241,21 @@ describe('定義の自己記述（describe）', () => {
     expect(text).not.toContain('→ actor');
     expect(text).not.toContain('あふれても移す');
     expect(text).not.toContain('→ same_slot');
+  });
+
+  it('resistsは、持ち主に付けなくなる成立条件を書き出す', () => {
+    const text = describeToText(codex, (out) => describeObjectDef(objectDef('wild_boar'), names, out));
+
+    expect(text).toContain('resists: ');
+    expect(text).toContain('wariness >= 1');
+    // 土地は持ち主にならない（7.13節）ので、成立しても置き場を失うわけではない。
+    expect(text).toContain('土地以外の持ち主に付けない');
+  });
+
+  it('resistsを宣言していない型には、その行を書かない', () => {
+    const text = describeToText(codex, (out) => describeObjectDef(objectDef('coconut'), names, out));
+
+    expect(text).not.toContain('resists');
   });
 
   it('combinationは相手のタグとpickの候補を書き出す', () => {
