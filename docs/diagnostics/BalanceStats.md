@@ -533,8 +533,12 @@ npm run stats:balance
 
 島のどこを探しても作れも見つかりもしないもの。定義の穴で、これが下の経路を塞いでいる。
 
+- **jar__content_hot_water_liquid** — 1経路を塞いでいる
+  - `jar__content_hot_water_liquid.drink`（hydration +10.00）
 - **jar__content_tea_liquid** — 1経路を塞いでいる
   - `jar__content_tea_liquid.drink`（hydration +10.00、wakefulness +2.00）
+- **coconut_bowl__content_hot_water_liquid** — 1経路を塞いでいる
+  - `coconut_bowl__content_hot_water_liquid.drink`（hydration +10.00）
 - **coconut_bowl__content_tea_liquid** — 1経路を塞いでいる
   - `coconut_bowl__content_tea_liquid.drink`（hydration +10.00、wakefulness +2.00）
 
@@ -556,6 +560,7 @@ npm run stats:balance
 
 | オブジェクト | 足りない入力 |
 | --- | --- |
+| hot_stone | 作る工程が無い |
 | three_stone_hearth | 作る工程が無い |
 | stone_hearth | 作る工程が無い |
 | spear | 作る工程が無い |
@@ -843,6 +848,7 @@ npm run stats:balance
 | rope | twisted | recipe | 60 | 60 | rope ×1.00 | — |
 | fire_drill | carved | recipe | 60 | 60 | fire_drill ×1.00 | — |
 | dry_grass | light | interaction | 30 | 30 | burning_tinder ×0.60 | — |
+| hot_stone | boil | interaction | 5 | 5 | stone ×1.00 | — |
 | campfire | add_fuel | interaction | 1 | 1 | — | （self）fuel +999.00 |
 | campfire | add_stone | interaction | 5 | 5 | — | （self）stones +1.00 |
 | campfire | stacked | recipe | 15 | 15 | campfire ×1.00 | — |
@@ -894,6 +900,7 @@ npm run stats:balance
 | jar__content_water_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | jar__content_water_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 | jar__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
+| jar__content_hot_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
 | jar__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | jar__content_tea_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 | jar__content_tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
@@ -902,6 +909,7 @@ npm run stats:balance
 | coconut_bowl__content_water_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | coconut_bowl__content_water_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 | coconut_bowl__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
+| coconut_bowl__content_hot_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
 | coconut_bowl__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
 | coconut_bowl__content_tea_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 | coconut_bowl__content_tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
