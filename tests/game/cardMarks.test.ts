@@ -17,8 +17,28 @@ describe('カードの印と覆い', () => {
 
   const WORLD = `
 object_defs:
+  # 炉の中で熱を溜め、溜め切ると焼け石になる（FireSystem.md 9.1節）。12 ÷ 3 = 4tick。
   stone:
     tags: [item]
+    props:
+      heat_soak:
+        value: 0
+        range: {min: 0, max: 12}
+        on_max:
+          destroy: self
+          spawn: {object: hot_stone}
+
+  # 溜め切った石。残っている熱は桟のバーで見せる。
+  hot_stone:
+    tags: [item]
+    props:
+      heat_soak:
+        value: 12
+        range: {min: 0, max: 12}
+        gauge: {min: bad, max: good}
+        on_min:
+          destroy: self
+          spawn: {object: stone}
 
   # 動物はitemも兼ねる（HuntingSystem.md 1.1節）。負った傷を抱えられる。
   monkey:
@@ -51,18 +71,23 @@ object_defs:
   bandage:
     tags: [item, treatment]
 
-  # 火にかけた物のcooking_progressを進めるのは、heatの段が宣言した寄与（FireSystem.md 7節）。
+  # 火にかけた物の値を進めるのは、heatの段が宣言した寄与（FireSystem.md 7節）。進みを受ける名前は
+  # 1つではない——料理はcooking_progress、石はheat_soakで受け、持たない側では黙って捨てられる。
   hearth:
     tags: [fixture]
     props:
+      # 火力そのものも上限へ育つが、着いても何も起きない（on_maxを書いていない）。
       heat:
         value: 0
+        range: {min: 0, max: 60}
         stages:
           - {name: out}
           - name: flame
             min: 20
             passives:
-              - add: {child: {cooking_progress: 3}}
+              - add:
+                  self: {heat: 2}
+                  child: {cooking_progress: 3, heat_soak: 3}
     slots:
       fire: {cell: {accept: {tag: item}}}
 
@@ -70,13 +95,43 @@ object_defs:
   raw_meat:
     tags: [item]
     props:
-      cooking_progress: {value: 0, range: {min: 0, max: 24}}
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_meat}
+
+  roasted_meat:
+    tags: [item]
 
   # 6 ÷ 3 = 2tick。生肉より先に変わる。
   small_fish:
     tags: [item]
     props:
-      cooking_progress: {value: 0, range: {min: 0, max: 6}}
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 6}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_meat}
+
+  # 覆いに回る値を2つ持つ物。12 ÷ 3 = 4tickの蓄熱が、8tickの焼き上がりより先に変わる。
+  stone_wrapped_meat:
+    tags: [item]
+    props:
+      cooking_progress:
+        value: 0
+        range: {min: 0, max: 24}
+        on_max:
+          destroy: self
+          spawn: {object: roasted_meat}
+      heat_soak:
+        value: 0
+        range: {min: 0, max: 12}
+        on_max:
+          destroy: self
+          spawn: {object: hot_stone}
 `;
 
   const setUp = (): MiniGame => miniGame(WORLD);
@@ -243,6 +298,46 @@ object_defs:
     hearth.tryGetProperty(mini.codex.propertyNames.getId('heat'))?.setNumber(0);
 
     expect(cardOf(mini, meat).cooking).toBeUndefined();
+  });
+
+  it('炉に入れた石も、焼け石になるまでの残り時間を出す', () => {
+    // 覆いに回る値は名前で決めない（CardView.md 15節）。石が受けるのはheat_soakだが、宣言の形は
+    // 肉のcooking_progressと同じなので、同じ覆いが出る。
+    const mini = setUp();
+    const { hearth } = placeCookingHearth(mini);
+    const stone = mini.createObject('stone', mini.slot('fire', hearth));
+
+    // 12 ÷ 3 = 4tickでmaxに乗り、そこでon_maxが焼け石を生む → 4tick × 15分。
+    expect(cardOf(mini, stone).cooking).toEqual({ ratio: 0, minutes: 60 });
+  });
+
+  it('桟のバーで見せている値は、進んでいても覆いにならない', () => {
+    // 焼け石の残り熱はバーが言うので、炉へ戻して溜め直しても覆いは重ねない（CardView.md 15節）。
+    const mini = setUp();
+    const { hearth } = placeCookingHearth(mini);
+    const hotStone = mini.createObject('hot_stone', mini.slot('fire', hearth));
+    hotStone.tryGetProperty(mini.codex.propertyNames.getId('heat_soak'))?.setNumber(6);
+
+    expect(cardOf(mini, hotStone).cooking, '覆いは出ない').toBeUndefined();
+    expect(cardOf(mini, hotStone).gauges, 'バーは出ている').toHaveLength(1);
+  });
+
+  it('上限に着いても何も起きない値は、進んでいても覆いにならない', () => {
+    // 炉の火力は上限へ育つが、on_maxを書いていないので着いても何も起きない（CardView.md 15節）。
+    const mini = setUp();
+    const hearth = mini.createObject('hearth', mini.slot('fixtures', mini.land));
+    hearth.tryGetProperty(mini.codex.propertyNames.getId('heat'))?.setNumber(30);
+
+    expect(cardOf(mini, hearth).cooking).toBeUndefined();
+  });
+
+  it('覆いに回る値を2つ持つ物は、先に変わるほうの残り時間を出す', () => {
+    const mini = setUp();
+    const { hearth } = placeCookingHearth(mini);
+    const wrapped = mini.createObject('stone_wrapped_meat', mini.slot('fire', hearth));
+
+    // 蓄熱は4tickで60分、焼き上がりは8tickで120分。先に変わるのは蓄熱のほう。
+    expect(cardOf(mini, wrapped).cooking?.minutes).toBe(60);
   });
 
   it('炉のカードは、中で一番早く変わるものの残り時間を上げる', () => {

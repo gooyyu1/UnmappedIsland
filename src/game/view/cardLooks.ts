@@ -1,5 +1,7 @@
 import type { AlertLevel } from '../../domain/AlertLevel';
 import type { ObjectDef } from '../../domain/ObjectDef';
+import type { PropertyDef } from '../../domain/PropertyDef';
+import type { PropertyValue } from '../../domain/PropertyValue';
 import type { WorldCodex } from '../../domain/WorldCodex';
 import type { WorldObject } from '../../domain/WorldObject';
 import type { World } from '../../domain/wrappers/World';
@@ -65,14 +67,33 @@ const CONSCIOUSNESS_PROPERTY = 'consciousness';
 const WARINESS_PROPERTY = 'wariness';
 
 /**
- * 加熱の進みを持つプロパティの名前（animals.yaml・FireSystem.md 7節）。進んでいる間だけ、カードに
- * 覆いと残り時間が出る（CardView.md 15節）。
+ * その値の進みを、絵を覆う残り時間として出すか（CardView.md 15節）。**プロパティの名前は見ない**
+ * ——肉の`cooking_progress`も石の`heat_soak`も、宣言の形はどちらも「進み切ると別の物になる値」で、
+ * UI側から見て違うところは無い。
  *
- * **`gauge`宣言に乗せない唯一の理由は、常時出したくないこと。** 火にかかっているのは料理の間だけで、
- * 桟のバーは腐敗のように常に意味を持つ値のためのもの。名前を直読みするのは、意識の覆い
- * （CONSCIOUSNESS_PROPERTY）と同じく「出す/出さないの規則が宣言の外にある」場合に限る。
+ * 覆いに回すのは次の2つを満たす値。**今その値が進んでいるか**は宣言ではなく状態なので、ここでは
+ * 見ない（PropertyValue.ticksUntilMax）。
+ *
+ * - **`gauge`を宣言していない。** 桟のバー（同8節）で常時見せると宣言した値は、そちらが言う
+ *   ——焼け石に残っている熱も、筏の航海の進みもバーを持つ。同じ値を2箇所で言わない。
+ * - **進み切った先を著者が書いている**（`on_max`、GameElementDefinition.md 6.3節）。書いていない値は
+ *   上限で丸められるだけで、着いても何も起きない——炉の火力（fire.yamlの`heat`）がそれで、
+ *   上限へ育つ途中に「あと何分」を出しても指す出来事が無い。
  */
-const COOKING_PROPERTY = 'cooking_progress';
+const showsCookingOverlay = (propertyDef: PropertyDef): boolean =>
+  propertyDef.gauge === undefined && propertyDef.hasDeclaredOnMax;
+
+/**
+ * 候補のうち、先に変わるもの（CardView.md 15節）。**変わってしまう前に気付けることが要る**ので、
+ * 2つ以上進んでいるときに出すのは早いほう。1つも進んでいなければundefined。
+ */
+const soonestOf = (candidates: Iterable<CardCooking | undefined>): CardCooking | undefined => {
+  let soonest: CardCooking | undefined;
+  for (const candidate of candidates)
+    if (candidate !== undefined && (soonest === undefined || candidate.minutes < soonest.minutes))
+      soonest = candidate;
+  return soonest;
+};
 
 /**
  * 治療具を当てておくスロットの名前と、当たっているカードへ出す印
@@ -108,7 +129,7 @@ const UNCONSCIOUS_STAGE = 'unconscious';
  * 札の見た目（CardView.md）。**ワールドの今の状態だけから決まる**——誰が操作するのかも、今どこに
  * 居るのかも要らないので、Codexと対応表があれば作れる。
  *
- * 何を出すかはすべてワールド側の宣言から引く。ここが名前を直読みするプロパティ（意識・警戒・加熱）は、
+ * 何を出すかはすべてワールド側の宣言から引く。ここが名前を直読みするプロパティ（意識・警戒）は、
  * 「出す/出さないの規則が宣言の外にある」ものだけ（各定数の注釈参照）。
  */
 export interface CardLooks {
@@ -258,26 +279,37 @@ export function cardLooksOf(
     return { key: BUILTIN_GAUGE_KEYS.material, ratio, atMin: 'bad', atMax: 'good', worsensUpward: false };
   };
 
-  const cookingPropertyId = codex.propertyNames.tryGetId(COOKING_PROPERTY);
   /**
-   * その物自身の加熱の進み（CardView.md 15節）。`cooking_progress`を持たない物と、今は進んでいない物
-   * ——火から出した肉、火の消えた炉の中身——ではundefined。
+   * その値が今どれだけ進んでいて、あと何分で変わるか。今は進んでいない値ではundefined。
+   *
+   * **変わるのはtickが回る瞬間だけ**なので、残り時間はその瞬間までの分数そのもの（World参照）。
+   * tick内で時間が進めば、値が進んでいなくても残り時間は減る——同じ瞬間に変わるのだから、
+   * 先に入れた物と後から入れた物の残り時間が揃うのが正しい。
+   */
+  const cookingFrom = (property: PropertyValue): CardCooking | undefined => {
+    const ticks = property.ticksUntilMax();
+    const ratio = property.ratio;
+    return ticks === undefined || ratio === undefined
+      ? undefined
+      : { ratio, minutes: world.minutesUntilTick(ticks) };
+  };
+
+  /**
+   * その物自身の加熱の進み（CardView.md 15節）。覆いに回る値（showsCookingOverlay）を持たない物と、
+   * 今は進んでいない物——火から出した肉、火の消えた炉の中身——ではundefined。
    *
    * **「火にかかっているか」を場所で判定しない。** 加熱を進めているのは炉の`heat`の段が宣言した
    * 寄与（FireSystem.md 7節）なので、その寄与が今効いているかどうかがそのまま答えになる。炉から
    * 出せば寄与が外れ、火が消えても外れる。UI側は炉のスロット名も火力の段も知らない。
    */
-  const ownCookingOf = (object: WorldObject): CardCooking | undefined => {
-    if (cookingPropertyId === undefined) return undefined;
-    const ticks = object.tryGetProperty(cookingPropertyId)?.ticksUntilMax();
-    if (ticks === undefined) return undefined;
-
-    // **焼き上がるのはtickが回る瞬間だけ**なので、残り時間はその瞬間までの分数そのもの（World参照）。
-    // tick内で時間が進めば、加熱が進んでいなくても残り時間は減る——同じ瞬間に焼き上がるのだから、
-    // 先に入れた物と後から入れた物の残り時間が揃うのが正しい。
-    const ratio = object.tryGetProperty(cookingPropertyId)?.ratio;
-    return ratio === undefined ? undefined : { ratio, minutes: world.minutesUntilTick(ticks) };
-  };
+  const ownCookingOf = (object: WorldObject): CardCooking | undefined =>
+    soonestOf(
+      object.def
+        .enumeratePropertyDefs()
+        .filter(showsCookingOverlay)
+        .map((propertyDef) => object.tryGetProperty(propertyDef.globalId))
+        .map((property) => (property === undefined ? undefined : cookingFrom(property))),
+    );
 
   /**
    * カードに出す加熱の進み。**自分が焼かれていればそれ、そうでなければ中で一番早く変わるもの**を出す。
@@ -286,18 +318,8 @@ export function cardLooksOf(
    * （FireSystem.md 7.2節）ものを、開かずに気付けるようにする——出血の印が負っている本人まで
    * 上がるのと同じ理由（CardView.md 9.0節）で、辿るのは直下の子まで。
    */
-  const cookingOf = (object: WorldObject): CardCooking | undefined => {
-    const own = ownCookingOf(object);
-    if (own !== undefined) return own;
-
-    let soonest: CardCooking | undefined;
-    for (const child of object.children()) {
-      const cooking = ownCookingOf(child);
-      if (cooking !== undefined && (soonest === undefined || cooking.minutes < soonest.minutes))
-        soonest = cooking;
-    }
-    return soonest;
-  };
+  const cookingOf = (object: WorldObject): CardCooking | undefined =>
+    ownCookingOf(object) ?? soonestOf([...object.children()].map(ownCookingOf));
 
   /**
    * カードが出すバーを、桟へ積む順に並べる（CardView.md 8節）。**プロパティが自分で宣言したゲージも、
