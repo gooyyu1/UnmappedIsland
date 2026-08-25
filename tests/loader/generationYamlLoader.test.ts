@@ -41,6 +41,11 @@ generation_scopes:
     coast_band: 15
     hull_coast: true
     interior_bias: 0.6
+    diameter_meters: 6700
+    walk_meters_per_hour: 4000
+    climb_meters_per_hour: 600
+    elevation_axis: elevation
+    elevation_top_meters: 400
     guarantees:
       - {location_type: peak, count: 1, axis: elevation, pick: max}
 `;
@@ -265,6 +270,11 @@ location_types:
 generation_scopes:
   island:
     site_count: {min: 10, max: 20}
+    diameter_meters: 6700
+    walk_meters_per_hour: 4000
+    climb_meters_per_hour: 600
+    elevation_axis: elevation
+    elevation_top_meters: 400
     guarantees:
       - {location_type: no_such_type, axis: elevation, pick: max}
 `),

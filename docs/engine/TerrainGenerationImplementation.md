@@ -126,14 +126,17 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 始め、`Site` を1点ずつ挿入するたびに外接円判定（モジュール内関数 `inCircumcircle`）で無効化された三角形を
 削除・再分割します。最後にスーパートライアングルの頂点を含む三角形を除いて、無向辺の集合を返します。
 
-### 3.5 `build(sites, delaunayEdges, scope): IslandEdge[]`（`PathNetworkBuilder.ts`）
+### 3.5 `buildPathNetwork(sites, delaunayEdges, scope, axes): IslandEdge[]`（`PathNetworkBuilder.ts`）
 
+- サイト間の距離を `scope.metersPerDistanceUnit` でメートルへ直します。**抽象座標を現実の長さへ
+  変換するのはここ1箇所**で、以降の距離はすべてメートルです。
 - Kruskal法で最小全域木（MST）を求めます（`unionFind` 配列 + ローカル関数 `find`）。
 - MSTに含まれなかった辺（`rest`）を距離順に走査し、モジュール内関数 `shortestPathDistance`（Dijkstra）で
-  求めた「現在のグラフでの2点間最短距離」が、直結距離 × `scope.extraEdgeDetourFactor / 100` を超えていれば
+  求めた「現在のグラフでの2点間最短距離」が、直結距離 × `scope.extraEdgeDetourThreshold` を超えていれば
   その辺を復活させます。
-- 採用した各辺について、モジュール内関数 `travelMinutes(sites, a, b, distance, scope)` で移動時間（分、
-  15分刻み・下限 `MIN_TRAVEL_MINUTES`）を計算し、`IslandEdge` を作ります。
+- 採用した各辺について、モジュール内関数 `travelMinutes` で移動時間（分、`TRAVEL_MINUTES_STEP` 刻み・
+  下限も同じ1刻み）を計算し、`IslandEdge` を作ります。標高軸の値域は `axes` から引きます
+  （どの軸を標高として読むかは `scope.elevationAxis`）。
 
 ### 3.6 `assignNames(sites, rng)`（`NameAssigner.ts`）
 
