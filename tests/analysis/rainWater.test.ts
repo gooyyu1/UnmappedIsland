@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { RainWaterRow } from '../../src/analysis/seasonalRain';
+import type { RainWaterRow, SeasonName } from '../../src/analysis/seasonalRain';
 import { SEASON_RAIN, rainWaterRows } from '../../src/analysis/seasonalRain';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
@@ -75,7 +75,7 @@ object_defs:
 
   const codex = new WorldCodexYamlLoader().load('rainWater.yaml', YAML).buildAndReset();
   const rows = rainWaterRows(codex);
-  const rowOf = (containerName: string, seasonName: string): RainWaterRow => {
+  const rowOf = (containerName: string, seasonName: SeasonName): RainWaterRow => {
     const row = rows.find(
       (candidate) => candidate.containerName === containerName && candidate.seasonName === seasonName,
     );
@@ -101,7 +101,7 @@ object_defs:
 
   it('雨季以外は蒸発が降雨を上回る', () => {
     for (const containerName of ['jar', 'coconut_bowl'])
-      for (const seasonName of ['calm', 'dry'])
+      for (const seasonName of ['calm', 'dry'] as const)
         expect(rowOf(containerName, seasonName).netPerDay, `${containerName} / ${seasonName}`).toBeLessThan(
           0,
         );
@@ -115,7 +115,7 @@ object_defs:
 
   it('蒸発は容量ではなく口径で決まる', () => {
     // 甕はヤシの器の16倍の容量だが、蒸発は口径ごとの mL/tick なので同じ倍率にはならない。
-    for (const seasonName of ['calm', 'wet', 'dry'])
+    for (const seasonName of ['calm', 'wet', 'dry'] as const)
       expect(
         rowOf('jar', seasonName).evaporationPerDay / rowOf('coconut_bowl', seasonName).evaporationPerDay,
         seasonName,
@@ -139,7 +139,7 @@ object_defs:
     it('雨の降っている時間', () => {
       for (const season of SEASON_RAIN) {
         const section = sectionOf(report, season.name);
-        for (const [weather, hours] of season.hoursByWeather)
+        for (const [weather, hours] of Object.entries(season.hoursByWeather))
           expect(meanOf(subsectionOf(section, weather), '全体'), `${season.name} / ${weather}`).toBeCloseTo(
             hours,
             2,

@@ -80,8 +80,7 @@ export function rangeCyclesOf(
     ];
 
     for (const driver of drivers) {
-      const slowest = own.slowest + (driver?.slowest ?? 0);
-      const fastest = own.fastest + (driver?.fastest ?? 0);
+      const { slowest, fastest } = amountsWithDriver(own, driver);
       const ticks = ticksToRangeEnd(propertyDef, value, slowest);
       const shortestTicks = ticksToRangeEnd(propertyDef, value, fastest);
       if (ticks === undefined || shortestTicks === undefined) continue;
@@ -178,6 +177,15 @@ export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): 
   return [...byProperty.values()];
 }
 
+/** そのプロパティが自分のtick毎の持続効果で動く量の幅（tickAmountsOf）。 */
+interface TickAmounts {
+  /** 常時効く分だけの合計。条件つきの増減（8.2節）を含まない。 */
+  readonly unconditional: number;
+
+  readonly slowest: number;
+  readonly fastest: number;
+}
+
 /**
  * そのプロパティが、自分のtick毎の持続効果でどれだけ動くか（段で切り替わるものは除く）。
  *
@@ -185,7 +193,7 @@ export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): 
  * ので、最も遅い場合（条件つきのうち最小の1つだけが効く）と最も速い場合（全部が重なる）の両方を返す。
  * 罠の耐久がこれで、地面にある間の-1と獲物を抱えている間の-10は足しっぱなしにすると寿命が1/11になる。
  */
-function tickAmountsOf(def: ObjectDef, propertyGlobalId: number): { slowest: number; fastest: number } {
+function tickAmountsOf(def: ObjectDef, propertyGlobalId: number): TickAmounts {
   let unconditional = 0;
   const conditional: number[] = [];
   for (const delta of tickDeltasOf(def)) {
@@ -196,7 +204,8 @@ function tickAmountsOf(def: ObjectDef, propertyGlobalId: number): { slowest: num
   }
 
   const fastest = unconditional + conditional.reduce((sum, amount) => sum + amount, 0);
-  if (unconditional !== 0 || conditional.length === 0) return { slowest: unconditional, fastest };
+  if (unconditional !== 0 || conditional.length === 0)
+    return { unconditional, slowest: unconditional, fastest };
 
   // 常時効くものが無いなら、同じ向きの条件つきのうち最も小さい1つだけが効く場合が最も遅い。
   const sameDirection = conditional.filter((amount) => amount * fastest > 0);
@@ -204,7 +213,22 @@ function tickAmountsOf(def: ObjectDef, propertyGlobalId: number): { slowest: num
     (best, amount) => (Math.abs(amount) < Math.abs(best) ? amount : best),
     sameDirection[0] ?? 0,
   );
-  return { slowest, fastest };
+  return { unconditional, slowest, fastest };
+}
+
+/**
+ * 押し手（ExternalTickDelta）まで含めた、tick毎の動きの幅。押し手が居なければ自分の分がそのまま。
+ *
+ * **押されている間、自分の条件つきの増減（8.2節）は数えない。** その条件が成立する場面と押されて
+ * いる場面が同時に来るかは定義からは決まらず、石が冷めるのは炉の外に居る間の宣言（祖先の火力を
+ * `not` で見る）なので、足し合わせると押し手の向き——熱を溜める——を打ち消して周期そのものが消える。
+ */
+function amountsWithDriver(
+  own: TickAmounts,
+  driver: ExternalTickDelta | undefined,
+): { readonly slowest: number; readonly fastest: number } {
+  if (driver === undefined) return own;
+  return { slowest: own.unconditional + driver.slowest, fastest: own.unconditional + driver.fastest };
 }
 
 /**

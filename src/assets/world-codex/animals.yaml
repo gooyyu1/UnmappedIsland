@@ -24,6 +24,13 @@ traits:
     visible_slots: [injuries, spoils]
     # 気を失っている間は、絵が倒れた姿へ変わる（consciousnessのunconscious段、CardView.md 5.1節）。
     art_by_stage: consciousness
+    # 警戒している間は持ち主を持てない（HuntingSystem.md 4節）。手持ち・かご・台車・罠の枠は
+    # 何も知らず、抵抗する側が拒む。読むのは実効値（7.13節）なので、罠に掛かっている間も気を
+    # 失っている間も打ち消されて成立しない——**掴めるのは、落ち着いた個体か、動けなくした個体だけ**。
+    #
+    # **しきい値は動物によらず同じ。** 1手の配分の合計を100に揃えるのと同じ理由で、同じ警戒の値が
+    # 動物によって別の意味を持たないようにする。
+    resists: [{prop: wariness, gte: 1}]
     slots:
       # 負っている怪我。プレイヤーは出し入れできず、付けるのは攻撃・外すのは怪我自身
       # （characters/player_character.yamlのinjuriesと同じ扱い）。

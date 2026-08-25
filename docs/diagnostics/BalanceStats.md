@@ -199,35 +199,35 @@ npm run stats:balance
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | sandy_beach.explore → coconut_crab.cooking_progress.on_max → roasted_coconut_crab.eat ‡ | 0.12 | 0.09 | 0.03 | 181 | 12.6% | — | satiety +460.00、protein +28.00、lipid +9.00、vitamin +1.00 | campfire（55.9分） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.26 | 0.00 | 0.26 | 393 | 27.3% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
-| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 0.38 | 0.04 | 0.34 | 585 | 40.7% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分・他の土地で） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.26 | 0.00 | 0.26 | 393 | 27.3% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（138.4分）、palm_tree（122.3分） |
+| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 0.38 | 0.04 | 0.34 | 585 | 40.7% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（138.4分）、stone（78.4分） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（138.4分）、palm_tree（122.3分） |
 
 #### vitamin（1日 48）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 368 | 25.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
-| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 10.89 | 1.25 | 9.64 | 523 | 36.3% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分・他の土地で） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（138.4分）、palm_tree（122.3分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 368 | 25.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（138.4分）、palm_tree（122.3分） |
+| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 10.89 | 1.25 | 9.64 | 523 | 36.3% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（138.4分）、stone（78.4分） |
 | sandy_beach.explore → coconut_crab.cooking_progress.on_max → roasted_coconut_crab.eat ‡ | 54.23 | 39.23 | 15.00 | 2603 | 180.8% | — | satiety +460.00、protein +28.00、lipid +9.00、vitamin +1.00 | campfire（55.9分） |
 
 #### hydration（1日 96・尽きると死ぬ）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.37 | 0.00 | 7.37 | 708 | 49.1% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
-| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 12.71 | 1.46 | 11.25 | 1220 | 84.7% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分・他の土地で） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（138.4分）、palm_tree（122.3分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.37 | 0.00 | 7.37 | 708 | 49.1% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（138.4分）、palm_tree（122.3分） |
+| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 12.71 | 1.46 | 11.25 | 1220 | 84.7% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（138.4分）、stone（78.4分） |
 
 #### body_fat（1日 96・尽きると死ぬ／carbohydrate・protein・lipidで埋まる）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | sandy_beach.explore → coconut_crab.cooking_progress.on_max → roasted_coconut_crab.eat ‡ | 1.47 | 1.06 | 0.41 | 141 | 9.8% | — | satiety +460.00、protein +28.00、lipid +9.00、vitamin +1.00 | campfire（55.9分） |
-| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 2.31 | 0.26 | 2.05 | 222 | 15.4% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分・他の土地で） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 736 | 51.1% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 15.83 | 0.00 | 15.83 | 1520 | 105.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.2分）、palm_tree（122.3分） |
+| sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 2.31 | 0.26 | 2.05 | 222 | 15.4% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（138.4分）、stone（78.4分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 736 | 51.1% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（138.4分）、palm_tree（122.3分） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 15.83 | 0.00 | 15.83 | 1520 | 105.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（138.4分）、palm_tree（122.3分） |
 
 #### wakefulness（1日 96）
 
@@ -340,10 +340,10 @@ npm run stats:balance
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | forest.explore → taro.cooking_progress.on_max → roasted_taro.eat ‡ | 0.07 | 0.05 | 0.03 | 112 | 7.8% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
-| forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 0.11 | 0.04 | 0.08 | 176 | 12.2% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
-| forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat ‡ | 0.13 | 0.04 | 0.09 | 195 | 13.6% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
+| forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 0.11 | 0.04 | 0.08 | 176 | 12.2% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（138.4分）、weapon → sharp_stone（138.4分） |
+| forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat ‡ | 0.13 | 0.04 | 0.09 | 195 | 13.6% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（138.4分）、weapon → sharp_stone（138.4分） |
 | snare.catch_remaining.on_min → rat.blood.on_min → rat_carcass.cooking_progress.on_max → roasted_rat.cooking_progress.on_max → charred_lump.eat | 0.14 | 0.02 | 0.11 | 208 | 14.4% | 1.3 | satiety +200.00 | campfire（55.9分）、laceration（27.6分）、snare（103.3分） |
-| forest.explore → banana_plant.fell → banana.eat ‡ | 0.34 | 0.27 | 0.07 | 518 | 36.0% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
+| forest.explore → banana_plant.fell → banana.eat ‡ | 0.34 | 0.27 | 0.07 | 518 | 36.0% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（138.4分） |
 | snare.catch_remaining.on_min → rat.blood.on_min → rat_carcass.cooking_progress.on_max → roasted_rat.eat | 0.45 | 0.08 | 0.37 | 692 | 48.1% | 4.3 | satiety +60.00、protein +3.00、lipid +1.00 | campfire（55.9分）、laceration（27.6分）、snare（103.3分） |
 
 #### vitamin（1日 48）
@@ -351,18 +351,18 @@ npm run stats:balance
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | forest.explore → taro.cooking_progress.on_max → roasted_taro.eat ‡ | 1.68 | 1.05 | 0.63 | 81 | 5.6% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
-| forest.explore → banana_plant.fell → banana.eat ‡ | 3.38 | 2.66 | 0.71 | 162 | 11.3% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
-| forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 28.63 | 9.31 | 19.31 | 1374 | 95.4% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
+| forest.explore → banana_plant.fell → banana.eat ‡ | 3.38 | 2.66 | 0.71 | 162 | 11.3% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（138.4分） |
+| forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 28.63 | 9.31 | 19.31 | 1374 | 95.4% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（138.4分）、weapon → sharp_stone（138.4分） |
 
 #### body_fat（1日 96・尽きると死ぬ／carbohydrate・protein・lipidで埋まる）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | forest.explore → taro.cooking_progress.on_max → roasted_taro.eat ‡ | 0.81 | 0.51 | 0.30 | 77 | 5.4% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
-| forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat ‡ | 1.85 | 0.60 | 1.25 | 177 | 12.3% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
-| forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 2.39 | 0.78 | 1.61 | 229 | 15.9% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
+| forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat ‡ | 1.85 | 0.60 | 1.25 | 177 | 12.3% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（138.4分）、weapon → sharp_stone（138.4分） |
+| forest.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 2.39 | 0.78 | 1.61 | 229 | 15.9% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（138.4分）、weapon → sharp_stone（138.4分） |
 | snare.catch_remaining.on_min → rat.blood.on_min → rat_carcass.cooking_progress.on_max → roasted_rat.eat | 6.76 | 1.14 | 5.62 | 649 | 45.1% | 4.0 | satiety +60.00、protein +3.00、lipid +1.00 | campfire（55.9分）、laceration（27.6分）、snare（103.3分） |
-| forest.explore → banana_plant.fell → banana.eat ‡ | 11.81 | 9.31 | 2.50 | 1134 | 78.8% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
+| forest.explore → banana_plant.fell → banana.eat ‡ | 11.81 | 9.31 | 2.50 | 1134 | 78.8% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（138.4分） |
 
 #### wakefulness（1日 96）
 
@@ -386,15 +386,15 @@ npm run stats:balance
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | jungle.explore → taro.cooking_progress.on_max → roasted_taro.eat ‡ | 0.07 | 0.05 | 0.03 | 112 | 7.8% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
-| jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 0.11 | 0.04 | 0.08 | 176 | 12.2% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
-| jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat ‡ | 0.13 | 0.04 | 0.09 | 195 | 13.6% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
+| jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 0.11 | 0.04 | 0.08 | 176 | 12.2% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（138.4分）、weapon → sharp_stone（138.4分） |
+| jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat ‡ | 0.13 | 0.04 | 0.09 | 195 | 13.6% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（138.4分）、weapon → sharp_stone（138.4分） |
 | snare.catch_remaining.on_min → rat.blood.on_min → rat_carcass.cooking_progress.on_max → roasted_rat.cooking_progress.on_max → charred_lump.eat | 0.15 | 0.03 | 0.12 | 228 | 15.9% | 1.3 | satiety +200.00 | campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.26 | 0.00 | 0.26 | 393 | 27.3% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（157.0分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 0.26 | 0.00 | 0.26 | 393 | 27.3% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（138.4分）、palm_tree（157.0分） |
 | jungle.explore → water_spinach.eat | 0.30 | 0.25 | 0.05 | 466 | 32.3% | — | satiety +300.00、carbohydrate +1.00、vitamin +83.00 | — |
-| jungle.explore → banana_plant.fell → banana.eat ‡ | 0.34 | 0.27 | 0.07 | 518 | 36.0% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
-| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 0.38 | 0.04 | 0.34 | 585 | 40.7% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分・他の土地で） |
+| jungle.explore → banana_plant.fell → banana.eat ‡ | 0.34 | 0.27 | 0.07 | 518 | 36.0% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（138.4分） |
+| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 0.38 | 0.04 | 0.34 | 585 | 40.7% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（138.4分）、stone（78.4分） |
 | snare.catch_remaining.on_min → rat.blood.on_min → rat_carcass.cooking_progress.on_max → roasted_rat.eat | 0.50 | 0.09 | 0.40 | 761 | 52.8% | 4.3 | satiety +60.00、protein +3.00、lipid +1.00 | campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.2分）、palm_tree（157.0分） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 0.53 | 0.00 | 0.53 | 811 | 56.3% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（138.4分）、palm_tree（157.0分） |
 
 #### vitamin（1日 48）
 
@@ -402,32 +402,32 @@ npm run stats:balance
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | jungle.explore → water_spinach.eat | 1.10 | 0.92 | 0.18 | 53 | 3.7% | — | satiety +300.00、carbohydrate +1.00、vitamin +83.00 | — |
 | jungle.explore → taro.cooking_progress.on_max → roasted_taro.eat ‡ | 1.68 | 1.05 | 0.63 | 81 | 5.6% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
-| jungle.explore → banana_plant.fell → banana.eat ‡ | 3.38 | 2.66 | 0.71 | 162 | 11.3% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.2分）、palm_tree（157.0分） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 368 | 25.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（157.0分） |
-| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 10.89 | 1.25 | 9.64 | 523 | 36.3% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分・他の土地で） |
-| jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 28.63 | 9.31 | 19.31 | 1374 | 95.4% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
+| jungle.explore → banana_plant.fell → banana.eat ‡ | 3.38 | 2.66 | 0.71 | 162 | 11.3% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（138.4分） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 6.33 | 0.00 | 6.33 | 304 | 21.1% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（138.4分）、palm_tree（157.0分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 368 | 25.6% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（138.4分）、palm_tree（157.0分） |
+| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 10.89 | 1.25 | 9.64 | 523 | 36.3% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（138.4分）、stone（78.4分） |
+| jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 28.63 | 9.31 | 19.31 | 1374 | 95.4% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（138.4分）、weapon → sharp_stone（138.4分） |
 
 #### hydration（1日 96・尽きると死ぬ）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.2分）、palm_tree（157.0分） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.37 | 0.00 | 7.37 | 708 | 49.1% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（157.0分） |
-| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 12.71 | 1.46 | 11.25 | 1220 | 84.7% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分・他の土地で） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 1.58 | 0.00 | 1.58 | 152 | 10.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（138.4分）、palm_tree（157.0分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.37 | 0.00 | 7.37 | 708 | 49.1% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（138.4分）、palm_tree（157.0分） |
+| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 12.71 | 1.46 | 11.25 | 1220 | 84.7% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（138.4分）、stone（78.4分） |
 
 #### body_fat（1日 96・尽きると死ぬ／carbohydrate・protein・lipidで埋まる）
 
 | 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | jungle.explore → taro.cooking_progress.on_max → roasted_taro.eat ‡ | 0.81 | 0.51 | 0.30 | 77 | 5.4% | — | satiety +550.00、carbohydrate +48.00、protein +2.00、vitamin +24.00 | campfire（55.9分） |
-| jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat ‡ | 1.85 | 0.60 | 1.25 | 177 | 12.3% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
-| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 2.31 | 0.26 | 2.05 | 222 | 15.4% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（72.2分）、stone（12.2分・他の土地で） |
-| jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 2.39 | 0.78 | 1.61 | 229 | 15.9% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（72.2分）、weapon → sharp_stone（72.2分） |
+| jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.cooking_progress.on_max → roasted_meat.eat ‡ | 1.85 | 0.60 | 1.25 | 177 | 12.3% | — | satiety +450.00、protein +24.00、lipid +7.00 | campfire（55.9分）、cutting_tool → sharp_stone（138.4分）、weapon → sharp_stone（138.4分） |
+| jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_meat.eat ‡ | 2.31 | 0.26 | 2.05 | 222 | 15.4% | — | satiety +200.00、carbohydrate +4.00、protein +3.00、lipid +26.00、vitamin +7.00、hydration +6.00 | cutting_tool → sharp_stone（138.4分）、stone（78.4分） |
+| jungle.explore → wild_boar.strike → wild_boar_carcass.butcher → raw_meat.eat ‡ | 2.39 | 0.78 | 1.61 | 229 | 15.9% | — | satiety +500.00、protein +20.00、lipid +4.00、vitamin +2.00 | cutting_tool → sharp_stone（138.4分）、weapon → sharp_stone（138.4分） |
 | snare.catch_remaining.on_min → rat.blood.on_min → rat_carcass.cooking_progress.on_max → roasted_rat.eat | 7.43 | 1.40 | 6.03 | 713 | 49.5% | 4.0 | satiety +60.00、protein +3.00、lipid +1.00 | campfire（55.9分）、laceration（27.7分）、snare（103.3分） |
-| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 736 | 51.1% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（72.2分）、palm_tree（157.0分） |
-| jungle.explore → banana_plant.fell → banana.eat ‡ | 11.81 | 9.31 | 2.50 | 1134 | 78.8% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（72.2分） |
-| palm_tree.pick_green_coconut → green_coconut.bore | 15.83 | 0.00 | 15.83 | 1520 | 105.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（72.2分）、palm_tree（157.0分） |
+| palm_tree.pick_green_coconut → green_coconut.bore → drained_green_coconut.split → coconut_jelly.eat | 7.67 | 0.00 | 7.67 | 736 | 51.1% | — | satiety +150.00、carbohydrate +4.00、lipid +1.00、vitamin +5.00、hydration +5.20 | cutting_tool → sharp_stone（138.4分）、palm_tree（157.0分） |
+| jungle.explore → banana_plant.fell → banana.eat ‡ | 11.81 | 9.31 | 2.50 | 1134 | 78.8% | — | satiety +350.00、carbohydrate +10.00、vitamin +35.00 | cutting_tool → sharp_stone（138.4分） |
+| palm_tree.pick_green_coconut → green_coconut.bore | 15.83 | 0.00 | 15.83 | 1520 | 105.6% | — | satiety +60.00、carbohydrate +2.00、vitamin +5.00、hydration +20.00 | cutting_tool → sharp_stone（138.4分）、palm_tree（157.0分） |
 | jungle.explore → water_spinach.eat | 90.97 | 75.97 | 15.00 | 8733 | 606.5% | — | satiety +300.00、carbohydrate +1.00、vitamin +83.00 | — |
 
 #### wakefulness（1日 96）
@@ -508,35 +508,94 @@ npm run stats:balance
 
 | 場所 | 値 | 経路 | 同時に返す値 |
 | --- | --- | --- | --- |
-| 島全体 | hydration | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| 島全体 | hydration | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_water_liquid.pour_into_empty → jar__content_water_liquid.drink | hydration +10.00 |
+| 島全体 | hydration | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_water_liquid.pour_into_empty → rocky_field.explore → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink | hydration +10.00 |
+| 島全体 | hydration | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | 島全体 | hydration | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| 島全体 | hydration | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → rocky_field.explore → stone.heat_soak.on_max → hot_stone.boil → coconut_bowl__content_hot_water_liquid.drink | hydration +10.00 |
+| 島全体 | hydration | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| 島全体 | wakefulness | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| 島全体 | wakefulness | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | sandy_beach | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| sandy_beach | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → hot_stone.boil → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink | hydration +10.00 |
+| sandy_beach | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | sandy_beach | hydration | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| sandy_beach | hydration | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → hot_stone.boil → stone.heat_soak.on_max → hot_stone.boil → coconut_bowl__content_hot_water_liquid.drink | hydration +10.00 |
+| sandy_beach | hydration | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| sandy_beach | wakefulness | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| sandy_beach | wakefulness | sandy_beach.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | rocky_coast | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| rocky_coast | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → rocky_coast.explore → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink | hydration +10.00 |
+| rocky_coast | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | rocky_coast | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| rocky_coast | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → rocky_coast.explore → stone.heat_soak.on_max → hot_stone.boil → coconut_bowl__content_hot_water_liquid.drink | hydration +10.00 |
+| rocky_coast | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| rocky_coast | wakefulness | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| rocky_coast | wakefulness | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | cliff_coast | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| cliff_coast | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → cliff_coast.explore → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink | hydration +10.00 |
+| cliff_coast | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | cliff_coast | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| cliff_coast | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → cliff_coast.explore → stone.heat_soak.on_max → hot_stone.boil → coconut_bowl__content_hot_water_liquid.drink | hydration +10.00 |
+| cliff_coast | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| cliff_coast | wakefulness | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| cliff_coast | wakefulness | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | grassland | hydration | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| grassland | hydration | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → hot_stone.boil → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink | hydration +10.00 |
+| grassland | hydration | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| grassland | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| grassland | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → hot_stone.boil → stone.heat_soak.on_max → hot_stone.boil → coconut_bowl__content_hot_water_liquid.drink | hydration +10.00 |
+| grassland | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| grassland | wakefulness | grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| grassland | wakefulness | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | forest | hydration | forest.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| forest | hydration | forest.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → hot_stone.boil → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink | hydration +10.00 |
+| forest | hydration | forest.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| forest | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| forest | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → hot_stone.boil → stone.heat_soak.on_max → hot_stone.boil → coconut_bowl__content_hot_water_liquid.drink | hydration +10.00 |
+| forest | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| forest | wakefulness | forest.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| forest | wakefulness | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | jungle | hydration | jungle.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| jungle | hydration | jungle.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → hot_stone.boil → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink | hydration +10.00 |
+| jungle | hydration | jungle.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | jungle | hydration | jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| jungle | hydration | jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → hot_stone.boil → stone.heat_soak.on_max → hot_stone.boil → coconut_bowl__content_hot_water_liquid.drink | hydration +10.00 |
+| jungle | hydration | jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| jungle | wakefulness | jungle.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| jungle | wakefulness | jungle.explore → coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | rocky_field | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| rocky_field | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → rocky_field.explore → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink | hydration +10.00 |
+| rocky_field | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | rocky_field | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| rocky_field | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → rocky_field.explore → stone.heat_soak.on_max → hot_stone.boil → coconut_bowl__content_hot_water_liquid.drink | hydration +10.00 |
+| rocky_field | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| rocky_field | wakefulness | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| rocky_field | wakefulness | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | wasteland | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| wasteland | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → wasteland.explore → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink | hydration +10.00 |
+| wasteland | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | wasteland | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| wasteland | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → wasteland.explore → stone.heat_soak.on_max → hot_stone.boil → coconut_bowl__content_hot_water_liquid.drink | hydration +10.00 |
+| wasteland | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| wasteland | wakefulness | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| wasteland | wakefulness | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | mountainside | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| mountainside | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → mountainside.explore → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink | hydration +10.00 |
+| mountainside | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | mountainside | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
+| mountainside | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → mountainside.explore → stone.heat_soak.on_max → hot_stone.boil → coconut_bowl__content_hot_water_liquid.drink | hydration +10.00 |
+| mountainside | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| mountainside | wakefulness | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| mountainside | wakefulness | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | mountain_peak | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink | hydration +10.00 |
+| mountain_peak | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → mountain_peak.explore → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink | hydration +10.00 |
+| mountain_peak | hydration | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 | mountain_peak | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → coconut_bowl__content_water_liquid.drink | hydration +10.00 |
-
-### 島全体で入手経路が無いもの
-
-島のどこを探しても作れも見つかりもしないもの。定義の穴で、これが下の経路を塞いでいる。
-
-- **jar__content_tea_liquid** — 1経路を塞いでいる
-  - `jar__content_tea_liquid.drink`（hydration +10.00、wakefulness +2.00）
-- **coconut_bowl__content_tea_liquid** — 1経路を塞いでいる
-  - `coconut_bowl__content_tea_liquid.drink`（hydration +10.00、wakefulness +2.00）
+| mountain_peak | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → coconut_bowl.collect_rain → mountain_peak.explore → stone.heat_soak.on_max → hot_stone.boil → coconut_bowl__content_hot_water_liquid.drink | hydration +10.00 |
+| mountain_peak | hydration | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| mountain_peak | wakefulness | unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
+| mountain_peak | wakefulness | coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink | hydration +10.00、wakefulness +2.00 |
 
 ## 2. オブジェクトの総コスト
 
@@ -603,6 +662,7 @@ npm run stats:balance
 | fire_drill | 97.4 | 37.4 | 60.0 | 0.12 | sandy_beach.explore → forest.explore → fire_drill.carved | — |
 | dry_grass | 142.5 | 142.5 | 0.0 | 0.17 | wasteland.explore | — |
 | burning_tinder | 99.9 | 29.4 | 70.5 | 0.12 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.light | fire_drill（97.4分）、cutting_tool → sharp_stone（72.2分） |
+| hot_stone | 12.2 | 12.2 | 0.0 | 0.01 | rocky_field.explore → stone.heat_soak.on_max | campfire（55.9分） |
 | campfire | 55.9 | 40.9 | 15.0 | 0.07 | forest.explore → campfire.stacked | — |
 | water_spinach | 17.7 | 17.7 | 0.0 | 0.02 | grassland.explore | — |
 | coconut_crab | 39.2 | 39.2 | 0.0 | 0.05 | rocky_coast.explore | — |
@@ -843,6 +903,8 @@ npm run stats:balance
 | rope | twisted | recipe | 60 | 60 | rope ×1.00 | — |
 | fire_drill | carved | recipe | 60 | 60 | fire_drill ×1.00 | — |
 | dry_grass | light | interaction | 30 | 30 | burning_tinder ×0.60 | — |
+| hot_stone | boil | interaction | 5 | 5 | jar__content_hot_water_liquid ×1.00、stone ×1.00 | — |
+| hot_stone | boil | interaction | 5 | 5 | coconut_bowl__content_hot_water_liquid ×1.00、stone ×1.00 | — |
 | campfire | add_fuel | interaction | 1 | 1 | — | （self）fuel +999.00 |
 | campfire | add_stone | interaction | 5 | 5 | — | （self）stones +1.00 |
 | campfire | stacked | recipe | 15 | 15 | campfire ×1.00 | — |
@@ -867,6 +929,9 @@ npm run stats:balance
 | jar | collect_rain | interaction | 0 | 0 | jar__content_water_liquid ×1.00 | — |
 | coconut_bowl | collect_rain | interaction | 0 | 0 | coconut_bowl__content_water_liquid ×1.00 | — |
 | stone | knap | interaction | 60 | 60 | sharp_stone ×1.00 | — |
+| stone | heat_soak.on_max | periodic | 0 | 180 | hot_stone ×1.00 | — |
+| stone | heat_soak.on_max | periodic | 0 | 180 | hot_stone ×1.00 | — |
+| stone | heat_soak.on_max | periodic | 0 | 180 | hot_stone ×1.00 | — |
 | sandy_beach | explore | interaction | 15 | 15 | palm_tree ×0.12、woven_basket ×0.05、coconut_crab ×0.27、rat ×0.02、monkey ×0.04、coconut ×0.86、thick_branch ×0.63 | （self）exploration_progress +1.00 |
 | rocky_coast | explore | interaction | 15 | 15 | cave_entrance ×0.13、coconut_crab ×0.38、rat ×0.02、stone ×1.23、thick_branch ×0.27 | （self）exploration_progress +1.00 |
 | cliff_coast | explore | interaction | 15 | 15 | cave_entrance ×0.19、golden_chalice ×0.04、stone ×1.07、rat ×0.02、thick_branch ×0.24 | （self）exploration_progress +1.00 |
@@ -891,20 +956,28 @@ npm run stats:balance
 | rawhide_sail | sewn | recipe | 420 | 420 | rawhide_sail ×1.00 | — |
 | palm_frond | weave | interaction | 90 | 90 | woven_leaf ×1.00 | — |
 | palm_frond | split_and_weave | interaction | 60 | 60 | woven_leaf ×2.00 | — |
-| jar__content_water_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
+| jar__content_water_liquid | pour_into_empty | interaction | 0 | 0 | jar__content_water_liquid ×1.00 | （self）fill -999999.00 |
+| jar__content_water_liquid | pour_into_empty | interaction | 0 | 0 | coconut_bowl__content_water_liquid ×1.00 | （self）fill -999999.00 |
 | jar__content_water_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 | jar__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
-| jar__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
+| jar__content_hot_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
+| jar__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | jar__content_tea_liquid ×1.00 | （self）fill -999999.00 |
+| jar__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | coconut_bowl__content_tea_liquid ×1.00 | （self）fill -999999.00 |
 | jar__content_tea_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 | jar__content_tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
-| jar__content_oil_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
+| jar__content_oil_liquid | pour_into_empty | interaction | 0 | 0 | jar__content_oil_liquid ×1.00 | （self）fill -999999.00 |
+| jar__content_oil_liquid | pour_into_empty | interaction | 0 | 0 | coconut_bowl__content_oil_liquid ×1.00 | （self）fill -999999.00 |
 | jar__content_oil_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
-| coconut_bowl__content_water_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
+| coconut_bowl__content_water_liquid | pour_into_empty | interaction | 0 | 0 | jar__content_water_liquid ×1.00 | （self）fill -999999.00 |
+| coconut_bowl__content_water_liquid | pour_into_empty | interaction | 0 | 0 | coconut_bowl__content_water_liquid ×1.00 | （self）fill -999999.00 |
 | coconut_bowl__content_water_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 | coconut_bowl__content_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
-| coconut_bowl__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
+| coconut_bowl__content_hot_water_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、（self）fill -250.00 |
+| coconut_bowl__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | jar__content_tea_liquid ×1.00 | （self）fill -999999.00 |
+| coconut_bowl__content_tea_liquid | pour_into_empty | interaction | 0 | 0 | coconut_bowl__content_tea_liquid ×1.00 | （self）fill -999999.00 |
 | coconut_bowl__content_tea_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 | coconut_bowl__content_tea_liquid | drink | interaction | 3 | 3 | — | hydration +10.00、wakefulness +2.00、（self）fill -250.00 |
-| coconut_bowl__content_oil_liquid | pour_into_empty | interaction | 0 | 0 | — | （self）fill -999999.00 |
+| coconut_bowl__content_oil_liquid | pour_into_empty | interaction | 0 | 0 | jar__content_oil_liquid ×1.00 | （self）fill -999999.00 |
+| coconut_bowl__content_oil_liquid | pour_into_empty | interaction | 0 | 0 | coconut_bowl__content_oil_liquid ×1.00 | （self）fill -999999.00 |
 | coconut_bowl__content_oil_liquid | pour_into_filled | interaction | 0 | 0 | — | （self）fill +999999.00 |
 

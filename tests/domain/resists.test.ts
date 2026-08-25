@@ -8,7 +8,8 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 /**
  * resists（GameElementDefinition.md 7.13節）——条件が成立している間は持ち主を持てない物に対する
  * 自動テスト。土地以外の親へ移れないこと、成立した瞬間に最も近い土地へこぼれ出ること、見るのが
- * 実効値であること（罠の中では成立しない、TrapSystem.md 5節）の3つを確かめる。
+ * 実効値であること（罠の中では成立しない、TrapSystem.md 5節）、生まれた直後の配置は通ることを
+ * 確かめる。
  */
 describe('resists（持ち主を持てない条件）', () => {
   const yaml = `
@@ -185,6 +186,27 @@ object_defs:
       '掛かっている間は手に取れる',
     ).toBeUndefined();
     expect(fixture.boar.parent, '罠を出れば寄与が消えて成立し、手には持てず地面へ落ちる').toBe(fixture.here);
+  });
+
+  it('生まれた直後の配置は通り、拘束しない入れ物ならその場でこぼれる', () => {
+    // 罠が獲物を自分の中へ生む道（TrapSystem.md 5節）。生まれた個体はまだ罠の子ではないので、
+    // 拘束の寄与がまだ効いていない——ここで弾くと、警戒した獲物はどの罠にも掛からなくなる。
+    const fixture = setUp();
+    const warinessId = fixture.codex.propertyNames.getId('wariness');
+
+    const caught = fixture.create('boar');
+    caught.getProperty(warinessId).setNumber(50);
+
+    expect(caught.moveToSlotOrRejection(fixture.slotOf(fixture.trap, 'catch'))).toBeUndefined();
+    expect(caught.parent, '罠が打ち消すので、掛かったまま居続ける').toBe(fixture.trap);
+
+    // 通すのは関門だけで、付いた後の判定は変わらない。打ち消さない入れ物の中へ生まれれば、その場で
+    // 土地まで落ちる——生まれ落ちた先だからといって持ち主のままにはならない。
+    const loose = fixture.create('boar');
+    loose.getProperty(warinessId).setNumber(50);
+
+    expect(loose.moveToSlotOrRejection(fixture.slotOf(fixture.cart, 'cargo'))).toBeUndefined();
+    expect(loose.parent, '台車は拘束しないので地面へ落ちる').toBe(fixture.here);
   });
 
   it('値の変更を経ずに成立した抵抗も、tickが拾う', () => {

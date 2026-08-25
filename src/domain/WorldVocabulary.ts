@@ -36,6 +36,10 @@ export const VOLUME_PROPERTY = 'volume';
  * あれらは「その値が進んでいたら覆いを出す」という規則の一部で、名前だけを引き剥がすと規則が
  * 2箇所に割れる。種別を言うタグ（item・animal など）はそうではなく、**この世界に何が居るかを言う語**
  * なので、他の規約プロパティと同じくここに並ぶ。
+ *
+ * **実測値の表の鍵も載せない**（analysis/seasonalRain の季節名・雨の降り方・口径のタグ）。あれらは
+ * シミュレーションで測った数値に付いた行名で、名前と数値で1つ。世界を変えたときに古くなるのは
+ * 数値のほうで、それはこの一覧が答えられることではない。
  */
 export class WorldVocabulary {
   readonly engine: EngineVocabulary;

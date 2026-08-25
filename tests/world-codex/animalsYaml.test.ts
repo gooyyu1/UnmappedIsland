@@ -635,6 +635,68 @@ describe('animals.yamlの動物', () => {
     ]);
   });
 
+  describe('抵抗', () => {
+    /** その動物を密林へ置き、プレイヤーの手へ移そうとしたときの拒否理由（持てるならundefined）。 */
+    function tryToPickUp(animal: WorldObject): string | undefined {
+      return animal.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')));
+    }
+
+    it('4種とも抵抗を宣言している', () => {
+      // 宣言はbeast traitの1箇所だが、混ぜ込んだ型が引き継ぐ（GameElementDefinition.md 5節）。
+      // 死体は抵抗しない——仕留めた獲物は運んで帰るもの。
+      for (const name of ['monkey', 'junglefowl', 'rat', 'wild_boar']) {
+        expect(codex.objects.get(codex.objectNames.getId(name)).resists, name).toBeDefined();
+        expect(codex.objects.get(codex.objectNames.getId(`${name}_carcass`)).resists, name).toBeUndefined();
+      }
+    });
+
+    it('警戒している動物は、手にも入れ物にも入らず地面に残る', () => {
+      const basket = spawnInto('woven_basket', jungle, 'items');
+
+      expect(tryToPickUp(monkey), '手には持てない').toContain('収まりません');
+      expect(
+        monkey.moveToSlotOrRejection(basket.getSlot(codex.slotNames.getId('contents'))),
+        'かごにも入らない',
+      ).toContain('収まりません');
+      expect(monkey.parent, '土地には普通に居られる').toBe(jungle);
+    });
+
+    it('掴めるのは完全に落ち着いてからで、安全域に入っただけでは掴めない', () => {
+      // しきい値は1（HuntingSystem.md 4節）なので、輪郭の明滅が止まる20を切ってもまだ抵抗する。
+      // 40からの-1/tickなので、掴めるようになるのは10時間後。
+      tick(21);
+      expect(monkey.tryGetProperty(warinessId)?.alert, '明滅は止まっている').toBe('safe');
+      expect(tryToPickUp(monkey), 'それでもまだ掴めない').toContain('収まりません');
+
+      tick(19);
+
+      expect(tryToPickUp(monkey), '警戒が尽きれば持ち上がる').toBeUndefined();
+      expect(monkey.parent).toBe(player);
+    });
+
+    it('気を失っている相手は抵抗しない', () => {
+      // 見るのは実効値（GameElementDefinition.md 7.13節）。警戒の実体値は上がったままだが、
+      // 気絶が打ち消している間は運べる——**動けなくすれば持ち帰れる**。
+      strikeWith('stone_axe');
+
+      expect(monkey.tryGetProperty(warinessId)?.number ?? 0, '警戒そのものは上がっている').toBeGreaterThan(0);
+      expect(tryToPickUp(monkey)).toBeUndefined();
+      expect(monkey.parent).toBe(player);
+    });
+
+    it('担いだ相手が目を覚ませば、暴れて手から落ちる', () => {
+      strikeWith('stone_axe');
+      expect(tryToPickUp(monkey)).toBeUndefined();
+
+      tick(18);
+
+      expect(monkey.tryGetProperty(consciousnessId)?.isInStage('unconscious') ?? false, '目を覚ます').toBe(
+        false,
+      );
+      expect(monkey.parent, '手は持ち主なので、土地へこぼれる').toBe(jungle);
+    });
+  });
+
   it('武器でない物を重ねても殴れない', () => {
     const stone = spawnInto('stone', player, 'hand');
 
