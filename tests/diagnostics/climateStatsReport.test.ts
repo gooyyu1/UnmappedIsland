@@ -1,16 +1,18 @@
-import { writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import type { SeasonWeatherHours } from '../../src/analysis/activityHours';
 import { activityHoursOf } from '../../src/analysis/activityHours';
+import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { Stat } from '../support/Stat';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexPath } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 
 /**
@@ -18,14 +20,40 @@ import { seededRng } from '../../src/domain/Rng';
  * 連続未降雨/降雨時間の統計（平均/最小/5%ile/95%ile/最大/標準偏差）を計測し、
  * `docs/diagnostics/ClimateSystemStats.md`へ書き出す。
  *
- * 通常のテストスイート（`npm test`）には含めない: 20シード×3600日のシミュレーションに数分かかり、
- * かつ合否判定を目的とした回帰テストではなく統計の再計測が目的のため、`RUN_CLIMATE_STATS`環境変数が
- * 立っているときだけ実行されるようにしている。バランス調整で数値を変えた後、明示的に再実行してレポートを
- * 更新したい場合に使う: `npm run stats:climate`
+ * 計測そのものは通常のテストスイート（`npm test`）に含めない: 20シード×3600日のシミュレーションに
+ * 数分かかり、かつ合否判定を目的とした回帰テストではなく統計の再計測が目的のため、`RUN_CLIMATE_STATS`
+ * 環境変数が立っているときだけ実行されるようにしている: `npm run stats:climate`
+ *
+ * **代わりに、生成物が今の入力より古くなっていないかは常に見る**（末尾のdescribe）。再生成する運用は
+ * 1度すり抜けており（issue #775）、そのとき古い表と手書きの定数が互いにだけ一致していた。
  */
 
 const SEED_COUNT = 20;
 const SIM_DAYS = 3600; // 約40周分/シード
+
+const REPORT_PATH = join('docs', 'diagnostics', 'ClimateSystemStats.md');
+
+/**
+ * 指紋が見る入力。**シミュレーションが読むのはworldの定義だけで、それは`core.yaml`にしかない**
+ * （このテストがディレクトリ全体を読むのは、活動時間の表に土地の一覧が要るため）。
+ *
+ * 土地の側の変更まで指紋に含めると、食べ物を1つ足すたびに数分の再生成を要求することになる。
+ * 活動時間の表が土地から読む値は、指紋ではなく**再計算そのもの**で突き合わせる（下のdescribe）。
+ */
+const FINGERPRINT_SOURCES = ['core.yaml'];
+
+const FINGERPRINT_LABEL = '入力の指紋: ';
+
+/**
+ * 指紋が見る入力ファイルの中身のハッシュ。**改行はLFへ均す**——CRLFの作業ツリーで生成した指紋が、
+ * LFの作業ツリーで食い違わないようにする。
+ */
+function inputFingerprint(): string {
+  const hash = createHash('sha256');
+  for (const fileName of FINGERPRINT_SOURCES)
+    hash.update(readFileSync(worldCodexPath(fileName), 'utf8').replace(/\r\n/g, '\n'));
+  return hash.digest('hex').slice(0, 16);
+}
 
 /**
  * 集計中の全統計。季節ごと(全体)/季節+序盤中盤終盤ごと、(天気, 季節)ごと/(天気, 季節, 序盤中盤終盤)ごと、
@@ -220,6 +248,12 @@ function buildReport(
   append('```');
   append('npm run stats:climate');
   append('```');
+  append();
+  append(`${FINGERPRINT_LABEL}\`${inputFingerprint()}\`（\`${FINGERPRINT_SOURCES.join('`・`')}\`）`);
+  append();
+  append('`npm test` がこの指紋を今の定義と突き合わせるので、**再生成しないまま入力を変えると赤くなる**。');
+  append('指紋が見るのは上のファイルだけ——シミュレーションが読むのは`world`の定義で、それはそこにしか');
+  append('無い。土地の明るさを読む「土地×季節ごとの活動時間」の節は、指紋ではなく再計算で突き合わせる。');
   append();
   append('## 計測方法');
   append();
@@ -454,10 +488,65 @@ describe.runIf(process.env.RUN_CLIMATE_STATS === '1')('気候システム統計�
     }
 
     const report = buildReport(codex, seasonKinds, weatherKinds, rainWeatherKinds, stats);
-    const outPath = join('docs', 'diagnostics', 'ClimateSystemStats.md');
-    writeFileSync(outPath, report, 'utf8');
-    console.log(`Report written to: ${outPath}`);
+    writeFileSync(REPORT_PATH, report, 'utf8');
+    console.log(`Report written to: ${REPORT_PATH}`);
 
     expect(report).toContain('# 気候システム統計レポート');
   }, 600_000);
 });
+
+/**
+ * 生成済みの`ClimateSystemStats.md`が、今の定義より古くなっていないか。
+ *
+ * 再生成に数分かかるので、`npm test`では作り直さずに**入力が変わったことだけを軽く見る**。
+ * シミュレーションの入力（`core.yaml`）は指紋で、定義から静的に解ける活動時間の表は再計算で。
+ *
+ * **見るのは古さだけで、値の妥当性は見ない。** 値は各解析の単体試験（`tests/analysis/`）と、
+ * 再生成したレポートの差分が持つ。
+ */
+describe('気候システム統計レポートの鮮度', () => {
+  const report = readFileSync(REPORT_PATH, 'utf8').split(/\r?\n/);
+
+  it('レポートの指紋が、今の入力と一致する', () => {
+    const line = report.find((candidate) => candidate.startsWith(FINGERPRINT_LABEL));
+    expect(line, `'${FINGERPRINT_LABEL}'の行が見つからない`).toBeDefined();
+
+    const recorded = /`([0-9a-f]+)`/.exec(line!)?.[1];
+    expect(
+      recorded,
+      `${FINGERPRINT_SOURCES.join('・')}が変わっている。'npm run stats:climate'で再生成する`,
+    ).toBe(inputFingerprint());
+  });
+
+  it('活動時間の表が、今の定義から数え直したものと一致する', () => {
+    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    const seasons: SeasonWeatherHours[] = SEASON_CLIMATE.map((season) => ({
+      seasonName: season.name,
+      durationDays: season.durationDays,
+      hoursByWeather: new Map(Object.entries(season.hoursByWeather)),
+    }));
+
+    // 天候の出現時間はSEASON_CLIMATE（レポートから書き写した値）を使うので、丸めのぶんだけずれる。
+    // 突き合わせたいのは「土地の明るさが動いたのに表が古いまま」なので、その桁での一致で足りる。
+    for (const row of activityHoursOf(codex, seasons)) {
+      const label = `${row.locationName} / ${row.seasonName}`;
+      const cells = activityRowOf(report, row.locationName, row.seasonName);
+      expect(row.travelHoursPerDay, `${label} の移動できる時間`).toBeCloseTo(cells.travel, 1);
+      expect(row.activeHoursPerDay, `${label} の活動できる時間`).toBeCloseTo(cells.active, 1);
+    }
+  });
+});
+
+/** 活動時間の表から、土地×季節の1行を読む。 */
+function activityRowOf(
+  lines: readonly string[],
+  locationName: string,
+  seasonName: string,
+): { travel: number; active: number } {
+  const prefix = `| ${locationName} | ${seasonName} |`;
+  const row = lines.find((line) => line.startsWith(prefix));
+  expect(row, `行 '${prefix}' が見つからない`).toBeDefined();
+
+  const cells = row!.split('|');
+  return { travel: Number.parseFloat(cells[3]), active: Number.parseFloat(cells[4]) };
+}

@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
@@ -29,9 +29,12 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
  * 差分のため**——数値を触ったときに何がどう動いたかは`git diff`でしか読めず、ビューアはその瞬間の
  * 姿しか見せられない。
  *
- * 通常のテストスイート（`npm test`）には含めない: 合否判定を目的とした回帰テストではなく、
+ * 書き出しは通常のテストスイート（`npm test`）には含めない: 合否判定を目的とした回帰テストではなく、
  * 数値を触るたびに差分で影響を見るための再計算が目的のため、`RUN_BALANCE_STATS`環境変数が
  * 立っているときだけ実行する。定義の数値を変えた後に再生成する: `npm run stats:balance`
+ *
+ * **代わりに、生成済みのレポートが古くなっていないかは常に見る**（末尾のdescribe）。表を作り直すのは
+ * 1秒で済むので、指紋のような間接の突き合わせは要らない——**丸ごと比べれば取りこぼしが無い。**
  */
 
 function formatNumber(value: number, digits = 1): string {
@@ -445,14 +448,19 @@ function appendRainWater(append: (line?: string) => void, tables: BalanceTables)
   append('存在しない中間の状態を測ることになる。読みたいのは差引の符号——**雨だけで水を賄えるのは');
   append('雨季だけ**で、それ以外の季節は置いておくだけでは減る。');
   append();
+  append('- **降雨も蒸発も、同じ1つの数え方で出している。** どちらも`fill`をtick毎に動かす持続効果で、');
+  append('  違うのは符号だけ。器の居る場所の天候と明るさを時刻ごとに置き、そのとき条件が成立する増減を');
+  append('  出現時間で加重して均している（**天候と時刻は独立とみなす近似**）。');
+  append('- **明るさは開けた土地のもの。** 蒸発の上乗せは`ancestor.ambient_brightness`を見るので');
+  append('  （`LiquidContainerSystem.md` 6節）、樹冠も反射もある土地では変わる。この表は');
+  append('  `ambient_brightness`の`value`が0の土地に置いた容器の量。');
   append('- **雨よけの下かどうかは見ていない。** 水が増える宣言は、雨が降っていることに加えて');
-  append('  「雨よけの下でないこと」（`{subject: ancestor, prop: sheltered}`）も課しているが、祖先を');
-  append('  見る条件は真偽を決めずに素通しする（計測方法の「この表が数えていないもの」）。この表は');
-  append('  **雨の当たる場所に置いた容器**の量で、屋根の下に置いた容器も同じだけ受ける前提になっている。');
-  append('- **数えるのは、効く天候をちょうど1つの比較で名指しした増分だけ。** `not_in` のように');
-  append('  残り全部を指す比較・天候の比較を2つ以上重ねた増分・段（`stage`）で縛られた増分は、');
-  append('  どの天候の間にどれだけ効くかが定義から決まらないので数に入らない。今の定義に');
-  append('  該当は無いが、**書き方をそちらへ変えるとその増分はこの表から黙って消える。**');
+  append('  「雨よけの下でないこと」（`{subject: ancestor, prop: sheltered}`）も課しているが、天候と');
+  append('  明るさ以外の祖先の条件は真偽を決めずに素通しする（計測方法の「この表が数えていないもの」）。');
+  append('  この表は**雨の当たる場所に置いた容器**の量で、屋根の下に置いた容器も同じだけ受ける前提。');
+  append('- **段（`stage`）で縛られた増減は数に入らない。** その段だった時間は天候の出現時間からは');
+  append('  決まらないため。今の定義に該当は無いが、**書き方をそちらへ変えるとその増分はこの表から');
+  append('  黙って消える。**');
   append('- **蒸発は中身がある間しか効かない。** 空になった容器は素の型へ戻って蒸発も止まるので、');
   append('  この「1日に失う水」は満杯を保った場合の上限。実際の減りはこれより小さい。');
   append('- **容量を超えた分は捨てられる。** 雨季のヤシの器は容量250mLに対して1日1300mL近く降るので、');
@@ -520,15 +528,16 @@ function appendSupply(append: (line?: string) => void, tables: BalanceTables): v
   append();
 }
 
+const REPORT_PATH = join('docs', 'diagnostics', 'BalanceStats.md');
+
 describe.runIf(process.env.RUN_BALANCE_STATS === '1')('アイテム収支レポート', () => {
   it('定義から収支を計算してBalanceStats.mdを再生成する', () => {
     const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     const tables = buildBalanceTables(codex, SAMPLE_CHARACTER);
 
     const report = buildReport(tables);
-    const outPath = join('docs', 'diagnostics', 'BalanceStats.md');
-    writeFileSync(outPath, report, 'utf8');
-    console.log(`Report written to: ${outPath}`);
+    writeFileSync(REPORT_PATH, report, 'utf8');
+    console.log(`Report written to: ${REPORT_PATH}`);
 
     expect(report).toContain('# アイテム収支レポート');
     expect(tables.places[0].name).toBe(WHOLE_ISLAND);
@@ -537,13 +546,32 @@ describe.runIf(process.env.RUN_BALANCE_STATS === '1')('アイテム収支レポ�
     expect(report).toContain('### 数えられない経路');
     expect(tables.gaps.filter((gap) => gap.label.includes('water_liquid'))).toEqual([]);
 
-    // 汲む労働は数えられなくても、溜まる量は季節ごとに出る（issue #662）。**符号が結論**なので、
-    // 値ではなくこれを見る——雨だけで水を賄えるのは雨季だけで、それ以外の季節は置くだけでは減る。
+    // 汲む労働は数えられなくても、溜まる量は季節ごとに出る（issue #662）。差引の符号が結論で、
+    // それは`rainWaterContent.test.ts`が常時見る。
     expect(report).toContain('### 雨で溜まる水');
-    for (const row of tables.rainWater) {
-      const label = `${row.containerName} / ${row.seasonName}`;
-      if (row.seasonName === 'wet') expect(row.netPerDay, label).toBeGreaterThan(0);
-      else expect(row.netPerDay, label).toBeLessThan(0);
-    }
   }, 600_000);
 });
+
+/**
+ * 生成済みの`BalanceStats.md`が、今の定義より古くなっていないか。
+ *
+ * **丸ごと作り直して比べる。** 表の入力は定義（YAML）だけではなく、気候の実測値のように解析側が
+ * 持つ値も含む（`seasonalRain.ts`）ので、YAMLの指紋では取りこぼす——実際、#776 で気候の定数を
+ * 直したときにこの表が3行ずれた。
+ */
+describe('アイテム収支レポートの鮮度', () => {
+  it('生成済みのBalanceStats.mdが、今の定義から作り直したものと一致する', () => {
+    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    const rebuilt = buildReport(buildBalanceTables(codex, SAMPLE_CHARACTER));
+    const stored = readFileSync(REPORT_PATH, 'utf8');
+
+    expect(normalizeNewlines(stored), "古い。'npm run stats:balance'で再生成する").toBe(
+      normalizeNewlines(rebuilt),
+    );
+  }, 600_000);
+});
+
+/** CRLFの作業ツリーで生成したレポートが、LFの作業ツリーで食い違わないようにする。 */
+function normalizeNewlines(text: string): string {
+  return text.replace(/\r\n/g, '\n');
+}

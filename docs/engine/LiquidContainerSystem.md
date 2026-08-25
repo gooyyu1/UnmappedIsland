@@ -217,8 +217,13 @@ water_liquid:
 | 季節 | ヤシの器（250mL） | 甕（4L） |
 |---|---|---|
 | `calm` | 2.6日 | 16.6日 |
-| `wet` | 9.8日 | 65.2日 |
+| `wet` | 9.8日 | 65.1日 |
 | `dry` | 2.3日 | 14.7日 |
+
+この表は手で書いていますが、**上の `passives` から数え直した値とずれると `npm test` が赤くなります**
+（`tests/diagnostics/rainWaterContent.test.ts`）。数えているのは `src/analysis/seasonalRain.ts` で、
+`ancestor.ambient_brightness` には**時刻と天気の寄与だけ**（`ambient_brightness` の `value` が 0 の土地）を
+置いています。
 
 乾季は 30 日なので、蓋のできない容器は乾季を越えて水を持ち越せません。**森や密林へ置いても越えられません**
 ——上乗せが消えても基礎の蒸発は残り、甕は 2mL/tick＝1日 192mL で 21 日ほど、ヤシの器は 1mL/tick で
