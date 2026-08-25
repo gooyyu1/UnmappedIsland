@@ -4,6 +4,9 @@
 確定度の印は [`docs/DocumentStyle.md`](../docs/DocumentStyle.md) 6節、確認の積み方と
 「担当外は触らない」は [`CLAUDE.md`](../CLAUDE.md) が持つので、ここでは繰り返さない。
 
+**人間向けの全体像は [`docs/ParallelAgents.md`](../docs/ParallelAgents.md)。** 誰が何をして人間はどこで
+決めるのかを図で示す。**規則を書くのはこちらだけ**で、あちらは全体像だけを持つ（同じ説明を二度書かない）。
+
 ## 1. 分かれ目は「書くかどうか」
 
 | 作業 | 走らせ方 |
