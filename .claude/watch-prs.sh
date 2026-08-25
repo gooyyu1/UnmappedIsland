@@ -14,6 +14,7 @@
 #   GREEN   <番号> <ラベル>        … 全チェックが成功（ラベルが空なら素通しの候補）
 #   RED     <番号> <落ちたチェック名>
 #   GONE    <番号>                 … 見張っていた issue が閉じた（--issues のときだけ）
+#   FIXED   <番号>                 … 直し待ちのPRへ、新しいコミットが載った
 #   COMMENT pr|issue <番号> <著者> … 起動より後に付いたコメント
 #   TASK    <番号>                 … --issues に無い open な issue（＝こちらがまだ知らない仕事）
 #   終了コード 0 … 動きが1件以上ある（上の行が出ている）
@@ -110,27 +111,34 @@ failures=0
 # - `判断待ち` … ユーザーの手元。仮決めを含むので司令塔は触らない。
 # - `直し待ち` … 書いたセッションの手元。司令塔が `send_message` で差し戻した状態。**緑のまま
 #   放置すると毎周報告される**ので、差し戻したら必ず付ける（2026-08-25 に PR #771 で実際に空振りした）。
-#   直しが push されてCIが回り、こちらが外すまで黙る。
+#
+# **`直し待ち` は、新しいコミットが載った時点で `FIXED` を出す。** 黙らせたまま放っておくと、直しが
+# 上がったことに誰も気づけない——2026-08-25 に PR #781 で実際にそうなり、直しが1時間半見過ごされた。
+# ラベルを付けた時刻より後のコミットがあれば、それが「戻ってきた」の合図になる。
 #
 # **チェックが1つも登録されないPRは、放っておくと永久に報告されない。** CI（`tests.yml`）の `paths` は
 # `src/` `tests/` `scripts/` などで、`docs/` や `.claude/` しか触らないPRでは1つも走らないため。
 # 実測（2026-08-25）で、PR #766 が誰にも拾われないまま残った。落ち着くのを待ってから GREEN として
 # 出す（`--no-check-grace` 秒、既定90）。まだ登録中なだけの場合と区別が付かないので、猶予を置く。
 pr_settled_filter() {
+  # 第1引数はチェック無しPRの猶予の境目。
   printf '
     .[]
-    | select(([.labels[].name] | index("判断待ち")) == null)
-    | select(([.labels[].name] | index("直し待ち")) == null)
     | . as $pr
-    | ([$pr.statusCheckRollup[] | select(.status != "COMPLETED")] | length) as $running
-    | if ($pr.statusCheckRollup | length) == 0
-      then (if $pr.updatedAt < "%s" then "GREEN \($pr.number) \([$pr.labels[].name] | join(","))" else empty end)
-      elif $running > 0 then empty
+    | ([$pr.labels[].name]) as $names
+    | if ($names | index("直し待ち")) != null then "MENDING \($pr.number)"
+      elif ($names | index("判断待ち")) != null then empty
       else
-        ([$pr.statusCheckRollup[] | select(.conclusion != "SUCCESS" and .conclusion != "NEUTRAL" and .conclusion != "SKIPPED") | .name]) as $failed
-        | if ($failed | length) == 0
-          then "GREEN \($pr.number) \([$pr.labels[].name] | join(","))"
-          else "RED \($pr.number) \($failed | join(","))"
+        ([$pr.statusCheckRollup[] | select(.status != "COMPLETED")] | length) as $running
+        | if ($pr.statusCheckRollup | length) == 0
+          then (if $pr.updatedAt < "%s" then "GREEN \($pr.number) \($names | join(","))" else empty end)
+          elif $running > 0 then empty
+          else
+            ([$pr.statusCheckRollup[] | select(.conclusion != "SUCCESS" and .conclusion != "NEUTRAL" and .conclusion != "SKIPPED") | .name]) as $failed
+            | if ($failed | length) == 0
+              then "GREEN \($pr.number) \($names | join(","))"
+              else "RED \($pr.number) \($failed | join(","))"
+              end
           end
       end
   ' "$1"
@@ -155,8 +163,20 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
     settled=$(jq -r "$(pr_settled_filter "$grace")" <<<"$prs")
     if [ ${#NUMBERS[@]} -gt 0 ]; then
       pattern=$(printf '%s\n' "${NUMBERS[@]}" | paste -sd'|' -)
-      settled=$(grep -E "^(GREEN|RED) (${pattern}) " <<<"$settled")
+      settled=$(grep -E "^(GREEN|RED|MENDING) (${pattern})( |$)" <<<"$settled")
     fi
+    # `直し待ち` のPRだけ、コミットの日付を追加で引く。**一覧の `--json` へ `commits` を足しては
+    # いけない**——50本ぶんだとGraphQLのノード上限（50万）を超えて `gh` が丸ごと失敗し、**見張り全体が
+    # 黙る**（2026-08-25 に実測）。1本ずつ引けば、払うのは差し戻し中のPRがあるときだけで済む。
+    while read -r number; do
+      [ -n "$number" ] || continue
+      pushed=$(gh pr view "$number" --json commits --jq '.commits | last | .committedDate' 2>/dev/null)
+      if [ -n "$pushed" ] && [[ "$pushed" > "$SINCE" ]]; then
+        settled=$(printf '%s\nFIXED %s' "$settled" "$number")
+      fi
+    done < <(grep '^MENDING ' <<<"$settled" | awk '{print $2}')
+    settled=$(grep -v '^MENDING ' <<<"$settled")
+
     settled=$(printf '%s\n%s' "$settled" "$(jq -r "$(comment_filter pr)" <<<"$prs")")
 
     # 見張っている issue を1回引いて、閉じたもの（開いている一覧に居ないもの）と、起動より後に
