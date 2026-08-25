@@ -27,15 +27,14 @@ import type { WorldCodex } from '../domain/WorldCodex';
  */
 
 /**
- * IlluminationSystem.md 5節: 移動のしきい値（looking_brightness ≥ −5）。
+ * IlluminationSystem.md 5節: 移動のしきい値（looking_brightness が `pitch_dark` でないこと ＝ ≥ −5）。
  *
- * **同節の表と一致しているかは `tests/diagnostics/activityHoursAssumptions.test.ts` が見る。**
- * 条件を宣言している側（`path.travel`・`crafting_conditions`）は今の静的解析APIの対象外なので、
- * 定義から読む代わりに、書き写した先を機械で突き合わせている。
+ * **境目を持つのはキャラクタの段の宣言だけ**（同 8節）なので、これはその写し。段と一致しているかは
+ * `tests/diagnostics/activityHoursAssumptions.test.ts` が見る。
  */
 export const TRAVEL_THRESHOLD = -5;
 
-/** 同節: 屋外の採取・手元の作業のしきい値（looking_brightness・hand_brightness ともに ≥ +5）。 */
+/** 同節: 屋外の採取・手元の作業のしきい値（looking_brightness・hand_brightness の `bright` ＝ ≥ +5）。 */
 export const ACTIVE_THRESHOLD = 5;
 
 /** 季節1つぶんの、天候の出現時間の実測値（`ClimateSystemStats.md`）。 */

@@ -42,14 +42,17 @@ required_props:
 # **レシピごとには書かない。** 書き分けると、条件の無いレシピが「暗くてもできると決めた」のか
 # 「書き忘れた」のか見分けが付かなくなる。
 #
-# 手作業のうち`interactions`として宣言されているもの（打つ・剥ぐ・撚る）は、同じしきい値を自分の
+# 手作業のうち`interactions`として宣言されているもの（打つ・剥ぐ・撚る）は、同じ段を自分の
 # conditionsに書く。**火を熾すことだけは書かない**——摩擦発火は手と耳の作業で、熾は自分で光る。
 # ここを塞ぐと、日が落ちた後に明かりを取り戻す道が無くなる。
+#
+# 段の名前で見るので、境目はキャラクタのhand_brightnessのstagesだけが持つ
+# （characters/player_character.yaml、IlluminationSystem.md 5節）。
 crafting_conditions:
   - reason: too_dark
     subject: actor
     prop: hand_brightness
-    gte: 5
+    in_stage: bright
 
 # 製作中オブジェクトが完成品から引き継ぐタグ（docs/engine/RecipeSystem.md 5節）。挙げてよいのは
 # **どこに置けるかを言うタグ**だけで、何ができるかを言うタグ（tool・weapon・sail・pottery）は
