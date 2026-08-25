@@ -161,6 +161,8 @@ describe('locations.yamlの土地・道定義', () => {
     const worldInstance = new WorldObject(0, def('world'), session);
     const worldView = new World(worldInstance, codex);
     session.adoptWorld(worldView);
+    // 経過分は開始時刻（core.yamlのworld.hourの既定値）に依らず、組んだ時点からの差で見る。
+    const startMinutes = worldView.totalMinutes;
 
     const grassland = session.createObject(codex.objectNames.getId('grassland'));
     const forest = session.createObject(codex.objectNames.getId('forest'));
@@ -203,14 +205,12 @@ describe('locations.yamlの土地・道定義', () => {
     );
 
     // 発見済みの道で移動すると、プレイヤーは移動先のcharactersスロットへ移り、移動時間分だけ時間が進む。
-    const minutesBefore = worldView.hour * 60 + worldView.minute;
-    expect(minutesBefore, '草原の探索3回でduration 15分×3が経過している').toBe(15 * 3);
+    const minutesBefore = worldView.totalMinutes;
+    expect(minutesBefore - startMinutes, '草原の探索3回でduration 15分×3が経過している').toBe(15 * 3);
     expect(pathView.travel(character)).toBe(true);
 
     expect(character.parent, '移動で移動先の土地へ移る').toBe(forest);
     expect(new Location(forest, codex).characters, '移動先ではcharactersスロットに入る').toContain(character);
-    expect(worldView.hour * 60 + worldView.minute, '移動時間（travel_minutes=90分）が経過する').toBe(
-      minutesBefore + 90,
-    );
+    expect(worldView.totalMinutes, '移動時間（travel_minutes=90分）が経過する').toBe(minutesBefore + 90);
   });
 });
