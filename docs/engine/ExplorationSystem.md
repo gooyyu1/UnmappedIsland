@@ -71,6 +71,9 @@ traits:
 こぼれ落ち（起点自身の親へ、9.4 節）が同じく先頭のスロットから試すためで、「持ちきれない発見物は
 地面（土地の `items`）に落ちる」という直感的な結果を、追加のルールなしに実現しています。
 
+【いつか: 洞窟内部】 `cave_entrance` は見つかるだけで、中へ入る先はまだありません
+（[`Someday.md`](../Someday.md)）。
+
 ### 1.2 道の2スロット（隠しスロット方式、`explorable` trait）
 
 土地同士の繋がりは、**探索によって見つかる `path` という専用オブジェクト**として表現します。「発見」は
@@ -245,10 +248,6 @@ explore(actor: WorldObject | undefined, session: WorldSession): boolean {
 
 ## 6. 未決事項・今後の検討課題
 
-- **洞窟内部の生成**: `cave_entrance`（探索で見つかる `fixture`）は、`TerrainGeneration.md` 3.7 節が構想する
-  「内部に子 `Location` グラフを持つ `Structure`」の入口として先に用意したプレースホルダです。
-  `structure_interior` 生成スコープの具体的なスキーマと、洞窟内部への遷移アクション（`move` の応用）は
-  未実装です。
 - **`spring`（湧き水）の給水アクション**: 発見されるだけのプレースホルダで、`drink` 的なアクションは
   `ContainerSystem.md` の液体表現の実装とあわせて今後の課題です。
 - **発見物の `volume`/`weight`**: 探索で見つかるアイテム・設置物は、コンテナ容量（`ContainerSystem.md`）に
