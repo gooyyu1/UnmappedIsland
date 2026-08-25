@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 # メタMCP（`mcp__ccr_meta__*`）のツールを、トークンを読み直しながら呼ぶ。
 #
-#   bash .claude/ccr-meta.sh list_sessions '{"limit": 5}'
-#   bash .claude/ccr-meta.sh archive_session '{"session_id": "cse_..."}'
-#   bash .claude/ccr-meta.sh create_session "$(cat args.json)"
+#   bash .claude/ccr-meta.sh list_sessions <<<'{"limit": 5}'
+#   bash .claude/ccr-meta.sh archive_session <<<'{"session_id": "cse_..."}'
+#   bash .claude/ccr-meta.sh create_session < args.json
 #
-# 引数は tools/call の arguments そのもの。**普段の `mcp__ccr_meta__*` と同じ道具・同じ引数**なので、
-# 覚え直すことは無い。使えるのは23個全部（`tools/list` で引ける）。
+# **引数は標準入力で渡す**（argvではない）。中身は tools/call の arguments そのもので、**普段の
+# `mcp__ccr_meta__*` と同じ道具・同じ引数**なので覚え直すことは無い。使えるのは23個全部
+# （`tools/list` で引ける）。
+#
+# **日本語を含む引数は、必ずファイルへ書いてから流す。** シェルの `$(...)` や環境変数を経由すると
+# Windowsのnodeが化けさせる（下記）。
 #
 # ## なぜこれが要るのか
 #
@@ -30,7 +34,6 @@
 set -euo pipefail
 
 TOOL="${1:?ツール名を渡す（例: list_sessions）}"
-ARGS="${2:-{\}}"
 
 TOKEN=$(node -e "
   const fs = require('node:fs');
@@ -38,21 +41,28 @@ TOKEN=$(node -e "
   process.stdout.write(JSON.parse(fs.readFileSync(path, 'utf8')).claudeAiOauth.accessToken);
 ")
 
-BODY=$(TOOL="$TOOL" ARGS="$ARGS" node -e "
-  process.stdout.write(JSON.stringify({
-    jsonrpc: '2.0',
-    id: 1,
-    method: 'tools/call',
-    params: { name: process.env.TOOL, arguments: JSON.parse(process.env.ARGS) },
-  }));
-")
-
-curl -sS -X POST \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "content-type: application/json" \
-  -H "accept: application/json, text/event-stream" \
-  --data "$BODY" \
-  "https://api.anthropic.com/v1/code/mcp/meta" |
+# **引数は標準入力から受けて、そのまま curl へ流す。** シェル変数にも環境変数にも載せない——
+# Windowsのnodeは環境変数をANSIコードページで受け取るので、**日本語を env や `$(...)` で渡すと
+# 静かに化ける**（2026-08-25 に、セッションのタイトルが化けて実際に見つかった）。
+node -e "
+  let stdin = '';
+  process.stdin.on('data', (d) => (stdin += d)).on('end', () => {
+    process.stdout.write(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: { name: process.argv[1], arguments: JSON.parse(stdin || '{}') },
+      }),
+    );
+  });
+" "$TOOL" |
+  curl -sS -X POST \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "content-type: application/json; charset=utf-8" \
+    -H "accept: application/json, text/event-stream" \
+    --data-binary @- \
+    "https://api.anthropic.com/v1/code/mcp/meta" |
   node -e "
     let s = '';
     process.stdin.on('data', (d) => (s += d)).on('end', () => {
