@@ -109,9 +109,17 @@ export function describeDocumentedSections(docPath: string, reportPath: string):
   return sections;
 }
 
-/** 文書の「YAMLの節」の表を読む。 */
+/**
+ * 文書の「YAMLの節」の表を読む。
+ *
+ * **改行は自分で均す。** 見出しを字面で拾うので、CRLFの作業ツリー——`.prettierrc` の
+ * `endOfLine: auto` が想定している状態——では見出しに一致せず、**節が0件になる**。文書とYAMLの
+ * 突き合わせはそこで赤くなるが、この結果を要求リストとして受け取る
+ * {@link describeYamlReportRegeneration} は**何も要求しないまま緑になる**。呼び手に均させると、
+ * 呼び手が増えるたびに同じ穴が空く。
+ */
 export function documentedSections(markdown: string): DocumentedSections {
-  const table = /\n## YAMLの節\n([\s\S]*?)(?=\n## |$)/.exec(markdown);
+  const table = /\n## YAMLの節\n([\s\S]*?)(?=\n## |$)/.exec(normalizeNewlines(markdown));
   if (table === null) return { all: [], required: [] };
 
   const rows = [...table[1].matchAll(/^\| `([^`]+)` \|([^\n]*)/gm)];
