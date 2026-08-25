@@ -217,9 +217,11 @@ traits:
         add:
           self:
             fill: -2
-      # 日射による上乗せ。しきい値はEV（IlluminationSystem.md 1節）で、+12は約10,000 lx＝薄日でも
-      # 直射がある明るさ。夜は底の-6になる（core.yamlのhour）ため成立せず、雨天は最も明るい小雨の
-      # 正午でも+10で最も低いしきい値に届かないため、天候を見る必要がない。
+      # 日射による上乗せ。読むのは**器が居る場所の環境光**で、樹冠と地面の反射が入り、据え付けの
+      # 光源は入らない（IlluminationSystem.md 2節・3節）。しきい値はEV（同1節）＝器へ届いている
+      # 照度そのもので、+12は約10,000 lx。夜は底の-6になる（core.yamlのhour）ため成立せず、雨天は
+      # 最も明るい小雨の正午でも届かないため、天候を見る必要がない。土地ごとの効き方は
+      # LiquidContainerSystem.md 6節。
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
           - {subject: ancestor, prop: ambient_brightness, gte: 12}
