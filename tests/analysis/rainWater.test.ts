@@ -19,11 +19,14 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  * 量は `docs/engine/LiquidContainerSystem.md` 7節と同じにしてあるので、同梱の甕・ヤシの器の行と
  * 同じ数字が出る。同梱の中身そのものに対する符号は、レポートを再生成する
  * `tests/diagnostics/balanceStatsReport.test.ts` が見る。
+ *
+ * **条件の並びも同梱の `rain_filled_liquid` と揃える。** 数え方は宣言の形に依るので、形が揃って
+ * いないと、同梱側にだけ増えた条件（雨よけの `sheltered`）をこの試験が見逃す。
  */
 describe('雨で溜まる水（seasonalRain）', () => {
   const YAML = `
 object_defs:
-  # 甕（narrow、4L）。雨が降っている間だけ、降り方に応じてfillが増える。
+  # 甕（narrow、4L）。雨よけの無い場所で雨が降っている間だけ、降り方に応じてfillが増える。
   jar:
     tags: [item, narrow_open_container]
     props:
@@ -32,21 +35,30 @@ object_defs:
     passives:
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: light_rain}
         add: {self: {fill: 20}}
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: heavy_rain}
         add: {self: {fill: 40}}
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: storm}
         add: {self: {fill: 80}}
       # 口径の違う容器あての宣言。同じ型に配られていても、この型では一度も効かない。
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: light_rain}
         add: {self: {fill: 10}}
+      # 天候を名指ししていない増分。何tick効くかが天候の出現時間から決まらないので数えない。
+      - conditions:
+          - {subject: self, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
+        add: {self: {fill: 1000}}
 
   # ヤシの器（wide、250mL）。
   coconut_bowl:
@@ -57,14 +69,17 @@ object_defs:
     passives:
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: light_rain}
         add: {self: {fill: 10}}
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: heavy_rain}
         add: {self: {fill: 20}}
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: storm}
         add: {self: {fill: 40}}
 
@@ -110,10 +125,22 @@ object_defs:
         );
   });
 
-  it('効かない口径あての宣言は降雨に足さない', () => {
-    // 甕は narrow の宣言（light_rain 20mL/tick）だけで増える。同じ型に配られている wide の10mLを
-    // 足してしまうと、雨の少ない季節でも差引が正へ転びうる。
-    expect(rowOf('jar', 'calm').rainPerDay / rowOf('coconut_bowl', 'calm').rainPerDay).toBeCloseTo(2, 6);
+  it('天候以外の条件が課されていても、その天候の量として数える', () => {
+    // 雨を受ける宣言は「雨よけの下でないこと」も課している。祖先の条件は真偽を決めずに素通しする
+    // 決まりなので、それを理由に数えるのをやめると、容器そのものが表から消える。
+    for (const containerName of ['jar', 'coconut_bowl'])
+      expect(rowOf(containerName, 'wet').rainPerDay, containerName).toBeGreaterThan(0);
+  });
+
+  it('効かない口径あての宣言・天候を名指ししない宣言は降雨に足さない', () => {
+    // 甕は narrow の3つの宣言だけで増え、その量はどの降り方でもヤシの器のちょうど2倍。同じ型に
+    // 配られている wide あての宣言や、天候を名指ししていない宣言（雨よけだけを見る1000mL/tick）が
+    // 混ざると、この倍率が崩れる。
+    for (const seasonName of ['calm', 'wet', 'dry'] as const)
+      expect(
+        rowOf('jar', seasonName).rainPerDay / rowOf('coconut_bowl', seasonName).rainPerDay,
+        seasonName,
+      ).toBeCloseTo(2, 6);
   });
 
   it('蒸発は容量ではなく口径で決まる', () => {
