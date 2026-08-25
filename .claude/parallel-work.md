@@ -48,26 +48,25 @@ GPUを占有するので、ローカルの枠を実装で埋めると、画像�
 「issue に答える」だけ。**ただしローカルから呼ぶときは `permission_mode` を渡せない**（CCRの親
 セッションが要る）ので、既定のまま作る。
 
-#### メタMCPが切れたら [`create-session.sh`](./create-session.sh)
+#### メタMCPが切れたら [`ccr-meta.sh`](./ccr-meta.sh)
 
 `mcp__ccr_meta__*` は**起動時のヘッダを掴んだまま**なので、走っている最中にトークンが切れると、
 登録を直しても**そのセッションからは二度と使えない**（2026-08-25 に2回起きた）。
 
 ```bash
-bash .claude/create-session.sh 774 "#774 時間表を定義から数える" <<'EOF'
-（指示）
-EOF
+bash .claude/ccr-meta.sh create_session "$(cat args.json)"
+bash .claude/ccr-meta.sh archive_session '{"session_id": "cse_..."}'
 ```
 
-**呼ぶたびに `~/.claude/.credentials.json` から読み直す**ので切れない。立つのは普通のセッションで、
-タグも付き、**一覧にも出る**。
+**呼ぶたびに `~/.claude/.credentials.json` から読み直す**ので切れない。**道具も引数も普段と同じで、
+23個すべてが使える**——MCPサーバもただのHTTPで、しかもステートレスに応じるため、`tools/call` を
+1発投げるだけでよい。
+
+**RESTを逆算しない**（`/v1/code/sessions` を直に叩く道もある）。形が違ううえ
+（`sources` は入れ子ではなく平ら）、**`DELETE` は畳まずに消す**——同じ意味の操作を2通り持つ理由が無い。
 
 `RemoteTrigger` でも立てられるが、**トリガー発火の実行はセッション一覧に出ない**——ユーザーが進み
-具合を見に行けないので、こちらを先に使う。
-
-**畳むのは `mcp__ccr_meta__archive_session` だけ。** RESTの `DELETE /v1/code/sessions/<id>` は畳まずに
-**消す**（2026-08-25 に実測）。`PUT` は `title` と `tags` は変えられるが `status` は無視する。
-**MCPが切れている間は畳めない**ので、戻ってからまとめて畳む。
+具合を見に行けないので、上を先に使う。
 
 ### 前のタスクの完了は、シェルで待つ
 
