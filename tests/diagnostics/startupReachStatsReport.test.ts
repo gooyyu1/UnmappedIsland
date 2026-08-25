@@ -1,18 +1,15 @@
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
 import type { IslandReach, NeedReach, StartupNeedSources } from '../../src/analysis/startupReach';
 import { islandReachOf, STARTUP_NEEDS, startupNeedSourcesOf } from '../../src/analysis/startupReach';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
+  describeDocumentedSections,
   describeReportFreshness,
   describeYamlReportRegeneration,
   formatYamlReport,
-  missingYamlSections,
   RoundedNumber,
-  yamlSectionKeys,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -314,41 +311,13 @@ function buildReportFromDefinitions(): string {
   );
 }
 
-/**
- * 手書きの文書が「YAMLの節」の表で挙げている節の名前。
- *
- * **生成物から手で書き写した文章は、生成物とずれる**（issue #775）。文書とYAMLを分けた以上、
- * 一致は人の運用ではなく試験が見る。表の1列目のインラインコードだけを拾う。
- */
-function documentedSectionKeys(markdown: string): string[] {
-  const table = /\n## YAMLの節\n([\s\S]*?)(?=\n## |$)/.exec(markdown);
-  if (table === null) return [];
-  return [...table[1].matchAll(/^\| `([^`]+)` \|/gm)].map((match) => match[1]);
-}
-
-const DOCUMENTED_SECTIONS = documentedSectionKeys(readFileSync(DOC_PATH, 'utf8'));
-
-describe('手書きの文書とYAML', () => {
-  it('文書が挙げる節が、YAMLに在って空でない', () => {
-    expect(DOCUMENTED_SECTIONS.length, `${DOC_PATH}の「YAMLの節」の表が読めない`).toBeGreaterThan(0);
-
-    const missing = missingYamlSections(readFileSync(REPORT_PATH, 'utf8'), DOCUMENTED_SECTIONS);
-    expect(missing, `${DOC_PATH}が、${REPORT_PATH}に無い節を語っている`).toEqual([]);
-  });
-
-  it('YAMLの節が、すべて文書に挙がっている', () => {
-    const undocumented = yamlSectionKeys(readFileSync(REPORT_PATH, 'utf8')).filter(
-      (key) => !DOCUMENTED_SECTIONS.includes(key),
-    );
-    expect(undocumented, `${DOC_PATH}の「YAMLの節」の表に足す`).toEqual([]);
-  });
-});
+const DOCUMENTED_SECTIONS = describeDocumentedSections(DOC_PATH, REPORT_PATH);
 
 describeYamlReportRegeneration(
   REPORT_PATH,
   'RUN_STARTUP_REACH_STATS',
   buildReportFromDefinitions,
-  DOCUMENTED_SECTIONS,
+  DOCUMENTED_SECTIONS.required,
 );
 
 describeReportFreshness(REPORT_PATH, 'npm run stats:startup', buildReportFromDefinitions);

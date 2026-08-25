@@ -46,7 +46,7 @@ object_defs:
           - reason: too_dark
             subject: actor
             prop: looking_brightness
-            gte: 5
+            in_stage: bright
         duration: 30
         pick:
           - weight: 90
@@ -62,7 +62,7 @@ object_defs:
           - reason: too_dark
             subject: actor
             prop: looking_brightness
-            gte: 5
+            in_stage: bright
         duration: 30
         pick:
           - weight: 90
@@ -154,7 +154,7 @@ object_defs:
           - reason: too_dark
             subject: actor
             prop: hand_brightness
-            gte: 5
+            in_stage: bright
         duration: 30
         destroy: self
         spawn:
@@ -213,7 +213,7 @@ object_defs:
           - reason: too_dark
             subject: actor
             prop: hand_brightness
-            gte: 5
+            in_stage: bright
         duration: 30
         destroy: self
         spawn:

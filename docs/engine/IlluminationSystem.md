@@ -16,8 +16,8 @@
 
 **実現方法**: どの値も普通の数値プロパティで、`props` の `value`（土地ごとの定数）・`range`（クランプ、
 [`GameElementDefinition.md`](./GameElementDefinition.md) 6.3節）・`base`（同 6.5節、値の土台。本書 6節）・
-`modify`（同 8.3節）・`conditions`（同 14節）だけで組み立てます。計算式を持ち込む `derived`（同 17節）は
-使いません。
+`modify`（同 8.3節）・`stages`（同 6.4節、しきい値の境目。本書 8節）・`conditions`（同 14節）だけで
+組み立てます。計算式を持ち込む `derived`（同 17節）は使いません。
 
 **在処**: 定義は `src/assets/world-codex/` の `core.yaml`（world の環境光と、場所が共通で持つ2つの値）・
 `locations.yaml`（土地ごとの樹冠と反射、移動と探索の条件）・`voyage.yaml`（外洋・本土・筏）・
@@ -165,11 +165,15 @@ torch:
 はなく、線を引きます（[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「悪条件は、効率を
 下げるのではなく、できる／できないの線で効かせる」節）。
 
-| 行動のクラス | 見る値 | しきい値 | 書く場所 |
-| --- | --- | --: | --- |
-| 土地の間を移動する | `looking_brightness` | −5 | `path` の `travel`（`ExplorationSystem.md` 3節） |
-| 屋外で採る・探索する | `looking_brightness` | +5 | 土地の `explore` と、各採取の操作 |
-| 手元の細かい作業 | `hand_brightness` | +5 | 全レシピ共通の `crafting_conditions` と、その作業を宣言している `interactions` |
+| 行動のクラス | 見る値 | しきい値 | 段で書くと | 書く場所 |
+| --- | --- | --: | --- | --- |
+| 土地の間を移動する | `looking_brightness` | −5 | `pitch_dark` でないこと | `path` の `travel`（`ExplorationSystem.md` 3節） |
+| 屋外で採る・探索する | `looking_brightness` | +5 | `bright` | 土地の `explore` と、各採取の操作 |
+| 手元の細かい作業 | `hand_brightness` | +5 | `bright` | 全レシピ共通の `crafting_conditions` と、その作業を宣言している `interactions` |
+
+**条件の側には数字を書きません。** しきい値を持つのはキャラクタの2つの `stages` だけで（8節）、
+条件は段の名前で見ます。条件は行動の数だけ増えるので、境目をそこへ書き写すと、**揃っているかを
+見るものが1つも無くなります。**
 
 ```yaml
 path:
@@ -178,9 +182,7 @@ path:
       conditions:
         - {in_slot: fixtures}
         - reason: too_dark
-          subject: actor
-          prop: looking_brightness
-          gte: -5
+          not: {subject: actor, prop: looking_brightness, in_stage: pitch_dark}
 ```
 
 - **主語は `actor` です。** 行動が見るのはキャラクタ側の2つで、キャラクタは操作を実行している本人だから
@@ -278,16 +280,38 @@ deep_cave:
 （[`Dwellings.md`](../world/Dwellings.md) 5.1節）。真っ暗なのは浅い洞窟の奥で、そこへ続く道は
 【いつか: 洞窟内部】待ちです（[`Someday.md`](../Someday.md)）。
 
-## 8. 段（`stages`）は環境光にだけ置く
+## 8. 境目を持つのは段（`stages`）だけ
 
-**段を持つのは `ambient_brightness` だけで、行動の可否は段では判定しません**（5節の条件が実効値を
-直接見ます）。段は「今どのくらい明るいか」を他の値へ渡すための粗い区分です。
+**明るさのしきい値は、どれも段の宣言にしか書きません。** 読む側（5節の条件・9節の気温）は段の名前で
+見るので、境目を動かすときに書き換えるのは1箇所です。行動の可否を決める2つが条件の側で数字と
+比べられていないことは、`tests/world-codex/illuminationStages.test.ts` が見張ります。
 
-**world の `ambient_brightness` は3段**——`dark`（0未満）・`dim`（0〜+10）・`bright`（+11以上）。
-気温への寄与（9節）がこの段に乗っています。
+**行動の可否を決める2つは、キャラクタが3段を持ちます**（`characters/player_character.yaml`）。境目は
+5節のしきい値そのもので、`pitch_dark`（−5未満）・`dim`（−5〜+4）・`bright`（+5以上）。
 
-**境目はどちらも日射の強さで置きます。** world の段を読むのは気温で、そこで要るのは「陽がどれだけ
-照っているか」——行動のしきい値（5節）ではありません。
+```yaml
+character:
+  props:
+    hand_brightness:
+      value: 0
+      base: {subject: ancestor, prop: hand_brightness}
+      stages:
+        - {name: pitch_dark}
+        - {name: dim, min: -5}
+        - {name: bright, min: 5}
+```
+
+- **2つが同じ3段を持つのは、同じEVスケールを同じ底（−6）から測っているからです。** 段を共有するの
+  ではなく、**同じ刻みを別々に持ちます**——片方の境目を動かせば、そのプロパティを見る行動だけが動きます
+  （屋外の採取だけを緩めたければ `looking_brightness` の `bright` を1行）。`hand_brightness` は −5 を
+  境目として使いませんが、そこで段を1つ減らすと `dim` が2つの意味を持つことになります。
+- **場所の側には段を置きません。** 行動が見るのはキャラクタ側の2つ（2節）なので、場所の
+  `hand_brightness` を段の名前で読む者が居ません。
+
+**world の `ambient_brightness` も3段**——`dark`（0未満）・`dim`（0〜+10）・`bright`（+11以上）。
+気温への寄与（9節）がこの段に乗っています。**境目は日射の強さで置きます**——気温が要るのは「陽が
+どれだけ照っているか」で、行動のしきい値（5節）ではありません。同じ名前でも、プロパティが違えば
+境目も違います（段の名前はプロパティごとの名前空間、`GameElementDefinition.md` 6.4節）。
 
 - **0（2.5 lx）は、陽が地平線の下にあること。** 月あかりはこれより遥かに暗いので、夜はすべて
   `dark` に入ります。**夜の涼しさが天気や月で揺れてはいけない**ので、境目は月の届く範囲より上に
@@ -296,6 +320,9 @@ deep_cave:
   **日射が空気を暖め始める明るさ**です。
 
 段の側を細かくしても、できることは変わりません。
+
+**土地の `ambient_brightness` にはまだ段がありません。** 水の蒸発（9節）だけがこれを読み、しきい値3つを
+自分の `conditions` に数字で書いています。
 
 ## 9. 環境光を読んでいるのは3箇所
 

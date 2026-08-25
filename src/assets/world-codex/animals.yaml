@@ -410,7 +410,7 @@ object_defs:
           - reason: too_dark
             subject: actor
             prop: hand_brightness
-            gte: 5
+            in_stage: bright
         duration: 60
         destroy: self
         spawn:
@@ -638,7 +638,7 @@ object_defs:
           - reason: too_dark
             subject: actor
             prop: hand_brightness
-            gte: 5
+            in_stage: bright
         duration: 240
         destroy: self
         spawn:
@@ -663,7 +663,7 @@ object_defs:
           - reason: too_dark
             subject: actor
             prop: hand_brightness
-            gte: 5
+            in_stage: bright
         duration: 20
         destroy: self
         spawn:
@@ -748,7 +748,7 @@ object_defs:
           - reason: too_dark
             subject: actor
             prop: hand_brightness
-            gte: 5
+            in_stage: bright
         duration: 40
         destroy: self
         spawn: {object: bone_needle}

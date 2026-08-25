@@ -13,13 +13,23 @@ import type { GenerationScopeDef } from '../../src/domain/generation/GenerationS
 import type { IslandMap } from '../../src/domain/generation/IslandMap';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { describeReportFreshness, describeReportRegeneration } from '../support/generatedReport';
+import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
+import {
+  describeDocumentedSections,
+  describeReportFreshness,
+  describeYamlReportRegeneration,
+  formatYamlReport,
+  RoundedNumber,
+} from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
  * パスネットワーク（TerrainGeneration.md 3.5節）の現在の実装について、土地1つあたりの道の本数
- * （連結数）などの統計を計測し、`docs/diagnostics/TerrainStats.md`へ書き出す。
+ * （連結数）などの統計を計測し、`stats/terrain.yaml`へ書き出す。
+ *
+ * **書き出すのは数値だけ。** 何を測ったか・引いた線・数えていないものは、手書きの
+ * `docs/diagnostics/TerrainStats.md` が持つ。
  *
  * 「繋がりすぎ/繋がらなすぎ」を数値で見るためのもので、`extra_edge_detour_factor` 等を変えた後に
  * 再生成する: `npm run stats:terrain`。再生成と鮮度の形は `tests/support/generatedReport.ts` が持つ。
@@ -28,7 +38,7 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 const SEED_COUNT = 500;
 
-/** 次数のヒストグラムに出す本数の上限（これを超える分はまとめて「N本以上」）。 */
+/** 次数のヒストグラムに出す本数の上限（これを超える分はまとめて `or_more`）。 */
 const MAX_LISTED_DEGREE = 7;
 
 interface TerrainStats {
@@ -205,193 +215,157 @@ function collect(
   addDailyPhases(stats, phases.bestBase);
 }
 
-function buildReport(stats: TerrainStats): string {
-  const lines: string[] = [];
-  const append = (line = ''): void => {
-    lines.push(line);
-  };
-
-  append('# 地形生成統計レポート');
-  append();
-  append('`tests/diagnostics/terrainStatsReport.test.ts` による生成実測値のスナップショット');
-  append(`（シード ${SEED_COUNT} 個）。\`terrain_generation.yaml\` を変更したら以下で再生成する。`);
-  append();
-  append('```');
-  append('npm run stats:terrain');
-  append('```');
-  append();
-  append('## 計測方法');
-  append();
-  append('- 次数 = その土地に繋がっている道の本数。道は無向で、辺1本が両端の次数を1ずつ増やす。');
-  append('- 余分な道 = 道の本数 − (土地数 − 1)。全土地を繋ぐのに最低限必要な本数（MST）を超えた分。');
-  append('- 標準偏差は標本標準偏差（n-1）、5%ile/95%ileは最近隣法（nearest-rank）。');
-  append();
-
-  const appendStatTable = (firstColumn: string, rows: readonly (readonly [string, string, Stat])[]): void => {
-    append(`| ${firstColumn} | 平均 | 最小 | 5%ile | 95%ile | 最大 | 標準偏差 | n |`);
-    append('| --- | --- | --- | --- | --- | --- | --- | --- |');
-    for (const [label, unit, stat] of rows) append(stat.tableRow(label, unit));
-    append();
-  };
-
-  append('## 島ごと');
-  append();
-  appendStatTable('項目', [
-    ['土地数', '', stats.siteCount],
-    ['道の本数', '', stats.edgeCount],
-    ['平均次数', '', stats.meanDegree],
-    ['次数の標準偏差', '', stats.degreeStdDevPerIsland],
-    ['余分な道の本数', '', stats.extraEdgeCount],
-    ['余分な道／土地数', '%', stats.extraEdgeRatio],
-  ]);
-
-  append('## 土地の種類ごと');
-  append();
-  append('同じ地形は環境も発見物も見た目も同じなので、並べても島は広くならない。個数は');
-  append('`max_sites_per_type` で頭打ちにし、そこへ届く前から `crowding_penalty` で他の型へ譲らせている');
-  append('（TerrainGeneration.md 3.4節）。');
-  append();
-  appendStatTable('項目', [['島あたりの種類数', '種類', stats.typesPerIsland]]);
-
-  append('| 種類 | 出現する島 | 平均個数 | 出た島での平均 | 最大 |');
-  append('| --- | --- | --- | --- | --- |');
-  for (const [name, stat] of stats.countByType) {
-    const appeared = 1 - stat.shareOf(0);
-    const meanWhenPresent = appeared === 0 ? 0 : stat.mean / appeared;
-    append(
-      `| ${name} | ${(appeared * 100).toFixed(1)}% | ${stat.mean.toFixed(2)} |` +
-        ` ${meanWhenPresent.toFixed(2)} | ${stat.max.toFixed(0)} |`,
-    );
-  }
-  append();
-
-  append('## 土地ごと');
-  append();
-  appendStatTable('項目', [['次数', '本', stats.degree]]);
-
-  append('### 次数の分布');
-  append();
-  append('| 次数 | 割合 |');
-  append('| --- | --- |');
-  let listed = 0;
-  for (let degree = 1; degree <= MAX_LISTED_DEGREE; degree++) {
-    const share = stats.degree.shareOf(degree);
-    listed += share;
-    append(`| ${degree}本 | ${(share * 100).toFixed(2)}% |`);
-  }
-  append(`| ${MAX_LISTED_DEGREE + 1}本以上 | ${((1 - listed) * 100).toFixed(2)}% |`);
-  append();
-
-  append('## 道ごと');
-  append();
-  append('移動時間は「距離 ÷ 歩く速さ × 両端のmove_costの平均 ＋ 高低差 ÷ 登り下りの速さ」');
-  append('（TerrainGeneration.md 3.5節）。距離も高低差も現実の長さで、縮尺と速さは');
-  append('`generation_scopes.island` が別々に宣言している。');
-  append();
-  appendStatTable('項目', [
-    ['距離', 'm', stats.distanceMeters],
-    ['両端の高低差', 'm', stats.climbMeters],
-    ['移動時間', '分', stats.travelMinutes],
-  ]);
-
-  append('## 島の広さ');
-  append();
-  append('拠点から他の土地への片道（最短経路）の平均。**拠点を選ぶと縮む**——プレイヤーは拠点を');
-  append('選べるので、1周回で実際に払うのは上の行に近い。');
-  append();
-  appendStatTable('拠点の選び方', [
-    ['他の土地への片道が平均で最も短い土地', '分', stats.chosenBaseOneWayMinutes],
-    ['どの土地を拠点にしてもよいとき', '分', stats.anyBaseOneWayMinutes],
-  ]);
-
-  append('## 局面ごとの1日');
-  append();
-  append('拠点を出て仕事をして帰る1日を、局面ごとに数える（ContentSkeleton.md 8.2節・8.3節）。');
-  append('計算は`src/analysis/dailyPhases.ts`で、拠点は上の「片道が平均で最も短い土地」。');
-  append();
-  append('**数え方は局面をまたいで1つだけ。**');
-  append();
-  append('```');
-  append(
-    `その日その土地で進む仕事（分） = min(${OUTDOOR_WINDOW_MINUTES} − 往復の移動 −` +
-      ` ${SURVIVAL_GATHERING_MINUTES}, その土地の活動できる時間)`,
-  );
-  append('```');
-  append();
-  append(`- **${OUTDOOR_WINDOW_MINUTES}分** = 屋外の枠。太陽が出ている12時間で、移動のしきい値を`);
-  append('  満たす時間そのもの。');
-  append(`- **${SURVIVAL_GATHERING_MINUTES}分** = 1日を賄う生存の採取（BalanceStats.mdの最小労働から`);
-  append('  睡眠を引いた分）。');
-  append('- **その土地の活動できる時間** = ClimateSystemStats.md「土地×季節ごとの活動時間」の季節平均。');
-  append('  遠さは移動の項として、暗さは頭打ちとして、同じ1行に入る。');
-  append('- 1日は1つの土地で使う（往復1回）。余った時間は次の土地へ繰り越さない。');
-  append('- 土地の間は最短経路をたどる。');
-  append();
-
-  append('### 探索の局面（島を開き切るまで）');
-  append();
-  append('未踏の土地を、拠点から近い順に探索率100%まで開いていく行程。**遠い土地へ着くのに要る道は、');
-  append('手前の土地を開く過程で必ず出る**ので、開く順は移動時間の小さい順に採れる');
-  append('（ExplorationSystem.md 3.2節）。');
-  append();
-  append('**泊まりがけは、滞在中の生存の採取を現地で払わない**（補給を持ち込む行程、');
-  append('GameEndings.md 9.2節）。1日に進む探索がその土地の活動できる時間を超えられないことと、');
-  append('往復の移動も屋外の枠から出ることの2つだけで縛る。');
-  append();
-  appendStatTable('項目', [
-    ['島を開くのに要る探索時間の合計', '分', stats.exploration.explorationMinutes],
-    ['開き切るまでの日数（日帰りだけ）', '日', stats.exploration.dayTripDays],
-    ['1日あたりの移動（往復、日帰りだけ）', '分', stats.exploration.dayTripTravelMinutesPerDay],
-    ['1日あたりに進む探索（日帰りだけ）', '分', stats.exploration.dayTripExplorationMinutesPerDay],
-    ['開き切るまでの日数（泊まりも使う）', '日', stats.exploration.mixedDays],
-    ['泊まりのほうが安い土地', '個', stats.exploration.stayOverSiteCount],
-    ['日帰りでは1分も探索が進まない土地', '個', stats.exploration.dayTripImpossibleSiteCount],
-  ]);
-  append(
-    `日帰りだけで開き切れる島は ${((stats.exploration.dayTripDays.count / SEED_COUNT) * 100).toFixed(1)}%` +
-      `（${stats.exploration.dayTripDays.count}/${SEED_COUNT}）。残りは、往復で枠が尽きる土地を` +
-      '1つ以上持つ。',
-  );
-  append();
-
-  append('### 定常の局面（開き切った後の1日）');
-  append();
-  append('探索は終わっていて、山（ContentSkeleton.md 4節）だけを進める1日。行き先は**山の土地の配分**');
-  append('が決め、その組の中では**その日の実入りが最も多い土地**を選ぶ（同じなら近いほう）。');
-  append('**島に無い組の配分は、ある組へ按分する。**');
-  append();
-  append('**配分は仕事の量の配分であって、日数の配分ではない。** 1日は1つの土地で使うので、ある組へ');
-  append('費やす日数はその組の仕事量をその土地の1日の実入りで割ったものになり、下の「1日に進む山」は');
-  append('その日数で重み付けした平均になる。');
-  append();
-  append('**日数を出すのは最後の行。** 1周回の山の量はどの島でも同じなので、島ごとの日数を平均するには');
-  append('率ではなくその逆数を平均する——「1日に進む山」の平均で割ると、日数は短く出る。');
-  append();
-  appendStatTable('項目', [
-    ['1日の移動（往復）', '分', stats.steady.travelMinutesPerDay],
-    ['1日に進む山', '分', stats.steady.workMinutesPerDay],
-    ['屋外の山1,000分あたりの日数', '日', stats.steady.daysPerThousandWorkMinutes],
-  ]);
-
-  append('配分ごとの内訳（その組の土地がある島だけを数えるので、右端がその島数の割合になる）。');
-  append();
-  append('| 配分 | 仕事の割合 | 往復の移動 | 1日に進む山 | 日数の割合 | その組を持つ島 |');
-  append('| --- | --- | --- | --- | --- | --- |');
-  for (const share of WORK_SHARES) {
-    const stat = stats.steady.byShare.get(share.label)!;
-    append(
-      `| ${share.label} | ${(share.share * 100).toFixed(0)}% |` +
-        ` ${stat.roundTripMinutes.mean.toFixed(2)}分 | ${stat.workMinutesPerDay.mean.toFixed(2)}分 |` +
-        ` ${(stat.dayShare.mean * 100).toFixed(1)}% |` +
-        ` ${((stat.dayShare.count / SEED_COUNT) * 100).toFixed(1)}% |`,
-    );
-  }
-  append();
-
-  return lines.join('\n') + '\n';
+/**
+ * 丸めた数。**標本が足りずNaNになる値はnullで書く**——`NaN`と書くと、読む側では数ではなく文字列に
+ * なって型が行ごとに変わる。
+ */
+function rounded(value: number, decimals = 2): RoundedNumber | null {
+  return Number.isNaN(value) ? null : new RoundedNumber(value, decimals);
 }
 
-const REPORT_PATH = join('docs', 'diagnostics', 'TerrainStats.md');
+/** 分布1つのレコード。`keys`はそれが何の分布かを指す鍵（測った項目と単位）。 */
+function statRecord(keys: YamlRecord, stat: Stat): YamlRecord {
+  return {
+    ...keys,
+    mean: rounded(stat.mean),
+    min: rounded(stat.min),
+    p5: rounded(stat.percentile(0.05)),
+    p95: rounded(stat.percentile(0.95)),
+    max: rounded(stat.max),
+    sd: rounded(stat.stdDev),
+    n: stat.count,
+  };
+}
+
+/** 測った項目1つぶんの、名前と単位と分布。 */
+type Metric = readonly [metric: string, unit: string, stat: Stat];
+
+function metricRecords(metrics: readonly Metric[]): YamlRecord[] {
+  return metrics.map(([metric, unit, stat]) => statRecord({ metric, unit }, stat));
+}
+
+function degreeHistogramRecords(degree: Stat): YamlRecord[] {
+  const records: YamlRecord[] = [];
+  let listed = 0;
+  for (let value = 1; value <= MAX_LISTED_DEGREE; value++) {
+    const share = degree.shareOf(value);
+    listed += share;
+    records.push({ degree: value, or_more: false, unit: 'percent', share: rounded(share * 100) });
+  }
+  records.push({
+    degree: MAX_LISTED_DEGREE + 1,
+    or_more: true,
+    unit: 'percent',
+    share: rounded((1 - listed) * 100),
+  });
+  return records;
+}
+
+function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
+  return [
+    { key: 'meta', records: [{ seeds: SEED_COUNT }] },
+    {
+      key: 'island',
+      records: metricRecords([
+        ['site_count', 'sites', stats.siteCount],
+        ['edge_count', 'edges', stats.edgeCount],
+        ['mean_degree', 'edges', stats.meanDegree],
+        ['degree_sd', 'edges', stats.degreeStdDevPerIsland],
+        ['extra_edge_count', 'edges', stats.extraEdgeCount],
+        ['extra_edge_ratio', 'percent', stats.extraEdgeRatio],
+        ['location_types', 'types', stats.typesPerIsland],
+      ]),
+    },
+    {
+      key: 'location_type_counts',
+      records: [...stats.countByType].map(([location, stat]) => {
+        const present = 1 - stat.shareOf(0);
+        return {
+          location,
+          present_percent: rounded(present * 100, 1),
+          mean_per_island: rounded(stat.mean),
+          mean_when_present: rounded(present === 0 ? 0 : stat.mean / present),
+          max_per_island: rounded(stat.max, 0),
+        };
+      }),
+    },
+    { key: 'site_degree', records: [statRecord({ unit: 'edges' }, stats.degree)] },
+    { key: 'site_degree_histogram', records: degreeHistogramRecords(stats.degree) },
+    {
+      key: 'edge',
+      records: metricRecords([
+        ['distance', 'meters', stats.distanceMeters],
+        ['climb', 'meters', stats.climbMeters],
+        ['travel', 'minutes', stats.travelMinutes],
+      ]),
+    },
+    {
+      key: 'base_one_way',
+      records: [
+        statRecord({ base: 'shortest_mean', unit: 'minutes' }, stats.chosenBaseOneWayMinutes),
+        statRecord({ base: 'any', unit: 'minutes' }, stats.anyBaseOneWayMinutes),
+      ],
+    },
+    {
+      key: 'daily_budget',
+      records: [
+        {
+          unit: 'minutes',
+          outdoor_window: OUTDOOR_WINDOW_MINUTES,
+          survival_gathering: SURVIVAL_GATHERING_MINUTES,
+        },
+      ],
+    },
+    {
+      key: 'exploration_phase',
+      records: metricRecords([
+        ['exploration_minutes', 'minutes', stats.exploration.explorationMinutes],
+        ['day_trip_days', 'days', stats.exploration.dayTripDays],
+        ['day_trip_travel_per_day', 'minutes', stats.exploration.dayTripTravelMinutesPerDay],
+        ['day_trip_exploration_per_day', 'minutes', stats.exploration.dayTripExplorationMinutesPerDay],
+        ['mixed_days', 'days', stats.exploration.mixedDays],
+        ['stay_over_sites', 'sites', stats.exploration.stayOverSiteCount],
+        ['day_trip_impossible_sites', 'sites', stats.exploration.dayTripImpossibleSiteCount],
+      ]),
+    },
+    {
+      key: 'exploration_day_trip_islands',
+      records: [
+        {
+          unit: 'percent',
+          share: rounded((stats.exploration.dayTripDays.count / SEED_COUNT) * 100, 1),
+          islands: stats.exploration.dayTripDays.count,
+          seeds: SEED_COUNT,
+        },
+      ],
+    },
+    {
+      key: 'steady_phase',
+      records: metricRecords([
+        ['travel_per_day', 'minutes', stats.steady.travelMinutesPerDay],
+        ['work_per_day', 'minutes', stats.steady.workMinutesPerDay],
+        ['days_per_1000_work_minutes', 'days', stats.steady.daysPerThousandWorkMinutes],
+      ]),
+    },
+    {
+      key: 'steady_phase_by_work_share',
+      records: WORK_SHARES.map((share) => {
+        const stat = stats.steady.byShare.get(share.label)!;
+        return {
+          share: share.label,
+          work_percent: rounded(share.share * 100, 0),
+          round_trip_minutes: rounded(stat.roundTripMinutes.mean),
+          work_minutes_per_day: rounded(stat.workMinutesPerDay.mean),
+          day_percent: rounded(stat.dayShare.mean * 100, 1),
+          islands_percent: rounded((stat.dayShare.count / SEED_COUNT) * 100, 1),
+        };
+      }),
+    },
+  ];
+}
+
+const REPORT_PATH = join('stats', 'terrain.yaml');
+const DOC_PATH = join('docs', 'diagnostics', 'TerrainStats.md');
 
 /** 定義から島を生成して測り、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
 function buildReportFromDefinitions(): string {
@@ -418,11 +392,23 @@ function buildReportFromDefinitions(): string {
     collect(stats, generateIsland(codex.generation, 'island', seed), scope, elevationSpan, locationDays);
   }
 
-  return buildReport(stats);
+  return formatYamlReport(
+    [
+      '地形生成の実測。定義（src/assets/world-codex/*.yaml）から生成した島だけから計算した。',
+      '生成物。手で書き換えず、npm run stats:terrain で作り直す。',
+      '何を測ったか・引いた線・数えていないものは docs/diagnostics/TerrainStats.md。',
+    ],
+    buildSections(stats),
+  );
 }
 
-describeReportRegeneration(REPORT_PATH, 'RUN_TERRAIN_STATS', buildReportFromDefinitions, [
-  '# 地形生成統計レポート',
-]);
+const DOCUMENTED_SECTIONS = describeDocumentedSections(DOC_PATH, REPORT_PATH);
+
+describeYamlReportRegeneration(
+  REPORT_PATH,
+  'RUN_TERRAIN_STATS',
+  buildReportFromDefinitions,
+  DOCUMENTED_SECTIONS.required,
+);
 
 describeReportFreshness(REPORT_PATH, 'npm run stats:terrain', buildReportFromDefinitions);
