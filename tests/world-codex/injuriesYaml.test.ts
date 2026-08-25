@@ -8,6 +8,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { makeBrightEnoughForAnyAction } from '../support/illumination';
 
 /**
  * injuries.yamlの怪我を、実ファイルの定義だけで検証する（docs/engine/InjurySystem.md）。
@@ -44,6 +45,9 @@ describe('injuries.yamlの怪我', () => {
     session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(roll));
     beach = spawnInto('sandy_beach', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, beach, 'characters');
+    // 怪我を負う実採り（coconut.yaml）は明るさを要求する（IlluminationSystem.md 5節）。ここで
+    // 見たいのは怪我なので、時刻や光源を組み立てずに作業者の側で明るさを満たす。
+    makeBrightEnoughForAnyAction(player, codex);
   }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {

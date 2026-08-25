@@ -8,6 +8,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { makeBrightEnoughForAnyAction } from '../support/illumination';
 
 /**
  * weaving.yamlのヤシの葉を編む連鎖を、実ファイルの定義だけで検証する。
@@ -38,6 +39,9 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
 
     beach = spawnInto('sandy_beach', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, beach, 'characters');
+    // 葉を採るのも編むのも明るさを要求する（IlluminationSystem.md 5節）。ここで見たいのは編む
+    // 連鎖なので、時刻や光源を組み立てずに作業者の側で明るさを満たす。
+    makeBrightEnoughForAnyAction(player, codex);
   });
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {

@@ -40,6 +40,13 @@ object_defs:
       # （採取ポイントの枯渇は今後の課題）。
       pick_green_coconut:
         trigger: menu
+        # 頂部の房を見上げて、採れる実を選びながら切り落とす屋外の行動なので、見るのは視界の側
+        # （docs/engine/IlluminationSystem.md 5節）。
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 30
         pick:
           - weight: 90
@@ -51,6 +58,11 @@ object_defs:
       # 実採りと同じく幹を登るため、同じだけ踏み外す。葉はweaving.yamlが定義する。
       pick_frond:
         trigger: menu
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 30
         pick:
           - weight: 90
@@ -72,6 +84,9 @@ object_defs:
       #
       # 満水でも実行できる。飲みきれない分はhydrationのクランプに任せてこぼれる。条件で塞ぐと、
       # 満水の間だけ連鎖が進まなくなる。
+      #
+      # **明るさの条件は書かない**——柔らかい芽の窪みへ刃先を落として飲むだけで、仕上がる形が無い
+      # （docs/engine/IlluminationSystem.md 5節）。
       bore:
         trigger: {drag: {tag: cutting_tool}}
         duration: 15
@@ -93,6 +108,8 @@ object_defs:
       # 水が抜けても外寸は変わらない。
       volume: {value: 4900}
     interactions:
+      # **明るさの条件は書かない**——割れさえすればゼリーは取れるので、暗くて損なう形が無い
+      # （docs/engine/IlluminationSystem.md 5節。husked_coconutのcrack・pry_openも同じ）。
       split:
         trigger: {drag: {tag: cutting_tool}}
         duration: 15
@@ -129,8 +146,15 @@ object_defs:
       weight: {value: 1400}
       volume: {value: 3800}
     interactions:
+      # 厚い繊維を刃で起こしては引き剥がす手元の作業（docs/engine/IlluminationSystem.md 5節）。
+      # 据え付けの光源も効くので、焚き火のそばなら夜でもはげる。
       husk:
         trigger: {drag: {tag: cutting_tool}}
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: hand_brightness
+            gte: 5
         duration: 30
         destroy: self
         spawn:
@@ -162,6 +186,7 @@ object_defs:
       weight: {value: 800}
       volume: {value: 900}
     interactions:
+      # どちらも**明るさの条件を書かない**（drained_green_coconutのsplitと同じ理由）。
       crack:
         trigger: {drag: {object: stone}}
         duration: 15
@@ -180,8 +205,15 @@ object_defs:
       weight: {value: 300}
       volume: {value: 900}
     interactions:
+      # 殻を割らないよう刃を内側の丸みに沿わせて送る手元の作業（docs/engine/IlluminationSystem.md
+      # 5節）。掻き方が雑だと器になる殻を損なう。
       scrape:
         trigger: {drag: {tag: cutting_tool}}
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: hand_brightness
+            gte: 5
         duration: 30
         destroy: self
         spawn:

@@ -259,6 +259,9 @@ traits:
       #
       # **打撲の成分はshockが持ち、怪我としては表さない。** 一撃で「裂傷」と「打撲」の2枚を刺すと
       # 怪我スロットが溢れる。裂けた皮膚が傷（injuries.yaml）、殴られた揺れがshock、という分け方で足りる。
+      #
+      # **明るさの条件は書かない**（docs/engine/IlluminationSystem.md 5節）。相手は既に目の前に居て
+      # 探す作業が無く、当たり外れは上の重み配分が表している。塞ぐと、夜に襲われた側が手を出せない。
       strike:
         trigger: {drag: {tag: weapon}}
         duration: 15
@@ -397,8 +400,17 @@ object_defs:
       #
       # 5000gの内訳: 生肉500g×4 + 獣骨500g + 生皮600g = 3100g。残る1900gは血と内臓・頭で、
       # 使い道が無いのでカードにしない。値を変えるときはこの内訳を崩さないこと。
+      #
+      # 皮を破らず剥ぎ、関節を探って刃を入れる手元の作業なので、明るさの条件が要る
+      # （docs/engine/IlluminationSystem.md 5節。他の獣の死体も同じ）。据え付けの光源も効くので、
+      # 焚き火のそばなら夜でも捌ける。
       butcher:
         trigger: {drag: {tag: cutting_tool}}
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: hand_brightness
+            gte: 5
         duration: 60
         destroy: self
         spawn:
@@ -622,6 +634,11 @@ object_defs:
       # 大きく取れるため。
       butcher:
         trigger: {drag: {tag: cutting_tool}}
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: hand_brightness
+            gte: 5
         duration: 240
         destroy: self
         spawn:
@@ -642,6 +659,11 @@ object_defs:
     interactions:
       butcher:
         trigger: {drag: {tag: cutting_tool}}
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: hand_brightness
+            gte: 5
         duration: 20
         destroy: self
         spawn:
@@ -719,8 +741,14 @@ object_defs:
     interactions:
       # 削って針にする（tools.yamlのbone_needle）。刃物を当てる側（dragged）は残り、削られる骨だけが
       # 針へ置き換わる——石を打ち割って尖った石を作るのと同じ形（locations.yamlのknap）。
+      # 明るさの条件も同じで、削り出す形が手元の明るさに掛かる（docs/engine/IlluminationSystem.md 5節）。
       whittle:
         trigger: {drag: {tag: cutting_tool}}
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: hand_brightness
+            gte: 5
         duration: 40
         destroy: self
         spawn: {object: bone_needle}

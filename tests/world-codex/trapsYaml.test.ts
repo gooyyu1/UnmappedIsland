@@ -6,6 +6,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { makeBrightEnoughForAnyAction } from '../support/illumination';
 
 /**
  * traps.yamlのくくり罠を、実ファイルの定義だけで検証する（docs/engine/TrapSystem.md）。
@@ -56,6 +57,9 @@ describe('traps.yamlのくくり罠', () => {
     session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(roll));
     grassland = spawnInto(locationName, worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, grassland, 'characters');
+    // 掛かった獲物の解体は明るさを要求する（IlluminationSystem.md 5節）。ここで見たいのは罠なので、
+    // 時刻や光源を組み立てずに作業者の側で明るさを満たす。
+    makeBrightEnoughForAnyAction(player, codex);
     snare = spawnInto('snare', grassland, 'items');
   }
 

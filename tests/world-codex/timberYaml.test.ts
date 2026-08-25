@@ -7,6 +7,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { makeBrightEnoughForAnyAction } from '../support/illumination';
 
 /**
  * timber.yamlの伐採を、実ファイルの定義だけで検証する。斧でしか倒せないこと、倒せば丸太が採れること
@@ -33,6 +34,9 @@ describe('timber.yamlの伐採', () => {
 
     forest = spawnInto('forest', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, forest, 'characters');
+    // 木を伐るのも明るさを要求する（IlluminationSystem.md 5節）。ここで見たいのは伐採の取り分
+    // なので、時刻や光源を組み立てずに作業者の側で明るさを満たす。
+    makeBrightEnoughForAnyAction(player, codex);
   });
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
