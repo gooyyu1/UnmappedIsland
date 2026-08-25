@@ -36,7 +36,8 @@ docs/
 だけが `【確定】` を持ちます（同 6 節）。文書ごとの内訳は `npm run stats:docs` が出します。
 
 **このゲームは複数のAIエージェントが同時に開発しています。** その仕組みの全体像——誰が何をして、
-人間はどこで決めるのか——は [`ParallelAgents.md`](./ParallelAgents.md) にあります。
+人間はどこで決めるのか——は [`ParallelAgents.md`](./ParallelAgents.md)、**そこへ辿り着くまでに作り方を
+どう変えてきたか**は [`HowWeGotHere.md`](./HowWeGotHere.md) にあります。
 
 **無くても完成を宣言できるが、いつか実装したいもの**は [`Someday.md`](./Someday.md) が1箇所で持ちます
 （残りの作業量には数えません）。
