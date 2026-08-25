@@ -683,7 +683,7 @@ function prerequisitesOf(
   acquisition: Acquisition,
   route: readonly StepRef[],
 ): ReadonlyMap<string, RoutePrerequisite> {
-  const madeInRoute = new Set(route.flatMap((ref) => [...expectedSpawns(ref.step).keys()]));
+  const madeInRoute = new Set(route.flatMap((ref) => acquisition.netOutputsOf(ref)));
 
   const prerequisites = new Map<string, RoutePrerequisite>();
   for (const ref of route)
@@ -946,6 +946,13 @@ interface StepCost {
   readonly imported: boolean;
 }
 
+/** 消費される入力1件を、どの型で・いくらで満たすか。 */
+interface InputSource {
+  readonly objectGlobalId: number;
+  readonly cost: Cost;
+  readonly imported: boolean;
+}
+
 /** 工程を実行するのに要る、消費されない入力1件。costがundefinedなら、島のどこにも入手経路が無い。 */
 interface Prerequisite {
   readonly label: string;
@@ -1175,7 +1182,7 @@ class Acquisition {
 
     for (const input of ref.step.inputs) {
       if (!input.consumed) continue;
-      const resolved = this.inputCost(input);
+      const resolved = this.inputSource(input);
       if (resolved === undefined) return undefined;
       // **要る個数を掛ける。** 筏は丸太を6本使うので、1本ぶんで数えると桁が変わる。
       cost = addCost(cost, scaleCost(resolved.cost, input.count));
@@ -1248,6 +1255,17 @@ class Acquisition {
     return best ?? [];
   }
 
+  /**
+   * その工程が正味で生む型。**閉路で戻ってくるだけの型は含まない**（consumesOwnOutput参照）——
+   * 焼け石を沸かすと石が戻るが、その焼け石が石を焼いたものである以上、その経路は石を自前で
+   * 用意したことにならない。
+   */
+  netOutputsOf(ref: StepRef): readonly number[] {
+    return [...expectedSpawns(ref.step).keys()].filter(
+      (objectGlobalId) => !this.consumesOwnOutput(ref, objectGlobalId),
+    );
+  }
+
   /** その型を手に入れるまでの連鎖に現れる工程を、最も安い経路だけ遡って挙げる。 */
   routeOf(objectGlobalId: number, seen = new Set<number>()): readonly StepRef[] {
     if (seen.has(objectGlobalId)) return [];
@@ -1308,18 +1326,24 @@ class Acquisition {
   }
 
   /**
-   * 入力1件を満たすのに最も安い値段。この土地で手に入らなければ、他の土地から持ち込んだものとして
-   * 島全体の値段を使う——**入手できるかの判定は島全体でだけ行う**（issue #562）。島のどこにも
-   * 無ければundefined。
+   * 入力1件を、どの型で・いくらで満たすか。この土地で手に入らなければ、他の土地から持ち込んだ
+   * ものとして島全体の値段を使う——**入手できるかの判定は島全体でだけ行う**（issue #562）。
+   * 島のどこにも無ければundefined。
+   *
+   * **値段を積む側（stepCost）と閉路を辿る側（consumesOwnOutput）が、同じここを通る。** 別々に
+   * 選ぶと、数えた道筋と閉路を探した道筋が食い違う。
    */
-  private inputCost(input: CraftingStep['inputs'][number]): StepCost | undefined {
+  private inputSource(input: CraftingStep['inputs'][number]): InputSource | undefined {
     const local = this.cheapestCandidate(input);
     if (local !== undefined) {
       const cost = this.costByObject.get(local);
-      if (cost !== undefined) return { cost, imported: this.importedByObject.get(local) === true };
+      if (cost !== undefined)
+        return { objectGlobalId: local, cost, imported: this.importedByObject.get(local) === true };
     }
     const imported = this.importedInputCost(input);
-    return imported === undefined ? undefined : { cost: imported.cost, imported: true };
+    return imported === undefined
+      ? undefined
+      : { objectGlobalId: imported.objectGlobalId, cost: imported.cost, imported: true };
   }
 
   /** 入力1件を満たしうる型のグローバルID（タグ指定なら、そのタグを持つ型すべて）。 */
@@ -1329,6 +1353,43 @@ class Acquisition {
     const found: number[] = [];
     for (const def of this.codex.objects) if (def.hasTag(input.tagGlobalId)) found.push(def.globalId);
     return found;
+  }
+
+  /**
+   * その工程を1回行うのに、消費する入力を遡って`objectGlobalId`そのものが要るか。真なら、その工程は
+   * その型の出どころではない——正味で何も生まないため。
+   *
+   * 焼け石を水の器へ落とすと石が戻る（`hot_stone.boil`）が、その焼け石は石を炉で焼いたものなので、
+   * 「石を持ち込む → 焼く → 沸かす → 石が戻る」は石の作り方ではない（issue #734）。これを作り方と
+   * 数えると、石の産まない土地では持ち込みより高い値段がその土地の作り方になる。
+   *
+   * 遡るのは消費される入力だけ。道具は1度作れば繰り返し使えるので、Xで作った道具でXを作るのは
+   * 閉路ではない。
+   *
+   * **この土地で作れない入力は、島全体の文脈へ渡って遡る。** 焼け石は持ち込みとしても解けるので、
+   * 土地の文脈だけを見ると「石から焼いた」という素性が土地の境で切れ、閉路が見えなくなる。
+   */
+  private consumesOwnOutput(
+    ref: StepRef,
+    objectGlobalId: number,
+    visited = new Set<CraftingStep>(),
+  ): boolean {
+    if (visited.has(ref.step)) return false;
+    visited.add(ref.step);
+
+    for (const input of ref.step.inputs) {
+      if (!input.consumed) continue;
+      const source = this.inputSource(input);
+      if (source === undefined) continue;
+      if (source.objectGlobalId === objectGlobalId) return true;
+
+      const context = this.viaStep.has(source.objectGlobalId) ? this : this.islandWide;
+      if (context === undefined) continue;
+
+      const via = context.viaStep.get(source.objectGlobalId);
+      if (via !== undefined && context.consumesOwnOutput(via, objectGlobalId, visited)) return true;
+    }
+    return false;
   }
 
   private lowerCostsUntilStable(): void {
@@ -1343,6 +1404,7 @@ class Acquisition {
           const candidate = scaleCost(resolved.cost, 1 / count);
           const known = this.costByObject.get(objectGlobalId);
           if (known !== undefined && totalOf(known) <= totalOf(candidate) + EPSILON) continue;
+          if (this.consumesOwnOutput(ref, objectGlobalId)) continue;
 
           this.costByObject.set(objectGlobalId, candidate);
           this.importedByObject.set(objectGlobalId, resolved.imported);
