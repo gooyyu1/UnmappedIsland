@@ -1353,6 +1353,12 @@ hydration:
 マップの中身は `subject`（省略時は `self`）・`prop`・`reason` の3つで、`prop` を書けばその実効値が
 インスタンスIDとして指す相手（`destroy: {prop: smash_target, reason: crushed}`）、書かなければ
 `subject` そのものを指します。スカラーとリストの書き方はそのままで、リストの要素にもマップを置けます。
+**空のマップ（`destroy: {}`）はロード時エラー**です——既定に任せれば動きますが、それは何も書かずに
+`destroy: self` を得る抜け道で、書く理由がありません。
+
+表示文言は locale の `destroy_reason_texts`（[`Localization.md`](./Localization.md)
+destroy_reason_texts節）が持ちます。**段（6.4節）とも要件の `reason`（14.6節）とも別の名前空間**で、
+同じ綴りを当てても構いませんが、揃っていることを当てにはしません。
 
 **名乗らない消滅は、何も残しません。** 立ち去った獣（`stay_remaining` の `on_min`）と渇きで死んだ獣は、
 残った値から見れば同じ「下限で消えた」ですが、名乗るかどうかで分かれます——**消えたことの意味を

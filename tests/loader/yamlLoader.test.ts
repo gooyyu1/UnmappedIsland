@@ -900,6 +900,33 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/dragged/);
   });
 
+  it('destroyのマップが空だとエラーになる', () => {
+    // subjectの既定がselfなので`destroy: {}`も動いてしまうが、それは何も書かずに`destroy: self`を
+    // 得る抜け道（9.3節）。漏れても困らなくすると、漏れたままの定義がそのまま正しいことになる。
+    const yaml = `
+object_defs:
+  thing:
+    interactions:
+      use:
+        trigger: menu
+        destroy: {}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/subject/);
+  });
+
+  it('destroyのマップにreasonだけを書くのは通る（対象はself）', () => {
+    // 名乗りだけを添えた消滅は、対象を省いた書き方であって書き漏らしではない（9.3節）。
+    const yaml = `
+object_defs:
+  thing:
+    interactions:
+      use:
+        trigger: menu
+        destroy: {reason: smitten}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).not.toThrow();
+  });
+
   it('activeでchild対象を指定するとエラーになる', () => {
     const yaml = `
 object_defs:

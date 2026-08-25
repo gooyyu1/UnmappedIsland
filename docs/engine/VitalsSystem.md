@@ -301,8 +301,12 @@ laceration:
 [`GameElementDefinition.md`](./GameElementDefinition.md) 9.3節）、その名前が消された側に残ります
 （`WorldObject.destroyedReason`）。`Ending.causeOfDeath` はそれを読むだけで、
 `dehydrated`・`starved`・`exsanguinated` が、そのまま3つの死に方の名前です。画面は名前から文言を引くだけで
-（`Localization.stage`）、しきい値も死因の言い方も知りません。死に方が増えても、名前を1つ添えるだけで
-画面に出ます。
+（`Localization.destroyReason`、[`Localization.md`](./Localization.md) destroy_reason_texts節）、しきい値も
+死因の言い方も知りません。死に方が増えても、名前を1つ添えるだけで画面に出ます。
+
+**死因の名前は、段の名前とは別の名前空間です。** 今の3つはたまたま命を絶つ値の最後の段と同じ綴りですが、
+揃っている必要はありません——段を通らない即死（`interactions` の `destroy`）には対応する段が無いので、
+揃える規約は最初から成り立ちません。
 
 **残った数値から推測しません。** 「`on_min` を宣言していて下限以下の値」を探す読み方は、次の3つを
 同時に取りこぼします——上限に達して消える死に方（判定が下限側しか見ていない）、段を通らない即死

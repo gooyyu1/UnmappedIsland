@@ -132,6 +132,9 @@ object_defs:
           allow_overflow: true
           linked_add: {self: {spilled: -1}}
         move: {subject: self, to: parent}
+      smash:
+        trigger: menu
+        destroy: {subject: self, reason: shattered}
 `;
 
 function describeAllPassives(def: ObjectDef, names: DefNames, out: DescriptionWriter): void {
@@ -213,6 +216,16 @@ describe('定義の自己記述（describe）', () => {
 
     expect(lines).toContain('transfer water → hydration（最大200 → 4）');
     expect(lines).toContain('set spilled = 1');
+  });
+
+  it('destroyは消し方の名乗り（reason）まで書き出す', () => {
+    // 名乗ったかどうかは消された側にしか残らない情報（9.3節）なので、落とすと図鑑からは
+    // 「ただ消える」との区別が付かなくなる。
+    const lines = describeToText(codex, (out) =>
+      describeInteraction(objectDef('gourd').menuTriggers[2], names, out),
+    ).split('\n');
+
+    expect(lines).toContain('destroy self（消し方: shattered）');
   });
 
   it('linked_addと、moveの両端を書き出す', () => {

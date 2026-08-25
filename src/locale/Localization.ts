@@ -283,6 +283,7 @@ interface LocaleSections {
   readonly symbols?: ReadonlyMap<string, DeclaredTexts>;
   readonly locations?: ReadonlyMap<string, LocationTextsEntry>;
   readonly reasons?: ReadonlyMap<string, string>;
+  readonly destroyReasons?: ReadonlyMap<string, string>;
   readonly ordinalSuffix?: string;
   readonly slots?: ReadonlyMap<string, SlotTextsEntry>;
   readonly signals?: ReadonlyMap<string, string>;
@@ -301,6 +302,7 @@ export class Localization {
   private readonly symbols: ReadonlyMap<string, DeclaredTexts>;
   private readonly locations: ReadonlyMap<string, LocationTextsEntry>;
   private readonly reasons: ReadonlyMap<string, string>;
+  private readonly destroyReasons: ReadonlyMap<string, string>;
   private readonly ordinalSuffix: string;
   private readonly slots: ReadonlyMap<string, SlotTextsEntry>;
   private readonly signals: ReadonlyMap<string, string>;
@@ -316,6 +318,7 @@ export class Localization {
     this.symbols = sections.symbols ?? new Map();
     this.locations = sections.locations ?? new Map();
     this.reasons = sections.reasons ?? new Map();
+    this.destroyReasons = sections.destroyReasons ?? new Map();
     this.ordinalSuffix = sections.ordinalSuffix ?? DEFAULT_ORDINAL_SUFFIX;
     this.slots = sections.slots ?? new Map();
     this.signals = sections.signals ?? new Map();
@@ -353,6 +356,19 @@ export class Localization {
    */
   reason(reasonName: string): string | undefined {
     return this.reasons.get(reasonName);
+  }
+
+  /**
+   * 消し方の名乗り（GameElementDefinition.md 9.3節のdestroyの`reason`）の文言。未登録なら識別子そのもの。
+   *
+   * **段（stage_texts）とも要件の理由（reason_texts）とも別の名前空間。** 消し方の名前は消す宣言が
+   * その場で決めるもので、尽きた値がどの段に居るかとも、操作を止めた理由とも関わらない。
+   *
+   * 未登録でも識別子を返すのは`signal`と同じ理由——消滅は既に起きていて、文言の欠けを黙って
+   * 握り潰すと**名乗らずに消えた場合と見分けが付かなくなる**。
+   */
+  destroyReason(reasonName: string): string {
+    return this.destroyReasons.get(reasonName) ?? reasonName;
   }
 
   /**
@@ -445,6 +461,12 @@ export class Localization {
       symbols: mergedRejectingDuplicates(this.symbols, other.symbols, label, 'symbol_texts'),
       locations: mergedRejectingDuplicates(this.locations, other.locations, label, 'location_texts'),
       reasons: mergedRejectingDuplicates(this.reasons, other.reasons, label, 'reason_texts'),
+      destroyReasons: mergedRejectingDuplicates(
+        this.destroyReasons,
+        other.destroyReasons,
+        label,
+        'destroy_reason_texts',
+      ),
       ordinalSuffix:
         other.ordinalSuffix === DEFAULT_ORDINAL_SUFFIX ? this.ordinalSuffix : other.ordinalSuffix,
       slots: mergedRejectingDuplicates(this.slots, other.slots, label, 'slot_texts'),
@@ -561,6 +583,12 @@ export function parseLocale(label: string, yamlText: string): Localization {
     for (const [name, node] of entriesInOrder(reasonSection))
       reasons.set(name, asScalarText(node, `${label}.reason_texts.'${name}'`));
 
+  const destroyReasons = new Map<string, string>();
+  const destroyReasonSection = tryGetMap(root, 'destroy_reason_texts', label);
+  if (destroyReasonSection !== undefined)
+    for (const [name, node] of entriesInOrder(destroyReasonSection))
+      destroyReasons.set(name, asScalarText(node, `${label}.destroy_reason_texts.'${name}'`));
+
   const signals = new Map<string, string>();
   const signalSection = tryGetMap(root, 'signal_texts', label);
   if (signalSection !== undefined)
@@ -591,6 +619,7 @@ export function parseLocale(label: string, yamlText: string): Localization {
     symbols,
     locations,
     reasons,
+    destroyReasons,
     ordinalSuffix,
     slots,
     signals,

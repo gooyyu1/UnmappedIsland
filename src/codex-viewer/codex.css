@@ -380,7 +380,8 @@ a.ref:hover {
 
 .ref-symbol,
 .ref-stage,
-.ref-signal {
+.ref-signal,
+.ref-destroy-reason {
   color: var(--property-tag-fg);
 }
 
