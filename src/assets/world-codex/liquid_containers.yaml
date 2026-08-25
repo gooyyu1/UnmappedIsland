@@ -218,7 +218,7 @@ traits:
           self:
             fill: -2
       # 日射による上乗せ。しきい値はEV（IlluminationSystem.md 1節）で、+12は約10,000 lx＝薄日でも
-      # 直射がある明るさ。夜は月あかりだけ（最も明るい満月の中天でも-3）なので成立せず、雨天は最も明るい小雨の
+      # 直射がある明るさ。夜は底の-6になる（core.yamlのhour）ため成立せず、雨天は最も明るい小雨の
       # 正午でも+10で最も低いしきい値に届かないため、天候を見る必要がない。
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
