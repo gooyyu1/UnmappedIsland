@@ -73,18 +73,16 @@ export const SEASON_RAIN: readonly SeasonRain[] = [
  * 口径のタグ → 季節 → 蒸発量（mL/tick）。**容量ではなく口径で決まる**——蒸発は口径ごとの定数
  * （`liquid_containers.yaml` の `evaporating_liquid`）で、容器の大きさには依らない。
  *
- * `LiquidContainerSystem.md` 6節の「満杯から空になるまでの日数」を、その表が見ている容量
- * （ヤシの器250mL・甕4000mL）と1日96 tickで割ったもの。日射による上乗せと「雨天は蒸発しない」を
- * 含んだ、季節を通しての平均になっている。
+ * `liquid_containers.yaml` の蒸発量を、明るさ（`core.yaml` の `hour` と `weather` の寄与の和）と
+ * 天候の出現時間（`ClimateSystemStats.md`）で加重した、季節を通しての平均。日射による上乗せと
+ * 「雨天は蒸発しない」を含む。**天候と時刻は独立とみなす近似。**
  *
- * | 口径 | calm | wet | dry |
- * |---|--:|--:|--:|
- * | ヤシの器（250mL） | 2.6日 | 10.1日 | 2.2日 |
- * | 甕（4000mL） | 17.1日 | 67.3日 | 14.1日 |
+ * `LiquidContainerSystem.md` 6節の「満杯から空になるまでの日数」は、この値を容量で割ったもの。
+ * ずれていないかは `tests/analysis/rainWater.test.ts` が見る。
  */
 const EVAPORATION_PER_TICK: Readonly<Record<ApertureTagName, SeasonalEvaporation>> = {
-  wide_open_container: { calm: 1.0016, wet: 0.2579, dry: 1.1837 },
-  narrow_open_container: { calm: 2.4366, wet: 0.6192, dry: 2.9551 },
+  wide_open_container: { calm: 1.0098, wet: 0.2663, dry: 1.1258 },
+  narrow_open_container: { calm: 2.5054, wet: 0.639, dry: 2.8357 },
 };
 
 /** 待ち生産表の1行（容器1種 × 季節1つ）。量はすべてmL。 */
