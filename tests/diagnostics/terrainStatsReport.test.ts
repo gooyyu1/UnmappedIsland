@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
@@ -16,6 +16,9 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * 「繋がりすぎ/繋がらなすぎ」を数値で見るための再計測が目的のため、`RUN_TERRAIN_STATS`環境変数が
  * 立っているときだけ実行する。`extra_edge_detour_factor` 等を変えた後に再生成する:
  * `npm run stats:terrain`
+ *
+ * **代わりに、生成済みのレポートが古くなっていないかは常に見る**（末尾のdescribe）。500シードの
+ * 生成は1秒で済むので、指紋のような間接の突き合わせは要らない——**丸ごと比べれば取りこぼしが無い。**
  */
 
 const SEED_COUNT = 500;
@@ -172,20 +175,46 @@ function buildReport(stats: TerrainStats): string {
   return lines.join('\n') + '\n';
 }
 
+const REPORT_PATH = join('docs', 'diagnostics', 'TerrainStats.md');
+
+/** 定義から島を生成して測り、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
+function buildReportFromDefinitions(): string {
+  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+
+  const stats = createStats(codex.generation!.locationTypes.map((type) => type.name));
+  for (let seed = 0; seed < SEED_COUNT; seed++) {
+    collect(stats, generateIsland(codex.generation, 'island', seed));
+  }
+
+  return buildReport(stats);
+}
+
 describe.runIf(process.env.RUN_TERRAIN_STATS === '1')('地形生成統計レポート', () => {
   it(`${SEED_COUNT}シード分の島を生成してTerrainStats.mdを再生成する`, () => {
-    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
-
-    const stats = createStats(codex.generation!.locationTypes.map((type) => type.name));
-    for (let seed = 0; seed < SEED_COUNT; seed++) {
-      collect(stats, generateIsland(codex.generation, 'island', seed));
-    }
-
-    const report = buildReport(stats);
-    const outPath = join('docs', 'diagnostics', 'TerrainStats.md');
-    writeFileSync(outPath, report, 'utf8');
-    console.log(`Report written to: ${outPath}`);
+    const report = buildReportFromDefinitions();
+    writeFileSync(REPORT_PATH, report, 'utf8');
+    console.log(`Report written to: ${REPORT_PATH}`);
 
     expect(report).toContain('# 地形生成統計レポート');
   }, 600_000);
 });
+
+/**
+ * 生成済みの`TerrainStats.md`が、今の定義より古くなっていないか。
+ *
+ * **見るのは古さだけで、値の妥当性は見ない。** 値は生成の単体試験と、再生成したレポートの差分が持つ。
+ */
+describe('地形生成統計レポートの鮮度', () => {
+  it('生成済みのTerrainStats.mdが、今の定義から作り直したものと一致する', () => {
+    const stored = readFileSync(REPORT_PATH, 'utf8');
+
+    expect(normalizeNewlines(stored), "古い。'npm run stats:terrain'で再生成する").toBe(
+      normalizeNewlines(buildReportFromDefinitions()),
+    );
+  }, 600_000);
+});
+
+/** CRLFの作業ツリーで生成したレポートが、LFの作業ツリーで食い違わないようにする。 */
+function normalizeNewlines(text: string): string {
+  return text.replace(/\r\n/g, '\n');
+}
