@@ -150,8 +150,11 @@ function rainCatchingContainerOf(codex: WorldCodex, def: ObjectDef): RainCatchin
 /**
  * その型が、天候ごとにtick毎いくつ水を受けるか。受けないなら空。
  *
- * 数えるのは**天候だけで決まる増分**に限る。他の条件（日射・段）も伴う増分は、その天候だった時間
- * だけでは何tick効いたかが決まらない。
+ * 数えるのは、**効く天候をちょうど1つの比較で名指ししている増分**。天候以外の祖先の条件
+ * （置き場所が雨よけの下か、など）は真偽を決めずに素通しするので、この表は**雨の当たる場所に
+ * 置いた容器**の量を出す（`docs/diagnostics/BalanceStats.md`「この表が数えていないもの」）。
+ *
+ * 段で縛られた増分は数えない——その段だった時間は天候の出現時間からは決まらない。
  */
 function rainPerTickOf(codex: WorldCodex, def: ObjectDef): ReadonlyMap<string, number> {
   const perWeather = new Map<string, number>();
@@ -159,9 +162,12 @@ function rainPerTickOf(codex: WorldCodex, def: ObjectDef): ReadonlyMap<string, n
     if (delta.target !== 'self' || delta.propertyGlobalId !== codex.vocabulary.engine.fillId) continue;
     if (delta.amount <= 0 || delta.gate.stage !== undefined) continue;
 
-    if (delta.gate.ancestorConditions.length !== 1) continue;
-    const [condition] = delta.gate.ancestorConditions;
-    if (condition.propertyGlobalId !== codex.vocabulary.world.weatherId) continue;
+    const weatherConditions = delta.gate.ancestorConditions.filter(
+      (candidate) => candidate.propertyGlobalId === codex.vocabulary.world.weatherId,
+    );
+    // 天候の比較が2つ以上あると、どちらの天候の間に効くのかが決まらない（両方の成立が要る）。
+    if (weatherConditions.length !== 1) continue;
+    const [condition] = weatherConditions;
     // 効く天候を名指ししている比較だけ。`not_in` のように残り全部を指す比較は、どの天候で効くかを
     // ここでは決められない（天候の一覧を知らない）。
     if (condition.op !== 'eq' && condition.op !== 'in') continue;
