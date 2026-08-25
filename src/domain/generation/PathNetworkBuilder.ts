@@ -1,11 +1,15 @@
+import type { AxisDef } from './AxisDef';
 import type { GenerationScopeDef } from './GenerationScopeDef';
 import { IslandEdge } from './IslandMap';
 import type { Site } from './IslandMap';
 
-type WeightedEdge = { readonly a: number; readonly b: number; readonly distance: number };
+type WeightedEdge = { readonly a: number; readonly b: number; readonly distanceMeters: number };
 
-/** 移動時間の下限（分）。どんなに近い土地の間でも最低これだけはかかる。 */
-const MIN_TRAVEL_MINUTES = 15;
+/** 移動時間の刻み（分）＝ minutes_per_tick（core.yaml）。tick単位の粗い時間経過と噛み合う粒度に揃え、
+ * どんなに近い土地の間でも最低1刻みはかかるものとする。 */
+const TRAVEL_MINUTES_STEP = 15;
+
+const MINUTES_PER_HOUR = 60;
 
 /**
  * パスネットワークの確定（TerrainGeneration.md 3.5節）。Delaunay辺を土台に、
@@ -17,18 +21,21 @@ const MIN_TRAVEL_MINUTES = 15;
  *
  * の2段で間引く。復活辺もDelaunay辺の部分集合であるため、グラフは常に交差なし（平面）のまま。
  *
- * 各辺のtravelMinutes（移動時間）は
- *     距離 × baseMinutesPerDistance × 両端のmoveCostの平均
- * で確定する。距離と移動難易度は保持せず、移動時間に代表させる。
+ * 各辺のtravelMinutes（移動時間）は、水平距離を歩く時間と高低差を登り下りする時間の和として
+ * 確定する（travelMinutes参照）。**距離が先にあり、速さで割ると時間が出る**——縮尺と速さは
+ * 別々の宣言なので、どちらも現実の値と突き合わせて検算できる。
  */
 export function buildPathNetwork(
   sites: readonly Site[],
   delaunayEdges: readonly (readonly [number, number])[],
   scope: GenerationScopeDef,
+  axes: ReadonlyMap<string, AxisDef>,
 ): IslandEdge[] {
+  // 抽象座標をメートルへ直すのはここ1箇所。以降の距離はすべて現実の長さで扱う。
+  const metersPerDistanceUnit = scope.metersPerDistanceUnit;
   const ordered: WeightedEdge[] = delaunayEdges
-    .map(([a, b]) => ({ a, b, distance: sites[a].distanceTo(sites[b]) }))
-    .sort((x, y) => x.distance - y.distance || x.a - y.a || x.b - y.b);
+    .map(([a, b]) => ({ a, b, distanceMeters: sites[a].distanceTo(sites[b]) * metersPerDistanceUnit }))
+    .sort((x, y) => x.distanceMeters - y.distanceMeters || x.a - y.a || x.b - y.b);
 
   // 1. Kruskal MST。
   const unionFind = sites.map((_, i) => i);
@@ -59,29 +66,52 @@ export function buildPathNetwork(
   const detourFactor = scope.extraEdgeDetourThreshold;
   for (const edge of rest) {
     const viaGraph = shortestPathDistance(sites.length, chosen, edge.a, edge.b);
-    if (viaGraph > edge.distance * detourFactor) chosen.push(edge);
+    if (viaGraph > edge.distanceMeters * detourFactor) chosen.push(edge);
   }
 
+  // 標高軸の実在はGenerationDefsが組み上がった時点で確かめている。
+  const elevationRange = axes.get(scope.elevationAxis)!.range;
+  const metersPerElevationUnit = scope.metersPerElevationUnit(elevationRange.max - elevationRange.min);
+
   return chosen.map(
-    (e) => new IslandEdge(e.a, e.b, e.distance, travelMinutes(sites, e.a, e.b, e.distance, scope)),
+    (e) =>
+      new IslandEdge(
+        e.a,
+        e.b,
+        e.distanceMeters,
+        travelMinutes(sites[e.a], sites[e.b], e.distanceMeters, scope, metersPerElevationUnit),
+      ),
   );
 }
 
+/**
+ * 道1本の移動時間（分、TerrainGeneration.md 3.5節）。
+ *
+ *     水平距離(m) ÷ 歩く速さ × 両端のmove_costの平均 ＋ 高低差(m) ÷ 登り下りの速さ
+ *
+ * move_costはその土地を進む遅さの倍率（1.0が開けた土地）。高低差の項は**登りと下りで対称**に課す
+ * ——道は両端に2つあるので向きは表せるが、行きと帰りで時間が変わると往復の勘定が全部2倍に複雑になる。
+ */
 function travelMinutes(
-  sites: readonly Site[],
-  a: number,
-  b: number,
-  distance: number,
+  a: Site,
+  b: Site,
+  distanceMeters: number,
   scope: GenerationScopeDef,
+  metersPerElevationUnit: number,
 ): number {
-  const moveCostAverage = (sites[a].type!.moveCost + sites[b].type!.moveCost) / 2;
-  let minutes = Math.round(distance * scope.baseMinutesPerDistance * moveCostAverage);
-  // tick（minutes_per_tick）単位の粗い時間経過と噛み合うよう、15分刻みへ丸める。
-  minutes = Math.max(MIN_TRAVEL_MINUTES, Math.round(minutes / 15) * 15);
-  return minutes;
+  const moveCostAverage = (a.type!.moveCost + b.type!.moveCost) / 2;
+  const walkMinutes = ((distanceMeters * moveCostAverage) / scope.walkMetersPerHour) * MINUTES_PER_HOUR;
+
+  const climbMeters =
+    Math.abs(a.axisValues.get(scope.elevationAxis)! - b.axisValues.get(scope.elevationAxis)!) *
+    metersPerElevationUnit;
+  const climbMinutes = (climbMeters / scope.climbMetersPerHour) * MINUTES_PER_HOUR;
+
+  const steps = Math.round((walkMinutes + climbMinutes) / TRAVEL_MINUTES_STEP);
+  return Math.max(1, steps) * TRAVEL_MINUTES_STEP;
 }
 
-/** 現在の辺集合でのa→bの最短距離（Dijkstra。ノード数が高々20のため素朴な実装で十分）。
+/** 現在の辺集合でのa→bの最短距離（m。Dijkstra。ノード数が高々20のため素朴な実装で十分）。
  * 到達不能ならinfinity（MSTが全域を繋ぐため実際には起こらない）。 */
 function shortestPathDistance(
   nodeCount: number,
@@ -90,9 +120,9 @@ function shortestPathDistance(
   to: number,
 ): number {
   const adjacency: { to: number; distance: number }[][] = Array.from({ length: nodeCount }, () => []);
-  for (const { a, b, distance } of edges) {
-    adjacency[a].push({ to: b, distance });
-    adjacency[b].push({ to: a, distance });
+  for (const { a, b, distanceMeters } of edges) {
+    adjacency[a].push({ to: b, distance: distanceMeters });
+    adjacency[b].push({ to: a, distance: distanceMeters });
   }
 
   const best = new Array<number>(nodeCount).fill(Number.POSITIVE_INFINITY);

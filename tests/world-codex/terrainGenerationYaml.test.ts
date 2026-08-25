@@ -79,6 +79,20 @@ describe('terrain_generation.yamlの地形生成定義', () => {
     expect(mountain?.pick).toBe('max');
   });
 
+  it('islandスコープが島の大きさと歩く速さを現実の単位で宣言する', () => {
+    const island = scopeOf('island');
+
+    expect(island.diameterMeters, '島の直径は6.7km(確定。TerrainGeneration.md 3.5節)').toBe(6700);
+    expect(island.elevationTopMeters, '島の最高点は400m(確定)').toBe(400);
+    expect(island.walkMetersPerHour, '道の無い地面を歩く速さは4km/h(確定)').toBe(4000);
+    expect(island.climbMetersPerHour, '登り下りの速さが宣言されている').toBeGreaterThan(0);
+
+    // 縮尺と速さが別々に宣言されていること自体が要求（1つの値に兼ねさせない）。抽象座標の直径は
+    // 200単位なので、6.7kmなら1単位=33.5m。
+    expect(island.metersPerDistanceUnit, '抽象1単位は33.5m').toBeCloseTo(33.5, 6);
+    expect(generation.axes.has(island.elevationAxis), 'elevation_axisが実在の軸を指す').toBe(true);
+  });
+
   it('海岸型は海岸帯に限定され、内陸型は海岸帯から除外される', () => {
     const island = scopeOf('island');
     const coastalTypes = ['sandy_beach', 'rocky_coast', 'cliff_coast'];

@@ -569,7 +569,7 @@
       }
     },
     "active_target_name": {
-      "description": "set/addの対象キー、およびdestroyの対象名。childは未対応（一度きりの命令に対して『どの子か』の意味が確定していないため、ロード時エラー）。draggedはcombinations内のみ。",
+      "description": "transferのfrom/toが指す対象キー（9.5節）。childは未対応（一度きりの命令に対して『どの子か』の意味が確定していないため、ロード時エラー）。draggedはcombinations内のみ。",
       "enum": [
         "self",
         "parent",
@@ -580,44 +580,74 @@
       ]
     },
     "destroy_target_spec": {
-      "description": "削除する対象を直接指定する。単一の対象(`destroy: self` / `destroy: {prop: smash_target}`)か、そのリスト(`destroy: [self, dragged]`)のいずれか。",
+      "description": "削除する対象を直接指定する（9.3節）。単一の対象(`destroy: self` / `destroy: {subject: self, reason: dehydrated}`)か、そのリスト(`destroy: [self, dragged]`)のいずれか。",
       "oneOf": [
         {
-          "$ref": "#/$defs/object_ref"
+          "$ref": "#/$defs/destroy_target"
         },
         {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/object_ref"
+            "$ref": "#/$defs/destroy_target"
           },
           "minItems": 1
         }
       ]
     },
-    "object_ref": {
-      "description": "オブジェクトそのものを1つ指す参照（9.3節・9.6節）。対象名か、インスタンスIDを保持するプロパティ（`{prop: ...}`）のいずれか。",
+    "destroy_target": {
+      "description": "消す相手1つ（9.3節）。対象名だけを書くか、`subject`/`prop`/`reason`のマップで書く。",
       "oneOf": [
         {
-          "$ref": "#/$defs/destroy_target_name"
+          "$ref": "#/$defs/object_target_name"
         },
         {
-          "$ref": "#/$defs/instance_id_prop_ref"
+          "$ref": "#/$defs/destroy_target_map"
         }
       ]
     },
-    "instance_id_prop_ref": {
-      "description": "そのプロパティの実効値をインスタンスIDとして解釈した相手（9.6節）。定義時点では決まらず実行時に確定する個体を指す。",
-      "type": "object",
-      "properties": {
-        "prop": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+    "destroy_target_map": {
+      "description": "マップで書いた消す相手（9.3節）。`prop`の有無で、指す相手が対象キーそのものか、そのプロパティが指す個体かに分かれる。空のマップ(`destroy: {}`)はロード時エラー——subjectの既定がselfなので動いてしまうが、何も書かずに`destroy: self`を得る抜け道でしかない。",
+      "oneOf": [
+        {
+          "description": "`subject`（省略時self）そのものを消す。オブジェクトそのものを指すのでancestorは使えない。",
+          "type": "object",
+          "properties": {
+            "subject": {
+              "$ref": "#/$defs/object_target_name"
+            },
+            "reason": {
+              "$ref": "#/$defs/destroy_reason"
+            }
+          },
+          "minProperties": 1,
+          "additionalProperties": false
+        },
+        {
+          "description": "`prop`の実効値をインスタンスIDとして解釈した相手を消す（9.6節）。祖先のプロパティを探せるのでancestorを書ける。",
+          "type": "object",
+          "properties": {
+            "subject": {
+              "$ref": "#/$defs/subject_root"
+            },
+            "prop": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "reason": {
+              "$ref": "#/$defs/destroy_reason"
+            }
+          },
+          "required": [
+            "prop"
+          ],
+          "additionalProperties": false
         }
-      },
-      "required": [
-        "prop"
-      ],
-      "additionalProperties": false
+      ]
+    },
+    "destroy_reason": {
+      "description": "この消滅が名乗る名前の識別子（9.3節）。消された側に残り（WorldObject.destroyedReason）、死亡ダイアログの死因になる（VitalsSystem.md 6節）。文言はlocaleのdestroy_reason_textsが持つ。段（6.4節）とも要件のreason（14.6節）とも別の名前空間。書かなければ、その消滅は何も名乗らない。",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
     },
     "spawn_spec": {
       "description": "spawn（9.4節）。単一のmappingか、mappingの配列のいずれか——1つの効果で複数の型を生むときに並べる（どちらで書いても同じなので、1件だけのときに配列を強いない）。",
@@ -1313,8 +1343,8 @@
       },
       "additionalProperties": false
     },
-    "destroy_target_name": {
-      "description": "オブジェクトそのものを指す対象名（destroy・signal・move・become）。ancestorは「どのプロパティを探すか」が無く解決できないため不可。childは相手が1つに決まらないため不可。pickedはamongを書いた候補の中でのみ解決できる（10.3節）。",
+    "object_target_name": {
+      "description": "オブジェクトそのものを指す対象名（destroy・move・become）。ancestorは「どのプロパティを探すか」が無く解決できないため不可。childは相手が1つに決まらないため不可。pickedはamongを書いた候補の中でのみ解決できる（10.3節）。",
       "enum": [
         "self",
         "parent",
@@ -1583,7 +1613,7 @@
       "description": "命令が指すオブジェクトそのもの1つ（9.6節）。対象名で直接指すか、インスタンスIDを保持するプロパティ（{subject, prop}、subject省略時はself）で指す。move（9.6節）とbecome（9.9節）が共有する。対象名だけを書く形ではancestorを使えない——プロパティ名が無いと辿る先が決まらないため。",
       "oneOf": [
         {
-          "$ref": "#/$defs/destroy_target_name"
+          "$ref": "#/$defs/object_target_name"
         },
         {
           "$ref": "#/$defs/prop_ref"

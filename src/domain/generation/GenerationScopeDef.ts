@@ -1,3 +1,5 @@
+import { ISLAND_RADIUS } from './SitePlacer';
+
 /** guaranteesのpick: 保証対象のサイトを軸値のどちら側から選ぶか。 */
 export type GuaranteePick = 'max' | 'min';
 
@@ -46,8 +48,20 @@ export class GenerationScopeDef {
    * 直結距離のこの倍を超えるなら、その辺を近道として復活させる。 */
   readonly extraEdgeDetourThreshold: number;
 
-  /** 抽象座標の距離1あたりの基準移動時間（分）。 */
-  readonly baseMinutesPerDistance: number;
+  /** このスコープが生成する土地の差し渡し（m）。抽象座標の直径（ISLAND_RADIUSの2倍）がこの長さに当たる。 */
+  readonly diameterMeters: number;
+
+  /** moveCostが1.0の土地を歩く速さ（m/時）。 */
+  readonly walkMetersPerHour: number;
+
+  /** 高低差を登り下りする速さ（m/時）。水平移動とは別に、両端の高低差ぶんの時間が乗る。 */
+  readonly climbMetersPerHour: number;
+
+  /** 標高として読む軸の名前（実在はGenerationDefsが確かめる）。 */
+  readonly elevationAxis: string;
+
+  /** 標高軸の上端が海抜何メートルに当たるか（下端が0m）。 */
+  readonly elevationTopMeters: number;
 
   /**
    * 同じLocationTypeを何個まで置いてよいか（TerrainGeneration.md 3.4節）。同じ地形は環境も発見物も
@@ -71,7 +85,11 @@ export class GenerationScopeDef {
     clampsHullSitesToCoast: boolean,
     interiorBias: number,
     extraEdgeDetourThreshold: number,
-    baseMinutesPerDistance: number,
+    diameterMeters: number,
+    walkMetersPerHour: number,
+    climbMetersPerHour: number,
+    elevationAxis: string,
+    elevationTopMeters: number,
     maxSitesPerType: number,
     crowdingPenaltyPerDuplicate: number,
     guarantees: readonly CoverageGuaranteeDef[],
@@ -84,6 +102,13 @@ export class GenerationScopeDef {
       throw new Error(`'${name}': max_sites_per_typeは0以上である必要があります（0で無制限）。`);
     if (crowdingPenaltyPerDuplicate < 0)
       throw new Error(`'${name}': crowding_penaltyは0以上である必要があります（0で無効）。`);
+    if (diameterMeters <= 0) throw new Error(`'${name}': diameter_metersは正の数である必要があります。`);
+    if (walkMetersPerHour <= 0)
+      throw new Error(`'${name}': walk_meters_per_hourは正の数である必要があります。`);
+    if (climbMetersPerHour <= 0)
+      throw new Error(`'${name}': climb_meters_per_hourは正の数である必要があります。`);
+    if (elevationTopMeters < 0)
+      throw new Error(`'${name}': elevation_top_metersは0以上である必要があります。`);
 
     this.name = name;
     this.siteCountMin = siteCountMin;
@@ -92,9 +117,23 @@ export class GenerationScopeDef {
     this.clampsHullSitesToCoast = clampsHullSitesToCoast;
     this.interiorBias = interiorBias;
     this.extraEdgeDetourThreshold = extraEdgeDetourThreshold;
-    this.baseMinutesPerDistance = baseMinutesPerDistance;
+    this.diameterMeters = diameterMeters;
+    this.walkMetersPerHour = walkMetersPerHour;
+    this.climbMetersPerHour = climbMetersPerHour;
+    this.elevationAxis = elevationAxis;
+    this.elevationTopMeters = elevationTopMeters;
     this.maxSitesPerType = maxSitesPerType;
     this.crowdingPenaltyPerDuplicate = crowdingPenaltyPerDuplicate;
     this.guarantees = guarantees;
+  }
+
+  /** 抽象座標1単位が何メートルか。抽象座標系は半径ISLAND_RADIUSの円盤で、その直径がdiameterMeters。 */
+  get metersPerDistanceUnit(): number {
+    return this.diameterMeters / (ISLAND_RADIUS * 2);
+  }
+
+  /** 標高軸の値1あたりの高さ（m）。軸の値域はスコープ側では分からないので呼び手が渡す。 */
+  metersPerElevationUnit(elevationAxisSpan: number): number {
+    return this.elevationTopMeters / elevationAxisSpan;
   }
 }
