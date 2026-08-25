@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
@@ -6,6 +6,7 @@ import type { IslandReach, NeedReach, StartupNeedSources } from '../../src/analy
 import { islandReachOf, STARTUP_NEEDS, startupNeedSourcesOf } from '../../src/analysis/startupReach';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { describeReportFreshness } from '../support/reportFreshness';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -17,8 +18,8 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * 生成と発見物の配りを触ったときに散らばりがどう動いたかを差分で読むための再計測が目的のため、
  * `RUN_STARTUP_REACH_STATS`環境変数が立っているときだけ実行する: `npm run stats:startup`
  *
- * **代わりに、生成済みのレポートが古くなっていないかは常に見る**（末尾のdescribe）。2,000シードの
- * 計測は2秒で済むので、指紋のような間接の突き合わせは要らない——**丸ごと比べれば取りこぼしが無い。**
+ * **代わりに、生成済みのレポートが古くなっていないかは常に見る**（末尾の`describeReportFreshness`）。
+ * 2,000シードの計測は2秒で済むので、丸ごと作り直して比べられる。
  */
 
 /**
@@ -409,23 +410,4 @@ describe.runIf(process.env.RUN_STARTUP_REACH_STATS === '1')('開始地点の立�
   }, 600_000);
 });
 
-/**
- * 生成済みの`StartupReachStats.md`が、今の定義より古くなっていないか。
- *
- * **見るのは古さだけで、値の妥当性は見ない。** 値は`src/analysis/startupReach.ts`の単体試験と、
- * 再生成したレポートの差分が持つ。
- */
-describe('開始地点の立ち上がりレポートの鮮度', () => {
-  it('生成済みのStartupReachStats.mdが、今の定義から作り直したものと一致する', () => {
-    const stored = readFileSync(REPORT_PATH, 'utf8');
-
-    expect(normalizeNewlines(stored), "古い。'npm run stats:startup'で再生成する").toBe(
-      normalizeNewlines(buildReportFromDefinitions()),
-    );
-  }, 600_000);
-});
-
-/** CRLFの作業ツリーで生成したレポートが、LFの作業ツリーで食い違わないようにする。 */
-function normalizeNewlines(text: string): string {
-  return text.replace(/\r\n/g, '\n');
-}
+describeReportFreshness(REPORT_PATH, 'npm run stats:startup', buildReportFromDefinitions);
