@@ -2,13 +2,15 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
+import type { SeasonWeatherHours } from '../../src/analysis/activityHours';
+import { activityHoursOf } from '../../src/analysis/activityHours';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { Stat } from '../support/Stat';
-import { loadYamlFile, worldCodexPath } from '../support/worldCodexFiles';
+import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 
 /**
@@ -294,6 +296,35 @@ function buildReport(
     seasonKinds.map((s) => [seasonName(s), getStat(stats.seasonDuration, s)] as const),
   );
 
+  append('## 土地×季節ごとの活動時間');
+  append();
+  append('`src/analysis/activityHours.ts`が、`core.yaml`の`hour`・`weather`の段（太陽高度と天気の透過率が');
+  append('ambient_brightnessへ与える寄与）・土地ごとのambient_brightness・上の天候の出現時間（平均）から');
+  append('数える（[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 5節のしきい値: 移動 −5・');
+  append('屋外の採取と手元の作業はともに+5）。据え付けの光源（松明・炉）は含まない。');
+  append();
+  append('「屋外の採取」と「手元の作業」は1列に畳んである。しきい値はどちらも+5だが見る値が違う');
+  append('（採る側はlooking_brightness、作る側はhand_brightness）——据え付けの光源が無ければ両方とも土地の');
+  append('ambient_brightnessをそのまま土台にするだけなので、常に同じ値になる。');
+  append();
+
+  const seasonWeatherHours: SeasonWeatherHours[] = seasonKinds.map((s) => ({
+    seasonName: seasonName(s),
+    durationDays: getStat(stats.seasonDuration, s).mean,
+    hoursByWeather: new Map(
+      weatherKinds.map((w) => [weatherName(w), getStat(stats.weatherTimeOverall, `${w},${s}`).mean] as const),
+    ),
+  }));
+
+  append('| 土地 | 季節 | 移動できる | 活動できる（屋外の採取・手元の作業） |');
+  append('| --- | --- | --: | --: |');
+  for (const row of activityHoursOf(codex, seasonWeatherHours)) {
+    append(
+      `| ${row.locationName} | ${row.seasonName} | ${row.travelHoursPerDay.toFixed(1)} | ${row.activeHoursPerDay.toFixed(1)} |`,
+    );
+  }
+  append();
+
   for (const s of seasonKinds) {
     append(`## ${seasonName(s)}`);
     append();
@@ -347,7 +378,9 @@ function buildReport(
 
 describe.runIf(process.env.RUN_CLIMATE_STATS === '1')('気候システム統計レポート', () => {
   it('20シード×3600日をシミュレートしてClimateSystemStats.mdを再生成する', () => {
-    const codex = loadYamlFile(new WorldCodexYamlLoader(), worldCodexPath('core.yaml')).buildAndReset();
+    // world-codex全体を読む——土地の一覧が要る活動時間表（activityHoursOf）にはlocations.yaml等が
+    // 要るため。worldの定義はcore.yamlにしか無いので、シミュレーション自体への影響は無い。
+    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
 
     const calmId = codex.symbolNames.intern('calm');
     const wetId = codex.symbolNames.intern('wet');
