@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import type { SeasonWeatherHours } from '../../src/analysis/activityHours';
 import { activityHoursOf } from '../../src/analysis/activityHours';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
@@ -10,28 +11,37 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { describeReportRegeneration } from '../support/generatedReport';
+import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
+import {
+  describeDocumentedSections,
+  describeYamlReportRegeneration,
+  formatYamlReport,
+  RoundedNumber,
+} from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexPath } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 
 /**
  * 気候システム（ClimateSystem.md）の現在の実装について、季節の持続日数・気温・天気ごとの発生時間・
- * 連続未降雨/降雨時間の統計（平均/最小/5%ile/95%ile/最大/標準偏差）を計測し、
- * `docs/diagnostics/ClimateSystemStats.md`へ書き出す。
+ * 連続未降雨/降雨時間の統計を計測し、`stats/climate.yaml`へ書き出す。
+ *
+ * **書き出すのは数値だけ。** 何を測ったか・引いた線・数えていないものは、手書きの
+ * `docs/diagnostics/ClimateSystemStats.md` が持つ。
  *
  * 気候の定数を変えた後に再生成する: `npm run stats:climate`。再生成の形は
  * `tests/support/generatedReport.ts` が持つ。
  *
  * **代わりに、生成物が今の入力より古くなっていないかは常に見る**（末尾のdescribe）。20シード×3600日の
- * シミュレーションは数分かかるので、他のレポートと違って丸ごと作り直しては比べられない。再生成する運用は
- * 1度すり抜けており（issue #775）、そのとき古い表と手書きの定数が互いにだけ一致していた。
+ * シミュレーションは分単位でかかるので、他のレポートと違って丸ごと作り直しては比べられない。再生成する
+ * 運用は1度すり抜けており（issue #775）、そのとき古い表と手書きの定数が互いにだけ一致していた。
  */
 
 const SEED_COUNT = 20;
 const SIM_DAYS = 3600; // 約40周分/シード
 
-const REPORT_PATH = join('docs', 'diagnostics', 'ClimateSystemStats.md');
+const REPORT_PATH = join('stats', 'climate.yaml');
+const DOC_PATH = join('docs', 'diagnostics', 'ClimateSystemStats.md');
 
 /**
  * 指紋が見る入力。**シミュレーションが読むのはworldの定義だけで、それは`core.yaml`にしかない**
@@ -41,8 +51,6 @@ const REPORT_PATH = join('docs', 'diagnostics', 'ClimateSystemStats.md');
  * 活動時間の表が土地から読む値は、指紋ではなく**再計算そのもの**で突き合わせる（下のdescribe）。
  */
 const FINGERPRINT_SOURCES = ['core.yaml'];
-
-const FINGERPRINT_LABEL = '入力の指紋: ';
 
 /**
  * 指紋が見る入力ファイルの中身のハッシュ。**改行はLFへ均す**——CRLFの作業ツリーで生成した指紋が、
@@ -228,186 +236,144 @@ function deriveWeatherMoistureDecrement(
   return totalCount > 0 ? weightedSum / totalCount : NaN;
 }
 
-function buildReport(
+/**
+ * 丸めた数。**標本が足りずNaNになる値はnullで書く**——`NaN`と書くと、読む側では数ではなく文字列に
+ * なって型が行ごとに変わる。
+ */
+function rounded(value: number, decimals = 2): RoundedNumber | null {
+  return Number.isNaN(value) ? null : new RoundedNumber(value, decimals);
+}
+
+/** 分布1つのレコード。`keys`はそれが何の分布かを指す鍵（季節・天気・区間）。 */
+function statRecord(keys: YamlRecord, stat: Stat): YamlRecord {
+  return {
+    ...keys,
+    mean: rounded(stat.mean),
+    min: rounded(stat.min),
+    p5: rounded(stat.percentile(0.05)),
+    p95: rounded(stat.percentile(0.95)),
+    max: rounded(stat.max),
+    sd: rounded(stat.stdDev),
+    n: stat.count,
+  };
+}
+
+/** 各季節インスタンスの実持続期間の3等分区間。全体を先頭に置く。 */
+const SEGMENTS = ['early', 'middle', 'late'] as const;
+
+/** 全体＋3等分区間の4レコード。 */
+function segmentRecords(keys: YamlRecord, overall: Stat, byThird: (third: number) => Stat): YamlRecord[] {
+  return [
+    statRecord({ ...keys, segment: 'overall' }, overall),
+    ...SEGMENTS.map((segment, third) => statRecord({ ...keys, segment }, byThird(third))),
+  ];
+}
+
+function buildSections(
   codex: WorldCodex,
   seasonKinds: readonly number[],
   weatherKinds: readonly number[],
   rainWeatherKinds: readonly number[],
   stats: ClimateStats,
-): string {
-  const lines: string[] = [];
-  const append = (line = ''): void => {
-    lines.push(line);
-  };
-
-  append('# 気候システム統計レポート');
-  append();
-  append('`tests/diagnostics/climateStatsReport.test.ts` によるシミュレーション実測値のスナップショット');
-  append(`（シード数 ${SEED_COUNT}、各 ${SIM_DAYS} 日）。\`core.yaml\` を変更したら以下で再生成する。`);
-  append();
-  append('```');
-  append('npm run stats:climate');
-  append('```');
-  append();
-  append(`${FINGERPRINT_LABEL}\`${inputFingerprint()}\`（\`${FINGERPRINT_SOURCES.join('`・`')}\`）`);
-  append();
-  append('`npm test` がこの指紋を今の定義と突き合わせるので、**再生成しないまま入力を変えると赤くなる**。');
-  append('指紋が見るのは上のファイルだけ——シミュレーションが読むのは`world`の定義で、それはそこにしか');
-  append('無い。土地の明るさを読む「土地×季節ごとの活動時間」の節は、指紋ではなく再計算で突き合わせる。');
-  append();
-  append('## 計測方法');
-  append();
-  append('- 序盤/中盤/終盤 = 各季節インスタンスの実持続期間の3等分区間。');
-  append(
-    '- 天気ごとの発生時間 = 期間内の合計時間。発生しなかった期間も0時間の標本として計上（nは全天気共通）。',
-  );
-  append(
-    '- 連続降雨/未降雨時間 = 同じ状態が連続した1回ごとの長さ。開始tickの区間に割り当て、季節境界で打ち切り。',
-  );
-  append('- 標準偏差は標本標準偏差（n-1）、5%ile/95%ileは最近隣法（nearest-rank）。');
-  append();
-
-  const seasonName = (id: number): string => codex.symbolNames.getName(id);
-  const weatherName = (id: number): string => codex.symbolNames.getName(id);
-
-  const appendStatTable = (
-    firstColumn: string,
-    unit: string,
-    rows: readonly (readonly [string, Stat])[],
-  ): void => {
-    append(`| ${firstColumn} | 平均 | 最小 | 5%ile | 95%ile | 最大 | 標準偏差 | n |`);
-    append('| --- | --- | --- | --- | --- | --- | --- | --- |');
-    for (const [label, stat] of rows) append(stat.tableRow(label, unit));
-    append();
-  };
-
-  const thirdRows = (overall: Stat, byThird: (third: number) => Stat): (readonly [string, Stat])[] => [
-    ['全体', overall],
-    ['序盤', byThird(0)],
-    ['中盤', byThird(1)],
-    ['終盤', byThird(2)],
-  ];
-
-  append('## 試験条件: 大気水分量のレート・自己減算');
-  append();
-  append('`core.yaml`の設定値の実測値（範囲端0/10,000に達したtickは除外）。');
-  append();
-  append('### 季節ごとの大気水分量レート（1tickあたり、非雨天時）');
-  append();
-  appendStatTable(
-    '季節',
-    '',
-    seasonKinds.map((s) => [seasonName(s), getStat(stats.seasonMoistureRate, s)] as const),
-  );
-  append(
-    '（`dry`の標準偏差が0でないのは、最初の`dry`季節に難易度の初期補正=`ClimateSystem.md` 5.2節が重なるため。）',
-  );
-  append();
-  append('### 天気ごとの自己減算（1tickあたり、降雨中のみ）');
-  append();
-  append('推定自己減算 = その天気の間の正味変化量 − その季節のレート。');
-  append();
-  for (const w of rainWeatherKinds) {
-    append(`#### ${weatherName(w)}`);
-    append();
-    const decrement = deriveWeatherMoistureDecrement(stats, seasonKinds, w);
-    append(`推定自己減算: **${decrement.toFixed(1)}**。季節ごとの正味変化量:`);
-    append();
-    appendStatTable(
-      '季節',
-      '',
-      seasonKinds
-        .filter((s) => getStat(stats.rainWeatherNetMoistureDelta, `${w},${s}`).count > 0)
-        .map((s) => [seasonName(s), getStat(stats.rainWeatherNetMoistureDelta, `${w},${s}`)] as const),
-    );
-  }
-
-  append('## 季節の持続日数');
-  append();
-  appendStatTable(
-    '季節',
-    '日',
-    seasonKinds.map((s) => [seasonName(s), getStat(stats.seasonDuration, s)] as const),
-  );
-
-  append('## 土地×季節ごとの活動時間');
-  append();
-  append('`src/analysis/activityHours.ts`が、`core.yaml`の`hour`・`weather`の段（太陽高度と天気の透過率が');
-  append('ambient_brightnessへ与える寄与）・土地ごとのambient_brightness・上の天候の出現時間（平均）から');
-  append('数える（[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 5節のしきい値: 移動 −5・');
-  append('屋外の採取と手元の作業はともに+5）。据え付けの光源（松明・炉）は含まない。');
-  append();
-  append('「屋外の採取」と「手元の作業」は1列に畳んである。しきい値はどちらも+5だが見る値が違う');
-  append('（採る側はlooking_brightness、作る側はhand_brightness）——据え付けの光源が無ければ両方とも土地の');
-  append('ambient_brightnessをそのまま土台にするだけなので、常に同じ値になる。');
-  append();
+): readonly YamlReportSection[] {
+  const nameOf = (id: number): string => codex.symbolNames.getName(id);
 
   const seasonWeatherHours: SeasonWeatherHours[] = seasonKinds.map((s) => ({
-    seasonName: seasonName(s),
+    seasonName: nameOf(s),
     durationDays: getStat(stats.seasonDuration, s).mean,
     hoursByWeather: new Map(
-      weatherKinds.map((w) => [weatherName(w), getStat(stats.weatherTimeOverall, `${w},${s}`).mean] as const),
+      weatherKinds.map((w) => [nameOf(w), getStat(stats.weatherTimeOverall, `${w},${s}`).mean] as const),
     ),
   }));
 
-  append('| 土地 | 季節 | 移動できる | 活動できる（屋外の採取・手元の作業） |');
-  append('| --- | --- | --: | --: |');
-  for (const row of activityHoursOf(codex, seasonWeatherHours)) {
-    append(
-      `| ${row.locationName} | ${row.seasonName} | ${row.travelHoursPerDay.toFixed(1)} | ${row.activeHoursPerDay.toFixed(1)} |`,
-    );
-  }
-  append();
-
-  for (const s of seasonKinds) {
-    append(`## ${seasonName(s)}`);
-    append();
-
-    append('### 気温（内部値）');
-    append();
-    appendStatTable(
-      '区間',
-      '',
-      thirdRows(getStat(stats.temperatureOverall, s), (third) =>
-        getStat(stats.temperatureThird, `${s},${third}`),
+  return [
+    { key: 'meta', records: [{ seeds: SEED_COUNT, days: SIM_DAYS }] },
+    {
+      key: 'input_fingerprint',
+      records: [{ sources: FINGERPRINT_SOURCES, sha256_prefix: inputFingerprint() }],
+    },
+    {
+      key: 'season_moisture_rate',
+      records: seasonKinds.map((s) =>
+        statRecord({ season: nameOf(s), unit: 'per_tick' }, getStat(stats.seasonMoistureRate, s)),
       ),
-    );
-
-    append('### 天気ごとの発生時間（時間/期間）');
-    append();
-    for (const w of weatherKinds) {
-      // 見出しと表の間に空行を挟まないとMarkdown変換で表として解釈されないため、天気名は見出しにする
-      append(`#### ${weatherName(w)}`);
-      append();
-      appendStatTable(
-        '区間',
-        'h',
-        thirdRows(getStat(stats.weatherTimeOverall, `${w},${s}`), (third) =>
-          getStat(stats.weatherTimeThird, `${w},${s},${third}`),
+    },
+    {
+      key: 'rain_weather_moisture_decrement',
+      records: rainWeatherKinds.map((w) => ({
+        weather: nameOf(w),
+        unit: 'per_tick',
+        estimated: rounded(deriveWeatherMoistureDecrement(stats, seasonKinds, w), 1),
+      })),
+    },
+    {
+      key: 'rain_weather_net_moisture_delta',
+      records: rainWeatherKinds.flatMap((w) =>
+        seasonKinds
+          .filter((s) => getStat(stats.rainWeatherNetMoistureDelta, `${w},${s}`).count > 0)
+          .map((s) =>
+            statRecord(
+              { weather: nameOf(w), season: nameOf(s), unit: 'per_tick' },
+              getStat(stats.rainWeatherNetMoistureDelta, `${w},${s}`),
+            ),
+          ),
+      ),
+    },
+    {
+      key: 'season_duration',
+      records: seasonKinds.map((s) =>
+        statRecord({ season: nameOf(s), unit: 'days' }, getStat(stats.seasonDuration, s)),
+      ),
+    },
+    {
+      key: 'activity_hours',
+      records: activityHoursOf(codex, seasonWeatherHours).map((row) => ({
+        location: row.locationName,
+        season: row.seasonName,
+        unit: 'hours',
+        travel: rounded(row.travelHoursPerDay, 1),
+        active: rounded(row.activeHoursPerDay, 1),
+      })),
+    },
+    {
+      key: 'temperature',
+      records: seasonKinds.flatMap((s) =>
+        segmentRecords(
+          { season: nameOf(s), unit: 'internal' },
+          getStat(stats.temperatureOverall, s),
+          (third) => getStat(stats.temperatureThird, `${s},${third}`),
         ),
-      );
-    }
-
-    append('### 連続未降雨時間（日）');
-    append();
-    appendStatTable(
-      '区間',
-      '日',
-      thirdRows(getStat(stats.nonRainStreak, s), (third) =>
-        getStat(stats.nonRainStreakThird, `${s},${third}`),
       ),
-    );
-
-    append('### 連続降雨時間（日）');
-    append();
-    appendStatTable(
-      '区間',
-      '日',
-      thirdRows(getStat(stats.rainStreak, s), (third) => getStat(stats.rainStreakThird, `${s},${third}`)),
-    );
-  }
-
-  return lines.join('\n') + '\n';
+    },
+    {
+      key: 'weather_hours',
+      records: seasonKinds.flatMap((s) =>
+        weatherKinds.flatMap((w) =>
+          segmentRecords(
+            { season: nameOf(s), weather: nameOf(w), unit: 'hours' },
+            getStat(stats.weatherTimeOverall, `${w},${s}`),
+            (third) => getStat(stats.weatherTimeThird, `${w},${s},${third}`),
+          ),
+        ),
+      ),
+    },
+    {
+      key: 'non_rain_streak',
+      records: seasonKinds.flatMap((s) =>
+        segmentRecords({ season: nameOf(s), unit: 'days' }, getStat(stats.nonRainStreak, s), (third) =>
+          getStat(stats.nonRainStreakThird, `${s},${third}`),
+        ),
+      ),
+    },
+    {
+      key: 'rain_streak',
+      records: seasonKinds.flatMap((s) =>
+        segmentRecords({ season: nameOf(s), unit: 'days' }, getStat(stats.rainStreak, s), (third) =>
+          getStat(stats.rainStreakThird, `${s},${third}`),
+        ),
+      ),
+    },
+  ];
 }
 
 /** 定義から気候をシミュレートして測り、レポートの中身を作る。 */
@@ -479,37 +445,48 @@ function buildReportFromDefinitions(): string {
     // 末尾の未完了セグメントは破棄（flushSegmentを呼ばない）
   }
 
-  return buildReport(codex, seasonKinds, weatherKinds, rainWeatherKinds, stats);
+  return formatYamlReport(
+    [
+      '気候システムのシミュレーション実測。',
+      '生成物。手で書き換えず、npm run stats:climate で作り直す。',
+      '何を測ったか・引いた線・数えていないものは docs/diagnostics/ClimateSystemStats.md。',
+    ],
+    buildSections(codex, seasonKinds, weatherKinds, rainWeatherKinds, stats),
+  );
 }
 
-describeReportRegeneration(REPORT_PATH, 'RUN_CLIMATE_STATS', buildReportFromDefinitions, [
-  '# 気候システム統計レポート',
-]);
+const DOCUMENTED_SECTIONS = describeDocumentedSections(DOC_PATH, REPORT_PATH);
+
+describeYamlReportRegeneration(
+  REPORT_PATH,
+  'RUN_CLIMATE_STATS',
+  buildReportFromDefinitions,
+  DOCUMENTED_SECTIONS.required,
+);
 
 /**
- * 生成済みの`ClimateSystemStats.md`が、今の定義より古くなっていないか。
+ * 生成済みの`stats/climate.yaml`が、今の定義より古くなっていないか。
  *
- * 再生成に数分かかるので、`npm test`では作り直さずに**入力が変わったことだけを軽く見る**。
- * シミュレーションの入力（`core.yaml`）は指紋で、定義から静的に解ける活動時間の表は再計算で。
+ * 再生成に分単位でかかるので、`npm test`では作り直さずに**入力が変わったことだけを軽く見る**。
+ * シミュレーションの入力（`core.yaml`）は指紋で、定義から静的に解ける活動時間の節は再計算で。
  *
  * **見るのは古さだけで、値の妥当性は見ない。** 値は各解析の単体試験（`tests/analysis/`）と、
  * 再生成したレポートの差分が持つ。
  */
-describe('気候システム統計レポートの鮮度', () => {
-  const report = readFileSync(REPORT_PATH, 'utf8').split(/\r?\n/);
+describe('climate.yamlの鮮度', () => {
+  const storedReport = (): Record<string, YamlRecord[]> =>
+    parse(readFileSync(REPORT_PATH, 'utf8')) as Record<string, YamlRecord[]>;
 
   it('レポートの指紋が、今の入力と一致する', () => {
-    const line = report.find((candidate) => candidate.startsWith(FINGERPRINT_LABEL));
-    expect(line, `'${FINGERPRINT_LABEL}'の行が見つからない`).toBeDefined();
+    const recorded = storedReport().input_fingerprint[0].sha256_prefix;
 
-    const recorded = /`([0-9a-f]+)`/.exec(line!)?.[1];
     expect(
       recorded,
       `${FINGERPRINT_SOURCES.join('・')}が変わっている。'npm run stats:climate'で再生成する`,
     ).toBe(inputFingerprint());
   });
 
-  it('活動時間の表が、今の定義から数え直したものと一致する', () => {
+  it('活動時間の節が、今の定義から数え直したものと一致する', () => {
     const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     const seasons: SeasonWeatherHours[] = SEASON_CLIMATE.map((season) => ({
       seasonName: season.name,
@@ -518,26 +495,16 @@ describe('気候システム統計レポートの鮮度', () => {
     }));
 
     // 天候の出現時間はSEASON_CLIMATE（レポートから書き写した値）を使うので、丸めのぶんだけずれる。
-    // 突き合わせたいのは「土地の明るさが動いたのに表が古いまま」なので、その桁での一致で足りる。
+    // 突き合わせたいのは「土地の明るさが動いたのに節が古いまま」なので、その桁での一致で足りる。
+    const report = storedReport();
     for (const row of activityHoursOf(codex, seasons)) {
       const label = `${row.locationName} / ${row.seasonName}`;
-      const cells = activityRowOf(report, row.locationName, row.seasonName);
-      expect(row.travelHoursPerDay, `${label} の移動できる時間`).toBeCloseTo(cells.travel, 1);
-      expect(row.activeHoursPerDay, `${label} の活動できる時間`).toBeCloseTo(cells.active, 1);
+      const record = report.activity_hours.find(
+        (candidate) => candidate.location === row.locationName && candidate.season === row.seasonName,
+      );
+      expect(record, `${label} のレコードが見つからない`).toBeDefined();
+      expect(row.travelHoursPerDay, `${label} の移動できる時間`).toBeCloseTo(Number(record!.travel), 1);
+      expect(row.activeHoursPerDay, `${label} の活動できる時間`).toBeCloseTo(Number(record!.active), 1);
     }
   });
 });
-
-/** 活動時間の表から、土地×季節の1行を読む。 */
-function activityRowOf(
-  lines: readonly string[],
-  locationName: string,
-  seasonName: string,
-): { travel: number; active: number } {
-  const prefix = `| ${locationName} | ${seasonName} |`;
-  const row = lines.find((line) => line.startsWith(prefix));
-  expect(row, `行 '${prefix}' が見つからない`).toBeDefined();
-
-  const cells = row!.split('|');
-  return { travel: Number.parseFloat(cells[3]), active: Number.parseFloat(cells[4]) };
-}
