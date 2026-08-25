@@ -26,6 +26,7 @@ describe('animals.yamlの動物', () => {
 
   let codex: WorldCodex;
   let session: WorldSession;
+  let startMinutes: number;
   let jungle: WorldObject;
   let player: WorldObject;
   let monkey: WorldObject;
@@ -56,9 +57,15 @@ describe('animals.yamlの動物', () => {
       new WorldSession(codex),
     );
     session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(roll));
+    startMinutes = session.world!.totalMinutes;
     jungle = spawnInto('jungle', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');
     monkey = spawnInto('monkey', jungle, 'items');
+  }
+
+  /** worldを組んでからの経過分。開始時刻（core.yamlのworld.hourの既定値）に依らずdurationだけを見る。 */
+  function elapsedMinutes(): number {
+    return session.world!.totalMinutes - startMinutes;
   }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
@@ -141,7 +148,7 @@ describe('animals.yamlの動物', () => {
 
     expect(injuriesOf(monkey), '傷は動物のinjuriesスロットへ入る').toEqual(['laceration']);
     expect(stone.parent, '武器は手元に残る').toBe(player);
-    expect(session.world!.totalMinutes, 'durationの15分が経つ').toBe(15);
+    expect(elapsedMinutes(), 'durationの15分が経つ').toBe(15);
   });
 
   it('殴れば警戒が上がり、刃も摩耗する', () => {
@@ -497,7 +504,7 @@ describe('animals.yamlの動物', () => {
       ]);
       expect(carcass.parent, '死体は世界から出る').toBeUndefined();
       expect(knife.parent, '刃物は手元に残る').toBe(player);
-      expect(session.world!.totalMinutes - 30, 'durationの60分が経つ（殴った2回で30分）').toBe(60);
+      expect(elapsedMinutes() - 30, 'durationの60分が経つ（殴った2回で30分）').toBe(60);
     });
 
     it('取り分の重さの合計は、死体より軽くなる', () => {

@@ -49,7 +49,7 @@ describe('core.yamlのworld定義', () => {
     expect(instance.tryGetProperty(codex.propertyNames.getId('tick'))?.number ?? 0).toBe(0);
     expect(instance.tryGetProperty(codex.propertyNames.getId('minutes_per_tick'))?.number ?? 0).toBe(15);
     expect(instance.tryGetProperty(codex.propertyNames.getId('minute'))?.number ?? 0).toBe(0);
-    expect(instance.tryGetProperty(codex.propertyNames.getId('hour'))?.number ?? 0).toBe(0);
+    expect(instance.tryGetProperty(codex.propertyNames.getId('hour'))?.number ?? 0).toBe(12);
     expect(instance.tryGetProperty(codex.propertyNames.getId('day'))?.number ?? 0).toBe(1);
     expect(instance.tryGetProperty(codex.propertyNames.getId('ambient_temperature'))?.number ?? 0).toBe(20);
   });
@@ -91,6 +91,8 @@ describe('core.yamlのworld定義', () => {
     const worldInstance = new WorldSession(codex).createObject(world.globalId);
     const worldView = new World(worldInstance, codex);
     const session = new WorldSession(codex, worldView);
+    // 見たいのは繰り上がりの連鎖なので、hourの既定値（正午）ではなく0:00から始める。
+    worldInstance.getProperty(hourId).setNumberWithoutEvents(0);
 
     session.advanceWorldTime(60); // 60分 -> minuteが折り返し、hourへ+1
 

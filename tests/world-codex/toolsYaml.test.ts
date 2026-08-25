@@ -91,6 +91,8 @@ describe('tools.yamlの道具定義', () => {
     );
     const worldView = new World(worldInstance, codex);
     const session = new WorldSession(codex, worldView);
+    // 経過分は開始時刻（core.yamlのworld.hourの既定値）に依らず、組んだ時点からの差で見る。
+    const startMinutes = worldView.totalMinutes;
 
     const beach = session.createObject(codex.objectNames.getId('sandy_beach'));
     expect(
@@ -120,8 +122,7 @@ describe('tools.yamlの道具定義', () => {
       '割られた側が尖った石へ置き換わる（槌は手元に残ったまま）',
     ).toEqual(['sharp_stone']);
     expect(hammer.parent, '打ち合わせた側は消えない').toBeUndefined();
-    expect(worldView.hour, 'durationの60分が経つ').toBe(1);
-    expect(worldView.minute).toBe(0);
+    expect(worldView.totalMinutes - startMinutes, 'durationの60分が経つ').toBe(60);
   });
 });
 

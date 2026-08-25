@@ -18,6 +18,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
   let codex: WorldCodex;
   let session: WorldSession;
   let worldView: World;
+  let startMinutes: number;
   let beach: WorldObject;
   let player: WorldObject;
   let hydrationId: number;
@@ -38,10 +39,16 @@ describe('coconut.yamlのヤシの実の加工', () => {
     worldView = new World(worldInstance, codex);
     // 実採りは確率で捻挫する（injuries.yaml）。ここは加工の連鎖を見るテストなので、必ず成功する側を引く。
     session = new WorldSession(codex, worldView, fixedRng(0));
+    startMinutes = worldView.totalMinutes;
 
     beach = spawnInto('sandy_beach', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, beach, 'characters');
   });
+
+  /** worldを組んでからの経過分。開始時刻（core.yamlのworld.hourの既定値）に依らずdurationだけを見る。 */
+  function elapsedMinutes(): number {
+    return worldView.totalMinutes - startMinutes;
+  }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.createObject(codex.objectNames.getId(objectName));
@@ -91,8 +98,7 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
     expect(handOf(player), '1回登ればまとめて採れる').toEqual(['green_coconut', 'green_coconut']);
     expect(tree.parent, 'ヤシの木は残る').toBe(beach);
-    expect(worldView.hour, 'durationの30分が経つ').toBe(0);
-    expect(worldView.minute).toBe(30);
+    expect(elapsedMinutes(), 'durationの30分が経つ').toBe(30);
   });
 
   it('手持ちが埋まっていると、採った実は装備欄ではなく足元へ落ちる', () => {

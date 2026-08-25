@@ -17,6 +17,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
   let codex: WorldCodex;
   let session: WorldSession;
   let worldView: World;
+  let startMinutes: number;
   let beach: WorldObject;
   let player: WorldObject;
 
@@ -35,10 +36,16 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
     worldView = new World(worldInstance, codex);
     // 葉採りは確率で捻挫する（injuries.yaml）。ここは加工の連鎖を見るテストなので、必ず成功する側を引く。
     session = new WorldSession(codex, worldView, fixedRng(0));
+    startMinutes = worldView.totalMinutes;
 
     beach = spawnInto('sandy_beach', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, beach, 'characters');
   });
+
+  /** worldを組んでからの経過分。開始時刻（core.yamlのworld.hourの既定値）に依らずdurationだけを見る。 */
+  function elapsedMinutes(): number {
+    return worldView.totalMinutes - startMinutes;
+  }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
     const spawned = session.createObject(codex.objectNames.getId(objectName));
@@ -69,7 +76,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
 
     expect(handOf(player)).toEqual(['palm_frond', 'palm_frond', 'palm_frond']);
     expect(tree.parent, 'ヤシの木は残る').toBe(beach);
-    expect(worldView.minute, 'durationの30分が経つ').toBe(30);
+    expect(elapsedMinutes(), 'durationの30分が経つ').toBe(30);
   });
 
   it('素手で編むと、葉1枚から編んだ葉が1枚できる', () => {
@@ -79,8 +86,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
 
     expect(itemsOn(beach)).toEqual(['woven_leaf']);
     expect(weightsOn(beach), '重さの大半を占める中軸を捨てるので、葉4000gより軽くなる').toEqual([400]);
-    expect(worldView.hour, '素手は時間がかかる（90分）').toBe(1);
-    expect(worldView.minute).toBe(30);
+    expect(elapsedMinutes(), '素手は時間がかかる（90分）').toBe(90);
   });
 
   it('刃物を当てて割って編むと、同じ葉から2枚とれる', () => {
@@ -97,8 +103,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
     expect(itemsOn(beach), '元の葉が居た場所へ2枚が並んで置き換わる').toEqual(['woven_leaf', 'woven_leaf']);
     expect(weightsOn(beach), '2枚に増えても1枚ぶんの重さは変わらない').toEqual([400, 400]);
     expect(knife.parent, '刃物は消費されない').toBe(player);
-    expect(worldView.hour, '割って編むほうが1枚あたりは速い（60分で2枚）').toBe(1);
-    expect(worldView.minute).toBe(0);
+    expect(elapsedMinutes(), '割って編むほうが1枚あたりは速い（60分で2枚）').toBe(60);
   });
 
   it('編み籠のレシピは編んだ葉を6枚要求し、解放条件を持たない', () => {
