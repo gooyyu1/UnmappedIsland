@@ -654,6 +654,7 @@ npm run stats:balance
 | fire_drill | 97.4 | 37.4 | 60.0 | 0.12 | sandy_beach.explore → forest.explore → fire_drill.carved | — |
 | dry_grass | 142.5 | 142.5 | 0.0 | 0.17 | wasteland.explore | — |
 | burning_tinder | 99.9 | 29.4 | 70.5 | 0.12 | jungle.explore → abaca.fell → banana_stem.strip → plant_fiber.light | fire_drill（97.4分）、cutting_tool → sharp_stone（72.2分） |
+| torch | 75.4 | 43.4 | 32.0 | 0.09 | jungle.explore → abaca.fell → banana_stem.strip → sandy_beach.explore → torch.wrapped | cutting_tool → sharp_stone（72.2分） |
 | hot_stone | 12.2 | 12.2 | 0.0 | 0.01 | rocky_field.explore → stone.heat_soak.on_max | campfire（55.9分） |
 | campfire | 55.9 | 40.9 | 15.0 | 0.07 | forest.explore → campfire.stacked | — |
 | water_spinach | 17.7 | 17.7 | 0.0 | 0.02 | grassland.explore | — |
@@ -667,7 +668,7 @@ npm run stats:balance
 | stone | 12.2 | 12.2 | 0.0 | 0.01 | rocky_field.explore | — |
 | twig | 13.6 | 13.6 | 0.0 | 0.02 | forest.explore | — |
 | berry_bush | 71.6 | 71.6 | 0.0 | 0.09 | mountainside.explore | — |
-| cave_entrance | 41.4 | 41.4 | 0.0 | 0.05 | mountain_peak.explore | — |
+| shallow_cave | 41.4 | 41.4 | 0.0 | 0.05 | mountain_peak.explore | — |
 | spring | 199.5 | 199.5 | 0.0 | 0.24 | grassland.explore | — |
 | clay | 71.3 | 71.3 | 0.0 | 0.09 | grassland.explore | — |
 | unfired_jar | 232.5 | 142.5 | 90.0 | 0.29 | grassland.explore → unfired_jar.coiled | — |
@@ -895,6 +896,7 @@ npm run stats:balance
 | rope | twisted | recipe | 60 | 60 | rope ×1.00 | — |
 | fire_drill | carved | recipe | 60 | 60 | fire_drill ×1.00 | — |
 | dry_grass | light | interaction | 30 | 30 | burning_tinder ×0.60 | — |
+| torch | wrapped | recipe | 15 | 15 | torch ×1.00 | — |
 | hot_stone | boil | interaction | 5 | 5 | jar__content_hot_water_liquid ×1.00、stone ×1.00 | — |
 | hot_stone | boil | interaction | 5 | 5 | coconut_bowl__content_hot_water_liquid ×1.00、stone ×1.00 | — |
 | campfire | add_fuel | interaction | 1 | 1 | — | （self）fuel +999.00 |
@@ -925,15 +927,15 @@ npm run stats:balance
 | stone | heat_soak.on_max | periodic | 0 | 180 | hot_stone ×1.00 | — |
 | stone | heat_soak.on_max | periodic | 0 | 180 | hot_stone ×1.00 | — |
 | sandy_beach | explore | interaction | 15 | 15 | palm_tree ×0.12、woven_basket ×0.05、coconut_crab ×0.27、rat ×0.02、monkey ×0.04、coconut ×0.86、thick_branch ×0.63 | （self）exploration_progress +1.00 |
-| rocky_coast | explore | interaction | 15 | 15 | cave_entrance ×0.13、coconut_crab ×0.38、rat ×0.02、stone ×1.23、thick_branch ×0.27 | （self）exploration_progress +1.00 |
-| cliff_coast | explore | interaction | 15 | 15 | cave_entrance ×0.19、golden_chalice ×0.04、stone ×1.07、rat ×0.02、thick_branch ×0.24 | （self）exploration_progress +1.00 |
+| rocky_coast | explore | interaction | 15 | 15 | shallow_cave ×0.13、coconut_crab ×0.38、rat ×0.02、stone ×1.23、thick_branch ×0.27 | （self）exploration_progress +1.00 |
+| cliff_coast | explore | interaction | 15 | 15 | shallow_cave ×0.19、golden_chalice ×0.04、stone ×1.07、rat ×0.02、thick_branch ×0.24 | （self）exploration_progress +1.00 |
 | grassland | explore | interaction | 15 | 15 | berry_bush ×0.11、spring ×0.08、rat ×0.02、junglefowl ×0.03、water_spinach ×0.85、taro ×0.59、dry_grass ×0.09、clay ×0.21 | （self）exploration_progress +1.00 |
 | forest | explore | interaction | 15 | 15 | berry_bush ×0.17、spring ×0.07、rat ×0.02、monkey ×0.03、wild_boar ×0.02、broadleaf_tree ×0.10、twig ×1.10、taro ×0.22、banana_plant ×0.08、clay ×0.16 | （self）exploration_progress +1.00 |
 | jungle | explore | interaction | 15 | 15 | palm_tree ×0.10、taro ×0.14、rat ×0.02、junglefowl ×0.02、monkey ×0.03、wild_boar ×0.02、broadleaf_tree ×0.08、twig ×0.52、coconut ×0.57、water_spinach ×0.20、abaca ×0.08、banana_plant ×0.06、clay ×0.13 | （self）exploration_progress +1.00 |
-| rocky_field | explore | interaction | 15 | 15 | cave_entrance ×0.17、golden_chalice ×0.03、twig ×0.55、rat ×0.02、stone ×1.23 | （self）exploration_progress +1.00 |
+| rocky_field | explore | interaction | 15 | 15 | shallow_cave ×0.17、golden_chalice ×0.03、twig ×0.55、rat ×0.02、stone ×1.23 | （self）exploration_progress +1.00 |
 | wasteland | explore | interaction | 15 | 15 | stone ×0.99、twig ×0.50、rat ×0.02、dry_grass ×0.11 | （self）exploration_progress +1.00 |
-| mountainside | explore | interaction | 15 | 15 | cave_entrance ×0.14、golden_chalice ×0.03、berry_bush ×0.21、rat ×0.02、stone ×0.98、twig ×0.62 | （self）exploration_progress +1.00 |
-| mountain_peak | explore | interaction | 15 | 15 | cave_entrance ×0.36、stone ×1.19、rat ×0.02 | （self）exploration_progress +1.00 |
+| mountainside | explore | interaction | 15 | 15 | shallow_cave ×0.14、golden_chalice ×0.03、berry_bush ×0.21、rat ×0.02、stone ×0.98、twig ×0.62 | （self）exploration_progress +1.00 |
+| mountain_peak | explore | interaction | 15 | 15 | shallow_cave ×0.36、stone ×1.19、rat ×0.02 | （self）exploration_progress +1.00 |
 | unfired_jar | coiled | recipe | 90 | 90 | unfired_jar ×1.00 | — |
 | unfired_jar | cooking_progress.on_max | periodic | 0 | 1800 | jar ×0.50 | — |
 | earth_kiln | add_fuel | interaction | 1 | 1 | — | （self）fuel +999.00 |
