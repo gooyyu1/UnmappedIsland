@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { parseDocument, isMap, isScalar } from 'yaml';
+import { parseDocument, isMap, isScalar, isSeq } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { Localization } from '../../src/locale/Localization';
@@ -28,15 +28,49 @@ function nameWidth(label: string): number {
 }
 
 /**
- * WorldCodexのYAMLがconditionsに書いた理由（reason、14.6節）の識別子。ロード後のConditionNodeは
- * 木に畳まれていて列挙できないため、定義ファイルの字面から拾う。
+ * `reason`が書ける2箇所（GameElementDefinition.md 14.6節と9.3節）。**同じ綴りの別の名前空間**なので、
+ * 引く先の対応表も別（`reason_texts` と `destroy_reason_texts`）。
  */
-function declaredReasonNames(): readonly string[] {
-  const found = new Set<string>();
+type ReasonNamespace = 'condition' | 'destroy';
+
+/**
+ * WorldCodexのYAMLが書いた理由（reason）の識別子を、名前空間ごとに集める。ロード後のConditionNodeも
+ * 効果も木に畳まれていて列挙できないため、定義ファイルの構文木から拾う。
+ *
+ * **字面ではなく構文木を辿る。** 行の形で見分けると、同じ意味の`- {reason: x, ...}`と
+ * `- reason: x`が別の扱いになり、書き方を変えただけで検査をすり抜ける。
+ */
+function declaredReasonNames(): ReadonlyMap<ReasonNamespace, ReadonlySet<string>> {
+  const found = new Map<ReasonNamespace, Set<string>>([
+    ['condition', new Set()],
+    ['destroy', new Set()],
+  ]);
+
+  /** namespaceは、この節の直下に書かれた`reason`がどちらの名前空間に属するか（属さない位置ならundefined）。 */
+  const walk = (node: unknown, namespace: ReasonNamespace | undefined): void => {
+    if (isSeq(node)) {
+      // conditionsもdestroyもリストで書けて、要素1つずつが同じ名前空間の`reason`を持つ。
+      for (const item of node.items) walk(item, namespace);
+      return;
+    }
+    if (!isMap(node)) return;
+
+    for (const pair of node.items) {
+      const key = isScalar(pair.key) ? String(pair.key.value) : '';
+      if (key === 'reason' && isScalar(pair.value)) {
+        expect(namespace, `'reason: ${String(pair.value.value)}' が想定外の位置にある`).toBeDefined();
+        found.get(namespace!)!.add(String(pair.value.value));
+        continue;
+      }
+      // 要件は`conditions`のほか、全レシピへ掛かる`crafting_conditions`（RecipeSystem.md 5節）にも書ける。
+      const isConditions = key.endsWith('conditions');
+      walk(pair.value, isConditions ? 'condition' : key === 'destroy' ? 'destroy' : undefined);
+    }
+  };
+
   for (const path of worldCodexYamlPaths())
-    for (const match of readFileSync(path, 'utf8').matchAll(/^\s*-?\s*reason:\s*([a-z][a-z0-9_]*)\s*$/gm))
-      found.add(match[1]);
-  return [...found];
+    walk(parseDocument(readFileSync(path, 'utf8')).contents, undefined);
+  return found;
 }
 
 /**
@@ -136,8 +170,16 @@ describe('同梱の表示文字列ファイル', () => {
   it('conditionsが宣言する理由（reason）はすべて文言を持つ', () => {
     // 欠けると、押せないアクションの吹き出しが「今はできない。」に落ちて理由が伝わらない
     // （GameElementDefinition.md 14.6節）。
-    for (const reasonName of declaredReasonNames())
+    for (const reasonName of declaredReasonNames().get('condition')!)
       expect(locale.reason(reasonName), `reason '${reasonName}' には文言が必要`).toBeDefined();
+  });
+
+  it('destroyが名乗る消し方（reason）はすべて文言を持つ', () => {
+    // 死亡ダイアログが死因として出す（VitalsSystem.md 6節）。欠けると識別子（dehydrated等）が
+    // そのまま画面に出る。**段の対応表は見ない**——名前が揃っているのはたまたまで、揃っている
+    // ことに意味は無い（9.3節）。
+    for (const reasonName of declaredReasonNames().get('destroy')!)
+      expect(locale.destroyReason(reasonName), `消し方 '${reasonName}' には文言が必要`).not.toBe(reasonName);
   });
 
   it('告げる出来事（signal）はすべて、札の上に収まる短い文言を持つ', () => {
@@ -160,9 +202,6 @@ describe('同梱の表示文字列ファイル', () => {
     const STAGE_MAX_WIDTH = 3;
 
     expect(locale.stage('unconscious'), '気絶は覆いを出す段（VitalsSystem.md 6節）').not.toBe('unconscious');
-    // 死亡ダイアログが死因として出す段（VitalsSystem.md 6節）。文言が欠けると識別子が画面に出る。
-    for (const name of ['dehydrated', 'starved', 'exsanguinated'])
-      expect(locale.stage(name), `死因の段 '${name}' には文言が必要`).not.toBe(name);
 
     for (const name of declaredStageTextNames()) {
       const label = locale.stage(name);
@@ -196,6 +235,10 @@ describe('同梱の表示文字列ファイル', () => {
 
     for (const name of declaredSectionKeys('symbol_texts'))
       expect(codex.symbolNames.tryGetId(name), `'${name}' はWorldCodexに存在しないシンボル`).toBeDefined();
+
+    const destroyReasons = declaredReasonNames().get('destroy')!;
+    for (const name of declaredSectionKeys('destroy_reason_texts'))
+      expect(destroyReasons.has(name), `'${name}' を名乗るdestroyはWorldCodexに無い`).toBe(true);
 
     const types = new Map(codex.generation!.locationTypes.map((type) => [type.name, type]));
     for (const [typeName, variantIds] of declaredLocationNames()) {

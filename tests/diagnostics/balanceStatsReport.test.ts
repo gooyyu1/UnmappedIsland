@@ -1,6 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import type {
   BalanceTables,
@@ -20,6 +18,7 @@ import {
   WHOLE_ISLAND,
 } from '../../src/analysis/balanceTables';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { describeReportFreshness, describeReportRegeneration } from '../support/generatedReport';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
@@ -29,12 +28,8 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
  * 差分のため**——数値を触ったときに何がどう動いたかは`git diff`でしか読めず、ビューアはその瞬間の
  * 姿しか見せられない。
  *
- * 書き出しは通常のテストスイート（`npm test`）には含めない: 合否判定を目的とした回帰テストではなく、
- * 数値を触るたびに差分で影響を見るための再計算が目的のため、`RUN_BALANCE_STATS`環境変数が
- * 立っているときだけ実行する。定義の数値を変えた後に再生成する: `npm run stats:balance`
- *
- * **代わりに、生成済みのレポートが古くなっていないかは常に見る**（末尾のdescribe）。表を作り直すのは
- * 1秒で済むので、指紋のような間接の突き合わせは要らない——**丸ごと比べれば取りこぼしが無い。**
+ * 定義の数値を変えた後に再生成する: `npm run stats:balance`。再生成と鮮度の形は
+ * `tests/support/generatedReport.ts` が持つ。表を作り直すのは1秒で済むので、鮮度は丸ごと作り直して比べる。
  */
 
 function formatNumber(value: number, digits = 1): string {
@@ -530,48 +525,39 @@ function appendSupply(append: (line?: string) => void, tables: BalanceTables): v
 
 const REPORT_PATH = join('docs', 'diagnostics', 'BalanceStats.md');
 
-describe.runIf(process.env.RUN_BALANCE_STATS === '1')('アイテム収支レポート', () => {
-  it('定義から収支を計算してBalanceStats.mdを再生成する', () => {
-    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
-    const tables = buildBalanceTables(codex, SAMPLE_CHARACTER);
-
-    const report = buildReport(tables);
-    writeFileSync(REPORT_PATH, report, 'utf8');
-    console.log(`Report written to: ${REPORT_PATH}`);
-
-    expect(report).toContain('# アイテム収支レポート');
-    expect(tables.places[0].name).toBe(WHOLE_ISLAND);
-
-    // 雨で溜まる水は、時間を数えられていないだけで内容の穴ではない（issue #660）。
-    expect(report).toContain('### 数えられない経路');
-    expect(tables.gaps.filter((gap) => gap.label.includes('water_liquid'))).toEqual([]);
-
-    // 汲む労働は数えられなくても、溜まる量は季節ごとに出る（issue #662）。差引の符号が結論で、
-    // それは`rainWaterContent.test.ts`が常時見る。
-    expect(report).toContain('### 雨で溜まる水');
-  }, 600_000);
-});
+/** 定義から収支を計算する。再生成と鮮度の確認が同じものを見るための1箇所。 */
+function buildTablesFromDefinitions(): BalanceTables {
+  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  return buildBalanceTables(codex, SAMPLE_CHARACTER);
+}
 
 /**
- * 生成済みの`BalanceStats.md`が、今の定義より古くなっていないか。
- *
- * **丸ごと作り直して比べる。** 表の入力は定義（YAML）だけではなく、気候の実測値のように解析側が
- * 持つ値も含む（`seasonalRain.ts`）ので、YAMLの指紋では取りこぼす——実際、#776 で気候の定数を
- * 直したときにこの表が3行ずれた。
+ * 見張る節: `### 数えられない経路` と `### 雨で溜まる水` は、汲む労働を数えられないこと
+ * （issue #660・#662）がレポートに残る形そのもの。`### ${WHOLE_ISLAND}` は、土地を渡り歩ける前提で
+ * 数えた節。
  */
-describe('アイテム収支レポートの鮮度', () => {
-  it('生成済みのBalanceStats.mdが、今の定義から作り直したものと一致する', () => {
-    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
-    const rebuilt = buildReport(buildBalanceTables(codex, SAMPLE_CHARACTER));
-    const stored = readFileSync(REPORT_PATH, 'utf8');
+describeReportRegeneration(
+  REPORT_PATH,
+  'RUN_BALANCE_STATS',
+  () => buildReport(buildTablesFromDefinitions()),
+  ['# アイテム収支レポート', `### ${WHOLE_ISLAND}`, '### 数えられない経路', '### 雨で溜まる水'],
+);
 
-    expect(normalizeNewlines(stored), "古い。'npm run stats:balance'で再生成する").toBe(
-      normalizeNewlines(rebuilt),
-    );
+describeReportFreshness(REPORT_PATH, 'npm run stats:balance', () =>
+  buildReport(buildTablesFromDefinitions()),
+);
+
+/**
+ * 雨で溜まる水は、**時間を数えられていないだけで内容の穴ではない**（issue #660）。穴として数えられると
+ * 水を要る経路がまとめて塞がれるので、`### 島全体で入手経路が無いもの` に載っていないことを見る。
+ *
+ * レポートの字面では表せない——この節は穴が1つも無ければ丸ごと出ず、載る名前も `x → y` の形を取りうる。
+ * 再生成（`RUN_BALANCE_STATS`）の中に置くとCIが見ないままになる（issue #768）ので、常時走らせる。
+ */
+describe('収支の穴', () => {
+  it('雨で溜まる水が、島全体で入手経路が無いものに数えられていない', () => {
+    const gaps = buildTablesFromDefinitions().gaps.map((gap) => gap.label);
+
+    expect(gaps.filter((label) => label.includes('water_liquid'))).toEqual([]);
   }, 600_000);
 });
-
-/** CRLFの作業ツリーで生成したレポートが、LFの作業ツリーで食い違わないようにする。 */
-function normalizeNewlines(text: string): string {
-  return text.replace(/\r\n/g, '\n');
-}

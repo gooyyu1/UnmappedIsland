@@ -1,12 +1,10 @@
-import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import process from 'node:process';
-import { describe, expect, it } from 'vitest';
 import type { BaseDailyTravel, DestinationChoice } from '../../src/analysis/dailyTravel';
 import { dailyTravelOf, DESTINATION_CHOICES, VISIT_COUNTS } from '../../src/analysis/dailyTravel';
 import type { IslandMap } from '../../src/domain/generation/IslandMap';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { describeReportFreshness, describeReportRegeneration } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -14,10 +12,9 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * パスネットワーク（TerrainGeneration.md 3.5節）の現在の実装について、土地1つあたりの道の本数
  * （連結数）などの統計を計測し、`docs/diagnostics/TerrainStats.md`へ書き出す。
  *
- * 通常のテストスイート（`npm test`）には含めない: 合否判定を目的とした回帰テストではなく、
- * 「繋がりすぎ/繋がらなすぎ」を数値で見るための再計測が目的のため、`RUN_TERRAIN_STATS`環境変数が
- * 立っているときだけ実行する。`extra_edge_detour_factor` 等を変えた後に再生成する:
- * `npm run stats:terrain`
+ * 「繋がりすぎ/繋がらなすぎ」を数値で見るためのもので、`extra_edge_detour_factor` 等を変えた後に
+ * 再生成する: `npm run stats:terrain`。再生成と鮮度の形は `tests/support/generatedReport.ts` が持つ。
+ * 500シードの生成は1秒で済むので、鮮度は丸ごと作り直して比べる。
  */
 
 const SEED_COUNT = 500;
@@ -251,20 +248,22 @@ function buildReport(stats: TerrainStats): string {
   return lines.join('\n') + '\n';
 }
 
-describe.runIf(process.env.RUN_TERRAIN_STATS === '1')('地形生成統計レポート', () => {
-  it(`${SEED_COUNT}シード分の島を生成してTerrainStats.mdを再生成する`, () => {
-    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+const REPORT_PATH = join('docs', 'diagnostics', 'TerrainStats.md');
 
-    const stats = createStats(codex.generation!.locationTypes.map((type) => type.name));
-    for (let seed = 0; seed < SEED_COUNT; seed++) {
-      collect(stats, generateIsland(codex.generation, 'island', seed));
-    }
+/** 定義から島を生成して測り、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
+function buildReportFromDefinitions(): string {
+  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
 
-    const report = buildReport(stats);
-    const outPath = join('docs', 'diagnostics', 'TerrainStats.md');
-    writeFileSync(outPath, report, 'utf8');
-    console.log(`Report written to: ${outPath}`);
+  const stats = createStats(codex.generation!.locationTypes.map((type) => type.name));
+  for (let seed = 0; seed < SEED_COUNT; seed++) {
+    collect(stats, generateIsland(codex.generation, 'island', seed));
+  }
 
-    expect(report).toContain('# 地形生成統計レポート');
-  }, 600_000);
-});
+  return buildReport(stats);
+}
+
+describeReportRegeneration(REPORT_PATH, 'RUN_TERRAIN_STATS', buildReportFromDefinitions, [
+  '# 地形生成統計レポート',
+]);
+
+describeReportFreshness(REPORT_PATH, 'npm run stats:terrain', buildReportFromDefinitions);

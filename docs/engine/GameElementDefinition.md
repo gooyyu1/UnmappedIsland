@@ -1338,6 +1338,34 @@ interactions:
 こぼれずに一緒に外れます——割れた器の水は残りません。こぼれた先がすでにその tick の中身を数え終えて
 いれば、その物はそのtickの残りだけ動きません（1 tick の取りこぼしは、1日96 tickの刻みでは無視できます）。
 
+#### 消し方に名前を添える（`reason`）
+
+**どう消したのかは、消した宣言がその場で名乗ります。** 対象をマップで書くと `reason` を添えられ、
+名前は消された側に残ります（`WorldObject.destroyedReason`）。
+
+```yaml
+hydration:
+  range: {min: 0, max: 336}
+  on_min:
+    destroy: {subject: self, reason: dehydrated}   # 渇きで死んだ
+```
+
+マップの中身は `subject`（省略時は `self`）・`prop`・`reason` の3つで、`prop` を書けばその実効値が
+インスタンスIDとして指す相手（`destroy: {prop: smash_target, reason: crushed}`）、書かなければ
+`subject` そのものを指します。スカラーとリストの書き方はそのままで、リストの要素にもマップを置けます。
+**空のマップ（`destroy: {}`）はロード時エラー**です——既定に任せれば動きますが、それは何も書かずに
+`destroy: self` を得る抜け道で、書く理由がありません。
+
+表示文言は locale の `destroy_reason_texts`（[`Localization.md`](./Localization.md)
+destroy_reason_texts節）が持ちます。**段（6.4節）とも要件の `reason`（14.6節）とも別の名前空間**で、
+同じ綴りを当てても構いませんが、揃っていることを当てにはしません。
+
+**名乗らない消滅は、何も残しません。** 立ち去った獣（`stay_remaining` の `on_min`）と渇きで死んだ獣は、
+残った値から見れば同じ「下限で消えた」ですが、名乗るかどうかで分かれます——**消えたことの意味を
+知っているのは消した側だけ**なので、後から状態を見て推測しません
+（[`VitalsSystem.md`](./VitalsSystem.md) 6 節）。識別子は表示のためだけに使い（`signal` の名前・要件の
+`reason` と同じ扱い、9.8 節・14.6 節）、エンジンは名前の意味を知りません。
+
 ### 9.4 spawn
 
 `{object, into}` を指定すると、新規オブジェクトを生成し、指定した場所へ配置します。`spawn` は常に **`self`
@@ -2265,7 +2293,7 @@ object_defs:
 `tick` も持つ。）
 
 **「1つだけ存在すべき」は「世界を作った時点で在る」と読みます。** ただし湧かせるのは、`world` が直に
-受け入れられる型だけです（`NewGame.spawnSingletons`）——外洋・本土（[`Voyage.md`](../world/Voyage.md) 4 節）は
+受け入れられる型だけです（`NewGame.spawnSingletonsAcceptedByWorld`）——外洋・本土（[`Voyage.md`](../world/Voyage.md) 4 節）は
 `world` の `locations` 枠に入るのでそこに在り、キャラクタも `singleton` ですが、`world` のどの枠にも入らない
 （土地の `characters` 枠に入る物です）ので湧きません。何が最初から在るかを決めるのは枠の宣言だけで、
 エンジンは型の名前を1つも知りません。これにより、型の名前で行き先を指す `move` の `to_object`（9.6 節）は

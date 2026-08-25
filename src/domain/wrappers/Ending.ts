@@ -22,12 +22,15 @@ export class Ending extends ObjectWrapper {
   }
 
   /**
-   * 命を奪った値が居る段の名前（死んでいなければundefined）。渇き・飢え・失血のどれで死んだかは、
-   * 尽きた値のまま残っている段が答える（WorldObject.exhaustedStage）。表示文言は段の名前から引く
-   * （Localization.stage）ので、死因を名乗るのはワールドの側だけになる。
+   * 命を奪った宣言が名乗った名前（死んでいなければundefined）。渇き・飢え・失血のどれで死んだかは、
+   * 命を絶った`destroy`が置いた名前がそのまま答える（WorldObject.destroyedReason）——**残った値から
+   * 推測しない**（VitalsSystem.md 6節）。表示文言はその名前から引く（Localization.destroyReason）ので、
+   * 死因を名乗るのはワールドの側だけになる。
+   *
+   * 名前を持たない消滅（行き場を失ってこぼれ落ちた等）はundefinedで、画面は死に方を言わない。
    */
   get causeOfDeath(): string | undefined {
-    return this.kind === 'death' ? this.instance.exhaustedStage : undefined;
+    return this.kind === 'death' ? this.instance.destroyedReason : undefined;
   }
 
   /**

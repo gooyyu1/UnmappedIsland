@@ -74,8 +74,7 @@ export function parseActiveEffectBody(
         operations.push(...parseMoves(loader, keyContext, valueNode, scope));
         break;
       case 'destroy':
-        for (const target of parseDestroyTargets(loader, keyContext, valueNode, scope))
-          operations.push(new DestroyEffect(target));
+        operations.push(...parseDestroys(loader, keyContext, valueNode, scope));
         break;
       case 'spawn':
         operations.push(...parseSpawns(loader, keyContext, valueNode));
@@ -521,16 +520,61 @@ function parseSignals(context: string, node: YamlNode, scope: ReferenceScope): S
   });
 }
 
-/** destroy（削除対象の直接指定）を読む。単一の対象か対象のリストを許容する。 */
-function parseDestroyTargets(
+/** destroy（削除対象の直接指定、9.3節）を読む。単一の対象か対象のリストを許容する。 */
+function parseDestroys(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YamlNode,
   scope: ReferenceScope,
-): ObjectRef[] {
-  if (isSeq(node)) return (node.items as YamlNode[]).map((n) => parseObjectRef(loader, context, n, scope));
+): DestroyEffect[] {
+  if (isSeq(node)) return (node.items as YamlNode[]).map((n) => parseDestroy(loader, context, n, scope));
 
-  return [parseObjectRef(loader, context, node, scope)];
+  return [parseDestroy(loader, context, node, scope)];
+}
+
+/**
+ * destroyの対象1つ（9.3節）。対象キー（`destroy: self`）か、`{subject, prop, reason}`のマップ——
+ * `prop`を書けばその実効値がインスタンスIDとして指す相手、書かなければ`subject`（省略時はself）
+ * そのものを指す。
+ *
+ * `reason`はこの消滅が名乗る名前で、消された側に残る（WorldObject.destroyedReason）。書かなければ
+ * 何も残らないので、その消滅は死因として読まれない。
+ *
+ * **中身が空のマップは弾く。** `subject`の既定がselfなので`destroy: {}`も動いてしまうが、それは
+ * 何も書かずに`destroy: self`を得る抜け道で、書く理由が無い（policies.md「宣言漏れの扱い」）。
+ */
+function parseDestroy(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YamlNode,
+  scope: ReferenceScope,
+): DestroyEffect {
+  if (!isMap(node))
+    return new DestroyEffect(
+      ObjectRef.ofRoot(parseObjectTargetRoot(context, asScalarText(node, context), scope)),
+    );
+
+  if (node.items.length === 0)
+    throw new YamlLoadError(
+      `${context}: destroyのマップが空です。消す相手（'subject'か'prop'）を書いてください（相手がself自身なら 'destroy: self'）。`,
+    );
+
+  requireKnownKeys(node, ['subject', 'prop', 'reason'], context);
+  const reason = tryGetScalar(node, 'reason', context);
+  const subjectName = tryGetScalar(node, 'subject', context);
+  const propName = tryGetScalar(node, 'prop', context);
+
+  if (propName === undefined)
+    return new DestroyEffect(
+      ObjectRef.ofRoot(parseObjectTargetRoot(context, subjectName ?? 'self', scope)),
+      reason,
+    );
+
+  const root = subjectName === undefined ? 'self' : parseSubjectRoot(context, subjectName, scope);
+  return new DestroyEffect(
+    ObjectRef.ofProperty(new PropertyPath(root, loader.propertyNames.intern(propName))),
+    reason,
+  );
 }
 
 /**

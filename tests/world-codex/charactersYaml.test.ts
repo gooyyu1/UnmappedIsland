@@ -345,12 +345,12 @@ describe('プレイヤーキャラクタの定義', () => {
     });
 
     // 死に方は3つだけ（VitalsSystem.md 8節）。どれも「尽きたら世界から出る」という同じ形で、
-    // 死因の名前を持つのは、尽きた値が居る段（画面はその段の文言を出すだけ）。
+    // 死因の名前を名乗るのは命を絶ったdestroy（9.3節のreason。画面はその文言を出すだけ）。
     it.each([
       ['hydration', 'dehydrated'],
       ['body_fat', 'starved'],
       ['blood', 'exsanguinated'],
-    ])('%sを使い切ると死に、死因は段「%s」になる', (propertyName, stageName) => {
+    ])('%sを使い切ると死に、死因は「%s」を名乗る', (propertyName, reason) => {
       const { player } = stand(character);
       const propertyId = codex.propertyNames.getId(propertyName);
 
@@ -364,7 +364,48 @@ describe('プレイヤーキャラクタの定義', () => {
       player.instance.tryGetProperty(propertyId)?.add(-1);
 
       expect(player.ending.kind, '下限に達した時点で世界から外れる').toBe('death');
-      expect(player.ending.causeOfDeath).toBe(stageName);
+      expect(player.ending.causeOfDeath).toBe(reason);
+    });
+
+    /**
+     * 命を絶つ宣言の書き忘れを止める見張り（policies.md「宣言漏れの扱い」）。**見るのは
+     * 「消えたのに名乗っていない」ことだけ**で、名前が何であるかは上の3件が見ている。
+     *
+     * 死に方を1つ足したときにreasonを書き忘れると、画面は死因を言えないまま黙って動く。
+     * どの値が命を絶つかを列挙せずに、端まで動かして消えたかどうかで拾う。
+     */
+    it('名乗らずに消えたときは、死因を言わない', () => {
+      // 動物の立ち去り（stay_remainingのon_min）と同じ、名前を持たない消滅。**世界から出たことは
+      // 死だが、死に方は誰も名乗っていない**ので、画面は死因を出さない（VitalsSystem.md 6節）。
+      const { player } = stand(character);
+
+      player.instance.destroy();
+
+      expect(player.ending.kind).toBe('death');
+      expect(player.ending.causeOfDeath).toBeUndefined();
+    });
+
+    it('端まで動かして消えるなら、必ず死因を名乗る', () => {
+      const edges = def(character)
+        .enumeratePropertyDefs()
+        .flatMap((propertyDef) =>
+          propertyDef.range === undefined
+            ? []
+            : [propertyDef.range.min, propertyDef.range.max].map((edge) => ({ propertyDef, edge })),
+        );
+
+      expect(edges.length, '端を持つ値が1つも無ければ、この見張りは何も見ていない').toBeGreaterThan(0);
+
+      for (const { propertyDef, edge } of edges) {
+        const { player } = stand(character);
+        player.instance.tryGetProperty(propertyDef.globalId)?.setNumber(edge);
+
+        if (player.ending.kind !== 'death') continue;
+        expect(
+          player.ending.causeOfDeath,
+          `'${propertyDef.name}'の端で世界から外れるのに、死因を名乗っていない`,
+        ).toBeDefined();
+      }
     });
 
     it.each(RESTS)('休息「%s」を持ち、%i分かかる', (actionName, minutes) => {

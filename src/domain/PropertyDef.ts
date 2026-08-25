@@ -544,15 +544,6 @@ export class PropertyDef {
       ...new Set(this.stages.map((stage) => stage.art).filter((art): art is string => art !== undefined)),
     ];
   }
-
-  /**
-   * 実体値numberがこのプロパティにとって「尽きた」か。下限へ届いたことを合図として扱う宣言
-   * （on_min、6.3節）を持つプロパティだけが尽きうる——下限に居るだけの値（痛みの0など）は
-   * 尽きたのではなく、単に何も起きていない。
-   */
-  isExhausted(rawValue: number): boolean {
-    return this.declaredOnMin !== undefined && this.range !== undefined && rawValue <= this.range.min;
-  }
 }
 
 /**

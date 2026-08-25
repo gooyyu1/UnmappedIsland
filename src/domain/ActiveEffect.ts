@@ -178,21 +178,28 @@ export class AddEffect extends ActiveEffect {
 /**
  * destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。`destroy: [self, dragged]`は
  * 要素2つのDestroyEffectとして表す。same_slot spawnとの連携はsameSlotSpawnSite（ActiveEffect参照）が担う。
+ *
+ * **消し方に名前を添えられる**（reason、9.3節）。名前は消された側に残り、後から「どう消されたか」を
+ * 答える（WorldObject.destroyedReason）——渇きで死んだのか、ただ立ち去ったのかは、消した宣言だけが知っている。
  */
 export class DestroyEffect extends ActiveEffect {
   private readonly target: ObjectRef;
 
-  constructor(target: ObjectRef) {
+  /** この消滅の名前（9.3節）。書かれていなければundefinedで、消された側は何も名乗らない。 */
+  private readonly reason: string | undefined;
+
+  constructor(target: ObjectRef, reason?: string) {
     super();
     this.target = target;
+    this.reason = reason;
   }
 
   apply(context: ReferenceContext): void {
-    this.target.resolve(context)?.destroy();
+    this.target.resolve(context)?.destroy(this.reason);
   }
 
   read(reader: EffectReader): void {
-    reader.destroy(this.target.reading);
+    reader.destroy(this.target.reading, this.reason);
   }
 }
 

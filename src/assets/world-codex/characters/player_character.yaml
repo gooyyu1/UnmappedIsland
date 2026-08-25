@@ -92,8 +92,8 @@ traits:
       # 段は失った割合で刻む（出血性ショックの分類）。2割までが安全域なので、
       # docs/world/Characters.md の「maxの80%で安全域を外れる」とそのまま一致する。
       #
-      # **尽きれば失血死する**（VitalsSystem.md 3節）。on_minが既定のクランプを置き換えるので、
-      # 0を割った値はそのまま残り、死因（どの段で尽きたか）を後から読める（同6節）。
+      # **尽きれば失血死する**（VitalsSystem.md 3節）。死因を名乗るのは消す宣言
+      # （destroyのreason、9.3節）で、残った値からは推測しない（同6節）。
       #
       # 意識への寄与（VitalsSystem.md 3節）はまだ書かない。キャラクタは consciousness を持たず
       # （同7節）、気を失った手番をどう飛ばすかも決まっていない（同6節）。
@@ -108,7 +108,7 @@ traits:
           - {name: low, min: 3500, alert: watch}
           - {name: replete, min: 4000}
         on_min:
-          destroy: self
+          destroy: {subject: self, reason: exsanguinated}
         passives:
           - add:
               self:
