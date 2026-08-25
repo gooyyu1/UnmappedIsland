@@ -13,20 +13,24 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 
 ## 1. 検証方法
 
-`WorldCodex.schema.json` は以下の観点で検証済みです。
+**`npm test` が毎回検証します**（`tests/world-codex/worldCodexSchema.test.ts`。`ajv` の Draft 2020-12
+バリデータを使う）。手で走らせて確かめるものではないので、乖離はその場で赤になります。
 
-- **スキーマ自体の妥当性**: `jsonschema` ライブラリの `Draft202012Validator.check_schema` により、Draft 2020-12として
-  構文的に正しいスキーマであることを確認
-- **実データ全ファイルの受理**: `src/assets/world-codex/` の全YAMLファイル（`core.yaml`・`locations.yaml`・
-  `liquid_containers.yaml`・`containers.yaml`・`foods.yaml`・`characters/`・`terrain_generation.yaml`）が、実際にゲームがロードしている
-  ままの内容でスキーマを満たすことを確認（ローダーで読み込めるファイルはスキーマも通る、が維持基準）
-- **不正な記述の拒否**: identifier の
-  命名規則に反するキーを使う、未定義の比較演算子を使う、`set`/`add` に未対応の対象キー（`sibling`/`child` など)を
-  使う、`destroy` の対象に `ancestor` を使う、枠の `accept` に `tag` と `object` を同時指定する（またはどちらも省略する）、
-  ドラッグ型の操作に `trigger` を書き忘れる、廃止済みの `active:` 入れ子を使う、`passives` を配列でなく単一マッピングで
-  書く、`conditions` の葉に `slot` と `prop` を同時指定する、`conditions` の `value` に未対応の `max`/`min` を使う、
-  `in`/`not_in` に配列でない `value` を渡す、`move` の `subject` に `actor` 以外を使う、といった誤った記述が
-  拒否されることを確認
+見るのは3つで、**赤の意味が3つに分かれる**ようにしています。
+
+- **スキーマ自体の妥当性**: Draft 2020-12 として組めること。ajvのstrictモードを切っていないので、
+  綴りを間違えたキーワード（`additionalProprties`）が黙って無視される事故もここで落ちます。
+- **実データ全ファイルの受理**: `src/assets/world-codex/` 以下の全YAMLファイルが、実際にゲームが
+  ロードしているままの内容でスキーマを満たすこと（ローダーで読み込めるファイルはスキーマも通る、
+  が維持基準）。赤＝**スキーマがまだ知らない文法がある**ので、直すのはスキーマの側。
+- **不正な記述の拒否**: identifier の命名規則に反するキーを使う、未定義の比較演算子を使う、
+  `set`/`add` に未対応の対象キー（`child`）を使う、`destroy` の対象に `ancestor` を使う、枠の `accept` に
+  `tag` と `object` を同時指定する（またはどちらも省略する）、操作に `trigger` を書き忘れる、廃止済みの
+  `auto_placement` を使う、`passives` を配列でなく単一マッピングで書く、`conditions` の葉に `slot` と `prop` を
+  同時指定する、`conditions` の `value` に未対応の `max`/`min` を使う、`in`/`not_in` に配列でない `value` を
+  渡す、といった記述が拒否されること。赤＝**スキーマが緩んで何も見なくなった**。
+
+受理だけを見ると、スキーマを緩めれば緑になってしまうので、拒否も併せて見ます。
 
 ## 2. スキーマの範囲
 
@@ -67,22 +71,16 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
 ## 4. 使い方
 
 `WorldCodex.schema.json` は JSON Schema Draft 2020-12 準拠です。YAML ファイルをパースして得られるオブジェクトに対して、
-一般的な JSON Schema バリデータ（Python の `jsonschema`、Node.js の `ajv` 等）でそのまま検証できます。
+一般的な JSON Schema バリデータ（Node.js の `ajv` 8、Python の `jsonschema` 等）でそのまま検証できます。同梱ぶんを
+まとめて掛けるのは1節の試験なので、単体で走らせるならこれだけで足ります。
 
 ```bash
-python3 -c "
-import json, yaml, jsonschema
-schema = json.load(open('docs/engine/WorldCodex.schema.json'))
-v = jsonschema.Draft202012Validator(schema)
-for e in v.iter_errors(yaml.safe_load(open('src/assets/world-codex/core.yaml'))):
-    print(list(e.absolute_path), e.message)
-"
+npx vitest run tests/world-codex/worldCodexSchema.test.ts
 ```
 
 ## 5. 未決事項・今後の検討課題
 
 - 地形生成（`axes`/`location_types`/`generation_scopes`）の中身の詳細スキーマ化（2.2節。現在はキーの許容のみ）
-- スキーマ検証をCI（テストスイート）へ組み込み、ローダーとスキーマの乖離を自動検知するかどうか
 - 本スキーマは単一ファイル内の構造のみを検証するため、「参照している `object_def` や `trait` の id が実在するか」
   といった、ファイル横断的な整合性チェックは対象外（別途のバリデーションステップ、ロード後の検証に相当）
 - `GameElementDefinition.md`・`ActionSystem.md`・`RecipeSystem.md`・`ContainerSystem.md` 側の未決事項

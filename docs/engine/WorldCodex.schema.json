@@ -25,6 +25,52 @@
       },
       "additionalProperties": false
     },
+    "property_tags": {
+      "description": "プロパティのカテゴリの宣言（GameElementDefinition.md 6.7節）。識別子をキーとする辞書で、ローダーが読むのは名前と宣言順だけ（値は書かない）。",
+      "type": "object",
+      "patternProperties": {
+        "^[a-z][a-z0-9_]*$": true
+      },
+      "additionalProperties": false
+    },
+    "recipe_categories": {
+      "description": "レシピ一覧の棚（docs/ui/Windows.md 9節）。既にあるタグを並べ替えて指すだけ。",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/identifier"
+      }
+    },
+    "required_props": {
+      "description": "タグが宣言を義務づけるプロパティ（GameElementDefinition.md 4.2節）。タグ名をキーに、そのタグを名乗る型が持たねばならないプロパティ名を並べる。",
+      "type": "object",
+      "patternProperties": {
+        "^[a-z][a-z0-9_]*$": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "in_progress_tags": {
+      "description": "製作中オブジェクトが完成品から引き継ぐタグ（RecipeSystem.md 5節）。",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/identifier"
+      }
+    },
+    "crafting_conditions": {
+      "$ref": "#/$defs/conditions_list",
+      "description": "全レシピの工程を進めるのに一律で掛かる条件（GameElementDefinition.md 13.4節）。conditionsと同じ形で、要素ごとにreasonを書ける。"
+    },
+    "patch_object_defs": {
+      "description": "既にあるobject_defへの変更（GameElementDefinition.md 3.4節）。",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/patch_entry"
+      }
+    },
     "axes": {
       "description": "地形生成の軸定義（TerrainGeneration.md 3.1節）。本スキーマでは中身を検証しない。"
     },
@@ -50,15 +96,85 @@
       },
       "additionalProperties": false
     },
+    "number_literal": {
+      "description": "数値リテラル（GameElementDefinition.md 6節）。値を扱うすべての場所で小数を書ける（値域は32bit整数の幅、精度は倍精度）。整数で書くかは「数えるものか連続量か」というプロパティ側の約束であって、書かれた場所からは決まらないため、本スキーマでは区別しない（ロード時チェックに委ねる）。",
+      "type": "number"
+    },
+    "patch_path": {
+      "description": "patchが指す場所（GameElementDefinition.md 3.4節）。先頭がobject_defの識別子で、以下の場所をドット区切りで続ける。",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$"
+    },
+    "patch_entry": {
+      "description": "既にあるobject_defへの変更1つ（GameElementDefinition.md 3.4節）。動詞（add/append/set/remove）をちょうど1つ書き、その値がパスになる。**動詞がパスの読み方を決める**——addのパスはまだ無いキー、appendのパスは既にある配列を指す。valueはadd/append/setに必須でremoveには書けない。whereはset/removeだけが持てる（配列の要素を位置ではなく中身で指す）。",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "add": {
+              "$ref": "#/$defs/patch_path"
+            },
+            "value": true
+          },
+          "required": [
+            "add",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "append": {
+              "$ref": "#/$defs/patch_path"
+            },
+            "value": true
+          },
+          "required": [
+            "append",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "set": {
+              "$ref": "#/$defs/patch_path"
+            },
+            "value": true,
+            "where": true
+          },
+          "required": [
+            "set",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "remove": {
+              "$ref": "#/$defs/patch_path"
+            },
+            "where": true
+          },
+          "required": [
+            "remove"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
     "range_value": {
-      "description": "min/max のみを持つ範囲。props の value（生成時に1回ロールする初期値の範囲、6.2節）と range（overflowの上下限、6.3節）の両方で使う共通の形。数値プロパティは32bit整数のみを扱うため、min/maxも整数（6節）。",
+      "description": "min/max のみを持つ範囲。props の value（生成時に1回ロールする初期値の範囲、6.2節）と range（overflowの上下限、6.3節）の両方で使う共通の形。",
       "type": "object",
       "properties": {
         "min": {
-          "type": "integer"
+          "$ref": "#/$defs/number_literal"
         },
         "max": {
-          "type": "integer"
+          "$ref": "#/$defs/number_literal"
         }
       },
       "required": [
@@ -68,13 +184,13 @@
       "additionalProperties": false
     },
     "prop_value": {
-      "description": "props の value。固定値（整数・真偽値・シンボル名）、または {min, max} の範囲値（6.2節、生成時に1回だけロールされる初期値の範囲）のいずれか。整数・真偽値として解釈できない識別子形の文字列はシンボル型（6.6節）として登録され、そのプロパティ自体がシンボル型になる。数値は32bit整数のみを扱う（6節）。",
+      "description": "props の value。固定値（数値・真偽値・シンボル名）、または {min, max} の範囲値（6.2節、生成時に1回だけロールされる初期値の範囲）のいずれか。数値・真偽値として解釈できない識別子形の文字列はシンボル型（6.6節）として登録され、そのプロパティ自体がシンボル型になる。",
       "oneOf": [
         {
-          "type": [
-            "integer",
-            "boolean"
-          ]
+          "$ref": "#/$defs/number_literal"
+        },
+        {
+          "type": "boolean"
         },
         {
           "type": "string",
@@ -94,9 +210,13 @@
         },
         "min": {
           "description": "この段階の下限（数値型のみ）。最下段は null か省略で、それより下の残り全ての値を拾う。",
-          "type": [
-            "integer",
-            "null"
+          "oneOf": [
+            {
+              "$ref": "#/$defs/number_literal"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "alert": {
@@ -163,9 +283,37 @@
             "type": "string"
           },
           "description": "プロパティのカテゴリ（6.7節）。トップレベルのproperty_tagsで宣言した名前のみ使える（未宣言はロード時エラー）。"
+        },
+        "gauge": {
+          "$ref": "#/$defs/gauge_def"
         }
       },
       "additionalProperties": false
+    },
+    "gauge_def": {
+      "description": "そのプロパティをカードのバーとして見せる宣言（GameElementDefinition.md 6.8節・docs/ui/CardView.md 8節）。両端がどちらへ寄ると良いのかだけを持つ。rangeが無いと割合を出せないためロード時エラー。",
+      "type": "object",
+      "properties": {
+        "min": {
+          "$ref": "#/$defs/gauge_end"
+        },
+        "max": {
+          "$ref": "#/$defs/gauge_end"
+        }
+      },
+      "required": [
+        "min",
+        "max"
+      ],
+      "additionalProperties": false
+    },
+    "gauge_end": {
+      "description": "バーの端の見え方（6.8節）。",
+      "enum": [
+        "good",
+        "bad",
+        "neutral"
+      ]
     },
     "condition_op": {
       "description": "conditionsの葉で使う比較演算子（14.1節、キーとして書く）。'between'等の追加は未決定（17節）。",
@@ -181,13 +329,14 @@
       ]
     },
     "subject_root": {
-      "description": "conditions/weightの`subject`（主語）の参照ルート（14.1節）。self/parent/ancestor/actor/dragged（draggedはcombinations内のみ、12.2節。passivesのゲートはself/parent/ancestorのみ）。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
+      "description": "conditions/weightの`subject`（主語）の参照ルート（14.1節）。プロパティ名を伴う参照なのでancestorを書ける。draggedはcombinations内のみ（12.2節）、pickedはamongを書いた候補の中のみ（10.3節）、passivesのゲートはself/parent/ancestorのみ。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
       "enum": [
         "self",
         "parent",
         "ancestor",
         "actor",
-        "dragged"
+        "dragged",
+        "picked"
       ]
     },
     "condition_property_leaf": {
@@ -293,13 +442,10 @@
           "$ref": "#/$defs/condition_property_leaf"
         },
         {
-          "$ref": "#/$defs/condition_in_slot_leaf"
-        },
-        {
           "$ref": "#/$defs/condition_slot_content_leaf"
         },
         {
-          "$ref": "#/$defs/condition_object_matches_leaf"
+          "$ref": "#/$defs/condition_object_leaf"
         },
         {
           "type": "object",
@@ -362,17 +508,17 @@
       }
     },
     "target_amount_map": {
-      "description": "passiveの1対象に対する、プロパティ名→数値の割り当て（modify/add共通の形）。数値プロパティは32bit整数のみを扱う（6節）。",
+      "description": "passiveの1対象に対する、プロパティ名→数値の割り当て（modify/add共通の形）。",
       "type": "object",
       "patternProperties": {
         "^[a-z][a-z0-9_.]*$": {
-          "type": "integer"
+          "$ref": "#/$defs/number_literal"
         }
       },
       "additionalProperties": false
     },
     "passive_operation_map": {
-      "description": "passiveの1操作(modify/add)が持つ、対象（self/parent/child/ancestor）をキーとする辞書（8.1節・8.6節）。actorは持続的な関係に紐づかないため未対応（ローダーは黙って読み飛ばす）。combinations内のdraggedはactiveのみで意味を持ち、passiveには現れない。",
+      "description": "passiveの1操作(modify/add)が持つ、対象（self/parent/child/ancestor）をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。actorは持続的な関係に紐づかないためロード時エラー。combinations内のdraggedはactiveのみで意味を持ち、passiveには現れない。",
       "type": "object",
       "properties": {
         "self": {
@@ -386,10 +532,6 @@
         },
         "ancestor": {
           "$ref": "#/$defs/target_amount_map"
-        },
-        "actor": {
-          "$ref": "#/$defs/target_amount_map",
-          "description": "未対応。ローダーは黙って読み飛ばす。"
         }
       },
       "additionalProperties": false
@@ -430,7 +572,8 @@
         "parent",
         "ancestor",
         "actor",
-        "dragged"
+        "dragged",
+        "picked"
       ]
     },
     "destroy_target_spec": {
@@ -452,7 +595,7 @@
       "description": "消す相手1つ（9.3節）。対象名だけを書くか、`subject`/`prop`/`reason`のマップで書く。",
       "oneOf": [
         {
-          "$ref": "#/$defs/destroy_target_name"
+          "$ref": "#/$defs/object_target_name"
         },
         {
           "$ref": "#/$defs/destroy_target_map"
@@ -467,7 +610,7 @@
           "type": "object",
           "properties": {
             "subject": {
-              "$ref": "#/$defs/destroy_target_name"
+              "$ref": "#/$defs/object_target_name"
             },
             "reason": {
               "$ref": "#/$defs/destroy_reason"
@@ -504,6 +647,21 @@
       "pattern": "^[a-z][a-z0-9_]*$"
     },
     "spawn_spec": {
+      "description": "spawn（9.4節）。単一のmappingか、mappingの配列のいずれか——1つの効果で複数の型を生むときに並べる（どちらで書いても同じなので、1件だけのときに配列を強いない）。",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/spawn_map"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/spawn_map"
+          },
+          "minItems": 1
+        }
+      ]
+    },
+    "spawn_map": {
       "type": "object",
       "properties": {
         "object": {
@@ -519,16 +677,17 @@
             "same_slot",
             "self",
             "actor",
+            "picked",
             "child"
           ],
-          "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。self/actorは、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。actorはアクション実行文脈でのみ解決できる。childはselfの子を順に走査し、最初に受け取れた子のスロットへ入れる（罠が自分の生んだ獲物へ怪我を渡す経路、TrapSystem.md 5.3節）。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、枠の要件・capacityを無視して強制的に伝播する（childの場合の起点はself）。"
+          "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。self/actor/pickedは、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。actorはアクション実行文脈でのみ、pickedはamongを書いた候補の中でのみ解決できる（10.3節）。childはselfの子を順に走査し、最初に受け取れた子のスロットへ入れる（罠が自分の生んだ獲物へ怪我を渡す経路、TrapSystem.md 5.3節）。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、枠の要件・capacityを無視して強制的に伝播する（childの場合の起点はself）。"
         }
       },
       "required": [
         "object"
       ],
       "additionalProperties": false,
-      "description": "新規オブジェクトを生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。destroyと同時に指定できる。"
+      "description": "新規オブジェクトを1つ生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。destroyと同時に指定できる。"
     },
     "active_def": {
       "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/become/transfer/move/signal)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_max/on_min（6.3節）は、専用キー(on_min:等)の値としてこの形をそのまま持つ。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_min: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントには操作者が居ないので、対象にactor/draggedを指すとロード時エラーになる（14.1節。本スキーマでは場所ごとの制限までは表現しない）。interactions/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（interaction_def/pick_candidate参照）。",
@@ -588,6 +747,10 @@
             "dragged": {
               "$ref": "#/$defs/identifier",
               "description": "combinationsの中でのみ意味を持つ（12.2節）。"
+            },
+            "picked": {
+              "$ref": "#/$defs/identifier",
+              "description": "amongを書いた候補の中でのみ意味を持つ（10.3節）。"
             }
           },
           "additionalProperties": false,
@@ -607,11 +770,14 @@
       ]
     },
     "pick_candidate": {
-      "description": "pickの1候補（GameElementDefinition.md 10.1節）。専用の`active:`ラップを挟まず、set/add/destroy/spawn/becomeをweight/pickと対等な兄弟キーとして直接持つ。候補自身がさらにpickを持つ再帰も構造上排除しない。",
+      "description": "pickの1候補（GameElementDefinition.md 10.1節）。専用の`active:`ラップを挟まず、set/add/destroy/spawn/becomeをweight/pickと対等な兄弟キーとして直接持つ。候補自身がさらにpickを持つ再帰も構造上排除しない。weightだけの候補は「選ばれても何も起きない回」を表す。",
       "type": "object",
       "properties": {
         "weight": {
           "$ref": "#/$defs/weight_spec"
+        },
+        "among": {
+          "$ref": "#/$defs/among_spec"
         },
         "set": {
           "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",
@@ -646,6 +812,28 @@
       },
       "required": [
         "weight"
+      ],
+      "additionalProperties": false
+    },
+    "among_spec": {
+      "description": "この候補が周りから相手を1つ選ぶ宣言（GameElementDefinition.md 10.3節）。集合の指し方は条件の{subject, slot, matches}（14.3節）と同じで、足しているのは候補ごとのweightだけ。**amongを書いた候補の中だけがpickedを指せる**（重みも効果も同じ場所として読む）。weightの参照は候補自身を指すので{subject: picked, prop: ...}と書く。",
+      "type": "object",
+      "properties": {
+        "subject": {
+          "$ref": "#/$defs/subject_root"
+        },
+        "slot": {
+          "$ref": "#/$defs/identifier"
+        },
+        "matches": {
+          "$ref": "#/$defs/type_match_rule"
+        },
+        "weight": {
+          "$ref": "#/$defs/weight_spec"
+        }
+      },
+      "required": [
+        "slot"
       ],
       "additionalProperties": false
     },
@@ -733,10 +921,13 @@
       "additionalProperties": false
     },
     "recipe_step_requirement": {
-      "description": "工程ごとの素材・道具の要求（GameElementDefinition.md 13.1節）。",
+      "description": "工程ごとの素材・道具の要求（GameElementDefinition.md 13.1節）。何が当てはまるかは枠のacceptと同じ二択で、object（その型だけ）かtag（そのタグを持つ任意の型）のどちらか一方を書く。",
       "type": "object",
       "properties": {
         "object": {
+          "$ref": "#/$defs/identifier"
+        },
+        "tag": {
           "$ref": "#/$defs/identifier"
         },
         "count": {
@@ -750,8 +941,19 @@
         }
       },
       "required": [
-        "object",
         "consume"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "object"
+          ]
+        },
+        {
+          "required": [
+            "tag"
+          ]
+        }
       ],
       "additionalProperties": false
     },
@@ -802,31 +1004,48 @@
       "additionalProperties": false
     },
     "type_match_rule": {
-      "description": "どの型が当てはまるかの指定（GameElementDefinition.md 4.1節）。枠のaccept（7.2節）・combinationsのwith（12.1節）・conditionsのmatches（14.3節・14.4節）が共有する。tag（タグを持つ任意のobject_def）とobject（特定のobject_def）はどちらか一方のみ指定する。",
-      "type": "object",
-      "properties": {
-        "tag": {
-          "$ref": "#/$defs/identifier",
-          "description": "このタグを持つobject_defが当てはまる。"
-        },
-        "object": {
-          "$ref": "#/$defs/identifier",
-          "description": "このobject_defだけが当てはまる。"
-        }
-      },
+      "description": "どの型が当てはまるかの指定（GameElementDefinition.md 4.1節）。枠のaccept（7.2節）・combinationsのwith（12.1節）・conditionsのmatches（14.3節・14.4節）が共有する。tag（タグを持つ任意のobject_def）・object（特定のobject_def）・not（当てはまらないこと）のうち、ちょうど1つを書く。",
       "oneOf": [
         {
+          "type": "object",
+          "properties": {
+            "tag": {
+              "$ref": "#/$defs/identifier",
+              "description": "このタグを持つobject_defが当てはまる。"
+            }
+          },
           "required": [
             "tag"
-          ]
+          ],
+          "additionalProperties": false
         },
         {
+          "type": "object",
+          "properties": {
+            "object": {
+              "$ref": "#/$defs/identifier",
+              "description": "このobject_defだけが当てはまる。"
+            }
+          },
           "required": [
             "object"
-          ]
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/type_match_rule",
+              "description": "内側の指定に当てはまらない型が当てはまる。他のキーとは同居できない。"
+            }
+          },
+          "required": [
+            "not"
+          ],
+          "additionalProperties": false
         }
-      ],
-      "additionalProperties": false
+      ]
     },
     "cell_def": {
       "description": "1つの枠（セル）の定義（GameElementDefinition.md 7.2節）。何が入るかはaccept、その枠に何個積めるかはmaxが決める。",
@@ -870,9 +1089,28 @@
           "type": "number",
           "exclusiveMinimum": 0
         },
-        "auto_placement": {
-          "description": "spawn/moveの宣言順走査の対象になるか（GameElementDefinition.md 7.7節）。既定true。falseなら、プレイヤーの手動配置とスロット名を名指しした移動でしか物が入らない（例: キャラクターの装備欄）。",
-          "type": "boolean"
+        "placement": {
+          "description": "誰がここへ物を入れてよいか（GameElementDefinition.md 7.7節）。省略すればエンジン（auto。spawn/moveの宣言順走査）もプレイヤー（manual）も入れられる。空の配列はどちらも入れられないことを表す。",
+          "type": "array",
+          "items": {
+            "enum": [
+              "auto",
+              "manual"
+            ]
+          }
+        },
+        "put_in": {
+          "description": "ここへ物を入れるのにかかるゲーム内時間（分）。出す側に時間は課さない。",
+          "type": "object",
+          "properties": {
+            "duration": {
+              "$ref": "#/$defs/weight_spec"
+            }
+          },
+          "required": [
+            "duration"
+          ],
+          "additionalProperties": false
         }
       },
       "not": {
@@ -976,6 +1214,25 @@
         "stack_order": {
           "$ref": "#/$defs/stack_order"
         },
+        "visible_slots": {
+          "description": "カードのタブに出すスロットの名前（GameElementDefinition.md 7.11節）。**並びがそのまま表示順**。自分が持たないスロットを指すとロード時エラー。trait由来を先に、自分自身の宣言を後ろにして足し合わせる。",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "storage": {
+          "description": "物を溜める入れ物として使う型か（GameElementDefinition.md 7.12節）。既定false。tagsと同じくORで合成する。",
+          "type": "boolean"
+        },
+        "bound_to_owner": {
+          "description": "単独では存在できない型か（GameElementDefinition.md 7.9節）。既定false。tagsと同じくORで合成する。",
+          "type": "boolean"
+        },
+        "resists": {
+          "$ref": "#/$defs/conditions_list",
+          "description": "成立している間、土地以外の親へ移れなくなる条件（GameElementDefinition.md 7.13節）。見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面（tick・こぼれ落ち）でも同じ判定が走る。並び全体で1つの条件木なので、trait由来と連結せず、自分自身か1つのtraitのどちらかの宣言だけが効く。"
+        },
         "tags": {
           "description": "このobject_def/traitが持つタグのリスト（4節）。枠のaccept・combinationsのwith等のマッチングに使う。",
           "type": "array",
@@ -1046,6 +1303,25 @@
         "stack_order": {
           "$ref": "#/$defs/stack_order"
         },
+        "visible_slots": {
+          "description": "カードのタブに出すスロットの名前（GameElementDefinition.md 7.11節）。**並びがそのまま表示順**。自分が持たないスロットを指すとロード時エラー。trait由来を先に、自分自身の宣言を後ろにして足し合わせる。",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "storage": {
+          "description": "物を溜める入れ物として使う型か（GameElementDefinition.md 7.12節）。既定false。tagsと同じくORで合成する。",
+          "type": "boolean"
+        },
+        "bound_to_owner": {
+          "description": "単独では存在できない型か（GameElementDefinition.md 7.9節）。既定false。tagsと同じくORで合成する。",
+          "type": "boolean"
+        },
+        "resists": {
+          "$ref": "#/$defs/conditions_list",
+          "description": "成立している間、土地以外の親へ移れなくなる条件（GameElementDefinition.md 7.13節）。見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面（tick・こぼれ落ち）でも同じ判定が走る。並び全体で1つの条件木なので、trait由来と連結せず、自分自身か1つのtraitのどちらかの宣言だけが効く。"
+        },
         "tags": {
           "description": "このobject_def/traitが持つタグのリスト（4節）。枠のaccept・combinationsのwith等のマッチングに使う。",
           "type": "array",
@@ -1064,8 +1340,8 @@
       },
       "additionalProperties": false
     },
-    "destroy_target_name": {
-      "description": "destroyの対象名（becomeのsubjectも同じ集合）。ancestorは「どのプロパティを探すか」が無く解決できないため不可。pickedはamongを書いた候補の中でのみ解決できる（10.3節）。",
+    "object_target_name": {
+      "description": "オブジェクトそのものを指す対象名（destroy・move・become）。ancestorは「どのプロパティを探すか」が無く解決できないため不可。childは相手が1つに決まらないため不可。pickedはamongを書いた候補の中でのみ解決できる（10.3節）。",
       "enum": [
         "self",
         "parent",
@@ -1106,13 +1382,13 @@
       "additionalProperties": false
     },
     "set_value": {
-      "description": "setの1エントリの値（9.2節）。リテラル（整数・真偽値・シンボル名）のみ。",
+      "description": "setの1エントリの値（9.2節）。リテラル（数値・真偽値・シンボル名）のみ。",
       "oneOf": [
         {
-          "type": [
-            "integer",
-            "boolean"
-          ]
+          "$ref": "#/$defs/number_literal"
+        },
+        {
+          "type": "boolean"
         },
         {
           "type": "string",
@@ -1131,17 +1407,17 @@
       "additionalProperties": false
     },
     "add_target_amount_map": {
-      "description": "addの1対象に対する、プロパティ名→加算量（整数リテラルのみ）の割り当て。",
+      "description": "addの1対象に対する、プロパティ名→加算量（数値リテラルのみ）の割り当て。",
       "type": "object",
       "patternProperties": {
         "^[a-z][a-z0-9_]*$": {
-          "type": "integer"
+          "$ref": "#/$defs/number_literal"
         }
       },
       "additionalProperties": false
     },
     "set_operation_map": {
-      "description": "setが持つ、対象（self/parent/ancestor/actor、combinations内はdraggedも）をキーとする辞書。",
+      "description": "setが持つ、対象（self/parent/ancestor/actor、combinations内はdraggedも、amongを書いた候補の中ではpickedも）をキーとする辞書。",
       "type": "object",
       "properties": {
         "self": {
@@ -1159,12 +1435,16 @@
         "dragged": {
           "$ref": "#/$defs/set_target_amount_map",
           "description": "combinationsの中でのみ意味を持つ（12.2節）。"
+        },
+        "picked": {
+          "$ref": "#/$defs/set_target_amount_map",
+          "description": "amongを書いた候補の中でのみ意味を持つ（10.3節）。"
         }
       },
       "additionalProperties": false
     },
     "add_operation_map": {
-      "description": "addが持つ、対象（self/parent/ancestor/actor、combinations内はdraggedも）をキーとする辞書。",
+      "description": "addが持つ、対象（self/parent/ancestor/actor、combinations内はdraggedも、amongを書いた候補の中ではpickedも）をキーとする辞書。",
       "type": "object",
       "properties": {
         "self": {
@@ -1182,6 +1462,10 @@
         "dragged": {
           "$ref": "#/$defs/add_target_amount_map",
           "description": "combinationsの中でのみ意味を持つ（12.2節）。"
+        },
+        "picked": {
+          "$ref": "#/$defs/add_target_amount_map",
+          "description": "amongを書いた候補の中でのみ意味を持つ（10.3節）。"
         }
       },
       "additionalProperties": false
@@ -1205,7 +1489,12 @@
           "pattern": "^[a-z][a-z0-9_]*$"
         },
         "amount": {
-          "type": "integer"
+          "$ref": "#/$defs/number_literal",
+          "description": "移送元から出す量。"
+        },
+        "to_amount": {
+          "$ref": "#/$defs/number_literal",
+          "description": "移送元と移送先で単位が違うときの、amount分を出したときに移送先が増える量（9.5節）。単位が同じなら省略できる（1対1）。0は移送先が増えないうえ割り戻しが割れないためロード時エラー。"
         },
         "allow_overflow": {
           "type": "boolean"
@@ -1237,29 +1526,47 @@
       ]
     },
     "move_spec": {
-      "description": "move（9.6節）: subjectのオブジェクトを、移動先のオブジェクトの中へ移動する。動かす物はsubject（self=move宣言元自身 / actor / dragged）かsubject_prop（そのプロパティが保持するインスタンスIDのオブジェクト）のどちらか一方、移動先はto（self / parent=その直接の親）かto_propのどちらか一方で指す。on_max/on_minでは使えない（actorが存在しないため、ロード時エラー）。",
+      "description": "move（9.6節）。単一のmappingか、mappingの配列のいずれか——同じ一手で2つ動かす（乗り込んでから漕ぎ出す）ために並べられる。",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/move_map"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/move_map"
+          },
+          "minItems": 1
+        }
+      ]
+    },
+    "move_map": {
+      "description": "move 1件（9.6節）: subjectのオブジェクトを、移動先のオブジェクトの中へ移動する。動かす物はsubject（対象キーか{subject, prop}）かsubject_prop（そのプロパティが保持するインスタンスID）のどちらか一方、移動先はto・to_prop・to_objectのどれか1つで指す。rangeイベント（on_max/on_min）で禁じられるのはactor/draggedを指す形だけで、selfと型で書いた移動は使える（Voyage.md 4節）。",
       "type": "object",
       "properties": {
         "subject": {
-          "enum": [
-            "self",
-            "actor",
-            "dragged"
-          ]
+          "$ref": "#/$defs/object_target"
         },
         "subject_prop": {
           "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "self のそのプロパティが保持するインスタンスIDのオブジェクト。"
         },
         "to": {
-          "enum": [
-            "self",
-            "parent"
-          ]
+          "$ref": "#/$defs/object_target"
         },
         "to_prop": {
           "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "self のそのプロパティが保持するインスタンスIDのオブジェクトへ入れる。"
+        },
+        "to_object": {
+          "$ref": "#/$defs/identifier",
+          "description": "世界にただ1つ在る型（singleton、15節）をその名前で行き先にする。生成時に確定する個体を指すto_propと違い、**定義の時点で名前の分かっている行き先**（外洋・本土）のためのもの。"
+        },
+        "to_slot": {
+          "$ref": "#/$defs/identifier",
+          "description": "行き先の中のどの枠へ入れるか。省けば宣言順で最初に受け入れた枠になる。"
         }
       },
       "allOf": [
@@ -1288,14 +1595,30 @@
               "required": [
                 "to_prop"
               ]
+            },
+            {
+              "required": [
+                "to_object"
+              ]
             }
           ]
         }
       ],
       "additionalProperties": false
     },
-    "condition_in_slot_leaf": {
-      "description": "{subject, in_slot}形式の、subjectが指すオブジェクトの現在のスロット位置判定（14.2節）。常に等価判定でopは持たない（否定はnotで包む）。subjectにancestorは使えない（ロード時エラー）。",
+    "object_target": {
+      "description": "命令が指すオブジェクトそのもの1つ（9.6節）。対象名で直接指すか、インスタンスIDを保持するプロパティ（{subject, prop}、subject省略時はself）で指す。move（9.6節）とbecome（9.9節）が共有する。対象名だけを書く形ではancestorを使えない——プロパティ名が無いと辿る先が決まらないため。",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/object_target_name"
+        },
+        {
+          "$ref": "#/$defs/prop_ref"
+        }
+      ]
+    },
+    "condition_object_leaf": {
+      "description": "主語がオブジェクトそのものの葉（14.2節・14.4節）。`in_slot`は親の中での位置判定、`matches`はsubject自身の型判定で、**演算子キーは複数書ける（暗黙のAND）**——条件の配列と同じ規則。どちらも等価判定でopを持たない（否定はnotで包む）。プロパティ名を伴わないのでsubjectにancestorは使えない（ロード時エラー）。",
       "type": "object",
       "properties": {
         "subject": {
@@ -1304,12 +1627,24 @@
         "in_slot": {
           "$ref": "#/$defs/identifier"
         },
+        "matches": {
+          "$ref": "#/$defs/type_match_rule"
+        },
         "reason": {
           "$ref": "#/$defs/condition_reason"
         }
       },
-      "required": [
-        "in_slot"
+      "anyOf": [
+        {
+          "required": [
+            "in_slot"
+          ]
+        },
+        {
+          "required": [
+            "matches"
+          ]
+        }
       ],
       "additionalProperties": false
     },
@@ -1336,33 +1671,14 @@
       ],
       "additionalProperties": false
     },
-    "condition_object_matches_leaf": {
-      "description": "{subject, matches}形式の、subjectが指すオブジェクト自身がmatchesへ当てはまるかの判定（14.4節）。",
-      "type": "object",
-      "properties": {
-        "subject": {
-          "$ref": "#/$defs/subject_root"
-        },
-        "matches": {
-          "$ref": "#/$defs/type_match_rule"
-        },
-        "reason": {
-          "$ref": "#/$defs/condition_reason"
-        }
-      },
-      "required": [
-        "matches"
-      ],
-      "additionalProperties": false
-    },
     "condition_comparison_value": {
-      "description": "lt/lte/gt/gte/eq/neqの比較の相手（14.1節）。リテラル（整数・真偽値・シンボル名）か{subject, prop}参照。'max'/'min'は未対応（参照先rangeの上下限を指す規約が未確定のため、ロード時エラー。17節）。",
+      "description": "lt/lte/gt/gte/eq/neqの比較の相手（14.1節）。リテラル（数値・真偽値・シンボル名）か{subject, prop}参照。'max'/'min'は未対応（参照先rangeの上下限を指す規約が未確定のため、ロード時エラー。17節）。",
       "oneOf": [
         {
-          "type": [
-            "integer",
-            "boolean"
-          ]
+          "$ref": "#/$defs/number_literal"
+        },
+        {
+          "type": "boolean"
         },
         {
           "type": "string",
@@ -1386,10 +1702,10 @@
       "items": {
         "oneOf": [
           {
-            "type": [
-              "integer",
-              "boolean"
-            ]
+            "$ref": "#/$defs/number_literal"
+          },
+          {
+            "type": "boolean"
           },
           {
             "type": "string",
@@ -1414,7 +1730,7 @@
       "type": "object",
       "properties": {
         "subject": {
-          "$ref": "#/$defs/destroy_target_name",
+          "$ref": "#/$defs/object_target",
           "description": "形を変える対象（9.9節）。省略時はself。"
         }
       },
