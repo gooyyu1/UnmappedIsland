@@ -9,6 +9,7 @@ import { githubSlugs } from '../../scripts/githubSlugs.mjs';
  * - Markdownリンク（ファイル・アンカー）が実在すること
  * - コード・YAML・ドキュメント中の「Foo.md N節」「Foo.md 〇〇節」が実在の節を指すこと
  * - 見出しの【未実装: 識別子】ラベルが、実装後に剥がし忘れられていないこと
+ * - 【いつか: 識別子】の印と docs/Someday.md の項目が1対1で対応すること（DocumentStyle.md 4.1節）
  * - 確定度の印が、印として働く形で付いていること（DocumentStyle.md 6節）
  *
  * アンカーの照合には、公開サイトが実際にIDを振るのと同じ {@link githubSlugs} を使う。
@@ -37,6 +38,9 @@ const CONFIRMED_LABEL = '【確定】';
 
 /** 既定である暫定の側に印を付ける語。使わない。 */
 const PROVISIONAL_LABELS = ['【未確定】', '【暫定】'];
+
+/** 「いつか実装したいもの」の実体の一覧（DocumentStyle.md 4.1節）。 */
+const SOMEDAY_DOC = join('docs', 'Someday.md');
 
 /** 参照を検査する対象。ドキュメント自身と、節番号でドキュメントを指すコード・データ。 */
 const REF_FILES = [
@@ -244,6 +248,31 @@ describe('ドキュメントの参照', () => {
       stale,
       `実装済みの疑いがある【未実装】ラベル（ドキュメント側の剥がし忘れ？）:\n` +
         stale.map(({ doc, ident }) => `${doc}: ${ident}`).join('\n'),
+    ).toEqual([]);
+  });
+
+  it('【いつか: 識別子】と Someday.md の項目が1対1で対応する（DocumentStyle.md 4.1節）', () => {
+    // 一覧の項目は Someday.md の第3レベルの見出しで、先頭の語が識別子。
+    const items = new Set(
+      [...read(SOMEDAY_DOC).matchAll(/^### (\S+)/gm)].map((match) => match[1]),
+    );
+    const labels: { doc: string; ident: string }[] = [];
+    for (const [rel, text] of docByPath) {
+      if (rel === SOMEDAY_DOC) continue; // 一覧自身は印を持たない
+      for (const match of withoutCode(text).matchAll(/【いつか:\s*([^\s】]+)\s*】/g)) {
+        labels.push({ doc: rel, ident: match[1] });
+      }
+    }
+    const missing = labels.filter(({ ident }) => !items.has(ident));
+    expect(
+      missing,
+      `${SOMEDAY_DOC} に項目の無い【いつか】:\n` +
+        missing.map(({ doc, ident }) => `${doc}: ${ident}`).join('\n'),
+    ).toEqual([]);
+    const orphans = [...items].filter((ident) => !labels.some((l) => l.ident === ident));
+    expect(
+      orphans,
+      `どの文書からも印で指されていない${SOMEDAY_DOC}の項目（読み手に届かない）:\n${orphans.join('\n')}`,
     ).toEqual([]);
   });
 
