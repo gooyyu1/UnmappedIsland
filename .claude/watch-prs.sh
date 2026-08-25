@@ -49,8 +49,12 @@ failures=0
 
 # 1周につき gh を1回だけ呼ぶ。見張る本数が増えても呼び出し回数は増えない。
 # チェックが1つでも走っていれば、そのPRはまだ決着していない。
+#
+# `判断待ち` の付いたPRは既に振り分けが済んでユーザーの手元にあるので、決着していても出さない。
+# 出すと、起こされた側が同じ行を受け取り続けて回り続ける。
 jq_filter='
   .[]
+  | select(([.labels[].name] | index("判断待ち")) == null)
   | select((.statusCheckRollup | length) > 0)
   | select([.statusCheckRollup[] | select(.status != "COMPLETED")] | length == 0)
   | . as $pr
