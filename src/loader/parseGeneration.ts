@@ -298,23 +298,23 @@ function parseGenerationScope(name: string, raw: YamlNode): GenerationScopeDef {
   const scope = withYamlContext(
     context,
     () =>
-      new GenerationScopeDef(
+      new GenerationScopeDef({
         name,
         siteCountMin,
         siteCountMax,
-        tryGetInt(node, 'coast_band', context) ?? 0,
-        tryGetBool(node, 'hull_coast', context) ?? false,
-        tryGetNumber(node, 'interior_bias', context) ?? 0,
-        tryGetNumber(node, 'extra_edge_detour_factor', context) ?? 1.5,
-        requireInt(node, 'diameter_meters', context),
-        requireInt(node, 'walk_meters_per_hour', context),
-        requireInt(node, 'climb_meters_per_hour', context),
-        requireScalar(node, 'elevation_axis', context),
-        requireInt(node, 'elevation_top_meters', context),
-        tryGetInt(node, 'max_sites_per_type', context) ?? 0,
-        tryGetNumber(node, 'crowding_penalty', context) ?? 0,
+        coastBandMaxDistance: tryGetInt(node, 'coast_band', context) ?? 0,
+        clampsHullSitesToCoast: tryGetBool(node, 'hull_coast', context) ?? false,
+        interiorBias: tryGetNumber(node, 'interior_bias', context) ?? 0,
+        extraEdgeDetourThreshold: tryGetNumber(node, 'extra_edge_detour_factor', context) ?? 1.5,
+        diameterMeters: requireInt(node, 'diameter_meters', context),
+        walkMetersPerHour: requireInt(node, 'walk_meters_per_hour', context),
+        climbMetersPerHour: requireInt(node, 'climb_meters_per_hour', context),
+        elevationAxis: requireScalar(node, 'elevation_axis', context),
+        elevationTopMeters: requireInt(node, 'elevation_top_meters', context),
+        maxSitesPerType: tryGetInt(node, 'max_sites_per_type', context) ?? 0,
+        crowdingPenaltyPerDuplicate: tryGetNumber(node, 'crowding_penalty', context) ?? 0,
         guarantees,
-      ),
+      }),
   );
 
   requireKnownKeys(
