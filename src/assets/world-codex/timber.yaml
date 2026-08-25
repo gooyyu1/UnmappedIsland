@@ -25,6 +25,12 @@ object_defs:
             subject: dragged
             prop: durability
             gt: 0
+          # 受け口を見ながら斧を同じ傷へ入れ続ける屋外の行動なので、見るのは視界の側
+          # （docs/engine/IlluminationSystem.md 5節）。倒れる向きも見えていなければ決められない。
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         add:
           dragged:
             durability: -120

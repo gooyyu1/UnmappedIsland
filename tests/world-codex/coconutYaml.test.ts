@@ -8,6 +8,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { makeBrightEnoughForAnyAction } from '../support/illumination';
 
 /**
  * coconut.yamlのヤシの実の加工の連鎖を、実ファイルの定義だけで検証する。熟度で分かれる2本
@@ -41,6 +42,9 @@ describe('coconut.yamlのヤシの実の加工', () => {
 
     beach = spawnInto('sandy_beach', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, beach, 'characters');
+    // 実を採るのも皮をはぐのも掻き出すのも明るさを要求する（IlluminationSystem.md 5節）。ここで
+    // 見たいのは加工の連鎖なので、時刻や光源を組み立てずに作業者の側で明るさを満たす。
+    makeBrightEnoughForAnyAction(player, codex);
   });
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {

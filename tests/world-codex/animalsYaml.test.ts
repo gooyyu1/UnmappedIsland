@@ -6,6 +6,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { makeBrightEnoughForAnyAction } from '../support/illumination';
 
 /**
  * animals.yamlの動物を、実ファイルの定義だけで検証する（docs/engine/HuntingSystem.md・
@@ -58,6 +59,9 @@ describe('animals.yamlの動物', () => {
     session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(roll));
     jungle = spawnInto('jungle', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');
+    // 解体は明るさを要求する（IlluminationSystem.md 5節）。ここで見たいのは狩りと取り分なので、
+    // 時刻や光源を組み立てずに作業者の側で明るさを満たす。
+    makeBrightEnoughForAnyAction(player, codex);
     monkey = spawnInto('monkey', jungle, 'items');
   }
 
