@@ -1,7 +1,9 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import type { PropertyValue } from '../../src/domain/PropertyValue';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
+import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -167,5 +169,102 @@ describe('消化（かさ・栄養素・蓄え）', () => {
     tick(DAY);
     expect(player.parent, '18日目には世界から外れる').toBeUndefined();
     expect(player.exhaustedStage).toBe('starved');
+  });
+
+  /**
+   * ビタミンが尽きた先（DigestionSystem.md 4節）。壊血病は怪我のカードではなく、ビタミンの一番下の
+   * 段そのもの——見るのは、絶てば段まで落ちること・段が痛みを押し上げること・食べれば戻ることの3つ。
+   */
+  describe('壊血病', () => {
+    /** 空心菜1束ぶんのビタミン（foods.yaml）。1.7日ぶんに当たる。 */
+    const ONE_BUNCH = 83;
+    /** 壊血病が出る量（現実の閾値）。 */
+    const SCURVY_THRESHOLD = 300;
+    /** 開始時の900mgが閾値ちょうどに着くまでのtick数（(900 - 300) ÷ 0.5）。12.5日。 */
+    const REACHES_THRESHOLD = 1200;
+    /** 閾値を割って壊血病に入るまでのtick数（段の下限は閾値を含む）。 */
+    const ONSET_TICKS = REACHES_THRESHOLD + 1;
+    /** 開始時の900mgが0に着くまでのtick数（900 ÷ 0.5）。18.75日。 */
+    const DEPLETION_TICKS = 1800;
+
+    /**
+     * count tickぶん進める。13日ぶんを回すので、その間に渇きと飢えで死んでしまわないよう
+     * （VitalsSystem.md 8節）、命を絶つ値だけは戻しておく。
+     */
+    function endure(count: number): void {
+      const vital = ['hydration', 'body_fat'].map((name) => codex.propertyNames.getId(name));
+      const held = vital.map((id) => player.tryGetProperty(id)?.number ?? 0);
+      for (let i = 0; i < count; i++) {
+        player.tick();
+        vital.forEach((id, index) => player.getProperty(id).setNumberWithoutEvents(held[index]));
+      }
+    }
+
+    function vitamin(): PropertyValue {
+      return player.getProperty(codex.propertyNames.getId('vitamin'));
+    }
+
+    function painOf(): number {
+      return player.tryGetProperty(codex.propertyNames.getId('pain'))?.getEffectiveValue() ?? 0;
+    }
+
+    /** 怪我スロットに並ぶ物の識別子（同種のスタックは個数ぶん並べる）。 */
+    function injuries(): string[] {
+      return new PlayerCharacter(player, codex).injuryStacks.flatMap((stack) =>
+        stack.map((object) => object.def.name),
+      );
+    }
+
+    it('葉物を絶つと、12.5日で300mgを割って壊血病の段に落ちる', () => {
+      endure(REACHES_THRESHOLD);
+      expect(vitamin().number, '閾値ちょうど').toBe(SCURVY_THRESHOLD);
+      expect(vitamin().stage?.name, '割るまでは壊血病ではない').toBe('deficient');
+
+      endure(1);
+      expect(vitamin().stage?.name).toBe('scurvy');
+    });
+
+    it('壊血病は怪我のカードを作らず、段が痛みを押し上げる', () => {
+      // 怪我にすると、目に見えない病のカードを何枚も作ることになる（DesignPrinciples.md）。
+      expect(painOf(), '足りているうちは痛まない').toBe(0);
+
+      endure(ONSET_TICKS);
+
+      expect(injuries(), '怪我スロットには何も入らない').toEqual([]);
+      expect(painOf(), '段のmodifyが押し上げる').toBe(60);
+    });
+
+    it('割った直後なら、空心菜1束で段を抜けて痛みがその場で引く', () => {
+      endure(ONSET_TICKS);
+      expect(painOf()).toBe(60);
+
+      vitamin().add(ONE_BUNCH);
+
+      expect(vitamin().stage?.name).toBe('deficient');
+      expect(painOf(), 'modifyは可逆なので、段を出た瞬間に消える（8.3節）').toBe(0);
+    });
+
+    it('尽きるまで放っておくと、戻すのに4束要る', () => {
+      // 閾値の上に戻すのが手当てにあたるので、放置した分だけ支払う量が増える。
+      endure(DEPLETION_TICKS);
+      expect(vitamin().number).toBe(0);
+
+      vitamin().add(ONE_BUNCH * 3);
+      expect(vitamin().stage?.name, '249mgでは閾値に届かない').toBe('scurvy');
+
+      vitamin().add(ONE_BUNCH);
+
+      expect(vitamin().stage?.name).toBe('deficient');
+      expect(painOf()).toBe(0);
+    });
+
+    it('壊血病でも死なない（死に方は3つのまま）', () => {
+      // 尽きて死ぬのは水分・体脂肪・血だけ（VitalsSystem.md 8節）。ビタミンは致命的域を持たない。
+      endure(DEPLETION_TICKS + DAY);
+
+      expect(vitamin().number, '0で止まる').toBe(0);
+      expect(player.parent, '尽きたまま置いても世界から外れない').toBeDefined();
+      expect(vitamin().alert).toBe('danger');
+    });
   });
 });

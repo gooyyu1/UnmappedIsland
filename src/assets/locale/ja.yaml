@@ -86,7 +86,7 @@ object_texts:
       pain:
         display_name: 痛み
         icon: 💢
-        description: 今感じている痛みの強さ。負っている怪我が重なるほど強くなり、治れば引く。
+        description: 今感じている痛みの強さ。負っている怪我と体調の不良が重なるほど強くなり、因が引けば戻る。
       durability:
         display_name: 耐久
       heavy_blow:
@@ -182,7 +182,7 @@ object_texts:
       vitamin:
         display_name: ビタミン
         icon: 🥬
-        description: 体に残っているビタミン。力にはならないが、尽きると古傷が開き歯が抜ける。
+        description: 体に残っているビタミン。力にはならないが、尽きると壊血病になり、古傷が開き歯が抜ける。葉物を口にすれば戻る。
       afloat:
         display_name: 浮いている
         description: 水に浮かんでいるか。帆のような部品は、浮いている間だけ効く。
