@@ -20,6 +20,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   let hourId: number;
   let locationsSlotId: number;
   let fillId: number;
+  let handBrightnessId: number;
 
   beforeAll(() => {
     const loader = new WorldCodexYamlLoader();
@@ -30,9 +31,36 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     // 容器はその下に居ないと蒸発も雨も成立しない。locations.yamlは依存が広いので最小のものを立てる。
     // location traitのambient_brightnessはvalueを持たない（樹冠と地面の反射は場所ごと）ので、
     // ここで与える。0は「遮るものが無い開けた場所」で、世界の日射がそのまま届く。
+    //
+    // 蒸発が読むのは器の居る場所の明るさなので（LiquidContainerSystem.md 6節）、樹冠と反射の
+    // 効き方を見るために+1（砂浜相当）と-5（森相当）も立てる。値の出どころはContentSkeleton.md
+    // 8.1.2節で、ここが確かめるのは値そのものではなく「土地の値が上乗せの段を動かすこと」。
+    //
+    // test_fixture_lightは据え付けの光源の代役。松明も炉も親のhand_brightness/looking_brightnessへ
+    // 書くだけで（IlluminationSystem.md 3節）、その形が蒸発へ届かないことを見るのが目的なので、
+    // 依存の広いfire.yamlは読まずに同じ2行を持つ物を立てる。
     loader.load(
       'test_ground.yaml',
-      'object_defs:\n  test_ground:\n    traits: [location]\n    props:\n      ambient_brightness: {value: 0}\n',
+      `object_defs:
+  test_ground:
+    traits: [location]
+    props:
+      ambient_brightness: {value: 0}
+  test_bright_ground:
+    traits: [location]
+    props:
+      ambient_brightness: {value: 1}
+  test_shaded_ground:
+    traits: [location]
+    props:
+      ambient_brightness: {value: -5}
+  test_fixture_light:
+    tags: [fixture]
+    props:
+      weight: {value: 0}
+    passives:
+      - modify: {parent: {hand_brightness: 11, looking_brightness: 11}}
+`,
     );
     codex = loader.buildAndReset();
 
@@ -42,6 +70,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     hourId = codex.propertyNames.getId('hour');
     locationsSlotId = codex.slotNames.getId('locations');
     fillId = codex.propertyNames.getId('fill');
+    handBrightnessId = codex.propertyNames.getId('hand_brightness');
   });
 
   beforeEach(() => {
@@ -90,11 +119,16 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     return world;
   }
 
-  /** 天候・日射は世界が持つので、容器は世界の下——土地のアイテム枠——へ置く。 */
-  function placeUnderWorld(container: WorldObject, world: WorldObject): WorldObject {
-    const land = spawn('test_ground');
+  /** 世界の下の土地。既定は開けた土地（樹冠も反射も無い）。 */
+  function spawnLandUnderWorld(world: WorldObject, landName = 'test_ground'): WorldObject {
+    const land = spawn(landName);
     expect(land.moveToSlotOrRejection(world.getSlot(locationsSlotId))).toBeUndefined();
-    expect(container.moveIntoFirstAcceptingSlot(land)).toBe(true);
+    return land;
+  }
+
+  /** 天候・日射は世界が持つので、容器は世界の下——土地のアイテム枠——へ置く。 */
+  function placeUnderWorld(container: WorldObject, world: WorldObject, landName?: string): WorldObject {
+    expect(container.moveIntoFirstAcceptingSlot(spawnLandUnderWorld(world, landName))).toBe(true);
     return container;
   }
 
@@ -107,8 +141,9 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     liquidKind: string,
     size: number,
     world: WorldObject,
+    landName?: string,
   ): WorldObject {
-    return placeUnderWorld(spawnContainer(containerName, liquidKind, size), world);
+    return placeUnderWorld(spawnContainer(containerName, liquidKind, size), world, landName);
   }
 
   it('空の容器は中身の宣言を一切持たず、中身入りは同じ型に畳まれている', () => {
@@ -325,6 +360,45 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     container.tick();
 
     expect(amountIn(container)).toBe(200 + expectedDelta);
+  });
+
+  // 上乗せが読むのは器の居る場所の明るさなので、樹冠と地面の反射が段を動かす（6節）。
+  it.each([
+    ['coconut_bowl', -1],
+    ['jar', -2],
+  ])('日陰の土地(%s)は、雲の無い空の正午でも上乗せが消える', (containerName, expectedDelta) => {
+    // 森（-5）。世界は+16でも器の居る場所は+11で、最も低いしきい値(+12)に1段届かない。
+    const world = spawnWorld('scorching');
+    const container = spawnContainerUnderWorld(containerName, 'water', 200, world, 'test_shaded_ground');
+
+    container.tick();
+
+    expect(amountIn(container)).toBe(200 + expectedDelta);
+  });
+
+  it('明るい地面は、開けた土地より1段ぶん早く上乗せが効く', () => {
+    // 砂浜(+1)。曇りの正午は開けた土地なら+11で上乗せゼロだが、反射のぶん最も低いしきい値へ届く。
+    const world = spawnWorld('cloudy');
+    const jar = spawnContainerUnderWorld('jar', 'water', 200, world, 'test_bright_ground');
+
+    jar.tick();
+
+    expect(amountIn(jar)).toBe(200 - 4); // 基礎2 + 上乗せ2（開けた土地では基礎2だけ）
+  });
+
+  it('据え付けの光源は蒸発を変えない', () => {
+    // 焚き火のそばの水が余分に減ってはいけない（6節）。光源はhand_brightnessにしか届かず、
+    // 蒸発が読むambient_brightnessには入らない。
+    const world = spawnWorld('scorching');
+    const land = spawnLandUnderWorld(world);
+    const jar = spawnContainer('jar', 'water', 200);
+    expect(jar.moveIntoFirstAcceptingSlot(land)).toBe(true);
+    expect(spawn('test_fixture_light').moveIntoFirstAcceptingSlot(land)).toBe(true);
+
+    jar.tick();
+
+    expect(land.getProperty(handBrightnessId).getEffectiveValue(), '光源は手元へは届いている').toBe(16 + 11);
+    expect(amountIn(jar), '光源が無いときと同じ').toBe(200 - 8);
   });
 
   // 雨天は蒸発せず（蒸発の基礎は雨天を除外する）、代わりに降った分だけ増える。

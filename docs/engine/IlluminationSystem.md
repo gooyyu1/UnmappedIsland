@@ -275,21 +275,21 @@ location_cave:
 
 段の側を細かくしても、できることは変わりません。
 
-## 9. world の環境光を読んでいるのは3箇所
+## 9. 環境光を読んでいるのは3箇所
 
-| 読み手 | 読み方 |
-| --- | --- |
-| 気温への寄与（`core.yaml`） | `ambient_brightness` の段（8節）の `dark` と `bright` が `ambient_temperature` を `modify` する |
-| 空の色（`src/game/looks/skyTint.ts`） | 曇りの正午（+11）を翳りも輝きも無い基準に、底（−6）から上限（+17）までを1本の値で読む |
-| 水の蒸発（`liquid_containers.yaml`、[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 6節） | `gte` のしきい値3つ |
+| 読み手 | 読む先 | 読み方 |
+| --- | --- | --- |
+| 気温への寄与（`core.yaml`） | world | `ambient_brightness` の段（8節）の `dark` と `bright` が `ambient_temperature` を `modify` する |
+| 空の色（`src/game/looks/skyTint.ts`） | world | 曇りの正午（+11）を翳りも輝きも無い基準に、底（−6）から上限（+17）までを1本の値で読む |
+| 水の蒸発（`liquid_containers.yaml`、[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 6節） | **土地** | `gte` のしきい値3つ |
 
 **気温と空の色は world の側を見ます。** 土地の `ambient_brightness` には樹冠と地面の反射が入っているので、
 日射の代わりにはなりません。
 
-**水の蒸発だけは、今は土地の側を見ています。** `{subject: ancestor}` は同名を定義している最初の祖先で
-止まるため、土地が `ambient_brightness` を持った時点で world まで遡らなくなりました。**密林や森に置いた
-器は日射ぶんの蒸発をしません。** 影で蒸発が遅いこと自体は現実に合いますが、しきい値（+12・+14・+16）は
-日射として置いた値なので、読み手をどちらに戻すかは決まっていません。
+**水の蒸発は土地の側を見ます。** 器を乾かすのはその器へ届いている光で、樹冠はそれを遮るからです
+——**森や密林に置いた器は上乗せの蒸発をしません。** 焚き火や松明で減ることも無く、据え付けの光源が
+`ambient_brightness` へ入らないこと（3節）がそのまま効いています。しきい値の置き方と土地ごとの
+効き方は [`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 6節。
 
 **時刻の段（`core.yaml` の `hour`）は太陽高度で切ってあります。** 赤道付近の島なので日の出6時・日没
 18時が動かず、太陽は1時間に15°動くので、6時から17時までの12段（正午をはさんで対称）と夜の1段に
