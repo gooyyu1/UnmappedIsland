@@ -65,5 +65,7 @@ npm run stats:terrain
   生成元: `tests/diagnostics/startupReachStatsReport.test.ts`（計算は `src/analysis/startupReach.ts`）
 - [地形生成統計レポート](./TerrainStats.md) — 土地1つあたりの道の本数（連結数）と余分な道の本数の
   平均/最小/最大/標準偏差、次数の分布、道の移動時間
-  （[`TerrainGeneration.md`](../engine/TerrainGeneration.md) 3.5節参照）。
-  生成元: `tests/diagnostics/terrainStatsReport.test.ts`
+  （[`TerrainGeneration.md`](../engine/TerrainGeneration.md) 3.5節参照）。あわせて**局面ごとの1日**
+  ——島を開き切るまでの探索の局面と、開き切った後の定常の局面——を、島の広さと土地ごとの
+  活動できる時間から数える（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.2節・8.3節参照）。
+  生成元: `tests/diagnostics/terrainStatsReport.test.ts`（局面の計算は `src/analysis/dailyPhases.ts`）
