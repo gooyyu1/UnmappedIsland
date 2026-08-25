@@ -77,7 +77,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     return def.enumeratePropertyDefs().find((p) => p.globalId === fillId)?.range?.max;
   }
 
-  /** hourは既定で昼（10-17時のdayステージ）。sunlightはhourとweatherの寄与の和で決まる。 */
+  /** hourは既定で正午（11-12時のnoonステージ）。明るさはhourとweatherの寄与の和で決まる。 */
   function spawnWorld(weather: string, hour = 12): WorldObject {
     const world = spawn('world');
     world.getProperty(weatherId).setNumberWithoutEvents(codex.symbolNames.intern(weather));
@@ -271,13 +271,12 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     expect(Math.min(oil.red, oil.green), '油は赤と緑が揃って強い＝黄色').toBeGreaterThan(oil.blue);
   });
 
-  // 昼のsunlightは cloudy 7 / clear 10 / sunny 12 / scorching 15。
+  // 正午のambient_brightnessは cloudy 11 / clear 14 / sunny 15 / scorching 16。
   it.each([
     ['cloudy', -1],
-    ['clear', -1],
-    ['sunny', -2],
+    ['clear', -2],
     ['scorching', -3],
-  ])('coconut_bowlの昼の蒸発量は日差しの強さ(%s)で決まる', (weather, expectedDelta) => {
+  ])('coconut_bowlの正午の蒸発量は日差しの強さ(%s)で決まる', (weather, expectedDelta) => {
     const world = spawnWorld(weather);
     const bowl = spawnContainerUnderWorld('coconut_bowl', 'water', 100, world);
 
@@ -288,10 +287,9 @@ describe('liquid_containers.yamlの液体容器定義', () => {
 
   it.each([
     ['cloudy', -2],
-    ['clear', -4],
-    ['sunny', -6],
+    ['clear', -6],
     ['scorching', -8],
-  ])('jarの昼の蒸発量は日差しの強さ(%s)で決まる', (weather, expectedDelta) => {
+  ])('jarの正午の蒸発量は日差しの強さ(%s)で決まる', (weather, expectedDelta) => {
     const world = spawnWorld(weather);
     const jar = spawnContainerUnderWorld('jar', 'water', 200, world);
 
@@ -304,7 +302,7 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     ['coconut_bowl', -1],
     ['jar', -2],
   ])('夜(%s)は日射の上乗せが消え、基礎の蒸発だけが残る', (containerName, expectedDelta) => {
-    const world = spawnWorld('scorching', 0); // 夜はsunlightが0にクランプされる
+    const world = spawnWorld('scorching', 0); // 夜は明るさが底（-6）へ均される
     const container = spawnContainerUnderWorld(containerName, 'water', 200, world);
 
     container.tick();
@@ -313,10 +311,10 @@ describe('liquid_containers.yamlの液体容器定義', () => {
   });
 
   it.each([
-    ['coconut_bowl', -2],
-    ['jar', -6],
-  ])('朝夕(%s)の日差しは昼より弱い', (containerName, expectedDelta) => {
-    const world = spawnWorld('scorching', 7); // sunlight 12（昼のsunnyと同値）
+    ['coconut_bowl', -1],
+    ['jar', -4],
+  ])('日の出直後(%s)の日差しは正午より弱い', (containerName, expectedDelta) => {
+    const world = spawnWorld('scorching', 7); // 太陽高度22.5°で明るさ13（最も低いしきい値だけを超える）
     const container = spawnContainerUnderWorld(containerName, 'water', 200, world);
 
     container.tick();

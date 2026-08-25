@@ -4,7 +4,7 @@ import { skyTintFor } from '../looks/skyTint';
 import { COLOR } from '../looks/theme';
 
 /**
- * 日射に応じて画面全体へかぶせる翳り・輝き（ScreenLayout.md 7.5節 空の演出）。見え方はskyTint.tsが
+ * 明るさに応じて画面全体へかぶせる翳り・輝き（ScreenLayout.md 7.5節 空の演出）。見え方はskyTint.tsが
  * 決め、こちらは「その通りに描く」ことだけを行う。
  *
  * 入力は遮らない（下のカードもボタンもそのまま操作できる）。ほぼ全ての表示物より手前へ出す必要が
@@ -14,16 +14,16 @@ import { COLOR } from '../looks/theme';
  * （[DesignNotes.md](../../../docs/engine/DesignNotes.md)）。
  */
 export class ScreenSkyTint extends Phaser.GameObjects.Rectangle {
-  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, sunlight: number | undefined) {
+  constructor(scene: Phaser.Scene, metrics: ScreenMetrics, ambientBrightness: number | undefined) {
     super(scene, metrics.width / 2, metrics.height / 2, metrics.width, metrics.height, COLOR.skyShade, 1);
 
     scene.add.existing(this);
-    this.setSunlight(sunlight);
+    this.setAmbientBrightness(ambientBrightness);
   }
 
-  /** 今の日射に合わせてかぶせ直す。かぶせるものが無ければ隠す。 */
-  setSunlight(sunlight: number | undefined): void {
-    const tint = skyTintFor(sunlight);
+  /** 今の明るさに合わせてかぶせ直す。かぶせるものが無ければ隠す。 */
+  setAmbientBrightness(ambientBrightness: number | undefined): void {
+    const tint = skyTintFor(ambientBrightness);
     if (tint === undefined) {
       this.setVisible(false);
     } else {

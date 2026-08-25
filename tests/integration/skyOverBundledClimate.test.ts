@@ -11,20 +11,21 @@ import { seededRng } from '../../src/domain/Rng';
  * 空の演出（skyTint・heatHaze）を、世界・意匠を繋いだまま通す試験。
  *
  * 意匠のしきい値は、気候が実際に作る値を当て込んで決めている（陽炎の27度、翳りの基準になる曇りの
- * 日射）。**どちらか片方だけでは、噛み合わなくなったことが分からない**——日射や気温の寄与を変えれば
- * 意匠は無言でずれる。ここはその噛み合わせだけを見るので、**実データ（core.yaml）に依存する**。
+ * 正午の明るさ）。**どちらか片方だけでは、噛み合わなくなったことが分からない**——明るさや気温の
+ * 寄与を変えれば意匠は無言でずれる。ここはその噛み合わせだけを見るので、
+ * **実データ（core.yaml）に依存する**。
  */
 describe('空の演出（世界→意匠 通し）', () => {
   let codex: WorldCodex;
 
-  /** worldのプロパティを直接置いた状態で、日射と気温の実効値を読む。 */
+  /** worldのプロパティを直接置いた状態で、明るさと気温の実効値を読む。 */
   function skyWith(weather: string, hour: number, thermalLevel: number) {
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
     const world = game.world.instance;
     world.tryGetProperty(codex.propertyNames.getId('weather'))?.setNumber(codex.symbolNames.getId(weather));
     world.tryGetProperty(codex.propertyNames.getId('hour'))?.setNumber(hour);
     world.tryGetProperty(codex.propertyNames.getId('thermal_level'))?.setNumber(thermalLevel);
-    return { sunlight: game.world.sunlight, temperature: game.world.ambientTemperature };
+    return { brightness: game.world.ambientBrightness, temperature: game.world.ambientTemperature };
   }
 
   /** 涼しくも暑くもない季節（thermal_levelのmild段）。 */
@@ -36,26 +37,26 @@ describe('空の演出（世界→意匠 通し）', () => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
-  it('夜は天気によらず日射が0になり、真夜中の快晴も明るくならない', () => {
+  it('夜は天気によらず底へ均され、真夜中の快晴も明るくならない', () => {
     for (const weather of ['clear', 'sunny', 'scorching']) {
-      const { sunlight } = skyWith(weather, 2, MILD);
-      expect(sunlight, weather).toBe(0);
-      expect(skyTintFor(sunlight)!.additive, `${weather}: 夜は翳る`).toBe(false);
+      const { brightness } = skyWith(weather, 2, MILD);
+      expect(brightness, weather).toBe(-6);
+      expect(skyTintFor(brightness)!.additive, `${weather}: 夜は翳る`).toBe(false);
     }
   });
 
-  it('日中は、曇りが翳りも輝きも無い基準になり、晴れるほど明るくなる', () => {
-    const brightness = (weather: string): number => {
-      const tint = skyTintFor(skyWith(weather, 11, MILD).sunlight);
+  it('正午は、曇りが翳りも輝きも無い基準になり、晴れるほど明るくなる', () => {
+    const tintDepth = (weather: string): number => {
+      const tint = skyTintFor(skyWith(weather, 11, MILD).brightness);
       return tint === undefined ? 0 : tint.alpha * (tint.additive ? 1 : -1);
     };
 
-    expect(brightness('cloudy'), '曇りの日中は基準').toBe(0);
-    expect(brightness('clear')).toBeGreaterThan(0);
-    expect(brightness('sunny')).toBeGreaterThan(brightness('clear'));
-    expect(brightness('scorching')).toBeGreaterThan(brightness('sunny'));
-    expect(brightness('light_rain'), '雨は基準より暗い').toBeLessThan(0);
-    expect(brightness('storm')).toBeLessThan(brightness('light_rain'));
+    expect(tintDepth('cloudy'), '曇りの正午は基準').toBe(0);
+    expect(tintDepth('clear')).toBeGreaterThan(0);
+    expect(tintDepth('sunny')).toBeGreaterThan(tintDepth('clear'));
+    expect(tintDepth('scorching')).toBeGreaterThan(tintDepth('sunny'));
+    expect(tintDepth('light_rain'), '雨は基準より暗い').toBeLessThan(0);
+    expect(tintDepth('storm')).toBeLessThan(tintDepth('light_rain'));
   });
 
   it('陽炎は、暑い季節の日中にだけ立つ', () => {

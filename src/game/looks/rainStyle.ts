@@ -3,7 +3,7 @@
  * 値はu単位（ScreenMetrics）とミリ秒。
  *
  * **暗さはここが持たない。** 明るさは日射（skyTint.ts）が一手に決める——雨が暗いのは雨雲が
- * 陽を遮っているからで、それは天気からsunlightへの寄与（core.yaml）として既に表されている。
+ * 陽を遮っているからで、それは天気からambient_brightnessへの寄与（core.yaml）として既に表されている。
  */
 export interface RainStyle {
   /** 1周期ぶんの帯に降らせる雨粒の数。 */

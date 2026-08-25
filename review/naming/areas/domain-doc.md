@@ -90,7 +90,7 @@ A（名前をなぞるだけ）: 686件 / B: 64件 / C: 22件
 
 | 現在地 | 名前 | 判定 | 一言で言うと | 名前から読み取れないこと | 案 |
 | ------ | ---- | ---- | ------------ | ------------------------ | -- |
-| `domain/wrappers/ObjectWrapper.ts`（745）, `domain/wrappers/World.ts`（767） | `ObjectWrapper::numberOf` / `World::minutesPerTick` | B | `numberOf` は**実効値**、`minutesPerTick` は**実体値**を返す | 同じ包みの中で読む値の種類が違うのに、どちらの名前も何も言っていない。`ambientTemperature`・`sunlight` は実効値なので、`minutesPerTick` だけ例外 | `effectiveNumberOf` / 実体値を返す側は `rawMinutesPerTick` |
+| `domain/wrappers/ObjectWrapper.ts`（745）, `domain/wrappers/World.ts`（767） | `ObjectWrapper::numberOf` / `World::minutesPerTick` | B | `numberOf` は**実効値**、`minutesPerTick` は**実体値**を返す | 同じ包みの中で読む値の種類が違うのに、どちらの名前も何も言っていない。`ambientTemperature`・`ambientBrightness` は実効値なので、`minutesPerTick` だけ例外 | `effectiveNumberOf` / 実体値を返す側は `rawMinutesPerTick` |
 
 ### 型・フィールドの意味が名前より広い／狭い
 

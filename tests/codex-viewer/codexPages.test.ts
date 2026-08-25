@@ -51,14 +51,14 @@ object_defs:
   world:
     singleton: true
     props:
-      sunlight: {value: 0, range: {min: 0, max: 20}}
+      ambient_brightness: {value: 0, range: {min: -6, max: 17}}
       hour:
         value: 0
         range: {min: 0, max: 24}
         stages:
           - name: night
             passives:
-              - modify: {self: {sunlight: -5}}
+              - modify: {self: {ambient_brightness: -5}}
 
   ${DRAWN_LAND}:
     tags: [location]
@@ -201,7 +201,7 @@ describe('WorldCodexビューアのページ', () => {
   });
 
   it('プロパティのページに影響元が出る', () => {
-    const html = renderPropertyPage(view, 'world', 'sunlight');
+    const html = renderPropertyPage(view, 'world', 'ambient_brightness');
 
     expect(html).toContain('影響元');
     expect(html).toContain('modify');

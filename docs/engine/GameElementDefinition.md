@@ -453,7 +453,7 @@ props:
           passives:
             - modify:
                 self:
-                  sunlight: 5
+                  ambient_brightness: -2
   ```
 
   数値型の「最下段（min省略）＝フォールバック」という概念は、シンボル型には存在しません。`stages` に

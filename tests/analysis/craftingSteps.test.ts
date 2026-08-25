@@ -485,7 +485,7 @@ object_defs:
       collect_rain:
         trigger: menu
         conditions:
-          - {subject: ancestor, prop: sunlight, lt: 5}
+          - {subject: ancestor, prop: ambient_brightness, lt: 5}
           - {subject: self, prop: fill, eq: 0}
         become: {content: water_liquid}
         set: {self: {fill: 1}}

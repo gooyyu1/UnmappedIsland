@@ -248,11 +248,12 @@ export interface PlayScreenView {
   readonly hour: number;
   readonly minute: number;
   /**
-   * 空の演出（ScreenLayout.md 7.5節）が読む、今の天気と日射。いずれも語彙を持たないCodexではundefined。
-   * 天気は識別子（`light_rain`など、ClimateSystem.md 4.2節）、日射は時間帯と天気を畳んだ実効値。
+   * 空の演出（ScreenLayout.md 7.5節）が読む、今の天気と明るさ。いずれも語彙を持たないCodexではundefined。
+   * 天気は識別子（`light_rain`など、ClimateSystem.md 4.2節）、明るさは太陽高度と天気を畳んだ実効値
+   * （EVスケール、IlluminationSystem.md 1節）。
    */
   readonly weather: string | undefined;
-  readonly sunlight: number | undefined;
+  readonly ambientBrightness: number | undefined;
   /** 陽炎が立つかを決める気温（ClimateSystem.md）。語彙を持たないCodexではundefined。 */
   readonly ambientTemperature: number | undefined;
   /**
@@ -751,7 +752,7 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
     hour: game.world.hour,
     minute: game.world.minute,
     weather: game.world.weather,
-    sunlight: game.world.sunlight,
+    ambientBrightness: game.world.ambientBrightness,
     ambientTemperature: game.world.ambientTemperature,
     weatherLabel:
       game.world.weather === undefined ? undefined : locale.symbol(game.world.weather).displayName,

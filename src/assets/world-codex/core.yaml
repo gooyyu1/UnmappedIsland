@@ -88,10 +88,15 @@ object_defs:
               minute: -60
               hour: 1
       # 現在の時（0-23）。溢れたらdayへ繰り上げ。
-      # stages（6.4節）+passives（8節）でsunlightへ時間帯の寄与を与える（天候による寄与はweather側。
-      # 両者のmodifyが加算的に重なる）。夜の-100は、weatherの寄与をsunlightのrange（min:0）クランプで
-      # 必ず0まで打ち消すための値。夜は0時をまたぐため、先頭のフォールバック段階とnight_lateの
-      # 2エントリで概念上1つの「夜」段階を表す。区切り時刻・補正量はいずれも仮の値。
+      # stages（6.4節）+passives（8節）でambient_brightnessへ太陽高度ぶんの寄与を与える（天気の
+      # 透過率はweather側。両者のmodifyが加算的に重なる）。赤道付近の島なので日の出6時・日没18時が
+      # 年間ほぼ動かず（ContentSkeleton.md 8.1.3節）、太陽は1時間に15°動く。各段の値は
+      # **その1時間の中央の太陽高度**での快晴の照度（125,000 lx × sin²高度）をEVへ直したもの
+      # （EV = log2(照度 / 2.5 lx)、IlluminationSystem.md 1節）。
+      # 夜は月あかりだけになるが、**半月固定**（ContentSkeleton.md 8.1.1.1節）なので底へ均される
+      # ——半月の照度は満月の約1/10（中天で0.025 lx = -6.6）で、底の-6（0.039 lx）を下回るため、
+      # 月の高度で刻んでも結果が変わらない。夜は0時をまたぐため、先頭のフォールバック段階（0-5時）と
+      # night_late（18-23時）の2エントリで概念上1つの「夜」段階を表す。
       hour:
         value: 0
         range: {min: 0, max: 24}
@@ -101,35 +106,71 @@ object_defs:
               hour: -24
               day: 1
         stages:
-          - name: night          # 0-5時（フォールバック）・22-23時（night_late）:
-            passives:            # weatherの寄与をsunlightのrangeクランプ経由で無効化する
+          - name: night            # 0-5時（フォールバック）・18-23時（night_late）: 底
+            passives:
               - modify:
                   self:
-                    sunlight: -100
-          - name: morning        # 6-9時: sunlightへ最低限の寄与
+                    ambient_brightness: -6
+          - name: sunrise          # 6時: 高度7.5°（2,100 lx）
             min: 6
             passives:
               - modify:
                   self:
-                    sunlight: 2
-          - name: day            # 10-17時: sunlightへより強い寄与
-            min: 10
+                    ambient_brightness: 10
+          - name: early_morning    # 7時: 高度22.5°（18,300 lx）
+            min: 7
             passives:
               - modify:
                   self:
-                    sunlight: 5
-          - name: evening        # 18-21時: 朝と同じsunlightへの寄与
+                    ambient_brightness: 13
+          - name: morning          # 8時: 高度37.5°（46,300 lx）
+            min: 8
+            passives:
+              - modify:
+                  self:
+                    ambient_brightness: 14
+          - name: late_morning     # 9-10時: 高度52.5°-67.5°（78,700-106,700 lx）
+            min: 9
+            passives:
+              - modify:
+                  self:
+                    ambient_brightness: 15
+          - name: noon             # 11-12時: 高度82.5°（122,900 lx）
+            min: 11
+            passives:
+              - modify:
+                  self:
+                    ambient_brightness: 16
+          - name: early_afternoon  # 13-14時: 朝の対称
+            min: 13
+            passives:
+              - modify:
+                  self:
+                    ambient_brightness: 15
+          - name: afternoon        # 15時: 朝の対称
+            min: 15
+            passives:
+              - modify:
+                  self:
+                    ambient_brightness: 14
+          - name: late_afternoon   # 16時: 朝の対称
+            min: 16
+            passives:
+              - modify:
+                  self:
+                    ambient_brightness: 13
+          - name: sunset           # 17時: 朝の対称
+            min: 17
+            passives:
+              - modify:
+                  self:
+                    ambient_brightness: 10
+          - name: night_late       # 18-23時: 夜と同じ
             min: 18
             passives:
               - modify:
                   self:
-                    sunlight: 2
-          - name: night_late     # 22-23時: 夜と同じ
-            min: 22
-            passives:
-              - modify:
-                  self:
-                    sunlight: -100
+                    ambient_brightness: -6
       # 現在の日（1始まり、上限なし。GameElementDefinition.md 17節）。
       day:
         value: 1
@@ -137,8 +178,10 @@ object_defs:
       # scorchingの7段階で、clear（普通の晴れ）がこの島の標準的な天気。
       # 遷移はClimateSystem.md参照: weather_remainingが0になるたび、atmospheric_moistureのstages
       # （scorchingのみthermal_levelのhot stage）が駆動する*_weightを重みとするpickで次が選ばれる。
-      # stagesはsunlightへ「晴れているほど追加で明るくなる」寄与をmodifyで与える（時間帯の寄与と
-      # 夜の無効化はhour側。シンボル型のstagesはステージ名がそのまま比較対象）。数値は仮の値。
+      # stagesはambient_brightnessへ**雲がどれだけ陽を遮るか**をmodifyで与える（太陽高度の寄与は
+      # hour側。シンボル型のstagesはステージ名がそのまま比較対象）。値は雲のまったく無い空
+      # （scorching、正午125,000 lx）を0として、そこから何段暗いか。ContentSkeleton.md 8.1.3節の
+      # 正午の照度に合わせてある（曇り5,000 lx=-5・小雨2,000=-6・大雨749=-8・嵐187=-10）。
       # 雨系stageは毎tick atmospheric_moistureを自己減算し、雨が水分を使い尽くすと乾いた候補が
       # 選ばれやすくなる貯水池の循環を作る（ClimateSystem.md 3節）。減算量と雨季の季節レートの
       # 大小関係が雨季の降雨の止み方を決める（4.3節）。
@@ -147,11 +190,17 @@ object_defs:
         stages:
           - name: storm
             passives:
+              - modify:
+                  self:
+                    ambient_brightness: -10
               - add:
                   self:
                     atmospheric_moisture: -2
           - name: heavy_rain
             passives:
+              - modify:
+                  self:
+                    ambient_brightness: -8
               - add:
                   self:
                     atmospheric_moisture: -1.3
@@ -159,7 +208,7 @@ object_defs:
             passives:
               - modify:
                   self:
-                    sunlight: 1
+                    ambient_brightness: -6
               - add:
                   self:
                     atmospheric_moisture: -1.1
@@ -167,45 +216,45 @@ object_defs:
             passives:
               - modify:
                   self:
-                    sunlight: 2
+                    ambient_brightness: -5
           - name: clear
             passives:
               - modify:
                   self:
-                    sunlight: 5
+                    ambient_brightness: -2
           - name: sunny
             passives:
               - modify:
                   self:
-                    sunlight: 7
-          - name: scorching
-            passives:
-              - modify:
-                  self:
-                    sunlight: 10
-      # 太陽光の強さ。hourとweather両方のmodifyが加算的に重なる、都度導出される実効値（8.3節）。
-      # min:0のクランプで、夜（hour側の-100）はweatherの寄与によらず必ず0になる。max:20は現状の
-      # 最大値（10）に対する余裕。ambient_temperatureへの補正はこのstages+WhenOwnStageゲート
-      # （6.4節・8.2節）が担う。しきい値・補正量は仮の値。
-      sunlight:
+                    ambient_brightness: -1
+          - name: scorching  # 快晴が基準（0）なので、寄与を持たない
+      # 樹冠も地面の反射も無い場所の明るさ（IlluminationSystem.md 2節）。EVスケール
+      # （EV = log2(照度 / 2.5 lx)、同1節）で、hourとweather両方のmodifyが加算的に重なる、
+      # 都度導出される実効値（8.3節）。
+      # rangeの底-6は「これより暗い場所を区別しない」暗さの底（同4節）。上限+17は、快晴の正午
+      # （+16）に最も明るい地面（砂浜+1）を足した、太陽光だけで届く最大（同4節）。
+      # ambient_temperatureへの補正はこのstages+WhenOwnStageゲート（6.4節・8.2節）が担う。境目は
+      # 2つとも日射の強さで置いてある: 0は2.5 lxで**陽が地平線の下**、+11は曇りの正午（5,000 lx）で
+      # **日射が空気を暖め始める明るさ**。補正量は仮の値。
+      ambient_brightness:
         value: 0
-        range: {min: 0, max: 20}
+        range: {min: -6, max: 17}
         stages:
-          - name: dark    # sunlight=0（フォールバック）: やや涼しい
+          - name: dark        # 0未満（フォールバック、夜）: やや涼しい
             passives:
               - modify:
                   self:
                     ambient_temperature: -3
-          - name: dim     # sunlight 1-6: 補正なし
-            min: 1
-          - name: bright  # sunlight 7以上: やや暑い
-            min: 7
+          - name: dim         # 0〜+10（朝夕と雨天の日中）: 補正なし
+            min: 0
+          - name: bright      # +11以上（曇り以上の日中）: やや暑い
+            min: 11
             passives:
               - modify:
                   self:
                     ambient_temperature: 3
-      # 現在の気温。体温と区別するための命名（ClimateSystem.md参照）。日照による補正はsunlight、
-      # 季節による補正はthermal_level参照。
+      # 現在の気温。体温と区別するための命名（ClimateSystem.md参照）。日射による補正は
+      # ambient_brightness、季節による補正はthermal_level参照。
       ambient_temperature:
         value: 20
 

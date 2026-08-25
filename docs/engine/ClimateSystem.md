@@ -14,7 +14,7 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
 ## 1. 基本方針
 
 気候は次の 2 層で構成します。いずれも `world`（`GameElementDefinition.md` 15 節の `singleton: true` オブジェクト。
-`core.yaml` で既に `tick`/`minute`/`hour`/`day`/`weather`/`sunlight`/`ambient_temperature` を直接プロパティとして
+`core.yaml` で既に `tick`/`minute`/`hour`/`day`/`weather`/`ambient_brightness`/`ambient_temperature` を直接プロパティとして
 持つ）自身のプロパティとして表現し、専用の `WorldObject` インスタンスは作りません。
 
 - **季節（長期サイクル）**: 穏やか・雨季・乾季の 3 状態を固定順で巡回する。滞在期間は初回サイクルのみ固定、
@@ -233,7 +233,7 @@ weather_remaining:
 ```
 
 `*_weight` プロパティ自身の値は、`atmospheric_moisture` の `stages`（数値の半開区間。GameElementDefinition.md
-6.4 節）が `passives` の `modify` として常時上書きすることで決まります（`weather` の `stages` が `sunlight` を
+6.4 節）が `passives` の `modify` として常時上書きすることで決まります（`weather` の `stages` が `ambient_brightness` を
 `modify` しているのと同じパターンで、新しいエンジン機能は不要です）。実装値は以下の通りです。
 
 ```yaml
@@ -455,7 +455,7 @@ first_dry_rain_calibration:
 - 5.2 節の `6720`/`6816` という tick 数は 2.3 節の「初回サイクル固定 30 日」に依存する導出値であり、2.3 節の
   前提が変わった場合はこの節も再計算が必要
 - storm・scorching への「特別な対策が必要な極端な天候」としてのゲームプレイ上の意味づけ（現状は天気の値が
-  変わるだけで、sunlight 以外への影響は未実装）
+  変わるだけで、明るさ以外への影響は未実装）
 - 天気に反応する別オブジェクト（例: 装備の防水性）を作る場合の参照経路。`subject: world` を条件・重みから
   参照する仕組みが未実装（`GameElementDefinition.md` 14.1 節・15 節・17 節）のため、`ancestor` 経由での
   参照が必要になる。本書の季節・天気遷移ロジック自体はすべて `world` 自身の `on_min`（対象は常に

@@ -103,7 +103,7 @@ export class WorldRuleVocabulary {
   readonly minuteId: number;
   readonly minutesPerTickId: number;
   readonly weatherId: number;
-  readonly sunlightId: number;
+  readonly ambientBrightnessId: number;
   readonly ambientTemperatureId: number;
 
   // ---- キャラクタ（docs/world/Characters.md、wrappers/PlayerCharacter） ----
@@ -161,7 +161,7 @@ export class WorldRuleVocabulary {
     this.minuteId = propertyNames.intern('minute');
     this.minutesPerTickId = propertyNames.intern('minutes_per_tick');
     this.weatherId = propertyNames.intern('weather');
-    this.sunlightId = propertyNames.intern('sunlight');
+    this.ambientBrightnessId = propertyNames.intern('ambient_brightness');
     this.ambientTemperatureId = propertyNames.intern('ambient_temperature');
 
     this.hpId = propertyNames.intern('hp');

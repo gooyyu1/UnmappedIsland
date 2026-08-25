@@ -83,8 +83,8 @@ consciousness:
   宣言するので、同じ傷が誰に刺さっても同じ意味を持つ必要があります。
 
 **押し下げるのは、押し下げる側の段です。** 寄与は `stages` の中の `passives` に書きます
-（[`GameElementDefinition.md`](./GameElementDefinition.md) 6.4節）。時刻（`hour`）の段が日射
-（`sunlight`）へ寄与しているのと同じ形で、**しきい値と寄与量が同じ1箇所に並びます**。
+（[`GameElementDefinition.md`](./GameElementDefinition.md) 6.4節）。時刻（`hour`）の段が明るさ
+（`ambient_brightness`）へ寄与しているのと同じ形で、**しきい値と寄与量が同じ1箇所に並びます**。
 
 ```yaml
 pain:

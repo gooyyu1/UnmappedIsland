@@ -69,7 +69,7 @@ private フィールドと private readonly は対象外（状態であって手
 |---|---|---|---|
 | src/game/looks/durationText.ts | `MINUTES_PER_DAY = 24 * 60`（非 export の定数） | `domain/views/World` | `World.totalMinutes` は `((day-1)*24 + hour)*60 + minute` と**同じ 24 と 60** を持つが、逆向き（総分→日時分）の分解を持たない。暦の形が世界と意匠の2箇所にある |
 | src/game/looks/theme.ts | `statusFillColorFor`（export） | `domain/AlertLevel` | `ALERT_LEVELS.indexOf(alert) / (length-1)` で深刻さを0〜1に直している。B に `severityOf` が無い |
-| src/game/looks/skyTint.ts | `BRIGHTEST_SUNLIGHT = 15`, `NEUTRAL_SUNLIGHT = 7` | `WorldCodex` / core.yaml | `sunlight` の宣言上の range は `{min:0, max:20}` で、**実際に届く最大**（天気+10 と時間帯+5 の和）は宣言から機械的に出せない。意匠がコメントで手計算している。`NEUTRAL_SUNLIGHT = 7` も core.yaml の `bright` ステージの `min: 7` と手で一致している |
+| src/game/looks/skyTint.ts | `BRIGHTEST = 16`, `NEUTRAL_BRIGHTNESS = 11` | `WorldCodex` / core.yaml | `ambient_brightness` の宣言上の range は `{min:-6, max:17}` で、**実際に届く最大**（太陽高度+16 と天気0 の和）は宣言から機械的に出せない。意匠がコメントで手計算している。`NEUTRAL_BRIGHTNESS = 11` も core.yaml の `bright` ステージの `min: 11` と手で一致している |
 | src/art/artFiles.ts | `locationDefNames`（export） | `WorldCodex` | 「入っていく土地か」を名乗る印が宣言側に無い（`location` タグは筏にも付く）ので、**背景の絵を持つか**を代用にしている。素材の有無が世界の分類を決めている |
 | src/locale/Localization.ts | `parseLocale` 内の10回の繰り返し | `src/loader/yamlMapping.ts` | 「1つの節を `Map<string, T>` に読む」形が10回インラインで書かれている。`entriesInOrder`+`asMap`+パーサの組を1つにする口が loader に無い（同じ形は `src/loader/` 側にも散っている） |
 
