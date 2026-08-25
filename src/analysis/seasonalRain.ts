@@ -54,18 +54,18 @@ export interface SeasonRain {
 export const SEASON_RAIN: readonly SeasonRain[] = [
   {
     name: 'calm',
-    durationDays: 29.81,
-    hoursByWeather: { light_rain: 59.68, heavy_rain: 0.44, storm: 0.01 },
+    durationDays: 29.83,
+    hoursByWeather: { light_rain: 59.37, heavy_rain: 0.47, storm: 0.04 },
   },
   {
     name: 'wet',
-    durationDays: 29.81,
-    hoursByWeather: { light_rain: 236.48, heavy_rain: 224.1, storm: 77.1 },
+    durationDays: 29.91,
+    hoursByWeather: { light_rain: 238.17, heavy_rain: 222.39, storm: 78.75 },
   },
   {
     name: 'dry',
-    durationDays: 29.83,
-    hoursByWeather: { light_rain: 10.58, heavy_rain: 1.44, storm: 0.74 },
+    durationDays: 30.1,
+    hoursByWeather: { light_rain: 10.47, heavy_rain: 1.33, storm: 0.86 },
   },
 ];
 
