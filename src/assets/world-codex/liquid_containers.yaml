@@ -197,7 +197,7 @@ traits:
           to: self
           to_prop: fill
 
-  # 開いた容器から蒸発する。日射に依らない基礎の蒸発と、sunlightのしきい値で決まる上乗せの和
+  # 開いた容器から蒸発する。日射に依らない基礎の蒸発と、ambient_brightnessのしきい値で決まる上乗せの和
   # （LiquidContainerSystem.md 6節）。密閉容器はどちらのゲートも成立しないため蒸発しない。
   # 量が尽きた変種は空の容器へ戻る（fillのon_min）。
   #
@@ -217,35 +217,36 @@ traits:
         add:
           self:
             fill: -2
-      # 日射による上乗せ。夜はsunlightが0になる（core.yamlのhour）ため成立せず、雨天のsunlightは
-      # 最大6で最も低いしきい値10に届かないため、天候を見る必要がない。
+      # 日射による上乗せ。しきい値はEV（IlluminationSystem.md 1節）で、+12は約10,000 lx＝薄日でも
+      # 直射がある明るさ。夜は底の-6になる（core.yamlのhour）ため成立せず、雨天は最も明るい小雨の
+      # 正午でも+10で最も低いしきい値に届かないため、天候を見る必要がない。
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
-          - {subject: ancestor, prop: sunlight, gte: 10}
+          - {subject: ancestor, prop: ambient_brightness, gte: 12}
         add:
           self:
             fill: -2
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
-          - {subject: ancestor, prop: sunlight, gte: 12}
+          - {subject: ancestor, prop: ambient_brightness, gte: 14}
         add:
           self:
             fill: -1
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
-          - {subject: ancestor, prop: sunlight, gte: 12}
+          - {subject: ancestor, prop: ambient_brightness, gte: 14}
         add:
           self:
             fill: -2
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
-          - {subject: ancestor, prop: sunlight, gte: 15}
+          - {subject: ancestor, prop: ambient_brightness, gte: 16}
         add:
           self:
             fill: -1
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
-          - {subject: ancestor, prop: sunlight, gte: 15}
+          - {subject: ancestor, prop: ambient_brightness, gte: 16}
         add:
           self:
             fill: -2

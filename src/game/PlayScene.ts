@@ -281,7 +281,7 @@ export class PlayScene extends ResponsiveScene {
   /** 天気に応じてフィールドエリアへ降らせる雨。現在地には依らないので、作り直しの対象外。 */
   private weatherOverlay!: WeatherOverlay;
 
-  /** 日射に応じて画面全体へかぶせる翳り・輝き。雨と同じく作り直しの対象外。 */
+  /** 明るさに応じて画面全体へかぶせる翳り・輝き。雨と同じく作り直しの対象外。 */
   private skyTint!: ScreenSkyTint;
 
   /** アイテムレーンに立てる陽炎。掛ける対象はフィールドエリアの作り直しで入れ替わる。 */
@@ -613,7 +613,9 @@ export class PlayScene extends ResponsiveScene {
       this.view.weather,
     ).setDepth(SCREEN_DEPTH.weather);
     // 翳り・輝きは画面全体にかぶるので、組み立ての順序ではなく深度で最前面近くへ出す。
-    this.skyTint = new ScreenSkyTint(this, this.metrics, this.view.sunlight).setDepth(SCREEN_DEPTH.skyTint);
+    this.skyTint = new ScreenSkyTint(this, this.metrics, this.view.ambientBrightness).setDepth(
+      SCREEN_DEPTH.skyTint,
+    );
     // 飛んでいるカードの層はフィールドエリアの作り直しでは捨てないので、そちらには含めない。
     this.cardTable = new CardTable(this, this.metrics);
     // タグで書かれた要求の空き枠に、当てはまる型を順に出すための拍（materialCells）。
@@ -746,7 +748,7 @@ export class PlayScene extends ResponsiveScene {
   /** 今の空を画面へ映し直す（ScreenLayout.md 7.5節 空の演出）。 */
   private showSky(): void {
     this.weatherOverlay.setWeather(this.view.weather);
-    this.skyTint.setSunlight(this.view.sunlight);
+    this.skyTint.setAmbientBrightness(this.view.ambientBrightness);
   }
 
   /**

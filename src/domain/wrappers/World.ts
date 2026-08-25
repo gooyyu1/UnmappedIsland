@@ -38,11 +38,12 @@ export class World extends ObjectWrapper {
   }
 
   /**
-   * 今の日射（ClimateSystem.md）。時間帯と天気の寄与が重なった実効値で、夜は天気によらず0になる。
-   * worldが日射を持たなければundefined。
+   * 樹冠も地面の反射も無い場所の、今の明るさ（IlluminationSystem.md 2節）。EVスケール（同1節）で、
+   * 太陽高度と天気の寄与が重なった実効値。夜は底（-6）へ均される。
+   * worldが明るさを持たなければundefined。
    */
-  get sunlight(): number | undefined {
-    return this.tryEffectiveNumberOf(this.words.sunlightId);
+  get ambientBrightness(): number | undefined {
+    return this.tryEffectiveNumberOf(this.words.ambientBrightnessId);
   }
 
   /**

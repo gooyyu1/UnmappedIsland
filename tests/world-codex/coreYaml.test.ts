@@ -104,7 +104,7 @@ describe('core.yamlのworld定義', () => {
     expect(worldInstance.tryGetProperty(dayId)?.number ?? 0).toBe(2);
   });
 
-  it('sunlightがambient_temperatureを補正する', () => {
+  it('ambient_brightnessがambient_temperatureを補正する', () => {
     const world = codex.objects.get(codex.objectNames.getId('world'));
     const hourId = codex.propertyNames.getId('hour');
     const weatherId = codex.propertyNames.getId('weather');
@@ -125,31 +125,31 @@ describe('core.yamlのworld定義', () => {
       );
     }
 
-    // 夜はweatherによらずsunlight=0のため、常にやや涼しい（hourを直接見ず、sunlight経由で補正）
-    assertAmbientTemperatureAt('storm', 2, 17, '暴風雨の深夜でもsunlightは0なのでやや涼しい');
-    assertAmbientTemperatureAt('heavy_rain', 23, 17, '大雨の夜もやや涼しい');
+    // 夜はweatherによらず底(-6)へ均されるため、常にやや涼しい（hourを直接見ず、明るさ経由で補正）
+    assertAmbientTemperatureAt('storm', 2, 17, '暴風雨の深夜は底なのでやや涼しい');
+    assertAmbientTemperatureAt('scorching', 23, 17, '雲の無い夜も底で、やや涼しいまま');
 
-    // sunlightが中間(1-6)の時間帯は補正なし
-    assertAmbientTemperatureAt('cloudy', 6, 20, '曇りの朝(sunlight=2+2=4)は補正なし');
-    assertAmbientTemperatureAt('heavy_rain', 12, 20, '大雨の昼(sunlight=5+0=5)も補正なし');
+    // dim帯(-5〜+10)は補正なし。日の出直後と、雨が陽を遮っている日中がここに入る。
+    assertAmbientTemperatureAt('clear', 6, 20, '晴れの日の出直後(10-2=8)は補正なし');
+    assertAmbientTemperatureAt('heavy_rain', 12, 20, '大雨の正午(16-8=8)も補正なし');
+    assertAmbientTemperatureAt('storm', 12, 20, '嵐の正午(16-10=6)も補正なし');
 
-    // sunlightが7以上ならやや暑い
-    assertAmbientTemperatureAt('clear', 12, 23, '晴れた昼(sunlight=5+5=10)はやや暑い');
-    assertAmbientTemperatureAt('clear', 6, 23, '晴れの朝(sunlight=2+5=7)もやや暑い');
-    assertAmbientTemperatureAt('cloudy', 12, 23, '曇りの昼(sunlight=5+2=7)もやや暑い');
-    assertAmbientTemperatureAt('sunny', 12, 23, '快晴の昼(sunlight=5+7=12)もbright帯のまま');
-    assertAmbientTemperatureAt('scorching', 12, 23, '最上級の晴れの昼(sunlight=5+10=15)もbright帯のまま');
+    // bright帯(+11以上)はやや暑い。境目は曇りの正午（5,000 lx）。
+    assertAmbientTemperatureAt('cloudy', 12, 23, '曇りの正午(16-5=11)はやや暑い');
+    assertAmbientTemperatureAt('clear', 12, 23, '晴れの正午(16-2=14)もやや暑い');
+    assertAmbientTemperatureAt('clear', 7, 23, '晴れの朝(13-2=11)もやや暑い');
+    assertAmbientTemperatureAt('scorching', 12, 23, '雲の無い正午(16)もbright帯のまま');
   });
 
-  it('weatherとhourがsunlightを補正する', () => {
+  it('hourとweatherがambient_brightnessを補正する', () => {
     const world = codex.objects.get(codex.objectNames.getId('world'));
     const hourId = codex.propertyNames.getId('hour');
     const weatherId = codex.propertyNames.getId('weather');
-    const sunlightId = codex.propertyNames.getId('sunlight');
+    const ambientBrightnessId = codex.propertyNames.getId('ambient_brightness');
 
     const worldInstance = new WorldSession(codex).createObject(world.globalId);
 
-    function assertSunlightAt(
+    function assertBrightnessAt(
       weather: string,
       hour: number,
       expectedEffective: number,
@@ -157,34 +157,28 @@ describe('core.yamlのworld定義', () => {
     ): void {
       worldInstance.getProperty(weatherId).setNumberWithoutEvents(codex.symbolNames.intern(weather));
       worldInstance.getProperty(hourId).setNumberWithoutEvents(hour);
-      expect(worldInstance.tryGetProperty(sunlightId)?.getEffectiveValue() ?? 0, because).toBe(
+      expect(worldInstance.tryGetProperty(ambientBrightnessId)?.getEffectiveValue() ?? 0, because).toBe(
         expectedEffective,
       );
     }
 
-    // 夜: hour側の最低限の寄与が0であり、weather側の追加ボーナスもconditionsで無効化されるため、
-    // weatherによらず常に0（晴れていても夜であれば日差しは強くない、という設計意図）
-    assertSunlightAt('scorching', 2, 0, '最上級の晴れの深夜でも0');
-    assertSunlightAt('heavy_rain', 23, 0, '大雨の夜は0');
+    // 夜: hour側の寄与が底(-6)そのもので、weather側は引く向きにしか働かないので、rangeの底が
+    // 天気によらず同じ暗さへ均す（晴れていても夜は明るくない）。
+    assertBrightnessAt('scorching', 2, -6, '雲の無い深夜も底');
+    assertBrightnessAt('heavy_rain', 23, -6, '大雨の夜も底');
 
-    // 昼(10-17時): hour側の最低限の寄与(5)に、weather側の追加ボーナスが加算される
-    assertSunlightAt('storm', 12, 5, '暴風雨の昼はweatherの追加ボーナスがなくhour(5)の最低限の寄与のみ');
-    assertSunlightAt('heavy_rain', 12, 5, '大雨の昼も同様');
-    assertSunlightAt('light_rain', 12, 6, '小雨の昼はhour(5)+weather(1)');
-    assertSunlightAt('cloudy', 12, 7, '曇りの昼はhour(5)+weather(2)');
-    assertSunlightAt('clear', 12, 10, '晴れた昼はhour(5)+weather(5)');
-    assertSunlightAt('sunny', 12, 12, '快晴の昼はhour(5)+weather(7)');
-    assertSunlightAt('scorching', 12, 15, '最上級の晴れの昼はhour(5)+weather(10)で最大');
+    // 正午(11-12時): 太陽高度82.5°の快晴(+16)から、天気の透過率のぶん引かれる。
+    assertBrightnessAt('scorching', 12, 16, '雲の無い正午は+16（125,000 lx）で最大');
+    assertBrightnessAt('cloudy', 12, 11, '曇りの正午は+11（5,000 lx）');
+    assertBrightnessAt('storm', 12, 6, '嵐の正午でも+6（約190 lx）で、真夜中とは区別が付く');
 
-    // 朝(6-9時)・夕方(18-21時): hour側の最低限の寄与(2)は昼より弱いが、weather側のボーナスは昼と同じ
-    assertSunlightAt('clear', 7, 7, '晴れの朝はhour(2)+weather(5)');
-    assertSunlightAt('clear', 20, 7, '晴れの夕方は朝と同じ強さ');
-    assertSunlightAt(
-      'storm',
-      8,
-      2,
-      '暴風雨の朝でもhour側の最低限の寄与(2)は残る（雨でも昼は夜より明るいはず、という設計意図）',
-    );
+    // 太陽高度が下がるほど暗い。日の出6時・日没18時なので、17時までが昼。
+    assertBrightnessAt('clear', 12, 14, '晴れの正午');
+    assertBrightnessAt('clear', 15, 12, '晴れの15時は高度37.5°');
+    assertBrightnessAt('clear', 17, 8, '晴れの17時は高度7.5°');
+    assertBrightnessAt('clear', 18, -6, '日没後は夜');
+    assertBrightnessAt('clear', 7, 11, '朝夕は正午をはさんで対称');
+    assertBrightnessAt('clear', 16, 11, '朝夕は正午をはさんで対称');
   });
 
   it('locationsスロットはlocationタグを持つオブジェクトだけを受け入れる', () => {
