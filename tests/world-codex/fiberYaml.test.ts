@@ -8,6 +8,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { makeBrightEnoughForAnyAction } from '../support/illumination';
 
 /**
  * fiber.yamlの繊維の連鎖を、実ファイルの定義だけで検証する。
@@ -37,6 +38,9 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
 
     jungle = spawnInto('jungle', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, jungle, 'characters');
+    // 刈るのも掻き取るのも撚るのも明るさを要求する（IlluminationSystem.md 5節）。ここで見たいのは
+    // 繊維の連鎖なので、時刻や光源を組み立てずに作業者の側で明るさを満たす。
+    makeBrightEnoughForAnyAction(player, codex);
   });
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {

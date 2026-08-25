@@ -154,7 +154,7 @@ object_defs:
 
     put('wood', 2);
     put('knife', 1);
-    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(true);
+    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, undefined)).toBe(true);
 
     expect(wip.tryGetProperty(finishedStepsId)?.number ?? 0, '1工程終えるごとに1増える').toBe(1);
     expect(wip.tryGetProperty(finishedStepsId)?.ratio, '2工程中1工程＝0.5').toBe(0.5);
@@ -177,7 +177,7 @@ object_defs:
     put('knife', 1);
 
     expect(stepIsSupplied(wip, materialsId(), recipe.steps[0])).toBe(false);
-    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(false);
+    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, undefined)).toBe(false);
     expect(wip.tryGetProperty(progressId())?.number ?? 0).toBe(0);
   });
 
@@ -185,7 +185,7 @@ object_defs:
     put('wood', 2);
     put('knife', 1);
 
-    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(true);
+    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, undefined)).toBe(true);
     // 木は消費される。刃物は2工程目が要求しないので、箱に留めず親へ返す。
     expect(boxContents()).toEqual([]);
     expect(onGround().sort()).toEqual([inProgressObjectName('axe', 'basic'), 'knife']);
@@ -197,7 +197,7 @@ object_defs:
     put('knife', 1);
     const before = session.world!.totalMinutes;
 
-    tryAdvanceCrafting(wip, materialsId(), recipe, codex, session);
+    tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, undefined);
 
     expect(session.world!.totalMinutes - before).toBe(30);
   });
@@ -209,7 +209,7 @@ object_defs:
     const duringTicks: string[][] = [];
     session.observeTicks(
       () => duringTicks.push(boxContents()),
-      () => tryAdvanceCrafting(wip, materialsId(), recipe, codex, session),
+      () => tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, undefined),
     );
 
     expect(duringTicks.length, '30分＝2tick').toBe(2);
@@ -225,7 +225,7 @@ object_defs:
     const rotting = session.createObject(idOf('crumbling_wood'));
     rotting.moveToSlotOrRejection(spearWip.getSlot(materialsId()));
 
-    expect(tryAdvanceCrafting(spearWip, materialsId(), spear, codex, session)).toBe(true);
+    expect(tryAdvanceCrafting(spearWip, materialsId(), spear, codex, session, undefined)).toBe(true);
 
     expect(rotting.parent, '素材は経過中に壊れて世界から外れている').toBeUndefined();
     expect(spearWip.def.name, 'それでも工程は成立し、同じ個体が完成品になる').toBe('spear');
@@ -236,13 +236,13 @@ object_defs:
     put('knife', 1);
     put('rope', 1);
 
-    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(true);
+    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, undefined)).toBe(true);
     expect(onGround().sort(), '途中はまだ製作中。用済みの刃物は先にこぼれる').toEqual([
       inProgressObjectName('axe', 'basic'),
       'knife',
     ]);
 
-    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session)).toBe(true);
+    expect(tryAdvanceCrafting(wip, materialsId(), recipe, codex, session, undefined)).toBe(true);
     expect(onGround().sort()).toEqual(['axe', 'knife']);
   });
 });

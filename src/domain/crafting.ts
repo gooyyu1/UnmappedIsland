@@ -136,8 +136,8 @@ export function stepIsSupplied(
  * 表せないため、ここに置く（RecipeSystem.md 2節・4節）。**時間と効果の順序はactions/combinationsと
  * 同じ**（ActionSystem.md 2節）。
  *
- * @returns 進めたら true。素材が足りない、全工程を終えている、経過中に製作中オブジェクト自身が
- *   失われたなら false。最後の場合だけは時間が経過している（actionTime参照）。
+ * @returns 進めたら true。作業できる状況にない、素材が足りない、全工程を終えている、経過中に
+ *   製作中オブジェクト自身が失われたなら false。最後の場合だけは時間が経過している（actionTime参照）。
  */
 export function tryAdvanceCrafting(
   inProgress: WorldObject,
@@ -145,7 +145,12 @@ export function tryAdvanceCrafting(
   recipe: RecipeDef,
   codex: WorldCodex,
   session: WorldSession,
+  actor: WorldObject | undefined,
 ): boolean {
+  // 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.4節）。画面も同じ問いで
+  // ボタンの可否と理由を出すが、**止めるのはここ**——画面を通らない経路から進められては困る。
+  if (codex.unmetCraftingRequirement(actor) !== undefined) return false;
+
   const progressGlobalId = codex.vocabulary.engine.progressId;
   const step = currentStep(recipe, inProgress.tryGetProperty(progressGlobalId)?.number ?? 0);
   if (step === undefined) return false;

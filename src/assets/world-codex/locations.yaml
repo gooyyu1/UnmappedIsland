@@ -69,6 +69,13 @@ object_defs:
           # （ContainerSystem.md 5節）。
           - reason: too_heavy
             not: {subject: actor, prop: load, in_stage: too_heavy}
+          # 暗ければ道は歩けない（IlluminationSystem.md 5節）。**出発する土地の明るさで決まる**
+          # ——道は自分の明るさを持たず、条件から行き先の土地は辿れない。見るのは視界の側なので、
+          # 持ち歩ける光源だけが効く（据えた焚き火のそばから夜の道へは出られない、同3節）。
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: -5
         duration: {prop: travel_minutes}
         move:
           subject: actor
@@ -110,6 +117,13 @@ object_defs:
     interactions:
       knap:
         trigger: {drag: {object: stone}}
+        # 狙った縁を打ち欠く手元の作業（IlluminationSystem.md 5節）。据え付けの光源も効くので、
+        # 焚き火のそばなら夜でも打てる。
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: hand_brightness
+            gte: 5
         duration: 60
         destroy: self
         spawn: {object: sharp_stone}
@@ -167,6 +181,10 @@ object_defs:
   #   1回に1つまでにし、数で増えるのはアイテムだけにする。
   # - 生きた獣（animals.yaml）は**単独の候補**にする。収穫ではなく出くわすものなので、他の物と一緒に
   #   見つかると「実り」に混ざってしまう（docs/engine/ExplorationSystem.md 2.1節）。
+  # - ambient_brightnessは樹冠と地面の反射の合計（core.yamlのlocation traitが土台と底を持つ）。
+  #   内訳はContentSkeleton.md 8.1.2節の表で、ここに書くのは合計だけ。
+  # - exploreは視界の明るさを要求する（IlluminationSystem.md 5節）。据え付けの光源は視界に効かない
+  #   ため、**夜の採取は光源を持って出るしかない**。
   # - durationは1回の探索にかかる時間（分）。全土地で1tick（minutes_per_tick、core.yaml）に揃える。
   #   土地ごとの探索の重さは、回数（exploration_progress.range.max）だけで表す。
   # - `weight: {prop: ...}`の候補は**発見量のつまみ**。valueが素の重みで、亜種
@@ -181,6 +199,9 @@ object_defs:
     # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのraft.set_sail）。
     tags: [coast]
     props:
+      # 遮るものが無く、乾いた砂がよく返す。**島で最も明るい地面**で、上限+17の根拠でもある
+      # （IlluminationSystem.md 4節）。
+      ambient_brightness: {value: 1}
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
@@ -202,6 +223,11 @@ object_defs:
     interactions:
       explore:
         trigger: menu
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -244,6 +270,8 @@ object_defs:
     # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのraft.set_sail）。
     tags: [coast]
     props:
+      # 遮るものが無く、地面は基準の明るさ。
+      ambient_brightness: {value: 0}
       exploration_progress:
         value: 0
         range: {min: 0, max: 12}
@@ -261,6 +289,11 @@ object_defs:
     interactions:
       explore:
         trigger: menu
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -299,6 +332,8 @@ object_defs:
     # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのraft.set_sail）。
     tags: [coast]
     props:
+      # 遮るものが無く、地面は基準の明るさ。
+      ambient_brightness: {value: 0}
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
@@ -317,6 +352,11 @@ object_defs:
     interactions:
       explore:
         trigger: menu
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -348,6 +388,8 @@ object_defs:
   grassland:
     traits: [location, explorable]
     props:
+      # 遮るものが無く、地面は基準の明るさ。
+      ambient_brightness: {value: 0}
       exploration_progress:
         value: 0
         range: {min: 0, max: 12}
@@ -367,6 +409,11 @@ object_defs:
     interactions:
       explore:
         trigger: menu
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -412,6 +459,8 @@ object_defs:
   forest:
     traits: [location, explorable]
     props:
+      # 樹冠が通すのは5%（-4）、落ち葉の地面は返さない（-1）。
+      ambient_brightness: {value: -5}
       exploration_progress:
         value: 0
         range: {min: 0, max: 15}
@@ -434,6 +483,11 @@ object_defs:
     interactions:
       explore:
         trigger: menu
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -483,6 +537,9 @@ object_defs:
   jungle:
     traits: [location, explorable]
     props:
+      # 樹冠が通すのは1%（-7）、暗い林床はほとんど返さない（-2）。**島で最も暗い土地**で、
+      # 陽が高い数時間しか採りに入れない。
+      ambient_brightness: {value: -9}
       exploration_progress:
         value: 0
         range: {min: 0, max: 18}
@@ -507,6 +564,11 @@ object_defs:
     interactions:
       explore:
         trigger: menu
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -565,6 +627,8 @@ object_defs:
   rocky_field:
     traits: [location, explorable]
     props:
+      # 遮るものが無く、地面は基準の明るさ。
+      ambient_brightness: {value: 0}
       exploration_progress:
         value: 0
         range: {min: 0, max: 12}
@@ -583,6 +647,11 @@ object_defs:
     interactions:
       explore:
         trigger: menu
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -618,6 +687,8 @@ object_defs:
   wasteland:
     traits: [location, explorable]
     props:
+      # 遮るものが無く、地面は基準の明るさ。
+      ambient_brightness: {value: 0}
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
@@ -635,6 +706,11 @@ object_defs:
     interactions:
       explore:
         trigger: menu
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -667,6 +743,8 @@ object_defs:
   mountainside:
     traits: [location, explorable]
     props:
+      # 遮るものが無く、地面は基準の明るさ。
+      ambient_brightness: {value: 0}
       exploration_progress:
         value: 0
         range: {min: 0, max: 15}
@@ -688,6 +766,11 @@ object_defs:
     interactions:
       explore:
         trigger: menu
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -726,6 +809,8 @@ object_defs:
   mountain_peak:
     traits: [location, explorable]
     props:
+      # 遮るものが無く、地面は基準の明るさ。
+      ambient_brightness: {value: 0}
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
@@ -737,6 +822,11 @@ object_defs:
     interactions:
       explore:
         trigger: menu
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
