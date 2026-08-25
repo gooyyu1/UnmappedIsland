@@ -1,9 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ACTIVE_THRESHOLD, activityHoursOf, TRAVEL_THRESHOLD } from '../../src/analysis/activityHours';
+import { activityHoursOf, characterStageMinimumOf } from '../../src/analysis/activityHours';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
-import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -14,8 +13,8 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * **正しく追随させられない前提は、崩れた時点で赤くする**——静かに間違った表を出し続けるより、
  * 数え方を見直せと言われるほうがよい。
  *
- * **しきい値の出どころはキャラクタの段の宣言**（`IlluminationSystem.md` 8節）で、解析の定数も文書の表も
- * その写し。両方を段と突き合わせるので、赤くなった側がどちらの写しかで分かれる。
+ * **しきい値の出どころはキャラクタの段の宣言**（`IlluminationSystem.md` 8節）で、解析はそこから直接読む。
+ * 写しとして残っているのは文書の表だけなので、突き合わせるのもそれだけ。
  */
 
 /**
@@ -24,36 +23,13 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * **境目の数字はここに書かない**——持ってよいのは段の宣言だけ（同 8節）。
  */
 const ACTION_CLASSES = [
-  {
-    documentedClass: '土地の間を移動する',
-    propertyName: 'looking_brightness',
-    stageName: 'dim',
-    analysisThreshold: TRAVEL_THRESHOLD,
-  },
-  {
-    documentedClass: '屋外で採る・探索する',
-    propertyName: 'looking_brightness',
-    stageName: 'bright',
-    analysisThreshold: ACTIVE_THRESHOLD,
-  },
-  {
-    documentedClass: '手元の細かい作業',
-    propertyName: 'hand_brightness',
-    stageName: 'bright',
-    analysisThreshold: ACTIVE_THRESHOLD,
-  },
+  { documentedClass: '土地の間を移動する', propertyName: 'looking_brightness', stageName: 'dim' },
+  { documentedClass: '屋外で採る・探索する', propertyName: 'looking_brightness', stageName: 'bright' },
+  { documentedClass: '手元の細かい作業', propertyName: 'hand_brightness', stageName: 'bright' },
 ] as const;
 
 describe('活動時間表の前提', () => {
   const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
-
-  it('解析のしきい値が、キャラクタの段の境目と一致する', () => {
-    for (const action of ACTION_CLASSES)
-      expect(
-        characterStageMinimumOf(codex, action.propertyName, action.stageName),
-        `${action.documentedClass}のしきい値`,
-      ).toBe(action.analysisThreshold);
-  });
 
   it('IlluminationSystem.md 5節の表が、キャラクタの段の境目と一致する', () => {
     const documented = documentedThresholds();
@@ -81,35 +57,6 @@ describe('活動時間表の前提', () => {
     );
   });
 });
-
-/**
- * 同梱定義のキャラクタが宣言している、その明るさのその段の下限（`IlluminationSystem.md` 8節）。
- *
- * **キャラクタ全員を見て、食い違っていたら例外にする。** 活動時間表は誰が動くかを区別せず1行しか
- * 出さないので、境目が個体ごとに違えばその行の意味が消える。
- */
-function characterStageMinimumOf(codex: WorldCodex, propertyName: string, stageName: string): number {
-  const propertyGlobalId = codex.propertyNames.getId(propertyName);
-  const characterNamesByMinimum = new Map<number | undefined, string[]>();
-  for (const def of codex.objects) {
-    if (!def.hasTag(codex.vocabulary.world.characterTagId)) continue;
-    const minimum = def
-      .tryGetPropertyDef(propertyGlobalId)
-      ?.stages.find((stage) => stage.name === stageName)?.min;
-    characterNamesByMinimum.set(minimum, [...(characterNamesByMinimum.get(minimum) ?? []), def.name]);
-  }
-
-  const where = `${propertyName} の ${stageName}`;
-  if (characterNamesByMinimum.size !== 1)
-    throw new Error(
-      `${where} の境目が、キャラクタ全員で1つに定まりません` +
-        `（${[...characterNamesByMinimum].map(([minimum, names]) => `${minimum}: ${names.join('・')}`).join('、')}）。`,
-    );
-
-  const [minimum] = [...characterNamesByMinimum.keys()];
-  if (minimum === undefined) throw new Error(`キャラクタが ${where} を宣言していません。`);
-  return minimum;
-}
 
 /**
  * `docs/engine/IlluminationSystem.md` 5節の表から、行動のクラス → しきい値。
