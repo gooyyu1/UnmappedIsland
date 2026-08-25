@@ -3,8 +3,8 @@ import { skyTintFor } from '../../src/game/looks/skyTint';
 
 /**
  * 明るさに応じてフィールドエリアへかぶせる色（ScreenLayout.md 7.5節 空の演出）。
- * `ambient_brightness` の値はcore.yamlの寄与から決まる（太陽高度: 夜-6/正午+16、天気の透過率:
- * 曇り-5/晴れ-2/雲なし0）。EVスケールなので、1段が明るさの2倍にあたる。
+ * `ambient_brightness` の値はcore.yamlの寄与から決まる（太陽高度: 正午+16、月の高度: 中天-3、
+ * 天気の透過率: 曇り-5/晴れ-2/雲なし0）。EVスケールなので、1段が明るさの2倍にあたる。
  */
 describe('skyTint(明るさに応じた翳り・輝き)', () => {
   const alphaAt = (brightness: number): number => skyTintFor(brightness)?.alpha ?? 0;
@@ -35,9 +35,10 @@ describe('skyTint(明るさに応じた翳り・輝き)', () => {
       expect(skyTintFor(brightness)!.additive, '輝きは加算合成（白く濁らせない）').toBe(true);
   });
 
-  it('夜は天気によらず同じ暗さになる', () => {
-    // 明るさは夜に底（-6）へ均されるので、真夜中の快晴が明るくなることはない。
-    expect(alphaAt(-6)).toBeGreaterThan(alphaAt(-5));
+  it('夜はどこまでも翳る側で、真夜中の快晴も明るくならない', () => {
+    // 最も明るい「雲の無い満月の中天」(-3)でも、日の出直後(+8)より濃く翳る。
+    expect(alphaAt(-3)).toBeGreaterThan(alphaAt(8));
+    expect(alphaAt(-6)).toBeGreaterThan(alphaAt(-3));
   });
 
   it('翳りも輝きも、画面が読めなくなるほど強くしない', () => {

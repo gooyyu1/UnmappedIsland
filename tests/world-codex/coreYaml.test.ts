@@ -125,11 +125,12 @@ describe('core.yamlのworld定義', () => {
       );
     }
 
-    // 夜はweatherによらず底(-6)へ均されるため、常にやや涼しい（hourを直接見ず、明るさ経由で補正）
+    // 夜は月あかりだけで、最も明るい満月の中天でも-3。境目の0（陽が地平線の下）を越えないので、
+    // 天気にも月の高さにもよらず常にやや涼しい（hourを直接見ず、明るさ経由で補正）。
     assertAmbientTemperatureAt('storm', 2, 17, '暴風雨の深夜は底なのでやや涼しい');
-    assertAmbientTemperatureAt('scorching', 23, 17, '雲の無い夜も底で、やや涼しいまま');
+    assertAmbientTemperatureAt('scorching', 0, 17, '雲の無い真夜中（月が中天で-3）もやや涼しい');
 
-    // dim帯(-5〜+10)は補正なし。日の出直後と、雨が陽を遮っている日中がここに入る。
+    // dim帯(0〜+10)は補正なし。日の出直後と、雨が陽を遮っている日中がここに入る。
     assertAmbientTemperatureAt('clear', 6, 20, '晴れの日の出直後(10-2=8)は補正なし');
     assertAmbientTemperatureAt('heavy_rain', 12, 20, '大雨の正午(16-8=8)も補正なし');
     assertAmbientTemperatureAt('storm', 12, 20, '嵐の正午(16-10=6)も補正なし');
@@ -162,10 +163,11 @@ describe('core.yamlのworld定義', () => {
       );
     }
 
-    // 夜: hour側の寄与が底(-6)そのもので、weather側は引く向きにしか働かないので、rangeの底が
-    // 天気によらず同じ暗さへ均す（晴れていても夜は明るくない）。
-    assertBrightnessAt('scorching', 2, -6, '雲の無い深夜も底');
-    assertBrightnessAt('heavy_rain', 23, -6, '大雨の夜も底');
+    // 夜: hour側の寄与は月の高度から出す（満月固定。中天0.25 lx = -3）。雲が月を隠せば底へ落ちる。
+    assertBrightnessAt('scorching', 0, -3, '雲の無い真夜中は月が中天で-3（0.25 lx）');
+    assertBrightnessAt('scorching', 20, -5, '同じ夜でも月が低い20時は-5');
+    assertBrightnessAt('scorching', 18, -6, '月が昇りきらない日没直後は底');
+    assertBrightnessAt('heavy_rain', 0, -6, '大雨の夜は月が隠れて底');
 
     // 正午(11-12時): 太陽高度82.5°の快晴(+16)から、天気の透過率のぶん引かれる。
     assertBrightnessAt('scorching', 12, 16, '雲の無い正午は+16（125,000 lx）で最大');

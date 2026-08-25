@@ -37,10 +37,11 @@ describe('空の演出（世界→意匠 通し）', () => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
   });
 
-  it('夜は天気によらず底へ均され、真夜中の快晴も明るくならない', () => {
+  it('夜は月あかりだけになり、真夜中の快晴も明るくならない', () => {
     for (const weather of ['clear', 'sunny', 'scorching']) {
       const { brightness } = skyWith(weather, 2, MILD);
-      expect(brightness, weather).toBe(-6);
+      // 最も明るい「雲の無い満月の夜」でも、日の出直後（+9以上）にすら遠く及ばない。
+      expect(brightness, weather).toBeLessThan(0);
       expect(skyTintFor(brightness)!.additive, `${weather}: 夜は翳る`).toBe(false);
     }
   });

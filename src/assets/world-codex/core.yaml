@@ -93,9 +93,10 @@ object_defs:
       # 年間ほぼ動かず（ContentSkeleton.md 8.1.3節）、太陽は1時間に15°動く。各段の値は
       # **その1時間の中央の太陽高度**での快晴の照度（125,000 lx × sin²高度）をEVへ直したもの
       # （EV = log2(照度 / 2.5 lx)、IlluminationSystem.md 1節）。
-      # 夜は月あかりだけになるので、底（-6）そのものを寄与にする。天気の寄与は引く向きにしか働かない
-      # ので、これで夜は天気によらず底へ均される。夜は0時をまたぐため、先頭のフォールバック段階と
-      # night_lateの2エントリで概念上1つの「夜」段階を表す。
+      # 夜は月あかりだけになるので、同じ形で**月の高度**から出す（満月固定、ContentSkeleton.md
+      # 8.1.1.1節）。満月は太陽の正反対に居るので日没18時に昇り0時に中天で、中天の照度は0.25 lx。
+      # 月が低い時間帯は底（-6）に均される。夜は0時をまたぐため、先頭のフォールバック段階（0時）と
+      # min:18以降の4段で、1つの「夜」を表す。
       hour:
         value: 0
         range: {min: 0, max: 24}
@@ -105,7 +106,25 @@ object_defs:
               hour: -24
               day: 1
         stages:
-          - name: night            # 0-5時（フォールバック）・18-23時（night_late）: 底
+          - name: moon_peak            # 0時（フォールバック）: 月の高度82.5°（0.25 lx）
+            passives:
+              - modify:
+                  self:
+                    ambient_brightness: -3
+          - name: moon_high_setting    # 1-2時: 月の高度52.5°-67.5°（0.16-0.21 lx）
+            min: 1
+            passives:
+              - modify:
+                  self:
+                    ambient_brightness: -4
+          - name: moon_low_setting     # 3時: 月の高度37.5°（0.09 lx）
+            min: 3
+            passives:
+              - modify:
+                  self:
+                    ambient_brightness: -5
+          - name: moon_faint_setting   # 4-5時: 月の高度22.5°以下。底に均される
+            min: 4
             passives:
               - modify:
                   self:
@@ -164,12 +183,30 @@ object_defs:
               - modify:
                   self:
                     ambient_brightness: 10
-          - name: night_late       # 18-23時: 夜と同じ
+          - name: moon_faint_rising    # 18-19時: 月が昇り始め、高度22.5°以下。底に均される
             min: 18
             passives:
               - modify:
                   self:
                     ambient_brightness: -6
+          - name: moon_low_rising      # 20時: 月の高度37.5°（0.09 lx）
+            min: 20
+            passives:
+              - modify:
+                  self:
+                    ambient_brightness: -5
+          - name: moon_high_rising     # 21-22時: 月の高度52.5°-67.5°（0.16-0.21 lx）
+            min: 21
+            passives:
+              - modify:
+                  self:
+                    ambient_brightness: -4
+          - name: moon_peak_rising     # 23時: 中天の直前（0.25 lx）
+            min: 23
+            passives:
+              - modify:
+                  self:
+                    ambient_brightness: -3
       # 現在の日（1始まり、上限なし。GameElementDefinition.md 17節）。
       day:
         value: 1
@@ -230,22 +267,22 @@ object_defs:
       # 樹冠も地面の反射も無い場所の明るさ（IlluminationSystem.md 2節）。EVスケール
       # （EV = log2(照度 / 2.5 lx)、同1節）で、hourとweather両方のmodifyが加算的に重なる、
       # 都度導出される実効値（8.3節）。
-      # rangeの底-6は「これより暗い場所を区別しない」暗さの底（同4節）で、夜を天気によらず同じ
-      # 暗さへ均す。上限+17は、快晴の正午（+16）に最も明るい地面（砂浜+1）を足した、太陽光だけで
-      # 届く最大（同4節）。
-      # ambient_temperatureへの補正はこのstages+WhenOwnStageゲート（6.4節・8.2節）が担う。
-      # 境目の+11は曇りの正午（5,000 lx）で、**日射が空気を暖め始める明るさ**。補正量は仮の値。
+      # rangeの底-6は「これより暗い場所を区別しない」暗さの底（同4節）。上限+17は、快晴の正午
+      # （+16）に最も明るい地面（砂浜+1）を足した、太陽光だけで届く最大（同4節）。
+      # ambient_temperatureへの補正はこのstages+WhenOwnStageゲート（6.4節・8.2節）が担う。境目は
+      # 2つとも日射の強さで置いてある: 0は2.5 lxで**陽が地平線の下**（最も明るい満月の中天でも-3）、
+      # +11は曇りの正午（5,000 lx）で**日射が空気を暖め始める明るさ**。補正量は仮の値。
       ambient_brightness:
         value: 0
         range: {min: -6, max: 17}
         stages:
-          - name: pitch_dark  # -6（フォールバック、夜）: やや涼しい
+          - name: dark        # 0未満（フォールバック、夜）: やや涼しい
             passives:
               - modify:
                   self:
                     ambient_temperature: -3
-          - name: dim         # -5〜+10（朝夕と雨天の日中）: 補正なし
-            min: -5
+          - name: dim         # 0〜+10（朝夕と雨天の日中）: 補正なし
+            min: 0
           - name: bright      # +11以上（曇り以上の日中）: やや暑い
             min: 11
             passives:
