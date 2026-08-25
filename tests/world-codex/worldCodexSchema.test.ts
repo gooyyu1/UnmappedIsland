@@ -71,6 +71,10 @@ const REJECTED: ReadonlyArray<readonly [string, unknown]> = [
     { traits: { t: { passives: [{ conditions: [{ prop: 'x', in: 1 }] }] } } },
   ],
   [
+    'conditionsの葉に演算子キーが1つも無い',
+    { traits: { t: { passives: [{ conditions: [{ subject: 'parent' }] }] } } },
+  ],
+  [
     'spawnに生む型が無い',
     { traits: { t: { interactions: { a: { trigger: 'menu', spawn: { into: 'self' } } } } } },
   ],

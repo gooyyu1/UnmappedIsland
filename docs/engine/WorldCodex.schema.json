@@ -442,13 +442,10 @@
           "$ref": "#/$defs/condition_property_leaf"
         },
         {
-          "$ref": "#/$defs/condition_in_slot_leaf"
-        },
-        {
           "$ref": "#/$defs/condition_slot_content_leaf"
         },
         {
-          "$ref": "#/$defs/condition_object_matches_leaf"
+          "$ref": "#/$defs/condition_object_leaf"
         },
         {
           "type": "object",
@@ -1620,8 +1617,8 @@
         }
       ]
     },
-    "condition_in_slot_leaf": {
-      "description": "{subject, in_slot}形式の、subjectが指すオブジェクトの現在のスロット位置判定（14.2節）。常に等価判定でopは持たない（否定はnotで包む）。subjectにancestorは使えない（ロード時エラー）。",
+    "condition_object_leaf": {
+      "description": "主語がオブジェクトそのものの葉（14.2節・14.4節）。`in_slot`は親の中での位置判定、`matches`はsubject自身の型判定で、**演算子キーは複数書ける（暗黙のAND）**——条件の配列と同じ規則。どちらも等価判定でopを持たない（否定はnotで包む）。プロパティ名を伴わないのでsubjectにancestorは使えない（ロード時エラー）。",
       "type": "object",
       "properties": {
         "subject": {
@@ -1630,12 +1627,24 @@
         "in_slot": {
           "$ref": "#/$defs/identifier"
         },
+        "matches": {
+          "$ref": "#/$defs/type_match_rule"
+        },
         "reason": {
           "$ref": "#/$defs/condition_reason"
         }
       },
-      "required": [
-        "in_slot"
+      "anyOf": [
+        {
+          "required": [
+            "in_slot"
+          ]
+        },
+        {
+          "required": [
+            "matches"
+          ]
+        }
       ],
       "additionalProperties": false
     },
@@ -1658,25 +1667,6 @@
       },
       "required": [
         "slot",
-        "matches"
-      ],
-      "additionalProperties": false
-    },
-    "condition_object_matches_leaf": {
-      "description": "{subject, matches}形式の、subjectが指すオブジェクト自身がmatchesへ当てはまるかの判定（14.4節）。",
-      "type": "object",
-      "properties": {
-        "subject": {
-          "$ref": "#/$defs/subject_root"
-        },
-        "matches": {
-          "$ref": "#/$defs/type_match_rule"
-        },
-        "reason": {
-          "$ref": "#/$defs/condition_reason"
-        }
-      },
-      "required": [
         "matches"
       ],
       "additionalProperties": false
