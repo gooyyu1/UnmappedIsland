@@ -1,6 +1,14 @@
 import { join } from 'node:path';
-import type { BaseDailyTravel, DestinationChoice } from '../../src/analysis/dailyTravel';
-import { dailyTravelOf, DESTINATION_CHOICES, VISIT_COUNTS } from '../../src/analysis/dailyTravel';
+import { activityHoursOf } from '../../src/analysis/activityHours';
+import type { BaseDailyPhases, LocationTypeDay } from '../../src/analysis/dailyPhases';
+import {
+  dailyPhasesOf,
+  locationTypeDaysOf,
+  OUTDOOR_WINDOW_MINUTES,
+  SURVIVAL_GATHERING_MINUTES,
+  WORK_SHARES,
+} from '../../src/analysis/dailyPhases';
+import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
 import type { GenerationScopeDef } from '../../src/domain/generation/GenerationScopeDef';
 import type { IslandMap } from '../../src/domain/generation/IslandMap';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
@@ -45,31 +53,72 @@ interface TerrainStats {
   readonly climbMeters: Stat;
   readonly travelMinutes: Stat;
 
-  /** 島1つあたり: 最も条件の良い拠点から見た1日の移動時間。 */
-  readonly chosenBaseTravel: DailyTravelStats;
-  /** 土地1つあたり: その土地を拠点にしたときの1日の移動時間。 */
-  readonly anyBaseTravel: DailyTravelStats;
+  /** 島1つあたり: 最も条件の良い拠点から見た片道（分）。 */
+  readonly chosenBaseOneWayMinutes: Stat;
+  /** 土地1つあたり: その土地を拠点にしたときの片道（分）。 */
+  readonly anyBaseOneWayMinutes: Stat;
+
+  /** 島1つあたり: 最も条件の良い拠点から見た、局面ごとの1日。 */
+  readonly exploration: ExplorationPhaseStats;
+  readonly steady: SteadyPhaseStats;
 }
 
-/** 拠点の選び方1つぶんの、1日の移動時間の分布。 */
-interface DailyTravelStats {
-  /** 拠点から他の土地への片道（分）。 */
-  readonly oneWayMinutes: Stat;
-  /** 行き先の選び方 → `VISIT_COUNTS`と同じ並びの、回って戻る移動時間（分）。 */
-  readonly tourMinutes: ReadonlyMap<DestinationChoice, readonly Stat[]>;
+/** 探索の局面（島を開き切るまで）の分布。 */
+interface ExplorationPhaseStats {
+  /** 島の全土地を探索率100%まで開くのに要る探索時間の合計（分）。 */
+  readonly explorationMinutes: Stat;
+  /** 日帰りだけで開き切る行程。**成立しない島は標本に入らない**ので、nがその島数になる。 */
+  readonly dayTripDays: Stat;
+  readonly dayTripTravelMinutesPerDay: Stat;
+  readonly dayTripExplorationMinutesPerDay: Stat;
+  /** 土地ごとに安いほうを採ったときの日数と、そのうち泊まりを選んだ土地の数。 */
+  readonly mixedDays: Stat;
+  readonly stayOverSiteCount: Stat;
+  /** 日帰りでは1分も探索が進まない土地の数。 */
+  readonly dayTripImpossibleSiteCount: Stat;
 }
 
-function createDailyTravelStats(): DailyTravelStats {
-  return {
-    oneWayMinutes: new Stat(),
-    tourMinutes: new Map(DESTINATION_CHOICES.map((choice) => [choice, VISIT_COUNTS.map(() => new Stat())])),
-  };
+/** 定常の局面（開き切った後）の1日の分布。 */
+interface SteadyPhaseStats {
+  readonly travelMinutesPerDay: Stat;
+  readonly workMinutesPerDay: Stat;
+  /**
+   * 屋外の山1,000分あたりに要る日数。**日数を出すのはこちら**——1周回の山の量はどの島でも同じなので、
+   * 島ごとの日数を平均するには、率ではなくその逆数を平均する。
+   */
+  readonly daysPerThousandWorkMinutes: Stat;
+  /** 山の配分の呼び名 → その組の行き先。**その組の土地がある島だけ**を数えるので、nが出現数になる。 */
+  readonly byShare: ReadonlyMap<string, ShareStats>;
 }
 
-function addDailyTravel(stats: DailyTravelStats, base: BaseDailyTravel): void {
-  stats.oneWayMinutes.add(base.oneWayMinutes);
-  for (const [choice, minutes] of base.tourMinutes)
-    for (const [i, stat] of stats.tourMinutes.get(choice)!.entries()) stat.add(minutes[i]);
+/** 山の配分1つの分布。`dayShare`は、その組へ費やす日数が定常の局面に占める割合。 */
+interface ShareStats {
+  readonly roundTripMinutes: Stat;
+  readonly workMinutesPerDay: Stat;
+  readonly dayShare: Stat;
+}
+
+function addDailyPhases(stats: TerrainStats, base: BaseDailyPhases): void {
+  const exploration = stats.exploration;
+  exploration.explorationMinutes.add(base.exploration.explorationMinutes);
+  exploration.mixedDays.add(base.exploration.mixedDays);
+  exploration.stayOverSiteCount.add(base.exploration.stayOverSiteCount);
+  exploration.dayTripImpossibleSiteCount.add(base.exploration.dayTripImpossibleSiteCount);
+  if (base.exploration.dayTripDays !== undefined) {
+    exploration.dayTripDays.add(base.exploration.dayTripDays);
+    exploration.dayTripTravelMinutesPerDay.add(base.exploration.dayTripTravelMinutesPerDay!);
+    exploration.dayTripExplorationMinutesPerDay.add(base.exploration.dayTripExplorationMinutesPerDay!);
+  }
+
+  stats.steady.travelMinutesPerDay.add(base.steady.travelMinutesPerDay);
+  stats.steady.workMinutesPerDay.add(base.steady.workMinutesPerDay);
+  stats.steady.daysPerThousandWorkMinutes.add(1000 / base.steady.workMinutesPerDay);
+  for (const share of base.steady.shares) {
+    const stat = stats.steady.byShare.get(share.label)!;
+    stat.roundTripMinutes.add(share.roundTripMinutes);
+    stat.workMinutesPerDay.add(share.workMinutesPerDay);
+    stat.dayShare.add(share.dayShare);
+  }
 }
 
 function createStats(typeNames: readonly string[]): TerrainStats {
@@ -86,8 +135,28 @@ function createStats(typeNames: readonly string[]): TerrainStats {
     distanceMeters: new Stat(),
     climbMeters: new Stat(),
     travelMinutes: new Stat(),
-    chosenBaseTravel: createDailyTravelStats(),
-    anyBaseTravel: createDailyTravelStats(),
+    chosenBaseOneWayMinutes: new Stat(),
+    anyBaseOneWayMinutes: new Stat(),
+    exploration: {
+      explorationMinutes: new Stat(),
+      dayTripDays: new Stat(),
+      dayTripTravelMinutesPerDay: new Stat(),
+      dayTripExplorationMinutesPerDay: new Stat(),
+      mixedDays: new Stat(),
+      stayOverSiteCount: new Stat(),
+      dayTripImpossibleSiteCount: new Stat(),
+    },
+    steady: {
+      travelMinutesPerDay: new Stat(),
+      workMinutesPerDay: new Stat(),
+      daysPerThousandWorkMinutes: new Stat(),
+      byShare: new Map(
+        WORK_SHARES.map((share) => [
+          share.label,
+          { roundTripMinutes: new Stat(), workMinutesPerDay: new Stat(), dayShare: new Stat() },
+        ]),
+      ),
+    },
   };
 }
 
@@ -96,6 +165,7 @@ function collect(
   map: IslandMap,
   scope: GenerationScopeDef,
   elevationSpan: number,
+  locationDays: ReadonlyMap<number, LocationTypeDay>,
 ): void {
   const metersPerElevationUnit = scope.metersPerElevationUnit(elevationSpan);
   const elevationOf = (site: number): number => map.sites[site].axisValues.get(scope.elevationAxis)!;
@@ -129,9 +199,10 @@ function collect(
   stats.typesPerIsland.add(counts.size);
   for (const [name, stat] of stats.countByType) stat.add(counts.get(name) ?? 0);
 
-  const travel = dailyTravelOf(map);
-  addDailyTravel(stats.chosenBaseTravel, travel.bestBase);
-  for (const base of travel.bases) addDailyTravel(stats.anyBaseTravel, base);
+  const phases = dailyPhasesOf(map, locationDays);
+  stats.chosenBaseOneWayMinutes.add(phases.bestBase.oneWayMinutes);
+  for (const base of phases.bases) stats.anyBaseOneWayMinutes.add(base.oneWayMinutes);
+  addDailyPhases(stats, phases.bestBase);
 }
 
 function buildReport(stats: TerrainStats): string {
@@ -223,50 +294,99 @@ function buildReport(stats: TerrainStats): string {
     ['移動時間', '分', stats.travelMinutes],
   ]);
 
-  append('## 1日の移動時間');
+  append('## 島の広さ');
   append();
-  append('拠点を出て何箇所かを回り、拠点へ戻るまでの移動時間（ContentSkeleton.md 8.2節）。');
-  append('計算は`src/analysis/dailyTravel.ts`。');
+  append('拠点から他の土地への片道（最短経路）の平均。**拠点を選ぶと縮む**——プレイヤーは拠点を');
+  append('選べるので、1周回で実際に払うのは上の行に近い。');
   append();
-  append('その日どの土地に用があるかは定義から決まらないので、行き先の選び方を2通り並べる。');
-  append('どちらを1日と読むかはContentSkeleton.md 8.3節が決める。');
+  appendStatTable('拠点の選び方', [
+    ['他の土地への片道が平均で最も短い土地', '分', stats.chosenBaseOneWayMinutes],
+    ['どの土地を拠点にしてもよいとき', '分', stats.anyBaseOneWayMinutes],
+  ]);
+
+  append('## 局面ごとの1日');
   append();
-  append('- **一様** — 拠点以外の土地から等しく選ぶ。どの土地にも同じだけ用があるとしたときの姿。');
-  append('- **近い順** — 拠点から近い順に採る。同じものが近くでも採れるとしたときの下限。');
-  append('- 回る順はその組で最も安いものを採り、土地の間は最短経路をたどる。');
-  append('- 道を見つける探索時間は含まない（StartupReachStats.mdが持つ）。');
+  append('拠点を出て仕事をして帰る1日を、局面ごとに数える（ContentSkeleton.md 8.2節・8.3節）。');
+  append('計算は`src/analysis/dailyPhases.ts`で、拠点は上の「片道が平均で最も短い土地」。');
+  append();
+  append('**数え方は局面をまたいで1つだけ。**');
+  append();
+  append('```');
+  append(
+    `その日その土地で進む仕事（分） = min(${OUTDOOR_WINDOW_MINUTES} − 往復の移動 −` +
+      ` ${SURVIVAL_GATHERING_MINUTES}, その土地の活動できる時間)`,
+  );
+  append('```');
+  append();
+  append(`- **${OUTDOOR_WINDOW_MINUTES}分** = 屋外の枠。太陽が出ている12時間で、移動のしきい値を`);
+  append('  満たす時間そのもの。');
+  append(`- **${SURVIVAL_GATHERING_MINUTES}分** = 1日を賄う生存の採取（BalanceStats.mdの最小労働から`);
+  append('  睡眠を引いた分）。');
+  append('- **その土地の活動できる時間** = ClimateSystemStats.md「土地×季節ごとの活動時間」の季節平均。');
+  append('  遠さは移動の項として、暗さは頭打ちとして、同じ1行に入る。');
+  append('- 1日は1つの土地で使う（往復1回）。余った時間は次の土地へ繰り越さない。');
+  append('- 土地の間は最短経路をたどる。');
   append();
 
-  const appendTravelTable = (travel: DailyTravelStats): void => {
-    appendStatTable('項目', [
-      ['片道（一様に選んだ行き先）', '分', travel.oneWayMinutes],
-      ...DESTINATION_CHOICES.flatMap((choice) =>
-        VISIT_COUNTS.map(
-          (visitCount, i) =>
-            [
-              `${visitCount}箇所を回って戻る（${choice.label}）`,
-              '分',
-              travel.tourMinutes.get(choice)![i],
-            ] as const,
-        ),
-      ),
-    ]);
-  };
+  append('### 探索の局面（島を開き切るまで）');
+  append();
+  append('未踏の土地を、拠点から近い順に探索率100%まで開いていく行程。**遠い土地へ着くのに要る道は、');
+  append('手前の土地を開く過程で必ず出る**ので、開く順は移動時間の小さい順に採れる');
+  append('（ExplorationSystem.md 3.2節）。');
+  append();
+  append('**泊まりがけは、滞在中の生存の採取を現地で払わない**（補給を持ち込む行程、');
+  append('GameEndings.md 9.2節）。1日に進む探索がその土地の活動できる時間を超えられないことと、');
+  append('往復の移動も屋外の枠から出ることの2つだけで縛る。');
+  append();
+  appendStatTable('項目', [
+    ['島を開くのに要る探索時間の合計', '分', stats.exploration.explorationMinutes],
+    ['開き切るまでの日数（日帰りだけ）', '日', stats.exploration.dayTripDays],
+    ['1日あたりの移動（往復、日帰りだけ）', '分', stats.exploration.dayTripTravelMinutesPerDay],
+    ['1日あたりに進む探索（日帰りだけ）', '分', stats.exploration.dayTripExplorationMinutesPerDay],
+    ['開き切るまでの日数（泊まりも使う）', '日', stats.exploration.mixedDays],
+    ['泊まりのほうが安い土地', '個', stats.exploration.stayOverSiteCount],
+    ['日帰りでは1分も探索が進まない土地', '個', stats.exploration.dayTripImpossibleSiteCount],
+  ]);
+  append(
+    `日帰りだけで開き切れる島は ${((stats.exploration.dayTripDays.count / SEED_COUNT) * 100).toFixed(1)}%` +
+      `（${stats.exploration.dayTripDays.count}/${SEED_COUNT}）。残りは、往復で枠が尽きる土地を` +
+      '1つ以上持つ。',
+  );
+  append();
 
-  append('### 拠点を選んだとき');
+  append('### 定常の局面（開き切った後の1日）');
   append();
-  append('他の土地への片道が平均で最も短い土地を拠点にした場合。プレイヤーは拠点を選べるので、');
-  append('1周回で実際に払う移動時間はこちらに近い。');
+  append('探索は終わっていて、山（ContentSkeleton.md 4節）だけを進める1日。行き先は**山の土地の配分**');
+  append('が決め、その組の中では**その日の実入りが最も多い土地**を選ぶ（同じなら近いほう）。');
+  append('**島に無い組の配分は、ある組へ按分する。**');
   append();
-  appendTravelTable(stats.chosenBaseTravel);
+  append('**配分は仕事の量の配分であって、日数の配分ではない。** 1日は1つの土地で使うので、ある組へ');
+  append('費やす日数はその組の仕事量をその土地の1日の実入りで割ったものになり、下の「1日に進む山」は');
+  append('その日数で重み付けした平均になる。');
+  append();
+  append('**日数を出すのは最後の行。** 1周回の山の量はどの島でも同じなので、島ごとの日数を平均するには');
+  append('率ではなくその逆数を平均する——「1日に進む山」の平均で割ると、日数は短く出る。');
+  append();
+  appendStatTable('項目', [
+    ['1日の移動（往復）', '分', stats.steady.travelMinutesPerDay],
+    ['1日に進む山', '分', stats.steady.workMinutesPerDay],
+    ['屋外の山1,000分あたりの日数', '日', stats.steady.daysPerThousandWorkMinutes],
+  ]);
 
-  append('### どの土地を拠点にしてもよいとき');
+  append('配分ごとの内訳（その組の土地がある島だけを数えるので、右端がその島数の割合になる）。');
   append();
-  append('全土地を1つずつ拠点として測ったもの。上の表との差が、拠点選びで動く分を表す。');
-  append('**動くのは「一様」の側だけ**——どの土地にも道が1本はあるので、近い順に回る分は拠点を');
-  append('選んでも縮まない。');
+  append('| 配分 | 仕事の割合 | 往復の移動 | 1日に進む山 | 日数の割合 | その組を持つ島 |');
+  append('| --- | --- | --- | --- | --- | --- |');
+  for (const share of WORK_SHARES) {
+    const stat = stats.steady.byShare.get(share.label)!;
+    append(
+      `| ${share.label} | ${(share.share * 100).toFixed(0)}% |` +
+        ` ${stat.roundTripMinutes.mean.toFixed(2)}分 | ${stat.workMinutesPerDay.mean.toFixed(2)}分 |` +
+        ` ${(stat.dayShare.mean * 100).toFixed(1)}% |` +
+        ` ${((stat.dayShare.count / SEED_COUNT) * 100).toFixed(1)}% |`,
+    );
+  }
   append();
-  appendTravelTable(stats.anyBaseTravel);
 
   return lines.join('\n') + '\n';
 }
@@ -281,9 +401,21 @@ function buildReportFromDefinitions(): string {
   const elevationRange = codex.generation!.axes.get(scope.elevationAxis)!.range;
   const elevationSpan = elevationRange.max - elevationRange.min;
 
+  const locationDays = locationTypeDaysOf(
+    codex,
+    activityHoursOf(
+      codex,
+      SEASON_CLIMATE.map((season) => ({
+        seasonName: season.name,
+        durationDays: season.durationDays,
+        hoursByWeather: new Map(Object.entries(season.hoursByWeather)),
+      })),
+    ),
+  );
+
   const stats = createStats(codex.generation!.locationTypes.map((type) => type.name));
   for (let seed = 0; seed < SEED_COUNT; seed++) {
-    collect(stats, generateIsland(codex.generation, 'island', seed), scope, elevationSpan);
+    collect(stats, generateIsland(codex.generation, 'island', seed), scope, elevationSpan, locationDays);
   }
 
   return buildReport(stats);
