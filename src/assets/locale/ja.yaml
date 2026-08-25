@@ -72,6 +72,17 @@ object_texts:
         display_name: 荷重
         icon: 🎒
         description: 今の担ぎ方で感じている、持ち物と装備の重さ。重すぎると歩けなくなる。
+      ambient_brightness:
+        display_name: 明るさ
+        description: その場を満たしている明るさ。空の明るさに、樹冠と地面の照り返しが効く。
+      hand_brightness:
+        display_name: 手元の明るさ
+        icon: 🕯️
+        description: 手元の細かい作業ができるかを決める明るさ。据えた炉の火も、持っている明かりも効く。
+      looking_brightness:
+        display_name: 視界の明るさ
+        icon: 👁️
+        description: 屋外で採れるか、道を歩けるかを決める明るさ。持ち歩ける明かりだけが効く。
       pain:
         display_name: 痛み
         icon: 💢
@@ -549,6 +560,18 @@ object_texts:
   burning_tinder:
     display_name: 火種
     description: 炎を上げている火口。すぐ燃え尽きるので、炉まで運ぶ以外にできることはない。
+  torch:
+    display_name: 松明
+    description: 枝の先に繊維を巻いた明かり。手に持っている間だけ足元の道まで照らし、二時間で燃え尽きる。
+    props:
+      lit:
+        display_name: 灯り
+      life:
+        display_name: 燃え残り
+    interactions:
+      light:
+        display_name: 火を移す
+        description: 火種を押し当てて灯す。灯した松明は、置いた場所ではなく持ち歩く人を照らす。
   campfire:
     display_name: 焚き火
     description: 小枝を組んだだけの火。器を載せる場所は無く、放っておけば種火もすぐ死ぬ。
@@ -866,6 +889,7 @@ reason_texts:
   at_sea: 海の上では降りられない。
   too_worn: この道具はもう使いものにならない。
   not_hot_enough: 石の熱が足りない。湯は沸かせない。
+  too_dark: 暗すぎて手が付けられない。明かりが要る。
 
 # 段（GameElementDefinition.md 6.4節のstages）のうち、UIが名前を読んで画面に出すもの。カードの上へ
 # 覆いとして出る（CardView.md 9.1節）ほか、死亡ダイアログが死因として出し（VitalsSystem.md 6節）、

@@ -101,18 +101,22 @@ export function parseConditionsField(
  * actions/combinationsのconditions。要素ごとに`reason`（満たさなかったときにプレイヤーへ出す理由の
  * 識別子）を持てる点だけがparseConditionsFieldと違う。入れ子のall/any/notの中には書けない
  * （落ちた要件は配列の要素の単位で指すため、Requirement参照）。
+ *
+ * `fieldName`は、この並びが載っているキーの名前（エラーメッセージ用）。`conditions`以外の名前で
+ * 同じ形を書ける場所（ルートキーの`crafting_conditions`、13.4節）のためだけに在る。
  */
 export function parseRequirementsField(
   loader: WorldCodexYamlLoader,
   context: string,
   conditionsNode: YAMLSeq | undefined,
   scope: ReferenceScope,
+  fieldName: string = 'conditions',
 ): Requirements | undefined {
   if (conditionsNode === undefined) return undefined;
 
   const entries: Requirement[] = [];
   for (const node of conditionsNode.items as YamlNode[]) {
-    const entryContext = `${context}.conditions[${entries.length}]`;
+    const entryContext = `${context}.${fieldName}[${entries.length}]`;
     const reasonName = tryGetScalar(asMap(node, entryContext), REASON_KEY, entryContext);
     entries.push(
       new Requirement(parseConditionNode(loader, entryContext, node, scope, REASON_KEY), reasonName),

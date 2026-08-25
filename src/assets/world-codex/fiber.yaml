@@ -32,6 +32,12 @@ object_defs:
       # 根元を刃物で断ち、運べる長さに切り分ける。株立ちなので1株から何本も採れる。
       fell:
         trigger: {drag: {tag: cutting_tool}}
+        # 屋外で採る行動なので、見るのは視界の側（docs/engine/IlluminationSystem.md 5節）。
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 20
         destroy: self
         spawn: {object: banana_stem, count: 5, into: actor}
@@ -45,6 +51,11 @@ object_defs:
     interactions:
       fell:
         trigger: {drag: {tag: cutting_tool}}
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            gte: 5
         duration: 20
         destroy: self
         spawn:
@@ -82,6 +93,13 @@ object_defs:
       # 葉鞘を1枚ずつ剥ぎ、刃を立てて引き抜いて肉を落とす。残る髄と水はその場に捨てる。
       strip:
         trigger: {drag: {tag: cutting_tool}}
+        # 刃の角度を目で見ながら送る手元の作業（docs/engine/IlluminationSystem.md 5節）。
+        # 据え付けの光源も効くので、焚き火のそばなら夜でも進められる。
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: hand_brightness
+            gte: 5
         duration: 30
         destroy: self
         spawn: {object: plant_fiber, count: 2}
@@ -100,6 +118,11 @@ object_defs:
       # 2束を手のひらで転がして1本に撚る。撚りに入りきらない短い屑は落ちる。
       spin:
         trigger: {drag: {object: plant_fiber}}
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: hand_brightness
+            gte: 5
         duration: 20
         destroy: [self, dragged]
         spawn: {object: yarn}
@@ -114,6 +137,11 @@ object_defs:
       # 2本を撚りとは逆向きに撚り合わせる。互いの撚りが噛んで解けなくなり、太さと強さが出る。
       ply:
         trigger: {drag: {object: yarn}}
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: hand_brightness
+            gte: 5
         duration: 20
         destroy: [self, dragged]
         spawn: {object: cord}

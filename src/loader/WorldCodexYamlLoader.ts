@@ -22,6 +22,9 @@ import type { AxisDef } from '../domain/generation/AxisDef';
 import type { GenerationScopeDef } from '../domain/generation/GenerationScopeDef';
 import type { LocationTypeDef } from '../domain/generation/LocationTypeDef';
 import { withYamlContext } from './parseCommon';
+import { parseRequirementsField } from './parseConditions';
+import type { Requirements } from '../domain/Requirement';
+import { ReferenceScope } from '../domain/ReferenceRoot';
 
 /**
  * YAMLファイル群からWorldCodexを組み立てるロード処理の入口（GameElementDefinition.md 3節）。
@@ -60,6 +63,9 @@ export class WorldCodexYamlLoader {
    * 引き継ぐかどうかを問うだけなので、並び順は持たない。
    */
   private inProgressTagIds = new Set<number>();
+
+  /** 製作の工程を進めるのに要る条件（crafting_conditions、13.4節）。全レシピ共通の1本。 */
+  private craftingConditions: Requirements | undefined;
 
   private _objectNames = new NameRegistry();
   private _propertyNames = new NameRegistry();
@@ -151,6 +157,18 @@ export class WorldCodexYamlLoader {
     if (inProgressTags !== undefined)
       for (const node of inProgressTags.items as YamlNode[])
         this.inProgressTagIds.add(this._tagNames.intern(asScalarText(node, `${label}.in_progress_tags`)));
+
+    // 製作の工程を進めるのに要る条件（13.4節）。**全レシピに一律で掛かる**ので、後から現れた宣言は
+    // 合流させず置き換える（同じ約束が2つあると、どちらが効いているのか読めなくなる）。
+    const craftingConditions = tryGetSeq(root, 'crafting_conditions', label);
+    if (craftingConditions !== undefined)
+      this.craftingConditions = parseRequirementsField(
+        this,
+        label,
+        craftingConditions,
+        ReferenceScope.recipeUnlock,
+        'crafting_conditions',
+      );
 
     const objectDefs = tryGetMap(root, 'object_defs', label);
     if (objectDefs !== undefined)
@@ -252,6 +270,7 @@ export class WorldCodexYamlLoader {
           generatedTypes,
           this.recipeCategoryTagIdsByPriority,
           this.requiredPropsByTag,
+          this.craftingConditions,
         ),
     );
 
@@ -294,6 +313,7 @@ export class WorldCodexYamlLoader {
     this.recipeCategoryTagIdsByPriority = [];
     this.requiredPropsByTag = new Map();
     this.inProgressTagIds = new Set();
+    this.craftingConditions = undefined;
     resetGeneration(this);
     this._objectNames = new NameRegistry();
     this._propertyNames = new NameRegistry();

@@ -6,6 +6,7 @@ import { Location } from '../../src/domain/wrappers/Location';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { createBrightEnoughActor } from '../support/illumination';
 import { seededRng } from '../../src/domain/Rng';
 
 /**
@@ -93,11 +94,14 @@ describe('探索で見つかる物', () => {
       instance.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
     ).toBeUndefined();
     const location = new Location(instance, codex);
+    // 探索には視界の明るさが要る（IlluminationSystem.md 5節）。ここで見たいのは抽選卓なので、
+    // 時刻を作らずに探索者の側で明るさを満たす。
+    const actor = createBrightEnoughActor(explorer, codex);
 
     const findings: Finding[] = [];
     let previous: Finding = new Map();
     for (let i = 0; i < trials; i++) {
-      expect(location.explore(undefined), `${landName}: 探索は必ず成立する`).toBe(true);
+      expect(location.explore(actor), `${landName}: 探索は必ず成立する`).toBe(true);
       const now = countByName([...location.items, ...location.fixtures]);
       findings.push(added(now, previous));
       previous = now;
