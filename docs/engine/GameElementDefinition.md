@@ -2020,7 +2020,7 @@ recipes:
 `interactions` の `conditions` と同じく、要素ごとに `reason`（14.6 節）を書けます。未解放の
 レシピは解放条件とともに一覧へ出すため、可否と理由が同じ 1 回の評価から得られます。
 
-### 13.4 crafting_conditions（工程を進めるのに要る条件）
+### 13.4 crafting_conditions（工程を進めるのに要る条件）【確定】
 
 ルートキー（`core.yaml`）で、**すべてのレシピの工程に一律で掛かる条件**です。書き方は `conditions`
 （14 節）と同じで、要素ごとに `reason`（14.6 節）を持てます。
