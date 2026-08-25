@@ -12,6 +12,9 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  * 調整で動く。動いても変わってほしくないのは「雨だけで水を賄えるのは雨季だけ」という配分のほうで、
  * それは差引の符号がそのまま表している。
  *
+ * **ただし実測値そのものは、出どころのドキュメントと突き合わせる。** 同じ値が2箇所にあると、
+ * 片方だけが更新されても誰も気づかない。
+ *
  * 容器はここで宣言する（同梱の定義は読まない、tests/architecture/testKinds.test.ts）。口径ごとの
  * 量は `docs/engine/LiquidContainerSystem.md` 7節と同じにしてあるので、同梱の甕・ヤシの器の行と
  * 同じ数字が出る。同梱の中身そのものに対する符号は、レポートを再生成する
@@ -123,6 +126,27 @@ object_defs:
   });
 
   /**
+   * 蒸発の実測値も2箇所（設計ドキュメントの日数表と解析）にある。読み手が見るのは日数のほうで、
+   * mL/tickはそれを容量で割っただけなので、割り戻して突き合わせる。
+   */
+  it('蒸発の実測値がLiquidContainerSystem.mdの日数表と一致する', () => {
+    const doc = readFileSync(join('docs', 'engine', 'LiquidContainerSystem.md'), 'utf8').split(/\r?\n/);
+    for (const [containerName, apertureLabel] of [
+      ['coconut_bowl', 'ヤシの器'],
+      ['jar', '甕'],
+    ]) {
+      const days = emptyingDaysOf(doc, apertureLabel);
+      for (const season of SEASON_RAIN) {
+        const row = rowOf(containerName, season.name);
+        expect(row.capacity / row.evaporationPerDay, `${containerName} / ${season.name} の日数`).toBeCloseTo(
+          days.get(season.name)!,
+          1,
+        );
+      }
+    }
+  });
+
+  /**
    * 気候の実測値が2箇所（気候レポートと解析）にあるので、ずれを機械で見る。突き合わせる相手を
    * `climateStatsReport.test.ts` ではなくその生成物にするのは、あの集計が20シード×3600日の
    * シミュレーションで、通常のテストスイートに置ける重さではないため。
@@ -148,6 +172,37 @@ object_defs:
     });
   });
 });
+
+/**
+ * `docs/engine/LiquidContainerSystem.md` 6節の「満杯から空になるまでの日数」の表から、見出しが
+ * その語を含む列（口径）を季節ごとに読む。
+ */
+function emptyingDaysOf(lines: readonly string[], apertureLabel: string): ReadonlyMap<SeasonName, number> {
+  const start = lines.findIndex((line) => line.startsWith('満杯から空になるまでの日数'));
+  expect(start, '日数表が見つからない').toBeGreaterThanOrEqual(0);
+  const table = lines.slice(start);
+
+  const header = table.find((line) => line.startsWith('|'));
+  expect(header, '日数表の見出し行が見つからない').toBeDefined();
+  const column = cellsOf(header!).findIndex((cell) => cell.includes(apertureLabel));
+  expect(column, `列 '${apertureLabel}' が見つからない`).toBeGreaterThanOrEqual(0);
+
+  const days = new Map<SeasonName, number>();
+  for (const season of SEASON_RAIN) {
+    const row = table.find((line) => line.startsWith(`| \`${season.name}\` |`));
+    expect(row, `行 '${season.name}' が見つからない`).toBeDefined();
+    days.set(season.name, Number.parseFloat(cellsOf(row!)[column]));
+  }
+  return days;
+}
+
+/** 表の行（`| a | b |`）の、両端の空文字を落としたセル。 */
+function cellsOf(row: string): readonly string[] {
+  return row
+    .split('|')
+    .slice(1, -1)
+    .map((cell) => cell.trim());
+}
 
 /** `## 見出し` から次の `## ` までの行。 */
 function sectionOf(lines: readonly string[], heading: string): readonly string[] {
