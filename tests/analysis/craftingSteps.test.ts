@@ -228,7 +228,24 @@ object_defs:
           - name: lit
             min: 1
             passives:
-              - add: {child: {cooking_progress: 3}}
+              - add: {child: {cooking_progress: 3, heat_soak: 3}}
+
+  stone:
+    tags: [item, roastable]
+    props:
+      heat_soak:
+        value: 0
+        range: {min: 0, max: 12}
+        passives:
+          # 冷めるのは炉の外に居る間だけ。押し手（炉）と同時には効かない。
+          - conditions:
+              - not: {subject: ancestor, prop: heat, gt: 0}
+            add: {self: {heat_soak: -3}}
+        on_max:
+          destroy: self
+          spawn: {object: hot_stone}
+
+  hot_stone: {tags: [item]}
 
   raw_meat:
     tags: [item, roastable]
@@ -313,6 +330,16 @@ object_defs:
       expect(cooking.step.outputs).toEqual([{ objectGlobalId: huntId('roasted_meat'), counts: [1] }]);
     });
 
+    it('押されている間は、自分の条件つきの増減を数えない', () => {
+      // 石が冷めるのは炉の外に居る間の宣言（-3/tick）。押し手（+3/tick）へ足すと向きが消えて、
+      // 熱を溜め切る周期そのものが立たなくなる。12 ÷ 3 = 4 tick で焼け石になる。
+      const [soaking] = rangeCyclesOf(defOf('stone'), undefined, drivers('hearth', 'child'));
+
+      expect(soaking.minutes).toBeCloseTo((12 / 3) * 15);
+      expect(soaking.drivenBy).toBe(huntId('hearth'));
+      expect(soaking.step.outputs).toEqual([{ objectGlobalId: huntId('hot_stone'), counts: [1] }]);
+    });
+
     it('出血で死ぬのは、傷が固まるまでに奪える血の量が足りる獲物だけ', () => {
       // 100 ÷ 25 = 4 tick で固まるので、奪えるのは合計60mL。
       expect(drivers('wound', 'parent')).toEqual([
@@ -371,8 +398,29 @@ object_defs:
         become: {content: water_liquid}
         set: {self: {fill: 1}}
 
+  bowl:
+    tags: [item]
+    props:
+      fill:
+        value: 0
+        range: {min: 0, max: 250}
+      weight: {value: 200}
+    variation_axes:
+      content: {of: {tag: liquid}}
+
+  hot_stone:
+    tags: [item]
+    interactions:
+      boil:
+        trigger: {drag: {tag: water}}
+        duration: 5
+        become: {subject: dragged, content: hot_water_liquid}
+
   water_liquid:
     traits: [liquid, water_liquid]
+
+  hot_water_liquid:
+    traits: [liquid]
 `;
     const liquidCodex = new WorldCodexYamlLoader().load('liquid.yaml', YAML_LIQUID).buildAndReset();
     const liquidId = (name: string) => liquidCodex.objectNames.getId(name);
@@ -387,6 +435,22 @@ object_defs:
       // 空の容器はここで水入りの容器になるので、その型のままでは残らない。
       expect(collectRain.inputs).toEqual([
         { kind: 'object', objectGlobalId: liquidId('jar'), consumed: true, count: 1 },
+      ]);
+    });
+
+    it('相手をタグで指したbecomeは、相手の型ごとに別の工程になる', () => {
+      const steps = craftingStepsOf(liquidCodex, liquidCodex.objects.get(liquidId('hot_stone')));
+
+      // 甕の水とヤシの器の水では沸いた先の型が違うので、タグのまま1つの工程にすると行き先が定まらず、
+      // 湯の入った容器の作り方がどこにも無くなる。軸を持たない`water_liquid`そのものは候補にしない
+      // ——行き先を解けない相手を並べても、産物の無い工程が増えるだけ。
+      expect(steps.map((step) => step.inputs[1])).toEqual([
+        { kind: 'object', objectGlobalId: liquidId('jar__content_water_liquid'), consumed: true, count: 1 },
+        { kind: 'object', objectGlobalId: liquidId('bowl__content_water_liquid'), consumed: true, count: 1 },
+      ]);
+      expect(steps.flatMap((step) => step.outputs)).toEqual([
+        { objectGlobalId: liquidId('jar__content_hot_water_liquid'), counts: [1] },
+        { objectGlobalId: liquidId('bowl__content_hot_water_liquid'), counts: [1] },
       ]);
     });
   });

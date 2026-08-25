@@ -112,17 +112,26 @@ export interface StaticValueRange {
 }
 
 /**
+ * ReferenceRootが指すプロパティの、取りうる値の範囲（StaticValueRange）。**型が定まらない起点では
+ * undefined**——祖先も、実行時にしか決まらない相手も、どの型が来るかを定義の側は知らない。
+ */
+export type StaticValueRangeResolver = (
+  root: ReferenceRoot,
+  propertyGlobalId: number,
+) => StaticValueRange | undefined;
+
+/**
  * 条件（14節）が、定義だけから真と分かるか・偽と分かるか。**どちらとも言えなければundefined。**
  *
- * 読めるのは`subject: self`のプロパティ比較だけで、他の葉——祖先の天候・相手の持ち物・スロットの
- * 中身・段の刻み——は判定せずに素通しにする。解析の側にゲームの実行を作り込むと、同じ規則の実装が
- * 2つになって食い違い始めるため。
+ * 読めるのは**型が定まっている起点**のプロパティ比較だけで、他の葉——祖先の天候・相手の持ち物・
+ * スロットの中身・段の刻み——は判定せずに素通しにする。解析の側にゲームの実行を作り込むと、同じ
+ * 規則の実装が2つになって食い違い始めるため。どの起点の型が定まるかはrangeOfが答える。
  */
 export function staticConditionTruth(
   condition: ConditionDeclaration,
-  rangeOfSelfProperty: (propertyGlobalId: number) => StaticValueRange | undefined,
+  rangeOf: StaticValueRangeResolver,
 ): boolean | undefined {
-  const reader = new ConditionTruthReader(rangeOfSelfProperty);
+  const reader = new ConditionTruthReader(rangeOf);
   condition.read(reader);
   return reader.truth;
 }
@@ -132,15 +141,15 @@ class ConditionTruthReader implements ConditionReader {
   /** 定義だけから決まった真偽。決まらなければundefined。 */
   truth: boolean | undefined;
 
-  private readonly rangeOfSelfProperty: (propertyGlobalId: number) => StaticValueRange | undefined;
+  private readonly rangeOf: StaticValueRangeResolver;
 
-  constructor(rangeOfSelfProperty: (propertyGlobalId: number) => StaticValueRange | undefined) {
-    this.rangeOfSelfProperty = rangeOfSelfProperty;
+  constructor(rangeOf: StaticValueRangeResolver) {
+    this.rangeOf = rangeOf;
   }
 
   property(reading: PropertyConditionReading): void {
-    if (reading.root !== 'self' || reading.values === undefined || reading.valueRef !== undefined) return;
-    const range = this.rangeOfSelfProperty(reading.propertyGlobalId);
+    if (reading.values === undefined || reading.valueRef !== undefined) return;
+    const range = this.rangeOf(reading.root, reading.propertyGlobalId);
     if (range !== undefined) this.truth = comparisonTruth(range, reading.op, reading.values);
   }
 
@@ -165,12 +174,12 @@ class ConditionTruthReader implements ConditionReader {
   }
 
   not(child: ConditionDeclaration): void {
-    const inner = staticConditionTruth(child, this.rangeOfSelfProperty);
+    const inner = staticConditionTruth(child, this.rangeOf);
     this.truth = inner === undefined ? undefined : !inner;
   }
 
   private truthsOf(children: readonly ConditionDeclaration[]): readonly (boolean | undefined)[] {
-    return children.map((child) => staticConditionTruth(child, this.rangeOfSelfProperty));
+    return children.map((child) => staticConditionTruth(child, this.rangeOf));
   }
 }
 
