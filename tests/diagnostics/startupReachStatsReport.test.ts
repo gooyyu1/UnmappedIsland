@@ -1,12 +1,9 @@
-import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import process from 'node:process';
-import { describe, expect, it } from 'vitest';
 import type { IslandReach, NeedReach, StartupNeedSources } from '../../src/analysis/startupReach';
 import { islandReachOf, STARTUP_NEEDS, startupNeedSourcesOf } from '../../src/analysis/startupReach';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { describeReportFreshness } from '../support/reportFreshness';
+import { describeReportFreshness, describeReportRegeneration } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -14,12 +11,9 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * 開始地点ごとの「立ち上がりやすさ」（`src/analysis/startupReach.ts`）を多数の種で測り、
  * `docs/diagnostics/StartupReachStats.md`へ書き出す。
  *
- * 通常のテストスイート（`npm test`）には含めない: 合否判定を目的とした回帰テストではなく、
- * 生成と発見物の配りを触ったときに散らばりがどう動いたかを差分で読むための再計測が目的のため、
- * `RUN_STARTUP_REACH_STATS`環境変数が立っているときだけ実行する: `npm run stats:startup`
- *
- * **代わりに、生成済みのレポートが古くなっていないかは常に見る**（末尾の`describeReportFreshness`）。
- * 2,000シードの計測は2秒で済むので、丸ごと作り直して比べられる。
+ * 生成と発見物の配りを触ったときに散らばりがどう動いたかを差分で読むためのもので、触った後に
+ * 再生成する: `npm run stats:startup`。再生成と鮮度の形は `tests/support/generatedReport.ts` が持つ。
+ * 2,000シードの計測は2秒で済むので、鮮度は丸ごと作り直して比べる。
  */
 
 /**
@@ -400,14 +394,8 @@ function buildReportFromDefinitions(): string {
   return buildReport(sources, stats);
 }
 
-describe.runIf(process.env.RUN_STARTUP_REACH_STATS === '1')('開始地点の立ち上がりレポート', () => {
-  it(`${SEED_COUNT}シード分の島を測ってStartupReachStats.mdを再生成する`, () => {
-    const report = buildReportFromDefinitions();
-    writeFileSync(REPORT_PATH, report, 'utf8');
-    console.log(`Report written to: ${REPORT_PATH}`);
-
-    expect(report).toContain('# 開始地点の立ち上がりレポート');
-  }, 600_000);
-});
+describeReportRegeneration(REPORT_PATH, 'RUN_STARTUP_REACH_STATS', buildReportFromDefinitions, [
+  '# 開始地点の立ち上がりレポート',
+]);
 
 describeReportFreshness(REPORT_PATH, 'npm run stats:startup', buildReportFromDefinitions);

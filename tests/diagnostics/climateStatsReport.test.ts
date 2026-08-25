@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import type { SeasonWeatherHours } from '../../src/analysis/activityHours';
 import { activityHoursOf } from '../../src/analysis/activityHours';
@@ -11,6 +10,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { describeReportRegeneration } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexPath } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
@@ -20,11 +20,11 @@ import { seededRng } from '../../src/domain/Rng';
  * 連続未降雨/降雨時間の統計（平均/最小/5%ile/95%ile/最大/標準偏差）を計測し、
  * `docs/diagnostics/ClimateSystemStats.md`へ書き出す。
  *
- * 計測そのものは通常のテストスイート（`npm test`）に含めない: 20シード×3600日のシミュレーションに
- * 数分かかり、かつ合否判定を目的とした回帰テストではなく統計の再計測が目的のため、`RUN_CLIMATE_STATS`
- * 環境変数が立っているときだけ実行されるようにしている: `npm run stats:climate`
+ * 気候の定数を変えた後に再生成する: `npm run stats:climate`。再生成の形は
+ * `tests/support/generatedReport.ts` が持つ。
  *
- * **代わりに、生成物が今の入力より古くなっていないかは常に見る**（末尾のdescribe）。再生成する運用は
+ * **代わりに、生成物が今の入力より古くなっていないかは常に見る**（末尾のdescribe）。20シード×3600日の
+ * シミュレーションは数分かかるので、他のレポートと違って丸ごと作り直しては比べられない。再生成する運用は
  * 1度すり抜けており（issue #775）、そのとき古い表と手書きの定数が互いにだけ一致していた。
  */
 
@@ -410,90 +410,81 @@ function buildReport(
   return lines.join('\n') + '\n';
 }
 
-describe.runIf(process.env.RUN_CLIMATE_STATS === '1')('気候システム統計レポート', () => {
-  it('20シード×3600日をシミュレートしてClimateSystemStats.mdを再生成する', () => {
-    // world-codex全体を読む——土地の一覧が要る活動時間表（activityHoursOf）にはlocations.yaml等が
-    // 要るため。worldの定義はcore.yamlにしか無いので、シミュレーション自体への影響は無い。
-    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+/** 定義から気候をシミュレートして測り、レポートの中身を作る。 */
+function buildReportFromDefinitions(): string {
+  // world-codex全体を読む——土地の一覧が要る活動時間表（activityHoursOf）にはlocations.yaml等が
+  // 要るため。worldの定義はcore.yamlにしか無いので、シミュレーション自体への影響は無い。
+  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
 
-    const calmId = codex.symbolNames.intern('calm');
-    const wetId = codex.symbolNames.intern('wet');
-    const dryId = codex.symbolNames.intern('dry');
-    const sunnyId = codex.symbolNames.intern('sunny');
-    const clearId = codex.symbolNames.intern('clear');
-    const cloudyId = codex.symbolNames.intern('cloudy');
-    const scorchingId = codex.symbolNames.intern('scorching');
-    const lightRainId = codex.symbolNames.intern('light_rain');
-    const heavyRainId = codex.symbolNames.intern('heavy_rain');
-    const stormId = codex.symbolNames.intern('storm');
-    const seasonId = codex.propertyNames.getId('season');
-    const weatherId = codex.propertyNames.getId('weather');
-    const temperatureId = codex.propertyNames.getId('ambient_temperature');
-    const moistureId = codex.propertyNames.getId('atmospheric_moisture');
+  const calmId = codex.symbolNames.intern('calm');
+  const wetId = codex.symbolNames.intern('wet');
+  const dryId = codex.symbolNames.intern('dry');
+  const sunnyId = codex.symbolNames.intern('sunny');
+  const clearId = codex.symbolNames.intern('clear');
+  const cloudyId = codex.symbolNames.intern('cloudy');
+  const scorchingId = codex.symbolNames.intern('scorching');
+  const lightRainId = codex.symbolNames.intern('light_rain');
+  const heavyRainId = codex.symbolNames.intern('heavy_rain');
+  const stormId = codex.symbolNames.intern('storm');
+  const seasonId = codex.propertyNames.getId('season');
+  const weatherId = codex.propertyNames.getId('weather');
+  const temperatureId = codex.propertyNames.getId('ambient_temperature');
+  const moistureId = codex.propertyNames.getId('atmospheric_moisture');
 
-    const seasonKinds = [calmId, wetId, dryId];
-    const weatherKinds = [scorchingId, sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId];
-    const rainWeatherKinds = [lightRainId, heavyRainId, stormId];
-    const isRain = (w: number): boolean => w === lightRainId || w === heavyRainId || w === stormId;
+  const seasonKinds = [calmId, wetId, dryId];
+  const weatherKinds = [scorchingId, sunnyId, clearId, cloudyId, lightRainId, heavyRainId, stormId];
+  const rainWeatherKinds = [lightRainId, heavyRainId, stormId];
+  const isRain = (w: number): boolean => w === lightRainId || w === heavyRainId || w === stormId;
 
-    const stats = createClimateStats(seasonKinds, weatherKinds, rainWeatherKinds);
+  const stats = createClimateStats(seasonKinds, weatherKinds, rainWeatherKinds);
 
-    const worldDef = codex.objects.get(codex.objectNames.getId('world'));
-    const totalTicks = SIM_DAYS * 96;
+  const worldDef = codex.objects.get(codex.objectNames.getId('world'));
+  const totalTicks = SIM_DAYS * 96;
 
-    for (let seed = 1; seed <= SEED_COUNT; seed++) {
-      const session = new WorldSession(codex, undefined, seededRng(seed));
-      const worldInstance = new WorldObject(1, worldDef, session);
-      session.adoptWorld(new World(worldInstance, codex));
+  for (let seed = 1; seed <= SEED_COUNT; seed++) {
+    const session = new WorldSession(codex, undefined, seededRng(seed));
+    const worldInstance = new WorldObject(1, worldDef, session);
+    session.adoptWorld(new World(worldInstance, codex));
 
-      // 現在進行中のセグメント（季節が変わるまでの一区間）のバッファ
-      let segSeason = worldInstance.tryGetProperty(seasonId)?.number ?? 0;
-      let segTemps: number[] = [];
-      let segWeathers: number[] = [];
-      let segMoistures: number[] = [];
-      let isFirstSegment = true;
+    // 現在進行中のセグメント（季節が変わるまでの一区間）のバッファ
+    let segSeason = worldInstance.tryGetProperty(seasonId)?.number ?? 0;
+    let segTemps: number[] = [];
+    let segWeathers: number[] = [];
+    let segMoistures: number[] = [];
+    let isFirstSegment = true;
 
-      const flushSegment = (): void => {
-        if (!isFirstSegment) {
-          processCompletedSegment(
-            stats,
-            weatherKinds,
-            isRain,
-            segSeason,
-            segTemps,
-            segWeathers,
-            segMoistures,
-          );
-        }
-        segTemps = [];
-        segWeathers = [];
-        segMoistures = [];
-      };
-
-      for (let t = 0; t < totalTicks; t++) {
-        session.advanceWorldTime(15); // minutes_per_tick分。ちょうど1tick進める
-
-        const currentSeason = worldInstance.tryGetProperty(seasonId)?.number ?? 0;
-        if (currentSeason !== segSeason) {
-          flushSegment();
-          isFirstSegment = false;
-          segSeason = currentSeason;
-        }
-
-        segTemps.push(worldInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0);
-        segWeathers.push(worldInstance.tryGetProperty(weatherId)?.number ?? 0);
-        segMoistures.push(worldInstance.tryGetProperty(moistureId)?.number ?? 0);
+    const flushSegment = (): void => {
+      if (!isFirstSegment) {
+        processCompletedSegment(stats, weatherKinds, isRain, segSeason, segTemps, segWeathers, segMoistures);
       }
-      // 末尾の未完了セグメントは破棄（flushSegmentを呼ばない）
+      segTemps = [];
+      segWeathers = [];
+      segMoistures = [];
+    };
+
+    for (let t = 0; t < totalTicks; t++) {
+      session.advanceWorldTime(15); // minutes_per_tick分。ちょうど1tick進める
+
+      const currentSeason = worldInstance.tryGetProperty(seasonId)?.number ?? 0;
+      if (currentSeason !== segSeason) {
+        flushSegment();
+        isFirstSegment = false;
+        segSeason = currentSeason;
+      }
+
+      segTemps.push(worldInstance.tryGetProperty(temperatureId)?.getEffectiveValue() ?? 0);
+      segWeathers.push(worldInstance.tryGetProperty(weatherId)?.number ?? 0);
+      segMoistures.push(worldInstance.tryGetProperty(moistureId)?.number ?? 0);
     }
+    // 末尾の未完了セグメントは破棄（flushSegmentを呼ばない）
+  }
 
-    const report = buildReport(codex, seasonKinds, weatherKinds, rainWeatherKinds, stats);
-    writeFileSync(REPORT_PATH, report, 'utf8');
-    console.log(`Report written to: ${REPORT_PATH}`);
+  return buildReport(codex, seasonKinds, weatherKinds, rainWeatherKinds, stats);
+}
 
-    expect(report).toContain('# 気候システム統計レポート');
-  }, 600_000);
-});
+describeReportRegeneration(REPORT_PATH, 'RUN_CLIMATE_STATS', buildReportFromDefinitions, [
+  '# 気候システム統計レポート',
+]);
 
 /**
  * 生成済みの`ClimateSystemStats.md`が、今の定義より古くなっていないか。

@@ -1,11 +1,8 @@
-import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import process from 'node:process';
-import { describe, expect, it } from 'vitest';
 import type { IslandMap } from '../../src/domain/generation/IslandMap';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { describeReportFreshness } from '../support/reportFreshness';
+import { describeReportFreshness, describeReportRegeneration } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -13,13 +10,9 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * パスネットワーク（TerrainGeneration.md 3.5節）の現在の実装について、土地1つあたりの道の本数
  * （連結数）などの統計を計測し、`docs/diagnostics/TerrainStats.md`へ書き出す。
  *
- * 通常のテストスイート（`npm test`）には含めない: 合否判定を目的とした回帰テストではなく、
- * 「繋がりすぎ/繋がらなすぎ」を数値で見るための再計測が目的のため、`RUN_TERRAIN_STATS`環境変数が
- * 立っているときだけ実行する。`extra_edge_detour_factor` 等を変えた後に再生成する:
- * `npm run stats:terrain`
- *
- * **代わりに、生成済みのレポートが古くなっていないかは常に見る**（末尾の`describeReportFreshness`）。
- * 500シードの生成は1秒で済むので、丸ごと作り直して比べられる。
+ * 「繋がりすぎ/繋がらなすぎ」を数値で見るためのもので、`extra_edge_detour_factor` 等を変えた後に
+ * 再生成する: `npm run stats:terrain`。再生成と鮮度の形は `tests/support/generatedReport.ts` が持つ。
+ * 500シードの生成は1秒で済むので、鮮度は丸ごと作り直して比べる。
  */
 
 const SEED_COUNT = 500;
@@ -190,14 +183,8 @@ function buildReportFromDefinitions(): string {
   return buildReport(stats);
 }
 
-describe.runIf(process.env.RUN_TERRAIN_STATS === '1')('地形生成統計レポート', () => {
-  it(`${SEED_COUNT}シード分の島を生成してTerrainStats.mdを再生成する`, () => {
-    const report = buildReportFromDefinitions();
-    writeFileSync(REPORT_PATH, report, 'utf8');
-    console.log(`Report written to: ${REPORT_PATH}`);
-
-    expect(report).toContain('# 地形生成統計レポート');
-  }, 600_000);
-});
+describeReportRegeneration(REPORT_PATH, 'RUN_TERRAIN_STATS', buildReportFromDefinitions, [
+  '# 地形生成統計レポート',
+]);
 
 describeReportFreshness(REPORT_PATH, 'npm run stats:terrain', buildReportFromDefinitions);
