@@ -41,11 +41,14 @@ generation_scopes:
     coast_band: 15
     hull_coast: true
     interior_bias: 0.6
+    extra_edge_detour_factor: 1.8
     diameter_meters: 6700
     walk_meters_per_hour: 4000
     climb_meters_per_hour: 600
     elevation_axis: elevation
     elevation_top_meters: 400
+    max_sites_per_type: 3
+    crowding_penalty: 0.25
     guarantees:
       - {location_type: peak, count: 1, axis: elevation, pick: max}
 `;
@@ -91,11 +94,22 @@ generation_scopes:
     const island = generation.scopes.get('island');
     expect(island).toBeDefined();
     if (island === undefined) return;
+    // 生成スコープの値は大半が数値なので、どのYAMLのキーがどのフィールドへ入るかを1つずつ見る
+    // （値は互いに違えてあるので、取り違えは値の一致で隠れない）。
+    expect(island.name).toBe('island');
     expect(island.siteCountMin).toBe(10);
     expect(island.siteCountMax).toBe(20);
     expect(island.coastBandMaxDistance).toBe(15);
     expect(island.clampsHullSitesToCoast).toBe(true);
     expect(island.interiorBias).toBe(0.6);
+    expect(island.extraEdgeDetourThreshold).toBe(1.8);
+    expect(island.diameterMeters).toBe(6700);
+    expect(island.walkMetersPerHour).toBe(4000);
+    expect(island.climbMetersPerHour).toBe(600);
+    expect(island.elevationAxis).toBe('elevation');
+    expect(island.elevationTopMeters).toBe(400);
+    expect(island.maxSitesPerType).toBe(3);
+    expect(island.crowdingPenaltyPerDuplicate).toBe(0.25);
     expect(island.guarantees).toHaveLength(1);
     expect(island.guarantees[0].locationType).toBe('peak');
     expect(island.guarantees[0].pick).toBe('max');

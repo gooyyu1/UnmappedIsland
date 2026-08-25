@@ -25,6 +25,18 @@ export class CoverageGuaranteeDef {
 }
 
 /**
+ * GenerationScopeDefを構築するのに要る値。**位置ではなく名前で渡す**——値のほとんどが数値なので、
+ * 位置で並べると隣どうしを取り違えても型検査が通ってしまう。各値の意味は同名のフィールドが持つ。
+ *
+ * 除くのは導出される値（メートル換算）だけ。除き忘れても、構築側がその計算結果まで要求されて
+ * 型検査で止まるので、黙って通ることはない。
+ */
+export type GenerationScopeParams = Omit<
+  GenerationScopeDef,
+  'metersPerDistanceUnit' | 'metersPerElevationUnit'
+>;
+
+/**
  * 生成スコープ（TerrainGeneration.md 3.7節）: 島の生成と構造物内部の生成が共有する
  * 生成ロジックへの、スコープごとのパラメータプリセット。
  */
@@ -77,54 +89,40 @@ export class GenerationScopeDef {
 
   readonly guarantees: readonly CoverageGuaranteeDef[];
 
-  constructor(
-    name: string,
-    siteCountMin: number,
-    siteCountMax: number,
-    coastBandMaxDistance: number,
-    clampsHullSitesToCoast: boolean,
-    interiorBias: number,
-    extraEdgeDetourThreshold: number,
-    diameterMeters: number,
-    walkMetersPerHour: number,
-    climbMetersPerHour: number,
-    elevationAxis: string,
-    elevationTopMeters: number,
-    maxSitesPerType: number,
-    crowdingPenaltyPerDuplicate: number,
-    guarantees: readonly CoverageGuaranteeDef[],
-  ) {
-    if (siteCountMin < 1 || siteCountMax < siteCountMin)
+  constructor(params: GenerationScopeParams) {
+    const { name } = params;
+    if (params.siteCountMin < 1 || params.siteCountMax < params.siteCountMin)
       throw new Error(`'${name}': site_countは1 <= min <= maxである必要があります。`);
-    if (interiorBias < 0 || interiorBias > 1)
+    if (params.interiorBias < 0 || params.interiorBias > 1)
       throw new Error(`'${name}': interior_biasは0〜1である必要があります。`);
-    if (maxSitesPerType < 0)
+    if (params.maxSitesPerType < 0)
       throw new Error(`'${name}': max_sites_per_typeは0以上である必要があります（0で無制限）。`);
-    if (crowdingPenaltyPerDuplicate < 0)
+    if (params.crowdingPenaltyPerDuplicate < 0)
       throw new Error(`'${name}': crowding_penaltyは0以上である必要があります（0で無効）。`);
-    if (diameterMeters <= 0) throw new Error(`'${name}': diameter_metersは正の数である必要があります。`);
-    if (walkMetersPerHour <= 0)
+    if (params.diameterMeters <= 0)
+      throw new Error(`'${name}': diameter_metersは正の数である必要があります。`);
+    if (params.walkMetersPerHour <= 0)
       throw new Error(`'${name}': walk_meters_per_hourは正の数である必要があります。`);
-    if (climbMetersPerHour <= 0)
+    if (params.climbMetersPerHour <= 0)
       throw new Error(`'${name}': climb_meters_per_hourは正の数である必要があります。`);
-    if (elevationTopMeters < 0)
+    if (params.elevationTopMeters < 0)
       throw new Error(`'${name}': elevation_top_metersは0以上である必要があります。`);
 
     this.name = name;
-    this.siteCountMin = siteCountMin;
-    this.siteCountMax = siteCountMax;
-    this.coastBandMaxDistance = coastBandMaxDistance;
-    this.clampsHullSitesToCoast = clampsHullSitesToCoast;
-    this.interiorBias = interiorBias;
-    this.extraEdgeDetourThreshold = extraEdgeDetourThreshold;
-    this.diameterMeters = diameterMeters;
-    this.walkMetersPerHour = walkMetersPerHour;
-    this.climbMetersPerHour = climbMetersPerHour;
-    this.elevationAxis = elevationAxis;
-    this.elevationTopMeters = elevationTopMeters;
-    this.maxSitesPerType = maxSitesPerType;
-    this.crowdingPenaltyPerDuplicate = crowdingPenaltyPerDuplicate;
-    this.guarantees = guarantees;
+    this.siteCountMin = params.siteCountMin;
+    this.siteCountMax = params.siteCountMax;
+    this.coastBandMaxDistance = params.coastBandMaxDistance;
+    this.clampsHullSitesToCoast = params.clampsHullSitesToCoast;
+    this.interiorBias = params.interiorBias;
+    this.extraEdgeDetourThreshold = params.extraEdgeDetourThreshold;
+    this.diameterMeters = params.diameterMeters;
+    this.walkMetersPerHour = params.walkMetersPerHour;
+    this.climbMetersPerHour = params.climbMetersPerHour;
+    this.elevationAxis = params.elevationAxis;
+    this.elevationTopMeters = params.elevationTopMeters;
+    this.maxSitesPerType = params.maxSitesPerType;
+    this.crowdingPenaltyPerDuplicate = params.crowdingPenaltyPerDuplicate;
+    this.guarantees = params.guarantees;
   }
 
   /** 抽象座標1単位が何メートルか。抽象座標系は半径ISLAND_RADIUSの円盤で、その直径がdiameterMeters。 */
