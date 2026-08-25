@@ -72,12 +72,26 @@ traits:
       # **手元は場所の手元を継ぐ**ので、地面や炉に据えた光源も入る。**視界は場所の環境光を継ぐ**
       # ので、据えた光源は入らない——持ち歩ける明かりだけが道に付いてくる（同3節）。
       # どちらへも、持っている光源が自分の子として届く。
+      #
+      # **しきい値を持つのはこの2つのstagesだけで、条件の側は段の名前で見る**
+      # （docs/engine/IlluminationSystem.md 5節）。行動が見るのはキャラクタ側の2つ（同2節）なので、
+      # 場所の hand_brightness には段を置かない——誰も段の名前では読まないため。
+      # 2つが同じ3段を持つのは、同じEVスケールを同じ底（-6）から測っているから。片方の境目を
+      # 動かすと、そのプロパティを見る行動だけが動く。
       hand_brightness:
         value: 0
         base: {subject: ancestor, prop: hand_brightness}
+        stages:
+          - {name: pitch_dark}
+          - {name: dim, min: -5}
+          - {name: bright, min: 5}
       looking_brightness:
         value: 0
         base: {subject: ancestor, prop: ambient_brightness}
+        stages:
+          - {name: pitch_dark}
+          - {name: dim, min: -5}
+          - {name: bright, min: 5}
       # 体重（g）。**筏に乗れば積載として効く**（voyage.yaml）ので、担ぐ側も担がれる側になる。
       # 血液量が体重のおよそ1/13という下の関係から、5,000mLはちょうど65kgにあたる。個体差は
       # まだ持たせず、血と同じくこの trait が配る。
