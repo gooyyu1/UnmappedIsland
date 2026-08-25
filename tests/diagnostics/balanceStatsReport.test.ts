@@ -1,6 +1,4 @@
-import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import type {
   BalanceTables,
@@ -20,7 +18,7 @@ import {
   WHOLE_ISLAND,
 } from '../../src/analysis/balanceTables';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { describeReportFreshness } from '../support/reportFreshness';
+import { describeReportFreshness, describeReportRegeneration } from '../support/generatedReport';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
@@ -30,12 +28,8 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
  * 差分のため**——数値を触ったときに何がどう動いたかは`git diff`でしか読めず、ビューアはその瞬間の
  * 姿しか見せられない。
  *
- * 書き出しは通常のテストスイート（`npm test`）には含めない: 合否判定を目的とした回帰テストではなく、
- * 数値を触るたびに差分で影響を見るための再計算が目的のため、`RUN_BALANCE_STATS`環境変数が
- * 立っているときだけ実行する。定義の数値を変えた後に再生成する: `npm run stats:balance`
- *
- * **代わりに、生成済みのレポートが古くなっていないかは常に見る**（末尾の`describeReportFreshness`）。
- * 表を作り直すのは1秒で済むので、丸ごと作り直して比べられる。
+ * 定義の数値を変えた後に再生成する: `npm run stats:balance`。再生成と鮮度の形は
+ * `tests/support/generatedReport.ts` が持つ。表を作り直すのは1秒で済むので、鮮度は丸ごと作り直して比べる。
  */
 
 function formatNumber(value: number, digits = 1): string {
@@ -537,27 +531,33 @@ function buildTablesFromDefinitions(): BalanceTables {
   return buildBalanceTables(codex, SAMPLE_CHARACTER);
 }
 
-describe.runIf(process.env.RUN_BALANCE_STATS === '1')('アイテム収支レポート', () => {
-  it('定義から収支を計算してBalanceStats.mdを再生成する', () => {
-    const tables = buildTablesFromDefinitions();
-
-    const report = buildReport(tables);
-    writeFileSync(REPORT_PATH, report, 'utf8');
-    console.log(`Report written to: ${REPORT_PATH}`);
-
-    expect(report).toContain('# アイテム収支レポート');
-    expect(tables.places[0].name).toBe(WHOLE_ISLAND);
-
-    // 雨で溜まる水は、時間を数えられていないだけで内容の穴ではない（issue #660）。
-    expect(report).toContain('### 数えられない経路');
-    expect(tables.gaps.filter((gap) => gap.label.includes('water_liquid'))).toEqual([]);
-
-    // 汲む労働は数えられなくても、溜まる量は季節ごとに出る（issue #662）。差引の符号が結論で、
-    // それは`rainWaterContent.test.ts`が常時見る。
-    expect(report).toContain('### 雨で溜まる水');
-  }, 600_000);
-});
+/**
+ * 見張る節: `### 数えられない経路` と `### 雨で溜まる水` は、汲む労働を数えられないこと
+ * （issue #660・#662）がレポートに残る形そのもの。`### ${WHOLE_ISLAND}` は、土地を渡り歩ける前提で
+ * 数えた節。
+ */
+describeReportRegeneration(
+  REPORT_PATH,
+  'RUN_BALANCE_STATS',
+  () => buildReport(buildTablesFromDefinitions()),
+  ['# アイテム収支レポート', `### ${WHOLE_ISLAND}`, '### 数えられない経路', '### 雨で溜まる水'],
+);
 
 describeReportFreshness(REPORT_PATH, 'npm run stats:balance', () =>
   buildReport(buildTablesFromDefinitions()),
 );
+
+/**
+ * 雨で溜まる水は、**時間を数えられていないだけで内容の穴ではない**（issue #660）。穴として数えられると
+ * 水を要る経路がまとめて塞がれるので、`### 島全体で入手経路が無いもの` に載っていないことを見る。
+ *
+ * レポートの字面では表せない——この節は穴が1つも無ければ丸ごと出ず、載る名前も `x → y` の形を取りうる。
+ * 再生成（`RUN_BALANCE_STATS`）の中に置くとCIが見ないままになる（issue #768）ので、常時走らせる。
+ */
+describe('収支の穴', () => {
+  it('雨で溜まる水が、島全体で入手経路が無いものに数えられていない', () => {
+    const gaps = buildTablesFromDefinitions().gaps.map((gap) => gap.label);
+
+    expect(gaps.filter((label) => label.includes('water_liquid'))).toEqual([]);
+  }, 600_000);
+});
