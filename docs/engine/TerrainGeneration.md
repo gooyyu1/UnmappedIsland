@@ -276,8 +276,8 @@ sandy_beach:
 
 `generation_scopes` にスコープごとのパラメータプリセットを持たせる仕組み自体は実装済み
 （現状 `island` のみ定義）で、`structure_interior` のようなスコープを追加すれば、同じ `TerrainGenerator`
-一式が同一ロジックのまま再帰生成できる設計です。探索の発見物 `cave_entrance`（`fixture` タグ）は洞窟の
-入口というプレースホルダで、内部の子 `Location` グラフはまだ生成しません
+一式が同一ロジックのまま再帰生成できる設計です。探索の発見物 `shallow_cave`（`fixture` かつ `location`）は
+それ自体が入れる場所ですが、そこから奥へ続く道と、内部の子 `Location` グラフはまだ生成しません
 （[`Someday.md`](../Someday.md)）。
 
 ## 4. これまでに合意し、実装した設計原則

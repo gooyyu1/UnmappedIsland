@@ -625,9 +625,16 @@ object_texts:
   berry_bush:
     display_name: ベリーの茂み
     description: 小さな実を付ける低木の茂み。
-  cave_entrance:
-    display_name: 洞窟の入口
-    description: 岩肌に開いた暗い穴。奥がどこまで続いているかは分からない。
+  shallow_cave:
+    display_name: 浅い洞窟
+    description: 岩肌が少しだけえぐれた空洞。奥へは続いていないが、雨をしのいで寝起きできる。
+    interactions:
+      enter:
+        display_name: 入る
+        description: 洞窟の中へ移る。物を置いたり火を焚いたりは、入ってからになる。
+      leave:
+        display_name: 出る
+        description: 洞窟から外へ戻る。
   spring:
     display_name: 湧き水
     description: 地面から湧き出す水。汲めば飲み水になる。
