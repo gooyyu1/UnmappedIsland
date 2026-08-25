@@ -17,8 +17,15 @@
 # MCPサーバもただのHTTPで、しかも**ステートレスに応じる**（`initialize` で session id を持たされない）
 # ので、`tools/call` を1発投げるだけでよい。
 #
-# **RESTを逆算しない。** `/v1/code/sessions` を直に叩く道もあるが、形が違う（`sources` は平ら）うえ、
-# **`DELETE` は畳まずに消す**。同じ意味の操作を2通り持つ理由が無いので、道具はMCP側に揃える。
+# **RESTを逆算しない。** `/v1/code/sessions` を直に叩く道もあるが、形が違ううえ、**`DELETE` は畳まずに
+# 消す**。同じ意味の操作を2通り持つ理由が無いので、道具はMCP側に揃える。
+#
+# ## リポジトリの渡し方を間違えると、空の箱で走り出す
+#
+# `create_session` に渡すのは **`source_url` / `source_revision`（平の引数）**。RESTの
+# `config.sources` の形で書くと**黙って無視され**、リポジトリの無い `/home/user` で起動する
+# （2026-08-25 に1回やった）。**立てた直後に `get_session` で `session_context.sources` を見て、
+# 入っていることを確かめる。**
 
 set -euo pipefail
 
