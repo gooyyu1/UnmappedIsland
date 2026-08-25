@@ -1,4 +1,6 @@
 import { join } from 'node:path';
+import type { BaseDailyTravel, DestinationChoice } from '../../src/analysis/dailyTravel';
+import { dailyTravelOf, DESTINATION_CHOICES, VISIT_COUNTS } from '../../src/analysis/dailyTravel';
 import type { IslandMap } from '../../src/domain/generation/IslandMap';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -39,6 +41,32 @@ interface TerrainStats {
   readonly degree: Stat;
   /** 道1本あたり: 移動時間（分）。 */
   readonly travelMinutes: Stat;
+
+  /** 島1つあたり: 最も条件の良い拠点から見た1日の移動時間。 */
+  readonly chosenBaseTravel: DailyTravelStats;
+  /** 土地1つあたり: その土地を拠点にしたときの1日の移動時間。 */
+  readonly anyBaseTravel: DailyTravelStats;
+}
+
+/** 拠点の選び方1つぶんの、1日の移動時間の分布。 */
+interface DailyTravelStats {
+  /** 拠点から他の土地への片道（分）。 */
+  readonly oneWayMinutes: Stat;
+  /** 行き先の選び方 → `VISIT_COUNTS`と同じ並びの、回って戻る移動時間（分）。 */
+  readonly tourMinutes: ReadonlyMap<DestinationChoice, readonly Stat[]>;
+}
+
+function createDailyTravelStats(): DailyTravelStats {
+  return {
+    oneWayMinutes: new Stat(),
+    tourMinutes: new Map(DESTINATION_CHOICES.map((choice) => [choice, VISIT_COUNTS.map(() => new Stat())])),
+  };
+}
+
+function addDailyTravel(stats: DailyTravelStats, base: BaseDailyTravel): void {
+  stats.oneWayMinutes.add(base.oneWayMinutes);
+  for (const [choice, minutes] of base.tourMinutes)
+    for (const [i, stat] of stats.tourMinutes.get(choice)!.entries()) stat.add(minutes[i]);
 }
 
 function createStats(typeNames: readonly string[]): TerrainStats {
@@ -53,6 +81,8 @@ function createStats(typeNames: readonly string[]): TerrainStats {
     countByType: new Map(typeNames.map((name) => [name, new Stat()])),
     degree: new Stat(),
     travelMinutes: new Stat(),
+    chosenBaseTravel: createDailyTravelStats(),
+    anyBaseTravel: createDailyTravelStats(),
   };
 }
 
@@ -83,6 +113,10 @@ function collect(stats: TerrainStats, map: IslandMap): void {
   for (const site of map.sites) counts.set(site.type!.name, (counts.get(site.type!.name) ?? 0) + 1);
   stats.typesPerIsland.add(counts.size);
   for (const [name, stat] of stats.countByType) stat.add(counts.get(name) ?? 0);
+
+  const travel = dailyTravelOf(map);
+  addDailyTravel(stats.chosenBaseTravel, travel.bestBase);
+  for (const base of travel.bases) addDailyTravel(stats.anyBaseTravel, base);
 }
 
 function buildReport(stats: TerrainStats): string {
@@ -165,6 +199,51 @@ function buildReport(stats: TerrainStats): string {
   append('## 道ごと');
   append();
   appendStatTable('項目', [['移動時間', '分', stats.travelMinutes]]);
+
+  append('## 1日の移動時間');
+  append();
+  append('拠点を出て何箇所かを回り、拠点へ戻るまでの移動時間（ContentSkeleton.md 8.2節）。');
+  append('計算は`src/analysis/dailyTravel.ts`。');
+  append();
+  append('その日どの土地に用があるかは定義から決まらないので、行き先の選び方を2通り並べる。');
+  append('どちらを1日と読むかはContentSkeleton.md 8.3節が決める。');
+  append();
+  append('- **一様** — 拠点以外の土地から等しく選ぶ。どの土地にも同じだけ用があるとしたときの姿。');
+  append('- **近い順** — 拠点から近い順に採る。同じものが近くでも採れるとしたときの下限。');
+  append('- 回る順はその組で最も安いものを採り、土地の間は最短経路をたどる。');
+  append('- 道を見つける探索時間は含まない（StartupReachStats.mdが持つ）。');
+  append();
+
+  const appendTravelTable = (travel: DailyTravelStats): void => {
+    appendStatTable('項目', [
+      ['片道（一様に選んだ行き先）', '分', travel.oneWayMinutes],
+      ...DESTINATION_CHOICES.flatMap((choice) =>
+        VISIT_COUNTS.map(
+          (visitCount, i) =>
+            [
+              `${visitCount}箇所を回って戻る（${choice.label}）`,
+              '分',
+              travel.tourMinutes.get(choice)![i],
+            ] as const,
+        ),
+      ),
+    ]);
+  };
+
+  append('### 拠点を選んだとき');
+  append();
+  append('他の土地への片道が平均で最も短い土地を拠点にした場合。プレイヤーは拠点を選べるので、');
+  append('1周回で実際に払う移動時間はこちらに近い。');
+  append();
+  appendTravelTable(stats.chosenBaseTravel);
+
+  append('### どの土地を拠点にしてもよいとき');
+  append();
+  append('全土地を1つずつ拠点として測ったもの。上の表との差が、拠点選びで動く分を表す。');
+  append('**動くのは「一様」の側だけ**——どの土地にも道が1本はあるので、近い順に回る分は拠点を');
+  append('選んでも縮まない。');
+  append();
+  appendTravelTable(stats.anyBaseTravel);
 
   return lines.join('\n') + '\n';
 }
