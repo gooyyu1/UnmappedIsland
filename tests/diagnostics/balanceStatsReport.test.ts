@@ -2,11 +2,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type {
   BalanceTables,
-  ChainRoute,
   NamedAmount,
-  PlaceBalance,
   PropertyChains,
-  PropertyRoute,
   RoutePrerequisite,
   RouteStep,
 } from '../../src/analysis/balanceTables';
@@ -15,16 +12,25 @@ import {
   MINUTES_PER_DAY,
   MINUTES_PER_TICK,
   TICKS_PER_DAY,
-  WHOLE_ISLAND,
 } from '../../src/analysis/balanceTables';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { describeReportFreshness, describeReportRegeneration } from '../support/generatedReport';
+import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
+import {
+  describeDocumentedSections,
+  describeReportFreshness,
+  describeYamlReportRegeneration,
+  formatYamlReport,
+  RoundedNumber,
+} from '../support/generatedReport';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
- * 定義から計算した収支表（`src/analysis/balanceTables.ts`）を`docs/diagnostics/BalanceStats.md`へ書き出す。
+ * 定義から計算した収支表（`src/analysis/balanceTables.ts`）を`stats/balance.yaml`へ書き出す。
  *
- * 同じ表はコーデックスビューア（`src/codex-viewer/balancePage.ts`）でも見られる。**Markdownを残すのは
+ * **書き出すのは数値だけ。** 何を測ったか・引いた線・数えていないものは、手書きの
+ * `docs/diagnostics/BalanceStats.md` が持つ。
+ *
+ * 同じ表はコーデックスビューア（`src/codex-viewer/balancePage.ts`）でも見られる。**書き出しを残すのは
  * 差分のため**——数値を触ったときに何がどう動いたかは`git diff`でしか読めず、ビューアはその瞬間の
  * 姿しか見せられない。
  *
@@ -32,498 +38,218 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
  * `tests/support/generatedReport.ts` が持つ。表を作り直すのは1秒で済むので、鮮度は丸ごと作り直して比べる。
  */
 
-function formatNumber(value: number, digits = 1): string {
-  if (!Number.isFinite(value)) return '—';
-  const rounded = value.toFixed(digits);
-  return rounded === `-${(0).toFixed(digits)}` ? (0).toFixed(digits) : rounded;
-}
-
-function signed(amount: number): string {
-  return `${amount >= 0 ? '+' : ''}${formatNumber(amount, 2)}`;
-}
-
-function amountList(amounts: readonly NamedAmount[]): string {
-  return amounts.map(({ name, amount }) => `${name} ${signed(amount)}`).join('、');
-}
-
-function routeText(route: ChainRoute): string {
-  return stepsText(route.steps);
-}
-
-function prerequisiteText({ label, minutes, imported }: RoutePrerequisite): string {
-  if (minutes === undefined) return `${label}（入手経路なし）`;
-  return `${label}（${formatNumber(minutes)}分${imported ? '・他の土地で' : ''}）`;
+/**
+ * 丸めた数。**決まらない値はnullで書く**——`—`と書くと、読む側では数ではなく文字列になって型が
+ * 行ごとに変わる。`-0.00`は`0.00`へ均す（丸めで符号だけが残った値に意味は無い）。
+ */
+function rounded(value: number | undefined, digits = 1): RoundedNumber | null {
+  if (value === undefined || !Number.isFinite(value)) return null;
+  const zero = (0).toFixed(digits);
+  return new RoundedNumber(value.toFixed(digits) === `-${zero}` ? 0 : value, digits);
 }
 
 function stepsText(steps: readonly RouteStep[]): string {
   return steps.map((step) => `${step.objectName}.${step.stepName}`).join(' → ');
 }
 
-function buildReport(tables: BalanceTables): string {
-  const lines: string[] = [];
-  const append = (line = ''): void => {
-    lines.push(line);
-  };
-
-  append('# アイテム収支レポート');
-  append();
-  append('`tests/diagnostics/balanceStatsReport.test.ts` が、定義（`src/assets/world-codex/*.yaml`）');
-  append('だけから計算した「時間あたりの収支」。定義の数値を変えたら以下で再生成する。');
-  append();
-  append('```');
-  append('npm run stats:balance');
-  append('```');
-  append();
-  append('同じ表はコーデックスビューアの「収支」ページでも見られる（アイコンつき）。');
-  append();
-
-  appendMethod(append);
-  appendChains(append, tables);
-  appendObjectCosts(append, tables);
-  appendDevices(append, tables);
-  appendConsumption(append, tables);
-  appendSupply(append, tables);
-
-  return lines.join('\n') + '\n';
-}
-
-function appendMethod(append: (line?: string) => void): void {
-  append('## 計測方法');
-  append();
-  append(`- 1 tick = ${MINUTES_PER_TICK}分、1日 = ${TICKS_PER_DAY} tick = ${MINUTES_PER_DAY}分。`);
-  append('- `pick` の分岐は `weight` から期待値を取る。入れ子の `pick` は確率の積まで畳んである。');
-  append('- **1つの工程が複数の値を返す場合、所要時間は按分せず全額を各値に計上する。** 按分には');
-  append('  水と満腹の交換レートが要るが、そのレートこそこの表が見つけようとしているもの。');
-  append('  代わりに「同時に返す値」を添えた——それらを縦に足すと二重計上になる。');
-  append('- **道具（消費されない入力）の入手時間は単位あたりの時間に含めない。** 繰り返し使えるものを');
-  append('  1個あたりへ按分するには「何回使うか」の仮定が要り、その仮定が数字を支配するため。');
-  append('  代わりに「前提」へ、1度だけ払う入手時間として別に並べる。');
-  append('- 連鎖の起点は探索。土地ごとに得られる物が違うので、連鎖表は土地ごとに出す。');
-  append('  ただし資源は土地をまたいで分かれている（木は砂浜、石は岩場）ので、渡り歩ける前提の');
-  append(`  **${WHOLE_ISLAND}**を先頭に置く——各資源を最も得やすい土地で得て、移動時間は数えない場合。`);
-  append();
-  append('### 待って得る生産の数え方');
-  append();
-  append('罠のように、仕掛けてから時間が経つと産物が返るものは、**待っている間に他のことができる**。');
-  append('そこで工程の時間を2本に分けて数える。');
-  append();
-  append('- **労働時間**: プレイヤーが払う分。他の行動と直接競合するのはこれだけで、');
-  append('  各表の「分」はすべてこちら。');
-  append('- **周期**: 経過するだけの分。単位あたりの時間には**足さない**。');
-  append();
-  append('では待ち時間が無コストかというと、そうではない。**設備は待っている間も朽ちる**ので、');
-  append('1周期で使い切る設備の割合（周期 ÷ 寿命）が、そのまま製作労働の按分になる——罠1回の判定は');
-  append('「罠を作る労働の、周期÷寿命ぶん」を払っている。連鎖表の数字はこの按分を含む。');
-  append();
-  append('この数え方が成り立つのは**並列度に上限があるとき**だけ。いくらでも並べられて朽ちもしない');
-  append('設備は、待つだけで無限に得られることになるので按分できず、連鎖表から外して待ち生産表へ回す。');
-  append();
-  append('### 隣の物に押されて起こる作り替え');
-  append();
-  append('焼くのも失血死も、**自分では動かない値を隣の物が動かす**。炉は火にかけた物の');
-  append('`cooking_progress` を進め（`add: {child: ...}`）、刺さった傷は持ち主の `blood` を奪う');
-  append('（`add: {parent: ...}`）。値が range の端へ届いた瞬間に、その型自身の `on_max`/');
-  append('`on_min` が生肉を焼けた肉へ、獲物を死体へ置き換える。');
-  append();
-  append('どちらも「1回で終わる待ち生産」なので、労働0・経過時間ありの工程として連鎖表に載せ、');
-  append('押し手（炉・傷）は**要る道具**として前提の列に出す。誰が誰の隣に立てるかは、枠の');
-  append('`accept` だけで判断する——炉の火の枠が `roastable` を受けるから、そこへ入る物は焼ける。');
-  append();
-  append('**押し手が止まるまでに動かせる総量**も数える。出血は傷の `bleeding` が尽きれば止まるので、');
-  append('罠の傷（-15/tick × 2 tick = 30mL）ではネズミ（血6mL）は死ぬがヤケイ（80mL）は死なない。');
-  append('届かない組み合わせはその工程を立てない。');
-  append();
-  append('一撃で端まで押す効果も同じ引き金を引く。仕留めの一撃（`set: {self: {blood: 0}}`）は');
-  append('血を空にするだけで、死体を生むのは `blood` の `on_min` ——工程の結果にこれを');
-  append('畳まないと、イノシシの死体（血4,600mLで失血死には届かない）の作り方がどこにも無くなる。');
-  append('確率でしか消えない入力は、**その確率ぶんだけ**消費されるものとして数える（21回に1回');
-  append('しか仕留められないなら、1回の実行に要る獲物は0.048匹）。');
-  append();
-  append('### この表が数えていないもの');
-  append();
-  append('- **土地の間の移動時間。** 道ごとに違い、地形生成が個体へ書き込むため定義からは決まらない。');
-  append('  設備を見回る時間もこれに含まれるので、必要設備数が多い経路ほど実際は不利になる。');
-  append('- **餌の効果。** 餌は `modify`（実効値への可逆な寄与）で重みを押し上げるが、静的に読めるのは');
-  append('  宣言値だけなので、罠のレートは**餌なし**の値。');
-  append('- **雨で溜まる水を汲む労働。** 量を増やすのは `rain_filled_liquid` のtick毎の持続効果で、');
-  append('  工程ではない。そのため水を汲む経路は労働0分になる——1節の「数えられない経路」へ分けて');
-  append('  ある。溜まる量そのものは3節に出す（労働ではなく、季節ごとの mL/日）。');
-  append('- **採取ポイントの枯渇。** 同じ木から何度でも採れる前提で計算している。');
-  append('- **炉の薪。** 焼くには火を保たなければならないが、そのぶんの薪は数えていない。炉は');
-  append('  前提（道具）としてだけ出る。');
-  append('- **どの武器を重ねたか。** 一撃の当たり所の配分は武器が宣言する（`{subject: dragged}` の');
-  append('  重み）ので、重ねる相手を決めないと配分が決まらない。ここでは**その値を最も高く宣言して');
-  append('  いる型を重ねた**として読むため、配分は「分岐ごとに最も良い武器を選べる場合」のものになる');
-  append('  ——1本の武器では出ない配分で、仕留めの確率は実際より低く出る。');
-  append('- **実行時にしか決まらない条件。** 起こりえない工程は立てないが、偽と判定できるのは');
-  append('  `subject: self` のプロパティが**その型の取りうる範囲**（`range`。端に達した瞬間に');
-  append('  その型でなくなるなら、その端を除く）から外れる条件だけ。祖先の天候・重ねる相手・');
-  append('  スロットの中身を見る条件は真偽を決めずに素通しするので、それだけで弾かれる操作は');
-  append('  工程として残る。');
-  append();
-  append('### 何を「1日に要る量」と数えるか');
-  append();
-  append('**輸送で減る値は需要にしない。** `carbohydrate`/`protein`/`lipid` はtick毎に体脂肪へ流れるが、');
-  append('あの速さ（合計3.5/tick）は在庫がある間の流量であって、要る量ではない。体が実際に燃やすのは');
-  append('受け皿側の `body_fat` の減りだけで、三大栄養素はそこへ注ぐ原資（DigestionSystem.md 3節）。');
-  append('流量を要求量として数えると、必要な3.5倍を食べさせることになる。');
-  append();
-  append('**段で減る速さが変わる値は、初期値が入る段の速さを採る。** 体脂肪は段ごとに -0.5〜-1.6/tick と');
-  append('違うので、全部を足すとどの段にも当てはまらない量になる。');
-  append();
-  append('`satiety` は胃のかさであってエネルギーではない（同2節）。尽きても死なず、食べれば同時に');
-  append('埋まるので、献立では他の値を賄うついでに満たされることが多い。');
-  append();
-}
-
-function appendChains(append: (line?: string) => void, tables: BalanceTables): void {
-  append('## 1. 連鎖表（素材から摂取までの総時間）');
-  append();
-  append(`1日ぶんの必要量は ${SAMPLE_CHARACTER} のもの（消費表から）。`);
-  append('時間はすべて労働時間で、待ち時間は含まない（待ち生産の設備は、周期÷寿命ぶんの製作労働と');
-  append('して計上する）。「1日の割合」は、1日ぶんを賄うのに要る労働が1日（1440分）に占める割合。');
-  append('「設備数」は、待ち生産の経路で1日ぶんを賄うのに同時に要る設備の数。');
-  append();
-  append('**土地ごとの表は可否を判定しない。** 答えるのは「この土地を起点にすると単位あたり何分か」');
-  append('だけで、ある経路が載らないのはできないからではなく**その表の対象ではない**から。');
-  append('入手できるかどうかは島全体でだけ判定し、島のどこにも経路が無いものは末尾の');
-  append('「島全体で入手経路が無いもの」へまとめる。');
-  append();
-  append('**‡ は、他の土地で用意した材料・道具が要る経路。** AとBの土地で集めた物を合わせて作るのは');
-  append('普通の遊び方なので可否は分けないが、土地の間の移動時間を数えていない以上、‡ の付いた経路は');
-  append('実際にはこの表より不利になる。');
-  append();
-  append('**時間を数えられない経路（労働0で値が返るもの）はこの表に混ぜず、末尾の「数えられない経路」');
-  append('へ分けた。** 注記は読み飛ばされるが順位は読み飛ばされないので、0分の行を最安として');
-  append('並べると「水はタダ」と読めてしまう。');
-  append();
-
-  for (const place of tables.places) {
-    if (place.properties.length === 0) continue;
-
-    append(`### ${place.name}`);
-    append();
-    appendMenu(append, place);
-
-    for (const chains of place.properties) {
-      const counted = chains.routes.filter((entry) => !entry.route.untimed);
-      if (counted.length === 0) continue;
-
-      append(`#### ${headingOf(chains)}`);
-      append();
-      append(
-        '| 経路 | 1単位あたり（分） | 探索 | それ以外 | 1日ぶん（分） | 1日の割合 | 設備数 | 同時に返す値 | 前提 |',
-      );
-      append('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
-      for (const entry of counted) append(chainRow(entry));
-      append();
-    }
-  }
-
-  appendUncounted(append, tables);
-  appendGaps(append, tables);
+/** 値の増減・産出の一覧。名前と量を分けて持つ——読む側で名前から量を引けるようにする。 */
+function amountRecords(amounts: readonly NamedAmount[]): YamlRecord[] {
+  return amounts.map(({ name, amount }) => ({ name, amount: rounded(amount, 2) }));
 }
 
 /**
- * 島のどこにも入手経路が無いもの。**土地の性質ではなく内容の穴**なので、土地ごとに繰り返さず
- * ここへ1度だけ出す。この一覧がそのまま、埋めるべきものになる。
+ * 前提（要る道具・他の土地で用意する材料）。`minutes`がnullなのは**入手経路が無い**ことで、
+ * 決まらないのではない。
  */
-function appendGaps(append: (line?: string) => void, tables: BalanceTables): void {
-  if (tables.gaps.length === 0) return;
-
-  append('### 島全体で入手経路が無いもの');
-  append();
-  append('島のどこを探しても作れも見つかりもしないもの。定義の穴で、これが下の経路を塞いでいる。');
-  append();
-  for (const gap of tables.gaps) {
-    append(`- **${gap.label}** — ${gap.blockedRoutes.length}経路を塞いでいる`);
-    for (const route of gap.blockedRoutes)
-      append(`  - \`${stepsText(route.steps)}\`（${amountList(route.deltas) || '—'}）`);
-  }
-  append();
+function prerequisiteRecords(prerequisites: readonly RoutePrerequisite[]): YamlRecord[] {
+  return prerequisites.map(({ label, minutes, imported }) => ({
+    label,
+    minutes: rounded(minutes),
+    imported,
+  }));
 }
 
-/** 需要の見出し。何で埋まるか（体脂肪なら三大栄養素）と、尽きると死ぬかを添える。 */
-function headingOf(chains: PropertyChains): string {
-  const supplied =
-    chains.suppliedByNames.length === 0 ? '' : `／${chains.suppliedByNames.join('・')}で埋まる`;
-  return (
-    `${chains.propertyName}（1日 ${formatNumber(chains.dailyNeed, 0)}` +
-    `${chains.lethal ? '・尽きると死ぬ' : ''}${supplied}）`
-  );
-}
+function buildSections(tables: BalanceTables): readonly YamlReportSection[] {
+  const chainPlaces = tables.places.filter((place) => place.properties.length > 0);
 
-function chainRow(entry: PropertyRoute): string {
-  const prerequisites = entry.route.prerequisites.map(prerequisiteText).join('、');
-
-  return (
-    `| ${routeText(entry.route)}${entry.route.needsImport ? ' ‡' : ''} | ${formatNumber(entry.perUnitMinutes, 2)} |` +
-    ` ${formatNumber(entry.route.exploreMinutes / entry.gain, 2)} |` +
-    ` ${formatNumber(entry.route.craftMinutes / entry.gain, 2)} |` +
-    ` ${formatNumber(entry.dailyMinutes, 0)} | ${formatNumber(entry.dailyShare, 1)}% |` +
-    ` ${entry.simultaneousDeviceCount === undefined ? '—' : formatNumber(entry.simultaneousDeviceCount, 1)} |` +
-    ` ${amountList(entry.route.deltas) || '—'} | ${prerequisites || '—'} |`
-  );
+  return [
+    {
+      key: 'meta',
+      records: [
+        {
+          character: SAMPLE_CHARACTER,
+          minutes_per_tick: MINUTES_PER_TICK,
+          ticks_per_day: TICKS_PER_DAY,
+          minutes_per_day: MINUTES_PER_DAY,
+        },
+      ],
+    },
+    { key: 'daily_needs', records: dailyNeedRecords(chainPlaces.flatMap((place) => place.properties)) },
+    {
+      key: 'daily_minimum',
+      records: chainPlaces
+        .filter((place) => place.menu.entries.length > 0 || place.menu.unmet.length > 0)
+        .map((place) => ({
+          place: place.name,
+          total_minutes: rounded(place.menu.totalMinutes, 0),
+          day_percent: rounded((place.menu.totalMinutes * 100) / MINUTES_PER_DAY, 1),
+          unmet: place.menu.unmet,
+        })),
+    },
+    {
+      key: 'daily_minimum_menu',
+      records: chainPlaces.flatMap((place) =>
+        place.menu.entries.map((entry) => ({
+          place: place.name,
+          route: stepsText(entry.route.steps),
+          repetitions: rounded(entry.repetitions, 2),
+          minutes: rounded(entry.minutes, 0),
+        })),
+      ),
+    },
+    {
+      key: 'chain_routes',
+      records: chainPlaces.flatMap((place) =>
+        place.properties.flatMap((chains) =>
+          chains.routes
+            .filter((entry) => !entry.route.untimed)
+            .map((entry) => ({
+              place: place.name,
+              property: chains.propertyName,
+              route: stepsText(entry.route.steps),
+              imported: entry.route.needsImport,
+              per_unit_minutes: rounded(entry.perUnitMinutes, 2),
+              explore_minutes: rounded(entry.route.exploreMinutes / entry.gain, 2),
+              other_minutes: rounded(entry.route.craftMinutes / entry.gain, 2),
+              daily_minutes: rounded(entry.dailyMinutes, 0),
+              day_percent: rounded(entry.dailyShare, 1),
+              device_count: rounded(entry.simultaneousDeviceCount, 1),
+              deltas: amountRecords(entry.route.deltas),
+              prerequisites: prerequisiteRecords(entry.route.prerequisites),
+            })),
+        ),
+      ),
+    },
+    {
+      key: 'chain_untimed_routes',
+      records: tables.places.flatMap((place) =>
+        place.properties.flatMap((chains) =>
+          chains.routes
+            .filter((entry) => entry.route.untimed)
+            .map((entry) => ({
+              place: place.name,
+              property: chains.propertyName,
+              route: stepsText(entry.route.steps),
+              deltas: amountRecords(entry.route.deltas),
+            })),
+        ),
+      ),
+    },
+    {
+      key: 'chain_gaps',
+      records: tables.gaps.flatMap((gap): YamlRecord[] =>
+        gap.blockedRoutes.length === 0
+          ? [{ label: gap.label, blocked_route: null, deltas: [] }]
+          : gap.blockedRoutes.map((route) => ({
+              label: gap.label,
+              blocked_route: stepsText(route.steps),
+              deltas: amountRecords(route.deltas),
+            })),
+      ),
+    },
+    {
+      key: 'object_costs',
+      records: tables.objectCosts.map((cost) => ({
+        object: cost.objectName,
+        total_minutes: rounded(cost.minutes),
+        explore_minutes: rounded(cost.minutes === undefined ? undefined : (cost.exploreMinutes ?? 0)),
+        other_minutes: rounded(cost.minutes === undefined ? undefined : (cost.craftMinutes ?? 0)),
+        days: rounded(cost.days, 2),
+        blocked_by_tool: cost.blockedByTool,
+        steps: stepsText(cost.steps) || null,
+        prerequisites: prerequisiteRecords(cost.prerequisites),
+        missing: cost.missing,
+      })),
+    },
+    {
+      key: 'devices',
+      records: tables.places.flatMap((place) =>
+        place.devices.map((device) => ({
+          place: place.name,
+          device: device.deviceName,
+          step: device.stepName,
+          period_minutes: rounded(device.periodMinutes, 0),
+          product: device.productName,
+          per_cycle: rounded(device.perCycle, 3),
+          per_day: rounded(device.perDay, 2),
+          lifetime_days: rounded(device.lifetimeDays, 1),
+          over_lifetime: rounded(device.overLifetime, 1),
+          build_minutes: rounded(device.buildMinutes),
+          labor_minutes_per_unit: rounded(device.laborPerUnit, 2),
+        })),
+      ),
+    },
+    {
+      key: 'rain_water',
+      records: tables.rainWater.map((row) => ({
+        container: row.containerName,
+        season: row.seasonName,
+        capacity_ml: rounded(row.capacity, 0),
+        rain_ml_per_day: rounded(row.rainPerDay, 0),
+        evaporation_ml_per_day: rounded(row.evaporationPerDay, 0),
+        net_ml_per_day: rounded(row.netPerDay, 0),
+      })),
+    },
+    {
+      key: 'consumption',
+      records: tables.consumption.flatMap((row) =>
+        tables.characterNames.map((character, index) => {
+          const perTick = row.perTickByCharacter[index];
+          return {
+            property: row.propertyName,
+            condition: row.condition,
+            character,
+            per_tick: rounded(perTick, 2),
+            per_day: rounded(perTick === undefined ? undefined : perTick * TICKS_PER_DAY, 0),
+          };
+        }),
+      ),
+    },
+    {
+      key: 'supply',
+      records: tables.supply.map((row) => ({
+        owner: row.ownerName,
+        step: row.stepName,
+        kind: row.kind,
+        labor_minutes: rounded(row.laborMinutes, 0),
+        unresolved_references: row.hasUnresolvedReferences,
+        elapsed_minutes: rounded(row.elapsedMinutes, 0),
+        spawns: amountRecords(row.spawns),
+        actor_deltas: amountRecords(row.actorDeltas),
+        self_deltas: amountRecords(row.selfDeltas),
+      })),
+    },
+  ];
 }
 
 /**
- * 1日を賄う最小労働（貪欲解）。**この数字がこのレポートで最も追いたいもの**なので、
- * 差分で動きが見えるように献立ごと出す。
+ * 1日に要る量。**土地をまたいで同じ**（要る量を決めるのはキャラクタで、土地ではない）ので、
+ * 土地ごとに繰り返さずここへ1度だけ出す。
  */
-function appendMenu(append: (line?: string) => void, place: PlaceBalance): void {
-  const { menu } = place;
-  if (menu.entries.length === 0 && menu.unmet.length === 0) return;
-
-  append(
-    `> **1日を賄う最小労働: ${formatNumber(menu.totalMinutes, 0)} 分**` +
-      `（1440分の ${formatNumber((menu.totalMinutes * 100) / MINUTES_PER_DAY, 1)}%）`,
-  );
-  if (menu.unmet.length > 0)
-    append(`> この土地を起点にできない値: ${menu.unmet.join('、')}（島全体の節を参照）`);
-  append();
-
-  if (menu.entries.length === 0) return;
-  append('| 献立 | 回数 | 労働（分） |');
-  append('| --- | --- | --- |');
-  for (const entry of menu.entries)
-    append(
-      `| ${routeText(entry.route)} | ${formatNumber(entry.repetitions, 2)} |` +
-        ` ${formatNumber(entry.minutes, 0)} |`,
-    );
-  append();
+function dailyNeedRecords(properties: readonly PropertyChains[]): YamlRecord[] {
+  const records = new Map<string, YamlRecord>();
+  for (const chains of properties)
+    records.set(chains.propertyName, {
+      property: chains.propertyName,
+      daily_need: rounded(chains.dailyNeed, 0),
+      lethal: chains.lethal,
+      supplied_by: chains.suppliedByNames,
+    });
+  return [...records.values()];
 }
 
-/**
- * 時間を数えられない経路。**別の節にする**——同じ並びに0分として混ぜると、注記を読まない限り
- * 最安の手段に見える。
- */
-function appendUncounted(append: (line?: string) => void, tables: BalanceTables): void {
-  const rows: string[] = [];
-  for (const place of tables.places)
-    for (const chains of place.properties)
-      for (const entry of chains.routes)
-        if (entry.route.untimed)
-          rows.push(
-            `| ${place.name} | ${chains.propertyName} | ${routeText(entry.route)} |` +
-              ` ${amountList(entry.route.deltas) || '—'} |`,
-          );
-  if (rows.length === 0) return;
-
-  append('### 数えられない経路');
-  append();
-  append('労働0で値が返る経路。**上の表には混ぜていない**——時間を数えられていないだけで、');
-  append('本当にタダなわけではない（雨で水が溜まるのはtick毎の持続効果で、工程ではない）。');
-  append();
-  append('| 場所 | 値 | 経路 | 同時に返す値 |');
-  append('| --- | --- | --- | --- |');
-  for (const row of rows) append(row);
-  append();
-}
-
-/**
- * オブジェクトごとの総コスト。**生存に要る値だけを見ていると、筏のような物のコストがどこにも
- * 出ない**（issue #568）。入手経路が無いものは先に挙げる——そこが定義の穴になる。
- */
-function appendObjectCosts(append: (line?: string) => void, tables: BalanceTables): void {
-  append('## 2. オブジェクトの総コスト');
-  append();
-  append('1つ手に入れるまでの労働を、素材の採集から数えたもの。組み立ての時間だけではない');
-  append('——筏は組むのに420分だが、丸太と縄を揃えるところから数えると桁が変わる。');
-  append();
-  append('「日数」は、生存に要る労働を引いた残り（1日の余剰時間）で割った日数。**目標までに');
-  append('何日かかるか**がこれで出る。道具（前提）の時間は総コストに含めない（#550のまま）。');
-  append();
-  append('土地・キャラクタ・単独で存在できない物（怪我・道）・製作中オブジェクト・軸の値の型');
-  append('（液体の種類。世界に現れるのは中身入りの容器という変種のほうで、`water_liquid` そのものの');
-  append('インスタンスは作られない）は、手に入れるという言い方が成り立たないので対象外。');
-  append();
-
-  const missing = tables.objectCosts.filter((cost) => cost.minutes === undefined);
-  if (missing.length > 0) {
-    append('### 入手経路が無いもの');
-    append();
-    append('島のどこにも作り方も見つけ方も無い。**足りない入力**まで出すので、そのまま埋めるべき穴になる。');
-    append();
-    append('| オブジェクト | 足りない入力 |');
-    append('| --- | --- |');
-    for (const cost of missing)
-      append(`| ${cost.objectName} | ${cost.missing.join('、') || '作る工程が無い'} |`);
-    append();
-  }
-
-  const toolBlocked = tables.objectCosts.filter((cost) => cost.blockedByTool);
-  if (toolBlocked.length > 0) {
-    append('### 道具が無くて作れないもの');
-    append();
-    append('材料は揃うが、要る道具に入手経路が無い。**総コストは出るが、実際には作れない**');
-    append('——道具の時間を総コストへ按分しない決まり（#550）の裏返しなので、ここで別に出す。');
-    append();
-    append('| オブジェクト | 総労働（分） | 無い道具 |');
-    append('| --- | --- | --- |');
-    for (const cost of toolBlocked)
-      append(
-        `| ${cost.objectName} | ${formatNumber(cost.minutes ?? 0)} |` +
-          ` ${cost.prerequisites
-            .filter(({ minutes }) => minutes === undefined)
-            .map(({ label }) => label)
-            .join('、')} |`,
-      );
-    append();
-  }
-
-  append('### 総コスト');
-  append();
-  append('| オブジェクト | 総労働（分） | 探索 | それ以外 | 日数 | 作り方 | 前提 |');
-  append('| --- | --- | --- | --- | --- | --- | --- |');
-  for (const cost of tables.objectCosts) {
-    if (cost.minutes === undefined) continue;
-    append(
-      `| ${cost.objectName} | ${formatNumber(cost.minutes)} |` +
-        ` ${formatNumber(cost.exploreMinutes ?? 0)} | ${formatNumber(cost.craftMinutes ?? 0)} |` +
-        ` ${cost.days === undefined ? '—' : formatNumber(cost.days, 2)} |` +
-        ` ${stepsText(cost.steps) || '—'} |` +
-        ` ${cost.prerequisites.map(prerequisiteText).join('、') || '—'} |`,
-    );
-  }
-  append();
-}
-
-function appendDevices(append: (line?: string) => void, tables: BalanceTables): void {
-  append('## 3. 待ち生産表（設備が時間をかけて返す分）');
-  append();
-  append('仕掛けてから時間が経つと産物が返るもの。**周期は単位あたりの労働時間には足していない**');
-  append('（計測方法の「待って得る生産の数え方」参照）ので、この表が代わりに周期とレートを出す。');
-  append();
-  append('- **設備あたり（個/日）**: 1日は24時間まるごと回る。眠っている間も進むのが待ち生産の取り柄。');
-  append('- **寿命（日）**: 条件つきの減り（`GameElementDefinition.md` 8.2節）は、**最小の1つだけが');
-  append('  効くとして**数えている。罠の寿命は地面にある間の -1/tick だけで割った値で、獲物が');
-  append('  掛かっている間の -10/tick は含まない——どの条件がいつ重なるかは定義からは決まらないため。');
-  append('  実際の寿命はこれより短く、下の2列はその分だけ設備に有利に出る。');
-  append('- **寿命の間に（個）**: 設備1つが朽ちるまでに返す総数。これが並列度の上限を決める。');
-  append('- **労働（分/個）**: 製作労働 ÷ 寿命の間に返す数。連鎖表に載るのはこの値。');
-  append();
-
-  for (const place of tables.places) {
-    if (place.devices.length === 0) continue;
-
-    append(`### ${place.name}`);
-    append();
-    append(
-      '| 設備 | 仕掛け | 周期（分） | 1周期あたり | 設備あたり（個/日） | 寿命（日） | 寿命の間に（個） | 製作労働（分） | 労働（分/個） |',
-    );
-    append('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
-    for (const device of place.devices)
-      append(
-        `| ${device.deviceName} | ${device.stepName} | ${formatNumber(device.periodMinutes, 0)} |` +
-          ` ${device.productName} ×${formatNumber(device.perCycle, 3)} | ${formatNumber(device.perDay, 2)} |` +
-          ` ${device.lifetimeDays === undefined ? '—（朽ちない）' : formatNumber(device.lifetimeDays, 1)} |` +
-          ` ${device.overLifetime === undefined ? '—' : formatNumber(device.overLifetime, 1)} |` +
-          ` ${device.buildMinutes === undefined ? '入手経路なし' : formatNumber(device.buildMinutes)} |` +
-          ` ${device.laborPerUnit === undefined ? '—' : formatNumber(device.laborPerUnit, 2)} |`,
-      );
-    append();
-  }
-
-  appendRainWater(append, tables);
-}
-
-/**
- * 雨で溜まる水。設備ではないが、**仕掛けて待つと値が返る**点は待ち生産と同じで、しかも労働が
- * 一切要らない。連鎖表には乗らない（工程ではないので労働0分になる）ので、量が出るのはここだけ。
- */
-function appendRainWater(append: (line?: string) => void, tables: BalanceTables): void {
-  if (tables.rainWater.length === 0) return;
-
-  append('### 雨で溜まる水');
-  append();
-  append('空けたまま置いた容器が、1日に受ける水と失う水（`LiquidContainerSystem.md` 6・7節）。');
-  append('降雨も蒸発も気候の実測値から出している（`ClimateSystemStats.md`）。');
-  append();
-  append('**単一の平均は出さない。** 雨季とそれ以外では降る時間が1桁違い、平均するとどの季節にも');
-  append('存在しない中間の状態を測ることになる。読みたいのは差引の符号——**雨だけで水を賄えるのは');
-  append('雨季だけ**で、それ以外の季節は置いておくだけでは減る。');
-  append();
-  append('- **降雨も蒸発も、同じ1つの数え方で出している。** どちらも`fill`をtick毎に動かす持続効果で、');
-  append('  違うのは符号だけ。器の居る場所の天候と明るさを時刻ごとに置き、そのとき条件が成立する増減を');
-  append('  出現時間で加重して均している（**天候と時刻は独立とみなす近似**）。');
-  append('- **明るさは開けた土地のもの。** 蒸発の上乗せは`ancestor.ambient_brightness`を見るので');
-  append('  （`LiquidContainerSystem.md` 6節）、樹冠も反射もある土地では変わる。この表は');
-  append('  `ambient_brightness`の`value`が0の土地に置いた容器の量。');
-  append('- **雨よけの下かどうかは見ていない。** 水が増える宣言は、雨が降っていることに加えて');
-  append('  「雨よけの下でないこと」（`{subject: ancestor, prop: sheltered}`）も課しているが、天候と');
-  append('  明るさ以外の祖先の条件は真偽を決めずに素通しする（計測方法の「この表が数えていないもの」）。');
-  append('  この表は**雨の当たる場所に置いた容器**の量で、屋根の下に置いた容器も同じだけ受ける前提。');
-  append('- **段（`stage`）で縛られた増減は数に入らない。** その段だった時間は天候の出現時間からは');
-  append('  決まらないため。今の定義に該当は無いが、**書き方をそちらへ変えるとその増分はこの表から');
-  append('  黙って消える。**');
-  append('- **蒸発は中身がある間しか効かない。** 空になった容器は素の型へ戻って蒸発も止まるので、');
-  append('  この「1日に失う水」は満杯を保った場合の上限。実際の減りはこれより小さい。');
-  append('- **容量を超えた分は捨てられる。** 雨季のヤシの器は容量250mLに対して1日1300mL近く降るので、');
-  append('  汲み替えなければそのほとんどが失われる。差引はその損失を含まない。');
-  append();
-  append('| 容器 | 季節 | 容量（mL） | 降雨（mL/日） | 蒸発（mL/日） | 差引（mL/日） |');
-  append('| --- | --- | --- | --- | --- | --- |');
-  for (const row of tables.rainWater)
-    append(
-      `| ${row.containerName} | ${row.seasonName} | ${formatNumber(row.capacity, 0)} |` +
-        ` ${formatNumber(row.rainPerDay, 0)} | ${formatNumber(row.evaporationPerDay, 0)} |` +
-        ` ${row.netPerDay > 0 ? '+' : ''}${formatNumber(row.netPerDay, 0)} |`,
-    );
-  append();
-}
-
-function appendConsumption(append: (line?: string) => void, tables: BalanceTables): void {
-  append('## 4. 消費表（1日あたり何が要るか）');
-  append();
-  append('キャラクタが自分のプロパティをtick毎にどれだけ動かすか（`passives` の `add` と `transfer`）。');
-  append('括弧内は1日ぶん（×96）。個体差はそのまま列に出る。**連鎖表の「1日 N」の出どころ**。');
-  append();
-  append(`| プロパティ | 条件 | ${tables.characterNames.join(' | ')} |`);
-  append(`| --- | --- | ${tables.characterNames.map(() => '---').join(' | ')} |`);
-  for (const row of tables.consumption) {
-    const cells = row.perTickByCharacter.map((amount) =>
-      amount === undefined ? '—' : `${formatNumber(amount, 2)}（${formatNumber(amount * TICKS_PER_DAY, 0)}）`,
-    );
-    append(`| ${row.propertyName} | ${row.condition} | ${cells.join(' | ')} |`);
-  }
-  append();
-}
-
-function appendSupply(append: (line?: string) => void, tables: BalanceTables): void {
-  append('## 5. 供給表（1工程あたり）');
-  append();
-  append('何かを生むか、値を動かす工程すべて。産出は1回の実行あたりの期待個数。');
-  append('各オブジェクトのページにも同じ宣言があるので、ここは横断して見比べるための一覧。');
-  append();
-  append('`?` は、所要時間か分岐の重みが**定義だけでは決まらない**工程（相手の持ち物を見る');
-  append('`{subject: dragged, prop: ...}` 参照など）。解けない重みは0として扱うので、その行の期待値は');
-  append('残った候補へ寄っている——例えば `strike` の当たり方は武器が決めるため、ここでは出せない。');
-  append();
-  append('種別 `periodic` は時間で回る工程（罠の判定）。労働は0で、周期だけが経過する。');
-  append('`transfer` の増減は宣言された上限で、実際に動く量は在庫と空きで目減りする。');
-  append();
-  append('| 宣言元 | 工程 | 種別 | 労働（分） | 周期（分） | 期待産出 | 値の増減 |');
-  append('| --- | --- | --- | --- | --- | --- | --- |');
-
-  for (const row of tables.supply) {
-    const spawnText = row.spawns.map(({ name, amount }) => `${name} ×${formatNumber(amount, 2)}`).join('、');
-    const deltaText = [
-      amountList(row.actorDeltas),
-      row.selfDeltas.map(({ name, amount }) => `（self）${name} ${signed(amount)}`).join('、'),
-    ]
-      .filter(Boolean)
-      .join('、');
-
-    append(
-      `| ${row.ownerName} | ${row.stepName} | ${row.kind} |` +
-        ` ${formatNumber(row.laborMinutes, 0)}${row.hasUnresolvedReferences ? ' ?' : ''} |` +
-        ` ${formatNumber(row.elapsedMinutes, 0)} | ${spawnText || '—'} | ${deltaText || '—'} |`,
-    );
-  }
-  append();
-}
-
-const REPORT_PATH = join('docs', 'diagnostics', 'BalanceStats.md');
+const REPORT_PATH = join('stats', 'balance.yaml');
+const DOC_PATH = join('docs', 'diagnostics', 'BalanceStats.md');
 
 /** 定義から収支を計算する。再生成と鮮度の確認が同じものを見るための1箇所。 */
 function buildTablesFromDefinitions(): BalanceTables {
@@ -531,27 +257,33 @@ function buildTablesFromDefinitions(): BalanceTables {
   return buildBalanceTables(codex, SAMPLE_CHARACTER);
 }
 
-/**
- * 見張る節: `### 数えられない経路` と `### 雨で溜まる水` は、汲む労働を数えられないこと
- * （issue #660・#662）がレポートに残る形そのもの。`### ${WHOLE_ISLAND}` は、土地を渡り歩ける前提で
- * 数えた節。
- */
-describeReportRegeneration(
+function buildReportFromDefinitions(): string {
+  return formatYamlReport(
+    [
+      'アイテム収支。定義（src/assets/world-codex/*.yaml）だけから計算した「時間あたりの収支」。',
+      '生成物。手で書き換えず、npm run stats:balance で作り直す。',
+      '何を測ったか・引いた線・数えていないものは docs/diagnostics/BalanceStats.md。',
+    ],
+    buildSections(buildTablesFromDefinitions()),
+  );
+}
+
+const DOCUMENTED_SECTIONS = describeDocumentedSections(DOC_PATH, REPORT_PATH);
+
+describeYamlReportRegeneration(
   REPORT_PATH,
   'RUN_BALANCE_STATS',
-  () => buildReport(buildTablesFromDefinitions()),
-  ['# アイテム収支レポート', `### ${WHOLE_ISLAND}`, '### 数えられない経路', '### 雨で溜まる水'],
+  buildReportFromDefinitions,
+  DOCUMENTED_SECTIONS.required,
 );
 
-describeReportFreshness(REPORT_PATH, 'npm run stats:balance', () =>
-  buildReport(buildTablesFromDefinitions()),
-);
+describeReportFreshness(REPORT_PATH, 'npm run stats:balance', buildReportFromDefinitions);
 
 /**
  * 雨で溜まる水は、**時間を数えられていないだけで内容の穴ではない**（issue #660）。穴として数えられると
- * 水を要る経路がまとめて塞がれるので、`### 島全体で入手経路が無いもの` に載っていないことを見る。
+ * 水を要る経路がまとめて塞がれるので、`chain_gaps` に載っていないことを見る。
  *
- * レポートの字面では表せない——この節は穴が1つも無ければ丸ごと出ず、載る名前も `x → y` の形を取りうる。
+ * レポートの字面では表せない——この節は穴が1つも無ければ空になり、載る名前も `x → y` の形を取りうる。
  * 再生成（`RUN_BALANCE_STATS`）の中に置くとCIが見ないままになる（issue #768）ので、常時走らせる。
  */
 describe('収支の穴', () => {

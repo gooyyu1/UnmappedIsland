@@ -5,41 +5,24 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
 /**
- * 生成するレポート（`stats/*.yaml`・`docs/diagnostics/*.md`）の、書き出し方と見張り方。
+ * 生成するレポート（`stats/*.yaml`）の、書き出し方と見張り方。
  *
  * 数値の読み手はエージェントなので、書き出す先は機械可読な YAML にする（`stats/`）。人が読む散文は
- * 生成物ではなく手書きの文書（`docs/diagnostics/*.md`）が持つ。`.md` へ書き出す形は、まだ移していない
- * レポートのために残してある。
+ * 生成物ではなく手書きの文書（`docs/diagnostics/*.md`）が持ち、両者が食い違っていないことは
+ * {@link describeDocumentedSections} が見る。
  */
 
 /**
  * 生成済みのレポートを、今の定義から作り直して書き出す試験を立てる。
  *
  * 通常のテストスイート（`npm test`）には含めない。合否判定ではなく、数値を触ったときの影響を差分で
- * 読むための再計算で、気候のように数分かかるものもあるため、`regenerateEnvVar` が `1` のときだけ
+ * 読むための再計算で、気候のように分単位でかかるものもあるため、`regenerateEnvVar` が `1` のときだけ
  * 走る（`npm run stats:*`）。
  *
  * **書き出した後に見るのは、節が消えていないことだけ。** 定義から解く道具は読み方が定義とずれても
- * 例外を投げずに0行を返し、レポートは0行の節を丸ごと落とすので、壊れたことが「節が消える」形でしか
- * 現れない（issue #765）。値の妥当性は各解析の単体試験と、再生成したレポートの差分が持つ。
- */
-export function describeReportRegeneration(
-  reportPath: string,
-  regenerateEnvVar: string,
-  buildFromDefinitions: () => string,
-  requiredHeadings: readonly string[],
-): void {
-  describeRegeneration(reportPath, regenerateEnvVar, buildFromDefinitions, (report) =>
-    requiredHeadings.filter((heading) => !report.includes(heading)),
-  );
-}
-
-/**
- * YAMLのレポート版の {@link describeReportRegeneration}。
- *
- * 節が消えていないことの見方が、見出しの文字列から**構造**へ変わる——キーが在るだけでは足りず、
- * 中身が空（`[]`・`{}`）でないことまで見る。0行の節はキーごと落ちるとは限らないので、字面の照合では
- * 上の穴（issue #765）が塞がらない。
+ * 例外を投げずに0行を返すので、壊れたことが「節が空になる」形でしか現れない（issue #765）。キーが
+ * 在るだけでは足りず、中身が空（`[]`・`{}`）でないことまで見る。値の妥当性は各解析の単体試験と、
+ * 再生成したレポートの差分が持つ。
  */
 export function describeYamlReportRegeneration(
   reportPath: string,
@@ -47,24 +30,16 @@ export function describeYamlReportRegeneration(
   buildFromDefinitions: () => string,
   requiredSectionKeys: readonly string[],
 ): void {
-  describeRegeneration(reportPath, regenerateEnvVar, buildFromDefinitions, (report) =>
-    missingYamlSections(report, requiredSectionKeys),
-  );
-}
-
-function describeRegeneration(
-  reportPath: string,
-  regenerateEnvVar: string,
-  buildFromDefinitions: () => string,
-  missingIn: (report: string) => string[],
-): void {
   describe.runIf(process.env[regenerateEnvVar] === '1')(`${basename(reportPath)}の再生成`, () => {
     it('今の定義から作り直して書き出す', () => {
       const report = buildFromDefinitions();
       writeFileSync(reportPath, report, 'utf8');
       console.log(`Report written to: ${reportPath}`);
 
-      expect(missingIn(report), '作り直したレポートから節が消えている').toEqual([]);
+      expect(
+        missingYamlSections(report, requiredSectionKeys),
+        '作り直したレポートから節が消えている',
+      ).toEqual([]);
     }, 600_000);
   });
 }
@@ -91,6 +66,59 @@ export function describeReportFreshness(
       );
     }, 600_000);
   });
+}
+
+/** 手書きの文書が「YAMLの節」の表で挙げている節。 */
+export interface DocumentedSections {
+  /** 表が挙げる全部。YAMLに在ってよい節の集合そのもの。 */
+  readonly all: readonly string[];
+
+  /** そのうち、空になってはいけないもの。 */
+  readonly required: readonly string[];
+}
+
+/** 空であることが望ましい節（内容の穴の一覧など）を、表の説明の中で名乗る印。 */
+const MAY_BE_EMPTY = '空でもよい';
+
+/**
+ * 手書きの文書とYAMLの節が、両方向で一致することの検査を立てる。
+ *
+ * **生成物から手で書き写した文章は、生成物とずれる**（issue #775）。文書とYAMLを分けた以上、
+ * 一致は人の運用ではなく試験が見る。表の1列目のインラインコードを節の名前として拾い、説明に
+ * `{@link MAY_BE_EMPTY}` と書かれた節だけを「空でもよい」として扱う。
+ */
+export function describeDocumentedSections(docPath: string, reportPath: string): DocumentedSections {
+  const sections = documentedSections(readFileSync(docPath, 'utf8'));
+
+  describe(`${basename(docPath)}と${basename(reportPath)}`, () => {
+    it('文書が挙げる節が、YAMLに在って空でない', () => {
+      expect(sections.all.length, `${docPath}の「YAMLの節」の表が読めない`).toBeGreaterThan(0);
+
+      const missing = missingYamlSections(readFileSync(reportPath, 'utf8'), sections.required);
+      expect(missing, `${docPath}が、${reportPath}に無い節を語っている`).toEqual([]);
+    });
+
+    it('YAMLの節が、すべて文書に挙がっている', () => {
+      const undocumented = yamlSectionKeys(readFileSync(reportPath, 'utf8')).filter(
+        (key) => !sections.all.includes(key),
+      );
+      expect(undocumented, `${docPath}の「YAMLの節」の表に足す`).toEqual([]);
+    });
+  });
+
+  return sections;
+}
+
+/** 文書の「YAMLの節」の表を読む。 */
+export function documentedSections(markdown: string): DocumentedSections {
+  const table = /\n## YAMLの節\n([\s\S]*?)(?=\n## |$)/.exec(markdown);
+  if (table === null) return { all: [], required: [] };
+
+  const rows = [...table[1].matchAll(/^\| `([^`]+)` \|([^\n]*)/gm)];
+  return {
+    all: rows.map((row) => row[1]),
+    required: rows.filter((row) => !row[2].includes(MAY_BE_EMPTY)).map((row) => row[1]),
+  };
 }
 
 /** CRLFの作業ツリーで生成したレポートが、LFの作業ツリーで食い違わないようにする。 */
@@ -137,7 +165,7 @@ export class RoundedNumber {
 }
 
 export type YamlScalar = string | number | boolean | null | RoundedNumber;
-export type YamlRecordValue = YamlScalar | readonly YamlScalar[];
+export type YamlRecordValue = YamlScalar | readonly YamlScalar[] | readonly YamlRecord[];
 
 /** YAMLへ1行で書き出す1レコード。 */
 export type YamlRecord = Readonly<Record<string, YamlRecordValue>>;
@@ -174,8 +202,15 @@ function formatRecord(record: YamlRecord): string {
 }
 
 function formatValue(value: YamlRecordValue): string {
-  if (Array.isArray(value)) return `[${value.map(formatScalar).join(', ')}]`;
-  return formatScalar(value as YamlScalar);
+  if (!Array.isArray(value)) return formatScalar(value as YamlScalar);
+
+  const items = value as readonly (YamlScalar | YamlRecord)[];
+  return `[${items.map((item) => (isRecord(item) ? formatRecord(item) : formatScalar(item))).join(', ')}]`;
+}
+
+/** 入れ子のレコードか。丸めた数を「値を持つオブジェクト」と取り違えないよう、先に除く。 */
+function isRecord(value: YamlScalar | YamlRecord): value is YamlRecord {
+  return typeof value === 'object' && value !== null && !(value instanceof RoundedNumber);
 }
 
 function formatScalar(value: YamlScalar): string {
