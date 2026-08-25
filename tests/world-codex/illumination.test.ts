@@ -5,6 +5,8 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { Path } from '../../src/domain/wrappers/Path';
 import { World } from '../../src/domain/wrappers/World';
+import { spawnInProgressObject, tryAdvanceCrafting } from '../../src/domain/crafting';
+import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -127,6 +129,45 @@ describe('明るさが行動を制限する', () => {
     expect(spinsFiber(lit.session, lit.land, lit.player), '焚き火のそばなら撚れる').toBe(true);
   });
 
+  it('レシピの工程は、暗ければどれも進まない（焚き火のそばなら進む）', () => {
+    const dark = open(NIGHT_HOUR, 'grassland');
+    expect(carvesFireDrill(dark.session, dark.land, dark.player), '夜は火起こし具も作れない').toBe(false);
+
+    const lit = open(NIGHT_HOUR, 'grassland');
+    litCampfire(lit.session, lit.land);
+    expect(carvesFireDrill(lit.session, lit.land, lit.player), '焚き火のそばなら作れる').toBe(true);
+  });
+
+  it('火を熾すことだけは夜もできる — これが日暮れ後の唯一の戻り道', () => {
+    // 日暮れ前に火起こし具・火口・炉を用意してあれば、真っ暗でも手元を取り戻せる
+    // （IlluminationSystem.md 5節）。摩擦発火は手と耳の作業で、熾は自分で光る。
+    const { session, land, player } = open(NIGHT_HOUR, 'grassland');
+    const hearth = spawnInto(session, 'campfire', land, 'fixtures');
+    hearth.getProperty(codex.propertyNames.getId('fuel')).setNumberWithoutEvents(20);
+    const grass = spawnInto(session, 'dry_grass', land, 'items');
+    const drill = spawnInto(session, 'fire_drill', player, 'hand');
+
+    expect(
+      grass
+        .combinationsWith(drill, player)
+        .find((combination) => combination.name === 'light')
+        ?.tryExecute() === true,
+      '真っ暗でも火起こしはできる',
+    ).toBe(true);
+
+    const tinder = new Location(land, codex).items.find((item) => item.def.name === 'burning_tinder');
+    expect(tinder, '火種ができている').toBeDefined();
+    expect(
+      hearth
+        .combinationsWith(tinder!, player)
+        .find((combination) => combination.name === 'ignite')
+        ?.tryExecute() === true,
+    ).toBe(true);
+
+    expect(brightnessOf(player, 'hand_brightness'), '点いた火が手元を+11押し上げる').toBe(5);
+    expect(carvesFireDrill(session, land, player), '手元が戻ったので工程も進む').toBe(true);
+  });
+
   it('密林の日中は、開けた土地より暗い', () => {
     const jungle = open(NOON_HOUR, 'jungle');
     const grassland = open(NOON_HOUR, 'grassland');
@@ -157,6 +198,28 @@ describe('明るさが行動を制限する', () => {
     putLight(session, land, player);
 
     return new Path(path, codex).travel(player);
+  }
+
+  /**
+   * 火起こし具を1工程ぶん進める（fire.yamlのcarved）。**レシピの工程の代表**で、条件は
+   * レシピ側ではなく世界の`crafting_conditions`（GameElementDefinition.md 13.4節）が持つ。
+   */
+  function carvesFireDrill(session: WorldSession, land: WorldObject, player: WorldObject): boolean {
+    const recipe = codex.objects.get(codex.objectNames.getId('fire_drill')).recipesProducingThis[0];
+    const materialsSlotId = codex.vocabulary.engine.materialsSlotId;
+    const wip = spawnInProgressObject(
+      session,
+      land,
+      codex.objectNames.getId(inProgressObjectName('fire_drill', 'carved')),
+    );
+    for (const name of ['twig', 'thick_branch'])
+      expect(
+        session
+          .createObject(codex.objectNames.getId(name))
+          .moveToSlotOrRejection(wip.getSlot(materialsSlotId)),
+      ).toBeUndefined();
+
+    return tryAdvanceCrafting(wip, materialsSlotId, recipe, codex, session, player);
   }
 
   /** 繊維2束を撚る（fiber.yamlのspin）。手元の明るさを要求する工程の代表。 */

@@ -39,15 +39,11 @@ traits:
       #
       # どちらの回もsignal（9.8節）で結果を告げる。火口はどちらの回も同じように消えるので、
       # レーンの上では30分かけて札が1枚減っただけに見え、成否が付かない。
+      # **明るさの条件を持たない**（IlluminationSystem.md 5節）。摩擦発火は手と耳の作業で、
+      # 受け止める熾は自分で光るため、暗さで難しくならない。ここを塞ぐと、日が落ちた後に
+      # 明かりを取り戻す道が無くなる。
       light:
         trigger: {drag: {object: fire_drill}}
-        # 米粒ほどの熾を火口の一点へ受け止める手元の作業（IlluminationSystem.md 5節）。
-        # **火は暗くなる前に熾しておくもの**になり、くべる（add_fuel）ほうは暗くてもできる。
-        conditions:
-          - reason: too_dark
-            subject: actor
-            prop: hand_brightness
-            gte: 5
         duration: 30
         pick:
           - weight: {prop: ignition_chance}

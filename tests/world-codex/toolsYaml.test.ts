@@ -167,17 +167,19 @@ describe('石斧を作る', () => {
     const recipe = codex.objects.get(codex.objectNames.getId('stone_axe')).recipesProducingThis[0];
     const materialsId = codex.vocabulary.engine.materialsSlotId;
     const wip = startAxe(session, field);
+    // 工程を進めるには手元の明るさが要る（IlluminationSystem.md 5節）。
+    const smith = createBrightEnoughActor(session, codex);
     const put = (name: string) =>
       expect(
         session.createObject(codex.objectNames.getId(name)).moveToSlotOrRejection(wip.getSlot(materialsId)),
       ).toBeUndefined();
 
     put('thick_branch');
-    expect(tryAdvanceCrafting(wip, materialsId, recipe, codex, session), '柄を削り出す').toBe(true);
+    expect(tryAdvanceCrafting(wip, materialsId, recipe, codex, session, smith), '柄を削り出す').toBe(true);
 
     put('sharp_stone');
     put('cord');
-    expect(tryAdvanceCrafting(wip, materialsId, recipe, codex, session), '刃を据えて縛る').toBe(true);
+    expect(tryAdvanceCrafting(wip, materialsId, recipe, codex, session, smith), '刃を据えて縛る').toBe(true);
 
     expect(
       new Location(field, codex).items.map((item) => item.def.name),

@@ -10,6 +10,7 @@ import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { createBrightEnoughActor } from '../support/illumination';
 
 /**
  * pottery.yamlの土器の連鎖を、実ファイルの定義だけで検証する。
@@ -74,6 +75,9 @@ describe('pottery.yamlの土器の連鎖', () => {
 
   /** 完成するまでレシピの工程を進める。各工程の要求を、そのつど材料スロットへ入れる。 */
   function craft(productName: string, recipeName: string, materials: readonly string[][]): void {
+    // 工程を進めるには手元の明るさが要る（IlluminationSystem.md 5節）。ここで見たいのは土器の
+    // 連鎖なので、時刻や光源を組み立てずに作り手の側で明るさを満たす。
+    const potter = createBrightEnoughActor(session, codex);
     const recipe = codex.objects.get(codex.objectNames.getId(productName)).recipesProducingThis[0];
     const materialsId = codex.vocabulary.engine.materialsSlotId;
     const wip = spawnInProgressObject(
@@ -88,7 +92,10 @@ describe('pottery.yamlの土器の連鎖', () => {
           session.createObject(codex.objectNames.getId(name)).moveToSlotOrRejection(wip.getSlot(materialsId)),
         ).toBeUndefined();
       }
-      expect(tryAdvanceCrafting(wip, materialsId, recipe, codex, session), `${productName}の工程`).toBe(true);
+      expect(
+        tryAdvanceCrafting(wip, materialsId, recipe, codex, session, potter),
+        `${productName}の工程`,
+      ).toBe(true);
     }
   }
 

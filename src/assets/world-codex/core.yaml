@@ -35,6 +35,22 @@ required_props:
   # 自分も積荷として効き、手に持った物の重さもそこを通る。
   character: [load, weight]
 
+# 工程を進めるのに満たしていなければならない条件（GameElementDefinition.md 13.4節）。
+# **全レシピに一律で掛かる。** レシピが表しているのは物を3つ以上組み合わせる複雑な作業なので、
+# 手元が見えなければどれも進まない（docs/engine/IlluminationSystem.md 5節）。
+#
+# **レシピごとには書かない。** 書き分けると、条件の無いレシピが「暗くてもできると決めた」のか
+# 「書き忘れた」のか見分けが付かなくなる。
+#
+# 手作業のうち`interactions`として宣言されているもの（打つ・剥ぐ・撚る）は、同じしきい値を自分の
+# conditionsに書く。**火を熾すことだけは書かない**——摩擦発火は手と耳の作業で、熾は自分で光る。
+# ここを塞ぐと、日が落ちた後に明かりを取り戻す道が無くなる。
+crafting_conditions:
+  - reason: too_dark
+    subject: actor
+    prop: hand_brightness
+    gte: 5
+
 # 製作中オブジェクトが完成品から引き継ぐタグ（docs/engine/RecipeSystem.md 5節）。挙げてよいのは
 # **どこに置けるかを言うタグ**だけで、何ができるかを言うタグ（tool・weapon・sail・pottery）は
 # 挙げない——作りかけはまだその物ではないので、道具の枠にも操作の相手にも当てはまってはいけない。
