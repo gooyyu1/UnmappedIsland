@@ -84,7 +84,7 @@ Phaser もゲームも付いてきません）。
   提供するか（ドラッグして入るかはドラッグ型の操作が答える）、解析が近似として持つか（6節）のどちらかです。
 
 公開を増やすときは、**格納の形ではなく問いの形**で足します（`visibleSlotGlobalIds`・`artSuffixes()`・
-`describe(names)`・`read(reader)`・`SlotDef.cellsToKeep`）。画面が増えれば口も増えますが、増えるのは口の実装であって、
+`describe(names)`・`read(reader)`・`SlotDef.cellCountPolicy`）。画面が増えれば口も増えますが、増えるのは口の実装であって、
 定義の内部が1つずつ剥がれていくことにはなりません。
 
 定義とインスタンスのどちらへ訊くかも、これで決まります。
