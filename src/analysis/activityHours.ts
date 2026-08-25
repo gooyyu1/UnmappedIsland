@@ -13,8 +13,8 @@ import type { WorldCodex } from '../domain/WorldCodex';
  * 据え付けの光源（松明・炉）は数えない——入れると「焚き火があれば24時間活動できる」になり、
  * この表の意味が消える（IlluminationSystem.md 3節）。
  *
- * **「屋外で採れる」と「手元の細かい作業」は1列に畳んである。** どちらもしきい値は+5だが、見る値が
- * 違う（採る側はlooking_brightness、作る側はhand_brightness）。据え付けの光源を数えない前提では、
+ * **「屋外で採れる」と「手元の細かい作業」は1列に畳んである。** どちらも要求する段は同じ（bright）だが、
+ * 見る値が違う（採る側はlooking_brightness、作る側はhand_brightness）。据え付けの光源を数えない前提では、
  * 両方とも土地のambient_brightnessをそのまま土台にするだけで他の寄与を持たないため（同2節）、
  * 常に同じ値になる——分けて計算しても差が出ない。
  *
@@ -26,16 +26,22 @@ import type { WorldCodex } from '../domain/WorldCodex';
  * `ClimateSystemStats.md`）。天候と時刻は独立とみなす近似は`seasonalRain.ts`と同じ。
  */
 
-/**
- * IlluminationSystem.md 5節: 移動のしきい値（looking_brightness が `pitch_dark` でないこと ＝ ≥ −5）。
- *
- * **境目を持つのはキャラクタの段の宣言だけ**（同 8節）なので、これはその写し。段と一致しているかは
- * `tests/diagnostics/activityHoursAssumptions.test.ts` が見る。
- */
-export const TRAVEL_THRESHOLD = -5;
+/** 行動のクラス（IlluminationSystem.md 5節）が要求する、明るさとその下限の段。 */
+interface BrightnessRequirement {
+  readonly propertyName: string;
+  readonly stageName: string;
+}
 
-/** 同節: 屋外の採取・手元の作業のしきい値（looking_brightness・hand_brightness の `bright` ＝ ≥ +5）。 */
-export const ACTIVE_THRESHOLD = 5;
+/** 移動: 視界が `pitch_dark` でないこと（同 5節）＝ その次の段 `dim` 以上。 */
+const TRAVEL_REQUIREMENTS: readonly BrightnessRequirement[] = [
+  { propertyName: 'looking_brightness', stageName: 'dim' },
+];
+
+/** 屋外で採る・手元の細かい作業（同 5節）。1列に畳んであるので、2つは同じしきい値でなければならない。 */
+const ACTIVE_REQUIREMENTS: readonly BrightnessRequirement[] = [
+  { propertyName: 'looking_brightness', stageName: 'bright' },
+  { propertyName: 'hand_brightness', stageName: 'bright' },
+];
 
 /** 季節1つぶんの、天候の出現時間の実測値（`ClimateSystemStats.md`）。 */
 export interface SeasonWeatherHours {
@@ -98,6 +104,8 @@ export function activityHoursOf(
   seasons: readonly SeasonWeatherHours[],
 ): readonly ActivityHoursRow[] {
   const worldAmbientAt = worldAmbientBrightnessOf(codex);
+  const travelThreshold = columnThresholdOf(codex, TRAVEL_REQUIREMENTS);
+  const activeThreshold = columnThresholdOf(codex, ACTIVE_REQUIREMENTS);
 
   const rows: ActivityHoursRow[] = [];
   for (const place of activityPlacesOf(codex)) {
@@ -109,8 +117,8 @@ export function activityHoursOf(
         for (const [weatherName, hoursInSeason] of season.hoursByWeather) {
           const fraction = hoursInSeason / (season.durationDays * 24);
           const brightness = place.brightnessAt(worldAmbientAt(hour, weatherName));
-          if (brightness >= TRAVEL_THRESHOLD) travelHoursPerDay += fraction;
-          if (brightness >= ACTIVE_THRESHOLD) activeHoursPerDay += fraction;
+          if (brightness >= travelThreshold) travelHoursPerDay += fraction;
+          if (brightness >= activeThreshold) activeHoursPerDay += fraction;
         }
       }
 
@@ -123,6 +131,56 @@ export function activityHoursOf(
     }
   }
   return rows;
+}
+
+/**
+ * 表の1列のしきい値。**その列に畳んだ行動が要求する段の下限が、全部で1つに定まること**を求める
+ * ——1列では1つしか出せないので、食い違っていたらその列の意味が消える。
+ */
+function columnThresholdOf(codex: WorldCodex, requirements: readonly BrightnessRequirement[]): number {
+  const wheresByMinimum = new Map<number, string[]>();
+  for (const { propertyName, stageName } of requirements) {
+    const minimum = characterStageMinimumOf(codex, propertyName, stageName);
+    const where = `${propertyName} の ${stageName}`;
+    wheresByMinimum.set(minimum, [...(wheresByMinimum.get(minimum) ?? []), where]);
+  }
+
+  if (wheresByMinimum.size === 1) return [...wheresByMinimum.keys()][0];
+  throw new Error(
+    '1列に畳んだ行動のしきい値が食い違っています' +
+      `（${[...wheresByMinimum].map(([minimum, wheres]) => `${minimum}: ${wheres.join('・')}`).join('、')}）。` +
+      '1列では1つしか出せないので、列を分けてください。',
+  );
+}
+
+/**
+ * 同梱定義のキャラクタが宣言している、その明るさのその段の下限（`IlluminationSystem.md` 8節）。
+ * **境目の数字を持つのはこの宣言だけ**なので、しきい値が要る側はここから読む。
+ *
+ * **キャラクタ全員を見て、食い違っていたら例外にする。** 活動時間表は誰が動くかを区別せず1行しか
+ * 出さないので、境目が個体ごとに違えばその行の意味が消える。
+ */
+export function characterStageMinimumOf(codex: WorldCodex, propertyName: string, stageName: string): number {
+  const propertyGlobalId = codex.propertyNames.getId(propertyName);
+  const characterNamesByMinimum = new Map<number | undefined, string[]>();
+  for (const def of codex.objects) {
+    if (!def.hasTag(codex.vocabulary.world.characterTagId)) continue;
+    const minimum = def
+      .tryGetPropertyDef(propertyGlobalId)
+      ?.stages.find((stage) => stage.name === stageName)?.min;
+    characterNamesByMinimum.set(minimum, [...(characterNamesByMinimum.get(minimum) ?? []), def.name]);
+  }
+
+  const where = `${propertyName} の ${stageName}`;
+  if (characterNamesByMinimum.size !== 1)
+    throw new Error(
+      `${where} の境目が、キャラクタ全員で1つに定まりません` +
+        `（${[...characterNamesByMinimum].map(([minimum, names]) => `${minimum}: ${names.join('・')}`).join('、')}）。`,
+    );
+
+  const [minimum] = [...characterNamesByMinimum.keys()];
+  if (minimum === undefined) throw new Error(`キャラクタが ${where} を宣言していません。`);
+  return minimum;
 }
 
 /** 表の1行を出す場所。世界の環境光から、そこへ届く明るさを出せる。 */
