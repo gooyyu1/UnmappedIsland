@@ -52,10 +52,10 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 `range.min` は常に0。1 tick = 15分、1時間 = 4 tick。
 
 **尽きると死ぬのは `hydration` / `body_fat` / `blood` の3つ**（[`VitalsSystem.md`](../engine/VitalsSystem.md) 8 節）。
-いずれも `range.min`（＝0）へ達した時点で `on_min` が自分を `destroy` する、同じ形で書く。既定の
-クランプを置き換えるので**尽きた値は範囲の外に残り**、消えたあとでも「何が尽きたか」を段から読める
-（`WorldObject.exhaustedStage`）。**死因の名前になるのは、その値が居る段**（`dehydrated` / `starved` /
-`exsanguinated`）で、画面はその段の文言を出すだけ。
+いずれも `range.min`（＝0）へ達した時点で `on_min` が自分を `destroy` する、同じ形で書く。
+**死因を名乗るのはその `destroy` で**、添えた `reason`（`dehydrated` / `starved` / `exsanguinated`）が
+消された側に残る（`WorldObject.destroyedReason`、[`VitalsSystem.md`](../engine/VitalsSystem.md) 6 節）。
+同じ名前の段を一番下に置くのは、尽きる前に警告を出すため。
 
 - **`satiety`（満腹感）**: **単位は mL**——胃に入っている物のかさで、エネルギーではない
   （[`DigestionSystem.md`](../engine/DigestionSystem.md) 2 節）。`max` が胃の容量なので、下の

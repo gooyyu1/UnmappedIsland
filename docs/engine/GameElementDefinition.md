@@ -2287,7 +2287,7 @@ object_defs:
 `tick` も持つ。）
 
 **「1つだけ存在すべき」は「世界を作った時点で在る」と読みます。** ただし湧かせるのは、`world` が直に
-受け入れられる型だけです（`NewGame.spawnSingletons`）——外洋・本土（[`Voyage.md`](../world/Voyage.md) 4 節）は
+受け入れられる型だけです（`NewGame.spawnSingletonsAcceptedByWorld`）——外洋・本土（[`Voyage.md`](../world/Voyage.md) 4 節）は
 `world` の `locations` 枠に入るのでそこに在り、キャラクタも `singleton` ですが、`world` のどの枠にも入らない
 （土地の `characters` 枠に入る物です）ので湧きません。何が最初から在るかを決めるのは枠の宣言だけで、
 エンジンは型の名前を1つも知りません。これにより、型の名前で行き先を指す `move` の `to_object`（9.6 節）は
