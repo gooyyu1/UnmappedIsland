@@ -265,6 +265,12 @@ object_defs:
                   self:
                     ambient_brightness: -1
           - name: scorching  # 快晴が基準（0）なので、寄与を持たない
+      # 環境から守られているか（0/1。ContainerSystem.md 6節）。雨を見ている条件は、天気の前に
+      # これを見る（fire.yamlの炉・liquid_containers.yamlの雨受け）。
+      # **worldが0を宣言するのは、守る物が間に無いときもancestorがここまで解けるようにするため。**
+      # 守る側（浅い洞窟・蓋のある入れ物・将来の屋根）だけが1を宣言し、守らない物は宣言しない。
+      sheltered:
+        value: 0
       # 樹冠も地面の反射も無い場所の明るさ（IlluminationSystem.md 2節）。EVスケール
       # （EV = log2(照度 / 2.5 lx)、同1節）で、hourとweather両方のmodifyが加算的に重なる、
       # 都度導出される実効値（8.3節）。

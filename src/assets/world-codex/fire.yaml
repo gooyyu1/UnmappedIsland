@@ -169,11 +169,10 @@ traits:
       # （+11、ContentSkeleton.md 8.1.1.1節）だけを持つ。
       - conditions: [{prop: heat, gt: 0}]
         modify: {parent: {hand_brightness: 11, looking_brightness: 11}}
-      # 雨。野ざらしの炉は火力を余分に削られる。屋根の下（sheltered）なら効かない
-      # （docs/engine/ContainerSystem.md 6節）。sheltered未実装の間はancestorが解決せず、
-      # 否定形の演算子（neq）で「分からないときは効かせる」側に倒している。
+      # 雨。野ざらしの炉は火力を余分に削られる。守られた場所（sheltered）なら効かない
+      # （docs/engine/ContainerSystem.md 6節）。
       - conditions:
-          - {subject: ancestor, prop: sheltered, neq: 1}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
         add: {self: {heat: -4}}
     interactions:

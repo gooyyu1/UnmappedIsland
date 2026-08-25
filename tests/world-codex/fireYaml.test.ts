@@ -94,6 +94,21 @@ describe('fire.yamlの火の連鎖', () => {
     return hearth;
   }
 
+  /** 世界の天気を変える（core.yamlのweather）。シンボル型なので名前をIDへ直して入れる。 */
+  function setWeather(weatherName: string): void {
+    land
+      .parent!.getProperty(codex.propertyNames.getId('weather'))
+      .setNumberWithoutEvents(codex.symbolNames.getId(weatherName));
+  }
+
+  /** 種火に薪を少しくべた焚き火（火力1・薪5）。薪はfewの段なので、1tickで+2だけ育つ。 */
+  function smallFire(): WorldObject {
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    hearth.getProperty(codex.propertyNames.getId('fuel')).setNumber(5);
+    hearth.getProperty(codex.propertyNames.getId('heat')).setNumber(1);
+    return hearth;
+  }
+
   /** 炉へ燃料を1つくべる。 */
   function stoke(hearth: WorldObject, fuelName: string): void {
     const fuel = spawnInto(fuelName, land, 'items');
@@ -244,6 +259,19 @@ describe('fire.yamlの火の連鎖', () => {
 
     expect(effectiveNumberOf(hearth, 'fuel')).toBe(0);
     expect(heatIs(hearth, 'out'), '薪も種火も尽きた').toBe(true);
+  });
+
+  it('雨は野ざらしの炉の火力を削り、育つはずの種火を消す', () => {
+    const underClearSky = smallFire();
+    session.advanceWorldTime(15);
+    expect(effectiveNumberOf(underClearSky, 'heat'), '晴れなら薪のぶんだけ育つ').toBe(3);
+
+    open(LIGHTS);
+    const inTheRain = smallFire();
+    setWeather('heavy_rain');
+    session.advanceWorldTime(15);
+
+    expect(heatIs(inTheRain, 'out'), '大雨の-4は薪の育ちを上回る').toBe(true);
   });
 
   it('焚き火は薪を積めるだけ積んでも高温には届かない', () => {
