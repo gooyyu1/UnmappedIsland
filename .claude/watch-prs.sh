@@ -7,14 +7,22 @@
 #
 #   bash .claude/watch-prs.sh                       # 開いている全PR
 #   bash .claude/watch-prs.sh 731 733               # 番号を指定
+#   bash .claude/watch-prs.sh --issues 746,751      # 投入した issue も見張る（下記）
 #   bash .claude/watch-prs.sh --interval 5 --timeout-minutes 60
 #
-# 出力は1行1PRで、**終了コードで区別できる**。
+# 出力は1行1件で、**終了コードで区別できる**。
 #   GREEN <番号> <ラベル>   … 全チェックが成功（ラベルが空なら素通しの候補）
 #   RED   <番号> <落ちたチェック名>
-#   終了コード 0 … 決着が1件以上ある（GREEN / RED の行が出ている）
+#   GONE  <番号>            … 見張っていた issue が閉じた（--issues のときだけ）
+#   終了コード 0 … 決着が1件以上ある（GREEN / RED / GONE の行が出ている）
 #   終了コード 3 … TIMEOUT（制限時間まで、どれも決着しなかった）
 #   終了コード 1 … ERROR（gh が続けて失敗した）
+#
+# **`--issues` を付けるのは、PRが出ないまま終わる場合があるから。** この見張りが見ているのはPRだけ
+# なので、投入した先が「閉じた issue だった」「セッションが落ちた」といった理由でPRを作らないと、
+# **何も届かないままタイムアウトまで空待ちになる**（2026-08-25 に実測。閉じた issue へ立てた
+# セッションが即終了し、120分の空待ちに入りかけた）。投入した issue の番号を渡しておけば、それが
+# 閉じた時点で `GONE` が出る——マージで閉じたのか、始めから閉じていたのかは、受け取った側が見る。
 #
 # 決着が付いた行を受け取った側の動きは `.claude/parallel-work.md` の「PR の型」節。
 # GREEN かつ `判断待ち` ラベルが無ければ司令塔がマージし、RED なら**そのPRを出したセッションを
@@ -26,6 +34,7 @@ INTERVAL=5
 TIMEOUT_MINUTES=60
 FAILURE_LIMIT=20
 NUMBERS=()
+ISSUES=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -35,6 +44,10 @@ while [ $# -gt 0 ]; do
       ;;
     --timeout-minutes)
       TIMEOUT_MINUTES="$2"
+      shift 2
+      ;;
+    --issues)
+      IFS=', ' read -r -a ISSUES <<<"$2"
       shift 2
       ;;
     *)
@@ -73,8 +86,19 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
       pattern=$(printf '%s\n' "${NUMBERS[@]}" | paste -sd'|' -)
       settled=$(grep -E "^(GREEN|RED) (${pattern}) " <<<"$settled")
     fi
-    if [ -n "$settled" ]; then
-      echo "$settled"
+    # 見張っている issue のうち、開いていないものを閉じたとみなす。開いている一覧を1回引いて
+    # 差を取るので、issue の本数が増えても gh の呼び出しは1周につき1回のまま。
+    if [ ${#ISSUES[@]} -gt 0 ]; then
+      if open_issues=$(gh issue list --state open --limit 100 --json number --jq '.[].number' 2>/dev/null); then
+        for issue in "${ISSUES[@]}"; do
+          if ! grep -qx "$issue" <<<"$open_issues"; then
+            settled=$(printf '%s\nGONE %s' "$settled" "$issue")
+          fi
+        done
+      fi
+    fi
+    if [ -n "${settled//[[:space:]]/}" ]; then
+      echo "$settled" | grep -v '^$'
       exit 0
     fi
   else
