@@ -158,7 +158,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
      インスタンスの `instanceId` を `map.siteInstanceIds[site.index]` へ書き込みます
      （これが `IslandMap` を書き換える唯一の箇所です）。
   2. `map.sites` を1つずつ、その `Site` に接続する `map.edges` を集め（`filter`/`map`）、
-     `ObjectDef.getPropertyDef(progressId).range.max` から探索率100%の進捗 `progressMax` を読み、道の本数に
+     `ObjectDef.tryGetPropertyDef(progressId).range.max` から探索率100%の進捗 `progressMax` を読み、道の本数に
      応じて `required_progress` を `[FIRST_PATH_PROGRESS(=2), progressMax - 1]` へ等間隔割当てする式
      （`FIRST_PATH_PROGRESS + (lastPathProgress - FIRST_PATH_PROGRESS) * i / (touching.length - 1)`）で計算します。
      `path` を `session.spawn` し、`setProperty` で `travel_minutes`/`required_progress`/`destination_id`
