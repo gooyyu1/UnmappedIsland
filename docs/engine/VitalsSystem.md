@@ -325,6 +325,13 @@ laceration:
 読むのと同じ分担で（[`Characters.md`](../world/Characters.md) 値の刻み方節）、しきい値を宣言しているのは
 ワールドの側だけになります。だから `unconscious` は**名前を固定します**。
 
+### 6.1 死因を名乗れるのは `destroy` だけ【確定】
+
+**死は、そのインスタンスが世界から出ることであって、姿が変わることではありません。**
+`become`（[`GameElementDefinition.md`](./GameElementDefinition.md) 9.9節）は**インスタンスがそのまま続く**
+ので、最初から死に方ではありません。だから `become` は死因を持ちません——他の終わり方へ名前を配れる
+ようにしておく必要もありません。
+
 ## 7. 4つとも、人にも獣にも配る
 
 `pain`・`shock`・`consciousness`・`blood` は、キャラクタと動物の両方が持ちます。**同じ傷が両方に刺さる**
