@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
@@ -16,6 +16,9 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * 通常のテストスイート（`npm test`）には含めない: 合否判定を目的とした回帰テストではなく、
  * 生成と発見物の配りを触ったときに散らばりがどう動いたかを差分で読むための再計測が目的のため、
  * `RUN_STARTUP_REACH_STATS`環境変数が立っているときだけ実行する: `npm run stats:startup`
+ *
+ * **代わりに、生成済みのレポートが古くなっていないかは常に見る**（末尾のdescribe）。2,000シードの
+ * 計測は2秒で済むので、指紋のような間接の突き合わせは要らない——**丸ごと比べれば取りこぼしが無い。**
  */
 
 /**
@@ -382,20 +385,47 @@ function buildReport(sources: StartupNeedSources, stats: StartupReachStats): str
   return lines.join('\n') + '\n';
 }
 
+const REPORT_PATH = join('docs', 'diagnostics', 'StartupReachStats.md');
+
+/** 定義から島を生成して測り、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
+function buildReportFromDefinitions(): string {
+  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const sources = startupNeedSourcesOf(codex);
+
+  const stats = createStats();
+  for (let seed = 0; seed < SEED_COUNT; seed++)
+    collect(stats, islandReachOf(sources, generateIsland(codex.generation, 'island', seed)));
+
+  return buildReport(sources, stats);
+}
+
 describe.runIf(process.env.RUN_STARTUP_REACH_STATS === '1')('開始地点の立ち上がりレポート', () => {
   it(`${SEED_COUNT}シード分の島を測ってStartupReachStats.mdを再生成する`, () => {
-    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
-    const sources = startupNeedSourcesOf(codex);
-
-    const stats = createStats();
-    for (let seed = 0; seed < SEED_COUNT; seed++)
-      collect(stats, islandReachOf(sources, generateIsland(codex.generation, 'island', seed)));
-
-    const report = buildReport(sources, stats);
-    const outPath = join('docs', 'diagnostics', 'StartupReachStats.md');
-    writeFileSync(outPath, report, 'utf8');
-    console.log(`Report written to: ${outPath}`);
+    const report = buildReportFromDefinitions();
+    writeFileSync(REPORT_PATH, report, 'utf8');
+    console.log(`Report written to: ${REPORT_PATH}`);
 
     expect(report).toContain('# 開始地点の立ち上がりレポート');
   }, 600_000);
 });
+
+/**
+ * 生成済みの`StartupReachStats.md`が、今の定義より古くなっていないか。
+ *
+ * **見るのは古さだけで、値の妥当性は見ない。** 値は`src/analysis/startupReach.ts`の単体試験と、
+ * 再生成したレポートの差分が持つ。
+ */
+describe('開始地点の立ち上がりレポートの鮮度', () => {
+  it('生成済みのStartupReachStats.mdが、今の定義から作り直したものと一致する', () => {
+    const stored = readFileSync(REPORT_PATH, 'utf8');
+
+    expect(normalizeNewlines(stored), "古い。'npm run stats:startup'で再生成する").toBe(
+      normalizeNewlines(buildReportFromDefinitions()),
+    );
+  }, 600_000);
+});
+
+/** CRLFの作業ツリーで生成したレポートが、LFの作業ツリーで食い違わないようにする。 */
+function normalizeNewlines(text: string): string {
+  return text.replace(/\r\n/g, '\n');
+}
