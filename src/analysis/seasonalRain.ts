@@ -1,6 +1,9 @@
+import type { ConditionOp } from '../domain/ConditionReader';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
-import { MINUTES_PER_TICK, TICKS_PER_DAY } from './balanceTables';
+import { worldAmbientBrightnessOf } from './activityHours';
+import { TICKS_PER_DAY } from './balanceTables';
+import type { AncestorCondition, TickDelta } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 
 /**
@@ -13,77 +16,87 @@ import { tickDeltasOf } from './tickDeltas';
  * 中間の状態を測ることになる。読みたいのは「雨だけで水を賄えるのはどの季節か」で、それは季節ごとの
  * 差引の符号がそのまま答える。
  *
+ * **降雨も蒸発も同じ1つの仕組みで数える。** どちらも `fill` をtick毎に動かす持続効果で、違うのは
+ * 符号だけ——器の居る場所の天候と明るさを時刻ごとに置いて、そのとき効く増減を足し合わせる。
+ * 明るさは開けた土地（`ambient_brightness` の `value` が0の土地）のもの（同6節）。
+ *
  * **気候の実測値を持つのはこのファイルだけ。** `src/analysis` の他はどこも季節も天候も知らない。
  *
- * **世界の定義から借りている語は、下の3つのユニオンに集めてある。** いずれも実測値の表の鍵として
+ * **世界の定義から借りている語は、下の2つのユニオンに集めてある。** いずれも実測値の表の鍵として
  * だけ使うので `WorldVocabulary` には載せない（理由はあちらのクラスコメント）。
  */
 
-const MINUTES_PER_HOUR = 60;
+const HOURS_PER_DAY = 24;
 
 /** 季節の識別子（`core.yaml` のシンボル）。 */
 export type SeasonName = 'calm' | 'wet' | 'dry';
 
-/** 雨の降り方の識別子（`core.yaml` のシンボル）。降らない天候は数えないので並ばない。 */
-export type RainWeatherName = 'light_rain' | 'heavy_rain' | 'storm';
-
-/** 口径を言うタグ（`liquid_containers.yaml`）。蒸発の速さはこれで決まる。 */
-type ApertureTagName = 'wide_open_container' | 'narrow_open_container';
-
-/** 季節 → 蒸発量（mL/tick）。季節を1つ足したら、口径ごとに測り直すまで型検査が通らない。 */
-type SeasonalEvaporation = Readonly<Record<SeasonName, number>>;
+/**
+ * 天候の識別子（`core.yaml` のシンボル）。**降らない天候も並べる**——蒸発が効くのは雨天以外で、
+ * 上乗せの量は明るさで決まるので、晴れと曇りを区別しないと蒸発が出ない。
+ */
+export type WeatherName = 'scorching' | 'sunny' | 'clear' | 'cloudy' | 'light_rain' | 'heavy_rain' | 'storm';
 
 /** 季節1つぶんの気候の実測値。 */
-export interface SeasonRain {
+export interface SeasonClimate {
   readonly name: SeasonName;
 
   /** 季節1インスタンスの持続日数。 */
   readonly durationDays: number;
 
-  /** 季節1インスタンスの間に、その降り方だった時間（h）。 */
-  readonly hoursByWeather: Readonly<Record<RainWeatherName, number>>;
+  /** 季節1インスタンスの間に、その天候だった時間（h）。合計は `durationDays × 24` になる。 */
+  readonly hoursByWeather: Readonly<Record<WeatherName, number>>;
 }
 
 /**
- * 季節ごとの、雨が降っている時間。`npm run stats:climate` の生成物
+ * 季節ごとの、天候の出現時間。`npm run stats:climate` の生成物
  * （`docs/diagnostics/ClimateSystemStats.md` の「季節の持続日数」と「天気ごとの発生時間」の平均）から。
  *
  * 気候の実装を変えると実測値が動くので、生成物と食い違っていないかは
- * `tests/analysis/rainWater.test.ts` が見る。
+ * `tests/analysis/rainWater.test.ts` が見る。生成物そのものが古くなっていないかは
+ * `tests/diagnostics/generatedReportFreshness.test.ts`。
  */
-export const SEASON_RAIN: readonly SeasonRain[] = [
+export const SEASON_CLIMATE: readonly SeasonClimate[] = [
   {
     name: 'calm',
     durationDays: 29.83,
-    hoursByWeather: { light_rain: 59.37, heavy_rain: 0.47, storm: 0.04 },
+    hoursByWeather: {
+      scorching: 1.11,
+      sunny: 159.62,
+      clear: 322.49,
+      cloudy: 172.85,
+      light_rain: 59.37,
+      heavy_rain: 0.47,
+      storm: 0.04,
+    },
   },
   {
     name: 'wet',
     durationDays: 29.91,
-    hoursByWeather: { light_rain: 238.17, heavy_rain: 222.39, storm: 78.75 },
+    hoursByWeather: {
+      scorching: 0.0,
+      sunny: 23.23,
+      clear: 85.51,
+      cloudy: 69.79,
+      light_rain: 238.17,
+      heavy_rain: 222.39,
+      storm: 78.75,
+    },
   },
   {
     name: 'dry',
     durationDays: 30.1,
-    hoursByWeather: { light_rain: 10.47, heavy_rain: 1.33, storm: 0.86 },
+    hoursByWeather: {
+      scorching: 84.75,
+      sunny: 171.69,
+      clear: 313.39,
+      cloudy: 139.87,
+      light_rain: 10.47,
+      heavy_rain: 1.33,
+      storm: 0.86,
+    },
   },
 ];
-
-/**
- * 口径のタグ → 季節 → 蒸発量（mL/tick）。**容量ではなく口径で決まる**——蒸発は口径ごとの定数
- * （`liquid_containers.yaml` の `evaporating_liquid`）で、容器の大きさには依らない。
- *
- * `liquid_containers.yaml` の蒸発量を、明るさ（`core.yaml` の `hour` と `weather` の寄与の和）と
- * 天候の出現時間（`ClimateSystemStats.md`）で加重した、季節を通しての平均。日射による上乗せと
- * 「雨天は蒸発しない」を含む。**天候と時刻は独立とみなす近似。**
- *
- * `LiquidContainerSystem.md` 6節の「満杯から空になるまでの日数」は、この値を容量で割ったもの。
- * ずれていないかは `tests/analysis/rainWater.test.ts` が見る。
- */
-const EVAPORATION_PER_TICK: Readonly<Record<ApertureTagName, SeasonalEvaporation>> = {
-  wide_open_container: { calm: 1.0098, wet: 0.2663, dry: 1.1258 },
-  narrow_open_container: { calm: 2.5054, wet: 0.639, dry: 2.8357 },
-};
 
 /** 待ち生産表の1行（容器1種 × 季節1つ）。量はすべてmL。 */
 export interface RainWaterRow {
@@ -105,105 +118,148 @@ export interface RainWaterRow {
 
 /** 雨を受ける容器すべてについて、季節ごとに1日で増減する水の量。 */
 export function rainWaterRows(codex: WorldCodex): readonly RainWaterRow[] {
-  const rows: RainWaterRow[] = [];
+  // 量の動く容器を先に選ぶ。**そういう容器が1つも無ければ世界の明るさも要らない**——液体を持たない
+  // 定義（解析の単体試験のミニ定義など）でも、worldの宣言を求めずに空の表を返せる。
+  const containers: { def: ObjectDef; capacity: number; deltas: readonly TickDelta[] }[] = [];
   for (const def of codex.objects) {
-    const container = rainCatchingContainerOf(codex, def);
-    if (container === undefined) continue;
-    for (const season of SEASON_RAIN) rows.push(rowOf(container, season));
+    const capacity = def.tryGetPropertyDef(codex.vocabulary.engine.fillId)?.range?.max;
+    const deltas = fillDeltasOf(codex, def);
+    if (capacity !== undefined && deltas.length > 0) containers.push({ def, capacity, deltas });
+  }
+  if (containers.length === 0) return [];
+
+  const climate = new SeasonalFillClimate(codex);
+
+  const rows: RainWaterRow[] = [];
+  for (const { def, capacity, deltas } of containers) {
+    const seasonal = SEASON_CLIMATE.map((season) => climate.fillPerDayIn(season, deltas));
+    // 雨で増えない容器はこの表の対象ではない（蓋のできる容器・雨として降らない液体）。
+    if (seasonal.every(({ gain }) => gain === 0)) continue;
+
+    const containerName = codex.baseOf(def).name;
+    for (const [index, season] of SEASON_CLIMATE.entries()) {
+      const { gain, loss } = seasonal[index];
+      rows.push({
+        containerName,
+        seasonName: season.name,
+        capacity,
+        rainPerDay: gain,
+        evaporationPerDay: loss,
+        netPerDay: gain - loss,
+      });
+    }
   }
   return rows;
 }
 
-/** 雨を受ける容器1つ。降り方ごとに受ける量と、口径で決まる蒸発の速さを解いたもの。 */
-interface RainCatchingContainer {
-  readonly name: string;
-  readonly capacity: number;
+/** 1日ぶんの `fill` の増減。あふれと在庫のクランプは見ていないので、どちらも上限。 */
+interface FillPerDay {
+  /** 降って増える分（mL/日）。 */
+  readonly gain: number;
+
+  /** 蒸発して減る分（mL/日、正の量）。 */
+  readonly loss: number;
+}
+
+/**
+ * 器の居る場所の天候と明るさを時刻ごとに置いて、`fill` の増減を季節平均へ均す道具。
+ *
+ * **天候と時刻は独立とみなす近似。** 実測値が持っているのは季節ごとの出現時間だけで、どの天候が
+ * どの時刻に多いかは持っていない。
+ */
+class SeasonalFillClimate {
+  private readonly codex: WorldCodex;
+
+  private readonly worldAmbientAt: (hour: number, weatherName: string) => number;
+
+  constructor(codex: WorldCodex) {
+    this.codex = codex;
+    this.worldAmbientAt = worldAmbientBrightnessOf(codex);
+  }
+
+  fillPerDayIn(season: SeasonClimate, deltas: readonly TickDelta[]): FillPerDay {
+    let gain = 0;
+    let loss = 0;
+    for (let hour = 0; hour < HOURS_PER_DAY; hour++) {
+      for (const [weatherName, hoursInSeason] of Object.entries(season.hoursByWeather)) {
+        const fraction = hoursInSeason / (season.durationDays * HOURS_PER_DAY) / HOURS_PER_DAY;
+        const state = this.stateAt(hour, weatherName);
+        for (const delta of deltas) {
+          if (!this.holdsUnder(delta, state)) continue;
+          if (delta.amount > 0) gain += fraction * delta.amount;
+          else loss -= fraction * delta.amount;
+        }
+      }
+    }
+    return { gain: gain * TICKS_PER_DAY, loss: loss * TICKS_PER_DAY };
+  }
+
+  private stateAt(hour: number, weatherName: string): AncestorState {
+    return {
+      // 定義に無い天候の名前は、どのシンボルとも等しくない番号にする——`eq` は成立せず `not_in` は
+      // 成立するという、その天候が定義に無いことの正しい読み方になる。
+      weatherSymbolId: this.codex.symbolNames.tryGetId(weatherName) ?? UNKNOWN_SYMBOL_ID,
+      ambientBrightness: this.worldAmbientAt(hour, weatherName),
+    };
+  }
 
   /**
-   * 雨の降り方の識別子 → その天候の間に増える量（mL/tick）。鍵は定義から読んだ名前そのものなので、
-   * 雨とは限らない天候も並びうる。
+   * その増減が、この天候と明るさのもとで効くか。
+   *
+   * **祖先へ課された比較のうち、天候と明るさだけを判定する。** 雨よけ（`sheltered`）のように
+   * 場所の置き方で決まる条件は真偽を決めずに素通しするので、この表は**雨の当たる開けた場所に
+   * 置いた容器**の量になる（`docs/diagnostics/BalanceStats.md`「この表が数えていないもの」）。
+   *
+   * 段（`stage`）で縛られた増減は数えない——その段だった時間は天候の出現時間からは決まらない。
    */
-  readonly rainPerTick: ReadonlyMap<string, number>;
-
-  /** 口径のタグが選んだ蒸発量（EVAPORATION_PER_TICK）。 */
-  readonly evaporationPerTick: SeasonalEvaporation;
-}
-
-/**
- * その型が雨を受ける容器なら、量を数えるのに要るものを解く。受けないか、実測値を持たない口径なら
- * undefined。
- *
- * 雨で増える宣言（`rain_filled_liquid`）を持つのは**中身が水の変種**なので、名前は素の型から採る
- * ——読み手が探すのは「甕」であって「水入りの甕」ではない。
- */
-function rainCatchingContainerOf(codex: WorldCodex, def: ObjectDef): RainCatchingContainer | undefined {
-  const rainPerTick = rainPerTickOf(codex, def);
-  if (rainPerTick.size === 0) return undefined;
-
-  const capacity = def.tryGetPropertyDef(codex.vocabulary.engine.fillId)?.range?.max;
-  const evaporationPerTick = evaporationPerTickOf(codex, def);
-  if (capacity === undefined || evaporationPerTick === undefined) return undefined;
-
-  return { name: codex.baseOf(def).name, capacity, rainPerTick, evaporationPerTick };
-}
-
-/**
- * その型が、天候ごとにtick毎いくつ水を受けるか。受けないなら空。
- *
- * 数えるのは、**効く天候をちょうど1つの比較で名指ししている増分**。天候以外の祖先の条件
- * （置き場所が雨よけの下か、など）は真偽を決めずに素通しするので、この表は**雨の当たる場所に
- * 置いた容器**の量を出す（`docs/diagnostics/BalanceStats.md`「この表が数えていないもの」）。
- *
- * 段で縛られた増分は数えない——その段だった時間は天候の出現時間からは決まらない。
- */
-function rainPerTickOf(codex: WorldCodex, def: ObjectDef): ReadonlyMap<string, number> {
-  const perWeather = new Map<string, number>();
-  for (const delta of tickDeltasOf(def)) {
-    if (delta.target !== 'self' || delta.propertyGlobalId !== codex.vocabulary.engine.fillId) continue;
-    if (delta.amount <= 0 || delta.gate.stage !== undefined) continue;
-
-    const weatherConditions = delta.gate.ancestorConditions.filter(
-      (candidate) => candidate.propertyGlobalId === codex.vocabulary.world.weatherId,
-    );
-    // 天候の比較が2つ以上あると、どちらの天候の間に効くのかが決まらない（両方の成立が要る）。
-    if (weatherConditions.length !== 1) continue;
-    const [condition] = weatherConditions;
-    // 効く天候を名指ししている比較だけ。`not_in` のように残り全部を指す比較は、どの天候で効くかを
-    // ここでは決められない（天候の一覧を知らない）。
-    if (condition.op !== 'eq' && condition.op !== 'in') continue;
-
-    for (const value of condition.values) {
-      const weather = codex.symbolNames.getName(value);
-      perWeather.set(weather, (perWeather.get(weather) ?? 0) + delta.amount);
-    }
-  }
-  return perWeather;
-}
-
-/** その型の口径が決める蒸発量。実測値を持たない口径ならundefined。 */
-function evaporationPerTickOf(codex: WorldCodex, def: ObjectDef): SeasonalEvaporation | undefined {
-  for (const [tagName, bySeason] of Object.entries(EVAPORATION_PER_TICK)) {
-    const tagGlobalId = codex.tagNames.tryGetId(tagName);
-    if (tagGlobalId !== undefined && def.hasTag(tagGlobalId)) return bySeason;
-  }
-  return undefined;
-}
-
-function rowOf(container: RainCatchingContainer, season: SeasonRain): RainWaterRow {
-  let rainPerDay = 0;
-  for (const [weather, hours] of Object.entries(season.hoursByWeather)) {
-    const perTick = container.rainPerTick.get(weather) ?? 0;
-    const ticksPerDay = (hours * MINUTES_PER_HOUR) / MINUTES_PER_TICK / season.durationDays;
-    rainPerDay += perTick * ticksPerDay;
+  private holdsUnder(delta: TickDelta, state: AncestorState): boolean {
+    if (delta.gate.stage !== undefined) return false;
+    return delta.gate.ancestorConditions.every((condition) => this.conditionHolds(condition, state));
   }
 
-  const evaporationPerDay = container.evaporationPerTick[season.name] * TICKS_PER_DAY;
-  return {
-    containerName: container.name,
-    seasonName: season.name,
-    capacity: container.capacity,
-    rainPerDay,
-    evaporationPerDay,
-    netPerDay: rainPerDay - evaporationPerDay,
-  };
+  private conditionHolds(condition: AncestorCondition, state: AncestorState): boolean {
+    const { world } = this.codex.vocabulary;
+    if (condition.propertyGlobalId === world.weatherId)
+      return comparisonHolds(condition.op, state.weatherSymbolId, condition.values);
+    if (condition.propertyGlobalId === world.ambientBrightnessId)
+      return comparisonHolds(condition.op, state.ambientBrightness, condition.values);
+    return true;
+  }
+}
+
+/** その器が居る場所の状態のうち、`fill` の増減が見ているもの。 */
+interface AncestorState {
+  readonly weatherSymbolId: number;
+  readonly ambientBrightness: number;
+}
+
+/** どのシンボルとも一致しない番号（シンボルの識別子は0以上）。 */
+const UNKNOWN_SYMBOL_ID = -1;
+
+/** その型が宣言している、自分の `fill` をtick毎に動かす分。 */
+function fillDeltasOf(codex: WorldCodex, def: ObjectDef): readonly TickDelta[] {
+  return tickDeltasOf(def).filter(
+    (delta) => delta.target === 'self' && delta.propertyGlobalId === codex.vocabulary.engine.fillId,
+  );
+}
+
+function comparisonHolds(op: ConditionOp, value: number, values: readonly number[]): boolean {
+  switch (op) {
+    case 'lt':
+      return value < values[0];
+    case 'lte':
+      return value <= values[0];
+    case 'gt':
+      return value > values[0];
+    case 'gte':
+      return value >= values[0];
+    case 'eq':
+      return value === values[0];
+    case 'neq':
+      return value !== values[0];
+    case 'in':
+      return values.includes(value);
+    case 'not_in':
+      return !values.includes(value);
+  }
 }
