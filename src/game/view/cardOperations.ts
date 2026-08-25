@@ -153,7 +153,7 @@ export function cardOperationsOf(
         reason: unmet?.reasonName === undefined ? undefined : locale.reason(unmet.reasonName),
       };
     });
-    return [...craftingActions(instance, codex, game), ...fromDefinition];
+    return [...craftingActions(instance, codex, game, locale), ...fromDefinition];
   };
 
   /**

@@ -6,6 +6,9 @@ import type { PassiveReader } from './PassiveReader';
 import type { PropertyDef } from './PropertyDef';
 import type { SlotDef } from './SlotDef';
 import type { WorldVocabulary } from './WorldVocabulary';
+import type { Requirement, Requirements } from './Requirement';
+import { ReferenceContext } from './ReferenceRoot';
+import type { WorldObject } from './WorldObject';
 
 /**
  * ロードされたYAMLファイル全体を表す集約オブジェクト（GameElementDefinition.md 3.1節）。
@@ -51,6 +54,12 @@ export class WorldCodex {
    */
   readonly recipeCategoryTagIdsByPriority: readonly number[];
 
+  /**
+   * 製作の工程を進めるのに満たしていなければならない条件（`crafting_conditions`、13.4節）。
+   * **全レシピ共通の1本**で、宣言が無ければどんな状況でも作業できる。
+   */
+  private readonly craftingConditions: Requirements | undefined;
+
   constructor(
     objectNames: NameRegistry,
     propertyNames: NameRegistry,
@@ -64,7 +73,9 @@ export class WorldCodex {
     generatedTypes?: GeneratedTypes,
     recipeCategoryTagIdsByPriority: readonly number[] = [],
     requiredPropsByTag: ReadonlyMap<number, readonly number[]> = new Map(),
+    craftingConditions?: Requirements,
   ) {
+    this.craftingConditions = craftingConditions;
     this.generatedTypes = generatedTypes ?? new GeneratedTypes();
     this.recipeCategoryTagIdsByPriority = recipeCategoryTagIdsByPriority;
     this.objectNames = objectNames;
@@ -79,6 +90,17 @@ export class WorldCodex {
 
     this.requireRangeEventsOnUnmodifiedProperties();
     this.requirePropsRequiredByTags(requiredPropsByTag);
+  }
+
+  /**
+   * 製作の工程を進める条件のうち、actorが満たしていない最初の要件（満たしていればundefined）。
+   *
+   * 可否と「なぜできないか」を同じ1回の評価から返すのは、レシピの解放条件
+   * （`RecipeDef.unmetUnlockRequirement`）と同じ理由。成果物のインスタンスはまだ無いので、
+   * 参照できるのはactorだけ（13.4節）。
+   */
+  unmetCraftingRequirement(actor: WorldObject | undefined): Requirement | undefined {
+    return this.craftingConditions?.firstUnmet(ReferenceContext.acting(undefined, actor, undefined));
   }
 
   /**

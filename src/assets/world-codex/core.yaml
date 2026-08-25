@@ -35,6 +35,22 @@ required_props:
   # 自分も積荷として効き、手に持った物の重さもそこを通る。
   character: [load, weight]
 
+# 工程を進めるのに満たしていなければならない条件（GameElementDefinition.md 13.4節）。
+# **全レシピに一律で掛かる。** レシピが表しているのは物を3つ以上組み合わせる複雑な作業なので、
+# 手元が見えなければどれも進まない（docs/engine/IlluminationSystem.md 5節）。
+#
+# **レシピごとには書かない。** 書き分けると、条件の無いレシピが「暗くてもできると決めた」のか
+# 「書き忘れた」のか見分けが付かなくなる。
+#
+# 手作業のうち`interactions`として宣言されているもの（打つ・剥ぐ・撚る）は、同じしきい値を自分の
+# conditionsに書く。**火を熾すことだけは書かない**——摩擦発火は手と耳の作業で、熾は自分で光る。
+# ここを塞ぐと、日が落ちた後に明かりを取り戻す道が無くなる。
+crafting_conditions:
+  - reason: too_dark
+    subject: actor
+    prop: hand_brightness
+    gte: 5
+
 # 製作中オブジェクトが完成品から引き継ぐタグ（docs/engine/RecipeSystem.md 5節）。挙げてよいのは
 # **どこに置けるかを言うタグ**だけで、何ができるかを言うタグ（tool・weapon・sail・pottery）は
 # 挙げない——作りかけはまだその物ではないので、道具の枠にも操作の相手にも当てはまってはいけない。
@@ -61,6 +77,24 @@ traits:
       characters:
         cell_count: 1
         cell: {accept: {tag: character}}
+    props:
+      # その場を満たしている明るさ（IlluminationSystem.md 2節）。世界の明るさ（時刻と天気）を土台に、
+      # 樹冠と地面の反射ぶんを足したもの。**据え付けの光源は入らない**（同3節）。
+      # 底の-6は「これより暗い場所を区別しない」暗さの底で、光源より前に効く（同4節）。
+      #
+      # **valueを持たないので、場所ごとに必ず与える**（5節）。樹冠も反射も場所ごとに違い、
+      # 既定値を置くと書き忘れがそのまま「開けた土地」として通る。内訳の表は
+      # ContentSkeleton.md 8.1.2節が持ち、定義に書くのは合計だけ。
+      ambient_brightness:
+        base: {subject: ancestor}
+        range: {min: -6, max: 17}
+      # 手元の明るさ（同2節）。地面や炉に据えられた光源はここへ届く。
+      #
+      # **場所はlooking_brightnessを持たない。** これが「据え付けの光源は視界を明るくしない」の
+      # 全部で、光源の側は自分がどちらに効くかを知らない（同3節）。
+      hand_brightness:
+        value: 0
+        base: {subject: self, prop: ambient_brightness}
 
 object_defs:
   world:

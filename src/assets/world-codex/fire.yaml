@@ -39,6 +39,9 @@ traits:
       #
       # どちらの回もsignal（9.8節）で結果を告げる。火口はどちらの回も同じように消えるので、
       # レーンの上では30分かけて札が1枚減っただけに見え、成否が付かない。
+      # **明るさの条件を持たない**（IlluminationSystem.md 5節）。摩擦発火は手と耳の作業で、
+      # 受け止める熾は自分で光るため、暗さで難しくならない。ここを塞ぐと、日が落ちた後に
+      # 明かりを取り戻す道が無くなる。
       light:
         trigger: {drag: {object: fire_drill}}
         duration: 30
@@ -158,6 +161,14 @@ traits:
               - conditions: [{prop: fuel, in_stage: none}]
                 add: {self: {heat: -6}}
     passives:
+      # 火は明かりでもある（docs/engine/IlluminationSystem.md 3節）。**どの光源も同じ2行を書き、
+      # 届き先は置かれた場所だけが決める**——据えた炉の親は土地で、土地は視界の明るさを持たないので、
+      # 手元にだけ届く。炉自身は「自分は視界に効かない」と知らない。
+      #
+      # 段では見ない。種火も炎も同じ明るさとして扱い、暗闇から作業できる明るさへ持ち上げる1段
+      # （+11、ContentSkeleton.md 8.1.1.1節）だけを持つ。
+      - conditions: [{prop: heat, gt: 0}]
+        modify: {parent: {hand_brightness: 11, looking_brightness: 11}}
       # 雨。野ざらしの炉は火力を余分に削られる。屋根の下（sheltered）なら効かない
       # （docs/engine/ContainerSystem.md 6節）。sheltered未実装の間はancestorが解決せず、
       # 否定形の演算子（neq）で「分からないときは効かせる」側に倒している。
@@ -235,6 +246,51 @@ object_defs:
           - add: {self: {life: -1}}
         on_min:
           destroy: self
+
+  # 松明。太い枝の先へ繊維を巻いたもので、**持ち歩ける唯一の明かり**
+  # （docs/engine/IlluminationSystem.md 3節）。据えた炉と同じ2行を書き、手に持っている間だけ
+  # 視界にも届く——夜の道を歩けるのはこれを持ったときだけになる。
+  #
+  # 燃料タグは持たない。炉へ重ねるとくべられてしまい、明かりとして持ち出す物ではなくなる。
+  torch:
+    tags: [item]
+    # 燃え残りが個体ごとに違うので束ねない。
+    stackable: false
+    props:
+      weight: {value: 1100}
+      volume: {value: 1400}
+      # 灯っているか。火種を移すと立ち、燃え尽きると物ごと消えるので0へは戻らない。
+      lit:
+        value: 0
+        range: {min: 0, max: 1}
+      # 燃え残り（tick）。灯している間だけ減り、2時間で燃え尽きる。
+      life:
+        value: 8
+        range: {min: 0, max: 8}
+        passives:
+          - conditions: [{prop: lit, eq: 1}]
+            add: {self: {life: -1}}
+        on_min:
+          destroy: self
+    passives:
+      - conditions: [{prop: lit, eq: 1}]
+        modify: {parent: {hand_brightness: 11, looking_brightness: 11}}
+    recipes:
+      # 枝へ繊維を巻くだけ。道具も解放条件も要らない。
+      wrapped:
+        steps:
+          - requires:
+              - {object: thick_branch, count: 1, consume: true}
+              - {object: plant_fiber, count: 1, consume: true}
+            duration: 15
+    interactions:
+      # 火種を移して灯す。炉の着火（hearthのignite）と同じ形で、火種は1tickで燃え尽きるので
+      # 火のある場所でしか灯せない。
+      light:
+        trigger: {drag: {object: burning_tinder}}
+        duration: 1
+        destroy: dragged
+        set: {self: {lit: 1}}
 
   # 焼け石。炉で熱を溜め切った石で、**炉から取り出せる唯一の産物**（docs/engine/FireSystem.md 9.1節）。
   # 石そのものは locations.yaml が定義し、溜め切った瞬間にこの型へ置き換わる。

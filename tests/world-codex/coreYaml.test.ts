@@ -254,6 +254,9 @@ object_defs:
 object_defs:
   test_hut:
     traits: [location]
+    props:
+      # location traitのambient_brightnessはvalueを持たない（IlluminationSystem.md 2節）。
+      ambient_brightness: {value: 0}
 `;
     const loader = new WorldCodexYamlLoader();
     loadYamlFile(loader, worldCodexPath('core.yaml'));

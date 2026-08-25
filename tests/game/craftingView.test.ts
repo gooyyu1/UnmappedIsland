@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { craftingActions, craftingMaterials } from '../../src/game/view/craftingView';
+import { parseLocale } from '../../src/locale/Localization';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import type { MiniGame } from '../support/miniGame';
 import { miniGame } from '../support/miniGame';
@@ -42,7 +43,10 @@ object_defs:
   const materialsIn = (mini: MiniGame, wip: WorldObject): readonly WorldObject[] =>
     wip.tryGetSlot(mini.codex.vocabulary.engine.materialsSlotId)?.contents ?? [];
 
-  const actionsOn = (mini: MiniGame, target: WorldObject) => craftingActions(target, mini.codex, mini.game);
+  // この世界はcrafting_conditions（13.4節）を宣言しないので、理由の文言は引かれない。
+  const locale = parseLocale('ja.yaml', 'object_texts:\n  leaf:\n    display_name: 葉\n');
+  const actionsOn = (mini: MiniGame, target: WorldObject) =>
+    craftingActions(target, mini.codex, mini.game, locale);
 
   it('製作中でない物は、操作も材料の枠も持たない', () => {
     const mini = miniGame(WORLD);

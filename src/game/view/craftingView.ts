@@ -8,6 +8,8 @@ import {
   remainingRequirements,
   stepIsSupplied,
 } from '../../domain/crafting';
+import type { Requirement } from '../../domain/Requirement';
+import type { Localization } from '../../locale/Localization';
 import type { CardAction } from './cardOperations';
 import { recipeOf } from './recipeList';
 
@@ -43,6 +45,7 @@ export function craftingActions(
   object: WorldObject,
   codex: WorldCodex,
   game: StartedGame,
+  locale: Localization,
 ): readonly CardAction[] {
   const recipe = recipeOf(object, codex);
   if (recipe === undefined) return [];
@@ -50,6 +53,9 @@ export function craftingActions(
   const materialsSlotId = codex.vocabulary.engine.materialsSlotId;
   const step = currentStep(recipe, progressOf(object, codex));
   const supplied = step !== undefined && stepIsSupplied(object, materialsSlotId, step);
+  // 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.4節）。素材より先に見るのは、
+  // 満たしていなければ素材が揃っていても手が付けられないため。
+  const unmetCrafting = codex.unmetCraftingRequirement(game.player.instance);
 
   return [
     {
@@ -77,10 +83,10 @@ export function craftingActions(
       name: '作業する',
       description: '揃っている素材を使って、次の工程を進める。',
       minutes: step?.durationMinutes ?? 0,
-      enabled: supplied,
-      reason: supplied ? undefined : '素材が足りない。',
+      enabled: supplied && unmetCrafting === undefined,
+      reason: reasonNotToWork(unmetCrafting, supplied, locale),
       execute: () => {
-        tryAdvanceCrafting(object, materialsSlotId, recipe, codex, game.session);
+        tryAdvanceCrafting(object, materialsSlotId, recipe, codex, game.session, game.player.instance);
       },
     },
     {
@@ -123,4 +129,20 @@ export function craftingMaterials(
 
 function progressOf(object: WorldObject, codex: WorldCodex): number {
   return object.tryGetProperty(codex.vocabulary.engine.progressId)?.number ?? 0;
+}
+
+/**
+ * 「作業する」を押せない理由（押せるならundefined）。
+ *
+ * 世界の条件が先で、素材はその後。**理由は1つしか出せない**ので、暗くて手が付けられないときに
+ * 「素材が足りない。」と言わせない。
+ */
+function reasonNotToWork(
+  unmetCrafting: Requirement | undefined,
+  supplied: boolean,
+  locale: Localization,
+): string | undefined {
+  if (unmetCrafting !== undefined)
+    return unmetCrafting.reasonName === undefined ? undefined : locale.reason(unmetCrafting.reasonName);
+  return supplied ? undefined : '素材が足りない。';
 }
