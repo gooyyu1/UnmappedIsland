@@ -82,3 +82,4 @@ npm run stats:terrain
   ——島を開き切るまでの探索の局面と、開き切った後の定常の局面——を、島の広さと土地ごとの
   活動できる時間から数える（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.2節・8.3節参照）。
   生成元: `tests/diagnostics/terrainStatsReport.test.ts`（局面の計算は `src/analysis/dailyPhases.ts`）
+
