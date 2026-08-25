@@ -66,7 +66,8 @@ describe('サンプルアセットパックの薬', () => {
     expect(potion.tryGetAction('drink', character)?.tryExecute() === true).toBe(true);
 
     // bloodのon_minが既定のクランプを置き換えるので、0を割った値がそのまま残る
-    // （VitalsSystem.md 3節・6節）。死因はその段が名乗る。
+    // （VitalsSystem.md 3節・6節）。死因を名乗るのはそのon_minのdestroyに添えたreasonで、
+    // 同じ名前の段は尽きる前に警告を出すために置いてある（GameElementDefinition.md 9.3節）。
     expect(character.tryGetProperty(bloodId)?.number ?? 0, '飲んだ量がそのまま引かれる').toBe(5000 - 9999);
     expect(character.tryGetProperty(bloodId)?.isInStage('exsanguinated') ?? false, '失血死の段').toBe(true);
   });
