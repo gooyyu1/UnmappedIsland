@@ -37,7 +37,12 @@ export class GenerationDefs {
               `location_types '${type.name}' の${key}が参照する軸 '${axis}' が見つかりません。`,
             );
 
-    for (const scope of scopes.values())
+    for (const scope of scopes.values()) {
+      if (!axes.has(scope.elevationAxis))
+        throw new Error(
+          `generation_scopes '${scope.name}' のelevation_axisが指す軸 '${scope.elevationAxis}' が見つかりません。`,
+        );
+
       for (const guarantee of scope.guarantees) {
         if (!axes.has(guarantee.axis))
           throw new Error(
@@ -49,5 +54,6 @@ export class GenerationDefs {
               `'${guarantee.locationType}' が見つかりません。`,
           );
       }
+    }
   }
 }

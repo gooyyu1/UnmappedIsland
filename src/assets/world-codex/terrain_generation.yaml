@@ -67,8 +67,8 @@ axes:
 #     倍率も控えめ（素の重みの0.5〜2倍程度）にとどめる。
 #   - 1つの島で使うのはmax_sites_per_type個までだが、多く書いておくと島ごとに違う亜種が出る。
 #     足りない分は通し番号で埋まる（名前としては読めないので、余裕を持って用意する）。
-# - move_cost: 移動コストの倍率（1=等倍）。道のtravel_minutes = 距離 × base_minutes_per_distance ×
-#   両端move_costの平均 で決まる（TerrainGeneration.md 3.5節）。
+# - move_cost: その土地を進む遅さの倍率（1=開けた土地＝generation_scopesのwalk_meters_per_hour
+#   そのままの速さ）。両端の平均が水平移動の時間へ掛かる（TerrainGeneration.md 3.5節）。
 # - is_fallback/priority: どの型もhard_limitsで弾かれたサイトの受け皿（3.3節）。
 #   priorityが最も高いfallbackが選ばれる。
 # - 海岸過多の防止: 海岸3種はhard_limits(coastal_distance.max=coast_band)で海岸帯にしか出ず、
@@ -298,9 +298,20 @@ generation_scopes:
     # 同じ型が1個増えるごとにマッチング距離へ乗せる割増（%）。上限に当たる前から他の型へ譲らせ、
     # 「上限で打ち切られた」島ばかりにならないようにする。
     crowding_penalty: 0.6
-    # 抽象座標の距離1あたりの基準移動時間（分）。島の直径=200単位を想定
-    # （隣接する土地の典型的な距離は40前後 → 移動コスト等倍でおよそ45分）。
-    base_minutes_per_distance: 1
+    # 島の差し渡し（m）。抽象座標の直径（SitePlacer.ISLAND_RADIUSの2倍＝200単位）がこの長さに当たり、
+    # 抽象1単位＝33.5mになる。山がひとつある島として自然な大きさ（面積およそ35km²で、
+    # ロビンソン・クルーソー島の約48km²よりやや小さい）。
+    diameter_meters: 6700
+    # move_cost 1.0 の土地を歩く速さ（m/時）。道の無い熱帯の地面を歩く速さ。
+    walk_meters_per_hour: 4000
+    # 高低差を登り下りする速さ（m/時）。水平移動とは別に、両端の高低差ぶんの時間が乗る。
+    # ネイスミスの法則（登り600m/時）の値を、登りにも下りにも同じだけ課す（3.5節）。
+    climb_meters_per_hour: 600
+    # 標高として読む軸と、その軸の上端（100）が海抜何メートルか。軸は0〜100の整数のまま
+    # （数値の規約）で、メートルへの読み替えをここが持つ。同じ縮尺で自然な高さ
+    # （青ヶ島は8.7km²で423m、ボラボラ島は30km²で727m）。
+    elevation_axis: elevation
+    elevation_top_meters: 400
     # カバレッジ保証（TerrainGeneration.md 3.4節・6節）。軸の分布だけでは個数を保証できないため、
     # 「指定軸が最大/最小のサイトへこの型を強制割当する」処理をマッチングの前に行う。
     # 島には必ず山がひとつある。

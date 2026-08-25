@@ -183,9 +183,25 @@ generation_scopes:
 
 ### 3.5 座標配置とパスネットワーク生成
 
+#### 島の大きさと歩く速さ【確定】
+
+- **島の直径は 6.7 km**（面積およそ 35 km²）。山がひとつある島として自然な大きさで、ロビンソン・
+  クルーソー島（約 48 km²）よりやや小さい大きさです。
+- **島の最高点は海抜 400 m。** 同じ縮尺で自然な高さです（青ヶ島は 8.7 km² で 423 m、ボラボラ島は
+  30 km² で 727 m）。
+- **道の無い熱帯の地面を歩く速さは 4 km/h**（`move_cost` が 1.0 の土地）。
+
+この3つは `generation_scopes.island` の `diameter_meters`・`elevation_top_meters`・
+`walk_meters_per_hour` として、**それぞれ現実の単位で別々に宣言**します。1つの値に縮尺と速さを
+兼ねさせると、どちらも外の知識と突き合わせて検算できなくなるためです
+（[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「現実に単位があるものは、その単位で持つ」
+「1つの原因に、複数の結果を兼ねさせない」）。
+
 #### 3.5.1 座標配置（海岸に囲まれ、かつ海岸過多にならない配置）
 
-島は単純な円盤（半径 `SitePlacer.IslandRadius`）とみなします。要求「海岸に囲まれた島を、海岸が多くなり
+島は単純な円盤（半径 `SitePlacer.IslandRadius`）とみなします。**抽象座標系の直径（`IslandRadius` の
+2 倍 ＝ 200 単位）が `diameter_meters` に当たり、抽象 1 単位が 33.5 m になります。** ノイズも距離場も
+`IslandRadius` で正規化しているので、縮尺を変えても地形の見た目は変わりません。要求「海岸に囲まれた島を、海岸が多くなり
 すぎないように生成する」を、次の2段階の**配置枠の分離**によって実現しています（円盤へ一様に散布すると、
 面積比の関係で外周付近のサイトが多数を占めてしまい、単純な後処理だけでは制御しづらいため、配置そのものを
 2種類に分けています）。
@@ -216,13 +232,25 @@ generation_scopes:
      グラフは常に交差なし（平面）のままです。この閾値は上げるほど道が減り、下限は MST だけが残る
      平均次数 ≒1.9 です。実測値は [`TerrainStats.md`](../diagnostics/TerrainStats.md)
      （`npm run stats:terrain` で再生成）にあり、閾値を動かしたら再生成します。
-- 各エッジには `distance`（座標上のユークリッド距離）と `travel_minutes`（移動時間、分）を持たせます。
+- 各エッジには `distance_meters`（2 地点間のユークリッド距離、m）と `travel_minutes`（移動時間、分）を
+  持たせます。**距離が先にあり、速さで割ると時間が出ます。**
 
   ```
-  travel_minutes = round_to_15( distance × base_minutes_per_distance × (moveCostA + moveCostB) / 200 )
+  歩く分   = distance_meters × (moveCostA + moveCostB) / 2 / walk_meters_per_hour × 60
+  登り下り = |elevationA − elevationB| × metersPerElevationUnit / climb_meters_per_hour × 60
+  travel_minutes = round_to_15( 歩く分 + 登り下り )
   ```
 
   （15分単位に丸め、`minutes_per_tick` に対して粗すぎない粒度に揃えます。最低15分。）
+
+  - `move_cost` は**その土地を進む遅さの倍率**です（1.0 が開けた土地＝ `walk_meters_per_hour`
+    そのままの速さ、密林 1.6、山頂 2.5）。
+  - `metersPerElevationUnit` は `elevation_top_meters ÷ 標高軸の値域` で、島では 400 m ÷ 100 = 4 m です。
+    どの軸を標高として読むかは `elevation_axis` が指します（エンジンは軸の名前を知りません）。
+  - 登り下りは**対称**です。道は両端に2つあるので向きは表せますが、行きと帰りで時間が変わると往復の
+    勘定が全部2倍に複雑になります。`climb_meters_per_hour` は 600 m/h（ネイスミスの法則）で、
+    海岸の土地から山頂まで最短経路で登ると、水平距離とは別に平均 23 分ぶんかかります。
+  - 実測の分布は [`TerrainStats.md`](../diagnostics/TerrainStats.md)（道1本あたり平均 1,436 m・37.1 分）。
 
 辺同士の交差を解決する処理はありません。採用する辺は常に Delaunay 辺の部分集合であるため、交差は数学的に
 起こりません。Delaunay に含まれない任意のショートカット辺を追加したい要求が出てきた場合に、その時点で
@@ -315,5 +343,9 @@ sandy_beach:
   3.3 節で「別途仕様書で定義する」とされている未着手事項。`location_types`/`axes`/`generation_scopes` の
   重複も、現状は常にエラーとする厳格モードのみ実装済み）。
 - **`generation_scopes.island` 以外の生成パラメータのバランス調整**: `interior_bias`・
-  `extra_edge_detour_factor`・`base_minutes_per_distance` 等の具体的な数値は、実際にプレイしての調整が必要。
+  `extra_edge_detour_factor` 等の具体的な数値は、実際にプレイしての調整が必要。
+- **`elevation` 軸の下端・上端が実際には出ない**: 軸は距離場を主成分に作るため、生成される島の
+  最高点は平均 314 m（`elevation_top_meters` の 400 m に届かない）、海岸の土地も海抜 88 m 前後に
+  なります。「軸 100 が 400 m」という宣言と「島の最高点が 400 m」を一致させるなら、軸の作り方
+  （距離場の正規化）か宣言のどちらかを動かす必要があります。
 

@@ -33,7 +33,7 @@ export function generateIsland(defs: GenerationDefs | undefined, scopeName: stri
   assignAxisValues(defs.axes, sites, seed, scope);
   assignTypes(defs, scope, sites);
   const delaunayEdges = triangulate(sites);
-  const edges = buildPathNetwork(sites, delaunayEdges, scope);
+  const edges = buildPathNetwork(sites, delaunayEdges, scope, defs.axes);
   assignNames(sites, Pcg32.forPurpose(seed, 'names'));
 
   return new IslandMap(scopeName, seed, sites, edges);

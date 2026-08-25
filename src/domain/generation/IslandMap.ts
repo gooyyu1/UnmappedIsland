@@ -69,17 +69,18 @@ export class Site {
   }
 }
 
-/** 土地同士を繋ぐ道1本（無向辺）。travelMinutesは距離と両端の移動コストから確定済み。 */
+/** 土地同士を繋ぐ道1本（無向辺）。travelMinutesは距離・両端の移動コスト・高低差から確定済み
+ * （TerrainGeneration.md 3.5節）。 */
 export class IslandEdge {
   readonly a: number;
   readonly b: number;
-  readonly distance: number;
+  readonly distanceMeters: number;
   readonly travelMinutes: number;
 
-  constructor(a: number, b: number, distance: number, travelMinutes: number) {
+  constructor(a: number, b: number, distanceMeters: number, travelMinutes: number) {
     this.a = a;
     this.b = b;
-    this.distance = distance;
+    this.distanceMeters = distanceMeters;
     this.travelMinutes = travelMinutes;
   }
 }

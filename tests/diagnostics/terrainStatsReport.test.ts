@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import type { BaseDailyTravel, DestinationChoice } from '../../src/analysis/dailyTravel';
 import { dailyTravelOf, DESTINATION_CHOICES, VISIT_COUNTS } from '../../src/analysis/dailyTravel';
+import type { GenerationScopeDef } from '../../src/domain/generation/GenerationScopeDef';
 import type { IslandMap } from '../../src/domain/generation/IslandMap';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -39,7 +40,9 @@ interface TerrainStats {
 
   /** 土地1つあたり: 次数。全島の全土地をまとめた分布。 */
   readonly degree: Stat;
-  /** 道1本あたり: 移動時間（分）。 */
+  /** 道1本あたり: 距離（m）・両端の高低差（m）・移動時間（分）。 */
+  readonly distanceMeters: Stat;
+  readonly climbMeters: Stat;
   readonly travelMinutes: Stat;
 
   /** 島1つあたり: 最も条件の良い拠点から見た1日の移動時間。 */
@@ -80,18 +83,30 @@ function createStats(typeNames: readonly string[]): TerrainStats {
     typesPerIsland: new Stat(),
     countByType: new Map(typeNames.map((name) => [name, new Stat()])),
     degree: new Stat(),
+    distanceMeters: new Stat(),
+    climbMeters: new Stat(),
     travelMinutes: new Stat(),
     chosenBaseTravel: createDailyTravelStats(),
     anyBaseTravel: createDailyTravelStats(),
   };
 }
 
-function collect(stats: TerrainStats, map: IslandMap): void {
+function collect(
+  stats: TerrainStats,
+  map: IslandMap,
+  scope: GenerationScopeDef,
+  elevationSpan: number,
+): void {
+  const metersPerElevationUnit = scope.metersPerElevationUnit(elevationSpan);
+  const elevationOf = (site: number): number => map.sites[site].axisValues.get(scope.elevationAxis)!;
+
   const n = map.sites.length;
   const degrees = new Array<number>(n).fill(0);
   for (const edge of map.edges) {
     degrees[edge.a]++;
     degrees[edge.b]++;
+    stats.distanceMeters.add(edge.distanceMeters);
+    stats.climbMeters.add(Math.abs(elevationOf(edge.a) - elevationOf(edge.b)) * metersPerElevationUnit);
     stats.travelMinutes.add(edge.travelMinutes);
   }
 
@@ -198,7 +213,15 @@ function buildReport(stats: TerrainStats): string {
 
   append('## 道ごと');
   append();
-  appendStatTable('項目', [['移動時間', '分', stats.travelMinutes]]);
+  append('移動時間は「距離 ÷ 歩く速さ × 両端のmove_costの平均 ＋ 高低差 ÷ 登り下りの速さ」');
+  append('（TerrainGeneration.md 3.5節）。距離も高低差も現実の長さで、縮尺と速さは');
+  append('`generation_scopes.island` が別々に宣言している。');
+  append();
+  appendStatTable('項目', [
+    ['距離', 'm', stats.distanceMeters],
+    ['両端の高低差', 'm', stats.climbMeters],
+    ['移動時間', '分', stats.travelMinutes],
+  ]);
 
   append('## 1日の移動時間');
   append();
@@ -254,9 +277,13 @@ const REPORT_PATH = join('docs', 'diagnostics', 'TerrainStats.md');
 function buildReportFromDefinitions(): string {
   const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
 
+  const scope = codex.generation!.scopes.get('island')!;
+  const elevationRange = codex.generation!.axes.get(scope.elevationAxis)!.range;
+  const elevationSpan = elevationRange.max - elevationRange.min;
+
   const stats = createStats(codex.generation!.locationTypes.map((type) => type.name));
   for (let seed = 0; seed < SEED_COUNT; seed++) {
-    collect(stats, generateIsland(codex.generation, 'island', seed));
+    collect(stats, generateIsland(codex.generation, 'island', seed), scope, elevationSpan);
   }
 
   return buildReport(stats);

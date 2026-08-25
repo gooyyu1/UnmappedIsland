@@ -149,6 +149,58 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
       }
   });
 
+  // 移動時間が「距離 ÷ 速さ」で出ていること自体を見張る（TerrainGeneration.md 3.5節）。分布は
+  // TerrainStats.mdの鮮度が見ているが、そちらは再生成すれば緑に戻るので、**導出の向きが逆に
+  // 戻された**ことは捕まえられない。宣言だけから組み直した値と突き合わせる。
+  it('移動時間は、宣言した縮尺と速さだけから組み直せる', () => {
+    const island = scope();
+    const elevationRange = codex.generation!.axes.get(island.elevationAxis)!.range;
+    const metersPerElevationUnit = island.metersPerElevationUnit(elevationRange.max - elevationRange.min);
+    const elevationOf = (site: { axisValues: ReadonlyMap<string, number> }): number =>
+      site.axisValues.get(island.elevationAxis)!;
+
+    for (const [seed, map] of islands)
+      for (const edge of map.edges) {
+        const a = map.sites[edge.a];
+        const b = map.sites[edge.b];
+        const moveCostAverage = (a.type!.moveCost + b.type!.moveCost) / 2;
+        const walkMinutes = ((edge.distanceMeters * moveCostAverage) / island.walkMetersPerHour) * 60;
+        const climbMinutes =
+          ((Math.abs(elevationOf(a) - elevationOf(b)) * metersPerElevationUnit) / island.climbMetersPerHour) *
+          60;
+
+        expect(edge.travelMinutes, `シード${seed}: 道${edge.a}-${edge.b}`).toBe(
+          Math.max(1, Math.round((walkMinutes + climbMinutes) / 15)) * 15,
+        );
+      }
+  });
+
+  // 「水平移動だけで説明できる時間」との差を見る。距離とmove_costの効果はその基準値に入っているので、
+  // 残る差は高低差の項しか作れない（両群の比を見るだけでは、山ほどmove_costが高いという相関を
+  // 高低差の効果と取り違える）。
+  it('高低差は移動時間に効く', () => {
+    const island = scope();
+    const flat: number[] = [];
+    const steep: number[] = [];
+    for (const map of islands.values())
+      for (const edge of map.edges) {
+        const a = map.sites[edge.a];
+        const b = map.sites[edge.b];
+        const moveCostAverage = (a.type!.moveCost + b.type!.moveCost) / 2;
+        const walkOnlyMinutes = ((edge.distanceMeters * moveCostAverage) / island.walkMetersPerHour) * 60;
+        const gap = Math.abs(
+          a.axisValues.get(island.elevationAxis)! - b.axisValues.get(island.elevationAxis)!,
+        );
+        (gap <= 5 ? flat : steep).push(edge.travelMinutes - walkOnlyMinutes);
+      }
+
+    const mean = (values: readonly number[]): number => values.reduce((s, v) => s + v, 0) / values.length;
+    expect(flat.length, '高低差のほとんど無い道が標本にある').toBeGreaterThan(20);
+    expect(steep.length, '高低差のある道が標本にある').toBeGreaterThan(20);
+    expect(Math.abs(mean(flat)), '高低差の無い道は、水平移動だけの時間で説明が付く').toBeLessThan(5);
+    expect(mean(steep), '高低差のある道には、その分の時間が乗る').toBeGreaterThan(5);
+  });
+
   it('同じ地形が並びすぎない（max_sites_per_type）', () => {
     const max = codex.generation!.scopes.get('island')!.maxSitesPerType;
     expect(max, '上限を設けたスコープで確かめる').toBeGreaterThan(0);
@@ -224,7 +276,7 @@ function fingerprint(map: IslandMap): string {
     );
   }
   for (const edge of [...map.edges].sort((a, b) => a.a - b.a || a.b - b.b))
-    lines.push(`edge ${edge.a}-${edge.b}: ${edge.distance.toFixed(6)} ${edge.travelMinutes}min`);
+    lines.push(`edge ${edge.a}-${edge.b}: ${edge.distanceMeters.toFixed(6)}m ${edge.travelMinutes}min`);
   return lines.join('\n');
 }
 
