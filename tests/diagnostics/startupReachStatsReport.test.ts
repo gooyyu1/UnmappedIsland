@@ -1,15 +1,29 @@
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
 import type { IslandReach, NeedReach, StartupNeedSources } from '../../src/analysis/startupReach';
 import { islandReachOf, STARTUP_NEEDS, startupNeedSourcesOf } from '../../src/analysis/startupReach';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { describeReportFreshness, describeReportRegeneration } from '../support/generatedReport';
+import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
+import {
+  describeReportFreshness,
+  describeYamlReportRegeneration,
+  formatYamlReport,
+  missingYamlSections,
+  RoundedNumber,
+  yamlSectionKeys,
+} from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
  * 開始地点ごとの「立ち上がりやすさ」（`src/analysis/startupReach.ts`）を多数の種で測り、
- * `docs/diagnostics/StartupReachStats.md`へ書き出す。
+ * `stats/startup_reach.yaml`へ書き出す。
+ *
+ * **書き出すのは数値だけ。** 何を測ったか・引いた線・数えていないものは、手書きの
+ * `docs/diagnostics/StartupReachStats.md` が持つ。この試験は文章を1行も持たない——生成物に散文を
+ * 混ぜると、読み方を直すたびに再生成が要る。
  *
  * 生成と発見物の配りを触ったときに散らばりがどう動いたかを差分で読むためのもので、触った後に
  * 再生成する: `npm run stats:startup`。再生成と鮮度の形は `tests/support/generatedReport.ts` が持つ。
@@ -23,7 +37,7 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  */
 const SEED_COUNT = 2000;
 
-/** 歩数のヒストグラムに出す上限（これを超える分はまとめて「N歩以上」）。 */
+/** 歩数のヒストグラムに出す上限（これを超える分はまとめて `or_more`）。 */
 const MAX_LISTED_HOPS = 5;
 
 /** 要るもの1つに対する、サイトをまたいだ集計。 */
@@ -141,246 +155,145 @@ function addReach(stats: NeedStats, reach: NeedReach | undefined): void {
   stats.pathDiscoveryMinutes.add(reach.pathDiscoveryMinutes);
 }
 
-/** Statの1行。tableRowと違い中央値を出す（散らばりの読み取りに要る）。 */
-function statRow(label: string, unit: string, stat: Stat): string {
-  if (stat.count === 0) return `| ${label} | - | - | - | - | - | - | 0 |`;
-  const cell = (value: number): string => `${value.toFixed(2)}${unit}`;
-  return (
-    `| ${label} | ${cell(stat.mean)} | ${cell(stat.min)} | ${cell(stat.percentile(0.5))} | ` +
-    `${cell(stat.percentile(0.95))} | ${cell(stat.max)} | ${stat.stdDev.toFixed(2)} | ${stat.count} |`
-  );
+/**
+ * 要るもの1つに対して必ず出る3つの測り方。`measure`はレコードの中で何を測ったかを名乗る値で、
+ * `unit`はその数の単位（`n`と件数は単位を持たない）。
+ */
+const MEASURES = [
+  { measure: 'hops', unit: 'hops', statOf: (need: NeedStats): Stat => need.hops },
+  { measure: 'travel', unit: 'minutes', statOf: (need: NeedStats): Stat => need.travelMinutes },
+  {
+    measure: 'path_discovery',
+    unit: 'minutes',
+    statOf: (need: NeedStats): Stat => need.pathDiscoveryMinutes,
+  },
+] as const;
+
+/**
+ * 丸めた数。**標本が足りずNaNになる値はnullで書く**——`NaN`と書くと、読む側では数ではなく文字列に
+ * なって型が行ごとに変わる。
+ */
+function rounded(value: number, decimals = 2): RoundedNumber | null {
+  return Number.isNaN(value) ? null : new RoundedNumber(value, decimals);
 }
 
-function appendStatTable(
-  append: (line?: string) => void,
-  firstColumn: string,
-  rows: readonly (readonly [string, string, Stat])[],
-): void {
-  append(`| ${firstColumn} | 平均 | 最小 | 中央 | 95%ile | 最大 | 標準偏差 | n |`);
-  append('| --- | --- | --- | --- | --- | --- | --- | --- |');
-  for (const [label, unit, stat] of rows) append(statRow(label, unit, stat));
-  append();
+/** 分布1つのレコード。`keys`はそれが何の分布かを指す鍵（要るもの・土地）。 */
+function statRecord(keys: YamlRecord, stat: Stat): YamlRecord {
+  return {
+    ...keys,
+    mean: rounded(stat.mean),
+    min: rounded(stat.min),
+    median: rounded(stat.percentile(0.5)),
+    p95: rounded(stat.percentile(0.95)),
+    max: rounded(stat.max),
+    sd: rounded(stat.stdDev),
+    n: stat.count,
+  };
 }
 
-function appendHopsHistogram(append: (line?: string) => void, stat: Stat): void {
-  append('| 歩数 | 割合 |');
-  append('| --- | --- |');
+/** 同じ鍵に対する3つの測り方のレコード。 */
+function statRecords(keys: YamlRecord, stats: NeedStats): YamlRecord[] {
+  return MEASURES.map(({ measure, unit, statOf }) => statRecord({ ...keys, measure, unit }, statOf(stats)));
+}
+
+/** 割合（0〜1）のレコード。 */
+function shareRecord(keys: YamlRecord, share: number): YamlRecord {
+  return { ...keys, unit: 'percent', share: rounded(share * 100) };
+}
+
+function hopsHistogramRecords(stat: Stat): YamlRecord[] {
+  const records: YamlRecord[] = [];
   let listed = 0;
   for (let hops = 0; hops <= MAX_LISTED_HOPS; hops++) {
     const share = stat.shareOf(hops);
     listed += share;
-    append(`| ${hops}歩 | ${(share * 100).toFixed(2)}% |`);
+    records.push(shareRecord({ hops, or_more: false }, share));
   }
-  append(`| ${MAX_LISTED_HOPS + 1}歩以上 | ${((1 - listed) * 100).toFixed(2)}% |`);
-  append();
+  records.push(shareRecord({ hops: MAX_LISTED_HOPS + 1, or_more: true }, 1 - listed));
+  return records;
 }
 
-function appendMethod(append: (line?: string) => void): void {
-  append('## 計測方法');
-  append();
-  append('- **測るのは「最初の段（ContentSkeleton.md 2.1節）を越えるのに要るもの6つが、その地点から');
-  append('  何歩先にあるか」**。歩数は道の本数で、0歩はその土地自身で採れること。');
-  append('- 経路は**歩数が最短のもの**を採り、同じ歩数なら移動時間が短い方。移動時間と探索時間は');
-  append('  その経路のもので、最短の移動時間ではない。');
-  append('- **道は未発見でも数える。** 判定するのは島の作りであってプレイヤーの進み具合ではない。');
-  append('  道を見つけるのに要る時間は「探索時間」として別に出す——その経路で通る土地について、');
-  append('  道が全部出そろうまでの探索回数（`exploration_progress`の上限−1）×1回の所要時間の和。');
-  append('  **着いた先の探索は含まない**（そこで目当ての物を引くまでの回数は引きの運）。');
-  append('- 出どころ（どの土地で何が採れるか）は`locations.yaml`の`explore`の実測。`pick`の重みからは');
-  append('  **期待値まで読み**、どの回に何を引くかは数えない。');
-  append('- **「全部が揃うまで」は、届いたものの中で最も遠い要るもの**（歩数、同歩数なら移動時間で');
-  append('  比べる）1つの値で表す。列どうしを混ぜないため、3つの数は同じ1本の経路のもの。');
-  append('- 中央値・95%ileは最近隣法（nearest-rank）、標準偏差は標本標準偏差（n-1）。');
-  append();
-  append('**この表は判定を出さない。** どの地点を開始地点の候補にするか、どの散らばりなら広すぎるかは');
-  append('（ContentSkeleton.md 2.3.2節・2.3.3節）、ここの数字を見てから決める。');
-  append();
-}
-
-function appendSources(append: (line?: string) => void, sources: StartupNeedSources): void {
-  append('## 要るものの出どころ');
-  append();
-  append('`locations.yaml`の`explore`の実測。**1つの土地では揃わない**ことがこの表の要点で、');
-  append('荒野は火口・錐・刃を持つが軸が無く、砂浜は軸しか持たない（ContentSkeleton.md 2.3節）。');
-  append();
-  append('| 要るもの | 出どころ | 採れる土地 | 1回の探索あたり |');
-  append('| --- | --- | --- | --- |');
-  for (const row of sources.rows)
-    append(
-      `| ${STARTUP_NEEDS[row.needIndex].label} | ${row.objectName} | ${row.locationDefName} |` +
-        ` ${row.expectedPerExplore.toFixed(3)}個 |`,
-    );
-  append();
-
-  append('### 土地の型ごと');
-  append();
-  append('探索時間は、その土地の道が全部出そろうまでの分数（上の「計測方法」参照）。');
-  append();
-  append('| 土地 | 採れる要るもの | 道が出そろうまでの探索時間 |');
-  append('| --- | --- | --- |');
-  for (const supply of sources.byLocationDef.values()) {
-    const labels = [...supply.needIndices]
-      .sort((a, b) => a - b)
-      .map((needIndex) => STARTUP_NEEDS[needIndex].label);
-    append(
-      `| ${supply.locationDefName} | ${labels.length === 0 ? '—' : labels.join('・')} |` +
-        ` ${supply.pathDiscoveryMinutes}分 |`,
-    );
-  }
-  append();
-}
-
-function appendPerSite(append: (line?: string) => void, stats: StartupReachStats): void {
-  append('## サイトごと');
-  append();
-  append(`全島の全サイト（${stats.siteCount}地点）をまとめた分布。**開始地点の候補になりうる地点の`);
-  append('全体像**で、選抜（ContentSkeleton.md 2.3節）はこの中から取ることになる。');
-  append();
-
-  append('### 要るものごと');
-  append();
-  appendStatTable(
-    append,
-    '歩数',
-    STARTUP_NEEDS.map((need, index) => [need.label, '歩', stats.perNeed[index].hops] as const),
-  );
-  appendStatTable(
-    append,
-    '移動時間',
-    STARTUP_NEEDS.map((need, index) => [need.label, '分', stats.perNeed[index].travelMinutes] as const),
-  );
-  appendStatTable(
-    append,
-    '探索時間',
-    STARTUP_NEEDS.map(
-      (need, index) => [need.label, '分', stats.perNeed[index].pathDiscoveryMinutes] as const,
-    ),
-  );
-
-  append('| 要るもの | 島のどこをたどっても届かないサイト |');
-  append('| --- | --- |');
-  for (const [index, need] of STARTUP_NEEDS.entries())
-    append(
-      `| ${need.label} | ${((stats.perNeed[index].unreachableSiteCount / stats.siteCount) * 100).toFixed(2)}% |`,
-    );
-  append();
-
-  append('### 全部が揃うまで');
-  append();
-  appendStatTable(append, '項目', [
-    ['歩数', '歩', stats.farthest.hops],
-    ['移動時間', '分', stats.farthest.travelMinutes],
-    ['探索時間', '分', stats.farthest.pathDiscoveryMinutes],
-  ]);
-  appendHopsHistogram(append, stats.farthest.hops);
-
-  append('| 最後まで残る要るもの | 割合 |');
-  append('| --- | --- |');
+function buildSections(sources: StartupNeedSources, stats: StartupReachStats): readonly YamlReportSection[] {
   const farthestTotal = stats.farthestNeedCounts.reduce((sum, count) => sum + count, 0);
-  for (const [index, need] of STARTUP_NEEDS.entries())
-    append(
-      `| ${need.label} | ${farthestTotal === 0 ? '-' : ((stats.farthestNeedCounts[index] / farthestTotal) * 100).toFixed(2)}% |`,
-    );
-  append();
-
-  append('### 始めた土地の型ごと');
-  append();
-  append('今の開始地点は砂浜が既定（`IslandSpawner.placePlayer`）なので、砂浜の行がそのまま');
-  append('今の立ち上がりになる。');
-  append();
-  append('| 土地 | 全部が揃うまでの歩数（平均） | 最小 | 最大 | n |');
-  append('| --- | --- | --- | --- | --- |');
-  for (const [name, stat] of [...stats.farthestHopsByLocation].sort((a, b) => a[0].localeCompare(b[0])))
-    append(
-      `| ${name} | ${stat.mean.toFixed(2)}歩 | ${stat.min.toFixed(0)}歩 |` +
-        ` ${stat.max.toFixed(0)}歩 | ${stat.count} |`,
-    );
-  append();
+  return [
+    {
+      key: 'meta',
+      records: [{ seeds: SEED_COUNT, islands: stats.islandCount, sites: stats.siteCount }],
+    },
+    {
+      key: 'need_sources',
+      records: sources.rows.map((row) => ({
+        need: STARTUP_NEEDS[row.needIndex].label,
+        object: row.objectName,
+        location: row.locationDefName,
+        unit: 'items_per_explore',
+        expected: rounded(row.expectedPerExplore, 3),
+      })),
+    },
+    {
+      key: 'location_supplies',
+      records: [...sources.byLocationDef.values()].map((supply) => ({
+        location: supply.locationDefName,
+        needs: [...supply.needIndices].sort((a, b) => a - b).map((i) => STARTUP_NEEDS[i].label),
+        unit: 'minutes',
+        path_discovery: supply.pathDiscoveryMinutes,
+      })),
+    },
+    {
+      key: 'site_reach_by_need',
+      records: STARTUP_NEEDS.flatMap((need, index) =>
+        statRecords({ need: need.label }, stats.perNeed[index]),
+      ),
+    },
+    {
+      key: 'site_unreachable_by_need',
+      records: STARTUP_NEEDS.map((need, index) =>
+        shareRecord({ need: need.label }, stats.perNeed[index].unreachableSiteCount / stats.siteCount),
+      ),
+    },
+    { key: 'site_all_needs', records: statRecords({}, stats.farthest) },
+    { key: 'site_all_needs_hops_histogram', records: hopsHistogramRecords(stats.farthest.hops) },
+    {
+      key: 'site_last_need',
+      records: STARTUP_NEEDS.map((need, index) =>
+        shareRecord({ need: need.label }, stats.farthestNeedCounts[index] / farthestTotal),
+      ),
+    },
+    {
+      key: 'site_all_needs_hops_by_start_location',
+      records: [...stats.farthestHopsByLocation]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([location, stat]) => statRecord({ location, measure: 'hops', unit: 'hops' }, stat)),
+    },
+    { key: 'island_best_site', records: statRecords({}, stats.best) },
+    { key: 'island_best_site_hops_histogram', records: hopsHistogramRecords(stats.best.hops) },
+    {
+      key: 'island_best_site_by_need',
+      records: STARTUP_NEEDS.flatMap((need, index) =>
+        statRecords({ need: need.label }, stats.bestPerNeed[index]),
+      ),
+    },
+    {
+      key: 'island_missing_need',
+      records: STARTUP_NEEDS.map((need, index) =>
+        shareRecord({ need: need.label }, stats.missingIslandCounts[index] / stats.islandCount),
+      ),
+    },
+    {
+      key: 'island_best_site_unreachable',
+      records: [shareRecord({}, stats.islandsWithUnreachableCount / stats.islandCount)],
+    },
+    {
+      key: 'island_best_site_locations',
+      records: [...stats.bestLocationCounts]
+        .sort((a, b) => b[1] - a[1])
+        .map(([location, count]) => shareRecord({ location }, count / stats.islandCount)),
+    },
+  ];
 }
 
-function appendPerIsland(append: (line?: string) => void, stats: StartupReachStats): void {
-  append('## 島ごと');
-  append();
-  append('その島で**最も条件の良いサイト**の値。島は引き直さないので（ContentSkeleton.md 2.3.1節）、');
-  append('どの地点も条件を満たさない島ではここから始まる——**この分布の散らばりが、選抜をしても');
-  append('引きで決まってしまうかどうかの材料**になる（同2.3.3節）。');
-  append();
-  append('「最も条件の良い」の順は「届かない数 → 全部が揃うまでの歩数 → その移動時間 → その探索時間');
-  append('→ サイトのindex」で、良し悪しの判定ではなく順序の定義。');
-  append();
-  appendStatTable(append, '項目', [
-    ['歩数', '歩', stats.best.hops],
-    ['移動時間', '分', stats.best.travelMinutes],
-    ['探索時間', '分', stats.best.pathDiscoveryMinutes],
-  ]);
-  appendHopsHistogram(append, stats.best.hops);
-
-  append('### 最も条件の良いサイトの要るものごと');
-  append();
-  append('歩数がほとんど動かないときは、散らばりは移動時間と探索時間の側に出る。');
-  append();
-  append('| 要るもの | 歩数（平均） | 歩数（最大） | 移動時間（平均） | 探索時間（平均） |');
-  append('| --- | --- | --- | --- | --- |');
-  for (const [index, need] of STARTUP_NEEDS.entries()) {
-    const perNeed = stats.bestPerNeed[index];
-    append(
-      `| ${need.label} | ${perNeed.hops.mean.toFixed(2)}歩 | ${perNeed.hops.max.toFixed(0)}歩 |` +
-        ` ${perNeed.travelMinutes.mean.toFixed(2)}分 | ${perNeed.pathDiscoveryMinutes.mean.toFixed(2)}分 |`,
-    );
-  }
-  append();
-
-  append('### 島全体で採れないもの');
-  append();
-  append('| 要るもの | 島のどこでも採れない島 |');
-  append('| --- | --- |');
-  for (const [index, need] of STARTUP_NEEDS.entries())
-    append(
-      `| ${need.label} | ${((stats.missingIslandCounts[index] / stats.islandCount) * 100).toFixed(2)}% |`,
-    );
-  append();
-  append(
-    `最も条件の良いサイトからでも届かない要るものがある島: ` +
-      `${((stats.islandsWithUnreachableCount / stats.islandCount) * 100).toFixed(2)}%`,
-  );
-  append();
-
-  append('### 最も条件の良いサイトの土地');
-  append();
-  append('| 土地 | 割合 |');
-  append('| --- | --- |');
-  for (const [name, count] of [...stats.bestLocationCounts].sort((a, b) => b[1] - a[1]))
-    append(`| ${name} | ${((count / stats.islandCount) * 100).toFixed(2)}% |`);
-  append();
-}
-
-function buildReport(sources: StartupNeedSources, stats: StartupReachStats): string {
-  const lines: string[] = [];
-  const append = (line = ''): void => {
-    lines.push(line);
-  };
-
-  append('# 開始地点の立ち上がりレポート');
-  append();
-  append('`tests/diagnostics/startupReachStatsReport.test.ts` が、定義');
-  append('（`src/assets/world-codex/*.yaml`）と生成された島だけから計算した、');
-  append(`開始地点ごとの「立ち上がりやすさ」（シード ${SEED_COUNT} 個）。`);
-  append('`locations.yaml`の発見物か`terrain_generation.yaml`を変更したら以下で再生成する。');
-  append();
-  append('```');
-  append('npm run stats:startup');
-  append('```');
-  append();
-
-  appendMethod(append);
-  appendSources(append, sources);
-  appendPerSite(append, stats);
-  appendPerIsland(append, stats);
-
-  return lines.join('\n') + '\n';
-}
-
-const REPORT_PATH = join('docs', 'diagnostics', 'StartupReachStats.md');
+const REPORT_PATH = join('stats', 'startup_reach.yaml');
+const DOC_PATH = join('docs', 'diagnostics', 'StartupReachStats.md');
 
 /** 定義から島を生成して測り、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
 function buildReportFromDefinitions(): string {
@@ -391,11 +304,51 @@ function buildReportFromDefinitions(): string {
   for (let seed = 0; seed < SEED_COUNT; seed++)
     collect(stats, islandReachOf(sources, generateIsland(codex.generation, 'island', seed)));
 
-  return buildReport(sources, stats);
+  return formatYamlReport(
+    [
+      '開始地点ごとの「立ち上がりやすさ」。定義（src/assets/world-codex/*.yaml）と生成された島だけから計算した。',
+      '生成物。手で書き換えず、npm run stats:startup で作り直す。',
+      '何を測ったか・引いた線・数えていないものは docs/diagnostics/StartupReachStats.md。',
+    ],
+    buildSections(sources, stats),
+  );
 }
 
-describeReportRegeneration(REPORT_PATH, 'RUN_STARTUP_REACH_STATS', buildReportFromDefinitions, [
-  '# 開始地点の立ち上がりレポート',
-]);
+/**
+ * 手書きの文書が「YAMLの節」の表で挙げている節の名前。
+ *
+ * **生成物から手で書き写した文章は、生成物とずれる**（issue #775）。文書とYAMLを分けた以上、
+ * 一致は人の運用ではなく試験が見る。表の1列目のインラインコードだけを拾う。
+ */
+function documentedSectionKeys(markdown: string): string[] {
+  const table = /\n## YAMLの節\n([\s\S]*?)(?=\n## |$)/.exec(markdown);
+  if (table === null) return [];
+  return [...table[1].matchAll(/^\| `([^`]+)` \|/gm)].map((match) => match[1]);
+}
+
+const DOCUMENTED_SECTIONS = documentedSectionKeys(readFileSync(DOC_PATH, 'utf8'));
+
+describe('手書きの文書とYAML', () => {
+  it('文書が挙げる節が、YAMLに在って空でない', () => {
+    expect(DOCUMENTED_SECTIONS.length, `${DOC_PATH}の「YAMLの節」の表が読めない`).toBeGreaterThan(0);
+
+    const missing = missingYamlSections(readFileSync(REPORT_PATH, 'utf8'), DOCUMENTED_SECTIONS);
+    expect(missing, `${DOC_PATH}が、${REPORT_PATH}に無い節を語っている`).toEqual([]);
+  });
+
+  it('YAMLの節が、すべて文書に挙がっている', () => {
+    const undocumented = yamlSectionKeys(readFileSync(REPORT_PATH, 'utf8')).filter(
+      (key) => !DOCUMENTED_SECTIONS.includes(key),
+    );
+    expect(undocumented, `${DOC_PATH}の「YAMLの節」の表に足す`).toEqual([]);
+  });
+});
+
+describeYamlReportRegeneration(
+  REPORT_PATH,
+  'RUN_STARTUP_REACH_STATS',
+  buildReportFromDefinitions,
+  DOCUMENTED_SECTIONS,
+);
 
 describeReportFreshness(REPORT_PATH, 'npm run stats:startup', buildReportFromDefinitions);
