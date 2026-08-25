@@ -34,12 +34,13 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | アクション | 休息の4つ（`wait` / `rest` / `nap` / `sleep`。下の[休息](#休息)節。`player_character` trait が配る） |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterCard.ts`。絵が入るまでの繋ぎ） |
 
-`status` タグが付くのは `pain` / `blood` / `satiety` / `hydration` / `wakefulness` / `stamina` / `load` の7つで、
-宣言順もこの順に揃える（`propertiesWithTag` の戻り順がそのままステータスエリアの並びになる、
-[`StatusArea.md`](../ui/StatusArea.md)）。先頭の3つが trait 由来なのは、trait の props がキャラクタ自身の
-props より前に並ぶため（`RawObjectDef.resolve`）。**栄養素の在庫（`carbohydrate` ほか3つ）は `status` を
-持たない**——常に見せるのは腹が満ちているかどうかだけで、在庫は開いて見るもの
-（[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節）。
+`status` タグが付くのは `pain` / `blood` / `satiety` / `vitamin` / `hydration` / `wakefulness` / `stamina` /
+`load` の8つで、宣言順もこの順に揃える（`propertiesWithTag` の戻り順がそのままステータスエリアの並びに
+なる、[`StatusArea.md`](../ui/StatusArea.md)）。先頭の4つが trait 由来なのは、trait の props がキャラクタ
+自身の props より前に並ぶため（`RawObjectDef.resolve`）。**栄養素の在庫（`carbohydrate` ほか3つ）は
+`status` を持たない**——常に見せるのは腹が満ちているかどうかだけで、在庫は開いて見るもの
+（[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節）。**ビタミンだけが在庫と別扱いなのは、
+尽きた先の弊害を段が持つ**ため（同 4 節）。
 
 気絶を決める `consciousness` は、`pain` と同じくキャラクタ間で共通の値としてここへ加わる予定である
 （押し下げる側は [`VitalsSystem.md`](../engine/VitalsSystem.md) 2 節。気を失った手番の飛ばし方が
@@ -64,7 +65,9 @@ props より前に並ぶため（`RawObjectDef.resolve`）。**栄養素の在�
 - **栄養素の在庫**（`carbohydrate` / `protein` / `lipid`）: **単位は tick**（体脂肪と同じ物差し）。
   在庫がある間は `body_fat` へ流れ続け、速さは栄養素ごとに違う（同 3 節）。個体差は持たず trait が配る。
 - **`vitamin`（ビタミン）**: **単位は mg**（ビタミンC相当）。エネルギーにならないので在庫の3本とは
-  物差しが違う（同 4 節）。同じく trait が配る。
+  物差しが違う（同 4 節）。同じく trait が配る。一番下の段 **`scurvy`**（壊血病）が `pain` を押し上げる
+  ——**体調不良を怪我のカードにせず、原因となる値の段に持たせる**
+  （[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）唯一の実装例。
 - **`hydration`（水分）**: `-1/tick` 固定で、`max` が「満水から何 tick 保つか」。**減り方に個体差を
   持たせない**——キャラクタが違っても、飲んだ水1mLの意味が変わってはならないため。持ちの差は
   `max`（＝体が抱える水の量）で表す。液体の mL からの換算は飲用側の宣言が持つ（`transfer` の
@@ -119,6 +122,9 @@ props より前に並ぶため（`RawObjectDef.resolve`）。**栄養素の在�
 - `hydration` も残り時間で切る: 残り2日未満で `caution`、残り1日未満で `danger`、
   残り6時間未満で `fatal`。
 - tickで減らない `stamina` は割合で切る: `max` の60%未満で `caution`、20%未満で `danger`。
+- `vitamin` の80%より下は現実の量で切る: 300mg 未満が壊血病（`danger`）で、その上の `caution` の
+  境目は 600mg（残り12.5日）。**発症の境目だけは残り時間ではなく実際の血中量**で、外から検算できる
+  （[`DesignPrinciples.md`](../concept/DesignPrinciples.md) 「現実に単位があるものは、その単位で持つ」）。
 - `blood` は**失った割合**で切る（臨床の出血性ショックの分類、
   [`VitalsSystem.md`](../engine/VitalsSystem.md) 3 節）。2割失って安全域を外れるので、上の80%の境界と
   ちょうど一致する。以降 3割で `caution`、4割で `danger`、6割で `fatal`。

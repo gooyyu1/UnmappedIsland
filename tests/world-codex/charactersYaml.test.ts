@@ -154,7 +154,9 @@ describe('プレイヤーキャラクタの定義', () => {
       ['carbohydrate', ['nutrition']],
       ['protein', ['nutrition']],
       ['lipid', ['nutrition']],
-      ['vitamin', ['nutrition']],
+      // ビタミンだけは在庫の3本と違い、尽きた先（壊血病）を段が持つのでステータスエリアに出す
+      // （DigestionSystem.md 4節）。
+      ['vitamin', ['status', 'nutrition']],
     ])('%sを持ち、期待されるプロパティタグが付いている', (propertyName, expectedTags) => {
       const tagNames = propOf(def(character), propertyName).tags.map((id) =>
         codex.propertyTagNames.getName(id),
@@ -163,7 +165,7 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(tagNames.sort()).toEqual([...expectedTags].sort());
     });
 
-    it('ステータスエリアに出るのは7件で、並び順も揃っている', () => {
+    it('ステータスエリアに出るのは8件で、並び順も揃っている', () => {
       // propertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（StatusArea.md 3節）。
       const instance = new WorldSession(codex).createObject(def(character).globalId);
       const status = instance.propertiesWithTag(codex.propertyTagNames.getId('status'));
@@ -172,6 +174,7 @@ describe('プレイヤーキャラクタの定義', () => {
         'pain',
         'blood',
         'satiety',
+        'vitamin',
         'hydration',
         'wakefulness',
         'stamina',
@@ -229,7 +232,7 @@ describe('プレイヤーキャラクタの定義', () => {
 
     // 満腹感はここに含めない。maxが容量ではなく感じ方の頂点で、実際に取る値の分布から刻むため
     // （DigestionSystem.md 2節）。
-    it.each(['hydration', 'wakefulness', 'stamina', 'blood'])(
+    it.each(['hydration', 'wakefulness', 'stamina', 'blood', 'vitamin'])(
       '%sは最大値の80%%を下回ると安全域から外れる',
       (propertyName) => {
         // 最大値だけ変えてstagesを直し忘れると、ステータスエリアに出始める位置がずれる。

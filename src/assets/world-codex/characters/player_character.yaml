@@ -54,9 +54,9 @@ traits:
       injuries:
         cell: {accept: {tag: injury}}
     props:
-      # 今感じている痛み。自分では動かず、injuriesスロットの中の怪我がmodifyで押し上げる
-      # （injuries.yaml）ので、valueは0のまま。増える側が悪いプロパティなので、段はmaxからの
-      # 割合で刻む（docs/world/Characters.md）。
+      # 今感じている痛み。自分では動かず、外から負った怪我（injuries.yaml）と、内側の不調を表す段
+      # （ビタミンのscurvy段）がmodifyで押し上げるので、valueは0のまま。増える側が悪いプロパティ
+      # なので、段はmaxからの割合で刻む（docs/world/Characters.md）。
       pain:
         tags: [status, health]
         value: 0
@@ -154,11 +154,28 @@ traits:
       # 「食べていない」と区別が付かない。だから量を別に持つ。
       #
       # ヒトのプールは飽和で約1,500mg、300mgを割ると壊血病が出る。代謝回転は1日およそ48mg。
-      # 尽きた先（壊血病）はまだ書いていない。
+      #
+      # **壊血病は、この値の一番下の段が持つ**（同4節）。怪我のカードは作らない——身体の外から
+      # 負ったものだけを怪我にする（docs/concept/DesignPrinciples.md）。
+      #
+      # 段の境目は現実の量で置く。壊血病が出るのは300mgを割ったときで、残りは1日48mgの回転から
+      # 読める日数（1,200＝残り25日で安全域を外れる80%規約、600＝残り12.5日）。
       vitamin:
-        tags: [nutrition]
+        tags: [status, nutrition]
         value: 900
         range: {min: 0, max: 1500}
+        stages:
+          # 壊血病。古傷が開き、歯が抜ける。痛みは刺し傷・牙の傷と並ぶ60で、この島で最も重い段。
+          # modifyなので可逆——葉物を食べて段を抜ければ、その場で引く。
+          - name: scurvy
+            alert: danger
+            passives:
+              - modify:
+                  self:
+                    pain: 60
+          - {name: deficient, min: 300, alert: caution}
+          - {name: waning, min: 600, alert: watch}
+          - {name: replete, min: 1200}
         passives:
           - add:
               self:
