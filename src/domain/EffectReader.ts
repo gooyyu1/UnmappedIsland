@@ -30,8 +30,11 @@ export interface EffectReader {
   /** `spawn`（9.4節）。配置先（into）は読み上げない——どこへ入るかは世界の形の話で、宣言の意味ではない。 */
   spawn(objectGlobalId: number, count: number): void;
 
-  /** `destroy`（9.3節）。 */
-  destroy(target: ObjectRefReading): void;
+  /**
+   * `destroy`（9.3節）。reasonはこの消滅が名乗る名前で、書かれていなければundefined
+   * （名乗らない消滅は、消された側にも何も残らない）。
+   */
+  destroy(target: ObjectRefReading, reason: string | undefined): void;
 
   /**
    * `become`（9.9節）。行き先は識別子ではなく座標——動かす軸とその値——で渡す（3.5節）。

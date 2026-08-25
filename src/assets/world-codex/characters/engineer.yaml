@@ -20,14 +20,14 @@ object_defs:
       # eatはこの段の名前で「もう食べられない」を見る（同2節）。初期値は最後の食事から数時間の位置で、
       # 腸（trait側）と合わせて満腹感が留意域から始まる（Characters.md 域の区分節）。
       # 満水から3日（288 tick）。
-      # 尽きれば渇きで死ぬ。on_minが既定のクランプを置き換えるので、0を割った値はそのまま残り、
-      # 死因（どの段で尽きたか）を後から読める（VitalsSystem.md 6節）。
+      # 尽きれば渇きで死ぬ。死因を名乗るのは消す宣言（destroyのreason、9.3節）で、残った値からは
+      # 推測しない（VitalsSystem.md 6節）。
       hydration:
         tags: [status, nutrition]
         value: 216
         range: {min: 0, max: 288}
         on_min:
-          destroy: self
+          destroy: {subject: self, reason: dehydrated}
         stages:
           - {name: dehydrated, alert: fatal}
           - {name: parched, min: 24, alert: danger}
@@ -49,9 +49,9 @@ object_defs:
         value: 1200
         range: {min: 0, max: 4800}
         on_min:
-          destroy: self
+          destroy: {subject: self, reason: starved}
         stages:
-          # 蓄えが尽きる域（残り1日ぶんを割った位置）。この段の名前が餓死の死因になる。
+          # 蓄えが尽きる域（残り1日ぶんを割った位置）。
           - name: starved
             alert: fatal
             passives:

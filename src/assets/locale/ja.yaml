@@ -908,7 +908,8 @@ reason_texts:
 stage_texts:
   # カードの覆いとして出るもの。離れて見ても読める短い語にする（全角3文字まで）。
   unconscious: 気絶
-  # 命を絶った値が居る段が、そのまま死因の名前になる（「渇きで死んだ。」）。
+  # 死因（命を絶つdestroyが名乗るreason、VitalsSystem.md 6節）。段と同じ語を当てているので、
+  # 引く先もここになる（「渇きで死んだ。」）。
   dehydrated: 渇き
   starved: 飢え
   exsanguinated: 失血

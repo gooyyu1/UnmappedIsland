@@ -160,9 +160,10 @@ describe('同梱の表示文字列ファイル', () => {
     const STAGE_MAX_WIDTH = 3;
 
     expect(locale.stage('unconscious'), '気絶は覆いを出す段（VitalsSystem.md 6節）').not.toBe('unconscious');
-    // 死亡ダイアログが死因として出す段（VitalsSystem.md 6節）。文言が欠けると識別子が画面に出る。
+    // 死亡ダイアログが死因として出す名前（命を絶つdestroyが名乗るreason、VitalsSystem.md 6節）。
+    // 文言が欠けると識別子が画面に出る。
     for (const name of ['dehydrated', 'starved', 'exsanguinated'])
-      expect(locale.stage(name), `死因の段 '${name}' には文言が必要`).not.toBe(name);
+      expect(locale.stage(name), `死因 '${name}' には文言が必要`).not.toBe(name);
 
     for (const name of declaredStageTextNames()) {
       const label = locale.stage(name);

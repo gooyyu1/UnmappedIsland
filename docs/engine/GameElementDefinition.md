@@ -1338,6 +1338,28 @@ interactions:
 こぼれずに一緒に外れます——割れた器の水は残りません。こぼれた先がすでにその tick の中身を数え終えて
 いれば、その物はそのtickの残りだけ動きません（1 tick の取りこぼしは、1日96 tickの刻みでは無視できます）。
 
+#### 消し方に名前を添える（`reason`）
+
+**どう消したのかは、消した宣言がその場で名乗ります。** 対象をマップで書くと `reason` を添えられ、
+名前は消された側に残ります（`WorldObject.destroyedReason`）。
+
+```yaml
+hydration:
+  range: {min: 0, max: 336}
+  on_min:
+    destroy: {subject: self, reason: dehydrated}   # 渇きで死んだ
+```
+
+マップの中身は `subject`（省略時は `self`）・`prop`・`reason` の3つで、`prop` を書けばその実効値が
+インスタンスIDとして指す相手（`destroy: {prop: smash_target, reason: crushed}`）、書かなければ
+`subject` そのものを指します。スカラーとリストの書き方はそのままで、リストの要素にもマップを置けます。
+
+**名乗らない消滅は、何も残しません。** 立ち去った獣（`stay_remaining` の `on_min`）と渇きで死んだ獣は、
+残った値から見れば同じ「下限で消えた」ですが、名乗るかどうかで分かれます——**消えたことの意味を
+知っているのは消した側だけ**なので、後から状態を見て推測しません
+（[`VitalsSystem.md`](./VitalsSystem.md) 6 節）。識別子は表示のためだけに使い（`signal` の名前・要件の
+`reason` と同じ扱い、9.8 節・14.6 節）、エンジンは名前の意味を知りません。
+
 ### 9.4 spawn
 
 `{object, into}` を指定すると、新規オブジェクトを生成し、指定した場所へ配置します。`spawn` は常に **`self`
