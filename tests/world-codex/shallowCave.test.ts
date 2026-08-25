@@ -70,6 +70,14 @@ describe('浅い洞窟', () => {
     return object.getProperty(codex.propertyNames.getId(propertyName)).getEffectiveValue();
   }
 
+  /** 種火に薪を少しくべた焚き火（fire.yaml）。雨に打たれなければ、1tickで薪のぶん（+2）だけ育つ。 */
+  function smallFire(session: WorldSession, place: WorldObject): WorldObject {
+    const hearth = spawnInto(session, 'campfire', place, 'fixtures');
+    hearth.getProperty(codex.propertyNames.getId('fuel')).setNumber(5);
+    hearth.getProperty(codex.propertyNames.getId('heat')).setNumber(1);
+    return hearth;
+  }
+
   /** 水の入った甕（liquid_containers.yaml）。空けて置けば、降っている雨のぶんだけ増える。 */
   function waterJar(session: WorldSession, place: WorldObject): WorldObject {
     return spawnInto(session, 'jar__content_water_liquid', place, 'items');
@@ -135,8 +143,19 @@ describe('浅い洞窟', () => {
     expect(execute(outdoorJar, 'collect_rain', player), '外では雨を受け始められる').toBe(true);
     expect(
       shelteredJar.tryGetAction('collect_rain', player)?.unmetRequirement()?.reasonName,
-      '中では降っていない扱いになる',
-    ).toBe('not_raining');
+      '中では雨が当たらない',
+    ).toBe('sheltered');
+  });
+
+  it('中では雨で火が消えない — 外の焚き火は消えるが、中の焚き火は育つ', () => {
+    const { session, land, cave } = outside(NOON_HOUR, 'heavy_rain');
+    const outdoorFire = smallFire(session, land);
+    const shelteredFire = smallFire(session, cave);
+
+    session.advanceWorldTime(15);
+
+    expect(propertyOf(outdoorFire, 'heat'), '野ざらしの炉は雨に消される').toBe(0);
+    expect(propertyOf(shelteredFire, 'heat'), '洞窟の中の炉は薪のぶんだけ育つ').toBe(3);
   });
 
   it('物を置いて拠点にできる — items / fixtures / charactersの3つが働く', () => {

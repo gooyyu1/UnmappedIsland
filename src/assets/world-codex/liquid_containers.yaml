@@ -42,6 +42,12 @@ traits:
             subject: ancestor
             prop: weather
             in: [light_rain, heavy_rain, storm]
+          # 雨が届く場所に置かれていること（ContainerSystem.md 6節）。降ってはいるが当たらない、が
+          # 降っていないと同じ文言にならないよう、理由を分けている。
+          - reason: sheltered
+            subject: ancestor
+            prop: sheltered
+            eq: 0
           # 中身のある容器では雨を受け始められない（既にある中身が水に置き換わってしまう）。
           - {reason: not_empty, subject: self, prop: fill, eq: 0}
         become: {content: water_liquid}
@@ -254,43 +260,49 @@ traits:
             fill: -2
 
   # 開いた容器に置かれている間、降っている雨のぶんだけ増える（LiquidContainerSystem.md 7節）。
-  # 蒸発の裏返しで、ゲートは同じ「容器の開き方」と「天候」の2つ。雨の強さは3段しかないので、
-  # 蒸発のような基礎＋上乗せの形は取らず、1行が1つの降り方の量そのものを表す。
-  # 満杯を超えた分はrangeが受け止める（fillの上限は容器のcapacity）。
+  # ゲートは「容器の開き方」「天候」「雨が届く場所か（sheltered、ContainerSystem.md 6節）」の3つ。
+  # 雨の強さは3段しかないので、蒸発のような基礎＋上乗せの形は取らず、1行が1つの降り方の量そのものを
+  # 表す。満杯を超えた分はrangeが受け止める（fillの上限は容器のcapacity）。
   rain_filled_liquid:
     passives:
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: light_rain}
         add:
           self:
             fill: 10
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: heavy_rain}
         add:
           self:
             fill: 20
       - conditions:
           - {subject: self, matches: {tag: wide_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: storm}
         add:
           self:
             fill: 40
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: light_rain}
         add:
           self:
             fill: 20
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: heavy_rain}
         add:
           self:
             fill: 40
       - conditions:
           - {subject: self, matches: {tag: narrow_open_container}}
+          - {subject: ancestor, prop: sheltered, eq: 0}
           - {subject: ancestor, prop: weather, eq: storm}
         add:
           self:
