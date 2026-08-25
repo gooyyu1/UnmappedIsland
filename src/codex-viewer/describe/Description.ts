@@ -27,6 +27,8 @@ export type DescriptionToken =
   | { readonly kind: 'combination'; readonly name: string }
   /** 要件が満たされない理由（14.6節）の識別子。 */
   | { readonly kind: 'reason'; readonly name: string }
+  /** 消し方の名乗り（9.3節のdestroyの`reason`）の識別子。要件の理由とは別の名前空間。 */
+  | { readonly kind: 'destroy_reason'; readonly name: string }
   /** 告げる出来事（9.8節のsignal）の識別子。 */
   | { readonly kind: 'signal'; readonly name: string };
 
@@ -72,6 +74,10 @@ export function combinationRef(name: string): DescriptionToken {
 
 export function reasonRef(name: string): DescriptionToken {
   return { kind: 'reason', name };
+}
+
+export function destroyReasonRef(name: string): DescriptionToken {
+  return { kind: 'destroy_reason', name };
 }
 
 export function signalRef(name: string): DescriptionToken {

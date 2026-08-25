@@ -3,6 +3,7 @@ import type { Rect } from '../ui/Rect';
 import { CHARACTER_DISPLAY_PADDING, PlayScreenLayout } from './looks/PlayScreenLayout';
 import { isAlive } from '../ui/lifetime';
 import { SCREEN_DEPTH } from './looks/screenDepth';
+import { causeOfDeathSentence } from './looks/deathTexts';
 import { ResponsiveScene } from './ResponsiveScene';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
 import type { WorldCodex } from '../domain/WorldCodex';
@@ -2300,10 +2301,10 @@ export class PlayScene extends ResponsiveScene {
     new ModalDialog(this, this.metrics, {
       card: this.view.characterCard,
       title: `${this.view.characterCard.name}は息絶えた`,
-      // 死因を名乗るのはワールドの側（命を絶った値が居る段）で、画面は文言を引くだけ。
+      // 死因を名乗るのはワールドの側（命を絶ったdestroy）で、画面は文言を引くだけ。
       body: [
         `生存 ${this.view.elapsedDays} 日目`,
-        cause === undefined ? '力尽きた。' : `${this.locale.stage(cause)}で死んだ。`,
+        causeOfDeathSentence(cause, this.locale),
         'この島の記録は残らない。',
       ].join('\n'),
       actions: [{ label: 'セーブ選択へ', style: 'primary', onTap: () => this.deleteSaveAndLeave() }],

@@ -177,6 +177,11 @@ export class CodexView {
     return this.identifierOrDisplayName(name, this.locale.signal(name));
   }
 
+  /** 消し方の名乗り（9.3節のdestroyのreason）の文言。死亡ダイアログに出るのと同じ言葉。 */
+  destroyReasonLabel(name: string): string {
+    return this.identifierOrDisplayName(name, this.locale.destroyReason(name));
+  }
+
   /**
    * object_defのタグ（4.1節）。**ここは識別子をそのまま出す**——`tag_texts`（Localization.tag）は
    * 在るが、ビューアはタグを見出しではなく分類の鍵として並べるため、引き当てていない。
@@ -293,6 +298,8 @@ export class CodexView {
       case 'reason':
         // 理由は識別子ではなく文言そのものが読みたい情報（Localization.md reason_texts節）。
         return this.refHtml('reason', token.name, this.locale.reason(token.name) ?? token.name, undefined);
+      case 'destroy_reason':
+        return this.refHtml('destroy-reason', token.name, this.destroyReasonLabel(token.name), undefined);
       case 'signal':
         return this.refHtml('signal', token.name, this.signalLabel(token.name), undefined);
     }

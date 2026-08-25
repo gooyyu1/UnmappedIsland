@@ -539,6 +539,9 @@ function parseDestroys(
  *
  * `reason`はこの消滅が名乗る名前で、消された側に残る（WorldObject.destroyedReason）。書かなければ
  * 何も残らないので、その消滅は死因として読まれない。
+ *
+ * **中身が空のマップは弾く。** `subject`の既定がselfなので`destroy: {}`も動いてしまうが、それは
+ * 何も書かずに`destroy: self`を得る抜け道で、書く理由が無い（policies.md「宣言漏れの扱い」）。
  */
 function parseDestroy(
   loader: WorldCodexYamlLoader,
@@ -549,6 +552,11 @@ function parseDestroy(
   if (!isMap(node))
     return new DestroyEffect(
       ObjectRef.ofRoot(parseObjectTargetRoot(context, asScalarText(node, context), scope)),
+    );
+
+  if (node.items.length === 0)
+    throw new YamlLoadError(
+      `${context}: destroyのマップが空です。消す相手（'subject'か'prop'）を書いてください（相手がself自身なら 'destroy: self'）。`,
     );
 
   requireKnownKeys(node, ['subject', 'prop', 'reason'], context);

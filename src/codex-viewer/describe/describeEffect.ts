@@ -1,5 +1,13 @@
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { objectRef, propertyRef, signalRef, signedNumber, slotRef, text } from './Description';
+import {
+  destroyReasonRef,
+  objectRef,
+  propertyRef,
+  signalRef,
+  signedNumber,
+  slotRef,
+  text,
+} from './Description';
 import type {
   EffectDeclaration,
   EffectReader,
@@ -134,8 +142,13 @@ class EffectDescriber implements EffectReader {
     this.out.write(...tokens);
   }
 
-  destroy(target: ObjectRefReading): void {
-    this.out.write(text('destroy '), ...objectRefTokens(target, this.names));
+  /** 消し方の名乗り（`reason`、9.3節）まで書く——名乗らない消滅と見分けが付くのは、この名前だけ。 */
+  destroy(target: ObjectRefReading, reason: string | undefined): void {
+    this.out.write(
+      text('destroy '),
+      ...objectRefTokens(target, this.names),
+      ...(reason === undefined ? [] : [text('（消し方: '), destroyReasonRef(reason), text('）')]),
+    );
   }
 
   /**

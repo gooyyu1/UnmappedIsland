@@ -897,6 +897,7 @@ reason_texts:
   at_sea: 海の上では降りられない。
   too_worn: この道具はもう使いものにならない。
   not_hot_enough: 石の熱が足りない。湯は沸かせない。
+  no_fuel: 燃やす物が入っていない。火種だけでは燃え続けない。
   too_dark: 暗すぎて手が付けられない。明かりが要る。
 
 # 段（GameElementDefinition.md 6.4節のstages）のうち、UIが名前を読んで画面に出すもの。カードの上へ
@@ -908,8 +909,8 @@ reason_texts:
 stage_texts:
   # カードの覆いとして出るもの。離れて見ても読める短い語にする（全角3文字まで）。
   unconscious: 気絶
-  # 死因（命を絶つdestroyが名乗るreason、VitalsSystem.md 6節）。段と同じ語を当てているので、
-  # 引く先もここになる（「渇きで死んだ。」）。
+  # 命を絶つ値が最後に通る段（VitalsSystem.md 6節）。まだ生きている域なので、ステータス詳細に
+  # 今いる段として出る。死んだと伝える文言は別の名前空間（destroy_reason_texts）が持つ。
   dehydrated: 渇き
   starved: 飢え
   exsanguinated: 失血
@@ -960,6 +961,16 @@ stage_texts:
   bone_dry: 乾いた
   leather_hard: 半乾き
   wet: 生乾き
+
+# 消し方の名乗り（GameElementDefinition.md 9.3節のdestroyのreason）。死亡ダイアログが「渇きで死んだ。」
+# のように死因として出す（VitalsSystem.md 6節）。
+#
+# 段（stage_texts）と同じ語を当てているものがあるが、名前空間は別。段は「今どこに居るか」で、
+# こちらは「どう消したか」を消す宣言が名乗ったもの。
+destroy_reason_texts:
+  dehydrated: 渇き
+  starved: 飢え
+  exsanguinated: 失血
 
 # 起きたことを告げる出来事（GameElementDefinition.md 9.8節のsignal）。起きた札の上に一瞬だけ浮かぶ
 # ので、離れて見ても読める短い語にする（CardView.md 14節）。

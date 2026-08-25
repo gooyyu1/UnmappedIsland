@@ -57,7 +57,7 @@ abstract class IgnoringEffectReader implements EffectReader {
   set(_target: ReferenceRoot, _propertyGlobalId: number, _value: number): void {}
   add(_reading: AddReading): void {}
   spawn(_objectGlobalId: number, _count: number): void {}
-  destroy(_target: ObjectRefReading): void {}
+  destroy(_target: ObjectRefReading, _reason: string | undefined): void {}
   become(_subject: ObjectRefReading, _axisValues: ReadonlyMap<string, string>): void {}
   transfer(_reading: TransferReading): void {}
   move(_subject: ObjectRefReading, _destination: ObjectRefReading, _slotGlobalId: number | undefined): void {}

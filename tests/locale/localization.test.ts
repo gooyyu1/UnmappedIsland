@@ -141,6 +141,17 @@ object_texts:
     expect(withReasons.reason('unknown_reason'), '未登録なら理由を出さない').toBeUndefined();
   });
 
+  it('消し方の名乗りの文言を引ける（未登録なら識別子）', () => {
+    const texts = parseLocale(
+      'ja.yaml',
+      'destroy_reason_texts:\n  dehydrated: 渇き\nstage_texts:\n  drowned: 水没\n',
+    );
+
+    expect(texts.destroyReason('dehydrated')).toBe('渇き');
+    expect(texts.destroyReason('drowned'), '段は別の名前空間なので引かない').toBe('drowned');
+    expect(texts.destroyReason('crushed'), '未登録でも名乗ったことは伝える').toBe('crushed');
+  });
+
   it('画面に出る段の文言を引ける（未登録なら識別子）', () => {
     const texts = parseLocale('ja.yaml', 'stage_texts:\n  unconscious: 気絶\n');
 

@@ -227,6 +227,26 @@ stage_texts:
 
 段の名前はプロパティごとの名前空間ですが、対応表は平らに持ちます——同じ名前の段は同じ言葉で出します。
 
+## destroy_reason_texts: 消し方の名乗りの文言
+
+`destroy` が添える `reason`（[GameElementDefinition.md](./GameElementDefinition.md) 9.3節）の文言です。
+死亡ダイアログが死因として出します（[VitalsSystem.md](./VitalsSystem.md) 6節）。`reason_texts` と同じく
+1行の文字列そのものを書きます。
+
+```yaml
+destroy_reason_texts:
+  dehydrated: 渇き
+```
+
+**`stage_texts` とも `reason_texts` とも別の名前空間です。** 命を絶つ値の段と死因に同じ語を当てることは
+できますが、揃っている必要はありません——段は「今どこに居るか」、消し方の名乗りは「どう消したか」で、
+決めているものが違います。名前を揃える規約にはしません。**揃っていることを検査で守っても、
+揃えられない死に方（段を通らない即死）が現れた時点で破れます。**
+
+未登録なら識別子がそのまま出ます（`signal_texts` と同じ）——消滅は既に起きているので、文言の欠けを
+黙って握り潰すと**名乗らずに消えた場合と見分けが付かなくなります**。付け忘れも改名の取り残しも、
+自動テスト（`tests/world-codex/bundledLocale.test.ts`）が捕まえます。
+
 ## signal_texts: 告げられた出来事の文言
 
 `signal`（[GameElementDefinition.md](./GameElementDefinition.md) 9.8節）が告げる出来事の識別子も、
