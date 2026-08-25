@@ -10,9 +10,12 @@
 扱います。本書が決めるのは、それらが合流する先である**4つのプロパティと、その底に着いたときに何が
 起きるか**だけです。
 
-**新設する文法はありません。** 導入する語彙は次の4つのプロパティと2つの段の名前だけで、
-残りは既存の仕組み——`stages` の中の `passives`（段ごとの寄与）・`modify`（可逆な寄与）・
-`add`（不可逆な削り）・`on_min`（下限へ達した瞬間の効果）——にそのまま載ります。
+**新設する文法は `destroy` の `reason`（消し方に名前を添える、
+[`GameElementDefinition.md`](./GameElementDefinition.md) 9.3 節）の1つだけです。** 死因を名乗るのに要ります
+（6 節）。導入する語彙は次の4つのプロパティと2つの段の名前、それに3つの死因の名前
+（`dehydrated`・`starved`・`exsanguinated`）で、残りは既存の仕組み——`stages` の中の `passives`
+（段ごとの寄与）・`modify`（可逆な寄与）・`add`（不可逆な削り）・`on_min`（下限へ達した瞬間の効果）
+——にそのまま載ります。
 
 | 語彙 | 何を表すか |
 | --- | --- |
@@ -173,8 +176,8 @@ shock:
 ## 3. 血は失われ、尽きれば死ぬ
 
 **`blood`（血液量、mL）は失われたら戻りにくい実体値**で、0 に達した瞬間に死にます。`on_min` で
-自分を消す形は怪我の `severity` と同じ（[`InjurySystem.md`](./InjurySystem.md) 1 節）です。`on_min` は
-既定のクランプを置き換えるので、尽きた値はそのまま残り、死因を後から読めます（6 節）。
+自分を消す形は怪我の `severity` と同じ（[`InjurySystem.md`](./InjurySystem.md) 1 節）です。消す宣言が
+死因の名前を添える（`reason: exsanguinated`）ので、消えたあとでも死に方を読めます（6 節）。
 
 ```yaml
 blood:
@@ -199,7 +202,7 @@ blood:
     - {name: low, min: 3500, alert: watch}
     - {name: replete, min: 4000}
   on_min:
-    destroy: self
+    destroy: {subject: self, reason: exsanguinated}   # 消す宣言が死因を名乗る（6 節）
   passives:
     # 血は自分で作り直される。1日およそ200mL。
     - add: {self: {blood: 2}}
@@ -291,15 +294,21 @@ laceration:
 
 | 起きること | 誰が起こす・読むか |
 | --- | --- |
-| 死 | **世界の側**（`on_min` の `destroy: self`）。プレイヤーが死んだことは「もうどこにも居ない」ことがそのまま表す（`Ending.kind` が `death`）ので、死んだという旗はどこにも持たない |
+| 死 | **世界の側**（命を絶つ値の `destroy`）。プレイヤーが死んだことは「もうどこにも居ない」ことがそのまま表す（`Ending.kind` が `death`）ので、死んだという旗はどこにも持たない。**どう死んだかだけは、消した宣言が名乗る**（`reason`） |
 | 気絶 | **画面**（操作を受け付けず時間だけ進める）と、**動物の1手を与える側**（[`HuntingSystem.md`](./HuntingSystem.md) 5.2節）が、段 `unconscious` を読んで手番を飛ばす |
 
-**死因を名乗るのはワールドの側です。** `on_min` は既定のクランプを置き換えるので、命を絶った値は
-`range` の外に残ります（[`GameElementDefinition.md`](./GameElementDefinition.md) 6.3節）。だから消えた
-あとでも「何が尽きたのか」を、その値が居る段の名前として読めます（`WorldObject.exhaustedStage`）——
-`dehydrated`・`starved`・`exsanguinated` が、そのまま3つの死に方の名前です。画面は段の文言を引くだけで
-（`Localization.stage`）、しきい値も死因の言い方も知りません。死に方が増えても、段を1つ名付けるだけで
+**死因を名乗るのはワールドの側です。** 命を絶つ `destroy` が名前を添え（`reason`、
+[`GameElementDefinition.md`](./GameElementDefinition.md) 9.3節）、その名前が消された側に残ります
+（`WorldObject.destroyedReason`）。`Ending.causeOfDeath` はそれを読むだけで、
+`dehydrated`・`starved`・`exsanguinated` が、そのまま3つの死に方の名前です。画面は名前から文言を引くだけで
+（`Localization.stage`）、しきい値も死因の言い方も知りません。死に方が増えても、名前を1つ添えるだけで
 画面に出ます。
+
+**残った数値から推測しません。** 「`on_min` を宣言していて下限以下の値」を探す読み方は、次の3つを
+同時に取りこぼします——上限に達して消える死に方（判定が下限側しか見ていない）、段を通らない即死
+（尽きた値がそもそも無い）、**致死でない消滅**（獣が立ち去る `stay_remaining` の `on_min` は、渇きで
+死ぬのと残った値の形が同じ）。3つとも「推測している」ことの帰結なので、個別に塞いでも次が出ます。
+名前を書かない `destroy` は何も名乗らないので、立ち去りが死因として読まれることはありません。
 
 **画面は死んだ瞬間の並びのまま止めます。** 死んだキャラクタはもうどの土地にも居ないので、そこから
 世界を映し直すと現在地も足元の物も別のものに入れ替わってしまいます。時間の経過も見せません——
@@ -315,6 +324,13 @@ laceration:
 読む側が知るのは**段の名前だけ**です。荷重の `too_heavy` を道の `travel` が読み、水分の `full` を飲用が
 読むのと同じ分担で（[`Characters.md`](../world/Characters.md) 値の刻み方節）、しきい値を宣言しているのは
 ワールドの側だけになります。だから `unconscious` は**名前を固定します**。
+
+### 6.1 死因を名乗れるのは `destroy` だけ【確定】
+
+**死は、そのインスタンスが世界から出ることであって、姿が変わることではありません。**
+`become`（[`GameElementDefinition.md`](./GameElementDefinition.md) 9.9節）は**インスタンスがそのまま続く**
+ので、最初から死に方ではありません。だから `become` は死因を持ちません——他の終わり方へ名前を配れる
+ようにしておく必要もありません。
 
 ## 7. 4つとも、人にも獣にも配る
 

@@ -64,6 +64,18 @@ export class WorldObject {
   }
 
   /**
+   * 自分を消した宣言が名乗った名前（`destroy`の`reason`、9.3節）。名前を書かない`destroy`で消えた物と、
+   * まだ消えていない物はundefined。
+   *
+   * **何が起きたのかは、起こした側がその場で名乗る。** 残った値から推測すると、上限で消えた場合・
+   * 段を通らない即死・致死でない消滅（動物の立ち去り）を同時に取りこぼす（VitalsSystem.md 6節）。
+   */
+  private _destroyedReason: string | undefined;
+  get destroyedReason(): string | undefined {
+    return this._destroyedReason;
+  }
+
+  /**
    * このオブジェクトが生きるセッション。**生成したセッションと、その後この物が居るセッションは同じ**
    * ——だからこの物へ何かを頼む側は、セッションを渡さない。配置の関門（attachToSlotOrRejection・destroy）も、
    * プロパティの値の変更（PropertyValue.add）も、ここから辿って自分で記録・判定する。
@@ -136,21 +148,6 @@ export class WorldObject {
   get artSuffix(): string | undefined {
     const propertyGlobalId = this.def.artByStagePropertyGlobalId;
     return propertyGlobalId === undefined ? undefined : this.tryGetProperty(propertyGlobalId)?.artSuffix;
-  }
-
-  /**
-   * 尽きたまま残っている値が今居る段（6.4節）の名前。尽きた値が無ければundefinedで、複数あれば
-   * propsの宣言順で最初の1つ。
-   *
-   * 尽きた瞬間に自分を消すプロパティ（on_minのdestroy、6.3節）は尽きた値のまま静止するので、
-   * **世界から出たあとでも「何が尽きて消えたのか」を答えられる**（VitalsSystem.md 6節の死因）。
-   */
-  get exhaustedStage(): string | undefined {
-    for (const property of this.properties) {
-      const stage = property.exhaustedStage;
-      if (stage !== undefined) return stage;
-    }
-    return undefined;
   }
 
   /**
@@ -584,11 +581,16 @@ export class WorldObject {
    * 現在の親から切り離す（destroy、9.3節）。切り離された時点でworldツリーから到達不能になり、tickの対象からも
    * 自然に外れる。既に親を持たない場合は何もしない（繰り返し実行しても安全、6.3節）。
    *
+   * **消した側は名前を名乗れる**（reason、9.3節）。名乗られた名前は消された側に残り、世界から出た
+   * あとでも「どう消されたか」を答える（destroyedReason）。名乗らない消滅——こぼれ落ちて行き場を
+   * 失う・立ち去る——は名前を持たないので、死因として読まれることもない。
+   *
    * **中身は道連れにしない。** 単独で在れる子（bound_to_ownerでない子、7.9節）は、消える自分ではなく
    * 自分の親——子から見た祖父——へこぼれ出す。治った怪我に当てていた包帯が消えてしまわないように、
    * 壊れた籠の中身が地面に散らばるように。
    */
-  destroy(): void {
+  destroy(reason?: string): void {
+    this._destroyedReason = reason;
     this.spillContentsTo(this._parent);
     const from = this._parentSlot;
     this.detachFromParent();

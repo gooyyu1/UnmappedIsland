@@ -273,6 +273,9 @@ describe('動物の1手', () => {
 
     passTurn(1);
     expect(rat.parent, '尽きた個体は世界から消える').toBeUndefined();
+    // 立ち去りは死ではない。消した宣言（stay_remainingのon_min）が名前を名乗らないので、
+    // この消滅は死因として読まれない（VitalsSystem.md 6節）。
+    expect(rat.destroyedReason, '立ち去った獣は、どう消えたかを名乗らない').toBeUndefined();
   });
 
   it('同じ土地に人が居る間は、立ち去りが止まる', () => {

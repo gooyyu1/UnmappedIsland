@@ -159,7 +159,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
     rates.forEach((rate, index) => expect(rate).toBeCloseTo([0.5, 0.7, 1, 1.3, 1.6][index], 10));
   });
 
-  it('絶食すると飢えで死に、死因は段starvedになる', () => {
+  it('絶食すると飢えで死に、死因はstarvedを名乗る', () => {
     stock(0);
 
     // 17.7日（DigestionSystem.md 4節）。基礎代謝が痩せるほど落ちるので、一定1/tickの15日より延びる。
@@ -168,7 +168,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
 
     tick(DAY);
     expect(player.parent, '18日目には世界から外れる').toBeUndefined();
-    expect(player.exhaustedStage).toBe('starved');
+    expect(player.destroyedReason).toBe('starved');
   });
 
   /**

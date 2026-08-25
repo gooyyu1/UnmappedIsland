@@ -206,17 +206,6 @@ export class PropertyValue {
     return this.stage?.art;
   }
 
-  /**
-   * 値が尽きたまま残っているなら（PropertyDef.isExhausted）、今居る段（6.4節）の名前。
-   * 尽きていないか、該当する段が無ければundefined。
-   *
-   * 尽きた瞬間に自分を消すプロパティ（on_minのdestroy、6.3節）は既定のクランプを持たないため、
-   * 尽きた値のまま静止する。「何が尽きたのか」はそこから読める。
-   */
-  get exhaustedStage(): string | undefined {
-    return this.def.isExhausted(this._number) ? this.stage?.name : undefined;
-  }
-
   /** rangeの中での位置（0〜1）。rangeを持たないプロパティはundefinedで、バーではなく数値で見せる。 */
   get ratio(): number | undefined {
     return this.def.ratioOf(this.getEffectiveValue());
