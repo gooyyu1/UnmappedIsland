@@ -61,6 +61,24 @@ traits:
       characters:
         cell_count: 1
         cell: {accept: {tag: character}}
+    props:
+      # その場を満たしている明るさ（IlluminationSystem.md 2節）。世界の明るさ（時刻と天気）を土台に、
+      # 樹冠と地面の反射ぶんを足したもの。**据え付けの光源は入らない**（同3節）。
+      # 底の-6は「これより暗い場所を区別しない」暗さの底で、光源より前に効く（同4節）。
+      #
+      # **valueを持たないので、場所ごとに必ず与える**（5節）。樹冠も反射も場所ごとに違い、
+      # 既定値を置くと書き忘れがそのまま「開けた土地」として通る。内訳の表は
+      # ContentSkeleton.md 8.1.2節が持ち、定義に書くのは合計だけ。
+      ambient_brightness:
+        base: {subject: ancestor}
+        range: {min: -6, max: 17}
+      # 手元の明るさ（同2節）。地面や炉に据えられた光源はここへ届く。
+      #
+      # **場所はlooking_brightnessを持たない。** これが「据え付けの光源は視界を明るくしない」の
+      # 全部で、光源の側は自分がどちらに効くかを知らない（同3節）。
+      hand_brightness:
+        value: 0
+        base: {subject: self, prop: ambient_brightness}
 
 object_defs:
   world:

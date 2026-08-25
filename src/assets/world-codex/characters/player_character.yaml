@@ -66,6 +66,18 @@ traits:
           - {name: sore, min: 25, alert: watch}
           - {name: hurting, min: 50, alert: caution}
           - {name: unbearable, min: 83, alert: danger}
+      # 行動の可否を決める2つの明るさ（docs/engine/IlluminationSystem.md 2節）。身体の仕組みでは
+      # ないが、どのキャラクタでも同じなので、痛み・血と同じくこの trait が配る。
+      #
+      # **手元は場所の手元を継ぐ**ので、地面や炉に据えた光源も入る。**視界は場所の環境光を継ぐ**
+      # ので、据えた光源は入らない——持ち歩ける明かりだけが道に付いてくる（同3節）。
+      # どちらへも、持っている光源が自分の子として届く。
+      hand_brightness:
+        value: 0
+        base: {subject: ancestor, prop: hand_brightness}
+      looking_brightness:
+        value: 0
+        base: {subject: ancestor, prop: ambient_brightness}
       # 体重（g）。**筏に乗れば積載として効く**（voyage.yaml）ので、担ぐ側も担がれる側になる。
       # 血液量が体重のおよそ1/13という下の関係から、5,000mLはちょうど65kgにあたる。個体差は
       # まだ持たせず、血と同じくこの trait が配る。

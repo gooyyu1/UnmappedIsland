@@ -8,6 +8,7 @@ import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { makeBrightEnoughForAnyAction } from '../support/illumination';
 
 /**
  * fire.yamlの火の連鎖を、実ファイルの定義だけで検証する。
@@ -52,6 +53,9 @@ describe('fire.yamlの火の連鎖', () => {
 
     land = spawnInto('grassland', worldInstance, 'locations');
     player = spawnInto(SAMPLE_CHARACTER, land, 'characters');
+    // 火起こしは手元の明るさを要求する（IlluminationSystem.md 5節）。ここで見たいのは火の連鎖なので、
+    // 時刻を作らずに火を起こす側で明るさを満たす。
+    makeBrightEnoughForAnyAction(player, codex);
   }
 
   function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {

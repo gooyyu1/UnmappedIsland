@@ -28,7 +28,12 @@ describe('liquid_containers.yamlの液体容器定義', () => {
     loadYamlFile(loader, worldCodexPath('liquid_containers.yaml'));
     // 容器を世界の下へ置くための土地（placeUnderWorld）。天候・日射を持つのは世界なので、
     // 容器はその下に居ないと蒸発も雨も成立しない。locations.yamlは依存が広いので最小のものを立てる。
-    loader.load('test_ground.yaml', 'object_defs:\n  test_ground:\n    traits: [location]\n');
+    // location traitのambient_brightnessはvalueを持たない（樹冠と地面の反射は場所ごと）ので、
+    // ここで与える。0は「遮るものが無い開けた場所」で、世界の日射がそのまま届く。
+    loader.load(
+      'test_ground.yaml',
+      'object_defs:\n  test_ground:\n    traits: [location]\n    props:\n      ambient_brightness: {value: 0}\n',
+    );
     codex = loader.buildAndReset();
 
     hydrationId = codex.propertyNames.getId('hydration');

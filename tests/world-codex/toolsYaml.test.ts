@@ -8,6 +8,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { createBrightEnoughActor } from '../support/illumination';
 
 /**
  * tools.yamlの道具定義と、素材から道具を作るcombinationの自動テスト。石を石へドラッグして
@@ -101,12 +102,14 @@ describe('tools.yamlの道具定義', () => {
     const hammer = session.createObject(codex.objectNames.getId('stone'));
     expect(target.moveToSlotOrRejection(beach.getSlot(itemsSlotId))).toBeUndefined();
 
-    const combination = target.combinationsWith(hammer, undefined).at(0);
+    // 打ち欠くのは手元の作業なので、明るさが要る（IlluminationSystem.md 5節）。
+    const knapper = createBrightEnoughActor(session, codex);
+    const combination = target.combinationsWith(hammer, knapper).at(0);
     expect(combination?.name, '石は石とのcombinationにマッチする').toBe('knap');
 
     expect(
       target
-        .combinationsWith(hammer, undefined)
+        .combinationsWith(hammer, knapper)
         .find((c) => c.name === 'knap')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -192,10 +195,13 @@ describe('石斧を作る', () => {
     expect(stem.moveToSlotOrRejection(field.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
     expect(wip.def.tags, 'タグの上でも刃物ではない').not.toContain(codex.tagNames.getId('cutting_tool'));
 
-    expect(stem.combinationsWith(wip, undefined), '作りかけは相手にならない').toEqual([]);
+    // 掻き取りは手元の明るさも要求する（IlluminationSystem.md 5節）。ここで見たいのは刃物かどうか
+    // なので、明るさの側は満たしておく。
+    const stripper = createBrightEnoughActor(session, codex);
+    expect(stem.combinationsWith(wip, stripper), '作りかけは相手にならない').toEqual([]);
     expect(
       stem
-        .combinationsWith(wip, undefined)
+        .combinationsWith(wip, stripper)
         .find((c) => c.name === 'strip')
         ?.tryExecute() === true,
       '名指しでも実行できない',
@@ -203,7 +209,7 @@ describe('石斧を作る', () => {
 
     const sharpStone = session.createObject(codex.objectNames.getId('sharp_stone'));
     expect(
-      stem.combinationsWith(sharpStone, undefined).map((combination) => combination.name),
+      stem.combinationsWith(sharpStone, stripper).map((combination) => combination.name),
       '出来上がった刃物でなら成立する',
     ).toEqual(['strip']);
   });

@@ -19,14 +19,13 @@
 `modify`（同 8.3節）・`conditions`（同 14節）だけで組み立てます。計算式を持ち込む `derived`（同 17節）は
 使いません。
 
-**在処**: 定義は `src/assets/world-codex/core.yaml`（world）・`locations.yaml`（土地）と各光源の型。
-world の `ambient_brightness`（時刻と天気の寄与、9節の3つの読み手）だけが `core.yaml` にあり、
-土地・キャラクタ・光源の定義はまだありません。
+**在処**: 定義は `src/assets/world-codex/` の `core.yaml`（world の環境光と、場所が共通で持つ2つの値）・
+`locations.yaml`（土地ごとの樹冠と反射、移動と探索の条件）・`voyage.yaml`（外洋・本土・筏）・
+`fire.yaml`（炉と松明）・`characters/player_character.yaml`（キャラクタの2つの値）。
 
-**確定度と実装状況**: **確定しているのは6節（値の土台を `base` で明示する）だけ**で、これは文法として
-実装済みです。**記述はすべて暫定です。** 実装があるのは world の側（2節の1行目・8節・9節）だけで、
-土地とキャラクタの宣言（2節の残り）・光源の型（3節）・行動ごとの条件（5節）・空を継がない場所
-（7節）は別タスクです。
+**確定度と実装状況**: **確定しているのは6節（値の土台を `base` で明示する）だけ**です。
+**記述はすべて暫定です。** 2節〜5節・8節・9節は実装済みで、未実装なのは空を継がない場所（7節）
+——【いつか: 洞窟内部】（[`Someday.md`](../Someday.md)）待ちで、入れる洞窟がまだありません。
 
 ## 1. 明るさはEV（照度の2を底とする対数）で持つ
 
@@ -64,12 +63,17 @@ EVは連続量なので小数を書けます（`GameElementDefinition.md` 6節�
 | オブジェクト | プロパティ | 土台（`base`） | 自分の `value` | 光源が届くか |
 | --- | --- | --- | --- | :-: |
 | world | `ambient_brightness` | — | 0（時刻と天気が `modify`） | — |
-| 土地 | `ambient_brightness` | world の `ambient_brightness` | 樹冠＋地面の反射 | — |
-| 土地 | `hand_brightness` | 自分の `ambient_brightness` | 0 | **据え付けの光源** |
-| キャラクタ | `hand_brightness` | 土地の `hand_brightness` | 0 | **持っている光源** |
-| キャラクタ | `looking_brightness` | 土地の **`ambient_brightness`** | 0 | **持っている光源** |
+| 場所 | `ambient_brightness` | 祖先の `ambient_brightness` | 樹冠＋地面の反射 | — |
+| 場所 | `hand_brightness` | 自分の `ambient_brightness` | 0 | **据え付けの光源** |
+| キャラクタ | `hand_brightness` | 場所の `hand_brightness` | 0 | **持っている光源** |
+| キャラクタ | `looking_brightness` | 場所の **`ambient_brightness`** | 0 | **持っている光源** |
 
-**土地は `looking_brightness` を持ちません。** これが「据え付けの光源は視界を明るくしない」の全部です（3節）。
+**場所は `looking_brightness` を持ちません。** これが「据え付けの光源は視界を明るくしない」の全部です（3節）。
+
+**2つを配るのは `location` trait**（`core.yaml`）で、土地だけでなく外洋・本土・筏（`voyage.yaml`）も
+同じ2つを持ちます。**筏が持たなければ、乗り込んだ瞬間に明かりの継ぎ目が切れます**——場所を名乗る物が
+間に挟まると、祖先を辿る土台はそこで止まるためです。`ambient_brightness` の `value` は trait に置かず、
+場所ごとに必ず書かせます（樹冠と反射は場所ごとに違い、既定値を置くと書き忘れが「開けた土地」として通る）。
 
 ```yaml
 # core.yaml — 世界（樹冠も反射も無い場所の明るさ）
@@ -79,26 +83,31 @@ world:
       value: 0                       # hourのstagesが太陽高度を、weatherのstagesが透過率をmodifyする
       range: {min: -6, max: 17}
 
-# locations.yaml — 密林（樹冠 -7・反射 -2）
-location_jungle:
+# core.yaml の location trait — あらゆる場所が持つ2つ（valueは継承先が与える）
+location:
   props:
     ambient_brightness:
-      value: -9
-      base: {subject: ancestor}      # worldのambient_brightnessが土台
+      base: {subject: ancestor}      # 祖先のambient_brightness（通常はworld）が土台
       range: {min: -6, max: 17}
     hand_brightness:
       value: 0
       base: {subject: self, prop: ambient_brightness}       # クランプ済みの環境光が土台
+
+# locations.yaml — 密林（樹冠 -7・反射 -2）
+jungle:
+  traits: [location, explorable]
+  props:
+    ambient_brightness: {value: -9}
 
 # キャラクタ
 character:
   props:
     hand_brightness:
       value: 0
-      base: {subject: ancestor, prop: hand_brightness}      # 土地の手元（据え付けの光源を含む）
+      base: {subject: ancestor, prop: hand_brightness}      # 場所の手元（据え付けの光源を含む）
     looking_brightness:
       value: 0
-      base: {subject: ancestor, prop: ambient_brightness}   # 土地の環境光だけ
+      base: {subject: ancestor, prop: ambient_brightness}   # 場所の環境光だけ
 ```
 
 ## 3. 光源は、置かれた場所だけで届き先が決まる
@@ -118,8 +127,11 @@ torch:
 | 置き方 | `parent` | 手元 | 視界 |
 | --- | --- | :-: | :-: |
 | 手に持つ | キャラクタ | ○ | ○ |
-| 地面や炉に据える | 土地 | ○ | **×**（土地は `looking_brightness` を持たない） |
+| 地面や炉に据える | 場所 | ○ | **×**（場所は `looking_brightness` を持たない） |
 | 袋にしまう | 袋 | × | × |
+
+**在るのは松明と炉の2つだけです**（`fire.yaml`。炉は火が生きている間、火力の段によらず同じ明るさ）。
+獣脂のランプは、獣脂そのものがまだ島にありません。
 
 **キャンプファイヤーが視界を良くしないのは、それが動かせない設置物だからです。** 光源自身は「自分は
 視界に効かない」と知りません。持ち歩けない明かりは道に付いてこないので、**焚き火のそばから夜の道へ
@@ -156,7 +168,7 @@ torch:
 | --- | --- | --: | --- |
 | 土地の間を移動する | `looking_brightness` | −5 | `path` の `travel`（`ExplorationSystem.md` 3節） |
 | 屋外で採る・探索する | `looking_brightness` | +5 | 土地の `explore` と、各採取の操作 |
-| 手元の細かい作業 | `hand_brightness` | +5 | 製作を進める操作（[`RecipeSystem.md`](./RecipeSystem.md)） |
+| 手元の細かい作業 | `hand_brightness` | +5 | その作業を宣言している `interactions` |
 
 ```yaml
 path:
@@ -176,6 +188,15 @@ path:
 - **明るさの条件を書かない操作は、暗さに依らずできる**という意味になります（食べる・飲む・眠る・火を
   くべる）。書き忘れと見分けが付かないので、見張る検査が要ります——【いつか: 明るさ条件の検査】
   遊びの側は無くても完成するので、後から足します（[`Someday.md`](../Someday.md)）。
+
+**線はこう引いてあります。** 条件を書くのは、暗いと形を損なう手作業（打つ・剥ぐ・撚る・縒る・火を熾す）と、
+目で探して選び取る屋外の行動（探索・草を刈って採る）と、陸の道を歩くことの3つだけで、手が覚えている
+粗い動作（食べる・くべる・石を積む・火種を落とす・焼け石を落とす・窯を割る・餌を置く）と、明るさとは
+別の値で線を引いている航海（`voyage.yaml`）には書きません。
+
+**レシピの工程（`steps`）には書けません。** 工程ごとの条件を持つ文法が無く、製作を進める操作は
+エンジン側が組み立てるためです（[`RecipeSystem.md`](./RecipeSystem.md) 2節・4節）。そのため「手元の
+細かい作業」の条件が乗っているのは、`interactions` として宣言されている手作業だけです。
 
 **夜、焚き火のそばで作ることはできますが、採りには出られません。** しきい値は同じ +5 でも、作る側は
 `hand_brightness`（据え付けの光源を含む）を、採る側は `looking_brightness`（含まない）を見るためです。
@@ -260,8 +281,13 @@ location_cave:
 | 空の色（`src/game/looks/skyTint.ts`） | 曇りの正午（+11）を翳りも輝きも無い基準に、底（−6）から上限（+17）までを1本の値で読む |
 | 水の蒸発（`liquid_containers.yaml`、[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 6節） | `gte` のしきい値3つ |
 
-**どれも world の側を見ます。** 土地の `ambient_brightness` には樹冠と地面の反射が入っているので、日射の
-代わりにはなりません。
+**気温と空の色は world の側を見ます。** 土地の `ambient_brightness` には樹冠と地面の反射が入っているので、
+日射の代わりにはなりません。
+
+**水の蒸発だけは、今は土地の側を見ています。** `{subject: ancestor}` は同名を定義している最初の祖先で
+止まるため、土地が `ambient_brightness` を持った時点で world まで遡らなくなりました。**密林や森に置いた
+器は日射ぶんの蒸発をしません。** 影で蒸発が遅いこと自体は現実に合いますが、しきい値（+12・+14・+16）は
+日射として置いた値なので、読み手をどちらに戻すかは決まっていません。
 
 **時刻の段（`core.yaml` の `hour`）は太陽高度で切ってあります。** 赤道付近の島なので日の出6時・日没
 18時が動かず、太陽は1時間に15°動くので、6時から17時までの12段（正午をはさんで対称）と夜の1段に

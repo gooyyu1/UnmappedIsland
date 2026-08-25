@@ -41,6 +41,10 @@ object_defs:
         cells:
           - {accept: {tag: sail}, max: 1}
     props:
+      # 筏は何も遮らないので、居る場所の明るさがそのまま乗っている人まで届く
+      # （docs/engine/IlluminationSystem.md 2節）。**場所を名乗る以上は明るさも名乗る**
+      # ——書かなければ、乗った瞬間に明かりの継ぎ目が切れる。
+      ambient_brightness: {value: 0}
       # 材料ぶんの自重（丸太6本120kg＋ロープ4本2.4kg）。中身の重さは実効値に足されるので（7.4節）、
       # 積むほど重くなる。**積むほど遅い**のは段が sail_speed を削るから（GameEndings.md 4節）。
       # 海の上で積荷を捨てれば段が下がり、そのぶん速くなる——専用の仕組みは要らない。
@@ -218,6 +222,9 @@ object_defs:
     singleton: true
     traits: [location]
     tags: [sea]
+    props:
+      # 遮るものが何も無いので、空の明るさがそのまま届く（IlluminationSystem.md 2節）。
+      ambient_brightness: {value: 0}
     passives:
       # 海流。浮かんでいるものを本土の方へ押し続ける。風が凪いでも進みが完全には止まらないのは
       # これがあるためで、向かい風はこれを打ち消す量として書いてある（筏の sail_speed 参照）。
@@ -232,3 +239,6 @@ object_defs:
     singleton: true
     traits: [location]
     tags: [mainland]
+    props:
+      # 着いた後を描かない場所だが、場所である以上は明るさを名乗る。開けた土地と同じ。
+      ambient_brightness: {value: 0}
