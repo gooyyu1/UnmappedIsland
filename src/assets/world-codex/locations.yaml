@@ -46,7 +46,7 @@ object_defs:
     # 行き先が個体ごとに違うので束ねない。束ねると代表の行き先しかカードに出せなくなる（4節）。
     stackable: false
     props:
-      # 道は地形そのものなので目方を持たない（cave_entranceと同じ、ContainerSystem.md 1節）。
+      # 道は地形そのものなので目方を持たない（浅い洞窟と同じ、ContainerSystem.md 1節）。
       # 筏から岸への道のように、重さを持つ物へ繋ぐ道もありうるため、0を明示する。
       weight: {value: 0}
       travel_minutes:
@@ -144,7 +144,7 @@ object_defs:
 
   # ------------------------------------------------------------------
   # 探索で見つかる設置物。fixtureタグによって土地のfixturesスロットへ振り分けられる。
-  # 発見されるだけのプレースホルダ（採取・内部生成などの振る舞いは今後の課題）。
+  # ベリーの茂みと湧き水は発見されるだけのプレースホルダ（採取の振る舞いは今後の課題）。
   # exploreが湧かせるヤシの木（palm_tree）はcoconut.yamlが定義する。
   # ------------------------------------------------------------------
 
@@ -155,13 +155,44 @@ object_defs:
       # 根の張った低木1株ぶん。
       weight: {value: 15000}
 
-  # 洞窟の入口。内部に子Locationグラフを持つ構造物（TerrainGeneration.md 3.7節）の入口となる想定。
-  cave_entrance:
+  # 浅い洞窟。岩肌が奥へ少しえぐれただけの空洞で、奥へ続く道は持たない（【いつか: 洞窟内部】、
+  # docs/Someday.md）。雨をしのげて物を置ける、見つければ無料で手に入る拠点（Dwellings.md 5節）。
+  #
+  # **設置物（fixture）でありながら場所（location）でもある**——筏（voyage.yaml）と同じ形で、
+  # 中へ入れば location traitのitems/fixtures/charactersがそのまま拠点の枠になる。
+  # 土地と同じく枠数もかさの上限も置かない（storageを名乗らない）ので、置ける量で洞窟を絞らない。
+  shallow_cave:
     tags: [fixture]
+    traits: [location]
+    # 中へ置いた物が個体ごとに違うので束ねない（SlotSystem.md 4節）。
+    stackable: false
     props:
       # **地形そのものなので、運べる目方を持たない。** 0は宣言漏れではなく、そう決めた印である
       # （ContainerSystem.md 1節）。以下の湧き水・道も同じ。
       weight: {value: 0}
+      # 岩陰ぶんの暗さ（IlluminationSystem.md 2節）。土台は親の土地なので、外が暮れれば中も暮れる。
+      # **-6は暗さの底ではなく外との差**——空を継がない真っ暗（同7節）は奥の洞窟の値で、ここは
+      # 日の差さない岩陰にすぎない。この差だと境目が世界の環境光+11（曇りの正午、同8節のbright段の
+      # 下端）に載るので、**外が曇りの正午より明るければ中でも手元の作業ができる**（しきい値+5、同5節）。
+      ambient_brightness: {value: -6}
+      # 中の天気。**ここでは雨が降らない**ことだけを言う宣言で、雨を見ている条件（fire.yamlの炉・
+      # liquid_containers.yamlの雨受け）は`ancestor`＝同名を宣言している最初の祖先で止まるため、
+      # 中の物は外の空を見なくなる（GameElementDefinition.md 8.6節）。
+      # **明るさには効かない**——段を持たないので、外の天気ぶんの暗さは上のbaseが継いだままになる。
+      weather: {value: cloudy}
+    interactions:
+      # 入る。**洞窟は場所なので、中の仕事は中に入らないとできない**（筏のboardと同じ）。
+      # 既に中に居るときは移動が空振りするだけなので、条件は置かない。
+      enter:
+        trigger: menu
+        duration: 5
+        move: {subject: actor, to: self}
+
+      # 出る。**明るさの条件は置かない**——置くと、夜に入った者が朝まで出られなくなる。
+      leave:
+        trigger: menu
+        duration: 5
+        move: {subject: actor, to: parent}
 
   # 湧き水。飲用・補水ポイントになる想定。
   spring:
@@ -299,7 +330,7 @@ object_defs:
         pick:
           # 1個
           - weight: {prop: cave_find}
-            spawn: {object: cave_entrance, into: self}
+            spawn: {object: shallow_cave, into: self}
           - weight: {prop: crab_find}
             spawn: {object: coconut_crab, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
@@ -362,7 +393,7 @@ object_defs:
         pick:
           # 1個
           - weight: {prop: cave_find}
-            spawn: {object: cave_entrance, into: self}
+            spawn: {object: shallow_cave, into: self}
           - weight: {prop: chalice_find}
             set: {self: {chalice_find: 0}}
             spawn: {object: golden_chalice, into: self}
@@ -657,7 +688,7 @@ object_defs:
         pick:
           # 1個
           - weight: {prop: cave_find}
-            spawn: {object: cave_entrance, into: self}
+            spawn: {object: shallow_cave, into: self}
           - weight: {prop: chalice_find}
             set: {self: {chalice_find: 0}}
             spawn: {object: golden_chalice, into: self}
@@ -776,7 +807,7 @@ object_defs:
         pick:
           # 1個
           - weight: {prop: cave_find}
-            spawn: {object: cave_entrance, into: self}
+            spawn: {object: shallow_cave, into: self}
           - weight: {prop: chalice_find}
             set: {self: {chalice_find: 0}}
             spawn: {object: golden_chalice, into: self}
@@ -832,7 +863,7 @@ object_defs:
         pick:
           # 1個
           - weight: 25
-            spawn: {object: cave_entrance, into: self}
+            spawn: {object: shallow_cave, into: self}
           - weight: 25
             spawn: {object: stone, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
@@ -843,7 +874,7 @@ object_defs:
             spawn: {object: stone, count: 2, into: self}
           - weight: 12
             spawn:
-              - {object: cave_entrance, into: self}
+              - {object: shallow_cave, into: self}
               - {object: stone, into: self}
           # 3個
           - weight: 8

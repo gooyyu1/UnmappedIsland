@@ -43,21 +43,19 @@
 ありません（[`LiquidContainerSystem.md`](./engine/LiquidContainerSystem.md) 1節）。空の容器と液体は別々に
 載っているので、無くても図鑑は読めます。載せると、容器と液体の組み合わせが1ページで確かめられます。
 
-### 洞窟内部 — 洞窟の中へ入って探索できるようにする
+### 洞窟内部 — 浅い洞窟の奥へ続く道を開く
 
-探索で `cave_entrance` は見つかりますが、入る先がありません。要るのは `structure_interior` スコープの
-再帰生成（[`TerrainGeneration.md`](./engine/TerrainGeneration.md) 3.7節）と、内部への遷移です。入口が
-見つかること自体は土地の顔になっているので、中へ入れなくても1周回は成立します。入れるときは次の3つが
-同時に要ります。
+浅い洞窟（`shallow_cave`）には入れますが、そこから奥へ続く道がありません。要るのは
+`structure_interior` スコープの再帰生成（[`TerrainGeneration.md`](./engine/TerrainGeneration.md) 3.7節）と、
+内部への遷移です。雨よけ・拠点・アーティファクトの行き先は浅い洞窟が既に担っているので、奥が無くても
+1周回は成立します。開くときは次の2つが同時に要ります。
 
 - **内部の土地にも、着いた時点で分かる違う名前が要ります。** 道のカードは `fixtures` レーンの中で
   並び替えできてしまうため、名前が無いと進んでいるのか戻っているのかが読めません
   （[`DesignPrinciples.md`](./concept/DesignPrinciples.md) の「見分けの付かない場所を作らない」節）。
   現実に即して見分けが付かないままにすると、盤面が読めず判断のしようがなくなります。
-- **洞窟は昼でも真っ暗です**（[`IlluminationSystem.md`](./engine/IlluminationSystem.md) 4節）。潜るには
-  必ず光源が要るので、燃料の需要が一段増えます。
-- **アーティファクトの出どころのうち8種類が洞窟の奥です**（[`ContentSkeleton.md`](./world/ContentSkeleton.md)
-  6節の確定した配分）。中へ入れないままなら、この8種類は別の行き先へ振り替えることになります。
+- **奥は昼でも真っ暗です**（[`IlluminationSystem.md`](./engine/IlluminationSystem.md) 7節）。浅い洞窟が
+  外の明るさを継ぐのに対し、奥は空を継がないので、潜るには必ず光源が要ります——燃料の需要が一段増えます。
 
 ## 動かせなかったもの
 
