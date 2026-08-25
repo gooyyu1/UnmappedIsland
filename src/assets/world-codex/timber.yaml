@@ -30,7 +30,7 @@ object_defs:
           - reason: too_dark
             subject: actor
             prop: looking_brightness
-            gte: 5
+            in_stage: bright
         add:
           dragged:
             durability: -120
