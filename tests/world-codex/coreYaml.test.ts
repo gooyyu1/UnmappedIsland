@@ -170,7 +170,7 @@ describe('core.yamlのworld定義', () => {
     assertBrightnessAt('scorching', 0, -6, '雲の無い真夜中も底');
     assertBrightnessAt('heavy_rain', 23, -6, '大雨の夜も底');
 
-    // 正午(11-12時): 太陽高度82.5°の快晴(+16)から、天気の透過率のぶん引かれる。
+    // 正午(11-12時): 太陽高度82.5°の雲のまったく無い空(+16)から、天気の透過率のぶん引かれる。
     assertBrightnessAt('scorching', 12, 16, '雲の無い正午は+16（125,000 lx）で最大');
     assertBrightnessAt('cloudy', 12, 11, '曇りの正午は+11（5,000 lx）');
     assertBrightnessAt('storm', 12, 6, '嵐の正午でも+6（約190 lx）で、真夜中とは区別が付く');
