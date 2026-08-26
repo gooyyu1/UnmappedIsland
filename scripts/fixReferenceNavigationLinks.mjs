@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // TypeDocはnavigationLinksのURLを、ページの階層に関わらずそのままhrefへ書き出す
 // （アセット等と違い、ページからの相対パスに直してくれない）。そのため相対リンクを書くと
 // Reference/index.htmlでは正しくても、Reference/modules/*.html など深い階層のページからは
