@@ -80,9 +80,9 @@ function parseAxis(name: string, raw: YamlNode): AxisDef {
     layers.push(parseGeneratorLayer(layerContext, layerNode));
   }
 
-  requireKnownKeys(node, ['range', 'generator'], context);
+  requireKnownKeys(node, ['range', 'generator', 'stretch_sites_to_range'], context);
   requireKnownKeys(generatorNode, ['blend'], context);
-  return new AxisDef(name, range, layers);
+  return new AxisDef(name, range, layers, tryGetBool(node, 'stretch_sites_to_range', context) ?? false);
 }
 
 function parseGeneratorLayer(context: string, node: YAMLMap): GeneratorLayer {

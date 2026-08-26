@@ -17,12 +17,16 @@
 axes:
   # 標高。内陸ほど高くなる距離場を主成分に、ノイズで起伏を加える。「海岸に囲まれた島で、
   # 内陸に山がある」という島の基本形はこの軸が作る。
+  # この軸だけはメートルへ読み替える（generation_scopes.island.elevation_top_meters）ので、
+  # 宣言した両端（海面0m・最高点400m）が実際に出るよう引き伸ばす。ノイズの重みが低いのは、
+  # 加算で乗せた起伏がそのまま海岸の高さのばらつきになるため（3.1節）。
   elevation:
     range: {min: 0, max: 100}
+    stretch_sites_to_range: true
     generator:
       blend:
-        - {type: distance_field, reference: edge, weight: 70}
-        - {type: layered_noise, octaves: 3, frequency: 2, seed_offset: 11, weight: 30}
+        - {type: distance_field, reference: edge, weight: 90}
+        - {type: layered_noise, octaves: 3, frequency: 2, seed_offset: 11, weight: 10}
 
   # 湿り気。純粋なノイズで、島のどこが湿りどこが乾くかをシードごとに変える。
   # 草原（中庸）・密林（高湿）・荒野（乾燥）の配置を分ける。
@@ -109,7 +113,7 @@ location_types:
     move_cost: 1.3
     axis_preferences:
       ruggedness: {ideal: 60, tolerance: 30, weight: 100}
-      elevation:  {ideal: 10, tolerance: 30, weight: 60}
+      elevation:  {ideal: 3, tolerance: 8, weight: 60}
     hard_limits:
       coastal_distance: {max: 15}
 
@@ -124,7 +128,7 @@ location_types:
     move_cost: 1.7
     axis_preferences:
       ruggedness: {ideal: 90, tolerance: 25, weight: 100}
-      elevation:  {ideal: 45, tolerance: 25, weight: 80}
+      elevation:  {ideal: 16, tolerance: 5, weight: 80}
     hard_limits:
       coastal_distance: {max: 15}
 
@@ -151,7 +155,7 @@ location_types:
       elevation: {ideal: 30, tolerance: 25, weight: 80}
     hard_limits:
       coastal_distance: {min: 16}
-      elevation: {max: 60}
+      elevation: {max: 68}
 
   forest:
     object_def: forest
@@ -176,7 +180,7 @@ location_types:
       elevation: {ideal: 40, tolerance: 30, weight: 80}
     hard_limits:
       coastal_distance: {min: 16}
-      elevation: {max: 70}
+      elevation: {max: 78}
 
   jungle:
     object_def: jungle
@@ -197,7 +201,7 @@ location_types:
     hard_limits:
       coastal_distance: {min: 16}
       humidity: {min: 65}
-      elevation: {max: 65}
+      elevation: {max: 73}
 
   rocky_field:
     object_def: rocky_field
@@ -215,7 +219,7 @@ location_types:
       humidity:   {ideal: 35, tolerance: 30, weight: 50}
     hard_limits:
       coastal_distance: {min: 16}
-      elevation: {max: 75}
+      elevation: {max: 84}
 
   wasteland:
     object_def: wasteland
@@ -250,10 +254,10 @@ location_types:
     applicable_scopes: [island]
     move_cost: 2
     axis_preferences:
-      elevation: {ideal: 75, tolerance: 15, weight: 100}
+      elevation: {ideal: 82, tolerance: 15, weight: 100}
     hard_limits:
       coastal_distance: {min: 16}
-      elevation: {min: 55}
+      elevation: {min: 64}
 
   mountain_peak:
     object_def: mountain_peak
@@ -266,8 +270,9 @@ location_types:
     axis_preferences:
       elevation: {ideal: 100, tolerance: 15, weight: 100}
     hard_limits:
+      # 山頂は島の最高点そのもの。stretch_sites_to_rangeで最高点だけが軸の上端に来る。
       coastal_distance: {min: 16}
-      elevation: {min: 80}
+      elevation: {min: 100}
 
 # ------------------------------------------------------------------
 # generation_scopes: 生成スコープごとのパラメータプリセット（TerrainGeneration.md 3.7節）。

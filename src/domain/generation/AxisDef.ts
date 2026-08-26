@@ -54,11 +54,25 @@ export class AxisDef {
   /** 重み合成するジェネレータ層（宣言順）。 */
   readonly layers: readonly GeneratorLayer[];
 
-  constructor(name: string, range: PropertyRange, layers: readonly GeneratorLayer[]) {
+  /**
+   * 1回の生成に出たサンプルの最小・最大が`range`の両端へ来るよう引き伸ばすか（3.1節）。
+   * ジェネレータの値はサイトの座標で決まり、どこにサイトが置かれるかは事前に決まらないため、
+   * **宣言した値域が実際に現れることを保証できるのはこの引き伸ばしだけ**。値域が現実の単位
+   * （標高のメートル）へ読み替えられる軸で要る。
+   */
+  readonly stretchesSitesToRange: boolean;
+
+  constructor(
+    name: string,
+    range: PropertyRange,
+    layers: readonly GeneratorLayer[],
+    stretchesSitesToRange: boolean,
+  ) {
     if (layers.length === 0) throw new Error(`軸'${name}': generator.blendには1つ以上の層が必要です。`);
 
     this.name = name;
     this.range = range;
     this.layers = layers;
+    this.stretchesSitesToRange = stretchesSitesToRange;
   }
 }

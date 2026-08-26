@@ -149,6 +149,40 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
       }
   });
 
+  // 宣言した値域が実際に出るかは「どこにサイトが置かれたか」で決まり、ジェネレータの式だけでは
+  // 保証できない（3.1節のstretch_sites_to_range）。メートルで宣言した以上、宣言と実測がずれれば
+  // 宣言のほうが嘘になるので、両端が出ることを島ごとに見張る。
+  it('標高は、宣言した両端（海面0mと最高点）が島ごとに実際に出る', () => {
+    const island = scope();
+    const elevationRange = codex.generation!.axes.get(island.elevationAxis)!.range;
+    const metersPerElevationUnit = island.metersPerElevationUnit(elevationRange.max - elevationRange.min);
+
+    for (const [seed, map] of islands) {
+      const meters = map.sites.map(
+        (site) => site.axisValues.get(island.elevationAxis)! * metersPerElevationUnit,
+      );
+      expect(Math.min(...meters), `シード${seed}: 島の最低点は海面`).toBe(0);
+      expect(Math.max(...meters), `シード${seed}: 島の最高点`).toBe(island.elevationTopMeters);
+    }
+  });
+
+  // 「海に接する土地が海面近くにある」も、両端が出ることとは別に崩れうる（両端だけなら、いちばん低い
+  // 1つが0mでも残りの海岸が高いままでありうる）。線は分布の調整値ではなく「海岸と呼べる高さか」で、
+  // 実測（500シード）の上限68mに対して余裕を持たせてある。
+  it('海岸帯の土地は海面近くに出る', () => {
+    const island = scope();
+    const elevationRange = codex.generation!.axes.get(island.elevationAxis)!.range;
+    const metersPerElevationUnit = island.metersPerElevationUnit(elevationRange.max - elevationRange.min);
+
+    for (const [seed, map] of islands)
+      for (const site of map.sites)
+        if (COAST_TYPES.includes(site.type!.name))
+          expect(
+            site.axisValues.get(island.elevationAxis)! * metersPerElevationUnit,
+            `シード${seed}: ${site.type!.name}の海抜`,
+          ).toBeLessThan(100);
+  });
+
   // 移動時間が「距離 ÷ 速さ」で出ていること自体を見張る（TerrainGeneration.md 3.5節）。分布は
   // TerrainStats.mdの鮮度が見ているが、そちらは再生成すれば緑に戻るので、**導出の向きが逆に
   // 戻された**ことは捕まえられない。宣言だけから組み直した値と突き合わせる。
