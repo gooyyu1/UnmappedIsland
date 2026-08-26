@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import process from 'node:process';
+import { setImmediate } from 'node:timers';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
@@ -11,6 +12,24 @@ import { parse } from 'yaml';
  * 生成物ではなく手書きの文書（`docs/diagnostics/*.md`）が持ち、両者が食い違っていないことは
  * {@link describeDocumentedSections} が見る。
  */
+
+/**
+ * 定義からレポートの中身を作る関数。**数十秒を超えるものは非同期にして、区切りのよいところで
+ * {@link yieldToEventLoop} を挟む**（同期のまま回し続けると、成功しても終了コードが1になる）。
+ */
+export type ReportBuilder = () => string | Promise<string>;
+
+/**
+ * 長い計算の途中で、イベントループへ一度返す。
+ *
+ * vitestのワーカーは、テストの進み具合をRPCで本体へ知らせて返事を待つ。**返事を受け取らないまま
+ * 60秒ブロックすると** `Timeout calling "onTaskUpdate"` が未処理エラーとして立ち、テストが全部
+ * 成功していても vitest は非ゼロで終わる（issue #828）。60秒はbirpcの既定値で、vitest 3.2.7には
+ * これを延ばす設定が無い。
+ */
+export async function yieldToEventLoop(): Promise<void> {
+  await new Promise<void>((resolve) => setImmediate(resolve));
+}
 
 /**
  * 生成済みのレポートを、今の定義から作り直して書き出す試験を立てる。
@@ -27,12 +46,12 @@ import { parse } from 'yaml';
 export function describeYamlReportRegeneration(
   reportPath: string,
   regenerateEnvVar: string,
-  buildFromDefinitions: () => string,
+  buildFromDefinitions: ReportBuilder,
   requiredSectionKeys: readonly string[],
 ): void {
   describe.runIf(process.env[regenerateEnvVar] === '1')(`${basename(reportPath)}の再生成`, () => {
-    it('今の定義から作り直して書き出す', () => {
-      const report = buildFromDefinitions();
+    it('今の定義から作り直して書き出す', async () => {
+      const report = await buildFromDefinitions();
       writeFileSync(reportPath, report, 'utf8');
       console.log(`Report written to: ${reportPath}`);
 
@@ -55,14 +74,14 @@ export function describeYamlReportRegeneration(
 export function describeReportFreshness(
   reportPath: string,
   regenerateCommand: string,
-  buildFromDefinitions: () => string,
+  buildFromDefinitions: ReportBuilder,
 ): void {
   describe(`${basename(reportPath)}の鮮度`, () => {
-    it('生成済みのレポートが、今の定義から作り直したものと一致する', () => {
+    it('生成済みのレポートが、今の定義から作り直したものと一致する', async () => {
       const stored = readFileSync(reportPath, 'utf8');
 
       expect(normalizeNewlines(stored), `古い。'${regenerateCommand}'で再生成する`).toBe(
-        normalizeNewlines(buildFromDefinitions()),
+        normalizeNewlines(await buildFromDefinitions()),
       );
     }, 600_000);
   });
