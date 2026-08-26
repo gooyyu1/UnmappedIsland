@@ -88,7 +88,10 @@ interface ExplorationPhaseStats {
   readonly dayTripImpossibleSiteCount: Stat;
 }
 
-/** 定常の局面（開き切った後）の1日の分布。 */
+/**
+ * 定常の局面（開き切った後）の1日の分布。**定常の局面が成立しない拠点は標本に入らない**
+ * （`BaseDailyPhases.steady`がundefined）ので、nがその島数になる。
+ */
 interface SteadyPhaseStats {
   readonly travelMinutesPerDay: Stat;
   readonly workMinutesPerDay: Stat;
@@ -120,6 +123,7 @@ function addDailyPhases(stats: TerrainStats, base: BaseDailyPhases): void {
     exploration.dayTripExplorationMinutesPerDay.add(base.exploration.dayTripExplorationMinutesPerDay!);
   }
 
+  if (base.steady === undefined) return;
   stats.steady.travelMinutesPerDay.add(base.steady.travelMinutesPerDay);
   stats.steady.workMinutesPerDay.add(base.steady.workMinutesPerDay);
   stats.steady.daysPerThousandWorkMinutes.add(1000 / base.steady.workMinutesPerDay);
@@ -346,6 +350,17 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
         ['work_per_day', 'minutes', stats.steady.workMinutesPerDay],
         ['days_per_1000_work_minutes', 'days', stats.steady.daysPerThousandWorkMinutes],
       ]),
+    },
+    {
+      key: 'steady_phase_islands',
+      records: [
+        {
+          unit: 'percent',
+          share: rounded((stats.steady.workMinutesPerDay.count / SEED_COUNT) * 100, 1),
+          islands: stats.steady.workMinutesPerDay.count,
+          seeds: SEED_COUNT,
+        },
+      ],
     },
     {
       key: 'steady_phase_by_work_share',
