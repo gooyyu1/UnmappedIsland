@@ -19,8 +19,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DOCS = 'docs';
 
-/** 節とみなす見出しの深さ。`#`は文書題名、`####`以下は節の内訳。 */
-const SECTION_DEPTHS = [2, 3];
+/** 節とみなす見出しの最も浅い深さ。`#`は文書題名なので数えない。 */
+const SHALLOWEST_SECTION_DEPTH = 2;
 
 function markdownFilesIn(dir) {
   const found = [];
@@ -42,7 +42,7 @@ function headingsOf(lines) {
       continue;
     }
     const match = /^(#{1,6})\s+(.*)$/.exec(line);
-    if (!inFence && match !== null && SECTION_DEPTHS.includes(match[1].length)) {
+    if (!inFence && match !== null && match[1].length >= SHALLOWEST_SECTION_DEPTH) {
       headings.push(match[2].trim());
     }
   }
