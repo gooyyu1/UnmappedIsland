@@ -18,6 +18,8 @@ YAMLとずれます）。
 `islands`）は単位を持ちません。**1つのレコードが違う量を並べて持つ節では、`unit` を置かずに
 キーの名前へ単位を入れています**（`round_trip_minutes`・`present_percent` など）。
 
+`base` は、そのレコードがどの拠点から見た値かです（選び方は「島の広さ」節）。
+
 分布のレコードは `mean`・`min`・`p5`（5%ile）・`p95`・`max`・`sd`（標準偏差）・`n`（標本数）を
 持ち、標本が足りずに決まらない数は `null` です。
 
@@ -29,7 +31,7 @@ YAMLとずれます）。
 | `site_degree` | 土地1つあたりの次数（全島の全土地をまとめた分布） |
 | `site_degree_histogram` | 同じものの割合（`or_more: true` の行は「その本数以上」） |
 | `edge` | 道1本あたりの距離・両端の高低差・移動時間 |
-| `base_one_way` | 拠点から他の土地への片道（`base` が拠点の選び方） |
+| `base_one_way` | 拠点から他の土地への片道 |
 | `daily_budget` | 局面ごとの1日が使う、屋外の枠と生存の採取 |
 | `exploration_phase` | 探索の局面（島を開き切るまで）の分布 |
 | `exploration_day_trip_islands` | 日帰りだけで開き切れる島の割合 |
@@ -74,9 +76,9 @@ YAMLとずれます）。
 拠点を出て仕事をして帰る1日を、局面ごとに数える（ContentSkeleton.md 8.2節・8.3節）。
 計算は`src/analysis/dailyPhases.ts`。
 
-**数えるのは「`base: shortest_mean` の土地に住み着いた1人の1日」。** `exploration_phase`・
-`steady_phase`・`steady_phase_by_work_share` は、島ごとにこの拠点1つだけを標本にする（全土地を順に
-拠点として測っているのは `base_one_way` の `base: any` だけ）。
+**数えるのは「`base: shortest_mean` の土地に住み着いた1人の1日」。** 局面の節のレコードはどれも
+この `base` を鍵として持つ——島ごとにこの拠点1つだけを標本にしていて、全土地を順に拠点として
+測っているのは `base_one_way` の `base: any` だけ。
 
 **全土地を拠点と見なした平均を採らないのは、それが誰の1日でもないから。** プレイヤーは拠点を選べる
 ので、山頂に住んだ人の1日と浜辺に住んだ人の1日を混ぜた値は、遊びのどの場面にも現れない。1人に決める
