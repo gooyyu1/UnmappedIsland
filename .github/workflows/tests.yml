@@ -1,5 +1,20 @@
 name: Tests
 
+# paths には、CIが走らせる4つのコマンドが**入力として読むもの**をすべて挙げる。漏れると、その入力を
+# 変えたPRで、それを見張る検査が1つも走らない（issue #829）。読んでいるのは次のとおり。
+#
+# - `docs/**` … 文書の参照・節・印の検査（tests/docs/）と、`docs/engine/WorldCodex.schema.json`。
+#   `docs/diagnostics/*.md` は生成レポートでもあり、鮮度と節の突き合わせが読む。
+# - `stats/**` … 生成レポート（YAML）。鮮度と節の突き合わせが読む。
+# - `CLAUDE.md`・`tools/**` … 節番号でドキュメントを指す側として、参照の検査が読む。
+# - `sample-pack/**`・`public/**` … ZIPの固め直し忘れの検出が、両方を突き合わせる。
+# - `.prettierrc`・`.prettierignore` … `npm run format:check` の対象と結果を決める。
+# - `vite.codex.config.ts` … `tsconfig.json` の include に入っており、`tsc --noEmit` が読む。
+#
+# `.claude/**` と `review/**` は、どのコマンドの入力でもないので挙げない。
+#
+# GitHub Actions のワークフローは YAML のアンカーを解釈しないため、push と pull_request で同じ
+# 一覧を2度書く。
 on:
   push:
     branches:
@@ -8,26 +23,42 @@ on:
       - 'src/**'
       - 'tests/**'
       - 'scripts/**'
-      - 'src/assets/world-codex/**'
+      - 'docs/**'
+      - 'stats/**'
+      - 'tools/**'
+      - 'sample-pack/**'
+      - 'public/**'
+      - 'CLAUDE.md'
       - 'index.html'
       - 'package.json'
       - 'package-lock.json'
       - 'tsconfig.json'
       - 'vite.config.ts'
+      - 'vite.codex.config.ts'
       - 'eslint.config.js'
+      - '.prettierrc'
+      - '.prettierignore'
       - '.github/workflows/tests.yml'
   pull_request:
     paths:
       - 'src/**'
       - 'tests/**'
       - 'scripts/**'
-      - 'src/assets/world-codex/**'
+      - 'docs/**'
+      - 'stats/**'
+      - 'tools/**'
+      - 'sample-pack/**'
+      - 'public/**'
+      - 'CLAUDE.md'
       - 'index.html'
       - 'package.json'
       - 'package-lock.json'
       - 'tsconfig.json'
       - 'vite.config.ts'
+      - 'vite.codex.config.ts'
       - 'eslint.config.js'
+      - '.prettierrc'
+      - '.prettierignore'
       - '.github/workflows/tests.yml'
   workflow_dispatch:
 
