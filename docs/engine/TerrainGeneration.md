@@ -82,11 +82,22 @@ Axis は汎用プリミティブの重み合成（`generator.blend`）で値を�
 axes:
   elevation:
     range: {min: 0, max: 100}
+    stretch_sites_to_range: true
     generator:
       blend:
-        - {type: distance_field, reference: edge, weight: 70}
-        - {type: layered_noise, octaves: 3, frequency: 2, seed_offset: 11, weight: 30}
+        - {type: distance_field, reference: edge, weight: 90}
+        - {type: layered_noise, octaves: 3, frequency: 2, seed_offset: 11, weight: 10}
 ```
+
+**`stretch_sites_to_range`**: 1 回の生成で出たサンプルの最小・最大が `range` の両端へ来るよう、
+量子化の前に引き伸ばします。**宣言した値域が実際に現れることを保証できるのはこれだけです**
+——ジェネレータの値はサイトの座標で決まり、どこにサイトが置かれるかは事前に決まらないため、
+式をどう組んでも「上端に届くサイトがある」とは言えません。値域が現実の単位へ読み替えられる軸
+（標高のメートル、3.5 節）で要ります。
+
+引き伸ばしは値の**幅**だけを保証し、**分布の形**は元の式のままです。`elevation` でノイズの重みが
+距離場に対して低いのはそのためで、加算で乗せた起伏はそのまま海岸の高さのばらつきになります
+（重み 30 では、海に接する土地が海抜 100 m を超えていました）。
 
 **設計上の注意**: 軸の種類・数はハードコードしません。`Axis` 定義自体が YAML で完結し、`LocationType` 側は
 「言及した軸だけ気にする」設計にすることで、軸の増減に対して `LocationType` 定義が壊れないようにします
@@ -247,10 +258,12 @@ generation_scopes:
     そのままの速さ、密林 1.6、山頂 2.5）。
   - `metersPerElevationUnit` は `elevation_top_meters ÷ 標高軸の値域` で、島では 400 m ÷ 100 = 4 m です。
     どの軸を標高として読むかは `elevation_axis` が指します（エンジンは軸の名前を知りません）。
+    **軸の両端が実際に出る**（3.1 節の `stretch_sites_to_range`）ので、島の最低点は必ず海抜 0 m、
+    最高点は必ず 400 m になります。
   - 登り下りは**対称**です。道は両端に2つあるので向きは表せますが、行きと帰りで時間が変わると往復の
     勘定が全部2倍に複雑になります。`climb_meters_per_hour` は 600 m/h（ネイスミスの法則）で、
-    海岸の土地から山頂まで最短経路で登ると、水平距離とは別に平均 23 分ぶんかかります。
-  - 実測の分布は [`stats/terrain.yaml`](../../stats/terrain.yaml) の `edge`（道1本あたり平均 1,436 m・37.1 分）。
+    海岸の土地から山頂まで最短経路で登ると、水平距離とは別に平均 38 分ぶんかかります。
+  - 実測の分布は [`stats/terrain.yaml`](../../stats/terrain.yaml) の `edge`（道1本あたり平均 1,436 m・42.0 分）。
 
 辺同士の交差を解決する処理はありません。採用する辺は常に Delaunay 辺の部分集合であるため、交差は数学的に
 起こりません。Delaunay に含まれない任意のショートカット辺を追加したい要求が出てきた場合に、その時点で
@@ -344,8 +357,7 @@ sandy_beach:
   重複も、現状は常にエラーとする厳格モードのみ実装済み）。
 - **`generation_scopes.island` 以外の生成パラメータのバランス調整**: `interior_bias`・
   `extra_edge_detour_factor` 等の具体的な数値は、実際にプレイしての調整が必要。
-- **`elevation` 軸の下端・上端が実際には出ない**: 軸は距離場を主成分に作るため、生成される島の
-  最高点は平均 314 m（`elevation_top_meters` の 400 m に届かない）、海岸の土地も海抜 88 m 前後に
-  なります。「軸 100 が 400 m」という宣言と「島の最高点が 400 m」を一致させるなら、軸の作り方
-  （距離場の正規化）か宣言のどちらかを動かす必要があります。
+- **海岸の土地の高さの配分**: 海に接する土地は海抜 0〜68 m に収まりますが、砂浜と岸壁がどれだけ
+  離れているべきか（岸壁は何 m から岸壁か）は決めていません。現在は `axis_preferences` の
+  `elevation` で岩海岸を低く・岸壁を高く寄せているだけです。
 

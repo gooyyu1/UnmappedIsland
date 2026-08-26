@@ -12,19 +12,19 @@ island:
   - {metric: degree_sd, unit: edges, mean: 0.91, min: 0.51, p5: 0.67, p95: 1.13, max: 1.38, sd: 0.14, n: 500}
   - {metric: extra_edge_count, unit: edges, mean: 4.63, min: 0.00, p5: 2.00, p95: 7.00, max: 9.00, sd: 1.66, n: 500}
   - {metric: extra_edge_ratio, unit: percent, mean: 30.03, min: 0.00, p5: 18.18, p95: 41.18, max: 50.00, sd: 7.13, n: 500}
-  - {metric: location_types, unit: types, mean: 8.55, min: 5.00, p5: 6.00, p95: 10.00, max: 10.00, sd: 1.13, n: 500}
+  - {metric: location_types, unit: types, mean: 8.53, min: 5.00, p5: 7.00, p95: 10.00, max: 10.00, sd: 1.10, n: 500}
 
 location_type_counts:
-  - {location: sandy_beach, present_percent: 97.4, mean_per_island: 1.89, mean_when_present: 1.94, max_per_island: 3}
-  - {location: rocky_coast, present_percent: 100.0, mean_per_island: 2.86, mean_when_present: 2.86, max_per_island: 3}
-  - {location: cliff_coast, present_percent: 55.8, mean_per_island: 0.65, mean_when_present: 1.17, max_per_island: 3}
-  - {location: grassland, present_percent: 99.4, mean_per_island: 2.27, mean_when_present: 2.28, max_per_island: 3}
-  - {location: forest, present_percent: 100.0, mean_per_island: 2.32, mean_when_present: 2.32, max_per_island: 3}
-  - {location: jungle, present_percent: 51.0, mean_per_island: 0.63, mean_when_present: 1.24, max_per_island: 3}
-  - {location: rocky_field, present_percent: 84.6, mean_per_island: 1.15, mean_when_present: 1.36, max_per_island: 3}
-  - {location: wasteland, present_percent: 84.0, mean_per_island: 1.20, mean_when_present: 1.43, max_per_island: 3}
-  - {location: mountainside, present_percent: 83.2, mean_per_island: 1.17, mean_when_present: 1.40, max_per_island: 3}
-  - {location: mountain_peak, present_percent: 100.0, mean_per_island: 1.00, mean_when_present: 1.00, max_per_island: 1}
+  - {location: sandy_beach, present_percent: 97.8, mean_per_island: 1.94, mean_when_present: 1.98, max_per_island: 3}
+  - {location: rocky_coast, present_percent: 100.0, mean_per_island: 2.82, mean_when_present: 2.82, max_per_island: 3}
+  - {location: cliff_coast, present_percent: 53.8, mean_per_island: 0.64, mean_when_present: 1.19, max_per_island: 3}
+  - {location: grassland, present_percent: 99.2, mean_per_island: 2.18, mean_when_present: 2.20, max_per_island: 3}
+  - {location: forest, present_percent: 99.8, mean_per_island: 2.30, mean_when_present: 2.30, max_per_island: 3}
+  - {location: jungle, present_percent: 52.2, mean_per_island: 0.64, mean_when_present: 1.23, max_per_island: 3}
+  - {location: rocky_field, present_percent: 85.0, mean_per_island: 1.17, mean_when_present: 1.38, max_per_island: 3}
+  - {location: wasteland, present_percent: 85.2, mean_per_island: 1.24, mean_when_present: 1.45, max_per_island: 3}
+  - {location: mountainside, present_percent: 80.0, mean_per_island: 1.21, mean_when_present: 1.51, max_per_island: 3}
+  - {location: mountain_peak, present_percent: 100.0, mean_per_island: 1.00, mean_when_present: 1.00, max_per_island: 2}
 
 site_degree:
   - {unit: edges, mean: 2.48, min: 1.00, p5: 1.00, p95: 4.00, max: 5.00, sd: 0.91, n: 7568}
@@ -41,37 +41,37 @@ site_degree_histogram:
 
 edge:
   - {metric: distance, unit: meters, mean: 1435.56, min: 518.87, p5: 889.83, p95: 2191.38, max: 3877.06, sd: 407.96, n: 9385}
-  - {metric: climb, unit: meters, mean: 72.55, min: 0.00, p5: 8.00, p95: 144.00, max: 272.00, sd: 42.06, n: 9385}
-  - {metric: travel, unit: minutes, mean: 37.10, min: 15.00, p5: 15.00, p95: 60.00, max: 120.00, sd: 13.01, n: 9385}
+  - {metric: climb, unit: meters, mean: 120.77, min: 0.00, p5: 16.00, p95: 232.00, max: 400.00, sd: 66.53, n: 9385}
+  - {metric: travel, unit: minutes, mean: 41.97, min: 15.00, p5: 15.00, p95: 75.00, max: 135.00, sd: 14.78, n: 9385}
 
 base_one_way:
-  - {base: shortest_mean, unit: minutes, mean: 76.57, min: 58.93, p5: 64.74, p95: 87.50, max: 95.00, sd: 6.72, n: 500}
-  - {base: any, unit: minutes, mean: 96.96, min: 58.93, p5: 73.24, p95: 127.50, max: 177.50, sd: 17.34, n: 7568}
+  - {base: shortest_mean, unit: minutes, mean: 86.43, min: 65.00, p5: 73.00, p95: 99.00, max: 110.00, sd: 7.73, n: 500}
+  - {base: any, unit: minutes, mean: 109.42, min: 65.00, p5: 81.82, p95: 146.47, max: 208.64, sd: 20.27, n: 7568}
 
 daily_budget:
   - {unit: minutes, outdoor_window: 720, survival_gathering: 264}
 
 exploration_phase:
-  - {metric: exploration_minutes, unit: minutes, mean: 2796.03, min: 1695.00, p5: 1815.00, p95: 3660.00, max: 3900.00, sd: 573.77, n: 500}
-  - {metric: day_trip_days, unit: days, mean: 16.99, min: 10.00, p5: 11.00, p95: 23.00, max: 27.00, sd: 3.91, n: 500}
-  - {metric: day_trip_travel_per_day, unit: minutes, mean: 146.76, min: 94.62, p5: 120.00, p95: 172.50, max: 204.00, sd: 16.64, n: 500}
-  - {metric: day_trip_exploration_per_day, unit: minutes, mean: 165.98, min: 123.00, p5: 143.44, p95: 184.09, max: 192.00, sd: 12.96, n: 500}
-  - {metric: mixed_days, unit: days, mean: 16.40, min: 10.00, p5: 10.00, p95: 22.00, max: 26.00, sd: 3.70, n: 500}
-  - {metric: stay_over_sites, unit: sites, mean: 0.59, min: 0.00, p5: 0.00, p95: 2.00, max: 5.00, sd: 0.88, n: 500}
+  - {metric: exploration_minutes, unit: minutes, mean: 2795.40, min: 1695.00, p5: 1800.00, p95: 3660.00, max: 3855.00, sd: 572.20, n: 500}
+  - {metric: day_trip_days, unit: days, mean: 17.76, min: 10.00, p5: 12.00, p95: 24.00, max: 31.00, sd: 4.03, n: 500}
+  - {metric: day_trip_travel_per_day, unit: minutes, mean: 170.45, min: 117.50, p5: 136.15, p95: 205.00, max: 243.87, sd: 20.36, n: 500}
+  - {metric: day_trip_exploration_per_day, unit: minutes, mean: 158.72, min: 120.00, p5: 135.00, p95: 181.76, max: 192.00, sd: 14.25, n: 500}
+  - {metric: mixed_days, unit: days, mean: 16.42, min: 10.00, p5: 10.00, p95: 22.00, max: 26.00, sd: 3.72, n: 500}
+  - {metric: stay_over_sites, unit: sites, mean: 1.29, min: 0.00, p5: 0.00, p95: 3.00, max: 6.00, sd: 1.17, n: 500}
   - {metric: day_trip_impossible_sites, unit: sites, mean: 0.00, min: 0.00, p5: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 500}
 
 exploration_day_trip_islands:
   - {unit: percent, share: 100.0, islands: 500, seeds: 500}
 
 steady_phase:
-  - {metric: travel_per_day, unit: minutes, mean: 64.28, min: 10.74, p5: 19.72, p95: 141.90, max: 208.77, sd: 40.46, n: 500}
-  - {metric: work_per_day, unit: minutes, mean: 332.90, min: 227.69, p5: 242.99, p95: 434.08, max: 439.12, sd: 82.41, n: 500}
-  - {metric: days_per_1000_work_minutes, unit: days, mean: 3.19, min: 2.28, p5: 2.30, p95: 4.12, max: 4.39, sd: 0.78, n: 500}
+  - {metric: travel_per_day, unit: minutes, mean: 70.56, min: 0.00, p5: 19.72, p95: 158.40, max: 231.01, sd: 43.95, n: 500}
+  - {metric: work_per_day, unit: minutes, mean: 327.35, min: 211.88, p5: 242.99, p95: 434.08, max: 456.00, sd: 80.68, n: 500}
+  - {metric: days_per_1000_work_minutes, unit: days, mean: 3.24, min: 2.19, p5: 2.30, p95: 4.12, max: 4.72, sd: 0.77, n: 500}
 
 steady_phase_islands:
   - {unit: percent, share: 100.0, islands: 500, seeds: 500}
 
 steady_phase_by_work_share:
-  - {share: 開けた土地, work_percent: 50, round_trip_minutes: 10.74, work_minutes_per_day: 445.26, day_percent: 45.0, islands_percent: 100.0}
-  - {share: 森, work_percent: 25, round_trip_minutes: 79.74, work_minutes_per_day: 367.09, day_percent: 27.7, islands_percent: 100.0}
-  - {share: 密林, work_percent: 25, round_trip_minutes: 130.24, work_minutes_per_day: 118.31, day_percent: 53.6, islands_percent: 51.0}
+  - {share: 開けた土地, work_percent: 50, round_trip_minutes: 11.28, work_minutes_per_day: 444.72, day_percent: 44.2, islands_percent: 100.0}
+  - {share: 森, work_percent: 25, round_trip_minutes: 88.86, work_minutes_per_day: 358.82, day_percent: 28.0, islands_percent: 99.8}
+  - {share: 密林, work_percent: 25, round_trip_minutes: 135.86, work_minutes_per_day: 118.23, day_percent: 53.4, islands_percent: 52.2}
