@@ -41,6 +41,12 @@ const SEED_COUNT = 500;
 /** 次数のヒストグラムに出す本数の上限（これを超える分はまとめて `or_more`）。 */
 const MAX_LISTED_DEGREE = 7;
 
+/**
+ * 拠点の選び方の呼び名のうち、他の土地への片道が平均で最も短い土地を指すもの。局面ごとの1日は
+ * どの節も島ごとにこの拠点1つだけを標本にするので、そのレコードは全部これを鍵として持つ。
+ */
+const SHORTEST_MEAN_BASE = 'shortest_mean';
+
 interface TerrainStats {
   /** 島1つあたり: 土地数・道の本数・平均次数・次数の標準偏差。 */
   readonly siteCount: Stat;
@@ -244,8 +250,9 @@ function statRecord(keys: YamlRecord, stat: Stat): YamlRecord {
 /** 測った項目1つぶんの、名前と単位と分布。 */
 type Metric = readonly [metric: string, unit: string, stat: Stat];
 
-function metricRecords(metrics: readonly Metric[]): YamlRecord[] {
-  return metrics.map(([metric, unit, stat]) => statRecord({ metric, unit }, stat));
+/** `keys`は、測った項目より前に置く鍵（どの拠点の値か、など）。 */
+function metricRecords(metrics: readonly Metric[], keys: YamlRecord = {}): YamlRecord[] {
+  return metrics.map(([metric, unit, stat]) => statRecord({ ...keys, metric, unit }, stat));
 }
 
 function degreeHistogramRecords(degree: Stat): YamlRecord[] {
@@ -306,7 +313,7 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
     {
       key: 'base_one_way',
       records: [
-        statRecord({ base: 'shortest_mean', unit: 'minutes' }, stats.chosenBaseOneWayMinutes),
+        statRecord({ base: SHORTEST_MEAN_BASE, unit: 'minutes' }, stats.chosenBaseOneWayMinutes),
         statRecord({ base: 'any', unit: 'minutes' }, stats.anyBaseOneWayMinutes),
       ],
     },
@@ -322,20 +329,24 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
     },
     {
       key: 'exploration_phase',
-      records: metricRecords([
-        ['exploration_minutes', 'minutes', stats.exploration.explorationMinutes],
-        ['day_trip_days', 'days', stats.exploration.dayTripDays],
-        ['day_trip_travel_per_day', 'minutes', stats.exploration.dayTripTravelMinutesPerDay],
-        ['day_trip_exploration_per_day', 'minutes', stats.exploration.dayTripExplorationMinutesPerDay],
-        ['mixed_days', 'days', stats.exploration.mixedDays],
-        ['stay_over_sites', 'sites', stats.exploration.stayOverSiteCount],
-        ['day_trip_impossible_sites', 'sites', stats.exploration.dayTripImpossibleSiteCount],
-      ]),
+      records: metricRecords(
+        [
+          ['exploration_minutes', 'minutes', stats.exploration.explorationMinutes],
+          ['day_trip_days', 'days', stats.exploration.dayTripDays],
+          ['day_trip_travel_per_day', 'minutes', stats.exploration.dayTripTravelMinutesPerDay],
+          ['day_trip_exploration_per_day', 'minutes', stats.exploration.dayTripExplorationMinutesPerDay],
+          ['mixed_days', 'days', stats.exploration.mixedDays],
+          ['stay_over_sites', 'sites', stats.exploration.stayOverSiteCount],
+          ['day_trip_impossible_sites', 'sites', stats.exploration.dayTripImpossibleSiteCount],
+        ],
+        { base: SHORTEST_MEAN_BASE },
+      ),
     },
     {
       key: 'exploration_day_trip_islands',
       records: [
         {
+          base: SHORTEST_MEAN_BASE,
           unit: 'percent',
           share: rounded((stats.exploration.dayTripDays.count / SEED_COUNT) * 100, 1),
           islands: stats.exploration.dayTripDays.count,
@@ -345,16 +356,20 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
     },
     {
       key: 'steady_phase',
-      records: metricRecords([
-        ['travel_per_day', 'minutes', stats.steady.travelMinutesPerDay],
-        ['work_per_day', 'minutes', stats.steady.workMinutesPerDay],
-        ['days_per_1000_work_minutes', 'days', stats.steady.daysPerThousandWorkMinutes],
-      ]),
+      records: metricRecords(
+        [
+          ['travel_per_day', 'minutes', stats.steady.travelMinutesPerDay],
+          ['work_per_day', 'minutes', stats.steady.workMinutesPerDay],
+          ['days_per_1000_work_minutes', 'days', stats.steady.daysPerThousandWorkMinutes],
+        ],
+        { base: SHORTEST_MEAN_BASE },
+      ),
     },
     {
       key: 'steady_phase_islands',
       records: [
         {
+          base: SHORTEST_MEAN_BASE,
           unit: 'percent',
           share: rounded((stats.steady.workMinutesPerDay.count / SEED_COUNT) * 100, 1),
           islands: stats.steady.workMinutesPerDay.count,
@@ -367,6 +382,7 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
       records: WORK_SHARES.map((share) => {
         const stat = stats.steady.byShare.get(share.label)!;
         return {
+          base: SHORTEST_MEAN_BASE,
           share: share.label,
           work_percent: rounded(share.share * 100, 0),
           round_trip_minutes: rounded(stat.roundTripMinutes.mean),

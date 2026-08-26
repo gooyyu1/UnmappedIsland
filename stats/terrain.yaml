@@ -52,26 +52,26 @@ daily_budget:
   - {unit: minutes, outdoor_window: 720, survival_gathering: 264}
 
 exploration_phase:
-  - {metric: exploration_minutes, unit: minutes, mean: 2795.40, min: 1695.00, p5: 1800.00, p95: 3660.00, max: 3855.00, sd: 572.20, n: 500}
-  - {metric: day_trip_days, unit: days, mean: 17.76, min: 10.00, p5: 12.00, p95: 24.00, max: 31.00, sd: 4.03, n: 500}
-  - {metric: day_trip_travel_per_day, unit: minutes, mean: 170.45, min: 117.50, p5: 136.15, p95: 205.00, max: 243.87, sd: 20.36, n: 500}
-  - {metric: day_trip_exploration_per_day, unit: minutes, mean: 158.72, min: 120.00, p5: 135.00, p95: 181.76, max: 192.00, sd: 14.25, n: 500}
-  - {metric: mixed_days, unit: days, mean: 16.42, min: 10.00, p5: 10.00, p95: 22.00, max: 26.00, sd: 3.72, n: 500}
-  - {metric: stay_over_sites, unit: sites, mean: 1.29, min: 0.00, p5: 0.00, p95: 3.00, max: 6.00, sd: 1.17, n: 500}
-  - {metric: day_trip_impossible_sites, unit: sites, mean: 0.00, min: 0.00, p5: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 500}
+  - {base: shortest_mean, metric: exploration_minutes, unit: minutes, mean: 2795.40, min: 1695.00, p5: 1800.00, p95: 3660.00, max: 3855.00, sd: 572.20, n: 500}
+  - {base: shortest_mean, metric: day_trip_days, unit: days, mean: 17.76, min: 10.00, p5: 12.00, p95: 24.00, max: 31.00, sd: 4.03, n: 500}
+  - {base: shortest_mean, metric: day_trip_travel_per_day, unit: minutes, mean: 170.45, min: 117.50, p5: 136.15, p95: 205.00, max: 243.87, sd: 20.36, n: 500}
+  - {base: shortest_mean, metric: day_trip_exploration_per_day, unit: minutes, mean: 158.72, min: 120.00, p5: 135.00, p95: 181.76, max: 192.00, sd: 14.25, n: 500}
+  - {base: shortest_mean, metric: mixed_days, unit: days, mean: 16.42, min: 10.00, p5: 10.00, p95: 22.00, max: 26.00, sd: 3.72, n: 500}
+  - {base: shortest_mean, metric: stay_over_sites, unit: sites, mean: 1.29, min: 0.00, p5: 0.00, p95: 3.00, max: 6.00, sd: 1.17, n: 500}
+  - {base: shortest_mean, metric: day_trip_impossible_sites, unit: sites, mean: 0.00, min: 0.00, p5: 0.00, p95: 0.00, max: 0.00, sd: 0.00, n: 500}
 
 exploration_day_trip_islands:
-  - {unit: percent, share: 100.0, islands: 500, seeds: 500}
+  - {base: shortest_mean, unit: percent, share: 100.0, islands: 500, seeds: 500}
 
 steady_phase:
-  - {metric: travel_per_day, unit: minutes, mean: 70.56, min: 0.00, p5: 19.72, p95: 158.40, max: 231.01, sd: 43.95, n: 500}
-  - {metric: work_per_day, unit: minutes, mean: 327.35, min: 211.88, p5: 242.99, p95: 434.08, max: 456.00, sd: 80.68, n: 500}
-  - {metric: days_per_1000_work_minutes, unit: days, mean: 3.24, min: 2.19, p5: 2.30, p95: 4.12, max: 4.72, sd: 0.77, n: 500}
+  - {base: shortest_mean, metric: travel_per_day, unit: minutes, mean: 70.56, min: 0.00, p5: 19.72, p95: 158.40, max: 231.01, sd: 43.95, n: 500}
+  - {base: shortest_mean, metric: work_per_day, unit: minutes, mean: 327.35, min: 211.88, p5: 242.99, p95: 434.08, max: 456.00, sd: 80.68, n: 500}
+  - {base: shortest_mean, metric: days_per_1000_work_minutes, unit: days, mean: 3.24, min: 2.19, p5: 2.30, p95: 4.12, max: 4.72, sd: 0.77, n: 500}
 
 steady_phase_islands:
-  - {unit: percent, share: 100.0, islands: 500, seeds: 500}
+  - {base: shortest_mean, unit: percent, share: 100.0, islands: 500, seeds: 500}
 
 steady_phase_by_work_share:
-  - {share: 開けた土地, work_percent: 50, round_trip_minutes: 11.28, work_minutes_per_day: 444.72, day_percent: 44.2, islands_percent: 100.0}
-  - {share: 森, work_percent: 25, round_trip_minutes: 88.86, work_minutes_per_day: 358.82, day_percent: 28.0, islands_percent: 99.8}
-  - {share: 密林, work_percent: 25, round_trip_minutes: 135.86, work_minutes_per_day: 118.23, day_percent: 53.4, islands_percent: 52.2}
+  - {base: shortest_mean, share: 開けた土地, work_percent: 50, round_trip_minutes: 11.28, work_minutes_per_day: 444.72, day_percent: 44.2, islands_percent: 100.0}
+  - {base: shortest_mean, share: 森, work_percent: 25, round_trip_minutes: 88.86, work_minutes_per_day: 358.82, day_percent: 28.0, islands_percent: 99.8}
+  - {base: shortest_mean, share: 密林, work_percent: 25, round_trip_minutes: 135.86, work_minutes_per_day: 118.23, day_percent: 53.4, islands_percent: 52.2}
