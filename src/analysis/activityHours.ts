@@ -13,10 +13,10 @@ import type { WorldCodex } from '../domain/WorldCodex';
  * 据え付けの光源（松明・炉）は数えない——入れると「焚き火があれば24時間活動できる」になり、
  * この表の意味が消える（IlluminationSystem.md 3節）。
  *
- * **「屋外で採れる」と「手元の細かい作業」は1列に畳んである。** どちらも要求する段は同じ（bright）だが、
- * 見る値が違う（採る側はlooking_brightness、作る側はhand_brightness）。据え付けの光源を数えない前提では、
- * 両方とも土地のambient_brightnessをそのまま土台にするだけで他の寄与を持たないため（同2節）、
- * 常に同じ値になる——分けて計算しても差が出ない。
+ * **「屋外で採れる」と「手元の細かい作業」は別々の列。** 要求する段の名前はどちらもbrightだが、
+ * 見る値が違い（採る側はlooking_brightness、作る側はhand_brightness）、境目も違う（同5節）。
+ * 据え付けの光源を数えない前提では、どちらも土地のambient_brightnessをそのまま土台にするだけなので
+ * （同2節）、**同じ明るさを別々のしきい値で切ったもの**になる。
  *
  * **浅い洞窟の土台は、生える先の土地から辿る**（`hostAmbientOf`）。岩陰の暗さ（-6）は土地との差
  * なので、生え先が非0の土地へ広がっても数え直しは要らない——ただし生え先どうしで明るさが違うと
@@ -26,22 +26,23 @@ import type { WorldCodex } from '../domain/WorldCodex';
  * `stats/climate.yaml`の`weather_hours`）。天候と時刻は独立とみなす近似は`seasonalRain.ts`と同じ。
  */
 
-/** 行動のクラス（IlluminationSystem.md 5節）が要求する、明るさとその下限の段。 */
-interface BrightnessRequirement {
+/**
+ * 表の1列。行動のクラス（IlluminationSystem.md 5節）が見る明るさと、その行動ができる最も暗い段。
+ * **列と行動のクラスは1対1**——1列に2つを畳むと、境目が別々に動いたときにその列の意味が消える。
+ */
+interface ActivityColumn {
   readonly propertyName: string;
   readonly stageName: string;
 }
 
-/** 移動: 視界が `pitch_dark` でないこと（同 5節）＝ その次の段 `dim` 以上。 */
-const TRAVEL_REQUIREMENTS: readonly BrightnessRequirement[] = [
-  { propertyName: 'looking_brightness', stageName: 'dim' },
-];
+/** 土地の間を移動する: 視界が `pitch_dark` でないこと（同 5節）＝ その次の段 `dim` 以上。 */
+const TRAVEL_COLUMN: ActivityColumn = { propertyName: 'looking_brightness', stageName: 'dim' };
 
-/** 屋外で採る・手元の細かい作業（同 5節）。1列に畳んであるので、2つは同じしきい値でなければならない。 */
-const ACTIVE_REQUIREMENTS: readonly BrightnessRequirement[] = [
-  { propertyName: 'looking_brightness', stageName: 'bright' },
-  { propertyName: 'hand_brightness', stageName: 'bright' },
-];
+/** 屋外で採る・探索する（同 5節）。 */
+const GATHERING_COLUMN: ActivityColumn = { propertyName: 'looking_brightness', stageName: 'bright' };
+
+/** 手元の細かい作業（同 5節）。 */
+const HANDWORK_COLUMN: ActivityColumn = { propertyName: 'hand_brightness', stageName: 'bright' };
 
 /** 季節1つぶんの、天候の出現時間の実測値（`stats/climate.yaml`の`weather_hours`）。 */
 export interface SeasonWeatherHours {
@@ -62,8 +63,11 @@ export interface ActivityHoursRow {
   /** 土地の間を移動できる時間（時間/日）。 */
   readonly travelHoursPerDay: number;
 
-  /** 屋外で採れる・手元の細かい作業ができる時間（時間/日、1列に畳んだもの）。 */
-  readonly activeHoursPerDay: number;
+  /** 屋外で採れる・探索できる時間（時間/日）。 */
+  readonly gatheringHoursPerDay: number;
+
+  /** 手元の細かい作業ができる時間（時間/日）。 */
+  readonly handworkHoursPerDay: number;
 }
 
 /**
@@ -104,21 +108,26 @@ export function activityHoursOf(
   seasons: readonly SeasonWeatherHours[],
 ): readonly ActivityHoursRow[] {
   const worldAmbientAt = worldAmbientBrightnessOf(codex);
-  const travelThreshold = columnThresholdOf(codex, TRAVEL_REQUIREMENTS);
-  const activeThreshold = columnThresholdOf(codex, ACTIVE_REQUIREMENTS);
+  const thresholdOf = (column: ActivityColumn): number =>
+    characterStageMinimumOf(codex, column.propertyName, column.stageName);
+  const travelThreshold = thresholdOf(TRAVEL_COLUMN);
+  const gatheringThreshold = thresholdOf(GATHERING_COLUMN);
+  const handworkThreshold = thresholdOf(HANDWORK_COLUMN);
 
   const rows: ActivityHoursRow[] = [];
   for (const place of activityPlacesOf(codex)) {
     for (const season of seasons) {
       let travelHoursPerDay = 0;
-      let activeHoursPerDay = 0;
+      let gatheringHoursPerDay = 0;
+      let handworkHoursPerDay = 0;
 
       for (let hour = 0; hour < 24; hour++) {
         for (const [weatherName, hoursInSeason] of season.hoursByWeather) {
           const fraction = hoursInSeason / (season.durationDays * 24);
           const brightness = place.brightnessAt(worldAmbientAt(hour, weatherName));
           if (brightness >= travelThreshold) travelHoursPerDay += fraction;
-          if (brightness >= activeThreshold) activeHoursPerDay += fraction;
+          if (brightness >= gatheringThreshold) gatheringHoursPerDay += fraction;
+          if (brightness >= handworkThreshold) handworkHoursPerDay += fraction;
         }
       }
 
@@ -126,31 +135,12 @@ export function activityHoursOf(
         locationName: place.name,
         seasonName: season.seasonName,
         travelHoursPerDay,
-        activeHoursPerDay,
+        gatheringHoursPerDay,
+        handworkHoursPerDay,
       });
     }
   }
   return rows;
-}
-
-/**
- * 表の1列のしきい値。**その列に畳んだ行動が要求する段の下限が、全部で1つに定まること**を求める
- * ——1列では1つしか出せないので、食い違っていたらその列の意味が消える。
- */
-function columnThresholdOf(codex: WorldCodex, requirements: readonly BrightnessRequirement[]): number {
-  const wheresByMinimum = new Map<number, string[]>();
-  for (const { propertyName, stageName } of requirements) {
-    const minimum = characterStageMinimumOf(codex, propertyName, stageName);
-    const where = `${propertyName} の ${stageName}`;
-    wheresByMinimum.set(minimum, [...(wheresByMinimum.get(minimum) ?? []), where]);
-  }
-
-  if (wheresByMinimum.size === 1) return [...wheresByMinimum.keys()][0];
-  throw new Error(
-    '1列に畳んだ行動のしきい値が食い違っています' +
-      `（${[...wheresByMinimum].map(([minimum, wheres]) => `${minimum}: ${wheres.join('・')}`).join('、')}）。` +
-      '1列では1つしか出せないので、列を分けてください。',
-  );
 }
 
 /**

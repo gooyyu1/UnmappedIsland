@@ -20,7 +20,7 @@ const LOCATION_TYPES = ['grassland', 'forest', 'jungle'] as const;
 const LOCATION_DAYS: ReadonlyMap<number, LocationTypeDay> = new Map(
   LOCATION_TYPES.map((locationDefName, index) => [
     index + 1,
-    { locationDefName, explorationMinutes: 600, activeMinutesPerDay: 600 },
+    { locationDefName, explorationMinutes: 600, gatheringMinutesPerDay: 600 },
   ]),
 );
 

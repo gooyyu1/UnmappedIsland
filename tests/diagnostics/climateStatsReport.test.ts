@@ -333,7 +333,8 @@ function buildSections(
         season: row.seasonName,
         unit: 'hours',
         travel: rounded(row.travelHoursPerDay, 1),
-        active: rounded(row.activeHoursPerDay, 1),
+        gathering: rounded(row.gatheringHoursPerDay, 1),
+        handwork: rounded(row.handworkHoursPerDay, 1),
       })),
     },
     {
@@ -512,7 +513,11 @@ describe('climate.yamlの鮮度', () => {
       );
       expect(record, `${label} のレコードが見つからない`).toBeDefined();
       expect(row.travelHoursPerDay, `${label} の移動できる時間`).toBeCloseTo(Number(record!.travel), 1);
-      expect(row.activeHoursPerDay, `${label} の活動できる時間`).toBeCloseTo(Number(record!.active), 1);
+      expect(row.gatheringHoursPerDay, `${label} の採れる時間`).toBeCloseTo(Number(record!.gathering), 1);
+      expect(row.handworkHoursPerDay, `${label} の手元の作業ができる時間`).toBeCloseTo(
+        Number(record!.handwork),
+        1,
+      );
     }
   });
 });
