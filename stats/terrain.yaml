@@ -68,6 +68,9 @@ steady_phase:
   - {metric: work_per_day, unit: minutes, mean: 332.90, min: 227.69, p5: 242.99, p95: 434.08, max: 439.12, sd: 82.41, n: 500}
   - {metric: days_per_1000_work_minutes, unit: days, mean: 3.19, min: 2.28, p5: 2.30, p95: 4.12, max: 4.39, sd: 0.78, n: 500}
 
+steady_phase_islands:
+  - {unit: percent, share: 100.0, islands: 500, seeds: 500}
+
 steady_phase_by_work_share:
   - {share: 開けた土地, work_percent: 50, round_trip_minutes: 10.74, work_minutes_per_day: 445.26, day_percent: 45.0, islands_percent: 100.0}
   - {share: 森, work_percent: 25, round_trip_minutes: 79.74, work_minutes_per_day: 367.09, day_percent: 27.7, islands_percent: 100.0}

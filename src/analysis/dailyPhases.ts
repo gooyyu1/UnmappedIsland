@@ -16,10 +16,12 @@ import { craftingStepsOf } from './craftingSteps';
  * 局面の違いは**どこへ行くか**と**そこで何をするか**の2つで、式そのものは共有する。遠さは移動の項
  * として、暗さは頭打ちとして、同じ1行に入る。
  *
- * 引く線は3つ。**1日は1つの土地で使う**——往復は1回で、余った時間を次の土地へ繰り越さない。
+ * 引く線は4つ。**1日は1つの土地で使う**——往復は1回で、余った時間を次の土地へ繰り越さない。
  * **荷物は数えない**——運べる量に上限が無い（ExplorationSystem.md 1.1節）ので、採ったものを置いて
  * 帰る自由はこの勘定に現れない。**探索の抽選は解かない**——何が見つかるかは実行時にしか決まらない
- * ので、探索は回数と時間だけで測る。
+ * ので、探索は回数と時間だけで測る。**定常の局面に泊まりがけを入れない**——探索と違って山は終わりの
+ * ある仕事ではないので、滞在の長さを決めるものが無い。日帰りで届かない組を持つ拠点は定常の局面を
+ * 持たず（`BaseDailyPhases.steady`）、数える側が標本から外す。
  */
 
 /** 1日の屋外の枠（分）。太陽が出ている12時間で、移動のしきい値を満たす時間そのもの。 */
@@ -145,7 +147,9 @@ export interface BaseDailyPhases {
   readonly oneWayMinutes: number;
 
   readonly exploration: ExplorationPhase;
-  readonly steady: SteadyPhase;
+
+  /** **日帰りで届かない組を持つ拠点ではundefined**（このファイルのクラスコメント）。 */
+  readonly steady: SteadyPhase | undefined;
 }
 
 /** 島1つ。 */
@@ -296,23 +300,21 @@ function stayOverDaysOf(day: LocationTypeDay, roundTripMinutes: number): number 
  * 日数はその組の仕事量をその土地の1日の実入りで割ったものになり、**1日に進む山は日数で重み付けした
  * 平均**になる。仕事量の割合でそのまま平均すると、実入りの少ない土地に居る日を短く数えてしまう。
  *
- * **島に無い組の配分は、ある組へ按分する。** 無い土地からは採れない。
+ * **島に無い組の配分は、ある組へ按分する。** 無い土地からは採れない。**島にあって日帰りで届かない
+ * 組は按分しない**——無いのではなく届かないだけなので、その山は消えずにそこへ残る。届かない組が
+ * 1つでもあれば、この拠点は定常の局面を持たない（undefined）。
  */
 function steadyPhaseOf(
   distances: readonly number[][],
   days: readonly LocationTypeDay[],
   base: number,
-): SteadyPhase {
+): SteadyPhase | undefined {
   const found: { label: string; roundTripMinutes: number; workMinutesPerDay: number; share: number }[] = [];
 
   for (const workShare of WORK_SHARES) {
     const best = bestDestinationOf(distances, days, base, workShare);
     if (best === undefined) continue;
-    if (best.workMinutesPerDay === 0)
-      throw new Error(
-        `拠点から見て、山の配分「${workShare.label}」の土地はどれも往復で屋外の枠が尽きます。` +
-          'この島では定常の局面が成立しないので、数え方を見直してください。',
-      );
+    if (best.workMinutesPerDay === 0) return undefined;
 
     found.push({ label: workShare.label, share: workShare.share, ...best });
   }
