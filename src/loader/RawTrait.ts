@@ -4,6 +4,12 @@ import { RawDeclarationBody } from './RawDeclarationBody';
 import { YamlLoadError } from './YamlLoadError';
 
 /**
+ * traitが宣言一式に足して読むキー（RawDeclarationBody.readFields参照）。`recipes`を挙げているのは、
+ * 未知キーとして弾くとどこへ書けばよいかを言えないため——通したうえで下のコンストラクタが弾く。
+ */
+const TRAIT_OWN_KEYS = ['recipes'];
+
+/**
  * traits（GameElementDefinition.md 5節、mixin）の1エントリの生の形。上書きマージ
  * （RawObjectDef.resolve参照）がまだ起こりうるフィールドは生YAMLノードのまま持つ。
  * 1つのtraitは複数のobject_defから参照され、参照ごとに異なるマージが起こるため、
@@ -23,7 +29,7 @@ export class RawTrait {
     this.source = source;
 
     const context = `traits.'${name}'`;
-    this.body.readFields(node, context);
+    this.body.readFields(node, context, TRAIT_OWN_KEYS);
 
     // レシピは成果物のobject_defへ埋め込むもの（RecipeSystem.md）なので、複数の型へ混ぜるtraitには
     // 書けない（どれが成果物か決まらない）。読み飛ばすと黙って消えるため、ロード時に弾く。
