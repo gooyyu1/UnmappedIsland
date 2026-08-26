@@ -170,7 +170,7 @@ D(type, site) = sqrt( Σ_i w_i * ((v_i - ideal_i) / tolerance_i)^2  /  Σ_i w_i 
 
 これは重複を減らすだけでなく、**島に出る地形の種類を増やします**。上限が無いと軸空間の中央付近に理想点を持つ
 型が大半の `Site` を取り、端に寄った型がほとんど出ません（実測値は
-[TerrainStats.md](../diagnostics/TerrainStats.md)）。
+[`stats/terrain.yaml`](../../stats/terrain.yaml) の `location_type_counts`）。
 
 **下限（最低出現数）のレンジ管理はしません。** 軸ベースの最近傍マッチングは各 `Site` が独立に
 判定されるため、個数の厳密な制御には本質的に向いていません。
@@ -241,7 +241,7 @@ generation_scopes:
      直結距離の `generation_scopes.island.extra_edge_detour_factor`（倍率）を超える」場合だけ復活させます
      （大回りを強いられている場合に、近道・分岐を作る）。復活させる辺も Delaunay 辺の部分集合であるため、
      グラフは常に交差なし（平面）のままです。この閾値は上げるほど道が減り、下限は MST だけが残る
-     平均次数 ≒1.9 です。実測値は [`TerrainStats.md`](../diagnostics/TerrainStats.md)
+     平均次数 ≒1.9 です。実測値は [`stats/terrain.yaml`](../../stats/terrain.yaml) の `site_degree`
      （`npm run stats:terrain` で再生成）にあり、閾値を動かしたら再生成します。
 - 各エッジには `distance_meters`（2 地点間のユークリッド距離、m）と `travel_minutes`（移動時間、分）を
   持たせます。**距離が先にあり、速さで割ると時間が出ます。**
@@ -263,7 +263,7 @@ generation_scopes:
   - 登り下りは**対称**です。道は両端に2つあるので向きは表せますが、行きと帰りで時間が変わると往復の
     勘定が全部2倍に複雑になります。`climb_meters_per_hour` は 600 m/h（ネイスミスの法則）で、
     海岸の土地から山頂まで最短経路で登ると、水平距離とは別に平均 38 分ぶんかかります。
-  - 実測の分布は [`TerrainStats.md`](../diagnostics/TerrainStats.md)（道1本あたり平均 1,436 m・42.0 分）。
+  - 実測の分布は [`stats/terrain.yaml`](../../stats/terrain.yaml) の `edge`（道1本あたり平均 1,436 m・42.0 分）。
 
 辺同士の交差を解決する処理はありません。採用する辺は常に Delaunay 辺の部分集合であるため、交差は数学的に
 起こりません。Delaunay に含まれない任意のショートカット辺を追加したい要求が出てきた場合に、その時点で

@@ -17,6 +17,7 @@ import {
   describeYamlReportRegeneration,
   formatYamlReport,
   RoundedNumber,
+  yieldToEventLoop,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexPath } from '../support/worldCodexFiles';
@@ -376,8 +377,13 @@ function buildSections(
   ];
 }
 
-/** 定義から気候をシミュレートして測り、レポートの中身を作る。 */
-function buildReportFromDefinitions(): string {
+/**
+ * 定義から気候をシミュレートして測り、レポートの中身を作る。
+ *
+ * **シードとシードの間でイベントループへ返す**（{@link yieldToEventLoop}）。1シードで1分を超えることは
+ * 無いので、これで足りる。
+ */
+async function buildReportFromDefinitions(): Promise<string> {
   // world-codex全体を読む——土地の一覧が要る活動時間表（activityHoursOf）にはlocations.yaml等が
   // 要るため。worldの定義はcore.yamlにしか無いので、シミュレーション自体への影響は無い。
   const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
@@ -408,6 +414,8 @@ function buildReportFromDefinitions(): string {
   const totalTicks = SIM_DAYS * 96;
 
   for (let seed = 1; seed <= SEED_COUNT; seed++) {
+    await yieldToEventLoop();
+
     const session = new WorldSession(codex, undefined, seededRng(seed));
     const worldInstance = new WorldObject(1, worldDef, session);
     session.adoptWorld(new World(worldInstance, codex));

@@ -27,6 +27,9 @@ const RETIRED_KEYS: readonly (readonly [string, string])[] = [
   ['auto_placement', "誰が入れてよいかを並べる'placement'（7.7節）"],
 ];
 
+/** スロットの宣言（7.1節）で書けるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。 */
+const KNOWN_SLOT_KEYS = ['cell', 'cells', 'cell_count', 'capacity', 'placement', 'put_in'];
+
 /** slots.'slotName'エントリを1つ読む。trait合成済みのノードを渡すこと。 */
 export function parseSlot(
   loader: WorldCodexYamlLoader,
@@ -37,11 +40,14 @@ export function parseSlot(
   const context = `'${objectDefName}'.slots.'${slotName}'`;
   const slotGlobalId = loader.slotNames.intern(slotName);
 
+  // 廃止キーを先に見る。未知キーとして弾くと、その内容を今どこへ書くかを言えない。
   for (const [key, replacement] of RETIRED_KEYS)
     if (node.has(key))
       throw new YamlLoadError(
         `${context}: '${key}'は廃止されました。${replacement}で表します（SlotSystem.md 2節）。`,
       );
+
+  requireKnownKeys(node, KNOWN_SLOT_KEYS, context);
 
   const cellsNode = tryGetSeq(node, 'cells', context);
   const sharedCellNode = tryGetMap(node, 'cell', context);

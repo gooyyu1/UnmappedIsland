@@ -1,34 +1,21 @@
 name: Tests
 
+# 走らせるかどうかを置き場の一覧で選ばない。**4つのコマンドの入力は追跡ファイル全部**なので、除ける
+# 置き場が無く、拒否リスト（`paths-ignore`）は空になる。
+#
+# - `npm run format:check` … `prettier --check .` はリポジトリ全体を見る。除外を持つのは `.prettierignore`。
+# - `npm run lint` … `eslint .` は `.claude/skills/**/*.mjs` も対象にする。
+# - `npm test` … `docMemberReferences.test.ts` が `git ls-files` の一覧を「これは参照ではなくファイル名だ」の
+#   判定に使うため、**どこのファイルを改名・追加・削除しても結果が変わりうる**。`exports.test.ts` は
+#   `.claude` 配下を輸入する側として読む。
+#
+# 許可リスト（`paths`）に戻すと、入力の置き場が増えるたびにこのファイルも直す運用に戻り、直し忘れが
+# 黙って素通しになる（issue #829 で `stats/` が実際に抜けていた）。
 on:
   push:
     branches:
       - main
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - 'scripts/**'
-      - 'src/assets/world-codex/**'
-      - 'index.html'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig.json'
-      - 'vite.config.ts'
-      - 'eslint.config.js'
-      - '.github/workflows/tests.yml'
   pull_request:
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - 'scripts/**'
-      - 'src/assets/world-codex/**'
-      - 'index.html'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'tsconfig.json'
-      - 'vite.config.ts'
-      - 'eslint.config.js'
-      - '.github/workflows/tests.yml'
   workflow_dispatch:
 
 jobs:

@@ -21,6 +21,9 @@ import type { PropertyDef } from '../domain/PropertyDef';
 import type { SlotDef } from '../domain/SlotDef';
 import { StackOrderDef } from '../domain/StackOrderDef';
 
+/** object_defが宣言一式に足して読むキー（型自身の素性。RawDeclarationBody.readFields参照）。 */
+const OBJECT_DEF_OWN_KEYS = ['traits', 'singleton', 'recipes', 'variation_axes'];
+
 /**
  * object_defs（GameElementDefinition.md 4節）の1エントリの、まだtrait解決を経ていない生の形。
  * trait上書きマージ（resolve参照）がまだ起こりうるフィールドは、意味解釈済みの型にせず
@@ -70,7 +73,7 @@ export class RawObjectDef {
   readFields(): void {
     const context = `object_defs.'${this.name}'`;
 
-    this.body.readFields(this.node, context);
+    this.body.readFields(this.node, context, OBJECT_DEF_OWN_KEYS);
     this.isSingleton = tryGetBool(this.node, 'singleton', context) ?? false;
     this.recipes = tryGetMap(this.node, 'recipes', context);
     this.variationAxes = tryGetMap(this.node, 'variation_axes', context);

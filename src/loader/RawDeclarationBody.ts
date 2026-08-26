@@ -4,12 +4,34 @@ import {
   asMap,
   asScalarText,
   entriesInOrder,
+  requireKnownKeys,
   tryGetBool,
   tryGetMap,
   tryGetScalar,
   tryGetSeq,
 } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
+
+/**
+ * 宣言一式そのものが読むキー。`covers`/`layer`はローダーが解釈しないが文法として文書化済みなので、
+ * 未知キーにはしない（RawObjectDef.resolve参照）。
+ */
+const KNOWN_BODY_KEYS = [
+  'tags',
+  'props',
+  'slots',
+  'passives',
+  'stack_order',
+  'visible_slots',
+  'storage',
+  'art_by_stage',
+  'bound_to_owner',
+  'resists',
+  'stackable',
+  'interactions',
+  'covers',
+  'layer',
+];
 
 /**
  * object_def と trait が共有する「**混ぜ込める宣言一式**」（GameElementDefinition.md 5節）。
@@ -52,8 +74,14 @@ export class RawDeclarationBody {
 
   interactions: YAMLMap | undefined;
 
-  /** 宣言から各フィールドを取り直す。**読む側はここ1箇所**で、object_def と trait で分かれない。 */
-  readFields(node: YAMLMap, context: string): void {
+  /**
+   * 宣言から各フィールドを取り直す。**読む側はここ1箇所**で、object_def と trait で分かれない。
+   * 未知キーの判定も宣言全体に対してここで行うので、持ち主は自分で読むキー（object_defの素性など）を
+   * ownKeysで名乗ること——名乗らなければ綴り間違いとして弾かれる。
+   */
+  readFields(node: YAMLMap, context: string, ownKeys: readonly string[]): void {
+    requireKnownKeys(node, [...KNOWN_BODY_KEYS, ...ownKeys], context);
+
     this.tags = namesIn(tryGetSeq(node, 'tags', context), context);
     this.props = tryGetMap(node, 'props', context);
     this.slots = tryGetMap(node, 'slots', context);

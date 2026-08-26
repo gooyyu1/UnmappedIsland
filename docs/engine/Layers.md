@@ -138,7 +138,7 @@ Phaser に依っていません。書き換えの前に映しへ寄せられる�
 
 ## 6. 解析（`src/analysis/`）——近似の置き場所
 
-**定義を読んで数値を導く側**です。収支レポート（[`docs/diagnostics/BalanceStats.md`](../diagnostics/BalanceStats.md)）と
+**定義を読んで数値を導く側**です。収支レポート（[`stats/balance.yaml`](../../stats/balance.yaml)）と
 クラフトネットワークがこれを使います。世界を動かさずに「1個手に入れるのに何分か」を答えるので、
 遊びの本体からは切り離されています。
 
