@@ -34,12 +34,6 @@ const KNOWN_BODY_KEYS = [
 ];
 
 /**
- * trait が宣言一式に足して読むキー。`recipes`はtraitには書けないが、ここで未知キーとして弾くと
- * どこへ書けばよいかを言えないので、通したうえでRawTraitが弾く。
- */
-const TRAIT_OWN_KEYS = ['recipes'];
-
-/**
  * object_def と trait が共有する「**混ぜ込める宣言一式**」（GameElementDefinition.md 5節）。
  * trait はこれだけのもので、object_def はこれに素性（globalId・traits・recipes・variation_axes）を
  * 足したもの。
@@ -85,7 +79,7 @@ export class RawDeclarationBody {
    * 未知キーの判定も宣言全体に対してここで行うので、持ち主は自分で読むキー（object_defの素性など）を
    * ownKeysで名乗ること——名乗らなければ綴り間違いとして弾かれる。
    */
-  readFields(node: YAMLMap, context: string, ownKeys: readonly string[] = TRAIT_OWN_KEYS): void {
+  readFields(node: YAMLMap, context: string, ownKeys: readonly string[]): void {
     requireKnownKeys(node, [...KNOWN_BODY_KEYS, ...ownKeys], context);
 
     this.tags = namesIn(tryGetSeq(node, 'tags', context), context);
