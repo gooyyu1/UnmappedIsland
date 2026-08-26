@@ -50,11 +50,11 @@ export interface SeasonClimate {
 
 /**
  * 季節ごとの、天候の出現時間。`npm run stats:climate` の生成物
- * （`docs/diagnostics/ClimateSystemStats.md` の「季節の持続日数」と「天気ごとの発生時間」の平均）から。
+ * （`stats/climate.yaml` の `season_duration` と `weather_hours` の `segment: overall` の平均）から。
  *
  * 気候の実装を変えると実測値が動くので、生成物と食い違っていないかは
  * `tests/analysis/rainWater.test.ts` が見る。生成物そのものが古くなっていないかは
- * `tests/diagnostics/generatedReportFreshness.test.ts`。
+ * `tests/diagnostics/climateStatsReport.test.ts`。
  */
 export const SEASON_CLIMATE: readonly SeasonClimate[] = [
   {
