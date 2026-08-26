@@ -414,9 +414,12 @@ GitHub App の管理だけになる。
 ### 司令塔の手入れは `main` へ直接 push する
 
 `.claude/` 配下（このファイル・[`policies.md`](./policies.md)・フック）の変更は、PRを作らずに `main`
-へ直接 push してよい。`main` に保護は掛かっておらず、CI（`tests.yml`）の `paths` は `src/` `tests/`
-`scripts/` などで **`.claude/` を見ていない**ので、PRにしても走るものが無い。**ユーザーのタップを1回
-増やすだけになる。**
+へ直接 push してよい。`main` に保護は掛かっておらず、**PRにしてもユーザーのタップを1回増やすだけ**
+だから。
+
+**CIは `.claude/` を触った push でも走る**（#840 で `tests.yml` の `paths` を外した。`.claude/**` は
+`eslint .`・`prettier --check .`・`exports.test.ts` の実際の入力）。**赤くなるのは push した後**なので、
+直接 push する前に手元で4つのコマンドを通しておくこと。それが面倒な変更は、PRにしてよい。
 
 `src/` `docs/` `tests/` を触る変更は今までどおりPR。CIが要り、他のセッションと担当が重なりうる。
 
