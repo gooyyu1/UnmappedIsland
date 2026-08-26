@@ -194,10 +194,7 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
   `storm` と `scorching` は両極の「極端な天候」で、それぞれ雨季後半・乾季後半の風物詩として対称に
   扱います（嵐は `monsoon_level`、灼熱は `thermal_level` という季節内進行度が駆動する。4.3 節参照）。
   **画面へ出る日本語名を持つのは `locale/ja.yaml` の `symbol_texts`**（[`Localization.md`](./Localization.md)）
-  で、`clear` が「晴れ」・`sunny` が「快晴」・`scorching` が「灼熱」です。**明るさを扱う文書
-  （[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1.3 節・[`IlluminationSystem.md`](./IlluminationSystem.md)
-  4 節）の「快晴」は現実の照度の呼び名（雲のまったく無い空、正午 125,000 lx）で、指す段は `scorching`
-  です。** 同じ語が別の段を指すため、天気は日本語名ではなく段の名前で照合します。
+  で、`clear` が「晴れ」・`sunny` が「快晴」・`scorching` が「灼熱」です。
 - `weather_remaining`: 残り tick 数。4〜6 時間（16/20/24 tick の等確率 `pick`）で、遷移のたびに
   ロールし直す（再ロールは 4.3 節の遷移 `pick` の葉が天気の `set` と同時に行う）。
 - `sunny_weight`/`clear_weight`/`cloudy_weight`/`light_rain_weight`/`heavy_rain_weight`/`storm_weight`/
