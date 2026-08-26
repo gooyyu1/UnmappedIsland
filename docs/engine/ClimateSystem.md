@@ -19,7 +19,8 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
 
 - **季節（長期サイクル）**: 穏やか・雨季・乾季の 3 状態を固定順で巡回する。滞在期間は初回サイクルのみ固定、
   2 周目以降はランダムに決まる（3 節）。
-- **天気（短期変動）**: 灼熱・快晴・晴れ・曇り・小雨・大雨・嵐の 7 段階。季節が育てる貯水池
+- **天気（短期変動）**: 灼熱（`scorching`）・快晴（`sunny`）・晴れ（`clear`）・曇り（`cloudy`）・
+  小雨（`light_rain`）・大雨（`heavy_rain`）・嵐（`storm`）の 7 段階。季節が育てる貯水池
   （大気水分量・蓄熱量）に重み付けされた抽選で決まる、季節から独立したプロパティ（4 節)。
 
 季節・天気とも、「現在の値」と「残り時間」の 2 プロパティの組で表現し、残り時間が 0 になった瞬間に次の値へ
@@ -192,6 +193,11 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
   `scorching`（灼熱。`sunny` より酷い、特別な対策が必要な極端な暑さ。乾季後半にのみ発生する 4.3 節参照）。
   `storm` と `scorching` は両極の「極端な天候」で、それぞれ雨季後半・乾季後半の風物詩として対称に
   扱います（嵐は `monsoon_level`、灼熱は `thermal_level` という季節内進行度が駆動する。4.3 節参照）。
+  **画面へ出る日本語名を持つのは `locale/ja.yaml` の `symbol_texts`**（[`Localization.md`](./Localization.md)）
+  で、`clear` が「晴れ」・`sunny` が「快晴」・`scorching` が「灼熱」です。**明るさを扱う文書
+  （[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1.3 節・[`IlluminationSystem.md`](./IlluminationSystem.md)
+  4 節）の「快晴」は現実の照度の呼び名（雲のまったく無い空、正午 125,000 lx）で、指す段は `scorching`
+  です。** 同じ語が別の段を指すため、天気は日本語名ではなく段の名前で照合します。
 - `weather_remaining`: 残り tick 数。4〜6 時間（16/20/24 tick の等確率 `pick`）で、遷移のたびに
   ロールし直す（再ロールは 4.3 節の遷移 `pick` の葉が天気の `set` と同時に行う）。
 - `sunny_weight`/`clear_weight`/`cloudy_weight`/`light_rain_weight`/`heavy_rain_weight`/`storm_weight`/
