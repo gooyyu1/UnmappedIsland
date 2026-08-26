@@ -25,7 +25,7 @@ import { objectLinkHtml } from './pages';
  *
  * **狭い画面で読めることを優先する。** 連鎖表は列が9つあり、経路の文字列だけで90字を超えるので、
  * 表にはせず「経路の絵 + 1日ぶん」だけの1行にして、残りは開いたときに出す。絵で経路を出せるのが
- * Markdownのスナップショットに対するこちらの取り柄（docs/diagnostics/BalanceStats.md）。
+ * YAMLのスナップショット（stats/balance.yaml）に対するこちらの取り柄。
  */
 
 /** 1日の必要量を取る代表キャラクタ（docs/world/Characters.md）。 */
@@ -60,7 +60,7 @@ function renderBalancePage(view: CodexView, tables: BalanceTables): string {
     `<h1>収支</h1>` +
     `<p class="muted">定義だけから計算した「時間あたりの収支」。時間はすべて<b>労働時間</b>で、` +
     `待ち時間（罠の周期など）は含まない。` +
-    `同じ内容は <code>docs/diagnostics/BalanceStats.md</code> にも書き出される。</p>` +
+    `同じ内容は <code>stats/balance.yaml</code> にも書き出される。</p>` +
     measurementMethodHtml() +
     placeIndexHtml(view, tables) +
     chainsHtml(view, tables) +

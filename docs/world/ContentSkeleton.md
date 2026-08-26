@@ -17,10 +17,10 @@
 持たせず、段はレシピの要求（スキルと材料の連言、[`Skills.md`](./Skills.md) 3節）が結果として作ります。
 本書が持つのは数え方だけで、その数え方は**区間によって変わります**（2節）。
 
-在処は、数え直しの材料として使った [`BalanceStats.md`](../diagnostics/BalanceStats.md)（`npm run
-stats:balance` の生成物）・[`ClimateSystemStats.md`](../diagnostics/ClimateSystemStats.md)・
-[`TerrainStats.md`](../diagnostics/TerrainStats.md)と、`src/assets/world-codex/terrain_generation.yaml` の
-`island.site_count` です。
+在処は、数え直しの材料として使った [`stats/balance.yaml`](../../stats/balance.yaml)（`npm run
+stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml)・
+[`stats/terrain.yaml`](../../stats/terrain.yaml)と、`src/assets/world-codex/terrain_generation.yaml` の
+`island.site_count` です。読み方は [`docs/diagnostics/`](../diagnostics/README.md) の各文書が持ちます。
 本書自身に対応する定義・実装・検証はありません。
 
 **確定しているのは 5.1 節（望遠鏡を置かず山頂が担う）・6 節（アーティファクトの数）・8.1.1.1 節（夜の
@@ -55,8 +55,8 @@ stats:balance` の生成物）・[`ClimateSystemStats.md`](../diagnostics/Climat
 | **開始直後** | 知らないこと。探索が終わっていないので次にどこへ行けるかも、行った先に何があるかも分からない。在庫が無いので最悪を想定するしかない | 1段だけ。完了条件は2.1節 |
 | **それ以降** | 払う労働の量 | 1日（1440分）以上の労働がかかる山を1段と数える |
 
-**平均値の表は開始直後には当てはまりません。** [`BalanceStats.md`](../diagnostics/BalanceStats.md) の
-分数は、どの経路も選べて `pick` の期待値どおりに引ける前提の数字です。開始直後のプレイヤーはどちらの
+**平均値の表は開始直後には当てはまりません。** [`stats/balance.yaml`](../../stats/balance.yaml) の
+`chain_routes` の分数は、どの経路も選べて `pick` の期待値どおりに引ける前提の数字です。開始直後のプレイヤーはどちらの
 前提も満たしていないので、表の分数はその区間の重さを表しません
 （[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の
 「何が足止めしているかは区間で変わるので、段の物差しも変える」節）。
@@ -84,8 +84,8 @@ stats:balance` の生成物）・[`ClimateSystemStats.md`](../diagnostics/Climat
 
 **刃物と火は仕組みの上では本物の前提ですが、プレイヤーが追う目的としては置きません。**
 
-前提としては外せません——水の経路は3本とも `cutting_tool` を要求し（[`BalanceStats.md`](../diagnostics/BalanceStats.md)
-の hydration）、タロイモもヤシガニも火が要ります（[`Animals.md`](./Animals.md) 1節）。外すと組み立てが
+前提としては外せません——水の経路は3本とも `cutting_tool` を要求し（[`stats/balance.yaml`](../../stats/balance.yaml)
+の `chain_routes` の `property: hydration`）、タロイモもヤシガニも火が要ります（[`Animals.md`](./Animals.md) 1節）。外すと組み立てが
 崩れます。
 
 目的にしない理由は、目的にした瞬間、まだ何も知らないプレイヤーへ「石を探せ」という指示を出すことに
@@ -323,7 +323,7 @@ stats:balance` の生成物）・[`ClimateSystemStats.md`](../diagnostics/Climat
 **同じ30個の山が、明るさ・移動・土地の差を入れると約155日ぶんになり、島を開く17日を足して1周回は
 約172日です。1日816分という自由時間は上限であって、実際に使える時間ではありません。**
 
-1日を賄う最小労働は624分（[`BalanceStats.md`](../diagnostics/BalanceStats.md)）なので、差し引きの自由
+1日を賄う最小労働は624分（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum`）なので、差し引きの自由
 時間は1日816分。4節の山の合計は約73,000分なので、**そのまま割れば90日ぶん**です。しかしこの816分は、
 1日のどの時間でも何でもできる場合の数字で、**明るさと移動がこれを削ります**（8.1・8.2）。
 
@@ -600,7 +600,7 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 **「1日」は1つではありません。** 島を開いている最中と、開き切った後とでは、同じ島でも1日の使い方が
 別物になります。**片道の平均は76.57分**（500シードの実測、
-[`TerrainStats.md`](../diagnostics/TerrainStats.md)「島の広さ」）ですが、この数字だけでは
+[`stats/terrain.yaml`](../../stats/terrain.yaml) の `base_one_way`）ですが、この数字だけでは
 どちらの1日も出ません。
 
 [`dailyPhasesOf`](../../src/analysis/dailyPhases.ts)が、生成された島から局面ごとに数えます。道1本の
@@ -616,7 +616,7 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 **遠さは移動の項として、暗さは頭打ちとして、同じ1行に入ります。** 局面の違いは**どこへ行くか**と
 **そこで何をするか**の2つだけで、式は共有します。720分は屋外の枠、264分は1日を賄う生存の採取
-（[`BalanceStats.md`](../diagnostics/BalanceStats.md)の最小労働624分から睡眠360分を引いた分）です。
+（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum` の624分から睡眠360分を引いた分）です。
 
 **生存の採取は、暗い土地でも払える形にしています。** 密林で1日に働けるのは118分ですが、その日の
 残りの明るい時間は拠点の周りにあります。頭打ちに掛ける前に引くことで、「密林へ行った日は食べられない」
@@ -638,8 +638,8 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 局面は2つに割りました。**割る位置を決めているのは「探索がまだ残っているか」の1点だけ**で、
 どちらの1日も8.2節の同じ式で出ます。値はすべて500シードの実測
-（[`TerrainStats.md`](../diagnostics/TerrainStats.md)「局面ごとの1日」、拠点は片道が平均で
-最も短い土地）。
+（[`stats/terrain.yaml`](../../stats/terrain.yaml) の `exploration_phase`・`steady_phase`、拠点は片道が
+平均で最も短い土地）。
 
 | 局面 | 1日の移動 | 1日に進む分 | 消化するもの | 日数 |
 | --- | --: | --: | --: | --: |
