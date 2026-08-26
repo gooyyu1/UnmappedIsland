@@ -160,8 +160,11 @@ export interface IslandDailyPhases {
   readonly bases: readonly BaseDailyPhases[];
 
   /**
-   * **最も条件の良い拠点**。プレイヤーは拠点を選べるので、選べる中で片道の平均が最も短い土地を
-   * 採る（同じなら`siteIndex`の小さいほう）。良し悪しの判定ではなく順序の定義。
+   * **局面ごとの1日を代表する拠点**。プレイヤーは拠点を選べるので、選べる中で片道の平均が最も短い
+   * 土地を採る（同じなら`siteIndex`の小さいほう）。良し悪しの判定ではなく順序の定義。
+   *
+   * **1日はこの拠点1つから見たものを採る**——`bases`を平均すると、どの土地に住んだ人のものでもない
+   * 1日になる（TerrainStats.md「局面ごとの1日」）。
    */
   readonly bestBase: BaseDailyPhases;
 }

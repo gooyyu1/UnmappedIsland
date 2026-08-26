@@ -55,3 +55,25 @@ describe('定常の局面と、日帰りできない組', () => {
     expect(phases.bestBase.oneWayMinutes, '島の広さは測れている').toBeGreaterThan(0);
   });
 });
+
+/**
+ * 報告する1日が**誰の1日か**（`IslandDailyPhases.bestBase`・TerrainStats.md「局面ごとの1日」）。
+ * 拠点ごとに1日は違うので、代表を1つ決めないと、どの土地に住んだ人のものでもない値になる。
+ */
+describe('局面ごとの1日を代表する拠点', () => {
+  it('代表は、他の土地への片道が平均で最も短い拠点', () => {
+    const phases = dailyPhasesOf(islandWithJungleAt(60), LOCATION_DAYS);
+
+    expect(phases.bases.map((base) => base.oneWayMinutes)).toEqual([60, 90, 90]);
+    expect(phases.bestBase.siteIndex, '道が2本とも伸びるgrasslandが最短').toBe(0);
+  });
+
+  it('その1日は拠点1つのもので、拠点ごとの1日を平均したものではない', () => {
+    const phases = dailyPhasesOf(islandWithJungleAt(60), LOCATION_DAYS);
+    const perBase = phases.bases.map((base) => base.steady!.workMinutesPerDay);
+    const mean = perBase.reduce((sum, minutes) => sum + minutes, 0) / perBase.length;
+
+    expect(phases.bestBase.steady!.workMinutesPerDay).toBe(perBase[0]);
+    expect(phases.bestBase.steady!.workMinutesPerDay, '平均は代表の1日より短い').toBeGreaterThan(mean);
+  });
+});
