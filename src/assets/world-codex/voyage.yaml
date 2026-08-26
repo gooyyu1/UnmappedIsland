@@ -1,12 +1,62 @@
 # 島からの脱出（docs/concept/GameEndings.md・docs/world/Voyage.md）。
 #
-# 筏・外洋・本土の3つで、周回の終わりを表す。専用の文法は使わず、いずれも location（core.yaml）と
-# 既存の passives/stages/move だけで書いている。
+# 筏・海区・本土で、周回の終わりを表す。専用の文法は使わず、いずれも location（core.yaml）と
+# explorable（locations.yaml）と、既存の passives/stages/move だけで書いている。
 #
 #   - 筏は設置物であり場所でもある。中にプレイヤーと積荷が入るので、筏を1つ動かせば全部が動く。
-#   - 出航は、筏を外洋へ move する1手。外洋と本土は singleton（15節）なので、型の名前で行き先を指せる。
-#   - 航海の進みは、風・海流・積載から導かれる sail_speed の段が、毎tick voyage_progress へ足す。
-#     風向き（world の wind）と海流（外洋が子へ配る modify）が効くので、単なる時間経過にはならない。
+#   - 海は海区の連なりで、海区は探索できる場所そのもの。見張り（explore）を重ねると航路が現れ、
+#     航路を渡ると次の海区へ移る。海区も本土も singleton（15節）なので、型の名前で行き先を指せる。
+#   - **時間を進めるだけでは1海区も進まない**（GameEndings.md 12節）。風・海流・積載・帆は進みでは
+#     なく、その海区を渡るのにかかる時間（crossing_minutes）へ効く。
+
+traits:
+  # 海区（GameEndings.md 12節）。**地上の土地と同じ場所**で、足しているのは海の側の3つだけ
+  # ——浮かんでいるものを押す海流、浮いていることの配布、そしてここを渡るのにかかる時間。
+  #
+  # 海区ごとに違うのは crossing_minutes と、見張り何回で航路が現れるか（exploration_progress の
+  # range.max）だけになる。
+  sea_zone:
+    tags: [sea]
+    props:
+      # この海区から次の海区へ渡るのにかかる時間（分）。**素の値は海区ごと**（距離）で、そこから
+      # 筏の sail_speed の段が引く（筏の sail_speed 参照）。風・海流・積載・帆はすべてそこへ集まる
+      # ので、ここに書くのは海区の側の事情だけになる。下限は、どれだけ条件が良くても渡り切るのに
+      # 要る時間。
+      crossing_minutes:
+        range: {min: 120, max: 900}
+    passives:
+      # 海流。浮かんでいるものを本土の方へ押し続ける。凪いでも渡れなくならないのはこれがあるためで、
+      # 向かい風はこれを打ち消す量として書いてある（筏の sail_speed 参照）。
+      - modify: {child: {sail_speed: 3}}
+      # 浮いていること自体を子へ配る。組み込んだ部品が「陸では効かない」と言うために読む
+      # （筏の afloat 参照）。
+      - modify: {child: {afloat: 1}}
+    interactions:
+      # 見張り。**地上の探索そのもの**（ExplorationSystem.md 2節）で、1回15分＝1tick、進捗が1つ進む。
+      # 進捗が上限に達した瞬間、その海区から出る航路が現れる（exploration_progress の on_max）。
+      #
+      # **航路が見えたら見張りは終わる。** 上限へ達した値は書き込みのたびに on_max を呼び直すので、
+      # 止めないと同じ航路が湧き続ける。見えているかは湧いた結果そのもので見る——回数で書くと、
+      # 上限と同じ数を2箇所に持つことになる。
+      explore:
+        trigger: menu
+        conditions:
+          - reason: route_already_sighted
+            not: {slot: fixtures, matches: {tag: sea_route}}
+        duration: 15
+        add: {self: {exploration_progress: 1}}
+
+  # 航路。海区から海区への繋がり1本で、見張りの成果として現れる設置物。
+  sea_route:
+    # fixtureは「持ち歩けない」という置き場所の分類、sea_routeは「海区から出る道である」という役割。
+    # 地上の道（path）とはタグを分ける——画面が path の札に出す行き先の土地名は、行き先を
+    # インスタンスIDで持つ道のためのもので、型で行き先を指す航路には引くものが無い。
+    tags: [fixture, sea_route]
+    # 繋がる海区の無い航路は存在しない（7.9節）。海区から外せず、海区が消えれば一緒に消える。
+    bound_to_owner: true
+    props:
+      # 航路は海そのものなので目方を持たない（地上の道と同じ、ContainerSystem.md 1節）。
+      weight: {value: 0}
 
 object_defs:
   # 筏。丸太を並べて縛った、島を出るための乗り物。
@@ -73,50 +123,42 @@ object_defs:
             min: 427400
             passives:
               - modify: {self: {sail_speed: -6}}
-      # 浮いているか。外洋が子へ配る（open_sea の modify）ので、海に出ている間だけ1になる。
+      # 浮いているか。海区が子へ配る（sea_zone traitの modify）ので、海に出ている間だけ1になる。
       #
       # **帆のような部品が「陸では効かない」と言うための足場。** 筏自身の寄与は親の型で絞れるが
       # （下の passives の `parent matches sea`）、部品から見た海は親の親で、条件では指せない。
       afloat: {value: 0}
-      # 航海の速さ（実効値）。素の値は0で、寄与は4つ——外洋の海流（open_sea の modify）、
+      # 航海の速さ（実効値）。素の値は0で、寄与は4つ——海区の海流（海区の modify）、
       # 風向き（下の passives）、積載の重さ（weight の段）、組み込んだ帆（rawhide_sail）。
       # 陸に居る間はどれも効かないので0になる。
+      #
+      # **速さは進みではなく、今居る海区を渡る時間へ効く**（GameEndings.md 12.3節）。段ごとに違う
+      # 量を親（海区）の crossing_minutes から引く——`modify` の量はリテラルしか書けないので、
+      # 可変の効き方を段で刻んでいる。陸の上の親は crossing_minutes を持たないので何も起きない。
       sail_speed:
         value: 0
         range: {min: 0, max: 20}
         stages:
-          # 進まない（凪・向かい風・積みすぎ）。
+          # 進まない（凪・向かい風・積みすぎ）。渡るのに丸々かかる。
           - name: becalmed
           - name: slow
             min: 2
             passives:
-              - add: {self: {voyage_progress: 1}}
+              - modify: {parent: {crossing_minutes: -30}}
           - name: moderate
             min: 4
             passives:
-              - add: {self: {voyage_progress: 2}}
+              - modify: {parent: {crossing_minutes: -60}}
           - name: steady
             min: 7
             passives:
-              - add: {self: {voyage_progress: 3}}
+              - modify: {parent: {crossing_minutes: -90}}
           - name: fast
             min: 10
             passives:
-              - add: {self: {voyage_progress: 4}}
-      # 本土までの残り。range.max が航海の距離で、追い風が続けば8日ほど、風に恵まれなければ
-      # その倍以上かかる（docs/world/Voyage.md 3節）。
-      #
-      # 上限に達した瞬間に本土へ着く。moveのあとは親が外洋でなくなるため風も海流も効かず、
-      # sail_speed が0に戻る（＝進みも止まる）ので、境界へ戻すsetと合わせて二度は発火しない。
-      voyage_progress:
-        gauge: {min: neutral, max: good}
-        value: 0
-        range: {min: 0, max: 2200}
-        on_max:
-          set: {self: {voyage_progress: 2200}}
-          move: {subject: self, to_object: mainland}
+              - modify: {parent: {crossing_minutes: -120}}
     passives:
-      # 風向きは world が持つ（core.yaml の wind）。祖先を遡って読むので、外洋に居る間だけ
+      # 風向きは world が持つ（core.yaml の wind）。祖先を遡って読むので、海区に居る間だけ
       # 親の型で絞る——陸に繋いだままの筏は風を受けない。
       - conditions:
           - {subject: parent, matches: {tag: sea}}
@@ -165,6 +207,8 @@ object_defs:
 
       # 航海に出る。乗り込むところまでを1手に含める——岸から直に出せるほうが手数が少なく、
       # 既に乗っていれば移動が空振りするだけで結果は同じになる。
+      #
+      # 出る先は島に最も近い海区で、そこから先は航路を1つずつ渡る（GameEndings.md 12節）。
       set_sail:
         trigger: menu
         conditions:
@@ -174,7 +218,7 @@ object_defs:
         duration: 60
         move:
           - {subject: actor, to: self}
-          - {subject: self, to_object: open_sea}
+          - {subject: self, to_object: coastal_waters}
 
   # 生皮の帆。筏の構造スロットへ組み込むと、風を受ける量が増える（sail_speed +2）。
   #
@@ -194,7 +238,7 @@ object_defs:
       # 入れることを強いているのは枠のaccept（tag: sail）であって、この宣言ではない。
       #
       # **浮いている間だけ効かせる。** 条件を付けないと、浜に置いた筏の sail_speed が2になって
-      # 段が `slow` へ上がり、陸のまま voyage_progress が溜まって本土へ着いてしまう（実際に起きた）。
+      # 段が `slow` へ上がり、陸に繋いだままの筏が横断時間を縮め始める。
       - conditions:
           - {subject: parent, prop: afloat, gt: 0}
         modify: {parent: {sail_speed: 2}}
@@ -214,27 +258,116 @@ object_defs:
               - {tag: sewing_tool, count: 1, consume: false}
             duration: 300
 
-  # 外洋。島と本土の間の海で、世界に1つだけ在る（15節）。
-  #
-  # 資源を持たない場所なので、探索（explorable）は持たない。ここに居る間にできることは、
-  # 積荷を食べること・休むこと・捨てることだけになる。
-  open_sea:
+  # ------------------------------------------------------------------
+  # 海区（GameEndings.md 12節）。島と本土の間の海を、十数個の海区の連なりとして持つ——第一段では
+  # 3つを鎖に並べてある。海区そのものの作りは sea_zone trait（このファイルの先頭）が持ち、
+  # ここが書くのは海区ごとに違う2つだけ——渡るのにかかる時間と、見張り何回で航路が現れるか。
+  # ------------------------------------------------------------------
+
+  # 島影の海。島を離れてすぐの海区で、陸が見えているぶん自分の居場所が読みやすい
+  # （ContentSkeleton.md 7節の「沿岸」）。
+  coastal_waters:
     singleton: true
-    traits: [location]
-    tags: [sea]
+    traits: [location, explorable, sea_zone]
     props:
       # 遮るものが何も無いので、空の明るさがそのまま届く（IlluminationSystem.md 2節）。
       ambient_brightness: {value: 0}
-    passives:
-      # 海流。浮かんでいるものを本土の方へ押し続ける。風が凪いでも進みが完全には止まらないのは
-      # これがあるためで、向かい風はこれを打ち消す量として書いてある（筏の sail_speed 参照）。
-      - modify: {child: {sail_speed: 3}}
-      # 浮いていること自体を子へ配る。組み込んだ部品が「陸では効かない」と言うために読む
-      # （筏の afloat 参照）。
-      - modify: {child: {afloat: 1}}
+      crossing_minutes: {value: 240}
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 2}
+        on_max:
+          spawn: {object: route_to_tide_rip, into: self}
+
+  # 潮目。流れのぶつかる帯で、波と鳥の集まりが目印になる（ContentSkeleton.md 7節）。
+  tide_rip:
+    singleton: true
+    traits: [location, explorable, sea_zone]
+    props:
+      # 遮るものが何も無いので、空の明るさがそのまま届く（IlluminationSystem.md 2節）。
+      ambient_brightness: {value: 0}
+      crossing_minutes: {value: 360}
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 3}
+        on_max:
+          spawn: {object: route_to_open_water, into: self}
+
+  # 空の海。目印が何も無いので、航路を見つけるのに最も見張りを重ねることになる
+  # （ContentSkeleton.md 7節）。ここから本土へ渡る。
+  open_water:
+    singleton: true
+    traits: [location, explorable, sea_zone]
+    props:
+      # 遮るものが何も無いので、空の明るさがそのまま届く（IlluminationSystem.md 2節）。
+      ambient_brightness: {value: 0}
+      crossing_minutes: {value: 480}
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 5}
+        on_max:
+          spawn: {object: route_to_mainland, into: self}
+
+  # ------------------------------------------------------------------
+  # 航路。海区どうしを繋ぐ1本で、地上の道（locations.yamlのpath）と同じ設置物。**違うのは動かす物
+  # だけ**——地上の道が歩く本人を動かすのに対し、航路は乗り手ごと筏を動かす。
+  #
+  # **3つの違いは行き先の1行だけ。** 行き先を型で指す（to_object）ので、渡る手ごと型を分けるほかない
+  # ——プロパティで指せるのはインスタンスIDだけで、singletonの海区は定義の時点でそれを持たない。
+  #
+  # 動かすのは、その海区に浮かんでいる筏。**渡る手から筏を指す道はamongだけ**——航路から見て筏は
+  # 親でも子でもなく、同じ海区に並ぶ兄弟にあたる。候補は高々1つなので、抽選にはならない。
+  # ------------------------------------------------------------------
+  route_to_tide_rip:
+    traits: [sea_route]
+    interactions:
+      cross:
+        trigger: menu
+        conditions:
+          - reason: no_vessel_here
+            subject: parent
+            slot: fixtures
+            matches: {object: raft}
+        duration: {subject: parent, prop: crossing_minutes}
+        pick:
+          - weight: 1
+            among: {subject: parent, slot: fixtures, matches: {object: raft}}
+            move: {subject: picked, to_object: tide_rip}
+
+  route_to_open_water:
+    traits: [sea_route]
+    interactions:
+      cross:
+        trigger: menu
+        conditions:
+          - reason: no_vessel_here
+            subject: parent
+            slot: fixtures
+            matches: {object: raft}
+        duration: {subject: parent, prop: crossing_minutes}
+        pick:
+          - weight: 1
+            among: {subject: parent, slot: fixtures, matches: {object: raft}}
+            move: {subject: picked, to_object: open_water}
+
+  route_to_mainland:
+    traits: [sea_route]
+    interactions:
+      cross:
+        trigger: menu
+        conditions:
+          - reason: no_vessel_here
+            subject: parent
+            slot: fixtures
+            matches: {object: raft}
+        duration: {subject: parent, prop: crossing_minutes}
+        pick:
+          - weight: 1
+            among: {subject: parent, slot: fixtures, matches: {object: raft}}
+            move: {subject: picked, to_object: mainland}
 
   # 本土。着いた時点で周回が終わる場所で、着いた後のことは描かない（GameEndings.md 3節）。
-  # 世界に1つだけ在り、筏の voyage_progress が上限へ達したときだけ、そこへ移る。
+  # 世界に1つだけ在り、最後の海区から航路を渡ったときだけ、そこへ移る。
   mainland:
     singleton: true
     traits: [location]

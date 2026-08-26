@@ -72,7 +72,7 @@ describe('入れ物の中から見た外側の場所（世界→映し 通し）
     ).toContain(raft);
   });
 
-  it('出航しても同じ形で、外側は外洋になる', () => {
+  it('出航しても同じ形で、外側は海区になる', () => {
     const { game, raft } = ready();
     board(game, raft);
     expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute(), '出航できる').toBe(true);
@@ -80,7 +80,9 @@ describe('入れ物の中から見た外側の場所（世界→映し 通し）
     const nested = fromGameSession(game, codex, locale).nestedLocations;
 
     expect(nested, '海の上でも現在地と外側の2件').toHaveLength(2);
-    expect(nested[1].fixtures.owner.def.name, '外側は外洋').toBe('open_sea');
-    expect(nested[1].explore(), '外洋は探索を宣言していないので、映していても探索はできない').toBe(false);
+    expect(nested[1].fixtures.owner.def.name, '外側は島に最も近い海区').toBe('coastal_waters');
+    // **見張りは、外側の場所を探索することそのもの**（docs/world/Voyage.md 3節）。筏に乗ったまま
+    // 海区を探索できるので、航海のための入口を画面側に足さずに済んでいる。
+    expect(nested[1].explore(), '海区は探索を宣言しているので、外側でも見張れる').toBe(true);
   });
 });
