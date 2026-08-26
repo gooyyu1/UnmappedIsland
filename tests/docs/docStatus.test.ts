@@ -5,14 +5,15 @@ import { describe, expect, it } from 'vitest';
 import { statusOfMarkdown } from '../../scripts/docStatus.mjs';
 
 /**
- * `npm run stats:docs`（`scripts/docStatus.mjs`）が空を返していないかの検査。
+ * `npm run stats:docs`（`scripts/docStatus.mjs`）が数え落としていないかの検査。
  *
  * この表は「14,000行を通しで読む代わりに、どこへ注意を向けるかを選ぶ」道具（`docs/README.md`）
- * なので、**全部0になっても表の形は保たれ、壊れたことが表から読み取れない**。CRLFの作業ツリーで
- * 見出しが1つも拾えなくなっていたのに気づかれなかったのがこれ（issue #867）。
+ * なので、**全部0になっても、印が1つ落ちても、表の形は保たれ、壊れたことが表から読み取れない**。
+ * CRLFの作業ツリーで見出しが1つも拾えなくなっていたのが前者（issue #867）、深さ4の見出しに付いた
+ * `【確定】` が落ちていたのが後者（issue #869）。
  *
- * 見るのは**数え方の当たり外れではなく、空になっていないこと**。値の妥当性は見ない——重ねて
- * 見ると、赤くなったときにどちらの意味か決まらなくなる。
+ * 見るのは**数え方の当たり外れではなく、空になっていないことと、印が落ちていないこと**。値の
+ * 妥当性は見ない——重ねて見ると、赤くなったときにどちらの意味か決まらなくなる。
  */
 
 const ROOT = resolve(__dirname, '../..');
@@ -43,8 +44,27 @@ const REPORTED = JSON.parse(
   }),
 ) as DocumentStatus[];
 
-function sumOf(key: 'sections' | 'confirmed'): number {
+function sumOf(key: 'sections' | 'confirmed' | 'unimplemented'): number {
   return REPORTED.reduce((sum, doc) => sum + doc[key], 0);
+}
+
+/**
+ * その印の付いた見出し行。**`docStatus.mjs` の数え方は使わない**——同じ関数で数えると、両方が
+ * 同じように落ちたときに気づけない。
+ *
+ * 見出しかどうかは行頭の`#`だけで決める。コードフェンスを追わないのは、`docs/`のフェンスに現れる
+ * `#`がYAMLのコメント（深さ1）で、節の深さ（2以上）と重ならないため。
+ */
+function headingLinesWith(mark: string): string[] {
+  const found: string[] = [];
+  for (const rel of listMarkdown('docs')) {
+    readFileSync(join(ROOT, rel), 'utf-8')
+      .split(/\r?\n/)
+      .forEach((line, index) => {
+        if (/^#{2,6}\s/.test(line) && line.includes(mark)) found.push(`${rel}:${index + 1} ${line}`);
+      });
+  }
+  return found;
 }
 
 describe('docs/ の確定度と実装状況の表', () => {
@@ -52,6 +72,20 @@ describe('docs/ の確定度と実装状況の表', () => {
     expect(REPORTED.length, '文書が1つも見つかっていない').toBeGreaterThan(0);
     expect(sumOf('sections'), '節が1つも拾えていない').toBeGreaterThan(0);
     expect(sumOf('confirmed'), '【確定】が1つも拾えていない').toBeGreaterThan(0);
+  });
+
+  it('見出しに付いた印を、1つも数え落としていない', () => {
+    // 落ちた印は、印の無い節と見分けが付かない（`【確定】`は「覆すには人間の判断が要る」という
+    // 変更権限の宣言なので、表から消えると誰でも覆せることになる）。
+    for (const [mark, key] of [
+      ['【確定】', 'confirmed'],
+      ['【未実装', 'unimplemented'],
+    ] as const) {
+      const inHeadings = headingLinesWith(mark);
+      expect(sumOf(key), `${mark} の付いた見出し:\n${inHeadings.join('\n')}`).toBe(
+        inHeadings.length,
+      );
+    }
   });
 
   it('同じ本文をLFとCRLFで数えて、同じ数になる', () => {
