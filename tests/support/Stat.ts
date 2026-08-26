@@ -59,13 +59,4 @@ export class Stat {
     }
     return this._max;
   }
-
-  tableRow(label: string, unit: string): string {
-    if (this._count === 0) return `| ${label} | - | - | - | - | - | - | 0 |`;
-    return (
-      `| ${label} | ${this.mean.toFixed(2)}${unit} | ${this.min.toFixed(2)}${unit} | ` +
-      `${this.percentile(0.05).toFixed(2)}${unit} | ${this.percentile(0.95).toFixed(2)}${unit} | ` +
-      `${this.max.toFixed(2)}${unit} | ${this.stdDev.toFixed(2)} | ${this._count} |`
-    );
-  }
 }
