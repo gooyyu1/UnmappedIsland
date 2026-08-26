@@ -212,7 +212,8 @@ water_liquid:
 | `cloudy` | +11 | — | — | — |
 | 雨系 | +10以下 | — | — | — |
 
-満杯から空になるまでの日数（**開けた土地**。`ClimateSystemStats.md` の天候出現時間で加重した実測ベース）:
+満杯から空になるまでの日数（**開けた土地**。[`stats/climate.yaml`](../../stats/climate.yaml) の
+`weather_hours` で加重した実測ベース）:
 
 | 季節 | ヤシの器（250mL） | 甕（4L） |
 |---|---|---|
