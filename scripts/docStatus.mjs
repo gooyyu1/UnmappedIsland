@@ -33,10 +33,10 @@ function markdownFilesIn(dir) {
 }
 
 /** コードフェンスの外の見出し行（`#`を除いた本文）。 */
-function headingsOf(markdown) {
+function headingsOf(lines) {
   const headings = [];
   let inFence = false;
-  for (const line of markdown.split('\n')) {
+  for (const line of lines) {
     if (/^\s*```/.test(line)) {
       inFence = !inFence;
       continue;
@@ -49,12 +49,17 @@ function headingsOf(markdown) {
   return headings;
 }
 
-function statusOf(rel) {
-  const text = readFileSync(path.join(ROOT, rel), 'utf-8');
-  const headings = headingsOf(text);
+/**
+ * 1つの文書の中身から数えたもの。
+ *
+ * **改行を割るのはここだけ。** 作業ツリーがCRLFのとき、行末に`\r`が残ると行末を見る判定
+ * （見出しの`$`）が一致しなくなる（issue #867）。
+ */
+export function statusOfMarkdown(markdown) {
+  const lines = markdown.split(/\r?\n/);
+  const headings = headingsOf(lines);
   return {
-    path: rel.split(path.sep).join('/'),
-    lines: text.split('\n').length,
+    lines: lines.length,
     sections: headings.length,
     confirmed: headings.filter((heading) => heading.includes('【確定】')).length,
     unimplemented: headings.filter((heading) => heading.includes('【未実装')).length,
@@ -62,13 +67,23 @@ function statusOf(rel) {
   };
 }
 
-const documents = markdownFilesIn(DOCS)
-  .map(statusOf)
-  .sort((a, b) => a.path.localeCompare(b.path));
+function statusOf(rel) {
+  return {
+    path: rel.split(path.sep).join('/'),
+    ...statusOfMarkdown(readFileSync(path.join(ROOT, rel), 'utf-8')),
+  };
+}
 
-if (process.argv.includes('--json')) {
-  console.log(JSON.stringify(documents, null, 2));
-} else {
+function printDocuments() {
+  const documents = markdownFilesIn(DOCS)
+    .map(statusOf)
+    .sort((a, b) => a.path.localeCompare(b.path));
+
+  if (process.argv.includes('--json')) {
+    console.log(JSON.stringify(documents, null, 2));
+    return;
+  }
+
   const total = documents.reduce(
     (sum, doc) => ({
       lines: sum.lines + doc.lines,
@@ -94,3 +109,7 @@ if (process.argv.includes('--json')) {
     );
   }
 }
+
+// 数える部分だけを試験から読み込めるように、表を出すのは直接実行したときだけにする。
+if (process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url))
+  printDocuments();
