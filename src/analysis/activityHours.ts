@@ -23,7 +23,7 @@ import type { WorldCodex } from '../domain/WorldCodex';
  * 1行では出せないので、そのときは例外にする。
  *
  * 天候の出現時間は呼び出し側が渡す（`npm run stats:climate`が実測する20シード×3,600日の平均、
- * `ClimateSystemStats.md`）。天候と時刻は独立とみなす近似は`seasonalRain.ts`と同じ。
+ * `stats/climate.yaml`の`weather_hours`）。天候と時刻は独立とみなす近似は`seasonalRain.ts`と同じ。
  */
 
 /** 行動のクラス（IlluminationSystem.md 5節）が要求する、明るさとその下限の段。 */
@@ -43,7 +43,7 @@ const ACTIVE_REQUIREMENTS: readonly BrightnessRequirement[] = [
   { propertyName: 'hand_brightness', stageName: 'bright' },
 ];
 
-/** 季節1つぶんの、天候の出現時間の実測値（`ClimateSystemStats.md`）。 */
+/** 季節1つぶんの、天候の出現時間の実測値（`stats/climate.yaml`の`weather_hours`）。 */
 export interface SeasonWeatherHours {
   readonly seasonName: string;
 
