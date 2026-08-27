@@ -716,6 +716,10 @@ object_texts:
     notes:
       exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
       explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。次の海区へ続く航路が見えれば、見張りはそこで終わる。
     interactions:
       explore:
         display_name: 見張り
@@ -726,6 +730,10 @@ object_texts:
     notes:
       exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
       explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。次の海区へ続く航路が見えれば、見張りはそこで終わる。
     interactions:
       explore:
         display_name: 見張り
@@ -737,6 +745,10 @@ object_texts:
     notes:
       exploring: 見張りを続けると、本土へ渡る航路が見つかる。
       explored: 本土への航路は見つかった。あとは渡るだけ。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。本土へ渡る航路が見えれば、見張りはそこで終わる。
     interactions:
       explore:
         display_name: 見張り

@@ -222,6 +222,17 @@ export class ObjectTexts {
   }
 
   /**
+   * その型が**自分の言葉で言い換えた**操作の名前。言い換えていなければundefined——defaultエントリは
+   * 参照しません（displayNameと同じ理由で、既定の言い方を「その型の言い換え」として返さないため）。
+   *
+   * 探索のタブの見出しのように、**言い換えている型だけがその語を使い、他は画面の既定語を出す**
+   * 場面で読みます。
+   */
+  renamedInteractionName(interactionName: string): string | undefined {
+    return this.entry?.tryGetMember('interactions', interactionName)?.displayName;
+  }
+
+  /**
    * 操作の表示文字列。**メニュー型（actions）とドラッグ型（combinations）を分けない**——
    * 操作の名前は元から1つの名前空間で、同じ物に同名の操作を2つ置くことはロードで弾く
    * （GameElementDefinition.md 11節）。

@@ -349,7 +349,7 @@ export class ObjectWindow {
         : [
             {
               key: EXPLORATION_TAB,
-              title: uiText('exploration'),
+              title: exploration.title,
               width: ExplorationPane.width(metrics),
               height: () => ExplorationPane.height(metrics),
               create: (area: Rect) =>

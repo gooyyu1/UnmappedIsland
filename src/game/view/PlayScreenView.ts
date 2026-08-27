@@ -715,17 +715,25 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
    *
    * 補足の1行は**型ごとの言い換え**を通す（`notes`、Localization.md）——探索で見つかるものは型で違う
    * （土地なら道、海区なら航路）ので、画面に文を持たせると1つの言い方しか出せない。
+   *
+   * タブの見出しも同じ理由で型ごとに変わる。**その型がexploreを言い換えているならその語**（海区の
+   * 「見張り」）で、言い換えていなければ画面の既定語（`ui_texts.exploration`）を出す。
    */
   const explorationOf = (object: WorldObject): ExplorationContent | undefined => {
     if (!object.def.declaresInteraction(EXPLORE_ACTION)) return undefined;
 
+    const texts = locale.object(object.def.name);
     const explorable = new Location(object, codex);
     const ratio =
       explorable.explorationProgressMax === 0
         ? 0
         : explorable.explorationProgress / explorable.explorationProgressMax;
     const scene = ratio >= 1 ? EXPLORED_NOTE : EXPLORING_NOTE;
-    return { ratio, note: locale.object(object.def.name).note(scene) ?? scene };
+    return {
+      ratio,
+      title: texts.renamedInteractionName(EXPLORE_ACTION) ?? locale.uiText('exploration'),
+      note: texts.note(scene) ?? scene,
+    };
   };
 
   /**
