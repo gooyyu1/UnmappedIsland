@@ -7,7 +7,57 @@ import { Location } from '../../src/domain/wrappers/Location';
 import { applyScenario, bundledScenario } from '../../src/scenario/Scenario';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import { seededRng } from '../../src/domain/Rng';
+
+/**
+ * 8種類の顔ぶれ（docs/world/ContentSkeleton.md 7節）と、それを配った海区。**顔ぶれは型でもタグでも
+ * ないので、どの海区がどの顔ぶれかを知っているのはこの表と、海区のつまみの値だけ。**
+ */
+const FACES: ReadonlyMap<string, readonly string[]> = new Map([
+  ['沿岸', ['coastal_waters', 'mainland_shallows']],
+  ['潮目', ['tide_rip', 'outer_tide_rip']],
+  ['海藻の帯', ['kelp_belt', 'drifting_kelp']],
+  ['岩礁', ['reef_shallows', 'black_reef']],
+  ['海鳥の岩', ['gull_rock', 'white_rock']],
+  ['沈船の海', ['wreck_waters']],
+  ['小島のある海区', ['islet_waters']],
+  ['空の海', ['open_water', 'long_swell']],
+]);
+
+/** 見張りの発見量のつまみ（voyage.yamlのsea_zone）。 */
+const KNOBS = [
+  'barren_find',
+  'driftwood_find',
+  'flotsam_find',
+  'seaweed_find',
+  'egg_find',
+  'wreck_find',
+  'shoal_find',
+  'seabird_find',
+];
+
+/**
+ * 顔ぶれごとに、見張りが返すもの——拾えるもの（手に入る）・湧くもの（海区に立つ）・実りの濃さ
+ * （1回の見張りで何かが返る割合）。**顔ぶれ1つにつき1つの海区**を見る（同じ顔ぶれの海区が同じ
+ * 配り方であることは別の検査が受け持つ）。
+ *
+ * 濃さの許容幅は、試行回数ぶんの揺れ（標準誤差は0.04ほど）より広く、顔ぶれの差（0.8/0.55/0.2/0）
+ * より狭く取る。
+ */
+const YIELDS: readonly (readonly [string, readonly string[], readonly string[], number, number])[] = [
+  ['coastal_waters', ['thick_branch', 'seaweed'], ['fish_shoal'], 0.7, 0.9],
+  ['tide_rip', [], ['fish_shoal'], 0.7, 0.9],
+  ['kelp_belt', ['seaweed'], [], 0.45, 0.65],
+  ['reef_shallows', ['thick_branch', 'rope'], ['fish_shoal'], 0.45, 0.65],
+  ['gull_rock', ['bird_egg', 'feather'], ['seabird_flock'], 0.45, 0.65],
+  ['wreck_waters', ['thick_branch', 'rope', 'golden_chalice'], [], 0.1, 0.3],
+  ['islet_waters', [], [], 0, 0],
+  ['open_water', [], [], 0, 0],
+];
+
+/** 1つの海区を何回見張って数えるか。 */
+const WATCHES = 120;
 
 /**
  * 島からの脱出（voyage.yaml、docs/world/Voyage.md）の検証。
@@ -84,6 +134,27 @@ describe('筏と航海', () => {
     return route?.tryGetAction('cross', game.player.instance)?.tryExecute() === true;
   }
 
+  /**
+   * 今居る海区から本土まで、見張って渡ることを繰り返す。渡った海区の名前を順に返す。
+   *
+   * **渇きと飢えは満たしながら渡る。** 本土までは数日かかるので、補給せずに渡ると乗り手が先に
+   * 倒れる——ここで見たいのは海区の連なりのほうで、何日ぶんの水と食料が要るかは別の問題
+   * （GameEndings.md 12.4節）。回数の上限は、鎖の長さ（十数個）より十分に大きい値。
+   */
+  function voyageToMainland(game: StartedGame, raft: WorldObject): string[] {
+    const visited: string[] = [];
+    for (let i = 0; i < 40 && raft.parent?.def.name !== 'mainland'; i++) {
+      const zone = raft.parent!;
+      visited.push(zone.def.name);
+      for (const name of ['hydration', 'satiety']) {
+        const property = game.player.instance.getProperty(codex.propertyNames.getId(name));
+        property.setNumberWithoutEvents(property.def.range?.max ?? 0);
+      }
+      expect(watchAndCross(game, zone), `${zone.def.name} から渡れる`).toBe(true);
+    }
+    return visited;
+  }
+
   it('出航すると、プレイヤーごと筏が島に最も近い海区へ移る', () => {
     const { game, raft } = ready();
 
@@ -144,10 +215,10 @@ describe('筏と航海', () => {
 
     expect(keepWatch(game, first), '2回目の見張り').toBe(true);
     const route = sightedRoute(first);
-    expect(route?.def.name, '2回目で潮目への航路が現れる').toBe('route_to_tide_rip');
+    expect(route?.def.name, '2回目で海藻の帯への航路が現れる').toBe('route_to_kelp_belt');
 
     expect(route!.tryGetAction('cross', game.player.instance)?.tryExecute(), '渡れる').toBe(true);
-    expect(raft.parent?.def.name, '次の海区へ移っている').toBe('tide_rip');
+    expect(raft.parent?.def.name, '次の海区へ移っている').toBe('kelp_belt');
     expect(game.player.location?.instance.instanceId, '乗り手は筏ごと渡る').toBe(raft.instanceId);
   });
 
@@ -176,7 +247,7 @@ describe('筏と航海', () => {
     keepWatch(game, first);
 
     // 筏だけを次の海区へ先に移す（乗り手は取り残される）。
-    raft.moveToSlotOrRejection(singletonPlace(game, 'tide_rip').getSlot(codex.slotNames.getId('fixtures')));
+    raft.moveToSlotOrRejection(singletonPlace(game, 'kelp_belt').getSlot(codex.slotNames.getId('fixtures')));
 
     const route = sightedRoute(first)!;
     expect(route.tryGetAction('cross', game.player.instance)?.tryExecute(), '渡る手は成立しない').toBe(false);
@@ -301,21 +372,138 @@ describe('筏と航海', () => {
     expect(empty, '軽くなれば短く渡れる').toBeLessThan(laden);
   });
 
+  /**
+   * その海区を繰り返し見張り、**手に入った物の名前・海区に湧いた物の名前・何かが返った割合**を返す。
+   *
+   * 見張りの進捗が上限へ達すると航路（と小島）が現れ、そこで見張りは終わる。**ここで見たいのは卓の
+   * ほうだけ**なので、毎回進捗を戻して上限へ届かせない。湧いた物は立ち去る（fish_shoalの
+   * stay_remaining）ので、今そこに居るかではなく**居たことがあるか**を個体で数える。
+   */
+  function watchRepeatedly(
+    zoneName: string,
+    times: number,
+  ): { picked: ReadonlySet<string>; spawned: ReadonlySet<string>; yieldRate: number } {
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    const zone = singletonPlace(game, zoneName);
+    expect(raft.moveToSlotOrRejection(zone.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+
+    const seaRouteTag = codex.tagNames.getId('sea_route');
+    // 出航のしたくの積荷（ヤシの実・聖杯）と乗り手は、見張りが返した物ではない。
+    const cargoAtStart = new Set([...raft.descendants()].map((object) => object.instanceId));
+    const spawned = new Map<number, string>();
+    const picked = new Map<number, string>();
+    let returned = 0;
+
+    for (let i = 0; i < times; i++) {
+      zone.getProperty(codex.propertyNames.getId('exploration_progress')).setNumberWithoutEvents(0);
+
+      const before = picked.size + spawned.size;
+      expect(keepWatch(game, zone), `${zoneName}: 見張りは成立する`).toBe(true);
+      for (const fixture of new Location(zone, codex).fixtures)
+        if (fixture !== raft && !fixture.def.hasTag(seaRouteTag))
+          spawned.set(fixture.instanceId, fixture.def.name);
+      for (const object of raft.descendants())
+        if (!cargoAtStart.has(object.instanceId)) picked.set(object.instanceId, object.def.name);
+      if (picked.size + spawned.size > before) returned++;
+    }
+
+    return {
+      picked: new Set(picked.values()),
+      spawned: new Set(spawned.values()),
+      yieldRate: returned / times,
+    };
+  }
+
+  it('島から本土まで、8種類の顔ぶれから配った十数個の海区を渡る', () => {
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+
+    const visited = voyageToMainland(game, raft);
+
+    expect(raft.parent?.def.name, '鎖を辿り切れば本土に着く').toBe('mainland');
+    expect(visited.length, '本土までは十数個の海区').toBeGreaterThanOrEqual(13);
+    expect(visited.length, '本土までは十数個の海区').toBeLessThanOrEqual(19);
+    expect(new Set(visited).size, '同じ海区は二度通らない').toBe(visited.length);
+    for (const [face, zones] of FACES)
+      expect(
+        zones.some((zoneName) => visited.includes(zoneName)),
+        `${face} を通る`,
+      ).toBe(true);
+    const known = new Set([...FACES.values()].flat());
+    expect(
+      visited.filter((zoneName) => !known.has(zoneName)),
+      '顔ぶれの分からない海区は無い',
+    ).toEqual([]);
+  });
+
+  it('同じ顔ぶれの海区は、同じつまみの配り方を持つ', () => {
+    // **顔ぶれは型でもタグでもなく、つまみの配り方そのもの**（voyage.yamlのsea_zone）。同じ顔ぶれの
+    // 海区が別の配り方を持ち始めたら、それは表に無い9種類目ができたということ。
+    const { game } = ready();
+    const knobsOf = (zoneName: string): string =>
+      KNOBS.map((knob) =>
+        propertyOf(game.session.createObject(codex.objectNames.getId(zoneName)), knob),
+      ).join('/');
+
+    for (const [face, zones] of FACES)
+      expect(new Set(zones.map(knobsOf)).size, `${face} の海区は同じ配り方`).toBe(1);
+  });
+
+  it.each(YIELDS)(
+    '%s の見張りは、その海区の顔ぶれのものだけを返す',
+    (zoneName, pickable, spawnable, low, high) => {
+      const watched = watchRepeatedly(zoneName, WATCHES);
+
+      expect([...watched.picked].sort(), `${zoneName}: 拾えるもの`).toEqual([...pickable].sort());
+      expect([...watched.spawned].sort(), `${zoneName}: 湧くもの`).toEqual([...spawnable].sort());
+      expect(watched.yieldRate, `${zoneName}: 実りの濃さ`).toBeGreaterThanOrEqual(low);
+      expect(watched.yieldRate, `${zoneName}: 実りの濃さ`).toBeLessThanOrEqual(high);
+    },
+  );
+
+  it('小島は、降りて探索でき、漕ぎ出せば海へ戻る', () => {
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    const zone = singletonPlace(game, 'islet_waters');
+    expect(raft.moveToSlotOrRejection(zone.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+
+    for (let i = 0; i < 20 && keepWatch(game, zone); i++);
+    const islet = new Location(zone, codex).fixtures.find((fixture) => fixture.def.name === 'offshore_islet');
+    expect(islet, '見張りを終えると、航路と一緒に小島が見つかる').toBeDefined();
+
+    makeBrightEnoughForAnyAction(game.player.instance, codex);
+    expect(
+      islet!.tryGetAction('explore', game.player.instance)?.tryExecute(),
+      '筏に乗ったままでは調べられない',
+    ).toBe(false);
+
+    expect(islet!.tryGetAction('land', game.player.instance)?.tryExecute(), '上陸できる').toBe(true);
+    expect(raft.parent?.instanceId, '筏ごと小島へ寄る').toBe(islet!.instanceId);
+    expect(raft.tryGetAction('disembark', game.player.instance)?.tryExecute(), '小島へは降りられる').toBe(
+      true,
+    );
+
+    makeBrightEnoughForAnyAction(game.player.instance, codex);
+    expect(new Location(islet!, codex).explore(game.player.instance), '降りれば探索できる').toBe(true);
+
+    expect(islet!.tryGetAction('launch', game.player.instance)?.tryExecute(), '漕ぎ出せる').toBe(true);
+    expect(raft.parent?.instanceId, '筏は海区へ戻る').toBe(zone.instanceId);
+    expect(game.player.location?.instance.instanceId, '乗り手も乗り込んで戻る').toBe(raft.instanceId);
+  });
+
   it('最後の海区から渡ると本土に着き、持ち帰った物ごと周回が終わる', () => {
     const { game, raft } = ready();
     raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
 
-    for (const zoneName of ['coastal_waters', 'tide_rip', 'open_water']) {
-      const zone = singletonPlace(game, zoneName);
-      expect(raft.parent?.def.name, `${zoneName} に居る`).toBe(zoneName);
-      expect(watchAndCross(game, zone), `${zoneName} から渡れる`).toBe(true);
-    }
+    expect(voyageToMainland(game, raft).length, '島から本土まで海区を渡り切る').toBeGreaterThan(0);
 
     expect(raft.parent?.def.name, '筏は本土に着く').toBe('mainland');
     expect(game.player.ending.kind, 'プレイヤーは島を出た').toBe('escape');
-    expect(game.player.ending.broughtArtifacts, '積んでいたアーティファクトを持ち帰る').toEqual([
-      'golden_chalice',
-    ]);
+    // **数ではなく種類で見る。** 沈船の海でも同じ杯が拾えるので、道中で増えうる。
+    expect([...new Set(game.player.ending.broughtArtifacts)], '積んでいたアーティファクトを持ち帰る').toEqual(
+      ['golden_chalice'],
+    );
 
     // 着いた後は風も海流も効かないので、速さは立たない（同じ到達が二度起きない）。
     tick(game);

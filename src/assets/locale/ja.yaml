@@ -707,12 +707,53 @@ object_texts:
       sewn:
         display_name: 帆を張る
         description: 枝と縄で枠を組み、生皮を縫い合わせて張る。
-  # 海区と、海区どうしを繋ぐ航路（GameEndings.md 12節）。
+  # 海で採れるもの（voyage.yaml）。
+  seaweed:
+    display_name: 海藻
+    description: 海面を漂う藻を掬い上げたもの。生のまま食べられる。
+  bird_egg:
+    display_name: 海鳥の卵
+    description: 岩の窪みから採った卵。殻を割ればそのまま飲める。
+  fish_shoal:
+    display_name: 魚の群れ
+    description: 水面まで上がってきた群れ。居るあいだだけ獲れて、しばらくすると去る。
+    interactions:
+      net_fish:
+        display_name: 掬う
+        description: 群れの中へ手を入れて、一匹すくい上げる。
+  seabird_flock:
+    display_name: 海鳥の群れ
+    description: 岩に集まって巣を作る鳥。人を知らないので手が届く。
+    interactions:
+      catch_seabird:
+        display_name: 獲る
+        description: 巣に居る鳥へ近づいて捕まえる。肉と羽が採れる。
+  offshore_islet:
+    display_name: 小島
+    description: 海区の中に浮かぶ、上陸して歩ける岩の島。
+    notes:
+      exploring: 島を歩き回ると、岩や流木、鳥の巣が見つかる。
+      explored: この島はひととおり歩いた。歩き続ければ、まだ何かは見つかる。
+    interactions:
+      explore:
+        display_name: 島を調べる
+        description: 岩の窪みと波打ち際を歩いて回る。筏から降りていないとできない。
+      land:
+        display_name: 上陸する
+        description: 筏を小島へ寄せる。積荷も乗り手も一緒に着く。
+      launch:
+        display_name: 漕ぎ出す
+        description: 乗り込んで、小島から海へ押し出す。
+
+  # 海区と、海区どうしを繋ぐ航路（GameEndings.md 12節）。海区は8種類の顔ぶれから配った14個で、
+  # **名前はそこから何が見えるかで付ける**（同12.2節）——見分けが付かないと、進んでいるのか
+  # 戻っているのかも読めなくなる。
+  #
+  # 海で見つかるのは航路と、拾えるもの・湧くもの（同12.1節）。航路が見えたら見張りは終わる
+  # （sea_zone traitのconditions）ので、見つけ切った後は渡ることだけが残る。
   coastal_waters:
     display_name: 島影の海
-    description: 島がまだ背後に見えている海。陸を目印にできるので、次の航路は早く見つかる。
-    # 海で見つかるのは航路だけで、アイテムも道も落ちていない（Voyage.md 3節）。航路が見えたら
-    # 見張りは終わる（sea_zone traitのconditions）ので、探索し切った後は渡ることだけが残る。
+    description: 島がまだ背後に見えている海。流木と海藻が寄り、魚も来る。陸が目印になる。
     notes:
       exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
       explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
@@ -723,10 +764,24 @@ object_texts:
     interactions:
       explore:
         display_name: 見張り
-        description: 海面と空をひとしきり見渡して、次の海区へ続く航路を探す。
+        description: 海面と空をひとしきり見渡して、次の海区へ続く航路と、拾えるものを探す。
+  kelp_belt:
+    display_name: 海藻の帯
+    description: 絡む海藻で進みが遅い海。帯そのものが目印になり、海藻はいくらでも採れる。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。次の海区へ続く航路が見えれば、見張りはそこで終わる。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: 藻の切れ目を辿って、次の海区へ続く航路と、掬える海藻を探す。
   tide_rip:
     display_name: 潮目
-    description: 流れのぶつかる帯。波が立ち、鳥が集まるので、海の上でもここだと分かる。
+    description: 流れのぶつかる帯。波が立ち、鳥が集まる。魚が寄るので、補給が当てになる。
     notes:
       exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
       explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
@@ -737,11 +792,151 @@ object_texts:
     interactions:
       explore:
         display_name: 見張り
-        description: 潮の筋をたどって、次の海区へ続く航路を探す。
+        description: 潮の筋をたどって、次の海区へ続く航路と、寄っている魚の群れを探す。
+  reef_shallows:
+    display_name: 岩礁の海
+    description: 波の砕ける瀬が続く海。漂流物が引っかかり、魚も付く。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。次の海区へ続く航路が見えれば、見張りはそこで終わる。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: 瀬の周りを見て回り、次の海区へ続く航路と、引っかかった漂流物を探す。
+  gull_rock:
+    display_name: 海鳥の岩
+    description: 鳥が巣を作る岩。卵と羽が拾え、鳥そのものも手が届く。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。次の海区へ続く航路が見えれば、見張りはそこで終わる。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: 岩の周りを回って、次の海区へ続く航路と、手の届く巣を探す。
+  islet_waters:
+    display_name: 小島の海
+    description: 小島の浮かぶ海。海面には何も無く、実りは上陸した先にある。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路と、近くの小島が見つかる。
+      explored: 航路と小島は見つかった。上陸するか、渡るか。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。次の海区へ続く航路が見えれば、見張りはそこで終わる。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: 島影の方を見渡して、次の海区へ続く航路と、寄れる岸を探す。
   open_water:
     display_name: 空の海
-    description: 目印の何も無い海。どこを向いても同じに見えるので、航路を見つけるまでが長い。
-    # この先に島は無い（route_to_mainland）ので、見つかる航路の行き先を名指しできる。
+    description: 目印の何も無い海。拾えるものは何も無いが、渡るのは最も短い。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。次の海区へ続く航路が見えれば、見張りはそこで終わる。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: 空と波だけを頼りに、次の海区へ続く航路を探す。
+  wreck_waters:
+    display_name: 沈船の海
+    description: 折れた帆柱と綱が漂う海。まれに、船が積んでいた物が浮いてくる。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。次の海区へ続く航路が見えれば、見張りはそこで終わる。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: 浮いている物を拾い上げながら、次の海区へ続く航路を探す。
+  long_swell:
+    display_name: うねりの海
+    description: 大きなうねりだけが続く海。見えるものは何も無い。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。次の海区へ続く航路が見えれば、見張りはそこで終わる。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: うねりの向きを読んで、次の海区へ続く航路を探す。
+  outer_tide_rip:
+    display_name: 沖の潮目
+    description: 島影の無い沖の潮目。ここにも流れが集まり、魚が寄る。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。次の海区へ続く航路が見えれば、見張りはそこで終わる。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: 潮の筋をたどって、次の海区へ続く航路と、寄っている魚の群れを探す。
+  black_reef:
+    display_name: 黒い岩礁
+    description: 水面すれすれに黒い瀬が続く海。漂流物が引っかかり、魚も付く。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。次の海区へ続く航路が見えれば、見張りはそこで終わる。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: 瀬の周りを見て回り、次の海区へ続く航路と、引っかかった漂流物を探す。
+  drifting_kelp:
+    display_name: 流れ藻の海
+    description: ちぎれた海藻が筋になって漂う海。進みは遅いが、海藻は採り放題。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。次の海区へ続く航路が見えれば、見張りはそこで終わる。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: 藻の切れ目を辿って、次の海区へ続く航路と、掬える海藻を探す。
+  white_rock:
+    display_name: 白い岩
+    description: 糞で白く染まった岩。遠くからでもそれと分かり、卵と羽が拾える。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    props:
+      exploration_progress:
+        display_name: 見張りの進み具合
+        description: この海区をどれだけ見渡したか。次の海区へ続く航路が見えれば、見張りはそこで終わる。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: 岩の周りを回って、次の海区へ続く航路と、手の届く巣を探す。
+  mainland_shallows:
+    display_name: 本土の島影
+    description: 本土の陸が見え始める海。島影の海と同じように、流木も海藻も魚も寄る。
+    # この先に海区は無い（route_to_mainland）ので、見つかる航路の行き先を名指しできる。
     notes:
       exploring: 見張りを続けると、本土へ渡る航路が見つかる。
       explored: 本土への航路は見つかった。あとは渡るだけ。
@@ -752,16 +947,49 @@ object_texts:
     interactions:
       explore:
         display_name: 見張り
-        description: 空と波だけを頼りに、次の海区へ続く航路を探す。
+        description: 近づいてくる陸を見ながら、本土へ渡る航路と、拾えるものを探す。
+  route_to_kelp_belt:
+    display_name: 海藻の帯への航路
+    description: 見張りで見つけた、海藻の帯へ抜ける針路。
   route_to_tide_rip:
     display_name: 潮目への航路
     description: 見張りで見つけた、潮目へ抜ける針路。
+  route_to_reef_shallows:
+    display_name: 岩礁の海への航路
+    description: 見張りで見つけた、岩礁の海へ抜ける針路。
+  route_to_gull_rock:
+    display_name: 海鳥の岩への航路
+    description: 見張りで見つけた、海鳥の岩へ抜ける針路。
+  route_to_islet_waters:
+    display_name: 小島の海への航路
+    description: 見張りで見つけた、小島の海へ抜ける針路。
   route_to_open_water:
     display_name: 空の海への航路
     description: 見張りで見つけた、空の海へ抜ける針路。
+  route_to_wreck_waters:
+    display_name: 沈船の海への航路
+    description: 見張りで見つけた、沈船の海へ抜ける針路。
+  route_to_long_swell:
+    display_name: うねりの海への航路
+    description: 見張りで見つけた、うねりの海へ抜ける針路。
+  route_to_outer_tide_rip:
+    display_name: 沖の潮目への航路
+    description: 見張りで見つけた、沖の潮目へ抜ける針路。
+  route_to_black_reef:
+    display_name: 黒い岩礁への航路
+    description: 見張りで見つけた、黒い岩礁へ抜ける針路。
+  route_to_drifting_kelp:
+    display_name: 流れ藻の海への航路
+    description: 見張りで見つけた、流れ藻の海へ抜ける針路。
+  route_to_white_rock:
+    display_name: 白い岩への航路
+    description: 見張りで見つけた、白い岩へ抜ける針路。
+  route_to_mainland_shallows:
+    display_name: 本土の島影への航路
+    description: 見張りで見つけた、本土の島影へ抜ける針路。
   route_to_mainland:
     display_name: 本土への航路
-    description: 見張りで見つけた、本土へ渡る針路。この先に島は無い。
+    description: 見張りで見つけた、本土へ渡る針路。この先に海区は無い。
   mainland:
     display_name: 本土
     description: 人の住む陸地。
@@ -957,6 +1185,8 @@ reason_texts:
   at_sea: 海の上では降りられない。
   route_already_sighted: この海区から出る航路はもう見えている。
   no_vessel_here: この海区に筏がない。渡る乗り物が要る。
+  no_vessel_ashore: 小島に筏がない。漕ぎ出す乗り物が要る。
+  not_ashore: 筏から降りていない。島は歩いて回るしかない。
   too_worn: この道具はもう使いものにならない。
   not_hot_enough: 石の熱が足りない。湯は沸かせない。
   no_fuel: 燃やす物が入っていない。火種だけでは燃え続けない。
