@@ -5,8 +5,8 @@
 # 起動しておき、終了通知で1回だけ起きて次のタスクを投入する。待っている間モデルのターンは
 # 消費されないので、間隔は詰めてよい。
 #
-#   bash .claude/wait-for-issues.sh 662 665
-#   bash .claude/wait-for-issues.sh 662 --interval 5 --timeout-minutes 120
+#   bash scripts/agent/wait-for-issues.sh 662 665
+#   bash scripts/agent/wait-for-issues.sh 662 --interval 5 --timeout-minutes 120
 #
 # **「issue が閉じたか」では早い。** タスクのセッションは PR を作った時点で issue を閉じるので、
 # 閉じた直後の main にはまだ何も入っていない。その状態で次のタスクを投入すると、前のタスクの

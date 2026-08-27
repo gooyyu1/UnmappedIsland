@@ -73,11 +73,11 @@ bash .claude/ccr-meta.sh archive_session '{"session_id": "cse_..."}'
 
 ### 前のタスクの完了は、シェルで待つ
 
-直列に並べたタスクは、[`wait-for-issues.sh`](./wait-for-issues.sh) をバックグラウンドで起動して
+直列に並べたタスクは、[`wait-for-issues.sh`](../scripts/agent/wait-for-issues.sh) をバックグラウンドで起動して
 待つ。完了した瞬間に1回だけ起きて次を投入できる。
 
 ```bash
-bash .claude/wait-for-issues.sh 662
+bash scripts/agent/wait-for-issues.sh 662
 ```
 
 **間隔を空けて浮くものは無い。** 高いのはモデルのターンであって `gh` の呼び出しではないので、
@@ -123,14 +123,14 @@ issue は、終わってはいるが main には何も入っていない。
 当てにならない——ユーザーは issue をいつでも閉じる（取り下げ・却下・別のPRが `Closes` で閉じた）。
 
 閉じた issue へ立てると、セッションは指示どおり「仕事は無い」と判断して即終了する。ここまでは
-正しいが、**PRが出ないので [`watch-prs.sh`](./watch-prs.sh) には何も届かない**——PRだけを見張って
+正しいが、**PRが出ないので [`watch-prs.sh`](../scripts/agent/watch-prs.sh) には何も届かない**——PRだけを見張って
 いるからで、タイムアウトまで空待ちになる。2026-08-25 に、却下されて閉じた issue へその16分後に
 セッションを立て、120分の空待ちに入りかけた。
 
 **そのため、待ちに入るときは投入した issue の番号も渡す。**
 
 ```bash
-bash .claude/watch-prs.sh --issues 746,751 --timeout-minutes 120
+bash scripts/agent/watch-prs.sh --issues 746,751 --timeout-minutes 120
 ```
 
 issue が閉じた時点で `GONE <番号>` が出る。**PRの決着と、PRが出ないまま終わったことの両方が、
@@ -158,7 +158,7 @@ issue で引く。** 畳む条件は3つ。
 **投入したものの決着だけを待つと、全部が `判断待ち` で止まった瞬間に何も起こらなくなる。** 手が
 空いたことも、その間にセッションが立てた issue も、誰の目にも触れない。
 
-[`watch-prs.sh`](./watch-prs.sh) は、**`--issues` に無く、依存も片付いている** issue を `TASK <番号>`
+[`watch-prs.sh`](../scripts/agent/watch-prs.sh) は、**`--issues` に無く、依存も片付いている** issue を `TASK <番号>`
 として出す。**`--issues` に渡すのは「こちらが把握している issue の全部」**——投入したものに加えて、
 **意図して置いてあるもの**（仮決めの範囲に含まれる issue・ユーザーの答え待ち）も渡す。渡さないと
 毎周起こされる。
@@ -169,7 +169,7 @@ issue で引く。** 畳む条件は3つ。
 
 #### 畳む引き金は `GONE`
 
-**条件が揃っても、それを見に行かなければ畳めない。** [`watch-prs.sh`](./watch-prs.sh) の `GONE <番号>`
+**条件が揃っても、それを見に行かなければ畳めない。** [`watch-prs.sh`](../scripts/agent/watch-prs.sh) の `GONE <番号>`
 は「その issue が閉じた」——**上の1つ目の条件そのもの**なので、これを合図にする。
 
 - **`--issues` には、投入した issue を全部渡す。** PRが出ないまま終わったものを拾う用途（`GONE` の
@@ -264,7 +264,7 @@ issue で引く。** 畳む条件は3つ。
 ### 順序は本文ではなく `blockedBy` に書く
 
 **先に片付いていないと着手できない issue があるなら、GitHub の依存（`blockedBy`）で結ぶ。** 本文に
-「#123 の後」と書いても機械は読めず、[`watch-prs.sh`](./watch-prs.sh) はそれを ready として配る。
+「#123 の後」と書いても機械は読めず、[`watch-prs.sh`](../scripts/agent/watch-prs.sh) はそれを ready として配る。
 
 ```bash
 gh api --method POST repos/gooyyu1/UnmappedIsland/issues/<この issue>/dependencies/blocked_by \
@@ -368,7 +368,7 @@ PRの本文しか無い。** ここに書かれなければ、その問いは誰
 | **却下** → **PR か #732 のどちらか、いま開いているほうにコメントを1つ** | 拾って、書いたセッションを `send_message` で起こす。直った後のCIとラベルの付け替えも司令塔 |
 
 - **どちらに書いてもよい**ことが肝。#732 を読んでいる最中に「#760 の暗さは −5 で」と書けるほうが、
-  PRを開き直すより手数が少ない。[`watch-prs.sh`](./watch-prs.sh) に `--issues 732,<投入した番号>` を
+  PRを開き直すより手数が少ない。[`watch-prs.sh`](../scripts/agent/watch-prs.sh) に `--issues 732,<投入した番号>` を
   渡して、両方を1つの待ちで拾う。
 - **コメントは理由まで書かれていなくてよい。** 「−5 で」だけで足りる。足りなければ司令塔が訊く。
 - **ユーザーがセッションと直接話すこともある。** それは速いので止めない——ただし司令塔には見えない
@@ -390,7 +390,7 @@ git ls-remote --heads origin 'claude/issue-<番号>*'
 入れた（PR #772）。**セッションは生きていて、その直後に PR #773 を出した。** 向こうのほうが良い
 出来だったので、こちらを消して統合し直すことになった。**枝が在れば生きている。**
 
-**差し戻したら `直し待ち` を付ける。** [`watch-prs.sh`](./watch-prs.sh) はこのラベルの付いたPRを
+**差し戻したら `直し待ち` を付ける。** [`watch-prs.sh`](../scripts/agent/watch-prs.sh) はこのラベルの付いたPRを
 報告しない。付け忘れると、**緑のまま直しを待っている間ずっと同じ行で起こされる**（2026-08-25 に
 PR #771 で実際に空振りした）。直しが上がったら外して、いつもどおり振り分ける。
 
@@ -407,7 +407,7 @@ GitHub App の管理だけになる。
 - `subscribe_pr_activity`
 
 この2つは**自動承認ができない**ので、見張らせた分がそのままユーザーのタップになる。待つのは
-シェルで待てる司令塔の仕事（[`watch-prs.sh`](./watch-prs.sh)）。
+シェルで待てる司令塔の仕事（[`watch-prs.sh`](../scripts/agent/watch-prs.sh)）。
 
 司令塔は `watch-prs.sh` をバックグラウンドで起動して決着を待ち、
 
@@ -500,15 +500,24 @@ prompt・`send_message` の本文・PRへのコメントの全部。GitHubへは
 
 ### 司令塔の手入れは `main` へ直接 push する
 
-`.claude/` 配下（このファイル・[`policies.md`](./policies.md)・フック）の変更は、PRを作らずに `main`
-へ直接 push してよい。`main` に保護は掛かっておらず、**PRにしてもユーザーのタップを1回増やすだけ**
-だから。
+`.claude/` 配下（このファイル・[`policies.md`](./policies.md)・フック）と
+[`scripts/agent/`](../scripts/agent)（見張り・待ち）の変更は、PRを作らずに `main` へ直接 push して
+よい。`main` に保護は掛かっておらず、**PRにしてもユーザーのタップを1回増やすだけ**だから。
 
 **CIは `.claude/` を触った push でも走る**（#840 で `tests.yml` の `paths` を外した。`.claude/**` は
 `eslint .`・`prettier --check .`・`exports.test.ts` の実際の入力）。**赤くなるのは push した後**なので、
 直接 push する前に手元で4つのコマンドを通しておくこと。それが面倒な変更は、PRにしてよい。
 
 `src/` `docs/` `tests/` を触る変更は今までどおりPR。CIが要り、他のセッションと担当が重なりうる。
+
+### エージェントを選ばない道具は `.claude/` に置かない
+
+[`watch-prs.sh`](../scripts/agent/watch-prs.sh) と
+[`wait-for-issues.sh`](../scripts/agent/wait-for-issues.sh) は `gh` と `jq` だけで動き、どのエージェントが
+起動しても同じに振る舞うので `scripts/agent/` に置く。`.claude/` に残すのは、**Claude Code が形式を
+決めているもの**——フック・`settings.json`・`launch.json`・メタMCPの入口（`ccr-meta.sh`）だけ。
+
+`.claude/skills/` は例外で、動かさない。**Copilot CLI もこの場所を読む**ので、移すと両方から見えなくなる。
 
 ### 承認の要る未実装を、勝手に流さない
 

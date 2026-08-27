@@ -5,10 +5,10 @@
 # 自分を起こすための `send_later` と、その取り消しの `delete_trigger` を使うことになる。この2つは
 # 自動承認できないので、そのままユーザーのタップに化ける。司令塔はシェルで待てる。
 #
-#   bash .claude/watch-prs.sh                           # 開いている全PR
-#   bash .claude/watch-prs.sh 731 733                   # PRの番号を指定
-#   bash .claude/watch-prs.sh --issues 732,759          # issue も見張る（下記）
-#   bash .claude/watch-prs.sh --interval 5 --timeout-minutes 60
+#   bash scripts/agent/watch-prs.sh                    # 開いている全PR
+#   bash scripts/agent/watch-prs.sh 731 733            # PRの番号を指定
+#   bash scripts/agent/watch-prs.sh --issues 732,759   # issue も見張る（下記）
+#   bash scripts/agent/watch-prs.sh --interval 5 --timeout-minutes 60
 #
 # 出力は1行1件で、**終了コードで区別できる**。
 #   GREEN   <番号> <ラベル>        … 全チェックが成功（ラベルが空なら素通しの候補）
