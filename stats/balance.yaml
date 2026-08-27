@@ -5,6 +5,11 @@
 meta:
   - {character: medic, minutes_per_tick: 15, ticks_per_day: 96, minutes_per_day: 1440}
 
+excluded_locations:
+  - {location: coastal_waters, tag: sea}
+  - {location: tide_rip, tag: sea}
+  - {location: open_water, tag: sea}
+
 daily_needs:
   - {property: satiety, daily_need: 1536, lethal: false, supplied_by: []}
   - {property: vitamin, daily_need: 48, lethal: false, supplied_by: []}
@@ -24,9 +29,6 @@ daily_minimum:
   - {place: wasteland, total_minutes: 360, day_percent: 25.0, unmet: [satiety, vitamin, hydration, body_fat]}
   - {place: mountainside, total_minutes: 360, day_percent: 25.0, unmet: [satiety, vitamin, hydration, body_fat]}
   - {place: mountain_peak, total_minutes: 360, day_percent: 25.0, unmet: [satiety, vitamin, hydration, body_fat]}
-  - {place: coastal_waters, total_minutes: 360, day_percent: 25.0, unmet: [satiety, vitamin, hydration, body_fat]}
-  - {place: tide_rip, total_minutes: 360, day_percent: 25.0, unmet: [satiety, vitamin, hydration, body_fat]}
-  - {place: open_water, total_minutes: 360, day_percent: 25.0, unmet: [satiety, vitamin, hydration, body_fat]}
 
 daily_minimum_menu:
   - {place: 島全体, route: grassland.explore → taro.cooking_progress.on_max → roasted_taro.eat, repetitions: 2.79, minutes: 112}
@@ -49,9 +51,6 @@ daily_minimum_menu:
   - {place: wasteland, route: medic.sleep, repetitions: 1.00, minutes: 360}
   - {place: mountainside, route: medic.sleep, repetitions: 1.00, minutes: 360}
   - {place: mountain_peak, route: medic.sleep, repetitions: 1.00, minutes: 360}
-  - {place: coastal_waters, route: medic.sleep, repetitions: 1.00, minutes: 360}
-  - {place: tide_rip, route: medic.sleep, repetitions: 1.00, minutes: 360}
-  - {place: open_water, route: medic.sleep, repetitions: 1.00, minutes: 360}
 
 chain_routes:
   - {place: 島全体, property: satiety, route: grassland.explore → taro.cooking_progress.on_max → roasted_taro.eat, imported: false, per_unit_minutes: 0.07, explore_minutes: 0.05, other_minutes: 0.03, daily_minutes: 112, day_percent: 7.8, device_count: null, deltas: [{name: satiety, amount: 550.00}, {name: carbohydrate, amount: 48.00}, {name: protein, amount: 2.00}, {name: vitamin, amount: 24.00}], prerequisites: [{label: campfire, minutes: 55.9, imported: false}]}
@@ -175,12 +174,6 @@ chain_routes:
   - {place: mountainside, property: wakefulness, route: medic.nap, imported: false, per_unit_minutes: 5.00, explore_minutes: 0.00, other_minutes: 5.00, daily_minutes: 480, day_percent: 33.3, device_count: null, deltas: [{name: stamina, amount: 36.00}, {name: wakefulness, amount: 36.00}], prerequisites: []}
   - {place: mountain_peak, property: wakefulness, route: medic.sleep, imported: false, per_unit_minutes: 3.75, explore_minutes: 0.00, other_minutes: 3.75, daily_minutes: 360, day_percent: 25.0, device_count: null, deltas: [{name: stamina, amount: 90.00}, {name: wakefulness, amount: 96.00}], prerequisites: []}
   - {place: mountain_peak, property: wakefulness, route: medic.nap, imported: false, per_unit_minutes: 5.00, explore_minutes: 0.00, other_minutes: 5.00, daily_minutes: 480, day_percent: 33.3, device_count: null, deltas: [{name: stamina, amount: 36.00}, {name: wakefulness, amount: 36.00}], prerequisites: []}
-  - {place: coastal_waters, property: wakefulness, route: medic.sleep, imported: false, per_unit_minutes: 3.75, explore_minutes: 0.00, other_minutes: 3.75, daily_minutes: 360, day_percent: 25.0, device_count: null, deltas: [{name: stamina, amount: 90.00}, {name: wakefulness, amount: 96.00}], prerequisites: []}
-  - {place: coastal_waters, property: wakefulness, route: medic.nap, imported: false, per_unit_minutes: 5.00, explore_minutes: 0.00, other_minutes: 5.00, daily_minutes: 480, day_percent: 33.3, device_count: null, deltas: [{name: stamina, amount: 36.00}, {name: wakefulness, amount: 36.00}], prerequisites: []}
-  - {place: tide_rip, property: wakefulness, route: medic.sleep, imported: false, per_unit_minutes: 3.75, explore_minutes: 0.00, other_minutes: 3.75, daily_minutes: 360, day_percent: 25.0, device_count: null, deltas: [{name: stamina, amount: 90.00}, {name: wakefulness, amount: 96.00}], prerequisites: []}
-  - {place: tide_rip, property: wakefulness, route: medic.nap, imported: false, per_unit_minutes: 5.00, explore_minutes: 0.00, other_minutes: 5.00, daily_minutes: 480, day_percent: 33.3, device_count: null, deltas: [{name: stamina, amount: 36.00}, {name: wakefulness, amount: 36.00}], prerequisites: []}
-  - {place: open_water, property: wakefulness, route: medic.sleep, imported: false, per_unit_minutes: 3.75, explore_minutes: 0.00, other_minutes: 3.75, daily_minutes: 360, day_percent: 25.0, device_count: null, deltas: [{name: stamina, amount: 90.00}, {name: wakefulness, amount: 96.00}], prerequisites: []}
-  - {place: open_water, property: wakefulness, route: medic.nap, imported: false, per_unit_minutes: 5.00, explore_minutes: 0.00, other_minutes: 5.00, daily_minutes: 480, day_percent: 33.3, device_count: null, deltas: [{name: stamina, amount: 36.00}, {name: wakefulness, amount: 36.00}], prerequisites: []}
 
 chain_untimed_routes:
   - {place: 島全体, property: hydration, route: grassland.explore → unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_water_liquid.pour_into_empty → jar__content_water_liquid.drink, deltas: [{name: hydration, amount: 10.00}]}
@@ -263,18 +256,6 @@ chain_untimed_routes:
   - {place: mountain_peak, property: hydration, route: coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink, deltas: [{name: hydration, amount: 10.00}, {name: wakefulness, amount: 2.00}]}
   - {place: mountain_peak, property: wakefulness, route: unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink, deltas: [{name: hydration, amount: 10.00}, {name: wakefulness, amount: 2.00}]}
   - {place: mountain_peak, property: wakefulness, route: coconut.husk → husked_coconut.crack → coconut_half.scrape → jar__content_tea_liquid.pour_into_empty → coconut_bowl__content_tea_liquid.drink, deltas: [{name: hydration, amount: 10.00}, {name: wakefulness, amount: 2.00}]}
-  - {place: coastal_waters, property: hydration, route: unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink, deltas: [{name: hydration, amount: 10.00}]}
-  - {place: coastal_waters, property: hydration, route: unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink, deltas: [{name: hydration, amount: 10.00}]}
-  - {place: coastal_waters, property: hydration, route: unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink, deltas: [{name: hydration, amount: 10.00}, {name: wakefulness, amount: 2.00}]}
-  - {place: coastal_waters, property: wakefulness, route: unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink, deltas: [{name: hydration, amount: 10.00}, {name: wakefulness, amount: 2.00}]}
-  - {place: tide_rip, property: hydration, route: unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink, deltas: [{name: hydration, amount: 10.00}]}
-  - {place: tide_rip, property: hydration, route: unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink, deltas: [{name: hydration, amount: 10.00}]}
-  - {place: tide_rip, property: hydration, route: unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink, deltas: [{name: hydration, amount: 10.00}, {name: wakefulness, amount: 2.00}]}
-  - {place: tide_rip, property: wakefulness, route: unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink, deltas: [{name: hydration, amount: 10.00}, {name: wakefulness, amount: 2.00}]}
-  - {place: open_water, property: hydration, route: unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → jar__content_water_liquid.drink, deltas: [{name: hydration, amount: 10.00}]}
-  - {place: open_water, property: hydration, route: unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar.collect_rain → stone.heat_soak.on_max → hot_stone.boil → jar__content_hot_water_liquid.drink, deltas: [{name: hydration, amount: 10.00}]}
-  - {place: open_water, property: hydration, route: unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink, deltas: [{name: hydration, amount: 10.00}, {name: wakefulness, amount: 2.00}]}
-  - {place: open_water, property: wakefulness, route: unfired_jar.coiled → unfired_jar.cooking_progress.on_max → jar__content_tea_liquid.pour_into_empty → jar__content_tea_liquid.drink, deltas: [{name: hydration, amount: 10.00}, {name: wakefulness, amount: 2.00}]}
 
 chain_gaps: []
 
@@ -561,9 +542,6 @@ supply:
   - {owner: snare, step: catch_remaining.on_min, kind: periodic, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 240, spawns: [{name: junglefowl, amount: 0.07}, {name: snare_laceration, amount: 0.18}, {name: rat, amount: 0.11}], actor_deltas: [], self_deltas: [{name: catch_remaining, amount: 16.00}]}
   - {owner: raft, step: lashed, kind: recipe, labor_minutes: 420, unresolved_references: false, elapsed_minutes: 420, spawns: [{name: raft, amount: 1.00}], actor_deltas: [], self_deltas: []}
   - {owner: rawhide_sail, step: sewn, kind: recipe, labor_minutes: 420, unresolved_references: false, elapsed_minutes: 420, spawns: [{name: rawhide_sail, amount: 1.00}], actor_deltas: [], self_deltas: []}
-  - {owner: coastal_waters, step: explore, kind: interaction, labor_minutes: 15, unresolved_references: false, elapsed_minutes: 15, spawns: [], actor_deltas: [], self_deltas: [{name: exploration_progress, amount: 1.00}]}
-  - {owner: tide_rip, step: explore, kind: interaction, labor_minutes: 15, unresolved_references: false, elapsed_minutes: 15, spawns: [], actor_deltas: [], self_deltas: [{name: exploration_progress, amount: 1.00}]}
-  - {owner: open_water, step: explore, kind: interaction, labor_minutes: 15, unresolved_references: false, elapsed_minutes: 15, spawns: [], actor_deltas: [], self_deltas: [{name: exploration_progress, amount: 1.00}]}
   - {owner: palm_frond, step: weave, kind: interaction, labor_minutes: 90, unresolved_references: false, elapsed_minutes: 90, spawns: [{name: woven_leaf, amount: 1.00}], actor_deltas: [], self_deltas: []}
   - {owner: palm_frond, step: split_and_weave, kind: interaction, labor_minutes: 60, unresolved_references: false, elapsed_minutes: 60, spawns: [{name: woven_leaf, amount: 2.00}], actor_deltas: [], self_deltas: []}
   - {owner: jar__content_water_liquid, step: pour_into_empty, kind: interaction, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 0, spawns: [{name: jar__content_water_liquid, amount: 1.00}], actor_deltas: [], self_deltas: [{name: fill, amount: -999999.00}]}

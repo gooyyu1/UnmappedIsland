@@ -13,6 +13,8 @@ import {
   MINUTES_PER_TICK,
   TICKS_PER_DAY,
 } from '../../src/analysis/balanceTables';
+import { islandLocationsOf } from '../../src/analysis/islandLocations';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
@@ -69,7 +71,7 @@ function prerequisiteRecords(prerequisites: readonly RoutePrerequisite[]): YamlR
   }));
 }
 
-function buildSections(tables: BalanceTables): readonly YamlReportSection[] {
+function buildSections(codex: WorldCodex, tables: BalanceTables): readonly YamlReportSection[] {
   const chainPlaces = tables.places.filter((place) => place.properties.length > 0);
 
   return [
@@ -83,6 +85,11 @@ function buildSections(tables: BalanceTables): readonly YamlReportSection[] {
           minutes_per_day: MINUTES_PER_DAY,
         },
       ],
+    },
+    // 表が数えなかった土地と、外した根拠のタグ（`islandLocations`）。
+    {
+      key: 'excluded_locations',
+      records: islandLocationsOf(codex).excludedSea.map(({ def, tag }) => ({ location: def.name, tag })),
     },
     { key: 'daily_needs', records: dailyNeedRecords(chainPlaces.flatMap((place) => place.properties)) },
     {
@@ -251,20 +258,21 @@ function dailyNeedRecords(properties: readonly PropertyChains[]): YamlRecord[] {
 const REPORT_PATH = join('stats', 'balance.yaml');
 const DOC_PATH = join('docs', 'diagnostics', 'BalanceStats.md');
 
-/** 定義から収支を計算する。再生成と鮮度の確認が同じものを見るための1箇所。 */
-function buildTablesFromDefinitions(): BalanceTables {
+/** 定義を読んで収支を計算する。再生成と鮮度の確認が同じものを見るための1箇所。 */
+function balanceFromDefinitions(): { readonly codex: WorldCodex; readonly tables: BalanceTables } {
   const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
-  return buildBalanceTables(codex, SAMPLE_CHARACTER);
+  return { codex, tables: buildBalanceTables(codex, SAMPLE_CHARACTER) };
 }
 
 function buildReportFromDefinitions(): string {
+  const { codex, tables } = balanceFromDefinitions();
   return formatYamlReport(
     [
       'アイテム収支。定義（src/assets/world-codex/*.yaml）だけから計算した「時間あたりの収支」。',
       '生成物。手で書き換えず、npm run stats:balance で作り直す。',
       '何を測ったか・引いた線・数えていないものは docs/diagnostics/BalanceStats.md。',
     ],
-    buildSections(buildTablesFromDefinitions()),
+    buildSections(codex, tables),
   );
 }
 
@@ -288,7 +296,7 @@ describeReportFreshness(REPORT_PATH, 'npm run stats:balance', buildReportFromDef
  */
 describe('収支の穴', () => {
   it('雨で溜まる水が、島全体で入手経路が無いものに数えられていない', () => {
-    const gaps = buildTablesFromDefinitions().gaps.map((gap) => gap.label);
+    const gaps = balanceFromDefinitions().tables.gaps.map((gap) => gap.label);
 
     expect(gaps.filter((label) => label.includes('water_liquid'))).toEqual([]);
   }, 600_000);
