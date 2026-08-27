@@ -17,6 +17,7 @@
 #   GONE    <番号>                 … 見張っていた issue が閉じた（--issues のときだけ）
 #   FIXED   <番号>                 … 直し待ちのPRへ、新しいコミットが載った
 #   COMMENT pr|issue <番号> <著者> … 起動より後に付いたコメント
+#   CHECKED <番号> <項目>          … 見張っている issue の本文で、起動より後にチェックが付いた項目
 #   TASK    <番号>                 … 着手できる open な task（--issues にもPRにも無く、依存も片付いている）
 #   終了コード 0 … 動きが1件以上ある（上の行が出ている）
 #   終了コード 3 … TIMEOUT（制限時間まで、何も動かなかった）
@@ -33,6 +34,16 @@
 #
 # **自分（司令塔）が書いたコメントでも起きる。** 著者で区別できない——セッションも司令塔もユーザーの
 # 資格情報で書くため。著者と番号は出すので、受け取った側が見て、自分のものなら見張り直す。
+#
+# ## CHECKED を見るのは、答えがコメントではなく本文に付くから
+#
+# 確認の置き場（#656）は**タップ1つで答えられる形**にしてあるので、答えは本文のチェックボックスに
+# 付き、コメントは1つも増えない。上の `COMMENT` だけを見ていると**タップは誰にも届かない**——
+# ユーザーからは「タップしたのに何も起きない」、司令塔からは「何も来ていない」としか見えず、
+# 区別が付かない。最小の入力を用意した意味が丸ごと消える。
+#
+# **見るのは起動時からの増分だけ。** 起動時に付いていた `[x]` を出すと、見張りは起きるたびに
+# その場で終わるので、何も見張れなくなる。既に付いている項目の掃除は、拾った側の仕事。
 #
 # ## --issues を付けるのは、PRが出ないまま終わる場合があるから
 #
@@ -124,6 +135,9 @@ done
 
 deadline=$(($(date +%s) + TIMEOUT_MINUTES * 60))
 failures=0
+# 起動時に付いていたチェック。1周目で控えて、以降はここから増えたぶんだけを出す。
+checked_baseline=''
+checked_baseline_taken=0
 
 # 1周につき gh を1回だけ呼ぶ。見張る本数が増えても呼び出し回数は増えない。
 # チェックが1つでも走っていれば、そのPRはまだ決着していない。
@@ -179,6 +193,19 @@ pr_settled_filter() {
   ' "$1"
 }
 
+# 本文の箇条書きのうち、チェックの付いているものを `<番号> <項目>` の行にする。**`body` は issue
+# 1件につき1つの文字列**なので、`commits` のようにGraphQLのノードを増やさず、1周1回の呼び出しに
+# 収まる。
+CHECKED_FILTER='
+  .[]
+  | .number as $number
+  | (.body // "")
+  | split("\n")[]
+  | select(test("^[[:space:]]*[-*][[:space:]]+\\[[xX]\\][[:space:]]"))
+  | sub("^[[:space:]]*[-*][[:space:]]+\\[[xX]\\][[:space:]]+"; "")
+  | "\($number) \(.)"
+'
+
 # gh の --jq には --arg を渡せないので、時刻は文字列として埋め込む。
 comment_filter() {
   printf '
@@ -219,7 +246,7 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
     if [ ${#ISSUES[@]} -gt 0 ]; then
       # jq は Windows では改行を CRLF で書く（msys の text mode）。番号どうしの突き合わせに使う
       # 一覧は、ここで `\r` を落としておかないと、どれも一致しなくなる。
-      if open_issues=$(gh issue list --state open --limit 100 --json number,labels,comments,blockedBy 2>/dev/null); then
+      if open_issues=$(gh issue list --state open --limit 100 --json number,labels,comments,blockedBy,body 2>/dev/null); then
         numbers=$(jq -r '.[].number' <<<"$open_issues" | tr -d '\r')
         for issue in "${ISSUES[@]}"; do
           if ! grep -qx "$issue" <<<"$numbers"; then
@@ -229,6 +256,16 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
         watched=$(printf '%s\n' "${ISSUES[@]}" | paste -sd'|' -)
         settled=$(printf '%s\n%s' "$settled" \
           "$(jq -r "$(comment_filter issue)" <<<"$open_issues" | grep -E "^COMMENT issue (${watched}) " || true)")
+        # 本文のチェック。1周目は控えるだけで、2周目から増分を出す。
+        checked_now=$(jq -r "$CHECKED_FILTER" <<<"$open_issues" | tr -d '\r' |
+          grep -E "^(${watched}) " || true)
+        if [ "$checked_baseline_taken" -eq 0 ]; then
+          checked_baseline="$checked_now"
+          checked_baseline_taken=1
+        elif [ -n "$checked_now" ]; then
+          settled=$(printf '%s\n%s' "$settled" \
+            "$(grep -vxF -e "$checked_baseline" <<<"$checked_now" | sed -E 's/^/CHECKED /' || true)")
+        fi
         # 渡された番号に無く、依存も片付いていて、PRも出ていない `task` は、今すぐ着手できる仕事。
         # **待ちを終える条件は「動いているものが終わること」ではなく「やることが無いこと」**なので、
         # これを出す。出さない3つは、どれも**その issue が今どこにあるか**を別の角度から見たもの。
