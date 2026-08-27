@@ -143,7 +143,7 @@ object_defs:
 
     expect(view.characterWindow.card, 'ポートレイトと同じ1枚').toBe(view.characterCard);
     expect(view.nestedLocations[0].window.card).toBe(view.currentLocationCard);
-    expect(view.windowOf(stone).explorationRatio, '石は探索できない').toBeUndefined();
+    expect(view.windowOf(stone).exploration, '石は探索できない').toBeUndefined();
     expect(view.windowOf(stone).card.name, '押した札が映す物の姿を出す').toBe(cardOf(view, stone).name);
   });
 
@@ -159,7 +159,7 @@ object_defs:
     expect(crateWindow.card.name, 'その札そのものを出す').toBe(cardOf(view, crate).name);
     expect(crateWindow.slots, '入れ物は中身のタブを持つ').toHaveLength(1);
     expect(crateWindow.properties, 'タグの付いたプロパティを持たないのでタブが出ない').toEqual([]);
-    expect(crateWindow.explorationRatio, '探索できるのは場所だけ').toBeUndefined();
+    expect(crateWindow.exploration, '探索できるのは場所だけ').toBeUndefined();
 
     expect(view.characterWindow.properties.length, 'キャラクタはプロパティのタブを持つ').toBeGreaterThan(0);
     expect(

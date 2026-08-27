@@ -1185,7 +1185,7 @@ export class PlayScene extends ResponsiveScene {
     this.childWindow = new ObjectWindow(this, this.metrics, {
       object: { card: window.card, description: window.description },
       properties: opened?.properties ?? window.properties,
-      exploration: window.explorationRatio === undefined ? undefined : { ratio: window.explorationRatio },
+      exploration: window.exploration,
       slots: this.childWindowTabs.map((tab) => {
         const slot = this.view.slotViewOf(tab.place);
         return {
@@ -1368,8 +1368,8 @@ export class PlayScene extends ResponsiveScene {
   private takeFound(shownBefore: ReadonlySet<number>): void {
     this.shown.takeFound(this.foundSince(shownBefore));
 
-    const ratio = this.shownLocation.window.explorationRatio;
-    if (ratio !== undefined) this.childWindow?.setExploration({ ratio });
+    const exploration = this.shownLocation.window.exploration;
+    if (exploration !== undefined) this.childWindow?.setExploration(exploration);
     this.childWindow?.openTab(EXPLORATION_TAB);
   }
 
