@@ -118,7 +118,7 @@ export function startNewGame(
 
 /**
  * 世界にただ1つ在る型（`singleton: true`、15節）のうち、**worldが直に受け入れられるものを、世界を
- * 作った時点で1つずつ湧かせる**。島の外に最初から在る場所（外洋・本土、docs/world/Voyage.md）が
+ * 作った時点で1つずつ湧かせる**。島の外に最初から在る場所（海区・本土、docs/world/Voyage.md）が
  * これにあたり、型の名前で行き先を指す`move`の`to_object`（9.6節）が必ず解決できることを保証する。
  *
  * 何を最初から在らせるかを決めるのはworldのスロットの宣言（`locations`が受け入れる型）で、コードは

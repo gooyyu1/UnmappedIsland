@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 import type { SeasonWeatherHours } from '../../src/analysis/activityHours';
 import { activityHoursOf } from '../../src/analysis/activityHours';
+import { islandLocationsOf } from '../../src/analysis/islandLocations';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { World } from '../../src/domain/wrappers/World';
@@ -336,6 +337,11 @@ function buildSections(
         gathering: rounded(row.gatheringHoursPerDay, 1),
         handwork: rounded(row.handworkHoursPerDay, 1),
       })),
+    },
+    // 活動時間表が数えなかった土地と、外した根拠のタグ（`islandLocations`）。
+    {
+      key: 'excluded_locations',
+      records: islandLocationsOf(codex).excludedSea.map(({ def, tag }) => ({ location: def.name, tag })),
     },
     {
       key: 'temperature',

@@ -33,14 +33,13 @@ Comfy Desktop の同梱環境は2つある。**`standalone-env\python.exe` で `
 
 ### 2. サーバーの起動
 
-```
-cd %LOCALAPPDATA%\Comfy-Desktop\ComfyUI-Installs\ComfyUI\ComfyUI
-.venv\Scripts\python.exe main.py --port 8188
+```bash
+cd "$LOCALAPPDATA/Comfy-Desktop/ComfyUI-Installs/ComfyUI/ComfyUI"
+nohup .venv/Scripts/python.exe main.py --port 8188 > /tmp/comfyui.log 2>&1 &
 ```
 
-10秒ほどで `http://127.0.0.1:8188/system_stats` が 200 を返す。PowerShellから起動するなら
-`Start-Process ... -WindowStyle Hidden -RedirectStandardOutput <log>` にして、ログを残しておくと
-失敗したときに原因が分かる。
+10秒ほどで `http://127.0.0.1:8188/system_stats` が 200 を返す。**ログを残しておく**と、返らなかった
+ときに原因が分かる。
 
 **起動済みのプロセスを勝手に止めないこと。** GIMPやComfy Desktopが開いたままのことがあり、
 作業中のセッションを壊す。止める必要があるときは、キューが空かと、Comfy Desktop の GUI が

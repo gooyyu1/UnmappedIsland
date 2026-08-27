@@ -51,6 +51,11 @@ object_texts:
       # （全角10文字）に収まる長さで書いてあり、そこへ「作りかけの」の5文字を足すと4文字より長い名前は
       # すべてはみ出す。作りかけであることは青い覆いが示す（CardView.md 10節）ので、名前で言い直さない。
       recipe: '{base}'
+    # 探索のタブのバーの下に出す補足の1行（docs/ui/Windows.md 5節）。**探索で何が見つかるかは型ごとに
+    # 違う**ので、言い方を変えたい型だけが自分のエントリで上書きする（海区は航路、下の coastal_waters）。
+    notes:
+      exploring: 探索を続けると、アイテムや他の土地へ続く道が見つかる。
+      explored: この土地に隠された道はすべて見つけた。探索を続ければ、まだ何かは見つかる。
     props:
       # iconは、ステータスの行の左に名前の代わりに出す絵（docs/ui/StatusArea.md 3節）。
       # キャラクタのプロパティはどれも固定表示にできる＝ステータスエリアへ出せるので、全部が持つ。
@@ -62,6 +67,9 @@ object_texts:
         display_name: 量
       travel_minutes:
         display_name: 移動時間
+      crossing_minutes:
+        display_name: 横断にかかる時間
+        description: この海区から次の海区へ渡るのにかかる時間。風・海流・積んだ重さ・帆で伸び縮みする。
       required_progress:
         display_name: 発見に必要な探索の進み具合
       weight:
@@ -214,6 +222,9 @@ object_texts:
       travel:
         display_name: 移動する
         description: この道を通って、繋がっている土地へ向かう。
+      cross:
+        display_name: 渡る
+        description: この航路を取って、筏ごと次の海区へ渡る。かかる時間は漕ぎ出すときの風と積荷で決まる。
       eat:
         display_name: 食べる
         description: その場で食べる。かさのぶん腹が満ち、含まれている栄養と水分が身体に入る。
@@ -678,10 +689,7 @@ object_texts:
     props:
       sail_speed:
         display_name: 進み足
-        description: 今この筏が出している速さ。風向き・海流・積んだ重さで決まる。
-      voyage_progress:
-        display_name: 航海の進み
-        description: 本土までの道のりをどこまで来たか。満ちれば陸が見える。
+        description: 今この筏が出している速さ。風向き・海流・積んだ重さで決まり、速いほど海区を短く渡れる。
     interactions:
       board:
         display_name: 乗り込む
@@ -699,9 +707,49 @@ object_texts:
       sewn:
         display_name: 帆を張る
         description: 枝と縄で枠を組み、生皮を縫い合わせて張る。
-  open_sea:
-    display_name: 外洋
-    description: 島と本土の間に広がる海。何も採れず、風と海流だけが筏を運ぶ。
+  # 海区と、海区どうしを繋ぐ航路（GameEndings.md 12節）。
+  coastal_waters:
+    display_name: 島影の海
+    description: 島がまだ背後に見えている海。陸を目印にできるので、次の航路は早く見つかる。
+    # 海で見つかるのは航路だけで、アイテムも道も落ちていない（Voyage.md 3節）。航路が見えたら
+    # 見張りは終わる（sea_zone traitのconditions）ので、探索し切った後は渡ることだけが残る。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: 海面と空をひとしきり見渡して、次の海区へ続く航路を探す。
+  tide_rip:
+    display_name: 潮目
+    description: 流れのぶつかる帯。波が立ち、鳥が集まるので、海の上でもここだと分かる。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: 潮の筋をたどって、次の海区へ続く航路を探す。
+  open_water:
+    display_name: 空の海
+    description: 目印の何も無い海。どこを向いても同じに見えるので、航路を見つけるまでが長い。
+    # この先に島は無い（route_to_mainland）ので、見つかる航路の行き先を名指しできる。
+    notes:
+      exploring: 見張りを続けると、本土へ渡る航路が見つかる。
+      explored: 本土への航路は見つかった。あとは渡るだけ。
+    interactions:
+      explore:
+        display_name: 見張り
+        description: 空と波だけを頼りに、次の海区へ続く航路を探す。
+  route_to_tide_rip:
+    display_name: 潮目への航路
+    description: 見張りで見つけた、潮目へ抜ける針路。
+  route_to_open_water:
+    display_name: 空の海への航路
+    description: 見張りで見つけた、空の海へ抜ける針路。
+  route_to_mainland:
+    display_name: 本土への航路
+    description: 見張りで見つけた、本土へ渡る針路。この先に島は無い。
   mainland:
     display_name: 本土
     description: 人の住む陸地。
@@ -895,6 +943,8 @@ reason_texts:
   too_full: 腹がいっぱいで、これ以上は入らない。
   not_on_coast: 海に面していない土地からは漕ぎ出せない。
   at_sea: 海の上では降りられない。
+  route_already_sighted: この海区から出る航路はもう見えている。
+  no_vessel_here: この海区に筏がない。渡る乗り物が要る。
   too_worn: この道具はもう使いものにならない。
   not_hot_enough: 石の熱が足りない。湯は沸かせない。
   no_fuel: 燃やす物が入っていない。火種だけでは燃え続けない。

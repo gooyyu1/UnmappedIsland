@@ -15,6 +15,7 @@ import type { CardPlace, CardPlacement, ScreenPlaceResolver } from './cardPlaces
 import { cardPlacesOf, nestedFixturePlacesOf } from './cardPlaces';
 import type { SlotRef } from '../../art/backgroundArt';
 import type { CardContent } from '../ui/Card';
+import type { ExplorationContent } from '../ui/ExplorationPane';
 import type { CardKind } from '../looks/theme';
 import type { PropertyCategory as PropertyTab } from '../ui/PropertiesPane';
 import type { StatusContent, StatusDetail, StatusInfluence } from '../ui/StatusBar';
@@ -127,8 +128,8 @@ export interface ObjectWindowView {
   /** プロパティのタブに出すカテゴリ（空ならタブを出さない）。 */
   readonly properties: readonly PropertyTab[];
 
-  /** 探索率（探索できない対象ではundefined＝探索のタブを出さない）。 */
-  readonly explorationRatio: number | undefined;
+  /** 探索のタブに出るもの（探索できない対象ではundefined＝探索のタブを出さない）。 */
+  readonly exploration: ExplorationContent | undefined;
 }
 
 /**
@@ -354,6 +355,13 @@ const LOCATION_ICON = '🗺️';
 
 /** 探索アクションの名前（locations.yaml）。持っているかどうかで、現在地を探索できるかが決まる。 */
 export const EXPLORE_ACTION = 'explore';
+
+/**
+ * 探索のタブの補足の1行を引く場面の名前（対応表の`notes`、Localization.md）。**探索し切ったかで言うことが
+ * 変わる**——まだ見つかるものと、もう見つからないものは別の文になる（Windows.md 5節）。
+ */
+const EXPLORING_NOTE = 'exploring';
+const EXPLORED_NOTE = 'explored';
 
 /**
  * ステータスエリアへ出す候補になるプロパティに付けるタグ（GameElementDefinition.md 6.7節）。
@@ -601,7 +609,7 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
     const named = instanceName(instanceId);
     if (named !== undefined) return named;
 
-    // 名前を付けるのは地形生成だけ（IslandMap）なので、島の外の場所——筏・外洋・本土
+    // 名前を付けるのは地形生成だけ（IslandMap）なので、島の外の場所——筏・海区・本土
     // （voyage.yaml）——はそこに載っていない。そういう場所は型の表示名がそのまま名前になる。
     const displayName = defName === undefined ? undefined : locale.object(defName).displayName;
     return displayName === undefined || displayName === defName
@@ -700,18 +708,24 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
     };
   };
   /**
-   * その物の探索率（探索できない物ではundefined＝探索のタブを出さない）。
+   * その物の探索のタブに出るもの（探索できない物ではundefined＝探索のタブを出さない）。
    *
    * 探索できるかは**その物がexploreを宣言しているか**で決まる（ExplorationSystem.md）。探索の語彙を
    * 持たないCodexでは上限が0になるため、0除算を避けて0%にする。
+   *
+   * 補足の1行は**型ごとの言い換え**を通す（`notes`、Localization.md）——探索で見つかるものは型で違う
+   * （土地なら道、海区なら航路）ので、画面に文を持たせると1つの言い方しか出せない。
    */
-  const explorationRatioOf = (object: WorldObject): number | undefined => {
+  const explorationOf = (object: WorldObject): ExplorationContent | undefined => {
     if (!object.def.declaresInteraction(EXPLORE_ACTION)) return undefined;
 
     const explorable = new Location(object, codex);
-    return explorable.explorationProgressMax === 0
-      ? 0
-      : explorable.explorationProgress / explorable.explorationProgressMax;
+    const ratio =
+      explorable.explorationProgressMax === 0
+        ? 0
+        : explorable.explorationProgress / explorable.explorationProgressMax;
+    const scene = ratio >= 1 ? EXPLORED_NOTE : EXPLORING_NOTE;
+    return { ratio, note: locale.object(object.def.name).note(scene) ?? scene };
   };
 
   /**
@@ -724,7 +738,7 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
     actions: operations.actionsOf(object),
     slots: visiblePlacesOf(object),
     properties: propertiesOf(object),
-    explorationRatio: explorationRatioOf(object),
+    exploration: explorationOf(object),
   });
 
   const characterWindow = windowOf(game.player.instance);

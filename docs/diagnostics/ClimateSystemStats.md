@@ -31,6 +31,7 @@ YAMLとずれます）。
 | `rain_weather_net_moisture_delta` | 同じものの素の実測（天気×季節ごとの正味変化量） |
 | `season_duration` | 季節1インスタンスの持続日数 |
 | `activity_hours` | 土地×季節ごとの、移動できる時間・屋外で採れる時間・手元の作業ができる時間 |
+| `excluded_locations` | 活動時間表が数えなかった土地と、外した根拠のタグ |
 | `temperature` | 季節×区間ごとの気温（内部値） |
 | `weather_hours` | 季節×天気×区間ごとの発生時間 |
 | `non_rain_streak` | 季節×区間ごとの連続未降雨時間 |
@@ -80,3 +81,7 @@ ambient_brightnessへ与える寄与）・土地ごとのambient_brightness・�
 `handwork`（手元の細かい作業）。**`gathering`が`handwork`より長いのは、しきい値だけの差**——見る値は
 違う（採る側はlooking_brightness、作る側はhand_brightness）が、据え付けの光源が無ければどちらも
 土地のambient_brightnessをそのまま土台にするので、同じ明るさを別々のしきい値で切ったものになる。
+
+**数えるのは島の土地だけ**で、海区（`voyage.yaml`の島影の海・潮目・空の海）は行にしない。海区は
+探索でき、寝られ、雨も貯まるので集め方の条件（`location`タグ＋`exploration_progress`）をそのまま
+満たすが、この表が答えたいのは島の1日。外した場所は`excluded_locations`に出る。

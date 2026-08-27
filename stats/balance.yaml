@@ -5,6 +5,11 @@
 meta:
   - {character: medic, minutes_per_tick: 15, ticks_per_day: 96, minutes_per_day: 1440}
 
+excluded_locations:
+  - {location: coastal_waters, tag: sea}
+  - {location: tide_rip, tag: sea}
+  - {location: open_water, tag: sea}
+
 daily_needs:
   - {property: satiety, daily_need: 1536, lethal: false, supplied_by: []}
   - {property: vitamin, daily_need: 48, lethal: false, supplied_by: []}

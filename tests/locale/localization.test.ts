@@ -114,6 +114,32 @@ object_texts:
     ).toBe('thick_branch');
   });
 
+  it('補足の1行は、自分のエントリ→defaultエントリの順に引く', () => {
+    const texts = parseLocale(
+      'ja.yaml',
+      `object_texts:
+  default:
+    notes:
+      exploring: 探索を続けると、道が見つかる。
+      explored: 隠された道はすべて見つけた。
+  coastal_waters:
+    notes:
+      exploring: 見張りを続けると、航路が見つかる。
+`,
+    );
+
+    expect(texts.object('coastal_waters').note('exploring'), '自分の文が優先される').toBe(
+      '見張りを続けると、航路が見つかる。',
+    );
+    expect(texts.object('coastal_waters').note('explored'), '自分に無ければdefault').toBe(
+      '隠された道はすべて見つけた。',
+    );
+    expect(texts.object('beach').note('exploring'), '未登録の型もdefaultから引ける').toBe(
+      '探索を続けると、道が見つかる。',
+    );
+    expect(texts.object('beach').note('sighted'), 'どちらにも無い場面はundefined').toBeUndefined();
+  });
+
   it('差し込んだ名前の中のプレースホルダは置換されない', () => {
     const texts = parseLocale(
       'ja.yaml',

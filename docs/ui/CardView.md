@@ -588,8 +588,9 @@ cells: readonly {
 なります。覆いに回すかどうかは、その値の宣言だけで決まります。
 
 - **`gauge`（8 節）を宣言していない値。** 桟のバーで常時見せると宣言した値は、そちらが言います
-  ——焼け石に残っている熱も、筏の航海の進み（[`Voyage.md`](../world/Voyage.md)）もバーを持ちます。
-  同じ値を 2 か所で言いません。
+  ——焼け石に残っている熱も、生の甕に残っている水気（[`SurvivalItems.md`](../world/SurvivalItems.md)
+  4 節）もバーを持ちます。同じ値を 2 か所で言いません。生の甕は 1 枚でこの分かれ目をそのまま見せます
+  ——焼成の進み（`cooking_progress`）が覆いに、水気（`moisture`）がバーに出ます。
 - **進み切った先を著者が書いている値**（`on_max`、
   [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.3 節）。`range` を書いただけの値は
   上限で丸められるだけで、着いても何も起きません——炉の火力（`heat`）がそれで、上限へ育つ途中に

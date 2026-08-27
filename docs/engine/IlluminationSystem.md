@@ -20,7 +20,7 @@
 組み立てます。計算式を持ち込む `derived`（同 17節）は使いません。
 
 **在処**: 定義は `src/assets/world-codex/` の `core.yaml`（world の環境光と、場所が共通で持つ2つの値）・
-`locations.yaml`（土地ごとの樹冠と反射、移動と探索の条件）・`voyage.yaml`（外洋・本土・筏）・
+`locations.yaml`（土地ごとの樹冠と反射、移動と探索の条件）・`voyage.yaml`（海区・本土・筏）・
 `fire.yaml`（炉と松明）・`characters/player_character.yaml`（キャラクタの2つの値）。
 
 **確定度と実装状況**: **確定しているのは5.1節（火の段取りは日が暮れるまでに済ませる）と6節（値の
@@ -71,7 +71,7 @@ EVは連続量なので小数を書けます（`GameElementDefinition.md` 6節�
 
 **場所は `looking_brightness` を持ちません。** これが「据え付けの光源は視界を明るくしない」の全部です（3節）。
 
-**2つを配るのは `location` trait**（`core.yaml`）で、土地だけでなく外洋・本土・筏（`voyage.yaml`）も
+**2つを配るのは `location` trait**（`core.yaml`）で、土地だけでなく海区・本土・筏（`voyage.yaml`）も
 同じ2つを持ちます。**筏が持たなければ、乗り込んだ瞬間に明かりの継ぎ目が切れます**——場所を名乗る物が
 間に挟まると、祖先を辿る土台はそこで止まるためです。`ambient_brightness` の `value` は trait に置かず、
 場所ごとに必ず書かせます（樹冠と反射は場所ごとに違い、既定値を置くと書き忘れが「開けた土地」として通る）。

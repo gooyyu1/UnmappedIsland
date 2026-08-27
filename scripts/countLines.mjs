@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // gitの追跡ファイルの行数を拡張子別に集計する。
 //
 // 対象を `git ls-files` から取るので、node_modules/ や dist/ などgitignore対象は自動で外れる。
