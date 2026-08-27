@@ -389,9 +389,12 @@ object_defs:
   # サルの死体。仕留めた個体が、その枠のまま置き換わる（destroyをspawnより先に書く、9.4節）。
   # 刺さっていた傷は持ち主から離れられないので道連れに消え、当てていた治療具だけが地面へ落ちる。
   #
-  # 腐敗はまだ無いので、置いたままでも傷まない（HuntingSystem.md 8節）。
+  # 腐敗（foods.yamlのtrait）は生肉と同じ速さで、放っておけば解体する前に消える。**死体も肉も
+  # 同じ2.5日**なので、解体を急ぐ理由は「腐る前に」ではなく「軽くして運ぶために」のまま
+  # （HuntingSystem.md 1.5節）。他の獣の死体も同じ（rat_carcassまで）。
   monkey_carcass:
     tags: [item, quarry]
+    traits: [perishable, spoils_fast]
     props:
       weight: {value: 5000}
       volume: {value: 12000}
@@ -626,6 +629,7 @@ object_defs:
   # 荷重の上限（33kg）に対して肉だけで20kgあり、一度には持ち帰れない。
   wild_boar_carcass:
     tags: [item, quarry]
+    traits: [perishable, spoils_fast]
     props:
       weight: {value: 60000}
       volume: {value: 144000}
@@ -653,6 +657,7 @@ object_defs:
   # なるまでは、獲物の種類で肉を分けない——分けると、それを使う側（料理）が獲物の数だけ分岐する。
   junglefowl_carcass:
     tags: [item, quarry]
+    traits: [perishable, spoils_fast]
     props:
       weight: {value: 1000}
       volume: {value: 2400}
@@ -679,6 +684,7 @@ object_defs:
   # 刻みを増やさない）。
   rat_carcass:
     tags: [item, quarry, roastable]
+    traits: [perishable, spoils_fast]
     props:
       weight: {value: 80}
       volume: {value: 200}
@@ -694,6 +700,7 @@ object_defs:
   # 繊維 → 罠 → 小動物 → 小骨 → 骨針）。**罠だけを起点に、刃物を1つも経由せず縫製へ届く。**
   roasted_rat:
     tags: [item, food, roastable]
+    traits: [perishable, spoils_fast]
     props:
       weight: {value: 60}
       volume: {value: 160}
@@ -763,6 +770,7 @@ object_defs:
   # 加熱の進み（cooking_progress）を持つだけで、進めるのは炉の側。
   raw_meat:
     tags: [item, food, meat_bait, roastable]
+    traits: [perishable, spoils_fast]
     props:
       weight: {value: 500}
       # 罠へ仕掛けると肉食の卓が引かれやすくなる（docs/engine/TrapSystem.md 4節）。
@@ -795,6 +803,7 @@ object_defs:
   # 放っておくと焦げる（docs/engine/FireSystem.md 7.2節）。
   roasted_meat:
     tags: [item, food, roastable]
+    traits: [perishable, spoils_fast]
     props:
       # 水が飛んだぶん軽くなる。
       weight: {value: 400}
@@ -828,6 +837,8 @@ object_defs:
   #
   # 進みが無くてもroastableを持つのは、焦げた瞬間に火の中の枠を引き継ぐため——枠が受け入れないと、
   # 置き換えが土地のアイテムへこぼれる（docs/engine/FireSystem.md 7.2節）。
+  #
+  # **腐らない。** 水も栄養素も残っていない炭なので、腐敗のtrait（foods.yaml）を持たない。
   charred_lump:
     tags: [item, food, roastable]
     props:

@@ -4,7 +4,9 @@ import type { PropertyDef } from '../../src/domain/PropertyDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
+import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 describe('foods.yamlの食料定義', () => {
@@ -160,4 +162,111 @@ describe('foods.yamlの食料定義', () => {
     if (prop === undefined) throw new Error(`'${def.name}' はプロパティ'${propertyName}'を持ちません。`);
     return prop;
   }
+});
+
+/**
+ * 食べ物の腐敗（docs/engine/DurabilitySystem.md 3節）。同節の表のレートで`durability`が減り、
+ * 0で消えること、屋外ではさらに速いことを、実ファイルの定義だけで確かめる。
+ */
+describe('食べ物の腐敗', () => {
+  /** 洞窟が湧く土地（locations.yamlのrocky_fieldのexplore）。屋根のある場所はここにしか無い。 */
+  const CAVE_LAND = 'rocky_field';
+  /** 1 tick（core.yamlの15分）。 */
+  const ONE_TICK = 15;
+
+  let codex: WorldCodex;
+  let durabilityId: number;
+
+  beforeAll(() => {
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    durabilityId = codex.propertyNames.getId('durability');
+  });
+
+  /** 岩場に浅い洞窟が1つある世界。土地が屋外、洞窟の中が「守られている場所」になる。 */
+  function world() {
+    const worldInstance = new WorldObject(
+      0,
+      codex.objects.get(codex.objectNames.getId('world')),
+      new WorldSession(codex),
+    );
+    const session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(0));
+    const land = spawnInto(session, CAVE_LAND, worldInstance, 'locations');
+    return { session, land, cave: spawnInto(session, 'shallow_cave', land, 'fixtures') };
+  }
+
+  function spawnInto(
+    session: WorldSession,
+    objectName: string,
+    parent: WorldObject,
+    slotName: string,
+  ): WorldObject {
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
+    expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+    return spawned;
+  }
+
+  function durabilityOf(food: WorldObject): number {
+    return food.getProperty(durabilityId).number;
+  }
+
+  /** 1 tickの間に減ったdurability。 */
+  function lossIn1Tick(session: WorldSession, food: WorldObject): number {
+    const before = durabilityOf(food);
+    session.advanceWorldTime(ONE_TICK);
+    return before - durabilityOf(food);
+  }
+
+  it.each([
+    // DurabilitySystem.md 3節の表。屋外の列は、腐敗と屋外劣化の2つのaddが加算的に重なった結果
+    // （GameElementDefinition.md 8.4節）。
+    ['raw_meat', '調理済み料理・生魚など', 4, 5],
+    ['water_spinach', '野菜など', 2, 3],
+    ['taro', '芋など', 0.5, 1.5],
+  ])('%s（%s）は表のレートで傷み、屋外ではさらに速い', (foodName, _category, indoors, outdoors) => {
+    const { session, land, cave } = world();
+    const sheltered = spawnInto(session, foodName, cave, 'items');
+    const exposed = spawnInto(session, foodName, land, 'items');
+    const before = durabilityOf(sheltered);
+
+    session.advanceWorldTime(ONE_TICK);
+
+    expect(before - durabilityOf(sheltered), '守られていれば腐敗だけ').toBe(indoors);
+    expect(before - durabilityOf(exposed), '屋外では屋外劣化が上乗せされる').toBe(outdoors);
+  });
+
+  it('腐りきると消える', () => {
+    const { session, land } = world();
+    const meat = spawnInto(session, 'raw_meat', land, 'items');
+    // 屋外の生肉は2日（192 tick）で尽きる。最後の1 tickだけを見たいので、そこまで詰めておく。
+    meat.getProperty(durabilityId).setNumberWithoutEvents(5);
+
+    session.advanceWorldTime(ONE_TICK);
+
+    expect(meat.parent, '0に達した食べ物は世界から出る').toBeUndefined();
+  });
+
+  it('守られた場所へ移せば、腐敗だけになる', () => {
+    // 蓋つきの入れ物・浅い洞窟が守るのは屋外劣化だけで、保存温度由来の腐敗は止まらない
+    // （docs/engine/ContainerSystem.md 6節）。
+    const { session, land, cave } = world();
+    const meat = spawnInto(session, 'raw_meat', land, 'items');
+
+    expect(lossIn1Tick(session, meat), '野ざらしなら-5').toBe(5);
+    expect(meat.moveToSlotOrRejection(cave.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
+    expect(lossIn1Tick(session, meat), '洞窟へ入れても腐敗は残る').toBe(4);
+  });
+
+  it('食べ物はすべて腐る（炭になった終端だけが例外）', () => {
+    // 食べ物を足したときに腐敗を付け忘れると、それだけが永久に保つ食料になる。数が増えても
+    // 気付けるよう、ここで全数を検査する。
+    const foodTagId = codex.tagNames.getId('food');
+    const imperishable: string[] = [];
+    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
+      const def = codex.objects.get(globalId);
+      if (!def.tags.includes(foodTagId) || codex.isGenerated(def)) continue;
+      if (def.tryGetPropertyDef(durabilityId) === undefined) imperishable.push(def.name);
+    }
+
+    expect(imperishable, '水も栄養素も残らない炭（animals.yaml）だけが腐らない').toEqual(['charred_lump']);
+  });
 });

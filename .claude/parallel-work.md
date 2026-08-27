@@ -41,19 +41,28 @@ Claude はローカルの枠を画像生成のために空ける。Copilot の�
 セッションはエージェントが立てられるので、ユーザーの手数は「issue に答える」だけ。ローカルから
 呼ぶときは `permission_mode` を渡せないため、既定のまま作る。
 
-#### メタMCPが切れたら [`ccr-meta.sh`](./ccr-meta.sh)
+#### 立てる・確かめる・畳むは [`ccr-meta.sh`](./ccr-meta.sh)
 
-`mcp__ccr_meta__*` は**起動時のヘッダを掴んだまま**なので、走っている最中にトークンが切れると、
-登録を直しても**そのセッションからは二度と使えない**（2026-08-25 に2回起きた）。
+**`mcp__ccr_meta__*` の登録は消した**（`~/.claude.json`）ので、入口はこれ1つ。あれは**起動時のヘッダを
+掴んだまま**で、走っている最中にトークンが切れると、登録を直しても**そのセッションからは二度と
+使えなかった**（2026-08-25 に2回起きた）。
 
 ```bash
-bash .claude/ccr-meta.sh create_session "$(cat args.json)"
-bash .claude/ccr-meta.sh archive_session '{"session_id": "cse_..."}'
+bash .claude/ccr-meta.sh create_session < args.json
+bash .claude/ccr-check-prompt.sh <セッションID> <送った指示のファイル>
+bash .claude/ccr-meta.sh archive_session <<<'{"session_id": "cse_..."}'
 ```
 
-**呼ぶたびに `~/.claude/.credentials.json` から読み直す**ので切れない。**道具も引数も普段と同じで、
-23個すべてが使える**——MCPサーバもただのHTTPで、しかもステートレスに応じるため、`tools/call` を
-1発投げるだけでよい。
+**引数は標準入力で渡す**（argvではない）。**呼ぶたびに `~/.claude/.credentials.json` から読み直す**ので
+切れない。**道具も引数も普段と同じで、23個すべてが使える**——MCPサーバもただのHTTPで、しかも
+ステートレスに応じるため、`tools/call` を1発投げるだけでよい。
+
+**指示の本文は [`dispatch-prompt.md`](./dispatch-prompt.md) を写して作る。** 手で書き起こすと落ちる
+（2026-08-27 に「PRを見張らない」が3本すべてから抜けた）。
+
+**立てた直後に [`ccr-check-prompt.sh`](./ccr-check-prompt.sh) を通す。** 指示が化けても壊れても
+セッションは普通に動き出すので、**動いている様子は判断材料にならない**（2026-08-25 に、丸ごと化けた
+指示で20分走らせた）。届いた本文と送ったファイルを文字列で突き合わせて、一致だけを信じる。
 
 **RESTを逆算しない**（`/v1/code/sessions` を直に叩く道もある）。形が違ううえ
 （`sources` は入れ子ではなく平ら）、**`DELETE` は畳まずに消す**——同じ意味の操作を2通り持つ理由が無い。
@@ -288,6 +297,12 @@ gh api --method POST repos/gooyyu1/UnmappedIsland/issues/<この issue>/dependen
 
 - **張るのは issue を立てた本人。** なぜその順序かを知っているのは、その問題を見つけた側だけ。
   全体を見る専任は本文から推測することになり、推測は必ず取りこぼす。
+  **ただしクラウドのセッションからは張れない**——GitHub の REST が丸ごと塞がっており、`gh` でも
+  `curl` でも `{"message":"GitHub access is not enabled for this session. An org admin must connect
+  the Claude GitHub App for this organization."}` が返る（2026-08-27 に3セッションが実際に踏んだ）。
+  issue やPRの作成は用意された道具で通るが、**依存の API はその道具の一覧に無い。**
+  クラウドのセッションには**張らせず、PR本文に「#A は #B の後」と書かせて司令塔が張る**
+  （投入時に伝える。[`dispatch-prompt.md`](./dispatch-prompt.md)）。判断は見つけた側に残る。
 - **迷ったら張らない。** 張り忘れ（早すぎる着手）はPRの段階で気づけて、やり直しはリベース1回で
   済む。**過剰に張ると鎖が伸びた分だけ黙って遅くなり、誤りに誰も気づかない。**
 - **「同じファイルを触る」は依存ではない。** 順序に理由があるものだけを書く。理由が無いのに
@@ -414,14 +429,21 @@ GitHub App の管理だけになる。
 
 ### PRを出したら、そのセッションの仕事は終わり
 
-**タスクのセッションに自分のPRを見張らせない。** 指示には「PRを作ったら報告して終わり。CIの結果も
-レビューも見張らない」と明記し、次を**使わせない**。
+**タスクのセッションに自分のPRを見張らせない。** `send_later`・`delete_trigger`（自分を起こすための
+予約と、その取り消し）と `subscribe_pr_activity` は**自動承認ができない**ので、見張らせた分がそのまま
+ユーザーのタップになる。待つのはシェルで待てる司令塔の仕事
+（[`watch-prs.sh`](../scripts/agent/watch-prs.sh)）。
 
-- `send_later` と `delete_trigger`（自分を起こすための予約と、その取り消し）
-- `subscribe_pr_activity`
+**禁止は2箇所に置いてある。** どちらも消さないこと——2026-08-27 に、この節にしか無かったせいで
+3セッションが見張りを始めた。
 
-この2つは**自動承認ができない**ので、見張らせた分がそのままユーザーのタップになる。待つのは
-シェルで待てる司令塔の仕事（[`watch-prs.sh`](../scripts/agent/watch-prs.sh)）。
+- [`CLAUDE.md`](../CLAUDE.md)「タスクの issue を渡されたとき」。**セッションが必ず読むのはこちら。**
+  この節だけに書いても、指したファイルを読むとは限らない。
+- [`dispatch-prompt.md`](./dispatch-prompt.md) の指示のひな形。投入のたびに本文へ入る。
+
+**「マージされるまで完了ではない」と並べて書く。** 分けて書くと、責任だけが残って手段が
+禁止された状態に読め、**セッションは自分で見張るほうへ倒れる**（実際に倒れた）。直しの依頼は
+向こうから来る、までを1つの文にする。
 
 司令塔は `watch-prs.sh` をバックグラウンドで起動して決着を待ち、
 

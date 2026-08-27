@@ -74,6 +74,9 @@ object_defs:
   # ように皮をはぐ工程を挟まない。
   green_coconut:
     tags: [item, food]
+    # 腐敗（foods.yamlのtrait）。**殻に包まれた丸のままの実は保つ**ので、芋と同じ20日。刃を入れた
+    # 先（drained_green_coconut以降）は中身が空気に触れるため、野菜の5日へ落ちる。
+    traits: [perishable, spoils_slow]
     props:
       weight: {value: 2200}
       # 湿った皮と500mLの水を抱えるので、乾いた熟した実より重く、少し大きい。
@@ -103,6 +106,7 @@ object_defs:
   # 熟した実のように掻き出す工程が要らない代わりに、器になる殻も残らない。
   drained_green_coconut:
     tags: [item]
+    traits: [perishable, spoils_normal]
     props:
       weight: {value: 1600}
       # 水が抜けても外寸は変わらない。
@@ -119,6 +123,7 @@ object_defs:
   # 青い実のゼリー状の果肉。ほとんどが水分で、熟した果肉ほどのカロリーは無い。
   coconut_jelly:
     tags: [item, food]
+    traits: [perishable, spoils_normal]
     props:
       weight: {value: 150}
       volume: {value: 250}
@@ -142,6 +147,7 @@ object_defs:
   # 皮をはぐと、中の実（husked_coconut）と皮（coconut_husk）に分かれる。
   coconut:
     tags: [item]
+    traits: [perishable, spoils_slow]
     props:
       weight: {value: 1400}
       volume: {value: 3800}
@@ -182,6 +188,8 @@ object_defs:
   # 割れた実は2つ生まれるが、同種は1スタックにまとまるため、2つとも元の実が居た場所へ置き換わる。
   husked_coconut:
     tags: [item]
+    # 皮は無くなっても硬い殻は閉じたままなので、丸のままの実と同じだけ保つ。
+    traits: [perishable, spoils_slow]
     props:
       weight: {value: 800}
       volume: {value: 900}
@@ -201,6 +209,7 @@ object_defs:
   # 割れたヤシの実。刃物で果肉を掻き出すと、果肉と器になる殻が残る。
   coconut_half:
     tags: [item]
+    traits: [perishable, spoils_normal]
     props:
       weight: {value: 300}
       volume: {value: 900}
@@ -224,6 +233,7 @@ object_defs:
   # （熟した果肉の水分は半分ほどで、まとまった水が飲めるのは青い実だけ）。
   coconut_meat:
     tags: [item, food]
+    traits: [perishable, spoils_normal]
     props:
       weight: {value: 200}
       volume: {value: 400}
