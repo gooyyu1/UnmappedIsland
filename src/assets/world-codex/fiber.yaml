@@ -65,6 +65,9 @@ object_defs:
   # 野生のバナナ。栽培種と違って硬い種が多く、果肉は少ない。
   banana:
     tags: [item, food]
+    # 腐敗（foods.yamlのtrait）。**このファイルで腐るのは実だけ**——茎から先は素材で、素材の劣化は
+    # まだ入っていない（docs/engine/DurabilitySystem.md 2節・5節）。
+    traits: [perishable, spoils_normal]
     props:
       weight: {value: 400}
       volume: {value: 500}
