@@ -1,16 +1,17 @@
 // Extension: session-bootstrap
 //
-// Claude Code の .claude/hooks/inject-policies.sh と .claude/hooks/format-after-edit.sh を
-// Copilot CLI 向けに移植したもの。この2つは「気づいたら読む／気づいたら整形する」に頼れない
-// （気づきに依存しない形で入れる、というのが元のフックの設計意図）。
+// Claude Code の .claude/hooks/ を Copilot CLI 向けに移植したもの。いずれも「気づいたら読む／
+// 気づいたら整形する／気づいたらやめる」に頼れない（気づきに依存しない形で入れる、というのが
+// 元のフックの設計意図）。
 //
 // - onSessionStart: .claude/policies.md（全文）と docs/concept/DesignPrinciples.md（見出しのみ）を
 //   セッション開始時に無条件でコンテキストへ注入する。
+// - onPreToolUse: シェルの呼び出しを bash に限り、シェルからのファイル書き換えを拒否する。
 // - onPostToolUse: create/edit で書き込んだファイルへ prettier --write を掛ける。
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { exec } from 'node:child_process';
+import { exec, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 import { joinSession } from '@github/copilot-sdk/extension';
 
@@ -53,11 +54,58 @@ async function buildPoliciesContext(repoDir) {
   return context.length > 0 ? context : undefined;
 }
 
+// Windowsのシェルツールは PowerShell だが、**PowerShell は UTF-8 のファイルを ANSI として読む**
+// ので、素の Get-Content や Select-String は日本語を壊す。壊れたことは出力を見ても分からず、
+// 読めたつもりのまま次の判断へ積まれる。bash（Git Bash）は同じ内容を正しく扱う。
+//
+// そのため、シェルツールは **bash の起動にだけ使わせる**。npm・git・gh・テストはすべて
+// `bash -lc "..."` から通る（実測）。判定は「bash で始まるか」だけなので、キーワードの拾い漏れが
+// 起きる形にはなっていない。
+const BASH_INVOCATION = /^\s*(&\s*)?"?[^"\s]*\bbash(\.exe)?"?(\s|$)/;
+
+const SHELL_TOOLS = new Set(['powershell', 'bash', 'shell']);
+
+const DENY_NOT_BASH =
+  'PowerShell は UTF-8 のファイルを ANSI として読むため、日本語のファイルを黙って壊す。' +
+  'シェルは bash 経由でだけ使うこと: bash -lc "..."（npm・git・gh はそのまま通る）。' +
+  'パスに空白があるときは bash 側をシングルクォートにする: bash -lc "cd \'/c/...\' && ..."';
+
+// シェルからのファイル書き換えは、bash 経由でも同じように壊せる（sed -i など）。判定の本体は
+// scripts/agent/check-shell-command.sh に置き、Claude Code のフックと同じものを使う。
+function fileWriteViolation(command, repoDir) {
+  const checker = path.join(repoDir, 'scripts', 'agent', 'check-shell-command.sh');
+  return new Promise((resolve) => {
+    const child = spawn('bash', [checker], { cwd: repoDir });
+    let stdout = '';
+    child.stdout.on('data', (chunk) => (stdout += chunk));
+    // 判定そのものが動かない環境では、何も止めない。
+    child.on('error', () => resolve(null));
+    child.on('close', (code) => resolve(code === 1 ? stdout.trim() : null));
+    child.stdin.end(command);
+  });
+}
+
 await joinSession({
   hooks: {
     onSessionStart: async (input) => {
       const context = await buildPoliciesContext(input.workingDirectory);
       return context ? { additionalContext: context } : undefined;
+    },
+    onPreToolUse: async (input) => {
+      if (!SHELL_TOOLS.has(input.toolName)) return;
+
+      const args = typeof input.toolArgs === 'string' ? JSON.parse(input.toolArgs) : input.toolArgs;
+      const command = args?.command;
+      if (typeof command !== 'string' || command.trim() === '') return;
+
+      if (!BASH_INVOCATION.test(command)) {
+        return { permissionDecision: 'deny', permissionDecisionReason: DENY_NOT_BASH };
+      }
+
+      const violation = await fileWriteViolation(command, input.workingDirectory);
+      if (violation !== null) {
+        return { permissionDecision: 'deny', permissionDecisionReason: violation };
+      }
     },
     onPostToolUse: async (input) => {
       if (input.toolName !== 'create' && input.toolName !== 'edit') return;

@@ -501,8 +501,9 @@ prompt・`send_message` の本文・PRへのコメントの全部。GitHubへは
 ### 司令塔の手入れは `main` へ直接 push する
 
 `.claude/` 配下（このファイル・[`policies.md`](./policies.md)・フック）と
-[`scripts/agent/`](../scripts/agent)（見張り・待ち）の変更は、PRを作らずに `main` へ直接 push して
-よい。`main` に保護は掛かっておらず、**PRにしてもユーザーのタップを1回増やすだけ**だから。
+[`scripts/agent/`](../scripts/agent)（見張り・待ち・シェルの検査）、`.github/extensions/`（Copilot CLI の
+フック）の変更は、PRを作らずに `main` へ直接 push してよい。`main` に保護は掛かっておらず、
+**PRにしてもユーザーのタップを1回増やすだけ**だから。
 
 **CIは `.claude/` を触った push でも走る**（#840 で `tests.yml` の `paths` を外した。`.claude/**` は
 `eslint .`・`prettier --check .`・`exports.test.ts` の実際の入力）。**赤くなるのは push した後**なので、
