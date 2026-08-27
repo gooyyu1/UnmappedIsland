@@ -632,6 +632,39 @@ object_texts:
     display_name: 編み籠
     description: 編んだ葉を綴じ合わせた入れ物。中に入れた物をまとめて持ち運べる。
 
+  # 衣類（clothing.yaml）。
+  tanned_leather:
+    display_name: なめし革
+    description: 樹皮の液に漬けてなめした革。生皮と違って乾いても固くならず、濡れても傷まない。
+  bundled_leaf_clothing:
+    display_name: 束ねた葉の服
+    description: ヤシの小葉を繊維で腰に束ねただけの腰蓑。何も要らずに作れる、最初の一着。
+    recipes:
+      bundled:
+        display_name: 葉を束ねる
+        description: 中軸から外した小葉を揃え、繊維で腰へ結わえる。
+  rawhide_clothing:
+    display_name: 生皮の服
+    description: 剥いだ皮に穴を開けて羽織るだけの一着。縫わないので早いが、固く、濡らせば傷む。
+    recipes:
+      draped:
+        display_name: 皮を羽織る
+        description: 頭と腕を通す穴を開け、そのまま身にまとう。
+  woven_leaf_clothing:
+    display_name: 編んだ葉の服
+    description: 編んだ葉を綴じ合わせた一着。束ねただけの葉と違って形が崩れない。
+    recipes:
+      stitched:
+        display_name: 葉を綴じる
+        description: 編んだパネルを身頃の形に並べ、繊維で綴じ合わせる。
+  tanned_leather_clothing:
+    display_name: なめし革の服
+    description: 裁った革を糸で縫い合わせた一着。柔らかく、長く着られる。
+    recipes:
+      sewn:
+        display_name: 革を縫う
+        description: 革を裁って合わせ、骨針と糸で縫い上げる。
+
   # 探索で見つかる設置物（locations.yaml）。
   berry_bush:
     display_name: ベリーの茂み
