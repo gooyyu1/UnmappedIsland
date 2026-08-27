@@ -213,8 +213,8 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 日数にして約90日ぶんです。**
 
 日数は自由時間（1日816分）に対する概算で、実測のあるものは印を付けました。**この90日は、明るさと
-移動時間を無視した下限です**——どちらも入れると同じ山が約158日ぶんに広がり、島を開く18日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->を足すと
-1周回は約176日になります（8節）。
+移動時間を無視した下限です**——どちらも入れると同じ山が約128日ぶんに広がり、島を開く17日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->を足すと
+1周回は約145日になります（8節）。
 
 | # | 系統 | 最初の段の中で手に入るもの | 1日以上の山（括弧内は日数） | 山 | 日 |
 | --- | --- | --- | --- | --: | --: |
@@ -326,8 +326,8 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 ## 8. 埋まる時間
 
-**同じ30個の山が、明るさ・移動・土地の差を入れると約158日ぶんになり、島を開く18日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->を足して1周回は
-約176日です。1日816分という自由時間は上限であって、実際に使える時間ではありません。**
+**同じ30個の山が、明るさ・移動・土地の差を入れると約128日ぶんになり、島を開く17日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->を足して1周回は
+約145日です。1日816分という自由時間は上限であって、実際に使える時間ではありません。**
 
 1日を賄う最小労働は624分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum`）なので、差し引きの自由
 時間は1日816分。4節の山の合計は約73,000分なので、**そのまま割れば90日ぶん**です。しかしこの816分は、
@@ -344,7 +344,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 **探索は分では軽く、日数では重いものです。** 島の土地は10〜20（`terrain_generation.yaml` の
 `site_count`）、探索率100%までは土地ごとに10〜20回で1回15分
 （[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 2節）なので、**全島を100%にしても2,795分<!-- stats: terrain.yaml exploration_phase metric=exploration_minutes mean -->**
-——山の合計の4%です。ところが**日数では18日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**（1周回の10%）になります。1日に探索できる時間が土地の
+——山の合計の4%です。ところが**日数では17日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**（1周回の12%）になります。1日に探索できる時間が土地の
 明るさで切られ、しかも1つの土地を開き切るまでそこに居る必要があるためで、この差が出るのが8.3節の
 「探索の局面」です。なお**最初の段の中では探索がほぼ全部**で、そこでの探索は時間を埋めているのでは
 なく不確実性を減らしています。同じ行動が区間によって別の働きをするので、まとめて数えられません。
@@ -384,7 +384,8 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 | 雲のまったく無い空の正午 | 125,000 lx | +16 |
 | 曇りの正午 | 5,000 lx | +11 |
 | 嵐の正午 | 187 lx | +6 |
-| **手元の細かい作業・屋外の採取のしきい値** | 100 lx | **+5** |
+| **手元の細かい作業のしきい値** | 80 lx | **+5** |
+| **屋外の採取のしきい値** | 20 lx | **+3** |
 | **土地の間を移動するしきい値** | 0.1 lx | **−5** |
 | **暗さの底（これより下は区別しない）** | 0.04 lx | **−6** |
 | 半月の夜の空（開けた土地） | 0.025 lx | −6.6 |
@@ -395,9 +396,13 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 中天にあるとき開けた土地は0.25 lx で、これを歩けないことにすると現実と合いません。**この島に満月は
 出ません**（8.1.1.1節）が、しきい値のほうは現実の目盛りに合わせてあります。
 
-**しきい値は2つだけです。** 屋外の採取を手元の作業と分けません——分けても、日の出と日没が急峻な
-開けた土地では時間が変わらないためです（8.1.3節）。**見る値のほうが違い**、手元の作業は据え付けの
-光源を含む明るさを、屋外の採取と移動は含まない明るさを見ます
+**屋外の採取は、手元の作業より2段低いところに線があります。** 80 lx は倉庫や廊下の明るさで、縫製の
+推奨（750〜1,500 lx）には遠く及びません——それでも手元の作業を通すのは、屋内の粗い作業の下限がその
+あたりだからです。屋外で草を採るのに要るのはそこまでではなく、現実の熱帯雨林の林床は快晴の正午で
+600〜2,500 lx あります。**開けた土地では日の出と日没が急峻なので、この2段の差は数分しか動きません**
+（8.1.3節）。**効くのは樹冠の深い森と密林だけ**で、そこでは採れる時間が手元の作業の倍以上になります。
+
+**見る値も違い**、手元の作業は据え付けの光源を含む明るさを、屋外の採取と移動は含まない明るさを見ます
 （[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 2節・5節）。
 
 **表の夜の3行は、空の側では底（−6）に均されます。** 底があるのは、光源が持ち上げる段数を場所によらず
@@ -435,8 +440,8 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 | 松明 | 30 lx | +4 | **+11** |
 | キャンプファイヤー | 150 lx | +6 | **+11** |
 
-底（−6）としきい値（−5・+5）を決めると、光源の値は引き算で一意に出ます——**1つで歩けるようになる
-明るさが +1、1つで作業できる明るさが +11** です。**獣脂のランプは1つで歩けますが、作業できる明るさに
+底（−6）と移動・手元の作業のしきい値（−5・+5）を決めると、光源の値は引き算で一意に出ます——**1つで
+歩けるようになる明るさが +1、1つで作業できる明るさが +11** です。**獣脂のランプは1つで歩けますが、作業できる明るさに
 するには11個要ります。** これは障壁として十分で、しかも現実の照度でも一致します（10 lx × 11個 =
 110 lx で、100 lx のしきい値を超える）。
 
@@ -450,8 +455,8 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 （+11）」の2階層で足ります。**両方を同時に使うと雲のまったく無い空の正午を超えますが、しきい値との比較にしか
 使わないので害はありません。**
 
-段（`stages`）は、しきい値の境目にだけ置いてあります——`pitch_dark`（−5未満）・`dim`（−5〜+4）・
-`bright`（+5以上）。**この3つがしきい値の置き場そのもの**で、条件の側は段の名前で見ます
+段（`stages`）は、しきい値の境目にだけ置いてあります——`pitch_dark`（−5未満）・`dim`・`bright`で、
+`bright` の境は手元が +5、視界が +3。**この3つがしきい値の置き場そのもの**で、条件の側は段の名前で見ます
 （[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 8節）。上の表の値を動かすときに
 一緒に見るのは、キャラクタの `hand_brightness`・`looking_brightness` の段だけです。
 
@@ -582,20 +587,21 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 [`activityHoursOf`](../../src/analysis/activityHours.ts)が、`core.yaml`の`hour`・`weather`の段
 （この節の透過率と太陽高度がambient_brightnessへ与える寄与そのもの）・土地ごとのambient_brightness
 （8.1.2節）・天気の出現時間（[`stats/climate.yaml`](../../stats/climate.yaml)の`weather_hours`、
-20シード×3,600日の実測）から、しきい値（8.1.1節の −5・+5）を満たす時間を積算します。据え付けの
+20シード×3,600日の実測）から、しきい値（8.1.1節の −5・+3・+5）を満たす時間を積算します。据え付けの
 光源は含みません（含めると「焚き火があれば24時間活動できる」になり、表の意味が消えます）。
 **表そのものは同じYAMLの`activity_hours`に1本だけ持ち、ここでは繰り返しません。**
 
-「屋外で採れる」と「手元の細かい作業」は1列（「活動できる」）に畳んであります。しきい値はどちらも
-+5ですが見る値が違い（採る側はlooking_brightness、作る側はhand_brightness）、据え付けの光源を含めない
-限り両方とも土地のambient_brightnessをそのまま土台にするだけなので、常に同じ値になります
+**列は行動のクラスと1対1です**——`travel`（移動できる）・`gathering`（屋外で採れる）・`handwork`
+（手元の細かい作業ができる）。後ろの2つが違う値になるのはしきい値の差だけによります。見る値は違います
+（採る側はlooking_brightness、作る側はhand_brightness）が、据え付けの光源を含めない限りどちらも土地の
+ambient_brightnessをそのまま土台にするためです
 （[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 2節）。
 
 **夜に動けるのは砂浜だけです。** 他の土地は夜になると移動のしきい値を割るので、日暮れ後に動くには
 光源が要ります（8.1.2節）。**密林は昼も天気の影響を受けます**——樹冠が−9と深いぶん、雨季の荒天では
 正午でも移動のしきい値を割ることがあり、「移動できる」列が12時間ちょうどにならない唯一の土地です。
 
-**土地の差がいちばん大きく出るのは「活動できる」列の雨季です。** 樹冠が深い森・密林ほど雨季に大きく
+**土地の差がいちばん大きく出るのは、採れる時間の雨季です。** 樹冠が深い森・密林ほど雨季に大きく
 削られます（森・密林とも雨季は繊維・バナナ・粘土・小枝の産地——2.3節の表——なので、**雨季は繊維が
 細る季節**になります）。保存の系統（3番）と備蓄が要る理由が、ここで数字になります。
 
@@ -618,30 +624,33 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 **数え方は局面をまたいで1つです。**
 
 ```
-その日その土地で進む仕事（分） = min(720 − 往復の移動 − 264, その土地の活動できる時間)
+その日その土地で進む仕事（分） = min(720 − 往復の移動 − 264, その土地で採れる時間)
 ```
 
 **遠さは移動の項として、暗さは頭打ちとして、同じ1行に入ります。** 局面の違いは**どこへ行くか**と
 **そこで何をするか**の2つだけで、式は共有します。720分<!-- stats: terrain.yaml daily_budget outdoor_window -->は屋外の枠、264分<!-- stats: terrain.yaml daily_budget survival_gathering -->は1日を賄う生存の採取
 （[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum` の624分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->から睡眠360分を引いた分）です。
 
-**生存の採取は、暗い土地でも払える形にしています。** 密林で1日に働けるのは118分<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 work_minutes_per_day -->ですが、その日の
+**生存の採取は、暗い土地でも払える形にしています。** 密林で1日に働けるのは265分<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 work_minutes_per_day -->ですが、その日の
 残りの明るい時間は拠点の周りにあります。頭打ちに掛ける前に引くことで、「密林へ行った日は食べられない」
 にならずに済みます。
 
-**移動は、8.1の「活動できる」時間からは引きません。** 移動のしきい値は −5、屋外の採取と手元の作業は
-+5（8.1.1節）で、その差の時間帯は**歩けるが働けない**時間です。1日の屋外の枠を決めるのは移動の
-しきい値のほう——太陽が出ている12時間（720分）です。
+**移動は、8.1の採れる時間からは引きません。** 移動のしきい値は −5、屋外の採取は +3（8.1.1節）で、
+その差の時間帯は**歩けるが採れない**時間です。1日の屋外の枠を決めるのは移動のしきい値のほう
+——太陽が出ている12時間（720分）です。
+
+**頭打ちに使うのは採れる時間で、手元の作業ができる時間ではありません。** この式が割っているのは
+屋外の枠であって、手元の作業が当たっているのは夜の360分のほうだからです（8.3節）。
 
 **引いた線は3つです。** 1日は1つの土地で使い（往復1回、余りは翌日へ繰り越さない）、荷物は数えず
 （運べる量に上限が無いので、採ったものを置いて帰る自由はこの勘定に現れません。
 [`ExplorationSystem.md`](../engine/ExplorationSystem.md) 1.1節）、探索の抽選は解きません
 （探索は回数と時間だけで測ります）。
 
-### 8.3 1周回は、局面を積んで約176日
+### 8.3 1周回は、局面を積んで約145日
 
-**同じ30個の山が、局面ごとに数え直すと約176日ぶんになります。** 内訳は**島を開く18日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**と、
-**開き切った後の158日**です。
+**同じ30個の山が、局面ごとに数え直すと約145日ぶんになります。** 内訳は**島を開く17日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->**と、
+**開き切った後の128日**です。
 
 局面は2つに割りました。**割る位置を決めているのは「探索がまだ残っているか」の1点だけ**で、
 どちらの1日も8.2節の同じ式で出ます。値はすべて500シード<!-- stats: terrain.yaml meta seeds -->の実測
@@ -650,16 +659,16 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 | 局面 | 1日の移動 | 1日に進む分 | 消化するもの | 日数 |
 | --- | --: | --: | --: | --: |
-| **探索**（島を開き切るまで） | 170分<!-- stats: terrain.yaml exploration_phase metric=day_trip_travel_per_day mean --> | 探索 159分<!-- stats: terrain.yaml exploration_phase metric=day_trip_exploration_per_day mean --> | 全土地を探索率100%まで（2,795分<!-- stats: terrain.yaml exploration_phase metric=exploration_minutes mean -->） | **18日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->** |
-| **定常**（開き切った後） | 71分<!-- stats: terrain.yaml steady_phase metric=travel_per_day mean --> | 山 327分<!-- stats: terrain.yaml steady_phase metric=work_per_day mean --> | 屋外の山（48,700分） | **158日** |
-| 合計 | | | | **約176日** |
+| **探索**（島を開き切るまで） | 173分<!-- stats: terrain.yaml exploration_phase metric=day_trip_travel_per_day mean --> | 探索 168分<!-- stats: terrain.yaml exploration_phase metric=day_trip_exploration_per_day mean --> | 全土地を探索率100%まで（2,795分<!-- stats: terrain.yaml exploration_phase metric=exploration_minutes mean -->） | **17日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->** |
+| **定常**（開き切った後） | 63分<!-- stats: terrain.yaml steady_phase metric=travel_per_day mean --> | 山 384分<!-- stats: terrain.yaml steady_phase metric=work_per_day mean --> | 屋外の山（48,700分） | **128日** |
+| 合計 | | | | **約145日** |
 
 30個の山（73,000分）のうち、屋外での採取・伐採・運搬を2/3（48,700分）、拠点での加工を1/3（24,300分）と
 置いています。**この割合と、下の土地の配分は仮置きです。**
 
 **探索の局面で移動が重いのは、行き先が選べないからです。** 未踏の土地は拠点から近い順に開いていく
-ので、前線が遠ざかるほど往復が滞在時間を食います（1日170分<!-- stats: terrain.yaml exploration_phase metric=day_trip_travel_per_day mean -->は、定常の71分<!-- stats: terrain.yaml steady_phase metric=travel_per_day mean -->の2倍以上）。それでも
-**1日に進む探索が159分<!-- stats: terrain.yaml exploration_phase metric=day_trip_exploration_per_day mean -->しかない**のは、遠さではなく**土地を1つ開き切るまでその土地に居る必要がある**
+ので、前線が遠ざかるほど往復が滞在時間を食います（1日173分<!-- stats: terrain.yaml exploration_phase metric=day_trip_travel_per_day mean -->は、定常の63分<!-- stats: terrain.yaml steady_phase metric=travel_per_day mean -->の2倍以上）。それでも
+**1日に進む探索が168分<!-- stats: terrain.yaml exploration_phase metric=day_trip_exploration_per_day mean -->しかない**のは、遠さではなく**土地を1つ開き切るまでその土地に居る必要がある**
 ためです——道は `[2, max−1]` に均等配置されるので、最後の道はほぼ探索し切る直前に出ます
 （[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 3.2節）。
 
@@ -669,34 +678,34 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 | 配分 | 往復の移動 | 1日に進む山 | **日数の割合** | その組を持つ島 |
 | --- | --: | --: | --: | --: |
-| 開けた土地（仕事の1/2） | 11.28分<!-- stats: terrain.yaml steady_phase_by_work_share share=開けた土地 round_trip_minutes --> | 445分<!-- stats: terrain.yaml steady_phase_by_work_share share=開けた土地 work_minutes_per_day --> | 44.2%<!-- stats: terrain.yaml steady_phase_by_work_share share=開けた土地 day_percent --> | 100%<!-- stats: terrain.yaml steady_phase_by_work_share share=開けた土地 islands_percent --> |
-| 森（仕事の1/4） | 88.86分<!-- stats: terrain.yaml steady_phase_by_work_share share=森 round_trip_minutes --> | 359分<!-- stats: terrain.yaml steady_phase_by_work_share share=森 work_minutes_per_day --> | 28.0%<!-- stats: terrain.yaml steady_phase_by_work_share share=森 day_percent --> | 99.8%<!-- stats: terrain.yaml steady_phase_by_work_share share=森 islands_percent --> |
-| 密林（仕事の1/4） | 135.86分<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 round_trip_minutes --> | **118分<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 work_minutes_per_day -->** | **53.4%<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 day_percent -->** | 52.2%<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 islands_percent --> |
+| 開けた土地（仕事の1/2） | 11.28分<!-- stats: terrain.yaml steady_phase_by_work_share share=開けた土地 round_trip_minutes --> | 445分<!-- stats: terrain.yaml steady_phase_by_work_share share=開けた土地 work_minutes_per_day --> | 50.7%<!-- stats: terrain.yaml steady_phase_by_work_share share=開けた土地 day_percent --> | 100%<!-- stats: terrain.yaml steady_phase_by_work_share share=開けた土地 islands_percent --> |
+| 森（仕事の1/4） | 88.86分<!-- stats: terrain.yaml steady_phase_by_work_share share=森 round_trip_minutes --> | 367分<!-- stats: terrain.yaml steady_phase_by_work_share share=森 work_minutes_per_day --> | 31.5%<!-- stats: terrain.yaml steady_phase_by_work_share share=森 day_percent --> | 99.8%<!-- stats: terrain.yaml steady_phase_by_work_share share=森 islands_percent --> |
+| 密林（仕事の1/4） | 135.86分<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 round_trip_minutes --> | **265分<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 work_minutes_per_day -->** | **34.3%<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 day_percent -->** | 52.2%<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 islands_percent --> |
 
-**食っているのは密林です。** 開けた土地の1日445分<!-- stats: terrain.yaml steady_phase_by_work_share share=開けた土地 work_minutes_per_day -->に対して118分<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 work_minutes_per_day -->なので、**仕事の4分の1が、密林の
-ある島では日数の53%<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 day_percent -->を持っていきます**（3つの合計が100%を超えるのは、密林の行だけが密林のある島
+**いちばん高く付くのは密林です。** 開けた土地の1日445分<!-- stats: terrain.yaml steady_phase_by_work_share share=開けた土地 work_minutes_per_day -->に対して265分<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 work_minutes_per_day -->なので、**仕事の4分の1が、密林の
+ある島では日数の34%<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 day_percent -->を持っていきます**（3つの合計が100%を超えるのは、密林の行だけが密林のある島
 52.2%<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 islands_percent -->の中の割合で、残りの島ではその配分が他の組へ回るためです）。しかも足止めしているのは距離ではなく
 暗さなので、道を短くしても縮みません。配分を動かすには「どの材料がどの土地で採れるか」（2.3節）から
 決め直すことになるので、本節では触っていません。
 
 **夜**は、睡眠360分と、焚き火のそばでの加工360分。**律速は屋外です**——拠点での加工24,300分は夜の
-360分/日に対して68日ぶんなので、176日の中に余裕で収まります。**夜が足りなくなることはなく、
+360分/日に対して68日ぶんなので、145日の中に余裕で収まります。**夜が足りなくなることはなく、
 足りないのは昼です。**
 
 **泊まりがけは、今の島の広さでは要りません。** 土地ごとに日帰りと泊まりの安いほうを採っても
-16.42日<!-- stats: terrain.yaml exploration_phase metric=mixed_days mean -->で、**日帰りだけの17.76日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->との差は1.3日**です。500島<!-- stats: terrain.yaml exploration_day_trip_islands islands -->のうち100.0%<!-- stats: terrain.yaml exploration_day_trip_islands share -->が、日帰りだけで全土地を開き切ります。
+15.14日<!-- stats: terrain.yaml exploration_phase metric=mixed_days mean -->で、**日帰りだけの16.67日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->との差は1.5日**です。500島<!-- stats: terrain.yaml exploration_day_trip_islands islands -->のうち100.0%<!-- stats: terrain.yaml exploration_day_trip_islands share -->が、日帰りだけで全土地を開き切ります。
 縮尺（#797）が入って往復が屋外の枠720分から生存の採取264分を引いた残りを使い切らなくなったためで、
 **遠出（11番）の「泊まりの行程」は、この島の広さでは成立しません。**
 
-**この176日は上限としても下限としても読めません。** 上へ振れる材料は、4節の山のうちそり（2日）・
+**この145日は上限としても下限としても読めません。** 上へ振れる材料は、4節の山のうちそり（2日）・
 泊まりの行程（2日）・山と洞窟の前線（4日）の3つが**移動が重いことを前提に置いた段**で、どれもまだ
-宣言が無く勘定に入っていないこと。下へ振れる材料は、**探索の局面の18日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->に山を1分も乗せていない**こと
-——1日の枠286分に対して探索は159分<!-- stats: terrain.yaml exploration_phase metric=day_trip_exploration_per_day mean -->しか進まないので、余る127分×18日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->は山へ回せます。
+宣言が無く勘定に入っていないこと。下へ振れる材料は、**探索の局面の17日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->に山を1分も乗せていない**こと
+——1日の枠283分に対して探索は168分<!-- stats: terrain.yaml exploration_phase metric=day_trip_exploration_per_day mean -->しか進まないので、余る115分×17日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->は山へ回せます。
 
 **「1周回は約480日」という前の結論は取り下げます。** 480日は、密林のような暗い土地でも生存の採取
-264分<!-- stats: terrain.yaml daily_budget survival_gathering -->を丸ごと引いていた（そこでは1日118分<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 work_minutes_per_day -->しか働けないのに）ことと、移動を「一様に選んだ行き先へ
+264分<!-- stats: terrain.yaml daily_budget survival_gathering -->を丸ごと引いていた（そこでは1日265分<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 work_minutes_per_day -->しか働けないのに）ことと、移動を「一様に選んだ行き先へ
 1箇所」（251分）と置いていたことの2つで膨らんでいました。**山を減らす理由は無く、
-[`GameEndings.md`](../concept/GameEndings.md) 8節の想定（約200日）に対して24日足りません。**
+[`GameEndings.md`](../concept/GameEndings.md) 8節の想定（約200日）に対して55日足りません。**
 
 ## 9. 骨格の都合で要ると分かった、まだ無い文法
 
@@ -716,12 +725,12 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 
 ## 未決事項・今後の検討課題
 
-- 1周回の日数（8節）。局面ごとに数えると**約176日**（探索18日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->＋定常158日、8.3節）で、
-  [`GameEndings.md`](../concept/GameEndings.md) 8節の想定（約200日）に24日足りません。**残る仮置きは
+- 1周回の日数（8節）。局面ごとに数えると**約145日**（探索17日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->＋定常128日、8.3節）で、
+  [`GameEndings.md`](../concept/GameEndings.md) 8節の想定（約200日）に55日足りません。**残る仮置きは
   屋外の割合（2/3）と土地の配分（開けた1/2・森1/4・密林1/4）の2つ**で、日数を支配しているのは後者
-  ——密林の1日118分<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 work_minutes_per_day -->が、4分の1の配分で日数の3割を持っていきます。**どの材料がどの土地で採れるか
+  ——密林の1日265分<!-- stats: terrain.yaml steady_phase_by_work_share share=密林 work_minutes_per_day -->が、4分の1の配分で日数の3分の1を持っていきます。**どの材料がどの土地で採れるか
   （2.3節）を決めると、この数字は動きます。**
-- 行動ごとのしきい値（8.1.1節の −5・+5 EV）、暗さの底（−6 EV）、光源の明るさ（+1・+11 EV）、土地の
+- 行動ごとのしきい値（8.1.1節の −5・+3・+5 EV）、暗さの底（−6 EV）、光源の明るさ（+1・+11 EV）、土地の
   反射率（8.1.2節）。しきい値と反射は現実の目安から、底と光源はそこから逆算して置きましたが、
   **遊びとして妥当かは通してみないと分かりません。**
 - 松明の燃費と、1本で歩ける時間（8.1.1節）。夜に出るコストと、朝夕や雨の日に浅い洞窟の中で手を
