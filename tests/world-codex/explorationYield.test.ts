@@ -98,13 +98,16 @@ describe('探索で見つかる物', () => {
     // 時刻を作らずに探索者の側で明るさを満たす。
     const actor = createBrightEnoughActor(explorer, codex);
 
+    // **見つかった物は、個数の差ではなく個体で数える**——置かれた物は腐って消える（食べ物の
+    // durability、DurabilitySystem.md 3節）ので、消えた数と見つかった数が打ち消し合うと、
+    // 見つかっているのに0個に見える。
     const findings: Finding[] = [];
-    let previous: Finding = new Map();
+    const seen = new Set<WorldObject>();
     for (let i = 0; i < trials; i++) {
       expect(location.explore(actor), `${landName}: 探索は必ず成立する`).toBe(true);
-      const now = countByName([...location.items, ...location.fixtures]);
-      findings.push(added(now, previous));
-      previous = now;
+      const present = [...location.items, ...location.fixtures];
+      findings.push(countByName(present.filter((object) => !seen.has(object))));
+      for (const object of present) seen.add(object);
     }
     return findings;
   }
@@ -170,16 +173,6 @@ function countByName(objects: readonly WorldObject[]): Finding {
   const counts = new Map<string, number>();
   for (const object of objects) counts.set(object.def.name, (counts.get(object.def.name) ?? 0) + 1);
   return counts;
-}
-
-/** nowのうち、beforeから増えた分だけ。 */
-function added(now: Finding, before: Finding): Finding {
-  const difference = new Map<string, number>();
-  for (const [name, count] of now) {
-    const grew = count - (before.get(name) ?? 0);
-    if (grew > 0) difference.set(name, grew);
-  }
-  return difference;
 }
 
 /** 発見物の合計個数。 */

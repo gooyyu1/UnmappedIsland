@@ -11,6 +11,48 @@
 # 物だけでなく、青いヤシの実（coconut.yaml）のようにcombinationで飲む物にも付く。加工すれば食べられる
 # だけの物には付けない——熟したヤシの実は皮をはいでも自分は何も体へ入れない。
 
+# 腐敗（docs/engine/DurabilitySystem.md 3節）。**分類の違いは通常温度で減る速さ1つだけ**なので、
+# 速さだけをtraitに分ける。durability本体と、屋外に置いたぶんの上乗せ（分類によらず-1）は
+# perishableが持ち、食べ物は「腐ること」と「どれだけ速いか」の2つを名乗る。
+#
+# 食べ物は他のファイル（coconut.yaml・fiber.yaml・animals.yaml）にも居るので、そこからも参照する。
+traits:
+  perishable:
+    props:
+      # 尽きると食べられなくなるので、満タン側がgood（CardView.md 8節）。上限は種類によらず960
+      # （DurabilitySystem.md 1節）。
+      durability:
+        gauge: {min: bad, max: good}
+        value: 960
+        range: {min: 0, max: 960}
+        # 腐りきった食べ物は残らない。**名乗らずに消す**——消え方の名前（9.3節）を出す先がまだ無い。
+        on_min:
+          destroy: self
+    passives:
+      # 屋外に置いたぶんの上乗せ。短命な素材と同じ速さ（同2節）で、腐敗とは別のaddとして加算的に
+      # 重なる（8.4節）。守られている場所——蓋つきの入れ物・浅い洞窟——では成立しない
+      # （ContainerSystem.md 6節）。**天気は見ない**: 雨のぶんは同5節の未決。
+      - conditions:
+          - {subject: ancestor, prop: sheltered, eq: 0}
+        add:
+          self:
+            durability: -1
+
+  # 調理済み料理・生魚など。通常温度で2.5日（屋外なら2日）。
+  spoils_fast:
+    passives:
+      - add: {self: {durability: -4}}
+
+  # 野菜など。通常温度で5日（屋外なら3.3日）。
+  spoils_normal:
+    passives:
+      - add: {self: {durability: -2}}
+
+  # 芋など。通常温度で20日（屋外なら6.7日）。
+  spoils_slow:
+    passives:
+      - add: {self: {durability: -0.5}}
+
 object_defs:
   # 空心菜（クウシンサイ）。熱帯の水辺に自生する、採取しやすい葉物野菜。
   #
@@ -18,6 +60,7 @@ object_defs:
   # なく育った水のほう（寄生虫）なので、物としては生食に向く。ヤシガニとタロイモは違う（各項参照）。
   water_spinach:
     tags: [item, food, plant_bait]
+    traits: [perishable, spoils_normal]
     props:
       weight: {value: 150}
       # 罠へ仕掛けると草食の卓が引かれやすくなる（docs/engine/TrapSystem.md 4節）。
@@ -49,6 +92,8 @@ object_defs:
   # （docs/world/Animals.md 1節）。
   coconut_crab:
     tags: [item, meat_bait, roastable]
+    # 生の甲殻類。食べられなくても傷むのは同じなので、foodタグの有無とは関わりなく腐る。
+    traits: [perishable, spoils_fast]
     props:
       weight: {value: 2000}
       meat_bait: {value: 12}
@@ -64,6 +109,7 @@ object_defs:
   # 丸焼きのヤシガニ。殻が器になるので、割って身を掻き出して食べる。
   roasted_coconut_crab:
     tags: [item, food, roastable]
+    traits: [perishable, spoils_fast]
     props:
       # 水が飛んだぶん軽くなる。
       weight: {value: 1700}
@@ -98,6 +144,8 @@ object_defs:
   # 火より後に来る）。
   taro:
     tags: [item, plant_bait, roastable]
+    # 土の中で育った塊茎そのもの。表の「芋など」はこれを指す。
+    traits: [perishable, spoils_slow]
     props:
       weight: {value: 800}
       plant_bait: {value: 12}
@@ -114,6 +162,9 @@ object_defs:
   # 焼いたタロイモ。芯まで火が通って、初めて食べられる。
   roasted_taro:
     tags: [item, food, roastable]
+    # **焼くと保たなくなる。** 20日保つ芋も、火を通せば調理済み料理の2.5日へ落ちる。まとめて焼いて
+    # 置いておくことはできない。
+    traits: [perishable, spoils_fast]
     props:
       # 水が飛んだぶん軽くなる。
       weight: {value: 600}
