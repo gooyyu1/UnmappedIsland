@@ -131,6 +131,12 @@ export class WorldRuleVocabulary {
   readonly pathTagId: number;
 
   /**
+   * 海区（`voyage.yaml`）。**島の土地と同じ場所**（location＋explorable）なので、島だけを数える側は
+   * これで見分ける（`analysis/islandLocations`）。
+   */
+  readonly seaTagId: number;
+
+  /**
    * 物が何であるかを言うタグ。**兼ねる物がある**（動物はitemでもあり、編み籠はitemでもfixtureでもある）
    * ので、どれを先に見るかは読む側が決める（cardLooks.kindOf）。
    */
@@ -184,6 +190,7 @@ export class WorldRuleVocabulary {
     this.locationTagId = tagNames.intern('location');
     this.characterTagId = tagNames.intern('character');
     this.pathTagId = tagNames.intern('path');
+    this.seaTagId = tagNames.intern('sea');
     this.itemTagId = tagNames.intern('item');
     this.fixtureTagId = tagNames.intern('fixture');
     this.injuryTagId = tagNames.intern('injury');

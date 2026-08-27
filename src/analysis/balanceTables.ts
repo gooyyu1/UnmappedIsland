@@ -4,6 +4,7 @@ import { tickDeltasOf } from './tickDeltas';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
 import { craftingStepsOf } from './craftingSteps';
+import { islandLocationsOf } from './islandLocations';
 import type { ExternalTickDelta, RangeCycle } from './rangeCycles';
 import { externalTickDeltasOf, rangeCyclesOf } from './rangeCycles';
 import { rangeEventReadouts } from './rangeEvents';
@@ -311,7 +312,7 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
         codex,
         withBestDragged(
           [...codex.objects],
-          highestDeclaredAncestorValueResolver(explorableLocationsOf(codex)),
+          highestDeclaredAncestorValueResolver(islandLocationsOf(codex).island),
         ),
       ),
     ),
@@ -477,7 +478,7 @@ function placeBalances(
   readonly gaps: readonly Gap[];
   readonly islandWide: Acquisition;
 } {
-  const locations = explorableLocationsOf(codex);
+  const locations = islandLocationsOf(codex).island;
   const defs = [...codex.objects];
 
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
@@ -987,17 +988,6 @@ function isCharacter(codex: WorldCodex, def: ObjectDef): boolean {
 }
 
 /**
- * 連鎖の起点にできる土地。**探索できるものだけ**——筏や外洋も土地（location）だが、探索を持たない
- * ので何も産まず、空の節が並ぶだけになる。`explorable` trait が配る進捗の宣言で見分ける。
- */
-function explorableLocationsOf(codex: WorldCodex): readonly ObjectDef[] {
-  const progress = codex.vocabulary.world.explorationProgressId;
-  return [...codex.objects].filter(
-    (def) => isLocation(codex, def) && def.tryGetPropertyDef(progress) !== undefined,
-  );
-}
-
-/**
  * 軸の値としてしか現れない型（3.5節）。液体の種類（`water_liquid`）がこれで、**世界に現れるのは
  * 中身入りの容器という変種のほう**——この型そのもののインスタンスは作られない。宣言している操作
  * （`drink`）も、変種が受け取って初めて起こるもので、この型が持っていても誰も起こせない。
@@ -1016,8 +1006,12 @@ function axisValueGlobalIds(codex: WorldCodex): ReadonlySet<number> {
 }
 
 /**
- * 全型の全工程。宣言順（型のグローバルID順、型の中は宣言順）。プレイヤーが起こす工程に続けて、
+ * 島の全型の全工程。宣言順（型のグローバルID順、型の中は宣言順）。プレイヤーが起こす工程に続けて、
  * 時間で回る工程（罠の判定）も並べる。軸の値の型は飛ばす（axisValueGlobalIds参照）。
+ *
+ * **海区が宣言する工程（見張り）も飛ばす**——この表が数えるのは島の1日で、海はその外
+ * （`islandLocations`）。土地ごとの表は`stepsAt`が既に他の土地の工程を落としているので、これが効くのは
+ * 島全体の文脈だけになる。
  *
  * outerは、祖先（＝置かれている土地）が入れる値を解く手立て。罠が掛ける動物の重みは土地が
  * 宣言するので（`base`）、これが無いと候補が全部0になる。
@@ -1025,8 +1019,9 @@ function axisValueGlobalIds(codex: WorldCodex): ReadonlySet<number> {
 function allSteps(codex: WorldCodex, outer?: StaticValueResolver): readonly StepRef[] {
   const defs = [...codex.objects];
   const axisValues = axisValueGlobalIds(codex);
+  const sea = new Set(islandLocationsOf(codex).excludedSea.map(({ def }) => def.globalId));
   return defs.flatMap((def) => {
-    if (axisValues.has(def.globalId)) return [];
+    if (axisValues.has(def.globalId) || sea.has(def.globalId)) return [];
     const cycles = rangeCyclesOf(def, outer, externalTickDeltasOn(def, defs));
     const lifetimeMinutes = decayLifetimeOf(cycles);
     return [

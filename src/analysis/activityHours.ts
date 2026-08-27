@@ -2,6 +2,7 @@ import type { EffectReader, PickCandidateReading } from '../domain/EffectReader'
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../domain/PassiveReader';
 import type { WorldCodex } from '../domain/WorldCodex';
+import { islandLocationsOf } from './islandLocations';
 
 /**
  * 土地×季節ごとの「移動できる／活動できる時間（時間/日）」を、`core.yaml`の`hour`・`weather`の段
@@ -192,18 +193,15 @@ interface ActivityPlace {
 }
 
 /**
- * 表に出す場所。探索できる土地（`explorable`、`ContentSkeleton.md` 8.1.2節の全種類）に、浅い洞窟
- * （`shallow_cave`）を続けて並べる。浅い洞窟は土地ではなく設置物だが、この表が数えたい「その中で
- * 活動できる時間」を持つため加える（`Dwellings.md` 5.1節）。
+ * 表に出す場所。島の土地（`islandLocations`）に、浅い洞窟（`shallow_cave`）を続けて並べる。浅い洞窟は
+ * 土地ではなく設置物だが、この表が数えたい「その中で活動できる時間」を持つため加える
+ * （`Dwellings.md` 5.1節）。
  */
 function activityPlacesOf(codex: WorldCodex): readonly ActivityPlace[] {
   const ambientId = codex.vocabulary.world.ambientBrightnessId;
-  const locationTagId = codex.vocabulary.world.locationTagId;
-  const progressId = codex.vocabulary.world.explorationProgressId;
 
   const places: ActivityPlace[] = [];
-  for (const def of codex.objects) {
-    if (!def.hasTag(locationTagId) || def.tryGetPropertyDef(progressId) === undefined) continue;
+  for (const def of islandLocationsOf(codex).island) {
     const place = placeOf(def, ambientId, 0);
     if (place !== undefined) places.push(place);
   }
