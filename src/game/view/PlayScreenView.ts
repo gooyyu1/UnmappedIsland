@@ -609,7 +609,7 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
     const named = instanceName(instanceId);
     if (named !== undefined) return named;
 
-    // 名前を付けるのは地形生成だけ（IslandMap）なので、島の外の場所——筏・外洋・本土
+    // 名前を付けるのは地形生成だけ（IslandMap）なので、島の外の場所——筏・海区・本土
     // （voyage.yaml）——はそこに載っていない。そういう場所は型の表示名がそのまま名前になる。
     const displayName = defName === undefined ? undefined : locale.object(defName).displayName;
     return displayName === undefined || displayName === defName
