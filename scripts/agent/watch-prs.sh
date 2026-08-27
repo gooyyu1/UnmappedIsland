@@ -17,7 +17,7 @@
 #   GONE    <番号>                 … 見張っていた issue が閉じた（--issues のときだけ）
 #   FIXED   <番号>                 … 直し待ちのPRへ、新しいコミットが載った
 #   COMMENT pr|issue <番号> <著者> … 起動より後に付いたコメント
-#   TASK    <番号>                 … 着手できる open な task（--issues に無く、依存も片付いている）
+#   TASK    <番号>                 … 着手できる open な task（--issues にもPRにも無く、依存も片付いている）
 #   終了コード 0 … 動きが1件以上ある（上の行が出ている）
 #   終了コード 3 … TIMEOUT（制限時間まで、何も動かなかった）
 #   終了コード 1 … ERROR（gh が続けて失敗した）
@@ -61,9 +61,10 @@
 #
 # ## 着手できるかは、印ではなく issue の依存から出す
 #
-# `TASK` に出るのは**`task` ラベルの付いた issue のうち、依存が片付いているものだけ**（GitHub の
-# `blockedBy` に open なものが無い）。`task` が1件のセッションの仕事の単位なので、確認の置き場や
-# ユーザーの答え待ちのように**投入する先が無い issue** は、依存が空でも仕事ではない。
+# `TASK` に出るのは**`task` ラベルの付いた issue のうち、依存が片付いていて、open なPRが `Closes` で
+# 指していないものだけ**（GitHub の `blockedBy` に open なものが無い）。`task` が1件のセッションの
+# 仕事の単位なので、確認の置き場やユーザーの答え待ちのように**投入する先が無い issue** は、依存が
+# 空でも仕事ではない。PRの出ている issue は、既にそのセッションの手元にある。
 # 「今着手してよいか」は実装の進み具合で**真偽が変わる述語**なので、ラベルのような印で持たせると
 # 必ず古くなり、貼り直す仕事が永久に残る。「A は B の後」は変わらない事実なので、一度書けば
 # 正しいままで、着手できるかは毎周そこから計算すればよい。`task` は**それが作業単位かどうか**
@@ -191,7 +192,7 @@ comment_filter() {
 
 while [ "$(date +%s)" -lt "$deadline" ]; do
   if prs=$(gh pr list --state open --limit 50 \
-    --json number,labels,statusCheckRollup,comments,updatedAt,mergeable 2>/dev/null); then
+    --json number,labels,statusCheckRollup,comments,updatedAt,mergeable,body 2>/dev/null); then
     failures=0
     grace=$(date -u -d "-${NO_CHECK_GRACE} seconds" +%Y-%m-%dT%H:%M:%SZ)
     settled=$(jq -r "$(pr_settled_filter "$grace")" <<<"$prs")
@@ -216,8 +217,10 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
     # 見張っている issue を1回引いて、閉じたもの（開いている一覧に居ないもの）と、起動より後に
     # 付いたコメントを拾う。issue の本数が増えても gh の呼び出しは1周につき1回のまま。
     if [ ${#ISSUES[@]} -gt 0 ]; then
+      # jq は Windows では改行を CRLF で書く（msys の text mode）。番号どうしの突き合わせに使う
+      # 一覧は、ここで `\r` を落としておかないと、どれも一致しなくなる。
       if open_issues=$(gh issue list --state open --limit 100 --json number,labels,comments,blockedBy 2>/dev/null); then
-        numbers=$(jq -r '.[].number' <<<"$open_issues")
+        numbers=$(jq -r '.[].number' <<<"$open_issues" | tr -d '\r')
         for issue in "${ISSUES[@]}"; do
           if ! grep -qx "$issue" <<<"$numbers"; then
             settled=$(printf '%s\nGONE %s' "$settled" "$issue")
@@ -226,18 +229,23 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
         watched=$(printf '%s\n' "${ISSUES[@]}" | paste -sd'|' -)
         settled=$(printf '%s\n%s' "$settled" \
           "$(jq -r "$(comment_filter issue)" <<<"$open_issues" | grep -E "^COMMENT issue (${watched}) " || true)")
-        # 渡された番号に無く、依存も片付いている `task` は、今すぐ着手できる仕事。**待ちを終える
-        # 条件は「動いているものが終わること」ではなく「やることが無いこと」**なので、これを出す。
-        # 依存が残っているものを出さないのは、投入しても着手できないから——出すと受け取った側が
-        # 毎周同じ番号を突き返すことになる。`task` の無い issue（確認の置き場・答え待ち）は、
-        # 依存が空でも投入する先が無いので出さない。
+        # 渡された番号に無く、依存も片付いていて、PRも出ていない `task` は、今すぐ着手できる仕事。
+        # **待ちを終える条件は「動いているものが終わること」ではなく「やることが無いこと」**なので、
+        # これを出す。出さない3つは、どれも**その issue が今どこにあるか**を別の角度から見たもの。
+        #
+        # - `task` の無い issue（確認の置き場・答え待ち）… 投入する先が無いので、そもそも仕事ではない。
+        # - open な `blockedBy` が残っている … 投入しても着手できず、受け取った側が毎周突き返す。
+        # - open なPRが `Closes` で指している … 既に誰かが持っている。二重に投入すると、2つの
+        #   セッションが同じ担当ファイルを触って衝突する（2026-08-27 に #885 と PR #890 で実際に出た）。
+        claimed=$(jq -r '.[].body // "" | [scan("(?i)\\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\\s+#([0-9]+)")] | .[][]' \
+          <<<"$prs" | tr -d '\r')
         ready=$(jq -r '.[]
             | select([.labels[].name] | index("task"))
             | select([.blockedBy.nodes[] | select(.state == "OPEN")] | length == 0)
             | .number' \
-          <<<"$open_issues")
+          <<<"$open_issues" | tr -d '\r')
         for issue in $ready; do
-          if ! grep -qxE "$watched" <<<"$issue"; then
+          if ! grep -qxE "$watched" <<<"$issue" && ! grep -qx "$issue" <<<"$claimed"; then
             settled=$(printf '%s\nTASK %s' "$settled" "$issue")
           fi
         done

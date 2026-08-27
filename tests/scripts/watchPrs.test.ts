@@ -39,6 +39,7 @@ function pullRequest(
   checks: { name: string; status: string; conclusion: string }[] = [
     { name: 'test', status: 'COMPLETED', conclusion: 'SUCCESS' },
   ],
+  body = '',
 ): unknown {
   return {
     number,
@@ -47,6 +48,7 @@ function pullRequest(
     comments: [],
     updatedAt: '2000-01-01T00:00:00Z',
     mergeable,
+    body,
   };
 }
 
@@ -115,6 +117,19 @@ describe('watch-prs.sh の TASK', () => {
     );
 
     expect(lines).toEqual(['TASK 910']);
+  });
+
+  it('open なPRが Closes で指している task は出ない', () => {
+    // PRの側の行が混じらないよう、判断待ちにして黙らせる。#922 は、何も出ずに時間切れになるのを
+    // 避けるための、誰の手元にも無い task。
+    const claiming = (body: string): unknown[][] => [[pullRequest(890, 'MERGEABLE', ['判断待ち'], [], body)]];
+    const issues = [issue(920, ['task']), issue(921, ['task']), issue(922, ['task'])];
+
+    expect(watch(claiming('Closes #920\n\n直した。'), issues, [921])).toEqual(['TASK 922']);
+    // 閉じる語は GitHub が認めるものすべて。大文字小文字も問わない。
+    expect(watch(claiming('fixes #920'), issues, [921])).toEqual(['TASK 922']);
+    // 参照するだけの番号では、着手済みにならない。
+    expect(watch(claiming('#920 と同じ形'), issues, [921])).toEqual(['TASK 920', 'TASK 922']);
   });
 });
 
