@@ -18,6 +18,12 @@ export interface ExplorationContent {
   readonly ratio: number;
 
   /**
+   * タブの見出し。**探索そのものの呼び名が型ごとに違う**（土地なら探索、海区なら見張り）ので、
+   * 補足の1行と同じく渡す側が決める（Windows.md 5節）。
+   */
+  readonly title: string;
+
+  /**
    * バーの下に出す補足の1行。**何が見つかるかは型ごとに違う**（土地なら道、海区なら航路）ので、
    * 文そのものを渡す側が決める（Windows.md 5節）。
    */
