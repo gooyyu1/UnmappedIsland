@@ -16,7 +16,7 @@
 #   GONE    <番号>                 … 見張っていた issue が閉じた（--issues のときだけ）
 #   FIXED   <番号>                 … 直し待ちのPRへ、新しいコミットが載った
 #   COMMENT pr|issue <番号> <著者> … 起動より後に付いたコメント
-#   TASK    <番号>                 … --issues に無い open な issue（＝こちらがまだ知らない仕事）
+#   TASK    <番号>                 … 着手できる open な issue（--issues に無く、依存も片付いている）
 #   終了コード 0 … 動きが1件以上ある（上の行が出ている）
 #   終了コード 3 … TIMEOUT（制限時間まで、何も動かなかった）
 #   終了コード 1 … ERROR（gh が続けて失敗した）
@@ -57,6 +57,24 @@
 # だから、**投入していないが意図して置いてあるもの**（判断待ちの範囲に含まれる issue・ユーザーの
 # 答え待ち）も `--issues` へ渡す。渡さないと毎周 `TASK` で起こされる。**出すか出さないかは機械が
 # 決め、拾うかどうかは受け取った側が決める。**
+#
+# ## 着手できるかは、印ではなく issue の依存から出す
+#
+# `TASK` に出るのは**依存が片付いている issue だけ**（GitHub の `blockedBy` に open なものが無い）。
+# 「今着手してよいか」は実装の進み具合で**真偽が変わる述語**なので、ラベルのような印で持たせると
+# 必ず古くなり、貼り直す仕事が永久に残る。「A は B の後」は変わらない事実なので、一度書けば
+# 正しいままで、着手できるかは毎周そこから計算すればよい。
+#
+# 依存は `gh issue list --json blockedBy` が**一覧と同時に返す**ので、呼び出しは1周1回のままで、
+# `state` も同梱されるため open 一覧との突き合わせも要らない。
+#
+# **止まったまま何も出なくなることはない。** GitHub は循環する依存を 422 で拒む（実測）ので、
+# 開いている issue の依存は必ず有向非巡回になる。**非巡回な有限のグラフには必ず根がある**ので、
+# open な issue が1件でもあれば ready も1件以上ある。TASK が空になるのは、本当に全部が
+# `--issues` に入っているときだけ。
+#
+# 依存に書いてよいのは**順序に理由がある依存だけ**。「同じファイルを触る」は依存ではない
+# （`parallel-work.md` の「1ファイル重なることは、直列にする理由にはしない」）。
 #
 # 動きを受け取った側の動きは `.claude/parallel-work.md` の「PR の型」節。
 
@@ -182,7 +200,7 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
     # 見張っている issue を1回引いて、閉じたもの（開いている一覧に居ないもの）と、起動より後に
     # 付いたコメントを拾う。issue の本数が増えても gh の呼び出しは1周につき1回のまま。
     if [ ${#ISSUES[@]} -gt 0 ]; then
-      if open_issues=$(gh issue list --state open --limit 100 --json number,comments 2>/dev/null); then
+      if open_issues=$(gh issue list --state open --limit 100 --json number,comments,blockedBy 2>/dev/null); then
         numbers=$(jq -r '.[].number' <<<"$open_issues")
         for issue in "${ISSUES[@]}"; do
           if ! grep -qx "$issue" <<<"$numbers"; then
@@ -192,9 +210,13 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
         watched=$(printf '%s\n' "${ISSUES[@]}" | paste -sd'|' -)
         settled=$(printf '%s\n%s' "$settled" \
           "$(jq -r "$(comment_filter issue)" <<<"$open_issues" | grep -E "^COMMENT issue (${watched}) " || true)")
-        # 渡された番号に無い open な issue は、こちらがまだ知らない仕事。**待ちを終える条件は
-        # 「動いているものが終わること」ではなく「やることが無いこと」**なので、これも出す。
-        for issue in $numbers; do
+        # 渡された番号に無く、依存も片付いている issue は、今すぐ着手できる仕事。**待ちを終える
+        # 条件は「動いているものが終わること」ではなく「やることが無いこと」**なので、これを出す。
+        # 依存が残っているものを出さないのは、投入しても着手できないから——出すと受け取った側が
+        # 毎周同じ番号を突き返すことになる。
+        ready=$(jq -r '.[] | select([.blockedBy.nodes[] | select(.state == "OPEN")] | length == 0) | .number' \
+          <<<"$open_issues")
+        for issue in $ready; do
           if ! grep -qxE "$watched" <<<"$issue"; then
             settled=$(printf '%s\nTASK %s' "$settled" "$issue")
           fi
