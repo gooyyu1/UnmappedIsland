@@ -1519,7 +1519,7 @@ interactions:
   - **`to_prop`**: `self` が持つプロパティ名。その実効値を `WorldObject` のインスタンスID（生成時に発行される、
     実行時限りの識別子）として解釈し、移動先とみなします。
   - **`to_object`**: `object_defs` の識別子。世界の木を辿って**その型のインスタンス**を探し、移動先とします。
-    **世界にただ1つ在る型（`singleton`、15 節）のためのもの**で、外洋・本土のように定義の時点で名前は
+    **世界にただ1つ在る型（`singleton`、15 節）のためのもの**で、海区・本土のように定義の時点で名前は
     分かっているが、生成時のインスタンスIDは分からない行き先を指します
     （[`Voyage.md`](../world/Voyage.md) 4 節）。同じ型が複数在れば、木を深さ優先で辿って最初に
     見つかったものになります。
@@ -1533,7 +1533,7 @@ interactions:
 ```yaml
 move:
   - {subject: actor, to: self}
-  - {subject: self, to_object: open_sea}
+  - {subject: self, to_object: coastal_waters}
 ```
 
 プロパティが個体を `object_defs` の id（型）ではなくインスタンスIDで指すのは、典型例（生成された特定の道が
@@ -2293,7 +2293,7 @@ object_defs:
 `tick` も持つ。）
 
 **「1つだけ存在すべき」は「世界を作った時点で在る」と読みます。** ただし湧かせるのは、`world` が直に
-受け入れられる型だけです（`NewGame.spawnSingletonsAcceptedByWorld`）——外洋・本土（[`Voyage.md`](../world/Voyage.md) 4 節）は
+受け入れられる型だけです（`NewGame.spawnSingletonsAcceptedByWorld`）——海区・本土（[`Voyage.md`](../world/Voyage.md) 4 節）は
 `world` の `locations` 枠に入るのでそこに在り、キャラクタも `singleton` ですが、`world` のどの枠にも入らない
 （土地の `characters` 枠に入る物です）ので湧きません。何が最初から在るかを決めるのは枠の宣言だけで、
 エンジンは型の名前を1つも知りません。これにより、型の名前で行き先を指す `move` の `to_object`（9.6 節）は
