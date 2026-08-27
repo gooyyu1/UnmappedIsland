@@ -460,7 +460,7 @@ function parseMoveSubject(
  * moveの移動先（to / to_prop / to_object のどれか1つ）。
  *
  * `to_object`は、世界にただ1つ在る型（`singleton`、15節）をその名前で指す。生成時に確定する個体を
- * 指すto_propと違い、**定義の時点で名前の分かっている行き先**（外洋・本土）のためのもの。
+ * 指すto_propと違い、**定義の時点で名前の分かっている行き先**（海区・本土）のためのもの。
  */
 function parseMoveDestination(
   loader: WorldCodexYamlLoader,
