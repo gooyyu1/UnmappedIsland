@@ -23,6 +23,9 @@
 #   無いので、素直に書くと空振りする。
 # - `list_events` が返すのは**新しい側から**。種の指示は最も古い1件なので、最初のページには
 #   居ないことがある。`before_id` に前のページの `first_id` を渡して遡る。
+# - **`create_session` の直後は、遡り切っても種の指示がまだ載っていない**（記録に出るまで数十秒
+#   掛かる。2026-08-28 に実測——立てた直後は「見つからない」、1時間後の同じセッションは「一致」）。
+#   無いことを不一致として報せると、化けていないものを化けたと読む。**載るまで待ってから判定する。**
 
 set -euo pipefail
 
@@ -38,8 +41,13 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-before=''
-for _ in $(seq 1 30); do
+# 種の指示が記録に載るまで待つ。載っていないことは「不一致」ではないので、判定を出さずに待ち直す。
+WAIT_SECONDS="${CCR_CHECK_WAIT_SECONDS:-180}"
+deadline=$((SECONDS + WAIT_SECONDS))
+
+while :; do
+  before=''
+  for _ in $(seq 1 30); do
   if [ -n "$before" ]; then
     printf '{"session_id":"%s","limit":100,"before_id":"%s"}' "$SESSION" "$before" >"$WORK/args.json"
   else
@@ -88,22 +96,23 @@ for _ in $(seq 1 30); do
       ;;
     MORE*)
       next="${verdict#MORE }"
-      [ "$next" != "$before" ] || {
-        echo "遡っても種の指示が見つからない" >&2
-        exit 1
-      }
+      # 同じ `first_id` が返ったら、それ以上は遡れない＝まだ載っていない。
+      [ "$next" != "$before" ] || break
       before="$next"
       ;;
     NOTFOUND)
-      echo "種の指示が見つからない（create_session で立てたセッションか確かめる）" >&2
-      exit 1
+      break
       ;;
     *)
       echo "$verdict" >&2
       exit 2
       ;;
   esac
-done
+  done
 
-echo "30ページ遡っても種の指示が見つからない" >&2
-exit 1
+  if [ "$SECONDS" -ge "$deadline" ]; then
+    echo "${WAIT_SECONDS}秒待っても種の指示が記録に出ない（create_session で立てたセッションか確かめる）" >&2
+    exit 1
+  fi
+  sleep 10
+done

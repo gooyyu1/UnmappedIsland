@@ -297,6 +297,12 @@ gh api --method POST repos/gooyyu1/UnmappedIsland/issues/<この issue>/dependen
 
 - **張るのは issue を立てた本人。** なぜその順序かを知っているのは、その問題を見つけた側だけ。
   全体を見る専任は本文から推測することになり、推測は必ず取りこぼす。
+  **ただしクラウドのセッションからは張れない**——GitHub の REST が丸ごと塞がっており、`gh` でも
+  `curl` でも `{"message":"GitHub access is not enabled for this session. An org admin must connect
+  the Claude GitHub App for this organization."}` が返る（2026-08-27 に3セッションが実際に踏んだ）。
+  issue やPRの作成は用意された道具で通るが、**依存の API はその道具の一覧に無い。**
+  クラウドのセッションには**張らせず、PR本文に「#A は #B の後」と書かせて司令塔が張る**
+  （投入時に伝える。[`dispatch-prompt.md`](./dispatch-prompt.md)）。判断は見つけた側に残る。
 - **迷ったら張らない。** 張り忘れ（早すぎる着手）はPRの段階で気づけて、やり直しはリベース1回で
   済む。**過剰に張ると鎖が伸びた分だけ黙って遅くなり、誤りに誰も気づかない。**
 - **「同じファイルを触る」は依存ではない。** 順序に理由があるものだけを書く。理由が無いのに
