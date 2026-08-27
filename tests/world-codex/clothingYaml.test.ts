@@ -98,6 +98,14 @@ describe('clothing.yamlの衣類', () => {
     craft(clothing);
   });
 
+  it.each(CLOTHING)('$name は、身につけられることを名乗っている', (clothing) => {
+    // 装備スロットはまだこのタグで絞っていない（player_character.yaml）が、何であるかは物の側の
+    // 事実なので先に名乗る。絞るときに拾う先はここ。
+    const equippableTagId = codex.tagNames.getId('equippable');
+
+    expect(codex.objects.get(codex.objectNames.getId(clothing.name)).tags).toContain(equippableTagId);
+  });
+
   it.each(CLOTHING)('$name は装備スロットへ着られて、脱げる', (clothing) => {
     const equipmentId = codex.vocabulary.world.equipmentSlotId;
     const handId = codex.vocabulary.world.handSlotId;
