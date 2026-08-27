@@ -76,8 +76,9 @@ traits:
       # **しきい値を持つのはこの2つのstagesだけで、条件の側は段の名前で見る**
       # （docs/engine/IlluminationSystem.md 5節）。行動が見るのはキャラクタ側の2つ（同2節）なので、
       # 場所の hand_brightness には段を置かない——誰も段の名前では読まないため。
-      # 2つが同じ3段を持つのは、同じEVスケールを同じ底（-6）から測っているから。片方の境目を
-      # 動かすと、そのプロパティを見る行動だけが動く。
+      # 2つが同じ3段の名前を持つのは、同じEVスケールを同じ底（-6）から測っているから。境目は
+      # 別々で、片方を動かすとそのプロパティを見る行動だけが動く——bright が手元は+5、視界は+3
+      # なのは、屋外で採るのに要る明るさが、縫うのに要る明るさより低いため。
       hand_brightness:
         value: 0
         base: {subject: ancestor, prop: hand_brightness}
@@ -91,7 +92,7 @@ traits:
         stages:
           - {name: pitch_dark}
           - {name: dim, min: -5}
-          - {name: bright, min: 5}
+          - {name: bright, min: 3}
       # 体重（g）。**筏に乗れば積載として効く**（voyage.yaml）ので、担ぐ側も担がれる側になる。
       # 血液量が体重のおよそ1/13という下の関係から、5,000mLはちょうど65kgにあたる。個体差は
       # まだ持たせず、血と同じくこの trait が配る。

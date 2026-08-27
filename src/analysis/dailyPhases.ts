@@ -10,8 +10,12 @@ import { craftingStepsOf } from './craftingSteps';
  * **数え方は局面をまたいで1つだけ。**
  *
  * ```
- * その日その土地で進む仕事（分） = min(屋外の枠 − 往復の移動 − 生存の採取, その土地の活動できる時間)
+ * その日その土地で進む仕事（分） = min(屋外の枠 − 往復の移動 − 生存の採取, その土地で採れる時間)
  * ```
+ *
+ * **暗さの頭打ちに使うのは、採れる時間**（`ActivityHoursRow.gatheringHoursPerDay`）。この式が割って
+ * いるのは屋外の枠であって、そこに入っているのは採取と探索——手元の細かい作業（`handworkHoursPerDay`）
+ * が当たっているのは夜の加工360分のほうで、この式は1分も数えていない（8.3節の割り付け）。
  *
  * 局面の違いは**どこへ行くか**と**そこで何をするか**の2つで、式そのものは共有する。遠さは移動の項
  * として、暗さは頭打ちとして、同じ1行に入る。
@@ -45,8 +49,8 @@ export interface LocationTypeDay {
   /** 探索率100%までに要る探索時間（分）＝ 探索の回数 × 探索1回の時間。 */
   readonly explorationMinutes: number;
 
-  /** 屋外で手を動かせる時間（分/日）。季節ごとの値の平均。 */
-  readonly activeMinutesPerDay: number;
+  /** 屋外で採れる・探索できる時間（分/日）。季節ごとの値の平均。 */
+  readonly gatheringMinutesPerDay: number;
 }
 
 /**
@@ -173,7 +177,7 @@ export interface IslandDailyPhases {
  * 探索できる土地の型ごとに、局面の勘定に要る値を実測する。定義は島をまたいで変わらないので、
  * 島ごとの算出はこれを使い回す。
  *
- * 活動時間は`activityHoursOf`の行（土地×季節）を季節で平均したもの。**配分（`WORK_SHARES`）から
+ * 採れる時間は`activityHoursOf`の行（土地×季節）を季節で平均したもの。**配分（`WORK_SHARES`）から
  * 漏れている型があれば投げる**——黙って通すと、その土地は山の勘定に一度も現れない。
  */
 export function locationTypeDaysOf(
@@ -192,7 +196,7 @@ export function locationTypeDaysOf(
     days.set(locationDef.globalId, {
       locationDefName: locationDef.name,
       explorationMinutes: explorationMinutesOf(codex, locationDef),
-      activeMinutesPerDay: activeMinutesPerDayOf(activityHours, locationDef.name),
+      gatheringMinutesPerDay: gatheringMinutesPerDayOf(activityHours, locationDef.name),
     });
   }
 
@@ -284,12 +288,12 @@ function explorationPhaseOf(
  * 泊まりがけで土地1つを開くのに要る日数。**滞在中の生存の採取は現地で払わない**——補給を持ち込む
  * 行程（GameEndings.md 9.2節）として数えるので、暗い土地でも滞在そのものは成立する。
  *
- * 縛るのは2つ。1日に進む探索はその土地の活動できる時間を超えられず、行程全体では往復の移動も
- * 屋外の枠から出る。
+ * 縛るのは2つ。1日に進む探索はその土地で採れる時間を超えられず（探索も見て探す仕事なので、採取と
+ * 同じ列を見る）、行程全体では往復の移動も屋外の枠から出る。
  */
 function stayOverDaysOf(day: LocationTypeDay, roundTripMinutes: number): number {
   return Math.max(
-    Math.ceil(day.explorationMinutes / day.activeMinutesPerDay),
+    Math.ceil(day.explorationMinutes / day.gatheringMinutesPerDay),
     Math.ceil((day.explorationMinutes + roundTripMinutes) / OUTDOOR_WINDOW_MINUTES),
   );
 }
@@ -373,7 +377,7 @@ function isBetterDestination(
 /** 局面をまたいで共有する、1日の勘定そのもの（このファイルのクラスコメント）。 */
 function workMinutesPerDayOf(day: LocationTypeDay, roundTripMinutes: number): number {
   const outdoor = OUTDOOR_WINDOW_MINUTES - roundTripMinutes - SURVIVAL_GATHERING_MINUTES;
-  return Math.max(0, Math.min(outdoor, day.activeMinutesPerDay));
+  return Math.max(0, Math.min(outdoor, day.gatheringMinutesPerDay));
 }
 
 function locationTypeDayOf(
@@ -403,12 +407,15 @@ function explorationMinutesOf(codex: WorldCodex, locationDef: ObjectDef): number
   return range.max * explore.laborMinutes;
 }
 
-/** その土地で屋外の仕事ができる時間（分/日）。季節ごとの行を平均する。 */
-function activeMinutesPerDayOf(activityHours: readonly ActivityHoursRow[], locationDefName: string): number {
+/** その土地で屋外で採れる時間（分/日）。季節ごとの行を平均する。 */
+function gatheringMinutesPerDayOf(
+  activityHours: readonly ActivityHoursRow[],
+  locationDefName: string,
+): number {
   const rows = activityHours.filter((row) => row.locationName === locationDefName);
   if (rows.length === 0) throw new Error(`土地 '${locationDefName}' が活動時間の表に載っていません。`);
 
-  return (rows.reduce((sum, row) => sum + row.activeHoursPerDay, 0) / rows.length) * 60;
+  return (rows.reduce((sum, row) => sum + row.gatheringHoursPerDay, 0) / rows.length) * 60;
 }
 
 /** 配分の検査。1つの型が2つの組に現れることも、どの組にも現れないことも許さない。 */

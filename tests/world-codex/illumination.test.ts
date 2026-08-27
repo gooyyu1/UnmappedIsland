@@ -23,8 +23,8 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
 const NIGHT_HOUR = 0;
 /** 正午。晴れ（clear）なら世界の明るさは+14。 */
 const NOON_HOUR = 12;
-/** 朝。晴れなら世界の明るさは+13で、密林（-9）だけがしきい値（+5）に届かない。 */
-const MORNING_HOUR = 9;
+/** 朝。晴れなら世界の明るさは+11で、密林（-9）だけが採取のしきい値（+3）に届かない。 */
+const MORNING_HOUR = 7;
 
 describe('明るさが行動を制限する', () => {
   let codex: WorldCodex;
