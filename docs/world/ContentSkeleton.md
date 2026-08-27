@@ -748,11 +748,11 @@ ambient_brightnessをそのまま土台にするためです
 - アーティファクトの24種類の中身（6節）。出どころごとの数だけを決めてあり、個々の物は未定です。
 - 海区の顔ぶれ8種類（7節）の実り差を、地上のつまみでどこまで表せるか
   （[`GameEndings.md`](../concept/GameEndings.md) の未決事項と共通）。
-- 遠出（11番）の「泊まりの行程」が成立する島の広さ。道1本の移動は平均37分（`terrain_generation.yaml` の
-  `diameter_meters` と `walk_meters_per_hour`・`climb_meters_per_hour` から出ます）、拠点からの往復は
-  最大でも204分なので、**今の島は端から端まで日帰りで届きます**——泊まりを使っても浮くのは0.6日
-  だけです（8.3節）。補給の要る行程（[`GameEndings.md`](../concept/GameEndings.md) 9.2節）が
-  成立しません。
+- 遠出（11番）の「泊まりの行程」が成立する島の広さ。道1本の移動は平均41.97分<!-- stats: terrain.yaml edge metric=travel mean -->、拠点（他の土地への
+  片道が平均で最も短い土地）から最も遠い土地でも片道110分<!-- stats: terrain.yaml base_one_way base=shortest_mean max -->＝往復220分で、屋外の枠720分<!-- stats: terrain.yaml daily_budget outdoor_window -->から
+  生存の採取264分<!-- stats: terrain.yaml daily_budget survival_gathering -->を引いた456分に収まります。**今の島は端から端まで日帰りで届きます**
+  ——泊まりを使っても浮くのは1.5日だけです（8.3節）。補給の要る行程
+  （[`GameEndings.md`](../concept/GameEndings.md) 9.2節）が成立しません。
 - 手当てを系統に数えなかったこと（3節）。段の連なりを持たないという理由ですが、治療の道具・薬草に段が
   できるなら13本目になります。
 - 保存（3番）と食の調達（2番）を分けたまま [`Skills.md`](./Skills.md) の「料理」が両方にまたがること。
