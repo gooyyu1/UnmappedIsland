@@ -51,6 +51,11 @@ object_texts:
       # （全角10文字）に収まる長さで書いてあり、そこへ「作りかけの」の5文字を足すと4文字より長い名前は
       # すべてはみ出す。作りかけであることは青い覆いが示す（CardView.md 10節）ので、名前で言い直さない。
       recipe: '{base}'
+    # 探索のタブのバーの下に出す補足の1行（docs/ui/Windows.md 5節）。**探索で何が見つかるかは型ごとに
+    # 違う**ので、言い方を変えたい型だけが自分のエントリで上書きする（海区は航路、下の coastal_waters）。
+    notes:
+      exploring: 探索を続けると、アイテムや他の土地へ続く道が見つかる。
+      explored: この土地に隠された道はすべて見つけた。探索を続ければ、まだ何かは見つかる。
     props:
       # iconは、ステータスの行の左に名前の代わりに出す絵（docs/ui/StatusArea.md 3節）。
       # キャラクタのプロパティはどれも固定表示にできる＝ステータスエリアへ出せるので、全部が持つ。
@@ -706,6 +711,11 @@ object_texts:
   coastal_waters:
     display_name: 島影の海
     description: 島がまだ背後に見えている海。陸を目印にできるので、次の航路は早く見つかる。
+    # 海で見つかるのは航路だけで、アイテムも道も落ちていない（Voyage.md 3節）。航路が見えたら
+    # 見張りは終わる（sea_zone traitのconditions）ので、探索し切った後は渡ることだけが残る。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
     interactions:
       explore:
         display_name: 見張り
@@ -713,6 +723,9 @@ object_texts:
   tide_rip:
     display_name: 潮目
     description: 流れのぶつかる帯。波が立ち、鳥が集まるので、海の上でもここだと分かる。
+    notes:
+      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
+      explored: 次の海区へ続く航路は見つかった。あとは渡るだけ。
     interactions:
       explore:
         display_name: 見張り
@@ -720,6 +733,10 @@ object_texts:
   open_water:
     display_name: 空の海
     description: 目印の何も無い海。どこを向いても同じに見えるので、航路を見つけるまでが長い。
+    # この先に島は無い（route_to_mainland）ので、見つかる航路の行き先を名指しできる。
+    notes:
+      exploring: 見張りを続けると、本土へ渡る航路が見つかる。
+      explored: 本土への航路は見つかった。あとは渡るだけ。
     interactions:
       explore:
         display_name: 見張り

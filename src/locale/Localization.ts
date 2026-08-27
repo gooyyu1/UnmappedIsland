@@ -130,6 +130,9 @@ interface DeclaredTexts {
 
   /** 変種の名前の書式（GameElementDefinition.md 3.5.1節）。軸の名前 → 書式。 */
   readonly variationNames: ReadonlyMap<string, string> | undefined;
+
+  /** 画面がその型について出す補足の1行（Localization.md）。場面の名前 → 文。 */
+  readonly notes: ReadonlyMap<string, string> | undefined;
 }
 
 /** localeファイルのslot_textsの1エントリ（スロット自身の文字列と、そこへ入れる操作の文字列）。 */
@@ -202,6 +205,16 @@ export class ObjectTexts {
     const declared =
       this.entry?.own?.variationNames?.get(axis) ?? this.defaults?.own?.variationNames?.get(axis);
     return declared === undefined ? baseName : format(declared, { base: baseName, value: valueName });
+  }
+
+  /**
+   * 画面がその型について出す補足の1行（`notes`）。**変種の書式と同じく、自分のエントリ → defaultエントリ**
+   * の順に引きます——ほとんどの型が同じ文でよく、言い方を変えたい型だけが自分のエントリで上書きします。
+   *
+   * 書いていなければundefinedで、その場面の文を持たない型のことです（呼び出し側が何を出すか決めます）。
+   */
+  note(sceneName: string): string | undefined {
+    return this.entry?.own?.notes?.get(sceneName) ?? this.defaults?.own?.notes?.get(sceneName);
   }
 
   prop(propertyName: string): Texts {
@@ -648,18 +661,15 @@ function parseEntry(node: YAMLMap, context: string): ObjectTextsEntry {
 }
 
 /**
- * 変種の名前の書式（`variation_names`）を読む。キーが軸の名前で、値が書式。
- * 軸の名前はWorldCodex側が決めるものなので、ここでは検証せず識別子としてそのまま持つ。
+ * 名前 → 文字列の対応（変種の名前の書式`variation_names`・補足の1行`notes`）を読む。名前はWorldCodexや
+ * 画面の側が決めるものなので、ここでは検証せず識別子としてそのまま持つ。
  */
-function parseVariationNames(node: YAMLMap, context: string): ReadonlyMap<string, string> | undefined {
-  const map = tryGetMap(node, 'variation_names', context);
+function parseTextMap(node: YAMLMap, key: string, context: string): ReadonlyMap<string, string> | undefined {
+  const map = tryGetMap(node, key, context);
   if (map === undefined) return undefined;
 
   return new Map(
-    entriesInOrder(map).map(([axis, node]) => [
-      axis,
-      asScalarText(node, `${context}.variation_names.${axis}`),
-    ]),
+    entriesInOrder(map).map(([name, node]) => [name, asScalarText(node, `${context}.${key}.${name}`)]),
   );
 }
 
@@ -669,13 +679,15 @@ function parseTexts(node: YAMLMap, context: string): DeclaredTexts | undefined {
   const description = tryGetScalar(node, 'description', context);
   const icon = tryGetScalar(node, 'icon', context);
   const displayNameWithOwner = tryGetScalar(node, 'display_name_with_owner', context);
-  const variationNames = parseVariationNames(node, context);
+  const variationNames = parseTextMap(node, 'variation_names', context);
+  const notes = parseTextMap(node, 'notes', context);
   if (
     displayName === undefined &&
     description === undefined &&
     icon === undefined &&
     displayNameWithOwner === undefined &&
-    variationNames === undefined
+    variationNames === undefined &&
+    notes === undefined
   )
     return undefined;
   return {
@@ -684,5 +696,6 @@ function parseTexts(node: YAMLMap, context: string): DeclaredTexts | undefined {
     icon,
     displayNameWithOwner,
     variationNames,
+    notes,
   };
 }

@@ -16,6 +16,12 @@ const BAR_HEIGHT = 72;
 export interface ExplorationContent {
   /** 探索率（0〜1）。 */
   readonly ratio: number;
+
+  /**
+   * バーの下に出す補足の1行。**何が見つかるかは型ごとに違う**（土地なら道、海区なら航路）ので、
+   * 文そのものを渡す側が決める（Windows.md 5節）。
+   */
+  readonly note: string;
 }
 
 /**
@@ -66,7 +72,7 @@ export class ExplorationPane implements ObjectWindowPane {
     cells: readonly LaneCell[],
   ) {
     this.readContent = content;
-    const ratio = content().ratio;
+    const { ratio, note } = content();
     const gap = metrics.px(CONTENT_GAP);
     const barHeight = metrics.px(BAR_HEIGHT);
     const laneHeight = metrics.px(SIZE.laneHeight);
@@ -91,7 +97,7 @@ export class ExplorationPane implements ObjectWindowPane {
     this.ownedObjects.push(this.bar, this.percent);
 
     cursorY += barHeight + gap;
-    this.note = addLabel(scene, metrics, centerX, cursorY, noteOf(ratio), {
+    this.note = addLabel(scene, metrics, centerX, cursorY, note, {
       size: 24,
       color: COLOR.textMuted,
       wrapWidthPx: area.width,
@@ -103,10 +109,10 @@ export class ExplorationPane implements ObjectWindowPane {
 
   /** 探索率だけを読み直す。**発見物のレーンは触らない**——並びの差し替えはCardTableが受け持つ。 */
   refresh(): void {
-    const ratio = this.readContent().ratio;
+    const { ratio, note } = this.readContent();
     this.bar.setRatio(ratio, { showChange: true });
     this.percent.setText(percentOf(ratio));
-    this.note.setText(noteOf(ratio));
+    this.note.setText(note);
   }
 
   destroy(): void {
@@ -122,10 +128,4 @@ const NOTE_HEIGHT = 68;
 /** 探索率は整数の%で見せる。100%に届いていない進捗を切り上げて100%と誤解させないよう切り捨てる。 */
 function percentOf(ratio: number): string {
   return `${Math.min(100, Math.trunc(ratio * 100))}%`;
-}
-
-function noteOf(ratio: number): string {
-  return ratio >= 1
-    ? 'この土地に隠された道はすべて見つけた。探索を続ければ、まだ何かは見つかる。'
-    : '探索を続けると、アイテムや他の土地へ続く道が見つかる。';
 }
