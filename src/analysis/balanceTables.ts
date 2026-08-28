@@ -4,6 +4,7 @@ import { tickDeltasOf } from './tickDeltas';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
 import { craftingStepsOf } from './craftingSteps';
+import type { IslandLocations } from './islandLocations';
 import { islandLocationsOf } from './islandLocations';
 import type { ExternalTickDelta, RangeCycle } from './rangeCycles';
 import { externalTickDeltasOf, rangeCyclesOf } from './rangeCycles';
@@ -297,23 +298,27 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
   const characterNames = codex.objectDefNamesWithTag(codex.vocabulary.world.characterTagId);
   const character = codex.objects.get(codex.objectNames.getId(sampleCharacter));
   const dailyNeeds = dailyNeedsOf(codex, character);
-  const { places, gaps, islandWide } = placeBalances(codex, character, dailyNeeds);
+  const islandLocations = islandLocationsOf(codex);
+  const { places, gaps, islandWide } = placeBalances(codex, character, dailyNeeds, islandLocations);
 
   return {
     characterNames,
     dailyNeeds,
     gaps,
-    objectCosts: objectCosts(codex, islandWide, MINUTES_PER_DAY - places[0].menu.totalMinutes),
+    objectCosts: objectCosts(
+      codex,
+      islandWide,
+      MINUTES_PER_DAY - places[0].menu.totalMinutes,
+      islandLocations.seaOnly,
+    ),
     consumption: consumptionRows(codex, characterNames),
     // 供給表は島全体の文脈で出す。罠の重みは土地が入れるので、土地を決めないと候補が全部0になる。
     supply: supplyRows(
       codex,
       allSteps(
         codex,
-        withBestDragged(
-          [...codex.objects],
-          highestDeclaredAncestorValueResolver(islandLocationsOf(codex).island),
-        ),
+        islandLocations.seaOnly,
+        withBestDragged([...codex.objects], highestDeclaredAncestorValueResolver(islandLocations.island)),
       ),
     ),
     places,
@@ -473,17 +478,17 @@ function placeBalances(
   codex: WorldCodex,
   character: ObjectDef,
   dailyNeeds: readonly DailyNeed[],
+  { island: locations, seaOnly }: IslandLocations,
 ): {
   readonly places: readonly PlaceBalance[];
   readonly gaps: readonly Gap[];
   readonly islandWide: Acquisition;
 } {
-  const locations = islandLocationsOf(codex).island;
   const defs = [...codex.objects];
 
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
   const islandContext = withBestDragged(defs, highestDeclaredAncestorValueResolver(locations));
-  const islandWide = new Acquisition(codex, allSteps(codex, islandContext));
+  const islandWide = new Acquisition(codex, allSteps(codex, seaOnly, islandContext));
 
   let islandRoutes: readonly ChainRoute[] = [];
   const places = [undefined, ...locations].map((location) => {
@@ -491,7 +496,9 @@ function placeBalances(
     const context =
       location === undefined ? islandContext : withBestDragged(defs, ancestorValueResolver(location));
     const steps =
-      location === undefined ? allSteps(codex, context) : stepsAt(codex, allSteps(codex, context), location);
+      location === undefined
+        ? allSteps(codex, seaOnly, context)
+        : stepsAt(codex, allSteps(codex, seaOnly, context), location);
     const acquisition = location === undefined ? islandWide : new Acquisition(codex, steps, islandWide);
     const routes = routeCandidates(codex, character, acquisition, steps, dailyNeeds, location);
 
@@ -518,18 +525,20 @@ function placeBalances(
  * 並びは宣言順にする。値で並べ替えると、数値を触るたびに行が入れ替わって差分が読めなくなる。
  * 対象から外すのは、手に入れるという言い方が成り立たないもの——土地・キャラクタ・世界（singleton）、
  * 単独で存在できない物（怪我・道）、レシピが自動生成する製作中オブジェクト、そして軸の値の型
- * （axisValueGlobalIds参照）。
+ * （axisValueGlobalIds参照）。**海でしか手に入らない物も外す**（seaOnly）——島の表なので、海藻の
+ * 値段を「入手経路が無い」として並べても、島の内容の穴を数えたことにはならない。
  */
 function objectCosts(
   codex: WorldCodex,
   islandWide: Acquisition,
   surplusMinutes: number,
+  seaOnly: ReadonlySet<number>,
 ): readonly ObjectCost[] {
   const rows: ObjectCost[] = [];
   const axisValues = axisValueGlobalIds(codex);
   for (const def of [...codex.objects]) {
     if (def.isSingleton || def.boundToOwner) continue;
-    if (codex.isGenerated(def) || axisValues.has(def.globalId)) continue;
+    if (codex.isGenerated(def) || axisValues.has(def.globalId) || seaOnly.has(def.globalId)) continue;
     // 土地は生成されるもので、手に入れるものではない。**ただし作れる土地は対象**——筏は乗り込む
     // 場所であると同時に、丸太と縄から組み上げる物でもある。
     if (isLocation(codex, def) && !islandWide.producedObjects.has(def.globalId)) continue;
@@ -1009,19 +1018,23 @@ function axisValueGlobalIds(codex: WorldCodex): ReadonlySet<number> {
  * 島の全型の全工程。宣言順（型のグローバルID順、型の中は宣言順）。プレイヤーが起こす工程に続けて、
  * 時間で回る工程（罠の判定）も並べる。軸の値の型は飛ばす（axisValueGlobalIds参照）。
  *
- * **海区が宣言する工程（見張り）も飛ばす**——この表が数えるのは島の1日で、海はその外
- * （`islandLocations`）。土地ごとの表は`stepsAt`が既に他の土地の工程を落としているので、これが効くのは
- * 島全体の文脈だけになる。
+ * **海でしか手に入らない型が宣言する工程も飛ばす**（seaOnly、`islandLocations`）——この表が数えるのは
+ * 島の1日で、海はその外。海区の見張りだけでなく漁り場の漁も落ちる：生肉を30分で返す漁り場を残すと、
+ * 生肉の代表経路が海に決まり、島で最も安い肉の経路（イノシシ）が表から押し出される。土地ごとの表は
+ * `stepsAt`が既に他の土地の工程を落としているが、漁り場も海藻も土地ではないのでそちらでは落ちない。
  *
  * outerは、祖先（＝置かれている土地）が入れる値を解く手立て。罠が掛ける動物の重みは土地が
  * 宣言するので（`base`）、これが無いと候補が全部0になる。
  */
-function allSteps(codex: WorldCodex, outer?: StaticValueResolver): readonly StepRef[] {
+function allSteps(
+  codex: WorldCodex,
+  seaOnly: ReadonlySet<number>,
+  outer?: StaticValueResolver,
+): readonly StepRef[] {
   const defs = [...codex.objects];
   const axisValues = axisValueGlobalIds(codex);
-  const sea = new Set(islandLocationsOf(codex).excludedSea.map(({ def }) => def.globalId));
   return defs.flatMap((def) => {
-    if (axisValues.has(def.globalId) || sea.has(def.globalId)) return [];
+    if (axisValues.has(def.globalId) || seaOnly.has(def.globalId)) return [];
     const cycles = rangeCyclesOf(def, outer, externalTickDeltasOn(def, defs));
     const lifetimeMinutes = decayLifetimeOf(cycles);
     return [
