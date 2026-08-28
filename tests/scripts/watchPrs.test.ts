@@ -142,10 +142,20 @@ describe('watch-prs.sh の TASK', () => {
 });
 
 describe('watch-prs.sh のマージ可否', () => {
-  it('コンフリクトしたPRは、ラベルが隠していても CONFLICT として出る', () => {
+  it('コンフリクトは `判断待ち` が隠していても出るが、`直し待ち` のPRでは出さない', () => {
     expect(watch([[pullRequest(800, 'CONFLICTING')]], [[]], [])).toEqual(['CONFLICT 800']);
     expect(watch([[pullRequest(801, 'CONFLICTING', ['判断待ち'])]], [[]], [])).toEqual(['CONFLICT 801']);
-    expect(watch([[pullRequest(802, 'CONFLICTING', ['直し待ち'])]], [[]], [])).toEqual(['CONFLICT 802']);
+    // 差し戻し済みのPRで出すと、解消されるまで毎周それが返り、司令塔は同じ差し戻しを繰り返す。
+    // 次に知りたいのは解消されたかどうかなので、新しいコミットが載った合図（FIXED）だけを出す。
+    // 隣に置いた 803 は、見張りが黙っているのではなく 802 だけを外していることの確かめ。
+    const lines = watch(
+      [[pullRequest(802, 'CONFLICTING', ['直し待ち']), pullRequest(803, 'CONFLICTING')]],
+      [[]],
+      [],
+    );
+
+    expect(lines).toContain('CONFLICT 803');
+    expect(lines).not.toContain('CONFLICT 802');
   });
 
   it('マージ可否が計算中のPRは決着として出さず、確定した次の周で出す', () => {
