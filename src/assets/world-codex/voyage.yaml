@@ -6,9 +6,9 @@
 #   - 筏は設置物であり場所でもある。中にプレイヤーと積荷が入るので、筏を1つ動かせば全部が動く。
 #   - 海は海区の連なりで、海区は探索できる場所そのもの。見張り（explore）を重ねると航路が現れ、
 #     航路を渡ると次の海区へ移る。海区も本土も singleton（15節）なので、型の名前で行き先を指せる。
-#   - **航路は方向を持たない。** 見張りは進む航路と戻る航路を一緒に返し、どちらも同じ1つの手
-#     （cross）で渡る。引き返しの代償が時間だけになるのはこの形の帰結で、専用の規則は無い
-#     （GameEndings.md 12.5節）。
+#   - **航路は方向を持たない。** 見張りは辺1本を見つけ、その両端——今いる海区と次の海区——へ1本ずつ
+#     立てる。どちらも同じ1つの手（cross）で渡る。引き返しの代償が時間だけになるのも、渡り着いた先で
+#     すぐ引き返せるのもこの形の帰結で、専用の規則は無い（GameEndings.md 12.5節）。
 #   - **時間を進めるだけでは1海区も進まない**（GameEndings.md 12節）。風・海流・積載・帆は進みでは
 #     なく、その海区を渡るのにかかる時間（crossing_minutes）へ効く。
 
@@ -28,6 +28,13 @@ traits:
       # 要る時間。
       crossing_minutes:
         range: {min: 120, max: 900}
+
+      # この海区の航路を見定めたか。見張りを打ち切るための印で、on_max が立てる。
+      #
+      # **設置物の有無では見分けられない。** 航路は辺なので両端に1本ずつ立ち（下の on_max 参照）、
+      # 渡り着いたばかりの海区には来た航路が既に立っている。「航路が在るか」で見ると、まだ一度も
+      # 見張っていない海区が見張れなくなる。
+      route_sighted: {value: 0}
 
       # 見張りの発見量のつまみ（ExplorationSystem.md 2節）。**素の重みは0＝その海区には無い**もので、
       # 海区の側が自分の海で見つかるものにだけ重みを与える。地上の土地が候補の並びそのもので
@@ -61,17 +68,17 @@ traits:
     interactions:
       # 見張り。**地上の探索そのもの**（ExplorationSystem.md 2節）で、1回15分＝1tick、進捗が1つ進む。
       # 進捗が上限に達した瞬間、その海区から出る航路が現れる（exploration_progress の on_max）。
-      # 現れるのは**進む先と、島の側へ戻る先の2本**（GameEndings.md 12.5節）。どちらも同じ sea_route で、
-      # 違うのは行き先だけ。
+      # 現れるのは**辺1本の両端**——この海区に立つ「次の海区への航路」と、次の海区に立つ
+      # 「この海区への航路」（GameEndings.md 12.5節）。どちらも同じ sea_route で、違うのは行き先だけ。
       #
       # **航路が見えたら見張りは終わる。** 上限へ達した値は書き込みのたびに on_max を呼び直すので、
-      # 止めないと同じ航路が湧き続ける。見えているかは湧いた結果そのもので見る——回数で書くと、
+      # 止めないと同じ航路が湧き続ける。見えているかは印（route_sighted）で見る——回数で書くと、
       # 上限と同じ数を2箇所に持つことになる。
       explore:
         trigger: menu
         conditions:
           - reason: route_already_sighted
-            not: {slot: fixtures, matches: {tag: sea_route}}
+            not: {prop: route_sighted, gt: 0}
         duration: 15
         add: {self: {exploration_progress: 1}}
         # 見張りが返すもの（GameEndings.md 12.1節）。次の行き先は航路（進捗の on_max）が受け持つので、
@@ -534,8 +541,14 @@ object_defs:
   # 並びは1本の鎖で、分岐はまだ無い。**最短の航路（空の海）が最も実りが薄く**、実りの濃い海区ほど
   # 渡るのに時間がかかる（GameEndings.md 12.1節）。
   #
-  # **on_max が湧かせるのは2本——本土の側へ進む航路と、島の側へ戻る航路**（同12.5節）。鎖の両端だけが
-  # 片方を持たない（本土に着けば周回が終わり、島影の海の島側は海区ではなく島）。
+  # **on_max が湧かせるのは辺1本の両端**——この海区に立つ「次の海区への航路」と、次の海区に立つ
+  # 「この海区への航路」（同12.5節）。地上の道が辺1本につき両端へ1個ずつ置く（`IslandSpawner`）のと
+  # 同じことを、海では見張りの成果として実行時にやる。**戻る航路は隣の海区が立ててくれる**ので、
+  # 自分では立てない——渡り着いたときには既に立っているので、見張らずに引き返せる（同12.5節）。
+  #
+  # 鎖の両端だけが片方を持たない。本土に着けば周回が終わるので折り返しは要らず、島影の海の島側は
+  # 海区ではないので相手側に立てるものが無い——島へ帰る航路（route_to_shore）だけは、島影の海が
+  # 自分の側へ立てる。
   # ------------------------------------------------------------------
 
   # 島影の海（沿岸）。島を離れてすぐの海区で、陸が見えているぶん自分の居場所が読みやすい。
@@ -553,9 +566,11 @@ object_defs:
         value: 0
         range: {min: 0, max: 2}
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_kelp_belt, into: self}
             - {object: route_to_shore, into: self}
+            - {object: route_to_coastal_waters, into_object: kelp_belt}
 
   # 海藻の帯。絡む海藻で進みが遅く、そのぶん帯そのものが目印になる。
   kelp_belt:
@@ -570,9 +585,10 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_tide_rip, into: self}
-            - {object: route_to_coastal_waters, into: self}
+            - {object: route_to_kelp_belt, into_object: tide_rip}
 
   # 潮目。流れのぶつかる帯で、波と鳥の集まりが目印になる。**補給が当てになる唯一の海区**。
   tide_rip:
@@ -587,9 +603,10 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_reef_shallows, into: self}
-            - {object: route_to_kelp_belt, into: self}
+            - {object: route_to_tide_rip, into_object: reef_shallows}
 
   # 岩礁の海。波の砕ける瀬に漂流物が寄り、魚も付く。
   reef_shallows:
@@ -605,9 +622,10 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_gull_rock, into: self}
-            - {object: route_to_tide_rip, into: self}
+            - {object: route_to_reef_shallows, into_object: gull_rock}
 
   # 海鳥の岩。鳥が巣を作る岩で、卵と羽が拾える。
   gull_rock:
@@ -623,9 +641,10 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_islet_waters, into: self}
-            - {object: route_to_reef_shallows, into: self}
+            - {object: route_to_gull_rock, into_object: islet_waters}
 
   # 小島の海。海面には何も無く、実りは上陸した先にある。
   #
@@ -642,10 +661,11 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_open_water, into: self}
-            - {object: route_to_gull_rock, into: self}
             - {object: offshore_islet, into: self}
+            - {object: route_to_islet_waters, into_object: open_water}
 
   # 空の海。目印が何も無いので、航路を見つけるのに最も見張りを重ねることになる。
   # **最短の航路はここを通る**——渡る時間は最も短く、拾えるものは何も無い。
@@ -660,9 +680,10 @@ object_defs:
         value: 0
         range: {min: 0, max: 5}
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_wreck_waters, into: self}
-            - {object: route_to_islet_waters, into: self}
+            - {object: route_to_open_water, into_object: wreck_waters}
 
   # 沈船の海。折れた帆柱と綱が漂い、まれに船が積んでいた物が浮いてくる。
   wreck_waters:
@@ -679,9 +700,10 @@ object_defs:
         value: 0
         range: {min: 0, max: 4}
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_long_swell, into: self}
-            - {object: route_to_open_water, into: self}
+            - {object: route_to_wreck_waters, into_object: long_swell}
 
   # うねりの海（空の海）。大きなうねりだけが続く。
   long_swell:
@@ -695,9 +717,10 @@ object_defs:
         value: 0
         range: {min: 0, max: 5}
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_outer_tide_rip, into: self}
-            - {object: route_to_wreck_waters, into: self}
+            - {object: route_to_long_swell, into_object: outer_tide_rip}
 
   # 沖の潮目。島影の無い沖でも、流れのぶつかる帯には魚が集まる。
   outer_tide_rip:
@@ -712,9 +735,10 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_black_reef, into: self}
-            - {object: route_to_long_swell, into: self}
+            - {object: route_to_outer_tide_rip, into_object: black_reef}
 
   # 黒い岩礁。水面すれすれの黒い瀬が続く。
   black_reef:
@@ -730,9 +754,10 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_drifting_kelp, into: self}
-            - {object: route_to_outer_tide_rip, into: self}
+            - {object: route_to_black_reef, into_object: drifting_kelp}
 
   # 流れ藻の海（海藻の帯）。ちぎれた海藻が筋になって漂う。
   drifting_kelp:
@@ -747,9 +772,10 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_white_rock, into: self}
-            - {object: route_to_black_reef, into: self}
+            - {object: route_to_drifting_kelp, into_object: white_rock}
 
   # 白い岩（海鳥の岩）。糞で白く染まった岩で、遠くからでもそれと分かる。
   white_rock:
@@ -765,9 +791,10 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_mainland_shallows, into: self}
-            - {object: route_to_drifting_kelp, into: self}
+            - {object: route_to_white_rock, into_object: mainland_shallows}
 
   # 本土の島影（沿岸）。本土の陸が見え始める海区で、島影の海と同じだけ実る。ここから本土へ渡る。
   mainland_shallows:
@@ -783,10 +810,11 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 2}
+        # 本土に着けば周回が終わるので、折り返しの1本は立てない（本土に航路は無い）。
         on_max:
+          set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_mainland, into: self}
-            - {object: route_to_white_rock, into: self}
 
   # ------------------------------------------------------------------
   # 航路。海区どうしを繋ぐ1本で、地上の道（locations.yamlのpath）と同じ設置物。渡る手そのものは
