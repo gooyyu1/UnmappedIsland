@@ -687,56 +687,113 @@ describe('筏と航海', () => {
     expect(propertyOf(raft, 'sail_speed'), '浜では帆も効かない').toBe(0);
   });
 
-  it('帆を張ると、同じ風でも段が1つ上がる', () => {
+  it('帆を張ると、渡る速さの段が1つ上がる', () => {
     // **積荷は降ろす。** 出航のしたくの積荷（ヤシの実70個）とプレイヤーの体重では段がheavyまで
-    // 落ちていて、向かい風では帆を張っても下限0に張り付いたまま差が出ない。
-    const sailSpeedIn = (wind: string, withSail: boolean): number => {
+    // 落ちていて、帆を張っても下限0に張り付いたまま差が出ない。
+    const afloatWith = (withSail: boolean): { speed: number; crossing: number } => {
       const { game, raft } = ready();
       if (withSail) rigSail(game, raft);
       raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
       for (const cargo of [...raft.children()]) {
         if (cargo !== game.player.instance && cargo.def.name !== 'rawhide_sail') cargo.destroy();
       }
-      setWind(game, wind);
       tick(game);
-      return propertyOf(raft, 'sail_speed');
+      return {
+        speed: propertyOf(raft, 'sail_speed'),
+        crossing: propertyOf(singletonPlace(game, 'coastal_waters'), 'crossing_minutes'),
+      };
     };
 
-    // 向かい風（海流+3、風-3）は帆が無ければ0。帆の+2でslowへ届く。
-    expect(sailSpeedIn('headwind', false), '帆が無ければ向かい風では止まる').toBe(0);
-    expect(sailSpeedIn('headwind', true), '帆があれば向かい風でも進む').toBe(2);
-    // 追い風でも同じだけ足される。
-    expect(sailSpeedIn('tailwind', true) - sailSpeedIn('tailwind', false), '寄与は2').toBe(2);
+    // **風はもう速さに入らない**（GameEndings.md 12.3節）ので、素の筏に効くのは海流の+3だけ。
+    const bare = afloatWith(false);
+    const rigged = afloatWith(true);
+    expect(bare.speed, '素の筏は海流だけで進む').toBe(3);
+    expect(rigged.speed, '帆の寄与は2').toBe(5);
+    // 2という値の意味は、段がちょうど1つ上がること（slow→moderate。段が引く量は30分刻み）。
+    expect(bare.crossing - rigged.crossing, '段が1つ上がるぶん短く渡れる').toBe(30);
   });
 
-  it('陸に居る間は、渡る速さが立たない（風も海流も効かない）', () => {
+  it('陸に居る間は、渡る速さが立たない（海流も帆も効かない）', () => {
     const { game, raft } = ready();
-    setWind(game, 'tailwind');
+    rigSail(game, raft);
 
     tick(game);
 
     expect(propertyOf(raft, 'sail_speed'), '陸の上では速さが立たない').toBe(0);
   });
 
-  it('風向きが横断にかかる時間を決める（追い風＜横風＜向かい風）', () => {
-    const crossingMinutesIn = (wind: string): number => {
-      const { game, raft } = ready();
-      raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
-      // 積載の効きは別の検査で見るので、ここでは降ろして風だけを残す。
-      for (const cargo of [...raft.children()]) {
-        if (cargo !== game.player.instance) cargo.destroy();
-      }
-      setWind(game, wind);
-      tick(game);
-      return propertyOf(singletonPlace(game, 'coastal_waters'), 'crossing_minutes');
-    };
+  /**
+   * 出航して最初の海区（島影の海）を見張り切り、**そこに並ぶ航路それぞれが今いくらで渡れるか**を返す。
+   * 並ぶのは2本——本土へ進む `route_to_kelp_belt` と、島へ戻る `route_to_shore`（出航が立てる）。
+   */
+  function crossingMinutesAtFirstZone(wind: string): ReadonlyMap<string, number> {
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    // 積載の効きは別の検査で見るので、ここでは降ろして風だけを残す。
+    for (const cargo of [...raft.children()]) {
+      if (cargo !== game.player.instance) cargo.destroy();
+    }
 
-    const tail = crossingMinutesIn('tailwind');
-    const cross = crossingMinutesIn('crosswind');
-    const head = crossingMinutesIn('headwind');
+    const zone = singletonPlace(game, 'coastal_waters');
+    watchUntilSighted(game, zone);
+    setWind(game, wind);
+    tick(game);
 
-    expect(tail, '追い風なら最も短く渡れる').toBeLessThan(cross);
-    expect(cross, '横風でも向かい風よりは短い').toBeLessThan(head);
+    return new Map(
+      sightedRoutes(zone).map((route) => [route.def.name, propertyOf(route, 'crossing_minutes')]),
+    );
+  }
+
+  it('風向きが、その航路を渡るのにかかる時間を決める（追い風＜横風＜向かい風）', () => {
+    const onward = (wind: string): number => crossingMinutesAtFirstZone(wind).get('route_to_kelp_belt') ?? 0;
+
+    expect(onward('tailwind'), '追い風なら最も短く渡れる').toBeLessThan(onward('crosswind'));
+    expect(onward('crosswind'), '横風でも向かい風よりは短い').toBeLessThan(onward('headwind'));
+  });
+
+  it('同じ辺を逆に渡れば、追い風は向かい風になる', () => {
+    // **行きが順調だったぶんだけ戻りが高くつく**（GameEndings.md 12.5節）。島影の海に並ぶ2本
+    // ——本土へ進む航路と島へ戻る航路——は、同じ風を反対から受ける。
+    const tail = crossingMinutesAtFirstZone('tailwind');
+    expect(tail.get('route_to_kelp_belt'), '追い風では進むほうが短い').toBeLessThan(
+      tail.get('route_to_shore') as number,
+    );
+
+    const head = crossingMinutesAtFirstZone('headwind');
+    expect(head.get('route_to_shore'), '向かい風では戻るほうが短い').toBeLessThan(
+      head.get('route_to_kelp_belt') as number,
+    );
+  });
+
+  it('横断にかかる時間は漕ぎ出すときに読み切る（途中で風が変わっても伸び縮みしない）', () => {
+    // **選んだ時点で結果が確定するので、針路の判断が博打にならない**（GameEndings.md 12.3節・
+    // Voyage.md 3.2節）。渡り終える前に必ず風が変わるようにして、経過した時間が漕ぎ出す前に
+    // 読んだ値と一致することを見る。
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+
+    const zone = singletonPlace(game, 'coastal_waters');
+    watchUntilSighted(game, zone);
+    setWind(game, 'headwind');
+    tick(game);
+
+    const route = sightedRoutes(zone).find((fixture) => fixture.def.name === 'route_to_kelp_belt');
+    expect(route, '進む航路が立っている').toBeDefined();
+    const expected = propertyOf(route!, 'crossing_minutes');
+
+    // 次のtickで風を引き直させ、引き直しが追い風になるようにする（重みは実効値なので、素の値を
+    // 大きくすれば季節の配る重みごと押し切れる）。
+    const world = game.world.instance;
+    world.getProperty(codex.propertyNames.getId('wind_remaining')).setNumberWithoutEvents(1);
+    world.getProperty(codex.propertyNames.getId('tailwind_weight')).setNumberWithoutEvents(100000);
+
+    const departedAt = game.world.totalMinutes;
+    expect(route!.tryGetAction('cross', game.player.instance)?.tryExecute(), '渡れる').toBe(true);
+
+    expect(propertyOf(world, 'wind'), '渡っている最中に風が変わった').not.toBe(
+      codex.symbolNames.getId('headwind'),
+    );
+    expect(game.world.totalMinutes - departedAt, '向かい風のまま読み切った時間で渡り終える').toBe(expected);
   });
 
   /** 荒天を据える（holdWeather）。 */
@@ -1012,6 +1069,40 @@ describe('筏と航海', () => {
       'white_rock',
       'mainland_shallows',
     ]);
+  });
+
+  /**
+   * 分かれ道まで進み、見張り切って2本の航路を出したうえで風を据え、**そこに並ぶ航路それぞれが
+   * 今いくらで渡れるか**を返す。
+   */
+  function crossingMinutesAtFork(wind: string): ReadonlyMap<string, number> {
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    sailTo(game, raft, FORK);
+
+    const fork = singletonPlace(game, FORK);
+    watchUntilSighted(game, fork);
+    setWind(game, wind);
+    tick(game);
+
+    return new Map(
+      sightedRoutes(fork).map((route) => [route.def.name, propertyOf(route, 'crossing_minutes')]),
+    );
+  }
+
+  it('分かれ道では、風向きによってどちらの航路が短く渡れるかが入れ替わる', () => {
+    // **GameEndings.md 12.3節（確定）の眼目。**「遠回りだが今なら短く渡れる航路」と「最短だが今は
+    // 長くかかる航路」が、同じ海区の盤面へ**同時に**出ること。近道は本土へ真っ直ぐ向かう辺、遠回りは
+    // 一度沖へ出る辺なので、同じ風でも受け方が分かれる（Voyage.md 3.2節）。
+    const head = crossingMinutesAtFork('headwind');
+    expect(head.get(DETOUR_ONWARD), '向かい風では遠回りのほうが短く渡れる').toBeLessThan(
+      head.get(SHORTCUT_ONWARD) as number,
+    );
+
+    const tail = crossingMinutesAtFork('tailwind');
+    expect(tail.get(SHORTCUT_ONWARD), '追い風では近道のほうが短く渡れる').toBeLessThan(
+      tail.get(DETOUR_ONWARD) as number,
+    );
   });
 
   it('近道が飛ばす2区間は、どちらも見張りが何かを返す海区', () => {
@@ -1342,6 +1433,40 @@ describe('筏と航海', () => {
         nodeAt(chart.bodies.get(zone), 'props', 'zones_to_mainland', 'value'),
         `${zone}: 本土まで最短で何区間か`,
       ).toBe(chart.distanceToMainland.get(zone));
+  });
+
+  it('航路が名乗る行き先の残り海区数は、行き先そのものが名乗る数と合う', () => {
+    // **風の受け方は、この数と今いる海区の同じ数との差から出る**（voyage.yaml の sea_route）。行き先の
+    // 型ごとに写した数なので、写し間違えれば、その航路だけが向きを取り違えたまま盤面に出る。
+    const chart = readSeaChart();
+    const declared = (routeName: string): unknown =>
+      nodeAt(chart.routeBodies.get(routeName), 'props', 'destination_zones_to_mainland', 'value');
+    const zoneDistance = (zoneName: string): number =>
+      // 本土は海区ではないので zones_to_mainland を持たない。本土まで0海区はそのまま事実。
+      (nodeAt(chart.bodies.get(zoneName), 'props', 'zones_to_mainland', 'value') as number | undefined) ?? 0;
+
+    for (const [routeName, destination] of chart.routeDestinations)
+      expect(declared(routeName), `${routeName}: 行き先（${destination}）までの残り海区数`).toBe(
+        zoneDistance(destination),
+      );
+
+    // 島へ戻る航路だけは行き先が海区ではない。**島は鎖の外**なので、どの海区から見ても本土から
+    // 遠い側でなければ、引き返しが追い風になってしまう。
+    const farthest = Math.max(...chart.zones.map(zoneDistance));
+    expect(declared('route_to_shore'), '島は鎖の島側の端より遠い').toBeGreaterThan(farthest);
+  });
+
+  it('辺の両端は、本土までの残り海区数が違う', () => {
+    // **同じ数の海区どうしが繋がると、その辺は本土へ近づきも遠ざかりもしない**——航路の風の受け方
+    // （voyage.yaml の sea_route）がどちらの条件にも当たらず、追い風でも向かい風でも横風と同じに
+    // なる。盤面に出ないまま風が効かない辺ができるので、繋ぎ方の側で塞いでおく。
+    const chart = readSeaChart();
+    const distance = (zoneName: string): number =>
+      (nodeAt(chart.bodies.get(zoneName), 'props', 'zones_to_mainland', 'value') as number | undefined) ?? 0;
+
+    for (const zone of chart.zones)
+      for (const neighbour of chart.neighbours.get(zone) ?? [])
+        expect(distance(neighbour), `${zone} と ${neighbour} は残り海区数が違う`).not.toBe(distance(zone));
   });
 
   it('押し流す先は、航路で繋がった隣の海区（追い風なら本土の側、向かい風なら島の側）', () => {

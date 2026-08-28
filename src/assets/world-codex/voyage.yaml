@@ -8,14 +8,17 @@
 #     航路を渡ると次の海区へ移る。海区も本土も singleton（15節）なので、型の名前で行き先を指せる。
 #   - **航路は方向を持たない。** 見張りは辺1本を見つけ、その両端——今いる海区と次の海区——へ1本ずつ
 #     立てる。どちらも同じ1つの手（cross）で渡る。引き返しの代償が時間だけになるのも、渡り着いた先で
-#     すぐ引き返せるのもこの形の帰結で、専用の規則は無い（GameEndings.md 12.5節）。
+#     すぐ引き返せるのもこの形の帰結で、専用の規則は無い（GameEndings.md 12.5節）。**風の受け方だけは
+#     向きで変わる**が、これも航路が向きを持つのではなく、行き先と今いる海区の「本土まであと何海区か」の
+#     差から出る（sea_route の destination_zones_to_mainland）。
 #   - **島と海を繋ぐ辺だけは、渡る手が航路ではなく出航（set_sail）。** 両端を立てるのは渡る手の
 #     側なので、島側の端（route_to_shore）を立てるのも見張りではなく出航（set_sail 参照）。
 #   - **その辺は海岸の数だけ在る。** どの海区へ着く辺なのかは海岸の側が名乗る（coast trait）ので、
 #     出航地点を選ぶことが航海の距離と危険度を選ぶことになる（GameEndings.md 5節）。
-#   - **時間を進めるだけでは1海区も進まない**（GameEndings.md 12節）。風・海流・積載・帆は進みでは
-#     なく、その海区を渡るのにかかる時間（crossing_minutes）へ効く。**唯一の例外が荒天で、これは
-#     進みではなく位置を動かす**——風下の隣へ押し流す（同12.4節、sea_zone の storm_drift）。
+#   - **時間を進めるだけでは1海区も進まない**（GameEndings.md 12節）。海流・積載・帆は進みではなく、
+#     その海区を渡るのにかかる時間（crossing_minutes）へ効き、**風はその上に、航路ごとの受け方として
+#     乗る**（同12.3節、sea_route の crossing_minutes）。**唯一の例外が荒天で、これは進みではなく
+#     位置を動かす**——風下の隣へ押し流す（同12.4節、sea_zone の storm_drift）。
 
 traits:
   # 海に面した土地（locations.yamlの砂浜・岩だらけの海岸・岸壁）。**足すのは海の側の事実1つだけ**
@@ -58,8 +61,9 @@ traits:
     props:
       # この海区から次の海区へ渡るのにかかる時間（分）。**素の値はどの海区も同じ**なので、海区ごと
       # ではなくここで1度だけ言う。そこから筏の sail_speed の段が引く（筏の sail_speed 参照）。
-      # 風・海流・積載・帆はすべてそこへ集まるので、ここに書くのは海区の側の事情だけになる。
-      # range の下限は、寄与がどれだけ重なっても横断時間が消えないための底（最も良い条件でも240分）。
+      # 海流・積載・帆はすべてそこへ集まるので、ここに書くのは海区の側の事情だけになる。**風だけは
+      # 航路ごとに受け方が違う**ので、ここではなく航路が持つ（sea_route の crossing_minutes）。
+      # range の下限は、寄与がどれだけ重なっても横断時間が消えないための底。
       #
       # **揃っていることが、推定日数（GameEndings.md 9.3節）の立つ条件。** 海図が持つのは残りの
       # 海区数だけ（同12.6節）なので、日数はこれから渡る1区間の時間で全区間を代表して出すしかなく、
@@ -149,6 +153,11 @@ traits:
       #
       # **分かれ道と合流点では、その向きの隣が2つある**（うねりの海の本土側、流れ藻の海の島側）。同じ
       # 重みの候補を2つ並べるので、どちらへ流されるかは荒天が決める——選ぶのはプレイヤーではない。
+      #
+      # **ここで分けている「本土の側／島の側」は、航路が風をどう受けるか（sea_route）とは別の分け方。**
+      # こちらが分けるのは鎖の先の隣か手前の隣かで、分かれ道では近道も遠回りも「先」。**航路の側から
+      # 出せないのは、航路がまだ1本も立っていない海区でも荒天は流すから**——未知の海区へ流れ着くことが
+      # 12.4節の眼目なので、隣は海区が手で名指しするしかない（Voyage.md 3.8節）。
       drift_to_mainland_weight: {value: 0}
       drift_to_island_weight: {value: 0}
 
@@ -162,8 +171,8 @@ traits:
         value: 0
         range: {min: 0, max: 16}
     passives:
-      # 海流。浮かんでいるものを本土の方へ押し続ける。凪いでも渡れなくならないのはこれがあるためで、
-      # 向かい風はこれを打ち消す量として書いてある（筏の sail_speed 参照）。
+      # 海流。浮かんでいるものを本土の方へ押し続ける。**素の筏が何も積まずに進めるのはこれだけ**で、
+      # 積載の段はこれを打ち消す量として書いてある（筏の sail_speed 参照）。
       - modify: {child: {sail_speed: 3}}
       # 浮いていること自体を子へ配る。組み込んだ部品が「陸では効かない」と言うために読む
       # （筏の afloat 参照）。
@@ -262,6 +271,54 @@ traits:
     props:
       # 航路は海そのものなので目方を持たない（地上の道と同じ、ContainerSystem.md 1節）。
       weight: {value: 0}
+
+      # 行き先の海区が名乗る「本土まであと何海区か」。**行き先は型ごとに1つに決まっている**ので、
+      # 型の側の事実として書ける（値を持たないので、各航路が必ず名乗る。5節）。
+      #
+      # **これと今いる海区の同じ数との差が、この辺の伸びている方角**（GameEndings.md 12.3節）。
+      # 行き先のほうが本土に近ければ本土の側へ、遠ければ沖の側へ伸びる辺で、風の受け方が反対になる。
+      # **航路が向きを持たないまま向きが出るのはこのため**——同じ型が辺の両端に立っても、立つ海区が
+      # 違えば差の符号が逆になる（引き返しの仕組みはそのまま、3.5節）。
+      destination_zones_to_mainland: {}
+
+      # この航路を渡るのにかかる時間（分）。**土台は今いる海区の横断時間**（筏の速さが引いた後の実効値）
+      # で、そこへ風の受け方（下の passives）が乗る。
+      #
+      # **風だけが海区ではなく航路に乗る**（GameEndings.md 12.3節「風向きは速さの係数ではなく、どの航路が
+      # 今いくらで渡れるかを決めます」）。海区に乗せると、同じ海区から出る2本の航路が同じ時間になり、
+      # 分かれ道が「今なら短く渡れる航路」を出せない。
+      #
+      # range の下限は海区の側と同じ理由の底（寄与がどれだけ重なっても横断時間が消えないため）。
+      crossing_minutes:
+        value: 0
+        base: {subject: parent, prop: crossing_minutes}
+        range: {min: 120, max: 900}
+    passives:
+      # 風の受け方（GameEndings.md 12.3節）。**同じ風でも、辺の伸びている方角で追い風・横風・向かい風に
+      # 分かれる。** 横風はどちらへ伸びる辺にも横から当たるので、方角を見ずに1本で書く。
+      - conditions:
+          - {subject: ancestor, prop: wind, eq: crosswind}
+        modify: {self: {crossing_minutes: -30}}
+      # 本土の側へ伸びる辺（行き先のほうが本土に近い）。世界の風向きがそのまま効く。
+      - conditions:
+          - {prop: destination_zones_to_mainland, lt: {subject: parent, prop: zones_to_mainland}}
+          - {subject: ancestor, prop: wind, eq: tailwind}
+        modify: {self: {crossing_minutes: -60}}
+      - conditions:
+          - {prop: destination_zones_to_mainland, lt: {subject: parent, prop: zones_to_mainland}}
+          - {subject: ancestor, prop: wind, eq: headwind}
+        modify: {self: {crossing_minutes: 30}}
+      # 沖の側へ伸びる辺（行き先のほうが本土から遠い）。**同じ辺を逆に渡れば追い風は向かい風になる**
+      # ——引き返しの代償が時間として出るのも、分かれ道の遠回りが向かい風の日に短く渡れるのもこれ
+      # （GameEndings.md 12.5節・12.3節）。
+      - conditions:
+          - {prop: destination_zones_to_mainland, gt: {subject: parent, prop: zones_to_mainland}}
+          - {subject: ancestor, prop: wind, eq: tailwind}
+        modify: {self: {crossing_minutes: 30}}
+      - conditions:
+          - {prop: destination_zones_to_mainland, gt: {subject: parent, prop: zones_to_mainland}}
+          - {subject: ancestor, prop: wind, eq: headwind}
+        modify: {self: {crossing_minutes: -60}}
     interactions:
       cross:
         trigger: menu
@@ -270,7 +327,9 @@ traits:
             subject: parent
             slot: fixtures
             matches: {object: raft}
-        duration: {subject: parent, prop: crossing_minutes}
+        # **漕ぎ出すときに読み切る**（duration は効果より先に時計を進める、11.3節）ので、渡っている
+        # 最中に風が変わっても伸び縮みしない（GameEndings.md 12.3節「針路の判断が博打にならない」）。
+        duration: {prop: crossing_minutes}
 
 object_defs:
   # 筏。丸太を並べて縛った、島を出るための乗り物。
@@ -332,7 +391,7 @@ object_defs:
             min: 347400
             passives:
               - modify: {self: {sail_speed: -3}}
-          # 240kg超。追い風でようやく進む。
+          # 240kg超。海流を打ち消し切るので、帆を張っても止まったまま。
           - name: overladen
             min: 427400
             passives:
@@ -346,21 +405,24 @@ object_defs:
       home_coast_id: {value: 0}
       # 浮いているか。海区が子へ配る（sea_zone traitの modify）ので、海に出ている間だけ1になる。
       #
-      # **帆のような部品が「陸では効かない」と言うための足場。** 筏自身の寄与は親の型で絞れるが
-      # （下の passives の `parent matches sea`）、部品から見た海は親の親で、条件では指せない。
+      # **帆のような部品が「陸では効かない」と言うための足場。** 筏自身なら親の型（`parent` が
+      # `sea` タグを持つか）で絞れるが、部品から見た海は親の親で、条件では指せない。
       afloat: {value: 0}
-      # 航海の速さ（実効値）。素の値は0で、寄与は4つ——海区の海流（海区の modify）、
-      # 風向き（下の passives）、積載の重さ（weight の段）、組み込んだ帆（rawhide_sail）。
-      # 陸に居る間はどれも効かないので0になる。
+      # 航海の速さ（実効値）。素の値は0で、寄与は3つ——海区の海流（海区の modify）、積載の重さ
+      # （weight の段）、組み込んだ帆（rawhide_sail）。陸に居る間はどれも効かないので0になる。
       #
-      # **速さは進みではなく、今居る海区を渡る時間へ効く**（GameEndings.md 12.3節）。段ごとに違う
-      # 量を親（海区）の crossing_minutes から引く——`modify` の量はリテラルしか書けないので、
-      # 可変の効き方を段で刻んでいる。陸の上の親は crossing_minutes を持たないので何も起きない。
+      # **風はここへ集めない**（GameEndings.md 12.3節）。風は速さの係数ではなく、どの航路が今いくらで
+      # 渡れるかを決めるものなので、航路の側が持つ（sea_route の crossing_minutes）。ここに集めると、
+      # 同じ海区から出る2本の航路が必ず同じ時間になる。
+      #
+      # **速さは進みではなく、今居る海区を渡る時間へ効く。** 段ごとに違う量を親（海区）の
+      # crossing_minutes から引く——`modify` の量はリテラルしか書けないので、可変の効き方を段で刻んで
+      # いる。陸の上の親は crossing_minutes を持たないので何も起きない。
       sail_speed:
         value: 0
         range: {min: 0, max: 20}
         stages:
-          # 進まない（凪・向かい風・積みすぎ）。渡るのに丸々かかる。
+          # 進まない（積みすぎて海流を打ち消した）。渡るのに素の時間が丸々かかる。
           - name: becalmed
           - name: slow
             min: 2
@@ -370,29 +432,6 @@ object_defs:
             min: 4
             passives:
               - modify: {parent: {crossing_minutes: -60}}
-          - name: steady
-            min: 7
-            passives:
-              - modify: {parent: {crossing_minutes: -90}}
-          - name: fast
-            min: 10
-            passives:
-              - modify: {parent: {crossing_minutes: -120}}
-    passives:
-      # 風向きは world が持つ（core.yaml の wind）。祖先を遡って読むので、海区に居る間だけ
-      # 親の型で絞る——陸に繋いだままの筏は風を受けない。
-      - conditions:
-          - {subject: parent, matches: {tag: sea}}
-          - {subject: ancestor, prop: wind, eq: tailwind}
-        modify: {self: {sail_speed: 6}}
-      - conditions:
-          - {subject: parent, matches: {tag: sea}}
-          - {subject: ancestor, prop: wind, eq: crosswind}
-        modify: {self: {sail_speed: 2}}
-      - conditions:
-          - {subject: parent, matches: {tag: sea}}
-          - {subject: ancestor, prop: wind, eq: headwind}
-        modify: {self: {sail_speed: -3}}
     # 解放条件（conditions、13.3節）はまだ置かない。建築スキルのプロパティと、それを伸ばす経路が
     # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
     recipes:
@@ -459,11 +498,11 @@ object_defs:
             move: {subject: self, to_object: gull_rock}
         spawn: {object: route_to_shore, into: parent}
 
-  # 生皮の帆。筏の構造スロットへ組み込むと、風を受ける量が増える（sail_speed +2）。
+  # 生皮の帆。筏の構造スロットへ組み込むと、風を捉える量が増える（sail_speed +2）。
   #
-  # **段をちょうど1つ上げる最小の値が2。** 向かい風（海流+3、風-3）では素の筏が `becalmed` で
-  # 止まるが、+2 で `slow` に届いて進み始める。+3 にしても向かい風の段は変わらず、盤面に差が
-  # 出ない。後から入るなめし革の帆を+4にすれば、悪い日ほど差が開く伸び方になる。
+  # **段をちょうど1つ上げる最小の値が2。** 素の筏は海流だけで `slow`、帆があれば `moderate` に届く。
+  # +1 では段が動かない積載があり、+3 にしても上がる段は変わらないので、盤面に差が出るのは2だけ。
+  # 後から入るなめし革の帆を+4にすれば、重く積んだ日ほど差が開く伸び方になる。
   #
   # 質量は材料の和（生皮6×600 + 糸10×100 + 太い枝2×1000 + ロープ2×600 = 7800g）。
   rawhide_sail:
@@ -1259,6 +1298,12 @@ object_defs:
   # ので、出航を何度繰り返しても、出た先の海区に並ぶのは1本のまま。
   route_to_shore:
     traits: [sea_route]
+    props:
+      # **島は海区の連なりの外**で、鎖の島側の端（島影の海、12）よりさらに向こうにある。どの海岸から
+      # 出ていてもこの辺は沖から島へ戻る辺なので、海区が名乗れる最も遠い値（zones_to_mainland の
+      # range.max）を書いて、どの海区から見ても本土から遠い側にしておく。**追い風で出た日ほど、戻りは
+      # 向かい風で高くつく**（GameEndings.md 12.5節）。
+      destination_zones_to_mainland: {value: 30}
     interactions:
       cross:
         trigger: menu
@@ -1270,6 +1315,8 @@ object_defs:
 
   route_to_coastal_waters:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 12}
     interactions:
       cross:
         trigger: menu
@@ -1280,6 +1327,8 @@ object_defs:
 
   route_to_kelp_belt:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 11}
     interactions:
       cross:
         trigger: menu
@@ -1290,6 +1339,8 @@ object_defs:
 
   route_to_tide_rip:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 10}
     interactions:
       cross:
         trigger: menu
@@ -1300,6 +1351,8 @@ object_defs:
 
   route_to_reef_shallows:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 9}
     interactions:
       cross:
         trigger: menu
@@ -1310,6 +1363,8 @@ object_defs:
 
   route_to_gull_rock:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 8}
     interactions:
       cross:
         trigger: menu
@@ -1320,6 +1375,8 @@ object_defs:
 
   route_to_islet_waters:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 7}
     interactions:
       cross:
         trigger: menu
@@ -1330,6 +1387,8 @@ object_defs:
 
   route_to_open_water:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 6}
     interactions:
       cross:
         trigger: menu
@@ -1340,6 +1399,8 @@ object_defs:
 
   route_to_wreck_waters:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 5}
     interactions:
       cross:
         trigger: menu
@@ -1350,6 +1411,8 @@ object_defs:
 
   route_to_long_swell:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 4}
     interactions:
       cross:
         trigger: menu
@@ -1360,6 +1423,8 @@ object_defs:
 
   route_to_outer_tide_rip:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 5}
     interactions:
       cross:
         trigger: menu
@@ -1370,6 +1435,8 @@ object_defs:
 
   route_to_black_reef:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 4}
     interactions:
       cross:
         trigger: menu
@@ -1380,6 +1447,8 @@ object_defs:
 
   route_to_drifting_kelp:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 3}
     interactions:
       cross:
         trigger: menu
@@ -1390,6 +1459,8 @@ object_defs:
 
   route_to_white_rock:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 2}
     interactions:
       cross:
         trigger: menu
@@ -1400,6 +1471,8 @@ object_defs:
 
   route_to_mainland_shallows:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 1}
     interactions:
       cross:
         trigger: menu
@@ -1410,6 +1483,8 @@ object_defs:
 
   route_to_mainland:
     traits: [sea_route]
+    props:
+      destination_zones_to_mainland: {value: 0}
     interactions:
       cross:
         trigger: menu

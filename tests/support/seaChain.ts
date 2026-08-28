@@ -25,6 +25,8 @@ export interface SeaChart {
   readonly bodies: ReadonlyMap<string, unknown>;
   /** 航路の型が渡す先（`route_to_shore` のように型で行き先を書かないものは含まない）。 */
   readonly routeDestinations: ReadonlyMap<string, string>;
+  /** 航路の生YAML（行き先の残り海区数を読むため）。 */
+  readonly routeBodies: ReadonlyMap<string, unknown>;
 }
 
 /** 生YAMLのマッピングを名前で辿った先。途中で辿れなくなればundefined。 */
@@ -63,6 +65,7 @@ export function readSeaChart(): SeaChart {
   const zones: string[] = [];
   const bodies = new Map<string, unknown>();
   const routeDestinations = new Map<string, string>();
+  const routeBodies = new Map<string, unknown>();
   for (const [name, body] of defs) {
     const traits = traitsOf(body);
     if (traits.includes('sea_zone')) {
@@ -70,6 +73,7 @@ export function readSeaChart(): SeaChart {
       bodies.set(name, body);
     }
     if (!traits.includes('sea_route')) continue;
+    routeBodies.set(name, body);
     // 航路が渡す先は、渡る手（cross）の`pick`が名指す型そのもの。
     for (const candidate of asList(nodeAt(body, 'interactions', 'cross', 'pick'))) {
       for (const move of asList(nodeAt(candidate, 'move'))) {
@@ -113,6 +117,7 @@ export function readSeaChart(): SeaChart {
     distanceToMainland: distancesFromMainland(neighbours),
     bodies,
     routeDestinations,
+    routeBodies,
   };
 }
 
