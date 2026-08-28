@@ -50,14 +50,17 @@ describe('terrain_generation.yamlの地形生成定義', () => {
     // locationタグではなく探索の進捗で絞るのは、**場所であることと、島の地形であることが別だから**
     // ——筏・本土（voyage.yaml）も場所だが、地形生成が置くものではない。**世界に1つだけ在る場所
     // （singleton）も外す**——海区（voyage.yaml）は探索できるが、世界を作った時点で湧いている
-    // （NewGame.spawnSingletonsAcceptedByWorld）ので、地形生成が置く余地がない。
+    // （NewGame.spawnSingletonsAcceptedByWorld）ので、地形生成が置く余地がない。**設置物として
+    // 湧く場所（小島）も外す**——見張りの成果として海区が湧かせるもので（Voyage.md 3節）、
+    // 島の地形の一部ではない。
     const progressId = codex.propertyNames.getId('exploration_progress');
+    const fixtureTag = codex.tagNames.getId('fixture');
     const singletonIds = new Set(codex.singletonGlobalIds());
     const referencedDefIds = new Set(generation.locationTypes.map((t) => t.objectDefGlobalId));
     for (let id = 0; id < codex.objects.count; id++) {
       const def = codex.objects.tryGet(id);
       if (def === undefined || def.tryGetPropertyDef(progressId) === undefined) continue;
-      if (singletonIds.has(id)) continue;
+      if (singletonIds.has(id) || def.tags.includes(fixtureTag)) continue;
       expect(
         referencedDefIds.has(id),
         `探索できる土地 '${def.name}' はいずれかのlocation_typeから参照される`,

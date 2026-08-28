@@ -65,14 +65,28 @@ activity_hours:
   - {location: mountain_peak, season: calm, unit: hours, travel: 12.0, gathering: 12.0, handwork: 11.8}
   - {location: mountain_peak, season: wet, unit: hours, travel: 12.0, gathering: 11.2, handwork: 10.1}
   - {location: mountain_peak, season: dry, unit: hours, travel: 12.0, gathering: 12.0, handwork: 12.0}
+  - {location: offshore_islet, season: calm, unit: hours, travel: 12.0, gathering: 12.0, handwork: 11.8}
+  - {location: offshore_islet, season: wet, unit: hours, travel: 12.0, gathering: 11.2, handwork: 10.1}
+  - {location: offshore_islet, season: dry, unit: hours, travel: 12.0, gathering: 12.0, handwork: 12.0}
   - {location: shallow_cave, season: calm, unit: hours, travel: 12.0, gathering: 9.6, handwork: 7.2}
   - {location: shallow_cave, season: wet, unit: hours, travel: 11.8, gathering: 4.3, handwork: 1.7}
   - {location: shallow_cave, season: dry, unit: hours, travel: 12.0, gathering: 10.2, handwork: 8.3}
 
 excluded_locations:
   - {location: coastal_waters, tag: sea}
+  - {location: kelp_belt, tag: sea}
   - {location: tide_rip, tag: sea}
+  - {location: reef_shallows, tag: sea}
+  - {location: gull_rock, tag: sea}
+  - {location: islet_waters, tag: sea}
   - {location: open_water, tag: sea}
+  - {location: wreck_waters, tag: sea}
+  - {location: long_swell, tag: sea}
+  - {location: outer_tide_rip, tag: sea}
+  - {location: black_reef, tag: sea}
+  - {location: drifting_kelp, tag: sea}
+  - {location: white_rock, tag: sea}
+  - {location: mainland_shallows, tag: sea}
 
 temperature:
   - {season: calm, unit: internal, segment: overall, mean: 16.08, min: 12.00, p5: 12.00, p95: 23.00, max: 23.00, sd: 3.54, n: 2242368}
