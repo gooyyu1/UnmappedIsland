@@ -17,6 +17,7 @@ import { IN_PROGRESS_SOURCE, inProgressObjectsYaml } from './inProgressObjects';
 import type { GeneratedObjectDefs } from './generatedObjectDefs';
 import { GeneratedTypes } from '../domain/GeneratedTypes';
 import { AXIS_VARIANT_SOURCE, axisVariantsYaml } from './axisVariants';
+import type { ObjectDefDestination } from '../domain/WorldCodex';
 import { WorldCodex } from '../domain/WorldCodex';
 import type { AxisDef } from '../domain/generation/AxisDef';
 import type { GenerationScopeDef } from '../domain/generation/GenerationScopeDef';
@@ -67,6 +68,12 @@ export class WorldCodexYamlLoader {
   /** 製作の工程を進めるのに要る条件（crafting_conditions、13.4節）。全レシピ共通の1本。 */
   private craftingConditions: Requirements | undefined;
 
+  /**
+   * 型の名前で行き先を指した宣言（`to_object`/`into_object`、9.4節・9.6節）。指した先がsingletonか
+   * どうかは相手の型を読み終えるまで分からないので、判定はWorldCodexへ渡してそちらで行う。
+   */
+  private objectDefDestinations: ObjectDefDestination[] = [];
+
   private _objectNames = new NameRegistry();
   private _propertyNames = new NameRegistry();
   private _slotNames = new NameRegistry();
@@ -103,6 +110,11 @@ export class WorldCodexYamlLoader {
   }
   get symbolNames(): NameRegistry {
     return this._symbolNames;
+  }
+
+  /** 型の名前で行き先を指した宣言を1件覚える（parseDestinationRefから）。 */
+  noteObjectDefDestination(objectGlobalId: number, context: string): void {
+    this.objectDefDestinations.push({ objectGlobalId, context });
   }
 
   /** load系メソッドで蓄積した地形生成定義（axes/location_types/generation_scopes）。
@@ -271,6 +283,7 @@ export class WorldCodexYamlLoader {
           this.recipeCategoryTagIdsByPriority,
           this.requiredPropsByTag,
           this.craftingConditions,
+          this.objectDefDestinations,
         ),
     );
 
@@ -314,6 +327,7 @@ export class WorldCodexYamlLoader {
     this.requiredPropsByTag = new Map();
     this.inProgressTagIds = new Set();
     this.craftingConditions = undefined;
+    this.objectDefDestinations = [];
     resetGeneration(this);
     this._objectNames = new NameRegistry();
     this._propertyNames = new NameRegistry();

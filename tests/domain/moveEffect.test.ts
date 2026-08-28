@@ -33,8 +33,10 @@ object_defs:
         cell: {accept: {tag: character}}
       stuff: {}
 
+  # to_objectの行き先。型の名前で指せるのは世界にただ1つ在る型だけ（15節）。
   hilltop:
     traits: [location]
+    singleton: true
     slots:
       characters:
         cell: {accept: {tag: character}}
