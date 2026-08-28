@@ -94,6 +94,11 @@ describe('fire.yamlの火の連鎖', () => {
     return hearth;
   }
 
+  /** その場の気温（core.yamlのlocation trait）。世界の気温を土台に、炉の暖が積まれた実効値。 */
+  function temperatureOf(location: WorldObject): number {
+    return location.getProperty(codex.propertyNames.getId('ambient_temperature')).getEffectiveValue();
+  }
+
   /** 世界の天気を変える（core.yamlのweather）。シンボル型なので名前をIDへ直して入れる。 */
   function setWeather(weatherName: string): void {
     land
@@ -520,6 +525,23 @@ describe('fire.yamlの火の連鎖', () => {
 
     expect(hot.combinationsWith(bowl, player), '候補にも挙がらない').toEqual([]);
     expect(bowl.def.name, '水のまま').toBe('coconut_bowl__content_water_liquid');
+  });
+
+  it('燃えている炉は、その土地だけを暖める（隣の土地も世界も暖まらない）', () => {
+    // 暖は親のambient_temperatureへのmodify（FireSystem.md 9.2節）。届き先は炉が置かれた場所だけで、
+    // 世界の気温を継いでいる隣の土地はそのまま——炉ひとつで島全体が暖まることはない。
+    const world = land.parent!;
+    const neighbor = spawnInto('grassland', world, 'locations');
+    const outside = temperatureOf(neighbor);
+
+    // 火の点いていない炉は暖めない。組んだだけの炉を隣へ置いて、暖の出どころが「炉が在ること」では
+    // なく「火が生きていること」であることまで見る。
+    spawnInto('campfire', neighbor, 'fixtures');
+    litCampfire();
+
+    expect(temperatureOf(land), '火のある土地は+8').toBe(outside + 8);
+    expect(temperatureOf(neighbor), '隣の土地は動かない（組んだだけの炉は暖めない）').toBe(outside);
+    expect(worldView.ambientTemperature, '世界も動かない').toBe(outside);
   });
 
   it('沸かした湯は放っておくと冷めて水に戻る', () => {

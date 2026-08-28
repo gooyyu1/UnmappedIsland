@@ -246,6 +246,48 @@ object_defs:
     ).toBeDefined();
   });
 
+  it('場所の気温は世界の気温を土台にし、その場だけの差を足す', () => {
+    // 気温は世界だけのものではなく、あらゆる場所が持つ（ClimateSystem.md 1節）。土台は祖先＝世界の
+    // 実効値（日射と季節の補正込み）なので、外が冷えれば中も冷える。
+    const yaml = `
+object_defs:
+  test_hut:
+    traits: [location]
+    props:
+      ambient_brightness: {value: 0}
+  test_cellar:
+    traits: [location]
+    props:
+      ambient_brightness: {value: 0}
+      # 気温だけは、差のある場所が自分のvalueで上書きする（location traitの既定は0）。
+      ambient_temperature: {value: -3}
+`;
+    const loader = new WorldCodexYamlLoader();
+    loadYamlFile(loader, worldCodexPath('core.yaml'));
+    loader.load('hut.yaml', yaml);
+    const testCodex = loader.buildAndReset();
+
+    const temperatureId = testCodex.propertyNames.getId('ambient_temperature');
+    const session = new WorldSession(testCodex);
+    const worldInstance = session.createObject(testCodex.objectNames.getId('world'));
+    // 夜（陽が地平線の下）は世界の気温が-3される。土台がその実効値であることまで見たいので、
+    // 既定の正午ではなく夜を作る。
+    worldInstance.getProperty(testCodex.propertyNames.getId('hour')).setNumberWithoutEvents(0);
+    const worldTemperature = worldInstance.getProperty(temperatureId).getEffectiveValue();
+    expect(worldTemperature, '涼しい夜（20-3）').toBe(17);
+
+    function temperatureIn(objectName: string): number {
+      const location = session.createObject(testCodex.objectNames.getId(objectName));
+      expect(
+        location.moveToSlotOrRejection(worldInstance.getSlot(testCodex.slotNames.getId('locations'))),
+      ).toBeUndefined();
+      return location.getProperty(temperatureId).getEffectiveValue();
+    }
+
+    expect(temperatureIn('test_hut'), '書かない場所は世界の気温そのまま').toBe(worldTemperature);
+    expect(temperatureIn('test_cellar'), '書いた場所はそのぶんだけ違う').toBe(worldTemperature - 3);
+  });
+
   it('location traitだけでitems/fixtures/charactersスロットを持ち、探索は伴わない', () => {
     // location trait（本ファイル）は「場所である」ことに付随する構造（items/fixtures/
     // charactersの3スロット）だけを配る。探索（exploration_progressプロパティ・
