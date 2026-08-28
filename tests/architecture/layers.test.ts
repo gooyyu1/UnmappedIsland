@@ -36,9 +36,10 @@ const PHASER_FREE = [
 const ANALYSIS_FREE = ['src/domain', 'src/loader', 'src/locale', 'src/game', 'src/ui'];
 
 /**
- * データベースビューア（`src/codex-viewer`）へ到達してはいけない置き場。宣言を**読める形へ書き出す**
- * のはビューアの仕事で、ドメインは自分が何を宣言しているかを読み上げる口（`EffectReader`・
- * `PassiveReader`・`ConditionReader`）を持つだけ。
+ * データベースビューア（`src/codex-viewer`）へ到達してはいけない置き場。守っているのは**表示の語彙**
+ * （`DescriptionToken`・リンク・表示名）がビューアの外へ出ないことで、宣言を語にする文そのものは
+ * ドメインに置ける——条件の日本語（`conditionWords`）は、収支の表とビューアが同じ文を出すために
+ * ドメインへ1つだけ置いてある（issue #987）。
  */
 const VIEWER_FREE = ['src/domain', 'src/loader', 'src/locale', 'src/game', 'src/ui', 'src/analysis'];
 
