@@ -233,14 +233,57 @@ describe('salt.yamlの塩田と塩蔵', () => {
   });
 
   it('塩漬けにできるのは、腐る物のうち生のままの物だけ', () => {
-    // 焼くのは食べるための工程なので、焼いた物には軸を付けていない（foods.yaml）。腐らない物
-    // （石）にも塩は効かない。
+    // 焼くのは食べるための工程なので、焼いた物には軸を付けていない（foods.yaml・animals.yaml）。
+    // 腐らない物（石）にも塩は効かない。
     const { session, land, player } = open();
-    const roasted = spawnInto(session, 'roasted_coconut_crab', land, 'items');
     const stone = spawnInto(session, 'stone', land, 'items');
 
-    expect(cure(session, player, roasted), '焼いた物は漬けない').toBe(false);
+    for (const roasted of ['roasted_coconut_crab', 'roasted_meat', 'roasted_rat'])
+      expect(cure(session, player, spawnInto(session, roasted, land, 'items')), `${roasted}は漬けない`).toBe(
+        false,
+      );
     expect(cure(session, player, stone), '腐らない物は漬けない').toBe(false);
+  });
+
+  it('生肉を塩漬けにすると、腐るのが遅くなる', () => {
+    // **塩蔵の本来の相手。** 生肉は調理済みと同じ段（-4）で、屋外の上乗せ（-1）と重なって-5——
+    // 狩った肉は2.5日で消える。塩漬けにすると芋と同じ段へ移って-1.5になる。
+    const { session, land, player } = open();
+    const meat = spawnInto(session, 'raw_meat', land, 'items');
+    expect(spoilRateOf(land, meat), '生のままなら速い').toBeCloseTo(5);
+
+    expect(cure(session, player, meat), '塩漬けにできる').toBe(true);
+    expect(meat.def.name, '同じ個体が塩漬けの版になる').toBe('raw_meat__cure_salted');
+    expect(spoilRateOf(land, meat), '塩漬けは遅い').toBeCloseTo(1.5);
+  });
+
+  it('死体は丸のまま漬けられるが、解体して出る生肉は漬かっていない', () => {
+    // 塩が残るのは掛けた個体だけ（spawnは新しい個体を作る）なので、丸のまま漬けても得られるのは
+    // 「解体を後へ回せる」ことだけ。肉まで保たせるには、肉になってからもう一度漬ける。
+    const { session, land, player } = open();
+    const carcass = spawnInto(session, 'junglefowl_carcass', land, 'items');
+    expect(cure(session, player, carcass), '死体を塩漬けにできる').toBe(true);
+    expect(spoilRateOf(land, carcass), '塩漬けの死体は遅い').toBeCloseTo(1.5);
+
+    const knife = spawnInto(session, 'sharp_stone', player, 'hand');
+    const butcher = carcass.combinationsWith(knife, player).find((c) => c.name === 'butcher');
+    expect(butcher?.tryExecute(), '塩漬けの死体も解体できる').toBe(true);
+
+    const meat = land
+      .getSlot(codex.slotNames.getId('items'))
+      .contents.find((object) => object.def.name === 'raw_meat');
+    expect(meat, '出てくるのは素の生肉').toBeDefined();
+    expect(spoilRateOf(land, meat!), '漬かっていないので速いまま').toBeCloseTo(5);
+  });
+
+  it('ヤシの実の中身も漬けられる', () => {
+    // ヤシの実の連鎖には焼く工程が無いので、腐る物すべてが軸を持つ（coconut.yaml）。
+    const { session, land, player } = open();
+    const flesh = spawnInto(session, 'coconut_meat', land, 'items');
+    expect(spoilRateOf(land, flesh), '生の果肉は野菜と同じ段（-2）＋屋外の-1').toBeCloseTo(3);
+
+    expect(cure(session, player, flesh), '塩漬けにできる').toBe(true);
+    expect(spoilRateOf(land, flesh), '塩漬けは遅い').toBeCloseTo(1.5);
   });
 
   it('塩田は平たい石4つから作れる', () => {
