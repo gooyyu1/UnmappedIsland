@@ -78,7 +78,7 @@ object_texts:
         display_name: 移動時間
       crossing_minutes:
         display_name: 横断にかかる時間
-        description: この海区から次の海区へ渡るのにかかる時間。風・海流・積んだ重さ・帆で伸び縮みする。
+        description: 次の海区へ渡るのにかかる時間。海流・積んだ重さ・帆で伸び縮みし、そこへ航路ごとの風の受け方が加わる。
       storm_drift:
         display_name: 荒天にさらされた時間
         description: この海区で筏が荒天に叩かれ続けた長さ。溜まり切ると風下の海区へ押し流される。横風の間は溜まらない。
@@ -806,7 +806,7 @@ object_texts:
     props:
       sail_speed:
         display_name: 進み足
-        description: 今この筏が出している速さ。風向き・海流・積んだ重さで決まり、速いほど海区を短く渡れる。
+        description: 今この筏が出している速さ。海流・積んだ重さ・張った帆で決まり、速いほど海区を短く渡れる。
     interactions:
       board:
         display_name: 乗り込む

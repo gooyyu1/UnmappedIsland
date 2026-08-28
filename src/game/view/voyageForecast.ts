@@ -18,6 +18,9 @@ const DAY_STEP = 0.5;
 /**
  * 渡るのにかかる時間を持つ場所＝海区、と読むためのプロパティ名（`docs/world/Voyage.md` 3.2節）。
  * 積載が速さを削り、速さの段が横断時間を縮める鎖も、この2つの名前だけで辿れる（同3.2節）。
+ *
+ * **航路も同じ名前で自分の横断時間を持つ**（風の受け方が乗った値、同3.2節）が、ここは読まない
+ * ——見積もりが読むのは海区の側だけで、風は入れない（下の `sailSpeedAtSea`）。
  */
 const CROSSING_MINUTES = 'crossing_minutes';
 const SAIL_SPEED = 'sail_speed';

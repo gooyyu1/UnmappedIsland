@@ -59,11 +59,14 @@ describe('推定日数', () => {
     return item;
   }
 
-  /** 世界に在る海区（渡るのにかかる時間を持つ場所、Voyage.md 3.2節）すべて。 */
+  /**
+   * 世界に在る海区すべて。**本土までの残り海区数を持つもの**で引く（Voyage.md 3.7節）——渡るのに
+   * かかる時間は航路も持つ（同3.2節の風の受け方）ので、それでは海区を選り分けられない。
+   */
   function seaZones(game: StartedGame): readonly WorldObject[] {
-    const crossingId = codex.propertyNames.getId('crossing_minutes');
+    const remainingId = codex.propertyNames.getId('zones_to_mainland');
     return [...game.world.instance.descendants()].filter(
-      (object) => object.tryGetProperty(crossingId) !== undefined,
+      (object) => object.tryGetProperty(remainingId) !== undefined,
     );
   }
 
