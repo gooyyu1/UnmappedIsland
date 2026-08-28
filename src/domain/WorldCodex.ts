@@ -11,6 +11,15 @@ import { ReferenceContext } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
 
 /**
+ * 型の名前で行き先を指した宣言1件（`move`の`to_object`・`spawn`の`into_object`、9.4節・9.6節）。
+ * contextはその宣言が書かれた場所で、指した先が正しくなかったときのエラーメッセージに使う。
+ */
+export interface ObjectDefDestination {
+  readonly objectGlobalId: number;
+  readonly context: string;
+}
+
+/**
  * ロードされたYAMLファイル全体を表す集約オブジェクト（GameElementDefinition.md 3.1節）。
  * 本体データ（ObjectDefTable）、6種の独立した名前空間（object/property/slot/tag/property_tag/symbol）の
  * NameRegistry、およびWorldVocabularyを持つ。ロード完了後は不変として扱う。
@@ -74,6 +83,7 @@ export class WorldCodex {
     recipeCategoryTagIdsByPriority: readonly number[] = [],
     requiredPropsByTag: ReadonlyMap<number, readonly number[]> = new Map(),
     craftingConditions?: Requirements,
+    objectDefDestinations: readonly ObjectDefDestination[] = [],
   ) {
     this.craftingConditions = craftingConditions;
     this.generatedTypes = generatedTypes ?? new GeneratedTypes();
@@ -90,6 +100,31 @@ export class WorldCodex {
 
     this.requireRangeEventsOnUnmodifiedProperties();
     this.requirePropsRequiredByTags(requiredPropsByTag);
+    this.requireSingletonObjectDefDestinations(objectDefDestinations);
+  }
+
+  /**
+   * 型の名前で行き先を指せるのは、**世界にただ1つ在る型**（`singleton`、15節）だけ
+   * （`move`の`to_object`・`spawn`の`into_object`、9.4節・9.6節）。
+   *
+   * 複数在りうる型を指すと、どの個体へ行くかは世界の形が決め、著者の書いた通りには動かない
+   * ——島へ戻る航路が、出た浜ではなく島で最初の浜へ着いていた。**書いた時点で分かる誤り**なので、
+   * 遊んで気づくのではなくロード時に落とす。
+   *
+   * 指した先の型は自分の宣言より後で読まれうる（複数ファイル・`patch_object_defs`）ので、
+   * 全部が揃ったここで見る。
+   */
+  private requireSingletonObjectDefDestinations(destinations: readonly ObjectDefDestination[]): void {
+    for (const { objectGlobalId, context } of destinations) {
+      const name = this.objectNames.getName(objectGlobalId);
+      const def = this.objects.tryGet(objectGlobalId);
+      if (def === undefined) throw new Error(`${context}: '${name}'という型は定義されていません。`);
+      if (!def.isSingleton)
+        throw new Error(
+          `${context}: '${name}'は世界にただ1つ在る型ではないので、型の名前では指せません` +
+            `（'${name}'にsingleton: trueを宣言するか、行き先を個体で指してください）。`,
+        );
+    }
   }
 
   /**
