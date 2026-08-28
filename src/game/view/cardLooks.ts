@@ -12,6 +12,8 @@ import { typeDisplayName } from '../../locale/typeDisplayName';
 import type { SlotRef } from '../../art/backgroundArt';
 import { placeholderIconOf } from './characterCard';
 import { recipeOf } from './recipeList';
+import { voyageForecastOf } from './voyageForecast';
+import { voyageDaysText } from '../looks/timeTexts';
 import type { CardContent, CardCooking, CardGauge } from '../ui/Card';
 import { COLOR } from '../looks/theme';
 import type { CardKind } from '../looks/theme';
@@ -336,6 +338,16 @@ export function cardLooksOf(
       capacityGaugeOf(object),
     ].filter((gauge): gauge is CardGauge => gauge !== undefined);
 
+  const voyageForecast = voyageForecastOf(codex, world);
+  /**
+   * 桟へ出す1行の文字（CardView.md 16節）。今のところ出すのは筏の推定日数だけで、見積もりを持たない
+   * カード——海にも海岸にも居ない筏、そもそも渡る当人でない物——では何も出ない。
+   */
+  const railTextOf = (object: WorldObject): string | undefined => {
+    const forecast = voyageForecast(object);
+    return forecast === undefined ? undefined : voyageDaysText(forecast.minDays, forecast.maxDays);
+  };
+
   const typeNameOf = (def: ObjectDef): string => typeDisplayName(codex, locale, def);
 
   /**
@@ -435,6 +447,7 @@ export function cardLooksOf(
     alert: alertOf(object),
     mark: markOf(object),
     cooking: cookingOf(object),
+    railText: railTextOf(object),
   });
 
   return {

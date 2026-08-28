@@ -7,8 +7,21 @@ import type { CardContent } from './Card';
  * Cardから離してあるのは、画面を持たない層（ShownCards）も印を作るため。
  */
 export function cardFace(content: CardContent): CardContent {
-  const { icon, name, art, backgroundSlot, kind, alert, road, gauges, mark, overlay, inProgress, cooking } =
-    content;
+  const {
+    icon,
+    name,
+    art,
+    backgroundSlot,
+    kind,
+    alert,
+    road,
+    gauges,
+    mark,
+    overlay,
+    inProgress,
+    cooking,
+    railText,
+  } = content;
   return {
     icon,
     name,
@@ -22,6 +35,7 @@ export function cardFace(content: CardContent): CardContent {
     overlay,
     inProgress,
     cooking,
+    railText,
   };
 }
 
