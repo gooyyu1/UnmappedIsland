@@ -114,11 +114,22 @@ describe('筏と航海', () => {
     return new Location(zone, codex).explore(game.player.instance);
   }
 
-  /** その海区に現れている航路（まだ見えていなければundefined）。 */
-  function sightedRoute(zone: WorldObject): WorldObject | undefined {
-    return new Location(zone, codex).fixtures.find((fixture) =>
+  /** その海区に現れている航路（宣言順。まだ見えていなければ空）。 */
+  function sightedRoutes(zone: WorldObject): readonly WorldObject[] {
+    return new Location(zone, codex).fixtures.filter((fixture) =>
       fixture.def.hasTag(codex.tagNames.getId('sea_route')),
     );
+  }
+
+  /** その海区に現れている、本土の側へ進む航路（まだ見えていなければundefined）。 */
+  function sightedRoute(zone: WorldObject): WorldObject | undefined {
+    return sightedRoutes(zone).at(0);
+  }
+
+  /** その海区から、名指しした行き先の航路を渡る。渡れなければfalse。 */
+  function cross(game: StartedGame, zone: WorldObject, routeName: string): boolean {
+    const route = sightedRoutes(zone).find((fixture) => fixture.def.name === routeName);
+    return route?.tryGetAction('cross', game.player.instance)?.tryExecute() === true;
   }
 
   /**
@@ -135,24 +146,39 @@ describe('筏と航海', () => {
   }
 
   /**
+   * 渇きと飢えを満たす。**海区をいくつも渡ると数日かかる**ので、補給せずに渡ると乗り手が先に
+   * 倒れる——航海の検査で見たいのは海区の連なりのほうで、何日ぶんの水と食料が要るかは別の問題
+   * （GameEndings.md 12.4節）。
+   */
+  function keepAlive(game: StartedGame): void {
+    for (const name of ['hydration', 'satiety']) {
+      const property = game.player.instance.getProperty(codex.propertyNames.getId(name));
+      property.setNumberWithoutEvents(property.def.range?.max ?? 0);
+    }
+  }
+
+  /**
    * 今居る海区から本土まで、見張って渡ることを繰り返す。渡った海区の名前を順に返す。
    *
-   * **渇きと飢えは満たしながら渡る。** 本土までは数日かかるので、補給せずに渡ると乗り手が先に
-   * 倒れる——ここで見たいのは海区の連なりのほうで、何日ぶんの水と食料が要るかは別の問題
-   * （GameEndings.md 12.4節）。回数の上限は、鎖の長さ（十数個）より十分に大きい値。
+   * 回数の上限は、鎖の長さ（十数個）より十分に大きい値。
    */
   function voyageToMainland(game: StartedGame, raft: WorldObject): string[] {
     const visited: string[] = [];
     for (let i = 0; i < 40 && raft.parent?.def.name !== 'mainland'; i++) {
       const zone = raft.parent!;
       visited.push(zone.def.name);
-      for (const name of ['hydration', 'satiety']) {
-        const property = game.player.instance.getProperty(codex.propertyNames.getId(name));
-        property.setNumberWithoutEvents(property.def.range?.max ?? 0);
-      }
+      keepAlive(game);
       expect(watchAndCross(game, zone), `${zone.def.name} から渡れる`).toBe(true);
     }
     return visited;
+  }
+
+  /** 筏に載っているもの（乗り手を除く直の子）の名前。積荷が減っていないかを見るのに使う。 */
+  function cargoNames(raft: WorldObject): string[] {
+    return [...raft.children()]
+      .filter((object) => !object.def.hasTag(codex.tagNames.getId('character')))
+      .map((object) => object.def.name)
+      .sort();
   }
 
   it('出航すると、プレイヤーごと筏が島に最も近い海区へ移る', () => {
@@ -216,6 +242,10 @@ describe('筏と航海', () => {
     expect(keepWatch(game, first), '2回目の見張り').toBe(true);
     const route = sightedRoute(first);
     expect(route?.def.name, '2回目で海藻の帯への航路が現れる').toBe('route_to_kelp_belt');
+    expect(
+      sightedRoutes(first).map((fixture) => fixture.def.name),
+      '進む航路と一緒に、島へ引き返す航路も現れる',
+    ).toEqual(['route_to_kelp_belt', 'route_to_shore']);
 
     expect(route!.tryGetAction('cross', game.player.instance)?.tryExecute(), '渡れる').toBe(true);
     expect(raft.parent?.def.name, '次の海区へ移っている').toBe('kelp_belt');
@@ -231,12 +261,7 @@ describe('筏と航海', () => {
     keepWatch(game, first);
     keepWatch(game, first);
     expect(keepWatch(game, first), '航路が見えた後は見張れない').toBe(false);
-    expect(
-      new Location(first, codex).fixtures.filter((fixture) =>
-        fixture.def.hasTag(codex.tagNames.getId('sea_route')),
-      ),
-      '航路は1本だけ',
-    ).toHaveLength(1);
+    expect(sightedRoutes(first), '航路は進む先と戻る先の2本だけ').toHaveLength(2);
   });
 
   it('筏の無い海区からは渡れない', () => {
@@ -251,6 +276,72 @@ describe('筏と航海', () => {
 
     const route = sightedRoute(first)!;
     expect(route.tryGetAction('cross', game.player.instance)?.tryExecute(), '渡る手は成立しない').toBe(false);
+  });
+
+  it('引き返す航路は、進む航路と同じ型（航路は向きを持たない）', () => {
+    // **島の側へ戻る航路に別の仕組みは無い**（GameEndings.md 12.5節）。航路が持つのは行き先だけなので、
+    // 潮目から海藻の帯へ戻る航路は、島影の海が海藻の帯へ進むのに使うのとまったく同じ型になる。
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+
+    for (const zoneName of ['coastal_waters', 'kelp_belt'])
+      expect(watchAndCross(game, singletonPlace(game, zoneName)), `${zoneName} から進む`).toBe(true);
+    for (let i = 0; i < 20 && keepWatch(game, singletonPlace(game, 'tide_rip')); i++);
+
+    expect(
+      sightedRoutes(singletonPlace(game, 'tide_rip')).map((route) => route.def.name),
+      '潮目には、進む先と戻る先の航路が1本ずつ立つ',
+    ).toEqual(['route_to_reef_shallows', 'route_to_kelp_belt']);
+    expect(
+      sightedRoutes(singletonPlace(game, 'coastal_waters')).map((route) => route.def.name),
+      '島影の海が進む先に使う型と、潮目が戻る先に使う型は同じ',
+    ).toContain('route_to_kelp_belt');
+  });
+
+  it('航海の途中から島へ引き返せて、積荷は1つも減らない', () => {
+    // **確定した仕様（GameEndings.md 12.5節）そのもの。** 引き返しの代償は来た航路を戻るぶんの時間だけで、
+    // 積荷を代償にしない。戻りに要るのは渡ってきた航路と同じ本数の横断で、**新しい見張りは1度も要らない**
+    // ——一度航路を見定めた海区では、進む先と戻る先の両方が立ったままになる。
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+
+    // 島影の海 → 海藻の帯 → 潮目。渡った航路は2本。
+    for (const zoneName of ['coastal_waters', 'kelp_belt']) {
+      keepAlive(game);
+      expect(watchAndCross(game, singletonPlace(game, zoneName)), `${zoneName} から進む`).toBe(true);
+    }
+    for (let i = 0; i < 20 && keepWatch(game, singletonPlace(game, 'tide_rip')); i++);
+    expect(raft.parent?.def.name, '外洋の海区に居る').toBe('tide_rip');
+
+    const cargoBefore = cargoNames(raft);
+    const progressBefore = ['kelp_belt', 'coastal_waters'].map((zoneName) =>
+      propertyOf(singletonPlace(game, zoneName), 'exploration_progress'),
+    );
+
+    // 来た航路をそのまま戻り、最後に島の浜へ上がる（出航の1手と対になる横断）。
+    const homeward: readonly (readonly [string, string])[] = [
+      ['tide_rip', 'route_to_kelp_belt'],
+      ['kelp_belt', 'route_to_coastal_waters'],
+      ['coastal_waters', 'route_to_shore'],
+    ];
+    for (const [zoneName, routeName] of homeward) {
+      keepAlive(game);
+      expect(cross(game, singletonPlace(game, zoneName), routeName), `${zoneName} から戻る`).toBe(true);
+    }
+
+    expect(raft.parent?.def.hasTag(codex.tagNames.getId('coast')), '島の海岸へ戻り着く').toBe(true);
+    expect(cargoNames(raft), '積荷は1つも減らない').toEqual(cargoBefore);
+    expect(
+      ['kelp_belt', 'coastal_waters'].map((zoneName) =>
+        propertyOf(singletonPlace(game, zoneName), 'exploration_progress'),
+      ),
+      '戻り道の海区を見張り直してはいない',
+    ).toEqual(progressBefore);
+    expect(
+      raft.tryGetAction('disembark', game.player.instance)?.tryExecute(),
+      '戻りきれば筏から降りられる',
+    ).toBe(true);
+    expect(game.player.ending.kind, '島へ戻っただけなので周回は終わらない').not.toBe('escape');
   });
 
   /** 帆を1枚作って、筏の構造スロットへ組み込む。 */
