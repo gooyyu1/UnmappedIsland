@@ -35,19 +35,24 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   });
 
   beforeEach(() => {
+    open(0);
+  });
+
+  /** 砂浜に立つプレイヤーから始める。rollはpickがどの候補を引くかを決める（fixedRng）。 */
+  function open(roll: number): void {
     const worldInstance = new WorldObject(
       0,
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
-    session = new WorldSession(codex, undefined, fixedRng(0));
+    session = new WorldSession(codex, undefined, fixedRng(roll));
     const beach = spawn('sandy_beach');
     expect(
       beach.moveToSlotOrRejection(worldInstance.getSlot(codex.slotNames.getId('locations'))),
     ).toBeUndefined();
     player = spawn(SAMPLE_CHARACTER);
     expect(player.moveToSlotOrRejection(beach.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
-  });
+  }
 
   function spawn(objectName: string): WorldObject {
     return session.createObject(codex.objectNames.getId(objectName));
@@ -265,6 +270,117 @@ describe('消化（かさ・栄養素・蓄え）', () => {
       expect(vitamin().number, '0で止まる').toBe(0);
       expect(player.parent, '尽きたまま置いても世界から外れない').toBeDefined();
       expect(vitamin().alert).toBe('danger');
+    });
+  });
+
+  /**
+   * 傷んだ物を食べたときの吐き下し（DigestionSystem.md 6節）。引き金は腐敗（durabilityの段）で、
+   * 見るのは、無事な物では当たらないこと・吐けば腹が空くこと・下せば水が余計に減ることの3つ。
+   */
+  describe('吐き下し', () => {
+    /** 腐った段（durability 240未満）に居る焼きイモの残り。 */
+    const ROTTEN = 120;
+    /** 傷んだ段（同480未満）に居る焼きイモの残り。 */
+    const STALE = 360;
+
+    // 腐った段の3択は等しい重み（無事100 : 吐く100 : 下す100、foods.yaml）なので、rollがそのまま
+    // どれを引くかになる。傷んだ段では吐き下しの重みが1/4なので、同じrollでも無事な側へ寄る。
+    const VOMITS = 0.5;
+    const HAS_DIARRHEA = 0.9;
+
+    /** 3本の在庫を同じ量だけ置く（減った分を割合で読みたいので、0に張り付かせない）。 */
+    const STOCKED = 60;
+    /** 吐き下しが3本から持っていく量（foods.yaml）。 */
+    const LOST = 40;
+    /** 下痢で余計に減る水分（同）。 */
+    const DRAINED = 48;
+
+    function stockAll(amount: number): void {
+      for (const name of ['carbohydrate', 'protein', 'lipid'])
+        player.getProperty(codex.propertyNames.getId(name)).setNumberWithoutEvents(amount);
+    }
+
+    /** 焼きイモを1つ、残りdurabilityを指定して食べる。 */
+    function eatTaro(durability: number): void {
+      const taro = spawn('roasted_taro');
+      expect(taro.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+      taro.getProperty(codex.propertyNames.getId('durability')).setNumberWithoutEvents(durability);
+      player.getProperty(satietyId).setNumberWithoutEvents(0);
+      stockAll(STOCKED);
+
+      expect(taro.tryGetAction('eat', player)?.tryExecute() === true).toBe(true);
+    }
+
+    function nutrients(): number[] {
+      return ['carbohydrate', 'protein', 'lipid'].map(
+        (name) => player.getProperty(codex.propertyNames.getId(name)).number,
+      );
+    }
+
+    it('無事な食べ物では当たらない', () => {
+      // 一番当たりやすい位置を引いても何も起きない。傷んでいなければ吐き下しの重みは0なので、
+      // 抽選そのものが無事な側の1択になる。
+      open(HAS_DIARRHEA);
+      const water = valueOf(hydrationId);
+
+      eatTaro(960);
+
+      expect(valueOf(satietyId), 'かさはそのまま残る').toBe(550);
+      expect(nutrients(), '中身も減らない').toEqual([STOCKED + 48, STOCKED + 2, STOCKED]);
+      expect(valueOf(hydrationId), '水も余計に減らない').toBe(water);
+    });
+
+    it('腐った物を食べて吐くと、腹が空になり、少し前に食べた分まで失う', () => {
+      open(VOMITS);
+      const water = valueOf(hydrationId);
+
+      eatTaro(ROTTEN);
+
+      expect(valueOf(satietyId), '胃は空になる').toBe(0);
+      expect(nutrients(), '在庫も割合で持っていかれる').toEqual([
+        STOCKED + 48 - LOST,
+        STOCKED + 2 - LOST,
+        STOCKED - LOST,
+      ]);
+      expect(valueOf(hydrationId), '吐くほうは水を余計に減らさない').toBe(water);
+    });
+
+    it('腐った物で下すと、身にならないうえ水が余計に減る', () => {
+      open(HAS_DIARRHEA);
+      const water = valueOf(hydrationId);
+
+      eatTaro(ROTTEN);
+
+      expect(valueOf(satietyId), '腹は満ちたまま（出るのは腸から先）').toBe(550);
+      expect(nutrients(), '在庫は体脂肪へ渡らずに減る').toEqual([
+        STOCKED + 48 - LOST,
+        STOCKED + 2 - LOST,
+        STOCKED - LOST,
+      ]);
+      expect(valueOf(hydrationId), '脱水はこちらだけ').toBe(water - DRAINED);
+    });
+
+    it('傷んだだけの段は、腐った段より当たりにくい', () => {
+      // 同じrollで結果が分かれることが、重みが段で変わっていることそのもの。
+      open(VOMITS);
+
+      eatTaro(STALE);
+      expect(valueOf(satietyId), '傷んだだけなら、この位置ではまだ無事に収まる').toBe(550);
+
+      eatTaro(ROTTEN);
+      expect(valueOf(satietyId), '腐っていれば同じ位置で吐く').toBe(0);
+    });
+
+    it('下痢の脱水は、既にある渇きの死に方へ流れる', () => {
+      // 吐き下しは新しい致命的な値を足さない（VitalsSystem.md 8節）。死ぬときの名乗りが渇きのまま
+      // であることが、死に方が増えていないことの証拠になる。
+      open(HAS_DIARRHEA);
+      player.getProperty(hydrationId).setNumberWithoutEvents(DRAINED);
+
+      eatTaro(ROTTEN);
+
+      expect(player.parent, '水を使い切って世界から外れる').toBeUndefined();
+      expect(player.destroyedReason).toBe('dehydrated');
     });
   });
 });
