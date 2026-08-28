@@ -6,6 +6,9 @@
 #   - 筏は設置物であり場所でもある。中にプレイヤーと積荷が入るので、筏を1つ動かせば全部が動く。
 #   - 海は海区の連なりで、海区は探索できる場所そのもの。見張り（explore）を重ねると航路が現れ、
 #     航路を渡ると次の海区へ移る。海区も本土も singleton（15節）なので、型の名前で行き先を指せる。
+#   - **航路は方向を持たない。** 見張りは進む航路と戻る航路を一緒に返し、どちらも同じ1つの手
+#     （cross）で渡る。引き返しの代償が時間だけになるのはこの形の帰結で、専用の規則は無い
+#     （GameEndings.md 12.5節）。
 #   - **時間を進めるだけでは1海区も進まない**（GameEndings.md 12節）。風・海流・積載・帆は進みでは
 #     なく、その海区を渡るのにかかる時間（crossing_minutes）へ効く。
 
@@ -58,6 +61,8 @@ traits:
     interactions:
       # 見張り。**地上の探索そのもの**（ExplorationSystem.md 2節）で、1回15分＝1tick、進捗が1つ進む。
       # 進捗が上限に達した瞬間、その海区から出る航路が現れる（exploration_progress の on_max）。
+      # 現れるのは**進む先と、島の側へ戻る先の2本**（GameEndings.md 12.5節）。どちらも同じ sea_route で、
+      # 違うのは行き先だけ。
       #
       # **航路が見えたら見張りは終わる。** 上限へ達した値は書き込みのたびに on_max を呼び直すので、
       # 止めないと同じ航路が湧き続ける。見えているかは湧いた結果そのもので見る——回数で書くと、
@@ -98,6 +103,10 @@ traits:
             spawn: {object: seabird_flock, into: self}
 
   # 航路。海区から海区への繋がり1本で、見張りの成果として現れる設置物。
+  #
+  # **航路は方向を持たない——持つのは行き先の型だけ。** だから「島の側へ戻る航路」に別の仕組みは
+  # 要らず、鎖を1つ戻る航路は多くが既に在る型そのものになる（潮目に置く「海藻の帯への航路」は、
+  # 島影の海が持つのと同じ route_to_kelp_belt）。
   #
   # **渡る手はここが持ち、行き先だけを型の側が書く。** 地上の道の travel と同じメニューの操作で、
   # 違うのは動かす物だけ——地上の道が歩く本人を動かすのに対し、航路は同じ海区に浮かんでいる筏を
@@ -261,7 +270,8 @@ object_defs:
         duration: 5
         move: {subject: actor, to: self}
 
-      # 降りる。海の上では降りられない（泳いで戻る手はまだ無い）。
+      # 降りる。海の上では降りられない。**引き返しは泳ぐことではなく、来た航路を戻ること**
+      # （GameEndings.md 12.5節）なので、海区から陸へ出る手はここではなく航路の側にある。
       disembark:
         trigger: menu
         conditions:
@@ -512,6 +522,9 @@ object_defs:
   #
   # 並びは1本の鎖で、分岐はまだ無い。**最短の航路（空の海）が最も実りが薄く**、実りの濃い海区ほど
   # 渡るのに時間がかかる（GameEndings.md 12.1節）。
+  #
+  # **on_max が湧かせるのは2本——本土の側へ進む航路と、島の側へ戻る航路**（同12.5節）。鎖の両端だけが
+  # 片方を持たない（本土に着けば周回が終わり、島影の海の島側は海区ではなく島）。
   # ------------------------------------------------------------------
 
   # 島影の海（沿岸）。島を離れてすぐの海区で、陸が見えているぶん自分の居場所が読みやすい。
@@ -529,7 +542,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 2}
         on_max:
-          spawn: {object: route_to_kelp_belt, into: self}
+          spawn:
+            - {object: route_to_kelp_belt, into: self}
+            - {object: route_to_shore, into: self}
 
   # 海藻の帯。絡む海藻で進みが遅く、そのぶん帯そのものが目印になる。
   kelp_belt:
@@ -544,7 +559,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          spawn: {object: route_to_tide_rip, into: self}
+          spawn:
+            - {object: route_to_tide_rip, into: self}
+            - {object: route_to_coastal_waters, into: self}
 
   # 潮目。流れのぶつかる帯で、波と鳥の集まりが目印になる。**補給が当てになる唯一の海区**。
   tide_rip:
@@ -559,7 +576,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          spawn: {object: route_to_reef_shallows, into: self}
+          spawn:
+            - {object: route_to_reef_shallows, into: self}
+            - {object: route_to_kelp_belt, into: self}
 
   # 岩礁の海。波の砕ける瀬に漂流物が寄り、魚も付く。
   reef_shallows:
@@ -575,7 +594,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          spawn: {object: route_to_gull_rock, into: self}
+          spawn:
+            - {object: route_to_gull_rock, into: self}
+            - {object: route_to_tide_rip, into: self}
 
   # 海鳥の岩。鳥が巣を作る岩で、卵と羽が拾える。
   gull_rock:
@@ -591,7 +612,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          spawn: {object: route_to_islet_waters, into: self}
+          spawn:
+            - {object: route_to_islet_waters, into: self}
+            - {object: route_to_reef_shallows, into: self}
 
   # 小島の海。海面には何も無く、実りは上陸した先にある。
   #
@@ -610,6 +633,7 @@ object_defs:
         on_max:
           spawn:
             - {object: route_to_open_water, into: self}
+            - {object: route_to_gull_rock, into: self}
             - {object: offshore_islet, into: self}
 
   # 空の海。目印が何も無いので、航路を見つけるのに最も見張りを重ねることになる。
@@ -625,7 +649,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 5}
         on_max:
-          spawn: {object: route_to_wreck_waters, into: self}
+          spawn:
+            - {object: route_to_wreck_waters, into: self}
+            - {object: route_to_islet_waters, into: self}
 
   # 沈船の海。折れた帆柱と綱が漂い、まれに船が積んでいた物が浮いてくる。
   wreck_waters:
@@ -642,7 +668,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 4}
         on_max:
-          spawn: {object: route_to_long_swell, into: self}
+          spawn:
+            - {object: route_to_long_swell, into: self}
+            - {object: route_to_open_water, into: self}
 
   # うねりの海（空の海）。大きなうねりだけが続く。
   long_swell:
@@ -656,7 +684,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 5}
         on_max:
-          spawn: {object: route_to_outer_tide_rip, into: self}
+          spawn:
+            - {object: route_to_outer_tide_rip, into: self}
+            - {object: route_to_wreck_waters, into: self}
 
   # 沖の潮目。島影の無い沖でも、流れのぶつかる帯には魚が集まる。
   outer_tide_rip:
@@ -671,7 +701,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          spawn: {object: route_to_black_reef, into: self}
+          spawn:
+            - {object: route_to_black_reef, into: self}
+            - {object: route_to_long_swell, into: self}
 
   # 黒い岩礁。水面すれすれの黒い瀬が続く。
   black_reef:
@@ -687,7 +719,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          spawn: {object: route_to_drifting_kelp, into: self}
+          spawn:
+            - {object: route_to_drifting_kelp, into: self}
+            - {object: route_to_outer_tide_rip, into: self}
 
   # 流れ藻の海（海藻の帯）。ちぎれた海藻が筋になって漂う。
   drifting_kelp:
@@ -702,7 +736,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          spawn: {object: route_to_white_rock, into: self}
+          spawn:
+            - {object: route_to_white_rock, into: self}
+            - {object: route_to_black_reef, into: self}
 
   # 白い岩（海鳥の岩）。糞で白く染まった岩で、遠くからでもそれと分かる。
   white_rock:
@@ -718,7 +754,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          spawn: {object: route_to_mainland_shallows, into: self}
+          spawn:
+            - {object: route_to_mainland_shallows, into: self}
+            - {object: route_to_drifting_kelp, into: self}
 
   # 本土の島影（沿岸）。本土の陸が見え始める海区で、島影の海と同じだけ実る。ここから本土へ渡る。
   mainland_shallows:
@@ -735,7 +773,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 2}
         on_max:
-          spawn: {object: route_to_mainland, into: self}
+          spawn:
+            - {object: route_to_mainland, into: self}
+            - {object: route_to_white_rock, into: self}
 
   # ------------------------------------------------------------------
   # 航路。海区どうしを繋ぐ1本で、地上の道（locations.yamlのpath）と同じ設置物。渡る手そのものは
@@ -744,7 +784,38 @@ object_defs:
   # 行き先を型で指す（to_object）ので、行き先ごとに型を分けるほかない——プロパティで指せるのは
   # インスタンスIDだけで、singletonの海区は定義の時点でそれを持たない。trigger を書き直しているのは、
   # どの操作も自分の trigger を名乗ることを文法が求めるため（WorldCodex.schema.json）。
+  #
+  # **島の側へ戻る航路も、ここに並ぶ型そのもの**（GameEndings.md 12.5節）。航路が持つのは行き先だけで
+  # 向きを持たないので、鎖を1つ戻る航路は隣の海区が進む先として使っている型と同じものになる。島の端の
+  # 2本（route_to_coastal_waters・route_to_shore）だけが、進む側に相手を持たないぶん新しい。
   # ------------------------------------------------------------------
+
+  # 島の浜へ戻る航路（島影の海にだけ現れる）。**鎖の島側の端で、この先に海区は無い。**
+  #
+  # 行き先が海区ではなく島の砂浜なので、ここだけは行き先が singleton ではない——`to_object` は木を
+  # 深さ優先で辿って最初の砂浜を返すため、**着く浜は島でいつも同じ1つで、出た浜とは限らない**
+  # （筏が出た浜の個体を覚える手段が今の文法に無い。docs/world/Voyage.md 未決事項）。
+  # 岩の海岸や崖からでも押し出せる筏を、引き上げられるのは砂浜だけ、という形になっている。
+  route_to_shore:
+    traits: [sea_route]
+    interactions:
+      cross:
+        trigger: menu
+        pick:
+          - weight: 1
+            among: {subject: parent, slot: fixtures, matches: {object: raft}}
+            move: {subject: picked, to_object: sandy_beach}
+
+  route_to_coastal_waters:
+    traits: [sea_route]
+    interactions:
+      cross:
+        trigger: menu
+        pick:
+          - weight: 1
+            among: {subject: parent, slot: fixtures, matches: {object: raft}}
+            move: {subject: picked, to_object: coastal_waters}
+
   route_to_kelp_belt:
     traits: [sea_route]
     interactions:

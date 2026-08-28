@@ -488,6 +488,37 @@ object_defs:
           - add:
               self:
                 blood: 0.032
+      # 囲いの中で1羽増えるまでの残り（docs/world/Animals.md 3.1節）。**増えるのは獣自身の仕事**なので、
+      # 囲い（farming.yamlのlivestock_pen）はこれを知らない——家畜になる獣を足しても、囲いの側は
+      # 1行も変わらない。
+      #
+      # 罠のcatch_remaining（TrapSystem.md 2節）と同じ見えないタイマーで、初期値の幅は待ち時間では
+      # なく**位相**（同2.1節）。同じ日に入れた群れが同じtickに一斉に増えるのを防ぐためだけのもの。
+      breeding_remaining:
+        value: {min: 1, max: 480}
+        range: {min: 0, max: 480}
+        passives:
+          - conditions:
+              # 囲いの枠に居る間だけ（farming.yaml）。罠に掛かっている個体も、地面に立っている個体も
+              # 増えない——罠が地面のitemsスロットだけで作動するのと同じ形（TrapSystem.md 1節）。
+              - {in_slot: livestock}
+              # 飼葉が残っている間だけ。
+              - {subject: parent, prop: fodder, gte: 1}
+            add:
+              self:
+                breeding_remaining: -1
+              # **食べるのは食べる当人。** 囲いは中身を数えられない（条件は存在判定だけ、14.3節）ので、
+              # 頭数が飼葉の減りに効くのはこの1行が獣の側にあるからで、4羽居れば4倍の速さで尽きる。
+              parent:
+                fodder: -0.05
+        on_min:
+          add: {self: {breeding_remaining: 480}}
+          # **仔ではなく成体が1羽増える。** 幼体の型を作ると、解体・警戒・resistsがすべて二重になる
+          # （罠が獲物の型を差し替えないのと同じ理由、TrapSystem.md 5.3節）。
+          #
+          # intoを省くと自分と同じ枠＝囲いの中へ（9.4節のsame_slot）。枠が埋まっていれば土地へ
+          # こぼれるので、**囲いが手狭になると仔は外に出る**。
+          spawn: {object: junglefowl}
 
   # ネズミ。罠の最小単位（Animals.md 3節）。何でも齧るので、罠では草食・肉食どちらの卓にも載る
   # （TrapSystem.md 4.1節の雑食）。血が6mLしかないので、罠に掛かればまず死ぬ。

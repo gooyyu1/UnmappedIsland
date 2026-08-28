@@ -1,0 +1,190 @@
+# 栽培と飼育の定義（docs/world/ContentSkeleton.md 4節の食の調達、docs/world/Animals.md 3.1節）。
+#
+# **罠（docs/engine/TrapSystem.md）とまったく同じ「留守番の設備」の形で、新しい文法は1つも足していない。**
+# 仕掛ける（撒く・入れる）→ 別の土地へ行く → 戻ると増えている、という往復が1単位で、設備の側は
+# 見に来たかどうかを知らない。
+#
+# 罠との違いは、**時間を数えるのが設備か中身か**の1点だけ。
+#
+# | | 時間を数えるもの | そうなる理由 |
+# |---|---|---|
+# | 罠 | 罠自身 | 掛かる獲物は**まだ物として在らない**ので、数えさせる相手が居ない |
+# | 畑 | 畑自身 | 撒いた種は撒いた瞬間に物でなくなる（下の`*_sown`）ので、同じく数える相手が居ない |
+# | 囲い | 中の獣（animals.yaml） | **増える当人が既に物として在る**ので、自分のことは自分でする |
+#
+# 罠が課すのは時間と運（TrapSystem.md 7節）だが、**畑と囲いが課すのは時間と食料だけ**で、運は無い。
+# 撒いたものは必ず実り、飼葉が続く限り必ず増える——賭けるものが違うので、罠の下位互換にならない。
+#
+# 数値はいずれも目安で、tick = 15分・1日 = 96 tickを前提とする。
+
+object_defs:
+  # 畑。掘り返して均した土そのものなので、持ち歩けない設置物（fixture）になる。
+  #
+  # **作物の種類は増やさない**（ContentSkeleton.md 概要「個々のレシピは決めません」）。既にある芋と
+  # 葉物（foods.yaml）を育てられるところまでで、品目の幅出しは別の仕事。
+  field:
+    tags: [fixture]
+    # 押すと実ったものが並ぶ（7.11節）。**畑は何も告げない**ので、見に来なければ実ったことは分からない
+    # ——罠と同じ沈黙（TrapSystem.md 5節）で、告げる経路を開けると畑は待つ物ではなく報せる物になる。
+    visible_slots: [crop]
+    # 撒いたものが個体ごとに違うので束ねない（SlotSystem.md 4節）。
+    stackable: false
+    slots:
+      # 実ったもの。**プレイヤーは入れられない**（placementからmanualを外す、7.7節）——ここを開けると、
+      # 撒くつもりで重ねた芋が、撒かれずに枠へ収まってしまう（カードへ重ねた物は、manualを許す枠が
+      # あればそちらへ入る、7.8節）。撒くのは下のsow_*で、取り出すのはいつでもできる。
+      crop:
+        cell_count: 6
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      # **耕した土そのものなので、運べる目方を持たない**（道・湧き水と同じ、locations.yaml）。
+      # 0は宣言漏れではなく、そう決めた印。
+      weight: {value: 0}
+      # 次に1株が実るまでの残り（罠のcatch_remainingと同じ見えないタイマー、TrapSystem.md 2節）。
+      # カードの状態バーは名前で決まった量だけを映す（CardView.md 8節）ので、隠す仕掛けは要らない。
+      #
+      # 初期値の幅は待ち時間ではなく**位相**（同2.1節）。複数の畑が同じtickに一斉に実るのを防ぐ
+      # ためだけのもの。**待たされる長さにばらつきは無い**——罠と違って空振りが無いため。
+      growth_remaining:
+        value: {min: 1, max: 192}
+        range: {min: 0, max: 192}
+        # **置かれている場所で分岐しない。** 畑は持ち歩けないので、罠の`{in_slot: items}`にあたる
+        # 「仕掛かっているか」の区別がそもそも立たない。
+        passives:
+          - add:
+              self:
+                growth_remaining: -1
+        # 周期の置き直しは、どの候補が選ばれても起こるのでpickの外へ1つだけ置く（9.7節）。
+        on_min:
+          add: {self: {growth_remaining: 192}}
+          pick:
+            # 何も撒かれていない回。**重みは0**——全候補の重みが0なら先頭が選ばれる規約（10節）
+            # だけで拾うので、1株でも撒いてあれば必ずそれが実る。罠の空振り（miss_weight）に
+            # あたるものを畑は持たない。
+            - weight: 0
+            # 実った回。撒いた株が1つ減り、種芋1つから親芋と子芋が採れる。
+            - weight: {prop: taro_sown}
+              add: {self: {taro_sown: -1}}
+              spawn: {object: taro, count: 3, into: self}
+            # 葉物は摘んでも脇芽が伸びるが、株そのものは1度で終わりにする——**作物ごとに育ち方を
+            # 変えない**（畑が持つタイマーは1つなので、周期を作物ごとに変えると「前に実った物が
+            # 次の周期を決める」ことになる）。
+            - weight: {prop: water_spinach_sown}
+              add: {self: {water_spinach_sown: -1}}
+              spawn: {object: water_spinach, count: 3, into: self}
+      # 撒いてある株の数。罠が土地から継承する`<動物>_catch`（TrapSystem.md 3節）と同じ立ち位置で、
+      # **宣言していない（＝撒いていない）作物は重みが0になり、候補ごと抽選から外れる**。
+      #
+      # 罠のつまみとの違いは、こちらが撒くたびに増え実るたびに減ることだけ。土地が宣言するのは
+      # 「そこに何が居るか」で動かないが、畑に何が植わっているかはプレイヤーが決める。
+      taro_sown: {value: 0, range: {min: 0, max: 8}}
+      water_spinach_sown: {value: 0, range: {min: 0, max: 8}}
+    interactions:
+      # 種を撒く（罠へ餌を仕掛けるのと同じドラッグ型、TrapSystem.md 4節）。
+      #
+      # **移る量は畑の側が持つ。** 餌がtransferで「仕掛けると増える量」を食べ物の側から運ぶ
+      # （FireSystem.md 2節の燃料と同じ形）のに対し、こちらは1個が1株にしかならない——分けても
+      # 増えない量なので、運ぶものが無い。
+      #
+      # **これが畑の代償で、罠の餌とまったく同じ性質**（TrapSystem.md 4節）。撒くのは自分が
+      # 食べられる食料で、序盤ほど重く、蓄えができるほど軽くなる。
+      sow_taro:
+        trigger: {drag: {object: taro}}
+        duration: 15
+        conditions:
+          - {reason: field_sown, prop: taro_sown, lt: 8}
+        add: {self: {taro_sown: 1}}
+        destroy: dragged
+      sow_water_spinach:
+        trigger: {drag: {object: water_spinach}}
+        duration: 15
+        conditions:
+          - {reason: field_sown, prop: water_spinach_sown, lt: 8}
+        add: {self: {water_spinach_sown: 1}}
+        destroy: dragged
+    # 解放条件（conditions、13.3節）はまだ置かない。スキルのプロパティと、それを伸ばす経路が
+    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
+    recipes:
+      # 掘り返して均すだけで、土は元からそこにある。**掘削具はまだ無い**（TrapSystem.md 8節の
+      # 落とし穴と同じ空白）ので、掘り棒にする太い枝を1本折り込む形で置いてある。
+      tilled:
+        steps:
+          - requires:
+              - {object: thick_branch, count: 1, consume: true}
+            duration: 240
+
+  # 家畜の囲い。丸太を並べて縄で結んだ柵で、獣を出さないためだけの物。
+  #
+  # **罠の檻（TrapSystem.md 1.2節の`pen`）とは別の型。** あちらは大型を生かして「捕らえる」罠で、
+  # こちらは既に落ち着いた獣を「置いておく」設備。材料が同じ（木材＋縄）なので1つの型に畳めるかは
+  # 檻を実装するときの判断になる。
+  #
+  # **囲いは何が中に居るかを知らない。** 増えるかどうかは獣自身が名乗る（animals.yamlのヤケイ）ので、
+  # 家畜になる獣を足しても、この型は1行も変わらない。
+  livestock_pen:
+    tags: [fixture]
+    # 押すと中の獣が並ぶ（7.11節）。畑と同じで、見に来なければ増えたことは分からない。
+    visible_slots: [livestock]
+    stackable: false
+    slots:
+      # 囲われている獣。**枠ごとに1頭**（maxを置く、7.2節）——獣は束ねられる型なので、maxが無いと
+      # 1つの枠に何頭でも積まれて、囲いの広さが何も意味しなくなる。
+      #
+      # 入れられるのは**落ち着いた個体だけ**。荒ぶっている間はどの持ち主にも付けない（resists、
+      # 7.13節・animals.yamlのbeast）ので、生け捕りにして待つ、が唯一の入口になる
+      # （docs/engine/VitalsSystem.md 7節・TrapSystem.md 5.2節）。
+      livestock:
+        cell_count: 4
+        cell: {accept: {tag: animal}, max: 1}
+    props:
+      # 丸太4本（20,000g）＋縄2本（600g）。**据えた物も目方を名乗る**（core.yaml）ので、筏へ載せれば
+      # 積荷として効き、中の獣の重さもここを通る。
+      weight: {value: 81200}
+      # 与えてある飼葉。罠の餌（TrapSystem.md 4節）とまったく同じ形で、食べ物の側が持つ
+      # 「草の餌になる量」（foods.yamlのplant_bait）をそのまま受け取る。
+      #
+      # **減らすのは囲いではなく中の獣**（animals.yaml）。囲いの側は中身を数えられない（条件は
+      # 存在判定だけ、14.3節）ので、頭数が効く形はこれでしか書けない——そして**食べるのは食べる
+      # 当人の仕事**なので、そちらが正しい置き場所でもある。
+      fodder:
+        value: 0
+        range: {min: 0, max: 96}
+    passives:
+      # 囲われた獣は暴れない。罠の拘束（TrapSystem.md 5節）と同じ1ブロックで、ここでは
+      # **生まれた仔がその場に留まる**ことだけを担う——警戒したまま生まれると、resistsが成立して
+      # 生まれた直後に土地までこぼれ出る（7.13節）。
+      #
+      # **無防備さ（vulnerability）は押し上げない。** 罠が押し上げるのは掛かった獲物をその場で
+      # 仕留めるためで、囲いは仕留めるための設備ではない。
+      - modify:
+          child:
+            wariness: -100
+    interactions:
+      # 飼葉を与える（罠へ餌を仕掛けるのとまったく同じ、TrapSystem.md 4節）。移る量は食べ物の側が
+      # 1箇所で持つ（FireSystem.md 2節の燃料と同じ形）。
+      #
+      # **罠の餌と同じタグ（plant_bait）で受ける。** 草食の獣が寄ってくる量と、草食の獣が食べる量は
+      # 同じ量——「草の食べ物としてどれだけあるか」——なので、食べ物の側に2つ目の量を持たせない。
+      feed:
+        trigger: {drag: {tag: plant_bait}}
+        duration: 5
+        conditions:
+          - {reason: pen_fed, prop: fodder, lt: 96}
+        transfer:
+          amount: 999
+          from: dragged
+          from_prop: plant_bait
+          to_prop: fodder
+        # 中途半端に残った飼葉を作らない。入りきらなかった分は失われるが、満杯を拒む条件があるので
+        # 失うのは高々1個ぶん（罠の餌と同じ）。
+        destroy: dragged
+    recipes:
+      # 丸太を並べて縄で結ぶ。檻（TrapSystem.md 1.2節）と同じ材料で、**生かして扱う設備は常に
+      # 高くつく**という線の上に乗っている。
+      fenced:
+        steps:
+          - requires:
+              - {object: log, count: 4, consume: true}
+              - {object: rope, count: 2, consume: true}
+            duration: 480
