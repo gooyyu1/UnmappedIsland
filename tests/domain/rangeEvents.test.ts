@@ -321,6 +321,38 @@ object_defs:
     );
   });
 
+  it('上限に張り付いたままのプロパティは、時間が進んでもon_maxを呼び直さない', () => {
+    // **on_maxは値が境界へ達した瞬間のもの**（6.3節）で、境界に居る間ずっとではない。折り返しも
+    // 自壊もしないon_max——海区が見張りの成果として航路を湧かせる（voyage.yaml）のがそれ——は、
+    // 呼び直されるたびに同じ物を湧かせてしまう。値が動かないtickでは何も起こらないこと自体を見る。
+    const yaml = `
+object_defs:
+  lookout:
+    props:
+      progress:
+        value: 1
+        range: {min: 0, max: 2}
+        on_max:
+          add: {self: {sighted: 1}}
+      sighted:
+        value: 0
+`;
+    const codex = load(yaml);
+    const progressId = codex.propertyNames.getId('progress');
+    const sightedId = codex.propertyNames.getId('sighted');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('lookout')), session);
+
+    instance.tryGetProperty(progressId)!.add(1); // 1+1=2 で上限へ達する
+    expect(instance.tryGetProperty(sightedId)?.number ?? 0, '達した瞬間に1度だけ起こる').toBe(1);
+
+    for (let i = 0; i < 5; i++) instance.tick();
+
+    expect(instance.tryGetProperty(progressId)?.number ?? 0, '進捗は上限に居座る').toBe(2);
+    expect(instance.tryGetProperty(sightedId)?.number ?? 0, '居座っている間は二度と起こらない').toBe(1);
+  });
+
   it('on_maxの加算先プロパティをこのobject_defが持たない場合は黙って無視される', () => {
     // add（ActiveEffect）の通常の規約と同じ: このobject_defが持たないプロパティへの
     // 加算は、たとえ同名のプロパティを別のobject_defが持っていて名前自体は登録されていても、
