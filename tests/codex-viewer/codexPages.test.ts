@@ -316,8 +316,7 @@ describe('WorldCodexビューアのページ', () => {
  */
 const DEVICE_COLUMNS: Record<keyof DeviceRow, string | null> = {
   deviceName: '設備',
-  // 工程名は出さない（どの工程かは設備のページに在る）。yamlの側には`step`として出ている（issue #982）。
-  stepName: null,
+  stepName: '工程',
   condition: '条件',
   periodMinutes: '周期',
   productName: '産物',
