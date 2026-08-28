@@ -817,6 +817,71 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/crate/);
   });
 
+  /**
+   * 型を値に持つプロパティ（GameElementDefinition.md 6.9節）。**検査は`to_object`に直接書いたときと
+   * 同じ**——どこに書いても「その型のインスタンスを1つ指す」ことに変わりはないので、複数在りうる型を
+   * 指せてはならない。
+   */
+  const neighbourYaml = (extra: string): string => `
+object_defs:
+  kelp_belt:${extra}
+    slots:
+      stuff: {}
+  coastal_waters:
+    props:
+      zone_toward_mainland: {value: {object: kelp_belt}}
+`;
+
+  it('propsに書いた型が非singletonならエラーになる', () => {
+    expect(() =>
+      new WorldCodexYamlLoader().load('core.yaml', neighbourYaml('')).buildAndReset(),
+    ).toThrowError(/kelp_belt/);
+  });
+
+  it('propsに書いた型がsingletonなら通る', () => {
+    expect(() =>
+      new WorldCodexYamlLoader().load('core.yaml', neighbourYaml('\n    singleton: true')).buildAndReset(),
+    ).not.toThrow();
+  });
+
+  it('to_objectが型を値に持たないプロパティを引くとエラーになる', () => {
+    // **プロパティの値は数のままなので、実行時には無関係な型を引くか、黙って何も起きないかになる。**
+    // どちらの宣言（型の名前・プロパティ）で書いても、指せているかはロード時に分かる。
+    const yaml = `
+object_defs:
+  kelp_belt:
+    singleton: true
+    slots:
+      stuff: {}
+  raft:
+    props:
+      storm_drift: {value: 0}
+    interactions:
+      sail:
+        trigger: menu
+        move: {subject: self, to_object: {prop: storm_drift}}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /storm_drift/,
+    );
+  });
+
+  it('propsの型に未知のキーを混ぜるとエラーになる', () => {
+    const yaml = `
+object_defs:
+  kelp_belt:
+    singleton: true
+    slots:
+      stuff: {}
+  coastal_waters:
+    props:
+      zone_toward_mainland: {value: {object: kelp_belt, min: 1}}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /未知のキー/,
+    );
+  });
+
   it('指した型が別のファイルでsingletonを名乗っていれば通る', () => {
     // 相手の型は自分の宣言より後に読まれうるので、検査は全ファイルを読み終えてから行う。
     const raft = `

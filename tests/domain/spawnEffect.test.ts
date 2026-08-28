@@ -63,8 +63,9 @@ object_defs:
 
 /**
  * spawnの配置先（9.4節）が、**moveの移動先と同じ三択**で書けることの検証。`into`（対象キー）のほかに、
- * 型の名前（`into_object`）と、プロパティが持つインスタンスID（`into_prop`）で指せる——どちらも
- * 「自分でも操作者でもない、離れた1つの相手」で、対象キーでは名指せない。
+ * 型（`into_object`。名前をその場に書いても、型を値に持つプロパティから引いてもよい、6.9節）と、
+ * プロパティが持つインスタンスID（`into_prop`）で指せる——どちらも「自分でも操作者でもない、離れた
+ * 1つの相手」で、対象キーでは名指せない。
  */
 describe('spawnの配置先', () => {
   const yaml = `
@@ -83,6 +84,8 @@ object_defs:
   emitter:
     props:
       target_id: {value: 0}
+      # 型を値に持つプロパティ（6.9節）。into_objectがここから行き先の型を引く。
+      target_type: {value: {object: depot}}
       fuse:
         value: 0
         range: {min: 0, max: 2147483647}
@@ -90,6 +93,7 @@ object_defs:
           spawn:
             - {object: marker, into_object: depot}
             - {object: marker, into_prop: target_id}
+            - {object: marker, into_object: {prop: target_type}}
 `;
 
   let codex: WorldCodex;
@@ -118,8 +122,8 @@ object_defs:
 
     expect(
       depot.tryGetSlot(itemsSlotId)!.contents.map((object) => object.def.name),
-      'into_objectはその型のインスタンスへ入れる',
-    ).toEqual(['marker']);
+      'into_objectはその型のインスタンスへ入れる（名前で書いても、プロパティから引いても同じ）',
+    ).toEqual(['marker', 'marker']);
     expect(
       box.tryGetSlot(itemsSlotId)!.contents.map((object) => object.def.name),
       'into_propはそのIDの個体へ入れる',

@@ -87,6 +87,10 @@ function objectRefTokens(reading: ObjectRefReading, names: DefNames): readonly D
       return [objectRef(names.objectName(reading.objectGlobalId))];
     case 'property':
       return [propertyPathRef(names.propertyName(reading.propertyGlobalId), 'self')];
+    // 型で指す相手を、名前ではなくプロパティから引く形（6.9節）。指すのが個体ではなく型であることは、
+    // 引くプロパティの名前だけでは読めないので添える。
+    case 'object_property':
+      return [propertyPathRef(names.propertyName(reading.propertyGlobalId), 'self'), text('が名乗る型')];
   }
 }
 

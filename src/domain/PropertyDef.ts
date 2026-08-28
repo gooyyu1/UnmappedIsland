@@ -264,6 +264,12 @@ export class PropertyDef {
   readonly isSymbolic: boolean;
 
   /**
+   * 値が型（`object_defs`のグローバルID、6.9節。海区が名乗る隣）か。**シンボルと同じく実行時の値は
+   * 数値なので、型の名前へ戻せるかどうかはこの宣言だけが知っている**（`DefNames.propertyValueToken`）。
+   */
+  readonly isObjectDef: boolean;
+
+  /**
    * カードのゲージとして見せる宣言（6.8節）。持たないプロパティはバーにならない——「出すかどうか」は
    * この宣言の有無だけで決まり、UI側は名前を1つも知らない（docs/ui/CardView.md 8節）。
    */
@@ -282,6 +288,7 @@ export class PropertyDef {
     tags: readonly number[] = [],
     isSymbolic = false,
     gauge: GaugeDef | undefined = undefined,
+    isObjectDef = false,
   ) {
     // シンボル型の段は名前そのものが比較対象なので、下限を持てない（6.6・6.4節）。**型と段の両方を
     // 見て初めて言えること**なので、段1つでは判定できない。**書かれたminを直に見る**——lowerBoundは
@@ -311,6 +318,7 @@ export class PropertyDef {
     this.base = base;
     this.tags = tags;
     this.isSymbolic = isSymbolic;
+    this.isObjectDef = isObjectDef;
     this.gauge = gauge;
 
     // 受け皿（どの段にも該当しない値の行き先、6.4節）。**シンボル型は持ちえない**——段名がそのまま

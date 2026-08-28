@@ -69,8 +69,9 @@ export class WorldCodexYamlLoader {
   private craftingConditions: Requirements | undefined;
 
   /**
-   * 型の名前で行き先を指した宣言（`to_object`/`into_object`、9.4節・9.6節）。指した先がsingletonか
-   * どうかは相手の型を読み終えるまで分からないので、判定はWorldCodexへ渡してそちらで行う。
+   * 行き先を型で指した宣言（`to_object`/`into_object`、9.4節・9.6節）。指した先がsingletonかどうかも、
+   * 引くプロパティが型を値に持つと宣言されているかも、相手の宣言を読み終えるまで分からないので、
+   * 判定はWorldCodexへ渡してそちらで行う。
    */
   private objectDefDestinations: ObjectDefDestination[] = [];
 
@@ -114,7 +115,12 @@ export class WorldCodexYamlLoader {
 
   /** 型の名前で行き先を指した宣言を1件覚える（parseDestinationRefから）。 */
   noteObjectDefDestination(objectGlobalId: number, context: string): void {
-    this.objectDefDestinations.push({ objectGlobalId, context });
+    this.objectDefDestinations.push({ kind: 'object', objectGlobalId, context });
+  }
+
+  /** 型を値に持つプロパティ（6.9節）から行き先を引いた宣言を1件覚える（parseDestinationRefから）。 */
+  noteObjectDefPropertyDestination(propertyGlobalId: number, context: string): void {
+    this.objectDefDestinations.push({ kind: 'property', propertyGlobalId, context });
   }
 
   /** load系メソッドで蓄積した地形生成定義（axes/location_types/generation_scopes）。

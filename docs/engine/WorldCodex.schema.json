@@ -184,7 +184,7 @@
       "additionalProperties": false
     },
     "prop_value": {
-      "description": "props の value。固定値（数値・真偽値・シンボル名）、または {min, max} の範囲値（6.2節、生成時に1回だけロールされる初期値の範囲）のいずれか。数値・真偽値として解釈できない識別子形の文字列はシンボル型（6.6節）として登録され、そのプロパティ自体がシンボル型になる。",
+      "description": "props の value。固定値（数値・真偽値・シンボル名）、{min, max} の範囲値（6.2節、生成時に1回だけロールされる初期値の範囲）、または型を指す値（{object: ...}、6.9節）のいずれか。数値・真偽値として解釈できない識別子形の文字列はシンボル型（6.6節）として登録され、そのプロパティ自体がシンボル型になる。",
       "oneOf": [
         {
           "$ref": "#/$defs/number_literal"
@@ -198,6 +198,9 @@
         },
         {
           "$ref": "#/$defs/range_value"
+        },
+        {
+          "$ref": "#/$defs/object_def_value"
         }
       ]
     },
@@ -692,8 +695,8 @@
           "description": "self のそのプロパティが保持するインスタンスIDのオブジェクトへ入れる（moveのto_propと同じ、9.6節）。"
         },
         "into_object": {
-          "$ref": "#/$defs/identifier",
-          "description": "世界にただ1つ在る型（singleton、15節）をその名前で配置先にする（moveのto_objectと同じ、9.6節）。singletonでない型を指すのはロード時エラー。"
+          "$ref": "#/$defs/object_def_target",
+          "description": "世界にただ1つ在る型（singleton、15節）を配置先にする（moveのto_objectと同じ、9.6節）。"
         }
       },
       "required": [
@@ -1601,8 +1604,8 @@
           "description": "self のそのプロパティが保持するインスタンスIDのオブジェクトへ入れる。"
         },
         "to_object": {
-          "$ref": "#/$defs/identifier",
-          "description": "世界にただ1つ在る型（singleton、15節）をその名前で行き先にする。生成時に確定する個体を指すto_propと違い、**定義の時点で名前の分かっている行き先**（海区・本土）のためのもの。singletonでない型を指すのはロード時エラー。"
+          "$ref": "#/$defs/object_def_target",
+          "description": "世界にただ1つ在る型（singleton、15節）を行き先にする。生成時に確定する個体を指すto_propと違い、**定義の時点で決まっている行き先**（海区・本土）のためのもの。"
         },
         "to_slot": {
           "$ref": "#/$defs/identifier",
@@ -1810,6 +1813,40 @@
         },
         {
           "$ref": "#/$defs/prop_ref"
+        }
+      ]
+    },
+    "object_def_value": {
+      "description": "props の value に書く型（6.9節）。その object_def のインスタンスを1つ指す値で、行き先を型で指す口（moveのto_object・spawnのinto_object）が {prop: ...} の形で引く。指せるのは世界にただ1つ在る型（singleton、15節）だけで、それ以外はロード時エラー。",
+      "type": "object",
+      "properties": {
+        "object": {
+          "$ref": "#/$defs/identifier"
+        }
+      },
+      "required": [
+        "object"
+      ],
+      "additionalProperties": false
+    },
+    "object_def_target": {
+      "description": "行き先の型（moveのto_object・spawnのinto_object、9.4節・9.6節）。識別子をそのまま書くか、型を値に持つ self のプロパティを {prop: ...} で引く（6.9節）。どちらも世界にただ1つ在る型（singleton、15節）のインスタンスを探すので、違うのは型の名前をその場に書くかどうかだけ。singletonでない型を指すのはロード時エラー。",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/identifier"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "prop": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "prop"
+          ],
+          "additionalProperties": false
         }
       ]
     }

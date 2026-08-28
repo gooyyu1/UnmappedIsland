@@ -64,7 +64,16 @@ export function parsePropAppendingPassives(
   let initialValueRange: PropertyRange | undefined;
   let initialValue: number;
   let isSymbolProperty: boolean;
-  if (isMap(valueNode)) {
+  let isObjectProperty = false;
+  if (isMap(valueNode) && tryGetNode(valueNode, 'object') !== undefined) {
+    // 型を指す値（6.9節）。持つのはobject_defのグローバルIDで、ロードした時点で決まる定数。
+    // singletonであることの検査は、行き先を型で名指した宣言と同じ経路へ乗せる。
+    requireKnownKeys(valueNode, ['object'], `${context}.value`);
+    initialValue = loader.objectNames.intern(requireScalar(valueNode, 'object', context));
+    loader.noteObjectDefDestination(initialValue, `${context}.value.object`);
+    isSymbolProperty = false;
+    isObjectProperty = true;
+  } else if (isMap(valueNode)) {
     const initRange = new PropertyRange(
       requireNumber(valueNode, 'min', context),
       requireNumber(valueNode, 'max', context),
@@ -131,6 +140,7 @@ export function parsePropAppendingPassives(
         tags,
         isSymbolProperty,
         gauge,
+        isObjectProperty,
       ),
   );
 }
