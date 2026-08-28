@@ -1,0 +1,21 @@
+{
+  "_comment": [
+    "src/assets/objects/coastal_waters.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "設定の意味は sandy_beach.json を参照。海区も土地と同じ作りで出す（Voyage.md 3節）。"
+  ],
+  "output": "src/assets/objects/coastal_waters.png",
+  "prompts": "location_cards.json",
+  "prompt": "coastal_waters",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 61101,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "card",
+    "mode": "none"
+  }
+}

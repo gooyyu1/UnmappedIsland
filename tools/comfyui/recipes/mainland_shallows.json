@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "src/assets/objects/mainland_shallows.png を作り直すためのレシピ。build.py が読む。",
+    "",
+    "設定の意味は sandy_beach.json を参照。海区も土地と同じ作りで出す（Voyage.md 3節）。",
+    "",
+    "seedを選んでいるのは、陸が消えて海と雲だけになる絵が多いため。62410は稜線が画面の端から",
+    "端まで続き、途切れる所が無い。"
+  ],
+  "output": "src/assets/objects/mainland_shallows.png",
+  "prompts": "location_cards.json",
+  "prompt": "mainland_shallows",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 62410,
+  "width": 832,
+  "height": 1280,
+  "cardArt": {
+    "size": "card",
+    "mode": "none"
+  }
+}
