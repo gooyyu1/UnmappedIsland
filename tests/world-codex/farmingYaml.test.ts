@@ -125,7 +125,7 @@ describe('farming.yamlの畑と囲い', () => {
 
   /** 囲いを1つ据えて、飼葉を芋で満たす。 */
   function buildPen(taroCount = 3): WorldObject {
-    const pen = spawnInto('livestock_pen', land, 'fixtures');
+    const pen = spawnInto('pen', land, 'fixtures');
     for (let i = 0; i < taroCount; i++) {
       const taro = spawnInto('taro', player, 'hand');
       expect(
@@ -438,7 +438,7 @@ describe('farming.yamlの畑と囲い', () => {
     // 草食の獣が寄ってくる量と、草食の獣が食べる量は同じ1つの量（TrapSystem.md 4.1節）。
     // 与えるのは罠へ餌を仕掛けるのとまったく同じ形。
     open();
-    const pen = spawnInto('livestock_pen', land, 'fixtures');
+    const pen = spawnInto('pen', land, 'fixtures');
     const before = {
       miss: pen.tryGetProperty(missWeightId)!.getEffectiveValue(),
       herbivore: pen.tryGetProperty(herbivoreWeightId)!.getEffectiveValue(),
@@ -484,7 +484,7 @@ describe('farming.yamlの畑と囲い', () => {
   it('囲いは丸太と縄から作れる', () => {
     // 罠の檻（TrapSystem.md 1.2節）と同じ材料。**生かして扱う設備は常に高くつく**。
     open();
-    const def = codex.objects.get(codex.objectNames.getId('livestock_pen'));
+    const def = codex.objects.get(codex.objectNames.getId('pen'));
     const [recipe] = def.recipesProducingThis;
     const [step] = recipe!.steps;
 
@@ -500,7 +500,7 @@ describe('farming.yamlの畑と囲い', () => {
     const hand = player.getSlot(codex.slotNames.getId('hand'));
 
     expect(tillField().moveToSlotOrRejection(hand), '畑は手に取れない').toBeDefined();
-    expect(spawnInto('livestock_pen', land, 'fixtures').moveToSlotOrRejection(hand)).toBeDefined();
+    expect(spawnInto('pen', land, 'fixtures').moveToSlotOrRejection(hand)).toBeDefined();
   });
 
   it('畑のタイマーは、実るまで止まらない', () => {

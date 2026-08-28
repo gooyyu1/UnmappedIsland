@@ -478,8 +478,8 @@ object_texts:
       sow_water_spinach:
         display_name: 葉物を撒く
         description: 挿し穂として1株植える。自分が食べられる葉物を先に賭けることになる。
-  livestock_pen:
-    display_name: 家畜の囲い
+  pen:
+    display_name: 囲い
     description: 丸太を縄で結んだ柵。空けておけば大型の獣が生きたまま掛かり、入れておけば飼葉が続く間だけ増える。
     props:
       catch_remaining:

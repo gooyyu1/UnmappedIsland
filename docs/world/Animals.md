@@ -70,7 +70,7 @@
 
 ### 3.1 生け捕りにした獣は、囲いで増える
 
-**飼育は、罠とまったく同じ「留守番の設備」の形に載ります**——囲い（`livestock_pen`、`farming.yaml`）は
+**飼育は、罠とまったく同じ「留守番の設備」の形に載ります**——囲い（`pen`、`farming.yaml`）は
 罠の檻と同じ 1 つの型です（[`TrapSystem.md`](../engine/TrapSystem.md) 1.2 節）。獣を入れる枠と飼葉に
 加えて、罠の見えないタイマー（`catch_remaining`）と、土地から継承する捕獲の重み（`<動物>_catch`・
 `miss_weight`・`herbivore_weight`）を持ちます。**増えるかどうかは獣の側が名乗ります**

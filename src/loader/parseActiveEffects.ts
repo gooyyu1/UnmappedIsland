@@ -613,7 +613,8 @@ function parseObjectRef(
  *
  * - `X`: その場所が用意できる相手（対象キーか`{subject, prop}`、parseObjectRef）。
  * - `X_prop`: `self`が持つプロパティ名。その実効値をインスタンスIDとして解釈する。
- * - `X_object`: `object_defs`の識別子。世界にただ1つ在る型（`singleton`、15節）を名前で指す。
+ * - `X_object`: `object_defs`の識別子。世界にただ1つ在る型（`singleton`、15節）を名前で指す
+ *   （singletonであることの検査は相手の型が揃ってからなので、WorldCodexが行う）。
  *
  * どれも書かれていなければundefined（省略を許すかは呼び出し側が決める）。2つ以上はロード時エラー。
  */
@@ -637,7 +638,11 @@ function parseDestinationRef(
 
   if (propName !== undefined)
     return ObjectRef.ofProperty(new PropertyPath('self', loader.propertyNames.intern(propName)));
-  if (objectName !== undefined) return ObjectRef.ofObjectDef(loader.objectNames.intern(objectName));
+  if (objectName !== undefined) {
+    const objectGlobalId = loader.objectNames.intern(objectName);
+    loader.noteObjectDefDestination(objectGlobalId, `${context}.${prefix}_object`);
+    return ObjectRef.ofObjectDef(objectGlobalId);
+  }
 
   return parseObjectRef(loader, `${context}.${prefix}`, refNode!, scope);
 }

@@ -498,7 +498,7 @@ object_defs:
       # 罠に掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
       # 罠の候補に載る。どの型の罠に載るかは、罠の側が並べた候補の一覧が決める（同1.1節）。
       rat_catch: {value: 6}
-      # 檻（farming.yamlのlivestock_pen）に掛かる大型。**探索の重みより低い**——姿を見かけるのと、
+      # 檻（farming.yamlのpen）に掛かる大型。**探索の重みより低い**——姿を見かけるのと、
       # 自分から檻へ入るのは別の頻度で、探索の`_find`とは別のつまみになっている（同3節）。
       wild_boar_catch: {value: 2}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
@@ -581,7 +581,7 @@ object_defs:
       # 罠の候補に載る。どの型の罠に載るかは、罠の側が並べた候補の一覧が決める（同1.1節）。
       rat_catch: {value: 6}
       junglefowl_catch: {value: 8}
-      # 檻（farming.yamlのlivestock_pen）に掛かる大型。森と同じ重み——イノシシの居方は
+      # 檻（farming.yamlのpen）に掛かる大型。森と同じ重み——イノシシの居方は
       # `wild_boar_find`が両方3で並んでいるとおりで、檻の側で差を付ける理由が無い。
       wild_boar_catch: {value: 2}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。

@@ -767,6 +767,93 @@ object_defs:
   });
 
   // ------------------------------------------------------------------
+  // 型で指す行き先（to_object / into_object）
+  // ------------------------------------------------------------------
+
+  /**
+   * 型の名前で行き先を指せるのは、世界にただ1つ在る型だけ（GameElementDefinition.md 9.4節・9.6節）。
+   * 複数在りうる型を指すと、どの個体へ行くかは世界の形が決めてしまう——島へ戻る航路が、出た浜では
+   * なく島で最初の浜へ着いていた（#931）。書いた時点で分かる誤りなので、ロード時に落とす。
+   */
+  const shoreYaml = (extra: string): string => `
+object_defs:
+  sandy_beach:${extra}
+    slots:
+      stuff: {}
+  raft:
+    interactions:
+      sail:
+        trigger: menu
+        move: {subject: self, to_object: sandy_beach}
+`;
+
+  it('to_objectが非singletonの型を指すとエラーになる', () => {
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', shoreYaml('')).buildAndReset()).toThrowError(
+      /sandy_beach/,
+    );
+  });
+
+  it('to_objectがsingletonの型を指せば通る', () => {
+    expect(() =>
+      new WorldCodexYamlLoader().load('core.yaml', shoreYaml('\n    singleton: true')).buildAndReset(),
+    ).not.toThrow();
+  });
+
+  it('into_objectが非singletonの型を指すとエラーになる', () => {
+    const yaml = `
+object_defs:
+  crate:
+    slots:
+      items: {}
+  seed: {}
+  sprouter:
+    props:
+      fuse:
+        value: 0
+        range: {min: 0, max: 10}
+        on_min:
+          spawn: {object: seed, into_object: crate}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/crate/);
+  });
+
+  it('指した型が別のファイルでsingletonを名乗っていれば通る', () => {
+    // 相手の型は自分の宣言より後に読まれうるので、検査は全ファイルを読み終えてから行う。
+    const raft = `
+object_defs:
+  raft:
+    interactions:
+      sail:
+        trigger: menu
+        move: {subject: self, to_object: coastal_waters}
+`;
+    const sea = `
+object_defs:
+  coastal_waters:
+    singleton: true
+    slots:
+      stuff: {}
+`;
+    expect(() =>
+      new WorldCodexYamlLoader().load('raft.yaml', raft).load('sea.yaml', sea).buildAndReset(),
+    ).not.toThrow();
+  });
+
+  it('to_objectが定義の無い型名を指すとエラーになる', () => {
+    const yaml = `
+object_defs:
+  raft:
+    interactions:
+      sail:
+        trigger: menu
+        move: {subject: self, to_object: coastal_watrs}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /coastal_watrs/,
+    );
+  });
+
+  // ------------------------------------------------------------------
   // 構文エラー
   // ------------------------------------------------------------------
 
