@@ -767,6 +767,13 @@ object_defs:
             satiety: 60
             protein: 3
             lipid: 1
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         # 食べ終わって残る骨。actorの手が塞がっていれば足元へ落ちる（9.4節のフォールバック）。
         spawn: {object: small_bone, into: actor}
         destroy: self
@@ -846,6 +853,13 @@ object_defs:
             protein: 20
             lipid: 4
             vitamin: 2
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # 焼けた肉。生より腹に残り、栄養も出る。焼き上がっても火の中の枠に居続けるので、
@@ -876,6 +890,13 @@ object_defs:
             satiety: 450
             protein: 24
             lipid: 7
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # 焦げた塊。加熱の進みを持たないので、ここで鎖が終わる。
@@ -888,6 +909,9 @@ object_defs:
   # 置き換えが土地のアイテムへこぼれる（docs/engine/FireSystem.md 7.2節）。
   #
   # **腐らない。** 水も栄養素も残っていない炭なので、腐敗のtrait（foods.yaml）を持たない。
+  # したがって**吐き下しのpick（docs/engine/DigestionSystem.md 6節）も持たない**——他の食べ物が
+  # 全部持っているのに、ここだけ書かない理由がこれ。引く重みは腐敗の段が押し上げるspoilageなので、
+  # 腐らない物には常に0の抽選しか書けない。
   charred_lump:
     tags: [item, food, roastable]
     props:

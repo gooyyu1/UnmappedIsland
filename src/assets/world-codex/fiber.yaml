@@ -83,6 +83,13 @@ object_defs:
             satiety: 350
             carbohydrate: 10
             vitamin: 35
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # バナナの茎。運べる長さに切った偽茎の一節で、繊維はこれを構成する葉鞘の中にある。

@@ -421,6 +421,13 @@ object_defs:
             satiety: 200
             carbohydrate: 1
             vitamin: 60
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # 海鳥の卵。岩の窪みに産み落とされたもので、殻を割ればそのまま飲める。
@@ -444,6 +451,13 @@ object_defs:
             protein: 6
             lipid: 5
             vitamin: 10
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # 魚の群れ。海面まで上がってきた群れで、**居る間だけ実る**（GameEndings.md 12.1節）。

@@ -154,8 +154,10 @@
 **死に方は増えません。** 下痢の脱水は、既にある渇きの死に方へ流れます
 （[`VitalsSystem.md`](./VitalsSystem.md) 8 節）。
 
-段と `spoilage` は `foods.yaml` の `perishable` が配るので**腐る物すべてが持ちます**が、引く `pick` を
-書いてあるのは同ファイルの 3 種だけです（他のファイルの食べ物はまだ当たりません）。
+段と `spoilage` は `foods.yaml` の `perishable` が配るので**腐る物すべてが持ち**、引く `pick` は
+**食べられる物すべての `eat` に書いてあります**（`foods.yaml`・`coconut.yaml`・`animals.yaml`・
+`voyage.yaml`・`fiber.yaml`）。例外は焦げた塊（`charred_lump`）だけで、水も栄養素も残らない炭は
+腐らないので `spoilage` を持ちません。
 
 ## 未決事項・今後の検討課題
 
