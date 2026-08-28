@@ -1,0 +1,166 @@
+# 製塩と塩蔵（docs/world/ContentSkeleton.md 4節の保存の段4、docs/world/SurvivalItems.md 9節）。
+#
+# **天日で作る。** 海に面した土地へ浅い盤を据え、海水を汲んで張り、強い日差しに任せて水を飛ばす。
+# 罠・畑（traps.yaml・farming.yaml）とまったく同じ「留守番の設備」の形で、新しい文法は1つも足して
+# いない——張る → 別の土地へ行く → 戻ると塩が採れている、の往復が1単位になる。
+#
+# **煮詰める形は採らない。** 海水を器へ汲む口も、煮詰め切った器から塩を出す口も、器の側
+# （liquid_containers.yaml）に置くことになる。甕のfillは既に「尽きたら空の容器へ戻る」を持って
+# いるので、そこへ「尽きたら塩が残る」を重ねられない。焼け石（fire.yaml）が沸かせるのは1個につき
+# 1杯の湯なので、4Lを煮詰める燃料の勘定も新しく持ち込むことになる。
+#
+# 塩蔵は食べ物の側のcure軸（foods.yaml）へ乗る。塩を食べ物へ重ねると、その個体が塩漬けの版になる
+# （become、GameElementDefinition.md 9.9節）——**別の型を作らないので、傷み具合は引き継がれる**。
+# 腐りかけを塩漬けにしても新品には戻らない（そもそも下のcureが無事な物しか受け付けない）。
+
+traits:
+  # 塩蔵された物。foods.yamlのcure軸が、このtraitを丸ごと食べ物へ配る。
+  #
+  # **腐敗の速さは既にある3段（docs/engine/DurabilitySystem.md 3節）のうち最も遅い段（芋と同じ
+  # -0.5＝通常温度で20日）で、新しいレートは持ち込まない。** 生の速さのほうは塩蔵されている間だけ
+  # 効かない（foods.yamlのspoils_*）ので、ここが名乗る1つだけが残る。
+  #
+  # 屋外の上乗せ（分類によらず-1）はperishableが持ったままなので、塩漬けでも外へ置けば6.7日に
+  # 落ちる（docs/engine/DurabilitySystem.md 3節）。**塩は温度と湿りの代わりにはならない。**
+  salted:
+    tags: [cured]
+    passives:
+      - add: {self: {durability: -0.5}}
+
+object_defs:
+  # 塩。掻き取った粗塩ひと掴みで、1つで食べ物1つを塩蔵できる。
+  #
+  # **食べ物ではない。** 舐めて体が動く仕組み（ナトリウム）は無いので、foodタグを持たない。
+  salt:
+    tags: [item]
+    props:
+      weight: {value: 300}
+      volume: {value: 200}
+    interactions:
+      # 塩蔵する。**宣言はここ1箇所だけで、食べ物の側には1行も要らない**——受け取れるかどうかは
+      # 相手がcure軸を宣言しているかが決め、宣言していない型へは操作そのものが現れない
+      # （行き先の座標に型が居ない組み合わせは候補にならない、9.9節）。生肉のような別ファイルの
+      # 食べ物が軸を名乗れば、この操作は1行も変わらずにそちらへも効く。
+      cure:
+        trigger: {drag: {tag: perishable}}
+        duration: 30
+        conditions:
+          # 塩をすり込む手元の作業なので、見るのは手元の側（IlluminationSystem.md 5節）。
+          - reason: too_dark
+            subject: actor
+            prop: hand_brightness
+            in_stage: bright
+          # 二度漬けても保ちは変わらないので、塩を捨てさせない。
+          - reason: already_cured
+            not: {subject: dragged, matches: {tag: cured}}
+          # **無事な物しか漬からない。** 塩は腐敗を止めるだけで、進んだぶんは戻らない
+          # （docs/engine/DigestionSystem.md 6節の段をそのまま読む）。
+          - reason: too_spoiled
+            subject: dragged
+            prop: durability
+            in_stage: sound
+        become: {subject: dragged, cure: salted}
+        destroy: self
+
+  # cure軸の値。**traitsだけを宣言する**（3.5.1節）——変種へ配られるのは上のtraitで、この型自身の
+  # インスタンスは作られない。
+  salted:
+    traits: [salted]
+
+  # 塩田。海に面した土地へ据える浅い盤で、張った海水が日に干されると塩が残る。
+  #
+  # **畑（farming.yaml）とまったく同じ形。** 周期タイマーが尽きるたびに、張ってある海水1杯ぶんが
+  # 塩1つになる。撒いた株が実って減るのと、張った海水が乾いて減るのは同じことなので、畑の
+  # `*_sown` にあたるのが下の`brine`になる。
+  salt_pan:
+    tags: [fixture]
+    # 押すと採れた塩が並ぶ（7.11節）。**塩田は何も告げない**ので、見に来なければ採れたことは
+    # 分からない——罠・畑と同じ沈黙（docs/engine/TrapSystem.md 5節）。
+    visible_slots: [salt]
+    # 中身が個体ごとに違うので束ねない（SlotSystem.md 4節）。
+    stackable: false
+    slots:
+      # 採れた塩。**プレイヤーは入れられない**（placementからmanualを外す、7.7節）——畑と同じで、
+      # 開けると持ち物の置き場になる。取り出すのはいつでもできる。
+      salt:
+        cell_count: 4
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      # 平たい石4つぶん（1,000×4）。**据えた物も目方を名乗る**（core.yaml）。
+      weight: {value: 4000}
+      # 次に1杯ぶんが干し上がるまでの残り（罠のcatch_remaining・畑のgrowth_remainingと同じ見えない
+      # タイマー、TrapSystem.md 2節）。
+      #
+      # 初期値の幅は待ち時間ではなく**位相**（同2.1節）。複数の塩田が同じtickに一斉に採れるのを
+      # 防ぐためだけのもの。
+      #
+      # 24は「強い日差しが24tick当たれば干し上がる」で、砂浜の晴れならちょうど1日ぶん
+      # （9〜14時の6時間）にあたる。**日陰の海岸では届く時間が短くなるので、そのぶん遅くなる**
+      # ——塩田が明るく開けた砂浜に向くのは、ここに書いた1つの境目から出る。
+      drying_remaining:
+        value: {min: 1, max: 24}
+        range: {min: 0, max: 24}
+        passives:
+          # 干し上がるのは強い日差しの下だけ。境目は液体の蒸発の上乗せと同じ+14
+          # （liquid_containers.yaml、docs/engine/IlluminationSystem.md 1節のEV）。
+          #
+          # **天気を見る必要はない**——曇りの正午（-5）でも雨天でもこの境目には届かないので、
+          # 日が陰れば止まる（蒸発の上乗せと同じ理由）。
+          - conditions:
+              - {subject: ancestor, prop: ambient_brightness, gte: 14}
+            add: {self: {drying_remaining: -1}}
+          # 雨は張った海水を薄める。**乾きかけは元へ戻る**（rangeの上限で止まる）ので、雨季に
+          # 塩を得るには晴れ間が続かなければならない。守られた場所なら効かない
+          # （sheltered、docs/engine/ContainerSystem.md 6節）が、そこは日も差さない。
+          - conditions:
+              - {subject: ancestor, prop: sheltered, eq: 0}
+              - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
+            add: {self: {drying_remaining: 2}}
+        # 周期の置き直しは、どの候補が選ばれても起こるのでpickの外へ1つだけ置く（9.7節）。
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          pick:
+            # 海水を張っていない回。**重みは0**——全候補の重みが0なら先頭が選ばれる規約（10節）
+            # だけで拾うので、1杯でも張ってあれば必ず塩になる。罠の空振り（miss_weight）に
+            # あたるものは、畑と同じく持たない。
+            - weight: 0
+            - weight: {prop: brine}
+              add: {self: {brine: -1}}
+              spawn: {object: salt, into: self}
+      # 張ってある海水の杯数。畑の`*_sown`と同じ立ち位置で、**張っていなければ候補ごと抽選から
+      # 外れる**。汲むたびに増え、干し上がるたびに減る。
+      brine: {value: 0, range: {min: 0, max: 8}}
+    interactions:
+      # 海水を汲んで張る。**これが製塩の代償**で、罠の餌・畑の種と同じく、待つ前に先に払う
+      # （TrapSystem.md 4節）。払うのが食料ではなく時間だけなのは、海水がいくらでもあるため。
+      #
+      # **器は要らない。** 汲むのは自分の手の届く波打ち際で、運ぶのは数歩ぶんなので、容器を
+      # 挟むと「塩田を海から離して置けない」を二度言うことになる。
+      draw_seawater:
+        trigger: menu
+        duration: 15
+        conditions:
+          # 波打ち際まで下りて汲む屋外の行動なので、見るのは視界の側
+          # （docs/engine/IlluminationSystem.md 5節）。
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            in_stage: bright
+          - {reason: salt_pan_full, prop: brine, lt: 8}
+          # 海に面した土地に据えた塩田だけが汲める（locations.yamlのcoastタグ）。**据える場所は
+          # 縛らない**——海から離れた塩田は、この操作が出ないことで何もできないと分かる。
+          - reason: no_seawater
+            subject: parent
+            matches: {tag: coast}
+        add: {self: {brine: 1}}
+    # 解放条件（conditions、13.3節）はまだ置かない。スキルのプロパティと、それを伸ばす経路が
+    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
+    recipes:
+      # 砂を掻き分け、平たい石を並べて底を張る。**掘削具は要らない**——畑（240分）と同じ手間で、
+      # 掘り返すのではなく並べるだけなので、掘り棒にする太い枝も折り込んでいない。
+      laid:
+        steps:
+          - requires:
+              - {object: stone, count: 4, consume: true}
+            duration: 240

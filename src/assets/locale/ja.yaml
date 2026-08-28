@@ -53,6 +53,9 @@ object_texts:
     # {base}が素の型の名前、{value}がその軸の値の名前。言い方を変えたい型だけが自分のエントリで上書きする。
     variation_names:
       content: '{value}入りの{base}'
+      # 保存加工（salt.yaml）。**加工の名前を前へ置くだけ**にして、加工の種類が増えても書式を
+      # 増やさない（「塩漬けの空心菜」「燻製の空心菜」）。
+      cure: '{value}の{base}'
       # 製作中オブジェクト（レシピの軸）。**完成品と同じ名前にする。** カード名は枠の中の1行
       # （全角10文字）に収まる長さで書いてあり、そこへ「作りかけの」の5文字を足すと4文字より長い名前は
       # すべてはみ出す。作りかけであることは青い覆いが示す（CardView.md 10節）ので、名前で言い直さない。
@@ -517,6 +520,30 @@ object_texts:
   roasted_taro:
     display_name: 焼いたタロイモ
     description: 熾火に埋めて芯まで焼いた芋。ここまでやって、初めて食べられる。出し忘れると焦げる。
+
+  # 製塩と塩蔵（salt.yaml）。
+  salt:
+    display_name: 塩
+    description: 天日で干し上げた粗塩。ひと掴みで食べ物1つを漬けられる。舐めても腹の足しにはならない。
+    interactions:
+      cure:
+        display_name: 塩漬けにする
+        description: 塩をすり込んで水気を抜く。腐るのがずっと遅くなるが、傷んだ物は元に戻らない。
+  # cure軸の値（salt.yaml）。変種の名前にだけ出る（下のvariation_names）。
+  salted:
+    display_name: 塩漬け
+  salt_pan:
+    display_name: 塩田
+    description: 海水を張って日に干す浅い盤。晴れた日が続くほど塩が採れる。雨に降られると振り出しに戻る。
+    props:
+      drying_remaining:
+        display_name: 次の塩
+      brine:
+        display_name: 張った海水
+    interactions:
+      draw_seawater:
+        display_name: 海水を汲む
+        description: 波打ち際から1杯ぶんを汲んで張る。干し上がれば塩1つになる。
 
   # 道具（tools.yaml）。
   sharp_stone:
@@ -1256,6 +1283,10 @@ reason_texts:
   trap_baited: 罠にはもう餌が仕掛けてある。これ以上は入らない。
   field_sown: この畑はもう植わっている。空くまでは撒けない。
   pen_fed: 囲いにはもう飼葉がある。これ以上は入らない。
+  salt_pan_full: 塩田は海水で満ちている。干し上がるまでは足せない。
+  no_seawater: 海に面していない土地では、汲む海水がない。
+  already_cured: これはもう塩漬けにしてある。
+  too_spoiled: もう傷んでいる。塩を打っても、進んだぶんは戻らない。
   too_heavy: 荷が重すぎて歩けない。まず何かを置いていく必要がある。
   not_thirsty: 喉はまったく渇いていない。これ以上は飲めない。
   not_raining: 雨は降っていない。溜められる雨がない。
