@@ -98,8 +98,8 @@ export interface ChainRoute {
   /** 1回の実行で動く値すべて。時間を按分していないので、これらを縦に足すと二重計上になる。 */
   readonly deltas: readonly NamedAmount[];
 
-  /** 待ち生産を含む経路なら、1回の実行で設備が回っている時間（分）。含まないならundefined。 */
-  readonly devicePeriodMinutes: number | undefined;
+  /** 経路が待つ設備（上流から下流の順）。待ち生産を含まないなら空。 */
+  readonly devices: readonly Device[];
 
   readonly prerequisites: readonly RoutePrerequisite[];
 
@@ -178,7 +178,8 @@ export interface PropertyRoute {
 
   /**
    * 待ち生産の経路で、1日ぶんを賄うのに同時に要る設備の数（1日に回す回数 × 周期 ÷ 1日）。
-   * 含まないならundefined。
+   * 含まないならundefined。**`route.devices`の条件が成立し続けた場合の数**で、条件が満たせなければ
+   * 何個並べても0（issue #981）。
    */
   readonly simultaneousDeviceCount: number | undefined;
 }
@@ -202,18 +203,25 @@ export interface DailyMenu {
   readonly chosen: ReadonlyMap<number, ChainRoute>;
 }
 
-/** 待ち生産表の1行（設備1つが返す産物1種）。 */
-export interface DeviceRow {
+/**
+ * 待ち生産の設備1つ。**周期と、それが進む条件は対で持つ**——条件を伴わない周期は「置けば回る」と
+ * しか読めず、囲いも飼葉も無いまま数だけ並べる話になる（issue #981）。
+ */
+export interface Device {
   readonly deviceName: string;
   readonly stepName: string;
 
   /**
-   * 周期が進む条件（消費表の`condition`と同じ語彙）。**この行のレートは、これが成立している間の
+   * 周期が進む条件（消費表の`condition`と同じ語彙）。**周期から出る数字は、これが成立している間の
    * もの**——`常時`でなければ、置いただけでは1 tickも進まない。
    */
   readonly condition: string;
 
   readonly periodMinutes: number;
+}
+
+/** 待ち生産表の1行（設備1つが返す産物1種）。 */
+export interface DeviceRow extends Device {
   readonly productName: string;
 
   /** 1周期あたりの期待個数と、そこから出る1日あたりの個数。 */
@@ -853,6 +861,7 @@ function propertyRoute(route: ChainRoute, dailyNeed: DailyNeed): PropertyRoute {
   const gain = route.fills.get(dailyNeed.propertyGlobalId)!;
   const perUnitMinutes = route.executionMinutes / gain;
   const dailyMinutes = perUnitMinutes * dailyNeed.amount;
+  const devicePeriodMinutes = devicePeriodOf(route.devices);
   return {
     route,
     gain,
@@ -860,9 +869,9 @@ function propertyRoute(route: ChainRoute, dailyNeed: DailyNeed): PropertyRoute {
     dailyMinutes,
     dailyShare: (dailyMinutes * 100) / MINUTES_PER_DAY,
     simultaneousDeviceCount:
-      route.devicePeriodMinutes === undefined
+      devicePeriodMinutes === undefined
         ? undefined
-        : ((dailyNeed.amount / gain) * route.devicePeriodMinutes) / MINUTES_PER_DAY,
+        : ((dailyNeed.amount / gain) * devicePeriodMinutes) / MINUTES_PER_DAY,
   };
 }
 
@@ -916,7 +925,7 @@ function buildRoute(
       name: codex.propertyNames.getName(propertyGlobalId),
       amount,
     })),
-    devicePeriodMinutes: devicePeriodOf(route),
+    devices: routeDevices(codex, route),
     prerequisites: [...prerequisites.values()],
     blocked: [...prerequisites.values()].some(({ minutes }) => minutes === undefined),
     needsImport: resolved.imported || [...prerequisites.values()].some(({ imported }) => imported),
@@ -1027,19 +1036,35 @@ function addEntry(entries: MenuEntry[], route: ChainRoute, repetitions: number):
   }
 }
 
+/** その経路が待つ設備。経路は設備を何個でも通りうるので、条件も設備の数だけ在る。 */
+function routeDevices(codex: WorldCodex, route: readonly StepRef[]): readonly Device[] {
+  const devices: Device[] = [];
+  for (const ref of [...route].reverse()) {
+    if (ref.cycle?.repeats !== true) continue;
+    devices.push(deviceOf(codex, ref, ref.cycle));
+  }
+  return devices;
+}
+
 /**
  * その経路を1回実行する間に、設備が回っている時間（分）。待ち生産を含まないならundefined。
  *
  * **同時に何個要るかはここから出る**（simultaneousDeviceCount）——1日に回す回数 × この時間が1日を超えるなら、
  * 1つでは間に合わないということ。周期が長いほど数が要る。
  */
-function devicePeriodOf(route: readonly StepRef[]): number | undefined {
-  let periodMinutes = 0;
-  for (const ref of route) {
-    if (ref.cycle?.repeats !== true) continue;
-    periodMinutes += ref.cycle.periodMinutes;
-  }
-  return periodMinutes === 0 ? undefined : periodMinutes;
+function devicePeriodOf(devices: readonly Device[]): number | undefined {
+  if (devices.length === 0) return undefined;
+  return devices.reduce((sum, device) => sum + device.periodMinutes, 0);
+}
+
+/** 設備1つ分の事実。待ち生産表（deviceRows）と連鎖表（routeDevices）が同じものを見る。 */
+function deviceOf(codex: WorldCodex, ref: StepRef, cycle: DeviceCycle): Device {
+  return {
+    deviceName: ref.def.name,
+    stepName: ref.step.name,
+    condition: cycleCondition(codex, ref.def, cycle),
+    periodMinutes: cycle.periodMinutes,
+  };
 }
 
 function deviceRows(
@@ -1057,7 +1082,7 @@ function deviceRows(
     const deviceCost = acquisition.costByObject.get(ref.def.globalId);
     const lifetimeDays = lifetime === undefined ? undefined : lifetime.minutes / MINUTES_PER_DAY;
     const cyclesPerDay = MINUTES_PER_DAY / periodMinutes;
-    const condition = cycleCondition(codex, ref.def, ref.cycle);
+    const device = deviceOf(codex, ref, ref.cycle);
 
     for (const [objectGlobalId, perCycle] of expectedSpawns(ref.step)) {
       // 単独で存在できない型（怪我、7.9節）は産物ではない——獲物に刺さる傷は資源に数えない。
@@ -1065,10 +1090,7 @@ function deviceRows(
 
       const overLifetime = lifetimeDays === undefined ? undefined : perCycle * cyclesPerDay * lifetimeDays;
       rows.push({
-        deviceName: ref.def.name,
-        stepName: ref.step.name,
-        condition,
-        periodMinutes,
+        ...device,
         productName: codex.objectNames.getName(objectGlobalId),
         perCycle,
         perDay: perCycle * cyclesPerDay,
