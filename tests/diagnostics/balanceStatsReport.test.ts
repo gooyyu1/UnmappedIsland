@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type {
   BalanceTables,
+  Device,
   NamedAmount,
   PropertyChains,
   RoutePrerequisite,
@@ -71,6 +72,18 @@ function prerequisiteRecords(prerequisites: readonly RoutePrerequisite[]): YamlR
   }));
 }
 
+/**
+ * 経路が待つ設備と、その周期が進む条件。**`device_count`はこれらが成立し続けた場合の数**なので、
+ * 数と条件は同じ行で読めなければならない（issue #981）。周期とレートは`devices`節が持つ。
+ */
+function deviceRecords(devices: readonly Device[]): YamlRecord[] {
+  return devices.map(({ deviceName, stepName, condition }) => ({
+    device: deviceName,
+    step: stepName,
+    condition,
+  }));
+}
+
 function buildSections(codex: WorldCodex, tables: BalanceTables): readonly YamlReportSection[] {
   const chainPlaces = tables.places.filter((place) => place.properties.length > 0);
 
@@ -131,6 +144,7 @@ function buildSections(codex: WorldCodex, tables: BalanceTables): readonly YamlR
               daily_minutes: rounded(entry.dailyMinutes, 0),
               day_percent: rounded(entry.dailyShare, 1),
               device_count: rounded(entry.simultaneousDeviceCount, 1),
+              devices: deviceRecords(entry.route.devices),
               deltas: amountRecords(entry.route.deltas),
               prerequisites: prerequisiteRecords(entry.route.prerequisites),
             })),
@@ -185,10 +199,12 @@ function buildSections(codex: WorldCodex, tables: BalanceTables): readonly YamlR
           place: place.name,
           device: device.deviceName,
           step: device.stepName,
+          condition: device.condition,
           period_minutes: rounded(device.periodMinutes, 0),
           product: device.productName,
           per_cycle: rounded(device.perCycle, 3),
           per_day: rounded(device.perDay, 2),
+          lifetime_property: device.lifetimeProperty ?? null,
           lifetime_days: rounded(device.lifetimeDays, 1),
           over_lifetime: rounded(device.overLifetime, 1),
           build_minutes: rounded(device.buildMinutes),

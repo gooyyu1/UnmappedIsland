@@ -1,6 +1,14 @@
+import type {
+  ConditionDeclaration,
+  ConditionOp,
+  ConditionReader,
+  PropertyConditionReading,
+} from '../domain/ConditionReader';
 import type { ObjectDef } from '../domain/ObjectDef';
+import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { TickDelta } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
+import type { TypeMatchReading } from '../domain/TypeMatchRule';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
 import { craftingStepsOf } from './craftingSteps';
@@ -48,7 +56,7 @@ export interface Cost {
 export interface ConsumptionRow {
   readonly propertyName: string;
 
-  /** その増減が効く条件（常時・段・条件つき・輸送）。 */
+  /** その増減が効く条件（常時・段・ゲートの中身・輸送。conditionLabel参照）。 */
   readonly condition: string;
 
   readonly perTickByCharacter: readonly (number | undefined)[];
@@ -90,8 +98,8 @@ export interface ChainRoute {
   /** 1回の実行で動く値すべて。時間を按分していないので、これらを縦に足すと二重計上になる。 */
   readonly deltas: readonly NamedAmount[];
 
-  /** 待ち生産を含む経路なら、1回の実行で設備が回っている時間（分）。含まないならundefined。 */
-  readonly devicePeriodMinutes: number | undefined;
+  /** 経路が待つ設備（上流から下流の順）。待ち生産を含まないなら空。 */
+  readonly devices: readonly Device[];
 
   readonly prerequisites: readonly RoutePrerequisite[];
 
@@ -170,7 +178,8 @@ export interface PropertyRoute {
 
   /**
    * 待ち生産の経路で、1日ぶんを賄うのに同時に要る設備の数（1日に回す回数 × 周期 ÷ 1日）。
-   * 含まないならundefined。
+   * 含まないならundefined。**`route.devices`の条件が成立し続けた場合の数**で、条件が満たせなければ
+   * 何個並べても0（issue #981）。
    */
   readonly simultaneousDeviceCount: number | undefined;
 }
@@ -194,11 +203,25 @@ export interface DailyMenu {
   readonly chosen: ReadonlyMap<number, ChainRoute>;
 }
 
-/** 待ち生産表の1行（設備1つが返す産物1種）。 */
-export interface DeviceRow {
+/**
+ * 待ち生産の設備1つ。**周期と、それが進む条件は対で持つ**——条件を伴わない周期は「置けば回る」と
+ * しか読めず、囲いも飼葉も無いまま数だけ並べる話になる（issue #981）。
+ */
+export interface Device {
   readonly deviceName: string;
   readonly stepName: string;
+
+  /**
+   * 周期が進む条件（消費表の`condition`と同じ語彙）。**周期から出る数字は、これが成立している間の
+   * もの**——`常時`でなければ、置いただけでは1 tickも進まない。
+   */
+  readonly condition: string;
+
   readonly periodMinutes: number;
+}
+
+/** 待ち生産表の1行（設備1つが返す産物1種）。 */
+export interface DeviceRow extends Device {
   readonly productName: string;
 
   /** 1周期あたりの期待個数と、そこから出る1日あたりの個数。 */
@@ -208,6 +231,9 @@ export interface DeviceRow {
   /** 設備が朽ちるまでの日数と、その間に返す総数。朽ちないならundefined。 */
   readonly lifetimeDays: number | undefined;
   readonly overLifetime: number | undefined;
+
+  /** その日数の出どころ（尽きると設備が消えるプロパティ）。朽ちないならundefined。 */
+  readonly lifetimeProperty: string | undefined;
 
   /** 設備1つを作るのに要る時間（分）と、産物1個あたりへ按分した時間。 */
   readonly buildMinutes: number | undefined;
@@ -434,12 +460,176 @@ function tickAmountsByName(codex: WorldCodex, def: ObjectDef): ReadonlyMap<strin
   return byKey;
 }
 
-/** そのゲート（8.2節）と輸送かどうかを1語で言い表す。 */
+/** ゲート（8.2節）で縛られていない増減。 */
+const ALWAYS = '常時';
+
+/** そのゲート（8.2節）と輸送かどうかを言い表す。 */
 function conditionLabel(codex: WorldCodex, delta: TickDelta): string {
   const capped = delta.capped ? '（輸送・在庫がある間）' : '';
-  if (delta.gate.stage !== undefined)
-    return `段 ${codex.propertyNames.getName(delta.gate.stage.propertyGlobalId)}=${delta.gate.stage.name}${capped}`;
-  return `${delta.gate.conditional ? '条件つき' : '常時'}${capped}`;
+  const { stage, conditions } = delta.gate;
+  if (stage !== undefined)
+    return `段 ${codex.propertyNames.getName(stage.propertyGlobalId)}=${stage.name}${capped}`;
+  return `${conditions === undefined ? ALWAYS : conditionText(codex, conditions).text}${capped}`;
+}
+
+/** 条件（14節）を書き表したもの。compositeなら、並べるときに括弧が要る。 */
+interface ConditionText {
+  readonly text: string;
+  readonly composite: boolean;
+}
+
+/**
+ * 条件（14節）を1行で書き表す。**識別子はそのまま出す**——読み手が定義と引き比べられることが、
+ * 表がこの列を持つ理由そのもの（issue #961）。
+ *
+ * 否定は葉まで押し下げる（ド・モルガンの法則）。`not: {slot: catch, matches: {tag: quarry}}` を
+ * 「〜ではない」と包むより、「catch枠にquarryが無い」と書くほうが条件の形と一致する。
+ */
+function conditionText(codex: WorldCodex, condition: ConditionDeclaration, negated = false): ConditionText {
+  const writer = new ConditionTextWriter(codex, negated);
+  condition.read(writer);
+  return writer;
+}
+
+/** 比較演算子の書き表し方。YAMLのフロー形式でそのまま書ける記号を選ぶ（引用符が増えない）。 */
+const OP_SYMBOLS: Readonly<Record<ConditionOp, string>> = {
+  lt: '<',
+  lte: '≤',
+  gt: '>',
+  gte: '≥',
+  eq: '=',
+  neq: '≠',
+  in: '∈',
+  not_in: '∉',
+};
+
+/** 否定したときの比較演算子。比較の否定は比較なので、否定を葉まで押し下げられる。 */
+const NEGATED_OPS: Readonly<Record<ConditionOp, ConditionOp>> = {
+  lt: 'gte',
+  lte: 'gt',
+  gt: 'lte',
+  gte: 'lt',
+  eq: 'neq',
+  neq: 'eq',
+  in: 'not_in',
+  not_in: 'in',
+};
+
+/** 条件の主語を指す語。**selfには語を当てない**——行そのものがselfの話だから。 */
+const SUBJECT_WORDS: Readonly<Record<ReferenceRoot, string>> = {
+  self: '',
+  parent: '親',
+  child: '子',
+  actor: '操作者',
+  dragged: '重ねた相手',
+  picked: '選ばれた相手',
+  ancestor: '祖先',
+};
+
+/** 主語と助詞。selfは語ごと落ちるので助詞も付かない。 */
+function subject(root: ReferenceRoot, particle: string): string {
+  const word = SUBJECT_WORDS[root];
+  return word === '' ? '' : `${word}${particle}`;
+}
+
+/** 型の指定（4.1節）の書き表し方。 */
+function typeMatchText(codex: WorldCodex, match: TypeMatchReading): string {
+  switch (match.kind) {
+    case 'tag':
+      return codex.tagNames.getName(match.tagGlobalId);
+    case 'object':
+      return codex.objectNames.getName(match.objectGlobalId);
+    case 'not':
+      return `${typeMatchText(codex, match.inner)}でないもの`;
+  }
+}
+
+class ConditionTextWriter implements ConditionReader, ConditionText {
+  text = '';
+
+  composite = false;
+
+  private readonly codex: WorldCodex;
+
+  /** ここまでの否定を畳んだ結果。真なら、葉を否定形で書く。 */
+  private readonly negated: boolean;
+
+  constructor(codex: WorldCodex, negated: boolean) {
+    this.codex = codex;
+    this.negated = negated;
+  }
+
+  property(reading: PropertyConditionReading): void {
+    const op = this.negated ? NEGATED_OPS[reading.op] : reading.op;
+    this.text = `${subject(reading.root, 'の')}${this.propertyName(reading.propertyGlobalId)} ${OP_SYMBOLS[op]} ${this.valueText(reading)}`;
+  }
+
+  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string): void {
+    const suffix = this.negated ? 'でない' : '';
+    this.text = `${subject(root, 'の')}${this.propertyName(propertyGlobalId)}が段${stageName}${suffix}`;
+  }
+
+  slotPosition(root: ReferenceRoot, slotGlobalId: number): void {
+    this.text = `${subject(root, 'が')}${this.slotName(slotGlobalId)}枠に${this.negated ? '無い' : 'ある'}`;
+  }
+
+  slotContent(root: ReferenceRoot, slotGlobalId: number, match: TypeMatchReading): void {
+    const content = typeMatchText(this.codex, match);
+    this.text = `${subject(root, 'の')}${this.slotName(slotGlobalId)}枠に${content}が${this.negated ? '無い' : 'ある'}`;
+  }
+
+  objectMatches(root: ReferenceRoot, match: TypeMatchReading): void {
+    const suffix = this.negated ? 'でない' : 'である';
+    this.text = `${subject(root, 'が')}${typeMatchText(this.codex, match)}${suffix}`;
+  }
+
+  all(children: readonly ConditionDeclaration[]): void {
+    this.join(children, this.negated ? 'または' : 'かつ');
+  }
+
+  any(children: readonly ConditionDeclaration[]): void {
+    this.join(children, this.negated ? 'かつ' : 'または');
+  }
+
+  not(child: ConditionDeclaration): void {
+    const inner = conditionText(this.codex, child, !this.negated);
+    this.text = inner.text;
+    this.composite = inner.composite;
+  }
+
+  /** 入れ子の複合ノードだけを括弧で包む。平らな並びに括弧を足しても、切れ目は増えない。 */
+  private join(children: readonly ConditionDeclaration[], conjunction: string): void {
+    this.text = children
+      .map((child) => conditionText(this.codex, child, this.negated))
+      .map((child) => (child.composite ? `（${child.text}）` : child.text))
+      .join(` ${conjunction} `);
+    this.composite = children.length > 1;
+  }
+
+  private propertyName(propertyGlobalId: number): string {
+    return this.codex.propertyNames.getName(propertyGlobalId);
+  }
+
+  private slotName(slotGlobalId: number): string {
+    return this.codex.slotNames.getName(slotGlobalId);
+  }
+
+  /** 比較の相手。別のプロパティを見ているならその参照、リテラルなら値そのもの。 */
+  private valueText(reading: PropertyConditionReading): string {
+    const { valueRef } = reading;
+    if (valueRef !== undefined)
+      return `${subject(valueRef.root, 'の')}${this.propertyName(valueRef.propertyGlobalId)}`;
+
+    return (reading.values ?? [])
+      .map((value) => this.literalText(reading.propertyGlobalId, value))
+      .join('・');
+  }
+
+  /** シンボル型プロパティ（6.6節）の値はシンボル名へ戻す。実行時の値はどちらも数値なので、型を訊く。 */
+  private literalText(propertyGlobalId: number, value: number): string {
+    if (!this.codex.symbolicProperties.has(propertyGlobalId)) return String(value);
+    return this.codex.symbolNames.tryGetName(value) ?? String(value);
+  }
 }
 
 function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly SupplyRow[] {
@@ -671,6 +861,7 @@ function propertyRoute(route: ChainRoute, dailyNeed: DailyNeed): PropertyRoute {
   const gain = route.fills.get(dailyNeed.propertyGlobalId)!;
   const perUnitMinutes = route.executionMinutes / gain;
   const dailyMinutes = perUnitMinutes * dailyNeed.amount;
+  const devicePeriodMinutes = devicePeriodOf(route.devices);
   return {
     route,
     gain,
@@ -678,9 +869,9 @@ function propertyRoute(route: ChainRoute, dailyNeed: DailyNeed): PropertyRoute {
     dailyMinutes,
     dailyShare: (dailyMinutes * 100) / MINUTES_PER_DAY,
     simultaneousDeviceCount:
-      route.devicePeriodMinutes === undefined
+      devicePeriodMinutes === undefined
         ? undefined
-        : ((dailyNeed.amount / gain) * route.devicePeriodMinutes) / MINUTES_PER_DAY,
+        : ((dailyNeed.amount / gain) * devicePeriodMinutes) / MINUTES_PER_DAY,
   };
 }
 
@@ -734,7 +925,7 @@ function buildRoute(
       name: codex.propertyNames.getName(propertyGlobalId),
       amount,
     })),
-    devicePeriodMinutes: devicePeriodOf(route),
+    devices: routeDevices(codex, route),
     prerequisites: [...prerequisites.values()],
     blocked: [...prerequisites.values()].some(({ minutes }) => minutes === undefined),
     needsImport: resolved.imported || [...prerequisites.values()].some(({ imported }) => imported),
@@ -845,19 +1036,35 @@ function addEntry(entries: MenuEntry[], route: ChainRoute, repetitions: number):
   }
 }
 
+/** その経路が待つ設備。経路は設備を何個でも通りうるので、条件も設備の数だけ在る。 */
+function routeDevices(codex: WorldCodex, route: readonly StepRef[]): readonly Device[] {
+  const devices: Device[] = [];
+  for (const ref of [...route].reverse()) {
+    if (ref.cycle?.repeats !== true) continue;
+    devices.push(deviceOf(codex, ref, ref.cycle));
+  }
+  return devices;
+}
+
 /**
  * その経路を1回実行する間に、設備が回っている時間（分）。待ち生産を含まないならundefined。
  *
  * **同時に何個要るかはここから出る**（simultaneousDeviceCount）——1日に回す回数 × この時間が1日を超えるなら、
  * 1つでは間に合わないということ。周期が長いほど数が要る。
  */
-function devicePeriodOf(route: readonly StepRef[]): number | undefined {
-  let periodMinutes = 0;
-  for (const ref of route) {
-    if (ref.cycle?.repeats !== true) continue;
-    periodMinutes += ref.cycle.periodMinutes;
-  }
-  return periodMinutes === 0 ? undefined : periodMinutes;
+function devicePeriodOf(devices: readonly Device[]): number | undefined {
+  if (devices.length === 0) return undefined;
+  return devices.reduce((sum, device) => sum + device.periodMinutes, 0);
+}
+
+/** 設備1つ分の事実。待ち生産表（deviceRows）と連鎖表（routeDevices）が同じものを見る。 */
+function deviceOf(codex: WorldCodex, ref: StepRef, cycle: DeviceCycle): Device {
+  return {
+    deviceName: ref.def.name,
+    stepName: ref.step.name,
+    condition: cycleCondition(codex, ref.def, cycle),
+    periodMinutes: cycle.periodMinutes,
+  };
 }
 
 function deviceRows(
@@ -871,10 +1078,11 @@ function deviceRows(
     // 数える表に載せる意味が無い——返るのは常に1個で、消えるのは設備ではなく入力そのもの。
     if (ref.cycle?.repeats !== true || ref.step.outputs.length === 0) continue;
 
-    const { periodMinutes, lifetimeMinutes } = ref.cycle;
+    const { periodMinutes, lifetime } = ref.cycle;
     const deviceCost = acquisition.costByObject.get(ref.def.globalId);
-    const lifetimeDays = lifetimeMinutes === undefined ? undefined : lifetimeMinutes / MINUTES_PER_DAY;
+    const lifetimeDays = lifetime === undefined ? undefined : lifetime.minutes / MINUTES_PER_DAY;
     const cyclesPerDay = MINUTES_PER_DAY / periodMinutes;
+    const device = deviceOf(codex, ref, ref.cycle);
 
     for (const [objectGlobalId, perCycle] of expectedSpawns(ref.step)) {
       // 単独で存在できない型（怪我、7.9節）は産物ではない——獲物に刺さる傷は資源に数えない。
@@ -882,14 +1090,14 @@ function deviceRows(
 
       const overLifetime = lifetimeDays === undefined ? undefined : perCycle * cyclesPerDay * lifetimeDays;
       rows.push({
-        deviceName: ref.def.name,
-        stepName: ref.step.name,
-        periodMinutes,
+        ...device,
         productName: codex.objectNames.getName(objectGlobalId),
         perCycle,
         perDay: perCycle * cyclesPerDay,
         lifetimeDays,
         overLifetime,
+        lifetimeProperty:
+          lifetime === undefined ? undefined : codex.propertyNames.getName(lifetime.propertyGlobalId),
         buildMinutes: deviceCost === undefined ? undefined : totalOf(deviceCost),
         laborPerUnit:
           deviceCost === undefined || overLifetime === undefined
@@ -899,6 +1107,29 @@ function deviceRows(
     }
   }
   return rows;
+}
+
+/**
+ * その周期が進む条件（8.2節のゲート）。**周期を進めるのはその値を動かすtick毎の増減**なので、
+ * それを縛るゲートがそのまま「いつ働くか」になる——罠の`catch_remaining`は地面に置いてある間だけ、
+ * ヤケイの`breeding_remaining`は囲いの中で飼葉がある間だけ減る。
+ *
+ * 常時効く分が正味で残るなら、条件が1つも成立しなくても進む（rangeCyclesのtickAmountsOfと同じ
+ * 見方）。段で切り替わる増減は周期そのものが立たないので数えない。
+ */
+function cycleCondition(codex: WorldCodex, def: ObjectDef, cycle: DeviceCycle): string {
+  // 隣の物に押されて進む周期（炉が焼く・傷が血を奪う）は、押し手が傍に在ること自体が条件。
+  if (cycle.drivenBy !== undefined) return `${codex.objectNames.getName(cycle.drivenBy)}が傍にある`;
+
+  let unconditional = 0;
+  let gated: TickDelta | undefined;
+  for (const delta of tickDeltasOf(def)) {
+    if (delta.target !== 'self' || delta.propertyGlobalId !== cycle.propertyGlobalId) continue;
+    if (delta.gate.stage !== undefined) continue;
+    if (delta.gate.conditional) gated ??= delta;
+    else unconditional += delta.amount;
+  }
+  return unconditional !== 0 || gated === undefined ? ALWAYS : conditionLabel(codex, gated);
 }
 
 /** 1回の実行で、その型が生まれる期待個数（分岐の確率で重み付けした和）。 */
@@ -939,6 +1170,12 @@ interface StepRef {
 interface DeviceCycle {
   readonly periodMinutes: number;
 
+  /** この周期を進めているプロパティ。**それを動かす増減のゲートが、周期が進む条件そのもの。** */
+  readonly propertyGlobalId: number;
+
+  /** 外から押されて進む周期（炉が焼く・傷が血を奪う）なら、押し手の型（RangeCycle.drivenBy）。 */
+  readonly drivenBy: number | undefined;
+
   /**
    * 繰り返す仕掛け（罠）か。真なら**プレイヤーは待ち時間を払わないが、設備は待っている間も朽ちる**
    * ので、1周期で使い切る設備の割合（周期÷寿命）が値段になる。偽は1回で終わる作り替えで、
@@ -946,8 +1183,14 @@ interface DeviceCycle {
    */
   readonly repeats: boolean;
 
-  /** 宣言元が朽ちるまでの時間（分）。朽ちない設備では按分できないためundefined。 */
-  readonly lifetimeMinutes: number | undefined;
+  /** 宣言元が朽ちるまでの見込み。朽ちない設備では按分できないためundefined。 */
+  readonly lifetime: DecayLifetime | undefined;
+}
+
+/** その型が朽ちるまでの時間（分）と、尽きて自分を消すプロパティ。 */
+interface DecayLifetime {
+  readonly minutes: number;
+  readonly propertyGlobalId: number;
 }
 
 /** 工程1回の値段と、それが他の土地からの持ち込みを含むか。 */
@@ -1036,7 +1279,7 @@ function allSteps(
   return defs.flatMap((def) => {
     if (axisValues.has(def.globalId) || seaOnly.has(def.globalId)) return [];
     const cycles = rangeCyclesOf(def, outer, externalTickDeltasOn(def, defs));
-    const lifetimeMinutes = decayLifetimeOf(cycles);
+    const lifetime = decayLifetimeOf(cycles);
     return [
       ...craftingStepsOf(codex, def, outer).map((step) => ({ def, step, cycle: undefined })),
       // 繰り返す周期は設備（罠）。1回で終わる周期は、外から押されて初めて起こる作り替え
@@ -1046,7 +1289,13 @@ function allSteps(
         .map((cycle) => ({
           def,
           step: cycle.step,
-          cycle: { periodMinutes: cycle.minutes, repeats: cycle.repeats, lifetimeMinutes },
+          cycle: {
+            periodMinutes: cycle.minutes,
+            propertyGlobalId: cycle.propertyGlobalId,
+            drivenBy: cycle.drivenBy,
+            repeats: cycle.repeats,
+            lifetime,
+          },
         })),
     ];
   });
@@ -1075,11 +1324,14 @@ function externalTickDeltasOn(def: ObjectDef, defs: readonly ObjectDef[]): reado
  * 外から押されて消える周期（焼き上がり・失血死）は数えない——**置いておくだけでは起こらない**ので、
  * それを寿命と呼ぶと、火にかけていない肉まで勝手に焼け落ちることになる。
  */
-function decayLifetimeOf(cycles: readonly RangeCycle[]): number | undefined {
-  const ends = cycles
-    .filter((cycle) => cycle.destroysSelf && !cycle.repeats && cycle.drivenBy === undefined)
-    .map((cycle) => cycle.minutes);
-  return ends.length === 0 ? undefined : Math.min(...ends);
+function decayLifetimeOf(cycles: readonly RangeCycle[]): DecayLifetime | undefined {
+  let earliest: DecayLifetime | undefined;
+  for (const cycle of cycles) {
+    if (!cycle.destroysSelf || cycle.repeats || cycle.drivenBy !== undefined) continue;
+    if (earliest === undefined || cycle.minutes < earliest.minutes)
+      earliest = { minutes: cycle.minutes, propertyGlobalId: cycle.propertyGlobalId };
+  }
+  return earliest;
 }
 
 /** 祖先（置かれている土地）の宣言値を答える手立て。宣言していないプロパティは寄与0。 */
@@ -1182,10 +1434,11 @@ class Acquisition {
 
     // 繰り返す仕掛けは、1周期ぶんだけ設備を使い切る。朽ちない設備は按分できない（待てば無限に得られる）。
     if (ref.cycle?.repeats === true) {
-      if (ref.cycle.lifetimeMinutes === undefined) return undefined;
+      const lifetime = ref.cycle.lifetime;
+      if (lifetime === undefined) return undefined;
       const device = this.costByObject.get(ref.def.globalId);
       if (device === undefined) return undefined;
-      cost = addCost(cost, scaleCost(device, ref.cycle.periodMinutes / ref.cycle.lifetimeMinutes));
+      cost = addCost(cost, scaleCost(device, ref.cycle.periodMinutes / lifetime.minutes));
     }
 
     for (const input of ref.step.inputs) {

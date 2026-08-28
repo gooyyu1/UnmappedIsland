@@ -30,12 +30,18 @@ export interface TickDelta {
 }
 
 /** tick毎の増減を縛るゲートの、定義だけから読める姿。 */
-export interface TickGate {
+export class TickGate {
   /** 段で縛られているならその段（8.2節）。常時効くならundefined。 */
   readonly stage: { readonly propertyGlobalId: number; readonly name: string } | undefined;
 
-  /** 段以外の条件（conditions）でも縛られているか。真なら、その条件が成立している間だけ効く。 */
-  readonly conditional: boolean;
+  /**
+   * 段以外の条件（conditions、14節）。無ければundefined。
+   *
+   * **「縛られているか」の1ビットへ畳まず、宣言そのものを持つ。** 畳むと、置けば成立する罠の判定と、
+   * 囲いと飼葉が要るヤケイの繁殖が同じ姿になり、何の条件かを名前で出せなくなる（issue #961）。
+   * 以降のフィールドは、この宣言から**特定の問いのために**取り出した答えで、条件そのものではない。
+   */
+  readonly conditions: ConditionDeclaration | undefined;
 
   /**
    * 条件が見ている、宣言元自身のプロパティ。**その増減がいつまで効くか**の手掛かりで、出血なら
@@ -49,6 +55,34 @@ export interface TickGate {
    * その状態が続く時間から数えられるようにする。
    */
   readonly ancestorConditions: readonly AncestorCondition[];
+
+  /** 条件が宣言元自身の型に課している指定のうち、成立していなければ効かないもの。 */
+  private readonly selfTypeMatches: readonly TypeMatchReading[];
+
+  constructor(gate: GateReading) {
+    const collector = new GateConditionCollector();
+    gate.conditions?.read(collector);
+
+    this.stage = gate.stage;
+    this.conditions = gate.conditions;
+    this.watchedSelfProperties = collector.selfProperties;
+    this.ancestorConditions = collector.ancestorConditions;
+    this.selfTypeMatches = collector.selfTypeMatches;
+  }
+
+  /** 段以外の条件でも縛られているか。真なら、その条件が成立している間だけ効く。 */
+  get conditional(): boolean {
+    return this.conditions !== undefined;
+  }
+
+  /**
+   * その型で成り立ちうるゲートか。**蒸発も雨も口径ごとに宣言が分かれており**（`self` の型を見る
+   * 条件）、ヤシの器あての宣言は甕にとって一度も効かない。宣言を持っていることと、それがその型で
+   * 効くことは別。
+   */
+  possibleFor(def: ObjectDef): boolean {
+    return this.selfTypeMatches.every((match) => matchesType(def, match));
+  }
 }
 
 /** 祖先のプロパティに課された比較1つ。 */
@@ -114,22 +148,12 @@ class TickDeltaCollector implements PassiveReader {
   }
 
   /**
-   * ゲートの宣言を、増減がいつまで効くかを見積もれる形へ読み下す。**この型では成り立ちようのない
-   * 条件で縛られているならundefined**——蒸発も雨も口径ごとに宣言が分かれており（`self` の型を
-   * 見る条件）、ヤシの器あての宣言は甕にとって一度も効かない。宣言を持っていることと、それが
-   * その型で効くことは別。
+   * ゲートの宣言を読み下す。**この型では成り立ちようのない条件で縛られているならundefined**
+   * （TickGate.possibleFor）。
    */
   private tickGateOf(gate: GateReading): TickGate | undefined {
-    const conditions = new GateConditionCollector();
-    gate.conditions?.read(conditions);
-    if (!conditions.selfTypeMatches.every((match) => matchesType(this.def, match))) return undefined;
-
-    return {
-      stage: gate.stage,
-      conditional: gate.conditions !== undefined,
-      watchedSelfProperties: conditions.selfProperties,
-      ancestorConditions: conditions.ancestorConditions,
-    };
+    const tickGate = new TickGate(gate);
+    return tickGate.possibleFor(this.def) ? tickGate : undefined;
   }
 }
 
@@ -152,6 +176,11 @@ function matchesType(def: ObjectDef, match: TypeMatchReading): boolean {
  *
  * selfのプロパティは比較の相手（valueRef）を数えない——尽きて条件が外れるのは、見ている側の値が
  * 動いたときだから。祖先と型の指定は**論理積の枝にあるものだけ**を採る（下のreadAlternative）。
+ *
+ * **ここが集めるのは上の3つの問いへの答えだけで、条件そのものではない。** 枠を見る葉
+ * （`{in_slot}`・`{slot, matches}`）はどれにも答えない——枠に入っているかは、尽きる値でも
+ * 祖先の状態でも型でもない——ので空のまま。何が書かれているかは `TickGate.conditions` が
+ * 宣言のまま持つ。
  */
 class GateConditionCollector implements ConditionReader {
   readonly selfProperties: number[] = [];

@@ -161,14 +161,16 @@ traits:
               - conditions: [{prop: fuel, in_stage: none}]
                 add: {self: {heat: -6}}
     passives:
-      # 火は明かりでもある（docs/engine/IlluminationSystem.md 3節）。**どの光源も同じ2行を書き、
-      # 届き先は置かれた場所だけが決める**——据えた炉の親は土地で、土地は視界の明るさを持たないので、
-      # 手元にだけ届く。炉自身は「自分は視界に効かない」と知らない。
+      # 燃えている炉が周りへ与える、暖と明かり（docs/engine/FireSystem.md 9.2節）。どちらも親の
+      # プロパティをmodifyするだけで、**届き先は置かれた場所だけが決める**——据えた炉の親は土地で、
+      # 土地は気温を持つのでその土地だけが暖まり、視界の明るさは持たないので明かりは手元にしか
+      # 届かない（docs/engine/IlluminationSystem.md 3節）。炉自身はどこへ効くのかを知らない。
       #
-      # 段では見ない。種火も炎も同じ明るさとして扱い、暗闇から作業できる明るさへ持ち上げる1段
-      # （+11、ContentSkeleton.md 8.1.1.1節）だけを持つ。
+      # どちらも段では見ない。種火も炎も同じ値として扱い、持つのは線を1本跨がせる量だけ——明かりは
+      # 暗闇から作業できる明るさへ持ち上げる+11（ContentSkeleton.md 8.1.1.1節）、暖は世界が最も
+      # 冷えるとき（涼しい季節-5＋夜-3、core.yaml）をちょうど平年の気温へ戻す+8。
       - conditions: [{prop: heat, gt: 0}]
-        modify: {parent: {hand_brightness: 11, looking_brightness: 11}}
+        modify: {parent: {hand_brightness: 11, looking_brightness: 11, ambient_temperature: 8}}
       # 雨。野ざらしの炉は火力を余分に削られる。守られた場所（sheltered）なら効かない
       # （docs/engine/ContainerSystem.md 6節）。
       - conditions:

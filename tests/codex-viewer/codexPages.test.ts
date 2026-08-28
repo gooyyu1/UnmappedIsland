@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import type { DeviceRow } from '../../src/analysis/balanceTables';
+import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import { ART_BY_OBJECT_NAME } from '../../src/art/objectArt';
+import { BalancePage } from '../../src/codex-viewer/balancePage';
 import { CodexSource } from '../../src/codex-viewer/CodexSource';
 import { CodexView } from '../../src/codex-viewer/CodexView';
 import type { CodexPage } from '../../src/codex-viewer/CodexPage';
+import { escapeHtml } from '../../src/codex-viewer/html';
 import {
   ObjectListPage,
   ObjectPage,
@@ -296,5 +300,178 @@ describe('WorldCodexビューアのページ', () => {
   it('識別子はHTMLとして解釈されないようエスケープする', () => {
     expect(renderObjectPage(view, '<script>')).toContain('&lt;script&gt;');
     expect(renderObjectPage(view, '<script>')).not.toContain('<script>');
+  });
+});
+
+/**
+ * 待ち生産表の列と、`DeviceRow`（`src/analysis/balanceTables.ts`）のフィールドの対応。
+ *
+ * **`DeviceRow`は2箇所へ別々に書き出される**——`stats/balance.yaml`と、この表。フィールドが増えた
+ * ときに片方だけ列を足しても、どちらのテストも緑のままだった（issue #977。`condition`が増えたとき、
+ * 囲いの中でしか進まないヤケイの繁殖が、どこに置いても働くように読める表が残った）。
+ *
+ * `Record<keyof DeviceRow, …>` なので、**フィールドが増えるとここへ書き足すまでtypecheckが通らない**。
+ * 書き足せば、その列が表に在るかと、行のそのセルに値が出ているかをテストが見る。表に出さないと
+ * 決めたフィールドだけがnullで、理由を添える。
+ */
+const DEVICE_COLUMNS: Record<keyof DeviceRow, string | null> = {
+  deviceName: '設備',
+  stepName: '工程',
+  condition: '条件',
+  periodMinutes: '周期',
+  productName: '産物',
+  perCycle: '産物',
+  perDay: '個/日',
+  lifetimeDays: '寿命',
+  overLifetime: '生涯',
+  lifetimeProperty: '出どころ',
+  buildMinutes: '製作',
+  laborPerUnit: '分/個',
+};
+
+const DEVICE_FIELDS = Object.keys(DEVICE_COLUMNS) as readonly (keyof DeviceRow)[];
+
+/** `DeviceRow`のフィールドではない列。行がどの場所のものかは`PlaceBalance`が持つ。 */
+const PLACE_COLUMN = '場所';
+
+/** 描かれた表1つ。セルはHTMLのまま持つ（中の絵やリンクごと突き合わせる）。 */
+interface RenderedTable {
+  readonly headers: readonly string[];
+  readonly rows: readonly (readonly string[])[];
+}
+
+/** 待ち生産の節の先頭に在る表（後ろに続く雨で溜まる水の表は含めない）。 */
+function deviceTableOf(html: string): RenderedTable {
+  const heading = html.indexOf('<h2 id="balance-待ち生産">');
+  if (heading < 0) throw new Error('待ち生産の節が描かれていない');
+  const start = html.indexOf('<table>', heading);
+  const end = html.indexOf('</table>', start);
+  if (start < 0 || end < 0) throw new Error('待ち生産の表が描かれていない');
+  const table = html.slice(start, end);
+
+  return {
+    headers: [...table.matchAll(/<th>([\s\S]*?)<\/th>/g)].map(([, header]) => header),
+    rows: table
+      .split('<tr>')
+      .map((row) => [...row.matchAll(/<td>([\s\S]*?)<\/td>/g)].map(([, cell]) => cell))
+      .filter((cells) => cells.length > 0),
+  };
+}
+
+/**
+ * そのセルがその値を出しているか。数は列ごとに丸めの桁が違うので、どれかの桁で一致すればよい。
+ * セルがundefinedなのは列が無いとき（`indexOf`が-1）で、そのときも「出ていない」。
+ */
+function showsValue(cell: string | undefined, value: string | number): boolean {
+  if (cell === undefined) return false;
+  return typeof value === 'number'
+    ? [0, 1, 2, 3].some((digits) => cell.includes(value.toFixed(digits)))
+    : cell.includes(escapeHtml(value));
+}
+
+/**
+ * 待ち生産の設備を1つだけ宣言した世界。**`DeviceRow`のどのフィールドにも値が入るように書く**
+ * ——朽ちない設備や作り方の無い設備ではundefinedになるフィールドがあり、その列が見張られなくなる。
+ *
+ * 代表キャラクタの名前（`medic`）は収支ページが持つ定数。
+ */
+const DEVICE_YAML = `
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  spring_field:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 60
+        spawn: {object: fiber, into: self}
+
+  # 地面に置いてある間だけ周期が進み（＝「条件つき」）、耐久が尽きると自分が消える設備。
+  rain_basket:
+    tags: [item]
+    slots:
+      contents: {cell_count: 1, cell: {accept: {tag: item}}}
+    recipes:
+      woven:
+        steps:
+          - requires: [{object: fiber, count: 2, consume: true}]
+            duration: 180
+    props:
+      fill_remaining:
+        value: 16
+        range: {min: 0, max: 16}
+        passives:
+          - conditions: [{in_slot: items}]
+            add: {self: {fill_remaining: -1}}
+        on_min:
+          add: {self: {fill_remaining: 16}}
+          spawn: {object: gourd, into: self}
+      durability:
+        value: 960
+        range: {min: 0, max: 960}
+        passives:
+          - conditions: [{in_slot: items}]
+            add: {self: {durability: -1}}
+        on_min:
+          destroy: self
+
+  fiber: {tags: [item]}
+
+  gourd:
+    tags: [item]
+    interactions:
+      drink:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {actor: {hydration: 96}}
+`;
+
+describe('収支ページの待ち生産表', () => {
+  const codex = new WorldCodexYamlLoader().load('devices.yaml', DEVICE_YAML).buildAndReset();
+  // 識別子モードで描かせる。セルに出る名前が、そのまま`DeviceRow`の持つ識別子になる。
+  const source = new CodexSource(codex, parseLocale('ja.yaml', 'object_texts: {}'), ['devices.yaml']);
+  const view = new CodexView(source, 'identifier');
+  const devices = buildBalanceTables(codex, 'medic').places.flatMap((place) => place.devices);
+  const table = deviceTableOf(pageHtml(new BalancePage(), view));
+
+  it('列がDeviceRowのフィールドと対応している', () => {
+    const columns = [...new Set(Object.values(DEVICE_COLUMNS).filter((column) => column !== null))];
+
+    expect([...table.headers].sort()).toEqual([PLACE_COLUMN, ...columns].sort());
+  });
+
+  it('宣言した設備が、DeviceRowのどのフィールドにも値を持つ', () => {
+    const empty = DEVICE_FIELDS.filter((field) => devices.every((device) => device[field] === undefined));
+
+    expect(empty, 'undefinedのままのフィールドは、その列が出ているかを見張れない').toEqual([]);
+  });
+
+  it('行が、その設備の値をすべて出す', () => {
+    expect(table.rows.length, '解析が出した行が、すべて描かれてはいない').toBe(devices.length);
+
+    devices.forEach((device, index) => {
+      const cells = table.rows[index];
+      expect(cells.length, `${device.deviceName}の行のセルの数が、列の数と違う`).toBe(table.headers.length);
+
+      for (const field of DEVICE_FIELDS) {
+        const column = DEVICE_COLUMNS[field];
+        const value = device[field];
+        if (column === null || value === undefined) continue;
+
+        const message = `${device.deviceName}の${field}（${value}）が「${column}」の列に出ていない`;
+        expect(showsValue(cells[table.headers.indexOf(column)], value), message).toBe(true);
+      }
+    });
   });
 });

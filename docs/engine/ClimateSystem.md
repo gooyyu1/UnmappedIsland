@@ -28,6 +28,12 @@ tick 駆動・値域による状態決定・「ハードコードしない」「
 加算・減算し合う「数値積分」によって駆動します**。`derived`（導出値。GameElementDefinition.md 16 節・17 節、
 採否未確定）のような計算式は使いません。
 
+**`ambient_temperature` だけは `world` の専有ではありません。** あらゆる場所（`core.yaml` の `location`
+trait。土地・海区・筏・本土）が同名のプロパティを持ち、祖先の値を土台（`base`）に自分の差を足します
+——明るさと同じ形（[`IlluminationSystem.md`](./IlluminationSystem.md) 2 節・6 節）です。**`world` が持つのは
+空の側の気温**（季節と日射だけで決まる値）で、そこへ土地ごとの差と、据えた炉の暖
+（[`FireSystem.md`](./FireSystem.md) 9.2 節）が積まれます。本書が扱うのは `world` 側だけです。
+
 ## 2. 季節: worldプロパティとしての3サイクル
 
 ### 2.1 3状態・固定順の巡回

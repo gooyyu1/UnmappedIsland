@@ -26,6 +26,9 @@
 # - **`create_session` の直後は、遡り切っても種の指示がまだ載っていない**（記録に出るまで数十秒
 #   掛かる。2026-08-28 に実測——立てた直後は「見つからない」、1時間後の同じセッションは「一致」）。
 #   無いことを不一致として報せると、化けていないものを化けたと読む。**載るまで待ってから判定する。**
+# - **載りかけの本文は、長さの違う別物として読める**（2026-08-28 に実測——立てた直後は 1838 字で
+#   不一致、数分後の同じセッションは 1836 字で一致）。無いときと同じ理由なので、**長さが違っても
+#   即断せず、待ち切ってから不一致と言う。**
 
 set -euo pipefail
 
@@ -44,6 +47,9 @@ trap 'rm -rf "$WORK"' EXIT
 # 種の指示が記録に載るまで待つ。載っていないことは「不一致」ではないので、判定を出さずに待ち直す。
 WAIT_SECONDS="${CCR_CHECK_WAIT_SECONDS:-180}"
 deadline=$((SECONDS + WAIT_SECONDS))
+
+# 最後に見た「長さが違う」の中身。待ち切ってから、これがあれば不一致として出す。
+last_diff=''
 
 while :; do
   before=''
@@ -82,7 +88,7 @@ while :; do
       console.error(got.slice(0, 300));
       console.log("DIFF " + sent.length + " " + got.length);
     }
-  ' "$WORK/page.txt" "$SENT")
+  ' "$WORK/page.txt" "$SENT" 2>"$WORK/detail.txt")
 
   case "$verdict" in
     MATCH)
@@ -91,8 +97,9 @@ while :; do
       ;;
     DIFF*)
       set -- $verdict
-      echo "不一致（送った $2 字 / 届いた $3 字）"
-      exit 1
+      last_diff="送った $2 字 / 届いた $3 字"
+      cp "$WORK/detail.txt" "$WORK/last-detail.txt"
+      break
       ;;
     MORE*)
       next="${verdict#MORE }"
@@ -111,7 +118,12 @@ while :; do
   done
 
   if [ "$SECONDS" -ge "$deadline" ]; then
-    echo "${WAIT_SECONDS}秒待っても種の指示が記録に出ない（create_session で立てたセッションか確かめる）" >&2
+    if [ -n "$last_diff" ]; then
+      cat "$WORK/last-detail.txt" >&2
+      echo "不一致（$last_diff）"
+    else
+      echo "${WAIT_SECONDS}秒待っても種の指示が記録に出ない（create_session で立てたセッションか確かめる）" >&2
+    fi
     exit 1
   fi
   sleep 10

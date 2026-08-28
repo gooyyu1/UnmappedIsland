@@ -226,10 +226,12 @@ object_defs:
 
   # 砂浜。開けていて歩きやすく、漂着物とヤシの実に恵まれる。
   sandy_beach:
-    traits: [location, explorable]
-    # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのraft.set_sail）。
-    tags: [coast]
+    # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのcoast trait）。
+    traits: [location, explorable, coast]
     props:
+      # 遠浅の浜からは、陸がまだ見えている海へそのまま漕ぎ出す。**本土まで14区間で最も遠いが、
+      # 序盤に補給の当てになる海区が続く**（voyage.yamlのcoast trait）。
+      offshore_coastal_waters: {value: 1}
       # 遮るものが無く、乾いた砂がよく返す。**島で最も明るい地面**で、上限+17の根拠でもある
       # （IlluminationSystem.md 4節）。
       ambient_brightness: {value: 1}
@@ -297,10 +299,12 @@ object_defs:
 
   # 岩だらけの海岸。石とヤシガニが多いが、足場が悪い。
   rocky_coast:
-    traits: [location, explorable]
-    # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのraft.set_sail）。
-    tags: [coast]
+    # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのcoast trait）。
+    traits: [location, explorable, coast]
     props:
+      # 岩の鼻に潮が当たるので、漕ぎ出せばすぐ流れのぶつかる帯に出る。**本土まで12区間で、島影の海と
+      # 海藻の帯を跨ぐ**（voyage.yamlのcoast trait）。
+      offshore_tide_rip: {value: 1}
       # 遮るものが無く、地面は基準の明るさ。
       ambient_brightness: {value: 0}
       exploration_progress:
@@ -359,10 +363,12 @@ object_defs:
 
   # 岸壁。切り立った崖の海岸。得られるものは少ないが、洞窟が口を開けていることがある。
   cliff_coast:
-    traits: [location, explorable]
-    # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのraft.set_sail）。
-    tags: [coast]
+    # 海に面した土地。ここからだけ航海に出られる（voyage.yamlのcoast trait）。
+    traits: [location, explorable, coast]
     props:
+      # 崖の下はすぐ深く、海鳥の集まる岩へそのまま続いている。**本土まで10区間で最も近いが、その先は
+      # 補給の当てが無い海区が続く**（voyage.yamlのcoast trait）。
+      offshore_gull_rock: {value: 1}
       # 遮るものが無く、地面は基準の明るさ。
       ambient_brightness: {value: 0}
       exploration_progress:

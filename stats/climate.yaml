@@ -6,12 +6,12 @@ meta:
   - {seeds: 20, days: 3600}
 
 input_fingerprint:
-  - {sources: [core.yaml], sha256_prefix: '3a19f13fd0c12dcf'}
+  - {sources: [core.yaml], sha256_prefix: '9d6160d94ad8a63d'}
 
 season_moisture_rate:
   - {season: calm, unit: per_tick, mean: 0.10, min: 0.10, p5: 0.10, p95: 0.10, max: 0.10, sd: 0.00, n: 2053695}
   - {season: wet, unit: per_tick, mean: 0.99, min: 0.00, p5: 1.00, p95: 1.00, max: 1.00, sd: 0.09, n: 570335}
-  - {season: dry, unit: per_tick, mean: -0.18, min: -0.20, p5: -0.20, p95: -0.20, max: 1.80, sd: 0.18, n: 109217}
+  - {season: dry, unit: per_tick, mean: -0.18, min: -0.20, p5: -0.20, p95: -0.20, max: 1.80, sd: 0.18, n: 109224}
 
 rain_weather_moisture_decrement:
   - {weather: light_rain, unit: per_tick, estimated: -1.1}

@@ -98,6 +98,16 @@ traits:
       hand_brightness:
         value: 0
         base: {subject: self, prop: ambient_brightness}
+      # その場の気温（ClimateSystem.md 1節）。世界の気温（季節と日射）を土台に、その場だけの寄与を
+      # 足したもの。**据えた炉の暖はここへ届く**（FireSystem.md 9.2節）ので、火のある場所だけが
+      # 暖まり、隣の土地も世界も動かない。
+      #
+      # **明るさと違ってvalueを既定で持つ。** 空を継ぐ場所の気温は世界の気温そのままが正しく、
+      # 「書き忘れ」と「差が無い」が同じ意味になる——樹冠と反射のように場所ごとに必ず違う値では
+      # ないので、差のある場所だけが自分のvalueで上書きする。
+      ambient_temperature:
+        value: 0
+        base: {subject: ancestor}
 
 object_defs:
   world:
