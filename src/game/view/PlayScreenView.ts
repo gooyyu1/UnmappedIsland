@@ -357,13 +357,6 @@ const LOCATION_ICON = '🗺️';
 export const EXPLORE_ACTION = 'explore';
 
 /**
- * 探索のタブの補足の1行を引く場面の名前（対応表の`notes`、Localization.md）。**探索し切ったかで言うことが
- * 変わる**——まだ見つかるものと、もう見つからないものは別の文になる（Windows.md 5節）。
- */
-const EXPLORING_NOTE = 'exploring';
-const EXPLORED_NOTE = 'explored';
-
-/**
  * ステータスエリアへ出す候補になるプロパティに付けるタグ（GameElementDefinition.md 6.7節）。
  * 健康・栄養といったカテゴリのタグと重ねて付ける（満腹度はstatusでありnutritionでもある）。
  */
@@ -713,10 +706,7 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
    * 探索できるかは**その物がexploreを宣言しているか**で決まる（ExplorationSystem.md）。探索の語彙を
    * 持たないCodexでは上限が0になるため、0除算を避けて0%にする。
    *
-   * 補足の1行は**型ごとの言い換え**を通す（`notes`、Localization.md）——探索で見つかるものは型で違う
-   * （土地なら道、海区なら航路）ので、画面に文を持たせると1つの言い方しか出せない。
-   *
-   * タブの見出しも同じ理由で型ごとに変わる。**その型がexploreを言い換えているならその語**（海区の
+   * タブの見出しは型ごとに変わる。**その型がexploreを言い換えているならその語**（海区の
    * 「見張り」）で、言い換えていなければ画面の既定語（`ui_texts.exploration`）を出す。
    */
   const explorationOf = (object: WorldObject): ExplorationContent | undefined => {
@@ -728,11 +718,9 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
       explorable.explorationProgressMax === 0
         ? 0
         : explorable.explorationProgress / explorable.explorationProgressMax;
-    const scene = ratio >= 1 ? EXPLORED_NOTE : EXPLORING_NOTE;
     return {
       ratio,
       title: texts.renamedInteractionName(EXPLORE_ACTION) ?? locale.uiText('exploration'),
-      note: texts.note(scene) ?? scene,
     };
   };
 
