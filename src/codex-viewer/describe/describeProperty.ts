@@ -1,7 +1,7 @@
 import type { EffectDeclaration } from '../../domain/EffectReader';
 import type { PropertyDef, PropertyStage } from '../../domain/PropertyDef';
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
-import { propertyRef, propertyTagRef, stageRef, text } from './Description';
+import { propertyPathRef, propertyTagRef, stageRef, text } from './Description';
 import { describeEffect } from './describeEffect';
 
 /** 初期値の書き表し。一覧の表など、1行で済ませたい場所向けに断片で返す。 */
@@ -19,7 +19,7 @@ export function describeProperty(def: PropertyDef, names: DefNames, out: Descrip
   if (def.base !== undefined)
     out.write(
       text('base: '),
-      propertyRef(names.propertyName(def.base.propertyGlobalId), def.base.root),
+      propertyPathRef(names.propertyName(def.base.propertyGlobalId), def.base.root),
       text('の実効値を土台にして足す'),
     );
   if (def.gauge !== undefined)

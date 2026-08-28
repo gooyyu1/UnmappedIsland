@@ -11,8 +11,16 @@ export type DescriptionToken =
   /** 地の文（識別子ではない部分）。 */
   | { readonly kind: 'text'; readonly text: string }
   | { readonly kind: 'object'; readonly name: string }
-  /** プロパティ参照。rootは`self`などの起点で、起点を持たない文脈（プロパティ自身の宣言）ではundefined。 */
-  | { readonly kind: 'property'; readonly name: string; readonly root: ReferenceRoot | undefined }
+  /**
+   * プロパティ参照。rootは**どのオブジェクトのプロパティか**で、リンク先の持ち主を決める。
+   * writesRootは**その起点を`parent.`の形で文に出すか**——主語を語で言う文（条件）は出さない。
+   */
+  | {
+      readonly kind: 'property';
+      readonly name: string;
+      readonly root: ReferenceRoot;
+      readonly writesRoot: boolean;
+    }
   | { readonly kind: 'slot'; readonly name: string }
   | { readonly kind: 'tag'; readonly name: string }
   /** シンボル型プロパティ（GameElementDefinition.md 6.6節）の値。 */
@@ -40,8 +48,14 @@ export function objectRef(name: string): DescriptionToken {
   return { kind: 'object', name };
 }
 
-export function propertyRef(name: string, root?: ReferenceRoot): DescriptionToken {
-  return { kind: 'property', name, root };
+/** 名前だけを出すプロパティ参照。どのオブジェクトのものかは、文が主語を語で言うか文脈が決める。 */
+export function propertyRef(name: string, root: ReferenceRoot): DescriptionToken {
+  return { kind: 'property', name, root, writesRoot: false };
+}
+
+/** 起点を宣言と同じ`parent.重さ`の形で書くプロパティ参照（PropertyPath）。 */
+export function propertyPathRef(name: string, root: ReferenceRoot): DescriptionToken {
+  return { kind: 'property', name, root, writesRoot: true };
 }
 
 export function slotRef(name: string): DescriptionToken {
