@@ -9,6 +9,8 @@
 #   - **航路は方向を持たない。** 見張りは辺1本を見つけ、その両端——今いる海区と次の海区——へ1本ずつ
 #     立てる。どちらも同じ1つの手（cross）で渡る。引き返しの代償が時間だけになるのも、渡り着いた先で
 #     すぐ引き返せるのもこの形の帰結で、専用の規則は無い（GameEndings.md 12.5節）。
+#   - **島と島影の海を繋ぐ辺だけは、渡る手が航路ではなく出航（set_sail）。** 両端を立てるのは渡る手の
+#     側なので、島側の端（route_to_shore）を立てるのも見張りではなく出航（set_sail 参照）。
 #   - **時間を進めるだけでは1海区も進まない**（GameEndings.md 12節）。風・海流・積載・帆は進みでは
 #     なく、その海区を渡るのにかかる時間（crossing_minutes）へ効く。
 
@@ -305,6 +307,10 @@ object_defs:
       #
       # **押し出す前に、出た海岸を覚える**（home_coast_id）。順序がそのまま意味で、動いた後では
       # 親が海区に変わっている。
+      #
+      # **出航は島と島影の海を繋ぐ辺を渡る手なので、向こう端（route_to_shore）を立てるのもこの手。**
+      # 見張りが辺を見つけて両端へ1本ずつ立てるのと同じことで、島側の端が海区ではないぶん、立てる
+      # のが見張りではなく出航になっている。**出航した瞬間から島へ引き返せる**（同12.5節）。
       set_sail:
         trigger: menu
         conditions:
@@ -316,6 +322,7 @@ object_defs:
         move:
           - {subject: actor, to: self}
           - {subject: self, to_object: coastal_waters}
+        spawn: {object: route_to_shore, into_object: coastal_waters}
 
   # 生皮の帆。筏の構造スロットへ組み込むと、風を受ける量が増える（sail_speed +2）。
   #
@@ -550,9 +557,9 @@ object_defs:
   # 同じことを、海では見張りの成果として実行時にやる。**戻る航路は隣の海区が立ててくれる**ので、
   # 自分では立てない——渡り着いたときには既に立っているので、見張らずに引き返せる（同12.5節）。
   #
-  # 鎖の両端だけが片方を持たない。本土に着けば周回が終わるので折り返しは要らず、島影の海の島側は
-  # 海区ではないので相手側に立てるものが無い——島へ帰る航路（route_to_shore）だけは、島影の海が
-  # 自分の側へ立てる。
+  # 鎖の両端だけが見張りで両端を立てない。本土に着けば周回が終わるので折り返しは要らず、島影の海の
+  # 島側は海区ではないので見張りの相手にならない——島へ帰る航路（route_to_shore）を立てるのは、その辺を
+  # 渡る手そのものである出航（筏の set_sail）。
   # ------------------------------------------------------------------
 
   # 島影の海（沿岸）。島を離れてすぐの海区で、陸が見えているぶん自分の居場所が読みやすい。
@@ -573,7 +580,6 @@ object_defs:
           set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_kelp_belt, into: self}
-            - {object: route_to_shore, into: self}
             - {object: route_to_coastal_waters, into_object: kelp_belt}
 
   # 海藻の帯。絡む海藻で進みが遅く、そのぶん帯そのものが目印になる。
@@ -839,6 +845,10 @@ object_defs:
   # ここだけは行き先が型ではなく個体——**出航した当の海岸**（筏の home_coast_id）を引く。他の航路が
   # 行き先の型を書けるのは相手が singleton の海区だからで、島の海岸は島に何個も在る。岩の海岸からでも
   # 押し出せる筏は、押し出したその海岸へ戻る（砂浜が1つも無い島でも戻れる、Voyage.md 3.5節）。
+  #
+  # **この1本だけは渡ると消える。** 行き先が筏の覚えている海岸である以上、この航路が意味を持つのは
+  # 筏が海に出ている間だけで、岸へ戻った時点で指す先が無くなる。次に出航すればまた立つ（set_sail）
+  # ので、出航を何度繰り返しても島影の海に並ぶのは1本のまま。
   route_to_shore:
     traits: [sea_route]
     interactions:
@@ -848,6 +858,7 @@ object_defs:
           - weight: 1
             among: {subject: parent, slot: fixtures, matches: {object: raft}}
             move: {subject: picked, to: {subject: picked, prop: home_coast_id}}
+        destroy: self
 
   route_to_coastal_waters:
     traits: [sea_route]
