@@ -3,6 +3,7 @@ import type {
   EffectDeclaration,
   EffectReader,
   PickCandidateReading,
+  SetValueReading,
   TransferReading,
 } from '../domain/EffectReader';
 import type { ObjectRefReading } from '../domain/ObjectRef';
@@ -97,10 +98,13 @@ class OutcomeReader implements EffectReader {
     this.resolveBecomeDestination = resolveBecomeDestination;
   }
 
-  set(target: ReferenceRoot, propertyGlobalId: number, value: number): void {
-    this.combine([
-      { probability: 1, spawns: [], deltas: [], assignments: [{ target, propertyGlobalId, value }] },
-    ]);
+  /**
+   * 個体を指す代入（9.2節）は書き込む値が実行時にしか決まらないので、割り当てには載せない
+   * ——静的に言えるのは「そのプロパティが書き換わる」までで、いくつになるかは言えない。
+   */
+  set(target: ReferenceRoot, propertyGlobalId: number, value: SetValueReading): void {
+    const assignments = typeof value === 'number' ? [{ target, propertyGlobalId, value }] : [];
+    this.combine([{ probability: 1, spawns: [], deltas: [], assignments }]);
   }
 
   add(reading: AddReading): void {

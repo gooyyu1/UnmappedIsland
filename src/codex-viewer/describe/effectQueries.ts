@@ -3,6 +3,7 @@ import type {
   EffectDeclaration,
   EffectReader,
   PickCandidateReading,
+  SetValueReading,
   TransferReading,
 } from '../../domain/EffectReader';
 import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../../domain/PassiveReader';
@@ -54,7 +55,7 @@ export function spawnsObject(declaration: EffectDeclaration, objectGlobalId: num
 abstract class IgnoringEffectReader implements EffectReader {
   found = false;
 
-  set(_target: ReferenceRoot, _propertyGlobalId: number, _value: number): void {}
+  set(_target: ReferenceRoot, _propertyGlobalId: number, _value: SetValueReading): void {}
   add(_reading: AddReading): void {}
   spawn(_objectGlobalId: number, _count: number): void {}
   destroy(_target: ObjectRefReading, _reason: string | undefined): void {}

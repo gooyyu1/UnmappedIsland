@@ -30,7 +30,7 @@ import {
   SpawnEffect,
   TransferEffect,
 } from '../domain/ActiveEffect';
-import type { ActiveEffect, SpawnTargetRoot } from '../domain/ActiveEffect';
+import type { ActiveEffect, SpawnTarget } from '../domain/ActiveEffect';
 import { BecomeEffect } from '../domain/BecomeEffect';
 import { MoveEffect } from '../domain/MoveEffect';
 import { ObjectRef } from '../domain/ObjectRef';
@@ -215,16 +215,33 @@ export function parseWeight(
   );
 }
 
-/** setの1エントリの値。リテラル（数値・真偽値・シンボル名）のみ（9.2節）。 */
+/**
+ * setの1エントリの値（9.2節）。スカラーはリテラル（数値・真偽値・シンボル名）、`{subject: ...}`は
+ * **その対象キーが名指す個体**で、書き込まれるのはその個体のインスタンスID。
+ *
+ * 参照をマップの形に限るのは、値の位置ではスカラーが既にリテラルの綴りだから——`parent`と書けた
+ * ところで、それがシンボル名なのか親そのものなのかを読む側が決められない。
+ *
+ * **`prop`は書けない。** 他のプロパティの実効値を値として読む形が無いのは9.2節の規則そのままで、
+ * 値の算出をYAMLへ持ち込まないため。ここで書けるのは「今この場が名指せる相手」だけ。
+ */
 function parseSetEffect(
   loader: WorldCodexYamlLoader,
   context: string,
   target: ReferenceRoot,
   propertyGlobalId: number,
   valueNode: YamlNode,
+  scope: ReferenceScope,
 ): SetEffect {
+  const path = new PropertyPath(target, propertyGlobalId);
+  if (isMap(valueNode)) {
+    requireKnownKeys(valueNode, ['subject'], context);
+    const subjectName = requireScalar(valueNode, 'subject', context);
+    return new SetEffect(path, ObjectRef.ofRoot(parseObjectTargetRoot(context, subjectName, scope)));
+  }
+
   const [value] = parseNumberOrSymbol(loader, context, asScalarText(valueNode, context));
-  return new SetEffect(new PropertyPath(target, propertyGlobalId), value);
+  return new SetEffect(path, value);
 }
 
 /**
@@ -295,6 +312,7 @@ function parseSets(
           target,
           loader.propertyNames.intern(propName),
           valueNode,
+          scope,
         ),
       );
   }
@@ -325,15 +343,13 @@ function parseAdds(
 }
 
 /** spawn（9.4節）の1エントリが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。 */
-const SPAWN_KEYS = new Set(['object', 'into', 'count']);
+const SPAWN_KEYS = new Set(['object', 'into', 'into_prop', 'into_object', 'count']);
 
 function parseSpawns(loader: WorldCodexYamlLoader, context: string, node: YamlNode): SpawnEffect[] {
   return oneOrMany(context, node, (itemContext, map) => parseSpawn(loader, itemContext, map));
 }
 
 function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): SpawnEffect {
-  const into = tryGetScalar(map, 'into', context);
-
   requireKnownKeys(map, SPAWN_KEYS, context);
 
   const count = tryGetNumber(map, 'count', context) ?? 1;
@@ -343,10 +359,28 @@ function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap)
     () =>
       new SpawnEffect(
         loader.objectNames.intern(requireScalar(map, 'object', context)),
-        parseSpawnTargetRoot(context, into),
+        parseSpawnTarget(loader, context, map),
         count,
       ),
   );
+}
+
+/**
+ * spawnの配置先（9.4節）。**個体を指す形は`move`の移動先と同じ三択**（parseDestinationRef）で、
+ * `into`だけが個体ではないものも名乗れる——`same_slot`（selfが今占めている位置）と`child`
+ * （selfの子を順に走査する）。どれも書かなければ`same_slot`。
+ *
+ * 書ける相手を場所で絞らない（`ReferenceScope.anyTarget`）。居ない相手を指したspawnは、生まれた物が
+ * どこにも置かれずに消えるだけで済む——`on_max`/`on_min`の`into: actor`がそれ。
+ */
+function parseSpawnTarget(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): SpawnTarget {
+  const intoNode = tryGetNode(map, 'into');
+  if (intoNode !== undefined && isScalar(intoNode)) {
+    const raw = asScalarText(intoNode, context);
+    if (raw === 'same_slot' || raw === 'child') return raw;
+  }
+
+  return parseDestinationRef(loader, context, map, ReferenceScope.anyTarget, 'into') ?? 'same_slot';
 }
 
 /**
@@ -400,8 +434,8 @@ function oneOrMany<T>(context: string, node: YamlNode, parseOne: (context: strin
  *
  * 動かす物も行き先も「対象キーか、インスタンスIDを持つプロパティか、型か」の三択（ObjectRef）で、
  * subjectは`subject`/`subject_prop`、移動先は`to`/`to_prop`/`to_object`の**どれか1つ**で指す
- * （複数・どれも無しはエラー）。`to_slot`は行き先の中のどの枠へ入れるかで、省けば宣言順で最初に
- * 受け入れた枠になる。
+ * （複数・どれも無しはエラー）。移動先の三択は`spawn`の配置先と同じ読み手（parseDestinationRef）。
+ * `to_slot`は行き先の中のどの枠へ入れるかで、省けば宣言順で最初に受け入れた枠になる。
  *
  * selfOnly文脈（rangeイベント）で禁じるのは**actor/draggedを指す形だけ**。そこに実行者が居ないのは
  * 対象キーの解決先が無いという理由なので、`self`と型で書いた移動（本土への到達、Voyage.md 4節）は
@@ -456,33 +490,20 @@ function parseMoveSubject(
   return parseObjectRef(loader, `${context}.subject`, subjectNode!, scope);
 }
 
-/**
- * moveの移動先（to / to_prop / to_object のどれか1つ）。
- *
- * `to_object`は、世界にただ1つ在る型（`singleton`、15節）をその名前で指す。生成時に確定する個体を
- * 指すto_propと違い、**定義の時点で名前の分かっている行き先**（海区・本土）のためのもの。
- */
+/** moveの移動先（to / to_prop / to_object のどれか1つ、parseDestinationRef）。省略はできない。 */
 function parseMoveDestination(
   loader: WorldCodexYamlLoader,
   context: string,
   map: YAMLMap,
   scope: ReferenceScope,
 ): ObjectRef {
-  const toNode = tryGetNode(map, 'to');
-  const toProp = tryGetScalar(map, 'to_prop', context);
-  const toObject = tryGetScalar(map, 'to_object', context);
-
-  const given = [toNode, toProp, toObject].filter((value) => value !== undefined);
-  if (given.length !== 1)
+  const destination = parseDestinationRef(loader, context, map, scope, 'to');
+  if (destination === undefined)
     throw new YamlLoadError(
       `${context}: moveの移動先はto・to_prop・to_objectのどれか1つで指定してください。`,
     );
 
-  if (toProp !== undefined)
-    return ObjectRef.ofProperty(new PropertyPath('self', loader.propertyNames.intern(toProp)));
-  if (toObject !== undefined) return ObjectRef.ofObjectDef(loader.objectNames.intern(toObject));
-
-  return parseObjectRef(loader, `${context}.to`, toNode!, scope);
+  return destination;
 }
 
 /** activeの対象キー。解決先を持つrootかどうかは、その宣言が置かれた場所が決める（ReferenceScope）。 */
@@ -533,15 +554,9 @@ function parseDestroys(
 }
 
 /**
- * destroyの対象1つ（9.3節）。対象キー（`destroy: self`）か、`{subject, prop, reason}`のマップ——
- * `prop`を書けばその実効値がインスタンスIDとして指す相手、書かなければ`subject`（省略時はself）
- * そのものを指す。
- *
- * `reason`はこの消滅が名乗る名前で、消された側に残る（WorldObject.destroyedReason）。書かなければ
+ * destroyの対象1つ（9.3節）。指し方は他の命令と同じ（parseObjectRef）で、足しているのは`reason`
+ * だけ——この消滅が名乗る名前で、消された側に残る（WorldObject.destroyedReason）。書かなければ
  * 何も残らないので、その消滅は死因として読まれない。
- *
- * **中身が空のマップは弾く。** `subject`の既定がselfなので`destroy: {}`も動いてしまうが、それは
- * 何も書かずに`destroy: self`を得る抜け道で、書く理由が無い（policies.md「宣言漏れの扱い」）。
  */
 function parseDestroy(
   loader: WorldCodexYamlLoader,
@@ -549,55 +564,82 @@ function parseDestroy(
   node: YamlNode,
   scope: ReferenceScope,
 ): DestroyEffect {
-  if (!isMap(node))
-    return new DestroyEffect(
-      ObjectRef.ofRoot(parseObjectTargetRoot(context, asScalarText(node, context), scope)),
-    );
-
-  if (node.items.length === 0)
-    throw new YamlLoadError(
-      `${context}: destroyのマップが空です。消す相手（'subject'か'prop'）を書いてください（相手がself自身なら 'destroy: self'）。`,
-    );
-
-  requireKnownKeys(node, ['subject', 'prop', 'reason'], context);
-  const reason = tryGetScalar(node, 'reason', context);
-  const subjectName = tryGetScalar(node, 'subject', context);
-  const propName = tryGetScalar(node, 'prop', context);
-
-  if (propName === undefined)
-    return new DestroyEffect(
-      ObjectRef.ofRoot(parseObjectTargetRoot(context, subjectName ?? 'self', scope)),
-      reason,
-    );
-
-  const root = subjectName === undefined ? 'self' : parseSubjectRoot(context, subjectName, scope);
-  return new DestroyEffect(
-    ObjectRef.ofProperty(new PropertyPath(root, loader.propertyNames.intern(propName))),
-    reason,
-  );
+  const reason = isMap(node) ? tryGetScalar(node, 'reason', context) : undefined;
+  return new DestroyEffect(parseObjectRef(loader, context, node, scope, ['reason']), reason);
 }
 
 /**
- * オブジェクトそのものを1つ指す参照（ObjectRef）を読む。対象キー（`self`）か、インスタンスIDを
- * 持つプロパティ（`{subject, prop}`、subject省略時はself）のいずれか。
+ * オブジェクトそのものを1つ指す参照（ObjectRef）を読む。**個体を1つ指す口はすべてここを通る**
+ * ——`destroy`の対象、`move`の動かす物と移動先、`spawn`の配置先、`set`が書き込む個体。
  *
- * ancestorはプロパティ名が無いと解決先が決まらないため、オブジェクトを指す文脈では使えない。
+ * 対象キー（`self`）か、`{subject, prop}`のマップ——`prop`を書けばその実効値がインスタンスIDとして
+ * 指す相手、書かなければ`subject`（省略時はself）そのもの。reservedKeysは、呼び出し側が別に読む
+ * 兄弟キー（`destroy`の`reason`）を未知キー判定から外すためのもの。
+ *
+ * ancestorはプロパティ名が無いと解決先が決まらないため、`prop`を伴わない形では使えない。
+ *
+ * **中身が空のマップは弾く。** `subject`の既定がselfなので`{}`も動いてしまうが、それは何も書かずに
+ * `self`を得る抜け道で、書く理由が無い（policies.md「宣言漏れの扱い」）。
  */
 function parseObjectRef(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YamlNode,
   scope: ReferenceScope,
+  reservedKeys: readonly string[] = [],
 ): ObjectRef {
   if (!isMap(node))
     return ObjectRef.ofRoot(parseObjectTargetRoot(context, asScalarText(node, context), scope));
 
-  const propName = requireScalar(node, 'prop', context);
-  requireKnownKeys(node, ['subject', 'prop'], context);
+  if (node.items.length === 0)
+    throw new YamlLoadError(
+      `${context}: マップが空です。指す相手（'subject'か'prop'）を書いてください（相手がself自身なら 'self'）。`,
+    );
 
+  requireKnownKeys(node, ['subject', 'prop', ...reservedKeys], context);
   const subjectName = tryGetScalar(node, 'subject', context);
+  const propName = tryGetScalar(node, 'prop', context);
+
+  if (propName === undefined)
+    return ObjectRef.ofRoot(parseObjectTargetRoot(context, subjectName ?? 'self', scope));
+
   const root = subjectName === undefined ? 'self' : parseSubjectRoot(context, subjectName, scope);
   return ObjectRef.ofProperty(new PropertyPath(root, loader.propertyNames.intern(propName)));
+}
+
+/**
+ * 行き先を三択（`X` / `X_prop` / `X_object`）で読む。**`move`の移動先と`spawn`の配置先が共有する**
+ * ——どちらも「1つの個体をどう指すか」だけの話で、違うのはキーの綴りだけ（9.4節・9.6節）。
+ *
+ * - `X`: その場所が用意できる相手（対象キーか`{subject, prop}`、parseObjectRef）。
+ * - `X_prop`: `self`が持つプロパティ名。その実効値をインスタンスIDとして解釈する。
+ * - `X_object`: `object_defs`の識別子。世界にただ1つ在る型（`singleton`、15節）を名前で指す。
+ *
+ * どれも書かれていなければundefined（省略を許すかは呼び出し側が決める）。2つ以上はロード時エラー。
+ */
+function parseDestinationRef(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  map: YAMLMap,
+  scope: ReferenceScope,
+  prefix: string,
+): ObjectRef | undefined {
+  const refNode = tryGetNode(map, prefix);
+  const propName = tryGetScalar(map, `${prefix}_prop`, context);
+  const objectName = tryGetScalar(map, `${prefix}_object`, context);
+
+  const given = [refNode, propName, objectName].filter((value) => value !== undefined);
+  if (given.length > 1)
+    throw new YamlLoadError(
+      `${context}: ${prefix}・${prefix}_prop・${prefix}_objectのどれか1つで指定してください。`,
+    );
+  if (given.length === 0) return undefined;
+
+  if (propName !== undefined)
+    return ObjectRef.ofProperty(new PropertyPath('self', loader.propertyNames.intern(propName)));
+  if (objectName !== undefined) return ObjectRef.ofObjectDef(loader.objectNames.intern(objectName));
+
+  return parseObjectRef(loader, `${context}.${prefix}`, refNode!, scope);
 }
 
 /**
@@ -631,24 +673,4 @@ function parseBecome(
 /** オブジェクトそのものを指す対象（destroy・signal・move）。プロパティ名を伴わない場所になる。 */
 function parseObjectTargetRoot(context: string, key: string, scope: ReferenceScope): ReferenceRoot {
   return parseActiveTargetRoot(context, key, scope.withoutPropertyName);
-}
-
-function parseSpawnTargetRoot(context: string, raw: string | undefined): SpawnTargetRoot {
-  switch (raw) {
-    case undefined:
-    case 'same_slot':
-      return 'same_slot';
-    case 'self':
-      return 'self';
-    case 'actor':
-      return 'actor';
-    case 'picked':
-      return 'picked';
-    case 'child':
-      return 'child';
-    default:
-      throw new YamlLoadError(
-        `${context}: spawn.intoは 'same_slot'/'self'/'actor'/'picked'/'child' のいずれかである必要があります（値: '${raw}'）。`,
-      );
-  }
 }

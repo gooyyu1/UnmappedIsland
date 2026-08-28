@@ -1,4 +1,4 @@
-import type { ActiveEffect, SpawnTargetRoot } from './ActiveEffect';
+import type { ActiveEffect, SpawnTarget } from './ActiveEffect';
 import { Action, Combination } from './Interaction';
 import { SameSlotSpawnSite } from './SameSlotSpawnSite';
 import type { SameSlotPlacement } from './SameSlotSpawnSite';
@@ -867,7 +867,7 @@ export class WorldObject {
    */
   executeSpawn(
     objectGlobalId: number,
-    into: SpawnTargetRoot,
+    into: SpawnTarget,
     context: ReferenceContext,
     sameSlotSpawnSite: SameSlotSpawnSite | undefined,
   ): void {
@@ -877,13 +877,13 @@ export class WorldObject {
 
   /**
    * spawnした側は配置先のスロット名を書かない。same_slotなら捕捉しておいた位置へ配置する
-   * （SameSlotSpawnSite.placeReplacementへ委ねる）。self/actor/picked/childなら対象のスロットを宣言順に走査し、最初に配置できた
-   * スロットへ入れる。**配置に失敗した場合は起点自身の親へこぼれ、そこも受け取らなければさらに上へ**
-   * （spillTo）。どこにも入らなければ、生まれた物はそのまま失われる。
+   * （SameSlotSpawnSite.placeReplacementへ委ねる）。childなら子を、個体を指す参照ならその相手のスロットを
+   * 宣言順に走査し、最初に配置できたスロットへ入れる。**配置に失敗した場合は起点自身の親へこぼれ、
+   * そこも受け取らなければさらに上へ**（spillTo）。どこにも入らなければ、生まれた物はそのまま失われる。
    */
   private place(
     spawned: WorldObject,
-    into: SpawnTargetRoot,
+    into: SpawnTarget,
     context: ReferenceContext,
     site: SameSlotSpawnSite | undefined,
   ): void {
@@ -899,7 +899,7 @@ export class WorldObject {
       primaryTarget = this; // eslint-disable-line @typescript-eslint/no-this-alias -- 伝播先の起点として使うだけ
       placed = this.tryFirstAcceptingChild(spawned);
     } else {
-      const target = context.objectAt(into);
+      const target = into.resolve(context);
       if (target === undefined) return;
       primaryTarget = target;
       placed = spawned.moveIntoFirstAcceptingSlot(primaryTarget);

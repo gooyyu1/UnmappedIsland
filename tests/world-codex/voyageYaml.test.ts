@@ -344,6 +344,56 @@ describe('筏と航海', () => {
     expect(game.player.ending.kind, '島へ戻っただけなので周回は終わらない').not.toBe('escape');
   });
 
+  /** 島の海岸すべて（世界の木を深さ優先で辿った順）。`to_object`が引くのはこの並びの先頭だった。 */
+  function coasts(game: StartedGame): readonly WorldObject[] {
+    const coastTag = codex.tagNames.getId('coast');
+    return [...game.world.instance.descendants()].filter((object) => object.def.hasTag(coastTag));
+  }
+
+  /** 筏を乗り手ごとその海岸へ移す（出航前のしたく）。 */
+  function beachRaftAt(game: StartedGame, raft: WorldObject, coast: WorldObject): void {
+    expect(raft.moveToSlotOrRejection(coast.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+    expect(
+      game.player.instance.moveToSlotOrRejection(coast.getSlot(codex.slotNames.getId('characters'))),
+    ).toBeUndefined();
+  }
+
+  /** その海岸から出航し、島影の海を見張って、島へ戻る航路を渡る。着いた場所を返す。 */
+  function sailAndTurnBack(game: StartedGame, raft: WorldObject, coast: WorldObject): WorldObject {
+    beachRaftAt(game, raft, coast);
+    expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute(), '出航できる').toBe(true);
+
+    const first = singletonPlace(game, 'coastal_waters');
+    for (let i = 0; i < 20 && keepWatch(game, first); i++);
+    expect(cross(game, first, 'route_to_shore'), '島へ引き返せる').toBe(true);
+    return raft.parent!;
+  }
+
+  it('引き返して着くのは、出航したその海岸', () => {
+    // **島で最初の砂浜ではない。** 行き先を型で指していた頃は、どの海岸から出ても木を深さ優先で
+    // 辿った最初の砂浜へ着いていた——積んだ物を降ろす場所と拠点がずれる。
+    const { game, raft } = ready();
+    const beaches = coasts(game).filter((coast) => coast.def.name === 'sandy_beach');
+    expect(beaches.length, 'シード3の島には砂浜が複数ある').toBeGreaterThan(1);
+
+    const departure = beaches[beaches.length - 1];
+    expect(sailAndTurnBack(game, raft, departure).instanceId, '出た砂浜へ戻り着く').toBe(
+      departure.instanceId,
+    );
+  });
+
+  it('砂浜でない海岸から出ても、その海岸へ戻れる', () => {
+    // 出航は `{tag: coast}` なので岩の海岸からもできる。**砂浜が1つも無い島（60シードに1つ）でも
+    // 戻れる**のは、行き先が砂浜という型ではなく、出た当の海岸だから。
+    const { game, raft } = ready();
+    const departure = coasts(game).find((coast) => coast.def.name !== 'sandy_beach');
+    expect(departure, 'シード3の島に砂浜でない海岸がある').toBeDefined();
+
+    const arrival = sailAndTurnBack(game, raft, departure!);
+    expect(arrival.instanceId, '出た岩の海岸へ戻り着く').toBe(departure!.instanceId);
+    expect(arrival.def.name, '砂浜へ引き寄せられてはいない').not.toBe('sandy_beach');
+  });
+
   /** 帆を1枚作って、筏の構造スロットへ組み込む。 */
   function rigSail(game: StartedGame, raft: WorldObject): WorldObject {
     const sail = game.session.createObject(codex.objectNames.getId('rawhide_sail'));

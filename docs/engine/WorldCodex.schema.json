@@ -673,21 +673,34 @@
           "description": "生む個数（9.4節）。省略時は1。同じ宣言を並べるのと同じ意味で、1個ずつ順に生んで配置する。"
         },
         "into": {
-          "enum": [
-            "same_slot",
-            "self",
-            "actor",
-            "picked",
-            "child"
-          ],
-          "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。self/actor/pickedは、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。actorはアクション実行文脈でのみ、pickedはamongを書いた候補の中でのみ解決できる（10.3節）。childはselfの子を順に走査し、最初に受け取れた子のスロットへ入れる（罠が自分の生んだ獲物へ怪我を渡す経路、TrapSystem.md 5.3節）。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、枠の要件・capacityを無視して強制的に伝播する（childの場合の起点はself）。"
+          "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。個体を指す形はmoveの移動先と同じ（object_target）で、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。actorはアクション実行文脈でのみ、pickedはamongを書いた候補の中でのみ解決できる（10.3節）。childはselfの子を順に走査し、最初に受け取れた子のスロットへ入れる（罠が自分の生んだ獲物へ怪我を渡す経路、TrapSystem.md 5.3節）。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、枠の要件・capacityを無視して強制的に伝播する（childの場合の起点はself）。",
+          "oneOf": [
+            {
+              "enum": [
+                "same_slot",
+                "child"
+              ]
+            },
+            {
+              "$ref": "#/$defs/object_target"
+            }
+          ]
+        },
+        "into_prop": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "self のそのプロパティが保持するインスタンスIDのオブジェクトへ入れる（moveのto_propと同じ、9.6節）。"
+        },
+        "into_object": {
+          "$ref": "#/$defs/identifier",
+          "description": "世界にただ1つ在る型（singleton、15節）をその名前で配置先にする（moveのto_objectと同じ、9.6節）。"
         }
       },
       "required": [
         "object"
       ],
       "additionalProperties": false,
-      "description": "新規オブジェクトを1つ生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。destroyと同時に指定できる。"
+      "description": "新規オブジェクトを1つ生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。配置先はinto・into_prop・into_objectのどれか1つで指す（どれも書かなければsame_slot）。destroyと同時に指定できる。"
     },
     "active_def": {
       "description": "一時的な命令（9節）。文法は「操作(set/add/destroy/spawn/become/transfer/move/signal)が上位、対象が下位」。when/ゲートは持たず、登録の仕組みにも乗らない。on_max/on_min（6.3節）は、専用キー(on_min:等)の値としてこの形をそのまま持つ。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_min: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。rangeイベントには操作者が居ないので、対象にactor/draggedを指すとロード時エラーになる（14.1節。本スキーマでは場所ごとの制限までは表現しない）。interactions/pickは、この形を専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（interaction_def/pick_candidate参照）。",
@@ -1382,7 +1395,7 @@
       "additionalProperties": false
     },
     "set_value": {
-      "description": "setの1エントリの値（9.2節）。リテラル（数値・真偽値・シンボル名）のみ。",
+      "description": "setの1エントリの値（9.2節）。スカラーはリテラル（数値・真偽値・シンボル名）、マップは個体を1つ指す参照で、その個体のインスタンスIDが書き込まれる。参照をマップの形に限るのは、値の位置ではスカラーが既にリテラルの綴りだから。",
       "oneOf": [
         {
           "$ref": "#/$defs/number_literal"
@@ -1393,6 +1406,9 @@
         {
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        {
+          "$ref": "#/$defs/object_target_map"
         }
       ]
     },
@@ -1607,13 +1623,13 @@
       "additionalProperties": false
     },
     "object_target": {
-      "description": "命令が指すオブジェクトそのもの1つ（9.6節）。対象名で直接指すか、インスタンスIDを保持するプロパティ（{subject, prop}、subject省略時はself）で指す。move（9.6節）とbecome（9.9節）が共有する。対象名だけを書く形ではancestorを使えない——プロパティ名が無いと辿る先が決まらないため。",
+      "description": "命令が指すオブジェクトそのもの1つ（9.6節）。対象名で直接指すか、マップ（{subject} / {subject, prop}、subject省略時はself）で指す。move（9.6節）・become（9.9節）・spawnの配置先（9.4節）・setが書き込む個体（9.2節）が共有する。対象名だけを書く形ではancestorを使えない——プロパティ名が無いと辿る先が決まらないため。",
       "oneOf": [
         {
           "$ref": "#/$defs/object_target_name"
         },
         {
-          "$ref": "#/$defs/prop_ref"
+          "$ref": "#/$defs/object_target_map"
         }
       ]
     },
@@ -1751,6 +1767,27 @@
         "of"
       ],
       "additionalProperties": false
+    },
+    "object_target_map": {
+      "description": "マップで書いた、オブジェクトそのものを指す参照（9.6節）。`prop`の有無で、指す相手が対象キーそのものか、そのプロパティが指す個体かに分かれる。空のマップはロード時エラー——subjectの既定がselfなので動いてしまうが、何も書かずにselfを得る抜け道でしかない。",
+      "oneOf": [
+        {
+          "description": "`subject`（省略時self）そのもの。オブジェクトそのものを指すのでancestorは使えない。",
+          "type": "object",
+          "properties": {
+            "subject": {
+              "$ref": "#/$defs/object_target_name"
+            }
+          },
+          "required": [
+            "subject"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "$ref": "#/$defs/prop_ref"
+        }
+      ]
     }
   }
 }

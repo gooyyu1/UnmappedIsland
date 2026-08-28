@@ -21,8 +21,8 @@ export interface EffectDeclaration {
  * （`read`は抽象なので、実装を書かない効果はコンパイルが通らない）。
  */
 export interface EffectReader {
-  /** `set`（9.2節）。リテラルの絶対値を代入する。 */
-  set(target: ReferenceRoot, propertyGlobalId: number, value: number): void;
+  /** `set`（9.2節）。絶対値を代入する。 */
+  set(target: ReferenceRoot, propertyGlobalId: number, value: SetValueReading): void;
 
   /** `add`（9.2節）。加減算する。 */
   add(reading: AddReading): void;
@@ -65,6 +65,13 @@ export interface EffectReader {
    */
   pick(candidates: readonly PickCandidateReading[]): void;
 }
+
+/**
+ * `set`（9.2節）が代入する値の宣言。リテラルの数値か、**個体を1つ指す参照**——後者はその個体の
+ * インスタンスIDが書かれるが、**どの個体かは実行時にしか決まらない**ので、読み手が受け取れるのは
+ * 指し方だけ（SetEffect参照）。
+ */
+export type SetValueReading = number | ObjectRefReading;
 
 /** `pick`の候補1つの読み上げ（EffectReader.pick参照）。 */
 export interface PickCandidateReading {
