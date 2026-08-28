@@ -33,9 +33,14 @@
 # （[`parallel-work.md`](../../.claude/parallel-work.md)「人間が立てた issue は、投入する前に
 # 棚卸しで task へ翻訳する」）。
 #
-# ここに出るのは `task` も `meta` も付いていない open な issue。`meta` は常設の盤（#656 の確定待ち・
-# #732 の現在地）で、投入する先が無いので棚卸しの対象でもない。**どれが翻訳の要る issue かは
-# 判定しない**——並べるところまでが機械の仕事で、まとめ方も分け方もモデルが決める。
+# ここに出るのは `task` も `meta` も付いておらず、**依存も張られていない** open な issue。
+# `meta` は常設の盤（#656 の確定待ち・#732 の現在地）で、投入する先が無いので棚卸しの対象でもない。
+# **どれが翻訳の要る issue かは判定しない**——並べるところまでが機械の仕事で、まとめ方も分け方も
+# モデルが決める。
+#
+# **依存が張ってあるものを外すのは、それが棚卸しの結論そのものだから。** 分解した親（子が全部
+# 片付いたら閉じる入口）と、別の issue へ束ねた側は、どちらも `task` にはならないが翻訳は済んで
+# いる。外さないと毎回ここへ並び、**次の司令塔が「まだ棚卸ししていない」と読んで投入し直す。**
 
 set -euo pipefail
 
@@ -83,25 +88,29 @@ dispatched=$( {
 } | sort -u)
 
 # issue は1回だけ引いて、`task` の付いたものと、まだどこにも分類されていないものへ分ける。
-issues=$(gh issue list --state open --limit 100 --json number,title,labels)
+# **依存も同じ呼び出しで返る**ので、issue 1件ずつ `gh api` を叩かなくてよい。
+issues=$(gh issue list --state open --limit 100 --json number,title,labels,blockedBy)
 
 echo "## TASK"
-while read -r number title; do
+while read -r number blocker title; do
   [ -n "$number" ] || continue
   if grep -qx "$number" <<<"$dispatched"; then
     state='投入済み'
+  elif [ "$blocker" != '-' ]; then
+    state="待ち:#$blocker"
   else
-    # 依存は issue 1件につき1回。task は同時に数件なので、ここは払ってよい。
-    open_blocker=$(gh api "repos/$REPO/issues/$number/dependencies/blocked_by" \
-      --jq '.[] | select(.state == "open") | .number' 2>/dev/null | head -1 || true)
-    state=$([ -n "$open_blocker" ] && echo "待ち:#$open_blocker" || echo '着手可')
+    state='着手可'
   fi
   echo "TASK $number $state $title"
-done < <(jq -r '.[] | select([.labels[].name] | index("task")) | "\(.number) \(.title)"' <<<"$issues" | tr -d '\r')
+done < <(jq -r '.[]
+       | select([.labels[].name] | index("task"))
+       | ([.blockedBy.nodes[] | select(.state == "OPEN") | .number] | first // "-") as $blocker
+       | "\(.number) \($blocker) \(.title)"' <<<"$issues" | tr -d '\r')
 
 echo "## 未整理"
 jq -r '.[]
        | select([.labels[].name] | index("task") == null and index("meta") == null)
+       | select([.blockedBy.nodes[] | select(.state == "OPEN")] | length == 0)
        | "未整理 \(.number) \(if (.labels | length) == 0 then "-" else ([.labels[].name] | join(",")) end) \(.title)"' \
   <<<"$issues" | tr -d '\r' | grep . || echo "（無し）"
 
