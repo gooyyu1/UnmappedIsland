@@ -240,7 +240,13 @@ export function voyageForecastOf(
     return speed.def.range?.clamp(sum) ?? sum;
   };
 
-  /** その海区を1つ渡るのにかかる時間。素の横断時間から、上の速さの段が引く（同3.2節）。 */
+  /**
+   * その海区を1つ渡るのにかかる時間。素の横断時間から、上の速さの段が引く（同3.2節）。
+   *
+   * **これ1区間で残り全部を代表できるのは、素の横断時間がどの海区も同じだから**（同3.2節）。
+   * 海図が持つのは残りの海区数だけ（GameEndings.md 12.6節）なので、他の海区の時間は掛ける相手に
+   * できない——海区ごとに違えば、遠い出航地点ほど短く見えることが起きる。
+   */
   const crossingMinutes = (raft: WorldObject, zone: WorldObject): number => {
     const crossing = zone.getProperty(crossingId);
     const stage = raft.getProperty(sailSpeedId).def.stageAt(sailSpeedAtSea(raft, zone));
