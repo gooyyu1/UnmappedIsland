@@ -44,7 +44,8 @@ traits:
   #
   # **8種類の顔ぶれ（ContentSkeleton.md 7節）は、この trait が持つ1つの見張りの卓と、その重みの
   # 配り方だけで表す。** 顔ぶれごとの型もタグも持たない。海区ごとに違うのは crossing_minutes と、
-  # 見張り何回で航路が現れるか（exploration_progress の range.max）と、下のつまみの重みの3つ。
+  # 本土までの残り海区数（zones_to_mainland。鎖のどこに居るか）と、見張り何回で航路が現れるか
+  # （exploration_progress の range.max）と、下のつまみの重みの4つ。
   sea_zone:
     tags: [sea]
     # **海は物を置ける場所ではない**（GameEndings.md 12.7節）ので、location が配る items を落とす
@@ -58,6 +59,53 @@ traits:
       # 要る時間。
       crossing_minutes:
         range: {min: 120, max: 900}
+
+      # その海区から本土まで、その海区を含めて何区間あるか。**海図ではなく海の側の事実**なので
+      # 海区ごとに与える（鎖の先頭が14、本土の手前が1）。海図が持つのはこの数の見当（次の2つ）で、
+      # 真値そのものはプレイヤーへ出さない。
+      zones_to_mainland:
+        range: {min: 1, max: 30}
+
+      # 海図が言う「本土まであと何海区か」の下限と上限（GameEndings.md 12.6節）。**土台は真値**で、
+      # 記入の粗さがそこへ幅として乗る（chart_crossed の段）。**海図が持つべき精度は海区数であって
+      # 日数ではない**ので、時間へ直すのは読む側（同9.3節）。
+      #
+      # **valueは土台へ足す側なので0**（幅は下の段が modify で乗せる）。`range` は実体値も切るので
+      # （6.3節「実体値と実効値、そして range が誰の端か」）、**0を含む範囲でなければならない**
+      # ——下限を1にすると、土台へ足す0のほうが1へ繰り上がって海図が1海区ずれる。
+      zones_to_mainland_min:
+        value: 0
+        base: {subject: self, prop: zones_to_mainland}
+        range: {min: 0, max: 30}
+      zones_to_mainland_max:
+        value: 0
+        base: {subject: self, prop: zones_to_mainland}
+        range: {min: 0, max: 30}
+
+      # 山頂から見定めたか（GameEndings.md 9.1節の段階）。島を見下ろす高さから海を見渡すと、海図の
+      # 一区画に見当が付く（locations.yamlの山頂）。**上限が1なので、何度見渡しても記入は1度きり。**
+      chart_sighted: {value: 0, range: {min: 0, max: 1}}
+
+      # 渡って海図に残ったか（同12.6節）。**幅を配るのはこの段**——記入の細かさが1箇所に集まり、
+      # 「どこまで分かっているか」を読むのに他のプロパティを覚えなくて済む。
+      chart_crossed:
+        value: 0
+        range: {min: 0, max: 1}
+        stages:
+          # まだ渡っていない海区。幅は、山頂から見定めたかで決まる。
+          - name: estimated
+            passives:
+              # 方角しか分からない（漂流物の流れ着く向き、鳥の飛ぶ方角）。
+              - conditions:
+                  - not: {prop: chart_sighted, gt: 0}
+                modify: {self: {zones_to_mainland_min: -5, zones_to_mainland_max: 5}}
+              # 山頂から見定めた。幅のある海区数が海図に入る（同9.1節）。
+              - conditions:
+                  - {prop: chart_sighted, gt: 0}
+                modify: {self: {zones_to_mainland_min: -2, zones_to_mainland_max: 2}}
+          # 渡った海区は海図に残る。**幅は無い**——戻りが既知で進みが推定なのはこれによる（同12.5節）。
+          - name: crossed
+            min: 1
 
       # この海区の航路を見定めたか。見張りを打ち切るための印で、on_max が立てる。
       #
@@ -95,6 +143,12 @@ traits:
       # 浮いていること自体を子へ配る。組み込んだ部品が「陸では効かない」と言うために読む
       # （筏の afloat 参照）。
       - modify: {child: {afloat: 1}}
+      # 立った海区は海図に残る（GameEndings.md 12.6節）。**記入するのは海区自身**——筏が浮かんで
+      # いるかは自分の中を見れば分かるので、渡らせた側（航路・出航）が「渡った後にあれも書く」を
+      # 覚えておく必要が無い。上限が1なので、何度浮かんでも記入は1度きり。
+      - conditions:
+          - {slot: fixtures, matches: {object: raft}}
+        add: {self: {chart_crossed: 1}}
     interactions:
       # 見張り。**地上の探索そのもの**（ExplorationSystem.md 2節）で、1回15分＝1tick、進捗が1つ進む。
       # 進捗が上限に達した瞬間、その海区から出る航路が現れる（exploration_progress の on_max）。
@@ -616,8 +670,8 @@ object_defs:
   # ------------------------------------------------------------------
   # 海区（GameEndings.md 12節）。島と本土の間の海を、8種類の顔ぶれ（ContentSkeleton.md 7節）から
   # 配った14個の連なりとして持つ。海区そのものの作りは sea_zone trait（このファイルの先頭）が
-  # 持ち、ここが書くのは海区ごとに違う3つだけ——渡るのにかかる時間・見張り何回で航路が現れるか・
-  # 見張りの卓の重み（＝その海区の顔ぶれ）。
+  # 持ち、ここが書くのは海区ごとに違う4つだけ——渡るのにかかる時間・本土までの残り海区数・見張り
+  # 何回で航路が現れるか・見張りの卓の重み（＝その海区の顔ぶれ）。
   #
   # **明るさはどの海区も0**（遮るものが何も無いので、空の明るさがそのまま届く、
   # IlluminationSystem.md 2節）。location trait が値を持たないので、海区ごとに名乗る。
@@ -646,6 +700,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 240}
+      zones_to_mainland: {value: 14}
       driftwood_find: {value: 30}
       seaweed_find: {value: 25}
       shoal_find: {value: 25}
@@ -666,6 +721,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 600}
+      zones_to_mainland: {value: 13}
       seaweed_find: {value: 55}
       barren_find: {value: 45}
       exploration_progress:
@@ -684,6 +740,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 420}
+      zones_to_mainland: {value: 12}
       shoal_find: {value: 80}
       barren_find: {value: 20}
       exploration_progress:
@@ -702,6 +759,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 420}
+      zones_to_mainland: {value: 11}
       flotsam_find: {value: 35}
       shoal_find: {value: 20}
       barren_find: {value: 45}
@@ -721,6 +779,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 360}
+      zones_to_mainland: {value: 10}
       egg_find: {value: 35}
       seabird_find: {value: 20}
       barren_find: {value: 45}
@@ -741,6 +800,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 300}
+      zones_to_mainland: {value: 9}
       barren_find: {value: 100}
       exploration_progress:
         value: 0
@@ -760,6 +820,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 240}
+      zones_to_mainland: {value: 8}
       barren_find: {value: 100}
       exploration_progress:
         value: 0
@@ -777,6 +838,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 300}
+      zones_to_mainland: {value: 7}
       # 1周回に0〜1個（ContentSkeleton.md 7節）。見張り4回で当たるのは2割ほど。
       wreck_find: {value: 5}
       flotsam_find: {value: 15}
@@ -797,6 +859,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 240}
+      zones_to_mainland: {value: 6}
       barren_find: {value: 100}
       exploration_progress:
         value: 0
@@ -814,6 +877,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 420}
+      zones_to_mainland: {value: 5}
       shoal_find: {value: 80}
       barren_find: {value: 20}
       exploration_progress:
@@ -832,6 +896,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 420}
+      zones_to_mainland: {value: 4}
       flotsam_find: {value: 35}
       shoal_find: {value: 20}
       barren_find: {value: 45}
@@ -851,6 +916,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 600}
+      zones_to_mainland: {value: 3}
       seaweed_find: {value: 55}
       barren_find: {value: 45}
       exploration_progress:
@@ -869,6 +935,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 360}
+      zones_to_mainland: {value: 2}
       egg_find: {value: 35}
       seabird_find: {value: 20}
       barren_find: {value: 45}
@@ -889,6 +956,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       crossing_minutes: {value: 240}
+      zones_to_mainland: {value: 1}
       driftwood_find: {value: 30}
       seaweed_find: {value: 25}
       shoal_find: {value: 25}

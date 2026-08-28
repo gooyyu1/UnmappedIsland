@@ -848,7 +848,8 @@ object_defs:
               - {object: twig, into: self}
               - {object: berry_bush, into: self}
 
-  # 山頂。島で最も高い場所。風が強く得られるものは少ない（島を見渡す効果は今後の課題）。
+  # 山頂。島で最も高い場所。風が強く得られるものは少ないが、**ここからだけ海図が書ける**
+  # （GameEndings.md 9.1節の「山頂からの視認」）。
   mountain_peak:
     traits: [location, explorable]
     props:
@@ -857,6 +858,20 @@ object_defs:
       exploration_progress:
         value: 0
         range: {min: 0, max: 10}
+        # **島を歩き尽くしてなお海を見渡すと、海図の一区画に見当が付く**（GameEndings.md 9.1節。
+        # 上限へ達した進捗は、書き込みのたびにここを通る）。書き入れる先はどの海区とも決まって
+        # いない——見えるのは水平線のどこかなので、周りの海区から1つ選ぶ（10.3節）。
+        #
+        # **山頂へ登ることが中盤の目標になる**のはこれによる（同9.1節）。書き入れた海区は幅が
+        # 狭まり（voyage.yamlの chart_sighted）、渡ってしまえば幅は無くなる（同 chart_crossed）。
+        on_max:
+          # **既定のクランプを自分で書く。** on_max を書くと、補われるはずの既定（自分を上限へ
+          # set する、6.3節）が消える——書かないと探索率が100%を超えて伸び続ける。
+          set: {self: {exploration_progress: 10}}
+          pick:
+            - weight: 1
+              among: {subject: parent, slot: locations, matches: {tag: sea}}
+              add: {picked: {chart_sighted: 1}}
       # 罠に掛かる重み（docs/engine/TrapSystem.md 3節）。宣言した動物だけが、その土地の
       # 罠の候補に載る。どの型の罠に載るかは、罠の側が並べた候補の一覧が決める（同1.1節）。
       rat_catch: {value: 4}
