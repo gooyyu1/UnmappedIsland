@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { activityHoursOf } from '../../src/analysis/activityHours';
-import { buildBalanceTables } from '../../src/analysis/balanceTables';
+import { buildBalanceTables, WHOLE_ISLAND } from '../../src/analysis/balanceTables';
 import { islandLocationsOf } from '../../src/analysis/islandLocations';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -27,7 +27,16 @@ describe('診断レポートが数える土地', () => {
   );
 
   it('外した海の場所を挙げている', () => {
-    expect(excludedSea.map(({ def }) => def.name)).toEqual([...seaNames]);
+    // 一覧には海区に湧く土地（小島）も入るので、海区を1つ残らず含むことで見る。
+    const excluded = new Set(excludedSea.map(({ def }) => def.name));
+    expect([...seaNames].filter((name) => !excluded.has(name))).toEqual([]);
+  });
+
+  it('海区に湧く土地も、島の土地から外れている', () => {
+    // 小島は海区の設置物として湧くが`sea`タグを持たない（付けると筏の`disembark`が通らなくなる）
+    // ので、タグだけの網には掛からない（issue #921）。
+    expect(island.map((def) => def.name)).not.toContain('offshore_islet');
+    expect(excludedSea.map(({ def }) => def.name)).toContain('offshore_islet');
   });
 
   it('島の土地に海が混ざらない', () => {
@@ -49,6 +58,22 @@ describe('診断レポートが数える土地', () => {
 
     expect(tables.places.map((place) => place.name).filter((name) => seaNames.has(name))).toEqual([]);
     expect(tables.supply.map((row) => row.ownerName).filter((name) => seaNames.has(name))).toEqual([]);
+  }, 600_000);
+
+  it('海に湧くものが、島の連鎖表から島の経路を押し出さない', () => {
+    // 漁り場（`fish_shoal`）は海区にしか湧かないが生肉を30分で返すので、外さないと生肉の代表経路が
+    // 海に決まる。その経路は入手経路が無いので落とされ、島で最も安い肉の経路が丸ごと消える（#921）。
+    const tables = buildBalanceTables(codex, SAMPLE_CHARACTER);
+    const routeTexts = tables.places
+      .find((place) => place.name === WHOLE_ISLAND)!
+      .properties.flatMap((chains) =>
+        chains.routes.map(({ route }) =>
+          route.steps.map((step) => `${step.objectName}.${step.stepName}`).join(' → '),
+        ),
+      );
+
+    expect(routeTexts.filter((text) => text.includes('wild_boar.'))).not.toEqual([]);
+    expect(routeTexts.filter((text) => text.includes('fish_shoal.'))).toEqual([]);
   }, 600_000);
 
   it('活動時間表に、海区の行が現れない', () => {
