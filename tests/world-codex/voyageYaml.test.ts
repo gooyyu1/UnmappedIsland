@@ -175,14 +175,16 @@ describe('筏と航海', () => {
    * 立てる。voyage.yaml）ので、今そこに在る航路からは進む先を選べない。**見張りの前後の差**が、
    * その見張りの成果になる。
    *
-   * **回数に上限を置く。** 見張りは航路が見えた時点で止まる（voyage.yamlのexploreのconditions）ので
-   * 素の宣言では有限回で抜けるが、そこが壊れたときに**赤くなる代わりに止まらなくなる**のでは、
-   * この検査が何も言わなくなる。上限は、どの海区の必要回数（最大5）よりも十分に大きい値。
+   * **航路が現れた時点で止める。** 見張り自体は航路が見えた後も続けられる（GameEndings.md 12.1節）
+   * ので、止めるのはこの検査の都合。回数の上限は、どの海区の必要回数（最大5）よりも十分に大きい値。
    */
   function watchUntilSighted(game: StartedGame, zone: WorldObject): readonly WorldObject[] {
     const before = new Set(sightedRoutes(zone).map((route) => route.instanceId));
-    for (let i = 0; i < 20 && keepWatch(game, zone); i++);
-    return sightedRoutes(zone).filter((route) => !before.has(route.instanceId));
+    const sinceBefore = (): readonly WorldObject[] =>
+      sightedRoutes(zone).filter((route) => !before.has(route.instanceId));
+
+    for (let i = 0; i < 20 && sinceBefore().length === 0 && keepWatch(game, zone); i++);
+    return sinceBefore();
   }
 
   /** その海区の航路が見えるまで見張り、本土の側へ進む航路を渡る。渡れなければfalse。 */
@@ -324,16 +326,27 @@ describe('筏と航海', () => {
     expect(game.player.location?.instance.instanceId, '乗り手は筏ごと渡る').toBe(raft.instanceId);
   });
 
-  it('航路が見えたら、その海区の見張りは終わる', () => {
-    // 上限へ達した進捗は書き込みのたびにon_maxを呼び直すので、止めないと同じ航路が湧き続ける。
+  it('航路が現れた後も見張りは続けられ、同じ航路は2本目が湧かない', () => {
+    // **待つことは、その海区を探索し続けること**（GameEndings.md 12.3節）。航路が1本見えても拾い物と
+    // 魚の群れは続くので、見張りを打ち切ってはならない（同12.1節）。一方、上限へ達した進捗は書き込みの
+    // たびにon_maxを呼び直すので、湧かせる側が「もう立っている」を見て自分で止まる必要がある。
     const { game, raft } = ready();
     raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
     const first = singletonPlace(game, 'coastal_waters');
 
-    keepWatch(game, first);
-    keepWatch(game, first);
-    expect(keepWatch(game, first), '航路が見えた後は見張れない').toBe(false);
-    expect(sightedRoutes(first), '航路は進む先と戻る先の2本だけ').toHaveLength(2);
+    for (let i = 0; i < 10; i++) expect(keepWatch(game, first), `${i + 1}回目の見張り`).toBe(true);
+
+    expect(
+      sightedRoutes(first).map((route) => route.def.name),
+      '上限を超えて見張り続けても、航路は進む先と戻る先が1本ずつ',
+    ).toEqual(['route_to_shore', 'route_to_kelp_belt']);
+    expect(
+      sightedRoutes(singletonPlace(game, 'kelp_belt')).map((route) => route.def.name),
+      '辺の向こう端も1本のまま',
+    ).toEqual(['route_to_coastal_waters']);
+    expect(propertyOf(first, 'exploration_progress'), '探索率は100%のまま張り付く（地上と同じ）').toBe(
+      new Location(first, codex).explorationProgressMax,
+    );
   });
 
   it('筏の無い海区からは渡れない', () => {
@@ -739,8 +752,8 @@ describe('筏と航海', () => {
   /**
    * その海区を繰り返し見張り、**手に入った物の名前・海区に湧いた物の名前・何かが返った割合**を返す。
    *
-   * 見張りの進捗が上限へ達すると航路（と小島）が現れ、そこで見張りは終わる。**ここで見たいのは卓の
-   * ほうだけ**なので、毎回進捗を戻して上限へ届かせない。湧いた物は立ち去る（fish_shoalの
+   * 見張りの進捗が上限へ達すると航路（と小島）が現れる。**ここで見たいのは卓のほうだけ**なので、
+   * 毎回進捗を戻して上限へ届かせず、航路も小島も数に混ぜない。湧いた物は立ち去る（fish_shoalの
    * stay_remaining）ので、今そこに居るかではなく**居たことがあるか**を個体で数える。
    */
   function watchRepeatedly(
