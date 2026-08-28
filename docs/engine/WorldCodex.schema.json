@@ -234,7 +234,7 @@
         },
         "art": {
           "$ref": "#/$defs/identifier",
-          "description": "この段階にいる間カードに出す絵の接尾辞（art_by_stage、6.4節）。src/assets/objects/<object_defの識別子>_<この値>.pngを指す。宣言できるのは、その型のart_by_stageが指すプロパティの段だけ（他のプロパティの段に書くとロード時エラー）。ファイルをまだ用意していない場合は型自身の絵のまま。"
+          "description": "この段階にいる間カードに出す絵の接尾辞（art_by_stage、6.4節）。src/assets/objects/<型の絵の名前（4.3節）>_<この値>.pngを指す。宣言できるのは、その型のart_by_stageが指すプロパティの段だけ（他のプロパティの段に書くとロード時エラー）。ファイルをまだ用意していない場合は型自身の絵のまま。"
         }
       },
       "required": [
@@ -1266,6 +1266,10 @@
             "$ref": "#/$defs/identifier"
           }
         },
+        "art": {
+          "$ref": "#/$defs/identifier",
+          "description": "カードに出す絵の名前（4.3節）。src/assets/objects/<この値>.pngを指す。省略すると型の識別子そのもの。1枚の絵を複数の型で共有するための宣言で、stack_order/art_by_stageと同じくtrait側の指定も引ける（自分自身を優先、無ければちょうど1つのtrait）。"
+        },
         "art_by_stage": {
           "$ref": "#/$defs/identifier",
           "description": "カードに出す絵を段で切り替えるプロパティ名（6.4節）。指したプロパティはstagesを持つ必要があり、artを宣言できるのはこのプロパティの段だけ（他のプロパティの段でartを使うとロード時エラー）。1つの型につき高々1つ。"
@@ -1357,6 +1361,10 @@
           "items": {
             "$ref": "#/$defs/identifier"
           }
+        },
+        "art": {
+          "$ref": "#/$defs/identifier",
+          "description": "カードに出す絵の名前（4.3節）。src/assets/objects/<この値>.pngを指す。省略すると型の識別子そのもの。1枚の絵を複数の型で共有するための宣言で、stack_order/art_by_stageと同じくtrait側の指定も引ける（自分自身を優先、無ければちょうど1つのtrait）。"
         },
         "art_by_stage": {
           "$ref": "#/$defs/identifier",

@@ -13,7 +13,7 @@ import { describeAccept, putInDurationTokens } from './describe/describeSlot';
 import type { InteractionTrigger } from '../domain/InteractionTrigger';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { SlotDef } from '../domain/SlotDef';
-import { ART_BY_OBJECT_NAME } from '../art/objectArt';
+import { ART_BY_NAME } from '../art/objectArt';
 import { isInCraftingNetwork } from './networkPage';
 import { CodexPage } from './CodexPage';
 import type { CodexView } from './CodexView';
@@ -204,7 +204,9 @@ function renderTagListPage(view: CodexView): string {
 
 /** タグの見出しに使う絵。そのタグを持つ型のうち、絵が用意されている最初のものを借りる。 */
 function tagArtHtml(view: CodexView, names: readonly string[]): string {
-  const def = view.objectDef(names.find((name) => ART_BY_OBJECT_NAME.has(name)) ?? names.at(0) ?? '');
+  const def = view.objectDef(
+    names.find((name) => ART_BY_NAME.has(view.artNameOf(name))) ?? names.at(0) ?? '',
+  );
   return def === undefined
     ? '<span class="art art-thumb art-missing" aria-hidden="true"></span>'
     : artHtml(view, def, 'thumb');
@@ -443,7 +445,7 @@ export class SlotPage extends CodexPage {
  * 早く引けるが、表の1セルでは行が高くなる。
  */
 export function objectLinkHtml(view: CodexView, name: string, withArt = false): string {
-  const art = withArt ? inlineArtHtml(name) : '';
+  const art = withArt ? inlineArtHtml(view.artNameOf(name)) : '';
   return `<a href="${view.objectHref(name)}">${art}${escapeHtml(view.objectLabel(name))}</a>`;
 }
 
@@ -469,9 +471,9 @@ function objectCardHtml(view: CodexView, def: ObjectDef): string {
   );
 }
 
-/** カードの絵（`src/assets/objects/<識別子>.png`）。ゲームが使うのと同じ絵をそのまま出す。 */
+/** カードの絵（`src/assets/objects/<絵の名前>.png`）。ゲームが使うのと同じ絵をそのまま出す。 */
 function artHtml(view: CodexView, def: ObjectDef, size: 'thumb' | 'large'): string {
-  const url = ART_BY_OBJECT_NAME.get(def.name);
+  const url = ART_BY_NAME.get(def.artName);
   if (url === undefined) return `<span class="art art-${size} art-missing" aria-hidden="true"></span>`;
   return `<img class="art art-${size}" src="${url}" alt="${escapeHtml(view.objectLabel(def.name))}">`;
 }

@@ -257,7 +257,7 @@ function routeHtml(view: CodexView, entry: PropertyRoute): string {
   const { route } = entry;
   const icons = route.steps
     .map((step) => {
-      const art = inlineArtHtml(step.objectName);
+      const art = inlineArtHtml(view.artNameOf(step.objectName));
       const label = `${view.objectLabel(step.objectName)}.${step.stepName}`;
       const body = art === '' ? escapeHtml(view.objectLabel(step.objectName)) : art;
       return `<a href="${view.objectHref(step.objectName)}" title="${escapeHtml(label)}">${body}</a>`;
@@ -316,7 +316,7 @@ function prerequisitesHtml(view: CodexView, route: ChainRoute): string {
       const shown =
         objectName === undefined
           ? escapeHtml(label)
-          : `<a href="${view.objectHref(objectName)}">${inlineArtHtml(objectName)}` +
+          : `<a href="${view.objectHref(objectName)}">${inlineArtHtml(view.artNameOf(objectName))}` +
             `${escapeHtml(view.objectLabel(objectName))}</a>`;
       const cost =
         minutes === undefined

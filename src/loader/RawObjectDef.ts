@@ -89,7 +89,7 @@ export class RawObjectDef {
    * - props/slots/interactions: 同名エントリが複数のtraitにあればエラー（5節）。
    *   object_def自身が同名エントリを持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。
    * - passives/covers: 識別子を持たないため単純に連結（trait由来→自分自身の順）。
-   * - stack_order/art_by_stage/resists/layer: 自分自身の指定を優先。無ければちょうど1つの
+   * - stack_order/art/art_by_stage/resists/layer: 自分自身の指定を優先。無ければちょうど1つの
    *   traitが指定している必要がある（複数ならエラー）。
    * - recipes: 成果物ごとの内容なので合成せず、自分自身の宣言だけを読む。
    */
@@ -207,6 +207,7 @@ export class RawObjectDef {
           merged.boundToOwner,
           !merged.notStackable,
           parseRecipes(loader, this.name, this.recipes),
+          merged.art,
           artByStagePropertyGlobalId,
           visibleSlotGlobalIds,
           merged.isStorage,

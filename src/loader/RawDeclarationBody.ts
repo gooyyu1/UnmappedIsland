@@ -22,6 +22,7 @@ const KNOWN_BODY_KEYS = [
   'stack_order',
   'visible_slots',
   'storage',
+  'art',
   'art_by_stage',
   'bound_to_owner',
   'resists',
@@ -60,6 +61,9 @@ export class RawDeclarationBody {
 
   /** storage（7.12節）。物を溜める入れ物として使う型か。tagsと同じくORで合成する。 */
   isStorage = false;
+
+  /** art（4.3節）で指定された絵の名前。未指定ならundefined（＝型の識別子をそのまま使う）。 */
+  art: string | undefined;
 
   /** art_by_stage（6.4節）で指定されたプロパティ名。未指定ならundefined。 */
   artByStage: string | undefined;
@@ -107,6 +111,7 @@ export class RawDeclarationBody {
     this.stackOrder = tryGetMap(node, 'stack_order', context);
     this.visibleSlots = namesIn(tryGetSeq(node, 'visible_slots', context), `${context}.visible_slots`);
     this.isStorage = tryGetBool(node, 'storage', context) ?? false;
+    this.art = tryGetScalar(node, 'art', context);
     this.artByStage = tryGetScalar(node, 'art_by_stage', context);
     this.boundToOwner = tryGetBool(node, 'bound_to_owner', context) ?? false;
     this.resists = tryGetSeq(node, 'resists', context);
@@ -125,7 +130,7 @@ export class RawDeclarationBody {
    *   結果に残すものは無いので、返す本体のremoveSlotsは空のまま（呼び出し側に落とし直させない）。
    * - passives・tags・visible_slots・covers: 識別子で突き合わせようがないので、trait由来→自分自身の順に連結。
    *   **並びが表示順**（visible_slots）なので、混ぜる順序そのものに意味がある。
-   * - stack_order/art_by_stage/resists/layer: 自分自身の指定を優先。無ければちょうど1つのtraitが指定して
+   * - stack_order/art/art_by_stage/resists/layer: 自分自身の指定を優先。無ければちょうど1つのtraitが指定して
    *   いること。`resists`の並びは暗黙のANDで結ばれた1つの条件木なので、連結すると書いた覚えのない
    *   合わせ技になる——どれが効くかを混ぜる順序に頼らせない。
    * - 真偽値: 重複エラーにせずORで合成する（tagsと同じ扱い）。
@@ -169,6 +174,13 @@ export class RawDeclarationBody {
         traits.map(([name, body]) => [name, body.stackOrder] as const),
         ownerName,
         'stack_order',
+      );
+    result.art =
+      this.art ??
+      onlyDeclaration(
+        traits.map(([name, body]) => [name, body.art] as const),
+        ownerName,
+        'art',
       );
     result.artByStage =
       this.artByStage ??
