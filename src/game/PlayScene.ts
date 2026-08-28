@@ -1069,14 +1069,12 @@ export class PlayScene extends ResponsiveScene {
    * （Characters.md 休息節）が並ぶ。**カードのウィンドウと同じ経路**——映しているのは自分の札で、
    * ボタンはそのオブジェクトが宣言しているアクションそのもの。
    *
-   * **装備・怪我のボタンから開くときはopensPlaceを渡す。** そのスロットのタブから開き（記憶より
-   * 優先する、Windows.md 1.2節）、休息のアクションは並べない——ボタンが指しているのは持ち物で
-   * あって、本人の過ごし方ではない。
+   * **装備・怪我のボタンから開くときはopensPlaceを渡す。渡すのは最初に開くタブがどれかだけ**で
+   * （記憶より優先する、Windows.md 1.2節）、窓の中身はどの入口から来ても同じ。
    */
   private openCharacterWindow(opensPlace?: CardPlace): void {
-    const character = this.view.characterWindow;
     const origins = this.closeChildWindowReturningOrigins();
-    this.openChildWindow(opensPlace === undefined ? character : { ...character, actions: [] }, origins, {
+    this.openChildWindow(this.view.characterWindow, origins, {
       opensPlace,
       properties: this.status.tabs(),
     });
