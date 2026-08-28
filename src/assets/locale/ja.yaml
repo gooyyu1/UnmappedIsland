@@ -948,6 +948,12 @@ object_texts:
       explore:
         display_name: 見張り
         description: 近づいてくる陸を見ながら、本土へ渡る航路と、拾えるものを探す。
+  route_to_shore:
+    display_name: 島の浜への航路
+    description: 見張りで見つけた、島の浜へ引き返す針路。渡り着けば筏を浜へ上げられる。
+  route_to_coastal_waters:
+    display_name: 島影の海への航路
+    description: 見張りで見つけた、島影の海へ引き返す針路。
   route_to_kelp_belt:
     display_name: 海藻の帯への航路
     description: 見張りで見つけた、海藻の帯へ抜ける針路。
