@@ -172,7 +172,9 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-CCR_META="$(dirname "$0")/../../.claude/ccr-meta.sh"
+# 試験は差し替える（`gh` は PATH で差し替わるが、これはパスで呼ぶため）。差し替えられないと、
+# 試験がユーザーの実際のセッション一覧を引き、そのとき待機中のものが `STALLED` として混ざる。
+CCR_META="${CCR_META:-$(dirname "$0")/../../.claude/ccr-meta.sh}"
 
 # 動いておらず、自分のIDを載せた open なPRも無い `task` のセッションを出す。**判定は「PRを出したか」
 # だけ**（上の STALLED の節）。第1引数は「これより古い更新なら見る」境目。
