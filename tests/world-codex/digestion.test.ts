@@ -371,6 +371,50 @@ describe('消化（かさ・栄養素・蓄え）', () => {
       expect(valueOf(satietyId), '腐っていれば同じ位置で吐く').toBe(0);
     });
 
+    it('腐る食べ物は、どれを食べても当たる', () => {
+      // 食べ物を足したときにpickを書き忘れると、それだけが腐っても平気な食料になる。数が増えても
+      // 気付けるよう、eatを持つ食べ物を全数、腐らせてから食べさせる。
+      const foodTagId = codex.tagNames.getId('food');
+      const durabilityId = codex.propertyNames.getId('durability');
+      const affected: string[] = [];
+      const unaffected: string[] = [];
+
+      for (let globalId = 0; globalId < codex.objects.count; globalId++) {
+        const def = codex.objects.get(globalId);
+        if (!def.tags.includes(foodTagId) || codex.isGenerated(def)) continue;
+
+        open(VOMITS);
+        const food = spawn(def.name);
+        expect(food.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+        // 飲む物（青いヤシの実）はfoodタグを持つがeatを持たない（foods.yaml冒頭）。
+        if (food.tryGetAction('eat', player) === undefined) continue;
+        if (def.tryGetPropertyDef(durabilityId) !== undefined)
+          food.getProperty(durabilityId).setNumberWithoutEvents(ROTTEN);
+        player.getProperty(satietyId).setNumberWithoutEvents(0);
+        stockAll(STOCKED);
+
+        expect(food.tryGetAction('eat', player)?.tryExecute() === true, def.name).toBe(true);
+        (valueOf(satietyId) === 0 ? affected : unaffected).push(def.name);
+      }
+
+      expect(affected.sort()).toEqual([
+        'banana',
+        'bird_egg',
+        'coconut_jelly',
+        'coconut_meat',
+        'raw_meat',
+        'roasted_coconut_crab',
+        'roasted_meat',
+        'roasted_rat',
+        'roasted_taro',
+        'seaweed',
+        'water_spinach',
+      ]);
+      expect(unaffected, '水も栄養素も残らない炭（animals.yaml）だけが腐らないので当たらない').toEqual([
+        'charred_lump',
+      ]);
+    });
+
     it('下痢の脱水は、既にある渇きの死に方へ流れる', () => {
       // 吐き下しは新しい致命的な値を足さない（VitalsSystem.md 8節）。死ぬときの名乗りが渇きのまま
       // であることが、死に方が増えていないことの証拠になる。

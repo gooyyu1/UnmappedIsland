@@ -146,6 +146,13 @@ object_defs:
             lipid: 1
             vitamin: 5
             hydration: 5.2
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # 熟したヤシの実。厚い繊維質の皮に覆われていて、このままでは食べられない。
@@ -259,4 +266,11 @@ object_defs:
             lipid: 26
             vitamin: 7
             hydration: 6
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
