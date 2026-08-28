@@ -190,6 +190,14 @@ const RAIL_BAR_HEIGHT = 12;
 const RAIL_BAR_GAP = 2;
 const RAIL_PAD = 4.5;
 
+/**
+ * 桟へ出す1行の文字（CardContent.railText）の高さと大きさ（u単位。CardView.md 16節）。
+ *
+ * バー（12u）より少しだけ高く取る。字は塗りと違って上下に余白が要るぶん、同じ高さでは詰まって見える。
+ */
+const RAIL_TEXT_HEIGHT = 15;
+const RAIL_TEXT_SIZE = 13;
+
 /** 移動先のレーンがカードのどちら側にあるか。 */
 export type CardEdgeDirection = 'up' | 'down';
 
@@ -340,6 +348,12 @@ export interface CardContent {
    * 焼かれている肉にも、それを抱えている炉にも同じ覆いが出る。
    */
   readonly cooking?: CardCooking;
+
+  /**
+   * 桟へ出す1行の文字（CardView.md 16節）。**バーにできない値の置き場**——筏の推定日数のように
+   * 幅を持つ数は、割合ではないのでバーでは言えない。持たないカードには何も出ない。
+   */
+  readonly railText?: string;
 }
 
 /**
@@ -387,6 +401,9 @@ export class Card extends Phaser.GameObjects.Container {
 
   /** カードの名前。中身が入れ替われば同じインスタンスのままでも変わる（showName参照）。 */
   private readonly nameText: Phaser.GameObjects.Text;
+
+  /** 桟へ出す1行の文字（CardContent.railText）。持たないカードでは空文字で隠れる。 */
+  private readonly railTextObject: Phaser.GameObjects.Text;
 
   /**
    * 枠そのもの。**種別で色が変わり、下の桟の高さが中身で変わる**ので、1枚絵ではなく図形として
@@ -501,6 +518,15 @@ export class Card extends Phaser.GameObjects.Container {
     // 輪郭は枠より後。枠が引く縁の線の上に乗せないと、明滅が線の下で沈む。
     this.alertOutline = createAlertOutline(scene, metrics, width, height);
     this.nameText = createNameText(scene, metrics, width, height);
+    // 桟の文字は枠より後。桟は枠が塗るので、同じ層に混ぜると引き直しのたびに文字が沈む。
+    // 横の置き場所は変わらないので、縦の位置だけを差し替えのたびに決め直す（showRailText）。
+    this.railTextObject = scene.add
+      .text(width / 2, 0, '', {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(RAIL_TEXT_SIZE)}px`,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5);
     this.add([
       paper,
       this.backgroundLayer,
@@ -511,6 +537,7 @@ export class Card extends Phaser.GameObjects.Container {
       this.frame,
       this.alertOutline,
       this.nameText,
+      this.railTextObject,
     ]);
 
     // 状態のバーは映すものが決まってから枠より後に足す（ensureGaugeBarFor）ので、ここでは何も作らない。
@@ -692,11 +719,13 @@ export class Card extends Phaser.GameObjects.Container {
       this.cardHeight,
       bars.length,
       content.road === true,
+      content.railText !== undefined,
     );
     this.drawFrame(colors, rail);
     this.showAlert(content);
     this.showName(content, colors);
     this.showArt(content);
+    this.showRailText(content, rail, colors);
     this.showBars(bars, rail, colors, showChange, content.midAction === true);
     this.showEdge(content);
     this.showStackCount(content);
@@ -779,6 +808,24 @@ export class Card extends Phaser.GameObjects.Container {
   private showName(content: CardContent, colors: CardFrameColors): void {
     this.nameText.setColor(cssColor(colors.ink));
     if (this.nameText.text !== content.name) this.nameText.setText(content.name);
+  }
+
+  /**
+   * 桟へ出す1行の文字（CardView.md 16節）。**色は名前と同じく枠から引く**——同じ桟に並ぶバーの
+   * 枠線と揃い、種別が変わっても桟の中で浮かない。入り切らない文字は幅に合わせて縮める。
+   */
+  private showRailText(content: CardContent, rail: RailMetrics, colors: CardFrameColors): void {
+    const railText = content.railText;
+    this.railTextObject.setVisible(railText !== undefined && rail.railTextY !== undefined);
+    if (railText === undefined || rail.railTextY === undefined) return;
+
+    this.railTextObject.setColor(cssColor(colors.ink));
+    if (this.railTextObject.text !== railText) this.railTextObject.setText(railText);
+
+    const room = windowSpan(this.metrics, this.cardWidth, this.cardHeight).width;
+    this.railTextObject.setScale(1);
+    this.railTextObject.setScale(Math.min(1, room / Math.max(1, this.railTextObject.width)));
+    this.railTextObject.setY(rail.railTextY);
   }
 
   /**
@@ -1566,14 +1613,19 @@ interface RailMetrics {
   readonly height: number;
   /** 道の矢印の中心のy（px）。道でないカードはundefined。 */
   readonly arrowY: number | undefined;
+  /** 桟の文字の中心のy（px）。文字を持たないカードはundefined。 */
+  readonly railTextY: number | undefined;
   /** 状態バー1本目の上端（px）。2本目からはbarPitchずつ下がる。 */
   readonly barTop: number;
   readonly barPitch: number;
 }
 
 /**
- * 下の桟の寸法。**中身——道の矢印と、値を持つ状態バー——を上から積み、その高さで桟の厚みが決まる**
- * （CardView.md 1節 カードの枠）。何も積まないカードでは左右と同じ細さにして、間延びさせない。
+ * 下の桟の寸法。**中身——道の矢印・1行の文字・値を持つ状態バー——を上から積み、その高さで桟の
+ * 厚みが決まる**（CardView.md 1節 カードの枠）。何も積まないカードでは左右と同じ細さにして、
+ * 間延びさせない。
+ *
+ * **文字はバーより上に置く。** バーの本数はカードごとに変わるので、後ろに置くと出る位置が定まらない。
  */
 function railMetrics(
   metrics: ScreenMetrics,
@@ -1581,23 +1633,31 @@ function railMetrics(
   height: number,
   barCount: number,
   road: boolean,
+  railText: boolean,
 ): RailMetrics {
   const paper = paperRect(metrics, width, height);
   const barHeight = metrics.px(RAIL_BAR_HEIGHT);
   const gap = metrics.px(RAIL_BAR_GAP);
   const arrowHeight = metrics.px(ROAD_ARROW_HEIGHT);
-  const rows = (road ? 1 : 0) + barCount;
-  const stack = (road ? arrowHeight : 0) + barCount * barHeight + Math.max(0, rows - 1) * gap;
+  const railTextHeight = metrics.px(RAIL_TEXT_HEIGHT);
+  const rows = (road ? 1 : 0) + (railText ? 1 : 0) + barCount;
+  const stack =
+    (road ? arrowHeight : 0) +
+    (railText ? railTextHeight : 0) +
+    barCount * barHeight +
+    Math.max(0, rows - 1) * gap;
   // **バーの下は左右の桟と同じ厚みにする。** 中身の上下へ同じ余白を取ると、バーを持つカードだけ
   // 下の枠が細くなり、持たないカードと並んだときに枠が痩せて見える。上は枠ではなく絵との間隔なので、
   // 揃える相手が違う。
   const side = metrics.px(FRAME_SIDE);
   const railHeight = rows === 0 ? side : metrics.px(RAIL_PAD) + stack + side;
   const top = paper.y + paper.height - railHeight + metrics.px(RAIL_PAD);
+  const railTextTop = top + (road ? arrowHeight + gap : 0);
   return {
     height: railHeight,
     arrowY: road ? top + arrowHeight / 2 : undefined,
-    barTop: top + (road ? arrowHeight + gap : 0),
+    railTextY: railText ? railTextTop + railTextHeight / 2 : undefined,
+    barTop: railTextTop + (railText ? railTextHeight + gap : 0),
     barPitch: barHeight + gap,
   };
 }

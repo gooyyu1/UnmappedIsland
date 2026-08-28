@@ -36,6 +36,16 @@ export function timeCostLine(minutes: number): string | undefined {
 }
 
 /**
+ * 積み下ろしの間に出す、今の積載での推定日数（docs/concept/GameEndings.md 9.3節）。
+ *
+ * **幅は幅のまま出す**——1つの数へ丸めると、粗い海図から出た見積もりが確かなものに見える。
+ * 両端が揃うのは海図の幅が消えたとき（渡り終えた海区、Voyage.md 3.7節）だけで、そのときだけ1つの数になる。
+ */
+export function voyageDaysText(minDays: number, maxDays: number): string {
+  return `本土まで ${minDays === maxDays ? `${minDays}` : `${minDays}〜${maxDays}`}日`;
+}
+
+/**
  * 時間経過の演出に出す「開始から何分経ったか」（CardInteraction.md 7節）。
  *
  * hoursAndMinutesTextと形を分けているのは、これが**動きながら大きく出る数字**だから——「1時間30分」と
