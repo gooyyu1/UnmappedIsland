@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DeviceRow } from '../../src/analysis/balanceTables';
+import type { ChainRoute, DeviceRow } from '../../src/analysis/balanceTables';
 import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import { ART_BY_OBJECT_NAME } from '../../src/art/objectArt';
 import { BalancePage } from '../../src/codex-viewer/balancePage';
@@ -304,74 +304,209 @@ describe('WorldCodexビューアのページ', () => {
 });
 
 /**
- * 待ち生産表の列と、`DeviceRow`（`src/analysis/balanceTables.ts`）のフィールドの対応。
- *
- * **`DeviceRow`は2箇所へ別々に書き出される**——`stats/balance.yaml`と、この表。フィールドが増えた
- * ときに片方だけ列を足しても、どちらのテストも緑のままだった（issue #977。`condition`が増えたとき、
- * 囲いの中でしか進まないヤケイの繁殖が、どこに置いても働くように読める表が残った）。
- *
- * `Record<keyof DeviceRow, …>` なので、**フィールドが増えるとここへ書き足すまでtypecheckが通らない**。
- * 書き足せば、その列が表に在るかと、行のそのセルに値が出ているかをテストが見る。表に出さないと
- * 決めたフィールドだけがnullで、理由を添える。
+ * 描かれた行1つ。見出し（表の`<th>`／`<dl>`の`<dt>`）から、そこに出ている中身を引く。中身はHTMLの
+ * まま持つ（中の絵やリンクごと突き合わせる）。
  */
-const DEVICE_COLUMNS: Record<keyof DeviceRow, string | null> = {
-  deviceName: '設備',
-  stepName: '工程',
-  condition: '条件',
-  periodMinutes: '周期',
-  productName: '産物',
-  perCycle: '産物',
-  perDay: '個/日',
-  lifetimeDays: '寿命',
-  overLifetime: '生涯',
-  lifetimeProperty: '出どころ',
-  buildMinutes: '製作',
-  laborPerUnit: '分/個',
-};
+type RenderedRow = ReadonlyMap<string, string>;
 
-const DEVICE_FIELDS = Object.keys(DEVICE_COLUMNS) as readonly (keyof DeviceRow)[];
+/**
+ * 表に出すフィールド1つ。`label`はその見出しで、`texts`は**セルに出ているはずの値**——入れ子の型は
+ * 出す約束をした中身だけを取り出す（前提なら道具の名前だけで、他の土地で用意するかは文字にならない）。
+ */
+interface ShownField<Value> {
+  readonly label: string;
+  readonly texts: (value: Value) => readonly (string | number)[];
+}
 
-/** `DeviceRow`のフィールドではない列。行がどの場所のものかは`PlaceBalance`が持つ。 */
-const PLACE_COLUMN = '場所';
+/** 値をそのまま出すフィールド。決まらない値（undefined）はセルにも出ないので、何も要求しない。 */
+function asIs(label: string): ShownField<string | number | undefined> {
+  return { label, texts: (value) => (value === undefined ? [] : [value]) };
+}
 
-/** 描かれた表1つ。セルはHTMLのまま持つ（中の絵やリンクごと突き合わせる）。 */
-interface RenderedTable {
-  readonly headers: readonly string[];
-  readonly rows: readonly (readonly string[])[];
+function shows<Value>(
+  label: string,
+  texts: (value: Value) => readonly (string | number)[],
+): ShownField<Value> {
+  return { label, texts };
+}
+
+/**
+ * 解析の型のフィールドと、それが出る見出しの対応。**出さないと決めたフィールドだけがnull**で、
+ * 理由を添える。`[K in keyof Row]`なので、**フィールドが増えるとここへ書き足すまでtypecheckが
+ * 通らない**。
+ */
+type ShownFields<Row> = { readonly [K in keyof Row]: ShownField<Row[K]> | null };
+
+/** そのフィールドがセルに出しているはずの値。出さないと決めたフィールドは何も要求しない。 */
+function textsOf<Row, K extends keyof Row>(
+  fields: ShownFields<Row>,
+  key: K,
+  row: Row,
+): readonly (string | number)[] {
+  const field = fields[key];
+  return field === null ? [] : field.texts(row[key]);
+}
+
+/**
+ * 解析の型のフィールドが、描かれた表に出ているかの見張り。
+ *
+ * **同じ型が2箇所へ別々に書き出される**——`stats/balance.yaml`と、このページ。フィールドが増えた
+ * ときに片方だけ足しても、どちらのテストも緑のままだった（`DeviceRow.condition`でissue #977、
+ * `ChainRoute.devices`でissue #993。囲いの中でしか進まないヤケイの繁殖が、どこに置いても働くように
+ * 読める表が残った）。
+ *
+ * 待ち生産は`<table>`（見出しは全行に共通の`<th>`）、連鎖の内訳は`<dl>`（見出しは行ごとの`<dt>`）
+ * だが、**違うのは見出しと中身の取り出し方だけ**なので、`RenderedRow`にしてからは同じここが見る。
+ */
+function describeShownFields<Row>(spec: {
+  /** 見張る表の名前。 */
+  readonly name: string;
+  readonly fields: ShownFields<Row>;
+  /** 解析が出した行。描かれた行と同じ並びで渡す。 */
+  readonly rows: readonly Row[];
+  readonly rendered: readonly RenderedRow[];
+  /** 行の型のフィールドではない見出し。 */
+  readonly extraLabels: readonly string[];
+}): void {
+  const { name, fields, rows, rendered, extraLabels } = spec;
+  // `Object.keys`が返せるのはstring[]までなので、対応表がRowの全フィールドを持つことを使って読み替える。
+  const keys = Object.keys(fields) as unknown as readonly (keyof Row)[];
+  const labelOf = (key: keyof Row): string | undefined => fields[key]?.label;
+
+  describe(name, () => {
+    it('見出しが、型のフィールドと対応している', () => {
+      const declared = keys.map(labelOf).filter((label) => label !== undefined);
+      const drawn = [...new Set(rendered.flatMap((row) => [...row.keys()]))];
+
+      expect(drawn.sort()).toEqual([...new Set([...extraLabels, ...declared])].sort());
+    });
+
+    it('見本の世界が、出す約束のフィールドに値を持つ', () => {
+      const empty = keys.filter(
+        (key) => fields[key] !== null && rows.every((row) => textsOf(fields, key, row).length === 0),
+      );
+
+      expect(empty, '値が空のままのフィールドは、出ているかを見張れない').toEqual([]);
+    });
+
+    it('行が、その値をすべて出す', () => {
+      expect(rendered.length, '解析が出した行が、すべて描かれてはいない').toBe(rows.length);
+
+      rows.forEach((row, index) => {
+        for (const key of keys) {
+          const label = labelOf(key);
+          if (label === undefined) continue;
+
+          for (const text of textsOf(fields, key, row)) {
+            const message = `${index}行目の${String(key)}（${text}）が「${label}」に出ていない`;
+            expect(showsText(rendered[index].get(label), text), message).toBe(true);
+          }
+        }
+      });
+    });
+  });
+}
+
+/**
+ * その中身がその値を出しているか。数は見出しごとに丸めの桁が違うので、どれかの桁で一致すればよい。
+ * 中身がundefinedなのはその見出しが無いときで、そのときも「出ていない」。
+ */
+function showsText(cell: string | undefined, text: string | number): boolean {
+  if (cell === undefined) return false;
+  return typeof text === 'number'
+    ? [0, 1, 2, 3].some((digits) => cell.includes(text.toFixed(digits)))
+    : cell.includes(escapeHtml(text));
+}
+
+/** 見出しと中身を対にする。数が合わなければ対応が崩れたまま緑になるので、そこで落とす。 */
+function renderedRow(labels: readonly string[], cells: readonly string[]): RenderedRow {
+  if (labels.length !== cells.length)
+    throw new Error(`見出し${labels.length}個に対して中身が${cells.length}個ある`);
+  return new Map(labels.map((label, index) => [label, cells[index]]));
 }
 
 /** 待ち生産の節の先頭に在る表（後ろに続く雨で溜まる水の表は含めない）。 */
-function deviceTableOf(html: string): RenderedTable {
+function deviceTableRows(html: string): readonly RenderedRow[] {
   const heading = html.indexOf('<h2 id="balance-待ち生産">');
   if (heading < 0) throw new Error('待ち生産の節が描かれていない');
   const start = html.indexOf('<table>', heading);
   const end = html.indexOf('</table>', start);
   if (start < 0 || end < 0) throw new Error('待ち生産の表が描かれていない');
   const table = html.slice(start, end);
+  const headers = [...table.matchAll(/<th>([\s\S]*?)<\/th>/g)].map(([, header]) => header);
 
-  return {
-    headers: [...table.matchAll(/<th>([\s\S]*?)<\/th>/g)].map(([, header]) => header),
-    rows: table
-      .split('<tr>')
-      .map((row) => [...row.matchAll(/<td>([\s\S]*?)<\/td>/g)].map(([, cell]) => cell))
-      .filter((cells) => cells.length > 0),
-  };
+  return table
+    .split('<tr>')
+    .map((row) => [...row.matchAll(/<td>([\s\S]*?)<\/td>/g)].map(([, cell]) => cell))
+    .filter((cells) => cells.length > 0)
+    .map((cells) => renderedRow(headers, cells));
 }
 
-/**
- * そのセルがその値を出しているか。数は列ごとに丸めの桁が違うので、どれかの桁で一致すればよい。
- * セルがundefinedなのは列が無いとき（`indexOf`が-1）で、そのときも「出ていない」。
- */
-function showsValue(cell: string | undefined, value: string | number): boolean {
-  if (cell === undefined) return false;
-  return typeof value === 'number'
-    ? [0, 1, 2, 3].some((digits) => cell.includes(value.toFixed(digits)))
-    : cell.includes(escapeHtml(value));
+/** 連鎖の経路1つぶんの内訳。見出しは行ごとの`<dt>`なので、行によって出る見出しが違う。 */
+function routeDetailRows(html: string): readonly RenderedRow[] {
+  return [...html.matchAll(/<dl class="route-detail">([\s\S]*?)<\/dl>/g)].map(([, detail]) =>
+    renderedRow(
+      [...detail.matchAll(/<dt>([\s\S]*?)<\/dt>/g)].map(([, label]) => label),
+      [...detail.matchAll(/<dd[^>]*>([\s\S]*?)<\/dd>/g)].map(([, cell]) => cell),
+    ),
+  );
 }
 
+/** 待ち生産表の列と、`DeviceRow`（`src/analysis/balanceTables.ts`）のフィールドの対応。 */
+const DEVICE_LABELS: ShownFields<DeviceRow> = {
+  deviceName: asIs('設備'),
+  stepName: asIs('工程'),
+  condition: asIs('条件'),
+  periodMinutes: asIs('周期'),
+  productName: asIs('産物'),
+  perCycle: asIs('産物'),
+  perDay: asIs('個/日'),
+  lifetimeDays: asIs('寿命'),
+  overLifetime: asIs('生涯'),
+  lifetimeProperty: asIs('出どころ'),
+  buildMinutes: asIs('製作'),
+  laborPerUnit: asIs('分/個'),
+};
+
+/** `DeviceRow`のフィールドではない列。行がどの場所のものかは`PlaceBalance`が持つ。 */
+const PLACE_LABEL = '場所';
+
+/** 連鎖の経路を開いたときの内訳（`<dl>`）と、`ChainRoute`のフィールドの対応。 */
+const CHAIN_LABELS: ShownFields<ChainRoute> = {
+  steps: shows('工程', (steps) => steps.flatMap((step) => [step.objectName, step.stepName])),
+  devices: shows('設備', (devices) =>
+    devices.flatMap((device) => [device.deviceName, device.stepName, device.condition]),
+  ),
+  deltas: shows('1回で返る値', (deltas) => deltas.flatMap(({ name, amount }) => [name, amount])),
+  prerequisites: shows('前提', (prerequisites) =>
+    prerequisites.map(({ label, objectName }) => objectName ?? label),
+  ),
+
+  // 1回ぶんの時間は、需要1単位あたりへ割った形でだけ出す（割り算は`PropertyRoute`が持つ）。
+  executionMinutes: null,
+  exploreMinutes: null,
+  craftMinutes: null,
+
+  // 1回で埋まる量は`1単位あたり`の分母として効くだけで、プロパティのidから引く形では出さない。
+  fills: null,
+
+  // 行の見た目で出す（`route-blocked`・`route-import`）。
+  blocked: null,
+  needsImport: null,
+
+  // どの並びへ出すかの印で、行の中身ではない（その土地の表に載せるか、
+  // 「時間を数えられない経路」へ畳むか）。
+  rootedHere: null,
+  untimed: null,
+};
+
+/** `ChainRoute`のフィールドではない見出し。需要で割った時間は`PropertyRoute`が持つ。 */
+const PER_UNIT_LABEL = '1単位あたり';
+
 /**
- * 待ち生産の設備を1つだけ宣言した世界。**`DeviceRow`のどのフィールドにも値が入るように書く**
- * ——朽ちない設備や作り方の無い設備ではundefinedになるフィールドがあり、その列が見張られなくなる。
+ * 待ち生産の設備を1つだけ宣言した世界。**`DeviceRow`・`ChainRoute`のどのフィールドにも値が入るように
+ * 書く**——朽ちない設備や作り方の無い設備ではundefinedになるフィールドがあり、その見出しが
+ * 見張られなくなる。
  *
  * 代表キャラクタの名前（`medic`）は収支ページが持つ定数。
  */
@@ -437,41 +572,36 @@ object_defs:
         add: {actor: {hydration: 96}}
 `;
 
-describe('収支ページの待ち生産表', () => {
+describe('収支ページの表', () => {
   const codex = new WorldCodexYamlLoader().load('devices.yaml', DEVICE_YAML).buildAndReset();
-  // 識別子モードで描かせる。セルに出る名前が、そのまま`DeviceRow`の持つ識別子になる。
+  // 識別子モードで描かせる。中身に出る名前が、そのまま解析の持つ識別子になる。
   const source = new CodexSource(codex, parseLocale('ja.yaml', 'object_texts: {}'), ['devices.yaml']);
   const view = new CodexView(source, 'identifier');
-  const devices = buildBalanceTables(codex, 'medic').places.flatMap((place) => place.devices);
-  const table = deviceTableOf(pageHtml(new BalancePage(), view));
+  const tables = buildBalanceTables(codex, 'medic');
+  const html = pageHtml(new BalancePage(), view);
 
-  it('列がDeviceRowのフィールドと対応している', () => {
-    const columns = [...new Set(Object.values(DEVICE_COLUMNS).filter((column) => column !== null))];
-
-    expect([...table.headers].sort()).toEqual([PLACE_COLUMN, ...columns].sort());
+  describeShownFields({
+    name: '待ち生産',
+    fields: DEVICE_LABELS,
+    rows: tables.places.flatMap((place) => place.devices),
+    rendered: deviceTableRows(html),
+    extraLabels: [PLACE_LABEL],
   });
 
-  it('宣言した設備が、DeviceRowのどのフィールドにも値を持つ', () => {
-    const empty = DEVICE_FIELDS.filter((field) => devices.every((device) => device[field] === undefined));
-
-    expect(empty, 'undefinedのままのフィールドは、その列が出ているかを見張れない').toEqual([]);
-  });
-
-  it('行が、その設備の値をすべて出す', () => {
-    expect(table.rows.length, '解析が出した行が、すべて描かれてはいない').toBe(devices.length);
-
-    devices.forEach((device, index) => {
-      const cells = table.rows[index];
-      expect(cells.length, `${device.deviceName}の行のセルの数が、列の数と違う`).toBe(table.headers.length);
-
-      for (const field of DEVICE_FIELDS) {
-        const column = DEVICE_COLUMNS[field];
-        const value = device[field];
-        if (column === null || value === undefined) continue;
-
-        const message = `${device.deviceName}の${field}（${value}）が「${column}」の列に出ていない`;
-        expect(showsValue(cells[table.headers.indexOf(column)], value), message).toBe(true);
-      }
-    });
+  describeShownFields({
+    name: '連鎖の経路',
+    fields: CHAIN_LABELS,
+    // 描く順（土地 → プロパティ → 時間を数えた経路 → 数えられない経路）に並べる。
+    rows: tables.places
+      .filter((place) => place.properties.length > 0)
+      .flatMap((place) =>
+        place.properties.flatMap((chains) => [
+          ...chains.routes.filter((entry) => !entry.route.untimed),
+          ...chains.routes.filter((entry) => entry.route.untimed),
+        ]),
+      )
+      .map((entry) => entry.route),
+    rendered: routeDetailRows(html),
+    extraLabels: [PER_UNIT_LABEL],
   });
 });

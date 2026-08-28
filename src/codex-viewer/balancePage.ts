@@ -277,7 +277,9 @@ function routeHtml(view: CodexView, entry: PropertyRoute): string {
     `それ以外 ${formatNumber(route.craftMinutes / entry.gain, 2)}）</span></dd>` +
     (entry.simultaneousDeviceCount === undefined
       ? ''
-      : `<dt>設備数</dt><dd>${formatNumber(entry.simultaneousDeviceCount, 1)}</dd>`) +
+      : `<dt>設備</dt><dd>同時に${formatNumber(entry.simultaneousDeviceCount, 1)}個` +
+        `<span class="muted">（条件が成立し続けた場合）</span>` +
+        `<ul class="plain">${routeDevicesHtml(view, route)}</ul></dd>`) +
     `<dt>1回で返る値</dt><dd>${amountListHtml(route.deltas)}</dd>` +
     `<dt>前提</dt><dd>${prerequisitesHtml(view, route)}</dd>` +
     `<dt>工程</dt><dd class="route-steps">` +
@@ -289,6 +291,22 @@ function routeHtml(view: CodexView, entry: PropertyRoute): string {
       .join(' › ') +
     `</dd></dl></details></li>`
   );
+}
+
+/**
+ * 経路が待つ設備（上流から下流の順）。**数と条件を離さない**——周期を進めるのはtick毎の増減なので、
+ * 条件が成立しなければ何個並べても1 tickも進まず、数だけでは「その数だけ置けば回る」としか
+ * 読めない（issue #981）。周期とレートは待ち生産の節が持つ。
+ */
+function routeDevicesHtml(view: CodexView, route: ChainRoute): string {
+  return route.devices
+    .map(
+      (device) =>
+        `<li>${objectLinkHtml(view, device.deviceName, true)}` +
+        `.<code>${escapeHtml(device.stepName)}</code> ` +
+        `<span class="muted">${escapeHtml(device.condition)}</span></li>`,
+    )
+    .join('');
 }
 
 function prerequisitesHtml(view: CodexView, route: ChainRoute): string {
