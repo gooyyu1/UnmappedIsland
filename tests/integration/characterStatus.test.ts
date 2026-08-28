@@ -79,15 +79,16 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
 
     expect(travelOf(fromGameSession(game, codex, localeWithReason)).enabled, '空身なら歩ける').toBe(true);
 
-    // 装備スロットへ石（1kgずつ）を積んで、どのキャラクタでも危険域へ届く重さにする。
-    const equipmentId = codex.slotNames.getId('equipment');
+    // 手持ちへ石（1kgずつ）を積んで、どのキャラクタでも危険域へ届く重さにする。同じ物は束ねられる
+    // ので、枠数の決まった手持ちにも40個入る。
+    const handId = codex.slotNames.getId('hand');
     for (let i = 0; i < 40; i++)
       game.session
         .createObject(codex.objectNames.getId('stone'))
-        .moveToSlotOrRejection(game.player.instance.getSlot(equipmentId));
+        .moveToSlotOrRejection(game.player.instance.getSlot(handId));
     expect(
       game.player.instance.tryGetProperty(codex.propertyNames.getId('load'))?.getEffectiveValue() ?? 0,
-      '装備の重さがそのまま負荷になる',
+      '持ち物の重さがそのまま負荷になる',
     ).toBeGreaterThan(0);
 
     const travel = travelOf(fromGameSession(game, codex, localeWithReason));
@@ -103,11 +104,11 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
   it('同じに描かれる影響は1つの枠へ畳まれ、件数が付く', () => {
     // Windows.md 8節: 中身の子N個は同じ絵・同じ記号になるので、並べても数えるしかない。
     const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
-    const equipmentId = codex.slotNames.getId('equipment');
+    const handId = codex.slotNames.getId('hand');
     for (let i = 0; i < 40; i++)
       game.session
         .createObject(codex.objectNames.getId('stone'))
-        .moveToSlotOrRejection(game.player.instance.getSlot(equipmentId));
+        .moveToSlotOrRejection(game.player.instance.getSlot(handId));
 
     const load = fromGameSession(game, codex, locale)
       .propertyCategories.flatMap((tab) => tab.entries)
