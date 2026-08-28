@@ -489,7 +489,7 @@ object_defs:
               self:
                 blood: 0.032
       # 囲いの中で1羽増えるまでの残り（docs/world/Animals.md 3.1節）。**増えるのは獣自身の仕事**なので、
-      # 囲い（farming.yamlのlivestock_pen）はこれを知らない——家畜になる獣を足しても、囲いの側は
+      # 囲い（farming.yamlのpen）はこれを知らない——家畜になる獣を足しても、囲いの側は
       # 1行も変わらない。
       #
       # 罠のcatch_remaining（TrapSystem.md 2節）と同じ見えないタイマーで、初期値の幅は待ち時間では
