@@ -4,7 +4,7 @@ import type { SameSlotSpawnSite } from './SameSlotSpawnSite';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
 import type { ObjectRef } from './ObjectRef';
-import type { AddReading, EffectReader, TransferReading } from './EffectReader';
+import type { AddReading, EffectReader, SetValueReading, TransferReading } from './EffectReader';
 import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
 
 /**
@@ -116,23 +116,37 @@ export class ActiveEffectSequence extends ActiveEffect {
   }
 }
 
-/** set の1命令（対象プロパティへリテラルの絶対値を代入する、9.2節）。 */
+/**
+ * set の1命令（対象プロパティへ絶対値を代入する、9.2節）。
+ *
+ * 値はリテラルか、**個体を1つ指す参照**（ObjectRef）。後者は解決した相手のインスタンスIDを書き込む
+ * ——実行時に決まった個体を覚える手段はこれだけで、覚えた相手は `move` の行き先・`spawn` の配置先が
+ * そのまま引く（筏が出航した海岸、docs/world/Voyage.md 3.5節）。
+ */
 export class SetEffect extends ActiveEffect {
   private readonly target: PropertyPath;
-  private readonly value: number;
+  private readonly value: number | ObjectRef;
 
-  constructor(target: PropertyPath, value: number) {
+  constructor(target: PropertyPath, value: number | ObjectRef) {
     super();
     this.target = target;
     this.value = value;
   }
 
+  /** 参照が今どこも指していなければ何も書かない（解決できない適用は無視、9.1節）。 */
   apply(context: ReferenceContext): void {
-    this.target.propertyValue(context)?.setNumber(this.value);
+    const value = typeof this.value === 'number' ? this.value : this.value.resolve(context)?.instanceId;
+    if (value === undefined) return;
+    this.target.propertyValue(context)?.setNumber(value);
   }
 
   read(reader: EffectReader): void {
-    reader.set(this.target.root, this.target.propertyGlobalId, this.value);
+    reader.set(this.target.root, this.target.propertyGlobalId, this.reading);
+  }
+
+  /** 代入する値の宣言（SetValueReading参照）。個体を指す参照は、指し方そのものを渡す。 */
+  private get reading(): SetValueReading {
+    return typeof this.value === 'number' ? this.value : this.value.reading;
   }
 }
 
@@ -204,29 +218,27 @@ export class DestroyEffect extends ActiveEffect {
 }
 
 /**
- * spawn の配置先（9.4節）が起点にする参照ルート。スロットは指定せず、起点が持つスロットを宣言順に
- * 走査して最初に配置できた所へ入れる（著者がスロット名を知らなくてよい）。fallbackはYAML上に存在せず、
- * 配置失敗時は必ず起点自身の親へ伝播する（WorldObject.place参照）。on_max/on_minには
- * actorが存在しないため、それらのspawnでintoにActorを指定しても何も起きない。
+ * spawn の配置先（9.4節）。スロットは指定せず、起点が持つスロットを宣言順に走査して最初に配置できた
+ * 所へ入れる（著者がスロット名を知らなくてよい）。fallbackはYAML上に存在せず、配置失敗時は必ず起点
+ * 自身の親へ伝播する（WorldObject.place参照）。
+ *
+ * **個体を指す形は `move` の移動先と同じ ObjectRef**（対象キー・プロパティが持つインスタンスID・型）。
+ * 残る2つは個体ではないものを名乗るためにある——`same_slot` は位置、`child` は走査。
  */
-export type SpawnTargetRoot =
+export type SpawnTarget =
   /**
    * into 省略時の既定値。selfが今占めている場所（親と同じスロット）へ配置する。クラフト・腐敗など
    * 「同じ場所で別の物に置き換わる」場合に使う。一意の1スロットのため走査は行わない。
    */
   | 'same_slot'
-  /** self が持つスロットを宣言順に走査する。 */
-  | 'self'
-  /** actor が持つスロットを宣言順に走査する。 */
-  | 'actor'
-  /** `among`（10.3節）が選んだ相手が持つスロットを宣言順に走査する。 */
-  | 'picked'
   /**
    * selfの子を順に走査し、最初に受け取れた子のスロットへ入れる。intoが既に持つ「宣言順に走査して最初に
    * 配置できた所へ」という決め方が、1階層下へ伸びるだけ（docs/engine/TrapSystem.md 5.3節）。
    * 罠が自分の生んだ獲物へ怪我を渡す経路で、actorを持たないon_minからは他に手段が無い。
    */
-  | 'child';
+  | 'child'
+  /** 指した1つの個体が持つスロットを宣言順に走査する。 */
+  | ObjectRef;
 
 /**
  * spawn（9.4節）の1命令。intoへの配置に失敗した場合は起点の親へこぼれ、そこも受け取らなければさらに
@@ -235,7 +247,7 @@ export type SpawnTargetRoot =
  */
 export class SpawnEffect extends ActiveEffect {
   private readonly objectGlobalId: number;
-  private readonly into: SpawnTargetRoot;
+  private readonly into: SpawnTarget;
 
   /**
    * 生む個数（9.4節、既定1）。同じ宣言を並べるのと同じ意味で、1個ずつ順に生んで配置する
@@ -243,7 +255,7 @@ export class SpawnEffect extends ActiveEffect {
    */
   private readonly count: number;
 
-  constructor(objectGlobalId: number, into: SpawnTargetRoot, count = 1) {
+  constructor(objectGlobalId: number, into: SpawnTarget, count = 1) {
     super();
     if (!Number.isInteger(count) || count < 1)
       throw new Error(`countは1以上の整数である必要があります（値: ${count}）。`);

@@ -13,6 +13,7 @@ import type {
   EffectReader,
   AddReading,
   PickCandidateReading,
+  SetValueReading,
   TransferReading,
   DeclaredNumberReading,
 } from '../../domain/EffectReader';
@@ -122,12 +123,14 @@ class EffectDescriber implements EffectReader {
     this.out = out;
   }
 
-  set(target: ReferenceRoot, propertyGlobalId: number, value: number): void {
+  set(target: ReferenceRoot, propertyGlobalId: number, value: SetValueReading): void {
     this.out.write(
       text('set '),
       propertyRef(this.names.propertyName(propertyGlobalId), target),
       text(' = '),
-      this.names.propertyValueToken(propertyGlobalId, value),
+      ...(typeof value === 'number'
+        ? [this.names.propertyValueToken(propertyGlobalId, value)]
+        : objectRefTokens(value, this.names)),
     );
   }
 

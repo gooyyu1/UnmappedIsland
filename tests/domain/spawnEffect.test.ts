@@ -60,3 +60,69 @@ object_defs:
     expect(parts.map((part) => part.tryGetProperty(weightId)?.number ?? 0)).toEqual([400, 400]);
   });
 });
+
+/**
+ * spawnの配置先（9.4節）が、**moveの移動先と同じ三択**で書けることの検証。`into`（対象キー）のほかに、
+ * 型の名前（`into_object`）と、プロパティが持つインスタンスID（`into_prop`）で指せる——どちらも
+ * 「自分でも操作者でもない、離れた1つの相手」で、対象キーでは名指せない。
+ */
+describe('spawnの配置先', () => {
+  const yaml = `
+object_defs:
+  ground:
+    slots:
+      fixtures: {}
+  depot:
+    singleton: true
+    slots:
+      items: {}
+  box:
+    slots:
+      items: {}
+  marker: {}
+  emitter:
+    props:
+      target_id: {value: 0}
+      fuse:
+        value: 0
+        range: {min: 0, max: 2147483647}
+        on_min:
+          spawn:
+            - {object: marker, into_object: depot}
+            - {object: marker, into_prop: target_id}
+`;
+
+  let codex: WorldCodex;
+
+  beforeAll(() => {
+    codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+  });
+
+  it('型の名前とプロパティの持つインスタンスIDで、離れた相手のスロットへ入れられる', () => {
+    const session = new WorldSession(codex);
+    const fixturesSlotId = codex.slotNames.getId('fixtures');
+    const itemsSlotId = codex.slotNames.getId('items');
+    const create = (name: string, instanceId: number): WorldObject =>
+      new WorldObject(instanceId, codex.objects.get(codex.objectNames.getId(name)), session);
+
+    const ground = create('ground', 1);
+    const depot = create('depot', 2);
+    const box = create('box', 3);
+    const emitter = create('emitter', 4);
+    for (const object of [depot, box, emitter])
+      expect(object.moveToSlotOrRejection(ground.getSlot(fixturesSlotId))).toBeUndefined();
+    emitter.getProperty(codex.propertyNames.getId('target_id')).setNumberWithoutEvents(box.instanceId);
+
+    // fuseがrangeの下限を割っているので、tickでon_min（spawn2つ）が発火する。
+    ground.tick();
+
+    expect(
+      depot.tryGetSlot(itemsSlotId)!.contents.map((object) => object.def.name),
+      'into_objectはその型のインスタンスへ入れる',
+    ).toEqual(['marker']);
+    expect(
+      box.tryGetSlot(itemsSlotId)!.contents.map((object) => object.def.name),
+      'into_propはそのIDの個体へ入れる',
+    ).toEqual(['marker']);
+  });
+});

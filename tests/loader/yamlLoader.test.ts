@@ -1400,7 +1400,9 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/in/);
   });
 
-  it('setのvalueにプロパティ参照を書くとエラーになる（リテラルのみ、9.2節）', () => {
+  it('setのvalueに他のプロパティの値を読む形は書けない（9.2節）', () => {
+    // 値の位置に書けるマップは「その対象キーが名指す個体」（`{subject: parent}`）だけで、`prop`は
+    // 書けない——値の算出をYAMLへ持ち込まないという9.2節の規則は、個体を書けるようになっても変わらない。
     const yaml = `
 object_defs:
   bottle2:
@@ -1420,7 +1422,7 @@ object_defs:
         value: oil
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
-      /スカラー値/,
+      /未知のキー 'prop'/,
     );
   });
 
