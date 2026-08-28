@@ -82,7 +82,7 @@ describe('探索のタブの文言（世界→映し→対応表 通し）', () 
     exploreToFull(game, zone);
 
     expect(noteOf(game, game.startLocation.instance), '土地は探索し切っても続けられる').not.toBe(before.land);
-    expect(noteOf(game, zone), '海区は航路が見えたら見張りが終わる').not.toBe(before.sea);
+    expect(noteOf(game, zone), '海区は航路が見つかったことを言う').not.toBe(before.sea);
     expect(noteOf(game, zone)).toContain('航路');
   });
 

@@ -17,11 +17,11 @@ import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { withYamlContext, parseNumberOrSymbol } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
-import { parseSubjectRoot } from './parseConditions';
+import { parseConditionsField, parseSubjectRoot } from './parseConditions';
 import { parsePassiveInto } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { ALERT_LEVELS } from '../domain/AlertLevel';
-import type { ActiveEffect } from '../domain/ActiveEffect';
+import type { RangeEventDef } from '../domain/PropertyDef';
 import { GAUGE_ENDS, GaugeDef, PropertyDef, PropertyRange, PropertyStage } from '../domain/PropertyDef';
 import type { PassiveEffect } from '../domain/PassiveEffect';
 import { PropertyPath, ReferenceScope } from '../domain/ReferenceRoot';
@@ -211,15 +211,6 @@ function parsePropertyTags(loader: WorldCodexYamlLoader, context: string, node: 
   return [...tagIds];
 }
 
-/**
- * rangeイベント（on_max・on_min、6.3節）の中身を読む。対象はselfのみで、
- * pick候補の中の効果にも引き継ぐ。空のmapping（`on_min: {}`）は「宣言だけして何もしない」
- * （既定のクランプを打ち消す）を意味し、空のActiveEffectSequenceになる。
- */
-function parseRangeEventEffect(loader: WorldCodexYamlLoader, context: string, node: YAMLMap): ActiveEffect {
-  return parseActiveEffectBody(loader, context, node, ReferenceScope.declaration);
-}
-
 /** 1つのstagesエントリを解釈する（6.4節）。数値型はmin（半開区間）、シンボル型はeq
  * （nameが比較対象そのもの）を使う。stage内のpassivesも併せて解釈しpassivesへ追記する。 */
 function parseStageAppendingPassives(
@@ -252,14 +243,39 @@ function parseStageAppendingPassives(
   return stage;
 }
 
-/** labelのrangeイベント（6.3節）が書かれていればその中身。書かれていなければundefined。 */
+/** rangeイベントが持てる、効果以外の兄弟キー。 */
+const RANGE_EVENT_RESERVED_KEYS = ['conditions'] as const;
+
+/**
+ * labelのrangeイベント（on_max・on_min、6.3節）が書かれていればその中身。書かれていなければundefined。
+ *
+ * 対象はselfのみで、pick候補の中の効果にも引き継ぐ。空のmapping（`on_min: {}`）は「宣言だけして
+ * 何もしない」（既定のクランプを打ち消す）を意味し、空のActiveEffectSequenceになる。`conditions`
+ * （14節）を書くと、満たす回だけがこの中身へ、満たさない回は既定のクランプへ倒れる（RangeEventDef）。
+ */
 function parseOptionalRangeEvent(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YAMLMap,
   label: 'on_max' | 'on_min',
-): ActiveEffect | undefined {
+): RangeEventDef | undefined {
   const eventNode = tryGetMap(node, label, context);
   if (eventNode === undefined) return undefined;
-  return parseRangeEventEffect(loader, `${context}.${label}`, eventNode);
+
+  const eventContext = `${context}.${label}`;
+  return {
+    condition: parseConditionsField(
+      loader,
+      `${eventContext}.conditions`,
+      tryGetSeq(eventNode, 'conditions', eventContext),
+      ReferenceScope.declaration,
+    ),
+    effect: parseActiveEffectBody(
+      loader,
+      eventContext,
+      eventNode,
+      ReferenceScope.declaration,
+      RANGE_EVENT_RESERVED_KEYS,
+    ),
+  };
 }
