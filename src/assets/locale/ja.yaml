@@ -38,6 +38,12 @@ slot_texts:
     display_name: 怪我
   spoils:
     display_name: くわえた物
+  # 畑に実ったもの（farming.yaml）。撒くのは畑のカードへ重ねる操作なので、枠へ入れる口は持たない。
+  crop:
+    display_name: 実り
+  # 囲いの中の獣（farming.yaml）。
+  livestock:
+    display_name: 獣
 
 object_texts:
   # 全オブジェクト共通のメンバー。ここにdisplay_name/descriptionを書いても、
@@ -447,6 +453,35 @@ object_texts:
       add_meat_bait:
         display_name: 肉の餌を仕掛ける
         description: 肉食の獲物を寄せる。自分が食べられる肉を先に賭けることになる。
+
+  # 栽培と飼育（farming.yaml）。罠と同じ「留守番の設備」で、賭けるのは時間と食料。
+  field:
+    display_name: 畑
+    description: 掘り返して均した土。種を撒いて放っておくと、そのうち実る。撒いたぶんだけで終わる。
+    props:
+      growth_remaining:
+        display_name: 次の実り
+      taro_sown:
+        display_name: 撒いた芋
+      water_spinach_sown:
+        display_name: 撒いた葉物
+    interactions:
+      sow_taro:
+        display_name: 芋を撒く
+        description: 種芋として1株植える。自分が食べられる芋を先に賭けることになる。
+      sow_water_spinach:
+        display_name: 葉物を撒く
+        description: 挿し穂として1株植える。自分が食べられる葉物を先に賭けることになる。
+  livestock_pen:
+    display_name: 家畜の囲い
+    description: 丸太を縄で結んだ柵。落ち着いた獣だけが入る。飼葉が続く間だけ、中の獣は増える。
+    props:
+      fodder:
+        display_name: 飼葉
+    interactions:
+      feed:
+        display_name: 飼葉をやる
+        description: 中の獣に草の食べ物を与える。頭数が多いほど速く尽きる。
   # 治療具（treatments.yaml）。
   bandage:
     display_name: 包帯
@@ -1208,6 +1243,8 @@ location_texts:
 # 押している間、吹き出しに出る。
 reason_texts:
   trap_baited: 罠にはもう餌が仕掛けてある。これ以上は入らない。
+  field_sown: この畑はもう植わっている。空くまでは撒けない。
+  pen_fed: 囲いにはもう飼葉がある。これ以上は入らない。
   too_heavy: 荷が重すぎて歩けない。まず何かを置いていく必要がある。
   not_thirsty: 喉はまったく渇いていない。これ以上は飲めない。
   not_raining: 雨は降っていない。溜められる雨がない。
