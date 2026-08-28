@@ -60,11 +60,6 @@ object_texts:
       # （全角10文字）に収まる長さで書いてあり、そこへ「作りかけの」の5文字を足すと4文字より長い名前は
       # すべてはみ出す。作りかけであることは青い覆いが示す（CardView.md 10節）ので、名前で言い直さない。
       recipe: '{base}'
-    # 探索のタブのバーの下に出す補足の1行（docs/ui/Windows.md 5節）。**探索で何が見つかるかは型ごとに
-    # 違う**ので、言い方を変えたい型だけが自分のエントリで上書きする（海区は航路、下の coastal_waters）。
-    notes:
-      exploring: 探索を続けると、アイテムや他の土地へ続く道が見つかる。
-      explored: この土地に隠された道はすべて見つけた。探索を続ければ、まだ何かは見つかる。
     props:
       # iconは、ステータスの行の左に名前の代わりに出す絵（docs/ui/StatusArea.md 3節）。
       # キャラクタのプロパティはどれも固定表示にできる＝ステータスエリアへ出せるので、全部が持つ。
@@ -848,13 +843,10 @@ object_texts:
   offshore_islet:
     display_name: 小島
     description: 海区の中に浮かぶ、上陸して歩ける岩の島。
-    notes:
-      exploring: 島を歩き回ると、岩や流木、鳥の巣、それに黒い塊の混じった岩が見つかる。
-      explored: この島はひととおり歩いた。歩き続ければ、まだ何かは見つかる。
     interactions:
       explore:
         display_name: 島を調べる
-        description: 岩の窪みと波打ち際を歩いて回る。筏から降りていないとできない。
+        description: 岩の窪みと波打ち際を歩いて回って、岩や流木、鳥の巣、黒い塊の混じった岩を探す。筏から降りていないとできない。
       land:
         display_name: 上陸する
         description: 筏を小島へ寄せる。積荷も乗り手も一緒に着く。
@@ -869,14 +861,11 @@ object_texts:
   # **名前はそこから何が見えるかで付ける**（同12.2節）——見分けが付かないと、進んでいるのか
   # 戻っているのかも読めなくなる。
   #
-  # 海で見つかるのは航路と、拾えるもの・湧くもの（同12.1節）。**航路が見えた後も見張りは続けられる**
-  # （同12.3節）ので、見つけ切った後の1行は「渡るか、待って実りを取るか」を伝える。
+  # 海で見つかるのは航路と、拾えるもの・湧くもの（同12.1節）。見張りの1行は、その海区で何が
+  # 見つかるかを言う。
   coastal_waters:
     display_name: 島影の海
     description: 島がまだ背後に見えている海。流木と海藻が寄り、魚も来る。陸が目印になる。
-    notes:
-      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
-      explored: 次の海区へ続く航路は見つかった。渡ってもよいし、見張りを続けてもよい。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
@@ -888,9 +877,6 @@ object_texts:
   kelp_belt:
     display_name: 海藻の帯
     description: 絡む海藻で進みが遅い海。帯そのものが目印になり、海藻はいくらでも採れる。
-    notes:
-      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
-      explored: 次の海区へ続く航路は見つかった。渡ってもよいし、見張りを続けてもよい。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
@@ -902,9 +888,6 @@ object_texts:
   tide_rip:
     display_name: 潮目
     description: 流れのぶつかる帯。波が立ち、鳥が集まる。魚が寄るので、補給が当てになる。
-    notes:
-      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
-      explored: 次の海区へ続く航路は見つかった。渡ってもよいし、見張りを続けてもよい。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
@@ -916,9 +899,6 @@ object_texts:
   reef_shallows:
     display_name: 岩礁の海
     description: 波の砕ける瀬が続く海。漂流物が引っかかり、魚も付く。
-    notes:
-      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
-      explored: 次の海区へ続く航路は見つかった。渡ってもよいし、見張りを続けてもよい。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
@@ -930,9 +910,6 @@ object_texts:
   gull_rock:
     display_name: 海鳥の岩
     description: 鳥が巣を作る岩。卵と羽が拾え、鳥そのものも手が届く。
-    notes:
-      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
-      explored: 次の海区へ続く航路は見つかった。渡ってもよいし、見張りを続けてもよい。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
@@ -944,9 +921,6 @@ object_texts:
   islet_waters:
     display_name: 小島の海
     description: 小島の浮かぶ海。海面には何も無く、実りは上陸した先にある。
-    notes:
-      exploring: 見張りを続けると、次の海区へ続く航路と、近くの小島が見つかる。
-      explored: 航路と小島は見つかった。上陸するか、渡るか、見張りを続けるか。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
@@ -958,9 +932,6 @@ object_texts:
   open_water:
     display_name: 空の海
     description: 目印の何も無い海。拾えるものは何も無いが、渡るのは最も短い。
-    notes:
-      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
-      explored: 次の海区へ続く航路は見つかった。渡ってもよいし、見張りを続けてもよい。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
@@ -972,9 +943,6 @@ object_texts:
   wreck_waters:
     display_name: 沈船の海
     description: 折れた帆柱と綱が漂う海。まれに、船が積んでいた物が浮いてくる。
-    notes:
-      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
-      explored: 次の海区へ続く航路は見つかった。渡ってもよいし、見張りを続けてもよい。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
@@ -988,9 +956,6 @@ object_texts:
   long_swell:
     display_name: うねりの海
     description: 大きなうねりだけが続く海。見えるものは何も無いが、うねりの筋が二手に分かれている。
-    notes:
-      exploring: 見張りを続けると、二手に分かれた航路が見つかる。
-      explored: 航路は2本とも見つかった。流れ藻の海へは真っ直ぐ、沖の潮目を回れば遠回りになる。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
@@ -1002,9 +967,6 @@ object_texts:
   outer_tide_rip:
     display_name: 沖の潮目
     description: 島影の無い沖の潮目。ここにも流れが集まり、魚が寄る。
-    notes:
-      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
-      explored: 次の海区へ続く航路は見つかった。渡ってもよいし、見張りを続けてもよい。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
@@ -1016,9 +978,6 @@ object_texts:
   black_reef:
     display_name: 黒い岩礁
     description: 水面すれすれに黒い瀬が続く海。漂流物が引っかかり、魚も付く。
-    notes:
-      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
-      explored: 次の海区へ続く航路は見つかった。渡ってもよいし、見張りを続けてもよい。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
@@ -1030,9 +989,6 @@ object_texts:
   drifting_kelp:
     display_name: 流れ藻の海
     description: ちぎれた海藻が筋になって漂う海。進みは遅いが、海藻は採り放題。
-    notes:
-      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
-      explored: 次の海区へ続く航路は見つかった。渡ってもよいし、見張りを続けてもよい。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
@@ -1044,9 +1000,6 @@ object_texts:
   white_rock:
     display_name: 白い岩
     description: 糞で白く染まった岩。遠くからでもそれと分かり、卵と羽が拾える。
-    notes:
-      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
-      explored: 次の海区へ続く航路は見つかった。渡ってもよいし、見張りを続けてもよい。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
@@ -1059,9 +1012,6 @@ object_texts:
     display_name: 本土の島影
     description: 本土の陸が見え始める海。島影の海と同じように、流木も海藻も魚も寄る。
     # この先に海区は無い（route_to_mainland）ので、見つかる航路の行き先を名指しできる。
-    notes:
-      exploring: 見張りを続けると、本土へ渡る航路が見つかる。
-      explored: 本土への航路は見つかった。渡ってもよいし、見張りを続けてもよい。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
