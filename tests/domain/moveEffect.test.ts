@@ -92,10 +92,16 @@ object_defs:
       sail_by_prop:
         trigger: menu
         move: {subject: actor, to_object: {prop: destination_type}}
-      # 型を持たないプロパティを引くと、解決できないので何も起きない（9.6節）。
+      # **自分が持っていない**プロパティを引くと、解決できないので何も起きない（9.6節）。
+      # 片側の隣を持たない海区（voyage.yamlの鎖の端）が、そのために卓を書き分けずに済む形。
       sail_nowhere:
         trigger: menu
-        move: {subject: actor, to_object: {prop: unknown_type}}
+        move: {subject: actor, to_object: {prop: other_type}}
+
+  # 上のother_typeを型として宣言する側。pathは同じ名前のプロパティを持たない。
+  signpost:
+    props:
+      other_type: {value: {object: hilltop}}
 `;
 
   function build(): {
@@ -179,7 +185,7 @@ object_defs:
     expect(character.parent, 'プロパティが名乗る型のインスタンスへ移る').toBe(hilltop);
   });
 
-  it('型を持たないプロパティを引いたto_objectは何もしない', () => {
+  it('自分が持っていないプロパティを引いたto_objectは何もしない', () => {
     // 片側の隣を持たない海区（voyage.yamlの鎖の端）が、そのために卓を書き分けずに済む形。
     const { meadow, character, path } = build();
 

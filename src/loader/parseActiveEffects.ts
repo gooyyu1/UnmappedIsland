@@ -616,8 +616,8 @@ function parseObjectRef(
  * - `X_object`: 行き先の型。**スカラーなら`object_defs`の識別子そのもの、マップ（`{prop: ...}`）なら
  *   型を値に持つ`self`のプロパティ**（6.9節）で、探し方はどちらも同じ（世界にただ1つ在る型を探す、
  *   15節）。リテラルと参照の見分けがスカラーかマップかなのは`set`の値（9.2節）と同じ規約。
- *   singletonであることの検査は、識別子を書いた側でのみ行える（プロパティの中身はWorldCodexが
- *   宣言から辿るので、検査はその宣言の場所＝`props`が受け持つ）。
+ *   **どちらの書き方も、正しく型を指せているかの検査はWorldCodexが受ける**（相手の宣言を読み終えるまで
+ *   分からないため）——識別子ならsingletonか、プロパティなら型を値に持つと宣言されているか。
  *
  * どれも書かれていなければundefined（省略を許すかは呼び出し側が決める）。2つ以上はロード時エラー。
  */
@@ -653,7 +653,9 @@ function parseDestinationRef(
 function parseObjectDefRef(loader: WorldCodexYamlLoader, context: string, node: YamlNode): ObjectRef {
   if (isMap(node)) {
     requireKnownKeys(node, ['prop'], context);
-    return ObjectRef.ofObjectDefProperty(loader.propertyNames.intern(requireScalar(node, 'prop', context)));
+    const propertyGlobalId = loader.propertyNames.intern(requireScalar(node, 'prop', context));
+    loader.noteObjectDefPropertyDestination(propertyGlobalId, context);
+    return ObjectRef.ofObjectDefProperty(propertyGlobalId);
   }
 
   const objectGlobalId = loader.objectNames.intern(asScalarText(node, context));

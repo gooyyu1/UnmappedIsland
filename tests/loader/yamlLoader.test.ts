@@ -844,6 +844,28 @@ object_defs:
     ).not.toThrow();
   });
 
+  it('to_objectが型を値に持たないプロパティを引くとエラーになる', () => {
+    // **プロパティの値は数のままなので、実行時には無関係な型を引くか、黙って何も起きないかになる。**
+    // どちらの宣言（型の名前・プロパティ）で書いても、指せているかはロード時に分かる。
+    const yaml = `
+object_defs:
+  kelp_belt:
+    singleton: true
+    slots:
+      stuff: {}
+  raft:
+    props:
+      storm_drift: {value: 0}
+    interactions:
+      sail:
+        trigger: menu
+        move: {subject: self, to_object: {prop: storm_drift}}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /storm_drift/,
+    );
+  });
+
   it('propsの型に未知のキーを混ぜるとエラーになる', () => {
     const yaml = `
 object_defs:
