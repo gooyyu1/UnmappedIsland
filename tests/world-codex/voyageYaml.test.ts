@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { parse } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { startNewGame } from '../../src/domain/generation/NewGame';
@@ -6,7 +8,12 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import { Location } from '../../src/domain/wrappers/Location';
 import { applyScenario, bundledScenario } from '../../src/scenario/Scenario';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import {
+  loadYamlDirectory,
+  SAMPLE_CHARACTER,
+  WORLD_CODEX_DIR,
+  worldCodexYamlPaths,
+} from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import { seededRng } from '../../src/domain/Rng';
 
@@ -24,6 +31,27 @@ const FACES: ReadonlyMap<string, readonly string[]> = new Map([
   ['小島のある海区', ['islet_waters']],
   ['空の海', ['open_water', 'long_swell']],
 ]);
+
+/**
+ * 小島（`offshore_islet`）が立つ海区。**顔ぶれが決める**（ContentSkeleton.md 7節）——小島のある海区と、
+ * 海鳥の岩（鳥が巣を作るその岩が、上陸できる小島そのもの）の2つ。
+ */
+const ISLET_ZONES: readonly string[] = ['gull_rock', 'islet_waters', 'white_rock'];
+
+/** 砂浜から最寄りの小島（海鳥の岩）まで、見張って渡っていく海区の順（4区間、素の横断時間1680分）。 */
+const TO_NEAREST_ISLET: readonly string[] = ['coastal_waters', 'kelp_belt', 'tide_rip', 'reef_shallows'];
+
+/**
+ * 帰り道——今いる海区と、そこで押す航路。**行きに見張った辺をそのまま戻る**ので、帰りに見張りは
+ * 1度も要らない（GameEndings.md 12.5節）。最後の1本（`route_to_shore`）だけが海岸へ着く。
+ */
+const BACK_TO_SHORE: readonly (readonly [string, string])[] = [
+  ['gull_rock', 'route_to_reef_shallows'],
+  ['reef_shallows', 'route_to_tide_rip'],
+  ['tide_rip', 'route_to_kelp_belt'],
+  ['kelp_belt', 'route_to_coastal_waters'],
+  ['coastal_waters', 'route_to_shore'],
+];
 
 /**
  * 海岸と、そこから漕ぎ出したときに立つ海区（voyage.yamlのcoast trait、locations.yamlの各海岸）。
@@ -828,6 +856,104 @@ describe('筏と航海', () => {
     expect(game.player.location?.instance.instanceId, '乗り手も乗り込んで戻る').toBe(raft.instanceId);
   });
 
+  /** その海区に立っている小島（見張りを終えていなければundefined）。 */
+  function isletIn(zone: WorldObject): WorldObject | undefined {
+    return new Location(zone, codex).fixtures.find((fixture) => fixture.def.name === 'offshore_islet');
+  }
+
+  it('小島が立つのは、小島の海と海鳥の岩だけ', () => {
+    // **小島は顔ぶれの一部**（ContentSkeleton.md 7節）。どの海区に立つかを持つのは on_max の spawn
+    // だけなので、顔ぶれの表とずれても他のどの検査も赤くならない。
+    const found: string[] = [];
+    for (const zoneName of [...FACES.values()].flat()) {
+      const { game, raft } = ready();
+      raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+      const zone = singletonPlace(game, zoneName);
+      expect(raft.moveToSlotOrRejection(zone.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+
+      for (let i = 0; i < 20 && keepWatch(game, zone); i++);
+      if (isletIn(zone) !== undefined) found.push(zoneName);
+    }
+
+    expect(found.sort(), '小島を伴う海区').toEqual([...ISLET_ZONES].sort());
+  });
+
+  /**
+   * 小島を、名指しした物が見つかるまで歩く。見つけた1個を返す。
+   *
+   * **回数に上限を置く。** 錫は6回に1回ほど返る候補（voyage.yamlのoffshore_islet）なので素の宣言では
+   * すぐ見つかるが、卓から落ちたときに赤くなる代わりに止まらなくなるのでは、この検査が何も言わない。
+   */
+  function exploreIsletFor(game: StartedGame, islet: WorldObject, objectName: string): WorldObject {
+    const ashore = new Location(islet, codex);
+    for (let i = 0; i < 80; i++) {
+      keepAlive(game);
+      makeBrightEnoughForAnyAction(game.player.instance, codex);
+      expect(ashore.explore(game.player.instance), '小島を歩ける').toBe(true);
+
+      const found = ashore.items.find((item) => item.def.name === objectName);
+      if (found !== undefined) return found;
+    }
+    throw new Error(`小島を80回歩いても ${objectName} が見つかりません。`);
+  }
+
+  it('中盤の沿岸航海——近い海区の小島で錫を採り、積んだまま出た海岸へ戻る', () => {
+    // **最終航海より前に、戻ってこられる範囲の航海を経験する**（GameEndings.md 11節）。仕組みは
+    // 最終航海と同じで、行き先が近いだけ——足したのは航海の側ではなく、渡った先で得られるもの
+    // （錫は遠征先の小島にしか無い、ContentSkeleton.md 7.1節）。
+    //
+    // 砂浜から最寄りの小島（海鳥の岩）までは4区間。岸壁はその海区に面している（Voyage.md 3.6節）ので、
+    // 岸壁から出れば1区間も渡らずに同じ小島へ着く。
+    const { game, raft } = ready();
+    const departure = raft.parent!;
+    expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute(), '出航できる').toBe(true);
+
+    for (const zoneName of TO_NEAREST_ISLET) {
+      keepAlive(game);
+      expect(watchAndCross(game, singletonPlace(game, zoneName)), `${zoneName} から進む`).toBe(true);
+    }
+
+    const zone = singletonPlace(game, 'gull_rock');
+    expect(raft.parent?.instanceId, '海鳥の岩へ渡り着いている').toBe(zone.instanceId);
+    for (let i = 0; i < 20 && keepWatch(game, zone); i++);
+
+    const islet = isletIn(zone);
+    expect(islet, '見張りを終えると小島が見つかる').toBeDefined();
+    expect(islet!.tryGetAction('land', game.player.instance)?.tryExecute(), '上陸できる').toBe(true);
+    expect(raft.tryGetAction('disembark', game.player.instance)?.tryExecute(), '小島へ降りられる').toBe(true);
+
+    const ore = exploreIsletFor(game, islet!, 'tin_ore');
+    expect(
+      ore.moveToSlotOrRejection(raft.getSlot(codex.slotNames.getId('items'))),
+      '採った錫を筏へ積める',
+    ).toBeUndefined();
+
+    expect(islet!.tryGetAction('launch', game.player.instance)?.tryExecute(), '漕ぎ出せる').toBe(true);
+    for (const [zoneName, routeName] of BACK_TO_SHORE) {
+      keepAlive(game);
+      expect(cross(game, singletonPlace(game, zoneName), routeName), `${zoneName} から戻る`).toBe(true);
+    }
+
+    expect(raft.parent?.instanceId, '出た海岸へ戻り着く').toBe(departure.instanceId);
+    expect(cargoNames(raft), '錫は積んだまま').toContain('tin_ore');
+    expect(game.player.ending.kind, '島へ戻っただけなので周回は終わらない').not.toBe('escape');
+  });
+
+  it('錫を湧かせるのは、小島の探索だけ', () => {
+    // **「遠征先の小島にしかない」は、湧かせる場所が1つであること**（ContentSkeleton.md 7.1節）。
+    // 見るのは spawn の側だけ——使い道（製錬・青銅の道具、同4節）が入れば錫を**要求する**定義は
+    // 増えるが、それは出どころが増えたことではない。
+    const owners: string[] = [];
+    for (const path of worldCodexYamlPaths()) {
+      const file: unknown = parse(readFileSync(path, 'utf8'));
+      for (const [section, entries] of namedEntries(file))
+        for (const [name, body] of namedEntries(entries))
+          if (spawnedObjectNames(body).has('tin_ore')) owners.push(`${section}.${name}`);
+    }
+
+    expect(owners, '錫を湧かせる定義').toEqual(['object_defs.offshore_islet']);
+  });
+
   it('最後の海区から渡ると本土に着き、持ち帰った物ごと周回が終わる', () => {
     const { game, raft } = ready();
     raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
@@ -850,3 +976,27 @@ describe('筏と航海', () => {
     expect(raft.parent?.def.name, '本土に留まる').toBe('mainland');
   });
 });
+
+/** 名前で引ける節（`traits:`・`object_defs:` など）の中身を、名前と組で返す。それ以外は空。 */
+function namedEntries(node: unknown): readonly (readonly [string, unknown])[] {
+  if (node === null || typeof node !== 'object' || Array.isArray(node)) return [];
+  return Object.entries(node as Record<string, unknown>);
+}
+
+/**
+ * その節の下の `spawn`（9.4節）が湧かせる型の名前。**`spawn` の下へ入ったら、そこから先はすべて
+ * 湧かせる側**——`pick` の候補ごとにも、物の並びとしても書けるので、形で数え分けない。
+ */
+function spawnedObjectNames(node: unknown, underSpawn = false, found = new Set<string>()): Set<string> {
+  if (Array.isArray(node)) {
+    for (const item of node) spawnedObjectNames(item, underSpawn, found);
+    return found;
+  }
+  if (node === null || typeof node !== 'object') return found;
+
+  for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+    if (underSpawn && key === 'object' && typeof value === 'string') found.add(value);
+    spawnedObjectNames(value, underSpawn || key === 'spawn', found);
+  }
+  return found;
+}
