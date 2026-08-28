@@ -85,20 +85,6 @@ function declaredSignalNames(): readonly string[] {
   return [...found];
 }
 
-/** 同梱の対応表がstage_textsに書いている段の名前（幅の検査に使う）。 */
-function declaredStageTextNames(): readonly string[] {
-  const found: string[] = [];
-  const section = /^stage_texts:$/m.exec(bundledLocaleText());
-  if (section === null) return found;
-  const rest = bundledLocaleText().slice(section.index + section[0].length);
-  for (const line of rest.split('\n')) {
-    const match = /^ {2}([a-z][a-z0-9_]*):/.exec(line);
-    if (match === null) break;
-    found.push(match[1]);
-  }
-  return found;
-}
-
 describe('同梱の表示文字列ファイル', () => {
   let codex: WorldCodex;
   let locale: Localization;
@@ -203,7 +189,7 @@ describe('同梱の表示文字列ファイル', () => {
 
     expect(locale.stage('unconscious'), '気絶は覆いを出す段（VitalsSystem.md 6節）').not.toBe('unconscious');
 
-    for (const name of declaredStageTextNames()) {
+    for (const name of declaredSectionKeys('stage_texts')) {
       const label = locale.stage(name);
       expect(nameWidth(label), `stage '${name}': '${label}' はカードに収まらない`).toBeLessThanOrEqual(
         STAGE_MAX_WIDTH,

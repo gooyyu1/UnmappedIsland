@@ -1284,52 +1284,53 @@ stage_texts:
   unconscious: 気絶
   # 命を絶つ値が最後に通る段（VitalsSystem.md 6節）。まだ生きている域なので、ステータス詳細に
   # 今いる段として出る。死んだと伝える文言は別の名前空間（destroy_reason_texts）が持つ。
-  dehydrated: 渇き
+  # 渇きは水分の段（parched・thirsty）が使うので、こちらは尽きた先を医学の語で名乗る。
+  dehydrated: 脱水
   starved: 飢え
   exsanguinated: 失血
 
   # 痛み。
-  painless: 痛みなし
+  painless: 無痛
   sore: 疼く
   hurting: 痛む
-  unbearable: 耐えがたい
+  unbearable: 激痛
   # 血。
   replete: 十分
-  low: やや不足
+  low: 不足
   bled: 出血
-  hemorrhaging: 大量出血
+  hemorrhaging: 大出血
   # 満腹度。
   starving: 飢餓
   hungry: 空腹
-  peckish: 小腹が空く
-  fed: 足りている
+  peckish: 小腹
+  fed: 足りる
   # 満水と満腹の両方に出る（どちらも「もう入らない」）。
-  full: いっぱい
+  full: 満ちる
   # 水分。
-  parched: からから
-  thirsty: のどが渇く
-  dryish: やや渇き
-  hydrated: 潤っている
+  parched: 水切れ
+  thirsty: 渇き
+  dryish: 乾き
+  hydrated: 潤い
   # 体脂肪。
-  gaunt: やせ細り
+  gaunt: 痩せ
   nourished: 標準
-  stout: 恰幅がいい
+  stout: 太め
   obese: 肥満
   # 覚醒度。
   overtired: 限界
   sleepy: 眠い
   yawning: あくび
-  rested: 休めている
+  rested: 休めた
   # 体力。
-  exhausted: 疲労困憊
+  exhausted: 消耗
   tired: 疲れ
   winded: 息切れ
   fresh: 元気
   # 荷重。
   light: 身軽
-  laden: 荷を負う
+  laden: 荷持ち
   heavy: 重い
-  too_heavy: 重すぎる
+  too_heavy: 重すぎ
   # 未焼成の壺に残った水（pottery.yaml）。
   bone_dry: 乾いた
   leather_hard: 半乾き
