@@ -462,7 +462,7 @@ export class PlayScene extends ResponsiveScene {
     this.gameSession = startNewGame(this.codex, character, data.save.seed, seededRng(data.save.seed));
     if (data.scenario !== undefined) applyScenario(this.gameSession, data.scenario, this.codex);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
-    this.artLoader = new LocationArtLoader(this);
+    this.artLoader = new LocationArtLoader(this, this.codex);
     this.requestLocationArt();
     this.resetForNewVisit();
 
