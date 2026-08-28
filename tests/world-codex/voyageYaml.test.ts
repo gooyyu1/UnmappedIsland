@@ -954,6 +954,128 @@ describe('筏と航海', () => {
     expect(owners, '錫を湧かせる定義').toEqual(['object_defs.offshore_islet']);
   });
 
+  /** 海図が今その海区について言っている「本土まであと何海区か」の下限と上限。 */
+  function charted(zone: WorldObject): readonly [number, number] {
+    return [propertyOf(zone, 'zones_to_mainland_min'), propertyOf(zone, 'zones_to_mainland_max')];
+  }
+
+  /** 世界に在る海区すべて（宣言順ではなく、世界の木を辿った順）。 */
+  function seaZones(game: StartedGame): readonly WorldObject[] {
+    const seaTag = codex.tagNames.getId('sea');
+    return [...game.world.instance.descendants()].filter((object) => object.def.hasTag(seaTag));
+  }
+
+  /**
+   * 島の山頂で `times` 回探索する。**探索率が上限へ達した後の1回ごとに、海図の一区画が埋まる**
+   * （locations.yamlの山頂の on_max）。
+   */
+  function surveyFromPeak(game: StartedGame, times: number): void {
+    const peak = game.map.sites.find((site) => site.type!.name === 'mountain_peak');
+    expect(peak, 'シード3の島に山頂がある').toBeDefined();
+    const summit = game.world.instance.findSelfOrDescendantByInstanceId(
+      game.map.siteInstanceIds[peak!.index],
+    )!;
+
+    makeBrightEnoughForAnyAction(game.player.instance, codex);
+    for (let i = 0; i < times; i++) {
+      keepAlive(game);
+      expect(new Location(summit, codex).explore(game.player.instance), '山頂を見渡せる').toBe(true);
+    }
+  }
+
+  it('渡っていない海区は、幅を持って海図に載る', () => {
+    // **海図が持つべき精度は本土までの残り海区数**（GameEndings.md 12.6節）。真値は海区の側の事実で、
+    // 海図が言うのはその上下に幅を取った範囲——幅を狭めていくのが9.1節の段階になる。
+    const { game } = ready();
+
+    const zones = seaZones(game);
+    expect(zones.length, '海区は14個').toBe(14);
+    expect(
+      zones.map((zone) => propertyOf(zone, 'zones_to_mainland')).sort((a, b) => a - b),
+      '本土までの残り海区数は1から14まで1つずつ',
+    ).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+
+    for (const zone of zones) {
+      const truth = propertyOf(zone, 'zones_to_mainland');
+      expect(charted(zone), `${zone.def.name}: 方角しか分からない海区の幅`).toEqual([
+        Math.max(0, truth - 5),
+        truth + 5,
+      ]);
+    }
+  });
+
+  it('山頂から見渡すと、海図の幅が狭まる', () => {
+    // **山頂へ登ることが9.1節の段階の1つ**（GameEndings.md 9.1節）。見渡した海区は幅が狭まるだけで、
+    // 真値そのものは動かない——狭まっていくのは推定の幅（同12.6節）。
+    const { game } = ready();
+    const zones = seaZones(game);
+    const truths = new Map(zones.map((zone) => [zone.def.name, propertyOf(zone, 'zones_to_mainland')]));
+    const sightedNames = (): readonly string[] =>
+      zones.filter((zone) => propertyOf(zone, 'chart_sighted') > 0).map((zone) => zone.def.name);
+
+    // 探索率が上限（10回）へ達するまでは海図が動かない。**山頂に着いただけでは書けない。**
+    surveyFromPeak(game, 9);
+    expect(sightedNames(), '歩き尽くすまでは1区画も埋まらない').toEqual([]);
+
+    // 上限へ達した1回と、その先の1回ごとに1区画。**同じ区画を見直すこともある**ので、14個が
+    // 埋まるには回数が要る。
+    surveyFromPeak(game, 1);
+    expect(sightedNames(), '歩き尽くした1回で1区画が埋まる').toHaveLength(1);
+
+    surveyFromPeak(game, 150);
+    expect(sightedNames(), '見渡し続ければ海図が埋まる').toHaveLength(zones.length);
+    for (const zone of zones) {
+      const truth = truths.get(zone.def.name)!;
+      expect(propertyOf(zone, 'chart_sighted'), `${zone.def.name}: 見定めた`).toBe(1);
+      expect(propertyOf(zone, 'zones_to_mainland'), `${zone.def.name}: 真値は動かない`).toBe(truth);
+      expect(charted(zone), `${zone.def.name}: 見定めた海区の幅`).toEqual([
+        Math.max(0, truth - 2),
+        truth + 2,
+      ]);
+    }
+  });
+
+  it('渡った海区は海図に残り、幅が無くなる', () => {
+    // **沿岸航海で海に出るほど、最終航海の見通しが良くなる**（GameEndings.md 12.6節）。島へ引き返しても
+    // 記入は残るので、次に出るときには渡ったぶんだけ海図が確かになっている。
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    tick(game);
+
+    const first = singletonPlace(game, 'coastal_waters');
+    expect(charted(first), '立った海区は幅無しで海図に残る').toEqual([14, 14]);
+    expect(charted(singletonPlace(game, 'kelp_belt')), 'まだ渡っていない先は幅のまま').toEqual([8, 18]);
+
+    keepAlive(game);
+    expect(watchAndCross(game, first), '海藻の帯へ渡る').toBe(true);
+    tick(game);
+    expect(charted(singletonPlace(game, 'kelp_belt')), '渡り着いた海区も海図に残る').toEqual([13, 13]);
+
+    // 引き返しても記入は消えない（海図は持ち帰る）。
+    keepAlive(game);
+    expect(cross(game, singletonPlace(game, 'kelp_belt'), 'route_to_coastal_waters'), '戻る').toBe(true);
+    keepAlive(game);
+    expect(cross(game, first, 'route_to_shore'), '島へ戻る').toBe(true);
+    expect(charted(singletonPlace(game, 'kelp_belt')), '島へ戻っても記入は残る').toEqual([13, 13]);
+  });
+
+  it('海図が言う残り海区数は、実際に残っている海区の数と合う', () => {
+    // **嘘を書かない海図であること。** 幅の中心（真値）が実際の鎖とずれていれば、狭めるほど確信を持って
+    // 間違えることになる。渡り終えた海区は幅が無いので、そのまま実際の残り数と突き合わせられる。
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+
+    const visited = voyageToMainland(game, raft);
+
+    visited.forEach((zoneName, index) => {
+      const remaining = visited.length - index;
+      expect(charted(singletonPlace(game, zoneName)), `${zoneName}: 本土まであと${remaining}海区`).toEqual([
+        remaining,
+        remaining,
+      ]);
+    });
+  });
+
   it('最後の海区から渡ると本土に着き、持ち帰った物ごと周回が終わる', () => {
     const { game, raft } = ready();
     raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
