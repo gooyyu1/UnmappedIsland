@@ -19,19 +19,13 @@ export interface ExplorationContent {
 
   /**
    * タブの見出し。**探索そのものの呼び名が型ごとに違う**（土地なら探索、海区なら見張り）ので、
-   * 補足の1行と同じく渡す側が決める（Windows.md 5節）。
+   * 渡す側が決める（Windows.md 5節）。
    */
   readonly title: string;
-
-  /**
-   * バーの下に出す補足の1行。**何が見つかるかは型ごとに違う**（土地なら道、海区なら航路）ので、
-   * 文そのものを渡す側が決める（Windows.md 5節）。
-   */
-  readonly note: string;
 }
 
 /**
- * オブジェクトウィンドウの探索のタブ（Windows.md 5節）。発見物のレーン・探索率のバー・補足の1行を持つ。
+ * オブジェクトウィンドウの探索のタブ（Windows.md 5節）。発見物のレーンと探索率のバーを持つ。
  *
  * **「探索する」ボタンは持ちません。** 探索は現在地が宣言しているアクション（`explore`）なので、
  * 最下段の操作の行に他のアクションと並びます——画面の都合で足したボタンと、宣言から来たボタンを
@@ -51,13 +45,7 @@ export class ExplorationPane implements ObjectWindowPane {
 
   /** この面が要る高さ。窓の中段の高さは、最も高いタブに合わせて決まる（ObjectWindow）。 */
   static height(metrics: ScreenMetrics): number {
-    return (
-      metrics.px(SIZE.laneHeight) +
-      metrics.px(CONTENT_GAP) +
-      metrics.px(BAR_HEIGHT) +
-      metrics.px(CONTENT_GAP) +
-      metrics.px(NOTE_HEIGHT)
-    );
+    return metrics.px(SIZE.laneHeight) + metrics.px(CONTENT_GAP) + metrics.px(BAR_HEIGHT);
   }
 
   /** 発見物のレーン。並びの差し替えは呼び出し側（PlayScene）が他のレーンと一緒に通す。 */
@@ -67,7 +55,6 @@ export class ExplorationPane implements ObjectWindowPane {
   private readonly lane: CardLane;
   private readonly bar: ProgressBar;
   private readonly percent: Phaser.GameObjects.Text;
-  private readonly note: Phaser.GameObjects.Text;
   private readonly ownedObjects: Phaser.GameObjects.GameObject[] = [];
 
   constructor(
@@ -78,7 +65,7 @@ export class ExplorationPane implements ObjectWindowPane {
     cells: readonly LaneCell[],
   ) {
     this.readContent = content;
-    const { ratio, note } = content();
+    const { ratio } = content();
     const gap = metrics.px(CONTENT_GAP);
     const barHeight = metrics.px(BAR_HEIGHT);
     const laneHeight = metrics.px(SIZE.laneHeight);
@@ -94,31 +81,20 @@ export class ExplorationPane implements ObjectWindowPane {
     );
     this.lanes = [{ role: 'found', lane: this.lane }];
 
-    let cursorY = area.y + laneHeight + gap;
-    this.bar = new ProgressBar(scene, metrics, area.x, cursorY, area.width, barHeight, ratio);
-    this.percent = addLabel(scene, metrics, centerX, cursorY + barHeight / 2, percentOf(ratio), {
+    const barY = area.y + laneHeight + gap;
+    this.bar = new ProgressBar(scene, metrics, area.x, barY, area.width, barHeight, ratio);
+    this.percent = addLabel(scene, metrics, centerX, barY + barHeight / 2, percentOf(ratio), {
       size: 32,
       bold: true,
     }).setOrigin(0.5);
     this.ownedObjects.push(this.bar, this.percent);
-
-    cursorY += barHeight + gap;
-    this.note = addLabel(scene, metrics, centerX, cursorY, note, {
-      size: 24,
-      color: COLOR.textMuted,
-      wrapWidthPx: area.width,
-    })
-      .setOrigin(0.5, 0)
-      .setAlign('center');
-    this.ownedObjects.push(this.note);
   }
 
   /** 探索率だけを読み直す。**発見物のレーンは触らない**——並びの差し替えはCardTableが受け持つ。 */
   refresh(): void {
-    const { ratio, note } = this.readContent();
+    const { ratio } = this.readContent();
     this.bar.setRatio(ratio, { showChange: true });
     this.percent.setText(percentOf(ratio));
-    this.note.setText(note);
   }
 
   destroy(): void {
@@ -127,9 +103,6 @@ export class ExplorationPane implements ObjectWindowPane {
     this.ownedObjects.length = 0;
   }
 }
-
-/** 補足の1行が占める高さ（u単位）。**件数によらず窓の寸法を変えない**ため、2行ぶんで決め打つ。 */
-const NOTE_HEIGHT = 68;
 
 /** 探索率は整数の%で見せる。100%に届いていない進捗を切り上げて100%と誤解させないよう切り捨てる。 */
 function percentOf(ratio: number): string {
