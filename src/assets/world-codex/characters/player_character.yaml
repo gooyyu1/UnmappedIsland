@@ -46,7 +46,7 @@ traits:
       # **itemを受け入れるのは暫定の措置**で、絞る先は身につけられることを言うタグ（equippable、
       # clothing.yaml）。**絞るのは、装備できる物が試験できるだけの種類そろってから**——今それを
       # 名乗るのは衣類の4種だけで、装備のレーンの送り（Windows.md 1節）には別々の物が6つ要る
-      # （scenarios/crowded_equipment.yaml）。部位（covers、7.5節）も同じ理由でまだ持たない。
+      # （scenarios/crowded_equipment.yaml）。
       # 上限の無いitemスロットなので、自動配置（7.7節）から外さないと、手持ちが埋まった時の
       # 行き先を全部吸い込んでしまう（手元でクラフトした物が身につくことになる）。
       equipment:
