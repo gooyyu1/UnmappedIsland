@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { ChainRoute, DeviceRow } from '../../src/analysis/balanceTables';
+import type {
+  ChainRoute,
+  ConsumptionRow,
+  DeviceRow,
+  ObjectCost,
+  SupplyRow,
+} from '../../src/analysis/balanceTables';
 import { buildBalanceTables } from '../../src/analysis/balanceTables';
+import type { RainWaterRow } from '../../src/analysis/seasonalRain';
 import { ART_BY_OBJECT_NAME } from '../../src/art/objectArt';
 import { BalancePage } from '../../src/codex-viewer/balancePage';
 import { CodexSource } from '../../src/codex-viewer/CodexSource';
@@ -312,21 +319,24 @@ type RenderedRow = ReadonlyMap<string, string>;
 /**
  * 表に出すフィールド1つ。`label`はその見出しで、`texts`は**セルに出ているはずの値**——入れ子の型は
  * 出す約束をした中身だけを取り出す（前提なら道具の名前だけで、他の土地で用意するかは文字にならない）。
+ *
+ * `texts`は行も受け取る。**出るかどうかが同じ行の他のフィールドで決まるものがある**——供給表の周期は
+ * 労働と同じなら`—`になるので、値だけでは何を要求すべきかが決まらない。
  */
-interface ShownField<Value> {
+interface ShownField<Row, Value> {
   readonly label: string;
-  readonly texts: (value: Value) => readonly (string | number)[];
+  readonly texts: (value: Value, row: Row) => readonly (string | number)[];
 }
 
 /** 値をそのまま出すフィールド。決まらない値（undefined）はセルにも出ないので、何も要求しない。 */
-function asIs(label: string): ShownField<string | number | undefined> {
+function asIs<Row>(label: string): ShownField<Row, string | number | undefined> {
   return { label, texts: (value) => (value === undefined ? [] : [value]) };
 }
 
-function shows<Value>(
+function shows<Row, Value>(
   label: string,
-  texts: (value: Value) => readonly (string | number)[],
-): ShownField<Value> {
+  texts: (value: Value, row: Row) => readonly (string | number)[],
+): ShownField<Row, Value> {
   return { label, texts };
 }
 
@@ -335,7 +345,7 @@ function shows<Value>(
  * 理由を添える。`[K in keyof Row]`なので、**フィールドが増えるとここへ書き足すまでtypecheckが
  * 通らない**。
  */
-type ShownFields<Row> = { readonly [K in keyof Row]: ShownField<Row[K]> | null };
+type ShownFields<Row> = { readonly [K in keyof Row]: ShownField<Row, Row[K]> | null };
 
 /** そのフィールドがセルに出しているはずの値。出さないと決めたフィールドは何も要求しない。 */
 function textsOf<Row, K extends keyof Row>(
@@ -344,7 +354,7 @@ function textsOf<Row, K extends keyof Row>(
   row: Row,
 ): readonly (string | number)[] {
   const field = fields[key];
-  return field === null ? [] : field.texts(row[key]);
+  return field === null ? [] : field.texts(row[key], row);
 }
 
 /**
@@ -355,7 +365,7 @@ function textsOf<Row, K extends keyof Row>(
  * `ChainRoute.devices`でissue #993。囲いの中でしか進まないヤケイの繁殖が、どこに置いても働くように
  * 読める表が残った）。
  *
- * 待ち生産は`<table>`（見出しは全行に共通の`<th>`）、連鎖の内訳は`<dl>`（見出しは行ごとの`<dt>`）
+ * 大半は`<table>`（見出しは全行に共通の`<th>`）、連鎖の内訳だけが`<dl>`（見出しは行ごとの`<dt>`）
  * だが、**違うのは見出しと中身の取り出し方だけ**なので、`RenderedRow`にしてからは同じここが見る。
  */
 function describeShownFields<Row>(spec: {
@@ -425,13 +435,16 @@ function renderedRow(labels: readonly string[], cells: readonly string[]): Rende
   return new Map(labels.map((label, index) => [label, cells[index]]));
 }
 
-/** 待ち生産の節の先頭に在る表（後ろに続く雨で溜まる水の表は含めない）。 */
-function deviceTableRows(html: string): readonly RenderedRow[] {
-  const heading = html.indexOf('<h2 id="balance-待ち生産">');
-  if (heading < 0) throw new Error('待ち生産の節が描かれていない');
-  const start = html.indexOf('<table>', heading);
+/**
+ * その見出しの後ろに最初に出てくる表（見出しは全行に共通の`<th>`）。**表は見出しで指す**——同じ節に
+ * 表が2つ並ぶ（待ち生産と雨で溜まる水）ので、節の頭から数えると後ろの表が指せない。
+ */
+function tableRowsAfter(html: string, heading: string): readonly RenderedRow[] {
+  const found = html.indexOf(heading);
+  if (found < 0) throw new Error(`${heading}が描かれていない`);
+  const start = html.indexOf('<table>', found);
   const end = html.indexOf('</table>', start);
-  if (start < 0 || end < 0) throw new Error('待ち生産の表が描かれていない');
+  if (start < 0 || end < 0) throw new Error(`${heading}の表が描かれていない`);
   const table = html.slice(start, end);
   const headers = [...table.matchAll(/<th>([\s\S]*?)<\/th>/g)].map(([, header]) => header);
 
@@ -451,6 +464,9 @@ function routeDetailRows(html: string): readonly RenderedRow[] {
     ),
   );
 }
+
+/** 1日の必要量を取る代表キャラクタ。収支ページが持つ定数（balancePage.SAMPLE_CHARACTER）と同じ名前。 */
+const SAMPLE_CHARACTER = 'medic';
 
 /** 待ち生産表の列と、`DeviceRow`（`src/analysis/balanceTables.ts`）のフィールドの対応。 */
 const DEVICE_LABELS: ShownFields<DeviceRow> = {
@@ -503,16 +519,87 @@ const CHAIN_LABELS: ShownFields<ChainRoute> = {
 /** `ChainRoute`のフィールドではない見出し。需要で割った時間は`PropertyRoute`が持つ。 */
 const PER_UNIT_LABEL = '1単位あたり';
 
+/** 総コスト表の列と、`ObjectCost`のフィールドの対応。 */
+const COST_LABELS: ShownFields<ObjectCost> = {
+  objectName: asIs('オブジェクト'),
+  minutes: asIs('総労働'),
+  exploreMinutes: asIs('探索'),
+  craftMinutes: asIs('それ以外'),
+  days: asIs('日数'),
+  steps: shows('作り方', (steps) => steps.flatMap((step) => [step.objectName, step.stepName])),
+  prerequisites: shows('前提', (prerequisites) => prerequisites.map(({ label }) => label)),
+
+  // 前提の列が、入手経路の無い道具へ「入手経路なし」を添える。この真偽と前提は同じ1つの事実の裏表。
+  blockedByTool: shows('前提', (blocked) => (blocked ? ['入手経路なし'] : [])),
+
+  // 足りない入力は、表の前に出す「入手経路が無いもの」の一覧が持つ。この表は作れるものだけを並べる
+  // ので、ここへ来る行では常に空。
+  missing: null,
+};
+
+/** 雨で溜まる水の表の列と、`RainWaterRow`のフィールドの対応。 */
+const RAIN_WATER_LABELS: ShownFields<RainWaterRow> = {
+  containerName: asIs('容器'),
+  seasonName: asIs('季節'),
+  capacity: asIs('容量'),
+  rainPerDay: asIs('降雨'),
+  evaporationPerDay: asIs('蒸発'),
+  netPerDay: asIs('差引'),
+};
+
+/** 消費表の列と、`ConsumptionRow`のフィールドの対応。 */
+const CONSUMPTION_LABELS: ShownFields<ConsumptionRow> = {
+  propertyName: asIs('プロパティ'),
+  condition: asIs('条件'),
+
+  // キャラクタ1人が1列で、見出しはその名前。見本の世界のキャラクタは代表の1人だけ。
+  perTickByCharacter: shows(SAMPLE_CHARACTER, (amounts) =>
+    amounts.filter((amount): amount is number => amount !== undefined),
+  ),
+};
+
+/** 供給表の列と、`SupplyRow`のフィールドの対応。 */
+const SUPPLY_LABELS: ShownFields<SupplyRow> = {
+  ownerName: asIs('宣言元'),
+  stepName: asIs('工程'),
+
+  // 時間で回る工程だけが、工程名の後ろにその旨を添える。
+  kind: shows('工程', (kind) => (kind === 'periodic' ? [kind] : [])),
+
+  laborMinutes: asIs('労働'),
+
+  // 定義だけでは決まらない工程は、労働の後ろに「?」が付く。
+  hasUnresolvedReferences: shows('労働', (unresolved) => (unresolved ? ['?'] : [])),
+
+  // 待ち時間の無い工程では労働と同じ数字になるので、その行は`—`にする。
+  elapsedMinutes: shows('周期', (minutes, row) => (minutes === row.laborMinutes ? [] : [minutes])),
+
+  spawns: shows('期待産出', (spawns) => spawns.flatMap(({ name, amount }) => [name, amount])),
+  actorDeltas: shows('値の増減', (deltas) => deltas.flatMap(({ name, amount }) => [name, amount])),
+  selfDeltas: shows('値の増減', (deltas) => deltas.flatMap(({ name, amount }) => [name, amount])),
+};
+
 /**
- * 待ち生産の設備を1つだけ宣言した世界。**`DeviceRow`・`ChainRoute`のどのフィールドにも値が入るように
- * 書く**——朽ちない設備や作り方の無い設備ではundefinedになるフィールドがあり、その見出しが
- * 見張られなくなる。
- *
- * 代表キャラクタの名前（`medic`）は収支ページが持つ定数。
+ * 収支ページの6つの表を描かせる世界。**どの表のどのフィールドにも値が入るように書く**——朽ちない
+ * 設備や作り方の無い設備ではundefinedになるフィールドがあり、その見出しが見張られなくなる。
  */
 const DEVICE_YAML = `
 object_defs:
-  medic:
+  # 雨で溜まる水は、器の居る場所の明るさを時刻ごとに置いて数える（worldAmbientBrightnessOf）。
+  # worldがhourとambient_brightnessを宣言していないとそこで止まる。
+  world:
+    singleton: true
+    props:
+      ambient_brightness: {value: 0, range: {min: -6, max: 17}}
+      hour:
+        value: 0
+        range: {min: 0, max: 24}
+        stages:
+          - name: night
+            passives:
+              - modify: {self: {ambient_brightness: -5}}
+
+  ${SAMPLE_CHARACTER}:
     tags: [character]
     props:
       hydration:
@@ -570,6 +657,46 @@ object_defs:
         duration: 5
         destroy: self
         add: {actor: {hydration: 96}}
+      # 飲み干さずにひと口だけ。かかる時間は飲む人の渇き具合で決まるので、定義だけでは決まらない
+      # （SupplyRow.hasUnresolvedReferences）。
+      sip:
+        trigger: menu
+        duration: {subject: actor, prop: hydration}
+        add: {actor: {hydration: 8}}
+
+  # 入手経路が無い道具。これを要るレシピが「道具が無くて作れないもの」になる（ObjectCost.blockedByTool）。
+  flint_blade: {tags: [item, cutting_tool]}
+
+  # 材料は揃うが、切る道具が手に入らないもの。
+  fiber_rope:
+    tags: [item]
+    recipes:
+      twist:
+        steps:
+          - requires:
+              - {object: fiber, count: 3, consume: true}
+              - {tag: cutting_tool, count: 1, consume: false}
+            duration: 90
+
+  # 空けたまま置くと雨を受け、雨の降っていない間は蒸発する容器（RainWaterRow）。
+  rain_bowl:
+    tags: [item]
+    props:
+      # 抱えている量の重さを載せる先（containerPropagationPassives）。
+      weight: {value: 200}
+      fill:
+        value: 0
+        range: {min: 0, max: 2000}
+        passives:
+          - conditions: [{subject: ancestor, prop: weather, eq: light_rain}]
+            add: {self: {fill: 10}}
+          - conditions: [{subject: ancestor, prop: weather, eq: heavy_rain}]
+            add: {self: {fill: 20}}
+          - conditions: [{subject: ancestor, prop: weather, eq: storm}]
+            add: {self: {fill: 40}}
+          - conditions:
+              - {subject: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
+            add: {self: {fill: -1}}
 `;
 
 describe('収支ページの表', () => {
@@ -577,17 +704,10 @@ describe('収支ページの表', () => {
   // 識別子モードで描かせる。中身に出る名前が、そのまま解析の持つ識別子になる。
   const source = new CodexSource(codex, parseLocale('ja.yaml', 'object_texts: {}'), ['devices.yaml']);
   const view = new CodexView(source, 'identifier');
-  const tables = buildBalanceTables(codex, 'medic');
+  const tables = buildBalanceTables(codex, SAMPLE_CHARACTER);
   const html = pageHtml(new BalancePage(), view);
 
-  describeShownFields({
-    name: '待ち生産',
-    fields: DEVICE_LABELS,
-    rows: tables.places.flatMap((place) => place.devices),
-    rendered: deviceTableRows(html),
-    extraLabels: [PLACE_LABEL],
-  });
-
+  // 節の並びはページと同じ（連鎖 → 総コスト → 待ち生産 → 雨で溜まる水 → 消費 → 供給）。
   describeShownFields({
     name: '連鎖の経路',
     fields: CHAIN_LABELS,
@@ -603,5 +723,46 @@ describe('収支ページの表', () => {
       .map((entry) => entry.route),
     rendered: routeDetailRows(html),
     extraLabels: [PER_UNIT_LABEL],
+  });
+
+  describeShownFields({
+    name: 'オブジェクトの総コスト',
+    fields: COST_LABELS,
+    // 表に並ぶのは作れるものだけ。作れないものは表の前の一覧が持つ。
+    rows: tables.objectCosts.filter((cost) => cost.minutes !== undefined),
+    rendered: tableRowsAfter(html, '<h2 id="balance-総コスト">'),
+    extraLabels: [],
+  });
+
+  describeShownFields({
+    name: '待ち生産',
+    fields: DEVICE_LABELS,
+    rows: tables.places.flatMap((place) => place.devices),
+    rendered: tableRowsAfter(html, '<h2 id="balance-待ち生産">'),
+    extraLabels: [PLACE_LABEL],
+  });
+
+  describeShownFields({
+    name: '雨で溜まる水',
+    fields: RAIN_WATER_LABELS,
+    rows: tables.rainWater,
+    rendered: tableRowsAfter(html, '<h3>雨で溜まる水</h3>'),
+    extraLabels: [],
+  });
+
+  describeShownFields({
+    name: '消費',
+    fields: CONSUMPTION_LABELS,
+    rows: tables.consumption,
+    rendered: tableRowsAfter(html, '<h2 id="balance-消費">'),
+    extraLabels: [],
+  });
+
+  describeShownFields({
+    name: '供給',
+    fields: SUPPLY_LABELS,
+    rows: tables.supply,
+    rendered: tableRowsAfter(html, '<h2 id="balance-供給">'),
+    extraLabels: [],
   });
 });
