@@ -631,7 +631,7 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
     return {
       icon: LOCATION_ICON,
       name: locationNameOf(path.destinationInstanceId, path.destination?.def.name),
-      art: path.destination?.def.name,
+      art: path.destination?.def.artName,
       // 名前も絵も行き先のものなので、道であることは桟の矢印だけが示す（枠の色は現在地と同じ、
       // どちらも場所を映す札のため）。
       kind: 'location',
@@ -679,7 +679,7 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
           card: {
             icon: LOCATION_ICON,
             name: locationNameOf(instanceId),
-            art: root.findSelfOrDescendantByInstanceId(instanceId)?.def.name,
+            art: root.findSelfOrDescendantByInstanceId(instanceId)?.def.artName,
             kind: 'location',
           },
           current: site === currentSite,

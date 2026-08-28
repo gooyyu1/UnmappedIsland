@@ -73,6 +73,7 @@ export class NewGameScene extends ResponsiveScene {
 
   /** いずれもinitで必ず設定される（Phaserはinit→createの順に呼ぶ）。 */
   private locale!: Localization;
+  private codex!: WorldCodex;
   private characters!: readonly string[];
 
   private nameInput: TextInput | undefined;
@@ -91,7 +92,8 @@ export class NewGameScene extends ResponsiveScene {
 
   init(data: NewGameSceneData): void {
     this.locale = this.registry.get(LOCALIZATION_KEY) as Localization;
-    this.characters = characterDefNames(this.registry.get(WORLD_CODEX_KEY) as WorldCodex);
+    this.codex = this.registry.get(WORLD_CODEX_KEY) as WorldCodex;
+    this.characters = characterDefNames(this.codex);
     this.slotIndex = data.slotIndex;
     this.islandName = '';
     this.characterDefName = undefined;
@@ -356,7 +358,13 @@ export class NewGameScene extends ResponsiveScene {
     );
 
     const padding = this.metrics.px(CHARACTER_OPTION_PADDING);
-    const card = new Card(this, this.metrics, padding, padding, characterCardContent(character, this.locale));
+    const card = new Card(
+      this,
+      this.metrics,
+      padding,
+      padding,
+      characterCardContent(this.codex, character, this.locale),
+    );
     button.addContent(card.setScale(cardScale));
     return button;
   }

@@ -81,11 +81,6 @@ export class CodexView {
     return globalId === undefined ? undefined : this.codex.objects.get(globalId);
   }
 
-  /** その型の絵の名前（`art`、4.3節）。宣言が無ければ識別子そのもの。 */
-  artNameOf(objectName: string): string {
-    return this.objectDef(objectName)?.artName ?? objectName;
-  }
-
   /** 宣言されているobject_defのタグ（4.1節）を、宣言順（グローバルIDの順）に返す。 */
   tagNames(): readonly string[] {
     const names: string[] = [];
@@ -275,7 +270,7 @@ export class CodexView {
           token.name,
           this.objectLabel(token.name),
           this.objectHref(token.name),
-          inlineArtHtml(this.artNameOf(token.name)),
+          inlineArtHtml(this.codex.artNameOf(token.name)),
         );
       case 'property': {
         // 持ち主が分かるのはselfのときだけ。他の起点は実行時に相手が決まるので、持ち主不明として

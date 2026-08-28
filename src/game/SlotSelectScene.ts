@@ -2,7 +2,8 @@ import type { Rect } from '../ui/Rect';
 import { ResponsiveScene } from './ResponsiveScene';
 import type { SaveData } from '../save/SaveData';
 import { SaveSlots, SLOT_COUNT } from '../save/SaveSlots';
-import { LOCALIZATION_KEY } from './BootScene';
+import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
+import type { WorldCodex } from '../domain/WorldCodex';
 import type { Localization } from '../locale/Localization';
 import { Button } from './ui/Button';
 import { Card } from './ui/Card';
@@ -26,8 +27,9 @@ const DELETE_BUTTON_SIZE = 56;
  * スロットは4固定で、空き判定はセーブ本体の有無だけで行う。
  */
 export class SlotSelectScene extends ResponsiveScene {
-  /** buildで必ず設定される。 */
+  /** いずれもbuildで必ず設定される。 */
   private locale!: Localization;
+  private codex!: WorldCodex;
 
   constructor() {
     super('slots');
@@ -36,6 +38,7 @@ export class SlotSelectScene extends ResponsiveScene {
   protected build(): void {
     const { width, height } = this.metrics;
     this.locale = this.registry.get(LOCALIZATION_KEY) as Localization;
+    this.codex = this.registry.get(WORLD_CODEX_KEY) as WorldCodex;
     const slots = new SaveSlots(localStorage).readAll();
 
     addInputBlockingPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
@@ -76,7 +79,7 @@ export class SlotSelectScene extends ResponsiveScene {
       this.metrics,
       padding,
       (cell.height - this.metrics.px(SIZE.cardHeight) * cardScale) / 2,
-      characterCardContent(slot.characterId, this.locale),
+      characterCardContent(this.codex, slot.characterId, this.locale),
     ).setScale(cardScale);
 
     const infoX = padding + cardWidth + this.metrics.px(SLOT_PADDING);

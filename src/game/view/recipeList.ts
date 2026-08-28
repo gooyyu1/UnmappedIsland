@@ -58,7 +58,7 @@ export function recipeCategories(
         card: {
           icon: PRODUCT_ICON,
           name: locale.object(product.name).displayName,
-          art: product.name,
+          art: product.artName,
         },
         lockedReason:
           unmet === undefined
