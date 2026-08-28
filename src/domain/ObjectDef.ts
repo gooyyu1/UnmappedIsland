@@ -75,8 +75,17 @@ export class ObjectDef {
   readonly isStorage: boolean;
 
   /**
+   * **この型の絵の名前**（`art`、4.3節）。`src/assets/objects/<この名前>.png` を指す。既定は自分の
+   * 識別子で、`art` を宣言した型だけがそれ以外を名乗る（1枚を複数の型で共有するため）。
+   *
+   * **絵を引く鍵はこちらであって識別子ではない。** 識別子で引くと、共有している型が絵を持たない
+   * 扱いになり、黙って絵文字の代役へ落ちる。
+   */
+  readonly artName: string;
+
+  /**
    * **カードに出す絵を段で切り替えるプロパティ**のグローバルID（`art_by_stage`、6.4節）。undefinedなら
-   * 持たず、常にこの型自身の絵（`object_defの識別子.png`）を出す。
+   * 持たず、常にこの型自身の絵（`artName.png`）を出す。
    *
    * 1つの型につき高々1つ——複数のプロパティが同時に絵を主張する曖昧さを構造で禁じる。`art`（段の
    * 兄弟キー）を宣言できるのは、ここが指すプロパティの段だけ（ロード時に検証、RawObjectDef.resolve）。
@@ -143,6 +152,7 @@ export class ObjectDef {
     boundToOwner = false,
     stackable = true,
     recipesProducingThis: readonly RecipeDef[] = [],
+    art?: string,
     artByStagePropertyGlobalId?: number,
     visibleSlotGlobalIds: readonly number[] = [],
     isStorage = false,
@@ -175,6 +185,7 @@ export class ObjectDef {
     this.resists = resists;
     this.stackable = stackable;
     this.recipesProducingThis = recipesProducingThis;
+    this.artName = art ?? name;
     this.artByStagePropertyGlobalId = artByStagePropertyGlobalId;
     this.visibleSlotGlobalIds = visibleSlotGlobalIds;
     this.isStorage = isStorage;

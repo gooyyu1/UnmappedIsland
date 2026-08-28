@@ -3,10 +3,14 @@ import { addPackArt } from './packArt';
 /**
  * object_defごとの絵の解決。
  *
- * 置き場所と名前の規約は `src/assets/objects/<object_defの識別子>.png` のみで、コード側への登録は
- * 要らない。識別子はCodex全体で一意（objectNamesは単一のレジストリ）なので、種別のプレフィックスも
- * サフィックスも付けない——アイテムから設置物へ移しても、ファイル名を変えずに済むようにするため。
- * 唯一の例外が、載り方が違う絵を表す接尾辞（MULTIPLY_SUFFIX）。
+ * 置き場所と名前の規約は `src/assets/objects/<絵の名前>.png` のみで、コード側への登録は要らない。
+ * 絵の名前は既定でobject_defの識別子で、識別子はCodex全体で一意（objectNamesは単一のレジストリ）
+ * なので、種別のプレフィックスもサフィックスも付けない——アイテムから設置物へ移しても、ファイル名を
+ * 変えずに済むようにするため。唯一の例外が、載り方が違う絵を表す接尾辞（MULTIPLY_SUFFIX）。
+ *
+ * **識別子と違う名前を名乗るのは型の側**（`art`、GameElementDefinition.md 4.3節）。1枚を複数の型で
+ * 共有するための宣言で、ここが持つのは名前とURLの対応だけ——どの型がどの絵を使うかはObjectDefが
+ * 知っている（ObjectDef.artName）。
  *
  * 同梱ぶんの一覧はimport.meta.globがビルド時に作る。実行時に総当たりで読みに行くと、絵をまだ
  * 用意していないobject_defのぶんだけ404が出るため。アセットパックのぶんは起動時に重ねる
@@ -19,22 +23,23 @@ const FILES = import.meta.glob('../assets/objects/*.png', {
 }) as Record<string, string>;
 
 /**
- * object_defの識別子 → 画像のURL。同梱ぶんを土台に、起動時にアセットパックのぶんが重なる。
+ * 絵の名前 → 画像のURL。同梱ぶんを土台に、起動時にアセットパックのぶんが重なる。
  * 重なった後は変わらない。
  */
-const MUTABLE_ART_BY_OBJECT_NAME = new Map<string, string>(
+const MUTABLE_ART_BY_NAME = new Map<string, string>(
   Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.png$/, '$1'), url]),
 );
 
 /**
- * object_defの識別子 → 画像のURL。**鍵はテクスチャキーではない**ので、他の在庫表（BACKGROUND_ART
- * ほか）と同じ`*_ART`とは名乗らない——読み込む側はobjectTextureを掛けてから鍵にする（artFiles）。
+ * 絵の名前（既定はobject_defの識別子、ObjectDef.artName） → 画像のURL。**鍵はテクスチャキーでは
+ * ない**ので、他の在庫表（BACKGROUND_ARTほか）と同じ`*_ART`とは名乗らない——読み込む側は
+ * objectTextureを掛けてから鍵にする（artFiles）。
  */
-export const ART_BY_OBJECT_NAME: ReadonlyMap<string, string> = MUTABLE_ART_BY_OBJECT_NAME;
+export const ART_BY_NAME: ReadonlyMap<string, string> = MUTABLE_ART_BY_NAME;
 
 /** アセットパックの型の絵を在庫表へ重ねる（起動時に1回、installAssetPackから）。 */
 export function installPackObjectArt(art: ReadonlyMap<string, string>, packName: string): void {
-  addPackArt(MUTABLE_ART_BY_OBJECT_NAME, art, packName, '型の絵');
+  addPackArt(MUTABLE_ART_BY_NAME, art, packName, '型の絵');
 }
 
 /**
@@ -47,20 +52,22 @@ export const CARD_ART_WIDTH = 410;
 
 /**
  * カードに出す絵の名前。`art_by_stage`（GameElementDefinition.md 6.4節）の段が接尾辞を宣言していれば
- * `<objectName>_<接尾辞>` を、そのファイルがまだ無ければ型自身の絵（objectName）を返す。
+ * `<artName>_<接尾辞>` を、そのファイルがまだ無ければ型自身の絵（artName）を返す。
+ *
+ * 受け取るのは型の絵の名前（ObjectDef.artName）であって識別子ではない（4.3節）。
  *
  * ファイルの有無を見るのは、絵を描くのと文法を宣言するのを別々の時に行えるようにするため——先に
  * 宣言しても、絵が入るまでは今まで通りの姿で出る（`_multiply` と同じ既定動作）。
  */
-export function artNameFor(objectName: string, stageArtSuffix: string | undefined): string {
-  if (stageArtSuffix === undefined) return objectName;
-  const stageArtName = `${objectName}_${stageArtSuffix}`;
-  return ART_BY_OBJECT_NAME.has(stageArtName) ? stageArtName : objectName;
+export function artNameFor(artName: string, stageArtSuffix: string | undefined): string {
+  if (stageArtSuffix === undefined) return artName;
+  const stageArtName = `${artName}_${stageArtSuffix}`;
+  return ART_BY_NAME.has(stageArtName) ? stageArtName : artName;
 }
 
-/** object_defの識別子に対応するテクスチャキー（他のテクスチャと名前が衝突しないよう前置きする）。 */
-export function objectTexture(objectName: string): string {
-  return `object:${objectName}`;
+/** 絵の名前に対応するテクスチャキー（他のテクスチャと名前が衝突しないよう前置きする）。 */
+export function objectTexture(artName: string): string {
+  return `object:${artName}`;
 }
 
 /**
@@ -79,7 +86,7 @@ export function objectTexture(objectName: string): string {
 const MULTIPLY_SUFFIX = '_multiply';
 
 /** 通常の絵に重ねる、乗算の絵のテクスチャキー（用意されていなければundefined）。 */
-export function objectMultiplyTexture(objectName: string): string | undefined {
-  const fileName = `${objectName}${MULTIPLY_SUFFIX}`;
-  return ART_BY_OBJECT_NAME.has(fileName) ? objectTexture(fileName) : undefined;
+export function objectMultiplyTexture(artName: string): string | undefined {
+  const fileName = `${artName}${MULTIPLY_SUFFIX}`;
+  return ART_BY_NAME.has(fileName) ? objectTexture(fileName) : undefined;
 }

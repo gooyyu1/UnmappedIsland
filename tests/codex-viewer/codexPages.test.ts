@@ -8,7 +8,7 @@ import type {
 } from '../../src/analysis/balanceTables';
 import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import type { RainWaterRow } from '../../src/analysis/seasonalRain';
-import { ART_BY_OBJECT_NAME } from '../../src/art/objectArt';
+import { ART_BY_NAME } from '../../src/art/objectArt';
 import { BalancePage } from '../../src/codex-viewer/balancePage';
 import { CodexSource } from '../../src/codex-viewer/CodexSource';
 import { CodexView } from '../../src/codex-viewer/CodexView';
@@ -36,10 +36,10 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 /**
  * 絵が用意されている型の識別子を2つ借りる（`src/assets/objects/<識別子>.png`）。
  *
- * **絵の在庫だけは借り物**——絵の有無で出し分ける規約（ART_BY_OBJECT_NAME）を確かめるには、実在する
+ * **絵の在庫だけは借り物**——絵の有無で出し分ける規約（ART_BY_NAME）を確かめるには、実在する
  * ファイル名が要る。どれでもよいので、在庫の先頭から取る。
  */
-const [DRAWN_ITEM, DRAWN_LAND] = [...ART_BY_OBJECT_NAME.keys()].sort();
+const [DRAWN_ITEM, DRAWN_LAND] = [...ART_BY_NAME.keys()].sort();
 
 /** ページ1枚を組み立てる。引数が足りなければページはundefinedを返すので、ここで落とす。 */
 function pageHtml(page: CodexPage, view: CodexView, ...args: readonly string[]): string {

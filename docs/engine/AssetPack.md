@@ -69,11 +69,11 @@ ZIPは末尾に中央ディレクトリ（全エントリの一覧）を持つ�
 | 中身 | ZIP内の位置 | 同梱ぶんの位置 |
 |---|---|---|
 | 定義YAML | `world-codex/**/*.yaml` | `src/assets/world-codex/` |
-| 型の絵 | `objects/<object_defの識別子>.png` | `src/assets/objects/` |
+| 型の絵 | `objects/<型の絵の名前>.png` | `src/assets/objects/` |
 | 背景の絵 | `backgrounds/<持ち主>_<スロット名>_<用途>.png` | `src/assets/backgrounds/` |
 | 表示文字列 | `locale/<言語>.yaml` | `src/assets/locale/` |
 
-名前の規約（識別子そのもの・`_multiply` の接尾辞・背景の3語構成）は変わりません。読み手にとっては
+名前の規約（型の絵の名前・`_multiply` の接尾辞・背景の3語構成）は変わりません。読み手にとっては
 「同梱の絵をどこに置くか」を知っていれば、パックの作り方も知っていることになります。同梱ぶんを
 そのままZIPに固めれば、それが1つのパックとして通ります。
 
@@ -104,7 +104,7 @@ ZIPと `sample-pack/` が食い違っていないかは `tests/asset-pack/sample
 **「絵があれば使う」の判定は、常に在庫表への問い合わせで行い、読みに行って404かどうかでは
 決めません。** この不変条件が、パック対応で最も壊れやすい箇所です。
 
-現在の絵の解決は、`import.meta.glob` が作った一覧（`OBJECT_ART`・`BACKGROUND_ART`）への
+現在の絵の解決は、`import.meta.glob` が作った一覧（`ART_BY_NAME`・`BACKGROUND_ART`）への
 問い合わせだけでできています。
 
 - 段ごとの絵（`art_by_stage`）は、宣言された接尾辞のファイルが無ければ型自身の絵へ落とす

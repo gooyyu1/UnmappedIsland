@@ -30,35 +30,43 @@ describe('object_defごとの絵', () => {
       .map((file) => file.slice(0, -'.png'.length));
   }
 
-  /** ファイル名が指すobject_defの識別子（乗算の絵は接尾辞を外したもの）。 */
-  function objectNameOf(fileName: string): string {
+  /** ファイル名が指す絵の名前（乗算の絵は接尾辞を外したもの）。 */
+  function artNameOf(fileName: string): string {
     return fileName.endsWith(MULTIPLY_SUFFIX) ? fileName.slice(0, -MULTIPLY_SUFFIX.length) : fileName;
   }
 
   /**
-   * `art_by_stage`（GameElementDefinition.md 6.4節）が宣言している `<object_defの識別子>_<art接尾辞>`
-   * の一覧。素の識別子・`_multiply`と並ぶ、正当なファイル名の第3の形。
+   * 型が名乗っている絵の名前（`art`、GameElementDefinition.md 4.3節）。既定は識別子そのものなので、
+   * ここに並ぶのは1枚を共有している型のぶんだけ。
+   */
+  function declaredArtNames(): Set<string> {
+    const names = new Set<string>();
+    for (let id = 0; id < codex.objectNames.count; id++) names.add(codex.objects.get(id).artName);
+    return names;
+  }
+
+  /**
+   * `art_by_stage`（GameElementDefinition.md 6.4節）が宣言している `<型の絵の名前>_<art接尾辞>`
+   * の一覧。素の絵の名前・`_multiply`と並ぶ、正当なファイル名の第3の形。
    */
   function stageArtNames(): Set<string> {
     const names = new Set<string>();
     for (let id = 0; id < codex.objectNames.count; id++) {
-      const objectName = codex.objectNames.getName(id);
-      for (const suffix of codex.objects.get(id).artSuffixes()) names.add(`${objectName}_${suffix}`);
+      const objectDef = codex.objects.get(id);
+      for (const suffix of objectDef.artSuffixes()) names.add(`${objectDef.artName}_${suffix}`);
     }
     return names;
   }
 
-  it('ファイル名は、実在するobject_defの識別子である', () => {
+  it('ファイル名は、どれかの型が名乗っている絵の名前である', () => {
     const names = artNames();
     expect(names.length, '検査対象が無い（置き場所が変わっていないか）').toBeGreaterThan(0);
+    const known = declaredArtNames();
     const knownStageArtNames = stageArtNames();
 
     for (const name of names) {
       if (knownStageArtNames.has(name)) continue;
-      expect(
-        codex.objectNames.tryGetId(objectNameOf(name)),
-        `'${name}.png' に対応するobject_defが無い`,
-      ).toBeDefined();
+      expect(known.has(artNameOf(name)), `'${name}.png' を名乗る型が無い`).toBe(true);
     }
   });
 

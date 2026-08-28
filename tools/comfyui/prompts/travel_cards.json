@@ -1,0 +1,36 @@
+{
+  "_comment": [
+    "移動の辺の札に載せる絵のプロンプト（陸の道と航路）。キーは出力するファイル名（＝絵の名前、",
+    "GameElementDefinition.md 4.3節）と一致させる。",
+    "",
+    "辺は場所ではないので、location_cards.json とは狙いが違う。あちらは「そこがどんな眺めか」を",
+    "描くが、こちらが描くのは**ここから出て行ける筋**そのもの——道は草の間を抜ける踏み跡、航路は",
+    "凪いだ水の帯で、どちらも奥へ退いて水平線・稜線で消える。行き先はどのみち名前が言うので、",
+    "絵は行き先を描かない。",
+    "",
+    "**16本の航路が sea_route.png の1枚を共有する**（Voyage.md 3節）ので、どこの海とも読めない",
+    "沖の水面にする。海区の絵（location_cards.json の潮目・岩礁ほか）と紛れないよう、岩・海藻・",
+    "島影・鳥は negative で名指しで外す。",
+    "",
+    "negative はエントリごとに完全な形で持つ（location_cards.json と同じ理由）。"
+  ],
+  "path": {
+    "description": "陸の道。草の間を抜ける踏み跡が奥へ退き、丘の向こうへ消える。",
+    "positive": "a narrow bare earth footpath seen at eye level from where it starts, the trodden track running away from the viewer into the distance, pale dry soil worn smooth between low green grasses and small ground plants crowding both edges, the track narrowing as it climbs a gentle rise and disappearing over it, a high horizon with a band of overcast pale sky, neutral diffuse midday light, vertical composition filling a tall frame, painterly, soft blended edges, calm mood, muted natural colours, game illustration",
+    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, boats, fences, ruins, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, long shadows, lens flare, night, fantasy, ethereal, dreamlike, magical, glowing, paved road, cobblestones, gravel road, wheel ruts, cart track, wide road, crossroads, forked path, stairs, bridge, signpost, gate, wall, hedge, flowers, mushrooms, fallen logs, water, river, sea, snow, autumn colours"
+  },
+  "sea_route": {
+    "description": "航路の下地。何も浮いていない凪いだ沖の海。渡る筋はこの上へQwenが描き足す。",
+    "_note": [
+      "**ここで頼むのは凪いだ海だけで、渡る筋は Qwen が描き足す**（recipes/sea_route.json の edit）。",
+      "筋そのものをSDXLへ頼む言い方は7通り試して1枚も出なかった——泡の帯・航跡（wake）・凪いだ帯を",
+      "挟む2本の泡、どれも雲だけの海景か、桟橋・カヌー・崖・砕ける波になる。潮目（tide_rip）が",
+      "出るのは、あれが**水平線と平行な帯の境**だからで、奥へ退く線とは別の難しさだった。",
+      "",
+      "だから下地は**何も無い海**に徹する。浮くもの・岩・空の主張を negative で落として、Qwenが",
+      "線を1本足せる余地だけを残す。"
+    ],
+    "positive": "the open sea seen from a raft at water level, dark blue green water with small even ripples running away to the horizon and filling almost the whole frame, nothing floating on the water anywhere, a high horizon close to the top of the picture with only a narrow band of pale even overcast sky above it, bright neutral daylight, vertical composition filling a tall frame, painterly, soft blended edges, calm mood, muted natural colours, game illustration",
+    "negative": "text, letters, numbers, watermark, logo, signature, artist signature, scribble, people, characters, animals, buildings, structures, boats, ships, canoe, bow of a boat, sails, raft, buoy, pier, jetty, dock, boardwalk, walkway, bridge, wooden planks, pillars, gate, tunnel, fences, ruins, high contrast, harsh shadows, vignette, blurry, low quality, jpeg artifacts, sunset, sunrise, dusk, twilight, golden hour, evening, orange sky, pink sky, warm glow, sun in frame, sun glitter path, long shadows, lens flare, night, fantasy, ethereal, dreamlike, magical, glowing, abstract, colour field, flat wash, large sky, big cumulus clouds, dramatic cloudscape, storm clouds, dark sky, rain, low horizon, mirror flat water, breaking waves, wave crests, swell, rough sea, surf, spray, whitecaps, foam, rocks, reef, islands, headland, distant land, shore, beach, cliffs, waterfall, sand, kelp, seaweed, floating weed, driftwood, birds, fish, aerial view, top down view"
+  }
+}
