@@ -12,7 +12,9 @@ import { describe, expect, it } from 'vitest';
  * マージが失敗する。どちらも誤りは見張り自身の出力にしか現れず、GitHub の側は正常なままなので、
  * ここで見ていないと誰も気づけない。
  *
- * `gh` を PATH の先頭に差し替えて、実際にスクリプトを走らせる。
+ * `gh` を PATH の先頭に、`ccr-meta.sh` を `CCR_META` で差し替えて、実際にスクリプトを走らせる。
+ * **セッション一覧も差し替える**——差し替えないと、走らせた人のそのときのセッションが `STALLED`
+ * として混ざり、検査の結果が手元の状況で変わる。
  */
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/watch-prs.sh');
@@ -54,13 +56,35 @@ function pullRequest(
   };
 }
 
+/** `list_sessions` が返す形の1件。既定は「タスクを持ったまま動いていない」。 */
+function session(
+  id: string,
+  title = '題',
+  bucket = 'SESSION_STATUS_BUCKET_IDLE',
+  tags = ['task-900'],
+): unknown {
+  return {
+    id,
+    title,
+    tags,
+    session_status: 'SESSION_STATUS_RUNNING',
+    status_bucket: bucket,
+    updated_at: '2000-01-01T00:00:00Z',
+  };
+}
+
 /**
- * `gh` を差し替えて見張りを走らせ、出た行を返す。
+ * `gh` とセッション一覧を差し替えて見張りを走らせ、出た行を返す。
  *
  * `prRounds`・`issueRounds` は `gh pr list`・`gh issue list` が周ごとに返す一覧で、最後のものは
  * 以降ずっと返る。
  */
-function watch(prRounds: unknown[][], issueRounds: unknown[][], watched: number[]): string[] {
+function watch(
+  prRounds: unknown[][],
+  issueRounds: unknown[][],
+  watched: number[],
+  sessions: unknown[] = [],
+): string[] {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-watch-prs-'));
   try {
     const write = (name: string, value: unknown): string => {
@@ -90,11 +114,20 @@ function watch(prRounds: unknown[][], issueRounds: unknown[][], watched: number[
     );
     chmodSync(stub, 0o755);
 
+    // `ccr-meta.sh` と同じ包み（`<other-session>`）を付けて返す。
+    const list = write('sessions.json', { ccr: { data: sessions } });
+    const meta = join(work, 'ccr-meta.sh');
+    writeFileSync(meta, `#!/usr/bin/env bash\necho '<other-session>'\ncat '${list}'\n`, 'utf-8');
+
     const args = [SCRIPT, '--timeout-minutes', '1', '--interval', '1', '--no-check-grace', '0'];
     if (watched.length > 0) args.push('--issues', watched.join(','));
     const out = execFileSync('bash', args, {
       encoding: 'utf-8',
-      env: { ...process.env, PATH: `${work}${delimiter}${process.env.PATH ?? ''}` },
+      env: {
+        ...process.env,
+        PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
+        CCR_META: meta,
+      },
     });
     return out.split('\n').filter((line) => line.trim() !== '');
   } finally {
@@ -238,5 +271,42 @@ describe('watch-prs.sh の CHECKED', () => {
     );
 
     expect(lines).toEqual(['CHECKED 656 海の色を決める']);
+  });
+});
+
+describe('watch-prs.sh の STALLED', () => {
+  it('動いておらず、PRも出していない task のセッションを出す', () => {
+    expect(watch([[]], [[]], [], [session('session_01AAA', '風が航路の向きを見ていない')])).toEqual([
+      'STALLED session_01AAA 風が航路の向きを見ていない',
+    ]);
+  });
+
+  it('PRを出していれば、動いていなくても出さない', () => {
+    // 判定は「PRを出したか」だけ。PR本文の脚注が、そのPRを書いたセッション。
+    const lines = watch(
+      [[pullRequest(830, 'CONFLICTING', [], undefined, 'https://claude.ai/code/session_01AAA')]],
+      [[]],
+      [],
+      [session('session_01AAA')],
+    );
+
+    expect(lines).toEqual(['CONFLICT 830']);
+  });
+
+  // 何も出ないことは時間切れと区別が付かないので、隣に止まったセッションを置いて、そちらだけが
+  // 出ることで見る。
+  it('動いているセッションと、task のタグを持たないセッションは出さない', () => {
+    const lines = watch(
+      [[]],
+      [[]],
+      [],
+      [
+        session('session_01WORKING', '動いている', 'SESSION_STATUS_BUCKET_WORKING'),
+        session('session_01NOTAG', 'タグが無い', 'SESSION_STATUS_BUCKET_IDLE', ['bridge']),
+        session('session_01AAA', '止まっている'),
+      ],
+    );
+
+    expect(lines).toEqual(['STALLED session_01AAA 止まっている']);
   });
 });
