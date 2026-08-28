@@ -25,6 +25,19 @@ const FACES: ReadonlyMap<string, readonly string[]> = new Map([
   ['空の海', ['open_water', 'long_swell']],
 ]);
 
+/**
+ * 海岸と、そこから漕ぎ出したときに立つ海区（voyage.yamlのcoast trait、locations.yamlの各海岸）。
+ * **出航地点ごとに違うのはこの1点だけ**で、距離も危険度もそこからの帰結（GameEndings.md 5節）。
+ */
+const OFFSHORE: ReadonlyMap<string, string> = new Map([
+  ['sandy_beach', 'coastal_waters'],
+  ['rocky_coast', 'tide_rip'],
+  ['cliff_coast', 'gull_rock'],
+]);
+
+/** 海岸が「この海区に面している」と名乗るつまみの綴り（voyage.yamlのcoast trait）。 */
+const OFFSHORE_PREFIX = 'offshore_';
+
 /** 見張りの発見量のつまみ（voyage.yamlのsea_zone）。 */
 const KNOBS = [
   'barren_find',
@@ -475,16 +488,81 @@ describe('筏と航海', () => {
     ).toBeUndefined();
   }
 
-  /** その海岸から出航し、島影の海を見張って、島へ戻る航路を渡る。着いた場所を返す。 */
-  function sailAndTurnBack(game: StartedGame, raft: WorldObject, coast: WorldObject): WorldObject {
+  /** その海岸から出航する。**筏が立った海区**を返す（海岸ごとに違う、OFFSHORE）。 */
+  function sailFrom(game: StartedGame, raft: WorldObject, coast: WorldObject): WorldObject {
     beachRaftAt(game, raft, coast);
     expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute(), '出航できる').toBe(true);
+    return raft.parent!;
+  }
 
-    const first = singletonPlace(game, 'coastal_waters');
+  /** その海岸から出航し、立った海区を見張って、島へ戻る航路を渡る。着いた場所を返す。 */
+  function sailAndTurnBack(game: StartedGame, raft: WorldObject, coast: WorldObject): WorldObject {
+    const first = sailFrom(game, raft, coast);
     for (let i = 0; i < 20 && keepWatch(game, first); i++);
     expect(cross(game, first, 'route_to_shore'), '島へ引き返せる').toBe(true);
     return raft.parent!;
   }
+
+  it('どの海岸から漕ぎ出したかで、最初に立つ海区が変わる', () => {
+    // **地点差を持たせる仕組みは無い**（GameEndings.md 5節）。海岸ごとに違うのは面している海区だけで、
+    // 距離（本土までの残り海区数）も危険度（通ることになる海区の顔ぶれ）もそこからの帰結になる。
+    const coastNames = [...new Set(coasts(ready().game).map((coast) => coast.def.name))];
+    expect(coastNames.length, 'シード3の島には2種類以上の海岸がある').toBeGreaterThan(1);
+
+    const reached = new Set<string>();
+    for (const coastName of coastNames) {
+      const { game, raft } = ready();
+      const departure = coasts(game).find((coast) => coast.def.name === coastName)!;
+      const first = sailFrom(game, raft, departure).def.name;
+      expect(first, `${coastName} が面している海区`).toBe(OFFSHORE.get(coastName));
+      reached.add(first);
+    }
+
+    expect(reached.size, '海岸が違えば立つ海区も違う').toBe(coastNames.length);
+  });
+
+  it('海岸はどれも、面した海区をちょうど1つ名乗る', () => {
+    // **名乗らない海岸は、どこにも赤を出さないまま「どこから出ても同じ」に戻る。** 出航の卓は重みが
+    // 全部0になると先頭の候補を選ぶ（PickEffect）ので、島影の海へ黙って流れるだけになる。
+    const { game } = ready();
+    const coastTag = codex.tagNames.getId('coast');
+    const offshoreOf = (defName: string): readonly string[] => {
+      const def = codex.objects.get(codex.objectNames.getId(defName));
+      const instance = game.session.createObject(def.globalId);
+      return def
+        .enumeratePropertyDefs()
+        .filter((property) => property.name.startsWith(OFFSHORE_PREFIX))
+        .filter((property) => propertyOf(instance, property.name) > 0)
+        .map((property) => property.name.slice(OFFSHORE_PREFIX.length));
+    };
+
+    const coastDefs: string[] = [];
+    for (let id = 0; id < codex.objects.count; id++) {
+      const def = codex.objects.tryGet(id);
+      if (def?.tags.includes(coastTag) === true) coastDefs.push(def.name);
+    }
+
+    expect(coastDefs.sort(), '海岸の型は表と過不足なく対応する').toEqual([...OFFSHORE.keys()].sort());
+    for (const coastName of coastDefs)
+      expect(offshoreOf(coastName), `${coastName} が面している海区`).toEqual([OFFSHORE.get(coastName)]);
+  });
+
+  it('出航地点が変われば、本土まで渡る海区の数も変わる', () => {
+    // **これが「地点によって航海の距離が変わる」そのもの**（GameEndings.md 5節）。距離は地点が持つ
+    // パラメータではなく、そこから鎖のどこへ繋がるかの帰結として出る。
+    const zoneCountFrom = (coastName: string): number => {
+      const { game, raft } = ready();
+      sailFrom(
+        game,
+        raft,
+        coasts(game).find((coast) => coast.def.name === coastName)!,
+      );
+      return voyageToMainland(game, raft).length;
+    };
+
+    expect(zoneCountFrom('sandy_beach'), '砂浜からは14の海区を渡る').toBe(14);
+    expect(zoneCountFrom('rocky_coast'), '岩だらけの海岸からは12の海区で済む').toBe(12);
+  });
 
   it('引き返して着くのは、出航したその海岸', () => {
     // **島で最初の砂浜ではない。** 行き先を型で指していた頃は、どの海岸から出ても木を深さ優先で
