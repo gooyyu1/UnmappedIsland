@@ -13,16 +13,29 @@
 # 同じ理由で、issue に**もう投入済みか**も出す。判断材料が1つの表に載っていないと、二重に投入する
 # （2つのセッションが同じ issue で別々のPRを出す）。
 #
-# 出るのは3つの節。
+# 出るのは4つの節。
 #
-#   ## PR    <番号> <CI> <マージ可否> <ラベル> <題>
-#   ## TASK  <番号> <着手できるか> <題>
-#   ## 走行  <セッションID> <状態> <最終更新> <題>
+#   ## PR      <番号> <CI> <マージ可否> <ラベル> <題>
+#   ## TASK    <番号> <着手できるか> <題>
+#   ## 未整理  <番号> <ラベル> <題>
+#   ## 走行    <セッションID> <状態> <最終更新> <題>
 #
 # `TASK` の状態は次のどれか。
 #   投入済み   … 走行中のセッションか、開いているPRの `Closes` に載っている
 #   待ち:#N    … `blockedBy` の #N がまだ開いている
 #   着手可     … どちらでもない＝今すぐ投入してよい
+#
+# ## `未整理` は、人間が書いたまま投入できない issue
+#
+# ユーザーが立てる issue は自分の言葉で書かれていて、担当も完了条件も無い。**そのまま `task` を
+# 付けて投入すると、PRの範囲が宣言されていない**ので、司令塔は差分を見ても範囲外へ伸びたかを
+# 判定できず、全部が判断待ちに落ちる。**投入の前に棚卸しで翻訳する**
+# （[`parallel-work.md`](../../.claude/parallel-work.md)「人間が立てた issue は、投入する前に
+# 棚卸しで task へ翻訳する」）。
+#
+# ここに出るのは `task` も `meta` も付いていない open な issue。`meta` は常設の盤（#656 の確定待ち・
+# #732 の現在地）で、投入する先が無いので棚卸しの対象でもない。**どれが翻訳の要る issue かは
+# 判定しない**——並べるところまでが機械の仕事で、まとめ方も分け方もモデルが決める。
 
 set -euo pipefail
 
@@ -69,6 +82,9 @@ dispatched=$( {
   jq -r '.[].body // ""' <<<"$prs" | grep -oiE 'closes[[:space:]]+#[0-9]+' | grep -oE '[0-9]+' || true
 } | sort -u)
 
+# issue は1回だけ引いて、`task` の付いたものと、まだどこにも分類されていないものへ分ける。
+issues=$(gh issue list --state open --limit 100 --json number,title,labels)
+
 echo "## TASK"
 while read -r number title; do
   [ -n "$number" ] || continue
@@ -81,7 +97,13 @@ while read -r number title; do
     state=$([ -n "$open_blocker" ] && echo "待ち:#$open_blocker" || echo '着手可')
   fi
   echo "TASK $number $state $title"
-done < <(gh issue list --label task --state open --limit 50 --json number,title --jq '.[] | "\(.number) \(.title)"' | tr -d '\r')
+done < <(jq -r '.[] | select([.labels[].name] | index("task")) | "\(.number) \(.title)"' <<<"$issues" | tr -d '\r')
+
+echo "## 未整理"
+jq -r '.[]
+       | select([.labels[].name] | index("task") == null and index("meta") == null)
+       | "未整理 \(.number) \(if (.labels | length) == 0 then "-" else ([.labels[].name] | join(",")) end) \(.title)"' \
+  <<<"$issues" | tr -d '\r' | grep . || echo "（無し）"
 
 echo "## 走行"
 [ -n "$live" ] && awk -F'\t' '{print "走行 " $1 " " $2 " " $3 " " $4}' <<<"$live" || echo "（無し）"
