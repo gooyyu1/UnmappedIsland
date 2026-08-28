@@ -409,6 +409,10 @@ object_defs:
       weight: {value: 200}
       # 濡れた葉体は詰めても縮まないので、嵩そのままで見る（plant_fiberと同じ扱い）。
       volume: {value: 1500}
+    # 塩漬けにできる（salt.yaml）。**隔てるものが無く、塩が葉体へ直に届く。** 2.5日が20日になるので、
+    # 海で拾ったものを島へ持ち帰れるようになる。
+    variation_axes:
+      cure: {of: {tag: cured}}
     interactions:
       eat:
         trigger: menu
@@ -428,6 +432,9 @@ object_defs:
     tags: [item, food]
     # 殻が中身を外気から隔てているぶん、芋と同じ遅さで傷む（foods.yaml・DurabilitySystem.md 3節）。
     traits: [perishable, spoils_slow]
+    # **塩漬けにはできない**（salt.yamlのcure軸を名乗らない）。殻の中のヤシの実を除いたのと同じ線
+    # （coconut.yaml）で、塩をすり込む相手が殻になり、身へは届かない。上の遅さがその殻から出ている
+    # ことがそのまま理由で、隔てているものが既に塩の仕事をしている。
     props:
       weight: {value: 60}
       volume: {value: 55}

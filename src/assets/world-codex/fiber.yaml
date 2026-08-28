@@ -71,6 +71,11 @@ object_defs:
     props:
       weight: {value: 400}
       volume: {value: 500}
+    # 塩漬けにできる（salt.yaml）。**皮は殻ではない。** 殻の中のヤシの実を除けたのは、殻と果肉が
+    # 別々の型で、間に割る工程が挟まっているからで（coconut.yaml）、バナナにはその境目が無い——
+    # 皮はこの連鎖のどこにも型として無く、上の速さも剥き身の段（葉物・ヤシの果肉と同じ）そのもの。
+    variation_axes:
+      cure: {of: {tag: cured}}
     interactions:
       eat:
         trigger: menu

@@ -286,6 +286,21 @@ describe('salt.yamlの塩田と塩蔵', () => {
     expect(spoilRateOf(land, flesh), '塩漬けは遅い').toBeCloseTo(1.5);
   });
 
+  it('海で拾った海藻も、島のバナナも漬けられる', () => {
+    // 隔てるものが無い物には届く（voyage.yaml・fiber.yaml）。海藻は調理済みと同じ段（-4）から、
+    // バナナは野菜と同じ段（-2）から、どちらも芋と同じ段（-0.5）へ移る。
+    const { session, land, player } = open();
+    const seaweed = spawnInto(session, 'seaweed', land, 'items');
+    const banana = spawnInto(session, 'banana', land, 'items');
+    expect(spoilRateOf(land, seaweed), '生の海藻は速い').toBeCloseTo(5);
+    expect(spoilRateOf(land, banana), '生のバナナは野菜と同じ').toBeCloseTo(3);
+
+    expect(cure(session, player, seaweed), '海藻を塩漬けにできる').toBe(true);
+    expect(cure(session, player, banana), 'バナナを塩漬けにできる').toBe(true);
+    expect(spoilRateOf(land, seaweed), '塩漬けは遅い').toBeCloseTo(1.5);
+    expect(spoilRateOf(land, banana), '塩漬けは遅い').toBeCloseTo(1.5);
+  });
+
   it('塩田は平たい石4つから作れる', () => {
     const def = codex.objects.get(codex.objectNames.getId('salt_pan'));
     const [recipe] = def.recipesProducingThis;
