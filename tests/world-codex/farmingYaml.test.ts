@@ -24,14 +24,17 @@ describe('farming.yamlの畑と囲い', () => {
    * 重み0の葉物へは落ちない。
    *
    * 囲いにとってもこれは**掛かる引き**にあたる。外側は 空振り40・寄った10（飼葉があれば15と35）で
-   * 合計50なので0.9は寄った側へ落ち、内側は草原の 空振り8・ヤケイ10 なのでヤケイに当たる。
-   * **囲いを空のまま進めるとヤケイが掛かる**ので、飼育を見る試験は先に中を埋めてから時間を進める。
+   * 合計50なので0.9は寄った側へ落ち、内側は据えた土地が並べた候補で決まる——草原の
+   * 空振り8・ヤケイ10 ならヤケイ、森の 空振り8・イノシシ2 と密林の 空振り8・ヤケイ8・イノシシ2 なら
+   * どちらもイノシシに当たる（末尾の候補なので、土地が宣言していなければ引きは空振りへ落ちる）。
+   * **囲いを空のまま進めると掛かる**ので、飼育を見る試験は先に中を埋めてから時間を進める。
    */
   const ROLL = 0.9;
 
   let codex: WorldCodex;
   let session: WorldSession;
-  let grassland: WorldObject;
+  /** 囲いを据える土地。据えた土地が掛かる相手を決める（TrapSystem.md 3節）ので、試験ごとに選ぶ。 */
+  let land: WorldObject;
   let player: WorldObject;
   let warinessId: number;
   let vulnerabilityId: number;
@@ -58,16 +61,21 @@ describe('farming.yamlの畑と囲い', () => {
     herbivoreWeightId = codex.propertyNames.getId('herbivore_weight');
   });
 
-  /** 草原に立つプレイヤーから始める。rollがpickの引きと生成時のロールを決める。 */
-  function open(roll = ROLL): void {
+  /**
+   * その土地に立つプレイヤーから始める。rollがpickの引きと生成時のロールを決める。
+   *
+   * 土地を選べるのは、**囲いに掛かる相手を決めるのが土地だから**（TrapSystem.md 3節）。
+   * 草原はヤケイだけを宣言し、森と密林はイノシシも宣言する。
+   */
+  function open(roll = ROLL, locationName = 'grassland'): void {
     const worldInstance = new WorldObject(
       0,
       codex.objects.get(codex.objectNames.getId('world')),
       new WorldSession(codex),
     );
     session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(roll));
-    grassland = spawnInto('grassland', worldInstance, 'locations');
-    player = spawnInto(SAMPLE_CHARACTER, grassland, 'characters');
+    land = spawnInto(locationName, worldInstance, 'locations');
+    player = spawnInto(SAMPLE_CHARACTER, land, 'characters');
     makeBrightEnoughForAnyAction(player, codex);
   }
 
@@ -78,7 +86,7 @@ describe('farming.yamlの畑と囲い', () => {
   }
 
   function tick(count: number): void {
-    for (let i = 0; i < count; i++) grassland.tick();
+    for (let i = 0; i < count; i++) land.tick();
   }
 
   /** そのスロットに今並んでいる物の識別子。 */
@@ -90,7 +98,7 @@ describe('farming.yamlの畑と囲い', () => {
 
   /** 畑を1つ拓いた状態にする。 */
   function tillField(): WorldObject {
-    return spawnInto('field', grassland, 'fixtures');
+    return spawnInto('field', land, 'fixtures');
   }
 
   /** 畑へ1株撒く。 */
@@ -117,7 +125,7 @@ describe('farming.yamlの畑と囲い', () => {
 
   /** 囲いを1つ据えて、飼葉を芋で満たす。 */
   function buildPen(taroCount = 3): WorldObject {
-    const pen = spawnInto('livestock_pen', grassland, 'fixtures');
+    const pen = spawnInto('livestock_pen', land, 'fixtures');
     for (let i = 0; i < taroCount; i++) {
       const taro = spawnInto('taro', player, 'hand');
       expect(
@@ -139,7 +147,7 @@ describe('farming.yamlの畑と囲い', () => {
    * **囲いを据える前に呼ぶこと。** 空の囲いは罠なので、待っている40 tickのあいだに掛かってしまう。
    */
   function calmJunglefowl(): WorldObject {
-    const fowl = spawnInto('junglefowl', grassland, 'items');
+    const fowl = spawnInto('junglefowl', land, 'items');
     tick(40);
     expect(fowl.tryGetProperty(warinessId)!.getEffectiveValue(), '警戒が引き切っている').toBe(0);
     return fowl;
@@ -244,7 +252,7 @@ describe('farming.yamlの畑と囲い', () => {
     // **生け捕りにして落ち着くのを待つ**のが、囲いへ入れる唯一の入口になる。
     open();
     const pen = buildPen();
-    const wild = spawnInto('junglefowl', grassland, 'items');
+    const wild = spawnInto('junglefowl', land, 'items');
 
     expect(wild.tryGetProperty(warinessId)!.getEffectiveValue()).toBeGreaterThan(0);
     expect(
@@ -272,7 +280,7 @@ describe('farming.yamlの畑と囲い', () => {
     for (let i = 0; i < 600 && pennedCount(pen) < 2; i++) tick(1);
     const born = pen.tryGetSlot(codex.slotNames.getId('livestock'))!.contents.find((o) => o !== fowl)!;
     expect(born.parent, '仔は囲いの中に居る').toBe(pen);
-    expect(contentsOf(grassland, 'items'), '地面へこぼれていない').toEqual([]);
+    expect(contentsOf(land, 'items'), '地面へこぼれていない').toEqual([]);
   });
 
   it('飼葉が無ければ増えない', () => {
@@ -329,7 +337,7 @@ describe('farming.yamlの畑と囲い', () => {
     const prey = tickUntilCaught(pen);
     expect(prey.def.name).toBe('junglefowl');
     expect(injuriesOf(prey), '檻の傷が刺さる').toEqual(['pen_bruise']);
-    expect(contentsOf(grassland, 'items'), 'レーンに出ない——獲物は囲いの中に居る').toEqual([]);
+    expect(contentsOf(land, 'items'), 'レーンに出ない——獲物は囲いの中に居る').toEqual([]);
   });
 
   it('檻の傷は血を奪わないので、掛かった獣は死なない', () => {
@@ -342,6 +350,35 @@ describe('farming.yamlの畑と囲い', () => {
     tick(20);
     expect(prey.def.name, '死体になっていない').toBe('junglefowl');
     expect(prey.tryGetProperty(bloodId)!.getEffectiveValue(), '血は減らない').toBeGreaterThanOrEqual(blood);
+  });
+
+  it('森と密林に据えた檻には、イノシシが掛かる', () => {
+    // **大型が掛かるかどうかは、土地が`wild_boar_catch`を宣言しているかだけで決まる**
+    // （TrapSystem.md 3節）。檻の側はイノシシを候補に並べてあるが（farming.yaml）、宣言の無い
+    // 草原では重み0で候補ごと落ちる——上の試験でヤケイしか掛からないのがそれ。
+    for (const locationName of ['forest', 'jungle']) {
+      open(ROLL, locationName);
+      const prey = tickUntilCaught(buildPen());
+
+      expect(prey.def.name, `${locationName}はイノシシを宣言している`).toBe('wild_boar');
+      expect(injuriesOf(prey), '檻の傷が刺さる').toEqual(['pen_bruise']);
+      expect(contentsOf(land, 'items'), 'レーンに出ない——獲物は檻の中に居る').toEqual([]);
+    }
+  });
+
+  it('檻に掛かったイノシシは、血を失わずに生きたまま残る', () => {
+    // **檻が体格によらず生かせるのは、pen_bruiseがbleedingを書いていないこと1つ**
+    // （TrapSystem.md 5.2節）。くくり罠の傷は体格との比で意味が変わる（同5.1節）が、比を持たない
+    // 打ち身は60kgのイノシシからも1kgのヤケイからも1mLも奪わない。
+    open(ROLL, 'forest');
+    const prey = tickUntilCaught(buildPen());
+    const blood = prey.tryGetProperty(bloodId)!.getEffectiveValue();
+
+    tick(40);
+    expect(prey.def.name, '死体になっていない').toBe('wild_boar');
+    expect(prey.tryGetProperty(bloodId)!.getEffectiveValue(), '血は減らない').toBeGreaterThanOrEqual(blood);
+    expect(injuriesOf(prey), '傷は残ったまま').toEqual(['pen_bruise']);
+    expect(prey.tryGetProperty(warinessId)!.getEffectiveValue(), '牙を持つ相手でも暴れない').toBe(0);
   });
 
   it('掛かった獣は拘束され、囲いは罠であることをやめる', () => {
@@ -392,7 +429,7 @@ describe('farming.yamlの畑と囲い', () => {
     tick(40);
 
     const livestock = pen.getSlot(codex.slotNames.getId('livestock'));
-    expect(prey.moveToSlotOrRejection(grassland.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
+    expect(prey.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
     expect(prey.tryGetProperty(warinessId)!.getEffectiveValue(), '出しても暴れない').toBe(0);
     expect(prey.moveToSlotOrRejection(livestock), '落ち着いた個体として入り直せる').toBeUndefined();
   });
@@ -401,7 +438,7 @@ describe('farming.yamlの畑と囲い', () => {
     // 草食の獣が寄ってくる量と、草食の獣が食べる量は同じ1つの量（TrapSystem.md 4.1節）。
     // 与えるのは罠へ餌を仕掛けるのとまったく同じ形。
     open();
-    const pen = spawnInto('livestock_pen', grassland, 'fixtures');
+    const pen = spawnInto('livestock_pen', land, 'fixtures');
     const before = {
       miss: pen.tryGetProperty(missWeightId)!.getEffectiveValue(),
       herbivore: pen.tryGetProperty(herbivoreWeightId)!.getEffectiveValue(),
@@ -463,7 +500,7 @@ describe('farming.yamlの畑と囲い', () => {
     const hand = player.getSlot(codex.slotNames.getId('hand'));
 
     expect(tillField().moveToSlotOrRejection(hand), '畑は手に取れない').toBeDefined();
-    expect(spawnInto('livestock_pen', grassland, 'fixtures').moveToSlotOrRejection(hand)).toBeDefined();
+    expect(spawnInto('livestock_pen', land, 'fixtures').moveToSlotOrRejection(hand)).toBeDefined();
   });
 
   it('畑のタイマーは、実るまで止まらない', () => {
