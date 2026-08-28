@@ -498,8 +498,12 @@ object_defs:
   # 小島。海区で見つかる、上陸して探索できる陸地（ContentSkeleton.md 7節）。**設置物でありながら
   # 場所でもある**——浅い洞窟（locations.yaml）と同じ形で、筏を寄せれば中の仕事ができる。
   #
-  # 今の小島が返すのは岩と流木と海鳥の巣だけで、遠征先の小島にしか無い材料（錫、
-  # ContentSkeleton.md 7.1節）は青銅の鎖が入ってから（Voyage.md 未決事項）。
+  # **立つのは小島の海と海鳥の岩の2つの顔ぶれ**（海鳥の岩は、鳥が巣を作るその「岩」が上陸できる
+  # 小島そのもの）。**現れるのは航路と一緒**——見張りの卓の候補にすると同じ島が2つ湧きうるが、
+  # 見張りを終えた印（on_max）は海区ごとに1度しか通らない。
+  #
+  # **錫鉱石はここでしか採れない**（ContentSkeleton.md 7.1節）。青銅の材料の片割れが海の向こうにあることが、
+  # 最終航海より前に一度渡っておく理由になる（GameEndings.md 11節）。
   offshore_islet:
     tags: [fixture]
     traits: [location, explorable]
@@ -543,6 +547,10 @@ object_defs:
               - {object: feather, into: self}
           - weight: 15
             spawn: {object: thick_branch, count: 2, into: self}
+          # 錫鉱石。**どの候補も2個を返す**ので、1つ足しても1回あたりの平均（2個）は動かない
+          # （地上の土地と同じ配り方、locations.yaml）。
+          - weight: 20
+            spawn: {object: tin_ore, count: 2, into: self}
       # 上陸。**航路を渡るのと同じ形**で、同じ海区に浮かんでいる筏を乗り手ごと引き寄せる。
       land:
         trigger: menu
@@ -571,6 +579,18 @@ object_defs:
             move:
               - {subject: actor, to: picked}
               - {subject: picked, to: parent}
+
+  # 錫鉱石。小島の岩に混じる黒い塊で、**青銅の材料のうち、島では採れないほうの片割れ**
+  # （ContentSkeleton.md 7.1節。銅は母島の山で採れる）。
+  #
+  # **使い道（製錬と青銅の道具）は刃物・打撃の系統が持つ**（同4節）ので、ここに置くのは物そのものだけ。
+  tin_ore:
+    tags: [item]
+    props:
+      # 石と同じ大きさの塊だが、金属を含むぶん重い（石は1000g・700mL、locations.yaml）。**持ち帰るには
+      # 筏に積むことになる**ので、この重さがそのまま航海の速さを削る（筏の weight の段）。
+      weight: {value: 1500}
+      volume: {value: 700}
 
   # ------------------------------------------------------------------
   # 海区（GameEndings.md 12節）。島と本土の間の海を、8種類の顔ぶれ（ContentSkeleton.md 7節）から
@@ -673,7 +693,7 @@ object_defs:
             - {object: route_to_gull_rock, into: self}
             - {object: route_to_reef_shallows, into_object: gull_rock}
 
-  # 海鳥の岩。鳥が巣を作る岩で、卵と羽が拾える。
+  # 海鳥の岩。鳥が巣を作る岩で、卵と羽が拾える。**その岩は上陸できる**（offshore_islet）。
   gull_rock:
     singleton: true
     traits: [location, explorable, sea_zone]
@@ -690,12 +710,10 @@ object_defs:
           set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_islet_waters, into: self}
+            - {object: offshore_islet, into: self}
             - {object: route_to_gull_rock, into_object: islet_waters}
 
   # 小島の海。海面には何も無く、実りは上陸した先にある。
-  #
-  # **小島は航路と一緒に現れる。** 卓の候補にすると同じ島が2つ湧きうるが、見張りを終えた印
-  # （on_max）は海区ごとに1度しか通らない。
   islet_waters:
     singleton: true
     traits: [location, explorable, sea_zone]
@@ -823,7 +841,7 @@ object_defs:
             - {object: route_to_white_rock, into: self}
             - {object: route_to_drifting_kelp, into_object: white_rock}
 
-  # 白い岩（海鳥の岩）。糞で白く染まった岩で、遠くからでもそれと分かる。
+  # 白い岩（海鳥の岩）。糞で白く染まった岩で、遠くからでもそれと分かる。ここも上陸できる。
   white_rock:
     singleton: true
     traits: [location, explorable, sea_zone]
@@ -840,6 +858,7 @@ object_defs:
           set: {self: {route_sighted: 1}}
           spawn:
             - {object: route_to_mainland_shallows, into: self}
+            - {object: offshore_islet, into: self}
             - {object: route_to_white_rock, into_object: mainland_shallows}
 
   # 本土の島影（沿岸）。本土の陸が見え始める海区で、島影の海と同じだけ実る。ここから本土へ渡る。
