@@ -21,6 +21,10 @@ traits:
   # 見張り何回で航路が現れるか（exploration_progress の range.max）と、下のつまみの重みの3つ。
   sea_zone:
     tags: [sea]
+    # **海は物を置ける場所ではない**（GameEndings.md 12.7節）ので、location が配る items を落とす
+    # （7.14節）。**海であることの側の事実**なので、海区ごとの型ではなくここで1度だけ言う。
+    # 設置物（航路・魚の群れ・小島）は fixtures に立つので、落ちるのは拾い物の行き先だけ。
+    remove_slots: [items]
     props:
       # この海区から次の海区へ渡るのにかかる時間（分）。**素の値は海区ごと**（距離）で、そこから
       # 筏の sail_speed の段が引く（筏の sail_speed 参照）。風・海流・積載・帆はすべてそこへ集まる

@@ -227,6 +227,27 @@ describe('筏と航海', () => {
     expect(raft.parent?.instanceId, '筏は内陸に残る').toBe(landing!.instanceId);
   });
 
+  it('海区には物を置く枠が無いので、積荷を海面へ置けない', () => {
+    // **確定した仕様（GameEndings.md 12.7節）そのもの。** 置ける枠を作るかどうかは、置いてほしい物
+    // ではなく置けてしまう物で決まる——枠を作れば、漂流物だけでなく積荷の石も置ける。
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    const zone = singletonPlace(game, 'coastal_waters');
+
+    const cargo = [...raft.children()].find((object) => object.def.hasTag(codex.tagNames.getId('item')));
+    expect(cargo, 'シナリオが筏に積荷を載せている').toBeDefined();
+
+    expect(zone.slotForPutIn(cargo!), '手で置く先が無い').toBeUndefined();
+
+    // こぼれ落ちる経路（spawnの行き先が塞がったとき、9.4節）でも海面には残らない。海区が受け取らず、
+    // その上のworldも物を受け取らないので、その物は手に入らないまま失われる（12.7節）。
+    cargo!.spillTo(zone);
+    expect(
+      zone.findSelfOrDescendantByInstanceId(cargo!.instanceId),
+      'こぼれても海面には残らない',
+    ).toBeUndefined();
+  });
+
   it('時間を進めるだけでは1海区も進まない', () => {
     // **確定した仕様（GameEndings.md 12節）そのもの。** 漂っているだけでは航路も現れず、
     // 次の海区へも移らない——進みを運ぶのは時間ではなく見張りと横断という行為。

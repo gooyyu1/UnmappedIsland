@@ -718,8 +718,6 @@ ambient_brightnessをそのまま土台にするためです
 
 **ここでは決めません。** 本当に要るかは、骨格が固まってからまとめて判断します。
 
-- **海区から `items` スロットを落とす方法。** [`GameEndings.md`](../concept/GameEndings.md) 12.7節の
-  未決事項に既出。
 - 段の解放条件（スキルの連言）は [`SkillSystem.md`](../engine/SkillSystem.md) に既にあり、新設は要りません。
 
 ## 未決事項・今後の検討課題

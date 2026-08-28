@@ -17,6 +17,7 @@ const KNOWN_BODY_KEYS = [
   'tags',
   'props',
   'slots',
+  'remove_slots',
   'passives',
   'stack_order',
   'visible_slots',
@@ -42,6 +43,12 @@ export class RawDeclarationBody {
   tags: string[] = [];
   props: YAMLMap | undefined;
   slots: YAMLMap | undefined;
+
+  /**
+   * remove_slots（7.14節）で挙げられた、この型が持たないスロットの名前。混ぜ終わってから落とすので、
+   * **他のtraitが配ったスロットも落とせる**（海が location の items を持たない、voyage.yaml）。
+   */
+  removeSlots: readonly string[] = [];
 
   /** 読んだ時点でmappingとして確かめてある（どの宣言に書かれていたかは、その時点でしか分からない）。 */
   passives: readonly YAMLMap[] = [];
@@ -88,6 +95,12 @@ export class RawDeclarationBody {
     this.tags = namesIn(tryGetSeq(node, 'tags', context), context);
     this.props = tryGetMap(node, 'props', context);
     this.slots = tryGetMap(node, 'slots', context);
+    this.removeSlots = namesIn(tryGetSeq(node, 'remove_slots', context), `${context}.remove_slots`);
+    for (const slotName of this.removeSlots)
+      if (this.slots?.has(slotName) === true)
+        throw new YamlLoadError(
+          `${context}: '${slotName}' を slots で宣言しながら remove_slots でも落としています（7.14節）。`,
+        );
     this.passives = ((tryGetSeq(node, 'passives', context)?.items ?? []) as YamlNode[]).map((item) =>
       asMap(item, `${context}.passives`),
     );
@@ -108,6 +121,8 @@ export class RawDeclarationBody {
    *
    * - props/slots/interactions: 同名エントリが複数のtraitにあればエラー。自分自身が
    *   同名を持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。
+   * - remove_slots: 混ぜ終わったslotsから落とすので、**誰が配ったスロットでも落とせる**。落とし終えた
+   *   結果に残すものは無いので、返す本体のremoveSlotsは空のまま（呼び出し側に落とし直させない）。
    * - passives・tags・visible_slots・covers: 識別子で突き合わせようがないので、trait由来→自分自身の順に連結。
    *   **並びが表示順**（visible_slots）なので、混ぜる順序そのものに意味がある。
    * - stack_order/art_by_stage/resists/layer: 自分自身の指定を優先。無ければちょうど1つのtraitが指定して
@@ -124,10 +139,14 @@ export class RawDeclarationBody {
       `'${ownerName}'のprops`,
       PROP_UNION_KEYS,
     );
-    result.slots = mergeIdentifierMaps(
-      traits.map(([name, body]) => [name, body.slots] as const),
-      this.slots,
-      `'${ownerName}'のslots`,
+    result.slots = withoutRemovedSlots(
+      mergeIdentifierMaps(
+        traits.map(([name, body]) => [name, body.slots] as const),
+        this.slots,
+        `'${ownerName}'のslots`,
+      ),
+      [...traits.flatMap(([, body]) => body.removeSlots), ...this.removeSlots],
+      ownerName,
     );
     result.interactions = mergeIdentifierMaps(
       traits.map(([name, body]) => [name, body.interactions] as const),
@@ -175,6 +194,24 @@ export class RawDeclarationBody {
 
     return result;
   }
+}
+
+/**
+ * `remove_slots`（7.14節）が挙げたスロットを、混ぜ終わったslotsから落とす。**落とす先が無ければエラー**
+ * ——綴り間違いも、もう配られていない名前も、通せば「落としたつもり」の宣言がそのまま残る。
+ */
+function withoutRemovedSlots(
+  slots: YAMLMap | undefined,
+  removedSlotNames: readonly string[],
+  ownerName: string,
+): YAMLMap | undefined {
+  for (const slotName of removedSlotNames) {
+    if (slots?.has(slotName) !== true)
+      throw new YamlLoadError(`'${ownerName}': remove_slots が指すスロット '${slotName}' を持ちません。`);
+    slots.delete(slotName);
+  }
+
+  return slots === undefined || slots.items.length === 0 ? undefined : slots;
 }
 
 /** `traits`・`tags`・`visible_slots` のような、識別子を並べただけの配列を読む。 */
