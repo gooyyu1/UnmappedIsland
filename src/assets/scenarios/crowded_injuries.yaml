@@ -1,0 +1,26 @@
+# 子ウィンドウのレーンの送り（Windows.md 1節）を確かめるための開始状態。
+# 一度に見える枠数（LANE_CELLS_MAX = 4）より多く並べ、送らないと最後まで見えない状態から始める。
+#
+# **見るのは怪我のレーン。** 装備・怪我のタブに固有の処理は無く（Windows.md 2節）、どちらも同じ
+# SlotPane・CardLaneが枠を並べるので、送りの見え方はここで確かめられる。装備で作れないのは、
+# 身につけられる物（equippable、clothing.yaml）が今どれも同じ部位・同じ階層を覆う衣類で、
+# 同時に着られるのが1着だけのため。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 怪我がいっぱい
+
+# 3は開始地点が砂浜になるシード。
+seed: 3
+
+player:
+  # injuries.yamlの全種類。怪我は束ねられない（stackable: false）ので、種類の数がそのまま枠の数になる。
+  # 選ぶ理由が無いので全部並べる——怪我が増えても枠が足りなくならない。
+  injuries:
+    - sprained_ankle
+    - laceration
+    - puncture_wound
+    - bite_wound
+    - gore_wound
+    - snare_laceration
+    - pen_bruise

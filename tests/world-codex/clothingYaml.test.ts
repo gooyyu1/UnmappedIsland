@@ -99,11 +99,21 @@ describe('clothing.yamlの衣類', () => {
   });
 
   it.each(CLOTHING)('$name は、身につけられることを名乗っている', (clothing) => {
-    // 装備スロットはまだこのタグで絞っていない（player_character.yaml）が、何であるかは物の側の
-    // 事実なので先に名乗る。絞るときに拾う先はここ。
+    // 装備スロットが受け入れる先はこのタグ（player_character.yaml）。
     const equippableTagId = codex.tagNames.getId('equippable');
 
     expect(codex.objects.get(codex.objectNames.getId(clothing.name)).tags).toContain(equippableTagId);
+  });
+
+  it('身につけられることを名乗らない物は、装備スロットへ入らない', () => {
+    // 石でもヤシの実でも身につけられた頃の裏返し。断るのは枠の型（accept、7.2節）で、画面はこの
+    // 答えをそのまま落とし先の有無に使う（Windows.md 2節）。
+    const equipmentId = codex.vocabulary.world.equipmentSlotId;
+
+    for (const name of ['stone', 'coconut', 'sharp_stone'])
+      expect(spawn(name).moveToSlotOrRejection(player.getSlot(equipmentId)), name).toContain(
+        '枠の型が合いません',
+      );
   });
 
   it.each(CLOTHING)('$name は装備スロットへ着られて、脱げる', (clothing) => {

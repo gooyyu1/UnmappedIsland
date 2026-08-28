@@ -5,8 +5,7 @@
 # docs/engine/GameElementDefinition.md 7.5節）。部位を分けるのも重ね着も、衣類が増えてからでよい。
 #
 # **身につけられることはequippableタグが言う。** 着る先のequipmentスロット
-# （characters/player_character.yaml）は、今このタグで絞っていない——絞れないのは装備できる物が
-# この4種しか無いためで、物の側が何であるかとは別の話。
+# （characters/player_character.yaml）はこのタグだけを受け入れる。
 #
 # **保温の効果もまだ無い。** 寒さは場所のambient_temperature（core.yamlのlocation trait）が
 # 持っているが、それを体が受け取る形（キャラクタ側のプロパティ）が無いため、着ても値は何も動かない。
