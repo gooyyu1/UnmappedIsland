@@ -12,6 +12,7 @@ import {
   loadYamlDirectory,
   SAMPLE_CHARACTER,
   WORLD_CODEX_DIR,
+  worldCodexPath,
   worldCodexYamlPaths,
 } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
@@ -139,6 +140,20 @@ describe('筏と航海', () => {
     game.world.instance
       .getProperty(codex.propertyNames.getId('wind'))
       .setNumberWithoutEvents(codex.symbolNames.getId(wind));
+  }
+
+  /**
+   * 天気と風向きを据えたまま動かなくする（core.yamlのweather/wind）。**残り時間も一緒に伸ばす**
+   * ——どちらも残り時間が尽きれば引き直されるので、置いただけでは数tickのうちに別のものへ変わる。
+   */
+  function holdWeather(game: StartedGame, weather: string, wind: string): void {
+    const world = game.world.instance;
+    world
+      .getProperty(codex.propertyNames.getId('weather'))
+      .setNumberWithoutEvents(codex.symbolNames.getId(weather));
+    setWind(game, wind);
+    for (const name of ['weather_remaining', 'wind_remaining'])
+      world.getProperty(codex.propertyNames.getId(name)).setNumberWithoutEvents(9999);
   }
 
   function propertyOf(object: WorldObject, name: string): number {
@@ -289,11 +304,14 @@ describe('筏と航海', () => {
   it('時間を進めるだけでは1海区も進まない', () => {
     // **確定した仕様（GameEndings.md 12節）そのもの。** 漂っているだけでは航路も現れず、
     // 次の海区へも移らない——進みを運ぶのは時間ではなく見張りと横断という行為。
+    //
+    // **荒天だけが例外**（同12.4節）なので、天気を据えて外しておく——進みを運ばないことと、
+    // 荒天が位置を動かすことは別の話で、混ざると片方の検査にならない。
     const { game, raft } = ready();
     raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
     const first = singletonPlace(game, 'coastal_waters');
 
-    setWind(game, 'tailwind');
+    holdWeather(game, 'clear', 'tailwind');
     for (let i = 0; i < 96; i++) tick(game);
 
     expect(raft.parent?.def.name, '丸1日流されても最初の海区に居る').toBe('coastal_waters');
@@ -699,6 +717,128 @@ describe('筏と航海', () => {
 
     expect(tail, '追い風なら最も短く渡れる').toBeLessThan(cross);
     expect(cross, '横風でも向かい風よりは短い').toBeLessThan(head);
+  });
+
+  /** 荒天を据える（holdWeather）。 */
+  function setStorm(game: StartedGame, wind: string): void {
+    holdWeather(game, 'storm', wind);
+  }
+
+  /**
+   * 荒天の中で、押し流されるまで海区に留まる。押し流されるまでのtick数（`limit` 以内に動かなければ
+   * undefined）を返す。**見張りも渡りもしない**——動かすのが行為ではなく荒天であることを見るため。
+   */
+  function ticksUntilSwept(game: StartedGame, raft: WorldObject, limit = 60): number | undefined {
+    const from = raft.parent;
+    for (let elapsed = 1; elapsed <= limit; elapsed++) {
+      keepAlive(game);
+      tick(game);
+      if (raft.parent !== from) return elapsed;
+    }
+    return undefined;
+  }
+
+  /** 見張って渡ることを繰り返し、名指しした海区まで進む。 */
+  function sailTo(game: StartedGame, raft: WorldObject, zoneName: string): void {
+    for (let i = 0; i < 20 && raft.parent?.def.name !== zoneName; i++) {
+      keepAlive(game);
+      expect(watchAndCross(game, raft.parent!), `${raft.parent!.def.name} から渡れる`).toBe(true);
+    }
+    expect(raft.parent?.def.name, `${zoneName} まで来た`).toBe(zoneName);
+  }
+
+  it('荒天の中で海区に留まり続けると、追い風では本土の側の海区へ押し流される', () => {
+    // **荒天は進みを止めるのではなく押し流す**（GameEndings.md 12.4節）。罰が時間の損ではなく位置の
+    // 変化になるので、止められて手が無くなるのではなく、盤面を組み直すことになる。
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    setStorm(game, 'tailwind');
+
+    expect(ticksUntilSwept(game, raft), '押し流される').toBeDefined();
+    expect(raft.parent?.def.name, '風下＝本土の側の隣の海区へ移る').toBe('kelp_belt');
+    expect(game.player.location?.instance.instanceId, '乗り手は筏ごと流される').toBe(raft.instanceId);
+  });
+
+  it('向かい風の荒天では、島の側の海区へ押し流される', () => {
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    sailTo(game, raft, 'kelp_belt');
+    setStorm(game, 'headwind');
+
+    expect(ticksUntilSwept(game, raft), '押し流される').toBeDefined();
+    expect(raft.parent?.def.name, '風下＝島の側の隣の海区へ移る').toBe('coastal_waters');
+  });
+
+  it('横風の荒天では押し流されない（鎖に分岐が無く、横へ流す先が無い）', () => {
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    setStorm(game, 'crosswind');
+
+    expect(ticksUntilSwept(game, raft), '流されないまま留まる').toBeUndefined();
+    expect(raft.parent?.def.name, '出た海区に居る').toBe('coastal_waters');
+  });
+
+  it('鎖の先頭では、向かい風の荒天でも岸へ乗り上げない', () => {
+    // **押し流す先は隣の海区だけ。** 島影の海の風下（島の側）に海区は無いので、荒天が筏を岸へ
+    // 戻すことはない——引き返すのは来た航路を渡ることそのもの（GameEndings.md 12.5節）。
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    setStorm(game, 'headwind');
+
+    expect(ticksUntilSwept(game, raft), '島影の海から岸へは流されない').toBeUndefined();
+    expect(raft.parent?.def.name, '鎖の先頭に留まる').toBe('coastal_waters');
+  });
+
+  it('鎖の末尾では、追い風の荒天でも本土へ着かない', () => {
+    // **到達は本土へ移ることそのもの**（Voyage.md 4節）なので、そこへ渡らせるのは航路であって
+    // 荒天ではない。荒天で周回が終わることはない。
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    sailTo(game, raft, 'mainland_shallows');
+    setStorm(game, 'tailwind');
+
+    expect(ticksUntilSwept(game, raft), '本土の島影から本土へは流されない').toBeUndefined();
+    expect(raft.parent?.def.name, '最後の海区に留まる').toBe('mainland_shallows');
+  });
+
+  it('押し流された先が未知の海区なら、そこが海図に入る', () => {
+    // **記入するのは海区自身**（Voyage.md 3.7節）なので、渡って着いたか流されて着いたかを問わない。
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    const kelpBelt = singletonPlace(game, 'kelp_belt');
+    expect(charted(kelpBelt), '流される前は幅を持ったまま').toEqual([8, 18]);
+
+    setStorm(game, 'tailwind');
+    expect(ticksUntilSwept(game, raft), '押し流される').toBeDefined();
+    tick(game);
+
+    expect(charted(kelpBelt), '流れ着いた海区も幅無しで海図に残る').toEqual([13, 13]);
+  });
+
+  it('海岸に繋いだ筏は、荒天でも流されない', () => {
+    const { game, raft } = ready();
+    const coast = raft.parent!;
+    setStorm(game, 'tailwind');
+
+    expect(ticksUntilSwept(game, raft), '浜に置いたままの筏は動かない').toBeUndefined();
+    expect(raft.parent?.instanceId, '出航した海岸に在る').toBe(coast.instanceId);
+  });
+
+  it('岩礁の海は、他の海区より早く押し流される', () => {
+    // ContentSkeleton.md 7節の表が岩礁に与えている役割（**荒天で押し流されやすい**）そのもの。
+    const sweptIn = (zoneName: string): number | undefined => {
+      const { game, raft } = ready();
+      raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+      sailTo(game, raft, zoneName);
+      setStorm(game, 'tailwind');
+      return ticksUntilSwept(game, raft);
+    };
+
+    const reef = sweptIn('reef_shallows');
+    const kelp = sweptIn('kelp_belt');
+    expect(reef, '岩礁でも押し流される').toBeDefined();
+    expect(kelp, '海藻の帯でも押し流される').toBeDefined();
+    expect(reef!, '岩礁のほうが早い').toBeLessThan(kelp!);
   });
 
   it('据えた炉の中身も、乗員が手に持った物も、筏の重さに効く', () => {
@@ -1110,7 +1250,64 @@ describe('筏と航海', () => {
     expect(propertyOf(raft, 'sail_speed'), '本土では速さが立たない').toBe(0);
     expect(raft.parent?.def.name, '本土に留まる').toBe('mainland');
   });
+
+  it('押し流す先は、鎖の隣の海区（追い風なら1つ手前、向かい風なら1つ後ろ）', () => {
+    // **押し流す先は型の名前でしか書けない**ので、14個の海区が手で隣を名指ししている。取り違えは
+    // その海区で荒天に遭うまで表に出ないので、鎖の位置（zones_to_mainland）と突き合わせて数える。
+    const zones = seaZoneDefs();
+    expect(zones.size, '海区は14個').toBe(14);
+
+    const distances = new Map(
+      [...zones].map(([name, body]) => [name, nodeAt(body, 'props', 'zones_to_mainland', 'value')]),
+    );
+    const nameAtDistance = new Map([...distances].map(([name, distance]) => [distance, name]));
+
+    for (const [name, body] of zones) {
+      const distance = distances.get(name) as number;
+      const candidates = nodeAt(body, 'props', 'storm_drift', 'on_max', 'pick');
+      expect(Array.isArray(candidates) && candidates.length, `${name}: 風下は追い風と向かい風の2つ`).toBe(2);
+
+      const [toMainland, toIsland] = candidates as readonly unknown[];
+      expect(nodeAt(toMainland, 'weight', 'prop'), `${name}: 先頭が追い風の候補`).toBe(
+        'drift_to_mainland_weight',
+      );
+      expect(nodeAt(toIsland, 'weight', 'prop'), `${name}: 2つめが向かい風の候補`).toBe(
+        'drift_to_island_weight',
+      );
+      // 鎖の端では、その向きに海区が無い＝行き先を持たない候補になる。
+      expect(nodeAt(toMainland, 'move', 'to_object'), `${name}: 本土の側の隣`).toBe(
+        nameAtDistance.get(distance - 1),
+      );
+      expect(nodeAt(toIsland, 'move', 'to_object'), `${name}: 島の側の隣`).toBe(
+        nameAtDistance.get(distance + 1),
+      );
+    }
+  });
 });
+
+/** 生YAMLのマッピングを名前で辿った先。途中で辿れなくなればundefined。 */
+function nodeAt(node: unknown, ...path: readonly string[]): unknown {
+  let current = node;
+  for (const key of path) {
+    if (current === null || typeof current !== 'object' || Array.isArray(current)) return undefined;
+    current = (current as Record<string, unknown>)[key];
+  }
+  return current;
+}
+
+/**
+ * 海区（`sea_zone` traitを名乗る object_def）の生YAML。**押し流す先は型の名前**なので、鎖と食い違って
+ * いないかを見るには定義そのものを読むしかない（動かした世界からは、そこへ流されて初めて分かる）。
+ */
+function seaZoneDefs(): ReadonlyMap<string, unknown> {
+  const file: unknown = parse(readFileSync(worldCodexPath('voyage.yaml'), 'utf8'));
+  const found = new Map<string, unknown>();
+  for (const [name, body] of namedEntries(nodeAt(file, 'object_defs'))) {
+    const traits = nodeAt(body, 'traits');
+    if (Array.isArray(traits) && traits.includes('sea_zone')) found.set(name, body);
+  }
+  return found;
+}
 
 /** 名前で引ける節（`traits:`・`object_defs:` など）の中身を、名前と組で返す。それ以外は空。 */
 function namedEntries(node: unknown): readonly (readonly [string, unknown])[] {

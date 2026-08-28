@@ -79,6 +79,9 @@ object_texts:
       crossing_minutes:
         display_name: 横断にかかる時間
         description: この海区から次の海区へ渡るのにかかる時間。風・海流・積んだ重さ・帆で伸び縮みする。
+      storm_drift:
+        display_name: 荒天にさらされた時間
+        description: この海区で筏が荒天に叩かれ続けた長さ。溜まり切ると風下の海区へ押し流される。横風の間は溜まらない。
       required_progress:
         display_name: 発見に必要な探索の進み具合
       weight:
@@ -1415,6 +1418,7 @@ signal_texts:
   pierced: 深手
   smashed: 踏み壊し
   snatched: 持ち去り
+  swept: 押し流された
 
 # 画面の地の文（src/locale/uiTexts.ts）。**ワールド定義に由来しない、画面そのものの語**なので、
 # キーはWorldCodexの識別子ではなく画面側の名前。ここに無いキーは、そのままキーが表示される。
