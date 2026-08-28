@@ -3,6 +3,7 @@ import type { SlotPosition } from './SlotPosition';
 import type { ObjectStack } from './ObjectStack';
 import type { WorldObject } from './WorldObject';
 import { CellLayout, type SlotCell } from './CellLayout';
+import type { WornCoverage } from './WornCoverage';
 
 /**
  * 1つのWorldObjectが持つ、1つのスロットの実行時状態。中身の並べ方はCellLayoutが持ち、こちらは
@@ -45,13 +46,18 @@ export class Slot {
 
   /**
    * この候補オブジェクトを受け入れない理由（受け入れるならundefined）。見るのは枠の型・枠の空き・
-   * capacity（move_to_slot、7.1〜7.3節）。
+   * capacity（move_to_slot、7.1〜7.3節）と、身につける枠なら装備の排他（7.5節）。
    */
   rejectionFor(candidate: WorldObject): string | undefined {
     const engine = this.owner.session.codex.vocabulary.engine;
     const ownerName = this.owner.def.name;
     if (!this.def.acceptsAnywhere(candidate.def)) {
       return `'${ownerName}.${this.def.name}' は '${candidate.def.name}' を受け入れられません（枠の型が合いません）。`;
+    }
+
+    const occupant = this.wornOccupantBlocking(candidate);
+    if (occupant !== undefined) {
+      return `'${ownerName}.${this.def.name}' は既に '${occupant.def.name}' で埋まっています（同じ部位の同じ階層は重ねられません）。`;
     }
 
     if (this.def.capacity !== undefined) {
@@ -89,8 +95,13 @@ export class Slot {
   acceptedCount(candidates: readonly WorldObject[]): number {
     const engine = this.owner.session.codex.vocabulary.engine;
     if (candidates.length === 0 || !this.def.acceptsAnywhere(candidates[0].def)) return 0;
+    if (this.wornOccupantBlocking(candidates[0]) !== undefined) return 0;
 
-    const vacancy = this.layout.vacancyForIgnoringVolume(candidates[0]);
+    // 場所を占める物は、同じ束から1つしか身につけられない（7.5節）——2つ目は1つ目と衝突する。
+    const vacancy = Math.min(
+      this.layout.vacancyForIgnoringVolume(candidates[0]),
+      this.wornCoverageIn(candidates[0]) === undefined ? Number.POSITIVE_INFINITY : 1,
+    );
     let volume = this.sumVolume(engine.volumeId);
     let count = 0;
     for (const candidate of candidates) {
@@ -100,6 +111,26 @@ export class Slot {
       count += 1;
     }
     return count;
+  }
+
+  /**
+   * この枠で候補が占める場所（7.5節）。身につける枠でなければ、部位を持たない物と同じくundefined
+   * ——**同じ衣類を2着持ち歩けなくなっては困る**ので、排他が効くのは着る場所だけ。
+   *
+   * エンジンの他の規則と違い、ここは世界の側の語をそのまま読む——「身につける枠」を枠の宣言から
+   * 導く手掛かりが他に無いため（`WorldRuleVocabulary`。WorldObject.isLandと同じ事情）。
+   */
+  private wornCoverageIn(candidate: WorldObject): WornCoverage | undefined {
+    const world = this.owner.session.codex.vocabulary.world;
+    return this.def.globalId === world.equipmentSlotId ? candidate.def.wornCoverage : undefined;
+  }
+
+  /** 候補と同じ場所を既に占めている中身（競合はブロック型なので、外すのはプレイヤー。7.5節）。 */
+  private wornOccupantBlocking(candidate: WorldObject): WorldObject | undefined {
+    const coverage = this.wornCoverageIn(candidate);
+    if (coverage === undefined) return undefined;
+
+    return this.contents.find((worn) => coverage.conflictsWith(worn.def.wornCoverage));
   }
 
   private sumVolume(volumePropertyGlobalId: number): number {

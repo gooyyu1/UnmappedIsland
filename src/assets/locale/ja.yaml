@@ -1334,6 +1334,10 @@ stage_texts:
   bone_dry: 乾いた
   leather_hard: 半乾き
   wet: 生乾き
+  # 食べ物の傷み具合（foods.yaml）。食べて当たるのはこの段（DigestionSystem.md 6節）。
+  rotten: 腐った
+  stale: 傷んだ
+  sound: 無事
 
 # 消し方の名乗り（GameElementDefinition.md 9.3節のdestroyのreason）。死亡ダイアログが「渇きで死んだ。」
 # のように死因として出す（VitalsSystem.md 6節）。

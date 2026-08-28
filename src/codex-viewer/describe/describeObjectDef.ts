@@ -27,6 +27,15 @@ export function describeObjectDef(def: ObjectDef, names: DefNames, out: Descript
       text('の間は土地以外の持ち主に付けない（入れ物の中で成立すればこぼれ出る）'),
     );
 
+  if (def.wornCoverage !== undefined)
+    out.write(
+      text(
+        `covers: ${def.wornCoverage.partTagIds.map((partTagId) => names.tagName(partTagId)).join('・')}` +
+          `（${names.tagName(def.wornCoverage.layerTagId)}の階層）を占める。` +
+          '同じ部位の同じ階層を身につけている間は着られない',
+      ),
+    );
+
   if (def.stackOrder !== undefined)
     out.write(text('stack_order: '), ...stackOrderTokens(def.stackOrder.reading, names));
 
