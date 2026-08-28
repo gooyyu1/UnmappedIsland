@@ -342,8 +342,8 @@ object_defs:
   # 海藻。帯になって漂うものを掬い上げたもの。生のまま食べられる。
   seaweed:
     tags: [item, food]
-    # 葉物と同じ速さで傷む（DurabilitySystem.md 3節）。
-    traits: [perishable, spoils_normal]
+    # 水を抱えたまま剥き出しの葉体なので、葉物野菜より速く傷む（foods.yaml・DurabilitySystem.md 3節）。
+    traits: [perishable, spoils_fast]
     props:
       weight: {value: 200}
       # 濡れた葉体は詰めても縮まないので、嵩そのままで見る（plant_fiberと同じ扱い）。
@@ -365,7 +365,7 @@ object_defs:
   # 海鳥の卵。岩の窪みに産み落とされたもので、殻を割ればそのまま飲める。
   bird_egg:
     tags: [item, food]
-    # 殻に守られているぶん日持ちする（ヤシの実と同じ、DurabilitySystem.md 3節）。
+    # 殻が中身を外気から隔てているぶん、芋と同じ遅さで傷む（foods.yaml・DurabilitySystem.md 3節）。
     traits: [perishable, spoils_slow]
     props:
       weight: {value: 60}
