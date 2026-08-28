@@ -2,11 +2,16 @@
 # task の issue を1件、CCRのセッションへ投入して、届いたことの確認まで済ませる。
 #
 #   bash scripts/agent/dispatch-task.sh 1029 "$LOCALAPPDATA/Temp/ui-1029.md"
-#   bash scripts/agent/dispatch-task.sh 1029 <指示ファイル> --bridge   # このPCで走らせる
-#   DRY_RUN=1 bash scripts/agent/dispatch-task.sh 1029 <指示ファイル>  # 渡す引数を見るだけ
+#   bash scripts/agent/dispatch-task.sh 1029 <補足ファイル> --bridge   # このPCで走らせる
+#   DRY_RUN=1 bash scripts/agent/dispatch-task.sh 1029 <補足ファイル>  # 渡す引数を見るだけ
 #
-# 指示の本文は**先に Write でファイルへ書いておく**（ヒアドキュメントやシェル変数を通すと化ける。
-# [`.claude/ccr-meta.sh`](../../.claude/ccr-meta.sh)「指示は Write で書く」）。
+# **渡すのは補足だけ。** 共通のひな形（[`.claude/dispatch-prompt.md`](../../.claude/dispatch-prompt.md)）は
+# ここで読んで前へ付ける。ひな形自身が「手で書き写すと必ず何かが落ちる」と書いているものを、
+# 投入のたびに司令塔へ書き写させていた。
+#
+# 補足は**先に Write でファイルへ書いておく**（ヒアドキュメントやシェル変数を通すと化ける。
+# [`.claude/ccr-meta.sh`](../../.claude/ccr-meta.sh)「指示は Write で書く」）。**重なりが無くて
+# 書くことが無いなら、空のファイルでよい。**
 #
 # 出力は1行1件。
 #   SESSION <セッションID>
@@ -31,11 +36,11 @@
 set -euo pipefail
 
 ISSUE="${1:?issueの番号を渡す（例: 1029）}"
-INSTRUCTION="${2:?指示のファイルのパスを渡す}"
+SUPPLEMENT="${2:?補足のファイルのパスを渡す}"
 WHERE="${3:-}"
 
-[ -r "$INSTRUCTION" ] || {
-  echo "読めない: $INSTRUCTION" >&2
+[ -r "$SUPPLEMENT" ] || {
+  echo "読めない: $SUPPLEMENT" >&2
   exit 1
 }
 
@@ -47,8 +52,23 @@ REPO_URL="https://github.com/$(gh repo view --json nameWithOwner --jq '.nameWith
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CCR_META="$HERE/../../.claude/ccr-meta.sh"
 CHECK_PROMPT="$HERE/../../.claude/ccr-check-prompt.sh"
+TEMPLATE="$HERE/../../.claude/dispatch-prompt.md"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
+
+# ひな形は司令塔が書き写さない。**書き写すと必ず何かが落ちる**——2026-08-27 に「PRを見張らない」の
+# 一文が3本すべてから抜け、3セッションが承認待ちで止まった。ここで `dispatch-prompt.md` の
+# ``` の中を読み、`<番号>` を埋めて、渡された補足を末尾へ足す。司令塔が書くのは補足だけ。
+INSTRUCTION="$WORK/prompt.md"
+awk '/^```$/ { inside = !inside; next } inside' "$TEMPLATE" |
+  sed "s/<番号>/$ISSUE/g" >"$INSTRUCTION"
+# ひな形の最後の行は補足の置き場を説明する山括弧なので、補足そのものへ差し替える。
+grep -q '^<このタスク固有の補足' "$INSTRUCTION" || {
+  echo "ひな形から補足の置き場が消えている: $TEMPLATE" >&2
+  exit 1
+}
+sed -i '/^<このタスク固有の補足/,$d' "$INSTRUCTION"
+cat "$SUPPLEMENT" >>"$INSTRUCTION"
 
 # **日本語はシェル変数に載せない。** Windowsのnodeは argv も環境変数もANSIで受け取るので、題を
 # `$(...)` で渡すと黙って化ける。題も本文もファイル経由で node へ渡す。
