@@ -32,11 +32,25 @@
 
 | 実行元 | 立てる先 |
 | --- | --- |
-| Claude | **クラウド優先**。画像の生成（ComfyUI）だけローカル |
+| Claude | **クラウド優先**。画像の生成（ComfyUI）だけ**ブリッジ環境へ投入する** |
 | Copilot | **ローカルworktree**。クラウドは使わない |
 
 Claude はローカルの枠を画像生成のために空ける。Copilot のクラウド起動は失敗する経路であり、隔離は
 ローカルworktreeで確保できる。実装・ドキュメント・画面の動作確認もこの原則に従う。
+
+**画像生成も「投入する」。司令塔が自分で抱え込まない。** ここでの「ローカル」は**投入先の環境の
+名前**であって、そのセッション自身が作業することではない。**この読み違いを一度やっている**
+（2026-08-28、「絵の生成は ComfyUI 依存なのでタスクとして投入できない」とユーザーへ報告した。
+実際にはブリッジ環境へ投入すれば済む話だった）。**タスクとして出せないものは無い。**
+
+`create_session` は既定で**呼び出し元と同じ環境**に立つので、環境を選ぶには `environment_id` を
+渡す。IDは `bash .claude/ccr-meta.sh list_environments <<<'{}'` の `kind` が `bridge` のもの。
+
+```bash
+bash .claude/ccr-meta.sh list_environments <<<'{}'   # kind が bridge のIDを取る
+# args.json に "environment_id": "env_..." を足してから立てる（他は普段どおり）
+bash .claude/ccr-meta.sh create_session < args.json
+```
 
 セッションはエージェントが立てられるので、ユーザーの手数は「issue に答える」だけ。ローカルから
 呼ぶときは `permission_mode` を渡せないため、既定のまま作る。
