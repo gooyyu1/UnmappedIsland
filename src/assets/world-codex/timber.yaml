@@ -6,6 +6,9 @@
 #
 # 丸太は1本20kgで、荷重の限界（キャラクタのload、docs/world/Characters.md）に対して1本ずつしか
 # 運べない重さにしてある。筏に6本要るので、拠点をどこに置くかが運搬の手間を決める。
+#
+# 同じ木から樹皮も剥ぐ。倒さずに立ったまま剥げるので、丸太とは別の入口になる（なめし革へ繋がる
+# 先はclothing.yaml）。
 
 object_defs:
   # 広葉樹。幹が太く、倒せば丸太が採れる唯一の木。
@@ -43,6 +46,23 @@ object_defs:
           - {object: thick_branch, count: 3, into: self}
         destroy: self
 
+      # 幹に縦の切れ目を入れ、内樹皮ごと帯で剥がす。刃を通すだけなので斧は要らない
+      # （fiber.yamlの茎剥ぎと同じcutting_tool）。木は立ったままなので、後から倒して丸太も採れる。
+      #
+      # 剥いでも木は減らない。採取ポイントの枯渇はヤシの木（coconut.yaml）と同じく今後の課題で、
+      # ここだけ先に持ち込むと木ごとに枯れ方の違う世界になる。
+      strip_bark:
+        trigger: {drag: {tag: cutting_tool}}
+        # 立ち木を回りながら剥ぐ屋外の行動なので、見るのは視界の側
+        # （docs/engine/IlluminationSystem.md 5節）。
+        conditions:
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            in_stage: bright
+        duration: 30
+        spawn: {object: tree_bark, count: 3, into: actor}
+
   # 丸太。幹を運べる長さ（2mほど）に切ったもの。筏の浮力を担う。
   log:
     tags: [item]
@@ -53,3 +73,12 @@ object_defs:
       volume: {value: 35000}
       # 太い枝（fuel 20）10本ぶん。
       fuel: {value: 200}
+
+  # 樹皮。剥いだ帯を丸めたひと巻き（docs/world/SurvivalItems.md 0節）。渋（タンニン）を含むので、
+  # 生皮をなめす剤になる（clothing.yamlのtanned_leather）。
+  tree_bark:
+    tags: [item]
+    props:
+      weight: {value: 700}
+      # 丸まった帯は詰めても縮まないので、嵩そのままで見る。
+      volume: {value: 2500}
