@@ -1,0 +1,78 @@
+name: Regenerate stats
+
+# `stats/**` の生成物は、**gitの上では衝突しないのに意味の上では古くなる**。生成物を触るPRが2本
+# 続くと、2本目は1本目が入る前の定義から作られているので `MERGEABLE CLEAN` のまま入り、
+# 鮮度検査（`tests/support/generatedReport.ts` の `describeReportFreshness`）が `main` で落ちる。
+# マージの瞬間には何も警告が出ない。
+#
+# **生成をPRから外すのではなく、`main` で作り直して直す。** 生成物がPRの差分に出ること自体が検査
+# （数値を触ったときの影響を差分で読む。`generatedReport.ts` の説明を参照）なので、PRから
+# 追い出すとその検査が消える。ここが直すのは「2本が混ざったときだけ古くなる」ぶん。
+#
+# 気候表（`stats/climate.yaml`）は入れていない——生成に分単位かかり、そもそも鮮度検査が無い（#1009）。
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# 直列に並べる。並べないと、2本目の run が1本目の直したツリーを知らないまま push して弾かれる。
+concurrency:
+  group: regenerate-stats
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    name: stats/ を作り直す
+    runs-on: ubuntu-latest
+    steps:
+      # 押されたコミットではなく `main` の先端を見る。直列化と合わせて、常に最新のツリーから
+      # 作り直して push できる形にする。
+      - name: Checkout main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Regenerate
+        run: |
+          npm run stats:balance
+          npm run stats:terrain
+          npm run stats:startup
+
+      - name: Check for drift
+        id: drift
+        run: |
+          if git diff --quiet -- stats/; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff --stat -- stats/
+          fi
+
+      # GITHUB_TOKEN での push は新しい run を起こさないので、ここで自分を呼び直すことはない。
+      - name: Commit and push
+        if: steps.drift.outputs.changed == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add stats/
+          git commit -m '生成物を今の定義から作り直す'
+          git push origin HEAD:main
+
+      # push したツリーは CI に掛からない（上のとおり run が起きない）ので、このジョブの緑が
+      # 唯一の保証になる。
+      - name: Verify
+        if: steps.drift.outputs.changed == 'true'
+        run: npm test

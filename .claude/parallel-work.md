@@ -296,19 +296,25 @@ for s in <session_id>...; do bash .claude/ccr-meta.sh get_session <<<"{\"session
 落ちていたため同じ検査を書いて先に入れた。**セッションは生きていて、その直後にPRを出した**
 （#772・#773 の重複）。**枝が在れば生きている。**
 
-### 生成物を触るPRを2本続けてマージしたら、司令塔がその場で作り直す
+### 生成物が古くなるのは workflow が直す。司令塔は何もしない
 
 `stats/balance.yaml` のような生成物は、**gitの上では衝突しないのに意味の上では古くなる**。2本目は
 1本目が入る前の定義から作られているので、行が離れていれば `MERGEABLE CLEAN` のまま入り、**鮮度検査
 （[`tests/support/generatedReport.ts`](../tests/support/generatedReport.ts) の
-`describeReportFreshness`）が `main` で落ちる。** マージの瞬間には何も警告が出ない。
+`describeReportFreshness`）が `main` で落ちる**（2026-08-28 に #1004・#1005 で実際に起きた。
+#1004 が足した `pick` のぶん3項目が、#1005 の持っていた表から欠けていた）。
 
-**2本目をマージしたら、その場で司令塔が作り直して直接 push する**（2026-08-28 に #1004・#1005 で
-実際に起きた。#1004 が足した `pick` のぶん3項目が、#1005 の持っていた表から欠けていた）。判断を
-一切含まない機械操作なので、セッションを `send_message` で起こすより速い。
+[`.github/workflows/regenerate-stats.yml`](../.github/workflows/regenerate-stats.yml) が
+`main` への push のたびに `stats/` を作り直し、差分が出たら直接 push し直す。**マージした後に
+司令塔がすることは無い。**
 
-**Windows の bash からは `npm run stats:balance` が通らない**——npm がスクリプトを cmd.exe へ渡すので
-`RUN_BALANCE_STATS=1` の前置が解釈されない。`RUN_BALANCE_STATS=1 npx vitest run
+**残る赤が1本ある。** 直したコミットを push しても、その前のマージコミットに付いた `tests.yml` の
+赤は消えない（`GITHUB_TOKEN` の push は新しい run を起こさないので、ループもしない代わりに
+過去の run も塗り替えない）。**`main` の最新が緑なら直っている**ので、履歴の赤は追わなくてよい。
+
+**手で作り直すとき**（workflow が壊れている・気候表を触るときなど）、**Windows の bash からは
+`npm run stats:balance` が通らない**——npm がスクリプトを cmd.exe へ渡すので `RUN_BALANCE_STATS=1` の
+前置が解釈されない。`RUN_BALANCE_STATS=1 npx vitest run
 tests/diagnostics/balanceStatsReport.test.ts` を直に呼ぶ（気候表は `RUN_CLIMATE_STATS` と
 `tests/diagnostics/climateStatsReport.test.ts`）。
 
