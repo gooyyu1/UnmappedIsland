@@ -6,6 +6,9 @@
 # （injuries.yaml）を1つ足すことで表す（同3節）。
 #
 # 死体と、それを解体して得られる素材（同1.5節）も、獲物から続く一続きの連鎖なのでこのファイルが持つ。
+#
+# 塩蔵（salt.yamlのcure軸）は**生のまま腐る物だけが名乗る**——死体と生肉には付け、焼いた物
+# （roasted_meat・roasted_rat）には付けない（foods.yamlと同じ線）。
 
 traits:
   # 獣が共通して持つもの。**体格に依らない値だけ**をここへ置く（VitalsSystem.md 7節）。体格が
@@ -398,6 +401,11 @@ object_defs:
     props:
       weight: {value: 5000}
       volume: {value: 12000}
+    # 塩漬けにできる（salt.yaml）。**解体して出る生肉は漬かっていない**——spawnは新しい個体を
+    # 作るので、塩は掛けた個体にしか残らない。丸のまま漬けるのは、解体する時間を後へ回すため
+    # （他の獣の死体も同じ）。
+    variation_axes:
+      cure: {of: {tag: cured}}
     interactions:
       # 刃物を重ねて解体する（HuntingSystem.md 1.5節）。
       #
@@ -664,6 +672,8 @@ object_defs:
     props:
       weight: {value: 60000}
       volume: {value: 144000}
+    variation_axes:
+      cure: {of: {tag: cured}}
     interactions:
       # 大きいぶん時間がかかるが、1kgあたりで見ればサル（60分/5kg）より速い——同じ手数で
       # 大きく取れるため。
@@ -692,6 +702,8 @@ object_defs:
     props:
       weight: {value: 1000}
       volume: {value: 2400}
+    variation_axes:
+      cure: {of: {tag: cured}}
     interactions:
       butcher:
         trigger: {drag: {tag: cutting_tool}}
@@ -726,6 +738,8 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: roasted_rat}
+    variation_axes:
+      cure: {of: {tag: cured}}
 
   # 丸焼きのネズミ。食べると小さな骨が残る（骨針の材料、docs/world/SurvivalItems.md 1.2節の
   # 繊維 → 罠 → 小動物 → 小骨 → 骨針）。**罠だけを起点に、刃物を1つも経由せず縫製へ届く。**
@@ -815,6 +829,10 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: roasted_meat}
+    # 塩漬けにできる（salt.yaml）。**塩蔵の本来の相手がここ**で、2.5日しか保たない肉が20日になる
+    # ——狩った肉を、その日のうちに焼き切らずに持ち帰れるようになる。
+    variation_axes:
+      cure: {of: {tag: cured}}
     interactions:
       eat:
         trigger: menu

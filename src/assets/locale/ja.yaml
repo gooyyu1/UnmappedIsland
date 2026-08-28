@@ -398,6 +398,10 @@ object_texts:
   wild_boar_carcass:
     display_name: イノシシの死体
     description: 仕留めたイノシシ。丸ごと運べる重さではないので、その場で解体するしかない。
+    # 「塩漬けのイノシシの死体」は枠の1行（全角10文字）を越えるので、この型だけ書式を上書きする。
+    # 加工の名前を前へ置く形は変えないので、燻製が入っても書き足すものは無い。
+    variation_names:
+      cure: '{value}のイノシシ'
     interactions:
       butcher:
         display_name: 解体する
