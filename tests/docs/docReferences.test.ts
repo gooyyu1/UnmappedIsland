@@ -114,6 +114,35 @@ function hasNamedSection(docRel: string, name: string): boolean {
   return (headingsByPath.get(docRel) ?? []).some((h) => h.replace(/[\s「」]/g, '').includes(name));
 }
 
+/**
+ * 識別子が実装に現れているか。
+ *
+ * 語の境界を要求するのは識別子の端が `\w` の側だけ。`\b` は `\w` の境目なので、日本語の識別子に
+ * 付けると前後に何があっても成立しない（`\b海図\b` はどんな文脈にも当たらない）。
+ */
+function appearsInSources(ident: string, sources: string): boolean {
+  const escaped = ident.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const head = /\w/.test(ident.slice(0, 1)) ? '\\b' : '';
+  const tail = /\w/.test(ident.slice(-1)) ? '\\b' : '';
+  return new RegExp(`${head}${escaped}${tail}`).test(sources);
+}
+
+/**
+ * 見出しに【未実装】の印が現れる行。**捕獲側の正規表現は使わない**——同じ経路で数えると、
+ * 両方が同じように落ちたときに気づけない（`docStatus.test.ts` と同じ考え方）。
+ */
+function unimplementedHeadingLines(): string[] {
+  const found: string[] = [];
+  for (const [rel, text] of docByPath) {
+    text.split(/\r?\n/).forEach((line, index) => {
+      if (/^#{1,6}\s/.test(line) && line.includes('【未実装')) {
+        found.push(`${rel}:${index + 1} ${line.trim()}`);
+      }
+    });
+  }
+  return found;
+}
+
 describe('ドキュメントの参照', () => {
   it('Markdownリンクの先のファイルが存在する', () => {
     const broken: string[] = [];
@@ -230,10 +259,17 @@ describe('ドキュメントの参照', () => {
   it('【未実装: 識別子】ラベルの識別子が、実装に現れていない（剥がし忘れ検知）', () => {
     const labels: { doc: string; ident: string }[] = [];
     for (const [rel, text] of docByPath) {
-      for (const match of text.matchAll(/【未実装:\s*([\w.]+)\s*】/g)) {
+      for (const match of withoutCode(text).matchAll(/【未実装:\s*([^\s】]+)\s*】/g)) {
         labels.push({ doc: rel, ident: match[1] });
       }
     }
+    // 捕獲側が黙って0件になると、**1つも拾えていない状態と、全部が正しい状態が同じ緑**になる。
+    // 別の数え方と突き合わせておけば、ラベルが全部消える日が来ても両方0で通る。
+    const inHeadings = unimplementedHeadingLines();
+    expect(
+      labels.map(({ ident }) => ident),
+      `見出しに付いた【未実装】:\n${inHeadings.join('\n')}`,
+    ).toHaveLength(inHeadings.length);
     // コメントを除いた実装・データだけを見る（コメントはドキュメントへの言及でありうるため）。
     const sources = [
       ...listFiles('src', ['.ts']).map((rel) =>
@@ -243,12 +279,22 @@ describe('ドキュメントの参照', () => {
       ),
       ...listFiles('src', ['.yaml']).map((rel) => read(rel).replace(/#.*$/gm, '')),
     ].join('\n');
-    const stale = labels.filter(({ ident }) => new RegExp(`\\b${ident}\\b`).test(sources));
+    const stale = labels.filter(({ ident }) => appearsInSources(ident, sources));
     expect(
       stale,
       `実装済みの疑いがある【未実装】ラベル（ドキュメント側の剥がし忘れ？）:\n` +
         stale.map(({ doc, ident }) => `${doc}: ${ident}`).join('\n'),
     ).toEqual([]);
+  });
+
+  it('剥がし忘れの照合が、日本語の識別子にも効く', () => {
+    // 上の検査は「照合が当たらない」と「まだ実装されていない」を区別できないので、既知の入力で
+    // 別に確かめる。日本語の識別子に `\b` を付けると、当たるべき場面でも常に false になる。
+    expect(appearsInSources('海図', 'const chart = 海図を描く;')).toBe(true);
+    expect(appearsInSources('暖と明かり', 'warmth: 暖と明かり')).toBe(true);
+    expect(appearsInSources('海図', 'const chart = 1;')).toBe(false);
+    expect(appearsInSources('ambient_temperature', 'ambient_temperature: 0')).toBe(true);
+    expect(appearsInSources('ambient_temperature', 'x_ambient_temperature_y: 0')).toBe(false);
   });
 
   it('【いつか: 識別子】と Someday.md の項目が1対1で対応する（DocumentStyle.md 4.1節）', () => {
