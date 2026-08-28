@@ -441,6 +441,7 @@ function devicesHtml(view: CodexView, tables: BalanceTables): string {
     place.devices.map((device) => [
       escapeHtml(placeLabel(view, place.name)),
       objectLinkHtml(view, device.deviceName, true),
+      `<code>${escapeHtml(device.stepName)}</code>`,
       `${objectLinkHtml(view, device.productName, true)} ` +
         `<span class="muted">×${formatNumber(device.perCycle, 3)}</span>`,
       `<span class="muted">${escapeHtml(device.condition)}</span>`,
@@ -469,12 +470,26 @@ function devicesHtml(view: CodexView, tables: BalanceTables): string {
     `それがゲートで縛られていれば、条件が成立しない限り1 tickも進まない——「条件」がそれで、` +
     `<code>常時</code>は置くだけで進むもの、それ以外はゲートの中身をそのまま書き出したもの` +
     `（識別子は定義のまま）。行の数字はすべて条件が成立し続けた場合のレート。` +
+    `1つの設備が周期を複数持つことがあるので、どの周期の行かは「工程」で見分ける。` +
     `「出どころ」は尽きると設備が終わるプロパティで、` +
     `その減る条件が周期の条件と別なら、「生涯」は同時には成立しない仮定の掛け算になる。</p>` +
     (rows.length === 0
       ? ''
       : tableHtml(
-          ['場所', '設備', '産物', '条件', '周期', '個/日', '出どころ', '寿命', '生涯', '製作', '分/個'],
+          [
+            '場所',
+            '設備',
+            '工程',
+            '産物',
+            '条件',
+            '周期',
+            '個/日',
+            '出どころ',
+            '寿命',
+            '生涯',
+            '製作',
+            '分/個',
+          ],
           rows,
           true,
         )) +
