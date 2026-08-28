@@ -6,6 +6,9 @@
 # （injuries.yaml）を1つ足すことで表す（同3節）。
 #
 # 死体と、それを解体して得られる素材（同1.5節）も、獲物から続く一続きの連鎖なのでこのファイルが持つ。
+#
+# 塩蔵（salt.yamlのcure軸）は**生のまま腐る物だけが名乗る**——死体と生肉には付け、焼いた物
+# （roasted_meat・roasted_rat）には付けない（foods.yamlと同じ線）。
 
 traits:
   # 獣が共通して持つもの。**体格に依らない値だけ**をここへ置く（VitalsSystem.md 7節）。体格が
@@ -398,6 +401,11 @@ object_defs:
     props:
       weight: {value: 5000}
       volume: {value: 12000}
+    # 塩漬けにできる（salt.yaml）。**解体して出る生肉は漬かっていない**——spawnは新しい個体を
+    # 作るので、塩は掛けた個体にしか残らない。丸のまま漬けるのは、解体する時間を後へ回すため
+    # （他の獣の死体も同じ）。
+    variation_axes:
+      cure: {of: {tag: cured}}
     interactions:
       # 刃物を重ねて解体する（HuntingSystem.md 1.5節）。
       #
@@ -664,6 +672,8 @@ object_defs:
     props:
       weight: {value: 60000}
       volume: {value: 144000}
+    variation_axes:
+      cure: {of: {tag: cured}}
     interactions:
       # 大きいぶん時間がかかるが、1kgあたりで見ればサル（60分/5kg）より速い——同じ手数で
       # 大きく取れるため。
@@ -692,6 +702,8 @@ object_defs:
     props:
       weight: {value: 1000}
       volume: {value: 2400}
+    variation_axes:
+      cure: {of: {tag: cured}}
     interactions:
       butcher:
         trigger: {drag: {tag: cutting_tool}}
@@ -726,6 +738,8 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: roasted_rat}
+    variation_axes:
+      cure: {of: {tag: cured}}
 
   # 丸焼きのネズミ。食べると小さな骨が残る（骨針の材料、docs/world/SurvivalItems.md 1.2節の
   # 繊維 → 罠 → 小動物 → 小骨 → 骨針）。**罠だけを起点に、刃物を1つも経由せず縫製へ届く。**
@@ -753,6 +767,13 @@ object_defs:
             satiety: 60
             protein: 3
             lipid: 1
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         # 食べ終わって残る骨。actorの手が塞がっていれば足元へ落ちる（9.4節のフォールバック）。
         spawn: {object: small_bone, into: actor}
         destroy: self
@@ -815,6 +836,10 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: roasted_meat}
+    # 塩漬けにできる（salt.yaml）。**塩蔵の本来の相手がここ**で、2.5日しか保たない肉が20日になる
+    # ——狩った肉を、その日のうちに焼き切らずに持ち帰れるようになる。
+    variation_axes:
+      cure: {of: {tag: cured}}
     interactions:
       eat:
         trigger: menu
@@ -828,6 +853,13 @@ object_defs:
             protein: 20
             lipid: 4
             vitamin: 2
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # 焼けた肉。生より腹に残り、栄養も出る。焼き上がっても火の中の枠に居続けるので、
@@ -858,6 +890,13 @@ object_defs:
             satiety: 450
             protein: 24
             lipid: 7
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # 焦げた塊。加熱の進みを持たないので、ここで鎖が終わる。
@@ -870,6 +909,9 @@ object_defs:
   # 置き換えが土地のアイテムへこぼれる（docs/engine/FireSystem.md 7.2節）。
   #
   # **腐らない。** 水も栄養素も残っていない炭なので、腐敗のtrait（foods.yaml）を持たない。
+  # したがって**吐き下しのpick（docs/engine/DigestionSystem.md 6節）も持たない**——他の食べ物が
+  # 全部持っているのに、ここだけ書かない理由がこれ。引く重みは腐敗の段が押し上げるspoilageなので、
+  # 腐らない物には常に0の抽選しか書けない。
   charred_lump:
     tags: [item, food, roastable]
     props:
@@ -895,7 +937,7 @@ object_defs:
       # 形の揃わない骨の束なので、詰めても縮まない嵩で見る（ヤシの実の皮と同じ扱い）。
       volume: {value: 700}
 
-  # 生皮。剥いだままの皮で、なめす工程はまだ無い。
+  # 生皮。剥いだままの皮。樹皮の渋に漬ければなめし革になる（clothing.yamlのtanned_leather）。
   rawhide:
     tags: [item]
     props:

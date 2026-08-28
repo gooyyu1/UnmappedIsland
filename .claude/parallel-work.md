@@ -32,11 +32,25 @@
 
 | 実行元 | 立てる先 |
 | --- | --- |
-| Claude | **クラウド優先**。画像の生成（ComfyUI）だけローカル |
+| Claude | **クラウド優先**。画像の生成（ComfyUI）だけ**ブリッジ環境へ投入する** |
 | Copilot | **ローカルworktree**。クラウドは使わない |
 
 Claude はローカルの枠を画像生成のために空ける。Copilot のクラウド起動は失敗する経路であり、隔離は
 ローカルworktreeで確保できる。実装・ドキュメント・画面の動作確認もこの原則に従う。
+
+**画像生成も「投入する」。司令塔が自分で抱え込まない。** ここでの「ローカル」は**投入先の環境の
+名前**であって、そのセッション自身が作業することではない。**この読み違いを一度やっている**
+（2026-08-28、「絵の生成は ComfyUI 依存なのでタスクとして投入できない」とユーザーへ報告した。
+実際にはブリッジ環境へ投入すれば済む話だった）。**タスクとして出せないものは無い。**
+
+`create_session` は既定で**呼び出し元と同じ環境**に立つので、環境を選ぶには `environment_id` を
+渡す。IDは `bash .claude/ccr-meta.sh list_environments <<<'{}'` の `kind` が `bridge` のもの。
+
+```bash
+bash .claude/ccr-meta.sh list_environments <<<'{}'   # kind が bridge のIDを取る
+# args.json に "environment_id": "env_..." を足してから立てる（他は普段どおり）
+bash .claude/ccr-meta.sh create_session < args.json
+```
 
 セッションはエージェントが立てられるので、ユーザーの手数は「issue に答える」だけ。ローカルから
 呼ぶときは `permission_mode` を渡せないため、既定のまま作る。
@@ -282,6 +296,28 @@ for s in <session_id>...; do bash .claude/ccr-meta.sh get_session <<<"{\"session
 落ちていたため同じ検査を書いて先に入れた。**セッションは生きていて、その直後にPRを出した**
 （#772・#773 の重複）。**枝が在れば生きている。**
 
+### 生成物が古くなるのは workflow が直す。司令塔は何もしない
+
+`stats/balance.yaml` のような生成物は、**gitの上では衝突しないのに意味の上では古くなる**。2本目は
+1本目が入る前の定義から作られているので、行が離れていれば `MERGEABLE CLEAN` のまま入り、**鮮度検査
+（[`tests/support/generatedReport.ts`](../tests/support/generatedReport.ts) の
+`describeReportFreshness`）が `main` で落ちる**（2026-08-28 に #1004・#1005 で実際に起きた。
+#1004 が足した `pick` のぶん3項目が、#1005 の持っていた表から欠けていた）。
+
+[`.github/workflows/regenerate-stats.yml`](../.github/workflows/regenerate-stats.yml) が
+`main` への push のたびに `stats/` を作り直し、差分が出たら直接 push し直す。**マージした後に
+司令塔がすることは無い。**
+
+**残る赤が1本ある。** 直したコミットを push しても、その前のマージコミットに付いた `tests.yml` の
+赤は消えない（`GITHUB_TOKEN` の push は新しい run を起こさないので、ループもしない代わりに
+過去の run も塗り替えない）。**`main` の最新が緑なら直っている**ので、履歴の赤は追わなくてよい。
+
+**手で作り直すとき**（workflow が壊れている・気候表を触るときなど）、**Windows の bash からは
+`npm run stats:balance` が通らない**——npm がスクリプトを cmd.exe へ渡すので `RUN_BALANCE_STATS=1` の
+前置が解釈されない。`RUN_BALANCE_STATS=1 npx vitest run
+tests/diagnostics/balanceStatsReport.test.ts` を直に呼ぶ（気候表は `RUN_CLIMATE_STATS` と
+`tests/diagnostics/climateStatsReport.test.ts`）。
+
 ## 3. タスク issue の型
 
 1タスク = 1 issue。ユーザーはその URL を新しいセッションへ貼るだけで指示が済む。
@@ -303,6 +339,26 @@ for s in <session_id>...; do bash .claude/ccr-meta.sh get_session <<<"{\"session
 - **「完了」が実装と食い違っていたら、疑うのは issue のほう。** 書いた側は全部のファイルを見て
   いない。条件に合わせて文書を直すと、**文書だけが実装から離れる**。担当の範囲だけ直し、食い違いは
   新しい issue にする。
+
+### 担当外へ出てよいのは、自分が嘘にしたものを直すとき
+
+**自分の変更がその記述・コードを事実でなくしたなら、担当外でも同じPRで直す。** 判定は「**自分の
+差分がこの行を嘘にしたか**」の一点で、「ついでに気づいた」「直したほうがよさそう」は入らない
+（それは今までどおり新しい issue）。入れたぶんは **PR本文の `## 担当外へ入った直し` 節に、1件ずつ
+「何が嘘になったから直したか」を書く。**
+
+開ける理由は速度。**手続きが実装の10倍を超えていた**——2026-08-28 の1日で、担当外というだけで
+issue に化けた直しが4件あり（#994・#998・#1000・#993）、うち2件は2〜3行だった。2行のために
+issue 1件・セッション1本・PR1本・マージ1回が要っていた。
+
+**全面自由にはしない。** 担当が守っているのは衝突ではなく（衝突のコストはリベース1回。2節）、
+**PRの範囲が読めること**。範囲が宣言されているから、司令塔は差分を見て「範囲外へ伸びていないか」を
+機械的に判定でき、判断待ちへ落とさずに済む。無制限にすると1PRが膨らんで判定できないPRが増え、
+**結局ユーザーの手が要る回数が増える**——速度のために開けたはずが逆を向く。
+
+**生成物は、担当に挙がっていなくても作り直してよい**（`stats/balance.yaml` は `npm run stats:balance`、
+`stats/climate.yaml` は `npm run stats:climate`）。鮮度検査があるので、作り直さなければCIが落ちる。
+手で書き換えることは許さない——**作り直すのであって直すのではない。**
 
 ### 順序は本文ではなく `blockedBy` に書く
 
@@ -609,6 +665,9 @@ prompt・`send_message` の本文・PRへのコメントの全部。GitHubへは
 **CIは `.claude/` を触った push でも走る**（#840 で `tests.yml` の `paths` を外した。`.claude/**` は
 `eslint .`・`prettier --check .`・`exports.test.ts` の実際の入力）。**赤くなるのは push した後**なので、
 直接 push する前に手元で4つのコマンドを通しておくこと。それが面倒な変更は、PRにしてよい。
+
+**ルートの [`CLAUDE.md`](../CLAUDE.md) も同じ扱い。** 進め方の取り決めそのもので、タスクの担当に
+挙がることが無いので重ならない。
 
 `src/` `docs/` `tests/` を触る変更は今までどおりPR。CIが要り、他のセッションと担当が重なりうる。
 

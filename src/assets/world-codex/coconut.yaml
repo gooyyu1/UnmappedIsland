@@ -13,6 +13,9 @@
 #
 # 生の実はどちらも食べられない。食べられるのは連鎖の終端の果肉（coconut_meat・coconut_jelly）だけ。
 #
+# 塩蔵（salt.yamlのcure軸）を名乗るのは、**殻から出した生の果肉だけ**（coconut_meat・coconut_jelly）。
+# 殻に入ったままの実——丸のままも、穴を開けたものも、割った半分も——には付けない。塩が身に届かない。
+#
 # 熟した実の重さは連鎖を通して差が合う: 1400g = 皮600g + 実800g、実800g = 割れた実300g×2 + 水200g、
 # 割れた実300g = 果肉200g + 殻100g。失われるのは割るときにこぼれる水だけで、これは飲用には足りない
 # （熟した実の水は果肉に吸われて200mLほどしか残らない）。値を変えるときはこの内訳を崩さないこと。
@@ -127,6 +130,8 @@ object_defs:
     props:
       weight: {value: 150}
       volume: {value: 250}
+    variation_axes:
+      cure: {of: {tag: cured}}
     interactions:
       eat:
         trigger: menu
@@ -141,6 +146,13 @@ object_defs:
             lipid: 1
             vitamin: 5
             hydration: 5.2
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # 熟したヤシの実。厚い繊維質の皮に覆われていて、このままでは食べられない。
@@ -237,6 +249,8 @@ object_defs:
     props:
       weight: {value: 200}
       volume: {value: 400}
+    variation_axes:
+      cure: {of: {tag: cured}}
     interactions:
       eat:
         trigger: menu
@@ -252,4 +266,11 @@ object_defs:
             lipid: 26
             vitamin: 7
             hydration: 6
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self

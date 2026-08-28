@@ -1,124 +1,24 @@
-import type {
-  ConditionDeclaration,
-  ConditionOp,
-  ConditionReader,
-  PropertyConditionReading,
-} from '../../domain/ConditionReader';
-import type { ReferenceRoot } from '../../domain/ReferenceRoot';
-import type { TypeMatchReading } from '../../domain/TypeMatchRule';
+import type { ConditionDeclaration } from '../../domain/ConditionReader';
+import { conditionWords } from '../../domain/conditionWords';
 import type { DefNames, DescriptionToken } from './Description';
-import { propertyRef, slotRef, stageRef, text } from './Description';
-import { typeMatchTokens } from './typeMatchTokens';
-
-/** 比較演算子の書き表し方。 */
-const OP_SYMBOLS: Readonly<Record<ConditionOp, string>> = {
-  lt: '<',
-  lte: '<=',
-  gt: '>',
-  gte: '>=',
-  eq: '==',
-  neq: '!=',
-  in: 'in',
-  not_in: 'not in',
-};
+import { objectRef, propertyRef, slotRef, stageRef, tagRef, text } from './Description';
 
 /**
  * 条件（14節）を読める形に書き表す。1つの式なので行に分けず、断片の並びを返す。
- * 複合ノード（all/any/not）は括弧で包み、入れ子の切れ目が読み取れるようにする。
+ *
+ * **文の形を決めるのはドメインの[`conditionWords`](../../domain/conditionWords.ts)**で、ここが担うのは
+ * 識別子を参照の断片（リンクを張れる）へ戻すところだけ。収支の表（`stats/balance.yaml`）と同じ文が
+ * 出る（issue #987）。
  */
 export function conditionTokens(node: ConditionDeclaration, names: DefNames): readonly DescriptionToken[] {
-  const describer = new ConditionDescriber(names);
-  node.read(describer);
-  return describer.tokens;
-}
-
-class ConditionDescriber implements ConditionReader {
-  tokens: readonly DescriptionToken[] = [];
-
-  private readonly names: DefNames;
-
-  constructor(names: DefNames) {
-    this.names = names;
-  }
-
-  property(reading: PropertyConditionReading): void {
-    const tokens: DescriptionToken[] = [
-      propertyRef(this.names.propertyName(reading.propertyGlobalId), reading.root),
-      text(` ${OP_SYMBOLS[reading.op]} `),
-    ];
-
-    if (reading.valueRef !== undefined) {
-      tokens.push(
-        propertyRef(this.names.propertyName(reading.valueRef.propertyGlobalId), reading.valueRef.root),
-      );
-    } else {
-      const values = (reading.values ?? []).map((value) =>
-        this.names.propertyValueToken(reading.propertyGlobalId, value),
-      );
-      const isList = reading.op === 'in' || reading.op === 'not_in';
-      if (isList) tokens.push(text('['));
-      for (const [index, value] of values.entries()) {
-        if (index > 0) tokens.push(text(', '));
-        tokens.push(value);
-      }
-      if (isList) tokens.push(text(']'));
-    }
-    this.tokens = tokens;
-  }
-
-  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string): void {
-    this.tokens = [
-      propertyRef(this.names.propertyName(propertyGlobalId), root),
-      text('が段'),
-      stageRef(stageName),
-      text('にある'),
-    ];
-  }
-
-  slotPosition(root: ReferenceRoot, slotGlobalId: number): void {
-    this.tokens = [
-      text(`${root}が`),
-      slotRef(this.names.slotName(slotGlobalId)),
-      text('スロットに入っている'),
-    ];
-  }
-
-  slotContent(root: ReferenceRoot, slotGlobalId: number, match: TypeMatchReading): void {
-    this.tokens = [
-      text(`${root}の`),
-      slotRef(this.names.slotName(slotGlobalId)),
-      text('スロットに'),
-      ...typeMatchTokens(match, this.names),
-      text('が入っている'),
-    ];
-  }
-
-  objectMatches(root: ReferenceRoot, match: TypeMatchReading): void {
-    this.tokens = [text(`${root}が`), ...typeMatchTokens(match, this.names), text('である')];
-  }
-
-  all(children: readonly ConditionDeclaration[]): void {
-    this.tokens = this.joined(children, 'かつ');
-  }
-
-  any(children: readonly ConditionDeclaration[]): void {
-    this.tokens = this.joined(children, 'または');
-  }
-
-  not(child: ConditionDeclaration): void {
-    this.tokens = [text('not '), ...conditionTokens(child, this.names)];
-  }
-
-  private joined(
-    children: readonly ConditionDeclaration[],
-    conjunction: string,
-  ): readonly DescriptionToken[] {
-    const tokens: DescriptionToken[] = [text('(')];
-    for (const [index, child] of children.entries()) {
-      if (index > 0) tokens.push(text(` ${conjunction} `));
-      tokens.push(...conditionTokens(child, this.names));
-    }
-    tokens.push(text(')'));
-    return tokens;
-  }
+  return conditionWords<DescriptionToken>(node, {
+    text,
+    // 起点（self・parent）は文の主語として語で出ているので、参照そのものには添えない。
+    property: (globalId) => propertyRef(names.propertyName(globalId)),
+    propertyValue: (propertyGlobalId, value) => names.propertyValueToken(propertyGlobalId, value),
+    slot: (globalId) => slotRef(names.slotName(globalId)),
+    tag: (globalId) => tagRef(names.tagName(globalId)),
+    object: (globalId) => objectRef(names.objectName(globalId)),
+    stage: stageRef,
+  });
 }

@@ -260,7 +260,7 @@ describe('定義の自己記述（describe）', () => {
     const text = describeToText(codex, (out) => describeObjectDef(objectDef('wild_boar'), names, out));
 
     expect(text).toContain('resists: ');
-    expect(text).toContain('wariness >= 1');
+    expect(text).toContain('wariness ≥ 1');
     // 土地は持ち主にならない（7.13節）ので、成立しても置き場を失うわけではない。
     expect(text).toContain('土地以外の持ち主に付けない');
   });

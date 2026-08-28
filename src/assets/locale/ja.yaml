@@ -398,6 +398,10 @@ object_texts:
   wild_boar_carcass:
     display_name: イノシシの死体
     description: 仕留めたイノシシ。丸ごと運べる重さではないので、その場で解体するしかない。
+    # 「塩漬けのイノシシの死体」は枠の1行（全角10文字）を越えるので、この型だけ書式を上書きする。
+    # 加工の名前を前へ置く形は変えないので、燻製が入っても書き足すものは無い。
+    variation_names:
+      cure: '{value}のイノシシ'
     interactions:
       butcher:
         display_name: 解体する
@@ -703,6 +707,10 @@ object_texts:
   tanned_leather:
     display_name: なめし革
     description: 樹皮の液に漬けてなめした革。生皮と違って乾いても固くならず、濡れても傷まない。
+    recipes:
+      tanned:
+        display_name: 皮をなめす
+        description: 毛と肉を掻き落とし、砕いた樹皮の渋に漬けて、揉みながら乾かす。一日がかりの仕事になる。
   bundled_leaf_clothing:
     display_name: 束ねた葉の服
     description: ヤシの小葉を繊維で腰に束ねただけの腰蓑。何も要らずに作れる、最初の一着。
@@ -773,14 +781,20 @@ object_texts:
   # 木を伐って丸太を採る（timber.yaml）。
   broadleaf_tree:
     display_name: 広葉樹
-    description: 幹の太い木。斧があれば倒して丸太にできる。
+    description: 幹の太い木。斧があれば倒して丸太にでき、刃物があれば立ったまま樹皮を剥げる。
     interactions:
       fell:
         display_name: 伐り倒す
         description: 根元を斧で断ち、倒した幹を運べる長さに切り分ける。半日がかりの仕事になる。
+      strip_bark:
+        display_name: 樹皮を剥ぐ
+        description: 幹に縦の切れ目を入れ、内樹皮ごと帯で剥がす。木は立ったまま残る。
   log:
     display_name: 丸太
     description: 幹を2mほどに切ったもの。1本でも相当に重いが、水に浮く。
+  tree_bark:
+    display_name: 樹皮
+    description: 剥いだ樹皮を丸めたひと巻き。含まれる渋が、生皮を革に変える。
 
   # 島からの脱出（voyage.yaml、docs/world/Voyage.md）。
   raft:
