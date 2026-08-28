@@ -42,8 +42,12 @@
 ファイル全体が 1 つの `WorldCodex` を表します。専用のルートキーは置かず、`object_defs`・`traits` と、
 プロパティのカテゴリを宣言する `property_tags`（6.7 節）をトップレベルキーとして持ちます。
 
-ほかに、画面の都合だけを持つルートキーが 1 つあります。`recipe_categories` は、レシピ一覧の棚に使う
+ほかに、画面の都合だけを持つルートキーが 2 つあります。`recipe_categories` は、レシピ一覧の棚に使う
 タグ（4.1 節）を**優先順位の順に**並べた列で、意味は [`Windows.md`](../ui/Windows.md) 9.2 節が持ちます。
+`card_filters` は、フィルターバーのボタンを**並べる順に**挙げた列で、要素は `id`（そのままアイコンの
+名前）と、そのボタンが指すタグの列 `tags` を持ちます。意味は
+[`ScreenLayout.md`](../ui/ScreenLayout.md) 8.1.3 節が持ちます。**どちらも分類のための語彙を新設せず、
+既にあるタグを指すだけです。**
 その世界の約束を書く `required_props`（4.2 節）と、製作中オブジェクトが完成品から引き継ぐタグを挙げる
 `in_progress_tags`（[`RecipeSystem.md`](./RecipeSystem.md) 5 節）もルートキーです。
 地形生成の `axes`・`location_types`・`generation_scopes` は

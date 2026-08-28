@@ -38,7 +38,15 @@ ATTEMPTS=5
   exit 1
 }
 
-REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
+# `owner/repo` は remote のURLから取る。**`gh` を使ってはいけない**——CCRのタスクセッションには
+# `gh` が入っておらず（GitHubへはMCP経由）、ここで `command not found` になる。画面を触るタスクは
+# 全部この道具を通るので、落ちると証跡が1枚も貼られない。
+REPO=$(git config --get remote.origin.url |
+  sed -E 's#^(https?://[^/]+/|git@[^:]+:|ssh://git@[^/]+/)##; s#\.git$##')
+[ -n "$REPO" ] || {
+  echo "remote.origin.url から owner/repo を取れなかった" >&2
+  exit 1
+}
 
 # 置き場は枝ごとに分ける。剥がれた HEAD なら短いコミットで代用する（枝の名前が無いだけで、
 # 同じPRの画像が1箇所へ集まることは変わらない）。
