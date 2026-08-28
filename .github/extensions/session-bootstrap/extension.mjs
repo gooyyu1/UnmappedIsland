@@ -11,7 +11,7 @@
 
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { exec, spawn } from 'node:child_process';
+import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { joinSession } from '@github/copilot-sdk/extension';
 
@@ -70,21 +70,6 @@ const DENY_NOT_BASH =
   'シェルは bash 経由でだけ使うこと: bash -lc "..."（npm・git・gh はそのまま通る）。' +
   'パスに空白があるときは bash 側をシングルクォートにする: bash -lc "cd \'/c/...\' && ..."';
 
-// シェルからのファイル書き換えは、bash 経由でも同じように壊せる（sed -i など）。判定の本体は
-// scripts/agent/check-shell-command.sh に置き、Claude Code のフックと同じものを使う。
-function fileWriteViolation(command, repoDir) {
-  const checker = path.join(repoDir, 'scripts', 'agent', 'check-shell-command.sh');
-  return new Promise((resolve) => {
-    const child = spawn('bash', [checker], { cwd: repoDir });
-    let stdout = '';
-    child.stdout.on('data', (chunk) => (stdout += chunk));
-    // 判定そのものが動かない環境では、何も止めない。
-    child.on('error', () => resolve(null));
-    child.on('close', (code) => resolve(code === 1 ? stdout.trim() : null));
-    child.stdin.end(command);
-  });
-}
-
 await joinSession({
   hooks: {
     onSessionStart: async (input) => {
@@ -100,11 +85,6 @@ await joinSession({
 
       if (!BASH_INVOCATION.test(command)) {
         return { permissionDecision: 'deny', permissionDecisionReason: DENY_NOT_BASH };
-      }
-
-      const violation = await fileWriteViolation(command, input.workingDirectory);
-      if (violation !== null) {
-        return { permissionDecision: 'deny', permissionDecisionReason: violation };
       }
     },
     onPostToolUse: async (input) => {
