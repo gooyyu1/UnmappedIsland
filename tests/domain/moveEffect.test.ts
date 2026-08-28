@@ -54,6 +54,9 @@ object_defs:
         value: 0
       travel_minutes:
         value: 60
+      # 型を指す値（6.9節）。持つのは型そのもので、インスタンスIDではない。
+      destination_type:
+        value: {object: hilltop}
     slots:
       spoils: {}
     interactions:
@@ -85,6 +88,14 @@ object_defs:
         move:
           - {subject: actor, to: self}
           - {subject: self, to_object: hilltop}
+      # 同じ行き先を、型の名前ではなくプロパティから引く（6.9節）。探し方はsailと同じ。
+      sail_by_prop:
+        trigger: menu
+        move: {subject: actor, to_object: {prop: destination_type}}
+      # 型を持たないプロパティを引くと、解決できないので何も起きない（9.6節）。
+      sail_nowhere:
+        trigger: menu
+        move: {subject: actor, to_object: {prop: unknown_type}}
 `;
 
   function build(): {
@@ -157,6 +168,23 @@ object_defs:
       character.findRoot().findSelfOrDescendantOfDef(codex.objectNames.getId('character')),
       '中の物も一緒に運ばれる',
     ).toBe(character);
+  });
+
+  it('to_objectは、型を値に持つプロパティからも引ける（6.9節）', () => {
+    // **探し方は型の名前をその場に書いたときと同じ**（sail の to_object: hilltop）。違うのは名前を
+    // どこに書くかだけで、行き先を2箇所へ書き写さずに済ませるためのもの。
+    const { hilltop, character, path } = build();
+
+    expect(path.tryGetAction('sail_by_prop', character)?.tryExecute() === true).toBe(true);
+    expect(character.parent, 'プロパティが名乗る型のインスタンスへ移る').toBe(hilltop);
+  });
+
+  it('型を持たないプロパティを引いたto_objectは何もしない', () => {
+    // 片側の隣を持たない海区（voyage.yamlの鎖の端）が、そのために卓を書き分けずに済む形。
+    const { meadow, character, path } = build();
+
+    expect(path.tryGetAction('sail_nowhere', character)?.tryExecute() === true).toBe(true);
+    expect(character.parent, '解決できなければ何も起きない').toBe(meadow);
   });
 
   it('移動先が解決できない場合は何もしない', () => {

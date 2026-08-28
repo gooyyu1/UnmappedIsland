@@ -231,6 +231,23 @@ export class WorldCodex {
   private symbolicPropertyIds: ReadonlySet<number> | undefined;
 
   /**
+   * 型を値に持つ（6.9節）と宣言されたプロパティのグローバルID。読み方はsymbolicPropertiesと同じで、
+   * 答えるのは「この値は型か」だけ。
+   */
+  get objectDefProperties(): ReadonlySet<number> {
+    if (this.objectDefPropertyIds === undefined) {
+      const found = new Set<number>();
+      for (const objectDef of this.objects)
+        for (const propertyDef of objectDef.enumeratePropertyDefs())
+          if (propertyDef.isObjectDef) found.add(propertyDef.globalId);
+      this.objectDefPropertyIds = found;
+    }
+    return this.objectDefPropertyIds;
+  }
+
+  private objectDefPropertyIds: ReadonlySet<number> | undefined;
+
+  /**
    * 生成型（3.5節）の素の型。生成型でなければ自分自身。**絵と名前の骨格はここから引く**
    * ——変種のために絵を描き足す道は無いので、素の型のものを映す。
    */

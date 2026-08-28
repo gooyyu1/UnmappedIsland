@@ -15,7 +15,7 @@ import {
   worldCodexYamlPaths,
 } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
-import { namedEntries, nodeAt, readSeaChart } from '../support/seaChain';
+import { namedEntries, nodeAt, objectValueAt, readSeaChart } from '../support/seaChain';
 import { seededRng } from '../../src/domain/Rng';
 
 /**
@@ -1456,6 +1456,18 @@ describe('筏と航海', () => {
     expect(declared('route_to_shore'), '島は鎖の島側の端より遠い').toBeGreaterThan(farthest);
   });
 
+  it('行き先を型で持たない航路は、島へ戻る1本だけ', () => {
+    // **渡す手は sea_route trait が1本だけ持ち、そこが引くのは `destination_zone`**（voyage.yaml）。
+    // 名乗り忘れた航路は行き先を解決できず、渡っても何も起きない札になる——盤面には出るので、
+    // 宣言の側で数え上げておく。島へ戻る1本だけは行き先が個体（筏が覚えている海岸）なので持たない。
+    const chart = readSeaChart();
+    const withoutDestination = [...chart.routeBodies.keys()].filter(
+      (routeName) => !chart.routeDestinations.has(routeName),
+    );
+
+    expect(withoutDestination, '行き先の型を名乗らない航路').toEqual(['route_to_shore']);
+  });
+
   it('辺の両端は、本土までの残り海区数が違う', () => {
     // **同じ数の海区どうしが繋がると、その辺は本土へ近づきも遠ざかりもしない**——航路の風の受け方
     // （voyage.yaml の sea_route）がどちらの条件にも当たらず、追い風でも向かい風でも横風と同じに
@@ -1470,21 +1482,32 @@ describe('筏と航海', () => {
   });
 
   it('押し流す先は、航路で繋がった隣の海区（追い風なら本土の側、向かい風なら島の側）', () => {
-    // **押し流す先は型の名前でしか書けない**ので、14個の海区が手で隣を名指ししている。取り違えは
-    // その海区で荒天に遭うまで表に出ないので、航路の辺から組み立てた隣と突き合わせる。
+    // **隣は海区が `zone_toward_*` に1度だけ書く**（6.9節）が、1箇所へ集まったことと、その1箇所が
+    // 正しいことは別。取り違えはその海区で荒天に遭うまで表に出ないので、航路の辺から組み立てた隣と
+    // 突き合わせる。
     //
     // 向きは**辺の側の事実で、残り海区数からは出せない**（遠回りの側の隣は自分より遠い）。だから
     // 見るのは3つ——隣の顔ぶれが辺と一致すること、本土の側と島の側が重なりなくそれを二分すること、
     // そして辺の両端が向きを反対に名乗ること。
+    //
+    // **卓そのものは sea_zone trait が1つだけ持つ**ので、海区が書き直していなければそちらを読む
+    // （分かれ道と合流点だけが、遠回りの側の1本を足すために書き直している）。行き先はプロパティ名で
+    // 書かれているので、そのプロパティが名乗る型まで辿って初めて隣の名前になる。
     const chart = readSeaChart();
-    const driftTargets = (zone: string, weightProp: string): readonly string[] => {
-      const candidates = nodeAt(chart.bodies.get(zone), 'props', 'storm_drift', 'on_max', 'pick');
-      expect(Array.isArray(candidates), `${zone}: 押し流しの卓がある`).toBe(true);
-      return (candidates as readonly unknown[])
-        .filter((candidate) => nodeAt(candidate, 'weight', 'prop') === weightProp)
-        .map((candidate) => nodeAt(candidate, 'move', 'to_object'))
-        .filter((name): name is string => typeof name === 'string');
+    const stormPick = (zone: string): readonly unknown[] => {
+      const own = nodeAt(chart.bodies.get(zone), 'props', 'storm_drift', 'on_max', 'pick');
+      const shared = nodeAt(chart.traitBodies.get('sea_zone'), 'props', 'storm_drift', 'on_max', 'pick');
+      const pick = Array.isArray(own) ? own : shared;
+      expect(Array.isArray(pick), `${zone}: 押し流しの卓がある`).toBe(true);
+      return pick as readonly unknown[];
     };
+    const driftTargets = (zone: string, weightProp: string): readonly string[] =>
+      stormPick(zone)
+        .filter((candidate) => nodeAt(candidate, 'weight', 'prop') === weightProp)
+        .map((candidate) => nodeAt(candidate, 'move', 'to_object', 'prop'))
+        .filter((prop): prop is string => typeof prop === 'string')
+        .map((prop) => objectValueAt(chart.bodies.get(zone), 'props', prop))
+        .filter((name): name is string => name !== undefined);
 
     const toMainland = new Map(
       chart.zones.map((zone) => [zone, driftTargets(zone, 'drift_to_mainland_weight')]),

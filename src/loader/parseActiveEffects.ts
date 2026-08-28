@@ -613,8 +613,11 @@ function parseObjectRef(
  *
  * - `X`: その場所が用意できる相手（対象キーか`{subject, prop}`、parseObjectRef）。
  * - `X_prop`: `self`が持つプロパティ名。その実効値をインスタンスIDとして解釈する。
- * - `X_object`: `object_defs`の識別子。世界にただ1つ在る型（`singleton`、15節）を名前で指す
- *   （singletonであることの検査は相手の型が揃ってからなので、WorldCodexが行う）。
+ * - `X_object`: 行き先の型。**スカラーなら`object_defs`の識別子そのもの、マップ（`{prop: ...}`）なら
+ *   型を値に持つ`self`のプロパティ**（6.9節）で、探し方はどちらも同じ（世界にただ1つ在る型を探す、
+ *   15節）。リテラルと参照の見分けがスカラーかマップかなのは`set`の値（9.2節）と同じ規約。
+ *   singletonであることの検査は、識別子を書いた側でのみ行える（プロパティの中身はWorldCodexが
+ *   宣言から辿るので、検査はその宣言の場所＝`props`が受け持つ）。
  *
  * どれも書かれていなければundefined（省略を許すかは呼び出し側が決める）。2つ以上はロード時エラー。
  */
@@ -627,9 +630,9 @@ function parseDestinationRef(
 ): ObjectRef | undefined {
   const refNode = tryGetNode(map, prefix);
   const propName = tryGetScalar(map, `${prefix}_prop`, context);
-  const objectName = tryGetScalar(map, `${prefix}_object`, context);
+  const objectNode = tryGetNode(map, `${prefix}_object`);
 
-  const given = [refNode, propName, objectName].filter((value) => value !== undefined);
+  const given = [refNode, propName, objectNode].filter((value) => value !== undefined);
   if (given.length > 1)
     throw new YamlLoadError(
       `${context}: ${prefix}・${prefix}_prop・${prefix}_objectのどれか1つで指定してください。`,
@@ -638,13 +641,24 @@ function parseDestinationRef(
 
   if (propName !== undefined)
     return ObjectRef.ofProperty(new PropertyPath('self', loader.propertyNames.intern(propName)));
-  if (objectName !== undefined) {
-    const objectGlobalId = loader.objectNames.intern(objectName);
-    loader.noteObjectDefDestination(objectGlobalId, `${context}.${prefix}_object`);
-    return ObjectRef.ofObjectDef(objectGlobalId);
-  }
+  if (objectNode !== undefined) return parseObjectDefRef(loader, `${context}.${prefix}_object`, objectNode);
 
   return parseObjectRef(loader, `${context}.${prefix}`, refNode!, scope);
+}
+
+/**
+ * 行き先の型（`to_object`/`into_object`）。スカラーは`object_defs`の識別子、`{prop: ...}`は
+ * 型を値に持つ`self`のプロパティ（6.9節）。
+ */
+function parseObjectDefRef(loader: WorldCodexYamlLoader, context: string, node: YamlNode): ObjectRef {
+  if (isMap(node)) {
+    requireKnownKeys(node, ['prop'], context);
+    return ObjectRef.ofObjectDefProperty(loader.propertyNames.intern(requireScalar(node, 'prop', context)));
+  }
+
+  const objectGlobalId = loader.objectNames.intern(asScalarText(node, context));
+  loader.noteObjectDefDestination(objectGlobalId, context);
+  return ObjectRef.ofObjectDef(objectGlobalId);
 }
 
 /**
