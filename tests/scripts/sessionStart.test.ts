@@ -44,6 +44,9 @@ function run(world: World): string {
   try {
     const dir = work.replace(/\\/g, '/');
     const tree = join(work, 'tree');
+    // 本体の身代わり。`.git` の実体が要る——フックは `--git-common-dir` から `..` を辿って本体へ
+    // 出るので、`cd` が実際に通らないといけない（Git Bash は `..` を字句で畳むが、Linux は畳まない）。
+    mkdirSync(join(work, 'main', '.git'), { recursive: true });
     mkdirSync(join(work, 'main', 'node_modules'), { recursive: true });
     mkdirSync(tree, { recursive: true });
     writeFileSync(join(tree, 'package-lock.json'), lock(world.want, world.optional), 'utf-8');

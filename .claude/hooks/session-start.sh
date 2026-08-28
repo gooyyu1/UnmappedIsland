@@ -44,7 +44,9 @@ command -v node >/dev/null || exit 0
 
 common=$(git rev-parse --git-common-dir 2>/dev/null) || exit 0
 [ -n "$common" ] || exit 0
-MAIN_DIR=$(cd "$common/.." && pwd)
+# ここは促すだけの経路なので、辿れなければ黙って降りる。**フックが落ちるとセッションが始まらない。**
+MAIN_DIR=$(cd "$common/.." 2>/dev/null && pwd) || exit 0
+[ -n "$MAIN_DIR" ] || exit 0
 [ "$MAIN_DIR" != "$REPO_DIR" ] || exit 0
 
 INSTALLED="$MAIN_DIR/node_modules/.package-lock.json"
