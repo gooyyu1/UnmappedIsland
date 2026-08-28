@@ -119,13 +119,13 @@ describe('探索と地図（世界→映し 通し）', () => {
     expect(others.length).toBeGreaterThan(0);
 
     expect(paths.map((card) => card.art)).toEqual(
-      paths.map((card) => new Path(card.objects[0], codex).destination?.def.name),
+      paths.map((card) => new Path(card.objects[0], codex).destination?.def.artName),
     );
     expect(
-      paths.some((card) => card.art !== game.startLocation.instance.def.name),
+      paths.some((card) => card.art !== game.startLocation.instance.def.artName),
       '行き先は今いる土地とは限らない',
     ).toBe(true);
-    expect(others.every((card) => card.art === card.objects[0].def.name)).toBe(true);
+    expect(others.every((card) => card.art === card.objects[0].def.artName)).toBe(true);
   });
 
   it('探索率は現在地の進捗を0〜1で表し、100%を超えない', () => {
@@ -215,8 +215,8 @@ describe('探索と地図（世界→映し 通し）', () => {
     for (const land of view.mapLands) {
       const instanceId = game.map.siteInstanceIds[land.site];
       expect(land.card.name).toBe(locale.locationName(game.map.nameOfInstance(instanceId)!));
-      expect(land.card.art, '絵は土地のobject_defの識別子で引く').toBe(
-        root.findSelfOrDescendantByInstanceId(instanceId)?.def.name,
+      expect(land.card.art, '絵は土地の型が名乗る絵の名前で引く').toBe(
+        root.findSelfOrDescendantByInstanceId(instanceId)?.def.artName,
       );
       expect(land.card.art).toBeDefined();
     }

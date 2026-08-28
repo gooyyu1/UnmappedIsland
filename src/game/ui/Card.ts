@@ -277,8 +277,11 @@ export interface CardContent {
   /** 1枚が映しているインスタンスの数。2以上のときだけ、右上に丸で囲んだ数字として出す。 */
   readonly count?: number;
   /**
-   * 絵を引くためのobject_defの識別子（objectArt参照）。その絵があれば枠の上に重ねて描き、
-   * 無ければiconの絵文字で代用する。
+   * 絵を引くための**絵の名前**（`ObjectDef.artName`・`WorldCodex.artNameOf`、objectArt参照）。その絵が
+   * あれば枠の上に重ねて描き、無ければiconの絵文字で代用する。
+   *
+   * **object_defの識別子ではない。** 1枚を共有する型（`art`、GameElementDefinition.md 4.3節）は識別子で
+   * 引くと在庫に無い鍵になり、絵を持たないものとして絵文字の代役へ落ちる。
    */
   readonly art?: string;
   /**

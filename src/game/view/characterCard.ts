@@ -1,8 +1,9 @@
+import type { WorldCodex } from '../../domain/WorldCodex';
 import type { Localization } from '../../locale/Localization';
 import type { CardContent } from '../ui/Card';
 
 /**
- * キャラクタの絵（`src/assets/objects/<識別子>.png`、objectArt.ts）が用意されるまでの代替アイコン。
+ * キャラクタの絵（`src/assets/objects/<絵の名前>.png`、objectArt.ts）が用意されるまでの代替アイコン。
  * 選択肢が絵無しで全部同じ姿になるのを避けるための繋ぎで、絵が入れば不要になる。
  *
  * 表に無いキャラクタが出ないことは tests/world-codex/charactersYaml.test.ts が見張る。
@@ -34,11 +35,15 @@ export function characterIcon(characterDefName: string): string {
  * 持たない姿**なので、値のバーも印も持たない（プレイ中のポートレイトはcardLooks.contentOfが作る）。
  * 絵が無いあいだ絵文字で代用するのはCard側の役目。
  */
-export function characterCardContent(characterDefName: string, locale: Localization): CardContent {
+export function characterCardContent(
+  codex: WorldCodex,
+  characterDefName: string,
+  locale: Localization,
+): CardContent {
   return {
     icon: characterIcon(characterDefName),
     name: locale.object(characterDefName).displayName,
-    art: characterDefName,
+    art: codex.artNameOf(characterDefName),
     kind: 'character',
   };
 }

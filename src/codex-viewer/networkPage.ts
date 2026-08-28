@@ -274,7 +274,7 @@ function objectNodeHtml(
   state: string,
 ): string {
   const { width, height } = OBJECT_NODE;
-  const url = ART_BY_NAME.get(view.artNameOf(objectName));
+  const url = ART_BY_NAME.get(view.codex.artNameOf(objectName));
   const artX = position.x + (width - ART_SIZE) / 2;
   const art =
     url === undefined

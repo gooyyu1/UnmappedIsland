@@ -14,7 +14,7 @@ export function escapeHtml(value: string): string {
 /**
  * 参照の行頭へ添える小さな絵。絵を持たない型では空文字を返す。
  *
- * 受け取るのは**絵の名前**（`CodexView.artNameOf`）であって型の識別子ではない。1枚を共有する型
+ * 受け取るのは**絵の名前**（`WorldCodex.artNameOf`）であって型の識別子ではない。1枚を共有する型
  * （`art`、4.3節）は識別子で引くと絵を持たない扱いになる。
  */
 export function inlineArtHtml(artName: string): string {

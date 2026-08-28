@@ -289,9 +289,10 @@ object_defs:
   it('現在地のカードは、その土地の絵を持つ', () => {
     const mini = setUp();
 
-    expect(viewOf(mini).currentLocationCard.art, '土地そのものもobject_defなので、絵は識別子で引ける').toBe(
-      mini.land.def.name,
-    );
+    expect(
+      viewOf(mini).currentLocationCard.art,
+      '土地そのものもobject_defなので、その型が名乗る絵の名前で引ける',
+    ).toBe(mini.land.def.artName);
   });
 
   it('手持ちが6枠とも埋まっていると、アイテムのmoveは何も起こさない', () => {

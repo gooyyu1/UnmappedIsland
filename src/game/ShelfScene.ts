@@ -117,6 +117,11 @@ export class ShelfScene extends ResponsiveScene {
   }
 
   private cardOf(name: string): CardContent {
-    return { icon: ARTIFACT_ICON, name: this.locale.object(name).displayName, art: name, kind: 'item' };
+    return {
+      icon: ARTIFACT_ICON,
+      name: this.locale.object(name).displayName,
+      art: this.codex.artNameOf(name),
+      kind: 'item',
+    };
   }
 }

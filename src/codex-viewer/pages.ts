@@ -205,7 +205,7 @@ function renderTagListPage(view: CodexView): string {
 /** タグの見出しに使う絵。そのタグを持つ型のうち、絵が用意されている最初のものを借りる。 */
 function tagArtHtml(view: CodexView, names: readonly string[]): string {
   const def = view.objectDef(
-    names.find((name) => ART_BY_NAME.has(view.artNameOf(name))) ?? names.at(0) ?? '',
+    names.find((name) => ART_BY_NAME.has(view.codex.artNameOf(name))) ?? names.at(0) ?? '',
   );
   return def === undefined
     ? '<span class="art art-thumb art-missing" aria-hidden="true"></span>'
@@ -445,7 +445,7 @@ export class SlotPage extends CodexPage {
  * 早く引けるが、表の1セルでは行が高くなる。
  */
 export function objectLinkHtml(view: CodexView, name: string, withArt = false): string {
-  const art = withArt ? inlineArtHtml(view.artNameOf(name)) : '';
+  const art = withArt ? inlineArtHtml(view.codex.artNameOf(name)) : '';
   return `<a href="${view.objectHref(name)}">${art}${escapeHtml(view.objectLabel(name))}</a>`;
 }
 
