@@ -26,6 +26,7 @@
 #   ここで必ず `task-<番号>` を付ける。
 # - `environment_id` は必須（この経路には呼び元が無いので継げない）。`permission_mode` は逆に
 #   渡してはいけない（親セッションを要求されて撥ねられる）。
+# - **閉じた issue へ立てると、空待ちになる。** 題を引くのと同じ `gh issue view` で `state` も見る。
 
 set -euo pipefail
 
@@ -51,14 +52,22 @@ trap 'rm -rf "$WORK"' EXIT
 
 # **日本語はシェル変数に載せない。** Windowsのnodeは argv も環境変数もANSIで受け取るので、題を
 # `$(...)` で渡すと黙って化ける。題も本文もファイル経由で node へ渡す。
-gh issue view "$ISSUE" --json title --jq '.title' >"$WORK/title.txt"
+gh issue view "$ISSUE" --json title,state >"$WORK/issue.json"
+
+# 閉じた issue へ立てると、セッションは「仕事は無い」と正しく判断して即終了する。PRが出ないので
+# `watch-prs.sh` には何も届かず、タイムアウトまでの空待ちになる。
+state=$(jq -r '.state' "$WORK/issue.json")
+[ "$state" = "OPEN" ] || {
+  echo "issue #$ISSUE は開いていない（state=$state）。投入しない。" >&2
+  exit 1
+}
 
 node -e '
   const fs = require("node:fs");
-  const [titlePath, promptPath, issue, envId, repoUrl] = process.argv.slice(1);
+  const [issuePath, promptPath, issue, envId, repoUrl] = process.argv.slice(1);
   const args = {
     environment_id: envId,
-    title: `${fs.readFileSync(titlePath, "utf8").trim()} (#${issue})`,
+    title: `${JSON.parse(fs.readFileSync(issuePath, "utf8")).title.trim()} (#${issue})`,
     prompt: fs.readFileSync(promptPath, "utf8"),
     tags: [`task-${issue}`],
   };
@@ -67,7 +76,7 @@ node -e '
     args.source_revision = "main";
   }
   process.stdout.write(JSON.stringify(args));
-' "$WORK/title.txt" "$INSTRUCTION" "$ISSUE" \
+' "$WORK/issue.json" "$INSTRUCTION" "$ISSUE" \
   "$([ "$WHERE" = "--bridge" ] && echo "$BRIDGE_ENV" || echo "$CLOUD_ENV")" \
   "$([ "$WHERE" = "--bridge" ] || echo "$REPO_URL")" >"$WORK/args.json"
 
