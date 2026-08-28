@@ -42,13 +42,6 @@ const PROVISIONAL_LABELS = ['【未確定】', '【暫定】'];
 /** 「いつか実装したいもの」の実体の一覧（DocumentStyle.md 4.1節）。 */
 const SOMEDAY_DOC = join('docs', 'Someday.md');
 
-/**
- * 実装は名前だけを知っていて、意味は解釈しない識別子。剥がし忘れの疑いから外す——ローダーは
- * 未知キーを綴り間違いとして弾くので、**解釈しないキーこそ名前で並べる必要がある**
- * （RawDeclarationBody）。名前が現れることと実装されていることは別。
- */
-const NAMED_BUT_UNINTERPRETED = ['covers', 'layer'];
-
 /** 参照を検査する対象。ドキュメント自身と、節番号でドキュメントを指すコード・データ。 */
 const REF_FILES = [
   ...DOC_FILES,
@@ -250,9 +243,7 @@ describe('ドキュメントの参照', () => {
       ),
       ...listFiles('src', ['.yaml']).map((rel) => read(rel).replace(/#.*$/gm, '')),
     ].join('\n');
-    const stale = labels
-      .filter(({ ident }) => !NAMED_BUT_UNINTERPRETED.includes(ident))
-      .filter(({ ident }) => new RegExp(`\\b${ident}\\b`).test(sources));
+    const stale = labels.filter(({ ident }) => new RegExp(`\\b${ident}\\b`).test(sources));
     expect(
       stale,
       `実装済みの疑いがある【未実装】ラベル（ドキュメント側の剥がし忘れ？）:\n` +

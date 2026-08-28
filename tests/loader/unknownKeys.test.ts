@@ -96,7 +96,7 @@ object_defs:
     });
   });
 
-  it('covers・layerは、ローダーが解釈しないまま素通しする（文法として文書化済み）', () => {
+  it('covers・layerは、traitにもobject_defにも書ける（7.5節）', () => {
     expect(() =>
       load(`
 traits:
