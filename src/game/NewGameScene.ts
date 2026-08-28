@@ -5,6 +5,7 @@ import type { WorldCodex } from '../domain/WorldCodex';
 import type { Localization } from '../locale/Localization';
 import { characterDefNames } from '../domain/generation/NewGame';
 import { randomRng } from '../domain/Rng';
+import { initialSeed } from './launchSeed';
 import { ISLAND_NAME_MAX_LENGTH, SEED_MAX } from '../save/SaveData';
 import { SaveSlots } from '../save/SaveSlots';
 import {
@@ -97,7 +98,7 @@ export class NewGameScene extends ResponsiveScene {
     this.slotIndex = data.slotIndex;
     this.islandName = '';
     this.characterDefName = undefined;
-    this.seedText = String(randomSeed(randomRng()));
+    this.seedText = String(initialSeed(randomRng()));
   }
 
   protected build(): void {
