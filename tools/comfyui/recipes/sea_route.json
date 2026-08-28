@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "src/assets/objects/sea_route.png を作り直すためのレシピ。build.py が読む。",
+    "16本の航路が共有する1枚（GameElementDefinition.md 4.3節）。",
+    "",
+    "**2段で作る。** SDXLには何も無い凪いだ海だけを描かせ、渡る筋はQwenが描き足す。筋そのものを",
+    "SDXLへ頼む言い方は travel_cards.json の _note のとおり通らなかった。source を書かない edit は",
+    "同じレシピの生成を下絵にする（README「既存の絵からの派生」節）。",
+    "",
+    "設定の意味は sandy_beach.json を参照。辺の札も土地と同じ作りで出す（札の全面を使う絵）。"
+  ],
+  "output": "src/assets/objects/sea_route.png",
+  "prompts": "travel_cards.json",
+  "prompt": "sea_route",
+  "workflow": "lane_background_sdxl.api.json",
+  "lora": "watercolor_sdxl.safetensors",
+  "loraStrength": 0.8,
+  "noTrigger": true,
+  "seed": 70903,
+  "width": 832,
+  "height": 1280,
+  "edit": {
+    "prompt": "Keep this seascape exactly as it is: the same water, the same colours, the same small ripples, the same horizon in the same place, the same pale sky, painted in the same soft hand painted style. Now paint one narrow calm lane of water crossing it, as if a way had been opened across the sea. The lane runs from the bottom edge of the picture straight up to the horizon in the middle, and it is narrow: about a quarter of the width of the picture where it meets the bottom edge, narrowing steadily with distance until it is only a thread at the horizon. Inside the lane the water is still water, with the same small ripples as everywhere else, only quieter and a little paler. A thin ragged line of pale white foam bubbles marks each of its two long edges all the way along. The water outside the lane keeps its ripples exactly as before. Do not paint the lane as a flat blank surface, do not part the sea into a road, do not add any boat, raft, ship, jetty, land, rock or bird, do not change the sky, and do not move the horizon. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "card",
+    "mode": "none"
+  }
+}
