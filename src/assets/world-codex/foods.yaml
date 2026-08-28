@@ -17,11 +17,18 @@
 #
 # 食べ物は他のファイル（coconut.yaml・fiber.yaml・animals.yaml）にも居るので、そこからも参照する。
 #
+# 塩蔵（保存の段4、salt.yaml）は`cure`軸として食べ物の側が名乗る。軸を宣言した型にだけ塩を重ねられ、
+# 重ねると同じ個体が塩漬けの版になる（3.5.1節）。**軸を持つのは生のままの物だけ**——焼くのは食べる
+# ための工程なので、焼いた物を保たせる形（塩漬けの焼き芋）は作らない。
+#
 # 傷んだ物を食べたときの吐き下しは、各eatの末尾のpickが引く（docs/engine/DigestionSystem.md 6節）。
 # 重みは「無事100 : 吐く spoilage : 下す spoilage」の3つで、**pickはaddより後ろに置く**——腹に
 # 収めてから吐くので、順が逆だと吐いた後に食べたことになる（GameElementDefinition.md 9.7節）。
 traits:
   perishable:
+    # 腐る物であること。塩（salt.yaml）が重ねる相手を指すのに使う。**食べられるかとは別**なので
+    # foodタグとは重ならない——生のヤシガニは食べられないが腐る。
+    tags: [perishable]
     props:
       # 尽きると食べられなくなるので、満タン側がgood（CardView.md 8節）。上限は種類によらず960
       # （DurabilitySystem.md 1節）。
@@ -59,20 +66,29 @@ traits:
           self:
             durability: -1
 
+  # 生のままの速さ。3つとも**塩蔵されていない間だけ**効く（curedタグ、salt.yaml）——塩蔵した物が
+  # どれだけ保つかは加工の側が1箇所で名乗るので、ここで打ち消す量を書くことにはならない。
+  #
   # 調理済み料理・生魚など。通常温度で2.5日（屋外なら2日）。
   spoils_fast:
     passives:
-      - add: {self: {durability: -4}}
+      - conditions:
+          - not: {subject: self, matches: {tag: cured}}
+        add: {self: {durability: -4}}
 
   # 野菜など。通常温度で5日（屋外なら3.3日）。
   spoils_normal:
     passives:
-      - add: {self: {durability: -2}}
+      - conditions:
+          - not: {subject: self, matches: {tag: cured}}
+        add: {self: {durability: -2}}
 
   # 芋など。通常温度で20日（屋外なら6.7日）。
   spoils_slow:
     passives:
-      - add: {self: {durability: -0.5}}
+      - conditions:
+          - not: {subject: self, matches: {tag: cured}}
+        add: {self: {durability: -0.5}}
 
 object_defs:
   # 空心菜（クウシンサイ）。熱帯の水辺に自生する、採取しやすい葉物野菜。
@@ -88,6 +104,9 @@ object_defs:
       plant_bait: {value: 8}
       # 葉物の束も詰めて縮まないので、嵩そのままで見る。
       volume: {value: 3000}
+    # 塩漬けにできる（salt.yaml）。漬けた葉物は5日から20日へ延びる。
+    variation_axes:
+      cure: {of: {tag: cured}}
     interactions:
       eat:
         trigger: menu
@@ -133,6 +152,10 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: roasted_coconut_crab}
+    # 塩漬けにできる（salt.yaml）。2.5日しか保たない生の甲殻が20日保つようになる——**焼くのは
+    # 食べる直前**という順序が、これで初めて選べるようになる（焼いてから漬けることはできない）。
+    variation_axes:
+      cure: {of: {tag: cured}}
 
   # 丸焼きのヤシガニ。殻が器になるので、割って身を掻き出して食べる。
   roasted_coconut_crab:
@@ -193,6 +216,11 @@ object_defs:
         on_max:
           destroy: self
           spawn: {object: roasted_taro}
+    # 塩漬けにできる（salt.yaml）。**元から20日保つので、漬けても速さは変わらない**——それでも
+    # 軸を持つのは、漬かるかどうかを食材の種類で選り分けないため。塩を使う意味が無いことは、
+    # 遊ぶ側が値を見て決められる。
+    variation_axes:
+      cure: {of: {tag: cured}}
 
   # 焼いたタロイモ。芯まで火が通って、初めて食べられる。
   roasted_taro:
