@@ -9,9 +9,12 @@
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
 #   ARCHIVED <セッションID>         … そのPRを出したCCRセッションを畳んだ
+#   SYNCED   <コミット>             … 本体のチェックアウトを新しい `main` へ進めた
+#   INSTALLED                       … 依存が変わったので本体で `npm install` した
+#   DIRTY    <本体のパス>           … 本体に未コミットの変更があるので触らなかった
 #   終了コード 0 … すべて片付いた
 #   終了コード 1 … マージできなかった（何もしていない）
-#   終了コード 2 … マージはしたが、後片付けに残りがある（上の `OPEN` など）
+#   終了コード 2 … マージはしたが、後片付けに残りがある（上の `OPEN`・`DIRTY`）
 #
 # ## 畳んだのは、毎回同じ順で叩いていた5つ
 #
@@ -29,6 +32,20 @@
 #
 # ローカルに `main` の worktree があると `fatal: 'main' is already used by worktree at ...` を吐くが、
 # **リモートのマージとブランチ削除は成功している**。毎回 `grep -v` で潰していたので、ここへ入れる。
+#
+# ## 本体を追随させるのは、ここでしかできないから
+#
+# 作業ツリーは `<repo>/.claude/worktrees/` に置かれる。**リポジトリの中なので、Node も npm も親を
+# 遡って本体の `node_modules` を見つけ、そのまま共有する。** 本体のチェックアウトが古いと、
+# 共有しているのに版が食い違う——`Cannot find module` にはならず、**古い版が解決されて一部だけ
+# 壊れる**（本体が `ajv` 8 を持たず eslint 由来の 6 だけ在り、テスト1本が落ちた実例がある）。
+#
+# 誰も本体では作業しないので、本体が自分から追いつくことはない。**`main` が動くのはマージの瞬間で、
+# それを起こしているのがこのスクリプト**だから、ここで一緒に進める。
+#
+# 本体でブランチは持たない（detached HEAD）。`main` は同時に2箇所へチェックアウトできず、本体が
+# 握ると作業ツリーが作れなくなる。detached は「固定」ではなく、ブランチ名を挟まずにコミットを
+# 直接指す形で、マージのたびに指す先を新しい `main` へ付け替える。
 
 set -euo pipefail
 
@@ -80,5 +97,25 @@ while read -r session; do
   printf '{"session_id":"%s"}' "$session" | bash "$CCR_META" archive_session >/dev/null
   echo "ARCHIVED $session"
 done < <(grep -o 'session_[A-Za-z0-9]*' <<<"$body" | sort -u)
+
+# 本体は作業ツリーの共有先なので、進める前に汚れていないことを見る。未追跡は見ない——本体には
+# `claude_rc.bat` のような、追跡していない持ち物が置いてある。
+main_dir="$(cd "$HERE" && cd "$(git rev-parse --git-common-dir)/.." && pwd)"
+if [ -n "$(git -C "$main_dir" status --porcelain --untracked-files=no)" ]; then
+  echo "DIRTY $main_dir"
+  leftover=1
+else
+  before=$(git -C "$main_dir" rev-parse HEAD:package-lock.json)
+  git -C "$main_dir" fetch --quiet origin main
+  git -C "$main_dir" checkout --quiet --detach origin/main
+  echo "SYNCED $(git -C "$main_dir" rev-parse --short HEAD)"
+  # 依存が変わったときだけ入れ直す。`npm install` の最中は共有先が揺れるので、毎回は打たない
+  # （直近30日で `package-lock.json` を触ったコミットは1572件中3件）。
+  if [ "$before" != "$(git -C "$main_dir" rev-parse HEAD:package-lock.json)" ] ||
+    [ ! -e "$main_dir/node_modules/.package-lock.json" ]; then
+    (cd "$main_dir" && npm install --no-fund --no-audit)
+    echo "INSTALLED"
+  fi
+fi
 
 exit "$([ "$leftover" -eq 0 ] && echo 0 || echo 2)"
