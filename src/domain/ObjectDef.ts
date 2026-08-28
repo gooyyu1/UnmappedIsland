@@ -13,6 +13,7 @@ import type { PropertyDef } from './PropertyDef';
 import type { RecipeDef } from './RecipeDef';
 import type { Placement, SlotDef } from './SlotDef';
 import type { StackOrderDef } from './StackOrderDef';
+import type { WornCoverage } from './WornCoverage';
 
 /**
  * 型定義（`object_defs` の1エントリ、4節）。ロード完了後は不変として扱う。
@@ -107,6 +108,12 @@ export class ObjectDef {
   readonly stackable: boolean;
 
   /**
+   * **身につけたときに占める場所**（`covers` / `layer`、7.5節）。宣言が無ければundefinedで、
+   * 何着でも重ねられる（部位を持たない物は誰の場所も奪わない）。
+   */
+  readonly wornCoverage: WornCoverage | undefined;
+
+  /**
    * このObjectDefが宣言している操作のきっかけ（11節・12節）。宣言順で、種類は混ざっている
    * ——ページに並べるときと名前で引くときだけ、この並びを見る。
    */
@@ -141,6 +148,7 @@ export class ObjectDef {
     isStorage = false,
     isInProgress = false,
     resists?: ConditionNode,
+    wornCoverage?: WornCoverage,
   ) {
     this.globalId = globalId;
     this.name = name;
@@ -171,6 +179,7 @@ export class ObjectDef {
     this.visibleSlotGlobalIds = visibleSlotGlobalIds;
     this.isStorage = isStorage;
     this.isInProgress = isInProgress;
+    this.wornCoverage = wornCoverage;
 
     // 段のartを宣言できるのはart_by_stageが指すプロパティだけ（1オブジェクト1絵の原則、6.4節）。
     // 他のプロパティの段が黙って無視されるのを避けるため、組み立てた時点で弾く。

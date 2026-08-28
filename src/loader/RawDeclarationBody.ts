@@ -12,10 +12,7 @@ import {
 } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 
-/**
- * 宣言一式そのものが読むキー。`covers`/`layer`はローダーが解釈しないが文法として文書化済みなので、
- * 未知キーにはしない（RawObjectDef.resolve参照）。
- */
+/** 宣言一式そのものが読むキー。 */
 const KNOWN_BODY_KEYS = [
   'tags',
   'props',
@@ -74,6 +71,12 @@ export class RawDeclarationBody {
 
   interactions: YAMLMap | undefined;
 
+  /** covers（7.5節）。身につけたとき覆う部位のタグ名。未宣言なら空。 */
+  covers: readonly string[] = [];
+
+  /** layer（7.5節）。重ね着の階層の名前。未宣言ならundefined。 */
+  layer: string | undefined;
+
   /**
    * 宣言から各フィールドを取り直す。**読む側はここ1箇所**で、object_def と trait で分かれない。
    * 未知キーの判定も宣言全体に対してここで行うので、持ち主は自分で読むキー（object_defの素性など）を
@@ -96,6 +99,8 @@ export class RawDeclarationBody {
     this.resists = tryGetSeq(node, 'resists', context);
     this.notStackable = !(tryGetBool(node, 'stackable', context) ?? true);
     this.interactions = tryGetMap(node, 'interactions', context);
+    this.covers = namesIn(tryGetSeq(node, 'covers', context), `${context}.covers`);
+    this.layer = tryGetScalar(node, 'layer', context);
   }
 
   /**
@@ -103,9 +108,9 @@ export class RawDeclarationBody {
    *
    * - props/slots/interactions: 同名エントリが複数のtraitにあればエラー。自分自身が
    *   同名を持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。
-   * - passives・tags・visible_slots: 識別子で突き合わせようがないので、trait由来→自分自身の順に連結。
+   * - passives・tags・visible_slots・covers: 識別子で突き合わせようがないので、trait由来→自分自身の順に連結。
    *   **並びが表示順**（visible_slots）なので、混ぜる順序そのものに意味がある。
-   * - stack_order/art_by_stage/resists: 自分自身の指定を優先。無ければちょうど1つのtraitが指定して
+   * - stack_order/art_by_stage/resists/layer: 自分自身の指定を優先。無ければちょうど1つのtraitが指定して
    *   いること。`resists`の並びは暗黙のANDで結ばれた1つの条件木なので、連結すると書いた覚えのない
    *   合わせ技になる——どれが効くかを混ぜる順序に頼らせない。
    * - 真偽値: 重複エラーにせずORで合成する（tagsと同じ扱い）。
@@ -133,6 +138,7 @@ export class RawDeclarationBody {
     result.passives = [...traits.flatMap(([, body]) => body.passives), ...this.passives];
     result.tags = [...traits.flatMap(([, body]) => body.tags), ...this.tags];
     result.visibleSlots = [...traits.flatMap(([, body]) => body.visibleSlots), ...this.visibleSlots];
+    result.covers = [...traits.flatMap(([, body]) => body.covers), ...this.covers];
 
     result.isStorage = this.isStorage || traits.some(([, body]) => body.isStorage);
     result.boundToOwner = this.boundToOwner || traits.some(([, body]) => body.boundToOwner);
@@ -158,6 +164,13 @@ export class RawDeclarationBody {
         traits.map(([name, body]) => [name, body.resists] as const),
         ownerName,
         'resists',
+      );
+    result.layer =
+      this.layer ??
+      onlyDeclaration(
+        traits.map(([name, body]) => [name, body.layer] as const),
+        ownerName,
+        'layer',
       );
 
     return result;
