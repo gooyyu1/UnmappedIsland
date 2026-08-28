@@ -9,7 +9,9 @@ name: Regenerate stats
 # （数値を触ったときの影響を差分で読む。`generatedReport.ts` の説明を参照）なので、PRから
 # 追い出すとその検査が消える。ここが直すのは「2本が混ざったときだけ古くなる」ぶん。
 #
-# 気候表（`stats/climate.yaml`）は入れていない——生成に分単位かかり、そもそも鮮度検査が無い（#1009）。
+# 気候表（`stats/climate.yaml`）にとっては、ここが丸ごとの突き合わせを持つ唯一の場所でもある。
+# `npm test` は入力の指紋と静的に解ける節しか見ない（再生成の1分強で `npm test` 全体が3倍以上に
+# なるため）ので、シミュレーションのコードを変えて古くなったぶんは、ここでしか現れない。
 on:
   push:
     branches:
@@ -50,6 +52,7 @@ jobs:
           npm run stats:balance
           npm run stats:terrain
           npm run stats:startup
+          npm run stats:climate
 
       - name: Check for drift
         id: drift
