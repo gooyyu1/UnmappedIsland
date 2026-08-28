@@ -266,6 +266,19 @@ export class WorldCodex {
   }
 
   /**
+   * その識別子の型が名乗る絵の名前（`art`、4.3節。宣言が無ければ識別子そのもの、ObjectDef.artName）。
+   * 登録の無い識別子でも識別子をそのまま返す——絵の在庫に無ければどのみち絵は出ない。
+   *
+   * **絵を引く鍵はこれであって識別子ではない。** 識別子で引くと、1枚を共有している型が絵を持たない
+   * 扱いになる。
+   */
+  artNameOf(objectName: string): string {
+    const globalId = this.objectNames.tryGetId(objectName);
+    if (globalId === undefined) return objectName;
+    return this.objects.tryGet(globalId)?.artName ?? objectName;
+  }
+
+  /**
    * タグ（4.1節）を持つobject_defの識別子を、宣言順（グローバルID順）で返す。誰も持たないタグでは空。
    * タグは型のグループを指す唯一の手段なので、「locationな型の一覧」「選べるキャラクタの一覧」は
    * いずれもこれで引く。

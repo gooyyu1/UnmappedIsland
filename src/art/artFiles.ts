@@ -20,15 +20,19 @@ export interface ArtFile {
 /**
  * 土地カードの絵（1枚。用意されていなければ空）。道のカードが行き先の絵としても使うため、
  * 未発見の道の行き先ぶんはこれだけを先に読む（LocationArtLoader.requestCardArt）。
+ *
+ * **土地は識別子で指し、絵はその型が名乗る名前で引く**（WorldCodex.artNameOf）。識別子で引くと、
+ * 1枚を共有している土地の絵が土地のぶんから漏れ、起動時に読まれてしまう。
  */
-export function locationCardArtFiles(location: string): readonly ArtFile[] {
-  const url = ART_BY_NAME.get(location);
-  return url === undefined ? [] : [{ key: objectTexture(location), url }];
+export function locationCardArtFiles(codex: WorldCodex, location: string): readonly ArtFile[] {
+  const artName = codex.artNameOf(location);
+  const url = ART_BY_NAME.get(artName);
+  return url === undefined ? [] : [{ key: objectTexture(artName), url }];
 }
 
 /** 1つの土地に紐づく絵（用意されているものだけ。絵が1枚も無い土地では空）。 */
-export function locationArtFiles(location: string): readonly ArtFile[] {
-  const files: ArtFile[] = [...locationCardArtFiles(location)];
+export function locationArtFiles(codex: WorldCodex, location: string): readonly ArtFile[] {
+  const files: ArtFile[] = [...locationCardArtFiles(codex, location)];
   for (const key of backgroundTexturesOf(location)) {
     const backgroundUrl = BACKGROUND_ART.get(key);
     if (backgroundUrl !== undefined) files.push({ key, url: backgroundUrl });
@@ -37,8 +41,8 @@ export function locationArtFiles(location: string): readonly ArtFile[] {
 }
 
 /** どの土地にも紐づかない、起動時に読み切る絵（キャラクター・アイテム・共通の背景）。 */
-export function commonArtFiles(locations: readonly string[]): readonly ArtFile[] {
-  const locationKeys = new Set(locations.flatMap((l) => locationArtFiles(l).map((file) => file.key)));
+export function commonArtFiles(codex: WorldCodex, locations: readonly string[]): readonly ArtFile[] {
+  const locationKeys = new Set(locations.flatMap((l) => locationArtFiles(codex, l).map((file) => file.key)));
   const files: ArtFile[] = [];
   for (const [name, url] of ART_BY_NAME) {
     const key = objectTexture(name);

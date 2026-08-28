@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import type { ArtFile } from '../../art/artFiles';
 import { locationArtFiles, locationCardArtFiles } from '../../art/artFiles';
+import type { WorldCodex } from '../../domain/WorldCodex';
 
 /**
  * 土地の絵の遅延ロード。起動時にはロードされない土地の絵（artFiles参照）を、プレイ中に
@@ -12,6 +13,9 @@ import { locationArtFiles, locationCardArtFiles } from '../../art/artFiles';
  */
 export class LocationArtLoader {
   private readonly scene: Phaser.Scene;
+
+  /** 土地の識別子から絵の名前を引くために持つ（artFiles）。 */
+  private readonly codex: WorldCodex;
 
   /** ロードを頼んだが、まだ完了も失敗もしていないテクスチャキー。 */
   private readonly inFlight = new Set<string>();
@@ -27,8 +31,9 @@ export class LocationArtLoader {
 
   private readonly waiters: { location: string; onLoaded: () => void }[] = [];
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, codex: WorldCodex) {
     this.scene = scene;
+    this.codex = codex;
     scene.load.on(Phaser.Loader.Events.FILE_COMPLETE, (key: string) => this.onFileSettled(key));
     scene.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, (file: Phaser.Loader.File) => {
       this.failed.add(file.key);
@@ -39,7 +44,7 @@ export class LocationArtLoader {
 
   /** その土地の絵のうち未ロードのものを読み始める（冪等）。 */
   request(location: string): void {
-    this.load(locationArtFiles(location));
+    this.load(locationArtFiles(this.codex, location));
   }
 
   /**
@@ -47,7 +52,7 @@ export class LocationArtLoader {
    * 発見と同時に行き先の絵で現れるため、発見してからでは間に合わない。背景はまだ読まない。
    */
   requestCardArt(location: string): void {
-    this.load(locationCardArtFiles(location));
+    this.load(locationCardArtFiles(this.codex, location));
   }
 
   private load(files: readonly ArtFile[]): void {
@@ -69,7 +74,7 @@ export class LocationArtLoader {
 
   /** その土地の絵がすべて届いているか（失敗した絵は待っても来ないので届いた扱い）。 */
   loaded(location: string): boolean {
-    return locationArtFiles(location).every(
+    return locationArtFiles(this.codex, location).every(
       ({ key }) => this.scene.textures.exists(key) || this.failed.has(key),
     );
   }
