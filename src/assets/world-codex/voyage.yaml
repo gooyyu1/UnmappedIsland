@@ -43,9 +43,9 @@ traits:
   # ——浮かんでいるものを押す海流、浮いていることの配布、そしてここを渡るのにかかる時間。
   #
   # **8種類の顔ぶれ（ContentSkeleton.md 7節）は、この trait が持つ1つの見張りの卓と、その重みの
-  # 配り方だけで表す。** 顔ぶれごとの型もタグも持たない。海区ごとに違うのは crossing_minutes と、
-  # 本土までの残り海区数（zones_to_mainland。鎖のどこに居るか）と、見張り何回で航路が現れるか
-  # （exploration_progress の range.max）と、下のつまみの重みの4つ。
+  # 配り方だけで表す。** 顔ぶれごとの型もタグも持たない。海区ごとに違うのは本土までの残り海区数
+  # （zones_to_mainland。鎖のどこに居るか）と、見張り何回で航路が現れるか（exploration_progress の
+  # range.max）と、下のつまみの重みの3つ。
   sea_zone:
     tags: [sea]
     # **海は物を置ける場所ではない**（GameEndings.md 12.7節）ので、location が配る items を落とす
@@ -53,11 +53,16 @@ traits:
     # 設置物（航路・魚の群れ・小島）は fixtures に立つので、落ちるのは拾い物の行き先だけ。
     remove_slots: [items]
     props:
-      # この海区から次の海区へ渡るのにかかる時間（分）。**素の値は海区ごと**（距離）で、そこから
-      # 筏の sail_speed の段が引く（筏の sail_speed 参照）。風・海流・積載・帆はすべてそこへ集まる
-      # ので、ここに書くのは海区の側の事情だけになる。下限は、どれだけ条件が良くても渡り切るのに
-      # 要る時間。
+      # この海区から次の海区へ渡るのにかかる時間（分）。**素の値はどの海区も同じ**なので、海区ごと
+      # ではなくここで1度だけ言う。そこから筏の sail_speed の段が引く（筏の sail_speed 参照）。
+      # 風・海流・積載・帆はすべてそこへ集まるので、ここに書くのは海区の側の事情だけになる。
+      # range の下限は、寄与がどれだけ重なっても横断時間が消えないための底（最も良い条件でも240分）。
+      #
+      # **揃っていることが、推定日数（GameEndings.md 9.3節）の立つ条件。** 海図が持つのは残りの
+      # 海区数だけ（同12.6節）なので、日数はこれから渡る1区間の時間で全区間を代表して出すしかなく、
+      # 海区ごとに違えば、最も遠い出航地点が最も短く見える。**距離の差は残りの海区数だけで表す。**
       crossing_minutes:
+        value: 360
         range: {min: 120, max: 900}
 
       # その海区から本土まで、その海区を含めて何区間あるか。**海図ではなく海の側の事実**なので
@@ -660,14 +665,14 @@ object_defs:
   # ------------------------------------------------------------------
   # 海区（GameEndings.md 12節）。島と本土の間の海を、8種類の顔ぶれ（ContentSkeleton.md 7節）から
   # 配った14個の連なりとして持つ。海区そのものの作りは sea_zone trait（このファイルの先頭）が
-  # 持ち、ここが書くのは海区ごとに違う4つだけ——渡るのにかかる時間・本土までの残り海区数・見張り
-  # 何回で航路が現れるか・見張りの卓の重み（＝その海区の顔ぶれ）。
+  # 持ち、ここが書くのは海区ごとに違う3つだけ——本土までの残り海区数・見張り何回で航路が現れるか・
+  # 見張りの卓の重み（＝その海区の顔ぶれ）。**渡るのにかかる時間は揃っている**（sea_zone trait）。
   #
   # **明るさはどの海区も0**（遮るものが何も無いので、空の明るさがそのまま届く、
   # IlluminationSystem.md 2節）。location trait が値を持たないので、海区ごとに名乗る。
   #
-  # 並びは1本の鎖で、分岐はまだ無い。**最短の航路（空の海）が最も実りが薄く**、実りの濃い海区ほど
-  # 渡るのに時間がかかる（GameEndings.md 12.1節）。
+  # 並びは1本の鎖で、分岐はまだ無い。**実りの濃淡は見張りの卓の重みだけで表す**（GameEndings.md
+  # 12.1節）——渡る時間はどの海区も同じなので、濃い海区を「渡るのに時間がかかる」形では表せない。
   #
   # **on_max が湧かせるのは辺1本の両端**——この海区に立つ「次の海区への航路」と、次の海区に立つ
   # 「この海区への航路」（同12.5節）。地上の道が辺1本につき両端へ1個ずつ置く（`IslandSpawner`）のと
@@ -696,7 +701,6 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 240}
       zones_to_mainland: {value: 14}
       driftwood_find: {value: 30}
       seaweed_find: {value: 25}
@@ -712,13 +716,12 @@ object_defs:
             - {object: route_to_kelp_belt, into: self}
             - {object: route_to_coastal_waters, into_object: kelp_belt}
 
-  # 海藻の帯。絡む海藻で進みが遅く、そのぶん帯そのものが目印になる。
+  # 海藻の帯。帯そのものが目印になり、掬えば海藻が採れる。
   kelp_belt:
     singleton: true
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 600}
       zones_to_mainland: {value: 13}
       seaweed_find: {value: 55}
       barren_find: {value: 45}
@@ -738,7 +741,6 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 420}
       zones_to_mainland: {value: 12}
       shoal_find: {value: 80}
       barren_find: {value: 20}
@@ -758,7 +760,6 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 420}
       zones_to_mainland: {value: 11}
       flotsam_find: {value: 35}
       shoal_find: {value: 20}
@@ -779,7 +780,6 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 360}
       zones_to_mainland: {value: 10}
       egg_find: {value: 35}
       seabird_find: {value: 20}
@@ -801,7 +801,6 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 300}
       zones_to_mainland: {value: 9}
       barren_find: {value: 100}
       exploration_progress:
@@ -822,7 +821,6 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 240}
       zones_to_mainland: {value: 8}
       barren_find: {value: 100}
       exploration_progress:
@@ -841,7 +839,6 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 300}
       zones_to_mainland: {value: 7}
       # 1周回に0〜1個（ContentSkeleton.md 7節）。見張り4回で当たるのは2割ほど。
       wreck_find: {value: 5}
@@ -863,7 +860,6 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 240}
       zones_to_mainland: {value: 6}
       barren_find: {value: 100}
       exploration_progress:
@@ -882,7 +878,6 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 420}
       zones_to_mainland: {value: 5}
       shoal_find: {value: 80}
       barren_find: {value: 20}
@@ -902,7 +897,6 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 420}
       zones_to_mainland: {value: 4}
       flotsam_find: {value: 35}
       shoal_find: {value: 20}
@@ -923,7 +917,6 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 600}
       zones_to_mainland: {value: 3}
       seaweed_find: {value: 55}
       barren_find: {value: 45}
@@ -943,7 +936,6 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 360}
       zones_to_mainland: {value: 2}
       egg_find: {value: 35}
       seabird_find: {value: 20}
@@ -965,7 +957,6 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      crossing_minutes: {value: 240}
       zones_to_mainland: {value: 1}
       driftwood_find: {value: 30}
       seaweed_find: {value: 25}

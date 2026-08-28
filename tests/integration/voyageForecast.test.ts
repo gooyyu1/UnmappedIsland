@@ -55,6 +55,137 @@ describe('推定日数', () => {
     return item;
   }
 
+  /** 世界に在る海区（渡るのにかかる時間を持つ場所、Voyage.md 3.2節）すべて。 */
+  function seaZones(game: StartedGame): readonly WorldObject[] {
+    const crossingId = codex.propertyNames.getId('crossing_minutes');
+    return [...game.world.instance.descendants()].filter(
+      (object) => object.tryGetProperty(crossingId) !== undefined,
+    );
+  }
+
+  function zoneOf(game: StartedGame, name: string): WorldObject {
+    const zone = game.world.instance.findSelfOrDescendantOfDef(codex.objectNames.getId(name));
+    if (zone === undefined) throw new Error(`海区 ${name} がありません。`);
+    return zone;
+  }
+
+  /** 筏をその海岸へ繋ぎ直す。 */
+  function mooredAt(game: StartedGame, raft: WorldObject, coastName: string): void {
+    const coast = game.session.createObject(codex.objectNames.getId(coastName));
+    const fixtures = coast.getSlot(codex.slotNames.getId('fixtures'));
+    expect(raft.moveToSlotOrRejection(fixtures), `${coastName}へ繋げる`).toBeUndefined();
+  }
+
+  /**
+   * その海区から本土まで、実際にかかる分数の合計。**筏を1海区ずつ実際に浮かべて、その海区の
+   * `crossing_minutes` の実効値を読む**——見積もりと同じ式をここへ書き写すと、写した式どうしが
+   * 合っていることしか確かめられない。
+   */
+  function minutesToMainland(game: StartedGame, raft: WorldObject, departure: WorldObject): number {
+    const remainingId = codex.propertyNames.getId('zones_to_mainland');
+    const crossingId = codex.propertyNames.getId('crossing_minutes');
+    const fixtures = codex.slotNames.getId('fixtures');
+    const remaining = (zone: WorldObject): number => zone.getProperty(remainingId).getEffectiveValue();
+
+    const ahead = seaZones(game)
+      .filter((zone) => remaining(zone) <= remaining(departure))
+      .sort((a, b) => remaining(b) - remaining(a));
+
+    let minutes = 0;
+    for (const zone of ahead) {
+      expect(raft.moveToSlotOrRejection(zone.getSlot(fixtures))).toBeUndefined();
+      minutes += zone.getProperty(crossingId).getEffectiveValue();
+    }
+    return minutes;
+  }
+
+  /** 札と同じ刻み（半日・切り上げ）へ直す。帯の両端も同じ丸めを受けているので、比べるならこの単位。 */
+  function inHalfDays(minutes: number): number {
+    return Math.ceil(minutes / (24 * 60) / 0.5) * 0.5;
+  }
+
+  /** 出航先1つぶんの、札に出る帯と実際にかかる日数。 */
+  interface Departure {
+    readonly zone: string;
+    readonly minDays: number;
+    readonly maxDays: number;
+    readonly trueDays: number;
+  }
+
+  /**
+   * 島の海岸3つ（`coast` trait）から漕ぎ出したときの、札の帯と実際にかかる日数。
+   * `sighted` は山頂から見定めた海図（幅±2、GameEndings.md 9.1節）かどうか。
+   *
+   * **真値は帯を読んだ後に測る**——浮かべた海区は海図に記入されてしまう（Voyage.md 3.7節）。
+   */
+  function departures(sighted: boolean): readonly Departure[] {
+    const coasts = [
+      { coast: 'sandy_beach', zone: 'coastal_waters' },
+      { coast: 'rocky_coast', zone: 'tide_rip' },
+      { coast: 'cliff_coast', zone: 'gull_rock' },
+    ];
+
+    return coasts.map(({ coast, zone }) => {
+      const { game, raft } = ready();
+      const departure = zoneOf(game, zone);
+      if (sighted) departure.getProperty(codex.propertyNames.getId('chart_sighted')).setNumber(1);
+
+      mooredAt(game, raft, coast);
+      const forecast = forecastIn(game)(raft);
+      if (forecast === undefined) throw new Error(`${coast}に繋いだ筏に見積もりが出ません。`);
+
+      return {
+        zone,
+        minDays: forecast.minDays,
+        maxDays: forecast.maxDays,
+        trueDays: inHalfDays(minutesToMainland(game, raft, departure)),
+      };
+    });
+  }
+
+  it('どの海区も素の横断時間が同じ', () => {
+    const { game } = ready();
+    const crossingId = codex.propertyNames.getId('crossing_minutes');
+
+    // **これが、1区間の時間で全区間を代表してよい根拠**（Voyage.md 3.2節）。海図が持つのは残りの
+    // 海区数だけ（GameEndings.md 12.6節）なので、海区ごとに違えば下の2つの試験が同時には通らない。
+    const minutes = seaZones(game).map((zone) => zone.getProperty(crossingId).number);
+    expect(minutes.length, '海区は14個').toBe(14);
+    expect(new Set(minutes), '素の横断時間は1種類').toEqual(new Set([minutes[0]]));
+  });
+
+  it('3つの出航先の日数の並びが、実際にかかる時間の並びと同じ向きになる', () => {
+    const seen = departures(false);
+    const bySpeed = [...seen].sort((a, b) => a.trueDays - b.trueDays);
+
+    // 鎖の先頭（島影の海）が最も遠く、岸壁から出る海鳥の岩が最も近い（Voyage.md 3.6節）。
+    expect(
+      bySpeed.map((departure) => departure.zone),
+      '実際に速いのは海鳥の岩・潮目・島影の海の順',
+    ).toEqual(['gull_rock', 'tide_rip', 'coastal_waters']);
+
+    // **どの海岸へ運ぶかを漕ぎ出す前に秤にかけられる**（GameEndings.md 5節後段）ので、札の帯は
+    // 実際にかかる時間と同じ向きに並ぶ。片方の端だけでは、帯が重なったときに向きが読めない。
+    for (let i = 1; i < bySpeed.length; i++) {
+      const near = bySpeed[i - 1];
+      const far = bySpeed[i];
+      expect(far.minDays, `${far.zone}の下限は${near.zone}より短くない`).toBeGreaterThanOrEqual(near.minDays);
+      expect(far.maxDays, `${far.zone}の上限は${near.zone}より短くない`).toBeGreaterThanOrEqual(near.maxDays);
+    }
+  });
+
+  it('海図の幅が狭まっても、真値が帯から外れない', () => {
+    for (const sighted of [false, true]) {
+      for (const departure of departures(sighted)) {
+        const where = `${departure.zone}（海図${sighted ? '±2' : '±5'}）`;
+        expect(departure.trueDays, `${where}の真値が下限を下回らない`).toBeGreaterThanOrEqual(
+          departure.minDays,
+        );
+        expect(departure.trueDays, `${where}の真値が上限を超えない`).toBeLessThanOrEqual(departure.maxDays);
+      }
+    }
+  });
+
   it('海岸に繋いだ筏が、幅を持ったまま推定日数を出す', () => {
     const { game, raft } = ready();
     const forecast = forecastIn(game)(raft);
