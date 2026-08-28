@@ -11,6 +11,7 @@ import { NewGameScene } from './game/NewGameScene';
 import { ScenarioSelectScene } from './game/ScenarioSelectScene';
 import { ShelfScene } from './game/ShelfScene';
 import { PlayScene } from './game/PlayScene';
+import { parseLaunchSeed, setLaunchSeed } from './game/launchSeed';
 import { cssColor } from './util/cssColor';
 import { setLabelDefaults } from './ui/labels';
 import { COLOR, FONT_FAMILY, SHAPE_LOOK } from './game/looks/theme';
@@ -23,6 +24,10 @@ installErrorReport();
 // （src/ui/labels・src/ui/shapes）。
 setLabelDefaults({ fontFamily: FONT_FAMILY, color: COLOR.text });
 setShapeDefaults(SHAPE_LOOK);
+
+// URLの `?seed=` は新規ゲームの種を固定する（launchSeed）。読むのは起動時の1度だけで、以降は
+// 画面を作り直しても同じ値が出る。
+setLaunchSeed(parseLaunchSeed(location.search));
 
 // アセットパックは、定義も絵も読み込まれる前に入れる（AssetPack.md 4節）。読むかどうかはスタート
 // 画面の設定が決める（StartScreen.md 画面構成 4）。取得に失敗したら起動しない——あるはずの物が
