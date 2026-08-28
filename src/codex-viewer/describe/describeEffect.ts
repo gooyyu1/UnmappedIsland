@@ -2,7 +2,7 @@ import type { DefNames, DescriptionToken, DescriptionWriter } from './Descriptio
 import {
   destroyReasonRef,
   objectRef,
-  propertyRef,
+  propertyPathRef,
   signalRef,
   signedNumber,
   slotRef,
@@ -50,7 +50,7 @@ export function addTokens(
 ): readonly DescriptionToken[] {
   return [
     text(`${verb} `),
-    propertyRef(names.propertyName(propertyGlobalId), target),
+    propertyPathRef(names.propertyName(propertyGlobalId), target),
     text(` ${signedNumber(amount)}`),
   ];
 }
@@ -59,9 +59,9 @@ export function addTokens(
 export function transferTokens(reading: TransferReading, names: DefNames): readonly DescriptionToken[] {
   const tokens: DescriptionToken[] = [
     text('transfer '),
-    propertyRef(names.propertyName(reading.fromPropertyGlobalId), reading.from),
+    propertyPathRef(names.propertyName(reading.fromPropertyGlobalId), reading.from),
     text(' → '),
-    propertyRef(names.propertyName(reading.toPropertyGlobalId), reading.to),
+    propertyPathRef(names.propertyName(reading.toPropertyGlobalId), reading.to),
     text(`（最大${reading.amount}`),
   ];
   // 単位が違う移送（水のmL → 水分のtick数）だけ、受け取る側の量も書く。
@@ -86,7 +86,7 @@ function objectRefTokens(reading: ObjectRefReading, names: DefNames): readonly D
     case 'object':
       return [objectRef(names.objectName(reading.objectGlobalId))];
     case 'property':
-      return [propertyRef(names.propertyName(reading.propertyGlobalId), 'self')];
+      return [propertyPathRef(names.propertyName(reading.propertyGlobalId), 'self')];
   }
 }
 
@@ -97,7 +97,7 @@ export function declaredNumberTokens(
 ): readonly DescriptionToken[] {
   return reading.kind === 'literal'
     ? [text(String(reading.value))]
-    : [propertyRef(names.propertyName(reading.propertyGlobalId), reading.subject)];
+    : [propertyPathRef(names.propertyName(reading.propertyGlobalId), reading.subject)];
 }
 
 /** `among`（10.3節）の1行。どこから・どう絞って・どんな重みで1つ選ぶか。 */
@@ -126,7 +126,7 @@ class EffectDescriber implements EffectReader {
   set(target: ReferenceRoot, propertyGlobalId: number, value: SetValueReading): void {
     this.out.write(
       text('set '),
-      propertyRef(this.names.propertyName(propertyGlobalId), target),
+      propertyPathRef(this.names.propertyName(propertyGlobalId), target),
       text(' = '),
       ...(typeof value === 'number'
         ? [this.names.propertyValueToken(propertyGlobalId, value)]

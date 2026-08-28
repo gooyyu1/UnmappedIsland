@@ -273,8 +273,10 @@ export class CodexView {
           inlineArtHtml(token.name),
         );
       case 'property': {
-        const owner = token.root === undefined || token.root === 'self' ? selfObjectName : undefined;
-        const prefix = token.root === undefined ? '' : `<span class="ref-root">${token.root}.</span>`;
+        // 持ち主が分かるのはselfのときだけ。他の起点は実行時に相手が決まるので、持ち主不明として
+        // 同名候補へ向ける（propertyRefHref）。
+        const owner = token.root === 'self' ? selfObjectName : undefined;
+        const prefix = token.writesRoot ? `<span class="ref-root">${token.root}.</span>` : '';
         const label = this.propertyLabel(owner, token.name);
         return prefix + this.refHtml('property', token.name, label, this.propertyRefHref(owner, token.name));
       }

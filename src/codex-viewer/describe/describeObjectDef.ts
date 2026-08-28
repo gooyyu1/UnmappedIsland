@@ -42,7 +42,7 @@ export function describeObjectDef(def: ObjectDef, names: DefNames, out: Descript
   if (def.artByStagePropertyGlobalId !== undefined)
     out.write(
       text('art_by_stage: '),
-      propertyRef(names.propertyName(def.artByStagePropertyGlobalId)),
+      propertyRef(names.propertyName(def.artByStagePropertyGlobalId), 'self'),
       text('の段が絵を切り替える'),
     );
 }
@@ -112,7 +112,7 @@ function describeMatchingRangeEvents(
   out: DescriptionWriter,
 ): void {
   if (!propertyDef.hasRangeEventMatching(matches)) return;
-  out.write(propertyRef(propertyDef.name), text(':'));
+  out.write(propertyRef(propertyDef.name, 'self'), text(':'));
   out.indented(() => {
     for (const [label, effect] of propertyDef.rangeEvents())
       if (matches(effect)) describeRangeEvent(label, effect, names, out);

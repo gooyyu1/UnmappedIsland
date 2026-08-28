@@ -19,8 +19,11 @@ export interface ConditionWordMaker<T> {
   /** 地の文（識別子ではない部分）。 */
   text(value: string): T;
 
-  /** プロパティ参照。主語は文の側が言うので、起点（self・parent）はここには現れない。 */
-  property(globalId: number): T;
+  /**
+   * プロパティ参照。**主語を文に出すのは文の側**（下のSUBJECT_WORDS）なので、rootは語ではなく
+   * 「どのオブジェクトのプロパティか」として渡す——リンクを張る読み手はこれで持ち主を決める。
+   */
+  property(globalId: number, root: ReferenceRoot): T;
 
   /** 比較の相手のリテラル1つ。シンボル型プロパティ（6.6節）の値はシンボル名へ戻す。 */
   propertyValue(propertyGlobalId: number, value: number): T;
@@ -122,7 +125,7 @@ class ConditionWordWriter<T> implements ConditionReader, ConditionPhrase<T> {
     const op = this.negated ? NEGATED_OPS[reading.op] : reading.op;
     this.words = [
       ...this.subject(reading.root, 'の'),
-      this.make.property(reading.propertyGlobalId),
+      this.make.property(reading.propertyGlobalId, reading.root),
       this.make.text(` ${OP_SYMBOLS[op]} `),
       ...this.valueWords(reading),
     ];
@@ -131,7 +134,7 @@ class ConditionWordWriter<T> implements ConditionReader, ConditionPhrase<T> {
   propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string): void {
     this.words = [
       ...this.subject(root, 'の'),
-      this.make.property(propertyGlobalId),
+      this.make.property(propertyGlobalId, root),
       this.make.text('が段'),
       this.make.stage(stageName),
       this.make.text(this.negated ? 'にない' : 'にある'),
@@ -213,7 +216,10 @@ class ConditionWordWriter<T> implements ConditionReader, ConditionPhrase<T> {
   private valueWords(reading: PropertyConditionReading): readonly T[] {
     const { valueRef } = reading;
     if (valueRef !== undefined)
-      return [...this.subject(valueRef.root, 'の'), this.make.property(valueRef.propertyGlobalId)];
+      return [
+        ...this.subject(valueRef.root, 'の'),
+        this.make.property(valueRef.propertyGlobalId, valueRef.root),
+      ];
 
     const words: T[] = [];
     for (const value of reading.values ?? []) {

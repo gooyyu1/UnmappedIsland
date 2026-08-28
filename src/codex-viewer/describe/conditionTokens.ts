@@ -13,8 +13,8 @@ import { objectRef, propertyRef, slotRef, stageRef, tagRef, text } from './Descr
 export function conditionTokens(node: ConditionDeclaration, names: DefNames): readonly DescriptionToken[] {
   return conditionWords<DescriptionToken>(node, {
     text,
-    // 起点（self・parent）は文の主語として語で出ているので、参照そのものには添えない。
-    property: (globalId) => propertyRef(names.propertyName(globalId)),
+    // 起点は文の主語として語で出ているので接頭辞には出さない。リンク先の持ち主を決めるのには要る。
+    property: (globalId, root) => propertyRef(names.propertyName(globalId), root),
     propertyValue: (propertyGlobalId, value) => names.propertyValueToken(propertyGlobalId, value),
     slot: (globalId) => slotRef(names.slotName(globalId)),
     tag: (globalId) => tagRef(names.tagName(globalId)),

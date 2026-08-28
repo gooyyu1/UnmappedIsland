@@ -1,6 +1,6 @@
 import type { DefNames, DescriptionToken, DescriptionWriter } from './Description';
 import { conditionTokens } from './conditionTokens';
-import { propertyRef, stageRef, text } from './Description';
+import { propertyPathRef, propertyRef, stageRef, text } from './Description';
 import { addTokens, linkedAddTokens, transferTokens } from './describeEffect';
 import type { TransferReading } from '../../domain/EffectReader';
 import type {
@@ -37,11 +37,11 @@ function amountTokens(
   const factors: DescriptionToken[] = [];
   for (const globalId of reading.amount.factorPropertyGlobalIds) {
     if (factors.length > 0) factors.push(text(' × '));
-    factors.push(propertyRef(names.propertyName(globalId)));
+    factors.push(propertyRef(names.propertyName(globalId), 'self'));
   }
   return [
     text(`${verb} `),
-    propertyRef(names.propertyName(reading.propertyGlobalId), reading.target),
+    propertyPathRef(names.propertyName(reading.propertyGlobalId), reading.target),
     text(' '),
     ...factors,
     text(' ぶん'),
@@ -53,7 +53,7 @@ function gateTokens(gate: GateReading, names: DefNames): readonly DescriptionTok
   const tokens: DescriptionToken[] = [];
   if (gate.stage !== undefined)
     tokens.push(
-      propertyRef(names.propertyName(gate.stage.propertyGlobalId)),
+      propertyRef(names.propertyName(gate.stage.propertyGlobalId), 'self'),
       text('が段'),
       stageRef(gate.stage.name),
       text('にある'),
