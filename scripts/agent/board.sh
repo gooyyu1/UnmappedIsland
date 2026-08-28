@@ -47,10 +47,18 @@ jq -r '
 ' <<<"$prs"
 
 # 走行中（畳んでいない）セッション。ここが「もう投入したか」の主な根拠。
-sessions=$(bash "$CCR_META" list_sessions <<<'{"mine":true,"limit":30}' 2>/dev/null | grep -o '{"ccr".*' || true)
+#
+# **上限に当たったら黙らない。** 一覧は新しい順なので、切れるのは古い側——畳み忘れて残っている
+# セッションはまさにそこに居る。出ないことを「無い」と読むと、永久に畳まれない。
+SESSION_LIMIT=100
+sessions=$(printf '{"mine":true,"limit":%s}' "$SESSION_LIMIT" |
+  bash "$CCR_META" list_sessions 2>/dev/null | grep -o '{"ccr".*' || true)
 if [ -z "$sessions" ]; then
   echo "（セッションの一覧を引けなかった。投入済みの判定はPRだけで行う）" >&2
   sessions='{"ccr":{"data":[]}}'
+fi
+if [ "$(jq -r '.ccr.data | length' <<<"$sessions")" = "$SESSION_LIMIT" ]; then
+  echo "（一覧が上限 $SESSION_LIMIT に当たった。これより古いセッションは見えていない）" >&2
 fi
 live=$(jq -r '.ccr.data[] | select(.session_status != "SESSION_STATUS_ARCHIVED")
               | "\(.id)\t\(.session_status | sub("SESSION_STATUS_"; ""))\t\(.updated_at)\t\(.title // "")"' <<<"$sessions")
