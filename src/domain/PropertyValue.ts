@@ -38,6 +38,15 @@ export class PropertyValue {
    */
   private isComputingEffectiveValue = false;
 
+  /**
+   * 最後にrangeイベント（6.3節）を判定した実体値。まだ一度も判定していなければundefined。
+   *
+   * **on_max/on_minは、値が境界へ達した瞬間のもの**（6.3節）で、境界に居る間ずっとではない。
+   * 判定は値を動かした側から呼ばれるが、tickは値が動かなくても回るので、同じ値のまま二度目を
+   * 走らせないための覚え書きが要る。
+   */
+  private eventedNumber: number | undefined;
+
   /** 初期値は定義が決める（PropertyDef.rollInitialValue、6.2節）。抽選つきの宣言があるので乱数源が要る。 */
   constructor(def: PropertyDef, owner: WorldObject) {
     this._number = def.rollInitialValue(owner.session.rng);
@@ -81,10 +90,23 @@ export class PropertyValue {
 
     // 操作が直に動かした値はここだけを通る（毎tickの積分はtick()が直に足す、PropertyGain参照）。
     this.owner.session.recordGain(this.owner, this.def, delta);
-    this.def.applyRangeEventsAt(this._number, this.owner);
+    this.applyRangeEvents();
     // 値が動けば、持ち主の下に居られるかも変わりうる（resists、7.13節）。どう変わるかを知っているのは
     // 持ち主の側なので、変わったことだけを伝える。
     this.owner.spillOutIfResisting();
+  }
+
+  /**
+   * rangeイベント（6.3節）を判定する。**同じ値に二度は判定しない**——境界へ達した瞬間のものなので、
+   * 上限に張り付いたまま動かない値に呼び直してはいけない。折り返しも自壊もしないon_max
+   * ——海区が見張りの成果として航路を湧かせる（voyage.yaml）のがそれ——は、呼び直されるたびに
+   * 同じ物を湧かせる。
+   */
+  private applyRangeEvents(): void {
+    if (this._number === this.eventedNumber) return;
+
+    this.eventedNumber = this._number;
+    this.def.applyRangeEventsAt(this._number, this.owner);
   }
 
   /** 絶対値代入（set）。差分をaddへ委譲するため、range判定はadd側に一本化される。 */
@@ -149,18 +171,19 @@ export class PropertyValue {
   /**
    * passivesの`add`を実体値へ加減算し（8.4節、不可逆）、rangeイベント（6.3節）を判定する。
    * 1tickにつき1回、WorldObject.tick経由で呼ばれる想定。
+   *
    */
   tick(): void {
-    for (const c of this.accumulateEffects) this._number += c.activeAmount();
+    this._number += this.changePerTick();
 
-    this.def.applyRangeEventsAt(this._number, this.owner);
+    this.applyRangeEvents();
   }
 
   /**
    * 今tickこの値へ入る`add`の合計（8.4節）。0なら、この値は今のところ動かない。
    *
-   * tickが足すのと同じ寄与を、足さずに数えたもの。**この場で結果を見に行かずに、これから何が
-   * 起きるかを言える唯一の手掛かり**で、値の出入り（WorldChange）には現れない。
+   * **tickが実際に足すのはこの値。** 足す前に同じ数を読めることが、**この場で結果を見に行かずに、
+   * これから何が起きるかを言える唯一の手掛かり**になる（値の出入り（WorldChange）には現れない）。
    */
   private changePerTick(): number {
     let sum = 0;
