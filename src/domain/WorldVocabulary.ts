@@ -93,7 +93,8 @@ export class EngineVocabulary {
  * 変わりうる**——変わったときに何が動かなくなるかが、この一覧の中身そのもの。
  *
  * 使い手は `domain/wrappers`・`domain/generation`・`analysis` と、`WorldObject` の抵抗の判定
- * （`resists`、GameElementDefinition.md 7.13節）。いずれも名前を「値や集合を引く鍵」としてだけ使っていて、
+ * （`resists`、GameElementDefinition.md 7.13節）、`Slot` の装備の排他（同7.5節。**どの枠が
+ * 「身につける枠」かは枠の宣言から導けない**）。いずれも名前を「値や集合を引く鍵」としてだけ使っていて、
  * どの名前かに他の判断が依存しない。
  */
 export class WorldRuleVocabulary {

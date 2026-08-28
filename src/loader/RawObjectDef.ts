@@ -20,6 +20,7 @@ import type { PassiveEffect } from '../domain/PassiveEffect';
 import type { PropertyDef } from '../domain/PropertyDef';
 import type { SlotDef } from '../domain/SlotDef';
 import { StackOrderDef } from '../domain/StackOrderDef';
+import { WornCoverage } from '../domain/WornCoverage';
 
 /** object_defが宣言一式に足して読むキー（型自身の素性。RawDeclarationBody.readFields参照）。 */
 const OBJECT_DEF_OWN_KEYS = ['traits', 'singleton', 'recipes', 'variation_axes'];
@@ -87,11 +88,10 @@ export class RawObjectDef {
    * 合成規則（フェーズ1）:
    * - props/slots/interactions: 同名エントリが複数のtraitにあればエラー（5節）。
    *   object_def自身が同名エントリを持つ場合はフィールド単位で上書き（残りはtrait側を引き継ぐ）。
-   * - passives: 識別子を持たないため単純に連結（trait由来→自分自身の順）。
-   * - stack_order/art_by_stage/resists: 自分自身の指定を優先。無ければちょうど1つの
+   * - passives/covers: 識別子を持たないため単純に連結（trait由来→自分自身の順）。
+   * - stack_order/art_by_stage/resists/layer: 自分自身の指定を優先。無ければちょうど1つの
    *   traitが指定している必要がある（複数ならエラー）。
    * - recipes: 成果物ごとの内容なので合成せず、自分自身の宣言だけを読む。
-   * 未対応（Codex側にビルド先の型が無いため意図的にスキップ）: covers/layer。
    */
   resolve(traitsByName: ReadonlyMap<string, RawTrait>, loader: WorldCodexYamlLoader): ObjectDef {
     const traits = this.traitNames.map((traitName) => {
@@ -212,9 +212,35 @@ export class RawObjectDef {
           merged.isStorage,
           tagIds.includes(loader.tagNames.intern(IN_PROGRESS_TAG)),
           resists,
+          wornCoverageOf(loader, this.name, merged),
         ),
     );
   }
+}
+
+/**
+ * `covers` / `layer`（7.5節）から、身につけたときに占める場所を組み立てる。どちらも無ければundefined。
+ *
+ * **2つは対でしか書けない。** 片方だけでは競合を判定できない（部位の無い階層は誰とも重ならず、
+ * 階層の無い部位はどの段で重なるかを言えない）ので、書き漏らしはロード時に弾く。
+ */
+function wornCoverageOf(
+  loader: WorldCodexYamlLoader,
+  objectDefName: string,
+  merged: RawDeclarationBody,
+): WornCoverage | undefined {
+  const { covers, layer } = merged;
+  if (covers.length === 0 && layer === undefined) return undefined;
+  if (covers.length === 0 || layer === undefined)
+    throw new YamlLoadError(
+      `'${objectDefName}': covers と layer は対で宣言してください（7.5節。` +
+        `${layer === undefined ? 'layer' : 'covers'} がありません）。`,
+    );
+
+  return new WornCoverage(
+    [...new Set(covers.map((part) => loader.tagNames.intern(part)))],
+    loader.tagNames.intern(layer),
+  );
 }
 
 /**

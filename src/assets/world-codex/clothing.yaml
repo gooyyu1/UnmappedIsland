@@ -1,8 +1,8 @@
 # 身につける衣類（docs/world/SurvivalItems.md 5節）。素材の系統ごとに4種を置く。
 #
-# 4種は「素材が何か」だけで分かれていて、**覆う部位も重ね着の階層も持たない**（1着で全身）。
-# 排他制御（covers / layer、docs/engine/GameElementDefinition.md 7.5節）は、この4種で足りるかが
-# 分かってから入れる。
+# 4種は「素材が何か」だけで分かれていて、どれも1着で全身を覆う。**覆う部位（body）も重ね着の階層
+# （base）も4種で共通**なので、身につけられるのは同時に1着だけになる（排他制御、covers / layer、
+# docs/engine/GameElementDefinition.md 7.5節）。部位を分けるのも重ね着も、衣類が増えてからでよい。
 #
 # **身につけられることはequippableタグが言う。** 着る先のequipmentスロット
 # （characters/player_character.yaml）は、今このタグで絞っていない——絞れないのは装備できる物が
@@ -31,6 +31,8 @@ object_defs:
   # 加工がほとんど要らないので、刃物も火も無いうちから作れる。
   bundled_leaf_clothing:
     tags: [item, equippable]
+    covers: [body]
+    layer: base
     props:
       # 葉1枚のうち身につけるのは小葉だけで、重さの大半を占める中軸は捨てる（weaving.yaml）。
       weight: {value: 900}
@@ -50,6 +52,8 @@ object_defs:
   # 生皮のまま乾いた革は固く、濡らせば傷む（animals.yamlのrawhide）。
   rawhide_clothing:
     tags: [item, equippable]
+    covers: [body]
+    layer: base
     props:
       weight: {value: 1200}
       volume: {value: 3000}
@@ -64,6 +68,8 @@ object_defs:
   # 編んである分だけ形が保たれる。
   woven_leaf_clothing:
     tags: [item, equippable]
+    covers: [body]
+    layer: base
     props:
       weight: {value: 1300}
       volume: {value: 4000}
@@ -79,6 +85,8 @@ object_defs:
   # （tools.yamlのbone_needle、voyage.yamlの帆と同じ要求の書き方）。
   tanned_leather_clothing:
     tags: [item, equippable]
+    covers: [body]
+    layer: base
     props:
       weight: {value: 1300}
       volume: {value: 3000}
