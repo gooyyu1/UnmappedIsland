@@ -282,6 +282,22 @@ for s in <session_id>...; do bash .claude/ccr-meta.sh get_session <<<"{\"session
 落ちていたため同じ検査を書いて先に入れた。**セッションは生きていて、その直後にPRを出した**
 （#772・#773 の重複）。**枝が在れば生きている。**
 
+### 生成物を触るPRを2本続けてマージしたら、司令塔がその場で作り直す
+
+`stats/balance.yaml` のような生成物は、**gitの上では衝突しないのに意味の上では古くなる**。2本目は
+1本目が入る前の定義から作られているので、行が離れていれば `MERGEABLE CLEAN` のまま入り、**鮮度検査
+（[`tests/support/generatedReport.ts`](../tests/support/generatedReport.ts) の
+`describeReportFreshness`）が `main` で落ちる。** マージの瞬間には何も警告が出ない。
+
+**2本目をマージしたら、その場で司令塔が作り直して直接 push する**（2026-08-28 に #1004・#1005 で
+実際に起きた。#1004 が足した `pick` のぶん3項目が、#1005 の持っていた表から欠けていた）。判断を
+一切含まない機械操作なので、セッションを `send_message` で起こすより速い。
+
+**Windows の bash からは `npm run stats:balance` が通らない**——npm がスクリプトを cmd.exe へ渡すので
+`RUN_BALANCE_STATS=1` の前置が解釈されない。`RUN_BALANCE_STATS=1 npx vitest run
+tests/diagnostics/balanceStatsReport.test.ts` を直に呼ぶ（気候表は `RUN_CLIMATE_STATS` と
+`tests/diagnostics/climateStatsReport.test.ts`）。
+
 ## 3. タスク issue の型
 
 1タスク = 1 issue。ユーザーはその URL を新しいセッションへ貼るだけで指示が済む。
