@@ -82,6 +82,9 @@ function watch(prRounds: unknown[][], issueRounds: unknown[][], watched: number[
       stub,
       `#!/usr/bin/env bash\n` +
         `if [ "$1" = issue ]; then\n${rounds('issue', issueRounds.length)}exit 0\nfi\n` +
+        // 緑のPRに同梱する本文の引き直し。周を進めないよう、一覧より先に返す。
+        `if [ "$2" = view ] && [[ "$*" == *title,body,files* ]]; then\n` +
+        `  echo "本文 $3"\n  exit 0\nfi\n` +
         rounds('pr', prRounds.length),
       'utf-8',
     );
@@ -165,7 +168,11 @@ describe('watch-prs.sh のマージ可否', () => {
   });
 
   it('マージできるPRは従来どおり出る', () => {
-    expect(watch([[pullRequest(820, 'MERGEABLE')]], [[]], [])).toEqual(['GREEN 820 ']);
+    expect(watch([[pullRequest(820, 'MERGEABLE')]], [[]], [])).toEqual([
+      'GREEN 820 ',
+      '--- PR 820 ---',
+      '本文 820',
+    ]);
     expect(
       watch(
         [[pullRequest(821, 'MERGEABLE', [], [{ name: 'test', status: 'COMPLETED', conclusion: 'FAILURE' }])]],
@@ -173,6 +180,12 @@ describe('watch-prs.sh のマージ可否', () => {
         [],
       ),
     ).toEqual(['RED 821 test']);
+  });
+
+  it('緑でないPRの本文は引かない', () => {
+    // 受け取った側が読むのは緑のPRだけ。赤やコンフリクトの本文まで付けると、差し戻す判断には
+    // 要らないものが毎回載る。
+    expect(watch([[pullRequest(822, 'CONFLICTING')]], [[]], [])).toEqual(['CONFLICT 822']);
   });
 });
 

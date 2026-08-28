@@ -25,6 +25,10 @@
 #   終了コード 3 … TIMEOUT（制限時間まで、何も動かなかった）
 #   終了コード 1 … ERROR（gh が続けて失敗した）
 #
+# **`GREEN` があるときは、行の後ろにそのPRの題・本文・ファイル一覧が `--- PR <番号> ---` に続いて
+# 付く。** 緑を受け取った側は必ず本文を引くので、往復を1つ減らすために同梱している。**判定は増えて
+# いない**——ここが担うのは促すことだけで、通すかどうかは受け取った側が差分を読んで決める。
+#
 # ## COMMENT を見るのは、却下を受け取る唯一の経路だから
 #
 # **PRの作者はすべてユーザー自身になる**（セッションがユーザーの資格情報で push するため）ので、
@@ -362,7 +366,17 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
     fi
 
     if [ -n "${settled//[[:space:]]/}" ]; then
-      grep -v '^[[:space:]]*$' <<<"$settled"
+      settled=$(grep -v '^[[:space:]]*$' <<<"$settled")
+      printf '%s\n' "$settled"
+      # 緑のPRは、この後かならず本文とファイル一覧を引くことになる。ここで出しておけば、起こされた
+      # 側は差分を読む往復から始められる。
+      while read -r number; do
+        [ -n "$number" ] || continue
+        printf -- '--- PR %s ---\n' "$number"
+        gh pr view "$number" --json title,body,files \
+          --jq '.title, "", .body, "", "--- ファイル ---", (.files[] | "\(.additions)+ \(.deletions)- \(.path)")' ||
+          echo "（本文を引けなかった。gh pr view $number で引き直す）"
+      done < <(grep '^GREEN ' <<<"$settled" | awk '{print $2}')
       exit 0
     fi
   else
