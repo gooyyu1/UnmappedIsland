@@ -1197,6 +1197,13 @@
       },
       "additionalProperties": false
     },
+    "remove_slots": {
+      "description": "混ぜ終わったslotsから落とすスロットの名前（GameElementDefinition.md 7.14節）。traitが配ったスロットを持たない型を書くための口で、落とす先が無ければロード時エラー。同じ宣言のslotsに書いた名前は挙げられない。",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/identifier"
+      }
+    },
     "trait_entry": {
       "description": "traits の1エントリ（5節）。object_def_entry からtraits参照・singletonを除いたもの（多重継承の禁止、singletonの概念がmixinに馴染まないため）。",
       "type": "object",
@@ -1220,6 +1227,9 @@
         },
         "slots": {
           "$ref": "#/$defs/slots_map"
+        },
+        "remove_slots": {
+          "$ref": "#/$defs/remove_slots"
         },
         "passives": {
           "$ref": "#/$defs/passives_list"
@@ -1309,6 +1319,9 @@
         },
         "slots": {
           "$ref": "#/$defs/slots_map"
+        },
+        "remove_slots": {
+          "$ref": "#/$defs/remove_slots"
         },
         "passives": {
           "$ref": "#/$defs/passives_list"
