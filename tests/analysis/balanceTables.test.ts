@@ -134,3 +134,110 @@ object_defs:
     expect(costOf('hot_stone')).toMatchObject({ minutes: 90 });
   });
 });
+
+/**
+ * 海区にしか湧かないものを、島の表が1つも数えないこと（issue #921）。
+ *
+ * 海区に湧く漁り場は、島から見れば入手経路が無い。それでも工程として数えると、その物の代表経路が
+ * 海のほうへ決まり、**島に在る経路が表から押し出される**——落とされるのは入手経路の無い海の経路だけで、
+ * 押し出された島の経路は戻ってこない。海区に湧く土地（小島）は、それ自身が島の土地の行にもなる。
+ *
+ * `sea`タグを持つのは海区だけで、そこに湧く物は持たない。湧き元を辿って外すのが
+ * `islandLocations`の役目で、ここが見るのはその結果を収支表が使えているか。
+ */
+describe('海でしか手に入らないもの', () => {
+  const YAML = `
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  spring_field:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 60
+        spawn: {object: gourd, into: self}
+
+  # 海区。探索でき、探索を重ねると漁り場と小島が湧く。
+  coastal_waters:
+    tags: [sea, location]
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 3}
+        on_max:
+          spawn: {object: offshore_islet, into: self}
+    interactions:
+      watch:
+        trigger: menu
+        duration: 15
+        add: {self: {exploration_progress: 1}}
+        spawn: {object: fish_shoal, into: self}
+
+  # 海区に湧く漁り場。島の泉より速く水を返すので、外さないと代表経路がこちらに決まる。
+  fish_shoal:
+    tags: [fixture]
+    interactions:
+      net_water:
+        trigger: menu
+        duration: 5
+        spawn: {object: gourd, into: actor}
+
+  # 海区に湧く土地。sea タグは持たない。
+  offshore_islet:
+    tags: [fixture, location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 15
+        spawn: {object: gourd, into: self}
+
+  gourd:
+    tags: [item]
+    interactions:
+      drink:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {actor: {hydration: 96}}
+`;
+
+  const tables = buildBalanceTables(
+    new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
+    'medic',
+  );
+
+  /** 島全体の文脈で、需要を埋める経路すべて（`工程 → 工程`の字面）。 */
+  const routeTexts = tables.places
+    .find((place) => place.name === WHOLE_ISLAND)!
+    .properties.flatMap((chains) =>
+      chains.routes.map(({ route }) =>
+        route.steps.map((step) => `${step.objectName}.${step.stepName}`).join(' → '),
+      ),
+    );
+
+  it('海に湧くものの経路が、島の経路を押し出さない', () => {
+    expect(routeTexts).toEqual(['spring_field.explore → gourd.drink']);
+  });
+
+  it('海区に湧く土地は、島の土地の行にならない', () => {
+    expect(tables.places.map((place) => place.name)).toEqual([WHOLE_ISLAND, 'spring_field']);
+  });
+
+  it('海に湧くものは、供給表にも総コスト表にも出ない', () => {
+    expect(tables.supply.map((row) => row.ownerName)).not.toContain('fish_shoal');
+    expect(tables.supply.map((row) => row.ownerName)).not.toContain('offshore_islet');
+    expect(tables.objectCosts.map((cost) => cost.objectName)).not.toContain('fish_shoal');
+  });
+});

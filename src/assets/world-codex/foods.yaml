@@ -16,6 +16,10 @@
 # perishableが持ち、食べ物は「腐ること」と「どれだけ速いか」の2つを名乗る。
 #
 # 食べ物は他のファイル（coconut.yaml・fiber.yaml・animals.yaml）にも居るので、そこからも参照する。
+#
+# 傷んだ物を食べたときの吐き下しは、各eatの末尾のpickが引く（docs/engine/DigestionSystem.md 6節）。
+# 重みは「無事100 : 吐く spoilage : 下す spoilage」の3つで、**pickはaddより後ろに置く**——腹に
+# 収めてから吐くので、順が逆だと吐いた後に食べたことになる（GameElementDefinition.md 9.7節）。
 traits:
   perishable:
     props:
@@ -28,6 +32,23 @@ traits:
         # 腐りきった食べ物は残らない。**名乗らずに消す**——消え方の名前（9.3節）を出す先がまだ無い。
         on_min:
           destroy: self
+        # 傷み具合（docs/engine/DigestionSystem.md 6節）。**境目は残りの割合で置く**——腐る速さは
+        # 分類で違うが、durabilityは種類によらず960から始まるので、同じ数が全部の食べ物で
+        # 「残り半分」「残り4分の1」を指す。
+        stages:
+          - name: rotten
+            alert: danger
+            passives:
+              - modify: {self: {spoilage: 100}}
+          - name: stale
+            min: 240
+            alert: caution
+            passives:
+              - modify: {self: {spoilage: 25}}
+          - {name: sound, min: 480}
+      # 食べたときに吐き下しを引く重み（同6節）。自分では動かず、上のdurabilityの段だけがmodifyで
+      # 押し上げるのでvalueは0のまま——無事な物を食べても当たらない。
+      spoilage: {value: 0}
     passives:
       # 屋外に置いたぶんの上乗せ。短命な素材と同じ速さ（同2節）で、腐敗とは別のaddとして加算的に
       # 重なる（8.4節）。守られている場所——蓋つきの入れ物・浅い洞窟——では成立しない
@@ -79,6 +100,13 @@ object_defs:
             satiety: 300
             carbohydrate: 1
             vitamin: 83
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # ヤシガニ。狩猟の道具がなくても「見つけて捕まえる」だけで採取できる大型の甲殻類。
@@ -134,6 +162,13 @@ object_defs:
             protein: 28
             lipid: 9
             vitamin: 1
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # タロイモ。東南アジア島嶼が原産の塊茎作物（docs/world/Animals.md 概要節）。野生形が自生している。
@@ -190,4 +225,11 @@ object_defs:
             carbohydrate: 48
             protein: 2
             vitamin: 24
+        pick:
+          - weight: 100
+          - weight: {prop: spoilage}
+            set: {actor: {satiety: 0}}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+          - weight: {prop: spoilage}
+            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
