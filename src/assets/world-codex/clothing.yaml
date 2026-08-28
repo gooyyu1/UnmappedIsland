@@ -1,0 +1,92 @@
+# 身につける衣類（docs/world/SurvivalItems.md 5節）。素材の系統ごとに4種を置く。
+#
+# 4種は「素材が何か」だけで分かれていて、**覆う部位も重ね着の階層も持たない**（1着で全身）。
+# 排他制御（covers / layer、docs/engine/GameElementDefinition.md 7.5節）は、この4種で足りるかが
+# 分かってから入れる。
+#
+# **身につけられることはequippableタグが言う。** 着る先のequipmentスロット
+# （characters/player_character.yaml）は、今このタグで絞っていない——絞れないのは装備できる物が
+# この4種しか無いためで、物の側が何であるかとは別の話。
+#
+# **保温の効果もまだ無い。** 寒さはworldのambient_temperatureにしかなく、それを体が受け取る形
+# （キャラクタ側のプロパティ）が無いため、着ても値は何も動かない。
+#
+# 重さは材料の和で置く（中軸のように捨てる部分だけを引く）。値を変えるときは、材料側の重さ
+# （weaving.yaml・fiber.yaml・animals.yaml）と釣り合っているかを見ること。
+
+object_defs:
+  # なめし革。生皮を樹皮のなめし剤で処理した革で、皮袋・帆にも使う中間素材。
+  #
+  # **作る工程はまだ無い。** なめすには樹皮が要り、樹皮を採る先（立ち木）を持つのはこのファイル
+  # ではないため、なめしの連鎖は別に入る。ここに置いてあるのは、なめし革の衣類が名指しで
+  # 要求する相手として。
+  tanned_leather:
+    tags: [item]
+    props:
+      # 生皮（600g）から、毛と肉を落としたぶん軽くなる。
+      weight: {value: 500}
+      volume: {value: 1200}
+
+  # 束ねた葉の衣類。ヤシの葉の小葉を中軸から外し、繊維で腰へ束ねただけの腰蓑。
+  # 加工がほとんど要らないので、刃物も火も無いうちから作れる。
+  bundled_leaf_clothing:
+    tags: [item, equippable]
+    props:
+      # 葉1枚のうち身につけるのは小葉だけで、重さの大半を占める中軸は捨てる（weaving.yaml）。
+      weight: {value: 900}
+      # ばらけた葉は詰めても縮まないので、嵩そのままで見る。
+      volume: {value: 4000}
+    # 解放条件（conditions、13.3節）はまだ置かない。繊維・編みスキルのプロパティと、それを
+    # 伸ばす経路が未実装のため、今条件を置くと永久に作れなくなる（編み籠・ロープと同じ）。
+    recipes:
+      bundled:
+        steps:
+          - requires:
+              - {object: palm_frond, count: 1, consume: true}
+              - {object: plant_fiber, count: 1, consume: true}
+            duration: 30
+
+  # 生皮の衣類。剥いだ皮に頭と腕を通す穴を開け、そのまま羽織る。縫わないので早いが、
+  # 生皮のまま乾いた革は固く、濡らせば傷む（animals.yamlのrawhide）。
+  rawhide_clothing:
+    tags: [item, equippable]
+    props:
+      weight: {value: 1200}
+      volume: {value: 3000}
+    recipes:
+      draped:
+        steps:
+          - requires:
+              - {object: rawhide, count: 2, consume: true}
+            duration: 60
+
+  # 編んだ葉の衣類。編んだパネルを繊維で綴じ合わせる。束ねた葉より手はかかるが、
+  # 編んである分だけ形が保たれる。
+  woven_leaf_clothing:
+    tags: [item, equippable]
+    props:
+      weight: {value: 1300}
+      volume: {value: 4000}
+    recipes:
+      stitched:
+        steps:
+          - requires:
+              - {object: woven_leaf, count: 3, consume: true}
+              - {object: plant_fiber, count: 2, consume: true}
+            duration: 120
+
+  # なめし革の衣類。裁った革を糸で縫い合わせる。骨針は道具なので減らない
+  # （tools.yamlのbone_needle、voyage.yamlの帆と同じ要求の書き方）。
+  tanned_leather_clothing:
+    tags: [item, equippable]
+    props:
+      weight: {value: 1300}
+      volume: {value: 3000}
+    recipes:
+      sewn:
+        steps:
+          - requires:
+              - {object: tanned_leather, count: 2, consume: true}
+              - {object: yarn, count: 3, consume: true}
+              - {tag: sewing_tool, count: 1, consume: false}
+            duration: 240
