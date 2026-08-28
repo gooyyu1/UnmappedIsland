@@ -1,6 +1,14 @@
+import type {
+  ConditionDeclaration,
+  ConditionOp,
+  ConditionReader,
+  PropertyConditionReading,
+} from '../domain/ConditionReader';
 import type { ObjectDef } from '../domain/ObjectDef';
+import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { TickDelta } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
+import type { TypeMatchReading } from '../domain/TypeMatchRule';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
 import { craftingStepsOf } from './craftingSteps';
@@ -48,7 +56,7 @@ export interface Cost {
 export interface ConsumptionRow {
   readonly propertyName: string;
 
-  /** その増減が効く条件（常時・段・条件つき・輸送）。 */
+  /** その増減が効く条件（常時・段・ゲートの中身・輸送。conditionLabel参照）。 */
   readonly condition: string;
 
   readonly perTickByCharacter: readonly (number | undefined)[];
@@ -201,7 +209,7 @@ export interface DeviceRow {
 
   /**
    * 周期が進む条件（消費表の`condition`と同じ語彙）。**この行のレートは、これが成立している間の
-   * もの**——条件つきなら、置いただけでは1 tickも進まない。
+   * もの**——`常時`でなければ、置いただけでは1 tickも進まない。
    */
   readonly condition: string;
 
@@ -447,15 +455,173 @@ function tickAmountsByName(codex: WorldCodex, def: ObjectDef): ReadonlyMap<strin
 /** ゲート（8.2節）で縛られていない増減。 */
 const ALWAYS = '常時';
 
-/** 条件が成立している間だけ効く増減。定義からは、いつ成立するかまでは決まらない。 */
-const CONDITIONAL = '条件つき';
-
-/** そのゲート（8.2節）と輸送かどうかを1語で言い表す。 */
+/** そのゲート（8.2節）と輸送かどうかを言い表す。 */
 function conditionLabel(codex: WorldCodex, delta: TickDelta): string {
   const capped = delta.capped ? '（輸送・在庫がある間）' : '';
-  if (delta.gate.stage !== undefined)
-    return `段 ${codex.propertyNames.getName(delta.gate.stage.propertyGlobalId)}=${delta.gate.stage.name}${capped}`;
-  return `${delta.gate.conditional ? CONDITIONAL : ALWAYS}${capped}`;
+  const { stage, conditions } = delta.gate;
+  if (stage !== undefined)
+    return `段 ${codex.propertyNames.getName(stage.propertyGlobalId)}=${stage.name}${capped}`;
+  return `${conditions === undefined ? ALWAYS : conditionText(codex, conditions).text}${capped}`;
+}
+
+/** 条件（14節）を書き表したもの。compositeなら、並べるときに括弧が要る。 */
+interface ConditionText {
+  readonly text: string;
+  readonly composite: boolean;
+}
+
+/**
+ * 条件（14節）を1行で書き表す。**識別子はそのまま出す**——読み手が定義と引き比べられることが、
+ * 表がこの列を持つ理由そのもの（issue #961）。
+ *
+ * 否定は葉まで押し下げる（ド・モルガンの法則）。`not: {slot: catch, matches: {tag: quarry}}` を
+ * 「〜ではない」と包むより、「catch枠にquarryが無い」と書くほうが条件の形と一致する。
+ */
+function conditionText(codex: WorldCodex, condition: ConditionDeclaration, negated = false): ConditionText {
+  const writer = new ConditionTextWriter(codex, negated);
+  condition.read(writer);
+  return writer;
+}
+
+/** 比較演算子の書き表し方。YAMLのフロー形式でそのまま書ける記号を選ぶ（引用符が増えない）。 */
+const OP_SYMBOLS: Readonly<Record<ConditionOp, string>> = {
+  lt: '<',
+  lte: '≤',
+  gt: '>',
+  gte: '≥',
+  eq: '=',
+  neq: '≠',
+  in: '∈',
+  not_in: '∉',
+};
+
+/** 否定したときの比較演算子。比較の否定は比較なので、否定を葉まで押し下げられる。 */
+const NEGATED_OPS: Readonly<Record<ConditionOp, ConditionOp>> = {
+  lt: 'gte',
+  lte: 'gt',
+  gt: 'lte',
+  gte: 'lt',
+  eq: 'neq',
+  neq: 'eq',
+  in: 'not_in',
+  not_in: 'in',
+};
+
+/** 条件の主語を指す語。**selfには語を当てない**——行そのものがselfの話だから。 */
+const SUBJECT_WORDS: Readonly<Record<ReferenceRoot, string>> = {
+  self: '',
+  parent: '親',
+  child: '子',
+  actor: '操作者',
+  dragged: '重ねた相手',
+  picked: '選ばれた相手',
+  ancestor: '祖先',
+};
+
+/** 主語と助詞。selfは語ごと落ちるので助詞も付かない。 */
+function subject(root: ReferenceRoot, particle: string): string {
+  const word = SUBJECT_WORDS[root];
+  return word === '' ? '' : `${word}${particle}`;
+}
+
+/** 型の指定（4.1節）の書き表し方。 */
+function typeMatchText(codex: WorldCodex, match: TypeMatchReading): string {
+  switch (match.kind) {
+    case 'tag':
+      return codex.tagNames.getName(match.tagGlobalId);
+    case 'object':
+      return codex.objectNames.getName(match.objectGlobalId);
+    case 'not':
+      return `${typeMatchText(codex, match.inner)}でないもの`;
+  }
+}
+
+class ConditionTextWriter implements ConditionReader, ConditionText {
+  text = '';
+
+  composite = false;
+
+  private readonly codex: WorldCodex;
+
+  /** ここまでの否定を畳んだ結果。真なら、葉を否定形で書く。 */
+  private readonly negated: boolean;
+
+  constructor(codex: WorldCodex, negated: boolean) {
+    this.codex = codex;
+    this.negated = negated;
+  }
+
+  property(reading: PropertyConditionReading): void {
+    const op = this.negated ? NEGATED_OPS[reading.op] : reading.op;
+    this.text = `${subject(reading.root, 'の')}${this.propertyName(reading.propertyGlobalId)} ${OP_SYMBOLS[op]} ${this.valueText(reading)}`;
+  }
+
+  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string): void {
+    const suffix = this.negated ? 'でない' : '';
+    this.text = `${subject(root, 'の')}${this.propertyName(propertyGlobalId)}が段${stageName}${suffix}`;
+  }
+
+  slotPosition(root: ReferenceRoot, slotGlobalId: number): void {
+    this.text = `${subject(root, 'が')}${this.slotName(slotGlobalId)}枠に${this.negated ? '無い' : 'ある'}`;
+  }
+
+  slotContent(root: ReferenceRoot, slotGlobalId: number, match: TypeMatchReading): void {
+    const content = typeMatchText(this.codex, match);
+    this.text = `${subject(root, 'の')}${this.slotName(slotGlobalId)}枠に${content}が${this.negated ? '無い' : 'ある'}`;
+  }
+
+  objectMatches(root: ReferenceRoot, match: TypeMatchReading): void {
+    const suffix = this.negated ? 'でない' : 'である';
+    this.text = `${subject(root, 'が')}${typeMatchText(this.codex, match)}${suffix}`;
+  }
+
+  all(children: readonly ConditionDeclaration[]): void {
+    this.join(children, this.negated ? 'または' : 'かつ');
+  }
+
+  any(children: readonly ConditionDeclaration[]): void {
+    this.join(children, this.negated ? 'かつ' : 'または');
+  }
+
+  not(child: ConditionDeclaration): void {
+    const inner = conditionText(this.codex, child, !this.negated);
+    this.text = inner.text;
+    this.composite = inner.composite;
+  }
+
+  /** 入れ子の複合ノードだけを括弧で包む。平らな並びに括弧を足しても、切れ目は増えない。 */
+  private join(children: readonly ConditionDeclaration[], conjunction: string): void {
+    this.text = children
+      .map((child) => conditionText(this.codex, child, this.negated))
+      .map((child) => (child.composite ? `（${child.text}）` : child.text))
+      .join(` ${conjunction} `);
+    this.composite = children.length > 1;
+  }
+
+  private propertyName(propertyGlobalId: number): string {
+    return this.codex.propertyNames.getName(propertyGlobalId);
+  }
+
+  private slotName(slotGlobalId: number): string {
+    return this.codex.slotNames.getName(slotGlobalId);
+  }
+
+  /** 比較の相手。別のプロパティを見ているならその参照、リテラルなら値そのもの。 */
+  private valueText(reading: PropertyConditionReading): string {
+    const { valueRef } = reading;
+    if (valueRef !== undefined)
+      return `${subject(valueRef.root, 'の')}${this.propertyName(valueRef.propertyGlobalId)}`;
+
+    return (reading.values ?? [])
+      .map((value) => this.literalText(reading.propertyGlobalId, value))
+      .join('・');
+  }
+
+  /** シンボル型プロパティ（6.6節）の値はシンボル名へ戻す。実行時の値はどちらも数値なので、型を訊く。 */
+  private literalText(propertyGlobalId: number, value: number): string {
+    if (!this.codex.symbolicProperties.has(propertyGlobalId)) return String(value);
+    return this.codex.symbolNames.tryGetName(value) ?? String(value);
+  }
 }
 
 function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly SupplyRow[] {
@@ -931,7 +1097,7 @@ function deviceRows(
  */
 function cycleCondition(codex: WorldCodex, def: ObjectDef, cycle: DeviceCycle): string {
   // 隣の物に押されて進む周期（炉が焼く・傷が血を奪う）は、押し手が傍に在ること自体が条件。
-  if (cycle.drivenBy !== undefined) return CONDITIONAL;
+  if (cycle.drivenBy !== undefined) return `${codex.objectNames.getName(cycle.drivenBy)}が傍にある`;
 
   let unconditional = 0;
   let gated: TickDelta | undefined;
