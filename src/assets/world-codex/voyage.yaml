@@ -14,7 +14,8 @@
 #   - **その辺は海岸の数だけ在る。** どの海区へ着く辺なのかは海岸の側が名乗る（coast trait）ので、
 #     出航地点を選ぶことが航海の距離と危険度を選ぶことになる（GameEndings.md 5節）。
 #   - **時間を進めるだけでは1海区も進まない**（GameEndings.md 12節）。風・海流・積載・帆は進みでは
-#     なく、その海区を渡るのにかかる時間（crossing_minutes）へ効く。
+#     なく、その海区を渡るのにかかる時間（crossing_minutes）へ効く。**唯一の例外が荒天で、これは
+#     進みではなく位置を動かす**——風下の隣へ押し流す（同12.4節、sea_zone の storm_drift）。
 
 traits:
   # 海に面した土地（locations.yamlの砂浜・岩だらけの海岸・岸壁）。**足すのは海の側の事実1つだけ**
@@ -39,13 +40,15 @@ traits:
       offshore_tide_rip: {value: 0}
       offshore_gull_rock: {value: 0}
 
-  # 海区（GameEndings.md 12節）。**地上の土地と同じ場所**で、足しているのは海の側の3つだけ
-  # ——浮かんでいるものを押す海流、浮いていることの配布、そしてここを渡るのにかかる時間。
+  # 海区（GameEndings.md 12節）。**地上の土地と同じ場所**で、足しているのは海の側の4つだけ
+  # ——浮かんでいるものを押す海流、浮いていることの配布、ここを渡るのにかかる時間、そして荒天が
+  # 浮かんでいるものを風下へ押し流すこと（12.4節）。
   #
   # **8種類の顔ぶれ（ContentSkeleton.md 7節）は、この trait が持つ1つの見張りの卓と、その重みの
   # 配り方だけで表す。** 顔ぶれごとの型もタグも持たない。海区ごとに違うのは本土までの残り海区数
   # （zones_to_mainland。鎖のどこに居るか）と、見張り何回で航路が現れるか（exploration_progress の
-  # range.max）と、下のつまみの重みの3つ。
+  # range.max）と、下のつまみの重みと、荒天の押し流し（storm_drift。鎖の両隣と、流されるまでの
+  # 長さ）の4つ。
   sea_zone:
     tags: [sea]
     # **海は物を置ける場所ではない**（GameEndings.md 12.7節）ので、location が配る items を落とす
@@ -134,6 +137,22 @@ traits:
       shoal_find: {value: 0}
       # 海鳥の群れ。同じく海区へ湧く。
       seabird_find: {value: 0}
+
+      # 荒天の押し流し（GameEndings.md 12.4節）の向き——風下が鎖のどちら側かを、重みで言う。
+      # **`pick` の候補は条件を持てない**ので、風向きの見分けは条件ではなく重みへ移してある
+      # （下の passives が風向きごとに片方だけを立てる）。素の値が0なので、立った側だけが選ばれる。
+      drift_to_mainland_weight: {value: 0}
+      drift_to_island_weight: {value: 0}
+
+      # この海区で荒天にさらされた時間（tick）。上限に達すると1回押し流して0へ戻る（6.3節の折り返し）。
+      #
+      # **押し流す先を持つのは海区の側。** 筏は流されるだけで、鎖のどちら隣へ行くのかを知らない
+      # ——行き先を型で名指しできるのは、そこに在り続ける海区のほうだから（海岸と出航の関係と同じ）。
+      # 折り返す点（range.max）と押し流す先（on_max）は海区ごとに与える。**さらされてから流されるまでの
+      # 長さが顔ぶれの差**で、岩礁だけが短い（ContentSkeleton.md 7節）。
+      storm_drift:
+        value: 0
+        range: {min: 0, max: 16}
     passives:
       # 海流。浮かんでいるものを本土の方へ押し続ける。凪いでも渡れなくならないのはこれがあるためで、
       # 向かい風はこれを打ち消す量として書いてある（筏の sail_speed 参照）。
@@ -147,6 +166,29 @@ traits:
       - conditions:
           - {slot: fixtures, matches: {object: raft}}
         add: {self: {chart_crossed: 1}}
+      # 風下がどちら側か（GameEndings.md 12.4節）。追い風なら本土の側、向かい風なら島の側。
+      # **横風にはどちらも立たない**——鎖に分岐が無いので、横へ押し流す先が無い。
+      - conditions:
+          - {subject: ancestor, prop: wind, eq: tailwind}
+        modify: {self: {drift_to_mainland_weight: 1}}
+      - conditions:
+          - {subject: ancestor, prop: wind, eq: headwind}
+        modify: {self: {drift_to_island_weight: 1}}
+      # 荒天にさらされた時間。**筏がこの海に浮いている間だけ進む**ので、海岸に繋いだままの筏は
+      # 流されない。横風の間も進まない——押し流す先が無いので、待っても溜まらない。
+      - conditions:
+          - {slot: fixtures, matches: {object: raft}}
+          - {subject: ancestor, prop: weather, eq: storm}
+          - not: {subject: ancestor, prop: wind, eq: crosswind}
+        add: {self: {storm_drift: 1}}
+      # 荒天が去るか筏が出ていけば、貯まった時間はほどけていく（range.minの0で止まる）。
+      # **同じ海区へ戻ってきた筏が、前の荒天の続きから流されることはない。**
+      - conditions:
+          - not:
+              all:
+                - {slot: fixtures, matches: {object: raft}}
+                - {subject: ancestor, prop: weather, eq: storm}
+        add: {self: {storm_drift: -1}}
     interactions:
       # 見張り。**地上の探索そのもの**（ExplorationSystem.md 2節）で、1回15分＝1tick、進捗が1つ進む。
       # 進捗が上限に達した瞬間、その海区から出る航路が現れる（exploration_progress の on_max）。
@@ -718,6 +760,19 @@ object_defs:
           spawn:
             - {object: route_to_kelp_belt, into: self}
             - {object: route_to_coastal_waters, into_object: kelp_belt}
+      # 押し流す先（sea_zone の storm_drift）。**行き先は型の名前で書くしかない**ので、航路が海区ごとに
+      # 隣を名指ししているのと同じく、押し流しの先も海区ごとに名指す。片方の風下に海区が無ければ、その
+      # 候補は行き先を持たない——**選ばれても何も起きない回**になる（10.1節）。
+      storm_drift:
+        on_max:
+          add: {self: {storm_drift: -16}}
+          pick:
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: kelp_belt}
+              signal: {picked: swept}
+            # 鎖の先頭なので、島の側に海区が無い。**荒天が岸へ乗り上げさせることはない。**
+            - weight: {prop: drift_to_island_weight}
 
   # 海藻の帯。帯そのものが目印になり、掬えば海藻が採れる。
   kelp_belt:
@@ -737,6 +792,18 @@ object_defs:
           spawn:
             - {object: route_to_tide_rip, into: self}
             - {object: route_to_kelp_belt, into_object: tide_rip}
+      storm_drift:
+        on_max:
+          add: {self: {storm_drift: -16}}
+          pick:
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: tide_rip}
+              signal: {picked: swept}
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: coastal_waters}
+              signal: {picked: swept}
 
   # 潮目。流れのぶつかる帯で、波と鳥の集まりが目印になる。**補給が当てになる唯一の海区**。
   tide_rip:
@@ -756,6 +823,18 @@ object_defs:
           spawn:
             - {object: route_to_reef_shallows, into: self}
             - {object: route_to_tide_rip, into_object: reef_shallows}
+      storm_drift:
+        on_max:
+          add: {self: {storm_drift: -16}}
+          pick:
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: reef_shallows}
+              signal: {picked: swept}
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: kelp_belt}
+              signal: {picked: swept}
 
   # 岩礁の海。波の砕ける瀬に漂流物が寄り、魚も付く。
   reef_shallows:
@@ -776,6 +855,21 @@ object_defs:
           spawn:
             - {object: route_to_gull_rock, into: self}
             - {object: route_to_reef_shallows, into_object: gull_rock}
+      # **岩礁は荒天で押し流されやすい**（ContentSkeleton.md 7節）。顔ぶれの差は、さらされてから
+      # 流されるまでの長さ（折り返す点）だけで表す——押し流し方そのものは他の海区と同じ。
+      storm_drift:
+        range: {min: 0, max: 8}
+        on_max:
+          add: {self: {storm_drift: -8}}
+          pick:
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: gull_rock}
+              signal: {picked: swept}
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: tide_rip}
+              signal: {picked: swept}
 
   # 海鳥の岩。鳥が巣を作る岩で、卵と羽が拾える。**その岩は上陸できる**（offshore_islet）。
   gull_rock:
@@ -797,6 +891,18 @@ object_defs:
             - {object: route_to_islet_waters, into: self}
             - {object: offshore_islet, into: self}
             - {object: route_to_gull_rock, into_object: islet_waters}
+      storm_drift:
+        on_max:
+          add: {self: {storm_drift: -16}}
+          pick:
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: islet_waters}
+              signal: {picked: swept}
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: reef_shallows}
+              signal: {picked: swept}
 
   # 小島の海。海面には何も無く、実りは上陸した先にある。
   islet_waters:
@@ -816,6 +922,18 @@ object_defs:
             - {object: route_to_open_water, into: self}
             - {object: offshore_islet, into: self}
             - {object: route_to_islet_waters, into_object: open_water}
+      storm_drift:
+        on_max:
+          add: {self: {storm_drift: -16}}
+          pick:
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: open_water}
+              signal: {picked: swept}
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: gull_rock}
+              signal: {picked: swept}
 
   # 空の海。目印が何も無いので、航路を見つけるのに最も見張りを重ねることになる。
   # **最短の航路はここを通る**——渡る時間は最も短く、拾えるものは何も無い。
@@ -835,6 +953,18 @@ object_defs:
           spawn:
             - {object: route_to_wreck_waters, into: self}
             - {object: route_to_open_water, into_object: wreck_waters}
+      storm_drift:
+        on_max:
+          add: {self: {storm_drift: -16}}
+          pick:
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: wreck_waters}
+              signal: {picked: swept}
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: islet_waters}
+              signal: {picked: swept}
 
   # 沈船の海。折れた帆柱と綱が漂い、まれに船が積んでいた物が浮いてくる。
   wreck_waters:
@@ -856,6 +986,18 @@ object_defs:
           spawn:
             - {object: route_to_long_swell, into: self}
             - {object: route_to_wreck_waters, into_object: long_swell}
+      storm_drift:
+        on_max:
+          add: {self: {storm_drift: -16}}
+          pick:
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: long_swell}
+              signal: {picked: swept}
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: open_water}
+              signal: {picked: swept}
 
   # うねりの海（空の海）。大きなうねりだけが続く。
   long_swell:
@@ -874,6 +1016,18 @@ object_defs:
           spawn:
             - {object: route_to_outer_tide_rip, into: self}
             - {object: route_to_long_swell, into_object: outer_tide_rip}
+      storm_drift:
+        on_max:
+          add: {self: {storm_drift: -16}}
+          pick:
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: outer_tide_rip}
+              signal: {picked: swept}
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: wreck_waters}
+              signal: {picked: swept}
 
   # 沖の潮目。島影の無い沖でも、流れのぶつかる帯には魚が集まる。
   outer_tide_rip:
@@ -893,6 +1047,18 @@ object_defs:
           spawn:
             - {object: route_to_black_reef, into: self}
             - {object: route_to_outer_tide_rip, into_object: black_reef}
+      storm_drift:
+        on_max:
+          add: {self: {storm_drift: -16}}
+          pick:
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: black_reef}
+              signal: {picked: swept}
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: long_swell}
+              signal: {picked: swept}
 
   # 黒い岩礁。水面すれすれの黒い瀬が続く。
   black_reef:
@@ -913,6 +1079,20 @@ object_defs:
           spawn:
             - {object: route_to_drifting_kelp, into: self}
             - {object: route_to_black_reef, into_object: drifting_kelp}
+      # 岩礁（reef_shallows と同じ役割）。
+      storm_drift:
+        range: {min: 0, max: 8}
+        on_max:
+          add: {self: {storm_drift: -8}}
+          pick:
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: drifting_kelp}
+              signal: {picked: swept}
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: outer_tide_rip}
+              signal: {picked: swept}
 
   # 流れ藻の海（海藻の帯）。ちぎれた海藻が筋になって漂う。
   drifting_kelp:
@@ -932,6 +1112,18 @@ object_defs:
           spawn:
             - {object: route_to_white_rock, into: self}
             - {object: route_to_drifting_kelp, into_object: white_rock}
+      storm_drift:
+        on_max:
+          add: {self: {storm_drift: -16}}
+          pick:
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: white_rock}
+              signal: {picked: swept}
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: black_reef}
+              signal: {picked: swept}
 
   # 白い岩（海鳥の岩）。糞で白く染まった岩で、遠くからでもそれと分かる。ここも上陸できる。
   white_rock:
@@ -953,6 +1145,18 @@ object_defs:
             - {object: route_to_mainland_shallows, into: self}
             - {object: offshore_islet, into: self}
             - {object: route_to_white_rock, into_object: mainland_shallows}
+      storm_drift:
+        on_max:
+          add: {self: {storm_drift: -16}}
+          pick:
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: mainland_shallows}
+              signal: {picked: swept}
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: drifting_kelp}
+              signal: {picked: swept}
 
   # 本土の島影（沿岸）。本土の陸が見え始める海区で、島影の海と同じだけ実る。ここから本土へ渡る。
   mainland_shallows:
@@ -974,6 +1178,17 @@ object_defs:
             - not: {slot: fixtures, matches: {object: route_to_mainland}}
           spawn:
             - {object: route_to_mainland, into: self}
+      storm_drift:
+        on_max:
+          add: {self: {storm_drift: -16}}
+          pick:
+            # 鎖の末尾なので、本土の側に海区が無い。**到達は本土へ移ることそのもの**（Voyage.md 4節）で、
+            # そこへ渡らせるのは航路であって荒天ではない。
+            - weight: {prop: drift_to_mainland_weight}
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: white_rock}
+              signal: {picked: swept}
 
   # ------------------------------------------------------------------
   # 航路。海区どうしを繋ぐ1本で、地上の道（locations.yamlのpath）と同じ設置物。渡る手そのものは

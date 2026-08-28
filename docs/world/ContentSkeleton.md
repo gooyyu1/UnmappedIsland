@@ -302,7 +302,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 ## 7. 海区の顔ぶれと、遠征先の小島
 
-**海区は8種類の顔ぶれから十数個を配ります。** 差の付け方は地上の土地と同じつまみで、専用の仕組みは
+**海区は8種類の顔ぶれから十数個を配ります。** 実りの差の付け方は地上の土地と同じつまみで、専用の仕組みは
 足しません（[`GameEndings.md`](../concept/GameEndings.md) 12.1節、
 [`ExplorationSystem.md`](../engine/ExplorationSystem.md) 2節の「発見量のつまみ」）。
 
@@ -319,6 +319,9 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 名前はいずれも見れば分かるものから採るので、名前を得るための探索は要りません
 （[`GameEndings.md`](../concept/GameEndings.md) 12.2節）。
+
+**岩礁の「荒天で押し流されやすい」だけが見張りの卓の外です。** 荒天にさらされてから風下の海区へ
+押し流されるまでが、他の海区の半分です（[`Voyage.md`](./Voyage.md) 3.8節）。
 
 ### 7.1 遠征先の小島には錫を置く
 
