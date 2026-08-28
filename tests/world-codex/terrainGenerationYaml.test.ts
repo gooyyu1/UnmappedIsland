@@ -102,13 +102,17 @@ describe('terrain_generation.yamlの地形生成定義', () => {
 
   it('海岸型は海岸帯に限定され、内陸型は海岸帯から除外される', () => {
     const island = scopeOf('island');
-    const coastalTypes = ['sandy_beach', 'rocky_coast', 'cliff_coast'];
+    // **海岸かどうかは土地の側が名乗る**（voyage.yamlのcoast trait）。ここで型名を並べ直すと、
+    // 海岸を1つ足したときに2箇所を揃える仕事が生まれ、揃え忘れても赤が出ない。
+    const coastTag = codex.tagNames.getId('coast');
+    const isCoastal = (objectDefGlobalId: number): boolean =>
+      codex.objects.get(objectDefGlobalId).tags.includes(coastTag);
 
     for (const type of generation.locationTypes) {
       const coastal = singleOrUndefined(type.hardLimits, (l) => l.axis === 'coastal_distance');
       expect(coastal, `${type.name} はcoastal_distanceのhard_limitを持つ`).toBeDefined();
 
-      if (coastalTypes.includes(type.name))
+      if (isCoastal(type.objectDefGlobalId))
         expect(coastal?.max, `海岸型 ${type.name} は海岸帯(coast_band以下)にしか出ない`).toBe(
           island.coastBandMaxDistance,
         );
