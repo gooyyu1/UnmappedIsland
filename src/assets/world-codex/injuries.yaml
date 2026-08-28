@@ -296,3 +296,35 @@ object_defs:
         add:
           parent:
             blood: -15
+
+  # 檻の傷（docs/engine/TrapSystem.md 5.1節・5.2節）。閉じ込められた獣が丸太へ体を打ちつけて負う
+  # 打ち身で、**bleedingを持たない**。
+  #
+  # 生かす罠の性格は、この空白そのものでできている（同5.2節）。血を奪わないので体格によらず死なず、
+  # 60kgのイノシシも1kgのヤケイも、痛みを抱えたまま生きて檻の中に残る——**無傷では捕らえないが、
+  # 殺しもしない**。
+  pen_bruise:
+    traits: [injury, treatable]
+    props:
+      # 自然に治るまで120〜240 tick（1.25〜2.5日）。裂ける傷（snare_laceration）より浅いので短い。
+      # 幅は**ぶつかり方の激しさ**を生成時に1回ロールしたもの（6.2節）で、深さが生死を分ける
+      # 裂傷と違い、ここで変わるのは落ち着くまでの長さだけ。
+      severity:
+        # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
+        gauge: {min: good, max: bad}
+        value: {min: 120, max: 240}
+        range: {min: 0, max: 240}
+        stages:
+          - {name: mending}
+          - {name: sore, min: 80, alert: watch}
+          - {name: acute, min: 160, alert: caution}
+        passives:
+          - add:
+              self:
+                severity: -1
+        on_min:
+          destroy: self
+    passives:
+      - modify:
+          parent:
+            pain: 30

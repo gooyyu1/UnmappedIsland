@@ -13,12 +13,19 @@ import { makeBrightEnoughForAnyAction } from '../support/illumination';
  *
  * 見たいのは**罠と同じ「留守番の設備」の形に乗っていること**（docs/engine/TrapSystem.md）で、
  * 撒く／入れる → 留守にする → 戻ると増えている、の一巡を通す。
+ *
+ * 囲いは**罠の檻と同じ1つの型**（同1.2節）なので、空けておけば掛かり、埋めておけば増える。
+ * 掛かった個体をそのまま飼えること——**移し替えが要らないこと**——がこの型の要（同5.2節）。
  */
 describe('farming.yamlの畑と囲い', () => {
   /**
    * 畑のpickは 空振り0・撒いた株ぶん、なので撒いてあれば引きによらず実る。ここで大きい値を使うのは
    * **撒いていない作物が出ないこと**を見るため——芋だけを撒いた畑でこの引きを与えても、
    * 重み0の葉物へは落ちない。
+   *
+   * 囲いにとってもこれは**掛かる引き**にあたる。外側は 空振り40・寄った10（飼葉があれば15と35）で
+   * 合計50なので0.9は寄った側へ落ち、内側は草原の 空振り8・ヤケイ10 なのでヤケイに当たる。
+   * **囲いを空のまま進めるとヤケイが掛かる**ので、飼育を見る試験は先に中を埋めてから時間を進める。
    */
   const ROLL = 0.9;
 
@@ -27,18 +34,28 @@ describe('farming.yamlの畑と囲い', () => {
   let grassland: WorldObject;
   let player: WorldObject;
   let warinessId: number;
+  let vulnerabilityId: number;
+  let bloodId: number;
   let fodderId: number;
   let taroSownId: number;
   let growthRemainingId: number;
   let breedingRemainingId: number;
+  let catchRemainingId: number;
+  let missWeightId: number;
+  let herbivoreWeightId: number;
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     warinessId = codex.propertyNames.getId('wariness');
+    vulnerabilityId = codex.propertyNames.getId('vulnerability');
+    bloodId = codex.propertyNames.getId('blood');
     fodderId = codex.propertyNames.getId('fodder');
     taroSownId = codex.propertyNames.getId('taro_sown');
     growthRemainingId = codex.propertyNames.getId('growth_remaining');
     breedingRemainingId = codex.propertyNames.getId('breeding_remaining');
+    catchRemainingId = codex.propertyNames.getId('catch_remaining');
+    missWeightId = codex.propertyNames.getId('miss_weight');
+    herbivoreWeightId = codex.propertyNames.getId('herbivore_weight');
   });
 
   /** 草原に立つプレイヤーから始める。rollがpickの引きと生成時のロールを決める。 */
@@ -116,14 +133,40 @@ describe('farming.yamlの畑と囲い', () => {
 
   /**
    * 落ち着いたヤケイを1羽用意する。**野生の個体は警戒した状態で現れる**（animals.yamlのwariness）ので、
-   * 引き切るまで待つ——生け捕りにして待つのが、囲いへ入れる唯一の入口になる
+   * 引き切るまで待つ——手で囲いへ入れるなら、生け捕りにして待つのが唯一の入口になる
    * （docs/engine/VitalsSystem.md 7節・TrapSystem.md 5.2節）。
+   *
+   * **囲いを据える前に呼ぶこと。** 空の囲いは罠なので、待っている40 tickのあいだに掛かってしまう。
    */
   function calmJunglefowl(): WorldObject {
     const fowl = spawnInto('junglefowl', grassland, 'items');
     tick(40);
     expect(fowl.tryGetProperty(warinessId)!.getEffectiveValue(), '警戒が引き切っている').toBe(0);
     return fowl;
+  }
+
+  /** 落ち着いたヤケイを1羽入れた囲いを用意する。飼葉は満たしておく。 */
+  function penWithCalmFowl(): { pen: WorldObject; fowl: WorldObject } {
+    const fowl = calmJunglefowl();
+    const pen = buildPen();
+    expect(fowl.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('livestock')))).toBeUndefined();
+    return { pen, fowl };
+  }
+
+  /** 掛かるまで進める。掛からなければ失敗させる（周期16 tickなので余裕を持って回す）。 */
+  function tickUntilCaught(pen: WorldObject, limit = 40): WorldObject {
+    for (let i = 0; i < limit; i++) {
+      tick(1);
+      const first = pen.tryGetSlot(codex.slotNames.getId('livestock'))!.contents.at(0);
+      if (first !== undefined) return first;
+    }
+    throw new Error('囲いに何も掛からなかった');
+  }
+
+  /** その動物に刺さっている怪我の識別子。 */
+  function injuriesOf(animal: WorldObject): string[] {
+    const slot = animal.tryGetSlot(codex.slotNames.getId('injuries'));
+    return slot === undefined ? [] : slot.contents.map((object) => object.def.name);
   }
 
   /** 囲いの中のヤケイの数。 */
@@ -214,9 +257,7 @@ describe('farming.yamlの畑と囲い', () => {
     // **増えるのは獣自身の仕事**（animals.yamlのbreeding_remaining）。囲いは枠と飼葉を持つだけで、
     // 中に何が居るかを知らない。
     open();
-    const pen = buildPen();
-    const fowl = calmJunglefowl();
-    expect(fowl.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('livestock')))).toBeUndefined();
+    const { pen } = penWithCalmFowl();
 
     for (let i = 0; i < 600 && pennedCount(pen) < 2; i++) tick(1);
     expect(contentsOf(pen, 'livestock'), '1羽増えている').toEqual(['junglefowl', 'junglefowl']);
@@ -226,9 +267,7 @@ describe('farming.yamlの畑と囲い', () => {
     // 生まれた個体は野生と同じ警戒を持つので、そのままでは付いた直後に土地までこぼれ出る
     // （7.13節）。囲いが罠と同じ拘束のmodifyを持つことだけが、これを留めている。
     open();
-    const pen = buildPen();
-    const fowl = calmJunglefowl();
-    fowl.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('livestock')));
+    const { pen, fowl } = penWithCalmFowl();
 
     for (let i = 0; i < 600 && pennedCount(pen) < 2; i++) tick(1);
     const born = pen.tryGetSlot(codex.slotNames.getId('livestock'))!.contents.find((o) => o !== fowl)!;
@@ -240,8 +279,8 @@ describe('farming.yamlの畑と囲い', () => {
     // **これが飼育の代償**で、罠の餌とまったく同じ性質（TrapSystem.md 4節）——自分が食べられる
     // 食料を先に賭ける。
     open();
-    const pen = buildPen(0);
     const fowl = calmJunglefowl();
+    const pen = buildPen(0);
     fowl.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('livestock')));
 
     tick(600);
@@ -263,9 +302,9 @@ describe('farming.yamlの畑と囲い', () => {
     // 囲いの側は中身を数えられない（条件は存在判定だけ、14.3節）。**食べるのは食べる当人**なので、
     // 頭数が効くことが、囲いに1行も書かずに出る。
     open();
+    const first = calmJunglefowl();
     const pen = buildPen();
     const livestock = pen.getSlot(codex.slotNames.getId('livestock'));
-    const first = calmJunglefowl();
     first.moveToSlotOrRejection(livestock);
 
     const beforeOne = pen.tryGetProperty(fodderId)!.getEffectiveValue();
@@ -279,6 +318,130 @@ describe('farming.yamlの畑と囲い', () => {
     const twoRate = beforeTwo - pen.tryGetProperty(fodderId)!.getEffectiveValue();
 
     expect(twoRate, '2羽なら2倍').toBeCloseTo(oneRate * 2);
+  });
+
+  it('空の囲いは罠として働き、掛かった獣に檻の傷が刺さる', () => {
+    // **檻と家畜の囲いは1つの型**（TrapSystem.md 1.2節）。空いている間は大型を生かして捕らえる罠で、
+    // spawnの配列が順に生むので獲物を生んでからその中へ怪我を生む（into: child、同5.3節）。
+    open();
+    const pen = buildPen();
+
+    const prey = tickUntilCaught(pen);
+    expect(prey.def.name).toBe('junglefowl');
+    expect(injuriesOf(prey), '檻の傷が刺さる').toEqual(['pen_bruise']);
+    expect(contentsOf(grassland, 'items'), 'レーンに出ない——獲物は囲いの中に居る').toEqual([]);
+  });
+
+  it('檻の傷は血を奪わないので、掛かった獣は死なない', () => {
+    // **生かす罠の性格は、bleedingを書かなかったことでできている**（TrapSystem.md 5.2節）。
+    // くくり罠の傷なら80mLのヤケイは血を失うが、打ち身では1mLも減らない。
+    open();
+    const prey = tickUntilCaught(buildPen());
+    const blood = prey.tryGetProperty(bloodId)!.getEffectiveValue();
+
+    tick(20);
+    expect(prey.def.name, '死体になっていない').toBe('junglefowl');
+    expect(prey.tryGetProperty(bloodId)!.getEffectiveValue(), '血は減らない').toBeGreaterThanOrEqual(blood);
+  });
+
+  it('掛かった獣は拘束され、囲いは罠であることをやめる', () => {
+    // 拘束は罠と同じ1ブロック（TrapSystem.md 5節）。タイマーが止まるのは「中に獲物が居ないこと」を
+    // 問う条件1つ（同6節）で、**これが檻を囲いに変えている**。
+    open();
+    const pen = buildPen();
+    const prey = tickUntilCaught(pen);
+
+    expect(prey.tryGetProperty(warinessId)!.getEffectiveValue(), '中では暴れない').toBe(0);
+    expect(prey.tryGetProperty(vulnerabilityId)!.getEffectiveValue(), '締めやすくなる').toBeGreaterThan(100);
+
+    const stopped = pen.tryGetProperty(catchRemainingId)!.getEffectiveValue();
+    tick(20);
+    expect(pen.tryGetProperty(catchRemainingId)!.getEffectiveValue(), '2頭目は掛からない').toBe(stopped);
+    expect(pennedCount(pen)).toBe(1);
+  });
+
+  it('手で入れた家畜も、同じ条件で罠を止める', () => {
+    // 掛かって入ったか手で入れたかを、囲いは区別しない——問うているのは中に居るかだけ。
+    open();
+    const { pen } = penWithCalmFowl();
+    const stopped = pen.tryGetProperty(catchRemainingId)!.getEffectiveValue();
+
+    tick(20);
+    expect(pen.tryGetProperty(catchRemainingId)!.getEffectiveValue()).toBe(stopped);
+    expect(contentsOf(pen, 'livestock'), '獣が掛かって増えたりしない').toEqual(['junglefowl']);
+  });
+
+  it('掛かった個体は、移し替えずにそのまま増える', () => {
+    // **これが1つの型にした値打ち**（TrapSystem.md 1.2節・5.2節）。掛かった個体は既に囲いの中に
+    // 居るので、檻から囲いへ移す操作が要らない——**捕らえた後に一度も触らない**。
+    open();
+    const pen = buildPen();
+    tickUntilCaught(pen);
+
+    for (let i = 0; i < 900 && pennedCount(pen) < 2; i++) tick(1);
+    expect(contentsOf(pen, 'livestock'), '掛かった個体が増えている').toEqual(['junglefowl', 'junglefowl']);
+  });
+
+  it('掛かった個体は、閉じ込められたまま落ち着いて家畜になる', () => {
+    // 拘束はmodify（実効値への可逆な寄与）だが、警戒の実体値は中でも-1/tickで引き続ける
+    // （TrapSystem.md 5節）。**生かす罠から飼いならしへ続く道**（同5.2節）がこれで、掛かってすぐの
+    // 個体は上の「荒ぶる獣は囲いへ入れられない」で拒まれる側に居る。
+    open();
+    const pen = buildPen();
+    const prey = tickUntilCaught(pen);
+    tick(40);
+
+    const livestock = pen.getSlot(codex.slotNames.getId('livestock'));
+    expect(prey.moveToSlotOrRejection(grassland.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
+    expect(prey.tryGetProperty(warinessId)!.getEffectiveValue(), '出しても暴れない').toBe(0);
+    expect(prey.moveToSlotOrRejection(livestock), '落ち着いた個体として入り直せる').toBeUndefined();
+  });
+
+  it('飼葉は寄せる餌でもある', () => {
+    // 草食の獣が寄ってくる量と、草食の獣が食べる量は同じ1つの量（TrapSystem.md 4.1節）。
+    // 与えるのは罠へ餌を仕掛けるのとまったく同じ形。
+    open();
+    const pen = spawnInto('livestock_pen', grassland, 'fixtures');
+    const before = {
+      miss: pen.tryGetProperty(missWeightId)!.getEffectiveValue(),
+      herbivore: pen.tryGetProperty(herbivoreWeightId)!.getEffectiveValue(),
+    };
+
+    const taro = spawnInto('taro', player, 'hand');
+    expect(
+      pen
+        .combinationsWith(taro, player)
+        .find((combination) => combination.name === 'feed')
+        ?.tryExecute() === true,
+    ).toBe(true);
+
+    expect(pen.tryGetProperty(missWeightId)!.getEffectiveValue(), '空振りが減る').toBeLessThan(before.miss);
+    expect(
+      pen.tryGetProperty(herbivoreWeightId)!.getEffectiveValue(),
+      '寄ってくる回が増える',
+    ).toBeGreaterThan(before.herbivore);
+  });
+
+  it('ネズミは檻に掛からない', () => {
+    // **サイズは候補の一覧が持つ**（TrapSystem.md 1.1節）。草原はネズミも宣言している（rat_catch）が、
+    // 丸太の隙間から出ていく大きさなので檻の候補には無い——罠の側に「小さすぎる」を表す量は要らない。
+    //
+    // 引きは固定なので、1つの引きでは同じ候補しか出ない。**引きのほうを振って**一覧を見る。
+    const caught = new Set<string>();
+    for (const roll of [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95]) {
+      open(roll);
+      const pen = buildPen();
+      for (let i = 0; i < 60; i++) {
+        tick(1);
+        for (const object of pen.tryGetSlot(codex.slotNames.getId('livestock'))!.contents) {
+          caught.add(object.def.name);
+          object.destroy();
+        }
+      }
+    }
+
+    expect(caught, '掛かるものはある').toContain('junglefowl');
+    expect([...caught], 'ネズミは掛からない').toEqual(['junglefowl']);
   });
 
   it('囲いは丸太と縄から作れる', () => {
