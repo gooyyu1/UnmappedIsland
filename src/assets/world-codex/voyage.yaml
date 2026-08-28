@@ -31,7 +31,7 @@ traits:
   # 面している海区にだけ重みを与える。今はどの海岸も1つだけ立てるので抽選にはならないが、
   # 「風向き次第でどちらへ出るか」を書きたくなっても同じ卓で足りる。
   #
-  # **並ぶのは、島の海岸が面しうる海区だけ。** 鎖の先へ行くほど島から遠い海なので、島の海岸がそこへ
+  # **並ぶのは、島の海岸が面しうる海区だけ。** 本土の側へ行くほど島から遠い海なので、島の海岸がそこへ
   # 面することはない。この一覧が、そのまま出航の卓（筏の set_sail）の候補になる。
   coast:
     tags: [coast]
@@ -45,10 +45,10 @@ traits:
   # 浮かんでいるものを風下へ押し流すこと（12.4節）。
   #
   # **8種類の顔ぶれ（ContentSkeleton.md 7節）は、この trait が持つ1つの見張りの卓と、その重みの
-  # 配り方だけで表す。** 顔ぶれごとの型もタグも持たない。海区ごとに違うのは本土までの残り海区数
-  # （zones_to_mainland。鎖のどこに居るか）と、見張り何回で航路が現れるか（exploration_progress の
-  # range.max）と、下のつまみの重みと、荒天の押し流し（storm_drift。鎖の両隣と、流されるまでの
-  # 長さ）の4つ。
+  # 配り方だけで表す。** 顔ぶれごとの型もタグも持たない。海区ごとに違うのは本土までの最短の残り
+  # 海区数（zones_to_mainland。網のどこに居るか）と、見張り何回で航路が現れるか
+  # （exploration_progress の range.max）と、下のつまみの重みと、荒天の押し流し（storm_drift。
+  # 辺で繋がった隣と、流されるまでの長さ）の4つ。
   sea_zone:
     tags: [sea]
     # **海は物を置ける場所ではない**（GameEndings.md 12.7節）ので、location が配る items を落とす
@@ -68,9 +68,14 @@ traits:
         value: 360
         range: {min: 120, max: 900}
 
-      # その海区から本土まで、その海区を含めて何区間あるか。**海図ではなく海の側の事実**なので
-      # 海区ごとに与える（鎖の先頭が14、本土の手前が1）。海図が持つのはこの数の見当（次の2つ）で、
-      # 真値そのものはプレイヤーへ出さない。
+      # その海区から本土まで、その海区を含めて**最短で**何区間あるか。**海図ではなく海の側の事実**
+      # なので海区ごとに与える（島側の端が12、本土の手前が1）。海図が持つのはこの数の見当（次の2つ）
+      # で、真値そのものはプレイヤーへ出さない。
+      #
+      # **分岐がある以上、1つの数で言えるのは最短だけ**（GameEndings.md 12.6節）。遠回りを選べば実際は
+      # 延びるが、それは海図の粗さではなく針路の選択で、幅（次の2つ）が表すのは粗さのほうだけ。
+      # **鎖ではなく網なので、隣がこの数で必ず1つ手前になるとは限らない**——遠回りの側の隣は自分より
+      # 遠い（うねりの海4と沖の潮目5）。
       zones_to_mainland:
         range: {min: 1, max: 30}
 
@@ -138,15 +143,18 @@ traits:
       # 海鳥の群れ。同じく海区へ湧く。
       seabird_find: {value: 0}
 
-      # 荒天の押し流し（GameEndings.md 12.4節）の向き——風下が鎖のどちら側かを、重みで言う。
+      # 荒天の押し流し（GameEndings.md 12.4節）の向き——風下が本土の側か島の側かを、重みで言う。
       # **`pick` の候補は条件を持てない**ので、風向きの見分けは条件ではなく重みへ移してある
       # （下の passives が風向きごとに片方だけを立てる）。素の値が0なので、立った側だけが選ばれる。
+      #
+      # **分かれ道と合流点では、その向きの隣が2つある**（うねりの海の本土側、流れ藻の海の島側）。同じ
+      # 重みの候補を2つ並べるので、どちらへ流されるかは荒天が決める——選ぶのはプレイヤーではない。
       drift_to_mainland_weight: {value: 0}
       drift_to_island_weight: {value: 0}
 
       # この海区で荒天にさらされた時間（tick）。上限に達すると1回押し流して0へ戻る（6.3節の折り返し）。
       #
-      # **押し流す先を持つのは海区の側。** 筏は流されるだけで、鎖のどちら隣へ行くのかを知らない
+      # **押し流す先を持つのは海区の側。** 筏は流されるだけで、どの隣へ行くのかを知らない
       # ——行き先を型で名指しできるのは、そこに在り続ける海区のほうだから（海岸と出航の関係と同じ）。
       # 折り返す点（range.max）と押し流す先（on_max）は海区ごとに与える。**さらされてから流されるまでの
       # 長さが顔ぶれの差**で、岩礁だけが短い（ContentSkeleton.md 7節）。
@@ -167,7 +175,8 @@ traits:
           - {slot: fixtures, matches: {object: raft}}
         add: {self: {chart_crossed: 1}}
       # 風下がどちら側か（GameEndings.md 12.4節）。追い風なら本土の側、向かい風なら島の側。
-      # **横風にはどちらも立たない**——鎖に分岐が無いので、横へ押し流す先が無い。
+      # **横風にはどちらも立たない**——分岐が入っても、辺で繋がった隣はどれも本土の側か島の側の
+      # どちらかで、横風の風下に当たる海区はどれとも繋がっていない。
       - conditions:
           - {subject: ancestor, prop: wind, eq: tailwind}
         modify: {self: {drift_to_mainland_weight: 1}}
@@ -233,7 +242,7 @@ traits:
   # 航路。海区から海区への繋がり1本で、見張りの成果として現れる設置物。
   #
   # **航路は方向を持たない——持つのは行き先の型だけ。** だから「島の側へ戻る航路」に別の仕組みは
-  # 要らず、鎖を1つ戻る航路は多くが既に在る型そのものになる（潮目に置く「海藻の帯への航路」は、
+  # 要らず、1つ戻る航路は多くが既に在る型そのものになる（潮目に置く「海藻の帯への航路」は、
   # 島影の海が持つのと同じ route_to_kelp_belt）。
   #
   # **渡る手はここが持ち、行き先だけを型の側が書く。** 地上の道の travel と同じメニューの操作で、
@@ -710,14 +719,24 @@ object_defs:
   # ------------------------------------------------------------------
   # 海区（GameEndings.md 12節）。島と本土の間の海を、8種類の顔ぶれ（ContentSkeleton.md 7節）から
   # 配った14個の連なりとして持つ。海区そのものの作りは sea_zone trait（このファイルの先頭）が
-  # 持ち、ここが書くのは海区ごとに違う3つだけ——本土までの残り海区数・見張り何回で航路が現れるか・
-  # 見張りの卓の重み（＝その海区の顔ぶれ）。**渡るのにかかる時間は揃っている**（sea_zone trait）。
+  # 持ち、ここが書くのは海区ごとに違う3つだけ——本土までの最短の残り海区数・見張り何回で航路が
+  # 現れるか・見張りの卓の重み（＝その海区の顔ぶれ）。**渡るのにかかる時間は揃っている**
+  # （sea_zone trait）。
   #
   # **明るさはどの海区も0**（遮るものが何も無いので、空の明るさがそのまま届く、
   # IlluminationSystem.md 2節）。location trait が値を持たないので、海区ごとに名乗る。
   #
-  # 並びは1本の鎖で、分岐はまだ無い。**実りの濃淡は見張りの卓の重みだけで表す**（GameEndings.md
-  # 12.1節）——渡る時間はどの海区も同じなので、濃い海区を「渡るのに時間がかかる」形では表せない。
+  # **うねりの海で航路が二手に分かれ、流れ藻の海で合流する**（GameEndings.md 12.3節）。
+  #
+  #   島影の海 — 海藻の帯 — 潮目 — 岩礁の海 — 海鳥の岩 — 小島の海 — 空の海 — 沈船の海 — うねりの海
+  #     近道　: うねりの海 — 流れ藻の海
+  #     遠回り: うねりの海 — 沖の潮目 — 黒い岩礁 — 流れ藻の海
+  #   流れ藻の海 — 白い岩 — 本土の島影 — 本土
+  #
+  # **近道のほうが実りが薄い**（同12.1節）。渡る時間はどの海区も同じなので、実りの濃淡は見張りの卓の
+  # 重みだけで表し、経路の長短は**通る海区の数**で表す——近道は1区間で流れ藻の海へ着くかわりに、
+  # 沖の潮目（実り0.8）と黒い岩礁（同0.55）の2区間ぶんの見張りを丸ごと飛ばす。遠回りは2区間ぶん
+  # 長いが、その2つが返す。
   #
   # **on_max が湧かせるのは辺1本の両端**——この海区に立つ「次の海区への航路」と、次の海区に立つ
   # 「この海区への航路」（同12.5節）。地上の道が辺1本につき両端へ1個ずつ置く（`IslandSpawner`）のと
@@ -731,13 +750,17 @@ object_defs:
   # **条件を満たさない回は、range を書いただけのときと同じ既定のクランプが走る**ので、100%到達後も
   # 見張り続けられて（同12.1節）、進捗は上限に張り付いたままになる。
   #
-  # 鎖の先の端だけが見張りで両端を立てない（本土に着けば周回が終わるので折り返しは要らない）。島側は
+  # **分かれ道の海区だけが、見張り切ったときに航路を2本立てる**（うねりの海）。どちらへ渡るかを
+  # 選べることが分岐の眼目なので、片方だけ先に見えるようにはしない——見張りの進み具合は1つしか
+  # 無いので、段階を分けるなら別のつまみが要る。
+  #
+  # 本土の側の端だけが見張りで両端を立てない（本土に着けば周回が終わるので折り返しは要らない）。島側は
   # 海区ではないので見張りの相手にならず、島へ帰る航路（route_to_shore）を立てるのは、その辺を渡る手
   # そのものである出航（筏の set_sail）。
   #
-  # **島と繋がるのは鎖の先頭だけではない。** 海岸が面した海区へ直に漕ぎ出せる（coast trait）ので、
-  # 島影の海・潮目・海鳥の岩の3つが島と辺で繋がっている。本土までの残り区間が14・12・10と変わるのが、
-  # 出航地点ごとの距離そのもの（GameEndings.md 5節）。
+  # **島と繋がるのは島側の端だけではない。** 海岸が面した海区へ直に漕ぎ出せる（coast trait）ので、
+  # 島影の海・潮目・海鳥の岩の3つが島と辺で繋がっている。本土までの最短の残り区間が12・10・8と
+  # 変わるのが、出航地点ごとの距離そのもの（GameEndings.md 5節）。
   # ------------------------------------------------------------------
 
   # 島影の海（沿岸）。島を離れてすぐの海区で、陸が見えているぶん自分の居場所が読みやすい。
@@ -746,7 +769,7 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      zones_to_mainland: {value: 14}
+      zones_to_mainland: {value: 12}
       driftwood_find: {value: 30}
       seaweed_find: {value: 25}
       shoal_find: {value: 25}
@@ -771,7 +794,7 @@ object_defs:
               among: {slot: fixtures, matches: {object: raft}}
               move: {subject: picked, to_object: kelp_belt}
               signal: {picked: swept}
-            # 鎖の先頭なので、島の側に海区が無い。**荒天が岸へ乗り上げさせることはない。**
+            # 島側の端なので、島の側に海区が無い。**荒天が岸へ乗り上げさせることはない。**
             - weight: {prop: drift_to_island_weight}
 
   # 海藻の帯。帯そのものが目印になり、掬えば海藻が採れる。
@@ -780,7 +803,7 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      zones_to_mainland: {value: 13}
+      zones_to_mainland: {value: 11}
       seaweed_find: {value: 55}
       barren_find: {value: 45}
       exploration_progress:
@@ -811,7 +834,7 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      zones_to_mainland: {value: 12}
+      zones_to_mainland: {value: 10}
       shoal_find: {value: 80}
       barren_find: {value: 20}
       exploration_progress:
@@ -842,7 +865,7 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      zones_to_mainland: {value: 11}
+      zones_to_mainland: {value: 9}
       flotsam_find: {value: 35}
       shoal_find: {value: 20}
       barren_find: {value: 45}
@@ -877,7 +900,7 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      zones_to_mainland: {value: 10}
+      zones_to_mainland: {value: 8}
       egg_find: {value: 35}
       seabird_find: {value: 20}
       barren_find: {value: 45}
@@ -910,7 +933,7 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      zones_to_mainland: {value: 9}
+      zones_to_mainland: {value: 7}
       barren_find: {value: 100}
       exploration_progress:
         value: 0
@@ -942,7 +965,7 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      zones_to_mainland: {value: 8}
+      zones_to_mainland: {value: 6}
       barren_find: {value: 100}
       exploration_progress:
         value: 0
@@ -972,7 +995,7 @@ object_defs:
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      zones_to_mainland: {value: 7}
+      zones_to_mainland: {value: 5}
       # 1周回に0〜1個（ContentSkeleton.md 7節）。見張り4回で当たるのは2割ほど。
       wreck_find: {value: 5}
       flotsam_find: {value: 15}
@@ -1000,26 +1023,39 @@ object_defs:
               signal: {picked: swept}
 
   # うねりの海（空の海）。大きなうねりだけが続く。
+  #
+  # **ここで航路が二手に分かれる**（GameEndings.md 12.3節）——流れ藻の海へ直に渡る近道（1区間）と、
+  # 沖の潮目・黒い岩礁を回る遠回り（3区間）。**見張り切ると2本とも現れる**ので、渡る前にどちらも
+  # 盤面に出ている。見張りの進み具合は1つしか無いので、片方を先に見せるには別のつまみが要る。
   long_swell:
     singleton: true
     traits: [location, explorable, sea_zone]
     props:
       ambient_brightness: {value: 0}
-      zones_to_mainland: {value: 6}
+      zones_to_mainland: {value: 4}
       barren_find: {value: 100}
       exploration_progress:
         value: 0
         range: {min: 0, max: 5}
         on_max:
           conditions:
+            - not: {slot: fixtures, matches: {object: route_to_drifting_kelp}}
             - not: {slot: fixtures, matches: {object: route_to_outer_tide_rip}}
           spawn:
+            - {object: route_to_drifting_kelp, into: self}
+            - {object: route_to_long_swell, into_object: drifting_kelp}
             - {object: route_to_outer_tide_rip, into: self}
             - {object: route_to_long_swell, into_object: outer_tide_rip}
       storm_drift:
         on_max:
           add: {self: {storm_drift: -16}}
           pick:
+            # 本土の側の隣が2つある（分かれ道なので）。同じ重みで並ぶので、近道と遠回りのどちらへ
+            # 流されるかは荒天が決める。
+            - weight: {prop: drift_to_mainland_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: drifting_kelp}
+              signal: {picked: swept}
             - weight: {prop: drift_to_mainland_weight}
               among: {slot: fixtures, matches: {object: raft}}
               move: {subject: picked, to_object: outer_tide_rip}
@@ -1029,7 +1065,8 @@ object_defs:
               move: {subject: picked, to_object: wreck_waters}
               signal: {picked: swept}
 
-  # 沖の潮目。島影の無い沖でも、流れのぶつかる帯には魚が集まる。
+  # 沖の潮目。島影の無い沖でも、流れのぶつかる帯には魚が集まる。**遠回りの側の入口**で、うねりの海
+  # （4）より遠い5なのは、ここを通ると本土まで2区間ぶん長くなるから（zones_to_mainland）。
   outer_tide_rip:
     singleton: true
     traits: [location, explorable, sea_zone]
@@ -1094,7 +1131,8 @@ object_defs:
               move: {subject: picked, to_object: outer_tide_rip}
               signal: {picked: swept}
 
-  # 流れ藻の海（海藻の帯）。ちぎれた海藻が筋になって漂う。
+  # 流れ藻の海（海藻の帯）。ちぎれた海藻が筋になって漂う。**二手に分かれた航路はここで合流する**
+  # ——近道（うねりの海から直に）と遠回り（黒い岩礁から）の両方から航路が立つ。
   drifting_kelp:
     singleton: true
     traits: [location, explorable, sea_zone]
@@ -1119,6 +1157,12 @@ object_defs:
             - weight: {prop: drift_to_mainland_weight}
               among: {slot: fixtures, matches: {object: raft}}
               move: {subject: picked, to_object: white_rock}
+              signal: {picked: swept}
+            # 島の側の隣が2つある（合流点なので）。同じ重みで並ぶので、荒天がどちらの経路へ押し戻すかは
+            # 選べない——近道で来ても、遠回りの側へ戻されることがある。
+            - weight: {prop: drift_to_island_weight}
+              among: {slot: fixtures, matches: {object: raft}}
+              move: {subject: picked, to_object: long_swell}
               signal: {picked: swept}
             - weight: {prop: drift_to_island_weight}
               among: {slot: fixtures, matches: {object: raft}}
@@ -1182,7 +1226,7 @@ object_defs:
         on_max:
           add: {self: {storm_drift: -16}}
           pick:
-            # 鎖の末尾なので、本土の側に海区が無い。**到達は本土へ移ることそのもの**（Voyage.md 4節）で、
+            # 本土側の端なので、本土の側に海区が無い。**到達は本土へ移ることそのもの**（Voyage.md 4節）で、
             # そこへ渡らせるのは航路であって荒天ではない。
             - weight: {prop: drift_to_mainland_weight}
             - weight: {prop: drift_to_island_weight}
@@ -1200,7 +1244,7 @@ object_defs:
   # どの操作も自分の trigger を名乗ることを文法が求めるため（WorldCodex.schema.json）。
   #
   # **島の側へ戻る航路も、ここに並ぶ型そのもの**（GameEndings.md 12.5節）。航路が持つのは行き先だけで
-  # 向きを持たないので、鎖を1つ戻る航路は隣の海区が進む先として使っている型と同じものになる。島の端の
+  # 向きを持たないので、1つ戻る航路は隣の海区が進む先として使っている型と同じものになる。島の端の
   # 2本（route_to_coastal_waters・route_to_shore）だけが、進む側に相手を持たないぶん新しい。
   # ------------------------------------------------------------------
 
