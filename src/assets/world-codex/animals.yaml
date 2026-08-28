@@ -913,7 +913,7 @@ object_defs:
       # 形の揃わない骨の束なので、詰めても縮まない嵩で見る（ヤシの実の皮と同じ扱い）。
       volume: {value: 700}
 
-  # 生皮。剥いだままの皮で、なめす工程はまだ無い。
+  # 生皮。剥いだままの皮。樹皮の渋に漬ければなめし革になる（clothing.yamlのtanned_leather）。
   rawhide:
     tags: [item]
     props:
