@@ -422,4 +422,40 @@ object_defs:
       '2span分の折り返しでalarm_countも2回加算される',
     ).toBe(2);
   });
+
+  it('conditionsを満たす回だけon_maxが走り、満たさない回は既定のクランプへ倒れる', () => {
+    // 「一度だけ起こす」を起こす側に書くための口（6.3節）。境界に居る値は書き込みのたびにイベントを
+    // 呼び直すので、条件が無いと自分を破棄しないon_maxは繰り返し走る。
+    const yaml = `
+object_defs:
+  siren:
+    props:
+      charge:
+        value: 0
+        range: {min: 0, max: 3}
+        on_max:
+          conditions:
+            - not: {prop: rang, gt: 0}
+          set: {self: {rang: 1}}
+          add: {self: {rang_count: 1}}
+      rang:
+        value: 0
+      rang_count:
+        value: 0
+`;
+    const codex = load(yaml);
+    const chargeId = codex.propertyNames.getId('charge');
+    const countId = codex.propertyNames.getId('rang_count');
+    const session = new WorldSession(codex);
+
+    const instance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('siren')), session);
+
+    for (let i = 0; i < 5; i++) instance.tryGetProperty(chargeId)?.add(1);
+
+    expect(instance.tryGetProperty(countId)?.number ?? 0, '上限に着いた最初の1回だけ走る').toBe(1);
+    expect(
+      instance.tryGetProperty(chargeId)?.number ?? 0,
+      '条件を満たさない回は既定のクランプが走るので、値は上限に張り付く',
+    ).toBe(3);
+  });
 });

@@ -2,7 +2,8 @@ import type { WorldObject } from './WorldObject';
 import type { Rng } from './Rng';
 import { INT32_MAX } from '../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
-import { ActiveEffectSequence, SetEffect } from './ActiveEffect';
+import { ActiveEffectSequence, ConditionalEffect, SetEffect } from './ActiveEffect';
+import type { ConditionNode } from './ConditionNode';
 import { PropertyPath } from './ReferenceRoot';
 import type { EffectDeclaration } from './EffectReader';
 import type { AlertLevel } from './AlertLevel';
@@ -20,6 +21,15 @@ export type AlertDirection = 'up' | 'down' | 'mixed';
  * 知らずに塗れる。
  */
 export type GaugeEnd = 'good' | 'bad' | 'neutral';
+
+/**
+ * 著者が書いたrangeイベント1つ（`on_max`/`on_min`、6.3節）。`conditions`を書いていればその条件も持ち、
+ * **満たさない回は既定のクランプへ倒れる**（ConditionalEffect参照）。
+ */
+export interface RangeEventDef {
+  readonly condition: ConditionNode | undefined;
+  readonly effect: ActiveEffect;
+}
 
 export const GAUGE_ENDS: readonly GaugeEnd[] = ['good', 'bad', 'neutral'];
 
@@ -194,7 +204,8 @@ export class PropertyDef {
    * on_max（6.3節）: 値がrange.max**に達した**とき（超えたときを含む）にselfへ一度だけ適用するactive内容。
    * 対象プロパティは自分自身（折り返し）でも他のプロパティ（繰り上げ先）でも構わない。著者が書かなかった
    * 場合は「自分自身をrange.maxへsetする」既定のクランプ——著者は`range`を書くだけでクランプが得られ、
-   * 特別な挙動が要る場合だけon_maxを書けばよい。range自体が未定義の場合のみundefined。
+   * 特別な挙動が要る場合だけon_maxを書けばよい。著者が`conditions`を書いた場合は、満たさない回だけが
+   * 同じ既定のクランプへ倒れる（ConditionalEffect参照）。range自体が未定義の場合のみundefined。
    */
   private readonly onMax: ActiveEffect | undefined;
 
@@ -264,9 +275,9 @@ export class PropertyDef {
     initialValue: number,
     initialValueRange: PropertyRange | undefined,
     range: PropertyRange | undefined,
-    onMax: ActiveEffect | undefined,
+    onMax: RangeEventDef | undefined,
     stages: readonly PropertyStage[],
-    onMin?: ActiveEffect,
+    onMin?: RangeEventDef,
     base: PropertyPath | undefined = undefined,
     tags: readonly number[] = [],
     isSymbolic = false,
@@ -292,11 +303,11 @@ export class PropertyDef {
     this.initialValueWithoutRoll = initialValue;
     this.initialValueRange = initialValueRange;
     this.range = range;
-    this.declaredOnMax = onMax;
-    this.declaredOnMin = onMin;
-    this.onMax = onMax ?? defaultClampEffect(range, globalId, true);
+    this.declaredOnMax = onMax?.effect;
+    this.declaredOnMin = onMin?.effect;
+    this.onMax = rangeEventEffect(onMax, defaultClampEffect(range, globalId, true));
     this.stages = stages;
-    this.onMin = onMin ?? defaultClampEffect(range, globalId, false);
+    this.onMin = rangeEventEffect(onMin, defaultClampEffect(range, globalId, false));
     this.base = base;
     this.tags = tags;
     this.isSymbolic = isSymbolic;
@@ -559,4 +570,17 @@ function defaultClampEffect(
   return new ActiveEffectSequence([
     new SetEffect(new PropertyPath('self', propertyGlobalId), isMax ? range.max : range.min),
   ]);
+}
+
+/**
+ * 端で実際に走る効果。著者が書いていなければ既定のクランプ、条件を書いていれば満たさない回だけが
+ * クランプへ倒れる（RangeEventDef参照）。
+ */
+function rangeEventEffect(
+  declared: RangeEventDef | undefined,
+  clamp: ActiveEffect | undefined,
+): ActiveEffect | undefined {
+  if (declared === undefined) return clamp;
+  if (declared.condition === undefined) return declared.effect;
+  return new ConditionalEffect(declared.condition, declared.effect, clamp);
 }

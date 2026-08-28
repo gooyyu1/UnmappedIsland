@@ -112,13 +112,6 @@ traits:
           - name: crossed
             min: 1
 
-      # この海区の航路を見定めたか。見張りを打ち切るための印で、on_max が立てる。
-      #
-      # **設置物の有無では見分けられない。** 航路は辺なので両端に1本ずつ立ち（下の on_max 参照）、
-      # 渡り着いたばかりの海区には来た航路が既に立っている。「航路が在るか」で見ると、まだ一度も
-      # 見張っていない海区が見張れなくなる。
-      route_sighted: {value: 0}
-
       # 見張りの発見量のつまみ（ExplorationSystem.md 2節）。**素の重みは0＝その海区には無い**もので、
       # 海区の側が自分の海で見つかるものにだけ重みを与える。地上の土地が候補の並びそのもので
       # 顔ぶれを表すのに対し、海区は同じ卓を共有して重みだけを変える——顔ぶれが8種類あっても、
@@ -160,14 +153,11 @@ traits:
       # 現れるのは**辺1本の両端**——この海区に立つ「次の海区への航路」と、次の海区に立つ
       # 「この海区への航路」（GameEndings.md 12.5節）。どちらも同じ sea_route で、違うのは行き先だけ。
       #
-      # **航路が見えたら見張りは終わる。** 上限へ達した値は書き込みのたびに on_max を呼び直すので、
-      # 止めないと同じ航路が湧き続ける。見えているかは印（route_sighted）で見る——回数で書くと、
-      # 上限と同じ数を2箇所に持つことになる。
+      # **航路が現れても見張りは終わらない**（同12.1節・12.3節）。渡らずに待つことは、その海区を
+      # 探索し続けること——拾い物も魚の群れも、航路が見えた後の見張りが返す。二重に湧かせないのは
+      # 湧かせる側の仕事で、ここには条件を置かない（各海区の on_max 参照）。
       explore:
         trigger: menu
-        conditions:
-          - reason: route_already_sighted
-            not: {prop: route_sighted, gt: 0}
         duration: 15
         add: {self: {exploration_progress: 1}}
         # 見張りが返すもの（GameEndings.md 12.1節）。次の行き先は航路（進捗の on_max）が受け持つので、
@@ -689,6 +679,13 @@ object_defs:
   # 同じことを、海では見張りの成果として実行時にやる。**戻る航路は隣の海区が立ててくれる**ので、
   # 自分では立てない——渡り着いたときには既に立っているので、見張らずに引き返せる（同12.5節）。
   #
+  # **どの on_max も「その航路がまだ立っていないなら」で自分を守る**（6.3節の conditions）。上限へ
+  # 達した値は書き込みのたびに on_max を呼び直すので、守らないと見張るたびに同じ航路が湧く。**見るのは
+  # 進む先の航路そのもの**で、印は持たない——航路が在るかは海区の中を見れば分かる。`sea_route` タグでは
+  # 見分けられない（渡り着いたばかりの海区には来た航路が既に立っている）ので、型を名指しする。
+  # **条件を満たさない回は、range を書いただけのときと同じ既定のクランプが走る**ので、100%到達後も
+  # 見張り続けられて（同12.1節）、進捗は上限に張り付いたままになる。
+  #
   # 鎖の先の端だけが見張りで両端を立てない（本土に着けば周回が終わるので折り返しは要らない）。島側は
   # 海区ではないので見張りの相手にならず、島へ帰る航路（route_to_shore）を立てるのは、その辺を渡る手
   # そのものである出航（筏の set_sail）。
@@ -713,7 +710,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 2}
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_kelp_belt}}
           spawn:
             - {object: route_to_kelp_belt, into: self}
             - {object: route_to_coastal_waters, into_object: kelp_belt}
@@ -731,7 +729,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_tide_rip}}
           spawn:
             - {object: route_to_tide_rip, into: self}
             - {object: route_to_kelp_belt, into_object: tide_rip}
@@ -749,7 +748,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_reef_shallows}}
           spawn:
             - {object: route_to_reef_shallows, into: self}
             - {object: route_to_tide_rip, into_object: reef_shallows}
@@ -768,7 +768,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_gull_rock}}
           spawn:
             - {object: route_to_gull_rock, into: self}
             - {object: route_to_reef_shallows, into_object: gull_rock}
@@ -787,7 +788,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_islet_waters}}
           spawn:
             - {object: route_to_islet_waters, into: self}
             - {object: offshore_islet, into: self}
@@ -805,7 +807,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_open_water}}
           spawn:
             - {object: route_to_open_water, into: self}
             - {object: offshore_islet, into: self}
@@ -824,7 +827,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 5}
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_wreck_waters}}
           spawn:
             - {object: route_to_wreck_waters, into: self}
             - {object: route_to_open_water, into_object: wreck_waters}
@@ -844,7 +848,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 4}
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_long_swell}}
           spawn:
             - {object: route_to_long_swell, into: self}
             - {object: route_to_wreck_waters, into_object: long_swell}
@@ -861,7 +866,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 5}
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_outer_tide_rip}}
           spawn:
             - {object: route_to_outer_tide_rip, into: self}
             - {object: route_to_long_swell, into_object: outer_tide_rip}
@@ -879,7 +885,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_black_reef}}
           spawn:
             - {object: route_to_black_reef, into: self}
             - {object: route_to_outer_tide_rip, into_object: black_reef}
@@ -898,7 +905,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_drifting_kelp}}
           spawn:
             - {object: route_to_drifting_kelp, into: self}
             - {object: route_to_black_reef, into_object: drifting_kelp}
@@ -916,7 +924,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_white_rock}}
           spawn:
             - {object: route_to_white_rock, into: self}
             - {object: route_to_drifting_kelp, into_object: white_rock}
@@ -935,7 +944,8 @@ object_defs:
         value: 0
         range: {min: 0, max: 3}
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_mainland_shallows}}
           spawn:
             - {object: route_to_mainland_shallows, into: self}
             - {object: offshore_islet, into: self}
@@ -957,7 +967,8 @@ object_defs:
         range: {min: 0, max: 2}
         # 本土に着けば周回が終わるので、折り返しの1本は立てない（本土に航路は無い）。
         on_max:
-          set: {self: {route_sighted: 1}}
+          conditions:
+            - not: {slot: fixtures, matches: {object: route_to_mainland}}
           spawn:
             - {object: route_to_mainland, into: self}
 

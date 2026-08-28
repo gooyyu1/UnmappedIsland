@@ -3,6 +3,7 @@ import type { PropertyValue } from './PropertyValue';
 import type { SameSlotSpawnSite } from './SameSlotSpawnSite';
 import type { WorldObject } from './WorldObject';
 import type { WorldSession } from './WorldSession';
+import type { ConditionNode } from './ConditionNode';
 import type { ObjectRef } from './ObjectRef';
 import type { AddReading, EffectReader, SetValueReading, TransferReading } from './EffectReader';
 import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
@@ -113,6 +114,41 @@ export class ActiveEffectSequence extends ActiveEffect {
       if (count !== undefined) return count;
     }
     return undefined;
+  }
+}
+
+/**
+ * 条件を満たす回だけ走る効果と、満たさない回に代わりに走る効果の組（rangeイベントの`conditions`、6.3節）。
+ *
+ * 「満たさない回は何も起きない」ではなく`otherwise`へ倒すのは、**条件を書いても既定のクランプを失わない**
+ * ため——`on_max`を書くとクランプが消えるのは、著者が上限での振る舞いを引き受けたからで、条件を満たさない
+ * 回は引き受けていない。
+ */
+export class ConditionalEffect extends ActiveEffect {
+  private readonly condition: ConditionNode;
+  private readonly whenMet: ActiveEffect;
+  private readonly otherwise: ActiveEffect | undefined;
+
+  constructor(condition: ConditionNode, whenMet: ActiveEffect, otherwise: ActiveEffect | undefined) {
+    super();
+    this.condition = condition;
+    this.whenMet = whenMet;
+    this.otherwise = otherwise;
+  }
+
+  apply(
+    context: ReferenceContext,
+    session: WorldSession,
+    sameSlotSpawnSite: SameSlotSpawnSite | undefined,
+  ): void {
+    const chosen = this.condition.evaluate(context) ? this.whenMet : this.otherwise;
+    chosen?.apply(context, session, sameSlotSpawnSite);
+  }
+
+  /** 読み手には両方を渡す。**起こりうることの一覧**が要るので、今どちらへ倒れるかは関係ない。 */
+  read(reader: EffectReader): void {
+    this.whenMet.read(reader);
+    this.otherwise?.read(reader);
   }
 }
 
