@@ -118,6 +118,31 @@ describe('clothing.yamlの衣類', () => {
     expect(garment.parentSlot?.def.globalId, '手持ちへ戻っている').toBe(handId);
   });
 
+  it('4種はどれも1着で全身を覆う（同じ部位・同じ階層）', () => {
+    const coverages = CLOTHING.map(
+      (clothing) => codex.objects.get(codex.objectNames.getId(clothing.name)).wornCoverage,
+    );
+
+    for (const [index, coverage] of coverages.entries()) {
+      expect(coverage, `${CLOTHING[index].name} が身につける場所を持たない`).toBeDefined();
+      expect(coverage!.conflictsWith(coverages[0]), `${CLOTHING[index].name} が1着目と競合しない`).toBe(true);
+    }
+  });
+
+  it('着ているあいだは、別の1着を重ねられない（外せば着られる）', () => {
+    const equipmentId = codex.vocabulary.world.equipmentSlotId;
+    const handId = codex.vocabulary.world.handSlotId;
+    const [worn, other] = [craft(CLOTHING[0]), craft(CLOTHING[1])];
+
+    expect(worn.moveToSlotOrRejection(player.getSlot(equipmentId))).toBeUndefined();
+    expect(other.moveToSlotOrRejection(player.getSlot(equipmentId)), '重ねられない').toContain(
+      '同じ部位の同じ階層',
+    );
+
+    expect(worn.moveToSlotOrRejection(player.getSlot(handId)), '脱ぐ').toBeUndefined();
+    expect(other.moveToSlotOrRejection(player.getSlot(equipmentId)), '脱いだ後なら着られる').toBeUndefined();
+  });
+
   it('なめし革の衣類は、骨針が無ければ縫えない', () => {
     // 骨針は消費されない道具（consume: false）だが、無ければ工程は進まない。素材だけで進んで
     // しまうと、縫製が骨針より前に来てしまう（SurvivalItems.md 1.2節の経路が意味を失う）。
