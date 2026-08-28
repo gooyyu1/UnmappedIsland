@@ -20,6 +20,7 @@
 #   COMMENT pr|issue <番号> <著者> … 起動より後に付いたコメント
 #   CHECKED <番号> <項目>          … 見張っている issue の本文で、起動より後にチェックが付いた項目
 #   TASK    <番号>                 … 着手できる open な task（--issues にもPRにも無く、依存も片付いている）
+#   STALLED <セッションID> <題>    … 動いておらず、PRも出していないタスクのセッション
 #   終了コード 0 … 動きが1件以上ある（上の行が出ている）
 #   終了コード 3 … TIMEOUT（制限時間まで、何も動かなかった）
 #   終了コード 1 … ERROR（gh が続けて失敗した）
@@ -93,7 +94,28 @@
 # 依存に書いてよいのは**順序に理由がある依存だけ**。「同じファイルを触る」は依存ではない
 # （`parallel-work.md` の「1ファイル重なることは、直列にする理由にはしない」）。
 #
-# 動きを受け取った側の動きは `.claude/parallel-work.md` の「PR の型」節。
+# ## STALLED を見るのは、止まったセッションが誰にも見えないから
+#
+# **セッションは利用制限・権限の確認待ち・失敗で、PRを出さないまま止まる。** 止まっても
+# GitHub 上には何も現れないので、上の6種類はどれも出ない。ここを見ていないと、司令塔は
+# 「まだ書いているのだろう」と読んだままタイムアウトまで待つ（2026-08-28 に実際に起きた。
+# 司令塔だけはユーザーが1行送って起こしていたので進み、子セッションは止まったままだった）。
+#
+# **判定は「PRを出したか」だけで見る。** セッションの状態だけでは、書き終えて報告した IDLE と、
+# 途中で落ちた IDLE が区別できない。**PRの本文には作ったセッションのIDが脚注として入る**ので、
+# 「動いていない × 自分のIDを載せた open なPRが無い」が、そのまま「まだ仕事が残っている」になる。
+# 枝の名前では引けない——ブリッジのセッションの `current_branches` は worktree のローカル枝で、
+# push する枝とは別物。
+#
+# マージ済みで畳み忘れたセッションもここに出る。**どちらも司令塔が手を入れるべき状態**なので、
+# 種類を分けない（起こすのか畳むのかは、受け取った側が `list_events` を見て決める）。
+#
+# **既定で見る。`--no-sessions` で切る。** 引くのに `.claude/ccr-meta.sh`（＝Claude Code の資格情報）が
+# 要るので、使えない環境では最初の1回で諦めて**標準エラーへ `SESSIONS-OFF` を出し**、以降はPRと
+# issue だけを見る。黙って落とすと「止まったセッションは無い」と読めてしまう。
+#
+# 引く間隔はPRより粗い（`--session-interval` 秒、既定60）。`ccr-meta.sh` は1回ごとに curl と node を
+# 起こすので、5秒ごとに叩く相手ではない。止まったセッションは1分待っても止まったまま。
 
 set -uo pipefail
 
@@ -103,6 +125,10 @@ FAILURE_LIMIT=20
 NUMBERS=()
 ISSUES=()
 NO_CHECK_GRACE=90
+SESSIONS=1
+SESSION_INTERVAL=60
+# 立てた直後のセッションは、最初のターンが始まるまでの数秒だけ「動いていない」に見える。
+SESSION_GRACE=180
 SINCE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 while [ $# -gt 0 ]; do
@@ -127,6 +153,14 @@ while [ $# -gt 0 ]; do
       NO_CHECK_GRACE="$2"
       shift 2
       ;;
+    --no-sessions)
+      SESSIONS=0
+      shift
+      ;;
+    --session-interval)
+      SESSION_INTERVAL="$2"
+      shift 2
+      ;;
     *)
       NUMBERS+=("$1")
       shift
@@ -134,7 +168,21 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+CCR_META="$(dirname "$0")/../../.claude/ccr-meta.sh"
+
+# 動いておらず、自分のIDを載せた open なPRも無い `task` のセッションを出す。**判定は「PRを出したか」
+# だけ**（上の STALLED の節）。第1引数は「これより古い更新なら見る」境目。
+STALLED_FILTER='
+  .ccr.data[]
+  | select([.tags[]? | select(startswith("task"))] | length > 0)
+  | select(.session_status != "SESSION_STATUS_ARCHIVED")
+  | select(.status_bucket != "SESSION_STATUS_BUCKET_WORKING")
+  | select(.updated_at < $grace)
+  | "\(.id) \(.title // "")"
+'
+
 deadline=$(($(date +%s) + TIMEOUT_MINUTES * 60))
+session_next=0
 failures=0
 # 起動時に付いていたチェック。1周目で控えて、以降はここから増えたぶんだけを出す。
 checked_baseline=''
@@ -291,6 +339,25 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
             settled=$(printf '%s\nTASK %s' "$settled" "$issue")
           fi
         done
+      fi
+    fi
+
+    if [ "$SESSIONS" -eq 1 ] && [ "$(date +%s)" -ge "$session_next" ]; then
+      session_next=$(($(date +%s) + SESSION_INTERVAL))
+      # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
+      if sessions=$(bash "$CCR_META" list_sessions <<<'{"mine":true,"limit":30}' 2>/dev/null |
+        grep -o '{"ccr".*'); then
+        session_grace=$(date -u -d "-${SESSION_GRACE} seconds" +%Y-%m-%dT%H:%M:%SZ)
+        # PR本文の脚注 `https://claude.ai/code/session_...` が、そのPRを出したセッション。
+        with_pr=$(jq -r '.[].body // ""' <<<"$prs" | grep -o 'session_[A-Za-z0-9]*' | sort -u)
+        while read -r id title; do
+          [ -n "$id" ] || continue
+          grep -qx "$id" <<<"$with_pr" && continue
+          settled=$(printf '%s\nSTALLED %s %s' "$settled" "$id" "$title")
+        done < <(jq -r --arg grace "$session_grace" "$STALLED_FILTER" <<<"$sessions" | tr -d '\r')
+      else
+        echo "SESSIONS-OFF セッションの状態を引けないので、以降はPRとissueだけを見る" >&2
+        SESSIONS=0
       fi
     fi
 
