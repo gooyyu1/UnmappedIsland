@@ -65,14 +65,12 @@ activity_hours:
   - {location: mountain_peak, season: calm, unit: hours, travel: 12.0, gathering: 12.0, handwork: 11.8}
   - {location: mountain_peak, season: wet, unit: hours, travel: 12.0, gathering: 11.2, handwork: 10.1}
   - {location: mountain_peak, season: dry, unit: hours, travel: 12.0, gathering: 12.0, handwork: 12.0}
-  - {location: offshore_islet, season: calm, unit: hours, travel: 12.0, gathering: 12.0, handwork: 11.8}
-  - {location: offshore_islet, season: wet, unit: hours, travel: 12.0, gathering: 11.2, handwork: 10.1}
-  - {location: offshore_islet, season: dry, unit: hours, travel: 12.0, gathering: 12.0, handwork: 12.0}
   - {location: shallow_cave, season: calm, unit: hours, travel: 12.0, gathering: 9.6, handwork: 7.2}
   - {location: shallow_cave, season: wet, unit: hours, travel: 11.8, gathering: 4.3, handwork: 1.7}
   - {location: shallow_cave, season: dry, unit: hours, travel: 12.0, gathering: 10.2, handwork: 8.3}
 
 excluded_locations:
+  - {location: offshore_islet, tag: sea}
   - {location: coastal_waters, tag: sea}
   - {location: kelp_belt, tag: sea}
   - {location: tide_rip, tag: sea}

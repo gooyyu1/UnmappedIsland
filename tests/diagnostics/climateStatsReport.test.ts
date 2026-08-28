@@ -479,11 +479,19 @@ describeYamlReportRegeneration(
   DOCUMENTED_SECTIONS.required,
 );
 
+/** 節がずれていたときに出す直し方。 */
+const REGENERATE_HINT = "'npm run stats:climate'で再生成する";
+
 /**
  * 生成済みの`stats/climate.yaml`が、今の定義より古くなっていないか。
  *
  * 再生成に分単位でかかるので、`npm test`では作り直さずに**入力が変わったことだけを軽く見る**。
- * シミュレーションの入力（`core.yaml`）は指紋で、定義から静的に解ける活動時間の節は再計算で。
+ * シミュレーションの入力（`core.yaml`）は指紋で、定義から静的に解ける節（活動時間・外した土地）は
+ * 再計算で。
+ *
+ * **行は両向きで突き合わせる。** 今の定義から出る行を書き出し済みの表へ探しに行くだけでは、
+ * **定義から出なくなった行が表に残っても気づけない**——土地を島から外す変更は、行が増える形ではなく
+ * 減る形でしか現れない。
  *
  * **見るのは古さだけで、値の妥当性は見ない。** 値は各解析の単体試験（`tests/analysis/`）と、
  * 再生成したレポートの差分が持つ。
@@ -492,38 +500,55 @@ describe('climate.yamlの鮮度', () => {
   const storedReport = (): Record<string, YamlRecord[]> =>
     parse(readFileSync(REPORT_PATH, 'utf8')) as Record<string, YamlRecord[]>;
 
+  const loadCodex = (): WorldCodex =>
+    loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+
   it('レポートの指紋が、今の入力と一致する', () => {
     const recorded = storedReport().input_fingerprint[0].sha256_prefix;
 
-    expect(
-      recorded,
-      `${FINGERPRINT_SOURCES.join('・')}が変わっている。'npm run stats:climate'で再生成する`,
-    ).toBe(inputFingerprint());
+    expect(recorded, `${FINGERPRINT_SOURCES.join('・')}が変わっている。${REGENERATE_HINT}`).toBe(
+      inputFingerprint(),
+    );
   });
 
-  it('活動時間の節が、今の定義から数え直したものと一致する', () => {
-    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  it('活動時間の節の行が、今の定義から出る行と過不足なく一致する', () => {
     const seasons: SeasonWeatherHours[] = SEASON_CLIMATE.map((season) => ({
       seasonName: season.name,
       durationDays: season.durationDays,
       hoursByWeather: new Map(Object.entries(season.hoursByWeather)),
     }));
+    const rows = activityHoursOf(loadCodex(), seasons);
+    const stored = storedReport().activity_hours;
+    const keyOf = (location: unknown, season: unknown): string => `${String(location)} / ${String(season)}`;
+
+    expect(
+      stored.map((record) => keyOf(record.location, record.season)).sort(),
+      `活動時間の行が今の定義と食い違う。${REGENERATE_HINT}`,
+    ).toEqual(rows.map((row) => keyOf(row.locationName, row.seasonName)).sort());
 
     // 天候の出現時間はSEASON_CLIMATE（レポートから書き写した値）を使うので、丸めのぶんだけずれる。
     // 突き合わせたいのは「土地の明るさが動いたのに節が古いまま」なので、その桁での一致で足りる。
-    const report = storedReport();
-    for (const row of activityHoursOf(codex, seasons)) {
-      const label = `${row.locationName} / ${row.seasonName}`;
-      const record = report.activity_hours.find(
-        (candidate) => candidate.location === row.locationName && candidate.season === row.seasonName,
-      );
-      expect(record, `${label} のレコードが見つからない`).toBeDefined();
-      expect(row.travelHoursPerDay, `${label} の移動できる時間`).toBeCloseTo(Number(record!.travel), 1);
-      expect(row.gatheringHoursPerDay, `${label} の採れる時間`).toBeCloseTo(Number(record!.gathering), 1);
+    const recordOf = new Map(stored.map((record) => [keyOf(record.location, record.season), record]));
+    for (const row of rows) {
+      const label = keyOf(row.locationName, row.seasonName);
+      const record = recordOf.get(label)!;
+      expect(row.travelHoursPerDay, `${label} の移動できる時間`).toBeCloseTo(Number(record.travel), 1);
+      expect(row.gatheringHoursPerDay, `${label} の採れる時間`).toBeCloseTo(Number(record.gathering), 1);
       expect(row.handworkHoursPerDay, `${label} の手元の作業ができる時間`).toBeCloseTo(
-        Number(record!.handwork),
+        Number(record.handwork),
         1,
       );
     }
+  });
+
+  it('外した土地の節が、今の定義で外れるものと過不足なく一致する', () => {
+    const excluded = islandLocationsOf(loadCodex()).excludedSea;
+
+    expect(
+      storedReport()
+        .excluded_locations.map((record) => `${String(record.location)} / ${String(record.tag)}`)
+        .sort(),
+      `外した土地が今の定義と食い違う。${REGENERATE_HINT}`,
+    ).toEqual(excluded.map(({ def, tag }) => `${def.name} / ${tag}`).sort());
   });
 });
