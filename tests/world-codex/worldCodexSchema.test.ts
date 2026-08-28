@@ -57,6 +57,7 @@ const REJECTED: ReadonlyArray<readonly [string, unknown]> = [
   ['枠のacceptがtagもobjectも持たない', { traits: { t: { slots: { s: { cell: { accept: {} } } } } } }],
   ['操作にtriggerが無い', { traits: { t: { interactions: { a: { destroy: 'self' } } } } }],
   ['廃止したauto_placement', { traits: { t: { slots: { s: { auto_placement: false } } } } }],
+  ['remove_slotsに配列でなくスロット名を1つ書く', { traits: { t: { remove_slots: 'items' } } }],
   ['passivesを配列でなく単一マッピングで書く', { traits: { t: { passives: { add: { self: { x: 1 } } } } } }],
   [
     'conditionsの葉にslotとpropを同時指定',

@@ -1109,6 +1109,35 @@ object_defs:
 - trait と自分自身の宣言は、片方だけが持てます（`stack_order` と同じ、5 節）。並び全体が 1 つの条件木
   なので、連結すると書いた覚えのない合わせ技になります。
 
+### 7.14 remove_slots（配られたスロットを落とす）
+
+**`remove_slots`** は、混ぜ終わった `slots` から名指ししたスロットを落とします（`slots` と同じ位置に書く
+オブジェクトレベルのキー）。**trait が配ったスロットを持たない型**を書くための唯一の口です。
+
+```yaml
+traits:
+  location:
+    slots:
+      items: {cell: {accept: {tag: item}}}
+      fixtures: {cell: {accept: {tag: fixture}}}
+  sea_zone:
+    remove_slots: [items]        # 海は物を置ける場所ではない
+
+object_defs:
+  coastal_waters:
+    traits: [location, sea_zone] # itemsを持たない場所になる
+```
+
+- **落とすのは混ぜ終わってから**なので、**誰が配ったスロットでも落とせます**——`slots` に同名を書いて
+  上書きする形（5 節）とは別物で、あちらは同名エントリが複数の trait にあればエラーになります。
+- **trait にも書けます。** 落とすことが「その trait であること」の側の事実——海は物を置ける場所では
+  ない——なら、混ぜ込まれる型ごとに書かせません。
+- **落とす先が無ければロードエラー**です。綴り間違いも、もう配られていない名前も、通せば「落とした
+  つもり」の宣言が残ります。同じ宣言の中で `slots` に書きながら `remove_slots` にも挙げるのもエラーです。
+- 枠を作るかどうかは、**置いてほしい物ではなく置けてしまう物**で決まります。置けてはいけない物が
+  あるなら、条件で弾くのではなく枠そのものを作りません
+  （[`GameEndings.md`](../concept/GameEndings.md) 12.7 節）。
+
 ## 8. passives（持続する影響）
 
 `passives` は、`self`/`parent`/`child` の関係とゲート（常時／`conditions`／プロパティの stage）に紐づいて

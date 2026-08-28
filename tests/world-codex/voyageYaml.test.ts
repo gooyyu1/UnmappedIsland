@@ -121,11 +121,6 @@ describe('筏と航海', () => {
     );
   }
 
-  /** その海区に現れている、本土の側へ進む航路（まだ見えていなければundefined）。 */
-  function sightedRoute(zone: WorldObject): WorldObject | undefined {
-    return sightedRoutes(zone).at(0);
-  }
-
   /** その海区から、名指しした行き先の航路を渡る。渡れなければfalse。 */
   function cross(game: StartedGame, zone: WorldObject, routeName: string): boolean {
     const route = sightedRoutes(zone).find((fixture) => fixture.def.name === routeName);
@@ -133,16 +128,27 @@ describe('筏と航海', () => {
   }
 
   /**
-   * その海区の航路が見えるまで見張り、渡る。渡れなければfalse。
+   * その海区の航路が見えるまで見張り、**その見張りが立てた航路**を宣言順に返す。
+   *
+   * 渡り着いた海区には来た航路が既に立っている（航路は辺なので、見つけた側の見張りが両端へ1本ずつ
+   * 立てる。voyage.yaml）ので、今そこに在る航路からは進む先を選べない。**見張りの前後の差**が、
+   * その見張りの成果になる。
    *
    * **回数に上限を置く。** 見張りは航路が見えた時点で止まる（voyage.yamlのexploreのconditions）ので
    * 素の宣言では有限回で抜けるが、そこが壊れたときに**赤くなる代わりに止まらなくなる**のでは、
    * この検査が何も言わなくなる。上限は、どの海区の必要回数（最大5）よりも十分に大きい値。
    */
-  function watchAndCross(game: StartedGame, zone: WorldObject): boolean {
+  function watchUntilSighted(game: StartedGame, zone: WorldObject): readonly WorldObject[] {
+    const before = new Set(sightedRoutes(zone).map((route) => route.instanceId));
     for (let i = 0; i < 20 && keepWatch(game, zone); i++);
-    const route = sightedRoute(zone);
-    return route?.tryGetAction('cross', game.player.instance)?.tryExecute() === true;
+    return sightedRoutes(zone).filter((route) => !before.has(route.instanceId));
+  }
+
+  /** その海区の航路が見えるまで見張り、本土の側へ進む航路を渡る。渡れなければfalse。 */
+  function watchAndCross(game: StartedGame, zone: WorldObject): boolean {
+    // 見張りが立てるのは、その海区に立つ航路のうち進む先の1本だけ（voyage.yaml）。
+    const onward = watchUntilSighted(game, zone).at(0);
+    return onward?.tryGetAction('cross', game.player.instance)?.tryExecute() === true;
   }
 
   /**
@@ -216,6 +222,27 @@ describe('筏と航海', () => {
     expect(raft.parent?.instanceId, '筏は内陸に残る').toBe(landing!.instanceId);
   });
 
+  it('海区には物を置く枠が無いので、積荷を海面へ置けない', () => {
+    // **確定した仕様（GameEndings.md 12.7節）そのもの。** 置ける枠を作るかどうかは、置いてほしい物
+    // ではなく置けてしまう物で決まる——枠を作れば、漂流物だけでなく積荷の石も置ける。
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    const zone = singletonPlace(game, 'coastal_waters');
+
+    const cargo = [...raft.children()].find((object) => object.def.hasTag(codex.tagNames.getId('item')));
+    expect(cargo, 'シナリオが筏に積荷を載せている').toBeDefined();
+
+    expect(zone.slotForPutIn(cargo!), '手で置く先が無い').toBeUndefined();
+
+    // こぼれ落ちる経路（spawnの行き先が塞がったとき、9.4節）でも海面には残らない。海区が受け取らず、
+    // その上のworldも物を受け取らないので、その物は手に入らないまま失われる（12.7節）。
+    cargo!.spillTo(zone);
+    expect(
+      zone.findSelfOrDescendantByInstanceId(cargo!.instanceId),
+      'こぼれても海面には残らない',
+    ).toBeUndefined();
+  });
+
   it('時間を進めるだけでは1海区も進まない', () => {
     // **確定した仕様（GameEndings.md 12節）そのもの。** 漂っているだけでは航路も現れず、
     // 次の海区へも移らない——進みを運ぶのは時間ではなく見張りと横断という行為。
@@ -227,7 +254,10 @@ describe('筏と航海', () => {
     for (let i = 0; i < 96; i++) tick(game);
 
     expect(raft.parent?.def.name, '丸1日流されても最初の海区に居る').toBe('coastal_waters');
-    expect(sightedRoute(first), '航路も現れない').toBeUndefined();
+    expect(
+      sightedRoutes(first).map((route) => route.def.name),
+      '次の海区への航路も現れない（出航が立てた帰り道だけが在る）',
+    ).toEqual(['route_to_shore']);
     expect(propertyOf(first, 'exploration_progress'), '見張っていないので進捗も動かない').toBe(0);
   });
 
@@ -237,17 +267,18 @@ describe('筏と航海', () => {
     const first = singletonPlace(game, 'coastal_waters');
 
     expect(keepWatch(game, first), '1回目の見張り').toBe(true);
-    expect(sightedRoute(first), '1回では航路は見えない').toBeUndefined();
-
-    expect(keepWatch(game, first), '2回目の見張り').toBe(true);
-    const route = sightedRoute(first);
-    expect(route?.def.name, '2回目で海藻の帯への航路が現れる').toBe('route_to_kelp_belt');
     expect(
       sightedRoutes(first).map((fixture) => fixture.def.name),
-      '進む航路と一緒に、島へ引き返す航路も現れる',
-    ).toEqual(['route_to_kelp_belt', 'route_to_shore']);
+      '1回では次の海区への航路は見えない',
+    ).toEqual(['route_to_shore']);
 
-    expect(route!.tryGetAction('cross', game.player.instance)?.tryExecute(), '渡れる').toBe(true);
+    expect(keepWatch(game, first), '2回目の見張り').toBe(true);
+    expect(
+      sightedRoutes(first).map((fixture) => fixture.def.name),
+      '2回目で海藻の帯への航路が、出航が立てた帰り道と並ぶ',
+    ).toEqual(['route_to_shore', 'route_to_kelp_belt']);
+
+    expect(cross(game, first, 'route_to_kelp_belt'), '渡れる').toBe(true);
     expect(raft.parent?.def.name, '次の海区へ移っている').toBe('kelp_belt');
     expect(game.player.location?.instance.instanceId, '乗り手は筏ごと渡る').toBe(raft.instanceId);
   });
@@ -274,8 +305,7 @@ describe('筏と航海', () => {
     // 筏だけを次の海区へ先に移す（乗り手は取り残される）。
     raft.moveToSlotOrRejection(singletonPlace(game, 'kelp_belt').getSlot(codex.slotNames.getId('fixtures')));
 
-    const route = sightedRoute(first)!;
-    expect(route.tryGetAction('cross', game.player.instance)?.tryExecute(), '渡る手は成立しない').toBe(false);
+    expect(cross(game, first, 'route_to_kelp_belt'), '渡る手は成立しない').toBe(false);
   });
 
   it('引き返す航路は、進む航路と同じ型（航路は向きを持たない）', () => {
@@ -290,12 +320,99 @@ describe('筏と航海', () => {
 
     expect(
       sightedRoutes(singletonPlace(game, 'tide_rip')).map((route) => route.def.name),
-      '潮目には、進む先と戻る先の航路が1本ずつ立つ',
-    ).toEqual(['route_to_reef_shallows', 'route_to_kelp_belt']);
+      '潮目には、戻る先と進む先の航路が1本ずつ立つ',
+    ).toEqual(['route_to_kelp_belt', 'route_to_reef_shallows']);
     expect(
       sightedRoutes(singletonPlace(game, 'coastal_waters')).map((route) => route.def.name),
       '島影の海が進む先に使う型と、潮目が戻る先に使う型は同じ',
     ).toContain('route_to_kelp_belt');
+  });
+
+  it('渡り着いたばかりの海区から、1回も見張らずに来た航路を戻れる', () => {
+    // **確定した仕様（GameEndings.md 12.5節）そのもの。** 引き返しは航海のどこからでも選べ、代償は
+    // 来た航路を戻るぶんの時間だけ——渡り着いた先で見張り（3〜5回＝45〜75分）を済ませるまで待つ、は
+    // そこに無い。航路は辺なので、見つけた側の見張りが**両端へ1本ずつ**立てる（voyage.yaml）。
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    expect(watchAndCross(game, singletonPlace(game, 'coastal_waters')), '島影の海から渡る').toBe(true);
+
+    const arrived = singletonPlace(game, 'kelp_belt');
+    expect(raft.parent?.instanceId, '海藻の帯へ渡り着いている').toBe(arrived.instanceId);
+    expect(propertyOf(arrived, 'exploration_progress'), 'まだ1回も見張っていない').toBe(0);
+    expect(
+      sightedRoutes(arrived).map((route) => route.def.name),
+      '渡り着いた海区には、来た航路が立っている',
+    ).toEqual(['route_to_coastal_waters']);
+
+    expect(cross(game, arrived, 'route_to_coastal_waters'), '見張らずに引き返せる').toBe(true);
+    expect(raft.parent?.def.name, '来た海区へ戻っている').toBe('coastal_waters');
+    expect(propertyOf(arrived, 'exploration_progress'), '戻るのに見張りは要らなかった').toBe(0);
+  });
+
+  it('渡り着いた先で見張っても、来た航路は二重にならない', () => {
+    // 辺の両端を立てるのは**見つけた側の見張りだけ**。渡り着いた側の見張りも戻る航路を立てると、
+    // 同じ航路が2本並ぶ。
+    const { game, raft } = ready();
+    raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+    expect(watchAndCross(game, singletonPlace(game, 'coastal_waters')), '島影の海から渡る').toBe(true);
+
+    const arrived = singletonPlace(game, 'kelp_belt');
+    expect(
+      watchUntilSighted(game, arrived).map((route) => route.def.name),
+      '見張りが立てるのは、次の海区への1本だけ',
+    ).toEqual(['route_to_tide_rip']);
+    expect(
+      sightedRoutes(arrived).map((route) => route.def.name),
+      '来た航路と進む航路が1本ずつ',
+    ).toEqual(['route_to_coastal_waters', 'route_to_tide_rip']);
+  });
+
+  it('出航した直後、1回も見張らずに島へ引き返せる', () => {
+    // **確定した仕様（GameEndings.md 12.5節）そのもの。** 引き返しは航海のどこからでも選べ、出航した
+    // 直後もそこに含まれる。島と島影の海を繋ぐ辺を渡る手は見張りではなく出航なので、向こう端の航路
+    // （route_to_shore）を立てるのも出航（voyage.yamlのset_sail）。
+    const { game, raft } = ready();
+    const departure = raft.parent!;
+    expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute(), '出航できる').toBe(true);
+
+    const first = singletonPlace(game, 'coastal_waters');
+    expect(propertyOf(first, 'exploration_progress'), 'まだ1回も見張っていない').toBe(0);
+    expect(
+      sightedRoutes(first).map((route) => route.def.name),
+      '出航が島へ戻る航路を立てている',
+    ).toEqual(['route_to_shore']);
+
+    expect(cross(game, first, 'route_to_shore'), '見張らずに引き返せる').toBe(true);
+    expect(raft.parent?.instanceId, '出た海岸へ戻り着く').toBe(departure.instanceId);
+    expect(propertyOf(first, 'exploration_progress'), '戻るのに見張りは要らなかった').toBe(0);
+  });
+
+  it('何度出航しても、島へ戻る航路は二重にならない', () => {
+    // 出航は何度でもできるので、立てるだけでは周回のたびに積み上がる。**岸へ渡れば消える**
+    // （voyage.yamlのroute_to_shore）ことが、島影の海に並ぶ本数を1本に保つ。
+    const { game, raft } = ready();
+    const first = singletonPlace(game, 'coastal_waters');
+    const shoreRoutes = (): number =>
+      sightedRoutes(first).filter((route) => route.def.name === 'route_to_shore').length;
+
+    for (let voyage = 1; voyage <= 3; voyage++) {
+      keepAlive(game);
+      expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute(), `${voyage}度目の出航`).toBe(
+        true,
+      );
+      expect(shoreRoutes(), `${voyage}度目の出航でも、島へ戻る航路は1本`).toBe(1);
+
+      // 1度目だけ島影の海を見張り切る（見張りが立てるのは進む先だけなので、帰り道は増えない）。
+      if (voyage === 1) for (let i = 0; i < 20 && keepWatch(game, first); i++);
+
+      expect(cross(game, first, 'route_to_shore'), `${voyage}度目の引き返し`).toBe(true);
+      expect(shoreRoutes(), '岸へ戻れば、その航路は消える').toBe(0);
+    }
+
+    expect(
+      sightedRoutes(first).map((route) => route.def.name),
+      '残るのは見張りが立てた進む先だけ',
+    ).toEqual(['route_to_kelp_belt']);
   });
 
   it('航海の途中から島へ引き返せて、積荷は1つも減らない', () => {
@@ -645,6 +762,9 @@ describe('筏と航海', () => {
     expect([...new Set(game.player.ending.broughtArtifacts)], '積んでいたアーティファクトを持ち帰る').toEqual(
       ['golden_chalice'],
     );
+
+    // 本土は鎖の端なので、折り返しの航路が立たない（着けば周回が終わり、そこから先も戻りも無い）。
+    expect(sightedRoutes(singletonPlace(game, 'mainland')), '本土に航路は無い').toHaveLength(0);
 
     // 着いた後は風も海流も効かないので、速さは立たない（同じ到達が二度起きない）。
     tick(game);

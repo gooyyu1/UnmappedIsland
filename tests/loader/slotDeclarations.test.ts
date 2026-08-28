@@ -152,3 +152,78 @@ object_defs:
     expect(isStorage('stone'), '既定は入れ物ではない').toBe(false);
   });
 });
+
+/** 配られたスロットを落とす宣言（`remove_slots`、GameElementDefinition.md 7.14節）のロード。 */
+describe('remove_slots', () => {
+  const load = (yaml: string): WorldCodex =>
+    new WorldCodexYamlLoader().load('test.yaml', yaml).buildAndReset();
+
+  const slotNamesOf = (codex: WorldCodex, objectName: string): string[] =>
+    codex.objects
+      .get(codex.objectNames.getId(objectName))
+      .enumerateSlotDefs()
+      .map((slotDef) => slotDef.name);
+
+  it('別のtraitが配ったスロットも落とせる（落とすのは混ぜ終わってから）', () => {
+    const codex = load(`
+traits:
+  location:
+    slots:
+      items: {cell: {accept: {tag: item}}}
+      fixtures: {cell: {accept: {tag: fixture}}}
+  sea_zone:
+    remove_slots: [items]
+object_defs:
+  coastal_waters:
+    traits: [location, sea_zone]
+  grassland:
+    traits: [location]
+`);
+
+    expect(slotNamesOf(codex, 'coastal_waters')).toEqual(['fixtures']);
+    expect(slotNamesOf(codex, 'grassland'), '落とさない型はそのまま').toEqual(['items', 'fixtures']);
+  });
+
+  it('落とす先が無ければエラー（綴り間違いを黙って捨てない）', () => {
+    expect(() =>
+      load(`
+traits:
+  location:
+    slots:
+      items: {cell: {accept: {tag: item}}}
+object_defs:
+  coastal_waters:
+    traits: [location]
+    remove_slots: [itmes]
+`),
+    ).toThrow(YamlLoadError);
+  });
+
+  it('同じ宣言でslotsに書きながら落とすのはエラー', () => {
+    expect(() =>
+      load(`
+object_defs:
+  coastal_waters:
+    slots:
+      items: {cell: {accept: {tag: item}}}
+    remove_slots: [items]
+`),
+    ).toThrow(YamlLoadError);
+  });
+
+  it('落としたスロットをvisible_slotsが指すとエラー', () => {
+    expect(() =>
+      load(`
+traits:
+  location:
+    slots:
+      items: {cell: {accept: {tag: item}}}
+object_defs:
+  coastal_waters:
+    traits: [location]
+    remove_slots: [items]
+    visible_slots: [items]
+`),
+    ).toThrow(YamlLoadError);
+  });
+});
