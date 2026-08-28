@@ -443,8 +443,13 @@ function devicesHtml(view: CodexView, tables: BalanceTables): string {
       objectLinkHtml(view, device.deviceName, true),
       `${objectLinkHtml(view, device.productName, true)} ` +
         `<span class="muted">×${formatNumber(device.perCycle, 3)}</span>`,
+      `<span class="muted">${escapeHtml(device.condition)}</span>`,
       `${formatNumber(device.periodMinutes, 0)}分`,
       formatNumber(device.perDay, 2),
+      device.lifetimeProperty === undefined
+        ? '—'
+        : `<a href="${view.propertyHref(device.deviceName, device.lifetimeProperty)}">` +
+          `${escapeHtml(view.propertyLabel(device.deviceName, device.lifetimeProperty))}</a>`,
       device.lifetimeDays === undefined ? '朽ちない' : `${formatNumber(device.lifetimeDays, 1)}日`,
       device.overLifetime === undefined ? '—' : formatNumber(device.overLifetime, 1),
       device.buildMinutes === undefined
@@ -459,10 +464,18 @@ function devicesHtml(view: CodexView, tables: BalanceTables): string {
     `<h2 id="${balanceSectionId(DEVICES_SECTION)}">待ち生産</h2>` +
     `<p class="muted">仕掛けてから時間が経つと産物が返るもの。周期は単位あたりの労働に足していないので、` +
     `ここが代わりに周期とレートを出す。「生涯」は設備1つが朽ちるまでに返す総数で、これが並列度の上限。` +
-    `場所で違うのは掛かる動物の重みだけなので、1つの表に並べる。</p>` +
+    `場所で違うのは掛かる動物の重みだけなので、1つの表に並べる——` +
+    `<b>その場所へ置けば働くという意味ではない。</b>周期を進めるのはtick毎の増減なので、` +
+    `それがゲートで縛られていれば「条件つき」で、行の数字はすべて条件が成立し続けた場合のレート` +
+    `（何の条件かは設備の定義を見ることになる）。「出どころ」は尽きると設備が終わるプロパティで、` +
+    `その減る条件が周期の条件と別なら、「生涯」は同時には成立しない仮定の掛け算になる。</p>` +
     (rows.length === 0
       ? ''
-      : tableHtml(['場所', '設備', '産物', '周期', '個/日', '寿命', '生涯', '製作', '分/個'], rows, true)) +
+      : tableHtml(
+          ['場所', '設備', '産物', '条件', '周期', '個/日', '出どころ', '寿命', '生涯', '製作', '分/個'],
+          rows,
+          true,
+        )) +
     rainWaterHtml(view, tables)
   );
 }

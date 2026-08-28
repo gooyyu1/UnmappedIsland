@@ -799,7 +799,7 @@ object_texts:
         description: 筏から岸へ戻る。
       set_sail:
         display_name: 航海に出る
-        description: 乗り込んで漕ぎ出す。島へ戻ることはできない。
+        description: 乗り込んで、この海岸が面した海へ漕ぎ出す。出た海岸へはいつでも引き返せる。
   rawhide_sail:
     display_name: 生皮の帆
     description: 生皮を縫い合わせて枠へ張った帆。筏に組み込めば、風をつかんで進みが増す。
@@ -1052,8 +1052,8 @@ object_texts:
         display_name: 見張り
         description: 近づいてくる陸を見ながら、本土へ渡る航路と、拾えるものを探す。
   route_to_shore:
-    display_name: 島の浜への航路
-    description: 見張りで見つけた、島の浜へ引き返す針路。渡り着けば筏を浜へ上げられる。
+    display_name: 出た海岸への航路
+    description: 漕ぎ出したときから在る、出た海岸へ引き返す針路。渡り着けば筏を岸へ上げられる。
   route_to_coastal_waters:
     display_name: 島影の海への航路
     description: 見張りで見つけた、島影の海へ引き返す針路。
