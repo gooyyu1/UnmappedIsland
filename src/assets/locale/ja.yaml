@@ -983,20 +983,22 @@ object_texts:
       explore:
         display_name: 見張り
         description: 浮いている物を拾い上げながら、次の海区へ続く航路を探す。
+  # 航路が二手に分かれる海区（GameEndings.md 12.3節）。**分かれることを言うのはここだけ**なので、
+  # 見張りの1行も「次の海区へ続く航路」ではなく2本あることを伝える。
   long_swell:
     display_name: うねりの海
-    description: 大きなうねりだけが続く海。見えるものは何も無い。
+    description: 大きなうねりだけが続く海。見えるものは何も無いが、うねりの筋が二手に分かれている。
     notes:
-      exploring: 見張りを続けると、次の海区へ続く航路が見つかる。
-      explored: 次の海区へ続く航路は見つかった。渡ってもよいし、見張りを続けてもよい。
+      exploring: 見張りを続けると、二手に分かれた航路が見つかる。
+      explored: 航路は2本とも見つかった。流れ藻の海へは真っ直ぐ、沖の潮目を回れば遠回りになる。
     props:
       exploration_progress:
         display_name: 見張りの進み具合
-        description: この海区をどれだけ見渡したか。見渡し切ると、次の海区へ続く航路が見える。
+        description: この海区をどれだけ見渡したか。見渡し切ると、二手に分かれた航路が見える。
     interactions:
       explore:
         display_name: 見張り
-        description: うねりの向きを読んで、次の海区へ続く航路を探す。
+        description: うねりの向きを読んで、二手に分かれる航路を探す。
   outer_tide_rip:
     display_name: 沖の潮目
     description: 島影の無い沖の潮目。ここにも流れが集まり、魚が寄る。

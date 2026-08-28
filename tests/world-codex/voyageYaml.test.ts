@@ -12,10 +12,10 @@ import {
   loadYamlDirectory,
   SAMPLE_CHARACTER,
   WORLD_CODEX_DIR,
-  worldCodexPath,
   worldCodexYamlPaths,
 } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
+import { namedEntries, nodeAt, readSeaChart } from '../support/seaChain';
 import { seededRng } from '../../src/domain/Rng';
 
 /**
@@ -100,6 +100,14 @@ const YIELDS: readonly (readonly [string, readonly string[], readonly string[], 
 
 /** 1つの海区を何回見張って数えるか。 */
 const WATCHES = 120;
+
+/** 海区の網（航路の宣言から組み立てたもの）。行き先の型から海区を引くのに使う。 */
+const SEA_CHART = readSeaChart();
+
+/** 航路が二手に分かれる海区（voyage.yaml のうねりの海）と、そこから出る近道・遠回りの航路。 */
+const FORK = 'long_swell';
+const SHORTCUT_ONWARD = 'route_to_drifting_kelp';
+const DETOUR_ONWARD = 'route_to_outer_tide_rip';
 
 /**
  * 島からの脱出（voyage.yaml、docs/world/Voyage.md）の検証。
@@ -202,11 +210,23 @@ describe('筏と航海', () => {
     return sinceBefore();
   }
 
-  /** その海区の航路が見えるまで見張り、本土の側へ進む航路を渡る。渡れなければfalse。 */
+  /**
+   * その海区の航路が見えるまで見張り、**本土へ最短で近づく航路**を渡る。渡れなければfalse。
+   *
+   * 見張りが立てるのは進む先の航路だけだが、**分かれ道では2本立つ**（voyage.yaml のうねりの海）ので、
+   * 宣言順ではなく行き先の残り海区数で選ぶ——最短の経路を辿ることを、この検査の側で決めておく。
+   */
   function watchAndCross(game: StartedGame, zone: WorldObject): boolean {
-    // 見張りが立てるのは、その海区に立つ航路のうち進む先の1本だけ（voyage.yaml）。
-    const onward = watchUntilSighted(game, zone).at(0);
-    return onward?.tryGetAction('cross', game.player.instance)?.tryExecute() === true;
+    const remainingId = codex.propertyNames.getId('zones_to_mainland');
+    const remainingBeyond = (route: WorldObject): number => {
+      const destination = SEA_CHART.routeDestinations.get(route.def.name);
+      const zone = destination === undefined ? undefined : singletonPlace(game, destination);
+      // 本土そのものへの航路が最短（残り0）。海区でない行き先は残り海区数を持たない。
+      return zone?.tryGetProperty(remainingId)?.getEffectiveValue() ?? 0;
+    };
+
+    const onward = [...watchUntilSighted(game, zone)].sort((a, b) => remainingBeyond(a) - remainingBeyond(b));
+    return onward.at(0)?.tryGetAction('cross', game.player.instance)?.tryExecute() === true;
   }
 
   /**
@@ -619,8 +639,8 @@ describe('筏と航海', () => {
       return voyageToMainland(game, raft).length;
     };
 
-    expect(zoneCountFrom('sandy_beach'), '砂浜からは14の海区を渡る').toBe(14);
-    expect(zoneCountFrom('rocky_coast'), '岩だらけの海岸からは12の海区で済む').toBe(12);
+    expect(zoneCountFrom('sandy_beach'), '砂浜からは最短で12の海区を渡る').toBe(12);
+    expect(zoneCountFrom('rocky_coast'), '岩だらけの海岸からは10の海区で済む').toBe(10);
   });
 
   it('引き返して着くのは、出航したその海岸', () => {
@@ -769,7 +789,9 @@ describe('筏と航海', () => {
     expect(raft.parent?.def.name, '風下＝島の側の隣の海区へ移る').toBe('coastal_waters');
   });
 
-  it('横風の荒天では押し流されない（鎖に分岐が無く、横へ流す先が無い）', () => {
+  it('横風の荒天では押し流されない（横風の風下に、辺で繋がった海区が無い）', () => {
+    // 分岐が入っても、辺で繋がった隣はどれも本土の側か島の側のどちらか（voyage.yaml）。分かれ道で
+    // 隣が2つになるのは「本土の側が2つ」であって、横風の行き先ができたわけではない。
     const { game, raft } = ready();
     raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
     setStorm(game, 'crosswind');
@@ -778,7 +800,7 @@ describe('筏と航海', () => {
     expect(raft.parent?.def.name, '出た海区に居る').toBe('coastal_waters');
   });
 
-  it('鎖の先頭では、向かい風の荒天でも岸へ乗り上げない', () => {
+  it('島側の端では、向かい風の荒天でも岸へ乗り上げない', () => {
     // **押し流す先は隣の海区だけ。** 島影の海の風下（島の側）に海区は無いので、荒天が筏を岸へ
     // 戻すことはない——引き返すのは来た航路を渡ることそのもの（GameEndings.md 12.5節）。
     const { game, raft } = ready();
@@ -786,10 +808,10 @@ describe('筏と航海', () => {
     setStorm(game, 'headwind');
 
     expect(ticksUntilSwept(game, raft), '島影の海から岸へは流されない').toBeUndefined();
-    expect(raft.parent?.def.name, '鎖の先頭に留まる').toBe('coastal_waters');
+    expect(raft.parent?.def.name, '島側の端に留まる').toBe('coastal_waters');
   });
 
-  it('鎖の末尾では、追い風の荒天でも本土へ着かない', () => {
+  it('本土側の端では、追い風の荒天でも本土へ着かない', () => {
     // **到達は本土へ移ることそのもの**（Voyage.md 4節）なので、そこへ渡らせるのは航路であって
     // 荒天ではない。荒天で周回が終わることはない。
     const { game, raft } = ready();
@@ -806,13 +828,13 @@ describe('筏と航海', () => {
     const { game, raft } = ready();
     raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
     const kelpBelt = singletonPlace(game, 'kelp_belt');
-    expect(charted(kelpBelt), '流される前は幅を持ったまま').toEqual([8, 18]);
+    expect(charted(kelpBelt), '流される前は幅を持ったまま').toEqual([6, 16]);
 
     setStorm(game, 'tailwind');
     expect(ticksUntilSwept(game, raft), '押し流される').toBeDefined();
     tick(game);
 
-    expect(charted(kelpBelt), '流れ着いた海区も幅無しで海図に残る').toEqual([13, 13]);
+    expect(charted(kelpBelt), '流れ着いた海区も幅無しで海図に残る').toEqual([11, 11]);
   });
 
   it('海岸に繋いだ筏は、荒天でも流されない', () => {
@@ -932,15 +954,17 @@ describe('筏と航海', () => {
     };
   }
 
-  it('島から本土まで、8種類の顔ぶれから配った十数個の海区を渡る', () => {
+  it('島から本土まで、8種類の顔ぶれから配った十数個の海区の網を渡る', () => {
     const { game, raft } = ready();
     raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
 
     const visited = voyageToMainland(game, raft);
 
-    expect(raft.parent?.def.name, '鎖を辿り切れば本土に着く').toBe('mainland');
-    expect(visited.length, '本土までは十数個の海区').toBeGreaterThanOrEqual(13);
-    expect(visited.length, '本土までは十数個の海区').toBeLessThanOrEqual(19);
+    expect(raft.parent?.def.name, '網を辿り切れば本土に着く').toBe('mainland');
+    // **盤面の海区は十数個（14個）で、最短の経路がそのうち12個を通る**（残り2つは遠回りの側、
+    // GameEndings.md 12節）。近道を選んでも、8種類の顔ぶれはすべて道中に出る。
+    expect(SEA_CHART.zones.length, '盤面の海区は十数個').toBe(14);
+    expect(visited.length, '最短の経路が通るのは12個').toBe(12);
     expect(new Set(visited).size, '同じ海区は二度通らない').toBe(visited.length);
     for (const [face, zones] of FACES)
       expect(
@@ -952,6 +976,57 @@ describe('筏と航海', () => {
       visited.filter((zoneName) => !known.has(zoneName)),
       '顔ぶれの分からない海区は無い',
     ).toEqual([]);
+  });
+
+  it('分かれ道では航路が2本現れ、どちらを渡っても本土へ着く', () => {
+    // **針路の選択（GameEndings.md 12.3節）が盤面に出ているか。** 同じ海区から本土へ向かう経路が
+    // 2つあり、通る海区の数が違い、**どちらも行き止まりにならない**ことを、実データで確かめる。
+    const beyondFork = (routeName: string): readonly string[] => {
+      const { game, raft } = ready();
+      raft.tryGetAction('set_sail', game.player.instance)?.tryExecute();
+      sailTo(game, raft, FORK);
+
+      const fork = singletonPlace(game, FORK);
+      expect(
+        watchUntilSighted(game, fork)
+          .map((route) => route.def.name)
+          .sort(),
+        '見張り切ると、進む先の航路が2本とも現れる',
+      ).toEqual([DETOUR_ONWARD, SHORTCUT_ONWARD].sort());
+
+      keepAlive(game);
+      expect(cross(game, fork, routeName), `${routeName} を渡る`).toBe(true);
+      const beyond = voyageToMainland(game, raft);
+      expect(raft.parent?.def.name, `${routeName} を選んでも本土に着く`).toBe('mainland');
+      return beyond;
+    };
+
+    const shortcut = beyondFork(SHORTCUT_ONWARD);
+    const detour = beyondFork(DETOUR_ONWARD);
+
+    expect(shortcut, '近道は3区間で本土へ出る').toEqual(['drifting_kelp', 'white_rock', 'mainland_shallows']);
+    expect(detour, '遠回りは5区間').toEqual([
+      'outer_tide_rip',
+      'black_reef',
+      'drifting_kelp',
+      'white_rock',
+      'mainland_shallows',
+    ]);
+  });
+
+  it('近道が飛ばす2区間は、どちらも見張りが何かを返す海区', () => {
+    // **「最短の航路が最も実りが薄い」**（GameEndings.md 12.1節）。近道は独自の海区を持たず、遠回りが
+    // 通る海区のうち2つを飛ばすだけ——飛ばす相手が何も返さない海区なら、近道は損をしない。
+    const { game } = ready();
+    const skipped = ['outer_tide_rip', 'black_reef'];
+
+    for (const zoneName of skipped) {
+      const zone = singletonPlace(game, zoneName);
+      // 素の重みの合計に対するハズレの割合が、そのまま「何も返さない見張り」の割合（Voyage.md 3.3節）。
+      const total = KNOBS.reduce((sum, knob) => sum + propertyOf(zone, knob), 0);
+      expect(total, `${zoneName}: 見張りの卓がある`).toBeGreaterThan(0);
+      expect(propertyOf(zone, 'barren_find') / total, `${zoneName}: ハズレばかりではない`).toBeLessThan(0.5);
+    }
   });
 
   it('同じ顔ぶれの海区は、同じつまみの配り方を持つ', () => {
@@ -1143,10 +1218,12 @@ describe('筏と航海', () => {
 
     const zones = seaZones(game);
     expect(zones.length, '海区は14個').toBe(14);
+    // **分岐があるので、1から14まで1つずつではない**——遠回りの2区間（沖の潮目5・黒い岩礁4）は、
+    // 近道の側の同じ数（うねりの海4・沈船の海5）と並ぶ。何区間か言えるのは最短についてだけ。
     expect(
       zones.map((zone) => propertyOf(zone, 'zones_to_mainland')).sort((a, b) => a - b),
-      '本土までの残り海区数は1から14まで1つずつ',
-    ).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+      '本土まで最短で何区間かが、海区ごとに立っている',
+    ).toEqual([1, 2, 3, 4, 4, 5, 5, 6, 7, 8, 9, 10, 11, 12]);
 
     for (const zone of zones) {
       const truth = propertyOf(zone, 'zones_to_mainland');
@@ -1196,20 +1273,20 @@ describe('筏と航海', () => {
     tick(game);
 
     const first = singletonPlace(game, 'coastal_waters');
-    expect(charted(first), '立った海区は幅無しで海図に残る').toEqual([14, 14]);
-    expect(charted(singletonPlace(game, 'kelp_belt')), 'まだ渡っていない先は幅のまま').toEqual([8, 18]);
+    expect(charted(first), '立った海区は幅無しで海図に残る').toEqual([12, 12]);
+    expect(charted(singletonPlace(game, 'kelp_belt')), 'まだ渡っていない先は幅のまま').toEqual([6, 16]);
 
     keepAlive(game);
     expect(watchAndCross(game, first), '海藻の帯へ渡る').toBe(true);
     tick(game);
-    expect(charted(singletonPlace(game, 'kelp_belt')), '渡り着いた海区も海図に残る').toEqual([13, 13]);
+    expect(charted(singletonPlace(game, 'kelp_belt')), '渡り着いた海区も海図に残る').toEqual([11, 11]);
 
     // 引き返しても記入は消えない（海図は持ち帰る）。
     keepAlive(game);
     expect(cross(game, singletonPlace(game, 'kelp_belt'), 'route_to_coastal_waters'), '戻る').toBe(true);
     keepAlive(game);
     expect(cross(game, first, 'route_to_shore'), '島へ戻る').toBe(true);
-    expect(charted(singletonPlace(game, 'kelp_belt')), '島へ戻っても記入は残る').toEqual([13, 13]);
+    expect(charted(singletonPlace(game, 'kelp_belt')), '島へ戻っても記入は残る').toEqual([11, 11]);
   });
 
   it('海図が言う残り海区数は、実際に残っている海区の数と合う', () => {
@@ -1251,69 +1328,75 @@ describe('筏と航海', () => {
     expect(raft.parent?.def.name, '本土に留まる').toBe('mainland');
   });
 
-  it('押し流す先は、鎖の隣の海区（追い風なら1つ手前、向かい風なら1つ後ろ）', () => {
+  it('海図が言う真値は、航路の辺から数えた最短の残り海区数', () => {
+    // **海図の土台は海の側の事実**（Voyage.md 3.7節）で、事実とは辺の繋がり方そのもの。海区ごとに
+    // 手で書いた数が航路の繋がりとずれれば、幅を狭めるほど確信を持って間違えることになる。
+    //
+    // **分岐が入ると、この数は隣どうしで1違うとは限らない**（遠回りの側の隣は自分より遠い）ので、
+    // 隣を1つずつ突き合わせるのではなく、辺を辿った最短距離と突き合わせる。
+    const chart = readSeaChart();
+    expect(chart.zones.length, '海区は14個').toBe(14);
+
+    for (const zone of chart.zones)
+      expect(
+        nodeAt(chart.bodies.get(zone), 'props', 'zones_to_mainland', 'value'),
+        `${zone}: 本土まで最短で何区間か`,
+      ).toBe(chart.distanceToMainland.get(zone));
+  });
+
+  it('押し流す先は、航路で繋がった隣の海区（追い風なら本土の側、向かい風なら島の側）', () => {
     // **押し流す先は型の名前でしか書けない**ので、14個の海区が手で隣を名指ししている。取り違えは
-    // その海区で荒天に遭うまで表に出ないので、鎖の位置（zones_to_mainland）と突き合わせて数える。
-    const zones = seaZoneDefs();
-    expect(zones.size, '海区は14個').toBe(14);
+    // その海区で荒天に遭うまで表に出ないので、航路の辺から組み立てた隣と突き合わせる。
+    //
+    // 向きは**辺の側の事実で、残り海区数からは出せない**（遠回りの側の隣は自分より遠い）。だから
+    // 見るのは3つ——隣の顔ぶれが辺と一致すること、本土の側と島の側が重なりなくそれを二分すること、
+    // そして辺の両端が向きを反対に名乗ること。
+    const chart = readSeaChart();
+    const driftTargets = (zone: string, weightProp: string): readonly string[] => {
+      const candidates = nodeAt(chart.bodies.get(zone), 'props', 'storm_drift', 'on_max', 'pick');
+      expect(Array.isArray(candidates), `${zone}: 押し流しの卓がある`).toBe(true);
+      return (candidates as readonly unknown[])
+        .filter((candidate) => nodeAt(candidate, 'weight', 'prop') === weightProp)
+        .map((candidate) => nodeAt(candidate, 'move', 'to_object'))
+        .filter((name): name is string => typeof name === 'string');
+    };
 
-    const distances = new Map(
-      [...zones].map(([name, body]) => [name, nodeAt(body, 'props', 'zones_to_mainland', 'value')]),
+    const toMainland = new Map(
+      chart.zones.map((zone) => [zone, driftTargets(zone, 'drift_to_mainland_weight')]),
     );
-    const nameAtDistance = new Map([...distances].map(([name, distance]) => [distance, name]));
+    const toIsland = new Map(chart.zones.map((zone) => [zone, driftTargets(zone, 'drift_to_island_weight')]));
 
-    for (const [name, body] of zones) {
-      const distance = distances.get(name) as number;
-      const candidates = nodeAt(body, 'props', 'storm_drift', 'on_max', 'pick');
-      expect(Array.isArray(candidates) && candidates.length, `${name}: 風下は追い風と向かい風の2つ`).toBe(2);
+    for (const zone of chart.zones) {
+      const both = [...toMainland.get(zone)!, ...toIsland.get(zone)!];
+      // 本土は海区ではないので、押し流しの相手にならない（到達は航路を渡ること、Voyage.md 4節）。
+      const neighbours = (chart.neighbours.get(zone) ?? []).filter((name) => name !== 'mainland');
+      expect([...both].sort(), `${zone}: 押し流す先は航路で繋がった隣だけ`).toEqual([...neighbours].sort());
+      expect(new Set(both).size, `${zone}: 同じ隣を両方の風下に置かない`).toBe(both.length);
 
-      const [toMainland, toIsland] = candidates as readonly unknown[];
-      expect(nodeAt(toMainland, 'weight', 'prop'), `${name}: 先頭が追い風の候補`).toBe(
-        'drift_to_mainland_weight',
-      );
-      expect(nodeAt(toIsland, 'weight', 'prop'), `${name}: 2つめが向かい風の候補`).toBe(
-        'drift_to_island_weight',
-      );
-      // 鎖の端では、その向きに海区が無い＝行き先を持たない候補になる。
-      expect(nodeAt(toMainland, 'move', 'to_object'), `${name}: 本土の側の隣`).toBe(
-        nameAtDistance.get(distance - 1),
-      );
-      expect(nodeAt(toIsland, 'move', 'to_object'), `${name}: 島の側の隣`).toBe(
-        nameAtDistance.get(distance + 1),
-      );
+      for (const neighbour of toMainland.get(zone)!)
+        expect(toIsland.get(neighbour), `${neighbour}から見て${zone}は島の側`).toContain(zone);
+      for (const neighbour of toIsland.get(zone)!)
+        expect(toMainland.get(neighbour), `${neighbour}から見て${zone}は本土の側`).toContain(zone);
+    }
+
+    // 本土の側を辿り続ければ必ず本土の手前へ出る（島の側なら島側の端へ）。向きが局所的に噛み合って
+    // いても、網の全体として前後が入れ替わっていれば、ここで出口が見つからない。
+    const endOfChain = (zone: string, sides: ReadonlyMap<string, readonly string[]>): string => {
+      let current = zone;
+      for (let steps = 0; steps <= chart.zones.length; steps++) {
+        const onward = sides.get(current)!;
+        if (onward.length === 0) return current;
+        current = onward[0];
+      }
+      throw new Error(`${zone} から辿ると端に着かない（向きが輪になっている）`);
+    };
+
+    for (const zone of chart.zones) {
+      expect(endOfChain(zone, toMainland), `${zone}: 本土の側を辿った先`).toBe('mainland_shallows');
+      expect(endOfChain(zone, toIsland), `${zone}: 島の側を辿った先`).toBe('coastal_waters');
     }
   });
 });
-
-/** 生YAMLのマッピングを名前で辿った先。途中で辿れなくなればundefined。 */
-function nodeAt(node: unknown, ...path: readonly string[]): unknown {
-  let current = node;
-  for (const key of path) {
-    if (current === null || typeof current !== 'object' || Array.isArray(current)) return undefined;
-    current = (current as Record<string, unknown>)[key];
-  }
-  return current;
-}
-
-/**
- * 海区（`sea_zone` traitを名乗る object_def）の生YAML。**押し流す先は型の名前**なので、鎖と食い違って
- * いないかを見るには定義そのものを読むしかない（動かした世界からは、そこへ流されて初めて分かる）。
- */
-function seaZoneDefs(): ReadonlyMap<string, unknown> {
-  const file: unknown = parse(readFileSync(worldCodexPath('voyage.yaml'), 'utf8'));
-  const found = new Map<string, unknown>();
-  for (const [name, body] of namedEntries(nodeAt(file, 'object_defs'))) {
-    const traits = nodeAt(body, 'traits');
-    if (Array.isArray(traits) && traits.includes('sea_zone')) found.set(name, body);
-  }
-  return found;
-}
-
-/** 名前で引ける節（`traits:`・`object_defs:` など）の中身を、名前と組で返す。それ以外は空。 */
-function namedEntries(node: unknown): readonly (readonly [string, unknown])[] {
-  if (node === null || typeof node !== 'object' || Array.isArray(node)) return [];
-  return Object.entries(node as Record<string, unknown>);
-}
 
 /**
  * その節の下の `spawn`（9.4節）が湧かせる型の名前。**`spawn` の下へ入ったら、そこから先はすべて

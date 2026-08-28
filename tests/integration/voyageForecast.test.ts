@@ -12,6 +12,10 @@ import { cardLooksOf } from '../../src/game/view/cardLooks';
 import { voyageDaysText } from '../../src/game/looks/timeTexts';
 import { parseLocale } from '../../src/locale/Localization';
 import { borrowedFace } from '../../src/game/ui/cardFace';
+import { readSeaChart, shortestRouteToMainland } from '../support/seaChain';
+
+/** 海区の網（航路の宣言から組み立てたもの）。真値を測る経路をここから決める。 */
+const SEA_CHART = readSeaChart();
 
 /**
  * 積み下ろしの間に出す推定日数（docs/concept/GameEndings.md 9.3節・docs/ui/CardView.md 16節）を、
@@ -77,22 +81,20 @@ describe('推定日数', () => {
   }
 
   /**
-   * その海区から本土まで、実際にかかる分数の合計。**筏を1海区ずつ実際に浮かべて、その海区の
-   * `crossing_minutes` の実効値を読む**——見積もりと同じ式をここへ書き写すと、写した式どうしが
-   * 合っていることしか確かめられない。
+   * その海区から本土まで、**最短の経路で**実際にかかる分数の合計。**筏を1海区ずつ実際に浮かべて、
+   * その海区の `crossing_minutes` の実効値を読む**——見積もりと同じ式をここへ書き写すと、写した式
+   * どうしが合っていることしか確かめられない。
+   *
+   * **経路は航路の宣言から組み立てた網を辿って決める**（`tests/support/seaChain.ts`）。分岐が入って
+   * 残り海区数が経路によって変わるので、海図が言うのは最短の経路（`docs/world/Voyage.md` 3.7節）。
    */
   function minutesToMainland(game: StartedGame, raft: WorldObject, departure: WorldObject): number {
-    const remainingId = codex.propertyNames.getId('zones_to_mainland');
     const crossingId = codex.propertyNames.getId('crossing_minutes');
     const fixtures = codex.slotNames.getId('fixtures');
-    const remaining = (zone: WorldObject): number => zone.getProperty(remainingId).getEffectiveValue();
-
-    const ahead = seaZones(game)
-      .filter((zone) => remaining(zone) <= remaining(departure))
-      .sort((a, b) => remaining(b) - remaining(a));
 
     let minutes = 0;
-    for (const zone of ahead) {
+    for (const zoneName of shortestRouteToMainland(SEA_CHART, departure.def.name)) {
+      const zone = zoneOf(game, zoneName);
       expect(raft.moveToSlotOrRejection(zone.getSlot(fixtures))).toBeUndefined();
       minutes += zone.getProperty(crossingId).getEffectiveValue();
     }
@@ -246,7 +248,11 @@ describe('推定日数', () => {
     const sail = game.session.createObject(codex.objectNames.getId('rawhide_sail'));
     expect(sail.moveToSlotOrRejection(raft.getSlot(codex.slotNames.getId('structure')))).toBeUndefined();
 
-    expect(forecast(raft)!.maxDays, '帆を張れば早く着く').toBeLessThan(before.maxDays);
+    // **帯の刻みは半日**（DAY_STEP）なので、1区間あたり30分の縮みは帯の端によっては丸めに隠れる。
+    // 縮んだことが出るのは下限の側で、上限は少なくとも延びない。
+    const rigged = forecast(raft)!;
+    expect(rigged.minDays, '帆を張れば早く着く').toBeLessThan(before.minDays);
+    expect(rigged.maxDays, '上限が延びることはない').toBeLessThanOrEqual(before.maxDays);
   });
 
   it('海の上でも、今いる海区の値で出す', () => {
@@ -265,6 +271,23 @@ describe('推定日数', () => {
     zone!.getProperty(codex.propertyNames.getId('chart_crossed')).setNumber(1);
     const crossed = forecast(raft)!;
     expect(crossed.minDays, '幅が消えれば両端が揃う').toBe(crossed.maxDays);
+  });
+
+  it('分かれ道に浮かんだ筏には、最短の経路での日数が出る', () => {
+    // **分岐が入ると残り海区数が経路によって変わる**（GameEndings.md 12.6節）。海図が1つの数で言える
+    // のは最短だけで、遠回りを選べば実際は延びる——それは海図の粗さではなく針路の選択
+    // （Voyage.md 3.7節）なので、幅ではなく最短を出す。
+    const { game, raft } = ready();
+    const fork = zoneOf(game, 'long_swell');
+    expect(raft.moveToSlotOrRejection(fork.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+    // 渡り終えた海区は幅を持たない（Voyage.md 3.7節）ので、帯が1つの数になり真値とそのまま比べられる。
+    fork.getProperty(codex.propertyNames.getId('chart_crossed')).setNumber(1);
+
+    const forecast = forecastIn(game)(raft)!;
+    expect(forecast.minDays, '渡り終えた海区なので幅が無い').toBe(forecast.maxDays);
+    expect(forecast.maxDays, '最短の経路で実際にかかる日数と合う').toBe(
+      inHalfDays(minutesToMainland(game, raft, fork)),
+    );
   });
 
   it('渡る当人でない物には出さない', () => {
