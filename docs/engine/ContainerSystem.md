@@ -274,10 +274,10 @@ conditions:
 ## 8. 未決事項・今後の検討課題
 
 - 重い荷が**移動時間**へ与える影響（移動できるかどうかだけが 5 節で実装済み。**疲労のほうは段の `add` で
-  書けると決まった**、[`../world/Characters.md`](../world/Characters.md) 荷重の効き方節）。`duration` は
-  単一のプロパティ参照（11.3 節）なので、道ごとの所要時間と担ぎ手の遅れを合流させる場所が無い。
-  **足りるのは 2 つの参照の積**で、記法の採否は [`GameElementDefinition.md`](./GameElementDefinition.md)
-  17 節が持つ
+  書けると決まった**、[`../world/Characters.md`](../world/Characters.md) 荷重の効き方節）。道ごとの所要時間と
+  担ぎ手の遅れを合流させる文法（`duration` の参照 2 つの積、
+  [`GameElementDefinition.md`](./GameElementDefinition.md) 11.3 節）は入ったので、残っているのは
+  `pace` と段ごとの倍率を実データへ書くことだけ
 - **荷重の段ごとの倍率と `stamina` の削り**（[`../world/Characters.md`](../world/Characters.md)
   荷重の効き方節）。「1 日ぶんと一晩の回復が同じ桁」という置き方だけが決まっていて、`laden` と `heavy` の
   差をどれだけ開けるかは、**1 日にどれだけ往復するのが普通か**が見えてから決める

@@ -89,19 +89,36 @@ export interface PickCandidateReading {
   readonly among: AmongReading | undefined;
 }
 
+/** `{subject, prop}`参照1つの読み上げ。単体でも、積の因子としても同じ形。 */
+export interface PropertyRefReading {
+  readonly subject: ReferenceRoot;
+  readonly propertyGlobalId: number;
+}
+
 /**
- * 重み・所要時間の宣言（10.2節）。リテラルか、対象のプロパティ参照かの二択。
+ * 重み・所要時間の宣言（10.2節）。リテラルか、対象のプロパティ参照か、参照2つの積の三択。
  *
  * 参照の側を**数値へ解かずに**渡すのは、解ける値かどうかが文脈で決まるため——重ねる相手の値は
  * 「どれを重ねた場合か」を決めた側にしか答えられない。
  */
 export type DeclaredNumberReading =
-  | { readonly kind: 'literal'; readonly value: number }
+  { readonly kind: 'literal'; readonly value: number } | ReferencedNumberReading;
+
+/** リテラルではない側——参照1つか、参照2つの積。 */
+export type ReferencedNumberReading =
+  | ({ readonly kind: 'property' } & PropertyRefReading)
   | {
-      readonly kind: 'property';
-      readonly subject: ReferenceRoot;
-      readonly propertyGlobalId: number;
+      readonly kind: 'product';
+      readonly factors: readonly [PropertyRefReading, PropertyRefReading];
     };
+
+/**
+ * この宣言が掛け合わせている参照。**単体と積を同じ形で読むための入口**——読み手はどれも
+ * 「掛け合わせる」しかしないので、参照が1つか2つかで処理を分ける理由が無い。
+ */
+export function multipliedRefs(reading: ReferencedNumberReading): readonly PropertyRefReading[] {
+  return reading.kind === 'property' ? [reading] : reading.factors;
+}
 
 /** `transfer`（9.5節）の読み上げ。linkedはamountが全量動いた場合の`linked_add`。 */
 export interface TransferReading {

@@ -17,6 +17,7 @@ import type {
   TransferReading,
   DeclaredNumberReading,
 } from '../../domain/EffectReader';
+import { multipliedRefs } from '../../domain/EffectReader';
 import type { AmongReading } from '../../domain/AmongSpec';
 import type { ObjectRefReading } from '../../domain/ObjectRef';
 import { typeMatchTokens } from './typeMatchTokens';
@@ -94,14 +95,17 @@ function objectRefTokens(reading: ObjectRefReading, names: DefNames): readonly D
   }
 }
 
-/** 重み・所要時間の書き表し。リテラルなら数値、参照ならプロパティ。 */
+/** 重み・所要時間の書き表し。リテラルなら数値、参照ならプロパティ、積なら「× 」で繋いだ2つ。 */
 export function declaredNumberTokens(
   reading: DeclaredNumberReading,
   names: DefNames,
 ): readonly DescriptionToken[] {
-  return reading.kind === 'literal'
-    ? [text(String(reading.value))]
-    : [propertyPathRef(names.propertyName(reading.propertyGlobalId), reading.subject)];
+  if (reading.kind === 'literal') return [text(String(reading.value))];
+
+  return multipliedRefs(reading).flatMap((ref, index) => [
+    ...(index === 0 ? [] : [text(' × ')]),
+    propertyPathRef(names.propertyName(ref.propertyGlobalId), ref.subject),
+  ]);
 }
 
 /** `among`（10.3節）の1行。どこから・どう絞って・どんな重みで1つ選ぶか。 */
