@@ -2,6 +2,38 @@ import { describe, expect, it } from 'vitest';
 import { PlayScreenLayout } from '../../src/game/looks/PlayScreenLayout';
 import { ScreenMetrics } from '../../src/game/looks/ScreenMetrics';
 
+/** 有理数（分子・分母のBigInt）。laneCellsの真の値を、浮動小数の誤差なしで求めるために使う。 */
+interface Rational {
+  readonly n: bigint;
+  readonly d: bigint;
+}
+
+const ratio = (n: bigint, d: bigint): Rational => ({ n, d });
+const smaller = (a: Rational, b: Rational): Rational => (a.n * b.d < b.n * a.d ? a : b);
+const times = (a: Rational, k: bigint): Rational => ratio(a.n * k, a.d);
+const minus = (a: Rational, b: Rational): Rational => ratio(a.n * b.d - b.n * a.d, a.d * b.d);
+const plus = (a: Rational, b: Rational): Rational => ratio(a.n * b.d + b.n * a.d, a.d * b.d);
+
+/**
+ * PlayScreenLayout.laneCellsと同じ式を有理数で解いたもの。ScreenMetricsのuも、
+ * フィールドエリアの幅（横型は画面幅からダッシュボード列478uと右サイドバー120uを引いたもの、
+ * 縦型は画面幅そのもの）も、割り切れない値のまま持ち回る。
+ */
+function exactLaneCells(width: number, height: number): number {
+  const w = BigInt(width);
+  const h = BigInt(height);
+  const landscape = width >= height;
+  const u = landscape ? smaller(ratio(h, 1080n), ratio(w, 1683n)) : smaller(ratio(w, 1080n), ratio(h, 1920n));
+
+  // レーンに使える幅 ＝ フィールドエリアの幅 − 外周マージン（横型は左右、縦型は左だけ）。
+  // これにギャップ1つ分を足したものを、カードのピッチ217uで割る。
+  const usable = landscape ? minus(ratio(w, 1n), times(u, 598n + 12n)) : minus(ratio(w, 1n), times(u, 6n));
+  const numerator = plus(usable, times(u, 12n));
+  const pitch = times(u, 217n);
+  const cells = (numerator.n * pitch.d) / (numerator.d * pitch.n);
+  return Number(cells < 0n ? 0n : cells);
+}
+
 describe('ScreenMetrics', () => {
   it('uは画面短辺の1/1080になる', () => {
     expect(new ScreenMetrics(1080, 1920).u).toBe(1);
@@ -203,11 +235,13 @@ describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
     expect(portrait.sidebarSeparator).toBeUndefined();
   });
 
-  it('どの画面比でもレーンにカードが5枚以上見える', () => {
+  it('どの画面比でもレーンにカード5枚ぶんの幅があり、laneCellsがその枚数を返す', () => {
     // 5枚見えていないと、場に何があるかを見比べるより先に送る操作が要る（ScreenLayout.md 3.1節）。
-    // 何枠見えるかを数えるのはlaneCellsなので、ここでも同じ答えを使う——「横型は左右とも区切りの帯が
-    // かぶり、縦型の右端は画面の端そのもの」という数え方を2箇所に持つと、片方だけ変えても気づけない。
-    // 6が出るかどうかが、手持ちの6枠目が隠れるか（＝前へ詰めるか、7.3節）を分ける。
+    // laneCellsは下限（LANE_MIN_CARDS）を持っていて必ず5以上を返すので、5枚の規則を見るのは
+    // **幾何のほう**——レーンに使える幅がカード5枚ぶん1073u以上あること。保証を持っているのは
+    // 寸法の側（ScreenMetrics）なので、そちらを見れば下限が本当の退行を隠すことはない。
+    // laneCellsの値そのものは期待値ちょうどで見る。6が出るかどうかが、手持ちの6枠目が隠れるか
+    // （＝前へ詰めるか、7.3節）を分ける。
     for (const [width, height, expected] of [
       [1080, 1920, 5], // 9:16（縦型の基準）
       [540, 960, 5], // 9:16の小さな端末
@@ -217,11 +251,23 @@ describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
       [1152, 1080, 5], // 16:15
       [1080, 1080, 5], // 正方形
       [2560, 1080, 9], // 21:9
+      // ここから下は、幅で決まる横型（商がちょうど5.0000）で誤差により4を返していた寸法。
+      [721, 720, 5],
+      [1083, 1080, 5],
+      [1090, 1080, 5],
+      // 商が6以上の側でも、割り切れる寸法では同じ誤差が出ていた。
+      [1945, 900, 8],
+      [3030, 900, 14],
     ]) {
-      const { laneCells } = new PlayScreenLayout(new ScreenMetrics(width, height));
+      const layout = new PlayScreenLayout(new ScreenMetrics(width, height));
+      const { u, isLandscape } = layout.metrics;
+      // レーンに使える幅＝フィールドエリアの幅から外周マージンを引いたもの。横型は左右とも区切りの
+      // 帯がかぶるので12u、縦型の右端は画面の端そのものなので左の6uだけ（laneCells）。
+      const usable = (layout.fieldArea.width - layout.metrics.px(isLandscape ? 12 : 6)) / u;
 
-      expect(laneCells, `${width}×${height}`).toBe(expected);
-      expect(laneCells, `${width}×${height}は5枚以上`).toBeGreaterThanOrEqual(5);
+      // 幾何のほうも浮動小数なので、比較にはlaneCellsと同じだけの遊びを持たせる。
+      expect(usable + 1e-6, `${width}×${height}: カード5枚ぶん1073u`).toBeGreaterThanOrEqual(1073);
+      expect(layout.laneCells, `${width}×${height}`).toBe(expected);
     }
   });
 
@@ -292,6 +338,21 @@ describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
 
     const portrait = new PlayScreenLayout(new ScreenMetrics(1080, 1920));
     expect(portrait.optionsBarIcons(20).icons[0].x, '縦型は右寄せ').toBe(portrait.optionsBar.x + 24);
+  });
+
+  it('laneCellsは、どの画面寸法でも有理数で求めた厳密な値と一致する', () => {
+    // 設計寸法が「カード5枚ぴったり」なので、幅で決まる横型はどれも境界（ちょうど5.0000）に載る。
+    // 浮動小数で数えると、丸めの目次第でMath.floorが1つ落ちる。真の値は有理数（BigInt）で求める。
+    const mismatches: string[] = [];
+    for (const height of [720, 900, 1080, 1920]) {
+      for (let width = 320; width <= 3840; width++) {
+        const { laneCells } = new PlayScreenLayout(new ScreenMetrics(width, height));
+        const exact = exactLaneCells(width, height);
+        if (laneCells !== exact) mismatches.push(`${width}×${height}: 厳密${exact} → ${laneCells}`);
+      }
+    }
+
+    expect(mismatches.slice(0, 10)).toEqual([]);
   });
 
   it('どの縦型でもフィールドエリアは3レーン分（1080u）を確保する', () => {

@@ -1,5 +1,6 @@
 import { INFORMATION_PAPER_INSET } from '../../art/informationArt';
 import { SIZE } from './theme';
+import { LANE_MIN_CARDS } from './ScreenMetrics';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from './ScreenMetrics';
 
@@ -348,14 +349,21 @@ export class PlayScreenLayout {
   /**
    * 1つのレーンに一度に見えている枠の数。**送らずに読める枚数**で、レーンの外周マージン（左）の
    * 内側から数える——横型は左右とも区切りの帯がかぶるが、縦型の右端は画面の端そのもので、右の
-   * マージンへ届いたカードもそのまま見える（buildLanes・「どの画面比でもレーンにカードが5枚見える」）。
+   * マージンへ届いたカードもそのまま見える（buildLanes）。
    *
    * 使うのは手持ちを前へ詰めるかどうかの判定だけ（ScreenLayout.md 7.3節）。
    */
   get laneCells(): number {
     const hidden = this.metrics.px(this.metrics.isLandscape ? SIZE.margin * 2 : SIZE.margin);
     const pitch = this.metrics.px(SIZE.cardWidth + SIZE.gap);
-    return Math.max(0, Math.floor((this.fieldArea.width - hidden + this.metrics.px(SIZE.gap)) / pitch));
+    const usable = this.fieldArea.width - hidden + this.metrics.px(SIZE.gap);
+    // 設計寸法はカード5枚ぴったりで組んであるので、幅で決まる横型はどれも商がちょうど5.0000になる。
+    // 足すのは**浮動小数の誤差だけ**で、幾何の不足ではない——1px単位まで緩めると、本当に入り切って
+    // いないカードを数える。
+    const fits = Math.floor(usable / pitch + 1e-9);
+    // 下限は測り直した結果ではなく、ScreenMetricsがuを「カードが5枚見える」ように選んでいるという
+    // 保証（ScreenLayout.md 3.1節）の書き写し。
+    return Math.max(LANE_MIN_CARDS, fits);
   }
 
   /** オプションバーに並ぶアイコンボタン。横型は高さいっぱいの中央へ、縦型は右端へ寄せる。 */
