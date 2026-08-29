@@ -69,8 +69,8 @@ jobs:
 
       - name: Prepare shared page header
         run: |
-          # 変換したページと索引ページで同じ見た目にするため、追加のスタイルはここだけに書く
-          # （変換スクリプトと、後続の索引ページの生成が同じファイルを読む）。
+          # 変換したページと索引ページで同じ見た目にするため、追加のスタイルと図の描画はここだけに
+          # 書く（変換スクリプトと、後続の索引ページの生成が同じファイルを読む）。
           cat > /tmp/docs-header.html <<'EOF'
           <style>
             /*
@@ -89,7 +89,28 @@ jobs:
                 padding: 1rem !important;
               }
             }
+            /*
+             * mermaidの図は<pre>で出す（buildDocsSite.mjs）ので、github-markdown-cssの
+             * コードブロックの地と余白が付く。図に枠は要らないので外し、中央へ置く。
+             * 要素で絞るのは、github-markdown-cssの`.markdown-body pre`に詳細度で負けないため。
+             */
+            pre.mermaid {
+              background: transparent;
+              padding: 0;
+              text-align: center;
+            }
           </style>
+          <script type="module">
+            // 図の無いページ（索引ページ・図を持たない文書）で大きな束を取りに行かないよう、
+            // 実際に .mermaid があるときだけ読み込む。
+            if (document.querySelector('.mermaid')) {
+              const { default: mermaid } = await import(
+                'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'
+              );
+              mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+              await mermaid.run();
+            }
+          </script>
           EOF
 
       - name: Convert markdown files to HTML

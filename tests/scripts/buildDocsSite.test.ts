@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { extname, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -42,6 +42,40 @@ describe('docs/ のHTML化', () => {
       const markdown = countFiles(join(ROOT, 'docs'), '.md');
       expect(markdown, 'docs/ に .md が1つも無い').toBeGreaterThan(0);
       expect(countFiles(site, '.html'), `docs/ の .md は ${markdown} 件`).toBe(markdown);
+    } finally {
+      rmSync(work, { recursive: true, force: true });
+    }
+  });
+
+  /**
+   * mermaidのブロックは表示するコードではなく図なので、クライアント側のmermaidが既定で拾う形
+   * （`.mermaid`）で出す。mermaidは要素のinnerHTMLをエンティティ復号して図の定義として読むため、
+   * 中身は素のままではなくエスケープされている必要がある。
+   */
+  it('mermaidのブロックは、コードブロックではなく.mermaidとして出る', () => {
+    const work = mkdtempSync(join(tmpdir(), 'unmapped-island-docs-site-mermaid-'));
+    try {
+      const input = join(work, 'docs');
+      mkdirSync(input, { recursive: true });
+      writeFileSync(
+        join(input, 'diagram.md'),
+        ['```mermaid', 'flowchart TD', '  A["<入口>"] --> B', '```', ''].join('\n'),
+        'utf-8',
+      );
+      const site = join(work, 'site');
+      mkdirSync(site, { recursive: true });
+      const header = join(work, 'header.html');
+      writeFileSync(header, '<style></style>\n', 'utf-8');
+
+      execFileSync('node', [join(ROOT, 'scripts/buildDocsSite.mjs'), input, site, header], {
+        cwd: ROOT,
+        encoding: 'utf-8',
+      });
+
+      const html = readFileSync(join(site, 'diagram.html'), 'utf-8');
+      expect(html).toContain('<pre class="mermaid">');
+      expect(html).not.toContain('language-mermaid');
+      expect(html).toContain('A[&quot;&lt;入口&gt;&quot;] --&gt; B');
     } finally {
       rmSync(work, { recursive: true, force: true });
     }

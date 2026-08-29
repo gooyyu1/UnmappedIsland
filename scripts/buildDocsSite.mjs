@@ -21,6 +21,9 @@ const HIGHLIGHT_CSS = 'https://cdn.jsdelivr.net/npm/highlight.js@11/styles/githu
 const markdown = MarkdownIt({
   html: true,
   highlight(code, language) {
+    // mermaidは表示するコードではなく図。ページ側のmermaidが既定で拾うセレクタ（.mermaid）で出す。
+    // mermaidは要素のinnerHTMLをエンティティ復号して定義として読むので、中身はエスケープしておく。
+    if (language === 'mermaid') return `<pre class="mermaid">${markdown.utils.escapeHtml(code)}</pre>`;
     if (language === '' || !hljs.getLanguage(language)) return '';
     return `<pre class="hljs"><code>${hljs.highlight(code, { language }).value}</code></pre>`;
   },
