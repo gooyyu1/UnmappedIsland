@@ -165,8 +165,10 @@
 入れ物、[`Containers.md`](./Containers.md)）が入るなら、それも同じタグを名乗ります。タグが言うのは
 衣類であることではなく、身につけられることです。
 
-**保温の効果はまだありません。** 寒さは場所の `ambient_temperature`（[`../engine/ClimateSystem.md`](../engine/ClimateSystem.md)）
-にはありますが、それを体が受け取る形（キャラクタ側のプロパティ）が無いためで、着ても値は何も動きません。
+**保温の効果はまだありません。** 受け取る側（キャラクタの `warmth` と `chill_point`、
+[`Characters.md`](./Characters.md)）は入りましたが、衣類が `chill_point` を押し下げる側がまだ無いため、
+着ても値は何も動きません——寒さを防ぐ手段は今のところ火と洞窟だけです
+（[`../engine/VitalsSystem.md`](../engine/VitalsSystem.md) 8.3 節）。
 
 **なめし革を作る工程も入りました**（`clothing.yaml` の `tanned_leather`）。広葉樹から**立ったまま樹皮を
 剥ぎ**（刃物が要る。`timber.yaml`）、毛と肉を落とした生皮1枚を樹皮3巻きの渋に漬けると、なめし革1枚に

@@ -7,8 +7,9 @@
 # **身につけられることはequippableタグが言う。** 着る先のequipmentスロット
 # （characters/player_character.yaml）はこのタグだけを受け入れる。
 #
-# **保温の効果もまだ無い。** 寒さは場所のambient_temperature（core.yamlのlocation trait）が
-# 持っているが、それを体が受け取る形（キャラクタ側のプロパティ）が無いため、着ても値は何も動かない。
+# **保温の効果もまだ無い。** 受け取る側（キャラクタのwarmthとchill_point、
+# characters/player_character.yaml）は入ったが、衣類がchill_pointを押し下げる側はまだ書いていない
+# ——寒さを防ぐ手段は今のところ火と洞窟だけ（docs/engine/VitalsSystem.md 8.3節）。
 #
 # 重さは材料の和で置く（中軸のように捨てる部分だけを引く）。値を変えるときは、材料側の重さ
 # （weaving.yaml・fiber.yaml・animals.yaml）と釣り合っているかを見ること。
