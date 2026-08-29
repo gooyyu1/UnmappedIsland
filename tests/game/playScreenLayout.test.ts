@@ -16,8 +16,11 @@ const plus = (a: Rational, b: Rational): Rational => ratio(a.n * b.d + b.n * a.d
 
 /**
  * PlayScreenLayout.laneCellsと同じ式を有理数で解いたもの。ScreenMetricsのuも、
- * フィールドエリアの幅（横型は画面幅からダッシュボード列478uと右サイドバー120uを引いたもの、
+ * フィールドエリアの幅（横型は画面幅からダッシュボード列478uと右サイドバーを引いたもの、
  * 縦型は画面幅そのもの）も、割り切れない値のまま持ち回る。
+ *
+ * 横型のサイドバーは、広げる前（120u）の枚数が6枚を超えるときだけ240uになる（ScreenLayout.md
+ * 10.1節）。判定に使うのも同じ式なので、ここでも同じ順に2度解く。
  */
 function exactLaneCells(width: number, height: number): number {
   const w = BigInt(width);
@@ -27,11 +30,18 @@ function exactLaneCells(width: number, height: number): number {
 
   // レーンに使える幅 ＝ フィールドエリアの幅 − 外周マージン（横型は左右、縦型は左だけ）。
   // これにギャップ1つ分を足したものを、カードのピッチ217uで割る。
-  const usable = landscape ? minus(ratio(w, 1n), times(u, 598n + 12n)) : minus(ratio(w, 1n), times(u, 6n));
-  const numerator = plus(usable, times(u, 12n));
-  const pitch = times(u, 217n);
-  const cells = (numerator.n * pitch.d) / (numerator.d * pitch.n);
-  return Number(cells < 0n ? 0n : cells);
+  const cellsBeside = (sidebar: bigint): bigint => {
+    const usable = landscape
+      ? minus(ratio(w, 1n), times(u, 478n + sidebar + 12n))
+      : minus(ratio(w, 1n), times(u, 6n));
+    const numerator = plus(usable, times(u, 12n));
+    const pitch = times(u, 217n);
+    const cells = (numerator.n * pitch.d) / (numerator.d * pitch.n);
+    return cells < 0n ? 0n : cells;
+  };
+
+  const narrow = cellsBeside(120n);
+  return Number(landscape && narrow > 6n ? cellsBeside(240n) : narrow);
 }
 
 describe('ScreenMetrics', () => {
@@ -250,14 +260,14 @@ describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
       [1440, 1080, 5], // 4:3
       [1152, 1080, 5], // 16:15
       [1080, 1080, 5], // 正方形
-      [2560, 1080, 9], // 21:9
+      [2560, 1080, 8], // 21:9（6枚を超えた分の幅はサイドバーへ回るので、9枚ではなく8枚）
       // ここから下は、幅で決まる横型（商がちょうど5.0000）で誤差により4を返していた寸法。
       [721, 720, 5],
       [1083, 1080, 5],
       [1090, 1080, 5],
       // 商が6以上の側でも、割り切れる寸法では同じ誤差が出ていた。
-      [1945, 900, 8],
-      [3030, 900, 14],
+      [1945, 900, 7],
+      [3030, 900, 13],
     ]) {
       const layout = new PlayScreenLayout(new ScreenMetrics(width, height));
       const { u, isLandscape } = layout.metrics;
@@ -307,6 +317,43 @@ describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
     // 送り切った先で、最後のボタンが末尾の余白ぶんだけ内側に収まる。
     const last = row.icons[8];
     expect(last.y + last.height + 16).toBe(layout.filterBar.y + row.length);
+  });
+
+  it('十分に横長な画面は、サイドバーを2列に広げてフィルター9個を送らずに出す', () => {
+    // 19.5:9。フィールドエリアが1742u＝8枚ぶんあり、手持ちの6枠を超えた分を使う相手が居ない
+    // （ScreenLayout.md 10.1節）。回すのは1列（120u）ぶん。
+    const layout = new PlayScreenLayout(new ScreenMetrics(2340, 1080));
+
+    expect(layout.fieldArea).toEqual({ x: 478, y: 0, width: 1622, height: 1080 });
+    // 2列とも画面の高さいっぱい。フィルターはフィールドエリア寄りの左、オプションが右端（10.2節）。
+    expect(layout.filterBar).toEqual({ x: 2100, y: 0, width: 120, height: 1080 });
+    expect(layout.optionsBar).toEqual({ x: 2220, y: 0, width: 120, height: 1080 });
+    // 境目の帯はフィールドエリアの右辺（＝広げたサイドバーの左辺）に、中心を合わせて敷く。
+    expect(layout.sidebarSeparator).toEqual({ x: 2094, y: 0, width: 12, height: 1080 });
+
+    // 9個は1080uの列に収まるので、送り先を持たない（PlayScene.buildIconBar）。
+    expect(layout.filterBarIcons(9).length).toBe(16 + 88 * 9 + 20 * 8 + 16);
+    expect(layout.filterBarIcons(9).length).toBeLessThanOrEqual(layout.filterBar.height);
+  });
+
+  it('広げるかは広げる前の幅で決め、広げた後もカード6枚は割らない', () => {
+    // 広げた後の幅で測ると、広げる→6枚になる→余剰が無くなる→戻す、を繰り返す（10.2節）。
+    // 120u（回す幅）はカード1枚のピッチ217uより狭いので、広げても6枚を下回ることは無い。
+    for (const [width, height, widened, cells] of [
+      [1920, 1080, false, 6], // 16:9（横型の基準。ここが変わると#1092の設計が崩れる）
+      [2116, 1080, false, 6], // 広げる前が6枚。1uの差でも回さない
+      [2117, 1080, true, 6], // 広げる前が7枚ちょうど（1519u = 217×7）
+      [2340, 1080, true, 7], // 19.5:9。回した後も1枚余るが、足す先が無い
+      [2560, 1080, true, 8], // 21:9
+      [1440, 1080, false, 5], // 4:3（uを縮めて幅を作っている側。余剰は無い）
+    ] as const) {
+      const layout = new PlayScreenLayout(new ScreenMetrics(width, height));
+      const label = `${width}×${height}`;
+
+      expect(layout.filterBar.x < layout.optionsBar.x, `${label}: 2列に広げるか`).toBe(widened);
+      expect(layout.laneCells, label).toBe(cells);
+      expect(layout.laneCells, `${label}: 手持ちの6枠を割らない`).toBeGreaterThanOrEqual(widened ? 6 : 5);
+    }
   });
 
   it('収まる並びは送り先を持たない（オプションバーと、縦型のフィルターバー）', () => {
