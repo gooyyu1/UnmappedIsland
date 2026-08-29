@@ -16,6 +16,12 @@ import { describe, expect, it } from 'vitest';
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/merge-and-close.sh');
 
+/**
+ * 脚注の無い本文は `NOSESSION` を出すので、脚注の話でない試験には既定でこれを持たせる。
+ * 指す先は畳み済みなので、`ARCHIVED` の行も増えない。
+ */
+const DEFAULT_BODY = '_[Claude Code](https://claude.ai/code/session_01ZZZ)_';
+
 interface World {
   readonly mergeable?: string;
   readonly body?: string;
@@ -49,7 +55,7 @@ function run(world: World): Run {
   try {
     const dir = work.replace(/\\/g, '/');
     // 本文は改行もバッククォートも含むので、シェルへ埋め込まずファイルで渡す。
-    writeFileSync(join(work, 'body.txt'), world.body ?? '', 'utf-8');
+    writeFileSync(join(work, 'body.txt'), world.body ?? DEFAULT_BODY, 'utf-8');
 
     // 本体の身代わり。`.git` があることでスクリプトの `--git-common-dir` からの辿りが成り立つ。
     mkdirSync(join(work, 'main', '.git'), { recursive: true });
@@ -129,7 +135,7 @@ if [ "$1" = archive_session ]; then
 fi
 echo '<other-session>'
 case "$id" in
-${Object.entries(world.sessions ?? {})
+${Object.entries({ session_01ZZZ: 'SESSION_STATUS_ARCHIVED', ...world.sessions })
   .map(([id, status]) => `  ${id}) echo '{"ccr":{"session_status":"${status}"}}' ;;`)
   .join('\n')}
 esac
@@ -187,9 +193,19 @@ describe('merge-and-close.sh', () => {
   });
 
   it('閉じ損ねた issue は残りとして出し、終了コードで報せる', () => {
-    const result = run({ body: 'Closes #1033', issues: { 1033: 'OPEN' } });
+    const result = run({ body: `Closes #1033\n\n${DEFAULT_BODY}`, issues: { 1033: 'OPEN' } });
 
     expect(result.lines).toEqual(['MERGED 1000', 'OPEN 1033', 'SYNCED deadbee']);
+    expect(result.status).toBe(2);
+  });
+
+  // 本文を書き直した拍子に脚注が落ちる（PR #1083 で実際に落ちた）。黙って畳まずに済ませると、
+  // 走ったままのセッションが誰にも数えられずに残る。
+  it('本文に脚注が無ければ、畳む相手が分からなかったことを残りとして報せる', () => {
+    const result = run({ body: 'Closes #1033', issues: { 1033: 'CLOSED' } });
+
+    expect(result.lines).toEqual(['MERGED 1000', 'CLOSED 1033', 'NOSESSION 1000', 'SYNCED deadbee']);
+    expect(result.archived).toEqual([]);
     expect(result.status).toBe(2);
   });
 
