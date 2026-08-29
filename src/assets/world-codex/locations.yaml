@@ -271,7 +271,9 @@ object_defs:
           # 1個
           - weight: {prop: palm_find}
             spawn: {object: palm_tree, into: self}
-          # 打ち上げられた流木の幹（timber.yaml）。海岸3種すべてに寄る。
+          # 打ち上げられた流木の幹（timber.yaml）。海岸3種すべてに寄る。**下の`driftwood_find`とは
+          # 別の候補で、つまみも共有しない**——あちらが出すのは枝ぶりの流木で、亜種（流木の浜）が
+          # 増やすのはそちらだけ。幹まで亜種で増やすと、その砂浜を引いた島だけ筏が安くなる。
           - weight: 6
             spawn: {object: driftwood_trunk, into: self}
           - weight: 5
