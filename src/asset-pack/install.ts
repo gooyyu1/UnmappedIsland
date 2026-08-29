@@ -1,7 +1,8 @@
 import { installPackBackgroundArt } from '../art/backgroundArt';
 import { installPackObjectArt } from '../art/objectArt';
-import type { AssetPack } from './AssetPack';
-import { fetchAssetPack } from './AssetPack';
+import { messageOf } from '../loader/errorMessage';
+import type { LoadReport } from '../loader/LoadReport';
+import { AssetPack } from './AssetPack';
 
 /**
  * サンプルアセットパックのURL（AssetPack.md）。取得元を選ぶ画面がまだ無いので、入るのはこの1つだけ。
@@ -22,25 +23,39 @@ const SAMPLE_PACK_URL = 'sample-pack.zip';
 export class AssetPacks {
   private readonly packs: AssetPack[] = [];
 
+  /** 配布物を1つでも取りに行ったか。読めずに外したぶんも数える（matchesSetting）。 */
+  private requested = false;
+
   get all(): readonly AssetPack[] {
     return this.packs;
   }
 
-  get isEmpty(): boolean {
-    return this.packs.length === 0;
-  }
-
-  add(pack: AssetPack): void {
+  /**
+   * 取りに行った配布物1つを受け取る。読めたなら並びへ加わり、読めなかった（undefined）なら
+   * 取りに行った事実だけが残る（AssetPack.md 6.1節）。
+   */
+  receive(pack: AssetPack | undefined): void {
+    this.requested = true;
+    if (pack === undefined) return;
     if (this.packs.some((other) => other.name === pack.name))
       throw new Error(`アセットパック '${pack.name}' は既に入っています（同じ識別子は2つ入れられません）。`);
     this.packs.push(pack);
+  }
+
+  /**
+   * 設定の言う通りに読んだか。**並びが空かどうかでは代えられない**——読めなかった配布物は外れて
+   * 並びが空のままになるが（AssetPack.md 6.1節）、それは設定どおりに読んだ結果であって、
+   * 読み込み直しても変わらない。
+   */
+  matchesSetting(loadsAssetPack: boolean): boolean {
+    return this.requested === loadsAssetPack;
   }
 }
 
 /**
  * インストール済みのアセットパック。
  *
- * **起動時に入り、以後は変わらない**（AssetPack.md 4節）。ここに並ぶのは取得できたパックで、
+ * **起動時に入り、以後は変わらない**（AssetPack.md 4節）。ここに並ぶのは配布物を読めたパックで、
  * そのうち実際に載るのは読み込みを通ったぶんだけ（同6.1節、loadDefinitions）。
  */
 const installed = new AssetPacks();
@@ -65,19 +80,52 @@ export function installPackArt(packs: readonly AssetPack[]): void {
  * サンプルアセットパックを取得して並びへ加える。読むかどうかを決めるのは呼び出し側で、定義も絵も
  * ここでは載せない（載せられるパックを選ぶのはloadDefinitions）。
  *
- * 取得の失敗はそのまま投げる——パックが入らないまま起動すると、あるはずの物が無い世界で遊ぶことに
- * なり、定義の欠落と同じく黙って進めてよい状態ではない（AssetPack.md 2節）。
+ * **取得と読み込みでは失敗の扱いが違う。** 何も届かないのは設定の誤りなので投げて起動を止める
+ * （AssetPack.md 2節）。届いた配布物が読めないのはパック1つの失敗なので、並びへ加えずに理由を
+ * 記録して続ける（同6.1節）——記録の出所はURLで、名乗れなかったパックには名前が無い。
  */
-export async function installSampleAssetPack(): Promise<void> {
-  installed.add(await fetchAssetPack(SAMPLE_PACK_URL));
+export async function installSampleAssetPack(report: LoadReport): Promise<void> {
+  const archive = await fetchPackArchive(SAMPLE_PACK_URL);
+  installed.receive(await readPack(archive, SAMPLE_PACK_URL, report));
 }
 
 /**
- * 今入っているものが、設定の言う通りか。
+ * 届いた配布物を読む。読めなければ、そのパックを外した理由を記録してundefinedを返す
+ * （AssetPack.md 6.1節）。
+ *
+ * **受けるのは配布物を読めなかったぶんだけ。** 読めたパックが定義や絵で落ちるのは別の失敗で、
+ * そちらは読み込み側が同じ単位で外す（loadDefinitions）。
+ */
+async function readPack(
+  archive: ArrayBuffer,
+  url: string,
+  report: LoadReport,
+): Promise<AssetPack | undefined> {
+  try {
+    return await AssetPack.read(archive);
+  } catch (error) {
+    report.addDiscarded(url, undefined, `配布物を読めないので、このパックを外しました: ${messageOf(error)}`);
+    return undefined;
+  }
+}
+
+/**
+ * 配布物を取得する。届かなければ投げる——パックを指定したのに何も届いていない状態は、パックの
+ * 中身の問題ではなく設定の誤り（AssetPack.md 2節）。
+ */
+async function fetchPackArchive(url: string): Promise<ArrayBuffer> {
+  const response = await fetch(url);
+  if (!response.ok)
+    throw new Error(`アセットパック '${url}' を取得できませんでした（status ${response.status}）。`);
+  return response.arrayBuffer();
+}
+
+/**
+ * この起動が、設定の言う通りに読んだか（AssetPacks.matchesSetting）。
  *
  * 食い違っているなら、設定を反映する手はページを読み込み直すことしかない——絵の在庫表もWorldCodexも
  * 起動時に1回だけ組み立てて以後不変（AssetPack.md 4節）だから。
  */
 export function assetPackInstallMatchesSetting(loadsAssetPack: boolean): boolean {
-  return !installed.isEmpty === loadsAssetPack;
+  return installed.matchesSetting(loadsAssetPack);
 }
