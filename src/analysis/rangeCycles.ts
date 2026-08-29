@@ -42,7 +42,7 @@ export interface RangeCycle {
   /**
    * 端へ届くまでの時間（分）。**同時に成立しうる条件（8.2節）の組み合わせのうち、端へ最も遅く
    * 届くもの**の値——罠の耐久は地面にある間ずっと減るが、獲物を抱えている間だけの上乗せは
-   * 常時ではない。生成時のロール（6.2節）は端へ近い側に出た場合で見る（ticksAcrossRoll）。
+   * 常時ではない。生成時のロール（6.2節）は端へ近い側に出た場合で見る。
    */
   readonly minutes: number;
 
@@ -87,7 +87,7 @@ export function rangeCyclesOf(
   const cycles: RangeCycle[] = [];
   for (const propertyDef of def.enumeratePropertyDefs()) {
     const own = tickAmountsOf(def, propertyDef.globalId);
-    // 生成時のロール（6.2節）は初期値を振らせるので、両端とも数える（ticksAcrossRoll）。
+    // 生成時のロール（6.2節）は初期値を振らせるので、両端とも数える。
     const initialValues = ROLL_ENDS.map((end) => staticValueOf(def, propertyDef.globalId, end, outer));
     const drivers: readonly (ExternalTickDelta | undefined)[] = [
       undefined,
@@ -106,11 +106,14 @@ export function rangeCyclesOf(
         const pace = paceTowards(totals, readout.label);
         if (pace === undefined) continue;
 
+        // **どちらのロールが遠いかは、向かう端で裏返る**——下端へ向かうなら重く出たほうが、上端へ
+        // 向かうなら軽く出たほうが遠い。端まで測ってから短い順に並べれば、向きに関わらず先頭が
+        // 近い側・末尾が遠い側になる。
         const { slowest, fastest } = pace;
-        const slowRoll = ticksAcrossRoll(propertyDef, initialValues, slowest);
+        const slowRoll = sortedTicksToRangeEnd(propertyDef, initialValues, slowest);
         const ticks = slowRoll.at(0);
         const longestTicks = slowRoll.at(-1);
-        const shortestTicks = ticksAcrossRoll(propertyDef, initialValues, fastest).at(0);
+        const shortestTicks = sortedTicksToRangeEnd(propertyDef, initialValues, fastest).at(0);
         if (ticks === undefined || longestTicks === undefined || shortestTicks === undefined) continue;
 
         // 外からの増減が止まる前に端へ届かないなら、その仕掛けは成立しない——小さな獲物は罠の傷でも
@@ -163,14 +166,12 @@ export function rangeCyclesOf(
 }
 
 /**
- * その速さで端へ届くまでのtick数を、**生成時のロール（6.2節）の両端の初期値で**測って短い順に
- * 並べたもの。
+ * 渡された初期値それぞれから、その速さで端へ届くまでのtick数を**短い順に並べた**もの。
  *
- * **どちらのロールが遠いかは、向かう端で裏返る**——下端へ向かうなら重く出たほうが、上端へ向かう
- * なら軽く出たほうが遠い。片方だけ長さを見ると、向きによって幅のどちらの端を落とすかが変わる。
- * 生まれた時点で端に居る側は長さを持たないので数に入れず、どちらも届かなければ空。
+ * 読めない初期値と、生まれた時点で端に居て長さを持たない初期値は数に入れない——どれも届かなければ
+ * 空になる。並べ替えるので、渡す順序に意味は無い。
  */
-function ticksAcrossRoll(
+function sortedTicksToRangeEnd(
   propertyDef: PropertyDef,
   initialValues: readonly (number | undefined)[],
   perTick: number,

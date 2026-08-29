@@ -10,7 +10,7 @@ import type { ObjectRefReading } from '../domain/ObjectRef';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { StepOutcome } from './CraftingStep';
 import { UNCHANGED_OUTCOMES, combineOutcomes, scaleOutcomes } from './CraftingStep';
-import type { StaticValueResolver } from './staticValue';
+import type { EndBoundValueResolver } from './staticValue';
 import { resolveDeclaredNumber } from './staticValue';
 
 /**
@@ -54,7 +54,7 @@ export interface EffectReading {
  */
 export function readEffect(
   declaration: EffectDeclaration,
-  resolve: StaticValueResolver,
+  resolve: EndBoundValueResolver,
   resolveBecomeDestination?: BecomeDestinationResolver,
 ): EffectReading {
   const reader = new OutcomeReader(resolve, resolveBecomeDestination);
@@ -71,7 +71,7 @@ export function readEffect(
  * 減らさない重み（罠の掛かりやすさ、器に残った水、食べ物の傷み）は宣言値のまま。それらは仕込む物
  * ではなく、宣言された値そのものが答えになるつまみで、初期値の外に読むべき状態を持たない。
  */
-function stockedResolverOf(resolve: StaticValueResolver, reading: EffectReading): StaticValueResolver {
+function stockedResolverOf(resolve: EndBoundValueResolver, reading: EffectReading): EndBoundValueResolver {
   const stocks = spentAmountsOf(reading.outcomes);
   if (stocks.size === 0) return resolve;
 
@@ -131,11 +131,11 @@ class OutcomeReader implements EffectReader {
 
   readonly transformed: ObjectRefReading[] = [];
 
-  private readonly resolve: StaticValueResolver;
+  private readonly resolve: EndBoundValueResolver;
 
   private readonly resolveBecomeDestination: BecomeDestinationResolver | undefined;
 
-  constructor(resolve: StaticValueResolver, resolveBecomeDestination?: BecomeDestinationResolver) {
+  constructor(resolve: EndBoundValueResolver, resolveBecomeDestination?: BecomeDestinationResolver) {
     this.resolve = resolve;
     this.resolveBecomeDestination = resolveBecomeDestination;
   }
