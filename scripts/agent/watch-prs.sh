@@ -7,6 +7,7 @@
 #
 #   bash scripts/agent/watch-prs.sh                    # 開いている全PR
 #   bash scripts/agent/watch-prs.sh 731 733            # PRの番号を指定
+#   bash scripts/agent/watch-prs.sh 0 --issues 732     # CIの決着を見たいPRが1本も無いとき
 #   bash scripts/agent/watch-prs.sh --issues 732,759   # issue も見張る（下記）
 #   bash scripts/agent/watch-prs.sh --interval 5 --timeout-minutes 60
 #
@@ -46,7 +47,10 @@
 #
 # **番号（`$1`〜）で絞らない。** 絞ると、司令塔が渡し忘れた番号は出なくなる——取りこぼしを防ぐのが
 # この2つの役目なので、絞ると役目そのものが消える。手が動けば状態が変わって黙るので、放っておいても
-# 毎周返り続けることはない。
+# 毎周返り続けることはない。番号が掛かるのは `GREEN`・`RED`・`CONFLICT` の3つだけ。
+#
+# **番号を1つも渡さないと「全部」の意味になる。** レビューへ出したPRは緑のまま置くので、渡さないと
+# `GREEN` が毎周返って見張りがその場で終わる。CIの決着を見たいPRが1本も無いときは `0` を渡す。
 #
 # ## COMMENT を見るのは、却下を受け取る唯一の経路だから
 #
@@ -325,10 +329,13 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
     failures=0
     grace=$(date -u -d "-${NO_CHECK_GRACE} seconds" +%Y-%m-%dT%H:%M:%SZ)
     settled=$(jq -r "$(pr_settled_filter "$grace")" <<<"$prs")
+    # 差し戻し中のPRは**絞る前に**控える。`FIXED` は手番なので、番号を渡し忘れても出す。
+    mending=$(grep '^MENDING ' <<<"$settled" | awk '{print $2}')
     if [ ${#NUMBERS[@]} -gt 0 ]; then
       pattern=$(printf '%s\n' "${NUMBERS[@]}" | paste -sd'|' -)
-      settled=$(grep -E "^(GREEN|RED|MENDING|CONFLICT) (${pattern})( |$)" <<<"$settled")
+      settled=$(grep -E "^(GREEN|RED|CONFLICT) (${pattern})( |$)" <<<"$settled")
     fi
+    settled=$(grep -v '^MENDING ' <<<"$settled")
     # 差し戻し中とレビュー済みのPRだけ、コミットの日付を追加で引く。**一覧の `--json` へ `commits`
     # を足してはいけない**——50本ぶんだとGraphQLのノード上限（50万）を超えて `gh` が丸ごと失敗し、
     # **見張り全体が黙る**（2026-08-25 に実測）。1本ずつ引けば、払うのはそのPRがあるときだけで済む。
@@ -344,8 +351,7 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
       if [ -n "$pushed" ] && [[ "$pushed" > "$sent_back" ]]; then
         settled=$(printf '%s\nFIXED %s' "$settled" "$number")
       fi
-    done < <(grep '^MENDING ' <<<"$settled" | awk '{print $2}')
-    settled=$(grep -v '^MENDING ' <<<"$settled")
+    done <<<"$mending"
 
     # レビューの結論。**番号で絞った後に足す**——絞ると、渡し忘れた番号の結論が出なくなる。
     while IFS=$'\t' read -r number at verdict; do

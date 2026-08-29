@@ -78,15 +78,20 @@ function session(
  * `gh` とセッション一覧を差し替えて見張りを走らせ、出た行を返す。
  *
  * `prRounds`・`issueRounds` は `gh pr list`・`gh issue list` が周ごとに返す一覧で、最後のものは
- * 以降ずっと返る。`times` はPR番号ごとの「最後のコミットの時刻」と「`直し待ち` を付けた時刻」で、
- * `REVIEWED`・`FIXED` はこの2つと比べて手番を決める。
+ * 以降ずっと返る。`options.pushed`・`options.sentBack` はPR番号ごとの「最後のコミットの時刻」と
+ * 「`直し待ち` を付けた時刻」で、`REVIEWED`・`FIXED` はこの2つと比べて手番を決める。
+ * `options.numbers` は見張るPRの番号（渡さなければ全部）。
  */
 function watch(
   prRounds: unknown[][],
   issueRounds: unknown[][],
   watched: number[],
   sessions: unknown[] = [],
-  times: { pushed?: Record<number, string>; sentBack?: Record<number, string> } = {},
+  options: {
+    pushed?: Record<number, string>;
+    sentBack?: Record<number, string>;
+    numbers?: number[];
+  } = {},
 ): string[] {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-watch-prs-'));
   try {
@@ -101,8 +106,8 @@ function watch(
     const writeLine = (name: string, value: string): void => {
       writeFileSync(join(work, name), `${value}\n`, 'utf-8');
     };
-    Object.entries(times.pushed ?? {}).forEach(([number, at]) => writeLine(`commits-${number}`, at));
-    Object.entries(times.sentBack ?? {}).forEach(([number, at]) => writeLine(`labeled-${number}`, at));
+    Object.entries(options.pushed ?? {}).forEach(([number, at]) => writeLine(`commits-${number}`, at));
+    Object.entries(options.sentBack ?? {}).forEach(([number, at]) => writeLine(`labeled-${number}`, at));
     // `gh pr list` と `gh issue list` で返し分ける。どちらも呼ばれた回数で切り替える。
     const dir = work.replace(/\\/g, '/');
     const rounds = (kind: string, length: number): string =>
@@ -135,6 +140,7 @@ function watch(
 
     const args = [SCRIPT, '--timeout-minutes', '1', '--interval', '1', '--no-check-grace', '0'];
     if (watched.length > 0) args.push('--issues', watched.join(','));
+    (options.numbers ?? []).forEach((number) => args.push(String(number)));
     const out = execFileSync('bash', args, {
       encoding: 'utf-8',
       env: {
@@ -301,6 +307,30 @@ describe('watch-prs.sh の手番（REVIEWED・FIXED）', () => {
     });
 
     expect(lines).toEqual(['FIXED 850']);
+  });
+
+  it('番号を絞っても、手番の2つ（REVIEWED・FIXED）は絞られない', () => {
+    // 絞られると、渡し忘れた番号の直しと結論が出なくなる——取りこぼしを防ぐのがこの2つの役目
+    // なので、絞ると役目そのものが消える。853 の `GREEN` が出ていないことで、絞りは効いている。
+    const lines = watch(
+      [
+        [
+          pullRequest(853, 'MERGEABLE'),
+          pullRequest(854, 'MERGEABLE', ['直し待ち']),
+          pullRequest(855, 'MERGEABLE', [], undefined, '', [verdict('[レビュー] 通してよい')]),
+        ],
+      ],
+      [[]],
+      [],
+      [],
+      {
+        numbers: [0],
+        pushed: { 854: '2026-08-29T12:55:00Z' },
+        sentBack: { 854: '2026-08-29T12:00:00Z' },
+      },
+    );
+
+    expect(lines).toEqual(['FIXED 854', 'REVIEWED 855 通してよい']);
   });
 
   it('差し戻す前のコミットしか無ければ FIXED を出さない', () => {
