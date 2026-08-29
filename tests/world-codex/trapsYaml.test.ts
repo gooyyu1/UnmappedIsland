@@ -309,3 +309,174 @@ describe('traps.yamlのくくり罠', () => {
     );
   });
 });
+
+/**
+ * traps.yamlの落とし穴を、実ファイルの定義だけで検証する（docs/engine/TrapSystem.md 1.2節・5.2節）。
+ * 掘る→待つ→落ちる→怪我が刺さる、の一巡と、杭を打つと刺す傷が入れ替わることを通す。
+ */
+describe('traps.yamlの落とし穴', () => {
+  // 外側のpickの重みは 空振り40・草食10（合計50）。内側は森なら 空振り8・イノシシ2（合計10）。
+  // fixedRngは両方の階層へ同じ値を渡すので、0.85は両方で末尾の区間に入る。
+  /** 草食の卓を引き、その中でイノシシに当たる引き。 */
+  const CATCHES_BOAR = 0.85;
+
+  let codex: WorldCodex;
+  let session: WorldSession;
+  let forest: WorldObject;
+  let pitfall: WorldObject;
+  let catchRemainingId: number;
+  let durabilityId: number;
+  let bloodId: number;
+
+  beforeAll(() => {
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    catchRemainingId = codex.propertyNames.getId('catch_remaining');
+    durabilityId = codex.propertyNames.getId('durability');
+    bloodId = codex.propertyNames.getId('blood');
+  });
+
+  /** 森に掘った落とし穴から始める。イノシシを宣言している土地は森と密林だけ（locations.yaml）。 */
+  function open(roll: number): void {
+    const worldInstance = new WorldObject(
+      0,
+      codex.objects.get(codex.objectNames.getId('world')),
+      new WorldSession(codex),
+    );
+    session = new WorldSession(codex, new World(worldInstance, codex), fixedRng(roll));
+    forest = spawnInto('forest', worldInstance, 'locations');
+    // 掘る手間そのものはレシピが持つ（最後のit）ので、ここでは掘り終えた穴から始める。
+    pitfall = spawnInto('pitfall', forest, 'fixtures');
+  }
+
+  function spawnInto(objectName: string, parent: WorldObject, slotName: string): WorldObject {
+    const spawned = session.createObject(codex.objectNames.getId(objectName));
+    expect(spawned.moveToSlotOrRejection(parent.getSlot(codex.slotNames.getId(slotName)))).toBeUndefined();
+    return spawned;
+  }
+
+  /** 今この穴に落ちている物（獲物か死体）。 */
+  function caught(): WorldObject[] {
+    return [...(pitfall.tryGetSlot(codex.slotNames.getId('catch'))?.contents ?? [])];
+  }
+
+  /** その動物に刺さっている怪我の識別子。 */
+  function injuriesOf(animal: WorldObject): string[] {
+    const slot = animal.tryGetSlot(codex.slotNames.getId('injuries'));
+    return slot === undefined ? [] : slot.contents.map((object) => object.def.name);
+  }
+
+  function tick(count: number): void {
+    for (let i = 0; i < count; i++) forest.tick();
+  }
+
+  /** 落ちるまで進める。落ちなければ失敗させる（周期16 tickなので余裕を持って回す）。 */
+  function tickUntilCaught(limit = 40): WorldObject {
+    for (let i = 0; i < limit; i++) {
+      tick(1);
+      const first = caught().at(0);
+      if (first !== undefined) return first;
+    }
+    throw new Error('落とし穴に何も落ちなかった');
+  }
+
+  /** 穴へ太い枝を立てて、杭を打った版にする。 */
+  function driveStake(): boolean {
+    const branch = spawnInto('thick_branch', forest, 'items');
+    return (
+      pitfall
+        .combinationsWith(branch, undefined)
+        .find((combination) => combination.name === 'drive_stake')
+        ?.tryExecute() === true
+    );
+  }
+
+  it('落ちたイノシシへ骨折が刺さる', () => {
+    // 骨折を刺すのは落とし穴だけ（TrapSystem.md 5.2節・InjurySystem.md 5節）。獣の1手（crush）と
+    // 並ぶ2つ目の口で、獲物を生んでからその中へ怪我を生む（into: child、TrapSystem.md 5.3節）。
+    open(CATCHES_BOAR);
+    const prey = tickUntilCaught();
+
+    expect(prey.def.name).toBe('wild_boar');
+    expect(injuriesOf(prey), '落とし穴の傷が刺さる').toEqual(['fracture']);
+  });
+
+  it('骨折は血を奪わないので、落ちた獣は生きて残る', () => {
+    // 生かす罠が刺すのは血を奪わない怪我（TrapSystem.md 5.2節）。体格で意味が変わらないので、
+    // 60kgのイノシシは痛みを抱えたまま穴の中に残る。
+    open(CATCHES_BOAR);
+    const prey = tickUntilCaught();
+    const blood = prey.tryGetProperty(bloodId)!.getEffectiveValue();
+
+    tick(8);
+    expect(
+      caught().map((object) => object.def.name),
+      '死体になっていない',
+    ).toEqual(['wild_boar']);
+    expect(prey.tryGetProperty(bloodId)!.getEffectiveValue(), '血は1滴も減らない').toBe(blood);
+  });
+
+  it('杭を打つと、刺さるのは骨折ではなく刺し傷になる', () => {
+    // 罠が刺すのは1つだけ（TrapSystem.md 5.1節）なので、杭は「落ちて折れる」を「落ちて貫かれる」に
+    // 置き換える。生かす側だけが骨折を残し、殺す側は血で決着する（同5.2節）。
+    open(CATCHES_BOAR);
+    expect(driveStake(), '掘った穴へ杭を打てる').toBe(true);
+
+    const prey = tickUntilCaught();
+    expect(injuriesOf(prey), '骨折は刺さらない').toEqual(['puncture_wound']);
+
+    const blood = prey.tryGetProperty(bloodId)!.getEffectiveValue();
+    tick(4);
+    expect(prey.tryGetProperty(bloodId)!.getEffectiveValue(), '刺し傷は血で決着する').toBeLessThan(blood);
+  });
+
+  it('杭を打っても、穴も待ちも掛かる相手もそのまま', () => {
+    // becomeは同じ個体のまま型を差し替える（9.9節）ので、杭が変えるのは刺す怪我だけ
+    // （TrapSystem.md 1.2節）——掘り直しにはならない。
+    open(CATCHES_BOAR);
+    tick(3);
+    const before = {
+      remaining: pitfall.tryGetProperty(catchRemainingId)!.getEffectiveValue(),
+      durability: pitfall.tryGetProperty(durabilityId)!.getEffectiveValue(),
+    };
+
+    expect(driveStake()).toBe(true);
+    expect(pitfall.def.name, '杭を打った版へ変わる').not.toBe('pitfall');
+    expect(pitfall.parent, '掘った土地に据わったまま').toBe(forest);
+    // 打っている1時間（4 tick）ぶんは待ちも耐久も普段どおり進む。引き継ぐとは、そこから続く
+    // ということ——生まれ直した罠なら、どちらも振り出し（16と2,880）へ戻る。
+    const STAKING_TICKS = 4;
+    expect(pitfall.tryGetProperty(catchRemainingId)!.getEffectiveValue(), '待ちは引き継ぐ').toBe(
+      before.remaining - STAKING_TICKS,
+    );
+    expect(pitfall.tryGetProperty(durabilityId)!.getEffectiveValue(), '掘った穴も引き継ぐ').toBe(
+      before.durability - STAKING_TICKS,
+    );
+    expect(tickUntilCaught().def.name, '掛かる相手も変わらない').toBe('wild_boar');
+  });
+
+  it('杭は二度打てない', () => {
+    // 二度打っても刺す傷は変わらないので、棒を捨てさせない（塩の二度漬けと同じ、salt.yaml）。
+    open(CATCHES_BOAR);
+    expect(driveStake()).toBe(true);
+    expect(driveStake(), 'もう杭は立っている').toBe(false);
+  });
+
+  it('落とし穴は掘り棒1本で作れて、掘った土地から動かせない', () => {
+    // 掘削具はまだ無いので、畑と同じく掘り棒にする太い枝を1本折り込んである（TrapSystem.md 8節）。
+    // 据え置きなのは掘って作る罠だから（同1節）で、仕掛け直せない代わりに大きい獲物が掛かる。
+    const def = codex.objects.get(codex.objectNames.getId('pitfall'));
+    const [recipe] = def.recipesProducingThis;
+    const [step] = recipe!.steps;
+
+    expect(step!.requirements).toHaveLength(1);
+    expect(step!.requirements[0].requires(codex.objects.get(codex.objectNames.getId('thick_branch')))).toBe(
+      true,
+    );
+
+    open(CATCHES_BOAR);
+    expect(
+      pitfall.moveToSlotOrRejection(forest.getSlot(codex.slotNames.getId('items'))),
+      '地面の物として拾えない',
+    ).toBeDefined();
+  });
+});
