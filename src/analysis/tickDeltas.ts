@@ -59,6 +59,9 @@ export class TickGate {
   /** 条件が宣言元自身の型に課している指定のうち、成立していなければ効かないもの。 */
   private readonly selfTypeMatches: readonly TypeMatchReading[];
 
+  /** 型だけでは真偽の決まらない条件が残っているか（{@link conditional}）。 */
+  private readonly hasRuntimeConditions: boolean;
+
   constructor(gate: GateReading) {
     const collector = new GateConditionCollector();
     gate.conditions?.read(collector);
@@ -68,11 +71,19 @@ export class TickGate {
     this.watchedSelfProperties = collector.selfProperties;
     this.ancestorConditions = collector.ancestorConditions;
     this.selfTypeMatches = collector.selfTypeMatches;
+    this.hasRuntimeConditions = collector.hasRuntimeConditions;
   }
 
-  /** 段以外の条件でも縛られているか。真なら、その条件が成立している間だけ効く。 */
+  /**
+   * 段以外の条件でも縛られているか。真なら、その条件が成立している間だけ効く。
+   *
+   * **型だけで真偽の決まる条件は、縛りとして数えない。** 塩蔵されていない間だけ効く腐敗（`not`で
+   * `cured`タグを見る）は、塩漬けの版では一度も効かず、生の版では常に効く——どちらでも「成立する
+   * 場合としない場合がある」ではない。成立しない側は{@link possibleFor}が宣言ごと落とすので、
+   * ここまで来たものは常に効く。
+   */
   get conditional(): boolean {
-    return this.conditions !== undefined;
+    return this.hasRuntimeConditions;
   }
 
   /**
@@ -187,12 +198,19 @@ class GateConditionCollector implements ConditionReader {
   readonly ancestorConditions: AncestorCondition[] = [];
   readonly selfTypeMatches: TypeMatchReading[] = [];
 
+  /** 型の指定以外の葉を1つでも読んだか（TickGate.conditional）。 */
+  hasRuntimeConditions = false;
+
   /** 今読んでいる枝の比較が、成立していなければ増減が効かないものか。 */
   private required = true;
 
+  /** 今読んでいる枝が否定の下にあるか。型の指定はここで裏返して集める。 */
+  private negated = false;
+
   property(reading: PropertyConditionReading): void {
+    this.hasRuntimeConditions = true;
     if (reading.root === 'self') this.selfProperties.push(reading.propertyGlobalId);
-    if (reading.root !== 'ancestor' || !this.required || reading.values === undefined) return;
+    if (reading.root !== 'ancestor' || !this.required || this.negated || reading.values === undefined) return;
     this.ancestorConditions.push({
       propertyGlobalId: reading.propertyGlobalId,
       op: reading.op,
@@ -201,38 +219,53 @@ class GateConditionCollector implements ConditionReader {
   }
 
   propertyStage(root: ReferenceRoot, propertyGlobalId: number): void {
+    this.hasRuntimeConditions = true;
     if (root === 'self') this.selfProperties.push(propertyGlobalId);
   }
 
-  slotPosition(): void {}
+  slotPosition(): void {
+    this.hasRuntimeConditions = true;
+  }
 
-  slotContent(): void {}
+  slotContent(): void {
+    this.hasRuntimeConditions = true;
+  }
 
   objectMatches(root: ReferenceRoot, match: TypeMatchReading): void {
-    if (root === 'self' && this.required) this.selfTypeMatches.push(match);
+    if (root !== 'self' || !this.required) {
+      this.hasRuntimeConditions = true;
+      return;
+    }
+    this.selfTypeMatches.push(this.negated ? { kind: 'not', inner: match } : match);
   }
 
   all(children: readonly ConditionDeclaration[]): void {
     for (const child of children) child.read(this);
   }
 
-  any(children: readonly ConditionDeclaration[]): void {
-    this.readAlternative(children);
-  }
-
-  not(child: ConditionDeclaration): void {
-    this.readAlternative([child]);
-  }
-
   /**
-   * 論理和・否定の下の枝。**祖先の比較も型の指定も集めない**——「どれかが成り立てばよい」
-   * 「成り立たないこと」は、その比較が成立していることそのものではない。集めてしまうと、外の状態が
-   * 続く時間を数え違え、効く型を取り違える。
+   * 論理和の下の枝。**祖先の比較も型の指定も集めない**——「どれかが成り立てばよい」は、その比較が
+   * 成立していることそのものではない。集めてしまうと、外の状態が続く時間を数え違え、効く型を
+   * 取り違える。どれが成り立って増減が効いたのかも、定義だけでは決まらない。
    */
-  private readAlternative(children: readonly ConditionDeclaration[]): void {
+  any(children: readonly ConditionDeclaration[]): void {
+    this.hasRuntimeConditions = true;
+
     const outer = this.required;
     this.required = false;
     for (const child of children) child.read(this);
     this.required = outer;
+  }
+
+  /**
+   * 否定の下の枝。**型の指定だけは裏返して集める**——「`cured`でないこと」はその型を見れば決まる
+   * ので、成立するかどうかが分かれる条件ではない。祖先の比較は集めない：「成り立たないこと」は、
+   * その比較が成立していることそのものではなく、集めると外の状態が続く時間を数え違える。
+   */
+  not(child: ConditionDeclaration): void {
+    const outer = this.negated;
+    this.negated = !this.negated;
+    child.read(this);
+    this.negated = outer;
   }
 }
