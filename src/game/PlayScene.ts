@@ -41,6 +41,8 @@ import { noteOperation, setStateReporter } from './errorReport';
 import { ShownStatuses } from './view/ShownStatuses';
 import type { ElapseFrame } from './view/elapsePlayback';
 import { ElapsePlayback } from './view/elapsePlayback';
+import type { DaylightMoment } from './view/daylight';
+import { SunlightHours } from './view/daylight';
 import type { Activity } from './view/operationSteps';
 import { playbackSteps, afterPlaybackSteps, isMidAction, acceptsOperation } from './view/operationSteps';
 import { Button } from './ui/Button';
@@ -83,6 +85,7 @@ import { iconTexture } from '../art/iconArt';
 import { WeatherPanel } from './ui/WeatherPanel';
 import { WeatherOverlay } from './ui/WeatherOverlay';
 import { ScreenSkyTint } from './ui/ScreenSkyTint';
+import { DaybreakOverlay } from './ui/DaybreakOverlay';
 import { LaneHaze } from './ui/LaneHaze';
 import { heatHazeFor } from './looks/heatHaze';
 import { clockParts, timeCostLine } from './looks/timeTexts';
@@ -285,6 +288,21 @@ export class PlayScene extends ResponsiveScene {
   /** 明るさに応じて画面全体へかぶせる翳り・輝き。雨と同じく作り直しの対象外。 */
   private skyTint!: ScreenSkyTint;
 
+  /**
+   * 太陽の光だけで手元の細かい作業ができる時刻（SunlightHours）。世界の宣言から決まるので、
+   * このプレイの間は変わらない。
+   */
+  private sunlight!: SunlightHours;
+
+  /**
+   * 今この画面が映している日付と時刻。**次に映すものと比べて、日の出・日の入りの境目をまたいだかを
+   * 訊く**（showDaybreak）ので、またいだかを憶えるのではなく、映しているものだけを憶える。
+   */
+  private shownDaylight!: DaylightMoment;
+
+  /** 出ている最中の日の出・日の入りの演出。次のがすぐ来る（夜を通して眠る）ときは差し替える。 */
+  private daybreakOverlay: DaybreakOverlay | undefined;
+
   /** アイテムレーンに立てる陽炎。掛ける対象はフィールドエリアの作り直しで入れ替わる。 */
   private haze!: LaneHaze;
 
@@ -462,6 +480,9 @@ export class PlayScene extends ResponsiveScene {
     this.gameSession = startNewGame(this.codex, character, data.save.seed, seededRng(data.save.seed));
     if (data.scenario !== undefined) applyScenario(this.gameSession, data.scenario, this.codex);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+    this.sunlight = SunlightHours.of(this.codex, this.gameSession.player.instance.def);
+    // 開いた時点の空を基準にする。開いた瞬間にまたいだことにはならない。
+    this.shownDaylight = { elapsedDays: this.view.elapsedDays, hour: this.view.hour };
     this.artLoader = new LocationArtLoader(this, this.codex);
     this.requestLocationArt();
     this.resetForNewVisit();
@@ -501,6 +522,7 @@ export class PlayScene extends ResponsiveScene {
     this.recipeWindow = undefined;
 
     // 見せている最中だった演出は、それを終わらせるtweenごと消えている（終わったものとして始める）。
+    this.daybreakOverlay = undefined;
     this.activity = 'idle';
     this.selectedFilter = 0;
     this.shownLocationDepth = 0;
@@ -750,6 +772,25 @@ export class PlayScene extends ResponsiveScene {
   private showSky(): void {
     this.weatherOverlay.setWeather(this.view.weather);
     this.skyTint.setAmbientBrightness(this.view.ambientBrightness);
+    this.showDaybreak();
+  }
+
+  /**
+   * 前に映した時刻から日の出・日の入りの境目をまたいでいれば、その演出を出す
+   * （ScreenLayout.md 7.5.6節）。経過の再生は控えを1つずつここへ通す（showRecorded）ので、
+   * **またいだtickのところで出る**——経過し切ってからまとめて出ることはない。
+   */
+  private showDaybreak(): void {
+    const shown = this.shownDaylight;
+    this.shownDaylight = { elapsedDays: this.view.elapsedDays, hour: this.view.hour };
+    const daybreak = this.sunlight.daybreakBetween(shown, this.shownDaylight);
+    if (daybreak === undefined) return;
+
+    // 夜を通して眠れば日の入りと日の出が続けて来る。前のが醒め切るのを待たずに差し替える。
+    this.daybreakOverlay?.destroy();
+    this.daybreakOverlay = new DaybreakOverlay(this, this.metrics, this.layout.fieldArea, daybreak).setDepth(
+      SCREEN_DEPTH.daybreak,
+    );
   }
 
   /**

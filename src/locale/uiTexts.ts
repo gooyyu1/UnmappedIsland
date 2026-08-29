@@ -26,7 +26,8 @@ export type UiTextName =
   | 'received_influence'
   | 'unnamed_location'
   | 'recipe_locked'
-  | 'recipe_other';
+  | 'recipe_other'
+  | 'day';
 
 let source: Localization | undefined;
 
