@@ -26,7 +26,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 **生成物から書き写した数値には、出どころのキーを名乗る印（HTMLコメント）が付いています。**
 再生成で値が動いたときに本書だけが古いままにならないよう、
 [`tests/docs/docStatsCitations.test.ts`](../../tests/docs/docStatsCitations.test.ts) が印の指す先と
-突き合わせます。**印が付くのは書き写した数値だけ**で、そこから導いた数値（158日・176日など）は
+突き合わせます。**印が付くのは書き写した数値だけ**で、そこから導いた数値（約108日・約125日など）は
 対象外です。
 
 **確定しているのは 2.3.2 節（難易度は歩数で切る）・5.1 節（望遠鏡を置かず山頂が担う）・6 節
@@ -60,7 +60,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 区間 | 足止めしているもの | 段の切り方 |
 | --- | --- | --- |
 | **開始直後** | 知らないこと。探索が終わっていないので次にどこへ行けるかも、行った先に何があるかも分からない。在庫が無いので最悪を想定するしかない | 1段だけ。完了条件は2.1節 |
-| **それ以降** | 払う労働の量 | 1日（1440分）以上の労働がかかる山を1段と数える |
+| **それ以降** | 払う労働の量 | 1日（自由時間816分。8節）以上の労働がかかる山を1段と数える |
 
 **平均値の表は開始直後には当てはまりません。** [`stats/balance.yaml`](../../stats/balance.yaml) の
 `chain_routes` の分数は、どの経路も選べて `pick` の期待値どおりに引ける前提の数字です。開始直後のプレイヤーはどちらの
@@ -70,7 +70,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 **1日未満で越えられる前提は、段ではなく幅です**（同「段は、実際に足止めしたものだけを数える」節）。
 実測では、刃物（72.2分<!-- stats: balance.yaml object_costs object=sharp_stone total_minutes -->）・焚き火（55.9分<!-- stats: balance.yaml object_costs object=campfire total_minutes -->）・くくり罠（103.3分<!-- stats: balance.yaml object_costs object=snare total_minutes -->）・覆い焼きの炉（303.8分<!-- stats: balance.yaml object_costs object=earth_kiln total_minutes -->）はいずれも
-0.04〜0.21日で、どれも段になりません。4桁の労働がかかるのは筏（4,207分<!-- stats: balance.yaml object_costs object=raft total_minutes -->）と帆（3,777分<!-- stats: balance.yaml object_costs object=rawhide_sail total_minutes -->）だけです。
+0.07<!-- stats: balance.yaml object_costs object=campfire days -->〜0.37<!-- stats: balance.yaml object_costs object=earth_kiln days -->日で、どれも段になりません。4桁の労働がかかるのは筏（4,207分<!-- stats: balance.yaml object_costs object=raft total_minutes -->）と帆（3,777分<!-- stats: balance.yaml object_costs object=rawhide_sail total_minutes -->）だけです。
 
 **この物差しは道具が判定します。** `npm run stats:balance` の総コストがそのまま「段かどうか」を決めるので、
 幅出しで物が増えたときに数え直しが要りません。
@@ -186,7 +186,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 **1つの物で1日を超えるものはほとんどありません。段になるのは「まとまった量」です。**
 
-石の斧は484分<!-- stats: balance.yaml object_costs object=stone_axe total_minutes -->（0.34日）、甕は465分<!-- stats: balance.yaml object_costs object=jar total_minutes -->（0.32日）、ロープは680分<!-- stats: balance.yaml object_costs object=rope total_minutes -->（0.47日）。段として立つのは「家1軒ぶんの
+石の斧は484分<!-- stats: balance.yaml object_costs object=stone_axe total_minutes -->（0.59日<!-- stats: balance.yaml object_costs object=stone_axe days -->）、甕は465分<!-- stats: balance.yaml object_costs object=jar total_minutes -->（0.57日<!-- stats: balance.yaml object_costs object=jar days -->）、ロープは680分<!-- stats: balance.yaml object_costs object=rope total_minutes -->（0.83日<!-- stats: balance.yaml object_costs object=rope days -->）。段として立つのは「家1軒ぶんの
 丸太20本」「水を貯める甕10個」のような量のほうです。4節はこの単位で並べます。
 
 **行き先が絡む段は、そこにしかない材料と対で書きます**
@@ -240,7 +240,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 12 | 船と海図 | — | **筏（5.2<!-- stats: balance.yaml object_costs object=raft days -->・実測）**／**帆（4.6<!-- stats: balance.yaml object_costs object=rawhide_sail days -->・実測）**／櫂と舵（2）／沿岸航海（3）／海図を仕上げる（5） | 5 | 19.8 |
 | | | | **合計** | **28** | **75.1** |
 
-**山が「量」で立っていることに注意してください**（2.4節）。石の斧も甕も1つでは0.3日ほどで段になりません
+**山が「量」で立っていることに注意してください**（2.4節）。石の斧も甕も1つでは0.6日ほどで段になりません
 ——段になるのは家1軒ぶんの丸太であり、貯水に足りる数の甕です。**畑も1枚は0.33日<!-- stats: balance.yaml object_costs object=field days -->**で、段になるのは
 拓いた枚数と、撒いて収穫しに戻る往復の回数のほうです。**塩田も1枚は0.35日<!-- stats: balance.yaml object_costs object=salt_pan days -->**で、段になるのは据えた枚数と、
 海水を汲みに戻る往復の回数です。**囲いは1つで段に届きます**——丸太4本と縄2本が要るためです。
