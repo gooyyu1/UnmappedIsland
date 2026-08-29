@@ -102,6 +102,8 @@ export interface ChainRoute {
   /**
    * 他の土地で用意した材料・道具が要る経路か。**可否は分けない**——AとBの土地で集めた物を合わせて
    * 作るのは普通の遊び方なので、印として持つだけ（issue #562）。時間の扱いも変わらない。
+   *
+   * **値段の付かない道具については偽に倒れる**（RoutePrerequisite.imported）。
    */
   readonly needsImport: boolean;
 
@@ -134,7 +136,16 @@ export interface RoutePrerequisite {
    */
   readonly minutes: number | undefined;
 
-  /** この土地では作れず、他の土地から持ち込むことになる道具か。 */
+  /**
+   * この土地では作れず、他の土地から持ち込むことになる道具か。**そう言えるのは値段の付く道具に
+   * ついてだけで、値段の付かない道具（minutesがundefined）では常に偽になる。** 値段の付く型には
+   * 「その土地の値段表」と「島全体の値段表」の2つが在るので分けられるが、**値段の付かない型の集合は
+   * 島全体に1つしかなく**（入手の可否を島全体でだけ判定することの帰結。BalanceStats.md
+   * 「土地ごとの行は可否を判定しない」）、土地の文脈も島全体も同じ答えを返すため。
+   *
+   * 同梱の定義に値段の付かない道具は無いので今は出ないが、現れれば、他の土地でしか用意できない
+   * 道具が「持ち込みではない」ことになる（issue #1217）。
+   */
   readonly imported: boolean;
 }
 
@@ -1087,7 +1098,10 @@ interface ObtainableSource {
   readonly objectGlobalId: number;
   readonly cost: Cost | undefined;
 
-  /** この土地では用意できず、他の土地から持ち込むことになるか。 */
+  /**
+   * この土地では用意できず、他の土地から持ち込むことになるか。**costがundefinedの側では常に偽**
+   * （RoutePrerequisite.imported）。
+   */
   readonly imported: boolean;
 }
 
@@ -1485,10 +1499,9 @@ class Acquisition {
    * 付かない型を探す**——時間の出る候補を、時間の出ない候補で押しのけない。どちらも「この土地 →
    * 持ち込み」の順で見る。島のどこにも手に入る型が無ければundefined。
    *
-   * **`imported`が意味を持つのは値段の付く側だけで、値段の付かない側では常に偽になる**
-   * ——`unpricedCandidate`が当てる集合は島全体に1つしか無く（obtainableWithoutCost）、土地の文脈も
-   * 同じ集合を見るので、必ず`context === this`で決まるため。**ここでは「どこで用意するか」を
-   * 答えられない**（BalanceStats.md「土地ごとの行は可否を判定しない」の帰結。issue #1217）。
+   * **値段の付かない側では`imported`をここで決められない**——`unpricedCandidate`が当てる集合
+   * （obtainableWithoutCost）は島全体に1つしか無く、土地の文脈も同じ集合を見るので、必ず
+   * `context === this`で決まる（常に偽。RoutePrerequisite.imported）。
    */
   private obtainableSource(input: CraftingStep['inputs'][number]): ObtainableSource | undefined {
     const contexts = this.islandWide === undefined ? [this] : [this, this.islandWide];
