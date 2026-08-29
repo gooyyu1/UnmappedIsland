@@ -26,14 +26,14 @@
 <circle cx="734" cy="183.3" r="3" fill="#0072B2"/>
 <line x1="282" y1="44" x2="300" y2="44" stroke="#D55E00" stroke-width="2.5"/>
 <text x="306" y="48" fill="#24292f">PR（mainへ入った）</text>
-<polyline points="68,236.88 176.4186046511628,222.44 284.8372093023256,206.1 470.69767441860466,175.89 625.5813953488372,134.09 672.046511627907,113.19 734,84.31" fill="none" stroke="#D55E00" stroke-width="2.5" stroke-linejoin="round"/>
+<polyline points="68,236.88 176.4186046511628,222.44 284.8372093023256,206.1 470.69767441860466,175.89 625.5813953488372,134.09 672.046511627907,113.19 734,83.93" fill="none" stroke="#D55E00" stroke-width="2.5" stroke-linejoin="round"/>
 <circle cx="68" cy="236.88" r="3" fill="#D55E00"/>
 <circle cx="176.4186046511628" cy="222.44" r="3" fill="#D55E00"/>
 <circle cx="284.8372093023256" cy="206.1" r="3" fill="#D55E00"/>
 <circle cx="470.69767441860466" cy="175.89" r="3" fill="#D55E00"/>
 <circle cx="625.5813953488372" cy="134.09" r="3" fill="#D55E00"/>
 <circle cx="672.046511627907" cy="113.19" r="3" fill="#D55E00"/>
-<circle cx="734" cy="84.31" r="3" fill="#D55E00"/>
+<circle cx="734" cy="83.93" r="3" fill="#D55E00"/>
 <text x="68" y="262" text-anchor="middle" fill="#6e7781">07-18</text>
 <text x="176.4186046511628" y="262" text-anchor="middle" fill="#6e7781">07-25</text>
 <text x="284.8372093023256" y="262" text-anchor="middle" fill="#6e7781">08-01</text>
