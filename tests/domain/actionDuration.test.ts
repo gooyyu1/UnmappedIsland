@@ -111,6 +111,117 @@ object_defs:
     expect(world.minute, 'self.travel_minutesの値だけ時間が進む').toBe(45);
   });
 
+  it('参照2つの積は、掛け合わせた時間だけ進む（道の長さ×担ぎ手の遅れ）', () => {
+    const { codex, session, world } = buildWorldSession(`
+object_defs:
+  hiker:
+    props:
+      pace:
+        value: 2
+  trail:
+    props:
+      travel_minutes:
+        value: 20
+    interactions:
+      travel:
+        trigger: menu
+        duration: {prop: travel_minutes, times: {subject: actor, prop: pace}}
+`);
+    const trail = session.createObject(codex.objectNames.getId('trail'));
+    const hiker = session.createObject(codex.objectNames.getId('hiker'));
+    trail.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
+
+    expect(trail.tryGetAction('travel', hiker)?.tryExecute() === true).toBe(true);
+    expect(world.minute, 'self.travel_minutes × actor.pace だけ進む').toBe(40);
+  });
+
+  it('積の片方が解決できなければ0分（等倍にはしない）', () => {
+    const { codex, session, world } = buildWorldSession(`
+object_defs:
+  # paceを持たない担ぎ手。掛ける相手が居ない。
+  ghost: {}
+  trail:
+    props:
+      travel_minutes:
+        value: 45
+    interactions:
+      travel:
+        trigger: menu
+        duration: {prop: travel_minutes, times: {subject: actor, prop: pace}}
+`);
+    const trail = session.createObject(codex.objectNames.getId('trail'));
+    const ghost = session.createObject(codex.objectNames.getId('ghost'));
+    trail.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
+
+    expect(trail.tryGetAction('travel', ghost)?.tryExecute() === true).toBe(true);
+    expect(world.minute, '解決できない参照を含む宣言は0（単一の参照と同じ扱い）').toBe(0);
+  });
+
+  it('durationはactorのプロパティを単独でも読める', () => {
+    const { codex, session, world } = buildWorldSession(`
+object_defs:
+  hiker:
+    props:
+      rest_minutes:
+        value: 20
+  hammock:
+    interactions:
+      nap:
+        trigger: menu
+        duration: {subject: actor, prop: rest_minutes}
+`);
+    const hammock = session.createObject(codex.objectNames.getId('hammock'));
+    const hiker = session.createObject(codex.objectNames.getId('hiker'));
+    hammock.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
+
+    expect(hammock.tryGetAction('nap', hiker)?.tryExecute() === true).toBe(true);
+    expect(world.minute, 'actor.rest_minutesの値だけ時間が進む').toBe(20);
+  });
+
+  it('timesにリテラルは書けない（積を取れるのは参照2つだけ）', () => {
+    expect(() =>
+      new WorldCodexYamlLoader()
+        .load(
+          'extra.yaml',
+          `
+object_defs:
+  trail:
+    props:
+      travel_minutes:
+        value: 45
+    interactions:
+      travel:
+        trigger: menu
+        duration: {prop: travel_minutes, times: 2}
+`,
+        )
+        .buildAndReset(),
+    ).toThrowError(/times/);
+  });
+
+  it('timesの中にtimesは書けない（積は2つで打ち止め）', () => {
+    expect(() =>
+      new WorldCodexYamlLoader()
+        .load(
+          'extra.yaml',
+          `
+object_defs:
+  trail:
+    props:
+      travel_minutes:
+        value: 45
+    interactions:
+      travel:
+        trigger: menu
+        duration:
+          prop: travel_minutes
+          times: {subject: actor, prop: pace, times: {subject: actor, prop: haste}}
+`,
+        )
+        .buildAndReset(),
+    ).toThrowError(/times/);
+  });
+
   it('条件不成立の場合は時間を消費しない', () => {
     const { codex, session, world } = buildWorldSession(`
 object_defs:

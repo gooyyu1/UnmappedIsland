@@ -1,4 +1,5 @@
 import type { EffectReader, PickCandidateReading, DeclaredNumberReading } from '../../domain/EffectReader';
+import { multipliedRefs } from '../../domain/EffectReader';
 import type { ObjectRefReading } from '../../domain/ObjectRef';
 import type { ObjectDef } from '../../domain/ObjectDef';
 import type { GateReading, PassivePropertyReading, PassiveReader } from '../../domain/PassiveReader';
@@ -174,9 +175,10 @@ export function voyageForecastOf(
   /** 出航の卓が引く重み。海岸が名乗る「この海区に面しているか」（同3.6節）はここで読む。 */
   const weightOf = (reading: DeclaredNumberReading, raft: WorldObject): number => {
     if (reading.kind === 'literal') return reading.value;
-    const subject =
-      reading.subject === 'self' ? raft : reading.subject === 'parent' ? raft.parent : undefined;
-    return subject?.tryGetProperty(reading.propertyGlobalId)?.getEffectiveValue() ?? 0;
+    return multipliedRefs(reading).reduce((product, ref) => {
+      const subject = ref.subject === 'self' ? raft : ref.subject === 'parent' ? raft.parent : undefined;
+      return product * (subject?.tryGetProperty(ref.propertyGlobalId)?.getEffectiveValue() ?? 0);
+    }, 1);
   };
 
   /** 今の海岸から漕ぎ出したときに立ちうる海区。重みが0の候補＝面していない海区は挙がらない。 */

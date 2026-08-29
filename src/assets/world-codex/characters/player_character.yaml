@@ -157,6 +157,51 @@ traits:
             add:
               self:
                 blood: 2
+      # 体に残っている熱（docs/engine/VitalsSystem.md 8.3節）。**単位はkcal**で、maxが体格そのもの
+      # ——深部体温37℃から心臓が止まる25℃までに失える熱。血と同じく個体差を持たせず、この trait が配る。
+      #
+      # **尽きれば凍死する**（4本目の死に方、同8節）。段の境目は深部体温で置いてある
+      # （175=28℃・350=31℃・560=34.6℃）。
+      #
+      # **寒いかどうかは、気温と下のchill_pointの比較1つで決まる。** 火は気温の側を上げ、衣服・寝床は
+      # 境目の側を下げる（同8.3節）ので、防ぐ手段がどれだけ増えてもこの3ブロックは増えない。
+      # 雨は気温ではなく削る速さに効く——濡れた体から熱が抜けるのは空気の温度の話ではないため。
+      warmth:
+        tags: [status, health]
+        value: 700
+        range: {min: 0, max: 700}
+        stages:
+          - {name: frozen, alert: fatal}
+          - {name: hypothermic, min: 175, alert: danger}
+          - {name: shivering, min: 350, alert: caution}
+          - {name: chilled, min: 560, alert: watch}
+          - {name: warm, min: 700}
+        on_min:
+          destroy: {subject: self, reason: frozen}
+        passives:
+          # 寒い所に居る間の削り。雨に打たれていなければこちら。
+          - conditions:
+              - {subject: ancestor, prop: ambient_temperature, lt: {prop: chill_point}}
+              - any:
+                  - {prop: sheltered, gte: 1}
+                  # 天候の概念を持たない祖先の下では「降っていない」に倒れる否定形で書く（14.1節）。
+                  - {subject: ancestor, prop: weather, not_in: [light_rain, heavy_rain, storm]}
+            add: {self: {warmth: -2}}
+          # 屋根も蓋も無い所で雨に打たれている間（docs/engine/ContainerSystem.md 6節）。
+          - conditions:
+              - {subject: ancestor, prop: ambient_temperature, lt: {prop: chill_point}}
+              - {prop: sheltered, eq: 0}
+              - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
+            add: {self: {warmth: -6}}
+          # 境目より上に居る間は戻る。**血と違って熱は取り返せる**ので、凍死は「一晩をどう越すか」の
+          # 死に方になる——濡れた一晩（48 tick）で失う288 kcalが、火のそばの9時間で戻る。
+          - conditions:
+              - {subject: ancestor, prop: ambient_temperature, gte: {prop: chill_point}}
+            add: {self: {warmth: 8}}
+      # 寒さの入口（docs/engine/VitalsSystem.md 8.3節）。これを下回る気温の場所に居る間だけ、
+      # 上のwarmthが削られる。
+      # 素は16℃で、衣服・寝床が入ればそれらがmodifyで押し下げる。
+      chill_point: {value: 16}
       # 満腹感（docs/engine/DigestionSystem.md 2節）。**単位はmL——胃に入っているかさそのもの**で、
       # エネルギーではない。食べたかさぶん増え、tickで減る。
       #
@@ -199,10 +244,28 @@ traits:
         range: {min: 0, max: 120}
         passives:
           - transfer: {from_prop: protein, to_prop: body_fat, amount: 1}
+      # 脂質だけが段を持つ（同7節）。3本のうちここだけ、尽きたときに固有の弊害が出る。
       lipid:
         tags: [nutrition]
         value: 30
         range: {min: 0, max: 120}
+        stages:
+          # 脂の在庫が尽きた域。境目の1は「15分ぶんも残っていなければ尽きたとみなす」で、
+          # 輸送の刻み（0.5）に依らずに読める。壊血病（同4節）と同じ形で、内側の不調を原因の値の段が持つ。
+          # **死に方は増えない**——削るのは既にあるhydrationとbody_fatで、終わり方は脱水と餓死のまま
+          # （VitalsSystem.md 8節）。statusタグを持たないので、画面に行も増えない。
+          - name: fat_starved
+            alert: caution
+            passives:
+              # 余ったたんぱく質は尿素として捨てるしかなく、その排泄に水が要る。水分の保ちが半分になり
+              # （-1/tickが-2/tick）、捨てられる分は身にならない。**肉を食べ足すほど悪化する**
+              # ——ゲートがたんぱく質の在庫なので、脂の無い肉を足すほど水が減る。
+              - conditions: [{prop: protein, gte: 1}]
+                add: {self: {hydration: -1, protein: -2}}
+              # 必須脂肪酸の欠乏（肌が荒れ、傷が治らない）。modifyなので可逆——脂を摂って段を抜ければ
+              # その場で引く。壊血病の60に対して半分。
+              - modify: {self: {pain: 30}}
+          - {name: stocked, min: 1}
         passives:
           - transfer: {from_prop: lipid, to_prop: body_fat, amount: 0.5}
       # 体内のビタミン（同4節）。**単位はmg——ビタミンC相当**で、エネルギーの3本とは物差しが違う。

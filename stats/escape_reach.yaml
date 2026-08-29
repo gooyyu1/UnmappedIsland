@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/EscapeReachStats.md。
 
 meta:
-  - {departure_locations: 10, needs: 26, goals: 2, unit: hops, max_hops: 9}
+  - {departure_locations: 10, needs: 27, goals: 3, unit: hops, max_hops: 9}
 
 departure:
   - {location: sandy_beach}
@@ -42,6 +42,7 @@ needs:
   - {object: cord, goal_tag: null, unit: hops, hops: 6, step_kind: interaction, step: ply, owner: yarn, inputs: [{object: yarn, tag: null, consumed: true}, {object: yarn, tag: null, consumed: true}]}
   - {object: rope, goal_tag: null, unit: hops, hops: 7, step_kind: recipe, step: twisted, owner: rope, inputs: [{object: cord, tag: null, consumed: true}]}
   - {object: stone_axe, goal_tag: null, unit: hops, hops: 7, step_kind: recipe, step: hafted, owner: stone_axe, inputs: [{object: thick_branch, tag: null, consumed: true}, {object: sharp_stone, tag: null, consumed: true}, {object: cord, tag: null, consumed: true}]}
+  - {object: fishing_harpoon, goal_tag: fishing_tool, unit: hops, hops: 7, step_kind: recipe, step: hafted, owner: fishing_harpoon, inputs: [{object: thick_branch, tag: null, consumed: true}, {object: sharp_stone, tag: null, consumed: true}, {object: cord, tag: null, consumed: true}]}
   - {object: log, goal_tag: null, unit: hops, hops: 8, step_kind: interaction, step: fell, owner: broadleaf_tree, inputs: [{object: broadleaf_tree, tag: null, consumed: true}, {object: stone_axe, tag: chopping_tool, consumed: false}]}
   - {object: rawhide_sail, goal_tag: sail, unit: hops, hops: 8, step_kind: recipe, step: sewn, owner: rawhide_sail, inputs: [{object: thick_branch, tag: null, consumed: true}, {object: rope, tag: null, consumed: true}, {object: rawhide, tag: null, consumed: true}, {object: yarn, tag: null, consumed: true}, {object: bone_needle, tag: sewing_tool, consumed: false}]}
   - {object: raft, goal_tag: boat, unit: hops, hops: 9, step_kind: recipe, step: lashed, owner: raft, inputs: [{object: log, tag: null, consumed: true}, {object: rope, tag: null, consumed: true}]}

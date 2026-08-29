@@ -131,6 +131,14 @@ object_texts:
         display_name: 血液量
         icon: 🩸
         description: 体に残っている血。傷から流れ出た分は戻らず、失いすぎれば意識が薄れ、尽きれば死ぬ。
+      warmth:
+        display_name: 体熱
+        icon: 🔥
+        description: 体に残っている熱。寒い場所に居ると減り、雨に打たれればなお速い。暖かい所へ戻れば戻り、尽きれば凍えて死ぬ。
+      chill_point:
+        display_name: 寒さの入口
+        icon: 🥶
+        description: これを下回る気温の場所に居ると、体の熱が奪われ始める。
       vulnerability:
         display_name: 無防備さ
         description: 狙って急所を打てる度合い。気を失っている相手ほど大きい。
@@ -143,6 +151,9 @@ object_texts:
       gore:
         display_name: 牙
         description: 1手の重み配分のうち、牙を突き上げる回の重み。大型だけが持つ。
+      crush:
+        display_name: 圧し掛かり
+        description: 1手の重み配分のうち、相手へ体ごと圧し掛かる回の重み。大型だけが持ち、骨を折る。
       snatch:
         display_name: 持ち去り
         description: 1手の重み配分のうち、足元の物をくわえて自分のものにする回の重み。
@@ -377,6 +388,9 @@ object_texts:
   gore_wound:
     display_name: 牙の傷
     description: 下から突き上げた牙が深部まで裂いた傷。この島で最も速く血が流れる。手当てが間に合わなければ、その場を離れても倒れる。
+  fracture:
+    display_name: 骨折
+    description: 重さに押し潰されて折れた骨。血は流れないが痛みは絶えず、繋がるまでの半月、荷を担げば身動きが取れない。
 
   # 動物（animals.yaml）。
   monkey:
@@ -1313,6 +1327,7 @@ stage_texts:
   dehydrated: 脱水
   starved: 飢え
   exsanguinated: 失血
+  frozen: 低体温
 
   # 痛み。
   painless: 無痛
@@ -1374,12 +1389,14 @@ destroy_reason_texts:
   dehydrated: 渇き
   starved: 飢え
   exsanguinated: 失血
+  frozen: 凍え
 
 # 起きたことを告げる出来事（GameElementDefinition.md 9.8節のsignal）。起きた札の上に一瞬だけ浮かぶ
 # ので、離れて見ても読める短い語にする（CardView.md 14節）。
 signal_texts:
   bit: 噛みつき
   cracked: 割れた
+  crushed: 押し潰し
   devoured: 食べた
   fired: 焼けた
   fled: 逃げた

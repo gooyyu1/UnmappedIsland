@@ -182,8 +182,9 @@ function parseAmong(
 }
 
 /**
- * リテラル数値か`{subject, prop}`参照（GameElementDefinition.md 10.2節）を読む。durationもこの形で、
- * 「今の状態から見ていくらか」を書けるようにするため（切れ味の悪い刃物ほど時間がかかる）。
+ * リテラル数値か`{subject, prop}`参照、またはその参照2つの積（GameElementDefinition.md 10.2節）を読む。
+ * durationもこの形で、「今の状態から見ていくらか」を書けるようにするため（切れ味の悪い刃物ほど
+ * 時間がかかる、荷が重いほど道は遠い）。
  */
 export function parseWeight(
   loader: WorldCodexYamlLoader,
@@ -201,18 +202,38 @@ export function parseWeight(
   }
 
   if (isMap(node)) {
-    const subjectName = tryGetScalar(node, 'subject', context);
-    const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, scope) : 'self';
-    const propName = requireScalar(node, 'prop', context);
+    requireKnownKeys(node, ['subject', 'prop', 'times'], context);
+    const path = parsePropertyRef(loader, context, node, scope);
 
-    requireKnownKeys(node, ['subject', 'prop'], context);
+    // times: 掛ける相手（10.2節）。**参照しか書けない形**——リテラルはスカラーで書く綴りなので、
+    // ここがマップである限り「参照2つの積」から外れようがない。
+    const timesNode = tryGetNode(node, 'times');
+    if (timesNode === undefined) return DeclaredNumber.ofPath(path);
+    if (!isMap(timesNode))
+      throw new YamlLoadError(
+        `${context}: ${fieldName}の'times'は{subject, prop}参照である必要があります（積を取れるのは参照2つだけです）。`,
+      );
 
-    return DeclaredNumber.ofPath(new PropertyPath(root, loader.propertyNames.intern(propName)));
+    const timesContext = `${context}.times`;
+    requireKnownKeys(timesNode, ['subject', 'prop'], timesContext);
+    return DeclaredNumber.ofProduct(path, parsePropertyRef(loader, timesContext, timesNode, scope));
   }
 
   throw new YamlLoadError(
     `${context}: ${fieldName}はリテラル数値か{subject, prop}のいずれかである必要があります。`,
   );
+}
+
+/** `{subject, prop}`（10.2節）の1つ分。`subject`を省けば`self`。 */
+function parsePropertyRef(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YAMLMap,
+  scope: ReferenceScope,
+): PropertyPath {
+  const subjectName = tryGetScalar(node, 'subject', context);
+  const root = subjectName !== undefined ? parseSubjectRoot(context, subjectName, scope) : 'self';
+  return new PropertyPath(root, loader.propertyNames.intern(requireScalar(node, 'prop', context)));
 }
 
 /**

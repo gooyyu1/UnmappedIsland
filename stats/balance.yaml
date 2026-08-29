@@ -401,6 +401,18 @@ consumption:
   - {property: blood, condition: （hydrationが段hydratedにある または hydrationが段fullにある） かつ （body_fatが段gauntにある または body_fatが段nourishedにある または body_fatが段stoutにある または body_fatが段obeseにある）, character: engineer, per_tick: 2.00, per_day: 192}
   - {property: blood, condition: （hydrationが段hydratedにある または hydrationが段fullにある） かつ （body_fatが段gauntにある または body_fatが段nourishedにある または body_fatが段stoutにある または body_fatが段obeseにある）, character: farmer, per_tick: 2.00, per_day: 192}
   - {property: blood, condition: （hydrationが段hydratedにある または hydrationが段fullにある） かつ （body_fatが段gauntにある または body_fatが段nourishedにある または body_fatが段stoutにある または body_fatが段obeseにある）, character: medic, per_tick: 2.00, per_day: 192}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: captain, per_tick: -2.00, per_day: -192}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: engineer, per_tick: -2.00, per_day: -192}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: farmer, per_tick: -2.00, per_day: -192}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: medic, per_tick: -2.00, per_day: -192}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ sheltered = 0 かつ 祖先のweather ∈ light_rain・heavy_rain・storm, character: captain, per_tick: -6.00, per_day: -576}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ sheltered = 0 かつ 祖先のweather ∈ light_rain・heavy_rain・storm, character: engineer, per_tick: -6.00, per_day: -576}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ sheltered = 0 かつ 祖先のweather ∈ light_rain・heavy_rain・storm, character: farmer, per_tick: -6.00, per_day: -576}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ sheltered = 0 かつ 祖先のweather ∈ light_rain・heavy_rain・storm, character: medic, per_tick: -6.00, per_day: -576}
+  - {property: warmth, condition: 祖先のambient_temperature ≥ chill_point, character: captain, per_tick: 8.00, per_day: 768}
+  - {property: warmth, condition: 祖先のambient_temperature ≥ chill_point, character: engineer, per_tick: 8.00, per_day: 768}
+  - {property: warmth, condition: 祖先のambient_temperature ≥ chill_point, character: farmer, per_tick: 8.00, per_day: 768}
+  - {property: warmth, condition: 祖先のambient_temperature ≥ chill_point, character: medic, per_tick: 8.00, per_day: 768}
   - {property: satiety, condition: 常時, character: captain, per_tick: -16.00, per_day: -1536}
   - {property: satiety, condition: 常時, character: engineer, per_tick: -16.00, per_day: -1536}
   - {property: satiety, condition: 常時, character: farmer, per_tick: -16.00, per_day: -1536}
@@ -417,6 +429,14 @@ consumption:
   - {property: protein, condition: 常時（輸送・在庫がある間）, character: engineer, per_tick: -1.00, per_day: -96}
   - {property: protein, condition: 常時（輸送・在庫がある間）, character: farmer, per_tick: -1.00, per_day: -96}
   - {property: protein, condition: 常時（輸送・在庫がある間）, character: medic, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 段 lipid=fat_starved, character: captain, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 段 lipid=fat_starved, character: engineer, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 段 lipid=fat_starved, character: farmer, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 段 lipid=fat_starved, character: medic, per_tick: -1.00, per_day: -96}
+  - {property: protein, condition: 段 lipid=fat_starved, character: captain, per_tick: -2.00, per_day: -192}
+  - {property: protein, condition: 段 lipid=fat_starved, character: engineer, per_tick: -2.00, per_day: -192}
+  - {property: protein, condition: 段 lipid=fat_starved, character: farmer, per_tick: -2.00, per_day: -192}
+  - {property: protein, condition: 段 lipid=fat_starved, character: medic, per_tick: -2.00, per_day: -192}
   - {property: lipid, condition: 常時（輸送・在庫がある間）, character: captain, per_tick: -0.50, per_day: -48}
   - {property: lipid, condition: 常時（輸送・在庫がある間）, character: engineer, per_tick: -0.50, per_day: -48}
   - {property: lipid, condition: 常時（輸送・在庫がある間）, character: farmer, per_tick: -0.50, per_day: -48}
@@ -455,24 +475,24 @@ consumption:
   - {property: wakefulness, condition: 常時, character: medic, per_tick: -1.00, per_day: -96}
 
 supply:
-  - {owner: monkey, step: turn, kind: interaction, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 0, spawns: [{name: bite_wound, amount: 0.15}, {name: gore_wound, amount: 0.00}], actor_deltas: [], self_deltas: []}
+  - {owner: monkey, step: turn, kind: interaction, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 0, spawns: [{name: bite_wound, amount: 0.15}, {name: gore_wound, amount: 0.00}, {name: fracture, amount: 0.00}], actor_deltas: [], self_deltas: []}
   - {owner: monkey, step: strike, kind: interaction, labor_minutes: 15, unresolved_references: false, elapsed_minutes: 15, spawns: [{name: laceration, amount: 0.55}, {name: puncture_wound, amount: 0.23}, {name: monkey_carcass, amount: 0.02}], actor_deltas: [], self_deltas: [{name: wariness, amount: 24.47}, {name: shock, amount: 79.79}]}
   - {owner: monkey, step: blood.on_min, kind: periodic, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 24, spawns: [{name: monkey_carcass, amount: 1.00}], actor_deltas: [], self_deltas: []}
   - {owner: monkey, step: blood.on_min, kind: periodic, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 40, spawns: [{name: monkey_carcass, amount: 1.00}], actor_deltas: [], self_deltas: []}
   - {owner: monkey_carcass, step: butcher, kind: interaction, labor_minutes: 60, unresolved_references: false, elapsed_minutes: 60, spawns: [{name: raw_meat, amount: 4.00}, {name: animal_bone, amount: 1.00}, {name: rawhide, amount: 1.00}], actor_deltas: [], self_deltas: []}
-  - {owner: junglefowl, step: turn, kind: interaction, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 0, spawns: [{name: bite_wound, amount: 0.00}, {name: gore_wound, amount: 0.00}], actor_deltas: [], self_deltas: []}
+  - {owner: junglefowl, step: turn, kind: interaction, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 0, spawns: [{name: bite_wound, amount: 0.00}, {name: gore_wound, amount: 0.00}, {name: fracture, amount: 0.00}], actor_deltas: [], self_deltas: []}
   - {owner: junglefowl, step: strike, kind: interaction, labor_minutes: 15, unresolved_references: false, elapsed_minutes: 15, spawns: [{name: laceration, amount: 0.55}, {name: puncture_wound, amount: 0.23}, {name: junglefowl_carcass, amount: 0.02}], actor_deltas: [], self_deltas: [{name: wariness, amount: 24.47}, {name: shock, amount: 79.79}]}
   - {owner: junglefowl, step: blood.on_min, kind: periodic, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 5, spawns: [{name: junglefowl_carcass, amount: 1.00}], actor_deltas: [], self_deltas: []}
   - {owner: junglefowl, step: blood.on_min, kind: periodic, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 8, spawns: [{name: junglefowl_carcass, amount: 1.00}], actor_deltas: [], self_deltas: []}
   - {owner: junglefowl, step: breeding_remaining.on_min, kind: periodic, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 7200, spawns: [{name: junglefowl, amount: 1.00}], actor_deltas: [], self_deltas: [{name: breeding_remaining, amount: 480.00}]}
-  - {owner: rat, step: turn, kind: interaction, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 0, spawns: [{name: bite_wound, amount: 0.05}, {name: gore_wound, amount: 0.00}], actor_deltas: [], self_deltas: []}
+  - {owner: rat, step: turn, kind: interaction, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 0, spawns: [{name: bite_wound, amount: 0.05}, {name: gore_wound, amount: 0.00}, {name: fracture, amount: 0.00}], actor_deltas: [], self_deltas: []}
   - {owner: rat, step: strike, kind: interaction, labor_minutes: 15, unresolved_references: false, elapsed_minutes: 15, spawns: [{name: laceration, amount: 0.55}, {name: puncture_wound, amount: 0.23}, {name: rat_carcass, amount: 0.02}], actor_deltas: [], self_deltas: [{name: wariness, amount: 24.47}, {name: shock, amount: 79.79}]}
   - {owner: rat, step: blood.on_min, kind: periodic, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 6, spawns: [{name: rat_carcass, amount: 1.00}], actor_deltas: [], self_deltas: []}
   - {owner: rat, step: blood.on_min, kind: periodic, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 0, spawns: [{name: rat_carcass, amount: 1.00}], actor_deltas: [], self_deltas: []}
   - {owner: rat, step: blood.on_min, kind: periodic, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 9, spawns: [{name: rat_carcass, amount: 1.00}], actor_deltas: [], self_deltas: []}
   - {owner: rat, step: blood.on_min, kind: periodic, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 1, spawns: [{name: rat_carcass, amount: 1.00}], actor_deltas: [], self_deltas: []}
   - {owner: rat, step: blood.on_min, kind: periodic, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 6, spawns: [{name: rat_carcass, amount: 1.00}], actor_deltas: [], self_deltas: []}
-  - {owner: wild_boar, step: turn, kind: interaction, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 0, spawns: [{name: bite_wound, amount: 0.00}, {name: gore_wound, amount: 0.40}], actor_deltas: [], self_deltas: []}
+  - {owner: wild_boar, step: turn, kind: interaction, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 0, spawns: [{name: bite_wound, amount: 0.00}, {name: gore_wound, amount: 0.30}, {name: fracture, amount: 0.10}], actor_deltas: [], self_deltas: []}
   - {owner: wild_boar, step: strike, kind: interaction, labor_minutes: 15, unresolved_references: false, elapsed_minutes: 15, spawns: [{name: laceration, amount: 0.55}, {name: puncture_wound, amount: 0.23}, {name: wild_boar_carcass, amount: 0.02}], actor_deltas: [], self_deltas: [{name: wariness, amount: 24.47}, {name: shock, amount: 79.79}]}
   - {owner: wild_boar_carcass, step: butcher, kind: interaction, labor_minutes: 240, unresolved_references: false, elapsed_minutes: 240, spawns: [{name: raw_meat, amount: 40.00}, {name: animal_bone, amount: 6.00}, {name: rawhide, amount: 6.00}], actor_deltas: [], self_deltas: []}
   - {owner: junglefowl_carcass, step: butcher, kind: interaction, labor_minutes: 20, unresolved_references: false, elapsed_minutes: 20, spawns: [{name: raw_meat, amount: 1.00}, {name: feather, amount: 1.00}, {name: small_bone, amount: 1.00}], actor_deltas: [], self_deltas: []}

@@ -186,6 +186,38 @@ describe('動物の1手', () => {
     expect(boar.parent, '逃げ道が無いので居座る').toBe(jungle);
   });
 
+  it('イノシシに圧し掛かられると骨を折り、荷が担げなくなる', () => {
+    // 骨折を残すのは大型の獣の1手だけ（HuntingSystem.md 5節）。血ではなく動きを奪うので、
+    // 傷の側に移動の規則を1行も書かずに「折れた脚では運べない」が出る（InjurySystem.md 5節）。
+    //
+    // 密林に居るイノシシの候補は様子見15・牙30・圧し掛かり10（足元に物も逃げ道も無いので、
+    // 残りは抽選に出ない）。合計55のうち末尾の10を引くrollを渡す。
+    open(0.9);
+    const boar = release('wild_boar');
+
+    passTurn();
+
+    expect(injuriesOf(player)).toEqual(['fracture']);
+    expect(boar.parent, '突き飛ばした側はその場に残る').toBe(jungle);
+    expect(
+      player.tryGetProperty(codex.propertyNames.getId('load'))?.stage?.name,
+      '空身でも荷を負っているのと同じになる',
+    ).toBe('heavy');
+  });
+
+  it('小型の獣は、追い詰められても噛みつくだけで骨は折らない', () => {
+    // 重みを立てるのは大型だけなので、小型では候補ごと抽選に出ない（HuntingSystem.md 5節）。
+    // 「重い獣に踏まれたときだけ折れる」を、傷の側に「大型からしか出ない」と書かずに表している。
+    // 上と同じrollを、逃げ道の無い密林に置いたネズミへ渡す。
+    open(0.9);
+    const rat = release('rat');
+
+    passTurn();
+
+    expect(injuriesOf(player), '重みを立てていない候補は引かれない').toEqual(['bite_wound']);
+    expect(rat.tryGetProperty(codex.propertyNames.getId('crush'))?.getEffectiveValue() ?? 0).toBe(0);
+  });
+
   it('深手を負うほど、逃走の重みが太くなる', () => {
     // 痛みの段が逃走の重みを押し上げる（animals.yamlのpain）。動物の種類によらない1箇所の宣言で、
     // 「傷めつければ逃げる」が全種類に効く。
