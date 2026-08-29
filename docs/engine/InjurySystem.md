@@ -37,8 +37,8 @@
 | `passives` | `modify` で `parent`（宿主）の `pain` を上げる。骨折はさらに `load`（荷重）も上げる（5 節） |
 | 表示 | `ja.yaml` の表示名と説明。絵は**傷そのものだけ**を描く（[`CardView.md`](../ui/CardView.md) 5 節・7 節）——誰の身体かはカードの地が言うので、人と動物で同じ絵を使える |
 
-傷そのものに目方はありませんが、`weight` は 0 で宣言します——当てた治療具の重さが宿主の荷重へ渡る口に
-なるためです（[`ContainerSystem.md`](./ContainerSystem.md) 1 節・2 節）。また `bound_to_owner`
+傷そのものに目方はありませんが、`weight` は 0 で宣言します——当てた治療具の重さが宿主の `weight` へ
+渡る口になるためです（[`ContainerSystem.md`](./ContainerSystem.md) 1 節）。また `bound_to_owner`
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 7.9節）なので、負った本人から剥がせません——
 プレイヤーが怪我を出し入れできないのはこの帰結で、画面側の制限ではありません。
 
@@ -85,7 +85,7 @@
 だけが無料になり、同じことが経路で違う値段になります。
 
 - **効き目は当てている間だけ**なので、治療具の側に `passives` として書きます。実体値へ焼き付けると、
-  外したときに戻せません。当てている怪我が `parent`、痛みを持つキャラクタは `ancestor`
+  外したときに戻せません。当てている怪我が `parent`、痛みを持つ宿主は `ancestor`
   （[`GameElementDefinition.md`](./GameElementDefinition.md) 8.6節）。
 - **ただし、傷が押し上げている量を緩めるものは、傷の側が持ちます。** 治療具はタグを名乗るだけで、
   緩んだ後の量は押し上げている傷が書きます（出血のゲートと `hemostatic`、骨折の `load` と

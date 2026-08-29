@@ -18,7 +18,7 @@ object_defs:
     passives:
       # **当てている間だけ**に絞る。conditionsが無いと、手持ちに入れているだけで効いてしまう
       # （ancestorはスロットを問わず祖先を辿るので、鞄の中の包帯が痛みを止める）。
-      # parentは当てている怪我、痛みを持つのはその上のキャラクタなのでancestorで辿る（8.6節）。
+      # parentは当てている怪我、痛みを持つのはそれを負った本人なのでancestorで辿る（8.6節）。
       - conditions:
           - {in_slot: treatment}
         add:
