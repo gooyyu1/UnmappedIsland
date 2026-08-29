@@ -31,6 +31,14 @@ describe('総コストが出ない理由', () => {
     });
   });
 
+  it('同じ朽ちない設備でも、他に作り方のある産物には印が付かない', () => {
+    // 畑も囲いも朽ちないが、タロイモもヤケイも探索で採れるので総コストは出る。印が「朽ちない設備が
+    // 返すもの」ではなく「それでしか得られないもの」であることが、ここで分かれる。
+    expect(costOf('taro').onlyFromEverlastingDevice).toBe(false);
+    expect(costOf('junglefowl').onlyFromEverlastingDevice).toBe(false);
+    expect(costOf('taro').minutes).toBeGreaterThan(0);
+  });
+
   it('総コストが出ないその他は、埋めるべき穴のまま残る', () => {
     // 印が全部の行へ付いてしまうと、内容の穴を数える側が空になる。
     const unreachable = tables.objectCosts.filter(

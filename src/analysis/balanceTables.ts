@@ -283,19 +283,22 @@ export interface ObjectCost {
    */
   readonly onlyFromEverlastingDevice: boolean;
 
-  /** 最も安い作り方（上流→下流）。入手経路が無ければ空。 */
+  /** 最も安い作り方（上流→下流）。総コストが出なければ空。 */
   readonly steps: readonly RouteStep[];
 
   /** 要る道具。単位あたりへは按分しない（#550）。 */
   readonly prerequisites: readonly RoutePrerequisite[];
 
-  /** 入手経路が無いとき、足りていない入力。**どこで詰まっているか**がこれで分かる。 */
+  /**
+   * 総コストが出ないとき、足りていない入力。**どこで詰まっているか**がこれで分かる。
+   * onlyFromEverlastingDeviceの側では空——足りない物は無く、按分できないだけ。
+   */
   readonly missing: readonly string[];
 
   /** 材料は揃うが、要る道具に入手経路が無いか。筏は丸太も縄も作れるが、丸太を切る道具が無い。 */
   readonly blockedByTool: boolean;
 
-  /** 生存に要る労働を引いた残りで割った日数。余剰が無ければundefined。 */
+  /** 生存に要る労働を引いた残りで割った日数。総コストが出ないか、余剰が無ければundefined。 */
   readonly days: number | undefined;
 }
 
@@ -1332,9 +1335,10 @@ class Acquisition {
   }
 
   /**
-   * その型が手に入らないとき、足りていない入力。**最も惜しい工程**（足りない入力が最も少ない
+   * その型に値段が付かないとき、足りていない入力。**最も惜しい工程**（足りない入力が最も少ない
    * 工程）のものを返す——どこで詰まっているかを1つに絞らないと、読み手が辿る先を決められない。
-   * 手に入る型では空。
+   * 値段の付く型では空。**朽ちない設備の産物でも空**（everlastingDeviceProducts）——入力は揃って
+   * いるので、詰まっている所は無い。
    */
   missingInputsFor(objectGlobalId: number): readonly string[] {
     if (this.costByObject.has(objectGlobalId)) return [];
