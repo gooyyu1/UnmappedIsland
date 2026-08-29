@@ -402,7 +402,7 @@ function inInitialStage(def: ObjectDef, delta: TickDelta): boolean {
   if (stage === undefined) return true;
 
   const propertyDef = def.tryGetPropertyDef(stage.propertyGlobalId);
-  const value = staticValueOf(def, stage.propertyGlobalId);
+  const value = staticValueOf(def, stage.propertyGlobalId, 'lowest');
   if (propertyDef === undefined || value === undefined) return false;
   return propertyDef.isInStage(value, stage.name);
 }
@@ -1153,7 +1153,7 @@ function decayLifetimeOf(cycles: readonly RangeCycle[]): DecayLifetime | undefin
 /** 祖先（置かれている土地）の宣言値を答える手立て。宣言していないプロパティは寄与0。 */
 function ancestorValueResolver(location: ObjectDef): StaticValueResolver {
   return (root, propertyGlobalId) =>
-    root === 'ancestor' ? (staticValueOf(location, propertyGlobalId) ?? 0) : undefined;
+    root === 'ancestor' ? (staticValueOf(location, propertyGlobalId, 'lowest') ?? 0) : undefined;
 }
 
 /** どの土地に置いてもよい前提での祖先の値。最も高く宣言している土地に置いたものとして扱う。 */
@@ -1161,7 +1161,7 @@ function highestDeclaredAncestorValueResolver(locations: readonly ObjectDef[]): 
   return (root, propertyGlobalId) => {
     if (root !== 'ancestor') return undefined;
     const declared = locations
-      .map((location) => staticValueOf(location, propertyGlobalId))
+      .map((location) => staticValueOf(location, propertyGlobalId, 'lowest'))
       .filter((value): value is number => value !== undefined);
     return declared.length === 0 ? 0 : Math.max(...declared);
   };
@@ -1179,7 +1179,7 @@ function withBestDragged(defs: readonly ObjectDef[], ancestor: StaticValueResolv
   return (root, propertyGlobalId) => {
     if (root !== 'dragged') return ancestor(root, propertyGlobalId);
     const declared = defs
-      .map((def) => staticValueOf(def, propertyGlobalId))
+      .map((def) => staticValueOf(def, propertyGlobalId, 'lowest'))
       .filter((value): value is number => value !== undefined);
     return declared.length === 0 ? undefined : Math.max(...declared);
   };

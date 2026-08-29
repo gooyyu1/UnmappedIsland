@@ -36,7 +36,7 @@ describe('仕込んだ在庫を重みにした抽選（同梱の定義）', () =
   function ancestorOf(placeName: string): StaticValueResolver {
     const place = codex.objects.get(codex.objectNames.getId(placeName));
     return (root, propertyGlobalId) =>
-      root === 'ancestor' ? (staticValueOf(place, propertyGlobalId) ?? 0) : undefined;
+      root === 'ancestor' ? (staticValueOf(place, propertyGlobalId, 'lowest') ?? 0) : undefined;
   }
 
   function expectedSpawnsOf(outcomes: readonly StepOutcome[]): Map<string, number> {

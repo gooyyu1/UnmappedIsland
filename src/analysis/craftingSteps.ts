@@ -116,7 +116,12 @@ function conditionsNeverMet(
     const subjectDef = rootTypeOf(def, dragged, root);
     return subjectDef === undefined
       ? undefined
-      : staticValueRangeOf(codex, subjectDef, propertyGlobalId, staticResolverOf(subjectDef, outer));
+      : staticValueRangeOf(
+          codex,
+          subjectDef,
+          propertyGlobalId,
+          staticResolverOf(subjectDef, 'lowest', outer),
+        );
   };
   return interaction.requirementDeclarations.some(
     (requirement) => staticConditionTruth(requirement.condition, rangeOf) === false,
@@ -180,7 +185,7 @@ function interactionStep(
   outer: StaticValueResolver | undefined,
 ): CraftingStep {
   const interaction = trigger.interaction;
-  const tracking = trackingResolverOf(def, outer);
+  const tracking = trackingResolverOf(def, 'lowest', outer);
   const reading = readEffect(interaction, tracking.resolve, becomeDestinationResolverOf(codex, def, dragged));
   const minutes = minutesOf(interaction, tracking.resolve);
   return {
@@ -249,7 +254,7 @@ function withTriggeredRangeEvents(
   step: CraftingStep,
   outer: StaticValueResolver | undefined,
 ): CraftingStep {
-  const resolve = staticResolverOf(def, outer);
+  const resolve = staticResolverOf(def, 'lowest', outer);
 
   let destroyedProbability = 0;
   const expanded = step.outcomes.map((outcome) => {
@@ -299,7 +304,7 @@ function selfPropertyValuesAfterOf(
   const moves: (readonly [number, number])[] = [];
   for (const delta of outcome.deltas) {
     if (delta.target !== 'self') continue;
-    const before = staticValueOf(def, delta.propertyGlobalId, outer);
+    const before = staticValueOf(def, delta.propertyGlobalId, 'lowest', outer);
     if (before !== undefined) moves.push([delta.propertyGlobalId, before + delta.amount]);
   }
   for (const assignment of outcome.assignments)
