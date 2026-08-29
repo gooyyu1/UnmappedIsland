@@ -124,14 +124,27 @@ export interface RoutePrerequisite {
   /** 表示する名前。タグ指定の入力は「タグ → 実際に使う型」の形。 */
   readonly label: string;
 
-  /** 実際に使う型。入手経路が無ければundefined。 */
+  /** 実際に使う型。**島のどこにも入手経路が無ければundefined**（＝内容の穴。isGap参照）。 */
   readonly objectName: string | undefined;
 
-  /** その道具を1つ手に入れるまでの時間（分）。入手経路が無ければundefined。 */
+  /**
+   * その道具を1つ手に入れるまでの時間（分）。**値段が付かなければundefined**——入手経路が無いか、
+   * 手に入るが値段を付けられない（ObjectCost.obtainableWithoutCost）か。
+   * 穴かどうかを答えるのは`objectName`のほうで、この値ではない。
+   */
   readonly minutes: number | undefined;
 
   /** この土地では作れず、他の土地から持ち込むことになる道具か。 */
   readonly imported: boolean;
+}
+
+/**
+ * その前提が内容の穴（島のどこにも入手経路が無い）か。**値段が付かないだけの道具は穴ではない**
+ * ——朽ちない設備の産物は工程も設備も在って手に入るし、道具の時間は経路へ按分しない（#550）ので、
+ * 値段の有無は経路の時間も成否も変えない。
+ */
+export function isGap(prerequisite: RoutePrerequisite): boolean {
+  return prerequisite.objectName === undefined;
 }
 
 /** 連鎖表の、プロパティ1つぶん。 */
@@ -228,7 +241,15 @@ export interface DeviceRow extends Device {
   /** その日数の出どころ（尽きると設備が消えるプロパティ）。朽ちないならundefined。 */
   readonly lifetimeProperty: string | undefined;
 
-  /** 設備1つを作るのに要る時間（分）と、産物1個あたりへ按分した時間。 */
+  /**
+   * 設備1つを作るのに要る時間（分）と、産物1個あたりへ按分した時間。**その土地の値段**（stepCostが
+   * 周期へ按分するのと同じ値なので、chain_routesの数字と対になる）。
+   *
+   * **undefinedが理由を持たないのは、理由が島全体の事実だから。** その土地では作れないのかもしれず、
+   * 島のどこでも値段が付かない（ObjectCost.obtainableWithoutCost）のかもしれず、入手経路が無いのかも
+   * しれない。土地ごとの行に島全体の答えを持たせると、1つの行の2つの値が別の問いに答えることになる
+   * （BalanceStats.md「土地ごとの行は可否を判定しない」）。理由を持つのはObjectCostのほう。
+   */
   readonly buildMinutes: number | undefined;
   readonly laborPerUnit: number | undefined;
 }
@@ -270,18 +291,19 @@ export interface ObjectCost {
 
   /**
    * 素材の採集から数えた総労働（分）。出せなければundefined——島のどこにも入手経路が無いか、
-   * 按分できない待ち生産でしか得られない（onlyFromEverlastingDevice）かのどちらか。
+   * 手に入るが値段を付けられない（obtainableWithoutCost）かのどちらか。
    */
   readonly minutes: number | undefined;
   readonly exploreMinutes: number | undefined;
   readonly craftMinutes: number | undefined;
 
   /**
-   * 総コストが出ないのが、**朽ちない設備の待ち生産でしか得られないから**か。真なら入手経路はあり、
-   * 周期とレートは待ち生産表（devices）に出ている——按分できないので値段が付かないだけ
-   * （BalanceStats.md「待って得る生産の数え方」）。
+   * 総コストが出ないのが、**入手経路が無いからではなく値段を付けられないから**か。真なら手に入る
+   * ——出どころを辿ると朽ちない設備の待ち生産に行き着き、按分の分母（寿命）が無い
+   * （BalanceStats.md「待って得る生産の数え方」）。**その産物を材料に取る物も真**で、値段の
+   * 付かなさは連鎖を下流へ伝わるため、**待ち生産表（devices）に行が在るのは設備が直に返す物だけ。**
    */
-  readonly onlyFromEverlastingDevice: boolean;
+  readonly obtainableWithoutCost: boolean;
 
   /** 最も安い作り方（上流→下流）。総コストが出なければ空。 */
   readonly steps: readonly RouteStep[];
@@ -291,11 +313,15 @@ export interface ObjectCost {
 
   /**
    * 総コストが出ないとき、足りていない入力。**どこで詰まっているか**がこれで分かる。
-   * onlyFromEverlastingDeviceの側では空——足りない物は無く、按分できないだけ。
+   * obtainableWithoutCostの側では空——印が立つのは足りない入力が1つも無い工程が在るときだけで、
+   * 同じ判定（Acquisition.missingInputsOf）がこの一覧を組む。
    */
   readonly missing: readonly string[];
 
-  /** 材料は揃うが、要る道具に入手経路が無いか。筏は丸太も縄も作れるが、丸太を切る道具が無い。 */
+  /**
+   * 材料は揃うが、要る道具に入手経路が無いか。筏は丸太も縄も作れるが、丸太を切る道具が無い。
+   * **値段が付かないだけの道具では立たない**（isGap）——手に入る以上、作れないことにはならない。
+   */
   readonly blockedByTool: boolean;
 
   /** 生存に要る労働を引いた残りで割った日数。総コストが出ないか、余剰が無ければundefined。 */
@@ -588,11 +614,11 @@ function objectCosts(
       minutes: cost === undefined ? undefined : totalOf(cost),
       exploreMinutes: cost?.exploreMinutes,
       craftMinutes: cost?.craftMinutes,
-      onlyFromEverlastingDevice: islandWide.everlastingDeviceProducts.has(def.globalId),
+      obtainableWithoutCost: islandWide.obtainableWithoutCost.has(def.globalId),
       steps: [...route].reverse().map((ref) => ({ objectName: ref.def.name, stepName: ref.step.name })),
       prerequisites,
       missing: cost === undefined ? islandWide.missingInputsFor(def.globalId) : [],
-      blockedByTool: cost !== undefined && prerequisites.some(({ minutes }) => minutes === undefined),
+      blockedByTool: cost !== undefined && prerequisites.some(isGap),
       days: cost === undefined || surplusMinutes <= 0 ? undefined : totalOf(cost) / surplusMinutes,
     });
   }
@@ -608,7 +634,7 @@ function gapsOf(islandRoutes: readonly ChainRoute[]): readonly Gap[] {
   for (const route of islandRoutes) {
     if (!route.blocked) continue;
     for (const prerequisite of route.prerequisites) {
-      if (prerequisite.minutes !== undefined) continue;
+      if (!isGap(prerequisite)) continue;
       const blocked = byLabel.get(prerequisite.label) ?? [];
       blocked.push({ steps: route.steps, deltas: route.deltas });
       byLabel.set(prerequisite.label, blocked);
@@ -774,7 +800,7 @@ function buildRoute(
     })),
     devices: routeDevices(codex, route),
     prerequisites: [...prerequisites.values()],
-    blocked: [...prerequisites.values()].some(({ minutes }) => minutes === undefined),
+    blocked: [...prerequisites.values()].some(isGap),
     needsImport: resolved.imported || [...prerequisites.values()].some(({ imported }) => imported),
     // その土地を起点にする経路か。**持ち込みが1つも要らないなら起点はここ**——他の土地の産物は
     // 必ず持ち込みとして解かれるため（stepsAtが他の土地の探索を外している）。休息もここに入る。
@@ -1053,7 +1079,22 @@ interface InputSource {
   readonly imported: boolean;
 }
 
-/** 工程を実行するのに要る、消費されない入力1件。costがundefinedなら、島のどこにも入手経路が無い。 */
+/**
+ * 入力1件を満たす型と、その値段。**costがundefinedでも手に入る**——待ち生産に行き着く型は按分の
+ * 分母（寿命）が無いだけで、工程も設備も在る。
+ */
+interface ObtainableSource {
+  readonly objectGlobalId: number;
+  readonly cost: Cost | undefined;
+
+  /** この土地では用意できず、他の土地から持ち込むことになるか。 */
+  readonly imported: boolean;
+}
+
+/**
+ * 工程を実行するのに要る、消費されない入力1件。objectGlobalIdがundefinedなら島のどこにも入手経路が
+ * 無く、objectGlobalIdは在ってcostがundefinedなら手に入るが値段が付かない（ObtainableSource参照）。
+ */
 interface Prerequisite {
   readonly label: string;
   readonly objectGlobalId: number | undefined;
@@ -1218,10 +1259,14 @@ class Acquisition {
   readonly producedObjects = new Set<number>();
 
   /**
-   * 朽ちない設備の待ち生産でしか得られない型。**値段が付かないのは入手経路が無いからではない**
-   * ——工程も設備も在って、按分の分母（寿命）だけが無い（「待って得る生産の数え方」）。
+   * 手に入るのに値段が付かない型。**値段が付かないのは入手経路が無いからではない**——工程も
+   * 設備も在って、按分の分母（寿命）だけが無い（「待って得る生産の数え方」）。出どころを辿ると
+   * 朽ちない設備の待ち生産に行き着くが、**それを材料に取る工程の産物も同じ**なので、設備が直に
+   * 返す型とは限らない。
+   *
+   * **島全体で1つ**（constructor参照）。土地の文脈は同じ集合を見る。
    */
-  readonly everlastingDeviceProducts = new Set<number>();
+  readonly obtainableWithoutCost: Set<number>;
 
   /**
    * その型を最も安く手に入れる道筋が、他の土地の産物を含むか。**入手連鎖を伝って残す**——
@@ -1251,10 +1296,22 @@ class Acquisition {
     this.codex = codex;
     this.steps = steps;
     this.islandWide = islandWide;
+    // **手に入るかを判定するのは島全体だけ**（BalanceStats.md「土地ごとの行は可否を判定しない」）。
+    // 土地の文脈が答えるのは「この土地を起点にすると何分か」で、そこで値段が出ないのは作れない
+    // からとは限らない——持ち込めば済む型まで「値段が付かない」と数えることになる。
+    this.obtainableWithoutCost = islandWide?.obtainableWithoutCost ?? new Set();
     for (const ref of steps)
       for (const objectGlobalId of expectedSpawns(ref.step).keys()) this.producedObjects.add(objectGlobalId);
     this.lowerCostsUntilStable();
-    this.collectEverlastingDeviceProducts();
+    if (islandWide === undefined) this.collectObtainableWithoutCost();
+  }
+
+  /**
+   * その型を島のどこかで手に入れられるか。**値段が付くかとは別の問い**——待ち生産に行き着く型は
+   * 按分できないので値段が付かないが、待てば手に入る（obtainableWithoutCost）。
+   */
+  obtainable(objectGlobalId: number): boolean {
+    return this.costByObject.has(objectGlobalId) || this.obtainableWithoutCost.has(objectGlobalId);
   }
 
   /**
@@ -1262,7 +1319,7 @@ class Acquisition {
    * 待ち時間は含めない——待っている間に他のことができるため。
    *
    * undefinedになるのは、入力が揃わないときと、**朽ちない設備の周期で按分できない**とき
-   * （everlastingDeviceProducts）。
+   * （obtainableWithoutCost）。
    */
   stepCost(ref: StepRef): StepCost | undefined {
     const resolved = this.inputCost(ref);
@@ -1314,53 +1371,58 @@ class Acquisition {
           ? this.codex.tagNames.getName(input.tagGlobalId)
           : this.codex.objectNames.getName(input.objectGlobalId);
 
-      const local = this.cheapestCandidate(input);
-      // この土地で用意できなければ、他の土地で用意したものとして島全体から取る。
-      const imported = local === undefined ? this.importedInputCost(input) : undefined;
-      const objectGlobalId = local ?? imported?.objectGlobalId;
-      if (objectGlobalId === undefined) {
+      const source = this.obtainableSource(input);
+      if (source === undefined) {
         found.push({ label: declared, objectGlobalId: undefined, cost: undefined, imported: false });
         continue;
       }
 
-      const chosen = this.codex.objectNames.getName(objectGlobalId);
+      const chosen = this.codex.objectNames.getName(source.objectGlobalId);
       found.push({
         label: chosen === declared ? chosen : `${declared} → ${chosen}`,
-        objectGlobalId,
-        cost: imported?.cost ?? this.costByObject.get(objectGlobalId),
-        imported: imported !== undefined,
+        objectGlobalId: source.objectGlobalId,
+        cost: source.cost,
+        imported: source.imported,
       });
     }
     return found;
   }
 
   /**
-   * その型に値段が付かないとき、足りていない入力。**最も惜しい工程**（足りない入力が最も少ない
+   * その型が手に入らないとき、足りていない入力。**最も惜しい工程**（足りない入力が最も少ない
    * 工程）のものを返す——どこで詰まっているかを1つに絞らないと、読み手が辿る先を決められない。
-   * 値段の付く型では空。**朽ちない設備の産物でも空**（everlastingDeviceProducts）——入力は揃って
-   * いるので、詰まっている所は無い。
+   * 手に入る型では空（obtainable）。
    */
   missingInputsFor(objectGlobalId: number): readonly string[] {
-    if (this.costByObject.has(objectGlobalId)) return [];
+    if (this.obtainable(objectGlobalId)) return [];
 
-    let best: string[] | undefined;
+    let best: readonly string[] | undefined;
     for (const ref of this.steps) {
       if (!expectedSpawns(ref.step).has(objectGlobalId)) continue;
 
-      const missing: string[] = [];
-      for (const input of ref.step.inputs) {
-        if (input.kind === 'object' && this.isAlwaysAtHand(input.objectGlobalId)) continue;
-        if (this.cheapestCandidate(input) !== undefined) continue;
-        if (this.importedInputCost(input) !== undefined) continue;
-        missing.push(
-          input.kind === 'tag'
-            ? this.codex.tagNames.getName(input.tagGlobalId)
-            : this.codex.objectNames.getName(input.objectGlobalId),
-        );
-      }
+      const missing = this.missingInputsOf(ref);
       if (best === undefined || missing.length < best.length) best = missing;
     }
     return best ?? [];
+  }
+
+  /**
+   * その工程に足りていない入力（消費する物も道具も）。**空なら、その工程は実行できる。**
+   * 値段が積めるか（stepCost）とは別の問い——道具の時間は値段へ按分しない（#550）が、道具が
+   * 無ければ工程そのものが行えない。
+   */
+  private missingInputsOf(ref: StepRef): readonly string[] {
+    const missing: string[] = [];
+    for (const input of ref.step.inputs) {
+      if (input.kind === 'object' && this.isAlwaysAtHand(input.objectGlobalId)) continue;
+      if (this.obtainableSource(input) !== undefined) continue;
+      missing.push(
+        input.kind === 'tag'
+          ? this.codex.tagNames.getName(input.tagGlobalId)
+          : this.codex.objectNames.getName(input.objectGlobalId),
+      );
+    }
+    return missing;
   }
 
   /**
@@ -1418,7 +1480,33 @@ class Acquisition {
     return isLocation(this.codex, def) || isCharacter(this.codex, def);
   }
 
-  /** 入力1件を満たすのに最も安い型。この文脈でどれも手に入らなければundefined。 */
+  /**
+   * 入力1件を、どの型で・いくらで満たすか。**値段の付く型を先に探し、どこにも無ければ値段の
+   * 付かない型を探す**——時間の出る候補を、時間の出ない候補で押しのけない。どちらも「この土地 →
+   * 持ち込み」の順で見る。島のどこにも手に入る型が無ければundefined。
+   */
+  private obtainableSource(input: CraftingStep['inputs'][number]): ObtainableSource | undefined {
+    const contexts = this.islandWide === undefined ? [this] : [this, this.islandWide];
+
+    for (const priced of [true, false])
+      for (const context of contexts) {
+        const objectGlobalId = priced ? context.cheapestCandidate(input) : context.unpricedCandidate(input);
+        if (objectGlobalId === undefined) continue;
+        return {
+          objectGlobalId,
+          cost: context.costByObject.get(objectGlobalId),
+          imported: context !== this,
+        };
+      }
+    return undefined;
+  }
+
+  /** 入力1件を満たす型のうち、値段は付かないが手に入るもの（obtainableWithoutCost）。 */
+  private unpricedCandidate(input: CraftingStep['inputs'][number]): number | undefined {
+    return this.candidatesOf(input).find((objectGlobalId) => this.obtainableWithoutCost.has(objectGlobalId));
+  }
+
+  /** 入力1件を満たすのに最も安い型。この文脈で値段の付く型がどれも無ければundefined。 */
   private cheapestCandidate(input: CraftingStep['inputs'][number]): number | undefined {
     let best: number | undefined;
     let bestCost: Cost | undefined;
@@ -1501,18 +1589,28 @@ class Acquisition {
   }
 
   /**
-   * 値段が付かないまま残った型のうち、朽ちない設備が待ち生産で返すものを控える
-   * （everlastingDeviceProducts）。**設備が手に入り、入力も揃うものだけ**——どちらかが欠けていれば、
-   * 値段が付かない理由は按分ではなく入手経路のほうにある。
+   * 値段が付かないまま残った型のうち、それでも手に入るものを控える（obtainableWithoutCost）。
+   * 出どころは朽ちない設備の待ち生産で、按分の分母（寿命）だけが無い。
+   *
+   * 見るのは**その工程を実行できるか**（missingInputsOf）だけ——設備も道具もその工程の入力なので、
+   * どれかが欠けていれば、値段が付かない理由は按分ではなく入手経路のほうにある。**塩を材料に取る
+   * 工程の産物も同じ**なので、増えなくなるまで繰り返す（値段の側と同じ形、lowerCostsUntilStable）。
    */
-  private collectEverlastingDeviceProducts(): void {
-    for (const ref of this.steps) {
-      if (ref.cycle?.repeats !== true || ref.cycle.lifetime !== undefined) continue;
-      if (!this.costByObject.has(ref.def.globalId) || this.inputCost(ref) === undefined) continue;
+  private collectObtainableWithoutCost(): void {
+    for (let pass = 0; pass <= this.codex.objects.count; pass++) {
+      let added = false;
+      for (const ref of this.steps) {
+        if (this.missingInputsOf(ref).length > 0) continue;
 
-      for (const [objectGlobalId, count] of expectedSpawns(ref.step))
-        if (count > 0 && !this.costByObject.has(objectGlobalId))
-          this.everlastingDeviceProducts.add(objectGlobalId);
+        for (const [objectGlobalId, count] of expectedSpawns(ref.step)) {
+          if (count <= 0 || this.obtainable(objectGlobalId)) continue;
+          if (this.consumesOwnOutput(ref, objectGlobalId)) continue;
+
+          this.obtainableWithoutCost.add(objectGlobalId);
+          added = true;
+        }
+      }
+      if (!added) return;
     }
   }
 

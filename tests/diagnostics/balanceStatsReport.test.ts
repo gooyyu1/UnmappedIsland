@@ -61,12 +61,14 @@ function amountRecords(amounts: readonly NamedAmount[]): YamlRecord[] {
 }
 
 /**
- * 前提（要る道具・他の土地で用意する材料）。`minutes`がnullなのは**入手経路が無い**ことで、
- * 決まらないのではない。
+ * 前提（要る道具・他の土地で用意する材料）。**`object`が実際に使う型で、nullなら島のどこにも
+ * 入手経路が無い**（内容の穴）。`minutes`のnullは値段が付かないことで、穴とは限らない——朽ちない
+ * 設備の待ち生産でしか得られない道具は、手に入るが按分できない。
  */
 function prerequisiteRecords(prerequisites: readonly RoutePrerequisite[]): YamlRecord[] {
-  return prerequisites.map(({ label, minutes, imported }) => ({
+  return prerequisites.map(({ label, objectName, minutes, imported }) => ({
     label,
+    object: objectName ?? null,
     minutes: rounded(minutes),
     imported,
   }));
@@ -186,7 +188,7 @@ function buildSections(codex: WorldCodex, tables: BalanceTables): readonly YamlR
         explore_minutes: rounded(cost.minutes === undefined ? undefined : (cost.exploreMinutes ?? 0)),
         other_minutes: rounded(cost.minutes === undefined ? undefined : (cost.craftMinutes ?? 0)),
         days: rounded(cost.days, 2),
-        only_from_everlasting_device: cost.onlyFromEverlastingDevice,
+        obtainable_without_cost: cost.obtainableWithoutCost,
         blocked_by_tool: cost.blockedByTool,
         steps: stepsText(cost.steps) || null,
         prerequisites: prerequisiteRecords(cost.prerequisites),
