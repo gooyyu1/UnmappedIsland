@@ -39,11 +39,21 @@ export interface Duration {
   /**
    * 端へ届くまでの日数。**同時に成立しうる条件（8.2節）の組み合わせのうち、最も遅いもの**の値
    * ——生肉は置いておくだけなら10日もつが、暑さのような上乗せが重なればもっと早く傷む。
+   * 生成時のロール（6.2節）は短いほうに出た場合で見る。
    */
   readonly days: number;
 
   /** 同じ組み合わせのうち、最も速いものの日数。組み合わせが1通りなら{@link days}と等しい。 */
   readonly shortestDays: number;
+
+  /**
+   * **生成時のロール（6.2節）が長いほうに出た場合**の日数。ロールを持たない物では{@link days}と
+   * 等しい。骨折は折れ方を1回ロールするので、10.5日と14日の両端を持つ。
+   *
+   * 条件つきの幅（{@link days}〜{@link shortestDays}）とは**別の軸**。1つの幅へ畳むと、条件が
+   * 重なったのか重く出たのかが読めなくなる。
+   */
+  readonly longestDays: number;
 
   /** 端で値が戻って繰り返すか（季節の交代・畑の実り）。偽なら一度きりの長さ。 */
   readonly repeats: boolean;
@@ -85,6 +95,7 @@ export function durationsOf(codex: WorldCodex): readonly Duration[] {
         propertyName: codex.propertyNames.getName(cycle.propertyGlobalId),
         days,
         shortestDays: cycle.shortestMinutes / MINUTES_PER_DAY,
+        longestDays: cycle.longestMinutes / MINUTES_PER_DAY,
         repeats: cycle.repeats,
         destroysSelf: cycle.destroysSelf,
       });

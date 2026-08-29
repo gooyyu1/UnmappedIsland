@@ -58,6 +58,7 @@ function durationRecord(duration: Duration): YamlRecord {
     unit: 'days',
     days: days(duration.days),
     shortest_days: days(duration.shortestDays),
+    longest_days: days(duration.longestDays),
     repeats: duration.repeats,
     destroys: duration.destroysSelf,
   };
@@ -110,6 +111,44 @@ describeYamlReportRegeneration(
 );
 
 describeReportFreshness(REPORT_PATH, 'npm run stats:durations', buildReportFromDefinitions);
+
+/**
+ * **生成時に1回ロールする初期値（6.2節）の上端が、列に載ること。** 骨折は10.5〜14日だが、下端の
+ * 10.50しか出ていなかった（issue #1160）。この表の仕事は逆転の検出なので、上端が見えないと
+ * 「上端でだけ起こる逆転」を緑のまま通す。
+ */
+describe('生成時にロールする長さの幅', () => {
+  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+
+  const severityOf = (objectName: string) =>
+    durationsOf(codex).find(
+      (duration) => duration.objectName === objectName && duration.propertyName === 'severity',
+    );
+
+  it('骨折が、最も軽い折れ方と最も重い折れ方の幅として載る', () => {
+    // severityは1008〜1344 tickを1回引いて-1/tickで減る（injuries.yaml）。条件つきの増減は
+    // 持たないので、幅を作っているのはロールだけ——daysとshortest_daysは一致したままになる。
+    expect(severityOf('fracture')).toMatchObject({
+      days: 1008 / 96,
+      shortestDays: 1008 / 96,
+      longestDays: 1344 / 96,
+    });
+  });
+
+  it('同じロールを持つ他の傷も、上端まで載る', () => {
+    expect(severityOf('snare_laceration')).toMatchObject({ days: 240 / 96, longestDays: 480 / 96 });
+    expect(severityOf('pen_bruise')).toMatchObject({ days: 120 / 96, longestDays: 240 / 96 });
+  });
+
+  it('位相をロールする周期は、幅を持たない', () => {
+    // 罠や畑の見えないタイマーが引くのは待ち時間ではなく位相（TrapSystem.md 2.1節）。値が戻って
+    // 繰り返す周期の長さは戻った量で決まるので、初期値のロールは長さを変えない。
+    const growth = durationsOf(codex).find((duration) => duration.propertyName === 'growth_remaining');
+
+    expect(growth).toMatchObject({ repeats: true });
+    expect(growth?.longestDays).toBe(growth?.days);
+  });
+});
 
 /**
  * **同時には成立しない条件つきの増減で終わる長さが、列から落ちないこと。** どちらも打ち消し合って
