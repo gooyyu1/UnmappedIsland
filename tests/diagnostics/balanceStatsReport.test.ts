@@ -10,6 +10,7 @@ import type {
 } from '../../src/analysis/balanceTables';
 import {
   buildBalanceTables,
+  isGap,
   MINUTES_PER_DAY,
   MINUTES_PER_TICK,
   TICKS_PER_DAY,
@@ -308,5 +309,30 @@ describe('収支の穴', () => {
     const gaps = balanceFromDefinitions().tables.gaps.map((gap) => gap.label);
 
     expect(gaps.filter((label) => label.includes('water_liquid'))).toEqual([]);
+  }, 600_000);
+});
+
+/**
+ * 値段の付かない道具では `imported` が常に偽になる（BalanceStats.md の `imported` の説明、
+ * issue #1217）。
+ * **同梱の定義には、その差が表に出る場面がまだ無い**ことを見る——値段の付かない道具を要る経路が
+ * 現れた時点で、その経路の `imported` は「どこで用意するか」を答えていないことになる。
+ */
+describe('値段の付かない道具', () => {
+  it('前提として要る道具に、値段の付かないものが1つも無い', () => {
+    const { tables } = balanceFromDefinitions();
+    const prerequisites = [
+      ...tables.places.flatMap((place) =>
+        place.properties.flatMap((chains) => chains.routes.flatMap((entry) => entry.route.prerequisites)),
+      ),
+      ...tables.objectCosts.flatMap((cost) => cost.prerequisites),
+    ];
+
+    // 型は決まっているのに値段が付かないものが、値段の付かない道具（穴のほうは型が決まらない）。
+    expect(
+      prerequisites
+        .filter((prerequisite) => !isGap(prerequisite) && prerequisite.minutes === undefined)
+        .map((prerequisite) => prerequisite.label),
+    ).toEqual([]);
   }, 600_000);
 });
