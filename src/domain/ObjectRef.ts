@@ -20,7 +20,8 @@ export type ObjectRefReading =
  * オブジェクトそのものを1つ指す参照（`destroy`の対象・`move`の`subject`と移動先、9.3節・9.6節）。
  * 指し方は3通りで、どれも「1つのオブジェクトへ解決する」という同じ役目を持つ。
  *
- * - **対象キー**（`self`/`parent`/`agent`/`instrument`）: 定義時点で決まっている相手。
+ * - **対象キー**: 定義時点で決まっている相手。**どれを書けるかは、その宣言が置かれた場所が決める**
+ *   （parseObjectTargetRoot。一覧は9.3節が指す14.1節の表）。
  * - **プロパティ**（`{subject, prop}`、subject省略時はself）: その実効値をインスタンスIDとして解釈した
  *   相手。定義時点では決まらず実行時に確定する個体（道が指す土地、`among`が選んだ相手の行き先）を
  *   指す（`ExplorationSystem.md` 3節）。
