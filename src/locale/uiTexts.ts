@@ -94,6 +94,8 @@ export const UI_TEXT_NAMES = [
   'days_range',
   // 日の出の演出に出る日数の見出し（ScreenLayout.md 7.5.6節）。
   'day',
+  // 絞り込みで1枚も残らなかったレーンの枠に重ねる印（ScreenLayout.md 8.1.7節）。
+  'lane_hidden_cards',
   // 死亡・脱出・中断のダイアログ（VitalsSystem.md 6節、GameEndings.md 3節）。
   'death_exhausted',
   'death_by_cause',

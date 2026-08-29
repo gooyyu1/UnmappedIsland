@@ -57,7 +57,7 @@ import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
 import type { LaneCell } from './ui/laneCells';
-import { foundCells } from './ui/laneCells';
+import { foundCells, hiddenOnlyCells } from './ui/laneCells';
 import { Curtain } from './ui/Curtain';
 import { LocationArtLoader } from './ui/LocationArtLoader';
 import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from '../art/informationArt';
@@ -936,17 +936,22 @@ export class PlayScene extends ResponsiveScene {
     return background === undefined ? undefined : laneBackgroundTexture(background);
   }
 
-  /** その場所を映すレーンに並べる枠（slotCells）。 */
+  /**
+   * その場所を映すレーンに並べる枠（slotCells）。絞り込みで1枚も残らなかったレーンには、隠れている
+   * 枚数の印が付く（hiddenOnlyCells）——**どこに絞り込みが効くかを知っているのはShownCards**なので、
+   * 絞り込みの効かない場所（手持ち・子ウィンドウ）では隠れている枚数が0になり、印も付かない。
+   */
   private cellsAt(place: CardPlace): readonly LaneCell[] {
     const stacks = this.shown.stacksAt(place);
     const slot = this.view.slotViewOf(place);
-    return slotCells(
+    const cells = slotCells(
       slot,
       stacks,
       this.laneCardsWithEdgeActions(stacks),
       this.materialCycle,
       (objectGlobalId) => this.view.cardOfType(objectGlobalId),
     );
+    return hiddenOnlyCells(cells, this.shown.hiddenAt(place));
   }
 
   /**

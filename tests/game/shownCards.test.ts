@@ -261,6 +261,46 @@ describe('絞り込み（ScreenLayout.md 8.1.6節）', () => {
     expect(shown.stacksAt('windowCard'), '借りた1枚の枠').toEqual([borrowed]);
     expect(shown.stacksAt(place('items')), '絞り込みが効くのは元のレーンのほう').toEqual([]);
   });
+
+  it('隠している枚数を答える（ScreenLayout.md 8.1.7節）', () => {
+    // 絞り込みで空になったレーンを、本当に空のレーンと言い分けるための数。**絞り込み前の並びを
+    // 持っているのはここだけ**なので、レーンの側で引き直さない。
+    const shown = screen(
+      {
+        fixtures: [stack(place('fixtures'), [1]), stack(place('fixtures'), [2])],
+        items: [stack(place('items'), [3])],
+        hand: [stack(place('hand'), [4])],
+      },
+      { filter: filterMatching([1]) },
+    );
+
+    expect(shown.hiddenAt(place('fixtures')), '当たらない1枚が隠れる').toBe(1);
+    expect(shown.hiddenAt(place('items')), '1枚も残らないレーン').toBe(1);
+    expect(shown.hiddenAt(place('hand')), '絞り込みの効かないレーン').toBe(0);
+  });
+
+  it('束は何個入っていても1枚として数える', () => {
+    // 数えるのはレーンに並ぶ単位（札）で、その中の個体数ではない。
+    const shown = screen({ items: [stack(place('items'), [1, 2, 3])] }, { filter: filterMatching([]) });
+
+    expect(shown.hiddenAt(place('items'))).toBe(1);
+  });
+
+  it('何も選んでいなければ、隠している札は無い', () => {
+    const shown = screen({ items: [stack(place('items'), [1])] });
+
+    expect(shown.hiddenAt(place('items'))).toBe(0);
+  });
+
+  it('貸し出し中の枠に残る印も、隠れているぶんに数える', () => {
+    // 印（objectsが空）は当たりようがないので絞り込みが消す。レーンが空に見えているのは絞り込みの
+    // せいで、「すべて」を押せばその枠は戻る——本当に空のレーンとは違う。
+    const shown = screen({ items: [stack(place('items'), [1])] }, { filter: filterMatching([1]) });
+    borrow(shown, stack(place('items'), [1]));
+
+    expect(shown.stacksAt(place('items')), '絞り込みが効いている間は何も出ない').toEqual([]);
+    expect(shown.hiddenAt(place('items'))).toBe(1);
+  });
 });
 
 describe('貸し借りの流れ（Windows.md 1.1節）', () => {
