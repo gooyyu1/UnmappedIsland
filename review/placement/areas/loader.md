@@ -76,13 +76,13 @@
 | src/loader/inProgressObjects.ts | （`export { IN_PROGRESS_TAG } from '../domain/RecipeDef'` L13、インベントリ外） | 可視性 | 5 | domain の定数に loader 経由の第二の入口を作っているが、その入口を使う箇所は1つも無い | 削除（`domain/RecipeDef` から直に読む） | | |
 | src/loader/LoadReport.ts | `LOAD_REPORT` | 配置 | 4 | アプリ全体で1つの可変シングルトンが、記録の型を定義するファイルに同居している。`loadDefinitions` は `report` を引数で受けるので、誰が1つ持つかは組み立ての判断 | `src/game/BootScene.ts` と `src/codex-viewer/CodexSource.ts` が共有する組み立て側（`src/main.ts` / `src/codex-viewer/main.ts`） | ゲームとビューアという2つの入口が同じ実体を必要とするのに、両者を束ねる組み立ての場が存在しない。モジュール変数がその代わりになっている | |
 | src/loader/LoadReport.ts#LoadReport | `add()` | 所属 | 3 | 記録を溜めるだけでなく `console.warn` も行う。出力先の選択は記録の責務ではない | 出力は呼び出し側（組み立て）か、記録を読む側へ | | ✔ |
-| src/loader/YamlLoadError.ts ／ src/loader/yamlMapping.ts | `YamlLoadError`、および `yamlMapping.ts` の全21宣言 | 配置 | 3 | 世界の語彙を1つも持たない汎用YAMLアクセスで、`src/locale/Localization.ts` と `src/scenario/Scenario.ts` も loader へ手を伸ばして使っている | `src/util/yaml.ts` ／ `src/util/YamlLoadError.ts`（Layers.md 4節の「層の外」） | | |
+| src/loader/YamlLoadError.ts ／ src/loader/yamlMapping.ts | `YamlLoadError`、および `yamlMapping.ts` の全21宣言 | 配置 | 3 | 世界の語彙を1つも持たない汎用YAMLアクセスで、`src/locale/Localization.ts` と `src/scenario/Scenario.ts` も loader へ手を伸ばして使っている | `src/util/yaml.ts` ／ `src/util/YamlLoadError.ts`（CodeStructure.md 1節の「層の外」） | | |
 | src/loader/errorMessage.ts | `messageOf()` | 配置 | 3 | 例外から文字列を取り出すだけの汎用関数で、YAMLもロードも知らない。`src/game/errorReport.ts` には fallback 付きの同名の別実装がある | `src/util/errors.ts`（game 側の実装と統合） | | |
 | src/loader/axisVariants.ts | `AxisDecl` / `AxisDecl.values` | 所属 | 3 | フィールド1つだけの型で、`Array<[string, AxisDecl]>` のタプル要素にしかならない。プログラム上の都合だけで存在する | 型ごと畳んで `Array<[string, readonly ObjectDef[]]>` に | | |
 | src/loader/parseActiveEffects.ts | `oneOrMany<T>()` | 配置 | 3 | 「1個でも配列でも受ける」というYAMLの読み方一般の話で、active効果と関係が無い | `src/loader/yamlMapping.ts` | | |
 | src/loader/loadDefinitions.ts#Definitions | `files` | 所属 | 2 | 「実際に読んだ定義YAMLのファイル名」は定義そのものではなく、読み込みの診断情報。プログラム上、外したパックを見分けるために要る | — | | |
 | src/asset-pack/AssetPack.ts#AssetPack | `worldCodexTexts()` `localeText()` | 所属 | 4 | ZIP内の `world-codex/` と `locale/<言語>.yaml` という**読む側の規約**を、在庫表であるパックが知っている。同じ規約が同梱ぶん側（`loadWorldCodex.ts` の glob、`locale/Localization.ts`）にもあり、2箇所が暗黙に一致すべき状態になっている | `src/loader/loadWorldCodex.ts` ／ `src/locale/Localization.ts`（パックへはパス一覧と中身だけを聞く） | `files` と `text()` が private で、パス→中身を引く口が外に無い | |
-| src/asset-pack/AssetPack.ts#AssetPack | `objectArt()` `backgroundArt()` | 所属 | 4 | 「どのファイルがどの絵か」は Layers.md 3節が素材（`src/art/`）の仕事と明示している規約。`objects/<識別子>.png`・`backgrounds/<持ち主>_<スロット>_<用途>.png` をパックが知っている | `src/art/objectArt.ts` ／ `src/art/backgroundArt.ts` | Blob URL のキャッシュ（`urls`）と `url()` が private なので、パス→URL を作れるのは `AssetPack` の中だけ | |
+| src/asset-pack/AssetPack.ts#AssetPack | `objectArt()` `backgroundArt()` | 所属 | 4 | 「どのファイルがどの絵か」は CodeStructure.md 3節が素材（`src/art/`）の仕事と明示している規約。`objects/<識別子>.png`・`backgrounds/<持ち主>_<スロット>_<用途>.png` をパックが知っている | `src/art/objectArt.ts` ／ `src/art/backgroundArt.ts` | Blob URL のキャッシュ（`urls`）と `url()` が private なので、パス→URL を作れるのは `AssetPack` の中だけ | |
 | src/asset-pack/AssetPack.ts#AssetPack | `urls` | 所属 | 2 | 同じ絵を2度要求されたときに1つのBlob URLで済ませるためのキャッシュ | — | | |
 | src/asset-pack/install.ts | `assetPackMatches()` | 所属 | 3 | 引数 `loadsAssetPack` は `Settings` の値で、この関数は設定と現状の突き合わせという `SettingsScene` の判断そのもの。`installedAssetPack()` が既に公開されているので、ここに置いて守っているものは何も無い | `src/game/SettingsScene.ts` | | |
 | src/asset-pack/install.ts | `SAMPLE_PACK_URL` `installed` | 所属 | 2 | 起動時に1回だけ入るモジュール状態と、その取得先。プログラム上必要な配線 | — | | |
@@ -96,7 +96,7 @@
 
 ## ファイル配置（層=配置）についての所見
 
-- `src/loader/` は Layers.md 4節で「世界」の一部（`src/domain/` の定義を読む側）と位置づけられているが、実際には**世界の語彙を1つも知らない汎用YAML基盤**（`yamlMapping.ts` 21宣言・`YamlLoadError.ts`・`errorMessage.ts`）を抱えており、`src/locale/` と `src/scenario/` がそれを使うために loader へ import している。層の外の道具（`src/util/`）へ出せば、この2本の import は消える。担当範囲282宣言のうち23がこれに当たり、判定3の38件の大半を占める。
-- `src/asset-pack/` は Layers.md の在処の表に載っていない。`AssetPack` が世界（`world-codex/`）・ことば（`locale/`）・素材（`objects/`・`backgrounds/`）3層ぶんのファイル規約を1クラスで抱えているのが、層の表に書けない理由そのもの。パックを「パス一覧＋パス→中身／URL」に絞り、規約は各層側へ戻せば、`src/asset-pack/` は `zip.ts` と同じ「層の外の道具」として置ける。
+- `src/loader/` は CodeStructure.md 1節で「世界」の一部（`src/domain/` の定義を読む側）と位置づけられているが、実際には**世界の語彙を1つも知らない汎用YAML基盤**（`yamlMapping.ts` 21宣言・`YamlLoadError.ts`・`errorMessage.ts`）を抱えており、`src/locale/` と `src/scenario/` がそれを使うために loader へ import している。層の外の道具（`src/util/`）へ出せば、この2本の import は消える。担当範囲282宣言のうち23がこれに当たり、判定3の38件の大半を占める。
+- `src/asset-pack/` は CodeStructure.md の在処の表に載っていない。`AssetPack` が世界（`world-codex/`）・ことば（`locale/`）・素材（`objects/`・`backgrounds/`）3層ぶんのファイル規約を1クラスで抱えているのが、層の表に書けない理由そのもの。パックを「パス一覧＋パス→中身／URL」に絞り、規約は各層側へ戻せば、`src/asset-pack/` は `zip.ts` と同じ「層の外の道具」として置ける。
 - `RawPatch.ts` は patch宣言のデータ型（8宣言）と patch適用エンジン（11宣言）が同居している。`parseCommon.ts` も、型マッチ規則・数値リテラル・シンボル判定という互いに無関係な3つの主題を「Common」の名前で束ねている。どちらもファイル分割で片づく。
 - `src/loader/inProgressObjects.ts` と `axisVariants.ts`（生成器）は、`GeneratedObjectDefs` という1つの形で答えるところまで揃っており、配置としては妥当。問題は名前規約の export だけ。

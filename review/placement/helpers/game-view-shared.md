@@ -54,7 +54,7 @@ private フィールドと private readonly は対象外（状態であって手
 | src/game/view/ShownCards.ts | `awaitingStack` | `ObjectCardStack`（`PlayScreenView.ts`） | 「顔だけで操作を持たない束」を作る口。B は interface なので構築の手立てを持たず、A が7フィールドを手で並べる | 消える（`PlayScreenView.ts` へ移る。A からは消える） | B が interface で、`game/ui/cardFace.ts` の `cardFace` は `CardContent` までしか作れない（`ObjectCardStack` は映しの型なので `game/ui/` からは組めない） |
 | src/game/view/ShownCards.ts | `awaitingMark` | `CardContent` / `game/ui/cardFace.ts` | 同上。`cardFace` の隣に「identity を空にした印」が無い | 消える（`cardFace.ts` へ移る） | 同上 |
 | src/game/looks/PlayScreenLayout.ts | `horizontalSeparatorAt`, `verticalSeparatorAt` | `src/ui/Rect.ts` | `Rect` は4フィールドの interface で**演算を1つも持たない**。「span の中心に幅 h の帯」は純粋な幾何 | 消える | 無し |
-| src/game/looks/theme.ts | `gaugeEndColor` | `domain/PropertyDef.GaugeEnd` | **足りていない。が、足すべきでない**（色は意匠の語彙で、世界が持ってはいけない） | 消えない。ここに在るのが正しい | 層の境界そのもの（Layers.md 3節）。真の判定3 |
+| src/game/looks/theme.ts | `gaugeEndColor` | `domain/PropertyDef.GaugeEnd` | **足りていない。が、足すべきでない**（色は意匠の語彙で、世界が持ってはいけない） | 消えない。ここに在るのが正しい | 層の境界そのもの（CodeStructure.md 3節）。真の判定3 |
 | src/ui/shapes.ts | `fittingRadius` | Phaser `Graphics.fillRoundedRect` | 幅が丸みの2倍より狭いと弧が矩形の外へ膨らむ（Phaser の不具合）。B に丸みのクランプが無い | 消えない | B が外部ライブラリ。`src/ui/` は「Phaser の足りない分・間違っている分を埋める」場所なので、これは正しい配置 |
 | src/ui/shapes.ts | `strokeDashedBox`, `dashedLine` | Phaser `Graphics` | 破線のストロークが無い | 消えない | 同上 |
 | src/ui/nineSlice.ts | `addSliceFrames` | Phaser `NineSlice` / `Textures` | `NineSlice` が Canvas レンダラを持たない（`renderCanvas` が NOOP） | 消えない | 同上 |

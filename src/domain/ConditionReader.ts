@@ -42,7 +42,7 @@ export interface ConditionReader {
 
 /**
  * 自分が何を宣言しているかを読み上げられる条件。入れ子の子もこの形で渡す
- * （docs/engine/Layers.md 6節「読み下せる宣言だけを外へ出す」）。
+ * （docs/CodeStructure.md 5節「読み下せる宣言だけを外へ出す」）。
  */
 export interface ConditionDeclaration {
   read(reader: ConditionReader): void;

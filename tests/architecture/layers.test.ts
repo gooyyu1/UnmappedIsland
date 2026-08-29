@@ -3,7 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * 層の境界の検査（docs/engine/Layers.md 1節）。
+ * 層の境界の検査（docs/CodeStructure.md 1節）。
  *
  * **知らないと言っている層が、本当に知らないままか**を見る。import を辿るので、間に何本挟まって
  * いても見つかる——`ShownCards` が `Card.ts` の値を1つ輸入した瞬間に落ちる、という粒度。
@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(__dirname, '../..');
 
-/** Phaserへ到達してはいけない置き場（Layers.md 4節）。 */
+/** Phaserへ到達してはいけない置き場（CodeStructure.md 1節）。 */
 const PHASER_FREE = [
   'src/domain',
   'src/loader',
@@ -30,7 +30,7 @@ const PHASER_FREE = [
 ];
 
 /**
- * 解析層（`src/analysis`）へ到達してはいけない置き場（Layers.md 6節）。定義から数値を導く近似の
+ * 解析層（`src/analysis`）へ到達してはいけない置き場（CodeStructure.md 5節）。定義から数値を導く近似の
  * 置き場所なので、**ドメインと遊びの本体はその存在を知らない**。
  */
 const ANALYSIS_FREE = ['src/domain', 'src/loader', 'src/locale', 'src/game', 'src/ui'];
@@ -46,7 +46,7 @@ const VIEWER_FREE = ['src/domain', 'src/loader', 'src/locale', 'src/game', 'src/
 /** 効果と条件の木そのもの。組み立ててよいのはドメインと、YAMLから作るローダーだけ。 */
 const TREE_MODULES = ['src/domain/ActiveEffect.ts', 'src/domain/ConditionNode.ts'];
 
-/** 宣言を読み上げてもらう側の置き場（Layers.md 6節）。 */
+/** 宣言を読み上げてもらう側の置き場（CodeStructure.md 5節）。 */
 const TREE_READERS = ['src/analysis', 'src/codex-viewer'];
 
 /** そのディレクトリ以下の.tsファイル（リポジトリ相対）。 */
@@ -64,7 +64,7 @@ function sourcesIn(dir: string): string[] {
  * そのファイルが**実行時に**読み込む先（相対指定は解決して、パッケージ名はそのまま）。
  *
  * `import type` は数えない。契約（`CardContent`・`StatusContent` ほか）を定めるのは部品側で、映しは
- * それを型として輸入する（Layers.md 4節）——型はビルドで消えるので、Phaserは付いてこない。
+ * それを型として輸入する（CodeStructure.md 1節）——型はビルドで消えるので、Phaserは付いてこない。
  */
 function importsOf(rel: string, includeTypes = false): readonly string[] {
   const source = readFileSync(join(ROOT, rel), 'utf-8');
@@ -131,7 +131,7 @@ describe('層の境界', () => {
   });
 
   it('src/ui はこのゲームへ到達しない', () => {
-    // 汎用の部品だけを置く場所（Layers.md 4節）。ゲームの語彙も意匠も知らないので、ここにある
+    // 汎用部品だけを置く場所（CodeStructure.md 1節）。ゲームの語彙も意匠も知らないので、ここにある
     // ものはこのゲームを消しても変わらない。
     expect(
       routesFrom('src/ui', (target) => target.startsWith('src/game/')),

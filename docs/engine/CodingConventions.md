@@ -6,7 +6,7 @@
 
 ## ファイルと命名
 
-- どのフォルダへ置くかは、そのファイルが答えることで決まる（[`Layers.md`](./Layers.md) 1節）。
+- どのフォルダへ置くかは、そのファイルが答えることで決まる（[`CodeStructure.md`](../CodeStructure.md) 1節）。
 - ファイル名は主要エクスポートの名前に一致させる。クラス・型が主ならPascalCase（`PropertyValue.ts`）、
   関数群のモジュールならcamelCase（`yamlMapping.ts`）。
 - ディレクトリ名は小文字で、複数語はケバブケース（`domain/generation`・`asset-pack`・`assets/world-codex`）。

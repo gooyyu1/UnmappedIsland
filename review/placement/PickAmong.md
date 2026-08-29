@@ -69,7 +69,7 @@ conditions の `{subject, slot, matches}`（`slot_content`、14節）が「そ�
 - `PickCandidateDef` に `among` を持たせ、重み評価と効果適用を `withPicked` した文脈で行う。
 - 読み上げ（`EffectReader.pick`）へは、`among` の宣言（集合・絞り込み・重み）をそのまま渡す。
   解析側は「どれが選ばれるか」を定義だけからは決められないので、**近似の置き方は読み手が決める**
-  （Layers.md 6節の分担のまま）。
+  （CodeStructure.md 5節の分担のまま）。
 
 ## 4. これで消えるもの
 
