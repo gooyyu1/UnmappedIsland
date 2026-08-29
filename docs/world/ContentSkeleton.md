@@ -254,6 +254,9 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 塩蔵は [`SurvivalItems.md`](./SurvivalItems.md) 9節）。**まだ宣言が無いのは、水を溜める設備と、干し場・
 燻し小屋の2つです。**
 
+【いつか: 穀物】 年単位で保つ食材は、今ある保存がどれも20日で頭打ちのまま回るので後から足します
+（[`Someday.md`](../Someday.md)）。
+
 ## 5. 終盤に要るもの
 
 **出航までにプレイヤーが到達している必要があるのは、5つです。**
