@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { tryAdvanceCrafting, spawnInProgressObject } from '../../src/domain/crafting';
+import type { RecipeDef } from '../../src/domain/RecipeDef';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
@@ -81,6 +82,44 @@ describe('tools.yamlの道具定義', () => {
 
     expect(axe.def.tags).toContain(codex.tagNames.getId('cutting_tool'));
     expect(spear.def.tags, '槍では解体できない').not.toContain(codex.tagNames.getId('cutting_tool'));
+  });
+
+  it('突き銛は釣りの道具で、獣を突く武器ではない', () => {
+    const harpoon = codex.objects.get(codex.objectNames.getId('fishing_harpoon'));
+
+    expect(harpoon.tags).toContain(codex.tagNames.getId('tool'));
+    // 釣りの手（voyage.yamlのspear_shoal・spear_sea）はこのタグで探す（docs/world/Voyage.md 3.9.4節）。
+    expect(harpoon.tags).toContain(codex.tagNames.getId('fishing_tool'));
+    expect(harpoon.tags, '獣を突く道具ではない').not.toContain(codex.tagNames.getId('weapon'));
+  });
+
+  it('突き銛の材料と工程は石斧と同じ（新しい素材を足していない）', () => {
+    // **島の産物から筏・帆へ届く鎖の上に、素材を足さずに載る**（docs/world/Voyage.md 3.9.4節）。
+    // 繊維で直に締める形にすれば柄付けの標準が2つ並び、長い棒を使えば槍と一緒に止まる。
+    const recipeOf = (name: string): RecipeDef => {
+      const recipes = codex.objects.get(codex.objectNames.getId(name)).recipesProducingThis;
+      expect(recipes, `'${name}' のレシピは1つ`).toHaveLength(1);
+      return recipes[0];
+    };
+    const materialsOf = (recipe: RecipeDef): string[] =>
+      Array.from({ length: codex.objects.count }, (_, globalId) => codex.objects.get(globalId))
+        .filter((def) => recipe.requires(def))
+        .map((def) => def.name)
+        .sort();
+
+    const harpoon = recipeOf('fishing_harpoon');
+    const axe = recipeOf('stone_axe');
+
+    expect(materialsOf(harpoon), '太い枝・尖った石・紐の3つ').toEqual([
+      'cord',
+      'sharp_stone',
+      'thick_branch',
+    ]);
+    expect(materialsOf(harpoon), '石斧と同じ材料').toEqual(materialsOf(axe));
+    expect(
+      harpoon.steps.map((step) => step.durationMinutes),
+      '柄をこしらえる・穂先を締め上げるの2工程も同じ',
+    ).toEqual(axe.steps.map((step) => step.durationMinutes));
   });
 
   it('石へ石をドラッグすると、割られた側が尖った石になり、1時間が経つ', () => {

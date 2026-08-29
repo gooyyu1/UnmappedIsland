@@ -568,6 +568,13 @@ object_texts:
   bone_needle:
     display_name: 骨針
     description: 小さな骨を削って穴を開けた縫い針。皮を縫い合わせるのに要る。使っても減らない。
+  fishing_harpoon:
+    display_name: 突き銛
+    description: 枝の先へ石の穂先を締め上げた漁具。海の上で魚を突くのに要る。稀に魚に持って行かれる。
+    recipes:
+      hafted:
+        display_name: 柄を付ける
+        description: 枝を削って柄をこしらえ、穂先を溝へ据えて紐で締め上げる。
 
   # 葉を編む連鎖（weaving.yaml）。
   palm_frond:
@@ -816,6 +823,9 @@ object_texts:
       set_sail:
         display_name: 航海に出る
         description: 乗り込んで、この海岸が面した海へ漕ぎ出す。出た海岸へはいつでも引き返せる。
+      spear_sea:
+        display_name: 海へ突く
+        description: 筏の縁から真下の海を突く。群れが居ないので当たりは薄く、丸一日粘っても数切れ。
   rawhide_sail:
     display_name: 生皮の帆
     description: 生皮を縫い合わせて枠へ張った帆。筏に組み込めば、風をつかんで進みが増す。
@@ -834,9 +844,9 @@ object_texts:
     display_name: 魚の群れ
     description: 水面まで上がってきた群れ。居るあいだだけ獲れて、しばらくすると去る。
     interactions:
-      net_fish:
-        display_name: 掬う
-        description: 群れの中へ手を入れて、一匹すくい上げる。
+      spear_shoal:
+        display_name: 群れへ突く
+        description: 密に集まった群れへ銛を入れる。よく当たるが、稀に魚に持って行かれる。
   seabird_flock:
     display_name: 海鳥の群れ
     description: 岩に集まって巣を作る鳥。人を知らないので手が届く。
@@ -1271,6 +1281,7 @@ reason_texts:
   too_full: 腹がいっぱいで、これ以上は入らない。
   not_on_coast: 海に面していない土地からは漕ぎ出せない。
   at_sea: 海の上では降りられない。
+  not_afloat: 岸に繋いだ筏の下に、突く魚は居ない。
   no_vessel_here: この海区に筏がない。渡る乗り物が要る。
   no_vessel_ashore: 小島に筏がない。漕ぎ出す乗り物が要る。
   not_ashore: 筏から降りていない。島は歩いて回るしかない。
