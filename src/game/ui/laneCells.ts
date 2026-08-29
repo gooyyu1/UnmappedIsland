@@ -65,19 +65,20 @@ export function foundCells(found: readonly CardContent[]): readonly LaneCell[] {
 }
 
 /**
- * 絞り込みで1枚も残らなかったレーンの枠（ScreenLayout.md 8.1.7節）。**先頭の枠に隠れている枚数を
- * 重ねる**ので、何も置いていないレーン（受け皿の空枠だけが出る）と見分けが付く。
+ * 絞り込みが隠している枚数を重ねた枠（ScreenLayout.md 8.1.7節）。**残っている札の有無によらず、
+ * 1枚でも隠していれば出す**——見えている札がレーンの全部なのかどうかは、そこを見ないと分からない。
  *
- * **印が付くのは1枚も残っていないときだけ。** 「なぜ空なのか」という問いは、札が見えているレーンには
- * 立たない——絞り込みを選んでいることはボタンが言っている。
- *
- * 重ねるのは先頭の1枠。空枠が複数あっても、空になった理由は1度言えば足りる。
+ * 重ねるのは**先頭の空き枠**の1つ。空き枠は札の後ろに出るので、「この先に隠れているものがN枚ある」と
+ * 読める並びになる。空き枠が1つも無い並び（枠数の決まったスロットが埋まっている）では末尾の枠に
+ * 重ねる——そこが並びの終わりで、続きがあることを言う場所として最も近い。
  */
-export function hiddenOnlyCells(cells: readonly LaneCell[], hidden: number): readonly LaneCell[] {
-  if (hidden === 0 || cells.some((cell) => cell.card !== undefined)) return cells;
+export function hiddenCountCells(cells: readonly LaneCell[], hidden: number): readonly LaneCell[] {
+  if (hidden === 0) return cells;
 
+  const empty = cells.findIndex((cell) => cell.card === undefined);
+  const at = empty === -1 ? cells.length - 1 : empty;
   const overlay = uiText('lane_hidden_cards', { count: String(hidden) });
-  return cells.map((cell, index) => (index === 0 ? { ...cell, overlay } : cell));
+  return cells.map((cell, index) => (index === at ? { ...cell, overlay } : cell));
 }
 
 /**

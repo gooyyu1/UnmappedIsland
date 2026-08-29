@@ -152,8 +152,19 @@ const STACK_COUNT_SIZE = 24;
  */
 const CELL_HIGHLIGHT_WIDTH = SIZE.gap / 2;
 
-/** カードへ重ねる文字の大きさ・板の内側の余白・紙の下端からの浮かせ方（u単位）。 */
-const CELL_OVERLAY_SIZE = 40;
+/**
+ * カードへ重ねる文字の大きさ・板の内側の余白・紙の下端からの浮かせ方（u単位）。
+ *
+ * 大きさの上限は**板が紙からはみ出さないこと**で決まる。板の幅は文字の幅＋余白×2（makeBadge）、
+ * 紙の幅は`SIZE.cardWidth - PAPER_INSET * 2` = 200u なので、字幅をem比 w で見て
+ * `w × 大きさ + CELL_OVERLAY_PADDING × 2 ≤ 200`。重ねる文字で最も長いのは隠れ枚数（`隠れ12枚`＝
+ * 全角3字＋数字2桁で w ≒ 4.2）で、上限は (200 − 28) / 4.2 ≒ 41u。桁が1つ増えると（`隠れ123枚`、
+ * w ≒ 4.7）上限は 36u まで下がる。
+ *
+ * 採るのは 24u——名前（16u）と並べても浮かない範囲で最も大きい、スタック数（STACK_COUNT_SIZE）と
+ * 同じ大きさ。4桁（w ≒ 5.3、155u）まで余る。
+ */
+const CELL_OVERLAY_SIZE = 24;
 const CELL_OVERLAY_PADDING = 14;
 const CELL_OVERLAY_BOTTOM = 20;
 const CELL_OVERLAY_PLATE_ALPHA = 0.72;
