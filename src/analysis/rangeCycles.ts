@@ -177,6 +177,26 @@ export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): 
   return [...byProperty.values()];
 }
 
+/**
+ * その型のtick毎の値を外から動かす物（ExternalTickDelta参照）。**枠の受け入れが唯一の手掛かり**——
+ * 炉の火の枠が`roastable`を受けるから炉は肉を焼けるし、獲物の怪我の枠が`injury`を受けるから
+ * 刺さった傷は血を奪える。
+ */
+export function externalTickDeltasOn(
+  def: ObjectDef,
+  defs: readonly ObjectDef[],
+): readonly ExternalTickDelta[] {
+  const found: ExternalTickDelta[] = [];
+  for (const source of defs) {
+    if (source.globalId === def.globalId) continue;
+    if (source.slotDefs.some((slot) => slot.acceptsAnywhere(def)))
+      found.push(...externalTickDeltasOf(source, 'child'));
+    if (def.slotDefs.some((slot) => slot.acceptsAnywhere(source)))
+      found.push(...externalTickDeltasOf(source, 'parent'));
+  }
+  return found;
+}
+
 /** そのプロパティが自分のtick毎の持続効果で動く量の幅（tickAmountsOf）。 */
 interface TickAmounts {
   /** 常時効く分だけの合計。条件つきの増減（8.2節）を含まない。 */
