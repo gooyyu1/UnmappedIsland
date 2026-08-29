@@ -7,60 +7,31 @@ meta:
   - {seeds: 2000, islands: 2000, defined_locations: 10, goals: 3}
 
 island_departure:
-  - {measure: locations, unit: locations, mean: 8.48, min: 5.00, median: 9.00, p95: 10.00, max: 10.00, sd: 1.12, n: 2000}
+  - {measure: locations, unit: locations, mean: 8.41, min: 5.00, median: 9.00, p95: 10.00, max: 10.00, sd: 1.16, n: 2000}
 
 island_missing_location:
   - {location: sandy_beach, unit: percent, share: 1.80}
   - {location: rocky_coast, unit: percent, share: 0.00}
   - {location: cliff_coast, unit: percent, share: 44.90}
-  - {location: grassland, unit: percent, share: 0.65}
-  - {location: forest, unit: percent, share: 0.35}
-  - {location: jungle, unit: percent, share: 51.95}
-  - {location: rocky_field, unit: percent, share: 15.10}
-  - {location: wasteland, unit: percent, share: 13.90}
-  - {location: mountainside, unit: percent, share: 23.05}
+  - {location: grassland, unit: percent, share: 1.35}
+  - {location: forest, unit: percent, share: 0.00}
+  - {location: jungle, unit: percent, share: 51.35}
+  - {location: rocky_field, unit: percent, share: 14.40}
+  - {location: wasteland, unit: percent, share: 18.60}
+  - {location: mountainside, unit: percent, share: 26.55}
   - {location: mountain_peak, unit: percent, share: 0.00}
 
 island_unreached:
-  - {unit: percent, share: 0.30}
+  - {unit: percent, share: 0.00}
 
 island_goal_unreached:
-  - {object: raft, goal_tag: boat, unit: percent, share: 0.30}
-  - {object: rawhide_sail, goal_tag: sail, unit: percent, share: 0.30}
-  - {object: fishing_harpoon, goal_tag: fishing_tool, unit: percent, share: 0.30}
+  - {object: raft, goal_tag: boat, unit: percent, share: 0.00}
+  - {object: rawhide_sail, goal_tag: sail, unit: percent, share: 0.00}
+  - {object: fishing_harpoon, goal_tag: fishing_tool, unit: percent, share: 0.00}
 
 island_goal_hops:
-  - {object: raft, goal_tag: boat, measure: hops, unit: hops, mean: 9.00, min: 9.00, median: 9.00, p95: 9.00, max: 9.00, sd: 0.00, n: 1994}
-  - {object: rawhide_sail, goal_tag: sail, measure: hops, unit: hops, mean: 8.00, min: 8.00, median: 8.00, p95: 8.00, max: 8.00, sd: 0.00, n: 1994}
-  - {object: fishing_harpoon, goal_tag: fishing_tool, measure: hops, unit: hops, mean: 7.00, min: 7.00, median: 7.00, p95: 7.00, max: 7.00, sd: 0.00, n: 1994}
+  - {object: raft, goal_tag: boat, measure: hops, unit: hops, mean: 9.00, min: 9.00, median: 9.00, p95: 9.00, max: 9.00, sd: 0.00, n: 2000}
+  - {object: rawhide_sail, goal_tag: sail, measure: hops, unit: hops, mean: 8.00, min: 8.00, median: 8.00, p95: 8.00, max: 8.00, sd: 0.00, n: 2000}
+  - {object: fishing_harpoon, goal_tag: fishing_tool, measure: hops, unit: hops, mean: 7.00, min: 7.00, median: 7.00, p95: 7.00, max: 7.00, sd: 0.00, n: 2000}
 
-island_unreached_need:
-  - {object: abaca, unit: percent, share: 0.30}
-  - {object: banana_plant, unit: percent, share: 0.30}
-  - {object: banana_stem, unit: percent, share: 0.30}
-  - {object: black_reef, unit: percent, share: 0.30}
-  - {object: broadleaf_tree, unit: percent, share: 0.30}
-  - {object: cord, unit: percent, share: 0.30}
-  - {object: fishing_harpoon, unit: percent, share: 0.30}
-  - {object: forest, unit: percent, share: 0.30}
-  - {object: jungle, unit: percent, share: 0.30}
-  - {object: log, unit: percent, share: 0.30}
-  - {object: plant_fiber, unit: percent, share: 0.30}
-  - {object: raft, unit: percent, share: 0.30}
-  - {object: rawhide_sail, unit: percent, share: 0.30}
-  - {object: reef_shallows, unit: percent, share: 0.30}
-  - {object: rope, unit: percent, share: 0.30}
-  - {object: stone_axe, unit: percent, share: 0.30}
-  - {object: wreck_waters, unit: percent, share: 0.30}
-  - {object: yarn, unit: percent, share: 0.30}
-  - {object: gore_wound, unit: percent, share: 0.10}
-  - {object: monkey, unit: percent, share: 0.10}
-  - {object: monkey_carcass, unit: percent, share: 0.10}
-  - {object: monkey_carcass__cure_salted, unit: percent, share: 0.10}
-  - {object: puncture_wound, unit: percent, share: 0.10}
-  - {object: rawhide, unit: percent, share: 0.10}
-  - {object: salt, unit: percent, share: 0.10}
-  - {object: sandy_beach, unit: percent, share: 0.10}
-  - {object: wild_boar, unit: percent, share: 0.10}
-  - {object: wild_boar_carcass, unit: percent, share: 0.10}
-  - {object: wild_boar_carcass__cure_salted, unit: percent, share: 0.10}
+island_unreached_need: []
