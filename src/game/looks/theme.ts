@@ -388,7 +388,7 @@ const GOLD_PLATE_SHADOW = 0xeaa617;
 const GOLD_PLATE_GLINT = 0xfffa93;
 /** 板を左から右へ横切る間に、翳り→反射→翳りを何度繰り返すか。 */
 const GOLD_PLATE_WAVES = 2;
-/** 金の板の帯の本数。実寸で1本が数ピクセルになる細かさ（板の幅は172u）にして、段に見せない。 */
+/** 金の板の帯の本数。実寸で1本が数ピクセルになる細かさ（板の幅は184u）にして、段に見せない。 */
 const GOLD_PLATE_BANDS = 25;
 
 /**
