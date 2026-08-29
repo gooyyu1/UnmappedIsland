@@ -39,7 +39,10 @@ describe('farming.yamlの畑と囲い', () => {
   let warinessId: number;
   let vulnerabilityId: number;
   let bloodId: number;
+  let hydrationId: number;
   let fodderId: number;
+  let drinkingWaterId: number;
+  let fillId: number;
   let taroSownId: number;
   let growthRemainingId: number;
   let breedingRemainingId: number;
@@ -52,7 +55,10 @@ describe('farming.yamlの畑と囲い', () => {
     warinessId = codex.propertyNames.getId('wariness');
     vulnerabilityId = codex.propertyNames.getId('vulnerability');
     bloodId = codex.propertyNames.getId('blood');
+    hydrationId = codex.propertyNames.getId('hydration');
     fodderId = codex.propertyNames.getId('fodder');
+    drinkingWaterId = codex.propertyNames.getId('drinking_water');
+    fillId = codex.propertyNames.getId('fill');
     taroSownId = codex.propertyNames.getId('taro_sown');
     growthRemainingId = codex.propertyNames.getId('growth_remaining');
     breedingRemainingId = codex.propertyNames.getId('breeding_remaining');
@@ -140,6 +146,23 @@ describe('farming.yamlの畑と囲い', () => {
   }
 
   /**
+   * 水入りの甕を1つ空けて、囲いの飲み水にする（飼葉と同じドラッグ型の操作）。返すのは注いだ後の器で、
+   * 空になれば中身の軸が落ちて素の甕へ戻る（liquid_containers.yaml）。
+   */
+  function pourWater(pen: WorldObject, milliliters = 4000): WorldObject {
+    const jar = spawnInto('jar__content_water_liquid', player, 'hand');
+    jar.tryGetProperty(fillId)!.setNumber(milliliters);
+    expect(
+      pen
+        .combinationsWith(jar, player)
+        .find((combination) => combination.name === 'water')
+        ?.tryExecute() === true,
+      '水をやれる',
+    ).toBe(true);
+    return jar;
+  }
+
+  /**
    * 落ち着いたヤケイを1羽用意する。**野生の個体は警戒した状態で現れる**（animals.yamlのwariness）ので、
    * 引き切るまで待つ——手で囲いへ入れるなら、生け捕りにして待つのが唯一の入口になる
    * （docs/engine/VitalsSystem.md 7節・TrapSystem.md 5.2節）。
@@ -157,7 +180,7 @@ describe('farming.yamlの畑と囲い', () => {
   function penWithCalmFowl(): { pen: WorldObject; fowl: WorldObject } {
     const fowl = calmJunglefowl();
     const pen = buildPen();
-    expect(fowl.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('livestock')))).toBeUndefined();
+    expect(fowl.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('catch')))).toBeUndefined();
     return { pen, fowl };
   }
 
@@ -165,7 +188,7 @@ describe('farming.yamlの畑と囲い', () => {
   function tickUntilCaught(pen: WorldObject, limit = 40): WorldObject {
     for (let i = 0; i < limit; i++) {
       tick(1);
-      const first = pen.tryGetSlot(codex.slotNames.getId('livestock'))!.contents.at(0);
+      const first = pen.tryGetSlot(codex.slotNames.getId('catch'))!.contents.at(0);
       if (first !== undefined) return first;
     }
     throw new Error('囲いに何も掛からなかった');
@@ -179,7 +202,7 @@ describe('farming.yamlの畑と囲い', () => {
 
   /** 囲いの中のヤケイの数。 */
   function pennedCount(pen: WorldObject): number {
-    return contentsOf(pen, 'livestock').length;
+    return contentsOf(pen, 'catch').length;
   }
 
   it('種を撒くまで、畑は何も実らせない', () => {
@@ -256,7 +279,7 @@ describe('farming.yamlの畑と囲い', () => {
 
     expect(wild.tryGetProperty(warinessId)!.getEffectiveValue()).toBeGreaterThan(0);
     expect(
-      wild.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('livestock'))),
+      wild.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('catch'))),
       '荒ぶる個体は囲いが受け取らない',
     ).toBeDefined();
   });
@@ -266,9 +289,12 @@ describe('farming.yamlの畑と囲い', () => {
     // 中に何が居るかを知らない。
     open();
     const { pen } = penWithCalmFowl();
+    // **水をやらなければ、増える前に渇いて死ぬ**（下の「水をやらなければ〜」）。飼葉が尽きても
+    // 増えなくなるだけだが、水が尽きれば失う——留守番の設備を回すのに見に戻る理由がこれ。
+    pourWater(pen);
 
     for (let i = 0; i < 600 && pennedCount(pen) < 2; i++) tick(1);
-    expect(contentsOf(pen, 'livestock'), '1羽増えている').toEqual(['junglefowl', 'junglefowl']);
+    expect(contentsOf(pen, 'catch'), '1羽増えている').toEqual(['junglefowl', 'junglefowl']);
   });
 
   it('生まれた仔は囲いに留まる', () => {
@@ -276,9 +302,12 @@ describe('farming.yamlの畑と囲い', () => {
     // （7.13節）。囲いが罠と同じ拘束のmodifyを持つことだけが、これを留めている。
     open();
     const { pen, fowl } = penWithCalmFowl();
+    // 空いた器は片付ける——**人のほうが先に渇いて倒れる**（600 tickはキャラクタの水分より長い）ので、
+    // 手持ちのまま残すと地面へこぼれ、この試験が見たい「仔がこぼれていないこと」と混ざる。
+    pourWater(pen).destroy();
 
     for (let i = 0; i < 600 && pennedCount(pen) < 2; i++) tick(1);
-    const born = pen.tryGetSlot(codex.slotNames.getId('livestock'))!.contents.find((o) => o !== fowl)!;
+    const born = pen.tryGetSlot(codex.slotNames.getId('catch'))!.contents.find((o) => o !== fowl)!;
     expect(born.parent, '仔は囲いの中に居る').toBe(pen);
     expect(contentsOf(land, 'items'), '地面へこぼれていない').toEqual([]);
   });
@@ -289,15 +318,16 @@ describe('farming.yamlの畑と囲い', () => {
     open();
     const fowl = calmJunglefowl();
     const pen = buildPen(0);
-    fowl.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('livestock')));
+    fowl.moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('catch')));
 
     tick(600);
     expect(pennedCount(pen), '飼葉の無い囲いでは増えない').toBe(1);
   });
 
   it('囲いの外では、増えるまでの時間が進まない', () => {
-    // 囲いの枠に居る間だけ数える（`in_slot: livestock`）。地面に立っている個体も、罠に掛かって
-    // いる個体も進まない——地面に置いた罠だけが動くのと同じ形（TrapSystem.md 1節）。
+    // 閉じ込められている間だけ数える（`in_slot: catch`）。地面に立っている個体は進まない
+    // ——地面に置いた罠だけが動くのと同じ形（TrapSystem.md 1節）。くくり罠に掛かった個体が
+    // 進まないのは飼葉のほうが止めている（罠は飼葉を持たない、animals.yaml）。
     open();
     const fowl = calmJunglefowl();
     const onGround = fowl.tryGetProperty(breedingRemainingId)!.getEffectiveValue();
@@ -312,20 +342,88 @@ describe('farming.yamlの畑と囲い', () => {
     open();
     const first = calmJunglefowl();
     const pen = buildPen();
-    const livestock = pen.getSlot(codex.slotNames.getId('livestock'));
-    first.moveToSlotOrRejection(livestock);
+    const penned = pen.getSlot(codex.slotNames.getId('catch'));
+    first.moveToSlotOrRejection(penned);
 
     const beforeOne = pen.tryGetProperty(fodderId)!.getEffectiveValue();
     tick(1);
     const oneRate = beforeOne - pen.tryGetProperty(fodderId)!.getEffectiveValue();
     expect(oneRate, '1羽でも減る').toBeGreaterThan(0);
 
-    calmJunglefowl().moveToSlotOrRejection(livestock);
+    calmJunglefowl().moveToSlotOrRejection(penned);
     const beforeTwo = pen.tryGetProperty(fodderId)!.getEffectiveValue();
     tick(1);
     const twoRate = beforeTwo - pen.tryGetProperty(fodderId)!.getEffectiveValue();
 
     expect(twoRate, '2羽なら2倍').toBeCloseTo(oneRate * 2);
+  });
+
+  it('水をやらなければ、囲いの獣は3日半で渇いて死ぬ', () => {
+    // **これが檻を放置した罰**（TrapSystem.md 5.4節）。丸太を組んだ檻に耐久は無く、くくり罠のように
+    // もがかれて壊れることもないので、渇きだけがその空白を埋める。
+    //
+    // **死体は残らない。** 死体になる唯一の道はblood（animals.yamlの各動物のon_min）で、渇きで
+    // 失うのは個体そのもの——掛けたまま忘れれば、生かして獲った意味が消える。
+    open();
+    const { pen, fowl } = penWithCalmFowl();
+    expect(fowl.tryGetProperty(hydrationId)!.number, '満たされた状態で捕らえる').toBe(336);
+
+    tick(335);
+    expect(pennedCount(pen), '3日半までは生きている').toBe(1);
+
+    tick(1);
+    expect(contentsOf(pen, 'catch'), '渇いて消える（死体も残らない）').toEqual([]);
+    expect(contentsOf(land, 'items'), '地面にも何も落ちない').toEqual([]);
+  });
+
+  it('水をやってあれば、囲いの獣は渇かない', () => {
+    // **飲むのは飲む当人**（animals.yamlのbeast）。囲いは中身を数えられない（14.3節）ので、
+    // 飼葉とまったく同じ形で、飲み水の減りにも頭数がそのまま効く。
+    open();
+    const { pen, fowl } = penWithCalmFowl();
+    pourWater(pen);
+
+    tick(100);
+
+    expect(fowl.tryGetProperty(hydrationId)!.number, '飲んだぶんだけ満たされたまま').toBe(336);
+    expect(pen.tryGetProperty(drinkingWaterId)!.number, '1 tickあたり25mL減る').toBe(4000 - 25 * 100);
+  });
+
+  it('飲み水は頭数のぶんだけ速く減る', () => {
+    // 飼葉と同じ理由（囲いの側は1行も書いていない）。**2羽居れば2倍の速さで尽きる。**
+    open();
+    const { pen } = penWithCalmFowl();
+    pourWater(pen);
+
+    const beforeOne = pen.tryGetProperty(drinkingWaterId)!.number;
+    tick(1);
+    const oneRate = beforeOne - pen.tryGetProperty(drinkingWaterId)!.number;
+    expect(oneRate, '1羽でも減る').toBeGreaterThan(0);
+
+    calmJunglefowl().moveToSlotOrRejection(pen.getSlot(codex.slotNames.getId('catch')));
+    const beforeTwo = pen.tryGetProperty(drinkingWaterId)!.number;
+    tick(1);
+
+    expect(beforeTwo - pen.tryGetProperty(drinkingWaterId)!.number, '2羽なら2倍').toBeCloseTo(oneRate * 2);
+  });
+
+  it('水をやった器は、空になって手元に残る', () => {
+    // 飼葉は器ごと消える（食べ物そのものが餌になる）が、水は容器の変種として在る
+    // （liquid_containers.yaml）ので、注いだぶんfillが減り、空になれば素の甕へ戻る。
+    // **入りきらない分は器に残る**ので、水は1mLも捨てない。
+    open();
+    const pen = spawnInto('pen', land, 'fixtures');
+    const jar = pourWater(pen, 4000);
+
+    expect(jar.def.name, '空の甕へ戻っている').toBe('jar');
+    expect(pen.tryGetProperty(drinkingWaterId)!.number, '全部入った').toBe(4000);
+
+    const second = spawnInto('jar__content_water_liquid', player, 'hand');
+    second.tryGetProperty(fillId)!.setNumber(4000);
+    expect(
+      pen.combinationsWith(second, player).map((combination) => combination.name),
+      '満ちた囲いへは注げない',
+    ).not.toContain('water');
   });
 
   it('空の囲いは罠として働き、掛かった獣に檻の傷が刺さる', () => {
@@ -405,7 +503,7 @@ describe('farming.yamlの畑と囲い', () => {
 
     tick(20);
     expect(pen.tryGetProperty(catchRemainingId)!.getEffectiveValue()).toBe(stopped);
-    expect(contentsOf(pen, 'livestock'), '獣が掛かって増えたりしない').toEqual(['junglefowl']);
+    expect(contentsOf(pen, 'catch'), '獣が掛かって増えたりしない').toEqual(['junglefowl']);
   });
 
   it('掛かった個体は、移し替えずにそのまま増える', () => {
@@ -414,9 +512,10 @@ describe('farming.yamlの畑と囲い', () => {
     open();
     const pen = buildPen();
     tickUntilCaught(pen);
+    pourWater(pen);
 
     for (let i = 0; i < 900 && pennedCount(pen) < 2; i++) tick(1);
-    expect(contentsOf(pen, 'livestock'), '掛かった個体が増えている').toEqual(['junglefowl', 'junglefowl']);
+    expect(contentsOf(pen, 'catch'), '掛かった個体が増えている').toEqual(['junglefowl', 'junglefowl']);
   });
 
   it('掛かった個体は、閉じ込められたまま落ち着いて家畜になる', () => {
@@ -428,10 +527,10 @@ describe('farming.yamlの畑と囲い', () => {
     const prey = tickUntilCaught(pen);
     tick(40);
 
-    const livestock = pen.getSlot(codex.slotNames.getId('livestock'));
+    const penned = pen.getSlot(codex.slotNames.getId('catch'));
     expect(prey.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
     expect(prey.tryGetProperty(warinessId)!.getEffectiveValue(), '出しても暴れない').toBe(0);
-    expect(prey.moveToSlotOrRejection(livestock), '落ち着いた個体として入り直せる').toBeUndefined();
+    expect(prey.moveToSlotOrRejection(penned), '落ち着いた個体として入り直せる').toBeUndefined();
   });
 
   it('飼葉は寄せる餌でもある', () => {
@@ -470,7 +569,7 @@ describe('farming.yamlの畑と囲い', () => {
       const pen = buildPen();
       for (let i = 0; i < 60; i++) {
         tick(1);
-        for (const object of pen.tryGetSlot(codex.slotNames.getId('livestock'))!.contents) {
+        for (const object of pen.tryGetSlot(codex.slotNames.getId('catch'))!.contents) {
           caught.add(object.def.name);
           object.destroy();
         }

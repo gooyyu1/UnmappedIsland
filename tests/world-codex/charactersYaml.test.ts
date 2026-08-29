@@ -410,6 +410,11 @@ describe('プレイヤーキャラクタの定義', () => {
       const instance = new WorldObject(1, def(character), session);
       const bloodId = codex.propertyNames.getId('blood');
       const max = maxOf(character, 'blood');
+      // **水分は満たしてから測る。** 初期値はmaxの75%＝安全域のやや下（Characters.md 域の区分節）で、
+      // そのままでは下の条件で止まる。
+      instance
+        .tryGetProperty(codex.propertyNames.getId('hydration'))
+        ?.setNumber(maxOf(character, 'hydration'));
       instance.tryGetProperty(bloodId)?.setNumber(max - 100);
 
       instance.tick();
@@ -419,6 +424,29 @@ describe('プレイヤーキャラクタの定義', () => {
       for (let i = 0; i < 100; i++) instance.tick();
 
       expect(instance.tryGetProperty(bloodId)?.number ?? 0, '満タンを超えては溜まらない').toBe(max);
+    });
+
+    // 血が戻るのは水分と体脂肪がともに安全域にある間だけ（VitalsSystem.md 3.1節）。**判定は段の名前で
+    // 行う**ので、ここで置く値は「その段に入る位置」であって、条件の側の閾値ではない。
+    it.each([
+      ['hydration', 'dryish'],
+      ['body_fat', 'starved'],
+    ])('%sが安全域を外れている間は、血が戻らない', (propertyName, stageName) => {
+      const session = new WorldSession(codex);
+      const instance = new WorldObject(1, def(character), session);
+      const bloodId = codex.propertyNames.getId('blood');
+      const property = instance.tryGetProperty(codex.propertyNames.getId(propertyName))!;
+      const stage = propOf(def(character), propertyName).stages.find((one) => one.name === stageName)!;
+      // 水分は満たしておく（体脂肪を見る回で、水分のほうが止めていることにならないように）。
+      instance
+        .tryGetProperty(codex.propertyNames.getId('hydration'))
+        ?.setNumber(maxOf(character, 'hydration'));
+      instance.tryGetProperty(bloodId)?.setNumber(1000);
+      property.setNumber(stage.min ?? 1);
+
+      instance.tick();
+
+      expect(instance.tryGetProperty(bloodId)?.number ?? 0, `${stageName}では戻らない`).toBe(1000);
     });
 
     // 寒さは気温と寒さの入口（chill_point）の比較1つで決まり、雨は気温ではなく削る速さに効く

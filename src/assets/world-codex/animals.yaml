@@ -170,6 +170,71 @@ traits:
           - {name: dazed, min: 25, alert: caution}
           - {name: foggy, min: 60, alert: watch}
           - {name: clear, min: 80}
+
+      # 渇き（VitalsSystem.md 7節）。**減るのはcatchの枠に閉じ込められている間だけ**で、野生の個体では
+      # 減らない（TrapSystem.md 5.4節）。獣が自分で水を探す仕組みは無いので、無条件に減らせば島中の獣が
+      # 3日半で死ぬ——**ゲート1つが「飲めない状況に置いたのは誰か」を言い分ける**。
+      #
+      # **閉じ込めている側は1行も宣言しない。** 渇くのは獣自身のことなので、宣言は獣の側だけに置く。
+      # 枠の名前はくくり罠も檻も家畜の囲いも catch なので、ゲートは罠の型を問わない（同1.2節）。
+      #
+      # 刻みは人と同じ（docs/world/Characters.md 値の刻み方節）で、体格では変えない（TrapSystem.md 8節）。
+      # 尽きたときに名乗る死因も人と同じ dehydrated なので、死に方は増えない（VitalsSystem.md 8節）。
+      hydration:
+        # **満たされた状態で現れる。** 野生の個体は自分で飲んでいるので、渇きは捕らえた時点から始まる。
+        value: 336
+        range: {min: 0, max: 336}
+        stages:
+          - {name: dehydrated, alert: fatal}
+          - {name: parched, min: 24, alert: danger}
+          - {name: thirsty, min: 96, alert: caution}
+          - {name: dryish, min: 192, alert: watch}
+          - {name: hydrated, min: 269}
+          - {name: full, min: 336}
+        # **死体は残らない。** 死体になる唯一の道はblood（動物ごとのon_min）で、渇きで失うのは個体
+        # そのもの——掛けたまま忘れれば、生かして獲った意味が消える（TrapSystem.md 5.4節）。
+        on_min:
+          destroy: {subject: self, reason: dehydrated}
+        passives:
+          - conditions: [{in_slot: catch}]
+            add:
+              self:
+                hydration: -1
+          # 囲いの飲み水から自分で飲む（docs/world/Animals.md 3.1節）。**飲むのは飲む当人**なので、
+          # 頭数がそのまま減りの速さになる——飼葉を減らすのが獣自身なのと同じ形。25mLで1 tickぶんという
+          # 換算も人が飲むときと同じ（liquid_containers.yamlのdrink）。
+          #
+          # 罠の枠には飲み水が無いので、掛かったままの獲物は渇いていく——**この輸送が空振りすることが、
+          # 檻を家畜の囲いに変える操作そのもの**になる。
+          - conditions: [{in_slot: catch}]
+            transfer:
+              from: parent
+              from_prop: drinking_water
+              to_prop: hydration
+              amount: 25
+              to_amount: 1
+      # 飢え（同節）。渇きとまったく同じゲートで減り、尽きれば人と同じ starved を名乗る。
+      #
+      # **獣は太らない**（食べさせる仕組みは飼葉しか無く、飼葉は繁殖を数えるだけ）ので、捕らえた時点が
+      # 蓄えの満ちた状態にあたる——人のように段ごとに基礎代謝を変える平衡点（Characters.md）は立たず、
+      # 減りは一定。段のしきい値は人と同じ位置（残り1日を割れば starved、残り5日を割れば gaunt）に置く。
+      #
+      # **67日は罠の時間の桁から外れている**（TrapSystem.md 5.4節）。檻を放置した罰として働くのは渇きの
+      # ほうで、飢えをここへ置くのは、血の戻る条件を人と獣へ同じ形で配るため（VitalsSystem.md 3.1節）。
+      body_fat:
+        value: 6432
+        range: {min: 0, max: 6432}
+        stages:
+          - {name: starved, alert: fatal}
+          - {name: gaunt, min: 96}
+          - {name: nourished, min: 480}
+        on_min:
+          destroy: {subject: self, reason: starved}
+        passives:
+          - conditions: [{in_slot: catch}]
+            add:
+              self:
+                body_fat: -1
     # 1手の重み配分（上のprops）を、その場の状況で押し引きする（HuntingSystem.md 5.5節）。
     #
     # **打ち消しは重みが0でクランプされること（10節）を使う。** 素の配分より桁の大きい負の寄与を
@@ -367,8 +432,7 @@ object_defs:
       # 400mL——ヒトの1/12しかないので、同じ傷でもよく効く。段のしきい値は失った割合（出血性
       # ショックの分類）から引くので、ヒトの5,000mLと同じ比率になる。
       #
-      # 戻る速さも体格に比例する（ヒトの+2/tickに対し400/5000で+0.16）。餌をやる仕組みがまだ無いので
-      # 条件は付けず、常に戻す——手負いのまま逃げた個体は、追いつけなければ癒えてしまう。
+      # 戻る速さも体格に比例する（ヒトの+2/tickに対し400/5000で+0.16）。
       blood:
         value: 400
         range: {min: 0, max: 400}
@@ -397,7 +461,21 @@ object_defs:
           destroy: self
           spawn: {object: monkey_carcass}
         passives:
-          - add:
+          # **戻るのは水分と体脂肪がともに安全域にある間だけ**（VitalsSystem.md 3.1節）。判定は段の
+          # 名前で行い、**閾値を条件の側へ書き写さない**——域（alert）そのものを条件から読む術が無いので、
+          # 安全域の段をanyで束ねる。人の側もまったく同じ形（characters/player_character.yaml）で、
+          # ここが「渇きと飢えを人と獣の両方が持つ」ことの見返りにあたる。
+          #
+          # **野生の個体では水分も体脂肪も減らない**（beast trait）ので、条件は常に満たされる
+          # ——手負いのまま逃げた個体は、追いつけなければ癒えてしまう。効くのは閉じ込めた獣にだけ。
+          - conditions:
+              - any:
+                  - {prop: hydration, in_stage: hydrated}
+                  - {prop: hydration, in_stage: full}
+              - any:
+                  - {prop: body_fat, in_stage: gaunt}
+                  - {prop: body_fat, in_stage: nourished}
+            add:
               self:
                 blood: 0.16
 
@@ -506,7 +584,16 @@ object_defs:
           destroy: self
           spawn: {object: junglefowl_carcass}
         passives:
-          - add:
+          # 戻る条件もサルと同じ形（VitalsSystem.md 3.1節）。**囲いで水を切らせば、増えないだけでなく
+          # 負った傷も癒えなくなる**——飲み水はこの獣の繁殖と回復の両方を止める。
+          - conditions:
+              - any:
+                  - {prop: hydration, in_stage: hydrated}
+                  - {prop: hydration, in_stage: full}
+              - any:
+                  - {prop: body_fat, in_stage: gaunt}
+                  - {prop: body_fat, in_stage: nourished}
+            add:
               self:
                 blood: 0.032
       # 囲いの中で1羽増えるまでの残り（docs/world/Animals.md 3.1節）。**増えるのは獣自身の仕事**なので、
@@ -520,9 +607,12 @@ object_defs:
         range: {min: 0, max: 480}
         passives:
           - conditions:
-              # 囲いの枠に居る間だけ（farming.yaml）。罠に掛かっている個体も、地面に立っている個体も
-              # 増えない——罠が地面のitemsスロットだけで作動するのと同じ形（TrapSystem.md 1節）。
-              - {in_slot: livestock}
+              # 囲いの枠に居る間だけ（farming.yaml）。地面に立っている個体は増えない——罠が地面の
+              # itemsスロットだけで作動するのと同じ形（TrapSystem.md 1節）。
+              #
+              # **枠の名前は罠と同じcatch**（同5.4節）なので、くくり罠に掛かった個体もここを通る。
+              # 増えないのは飼葉のほうが止めている——罠は飼葉を持たない。
+              - {in_slot: catch}
               # 飼葉が残っている間だけ。
               - {subject: parent, prop: fodder, gte: 1}
             add:
@@ -601,7 +691,15 @@ object_defs:
           destroy: self
           spawn: {object: rat_carcass}
         passives:
-          - add:
+          # 戻る条件もサルと同じ形（VitalsSystem.md 3.1節）。
+          - conditions:
+              - any:
+                  - {prop: hydration, in_stage: hydrated}
+                  - {prop: hydration, in_stage: full}
+              - any:
+                  - {prop: body_fat, in_stage: gaunt}
+                  - {prop: body_fat, in_stage: nourished}
+            add:
               self:
                 blood: 0.0024
 
@@ -675,7 +773,15 @@ object_defs:
           destroy: self
           spawn: {object: wild_boar_carcass}
         passives:
-          - add:
+          # 戻る条件もサルと同じ形（VitalsSystem.md 3.1節）。
+          - conditions:
+              - any:
+                  - {prop: hydration, in_stage: hydrated}
+                  - {prop: hydration, in_stage: full}
+              - any:
+                  - {prop: body_fat, in_stage: gaunt}
+                  - {prop: body_fat, in_stage: nourished}
+            add:
               self:
                 blood: 1.84
 

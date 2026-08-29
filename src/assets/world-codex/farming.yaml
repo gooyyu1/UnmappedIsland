@@ -140,10 +140,13 @@ object_defs:
     tags: [fixture]
     # 押すと中の獣が並ぶ（7.11節）。畑と同じで、見に来なければ増えたことは分からない
     # ——罠が掛かったことを告げないのと同じ沈黙（TrapSystem.md 5節）。
-    visible_slots: [livestock]
+    visible_slots: [catch]
     stackable: false
     slots:
-      # 囲われている獣。**枠ごとに1頭**（maxを置く、7.2節）——獣は束ねられる型なので、maxが無いと
+      # 囲われている獣。**枠の名前は罠と同じcatch**——檻と家畜の囲いが1つの型である（TrapSystem.md
+      # 1.2節）以上、枠も1つで、閉じ込められた獣が渇くゲートが罠の型を問わずに書ける（同5.4節）。
+      #
+      # **枠ごとに1頭**（maxを置く、7.2節）——獣は束ねられる型なので、maxが無いと
       # 1つの枠に何頭でも積まれて、囲いの広さが何も意味しなくなる。
       #
       # **capacityは宣言しない**（TrapSystem.md 1.1節）。上限を宣言すると容量のバーが出て
@@ -157,7 +160,7 @@ object_defs:
       # （resists、7.13節・animals.yamlのbeast）ので、手で入れるなら生け捕りにして待つことになる
       # （docs/engine/VitalsSystem.md 7節・TrapSystem.md 5.2節）。掛かった個体は下の拘束が
       # 警戒を打ち消しているので、そのまま留まる。
-      livestock:
+      catch:
         cell_count: 4
         cell: {accept: {tag: quarry}, max: 1}
     props:
@@ -179,7 +182,7 @@ object_defs:
               #
               # **置かれている場所では分岐しない。** 囲いは持ち歩けないので、罠の`{in_slot: items}`に
               # あたる「仕掛かっているか」の区別がそもそも立たない（畑と同じ）。
-              - not: {slot: livestock, matches: {tag: quarry}}
+              - not: {slot: catch, matches: {tag: quarry}}
             add:
               self:
                 catch_remaining: -1
@@ -233,6 +236,21 @@ object_defs:
       fodder:
         value: 0
         range: {min: 0, max: 96}
+      # 与えてある飲み水（mL）。**飼葉とまったく同じ形**で、減らすのは囲いではなく中の獣
+      # （animals.yamlのbeast）——頭数がそのまま減りの速さになる。
+      #
+      # **飼葉と違って、切らせば死ぬ。** 閉じ込められた獣は catch の枠に居る間ずっと渇き
+      # （docs/engine/TrapSystem.md 5.4節）、満水から3日半で死ぬ。飼葉が尽きても増えなくなるだけなので、
+      # **留守番の設備に「見に戻る」を課しているのはこちら**（docs/world/Animals.md 3.1節）。
+      #
+      # **寄せる餌にはならない。** 飼葉が誘い餌を兼ねる（同じ1つの量、上のfodder）のに対し、水は
+      # 罠の卓の重みへ触れない——水場は島のどこにでもあり、それで寄って来るなら罠は要らない。
+      #
+      # maxは甕1杯ぶん（liquid_containers.yamlのjar）。1頭あたり25mL/tickなので、満たせば1頭で40時間
+      # 保つ。時間では減らない（飼葉と同じ。蒸発は器の口の広さが決めるもので、囲いは器ではない）。
+      drinking_water:
+        value: 0
+        range: {min: 0, max: 4000}
     passives:
       # 中の獣は暴れない。罠の拘束（TrapSystem.md 5節）と同じ1ブロックで、3つを同時に決める
       # ——掛かった獲物がresists（7.13節）で飛び出さない・その場で締められる・出せば暴れる。
@@ -271,6 +289,21 @@ object_defs:
         # 中途半端に残った飼葉を作らない。入りきらなかった分は失われるが、満杯を拒む条件があるので
         # 失うのは高々1個ぶん（罠の餌と同じ）。
         destroy: dragged
+      # 水をやる（飼葉と同じドラッグ型）。**容器は返す**——液体は容器の変種として在る
+      # （liquid_containers.yaml）ので、注いだぶんfillが減り、空になれば中身の軸が落ちて空の器に戻る。
+      # 入りきらなかった分は器に残る（transferの既定のallow_overflow: false）ので、水は1mLも捨てない。
+      #
+      # **湯も茶も受けない。** 受けるのはwaterタグだけで、沸かした湯・煎じた茶は人が飲むためのもの。
+      water:
+        trigger: {drag: {tag: water}}
+        duration: 5
+        conditions:
+          - {reason: pen_watered, prop: drinking_water, lt: 4000}
+        transfer:
+          amount: 999999
+          from: dragged
+          from_prop: fill
+          to_prop: drinking_water
     recipes:
       # 丸太を並べて縄で結ぶ。**生かして扱う設備は常に高くつく**（TrapSystem.md 1.2節）という線の
       # 上に乗っていて、大型で最も開く差がこれ。
