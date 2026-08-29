@@ -2,7 +2,8 @@
 #
 # 斧でしか倒せない木を1種だけ置く。刃物（cutting_tool）で足りる草の茎（fiber.yaml）・ヤシの葉
 # （weaving.yaml）と違い、木部を持つ幹は柄の遠心力が乗る道具でなければ断てない。石斧を作ることが、
-# そのまま丸太＝筏（voyage.yaml）への入口になる。
+# そのまま丸太＝筏（voyage.yaml）への入口になる。**丸太を出すものは2つある**（立ち木と、海岸へ
+# 打ち上げられた流木の幹）が、**どちらも斧を要求する**ので、この入口は1つのまま。
 #
 # 丸太は1本20kgで、荷重の限界（キャラクタのload、docs/world/Characters.md）に対して1本ずつしか
 # 運べない重さにしてある。筏に6本要るので、拠点をどこに置くかが運搬の手間を決める。
@@ -62,6 +63,42 @@ object_defs:
             in_stage: bright
         duration: 30
         spawn: {object: tree_bark, count: 3, into: actor}
+
+  # 打ち上げられた流木の幹。海岸3種すべての探索で見つかる（locations.yaml）。**丸太の2つ目の入口**で、
+  # 森も密林も無い島で筏の材料が絶えないようにする（docs/concept/DesignPrinciples.md「要るものは、
+  # 名指しの鍵ではなく、部分的に代替できる資源で作る」節）。
+  #
+  # 倒す手間が要らない代わりに、採れるのは丸太2本だけ——波に洗われた幹には枝も樹皮も残っていない。
+  driftwood_trunk:
+    tags: [fixture]
+    # 絵は丸太を借りる（GameElementDefinition.md 4.3節）。枝も皮も落ちた幹は玉切り前の丸太そのもので、
+    # 同じ絵しか持ちようがない。
+    art: log
+    props:
+      # 丸太2本（40kg）に、玉切りで落ちる末口と割れた部分を足した重さ。
+      weight: {value: 60000}
+    interactions:
+      # 運べる長さに玉切りする。既に倒れているので、立ち木を倒すより半分の手間で済む。
+      buck:
+        trigger: {drag: {tag: chopping_tool}}
+        conditions:
+          - reason: too_worn
+            subject: dragged
+            prop: durability
+            gt: 0
+          # 木目を読みながら刃を同じ傷へ入れ続ける屋外の行動なので、見るのは視界の側
+          # （docs/engine/IlluminationSystem.md 5節）。
+          - reason: too_dark
+            subject: actor
+            prop: looking_brightness
+            in_stage: bright
+        duration: 120
+        add:
+          dragged:
+            durability: -60
+        # **spawnを先に書く**（broadleaf_treeのfellと同じ理由）。
+        spawn: {object: log, count: 2, into: self}
+        destroy: self
 
   # 丸太。幹を運べる長さ（2mほど）に切ったもの。筏の浮力を担う。
   log:

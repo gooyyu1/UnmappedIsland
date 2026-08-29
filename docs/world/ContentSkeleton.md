@@ -70,7 +70,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 **1日未満で越えられる前提は、段ではなく幅です**（同「段は、実際に足止めしたものだけを数える」節）。
 実測では、刃物（72.2分<!-- stats: balance.yaml object_costs object=sharp_stone total_minutes -->）・焚き火（55.9分<!-- stats: balance.yaml object_costs object=campfire total_minutes -->）・くくり罠（103.3分<!-- stats: balance.yaml object_costs object=snare total_minutes -->）・覆い焼きの炉（303.8分<!-- stats: balance.yaml object_costs object=earth_kiln total_minutes -->）はいずれも
-0.04〜0.21日で、どれも段になりません。4桁の労働がかかるのは筏（4,305分<!-- stats: balance.yaml object_costs object=raft total_minutes -->）と帆（3,774分<!-- stats: balance.yaml object_costs object=rawhide_sail total_minutes -->）だけです。
+0.04〜0.21日で、どれも段になりません。4桁の労働がかかるのは筏（4,207分<!-- stats: balance.yaml object_costs object=raft total_minutes -->）と帆（3,777分<!-- stats: balance.yaml object_costs object=rawhide_sail total_minutes -->）だけです。
 
 **この物差しは道具が判定します。** `npm run stats:balance` の総コストがそのまま「段かどうか」を決めるので、
 幅出しで物が増えたときに数え直しが要りません。
@@ -121,9 +121,9 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 水 | ヤシの木（砂浜・密林）・湧き水（草原・森） |
 | 道具の要らない食料 | 空心菜（草原・密林） |
 
-**砂浜から始めると、この表がそのまま最初の数日の道順になります。** 砂浜にあるのは太い枝とヤシの実と
-ヤシガニだけで、ヤシの実は割るのに刃が要り、ヤシガニは焼かないと食べられません
-（[`Animals.md`](./Animals.md) 1節）。**プレイヤーは「石と火が要る」ことを、指示ではなく手元の物から
+**砂浜から始めると、この表がそのまま最初の数日の道順になります。** 砂浜で手が届くのは太い枝とヤシの実と
+ヤシガニで、ヤシの実は割るのに刃が要り、ヤシガニは焼かないと食べられません
+（[`Animals.md`](./Animals.md) 1節）。打ち上げられた流木の幹も転がっていますが、丸太にするには斧が要ります。**プレイヤーは「石と火が要る」ことを、指示ではなく手元の物から
 知ります**（2.2節）。そして砂浜は海岸帯なので岩礁海岸・断崖海岸と隣り合いやすく、そこに石があります。
 
 **開始地点が説明を兼ねます。** 何を採ればよいかを教える文章は要らず、持っている物が次にすることを
@@ -186,7 +186,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 **1つの物で1日を超えるものはほとんどありません。段になるのは「まとまった量」です。**
 
-石の斧は482分<!-- stats: balance.yaml object_costs object=stone_axe total_minutes -->（0.33日）、甕は465分<!-- stats: balance.yaml object_costs object=jar total_minutes -->（0.32日）、ロープは680分<!-- stats: balance.yaml object_costs object=rope total_minutes -->（0.47日）。段として立つのは「家1軒ぶんの
+石の斧は484分<!-- stats: balance.yaml object_costs object=stone_axe total_minutes -->（0.34日）、甕は465分<!-- stats: balance.yaml object_costs object=jar total_minutes -->（0.32日）、ロープは680分<!-- stats: balance.yaml object_costs object=rope total_minutes -->（0.47日）。段として立つのは「家1軒ぶんの
 丸太20本」「水を貯める甕10個」のような量のほうです。4節はこの単位で並べます。
 
 **行き先が絡む段は、そこにしかない材料と対で書きます**
@@ -227,7 +227,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | # | 系統 | 最初の段の中で手に入るもの | 1日以上の山（括弧内は日数） | 山 | 日 |
 | --- | --- | --- | --- | --: | --: |
 | 1 | 水 | ヤシの実・湧き水・運ぶ器 | 雨受けと貯水を据える（2）／甕を10個焼く（3.2）／航海ぶんの水を積む（1） | 3 | 6.2 |
-| 2 | 食の調達 | 拾う・掘る・くくり罠 | 畑を拓いて回す（4）／**家畜の囲い（3.2<!-- stats: balance.yaml object_costs object=pen days -->・実測）**／大型の狩り（2） | 3 | 9.2 |
+| 2 | 食の調達 | 拾う・掘る・くくり罠 | 畑を拓いて回す（4）／**家畜の囲い（3.1<!-- stats: balance.yaml object_costs object=pen days -->・実測）**／大型の狩り（2） | 3 | 9.1 |
 | 3 | 保存 | 焼く | 干し場（1）／燻し小屋（2）／製塩（3）／航海ぶんを塩漬けにする（1） | 4 | 7 |
 | 4 | 刃物・打撃 | 剥片・叩き石・石の斧 | 磨製一式（1.5）／鉱石を掘って製錬（5） | 2 | 6.5 |
 | 5 | 火 | きりもみ・焚き火・覆い焼きの炉 | 恒久窯（3） | 1 | 3 |
@@ -237,11 +237,11 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 9 | 寝床 | 敷物 | 高床の寝台（1.5）／詰め物（1） | 2 | 2.5 |
 | 10 | 住居 | 洞窟・雨よけ | 葉の小屋（3）／高床（4）／板の壁・床（5） | 3 | 12 |
 | 11 | 遠出 | 日帰りの探索 | —（8.3.1節） | 0 | 0 |
-| 12 | 船と海図 | — | **筏（5.3<!-- stats: balance.yaml object_costs object=raft days -->・実測）**／**帆（4.6<!-- stats: balance.yaml object_costs object=rawhide_sail days -->・実測）**／櫂と舵（2）／沿岸航海（3）／海図を仕上げる（5） | 5 | 19.9 |
-| | | | **合計** | **28** | **75.3** |
+| 12 | 船と海図 | — | **筏（5.2<!-- stats: balance.yaml object_costs object=raft days -->・実測）**／**帆（4.6<!-- stats: balance.yaml object_costs object=rawhide_sail days -->・実測）**／櫂と舵（2）／沿岸航海（3）／海図を仕上げる（5） | 5 | 19.8 |
+| | | | **合計** | **28** | **75.1** |
 
-**山が「量」で立っていることに注意してください**（2.4節）。石の斧も甕も1つでは0.33日で段になりません
-——段になるのは家1軒ぶんの丸太であり、貯水に足りる数の甕です。**畑も1枚は0.32日<!-- stats: balance.yaml object_costs object=field days -->**で、段になるのは
+**山が「量」で立っていることに注意してください**（2.4節）。石の斧も甕も1つでは0.3日ほどで段になりません
+——段になるのは家1軒ぶんの丸太であり、貯水に足りる数の甕です。**畑も1枚は0.33日<!-- stats: balance.yaml object_costs object=field days -->**で、段になるのは
 拓いた枚数と、撒いて収穫しに戻る往復の回数のほうです。**塩田も1枚は0.35日<!-- stats: balance.yaml object_costs object=salt_pan days -->**で、段になるのは据えた枚数と、
 海水を汲みに戻る往復の回数です。**囲いは1つで段に届きます**——丸太4本と縄2本が要るためです。
 
@@ -294,6 +294,21 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
    沿岸航海で作ります。
 
 出航に適した季節の窓（同3.1節）が、この5つに期限を与えます。
+
+**出航に要る素材は、どれも入口を2つ以上持ちます**（[`DesignPrinciples.md`](../concept/DesignPrinciples.md)
+の「要るものは、名指しの鍵ではなく、部分的に代替できる資源で作る」節）。**2つ目はどれも海岸に置いて
+あります**——島がどの土地を取りこぼしても海岸だけは必ず在る（`terrain_generation.yaml` の `hull_coast`）
+ので、これで「その土地の有無がそのまま当落になる」入口が無くなります。
+
+| 素材 | 1つ目の入口 | 2つ目の入口（海岸） |
+| --- | --- | --- |
+| 植物繊維 | バショウ属の草（森・密林） | ヤシの実の皮を叩き解す（コイア） |
+| 丸太 | 広葉樹を伐り倒す（森・密林） | 打ち上げられた流木の幹を玉切りにする |
+| 生皮 | イノシシ・サル（森・密林） | 海岸に降りるサル |
+
+**斧と刃物の段は飛びません**——繊維はどちらの入口も刃物を通り（掻き取るのも実の皮を剥ぐのも
+`cutting_tool`）、流木の幹も斧を要求し（[`Voyage.md`](./Voyage.md) 1節）、獣を仕留めるには武器が要ります。
+増やしたのは入口であって、段ではありません。
 
 ### 5.1 望遠鏡は置かない【確定】
 
