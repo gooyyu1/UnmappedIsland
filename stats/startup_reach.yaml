@@ -13,16 +13,16 @@ need_sources:
   - {need: 錐, object: twig, location: rocky_field, unit: items_per_explore, expected: 0.552}
   - {need: 錐, object: twig, location: wasteland, unit: items_per_explore, expected: 0.500}
   - {need: 錐, object: twig, location: mountainside, unit: items_per_explore, expected: 0.619}
-  - {need: 軸, object: thick_branch, location: sandy_beach, unit: items_per_explore, expected: 0.632}
-  - {need: 軸, object: thick_branch, location: rocky_coast, unit: items_per_explore, expected: 0.275}
-  - {need: 軸, object: thick_branch, location: cliff_coast, unit: items_per_explore, expected: 0.236}
-  - {need: 刃, object: stone, location: rocky_coast, unit: items_per_explore, expected: 1.225}
-  - {need: 刃, object: stone, location: cliff_coast, unit: items_per_explore, expected: 1.066}
+  - {need: 軸, object: thick_branch, location: sandy_beach, unit: items_per_explore, expected: 0.598}
+  - {need: 軸, object: thick_branch, location: rocky_coast, unit: items_per_explore, expected: 0.317}
+  - {need: 軸, object: thick_branch, location: cliff_coast, unit: items_per_explore, expected: 0.285}
+  - {need: 刃, object: stone, location: rocky_coast, unit: items_per_explore, expected: 0.992}
+  - {need: 刃, object: stone, location: cliff_coast, unit: items_per_explore, expected: 0.869}
   - {need: 刃, object: stone, location: rocky_field, unit: items_per_explore, expected: 1.229}
   - {need: 刃, object: stone, location: wasteland, unit: items_per_explore, expected: 0.991}
   - {need: 刃, object: stone, location: mountainside, unit: items_per_explore, expected: 0.981}
   - {need: 刃, object: stone, location: mountain_peak, unit: items_per_explore, expected: 1.186}
-  - {need: 水, object: palm_tree, location: sandy_beach, unit: items_per_explore, expected: 0.123}
+  - {need: 水, object: palm_tree, location: sandy_beach, unit: items_per_explore, expected: 0.116}
   - {need: 水, object: spring, location: grassland, unit: items_per_explore, expected: 0.075}
   - {need: 水, object: spring, location: forest, unit: items_per_explore, expected: 0.067}
   - {need: 水, object: palm_tree, location: jungle, unit: items_per_explore, expected: 0.096}
