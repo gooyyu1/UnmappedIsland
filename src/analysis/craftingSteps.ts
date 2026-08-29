@@ -11,7 +11,7 @@ import { collectOutputs, combineOutcomes } from './CraftingStep';
 import type { BecomeDestinationResolver, EffectReading } from './effectOutcomes';
 import { consumesRoot, destroysRoot, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
-import type { StaticValueRange, StaticValueResolver } from './staticValue';
+import type { EndBoundValueResolver, StaticValueRange, StaticValueResolver } from './staticValue';
 import {
   resolveDeclaredNumber,
   staticConditionTruth,
@@ -136,7 +136,7 @@ function staticValueRangeOf(
   codex: WorldCodex,
   def: ObjectDef,
   propertyGlobalId: number,
-  resolve: StaticValueResolver,
+  resolve: EndBoundValueResolver,
 ): StaticValueRange | undefined {
   const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
   const range = propertyDef?.range;
@@ -158,7 +158,7 @@ function leavesThisType(
   codex: WorldCodex,
   def: ObjectDef,
   effect: EffectDeclaration,
-  resolve: StaticValueResolver,
+  resolve: EndBoundValueResolver,
 ): boolean {
   const selfDestinations: (number | undefined)[] = [];
   const reading = readEffect(effect, resolve, (subject, axisValues) => {
@@ -375,7 +375,7 @@ function inputOf(reading: TypeMatchReading, consumed: boolean, count: number): C
  * その操作にかかるゲーム内時間（分）。durationを省いていれば0、参照が解けなければ0
  * （工程の側がhasUnresolvedReferencesで印を持つ）。
  */
-function minutesOf(interaction: InteractionDef, resolve: StaticValueResolver): number {
+function minutesOf(interaction: InteractionDef, resolve: EndBoundValueResolver): number {
   const reading = interaction.durationReading;
   return reading === undefined ? 0 : Math.trunc(resolveDeclaredNumber(reading, resolve) ?? 0);
 }

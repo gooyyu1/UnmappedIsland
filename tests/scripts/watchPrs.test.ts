@@ -75,6 +75,26 @@ function session(
 }
 
 /**
+ * レビューを手配済みであることを表すセッション。`dispatch-review.sh` が付けるタグと同じ形で、
+ * これが最後のコミットより後に立っていれば `UNREVIEWED` は黙る。
+ */
+function reviewSession(
+  number: number,
+  createdAt = '2026-08-29T13:00:00Z',
+  status = 'SESSION_STATUS_RUNNING',
+): unknown {
+  return {
+    id: `session_01REVIEW${number}`,
+    title: `#${number} のレビュー`,
+    tags: [`review-${number}`],
+    session_status: status,
+    status_bucket: 'SESSION_STATUS_BUCKET_WORKING',
+    created_at: createdAt,
+    updated_at: '2000-01-01T00:00:00Z',
+  };
+}
+
+/**
  * `gh` とセッション一覧を差し替えて見張りを走らせ、出た行を返す。
  *
  * `prRounds`・`issueRounds` は `gh pr list`・`gh issue list` が周ごとに返す一覧で、最後のものは
@@ -91,6 +111,7 @@ function watch(
     pushed?: Record<number, string>;
     sentBack?: Record<number, string>;
     numbers?: number[];
+    noSessions?: boolean;
   } = {},
 ): string[] {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-watch-prs-'));
@@ -140,6 +161,7 @@ function watch(
 
     const args = [SCRIPT, '--timeout-minutes', '1', '--interval', '1', '--no-check-grace', '0'];
     if (watched.length > 0) args.push('--issues', watched.join(','));
+    if (options.noSessions === true) args.push('--no-sessions');
     (options.numbers ?? []).forEach((number) => args.push(String(number)));
     const out = execFileSync('bash', args, {
       encoding: 'utf-8',
@@ -198,8 +220,12 @@ describe('watch-prs.sh の TASK', () => {
 });
 
 describe('watch-prs.sh のマージ可否', () => {
+  // この節で見たいのはマージ可否だけなので、どのPRもレビューは手配済みにして `UNREVIEWED` を
+  // 黙らせる。手配していないPRが出ることは、下の `UNREVIEWED` の節で見る。
   it('コンフリクトは `判断待ち` が隠していても出るが、`直し待ち` のPRでは出さない', () => {
-    expect(watch([[pullRequest(800, 'CONFLICTING')]], [[]], [])).toEqual(['CONFLICT 800']);
+    expect(watch([[pullRequest(800, 'CONFLICTING')]], [[]], [], [reviewSession(800)])).toEqual([
+      'CONFLICT 800',
+    ]);
     expect(watch([[pullRequest(801, 'CONFLICTING', ['判断待ち'])]], [[]], [])).toEqual(['CONFLICT 801']);
     // 差し戻し済みのPRで出すと、解消されるまで毎周それが返り、司令塔は同じ差し戻しを繰り返す。
     // 次に知りたいのは解消されたかどうかなので、新しいコミットが載った合図（FIXED）だけを出す。
@@ -208,19 +234,25 @@ describe('watch-prs.sh のマージ可否', () => {
       [[pullRequest(802, 'CONFLICTING', ['直し待ち']), pullRequest(803, 'CONFLICTING')]],
       [[]],
       [],
+      [reviewSession(803)],
     );
 
     expect(lines).toEqual(['CONFLICT 803']);
   });
 
   it('マージ可否が計算中のPRは決着として出さず、確定した次の周で出す', () => {
-    const lines = watch([[pullRequest(810, 'UNKNOWN')], [pullRequest(810, 'CONFLICTING')]], [[]], []);
+    const lines = watch(
+      [[pullRequest(810, 'UNKNOWN')], [pullRequest(810, 'CONFLICTING')]],
+      [[]],
+      [],
+      [reviewSession(810)],
+    );
 
     expect(lines).toEqual(['CONFLICT 810']);
   });
 
   it('マージできるPRは従来どおり出る', () => {
-    expect(watch([[pullRequest(820, 'MERGEABLE')]], [[]], [])).toEqual([
+    expect(watch([[pullRequest(820, 'MERGEABLE')]], [[]], [], [reviewSession(820)])).toEqual([
       'GREEN 820 ',
       '--- PR 820 ---',
       '本文 820',
@@ -230,6 +262,7 @@ describe('watch-prs.sh のマージ可否', () => {
         [[pullRequest(821, 'MERGEABLE', [], [{ name: 'test', status: 'COMPLETED', conclusion: 'FAILURE' }])]],
         [[]],
         [],
+        [reviewSession(821)],
       ),
     ).toEqual(['RED 821 test']);
   });
@@ -237,7 +270,9 @@ describe('watch-prs.sh のマージ可否', () => {
   it('緑でないPRの本文は引かない', () => {
     // 受け取った側が読むのは緑のPRだけ。赤やコンフリクトの本文まで付けると、差し戻す判断には
     // 要らないものが毎回載る。
-    expect(watch([[pullRequest(822, 'CONFLICTING')]], [[]], [])).toEqual(['CONFLICT 822']);
+    expect(watch([[pullRequest(822, 'CONFLICTING')]], [[]], [], [reviewSession(822)])).toEqual([
+      'CONFLICT 822',
+    ]);
   });
 });
 
@@ -264,8 +299,9 @@ describe('watch-prs.sh の手番（REVIEWED・FIXED）', () => {
   });
 
   it('結論より後にコミットが載っていれば出さない', () => {
-    // 直しが既に入っている＝司令塔の手番ではない。隣の 842 は、見張りが黙っているのではなく
-    // 841 だけを外していることの確かめ。
+    // 直しが既に入っている＝結論を受け取る手番ではない。次はレビューへ出し直す手番なので、
+    // 841 は `UNREVIEWED` のほうへ移る。隣の 842 は、見張りが黙っているのではなく 841 だけを
+    // 外していることの確かめ。
     const lines = watch(
       [
         [
@@ -279,7 +315,7 @@ describe('watch-prs.sh の手番（REVIEWED・FIXED）', () => {
       { pushed: { 841: '2026-08-29T13:00:00Z' } },
     );
 
-    expect(lines).toEqual(['CONFLICT 841', 'CONFLICT 842', 'REVIEWED 842 直しが要る']);
+    expect(lines).toEqual(['CONFLICT 841', 'CONFLICT 842', 'REVIEWED 842 直しが要る', 'UNREVIEWED 841']);
   });
 
   it('ラベルの付いたPRは、結論が残っていても出さない', () => {
@@ -309,8 +345,8 @@ describe('watch-prs.sh の手番（REVIEWED・FIXED）', () => {
     expect(lines).toEqual(['FIXED 850']);
   });
 
-  it('番号を絞っても、手番の2つ（REVIEWED・FIXED）は絞られない', () => {
-    // 絞られると、渡し忘れた番号の直しと結論が出なくなる——取りこぼしを防ぐのがこの2つの役目
+  it('番号を絞っても、手番の3つ（REVIEWED・UNREVIEWED・FIXED）は絞られない', () => {
+    // 絞られると、渡し忘れた番号の直しと結論が出なくなる——取りこぼしを防ぐのがこの3つの役目
     // なので、絞ると役目そのものが消える。853 の `GREEN` が出ていないことで、絞りは効いている。
     const lines = watch(
       [
@@ -330,7 +366,7 @@ describe('watch-prs.sh の手番（REVIEWED・FIXED）', () => {
       },
     );
 
-    expect(lines).toEqual(['FIXED 854', 'REVIEWED 855 通してよい']);
+    expect(lines).toEqual(['FIXED 854', 'REVIEWED 855 通してよい', 'UNREVIEWED 853']);
   });
 
   it('差し戻す前のコミットしか無ければ FIXED を出さない', () => {
@@ -346,6 +382,96 @@ describe('watch-prs.sh の手番（REVIEWED・FIXED）', () => {
     );
 
     expect(lines).toEqual(['FIXED 852']);
+  });
+});
+
+describe('watch-prs.sh の UNREVIEWED', () => {
+  // どれも `0` を渡して走らせる。司令塔がレビュー中のPRを黙らせるために普段そうしていて、そのとき
+  // `GREEN`・`RED`・`CONFLICT` が全部外れることが、この合図を要る理由そのものだから。
+
+  it('結論もレビューのセッションも無いPRを出す', () => {
+    const lines = watch([[pullRequest(860, 'MERGEABLE')]], [[]], [], [], { numbers: [0] });
+
+    expect(lines).toEqual(['UNREVIEWED 860']);
+  });
+
+  it('レビューのセッションが立っていれば出さない', () => {
+    // 手配してもPRの状態は変わらないので、ここを見ていないと結論が付くまで毎周これが返り、
+    // 見張りがその場で終わる。隣の 862 は、見張りが黙っているのではないことの確かめ。
+    const lines = watch(
+      [[pullRequest(861, 'MERGEABLE'), pullRequest(862, 'MERGEABLE')]],
+      [[]],
+      [],
+      [reviewSession(861)],
+      { numbers: [0] },
+    );
+
+    expect(lines).toEqual(['UNREVIEWED 862']);
+  });
+
+  it('最後のコミットより前に立ったセッションでは黙らない', () => {
+    // 直しが入った後も前回のレビューのセッションは残る。畳み忘れで黙ると、直した先が
+    // レビューされないまま通る。
+    const lines = watch(
+      [[pullRequest(863, 'MERGEABLE'), pullRequest(864, 'MERGEABLE')]],
+      [[]],
+      [],
+      [reviewSession(863, '2026-08-29T12:00:00Z'), reviewSession(864)],
+      { numbers: [0], pushed: { 863: '2026-08-29T12:30:00Z', 864: '2026-08-29T12:30:00Z' } },
+    );
+
+    expect(lines).toEqual(['UNREVIEWED 863']);
+  });
+
+  it('畳んだセッションは数えない', () => {
+    const lines = watch(
+      [[pullRequest(865, 'MERGEABLE'), pullRequest(866, 'MERGEABLE')]],
+      [[]],
+      [],
+      [reviewSession(865, '2026-08-29T13:00:00Z', 'SESSION_STATUS_ARCHIVED'), reviewSession(866)],
+      { numbers: [0] },
+    );
+
+    expect(lines).toEqual(['UNREVIEWED 865']);
+  });
+
+  it('結論が最後のコミットより新しいPRと、ラベルの付いたPRは出さない', () => {
+    // 前者は `REVIEWED` の手番、後者は既に誰かの手元にある。
+    const lines = watch(
+      [
+        [
+          pullRequest(867, 'MERGEABLE', [], undefined, '', [
+            { body: '[レビュー] 通してよい', createdAt: '2026-08-29T12:49:33Z' },
+          ]),
+          pullRequest(868, 'MERGEABLE', ['直し待ち']),
+          pullRequest(869, 'MERGEABLE', ['判断待ち']),
+          pullRequest(870, 'MERGEABLE'),
+        ],
+      ],
+      [[]],
+      [],
+      [],
+      { numbers: [0] },
+    );
+
+    expect(lines).toEqual(['REVIEWED 867 通してよい', 'UNREVIEWED 870']);
+  });
+
+  it('セッション一覧を見ない指定では出さない', () => {
+    // 手配済みかどうかを判定する材料が無い。出し続けると見張りが毎周その場で終わるので、
+    // 出さない側へ倒す。TASK が出ていることで、見張り自体は動いている。
+    const lines = watch(
+      [[pullRequest(871, 'MERGEABLE')]],
+      [[issue(905, ['task']), issue(906, [])]],
+      [906],
+      [],
+      {
+        numbers: [0],
+        noSessions: true,
+      },
+    );
+
+    expect(lines).toEqual(['TASK 905']);
   });
 });
 
@@ -414,7 +540,7 @@ describe('watch-prs.sh の STALLED', () => {
       [[pullRequest(830, 'CONFLICTING', [], undefined, 'https://claude.ai/code/session_01AAA')]],
       [[]],
       [],
-      [session('session_01AAA')],
+      [session('session_01AAA'), reviewSession(830)],
     );
 
     expect(lines).toEqual(['CONFLICT 830']);
@@ -426,7 +552,7 @@ describe('watch-prs.sh の STALLED', () => {
       [[pullRequest(830, 'CONFLICTING', [], undefined, 'Closes #900\n\n脚注の無い本文')]],
       [[]],
       [],
-      [session('session_01AAA')],
+      [session('session_01AAA'), reviewSession(830)],
     );
 
     expect(lines).toEqual(['CONFLICT 830']);
@@ -437,7 +563,7 @@ describe('watch-prs.sh の STALLED', () => {
       [[pullRequest(830, 'CONFLICTING', [], undefined, 'Closes #901')]],
       [[]],
       [],
-      [session('session_01AAA', '止まっている')],
+      [session('session_01AAA', '止まっている'), reviewSession(830)],
     );
 
     expect(lines).toEqual(['CONFLICT 830', 'STALLED session_01AAA 止まっている']);
