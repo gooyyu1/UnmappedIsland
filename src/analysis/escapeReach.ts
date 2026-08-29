@@ -1,7 +1,9 @@
+import type { IslandMap } from '../domain/generation/IslandMap';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingInput, CraftingStep } from './CraftingStep';
 import { craftingStepsOf } from './craftingSteps';
+import type { IslandLocations } from './islandLocations';
 import { islandLocationsOf } from './islandLocations';
 
 /**
@@ -18,8 +20,10 @@ import { islandLocationsOf } from './islandLocations';
  * `explore`が何を配るかを読み直さない。島に湧く動物も探索が配るので、同じ道を通って出てくる。海区は
  * 出発集合に入れないため、海の産物は船が出来るまで手に入らない。
  *
- * **島ごとの土地の配りは数えない。** 数えるのは定義の上で鎖が閉じるかで、その土地が生成された島に
- * 在るかは別の問い（`startupReach`が島ごとに測る軸）。
+ * **どの土地を出発集合に置くかだけが、2つの問いの違い。** 定義上の島の土地すべてを置けば「定義の上で
+ * 鎖が閉じるか」（{@link escapeReachOf}）、生成された島が実際に持つ土地だけを置けば「その島で島を
+ * 出られるか」（{@link islandEscapeReachOf}）。島は土地の型を取りこぼすので、後者の出発集合は前者の
+ * 部分集合になる。
  *
  * **個数は数えない。** 同じ工程は何度でも繰り返せるので、届くかどうかに個数は効かない。道具
  * （`consume: false`）も、減らないだけで要ることに変わりはなく、材料と同じ1つの入力として数える。
@@ -107,16 +111,36 @@ export interface EscapeReach {
   readonly unreachedNeeds: readonly EscapeNeed[];
 }
 
+/** タグ → それを名乗る型（宣言順）。 */
+export type TagBearers = ReadonlyMap<number, readonly number[]>;
+
 /**
- * 定義から数える。
+ * 定義から一度だけ解けるもの。**島ごとに数えるときは使い回す**——工程の集めはコーデックスを丸ごと
+ * 舐めるので、島の数だけ繰り返すと、数えるより集める方に時間がかかる。
+ */
+export interface EscapeReachSources {
+  readonly codex: WorldCodex;
+
+  /** 世界のすべての工程。届かない型がどこで切れたかも、ここから引く。 */
+  readonly steps: readonly CraftingStep[];
+
+  readonly tagBearers: TagBearers;
+
+  /** 島を出るのに要るもの（目標そのもの） → それを名乗っているタグ名。 */
+  readonly goals: ReadonlyMap<number, string>;
+
+  /** 探索できる土地の集め（`islandLocations.ts`）。出発集合はここから選ぶ。 */
+  readonly locations: IslandLocations;
+}
+
+/**
+ * 定義を解く。
  *
  * 目標のタグを名乗る型が1つも無ければ投げる——島を出る手立てが宣言されていないのに数えると、
  * 「要るものは全部揃っている」が空集合について成り立ってしまう。
  */
-export function escapeReachOf(codex: WorldCodex): EscapeReach {
-  const departure = islandLocationsOf(codex).island;
+export function escapeReachSourcesOf(codex: WorldCodex): EscapeReachSources {
   const tagBearers = tagBearersOf(codex);
-  const closure = closureFrom(codex, tagBearers, departure);
 
   const goals = new Map<number, string>();
   for (const tagName of ESCAPE_GOAL_TAG_NAMES) {
@@ -126,7 +150,27 @@ export function escapeReachOf(codex: WorldCodex): EscapeReach {
     for (const objectGlobalId of bearers) if (!goals.has(objectGlobalId)) goals.set(objectGlobalId, tagName);
   }
 
-  const needs = needsOf(codex, closure, tagBearers, goals);
+  return {
+    codex,
+    steps: [...codex.objects].flatMap((def) => craftingStepsOf(codex, def)),
+    tagBearers,
+    goals,
+    locations: islandLocationsOf(codex),
+  };
+}
+
+/** 定義上の島の土地すべてを出発集合にして数える。 */
+export function escapeReachOf(sources: EscapeReachSources): EscapeReach {
+  return reachFrom(sources, sources.locations.island);
+}
+
+/** 生成された島が実際に持つ土地を出発集合にして数える。 */
+export function islandEscapeReachOf(sources: EscapeReachSources, map: IslandMap): EscapeReach {
+  return reachFrom(sources, departureOf(sources, map));
+}
+
+function reachFrom(sources: EscapeReachSources, departure: readonly ObjectDef[]): EscapeReach {
+  const needs = needsOf(sources, closureFrom(sources, departure));
   return {
     departureObjectNames: departure.map((def) => def.name),
     needs,
@@ -134,8 +178,27 @@ export function escapeReachOf(codex: WorldCodex): EscapeReach {
   };
 }
 
-/** タグ → それを名乗る型（宣言順）。 */
-type TagBearers = ReadonlyMap<number, readonly number[]>;
+/**
+ * 生成された島が持つ土地（宣言順）。海区は出発集合に入れない（冒頭）。
+ *
+ * 土地にも海区にも数えられていない型を置いたサイトは投げる——黙って落とすと、その土地の産物を
+ * 丸ごと欠いたまま「この島では島を出られない」と数えることになり、壊れたことが数字の側に現れない。
+ */
+function departureOf(sources: EscapeReachSources, map: IslandMap): readonly ObjectDef[] {
+  const islandGlobalIds = new Set(sources.locations.island.map((def) => def.globalId));
+  const present = new Set<number>();
+  for (const site of map.sites) {
+    const objectGlobalId = site.type!.objectDefGlobalId;
+    if (sources.locations.seaOnly.has(objectGlobalId)) continue;
+    if (!islandGlobalIds.has(objectGlobalId))
+      throw new Error(
+        `サイト ${site.index} の土地 '${sources.codex.objects.get(objectGlobalId).name}' が、` +
+          '探索できる土地に数えられていません。',
+      );
+    present.add(objectGlobalId);
+  }
+  return sources.locations.island.filter((def) => present.has(def.globalId));
+}
 
 /** 島の産物から届いた型と、そこまでの工程数・工程。 */
 interface Closure {
@@ -144,9 +207,6 @@ interface Closure {
 
   /** 型 → 最も少ない工程でそこへ届いた工程。出発集合の型は載らない。 */
   readonly via: ReadonlyMap<number, CraftingStep>;
-
-  /** 世界のすべての工程。届かない型がどこで切れたかも、ここから引く。 */
-  readonly steps: readonly CraftingStep[];
 }
 
 /**
@@ -156,19 +216,18 @@ interface Closure {
  * あり、これが**循環に落ちないこと**でもある——ある型の工程数はその入力すべてより必ず大きいので、
  * 自分を材料にして自分へ届く鎖は数えられない。
  */
-function closureFrom(codex: WorldCodex, tagBearers: TagBearers, departure: readonly ObjectDef[]): Closure {
-  const steps = [...codex.objects].flatMap((def) => craftingStepsOf(codex, def));
+function closureFrom(sources: EscapeReachSources, departure: readonly ObjectDef[]): Closure {
   const hops = new Map<number, number>(departure.map((def) => [def.globalId, 0]));
   const via = new Map<number, CraftingStep>();
 
   for (let round = 1; ; round++) {
     const arrived = new Map<number, CraftingStep>();
-    for (const step of steps) {
-      if (!step.inputs.every((input) => satisfierOf(hops, tagBearers, input) !== undefined)) continue;
+    for (const step of sources.steps) {
+      if (!step.inputs.every((input) => satisfierOf(hops, sources.tagBearers, input) !== undefined)) continue;
       for (const objectGlobalId of producedBy(step))
         if (!hops.has(objectGlobalId) && !arrived.has(objectGlobalId)) arrived.set(objectGlobalId, step);
     }
-    if (arrived.size === 0) return { hops, via, steps };
+    if (arrived.size === 0) return { hops, via };
 
     for (const [objectGlobalId, step] of arrived) {
       hops.set(objectGlobalId, round);
@@ -181,14 +240,9 @@ function closureFrom(codex: WorldCodex, tagBearers: TagBearers, departure: reado
  * 目標から要るものを推移的に集める。届いた型は届いた工程の入力を辿り、届かない型はそれを生みうる
  * 工程すべてへ広げる——**途切れた先だけが広がる**ので、鎖が閉じている限り一覧は実際に通る道だけになる。
  */
-function needsOf(
-  codex: WorldCodex,
-  closure: Closure,
-  tagBearers: TagBearers,
-  goals: ReadonlyMap<number, string>,
-): readonly EscapeNeed[] {
+function needsOf(sources: EscapeReachSources, closure: Closure): readonly EscapeNeed[] {
   const needs = new Map<number, EscapeNeed>();
-  const pending = [...goals.keys()];
+  const pending = [...sources.goals.keys()];
 
   while (pending.length > 0) {
     const objectGlobalId = pending.pop()!;
@@ -199,28 +253,28 @@ function needsOf(
     const blockedBy: BlockedStep[] = [];
 
     if (hops === undefined)
-      for (const step of closure.steps) {
+      for (const step of sources.steps) {
         if (!producedBy(step).includes(objectGlobalId)) continue;
         const missing = step.inputs.filter(
-          (input) => satisfierOf(closure.hops, tagBearers, input) === undefined,
+          (input) => satisfierOf(closure.hops, sources.tagBearers, input) === undefined,
         );
         blockedBy.push({
-          step: needStepOf(codex, closure, tagBearers, step),
-          missing: missing.map((input) => needInputOf(codex, closure, tagBearers, input)),
+          step: needStepOf(sources, closure, step),
+          missing: missing.map((input) => needInputOf(sources, closure, input)),
         });
-        for (const input of missing) pending.push(...declaredSatisfiersOf(tagBearers, input));
+        for (const input of missing) pending.push(...declaredSatisfiersOf(sources.tagBearers, input));
       }
 
     if (via !== undefined)
-      for (const input of via.inputs) pending.push(satisfierOf(closure.hops, tagBearers, input)!);
+      for (const input of via.inputs) pending.push(satisfierOf(closure.hops, sources.tagBearers, input)!);
 
     needs.set(objectGlobalId, {
-      objectName: codex.objects.get(objectGlobalId).name,
-      goalTagName: goals.get(objectGlobalId),
+      objectName: sources.codex.objects.get(objectGlobalId).name,
+      goalTagName: sources.goals.get(objectGlobalId),
       reach:
         hops === undefined
           ? undefined
-          : { hops, via: via === undefined ? undefined : needStepOf(codex, closure, tagBearers, via) },
+          : { hops, via: via === undefined ? undefined : needStepOf(sources, closure, via) },
       blockedBy,
     });
   }
@@ -236,30 +290,21 @@ function hopsOrder(need: EscapeNeed): number {
   return need.reach?.hops ?? Number.MAX_SAFE_INTEGER;
 }
 
-function needStepOf(
-  codex: WorldCodex,
-  closure: Closure,
-  tagBearers: TagBearers,
-  step: CraftingStep,
-): NeedStep {
+function needStepOf(sources: EscapeReachSources, closure: Closure, step: CraftingStep): NeedStep {
   return {
     kind: step.kind,
     name: step.name,
-    ownerObjectName: codex.objects.get(step.ownerGlobalId).name,
-    inputs: step.inputs.map((input) => needInputOf(codex, closure, tagBearers, input)),
+    ownerObjectName: sources.codex.objects.get(step.ownerGlobalId).name,
+    inputs: step.inputs.map((input) => needInputOf(sources, closure, input)),
   };
 }
 
-function needInputOf(
-  codex: WorldCodex,
-  closure: Closure,
-  tagBearers: TagBearers,
-  input: CraftingInput,
-): NeedInput {
-  const named = input.kind === 'object' ? input.objectGlobalId : satisfierOf(closure.hops, tagBearers, input);
+function needInputOf(sources: EscapeReachSources, closure: Closure, input: CraftingInput): NeedInput {
+  const named =
+    input.kind === 'object' ? input.objectGlobalId : satisfierOf(closure.hops, sources.tagBearers, input);
   return {
-    tagName: input.kind === 'tag' ? codex.tagNames.getName(input.tagGlobalId) : undefined,
-    objectName: named === undefined ? undefined : codex.objects.get(named).name,
+    tagName: input.kind === 'tag' ? sources.codex.tagNames.getName(input.tagGlobalId) : undefined,
+    objectName: named === undefined ? undefined : sources.codex.objects.get(named).name,
     consumed: input.consumed,
   };
 }

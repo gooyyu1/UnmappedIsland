@@ -18,7 +18,7 @@
 1レコード1行のフロー形式で書くのは、`git diff` に値だけが並んで**どのレコードの値かが分からなく
 なる**のを避けるためです。
 
-**5本すべてがこの形です。** `docs/diagnostics/*.md` が持つのは読み方——何を測ったか・どこに線を
+**6本すべてがこの形です。** `docs/diagnostics/*.md` が持つのは読み方——何を測ったか・どこに線を
 引いたか・何を数えていないか——だけで、**数値は1行も書きません**（書けば、再生成したYAMLとずれます）。
 どちらが古いかを運用で守らずに済むよう、**手書きの文書の「YAMLの節」の表とYAMLの節は、両方向で
 突き合わせています**（片方にしか無い節があると `npm test` が赤くなる）。
@@ -33,6 +33,7 @@
 npm run stats:balance
 npm run stats:climate
 npm run stats:escape
+npm run stats:escape-islands
 npm run stats:startup
 npm run stats:terrain
 ```
@@ -57,6 +58,7 @@ PRの段では `npm test` が、`main` へ入った後は
 | [アイテム収支](../../stats/balance.yaml) | **丸ごと作り直して比べる**（1秒で済むので取りこぼしが無い） |
 | [気候システム統計](../../stats/climate.yaml) | シミュレーションの入力（`core.yaml`）の**指紋**をレポートへ書き込み、突き合わせる。定義から静的に解ける `activity_hours`・`excluded_locations` の節だけは作り直して比べる |
 | [島を出るまでの工程数](../../stats/escape_reach.yaml) | **丸ごと作り直して比べる**（定義から解くだけなので一瞬） |
+| [島ごとの脱出可否](../../stats/island_escape_reach.yaml) | **丸ごと作り直して比べる**（2,000シードで2秒） |
 | [開始地点の立ち上がり](../../stats/startup_reach.yaml) | **丸ごと作り直して比べる**（2,000シードでも2秒） |
 | [地形生成統計](../../stats/terrain.yaml) | **丸ごと作り直して比べる**（500シードで1秒） |
 
@@ -99,6 +101,10 @@ PRの段では `npm test` が、`main` へ入った後は
   鎖が長すぎるかどうかの判定は出さない。
   読み方は [`EscapeReachStats.md`](./EscapeReachStats.md)。
   生成元: `tests/diagnostics/escapeReachStatsReport.test.ts`（計算は `src/analysis/escapeReach.ts`）
+- [島ごとの脱出可否](../../stats/island_escape_reach.yaml) — 上と同じ鎖を、**生成された島が実際に
+  持つ土地**から数えたもの。島を出られない島の割合と、土地の型の取りこぼし・鎖の切れ目。
+  読み方は [`IslandEscapeReachStats.md`](./IslandEscapeReachStats.md)。
+  生成元: `tests/diagnostics/islandEscapeReachStatsReport.test.ts`（計算は `src/analysis/escapeReach.ts`）
 - [開始地点の立ち上がり](../../stats/startup_reach.yaml) — 最初の段を越えるのに要るもの6つが、
   各サイトから何歩先にあるか（移動時間・道を見つける探索時間つき）と、島ごとに最も条件の良い
   サイトの値の分布（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 2.3節参照）。
