@@ -214,6 +214,7 @@ describe('fire.yamlの火の連鎖', () => {
     // 洞窟がsheltered: 1を宣言し、火口の祖先がそこで止まる（ContainerSystem.md 6節）。
     const cave = spawnInto('shallow_cave', land, 'fixtures');
     setWeather('heavy_rain');
+    expect(cave.tryGetAction('enter', player)?.tryExecute(), '屋根の下へ入る').toBe(true);
     const grass = spawnInto('dry_grass', cave, 'items');
     const drill = spawnInto('fire_drill', player, 'hand');
 
