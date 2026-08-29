@@ -11,6 +11,7 @@ import { githubSlugs } from '../../scripts/githubSlugs.mjs';
  * - 見出しの【未実装: 識別子】ラベルが、実装後に剥がし忘れられていないこと
  * - 【いつか: 識別子】の印と docs/Someday.md の項目が1対1で対応すること（DocumentStyle.md 4.1節）
  * - 確定度の印が、印として働く形で付いていること（DocumentStyle.md 6節）
+ * - 確定節が射程・中身・出どころの条件を満たすこと（同 6.1節。有効化は issue #1186）
  *
  * アンカーの照合には、公開サイトが実際にIDを振るのと同じ {@link githubSlugs} を使う。
  */
@@ -38,6 +39,15 @@ const CONFIRMED_LABEL = '【確定】';
 
 /** 既定である暫定の側に印を付ける語。使わない。 */
 const PROVISIONAL_LABELS = ['【未確定】', '【暫定】'];
+
+/** 確定節が見出しの直後に置く、印の根拠の行（DocumentStyle.md 6.1節）。 */
+const SOURCE_LINE_PREFIX = '**出どころ**:';
+
+/**
+ * 本文が暫定であることを自白する語（DocumentStyle.md 6.1節）。確定節の射程には現れない——
+ * 印は見出しに付くので、但し書きを本文へ添えても印を弱められない。
+ */
+const PROVISIONAL_WORDS = ['目安', '仮置き', '仮決め', 'まだ決め', '未定', 'かもしれ', '暫定'];
 
 /** 「いつか実装したいもの」の実体の一覧（DocumentStyle.md 4.1節）。 */
 const SOMEDAY_DOC = join('docs', 'Someday.md');
@@ -91,8 +101,50 @@ function slugsOf(headings: readonly string[]): Set<string> {
   return new Set(githubSlugs(headings));
 }
 
+/** 見出しと、次の見出しまでの本文。`【確定】` の射程はこの本文だけ（DocumentStyle.md 6.1節）。 */
+interface Section {
+  /** 見出しの行番号（1始まり）。 */
+  line: number;
+  /** 見出しの `#` の数。 */
+  depth: number;
+  heading: string;
+  /** 次の見出しまでの本文。インラインコード・コードフェンスは除いてある（例示を拾わないため）。 */
+  body: { line: number; text: string }[];
+  /** より深い見出しが直後に続くか（＝下位節を抱えているか）。 */
+  hasSubsections: boolean;
+}
+
+function sectionsOf(markdown: string): Section[] {
+  const sections: Section[] = [];
+  for (const { line, text } of textLines(markdown)) {
+    const match = /^(#{1,6})\s+(.*)$/.exec(text);
+    if (match !== null) {
+      sections.push({
+        line,
+        depth: match[1].length,
+        heading: match[2].trim(),
+        body: [],
+        hasSubsections: false,
+      });
+    } else {
+      sections[sections.length - 1]?.body.push({ line, text });
+    }
+  }
+  return sections.map((section, index) => ({
+    ...section,
+    hasSubsections: (sections[index + 1]?.depth ?? 0) > section.depth,
+  }));
+}
+
 const docByPath = new Map(DOC_FILES.map((rel) => [rel, read(rel)]));
 const headingsByPath = new Map([...docByPath].map(([rel, text]) => [rel, headingsOf(text)]));
+
+/** `【確定】` の付いた節（DocumentStyle.md 6.1節の4条件を課される対象）。 */
+const confirmedSections = [...docByPath].flatMap(([doc, text]) =>
+  sectionsOf(text)
+    .filter((section) => section.heading.includes(CONFIRMED_LABEL))
+    .map((section) => ({ doc, ...section })),
+);
 
 /** ファイル名（basename）→ docs内の候補パス。 */
 const docsByBasename = new Map<string, string[]>();
@@ -349,6 +401,58 @@ describe('ドキュメントの参照', () => {
     expect(
       found,
       `暫定は既定なので印を付けない（印が多数側に付くと背景になって読めない）:\n${found.join('\n')}`,
+    ).toEqual([]);
+  });
+});
+
+/**
+ * `【確定】` を付けてよい節の条件（DocumentStyle.md 6.1節）。
+ *
+ * **既存の確定節が規約より先にあるので、有効化は文書を合わせる issue #1186 で行う**——`.skip` を
+ * 外すだけで済むように、検査そのものはここで完成させてある。
+ */
+describe.skip('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節）', () => {
+  it('確定節を1つ以上拾えている', () => {
+    // 拾えていないと、全部が規約どおりの状態と見分けが付かないまま緑になる。
+    expect(confirmedSections.length).toBeGreaterThan(0);
+  });
+
+  it('確定節が下位節を抱えていない（射程はその節の本文だけ）', () => {
+    const nested = confirmedSections
+      .filter((section) => section.hasSubsections)
+      .map((section) => `${section.doc}:${section.line} ${section.heading}`);
+    expect(
+      nested,
+      `下位節を抱えた確定節（親に付けると、見出し1つで子の全行が確定になる）:\n${nested.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('確定節の本文に、暫定を表す語が無い（但し書きは印の内側にある）', () => {
+    const found: string[] = [];
+    for (const section of confirmedSections) {
+      for (const { line, text } of section.body) {
+        for (const word of PROVISIONAL_WORDS) {
+          if (text.includes(word)) found.push(`${section.doc}:${line}: 「${word}」`);
+        }
+      }
+    }
+    expect(
+      found,
+      `確定節に残った仮決め（印の外——枝番の節・未決事項——へ出す）:\n${found.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('確定節が、見出しの直後に出どころの1行を持つ', () => {
+    const missing: string[] = [];
+    for (const section of confirmedSections) {
+      const first = section.body.find(({ text }) => text.trim() !== '');
+      if (first === undefined || !first.text.startsWith(SOURCE_LINE_PREFIX)) {
+        missing.push(`${section.doc}:${section.line} ${section.heading}`);
+      }
+    }
+    expect(
+      missing,
+      `出どころの無い確定節（人間の判断の在処が節から読めない）:\n${missing.join('\n')}`,
     ).toEqual([]);
   });
 });
