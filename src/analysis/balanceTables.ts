@@ -67,7 +67,7 @@ export interface SupplyRow {
   readonly hasUnresolvedReferences: boolean;
 
   readonly spawns: readonly NamedAmount[];
-  readonly actorDeltas: readonly NamedAmount[];
+  readonly agentDeltas: readonly NamedAmount[];
   readonly selfDeltas: readonly NamedAmount[];
 }
 
@@ -519,9 +519,9 @@ function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly Supp
   const rows: SupplyRow[] = [];
   for (const ref of steps) {
     const spawns = expectedSpawns(ref.step);
-    const actorDeltas = expectedDeltas(ref.step, 'agent');
+    const agentDeltas = expectedDeltas(ref.step, 'agent');
     const selfDeltas = expectedDeltas(ref.step, 'self');
-    if (spawns.size === 0 && actorDeltas.size === 0 && selfDeltas.size === 0) continue;
+    if (spawns.size === 0 && agentDeltas.size === 0 && selfDeltas.size === 0) continue;
 
     rows.push({
       ownerName: ref.def.name,
@@ -534,7 +534,7 @@ function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly Supp
         name: codex.objectNames.getName(globalId),
         amount,
       })),
-      actorDeltas: [...actorDeltas].map(([globalId, amount]) => ({
+      agentDeltas: [...agentDeltas].map(([globalId, amount]) => ({
         name: codex.propertyNames.getName(globalId),
         amount,
       })),

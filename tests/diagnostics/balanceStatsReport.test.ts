@@ -242,7 +242,7 @@ function buildSections(codex: WorldCodex, tables: BalanceTables): readonly YamlR
         unresolved_references: row.hasUnresolvedReferences,
         elapsed_minutes: rounded(row.elapsedMinutes, 0),
         spawns: amountRecords(row.spawns),
-        actor_deltas: amountRecords(row.actorDeltas),
+        agent_deltas: amountRecords(row.agentDeltas),
         self_deltas: amountRecords(row.selfDeltas),
       })),
     },

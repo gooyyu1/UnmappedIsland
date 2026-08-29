@@ -601,7 +601,7 @@ function supplyHtml(view: CodexView, tables: BalanceTables): string {
               `${objectLinkHtml(view, name, true)} <span class="muted">×${formatNumber(amount, 2)}</span>`,
           )
           .join(' '),
-    [amountListHtml(row.actorDeltas), amountListHtml(row.selfDeltas, 'self')]
+    [amountListHtml(row.agentDeltas), amountListHtml(row.selfDeltas, 'self')]
       .filter((text) => text !== '—')
       .join('、') || '—',
   ]);
