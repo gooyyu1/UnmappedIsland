@@ -305,11 +305,11 @@ export interface PlayScreenView {
 
   /**
    * その場所の枠の並び（空き枠はundefined）。**枠の位置がそのまま並びになる**ので、枠数の決まった
-   * スロット（入れ物の中身）で抜けた枠は詰まらない——世界が枠の位置を保つ以上、画面もそこを
+   * スロット（手持ち・入れ物の中身）で抜けた枠は詰まらない——世界が枠の位置を保つ以上、画面もそこを
    * 動かさない（SlotSystem.md 3節）。
    *
-   * **手持ちだけは前へ詰まって出る。** 詰めるのは世界の側なので（packToFront）、ここは他の場所と
-   * 同じく枠の位置をそのまま映す。
+   * 手持ちがレーンに入り切らないときだけは、写し取る前に世界の側が詰まる（packToFrontIfHidden）。
+   * ここは詰まった結果をそのまま映すだけで、他の場所と扱いは変わらない。
    */
   readonly cardsIn: (place: CardPlace) => readonly (ObjectCardStack | undefined)[];
 
@@ -373,16 +373,30 @@ export function withFrozenCards(
 }
 
 /**
- * その場所の中身を、空き枠を左に残さないように前へ詰める（ScreenLayout.md 7.3節）。**枠の数は
- * 変わらない**——いくつ持てるかはスロットの宣言が決めることで、中身をどこへ寄せるかとは別
- * （SlotSystem.md 3節）。前詰めのスロットには初めから穴が無いので何も起きない。
+ * その場所の中身を、空き枠を左に残さないように前へ詰める。**画面の都合による場当たりの割り切り**で、
+ * スロットの規定ではない（ScreenLayout.md 7.3節）。**画面に入り切らない札が在るときにしか詰めない**
+ * ので、固定枠スロットの枠の位置は原則として動かないまま（SlotSystem.md 3節）。
  *
- * **詰めるのは世界の側で、見た目の層ではない。** 並べる枠だけを詰めると、枠の位置とスロットの
+ * visibleCellsは、その場所を映すレーンに**一度に見えている枠の数**。詰めるのは次の3つが揃うときだけ。
+ *
+ * - レーンに枠が全部は表示できていない
+ * - 入り切らない枠に札が在る
+ * - その札より左に空き枠が在る
+ *
+ * **画面の都合でワールドの側を変えている。** 詰めるのを見た目の層に留めると、枠の位置とスロットの
  * 添字がずれ、空き枠へ落としたカードが別の枠へ入る（落とし先はSlotPositionのまま渡る、cardPlaces）。
+ * 本来やらないことを承知でやっているので、条件が消えたらこの関数ごと消える。
  */
-function packToFront(place: CardPlace): void {
+function packToFrontIfHidden(place: CardPlace, visibleCells: number): void {
+  const cells = place.cells;
+  if (cells.length <= visibleCells) return;
+
+  const hidden = cells.findIndex((cell, index) => index >= visibleCells && cell.stack !== undefined);
+  const empty = cells.findIndex((cell) => cell.stack === undefined);
+  if (hidden < 0 || empty < 0 || empty > hidden) return;
+
   let next = 0;
-  place.cells.forEach((cell, index) => {
+  cells.forEach((cell, index) => {
     const stack = cell.stack;
     if (stack === undefined) return;
 
@@ -441,19 +455,27 @@ function collapsed(looks: readonly InfluenceLook[]): readonly StatusInfluence[] 
  * ワールドの状態を写し取るだけなので、アクションでワールドが変わったら作り直す（PlayScene参照）。
  * **写し取るのは一度に全部**——ここが作るものは同じ時点のワールドを映す。
  *
- * 唯一の例外が**写し取る前に手持ちを前へ詰めること**（packToFront）。手持ちが画面に出る形は
- * ここを通ってしか作れないので、詰める手順を呼び出し側に覚えさせない。
+ * 唯一の例外が**写し取る前に手持ちを前へ詰めること**（packToFrontIfHidden）。本来の写し取りの後ろに
+ * 後付けした画面都合の割り切りで、ワールドの側を変えている。
+ *
+ * handLaneCellsは、ハンドレーンに一度に見えている枠の数。**画面にしか無い値**なので、知らない
+ * 呼び出し側（枠が全部見えているのと同じ扱い）は詰めない。
  *
  * カードの語彙は3つに分かれている。場所とスロットの対応（cardPlaces）・札の見た目（cardLooks）・
  * 札の上の操作（cardOperations）で、ここはそれを束ねて画面の区画へ配る。
  */
-export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Localization): PlayScreenView {
+export function fromGameSession(
+  game: StartedGame,
+  codex: WorldCodex,
+  locale: Localization,
+  handLaneCells: number = Number.POSITIVE_INFINITY,
+): PlayScreenView {
   const location = game.player.location ?? game.startLocation;
   const places = cardPlacesOf(game.player, location);
 
-  // 手持ちは空き枠を左に残さない（ScreenLayout.md 7.3節）。レーンに一度に見える枠の数は端末で
-  // 変わるので、右の枠に居る札は縦型では送らないと見えない。
-  packToFront(places('hand'));
+  // 縦型ではレーンに6枠が入り切らず、右の枠に居る札は送らないと見えない。**入り切らないときだけ**
+  // 前へ詰める場当たり対応（ScreenLayout.md 7.3節）。
+  packToFrontIfHidden(places('hand'), handLaneCells);
 
   /** ワールドが個体に付けた名前（土地の命名、IslandMap）。付いていない個体ではundefined。 */
   const instanceName = (instanceId: number): string | undefined => {

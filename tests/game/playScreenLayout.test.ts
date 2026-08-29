@@ -203,25 +203,25 @@ describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
     expect(portrait.sidebarSeparator).toBeUndefined();
   });
 
-  it('どの画面比でもレーンにカードが5枚見える', () => {
+  it('どの画面比でもレーンにカードが5枚以上見える', () => {
     // 5枚見えていないと、場に何があるかを見比べるより先に送る操作が要る（ScreenLayout.md 3.1節）。
-    // レーンは外周マージン（6u）の内側から送る。横型はその外側の左右に区切りの帯がかぶるので、
-    // 見えるのは送り幅だけ。縦型の右端は画面の端そのもので、はみ出したカードもそのまま見える。
-    const cards = 205 * 5 + 12 * 4;
-    for (const [width, height] of [
-      [1080, 1920], // 9:16（縦型の基準）
-      [1080, 1440], // 3:4
-      [1920, 1080], // 16:9（横型の基準）
-      [1440, 1080], // 4:3
-      [1152, 1080], // 16:15
-      [1080, 1080], // 正方形
-      [2560, 1080], // 21:9
+    // 何枠見えるかを数えるのはlaneCellsなので、ここでも同じ答えを使う——「横型は左右とも区切りの帯が
+    // かぶり、縦型の右端は画面の端そのもの」という数え方を2箇所に持つと、片方だけ変えても気づけない。
+    // 6が出るかどうかが、手持ちの6枠目が隠れるか（＝前へ詰めるか、7.3節）を分ける。
+    for (const [width, height, expected] of [
+      [1080, 1920, 5], // 9:16（縦型の基準）
+      [540, 960, 5], // 9:16の小さな端末
+      [1080, 1440, 6], // 3:4
+      [1920, 1080, 6], // 16:9（横型の基準）
+      [1440, 1080, 5], // 4:3
+      [1152, 1080, 5], // 16:15
+      [1080, 1080, 5], // 正方形
+      [2560, 1080, 9], // 21:9
     ]) {
-      const layout = new PlayScreenLayout(new ScreenMetrics(width, height));
-      const hidden = layout.metrics.isLandscape ? 12 : 6;
-      const visible = layout.fieldArea.width / layout.metrics.u - hidden;
-      // 1u未満の差はuを掛けて割り戻す途中の丸め。
-      expect(visible, `${width}×${height}`).toBeGreaterThan(cards - 1);
+      const { laneCells } = new PlayScreenLayout(new ScreenMetrics(width, height));
+
+      expect(laneCells, `${width}×${height}`).toBe(expected);
+      expect(laneCells, `${width}×${height}は5枚以上`).toBeGreaterThanOrEqual(5);
     }
   });
 

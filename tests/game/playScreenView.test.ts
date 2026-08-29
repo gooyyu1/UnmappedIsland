@@ -93,6 +93,13 @@ object_defs:
   const viewOf = (mini: MiniGame): PlayScreenView => fromGameSession(mini.game, mini.codex, locale);
 
   /**
+   * ハンドレーンに枠がhandLaneCells個だけ見えている画面。手持ちの前詰めは**入り切らないときだけ**の
+   * 場当たり対応なので（ScreenLayout.md 7.3節）、その条件を作るのに要る。
+   */
+  const viewOnLane = (mini: MiniGame, handLaneCells: number): PlayScreenView =>
+    fromGameSession(mini.game, mini.codex, locale, handLaneCells);
+
+  /**
    * 画面の区画（3つのレーン）が今映している場所。テストは区画を名前で書きたいので、その都度ビューと
    * 同じ解決を通す（cardPlaces）。
    */
@@ -149,14 +156,33 @@ object_defs:
     ]);
   });
 
-  it('手持ちは、右の枠に入れた札も左端へ詰めて映す', () => {
-    // 縦型のレーンには6枠が一度に入らない（ScreenLayout.md 7.3節）ので、右の枠に居る札は送らないと
-    // 見えない。空き枠を左に残さなければ、持っている枚数がレーンに収まる限りは必ず見える。
+  it('手持ちの枠がレーンに全部見えているなら、右の枠に入れた札は詰まらない', () => {
+    // 前詰めは画面に入り切らないときだけの割り切り（ScreenLayout.md 7.3節）。枠の位置が動かないこと
+    // そのものに用途がある（かごを右端に置き、左を作業スペースに空ける）ので、見えているなら動かさない。
     const mini = setUp();
     const stone = mini.createObject('stone');
     expect(stone.moveToSlotOrRejection(mini.slot('hand'), { kind: 'cell', index: 5 })).toBeUndefined();
 
-    const view = viewOf(mini);
+    const cells = handCells(viewOnLane(mini, 6), mini);
+
+    expect(cells.slice(0, 5), '左の5枠は空いたまま').toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+    expect(cells[5]?.objects, '入れた枠に居続ける').toEqual([stone]);
+  });
+
+  it('レーンに入り切らない枠に札が在るときは、左端へ詰めて映す', () => {
+    // 縦型のレーンには6枠が一度に入らない（ScreenLayout.md 7.3節）ので、6枠目に居る札は送らないと
+    // 見えない。左の空き枠へ寄せれば見える。
+    const mini = setUp();
+    const stone = mini.createObject('stone');
+    expect(stone.moveToSlotOrRejection(mini.slot('hand'), { kind: 'cell', index: 5 })).toBeUndefined();
+
+    const view = viewOnLane(mini, 4);
     const cells = handCells(view, mini);
 
     expect(cells[0]?.objects, '左端の枠へ寄る').toEqual([stone]);
@@ -174,18 +200,36 @@ object_defs:
     ).toHaveLength(6);
   });
 
-  it('手持ちの間の枠が抜けたら詰まり、残った札の順は変わらない', () => {
+  it('入り切らない枠に札が無いなら、間の空き枠はそのまま残る', () => {
     const mini = setUp();
-    const held = ['stone', 'twig', 'leaf'].map((name) => mini.createObject(name, mini.slot('hand')));
+    const stone = mini.createObject('stone', mini.slot('hand'));
+    const leaf = mini.createObject('leaf');
+    expect(leaf.moveToSlotOrRejection(mini.slot('hand'), { kind: 'cell', index: 2 })).toBeUndefined();
+
+    expect(handCells(viewOnLane(mini, 4), mini).map((card) => card?.objects[0])).toEqual([
+      stone,
+      undefined,
+      leaf,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+  });
+
+  it('詰めたときも、残った札どうしの前後は変わらない', () => {
+    const mini = setUp();
+    const held = ['stone', 'twig', 'leaf', 'shell', 'bone', 'feather'].map((name) =>
+      mini.createObject(name, mini.slot('hand')),
+    );
 
     expect(held[1].moveToSlotOrRejection(mini.slot('items', mini.land))).toBeUndefined();
 
-    expect(handCells(viewOf(mini), mini).map((card) => card?.objects[0])).toEqual([
+    expect(handCells(viewOnLane(mini, 4), mini).map((card) => card?.objects[0])).toEqual([
       held[0],
       held[2],
-      undefined,
-      undefined,
-      undefined,
+      held[3],
+      held[4],
+      held[5],
       undefined,
     ]);
   });
