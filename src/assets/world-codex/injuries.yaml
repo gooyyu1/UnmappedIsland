@@ -345,9 +345,21 @@ object_defs:
       # 量の差になる。
       #
       # 量そのものの釣り合いは、荷重が移動の速さと疲れへ効く形が入って初めて見える（同 未決事項）。
-      - modify:
+      #
+      # **添え木で固定している間は半分に緩む**（immobilizing、treatments.yaml）。緩んだ後の量を
+      # 押し上げている側が持つのは、hemostaticで出血のゲートを開け閉めするのと同じ形（同3.1節）
+      # ——治療具の側に「-9,000」と書くと、押し上げていない傷（捻挫）へ当てたときに無傷より軽くなる。
+      # 9,000gなら、空身は通れる段まで戻り、普段どおりの荷（ヤシの実5つ）でも道を通れる。
+      - conditions:
+          - not: {slot: treatment, matches: {tag: immobilizing}}
+        modify:
           parent:
             load: 18000
+      - conditions:
+          - {slot: treatment, matches: {tag: immobilizing}}
+        modify:
+          parent:
+            load: 9000
 
   # 檻の傷（docs/engine/TrapSystem.md 5.1節・5.2節）。閉じ込められた獣が丸太へ体を打ちつけて負う
   # 打ち身で、**bleedingを持たない**。

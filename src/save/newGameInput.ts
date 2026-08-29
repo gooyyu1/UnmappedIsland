@@ -1,6 +1,7 @@
 import type { Rng } from '../domain/Rng';
 import type { SaveData } from './SaveData';
 import { ISLAND_NAME_MAX_LENGTH, SAVE_SCHEMA_VERSION, SEED_MAX } from './SaveData';
+import { currentAssetPacks } from './savedAssetPacks';
 
 const NAME_ADJECTIVES = [
   '霧深い',
@@ -44,7 +45,12 @@ export function normalizedIslandNameOrUndefined(input: string): string | undefin
   return name.length >= 1 && name.length <= ISLAND_NAME_MAX_LENGTH ? name : undefined;
 }
 
-/** 新規ゲームの入力からセーブデータを作る。開始直後なので生存日数は0。 */
+/**
+ * 新規ゲームの入力からセーブデータを作る。開始直後なので生存日数は0。
+ *
+ * 入っているアセットパックの並びはここで刻む（AssetPack.md 6.4節）——ユーザの入力ではないので、
+ * 呼び出し側が「作った後にパックも書く」手順を覚える必要は無い。
+ */
 export function createSaveData(
   islandName: string,
   seed: number,
@@ -60,5 +66,6 @@ export function createSaveData(
     elapsedDays: 0,
     pinnedStatuses: [],
     mapCardPositions: [],
+    assetPacks: currentAssetPacks(),
   };
 }
