@@ -371,3 +371,183 @@ object_defs:
     expect(costOf('spear')).toMatchObject({ minutes: undefined, onlyFromEverlastingDevice: false });
   });
 });
+
+/**
+ * 値段が付かない物を要求する経路を、「島のどこにも入手経路が無い」の側へ落とさないこと
+ * （issue #1188）。
+ *
+ * 朽ちない設備の産物は按分の分母が無いだけで手に入る。それを道具に取る経路は成立するし
+ * （道具の時間は按分しない、#550）、それを材料に取る物も手に入る——値段が付かないだけ。
+ */
+describe('値段が付かない物を要求する経路', () => {
+  const YAML = `
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  rocky_field:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 60
+        spawn: {object: stone, into: self}
+
+  clay_flat:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 20
+        spawn: {object: gourd, into: self}
+      dig:
+        trigger: menu
+        duration: 30
+        spawn: {object: clay, into: self}
+      pick:
+        trigger: menu
+        duration: 10
+        spawn: {object: fruit, into: self}
+
+  stone:
+    tags: [item]
+
+  # 朽ちない設備。干し上がるたびに塩を返すが、寿命が無いので按分の分母が取れない。
+  salt_pan:
+    tags: [fixture]
+    slots:
+      salt:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - add: {self: {drying_remaining: -1}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+    recipes:
+      laid:
+        steps:
+          - requires:
+              - {object: stone, count: 1, consume: true}
+            duration: 60
+
+  salt:
+    tags: [item]
+
+  # 塩を**道具**に取る工程。塩は消えないので、値段が付かなくてもこの経路は成立する。
+  gourd:
+    tags: [item]
+    interactions:
+      season:
+        trigger: {drag: {object: salt}}
+        duration: 5
+        destroy: self
+        spawn: {object: brine_gourd}
+
+  brine_gourd:
+    tags: [item]
+    interactions:
+      drink:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {actor: {hydration: 96}}
+
+  # 塩を**材料**に取る工程。産物にも値段は付かないが、手に入らないわけではない。
+  clay:
+    tags: [item]
+    interactions:
+      knead:
+        trigger: {drag: {object: salt}}
+        duration: 10
+        destroy: [self, dragged]
+        spawn: {object: salt_brick}
+
+  salt_brick:
+    tags: [item]
+
+  # 入手経路が無い道具と、それを要求する経路。こちらは穴のまま塞がっていること。
+  spear:
+    tags: [item]
+
+  fruit:
+    tags: [item]
+    interactions:
+      pierce:
+        trigger: {drag: {object: spear}}
+        duration: 5
+        destroy: self
+        spawn: {object: fruit_water}
+
+  fruit_water:
+    tags: [item]
+    interactions:
+      drink:
+        trigger: menu
+        duration: 5
+        destroy: self
+        add: {actor: {hydration: 96}}
+`;
+
+  const tables = buildBalanceTables(
+    new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
+    'medic',
+  );
+
+  const costOf = (objectName: string) => tables.objectCosts.find((cost) => cost.objectName === objectName)!;
+
+  /** 島全体の文脈で、hydrationを埋める経路のうち末尾の工程が指定の型のもの。 */
+  const routeEndingAt = (objectName: string) =>
+    tables.places
+      .find((place) => place.name === WHOLE_ISLAND)!
+      .properties.find((chains) => chains.propertyName === 'hydration')!
+      .routes.find((route) => route.route.steps.at(-1)?.objectName === objectName)!.route;
+
+  it('値段が付かない道具は、型が決まったまま時間だけがundefinedになる', () => {
+    const route = routeEndingAt('brine_gourd');
+
+    expect(route.prerequisites.find((prerequisite) => prerequisite.label === 'salt')).toMatchObject({
+      objectName: 'salt',
+      minutes: undefined,
+    });
+    expect(route.blocked).toBe(false);
+  });
+
+  it('値段が付かないだけの道具は、内容の穴に挙がらない', () => {
+    expect(tables.gaps.map((gap) => gap.label)).toEqual(['spear']);
+  });
+
+  it('入手経路の無い道具は、これまでどおり穴として経路を塞ぐ', () => {
+    const gap = tables.gaps.find((candidate) => candidate.label === 'spear')!;
+
+    expect(gap.blockedRoutes.map((route) => route.steps.at(-1)?.objectName)).toEqual(['fruit_water']);
+    expect(costOf('fruit_water').blockedByTool).toBe(true);
+  });
+
+  it('値段が付かない道具を要求する物には、道具が無いという印が付かない', () => {
+    expect(costOf('brine_gourd')).toMatchObject({ blockedByTool: false, minutes: 25 });
+  });
+
+  it('値段が付かない物を材料に取る産物も、値段が付かないまま入手経路のあるものになる', () => {
+    expect(costOf('salt_brick')).toMatchObject({
+      minutes: undefined,
+      onlyFromEverlastingDevice: true,
+      missing: [],
+    });
+  });
+});

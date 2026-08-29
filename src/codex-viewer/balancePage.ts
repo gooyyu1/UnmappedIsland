@@ -5,6 +5,7 @@ import type {
   ObjectCost,
   PlaceBalance,
   PropertyRoute,
+  RoutePrerequisite,
 } from '../analysis/balanceTables';
 import {
   MINUTES_PER_DAY,
@@ -12,6 +13,7 @@ import {
   TICKS_PER_DAY,
   WHOLE_ISLAND,
   buildBalanceTables,
+  isGap,
   menuFor,
 } from '../analysis/balanceTables';
 import { CodexPage } from './CodexPage';
@@ -312,19 +314,29 @@ function routeDevicesHtml(view: CodexView, route: ChainRoute): string {
 function prerequisitesHtml(view: CodexView, route: ChainRoute): string {
   if (route.prerequisites.length === 0) return '<span class="muted">なし</span>';
   return route.prerequisites
-    .map(({ label, objectName, minutes, imported }) => {
+    .map((prerequisite) => {
+      const { label, objectName } = prerequisite;
       const shown =
         objectName === undefined
           ? escapeHtml(label)
           : `<a href="${view.objectHref(objectName)}">${inlineArtHtml(view.codex.artNameOf(objectName))}` +
             `${escapeHtml(view.objectLabel(objectName))}</a>`;
-      const cost =
-        minutes === undefined
-          ? `<span class="warn">入手経路なし</span>`
-          : `<span class="muted">${formatNumber(minutes)}分${imported ? '・他の土地で' : ''}</span>`;
-      return `${shown} ${cost}`;
+      return `${shown} ${prerequisiteCostHtml(prerequisite)}`;
     })
     .join('、');
+}
+
+/**
+ * 前提1つを手に入れるまでの時間。**時間が出ない2つの理由を分ける**——穴（島のどこにも入手経路が
+ * 無い）と、朽ちない設備の待ち生産でしか得られない（按分できないので値段が付かないだけ）は別のこと。
+ */
+function prerequisiteCostHtml(prerequisite: RoutePrerequisite): string {
+  if (isGap(prerequisite)) return `<span class="warn">入手経路なし</span>`;
+
+  const { minutes, imported } = prerequisite;
+  return minutes === undefined
+    ? `<span class="muted">待ち生産（総コストなし）</span>`
+    : `<span class="muted">${formatNumber(minutes)}分${imported ? '・他の土地で' : ''}</span>`;
 }
 
 /**
@@ -406,7 +418,7 @@ function objectCostsHtml(view: CodexView, tables: BalanceTables): string {
       (cost) =>
         `無い道具: ${escapeHtml(
           cost.prerequisites
-            .filter(({ minutes }) => minutes === undefined)
+            .filter(isGap)
             .map(({ label }) => gapLabel(view, label))
             .join('、'),
         )}`,
@@ -427,11 +439,8 @@ function objectCostsHtml(view: CodexView, tables: BalanceTables): string {
           .join(' › ') || '—',
         cost.prerequisites
           .map(
-            ({ label, minutes }) =>
-              `${escapeHtml(gapLabel(view, label))}` +
-              (minutes === undefined
-                ? ' <span class="warn">入手経路なし</span>'
-                : ` <span class="muted">${formatNumber(minutes)}分</span>`),
+            (prerequisite) =>
+              `${escapeHtml(gapLabel(view, prerequisite.label))} ${prerequisiteCostHtml(prerequisite)}`,
           )
           .join('、') || '—',
       ]),
