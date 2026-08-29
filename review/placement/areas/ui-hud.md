@@ -51,7 +51,7 @@
 | 現在地 | 名前 | 層 | 判定 | 根拠 | 移動先候補 | 阻害要因(判定4のみ) | 名前不一致 |
 |---|---|---|---|---|---|---|---|
 | src/game/ui/Button.ts | `SLOT_BUTTON_PAPER_TEXTURE`, `SLOT_BUTTON_PAPER_FRAME` | 配置 | 5 | `Button` はこの2つを一度も参照せず、読むのは BootScene（ロード）と PlayScene（スロットボタン列の紙）だけ。 | `src/art/`（絵のキーと実寸を答えるモジュール） | | |
-| src/game/ui/Button.ts | `Button`（クラス） | 配置 | 4 | クラス本体が使うのは Rect・BoxStyle・drawBox・onPressRelease と `COLOR.pressedShade` だけで、ゲームの語彙も寸法も持たない。 | `src/ui/Button.ts` | 押下の覆いの色を意匠（`COLOR.pressedShade`）から直に引いており、汎用の部品は意匠を引けない（CodeStructure.md 1節）。既定値＋起動時差し替え（`ui/labels.ts` の `setLabelDefaults` 方式）にするまで出られない | |
+| src/game/ui/Button.ts | `Button`（クラス） | 配置 | 4 | クラス本体が使うのは Rect・BoxStyle・drawBox・onPressRelease と `COLOR.pressedShade` だけで、ゲームの語彙も寸法も持たない。 | `src/ui/Button.ts` | 押下の覆いの色を意匠（`COLOR.pressedShade`）から直に引いており、汎用部品は意匠を引けない（CodeStructure.md 1節）。既定値＋起動時差し替え（`ui/labels.ts` の `setLabelDefaults` 方式）にするまで出られない | |
 | src/game/ui/Button.ts | `tabBoxStyle` | 所属 | 4 | 「選ばれているタブの台紙は何色か」は意匠の問いで、6ファイルがここへ色を訊きに来ている。 | `src/game/looks/theme.ts` | 文字ボタンの台紙（`textButtonBoxStyle`）と縁の色・角の丸みを必ず一致させる必要があり、その組み立てがこのファイルにあるため | |
 | src/game/ui/Button.ts | `HOLD_MS` | 配置 | 3 | 同じ「長押しと見なす400ms」が `src/ui/holdRepeat.ts` にも非公開で置かれていて、一致すべき値が2箇所にある。 | `src/ui/holdRepeat.ts`（公開して共有） | | |
 | src/game/ui/Curtain.ts | `Curtain`（クラス） | 配置 | 4 | 矩形を覆って暗転・明転するだけで、ゲームの語彙も寸法も持たない。 | `src/ui/Curtain.ts` | 幕の色を意匠（`COLOR.curtain`）から直に引いているため | |

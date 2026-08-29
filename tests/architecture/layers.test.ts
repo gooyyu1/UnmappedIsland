@@ -241,9 +241,12 @@ describe('層の境界', () => {
   it('依存の図のノードが、1節の表の行と同じ', () => {
     // 表と図は同じものを説明する2つの一覧なので、**並べた時点で行集合の一致を誰かが見る必要が
     // ある**。図が網羅すると言っているのはノードで（CodeStructure.md 2節）、辺は主な向きの要約。
+    //
+    // ラベルは**丸ごと**取る。`<br/>` の手前で切ると、ノードに置き場を書き足しても検査の外に
+    // 出てしまい、1節の表だけが唯一の記載場所だという宣言がそこで破れる。
     const diagram = structureDoc().match(/```mermaid\n([\s\S]*?)```/);
     if (diagram === null) throw new Error('CodeStructure.md の依存の図が見つかりません');
-    const nodes = [...diagram[1].matchAll(/^\s+\w+\["([^"<]+)/gm)].map((m) => m[1].trim());
+    const nodes = [...diagram[1].matchAll(/^\s+\w+\["([^"]+)"\]/gm)].map((m) => m[1].trim());
 
     expect([...nodes].sort(), '図のノードと表の行が食い違っている').toEqual([...structureNames()].sort());
     expect(nodes.length).toBeGreaterThan(9);

@@ -63,22 +63,23 @@ YAML・表示文字列・シナリオはすべて `src/assets/` 以下に置き�
 （`tests/architecture/layers.test.ts`）。破線の枠は層ではないもの。`層の外` はどこからでも使えるので、
 入ってくる矢印は描いていません。
 
-**矢印は依存してよい主な向きで、実際の import の全数ではありません。** 網羅しているのはノードの
-ほうです——辺まで写すと、一致を誰も検査しない2つ目の一覧が増えます。どこへ依存してよいかを決めるのは
-1節の表の「知ってはいけないもの」で、図はそれを読みやすくしたものです。
+**置き場はノードに書きません**——1節の表が唯一の記載場所で、ここへ写すと一致を誰も検査しない
+2つ目の一覧が増えます。**矢印も依存してよい主な向きで、実際の import の全数ではありません。**
+どこへ依存してよいかを決めるのは1節の表の「知ってはいけないもの」で、図はその向きを読みやすく
+したものです。
 
 ```mermaid
 flowchart LR
-    Assembly["組み立て<br/>main.ts・DeviceScreen・*Scene・*Window"]
-    Parts["部品<br/>src/game/ui/"]
-    Common["汎用部品<br/>src/ui/"]
-    Looks["意匠<br/>src/game/looks/"]
-    Art["素材<br/>src/art/"]
-    View["映し<br/>src/game/view/"]
-    World["世界<br/>src/domain/・loader/・locale/"]
-    Analysis["解析<br/>src/analysis/"]
-    Outside["層の外<br/>src/asset-pack/・src/save/・src/scenario/・src/util/<br/>errorReport.ts・launchSeed.ts"]
-    Codex["codex ビューア<br/>src/codex-viewer/"]
+    Assembly["組み立て"]
+    Parts["部品"]
+    Common["汎用部品"]
+    Looks["意匠"]
+    Art["素材"]
+    View["映し"]
+    World["世界"]
+    Analysis["解析"]
+    Outside["層の外"]
+    Codex["codex ビューア"]
 
     Assembly --> Parts & Common & View & Looks & Art & World
     Parts --> Common & Looks & Art
@@ -170,7 +171,8 @@ Phaser もゲームも付いてきません）。
 
 ## 4. Phaser をやめるとどうなるか
 
-**書き換えるのは部品と組み立てだけです。** 世界・映し・意匠・素材は、判断も語彙もそのまま残ります。
+**書き換えるのは部品・汎用部品・組み立てだけです。** 世界・映し・意匠・素材は、判断も語彙もそのまま
+残ります。
 
 部品の中でも、規則を抱えているもの（掴んだと見なす閾値、点がカード本体か隙間か、押し続けの間隔）は
 Phaser に依っていません。書き換えの前に映しへ寄せられる分がどれかは、そのときに見直します。
