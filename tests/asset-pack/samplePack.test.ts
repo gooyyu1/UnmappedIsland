@@ -22,8 +22,15 @@ describe('サンプルアセットパック', () => {
   const zip = new Uint8Array(readFileSync(SAMPLE_PACK_ZIP));
 
   async function pack(): Promise<AssetPack> {
-    return new AssetPack('sample-pack', await readZip(zip.buffer as ArrayBuffer));
+    return new AssetPack(await readZip(zip.buffer as ArrayBuffer));
   }
+
+  it('pack.yaml で自分の識別子と版を名乗る', async () => {
+    const loaded = await pack();
+
+    expect(loaded.name).toBe('sample-pack');
+    expect(loaded.version).toBe('1');
+  });
 
   it('ZIPの中身が sample-pack/ と一致する（固め直し忘れの検出）', async () => {
     const files = await readZip(zip.buffer as ArrayBuffer);
