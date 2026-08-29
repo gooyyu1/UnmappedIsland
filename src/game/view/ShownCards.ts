@@ -1,3 +1,4 @@
+import type { CardFilter } from '../../domain/CardFilter';
 import type { WorldObject } from '../../domain/WorldObject';
 import type { ObjectCardStack } from './PlayScreenView';
 import type { CardCombination, CardDrop } from './cardOperations';
@@ -25,6 +26,11 @@ export interface CardSource {
   ) => CardCombination | undefined;
   /** その物が現在地から見えるか（PlayScreenView.visible）。見えない物は画面のどこにも出さない。 */
   readonly visible: (object: WorldObject) => boolean;
+  /**
+   * 今選ばれている絞り込み（何も選んでいなければundefined、ScreenLayout.md 8.1節）。**選ぶのは
+   * プレイヤーで、世界の状態ではない**ので、行動のたびではなくボタンを押したときだけ変わる。
+   */
+  readonly filter: () => CardFilter | undefined;
   /** 子ウィンドウが映しているスロット（映していなければundefined）。端の行き先の候補に入る。 */
   readonly windowPlace: () => CardPlace | undefined;
   /**
@@ -95,16 +101,41 @@ export class ShownCards {
 
   // ---- 並び ----
 
-  /** そこに並ぶ束。持ち出されている札を差し引いた、画面に出ている姿そのもの。 */
+  /** そこに並ぶ束。持ち出されている札と絞り込みで隠れる札を差し引いた、画面に出ている姿そのもの。 */
   stacksAt(spot: CardSpot): readonly (ObjectCardStack | undefined)[] {
     if (spot === 'windowCard') return [this.window?.stack];
 
     const stacks = this.source.stacksIn(spot);
     const aloft = this.aloft();
-    if (aloft.size === 0) return stacks;
+    const shown =
+      aloft.size === 0
+        ? stacks
+        : stacks.flatMap<ObjectCardStack | undefined>((stack) =>
+            stack === undefined ? [undefined] : this.shownStacksOf(stack, aloft),
+          );
+    return this.matching(spot, shown);
+  }
 
-    return stacks.flatMap<ObjectCardStack | undefined>((stack) =>
-      stack === undefined ? [undefined] : this.shownStacksOf(stack, aloft),
+  /**
+   * 絞り込みに当たる札だけ（何も選んでいない場所・レーンではそのまま）。**効くのは設置物レーンと
+   * アイテムレーンだけ**（ScreenLayout.md 8.1.6節）——手持ちは左へ詰まっていて隠しても短くならず、
+   * 子ウィンドウの中は今開けている入れ物そのものの中身なので、絞ると開けた意味が消える。
+   *
+   * **出ている個体が1つも当たらない札は隠れる。** 貸し出し中の枠に残る印（objectsが空）も同じで、
+   * 帰ってくる先はその札が当たるようになったときに現れる。
+   */
+  private matching(
+    spot: CardSpot,
+    stacks: readonly (ObjectCardStack | undefined)[],
+  ): readonly (ObjectCardStack | undefined)[] {
+    const filter = this.source.filter();
+    if (filter === undefined) return stacks;
+
+    const places = this.source.places;
+    if (spot !== places('fixtures') && spot !== places('items')) return stacks;
+
+    return stacks.filter(
+      (stack) => stack === undefined || stack.objects.some((object) => filter.matches(object)),
     );
   }
 

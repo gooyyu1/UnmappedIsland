@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { CardFilter } from '../../src/domain/CardFilter';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import type { CardSpot } from '../../src/game/view/ShownCards';
 import { ShownCards } from '../../src/game/view/ShownCards';
@@ -79,7 +80,12 @@ function stack(
  */
 function screen(
   lanes: Partial<Record<'hand' | 'items' | 'fixtures', readonly (ObjectCardStack | undefined)[]>>,
-  options: { readonly windowPlace?: CardPlace; readonly hidden?: readonly number[] } = {},
+  options: {
+    readonly windowPlace?: CardPlace;
+    readonly hidden?: readonly number[];
+    /** 選んでいる絞り込み（ScreenLayout.md 8.1節）。既定では何も選んでいない。 */
+    readonly filter?: CardFilter;
+  } = {},
 ): ShownCards {
   return new ShownCards({
     stacksIn: (asked) => {
@@ -119,6 +125,7 @@ function screen(
     visible: (object) => options.hidden?.includes(object.instanceId) !== true,
     windowPlace: () => options.windowPlace,
     places: place,
+    filter: () => options.filter,
   });
 }
 
@@ -511,6 +518,7 @@ describe('ドロップの意味', () => {
       visible: () => true,
       windowPlace: () => undefined,
       places: place,
+      filter: () => undefined,
     });
 
     const drop = {

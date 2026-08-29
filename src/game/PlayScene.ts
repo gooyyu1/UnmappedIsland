@@ -6,6 +6,7 @@ import { SCREEN_DEPTH } from './looks/screenDepth';
 import { causeOfDeathSentence } from './looks/deathTexts';
 import { ResponsiveScene } from './ResponsiveScene';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
+import type { CardFilter } from '../domain/CardFilter';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { StartedGame } from '../domain/generation/NewGame';
 import { resolveCharacterDefNameOrFirst, startNewGame } from '../domain/generation/NewGame';
@@ -156,9 +157,14 @@ const ACTIVITY_NAMES: Readonly<Record<Activity, string>> = {
   transiting: '場面転換',
 };
 
-/** バーのアイコンボタン1つ。絵があればそれを、無ければ絵文字を置く（iconArt参照）。 */
+/**
+ * バーのアイコンボタン1つ。絵があればそれを、無ければ絵文字を置く（iconArt参照）。
+ *
+ * **絵の名前は画面が名指しするとは限らない**——フィルターのボタンはワールドの宣言が名乗る
+ * （`card_filters`の`id`、ScreenLayout.md 8.1.3節）。
+ */
 interface BarIcon {
-  readonly art?: IconName;
+  readonly art?: string;
   readonly icon: string;
 }
 
@@ -193,13 +199,11 @@ const OPTION_ICONS: readonly BarIcon[] = [
   { art: 'diary', icon: '📓' },
   MENU_ICON,
 ];
-const FILTER_ICONS: readonly BarIcon[] = [
-  { art: 'filter_all', icon: '🗂️' },
-  { art: 'filter_cook', icon: '🍖' },
-  { art: 'filter_water', icon: '💧' },
-  { art: 'filter_craft', icon: '🔨' },
-  { art: 'filter_fun', icon: '🎵' },
-];
+/**
+ * 絞り込みを解除するボタン（ScreenLayout.md 8.1.1節）。**ワールドのフィルターの一覧には入れず、
+ * 画面が常に先頭へ置く**——アセットパックが解除の手段を消せてしまうため。
+ */
+const FILTER_ALL_ICON: BarIcon = { art: 'filter_all', icon: '🗂️' };
 
 /** プレイ中の画面を開くときに渡す、対象のセーブデータ。 */
 export interface PlaySceneData {
@@ -293,6 +297,10 @@ export class PlayScene extends ResponsiveScene {
 
   private drag!: CardDragController;
 
+  /**
+   * 選んでいる絞り込みのボタンの位置（0は「すべて」＝絞り込まない、ScreenLayout.md 8.1.6節）。
+   * **場所を移っても時間が経っても続く**ので、画面の作り直しでは捨てない。
+   */
   private selectedFilter = 0;
   private filterButtons: Button[] = [];
 
@@ -329,7 +337,13 @@ export class PlayScene extends ResponsiveScene {
     visible: (...asked) => this.view.visible(...asked),
     windowPlace: () => this.childWindowPlace,
     places: (...asked) => this.placeOfScreen(...asked),
+    filter: () => this.cardFilter,
   });
+
+  /** 今選ばれている絞り込み（「すべて」を選んでいる間はundefined）。 */
+  private get cardFilter(): CardFilter | undefined {
+    return this.codex.cardFilters[this.selectedFilter - 1];
+  }
 
   /**
    * 設置物レーンが映している場所を、現在地から外側へ数えた段（0が現在地。ScreenLayout.md 7.1.1節）。
@@ -2045,7 +2059,7 @@ export class PlayScene extends ResponsiveScene {
    * 揃えると、その差が消えてしまう。周りは透けているので、ボタンの地の色が下に出る。
    */
   private buttonIcon(
-    spec: { art?: IconName; icon: string },
+    spec: BarIcon,
     canvas: { width: number; height: number },
     glyphSize: number,
   ): Phaser.GameObjects.Image | Phaser.GameObjects.Text {
@@ -2267,12 +2281,21 @@ export class PlayScene extends ResponsiveScene {
     });
   }
 
-  /** 選択中のタグは背景色を反転させて強調する（ScreenLayout.md 8節）。 */
+  /**
+   * 絞り込みのボタン列（ScreenLayout.md 8節）。選択中のタグは背景色を反転させて強調する。
+   *
+   * **並ぶボタンを決めるのはワールド**（`card_filters`、同8.1.3節）で、画面が足すのは先頭の
+   * 「すべて」だけ。絵も絵文字もその宣言が名乗るので、ここに対応表は無い。
+   */
   private buildFilterBar(area: Rect): void {
     addInputBlockingPanel(this, area, COLOR.filterBar);
 
-    const rects = this.layout.filterBarIcons(FILTER_ICONS.length);
-    this.filterButtons = FILTER_ICONS.map((spec, index) => {
+    const specs: readonly BarIcon[] = [
+      FILTER_ALL_ICON,
+      ...this.codex.cardFilters.map((filter) => ({ art: filter.id, icon: filter.icon })),
+    ];
+    const rects = this.layout.filterBarIcons(specs.length);
+    this.filterButtons = specs.map((spec, index) => {
       const button = this.addIconButton(
         rects[index],
         spec,
@@ -2284,11 +2307,21 @@ export class PlayScene extends ResponsiveScene {
     });
   }
 
+  /**
+   * 絞り込みを選び直す。**同じボタンを押し直すと解除する**（ScreenLayout.md 8.1.6節）——選べるのは
+   * 1つだけなので、押すたびに入り切りが要る。
+   *
+   * 隠れる札が変わるだけでワールドは何も変わらないので、時間は経たない。
+   */
   private selectFilter(index: number): void {
-    this.selectedFilter = index;
+    if (this.busy) return;
+
+    this.selectedFilter = index === this.selectedFilter ? 0 : index;
     this.filterButtons.forEach((button, i) => {
-      button.setBoxStyle(this.iconButtonStyle(i === index, COLOR.filterButtonBorder));
+      button.setBoxStyle(this.iconButtonStyle(i === this.selectedFilter, COLOR.filterButtonBorder));
     });
+    noteOperation(`絞り込みを選んだ: ${this.cardFilter?.id ?? 'すべて'}`);
+    this.showView();
   }
 
   /**

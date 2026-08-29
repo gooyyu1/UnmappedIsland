@@ -15,8 +15,12 @@ const FILES = import.meta.glob('../assets/icons/*.png', {
 }) as Record<string, string>;
 
 /**
- * 絵を置けるアイコンの識別子。ここに無い名前のファイルは黙って使われないままになるので、
- * 実在するかどうかは自動テスト（tests/art/iconArt.test.ts）が検査する。
+ * 画面が自分で名指しするアイコンの識別子。**フィルターのボタンはここに無い**——どのボタンが並ぶかを
+ * 決めるのはワールドで、絵の名前もその宣言（`card_filters`の`id`、ScreenLayout.md 8.1.3節）が名乗る。
+ * 絞り込みを解除する`filter_all`だけは画面が置くボタンなのでここに在る（同8.1.1節）。
+ *
+ * ここにもワールドにも無い名前のファイルは黙って使われないままになるので、実在するかどうかは
+ * 自動テスト（tests/art/iconArt.test.ts）が検査する。
  */
 export const ICON_NAMES = [
   'map',
@@ -27,10 +31,6 @@ export const ICON_NAMES = [
   'codex',
   'diary',
   'filter_all',
-  'filter_cook',
-  'filter_water',
-  'filter_craft',
-  'filter_fun',
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];
@@ -43,8 +43,11 @@ export const ICON_ART: ReadonlyMap<string, string> = new Map(
 /**
  * アイコンのテクスチャキー。絵がまだ無いものはundefinedを返し、呼び出し側は絵文字で代用する
  * （絵は少しずつ増える前提なので、絵と絵文字が混ざった状態を正常とする）。
+ *
+ * **名前は画面が名指しするもの（IconName）とは限らない**——フィルターのボタンの絵は、ワールドの
+ * 宣言が名乗る識別子で引く（ScreenLayout.md 8.1.3節）。
  */
-export function iconTexture(name: IconName): string | undefined {
+export function iconTexture(name: string): string | undefined {
   const key = `icon:${name}`;
   return ICON_ART.has(key) ? key : undefined;
 }

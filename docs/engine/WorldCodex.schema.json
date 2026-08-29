@@ -40,6 +40,32 @@
         "$ref": "#/$defs/identifier"
       }
     },
+    "card_filters": {
+      "description": "フィルターバーのボタン（docs/ui/ScreenLayout.md 8.1.3節）。並べる順に書き、既にあるタグを指すだけ。絞り込みを解除する「すべて」は含まない。",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "ボタンの絵の名前（src/assets/icons/<id>.png）。",
+            "$ref": "#/$defs/identifier"
+          },
+          "icon": {
+            "description": "絵がまだ無いときに代わりに置く絵文字（同4.2節）。",
+            "type": "string"
+          },
+          "tags": {
+            "description": "このボタンが残す札のタグ。どれか1つでも持てば残る。",
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/identifier"
+            }
+          }
+        },
+        "required": ["id", "icon", "tags"],
+        "additionalProperties": false
+      }
+    },
     "required_props": {
       "description": "タグが宣言を義務づけるプロパティ（GameElementDefinition.md 4.2節）。タグ名をキーに、そのタグを名乗る型が持たねばならないプロパティ名を並べる。",
       "type": "object",
