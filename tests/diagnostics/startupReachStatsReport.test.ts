@@ -11,7 +11,7 @@ import {
   formatYamlReport,
   rounded,
   shareRecord,
-  statRecord,
+  statRecordsWith,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -38,6 +38,9 @@ const SEED_COUNT = 2000;
 
 /** 歩数のヒストグラムに出す上限（これを超える分はまとめて `or_more`）。 */
 const MAX_LISTED_HOPS = 5;
+
+/** このレポートの分布レコード。**真ん中の位置を見る**表なので、真ん中の列は`median`。 */
+const statRecord = statRecordsWith('median');
 
 /** 要るもの1つに対する、サイトをまたいだ集計。 */
 interface NeedStats {
@@ -170,9 +173,7 @@ const MEASURES = [
 
 /** 同じ鍵に対する3つの測り方のレコード。 */
 function statRecords(keys: YamlRecord, stats: NeedStats): YamlRecord[] {
-  return MEASURES.map(({ measure, unit, statOf }) =>
-    statRecord({ ...keys, measure, unit }, statOf(stats), 'median'),
-  );
+  return MEASURES.map(({ measure, unit, statOf }) => statRecord({ ...keys, measure, unit }, statOf(stats)));
 }
 
 function hopsHistogramRecords(stat: Stat): YamlRecord[] {
@@ -237,7 +238,7 @@ function buildSections(sources: StartupNeedSources, stats: StartupReachStats): r
       key: 'site_all_needs_hops_by_start_location',
       records: [...stats.farthestHopsByLocation]
         .sort((a, b) => a[0].localeCompare(b[0]))
-        .map(([location, stat]) => statRecord({ location, measure: 'hops', unit: 'hops' }, stat, 'median')),
+        .map(([location, stat]) => statRecord({ location, measure: 'hops', unit: 'hops' }, stat)),
     },
     { key: 'island_best_site', records: statRecords({}, stats.best) },
     { key: 'island_best_site_hops_histogram', records: hopsHistogramRecords(stats.best.hops) },

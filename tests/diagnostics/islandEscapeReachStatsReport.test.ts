@@ -10,7 +10,7 @@ import {
   describeYamlReportRegeneration,
   formatYamlReport,
   shareRecord,
-  statRecord,
+  statRecordsWith,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -38,6 +38,9 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * 10,000個まで伸ばしても動くのは小数第2位だけ。
  */
 const SEED_COUNT = 2000;
+
+/** このレポートの分布レコード。**真ん中の位置を見る**表なので、真ん中の列は`median`。 */
+const statRecord = statRecordsWith('median');
 
 /** 島を出るのに要るもの1つ（目標そのもの）。 */
 interface Goal {
@@ -122,7 +125,7 @@ function buildSections(
     },
     {
       key: 'island_departure',
-      records: [statRecord({ measure: 'locations', unit: 'locations' }, stats.departureCount, 'median')],
+      records: [statRecord({ measure: 'locations', unit: 'locations' }, stats.departureCount)],
     },
     {
       key: 'island_missing_location',
@@ -149,7 +152,6 @@ function buildSections(
         statRecord(
           { object: goal.objectName, goal_tag: goal.tagName, measure: 'hops', unit: 'hops' },
           stats.goalHops.get(goal.objectName) ?? new Stat(),
-          'median',
         ),
       ),
     },
