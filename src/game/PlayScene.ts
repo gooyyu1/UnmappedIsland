@@ -1257,16 +1257,16 @@ export class PlayScene extends ResponsiveScene {
    * 並びの引き直しは呼び出し側——閉じるのは差し替えの途中のこともあるため。
    */
   private closeChildWindowReturningOrigins(): ReadonlyMap<number, Rect> {
-    // **枠を測るのは閉じる前**——閉じるとレーンごと消えるので、そのあとでは出どころを引けない。
+    // **枠を測る順は問わない**——閉じるボタンは窓を閉じてから知らせに来るので、ここへ来た時点で
+    // 面はもう無く、枠を答えるのは窓のほう（ObjectWindow.cellRect）。
     const window = this.childWindow;
-    const cardRect = window?.cardRect;
-    const foundLane = window?.laneOf('found');
 
     const returned = this.shown.returnBorrowed();
     const origins = new Map<number, Rect>();
+    const cardRect = window?.cellRect('card', 0);
     if (cardRect !== undefined) for (const id of returned.card) origins.set(id, cardRect);
     returned.found.forEach((card, index) => {
-      const rect = foundLane?.cellRect(index);
+      const rect = window?.cellRect('found', index);
       if (rect === undefined) return;
       for (const id of card.identity ?? []) origins.set(id, rect);
     });

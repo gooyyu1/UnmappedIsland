@@ -3,16 +3,19 @@ import type { CardLane } from './CardLane';
 import type { ObjectWindowLane, ObjectWindowLaneRole, ObjectWindowPane } from './ObjectWindowPane';
 
 /**
- * 子ウィンドウが今開いている面と、そこから借りた札の枠（ObjectWindow）。
+ * 子ウィンドウが今開いている面と、そこから借りた札が居た枠（ObjectWindow）。
  *
  * **面を捨てられるのはここからだけ。** 捨て方が2つある（タブの切り替えと窓を閉じる）ので、
- * 「捨てる前に札の枠を控える」を捨てる側それぞれに書くと、片方だけ書き忘れる。
+ * 「捨てる前に枠を控える」を捨てる側それぞれに書くと、片方だけ書き忘れる。
  */
 export class OpenPane {
   private pane: ObjectWindowPane | undefined;
 
-  /** 借りた札が最後に居た枠。札の枠を持たない面では描かないので、面を捨てるたびに控える。 */
-  private lastCardRect: Rect | undefined;
+  /**
+   * 役割ごとの、レーンの枠が最後に在った場所（位置＝添字）。**役割を選ばずに全部控える**
+   * ——借りるレーンが増えるたびに控える側へ足すことになると、そのレーンだけ枠を答えられなくなる。
+   */
+  private readonly lastRects = new Map<ObjectWindowLaneRole, readonly Rect[]>();
 
   /** 今の面が持つレーン（役割つき）。面が無ければ空。 */
   get lanes(): readonly ObjectWindowLane[] {
@@ -25,11 +28,13 @@ export class OpenPane {
   }
 
   /**
-   * 借りた札の枠。運んでくる先・返すときの出発点で、**面を捨てたあとも最後の枠を答える**
-   * ——帰りの出発点を測りに来るのは窓が閉じたあと（PlayScene.closeChildWindowReturningOrigins）。
+   * その役割のレーンの、添字の位置の枠。借りた札を運んでくる先・返すときの出発点で、
+   * **面を捨てたあとも最後の枠を答える**——帰りの出発点を測りに来るのは窓が閉じたあと
+   * （PlayScene.closeChildWindowReturningOrigins）。
    */
-  get cardRect(): Rect | undefined {
-    return this.laneOf('card')?.cellRect(0) ?? this.lastCardRect;
+  cellRect(role: ObjectWindowLaneRole, index: number): Rect | undefined {
+    const lane = this.laneOf(role);
+    return lane === undefined ? this.lastRects.get(role)?.[index] : lane.cellRect(index);
   }
 
   /** 今の面に、元にしている内容を読み直させる。 */
@@ -45,9 +50,8 @@ export class OpenPane {
 
   /** 今の面を捨てる（次は開かない）。 */
   close(): void {
-    // 札の枠は面と一緒に消えるので、消える前に位置を控える（cardRect）。
-    const card = this.laneOf('card');
-    if (card !== undefined) this.lastCardRect = card.cellRect(0);
+    // 枠はレーンごと消えるので、消える前に位置を控える（cellRect）。
+    for (const { role, lane } of this.lanes) this.lastRects.set(role, lane.cellRects);
 
     this.pane?.destroy();
     this.pane = undefined;
