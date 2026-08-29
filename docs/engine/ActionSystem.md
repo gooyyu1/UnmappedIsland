@@ -101,13 +101,18 @@ actions/combinations の一度きりの判定と、passives（8節）の持続�
 `conditions` の `subject`、効果の対象キー、`{subject, prop}` 参照はすべて共通の起点
 `ReferenceRoot` を使う。`self.prop` のような1階層の参照のみで、パス連結はない。
 
-| 起点 | 解決先 | 使える文脈 |
+| 起点 | 解決先 | 解決先を持つ場所 |
 | --- | --- | --- |
-| `self` | 操作対象のカード自身 | すべて |
-| `parent` | self の直接の親 | すべて |
-| `agent` | プレイヤーキャラクター | actions / combinations（rangeイベントには存在しない） |
-| `instrument` | 組み合わせる相手のカード | combinations のみ |
-| `ancestor` | self の親から遡り、参照プロパティを定義する最初の祖先 | プロパティ参照のみ（位置判定では不可） |
+| `self` | 宣言元の個体自身 | 宣言元の個体が居る場所（rangeイベント・passives も含む） |
+| `parent` | self の直接の親 | 同上 |
+| `agent` | その操作で動いている個体 | 操作の関係の役（11.5節）なので、書ける場所は同節「役を書ける場所」の表が決める |
+| `instrument` | 運ばれてきて働きかけに使われる参加者。宣言が乗っていない側 | 同上 |
+| `picked` | `among`（10.3節）が周りから選んだ相手 | `among` を書いた候補の中（重みと効果）だけ |
+| `ancestor` | self の親から遡り、参照プロパティを定義する最初の祖先 | プロパティ名を伴う参照のみ（`destroy`・`move`・位置判定のようにオブジェクトそのものを指す場所では不可） |
+
+**どの起点が書けるかは、場所ごとに数え上げるのではなく、宣言が置かれた場所が何を持つかから導く**
+（`ReferenceScope`）。**ロード時に弾く根拠と、実行時に組む `ReferenceContext` は同じ1つの事実**なので、
+書けたのに実行時は必ず空振りする、という宣言が作れない。
 
 `world` は起点として未対応（ロード時エラー）。すべてのオブジェクトは world の下にぶら下がるため、
 world 固有プロパティの参照は `ancestor` で代替できる。`child` は passives の target 専用で、
@@ -136,13 +141,20 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
   `agent` を移動する。移動先が定義時点で決まらず生成時に確定する（道の移動アクション）ため、
   `object_def` 参照ではなくインスタンスIDで指す。
 - プロパティの rangeイベント（`on_max`/`on_min`、6.3節）も**同じ**
-  `ActiveEffect` と適用経路（`WorldObject.ApplyActiveEffect`）を使う。その文脈では
-  agent/instrument が null で、対象は `self` のみ（ロード時に強制）。
+  `ActiveEffect` と適用経路（`WorldObject.ApplyActiveEffect`）を使う。書ける動詞に差は無く、
+  `pick` も `move` も並べて書ける（海区の `storm_drift` の `on_max` が、`among` で選んだ筏を `move` で
+  隣の海区へ流す。`voyage.yaml`）。違うのは**発火させるのが時間の側で、操作している者が居ない**こと
+  だけなので、ロード時に弾かれるのは操作の関係の役（`agent`・`instrument`）を指したときに限る
+  （11.5節「役を書ける場所」）。起点は `self`・`parent`・`ancestor` と、`among` を書いた候補の中の
+  `picked` が使える。
 
 ## 6. 時間の経過（duration）
 
 - `interactions` の `duration` はゲーム内の**分**。リテラルか `{subject, prop}` 参照か参照 2 つの積
-  （`weight` と同じ三択。ドラッグ型では `instrument` も指せる）で、省略時は時間を消費しない。
+  （`weight` と同じ三択）で、省略時は時間を消費しない。`subject` にどの役を書けるかは、きっかけの
+  名前ではなく 11.5節「役を書ける場所」の表が決める。**枠へ入れるのにかかる時間（`put_in` の
+  `duration`、7.10節）も同じ形の宣言**で、そこでも入れる物を `instrument` として指せる
+  （`SlotDef.putInMinutes`）。
 - 時間進行は `InteractionDef` 自身が `WorldSession.AdvanceWorldTime(minutes)` を呼んで完結させる。
   呼び出し側（UI層）が実行後に別途時間を進める必要はない。解決した分数は実行前にも引ける
   （`MinutesFor`。UI層が実行前に所要時間を見せるため、[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
