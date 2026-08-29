@@ -31,8 +31,16 @@ export class AssetPack {
   /** 作ったBlobのURL。同じ絵を2度要求されても1つで済ませる。 */
   private readonly urls = new Map<string, string>();
 
-  /** `pack.yaml` を名乗れないZIPはパックとして受け取らない（YamlLoadError）。 */
-  constructor(files: ReadonlyMap<string, Uint8Array>) {
+  /**
+   * 届いた配布物1つを読む。**ZIPとして読めない配布物・`pack.yaml` を名乗れない配布物は、パックに
+   * ならない**（ZipReadError・YamlLoadError）。読めなかった配布物をどう扱うかは受け取る側が決める
+   * （AssetPack.md 6.1節、install）。
+   */
+  static async read(archive: ArrayBuffer): Promise<AssetPack> {
+    return new AssetPack(await readZip(archive));
+  }
+
+  private constructor(files: ReadonlyMap<string, Uint8Array>) {
     const manifest = parseManifest(files);
     this.name = manifest.id;
     this.version = manifest.version;
@@ -92,15 +100,6 @@ export class AssetPack {
     }
     return art;
   }
-}
-
-/** アセットパックを取得して読む。取得も展開も失敗はそのまま投げ、呼び出し側が画面に出す。 */
-export async function fetchAssetPack(url: string): Promise<AssetPack> {
-  const response = await fetch(url);
-  if (!response.ok)
-    throw new Error(`アセットパック '${url}' を取得できませんでした（status ${response.status}）。`);
-
-  return new AssetPack(await readZip(await response.arrayBuffer()));
 }
 
 /** パックの名乗り（AssetPack.md 3.2節）。どちらも省略できない。 */

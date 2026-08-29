@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AssetPack } from '../../src/asset-pack/AssetPack';
-import { AssetPacks } from '../../src/asset-pack/install';
-import { readZip } from '../../src/asset-pack/zip';
+import {
+  assetPackInstallMatchesSetting,
+  AssetPacks,
+  installedAssetPacks,
+  installSampleAssetPack,
+} from '../../src/asset-pack/install';
 import { artKeyIn, rebuildArtCatalog } from '../../src/art/packArt';
 import { BACKGROUND_ART } from '../../src/art/backgroundArt';
 import { ART_BY_NAME, artUrl, objectTexture } from '../../src/art/objectArt';
@@ -24,7 +28,7 @@ async function pack(id: string, sources: readonly ZipSource[]): Promise<AssetPac
 
 /** 名乗りも含めてZIPの中身をそのまま渡す（`pack.yaml` の検査用）。 */
 async function packOf(sources: readonly ZipSource[]): Promise<AssetPack> {
-  return new AssetPack(await readZip(zipArchive(sources)));
+  return AssetPack.read(zipArchive(sources));
 }
 
 const OBJECT_YAML = `
@@ -64,6 +68,56 @@ describe('パックの名乗り（pack.yaml）', () => {
     await expect(
       packOf([{ name: 'pack.yaml', content: "id: potions\nversion: '1'\nauthor: だれか\n" }]),
     ).rejects.toThrow(/author/);
+  });
+});
+
+/**
+ * 届いた配布物を読めない失敗は、パック1つを外す失敗として扱う（AssetPack.md 6.1節）。取得そのものの
+ * 失敗——パックを指定したのに何も届いていない——だけは、設定の誤りとして起動を止める（同2節）。
+ */
+describe('読めない配布物は、そのパックだけを外して起動する', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** 取得元にこのバイト列が置いてある状態にする。 */
+  function delivered(archive: ArrayBuffer): void {
+    vi.stubGlobal('fetch', () => Promise.resolve(new Response(archive)));
+  }
+
+  it('ZIPとして読めない配布物を置いても、同梱ぶんだけで起動する', async () => {
+    const report = new LoadReport();
+    delivered(new TextEncoder().encode('これはZIPではない').buffer as ArrayBuffer);
+
+    await installSampleAssetPack(report);
+
+    expect(installedAssetPacks(), 'パックは入らない').toHaveLength(0);
+    expect(report.problems.map((problem) => problem.reason)).toEqual([
+      expect.stringContaining('ZIPファイルではありません'),
+    ]);
+    // 起動は続く（同梱ぶんだけの、それ自体で筋の通った世界）。
+    const definitions = loadDefinitions(installedAssetPacks(), report);
+    expect(definitions.codex.objectNames.tryGetId('coconut')).toBeDefined();
+  });
+
+  it('pack.yaml を名乗れない配布物も、そのパックだけが外れる', async () => {
+    const report = new LoadReport();
+    delivered(zipArchive([{ name: 'world-codex/totem.yaml', content: OBJECT_YAML }]));
+
+    await installSampleAssetPack(report);
+
+    expect(installedAssetPacks()).toHaveLength(0);
+    expect(report.problems.map((problem) => problem.reason)).toEqual([expect.stringContaining('pack.yaml')]);
+    // 外れて空になっても、設定どおりに読んだ結果なので読み込み直しは促さない（SettingsScene）。
+    expect(assetPackInstallMatchesSetting(true)).toBe(true);
+  });
+
+  it('何も届かなければ起動を止める（AssetPack.md 2節）', async () => {
+    const report = new LoadReport();
+    vi.stubGlobal('fetch', () => Promise.resolve(new Response('', { status: 404 })));
+
+    await expect(installSampleAssetPack(report)).rejects.toThrow(/取得できませんでした/);
+    expect(report.problems, '設定の誤りは、読み込みの記録に残す話ではない').toHaveLength(0);
   });
 });
 
@@ -211,11 +265,36 @@ describe('複数のアセットパックを並べた順に読む', () => {
 
   it('同じ識別子のパックは2つ入れられない（AssetPack.md 3.2節）', async () => {
     const packs = new AssetPacks();
-    packs.add(await pack('twin', []));
+    packs.receive(await pack('twin', []));
     const again = await pack('twin', []);
 
-    expect(() => packs.add(again)).toThrow(/twin/);
+    expect(() => packs.receive(again)).toThrow(/twin/);
     expect(packs.all).toHaveLength(1);
+  });
+});
+
+/**
+ * 設定と、この起動が実際に読んだかの照合。食い違いは読み込み直しでしか解けない（AssetPack.md 4節、
+ * SettingsScene）。
+ *
+ * **見るのは取りに行ったかどうかで、並びが空かどうかではない。** 読めなかった配布物は外れて空の
+ * ままになるが（同6.1節）、それは設定どおりに読んだ結果で、読み込み直しても同じ配布物は読めない。
+ */
+describe('設定とアセットパックの照合', () => {
+  it('取りに行っていなければ、読まない設定と一致する', () => {
+    const packs = new AssetPacks();
+
+    expect(packs.matchesSetting(false)).toBe(true);
+    expect(packs.matchesSetting(true)).toBe(false);
+  });
+
+  it('読めずに外して並びが空でも、読む設定と一致する', () => {
+    const packs = new AssetPacks();
+    packs.receive(undefined);
+
+    expect(packs.all).toHaveLength(0);
+    expect(packs.matchesSetting(true)).toBe(true);
+    expect(packs.matchesSetting(false)).toBe(false);
   });
 });
 
