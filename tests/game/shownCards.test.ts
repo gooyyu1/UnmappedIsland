@@ -79,7 +79,7 @@ function stack(
  */
 function screen(
   lanes: Partial<Record<'hand' | 'items' | 'fixtures', readonly (ObjectCardStack | undefined)[]>>,
-  windowPlace?: CardPlace,
+  options: { readonly windowPlace?: CardPlace; readonly hidden?: readonly number[] } = {},
 ): ShownCards {
   return new ShownCards({
     stacksIn: (asked) => {
@@ -114,7 +114,10 @@ function screen(
             execute: () => {},
           } as CardCombination);
     },
-    windowPlace: () => windowPlace,
+    // 現在地から見えるか（PlayScreenView.visible）。既定では全部見えていて、hiddenに挙げた個体だけが
+    // 「世界には在るが、ここからは見えない」（別の土地へ置いてきた道）。
+    visible: (object) => options.hidden?.includes(object.instanceId) !== true,
+    windowPlace: () => options.windowPlace,
     places: place,
   });
 }
@@ -122,7 +125,7 @@ function screen(
 /** 束の先頭1個を子ウィンドウへ借りる（開くときの経路そのもの）。 */
 function borrow(shown: ShownCards, borrowed: ObjectCardStack): ObjectCardStack {
   const first = shown.firstOf(borrowed);
-  shown.borrow(first, first);
+  shown.borrow(first.objects[0], first, first);
   return first;
 }
 
@@ -239,13 +242,13 @@ describe('貸し借りの流れ（Windows.md 1.1節）', () => {
 
     // ワールドが変わった（束の並びが組み直された）が、その個体は残っている。
     stones[0] = stack(place('hand'), [2, 1]);
-    const card = shown.reborrowedCard();
 
+    expect(shown.reborrowedWindow(), 'まだ映せる').toBe(true);
+    const card = shown.stacksAt('windowCard')[0];
     expect(
       card?.objects.map((entry) => entry.instanceId),
       '映し続けるのは同じ1個',
     ).toEqual([1]);
-    expect(shown.stacksAt('windowCard')[0]).toBe(card);
   });
 
   it('借りている1枚が世界から消えていたら、引き直せない', () => {
@@ -254,7 +257,29 @@ describe('貸し借りの流れ（Windows.md 1.1節）', () => {
     borrow(shown, stones[0]);
 
     stones[0] = stack(place('hand'), [2]);
-    expect(shown.reborrowedCard(), '映すものが無い＝ウィンドウを閉じる合図').toBeUndefined();
+    expect(shown.reborrowedWindow(), '映すものが無い＝ウィンドウを閉じる合図').toBe(false);
+  });
+
+  it('借りている1枚が現在地から見えなくなっていたら、世界に在っても引き直せない', () => {
+    // 道は移った先から見えないだけで、置いてきた土地の設置物としては世界に在り続ける（issue #1046）。
+    const roads = [stack(place('fixtures'), [1])];
+    const shown = screen({ fixtures: roads }, { hidden: [1] });
+    borrow(shown, roads[0]);
+
+    expect(shown.reborrowedWindow(), '世界に在ることは、映せることではない').toBe(false);
+  });
+
+  it('札を借りない窓も、映しているものが見えなくなれば閉じる', () => {
+    // 場所そのもの・キャラクタの窓（Windows.md 1.1節）。並びから抜ける札は無いが、判定は同じ。
+    const beach = { icon: '🏝️', name: '砂浜', identity: [9] };
+
+    const here = screen({});
+    here.borrow(object(9), beach, undefined);
+    expect(here.reborrowedWindow(), '見えている間は、引き直す束が無くても映せる').toBe(true);
+
+    const left = screen({}, { hidden: [9] });
+    left.borrow(object(9), beach, undefined);
+    expect(left.reborrowedWindow()).toBe(false);
   });
 });
 
@@ -483,6 +508,7 @@ describe('ドロップの意味', () => {
           objects.map((entry) => entry.instanceId),
         ),
       combinationOf: () => undefined,
+      visible: () => true,
       windowPlace: () => undefined,
       places: place,
     });
@@ -504,7 +530,10 @@ describe('ドロップの意味', () => {
 describe('カードの端の行き先', () => {
   it('手持ちの上は、子ウィンドウを開いている間だけそちらを先に見る', () => {
     const inside = somewhere();
-    expect(screen({}, inside).edgeTargets(place('hand'), 'up')).toEqual([inside, place('items')]);
+    expect(screen({}, { windowPlace: inside }).edgeTargets(place('hand'), 'up')).toEqual([
+      inside,
+      place('items'),
+    ]);
     expect(screen({}).edgeTargets(place('hand'), 'up')).toEqual([place('items')]);
   });
 

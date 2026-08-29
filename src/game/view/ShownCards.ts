@@ -23,6 +23,8 @@ export interface CardSource {
     target: ObjectCardStack,
     count?: number,
   ) => CardCombination | undefined;
+  /** その物が現在地から見えるか（PlayScreenView.visible）。見えない物は画面のどこにも出さない。 */
+  readonly visible: (object: WorldObject) => boolean;
   /** 子ウィンドウが映しているスロット（映していなければundefined）。端の行き先の候補に入る。 */
   readonly windowPlace: () => CardPlace | undefined;
   /**
@@ -67,9 +69,16 @@ export class ShownCards {
    * 画面の側の話で、ここには持ち込まない。
    *
    * 束から借りたならその束も持つ。ポートレイト（キャラクタ自身の札）のように束でない札もあり、
-   * そちらは映すだけでボタンの相手にはならない。
+   * そちらは映すだけでボタンの相手にはならない。**subjectは束の有無によらず在る**ので、
+   * 窓を畳むかの判定（reborrowedWindow）は札を借りない窓にも同じ形で効く。
    */
-  private window: { readonly card: CardContent; readonly stack: ObjectCardStack | undefined } | undefined;
+  private window:
+    | {
+        readonly subject: WorldObject;
+        readonly card: CardContent;
+        readonly stack: ObjectCardStack | undefined;
+      }
+    | undefined;
 
   /** 探索ウィンドウが抱えている発見物（Windows.md 5.1節）。まだどの枠にも居たことがない。 */
   private foundCards: readonly CardContent[] = [];
@@ -148,11 +157,14 @@ export class ShownCards {
    * その1枚を、子ウィンドウが出す札として借りる。この時点から、それは元の枠ではなくウィンドウの枠に
    * 出ている——枠から枠への運びは、並びの差し替えがそのまま見せる（cardMotionPlan）。
    *
-   * **札を出さないウィンドウでは借りない**（装備・怪我）。借りると、元の枠から消えたままどこにも
+   * subjectは窓が映している1個（ObjectWindowView.object）。**stackを渡さないウィンドウでも要る**
+   * ——場所やキャラクタの窓も、映しているものが見えなくなれば畳むため（reborrowedWindow）。
+   *
+   * **札を出さないウィンドウでは束を渡さない**（装備・怪我）。渡すと、元の枠から消えたままどこにも
    * 出ない札ができてしまう。
    */
-  borrow(card: CardContent, stack: ObjectCardStack | undefined): void {
-    this.window = { card, stack };
+  borrow(subject: WorldObject, card: CardContent, stack: ObjectCardStack | undefined): void {
+    this.window = { subject, card, stack };
   }
 
   /**
@@ -194,22 +206,42 @@ export class ShownCards {
   }
 
   /**
-   * 貸している1枚を今のワールドで引き直す（世界から消えていればundefined）。**束ではなくその1個**
+   * 子ウィンドウが映しているものを今のワールドで借り直し、**まだ映せるか**を答える（映せなければ
+   * ウィンドウを閉じる合図）。
+   *
+   * **映せなくなるのは、映している1個が現在地から見えなくなったとき**——食べた・打ち割った物も、
+   * 別の土地へ移って置いてきた物も、同じ1つの基準で落ちる（CardSource.visible）。世界に在るかどうかは
+   * 見ない。道は移った先から見えないだけで世界には在り続けるため。
+   *
+   * 借りている束は今のワールドで引き直す。差し替えの前後で束は別物になっているので、そのまま使うと
+   * 次のアクションが古いインスタンスに対して組まれる。
+   */
+  reborrowedWindow(): boolean {
+    const opened = this.window;
+    if (opened === undefined) return true;
+    if (!this.source.visible(opened.subject)) return false;
+
+    // 札を借りていない窓（場所・キャラクタ・装備・怪我）は、引き直す束が無い。
+    return opened.stack === undefined || this.reborrowedCard() !== undefined;
+  }
+
+  /**
+   * 貸している1枚を今のワールドで引き直す（引き直せなければundefined）。**束ではなくその1個**
    * ——ウィンドウが映しているのも、ボタンの操作が効くのもその1個だけ。引き直せたら、映す束も
    * 返すときの姿もその新しい札になる。
    */
-  reborrowedCard(): ObjectCardStack | undefined {
+  private reborrowedCard(): ObjectCardStack | undefined {
     const opened = this.window?.stack;
     const id = opened?.identity?.[0];
     if (opened === undefined || id === undefined) return undefined;
 
     for (const stack of this.source.stacksIn(opened.place)) {
       const object = stack?.objects.find((entry) => entry.instanceId === id);
-      if (stack !== undefined && object !== undefined) {
-        const card = this.source.cardOfObjects([object]);
-        this.window = { card, stack: card };
-        return card;
-      }
+      if (object === undefined) continue;
+
+      const card = this.source.cardOfObjects([object]);
+      this.window = { subject: object, card, stack: card };
+      return card;
     }
     return undefined;
   }
