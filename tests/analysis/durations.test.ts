@@ -33,6 +33,21 @@ traits:
     passives:
       - add: {self: {durability: -0.5}}
 
+  # 「塩蔵かつ乾燥」の両方が揃ったときだけ効かない腐敗。片方しか名乗らない型では成立する。
+  rots_unless_both:
+    props:
+      durability:
+        value: 960
+        range: {min: 0, max: 960}
+        on_min: {destroy: self}
+    passives:
+      - conditions:
+          - not:
+              all:
+                - {subject: self, matches: {tag: cured}}
+                - {subject: self, matches: {tag: dried}}
+        add: {self: {durability: -1}}
+
 object_defs:
   # 10日で治る傷。端で自分が消える。
   bruise:
@@ -111,6 +126,11 @@ object_defs:
   salted_fish:
     tags: [item]
     traits: [rots_raw, salted]
+
+  # 塩蔵は名乗るが乾燥は名乗らない。「両方ではない」は成立するので、腐敗は効く。
+  salted_plum:
+    tags: [item, cured]
+    traits: [rots_unless_both]
 `;
 
   const codex = new WorldCodexYamlLoader().load('durations.yaml', YAML).buildAndReset();
@@ -119,6 +139,7 @@ object_defs:
     expect(durationsOf(codex).map((duration) => [duration.objectName, duration.days])).toEqual([
       ['salted_fish', 20],
       ['bruise', 10],
+      ['salted_plum', 10],
       ['berry', 2.5],
       ['fish', 2.5],
     ]);
@@ -135,6 +156,14 @@ object_defs:
 
   it('隣の物に押されて初めて進む値は数えない', () => {
     expect(durationsOf(codex).map((duration) => duration.objectName)).not.toContain('raw_meat');
+  });
+
+  it('否定の下の論理積は論理和なので、片方しか当てはまらない型でも落とさない', () => {
+    // 「cured かつ dried」の否定は、curedしか名乗らない型では成立する。両方を必須として読むと、
+    // この型の腐敗が丸ごと消えて長さが出なくなる。
+    expect(durationsOf(codex).find((duration) => duration.objectName === 'salted_plum')).toMatchObject({
+      days: 10,
+    });
   });
 
   it('使うたびに減る値は、日ではなく回数で出す', () => {

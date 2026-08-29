@@ -239,7 +239,12 @@ class GateConditionCollector implements ConditionReader {
     this.selfTypeMatches.push(this.negated ? { kind: 'not', inner: match } : match);
   }
 
+  /** **否定の下の論理積は論理和**（「aかつbでない」＝「aでない、またはbでない」）。 */
   all(children: readonly ConditionDeclaration[]): void {
+    if (this.negated) {
+      this.any(children);
+      return;
+    }
     for (const child of children) child.read(this);
   }
 
