@@ -60,7 +60,7 @@ export class SettingsScene extends ResponsiveScene {
   }
 
   /**
-   * タイトルへ戻る。設定が今入っているものと食い違っていれば、読み込み直して反映する
+   * タイトルへ戻る。設定が、この起動が読んだかどうかと食い違っていれば、読み込み直して反映する
    * （そのままではこの回のゲームに映らない）。読み込み直した先もタイトル画面になる。
    */
   private returnToTitle(): void {
