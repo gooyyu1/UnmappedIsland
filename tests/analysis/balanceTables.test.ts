@@ -545,10 +545,10 @@ object_defs:
 
   const costOf = (objectName: string) => tables.objectCosts.find((cost) => cost.objectName === objectName)!;
 
-  /** 島全体の文脈で、hydrationを埋める経路のうち末尾の工程が指定の型のもの。 */
-  const routeEndingAt = (objectName: string) =>
+  /** その土地（既定は島全体）の表で、hydrationを埋める経路のうち末尾の工程が指定の型のもの。 */
+  const routeEndingAt = (objectName: string, placeName: string = WHOLE_ISLAND) =>
     tables.places
-      .find((place) => place.name === WHOLE_ISLAND)!
+      .find((place) => place.name === placeName)!
       .properties.find((chains) => chains.propertyName === 'hydration')!
       .routes.find((route) => route.route.steps.at(-1)?.objectName === objectName)!.route;
 
@@ -560,6 +560,20 @@ object_defs:
       minutes: undefined,
     });
     expect(route.blocked).toBe(false);
+  });
+
+  it('値段が付かない道具は、その土地で用意できなくても持ち込みにならない', () => {
+    // clay_flatでは塩田の材料（石）が採れないので、塩はそこで用意できない。それでもimportedは
+    // 偽になる——値段の付かない型の集合は島全体に1つしかなく、土地の文脈も同じ答えを返すため
+    // （issue #1217）。**この経路が土地の表に載っていること自体が、その帰結**。
+    const route = routeEndingAt('brine_gourd', 'clay_flat');
+
+    expect(route.prerequisites.find((prerequisite) => prerequisite.label === 'salt')).toMatchObject({
+      objectName: 'salt',
+      minutes: undefined,
+      imported: false,
+    });
+    expect(route.needsImport).toBe(false);
   });
 
   it('値段が付かないだけの道具は、内容の穴に挙がらない', () => {

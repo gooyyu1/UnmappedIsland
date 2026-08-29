@@ -1484,6 +1484,11 @@ class Acquisition {
    * 入力1件を、どの型で・いくらで満たすか。**値段の付く型を先に探し、どこにも無ければ値段の
    * 付かない型を探す**——時間の出る候補を、時間の出ない候補で押しのけない。どちらも「この土地 →
    * 持ち込み」の順で見る。島のどこにも手に入る型が無ければundefined。
+   *
+   * **`imported`が意味を持つのは値段の付く側だけで、値段の付かない側では常に偽になる**
+   * ——`unpricedCandidate`が当てる集合は島全体に1つしか無く（obtainableWithoutCost）、土地の文脈も
+   * 同じ集合を見るので、必ず`context === this`で決まるため。**ここでは「どこで用意するか」を
+   * 答えられない**（BalanceStats.md「土地ごとの行は可否を判定しない」の帰結。issue #1217）。
    */
   private obtainableSource(input: CraftingStep['inputs'][number]): ObtainableSource | undefined {
     const contexts = this.islandWide === undefined ? [this] : [this, this.islandWide];
