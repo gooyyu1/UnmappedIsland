@@ -19,6 +19,19 @@ export class Shelf {
     this.area = new StorageArea(storage, 'shelf');
   }
 
+  /**
+   * 棚に収まっているもののうち、渡された型にあるぶん。
+   *
+   * **今の定義で名前を引けない識別子は、並べないだけで消さない**（SaveDataManagement.md 棚節）
+   * ——アセットパックの物を持ち帰った後にそのパックを外すと、棚には識別子だけが残る。数えるのも
+   * 並べるのもここが返す集合1つで済ませる。数と札を別々に数えると、外したパックのぶんだけ
+   * 「収めた数」が枠の数を超える。
+   */
+  heldAmong(defNames: readonly string[]): ReadonlySet<string> {
+    const held = new Set(this.contents);
+    return new Set(defNames.filter((name) => held.has(name)));
+  }
+
   /** 棚に収まっているアーティファクトのobject_defの識別子（収めた順、重複なし）。 */
   get contents(): readonly string[] {
     const parsed = this.area.readJson();

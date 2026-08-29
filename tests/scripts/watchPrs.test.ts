@@ -293,6 +293,29 @@ describe('watch-prs.sh の STALLED', () => {
     expect(lines).toEqual(['CONFLICT 830']);
   });
 
+  it('脚注が落ちたPRでも、Closes とタグで結んで出さない', () => {
+    // 本文を書き直すと脚注は消えるが、`Closes` は消せない（消すと issue が閉じない）。
+    const lines = watch(
+      [[pullRequest(830, 'CONFLICTING', [], undefined, 'Closes #900\n\n脚注の無い本文')]],
+      [[]],
+      [],
+      [session('session_01AAA')],
+    );
+
+    expect(lines).toEqual(['CONFLICT 830']);
+  });
+
+  it('別の issue を閉じるPRしか無ければ出す', () => {
+    const lines = watch(
+      [[pullRequest(830, 'CONFLICTING', [], undefined, 'Closes #901')]],
+      [[]],
+      [],
+      [session('session_01AAA', '止まっている')],
+    );
+
+    expect(lines).toEqual(['CONFLICT 830', 'STALLED session_01AAA 止まっている']);
+  });
+
   // 何も出ないことは時間切れと区別が付かないので、隣に止まったセッションを置いて、そちらだけが
   // 出ることで見る。
   it('動いているセッションと、task のタグを持たないセッションは出さない', () => {

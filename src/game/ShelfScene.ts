@@ -61,7 +61,7 @@ export class ShelfScene extends ResponsiveScene {
     );
 
     const all = this.codex.objectDefNamesWithTag(this.codex.vocabulary.world.artifactTagId);
-    const held = new Set(new Shelf(localStorage).contents);
+    const held = new Shelf(localStorage).heldAmong(all);
 
     const padding = this.metrics.px(PADDING);
     let y = ScreenHeader.height(this.metrics) + padding;

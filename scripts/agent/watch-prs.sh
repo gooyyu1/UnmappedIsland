@@ -106,10 +106,18 @@
 # 司令塔だけはユーザーが1行送って起こしていたので進み、子セッションは止まったままだった）。
 #
 # **判定は「PRを出したか」だけで見る。** セッションの状態だけでは、書き終えて報告した IDLE と、
-# 途中で落ちた IDLE が区別できない。**PRの本文には作ったセッションのIDが脚注として入る**ので、
-# 「動いていない × 自分のIDを載せた open なPRが無い」が、そのまま「まだ仕事が残っている」になる。
-# 枝の名前では引けない——ブリッジのセッションの `current_branches` は worktree のローカル枝で、
-# push する枝とは別物。
+# 途中で落ちた IDLE が区別できない。「動いていない × open なPRが無い」が、そのまま
+# 「まだ仕事が残っている」になる。枝の名前では引けない——ブリッジのセッションの `current_branches` は
+# worktree のローカル枝で、push する枝とは別物。
+#
+# **PRとセッションは2通りで結ぶ。片方だけでは足りない。**
+#
+# - PR本文の脚注 `https://claude.ai/code/session_...`。Claude Code が自動で付ける。
+# - PR本文の `Closes #<番号>` と、セッションの `task-<番号>` タグ（`dispatch-task.sh` が付ける）。
+#
+# 脚注だけで見ていたとき、**本文を書き直したPRで脚注ごと落ちた**（2026-08-29 の #1177・#1178）。
+# どちらもPRは出ているのに毎周 `STALLED` が出て、見張りがその場で終わっていた。脚注は本文の一部
+# なので書き手が消せるが、`Closes` は消せない——消すと issue が閉じない。
 #
 # マージ済みで畳み忘れたセッションもここに出る。**どちらも司令塔が手を入れるべき状態**なので、
 # 種類を分けない（起こすのか畳むのかは、受け取った側が `list_events` を見て決める）。
@@ -184,7 +192,7 @@ STALLED_FILTER='
   | select(.session_status != "SESSION_STATUS_ARCHIVED")
   | select(.status_bucket != "SESSION_STATUS_BUCKET_WORKING")
   | select(.updated_at < $grace)
-  | "\(.id) \(.title // "")"
+  | "\(.id)\t\([.tags[]? | select(startswith("task-")) | ltrimstr("task-")] | join(" "))\t\(.title // "")"
 '
 
 deadline=$(($(date +%s) + TIMEOUT_MINUTES * 60))
@@ -354,11 +362,18 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
       if sessions=$(bash "$CCR_META" list_sessions <<<'{"mine":true,"limit":30}' 2>/dev/null |
         grep -o '{"ccr".*'); then
         session_grace=$(date -u -d "-${SESSION_GRACE} seconds" +%Y-%m-%dT%H:%M:%SZ)
-        # PR本文の脚注 `https://claude.ai/code/session_...` が、そのPRを出したセッション。
-        with_pr=$(jq -r '.[].body // ""' <<<"$prs" | grep -o 'session_[A-Za-z0-9]*' | sort -u)
-        while read -r id title; do
+        # PR本文の脚注 `https://claude.ai/code/session_...` と、`Closes #<番号>` が指す issue。
+        bodies=$(jq -r '.[].body // ""' <<<"$prs")
+        with_pr=$(grep -o 'session_[A-Za-z0-9]*' <<<"$bodies" | sort -u)
+        closed_issues=$(grep -oiE 'closes #[0-9]+' <<<"$bodies" | grep -o '[0-9]*' | sort -u)
+        while IFS=$'\t' read -r id issues title; do
           [ -n "$id" ] || continue
           grep -qx "$id" <<<"$with_pr" && continue
+          claimed=0
+          for issue in $issues; do
+            grep -qx "$issue" <<<"$closed_issues" && claimed=1 && break
+          done
+          [ "$claimed" -eq 1 ] && continue
           settled=$(printf '%s\nSTALLED %s %s' "$settled" "$id" "$title")
         done < <(jq -r --arg grace "$session_grace" "$STALLED_FILTER" <<<"$sessions" | tr -d '\r')
       else
