@@ -4,7 +4,7 @@ import { SIZE } from './theme';
  * レーンに必ず見えているカードの枚数（ScreenLayout.md 3.1節）。5枚見えていないと、場に何があるかを
  * 見比べるより先に送る操作が要る。
  */
-const LANE_MIN_CARDS = 5;
+export const LANE_MIN_CARDS = 5;
 
 /** カード5枚とその間のギャップ（u）。レーンの外周マージンの内側に、これだけの幅が要る。 */
 const LANE_MIN_CARDS_WIDTH = SIZE.cardWidth * LANE_MIN_CARDS + SIZE.gap * (LANE_MIN_CARDS - 1);
