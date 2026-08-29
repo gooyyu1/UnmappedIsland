@@ -1488,6 +1488,15 @@ ui_texts:
   slots_delete_body: '「{island}」を削除します。この操作は取り消せません。'
   slots_delete_confirm: 削除する
   slots_new: 新規作成
+  # アセットパックの並びが食い違って開けないスロット（AssetPack.md 6.4節）。
+  slots_packs_differ: アセットパックが違うため開けません
+  slots_packs_title: '「{island}」は開けません'
+  slots_packs_reason: このセーブは、今とは違うアセットパックで作られています。同じシードでも別の島になるため、開いても続きになりません。
+  slots_packs_saved: '作ったとき: {packs}'
+  slots_packs_current: '今: {packs}'
+  slots_packs_none: なし（同梱ぶんだけ）
+  slots_packs_entry: '{id}（{version}）'
+  slots_packs_hint: タイトル画面の設定でアセットパックの読み込みを切り替えると、揃うことがあります。
 
   # 新規ゲーム作成画面（StartScreen.md 画面構成 3）。
   newgame_title: 新規ゲーム作成

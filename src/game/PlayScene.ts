@@ -20,6 +20,7 @@ import { SAVE_SCHEMA_VERSION } from '../save/SaveData';
 import { SaveSlots } from '../save/SaveSlots';
 import { Settings } from '../save/Settings';
 import { Shelf } from '../save/Shelf';
+import { currentAssetPacks } from '../save/savedAssetPacks';
 import type { Scenario } from '../scenario/Scenario';
 import { applyScenario } from '../scenario/Scenario';
 import { Path } from '../domain/wrappers/Path';
@@ -277,6 +278,7 @@ export function scenarioPlayData(scenario: Scenario): PlaySceneData {
       elapsedDays: 0,
       pinnedStatuses: [],
       mapCardPositions: [],
+      assetPacks: currentAssetPacks(),
     },
     slotIndex: -1,
     scenario,

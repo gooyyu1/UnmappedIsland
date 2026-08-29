@@ -84,6 +84,39 @@ describe('SaveSlots(SaveDataManagement.md)', () => {
     expect(new SaveSlots(storage).read(0)?.mapCardPositions).toEqual([{ site: 1, x: 0.1, y: 0.2 }]);
   });
 
+  it('アセットパックの並びはスロットごとに残る', () => {
+    const slots = new SaveSlots(new MemoryStorage());
+    slots.write(0, { ...saveOf('霧深い孤島'), assetPacks: [{ id: 'potions', version: '1.0.0' }] });
+    slots.write(1, saveOf('第二の島'));
+
+    expect(slots.read(0)?.assetPacks).toEqual([{ id: 'potions', version: '1.0.0' }]);
+    expect(slots.read(1)?.assetPacks).toEqual([]);
+  });
+
+  it('アセットパックの欄を持たない古い形式のセーブは、同梱ぶんだけで作られたものとして読める', () => {
+    const storage = new MemoryStorage();
+    const { assetPacks, ...oldFormat } = { ...saveOf('霧深い孤島'), schemaVersion: 3 };
+    expect(assetPacks, '古い形式には無いフィールド').toEqual([]);
+    storage.setItem('unmapped-island:save:0', JSON.stringify(oldFormat));
+
+    const save = new SaveSlots(storage).read(0);
+
+    expect(save?.islandName, '他のフィールドはそのまま読める').toBe('霧深い孤島');
+    expect(save?.assetPacks).toEqual([]);
+  });
+
+  it('壊れたアセットパックの欄は、読めた分だけ残さずスロットごと読めなくする', () => {
+    const storage = new MemoryStorage();
+    const broken = {
+      ...saveOf('霧深い孤島'),
+      assetPacks: [{ id: 'potions' }, { id: 'herbs', version: '1.0.0' }],
+    };
+    storage.setItem('unmapped-island:save:0', JSON.stringify(broken));
+
+    // 読めた分（herbsだけ）を残すと、herbsだけが入っている今と一致して、別の島のスロットが開く。
+    expect(new SaveSlots(storage).read(0)).toBeUndefined();
+  });
+
   it('壊れた値が入っていても空きスロットとして扱う', () => {
     const storage = new MemoryStorage();
     storage.setItem('unmapped-island:save:0', '{壊れたJSON');
