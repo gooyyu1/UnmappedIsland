@@ -20,7 +20,7 @@ const SCRIPT = resolve(__dirname, '../../scripts/agent/merge-and-close.sh');
  * 脚注の無い本文は `NOSESSION` を出すので、脚注の話でない試験には既定でこれを持たせる。
  * 指す先は畳み済みなので、`ARCHIVED` の行も増えない。
  */
-const DEFAULT_BODY = '_[Claude Code](https://claude.ai/code/session_01ZZZ)_';
+const DEFAULT_BODY = '_[Claude Code](https://claude.ai/code/session_01ZZZZZZZZZZZZZZZZZZZZZZ)_';
 
 interface World {
   readonly mergeable?: string;
@@ -29,6 +29,8 @@ interface World {
   readonly issues?: Record<number, string>;
   /** セッションIDごとの `session_status`。 */
   readonly sessions?: Record<string, string>;
+  /** `archive_session` が失敗するか。 */
+  readonly archiveFails?: boolean;
   /** 本体に未コミットの変更（追跡済み）があるか。 */
   readonly mainDirty?: boolean;
   /** マージで `package-lock.json` が変わったか。 */
@@ -131,11 +133,11 @@ exit 0
 id=$(node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).session_id))')
 if [ "$1" = archive_session ]; then
   echo "$id" >> '${dir}/archived'
-  exit 0
+  exit ${world.archiveFails === true ? 1 : 0}
 fi
 echo '<other-session>'
 case "$id" in
-${Object.entries({ session_01ZZZ: 'SESSION_STATUS_ARCHIVED', ...world.sessions })
+${Object.entries({ session_01ZZZZZZZZZZZZZZZZZZZZZZ: 'SESSION_STATUS_ARCHIVED', ...world.sessions })
   .map(([id, status]) => `  ${id}) echo '{"ccr":{"session_status":"${status}"}}' ;;`)
   .join('\n')}
 esac
@@ -181,14 +183,19 @@ describe('merge-and-close.sh', () => {
 
   it('マージして、Closes の issue が閉じたことと、PRを出したセッションを畳んだことを出す', () => {
     const result = run({
-      body: 'Closes #1033\n\n_[Claude Code](https://claude.ai/code/session_01AAA)_',
+      body: 'Closes #1033\n\n_[Claude Code](https://claude.ai/code/session_01AAAAAAAAAAAAAAAAAAAAAA)_',
       issues: { 1033: 'CLOSED' },
-      sessions: { session_01AAA: 'SESSION_STATUS_RUNNING' },
+      sessions: { session_01AAAAAAAAAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING' },
     });
 
     expect(result.merged).toBe(true);
-    expect(result.lines).toEqual(['MERGED 1000', 'CLOSED 1033', 'ARCHIVED session_01AAA', 'SYNCED deadbee']);
-    expect(result.archived).toEqual(['session_01AAA']);
+    expect(result.lines).toEqual([
+      'MERGED 1000',
+      'CLOSED 1033',
+      'ARCHIVED session_01AAAAAAAAAAAAAAAAAAAAAA',
+      'SYNCED deadbee',
+    ]);
+    expect(result.archived).toEqual(['session_01AAAAAAAAAAAAAAAAAAAAAA']);
     expect(result.status).toBe(0);
   });
 
@@ -209,10 +216,36 @@ describe('merge-and-close.sh', () => {
     expect(result.status).toBe(2);
   });
 
+  // 本文が脚注の**書き方を説明している**ことがある（このPR自身がそうだった）。
+  it('脚注の書き方を引用しているだけの文字列は、畳む相手にしない', () => {
+    const result = run({
+      body: `末尾に \`https://claude.ai/code/session_...\` が入る。\n\n${DEFAULT_BODY}`,
+    });
+
+    expect(result.archived).toEqual([]);
+    expect(result.lines).toEqual(['MERGED 1000', 'SYNCED deadbee']);
+    expect(result.status).toBe(0);
+  });
+
+  // マージは済んでいるので、ここで落ちると `main` の追随ごと落ちる。
+  it('畳めなかったときも止まらず、後片付けを済ませてから残りとして報せる', () => {
+    const result = run({
+      sessions: { session_01ZZZZZZZZZZZZZZZZZZZZZZ: 'SESSION_STATUS_RUNNING' },
+      archiveFails: true,
+    });
+
+    expect(result.lines).toEqual([
+      'MERGED 1000',
+      'UNARCHIVED session_01ZZZZZZZZZZZZZZZZZZZZZZ',
+      'SYNCED deadbee',
+    ]);
+    expect(result.status).toBe(2);
+  });
+
   it('畳み済みのセッションは畳み直さない', () => {
     const result = run({
-      body: 'https://claude.ai/code/session_01AAA',
-      sessions: { session_01AAA: 'SESSION_STATUS_ARCHIVED' },
+      body: 'https://claude.ai/code/session_01AAAAAAAAAAAAAAAAAAAAAA',
+      sessions: { session_01AAAAAAAAAAAAAAAAAAAAAA: 'SESSION_STATUS_ARCHIVED' },
     });
 
     expect(result.archived).toEqual([]);
