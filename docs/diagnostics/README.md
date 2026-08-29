@@ -18,7 +18,7 @@
 1レコード1行のフロー形式で書くのは、`git diff` に値だけが並んで**どのレコードの値かが分からなく
 なる**のを避けるためです。
 
-**4本すべてがこの形です。** `docs/diagnostics/*.md` が持つのは読み方——何を測ったか・どこに線を
+**5本すべてがこの形です。** `docs/diagnostics/*.md` が持つのは読み方——何を測ったか・どこに線を
 引いたか・何を数えていないか——だけで、**数値は1行も書きません**（書けば、再生成したYAMLとずれます）。
 どちらが古いかを運用で守らずに済むよう、**手書きの文書の「YAMLの節」の表とYAMLの節は、両方向で
 突き合わせています**（片方にしか無い節があると `npm test` が赤くなる）。
@@ -32,6 +32,7 @@
 ```bash
 npm run stats:balance
 npm run stats:climate
+npm run stats:escape
 npm run stats:startup
 npm run stats:terrain
 ```
@@ -55,6 +56,7 @@ PRの段では `npm test` が、`main` へ入った後は
 |---|---|
 | [アイテム収支](../../stats/balance.yaml) | **丸ごと作り直して比べる**（1秒で済むので取りこぼしが無い） |
 | [気候システム統計](../../stats/climate.yaml) | シミュレーションの入力（`core.yaml`）の**指紋**をレポートへ書き込み、突き合わせる。定義から静的に解ける `activity_hours`・`excluded_locations` の節だけは作り直して比べる |
+| [島を出るまでの工程数](../../stats/escape_reach.yaml) | **丸ごと作り直して比べる**（定義から解くだけなので一瞬） |
 | [開始地点の立ち上がり](../../stats/startup_reach.yaml) | **丸ごと作り直して比べる**（2,000シードでも2秒） |
 | [地形生成統計](../../stats/terrain.yaml) | **丸ごと作り直して比べる**（500シードで1秒） |
 
@@ -70,7 +72,7 @@ PRの段では `npm test` が、`main` へ入った後は
 
 ### `regenerate-stats.yml` ——`main` へ入った後
 
-`main` への push のたびに4本を丸ごと作り直し、差分が出たら `main` へ push し直します。
+`main` への push のたびに5本を丸ごと作り直し、差分が出たら `main` へ push し直します。
 `npm test` に映らない古さを、ここが拾います。
 
 - **生成物を触るPRが2本続いたぶん。** 2本目は1本目が入る前の定義から作られているので、gitの上では
@@ -91,6 +93,12 @@ PRの段では `npm test` が、`main` へ入った後は
   連続降雨/未降雨時間（[`ClimateSystem.md`](../engine/ClimateSystem.md) 参照）と、土地×季節ごとの活動時間。
   読み方は [`ClimateSystemStats.md`](./ClimateSystemStats.md)。
   生成元: `tests/diagnostics/climateStatsReport.test.ts`
+- [島を出るまでの工程数](../../stats/escape_reach.yaml) — 島を出るのに要るもの（`boat`・`sail` を
+  名乗る型と、そこへ推移的に要求される型）が、島の産物から何工程先にあるか
+  （[`ContentSkeleton.md`](../world/ContentSkeleton.md) 3節の系統12参照）。定義だけから計算した値で、
+  鎖が長すぎるかどうかの判定は出さない。
+  読み方は [`EscapeReachStats.md`](./EscapeReachStats.md)。
+  生成元: `tests/diagnostics/escapeReachStatsReport.test.ts`（計算は `src/analysis/escapeReach.ts`）
 - [開始地点の立ち上がり](../../stats/startup_reach.yaml) — 最初の段を越えるのに要るもの6つが、
   各サイトから何歩先にあるか（移動時間・道を見つける探索時間つき）と、島ごとに最も条件の良い
   サイトの値の分布（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 2.3節参照）。
