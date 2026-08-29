@@ -34,6 +34,26 @@ describe('アーティファクトの棚', () => {
     expect(new Shelf(storage).contents).toEqual(['golden_chalice']);
   });
 
+  it('今の定義で名前を引けない識別子は、棚に並ばない', () => {
+    const storage = new MemoryStorage();
+    new Shelf(storage).addReturningNewlyAdded(['golden_chalice', 'potion_of_kings']);
+
+    // アセットパックの物を持ち帰った後、そのパックを外した状態（AssetPack.md 6.4節）。
+    expect([...new Shelf(storage).heldAmong(['golden_chalice', 'bronze_mirror'])]).toEqual([
+      'golden_chalice',
+    ]);
+  });
+
+  it('並ばない識別子も棚からは消えず、次に持ち帰っても残る', () => {
+    const storage = new MemoryStorage();
+    new Shelf(storage).addReturningNewlyAdded(['potion_of_kings']);
+
+    new Shelf(storage).heldAmong(['golden_chalice']);
+    new Shelf(storage).addReturningNewlyAdded(['golden_chalice']);
+
+    expect(new Shelf(storage).contents).toEqual(['potion_of_kings', 'golden_chalice']);
+  });
+
   it('他タブや手動編集で壊れた値は、まだ何も無いとして読む', () => {
     const storage = new MemoryStorage();
     storage.setItem('unmapped-island:shelf', '{壊れている');
