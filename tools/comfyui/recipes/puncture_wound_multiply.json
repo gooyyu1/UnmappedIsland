@@ -1,0 +1,30 @@
+{
+  "_comment": [
+    "src/assets/objects/puncture_wound_multiply.png（刺し傷）を作り直すためのレシピ。build.py が読む。",
+    "",
+    "作りは laceration_multiply.json と同じ3段（下絵→肌の上でQwenに描き直させる→同じ肌で割る）。",
+    "割る相手（ground）は載せる相手ではなく**下絵を置いた肌**。",
+    "",
+    "**裂傷と見分ける手は形。** 実寸ではカードの1/3ほどに縮むので、色や深さの差はそこで潰れる。",
+    "裂傷が札を斜めに横切る長い線なのに対し、ここは中央の1点だけ——刃が面をなぞったか、先が",
+    "突き刺さったかの違いが、線と点として出る。",
+    "",
+    "**穴を丸く描かない。** 尖った物が刺さった痕は、皮膚が裂けて閉じた短い切れ目になる。丸い穴は",
+    "傷ではなく孔（ピアス）に見える。"
+  ],
+  "output": "src/assets/objects/puncture_wound_multiply.png",
+  "ground": "src/assets/backgrounds/medic_injuries_card.png",
+  "stain": {
+    "size": "410x640",
+    "spots": ["205,320,108,0.30,#dfaea9", "205,318,46,0.38,#bd7f7c"],
+    "slashes": ["196,286,214,354,12,0.60,#7c3f37"]
+  },
+  "edit": {
+    "_comment": [
+      "laceration と同じ言い方で唇を否定する（縁がふくらんだ左右対称のピンクのレンズは口に見える）。",
+      "凄惨にしないことも同じく書く——放っておくと口を開けた傷と血の滴になる。"
+    ],
+    "prompt": "Keep this picture of bare skin exactly as it is: the same skin colour, the same skin texture, the same lighting, and the wound in the same place at the same size. Repaint only the wound so that it looks like a real deep puncture wound on skin, made by a sharp point, that has already stopped bleeding. It is one small short slit, no wider than a fingernail, with a dark red brown clotted centre, surrounded by a narrow ring of bruised reddened skin that fades softly into the normal skin. Do not make it look like lips or a mouth: the shape is a short uneven slit, not a plump symmetrical oval, and the edges are flat, not swollen, not pink, not glossy. It is not a round hole and not a piercing. No gaping wound, no visible flesh, no blood drops, no gore. Matte skin, flat even lighting, no shine, no highlights. Nothing else in the picture changes. No text, no letters, no numbers.",
+    "seed": 1
+  }
+}
