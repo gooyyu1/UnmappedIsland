@@ -15,6 +15,9 @@ describe('causeOfDeathSentence(死んだことを伝える一文)', () => {
   drowned: 溺れ
 stage_texts:
   dehydrated: 渇き
+ui_texts:
+  death_exhausted: 力尽きた。
+  death_by_cause: '{cause}で死んだ。'
 `,
   );
 

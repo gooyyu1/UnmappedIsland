@@ -13,6 +13,7 @@ import type { ProgressBarOptions } from './ProgressBar';
 import type { AlertLevel } from '../../domain/AlertLevel';
 import type { GaugeEnd } from '../../domain/PropertyDef';
 import { noteOperation } from '../errorReport';
+import { uiText } from '../../locale/uiTexts';
 import { hoursAndMinutesText } from '../looks/timeTexts';
 import { HoldRepeat } from '../../ui/holdRepeat';
 import { onPressRelease } from '../../ui/tap';
@@ -1258,7 +1259,7 @@ export class Card extends Phaser.GameObjects.Container {
         highlight.setVisible(false);
         if (this.tapCancelled || !this.holdsCard) return;
 
-        noteOperation(`カードを押した: ${this._content.name}`);
+        noteOperation(uiText('log_card_tapped', { name: this._content.name }));
         this._content.onTap?.();
       },
     });

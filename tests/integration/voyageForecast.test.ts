@@ -10,7 +10,8 @@ import { seededRng } from '../../src/domain/Rng';
 import { voyageForecastOf } from '../../src/game/view/voyageForecast';
 import { cardLooksOf } from '../../src/game/view/cardLooks';
 import { voyageDaysText } from '../../src/game/looks/timeTexts';
-import { parseLocale } from '../../src/locale/Localization';
+import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
+import { setUiTexts } from '../../src/locale/uiTexts';
 import { borrowedFace } from '../../src/game/ui/cardFace';
 import { readSeaChart, shortestRouteToMainland } from '../support/seaChain';
 
@@ -30,6 +31,8 @@ describe('推定日数', () => {
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    // 日数の字面は画面そのものの語（ui_texts）から出るので、同梱の対応表を入れておく。
+    setUiTexts(parseLocale(LOCALE_FILE, bundledLocaleText()));
   });
 
   /** 出航のしたくシナリオの状態（砂浜に積荷入りの筏があり、プレイヤーは岸に立っている）。 */

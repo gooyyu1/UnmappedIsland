@@ -117,17 +117,10 @@ export class MapWindow {
     const title = addLabel(scene, metrics, padding, padding, uiText('map'), { size: 34, bold: true });
     this.ownedObjects.push(
       title,
-      addLabel(
-        scene,
-        metrics,
-        padding,
-        padding + title.height + metrics.px(4),
-        'カードを動かして、自分だけの地図を作る（ピンチ／ホイールで拡大）',
-        {
-          size: 22,
-          color: COLOR.textMuted,
-        },
-      ),
+      addLabel(scene, metrics, padding, padding + title.height + metrics.px(4), uiText('map_hint'), {
+        size: 22,
+        color: COLOR.textMuted,
+      }),
     );
 
     this.ownedObjects.push(
