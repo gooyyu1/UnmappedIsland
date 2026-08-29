@@ -58,7 +58,7 @@ import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
 import type { LaneCell } from './ui/laneCells';
-import { foundCells, hiddenOnlyCells } from './ui/laneCells';
+import { foundCells, hiddenCountCells } from './ui/laneCells';
 import { Curtain } from './ui/Curtain';
 import { LocationArtLoader } from './ui/LocationArtLoader';
 import { INFORMATION_BACKGROUND, INFORMATION_BORDER_PX, INFORMATION_OVERLAP_PX } from '../art/informationArt';
@@ -938,8 +938,8 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * その場所を映すレーンに並べる枠（slotCells）。絞り込みで1枚も残らなかったレーンには、隠れている
-   * 枚数の印が付く（hiddenOnlyCells）——**どこに絞り込みが効くかを知っているのはShownCards**なので、
+   * その場所を映すレーンに並べる枠（slotCells）。絞り込みが札を隠しているレーンには、隠れている
+   * 枚数の印が付く（hiddenCountCells）——**どこに絞り込みが効くかを知っているのはShownCards**なので、
    * 絞り込みの効かない場所（手持ち・子ウィンドウ）では隠れている枚数が0になり、印も付かない。
    */
   private cellsAt(place: CardPlace): readonly LaneCell[] {
@@ -952,7 +952,7 @@ export class PlayScene extends ResponsiveScene {
       this.materialCycle,
       (objectGlobalId) => this.view.cardOfType(objectGlobalId),
     );
-    return hiddenOnlyCells(cells, this.shown.hiddenAt(place));
+    return hiddenCountCells(cells, this.shown.hiddenAt(place));
   }
 
   /**
