@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { AssetPack } from '../../src/asset-pack/AssetPack';
+import { AssetPacks } from '../../src/asset-pack/install';
 import { readZip } from '../../src/asset-pack/zip';
-import { addPackArt } from '../../src/art/packArt';
+import { addPackArt, artKeyIn } from '../../src/art/packArt';
+import { ART_BY_NAME, artUrl, objectTexture } from '../../src/art/objectArt';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { loadDefinitions } from '../../src/loader/loadDefinitions';
 import { LoadReport } from '../../src/loader/LoadReport';
 import { loadWorldCodex } from '../../src/loader/loadWorldCodex';
@@ -94,7 +97,7 @@ describe('アセットパックの中身', () => {
 describe('アセットパックを重ねた読み込み', () => {
   it('パックの定義が同梱の定義に足される', async () => {
     const codex = loadWorldCodex(
-      await pack('sample', [{ name: 'world-codex/totem.yaml', content: OBJECT_YAML }]),
+      [await pack('sample', [{ name: 'world-codex/totem.yaml', content: OBJECT_YAML }])],
       new LoadReport(),
     );
 
@@ -108,18 +111,18 @@ describe('アセットパックを重ねた読み込み', () => {
       { name: 'world-codex/clash.yaml', content: 'object_defs:\n  coconut: {tags: [item]}\n' },
     ]);
 
-    expect(() => loadWorldCodex(clash, new LoadReport())).toThrow(YamlLoadError);
+    expect(() => loadWorldCodex([clash], new LoadReport())).toThrow(YamlLoadError);
   });
 
   it('パックの表示文字列が同梱の対応表に足される', async () => {
-    const locale = loadLocalization(
+    const locale = loadLocalization([
       await pack('sample', [
         {
           name: 'locale/ja.yaml',
           content: 'object_texts:\n  driftwood_totem:\n    display_name: 流木の像\n',
         },
       ]),
-    );
+    ]);
 
     expect(locale.object('driftwood_totem').displayName).toBe('流木の像');
     expect(locale.object('coconut').displayName).toBe('熟したヤシの実');
@@ -130,7 +133,7 @@ describe('アセットパックを重ねた読み込み', () => {
       { name: 'locale/ja.yaml', content: 'object_texts:\n  coconut:\n    display_name: 別のヤシの実\n' },
     ]);
 
-    expect(() => loadLocalization(clash)).toThrow(YamlLoadError);
+    expect(() => loadLocalization([clash])).toThrow(YamlLoadError);
   });
 
   it('読めないパックは丸ごと外し、同梱ぶんだけで組み直す', async () => {
@@ -141,7 +144,7 @@ describe('アセットパックを重ねた読み込み', () => {
       { name: 'world-codex/clash.yaml', content: 'object_defs:\n  coconut: {tags: [item]}\n' },
     ]);
 
-    const definitions = loadDefinitions(broken, report);
+    const definitions = loadDefinitions([broken], report);
 
     expect(definitions.codex.objectNames.tryGetId('driftwood_totem'), 'パックの型は入らない').toBeUndefined();
     expect(definitions.codex.objectNames.tryGetId('coconut'), '同梱ぶんは読める').toBeDefined();
@@ -150,9 +153,117 @@ describe('アセットパックを重ねた読み込み', () => {
   });
 
   it('パックを渡さなければ同梱ぶんだけを読む', () => {
-    expect(
-      loadWorldCodex(undefined, new LoadReport()).objectNames.tryGetId('driftwood_totem'),
-    ).toBeUndefined();
+    expect(loadWorldCodex([], new LoadReport()).objectNames.tryGetId('driftwood_totem')).toBeUndefined();
+  });
+});
+
+/**
+ * 複数のパックを並べて読む（AssetPack.md 6.2節）。順が変えるのは宣言順に振られるものだけで、
+ * 出来上がる世界の中身はどの順でも同じになる（同名の識別子は常にエラーで、後勝ちが無いため）。
+ */
+describe('複数のアセットパックを並べた順に読む', () => {
+  /** プロパティタグ・レシピ一覧の棚（＝宣言順がそのまま並びになるもの）だけを宣言したパック。 */
+  async function ordered(id: string, tag: string): Promise<AssetPack> {
+    return pack(id, [
+      {
+        name: 'world-codex/order.yaml',
+        content: `property_tags:\n  ${tag}: {}\nrecipe_categories: [${tag}]\n`,
+      },
+    ]);
+  }
+
+  it('宣言順に振られるものが、渡した順に並ぶ', async () => {
+    const [first, second] = [await ordered('first', 'alpha'), await ordered('second', 'beta')];
+
+    const forward = loadWorldCodex([first, second], new LoadReport());
+    const backward = loadWorldCodex([second, first], new LoadReport());
+
+    const tagOrder = (codex: WorldCodex): readonly string[] =>
+      ['alpha', 'beta'].sort((a, b) => codex.propertyTagNames.getId(a) - codex.propertyTagNames.getId(b));
+    expect(tagOrder(forward)).toEqual(['alpha', 'beta']);
+    expect(tagOrder(backward)).toEqual(['beta', 'alpha']);
+
+    // 同梱ぶんの棚が先に並んでいるので、パックが足したぶんだけを見る。
+    const shelves = (codex: WorldCodex): readonly string[] =>
+      codex.recipeCategoryTagIdsByPriority
+        .map((id) => codex.tagNames.getName(id))
+        .filter((name) => name === 'alpha' || name === 'beta');
+    expect(shelves(forward)).toEqual(['alpha', 'beta']);
+    expect(shelves(backward)).toEqual(['beta', 'alpha']);
+  });
+
+  it('片方が読めなくても、もう片方は生き残る', async () => {
+    const report = new LoadReport();
+    const broken = await pack('broken', [
+      // 同梱と同じ識別子。操作単位では捨てられないので、このパックだけが丸ごと外れる（6.1節）。
+      { name: 'world-codex/clash.yaml', content: 'object_defs:\n  coconut: {tags: [item]}\n' },
+    ]);
+    const sound = await pack('sound', [{ name: 'world-codex/totem.yaml', content: OBJECT_YAML }]);
+
+    const definitions = loadDefinitions([broken, sound], report);
+
+    expect(definitions.codex.objectNames.tryGetId('driftwood_totem'), '無事なパックは入る').toBeDefined();
+    expect(definitions.files.some((file) => file.startsWith('broken:'))).toBe(false);
+    expect(definitions.files.some((file) => file.startsWith('sound:'))).toBe(true);
+    expect(report.problems.map((problem) => problem.source)).toEqual(['broken']);
+  });
+
+  it('同じ識別子のパックは2つ入れられない（AssetPack.md 3.2節）', async () => {
+    const packs = new AssetPacks();
+    packs.add(await pack('twin', []));
+    const again = await pack('twin', []);
+
+    expect(() => packs.add(again)).toThrow(/twin/);
+    expect(packs.all).toHaveLength(1);
+  });
+});
+
+/**
+ * どのパックの絵かは、その型を宣言したパックで決まる（AssetPack.md 5節）。出所は型が名乗る絵の
+ * 名前に添えて運ぶので、引くのは名前1つで済む。
+ */
+describe('型の絵の出所', () => {
+  it('パックの型は、出所を添えた絵の名前を名乗る', async () => {
+    const declaring = await pack('declaring', [{ name: 'world-codex/totem.yaml', content: OBJECT_YAML }]);
+
+    const codex = loadWorldCodex([declaring], new LoadReport());
+
+    expect(codex.artNameOf('driftwood_totem')).toBe('declaring:driftwood_totem');
+  });
+
+  it('同じ名前の絵を2つのパックが持つとき、その型を宣言した側の絵が使われる', () => {
+    // どちらも `objects/driftwood_totem.png` を持つ在庫表（installPackObjectArtが作る形）。
+    const catalog = new Map([['coconut', '/bundled/coconut.png']]);
+    addPackArt(catalog, new Map([['declaring:driftwood_totem', 'blob:declaring']]), 'declaring', '型の絵');
+    addPackArt(catalog, new Map([['bystander:driftwood_totem', 'blob:bystander']]), 'bystander', '型の絵');
+
+    // 型 driftwood_totem を宣言しているのは declaring なので、名乗る絵の名前もそちらの出所を持つ。
+    expect(catalog.get(artKeyIn(catalog, 'declaring:driftwood_totem')!)).toBe('blob:declaring');
+    expect(catalog.get(artKeyIn(catalog, 'bystander:driftwood_totem')!)).toBe('blob:bystander');
+  });
+
+  it('パックが持っていない絵は同梱ぶんへ落ちる', () => {
+    const catalog = new Map([['coconut', '/bundled/coconut.png']]);
+    addPackArt(catalog, new Map([['borrowing:elixir', 'blob:elixir']]), 'borrowing', '型の絵');
+
+    // 「定義だけを足して絵は同梱のものを使う」パック（`art: coconut` を名乗った型）。
+    expect(artKeyIn(catalog, 'borrowing:coconut')).toBe('coconut');
+    expect(artKeyIn(catalog, 'borrowing:elixir')).toBe('borrowing:elixir');
+    expect(artKeyIn(catalog, 'borrowing:not_drawn_yet')).toBeUndefined();
+  });
+
+  it('読み込む鍵も落ちた先のもの（同梱ぶんの絵を二重に読まない）', async () => {
+    // 絵を1枚も持たず、同梱の絵を名乗るだけのパック。在庫表は触らないので、引くのは同梱ぶん。
+    const borrowing = await pack('borrowing', [
+      { name: 'world-codex/totem.yaml', content: `${OBJECT_YAML}    art: coconut\n` },
+    ]);
+
+    const codex = loadWorldCodex([borrowing], new LoadReport());
+
+    const artName = codex.artNameOf('driftwood_totem');
+    expect(artName).toBe('borrowing:coconut');
+    expect(artUrl(artName)).toBe(ART_BY_NAME.get('coconut'));
+    expect(objectTexture(artName)).toBe('object:coconut');
   });
 });
 

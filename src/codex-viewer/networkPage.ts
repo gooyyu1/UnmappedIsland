@@ -1,4 +1,4 @@
-import { ART_BY_NAME } from '../art/objectArt';
+import { artUrl } from '../art/objectArt';
 import type { CraftingNetwork, NetworkEdge, NetworkNode } from './craftingGraph';
 import { buildCraftingNetwork, objectNodeId } from './craftingGraph';
 import { CodexPage } from './CodexPage';
@@ -274,7 +274,7 @@ function objectNodeHtml(
   state: string,
 ): string {
   const { width, height } = OBJECT_NODE;
-  const url = ART_BY_NAME.get(view.codex.artNameOf(objectName));
+  const url = artUrl(view.codex.artNameOf(objectName));
   const artX = position.x + (width - ART_SIZE) / 2;
   const art =
     url === undefined

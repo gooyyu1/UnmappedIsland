@@ -2,6 +2,7 @@ import { parseDocument } from 'yaml';
 import type { YAMLMap } from 'yaml';
 import { asMap, requireKnownKeys, requireScalar } from '../loader/yamlMapping';
 import { YamlLoadError } from '../loader/YamlLoadError';
+import { packQualifiedName } from './packNames';
 import { readZip } from './zip';
 
 /** パックが自分の識別子と版を名乗るファイル。ZIPのトップに1つ置く（AssetPack.md 3.2節）。 */
@@ -42,7 +43,8 @@ export class AssetPack {
   worldCodexTexts(): ReadonlyMap<string, string> {
     const texts = new Map<string, string>();
     for (const path of this.pathsUnder('world-codex/'))
-      if (path.endsWith('.yaml') || path.endsWith('.yml')) texts.set(`${this.name}:${path}`, this.text(path));
+      if (path.endsWith('.yaml') || path.endsWith('.yml'))
+        texts.set(packQualifiedName(this.name, path), this.text(path));
     return texts;
   }
 

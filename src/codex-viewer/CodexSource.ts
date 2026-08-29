@@ -1,5 +1,5 @@
 import type { WorldCodex } from '../domain/WorldCodex';
-import { installedAssetPack } from '../asset-pack/install';
+import { installedAssetPacks } from '../asset-pack/install';
 import { loadDefinitions } from '../loader/loadDefinitions';
 import { LOAD_REPORT } from '../loader/LoadReport';
 import type { Localization } from '../locale/Localization';
@@ -28,6 +28,6 @@ export class CodexSource {
 
 /** WorldCodexと表示文字列を組み立てる（アセットパックが入っていればそれも含む）。 */
 export function loadCodexSource(): CodexSource {
-  const { codex, localization, files } = loadDefinitions(installedAssetPack(), LOAD_REPORT);
+  const { codex, localization, files } = loadDefinitions(installedAssetPacks(), LOAD_REPORT);
   return new CodexSource(codex, localization, files);
 }

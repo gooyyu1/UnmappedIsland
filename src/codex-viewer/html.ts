@@ -1,4 +1,4 @@
-import { ART_BY_NAME } from '../art/objectArt';
+import { artUrl } from '../art/objectArt';
 
 /** 中身が1つも無いことを表すHTML。節ごと省くかの判断（pages.tsのsection）もこれを目印にする。 */
 export const EMPTY_HTML = '<p class="muted">（なし）</p>';
@@ -18,6 +18,6 @@ export function escapeHtml(value: string): string {
  * （`art`、4.3節）は識別子で引くと絵を持たない扱いになる。
  */
 export function inlineArtHtml(artName: string): string {
-  const url = ART_BY_NAME.get(artName);
+  const url = artUrl(artName);
   return url === undefined ? '' : `<img class="ref-art" src="${url}" alt="">`;
 }
