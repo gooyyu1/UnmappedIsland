@@ -6,6 +6,7 @@
 // 使い方:
 //   node scripts/historyStats.mjs                      開始日から7日刻み＋今日
 //   node scripts/historyStats.mjs 2026-07-18 2026-08-30 指定した日だけ
+//   node scripts/historyStats.mjs --svg docs <日付...>  表に加えて、貼り込む図も書き出す
 //
 // 日付は**日本時間**で読み、その日の最終コミットの状態を測る。時差で日が変わるので、UTCの
 // 履歴をそのまま日で切ると1日ずれる。
@@ -31,6 +32,9 @@
 // だけで出るので、issue が引けないことを理由に全部を止めない。
 
 import { execFileSync } from 'node:child_process';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { lineChart } from './lineChart.mjs';
 
 /** 行数の4列。値は `git grep` へ渡す pathspec で、C#期とTS期の置き場を合併してある。 */
 const LINE_COLUMNS = [
@@ -178,7 +182,105 @@ function formatTable(rows) {
   return [`| ${headers.join(' | ')} |`, `| ${aligns.join(' | ')} |`, ...body].join('\n');
 }
 
-const days = process.argv.slice(2);
+/** その日の実測。表もグラフもここから作る。 */
+function measureAt(day, previousDay, pullRequests) {
+  const revision = revisionAt(day);
+  if (revision === '') {
+    console.error(`${day} までのコミットが履歴に無い。浅いクローンなら 'git fetch --unshallow' が要る。`);
+    process.exit(1);
+  }
+
+  const merged = pullRequests.filter(({ day: at }) => at <= day);
+  const diffs = merged.filter(({ day: at }) => at > previousDay).map(({ sha }) => diffOf(sha));
+  const mean = (pick) => diffs.reduce((sum, diff) => sum + pick(diff), 0) / diffs.length;
+  return {
+    day,
+    counts: LINE_COLUMNS.map((column) => lineCount(revision, column.pathspecs)),
+    issues: issueCountAt(day),
+    pullRequests: merged.length,
+    // 区間にPRが1本も無い日は平均が定義できない。0で埋めると「小さいPRが並んだ」と読めてしまう。
+    filesPerPullRequest: diffs.length === 0 ? null : mean((diff) => diff.files),
+    linesPerPullRequest: diffs.length === 0 ? null : mean((diff) => diff.lines),
+    bothSidesShare: diffs.length === 0 ? null : mean((diff) => (diff.bothSides ? 1 : 0)),
+  };
+}
+
+function toRow(measurement) {
+  const size =
+    measurement.linesPerPullRequest === null
+      ? '-'
+      : `${measurement.filesPerPullRequest.toFixed(1)}ファイル / ${Math.round(measurement.linesPerPullRequest).toLocaleString('en-US')}行`;
+  return [
+    measurement.day.slice(5),
+    ...measurement.counts.map((count) => count.toLocaleString('en-US')),
+    measurement.issues === null ? '-' : measurement.issues.toLocaleString('en-US'),
+    measurement.pullRequests.toLocaleString('en-US'),
+    size,
+    measurement.bothSidesShare === null ? '-' : `${Math.round(100 * measurement.bothSidesShare)}%`,
+  ];
+}
+
+/**
+ * 貼り込む図。ファイル名は参照する文書の名前を頭に付ける（`docs/ui/StartScreen_*.png` と同じ形）。
+ * 桁の違う量は同じ枠へ重ねないので、1枚あたりのパネル数は中身で決まる。
+ */
+function chartsOf(measurements) {
+  const days = measurements.map((measurement) => measurement.day);
+  const series = (name, pick) => ({ name, values: measurements.map(pick) });
+  const charts = [
+    {
+      file: 'HowWeGotHere_lines.svg',
+      title: '行数の推移',
+      days,
+      panels: [
+        {
+          label: '行数',
+          series: LINE_COLUMNS.map((column, index) =>
+            series(column.header, (measurement) => measurement.counts[index]),
+          ),
+        },
+      ],
+    },
+    {
+      file: 'HowWeGotHere_pr_size.svg',
+      title: 'PR1本あたりの大きさ',
+      days,
+      panels: [
+        { label: '変更行数', series: [series('1PRあたり', (m) => m.linesPerPullRequest ?? 0)] },
+        { label: 'ファイル数', series: [series('1PRあたり', (m) => m.filesPerPullRequest ?? 0)] },
+      ],
+    },
+  ];
+
+  // issue が引けなかった実行では、PRだけの図にならないよう1枚まるごと落とす。
+  if (measurements.every((measurement) => measurement.issues !== null)) {
+    charts.push({
+      file: 'HowWeGotHere_issues_prs.svg',
+      title: 'issue と PR の累計',
+      days,
+      panels: [
+        {
+          label: '累計',
+          series: [
+            series('issue（立てた）', (m) => m.issues),
+            series('PR（mainへ入った）', (m) => m.pullRequests),
+          ],
+        },
+      ],
+    });
+  }
+  return charts;
+}
+
+const argv = process.argv.slice(2);
+const svgIndex = argv.indexOf('--svg');
+const svgDirectory = svgIndex === -1 ? null : argv[svgIndex + 1];
+if (svgIndex !== -1 && (svgDirectory === undefined || svgDirectory.startsWith('-'))) {
+  console.error('--svg には書き出し先のディレクトリが要ります。');
+  process.exit(1);
+}
+
+const days = svgIndex === -1 ? argv : [...argv.slice(0, svgIndex), ...argv.slice(svgIndex + 2)];
 const targets = days.length > 0 ? days : defaultDays();
 for (const day of targets) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
@@ -188,41 +290,25 @@ for (const day of targets) {
 }
 
 const pullRequests = mergedPullRequests();
-const rows = [];
+const measurements = [];
 let previousDay = '';
 for (const day of targets) {
-  const revision = revisionAt(day);
-  if (revision === '') {
-    console.error(`${day} までのコミットが履歴に無い。浅いクローンなら 'git fetch --unshallow' が要る。`);
-    process.exit(1);
-  }
-
-  const counts = LINE_COLUMNS.map((column) => lineCount(revision, column.pathspecs));
-  const merged = pullRequests.filter(({ day: at }) => at <= day);
-  const inInterval = merged.filter(({ day: at }) => at > previousDay);
-  const diffs = inInterval.map(({ sha }) => diffOf(sha));
-  const mean = (pick) => diffs.reduce((sum, diff) => sum + pick(diff), 0) / diffs.length;
-  const empty = diffs.length === 0;
-  const size = empty
-    ? '-'
-    : `${mean((d) => d.files).toFixed(1)}ファイル / ${Math.round(mean((d) => d.lines))}行`;
-  const bothSides = empty ? '-' : `${Math.round(100 * mean((d) => (d.bothSides ? 1 : 0)))}%`;
-  const issues = issueCountAt(day);
-
-  rows.push([
-    day.slice(5),
-    ...counts.map((count) => count.toLocaleString('en-US')),
-    issues === null ? '-' : issues.toLocaleString('en-US'),
-    merged.length.toLocaleString('en-US'),
-    size,
-    bothSides,
-  ]);
+  measurements.push(measureAt(day, previousDay, pullRequests));
   previousDay = day;
 }
 
-if (rows.length === 0) {
+if (measurements.length === 0) {
   console.error('行が1つも出なかった。日付の指定か履歴の深さを確認してください。');
   process.exit(1);
 }
 
-console.log(formatTable(rows));
+console.log(formatTable(measurements.map(toRow)));
+
+if (svgDirectory !== null) {
+  mkdirSync(svgDirectory, { recursive: true });
+  for (const chart of chartsOf(measurements)) {
+    const path = join(svgDirectory, chart.file);
+    writeFileSync(path, lineChart(chart));
+    console.error(`書き出した: ${path}`);
+  }
+}

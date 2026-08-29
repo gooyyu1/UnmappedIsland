@@ -121,7 +121,7 @@ jobs:
       - name: Copy HTML mocks and assets to site/docs
         run: |
           # Copy standalone HTML mocks and screenshots from docs/ into the site
-          find docs -name '*.html' -o -name '*.png' -o -name '*.jpg' -o -name '*.gif' | while read asset; do
+          find docs -name '*.html' -o -name '*.png' -o -name '*.jpg' -o -name '*.gif' -o -name '*.svg' | while read asset; do
             rel="${asset#docs/}"
             dest="site/docs/${rel}"
             mkdir -p "$(dirname "$dest")"

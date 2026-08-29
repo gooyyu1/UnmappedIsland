@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -12,6 +14,9 @@ import { describe, expect, it } from 'vitest';
  * 見るのは**行数の4列が0でないこと**と、**遡れない日を頼まれたら黙って0を出さずに落ちること**の
  * 2つだけ。行数の4列は1コミットしか無くても数えられるので、浅いクローンでも成立する。
  * PRの列は履歴の深さで変わるため、**浅くないときだけ**見る。
+ *
+ * 図（`--svg`）も同じ理由で見る。**折れ線は、値が全部0でも枠と軸が描かれる**ので、絵が出た
+ * ことは中身が入っていることを意味しない。点の座標が枠の中に散らばっているかまで見る。
  */
 
 const ROOT = resolve(__dirname, '../..');
@@ -76,5 +81,32 @@ describe('育ち方の推移', () => {
   it('履歴に無い日を頼まれたら、0を出さずに落ちる', () => {
     // リポジトリが始まる前の日。ここで空の表を返すと、遡れなかったことが読む側に伝わらない。
     expect(run(['2020-01-01']).status).not.toBe(0);
+  });
+});
+
+describe('育ち方の推移の図', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'history-stats-'));
+  run(['--svg', directory, TODAY]);
+  const files = readdirSync(directory);
+
+  it('図が書き出される', () => {
+    expect(files.filter((name) => name.endsWith('.svg')).length).toBeGreaterThan(0);
+  });
+
+  it.each(['HowWeGotHere_lines.svg', 'HowWeGotHere_pr_size.svg'])('%s の点が枠の中に在る', (name) => {
+    const svg = readFileSync(join(directory, name), 'utf-8');
+    const height = Number(/height="(\d+)"/.exec(svg)?.[1]);
+    const centers = [...svg.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)"/g)];
+
+    expect(centers.length, `点が1つも無い:\n${svg.slice(0, 200)}`).toBeGreaterThan(0);
+    for (const [, cx, cy] of centers) {
+      expect(
+        Number.isFinite(Number(cx)) && Number.isFinite(Number(cy)),
+        `座標が数値でない: ${cx},${cy}`,
+      ).toBe(true);
+      // 枠からはみ出した点は、目盛りの上限が値を覆えていないということ。
+      expect(Number(cy)).toBeGreaterThanOrEqual(0);
+      expect(Number(cy)).toBeLessThanOrEqual(height);
+    }
   });
 });

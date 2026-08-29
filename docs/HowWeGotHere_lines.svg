@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="284" viewBox="0 0 760 284" font-family="system-ui, -apple-system, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif" font-size="12">
+<rect width="760" height="284" fill="#ffffff"/>
+<text x="68" y="22" font-size="14" font-weight="600" fill="#24292f">行数の推移</text>
+<line x1="68" y1="246" x2="734" y2="246" stroke="#d8dee4"/>
+<text x="60" y="250" text-anchor="end" fill="#6e7781">0</text>
+<line x1="68" y1="208" x2="734" y2="208" stroke="#d8dee4"/>
+<text x="60" y="212" text-anchor="end" fill="#6e7781">10k</text>
+<line x1="68" y1="170" x2="734" y2="170" stroke="#d8dee4"/>
+<text x="60" y="174" text-anchor="end" fill="#6e7781">20k</text>
+<line x1="68" y1="132" x2="734" y2="132" stroke="#d8dee4"/>
+<text x="60" y="136" text-anchor="end" fill="#6e7781">30k</text>
+<line x1="68" y1="94" x2="734" y2="94" stroke="#d8dee4"/>
+<text x="60" y="98" text-anchor="end" fill="#6e7781">40k</text>
+<line x1="68" y1="56" x2="734" y2="56" stroke="#d8dee4"/>
+<text x="60" y="60" text-anchor="end" fill="#6e7781">50k</text>
+<text x="68" y="48" fill="#24292f" font-weight="600">行数</text>
+<line x1="110" y1="44" x2="128" y2="44" stroke="#0072B2" stroke-width="2.5"/>
+<text x="134" y="48" fill="#24292f">実装</text>
+<polyline points="68,229.5194 176.4186046511628,210.0748 284.8372093023256,187.0772 470.69767441860466,143.837 625.5813953488372,99.9014 672.046511627907,89.5692 734,71.8194" fill="none" stroke="#0072B2" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="68" cy="229.5194" r="3" fill="#0072B2"/>
+<circle cx="176.4186046511628" cy="210.0748" r="3" fill="#0072B2"/>
+<circle cx="284.8372093023256" cy="187.0772" r="3" fill="#0072B2"/>
+<circle cx="470.69767441860466" cy="143.837" r="3" fill="#0072B2"/>
+<circle cx="625.5813953488372" cy="99.9014" r="3" fill="#0072B2"/>
+<circle cx="672.046511627907" cy="89.5692" r="3" fill="#0072B2"/>
+<circle cx="734" cy="71.8194" r="3" fill="#0072B2"/>
+<line x1="178" y1="44" x2="196" y2="44" stroke="#D55E00" stroke-width="2.5"/>
+<text x="202" y="48" fill="#24292f">試験</text>
+<polyline points="68,229.66 176.4186046511628,213.3352 284.8372093023256,202.75220000000002 470.69767441860466,175.3846 625.5813953488372,135.6556 672.046511627907,118.2364 734,75.09119999999999" fill="none" stroke="#D55E00" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="68" cy="229.66" r="3" fill="#D55E00"/>
+<circle cx="176.4186046511628" cy="213.3352" r="3" fill="#D55E00"/>
+<circle cx="284.8372093023256" cy="202.75220000000002" r="3" fill="#D55E00"/>
+<circle cx="470.69767441860466" cy="175.3846" r="3" fill="#D55E00"/>
+<circle cx="625.5813953488372" cy="135.6556" r="3" fill="#D55E00"/>
+<circle cx="672.046511627907" cy="118.2364" r="3" fill="#D55E00"/>
+<circle cx="734" cy="75.09119999999999" r="3" fill="#D55E00"/>
+<line x1="246" y1="44" x2="264" y2="44" stroke="#009E73" stroke-width="2.5"/>
+<text x="270" y="48" fill="#24292f">文書</text>
+<polyline points="68,238.2366 176.4186046511628,229.1356 284.8372093023256,225.1076 470.69767441860466,211.8 625.5813953488372,191.6334 672.046511627907,187.2672 734,177.9572" fill="none" stroke="#009E73" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="68" cy="238.2366" r="3" fill="#009E73"/>
+<circle cx="176.4186046511628" cy="229.1356" r="3" fill="#009E73"/>
+<circle cx="284.8372093023256" cy="225.1076" r="3" fill="#009E73"/>
+<circle cx="470.69767441860466" cy="211.8" r="3" fill="#009E73"/>
+<circle cx="625.5813953488372" cy="191.6334" r="3" fill="#009E73"/>
+<circle cx="672.046511627907" cy="187.2672" r="3" fill="#009E73"/>
+<circle cx="734" cy="177.9572" r="3" fill="#009E73"/>
+<line x1="314" y1="44" x2="332" y2="44" stroke="#CC79A7" stroke-width="2.5"/>
+<text x="338" y="48" fill="#24292f">定義</text>
+<polyline points="68,245.7606 176.4186046511628,240.1974 284.8372093023256,238.9662 470.69767441860466,234.0262 625.5813953488372,220.7072 672.046511627907,218.0738 734,204.60660000000001" fill="none" stroke="#CC79A7" stroke-width="2.5" stroke-linejoin="round"/>
+<circle cx="68" cy="245.7606" r="3" fill="#CC79A7"/>
+<circle cx="176.4186046511628" cy="240.1974" r="3" fill="#CC79A7"/>
+<circle cx="284.8372093023256" cy="238.9662" r="3" fill="#CC79A7"/>
+<circle cx="470.69767441860466" cy="234.0262" r="3" fill="#CC79A7"/>
+<circle cx="625.5813953488372" cy="220.7072" r="3" fill="#CC79A7"/>
+<circle cx="672.046511627907" cy="218.0738" r="3" fill="#CC79A7"/>
+<circle cx="734" cy="204.60660000000001" r="3" fill="#CC79A7"/>
+<text x="68" y="262" text-anchor="middle" fill="#6e7781">07-18</text>
+<text x="176.4186046511628" y="262" text-anchor="middle" fill="#6e7781">07-25</text>
+<text x="284.8372093023256" y="262" text-anchor="middle" fill="#6e7781">08-01</text>
+<text x="470.69767441860466" y="262" text-anchor="middle" fill="#6e7781">08-13</text>
+<text x="625.5813953488372" y="262" text-anchor="middle" fill="#6e7781">08-23</text>
+<text x="672.046511627907" y="262" text-anchor="middle" fill="#6e7781">08-26</text>
+<text x="734" y="262" text-anchor="middle" fill="#6e7781">08-30</text>
+</svg>
