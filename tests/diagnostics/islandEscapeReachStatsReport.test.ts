@@ -3,13 +3,14 @@ import type { EscapeReachSources, EscapeReach } from '../../src/analysis/escapeR
 import { escapeReachSourcesOf, islandEscapeReachOf } from '../../src/analysis/escapeReach';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
+import type { YamlReportSection } from '../support/generatedReport';
 import {
   describeDocumentedSections,
   describeReportFreshness,
   describeYamlReportRegeneration,
   formatYamlReport,
-  RoundedNumber,
+  shareRecord,
+  statRecord,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -101,33 +102,6 @@ function collect(stats: IslandEscapeStats, reach: EscapeReach): void {
   }
 }
 
-/**
- * 丸めた数。**標本が足りずNaNになる値はnullで書く**——`NaN`と書くと、読む側では数ではなく文字列に
- * なって型が行ごとに変わる。
- */
-function rounded(value: number, decimals = 2): RoundedNumber | null {
-  return Number.isNaN(value) ? null : new RoundedNumber(value, decimals);
-}
-
-/** 分布1つのレコード。`keys`はそれが何の分布かを指す鍵（目標・測ったもの）。 */
-function statRecord(keys: YamlRecord, stat: Stat): YamlRecord {
-  return {
-    ...keys,
-    mean: rounded(stat.mean),
-    min: rounded(stat.min),
-    median: rounded(stat.percentile(0.5)),
-    p95: rounded(stat.percentile(0.95)),
-    max: rounded(stat.max),
-    sd: rounded(stat.stdDev),
-    n: stat.count,
-  };
-}
-
-/** 割合（0〜1）のレコード。 */
-function shareRecord(keys: YamlRecord, share: number): YamlRecord {
-  return { ...keys, unit: 'percent', share: rounded(share * 100) };
-}
-
 function buildSections(
   sources: EscapeReachSources,
   goals: readonly Goal[],
@@ -148,7 +122,7 @@ function buildSections(
     },
     {
       key: 'island_departure',
-      records: [statRecord({ measure: 'locations', unit: 'locations' }, stats.departureCount)],
+      records: [statRecord({ measure: 'locations', unit: 'locations' }, stats.departureCount, 'median')],
     },
     {
       key: 'island_missing_location',
@@ -175,6 +149,7 @@ function buildSections(
         statRecord(
           { object: goal.objectName, goal_tag: goal.tagName, measure: 'hops', unit: 'hops' },
           stats.goalHops.get(goal.objectName) ?? new Stat(),
+          'median',
         ),
       ),
     },

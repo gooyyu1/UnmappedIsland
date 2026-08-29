@@ -23,7 +23,7 @@ import {
   describeReportFreshness,
   describeYamlReportRegeneration,
   formatYamlReport,
-  RoundedNumber,
+  rounded,
 } from '../support/generatedReport';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
@@ -40,16 +40,6 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
  * 定義の数値を変えた後に再生成する: `npm run stats:balance`。再生成と鮮度の形は
  * `tests/support/generatedReport.ts` が持つ。表を作り直すのは1秒で済むので、鮮度は丸ごと作り直して比べる。
  */
-
-/**
- * 丸めた数。**決まらない値はnullで書く**——`—`と書くと、読む側では数ではなく文字列になって型が
- * 行ごとに変わる。`-0.00`は`0.00`へ均す（丸めで符号だけが残った値に意味は無い）。
- */
-function rounded(value: number | undefined, digits = 1): RoundedNumber | null {
-  if (value === undefined || !Number.isFinite(value)) return null;
-  const zero = (0).toFixed(digits);
-  return new RoundedNumber(value.toFixed(digits) === `-${zero}` ? 0 : value, digits);
-}
 
 function stepsText(steps: readonly RouteStep[]): string {
   return steps.map((step) => `${step.objectName}.${step.stepName}`).join(' → ');
@@ -69,7 +59,7 @@ function prerequisiteRecords(prerequisites: readonly RoutePrerequisite[]): YamlR
   return prerequisites.map(({ label, objectName, minutes, imported }) => ({
     label,
     object: objectName ?? null,
-    minutes: rounded(minutes),
+    minutes: rounded(minutes, 1),
     imported,
   }));
 }
@@ -184,9 +174,9 @@ function buildSections(codex: WorldCodex, tables: BalanceTables): readonly YamlR
       key: 'object_costs',
       records: tables.objectCosts.map((cost) => ({
         object: cost.objectName,
-        total_minutes: rounded(cost.minutes),
-        explore_minutes: rounded(cost.minutes === undefined ? undefined : (cost.exploreMinutes ?? 0)),
-        other_minutes: rounded(cost.minutes === undefined ? undefined : (cost.craftMinutes ?? 0)),
+        total_minutes: rounded(cost.minutes, 1),
+        explore_minutes: rounded(cost.minutes === undefined ? undefined : (cost.exploreMinutes ?? 0), 1),
+        other_minutes: rounded(cost.minutes === undefined ? undefined : (cost.craftMinutes ?? 0), 1),
         days: rounded(cost.days, 2),
         obtainable_without_cost: cost.obtainableWithoutCost,
         blocked_by_tool: cost.blockedByTool,
@@ -210,7 +200,7 @@ function buildSections(codex: WorldCodex, tables: BalanceTables): readonly YamlR
           lifetime_property: device.lifetimeProperty ?? null,
           lifetime_days: rounded(device.lifetimeDays, 1),
           over_lifetime: rounded(device.overLifetime, 1),
-          build_minutes: rounded(device.buildMinutes),
+          build_minutes: rounded(device.buildMinutes, 1),
           labor_minutes_per_unit: rounded(device.laborPerUnit, 2),
         })),
       ),
