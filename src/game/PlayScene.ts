@@ -351,6 +351,11 @@ export class PlayScene extends ResponsiveScene {
       this.showStatuses();
       // 子ウィンドウのプロパティのタブを開いたまま切り替えられるため、そちらの印も引き直す。
       this.childWindow?.setProperties(this.status.tabs());
+      // 付け外しを頼んできた詳細ウィンドウにも、切り替わった結果を返す。
+      const key = this.statusDetailKey;
+      if (key !== undefined) {
+        this.statusDetailWindow?.setPinned(this.status.contentOf(key)?.pinned === true);
+      }
     },
     onOpenDetail: (key) => this.openStatusDetail(key),
   });
@@ -2106,7 +2111,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * バーをタップしたときに開く、そのステータスの詳細（Windows.md 8節）。開き直しでも同じ経路を
+   * 行をタップしたときに開く、そのステータスの詳細（Windows.md 8節）。開き直しでも同じ経路を
    * 通せるよう、受け取るのは中身ではなくプロパティの識別子で、中身は今のviewから引き直す。
    *
    * ステータスエリアからもプロパティのタブの行からも開くため、既に開いていれば入れ替える。
@@ -2123,6 +2128,11 @@ export class PlayScene extends ResponsiveScene {
       area: { x: 0, y: 0, width: this.metrics.width, height: this.metrics.height },
       // 影響の枠から相手の詳細へ渡り歩く。開き直しと同じ経路なので、今の窓は入れ替わる。
       onOpenStatus: (target) => this.openStatusDetail(target),
+      // 絵だけのボタンなので、押されたことはここで控える（Button.addTextButton参照）。
+      onTogglePin: () => {
+        noteOperation('ステータスの固定表示を切り替えた');
+        this.status.togglePin(key);
+      },
       onClose: () => {
         this.statusDetailWindow = undefined;
         this.statusDetailKey = undefined;
