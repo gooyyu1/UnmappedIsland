@@ -241,3 +241,133 @@ object_defs:
     expect(tables.objectCosts.map((cost) => cost.objectName)).not.toContain('fish_shoal');
   });
 });
+
+/**
+ * 総コストの出ない行が、「島のどこにも入手経路が無い」と「朽ちない設備の待ち生産でしか得られない」を
+ * 区別すること（issue #1175）。
+ *
+ * 朽ちない設備は1周期ぶんを按分できない（「待って得る生産の数え方」）ので、その産物には値段が
+ * 付かない。それを入手経路の無いものと同じ`undefined`で出すと、**工程も設備も在るのに内容の穴と
+ * 読める**。
+ */
+describe('総コストが出ない理由', () => {
+  const YAML = `
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      hydration:
+        value: 96
+        range: {min: 0, max: 96}
+        passives:
+          - add: {self: {hydration: -1}}
+
+  rocky_field:
+    tags: [location]
+    props:
+      exploration_progress: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 60
+        spawn: {object: stone, into: self}
+
+  stone:
+    tags: [item]
+
+  # 朽ちない設備。干し上がるたびに塩を返すが、寿命が無いので按分の分母が取れない。
+  salt_pan:
+    tags: [fixture]
+    slots:
+      catch:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - add: {self: {drying_remaining: -1}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          spawn: {object: salt, into: self}
+    recipes:
+      laid:
+        steps:
+          - requires:
+              - {object: stone, count: 1, consume: true}
+            duration: 60
+
+  # 朽ちる設備。耐久が尽きると消えるので、周期÷寿命が産物1個ぶんの値段になる。
+  snare:
+    tags: [fixture]
+    slots:
+      catch:
+        cell_count: 1
+        cell: {accept: {tag: item}}
+        placement: [auto]
+    props:
+      catch_remaining:
+        value: 12
+        range: {min: 0, max: 12}
+        passives:
+          - add: {self: {catch_remaining: -1}}
+        on_min:
+          add: {self: {catch_remaining: 12}}
+          spawn: {object: rat, into: self}
+      wear:
+        value: 100
+        range: {min: 0, max: 100}
+        passives:
+          - add: {self: {wear: -1}}
+        on_min:
+          destroy: self
+    recipes:
+      woven:
+        steps:
+          - requires:
+              - {object: stone, count: 1, consume: true}
+            duration: 60
+
+  salt:
+    tags: [item]
+
+  rat:
+    tags: [item]
+
+  # 作る工程も見つけ方も無いもの。
+  spear:
+    tags: [item]
+`;
+
+  const tables = buildBalanceTables(
+    new WorldCodexYamlLoader().load('test.yaml', YAML).buildAndReset(),
+    'medic',
+  );
+
+  const costOf = (objectName: string) => tables.objectCosts.find((cost) => cost.objectName === objectName)!;
+
+  it('朽ちない設備の産物は、値段が付かないまま入手経路のあるものとして印が付く', () => {
+    expect(costOf('salt')).toMatchObject({ minutes: undefined, onlyFromEverlastingDevice: true });
+  });
+
+  it('その印が指す先（待ち生産表）に、産物の周期が在る', () => {
+    const wholeIsland = tables.places.find((place) => place.name === WHOLE_ISLAND)!;
+
+    expect(wholeIsland.devices.find((device) => device.productName === 'salt')).toMatchObject({
+      deviceName: 'salt_pan',
+      lifetimeDays: undefined,
+    });
+  });
+
+  it('朽ちる設備の産物には印が付かず、按分を含んだ総コストが出る', () => {
+    // 罠は石1つ（60分）と製作60分の120分で、寿命1500分のうち180分を1周期で使う。
+    expect(costOf('rat').onlyFromEverlastingDevice).toBe(false);
+    expect(costOf('rat').minutes).toBeCloseTo(14.4);
+  });
+
+  it('作る工程そのものが無いものには、印が付かない', () => {
+    expect(costOf('spear')).toMatchObject({ minutes: undefined, onlyFromEverlastingDevice: false });
+  });
+});
