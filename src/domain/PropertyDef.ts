@@ -155,6 +155,14 @@ export type InitialValueReading =
   | { readonly kind: 'fixed'; readonly value: number }
   | { readonly kind: 'roll'; readonly min: number; readonly max: number };
 
+/**
+ * 生成時のロール（6.2節）のどちらの端に出た場合か（PropertyDef.initialValueAt）。ロールを持たない
+ * プロパティではどちらも同じ値になる。
+ */
+export type RollEnd = 'lowest' | 'highest';
+
+export const ROLL_ENDS: readonly RollEnd[] = ['lowest', 'highest'];
+
 /** range系イベント（6.3節）の名前。 */
 export type RangeEventLabel = 'on_max' | 'on_min';
 
@@ -443,6 +451,21 @@ export class PropertyDef {
     const width = this.range.max - this.range.min;
     if (width <= 0) return undefined;
     return (this.range.clamp(value) - this.range.min) / width;
+  }
+
+  /**
+   * 生成時のロール（6.2節）がその端に出た場合の初期値。**両端を答えるのはここだけ**で、片方の端
+   * だけを返して残りを振れ幅から足し戻させると、「返ってくるのはどちらの端か」を呼び出し側が
+   * 覚えていないと成立しなくなる。
+   *
+   * 下端の値はinitialValueWithoutRollと同じ数だが、問いが違う——あちらは「RNGを使わずに生成したら
+   * いくつになるか」で、こちらは「どちらの端に出た場合を読んでいるか」。定義だけから値を読む側
+   * （src/analysis）は必ずこちらで端を名指しする。
+   */
+  initialValueAt(end: RollEnd): number {
+    return end === 'highest' && this.initialValueRange !== undefined
+      ? this.initialValueRange.max
+      : this.initialValueWithoutRoll;
   }
 
   /**

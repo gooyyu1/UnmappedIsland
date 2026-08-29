@@ -85,7 +85,7 @@ location_types:
     variants:
       - {id: palm, props: {palm_find: 26}}
       - {id: crab, props: {crab_find: 16}}
-      - {id: driftwood, props: {driftwood_find: 26}}
+      - {id: driftwood, props: {driftwood_find: 26, driftwood_trunk_find: 12}}
       - {id: white_sand}
       - {id: shallow}
       - {id: rough_surf}

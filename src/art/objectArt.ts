@@ -1,5 +1,6 @@
 import { packQualifiedName } from '../asset-pack/packNames';
-import { addPackArt, artKeyIn } from './packArt';
+import type { PackArt } from './packArt';
+import { artKeyIn, rebuildArtCatalog } from './packArt';
 
 /**
  * object_defごとの絵の解決。
@@ -14,8 +15,8 @@ import { addPackArt, artKeyIn } from './packArt';
  * 知っている（ObjectDef.artName）。
  *
  * 同梱ぶんの一覧はimport.meta.globがビルド時に作る。実行時に総当たりで読みに行くと、絵をまだ
- * 用意していないobject_defのぶんだけ404が出るため。アセットパックのぶんは起動時に重ねる
- * （installPackObjectArt、AssetPack.md 4節）。
+ * 用意していないobject_defのぶんだけ404が出るため。アセットパックのぶんは、載せるパックが決まった
+ * 時点で重ねる（installPackObjectArt、AssetPack.md 4節）。
  *
  * **パックの絵はパックの名前を添えた鍵で並ぶ**（`<パックのid>:<絵の名前>`、packNames）。型が名乗る
  * 絵の名前にも出所のパックが同じ形で付く（ObjectDef.artName）ので、引けば必ずその型を宣言した
@@ -27,13 +28,16 @@ const FILES = import.meta.glob('../assets/objects/*.png', {
   import: 'default',
 }) as Record<string, string>;
 
-/**
- * 絵の名前 → 画像のURL。同梱ぶんを土台に、起動時にアセットパックのぶんが重なる。
- * 重なった後は変わらない。
- */
-const MUTABLE_ART_BY_NAME = new Map<string, string>(
+/** 同梱ぶんの絵の名前 → 画像のURL。組み直しの土台なので、ここは変わらない（rebuildArtCatalog）。 */
+const BUNDLED_ART_BY_NAME: ReadonlyMap<string, string> = new Map(
   Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.png$/, '$1'), url]),
 );
+
+/**
+ * 絵の名前 → 画像のURL。同梱ぶんを土台に、載せるパックが決まった時点でそのぶんが重なる。
+ * 重なった後は変わらない。
+ */
+const MUTABLE_ART_BY_NAME = new Map<string, string>(BUNDLED_ART_BY_NAME);
 
 /**
  * 絵の名前（既定はobject_defの識別子、ObjectDef.artName） → 画像のURL。**鍵はテクスチャキーでは
@@ -42,12 +46,18 @@ const MUTABLE_ART_BY_NAME = new Map<string, string>(
  */
 export const ART_BY_NAME: ReadonlyMap<string, string> = MUTABLE_ART_BY_NAME;
 
-/** アセットパックの型の絵を在庫表へ重ねる（起動時に1回、installAssetPackから）。 */
-export function installPackObjectArt(art: ReadonlyMap<string, string>, packName: string): void {
-  addPackArt(
+/**
+ * 載せるパックの型の絵で在庫表を組み直す（installPackArtから。AssetPack.md 4節）。
+ * 鍵にはパックの名前を前置きするので、同じ名前の絵を2つのパックが持っても衝突しない（同5節）。
+ */
+export function installPackObjectArt(packs: readonly PackArt[]): void {
+  rebuildArtCatalog(
     MUTABLE_ART_BY_NAME,
-    new Map([...art].map(([name, url]) => [packQualifiedName(packName, name), url])),
-    packName,
+    BUNDLED_ART_BY_NAME,
+    packs.map(({ packName, art }) => ({
+      packName,
+      art: new Map([...art].map(([name, url]) => [packQualifiedName(packName, name), url])),
+    })),
     '型の絵',
   );
 }

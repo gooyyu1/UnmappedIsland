@@ -1,7 +1,8 @@
 import type { Rect } from '../ui/Rect';
 import { ResponsiveScene } from './ResponsiveScene';
-import type { SaveData } from '../save/SaveData';
+import type { SaveData, SavedAssetPack } from '../save/SaveData';
 import { SaveSlots, SLOT_COUNT } from '../save/SaveSlots';
+import { currentAssetPacks, opensWithAssetPacks } from '../save/savedAssetPacks';
 import { LOCALIZATION_KEY, WORLD_CODEX_KEY } from './BootScene';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { Localization } from '../locale/Localization';
@@ -11,6 +12,7 @@ import { ModalDialog } from './ui/ModalDialog';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { characterCardContent } from './view/characterCard';
 import { addLabel } from '../ui/labels';
+import type { BoxStyle } from '../ui/shapes';
 import { addInputBlockingPanel } from '../ui/shapes';
 import { COLOR, SIZE, rowPlateStyle } from './looks/theme';
 import { truncateToWidth } from '../ui/textLayout';
@@ -40,6 +42,7 @@ export class SlotSelectScene extends ResponsiveScene {
     this.locale = this.registry.get(LOCALIZATION_KEY) as Localization;
     this.codex = this.registry.get(WORLD_CODEX_KEY) as WorldCodex;
     const slots = new SaveSlots(localStorage).readAll();
+    const installedPacks = currentAssetPacks();
 
     addInputBlockingPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
     new ScreenHeader(this, this.metrics, width, this.locale.uiText('slots_title'), () =>
@@ -63,14 +66,53 @@ export class SlotSelectScene extends ResponsiveScene {
         height: cellHeight,
       };
       if (slot === undefined) this.addEmptySlot(cell, index);
-      else this.addSavedSlot(cell, index, slot);
+      else if (opensWithAssetPacks(slot, installedPacks)) this.addSavedSlot(cell, index, slot);
+      else this.addUnopenableSlot(cell, index, slot, installedPacks);
     });
   }
 
+  /** 開けるスロット。押すとそのまま再開する。 */
   private addSavedSlot(cell: Rect, slotIndex: number, slot: SaveData): void {
-    const button = new Button(this, cell, rowPlateStyle(this.metrics), () =>
-      this.scene.start('play', { save: slot, slotIndex }),
+    this.addSlotPlate(
+      cell,
+      slotIndex,
+      slot,
+      rowPlateStyle(this.metrics),
+      this.locale.uiText('survived_days', { days: String(slot.elapsedDays) }),
+      () => this.scene.start('play', { save: slot, slotIndex }),
     );
+  }
+
+  /**
+   * アセットパックの並びが食い違うスロット（AssetPack.md 6.4節）。**押しても開かず**、何が違うかを
+   * 出すだけ——同じシードでも別の島が出るため。沈んだ色と一行の理由で、押す前に開けないと分かる。
+   */
+  private addUnopenableSlot(
+    cell: Rect,
+    slotIndex: number,
+    slot: SaveData,
+    installedPacks: readonly SavedAssetPack[],
+  ): void {
+    this.addSlotPlate(
+      cell,
+      slotIndex,
+      slot,
+      { ...rowPlateStyle(this.metrics), fillColor: COLOR.buttonDisabled },
+      this.locale.uiText('slots_packs_differ'),
+      () => this.explainAssetPacks(slot, installedPacks),
+    );
+  }
+
+  /** スロット1つの行。開けるかどうかで変わるのは、台紙の色・名前の下の一行・押した先だけ。 */
+  private addSlotPlate(
+    cell: Rect,
+    slotIndex: number,
+    slot: SaveData,
+    style: BoxStyle,
+    note: string,
+    onTap: () => void,
+  ): void {
+    const button = new Button(this, cell, style, onTap);
 
     const padding = this.metrics.px(SLOT_PADDING);
     // 札は行の高さいっぱいに収める（原寸より大きくはしない）。
@@ -91,17 +133,41 @@ export class SlotSelectScene extends ResponsiveScene {
       bold: true,
     }).setOrigin(0, 1);
     truncateToWidth(name, infoWidth);
-    const days = addLabel(
-      this,
-      this.metrics,
-      infoX,
-      cell.height / 2 + this.metrics.px(8),
-      this.locale.uiText('survived_days', { days: String(slot.elapsedDays) }),
-      { size: 24, color: COLOR.textMuted },
-    ).setOrigin(0, 0);
+    const noteLabel = addLabel(this, this.metrics, infoX, cell.height / 2 + this.metrics.px(8), note, {
+      size: 24,
+      color: COLOR.textMuted,
+    }).setOrigin(0, 0);
+    truncateToWidth(noteLabel, infoWidth);
 
-    button.addContent(card, name, days);
+    button.addContent(card, name, noteLabel);
     this.addDeleteButton(cell, slotIndex, slot);
+  }
+
+  /**
+   * 開けない理由を出す。**何が違うかを両方並べる**——設定でアセットパックの読み込みを切り替える
+   * 以外に戻す手が無いので、どちらへ揃えればよいかが分からないと直せない。
+   */
+  private explainAssetPacks(slot: SaveData, installedPacks: readonly SavedAssetPack[]): void {
+    new ModalDialog(this, this.metrics, {
+      title: this.locale.uiText('slots_packs_title', { island: slot.islandName }),
+      // 空行で3つに区切る。理由・食い違い・直し方が続けて流れると、並びの2行が本文に埋もれる。
+      body: [
+        this.locale.uiText('slots_packs_reason'),
+        '',
+        this.locale.uiText('slots_packs_saved', { packs: this.packsText(slot.assetPacks) }),
+        this.locale.uiText('slots_packs_current', { packs: this.packsText(installedPacks) }),
+        '',
+        this.locale.uiText('slots_packs_hint'),
+      ].join('\n'),
+      actions: [{ label: this.locale.uiText('ok'), style: 'primary' }],
+    });
+  }
+
+  private packsText(packs: readonly SavedAssetPack[]): string {
+    if (packs.length === 0) return this.locale.uiText('slots_packs_none');
+    return packs
+      .map((pack) => this.locale.uiText('slots_packs_entry', { id: pack.id, version: pack.version }))
+      .join(this.locale.uiText('list_separator'));
   }
 
   private addDeleteButton(cell: Rect, slotIndex: number, slot: SaveData): void {

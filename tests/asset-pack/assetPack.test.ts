@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { AssetPack } from '../../src/asset-pack/AssetPack';
 import { AssetPacks } from '../../src/asset-pack/install';
 import { readZip } from '../../src/asset-pack/zip';
-import { addPackArt, artKeyIn } from '../../src/art/packArt';
+import { artKeyIn, rebuildArtCatalog } from '../../src/art/packArt';
+import { BACKGROUND_ART } from '../../src/art/backgroundArt';
 import { ART_BY_NAME, artUrl, objectTexture } from '../../src/art/objectArt';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { loadDefinitions } from '../../src/loader/loadDefinitions';
@@ -219,6 +220,81 @@ describe('複数のアセットパックを並べた順に読む', () => {
 });
 
 /**
+ * 定義と絵は、パック1つを単位にまとめて載るかまとめて外れる（AssetPack.md 6.1節）。片方だけを
+ * 外すと「同梱ぶん＋無事なパック」にならない——定義だけ残ればその型は絵を持たず、絵だけ残れば
+ * 外したパックの背景が同梱の型に敷かれる。
+ */
+describe('絵の名前が重なるパックを外す', () => {
+  /** 同梱ぶんが持っている背景の名前（在庫表の鍵から前置きを外したもの）と、そのURL。 */
+  const BUNDLED_BACKGROUND_KEY = [...BACKGROUND_ART.keys()].sort()[0];
+  const BUNDLED_BACKGROUND = BUNDLED_BACKGROUND_KEY.replace(/^background:/, '');
+  const BUNDLED_BACKGROUND_URL = BACKGROUND_ART.get(BUNDLED_BACKGROUND_KEY);
+
+  const MASK_YAML = `
+object_defs:
+  driftwood_mask:
+    tags: [item]
+    props:
+      weight: {value: 400}
+      volume: {value: 1200}
+`;
+
+  it('同梱と同じ名前の背景を持つパックは、定義もろとも外れて、他のパックは載る', async () => {
+    const report = new LoadReport();
+    const clashing = await pack('clashing', [
+      { name: 'world-codex/mask.yaml', content: MASK_YAML },
+      { name: `backgrounds/${BUNDLED_BACKGROUND}.png`, content: new Uint8Array([1]) },
+    ]);
+    const sound = await pack('sound', [{ name: 'world-codex/totem.yaml', content: OBJECT_YAML }]);
+
+    // 起動を止めない（AssetPack.md 6.1節の2段目）。
+    const definitions = loadDefinitions([clashing, sound], report);
+
+    expect(
+      definitions.codex.objectNames.tryGetId('driftwood_mask'),
+      '外したパックの型は入らない',
+    ).toBeUndefined();
+    expect(definitions.codex.objectNames.tryGetId('driftwood_totem'), '無事なパックは入る').toBeDefined();
+    expect(definitions.codex.objectNames.tryGetId('coconut'), '同梱ぶんは読める').toBeDefined();
+    expect(definitions.files.some((file) => file.startsWith('clashing:'))).toBe(false);
+    expect(report.problems.map((problem) => problem.source)).toEqual(['clashing']);
+    // 在庫表は同梱ぶんのまま（重ねた側が勝たない。同6節）。
+    expect(BACKGROUND_ART.get(`background:${BUNDLED_BACKGROUND}`)).toBe(BUNDLED_BACKGROUND_URL);
+  });
+
+  it('定義が読めずに外したパックの絵は、在庫表に残らない', async () => {
+    const report = new LoadReport();
+    const broken = await pack('broken', [
+      // 同梱と同じ識別子。操作単位では捨てられないので、このパックだけが丸ごと外れる（6.1節）。
+      { name: 'world-codex/clash.yaml', content: 'object_defs:\n  coconut: {tags: [item]}\n' },
+      { name: 'backgrounds/driftwood_mask_fixtures_lane.png', content: new Uint8Array([2]) },
+      { name: 'objects/driftwood_mask.png', content: new Uint8Array([3]) },
+    ]);
+
+    loadDefinitions([broken], report);
+
+    expect(BACKGROUND_ART.has('background:driftwood_mask_fixtures_lane')).toBe(false);
+    expect(ART_BY_NAME.has('broken:driftwood_mask')).toBe(false);
+  });
+
+  it('載ったパックの絵は在庫表に並ぶ', async () => {
+    const loaded = await pack('loaded', [
+      { name: 'world-codex/mask.yaml', content: MASK_YAML },
+      { name: 'backgrounds/driftwood_mask_fixtures_lane.png', content: new Uint8Array([4]) },
+      { name: 'objects/driftwood_mask.png', content: new Uint8Array([5]) },
+    ]);
+
+    const definitions = loadDefinitions([loaded], new LoadReport());
+
+    expect(definitions.codex.objectNames.tryGetId('driftwood_mask')).toBeDefined();
+    expect(BACKGROUND_ART.has('background:driftwood_mask_fixtures_lane')).toBe(true);
+    expect(artUrl(definitions.codex.artNameOf('driftwood_mask'))).toBe(
+      ART_BY_NAME.get('loaded:driftwood_mask'),
+    );
+  });
+});
+
+/**
  * どのパックの絵かは、その型を宣言したパックで決まる（AssetPack.md 5節）。出所は型が名乗る絵の
  * 名前に添えて運ぶので、引くのは名前1つで済む。
  */
@@ -233,9 +309,16 @@ describe('型の絵の出所', () => {
 
   it('同じ名前の絵を2つのパックが持つとき、その型を宣言した側の絵が使われる', () => {
     // どちらも `objects/driftwood_totem.png` を持つ在庫表（installPackObjectArtが作る形）。
-    const catalog = new Map([['coconut', '/bundled/coconut.png']]);
-    addPackArt(catalog, new Map([['declaring:driftwood_totem', 'blob:declaring']]), 'declaring', '型の絵');
-    addPackArt(catalog, new Map([['bystander:driftwood_totem', 'blob:bystander']]), 'bystander', '型の絵');
+    const catalog = new Map<string, string>();
+    rebuildArtCatalog(
+      catalog,
+      new Map([['coconut', '/bundled/coconut.png']]),
+      [
+        { packName: 'declaring', art: new Map([['declaring:driftwood_totem', 'blob:declaring']]) },
+        { packName: 'bystander', art: new Map([['bystander:driftwood_totem', 'blob:bystander']]) },
+      ],
+      '型の絵',
+    );
 
     // 型 driftwood_totem を宣言しているのは declaring なので、名乗る絵の名前もそちらの出所を持つ。
     expect(catalog.get(artKeyIn(catalog, 'declaring:driftwood_totem')!)).toBe('blob:declaring');
@@ -243,8 +326,13 @@ describe('型の絵の出所', () => {
   });
 
   it('パックが持っていない絵は同梱ぶんへ落ちる', () => {
-    const catalog = new Map([['coconut', '/bundled/coconut.png']]);
-    addPackArt(catalog, new Map([['borrowing:elixir', 'blob:elixir']]), 'borrowing', '型の絵');
+    const catalog = new Map<string, string>();
+    rebuildArtCatalog(
+      catalog,
+      new Map([['coconut', '/bundled/coconut.png']]),
+      [{ packName: 'borrowing', art: new Map([['borrowing:elixir', 'blob:elixir']]) }],
+      '型の絵',
+    );
 
     // 「定義だけを足して絵は同梱のものを使う」パック（`art: coconut` を名乗った型）。
     expect(artKeyIn(catalog, 'borrowing:coconut')).toBe('coconut');
@@ -269,9 +357,14 @@ describe('型の絵の出所', () => {
 
 describe('絵の在庫表への重ね方', () => {
   it('同梱に無い絵は足される', () => {
-    const catalog = new Map([['coconut', '/bundled/coconut.png']]);
+    const catalog = new Map<string, string>();
 
-    addPackArt(catalog, new Map([['sample:driftwood_totem', 'blob:totem']]), 'sample', '型の絵');
+    rebuildArtCatalog(
+      catalog,
+      new Map([['coconut', '/bundled/coconut.png']]),
+      [{ packName: 'sample', art: new Map([['sample:driftwood_totem', 'blob:totem']]) }],
+      '型の絵',
+    );
 
     expect(catalog.get('sample:driftwood_totem')).toBe('blob:totem');
     expect(catalog.get('coconut')).toBe('/bundled/coconut.png');
@@ -279,10 +372,57 @@ describe('絵の在庫表への重ね方', () => {
 
   it('同じ鍵の絵はエラーになる（在庫表は上書きしない）', () => {
     // 衝突しうるのは前置きの付かない背景の絵だけ（型の絵は鍵に出所が付く。AssetPack.md 6節）。
-    const catalog = new Map([['background:hand_card', '/bundled/hand_card.png']]);
+    const catalog = new Map<string, string>();
+    const bundled = new Map([['background:hand_card', '/bundled/hand_card.png']]);
 
     expect(() =>
-      addPackArt(catalog, new Map([['background:hand_card', 'blob:other']]), 'sample', '背景の絵'),
+      rebuildArtCatalog(
+        catalog,
+        bundled,
+        [{ packName: 'sample', art: new Map([['background:hand_card', 'blob:other']]) }],
+        '背景の絵',
+      ),
     ).toThrow(/hand_card/);
+  });
+
+  it('組み直しは同梱ぶんから始まる（前に載せたパックのぶんが残らない）', () => {
+    const catalog = new Map<string, string>();
+    const bundled = new Map([['coconut', '/bundled/coconut.png']]);
+
+    rebuildArtCatalog(
+      catalog,
+      bundled,
+      [{ packName: 'gone', art: new Map([['gone:x', 'blob:x']]) }],
+      '型の絵',
+    );
+    rebuildArtCatalog(
+      catalog,
+      bundled,
+      [{ packName: 'kept', art: new Map([['kept:y', 'blob:y']]) }],
+      '型の絵',
+    );
+
+    expect([...catalog.keys()]).toEqual(['coconut', 'kept:y']);
+  });
+
+  it('重ねられないパックがあれば、在庫表は組み直す前のまま', () => {
+    const catalog = new Map<string, string>();
+    const bundled = new Map([['background:hand_card', '/bundled/hand_card.png']]);
+    rebuildArtCatalog(
+      catalog,
+      bundled,
+      [{ packName: 'kept', art: new Map([['background:y', 'blob:y']]) }],
+      '背景の絵',
+    );
+
+    expect(() =>
+      rebuildArtCatalog(
+        catalog,
+        bundled,
+        [{ packName: 'clashing', art: new Map([['background:hand_card', 'blob:other']]) }],
+        '背景の絵',
+      ),
+    ).toThrow(/hand_card/);
+    expect([...catalog.keys()]).toEqual(['background:hand_card', 'background:y']);
   });
 });
