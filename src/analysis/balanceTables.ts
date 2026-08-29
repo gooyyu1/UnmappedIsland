@@ -161,7 +161,7 @@ export interface PropertyChains {
   /** その値を埋める別のプロパティ（体脂肪なら三大栄養素）。自分自身で埋まるなら空。 */
   readonly suppliedByNames: readonly string[];
 
-  /** 単位あたりの労働の昇順。数えられない経路と前提が揃わない経路は末尾。 */
+  /** 単位あたりの労働の昇順。数えられない経路は末尾。 */
   readonly routes: readonly PropertyRoute[];
 }
 
@@ -825,7 +825,7 @@ function buildRoute(
  * ——プロパティごとに単位が違うので、必要量に対する割合へ直さないと足し合わせられない。
  */
 function greedyMenu(dailyNeeds: readonly DailyNeed[], routes: readonly ChainRoute[]): DailyMenu {
-  const usable = routes.filter((route) => !route.blocked && !route.untimed && route.executionMinutes > 0);
+  const usable = routes.filter((route) => !route.untimed && route.executionMinutes > 0);
   const remaining = new Map(dailyNeeds.map((need) => [need.propertyGlobalId, need.amount]));
   const chosen = new Map<number, ChainRoute>();
 

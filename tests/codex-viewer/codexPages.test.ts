@@ -506,12 +506,12 @@ const CHAIN_LABELS: ShownFields<ChainRoute> = {
   // 1回で埋まる量は`1単位あたり`の分母として効くだけで、プロパティのidから引く形では出さない。
   fills: null,
 
-  // 行の見た目で出す（`route-blocked`・`route-import`）。
-  blocked: null,
+  // 行の見た目で出す（`route-import`）。
   needsImport: null,
 
-  // どの並びへ出すかの印で、行の中身ではない（その土地の表に載せるか、
-  // 「時間を数えられない経路」へ畳むか）。
+  // どの並びへ出すかの印で、行の中身ではない。塞がった経路とその土地を起点にしない経路は
+  // `placeBalances`が落とすのでこの表に届かず、時間を数えられない経路は畳んで出す。
+  blocked: null,
   rootedHere: null,
   untimed: null,
 };
