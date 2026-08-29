@@ -1,4 +1,11 @@
+import { parseDocument } from 'yaml';
+import type { YAMLMap } from 'yaml';
+import { asMap, requireKnownKeys, requireScalar } from '../loader/yamlMapping';
+import { YamlLoadError } from '../loader/YamlLoadError';
 import { readZip } from './zip';
+
+/** パックが自分の識別子と版を名乗るファイル。ZIPのトップに1つ置く（AssetPack.md 3.2節）。 */
+const MANIFEST_FILE = 'pack.yaml';
 
 /**
  * 読み込み済みのアセットパック1つ（AssetPack.md）。
@@ -7,18 +14,27 @@ import { readZip } from './zip';
  * このクラスは**在庫表**——何が入っているかへの問い合わせ窓口であり、絵のURLもYAMLの中身も
  * ここから引く。読み込みに成功した時点で全エントリの在処が分かっているので、
  * 「あるかどうか」を取得しに行って確かめる必要はない（同4節）。
+ *
+ * **名乗りは中身から読む。** 取得元のURLやファイル名からは採らない——ミラーやリネームで
+ * 変わる名前では、同じパックが別物になる（同3.2節）。
  */
 export class AssetPack {
-  /** 出所の表示（エラーメッセージと、定義の出所に使う）。 */
+  /** パックが名乗った識別子。出所の表示（エラーメッセージと、定義の出所に使う）。 */
   readonly name: string;
+
+  /** パックが名乗った版。文字列で、大小の順序は持たない（AssetPack.md 3.2節）。 */
+  readonly version: string;
 
   private readonly files: ReadonlyMap<string, Uint8Array>;
 
   /** 作ったBlobのURL。同じ絵を2度要求されても1つで済ませる。 */
   private readonly urls = new Map<string, string>();
 
-  constructor(name: string, files: ReadonlyMap<string, Uint8Array>) {
-    this.name = name;
+  /** `pack.yaml` を名乗れないZIPはパックとして受け取らない（YamlLoadError）。 */
+  constructor(files: ReadonlyMap<string, Uint8Array>) {
+    const manifest = parseManifest(files);
+    this.name = manifest.id;
+    this.version = manifest.version;
     this.files = files;
   }
 
@@ -82,12 +98,36 @@ export async function fetchAssetPack(url: string): Promise<AssetPack> {
   if (!response.ok)
     throw new Error(`アセットパック '${url}' を取得できませんでした（status ${response.status}）。`);
 
-  return new AssetPack(packName(url), await readZip(await response.arrayBuffer()));
+  return new AssetPack(await readZip(await response.arrayBuffer()));
 }
 
-/** URLの末尾のファイル名（拡張子なし）をパックの名前にする。 */
-function packName(url: string): string {
-  return /([^/]+?)(?:\.zip)?$/i.exec(url)?.[1] ?? url;
+/** パックの名乗り（AssetPack.md 3.2節）。どちらも省略できない。 */
+interface PackManifest {
+  readonly id: string;
+  readonly version: string;
+}
+
+/** `pack.yaml` を読む。無い・書式が違う・知らないキーがある、はいずれもエラー。 */
+function parseManifest(files: ReadonlyMap<string, Uint8Array>): PackManifest {
+  const bytes = files.get(MANIFEST_FILE);
+  if (bytes === undefined)
+    throw new YamlLoadError(
+      `アセットパックに '${MANIFEST_FILE}' がありません（識別子と版の名乗りが要ります）。`,
+    );
+
+  const document = parseDocument(new TextDecoder().decode(bytes));
+  if (document.errors.length > 0)
+    throw new YamlLoadError(`${MANIFEST_FILE}: YAML構文エラー: ${document.errors[0].message}`);
+
+  const root = asMap(document.contents, MANIFEST_FILE);
+  requireKnownKeys(root, ['id', 'version'], MANIFEST_FILE);
+  return { id: requireNonEmpty(root, 'id'), version: requireNonEmpty(root, 'version') };
+}
+
+function requireNonEmpty(root: YAMLMap, key: string): string {
+  const value = requireScalar(root, key, MANIFEST_FILE);
+  if (value === '') throw new YamlLoadError(`${MANIFEST_FILE}: '${key}' が空です。`);
+  return value;
 }
 
 function mediaType(path: string): string {

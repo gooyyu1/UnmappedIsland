@@ -14,8 +14,13 @@ import type { ZipSource } from '../support/zipArchive';
  * アセットパックの読み込み（AssetPack.md）。ZIPのトップが `src/assets/` に相当する形で
  * 定義YAML・表示文字列・絵を受け取り、同梱ぶんへ重ねられることを確かめる。
  */
-async function pack(name: string, sources: readonly ZipSource[]): Promise<AssetPack> {
-  return new AssetPack(name, await readZip(zipArchive(sources)));
+async function pack(id: string, sources: readonly ZipSource[]): Promise<AssetPack> {
+  return packOf([{ name: 'pack.yaml', content: `id: ${id}\nversion: '1'\n` }, ...sources]);
+}
+
+/** 名乗りも含めてZIPの中身をそのまま渡す（`pack.yaml` の検査用）。 */
+async function packOf(sources: readonly ZipSource[]): Promise<AssetPack> {
+  return new AssetPack(await readZip(zipArchive(sources)));
 }
 
 const OBJECT_YAML = `
@@ -26,6 +31,37 @@ object_defs:
       weight: {value: 4000}
       volume: {value: 12000}
 `;
+
+describe('パックの名乗り（pack.yaml）', () => {
+  it('識別子と版を名乗り、出所の表示は識別子から採る', async () => {
+    const loaded = await packOf([
+      { name: 'pack.yaml', content: "id: potions\nversion: '2'\n" },
+      { name: 'world-codex/totem.yaml', content: OBJECT_YAML },
+    ]);
+
+    expect(loaded.name).toBe('potions');
+    expect(loaded.version).toBe('2');
+    expect([...loaded.worldCodexTexts().keys()]).toEqual(['potions:world-codex/totem.yaml']);
+  });
+
+  it('pack.yaml が無ければパックとして受け取らない', async () => {
+    await expect(packOf([{ name: 'world-codex/totem.yaml', content: OBJECT_YAML }])).rejects.toThrow(
+      YamlLoadError,
+    );
+  });
+
+  it('idもversionも省略できない', async () => {
+    await expect(packOf([{ name: 'pack.yaml', content: 'id: potions\n' }])).rejects.toThrow(/version/);
+    await expect(packOf([{ name: 'pack.yaml', content: "version: '1'\n" }])).rejects.toThrow(/id/);
+    await expect(packOf([{ name: 'pack.yaml', content: "id:\nversion: '1'\n" }])).rejects.toThrow(/id/);
+  });
+
+  it('知らないキーはエラーになる', async () => {
+    await expect(
+      packOf([{ name: 'pack.yaml', content: "id: potions\nversion: '1'\nauthor: だれか\n" }]),
+    ).rejects.toThrow(/author/);
+  });
+});
 
 describe('アセットパックの中身', () => {
   it('定義YAMLを、出所つきのファイル名で取り出せる', async () => {
