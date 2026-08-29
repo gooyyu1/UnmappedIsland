@@ -3,8 +3,10 @@
 # 差分を読んで通すと決めた後に叩く、決まりきった手順だけをまとめてある。
 #
 #   bash scripts/agent/merge-and-close.sh 1036
+#   bash scripts/agent/merge-and-close.sh 1036 --user-ok   … 関門をユーザーの許可で越える
 #
 # 出力は1行1件。
+#   HELD     <PR番号>              … 関門に掛かった。マージしていない（理由が続けて出る）
 #   MERGED   <PR番号>
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
@@ -15,9 +17,19 @@
 #   INSTALLED                       … 依存が変わったので本体で `npm install` した
 #   DIRTY    <本体のパス>           … 本体に未コミットの変更があるので触らなかった
 #   終了コード 0 … すべて片付いた
-#   終了コード 1 … マージできなかった（何もしていない）
+#   終了コード 1 … マージできなかった（何もしていない。関門を含む）
 #   終了コード 2 … マージはしたが、後片付けに残りがある
 #                  （上の `OPEN`・`NOSESSION`・`UNARCHIVED`・`DIRTY`）
+#
+# ## 関門（`needs-user-review.sh`）は、司令塔が越えられない
+#
+# 宣言文法・スキーマ・`【確定】` の印に触るPRは、**司令塔の判断ではマージしない**。
+# [`needs-user-review.sh`](needs-user-review.sh) が該当を出したら `判断待ち` を付けて `HELD` で止め、
+# ユーザーへ回す。越えるにはユーザーの許可を引いて `--user-ok` を付けて叩き直す——**そのとき許可を
+# 受けたことをPRへコメントとして残す**ので、後からどのPRが誰の許可で通ったのかを辿れる。
+#
+# **司令塔が自分の判断で越えられない関門にしてあるのは、越えられる関門は越えるから。** 直近25本で
+# `## 仮決め` に中身のあったPRが22本、`判断待ち` が付いたのは0本だった。
 #
 # ## 畳んだのは、毎回同じ順で叩いていた5つ
 #
@@ -56,15 +68,42 @@
 set -euo pipefail
 
 PR="${1:?PRの番号を渡す（例: 1036）}"
+USER_OK=0
+[ "${2:-}" != "--user-ok" ] || USER_OK=1
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 試験は差し替える（`gh` は PATH で差し替わるが、これはパスで呼ぶため）。
 CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
+NEEDS_USER_REVIEW="${NEEDS_USER_REVIEW:-$HERE/needs-user-review.sh}"
 
 body=$(gh pr view "$PR" --json body --jq '.body // ""' | tr -d '\r')
 state=$(gh pr view "$PR" --json state --jq '.state')
 
 if [ "$state" = "OPEN" ]; then
+  # 関門。**マージの前に見る**——通した後では、印が付いた状態が `main` に入ってしまう。
+  reasons=$(bash "$NEEDS_USER_REVIEW" "$PR" 2>&1) && gate=0 || gate=$?
+  if [ "$gate" -ne 1 ]; then
+    if [ "$USER_OK" -eq 0 ]; then
+      echo "HELD $PR"
+      echo "$reasons" | sed 's/^/    /'
+      gh pr edit "$PR" --add-label 判断待ち >/dev/null
+      exit 1
+    fi
+    note="$(mktemp)"
+    {
+      echo "[司令塔] **ユーザーの許可を得てマージします。**"
+      echo
+      echo '`needs-user-review.sh` はこのPRを止めていました。'
+      echo
+      echo '```'
+      echo "$reasons"
+      echo '```'
+    } >"$note"
+    gh pr comment "$PR" --body-file "$note" >/dev/null
+    rm -f "$note"
+    gh pr edit "$PR" --remove-label 判断待ち >/dev/null 2>&1 || true
+  fi
+
   mergeable=$(gh pr view "$PR" --json mergeable --jq '.mergeable')
   if [ "$mergeable" != "MERGEABLE" ]; then
     echo "マージできない（mergeable=$mergeable）。コンフリクトなら差し戻す。" >&2
