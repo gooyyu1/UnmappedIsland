@@ -80,7 +80,9 @@ export class ShelfScene extends ResponsiveScene {
   ): number {
     const lines = [this.locale.uiText('shelf_progress', { total: String(total), held: String(held) })];
     if (this.added.length > 0) {
-      const names = this.added.map((name) => this.locale.object(name).displayName).join('、');
+      const names = this.added
+        .map((name) => this.locale.object(name).displayName)
+        .join(this.locale.uiText('list_separator'));
       lines.unshift(this.locale.uiText('shelf_brought', { names }));
     }
 

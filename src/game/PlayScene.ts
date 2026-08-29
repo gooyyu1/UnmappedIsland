@@ -1447,12 +1447,7 @@ export class PlayScene extends ResponsiveScene {
     const startedAt = this.gameSession.world.totalMinutes;
 
     const explored = this.shownLocation;
-    noteOperation(
-      this.locale.uiText('log_explored', {
-        name: explored.window.card.name,
-        clock: this.clockText(),
-      }),
-    );
+    this.noteOperationAt(this.locale.uiText('log_explored', { name: explored.window.card.name }));
     // 結果待ちはここから。降ろすのは経過を見せ切った時点（passTime）。
     this.activity = 'exploring';
 
@@ -1686,6 +1681,14 @@ export class PlayScene extends ResponsiveScene {
     this.situationPanel.setTime(days, hour, minute);
   }
 
+  /**
+   * 起きた操作を、そのときのワールド時刻を添えて控える（errorReport参照）。**添え方はここだけが
+   * 決める**——操作ごとに書式を持つと、同じ「何をしたか＋いつか」の組み立てが対応表に並ぶ。
+   */
+  private noteOperationAt(label: string): void {
+    noteOperation(this.locale.uiText('log_at_clock', { label, clock: this.clockText() }));
+  }
+
   /** 今のワールド時刻（エラー報告と操作の記録に添える）。 */
   private clockText(): string {
     const { days, hour, minute } = clockParts(this.gameSession.world.totalMinutes);
@@ -1723,7 +1726,7 @@ export class PlayScene extends ResponsiveScene {
       return;
     }
 
-    noteOperation(`${label}（${this.clockText()}）`);
+    this.noteOperationAt(label);
 
     // 掴んで離したカードは、経過し切るまで離した場所に置いたままにする（使っている道具はそこに在る）。
     if (released !== undefined) this.cardTable.confirmHeldIds(released);
@@ -2420,12 +2423,7 @@ export class PlayScene extends ResponsiveScene {
    */
   private showDeath(): void {
     const cause = this.gameSession.player.ending.causeOfDeath;
-    noteOperation(
-      this.locale.uiText('log_died', {
-        cause: cause ?? this.locale.uiText('unknown'),
-        clock: this.clockText(),
-      }),
-    );
+    this.noteOperationAt(this.locale.uiText('log_died', { cause: cause ?? this.locale.uiText('unknown') }));
 
     new ModalDialog(this, this.metrics, {
       card: this.view.characterCard,
@@ -2454,12 +2452,7 @@ export class PlayScene extends ResponsiveScene {
    */
   private showEscape(): void {
     const brought = this.gameSession.player.ending.broughtArtifacts;
-    noteOperation(
-      this.locale.uiText('log_escaped', {
-        count: String(brought.length),
-        clock: this.clockText(),
-      }),
-    );
+    this.noteOperationAt(this.locale.uiText('log_escaped', { count: String(brought.length) }));
 
     new ModalDialog(this, this.metrics, {
       card: this.view.characterCard,

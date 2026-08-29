@@ -1385,6 +1385,9 @@ ui_texts:
   ok: OK
   # 名乗らずに終わったものの呼び名（エラー報告に載る死因・エラーの文言）。
   unknown: 不明
+  # 名前を並べるときの区切り。**つなぎ方も語と同じく言語のもの**（英語なら `, `）なので、
+  # コードではなくここが持つ。
+  list_separator: '、'
   # オブジェクトの子ウィンドウのタブ（Windows.md 1節）。
   description: 説明
   properties: 状態
@@ -1461,6 +1464,8 @@ ui_texts:
   # レシピ一覧（Windows.md 9節）の見出しと、1つも並ばないときの文。
   recipe_title: 作るもの
   recipe_empty: ここに並ぶものはまだ無い。
+  # 未解放のレシピの札。押せないことを、名前の後ろの理由で伝える。
+  recipe_locked_name: '{name}（{reason}）'
 
   # ゲーム内時間の長さ（timeTexts.ts）。時・分のどちらが立つかで3通り。
   duration_minutes: '{minutes}分'
@@ -1469,6 +1474,8 @@ ui_texts:
   time_cost: 'かかる時間 {duration}'
   # 積み下ろしの間に出す、今の積載での推定日数（GameEndings.md 9.3節）。幅は幅のまま出す。
   voyage_days: '本土まで {days}日'
+  # 幅のある日数。両端が揃うまでは幅のまま出す。
+  days_range: '{min}〜{max}'
   # 日の出の演出に出る日数の見出し（ScreenLayout.md 7.5.6節）。後ろに生存日数が続く。
   day: DAY
 
@@ -1531,6 +1538,8 @@ ui_texts:
 
   # エラー報告に載せる、直前の操作（errorReport.noteOperation）。**実際に起きたことだけ**を、
   # そのまま再現手順として読める言葉で書く。
+  # ワールドの時刻を添える書き方は1つだけ持ち、操作の側は何をしたかだけを言う。
+  log_at_clock: '{label}（{clock}）'
   log_screen_built: '画面を組み立てた: {scene} {width}x{height}'
   log_button_tapped: 'ボタンを押した: {label}'
   log_card_tapped: 'カードを押した: {name}'
@@ -1547,10 +1556,10 @@ ui_texts:
   log_card_put_in: 'カードを入れた: {dragged} → {onto}の中'
   log_action: 'アクション: {name}（{owner}）'
   log_child_window_opened: '子ウィンドウを開いた: {name}'
-  log_explored: '探索した: {name}（{clock}）'
+  log_explored: '探索した: {name}'
   log_status_detail_opened: ステータスの詳細を開いた
   log_status_pin_toggled: ステータスの固定表示を切り替えた
   log_recipe_window_opened: レシピ一覧を開いた
   log_map_opened: 地図を開いた
-  log_died: '死んだ: {cause}（{clock}）'
-  log_escaped: '島を出た: 持ち帰り {count} 点（{clock}）'
+  log_died: '死んだ: {cause}'
+  log_escaped: '島を出た: 持ち帰り {count} 点'

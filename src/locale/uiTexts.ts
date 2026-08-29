@@ -21,6 +21,8 @@ export const UI_TEXT_NAMES = [
   'cancel',
   'ok',
   'unknown',
+  // 語をつなぐ書き方。**つなぎ方も語と同じく言語のもの**なので、コードではなくここが持つ。
+  'list_separator',
   // オブジェクトの子ウィンドウのタブ（Windows.md 1節）。
   'description',
   'properties',
@@ -82,12 +84,14 @@ export const UI_TEXT_NAMES = [
   // レシピ一覧（Windows.md 9節）。
   'recipe_title',
   'recipe_empty',
+  'recipe_locked_name',
   // 時間の長さ（CardInteraction.md 7節、GameEndings.md 9.3節）。
   'duration_minutes',
   'duration_hours',
   'duration_hours_minutes',
   'time_cost',
   'voyage_days',
+  'days_range',
   // 日の出の演出に出る日数の見出し（ScreenLayout.md 7.5.6節）。
   'day',
   // 死亡・脱出・中断のダイアログ（VitalsSystem.md 6節、GameEndings.md 3節）。
@@ -140,7 +144,9 @@ export const UI_TEXT_NAMES = [
   'activity_exploring',
   'activity_elapsing',
   'activity_transiting',
-  // エラー報告に載せる、直前の操作（errorReport.noteOperation）。
+  // エラー報告に載せる、直前の操作（errorReport.noteOperation）。**時刻の添え方は1つ**
+  // （log_at_clock）で、操作の側は何をしたかだけを言う。
+  'log_at_clock',
   'log_screen_built',
   'log_button_tapped',
   'log_card_tapped',

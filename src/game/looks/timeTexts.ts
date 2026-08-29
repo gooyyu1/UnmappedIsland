@@ -49,7 +49,7 @@ export function timeCostLine(minutes: number): string | undefined {
  */
 export function voyageDaysText(minDays: number, maxDays: number): string {
   return uiText('voyage_days', {
-    days: minDays === maxDays ? `${minDays}` : `${minDays}〜${maxDays}`,
+    days: minDays === maxDays ? `${minDays}` : uiText('days_range', { min: `${minDays}`, max: `${maxDays}` }),
   });
 }
 
