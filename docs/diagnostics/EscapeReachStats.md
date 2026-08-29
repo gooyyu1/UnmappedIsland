@@ -2,7 +2,8 @@
 
 数値は [`stats/escape_reach.yaml`](../../stats/escape_reach.yaml) にあります。
 `tests/diagnostics/escapeReachStatsReport.test.ts` が、定義（`src/assets/world-codex/*.yaml`）だけから
-計算したものです。工程（`interactions`・`recipes`）や土地の発見物を変更したら再生成します。
+計算したものです。工程（`interactions`・`recipes`・range系イベントの周期）や土地の発見物を変更したら
+再生成します。
 
 ```
 npm run stats:escape
@@ -35,6 +36,8 @@ YAMLとずれます）。
   0工程は島の土地そのもの。
 - **出発集合は島の土地そのもの**で、探索も他と同じ1つの工程として回す。海区は入れないので、
   海の産物は船が出来るまで手に入らない。
+- **待って起こる作り替えも工程**。炉が焼く肉・罠が渡す獲物のように、操作ではなく値がrangeの端へ
+  届いて生まれる物も1つの工程として数える。**押し手は入力に並ぶ**ので、焼くには炉が要る。
 - **島ごとの土地の配りは数えない。** 定義の上で鎖が閉じるかだけを見る（その土地が生成された島に
   在るかは [`IslandEscapeReachStats.md`](./IslandEscapeReachStats.md) が同じ鎖について島ごとに数える）。
 - **個数は数えない。** 同じ工程は何度でも繰り返せる。道具（`consume: false`）も、減らないだけで
