@@ -20,6 +20,7 @@
     "stats:escape": "RUN_ESCAPE_REACH_STATS=1 vitest run tests/diagnostics/escapeReachStatsReport.test.ts",
     "stats:escape-islands": "RUN_ISLAND_ESCAPE_REACH_STATS=1 vitest run tests/diagnostics/islandEscapeReachStatsReport.test.ts",
     "stats:docs": "node scripts/docStatus.mjs",
+    "stats:durations": "RUN_DURATION_STATS=1 vitest run tests/diagnostics/durationStatsReport.test.ts",
     "stats:lines": "node scripts/countLines.mjs",
     "stats:startup": "RUN_STARTUP_REACH_STATS=1 vitest run tests/diagnostics/startupReachStatsReport.test.ts",
     "stats:terrain": "RUN_TERRAIN_STATS=1 vitest run tests/diagnostics/terrainStatsReport.test.ts",
