@@ -7,6 +7,7 @@ import type {
 import type { DeclaredNumberReading } from '../domain/EffectReader';
 import { multipliedRefs } from '../domain/EffectReader';
 import type { ObjectDef } from '../domain/ObjectDef';
+import type { RollEnd } from '../domain/PropertyDef';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
 
 /**
@@ -29,37 +30,43 @@ export type StaticValueResolver = (root: ReferenceRoot, propertyGlobalId: number
 
 /**
  * defを起点として、定義だけから値を解く手立て。selfは自分のプロパティ宣言が答え、それ以外の起点は
- * outerへ委ねる。
+ * outerへ委ねる。生成時のロール（6.2節）はendの端に出たものとして読む。
  */
 export function staticResolverOf(
   def: ObjectDef,
+  end: RollEnd,
   outer: StaticValueResolver | undefined,
 ): StaticValueResolver {
   return (root, propertyGlobalId) => {
-    return root === 'self' ? staticValueOf(def, propertyGlobalId, outer) : outer?.(root, propertyGlobalId);
+    return root === 'self'
+      ? staticValueOf(def, propertyGlobalId, end, outer)
+      : outer?.(root, propertyGlobalId);
   };
 }
 
 /**
  * defが宣言しているプロパティの、定義だけから読める値。宣言していなければundefined。
  *
- * **抽選つきの初期値（`value: {min, max}`）はRNGを使わない生成と同じ扱い**で、下限がそのまま
- * 答えになる（PropertyDef.initialValueWithoutRoll）。`base`（6.5節）があれば土台の値も足す。
- * 土台を辿れない文脈ではundefined。
+ * **生成時のロール（`value: {min, max}`、6.2節）はendの端に出たものとして読む**
+ * （PropertyDef.initialValueAt）。どちらの端の話かは問いによって変わる——端へ届くまでの長さは
+ * 遠い側が要り、尽きるまでの総量は多い側が要る——ので、**片方へ畳んで返さない。**
+ * `base`（6.5節）があれば土台の値も足す。土台を辿れない文脈ではundefined。
  */
 export function staticValueOf(
   def: ObjectDef,
   propertyGlobalId: number,
+  end: RollEnd,
   outer?: StaticValueResolver,
 ): number | undefined {
   const propertyDef = def.tryGetPropertyDef(propertyGlobalId);
   if (propertyDef === undefined) return undefined;
 
+  const initialValue = propertyDef.initialValueAt(end);
   const base = propertyDef.base;
-  if (base === undefined) return propertyDef.initialValueWithoutRoll;
+  if (base === undefined) return initialValue;
 
-  const baseValue = staticResolverOf(def, outer)(base.root, base.propertyGlobalId);
-  return baseValue === undefined ? undefined : propertyDef.initialValueWithoutRoll + baseValue;
+  const baseValue = staticResolverOf(def, end, outer)(base.root, base.propertyGlobalId);
+  return baseValue === undefined ? undefined : initialValue + baseValue;
 }
 
 /**
@@ -69,8 +76,12 @@ export function staticValueOf(
  * 印が意味するのは「その工程の所要時間・確率は、定義だけからは確定しない参照を含む」
  * （CraftingStep.hasUnresolvedReferences）。
  */
-export function trackingResolverOf(def: ObjectDef, outer: StaticValueResolver | undefined): TrackingResolver {
-  const inner = staticResolverOf(def, outer);
+export function trackingResolverOf(
+  def: ObjectDef,
+  end: RollEnd,
+  outer: StaticValueResolver | undefined,
+): TrackingResolver {
+  const inner = staticResolverOf(def, end, outer);
   let hit = false;
   return {
     resolve: (root, propertyGlobalId) => {

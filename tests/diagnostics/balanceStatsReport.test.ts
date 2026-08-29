@@ -186,6 +186,7 @@ function buildSections(codex: WorldCodex, tables: BalanceTables): readonly YamlR
         explore_minutes: rounded(cost.minutes === undefined ? undefined : (cost.exploreMinutes ?? 0)),
         other_minutes: rounded(cost.minutes === undefined ? undefined : (cost.craftMinutes ?? 0)),
         days: rounded(cost.days, 2),
+        only_from_everlasting_device: cost.onlyFromEverlastingDevice,
         blocked_by_tool: cost.blockedByTool,
         steps: stepsText(cost.steps) || null,
         prerequisites: prerequisiteRecords(cost.prerequisites),

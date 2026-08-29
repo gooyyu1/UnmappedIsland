@@ -70,6 +70,35 @@ describe('injuries.yamlの怪我', () => {
     );
   }
 
+  /** その怪我に当たっている治療具の識別子（当てていなければ空）。 */
+  function treatmentOn(injury: WorldObject): string[] {
+    const slot = injury.tryGetSlot(codex.slotNames.getId('treatment'));
+    return slot === undefined ? [] : slot.contents.map((object) => object.def.name);
+  }
+
+  /** 治療具を当てる。画面のドロップと同じ経路（枠が時間を課すので、そこを通さないと値段を払わない）。 */
+  function treat(injury: WorldObject, treatment: WorldObject): void {
+    const slot = injury.getSlot(codex.slotNames.getId('treatment'));
+    putIntoSlot(treatment, slot, player, session, () => {
+      treatment.moveToSlotOrRejection(slot);
+    });
+  }
+
+  /** 当てていた治療具を外して手元へ戻す。 */
+  function removeTreatment(treatment: WorldObject): void {
+    expect(treatment.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+  }
+
+  /** 骨折を1つ負う。刺す口は大型の獣の1手（animals.yaml、tests/world-codex/animalTurn.test.ts）。 */
+  function breakBone(): WorldObject {
+    return spawnInto('fracture', player, 'injuries');
+  }
+
+  /** 荷重（load）のプロパティ番号。 */
+  function loadId(): number {
+    return codex.propertyNames.getId('load');
+  }
+
   /** ヤシの実を採ろうとする。成否はopenへ渡したrollで決まっている。 */
   function pickCoconut(): void {
     const tree = spawnInto('palm_tree', beach, 'fixtures');
@@ -173,20 +202,6 @@ describe('injuries.yamlの怪我', () => {
       return { injury, bandage: spawnInto('bandage', player, 'hand') };
     }
 
-    /** その怪我に当たっている治療具の識別子（当てていなければ空）。 */
-    function treatmentOn(injury: WorldObject): string[] {
-      const slot = injury.tryGetSlot(codex.slotNames.getId('treatment'));
-      return slot === undefined ? [] : slot.contents.map((object) => object.def.name);
-    }
-
-    /** 治療具を当てる。画面のドロップと同じ経路（枠が時間を課すので、そこを通さないと値段を払わない）。 */
-    function treat(injury: WorldObject, treatment: WorldObject): void {
-      const slot = injury.getSlot(codex.slotNames.getId('treatment'));
-      putIntoSlot(treatment, slot, player, session, () => {
-        treatment.moveToSlotOrRejection(slot);
-      });
-    }
-
     it('包帯を怪我へ重ねると、その怪我に当たった状態になる', () => {
       const { injury, bandage } = injured();
 
@@ -267,7 +282,7 @@ describe('injuries.yamlの怪我', () => {
       const { injury, bandage } = injured();
       treat(injury, bandage);
 
-      expect(bandage.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+      removeTreatment(bandage);
 
       expect(player.tryGetProperty(painId)?.getEffectiveValue() ?? 0, '可逆な寄与なので戻る').toBe(40);
       const severityId = codex.propertyNames.getId('severity');
@@ -300,21 +315,12 @@ describe('injuries.yamlの怪我', () => {
   });
 
   it('怪我は荷重にならない', () => {
-    const loadId = codex.propertyNames.getId('load');
-
     pickCoconut();
 
-    expect(player.tryGetProperty(loadId)?.getEffectiveValue() ?? 0).toBe(0);
+    expect(player.tryGetProperty(loadId())?.getEffectiveValue() ?? 0).toBe(0);
   });
 
   describe('骨折', () => {
-    const loadId = () => codex.propertyNames.getId('load');
-
-    /** 骨折を1つ負う。刺す口は大型の獣の1手（animals.yaml、tests/world-codex/animalTurn.test.ts）。 */
-    function breakBone(): WorldObject {
-      return spawnInto('fracture', player, 'injuries');
-    }
-
     it('血は流れず、動きを奪う', () => {
       // 皮膚の下で折れるのでbleedingを持たない（InjurySystem.md 5節）。血を持たない代わりに、
       // 宿主のload（荷重）を押し上げる。
@@ -370,6 +376,93 @@ describe('injuries.yamlの怪我', () => {
       expect(initial.kind === 'roll' && initial.min, '最も軽い折れ方でも他のどの傷より長い').toBeGreaterThan(
         longestOthers,
       );
+    });
+  });
+
+  describe('添え木', () => {
+    const severityId = () => codex.propertyNames.getId('severity');
+
+    /** 怪我と、手持ちに持たせた添え木を返す。 */
+    function splintFor(injury: WorldObject): { injury: WorldObject; splint: WorldObject } {
+      return { injury, splint: spawnInto('splint', player, 'hand') };
+    }
+
+    /** count tick進める間に、その怪我の傷がどれだけ引いたか。 */
+    function healedOver(injury: WorldObject, count: number): number {
+      const before = injury.tryGetProperty(severityId())?.number ?? 0;
+      tick(count);
+      return before - (injury.tryGetProperty(severityId())?.number ?? 0);
+    }
+
+    it('骨折へ当てると、押し上げが緩んで普段どおりの荷を担げる', () => {
+      // 折れていなければladen（ContainerSystem.md 5節の通れる段）のヤシの実5つ（11kg）。
+      for (let i = 0; i < 5; i++) spawnInto('green_coconut', player, 'hand');
+      const { injury, splint } = splintFor(breakBone());
+      expect(player.tryGetProperty(loadId())?.stage?.name, '当てる前は担げない').toBe('too_heavy');
+
+      treat(injury, splint);
+
+      expect(treatmentOn(injury)).toEqual(['splint']);
+      expect(player.tryGetProperty(loadId())?.stage?.name, '添え木の重さを担いでも道は通れる').toBe('heavy');
+    });
+
+    it('外せば押し上げも戻る', () => {
+      // 可逆な寄与（InjurySystem.md 3節）。緩みは当てている間だけで、外した瞬間に元の押し上げへ戻る。
+      for (let i = 0; i < 5; i++) spawnInto('green_coconut', player, 'hand');
+      const { injury, splint } = splintFor(breakBone());
+      treat(injury, splint);
+
+      removeTreatment(splint);
+
+      expect(player.tryGetProperty(loadId())?.stage?.name).toBe('too_heavy');
+    });
+
+    it('当てている間だけ治りが早まる', () => {
+      const { injury, splint } = splintFor(breakBone());
+      expect(healedOver(injury, 10), '当てる前は自然治癒だけ').toBeCloseTo(1 * 10, 10);
+
+      treat(injury, splint);
+
+      // 自然治癒の-1/tickに、添え木の-0.6/tickが重なる（8.4節）。包帯の-1.4/tickより速い。
+      expect(healedOver(injury, 10)).toBeCloseTo(1.6 * 10, 10);
+
+      removeTreatment(splint);
+
+      expect(healedOver(injury, 10), '外せば元の速さへ戻る').toBeCloseTo(1 * 10, 10);
+    });
+
+    it('押し上げていない傷へ当てても、荷は軽くならない', () => {
+      // 緩める量は押し上げている骨折が持つ（injuries.yaml）。治療具の側に「-9,000」と書いていたら、
+      // 荷重を押し上げない捻挫へ当てたときに無傷より軽くなる。
+      pickCoconut();
+      const { injury, splint } = splintFor(new PlayerCharacter(player, codex).injuryStacks[0][0]);
+      const before = player.tryGetProperty(loadId())?.getEffectiveValue() ?? 0;
+
+      treat(injury, splint);
+
+      expect(player.tryGetProperty(loadId())?.getEffectiveValue() ?? 0, '添え木の重さぶんのまま').toBe(
+        before,
+      );
+      expect(before, '手持ちでも怪我の中でも、添え木の重さは同じだけ担いでいる').toBe(1400);
+    });
+
+    it('出血には効かない', () => {
+      // 皮膚の下で折れる傷に止める血は流れていないので、止血の口を持たない（InjurySystem.md 3.1節）。
+      // 血の流れる傷へ当てても、固まる速さは自然のまま——倍にするのは包帯だけ。
+      const bleedingId = codex.propertyNames.getId('bleeding');
+      const bloodId = codex.propertyNames.getId('blood');
+      const { injury, splint } = splintFor(spawnInto('laceration', player, 'injuries'));
+      treat(injury, splint);
+      const bleedingBefore = injury.tryGetProperty(bleedingId)?.number ?? 0;
+      const bloodBefore = player.tryGetProperty(bloodId)?.number ?? 0;
+
+      tick(1);
+
+      expect(
+        bleedingBefore - (injury.tryGetProperty(bleedingId)?.number ?? 0),
+        '固まる速さは変わらない',
+      ).toBe(25);
+      expect(bloodBefore - (player.tryGetProperty(bloodId)?.number ?? 0), '血も止まらない').toBe(15);
     });
   });
 });
