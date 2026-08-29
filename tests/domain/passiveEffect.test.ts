@@ -849,7 +849,7 @@ object_defs:
       expect(slot?.contents.length).toBe(0);
     });
 
-    it('on_min文脈にはactorが無いため、into: actorのspawnは何も配置しない', () => {
+    it('on_min文脈にはagentが無いため、into: agentのspawnは何も配置しない', () => {
       const yaml = `
 object_defs:
   clearing3:
@@ -865,7 +865,7 @@ object_defs:
           destroy: self
           spawn:
             object: berry
-            into: actor
+            into: agent
 `;
       const codex = load(yaml);
       const groundSlotId = codex.slotNames.getId('ground');
@@ -878,7 +878,7 @@ object_defs:
 
       expect(bushInstance.parent).toBeUndefined(); // bush自身は破棄される
       const slot = locationInstance.tryGetSlot(groundSlotId);
-      expect(slot?.contents.length).toBe(0); // actorルートはon_min文脈では解決できないため、berryはどこにも配置されない
+      expect(slot?.contents.length).toBe(0); // agentルートはon_min文脈では解決できないため、berryはどこにも配置されない
     });
 
     it('同じtick内で複数の子が自分自身を破棄しても、tickは正常に完了する', () => {

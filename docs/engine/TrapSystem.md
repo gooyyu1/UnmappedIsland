@@ -283,15 +283,15 @@ interactions:
     duration: 1
     conditions:
       - {reason: trap_baited, prop: plant_bait, lt: 24}
-    transfer: {amount: 999, from: dragged, from_prop: plant_bait, to_prop: plant_bait}
-    destroy: dragged
+    transfer: {amount: 999, from: instrument, from_prop: plant_bait, to_prop: plant_bait}
+    destroy: instrument
   add_meat_bait:
     trigger: {drag: {tag: meat_bait}}
     duration: 1
     conditions:
       - {reason: trap_baited, prop: meat_bait, lt: 24}
-    transfer: {amount: 999, from: dragged, from_prop: meat_bait, to_prop: meat_bait}
-    destroy: dragged
+    transfer: {amount: 999, from: instrument, from_prop: meat_bait, to_prop: meat_bait}
+    destroy: instrument
 ```
 
 ```yaml
@@ -536,9 +536,9 @@ pen_bruise:
 持つ（9.4 節）ので、**同じ規則が 1 階層下へ伸びるだけ**です。著者はスロット名も、どの子かも書きません
 ——怪我を受け取れるスロットを持つ子は 1 つしか居ません。
 
-- **これが無いと、罠は自分が生んだ獲物へ何も渡せません。** `into` は `same_slot`/`self`/`actor` しか
-  取れず、`actor` は `on_min` に存在しません（9.4 節）。**罠には手番を持つ実行者が居ない**という
-  一点だけで、`strike` が `into: actor` で書けること（`animals.yaml`）が書けなくなります。
+- **これが無いと、罠は自分が生んだ獲物へ何も渡せません。** `into` は `same_slot`/`self`/`agent` しか
+  取れず、`agent` は `on_min` に存在しません（9.4 節）。**罠には手番を持つ実行者が居ない**という
+  一点だけで、`strike` が `into: agent` で書けること（`animals.yaml`）が書けなくなります。
 - **一意性は罠が保証します。** くくり罠の `catch` は `cell_count: 1` なので子は 1 つで、枠が 4 つある
   檻でも、空でなければタイマーが減らない（6 節）ので生んだ瞬間の子は 1 つです。一般には「最初に
   受け取れた子」で決まり、`into` が既にスロットに対して行っている決め方と同じです。

@@ -183,12 +183,12 @@ describe('荷重が歩みの速さと体力に効く', () => {
   it('そりに載せれば、通れる・速い・疲れないの3つが同時に戻る', () => {
     // 同じ28個（28kg）でも、引きずるそりなら体感は1割（8000 + 28000 の 0.1 ＝ 3600g）でlightに収まる。
     const carried = trek(28);
-    const dragged = trek(28, { sled: true });
+    const instrument = trek(28, { sled: true });
 
     expect(carried.stage, '担げば動けない').toBe('too_heavy');
-    expect(dragged.stage, '引けば空身と同じ段').toBe('light');
-    expect(dragged.moved, '通れる').toBe(true);
-    expect(dragged.minutes, '速さも等倍に戻る').toBe(TRAVEL_MINUTES);
-    expect(dragged.staminaLost, '疲れもしない').toBe(0);
+    expect(instrument.stage, '引けば空身と同じ段').toBe('light');
+    expect(instrument.moved, '通れる').toBe(true);
+    expect(instrument.minutes, '速さも等倍に戻る').toBe(TRAVEL_MINUTES);
+    expect(instrument.staminaLost, '疲れもしない').toBe(0);
   });
 });

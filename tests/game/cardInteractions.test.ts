@@ -32,16 +32,16 @@ traits:
       drink:
         trigger: menu
         duration: 5
-        add: {actor: {hydration: 10}}
+        add: {agent: {hydration: 10}}
       # 宣言があるのは中身入りの側だけなので、どちらの札をどちらへ重ねてもselfは中身入りになる。
       pour_into_empty:
         trigger: {drag: {tag: liquid_container}}
-        conditions: [{reason: not_empty, subject: dragged, prop: fill, eq: 0}]
-        become: {subject: dragged, content: water_liquid}
-        transfer: {amount: 999999, from: self, from_prop: fill, to: dragged, to_prop: fill}
+        conditions: [{reason: not_empty, subject: instrument, prop: fill, eq: 0}]
+        become: {subject: instrument, content: water_liquid}
+        transfer: {amount: 999999, from: self, from_prop: fill, to: instrument, to_prop: fill}
       pour_into_filled:
         trigger: {drag: {tag: water}}
-        transfer: {amount: 999999, from: dragged, from_prop: fill, to: self, to_prop: fill}
+        transfer: {amount: 999999, from: instrument, from_prop: fill, to: self, to_prop: fill}
 
 object_defs:
   # 食べ飲みの効き先を持つキャラクタ。
@@ -85,8 +85,8 @@ object_defs:
       add_fuel:
         trigger: {drag: {object: branch}, allow_multiple: true}
         duration: 1
-        transfer: {amount: 999, from: dragged, from_prop: fuel, to_prop: fuel}
-        destroy: dragged
+        transfer: {amount: 999, from: instrument, from_prop: fuel, to_prop: fuel}
+        destroy: instrument
 
   fruit:
     tags: [item]
@@ -95,7 +95,7 @@ object_defs:
         trigger: menu
         duration: 15
         destroy: self
-        add: {actor: {satiety: 10}}
+        add: {agent: {satiety: 10}}
 
   bowl:
     tags: [item]

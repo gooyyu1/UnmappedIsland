@@ -224,9 +224,9 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
   `destination.tryGetSlot(...)` の結果を `mover.moveToSlotOrRejection(slot)` へ渡して配置します。
   `findRoot`/`findSelfOrDescendantByInstanceId`/`moveIntoFirstAcceptingSlot`/`moveToSlotOrRejection`
   はいずれも `WorldObject`（`src/domain/WorldObject.ts`）に定義した汎用メソッドです。
-- **道の発見・移動の入口**: `Location.explore(actor)`（`src/domain/wrappers/Location.ts`）が
+- **道の発見・移動の入口**: `Location.explore(agent)`（`src/domain/wrappers/Location.ts`）が
   `explore` アクションの実行と `revealDueFixtures`（`undiscovered_fixtures` → `fixtures` の移動）を1回の呼び出しに
-  まとめています。`Path.travel(actor)`（`src/domain/wrappers/Path.ts`）が `travel` アクション
+  まとめています。`Path.travel(agent)`（`src/domain/wrappers/Path.ts`）が `travel` アクション
   を実行します。
 
 ## 8. ファイル一覧（索引）

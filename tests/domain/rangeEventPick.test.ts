@@ -71,7 +71,7 @@ object_defs:
     expect(cycler.tryGetProperty(counterId)?.number ?? 0).toBe(20);
   });
 
-  it('on_min配下のpick候補（ネストを含む）にactor対象を書くとロードエラーになる', () => {
+  it('on_min配下のpick候補（ネストを含む）にagent対象を書くとロードエラーになる', () => {
     // rangeイベントには操作者が居ない。その事実はネストしたpick候補にもそのまま引き継がれる（6.3節）。
     const yaml = `
 object_defs:
@@ -86,7 +86,7 @@ object_defs:
               pick:
                 - weight: 1
                   set:
-                    actor: {counter: 10}
+                    agent: {counter: 10}
 `;
     expect(() => load(yaml)).toThrow(YamlLoadError);
   });

@@ -159,8 +159,8 @@ shock:
 与えるのは攻撃の側で、`add` は実体値への即時の書き込みなので**殴った瞬間に効きます**。
 
 ```yaml
-- weight: {subject: dragged, prop: heavy_blow}
-  add: {self: {shock: 250, wariness: 25}, dragged: {durability: -20}}
+- weight: {subject: instrument, prop: heavy_blow}
+  add: {self: {shock: 250, wariness: 25}, instrument: {durability: -20}}
   spawn: {object: deep_gash, into: self}
   signal: hit
 ```

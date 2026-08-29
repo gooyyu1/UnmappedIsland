@@ -55,7 +55,7 @@ A（名前をなぞるだけ）: 686件 / B: 64件 / C: 22件
 | `domain/generation/IslandSpawner.ts`・`PathNetworkBuilder.ts`・`TerrainGenerator.ts`・`NewGame.ts` | `populate` / `build` / `generate` / `start` | B | 島を世界へ実体化する／パスネットワークを組む／地形を生成する／新しいゲームを始める | 全て `import { build } from './PathNetworkBuilder'` の形で名前付きimportされるので、呼び出し側には `build(...)` としか残らない。何をbuildするかがモジュール名にしか無い | `spawnIslandIntoWorld` / `buildPathNetwork` / `generateIsland` / `startNewGame` |
 | `domain/crafting.ts` | `allocate` | B | 工程の**要求ごとに材料スロットの中身を割り当てる**（二重に数えない） | 何を何へ割り当てるか | `allocateContentsToRequirements` |
 | `domain/PassiveAmount.ts` | `PassiveAmount::of` | B | declarerの今の状態で**寄与する量**を返す | `of` は何も言っていない。呼び出しは `amount.of(declarer)` で、返るのが量だと読めない | `amountFor` |
-| `domain/ReferenceRoot.ts` | `ReferenceContext::of` | B | **selfだけが決まっている**文脈を作る | 何から作るのか。兄弟の static は `acting(self, actor, dragged)` と目的を名乗っている | `forSelf` |
+| `domain/ReferenceRoot.ts` | `ReferenceContext::of` | B | **selfだけが決まっている**文脈を作る | 何から作るのか。兄弟の static は `acting(self, agent, instrument)` と目的を名乗っている | `forSelf` |
 | `domain/CellLayout.ts` | `CellLayout::emptyCell` | B | セルを空にし、**枠数が可変なら枠ごと取り除いて前詰めする** | 名詞（空のセル）に読める。かつ `splice` で並びが縮むことが読めない | `vacateCell` |
 | `domain/CellLayout.ts` | `SlotCell::hold` | B | 中身のスタックを**入れ替える**（CellLayout専用） | 「保持する」ではなく破壊的な置換であること。専用の口であることも名前に無い | `replaceContents` |
 | `domain/Interaction.ts` | `Interaction::minutes` | B | 実行にかかるゲーム内時間 | メソッドなのに名詞1語。同じことをする `InteractionDef::minutesFor` と揃っていない | `executionMinutes` |

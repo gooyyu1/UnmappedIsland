@@ -18,14 +18,14 @@ import type { WorldSession } from './WorldSession';
 export function putIntoSlot(
   item: WorldObject,
   slot: Slot,
-  actor: WorldObject | undefined,
+  agent: WorldObject | undefined,
   session: WorldSession,
   place: () => void,
 ): void {
   // 入らないと分かっているなら時間も取らない。時間だけ取られて何も入らない、が起きないようにする。
   if (item.rejectionForMoveTo(slot) !== undefined) return;
 
-  if (!spendDurationAndReportParticipantsAlive(slot.putInMinutes(actor, item), session, [item, slot.owner]))
+  if (!spendDurationAndReportParticipantsAlive(slot.putInMinutes(agent, item), session, [item, slot.owner]))
     return;
 
   place();

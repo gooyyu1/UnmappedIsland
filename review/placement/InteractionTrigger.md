@@ -29,7 +29,7 @@
 
 | 差 | 今 | 統合後 |
 | -- | -- | -- |
-| `subject: dragged` を書けるか | 節が `ReferenceScope` を選ぶ | きっかけが選ぶ（`drag` のときだけ dragged が居る） |
+| `subject: instrument` を書けるか | 節が `ReferenceScope` を選ぶ | きっかけが選ぶ（`drag` のときだけ instrument が居る） |
 | 相手の型（`with`） | combinations 専用の兄弟キー | きっかけの中 |
 | ドロップ時に起動する動詞探し | `combinationsWith` が combinations だけ見る | きっかけが `drag` のものだけ見る |
 | まとめて重ねてよいか（`allow_multiple`） | combinations 専用の兄弟キー | きっかけの中 |
@@ -67,8 +67,8 @@ interactions:
 ## 5. 実行時のクラスは分けたまま
 
 `Interaction` の具象（`Action` / `Combination`）は統合しない。**引いた時点で相手が決まっている**対で、
-`Combination` は dragged が必ず居ることを型引数で保証している。ここを1つにすると
-「dragged が居るかもしれない」を実行時に見る形へ戻る。
+`Combination` は instrument が必ず居ることを型引数で保証している。ここを1つにすると
+「instrument が居るかもしれない」を実行時に見る形へ戻る。
 
 統合するのは**宣言の書き方**。`ObjectDef` は1つのリストで持ち、`actionsFor` は
 `trigger` が `menu` のもの、`combinationsWith` は `drag` のものを絞る。

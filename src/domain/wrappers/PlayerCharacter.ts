@@ -5,7 +5,7 @@ import { Ending } from './Ending';
 import { Location } from './Location';
 
 /**
- * actor（プレイヤーキャラクター、GameElementDefinition.md 8.1節・11節）に対する、UI/ゲームロジック向けの型付き
+ * agent（プレイヤーキャラクター、GameElementDefinition.md 8.1節・11節）に対する、UI/ゲームロジック向けの型付き
  * ビュー。Worldと同じ理由で継承ではなくラップにしている。
  *
  * どのプロパティを持つべきかはまだ確定していないため、既存のサンプルに登場済みのものだけを実装している。
@@ -79,7 +79,7 @@ export class PlayerCharacter extends ObjectWrapper {
 
   /**
    * 今いる土地を1回探索する（Location.explore）。土地に居ない・探索できない土地ならfalse。
-   * 「自分をactorとして自分の居場所へ渡す」手順を呼び出し側に持たせないための入口。
+   * 「自分をagentとして自分の居場所へ渡す」手順を呼び出し側に持たせないための入口。
    */
   explore(): boolean {
     return this.location?.explore(this.instance) ?? false;

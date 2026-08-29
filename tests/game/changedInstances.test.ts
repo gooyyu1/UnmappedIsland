@@ -50,7 +50,7 @@ object_defs:
     interactions:
       grab:
         trigger: {drag: {tag: item}}
-        move: {subject: dragged, to: self}
+        move: {subject: instrument, to: self}
 `;
 
   let codex: WorldCodex;

@@ -3,7 +3,7 @@ import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
 
 /**
  * 宣言に書かれた1つの数値（GameElementDefinition.md 10.2節）。リテラル定数か、既存propsへのパス参照、
- * またはパス参照2つの積のいずれかで、参照は使うときの文脈（self/actor/dragged）で解く。
+ * またはパス参照2つの積のいずれかで、参照は使うときの文脈（self/agent/instrument）で解く。
  *
  * pickのweightだけでなく、行動・組み合わせ・レシピの所要時間、スロットの`put_in`の所要時間も
  * これで表す——**「その場で決まる数値」という点で同じもの**で、何を表す数値かは持ち主の側が決める。

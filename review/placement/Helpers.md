@@ -51,7 +51,7 @@ export 4）。加えて `new` の後に B 自身の getter で検査する形（
 ### H-2. 定義に、実行時インスタンス無しで問いを立てる口が無い — 13＋8箇所
 
 ドメインの口が `WorldObject` 前提のため、解析が同じ規則を書き直している。private ヘルパーだけで13個
-（`inInitialStage` `destroysWhenEmpty` `ancestorContext` `bestAncestorContext` `withBestDragged`
+（`inInitialStage` `destroysWhenEmpty` `ancestorContext` `bestAncestorContext` `withBestInstrument`
 `isLocation` `isCharacter` `explorableLocationsOf` `isAlwaysAtHand` `selfMovesOf` `minutesOf`
 `tickAmountsOf` `ticksWhileGateHolds`）。それぞれ `PropertyValue.changePerTick` / `ticksUntilMax` / `add`、
 `PropertyDef.isInStage` / `checkRangeEvents` / `inheritedContribution`、`InteractionDef.durationMinutes` と
@@ -174,7 +174,7 @@ B 側に不足が無く、単に書き直されているだけのもの。
 | `Location.stacksOf` / `PlayerCharacter.stacksOf` | 完全に同一の実装 | どちらか一方（または `WorldObject`） |
 | `LocationTypeMatcher.normalizedDistance` / `passesHardLimits` | 読むのは `site.axisValues` だけ | `LocationTypeDef`（`appliesTo` の隣） |
 | `NameAssigner.shuffled` | `pickWeighted` は既に `Rng.ts` に居る | `Rng.ts` |
-| `recipeList.actorOnly` | 13.3節「解放条件は actor しか参照できない」という**ドメインの規則**を映しが持っている | `RecipeDef`（`src` 内の呼び出し元はここ1箇所だけ） |
+| `recipeList.actorOnly` | 13.3節「解放条件は agent しか参照できない」という**ドメインの規則**を映しが持っている | `RecipeDef`（`src` 内の呼び出し元はここ1箇所だけ） |
 | `PlayerCharacter.mainland` | `WorldObject.findAncestorWithTag` が無いだけ | `WorldObject` |
 
 ## 第1波の判定を変えたもの

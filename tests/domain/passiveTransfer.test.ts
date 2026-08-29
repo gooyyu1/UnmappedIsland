@@ -293,7 +293,7 @@ object_defs:
     ]);
   });
 
-  it('対象にactorは書けない（持続的な関係に紐づかないため）', () => {
+  it('対象にagentは書けない（持続的な関係に紐づかないため）', () => {
     expect(() =>
       load(`
 object_defs:
@@ -301,7 +301,7 @@ object_defs:
     props:
       stomach: {value: 1, range: {min: 0, max: 32}}
     passives:
-      - transfer: {from_prop: stomach, to: actor, to_prop: satiety, amount: 1}
+      - transfer: {from_prop: stomach, to: agent, to_prop: satiety, amount: 1}
 `),
     ).toThrow(YamlLoadError);
   });

@@ -45,7 +45,7 @@ export class InteractionDef {
   /**
    * この操作にかかるゲーム内時間（分）。durationを省いていれば0。
    *
-   * 「今のself（とdragged）の状態から見て、どれだけかかるか」なので、時間を進める前に解決する
+   * 「今のself（とinstrument）の状態から見て、どれだけかかるか」なので、時間を進める前に解決する
    * （切れ味の悪い刃物ほど時間がかかる、が書けるように）。実行前に画面へ見せる用途にも使う。
    */
   minutesFor(context: ReferenceContext): number {
@@ -104,13 +104,13 @@ export class InteractionDef {
     const self = context.self!;
     if (this.unmetRequirement(context) !== undefined) return false;
 
-    const involved = [self, context.actor, context.dragged];
+    const involved = [self, context.agent, context.instrument];
     if (!spendDurationAndReportParticipantsAlive(this.minutesFor(context), session, involved)) return false;
 
     // 時間を進め終えてから囲うので、経過中のtickが動かした値は「操作が増やしたもの」に入らない
     // （PropertyGain参照）。
     session.withInteractionEffect(self, () =>
-      self.applyActiveEffect(this.effect, context.actor, context.dragged),
+      self.applyActiveEffect(this.effect, context.agent, context.instrument),
     );
     return true;
   }

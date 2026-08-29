@@ -107,7 +107,7 @@ export interface CardOperationsFactory {
 
   /**
    * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭を実行する手段
-   * （無ければundefined）。candidatesは`dragged`の役になる個体を運んできた順に並べたもの、movedは
+   * （無ければundefined）。candidatesは`instrument`の役になる個体を運んできた順に並べたもの、movedは
    * 指が運んできた個体（演出で追う札）で、countはまとめて実行する個数。
    *
    * **candidatesとmovedは別物**——逆向きに成立した組み合わせでは、指が運んできた札のほうが`self`に
@@ -210,7 +210,7 @@ export function cardOperationsOf(
 
   /**
    * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭を実行する手段
-   * （無ければundefined）。candidatesは`dragged`の役になる個体、movedは指が運んできた個体。
+   * （無ければundefined）。candidatesは`instrument`の役になる個体、movedは指が運んできた個体。
    *
    * 複数の組み合わせがマッチしたときにどれを実行するかの解決はUI層に委ねられている
    * （ActionSystem.md 1節）ため、宣言順の先頭を採る。
@@ -224,10 +224,10 @@ export function cardOperationsOf(
     moved: readonly WorldObject[],
     count = 1,
   ): CardCombination | undefined => {
-    const dragged = candidates.at(0);
-    if (dragged === undefined) return undefined;
+    const instrument = candidates.at(0);
+    if (instrument === undefined) return undefined;
 
-    const combination = self.combinationsWith(dragged, game.player.instance).at(0);
+    const combination = self.combinationsWith(instrument, game.player.instance).at(0);
     if (combination === undefined) return undefined;
 
     const texts = locale.object(self.def.name).interaction(combination.name);

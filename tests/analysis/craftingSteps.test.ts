@@ -127,7 +127,7 @@ object_defs:
     expect(husk.inputs).toEqual([
       // selfはdestroyされるので消費。
       { kind: 'object', objectGlobalId: id('coconut'), consumed: true, count: 1 },
-      // 刃物（dragged）はdestroyされないので道具＝消費されない。
+      // 刃物（instrument）はdestroyされないので道具＝消費されない。
       { kind: 'tag', tagGlobalId: codex.tagNames.getId('cutting_tool'), consumed: false, count: 1 },
     ]);
     expect(husk.outputs.map((output) => output.objectGlobalId)).toEqual([id('husked_coconut'), id('husk')]);
@@ -414,7 +414,7 @@ object_defs:
       boil:
         trigger: {drag: {tag: water}}
         duration: 5
-        become: {subject: dragged, content: hot_water_liquid}
+        become: {subject: instrument, content: hot_water_liquid}
 
   water_liquid:
     traits: [liquid, water_liquid]
