@@ -11,6 +11,7 @@
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
 #   ARCHIVED <セッションID>         … そのPRを出したCCRセッションを畳んだ
+#   KEPT     <セッションID>         … issue を持たないセッションなので畳まなかった（相談役など）
 #   NOSESSION <PR番号>              … 本文が脚注を持たず、畳む相手が分からなかった
 #   UNARCHIVED <セッションID>       … 畳もうとして失敗した
 #   SYNCED   <コミット>             … 本体のチェックアウトを新しい `main` へ進めた
@@ -142,9 +143,16 @@ while read -r session; do
   [ -n "$session" ] || continue
   # 引けない・畳めないときは、そこで止めずに残りとして報せる。**マージは済んでいる**ので、
   # ここで落ちると後片付け（`main` の追随）ごと落ちる。
-  status=$(printf '{"session_id":"%s"}' "$session" |
-    bash "$CCR_META" get_session | grep -o '{"ccr".*' | jq -r '.ccr.session_status' || true)
-  [ "$status" != "SESSION_STATUS_ARCHIVED" ] || continue
+  info=$(printf '{"session_id":"%s"}' "$session" |
+    bash "$CCR_META" get_session | grep -o '{"ccr".*' || true)
+  [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" != "SESSION_STATUS_ARCHIVED" ] || continue
+  # **畳んでよいのは、1つの issue のために立てたセッションだけ**（`task-<番号>` タグを持つ。
+  # `dispatch-task.sh` が必ず付ける）。相談役のように issue を持たない相手は、PR1本が
+  # マージされても仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。
+  if ! jq -e '[.ccr.tags[]? | select(startswith("task-"))] | length > 0' <<<"$info" >/dev/null; then
+    echo "KEPT $session"
+    continue
+  fi
   if printf '{"session_id":"%s"}' "$session" | bash "$CCR_META" archive_session >/dev/null; then
     echo "ARCHIVED $session"
   else
