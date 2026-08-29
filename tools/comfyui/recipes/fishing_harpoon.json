@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "src/assets/objects/fishing_harpoon.png を作り直すためのレシピ。build.py が読む。",
+    "太い枝の先へ石の穂先を紐で固定した漁具（src/assets/world-codex/tools.yaml）。",
+    "",
+    "**配置を描いて渡す（sketch: harpoon）。** 石斧・槍と同じ理由で、柄・穂先・巻きを",
+    "layout_sketch.py で置いてからQwenに描かせる。",
+    "",
+    "**柄は斧、穂先は槍。** 材料も工程も石斧と同じ（太い枝・尖った石・紐）なので柄はaxeの寸法を",
+    "そのまま使い、穂先だけを柄の延長上へ出す（across=False）。長い棒は要らないので、槍のように",
+    "対角線へ伸ばさない（docs/world/Voyage.md 3.9.4節）。",
+    "",
+    "**影は描かせたまま、mode: flood で抜く**（recipes/stone_axe.json と同じ理由）。",
+    "fgは斧と同じ100で足りる——淡いのは槍の剥いだ長い棒で、樹皮の残る太い枝は暗い。",
+    "",
+    "段は400。斧と同じかさ（1800mL）。"
+  ],
+  "output": "src/assets/objects/fishing_harpoon.png",
+  "sketch": "harpoon",
+  "edit": {
+    "prompt": "Redraw this flat diagram as a soft hand painted illustration on a plain empty white page, keeping the same layout: a primitive fishing harpoon lying flat on the ground seen from above, with the shaft and the stone point in exactly the same places at the same angles and the same sizes. Paint the shaft as one straight piece of dry branch with rough brown bark, thicker at the head and whittled smooth where it is gripped, and cut blunt at the butt end. Paint the point as a narrow spike of dark grey stone chipped to a sharp tip, its faces flaked and its edges straight, sitting on the end of the shaft and continuing straight along the same line. Where the point meets the end of the shaft, wrap many tight turns of rough twisted plant fibre cord, warm tan and mid brown with its strands visible, binding the stone to the wood. There is no metal, no steel, no barb and no polished blade. Keep the plain empty white page with a wide white margin all around, and put one soft grey shadow on the ground beneath the harpoon. Everything in the picture is clearly darker than the white page, and nothing has a white outline, a pale rim or a glow around it. Dry matte surface, flat even lighting. No text, no letters, no numbers, no signature.",
+    "seed": 1
+  },
+  "cardArt": {
+    "size": "400",
+    "mode": "flood",
+    "fg": 100,
+    "bg": 6,
+    "unshade": true,
+    "edge": 1.5,
+    "shadow": 1,
+    "reach": 24
+  }
+}
