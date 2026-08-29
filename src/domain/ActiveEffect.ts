@@ -66,7 +66,8 @@ export abstract class ActiveEffect {
 /**
  * 一時的な命令（`set`/`add`/`destroy`/`spawn`/`transfer`、9節）と`pick`（10節）を、書かれた順に
  * まとめた合成効果。on_max・on_min（6節）、actions/combinations/pickの中身（11・12・10節）が
- * 共用する。on_max/on_minはselfのみが有効な対象（パーサ側で強制する）。
+ * 共用する。どの起点を書けるかは、共用する各場所が渡す`ReferenceScope`が決める（一覧は
+ * GameElementDefinition.md 14.1節の表。操作の関係の役は11.5節「役を書ける場所」）。
  * 空（命令が1つも無い）なら、適用しても何も起きない。
  */
 export class ActiveEffectSequence extends ActiveEffect {

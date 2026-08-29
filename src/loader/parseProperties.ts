@@ -262,7 +262,8 @@ const RANGE_EVENT_RESERVED_KEYS = ['conditions'] as const;
 /**
  * labelのrangeイベント（on_max・on_min、6.3節）が書かれていればその中身。書かれていなければundefined。
  *
- * 対象はselfのみで、pick候補の中の効果にも引き継ぐ。空のmapping（`on_min: {}`）は「宣言だけして
+ * 発火させるのは時間の側なので、この場に居るのは宣言元の個体だけ（`ReferenceScope.declaration`）で、
+ * pick候補の中の効果にも引き継ぐ。空のmapping（`on_min: {}`）は「宣言だけして
  * 何もしない」（既定のクランプを打ち消す）を意味し、空のActiveEffectSequenceになる。`conditions`
  * （14節）を書くと、満たす回だけがこの中身へ、満たさない回は既定のクランプへ倒れる（RangeEventDef）。
  */
