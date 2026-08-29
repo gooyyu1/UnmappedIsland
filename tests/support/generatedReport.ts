@@ -240,7 +240,7 @@ const MIDDLE_PERCENTILE: Readonly<Record<StatMiddleColumn, number>> = { p5: 0.05
  *
  * 列の並びはレポート横断の規約なので、ここが1箇所で持つ。
  */
-export function statRecordsWith(middle: StatMiddleColumn): (keys: YamlRecord, stat: Stat) => YamlRecord {
+export function statRecordWith(middle: StatMiddleColumn): (keys: YamlRecord, stat: Stat) => YamlRecord {
   return (keys, stat) => ({
     ...keys,
     mean: rounded(stat.mean, STAT_DECIMALS),

@@ -21,7 +21,7 @@ import {
   formatYamlReport,
   rounded,
   shareRecord,
-  statRecordsWith,
+  statRecordWith,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -41,7 +41,7 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 const SEED_COUNT = 500;
 
 /** このレポートの分布レコード。**低い側の裾を見る**表なので、真ん中の列は`p5`。 */
-const statRecord = statRecordsWith('p5');
+const statRecord = statRecordWith('p5');
 
 /** 次数のヒストグラムに出す本数の上限（これを超える分はまとめて `or_more`）。 */
 const MAX_LISTED_DEGREE = 7;
