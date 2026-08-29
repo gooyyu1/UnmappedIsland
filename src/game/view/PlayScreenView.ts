@@ -302,8 +302,11 @@ export interface PlayScreenView {
 
   /**
    * その場所の枠の並び（空き枠はundefined）。**枠の位置がそのまま並びになる**ので、枠数の決まった
-   * スロット（手持ち・入れ物の中身）で抜けた枠は詰まらない——世界が枠の位置を保つ以上、画面もそこを
+   * スロット（入れ物の中身）で抜けた枠は詰まらない——世界が枠の位置を保つ以上、画面もそこを
    * 動かさない（SlotSystem.md 3節）。
+   *
+   * **手持ちだけは前へ詰まって出る。** 詰めるのは世界の側なので（packToFront）、ここは他の場所と
+   * 同じく枠の位置をそのまま映す。
    */
   readonly cardsIn: (place: CardPlace) => readonly (ObjectCardStack | undefined)[];
 
@@ -366,6 +369,25 @@ export function withFrozenCards(
   return { ...view, cardsIn: (asked) => frozen.get(asked) ?? view.cardsIn(asked) };
 }
 
+/**
+ * その場所の中身を、空き枠を左に残さないように前へ詰める（ScreenLayout.md 7.3節）。**枠の数は
+ * 変わらない**——いくつ持てるかはスロットの宣言が決めることで、中身をどこへ寄せるかとは別
+ * （SlotSystem.md 3節）。前詰めのスロットには初めから穴が無いので何も起きない。
+ *
+ * **詰めるのは世界の側で、見た目の層ではない。** 並べる枠だけを詰めると、枠の位置とスロットの
+ * 添字がずれ、空き枠へ落としたカードが別の枠へ入る（落とし先はSlotPositionのまま渡る、cardPlaces）。
+ */
+function packToFront(place: CardPlace): void {
+  let next = 0;
+  place.cells.forEach((cell, index) => {
+    const stack = cell.stack;
+    if (stack === undefined) return;
+
+    if (index !== next) place.moveStackTo(stack, { kind: 'cell', index: next });
+    next++;
+  });
+}
+
 /** 場所を映す札の仮のアイコン。土地は種別を持たない（物ではない）ので、種別ごとの表とは別に置く。 */
 const LOCATION_ICON = '🗺️';
 
@@ -416,12 +438,19 @@ function collapsed(looks: readonly InfluenceLook[]): readonly StatusInfluence[] 
  * ワールドの状態を写し取るだけなので、アクションでワールドが変わったら作り直す（PlayScene参照）。
  * **写し取るのは一度に全部**——ここが作るものは同じ時点のワールドを映す。
  *
+ * 唯一の例外が**写し取る前に手持ちを前へ詰めること**（packToFront）。手持ちが画面に出る形は
+ * ここを通ってしか作れないので、詰める手順を呼び出し側に覚えさせない。
+ *
  * カードの語彙は3つに分かれている。場所とスロットの対応（cardPlaces）・札の見た目（cardLooks）・
  * 札の上の操作（cardOperations）で、ここはそれを束ねて画面の区画へ配る。
  */
 export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Localization): PlayScreenView {
   const location = game.player.location ?? game.startLocation;
   const places = cardPlacesOf(game.player, location);
+
+  // 手持ちは空き枠を左に残さない（ScreenLayout.md 7.3節）。レーンに一度に見える枠の数は端末で
+  // 変わるので、右の枠に居る札は縦型では送らないと見えない。
+  packToFront(places('hand'));
 
   /** ワールドが個体に付けた名前（土地の命名、IslandMap）。付いていない個体ではundefined。 */
   const instanceName = (instanceId: number): string | undefined => {

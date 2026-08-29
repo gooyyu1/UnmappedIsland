@@ -57,8 +57,7 @@ describe('ステータスエリアに出ている行', () => {
       '安全域は出さない',
     ).toEqual(['hunger']);
 
-    shown.rows(settled); // 行を引いてから、その行のトグルを押す（画面と同じ経路）。
-    thirstRowOf(shown).onTogglePin?.();
+    shown.togglePin('thirst'); // 詳細ウィンドウのボタンと同じ経路。
 
     expect(
       shown.rows(settled).map((row) => row.key),
@@ -67,21 +66,14 @@ describe('ステータスエリアに出ている行', () => {
     expect(shown.pinnedKeys, 'セーブへ書き戻す識別子').toEqual(['thirst']);
   });
 
-  /** 全件の中から喉の渇きの行を引く（固定表示のトグルを押すため）。 */
-  function thirstRowOf(shown: ShownStatuses): StatusContent {
-    const row = shown.contentOf('thirst');
-    expect(row).toBeDefined();
-    return row!;
-  }
-
   it('固定表示を切り替えたら、控えと引き直しのために知らせる', () => {
     const world = { statuses: [status('thirst', 80)] };
     const screened = screen(world);
 
-    thirstRowOf(screened.shown).onTogglePin?.();
+    screened.shown.togglePin('thirst');
     expect(screened.pinnedCalls).toBe(1);
 
-    thirstRowOf(screened.shown).onTogglePin?.();
+    screened.shown.togglePin('thirst');
     expect(screened.shown.pinnedKeys, '2度目で外れる').toEqual([]);
     expect(screened.pinnedCalls).toBe(2);
   });

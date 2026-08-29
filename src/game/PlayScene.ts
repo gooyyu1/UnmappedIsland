@@ -351,6 +351,11 @@ export class PlayScene extends ResponsiveScene {
       this.showStatuses();
       // 子ウィンドウのプロパティのタブを開いたまま切り替えられるため、そちらの印も引き直す。
       this.childWindow?.setProperties(this.status.tabs());
+      // 付け外しを頼んできた詳細ウィンドウにも、切り替わった結果を返す。
+      const key = this.statusDetailKey;
+      if (key !== undefined) {
+        this.statusDetailWindow?.setPinned(this.status.contentOf(key)?.pinned === true);
+      }
     },
     onOpenDetail: (key) => this.openStatusDetail(key),
   });
@@ -1022,8 +1027,9 @@ export class PlayScene extends ResponsiveScene {
   /**
    * そのインスタンスを今映しているカードの枠。どのレーンにも出ていなければundefined。
    *
-   * 現在地だけはレーンに並ぶカードを持たない（設置物レーンのピン留めの枠）ので、そこで答える。
-   * 探索で見つかった物が現在地から飛んでくるのはこの1行による。
+   * 設置物レーンが映している場所だけはレーンに並ぶカードを持たない（ピン留めの枠）ので、そこで
+   * 答える。**映しているのは現在地とは限らない**（外側の段を映していればそちら、shownLocation）。
+   * 探索で見つかった物がその場所から飛んでくるのも、子ウィンドウへ札が移るのもこの1行による。
    */
   private rectOfInstance(instanceId: number): Rect | undefined {
     for (const lane of this.openLanes) {
@@ -1031,7 +1037,7 @@ export class PlayScene extends ResponsiveScene {
       if (shown !== undefined) return shown.rect;
     }
 
-    return this.gameSession.player.location?.instance.instanceId === instanceId
+    return this.shownLocation.window.card.identity?.includes(instanceId) === true
       ? this.fixtureLane.pinnedRect
       : undefined;
   }
@@ -1279,16 +1285,16 @@ export class PlayScene extends ResponsiveScene {
    * 並びの引き直しは呼び出し側——閉じるのは差し替えの途中のこともあるため。
    */
   private closeChildWindowReturningOrigins(): ReadonlyMap<number, Rect> {
-    // **枠を測るのは閉じる前**——閉じるとレーンごと消えるので、そのあとでは出どころを引けない。
+    // **枠を測る順は問わない**——閉じるボタンは窓を閉じてから知らせに来るので、ここへ来た時点で
+    // 面はもう無く、枠を答えるのは窓のほう（ObjectWindow.cellRect）。
     const window = this.childWindow;
-    const cardRect = window?.cardRect;
-    const foundLane = window?.laneOf('found');
 
     const returned = this.shown.returnBorrowed();
     const origins = new Map<number, Rect>();
+    const cardRect = window?.cellRect('card', 0);
     if (cardRect !== undefined) for (const id of returned.card) origins.set(id, cardRect);
     returned.found.forEach((card, index) => {
-      const rect = foundLane?.cellRect(index);
+      const rect = window?.cellRect('found', index);
       if (rect === undefined) return;
       for (const id of card.identity ?? []) origins.set(id, rect);
     });
@@ -1304,13 +1310,17 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 設置物レーンが映している場所そのものを映す子ウィンドウ（探索できない場所の札を押したとき）。
+   * 設置物レーンが映している場所そのものを映す子ウィンドウ（ピン留めの札を押したとき）。
    *
-   * **場所の札は借りない。** ピン留めの札は設置物レーンに固定された枠で、他の札のように並びから
-   * 抜けて戻る先が無い（キャラクタの窓をスロットのタブから開くのと同じ扱い）。
+   * **出どころを渡すのはここ。** ピン留めの札はレーンの並びに居ないので、差し替えは「直前に居た枠」
+   * として憶えていない（cardMotionPlan.resolve）——渡さないと、札は飛ばずにウィンドウの中に現れる。
    */
   private openLocationWindow(): void {
-    const origins = this.closeChildWindowReturningOrigins();
+    const origins = new Map(this.closeChildWindowReturningOrigins());
+    for (const id of this.shownLocation.window.card.identity ?? []) {
+      const rect = this.rectOfInstance(id);
+      if (rect !== undefined) origins.set(id, rect);
+    }
     this.openChildWindow(this.shownLocation.window, origins);
   }
 
@@ -2087,7 +2097,7 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * バーをタップしたときに開く、そのステータスの詳細（Windows.md 8節）。開き直しでも同じ経路を
+   * 行をタップしたときに開く、そのステータスの詳細（Windows.md 8節）。開き直しでも同じ経路を
    * 通せるよう、受け取るのは中身ではなくプロパティの識別子で、中身は今のviewから引き直す。
    *
    * ステータスエリアからもプロパティのタブの行からも開くため、既に開いていれば入れ替える。
@@ -2104,6 +2114,11 @@ export class PlayScene extends ResponsiveScene {
       area: { x: 0, y: 0, width: this.metrics.width, height: this.metrics.height },
       // 影響の枠から相手の詳細へ渡り歩く。開き直しと同じ経路なので、今の窓は入れ替わる。
       onOpenStatus: (target) => this.openStatusDetail(target),
+      // 絵だけのボタンなので、押されたことはここで控える（Button.addTextButton参照）。
+      onTogglePin: () => {
+        noteOperation('ステータスの固定表示を切り替えた');
+        this.status.togglePin(key);
+      },
       onClose: () => {
         this.statusDetailWindow = undefined;
         this.statusDetailKey = undefined;

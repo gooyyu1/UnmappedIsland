@@ -123,7 +123,7 @@ describe('プレイヤーキャラクタの定義', () => {
 
       expect(hand, '手持ちスロットを持つ').toBeDefined();
       // 枠数は個体差にしてよいが、ハンドレーンに収まる範囲に留める（ScreenLayout.md 7.3節）。数を決めて
-      // いるので、持ち替えても枠の位置は動かない（SlotSystem.md 3節）。
+      // いるので、持ち運べる種類の数は端末によらない（SlotSystem.md 3節）。
       expect(hand?.cellCount, '手持ちは4〜8枠').toBeGreaterThanOrEqual(4);
       expect(hand?.cellCount, '手持ちは4〜8枠').toBeLessThanOrEqual(8);
 
