@@ -22,8 +22,8 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 [`stats/terrain.yaml`](../../stats/terrain.yaml)と、`src/assets/world-codex/terrain_generation.yaml` の
 `island.site_count` です。読み方は [`docs/diagnostics/`](../diagnostics/README.md) の各文書が持ちます。
 **本書の節のうち、定義へ写るものはほぼ写り終わっています**——8.1.1.1節・8.1.2節・8.1.3節の明るさは
-`core.yaml` の `hour`・`weather` と `locations.yaml` の各土地へ、5.1節の海図は山頂の `explore` へ。
-**写した側がこの文書の節を出どころとして名乗ります。**
+`core.yaml` の `hour`・`weather` と `locations.yaml` の各土地へ写っており、**写した側がこの3節を
+出どころとして名乗ります。** 5.1節の海図は山頂の `explore` が担っています。
 **まだ写っていないのは3つ**——6節は24種類のうち1つだけ（`artifacts.yaml` の `golden_chalice`）、
 2.3.2節の歩数による開始地点の選抜（未決事項）、8.1.4節（`【未実装: 風雨】`）です。
 
