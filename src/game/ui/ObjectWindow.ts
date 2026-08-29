@@ -281,11 +281,11 @@ export class ObjectWindow {
   }
 
   /**
-   * 借りた札の枠。運んでくる先・返すときの出発点で、**別のタブへ移っても、窓を閉じたあとも
-   * 最後の枠を覚えている**（OpenPane）。
+   * その役割のレーンの、添字の位置の枠。借りた札を運んでくる先・返すときの出発点で、**別のタブへ
+   * 移っても、窓を閉じたあとも最後の枠を覚えている**（OpenPane）。
    */
-  get cardRect(): Rect | undefined {
-    return this.pane.cardRect;
+  cellRect(role: ObjectWindowLaneRole, index: number): Rect | undefined {
+    return this.pane.cellRect(role, index);
   }
 
   /**

@@ -330,6 +330,11 @@ export class CardLane {
     });
   }
 
+  /** 並んでいる枠の、画面上の矩形（位置＝添字）。 */
+  get cellRects(): readonly Rect[] {
+    return this._cells.map((_, index) => this.cellRect(index));
+  }
+
   /** 添字の位置の枠の、画面上の矩形。 */
   cellRect(index: number): Rect {
     return {
