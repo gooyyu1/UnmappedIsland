@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/EscapeReachStats.md。
 
 meta:
-  - {departure_locations: 10, needs: 27, goals: 3, unit: hops, max_hops: 9}
+  - {departure_locations: 10, needs: 26, goals: 3, unit: hops, max_hops: 9}
 
 departure:
   - {location: sandy_beach}
@@ -23,20 +23,19 @@ needs:
   - {object: rocky_coast, goal_tag: null, unit: hops, hops: 0, step_kind: null, step: null, owner: null, inputs: []}
   - {object: grassland, goal_tag: null, unit: hops, hops: 0, step_kind: null, step: null, owner: null, inputs: []}
   - {object: forest, goal_tag: null, unit: hops, hops: 0, step_kind: null, step: null, owner: null, inputs: []}
-  - {object: jungle, goal_tag: null, unit: hops, hops: 0, step_kind: null, step: null, owner: null, inputs: []}
   - {object: monkey, goal_tag: null, unit: hops, hops: 1, step_kind: interaction, step: explore, owner: sandy_beach, inputs: [{object: sandy_beach, tag: null, consumed: false}]}
   - {object: junglefowl, goal_tag: null, unit: hops, hops: 1, step_kind: interaction, step: explore, owner: grassland, inputs: [{object: grassland, tag: null, consumed: false}]}
-  - {object: abaca, goal_tag: null, unit: hops, hops: 1, step_kind: interaction, step: explore, owner: jungle, inputs: [{object: jungle, tag: null, consumed: false}]}
+  - {object: coconut, goal_tag: null, unit: hops, hops: 1, step_kind: interaction, step: explore, owner: sandy_beach, inputs: [{object: sandy_beach, tag: null, consumed: false}]}
   - {object: thick_branch, goal_tag: null, unit: hops, hops: 1, step_kind: interaction, step: explore, owner: sandy_beach, inputs: [{object: sandy_beach, tag: null, consumed: false}]}
   - {object: stone, goal_tag: null, unit: hops, hops: 1, step_kind: interaction, step: explore, owner: rocky_coast, inputs: [{object: rocky_coast, tag: null, consumed: false}]}
   - {object: broadleaf_tree, goal_tag: null, unit: hops, hops: 1, step_kind: interaction, step: explore, owner: forest, inputs: [{object: forest, tag: null, consumed: false}]}
   - {object: sharp_stone, goal_tag: null, unit: hops, hops: 2, step_kind: interaction, step: knap, owner: stone, inputs: [{object: stone, tag: null, consumed: true}, {object: stone, tag: null, consumed: false}]}
   - {object: monkey_carcass, goal_tag: null, unit: hops, hops: 3, step_kind: interaction, step: strike, owner: monkey, inputs: [{object: monkey, tag: null, consumed: true}, {object: sharp_stone, tag: weapon, consumed: false}]}
   - {object: junglefowl_carcass, goal_tag: null, unit: hops, hops: 3, step_kind: interaction, step: strike, owner: junglefowl, inputs: [{object: junglefowl, tag: null, consumed: true}, {object: sharp_stone, tag: weapon, consumed: false}]}
-  - {object: banana_stem, goal_tag: null, unit: hops, hops: 3, step_kind: interaction, step: fell, owner: abaca, inputs: [{object: abaca, tag: null, consumed: true}, {object: sharp_stone, tag: cutting_tool, consumed: false}]}
+  - {object: coconut_husk, goal_tag: null, unit: hops, hops: 3, step_kind: interaction, step: husk, owner: coconut, inputs: [{object: coconut, tag: null, consumed: true}, {object: sharp_stone, tag: cutting_tool, consumed: false}]}
   - {object: small_bone, goal_tag: null, unit: hops, hops: 4, step_kind: interaction, step: butcher, owner: junglefowl_carcass, inputs: [{object: junglefowl_carcass, tag: null, consumed: true}, {object: sharp_stone, tag: cutting_tool, consumed: false}]}
   - {object: rawhide, goal_tag: null, unit: hops, hops: 4, step_kind: interaction, step: butcher, owner: monkey_carcass, inputs: [{object: monkey_carcass, tag: null, consumed: true}, {object: sharp_stone, tag: cutting_tool, consumed: false}]}
-  - {object: plant_fiber, goal_tag: null, unit: hops, hops: 4, step_kind: interaction, step: strip, owner: banana_stem, inputs: [{object: banana_stem, tag: null, consumed: true}, {object: sharp_stone, tag: cutting_tool, consumed: false}]}
+  - {object: plant_fiber, goal_tag: null, unit: hops, hops: 4, step_kind: interaction, step: ret, owner: coconut_husk, inputs: [{object: coconut_husk, tag: null, consumed: true}, {object: stone, tag: null, consumed: false}]}
   - {object: yarn, goal_tag: null, unit: hops, hops: 5, step_kind: interaction, step: spin, owner: plant_fiber, inputs: [{object: plant_fiber, tag: null, consumed: true}, {object: plant_fiber, tag: null, consumed: true}]}
   - {object: bone_needle, goal_tag: null, unit: hops, hops: 5, step_kind: interaction, step: whittle, owner: small_bone, inputs: [{object: small_bone, tag: null, consumed: true}, {object: sharp_stone, tag: cutting_tool, consumed: false}]}
   - {object: cord, goal_tag: null, unit: hops, hops: 6, step_kind: interaction, step: ply, owner: yarn, inputs: [{object: yarn, tag: null, consumed: true}, {object: yarn, tag: null, consumed: true}]}

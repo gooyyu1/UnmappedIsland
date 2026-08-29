@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { installSampleAssetPack } from './asset-pack/install';
+import { LOAD_REPORT } from './loader/LoadReport';
 import { Settings } from './save/Settings';
 import { DeviceScreen } from './game/DeviceScreen';
 import { installErrorReport } from './game/errorReport';
@@ -30,9 +31,10 @@ setShapeDefaults(SHAPE_LOOK);
 setLaunchSeed(parseLaunchSeed(location.search));
 
 // アセットパックは、定義も絵も読み込まれる前に入れる（AssetPack.md 4節）。読むかどうかはスタート
-// 画面の設定が決める（StartScreen.md 画面構成 4）。取得に失敗したら起動しない——あるはずの物が
-// 無い世界で遊ぶことになるため、報告（errorReport）に出して止める。
-if (new Settings(localStorage).loadsAssetPack) await installSampleAssetPack();
+// 画面の設定が決める（StartScreen.md 画面構成 4）。取得に失敗したら起動しない——パックを指定したのに
+// 何も届いていないのは設定の誤りなので、報告（errorReport）に出して止める（AssetPack.md 2節）。
+// 届いた配布物が読めなかったときは、そのパックだけが外れて起動は続く（AssetPack.md 6.1節）。
+if (new Settings(localStorage).loadsAssetPack) await installSampleAssetPack(LOAD_REPORT);
 
 DeviceScreen.startGame('game', {
   type: Phaser.AUTO,

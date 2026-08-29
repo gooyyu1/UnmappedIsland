@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { Settings } from '../../src/save/Settings';
-import { assetPackInstallMatchesSetting } from '../../src/asset-pack/install';
 import { MemoryStorage } from '../support/MemoryStorage';
 
 /** ゲームを始める前にだけ変えられる設定（StartScreen.md 画面構成 4）。 */
@@ -38,19 +37,5 @@ describe('設定', () => {
     storage.setItem('unmapped-island:settings:asset-pack', 'yes');
 
     expect(new Settings(storage).loadsAssetPack).toBe(false);
-  });
-});
-
-/**
- * 設定と、実際に入っているパックの照合。食い違いは読み込み直しでしか解けない（AssetPack.md 4節）。
- * テストの中ではパックを入れないので、「読む」と言われた側が食い違いになる。
- */
-describe('設定とアセットパックの照合', () => {
-  it('読まない設定なら、入っていないことと一致する', () => {
-    expect(assetPackInstallMatchesSetting(false)).toBe(true);
-  });
-
-  it('読む設定なのに入っていなければ、一致しない', () => {
-    expect(assetPackInstallMatchesSetting(true)).toBe(false);
   });
 });

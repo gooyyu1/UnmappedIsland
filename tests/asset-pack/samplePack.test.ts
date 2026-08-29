@@ -22,7 +22,7 @@ describe('サンプルアセットパック', () => {
   const zip = new Uint8Array(readFileSync(SAMPLE_PACK_ZIP));
 
   async function pack(): Promise<AssetPack> {
-    return new AssetPack(await readZip(zip.buffer as ArrayBuffer));
+    return AssetPack.read(zip.buffer as ArrayBuffer);
   }
 
   it('pack.yaml で自分の識別子と版を名乗る', async () => {
