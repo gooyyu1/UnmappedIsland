@@ -59,7 +59,6 @@ island_unreached_need:
   - {object: monkey_carcass__cure_salted, unit: percent, share: 0.10}
   - {object: puncture_wound, unit: percent, share: 0.10}
   - {object: rawhide, unit: percent, share: 0.10}
-  - {object: salt, unit: percent, share: 0.10}
   - {object: sandy_beach, unit: percent, share: 0.10}
   - {object: wild_boar, unit: percent, share: 0.10}
   - {object: wild_boar_carcass, unit: percent, share: 0.10}

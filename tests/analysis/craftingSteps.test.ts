@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CraftingStep } from '../../src/analysis/CraftingStep';
+import type { CraftingStep, StepOutcome } from '../../src/analysis/CraftingStep';
 import { craftingStepsOf } from '../../src/analysis/craftingSteps';
 import { externalTickDeltasOf, rangeCyclesOf } from '../../src/analysis/rangeCycles';
 import { buildCraftingNetwork } from '../../src/codex-viewer/craftingGraph';
@@ -519,6 +519,59 @@ object_defs:
     it('同じ条件でも、その端に留まれる型では立つ', () => {
       // 空の容器のon_minは自分自身へ戻るだけなので、fillが0のままでいられる。
       expect(stepNamesOf('jar')).toContain('collect_rain');
+    });
+  });
+
+  /**
+   * 仕込んだ在庫を重みにした抽選の読み方の検証。**候補が自分の重みの値を自分で減らしている**なら、
+   * その値はつまみではなくプレイヤーが仕込む在庫で、宣言された初期値は「まだ何も仕込んでいない
+   * 状態」でしかない。そこで重みを読むと、設備が何を返すかを一度も数えないことになる。
+   */
+  describe('仕込んだ在庫を重みにした抽選', () => {
+    const YAML_STOCK = `
+object_defs:
+  salt: {tags: [item]}
+  shell: {tags: [item]}
+
+  pan:
+    tags: [fixture]
+    props:
+      # 仕込んだ在庫。汲むたびに増え、干し上がるたびに減るので初期値は空。
+      brine: {value: 0, range: {min: 0, max: 8}}
+      # 仕込む物ではないつまみ。宣言された値そのものが答えになる。
+      shell_weight: {value: 3}
+      drying_remaining:
+        value: 24
+        range: {min: 0, max: 24}
+        passives:
+          - add: {self: {drying_remaining: -1}}
+        on_min:
+          add: {self: {drying_remaining: 24}}
+          pick:
+            - weight: 0
+            - weight: {prop: shell_weight}
+              spawn: {object: shell, into: self}
+            - weight: {prop: brine}
+              add: {self: {brine: -1}}
+              spawn: {object: salt, into: self}
+`;
+    const stockCodex = new WorldCodexYamlLoader().load('stock.yaml', YAML_STOCK).buildAndReset();
+    const pan = stockCodex.objects.get(stockCodex.objectNames.getId('pan'));
+    const [drying] = rangeCyclesOf(pan);
+    const spawnedIn = (outcome: StepOutcome): string[] =>
+      outcome.spawns.map((spawn) => stockCodex.objectNames.getName(spawn.objectGlobalId));
+
+    it('在庫を減らす候補は、1回ぶん仕込んであるとして重みを読む', () => {
+      const salt = drying.step.outcomes.find((outcome) => spawnedIn(outcome).includes('salt'));
+
+      // 在庫の重みは1杯ぶんの1、つまみは3で、何も起きない回の0と合わせて4。
+      expect(salt?.probability).toBeCloseTo(1 / 4);
+    });
+
+    it('在庫を減らさない候補の重みは、宣言値のまま読む', () => {
+      const shell = drying.step.outcomes.find((outcome) => spawnedIn(outcome).includes('shell'));
+
+      expect(shell?.probability).toBeCloseTo(3 / 4);
     });
   });
 });
