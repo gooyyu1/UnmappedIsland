@@ -21,8 +21,8 @@ YAMLとずれます）。
 `capacity_ml`・`day_percent` など）。時間はすべて労働時間で、待ち時間は含みません。
 
 **`null` は「決まらない」ではなく、節ごとに意味が決まっています**——`device_count` と `days` は
-その経路に当てはまらないこと、`build_minutes` と `object_costs.total_minutes` は入手経路が無いこと、
-`devices` の `lifetime_property` と `lifetime_days` は朽ちないことを表します。
+その経路に当てはまらないこと、`build_minutes` は入手経路が無いこと、`object_costs.total_minutes` は
+総コストを出せないこと、`devices` の `lifetime_property` と `lifetime_days` は朽ちないことを表します。
 
 | 節 | 中身 |
 | --- | --- |
@@ -184,10 +184,14 @@ YAMLとずれます）。
 `days` は、生存に要る労働を引いた残り（1日の余剰時間）で割った日数。**目標までに何日かかるか**が
 これで出る。道具（`prerequisites`）の時間は総コストに含めない（#550のまま）。
 
-- **`total_minutes: null`** は総コストを出せないもの。島のどこにも作り方も見つけ方も無いか、
-  **朽ちない設備の待ち生産でしか得られない**か（按分できないので工程として数えられない、
-  「待って得る生産の数え方」）のどちらか。前者では `missing`（足りない入力）がそのまま埋めるべき
-  穴になり、`missing` が空なら作る工程そのものが無い。後者は `devices` に行があることで見分ける。
+- **`total_minutes: null`** は総コストを出せないもの。**2つある理由を分けるのが
+  `only_from_everlasting_device`** です。
+- **`only_from_everlasting_device: false`** は、島のどこにも作り方も見つけ方も無いもの。
+  `missing`（足りない入力）がそのまま埋めるべき穴になり、`missing` が空なら作る工程そのものが無い。
+- **`only_from_everlasting_device: true`** は、**朽ちない設備の待ち生産でしか得られない**もの
+  （按分できないので工程として数えられない、「待って得る生産の数え方」）。**入手経路はあり**、
+  周期とレートは `devices` に出ています。設備が作れないか入力が揃わないなら立ちません——値段が
+  付かない理由が按分ではなく入手経路のほうにあるので、上の行として出ます。
 - **`blocked_by_tool: true`** は、材料は揃うが要る道具に入手経路が無いもの。**総コストは出るが、
   実際には作れない**——道具の時間を総コストへ按分しない決まり（#550）の裏返し。無い道具は
   `prerequisites` の `minutes: null` の行。

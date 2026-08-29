@@ -268,10 +268,20 @@ export interface RouteSummary {
 export interface ObjectCost {
   readonly objectName: string;
 
-  /** 素材の採集から数えた総労働（分）。島のどこにも入手経路が無ければundefined。 */
+  /**
+   * 素材の採集から数えた総労働（分）。出せなければundefined——島のどこにも入手経路が無いか、
+   * 按分できない待ち生産でしか得られない（onlyFromEverlastingDevice）かのどちらか。
+   */
   readonly minutes: number | undefined;
   readonly exploreMinutes: number | undefined;
   readonly craftMinutes: number | undefined;
+
+  /**
+   * 総コストが出ないのが、**朽ちない設備の待ち生産でしか得られないから**か。真なら入手経路はあり、
+   * 周期とレートは待ち生産表（devices）に出ている——按分できないので値段が付かないだけ
+   * （BalanceStats.md「待って得る生産の数え方」）。
+   */
+  readonly onlyFromEverlastingDevice: boolean;
 
   /** 最も安い作り方（上流→下流）。入手経路が無ければ空。 */
   readonly steps: readonly RouteStep[];
@@ -575,6 +585,7 @@ function objectCosts(
       minutes: cost === undefined ? undefined : totalOf(cost),
       exploreMinutes: cost?.exploreMinutes,
       craftMinutes: cost?.craftMinutes,
+      onlyFromEverlastingDevice: islandWide.everlastingDeviceProducts.has(def.globalId),
       steps: [...route].reverse().map((ref) => ({ objectName: ref.def.name, stepName: ref.step.name })),
       prerequisites,
       missing: cost === undefined ? islandWide.missingInputsFor(def.globalId) : [],
@@ -1204,6 +1215,12 @@ class Acquisition {
   readonly producedObjects = new Set<number>();
 
   /**
+   * 朽ちない設備の待ち生産でしか得られない型。**値段が付かないのは入手経路が無いからではない**
+   * ——工程も設備も在って、按分の分母（寿命）だけが無い（「待って得る生産の数え方」）。
+   */
+  readonly everlastingDeviceProducts = new Set<number>();
+
+  /**
    * その型を最も安く手に入れる道筋が、他の土地の産物を含むか。**入手連鎖を伝って残す**——
    * 熟したヤシの実を持ち込んで加工した果肉は、果肉そのものがこの土地で作れても「持ち込みが要る」。
    */
@@ -1234,28 +1251,38 @@ class Acquisition {
     for (const ref of steps)
       for (const objectGlobalId of expectedSpawns(ref.step).keys()) this.producedObjects.add(objectGlobalId);
     this.lowerCostsUntilStable();
+    this.collectEverlastingDeviceProducts();
   }
 
   /**
    * この工程を1回実行するのに**プレイヤーが払う**時間（労働時間＋消費する入力の入手時間）。
-   * 揃わなければundefined。待ち時間は含めない——待っている間に他のことができるため。
+   * 待ち時間は含めない——待っている間に他のことができるため。
+   *
+   * undefinedになるのは、入力が揃わないときと、**朽ちない設備の周期で按分できない**とき
+   * （everlastingDeviceProducts）。
    */
   stepCost(ref: StepRef): StepCost | undefined {
+    const resolved = this.inputCost(ref);
+    if (resolved === undefined || ref.cycle?.repeats !== true) return resolved;
+
+    // 繰り返す仕掛けは、1周期ぶんだけ設備を使い切る。朽ちない設備は按分できない（待てば無限に得られる）。
+    const { periodMinutes, lifetime } = ref.cycle;
+    const device = this.costByObject.get(ref.def.globalId);
+    if (lifetime === undefined || device === undefined) return undefined;
+    return {
+      ...resolved,
+      cost: addCost(resolved.cost, scaleCost(device, periodMinutes / lifetime.minutes)),
+    };
+  }
+
+  /** 工程の労働と、消費する入力を揃える時間。設備の按分（stepCost）は含まない。 */
+  private inputCost(ref: StepRef): StepCost | undefined {
     const owned = isLocation(this.codex, ref.def);
     let cost: Cost = {
       exploreMinutes: owned ? ref.step.laborMinutes : 0,
       craftMinutes: owned ? 0 : ref.step.laborMinutes,
     };
     let imported = false;
-
-    // 繰り返す仕掛けは、1周期ぶんだけ設備を使い切る。朽ちない設備は按分できない（待てば無限に得られる）。
-    if (ref.cycle?.repeats === true) {
-      const lifetime = ref.cycle.lifetime;
-      if (lifetime === undefined) return undefined;
-      const device = this.costByObject.get(ref.def.globalId);
-      if (device === undefined) return undefined;
-      cost = addCost(cost, scaleCost(device, ref.cycle.periodMinutes / lifetime.minutes));
-    }
 
     for (const input of ref.step.inputs) {
       if (!input.consumed) continue;
@@ -1467,6 +1494,22 @@ class Acquisition {
       if (via !== undefined && context.consumesOwnOutput(via, objectGlobalId, visited)) return true;
     }
     return false;
+  }
+
+  /**
+   * 値段が付かないまま残った型のうち、朽ちない設備が待ち生産で返すものを控える
+   * （everlastingDeviceProducts）。**設備が手に入り、入力も揃うものだけ**——どちらかが欠けていれば、
+   * 値段が付かない理由は按分ではなく入手経路のほうにある。
+   */
+  private collectEverlastingDeviceProducts(): void {
+    for (const ref of this.steps) {
+      if (ref.cycle?.repeats !== true || ref.cycle.lifetime !== undefined) continue;
+      if (!this.costByObject.has(ref.def.globalId) || this.inputCost(ref) === undefined) continue;
+
+      for (const [objectGlobalId, count] of expectedSpawns(ref.step))
+        if (count > 0 && !this.costByObject.has(objectGlobalId))
+          this.everlastingDeviceProducts.add(objectGlobalId);
+    }
   }
 
   private lowerCostsUntilStable(): void {

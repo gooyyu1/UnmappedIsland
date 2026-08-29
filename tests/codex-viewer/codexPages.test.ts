@@ -535,6 +535,9 @@ const COST_LABELS: ShownFields<ObjectCost> = {
   // 足りない入力は、表の前に出す「入手経路が無いもの」の一覧が持つ。この表は作れるものだけを並べる
   // ので、ここへ来る行では常に空。
   missing: null,
+
+  // 総コストの出ない行を2つの一覧へ振り分ける印で、表の列ではない。ここへ来る行では常に偽。
+  onlyFromEverlastingDevice: null,
 };
 
 /** 雨で溜まる水の表の列と、`RainWaterRow`のフィールドの対応。 */
