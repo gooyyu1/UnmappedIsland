@@ -9,6 +9,7 @@ import { DescriptionPane } from './DescriptionPane';
 import type { ExplorationContent } from './ExplorationPane';
 import { ExplorationPane } from './ExplorationPane';
 import type { ObjectWindowLane, ObjectWindowLaneRole, ObjectWindowPane } from './ObjectWindowPane';
+import { OpenPane } from './OpenPane';
 import type { PropertyCategory } from './PropertiesPane';
 import { PropertiesPane } from './PropertiesPane';
 import type { ObjectWindowSlot } from './SlotPane';
@@ -146,10 +147,7 @@ export class ObjectWindow {
   private readonly tabSpecs: readonly TabSpec[];
 
   /** 今開いているタブの中身。切り替えのたびに捨てて作り直す。 */
-  private pane: ObjectWindowPane | undefined;
-
-  /** 借りた札が最後に居た枠。札の枠を持たない面では描かないので、閉じたときの出発点として控える。 */
-  private lastCardRect: Rect | undefined;
+  private readonly pane = new OpenPane();
 
   /** タブのボタン（選択中だけ塗りを変えるので、作り直さず塗りだけ差し替える）。 */
   private readonly tabs: TabButtons;
@@ -266,12 +264,12 @@ export class ObjectWindow {
 
   /** 今開いている面が持つレーン（役割つき）。面がレーンを持たなければ空。 */
   get lanes(): readonly ObjectWindowLane[] {
-    return this.pane?.lanes ?? [];
+    return this.pane.lanes;
   }
 
   /** その役割のレーン。今開いている面が持たなければundefined。 */
   laneOf(role: ObjectWindowLaneRole): CardLane | undefined {
-    return this.lanes.find((entry) => entry.role === role)?.lane;
+    return this.pane.laneOf(role);
   }
 
   /**
@@ -282,9 +280,12 @@ export class ObjectWindow {
     return this.openedTabKey;
   }
 
-  /** 借りた札の枠。運んでくる先・返すときの出発点で、**別のタブへ移っても最後の枠を覚えている**。 */
-  get cardRect(): Rect | undefined {
-    return this.laneOf('card')?.cellRect(0) ?? this.lastCardRect;
+  /**
+   * その役割のレーンの、添字の位置の枠。借りた札を運んでくる先・返すときの出発点で、**別のタブへ
+   * 移っても、窓を閉じたあとも最後の枠を覚えている**（OpenPane）。
+   */
+  cellRect(role: ObjectWindowLaneRole, index: number): Rect | undefined {
+    return this.pane.cellRect(role, index);
   }
 
   /**
@@ -293,7 +294,7 @@ export class ObjectWindow {
    */
   setProperties(properties: readonly PropertyCategory[]): void {
     this.properties = properties;
-    this.pane?.refresh();
+    this.pane.refresh();
   }
 
   /**
@@ -304,7 +305,7 @@ export class ObjectWindow {
    */
   setExploration(exploration: ExplorationContent): void {
     this.exploration = exploration;
-    this.pane?.refresh();
+    this.pane.refresh();
   }
 
   /**
@@ -406,18 +407,13 @@ export class ObjectWindow {
    * 要求のほうを覚えると、出ていないタブを記憶に書き、その場所を引こうとすることになる。
    */
   private replacePane(tab: string | undefined): void {
-    // 札の枠は面と一緒に消えるので、消える前に位置を控える（cardRect）。
-    const card = this.laneOf('card');
-    if (card !== undefined) this.lastCardRect = card.cellRect(0);
-    this.pane?.destroy();
-
     // 説明のタブは必ず在り、必ず先頭（buildTabs）。
     const spec = this.tabSpecs.find((candidate) => candidate.key === tab) ?? this.tabSpecs[0];
     this.openedTabKey = spec.key;
 
     this.tabs.select(this.tabSpecs.indexOf(spec));
 
-    this.pane = spec.create(this.content);
+    this.pane.replace(() => spec.create(this.content));
   }
 
   /**
@@ -518,8 +514,7 @@ export class ObjectWindow {
   }
 
   close(): void {
-    this.pane?.destroy();
-    this.pane = undefined;
+    this.pane.close();
     this.tooltip.destroy();
     for (const object of [...this.ownedObjects, ...this.actionObjects]) object.destroy();
     this.ownedObjects.length = 0;

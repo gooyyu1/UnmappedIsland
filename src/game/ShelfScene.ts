@@ -122,6 +122,7 @@ export class ShelfScene extends ResponsiveScene {
       name: this.locale.object(name).displayName,
       art: this.codex.artNameOf(name),
       kind: 'item',
+      artifact: true,
     };
   }
 }

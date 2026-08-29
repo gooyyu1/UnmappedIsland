@@ -357,16 +357,33 @@ export type CardKind =
   'location' | 'fixture' | 'item' | 'food' | 'container' | 'tool' | 'injury' | 'animal' | 'character';
 
 /**
- * 枠の色を決める見た目の分類。種別に、製作中オブジェクトの**青写真**を足したもの。
+ * 枠の色を決める見た目の分類。種別に、製作中オブジェクトの**青写真**と、アーティファクトの**金**を
+ * 足したもの。
  *
- * 青写真は種別と並ぶ選択肢ではなく、**種別を覆って**掛かる（作りかけの籠は青写真であってアイテムの
- * 枠を持たない）。物の型が決める種別（CardKind）とは別の型にしてあるのはそのため。
+ * どちらも種別と並ぶ選択肢ではなく、**種別を覆って**掛かる（作りかけの籠は青写真であってアイテムの
+ * 枠を持たず、金の聖杯はアイテムのまま金の枠を持つ）。物の型が決める種別（CardKind）とは別の型に
+ * してあるのはそのため。
  */
-export type CardFrameKind = CardKind | 'blueprint';
+export type CardFrameKind = CardKind | 'blueprint' | 'artifact';
 
-/** 分類ごとの枠の面と縁の色。タイトルの板と文字の色はここから引く（cardFrameColors）。 */
+/**
+ * タイトルの板の帯（上から順）を、枠の面から縁の側へどれだけ暗くするか。**枠より暗くする**——枠から
+ * 強調したいのは絵であって、名前は枠の一部（CardView.md 2節 枠の色は種別で変える）。
+ *
+ * 平らな板は帯1本。**金だけが縞を持つ**——金が金に見えるのは面が一様に光るからではなく、明暗の縞
+ * として光を返すからで、単色では他の枠と同じ「ただ黄色い板」にしかならない（同2.2節）。上から
+ * 順に「強い反射・翳り・最も暗い・照り返し・翳り」で、**最も暗い帯が中央**に来る——名前はそこへ
+ * 載るので、文字の背後が帯の中で最も暗いほうが読める。
+ */
+const FLAT_PLATE_SHADES: readonly number[] = [0.55];
+const GOLD_PLATE_SHADES: readonly number[] = [0.15, 0.55, 0.9, 0.35, 0.75];
+
+/**
+ * 分類ごとの枠の面と縁の色。タイトルの板と文字の色はここから引く（cardFrameColors）。
+ * 板の帯を宣言しない分類は平らな板（FLAT_PLATE_SHADES）。
+ */
 const CARD_FRAME_BASE_COLORS: Readonly<
-  Record<CardFrameKind, { readonly face: number; readonly line: number }>
+  Record<CardFrameKind, { readonly face: number; readonly line: number; readonly plate?: readonly number[] }>
 > = {
   // 場所を映す札（現在地と道）の琥珀。
   location: { face: 0xce943e, line: 0x7a5018 },
@@ -388,13 +405,11 @@ const CARD_FRAME_BASE_COLORS: Readonly<
   character: { face: 0x6c7c9c, line: 0x38445e },
   // キャラクタの青より彩度を上げる。並んだときに「くすんだ青」と「青写真の青」が混ざらない差を取る。
   blueprint: { face: 0x3f7ec2, line: 0x1d4374 },
+  // アーティファクトの金。**食事の黄より彩度を上げ、明度を下げる**——同じアイテムレーンに並ぶので、
+  // 黄色い実の札と「金属の金」が混ざらないところまで離す。縁を暗い青銅まで落としてあるのは、板の縞
+  // （GOLD_PLATE_SHADES）が桟の面と縁の間で振れるため——ここが浅いと縞が出ない。
+  artifact: { face: 0xd9a441, line: 0x5e3f0d, plate: GOLD_PLATE_SHADES },
 };
-
-/**
- * タイトルの板を、枠の面から縁の側へどれだけ暗くするか。**枠より暗くする**——枠から強調したいのは
- * 絵であって、名前は枠の一部（CardView.md 2節 枠の色は種別で変える）。
- */
-const CARD_PLATE_SHADE = 0.55;
 
 /** 板の文字を、紙の白から枠の面の側へどれだけ染めるか（板の上で浮かせないため）。 */
 const CARD_PLATE_INK_TINT = 0.15;
@@ -408,18 +423,21 @@ export interface CardFrameColors {
   readonly face: number;
   /** 枠と窓の縁をなぞる線。 */
   readonly line: number;
-  /** タイトルの板。 */
-  readonly plate: number;
+  /**
+   * タイトルの板の帯（上から順に等分して塗る、Card.drawFrame）。**1本なら平らな板**で、複数なら
+   * 明暗の縞になる。板の描き方はこの並びだけで決まり、描く側は何の枠かを知らない。
+   */
+  readonly plate: readonly number[];
   /** 板に載せる名前の文字。 */
   readonly ink: number;
 }
 
 export function cardFrameColors(kind: CardFrameKind): CardFrameColors {
-  const { face, line } = CARD_FRAME_BASE_COLORS[kind];
+  const { face, line, plate = FLAT_PLATE_SHADES } = CARD_FRAME_BASE_COLORS[kind];
   return {
     face,
     line,
-    plate: mixColor(face, line, CARD_PLATE_SHADE),
+    plate: plate.map((shade) => mixColor(face, line, shade)),
     ink: mixColor(CARD_PAPER, face, CARD_PLATE_INK_TINT),
   };
 }

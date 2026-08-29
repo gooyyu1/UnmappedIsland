@@ -28,8 +28,8 @@ const CHANGE_GAP = 8;
 const CHANGE_SIZE = 34;
 const PIN_SIZE = 26;
 
-/** 固定表示の印。 */
-const PIN_MARK = '📌';
+/** 固定表示の印。行の左と、付け外しのボタン（StatusDetailWindow）で同じものを出す。 */
+export const PIN_MARK = '📌';
 
 /** 並び順が変わったときに、その位置まで動く時間。 */
 const MOVE_DURATION_MS = 250;
@@ -150,11 +150,8 @@ export interface StatusContent {
   /** その行動の途中の値か（trueの間は変化の帯を動かさず、合計の変化量を残す。ProgressBar.setRatio参照）。 */
   readonly midAction?: boolean;
 
-  /** ユーザが固定表示にしているか。 */
+  /** ユーザが固定表示にしているか。行の左に印を出すかが決まる（付け外しは詳細ウィンドウ）。 */
   readonly pinned?: boolean;
-
-  /** 名前をタップしたときの固定表示のトグル。持たない場合、名前はタップに反応しない。 */
-  readonly onTogglePin?: () => void;
 
   /**
    * ステータス詳細ウィンドウ（Windows.md 8節）に出す内容。バー自身は使わず、開く側へそのまま渡る。
@@ -162,7 +159,7 @@ export interface StatusContent {
    */
   readonly detail?: StatusDetail;
 
-  /** バーをタップしたときに詳細を開く。持たない場合、バーはタップに反応しない。 */
+  /** 行をタップしたときに詳細を開く。持たない場合、行はタップに反応しない。 */
   readonly onOpenDetail?: () => void;
 }
 
@@ -192,8 +189,8 @@ export interface StatusBarOptions {
  * ステータス1件分の「固定表示の印＋見出し＋バー＋増減」。行の高さはバーの高さと等しい。
  * 割合を定義できないプロパティは、バーの代わりに実効値そのものを出す。
  *
- * 危険域・致命的域のバーは枠を明滅させる（StatusArea.md）。見出しの欄をタップすると
- * 固定表示が切り替わる。
+ * 危険域・致命的域のバーは枠を明滅させる（StatusArea.md）。行はどこをタップしても、その
+ * ステータスの詳細が開く。
  */
 export class StatusBar extends Phaser.GameObjects.Container {
   static height(metrics: ScreenMetrics): number {
@@ -250,17 +247,6 @@ export class StatusBar extends Phaser.GameObjects.Container {
 
     for (const text of createLabel(scene, metrics, content, label)) this.add(text);
 
-    // 見出しは小さすぎてタップしにくいため、印の欄と見出しの欄いっぱいの当たり判定を別に置く。
-    const togglePin = content.onTogglePin;
-    if (togglePin !== undefined) {
-      const hitArea = scene.add
-        .zone(0, 0, pinWidth + labelWidth, height)
-        .setOrigin(0)
-        .setInteractive({ useHandCursor: true });
-      this.add(hitArea);
-      onPressRelease(hitArea, { onRelease: togglePin });
-    }
-
     if (content.ratio !== undefined) {
       this.bar = new ProgressBar(scene, metrics, barX, 0, barWidth, height, content.ratio, {
         worsensUpward: this.worsensUpward,
@@ -278,18 +264,17 @@ export class StatusBar extends Phaser.GameObjects.Container {
       this.add(this.valueText);
     }
 
-    // バーの側をタップすると詳細が開く。見出しの側（印・絵・名前）は固定表示の切り替えのままで、
-    // 1本の行の中で「何のステータスか」を押すか「その値」を押すかが2つの操作を分ける。
+    // 行はどこをタップしても詳細が開く（StatusArea.md 3節）。
     //
     // 呼ぶのは**今の**内容の入口。行は作り直さず中身だけ差し替わる（setContent）ので、作った時点の
     // 入口を捕まえると、開いた詳細だけが行動する前の状態のままになる。
     if (content.onOpenDetail !== undefined) {
-      const barHit = scene.add
-        .zone(barX, 0, Math.max(0, width - barX), height)
+      const hitArea = scene.add
+        .zone(0, 0, width, height)
         .setOrigin(0)
         .setInteractive({ useHandCursor: true });
-      this.add(barHit);
-      onPressRelease(barHit, { onRelease: () => this.content.onOpenDetail?.() });
+      this.add(hitArea);
+      onPressRelease(hitArea, { onRelease: () => this.content.onOpenDetail?.() });
     }
 
     this.changeMark = scene.add

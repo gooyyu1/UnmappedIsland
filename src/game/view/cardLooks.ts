@@ -386,6 +386,12 @@ export function cardLooksOf(
   };
 
   /**
+   * アーティファクトか（`artifact`タグ、ContentSkeleton.md 6節）。種別（kindOf）を覆って金の枠に
+   * なる（CardView.md 2.2節）ので、種別を決める並びには入らない——金の聖杯はアイテムのまま金で出る。
+   */
+  const isArtifact = (def: ObjectDef): boolean => def.hasTag(codex.vocabulary.world.artifactTagId);
+
+  /**
    * 絵がまだ無い物の代役アイコン。**型あての代役を先に、無ければ種別の代役**——キャラクタは絵が
    * 入るまで一人ずつ見分けたいので、型ごとの表（characterCard.ts）を持っている。
    */
@@ -426,6 +432,7 @@ export function cardLooksOf(
       name: typeNameOf(def),
       art: artOf(def),
       kind: kindOf(def),
+      artifact: isArtifact(def),
       inProgress: def.isInProgress,
     };
   };
@@ -437,6 +444,7 @@ export function cardLooksOf(
     icon: iconOf(object.def),
     name: nameOf(object),
     kind: kindOf(object.def),
+    artifact: isArtifact(object.def),
     // 作りかけかどうかは物の型が決める。設置物として地面に据わっていても手に持っていても、
     // 同じ「まだ物になっていない」カードとして出す。
     inProgress: object.def.isInProgress,

@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import { addTextButton } from './Button';
+import { Button, addTextButton, textButtonBoxStyle } from './Button';
 import {
   ACTION_HEIGHT,
   CONTENT_GAP,
@@ -15,6 +15,7 @@ import { objectTexture } from '../../art/objectArt';
 import { ProgressBar } from './ProgressBar';
 import { addInputBlockingPanel, drawBox } from '../../ui/shapes';
 import { onPressRelease } from '../../ui/tap';
+import { PIN_MARK } from './StatusBar';
 import type { StatusContent, StatusInfluence } from './StatusBar';
 import { COLOR, SIZE } from '../looks/theme';
 import { uiText } from '../../locale/uiTexts';
@@ -22,6 +23,16 @@ import { uiText } from '../../locale/uiTexts';
 /** 見出しの絵と表示名。 */
 const HEADER_ICON_SIZE = 52;
 const TITLE_SIZE = 34;
+
+/** 見出しの行の右端に置く、固定表示のボタン（正方形。最小タップ領域と同じ大きさ）。 */
+const PIN_BUTTON_SIZE = SIZE.iconButton;
+const PIN_MARK_SIZE = 40;
+
+/**
+ * 固定表示にしていないときの印の薄さ。**絵文字はグレースケールにできない**ので、濃さで代える
+ * （最終的に画像へ差し替える）。
+ */
+const UNPINNED_ALPHA = 0.35;
 
 /** 意味の説明文。 */
 const DESCRIPTION_SIZE = 26;
@@ -91,16 +102,23 @@ export interface StatusDetailWindowOptions {
   /** 影響の枠をタップしたときに、その相手のステータスの詳細を開く（相手がプロパティのときだけ）。 */
   readonly onOpenStatus: (key: string) => void;
 
+  /**
+   * 見出しの行のボタンで固定表示を付け外す。**値を持つのはここではない**ので、切り替わった結果は
+   * setPinnedで返ってくる。
+   */
+  readonly onTogglePin: () => void;
+
   readonly onClose: () => void;
 }
 
 /**
  * ステータス1件の意味と、他のステータスとのやり取りを見せる子ウィンドウ
- * （[`Windows.md`](../../../docs/ui/Windows.md) 8節）。ステータスエリアとプロパティのタブの
- * バーをタップすると開く。
+ * （[`Windows.md`](../../../docs/ui/Windows.md) 8節）。ステータスエリアとプロパティのタブの行を
+ * タップすると開く。
  *
  * 中身を出し入れしない読み取り専用のウィンドウなので、覆いは画面全体に敷く（後ろのカードを掴めなく
- * しても、掴む対象がこの窓の外にしか無い）。
+ * しても、掴む対象がこの窓の外にしか無い）。固定表示の付け外しだけはここから頼めるが、値そのものは
+ * 持たない（setPinned）。
  */
 export class StatusDetailWindow {
   private readonly ownedObjects: Phaser.GameObjects.GameObject[] = [];
@@ -108,9 +126,15 @@ export class StatusDetailWindow {
   /** 影響の枠から相手の詳細へ渡り歩く入口（枠を作るのは寸法が決まった後なので、先に控える）。 */
   private readonly onOpenStatus: (key: string) => void;
 
+  /** 固定表示のボタンと、その上の印。付いているかどうかを映すのに、開いた後も持っておく。 */
+  private readonly metrics: ScreenMetrics;
+  private readonly pinButton: Button;
+  private readonly pinMark: Phaser.GameObjects.Text;
+
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: StatusDetailWindowOptions) {
     const { content } = options;
     this.onOpenStatus = options.onOpenStatus;
+    this.metrics = metrics;
     const detail = content.detail;
 
     const padding = metrics.px(WINDOW_PADDING);
@@ -166,7 +190,8 @@ export class StatusDetailWindow {
       contentWidth,
     );
 
-    const headerHeight = Math.max(metrics.px(HEADER_ICON_SIZE), title.height);
+    const pinSize = metrics.px(PIN_BUTTON_SIZE);
+    const headerHeight = Math.max(metrics.px(HEADER_ICON_SIZE), title.height, pinSize);
     const windowHeight =
       padding * 2 +
       headerHeight +
@@ -187,13 +212,30 @@ export class StatusDetailWindow {
     const left = window.x + padding;
     let y = window.y + padding;
 
-    // 見出しは「絵・表示名」の1行。
+    // 見出しは「絵・表示名」の1行で、右端が固定表示のボタン。
     const icon = addLabel(scene, metrics, left, y + headerHeight / 2, content.icon ?? '', {
       size: HEADER_ICON_SIZE,
     }).setOrigin(0, 0.5);
     this.ownedObjects.push(icon);
     title.setPosition(left + icon.width + metrics.px(12), y + (headerHeight - title.height) / 2);
     this.ownedObjects.push(title);
+
+    this.pinButton = new Button(
+      scene,
+      {
+        x: window.x + window.width - padding - pinSize,
+        y: y + (headerHeight - pinSize) / 2,
+        width: pinSize,
+        height: pinSize,
+      },
+      textButtonBoxStyle(metrics, { fill: COLOR.button }),
+      options.onTogglePin,
+    );
+    this.pinMark = addLabel(scene, metrics, 0, 0, PIN_MARK, { size: PIN_MARK_SIZE });
+    this.pinButton.addCentered(this.pinMark);
+    this.ownedObjects.push(this.pinButton);
+    this.setPinned(content.pinned === true);
+
     y += headerHeight + gap;
     description.setPosition(left, y);
     this.ownedObjects.push(description);
@@ -256,6 +298,17 @@ export class StatusDetailWindow {
         },
       ),
     );
+  }
+
+  /**
+   * 固定表示が今どうなっているかを映す。**付いていれば台紙の塗りを反転**（選ばれているボタンと
+   * 同じ流儀）し、付いていない間は印を薄くする。
+   */
+  setPinned(pinned: boolean): void {
+    this.pinButton.setBoxStyle(
+      textButtonBoxStyle(this.metrics, { fill: pinned ? COLOR.buttonActive : COLOR.button }),
+    );
+    this.pinMark.setAlpha(pinned ? 1 : UNPINNED_ALPHA);
   }
 
   close(): void {
