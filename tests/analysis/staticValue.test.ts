@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { StaticValueResolver } from '../../src/analysis/staticValue';
 import { staticValueOf } from '../../src/analysis/staticValue';
+import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
@@ -53,5 +55,44 @@ object_defs:
     expect(valueOf(codex, 'severity', 'lowest')).toBe(11);
     // 自分の振れ幅（20-10）を下端へ足し戻すだけでは21になり、土台のぶんが下端のまま残る。
     expect(valueOf(codex, 'severity', 'highest')).toBe(23);
+  });
+});
+
+/**
+ * **祖先（置かれている土地）が入れる土台のロールも、訊かれた端で読む**ことの検査（issue #1192）。
+ *
+ * `self`の枝は端を辿るのに、`ancestor`・`dragged`の枝へ委ねた時点で端が消えると、上端の問い合わせが
+ * 下端の答えを混ぜて返す——足し戻しでは直せない、#1179と同じ形の取りこぼし。
+ */
+describe('外の文脈が入れる土台の初期値', () => {
+  const yaml = `
+object_defs:
+  meadow:
+    props:
+      wind: {value: {min: 10, max: 30}}
+
+  kite:
+    tags: [item]
+    props:
+      lift:
+        value: {min: 1, max: 3}
+        base: {subject: ancestor, prop: wind}
+`;
+
+  const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+
+  function defOf(name: string): ObjectDef {
+    return codex.objects.get(codex.objectNames.getId(name));
+  }
+
+  /** 祖先の宣言値を答える手立て（balanceTablesのancestorValueResolverと同じ形）。 */
+  const ancestor: StaticValueResolver = (root, propertyGlobalId, end) =>
+    root === 'ancestor' ? staticValueOf(defOf('meadow'), propertyGlobalId, end) : undefined;
+
+  it('祖先の土台のロールも、訊かれた端で読む', () => {
+    const lift = codex.propertyNames.getId('lift');
+
+    expect(staticValueOf(defOf('kite'), lift, 'lowest', ancestor)).toBe(11);
+    expect(staticValueOf(defOf('kite'), lift, 'highest', ancestor)).toBe(33);
   });
 });

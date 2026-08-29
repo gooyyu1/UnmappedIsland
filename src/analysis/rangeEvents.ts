@@ -1,7 +1,7 @@
 import type { PropertyDef, RangeEventLabel } from '../domain/PropertyDef';
 import type { StepOutcome } from './CraftingStep';
 import { destroysRoot, readEffect } from './effectOutcomes';
-import type { StaticValueResolver } from './staticValue';
+import type { EndBoundValueResolver } from './staticValue';
 
 /**
  * range系イベント（6.3節）が端で何をするかを、実行時のオブジェクトを使わずに読んだもの。
@@ -20,7 +20,7 @@ export interface RangeEventReadout {
 /** そのプロパティが宣言しているrange系イベントを、端で起こることまで開いて読む。 */
 export function rangeEventReadouts(
   propertyDef: PropertyDef,
-  resolve: StaticValueResolver,
+  resolve: EndBoundValueResolver,
 ): readonly RangeEventReadout[] {
   const readouts: RangeEventReadout[] = [];
   for (const [label, effect] of propertyDef.rangeEvents()) {
@@ -51,7 +51,7 @@ export function rangeEventReadouts(
 export function rangeEventAt(
   propertyDef: PropertyDef,
   value: number,
-  resolve: StaticValueResolver,
+  resolve: EndBoundValueResolver,
 ): RangeEventReadout | undefined {
   // どちらの端に達したかはプロパティ自身が答える（PropertyDef.rangeEventLabelsAt）。ここが読むのは、
   // その端で何が起こるかだけ。
