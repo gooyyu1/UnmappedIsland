@@ -1,5 +1,5 @@
 import type { ObjectDef } from '../domain/ObjectDef';
-import type { RangeEventLabel } from '../domain/PropertyDef';
+import type { PropertyDef, RangeEventLabel } from '../domain/PropertyDef';
 import type { TickDelta, TickGate } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { CraftingStep } from './CraftingStep';
@@ -41,12 +41,22 @@ export interface RangeCycle {
   /**
    * 端へ届くまでの時間（分）。**同時に成立しうる条件（8.2節）の組み合わせのうち、端へ最も遅く
    * 届くもの**の値——罠の耐久は地面にある間ずっと減るが、獲物を抱えている間だけの上乗せは
-   * 常時ではない。
+   * 常時ではない。生成時のロール（6.2節）は端へ近い側に出た場合で見る（ticksAcrossRoll）。
    */
   readonly minutes: number;
 
   /** 同じ組み合わせのうち、端へ最も速く届くものの時間（分）。組み合わせが1通りならminutesと等しい。 */
   readonly shortestMinutes: number;
+
+  /**
+   * **生成時のロール（6.2節）が端から遠い側に出た場合**の時間（分）。ロールを持たない値では
+   * minutesと等しい。
+   *
+   * 条件つきの幅（minutes〜shortestMinutes）とは別の軸なので、1つの幅へ畳まない——条件が重なった
+   * のか重く出たのかが読めなくなる。値が戻って繰り返す周期では初期値が効かないので、ここでも
+   * minutesと等しい。
+   */
+  readonly longestMinutes: number;
 
   readonly repeats: boolean;
   readonly destroysSelf: boolean;
@@ -95,9 +105,11 @@ export function rangeCyclesOf(
         if (pace === undefined) continue;
 
         const { slowest, fastest } = pace;
-        const ticks = ticksToRangeEnd(propertyDef, value, slowest);
-        const shortestTicks = ticksToRangeEnd(propertyDef, value, fastest);
-        if (ticks === undefined || shortestTicks === undefined) continue;
+        const slowRoll = ticksAcrossRoll(propertyDef, value, slowest);
+        const ticks = slowRoll.at(0);
+        const longestTicks = slowRoll.at(-1);
+        const shortestTicks = ticksAcrossRoll(propertyDef, value, fastest).at(0);
+        if (ticks === undefined || longestTicks === undefined || shortestTicks === undefined) continue;
 
         // 外からの増減が止まる前に端へ届かないなら、その仕掛けは成立しない——小さな獲物は罠の傷でも
         // 失血で死ぬが、血の多い獲物は傷が固まるほうが先になる。
@@ -111,6 +123,7 @@ export function rangeCyclesOf(
           minutes: period * MINUTES_PER_TICK,
           shortestMinutes:
             (repeats ? readout.expectedReturnToSelf / Math.abs(fastest) : shortestTicks) * MINUTES_PER_TICK,
+          longestMinutes: (repeats ? period : longestTicks) * MINUTES_PER_TICK,
           repeats,
           destroysSelf: readout.destroysSelf,
           drivenBy: driver?.sourceGlobalId,
@@ -145,6 +158,34 @@ export function rangeCyclesOf(
     }
   }
   return cycles;
+}
+
+/**
+ * その速さで端へ届くまでのtick数を、**生成時のロール（6.2節）の両端で**測って短い順に並べたもの。
+ *
+ * **どちらのロールが遠いかは、向かう端で裏返る**——下端へ向かうなら重く出たほうが、上端へ向かう
+ * なら軽く出たほうが遠い。片方だけ長さを見ると、向きによって幅のどちらの端を落とすかが変わる。
+ * 生まれた時点で端に居る側は長さを持たないので数に入れず、どちらも届かなければ空。
+ */
+function ticksAcrossRoll(
+  propertyDef: PropertyDef,
+  value: number | undefined,
+  perTick: number,
+): readonly number[] {
+  return [value, valueAtHighestRoll(propertyDef, value)]
+    .map((rolled) => ticksToRangeEnd(propertyDef, rolled, perTick))
+    .filter((ticks): ticks is number => ticks !== undefined)
+    .sort((a, b) => a - b);
+}
+
+/**
+ * 生成時のロール（6.2節）が上端に出た場合の初期値。staticValueOfが返すのは下端なので、振れ幅を
+ * 足したものになる。ロールを持たない値ではvalueそのまま。
+ */
+function valueAtHighestRoll(propertyDef: PropertyDef, value: number | undefined): number | undefined {
+  const reading = propertyDef.initialValueReading;
+  if (value === undefined || reading.kind !== 'roll') return value;
+  return value + (reading.max - reading.min);
 }
 
 /**
