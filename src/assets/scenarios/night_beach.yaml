@@ -1,0 +1,15 @@
+# 真っ暗な夜の見え方を確かめるための開始状態。暗さで通らなくなる操作（IlluminationSystem.md 5節）と、
+# それを知らせる状況アイコン（ScreenLayout.md 4.1.1節）が、日中の開始では一度も出ないため置く。
+#
+# 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
+
+title: 深夜の砂浜
+
+# 3は開始地点が砂浜になるシード。
+seed: 3
+
+world:
+  props:
+    # 月明かりも届かない時刻。太陽高度がそのまま環境光になる（IlluminationSystem.md 1節）ので、
+    # 手元も視界も最下段（pitch_dark）に落ちる。
+    hour: 22

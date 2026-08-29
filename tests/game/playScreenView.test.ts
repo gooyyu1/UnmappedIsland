@@ -4,6 +4,7 @@ import type { ObjectCardStack, PlayScreenView } from '../../src/game/view/PlaySc
 import { fromGameSession, withFrozenCards } from '../../src/game/view/PlayScreenView';
 import type { CardPlace, ScreenPlace } from '../../src/game/view/cardPlaces';
 import { cardPlacesOf } from '../../src/game/view/cardPlaces';
+import { plainCells } from '../../src/game/view/slotCells';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { parseLocale } from '../../src/locale/Localization';
 import type { MiniGame } from '../support/miniGame';
@@ -102,7 +103,7 @@ object_defs:
   const lane = (view: PlayScreenView, mini: MiniGame, screen: ScreenPlace) =>
     view.cardsIn(place(mini, screen)).filter((card) => card !== undefined);
 
-  /** 手持ちの枠の並び。**空き枠はundefinedのまま**——枠の位置がそのまま意味を持つ。 */
+  /** 手持ちの枠の並び。**空き枠はundefinedのまま**——枠の数（6）がそのまま並びの長さになる。 */
   const handCells = (view: PlayScreenView, mini: MiniGame) => view.cardsIn(place(mini, 'hand'));
 
   /** そのオブジェクトを映している札。 */
@@ -141,6 +142,47 @@ object_defs:
     });
     expect(handCells(view, mini).slice(1), '残りの枠は空きセルとして残る').toEqual([
       undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+  });
+
+  it('手持ちは、右の枠に入れた札も左端へ詰めて映す', () => {
+    // 縦型のレーンには6枠が一度に入らない（ScreenLayout.md 7.3節）ので、右の枠に居る札は送らないと
+    // 見えない。空き枠を左に残さなければ、持っている枚数がレーンに収まる限りは必ず見える。
+    const mini = setUp();
+    const stone = mini.createObject('stone');
+    expect(stone.moveToSlotOrRejection(mini.slot('hand'), { kind: 'cell', index: 5 })).toBeUndefined();
+
+    const view = viewOf(mini);
+    const cells = handCells(view, mini);
+
+    expect(cells[0]?.objects, '左端の枠へ寄る').toEqual([stone]);
+    expect(cells.slice(1), '空き枠は右にまとまる').toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+    expect(cells, '詰めても枠の総数は変わらない').toHaveLength(6);
+    expect(
+      plainCells(view.slotViewOf(place(mini, 'hand')), cells),
+      'レーンに並ぶ枠も6つのまま（持てる種類の数は画面の広さで変わらない）',
+    ).toHaveLength(6);
+  });
+
+  it('手持ちの間の枠が抜けたら詰まり、残った札の順は変わらない', () => {
+    const mini = setUp();
+    const held = ['stone', 'twig', 'leaf'].map((name) => mini.createObject(name, mini.slot('hand')));
+
+    expect(held[1].moveToSlotOrRejection(mini.slot('items', mini.land))).toBeUndefined();
+
+    expect(handCells(viewOf(mini), mini).map((card) => card?.objects[0])).toEqual([
+      held[0],
+      held[2],
       undefined,
       undefined,
       undefined,
@@ -596,6 +638,63 @@ object_defs:
         frozen.cardsIn(frozen.nestedLocations[1].fixtures).map((card) => card?.objects[0]),
         '外側の設置物レーンも控えた時点のまま',
       ).toEqual([vessel, tree]);
+    });
+  });
+
+  describe('状況アイコン（ScreenLayout.md 4.1.1節）', () => {
+    /**
+     * 段が名乗った絵の識別子だけが出る。**画面はプロパティの意味も段の意味も知らない**ので、
+     * 同梱の宣言ではなく、確かめたい形をその場で宣言する。
+     *
+     * propsの宣言順が並び順になるので、手元の明るさ・雨よけの順に並べてある。
+     */
+    const SITUATIONS = `
+object_defs:
+  islander:
+    traits: [carrier]
+    props:
+      hand_brightness:
+        value: 10
+        stages:
+          - {name: pitch_dark, situation: too_dark_for_handwork}
+          - {name: dim, min: -5, situation: too_dark_for_handwork}
+          - {name: bright, min: 5}
+      sheltered:
+        value: 0
+        stages:
+          - {name: sheltered, min: 1, situation: sheltered}
+`;
+
+    const setUpIslander = (): MiniGame => miniGame(SITUATIONS, { player: 'islander' });
+
+    const setProperty = (mini: MiniGame, name: string, value: number): void => {
+      mini.player.getProperty(mini.codex.propertyNames.getId(name)).setNumber(value);
+    };
+
+    it('何も妨げていない間は、1つも出ない', () => {
+      // 出しても読み取るものが無いため（晴れた日中は行が空になる）。
+      const mini = setUpIslander();
+
+      expect(viewOf(mini).conditions).toEqual([]);
+    });
+
+    it('段が名乗った絵が、propsの宣言順に並ぶ', () => {
+      const mini = setUpIslander();
+      setProperty(mini, 'hand_brightness', 0);
+      setProperty(mini, 'sheltered', 1);
+
+      expect(viewOf(mini).conditions).toEqual(['too_dark_for_handwork', 'sheltered']);
+    });
+
+    it('同じ絵を名乗る段どうしでは、絵が変わらない', () => {
+      // 手元の作業に要るのはbrightだけで、その下は「作れない」の一言に尽きる（4.1.2節）。
+      const mini = setUpIslander();
+
+      setProperty(mini, 'hand_brightness', -3);
+      expect(viewOf(mini).conditions, 'dimの段').toEqual(['too_dark_for_handwork']);
+
+      setProperty(mini, 'hand_brightness', -20);
+      expect(viewOf(mini).conditions, 'pitch_darkの段').toEqual(['too_dark_for_handwork']);
     });
   });
 });

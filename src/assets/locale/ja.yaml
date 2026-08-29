@@ -98,6 +98,10 @@ object_texts:
         display_name: 視界の明るさ
         icon: 👁️
         description: 屋外で採れるか、道を歩けるかを決める明るさ。持ち歩ける明かりだけが効く。
+      sheltered:
+        display_name: 雨よけ
+        icon: 🛖
+        description: 屋根や岩陰に守られていて、雨に打たれず日も差さない場所に居るかどうか。
       pain:
         display_name: 痛み
         icon: 💢
