@@ -16,6 +16,48 @@ property_tags:
 # （tests/world-codex/purposeTags.test.tsが同梱データにそれが無いことを見張る）。
 recipe_categories: [tool, container, fixture, item]
 
+# フィルターバーのボタン（docs/ui/ScreenLayout.md 8.1節）。**繰り返し払う支出の系統**
+# （docs/world/ContentSkeleton.md 3節の12本）に対応させ、同じ札の集まりを指す系統は1つへ畳む。
+# 並べる順にそのまま並ぶ。絞り込みを解除する「すべて」はここに入れない（UIが常に先頭へ置く）。
+#
+# **フィルター専用のタグは作らない**（docs/ui/ScreenLayout.md 8.1.5節）。指すのは既にあるタグだけで、1枚の札が複数の
+# ボタンに出てよい（炉は食と火の両方）。`id`がそのままボタンの絵の名前（`src/assets/icons/<id>.png`）
+# で、`icon`は絵がまだ無い間そこへ置く絵文字（4.2節）。
+card_filters:
+  # 食の調達（系統2）と保存（系統3）。**食べられる物だけではない**——焼ける物は生では食べられなくても
+  # 残り、炉も塩も残る。料理は札を並べてする仕事なので、材料と器具が同時に見えている必要がある。
+  - id: filter_food
+    icon: 🍖
+    tags: [food, roastable, hearth, preservative]
+  # 水（系統1）。汲む器も一緒に残す。
+  - id: filter_water
+    icon: 💧
+    tags: [water, hot_water, liquid_container]
+  # 火（系統5）。
+  - id: filter_fire
+    icon: 🔥
+    tags: [fuel, tinder, hearth]
+  # 刃物・打撃（系統4）と狩りの道具（系統6）。餌は罠の材料なので同じボタンに出る。
+  - id: filter_tool
+    icon: 🔨
+    tags: [tool, weapon, trap, meat_bait, plant_bait]
+  # 運ぶ入れ物（系統7）。
+  - id: filter_container
+    icon: 🧺
+    tags: [container, liquid_container]
+  # 衣類（系統8）。
+  - id: filter_wear
+    icon: 👕
+    tags: [equippable]
+  # 寝床（系統9）と住居（系統10）。**寝床を名乗る物はまだ世界に無い**ので、指すのは住居だけ。
+  - id: filter_shelter
+    icon: 🏠
+    tags: [shelter]
+  # 遠出（系統11）と船と海図（系統12）。道も他の設置物と同じにここでだけ残る。
+  - id: filter_travel
+    icon: 🧭
+    tags: [path, sea_route, boat, sail]
+
 # タグが名乗った以上、それに要るプロパティは宣言されていなければならない
 # （GameElementDefinition.md 4.2節）。**この世界の約束**であって、エンジンの規則ではない。
 required_props:

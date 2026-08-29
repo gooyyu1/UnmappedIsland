@@ -16,8 +16,12 @@ const FILES = import.meta.glob('../assets/icons/*.png', {
 }) as Record<string, string>;
 
 /**
- * 画面が固定で置くボタンの識別子。ここにも段の`situation`にも無い名前のファイルは黙って使われない
- * ままになるので、実在するかどうかは自動テスト（tests/art/iconArt.test.ts）が検査する。
+ * 画面が固定で置くボタンの識別子。**フィルターのボタンはここに無い**——どのボタンが並ぶかを
+ * 決めるのはワールドで、絵の名前もその宣言（`card_filters`の`id`、ScreenLayout.md 8.1.3節）が名乗る。
+ * 絞り込みを解除する`filter_all`だけは画面が置くボタンなのでここに在る（同8.1.1節）。
+ *
+ * ここにも段の`situation`にもワールドの宣言にも無い名前のファイルは黙って使われないままになるので、
+ * 実在するかどうかは自動テスト（tests/art/iconArt.test.ts）が検査する。
  */
 export const ICON_NAMES = [
   'map',
@@ -28,10 +32,6 @@ export const ICON_NAMES = [
   'codex',
   'diary',
   'filter_all',
-  'filter_cook',
-  'filter_water',
-  'filter_craft',
-  'filter_fun',
 ] as const;
 
 export type IconName = (typeof ICON_NAMES)[number];
@@ -45,8 +45,8 @@ export const ICON_ART: ReadonlyMap<string, string> = new Map(
  * アイコンのテクスチャキー。絵がまだ無いものはundefinedを返し、呼び出し側は絵文字で代用する
  * （絵は少しずつ増える前提なので、絵と絵文字が混ざった状態を正常とする）。
  *
- * **識別子はIconNameに限らない**——状況アイコンの識別子はワールドの宣言から来るので、コードの
- * 列挙には無い（モジュールの説明参照）。
+ * **識別子はIconNameに限らない**——状況アイコンもフィルターのボタンも、識別子はワールドの宣言から
+ * 来るので、コードの列挙には無い（モジュールの説明参照）。
  */
 export function iconTexture(name: string): string | undefined {
   const key = `icon:${name}`;

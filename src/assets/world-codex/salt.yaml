@@ -31,8 +31,9 @@ object_defs:
   # 塩。掻き取った粗塩ひと掴みで、1つで食べ物1つを塩蔵できる。
   #
   # **食べ物ではない。** 舐めて体が動く仕組み（ナトリウム）は無いので、foodタグを持たない。
+  # preservativeは「得た食を保たせる物である」ことを言うタグ（ContentSkeleton.md 3節の系統3）。
   salt:
-    tags: [item]
+    tags: [item, preservative]
     props:
       weight: {value: 300}
       volume: {value: 200}

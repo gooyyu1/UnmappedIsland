@@ -1551,6 +1551,8 @@ ui_texts:
   log_from_scenario: 'シナリオ「{title}」'
   log_from_slot: セーブスロット{index}
   log_fixtures_switched: '設置物レーンの場所を切り替えた: {name}'
+  log_filter_selected: '絞り込みを選んだ: {name}'
+  log_filter_none: すべて
   log_card_dropped: 'カードを落とした: {dragged} → {to}'
   log_card_combined: 'カードを重ねた: {dragged} → {onto}（{combination}）'
   log_card_put_in: 'カードを入れた: {dragged} → {onto}の中'

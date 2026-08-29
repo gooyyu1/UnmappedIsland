@@ -1,6 +1,14 @@
 import { parseDocument } from 'yaml';
 import type { YamlNode } from './yamlMapping';
-import { asMap, asScalarText, entriesInOrder, tryGetMap, tryGetSeq } from './yamlMapping';
+import {
+  asMap,
+  asScalarText,
+  entriesInOrder,
+  requireKnownKeys,
+  requireScalar,
+  tryGetMap,
+  tryGetSeq,
+} from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { messageOf } from './errorMessage';
 import { RawObjectDef } from './RawObjectDef';
@@ -9,6 +17,7 @@ import type { RawPatch } from './RawPatch';
 import { applyPatches, parsePatch } from './RawPatch';
 import { RawTrait } from './RawTrait';
 import { buildGenerationDefs, loadGenerationSections, resetGeneration } from './parseGeneration';
+import { CardFilter } from '../domain/CardFilter';
 import { NameRegistry } from '../domain/NameRegistry';
 import type { ObjectDef } from '../domain/ObjectDef';
 import { ObjectDefTable } from '../domain/ObjectDef';
@@ -55,6 +64,12 @@ export class WorldCodexYamlLoader {
 
   /** レシピ一覧の棚に使うタグ（recipe_categories、Windows.md 9節）。宣言順がそのまま優先順位。 */
   private recipeCategoryTagIdsByPriority: number[] = [];
+
+  /**
+   * フィルターバーのボタン（card_filters、ScreenLayout.md 8.1.3節）。**タグは名前のまま貯める**
+   * ——型のtagsが解決されるのはbuildなので、綴りが実在するかはこの時点では見られない。
+   */
+  private rawCardFilters: RawCardFilter[] = [];
 
   /** タグが宣言を義務づけるプロパティ（required_props、4.2節）。タグID → プロパティIDの並び。 */
   private requiredPropsByTag = new Map<number, number[]>();
@@ -152,6 +167,24 @@ export class WorldCodexYamlLoader {
         const tagId = this._tagNames.intern(asScalarText(node, `${label}.recipe_categories`));
         if (!this.recipeCategoryTagIdsByPriority.includes(tagId))
           this.recipeCategoryTagIdsByPriority.push(tagId);
+      }
+
+    // フィルターバーのボタン（ScreenLayout.md 8.1節）。並べる順に書く。同じ棚を足せるrecipe_categories
+    // と違い、ボタンは1つずつが別の絵と別のタグの組を持つので、重複は畳まずそのまま並べる。
+    const cardFilters = tryGetSeq(root, 'card_filters', label);
+    if (cardFilters !== undefined)
+      for (const node of cardFilters.items as YamlNode[]) {
+        const map = asMap(node, `${label}.card_filters`);
+        const id = requireScalar(map, 'id', `${label}.card_filters`);
+        const context = `${label}.card_filters.'${id}'`;
+        requireKnownKeys(map, ['id', 'icon', 'tags'], context);
+        this.rawCardFilters.push({
+          id,
+          icon: requireScalar(map, 'icon', context),
+          tagNames: (tryGetSeq(map, 'tags', context)?.items ?? []).map((tag) =>
+            asScalarText(tag, `${context}.tags`),
+          ),
+        });
       }
 
     // タグが宣言を義務づけるプロパティ（4.2節）。同じタグへ複数のファイルが足せる（パックが
@@ -290,11 +323,29 @@ export class WorldCodexYamlLoader {
           this.requiredPropsByTag,
           this.craftingConditions,
           this.objectDefDestinations,
+          this.buildCardFilters(),
         ),
     );
 
     this.reset();
     return codex;
+  }
+
+  /**
+   * フィルターバーのボタン（ScreenLayout.md 8.1.3節）。**綴りの誤りはここでは見ない**——指すタグは
+   * ファイルをまたいで付く（食のタグはfoods.yaml、火のタグはfire.yaml）ので、どのファイルまで
+   * 読んだ時点で「実在しない」と言えるかが決まらない。recipe_categoriesと同じくinternし、綴りは
+   * 同梱の世界を丸ごと読む試験が見張る（tests/world-codex/cardFiltersYaml.test.ts）。
+   */
+  private buildCardFilters(): readonly CardFilter[] {
+    return this.rawCardFilters.map(
+      (raw) =>
+        new CardFilter(
+          raw.id,
+          raw.icon,
+          raw.tagNames.map((tagName) => this._tagNames.intern(tagName)),
+        ),
+    );
   }
 
   /**
@@ -330,6 +381,7 @@ export class WorldCodexYamlLoader {
     this.globalTraits.clear();
     this.patches = [];
     this.recipeCategoryTagIdsByPriority = [];
+    this.rawCardFilters = [];
     this.requiredPropsByTag = new Map();
     this.inProgressTagIds = new Set();
     this.craftingConditions = undefined;
@@ -343,6 +395,13 @@ export class WorldCodexYamlLoader {
     this._symbolNames = new NameRegistry();
     this._engine = new EngineVocabulary(this._propertyNames, this._slotNames);
   }
+}
+
+/** 読んだままのフィルター1件（タグはまだ名前のまま。buildCardFilters参照）。 */
+interface RawCardFilter {
+  readonly id: string;
+  readonly icon: string;
+  readonly tagNames: readonly string[];
 }
 
 function addUnique<T extends { source: string }>(

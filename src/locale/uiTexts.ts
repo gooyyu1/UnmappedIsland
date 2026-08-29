@@ -158,6 +158,8 @@ export const UI_TEXT_NAMES = [
   'log_from_scenario',
   'log_from_slot',
   'log_fixtures_switched',
+  'log_filter_selected',
+  'log_filter_none',
   'log_card_dropped',
   'log_card_combined',
   'log_card_put_in',

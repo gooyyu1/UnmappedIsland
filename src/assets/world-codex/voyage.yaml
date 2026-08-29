@@ -358,8 +358,10 @@ object_defs:
   # **設置物（fixture）でありながら場所（location）でもある。** 中に積荷を載せ、プレイヤー自身も
   # 乗り込むため、土地と同じ items/fixtures/characters の3スロットを持つ。札へ重ねれば積める
   # （7.8節）——編み籠（containers.yaml）と同じ操作でよい。
+  # boatは「海を渡る乗り物である」ことを言うタグ（ContentSkeleton.md 3節の系統12）。帆や航路と違って
+  # 船そのものを指す語が無いと、遠出の絞り込みから船が消える（ScreenLayout.md 8.1.2節）。
   raft:
-    tags: [fixture]
+    tags: [fixture, boat]
     traits: [location]
     # 積荷が個体ごとに違うので束ねない（SlotSystem.md 4節）。
     stackable: false

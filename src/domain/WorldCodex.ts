@@ -1,3 +1,4 @@
+import type { CardFilter } from './CardFilter';
 import type { GenerationDefs } from './generation/GenerationDefs';
 import { GeneratedTypes } from './GeneratedTypes';
 import type { NameRegistry } from './NameRegistry';
@@ -67,6 +68,12 @@ export class WorldCodex {
   readonly recipeCategoryTagIdsByPriority: readonly number[];
 
   /**
+   * フィルターバーに並ぶボタン（`card_filters`、ScreenLayout.md 8.1.3節）。**宣言順がそのまま
+   * 並び順**で、絞り込みを解除する「すべて」は含まない（UIが常に先頭へ置く）。
+   */
+  readonly cardFilters: readonly CardFilter[];
+
+  /**
    * 製作の工程を進めるのに満たしていなければならない条件（`crafting_conditions`、13.4節）。
    * **全レシピ共通の1本**で、宣言が無ければどんな状況でも作業できる。
    */
@@ -87,10 +94,12 @@ export class WorldCodex {
     requiredPropsByTag: ReadonlyMap<number, readonly number[]> = new Map(),
     craftingConditions?: Requirements,
     objectDefDestinations: readonly ObjectDefDestination[] = [],
+    cardFilters: readonly CardFilter[] = [],
   ) {
     this.craftingConditions = craftingConditions;
     this.generatedTypes = generatedTypes ?? new GeneratedTypes();
     this.recipeCategoryTagIdsByPriority = recipeCategoryTagIdsByPriority;
+    this.cardFilters = cardFilters;
     this.objectNames = objectNames;
     this.propertyNames = propertyNames;
     this.slotNames = slotNames;
