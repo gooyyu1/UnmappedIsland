@@ -56,7 +56,9 @@ export class ShelfScene extends ResponsiveScene {
   protected build(): void {
     const { width, height } = this.metrics;
     addInputBlockingPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
-    new ScreenHeader(this, this.metrics, width, 'アーティファクトの棚', () => this.scene.start('title'));
+    new ScreenHeader(this, this.metrics, width, this.locale.uiText('shelf_title'), () =>
+      this.scene.start('title'),
+    );
 
     const all = this.codex.objectDefNamesWithTag(this.codex.vocabulary.world.artifactTagId);
     const held = new Set(new Shelf(localStorage).contents);
@@ -76,10 +78,10 @@ export class ShelfScene extends ResponsiveScene {
     total: number,
     held: number,
   ): number {
-    const lines = [`${total} のうち ${held} が棚に並んでいる。`];
+    const lines = [this.locale.uiText('shelf_progress', { total: String(total), held: String(held) })];
     if (this.added.length > 0) {
       const names = this.added.map((name) => this.locale.object(name).displayName).join('、');
-      lines.unshift(`${names}を持ち帰った。`);
+      lines.unshift(this.locale.uiText('shelf_brought', { names }));
     }
 
     const label = addLabel(this, this.metrics, x, y, lines.join('\n'), {

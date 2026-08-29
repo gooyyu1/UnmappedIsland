@@ -1377,6 +1377,10 @@ signal_texts:
 ui_texts:
   close: 閉じる
   map: 地図
+  cancel: キャンセル
+  ok: OK
+  # 名乗らずに終わったものの呼び名（エラー報告に載る死因・エラーの文言）。
+  unknown: 不明
   # オブジェクトの子ウィンドウのタブ（Windows.md 1節）。
   description: 説明
   properties: 状態
@@ -1393,3 +1397,153 @@ ui_texts:
   # レシピ一覧（Windows.md 9節）。未解放の理由が宣言されていない場合と、棚に載らないレシピの見出し。
   recipe_locked: まだ作り方が分からない
   recipe_other: その他
+
+  # タイトル画面（StartScreen.md 画面構成 1）。**画面の名前は、開くボタンと見出しで同じ語**——
+  # 押した先の見出しが違う語だと、同じ場所へ来たのか分からない。
+  title_start: はじめる
+  settings_title: 設定
+  shelf_title: アーティファクトの棚
+  scenarios_title: テスト用シナリオ
+
+  # セーブスロット選択画面（StartScreen.md 画面構成 2）。
+  slots_title: セーブデータを選択
+  # 生きた日数。スロットの行と、死んだことを伝えるダイアログが同じ言い方で出す。
+  survived_days: '生存 {days} 日目'
+  slots_delete_title: セーブデータを削除しますか？
+  slots_delete_body: '「{island}」を削除します。この操作は取り消せません。'
+  slots_delete_confirm: 削除する
+  slots_new: 新規作成
+
+  # 新規ゲーム作成画面（StartScreen.md 画面構成 3）。
+  newgame_title: 新規ゲーム作成
+  newgame_island_name: 島の名前
+  newgame_island_name_placeholder: '例: 霧深い孤島'
+  newgame_seed: 乱数シード
+  newgame_seed_placeholder: '例: 1837462519'
+  newgame_character: キャラクター選択
+  newgame_back: もどる
+  newgame_start: はじめる
+  newgame_notice_title: 入力を確認してください
+  newgame_notice_island_name: 島の名前を入力してください（ランダムボタンでも入力できます）
+  newgame_notice_seed: '乱数シードは0〜{max}の数字で入力してください'
+  newgame_notice_character: キャラクターを選択してください
+
+  # 設定画面（StartScreen.md 画面構成 4）。
+  settings_asset_pack: アセットパックを読み込む
+  settings_asset_pack_detail: サンプルパックの定義・絵・表示文字列を、同梱ぶんへ足す。
+  settings_reload_notice: 「もどる」で読み込み直します。
+  settings_on: オン
+  settings_off: オフ
+
+  # テスト用シナリオの選択画面（SaveDataManagement.md「テスト用シナリオ」節）。行の副題。
+  scenario_detail: '{name}（シード {seed}）'
+
+  # アーティファクトの棚（GameEndings.md 6節）。棚の上に置く一行。
+  shelf_progress: '{total} のうち {held} が棚に並んでいる。'
+  shelf_brought: '{names}を持ち帰った。'
+
+  # 地図ウィンドウ。地図は自分で並べるものだと伝える一行。
+  map_hint: カードを動かして、自分だけの地図を作る（ピンチ／ホイールで拡大）
+
+  # 製作中オブジェクトの操作（Crafting.md）。並びは自動補充・作業する・中断。
+  crafting_autofill: 自動補充
+  crafting_autofill_detail: 手持ちと足元から、足りない素材を入れる。入れ物の中までは探さない。
+  crafting_work: 作業する
+  crafting_work_detail: 揃っている素材を使って、次の工程を進める。
+  crafting_abort: 中断
+  crafting_abort_detail: 作りかけをやめる。入れてある素材はその場へこぼれる。
+  crafting_no_materials: 素材が足りない。
+
+  # レシピ一覧（Windows.md 9節）の見出しと、1つも並ばないときの文。
+  recipe_title: 作るもの
+  recipe_empty: ここに並ぶものはまだ無い。
+
+  # ゲーム内時間の長さ（timeTexts.ts）。時・分のどちらが立つかで3通り。
+  duration_minutes: '{minutes}分'
+  duration_hours: '{hours}時間'
+  duration_hours_minutes: '{hours}時間{minutes}分'
+  time_cost: 'かかる時間 {duration}'
+  # 積み下ろしの間に出す、今の積載での推定日数（GameEndings.md 9.3節）。幅は幅のまま出す。
+  voyage_days: '本土まで {days}日'
+
+  # 死んだことを伝えるダイアログ（VitalsSystem.md 6節）。死因は消し方の対応表から引く。
+  death_exhausted: 力尽きた。
+  death_by_cause: '{cause}で死んだ。'
+  death_title: '{name}は息絶えた'
+  death_no_record: この島の記録は残らない。
+  death_to_slots: セーブ選択へ
+  # 島を出たことを伝えるダイアログ（GameEndings.md 3節）。
+  escape_title: '{name}は島を出た'
+  escape_days: '島で {days} 日を過ごした'
+  escape_body: 潮に乗った筏は、ついに人の住む岸へ着いた。振り返っても、島はもう水平線の下にある。
+  escape_no_record: この島の記録は残らない。棚に並ぶ物だけが残る。
+  escape_to_shelf: 棚へ
+  # タイトルへ戻る確認。
+  quit_title: タイトルへ戻りますか？
+  quit_body: ここまでの進行はセーブデータに残ります。
+  quit_confirm: タイトルへ
+
+  # エラー報告の幕（errorReport.ts）。押せるのは写すことと閉じることだけ。
+  error_title: エラーが発生しました
+  error_copy: コピー
+  error_copied: コピーしました
+  error_selected: 選択しました（手でコピー）
+
+  # エラー報告の文面（errorReport.ts）。そのまま貼れば原因を追える形にするための地の文。
+  report_title: UnmappedIsland 実行時エラー
+  report_time: '発生時刻: {time}'
+  report_error: '【エラー {index}】{message}'
+  report_since_start: '起動から {seconds} 秒'
+  report_repeated: ' / 同じエラーが{count}回'
+  report_operations: '--- 直前の操作（古い順） ---'
+  report_no_operations: （記録なし）
+  report_operation: '{seconds}秒  {text}'
+  report_state: '--- 画面の状態 ---'
+  report_outside_play: （プレイ画面の外）
+  report_state_failed: '（状態を読めなかった: {message}）'
+  report_environment: '--- 環境 ---'
+  report_screen: '画面: {width}x{height} / dpr {ratio}'
+  report_no_stack: （スタックトレースなし）
+  report_promise_rejection: (Promiseの拒否)
+
+  # エラー報告に載せる、今の画面の状態（PlayScene.stateLines）。
+  state_world_time: 'ワールド時刻: {clock}'
+  state_location: '現在地: {name}'
+  state_activity: '演出中: {activity}'
+  state_child_window: '子ウィンドウ: {place}'
+  state_no_child_window: なし
+  state_hand: '手持ち: {cards}'
+  state_empty_cell: 空き
+  state_items: 'アイテム: {cards}'
+  # 場所1つ。同じ型の入れ物が複数あっても見分けられるよう、持ち主も出す。
+  state_place: '{owner}#{id}の{slot}'
+  state_clock: '{days}日 {time}'
+  activity_idle: なし
+  activity_exploring: 探索の結果待ち
+  activity_elapsing: 時間の経過
+  activity_transiting: 場面転換
+
+  # エラー報告に載せる、直前の操作（errorReport.noteOperation）。**実際に起きたことだけ**を、
+  # そのまま再現手順として読める言葉で書く。
+  log_screen_built: '画面を組み立てた: {scene} {width}x{height}'
+  log_button_tapped: 'ボタンを押した: {label}'
+  log_card_tapped: 'カードを押した: {name}'
+  log_card_grabbed: 'カードを掴んだ: {name}'
+  log_card_released: 'カードを離した: {name}（落とし先なし）'
+  log_card_edge_tapped: 'カードの端を押した: {name}（{place} の {direction}）'
+  log_settings_toggled: '設定を切り替えた: {title} → {value}'
+  log_play_opened: 'プレイ画面を開いた: {from} / シード {seed}'
+  log_from_scenario: 'シナリオ「{title}」'
+  log_from_slot: セーブスロット{index}
+  log_fixtures_switched: '設置物レーンの場所を切り替えた: {name}'
+  log_card_dropped: 'カードを落とした: {dragged} → {to}'
+  log_card_combined: 'カードを重ねた: {dragged} → {onto}（{combination}）'
+  log_card_put_in: 'カードを入れた: {dragged} → {onto}の中'
+  log_action: 'アクション: {name}（{owner}）'
+  log_child_window_opened: '子ウィンドウを開いた: {name}'
+  log_explored: '探索した: {name}（{clock}）'
+  log_status_detail_opened: ステータスの詳細を開いた
+  log_recipe_window_opened: レシピ一覧を開いた
+  log_map_opened: 地図を開いた
+  log_died: '死んだ: {cause}（{clock}）'
+  log_escaped: '島を出た: 持ち帰り {count} 点（{clock}）'

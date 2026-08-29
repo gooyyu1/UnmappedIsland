@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { noteOperation } from './errorReport';
+import { uiText } from '../locale/uiTexts';
 import { ScreenMetrics } from './looks/ScreenMetrics';
 
 /**
@@ -39,7 +40,13 @@ export abstract class ResponsiveScene extends Phaser.Scene {
    */
   protected rebuild(): void {
     // 画面の組み立ては、操作と同じくらい壊れる場所（向きを変えた直後だけ出る不具合等）。
-    noteOperation(`画面を組み立てた: ${this.scene.key} ${this.scale.width}x${this.scale.height}`);
+    noteOperation(
+      uiText('log_screen_built', {
+        scene: this.scene.key,
+        width: String(this.scale.width),
+        height: String(this.scale.height),
+      }),
+    );
 
     // 表示物は一覧から外すだけでなく必ず壊す。DisplayList.removeAllの引数はdestroyChildではなく
     // skipCallbackで（Containerのそれとは別物）、外しただけでは実体が残る。DOM要素で作る入力欄

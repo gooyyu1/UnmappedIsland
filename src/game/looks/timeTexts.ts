@@ -1,3 +1,5 @@
+import { uiText } from '../../locale/uiTexts';
+
 const MINUTES_PER_DAY = 24 * 60;
 
 /**
@@ -24,7 +26,11 @@ export function clockParts(totalMinutes: number): { days: number; hour: number; 
 export function hoursAndMinutesText(minutes: number): string {
   const hours = Math.trunc(minutes / 60);
   const rest = minutes % 60;
-  return hours === 0 ? `${rest}分` : rest === 0 ? `${hours}時間` : `${hours}時間${rest}分`;
+  return hours === 0
+    ? uiText('duration_minutes', { minutes: String(rest) })
+    : rest === 0
+      ? uiText('duration_hours', { hours: String(hours) })
+      : uiText('duration_hours_minutes', { hours: String(hours), minutes: String(rest) });
 }
 
 /**
@@ -32,7 +38,7 @@ export function hoursAndMinutesText(minutes: number): string {
  * 「かかる時間の行を出さない」を選べる——「0分かかる」と出しても意味が無いため。
  */
 export function timeCostLine(minutes: number): string | undefined {
-  return minutes <= 0 ? undefined : `かかる時間 ${hoursAndMinutesText(minutes)}`;
+  return minutes <= 0 ? undefined : uiText('time_cost', { duration: hoursAndMinutesText(minutes) });
 }
 
 /**
@@ -42,7 +48,9 @@ export function timeCostLine(minutes: number): string | undefined {
  * 両端が揃うのは海図の幅が消えたとき（渡り終えた海区、Voyage.md 3.7節）だけで、そのときだけ1つの数になる。
  */
 export function voyageDaysText(minDays: number, maxDays: number): string {
-  return `本土まで ${minDays === maxDays ? `${minDays}` : `${minDays}〜${maxDays}`}日`;
+  return uiText('voyage_days', {
+    days: minDays === maxDays ? `${minDays}` : `${minDays}〜${maxDays}`,
+  });
 }
 
 /**

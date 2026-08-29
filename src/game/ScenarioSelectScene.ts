@@ -4,6 +4,7 @@ import { scenarioPlayData } from './PlayScene';
 import { Button } from './ui/Button';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { addLabel } from '../ui/labels';
+import { uiText } from '../locale/uiTexts';
 import { addInputBlockingPanel } from '../ui/shapes';
 import { COLOR, SIZE, rowPlateStyle } from './looks/theme';
 import { LIST_ITEM_PADDING_X, LIST_PADDING } from './looks/listScreen';
@@ -25,7 +26,7 @@ export class ScenarioSelectScene extends ResponsiveScene {
   protected build(): void {
     const { width, height } = this.metrics;
     addInputBlockingPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
-    new ScreenHeader(this, this.metrics, width, 'テスト用シナリオ', () => this.scene.start('title'));
+    new ScreenHeader(this, this.metrics, width, uiText('scenarios_title'), () => this.scene.start('title'));
 
     const padding = this.metrics.px(LIST_PADDING);
     const gap = this.metrics.px(SIZE.gap);
@@ -62,10 +63,14 @@ export class ScenarioSelectScene extends ResponsiveScene {
       size: 30,
       bold: true,
     }).setOrigin(0, 1);
-    const detail = addLabel(this, this.metrics, left, height / 2, `${name}（シード ${scenario.seed}）`, {
-      size: 22,
-      color: COLOR.textMuted,
-    }).setOrigin(0, 0);
+    const detail = addLabel(
+      this,
+      this.metrics,
+      left,
+      height / 2,
+      uiText('scenario_detail', { name, seed: String(scenario.seed) }),
+      { size: 22, color: COLOR.textMuted },
+    ).setOrigin(0, 0);
     button.addContent(title, detail);
   }
 }
