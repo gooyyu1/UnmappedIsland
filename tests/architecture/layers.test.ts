@@ -234,7 +234,17 @@ describe('層の境界', () => {
     };
     walk('src');
 
+    // 逆向きも見る。**片方向だけでは、置き場を消したときに表だけが黙って腐る。**
+    const gone = listed.filter((entry) =>
+      entry.includes('*')
+        ? !readdirSync(join(ROOT, dirname(entry))).some((name) =>
+            new RegExp(`^${entry.split('/').pop()?.replace(/[.]/g, '\\.').replace(/\*/g, '.*')}$`).test(name),
+          )
+        : !existsSync(join(ROOT, entry)),
+    );
+
     expect(missing, 'この置き場が表のどの行にも載っていない').toEqual([]);
+    expect(gone, '表が挙げているこの置き場が実在しない').toEqual([]);
     expect(listed.length).toBeGreaterThan(10);
   });
 
