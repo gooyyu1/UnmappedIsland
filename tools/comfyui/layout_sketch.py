@@ -515,9 +515,15 @@ def draw_spear(draw: ImageDraw.ImageDraw) -> None:
     draw_hafted(draw, (120, 800), (960, 240), 26, (190, 30, 46, 8), 170, across=False)
 
 
+def draw_harpoon(draw: ImageDraw.ImageDraw) -> None:
+    """突き銛。柄は斧と同じ太い枝、穂先の向きは槍と同じ柄の延長上（docs/world/Voyage.md 3.9.4節）。"""
+    draw_hafted(draw, (880, 780), (350, 300), 44, (150, 40, 38, 9), 150, across=False)
+
+
 LAYS = {
     "axe": draw_axe,
     "clay": draw_clay,
+    "harpoon": draw_harpoon,
     "kiln": draw_kiln,
     "fan": draw_fan,
     "log": draw_log,
