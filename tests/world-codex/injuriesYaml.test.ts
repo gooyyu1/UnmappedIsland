@@ -194,6 +194,76 @@ describe('injuries.yamlの怪我', () => {
     expect(injury.tryGetProperty(severityId)?.ratio).toBeCloseTo(0.5, 2);
   });
 
+  /**
+   * 痛みの重さと治る長さの並び（InjurySystem.md 2節）。**2つを揃えないと決めたうえでの並び**なので、
+   * 逆転して見える組（捻挫と刺し傷）が意図どおりであることも、ここが持つ。
+   */
+  describe('痛みと治る長さの並び', () => {
+    /** 関節と骨の傷。塞がって終わらないので、皮膚と肉の傷の並びには乗らない（InjurySystem.md 2節）。 */
+    const SUPPORT_TISSUE = ['sprained_ankle', 'fracture'];
+
+    interface Reading {
+      name: string;
+      /** その傷を1つ負ったときの痛み。 */
+      pain: number;
+      /** 最も長く残る場合の傷の重さ。ロールで振れる傷はその上端（DurationStats.md）。 */
+      longest: number;
+    }
+
+    function reading(name: string): Reading {
+      open(FALLS);
+      spawnInto(name, player, 'injuries');
+      const def = codex.objects.get(codex.objectNames.getId(name));
+      return {
+        name,
+        pain: player.tryGetProperty(painId)?.getEffectiveValue() ?? 0,
+        longest: def.tryGetPropertyDef(codex.propertyNames.getId('severity'))?.range?.max ?? 0,
+      };
+    }
+
+    function readings(): Reading[] {
+      return codex.objectDefNamesWithTag(codex.tagNames.getId('injury')).map(reading);
+    }
+
+    function skinAndFlesh(all: Reading[]): Reading[] {
+      return all.filter((one) => !SUPPORT_TISSUE.includes(one.name));
+    }
+
+    it('皮膚と肉の傷は、痛みが重いほど長く残り、痛みが同じなら長さも同じ', () => {
+      const skin = skinAndFlesh(readings());
+      expect(skin.length, '検査対象が無い（injuryタグが変わっていないか）').toBeGreaterThan(1);
+
+      for (const a of skin) {
+        for (const b of skin) {
+          if (a.pain < b.pain) {
+            expect(a.longest, `${a.name}は${b.name}より痛みが軽い`).toBeLessThan(b.longest);
+          } else if (a.pain === b.pain) {
+            expect(a.longest, `${a.name}と${b.name}は痛みが同じ`).toBe(b.longest);
+          }
+        }
+      }
+    });
+
+    it('関節と骨の傷は、どの皮膚の傷よりも長く残る', () => {
+      const all = readings();
+      const support = all.filter((one) => SUPPORT_TISSUE.includes(one.name));
+      expect(support, '関節と骨の傷が見当たらない').toHaveLength(SUPPORT_TISSUE.length);
+
+      const skinLongest = Math.max(...skinAndFlesh(all).map((one) => one.longest));
+      for (const one of support) {
+        expect(one.longest, `${one.name}が皮膚の傷の並びに埋もれている`).toBeGreaterThan(skinLongest);
+      }
+    });
+
+    it('捻挫は、刺し傷より痛くないのに長く残る', () => {
+      const sprain = reading('sprained_ankle');
+      const puncture = reading('puncture_wound');
+
+      expect(sprain.pain).toBeLessThan(puncture.pain);
+      expect(sprain.longest, '痛みと長さを揃えないことの現れ').toBeGreaterThan(puncture.longest);
+    });
+  });
+
   describe('手当て', () => {
     /** 捻挫を1つ負い、その怪我と、手持ちに持たせた包帯を返す。 */
     function injured(): { injury: WorldObject; bandage: WorldObject } {
