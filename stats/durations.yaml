@@ -4,13 +4,15 @@
 # 何を数えて何を数えていないかは docs/diagnostics/DurationStats.md。
 
 meta:
-  - {unit: days, minimum: 1, durations: 72, longest: 67.00, shortest: 1.00, tool_wears: 13}
+  - {unit: days, minimum: 1, durations: 82, longest: 67.00, shortest: 1.00, tool_wears: 13}
 
 durations:
   - {object: junglefowl, property: body_fat, unit: days, days: 67.00, shortest_days: 67.00, repeats: false, destroys: true}
   - {object: monkey, property: body_fat, unit: days, days: 67.00, shortest_days: 67.00, repeats: false, destroys: true}
   - {object: rat, property: body_fat, unit: days, days: 67.00, shortest_days: 67.00, repeats: false, destroys: true}
   - {object: wild_boar, property: body_fat, unit: days, days: 67.00, shortest_days: 67.00, repeats: false, destroys: true}
+  - {object: pitfall, property: durability, unit: days, days: 30.00, shortest_days: 2.73, repeats: false, destroys: true}
+  - {object: pitfall__stake_staked, property: durability, unit: days, days: 30.00, shortest_days: 2.73, repeats: false, destroys: true}
   - {object: world, property: season_remaining, unit: days, days: 30.00, shortest_days: 30.00, repeats: false, destroys: false}
   - {object: banana__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, repeats: false, destroys: true}
   - {object: bird_egg, property: durability, unit: days, days: 20.00, shortest_days: 6.67, repeats: false, destroys: true}
@@ -51,6 +53,15 @@ durations:
   - {object: laceration, property: severity, unit: days, days: 5.00, shortest_days: 5.00, repeats: false, destroys: true}
   - {object: water_spinach, property: durability, unit: days, days: 5.00, shortest_days: 3.33, repeats: false, destroys: true}
   - {object: bite_wound, property: severity, unit: days, days: 3.75, shortest_days: 3.75, repeats: false, destroys: true}
+  - {object: captain, property: warmth, unit: days, days: 3.65, shortest_days: 1.22, repeats: false, destroys: true}
+  - {object: engineer, property: warmth, unit: days, days: 3.65, shortest_days: 1.22, repeats: false, destroys: true}
+  - {object: farmer, property: warmth, unit: days, days: 3.65, shortest_days: 1.22, repeats: false, destroys: true}
+  - {object: medic, property: warmth, unit: days, days: 3.65, shortest_days: 1.22, repeats: false, destroys: true}
+  - {object: junglefowl, property: hydration, unit: days, days: 3.50, shortest_days: 3.50, repeats: false, destroys: true}
+  - {object: monkey, property: hydration, unit: days, days: 3.50, shortest_days: 3.50, repeats: false, destroys: true}
+  - {object: rat, property: hydration, unit: days, days: 3.50, shortest_days: 3.50, repeats: false, destroys: true}
+  - {object: wild_boar, property: hydration, unit: days, days: 3.50, shortest_days: 3.50, repeats: false, destroys: true}
+  - {object: jar__content_water_liquid, property: fill, unit: days, days: 2.98, shortest_days: 0.52, repeats: false, destroys: false}
   - {object: captain, property: hydration, unit: days, days: 2.63, shortest_days: 2.63, repeats: false, destroys: true}
   - {object: coconut_crab, property: durability, unit: days, days: 2.50, shortest_days: 2.00, repeats: false, destroys: true}
   - {object: junglefowl_carcass, property: durability, unit: days, days: 2.50, shortest_days: 2.00, repeats: false, destroys: true}
@@ -69,7 +80,6 @@ durations:
   - {object: engineer, property: wakefulness, unit: days, days: 2.25, shortest_days: 2.25, repeats: false, destroys: false}
   - {object: farmer, property: hydration, unit: days, days: 2.25, shortest_days: 2.25, repeats: false, destroys: true}
   - {object: medic, property: hydration, unit: days, days: 2.25, shortest_days: 2.25, repeats: false, destroys: true}
-  - {object: jar__content_water_liquid, property: fill, unit: days, days: 2.08, shortest_days: 0.32, repeats: false, destroys: false}
   - {object: farmer, property: wakefulness, unit: days, days: 2.00, shortest_days: 2.00, repeats: false, destroys: false}
   - {object: field, property: growth_remaining, unit: days, days: 2.00, shortest_days: 2.00, repeats: true, destroys: false}
   - {object: medic, property: wakefulness, unit: days, days: 2.00, shortest_days: 2.00, repeats: false, destroys: false}

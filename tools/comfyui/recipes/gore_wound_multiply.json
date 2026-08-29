@@ -1,0 +1,29 @@
+{
+  "_comment": [
+    "src/assets/objects/gore_wound_multiply.png（牙の傷）を作り直すためのレシピ。build.py が読む。",
+    "",
+    "作りは laceration_multiply.json と同じ3段（下絵→肌の上でQwenに描き直させる→同じ肌で割る）。",
+    "",
+    "**裂傷と見分ける手は形。** 下から突き上げる牙が深部を裂く傷（injuries.yaml の gore_wound）なので、",
+    "刃がなぞる裂傷と違い、線は縦に近く、太く、上端で枝分かれする。島で最も重い傷なので、広がる",
+    "赤みも他より広い。",
+    "",
+    "**それでも凄惨にはしない。** カードは1/3に縮んで8枚並ぶ場所で、開いた傷や血の滴を描かせると",
+    "そこだけが目に刺さる（laceration_multiply.json と同じ）。"
+  ],
+  "output": "src/assets/objects/gore_wound_multiply.png",
+  "ground": "src/assets/backgrounds/medic_injuries_card.png",
+  "stain": {
+    "size": "410x640",
+    "spots": ["205,318,168,0.30,#d9a09c"],
+    "slashes": [
+      "178,458,224,206,58,0.46,#a85f60",
+      "178,458,224,206,23,0.62,#78392f",
+      "208,300,268,232,17,0.46,#8a4442"
+    ]
+  },
+  "edit": {
+    "prompt": "Keep this picture of bare skin exactly as it is: the same skin colour, the same skin texture, the same lighting, and the wound in the same place at the same angle and the same length. Repaint only the wound so that it looks like a real deep gash on skin, torn upward by a boar tusk, that has already stopped bleeding. It is one thick irregular tear that runs almost vertically and splits into a shorter branch near its upper end, with a dark red brown clotted line inside and a wide band of bruised reddened skin along both sides that fades softly into the normal skin. Do not make it look like lips or a mouth: the shape is an uneven tear, not a plump symmetrical oval, and the edges are flat, not swollen, not pink, not glossy. No gaping wound, no visible flesh, no blood drops, no gore. Matte skin, flat even lighting, no shine, no highlights. Nothing else in the picture changes. No text, no letters, no numbers.",
+    "seed": 1
+  }
+}

@@ -484,6 +484,26 @@ object_texts:
       add_meat_bait:
         display_name: 肉の餌を仕掛ける
         description: 肉食の獲物を寄せる。自分が食べられる肉を先に賭けることになる。
+  pitfall:
+    display_name: 落とし穴
+    description: 獣の道へ掘った深い穴。落ちた獣は骨を折って出られない。埋め戻せないので、掘る土地がそのまま賭けになる。
+    variation_names:
+      # 杭（traps.yamlのstake軸）。**打った物を前へ置くだけ**にして、穴の側の書式は増やさない。
+      stake: '{value}を打った{base}'
+    props:
+      catch_remaining:
+        display_name: 次の見込み
+      plant_bait:
+        display_name: 草の餌
+    interactions:
+      add_plant_bait:
+        display_name: 草の餌を仕掛ける
+        description: 草食の獲物を寄せる。持ち歩く罠と違って時間では傷まないので、置いたまま待てる。
+      drive_stake:
+        display_name: 杭を打つ
+        description: 穴の底へ棒を立てる。落ちた獣は骨を折る代わりに貫かれ、生かしては捕らえられなくなる。
+  staked:
+    display_name: 杭
 
   # 栽培と飼育（farming.yaml）。罠と同じ「留守番の設備」で、賭けるのは時間と食料。
   field:
@@ -1298,6 +1318,7 @@ reason_texts:
   salt_pan_full: 塩田は海水で満ちている。干し上がるまでは足せない。
   no_seawater: 海に面していない土地では、汲む海水がない。
   already_cured: これはもう塩漬けにしてある。
+  already_staked: この穴にはもう杭が立っている。
   too_spoiled: もう傷んでいる。塩を打っても、進んだぶんは戻らない。
   too_heavy: 荷が重すぎて歩けない。まず何かを置いていく必要がある。
   not_thirsty: 喉はまったく渇いていない。これ以上は飲めない。

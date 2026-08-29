@@ -1,0 +1,13 @@
+{
+  "_comment": [
+    "src/assets/objects/snare_laceration.png（縄の傷の下に敷く肌）を作り直すためのレシピ。",
+    "",
+    "**傷が面を破っていることを、これが表す**（作り・理由とも laceration.json と同じ）。縄の傷は",
+    "獣が負う傷なので、毛皮の上に載る機会がむしろ多い。"
+  ],
+  "output": "src/assets/objects/snare_laceration.png",
+  "underlay": {
+    "ground": "src/assets/backgrounds/medic_injuries_card.png",
+    "layer": "src/assets/objects/snare_laceration_multiply.png"
+  }
+}
