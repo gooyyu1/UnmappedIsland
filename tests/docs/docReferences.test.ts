@@ -40,14 +40,16 @@ const CONFIRMED_LABEL = '【確定】';
 /** 既定である暫定の側に印を付ける語。使わない。 */
 const PROVISIONAL_LABELS = ['【未確定】', '【暫定】'];
 
-/** 確定節が見出しの直後に置く、印の根拠の行（DocumentStyle.md 6.1節）。 */
+/** 確定節が本文に置く、印の根拠の行（DocumentStyle.md 6.1節）。 */
 const SOURCE_LINE_PREFIX = '**出どころ**:';
 
 /**
  * 本文が暫定であることを自白する語（DocumentStyle.md 6.1節）。確定節の射程には現れない——
  * 印は見出しに付くので、但し書きを本文へ添えても印を弱められない。
+ *
+ * 日本語には語の境界が無いので、他の語の一部として現れるものは個別に除く（`未定義` は語彙の説明）。
  */
-const PROVISIONAL_WORDS = ['目安', '仮置き', '仮決め', 'まだ決め', '未定', 'かもしれ', '暫定'];
+const PROVISIONAL_WORD = /目安|仮置き|仮決め|まだ決め|未定(?!義)|かもしれ|暫定/g;
 
 /** 「いつか実装したいもの」の実体の一覧（DocumentStyle.md 4.1節）。 */
 const SOMEDAY_DOC = join('docs', 'Someday.md');
@@ -62,15 +64,15 @@ const REF_FILES = [
 ].filter((rel) => !rel.startsWith(join('tests', 'docs'))); // 本テスト自身の例・正規表現は対象外
 
 /**
- * インラインコード・コードフェンスを除いた各行と、原文での行番号
- * （例示のリンク・参照・印を検査対象から外す）。
+ * コードフェンスの外の各行と、原文での行番号。`text` はインラインコードも除いた本文
+ * （例示のリンク・参照・印を検査対象から外す）、`raw` は原文のまま。
  */
-function textLines(markdown: string): { line: number; text: string }[] {
-  const kept: { line: number; text: string }[] = [];
+function textLines(markdown: string): { line: number; text: string; raw: string }[] {
+  const kept: { line: number; text: string; raw: string }[] = [];
   let inFence = false;
   markdown.split('\n').forEach((raw, index) => {
     if (/^\s*```/.test(raw)) inFence = !inFence;
-    else if (!inFence) kept.push({ line: index + 1, text: raw.replace(/`[^`]*`/g, '') });
+    else if (!inFence) kept.push({ line: index + 1, text: raw.replace(/`[^`]*`/g, ''), raw });
   });
   return kept;
 }
@@ -86,22 +88,12 @@ function read(rel: string): string {
   return readFileSync(join(ROOT, rel), 'utf-8');
 }
 
-/** 見出し行（コードフェンス内は除外）。 */
-function headingsOf(markdown: string): string[] {
-  const headings: string[] = [];
-  let inFence = false;
-  for (const line of markdown.split('\n')) {
-    if (/^\s*```/.test(line)) inFence = !inFence;
-    else if (!inFence && /^#{1,6}\s/.test(line)) headings.push(line.replace(/^#{1,6}\s+/, '').trim());
-  }
-  return headings;
-}
-
-function slugsOf(headings: readonly string[]): Set<string> {
-  return new Set(githubSlugs(headings));
-}
-
-/** 見出しと、次の見出しまでの本文。`【確定】` の射程はこの本文だけ（DocumentStyle.md 6.1節）。 */
+/**
+ * 見出しと、次の見出しまでの本文。`【確定】` の射程はこの本文だけ（DocumentStyle.md 6.1節）。
+ *
+ * 見出しは**原文のまま**持つ——失敗メッセージに出す名前であり、アンカーの照合にも使うので、
+ * インラインコードのバッククォートを落とすと元の見出しを指せなくなる。
+ */
 interface Section {
   /** 見出しの行番号（1始まり）。 */
   line: number;
@@ -116,8 +108,8 @@ interface Section {
 
 function sectionsOf(markdown: string): Section[] {
   const sections: Section[] = [];
-  for (const { line, text } of textLines(markdown)) {
-    const match = /^(#{1,6})\s+(.*)$/.exec(text);
+  for (const { line, text, raw } of textLines(markdown)) {
+    const match = /^(#{1,6})\s+(.*)$/.exec(raw);
     if (match !== null) {
       sections.push({
         line,
@@ -134,6 +126,15 @@ function sectionsOf(markdown: string): Section[] {
     ...section,
     hasSubsections: (sections[index + 1]?.depth ?? 0) > section.depth,
   }));
+}
+
+/** 見出し行（コードフェンス内は除外）。 */
+function headingsOf(markdown: string): string[] {
+  return sectionsOf(markdown).map((section) => section.heading);
+}
+
+function slugsOf(headings: readonly string[]): Set<string> {
+  return new Set(githubSlugs(headings));
 }
 
 const docByPath = new Map(DOC_FILES.map((rel) => [rel, read(rel)]));
@@ -403,20 +404,27 @@ describe('ドキュメントの参照', () => {
       `暫定は既定なので印を付けない（印が多数側に付くと背景になって読めない）:\n${found.join('\n')}`,
     ).toEqual([]);
   });
+
+  it('確定節を1つ以上拾えている（下の6.1節の検査の土台）', () => {
+    // 拾えていないと、全部が規約どおりの状態と見分けが付かないまま緑になる。
+    expect(confirmedSections.length).toBeGreaterThan(0);
+  });
+
+  it('暫定を表す語の照合が、他の語の一部を拾わない', () => {
+    // 6.1節の検査は「当たらない」と「規約どおり」を区別できないので、既知の入力で別に確かめる。
+    expect('未定です'.match(PROVISIONAL_WORD)).toEqual(['未定']);
+    expect('未定義の語彙'.match(PROVISIONAL_WORD)).toBeNull();
+  });
 });
 
 /**
  * `【確定】` を付けてよい節の条件（DocumentStyle.md 6.1節）。
  *
  * **既存の確定節が規約より先にあるので、有効化は文書を合わせる issue #1186 で行う**——`.skip` を
- * 外すだけで済むように、検査そのものはここで完成させてある。
+ * 外すだけで済むように、検査そのものはここで完成させてある。捕獲側（確定節を拾えているか・
+ * 語の照合が効くか）は既存の文書でも成り立つので、上の describe に置いて今から走らせている。
  */
 describe.skip('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節）', () => {
-  it('確定節を1つ以上拾えている', () => {
-    // 拾えていないと、全部が規約どおりの状態と見分けが付かないまま緑になる。
-    expect(confirmedSections.length).toBeGreaterThan(0);
-  });
-
   it('確定節が下位節を抱えていない（射程はその節の本文だけ）', () => {
     const nested = confirmedSections
       .filter((section) => section.hasSubsections)
@@ -431,8 +439,8 @@ describe.skip('【確定】を付けてよい節の条件（DocumentStyle.md 6.1
     const found: string[] = [];
     for (const section of confirmedSections) {
       for (const { line, text } of section.body) {
-        for (const word of PROVISIONAL_WORDS) {
-          if (text.includes(word)) found.push(`${section.doc}:${line}: 「${word}」`);
+        for (const match of text.matchAll(PROVISIONAL_WORD)) {
+          found.push(`${section.doc}:${line}: 「${match[0]}」`);
         }
       }
     }
@@ -442,14 +450,12 @@ describe.skip('【確定】を付けてよい節の条件（DocumentStyle.md 6.1
     ).toEqual([]);
   });
 
-  it('確定節が、見出しの直後に出どころの1行を持つ', () => {
-    const missing: string[] = [];
-    for (const section of confirmedSections) {
-      const first = section.body.find(({ text }) => text.trim() !== '');
-      if (first === undefined || !first.text.startsWith(SOURCE_LINE_PREFIX)) {
-        missing.push(`${section.doc}:${section.line} ${section.heading}`);
-      }
-    }
+  it('確定節が、本文に出どころの1行を持つ', () => {
+    // 置き場は縛らない。本文の先頭は結論の1文の場所（DocumentStyle.md 3節）なので、そこを
+    // 出どころで取ると、節の書き方の規約が2箇所に割れる。
+    const missing = confirmedSections
+      .filter((section) => !section.body.some(({ text }) => text.startsWith(SOURCE_LINE_PREFIX)))
+      .map((section) => `${section.doc}:${section.line} ${section.heading}`);
     expect(
       missing,
       `出どころの無い確定節（人間の判断の在処が節から読めない）:\n${missing.join('\n')}`,
