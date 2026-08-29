@@ -509,7 +509,8 @@ UI が決めていた頃は 2 度外しました。`container` タグの有無�
 
 一覧は、**このステータスの持ち主自身・その祖先・その子孫**が宣言している持続効果
 （[GameElementDefinition.md](../engine/GameElementDefinition.md) 8 節）から導きます
-（`WorldObject.readInfluences`）。効果が届く先は `self`/`parent`/`child`/`ancestor` のいずれかなので、
+（`WorldObject.readInfluences`）。対象キー（同 8.1 節が唯一の一覧）のうち、**今 `passives` に書けるのは
+木を辿るものだけ**です——操作の関係の役は未実装で（同 11.5 節）、書いてもロード時に弾かれます。だから
 自分へ届く効果も自分が届かせる効果も、宣言元は必ずこの 3 方向のどれかに居ます——横に並んだ物どうしは
 互いに届きません。
 
