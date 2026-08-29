@@ -158,11 +158,11 @@
 ## 移動先が書けなかったもの
 
 - 該当なし（判定4・5はすべて移動先候補を書けた）。ただし1つだけ、**移動先の「棚」が概念として欠けている**ものがある。
-  - `DeviceScreen`（判定4）: CodeStructure.md 1節の在処の表には「起動」の行が無い。`src/game/` は組み立て（`*Scene.ts` と `ui/*Window.ts`）と定義されており、`Phaser.Game` を作って端末の解像度に追従させる層は、世界・映し・意匠・部品・組み立てのどれでもない。`src/main.ts` と `DeviceScreen` が属する「起動」という区分が表に無いことが、置き場所が決まらない原因になっている。
+  - `DeviceScreen`（判定4）: 当時の在処の表には「起動」の行が無く、`src/game/` は組み立て（`*Scene.ts` と `ui/*Window.ts`）と定義されていた。`Phaser.Game` を作って端末の解像度に追従させる層は、世界・映し・意匠・部品・組み立てのどれでもない。`src/main.ts` と `DeviceScreen` が属する「起動」という区分が表に無いことが、置き場所が決まらない原因になっている。**現在は CodeStructure.md 1節の表が組み立ての置き場として `src/main.ts`・`src/game/DeviceScreen.ts` を名指ししており、起動を別区分にするかどうかだけが残っている。**
 
 ## ファイル配置（層=配置）についての所見
 
-- `src/game/` 直下は CodeStructure.md 1節で「組み立て（`*Scene.ts` と `ui/*Window.ts`）」＋例外として `errorReport.ts` と定められている。11ファイル中9つはシーンで、この定義に合っている。外れているのは `DeviceScreen.ts`（シーンでも横断の道具でもない起動側）と、抽象基底の `ResponsiveScene.ts`（シーンの土台なので許容範囲）。
+- `src/game/` 直下は当時「組み立て（`*Scene.ts` と `ui/*Window.ts`）」＋例外として `errorReport.ts` と定められていた。11ファイル中9つはシーンで、この定義に合っている。外れているのは `DeviceScreen.ts`（シーンでも横断の道具でもない起動側）と、抽象基底の `ResponsiveScene.ts`（シーンの土台なので許容範囲）。**現在の CodeStructure.md 1節は組み立ての置き場に `src/game/DeviceScreen.ts` を明記しており、外れているのは `ResponsiveScene.ts` だけになっている。**
 - ただし**中身の層は守れていない**。意匠（寸法・色・時間の見せ方）の定数が全10シーンに散っており、担当範囲の判定3の 84 件中 46 件がこれ。`looks/theme.ts` と `looks/PlayScreenLayout.ts` という受け皿が既にあるのに、`DISPLAY_PADDING` だけが looks 側、`STATUS_PADDING`/`BAR_PADDING` は PlayScene 側、という線の引かれ方になっている。
 - `BootScene.ts` の `preload()` は、`INFORMATION_ART`/`SEPARATOR_ART`/`ICON_ART`/`WEATHER_ART` を `src/art/` から引く一方、`card_frame.png`・`flip_digit.png`・`slot_button_paper.png`・`dust_puff.png` の4枚だけは URL を直に輸入している。「どのファイルがどの絵か」は素材（`src/art/`）の答えるべきこと（CodeStructure.md 3節）なので、この4枚だけが素材の棚を素通りしている。
 - `PlayScene.ts` は 2366 行・宣言 181 件で、判定1が 122 件（67%）＝大半は本当に結線。問題は残る 3〜5 の 55 件が「世界へ直に訊く」「映しの判断を持つ」「部品を組み立てる」の3方向へ散っていることで、`operationSteps` / `elapsePlayback` が示した「順序の判断を Phaser に触らない側へ出す」延長として、次に出せるのは `laneCards`（映し）・`foundSince`＋`shownInstanceIds`（映し）・`initialTab`（映し）・`slotButtonPaper`＋`buttonIcon`（部品）・`pathDestinationNames`（映し／世界）の5組。
