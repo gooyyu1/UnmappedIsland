@@ -40,8 +40,9 @@ import { DeclaredNumber } from '../domain/DeclaredNumber';
 import { SignalEffect } from '../domain/SignalEffect';
 
 /**
- * 効果の中身（9節の命令と、10節の`pick`）を読む。文法は「操作(set/add)が上位、
- * 対象(self/parent/agent/instrument)が下位」（例: `add: {self: {hour: 1}}`）。spawnは常にselfが実行する
+ * 効果の中身（9節の命令と、10節の`pick`）を読む。文法は「操作(set/add)が上位、対象が下位」
+ * （例: `add: {self: {hour: 1}}`）。**どの対象キーを書けるかは、受け取ったscopeが決める**
+ * （parseActiveTargetRoot。一覧は9.1節が指す14.1節の表）。spawnは常にselfが実行する
  * ものとみなすため対象キーを持たない。signalは対象を省ける（`signal: missed`＝selfへ告げる、9.8節）。
  *
  * **適用順はYAMLに書かれた順**で、動詞ごとの優先順位は無い（9.7節）。bodyNodeには効果以外の兄弟キーも
