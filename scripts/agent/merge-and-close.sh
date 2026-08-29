@@ -9,12 +9,13 @@
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
 #   ARCHIVED <セッションID>         … そのPRを出したCCRセッションを畳んだ
+#   NOSESSION <PR番号>              … 本文が脚注を持たず、畳む相手が分からなかった
 #   SYNCED   <コミット>             … 本体のチェックアウトを新しい `main` へ進めた
 #   INSTALLED                       … 依存が変わったので本体で `npm install` した
 #   DIRTY    <本体のパス>           … 本体に未コミットの変更があるので触らなかった
 #   終了コード 0 … すべて片付いた
 #   終了コード 1 … マージできなかった（何もしていない）
-#   終了コード 2 … マージはしたが、後片付けに残りがある（上の `OPEN`・`DIRTY`）
+#   終了コード 2 … マージはしたが、後片付けに残りがある（上の `OPEN`・`NOSESSION`・`DIRTY`）
 #
 # ## 畳んだのは、毎回同じ順で叩いていた5つ
 #
@@ -27,6 +28,9 @@
 # PR本文の末尾に `https://claude.ai/code/session_...` が入る（Claude Codeが付ける）。**これが、その
 # PRを実際に出したセッション。** タイトルの `(#1029)` で引くと、同じ issue へ2回投入したときに
 # 古いほうを畳む。`watch-prs.sh` の `STALLED` も同じ脚注を見ている。
+#
+# **脚注が無いPRがある。** 本文を書き直した拍子に落ちる（PR #1083 で実際に落ちた）。黙って畳まずに
+# 済ませると、走ったままのセッションが誰にも数えられず残るので、`NOSESSION` を出して残りとして扱う。
 #
 # ## `--delete-branch` は worktree の警告を必ず出す
 #
@@ -88,6 +92,12 @@ while read -r issue; do
   fi
 done < <(grep -oiE 'closes[[:space:]]+#[0-9]+' <<<"$body" | grep -oE '[0-9]+' | sort -u)
 
+# 見つからないときは `grep` が 1 を返す。`pipefail` があるので、ここで止めずに空として受ける。
+sessions=$(grep -o 'session_[A-Za-z0-9]*' <<<"$body" | sort -u || true)
+if [ -z "$sessions" ]; then
+  echo "NOSESSION $PR"
+  leftover=1
+fi
 # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
 while read -r session; do
   [ -n "$session" ] || continue
@@ -96,7 +106,7 @@ while read -r session; do
   [ "$status" != "SESSION_STATUS_ARCHIVED" ] || continue
   printf '{"session_id":"%s"}' "$session" | bash "$CCR_META" archive_session >/dev/null
   echo "ARCHIVED $session"
-done < <(grep -o 'session_[A-Za-z0-9]*' <<<"$body" | sort -u)
+done <<<"$sessions"
 
 # 本体は作業ツリーの共有先なので、進める前に汚れていないことを見る。未追跡は見ない——本体には
 # `claude_rc.bat` のような、追跡していない持ち物が置いてある。
