@@ -27,6 +27,9 @@ const PHASER_FREE = [
   'src/asset-pack',
   'src/game/view',
   'src/game/looks',
+  'src/game/errorReport.ts',
+  'src/game/launchSeed.ts',
+  'src/codex-viewer',
 ];
 
 /**
@@ -51,6 +54,8 @@ const TREE_READERS = ['src/analysis', 'src/codex-viewer'];
 
 /** そのディレクトリ以下の.tsファイル（リポジトリ相対）。 */
 function sourcesIn(dir: string): string[] {
+  // 検査対象にはファイル1つを名指しするものもある（層の外の `errorReport.ts`・`launchSeed.ts`）。
+  if (dir.endsWith('.ts')) return [dir];
   const found: string[] = [];
   for (const entry of readdirSync(join(ROOT, dir))) {
     const rel = `${dir}/${entry}`;
