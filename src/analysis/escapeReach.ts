@@ -5,6 +5,7 @@ import type { CraftingInput, CraftingStep } from './CraftingStep';
 import { craftingStepsOf } from './craftingSteps';
 import type { IslandLocations } from './islandLocations';
 import { islandLocationsOf } from './islandLocations';
+import { externalTickDeltasOn, rangeCyclesOf } from './rangeCycles';
 
 /**
  * 島の産物から**島を出るのに要るもの**まで、工程の鎖が閉じているかを数える。`startupReach.ts` が
@@ -30,6 +31,11 @@ import { islandLocationsOf } from './islandLocations';
  *
  * **実行時にしか決まらないものは解かない。** 抽選（`pick`）は確率が0でない分岐が返す物を「返る」と
  * 読み、どの回に何を引くかは数えない（`startupReach`が期待個数で読むのと同じ線）。
+ *
+ * **待って起こる作り替えも工程に数える**（`rangeCyclesOf`、収支表と同じ読み方）。焼けた肉も焼け石も
+ * 罠に掛かる獲物も、プレイヤーが操作するのではなく値がrangeの端へ届いて生まれるので、操作と
+ * レシピだけを数えると「どの工程からも生まれない型」になる。**押し手は入力に並ぶ**ので、焼くには
+ * 炉が要る——待てばいつか起こる、とは読まない。
  */
 
 /**
@@ -152,11 +158,29 @@ export function escapeReachSourcesOf(codex: WorldCodex): EscapeReachSources {
 
   return {
     codex,
-    steps: [...codex.objects].flatMap((def) => craftingStepsOf(codex, def)),
+    steps: stepsOf(codex),
     tagBearers,
     goals,
     locations: islandLocationsOf(codex),
   };
+}
+
+/**
+ * 世界のすべての工程。操作とレシピ（`craftingStepsOf`）に、待って起こる作り替え（`rangeCyclesOf`）を
+ * 足す。
+ *
+ * **数えるのは繰り返す周期と、外から押される周期だけ**（収支表の`allSteps`と同じ選び方）。前者は
+ * 設備（罠が獲物を渡す）、後者は押し手が要る作り替え（炉が肉を焼く）で、朽ちるだけの周期は何も
+ * 生まないので工程ではない。
+ */
+function stepsOf(codex: WorldCodex): readonly CraftingStep[] {
+  const defs = [...codex.objects];
+  return defs.flatMap((def) => [
+    ...craftingStepsOf(codex, def),
+    ...rangeCyclesOf(def, undefined, externalTickDeltasOn(def, defs))
+      .filter((cycle) => cycle.repeats || cycle.drivenBy !== undefined)
+      .map((cycle) => cycle.step),
+  ]);
 }
 
 /** 定義上の島の土地すべてを出発集合にして数える。 */

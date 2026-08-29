@@ -23,10 +23,33 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  */
 describe('島を出るのに要るもの（同梱の定義）', () => {
   const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
-  const reach = escapeReachOf(escapeReachSourcesOf(codex));
+  const sources = escapeReachSourcesOf(codex);
+  const reach = escapeReachOf(sources);
 
   it('島の産物だけで、要るものへ1つ残らず届く', () => {
     expect(reach.unreachedNeeds.map(describeBreak)).toEqual([]);
+  });
+
+  it('炉が焼いて生まれる型にも、それを生む工程がある', () => {
+    // 操作とレシピだけを工程に数えていたころ、値がrangeの端へ届いて生まれる型は「どの工程からも
+    // 生まれない型」になっていた。丸焼きのネズミは、罠だけを起点に刃物を1つも経由せず縫製へ
+    // 届く経路（animals.yamlのroasted_rat）の途中なので、落ちると小骨の入口が1つ減る。
+    const roastedRat = codex.objectNames.getId('roasted_rat');
+    const producers = sources.steps.filter((step) =>
+      step.outputs.some((output) => output.objectGlobalId === roastedRat),
+    );
+    expect(producers.map((step) => step.name)).not.toEqual([]);
+
+    // 押し手は入力に並ぶ——待てばいつか焼ける、とは読まない。焼く物のほかに炉が要るので、
+    // どの工程も型を名指しする入力を2つ以上持つ。
+    const campfire = codex.objectNames.getId('campfire');
+    for (const step of producers)
+      expect(step.inputs.filter((input) => input.kind === 'object').length, step.name).toBeGreaterThan(1);
+    expect(
+      producers.some((step) =>
+        step.inputs.some((input) => input.kind === 'object' && input.objectGlobalId === campfire),
+      ),
+    ).toBe(true);
   });
 
   it('船と帆の両方が目標に挙がっている', () => {

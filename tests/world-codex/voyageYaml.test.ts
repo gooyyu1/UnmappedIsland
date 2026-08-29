@@ -968,6 +968,130 @@ describe('筏と航海', () => {
     expect(empty, '軽くなれば短く渡れる').toBeLessThan(laden);
   });
 
+  /** 銛を1本、乗り手の手に持たせる。 */
+  function giveHarpoon(game: StartedGame): WorldObject {
+    const harpoon = game.session.createObject(codex.objectNames.getId('fishing_harpoon'));
+    const failure = harpoon.moveToSlotOrRejection(
+      game.player.instance.getSlot(codex.slotNames.getId('hand')),
+    );
+    if (failure !== undefined) throw new Error(`銛を持てません: ${failure}`);
+    return harpoon;
+  }
+
+  /** その海区に魚の群れを1つ立てる（見張りの卓を引き当てるのを待たずに、突く相手だけを置く）。 */
+  function raiseShoal(game: StartedGame, zone: WorldObject): WorldObject {
+    const shoal = game.session.createObject(codex.objectNames.getId('fish_shoal'));
+    expect(shoal.moveToSlotOrRejection(zone.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+    return shoal;
+  }
+
+  /**
+   * 銛で`tries`回突いて、**返った生肉の数と銛を失った回数**を数える。突く相手が違うだけの同じ手順で
+   * 群れと海面の両方を数える——見たいのは当たりの落差そのもの（Voyage.md 3.9.2節）。
+   *
+   * 銛は失うたびに持ち直し、群れは立ち去りまでの残りを毎回戻して留める。数えたいのは1回あたりの
+   * 当たりなので、銛の在庫も群れの寿命も混ぜない。獲れた生肉はその場で捨てる——手も積荷も詰まると、
+   * 湧いた生肉が黙って手に入らなくなる（`into: actor`、9.4節）。
+   */
+  function spearRepeatedly(target: 'shoal' | 'sea', tries: number): { meat: number; lost: number } {
+    const { game, raft } = ready();
+    // 荒天で押し流されると、立てた群れと筏の居る海区がずれる。見たいのは卓だけなので天気を止める。
+    holdWeather(game, 'clear', 'crosswind');
+    expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute()).toBe(true);
+    // 出航のしたくの積荷（ヤシの実70個）を降ろす。枠が空いていないと獲れた生肉が置けない。
+    for (const cargo of [...raft.children()]) {
+      if (cargo !== game.player.instance) cargo.destroy();
+    }
+
+    let harpoon = giveHarpoon(game);
+    let shoal: WorldObject | undefined;
+    let meat = 0;
+    let lost = 0;
+
+    for (let i = 0; i < tries; i++) {
+      keepAlive(game);
+      if (harpoon.parent === undefined) harpoon = giveHarpoon(game);
+      if (target === 'shoal') {
+        shoal ??= raiseShoal(game, raft.parent!);
+        // 突いている最中に群れが去ると、そのぶんが空振りとして数に混ざる（立ち去りは6時間、
+        // 突くのは1回30分）。残りを毎回満たして、数えるのを卓だけにする。
+        const staying = shoal.getProperty(codex.propertyNames.getId('stay_remaining'));
+        staying.setNumberWithoutEvents(staying.def.range?.max ?? 0);
+      }
+
+      const name = target === 'shoal' ? 'spear_shoal' : 'spear_sea';
+      const spear = (target === 'shoal' ? shoal! : raft)
+        .combinationsWith(harpoon, game.player.instance)
+        .find((candidate) => candidate.name === name);
+      expect(spear, `${name} が成立する`).toBeDefined();
+      expect(spear?.tryExecute(), `${name} を突く`).toBe(true);
+
+      if (harpoon.parent === undefined) lost++;
+      for (const object of [...raft.descendants()]) {
+        if (object.def.name === 'raw_meat') {
+          meat++;
+          object.destroy();
+        }
+      }
+    }
+
+    return { meat, lost };
+  }
+
+  it('魚を突くには銛が要る（手では獲れない）', () => {
+    const { game, raft } = ready();
+    expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute()).toBe(true);
+    const shoal = raiseShoal(game, raft.parent!);
+    const branch = game.session.createObject(codex.objectNames.getId('thick_branch'));
+    expect(
+      branch.moveToSlotOrRejection(game.player.instance.getSlot(codex.slotNames.getId('hand'))),
+    ).toBeUndefined();
+
+    expect(
+      shoal.tryGetAction('spear_shoal', game.player.instance),
+      '道具なしで押せる手は無い',
+    ).toBeUndefined();
+    expect(shoal.combinationsWith(branch, game.player.instance), '銛でない物を当てても成立しない').toEqual(
+      [],
+    );
+  });
+
+  it('群れへ突くほうが、群れの居ない海面へ突くよりよく獲れる', () => {
+    const tries = 120;
+    const shoal = spearRepeatedly('shoal', tries);
+    const sea = spearRepeatedly('sea', tries);
+
+    // 30分に0.78切れと、60分に0.15切れ（Voyage.md 3.9.2節）。**この落差が「積むか釣るか」の判断を
+    // 作っている**ので、見るのは平均ではなく差のほう。幅は試行回数ぶんの揺れ（標準誤差は0.04ほど）
+    // より広く、卓の差（0.78/0.15）より狭く取る。
+    expect(shoal.meat / tries, '群れは30分に0.78切れ').toBeGreaterThan(0.6);
+    expect(sea.meat / tries, '群れの居ない海面は60分に0.15切れ').toBeLessThan(0.3);
+  });
+
+  it('突いた魚に銛を持って行かれることがある', () => {
+    // 50回に1回（Voyage.md 3.9.4節）。**だから積むのは銛1本ではなく、穂先と紐の予備**になる。
+    const tries = 200;
+    const { lost } = spearRepeatedly('shoal', tries);
+
+    expect(lost, '突き続ければ失う').toBeGreaterThan(0);
+    expect(lost / tries, '失うのは稀（50回に1回）').toBeLessThan(0.1);
+  });
+
+  it('海へ突く手は、浮いている間だけ（浜に繋いだ筏では突けない）', () => {
+    const { game, raft } = ready();
+    const harpoon = giveHarpoon(game);
+    const spears = (): string[] =>
+      raft.combinationsWith(harpoon, game.player.instance).map((candidate) => candidate.name);
+
+    // **条件を落とすと、浜に繋いだままの筏の下から魚が獲れる**（帆が浮いている間だけ効くのと同じ形）。
+    expect(spears(), '浜では成立しない').not.toContain('spear_sea');
+
+    expect(raft.tryGetAction('set_sail', game.player.instance)?.tryExecute()).toBe(true);
+    tick(game);
+
+    expect(spears(), '海の上でだけ突ける').toContain('spear_sea');
+  });
+
   /**
    * その海区を繰り返し見張り、**手に入った物の名前・海区に湧いた物の名前・何かが返った割合**を返す。
    *

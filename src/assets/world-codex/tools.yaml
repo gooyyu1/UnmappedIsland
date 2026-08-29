@@ -121,3 +121,32 @@ object_defs:
       light_blow: {value: 0}
       thrust: {value: 55}
       whiff: {value: 45}
+
+  # 突き銛。太い枝の先へ石の穂先を紐で締めた漁具（docs/world/Voyage.md 3.9.4節）。
+  #
+  # **釣りの入力はfishing_toolタグで、型を名指ししない**（voyage.yamlのspear_shoal・spear_sea）。
+  # 木を倒せるのがchopping_toolだけであるのと同じ形で、釣り針や網が後から増えても釣りの手そのものは
+  # 書き換わらない。
+  #
+  # **柄は長い棒ではなく太い枝**（同3.9.4節）。筏の縁から真下へ突くので、獣を狙う長さが要らない。
+  # 材料も工程も石斧と同じ柄付け（docs/world/Skills.md 3節）なので、目方とかさも石斧に同じ。
+  #
+  # 武器にはならない（weapon traitを持たない）。獣を突く道具ではない。
+  fishing_harpoon:
+    tags: [item, tool, fishing_tool]
+    props:
+      weight: {value: 1200}
+      volume: {value: 1800}
+    # 解放条件（conditions、13.3節）はまだ置かない（石斧と同じ理由）。
+    recipes:
+      hafted:
+        steps:
+          # 柄をこしらえる。枝の先を割り、穂先を落とし込む溝を作る。
+          - requires:
+              - {object: thick_branch, count: 1, consume: true}
+            duration: 60
+          # 穂先を溝へ据え、紐で締め上げる（柄付け、docs/world/Skills.md 3節）。
+          - requires:
+              - {object: sharp_stone, count: 1, consume: true}
+              - {object: cord, count: 1, consume: true}
+            duration: 120

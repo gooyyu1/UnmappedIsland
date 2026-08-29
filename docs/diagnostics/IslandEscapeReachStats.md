@@ -2,8 +2,8 @@
 
 数値は [`stats/island_escape_reach.yaml`](../../stats/island_escape_reach.yaml) にあります。
 `tests/diagnostics/islandEscapeReachStatsReport.test.ts` が、定義（`src/assets/world-codex/*.yaml`）から
-島を生成して数えたものです。工程（`interactions`・`recipes`）・土地の発見物・生成の定義
-（`terrain_generation.yaml`）を変更したら再生成します。
+島を生成して数えたものです。工程（`interactions`・`recipes`・range系イベントの周期）・土地の発見物・
+生成の定義（`terrain_generation.yaml`）を変更したら再生成します。
 
 ```
 npm run stats:escape-islands
