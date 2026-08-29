@@ -1,0 +1,13 @@
+{
+  "_comment": [
+    "src/assets/objects/puncture_wound.png（刺し傷の下に敷く肌）を作り直すためのレシピ。",
+    "",
+    "**傷が面を破っていることを、これが表す**（作り・理由とも laceration.json と同じ）。乗算の層だけ",
+    "だと、毛皮の暗い所へ掛かった傷が見えなくなる。"
+  ],
+  "output": "src/assets/objects/puncture_wound.png",
+  "underlay": {
+    "ground": "src/assets/backgrounds/medic_injuries_card.png",
+    "layer": "src/assets/objects/puncture_wound_multiply.png"
+  }
+}
