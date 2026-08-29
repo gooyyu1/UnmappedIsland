@@ -180,7 +180,7 @@ object_defs:
           - {object: coconut_husk}
 
   # ヤシの実の皮。はぎ取った繊維の塊。ほぐせば火口になり、塊のままなら燃料になる
-  # （docs/engine/FireSystem.md 3.2節）。縄（コイア）への利用は今後の課題。
+  # （docs/engine/FireSystem.md 3.2節）。叩き解せばコイア＝植物繊維になる（fiber.yaml）。
   coconut_husk:
     tags: [item]
     traits: [burnable, ignitable]
@@ -193,6 +193,20 @@ object_defs:
       weight: {value: 600}
       # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。
       volume: {value: 4000}
+    interactions:
+      # 水に漬けて柔らかくし、石で叩いて繊維を解す（コイア）。**植物繊維の2つ目の入口**で、
+      # バショウ属の草の掻き取り（fiber.yaml）とは工程も道具も別。
+      #
+      # 漬けておく時間はこの1工程へ畳んである。掻き取り（30分）より長いのはそのぶんで、刃物を
+      # 持たなくても始められる代わりに時間で払う。600gの皮から繊維2束（120g）で、残りは
+      # 叩き落とす髄。
+      #
+      # **明るさの条件は書かない**——叩いて解すだけで、暗くて損なう形が無い（crackと同じ理由）。
+      ret:
+        trigger: {drag: {object: stone}}
+        duration: 120
+        destroy: self
+        spawn: {object: plant_fiber, count: 2}
 
   # 皮を剥いだ熟したヤシの実。硬い殻は、石で叩いても刃物をこじ入れても割れるので、道具のタグごとに
   # 1つずつcombinationを持つ（withは1つのタグしか取らないため）。

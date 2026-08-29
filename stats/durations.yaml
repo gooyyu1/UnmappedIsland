@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/DurationStats.md。
 
 meta:
-  - {unit: days, minimum: 1, durations: 82, longest: 67.00, shortest: 1.00, tool_wears: 13}
+  - {unit: days, minimum: 1, durations: 82, longest: 67.00, shortest: 1.00, tool_wears: 14}
 
 durations:
   - {object: junglefowl, property: body_fat, unit: days, days: 67.00, shortest_days: 67.00, repeats: false, destroys: true}
@@ -91,6 +91,7 @@ durations:
   - {object: wild_boar, property: stay_remaining, unit: days, days: 1.00, shortest_days: 1.00, repeats: false, destroys: true}
 
 tool_wear:
+  - {object: stone_axe, property: durability, step: buck, owner: driftwood_trunk, unit: uses, uses: 16.00, labor_minutes: 120}
   - {object: stone_axe, property: durability, step: fell, owner: broadleaf_tree, unit: uses, uses: 8.00, labor_minutes: 240}
   - {object: sharp_stone, property: durability, step: strike, owner: junglefowl, unit: uses, uses: 48.00, labor_minutes: 15}
   - {object: sharp_stone, property: durability, step: strike, owner: monkey, unit: uses, uses: 48.00, labor_minutes: 15}

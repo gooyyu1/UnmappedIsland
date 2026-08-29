@@ -349,6 +349,10 @@ object_texts:
   coconut_husk:
     display_name: ヤシの実の皮
     description: はぎ取った繊維の塊。硬く、ほぐれば長い繊維になる。
+    interactions:
+      ret:
+        display_name: 叩いて繊維を採る
+        description: 水に漬けて柔らかくし、石で叩いて繊維を解す。時間はかかるが、刃物は要らない。
   husked_coconut:
     display_name: 皮を剥いだヤシの実
     description: 皮を落として殻がむき出しになった実。殻は硬いが、叩くかこじれば二つに割れる。
@@ -843,6 +847,13 @@ object_texts:
       strip_bark:
         display_name: 樹皮を剥ぐ
         description: 幹に縦の切れ目を入れ、内樹皮ごと帯で剥がす。木は立ったまま残る。
+  driftwood_trunk:
+    display_name: 流木の幹
+    description: 波に打ち上げられた幹。枝も樹皮も落ちているが、玉切りにすれば丸太が採れる。
+    interactions:
+      buck:
+        display_name: 玉切りにする
+        description: 運べる長さに斧で切り分ける。倒す手間が無いぶん、伐り倒すより早い。
   log:
     display_name: 丸太
     description: 幹を2mほどに切ったもの。1本でも相当に重いが、水に浮く。

@@ -319,9 +319,6 @@ generation_scopes:
     elevation_top_meters: 400
     # カバレッジ保証（TerrainGeneration.md 3.4節・6節）。軸の分布だけでは個数を保証できないため、
     # 「指定軸が最大/最小のサイトへこの型を強制割当する」処理をマッチングの前に行う。
-    # 島には必ず山がひとつあり、木の茂る土地がひとつある。後者は、島を出るのに要る丸太・繊維・
-    # 大型の獣の入口が森と密林にしか無いため（docs/world/ContentSkeleton.md 5節）。岩がちでない
-    # 土地ほど木が根を張るので、いちばん岩の少ない内陸を森にする。
+    # 島には必ず山がひとつある。
     guarantees:
       - {location_type: mountain_peak, count: 1, axis: elevation, pick: max}
-      - {location_type: forest, count: 1, axis: ruggedness, pick: min}

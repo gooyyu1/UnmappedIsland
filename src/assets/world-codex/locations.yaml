@@ -271,6 +271,9 @@ object_defs:
           # 1個
           - weight: {prop: palm_find}
             spawn: {object: palm_tree, into: self}
+          # 打ち上げられた流木の幹（timber.yaml）。海岸3種すべてに寄る。
+          - weight: 6
+            spawn: {object: driftwood_trunk, into: self}
           - weight: 5
             spawn: {object: woven_basket, into: self}
           - weight: {prop: crab_find}
@@ -319,6 +322,7 @@ object_defs:
       rat_catch: {value: 4}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
       rat_find: {value: 2}
+      monkey_find: {value: 4}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 13
@@ -341,10 +345,20 @@ object_defs:
             spawn: {object: shallow_cave, into: self}
           - weight: {prop: crab_find}
             spawn: {object: coconut_crab, into: self}
+          # 打ち上げられた流木の幹（timber.yaml）。海岸3種すべてに寄る。
+          - weight: 8
+            spawn: {object: driftwood_trunk, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
             spawn: {object: rat, into: self}
+          - weight: {prop: monkey_find}
+            spawn: {object: monkey, into: self}
           # 2個
+          # 漂着物。ヤシの実は海を渡って流れ着くので、ヤシの生えない岩場にも寄る。
+          - weight: 12
+            spawn:
+              - {object: coconut, into: self}
+              - {object: thick_branch, into: self}
           - weight: 20
             spawn: {object: stone, count: 2, into: self}
           - weight: 15
@@ -383,6 +397,7 @@ object_defs:
       rat_catch: {value: 4}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
       rat_find: {value: 2}
+      monkey_find: {value: 4}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 20
@@ -409,10 +424,20 @@ object_defs:
             spawn: {object: golden_chalice, into: self}
           - weight: 30
             spawn: {object: stone, into: self}
+          # 打ち上げられた流木の幹（timber.yaml）。海岸3種すべてに寄る。
+          - weight: 8
+            spawn: {object: driftwood_trunk, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
             spawn: {object: rat, into: self}
+          - weight: {prop: monkey_find}
+            spawn: {object: monkey, into: self}
           # 2個
+          # 漂着物。ヤシの実は海を渡って流れ着くので、ヤシの生えない崖下にも寄る。
+          - weight: 12
+            spawn:
+              - {object: coconut, into: self}
+              - {object: thick_branch, into: self}
           - weight: 25
             spawn: {object: stone, count: 2, into: self}
           - weight: 17

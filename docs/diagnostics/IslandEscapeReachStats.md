@@ -54,9 +54,9 @@ YAMLとずれます）。
 要るものが1つでも届かない島がこれにあたり、島を出るには `boat`・`sail`・`fishing_tool` がすべて
 要るので、`island_goal_unreached` のどれかが立った島と同じものを数えています。
 
-**0でありうるのは仕組みの側です**——島を出るのに要る丸太・繊維・大型の獣の入口は森と密林にしか無く、
-島には必ず森が1つ配られる（`terrain_generation.yaml` の `guarantees`）ので、土地の配りによらず鎖は
-閉じます（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 5節）。
+**0でありうるのは仕組みの側です**——島を出るのに要るものは、どれも入口を2つ以上持ち、そのうち1つは
+**どの島にも必ず在る海岸**（`hull_coast` が外周を海岸帯にする）から届きます
+（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 5節）。
 
 `island_unreached_need` は、その島で届かなかった型。目標そのものだけでなく、そこへ至る鎖の途中の型と、
 **その型を生みうる工程が要求する型**（島に無い土地を含む）が並びます——切れ目の先だけが広がるので、
