@@ -9,7 +9,9 @@ import {
   describeReportFreshness,
   describeYamlReportRegeneration,
   formatYamlReport,
-  RoundedNumber,
+  rounded,
+  shareRecord,
+  statRecord,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -166,36 +168,11 @@ const MEASURES = [
   },
 ] as const;
 
-/**
- * 丸めた数。**標本が足りずNaNになる値はnullで書く**——`NaN`と書くと、読む側では数ではなく文字列に
- * なって型が行ごとに変わる。
- */
-function rounded(value: number, decimals = 2): RoundedNumber | null {
-  return Number.isNaN(value) ? null : new RoundedNumber(value, decimals);
-}
-
-/** 分布1つのレコード。`keys`はそれが何の分布かを指す鍵（要るもの・土地）。 */
-function statRecord(keys: YamlRecord, stat: Stat): YamlRecord {
-  return {
-    ...keys,
-    mean: rounded(stat.mean),
-    min: rounded(stat.min),
-    median: rounded(stat.percentile(0.5)),
-    p95: rounded(stat.percentile(0.95)),
-    max: rounded(stat.max),
-    sd: rounded(stat.stdDev),
-    n: stat.count,
-  };
-}
-
 /** 同じ鍵に対する3つの測り方のレコード。 */
 function statRecords(keys: YamlRecord, stats: NeedStats): YamlRecord[] {
-  return MEASURES.map(({ measure, unit, statOf }) => statRecord({ ...keys, measure, unit }, statOf(stats)));
-}
-
-/** 割合（0〜1）のレコード。 */
-function shareRecord(keys: YamlRecord, share: number): YamlRecord {
-  return { ...keys, unit: 'percent', share: rounded(share * 100) };
+  return MEASURES.map(({ measure, unit, statOf }) =>
+    statRecord({ ...keys, measure, unit }, statOf(stats), 'median'),
+  );
 }
 
 function hopsHistogramRecords(stat: Stat): YamlRecord[] {
@@ -260,7 +237,7 @@ function buildSections(sources: StartupNeedSources, stats: StartupReachStats): r
       key: 'site_all_needs_hops_by_start_location',
       records: [...stats.farthestHopsByLocation]
         .sort((a, b) => a[0].localeCompare(b[0]))
-        .map(([location, stat]) => statRecord({ location, measure: 'hops', unit: 'hops' }, stat)),
+        .map(([location, stat]) => statRecord({ location, measure: 'hops', unit: 'hops' }, stat, 'median')),
     },
     { key: 'island_best_site', records: statRecords({}, stats.best) },
     { key: 'island_best_site_hops_histogram', records: hopsHistogramRecords(stats.best.hops) },

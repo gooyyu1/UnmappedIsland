@@ -19,7 +19,9 @@ import {
   describeReportFreshness,
   describeYamlReportRegeneration,
   formatYamlReport,
-  RoundedNumber,
+  rounded,
+  shareRecord,
+  statRecord,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -225,34 +227,12 @@ function collect(
   addDailyPhases(stats, phases.bestBase);
 }
 
-/**
- * 丸めた数。**標本が足りずNaNになる値はnullで書く**——`NaN`と書くと、読む側では数ではなく文字列に
- * なって型が行ごとに変わる。
- */
-function rounded(value: number, decimals = 2): RoundedNumber | null {
-  return Number.isNaN(value) ? null : new RoundedNumber(value, decimals);
-}
-
-/** 分布1つのレコード。`keys`はそれが何の分布かを指す鍵（測った項目と単位）。 */
-function statRecord(keys: YamlRecord, stat: Stat): YamlRecord {
-  return {
-    ...keys,
-    mean: rounded(stat.mean),
-    min: rounded(stat.min),
-    p5: rounded(stat.percentile(0.05)),
-    p95: rounded(stat.percentile(0.95)),
-    max: rounded(stat.max),
-    sd: rounded(stat.stdDev),
-    n: stat.count,
-  };
-}
-
 /** 測った項目1つぶんの、名前と単位と分布。 */
 type Metric = readonly [metric: string, unit: string, stat: Stat];
 
 /** `keys`は、測った項目より前に置く鍵（どの拠点の値か、など）。 */
 function metricRecords(metrics: readonly Metric[], keys: YamlRecord = {}): YamlRecord[] {
-  return metrics.map(([metric, unit, stat]) => statRecord({ ...keys, metric, unit }, stat));
+  return metrics.map(([metric, unit, stat]) => statRecord({ ...keys, metric, unit }, stat, 'p5'));
 }
 
 function degreeHistogramRecords(degree: Stat): YamlRecord[] {
@@ -261,14 +241,9 @@ function degreeHistogramRecords(degree: Stat): YamlRecord[] {
   for (let value = 1; value <= MAX_LISTED_DEGREE; value++) {
     const share = degree.shareOf(value);
     listed += share;
-    records.push({ degree: value, or_more: false, unit: 'percent', share: rounded(share * 100) });
+    records.push(shareRecord({ degree: value, or_more: false }, share));
   }
-  records.push({
-    degree: MAX_LISTED_DEGREE + 1,
-    or_more: true,
-    unit: 'percent',
-    share: rounded((1 - listed) * 100),
-  });
+  records.push(shareRecord({ degree: MAX_LISTED_DEGREE + 1, or_more: true }, 1 - listed));
   return records;
 }
 
@@ -294,13 +269,13 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
         return {
           location,
           present_percent: rounded(present * 100, 1),
-          mean_per_island: rounded(stat.mean),
-          mean_when_present: rounded(present === 0 ? 0 : stat.mean / present),
+          mean_per_island: rounded(stat.mean, 2),
+          mean_when_present: rounded(present === 0 ? 0 : stat.mean / present, 2),
           max_per_island: rounded(stat.max, 0),
         };
       }),
     },
-    { key: 'site_degree', records: [statRecord({ unit: 'edges' }, stats.degree)] },
+    { key: 'site_degree', records: [statRecord({ unit: 'edges' }, stats.degree, 'p5')] },
     { key: 'site_degree_histogram', records: degreeHistogramRecords(stats.degree) },
     {
       key: 'edge',
@@ -313,8 +288,8 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
     {
       key: 'base_one_way',
       records: [
-        statRecord({ base: SHORTEST_MEAN_BASE, unit: 'minutes' }, stats.chosenBaseOneWayMinutes),
-        statRecord({ base: 'any', unit: 'minutes' }, stats.anyBaseOneWayMinutes),
+        statRecord({ base: SHORTEST_MEAN_BASE, unit: 'minutes' }, stats.chosenBaseOneWayMinutes, 'p5'),
+        statRecord({ base: 'any', unit: 'minutes' }, stats.anyBaseOneWayMinutes, 'p5'),
       ],
     },
     {
@@ -385,8 +360,8 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
           base: SHORTEST_MEAN_BASE,
           share: share.label,
           work_percent: rounded(share.share * 100, 0),
-          round_trip_minutes: rounded(stat.roundTripMinutes.mean),
-          work_minutes_per_day: rounded(stat.workMinutesPerDay.mean),
+          round_trip_minutes: rounded(stat.roundTripMinutes.mean, 2),
+          work_minutes_per_day: rounded(stat.workMinutesPerDay.mean, 2),
           day_percent: rounded(stat.dayShare.mean * 100, 1),
           islands_percent: rounded((stat.dayShare.count / SEED_COUNT) * 100, 1),
         };

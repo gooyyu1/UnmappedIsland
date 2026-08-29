@@ -17,7 +17,8 @@ import {
   describeDocumentedSections,
   describeYamlReportRegeneration,
   formatYamlReport,
-  RoundedNumber,
+  rounded,
+  statRecord,
   yieldToEventLoop,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
@@ -239,36 +240,14 @@ function deriveWeatherMoistureDecrement(
   return totalCount > 0 ? weightedSum / totalCount : NaN;
 }
 
-/**
- * 丸めた数。**標本が足りずNaNになる値はnullで書く**——`NaN`と書くと、読む側では数ではなく文字列に
- * なって型が行ごとに変わる。
- */
-function rounded(value: number, decimals = 2): RoundedNumber | null {
-  return Number.isNaN(value) ? null : new RoundedNumber(value, decimals);
-}
-
-/** 分布1つのレコード。`keys`はそれが何の分布かを指す鍵（季節・天気・区間）。 */
-function statRecord(keys: YamlRecord, stat: Stat): YamlRecord {
-  return {
-    ...keys,
-    mean: rounded(stat.mean),
-    min: rounded(stat.min),
-    p5: rounded(stat.percentile(0.05)),
-    p95: rounded(stat.percentile(0.95)),
-    max: rounded(stat.max),
-    sd: rounded(stat.stdDev),
-    n: stat.count,
-  };
-}
-
 /** 各季節インスタンスの実持続期間の3等分区間。全体を先頭に置く。 */
 const SEGMENTS = ['early', 'middle', 'late'] as const;
 
 /** 全体＋3等分区間の4レコード。 */
 function segmentRecords(keys: YamlRecord, overall: Stat, byThird: (third: number) => Stat): YamlRecord[] {
   return [
-    statRecord({ ...keys, segment: 'overall' }, overall),
-    ...SEGMENTS.map((segment, third) => statRecord({ ...keys, segment }, byThird(third))),
+    statRecord({ ...keys, segment: 'overall' }, overall, 'p5'),
+    ...SEGMENTS.map((segment, third) => statRecord({ ...keys, segment }, byThird(third), 'p5')),
   ];
 }
 
@@ -298,7 +277,7 @@ function buildSections(
     {
       key: 'season_moisture_rate',
       records: seasonKinds.map((s) =>
-        statRecord({ season: nameOf(s), unit: 'per_tick' }, getStat(stats.seasonMoistureRate, s)),
+        statRecord({ season: nameOf(s), unit: 'per_tick' }, getStat(stats.seasonMoistureRate, s), 'p5'),
       ),
     },
     {
@@ -318,6 +297,7 @@ function buildSections(
             statRecord(
               { weather: nameOf(w), season: nameOf(s), unit: 'per_tick' },
               getStat(stats.rainWeatherNetMoistureDelta, `${w},${s}`),
+              'p5',
             ),
           ),
       ),
@@ -325,7 +305,7 @@ function buildSections(
     {
       key: 'season_duration',
       records: seasonKinds.map((s) =>
-        statRecord({ season: nameOf(s), unit: 'days' }, getStat(stats.seasonDuration, s)),
+        statRecord({ season: nameOf(s), unit: 'days' }, getStat(stats.seasonDuration, s), 'p5'),
       ),
     },
     {

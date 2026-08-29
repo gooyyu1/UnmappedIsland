@@ -4,6 +4,7 @@ import process from 'node:process';
 import { setImmediate } from 'node:timers';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
+import type { Stat } from './Stat';
 
 /**
  * 生成するレポート（`stats/*.yaml`）の、書き出し方と見張り方。
@@ -204,6 +205,53 @@ export type YamlRecord = Readonly<Record<string, YamlRecordValue>>;
 export interface YamlReportSection {
   readonly key: string;
   readonly records: readonly YamlRecord[];
+}
+
+/**
+ * 丸めた数。**決まらない値はnullで書く**——`NaN`や`—`と書くと、読む側では数ではなく文字列になって
+ * 型が行ごとに変わる（標本が足りないときの`Stat`はNaNを返す）。`-0.00`は`0.00`へ均す（丸めで符号
+ * だけが残った値に意味は無い）。
+ *
+ * **桁は必ず受け取る**——既定を置くと、桁を書いていない呼び出しの出力が既定の変更で黙って変わる。
+ */
+export function rounded(value: number | undefined, decimals: number): RoundedNumber | null {
+  if (value === undefined || !Number.isFinite(value)) return null;
+  const zero = (0).toFixed(decimals);
+  return new RoundedNumber(value.toFixed(decimals) === `-${zero}` ? 0 : value, decimals);
+}
+
+/** 分布の列と割合の桁。**レポート横断で同じ**——別のレポートの同じ列と並べて読むため。 */
+const STAT_DECIMALS = 2;
+
+/**
+ * 分布のレコードで、`min`と`p95`の間に置く1列。**名前と分位は対応する**——低い側の裾を見る表は
+ * `p5`、真ん中の位置を見る表は`median`。
+ */
+export type StatMiddleColumn = 'p5' | 'median';
+
+const MIDDLE_PERCENTILE: Readonly<Record<StatMiddleColumn, number>> = { p5: 0.05, median: 0.5 };
+
+/**
+ * 分布1つのレコード。`keys`はそれが何の分布かを指す鍵（季節・土地・測ったものなど）。
+ *
+ * 列の並びはレポート横断の規約なので、ここが1箇所で持つ。
+ */
+export function statRecord(keys: YamlRecord, stat: Stat, middle: StatMiddleColumn): YamlRecord {
+  return {
+    ...keys,
+    mean: rounded(stat.mean, STAT_DECIMALS),
+    min: rounded(stat.min, STAT_DECIMALS),
+    [middle]: rounded(stat.percentile(MIDDLE_PERCENTILE[middle]), STAT_DECIMALS),
+    p95: rounded(stat.percentile(0.95), STAT_DECIMALS),
+    max: rounded(stat.max, STAT_DECIMALS),
+    sd: rounded(stat.stdDev, STAT_DECIMALS),
+    n: stat.count,
+  };
+}
+
+/** 割合（0〜1）のレコード。百分率へ直して書く。 */
+export function shareRecord(keys: YamlRecord, share: number): YamlRecord {
+  return { ...keys, unit: 'percent', share: rounded(share * 100, STAT_DECIMALS) };
 }
 
 /**
