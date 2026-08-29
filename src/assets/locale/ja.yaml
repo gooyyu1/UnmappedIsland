@@ -1479,6 +1479,10 @@ ui_texts:
   # 日の出の演出に出る日数の見出し（ScreenLayout.md 7.5.6節）。後ろに生存日数が続く。
   day: DAY
 
+  # 絞り込みで1枚も残らなかったレーンの枠に重ねる印（ScreenLayout.md 8.1.7節）。**枠に収まる短さ**で
+  # ——重ねる文字の板はカード1枚の幅しか持たない。
+  lane_hidden_cards: '隠れ{count}枚'
+
   # 死んだことを伝えるダイアログ（VitalsSystem.md 6節）。死因は消し方の対応表から引く。
   death_exhausted: 力尽きた。
   death_by_cause: '{cause}で死んだ。'

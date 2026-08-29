@@ -105,17 +105,32 @@ export class ShownCards {
 
   /** そこに並ぶ束。持ち出されている札と絞り込みで隠れる札を差し引いた、画面に出ている姿そのもの。 */
   stacksAt(spot: CardSpot): readonly (ObjectCardStack | undefined)[] {
+    return this.matching(spot, this.presentAt(spot));
+  }
+
+  /**
+   * そこで絞り込みが隠している札の枚数（隠していなければ0）。**数えるのはここ**——絞り込みを掛ける
+   * 前の並びを持っているのはここだけで、レーンの側で引き直すと同じ引き算が2箇所に分かれる。
+   *
+   * 数えるのは並ぶ単位（札）で、束の中の個体数ではない。貸し出し中の枠に残る印も1枚——「すべて」を
+   * 押せば戻る枠が、そのぶんだけ在る。
+   */
+  hiddenAt(spot: CardSpot): number {
+    const present = this.presentAt(spot);
+    return present.length - this.matching(spot, present).length;
+  }
+
+  /** そこに並ぶ束から、持ち出されているぶんだけを引いた並び（絞り込みはまだ掛けていない）。 */
+  private presentAt(spot: CardSpot): readonly (ObjectCardStack | undefined)[] {
     if (spot === 'windowCard') return [this.window?.stack];
 
     const stacks = this.source.stacksIn(spot);
     const aloft = this.aloft();
-    const shown =
-      aloft.size === 0
-        ? stacks
-        : stacks.flatMap<ObjectCardStack | undefined>((stack) =>
-            stack === undefined ? [undefined] : this.shownStacksOf(stack, aloft),
-          );
-    return this.matching(spot, shown);
+    return aloft.size === 0
+      ? stacks
+      : stacks.flatMap<ObjectCardStack | undefined>((stack) =>
+          stack === undefined ? [undefined] : this.shownStacksOf(stack, aloft),
+        );
   }
 
   /**
