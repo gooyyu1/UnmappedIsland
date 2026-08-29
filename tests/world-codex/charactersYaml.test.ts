@@ -46,7 +46,12 @@ function decayPerTick(character: string, propertyName: string): number {
  * 砂浜に立たせたキャラクタ。死ぬと世界から外れる（VitalsSystem.md 6節）ので、それを見るには
  * 居場所を持たせて始める必要がある。
  */
-function stand(character: string): { player: PlayerCharacter; session: WorldSession } {
+function stand(character: string): {
+  player: PlayerCharacter;
+  session: WorldSession;
+  world: WorldObject;
+  land: WorldObject;
+} {
   const session = new WorldSession(codex);
   const worldInstance = new WorldObject(0, def('world'), session);
   session.adoptWorld(new World(worldInstance, codex));
@@ -56,8 +61,83 @@ function stand(character: string): { player: PlayerCharacter; session: WorldSess
   ).toBeUndefined();
   const instance = session.createObject(codex.objectNames.getId(character));
   expect(instance.moveToSlotOrRejection(beach.getSlot(codex.slotNames.getId('characters')))).toBeUndefined();
-  return { player: new PlayerCharacter(instance, codex), session };
+  return { player: new PlayerCharacter(instance, codex), session, world: worldInstance, land: beach };
 }
+
+/** 寒さの入口（`chill_point`）の素の値（VitalsSystem.md 8.3節）。 */
+const CHILL_POINT = 16;
+
+/**
+ * 寒さの入口を下回る夜にして、天気を1つ据える（VitalsSystem.md 8.3節）。**世界はtickさせない**ので、
+ * 以後この気温と天気のまま動かない——見たいのはキャラクタ側の削りだけで、気候の巡りは
+ * climateSystem.test.tsが受け持つ。
+ */
+function chillTheWorld(world: WorldObject, weatherName: string): void {
+  world.getProperty(codex.propertyNames.getId('ambient_temperature')).setNumber(CHILL_POINT - 4);
+  world
+    .getProperty(codex.propertyNames.getId('weather'))
+    .setNumberWithoutEvents(codex.symbolNames.getId(weatherName));
+}
+
+/** その土地へ、火の点いた炉を1つ据える（fire.yamlのcampfire。暖は親の気温を+8する）。 */
+function setHearth(session: WorldSession, land: WorldObject): void {
+  const hearth = session.createObject(codex.objectNames.getId('campfire'));
+  expect(hearth.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+  hearth.getProperty(codex.propertyNames.getId('fuel')).setNumber(5);
+  hearth.getProperty(codex.propertyNames.getId('heat')).setNumber(1);
+}
+
+/** そのキャラクタを、雨の当たらない浅い洞窟（locations.yamlのshallow_cave）の中へ入れる。 */
+function moveIntoCave(session: WorldSession, land: WorldObject, player: PlayerCharacter): void {
+  const cave = session.createObject(codex.objectNames.getId('shallow_cave'));
+  expect(cave.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+  expect(
+    player.instance.moveToSlotOrRejection(cave.getSlot(codex.slotNames.getId('characters'))),
+  ).toBeUndefined();
+}
+
+/** 熱の増減を測るときの居場所。どちらも指定しなければ、雨の当たる野ざらし。 */
+interface Place {
+  readonly inCave?: boolean;
+  readonly hearth?: boolean;
+}
+
+/**
+ * 寒さの入口を下回る夜に1 tick置いたときの、熱の増減（VitalsSystem.md 8.3節）。満タンでも下限でも
+ * 頭打ちに掛からないよう、真ん中の位置から測る。
+ */
+function warmthChange(character: string, weatherName: string, place: Place): number {
+  const { player, session, world, land } = stand(character);
+  chillTheWorld(world, weatherName);
+  if (place.inCave === true) moveIntoCave(session, land, player);
+  if (place.hearth === true) setHearth(session, land);
+
+  const warmthId = codex.propertyNames.getId('warmth');
+  player.instance.tryGetProperty(warmthId)?.setNumber(maxOf(character, 'warmth') / 2);
+  const before = player.instance.tryGetProperty(warmthId)?.number ?? 0;
+
+  player.instance.tick();
+
+  return (player.instance.tryGetProperty(warmthId)?.number ?? 0) - before;
+}
+
+/** 熱の削りと戻りが、居場所と天気でどう変わるか（VitalsSystem.md 8.3節）。 */
+const WARMTH_CASES: readonly { situation: string; weather: string; place: Place; perTick: number }[] = [
+  { situation: '寒い夜に野ざらしでも、雨が降っていなければ', weather: 'clear', place: {}, perTick: -2 },
+  {
+    situation: '寒い雨の夜でも、岩屋根の下なら',
+    weather: 'heavy_rain',
+    place: { inCave: true },
+    perTick: -2,
+  },
+  { situation: '寒い雨の夜に野ざらしなら', weather: 'heavy_rain', place: {}, perTick: -6 },
+  {
+    situation: '炉の暖が気温を入口より上へ戻していれば',
+    weather: 'heavy_rain',
+    place: { hearth: true },
+    perTick: 8,
+  },
+];
 
 /** 休息（docs/world/Characters.md 休息節）の4つ。長さの短い順。 */
 const RESTS = [
@@ -145,6 +225,7 @@ describe('プレイヤーキャラクタの定義', () => {
     it.each([
       ['pain', ['status', 'health']],
       ['blood', ['status', 'health']],
+      ['warmth', ['status', 'health']],
       ['satiety', ['status', 'nutrition']],
       ['hydration', ['status', 'nutrition']],
       ['body_fat', ['nutrition']],
@@ -165,7 +246,7 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(tagNames.sort()).toEqual([...expectedTags].sort());
     });
 
-    it('ステータスエリアに出るのは8件で、並び順も揃っている', () => {
+    it('ステータスエリアに出るのは9件で、並び順も揃っている', () => {
       // propertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（StatusArea.md 3節）。
       const instance = new WorldSession(codex).createObject(def(character).globalId);
       const status = instance.propertiesWithTag(codex.propertyTagNames.getId('status'));
@@ -173,6 +254,7 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(status.map((property) => property.def.name)).toEqual([
         'pain',
         'blood',
+        'warmth',
         'satiety',
         'vitamin',
         'hydration',
@@ -182,12 +264,19 @@ describe('プレイヤーキャラクタの定義', () => {
       ]);
     });
 
-    it.each(['pain', 'blood', 'satiety', 'hydration', 'body_fat', 'wakefulness', 'stamina', 'load'])(
-      '%sは0を下限とするrangeを持つ',
-      (propertyName) => {
-        expect(propOf(def(character), propertyName).range?.min).toBe(0);
-      },
-    );
+    it.each([
+      'pain',
+      'blood',
+      'warmth',
+      'satiety',
+      'hydration',
+      'body_fat',
+      'wakefulness',
+      'stamina',
+      'load',
+    ])('%sは0を下限とするrangeを持つ', (propertyName) => {
+      expect(propOf(def(character), propertyName).range?.min).toBe(0);
+    });
 
     it.each([
       // 時間を数えるクラスは基準レートが1/tickで、maxが「何tick保つか」を直接表す（6.0節）。
@@ -332,8 +421,43 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(instance.tryGetProperty(bloodId)?.number ?? 0, '満タンを超えては溜まらない').toBe(max);
     });
 
-    it('ステータスエリアに出るもののうち、致命的域を持つのは水分と血だけ', () => {
-      // 3つ目の死に方（飢え）はbody_fatが持つが、statusタグが無いのでここには現れない
+    // 寒さは気温と寒さの入口（chill_point）の比較1つで決まり、雨は気温ではなく削る速さに効く
+    // （VitalsSystem.md 8.3節）。
+    it.each(WARMTH_CASES)('$situation、熱は1 tickあたり$perTick', ({ weather, place, perTick }) => {
+      expect(warmthChange(character, weather, place)).toBe(perTick);
+    });
+
+    it('雨の夜に野ざらしで居続けると、熱を失って凍死する', () => {
+      const { player, world } = stand(character);
+      chillTheWorld(world, 'heavy_rain');
+
+      // -6/tickなので、満タンの熱は120 tick（30時間）足らずで尽きる。水分はどのキャラクタも
+      // 216 tick以上あるので、ここで先に尽きるのは熱だけ。
+      for (let i = 0; i < Math.ceil(maxOf(character, 'warmth') / 6); i++) {
+        if (player.ending.kind !== undefined) break;
+        player.instance.tick();
+      }
+
+      expect(player.ending.kind).toBe('death');
+      expect(player.ending.causeOfDeath).toBe('frozen');
+    });
+
+    it('同じ夜でも、炉のそばなら死なずに熱が戻る', () => {
+      const { player, session, world, land } = stand(character);
+      chillTheWorld(world, 'heavy_rain');
+      setHearth(session, land);
+      const warmthId = codex.propertyNames.getId('warmth');
+      const max = maxOf(character, 'warmth');
+      player.instance.tryGetProperty(warmthId)?.setNumber(max / 2);
+
+      for (let i = 0; i < Math.ceil(max / 6); i++) player.instance.tick();
+
+      expect(player.ending.kind, '凍死しない').toBeUndefined();
+      expect(player.instance.tryGetProperty(warmthId)?.number ?? 0, '満タンまで戻る').toBe(max);
+    });
+
+    it('ステータスエリアに出るもののうち、致命的域を持つのは水分と血と熱だけ', () => {
+      // 4つ目の死に方（飢え）はbody_fatが持つが、statusタグが無いのでここには現れない
       // （画面に出る飢えの兆しは満腹度、docs/world/Characters.md）。
       const instance = new WorldSession(codex).createObject(def(character).globalId);
 
@@ -341,15 +465,16 @@ describe('プレイヤーキャラクタの定義', () => {
         .propertiesWithTag(codex.propertyTagNames.getId('status'))
         .filter((property) => property.def.alertOf(0) === 'fatal');
 
-      expect(fatal.map((property) => property.def.name)).toEqual(['blood', 'hydration']);
+      expect(fatal.map((property) => property.def.name)).toEqual(['blood', 'warmth', 'hydration']);
     });
 
-    // 死に方は3つだけ（VitalsSystem.md 8節）。どれも「尽きたら世界から出る」という同じ形で、
+    // 死に方は4つだけ（VitalsSystem.md 8節）。どれも「尽きたら世界から出る」という同じ形で、
     // 死因の名前を名乗るのは命を絶ったdestroy（9.3節のreason。画面はその文言を出すだけ）。
     it.each([
       ['hydration', 'dehydrated'],
       ['body_fat', 'starved'],
       ['blood', 'exsanguinated'],
+      ['warmth', 'frozen'],
     ])('%sを使い切ると死に、死因は「%s」を名乗る', (propertyName, reason) => {
       const { player } = stand(character);
       const propertyId = codex.propertyNames.getId(propertyName);

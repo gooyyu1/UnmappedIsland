@@ -401,6 +401,18 @@ consumption:
   - {property: blood, condition: 常時, character: engineer, per_tick: 2.00, per_day: 192}
   - {property: blood, condition: 常時, character: farmer, per_tick: 2.00, per_day: 192}
   - {property: blood, condition: 常時, character: medic, per_tick: 2.00, per_day: 192}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: captain, per_tick: -2.00, per_day: -192}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: engineer, per_tick: -2.00, per_day: -192}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: farmer, per_tick: -2.00, per_day: -192}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: medic, per_tick: -2.00, per_day: -192}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ sheltered = 0 かつ 祖先のweather ∈ light_rain・heavy_rain・storm, character: captain, per_tick: -6.00, per_day: -576}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ sheltered = 0 かつ 祖先のweather ∈ light_rain・heavy_rain・storm, character: engineer, per_tick: -6.00, per_day: -576}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ sheltered = 0 かつ 祖先のweather ∈ light_rain・heavy_rain・storm, character: farmer, per_tick: -6.00, per_day: -576}
+  - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ sheltered = 0 かつ 祖先のweather ∈ light_rain・heavy_rain・storm, character: medic, per_tick: -6.00, per_day: -576}
+  - {property: warmth, condition: 祖先のambient_temperature ≥ chill_point, character: captain, per_tick: 8.00, per_day: 768}
+  - {property: warmth, condition: 祖先のambient_temperature ≥ chill_point, character: engineer, per_tick: 8.00, per_day: 768}
+  - {property: warmth, condition: 祖先のambient_temperature ≥ chill_point, character: farmer, per_tick: 8.00, per_day: 768}
+  - {property: warmth, condition: 祖先のambient_temperature ≥ chill_point, character: medic, per_tick: 8.00, per_day: 768}
   - {property: satiety, condition: 常時, character: captain, per_tick: -16.00, per_day: -1536}
   - {property: satiety, condition: 常時, character: engineer, per_tick: -16.00, per_day: -1536}
   - {property: satiety, condition: 常時, character: farmer, per_tick: -16.00, per_day: -1536}
