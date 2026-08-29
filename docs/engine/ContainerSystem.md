@@ -171,11 +171,15 @@ character:
 移動可否は `{subject: actor, prop: load, lt: 60000}` のように、道の `travel` アクションの
 `conditions` で直接書けます。
 
-## 5. 負荷が効くのは移動できるかどうか
+## 5. 負荷の効かせ方
 
 `load` の段（`stages`、[`GameElementDefinition.md`](./GameElementDefinition.md) 6.4 節）の危険域に入ると、
 移動できなくなります。閾値はキャラクタごと（`characters/`）に置くので、担ぎ慣れの個人差はここに出ます。
 域そのものの見せ方は、ステータスの一種として [`StatusArea.md`](../ui/StatusArea.md)が扱います。
+
+**段が駆動するのは移動の可否だけではありません。** 歩みの速さと `stamina` の削りも同じ段が持ちます
+（[`../world/Characters.md`](../world/Characters.md) 荷重の効き方節）。本節が決めるのは `load` が
+どう積み上がるかまでで、**段に何をぶら下げるかはキャラクタの側**です。
 
 書き方は、道の `travel` に `actor` の `load` を見る条件を足すだけです。
 
@@ -195,7 +199,7 @@ interactions:
 実行できないアクションのボタンは押せない見た目になり、押している間だけ理由が出ます
 （`reason: too_heavy`、`GameElementDefinition.md` 14.6 節）。
 
-重い荷が移動時間や疲労に与える影響は、実現方法から検討し直します（7 節）。
+**疲労は段の `add` で書けますが、移動時間だけは文法が 1 つ足りません**（8 節）。
 
 ## 6. 環境からの保護は sheltered プロパティ1つで表す
 
@@ -216,7 +220,8 @@ conditions:
 **守るのは入れ物だけではありません。** 浅い洞窟（[`../world/Dwellings.md`](../world/Dwellings.md) 5.1 節）は
 場所として `sheltered: 1` を宣言し、中に置いた物・据えた炉が同じ1行で守られます。読む側は
 屋外劣化（`DurabilitySystem.md` 2 節）・炉の火力（[`FireSystem.md`](./FireSystem.md) 8 節）・雨受けの容器
-（[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 7 節）の3つで、いずれも上の1行だけを見ます。
+（[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 7 節）・雨に打たれて熱を失う体
+（[`VitalsSystem.md`](./VitalsSystem.md) 8.3 節）の4つで、いずれも上の1行だけを見ます。
 
 **雨をしのぐことを `weather` の宣言で表すことはしません。** 洞窟が自分の `weather` を宣言すれば雨を見ている
 条件は確かに止まりますが、それは「そこでは天気そのものが違う」という宣言になり、天気を読む先（明るさ・
@@ -268,10 +273,11 @@ conditions:
 
 ## 8. 未決事項・今後の検討課題
 
-- 重い荷が**移動時間**や**疲労**へ与える影響（移動できるかどうかだけは 5 節で実装済み）。実現方法から
-  検討し直す。`duration` は単一のプロパティ参照
-  （11.3 節）なので道ごとの所要時間と負荷を合流させる場所が無く、`set`/`add` の値はリテラルだけなので
-  （9.2 節）「移動のたびに負荷に応じた量を引く」も書けない。当面は移動の可否だけを見る
+- 重い荷が**移動時間**へ与える影響（移動できるかどうかだけが 5 節で実装済み。**疲労のほうは段の `add` で
+  書けると決まった**、[`../world/Characters.md`](../world/Characters.md) 荷重の効き方節）。`duration` は
+  単一のプロパティ参照（11.3 節）なので、道ごとの所要時間と担ぎ手の遅れを合流させる場所が無い。
+  **足りるのは 2 つの参照の積**で、記法の採否は [`GameElementDefinition.md`](./GameElementDefinition.md)
+  17 節が持つ
 - キャラクターの `load` を modify で調整して個人差や怪我を表す場合、`stages` の閾値は型定義なので動かせない。
   怪我は「荷が重く感じる」向きの modify として表すことになる
 - 中身の入った入れ物が壊れたときの中身の扱い。`destroy` は親スロットからの切り離しなので（9.3 節）中身も

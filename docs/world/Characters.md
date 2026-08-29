@@ -44,17 +44,21 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 
 気絶を決める `consciousness` は、`pain` と同じくキャラクタ間で共通の値としてここへ加わる予定である
 （押し下げる側は [`VitalsSystem.md`](../engine/VitalsSystem.md) 2 節。気を失った手番の飛ばし方が
-決まっていないため、まだ実装しておらず上の契約にも含めない）。
+決まっていないため、まだ実装しておらず上の契約にも含めない）。**体に残っている熱 `warmth` も同じ扱い**
+——4 本目の死に方（凍死）として決まっているが（同 8.3 節）、寒さを防ぐ側（衣服・寝床）が無いため
+まだ配っていない。入るときは `status` タグを持ち、`blood` の隣に並ぶ。
 
 ### 値の刻み方（キャラクタ間で共通の規約）
 
 数値のスケールは [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.0節に従い、
 `range.min` は常に0。1 tick = 15分、1時間 = 4 tick。
 
-**尽きると死ぬのは `hydration` / `body_fat` / `blood` の3つ**（[`VitalsSystem.md`](../engine/VitalsSystem.md) 8 節）。
+**尽きると死ぬのは `hydration` / `body_fat` / `blood` の3つ**で、**4つ目の `warmth` が決まっている**
+（[`VitalsSystem.md`](../engine/VitalsSystem.md) 8 節・8.3 節）。
 いずれも `range.min`（＝0）へ達した時点で `on_min` が自分を `destroy` する、同じ形で書く。
-**死因を名乗るのはその `destroy` で**、添えた `reason`（`dehydrated` / `starved` / `exsanguinated`）が
-消された側に残る（`WorldObject.destroyedReason`、[`VitalsSystem.md`](../engine/VitalsSystem.md) 6 節）。
+**死因を名乗るのはその `destroy` で**、添えた `reason`（`dehydrated` / `starved` / `exsanguinated` /
+`frozen`）が消された側に残る（`WorldObject.destroyedReason`、
+[`VitalsSystem.md`](../engine/VitalsSystem.md) 6 節）。
 同じ名前の段を一番下に置くのは、尽きる前に警告を出すため。
 
 - **`satiety`（満腹感）**: **単位は mL**——胃に入っている物のかさで、エネルギーではない
@@ -87,7 +91,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   眠り込むまでの時間」**で、普通の人間の48時間（192 tick）を基準に置く。外から起こし続ける実験の記録
   （数日〜十日）は採らない——あれは自力で起きていられる長さではないため。眠らずにいられる長さの
   個人差はここに出る。
-- **`stamina`（体力）**: 疲労の逆で、tickでは減らない。戻すのは休息だけ（同節）。
+- **`stamina`（体力）**: 疲労の逆。戻すのは休息だけ（同節）。**tickで減るのは荷を担いでいる間だけ**で、
+  減らすのは `load` の段（下の荷重の効き方節）。空身なら 1 も減らない。
 - **`pain`（痛み）**: 負っている怪我（[`InjurySystem.md`](../engine/InjurySystem.md)）が `modify` で押し上げる値。自分では
   動かないので `value` は 0 のまま、`max` は「これ以上は耐えられない」点。痛みの感じ方は食の好みではなく
   身体の仕組みなので、栄養バランスと同じく個体差を持たせず `player_character` trait が配る。
@@ -98,10 +103,12 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   自分で戻るステータス**（`+2/tick` ＝ 1日およそ200mL、赤血球が作られる実際の速さ）。削るのは出血する
   怪我だけなので、**削られるのは一瞬でも戻るのは桁違いに遅い**——失った1,000mLに5日かかる。尽きた段の
   名前は **`exsanguinated`**。刻み方は [`VitalsSystem.md`](../engine/VitalsSystem.md) 3 節、これも個体差を
-  持たせず trait が配る。
+  持たせず trait が配る。**戻るのは水分と体脂肪がともに安全域にある間だけ**で（同 3.1 節）、
+  水も食べ物も切らしたまま養生することはできない。
 - **`load`（荷重）**: 持ち物と装備の重さ（g）。自分では動かず、中身から導出される
   （[`ContainerSystem.md`](../engine/ContainerSystem.md) 2節）ので `value` は 0 のまま。`max` が
-  「担げる量」そのもので、担ぎ慣れの個人差はここに出る。
+  「担げる量」そのもので、担ぎ慣れの個人差はここに出る。**段が駆動するのは移動の可否だけではない**
+  ——歩みの速さと `stamina` の削りも段が持つ（下の荷重の効き方節）。
 
 
 ### 域の区分（`stages` の不変条件）
@@ -132,6 +139,38 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   割合で刻む: 1/4 で `watch`、1/2 で `caution`、5/6 で `danger`。0 から始まって荷造り・怪我の最中に
   現れるよう、最初の境目は低めに置く。`load` の危険域の段の名前は **`too_heavy`** で固定する——道の
   `travel` がこの名前で移動可否を見る（[`ContainerSystem.md`](../engine/ContainerSystem.md) 5節）。
+
+## 荷重の効き方【確定】【未実装: 荷の重さ】
+
+**荷は、担げるかどうかだけでなく、歩みの速さと疲れにも効きます。** 効かせ方は 1 箇所——`load` の段
+（[`ContainerSystem.md`](../engine/ContainerSystem.md) 5 節）で、閾値を別に持つ量は 1 つも足しません。
+
+| 段 | 移動 | 歩みの速さ | `stamina` |
+| --- | --- | --- | --- |
+| `light` | 通る | 等倍 | 減らない |
+| `laden` | 通る | ×1.15 | `-0.05/tick` |
+| `heavy` | 通る | ×1.4 | `-0.15/tick` |
+| `too_heavy` | **通れない** | — | `-0.4/tick` |
+
+- **疲れる側は、今の文法でそのまま書けます。** 段の `passives` が `add` で `stamina` を削るだけです
+  （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.4 節）。**削るのが時間なので、
+  往復の回数そのものが重みを持ちます**——重い荷で長い道を歩くほど、削られる tick が増えます。
+  `stamina` が tick で減らないという既定が破れるのはここだけで、破るのは荷重の段だけです。
+- **遅くなる側は、文法が 1 つ足りません。** 道の所要時間は道自身が持ち（`duration: {prop: travel_minutes}`）、
+  `duration` に書けるのは**単一の参照だけ**です（同 11.3 節）。**足りるのは、2 つの参照の積を取れること
+  だけです**——道の `travel_minutes` × 担ぎ手の `pace`（素は 1 で、`load` の段が `modify` で押し上げる）。
+  和ではなく積にするのは、**長い道ほど遅れも大きい**からで、遅れの量を道ごとに書かずに済みます。
+  加えて `duration` の `subject` は `self`/`ancestor` だけで `actor` を指せない（同 10.2 節）ので、
+  そこも要ります。詳しくは同 17 節。
+- **軽くする道具の値打ちは損なわれません。** そりのような率を下げる道具は `load` そのものを下げるので、
+  **移動の可否・速さ・疲れの 3 つに同時に効きます**（[`ContainerSystem.md`](../engine/ContainerSystem.md)
+  2 節）。移動が重くなる方向の変更ですが、[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の
+  「コストは、それを軽くする道具の値打ちそのもの」に沿って、**重くなった分がそのまま、そりを作る理由と
+  前線を近づける理由**になります。
+- **怪我もここへ合流します。** 骨折は宿主の `load` を押し上げる（[`InjurySystem.md`](../engine/InjurySystem.md)
+  5 節）ので、**傷の側に移動の規則を 1 行も書かずに**「折れた脚では遅く、余計に疲れる」が出ます。
+- **画面は変わりません。** `load` は既にステータスエリアへ「増えると悪い」バーとして並んでいます
+  （[`StatusArea.md`](../ui/StatusArea.md) 6 節）。段が増えたわけでも、新しい行が増えたわけでもありません。
 
 ## 休息
 
