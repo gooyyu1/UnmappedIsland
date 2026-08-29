@@ -70,7 +70,8 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 **1日未満で越えられる前提は、段ではなく幅です**（同「段は、実際に足止めしたものだけを数える」節）。
 実測では、刃物（72.2分<!-- stats: balance.yaml object_costs object=sharp_stone total_minutes -->）・焚き火（55.9分<!-- stats: balance.yaml object_costs object=campfire total_minutes -->）・くくり罠（103.3分<!-- stats: balance.yaml object_costs object=snare total_minutes -->）・覆い焼きの炉（303.8分<!-- stats: balance.yaml object_costs object=earth_kiln total_minutes -->）はいずれも
-0.07<!-- stats: balance.yaml object_costs object=campfire days -->〜0.37<!-- stats: balance.yaml object_costs object=earth_kiln days -->日で、どれも段になりません。4桁の労働がかかるのは筏（4,207分<!-- stats: balance.yaml object_costs object=raft total_minutes -->）と帆（3,777分<!-- stats: balance.yaml object_costs object=rawhide_sail total_minutes -->）だけです。
+0.07<!-- stats: balance.yaml object_costs object=campfire days -->〜0.37<!-- stats: balance.yaml object_costs object=earth_kiln days -->日で、どれも段になりません。単体で1段ぶんに届くのは筏（5.2日<!-- stats: balance.yaml object_costs object=raft days -->）・帆（4.6日<!-- stats: balance.yaml object_costs object=rawhide_sail days -->）・家畜の囲い（3.1日<!-- stats: balance.yaml object_costs object=pen days -->）・
+なめし革の一式（2.3日<!-- stats: balance.yaml object_costs object=tanned_leather_clothing days -->）の4つで、いずれも4節に山として挙がっています。
 
 **この物差しは道具が判定します。** `npm run stats:balance` の総コストがそのまま「段かどうか」を決めるので、
 幅出しで物が増えたときに数え直しが要りません。
