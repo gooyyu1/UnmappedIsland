@@ -5,7 +5,7 @@ import type { CardContent } from './Card';
 import { Card } from './Card';
 import { cardFace } from './cardFace';
 import type { CardLane } from './CardLane';
-import { FLY_EASE_OUT, FLY_MS } from '../looks/cardFlight';
+import { flightProgress } from '../looks/cardFlight';
 import { SCREEN_DEPTH } from '../looks/screenDepth';
 import { DustPuff } from './DustPuff';
 import type { PlacedCard } from '../view/cardMotionPlan';
@@ -78,7 +78,7 @@ interface Flight {
   fromX: number;
   fromY: number;
   elapsed: number;
-  /** 飛び立ちまでの残り時間（複数生まれたぶんは出どころに積まれ、順に飛び立つ）。 */
+  /** 飛び立つまで出発点で待つ時間（進み具合の引き方はcardFlight）。 */
   delay: number;
   raisesDust: boolean;
 }
@@ -342,15 +342,13 @@ export class CardTable {
       if (target !== undefined) flight.to = target();
 
       flight.elapsed += delta;
-      if (flight.elapsed < flight.delay) continue;
 
-      const t = Math.min(1, (flight.elapsed - flight.delay) / FLY_MS);
-      const eased = FLY_EASE_OUT(t);
+      const progress = flightProgress(flight.elapsed, flight.delay);
       flight.card.setPosition(
-        flight.fromX + (flight.to.x - flight.fromX) * eased,
-        flight.fromY + (flight.to.y - flight.fromY) * eased,
+        flight.fromX + (flight.to.x - flight.fromX) * progress,
+        flight.fromY + (flight.to.y - flight.fromY) * progress,
       );
-      if (t >= 1) this.land(flight);
+      if (progress >= 1) this.land(flight);
     }
   }
 
