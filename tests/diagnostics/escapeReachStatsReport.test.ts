@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import type { EscapeNeed, EscapeReach } from '../../src/analysis/escapeReach';
-import { escapeReachOf } from '../../src/analysis/escapeReach';
+import { escapeReachSourcesOf, escapeReachOf } from '../../src/analysis/escapeReach';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
@@ -89,7 +89,7 @@ function buildReportFromDefinitions(): string {
       '生成物。手で書き換えず、npm run stats:escape で作り直す。',
       '何を数えて何を数えていないかは docs/diagnostics/EscapeReachStats.md。',
     ],
-    buildSections(escapeReachOf(codex)),
+    buildSections(escapeReachOf(escapeReachSourcesOf(codex))),
   );
 }
 
