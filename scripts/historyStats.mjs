@@ -9,7 +9,11 @@
 //   node scripts/historyStats.mjs --svg docs <日付...>  表に加えて、貼り込む図も書き出す
 //
 // 日付は**日本時間**で読み、その日の最終コミットの状態を測る。時差で日が変わるので、UTCの
-// 履歴をそのまま日で切ると1日ずれる。
+// 履歴をそのまま日で切ると1日ずれる。**呼ぶ側も日付をJSTで作ること**——UTCの「今日」を渡すと、
+// JSTで日が変わった後の時間帯にはHEADが境界より後になり、その日のコミットが1つも無いことになる。
+//
+// **履歴を全部持っていないと走らない**（`requireFullHistory`）。浅いクローンでは、行数の列だけが
+// 出せてしまうのが一番危ないので、手前で止める。
 //
 // ## 行数の集め方
 //
@@ -61,6 +65,21 @@ function git(args) {
     maxBuffer: 256 * 1024 * 1024,
     env: { ...process.env, TZ: TIMEZONE },
   }).trim();
+}
+
+/**
+ * 履歴を全部持っていないなら、何も測らずに落ちる。
+ *
+ * **浅いクローンでは、この道具が答えるべきものが元から無い。** 行数の列だけは手元の1コミットから
+ * 出せてしまうが、そこで表を出すと**PRの列が欠けたまま「測れた」形の表**になり、貼った先で
+ * 気づけない。数えられるものと数えられないものの線は、ここ1箇所で引く。
+ */
+function requireFullHistory() {
+  if (git(['rev-parse', '--is-shallow-repository']) !== 'true') return;
+  console.error(
+    "浅いクローンでは育ち方を測れない。'git fetch --unshallow origin' で履歴を取ってから走らせること。",
+  );
+  process.exit(1);
 }
 
 /** その日（日本時間）の最終コミット。まだ1つも無い日は空文字。 */
@@ -127,13 +146,13 @@ function diffOf(sha) {
   return { files, lines, bothSides: documents && code };
 }
 
-/** その日までに立てられた issue の累計。`gh` が無ければ null。 */
+/** その日までに立てられた issue の累計。`gh` が無い・originがGitHubでないなら null。 */
 function issueCountAt(day) {
   const nextDay = new Date(`${day}T00:00:00+09:00`);
   nextDay.setUTCDate(nextDay.getUTCDate() + 1);
   const bound = nextDay.toISOString().replace(/\.\d+Z$/, 'Z');
-  const query = `repo:${repository()} is:issue created:<${bound}`;
   try {
+    const query = `repo:${repository()} is:issue created:<${bound}`;
     return Number(
       execFileSync('gh', ['api', '-X', 'GET', 'search/issues', '-f', `q=${query}`, '--jq', '.total_count'], {
         encoding: 'utf8',
@@ -275,6 +294,8 @@ function chartsOf(measurements) {
   }
   return charts;
 }
+
+requireFullHistory();
 
 const argv = process.argv.slice(2);
 const svgIndex = argv.indexOf('--svg');

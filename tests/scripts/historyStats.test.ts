@@ -8,15 +8,16 @@ import { describe, expect, it } from 'vitest';
  * `npm run stats:history`（`scripts/historyStats.mjs`）が空を返していないかの検査。
  *
  * この道具も `countLines.mjs` と同じで、**全部0になっても表の形は保たれる**（issue #867）。
- * 加えてこちらは履歴を遡るので、**浅いクローンでは静かに0になりうる**——CIの
- * `actions/checkout` は既定で深さ1なので、そこで数えたつもりになるのが一番危ない。
+ * 加えてこちらは履歴を遡るので、**手元に無いものを0として数えうる。**
  *
- * 見るのは**行数の4列が0でないこと**と、**遡れない日を頼まれたら黙って0を出さずに落ちること**の
- * 2つだけ。行数の4列は1コミットしか無くても数えられるので、浅いクローンでも成立する。
- * PRの列は履歴の深さで変わるため、**浅くないときだけ**見る。
+ * **浅いクローンかどうかで、確かめられることが入れ替わる。** CIの `actions/checkout` は既定で
+ * 深さ1なので、両方を書かないとどちらかの環境で何も見ていないことになる。
  *
- * 図（`--svg`）も同じ理由で見る。**折れ線は、値が全部0でも枠と軸が描かれる**ので、絵が出た
- * ことは中身が入っていることを意味しない。点の座標が枠の中に散らばっているかまで見る。
+ * - 浅い: **表を出さずに落ちること**だけを見る。道具はここで止まる決まり（`requireFullHistory`）。
+ * - 深い: 行数の4列とPRの累計が0でないこと、図の点が枠の中に散らばっていること。
+ *
+ * 日付は**JSTで作る**。道具はJSTの 23:59:59 で切るので、UTCの「今日」を渡すと、JSTで日が
+ * 変わった後の時間帯（CIの実行時刻がここに入る）にはその日のコミットが1つも無いことになる。
  */
 
 const ROOT = resolve(__dirname, '../..');
@@ -37,7 +38,11 @@ function run(args: readonly string[]): { readonly stdout: string; readonly statu
 }
 
 function git(args: readonly string[]): string {
-  return execFileSync('git', args, { cwd: ROOT, encoding: 'utf-8' }).trim();
+  return execFileSync('git', args, {
+    cwd: ROOT,
+    encoding: 'utf-8',
+    env: { ...process.env, TZ: 'Asia/Tokyo' },
+  }).trim();
 }
 
 const TODAY = git(['log', '-1', '--format=%ad', '--date=format-local:%Y-%m-%d']);
@@ -60,9 +65,19 @@ function tableOf(stdout: string): Map<string, string>[] {
     .map((cells) => new Map(headers.map((header, index) => [header, cells[index]])));
 }
 
-const NUMBER_COLUMNS = ['実装', '試験', '文書', '定義'];
+const NUMBER_COLUMNS = ['実装', '試験', '文書', '定義', 'PR'];
 
-describe('育ち方の推移', () => {
+describe.runIf(IS_SHALLOW)('浅いクローンでの育ち方の推移', () => {
+  const { stdout, status } = run([TODAY]);
+
+  it('表を出さずに落ちる', () => {
+    // 行数の列だけ出た表は、PRの列が欠けたまま「測れた」形をしているので、貼った先で気づけない。
+    expect(status, `落ちずに出力した:\n${stdout}`).not.toBe(0);
+    expect(tableOf(stdout).length).toBe(0);
+  });
+});
+
+describe.skipIf(IS_SHALLOW)('育ち方の推移', () => {
   const rows = tableOf(run([TODAY]).stdout);
   const value = (header: string) => Number(rows[0]?.get(header)?.replace(/,/g, ''));
 
@@ -74,17 +89,13 @@ describe('育ち方の推移', () => {
     expect(value(header), `${[...(rows[0]?.values() ?? [])].join(' | ')}`).toBeGreaterThan(0);
   });
 
-  it.skipIf(IS_SHALLOW)('PRの累計が0でない', () => {
-    expect(value('PR')).toBeGreaterThan(0);
-  });
-
   it('履歴に無い日を頼まれたら、0を出さずに落ちる', () => {
     // リポジトリが始まる前の日。ここで空の表を返すと、遡れなかったことが読む側に伝わらない。
     expect(run(['2020-01-01']).status).not.toBe(0);
   });
 });
 
-describe('育ち方の推移の図', () => {
+describe.skipIf(IS_SHALLOW)('育ち方の推移の図', () => {
   const directory = mkdtempSync(join(tmpdir(), 'history-stats-'));
   run(['--svg', directory, TODAY]);
   const files = readdirSync(directory);
