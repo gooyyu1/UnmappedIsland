@@ -52,8 +52,9 @@ describe('島を出るのに要るもの（同梱の定義）', () => {
     ).toBe(true);
   });
 
-  it('船と帆の両方が目標に挙がっている', () => {
-    // 目標が片方でも空だと、上の検査は空集合について緑になる。
+  it('目標のタグが1つ残らず、要るものに挙がっている', () => {
+    // 目標のタグが1つでも空だと、上の検査はその分だけ空集合について緑になる。船と帆に加えて、
+    // 航海の食料を釣って賄う道具（fishing_tool、Voyage.md 3.9節）も目標。
     const tags = new Set(reach.needs.map((need) => need.goalTagName).filter((tag) => tag !== undefined));
     expect([...tags].sort()).toEqual([...ESCAPE_GOAL_TAG_NAMES].sort());
   });

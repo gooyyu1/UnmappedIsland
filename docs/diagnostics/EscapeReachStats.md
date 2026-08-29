@@ -45,9 +45,9 @@ YAMLとずれます）。
 
 ## 要るもの
 
-`needs` は、目標そのもの——`boat`・`sail` を名乗る型（ContentSkeleton.md 3節の系統12）——と、そこへ
-推移的に要求される型。目標そのものの行だけが `goal_tag` を持ちます。並びは工程数の昇順で、同じ
-工程数なら宣言順。
+`needs` は、目標そのもの——`boat`・`sail`・`fishing_tool` を名乗る型（ContentSkeleton.md 3節の
+系統12）——と、そこへ推移的に要求される型。目標そのものの行だけが `goal_tag` を持ちます。並びは
+工程数の昇順で、同じ工程数なら宣言順。
 
 `step_kind`・`step`・`owner` は、その型へ最も少ない工程で届いた工程（`interaction` か `recipe`）。
 `hops` が0の型（出発集合）では空です。`inputs` の `tag` は、タグで指した入力

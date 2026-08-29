@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/IslandEscapeReachStats.md。
 
 meta:
-  - {seeds: 2000, islands: 2000, defined_locations: 10, goals: 2}
+  - {seeds: 2000, islands: 2000, defined_locations: 10, goals: 3}
 
 island_departure:
   - {measure: locations, unit: locations, mean: 8.48, min: 5.00, median: 9.00, p95: 10.00, max: 10.00, sd: 1.12, n: 2000}
@@ -27,10 +27,12 @@ island_unreached:
 island_goal_unreached:
   - {object: raft, goal_tag: boat, unit: percent, share: 0.30}
   - {object: rawhide_sail, goal_tag: sail, unit: percent, share: 0.30}
+  - {object: fishing_harpoon, goal_tag: fishing_tool, unit: percent, share: 0.30}
 
 island_goal_hops:
   - {object: raft, goal_tag: boat, measure: hops, unit: hops, mean: 9.00, min: 9.00, median: 9.00, p95: 9.00, max: 9.00, sd: 0.00, n: 1994}
   - {object: rawhide_sail, goal_tag: sail, measure: hops, unit: hops, mean: 8.00, min: 8.00, median: 8.00, p95: 8.00, max: 8.00, sd: 0.00, n: 1994}
+  - {object: fishing_harpoon, goal_tag: fishing_tool, measure: hops, unit: hops, mean: 7.00, min: 7.00, median: 7.00, p95: 7.00, max: 7.00, sd: 0.00, n: 1994}
 
 island_unreached_need:
   - {object: abaca, unit: percent, share: 0.30}
@@ -39,6 +41,7 @@ island_unreached_need:
   - {object: black_reef, unit: percent, share: 0.30}
   - {object: broadleaf_tree, unit: percent, share: 0.30}
   - {object: cord, unit: percent, share: 0.30}
+  - {object: fishing_harpoon, unit: percent, share: 0.30}
   - {object: forest, unit: percent, share: 0.30}
   - {object: jungle, unit: percent, share: 0.30}
   - {object: log, unit: percent, share: 0.30}
