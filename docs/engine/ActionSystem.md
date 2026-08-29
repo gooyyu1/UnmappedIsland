@@ -112,7 +112,8 @@ actions/combinations の一度きりの判定と、passives（8節）の持続�
 
 **どの起点が書けるかは、場所ごとに数え上げるのではなく、宣言が置かれた場所が何を持つかから導く**
 （`ReferenceScope`）。**ロード時に弾く根拠と、実行時に組む `ReferenceContext` は同じ1つの事実**なので、
-書けたのに実行時は必ず空振りする、という宣言が作れない。
+書けたのに実行時は必ず空振りする、という宣言が作れない。11.5節の表は未実装ぶんまで含むので、
+**今どこで書けるかを持っているのは `ReferenceScope` の側**。
 
 `world` は起点として未対応（ロード時エラー）。すべてのオブジェクトは world の下にぶら下がるため、
 world 固有プロパティの参照は `ancestor` で代替できる。`child` は passives の target 専用で、
@@ -131,22 +132,25 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
 設計上の要点:
 
 - `set`/`add` の値・`pick` の `weight` は「リテラルか `{subject, prop}` 参照か」の二択で統一されている。
-- `spawn` の配置先は `same_slot`（既定）/ `self` / `agent`。`same_slot` は、適用の入口で捕捉した
+- `spawn` の配置先（`into`、9.4節）は、**個体を指す形が `move` の移動先とまったく同じ**で、書ける起点は
+  4節の表のとおり。個体でないものを名乗れるのは `into` だけで、`same_slot`（既定）と `child` の2つ。
+  `same_slot` は、適用の入口で捕捉した
   「self が占めていた位置」のスナップショット（`WorldObject.SameSlotSpawnSite`）を使い、destroy で self が
   消えた後でもその位置を引き継げる。配置に失敗した場合は起点の親、さらにその親…とこぼれ落ち、
   どこにも入らなければ世界から消える（9.4 節）。どの段でも枠の宣言はそのまま効く。
 - `transfer`（9.5節）は「出せる量」と（`allow_overflow: false` なら）「受け取れる量」で実移動量を決め、
   `linked_add` を実移動量に比例スケールして適用する。
-- `move` は、`self` のプロパティ（`to_prop`）が保持する **インスタンスID** のオブジェクトの中へ
-  `agent` を移動する。移動先が定義時点で決まらず生成時に確定する（道の移動アクション）ため、
-  `object_def` 参照ではなくインスタンスIDで指す。
+- `move` は、動かす物（`subject`／`subject_prop`）と行き先（`to`／`to_prop`／`to_object`）を別々に指し、
+  行き先の指し方は `spawn` の `into` と共通。**行き先が定義時点で決まらず生成時に確定する**場合
+  （道の移動アクション）は、`object_def` 参照ではなく `self` のプロパティが保持する
+  **インスタンスID**（`to_prop`）で指す。
 - プロパティの rangeイベント（`on_max`/`on_min`、6.3節）も**同じ**
   `ActiveEffect` と適用経路（`WorldObject.ApplyActiveEffect`）を使う。書ける動詞に差は無く、
   `pick` も `move` も並べて書ける（海区の `storm_drift` の `on_max` が、`among` で選んだ筏を `move` で
-  隣の海区へ流す。`voyage.yaml`）。違うのは**発火させるのが時間の側で、操作している者が居ない**こと
-  だけなので、ロード時に弾かれるのは操作の関係の役（`agent`・`instrument`）を指したときに限る
-  （11.5節「役を書ける場所」）。起点は `self`・`parent`・`ancestor` と、`among` を書いた候補の中の
-  `picked` が使える。
+  隣の海区へ流す。`voyage.yaml`）。**この場所に無いのは操作している者だけ**なので、rangeイベントで
+  あることを理由に落ちる起点は操作の関係の役（`agent`・`instrument`、11.5節）だけ。残りの可否は
+  4節の表のとおりで、`child` が指せないことも `ancestor` が `move` のようにオブジェクトそのものを
+  指す場所では使えないことも、rangeイベントかどうかでは変わらない。
 
 ## 6. 時間の経過（duration）
 
