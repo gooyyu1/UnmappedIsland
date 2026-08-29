@@ -264,6 +264,10 @@
         "art": {
           "$ref": "#/$defs/identifier",
           "description": "この段階にいる間カードに出す絵の接尾辞（art_by_stage、6.4節）。src/assets/objects/<型の絵の名前（4.3節）>_<この値>.pngを指す。宣言できるのは、その型のart_by_stageが指すプロパティの段だけ（他のプロパティの段に書くとロード時エラー）。ファイルをまだ用意していない場合は型自身の絵のまま。"
+        },
+        "situation": {
+          "$ref": "#/$defs/identifier",
+          "description": "この段階にいる間、キャラクター表示エリアに出す状況アイコンの識別子（6.4節）。src/assets/icons/<この値>.pngを指す（docs/ui/ScreenLayout.md 4.1.1節）。宣言した段にいる間だけ出て、宣言しない段では出ない。artと違い、名乗れるプロパティを型が絞る宣言は無い。"
         }
       },
       "required": [

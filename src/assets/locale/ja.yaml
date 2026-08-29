@@ -98,6 +98,10 @@ object_texts:
         display_name: 視界の明るさ
         icon: 👁️
         description: 屋外で採れるか、道を歩けるかを決める明るさ。持ち歩ける明かりだけが効く。
+      sheltered:
+        display_name: 雨よけ
+        icon: 🛖
+        description: 屋根や岩陰に守られていて、雨に打たれず日も差さない場所に居るかどうか。
       pain:
         display_name: 痛み
         icon: 💢
@@ -1393,3 +1397,5 @@ ui_texts:
   # レシピ一覧（Windows.md 9節）。未解放の理由が宣言されていない場合と、棚に載らないレシピの見出し。
   recipe_locked: まだ作り方が分からない
   recipe_other: その他
+  # 日の出の演出に出る日数の見出し（ScreenLayout.md 7.5.6節）。後ろに生存日数が続く。
+  day: DAY

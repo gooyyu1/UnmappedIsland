@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CardFilter } from '../../src/domain/CardFilter';
+import type { WorldChange } from '../../src/domain/WorldChange';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import type { CardSpot } from '../../src/game/view/ShownCards';
 import { ShownCards } from '../../src/game/view/ShownCards';
@@ -32,6 +33,17 @@ const LANE_PLACES: Record<ScreenPlace, CardPlace> = {
   hand: somewhere(),
 };
 const place = (screen: ScreenPlace): CardPlace => LANE_PLACES[screen];
+
+/**
+ * 探索で見つかった1件ぶんの世界の変化（ShownCards.takeFound）。**レーンの外から来たこと**が発見の
+ * 印なので、生まれた物（fromが無い）がその枠へ入った形で足りる。
+ */
+const found = (instanceId: number, screen: ScreenPlace = 'items'): WorldChange => ({
+  object: object(instanceId),
+  subject: undefined,
+  from: undefined,
+  to: place(screen),
+});
 
 /** 束が受けた操作の記録。どの操作がどの個体・場所で組まれたかをテストが確かめる。 */
 interface Moved {
@@ -192,7 +204,7 @@ describe('画面に出ている札', () => {
     const shown = screen({
       items: [stack(place('items'), [1]), stack(place('items'), [2]), stack(place('items'), [3])],
     });
-    shown.takeFound([{ icon: '📦', name: '#2', identity: [2] }]);
+    shown.takeFound([found(2)]);
 
     expect(shown.stacksAt(place('items')).map((entry) => entry?.name)).toEqual(['#1', '#3']);
   });
@@ -233,7 +245,7 @@ describe('貸し借りの流れ（Windows.md 1.1節）', () => {
     // 借りているのはどちらも同じ子ウィンドウなので、返す口を分けない（片方の呼び忘れを作らない）。
     const shown = screen({ hand: [stack(place('hand'), [1, 2])] });
     borrow(shown, stack(place('hand'), [1, 2]));
-    shown.takeFound([{ icon: '🪵', name: '太い枝', identity: [7] }]);
+    shown.takeFound([found(7)]);
 
     const returned = shown.returnBorrowed();
 
@@ -294,7 +306,7 @@ describe('発見物の流れ（Windows.md 5.1節）', () => {
   it('抱えて、手放せば、次の差し替えから並びに戻る', () => {
     const shown = screen({ items: [stack(place('items'), [1, 2])] });
 
-    shown.takeFound([{ icon: '📦', name: '#2', identity: [2] }]);
+    shown.takeFound([found(2)]);
     expect(idsAt(shown, place('items'), 0), '見つかった分だけが抜ける').toEqual([1]);
 
     const returned = shown.returnFound();
@@ -326,7 +338,7 @@ describe('1つのオブジェクトに札は1つ（不変条件）', () => {
     [
       '探索が抱えている',
       (shown: ShownCards) => {
-        shown.takeFound([{ icon: '📦', name: '#4', identity: [4] }]);
+        shown.takeFound([found(4)]);
         return shown;
       },
     ],
@@ -334,7 +346,7 @@ describe('1つのオブジェクトに札は1つ（不変条件）', () => {
       '貸しながら抱えている',
       (shown: ShownCards) => {
         borrow(shown, stack(place('hand'), [1, 2]));
-        shown.takeFound([{ icon: '📦', name: '#4+5', identity: [4, 5] }]);
+        shown.takeFound([found(4), found(5)]);
         return shown;
       },
     ],

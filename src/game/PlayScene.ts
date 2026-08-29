@@ -42,13 +42,15 @@ import { noteOperation, setStateReporter } from './errorReport';
 import { ShownStatuses } from './view/ShownStatuses';
 import type { ElapseFrame } from './view/elapsePlayback';
 import { ElapsePlayback } from './view/elapsePlayback';
+import type { DaylightMoment } from './view/daylight';
+import { SunlightHours } from './view/daylight';
 import type { Activity } from './view/operationSteps';
 import { playbackSteps, afterPlaybackSteps, isMidAction, acceptsOperation } from './view/operationSteps';
 import { Button } from './ui/Button';
 import { SLOT_BUTTON_PAPER_TEXTURE } from '../art/slotButtonArt';
 import { EDGE_DIRECTIONS } from './ui/Card';
 import type { CardContent, CardEdgeAction } from './ui/Card';
-import { borrowedFace, cardFace } from './ui/cardFace';
+import { borrowedFace } from './ui/cardFace';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
@@ -84,12 +86,13 @@ import { iconTexture } from '../art/iconArt';
 import { WeatherPanel } from './ui/WeatherPanel';
 import { WeatherOverlay } from './ui/WeatherOverlay';
 import { ScreenSkyTint } from './ui/ScreenSkyTint';
+import { DaybreakOverlay } from './ui/DaybreakOverlay';
 import { LaneHaze } from './ui/LaneHaze';
 import { heatHazeFor } from './looks/heatHaze';
 import { clockParts, timeCostLine } from './looks/timeTexts';
 import { addLabel } from '../ui/labels';
 import type { BoxStyle } from '../ui/shapes';
-import { addInputBlockingPanel, addTiledImage, addTiledImageVertical } from '../ui/shapes';
+import { addInputBlockingPanel, addTiledImage, addTiledImageVertical, drawBox } from '../ui/shapes';
 import { COLOR, SIZE } from './looks/theme';
 
 /** 紙として置かれるボタン（スロットボタン・バーのアイコンボタン）が落とす影のずらし幅（u単位）。 */
@@ -178,6 +181,27 @@ const MENU_ICON: BarIcon = { icon: '☰' };
  * レシピだけ道具の絵を避けているのは、下のフィルターバーが道具の絞り込みに🔨を使っているため。
  */
 const SLOT_BUTTON_ICONS = { map: '🗺️', equipment: '👕', injuries: '🩹', recipe: '📜' } as const;
+
+/**
+ * 状況アイコンの代役。**絵（art）が届くまでの繋ぎ**で、スロットボタンと同じ扱い。
+ *
+ * ここに識別子が並んでいても、**何をいつ出すかを決めているのは世界の側の宣言**（段の`situation`、
+ * ScreenLayout.md 4.1.1節）で、ここが決めているのは絵が届くまでの見た目だけ。だから知らない識別子が
+ * 来ても落とさず、UNKNOWN_SITUATION_ICONを出す——出すと決めたものが黙って消えるほうが悪い。
+ */
+const SITUATION_ICONS: Readonly<Record<string, string>> = {
+  too_dark_for_handwork: '🕯️',
+  too_dark_outside: '🌘',
+  no_road: '🌑',
+  sheltered: '🛖',
+};
+
+/** 絵も代役も無い識別子の代役。 */
+const UNKNOWN_SITUATION_ICON = '❔';
+
+/** 状況アイコンに載せる絵のキャンバスと絵文字の大きさ（48uの枠の内側。オプションバーと同じ比）。 */
+const CONDITION_ICON_ART = 44;
+const CONDITION_GLYPH_SIZE = 28;
 
 /**
  * キャラクタの見えるスロット（`visible_slots`）1つにつき1つ並ぶボタンの姿。**どのスロットが並ぶかを
@@ -289,6 +313,21 @@ export class PlayScene extends ResponsiveScene {
   /** 明るさに応じて画面全体へかぶせる翳り・輝き。雨と同じく作り直しの対象外。 */
   private skyTint!: ScreenSkyTint;
 
+  /**
+   * 太陽の光だけで手元の細かい作業ができる時刻（SunlightHours）。世界の宣言から決まるので、
+   * このプレイの間は変わらない。
+   */
+  private sunlight!: SunlightHours;
+
+  /**
+   * 今この画面が映している日付と時刻。**次に映すものと比べて、日の出・日の入りの境目をまたいだかを
+   * 訊く**（showDaybreak）ので、またいだかを憶えるのではなく、映しているものだけを憶える。
+   */
+  private shownDaylight!: DaylightMoment;
+
+  /** 出ている最中の日の出・日の入りの演出。次のがすぐ来る（夜を通して眠る）ときは差し替える。 */
+  private daybreakOverlay: DaybreakOverlay | undefined;
+
   /** アイテムレーンに立てる陽炎。掛ける対象はフィールドエリアの作り直しで入れ替わる。 */
   private haze!: LaneHaze;
 
@@ -396,6 +435,13 @@ export class PlayScene extends ResponsiveScene {
   /** ポートレイトカードの枠。キャラクタ自身を映す札なので、回復の粒の行き先になる（showGains）。 */
   private portraitRect: Rect | undefined;
 
+  /**
+   * 状況アイコンの行。**中身は行動のたびに入れ替わる**（showConditions）ので、画面の組み立て時に器を
+   * 作っておき、以後はこの中だけを作り直す——あとから作った表示物は、開いている子ウィンドウの覆いより
+   * 手前へ出てしまう（buildStatusAreaと同じ理由）。
+   */
+  private conditionRow!: Phaser.GameObjects.Container;
+
   /** ステータスエリアの行の間隔（どのバーをどの行へ置くかは行動のたびに引き直す）。 */
   private statusRowGap = 0;
 
@@ -482,6 +528,9 @@ export class PlayScene extends ResponsiveScene {
     this.gameSession = startNewGame(this.codex, character, data.save.seed, seededRng(data.save.seed));
     if (data.scenario !== undefined) applyScenario(this.gameSession, data.scenario, this.codex);
     this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+    this.sunlight = SunlightHours.of(this.codex, this.gameSession.player.instance.def);
+    // 開いた時点の空を基準にする。開いた瞬間にまたいだことにはならない。
+    this.shownDaylight = { elapsedDays: this.view.elapsedDays, hour: this.view.hour };
     this.artLoader = new LocationArtLoader(this, this.codex);
     this.requestLocationArt();
     this.resetForNewVisit();
@@ -521,6 +570,7 @@ export class PlayScene extends ResponsiveScene {
     this.recipeWindow = undefined;
 
     // 見せている最中だった演出は、それを終わらせるtweenごと消えている（終わったものとして始める）。
+    this.daybreakOverlay = undefined;
     this.activity = 'idle';
     this.selectedFilter = 0;
     this.shownLocationDepth = 0;
@@ -775,6 +825,25 @@ export class PlayScene extends ResponsiveScene {
   private showSky(): void {
     this.weatherOverlay.setWeather(this.view.weather);
     this.skyTint.setAmbientBrightness(this.view.ambientBrightness);
+    this.showDaybreak();
+  }
+
+  /**
+   * 前に映した時刻から日の出・日の入りの境目をまたいでいれば、その演出を出す
+   * （ScreenLayout.md 7.5.6節）。経過の再生は控えを1つずつここへ通す（showRecorded）ので、
+   * **またいだtickのところで出る**——経過し切ってからまとめて出ることはない。
+   */
+  private showDaybreak(): void {
+    const shown = this.shownDaylight;
+    this.shownDaylight = { elapsedDays: this.view.elapsedDays, hour: this.view.hour };
+    const daybreak = this.sunlight.daybreakBetween(shown, this.shownDaylight);
+    if (daybreak === undefined) return;
+
+    // 夜を通して眠れば日の入りと日の出が続けて来る。前のが醒め切るのを待たずに差し替える。
+    this.daybreakOverlay?.destroy();
+    this.daybreakOverlay = new DaybreakOverlay(this, this.metrics, this.layout.fieldArea, daybreak).setDepth(
+      SCREEN_DEPTH.daybreak,
+    );
   }
 
   /**
@@ -1364,7 +1433,6 @@ export class PlayScene extends ResponsiveScene {
     if (this.busy) return;
 
     this.returnFound();
-    const shownBefore = this.shownInstanceIds();
     const statusesBefore = this.status.all();
     const startedAt = this.gameSession.world.totalMinutes;
 
@@ -1389,7 +1457,7 @@ export class PlayScene extends ResponsiveScene {
             this.noteStatusChanges(statusesBefore, startedAt);
             break;
           case 'found':
-            this.takeFound(shownBefore);
+            this.takeFound(recorded.changesAtEnd);
             break;
           case 'signals':
             this.showSignals(recorded.signalsAtEnd);
@@ -1409,8 +1477,8 @@ export class PlayScene extends ResponsiveScene {
    * 見つかったものを発見物の枠へ引き取り、それを見せる面へ自分から移る（Windows.md 5節）。
    * 探索は必ず1個以上見つかるので、押した結果がどのタブに出るかを覚えていなくてよい。
    */
-  private takeFound(shownBefore: ReadonlySet<number>): void {
-    this.shown.takeFound(this.foundSince(shownBefore));
+  private takeFound(changes: readonly WorldChange[]): void {
+    this.shown.takeFound(changes);
 
     const exploration = this.shownLocation.window.exploration;
     if (exploration !== undefined) this.childWindow?.setExploration(exploration);
@@ -1423,24 +1491,6 @@ export class PlayScene extends ResponsiveScene {
       ...this.view.cardsIn(this.placeOfScreen('fixtures')),
       ...this.view.cardsIn(this.placeOfScreen('items')),
     ].filter((card): card is ObjectCardStack => card !== undefined);
-  }
-
-  /** 今、設置物レーンとアイテムレーンに出ているインスタンスのID。 */
-  private shownInstanceIds(): ReadonlySet<number> {
-    return new Set(this.locationCards.flatMap((card) => card.identity ?? []));
-  }
-
-  /**
-   * 控えておいた「出ていたもの」に無いカード＝この探索で見つかったもの（アイテムと道）。
-   *
-   * **束のうち新しく現れた個体だけを数える。** 既に持っていた石に見つけた石が合流しても、発見物の
-   * 枠へ借り出すのは見つかった分だけで、元から在った分はレーンに残る。
-   */
-  private foundSince(shownBefore: ReadonlySet<number>): readonly CardContent[] {
-    return this.locationCards.flatMap((card) => {
-      const ids = (card.identity ?? []).filter((id) => !shownBefore.has(id));
-      return ids.length === 0 ? [] : [{ ...cardFace(card), identity: ids, count: ids.length }];
-    });
   }
 
   /** ワールドを変える操作を実行し、経過の控えを取る（runAndRecordChange）。実時間での再生はpassTime。 */
@@ -1816,6 +1866,7 @@ export class PlayScene extends ResponsiveScene {
   private showInformation(): void {
     this.situationPanel.setTime(this.view.elapsedDays, this.view.hour, this.view.minute);
     this.situationPanel.setWeather(this.view.weather, this.view.weatherLabel);
+    this.showConditions();
     this.showStatuses();
   }
 
@@ -1918,20 +1969,27 @@ export class PlayScene extends ResponsiveScene {
       height: portraitHeight + gap + conditionSize,
     });
 
-    this.addConditionRow(area.x + padding, area.y + padding + portraitHeight + gap);
+    // 中身は行動のたびに引き直す（showConditions）ので、ここで作るのは器だけ。
+    this.conditionRow = this.add.container(area.x + padding, area.y + padding + portraitHeight + gap);
   }
 
   /**
-   * 条件はラベルなしのアイコンボタン。ポートレイトの真下に1行で左詰めに並べる——キャラクターの
-   * 状態なので、カードの下に続けて置くと持ち主が読み取れる。
+   * 状況アイコンを並べ直す（ScreenLayout.md 4.1.1節）。ポートレイトの真下に1行で左詰めに並べる
+   * ——キャラクタの周りの事情なので、本人を映す札の下に続けて置くと誰の周りかが読み取れる。
+   *
+   * **押しても何も起きないので、押せる形（Button）にはしない。** 出しているのは場所と世界の事実で、
+   * そこから操作する対象が無い。何も妨げていない間は行ごと空になる。
    */
-  private addConditionRow(x: number, y: number): void {
+  private showConditions(): void {
+    this.conditionRow.removeAll(true);
     const size = this.metrics.px(SIZE.conditionButton);
     const gap = this.metrics.px(8);
-    this.view.conditions.forEach((icon, index) => {
-      const button = new Button(
-        this,
-        { x: x + index * (size + gap), y, width: size, height: size },
+    this.view.conditions.forEach((situation, index) => {
+      const x = index * (size + gap);
+      const box = this.add.graphics();
+      drawBox(
+        box,
+        { x, y: 0, width: size, height: size },
         {
           fillColor: COLOR.button,
           borderColor: COLOR.buttonBorder,
@@ -1939,7 +1997,13 @@ export class PlayScene extends ResponsiveScene {
           radius: this.metrics.px(SIZE.radius),
         },
       );
-      button.addCentered(addLabel(this, this.metrics, 0, 0, icon, { size: 28 }));
+      const icon = this.buttonIcon(
+        { art: situation, icon: SITUATION_ICONS[situation] ?? UNKNOWN_SITUATION_ICON },
+        { width: CONDITION_ICON_ART, height: CONDITION_ICON_ART },
+        CONDITION_GLYPH_SIZE,
+      );
+      icon.setPosition(x + size / 2, size / 2).setOrigin(0.5);
+      this.conditionRow.add([box, icon]);
     });
   }
 

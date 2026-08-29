@@ -1,12 +1,13 @@
 /**
- * UIのアイコンの絵（地図・装備・怪我・レシピのボタン）の解決。
+ * UIのアイコンの絵（地図・装備・怪我・レシピのボタン、状況アイコン）の解決。
  *
  * 置き場所と名前の規約は `src/assets/icons/<アイコンの識別子>.png` のみで、コード側への登録は
  * 要らない。一覧はimport.meta.globがビルド時に作る（実行時に総当たりで読みに行くと、絵をまだ
  * 用意していないぶんだけ404が出るため。backgroundArt参照）。
  *
- * カードの絵と違い、識別子はドメインではなくUIが決める。これらは特定のobject_defではなく、
- * 画面に固定で置かれるボタンだから。
+ * **識別子を決めるのはボタンとそれ以外で違う。** 画面に固定で置かれるボタンはUIが決めるので
+ * ICON_NAMESに並ぶが、状況アイコンは段の`situation`が名乗る（docs/ui/ScreenLayout.md 4.1.1節）ので、
+ * 何が来るかをここでは知らない。
  */
 const FILES = import.meta.glob('../assets/icons/*.png', {
   eager: true,
@@ -15,12 +16,12 @@ const FILES = import.meta.glob('../assets/icons/*.png', {
 }) as Record<string, string>;
 
 /**
- * 画面が自分で名指しするアイコンの識別子。**フィルターのボタンはここに無い**——どのボタンが並ぶかを
+ * 画面が固定で置くボタンの識別子。**フィルターのボタンはここに無い**——どのボタンが並ぶかを
  * 決めるのはワールドで、絵の名前もその宣言（`card_filters`の`id`、ScreenLayout.md 8.1.3節）が名乗る。
  * 絞り込みを解除する`filter_all`だけは画面が置くボタンなのでここに在る（同8.1.1節）。
  *
- * ここにもワールドにも無い名前のファイルは黙って使われないままになるので、実在するかどうかは
- * 自動テスト（tests/art/iconArt.test.ts）が検査する。
+ * ここにも段の`situation`にもワールドの宣言にも無い名前のファイルは黙って使われないままになるので、
+ * 実在するかどうかは自動テスト（tests/art/iconArt.test.ts）が検査する。
  */
 export const ICON_NAMES = [
   'map',
@@ -44,8 +45,8 @@ export const ICON_ART: ReadonlyMap<string, string> = new Map(
  * アイコンのテクスチャキー。絵がまだ無いものはundefinedを返し、呼び出し側は絵文字で代用する
  * （絵は少しずつ増える前提なので、絵と絵文字が混ざった状態を正常とする）。
  *
- * **名前は画面が名指しするもの（IconName）とは限らない**——フィルターのボタンの絵は、ワールドの
- * 宣言が名乗る識別子で引く（ScreenLayout.md 8.1.3節）。
+ * **識別子はIconNameに限らない**——状況アイコンもフィルターのボタンも、識別子はワールドの宣言から
+ * 来るので、コードの列挙には無い（モジュールの説明参照）。
  */
 export function iconTexture(name: string): string | undefined {
   const key = `icon:${name}`;
