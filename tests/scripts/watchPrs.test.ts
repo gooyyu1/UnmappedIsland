@@ -63,12 +63,13 @@ function session(
   title = '題',
   bucket = 'SESSION_STATUS_BUCKET_IDLE',
   tags = ['task-900'],
+  status = 'SESSION_STATUS_RUNNING',
 ): unknown {
   return {
     id,
     title,
     tags,
-    session_status: 'SESSION_STATUS_RUNNING',
+    session_status: status,
     status_bucket: bucket,
     updated_at: '2000-01-01T00:00:00Z',
   };
@@ -216,6 +217,53 @@ describe('watch-prs.sh の TASK', () => {
     expect(watch(claiming('fixes #920'), issues, [921])).toEqual(['TASK 922']);
     // 参照するだけの番号では、着手済みにならない。
     expect(watch(claiming('#920 と同じ形'), issues, [921])).toEqual(['TASK 920', 'TASK 922']);
+  });
+
+  it('`task-<番号>` のセッションが立っている task は、PRが出ていなくても出さない', () => {
+    // 投入してからPRが出るまでの十数分、PRの側には何も現れない。ここを見ないと、投入済みの番号が
+    // 毎周返って見張りがその場で終わる。#931 は、何も出ずに時間切れになるのを避けるための、
+    // 誰の手元にも無い task。
+    const lines = watch(
+      [[]],
+      [[issue(930, ['task']), issue(931, ['task']), issue(932, [])]],
+      [932],
+      [session('session_01DISPATCHED', '#930 を直す', 'SESSION_STATUS_BUCKET_WORKING', ['task-930'])],
+    );
+
+    expect(lines).toEqual(['TASK 931']);
+  });
+
+  it('畳んだセッションの task は出す', () => {
+    // PRを出さないまま畳まれたなら、その仕事は誰の手元にも無い。
+    const lines = watch(
+      [[]],
+      [[issue(940, ['task']), issue(941, [])]],
+      [941],
+      [
+        session(
+          'session_01ARCHIVED',
+          '#940 を直す',
+          'SESSION_STATUS_BUCKET_IDLE',
+          ['task-940'],
+          'SESSION_STATUS_ARCHIVED',
+        ),
+      ],
+    );
+
+    expect(lines).toEqual(['TASK 940']);
+  });
+
+  it('セッション一覧を見ない指定では、投入済みでも出す', () => {
+    // `UNREVIEWED` とは逆に倒す。`TASK` を止めると「やることが無い」が二度と出せなくなる。
+    const lines = watch(
+      [[]],
+      [[issue(950, ['task']), issue(951, [])]],
+      [951],
+      [session('session_01OFF', '#950 を直す', 'SESSION_STATUS_BUCKET_WORKING', ['task-950'])],
+      { noSessions: true },
+    );
+
+    expect(lines).toEqual(['TASK 950']);
   });
 });
 
