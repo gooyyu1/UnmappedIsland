@@ -30,7 +30,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | `singleton` | `true`（同時に存在するプレイヤーキャラクタは1体） |
 | タグ | `character` |
 | スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
-| プロパティ | `weight` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` |
+| プロパティ | `weight` / `pace` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` |
 | アクション | 休息の4つ（`wait` / `rest` / `nap` / `sleep`。下の[休息](#休息)節。`player_character` trait が配る） |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterCard.ts`。絵が入るまでの繋ぎ） |
 
@@ -100,6 +100,9 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **`weight`（体重、g）**: 65,000（下の `blood` が体重のおよそ1/13という関係から、5,000mLがちょうど
   65kg）。**担ぐ側も担がれる側になる**——筏に乗れば自分と手持ちが積載として効く
   （[`ContainerSystem.md`](../engine/ContainerSystem.md) 1.1 節）。個体差はまだ持たせず trait が配る。
+- **`pace`（歩みの遅さ、倍率）**: 素は 1（等倍）で、自分では動かず `load` の段が `modify` で押し上げる
+  （下の荷重の効き方節）。道の `travel` が所要時間へ掛ける。`status` タグは持たない——見せるのは
+  荷重そのもので、遅れはその段から読める。個体差は持たせず trait が配る。
 - **`blood`（血液量、mL）**: `max` が体格そのもの（体重のおよそ1/13）で、満タンから始まる。**唯一、
   自分で戻るステータス**（`+2/tick` ＝ 1日およそ200mL、赤血球が作られる実際の速さ）。削るのは出血する
   怪我だけなので、**削られるのは一瞬でも戻るのは桁違いに遅い**——失った1,000mLに5日かかる。尽きた段の
@@ -155,7 +158,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   現れるよう、最初の境目は低めに置く。`load` の危険域の段の名前は **`too_heavy`** で固定する——道の
   `travel` がこの名前で移動可否を見る（[`ContainerSystem.md`](../engine/ContainerSystem.md) 5節）。
 
-## 荷重の効き方【確定】【未実装: 荷の重さ】
+## 荷重の効き方【確定】
 
 **荷は、担げるかどうかだけでなく、歩みの速さと疲れにも効きます。** 効かせ方は 1 箇所——`load` の段
 （[`ContainerSystem.md`](../engine/ContainerSystem.md) 5 節）で、閾値を別に持つ量は 1 つも足しません。

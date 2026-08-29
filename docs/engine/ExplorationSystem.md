@@ -169,7 +169,8 @@ object_defs:
         trigger: menu
         conditions:
           - {in_slot: fixtures}   # 発見済み（fixturesスロット）の間だけ実行できる
-        duration: {prop: travel_minutes}
+        # 道の長さ × 担ぎ手の遅れ（world/Characters.md 荷重の効き方節）
+        duration: {prop: travel_minutes, times: {subject: actor, prop: pace}}
         move:
           subject: actor
           to_prop: destination_id

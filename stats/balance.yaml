@@ -473,6 +473,18 @@ consumption:
   - {property: wakefulness, condition: 常時, character: engineer, per_tick: -1.00, per_day: -96}
   - {property: wakefulness, condition: 常時, character: farmer, per_tick: -1.00, per_day: -96}
   - {property: wakefulness, condition: 常時, character: medic, per_tick: -1.00, per_day: -96}
+  - {property: stamina, condition: 段 load=laden, character: captain, per_tick: -0.30, per_day: -29}
+  - {property: stamina, condition: 段 load=laden, character: engineer, per_tick: -0.30, per_day: -29}
+  - {property: stamina, condition: 段 load=laden, character: farmer, per_tick: -0.30, per_day: -29}
+  - {property: stamina, condition: 段 load=laden, character: medic, per_tick: -0.30, per_day: -29}
+  - {property: stamina, condition: 段 load=heavy, character: captain, per_tick: -1.00, per_day: -96}
+  - {property: stamina, condition: 段 load=heavy, character: engineer, per_tick: -1.00, per_day: -96}
+  - {property: stamina, condition: 段 load=heavy, character: farmer, per_tick: -1.00, per_day: -96}
+  - {property: stamina, condition: 段 load=heavy, character: medic, per_tick: -1.00, per_day: -96}
+  - {property: stamina, condition: 段 load=too_heavy, character: captain, per_tick: -2.00, per_day: -192}
+  - {property: stamina, condition: 段 load=too_heavy, character: engineer, per_tick: -2.00, per_day: -192}
+  - {property: stamina, condition: 段 load=too_heavy, character: farmer, per_tick: -2.00, per_day: -192}
+  - {property: stamina, condition: 段 load=too_heavy, character: medic, per_tick: -2.00, per_day: -192}
 
 supply:
   - {owner: monkey, step: turn, kind: interaction, labor_minutes: 0, unresolved_references: false, elapsed_minutes: 0, spawns: [{name: bite_wound, amount: 0.15}, {name: gore_wound, amount: 0.00}, {name: fracture, amount: 0.00}], actor_deltas: [], self_deltas: []}
