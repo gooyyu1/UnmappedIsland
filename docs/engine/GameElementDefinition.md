@@ -1439,8 +1439,8 @@ object_defs:
 
 `set`・`add`・`destroy`・`spawn` という操作をキーとして直接書きます。`set`/`add` の中には、`self`/`parent`/
 `ancestor`（8.6 節と同じ祖先探索。`self`の直接の親から遡り、対象プロパティを定義している最初の祖先へ
-書き込む）/`agent` を対象キーとする辞書がぶら下がります（重ねる操作（12 節）の中では、これに加えて
-**`instrument`**（運ばれてきた側、11.5 節）も使えます）。`destroy`はオブジェクトそのものを指す（プロパティを
+書き込む）/`agent`/`instrument`（11.5 節の役。**書ける場所は同節「役を書ける場所」の表**）を対象キーと
+する辞書がぶら下がります。`destroy`はオブジェクトそのものを指す（プロパティを
 持たない）ため、`ancestor`は対象として使えません（未対応、ロード時エラー）。
 
 ```yaml
@@ -1629,8 +1629,7 @@ interactions:
 ```
 
 - **`from`**（省略可、既定値 `self`）・**`to`**（省略可、既定値 `self`）: 参照ルート。
-  `set`/`add` の対象キー（9.1 節）と同じ許可範囲（`self`/`parent`/`ancestor`/`agent`、重ねる操作では
-  `instrument` も）。
+  `set`/`add` の対象キー（9.1 節）と同じ許可範囲（`self`/`parent`/`ancestor`/`agent`/`instrument`）。
 - **`from_prop`**・**`to_prop`**: それぞれ移送元・移送先のプロパティ名。
 - **`amount`**: 一度に `from` から出すことを試みる量の上限。
 - **`to_amount`**（省略可、既定値は `amount`）: `amount` の全量を出したときに `to` が増える量。
@@ -1685,9 +1684,8 @@ interactions:
 - **動かす物**: `subject` と `subject_prop` の**どちらか一方**で指します（両方書く・どちらも書かないのは
   ロード時エラー）。
   - **`subject`**: オブジェクトそのものを指すので、指せるのは**その宣言が置かれた場所が用意できる相手**
-    です（14.1 節）——`menu`/`tick` なら `self`・`parent`・`agent`、`drag` ならさらに `instrument`、
-    `on_max`/`on_min` なら `self`・`parent`。`child` は「一度きりの命令に対してどれを動かすか」が
-    決まらないため、どの場所でも指せません。`ancestor` は探すプロパティ名を伴わないため同様です。
+    です（14.1 節。操作の関係の役は 11.5 節「役を書ける場所」）。`child` は「一度きりの命令に対してどれを
+    動かすか」が決まらないため、どの場所でも指せません。`ancestor` は探すプロパティ名を伴わないため同様です。
   - **`subject_prop`**: `self` が持つプロパティ名。`to_prop` と同じく実効値をインスタンスIDとして解釈します
     ——**動かす物も行き先も、実行時に初めて確定する個体を指せます**（動物が足元の物をくわえる 1 手、
     [`HuntingSystem.md`](./HuntingSystem.md) 5 節）。
@@ -1810,8 +1808,8 @@ interactions:
     signal: {instrument: chipped}   # 殴った側（重ねた武器）に起きたこととして告げる
 ```
 
-対象は `self`/`parent`/`agent`（重ねる操作では `instrument` も）で、`destroy` と同じくオブジェクト
-そのものを指すため `ancestor` は使えません（未対応、ロード時エラー）。
+対象は `self`/`parent`/`agent`/`instrument` で、`destroy` と同じくオブジェクトそのものを指すため
+`ancestor` は使えません（未対応、ロード時エラー）。
 
 外した回に何も書かないと、その一手は「起きなかった手」と見分けが付きません。観測する側が読むのは
 世界に起きた物の出入り（[`ActionSystem.md`](./ActionSystem.md) 7 節）なので、**出入りを伴わない出来事は、
@@ -1850,8 +1848,8 @@ interactions:
 どの型もどこかの座標に居なければなりません——液体容器なら、手で書いた空の容器が `content: none` に
 あたります。
 
-- **`subject`** は `destroy`（9.3 節）と同じ対象キー（`self`/`parent`/`agent`、重ねる操作では
-  `instrument`）で、省略すると `self` です。
+- **`subject`** は `destroy`（9.3 節）と同じ対象キー（`self`/`parent`/`agent`/`instrument`）で、省略すると
+  `self` です。
 - **行き先の座標に型が居ない組み合わせは、候補になりません**（12 節）。落とせるのに何も起きない操作を
   出さないためで、`conditions` の不成立と違って `reason`（14.6 節）は持ちません——成立していないのは
   条件ではなく行き先の型そのものだからです。
