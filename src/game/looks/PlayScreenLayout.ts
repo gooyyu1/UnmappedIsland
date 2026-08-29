@@ -84,6 +84,12 @@ const CHARACTER_DISPLAY_WIDTH_PORTRAIT = 460;
 /** 横型のオプションバー高（アイコンボタン4個の縦積み + 上下パディング16×2）。 */
 const OPTIONS_HEIGHT_LANDSCAPE = SIZE.iconButton * 4 + SIZE.barGap * 3 + 32;
 
+/**
+ * ハンドレーンの枠の上限（ScreenLayout.md 7.3節）。**これを超えて広げた幅を使う相手がフィールド
+ * エリアに居ない**ので、超えた分はサイドバーへ回す（同10.1節）。
+ */
+const HAND_LANE_CELLS = 6;
+
 /** 縦型でフィールドエリアを縮めてでも確保する高さ（状況エリア + ページの上辺 + キャラクター表示エリアの内容量）。 */
 const DASHBOARD_MIN_HEIGHT_PORTRAIT =
   SITUATION_HEIGHT_PORTRAIT + PAGE_TOP_EDGE_WIDTH_PORTRAIT + CHARACTER_DISPLAY_HEIGHT_PORTRAIT;
@@ -176,17 +182,31 @@ export class PlayScreenLayout {
     const { width, height } = metrics;
 
     if (metrics.isLandscape) {
-      const sidebarWidth = Math.min(u(SIZE.sidebar), width);
-      const dashboardWidth = Math.min(u(SIZE.dashboardColumn), width - sidebarWidth);
+      const barColumn = Math.min(u(SIZE.sidebar), width);
+      const dashboardBeside = (sidebar: number): number => Math.min(u(SIZE.dashboardColumn), width - sidebar);
+      // 余剰は**広げる前**の幅で測る（ScreenLayout.md 10.2節）。広げた後の幅で測ると、広げる→6枚に
+      // なる→余剰が無くなる→戻す、を繰り返す。
+      const spare = laneCellsIn(width - dashboardBeside(barColumn) - barColumn, metrics) > HAND_LANE_CELLS;
+      const sidebarWidth = Math.min(spare ? barColumn * 2 : barColumn, width);
+      const dashboardWidth = dashboardBeside(sidebarWidth);
       const optionsHeight = Math.min(u(OPTIONS_HEIGHT_LANDSCAPE), height);
 
-      this.optionsBar = { x: width - sidebarWidth, y: 0, width: sidebarWidth, height: optionsHeight };
-      this.filterBar = {
-        x: width - sidebarWidth,
-        y: optionsHeight,
-        width: sidebarWidth,
-        height: height - optionsHeight,
+      // 余剰があれば2列に分け、**どちらも画面の高さいっぱい**の列にする（10.2節）。1列を上下に
+      // 分け合うときだけ、オプションバーが内容量ぶんを取って残りをフィルターバーへ渡す。
+      this.optionsBar = {
+        x: width - barColumn,
+        y: 0,
+        width: barColumn,
+        height: spare ? height : optionsHeight,
       };
+      this.filterBar = spare
+        ? { x: width - sidebarWidth, y: 0, width: barColumn, height }
+        : {
+            x: width - barColumn,
+            y: optionsHeight,
+            width: barColumn,
+            height: height - optionsHeight,
+          };
       this.fieldArea = {
         x: dashboardWidth,
         y: 0,
@@ -346,24 +366,9 @@ export class PlayScreenLayout {
     };
   }
 
-  /**
-   * 1つのレーンに一度に見えている枠の数。**送らずに読める枚数**で、レーンの外周マージン（左）の
-   * 内側から数える——横型は左右とも区切りの帯がかぶるが、縦型の右端は画面の端そのもので、右の
-   * マージンへ届いたカードもそのまま見える（buildLanes）。
-   *
-   * 使うのは手持ちを前へ詰めるかどうかの判定だけ（ScreenLayout.md 7.3節）。
-   */
+  /** 組み上がったフィールドエリアで、1つのレーンに一度に見えている枠の数（laneCellsIn）。 */
   get laneCells(): number {
-    const hidden = this.metrics.px(this.metrics.isLandscape ? SIZE.margin * 2 : SIZE.margin);
-    const pitch = this.metrics.px(SIZE.cardWidth + SIZE.gap);
-    const usable = this.fieldArea.width - hidden + this.metrics.px(SIZE.gap);
-    // 設計寸法はカード5枚ぴったりで組んであるので、幅で決まる横型はどれも商がちょうど5.0000になる。
-    // 足すのは**浮動小数の誤差だけ**で、幾何の不足ではない——1px単位まで緩めると、本当に入り切って
-    // いないカードを数える。
-    const fits = Math.floor(usable / pitch + 1e-9);
-    // 下限は測り直した結果ではなく、ScreenMetricsがuを「カードが5枚見える」ように選んでいるという
-    // 保証（ScreenLayout.md 3.1節）の書き写し。
-    return Math.max(LANE_MIN_CARDS, fits);
+    return laneCellsIn(this.fieldArea.width, this.metrics);
   }
 
   /** オプションバーに並ぶアイコンボタン。横型は高さいっぱいの中央へ、縦型は右端へ寄せる。 */
@@ -438,6 +443,27 @@ export class PlayScreenLayout {
     ];
     return centers.map((center) => horizontalSeparatorAt(center, this.fieldArea, height));
   }
+}
+
+/**
+ * 幅がfieldWidthのフィールドエリアで、1つのレーンに一度に見えている枠の数。**送らずに読める枚数**で、
+ * レーンの外周マージン（左）の内側から数える——横型は左右とも区切りの帯がかぶるが、縦型の右端は
+ * 画面の端そのもので、右のマージンへ届いたカードもそのまま見える（buildLanes）。
+ *
+ * 幅を受け取るのは、**サイドバーを広げる前**の幅でも測るため（ScreenLayout.md 10.2節）。使い道は
+ * これと、手持ちを前へ詰めるかどうかの判定（同7.3節）の2つ。
+ */
+function laneCellsIn(fieldWidth: number, metrics: ScreenMetrics): number {
+  const hidden = metrics.px(metrics.isLandscape ? SIZE.margin * 2 : SIZE.margin);
+  const pitch = metrics.px(SIZE.cardWidth + SIZE.gap);
+  const usable = fieldWidth - hidden + metrics.px(SIZE.gap);
+  // 設計寸法はカード5枚ぴったりで組んであるので、幅で決まる横型はどれも商がちょうど5.0000になる。
+  // 足すのは**浮動小数の誤差だけ**で、幾何の不足ではない——1px単位まで緩めると、本当に入り切って
+  // いないカードを数える。
+  const fits = Math.floor(usable / pitch + 1e-9);
+  // 下限は測り直した結果ではなく、ScreenMetricsがuを「カードが5枚見える」ように選んでいるという
+  // 保証（ScreenLayout.md 3.1節）の書き写し。
+  return Math.max(LANE_MIN_CARDS, fits);
 }
 
 /**
