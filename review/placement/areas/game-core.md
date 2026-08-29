@@ -39,12 +39,12 @@
 
 | 現在地 | 名前 | 層 | 判定 | 根拠 | 移動先候補 | 阻害要因 | 名前不一致 |
 |---|---|---|---|---|---|---|---|
-| src/game/NewGameScene.ts | `BODY_PADDING` `BODY_PADDING_LANDSCAPE_X` `FIELD_GAP` `LABEL_GAP` `INPUT_HEIGHT` `RANDOM_BUTTON_SIZE` `CHARACTER_OPTION_PADDING` `FOOTER_BUTTON_HEIGHT` `FOOTER_PADDING_Y` `CHARACTER_DESCRIPTION_SIZE` `CHARACTER_DESCRIPTION_LINES` `FIELD_LABEL_SIZE` `COLUMN_GAP` `FIELD_COLUMN_MIN_WIDTH` | 配置 | 3 | 寸法は意匠（Layers.md 4節）だが、使う側がこのファイルにしか居ないので置かれている | `src/game/looks/`（`theme.ts` の `SIZE`、または `NewGameScreenLayout`） | | |
+| src/game/NewGameScene.ts | `BODY_PADDING` `BODY_PADDING_LANDSCAPE_X` `FIELD_GAP` `LABEL_GAP` `INPUT_HEIGHT` `RANDOM_BUTTON_SIZE` `CHARACTER_OPTION_PADDING` `FOOTER_BUTTON_HEIGHT` `FOOTER_PADDING_Y` `CHARACTER_DESCRIPTION_SIZE` `CHARACTER_DESCRIPTION_LINES` `FIELD_LABEL_SIZE` `COLUMN_GAP` `FIELD_COLUMN_MIN_WIDTH` | 配置 | 3 | 寸法は意匠（CodeStructure.md 1節）だが、使う側がこのファイルにしか居ないので置かれている | `src/game/looks/`（`theme.ts` の `SIZE`、または `NewGameScreenLayout`） | | |
 | src/game/PlayScene.ts | `BAR_PADDING` `OPTIONS_BAR_PADDING_X` `FILTER_BAR_PADDING_X` `STATUS_PADDING` `PAPER_BUTTON_SHADOW` `ICON_BUTTON_GLYPH` | 配置 | 3 | 同じ性質の `DISPLAY_PADDING` は既に `looks/PlayScreenLayout` に居り、線が引かれていない | `src/game/looks/PlayScreenLayout.ts` / `theme.ts` | | |
-| src/game/PlayScene.ts | `REAL_MS_PER_GAME_MINUTE` `REAL_MS_MAX` `realMsFor` `MATERIAL_CYCLE_MS` `BRIGHTEN_MS` `DARKEN_MS` `INSTANT_GAIN_SPREAD_MS` | 配置 | 3 | 「時間の見せ方」は意匠と明記されている（Layers.md 4節）のに組み立てが持っている | `src/game/looks/`（`durationText.ts` の隣） | | |
+| src/game/PlayScene.ts | `REAL_MS_PER_GAME_MINUTE` `REAL_MS_MAX` `realMsFor` `MATERIAL_CYCLE_MS` `BRIGHTEN_MS` `DARKEN_MS` `INSTANT_GAIN_SPREAD_MS` | 配置 | 3 | 「時間の見せ方」は意匠と明記されている（CodeStructure.md 1節）のに組み立てが持っている | `src/game/looks/`（`durationText.ts` の隣） | | |
 | src/game/PlayScene.ts | `PARTICLES_PER_FULL` | 配置 | 3 | 満タンの何割を何粒で表すかは見せ方の値 | `src/game/looks/` または `ui/GainParticles.ts` | | |
 | src/game/PlayScene.ts | `SLOT_BUTTON_ICONS` `CHARACTER_SLOT_BUTTONS` `OPTION_ICONS` `FILTER_ICONS` | 配置 | 3 | ボタンの姿（絵・絵文字・染め）の表で、コメント自身が「画面の意匠」と言っている | `src/game/looks/`（例 `barIcons.ts`） | | |
-| src/game/PlayScene.ts | `BarIcon` | 配置 | 3 | 「バーに何を渡せば描けるか」は部品の都合＝契約は部品側が定める（Layers.md 4節） | `src/game/ui/Button.ts` | | |
+| src/game/PlayScene.ts | `BarIcon` | 配置 | 3 | 「バーに何を渡せば描けるか」は部品の都合＝契約は部品側が定める（CodeStructure.md 1節） | `src/game/ui/Button.ts` | | |
 | src/game/ScenarioSelectScene.ts, src/game/SettingsScene.ts | `LIST_PADDING` `ITEM_HEIGHT` `ITEM_PADDING_X` | 配置 | 3 | 2ファイルに同名・同値で重複しており、暗黙に一致すべき規約が2箇所にある | `src/game/looks/theme.ts`（`rowPlateStyle` の隣） | | |
 | src/game/SettingsScene.ts | `SWITCH_WIDTH` `SWITCH_HEIGHT` | 配置 | 3 | スイッチの寸法は意匠 | `src/game/looks/theme.ts` | | |
 | src/game/ShelfScene.ts | `PADDING` `CARD_GAP` `CARD_HEIGHT` `ARTIFACT_ICON` | 配置 | 3 | 棚の余白・札の縮尺・仮アイコンはいずれも見せ方 | `src/game/looks/`（アイコンは `src/art/`） | | |
@@ -61,7 +61,7 @@
 
 | 現在地 | 名前 | 層 | 判定 | 根拠 | 移動先候補 | 阻害要因 | 名前不一致 |
 |---|---|---|---|---|---|---|---|
-| src/game/DeviceScreen.ts | `DeviceScreen` | 配置 | 4 | シーンでもウィンドウでもないのに `src/game/` 直下に居る。ゲームの語彙を1つも持たず、このゲームを消しても1文字も変わらない＝汎用部品の条件（Layers.md 3節）を満たす。唯一の利用者も `src/main.ts` で `src/game/` の外 | `src/ui/`（`DeviceScreen.ts`） | `src/ui/` の他の部品は「シーンの中で使う表示物」だが、これはゲーム全体（`Phaser.Game`）を作る側。同じ棚に置くと `src/ui/` の意味が二重になるため、行き場が無く組み立ての棚に残っている | |
+| src/game/DeviceScreen.ts | `DeviceScreen` | 配置 | 4 | シーンでもウィンドウでもないのに `src/game/` 直下に居る。ゲームの語彙を1つも持たず、このゲームを消しても1文字も変わらない＝汎用部品の条件（CodeStructure.md 3節）を満たす。唯一の利用者も `src/main.ts` で `src/game/` の外 | `src/ui/`（`DeviceScreen.ts`） | `src/ui/` の他の部品は「シーンの中で使う表示物」だが、これはゲーム全体（`Phaser.Game`）を作る側。同じ棚に置くと `src/ui/` の意味が二重になるため、行き場が無く組み立ての棚に残っている | |
 | src/game/DeviceScreen.ts#DeviceScreen | `width`, `height` | 所属 | 2 | 「直前に反映した寸法」の控えで、変化が無いのに作り直さないためだけに要る | | | |
 
 ### src/game/NewGameScene.ts
@@ -78,11 +78,11 @@
 
 | 現在地 | 名前 | 層 | 判定 | 根拠 | 移動先候補 | 阻害要因 | 名前不一致 |
 |---|---|---|---|---|---|---|---|
-| src/game/PlayScene.ts#PlayScene | `pathDestinationNames()` | 所属 | 5 | `codex.vocabulary.world.pathTagId` でタグを見分け、`new Path(...)` を組んで行き先を導いている。**結線ではなく世界の読み**で、Layers.md 3節が「読んだ値から答えを組み立てているなら、それは映しのものではない」と名指しした形そのもの | `PlayScreenView`（「今の土地から行ける土地の名前」を問いの形で足す）／`domain/views/Path` | | |
+| src/game/PlayScene.ts#PlayScene | `pathDestinationNames()` | 所属 | 5 | `codex.vocabulary.world.pathTagId` でタグを見分け、`new Path(...)` を組んで行き先を導いている。**結線ではなく世界の読み**で、CodeStructure.md 3節が「読んだ値から答えを組み立てているなら、それは映しのものではない」と名指しした形そのもの | `PlayScreenView`（「今の土地から行ける土地の名前」を問いの形で足す）／`domain/views/Path` | | |
 | src/game/PlayScene.ts#PlayScene | `currentLandArt` | 所属 | 3 | `player.location ?? startLocation` という世界の分岐を組み立てが持っている | `PlayScreenView`（現在地の識別子） | | |
 | src/game/PlayScene.ts#PlayScene | `locationCards` | 所属 | 3 | 「設置物＋アイテムに出ている束」は映しの断面で、`view.cardsIn` を2回呼んで組み立て側が合成している | `PlayScreenView` / `ShownCards` | | |
 | src/game/PlayScene.ts#PlayScene | `requestLocationArt()` | 所属 | 3 | `gameSession.player.location.fixtures` / `undiscoveredFixtures` を映しを飛ばして直に読む | `PlayScreenView`（絵が要る土地の名前を答える） | | |
-| src/game/PlayScene.ts#PlayScene | `laneCards()` | 所属 | 4 | 札に「押せる／掴める／どの端が出る／途中の値か」を付ける＝**何が出ていて、その上の操作が何を意味するか**で、映しの定義そのもの（Layers.md 1節） | `src/game/view/cardLooks.ts` / `ShownCards` | 付ける `onTap` が `whileIdle`＝`activity`（演出中か）に依存し、`activity` は組み立てだけが持つ状態。映しへ出すには `ShownStatuses` の `midAction: () => …` と同じ形で演出中かを渡す必要がある | |
+| src/game/PlayScene.ts#PlayScene | `laneCards()` | 所属 | 4 | 札に「押せる／掴める／どの端が出る／途中の値か」を付ける＝**何が出ていて、その上の操作が何を意味するか**で、映しの定義そのもの（CodeStructure.md 1節） | `src/game/view/cardLooks.ts` / `ShownCards` | 付ける `onTap` が `whileIdle`＝`activity`（演出中か）に依存し、`activity` は組み立てだけが持つ状態。映しへ出すには `ShownStatuses` の `midAction: () => …` と同じ形で演出中かを渡す必要がある | |
 | src/game/PlayScene.ts#PlayScene | `shownInstanceIds()`, `foundSince()` | 所属 | 4 | 「今回の探索で新しく現れた個体だけ」を数える判断。どの札が発見物かは映しの答えで、`view/changedInstances.ts` が既に同種の計算を持つ | `ShownCards`（`takeFound` の入力を自分で作る） | 差分を取るには探索**前**に出ていたIDの控えが要るが、映しは行動のたびに作り直されて履歴を持たない。控えを持てる場所が組み立てにしか無い | |
 | src/game/PlayScene.ts#PlayScene | `showGains()` | 所属 | 4 | `property.range` と `locale.…prop().icon` を直に読み、粒数を `sqrt` で決めている。どのプロパティを何粒で見せるかは映し＋意匠の判断 | `src/game/view/`（増加を粒の数へ直す）＋ `looks/`（`PARTICLES_PER_FULL`） | 飛ばす先（ポートレイトの矩形）と発生源の矩形は画面の事実なので、粒数だけを出すと1つの演出が2箇所に割れる | |
 | src/game/PlayScene.ts#PlayScene | `initialTab()` | 所属 | 4 | 「指定 ＞ 型ごとの記憶 ＞ 説明」という優先順位＝順序に意味のある判断で、`operationSteps` と同じ性質 | `src/game/view/`（優先順位だけを持つ関数） | 記憶の置き場が `Settings`（localStorage）で、映しへ出すと映しが保存先を知ることになる。記憶を引数で受ける形にしない限り出せない | |
@@ -158,11 +158,11 @@
 ## 移動先が書けなかったもの
 
 - 該当なし（判定4・5はすべて移動先候補を書けた）。ただし1つだけ、**移動先の「棚」が概念として欠けている**ものがある。
-  - `DeviceScreen`（判定4）: Layers.md 4節の在処の表には「起動」の行が無い。`src/game/` は組み立て（`*Scene.ts` と `ui/*Window.ts`）と定義されており、`Phaser.Game` を作って端末の解像度に追従させる層は、世界・映し・意匠・部品・組み立てのどれでもない。`src/main.ts` と `DeviceScreen` が属する「起動」という区分が表に無いことが、置き場所が決まらない原因になっている。
+  - `DeviceScreen`（判定4）: 当時の在処の表には「起動」の行が無く、`src/game/` は組み立て（`*Scene.ts` と `ui/*Window.ts`）と定義されていた。`Phaser.Game` を作って端末の解像度に追従させる層は、世界・映し・意匠・部品・組み立てのどれでもない。`src/main.ts` と `DeviceScreen` が属する「起動」という区分が表に無いことが、置き場所が決まらない原因になっている。**現在は CodeStructure.md 1節の表が組み立ての置き場として `src/main.ts`・`src/game/DeviceScreen.ts` を名指ししており、起動を別区分にするかどうかだけが残っている。**
 
 ## ファイル配置（層=配置）についての所見
 
-- `src/game/` 直下は Layers.md 4節で「組み立て（`*Scene.ts` と `ui/*Window.ts`）」＋例外として `errorReport.ts` と定められている。11ファイル中9つはシーンで、この定義に合っている。外れているのは `DeviceScreen.ts`（シーンでも横断の道具でもない起動側）と、抽象基底の `ResponsiveScene.ts`（シーンの土台なので許容範囲）。
+- `src/game/` 直下は当時「組み立て（`*Scene.ts` と `ui/*Window.ts`）」＋例外として `errorReport.ts` と定められていた。11ファイル中9つはシーンで、この定義に合っている。外れているのは `DeviceScreen.ts`（シーンでも横断の道具でもない起動側）と、抽象基底の `ResponsiveScene.ts`（シーンの土台なので許容範囲）。**現在の CodeStructure.md 1節は、組み立ての置き場に `src/game/DeviceScreen.ts` を、層の外に `src/game/launchSeed.ts` を明記している。`src/game/` 直下は表のどこかに全部入るようになった（`ResponsiveScene.ts` は `*Scene.ts` として組み立て。抽象基底なので許容範囲、という上の評価は変わらない）。**
 - ただし**中身の層は守れていない**。意匠（寸法・色・時間の見せ方）の定数が全10シーンに散っており、担当範囲の判定3の 84 件中 46 件がこれ。`looks/theme.ts` と `looks/PlayScreenLayout.ts` という受け皿が既にあるのに、`DISPLAY_PADDING` だけが looks 側、`STATUS_PADDING`/`BAR_PADDING` は PlayScene 側、という線の引かれ方になっている。
-- `BootScene.ts` の `preload()` は、`INFORMATION_ART`/`SEPARATOR_ART`/`ICON_ART`/`WEATHER_ART` を `src/art/` から引く一方、`card_frame.png`・`flip_digit.png`・`slot_button_paper.png`・`dust_puff.png` の4枚だけは URL を直に輸入している。「どのファイルがどの絵か」は素材（`src/art/`）の答えるべきこと（Layers.md 3節）なので、この4枚だけが素材の棚を素通りしている。
+- `BootScene.ts` の `preload()` は、`INFORMATION_ART`/`SEPARATOR_ART`/`ICON_ART`/`WEATHER_ART` を `src/art/` から引く一方、`card_frame.png`・`flip_digit.png`・`slot_button_paper.png`・`dust_puff.png` の4枚だけは URL を直に輸入している。「どのファイルがどの絵か」は素材（`src/art/`）の答えるべきこと（CodeStructure.md 3節）なので、この4枚だけが素材の棚を素通りしている。
 - `PlayScene.ts` は 2366 行・宣言 181 件で、判定1が 122 件（67%）＝大半は本当に結線。問題は残る 3〜5 の 55 件が「世界へ直に訊く」「映しの判断を持つ」「部品を組み立てる」の3方向へ散っていることで、`operationSteps` / `elapsePlayback` が示した「順序の判断を Phaser に触らない側へ出す」延長として、次に出せるのは `laneCards`（映し）・`foundSince`＋`shownInstanceIds`（映し）・`initialTab`（映し）・`slotButtonPaper`＋`buttonIcon`（部品）・`pathDestinationNames`（映し／世界）の5組。

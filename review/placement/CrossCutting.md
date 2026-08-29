@@ -173,7 +173,7 @@ CLAUDE.md の「2箇所が暗黙に一致すべき規約は1箇所へ集める�
 `src/asset-pack/zip.ts` と `src/domain/generation/Pcg32.ts` の 16進定数は色ではない。）
 
 なお `src/game/ui/` には UPPER_SNAKE の module-level 定数が **228個** あり、`src/game/looks/`（意匠）の
-49個を大きく上回る。ただし `docs/engine/Layers.md` は部品が寸法を持つこと自体は禁じていない
+49個を大きく上回る。ただし `docs/CodeStructure.md` は部品が寸法を持つこと自体は禁じていない
 （部品が知ってはいけないのは「世界の語彙」）ので、**数の多さそのものは指摘にしない**。
 指摘になるのは上の C-1（複数箇所で一致すべきもの）と C-3（色）に絞られる。
 

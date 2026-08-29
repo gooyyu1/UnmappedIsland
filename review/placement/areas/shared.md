@@ -47,7 +47,7 @@
 | objectArt | object_defの識別子から絵とテクスチャキーを答える。 | （`CARD_ART_WIDTH` は絵の基準幅なので漏れない） |
 | ui/shapes | 角丸矩形・敷き詰め・背景板をPhaserへ描く。 | `SHADOW_LAYERS` / `DASH_LENGTH_RATIO`（濃さ・破線長＝意匠の値） |
 | ui/holdRepeat | 押し続けている間、加速しながら1つずつ繰り返す。 | `REPEAT_MIN_MS` の**公開**（外は最高速度を知る必要が無い） |
-| ui/scrollArea, ui/scroll | 渡された表示物の位置だけを、ドラッグとホイールで送る。 | （漏れなし。Phaser抜きの算術を`scroll.ts`へ分ける形は Layers.md 2節の方針どおり） |
+| ui/scrollArea, ui/scroll | 渡された表示物の位置だけを、ドラッグとホイールで送る。 | （漏れなし。Phaser抜きの算術を`scroll.ts`へ分ける形は CodeStructure.md 2節の方針どおり） |
 | ui/labels, ui/textLayout, ui/tap, ui/clip, ui/lifetime, ui/nineSlice, ui/Rect | Phaserの足りない分・間違っている分を埋める。 | （漏れなし） |
 | util/* | 型・言語レベルの変換と操作。 | （漏れなし） |
 
@@ -55,7 +55,7 @@
 
 | 現在地 | 名前 | 層 | 判定 | 根拠 | 移動先候補 | 阻害要因(判定4のみ) | 名前不一致 |
 |---|---|---|---|---|---|---|---|
-| src/locale/Localization.ts | `parseLocale()`, `parseEntry()`, `parseVariationNames()`, `parseTexts()` | 配置 | 4 | YAMLを読むのは `src/loader/` の仕事で、引く側と読み手が別（Layers.md 4節）。 | `src/locale/parseLocale.ts` | 組み立て先の `DeclaredTexts`・`ObjectTextsEntry`・`SlotTextsEntry`・`LocationTextsEntry` がモジュール内に閉じており、別ファイルへ出すと4つとも export することになる | |
+| src/locale/Localization.ts | `parseLocale()`, `parseEntry()`, `parseVariationNames()`, `parseTexts()` | 配置 | 4 | YAMLを読むのは `src/loader/` の仕事で、引く側と読み手が別（CodeStructure.md 1節）。 | `src/locale/parseLocale.ts` | 組み立て先の `DeclaredTexts`・`ObjectTextsEntry`・`SlotTextsEntry`・`LocationTextsEntry` がモジュール内に閉じており、別ファイルへ出すと4つとも export することになる | |
 | src/locale/Localization.ts | `LocaleSections` | 可視性 | 5 | export されているが、メンバーの型（`ObjectTextsEntry` ほか）が非公開なので**外からは1つも作れない**。他ファイルからの参照も無い。 | `export` を外す | | |
 | src/locale/Localization.ts | `LOCALE_FILE`, `bundledLocaleText()` | 可視性 | 4 | src 内の利用者は同ファイルの `loadLocalization` だけで、export の実利用者は `tests/world-codex/bundledLocale.test.ts` のみ。 | `loadLocalization` の内部へ畳む | 同梱YAMLの中身と、エラーメッセージに出る出所ラベルを、テストが本番と同じ組で読み直すため | |
 | src/locale/Localization.ts#Localization | `locationName(name: LocationName)` | 所属 | 4 | 「引く」ではなく「組み立てる」——`LocationName`（型・亜種・通し番号）の構造を知っており、そのために `src/domain/generation/IslandMap` を import している。 | `typeDisplayName` と同じ場所（`src/locale/displayNames.ts`） | `ordinalSuffix` と亜種の解決順を公開せずに済ませるため | |
@@ -64,7 +64,7 @@
 | src/locale/Localization.ts#Localization | `static empty()` | 可視性 | 2 | 「テスト用」と書かれているが、`parseLocale` が空YAMLの戻り値として本番でも使う。 | (現状維持。コメントが実態と食い違う) | | ✔ |
 | src/locale/Localization.ts | `loadLocalization()` | 配置 | 3 | 読み込みの入口。引く側（`Localization`）とは責務が別だが、`parseLocale` の隣に居る。 | `src/locale/parseLocale.ts` | | |
 | src/locale/Localization.ts | `format()` | 所属 | 3 | 汎用の `{name}` 差し込み。`SlotTexts` と `ObjectTexts` からしか呼ばれない。 | `src/util/format.ts`（後述の所見参照） | | |
-| src/art/informationArt.ts | `INFORMATION_BORDER_PX`, `INFORMATION_OVERLAP_PX` | 配置 | 4 | 素材は「どのファイルがどの絵か」を答える場所で、px の寸法は意匠（Layers.md 3節・4節）。 | `src/game/looks/PlayScreenLayout.ts` | 絵を切り出す道具（`recipes/information_background.json` の crop / fade）が従うべき寸法そのもので、絵の登録と同じ場所に置くことで一致を保っている | |
+| src/art/informationArt.ts | `INFORMATION_BORDER_PX`, `INFORMATION_OVERLAP_PX` | 配置 | 4 | 素材は「どのファイルがどの絵か」を答える場所で、px の寸法は意匠（CodeStructure.md 1節・3節）。 | `src/game/looks/PlayScreenLayout.ts` | 絵を切り出す道具（`recipes/information_background.json` の crop / fade）が従うべき寸法そのもので、絵の登録と同じ場所に置くことで一致を保っている | |
 | src/art/informationArt.ts | `INFORMATION_PAPER_INSET` | 配置 | 4 | `edge: 24` は「表紙の縁に載らない程度の余白」＝絵から測れないレイアウト値。読むのは `PlayScreenLayout` と `theme.ts` だけ。 | `src/game/looks/PlayScreenLayout.ts` | `field` が絵の縁（BORDER−OVERLAP）から導かれるため、1つのオブジェクトに「絵の寸法」と「純粋な余白」が同居し、`edge` まで素材側へ引き寄せられている | |
 | src/art/iconArt.ts | `ICON_NAMES` | 所属 | 4 | このゲームの画面にどのボタンが在るかの一覧（`filter_cook`・`diary` など）。「どのファイルがどの絵か」ではない。src 内に他の参照は無く、実利用者はテストのみ。 | `src/game/ui/`（ボタンを並べる側） | 絵が実在するかを Phaser 抜きで検査する（`tests/art/iconArt.test.ts`）には、名前の一覧が在庫表（`ICON_ART`）と同じ場所に要る | |
 | src/art/iconArt.ts | `IconName` | 所属 | 3 | `ICON_NAMES` から導く型。`ICON_NAMES` が動けば一緒に動く。 | 同上 | | |
@@ -82,7 +82,7 @@
 | src/ui/holdRepeat.ts#HoldRepeat | `schedule()` | 所属 | 3 | private ヘルパー。 | (現状維持) | | |
 | src/ui/nineSlice.ts | `sliceSpans()`, `SliceSpan` | 可視性 | 4 / 3 | src 内の利用者は同ファイルの2関数だけで、export の実利用者は `tests/ui/nineSlice.test.ts` のみ。 | 非公開化＋`addNineSlice` の内部へ | 「辺が短いとき端どうしを重ねない」という境界を Phaser 抜きで確かめるため。`addNineSlice` はテクスチャ付きの `Phaser.Scene` を要求する | |
 | src/ui/nineSlice.ts | `frameNameOf()`, `addSliceFrames()` | 所属 | 3 | このファイル内からしか呼ばれない private。 | (現状維持) | | |
-| src/ui/labels.ts | `FontScale`, `defaults`, `setLabelDefaults()` | 所属 | 2 | 汎用部品が意匠を import できないための反転（`fontPx` は `ScreenMetrics` を型で受けずに受け取る）。Layers.md 4節が明示する形そのもの。 | (現状維持) | | |
+| src/ui/labels.ts | `FontScale`, `defaults`, `setLabelDefaults()` | 所属 | 2 | 汎用部品が意匠を import できないための反転（`fontPx` は `ScreenMetrics` を型で受けずに受け取る）。CodeStructure.md 1節が明示する形そのもの。 | (現状維持) | | |
 | src/ui/scrollArea.ts | `ScrollReadout` | 所属 | 2 | `ScrollIndicator` を知らずに送り具合を映すための反転インタフェース。 | (現状維持) | | |
 
 ## 移動先が書けなかったもの
@@ -93,9 +93,9 @@
 
 ## ファイル配置（層=配置）についての所見
 
-**`src/ui/`（汎用）の判定** — 「このゲームを消しても1文字も変わらないか」を全98宣言に当てた結果、**変わるのは3箇所だけ**だった。(1) `shapes.ts` の `SHADOW_LAYERS`・`0x000000`・`DASH_LENGTH_RATIO`（配色・寸法を定数で抱えている、差し替え口なし）、(2) `holdRepeat.ts` の `REPEAT_MIN_MS`（ゲーム側の演出間隔がこの定数を直接指している）、(3) コメント上の語彙（`scrollArea.ts` の「レーンの地の絵」「CardDragController」、`labels.ts` の「ScreenMetrics」、`clip.ts` の「飛んでいる札」）。(3) は宣言ではないので採点していないが、**契約の説明が具体的なゲーム画面を名指ししている**点は (1)(2) と同根。逆に `scroll.ts` の `WHEEL_DELTA_PIXELS`・`nineSlice.ts` の `'nine:'`・`labels.ts` の `sans-serif`/`0x000000` はブラウザ仕様・名前空間・「意匠が無くても読める既定値」であり、Layers.md 4節が認める形なので汎用のままでよい。
+**`src/ui/`（汎用）の判定** — 「このゲームを消しても1文字も変わらないか」を全98宣言に当てた結果、**変わるのは3箇所だけ**だった。(1) `shapes.ts` の `SHADOW_LAYERS`・`0x000000`・`DASH_LENGTH_RATIO`（配色・寸法を定数で抱えている、差し替え口なし）、(2) `holdRepeat.ts` の `REPEAT_MIN_MS`（ゲーム側の演出間隔がこの定数を直接指している）、(3) コメント上の語彙（`scrollArea.ts` の「レーンの地の絵」「CardDragController」、`labels.ts` の「ScreenMetrics」、`clip.ts` の「飛んでいる札」）。(3) は宣言ではないので採点していないが、**契約の説明が具体的なゲーム画面を名指ししている**点は (1)(2) と同根。逆に `scroll.ts` の `WHEEL_DELTA_PIXELS`・`nineSlice.ts` の `'nine:'`・`labels.ts` の `sans-serif`/`0x000000` はブラウザ仕様・名前空間・「意匠が無くても読める既定値」であり、CodeStructure.md 1節が認める形なので汎用のままでよい。
 
-**`src/art/`** — 8ファイル中5つ（`objectArt`・`backgroundArt`・`iconArt`・`weatherArt`・`separatorArt`）は「ファイル名の規約から絵を答える」で統一されていて、置き場所として正しい。歪んでいるのは残り3つの向きが違う点で、`informationArt.ts` は**素材ではなく寸法（意匠）を3つ抱え**、`artFiles.ts` は**ワールド（`WorldCodex`）を引数に取り**、`iconArt.ts` は**ゲーム画面のボタン一覧を持つ**。素材が codex ビューアからも使われる（Layers.md 3節）ことを踏まえると、この3つは素材をゲーム側へ引っ張る向きの依存になっている。
+**`src/art/`** — 8ファイル中5つ（`objectArt`・`backgroundArt`・`iconArt`・`weatherArt`・`separatorArt`）は「ファイル名の規約から絵を答える」で統一されていて、置き場所として正しい。歪んでいるのは残り3つの向きが違う点で、`informationArt.ts` は**素材ではなく寸法（意匠）を3つ抱え**、`artFiles.ts` は**ワールド（`WorldCodex`）を引数に取り**、`iconArt.ts` は**ゲーム画面のボタン一覧を持つ**。素材が codex ビューアからも使われる（CodeStructure.md 3節）ことを踏まえると、この3つは素材をゲーム側へ引っ張る向きの依存になっている。
 
 **`src/locale/`** — `Localization.ts` 631行は「引く」と「読む」の2責務が1ファイルに同居しており、後者（`parseLocale` ほか9宣言）を分けるのが最大の改善。加えて、名前を組み立てる処理が `Localization.locationName`（クラス内）と `typeDisplayName.ts`（クラス外）に**同じ形で二分**されている。片方は `domain/generation/IslandMap` を import し、もう片方は `WorldCodex` を避けるために外へ出ており、線の引き方が一貫していない。両方を `src/locale/displayNames.ts` へ寄せると、`Localization` は「識別子→文字列」の1文に収まる。
 

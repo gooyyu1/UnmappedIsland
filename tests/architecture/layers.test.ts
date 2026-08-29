@@ -3,7 +3,7 @@ import { dirname, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * 層の境界の検査（docs/engine/Layers.md 1節）。
+ * 層の境界の検査（docs/CodeStructure.md 1節）。
  *
  * **知らないと言っている層が、本当に知らないままか**を見る。import を辿るので、間に何本挟まって
  * いても見つかる——`ShownCards` が `Card.ts` の値を1つ輸入した瞬間に落ちる、という粒度。
@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = resolve(__dirname, '../..');
 
-/** Phaserへ到達してはいけない置き場（Layers.md 4節）。 */
+/** Phaserへ到達してはいけない置き場（CodeStructure.md 1節）。 */
 const PHASER_FREE = [
   'src/domain',
   'src/loader',
@@ -27,10 +27,13 @@ const PHASER_FREE = [
   'src/asset-pack',
   'src/game/view',
   'src/game/looks',
+  'src/game/errorReport.ts',
+  'src/game/launchSeed.ts',
+  'src/codex-viewer',
 ];
 
 /**
- * 解析層（`src/analysis`）へ到達してはいけない置き場（Layers.md 6節）。定義から数値を導く近似の
+ * 解析層（`src/analysis`）へ到達してはいけない置き場（CodeStructure.md 5節）。定義から数値を導く近似の
  * 置き場所なので、**ドメインと遊びの本体はその存在を知らない**。
  */
 const ANALYSIS_FREE = ['src/domain', 'src/loader', 'src/locale', 'src/game', 'src/ui'];
@@ -46,11 +49,13 @@ const VIEWER_FREE = ['src/domain', 'src/loader', 'src/locale', 'src/game', 'src/
 /** 効果と条件の木そのもの。組み立ててよいのはドメインと、YAMLから作るローダーだけ。 */
 const TREE_MODULES = ['src/domain/ActiveEffect.ts', 'src/domain/ConditionNode.ts'];
 
-/** 宣言を読み上げてもらう側の置き場（Layers.md 6節）。 */
+/** 宣言を読み上げてもらう側の置き場（CodeStructure.md 5節）。 */
 const TREE_READERS = ['src/analysis', 'src/codex-viewer'];
 
 /** そのディレクトリ以下の.tsファイル（リポジトリ相対）。 */
 function sourcesIn(dir: string): string[] {
+  // 検査対象にはファイル1つを名指しするものもある（層の外の `errorReport.ts`・`launchSeed.ts`）。
+  if (dir.endsWith('.ts')) return [dir];
   const found: string[] = [];
   for (const entry of readdirSync(join(ROOT, dir))) {
     const rel = `${dir}/${entry}`;
@@ -64,7 +69,7 @@ function sourcesIn(dir: string): string[] {
  * そのファイルが**実行時に**読み込む先（相対指定は解決して、パッケージ名はそのまま）。
  *
  * `import type` は数えない。契約（`CardContent`・`StatusContent` ほか）を定めるのは部品側で、映しは
- * それを型として輸入する（Layers.md 4節）——型はビルドで消えるので、Phaserは付いてこない。
+ * それを型として輸入する（CodeStructure.md 1節）——型はビルドで消えるので、Phaserは付いてこない。
  */
 function importsOf(rel: string, includeTypes = false): readonly string[] {
   const source = readFileSync(join(ROOT, rel), 'utf-8');
@@ -122,6 +127,29 @@ function routesFrom(
     .map((route) => route.join(' → '));
 }
 
+/** 構造の文書。1節の表と2節の図が、どちらもここから読める。 */
+function structureDoc(): string {
+  return readFileSync(join(ROOT, 'docs/CodeStructure.md'), 'utf-8');
+}
+
+/**
+ * 1節の表の行。**他の節の表を混ぜない**——5節にもドメインと解析を比べる表があり、混ぜると
+ * 1節から行が消えてもそちらが拾ってしまう。「1節の表が唯一の記載場所」を検査するのだから、
+ * 見る範囲もその表だけ。
+ */
+function structureRows(): readonly string[] {
+  const section = structureDoc()
+    .split(/^## /m)
+    .find((part) => part.startsWith('1. '));
+  if (section === undefined) throw new Error('CodeStructure.md の1節が見つかりません');
+  return section.split(/\r?\n/).filter((line) => line.startsWith('| **'));
+}
+
+/** 1節の表が並べる構成要素の名前（1列目）。 */
+function structureNames(): readonly string[] {
+  return structureRows().map((line) => line.split('|')[1].replaceAll('*', '').trim());
+}
+
 describe('層の境界', () => {
   it.each(PHASER_FREE)('%s はPhaserへ到達しない', (dir) => {
     expect(
@@ -131,7 +159,7 @@ describe('層の境界', () => {
   });
 
   it('src/ui はこのゲームへ到達しない', () => {
-    // 汎用の部品だけを置く場所（Layers.md 4節）。ゲームの語彙も意匠も知らないので、ここにある
+    // 汎用部品だけを置く場所（CodeStructure.md 1節）。ゲームの語彙も意匠も知らないので、ここにある
     // ものはこのゲームを消しても変わらない。
     expect(
       routesFrom('src/ui', (target) => target.startsWith('src/game/')),
@@ -178,5 +206,64 @@ describe('層の境界', () => {
     expect(sourcesIn('src/analysis').length).toBeGreaterThan(3);
     expect(sourcesIn('src/game/view').length).toBeGreaterThan(5);
     expect(sourcesIn('src/ui').length).toBeGreaterThan(5);
+  });
+
+  it('src/ の置き場が、CodeStructure.md の表に出そろっている', () => {
+    // 表は「置き場の唯一の記載場所」を名乗る（CodeStructure.md 1節）。名乗るだけでは、置き場を
+    // 足したときに書き忘れても誰も気づかない——**数えるのはこちらの仕事**。
+    //
+    // 表が丸ごと受けている場所はそこで止め、受けていなければ1段降りて確かめる。`src/game/` は
+    // ディレクトリごとの行を持たず直下のファイルを列挙しているので、この降り方でだけ拾える。
+    const listed = [
+      ...structureRows()
+        .join('\n')
+        .matchAll(/`(src\/[^`]+)`/g),
+    ].map((m) => m[1].replace(/\/$/, ''));
+    const covers = (path: string): boolean =>
+      listed.some((entry) =>
+        entry.includes('*')
+          ? new RegExp(`^${entry.replace(/[.]/g, '\\.').replace(/\*/g, '[^/]*')}$`).test(path)
+          : entry === path,
+      );
+
+    const missing: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(join(ROOT, dir))) {
+        const path = `${dir}/${entry}`;
+        // データファイルはコードではないので、どの行にも属さない（CodeStructure.md 1節）。
+        if (path === 'src/assets') continue;
+        if (covers(path)) continue;
+        if (statSync(join(ROOT, path)).isDirectory()) walk(path);
+        else missing.push(path);
+      }
+    };
+    walk('src');
+
+    // 逆向きも見る。**片方向だけでは、置き場を消したときに表だけが黙って腐る。**
+    const gone = listed.filter((entry) =>
+      entry.includes('*')
+        ? !readdirSync(join(ROOT, dirname(entry))).some((name) =>
+            new RegExp(`^${entry.split('/').pop()?.replace(/[.]/g, '\\.').replace(/\*/g, '.*')}$`).test(name),
+          )
+        : !existsSync(join(ROOT, entry)),
+    );
+
+    expect(missing, 'この置き場が表のどの行にも載っていない').toEqual([]);
+    expect(gone, '表が挙げているこの置き場が実在しない').toEqual([]);
+    expect(listed.length).toBeGreaterThan(10);
+  });
+
+  it('依存の図のノードが、1節の表の行と同じ', () => {
+    // 表と図は同じものを説明する2つの一覧なので、**並べた時点で行集合の一致を誰かが見る必要が
+    // ある**。図が網羅すると言っているのはノードで（CodeStructure.md 2節）、辺は主な向きの要約。
+    //
+    // ラベルは**丸ごと**取る。`<br/>` の手前で切ると、ノードに置き場を書き足しても検査の外に
+    // 出てしまい、1節の表だけが唯一の記載場所だという宣言がそこで破れる。
+    const diagram = structureDoc().match(/```mermaid\n([\s\S]*?)```/);
+    if (diagram === null) throw new Error('CodeStructure.md の依存の図が見つかりません');
+    const nodes = [...diagram[1].matchAll(/^\s+\w+\["([^"]+)"\]/gm)].map((m) => m[1].trim());
+
+    expect([...nodes].sort(), '図のノードと表の行が食い違っている').toEqual([...structureNames()].sort());
+    expect(nodes.length).toBeGreaterThan(3);
   });
 });

@@ -74,7 +74,7 @@
 | src/domain/StackOrderDef.ts#StackOrderDef | `insertionIndexOf(obj, members)` | 所属 | 4 | 実行時の `WorldObject` 列を走査する挿入位置決めで、唯一の呼び手は `ObjectStack`。 | `ObjectStack` | `propertyGlobalId`/`ascending`（private）を公開せずに並べ替えるため。ただし `reading` getter が同じ2値を既に公開しており、盾になっていない | |
 | src/domain/TypeMatchRule.ts#TypeMatchRule | `acceptSpec(names)` | 所属 | 5 | 宣言をYAMLの形へ書き戻す処理で、呼び手は `src/loader/inProgressObjects.ts` のみ。`reading` が同じ2値を公開済みなので何も守っていない。 | `src/loader/inProgressObjects.ts` | | ✓ |
 | src/domain/GeneratedTypes.ts#GeneratedTypes | `baseAlong(def, axis)` | 可視性 | 5 | public だが `src`・`tests` のどこからも呼ばれていない。 | (なし＝呼び手が居ない) | | ✓ |
-| src/domain/WorldCodex.ts#WorldCodex | `baseOf`, `isGenerated`, `variationsOf`, `tryResolveBecome` | 可視性 | 3 | `generatedTypes` フィールド自体が public なので、同じ問いへの口が2通りある（Layers.md の「素通しを生やすと線がぼやける」に当たる）。 | `GeneratedTypes` へ一本化 | | |
+| src/domain/WorldCodex.ts#WorldCodex | `baseOf`, `isGenerated`, `variationsOf`, `tryResolveBecome` | 可視性 | 3 | `generatedTypes` フィールド自体が public なので、同じ問いへの口が2通りある（CodeStructure.md の「素通しを生やすと線がぼやける」に当たる）。 | `GeneratedTypes` へ一本化 | | |
 | src/domain/WorldCodex.ts#WorldCodex | `singletonGlobalIds()`, `objectDefNamesWithTag()` | 所属 | 3 | 中身は `this.objects` の全走査で、Codex の他のフィールドをほぼ使わない。 | `ObjectDefTable` | | |
 | src/domain/WorldCodex.ts#WorldCodex | `symbolicPropertyIds` | 所属 | 3 | `symbolicProperties` getter 専用の遅延キャッシュ。 | 同クラス内で可 | | |
 | src/domain/WorldCodex.ts#WorldCodex | `recipeCategoryTagIds`, `symbolicProperties` | 所属 | 2 | 全型走査の結果をロード時／初回に畳んだ索引で、宣言そのものではない。 | | | |
@@ -90,11 +90,11 @@
 | src/domain/SlotDef.ts#SlotDef | `cellsToKeep`, `cellsReading`, `putInDurationReading` | 所属 | 2 | `cellDefs`/`sharedCell`/`putInDuration` の格納形を出さずに済ませる問いの形の口。 | | | |
 | src/domain/RecipeDef.ts | `RECIPE_AXIS`, `IN_PROGRESS_TAG` | 配置 | 3 | 「コードがYAMLの単語へ寄せている依存」なのに、その一覧である `WorldVocabulary` に載っていない。 | `src/domain/WorldVocabulary.ts` | | |
 | src/domain/RecipeDef.ts#RecipeDef | `unlock`(public) と `unmetUnlockRequirement()` | 可視性 | 3 | `unmetUnlockRequirement` は `unlock?.firstUnmet(...)` の素通しで、`unlock` 自体も public のため codex-viewer が `unlock!.declarations` を直に読んでいる。 | どちらか一方へ寄せる | | |
-| src/domain/RecipeDef.ts#RecipeDef | `icon` | 配置 | 2 | 絵のファイル識別子が世界の定義に直接入っている（Layers.md では「どのファイルがどの絵か」は素材側）。 | `src/art/` 側での対応付け | | |
+| src/domain/RecipeDef.ts#RecipeDef | `icon` | 配置 | 2 | 絵のファイル識別子が世界の定義に直接入っている（CodeStructure.md では「どのファイルがどの絵か」は素材側）。 | `src/art/` 側での対応付け | | |
 | src/domain/RecipeDef.ts | `RecipeStepDef.requires`, `RecipeDef.requires` | 所属 | 2 | 3階層で同名の畳み込み（`RecipeRequirementDef` → `RecipeStepDef` → `RecipeDef`）。 | | | |
 | src/domain/InteractionDef.ts#InteractionDef | `requirementDeclarations` | 可視性 | 3 | `unmetRequirement` と同じ private フィールドへの2つ目の口で、読み手は codex-viewer のみ。 | `Requirements`（`declarations` は既に public） | | |
 | src/domain/InteractionDef.ts | `InteractionTriggerReading` | 配置 | 3 | 下位クラス2種の形の合併が基底ファイルに居るため `InteractionDef.ts` → `ActionDef.ts` の型importが生じ、しかも宣言が import 群の途中に挟まっている。 | 型だけの共通ファイル、または import 群の後ろへ | | |
-| src/domain/InteractionDef.ts#InteractionDef | `read`, `durationReading` | 所属 | 2 | `effect`/`duration` を出さない読み上げ口（Layers.md 6節の `EffectReader` の形）。 | | | |
+| src/domain/InteractionDef.ts#InteractionDef | `read`, `durationReading` | 所属 | 2 | `effect`/`duration` を出さない読み上げ口（CodeStructure.md 5節の `EffectReader` の形）。 | | | |
 | src/domain/ActionDef.ts | `ShowMenuMode` | 配置 | 3 | 基底の `InteractionTriggerReading` が下位クラスのこの型を輸入しており、定義位置が上下逆。 | `InteractionDef.ts` または共通の型ファイル | | |
 | src/domain/CombinationDef.ts#CombinationDef | `with` | 可視性 | 3 | public だが `src` 内の読み手が無く（`trigger.with` は `triggerReading` の方）、`acceptsInstrument`・`triggerReading` と合わせて同じ規則に口が3つある。 | private化 | | |
 | src/domain/CombinationDef.ts#CombinationDef | `acceptsInstrument(instrumentDef)` | 所属 | 3 | `with.matches(instrumentDef)` の薄い包み。 | 呼び出し側で `TypeMatchRule.matches` を使う | | |
@@ -118,13 +118,13 @@
 
 ## ファイル配置（層=配置）についての所見
 
-14ファイルはすべて `src/domain/` 直下で、Layers.md の「世界＝`src/domain/`」に沿う。ただし直下が平らすぎて、
+14ファイルはすべて `src/domain/` 直下で、CodeStructure.md の「世界＝`src/domain/`」に沿う。ただし直下が平らすぎて、
 性格の違う3種が混ざっている: (a) 宣言そのもの（`ObjectDef`・`PropertyDef`・`SlotDef`・`RecipeDef`）、
 (b) 索引・語彙（`WorldCodex`・`NameRegistry`・`GeneratedTypes`・`WorldVocabulary`）、
 (c) 値オブジェクト（`TypeMatchRule`・`Requirement`・`StackOrderDef`）。`src/domain/generation/`・`src/domain/views/`
 というサブディレクトリが既にある以上、`src/domain/def/` を切る余地はある。
 
 個別には2点。`NameRegistry` はゲームの語彙を一切知らない汎用の表で、`src/util/` が自然（判定3）。
-`RecipeDef.icon` と `PropertyStage.art` は絵のファイル識別子で、Layers.md が「どのファイルがどの絵かは素材（`src/art/`）」
+`RecipeDef.icon` と `PropertyStage.art` は絵のファイル識別子で、CodeStructure.md が「どのファイルがどの絵かは素材（`src/art/`）」
 と書いている線と一致していない——ただし宣言YAMLに書かれている値をそのまま保持しているだけなので、
 歪みは `src/art/` 側の対応付けが薄いことの裏返し。
