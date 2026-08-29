@@ -132,11 +132,12 @@ traits:
       # 配分の合計は動物によらず100に揃える。傷が押し上げる量（painの段）と並ぶ目盛りが動物ごとに
       # 変わると、同じ深手が動物によって別の意味を持ってしまうため。
       #
-      # 7つとも値を持たないので、**宣言し忘れた動物はロードで落ちる**（5節）。0も明示して書く——
+      # 8つとも値を持たないので、**宣言し忘れた動物はロードで落ちる**（5節）。0も明示して書く——
       # 「この動物はしないこと」は書き忘れと同じ0になるため、並べて読めるようにする。
       lurk: {}
       bite: {}
       gore: {}
+      crush: {}
       snatch: {}
       smash: {}
       devour: {}
@@ -178,7 +179,7 @@ traits:
       # 落ち着いている相手には手を出さず、逃げもしない。**警戒しているかどうかで1手の顔ぶれが
       # 変わる**のがこの2つで、落ち着いていれば足元の物へ手を出すか、様子をうかがうかだけになる。
       - conditions: [{prop: wariness, in_stage: calm}]
-        modify: {self: {bite: -1000, gore: -1000, flee: -1000}}
+        modify: {self: {bite: -1000, gore: -1000, crush: -1000, flee: -1000}}
       # 荒ぶっている間は物どころではない。逃げるか、向かってくるかの二択になる。
       - conditions: [{prop: wariness, in_stage: enraged}]
         modify: {self: {snatch: -1000, smash: -1000}}
@@ -211,6 +212,16 @@ traits:
             among: {subject: parent, slot: characters, matches: {tag: character}}
             spawn: {object: gore_wound, into: picked}
             signal: gored
+          # 圧し掛かった回。**骨折（injuries.yamlのfracture）を残すのはこの候補だけ**で、重みを
+          # 立てるのは大型の獣だけなので、小型では候補ごと抽選に出ない——「重い獣に踏まれたときだけ
+          # 折れる」を、傷の側に「大型からしか出ない」と書かずに表せる（HuntingSystem.md 5節）。
+          #
+          # 血は流れず、代わりに相手の荷重が押し上がる（injuries.yamlのfracture）。突かれた相手が
+          # その場を離れても倒れるのに対し、こちらは**離れられても、しばらく何も運べない**。
+          - weight: {prop: crush}
+            among: {subject: parent, slot: characters, matches: {tag: character}}
+            spawn: {object: fracture, into: picked}
+            signal: crushed
           # 足元の物をくわえた回。倒せば地面へこぼれる（9.3節）ので、追えば取り返せる。
           # **かさが大きい物ほど狙われる**——地面に大きな物を広げていると危ない（5.4節）。
           # 獲物（quarry）は持ち去るものではないので外す（動物と死体、そして自分自身）。
@@ -325,6 +336,7 @@ object_defs:
       lurk: {value: 20}
       bite: {value: 15}
       gore: {value: 0}
+      crush: {value: 0}
       snatch: {value: 35}
       smash: {value: 0}
       devour: {value: 10}
@@ -442,6 +454,7 @@ object_defs:
       lurk: {value: 30}
       bite: {value: 0}
       gore: {value: 0}
+      crush: {value: 0}
       snatch: {value: 0}
       smash: {value: 0}
       devour: {value: 0}
@@ -541,6 +554,7 @@ object_defs:
       lurk: {value: 15}
       bite: {value: 5}
       gore: {value: 0}
+      crush: {value: 0}
       snatch: {value: 0}
       smash: {value: 0}
       devour: {value: 0}
@@ -604,9 +618,13 @@ object_defs:
       # 1手の配分（合計100、beast trait）。**牙が配分の中で最も太い唯一の動物**で、警戒した時点から
       # 向かってくる。落ち着いている間は藪を割って進むついでに足元の物を壊すだけだが、警戒させれば
       # そのぶんが攻めへ回る（荒ぶれば体当たりの候補が抽選から外れる）。
+      #
+      # **圧し掛かりの重みを立てる唯一の動物**（HuntingSystem.md 5節）。牙の40から10を振り替えた
+      # ——合計を100に揃えるためで、牙が減ったぶんだけ結末が重くなる（骨折は治るまで14日）。
       lurk: {value: 15}
       bite: {value: 0}
-      gore: {value: 40}
+      gore: {value: 30}
+      crush: {value: 10}
       snatch: {value: 0}
       smash: {value: 25}
       devour: {value: 0}

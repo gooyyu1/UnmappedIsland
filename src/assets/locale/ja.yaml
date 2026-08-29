@@ -142,6 +142,9 @@ object_texts:
       gore:
         display_name: 牙
         description: 1手の重み配分のうち、牙を突き上げる回の重み。大型だけが持つ。
+      crush:
+        display_name: 圧し掛かり
+        description: 1手の重み配分のうち、相手へ体ごと圧し掛かる回の重み。大型だけが持ち、骨を折る。
       snatch:
         display_name: 持ち去り
         description: 1手の重み配分のうち、足元の物をくわえて自分のものにする回の重み。
@@ -376,6 +379,9 @@ object_texts:
   gore_wound:
     display_name: 牙の傷
     description: 下から突き上げた牙が深部まで裂いた傷。この島で最も速く血が流れる。手当てが間に合わなければ、その場を離れても倒れる。
+  fracture:
+    display_name: 骨折
+    description: 重さに押し潰されて折れた骨。血は流れないが痛みは絶えず、繋がるまでの半月、荷を担げば身動きが取れない。
 
   # 動物（animals.yaml）。
   monkey:
@@ -1372,6 +1378,7 @@ destroy_reason_texts:
 signal_texts:
   bit: 噛みつき
   cracked: 割れた
+  crushed: 押し潰し
   devoured: 食べた
   fired: 焼けた
   fled: 逃げた

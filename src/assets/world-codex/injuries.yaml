@@ -297,6 +297,57 @@ object_defs:
           parent:
             blood: -15
 
+  # 骨折（docs/engine/InjurySystem.md 5節）。**重い罠と大型の獣だけが残す**——別格であることを
+  # 支えているのは量ではなく原因の少なさなので、どこからでも出る傷にしない。部位でも原因でも分けず、
+  # 島にある骨折はこの1枚だけ。
+  #
+  # **血ではなく動きを奪う。** 皮膚の下で折れるのでbleedingを持たず、代わりに宿主のload（荷重）を
+  # 押し上げる。**担げる量が減るのではなく、同じ荷が重く感じる**向きなので、荷重が駆動する3つ
+  # ——移動の可否・歩みの速さ・staminaの削り（docs/world/Characters.md 荷重の効き方節）——へ
+  # まとめて効く。傷の側に移動の規則は1行も無い。
+  fracture:
+    traits: [injury, treatable]
+    props:
+      # 自然に治るまで1,008〜1,344 tick（10.5〜14日）。**島にある傷の中で最も長い**——次に長い
+      # 捻挫（960 tick）を、最も軽い折れ方でも上回る。骨折が別格であることをロールの下振れで
+      # 崩さないため、幅の下端を捻挫より上に置く。
+      #
+      # 14日は現実の6〜12週を4分の1へ縮めた長さ（docs/concept/DesignPrinciples.md）。幅そのものは
+      # **折れ方の違い**を生成時に1回ロールしたもの（6.2節）で、部位を分ける代わりにここが引き受ける。
+      severity:
+        # 残っている傷は減るほど良いので、耐久度とは向きが逆（CardView.md 8節）。
+        gauge: {min: good, max: bad}
+        value: {min: 1008, max: 1344}
+        range: {min: 0, max: 1344}
+        # **危険域まで刻む唯一の傷。** 他の傷が負った直後でも要注意域までに留まるのは、この段を
+        # 骨折のために空けておいたから（docs/engine/InjurySystem.md 2節）。
+        stages:
+          - {name: mending}
+          - {name: sore, min: 448, alert: caution}
+          - {name: acute, min: 896, alert: danger}
+        passives:
+          - add:
+              self:
+                severity: -1
+        on_min:
+          destroy: self
+    passives:
+      # **1枚で危険域へ届く痛み**（player_characterのunbearableは83）。2節が「1つで危険域に届く量は
+      # 重い怪我のために取っておく」と空けておいた枠がここで、他の傷は最も重いgore_woundでも60。
+      - modify:
+          parent:
+            pain: 85
+      # 同じ荷が重く感じる（docs/engine/InjurySystem.md 5節）。**空身なら歩けるが、普段どおりの荷では
+      # too_heavyに届く**位置に置く。18,000gは、担げる量が最も少ない技師（27,000g）から最も多い農夫
+      # （36,000g）まで、**空身ならどのキャラクタもheavyの段**（道は通れる）に収まる位置で、そこから
+      # too_heavyまでの残りは4.5〜12kg——担ぎ慣れの個人差（loadのmax）が、そのまま折れた脚で運べる
+      # 量の差になる。
+      #
+      # 量そのものの釣り合いは、荷重が移動の速さと疲れへ効く形が入って初めて見える（同 未決事項）。
+      - modify:
+          parent:
+            load: 18000
+
   # 檻の傷（docs/engine/TrapSystem.md 5.1節・5.2節）。閉じ込められた獣が丸太へ体を打ちつけて負う
   # 打ち身で、**bleedingを持たない**。
   #
