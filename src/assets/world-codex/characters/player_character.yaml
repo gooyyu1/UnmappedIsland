@@ -229,10 +229,28 @@ traits:
         range: {min: 0, max: 120}
         passives:
           - transfer: {from_prop: protein, to_prop: body_fat, amount: 1}
+      # 脂質だけが段を持つ（同7節）。3本のうちここだけ、尽きたときに固有の弊害が出る。
       lipid:
         tags: [nutrition]
         value: 30
         range: {min: 0, max: 120}
+        stages:
+          # 脂の在庫が尽きた域。境目の1は「15分ぶんも残っていなければ尽きたとみなす」で、
+          # 輸送の刻み（0.5）に依らずに読める。壊血病（同4節）と同じ形で、内側の不調を原因の値の段が持つ。
+          # **死に方は増えない**——削るのは既にあるhydrationとbody_fatで、終わり方は脱水と餓死のまま
+          # （VitalsSystem.md 8節）。statusタグを持たないので、画面に行も増えない。
+          - name: fat_starved
+            alert: caution
+            passives:
+              # 余ったたんぱく質は尿素として捨てるしかなく、その排泄に水が要る。水分の保ちが半分になり
+              # （-1/tickが-2/tick）、捨てられる分は身にならない。**肉を食べ足すほど悪化する**
+              # ——ゲートがたんぱく質の在庫なので、脂の無い肉を足すほど水が減る。
+              - conditions: [{prop: protein, gte: 1}]
+                add: {self: {hydration: -1, protein: -2}}
+              # 必須脂肪酸の欠乏（肌が荒れ、傷が治らない）。modifyなので可逆——脂を摂って段を抜ければ
+              # その場で引く。壊血病の60に対して半分。
+              - modify: {self: {pain: 30}}
+          - {name: stocked, min: 1}
         passives:
           - transfer: {from_prop: lipid, to_prop: body_fat, amount: 0.5}
       # 体内のビタミン（同4節）。**単位はmg——ビタミンC相当**で、エネルギーの3本とは物差しが違う。

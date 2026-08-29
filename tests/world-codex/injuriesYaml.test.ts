@@ -80,9 +80,12 @@ describe('injuries.yamlの怪我', () => {
    * count tickぶん時間を進める。怪我が治りきるには10日かかるので、その間に渇きと飢えで死んで
    * しまわないよう（VitalsSystem.md 8節）、命を絶つ値だけは減った分を戻しておく。ここで見たいのは
    * 傷の治りだけで、生き延びる手立ては別のテストが持つ。
+   *
+   * **脂の在庫も戻す。** 15時間で尽きて段が痛みを押し上げる（DigestionSystem.md 7節）ので、
+   * そのままでは怪我の痛みだけを見ていられなくなる。
    */
   function tick(count: number): void {
-    const vital = ['hydration', 'body_fat'].map((name) => codex.propertyNames.getId(name));
+    const vital = ['hydration', 'body_fat', 'lipid'].map((name) => codex.propertyNames.getId(name));
     const held = vital.map((id) => player.tryGetProperty(id)?.number ?? 0);
     for (let i = 0; i < count; i++) {
       player.tick();
@@ -302,5 +305,71 @@ describe('injuries.yamlの怪我', () => {
     pickCoconut();
 
     expect(player.tryGetProperty(loadId)?.getEffectiveValue() ?? 0).toBe(0);
+  });
+
+  describe('骨折', () => {
+    const loadId = () => codex.propertyNames.getId('load');
+
+    /** 骨折を1つ負う。刺す口は大型の獣の1手（animals.yaml、tests/world-codex/animalTurn.test.ts）。 */
+    function breakBone(): WorldObject {
+      return spawnInto('fracture', player, 'injuries');
+    }
+
+    it('血は流れず、動きを奪う', () => {
+      // 皮膚の下で折れるのでbleedingを持たない（InjurySystem.md 5節）。血を持たない代わりに、
+      // 宿主のload（荷重）を押し上げる。
+      const injury = breakBone();
+
+      expect(injury.tryGetProperty(codex.propertyNames.getId('bleeding'))).toBeUndefined();
+      expect(player.tryGetProperty(loadId())?.getEffectiveValue() ?? 0).toBeGreaterThan(0);
+    });
+
+    it('空身なら歩けるが、普段どおりの荷では動けなくなる', () => {
+      // 段の名前で見るのは、道のtravelがこの名前で移動可否を決めるから（ContainerSystem.md 5節）。
+      // 担ぐのはヤシの実5つ（11kg）——折れていなければ、担いだと数え始めたばかりの荷。
+      for (let i = 0; i < 5; i++) spawnInto('green_coconut', player, 'hand');
+      expect(player.tryGetProperty(loadId())?.stage?.name, '無傷なら通れる').toBe('laden');
+
+      breakBone();
+
+      expect(player.tryGetProperty(loadId())?.stage?.name, '同じ荷が担げなくなる').toBe('too_heavy');
+    });
+
+    it('折れているだけでは歩ける', () => {
+      breakBone();
+
+      expect(player.tryGetProperty(loadId())?.stage?.name).toBe('heavy');
+    });
+
+    it('1枚で痛みが危険域へ届く', () => {
+      // 2節が「1つで危険域に届く量は重い怪我のために取っておく」と空けておいた枠（InjurySystem.md 5節）。
+      breakBone();
+
+      expect(player.tryGetProperty(painId)?.stage?.name).toBe('unbearable');
+    });
+
+    it('島にある傷の中で最も長く残る', () => {
+      // 現実の6〜12週を4分の1へ縮めても順序は崩れていない（DesignPrinciples.md）。**最も軽い
+      // 折れ方でも**次に長い捻挫（960 tick）を上回るので、ロールの下振れでも順序は保たれる。
+      const severityId = codex.propertyNames.getId('severity');
+      const injuries = codex.objectDefNamesWithTag(codex.tagNames.getId('injury'));
+      expect(injuries.length, '検査対象が無い（injuryタグが変わっていないか）').toBeGreaterThan(1);
+
+      const longestOthers = Math.max(
+        ...injuries
+          .filter((name) => name !== 'fracture')
+          .map(
+            (name) =>
+              codex.objects.get(codex.objectNames.getId(name)).tryGetPropertyDef(severityId)?.range?.max ?? 0,
+          ),
+      );
+      const fractureDef = codex.objects.get(codex.objectNames.getId('fracture'));
+      const initial = fractureDef.tryGetPropertyDef(severityId)!.initialValueReading;
+
+      expect(initial.kind, '折れ方の違いは生成時のロールが引き受ける（6.2節）').toBe('roll');
+      expect(initial.kind === 'roll' && initial.min, '最も軽い折れ方でも他のどの傷より長い').toBeGreaterThan(
+        longestOthers,
+      );
+    });
   });
 });

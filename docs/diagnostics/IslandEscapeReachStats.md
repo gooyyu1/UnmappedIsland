@@ -24,7 +24,7 @@ YAMLとずれます）。
 | `island_departure` | 島1つが持っていた土地の型の数の分布 |
 | `island_missing_location` | 土地の型ごとに、それを持たない島の割合 |
 | `island_unreached` | **島を出られない島の割合**（要るものが1つでも届かない島） |
-| `island_goal_unreached` | 目標そのもの（`boat`・`sail`）ごとに、それへ届かない島の割合 |
+| `island_goal_unreached` | 目標そのもの（`boat`・`sail`・`fishing_tool`）ごとに、それへ届かない島の割合 |
 | `island_goal_hops` | 目標そのものごとに、届いた島での工程数の分布 |
 | `island_unreached_need` | 届かなかった型ごとの島の割合（鎖のどこが切れたか。**鎖が閉じていれば空でもよい**） |
 
@@ -51,8 +51,8 @@ YAMLとずれます）。
 ## 出られない島
 
 `island_unreached` が、この表がいちばん答えたい数——**その周回で島を出られない島の割合**です。
-要るものが1つでも届かない島がこれにあたり、島を出るには `boat` と `sail` の両方が要るので、
-`island_goal_unreached` のどちらかが立った島と同じものを数えています。
+要るものが1つでも届かない島がこれにあたり、島を出るには `boat`・`sail`・`fishing_tool` がすべて
+要るので、`island_goal_unreached` のどれかが立った島と同じものを数えています。
 
 `island_unreached_need` は、その島で届かなかった型。目標そのものだけでなく、そこへ至る鎖の途中の型と、
 **その型を生みうる工程が要求する型**（島に無い土地を含む）が並びます——切れ目の先だけが広がるので、
