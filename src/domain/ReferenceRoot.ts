@@ -19,8 +19,7 @@ export type ReferenceRoot =
   | 'agent'
   /**
    * 運ばれてきて働きかけに使われる参加者。宣言が乗っていない側で、画面での操作の仕方では決まらない
-   * （11.5節）。**今どこで書けるかを持つのはReferenceScope**——11.5節の表は未実装ぶんまで含む
-   * （`props`のinstrumentは表では○だが、ReferenceScope.declarationが弾く）。
+   * （11.5節）。**今どこで書けるかを持つのはReferenceScope**——11.5節の表は未実装ぶんまで含む。
    */
   | 'instrument'
   /**
