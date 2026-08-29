@@ -1,4 +1,5 @@
-# 怪我（injuryタグ）の定義。キャラクタのinjuriesスロットにだけ入る（characters/player_character.yaml）。
+# 怪我（injuryタグ）の定義。キャラクタと動物のinjuriesスロットに入る
+# （characters/player_character.yaml・animals.yamlのbeast trait）。
 # 種類ごとの値の決め方は docs/engine/InjurySystem.md 2節 参照。
 
 traits:
@@ -61,7 +62,7 @@ object_defs:
         on_min:
           destroy: self
     passives:
-      # 怪我はinjuriesスロットにしか入らないので、親は常にそれを負ったキャラクタ。
+      # 怪我はinjuriesスロットにしか入らないので、親は常にそれを負った本人。
       - modify:
           parent:
             pain: 40

@@ -54,7 +54,7 @@ export function bornInstances(changes: readonly WorldChange[]): readonly number[
  * 映している枠（設置物・アイテム・手持ち）。
  *
  * **発見かどうかは、レーンの並びの差分では決まらない。** 海区の見張りが拾うものはプレイヤーの手元へ
- * 直に入る（voyage.yamlのexploreの`spawn: {into: actor}`）ので、設置物レーンにもアイテムレーンにも
+ * 直に入る（voyage.yamlのexploreの`spawn: {into: agent}`）ので、設置物レーンにもアイテムレーンにも
  * 現れず、そこだけを見ると航路しか発見物にならない。
  *
  * 数える規則は1つ——**レーンの外からレーンへ来たこと**。世界に生まれた拾い物も、隠しスロットから

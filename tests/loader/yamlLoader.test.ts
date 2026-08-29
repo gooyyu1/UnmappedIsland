@@ -656,9 +656,9 @@ object_defs:
 object_defs:
   thing:
     props:
-      warmth: {value: 0, base: {subject: actor, prop: warmth}}
+      warmth: {value: 0, base: {subject: agent, prop: warmth}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/actor/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/agent/);
   });
 
   it('fillを宣言する型がweightを持たないとエラーになる', () => {
@@ -733,7 +733,7 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).not.toThrow();
   });
 
-  it('on_minの対象にactorを指定するとエラーになる（rangeイベントに操作者は居ない）', () => {
+  it('on_minの対象にagentを指定するとエラーになる（rangeイベントに操作者は居ない）', () => {
     const yaml = `
 object_defs:
   log:
@@ -742,12 +742,46 @@ object_defs:
         value: 0
         range: {min: 0, max: 100}
         on_min:
-          destroy: actor
+          destroy: agent
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/actor/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/agent/);
   });
 
-  it('on_minのweightにactorを指定するとエラーになる（rangeイベントに操作者は居ない）', () => {
+  it('on_minのspawnの配置先にagentを指定するとエラーになる（配置先もmoveの移動先と同じ規則、9.4節）', () => {
+    const yaml = `
+object_defs:
+  berry: {}
+  bush:
+    props:
+      ripeness:
+        value: 0
+        range: {min: 0, max: 100}
+        on_min:
+          spawn: {object: berry, into: agent}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/agent/);
+  });
+
+  it('on_minのspawnでも、そこに居る相手を指す配置先は通る（selfとchild）', () => {
+    const yaml = `
+object_defs:
+  berry: {}
+  bush:
+    slots:
+      fruits: {}
+    props:
+      ripeness:
+        value: 0
+        range: {min: 0, max: 100}
+        on_min:
+          spawn:
+            - {object: berry, into: self}
+            - {object: berry, into: child}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).not.toThrow();
+  });
+
+  it('on_minのweightにagentを指定するとエラーになる（rangeイベントに操作者は居ない）', () => {
     const yaml = `
 object_defs:
   log:
@@ -757,13 +791,13 @@ object_defs:
         range: {min: 0, max: 100}
         on_min:
           pick:
-            - weight: {subject: actor, prop: luck}
+            - weight: {subject: agent, prop: luck}
               destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/actor/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/agent/);
   });
 
-  it('on_minのweightの積にactorを混ぜてもエラーになる（積の因子も同じ場所の参照）', () => {
+  it('on_minのweightの積にagentを混ぜてもエラーになる（積の因子も同じ場所の参照）', () => {
     const yaml = `
 object_defs:
   log:
@@ -773,10 +807,10 @@ object_defs:
         range: {min: 0, max: 100}
         on_min:
           pick:
-            - weight: {prop: life, times: {subject: actor, prop: luck}}
+            - weight: {prop: life, times: {subject: agent, prop: luck}}
               destroy: self
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/actor/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/agent/);
   });
 
   it('propの未知のキーはエラーになる', () => {
@@ -982,9 +1016,9 @@ object_defs:
       eat:
         trigger: menu
         conditions:
-          - {subject: actor, prop: satiety, lt: 100}
+          - {subject: agent, prop: satiety, lt: 100}
         add:
-          actor:
+          agent:
             satiety: 10
         destroy: self
   player:
@@ -1000,12 +1034,12 @@ object_defs:
     const appleInstance = new WorldObject(1, apple, session);
     const player = new WorldObject(2, codex.objects.get(codex.objectNames.getId('player')), session);
 
-    expect(appleInstance.tryGetAction('eat', player)?.tryExecute() === true).toBe(false); // actor.satiety=100 は lt 100 を満たさない
+    expect(appleInstance.tryGetAction('eat', player)?.tryExecute() === true).toBe(false); // agent.satiety=100 は lt 100 を満たさない
     player.tryGetProperty(satietyId)?.setNumber(99);
-    expect(appleInstance.tryGetAction('eat', player)?.tryExecute() === true).toBe(true); // actor.satiety=99 は lt 100 を満たす
+    expect(appleInstance.tryGetAction('eat', player)?.tryExecute() === true).toBe(true); // agent.satiety=99 は lt 100 を満たす
   });
 
-  it('andでdragged対象を持つcombinationをパースできる', () => {
+  it('andでinstrument対象を持つcombinationをパースできる', () => {
     const yaml = `
 object_defs:
   wood:
@@ -1013,11 +1047,11 @@ object_defs:
       chop:
         trigger: {drag: {tag: axe_tool}}
         conditions:
-          - {subject: dragged, prop: durability, gt: 0}
+          - {subject: instrument, prop: durability, gt: 0}
         spawn: {object: logs}
         destroy: self
         add:
-          dragged:
+          instrument:
             durability: -1
   logs: {}
   axe_tool:
@@ -1040,15 +1074,15 @@ object_defs:
         .combinationsWith(axe, undefined)
         .find((c) => c.name === 'chop')
         ?.tryExecute() === true,
-    ).toBe(false); // dragged.durability=0 のとき条件 gt 0 を満たさない
+    ).toBe(false); // instrument.durability=0 のとき条件 gt 0 を満たさない
     axe.tryGetProperty(durabilityId)?.setNumber(10);
     expect(
       woodInstance
         .combinationsWith(axe, undefined)
         .find((c) => c.name === 'chop')
         ?.tryExecute() === true,
-    ).toBe(true); // dragged.durability=10 のとき条件 gt 0 を満たす
-    expect(axe.tryGetProperty(durabilityId)?.number ?? 0).toBe(9); // add: dragged.durability: -1 が適用される
+    ).toBe(true); // instrument.durability=10 のとき条件 gt 0 を満たす
+    expect(axe.tryGetProperty(durabilityId)?.number ?? 0).toBe(9); // add: instrument.durability: -1 が適用される
     expect(woodInstance.parent).toBeUndefined(); // destroy: self が適用される
   });
 
@@ -1072,16 +1106,18 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/use/);
   });
 
-  it('actionsでdragged対象を指定するとエラーになる', () => {
+  it('actionsでinstrument対象を指定するとエラーになる', () => {
     const yaml = `
 object_defs:
   thing:
     interactions:
       use:
         trigger: menu
-        destroy: dragged
+        destroy: instrument
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/dragged/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /instrument/,
+    );
   });
 
   it('destroyのマップが空だとエラーになる', () => {
@@ -1183,7 +1219,7 @@ object_defs:
       use:
         trigger: menu
         conditions:
-          - {subject: actor, prop: satiety, lt: max}
+          - {subject: agent, prop: satiety, lt: max}
         destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/max/);
@@ -1483,8 +1519,8 @@ object_defs:
       offer:
         trigger: {drag: {tag: box_tag}}
         conditions:
-          - {subject: dragged, slot: content, matches: {tag: gem_tag}}
-          - {subject: dragged, in_slot: items}
+          - {subject: instrument, slot: content, matches: {tag: gem_tag}}
+          - {subject: instrument, in_slot: items}
         destroy: self
   box:
     tags: [box_tag]
@@ -1512,7 +1548,7 @@ object_defs:
         .combinationsWith(box, undefined)
         .find((c) => c.name === 'offer')
         ?.tryExecute() === true,
-      'draggedの中身が空なら偽',
+      'instrumentの中身が空なら偽',
     ).toBe(false);
 
     expect(gem.moveToSlotOrRejection(box.getSlot(codex.slotNames.getId('content')))).toBeUndefined();
@@ -1535,7 +1571,7 @@ object_defs:
       pour_in:
         trigger: {drag: {tag: liquid_container}}
         conditions:
-          - {prop: content, eq: {subject: dragged, prop: content}}
+          - {prop: content, eq: {subject: instrument, prop: content}}
         destroy: self
   bottle_source:
     tags: [liquid_container]
@@ -1558,7 +1594,7 @@ object_defs:
         .combinationsWith(sameContent, undefined)
         .find((c) => c.name === 'pour_in')
         ?.tryExecute() === true,
-    ).toBe(false); // self(empty)とdragged(water)のcontentが異なるので不成立
+    ).toBe(false); // self(empty)とinstrument(water)のcontentが異なるので不成立
 
     const contentId = codex.propertyNames.getId('content');
     bottle.getProperty(contentId).setNumberWithoutEvents(codex.symbolNames.getId('water'));
@@ -1567,7 +1603,7 @@ object_defs:
         .combinationsWith(sameContent, undefined)
         .find((c) => c.name === 'pour_in')
         ?.tryExecute() === true,
-    ).toBe(true); // selfとdraggedのcontentが同じ(water)なので成立
+    ).toBe(true); // selfとinstrumentのcontentが同じ(water)なので成立
   });
 
   it('プロパティ参照のvalueにinを指定するとエラーになる', () => {
@@ -1578,7 +1614,7 @@ object_defs:
       use:
         trigger: menu
         conditions:
-          - {prop: content, in: {subject: dragged, prop: content}}
+          - {prop: content, in: {subject: instrument, prop: content}}
         destroy: self
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/in/);
@@ -1598,7 +1634,7 @@ object_defs:
         trigger: {drag: {tag: liquid_container2}}
         set:
           self:
-            content: {subject: dragged, prop: content}
+            content: {subject: instrument, prop: content}
   oil_source:
     tags: [liquid_container2]
     props:
@@ -1812,7 +1848,7 @@ object_defs:
     interactions:
       ignite:
         trigger: {drag: {tag: tinder, object: burning_tinder3}}
-        destroy: dragged
+        destroy: instrument
   burning_tinder3: {}
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
@@ -1827,7 +1863,7 @@ object_defs:
     interactions:
       ignite:
         trigger: {drag: tinder}
-        destroy: dragged
+        destroy: instrument
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
       /マッピングである必要があります/,
@@ -1841,7 +1877,7 @@ object_defs:
     interactions:
       offer:
         trigger: {drag: {tag: offering}, allow_multiple: true}
-        destroy: dragged
+        destroy: instrument
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
       /器を1つだけ持つ効果です/,
@@ -1859,10 +1895,10 @@ object_defs:
     interactions:
       offer:
         trigger: {drag: {tag: offering}, allow_multiple: true}
-        transfer: {amount: 1, from: dragged, from_prop: weight, to_prop: offerings}
+        transfer: {amount: 1, from: instrument, from_prop: weight, to_prop: offerings}
         pick:
           - weight: 1
-            destroy: dragged
+            destroy: instrument
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
       /器を1つだけ持つ効果です/,
@@ -1916,7 +1952,7 @@ object_defs:
     expect(instance.tryGetProperty(codex.propertyNames.getId('hour'))?.number ?? 0).toBe(1);
   });
 
-  it('on_maxの対象にactorを指定するとエラーになる（rangeイベントに操作者は居ない）', () => {
+  it('on_maxの対象にagentを指定するとエラーになる（rangeイベントに操作者は居ない）', () => {
     const yaml = `
 object_defs:
   clock:
@@ -1925,9 +1961,9 @@ object_defs:
         value: 0
         range: {min: 0, max: 60}
         on_max:
-          add: {actor: {minute: -60}}
+          add: {agent: {minute: -60}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/actor/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/agent/);
   });
 
   it('on_maxの対象にparentを指定できる（遡る起点は自分なので解決先を持つ）', () => {
@@ -1984,7 +2020,7 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/range/);
   });
 
-  it('on_minの対象にdraggedを指定するとエラーになる（rangeイベントに重ねる相手は居ない）', () => {
+  it('on_minの対象にinstrumentを指定するとエラーになる（rangeイベントに使う物は居ない）', () => {
     const yaml = `
 object_defs:
   clock:
@@ -1993,9 +2029,11 @@ object_defs:
         value: 0
         range: {min: 0, max: 60}
         on_min:
-          add: {dragged: {minute: 60}}
+          add: {instrument: {minute: 60}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/dragged/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(
+      /instrument/,
+    );
   });
 
   it('on_minをパースし、実行時に適用する', () => {

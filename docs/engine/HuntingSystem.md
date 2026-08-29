@@ -51,7 +51,7 @@ wild_boar:
 「どのカードを重ねるか」に宿るため、画面に何も足さずに判断が残ります。
 
 **候補は「一撃がどう入ったか」の型で、武器はその配分だけを宣言します。** 動物の側（`beast` trait）が
-候補を1組だけ持ち、`weight` が `{subject: dragged, prop: ...}` で武器のプロパティを読みます
+候補を1組だけ持ち、`weight` が `{subject: instrument, prop: ...}` で武器のプロパティを読みます
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 10.2 節）。**動物はどんな武器が在るかを知らず、
 武器はどんな獲物が居るかを知りません。**
 
@@ -503,8 +503,8 @@ strike:
 | 拡張 | 内容 |
 | --- | --- |
 | `resists`（4 節） | `bound_to_owner` の対称形。条件が成立する間、土地以外の親へ移れない。成立した瞬間に土地へこぼれ出る（[`GameElementDefinition.md`](./GameElementDefinition.md) 7.13 節） |
-| オブジェクトを指す参照（`ObjectRef`） | 対象キー（`self`/`parent`/`actor`/`dragged`）と、インスタンスIDを保持するプロパティ（`{prop: ...}`）の二択。`destroy` の対象と `move` の `subject`・移動先が共有する（`GameElementDefinition.md` 9.3 節・9.6 節）。**動かす物と行き先を別々の仕組みで指さない**——どちらも「1つのオブジェクトを指す」という同じ役目だから |
-| `move` の `subject: self` | 現在は `actor`/`dragged` のみでロード時エラーだった（同 9.6 節）。`child` と違い `self` は一意なので曖昧さが無い |
+| オブジェクトを指す参照（`ObjectRef`） | 対象キー（`self`/`parent`/`agent`/`instrument`）と、インスタンスIDを保持するプロパティ（`{prop: ...}`）の二択。`destroy` の対象と `move` の `subject`・移動先が共有する（`GameElementDefinition.md` 9.3 節・9.6 節）。**動かす物と行き先を別々の仕組みで指さない**——どちらも「1つのオブジェクトを指す」という同じ役目だから |
+| `move` の `subject: self` | 現在は `agent`/`instrument` のみでロード時エラーだった（同 9.6 節）。`child` と違い `self` は一意なので曖昧さが無い |
 | `trigger: tick`（同 11.1 節） | 画面のボタンには出さない操作。起こすのはプレイヤーではなく時間の側になる |
 | `signal`（6.3 節） | 世界の形を変えず、出来事が起きたことだけを告げる。当たり外れに限らず、出入りを伴わない出来事すべてが使う |
 

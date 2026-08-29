@@ -40,7 +40,7 @@ export function describeEffect(
 }
 
 /**
- * `add`の1行（`add 満腹度(actor) +20`）。tick毎の持続効果（8.4節）も同じ形で書くので、断片で返す。
+ * `add`の1行（`add 満腹度(agent) +20`）。tick毎の持続効果（8.4節）も同じ形で書くので、断片で返す。
  */
 export function addTokens(
   target: ReferenceRoot,

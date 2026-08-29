@@ -41,7 +41,7 @@ import { SignalEffect } from '../domain/SignalEffect';
 
 /**
  * 効果の中身（9節の命令と、10節の`pick`）を読む。文法は「操作(set/add)が上位、
- * 対象(self/parent/actor/dragged)が下位」（例: `add: {self: {hour: 1}}`）。spawnは常にselfが実行する
+ * 対象(self/parent/agent/instrument)が下位」（例: `add: {self: {hour: 1}}`）。spawnは常にselfが実行する
  * ものとみなすため対象キーを持たない。signalは対象を省ける（`signal: missed`＝selfへ告げる、9.8節）。
  *
  * **適用順はYAMLに書かれた順**で、動詞ごとの優先順位は無い（9.7節）。bodyNodeには効果以外の兄弟キーも
@@ -77,7 +77,7 @@ export function parseActiveEffectBody(
         operations.push(...parseDestroys(loader, keyContext, valueNode, scope));
         break;
       case 'spawn':
-        operations.push(...parseSpawns(loader, keyContext, valueNode));
+        operations.push(...parseSpawns(loader, keyContext, valueNode, scope));
         break;
       case 'become':
         operations.push(parseBecome(loader, keyContext, asMap(valueNode, keyContext), scope));
@@ -268,7 +268,7 @@ function parseSetEffect(
 /**
  * transfer（9.5節）。from/toの参照はフラットな2フィールド（from/from_prop, to/to_prop）で表し、
  * from/toは省略時self。対象ルートはset/add/destroyと
- * 同じ制約（selfOnly・allowDragged）を共有する。linked_add（省略可）はaddと同じ構造で、
+ * 同じ制約（selfOnly・allowInstrument）を共有する。linked_add（省略可）はaddと同じ構造で、
  * 実際の移動量に比例してスケールされる副効果。to_amount（省略可）は、移送元と移送先で単位が違うときに
  * 「amount分を出すと移送先がどれだけ増えるか」を持つ。
  */
@@ -366,11 +366,21 @@ function parseAdds(
 /** spawn（9.4節）の1エントリが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。 */
 const SPAWN_KEYS = new Set(['object', 'into', 'into_prop', 'into_object', 'count']);
 
-function parseSpawns(loader: WorldCodexYamlLoader, context: string, node: YamlNode): SpawnEffect[] {
-  return oneOrMany(context, node, (itemContext, map) => parseSpawn(loader, itemContext, map));
+function parseSpawns(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YamlNode,
+  scope: ReferenceScope,
+): SpawnEffect[] {
+  return oneOrMany(context, node, (itemContext, map) => parseSpawn(loader, itemContext, map, scope));
 }
 
-function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): SpawnEffect {
+function parseSpawn(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  map: YAMLMap,
+  scope: ReferenceScope,
+): SpawnEffect {
   requireKnownKeys(map, SPAWN_KEYS, context);
 
   const count = tryGetNumber(map, 'count', context) ?? 1;
@@ -380,7 +390,7 @@ function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap)
     () =>
       new SpawnEffect(
         loader.objectNames.intern(requireScalar(map, 'object', context)),
-        parseSpawnTarget(loader, context, map),
+        parseSpawnTarget(loader, context, map, scope),
         count,
       ),
   );
@@ -391,22 +401,26 @@ function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap)
  * `into`だけが個体ではないものも名乗れる——`same_slot`（selfが今占めている位置）と`child`
  * （selfの子を順に走査する）。どれも書かなければ`same_slot`。
  *
- * 書ける相手を場所で絞らない（`ReferenceScope.anyTarget`）。居ない相手を指したspawnは、生まれた物が
- * どこにも置かれずに消えるだけで済む——`on_max`/`on_min`の`into: actor`がそれ。
+ * 書ける相手も`move`の移動先と同じく、周囲のscopeが用意できるものだけ（9.4節）。
  */
-function parseSpawnTarget(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): SpawnTarget {
+function parseSpawnTarget(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  map: YAMLMap,
+  scope: ReferenceScope,
+): SpawnTarget {
   const intoNode = tryGetNode(map, 'into');
   if (intoNode !== undefined && isScalar(intoNode)) {
     const raw = asScalarText(intoNode, context);
     if (raw === 'same_slot' || raw === 'child') return raw;
   }
 
-  return parseDestinationRef(loader, context, map, ReferenceScope.anyTarget, 'into') ?? 'same_slot';
+  return parseDestinationRef(loader, context, map, scope, 'into') ?? 'same_slot';
 }
 
 /**
- * passivesの中の transfer（8.4節）。文法はactiveのものと同一で、対象から `actor` だけを外す
- * ——持続的な関係に紐づかないため（modify/addのpassiveが `actor` を持たないのと同じ理由）。
+ * passivesの中の transfer（8.4節）。文法はactiveのものと同一で、対象から `agent` だけを外す
+ * ——持続的な関係に紐づかないため（modify/addのpassiveが `agent` を持たないのと同じ理由）。
  */
 export function parsePassiveTransfers(
   loader: WorldCodexYamlLoader,
@@ -451,14 +465,14 @@ function oneOrMany<T>(context: string, node: YamlNode, parseOne: (context: strin
 
 /**
  * move（subjectのオブジェクトを、移動先の中へ移動する。MoveEffect参照）。
- * transferと同じフラットフィールド規約（`move: {subject: actor, to_prop: destination_id}`）。
+ * transferと同じフラットフィールド規約（`move: {subject: agent, to_prop: destination_id}`）。
  *
  * 動かす物も行き先も「対象キーか、インスタンスIDを持つプロパティか、型か」の三択（ObjectRef）で、
  * subjectは`subject`/`subject_prop`、移動先は`to`/`to_prop`/`to_object`の**どれか1つ**で指す
  * （複数・どれも無しはエラー）。移動先の三択は`spawn`の配置先と同じ読み手（parseDestinationRef）。
  * `to_slot`は行き先の中のどの枠へ入れるかで、省けば宣言順で最初に受け入れた枠になる。
  *
- * selfOnly文脈（rangeイベント）で禁じるのは**actor/draggedを指す形だけ**。そこに実行者が居ないのは
+ * selfOnly文脈（rangeイベント）で禁じるのは**agent/instrumentを指す形だけ**。そこに実行者が居ないのは
  * 対象キーの解決先が無いという理由なので、`self`と型で書いた移動（本土への到達、Voyage.md 4節）は
  * 同じ理由に当たらない。
  */
@@ -533,8 +547,8 @@ function parseActiveTargetRoot(context: string, key: string, scope: ReferenceSco
     case 'self':
     case 'parent':
     case 'ancestor':
-    case 'actor':
-    case 'dragged':
+    case 'agent':
+    case 'instrument':
     case 'picked':
     case 'child':
       return requireResolvable(context, key, scope);
@@ -545,7 +559,7 @@ function parseActiveTargetRoot(context: string, key: string, scope: ReferenceSco
 
 /**
  * signal（9.8節）を読む。対象を省いた `signal: missed`（selfへ告げる）と、他の命令と同じ
- * 「操作が上位、対象が下位」の `signal: {dragged: missed}` の2つの形を許容する。
+ * 「操作が上位、対象が下位」の `signal: {instrument: missed}` の2つの形を許容する。
  *
  * 省略形を持つのは、告げる相手が効果を宣言した側そのものである場合が大半だから（動物のカードへ
  * 武器を重ねる、9.8節）。対象を書くのは、宣言した側と起きた側が違うときだけになる。

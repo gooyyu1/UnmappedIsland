@@ -5,7 +5,7 @@ import type { WorldObject } from '../WorldObject';
  * 道（locations.yamlのpath object_def）の包み（ObjectWrapper）。
  *
  * インスタンスごとの値（行き先・所要時間・要る進捗・戻る道）は生成時にIslandSpawnerが書き込む。
- * 移動そのもの（actorの所属差し替え・時間消費）はYAML側のtravelアクションが担う。
+ * 移動そのもの（agentの所属差し替え・時間消費）はYAML側のtravelアクションが担う。
  */
 export class Path extends ObjectWrapper {
   /** 移動時間（分）。 */
@@ -37,10 +37,10 @@ export class Path extends ObjectWrapper {
   }
 
   /**
-   * この道を通って移動する（YAML側のtravelアクション: 未発見なら不成立、成功ならactorが移動先へ移り、
+   * この道を通って移動する（YAML側のtravelアクション: 未発見なら不成立、成功ならagentが移動先へ移り、
    * travel_minutesに担ぎ手の遅れ（pace）を掛けた時間が進む）。
    */
-  travel(actor: WorldObject | undefined): boolean {
-    return this.instance.tryGetAction(this.words.travelAction, actor)?.tryExecute() === true;
+  travel(agent: WorldObject | undefined): boolean {
+    return this.instance.tryGetAction(this.words.travelAction, agent)?.tryExecute() === true;
   }
 }

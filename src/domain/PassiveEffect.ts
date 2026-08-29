@@ -57,7 +57,7 @@ export class PassiveEffectGate {
 
     if (
       this.conditions !== undefined &&
-      // ゲートはactor/draggedを持たない文脈で評価する（誰かが操作しているとは限らない）。
+      // ゲートはagent/instrumentを持たない文脈で評価する（誰かが操作しているとは限らない）。
       !this.conditions.evaluate(ReferenceContext.forSelf(slotBearer))
     )
       return false;

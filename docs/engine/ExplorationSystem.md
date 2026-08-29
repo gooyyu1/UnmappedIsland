@@ -170,9 +170,9 @@ object_defs:
         conditions:
           - {in_slot: fixtures}   # 発見済み（fixturesスロット）の間だけ実行できる
         # 道の長さ × 担ぎ手の遅れ（world/Characters.md 荷重の効き方節）
-        duration: {prop: travel_minutes, times: {subject: actor, prop: pace}}
+        duration: {prop: travel_minutes, times: {subject: agent, prop: pace}}
         move:
-          subject: actor
+          subject: agent
           to_prop: destination_id
 ```
 
@@ -183,7 +183,7 @@ object_defs:
 - **`conditions: [{in_slot: fixtures}]`**（`GameElementDefinition.md` 14.2 節）が「未発見（`undiscovered_fixtures`
   側）の間は移動できない」を表します。1 節の隠しスロット方式と組み合わさり、「発見されていない道は移動も
   できない」が自然に両立します。
-- **`move`**（`GameElementDefinition.md` 9.6 節で新設した汎用の active 動詞）が、`actor` を `destination_id`
+- **`move`**（`GameElementDefinition.md` 9.6 節で新設した汎用の active 動詞）が、`agent` を `destination_id`
   が指すインスタンスへ移動させます。移動先を `object_defs` の id（型）ではなくプロパティ値（インスタンスID）
   で指しているのは、同じ `LocationType` の土地が1つの島に複数存在しうる（例: 「花咲く草原」と「露の草原」）
   ため、型ではなく**生成時に確定した特定の個体**を指す必要があるからです。
@@ -229,18 +229,18 @@ object_defs:
 
 ## 5. カプセル化: 探索の入口を1箇所にする
 
-`Location.explore(actor, session)`（`src/domain/wrappers/Location.ts`）を、探索の唯一の入口としています。
+`Location.explore(agent, session)`（`src/domain/wrappers/Location.ts`）を、探索の唯一の入口としています。
 
 ```typescript
-explore(actor: WorldObject | undefined, session: WorldSession): boolean {
-  if (!this.instance.tryExecuteAction('explore', actor, session)) return false;
+explore(agent: WorldObject | undefined, session: WorldSession): boolean {
+  if (!this.instance.tryExecuteAction('explore', agent, session)) return false;
   this.revealDueFixtures(session);   // 進捗が必要値に達した設置物を、隠しスロットから公開スロットへ移す
   return true;
 }
 ```
 
 プレイヤー側の入口も同じく1箇所です。`PlayerCharacter.explore(session)`（`wrappers/PlayerCharacter.ts`）が
-「今いる土地に自分を actor として渡す」という手順を引き受けるため、UI は自分の居場所を知らなくてよく、
+「今いる土地に自分を agent として渡す」という手順を引き受けるため、UI は自分の居場所を知らなくてよく、
 探索できない場所に居る場合は `false` が返ります。
 
 `explore` アクション（YAML側）の実行と、後処理の `revealDueFixtures` を呼び出し側（UI等）に分けて呼ばせません

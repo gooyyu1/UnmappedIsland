@@ -26,17 +26,17 @@ object_defs:
         duration: 240
         conditions:
           - reason: too_worn
-            subject: dragged
+            subject: instrument
             prop: durability
             gt: 0
           # 受け口を見ながら斧を同じ傷へ入れ続ける屋外の行動なので、見るのは視界の側
           # （docs/engine/IlluminationSystem.md 5節）。倒れる向きも見えていなければ決められない。
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         add:
-          dragged:
+          instrument:
             durability: -120
         # 倒した場所に落ちる。木は中に物を持てないので、`into: self`は必ず親（土地）のアイテム
         # スロットへ伝播する（9.4節）。重いので、運ぶかどうかはその場で決める。
@@ -58,11 +58,11 @@ object_defs:
         # （docs/engine/IlluminationSystem.md 5節）。
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 30
-        spawn: {object: tree_bark, count: 3, into: actor}
+        spawn: {object: tree_bark, count: 3, into: agent}
 
   # 打ち上げられた流木の幹。海岸3種すべての探索で見つかる（locations.yaml）。**丸太の2つ目の入口**で、
   # 森も密林も無い島で筏の材料が絶えないようにする（docs/concept/DesignPrinciples.md「要るものは、
@@ -83,18 +83,18 @@ object_defs:
         trigger: {drag: {tag: chopping_tool}}
         conditions:
           - reason: too_worn
-            subject: dragged
+            subject: instrument
             prop: durability
             gt: 0
           # 木目を読みながら刃を同じ傷へ入れ続ける屋外の行動なので、見るのは視界の側
           # （docs/engine/IlluminationSystem.md 5節）。
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 120
         add:
-          dragged:
+          instrument:
             durability: -60
         # **spawnを先に書く**（broadleaf_treeのfellと同じ理由）。
         spawn: {object: log, count: 2, into: self}

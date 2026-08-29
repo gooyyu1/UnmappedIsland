@@ -26,7 +26,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: hand_brightness
             in_stage: bright
         duration: 90
@@ -38,7 +38,7 @@ object_defs:
         trigger: {drag: {tag: cutting_tool}}
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: hand_brightness
             in_stage: bright
         duration: 60

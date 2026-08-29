@@ -578,7 +578,7 @@ const SUPPLY_LABELS: ShownFields<SupplyRow> = {
   elapsedMinutes: shows('周期', (minutes, row) => (minutes === row.laborMinutes ? [] : [minutes])),
 
   spawns: shows('期待産出', (spawns) => spawns.flatMap(({ name, amount }) => [name, amount])),
-  actorDeltas: shows('値の増減', (deltas) => deltas.flatMap(({ name, amount }) => [name, amount])),
+  agentDeltas: shows('値の増減', (deltas) => deltas.flatMap(({ name, amount }) => [name, amount])),
   selfDeltas: shows('値の増減', (deltas) => deltas.flatMap(({ name, amount }) => [name, amount])),
 };
 
@@ -659,13 +659,13 @@ object_defs:
         trigger: menu
         duration: 5
         destroy: self
-        add: {actor: {hydration: 96}}
+        add: {agent: {hydration: 96}}
       # 飲み干さずにひと口だけ。かかる時間は飲む人の渇き具合で決まるので、定義だけでは決まらない
       # （SupplyRow.hasUnresolvedReferences）。
       sip:
         trigger: menu
-        duration: {subject: actor, prop: hydration}
-        add: {actor: {hydration: 8}}
+        duration: {subject: agent, prop: hydration}
+        add: {agent: {hydration: 8}}
 
   # 入手経路が無い道具。これを要るレシピが「道具が無くて作れないもの」になる（ObjectCost.blockedByTool）。
   flint_blade: {tags: [item, cutting_tool]}

@@ -232,12 +232,16 @@ export type StatMiddleColumn = 'p5' | 'median';
 const MIDDLE_PERCENTILE: Readonly<Record<StatMiddleColumn, number>> = { p5: 0.05, median: 0.5 };
 
 /**
- * 分布1つのレコード。`keys`はそれが何の分布かを指す鍵（季節・土地・測ったものなど）。
+ * 分布のレコードの作り方を、レポート1つぶん決める。返るのは、鍵（季節・土地・測ったものなど）と分布を
+ * 受け取ってレコードを作る関数。
+ *
+ * **`middle`はレポートの性質**（上の{@link StatMiddleColumn}）であって、レコードごとの選択ではない。
+ * レポートの入口でここを1回呼ぶことで、1つの表に`p5`の行と`median`の行が混ざることは書けなくなる。
  *
  * 列の並びはレポート横断の規約なので、ここが1箇所で持つ。
  */
-export function statRecord(keys: YamlRecord, stat: Stat, middle: StatMiddleColumn): YamlRecord {
-  return {
+export function statRecordWith(middle: StatMiddleColumn): (keys: YamlRecord, stat: Stat) => YamlRecord {
+  return (keys, stat) => ({
     ...keys,
     mean: rounded(stat.mean, STAT_DECIMALS),
     min: rounded(stat.min, STAT_DECIMALS),
@@ -246,7 +250,7 @@ export function statRecord(keys: YamlRecord, stat: Stat, middle: StatMiddleColum
     max: rounded(stat.max, STAT_DECIMALS),
     sd: rounded(stat.stdDev, STAT_DECIMALS),
     n: stat.count,
-  };
+  });
 }
 
 /** 割合（0〜1）のレコード。百分率へ直して書く。 */

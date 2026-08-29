@@ -25,7 +25,7 @@
 | クラス/モジュール | 責務（1文） | 1文から漏れるメンバー |
 |---|---|---|
 | ActionDef | メニューから選ぶ操作の宣言。 | （なし） |
-| CombinationDef | カードを重ねる操作の宣言と、相手が噛み合うかの判定。 | `with`（`acceptsDragged`・`triggerReading` と同じことを3通りで公開している） |
+| CombinationDef | カードを重ねる操作の宣言と、相手が噛み合うかの判定。 | `with`（`acceptsInstrument`・`triggerReading` と同じことを3通りで公開している） |
 | GeneratedTypes | 生成型のグローバルIDと軸座標の相互引き。 | `baseAlong`（誰も引いていない） |
 | InteractionDef | 操作1つの宣言を持ち、条件・時間・効果の順で実行する。 | `requirementDeclarations`（`unmetRequirement` と別口の読み上げ）、`InteractionTriggerReading`（下位クラス2種の形の合併が基底ファイルに居る） |
 | NameRegistry | 名前とIDの相互引き。 | クラス全体（ゲームの語彙を1つも知らない汎用表） |
@@ -96,8 +96,8 @@
 | src/domain/InteractionDef.ts | `InteractionTriggerReading` | 配置 | 3 | 下位クラス2種の形の合併が基底ファイルに居るため `InteractionDef.ts` → `ActionDef.ts` の型importが生じ、しかも宣言が import 群の途中に挟まっている。 | 型だけの共通ファイル、または import 群の後ろへ | | |
 | src/domain/InteractionDef.ts#InteractionDef | `read`, `durationReading` | 所属 | 2 | `effect`/`duration` を出さない読み上げ口（CodeStructure.md 5節の `EffectReader` の形）。 | | | |
 | src/domain/ActionDef.ts | `ShowMenuMode` | 配置 | 3 | 基底の `InteractionTriggerReading` が下位クラスのこの型を輸入しており、定義位置が上下逆。 | `InteractionDef.ts` または共通の型ファイル | | |
-| src/domain/CombinationDef.ts#CombinationDef | `with` | 可視性 | 3 | public だが `src` 内の読み手が無く（`trigger.with` は `triggerReading` の方）、`acceptsDragged`・`triggerReading` と合わせて同じ規則に口が3つある。 | private化 | | |
-| src/domain/CombinationDef.ts#CombinationDef | `acceptsDragged(draggedDef)` | 所属 | 3 | `with.matches(draggedDef)` の薄い包み。 | 呼び出し側で `TypeMatchRule.matches` を使う | | |
+| src/domain/CombinationDef.ts#CombinationDef | `with` | 可視性 | 3 | public だが `src` 内の読み手が無く（`trigger.with` は `triggerReading` の方）、`acceptsInstrument`・`triggerReading` と合わせて同じ規則に口が3つある。 | private化 | | |
+| src/domain/CombinationDef.ts#CombinationDef | `acceptsInstrument(instrumentDef)` | 所属 | 3 | `with.matches(instrumentDef)` の薄い包み。 | 呼び出し側で `TypeMatchRule.matches` を使う | | |
 | src/domain/CombinationDef.ts#CombinationDef | `acceptedCount(...)` | 所属 | 2 | 宣言（`with`・`allowMultiple`）から実行時の候補列を数える処理で、定義と実行の境目にある。 | | | |
 | src/domain/NameRegistry.ts | `NameRegistry`（クラス全体） | 配置 | 3 | ゲームの語彙を1文字も知らない汎用の文字列インターン表で、`src/domain/` に居る意味論的な理由が無い（利用者が近いだけ）。 | `src/util/` | | |
 | src/domain/NameRegistry.ts#NameRegistry | `getId`/`tryGetId`, `tryGetName` | 所属 | 2 | 例外あり／なしの対を4本持つのはプログラム上の都合。 | | | |

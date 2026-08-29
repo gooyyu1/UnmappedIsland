@@ -63,12 +63,13 @@ function session(
   title = '題',
   bucket = 'SESSION_STATUS_BUCKET_IDLE',
   tags = ['task-900'],
+  status = 'SESSION_STATUS_RUNNING',
 ): unknown {
   return {
     id,
     title,
     tags,
-    session_status: 'SESSION_STATUS_RUNNING',
+    session_status: status,
     status_bucket: bucket,
     updated_at: '2000-01-01T00:00:00Z',
   };
@@ -216,6 +217,53 @@ describe('watch-prs.sh の TASK', () => {
     expect(watch(claiming('fixes #920'), issues, [921])).toEqual(['TASK 922']);
     // 参照するだけの番号では、着手済みにならない。
     expect(watch(claiming('#920 と同じ形'), issues, [921])).toEqual(['TASK 920', 'TASK 922']);
+  });
+
+  it('`task-<番号>` のセッションが立っている task は、PRが出ていなくても出さない', () => {
+    // 投入してからPRが出るまでの十数分、PRの側には何も現れない。ここを見ないと、投入済みの番号が
+    // 毎周返って見張りがその場で終わる。#931 は、何も出ずに時間切れになるのを避けるための、
+    // 誰の手元にも無い task。
+    const lines = watch(
+      [[]],
+      [[issue(930, ['task']), issue(931, ['task']), issue(932, [])]],
+      [932],
+      [session('session_01DISPATCHED', '#930 を直す', 'SESSION_STATUS_BUCKET_WORKING', ['task-930'])],
+    );
+
+    expect(lines).toEqual(['TASK 931']);
+  });
+
+  it('畳んだセッションの task は出す', () => {
+    // PRを出さないまま畳まれたなら、その仕事は誰の手元にも無い。
+    const lines = watch(
+      [[]],
+      [[issue(940, ['task']), issue(941, [])]],
+      [941],
+      [
+        session(
+          'session_01ARCHIVED',
+          '#940 を直す',
+          'SESSION_STATUS_BUCKET_IDLE',
+          ['task-940'],
+          'SESSION_STATUS_ARCHIVED',
+        ),
+      ],
+    );
+
+    expect(lines).toEqual(['TASK 940']);
+  });
+
+  it('セッション一覧を見ない指定では、投入済みでも出す', () => {
+    // `UNREVIEWED` とは逆に倒す。`TASK` を止めると「やることが無い」が二度と出せなくなる。
+    const lines = watch(
+      [[]],
+      [[issue(950, ['task']), issue(951, [])]],
+      [951],
+      [session('session_01OFF', '#950 を直す', 'SESSION_STATUS_BUCKET_WORKING', ['task-950'])],
+      { noSessions: true },
+    );
+
+    expect(lines).toEqual(['TASK 950']);
   });
 });
 
@@ -476,51 +524,51 @@ describe('watch-prs.sh の UNREVIEWED', () => {
 });
 
 describe('watch-prs.sh の CHECKED', () => {
-  /** 項目を並べて確認の置き場の本文にする。`x ` で始まるものがチェック済み。 */
-  const asking = (number: number, ...items: string[]): unknown =>
+  /** 項目を並べて確認の置き場（`meta`）の本文にする。`x ` で始まるものがチェック済み。 */
+  const asking = (number: number, ...items: string[]): unknown => checklist(number, ['meta'], ...items);
+
+  /** `asking` と同じ本文を、任意のラベルで作る。 */
+  const checklist = (number: number, labels: string[], ...items: string[]): unknown =>
     issue(
       number,
-      [],
+      labels,
       [],
       items.map((item) => `- [${item.startsWith('x ') ? 'x' : ' '}] ${item.replace(/^x /, '')}`).join('\n'),
     );
 
-  it('起動より後に付いたチェックだけを出す', () => {
-    const lines = watch(
-      [[]],
-      [
-        [asking(656, 'x 海の色を決める', '島の名前を決める')],
-        [asking(656, 'x 海の色を決める', 'x 島の名前を決める')],
-      ],
-      [656],
-    );
+  it('付いているチェックを毎周出す。起動時に付いていたものも出す', () => {
+    // 起動時の状態を基準にすると、見張りを立て直すたびに、その谷間で付いたチェックが飲み込まれる。
+    // 隣の未チェックの項目が出ないことで、`[x]` だけを見ていることも見る。
+    const lines = watch([[]], [[asking(656, 'x 海の色を決める', '島の名前を決める')]], [656]);
 
-    expect(lines).toEqual(['CHECKED 656 島の名前を決める']);
+    expect(lines).toEqual(['CHECKED 656 海の色を決める']);
   });
 
-  it('外したチェックは出さない', () => {
-    // 何も出ないことは、時間切れと区別が付かない。同じ周に別の項目を付けて、そちらだけが出ることで
-    // 「外したほうは出ていない」を見る。
-    const lines = watch(
-      [[]],
-      [
-        [asking(656, 'x 海の色を決める', '島の名前を決める')],
-        [asking(656, '海の色を決める', 'x 島の名前を決める')],
-      ],
-      [656],
-    );
+  it('1周目に他の合図があっても、同じ周のチェックを出す', () => {
+    // 見張りは合図が1件でもあれば終わるので、増分の基準を1周目で取ると、他の合図が出た周の
+    // チェックは一度も出ないまま次の起動の基準に飲み込まれる。忙しい局面ほどそうなる。
+    const lines = watch([[pullRequest(871, 'MERGEABLE')]], [[asking(656, 'x 海の色を決める')]], [656], [], {
+      numbers: [0],
+    });
 
-    expect(lines).toEqual(['CHECKED 656 島の名前を決める']);
+    expect(lines).toEqual(['CHECKED 656 海の色を決める', 'UNREVIEWED 871']);
   });
 
-  it('見張っていない issue のチェックは出さない', () => {
+  it('`--issues` に渡していない確定待ちのチェックも出す', () => {
+    // 渡し忘れた番号が出なくなると、「#656 を渡し忘れると答えが1件も出ない」が残る——この合図が
+    // 塞いだ穴と同じ形。`meta` で絞っているので、番号でも絞る必要は無い。
+    const lines = watch([[]], [[asking(656, 'x 海の色を決める'), asking(657, 'x 別の問い')]], [656]);
+
+    expect(lines).toEqual(['CHECKED 656 海の色を決める', 'CHECKED 657 別の問い']);
+  });
+
+  it('`meta` でない issue のチェックは出さない', () => {
+    // チェックが答えになるのは確定待ちの盤の上だけ。task issue が本文に持つ手順の一覧まで拾うと、
+    // 拾いようのない項目で毎周起こされる。
     const lines = watch(
       [[]],
-      [
-        [asking(656, '海の色を決める'), asking(657, '別の問い')],
-        [asking(656, 'x 海の色を決める'), asking(657, 'x 別の問い')],
-      ],
-      [656],
+      [[asking(656, 'x 海の色を決める'), checklist(900, ['task'], 'x 手順1')]],
+      [656, 900],
     );
 
     expect(lines).toEqual(['CHECKED 656 海の色を決める']);

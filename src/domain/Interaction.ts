@@ -11,23 +11,23 @@ import { ReferenceContext } from './ReferenceRoot';
  * 話かを知らない**。だから宣言へ直に頼むと、所要時間を訊くにも実行するにも「誰の」「誰に」を毎回
  * 渡し直すことになる。引いた時点で相手を結び付けておけば、以降は名前も相手も渡さない。
  *
- * **重ねる相手（dragged）を持つかどうかだけが具象の差**なので、持たない側（Action）はundefinedを
+ * **使う物（instrument、11.5節）を持つかどうかだけが具象の差**なので、持たない側（Action）はundefinedを
  * 1度だけここへ渡す。訊き方も実行の仕方も具象では変わらない。
  */
 abstract class Interaction<G extends InteractionTrigger, T extends WorldObject | undefined> {
   /** この操作を起こしたきっかけ。宣言はここからぶら下がる。 */
   protected readonly trigger: G;
 
-  /** 誰がこの操作をしていて、誰に、何を重ねているか。宣言へ問うときはこれを渡す。 */
+  /** 誰がこの操作をしていて、誰に、何を使っているか。宣言へ問うときはこれを渡す。 */
   protected readonly context: ReferenceContext;
 
-  /** 重ねられた相手。メニュー型の操作には居ない（型引数がundefinedになる）。 */
-  protected readonly dragged: T;
+  /** この操作で働きかけに使われる物（11.5節）。伴わない操作には居ない（型引数がundefinedになる）。 */
+  protected readonly instrument: T;
 
-  protected constructor(trigger: G, self: WorldObject, actor: WorldObject | undefined, dragged: T) {
+  protected constructor(trigger: G, self: WorldObject, agent: WorldObject | undefined, instrument: T) {
     this.trigger = trigger;
-    this.context = ReferenceContext.acting(self, actor, dragged);
-    this.dragged = dragged;
+    this.context = ReferenceContext.acting(self, agent, instrument);
+    this.instrument = instrument;
   }
 
   protected get def(): InteractionDef {
@@ -60,20 +60,25 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
 
 /** 相手を伴わない操作（GameElementDefinition.md 11節）。1枚のカードだけで完結するので、相手は居ない。 */
 export class Action extends Interaction<ActionTrigger, undefined> {
-  constructor(trigger: ActionTrigger, self: WorldObject, actor: WorldObject | undefined) {
-    super(trigger, self, actor, undefined);
+  constructor(trigger: ActionTrigger, self: WorldObject, agent: WorldObject | undefined) {
+    super(trigger, self, agent, undefined);
   }
 }
 
 /**
- * 相手（dragged）まで決まった組み合わせ1つ（GameElementDefinition.md 12節）。
+ * 相手（instrument）まで決まった組み合わせ1つ（GameElementDefinition.md 12節）。
  *
  * **今成立するものしか作られない**（WorldObject.combinationsWith）ので、持っているだけで「重ねれば
  * 何かが起きる」と言える。
  */
 export class Combination extends Interaction<DragTrigger, WorldObject> {
-  constructor(trigger: DragTrigger, self: WorldObject, dragged: WorldObject, actor: WorldObject | undefined) {
-    super(trigger, self, actor, dragged);
+  constructor(
+    trigger: DragTrigger,
+    self: WorldObject,
+    instrument: WorldObject,
+    agent: WorldObject | undefined,
+  ) {
+    super(trigger, self, agent, instrument);
   }
 
   /**
@@ -84,7 +89,7 @@ export class Combination extends Interaction<DragTrigger, WorldObject> {
    * WorldObject.acceptedCountForMoveToIncludingSelfと同じ形。
    */
   acceptedCountIncludingSelf(followers: readonly WorldObject[]): number {
-    return this.trigger.acceptedCount(this.context, [this.dragged, ...followers]);
+    return this.trigger.acceptedCount(this.context, [this.instrument, ...followers]);
   }
 
   /**
@@ -97,9 +102,9 @@ export class Combination extends Interaction<DragTrigger, WorldObject> {
    */
   executeWithFollowers(followers: readonly WorldObject[]): number {
     let done = 0;
-    for (const dragged of [this.dragged, ...followers]) {
+    for (const instrument of [this.instrument, ...followers]) {
       const now = this.self
-        .combinationsWith(dragged, this.context.actor)
+        .combinationsWith(instrument, this.context.agent)
         .find((candidate) => candidate.trigger === this.trigger);
       if (now === undefined || !now.tryExecute()) break;
       done++;
@@ -112,7 +117,7 @@ export class Combination extends Interaction<DragTrigger, WorldObject> {
    * ことがある（`become`、9.9節）——宣言が要件を引き直すのと同じ理由。
    */
   override tryExecute(): boolean {
-    if (!this.trigger.acceptsDragged(this.dragged.def)) return false;
+    if (!this.trigger.acceptsInstrument(this.instrument.def)) return false;
     return super.tryExecute();
   }
 }

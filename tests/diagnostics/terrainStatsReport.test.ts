@@ -21,7 +21,7 @@ import {
   formatYamlReport,
   rounded,
   shareRecord,
-  statRecord,
+  statRecordWith,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -39,6 +39,9 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  */
 
 const SEED_COUNT = 500;
+
+/** このレポートの分布レコード。**低い側の裾を見る**表なので、真ん中の列は`p5`。 */
+const statRecord = statRecordWith('p5');
 
 /** 次数のヒストグラムに出す本数の上限（これを超える分はまとめて `or_more`）。 */
 const MAX_LISTED_DEGREE = 7;
@@ -232,7 +235,7 @@ type Metric = readonly [metric: string, unit: string, stat: Stat];
 
 /** `keys`は、測った項目より前に置く鍵（どの拠点の値か、など）。 */
 function metricRecords(metrics: readonly Metric[], keys: YamlRecord = {}): YamlRecord[] {
-  return metrics.map(([metric, unit, stat]) => statRecord({ ...keys, metric, unit }, stat, 'p5'));
+  return metrics.map(([metric, unit, stat]) => statRecord({ ...keys, metric, unit }, stat));
 }
 
 function degreeHistogramRecords(degree: Stat): YamlRecord[] {
@@ -275,7 +278,7 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
         };
       }),
     },
-    { key: 'site_degree', records: [statRecord({ unit: 'edges' }, stats.degree, 'p5')] },
+    { key: 'site_degree', records: [statRecord({ unit: 'edges' }, stats.degree)] },
     { key: 'site_degree_histogram', records: degreeHistogramRecords(stats.degree) },
     {
       key: 'edge',
@@ -288,8 +291,8 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
     {
       key: 'base_one_way',
       records: [
-        statRecord({ base: SHORTEST_MEAN_BASE, unit: 'minutes' }, stats.chosenBaseOneWayMinutes, 'p5'),
-        statRecord({ base: 'any', unit: 'minutes' }, stats.anyBaseOneWayMinutes, 'p5'),
+        statRecord({ base: SHORTEST_MEAN_BASE, unit: 'minutes' }, stats.chosenBaseOneWayMinutes),
+        statRecord({ base: 'any', unit: 'minutes' }, stats.anyBaseOneWayMinutes),
       ],
     },
     {

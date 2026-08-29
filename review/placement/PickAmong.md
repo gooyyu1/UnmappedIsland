@@ -16,7 +16,7 @@
 | `lootables` / `loot_target` | 土地の `items` | `quarry` でない | `volume` |
 | `smashables` / `smash_target` | 土地の `items` | `fragile` タグ | `volume` |
 | `escape_routes` / `flee_to` | 土地の `fixtures` の道 | なし | 一律 1 |
-| `nearby_characters` ＋ actor | 土地の `characters` | なし | （先頭を採る） |
+| `nearby_characters` ＋ agent | 土地の `characters` | なし | （先頭を採る） |
 | `spoils_target` | 自分の `spoils` | なし | （先頭を採る） |
 
 数（`lootables`）は「候補が無ければその手は起こらない」を書くため、対象（`loot_target`）は
@@ -63,9 +63,9 @@ conditions の `{subject, slot, matches}`（`slot_content`、14節）が「そ�
 
 実装側で要るもの:
 
-- `ReferenceRoot` に `picked` を足す。`ReferenceContext` は `withDragged` と同じ形の
+- `ReferenceRoot` に `picked` を足す。`ReferenceContext` は `withInstrument` と同じ形の
   `withPicked` を持つ（**候補ごとに束ね直す**のは既にある使い方——`TransferEffect.acceptedCount` が
-  `context.withDragged(candidate)` を候補ごとに作っている）。
+  `context.withInstrument(candidate)` を候補ごとに作っている）。
 - `PickCandidateDef` に `among` を持たせ、重み評価と効果適用を `withPicked` した文脈で行う。
 - 読み上げ（`EffectReader.pick`）へは、`among` の宣言（集合・絞り込み・重み）をそのまま渡す。
   解析側は「どれが選ばれるか」を定義だけからは決められないので、**近似の置き方は読み手が決める**

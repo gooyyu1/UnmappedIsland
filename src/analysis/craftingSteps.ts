@@ -34,7 +34,7 @@ import {
  * 終端の工程として数える）。ただし**条件（14節）が定義だけから偽と分かる操作は挙げない**
  * （conditionsNeverMet）。
  *
- * outerは、self以外の起点（祖先が入れる値・重ねる相手の値）を定義だけから解く手立て。省くと、
+ * outerは、self以外の起点（祖先が入れる値・使う物の値）を定義だけから解く手立て。省くと、
  * それらを参照する工程に「確定しない」印が付く（CraftingStep.hasUnresolvedReferences）。
  */
 export function craftingStepsOf(
@@ -44,9 +44,11 @@ export function craftingStepsOf(
 ): readonly CraftingStep[] {
   const steps: CraftingStep[] = [];
   for (const trigger of def.triggers)
-    for (const dragged of draggedTypesOf(codex, trigger)) {
-      if (conditionsNeverMet(codex, def, dragged, trigger.interaction, outer)) continue;
-      steps.push(withTriggeredRangeEvents(def, interactionStep(codex, def, trigger, dragged, outer), outer));
+    for (const instrument of instrumentTypesOf(codex, trigger)) {
+      if (conditionsNeverMet(codex, def, instrument, trigger.interaction, outer)) continue;
+      steps.push(
+        withTriggeredRangeEvents(def, interactionStep(codex, def, trigger, instrument, outer), outer),
+      );
     }
   for (const recipe of def.recipesProducingThis) steps.push(recipeStep(def, recipe));
   return steps;
@@ -62,13 +64,16 @@ export function craftingStepsOf(
  * 相手の型で産物が変わらない操作（刃物で剥く・武器で殴る）は割らない。候補の数だけ同じ工程が
  * 並ぶだけで、入力も産出も変わらないため。
  */
-function draggedTypesOf(codex: WorldCodex, trigger: InteractionTrigger): readonly (ObjectDef | undefined)[] {
+function instrumentTypesOf(
+  codex: WorldCodex,
+  trigger: InteractionTrigger,
+): readonly (ObjectDef | undefined)[] {
   const reading = trigger.reading;
   if (reading.kind !== 'drag') return [undefined];
   if (reading.with.kind === 'object') return [codex.objects.tryGet(reading.with.objectGlobalId)];
   if (reading.with.kind === 'not') return [undefined];
 
-  const axisValues = draggedBecomeAxesOf(trigger.interaction);
+  const axisValues = instrumentBecomeAxesOf(trigger.interaction);
   if (axisValues === undefined) return [undefined];
 
   const tagGlobalId = reading.with.tagGlobalId;
@@ -84,13 +89,13 @@ function draggedTypesOf(codex: WorldCodex, trigger: InteractionTrigger): readonl
  * その操作が相手を別の型へ変えるなら、行き先を決める軸の値（`become`、9.9節）。相手を変えない
  * 操作ではundefined。
  */
-function draggedBecomeAxesOf(interaction: InteractionDef): ReadonlyMap<string, string> | undefined {
+function instrumentBecomeAxesOf(interaction: InteractionDef): ReadonlyMap<string, string> | undefined {
   let axisValues: ReadonlyMap<string, string> | undefined;
   readEffect(
     interaction,
     () => undefined,
     (subject, values) => {
-      if (subject.kind === 'root' && subject.root === 'dragged') axisValues = values;
+      if (subject.kind === 'root' && subject.root === 'instrument') axisValues = values;
       return undefined;
     },
   );
@@ -103,17 +108,17 @@ function draggedBecomeAxesOf(interaction: InteractionDef): ReadonlyMap<string, s
  * 目的が壊れる（BalanceStats.md「この表が数えていないもの」）。
  *
  * 相手の型が定まっているなら、相手に課された条件も同じように読む——**空の容器へ注ぐ操作は、中身の
- * ある容器を相手には起こせない**（`{subject: dragged, prop: fill, eq: 0}`）。
+ * ある容器を相手には起こせない**（`{subject: instrument, prop: fill, eq: 0}`）。
  */
 function conditionsNeverMet(
   codex: WorldCodex,
   def: ObjectDef,
-  dragged: ObjectDef | undefined,
+  instrument: ObjectDef | undefined,
   interaction: InteractionDef,
   outer: StaticValueResolver | undefined,
 ): boolean {
   const rangeOf = (root: ReferenceRoot, propertyGlobalId: number): StaticValueRange | undefined => {
-    const subjectDef = rootTypeOf(def, dragged, root);
+    const subjectDef = rootTypeOf(def, instrument, root);
     return subjectDef === undefined
       ? undefined
       : staticValueRangeOf(
@@ -181,12 +186,16 @@ function interactionStep(
   codex: WorldCodex,
   def: ObjectDef,
   trigger: InteractionTrigger,
-  dragged: ObjectDef | undefined,
+  instrument: ObjectDef | undefined,
   outer: StaticValueResolver | undefined,
 ): CraftingStep {
   const interaction = trigger.interaction;
   const tracking = trackingResolverOf(def, 'lowest', outer);
-  const reading = readEffect(interaction, tracking.resolve, becomeDestinationResolverOf(codex, def, dragged));
+  const reading = readEffect(
+    interaction,
+    tracking.resolve,
+    becomeDestinationResolverOf(codex, def, instrument),
+  );
   const minutes = minutesOf(interaction, tracking.resolve);
   return {
     kind: 'interaction',
@@ -199,7 +208,7 @@ function interactionStep(
         consumed: consumesRoot(reading, 'self'),
         count: 1,
       },
-      ...draggedInputOf(trigger, dragged, reading),
+      ...instrumentInputOf(trigger, instrument, reading),
     ],
     outputs: collectOutputs(reading.outcomes),
     // プレイヤーが手を止めている間に時間が進むので、払う時間と経過する時間は等しい。
@@ -313,20 +322,20 @@ function selfPropertyValuesAfterOf(
 }
 
 /**
- * ドラッグ型の相手（きっかけが指す型）。他のきっかけには無い。消費されるかはdraggedの行方で決まる。
+ * ドラッグ型の相手（きっかけが指す型）。他のきっかけには無い。消費されるかはinstrumentの行方で決まる。
  * 型が定まっているならその型そのものが入力で、定まらないときだけ宣言（タグ）のまま並べる。
  */
-function draggedInputOf(
+function instrumentInputOf(
   trigger: InteractionTrigger,
-  dragged: ObjectDef | undefined,
+  instrument: ObjectDef | undefined,
   effect: EffectReading,
 ): readonly CraftingInput[] {
   const triggerReading = trigger.reading;
   if (triggerReading.kind !== 'drag') return [];
 
-  const consumed = consumesRoot(effect, 'dragged');
-  if (dragged !== undefined)
-    return [{ kind: 'object', objectGlobalId: dragged.globalId, consumed, count: 1 }];
+  const consumed = consumesRoot(effect, 'instrument');
+  if (instrument !== undefined)
+    return [{ kind: 'object', objectGlobalId: instrument.globalId, consumed, count: 1 }];
 
   const input = inputOf(triggerReading.with, consumed, 1);
   return input === undefined ? [] : [input];
@@ -334,28 +343,28 @@ function draggedInputOf(
 
 /**
  * この操作の中で`become`（9.9節）の行き先を解く手立て。答えられるのは**型が定まっている相手**
- * ——self と、型の定まったドラッグの相手（draggedTypesOf）——だけで、実行時にしか決まらない相手
- * （`parent`・`actor`・プロパティ参照）は定義から型が定まらない。
+ * ——self と、型の定まったドラッグの相手（instrumentTypesOf）——だけで、実行時にしか決まらない相手
+ * （`parent`・`agent`・プロパティ参照）は定義から型が定まらない。
  */
 function becomeDestinationResolverOf(
   codex: WorldCodex,
   def: ObjectDef,
-  dragged: ObjectDef | undefined,
+  instrument: ObjectDef | undefined,
 ): BecomeDestinationResolver {
   return (subject, axisValues) => {
-    const subjectDef = subject.kind === 'root' ? rootTypeOf(def, dragged, subject.root) : undefined;
+    const subjectDef = subject.kind === 'root' ? rootTypeOf(def, instrument, subject.root) : undefined;
     return subjectDef === undefined ? undefined : codex.tryResolveBecome(subjectDef, axisValues)?.globalId;
   };
 }
 
-/** その起点が指す型。定義からは定まらない起点（`parent`・`actor`・祖先）ではundefined。 */
+/** その起点が指す型。定義からは定まらない起点（`parent`・`agent`・祖先）ではundefined。 */
 function rootTypeOf(
   def: ObjectDef,
-  dragged: ObjectDef | undefined,
+  instrument: ObjectDef | undefined,
   root: ReferenceRoot,
 ): ObjectDef | undefined {
   if (root === 'self') return def;
-  return root === 'dragged' ? dragged : undefined;
+  return root === 'instrument' ? instrument : undefined;
 }
 
 /**

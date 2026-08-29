@@ -67,7 +67,7 @@ export interface SupplyRow {
   readonly hasUnresolvedReferences: boolean;
 
   readonly spawns: readonly NamedAmount[];
-  readonly actorDeltas: readonly NamedAmount[];
+  readonly agentDeltas: readonly NamedAmount[];
   readonly selfDeltas: readonly NamedAmount[];
 }
 
@@ -102,6 +102,8 @@ export interface ChainRoute {
   /**
    * 他の土地で用意した材料・道具が要る経路か。**可否は分けない**——AとBの土地で集めた物を合わせて
    * 作るのは普通の遊び方なので、印として持つだけ（issue #562）。時間の扱いも変わらない。
+   *
+   * **値段の付かない道具については偽に倒れる**（RoutePrerequisite.imported）。
    */
   readonly needsImport: boolean;
 
@@ -134,7 +136,16 @@ export interface RoutePrerequisite {
    */
   readonly minutes: number | undefined;
 
-  /** この土地では作れず、他の土地から持ち込むことになる道具か。 */
+  /**
+   * この土地では作れず、他の土地から持ち込むことになる道具か。**そう言えるのは値段の付く道具に
+   * ついてだけで、値段の付かない道具（minutesがundefined）では常に偽になる。** 値段の付く型には
+   * 「その土地の値段表」と「島全体の値段表」の2つが在るので分けられるが、**値段の付かない型の集合は
+   * 島全体に1つしかなく**（入手の可否を島全体でだけ判定することの帰結。BalanceStats.md
+   * 「土地ごとの行は可否を判定しない」）、土地の文脈も島全体も同じ答えを返すため。
+   *
+   * 同梱の定義に値段の付かない道具は無いので今は出ないが、現れれば、他の土地でしか用意できない
+   * 道具が「持ち込みではない」ことになる（issue #1217）。
+   */
   readonly imported: boolean;
 }
 
@@ -376,7 +387,7 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
       allSteps(
         codex,
         islandLocations.seaOnly,
-        withBestDragged([...codex.objects], highestDeclaredAncestorValueResolver(islandLocations.island)),
+        withBestInstrument([...codex.objects], highestDeclaredAncestorValueResolver(islandLocations.island)),
       ),
     ),
     places,
@@ -508,9 +519,9 @@ function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly Supp
   const rows: SupplyRow[] = [];
   for (const ref of steps) {
     const spawns = expectedSpawns(ref.step);
-    const actorDeltas = expectedDeltas(ref.step, 'actor');
+    const agentDeltas = expectedDeltas(ref.step, 'agent');
     const selfDeltas = expectedDeltas(ref.step, 'self');
-    if (spawns.size === 0 && actorDeltas.size === 0 && selfDeltas.size === 0) continue;
+    if (spawns.size === 0 && agentDeltas.size === 0 && selfDeltas.size === 0) continue;
 
     rows.push({
       ownerName: ref.def.name,
@@ -523,7 +534,7 @@ function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly Supp
         name: codex.objectNames.getName(globalId),
         amount,
       })),
-      actorDeltas: [...actorDeltas].map(([globalId, amount]) => ({
+      agentDeltas: [...agentDeltas].map(([globalId, amount]) => ({
         name: codex.propertyNames.getName(globalId),
         amount,
       })),
@@ -549,14 +560,14 @@ function placeBalances(
   const defs = [...codex.objects];
 
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
-  const islandContext = withBestDragged(defs, highestDeclaredAncestorValueResolver(locations));
+  const islandContext = withBestInstrument(defs, highestDeclaredAncestorValueResolver(locations));
   const islandWide = new Acquisition(codex, allSteps(codex, seaOnly, islandContext));
 
   let islandRoutes: readonly ChainRoute[] = [];
   const places = [undefined, ...locations].map((location) => {
     // 罠が掛ける動物の重みは土地が宣言する（base）ので、土地を決めてから工程を組み立てる。
     const context =
-      location === undefined ? islandContext : withBestDragged(defs, ancestorValueResolver(location));
+      location === undefined ? islandContext : withBestInstrument(defs, ancestorValueResolver(location));
     const steps =
       location === undefined
         ? allSteps(codex, seaOnly, context)
@@ -689,13 +700,13 @@ function routeCandidates(
 
 /**
  * その工程がキャラクタへ返す値。**宣言元がキャラクタ自身なら `self` も数える**——休息
- * （`wait`/`rest`/`nap`/`sleep`）は自分の値を自分で戻す工程で、他の工程のように `actor` を持たない。
+ * （`wait`/`rest`/`nap`/`sleep`）は自分の値を自分で戻す工程で、他の工程のように `agent` を持たない。
  */
 function gainsOf(codex: WorldCodex, ref: StepRef): ReadonlyMap<number, number> {
-  const actor = expectedDeltas(ref.step, 'actor');
-  if (!isCharacter(codex, ref.def)) return actor;
+  const agent = expectedDeltas(ref.step, 'agent');
+  if (!isCharacter(codex, ref.def)) return agent;
 
-  const merged = new Map(actor);
+  const merged = new Map(agent);
   for (const [propertyGlobalId, amount] of expectedDeltas(ref.step, 'self'))
     merged.set(propertyGlobalId, (merged.get(propertyGlobalId) ?? 0) + amount);
   return merged;
@@ -1018,7 +1029,7 @@ function expectedSpawns(step: CraftingStep): ReadonlyMap<number, number> {
 }
 
 /** 1回の実行で、対象のプロパティが動く期待量（分岐の確率で重み付けした和）。 */
-function expectedDeltas(step: CraftingStep, target: 'actor' | 'self'): ReadonlyMap<number, number> {
+function expectedDeltas(step: CraftingStep, target: 'agent' | 'self'): ReadonlyMap<number, number> {
   const amounts = new Map<number, number>();
   for (const outcome of step.outcomes)
     for (const delta of outcome.deltas) {
@@ -1087,7 +1098,10 @@ interface ObtainableSource {
   readonly objectGlobalId: number;
   readonly cost: Cost | undefined;
 
-  /** この土地では用意できず、他の土地から持ち込むことになるか。 */
+  /**
+   * この土地では用意できず、他の土地から持ち込むことになるか。**costがundefinedの側では常に偽**
+   * （RoutePrerequisite.imported）。
+   */
   readonly imported: boolean;
 }
 
@@ -1223,16 +1237,16 @@ function highestDeclaredAncestorValueResolver(locations: readonly ObjectDef[]): 
 }
 
 /**
- * ancestorに、重ねる相手（dragged）の値を足した文脈。**最も高く宣言している型を重ねたものとして
+ * ancestorに、使う物（instrument、11.5節）の値を足した文脈。**最も高く宣言している型を使ったものとして
  * 扱う**（highestDeclaredAncestorValueResolverと同じ見方）。
  *
  * これが無いと、相手の値を見る重み——一撃がどう入るかは武器が決める（HuntingSystem.md 1.2節）——が
  * 全て0になり、宣言順で最初の候補だけが起こることになる（PickEffect.selectWeighted）。
  * 分岐ごとに最も良い武器を選べる前提の配分なので、**どれか1つの武器で出る配分ではない**。
  */
-function withBestDragged(defs: readonly ObjectDef[], ancestor: StaticValueResolver): StaticValueResolver {
+function withBestInstrument(defs: readonly ObjectDef[], ancestor: StaticValueResolver): StaticValueResolver {
   return (root, propertyGlobalId, end) => {
-    if (root !== 'dragged') return ancestor(root, propertyGlobalId, end);
+    if (root !== 'instrument') return ancestor(root, propertyGlobalId, end);
     const declared = defs
       .map((def) => staticValueOf(def, propertyGlobalId, end))
       .filter((value): value is number => value !== undefined);
@@ -1484,6 +1498,10 @@ class Acquisition {
    * 入力1件を、どの型で・いくらで満たすか。**値段の付く型を先に探し、どこにも無ければ値段の
    * 付かない型を探す**——時間の出る候補を、時間の出ない候補で押しのけない。どちらも「この土地 →
    * 持ち込み」の順で見る。島のどこにも手に入る型が無ければundefined。
+   *
+   * **値段の付かない側では`imported`をここで決められない**——`unpricedCandidate`が当てる集合
+   * （obtainableWithoutCost）は島全体に1つしか無く、土地の文脈も同じ集合を見るので、必ず
+   * `context === this`で決まる（常に偽。RoutePrerequisite.imported）。
    */
   private obtainableSource(input: CraftingStep['inputs'][number]): ObtainableSource | undefined {
     const contexts = this.islandWide === undefined ? [this] : [this, this.islandWide];

@@ -98,8 +98,8 @@ export interface PropertyRefReading {
 /**
  * 重み・所要時間の宣言（10.2節）。リテラルか、対象のプロパティ参照か、参照2つの積の三択。
  *
- * 参照の側を**数値へ解かずに**渡すのは、解ける値かどうかが文脈で決まるため——重ねる相手の値は
- * 「どれを重ねた場合か」を決めた側にしか答えられない。
+ * 参照の側を**数値へ解かずに**渡すのは、解ける値かどうかが文脈で決まるため——使う物（instrument、
+ * 11.5節）の値は「どれを使った場合か」を決めた側にしか答えられない。
  */
 export type DeclaredNumberReading =
   { readonly kind: 'literal'; readonly value: number } | ReferencedNumberReading;

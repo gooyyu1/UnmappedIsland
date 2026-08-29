@@ -112,20 +112,20 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage: full}
         duration: 15
         add:
-          actor:
+          agent:
             satiety: 300
             carbohydrate: 1
             vitamin: 83
         pick:
           - weight: 100
           - weight: {prop: spoilage}
-            set: {actor: {satiety: 0}}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+            set: {agent: {satiety: 0}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
           - weight: {prop: spoilage}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # ヤシガニ。狩猟の道具がなくても「見つけて捕まえる」だけで採取できる大型の甲殻類。
@@ -177,10 +177,10 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage: full}
         duration: 15
         add:
-          actor:
+          agent:
             satiety: 460
             protein: 28
             lipid: 9
@@ -188,10 +188,10 @@ object_defs:
         pick:
           - weight: 100
           - weight: {prop: spoilage}
-            set: {actor: {satiety: 0}}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+            set: {agent: {satiety: 0}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
           - weight: {prop: spoilage}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # タロイモ。東南アジア島嶼が原産の塊茎作物（docs/world/Animals.md 概要節）。野生形が自生している。
@@ -242,10 +242,10 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage: full}
         duration: 15
         add:
-          actor:
+          agent:
             satiety: 550
             # 水が飛んで詰まったぶん、糖質は生より濃い。ビタミンCは熱で壊れるので逆に減る。
             carbohydrate: 48
@@ -254,8 +254,8 @@ object_defs:
         pick:
           - weight: 100
           - weight: {prop: spoilage}
-            set: {actor: {satiety: 0}}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+            set: {agent: {satiety: 0}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
           - weight: {prop: spoilage}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self

@@ -725,7 +725,7 @@ export class WorldObject {
   /**
    * 持続効果の対象（8.1節）を、影響の一覧のために解決する。**childは今入っている子を全部**返す
    * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（setChildRegistered）。
-   * actor/draggedはpassivesに現れない（parsePassiveTransfers）ため空になる。
+   * agent/instrumentはpassivesに現れない（parsePassiveTransfers）ため空になる。
    */
   resolveInfluenceTargets(path: PropertyPath): readonly WorldObject[] {
     if (path.root === 'child') return [...this.children()];
@@ -735,9 +735,9 @@ export class WorldObject {
 
   // ---- プレイヤーが起こせる操作（11節・12節） ----
 
-  /** actorがこのカードへ起こせる、**画面のボタンに出る**操作（11.1節、宣言順）。 */
-  menuActionsFor(actor: WorldObject | undefined): readonly Action[] {
-    return this.def.menuTriggers.map((trigger) => new Action(trigger, this, actor));
+  /** agentがこのカードへ起こせる、**画面のボタンに出る**操作（11.1節、宣言順）。 */
+  menuActionsFor(agent: WorldObject | undefined): readonly Action[] {
+    return this.def.menuTriggers.map((trigger) => new Action(trigger, this, agent));
   }
 
   /**
@@ -745,32 +745,32 @@ export class WorldObject {
    *
    * 探すのは相手を伴わないきっかけ（menu・tick）だけ——重ねる操作は相手が決まらないと引けない。
    */
-  tryGetAction(actionName: string, actor: WorldObject | undefined): Action | undefined {
+  tryGetAction(actionName: string, agent: WorldObject | undefined): Action | undefined {
     const trigger = [...this.def.menuTriggers, ...this.def.tickTriggers].find(
       (candidate) => candidate.interaction.name === actionName,
     );
-    return trigger === undefined ? undefined : new Action(trigger, this, actor);
+    return trigger === undefined ? undefined : new Action(trigger, this, agent);
   }
 
   /**
-   * draggedを重ねたときに**今**成立する組み合わせ（12節、宣言順）。相手として受け入れるかだけでなく、
+   * instrumentを重ねたときに**今**成立する組み合わせ（12節、宣言順）。相手として受け入れるかだけでなく、
    * 要件（14節）を満たしているかまで見る——満杯の炉に薪をくべる組み合わせは、候補にならない。
    *
    * **要件まで見るのは、候補を選ぶ側と実行できる側を食い違わせないため。** 型だけで選ぶと、選んだ
    * 先が実行できない場合に「落とせるのに何も起きない」になる。**行き先の座標に型が居ない組み合わせ**
    * （`become`、9.9節）も同じ理由で候補にならない。
    */
-  combinationsWith(dragged: WorldObject, actor: WorldObject | undefined): readonly Combination[] {
-    const context = ReferenceContext.acting(this, actor, dragged);
+  combinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
+    const context = ReferenceContext.acting(this, agent, instrument);
     return this.def.dragTriggers
       .filter(
         (trigger) =>
-          trigger.acceptsDragged(dragged.def) &&
+          trigger.acceptsInstrument(instrument.def) &&
           trigger.interaction.unmetRequirement(context) === undefined &&
-          trigger.acceptedCount(context, [dragged]) >= 1 &&
+          trigger.acceptedCount(context, [instrument]) >= 1 &&
           !trigger.interaction.blocksOperation(context),
       )
-      .map((trigger) => new Combination(trigger, this, dragged, actor));
+      .map((trigger) => new Combination(trigger, this, instrument, agent));
   }
 
   // ---- 時間の経過（8.4節） ----
@@ -806,19 +806,19 @@ export class WorldObject {
    */
   runTickActions(): void {
     const pending: WorldObject[] = [];
-    this.collectTickActors(pending);
+    this.collectTickAgents(pending);
 
-    for (const actor of pending) {
+    for (const agent of pending) {
       // 手番の途中で消えた個体は飛ばす——世界から外れると、辿り着く根が変わる。
-      if (actor.findRoot() !== this) continue;
-      for (const trigger of actor.def.tickTriggers) new Action(trigger, actor, undefined).tryExecute();
+      if (agent.findRoot() !== this) continue;
+      for (const trigger of agent.def.tickTriggers) new Action(trigger, agent, undefined).tryExecute();
     }
   }
 
-  private collectTickActors(into: WorldObject[]): void {
+  private collectTickAgents(into: WorldObject[]): void {
     if (this.def.tickTriggers.length > 0) into.push(this);
     for (const slot of this.slots) {
-      for (const child of [...slot.contents]) child.collectTickActors(into);
+      for (const child of [...slot.contents]) child.collectTickAgents(into);
     }
   }
 
@@ -826,8 +826,8 @@ export class WorldObject {
 
   /**
    * このオブジェクトをselfとして、set/add/destroy/spawnを実行する（9.2〜9.4節）。rangeイベント（6節）と
-   * actions/combinations（11節・12節）の両方から呼ばれる（rangeイベント経由ではactor/draggedはundefined）。
-   * 対象が解決できない場合（parentが無い、actor/draggedがこの実行文脈に無い）は、その対象への適用のみ無視する。
+   * actions/combinations（11節・12節）の両方から呼ばれる（rangeイベント経由ではagent/instrumentはundefined）。
+   * 対象が解決できない場合（parentが無い、agent/instrumentがこの実行文脈に無い）は、その対象への適用のみ無視する。
    *
    * destroyをspawnより先に行う（9.3節・9.4節）: 置き換え後のオブジェクトが破棄されるオブジェクトの位置を
    * 引き継げるよう、destroyで実際に位置が空いてから配置を行う。
@@ -838,15 +838,15 @@ export class WorldObject {
    */
   applyActiveEffect(
     effect: ActiveEffect,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
+    agent: WorldObject | undefined,
+    instrument: WorldObject | undefined,
   ): void {
     // same_slot spawnのために「selfが今占めている位置」を、まだ何も起きていないこの入口で捕捉する。destroyが
     // selfを消した後でも、spawnはこのアンカーと配置時のスロットの状態から置き換え位置を決められる（SameSlotSpawnSite
     // 参照）。
     const sameSlotSpawnSite = this.captureSameSlotSpawnSite();
     const session = this.session;
-    const context = ReferenceContext.acting(this, actor, dragged);
+    const context = ReferenceContext.acting(this, agent, instrument);
     session.withSubject(this, () => effect.apply(context, session, sameSlotSpawnSite));
   }
 

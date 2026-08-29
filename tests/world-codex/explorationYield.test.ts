@@ -6,7 +6,7 @@ import { Location } from '../../src/domain/wrappers/Location';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
-import { createBrightEnoughActor } from '../support/illumination';
+import { createBrightEnoughAgent } from '../support/illumination';
 import { seededRng } from '../../src/domain/Rng';
 
 /**
@@ -98,7 +98,7 @@ describe('探索で見つかる物', () => {
     const location = new Location(instance, codex);
     // 探索には視界の明るさが要る（IlluminationSystem.md 5節）。ここで見たいのは抽選卓なので、
     // 時刻を作らずに探索者の側で明るさを満たす。
-    const actor = createBrightEnoughActor(explorer, codex);
+    const agent = createBrightEnoughAgent(explorer, codex);
 
     // **見つかった物は、個数の差ではなく個体で数える**——置かれた物は腐って消える（食べ物の
     // durability、DurabilitySystem.md 3節）ので、消えた数と見つかった数が打ち消し合うと、
@@ -106,7 +106,7 @@ describe('探索で見つかる物', () => {
     const findings: Finding[] = [];
     const seen = new Set<WorldObject>();
     for (let i = 0; i < trials; i++) {
-      expect(location.explore(actor), `${landName}: 探索は必ず成立する`).toBe(true);
+      expect(location.explore(agent), `${landName}: 探索は必ず成立する`).toBe(true);
       const present = [...location.items, ...location.fixtures];
       findings.push(countByName(present.filter((object) => !seen.has(object))));
       for (const object of present) seen.add(object);

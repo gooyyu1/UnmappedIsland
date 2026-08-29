@@ -18,7 +18,7 @@ import {
   describeYamlReportRegeneration,
   formatYamlReport,
   rounded,
-  statRecord,
+  statRecordWith,
   yieldToEventLoop,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
@@ -43,6 +43,9 @@ import { seededRng } from '../../src/domain/Rng';
 
 const SEED_COUNT = 20;
 const SIM_DAYS = 3600; // 約40周分/シード
+
+/** このレポートの分布レコード。**低い側の裾を見る**表なので、真ん中の列は`p5`。 */
+const statRecord = statRecordWith('p5');
 
 const REPORT_PATH = join('stats', 'climate.yaml');
 const DOC_PATH = join('docs', 'diagnostics', 'ClimateSystemStats.md');
@@ -246,8 +249,8 @@ const SEGMENTS = ['early', 'middle', 'late'] as const;
 /** 全体＋3等分区間の4レコード。 */
 function segmentRecords(keys: YamlRecord, overall: Stat, byThird: (third: number) => Stat): YamlRecord[] {
   return [
-    statRecord({ ...keys, segment: 'overall' }, overall, 'p5'),
-    ...SEGMENTS.map((segment, third) => statRecord({ ...keys, segment }, byThird(third), 'p5')),
+    statRecord({ ...keys, segment: 'overall' }, overall),
+    ...SEGMENTS.map((segment, third) => statRecord({ ...keys, segment }, byThird(third))),
   ];
 }
 
@@ -277,7 +280,7 @@ function buildSections(
     {
       key: 'season_moisture_rate',
       records: seasonKinds.map((s) =>
-        statRecord({ season: nameOf(s), unit: 'per_tick' }, getStat(stats.seasonMoistureRate, s), 'p5'),
+        statRecord({ season: nameOf(s), unit: 'per_tick' }, getStat(stats.seasonMoistureRate, s)),
       ),
     },
     {
@@ -297,7 +300,6 @@ function buildSections(
             statRecord(
               { weather: nameOf(w), season: nameOf(s), unit: 'per_tick' },
               getStat(stats.rainWeatherNetMoistureDelta, `${w},${s}`),
-              'p5',
             ),
           ),
       ),
@@ -305,7 +307,7 @@ function buildSections(
     {
       key: 'season_duration',
       records: seasonKinds.map((s) =>
-        statRecord({ season: nameOf(s), unit: 'days' }, getStat(stats.seasonDuration, s), 'p5'),
+        statRecord({ season: nameOf(s), unit: 'days' }, getStat(stats.seasonDuration, s)),
       ),
     },
     {

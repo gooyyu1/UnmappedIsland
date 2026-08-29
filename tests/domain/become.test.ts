@@ -24,7 +24,7 @@ object_defs:
       # 行き先の座標に型が居ない宣言。候補にならないことの確認用。
       nowhere:
         trigger: {drag: {tag: item}}
-        become: {subject: dragged, recipe: missing}
+        become: {subject: instrument, recipe: missing}
   # 作りかけと同じ名前のプロパティ・スロットを持つ完成品。値も中身も引き継がれる。
   axe:
     tags: [item]

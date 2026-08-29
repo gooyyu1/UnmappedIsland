@@ -139,7 +139,7 @@ object_defs:
       fell:
         trigger: {drag: {tag: chopping_tool}}
         duration: 240
-        add: {dragged: {durability: -120}}
+        add: {instrument: {durability: -120}}
 
   fish:
     tags: [item]

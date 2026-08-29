@@ -36,12 +36,12 @@ object_defs:
         # 屋外で採る行動なので、見るのは視界の側（docs/engine/IlluminationSystem.md 5節）。
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 20
         destroy: self
-        spawn: {object: banana_stem, count: 5, into: actor}
+        spawn: {object: banana_stem, count: 5, into: agent}
 
   # バナナの株。実った房を採るには切り倒すしかないので、実と茎が一度に手に入る。
   banana_plant:
@@ -54,14 +54,14 @@ object_defs:
         trigger: {drag: {tag: cutting_tool}}
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 20
         destroy: self
         spawn:
-          - {object: banana, count: 2, into: actor}
-          - {object: banana_stem, count: 2, into: actor}
+          - {object: banana, count: 2, into: agent}
+          - {object: banana_stem, count: 2, into: agent}
 
   # 野生のバナナ。栽培種と違って硬い種が多く、果肉は少ない。
   banana:
@@ -82,20 +82,20 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage: full}
         duration: 15
         add:
-          actor:
+          agent:
             satiety: 350
             carbohydrate: 10
             vitamin: 35
         pick:
           - weight: 100
           - weight: {prop: spoilage}
-            set: {actor: {satiety: 0}}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+            set: {agent: {satiety: 0}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
           - weight: {prop: spoilage}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # バナナの茎。運べる長さに切った偽茎の一節で、繊維はこれを構成する葉鞘の中にある。
@@ -113,7 +113,7 @@ object_defs:
         # 据え付けの光源も効くので、焚き火のそばなら夜でも進められる。
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: hand_brightness
             in_stage: bright
         duration: 30
@@ -136,11 +136,11 @@ object_defs:
         trigger: {drag: {object: plant_fiber}}
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: hand_brightness
             in_stage: bright
         duration: 20
-        destroy: [self, dragged]
+        destroy: [self, instrument]
         spawn: {object: yarn}
 
   # 撚った糸。細いが長い。縫うにも縛るにも使え、撚り合わせれば紐になる。
@@ -155,11 +155,11 @@ object_defs:
         trigger: {drag: {object: yarn}}
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: hand_brightness
             in_stage: bright
         duration: 20
-        destroy: [self, dragged]
+        destroy: [self, instrument]
         spawn: {object: cord}
 
   # 紐。道具の柄を軸へ固定するのに使う（docs/world/Skills.md 3節の柄付け）。

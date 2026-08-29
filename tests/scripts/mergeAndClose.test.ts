@@ -29,7 +29,11 @@ interface World {
   readonly issues?: Record<number, string>;
   /** セッションIDごとの `session_status`。 */
   readonly sessions?: Record<string, string>;
-  /** `list_sessions` が返すセッションIDごとのタグ。既定は空（1件も返らない）。 */
+  /**
+   * セッションIDごとのタグ。`list_sessions` はここに挙げたものだけを返す（既定は空）。
+   * `get_session` は挙がっていないIDにも `task-1000` を返す——**畳む相手であることが既定**で、
+   * タグの話でない試験がそこで止まらないようにする。
+   */
   readonly tags?: Record<string, string[]>;
   /** `archive_session` が失敗するか。 */
   readonly archiveFails?: boolean;
@@ -178,7 +182,12 @@ fi
 echo '<other-session>'
 case "$id" in
 ${Object.entries({ session_01ZZZZZZZZZZZZZZZZZZZZZZ: 'SESSION_STATUS_ARCHIVED', ...world.sessions })
-  .map(([id, status]) => `  ${id}) echo '{"ccr":{"session_status":"${status}"}}' ;;`)
+  .map(
+    ([id, status]) =>
+      `  ${id}) echo '${JSON.stringify({
+        ccr: { session_status: status, tags: world.tags?.[id] ?? ['task-1000'] },
+      })}' ;;`,
+  )
   .join('\n')}
 esac
 `,
@@ -308,6 +317,20 @@ describe('merge-and-close.sh', () => {
       'SYNCED deadbee',
     ]);
     expect(result.archived).toEqual(['session_01TAGGED0000000000000']);
+    expect(result.status).toBe(0);
+  });
+
+  // 相談役は issue を持たず、PRを何本も出す。PR1本のマージで畳むと、ユーザーが話している窓口が
+  // 閉じる（2026-08-30 に PR #1240 のマージで実際に畳んでしまった）。
+  it('issue を持たないセッションは、PRがマージされても畳まない', () => {
+    const result = run({
+      body: '_[Claude Code](https://claude.ai/code/session_01ADVISER000000000000)_',
+      sessions: { session_01ADVISER000000000000: 'SESSION_STATUS_RUNNING' },
+      tags: { session_01ADVISER000000000000: ['adviser-parallel-agents'] },
+    });
+
+    expect(result.lines).toEqual(['MERGED 1000', 'KEPT session_01ADVISER000000000000', 'SYNCED deadbee']);
+    expect(result.archived).toEqual([]);
     expect(result.status).toBe(0);
   });
 
