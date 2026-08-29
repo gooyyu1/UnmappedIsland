@@ -150,7 +150,7 @@ export interface TextButtonStyle {
  * 文字のボタンの台紙（addTextButtonが敷くのと同じ形）。**選んだ/選んでいないで塗り替える側も
  * これを通す**——生のBoxStyleを組み直すと、縁の色も角の丸みも呼び出し側ごとに散る。
  */
-function textButtonBoxStyle(metrics: ScreenMetrics, style: TextButtonStyle): BoxStyle {
+export function textButtonBoxStyle(metrics: ScreenMetrics, style: TextButtonStyle): BoxStyle {
   return {
     fillColor: style.fill,
     borderColor: style.border ?? COLOR.buttonBorder,

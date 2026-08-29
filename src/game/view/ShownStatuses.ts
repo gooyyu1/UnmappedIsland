@@ -58,6 +58,15 @@ export class ShownStatuses {
   }
 
   /**
+   * 固定表示の付け外し。頼むのは詳細ウィンドウのボタンだけで（[`Windows.md`](../../../docs/ui/Windows.md)
+   * 8節）、固定表示にした行は安全域でもステータスエリアの先頭に出続ける（StatusArea.md 3節）。
+   */
+  togglePin(key: string): void {
+    if (!this.pinned.delete(key)) this.pinned.add(key);
+    this.source.onPinned();
+  }
+
+  /**
    * 行動の前後で比べ、増減を控える。beforeは行動を始める前のall()。
    *
    * timePassedは、その操作がゲーム内時間を消費したか。**記号が消えるのは時間が経過してなお値が
@@ -117,17 +126,7 @@ export class ShownStatuses {
       ratioBefore: delta?.ratioBefore,
       midAction: this.source.midAction(),
       pinned: this.pinned.has(status.key),
-      onTogglePin: () => this.togglePin(status.key),
       onOpenDetail: () => this.source.onOpenDetail(status.key),
     };
-  }
-
-  /**
-   * 名前をタップしたときの固定表示の切り替え。固定表示にした行は、安全域でもステータスエリアの
-   * 先頭に出続ける（StatusArea.md）。
-   */
-  private togglePin(key: string): void {
-    if (!this.pinned.delete(key)) this.pinned.add(key);
-    this.source.onPinned();
   }
 }

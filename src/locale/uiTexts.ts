@@ -157,6 +157,7 @@ export const UI_TEXT_NAMES = [
   'log_child_window_opened',
   'log_explored',
   'log_status_detail_opened',
+  'log_status_pin_toggled',
   'log_recipe_window_opened',
   'log_map_opened',
   'log_died',

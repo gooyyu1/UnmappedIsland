@@ -1543,6 +1543,7 @@ ui_texts:
   log_child_window_opened: '子ウィンドウを開いた: {name}'
   log_explored: '探索した: {name}（{clock}）'
   log_status_detail_opened: ステータスの詳細を開いた
+  log_status_pin_toggled: ステータスの固定表示を切り替えた
   log_recipe_window_opened: レシピ一覧を開いた
   log_map_opened: 地図を開いた
   log_died: '死んだ: {cause}（{clock}）'
