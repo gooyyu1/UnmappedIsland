@@ -41,7 +41,7 @@
 本ドキュメントは検討結果であり、確定仕様書ではありません。**くくり罠と檻の 2 つが実装済み**で、
 仕掛ける・待つ・掛かる・怪我が刺さる・死ぬか生き延びる・放置すれば壊れる、までが動きます。**未実装なのは
 1.2 節が挙げる残り 3 つの型**です。檻に大型が掛かるのはその土地が `wild_boar_catch` を宣言してからで
-（3 節）、**森と密林が宣言済みです**——密林の檻はヤケイとイノシシを、森の檻はイノシシだけを捕らえ、
+（3 節）、**森と密林が宣言済みです**——どちらの檻もヤケイとイノシシを捕らえ、
 残りの土地では大型は掛かりません。5 節の `resists`（`HuntingSystem.md` 4 節）は文法としては
 実装済みですが、動物側がまだ宣言していないため、
 掛かった獲物が飛び出さないことは今のところ拘束の宣言だけが支えています。数値はいずれも目安で、tick = 15 分・1 日 = 96 tick を前提とします。未決事項は
@@ -602,8 +602,8 @@ props:
 
 ## 8. 未決事項・今後の検討課題
 
-- **檻に掛かる大型の重み。** 森と密林が `wild_boar_catch: 2` を宣言し、檻には森で 0.24 頭/日<!-- stats: balance.yaml devices place=forest device=pen product=wild_boar per_day -->・
-  密林で 0.13 頭/日<!-- stats: balance.yaml devices place=jungle device=pen product=wild_boar per_day --> のイノシシが掛かります。**探索の `wild_boar_find`（両方 3）より低く置いた**のは、
+- **檻に掛かる大型の重み。** 森と密林が `wild_boar_catch: 2` を宣言し、檻に掛かるイノシシは森で 0.13 頭/日<!-- stats: balance.yaml devices place=forest device=pen product=wild_boar per_day -->・
+  密林で 0.13 頭/日<!-- stats: balance.yaml devices place=jungle device=pen product=wild_boar per_day --> と同じです。**探索の `wild_boar_find`（両方 3）より低く置いた**のは、
   姿を見かけるのと自分から檻へ入るのが別の頻度だからですが（3 節）、この差が 3 対 2 で足りるかは
   実際に回してみるまで分かりません
 - **檻に肉の卓を持たせるか。** 今の檻は草の餌だけを受けます（4.1 節の 2 つの卓のうち片方）。掛かる

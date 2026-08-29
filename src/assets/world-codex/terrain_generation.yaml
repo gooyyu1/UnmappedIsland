@@ -319,6 +319,11 @@ generation_scopes:
     elevation_top_meters: 400
     # カバレッジ保証（TerrainGeneration.md 3.4節・6節）。軸の分布だけでは個数を保証できないため、
     # 「指定軸が最大/最小のサイトへこの型を強制割当する」処理をマッチングの前に行う。
-    # 島には必ず山がひとつある。
+    # 島には必ず山がひとつと、木の茂る土地がひとつある。
     guarantees:
       - {location_type: mountain_peak, count: 1, axis: elevation, pick: max}
+      # 島を出る鎖の入口（繊維・丸太・革・骨）はどれも木の茂る土地にしか無いので、森を1つ置くことが
+      # 「どの島からも出られる」を成り立たせている（docs/diagnostics/IslandEscapeReachStats.md）。
+      # **最も低い内陸のサイトへ置く**——水の集まる低みが茂るのは自然で、湿り気の高い側へ置くと
+      # 密林と場所を奪い合い、密林を持つ島が目に見えて減る。
+      - {location_type: forest, count: 1, axis: elevation, pick: min}
