@@ -2,9 +2,6 @@ import type { ObjectDef } from '../../domain/ObjectDef';
 import type { PassiveDeclaration, PassivePropertyReading, PassiveReader } from '../../domain/PassiveReader';
 import type { WorldCodex } from '../../domain/WorldCodex';
 
-/** 太陽が1周する時の数（`core.yaml`のhourのrange）。 */
-const HOURS_PER_DAY = 24;
-
 /** 手元の細かい作業ができるキャラクタのプロパティと、その段（IlluminationSystem.md 5節・8節）。 */
 const HAND_BRIGHTNESS = 'hand_brightness';
 const HANDWORK_STAGE = 'bright';
@@ -30,8 +27,9 @@ export interface Daybreak {
  * 陽を遮るか（`core.yaml`のweather）も、樹冠と地面の反射（`locations.yaml`）も足さない——出すのは
  * 太陽が昇った・沈んだという位置の話なので、**嵐が来ただけで日が沈んではならない。**
  *
- * **境目の数字も寄与の値も持たない。** しきい値を持つのはキャラクタの `hand_brightness` の段だけ
- * （同8節）、太陽高度の寄与を持つのは `hour` の段の `modify` だけなので、どちらも宣言から読む。
+ * **数字を1つも持たない。** しきい値を持つのはキャラクタの `hand_brightness` の段だけ（同8節）、
+ * 太陽高度の寄与を持つのは `hour` の段の `modify` だけ、1日の長さを持つのは `hour` の値域だけなので、
+ * どれも宣言から読む。
  */
 export class SunlightHours {
   private readonly litHours: ReadonlySet<number>;
@@ -78,9 +76,14 @@ function litHoursOf(codex: WorldCodex, character: ObjectDef): ReadonlySet<number
   if (world === undefined || hourDef === undefined || ambientDef === undefined) return new Set();
   if (threshold === undefined) return new Set();
 
+  // 太陽が1周する時の並びは、時刻そのものの値域が持つ。**上限は含まない**——そこに達した時刻は
+  // その場で繰り上がる（`on_max`）ので、居座る値は下限から上限の手前までになる。
+  const clock = hourDef.range;
+  if (clock === undefined) return new Set();
+
   const deltas = sunDeltasOf(world, words.ambientBrightnessId, words.hourId);
   const lit = new Set<number>();
-  for (let hour = 0; hour < HOURS_PER_DAY; hour++) {
+  for (let hour = clock.min; hour < clock.max; hour++) {
     const stage = hourDef.stageAt(hour);
     const raw =
       ambientDef.initialValueWithoutRoll + (stage === undefined ? 0 : (deltas.get(stage.name) ?? 0));

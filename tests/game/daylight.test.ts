@@ -54,6 +54,52 @@ object_defs:
     tags: [character]
 `;
 
+/** 手元の明るさを見るキャラクタ（上のYAMLのheroと同じ宣言）。 */
+const HERO = `
+  hero:
+    tags: [character]
+    props:
+      hand_brightness:
+        value: 0
+        stages:
+          - {name: pitch_dark}
+          - {name: dim, min: -5}
+          - {name: bright, min: 5}
+`;
+
+/** 1日が8時しかない世界。5時から明るくなるので、明るいのは5・6・7の3つだけになる。 */
+const SHORT_DAY_YAML = `
+object_defs:
+  world:
+    singleton: true
+    props:
+      ambient_brightness:
+        value: 0
+        range: {min: -6, max: 17}
+      hour:
+        value: 0
+        range: {min: 0, max: 8}
+        stages:
+          - {name: night, passives: [{modify: {self: {ambient_brightness: -6}}}]}
+          - {name: day, min: 5, passives: [{modify: {self: {ambient_brightness: 10}}}]}
+${HERO}`;
+
+/** 時刻が値域を持たない世界。1日の長さが決まらないので、太陽の巡りも数えられない。 */
+const NO_CLOCK_RANGE_YAML = `
+object_defs:
+  world:
+    singleton: true
+    props:
+      ambient_brightness:
+        value: 0
+        range: {min: -6, max: 17}
+      hour:
+        value: 0
+        stages:
+          - {name: night, passives: [{modify: {self: {ambient_brightness: -6}}}]}
+          - {name: day, min: 5, passives: [{modify: {self: {ambient_brightness: 10}}}]}
+${HERO}`;
+
 function sunlightHoursOf(yaml: string, character: string): SunlightHours {
   const loader = new WorldCodexYamlLoader();
   loader.load('test.yaml', yaml);
@@ -109,5 +155,15 @@ describe('SunlightHours（太陽の光だけで手元の作業ができる時刻
     const hours = sunlightHoursOf(YAML, 'eyeless');
     expect([...Array(24).keys()].filter((hour) => hours.handworkLitAt(hour))).toEqual([]);
     expect(hours.daybreakBetween({ elapsedDays: 9, hour: 5 }, { elapsedDays: 9, hour: 6 })).toBeUndefined();
+  });
+
+  it('1日の長さは時刻の値域が決める（上限そのものは繰り上がるので含まない）', () => {
+    const hours = sunlightHoursOf(SHORT_DAY_YAML, 'hero');
+    expect([...Array(24).keys()].filter((hour) => hours.handworkLitAt(hour))).toEqual([5, 6, 7]);
+  });
+
+  it('時刻が値域を持たない世界では、どの時刻も明るくない', () => {
+    const hours = sunlightHoursOf(NO_CLOCK_RANGE_YAML, 'hero');
+    expect([...Array(24).keys()].filter((hour) => hours.handworkLitAt(hour))).toEqual([]);
   });
 });
