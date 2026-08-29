@@ -41,8 +41,11 @@ import { externalTickDeltasOn, rangeCyclesOf } from './rangeCycles';
 /**
  * 島を出るのに要るものを名乗るタグ（ContentSkeleton.md 3節の系統12）。**識別子（`raft`・
  * `rawhide_sail`）を直接書かない**——船や帆が増えたときに、この道具が古い世界を測ったまま緑になる。
+ *
+ * 釣りの道具（`fishing_tool`）も船・帆と同じ「島を出るのに要るもの」。航海の食料は積まずに釣って
+ * 賄う（Voyage.md 3.9節）ので、これが島の産物から作れない島は、出航しても餓死する。
  */
-export const ESCAPE_GOAL_TAG_NAMES: readonly string[] = ['boat', 'sail'];
+export const ESCAPE_GOAL_TAG_NAMES: readonly string[] = ['boat', 'sail', 'fishing_tool'];
 
 /** 工程の入力1つ。 */
 export interface NeedInput {

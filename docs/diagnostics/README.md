@@ -103,8 +103,8 @@ PRの段では `npm test` が、`main` へ入った後は
   減らず**使うたびに減る**値（道具の耐久）が尽きるまでの回数。
   読み方は [`DurationStats.md`](./DurationStats.md)。
   生成元: `tests/diagnostics/durationStatsReport.test.ts`（計算は `src/analysis/durations.ts`）
-- [島を出るまでの工程数](../../stats/escape_reach.yaml) — 島を出るのに要るもの（`boat`・`sail` を
-  名乗る型と、そこへ推移的に要求される型）が、島の産物から何工程先にあるか
+- [島を出るまでの工程数](../../stats/escape_reach.yaml) — 島を出るのに要るもの（`boat`・`sail`・
+  `fishing_tool` を名乗る型と、そこへ推移的に要求される型）が、島の産物から何工程先にあるか
   （[`ContentSkeleton.md`](../world/ContentSkeleton.md) 3節の系統12参照）。定義だけから計算した値で、
   鎖が長すぎるかどうかの判定は出さない。
   読み方は [`EscapeReachStats.md`](./EscapeReachStats.md)。
