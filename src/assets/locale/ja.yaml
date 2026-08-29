@@ -1397,3 +1397,5 @@ ui_texts:
   # レシピ一覧（Windows.md 9節）。未解放の理由が宣言されていない場合と、棚に載らないレシピの見出し。
   recipe_locked: まだ作り方が分からない
   recipe_other: その他
+  # 日の出の演出に出る日数の見出し（ScreenLayout.md 7.5.6節）。後ろに生存日数が続く。
+  day: DAY
