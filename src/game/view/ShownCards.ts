@@ -1,9 +1,11 @@
+import type { WorldChange } from '../../domain/WorldChange';
 import type { WorldObject } from '../../domain/WorldObject';
 import type { ObjectCardStack } from './PlayScreenView';
 import type { CardCombination, CardDrop } from './cardOperations';
 import type { CardPlace, CardPlacement, ScreenPlaceResolver } from './cardPlaces';
 import type { CardContent, CardEdgeDirection } from '../ui/Card';
-import { cardFace } from '../ui/cardFace';
+import { borrowedFace, cardFace } from '../ui/cardFace';
+import { foundObjects } from './changedInstances';
 
 /**
  * 札が出ている場所。ワールドのスロット（CardPlace）に、子ウィンドウが借りた1枚の枠を足したもの
@@ -248,9 +250,38 @@ export class ShownCards {
 
   // ---- 探索の発見物（Windows.md 5.1節） ----
 
-  /** 探索で見つかったものを、探索ウィンドウが抱える。抱えている間、その札はどの枠にも並ばない。 */
-  takeFound(cards: readonly CardContent[]): void {
-    this.foundCards = cards;
+  /**
+   * 探索で見つかったものを、探索ウィンドウが抱える（foundObjects）。抱えている間、その札はどの枠にも
+   * 並ばない。
+   *
+   * **何が発見物かを決めるのはここ。** 呼び出し側は探索で起きた世界の変化を渡すだけで、探索の前後で
+   * 並びを見比べる手順を覚えておかなくてよい。
+   */
+  takeFound(changes: readonly WorldChange[]): void {
+    const lanes: readonly CardPlace[] = (['fixtures', 'items', 'hand'] as const).map((screen) =>
+      this.source.places(screen),
+    );
+    this.foundCards = this.facesOfFound(foundObjects(changes, lanes));
+  }
+
+  /**
+   * 見つかった個体を、レーンでの束ごとに1枚の札へ畳む（見た目と、見つかった個体の識別子だけ）。
+   *
+   * **既に在った分は混ぜない**——石の束へ石を見つけたら、枠に出るのは見つかった分だけで、元から
+   * 在った分はレーンに残る（Windows.md 5.1節）。
+   */
+  private facesOfFound(objects: readonly WorldObject[]): readonly CardContent[] {
+    const groups = new Map<number, WorldObject[]>();
+    for (const object of objects) {
+      const head = stackHeadOf(object);
+      const group = groups.get(head);
+      if (group === undefined) groups.set(head, [object]);
+      else group.push(object);
+    }
+    return [...groups.values()].map((group) => {
+      const card = this.source.cardOfObjects(group);
+      return { ...borrowedFace(card), count: card.count };
+    });
   }
 
   /** 抱えている発見物。 */
@@ -402,6 +433,15 @@ export class ShownCards {
     // 手持ちの下は無く、子ウィンドウのカード（装備・怪我・コンテナの中身）の下は手持ち。
     return from === hand ? [] : [hand];
   }
+}
+
+/**
+ * その物が今並んでいる束の代表のID（束に居なければ自分自身）。**同じ札に映る個体をまとめる鍵**
+ * ——見つかった個体が別々の枠に入ったなら、発見物の枠にも別々の札として並ぶ。
+ */
+function stackHeadOf(object: WorldObject): number {
+  const stack = object.parentSlot?.stacks.find((members) => members.includes(object));
+  return stack?.[0].instanceId ?? object.instanceId;
 }
 
 /**

@@ -47,7 +47,7 @@ import { Button } from './ui/Button';
 import { SLOT_BUTTON_PAPER_TEXTURE } from '../art/slotButtonArt';
 import { EDGE_DIRECTIONS } from './ui/Card';
 import type { CardContent, CardEdgeAction } from './ui/Card';
-import { borrowedFace, cardFace } from './ui/cardFace';
+import { borrowedFace } from './ui/cardFace';
 import type { CardDrop, CardDropInfo } from './ui/CardDragController';
 import { CardDragController } from './ui/CardDragController';
 import { CardLane } from './ui/CardLane';
@@ -1340,7 +1340,6 @@ export class PlayScene extends ResponsiveScene {
     if (this.busy) return;
 
     this.returnFound();
-    const shownBefore = this.shownInstanceIds();
     const statusesBefore = this.status.all();
     const startedAt = this.gameSession.world.totalMinutes;
 
@@ -1365,7 +1364,7 @@ export class PlayScene extends ResponsiveScene {
             this.noteStatusChanges(statusesBefore, startedAt);
             break;
           case 'found':
-            this.takeFound(shownBefore);
+            this.takeFound(recorded.changesAtEnd);
             break;
           case 'signals':
             this.showSignals(recorded.signalsAtEnd);
@@ -1385,8 +1384,8 @@ export class PlayScene extends ResponsiveScene {
    * 見つかったものを発見物の枠へ引き取り、それを見せる面へ自分から移る（Windows.md 5節）。
    * 探索は必ず1個以上見つかるので、押した結果がどのタブに出るかを覚えていなくてよい。
    */
-  private takeFound(shownBefore: ReadonlySet<number>): void {
-    this.shown.takeFound(this.foundSince(shownBefore));
+  private takeFound(changes: readonly WorldChange[]): void {
+    this.shown.takeFound(changes);
 
     const exploration = this.shownLocation.window.exploration;
     if (exploration !== undefined) this.childWindow?.setExploration(exploration);
@@ -1399,24 +1398,6 @@ export class PlayScene extends ResponsiveScene {
       ...this.view.cardsIn(this.placeOfScreen('fixtures')),
       ...this.view.cardsIn(this.placeOfScreen('items')),
     ].filter((card): card is ObjectCardStack => card !== undefined);
-  }
-
-  /** 今、設置物レーンとアイテムレーンに出ているインスタンスのID。 */
-  private shownInstanceIds(): ReadonlySet<number> {
-    return new Set(this.locationCards.flatMap((card) => card.identity ?? []));
-  }
-
-  /**
-   * 控えておいた「出ていたもの」に無いカード＝この探索で見つかったもの（アイテムと道）。
-   *
-   * **束のうち新しく現れた個体だけを数える。** 既に持っていた石に見つけた石が合流しても、発見物の
-   * 枠へ借り出すのは見つかった分だけで、元から在った分はレーンに残る。
-   */
-  private foundSince(shownBefore: ReadonlySet<number>): readonly CardContent[] {
-    return this.locationCards.flatMap((card) => {
-      const ids = (card.identity ?? []).filter((id) => !shownBefore.has(id));
-      return ids.length === 0 ? [] : [{ ...cardFace(card), identity: ids, count: ids.length }];
-    });
   }
 
   /** ワールドを変える操作を実行し、経過の控えを取る（runAndRecordChange）。実時間での再生はpassTime。 */
