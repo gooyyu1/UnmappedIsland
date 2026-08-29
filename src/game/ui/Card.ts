@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
-import type { CardFrameColors, CardKind } from '../looks/theme';
+import type { CardFrameColors, CardFrameKind, CardKind } from '../looks/theme';
 import { cssColor } from '../../util/cssColor';
 import { COLOR, FONT_FAMILY, SIZE, cardFrameColors, gaugeColorFor } from '../looks/theme';
 import { drawBox } from '../../ui/shapes';
@@ -303,6 +303,12 @@ export interface CardContent {
   readonly kind?: CardKind;
 
   /**
+   * アーティファクト（`artifact`タグ、ContentSkeleton.md 6節）か。**種別を覆って金の枠になる**
+   * ——アイテムであることは変わらないが、レーンの中で埋没させない（CardView.md 2.2節）。
+   */
+  readonly artifact?: boolean;
+
+  /**
    * そのカードが映しているものが、放っておいてよくない状態にあるか（警戒している動物の`wariness`）。
    * 安全域を外れている間、カードの輪郭が赤く明滅する（CardView.md 3節）。持たないカードは明滅しない。
    */
@@ -357,6 +363,21 @@ export interface CardContent {
    * 幅を持つ数は、割合ではないのでバーでは言えない。持たないカードには何も出ない。
    */
   readonly railText?: string;
+}
+
+/**
+ * その札の枠の分類（CardView.md 2節）。**種別を覆って掛かるもの（青写真・金）が先**で、種別は
+ * どちらでもなかったときに残る。
+ *
+ * 青写真が金より先なのは、作りかけの物はまだアーティファクトではないため——出来上がるまでは
+ * 「まだその物になっていない」ほうが、何になるのかより先に言うべきこと（同10節）。
+ */
+function frameKindOf(content: CardContent): CardFrameKind {
+  return content.inProgress === true
+    ? 'blueprint'
+    : content.artifact === true
+      ? 'artifact'
+      : (content.kind ?? 'item');
 }
 
 /**
@@ -713,8 +734,7 @@ export class Card extends Phaser.GameObjects.Container {
    */
   private applyContent(content: CardContent, showChange: boolean): void {
     this._content = content;
-    // 製作中オブジェクトは種別に関わらず青写真の枠になる（まだその物ではないため）。
-    const colors = cardFrameColors(content.inProgress === true ? 'blueprint' : (content.kind ?? 'item'));
+    const colors = cardFrameColors(frameKindOf(content));
     const bars = this.prepareRailBarsFor(content);
     const rail = railMetrics(
       this.metrics,
@@ -1041,9 +1061,7 @@ export class Card extends Phaser.GameObjects.Container {
       frame.fillRect(paper.x, paper.y + paper.height - rail.height, paper.width, rail.height - side);
     }
 
-    // タイトルの板。窓の上端に乗せ、枠より暗くする（cardFrameColors）。
-    frame.fillStyle(colors.plate, 1);
-    frame.fillRoundedRect(inner.x, inner.y, inner.width, head, { tl: radius, tr: radius, bl: 0, br: 0 });
+    this.drawPlate(colors, inner, head, radius);
 
     frame.lineStyle(line, colors.line, 1);
     frame.lineBetween(inner.x, inner.y + head, inner.x + inner.width, inner.y + head);
@@ -1064,6 +1082,35 @@ export class Card extends Phaser.GameObjects.Container {
     );
 
     if (rail.arrowY !== undefined) this.drawRoadArrow(colors, rail.arrowY);
+  }
+
+  /**
+   * タイトルの板。窓の上端に乗せ、枠より暗くする（cardFrameColors）。**帯を上から順に等分して塗る**
+   * ので、1本なら今までどおりの平らな板、複数なら明暗の縞になる（金の板、CardView.md 2.2節）。
+   * ここは「渡された色を上から塗る」だけで、何本来るのかも何の枠なのかも知らない。
+   *
+   * **各帯は自分の下端までではなく板の下端まで塗り、次の帯が上から重ねて消す。** 角の丸みを持つのは
+   * 板の上端だけなので、こう塗ると丸みを描くのは1本目だけで済む（帯ごとに丸みの有無を場合分けせずに
+   * 済む）。2本目以降が角に掛からないよう、**帯の高さは角の半径（WINDOW_RADIUS）以上**にする
+   * ——板の高さ（FRAME_HEAD）から、帯は5本まで。
+   */
+  private drawPlate(colors: CardFrameColors, inner: Rect, head: number, radius: number): void {
+    const bandHeight = head / colors.plate.length;
+    colors.plate.forEach((band, index) => {
+      this.frame.fillStyle(band, 1);
+      if (index === 0) {
+        this.frame.fillRoundedRect(inner.x, inner.y, inner.width, head, {
+          tl: radius,
+          tr: radius,
+          bl: 0,
+          br: 0,
+        });
+        return;
+      }
+
+      const top = bandHeight * index;
+      this.frame.fillRect(inner.x, inner.y + top, inner.width, head - top);
+    });
   }
 
   /**

@@ -113,6 +113,12 @@ export interface MapRoadView {
  */
 export interface ObjectWindowView {
   /**
+   * 窓が映している1個そのもの。**窓を閉じるかを決めるのはこれ**——それが現在地から見えなくなれば
+   * 窓も畳む（visible、Windows.md 1.1節）ので、札を借りない窓（場所・キャラクタ）でも判定できる。
+   */
+  readonly object: WorldObject;
+
+  /**
    * 説明のタブに出す札。**その物1個ぶん**の姿で、子ウィンドウはこれをそのまま借りて出す
    * （Windows.md 1.1節）。
    */
@@ -225,6 +231,16 @@ export interface PlayScreenView {
    * 今どれを映しているかは画面が持つ（ScreenLayout.md 7.1.1節）。
    */
   readonly nestedLocations: readonly NestedLocationView[];
+
+  /**
+   * その物が**現在地から見えるか**（ScreenLayout.md 7.1.1節）。見えるのは`nestedLocations`のどれかの
+   * 中に在るものなので、筏の中に居れば外側の海区に在るものも見えている——**「現在地の子か」では
+   * 足りない**のはそのため。
+   *
+   * **答えるのは個体ごとで、どのレーンが今どこを映しているかには依らない。** 映す先を切り替えた
+   * だけで見えるものが変われば、切り替えのたびに子ウィンドウが閉じることになる。
+   */
+  readonly visible: (object: WorldObject) => boolean;
 
   /**
    * その物の子ウィンドウ。**物ごとに変わる**ので、値ではなく問い合わせで答える。キャラクタと現在地は
@@ -748,6 +764,7 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
    * どの枠に居るかも要らない——キャラクタも現在地も、押した札が映す物も同じこの1本を通る。
    */
   const windowOf = (object: WorldObject): ObjectWindowView => ({
+    object,
     card: looks.contentOf(object),
     description: locale.object(object.def.name).description,
     actions: operations.actionsOf(object),
@@ -768,10 +785,19 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
     explore: () => new Location(fixtures.owner, codex).explore(game.player.instance),
   }));
 
+  /**
+   * 現在地から見える範囲は、映せる場所（nestedLocations）の中身そのもの。**外側まで数えるので、
+   * 筏の中に居ても外の海区に在るものは見えている。** 置いてきた土地の物は世界には在るが、
+   * どの場所の中にも居ないので落ちる。
+   */
+  const visible = (object: WorldObject): boolean =>
+    nestedLocations.some((nested) => nested.fixtures.owner.containsOrIs(object));
+
   return {
     characterCard: characterWindow.card,
     characterWindow,
     nestedLocations,
+    visible,
     windowOf,
     conditions: situationsOf(game.player.instance),
     statuses: entriesWithTag(game.player.instance, codex.propertyTagNames.tryGetId(STATUS_TAG)),

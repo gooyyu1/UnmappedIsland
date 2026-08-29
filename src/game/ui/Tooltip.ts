@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { COLOR, SIZE } from '../looks/theme';
+import { SCREEN_DEPTH } from '../looks/screenDepth';
 import { drawBox } from '../../ui/shapes';
 import { addLabel } from '../../ui/labels';
 
@@ -39,6 +40,9 @@ export interface TooltipContent {
  * 置き場所は基準にした矩形（掴んでいるカード・押しているボタン）の真上。指はその中心にあるので、
  * 上へ逃がせば隠れない。上に入り切らない場合だけ下へ回す。
  *
+ * **札やボタンより手前に出ることは自分で保つ**（SCREEN_DEPTH.tooltip）。生成順に頼ると、後から
+ * 作られた札やボタンの陰に入るので、作り直す側それぞれが持ち上げ直しを覚えていなければならない。
+ *
  * 中身の作り直しは文言が変わったときだけ行う。ポインタが動くたびにTextを作り直すと、そのたびに
  * テクスチャが焼き直されて重いため。
  */
@@ -57,7 +61,7 @@ export class Tooltip {
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics) {
     this.scene = scene;
     this.metrics = metrics;
-    this.container = scene.add.container(0, 0).setVisible(false);
+    this.container = scene.add.container(0, 0).setVisible(false).setDepth(SCREEN_DEPTH.tooltip);
   }
 
   /** atの矩形を基準に、その上（入らなければ下）へ出す。 */
@@ -87,14 +91,6 @@ export class Tooltip {
   hide(): void {
     this.container.setVisible(false);
     this.shown = undefined;
-  }
-
-  /**
-   * 表示順を最前面へ持ち上げる。吹き出しは基準にした物より手前に出なければならないが、順序は
-   * 生成順で決まるので、基準の側（ボタンなど）を作り直した呼び出し側がこれを呼ぶ。
-   */
-  bringToTop(): void {
-    this.scene.children.bringToTop(this.container);
   }
 
   destroy(): void {
