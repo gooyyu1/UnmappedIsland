@@ -11,7 +11,7 @@
 [`CardView.md`](../ui/CardView.md) です。実際にどんな傷を用意するかは
 `src/assets/world-codex/injuries.yaml` そのものが一覧で、本書は個々の傷を並べません。
 
-**新設した文法はありません。** 怪我は普通のオブジェクトで、キャラクタの `injuries` スロットに入り、
+**新設した文法はありません。** 怪我は普通のオブジェクトで、キャラクタと動物の `injuries` スロットに入り、
 `severity` 1本と `range`/`on_min`（自然治癒と消滅）・`passives` の `modify`（宿主の痛みと荷重）・
 `add`（宿主の血）・`treatment` スロット（治療具を1つ当てる枠）だけで成り立ちます。
 
@@ -23,9 +23,10 @@
 
 ## 1. 契約
 
-怪我は `injury` タグを持ち、キャラクタの `injuries` スロットにしか入りません
-（[`Characters.md`](../world/Characters.md)）。プレイヤーは自分では出し入れできず、付けるのはワールド側の
-効果（アクションの `pick` の失敗候補など）、外すのは怪我自身です。
+怪我は `injury` タグを持ち、キャラクタと動物の `injuries` スロットにしか入りません
+（[`Characters.md`](../world/Characters.md)・[`HuntingSystem.md`](./HuntingSystem.md) 3 節）。プレイヤーは
+自分では出し入れできず、付けるのはワールド側の効果（アクションの `pick` の失敗候補など）、外すのは
+怪我自身です。
 
 | | 内容 |
 | --- | --- |
@@ -33,10 +34,11 @@
 | プロパティ | `severity`（`stages` を持ち、`on_min` に `destroy: self`）。血が流れる傷はさらに `bleeding`（[`VitalsSystem.md`](./VitalsSystem.md) 4 節） |
 | trait | `treatable`（治療具を1つ当てられる。3 節） |
 | `stackable` | `false`（同じ怪我を2つ負っても1つずつ並ぶ。手当ては1つずつ当てるため） |
-| `passives` | `modify` で `parent`（負ったキャラクタ）の `pain` を上げる |
+| `passives` | `modify` で `parent`（宿主）の `pain` を上げる。骨折はさらに `load`（荷重）も上げる（5 節） |
 | 表示 | `ja.yaml` の表示名と説明。絵は**傷そのものだけ**を描く（[`CardView.md`](../ui/CardView.md) 5 節・7 節）——誰の身体かはカードの地が言うので、人と動物で同じ絵を使える |
 
-`item` タグを付けないので `weight` は持ちません（怪我は荷重になりません）。また `bound_to_owner`
+傷そのものに目方はありませんが、`weight` は 0 で宣言します——当てた治療具の重さが宿主の `weight` へ
+渡る口になるためです（[`ContainerSystem.md`](./ContainerSystem.md) 1 節）。また `bound_to_owner`
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 7.9節）なので、負った本人から剥がせません——
 プレイヤーが怪我を出し入れできないのはこの帰結で、画面側の制限ではありません。
 
@@ -83,7 +85,7 @@
 だけが無料になり、同じことが経路で違う値段になります。
 
 - **効き目は当てている間だけ**なので、治療具の側に `passives` として書きます。実体値へ焼き付けると、
-  外したときに戻せません。当てている怪我が `parent`、痛みを持つキャラクタは `ancestor`
+  外したときに戻せません。当てている怪我が `parent`、痛みを持つ宿主は `ancestor`
   （[`GameElementDefinition.md`](./GameElementDefinition.md) 8.6節）。
 - **ただし、傷が押し上げている量を緩めるものは、傷の側が持ちます。** 治療具はタグを名乗るだけで、
   緩んだ後の量は押し上げている傷が書きます（出血のゲートと `hemostatic`、骨折の `load` と
