@@ -241,15 +241,13 @@ export interface DeviceRow extends Device {
   /** その日数の出どころ（尽きると設備が消えるプロパティ）。朽ちないならundefined。 */
   readonly lifetimeProperty: string | undefined;
 
-  /** 設備1つを作るのに要る時間（分）と、産物1個あたりへ按分した時間。 */
+  /**
+   * 設備1つを作るのに要る時間（分）と、産物1個あたりへ按分した時間。**undefinedは「その土地では
+   * 作れない」**——この行が答えるのはその土地を起点にした数字だけで、島のどこかに入手経路が
+   * あるかは答えない（ObjectCost.obtainableWithoutCostがそちらを答える）。
+   */
   readonly buildMinutes: number | undefined;
   readonly laborPerUnit: number | undefined;
-
-  /**
-   * buildMinutesが出ないのが、**設備そのものに値段が付かないから**か。真なら設備は手に入る
-   * （ObjectCost.obtainableWithoutCostと同じ問い）。偽なら島のどこにも入手経路が無い。
-   */
-  readonly obtainableWithoutCost: boolean;
 }
 
 /** 1つの文脈（島全体、または土地1つ）ぶんの結果。 */
@@ -974,7 +972,6 @@ function deviceRows(
           deviceCost === undefined || overLifetime === undefined
             ? undefined
             : totalOf(deviceCost) / overLifetime,
-        obtainableWithoutCost: acquisition.obtainableWithoutCost.has(ref.def.globalId),
       });
     }
   }
@@ -1262,8 +1259,10 @@ class Acquisition {
    * 設備も在って、按分の分母（寿命）だけが無い（「待って得る生産の数え方」）。出どころを辿ると
    * 朽ちない設備の待ち生産に行き着くが、**それを材料に取る工程の産物も同じ**なので、設備が直に
    * 返す型とは限らない。
+   *
+   * **島全体で1つ**（constructor参照）。土地の文脈は同じ集合を見る。
    */
-  readonly obtainableWithoutCost = new Set<number>();
+  readonly obtainableWithoutCost: Set<number>;
 
   /**
    * その型を最も安く手に入れる道筋が、他の土地の産物を含むか。**入手連鎖を伝って残す**——
@@ -1293,10 +1292,14 @@ class Acquisition {
     this.codex = codex;
     this.steps = steps;
     this.islandWide = islandWide;
+    // **手に入るかを判定するのは島全体だけ**（BalanceStats.md「土地ごとの行は可否を判定しない」）。
+    // 土地の文脈が答えるのは「この土地を起点にすると何分か」で、そこで値段が出ないのは作れない
+    // からとは限らない——持ち込めば済む型まで「値段が付かない」と数えることになる。
+    this.obtainableWithoutCost = islandWide?.obtainableWithoutCost ?? new Set();
     for (const ref of steps)
       for (const objectGlobalId of expectedSpawns(ref.step).keys()) this.producedObjects.add(objectGlobalId);
     this.lowerCostsUntilStable();
-    this.collectObtainableWithoutCost();
+    if (islandWide === undefined) this.collectObtainableWithoutCost();
   }
 
   /**

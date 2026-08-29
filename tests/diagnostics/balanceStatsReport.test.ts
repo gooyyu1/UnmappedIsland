@@ -211,7 +211,6 @@ function buildSections(codex: WorldCodex, tables: BalanceTables): readonly YamlR
           lifetime_days: rounded(device.lifetimeDays, 1),
           over_lifetime: rounded(device.overLifetime, 1),
           build_minutes: rounded(device.buildMinutes),
-          obtainable_without_cost: device.obtainableWithoutCost,
           labor_minutes_per_unit: rounded(device.laborPerUnit, 2),
         })),
       ),

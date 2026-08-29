@@ -21,15 +21,16 @@ YAMLとずれます）。
 `capacity_ml`・`day_percent` など）。時間はすべて労働時間で、待ち時間は含みません。
 
 **`null` は「決まらない」ではなく、節ごとに意味が決まっています**——`device_count` と `days` は
-その経路に当てはまらないこと、`build_minutes` と `object_costs.total_minutes` は総コストを出せない
-こと、`devices` の `lifetime_property` と `lifetime_days` は朽ちないことを表します。
+その経路に当てはまらないこと、`build_minutes` は**その土地では作れない**こと、
+`object_costs.total_minutes` は総コストを出せないこと、`devices` の `lifetime_property` と
+`lifetime_days` は朽ちないことを表します。
 
 **「値段が付かない」と「入手経路が無い」は別のことです。** 総コストが出ないのは、島のどこにも
 入手経路が無いからとは限らず、**手に入るが値段を付けられない**（出どころを辿ると朽ちない設備の
 待ち生産に行き着き、按分できない。「待って得る生産の数え方」）こともあります。どちらかを答えるのは
-`obtainable_without_cost`（`object_costs` と `devices`）と `prerequisites` の `object` で、
-`total_minutes: null`・`build_minutes: null`・`minutes: null` は**値段が付かないことしか言って
-いません**。
+`object_costs` の `obtainable_without_cost` と `prerequisites` の `object` で、
+`total_minutes: null`・`minutes: null` は**値段が付かないことしか言っていません**。
+**土地ごとの節（`devices`）はどちらも答えません**——答えるのはその土地を起点にした数字だけです。
 
 | 節 | 中身 |
 | --- | --- |
@@ -246,10 +247,11 @@ YAMLとずれます）。
   **`lifetime_property` が `condition` と別の条件で減るなら、この積は同時には成立しない仮定の
   掛け算になります**——ヤケイの `stay_remaining` は地面に立っている間しか減らないので、囲いの中の
   ヤケイは立ち去らず、地面に立っているヤケイは増えません。
-- **`build_minutes` / `obtainable_without_cost`**: 設備1つを作るまでの労働と、それが出ないときの理由。
-  `object_costs` の同名の鍵と同じ意味で、**`build_minutes: null` は入手経路が無いことではありません**。
-  `object_costs` と別に持つのは、この節が土地ごとの文脈で数えているためで、島全体では値段の付く
-  設備が、その土地では付かないことがあります。
+- **`build_minutes`**: 設備1つを作るまでの労働。**`null` は「その土地では作れない」ことで、
+  入手経路が無いことでも値段が付かないことでもありません**——罠の掛かる動物は土地が決めるので、
+  ヤケイの湧かない土地ではヤケイの行がこれになりますが、島全体では値段が付きます。**この節は
+  可否を判定しません**（連鎖表と同じ、上の「土地ごとの行は可否を判定しない」）。理由まで知りたい
+  ときは `object_costs` のその型の行を見てください。
 - **`labor_minutes_per_unit`**: 製作労働 ÷ 寿命の間に返す数。`chain_routes` に載るのはこの値。
 
 ## 雨で溜まる水（`rain_water`）

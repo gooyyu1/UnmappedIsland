@@ -585,13 +585,13 @@ object_defs:
     });
   });
 
-  it('値段の付かない物から建てた設備は、待ち生産表でも入手経路が無い側へ落ちない', () => {
-    // 「製作」の列がこの真偽を読む。偽なら`入手経路なし`と出るが、この設備は建てられる。
+  it('値段の付かない物から建てた設備も、値段が付かないまま手に入る側になる', () => {
+    // 待ち生産表は「その土地で何分か」しか答えないので、理由を持つのは総コスト表のほう。
     const wholeIsland = tables.places.find((place) => place.name === WHOLE_ISLAND)!;
 
+    expect(costOf('brine_trap')).toMatchObject({ minutes: undefined, obtainableWithoutCost: true });
     expect(wholeIsland.devices.find((device) => device.deviceName === 'brine_trap')).toMatchObject({
       buildMinutes: undefined,
-      obtainableWithoutCost: true,
     });
   });
 });

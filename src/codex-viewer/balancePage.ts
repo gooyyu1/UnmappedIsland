@@ -327,21 +327,16 @@ function prerequisitesHtml(view: CodexView, route: ChainRoute): string {
 }
 
 /**
- * 1つ手に入れるまでの労働。**時間が出ない2つの理由を分ける**——穴（島のどこにも入手経路が無い）と、
- * 手に入るが値段を付けられない（待ち生産に行き着くので按分できない）は別のこと。**この表で総労働を
- * 出す列はすべてここを通す**——前提の列と待ち生産表の「製作」が同じ言い方をしないと、片方だけが
- * 古い読みのまま残る。
+ * 前提1つを手に入れるまでの労働。**時間が出ない2つの理由を分ける**——穴（島のどこにも入手経路が
+ * 無い。isGap）と、手に入るが値段を付けられない（待ち生産に行き着くので按分できない）は別のこと。
  */
-function laborHtml(minutes: number | undefined, obtainableWithoutCost: boolean, suffix = ''): string {
-  if (minutes !== undefined) return `<span class="muted">${formatNumber(minutes)}分${suffix}</span>`;
-  return obtainableWithoutCost
-    ? `<span class="muted">値段が付かない</span>`
-    : `<span class="warn">入手経路なし</span>`;
-}
-
-/** 前提1つを手に入れるまでの労働。穴かどうかは`objectName`が答える（isGap）。 */
 function prerequisiteCostHtml(prerequisite: RoutePrerequisite): string {
-  return laborHtml(prerequisite.minutes, !isGap(prerequisite), prerequisite.imported ? '・他の土地で' : '');
+  if (isGap(prerequisite)) return `<span class="warn">入手経路なし</span>`;
+
+  const { minutes, imported } = prerequisite;
+  return minutes === undefined
+    ? `<span class="muted">値段が付かない</span>`
+    : `<span class="muted">${formatNumber(minutes)}分${imported ? '・他の土地で' : ''}</span>`;
 }
 
 /**
@@ -494,7 +489,11 @@ function devicesHtml(view: CodexView, tables: BalanceTables): string {
           `${escapeHtml(view.propertyLabel(device.deviceName, device.lifetimeProperty))}</a>`,
       device.lifetimeDays === undefined ? '朽ちない' : `${formatNumber(device.lifetimeDays, 1)}日`,
       device.overLifetime === undefined ? '—' : formatNumber(device.overLifetime, 1),
-      laborHtml(device.buildMinutes, device.obtainableWithoutCost),
+      // **この列は可否を答えない。** 出ないのは「この土地では作れない」ことで、島のどこかに
+      // 入手経路があるかは総コスト表（obtainableWithoutCost）が答える。
+      device.buildMinutes === undefined
+        ? '<span class="muted">この土地では作れない</span>'
+        : `${formatNumber(device.buildMinutes)}分`,
       device.laborPerUnit === undefined ? '—' : formatNumber(device.laborPerUnit, 2),
     ]),
   );

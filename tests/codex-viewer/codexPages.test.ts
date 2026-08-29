@@ -482,10 +482,6 @@ const DEVICE_LABELS: ShownFields<DeviceRow> = {
   lifetimeProperty: asIs('出どころ'),
   buildMinutes: asIs('製作'),
   laborPerUnit: asIs('分/個'),
-
-  // 「製作」の列が、値段の出ない設備へ理由を添える（`値段が付かない`か`入手経路なし`か）。
-  // この真偽と製作の列は同じ1つの事実の裏表。
-  obtainableWithoutCost: shows('製作', (unpriced) => (unpriced ? ['値段が付かない'] : [])),
 };
 
 /** `DeviceRow`のフィールドではない列。行がどの場所のものかは`PlaceBalance`が持つ。 */
@@ -670,56 +666,6 @@ object_defs:
         trigger: menu
         duration: {subject: actor, prop: hydration}
         add: {actor: {hydration: 8}}
-
-  # 朽ちない設備（寿命を持たない）。1周期ぶんを按分できないので、産物の塩に値段が付かない。
-  salt_pan:
-    tags: [item]
-    slots:
-      salt: {cell_count: 1, cell: {accept: {tag: item}}, placement: [auto]}
-    recipes:
-      laid:
-        steps:
-          - requires: [{object: fiber, count: 1, consume: true}]
-            duration: 60
-    props:
-      drying_remaining:
-        value: 24
-        range: {min: 0, max: 24}
-        passives:
-          - add: {self: {drying_remaining: -1}}
-        on_min:
-          add: {self: {drying_remaining: 24}}
-          spawn: {object: salt, into: self}
-
-  salt: {tags: [item]}
-
-  # 値段の付かない塩から編む設備。**製作の時間は出ないが建てられる**ので、待ち生産表の「製作」は
-  # 「入手経路なし」ではなく「値段が付かない」と出る（DeviceRow.obtainableWithoutCost）。
-  brine_basket:
-    tags: [item]
-    slots:
-      contents: {cell_count: 1, cell: {accept: {tag: item}}}
-    recipes:
-      woven:
-        steps:
-          - requires: [{object: salt, count: 1, consume: true}]
-            duration: 120
-    props:
-      fill_remaining:
-        value: 16
-        range: {min: 0, max: 16}
-        passives:
-          - add: {self: {fill_remaining: -1}}
-        on_min:
-          add: {self: {fill_remaining: 16}}
-          spawn: {object: gourd, into: self}
-      durability:
-        value: 960
-        range: {min: 0, max: 960}
-        passives:
-          - add: {self: {durability: -1}}
-        on_min:
-          destroy: self
 
   # 入手経路が無い道具。これを要るレシピが「道具が無くて作れないもの」になる（ObjectCost.blockedByTool）。
   flint_blade: {tags: [item, cutting_tool]}
