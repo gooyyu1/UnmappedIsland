@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/DurationStats.md。
 
 meta:
-  - {unit: days, minimum: 1, durations: 67, longest: 30.00, shortest: 1.00, tool_wears: 13}
+  - {unit: days, minimum: 1, durations: 68, longest: 30.00, shortest: 1.00, tool_wears: 13}
 
 durations:
   - {object: world, property: season_remaining, unit: days, days: 30.00, shortest_days: 30.00, repeats: false, destroys: false}
@@ -33,6 +33,7 @@ durations:
   - {object: medic, property: body_fat, unit: days, days: 12.86, shortest_days: 12.86, repeats: false, destroys: false}
   - {object: captain, property: body_fat, unit: days, days: 11.79, shortest_days: 11.79, repeats: false, destroys: false}
   - {object: engineer, property: body_fat, unit: days, days: 10.71, shortest_days: 10.71, repeats: false, destroys: false}
+  - {object: fracture, property: severity, unit: days, days: 10.50, shortest_days: 10.50, repeats: false, destroys: true}
   - {object: snare, property: durability, unit: days, days: 10.00, shortest_days: 0.91, repeats: false, destroys: true}
   - {object: sprained_ankle, property: severity, unit: days, days: 10.00, shortest_days: 10.00, repeats: false, destroys: true}
   - {object: gore_wound, property: severity, unit: days, days: 7.50, shortest_days: 7.50, repeats: false, destroys: true}
