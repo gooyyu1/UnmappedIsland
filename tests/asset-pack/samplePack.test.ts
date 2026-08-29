@@ -60,11 +60,13 @@ describe('サンプルアセットパック', () => {
   it('同梱ぶんへ重ねると、薬が型としても表示文字列としても足される', async () => {
     const loaded = await pack();
 
-    const codex = loadWorldCodex(loaded, new LoadReport());
+    const codex = loadWorldCodex([loaded], new LoadReport());
     expect(codex.objectNames.tryGetId('poison_potion')).toBeDefined();
     expect(codex.objectNames.tryGetId('healing_potion')).toBeDefined();
+    // 型の絵の名前には出所のパックが添う（AssetPack.md 5節）。
+    expect(codex.artNameOf('poison_potion')).toBe('sample-pack:poison_potion');
 
-    const locale = loadLocalization(loaded);
+    const locale = loadLocalization([loaded]);
     expect(locale.object('poison_potion').displayName).toBe('毒薬');
     expect(locale.object('poison_potion').interaction('drink').displayName).toBe('あおる');
   });

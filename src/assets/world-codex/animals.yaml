@@ -711,7 +711,8 @@ object_defs:
     traits: [beast]
     props:
       weight: {value: 60000}
-      # 荷重の上限（33kg）を大きく越えるので、倒しても丸ごとは運べない（Animals.md 5節）。
+      # 通れなくなる線（too_heavyの下限。担ぎ手ごとに22.5〜30kg）を大きく越えるので、倒しても丸ごとは
+      # 運べない（Animals.md 5節）。
       volume: {value: 144000}
       # 1手の配分（合計100、beast trait）。**牙が配分の中で最も太い唯一の動物**で、警戒した時点から
       # 向かってくる。落ち着いている間は藪を割って進むついでに足元の物を壊すだけだが、警戒させれば
@@ -789,7 +790,8 @@ object_defs:
   # 血と内臓・頭・骨の大半で、使い道が無いのでカードにしない（monkey_carcassと同じ規約）。
   #
   # **獲物の大きさは個数が表す**（HuntingSystem.md 1.5節）ので、サルと同じ物が12倍の数だけ出る。
-  # 荷重の上限（33kg）に対して肉だけで20kgあり、一度には持ち帰れない。
+  # 取り分は合わせて26.6kgあり、通れなくなる線（too_heavyの下限。担ぎ手ごとに22.5〜30kg）を越える側は
+  # 一度に持ち帰れない。肉だけの20kgなら4人とも運べるが、全員heavyの段に入る。
   wild_boar_carcass:
     tags: [item, quarry]
     traits: [perishable, spoils_fast]

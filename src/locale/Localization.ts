@@ -1,5 +1,6 @@
 import { parseDocument } from 'yaml';
 import type { AssetPack } from '../asset-pack/AssetPack';
+import { packQualifiedName } from '../asset-pack/packNames';
 import type { YAMLMap } from 'yaml';
 import { asMap, asScalarText, entriesInOrder, tryGetMap, tryGetScalar } from '../loader/yamlMapping';
 import { YamlLoadError } from '../loader/YamlLoadError';
@@ -28,17 +29,20 @@ export function bundledLocaleText(): string {
 }
 
 /**
- * 表示文字列を読む。同梱ぶんに、アセットパックが同じ言語の対応表を持っていれば重ねる
- * （AssetPack.md）。書式の誤りも識別子の重複もYamlLoadErrorのまま呼び出し側へ出す。
+ * 表示文字列を読む。同梱ぶんに、アセットパックが同じ言語の対応表を持っていれば**渡された順に**
+ * 重ねる（AssetPack.md 6.2節）。書式の誤りも識別子の重複もYamlLoadErrorのまま呼び出し側へ出す。
  */
-export function loadLocalization(pack: AssetPack | undefined): Localization {
-  const bundled = parseLocale(LOCALE_FILE, bundledLocaleText());
+export function loadLocalization(packs: readonly AssetPack[]): Localization {
+  let localization = parseLocale(LOCALE_FILE, bundledLocaleText());
 
-  const packText = pack?.localeText(LANGUAGE);
-  if (pack === undefined || packText === undefined) return bundled;
+  for (const pack of packs) {
+    const packText = pack.localeText(LANGUAGE);
+    if (packText === undefined) continue;
 
-  const label = `${pack.name}:${LOCALE_FILE}`;
-  return bundled.mergedWith(parseLocale(label, packText), label);
+    const label = packQualifiedName(pack.name, LOCALE_FILE);
+    localization = localization.mergedWith(parseLocale(label, packText), label);
+  }
+  return localization;
 }
 
 /**

@@ -4,7 +4,7 @@ import type { AssetPack } from './AssetPack';
 import { fetchAssetPack } from './AssetPack';
 
 /**
- * サンプルアセットパックのURL（AssetPack.md）。読めるパックは当面この1つだけ。
+ * サンプルアセットパックのURL（AssetPack.md）。取得元を選ぶ画面がまだ無いので、入るのはこの1つだけ。
  *
  * **ページからの相対で書く。** 公開ビルドは相対ベース（`--base=./`）で、ゲームは`/game/`、
  * ビューアは`/codex/`の下に出る。先頭に`/`を付けるとドメイン直下を見に行って取得できない。
@@ -12,28 +12,49 @@ import { fetchAssetPack } from './AssetPack';
 const SAMPLE_PACK_URL = 'sample-pack.zip';
 
 /**
+ * 入っているアセットパックの並び。**入れる人が並べた順**で、同梱ぶんは常にこれより先
+ * （AssetPack.md 6.2節）。
+ *
+ * **同じ識別子のパックは2つ入れられない**（同3.2節）。出所の表示が一意でなくなり、どちらのパックの
+ * 話なのかが読めなくなる。同じパックの2つの版を並べることもできないのは、版まで含めて識別子が
+ * 1つだから。
+ */
+export class AssetPacks {
+  private readonly packs: AssetPack[] = [];
+
+  get all(): readonly AssetPack[] {
+    return this.packs;
+  }
+
+  get isEmpty(): boolean {
+    return this.packs.length === 0;
+  }
+
+  add(pack: AssetPack): void {
+    if (this.packs.some((other) => other.name === pack.name))
+      throw new Error(`アセットパック '${pack.name}' は既に入っています（同じ識別子は2つ入れられません）。`);
+    this.packs.push(pack);
+  }
+}
+
+/**
  * インストール済みのアセットパック。
  *
- * **起動時に1回だけ入り、以後は変わらない**（AssetPack.md 4節）。絵の在庫表は入った時点で
- * 同梱ぶんと重なるので、以降は「この絵はあるか」を今まで通り在庫表へ聞ける。
+ * **起動時に入り、以後は変わらない**（AssetPack.md 4節）。絵の在庫表は入った時点で同梱ぶんと
+ * 重なるので、以降は「この絵はあるか」を今まで通り在庫表へ聞ける。
  */
-let installed: AssetPack | undefined;
+const installed = new AssetPacks();
 
-/** インストール済みのアセットパック（無ければundefined）。定義YAML・表示文字列はここから読む。 */
-export function installedAssetPack(): AssetPack | undefined {
-  return installed;
+/** インストール済みのアセットパック（並べた順）。定義YAML・表示文字列はここから読む。 */
+export function installedAssetPacks(): readonly AssetPack[] {
+  return installed.all;
 }
 
 /** アセットパックを入れる。絵は在庫表へ重ね、定義と表示文字列は読み込み側が起動時に読む。 */
 function installAssetPack(pack: AssetPack): void {
-  if (installed !== undefined)
-    throw new Error(
-      `アセットパックは1つしか入れられません（識別子 '${installed.name}' のパックが入っています）。`,
-    );
-
+  installed.add(pack);
   installPackObjectArt(pack.objectArt(), pack.name);
   installPackBackgroundArt(pack.backgroundArt(), pack.name);
-  installed = pack;
 }
 
 /**
@@ -53,5 +74,5 @@ export async function installSampleAssetPack(): Promise<void> {
  * 起動時に1回だけ組み立てて以後不変（AssetPack.md 4節）だから。
  */
 export function assetPackInstallMatchesSetting(loadsAssetPack: boolean): boolean {
-  return (installed !== undefined) === loadsAssetPack;
+  return !installed.isEmpty === loadsAssetPack;
 }

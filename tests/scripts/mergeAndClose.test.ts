@@ -37,6 +37,12 @@ interface World {
   readonly lockChanged?: boolean;
   /** 本体に依存が入っているか。既定は入っている。 */
   readonly mainInstalled?: boolean;
+  /** 関門（`needs-user-review.sh`）が出す理由。既定は該当なしで、関門は開いている。 */
+  readonly gate?: readonly string[];
+  /** 関門の終了コード。既定は理由の有無から決まる（あれば 0、無ければ 1）。 */
+  readonly gateStatus?: number;
+  /** `--user-ok` を付けて叩くか。 */
+  readonly userOk?: boolean;
 }
 
 interface Run {
@@ -50,6 +56,10 @@ interface Run {
   readonly installed: boolean;
   /** `git` に渡された引数。 */
   readonly git: string[];
+  /** `gh pr edit` に渡されたラベルの操作。 */
+  readonly labels: string[];
+  /** PRへ書いたコメントの本文。 */
+  readonly comments: string;
 }
 
 function run(world: World): Run {
@@ -86,6 +96,15 @@ if [ "$1" = pr ] && [ "$2" = view ]; then
     mergeable) printf '%s' '${world.mergeable ?? 'MERGEABLE'}' ;;
     state) if [ -e '${dir}/merged' ]; then printf '%s' MERGED; else printf '%s' OPEN; fi ;;
   esac
+  exit 0
+fi
+if [ "$1" = pr ] && [ "$2" = edit ]; then
+  shift 3
+  echo "$*" >> '${dir}/labels'
+  exit 0
+fi
+if [ "$1" = pr ] && [ "$2" = comment ]; then
+  cat "$5" >> '${dir}/comments'
   exit 0
 fi
 if [ "$1" = issue ] && [ "$2" = view ]; then
@@ -125,6 +144,16 @@ exit 0
     writeFileSync(npm, `#!/usr/bin/env bash\necho "$*" >> '${dir}/npm-calls'\n`, 'utf-8');
     chmodSync(npm, 0o755);
 
+    // 関門。理由が1件でもあれば 0（＝該当あり）を返す。`needs-user-review.sh` と同じ約束。
+    const gate = join(work, 'needs-user-review.sh');
+    writeFileSync(
+      gate,
+      `#!/usr/bin/env bash\n${(world.gate ?? []).map((line) => `echo '${line}'`).join('\n')}\nexit ${
+        world.gateStatus ?? ((world.gate ?? []).length > 0 ? 0 : 1)
+      }\n`,
+      'utf-8',
+    );
+
     // 引数は標準入力のJSON。`ccr-meta.sh` と同じ包み（`<other-session>`）を付けて返す。
     const meta = join(work, 'ccr-meta.sh');
     writeFileSync(
@@ -148,9 +177,14 @@ esac
     let status = 0;
     let out = '';
     try {
-      out = execFileSync('bash', [SCRIPT, '1000'], {
+      out = execFileSync('bash', [SCRIPT, '1000', ...(world.userOk === true ? ['--user-ok'] : [])], {
         encoding: 'utf-8',
-        env: { ...process.env, PATH: `${work}${delimiter}${process.env.PATH ?? ''}`, CCR_META: meta },
+        env: {
+          ...process.env,
+          PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
+          CCR_META: meta,
+          NEEDS_USER_REVIEW: gate,
+        },
       });
     } catch (error) {
       const failure = error as { status?: number; stdout?: string };
@@ -167,6 +201,8 @@ esac
       archived: logged('archived'),
       installed: logged('npm-calls').length > 0,
       git: logged('git-calls'),
+      labels: logged('labels'),
+      comments: existsSync(join(work, 'comments')) ? readFileSync(join(work, 'comments'), 'utf-8') : '',
     };
   } finally {
     rmSync(work, { recursive: true, force: true });
@@ -179,6 +215,42 @@ describe('merge-and-close.sh', () => {
 
     expect(result.merged).toBe(false);
     expect(result.status).toBe(1);
+  });
+
+  // 司令塔の判断では越えられない関門。越えるにはユーザーの許可を引いて `--user-ok` で叩き直す。
+  it('関門に掛かったPRはマージせず、判断待ちを付けて理由ごと HELD で返す', () => {
+    const result = run({ gate: ['GRAMMAR src/domain/DeclaredNumber.ts'] });
+
+    expect(result.merged).toBe(false);
+    expect(result.lines).toEqual(['HELD 1000', '    GRAMMAR src/domain/DeclaredNumber.ts']);
+    expect(result.labels).toEqual(['--add-label 判断待ち']);
+    expect(result.status).toBe(1);
+  });
+
+  // 関門は「調べられなかった」ときも該当ありとして閉じる。開いたままにすると、`gh` が転んだ日は
+  // 全部が素通しになる。
+  it('関門が調べられなかったときも止める', () => {
+    const result = run({ gate: ['PR #1000 のファイル一覧を引けなかった'], gateStatus: 2 });
+
+    expect(result.merged).toBe(false);
+    expect(result.lines).toEqual(['HELD 1000', '    PR #1000 のファイル一覧を引けなかった']);
+  });
+
+  it('--user-ok なら、許可を受けたことをPRへ残してからマージする', () => {
+    const result = run({ gate: ['GRAMMAR src/domain/DeclaredNumber.ts'], userOk: true });
+
+    expect(result.merged).toBe(true);
+    expect(result.comments).toContain('GRAMMAR src/domain/DeclaredNumber.ts');
+    expect(result.labels).toEqual(['--remove-label 判断待ち']);
+    expect(result.status).toBe(0);
+  });
+
+  it('関門に掛からないPRは、--user-ok を付けなくてもコメントを残さずマージする', () => {
+    const result = run({});
+
+    expect(result.merged).toBe(true);
+    expect(result.comments).toBe('');
+    expect(result.labels).toEqual([]);
   });
 
   it('マージして、Closes の issue が閉じたことと、PRを出したセッションを畳んだことを出す', () => {

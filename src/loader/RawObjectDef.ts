@@ -1,4 +1,5 @@
 import type { YAMLMap } from 'yaml';
+import { packQualifiedName } from '../asset-pack/packNames';
 import { asMap, entriesInOrder, requireScalar, tryGetBool, tryGetMap, tryGetSeq } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { withYamlContext } from './parseCommon';
@@ -37,6 +38,12 @@ export class RawObjectDef {
   /** 読み込み元。重複エラーメッセージの出所表示にのみ使う。 */
   readonly source: string;
 
+  /**
+   * この宣言を持ち込んだアセットパックの識別子（同梱ぶんならundefined）。**絵の出所を決める**
+   * ——この型の絵は、まずこのパックの在庫表から探す（AssetPack.md 5節、artName参照）。
+   */
+  readonly packName: string | undefined;
+
   /** objectNames.internによるグローバルID。trait解決を待たずパース時点で確定する。 */
   readonly globalId: number;
 
@@ -62,12 +69,23 @@ export class RawObjectDef {
    */
   variationAxes: YAMLMap | undefined;
 
-  constructor(name: string, source: string, globalId: number, node: YAMLMap) {
+  constructor(name: string, source: string, globalId: number, node: YAMLMap, packName?: string) {
     this.name = name;
     this.source = source;
+    this.packName = packName;
     this.globalId = globalId;
     this.node = node;
     this.readFields();
+  }
+
+  /**
+   * この型が名乗る絵の名前（`art`、4.3節。宣言が無ければ識別子そのもの）。パックの型には出所の
+   * パックを添える（AssetPack.md 5節）——引く側はこれ1本で、そのパックの絵を先に見て、無ければ
+   * 同梱ぶんへ落ちる（objectArt）。
+   */
+  private artName(declared: string | undefined): string | undefined {
+    if (this.packName === undefined) return declared;
+    return packQualifiedName(this.packName, declared ?? this.name);
   }
 
   /** 宣言から各フィールドを取り直す。trait合成がまだ起こりうるものは生YAMLノードのまま持つ。 */
@@ -207,7 +225,7 @@ export class RawObjectDef {
           merged.boundToOwner,
           !merged.notStackable,
           parseRecipes(loader, this.name, this.recipes),
-          merged.art,
+          this.artName(merged.art),
           artByStagePropertyGlobalId,
           visibleSlotGlobalIds,
           merged.isStorage,

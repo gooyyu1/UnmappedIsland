@@ -60,6 +60,28 @@ object_defs:
           - add: {self: {severity: -1}}
         on_min: {destroy: self}
 
+  # 折れ方を生成時に1回ロールする傷（6.2節）。軽く出れば5日、重く出れば10日残る。
+  sprain:
+    tags: [injury]
+    props:
+      severity:
+        value: {min: 480, max: 960}
+        range: {min: 0, max: 960}
+        passives:
+          - add: {self: {severity: -1}}
+        on_min: {destroy: self}
+
+  # 上端へ育つ値をロールする物。高く出るほど早く届くので、長いのは下端に出た場合。
+  seedling:
+    tags: [item]
+    props:
+      growth:
+        value: {min: 0, max: 480}
+        range: {min: 0, max: 960}
+        passives:
+          - add: {self: {growth: 1}}
+        on_max: {destroy: self}
+
   # 2.5日で腐る食べ物。濡れている間だけ倍の速さで傷む（条件つきの増減）。
   berry:
     tags: [item]
@@ -140,6 +162,8 @@ object_defs:
       ['salted_fish', 20],
       ['bruise', 10],
       ['salted_plum', 10],
+      ['seedling', 5],
+      ['sprain', 5],
       ['berry', 2.5],
       ['fish', 2.5],
     ]);
@@ -148,6 +172,23 @@ object_defs:
   it('条件つきの増減が全部重なった場合の長さも持つ', () => {
     const berry = durationsOf(codex).find((duration) => duration.objectName === 'berry');
     expect(berry).toMatchObject({ days: 2.5, shortestDays: 1.25, destroysSelf: true, repeats: false });
+  });
+
+  it('生成時のロールの幅は、条件つきの幅と別の列で出る', () => {
+    const found = (name: string) => durationsOf(codex).find((duration) => duration.objectName === name);
+
+    // ロールだけを持つ物。条件つきは1通りなので幅は出ず、長さの幅はロールだけから出る。
+    expect(found('sprain')).toMatchObject({ days: 5, shortestDays: 5, longestDays: 10 });
+
+    // 条件つきだけを持つ物。ロールの列は畳まれずにdaysと等しいままになる。
+    expect(found('berry')).toMatchObject({ days: 2.5, shortestDays: 1.25, longestDays: 2.5 });
+  });
+
+  it('上端へ向かう値では、ロールが高く出たほうが短い', () => {
+    // 長さは端までの距離で決まるので、ロールのどちらの端が遠いかは向かう端で裏返る。宣言の下端を
+    // 一律に基準とすると、ここでは幅の上端がdaysに入り、育ちかけで生まれた株の5日が落ちる。
+    const seedling = durationsOf(codex).find((duration) => duration.objectName === 'seedling');
+    expect(seedling).toMatchObject({ days: 5, shortestDays: 5, longestDays: 10 });
   });
 
   it('1日に満たない長さは数えない', () => {

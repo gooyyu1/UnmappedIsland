@@ -1,6 +1,6 @@
 import type { WorldCodex } from '../domain/WorldCodex';
 import { BACKGROUND_ART, backgroundTexturesOf } from './backgroundArt';
-import { ART_BY_NAME, objectTexture } from './objectArt';
+import { ART_BY_NAME, artUrl, objectTexture } from './objectArt';
 
 /**
  * 土地の絵の遅延ロードの単位分け。
@@ -26,7 +26,7 @@ export interface ArtFile {
  */
 export function locationCardArtFiles(codex: WorldCodex, location: string): readonly ArtFile[] {
   const artName = codex.artNameOf(location);
-  const url = ART_BY_NAME.get(artName);
+  const url = artUrl(artName);
   return url === undefined ? [] : [{ key: objectTexture(artName), url }];
 }
 
