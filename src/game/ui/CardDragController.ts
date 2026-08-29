@@ -227,7 +227,8 @@ export class CardDragController {
     gesture.card.cancelTap();
 
     // 作る順がそのまま重なりの順になる。ふちの光もどこへ落ちるかの枠もレーンのカードの装飾なので
-    // 運んでいる札より奥（指が運んでいるカードは常に見えている必要がある）、説明だけが手前。
+    // 運んでいる札より奥（指が運んでいるカードは常に見えている必要がある）。説明が手前に出ることは
+    // 吹き出しが自分で保つ（Tooltip）。
     this.showAcceptingCards(gesture);
     gesture.indicator = this.scene.add.graphics();
     gesture.carried = this.handlers.grab(gesture.card, () => gesture.lane.cellRect(gesture.index));

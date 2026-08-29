@@ -253,7 +253,6 @@ export class ObjectWindow {
     }));
     this.addActions(options.actions);
 
-    // 吹き出しはボタンより後に作る（表示順は生成順で決まるため、ボタンの上に出す必要がある）。
     this.tooltip = new Tooltip(scene, metrics);
 
     // 最初のタブは呼び出し側が決める（プログラムの指定＞記憶＞説明、Windows.md 1.2節）。
@@ -425,8 +424,6 @@ export class ObjectWindow {
     for (const object of this.actionObjects) object.destroy();
     this.actionObjects = [];
     this.addActions(actions);
-    // 作り直したボタンは吹き出しより後に生まれた＝手前にいるので、吹き出しを持ち上げ直す。
-    this.tooltip.bringToTop();
   }
 
   /**

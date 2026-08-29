@@ -1068,8 +1068,9 @@ export class PlayScene extends ResponsiveScene {
   /**
    * そのインスタンスを今映しているカードの枠。どのレーンにも出ていなければundefined。
    *
-   * 現在地だけはレーンに並ぶカードを持たない（設置物レーンのピン留めの枠）ので、そこで答える。
-   * 探索で見つかった物が現在地から飛んでくるのはこの1行による。
+   * 設置物レーンが映している場所だけはレーンに並ぶカードを持たない（ピン留めの枠）ので、そこで
+   * 答える。**映しているのは現在地とは限らない**（外側の段を映していればそちら、shownLocation）。
+   * 探索で見つかった物がその場所から飛んでくるのも、子ウィンドウへ札が移るのもこの1行による。
    */
   private rectOfInstance(instanceId: number): Rect | undefined {
     for (const lane of this.openLanes) {
@@ -1077,7 +1078,7 @@ export class PlayScene extends ResponsiveScene {
       if (shown !== undefined) return shown.rect;
     }
 
-    return this.gameSession.player.location?.instance.instanceId === instanceId
+    return this.shownLocation.window.card.identity?.includes(instanceId) === true
       ? this.fixtureLane.pinnedRect
       : undefined;
   }
@@ -1350,13 +1351,17 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 設置物レーンが映している場所そのものを映す子ウィンドウ（探索できない場所の札を押したとき）。
+   * 設置物レーンが映している場所そのものを映す子ウィンドウ（ピン留めの札を押したとき）。
    *
-   * **場所の札は借りない。** ピン留めの札は設置物レーンに固定された枠で、他の札のように並びから
-   * 抜けて戻る先が無い（キャラクタの窓をスロットのタブから開くのと同じ扱い）。
+   * **出どころを渡すのはここ。** ピン留めの札はレーンの並びに居ないので、差し替えは「直前に居た枠」
+   * として憶えていない（cardMotionPlan.resolve）——渡さないと、札は飛ばずにウィンドウの中に現れる。
    */
   private openLocationWindow(): void {
-    const origins = this.closeChildWindowReturningOrigins();
+    const origins = new Map(this.closeChildWindowReturningOrigins());
+    for (const id of this.shownLocation.window.card.identity ?? []) {
+      const rect = this.rectOfInstance(id);
+      if (rect !== undefined) origins.set(id, rect);
+    }
     this.openChildWindow(this.shownLocation.window, origins);
   }
 
