@@ -141,6 +141,14 @@ function screen(
   });
 }
 
+/**
+ * 挙げた個体だけに当たる絞り込み。**何が当たるかはここでは問わない**——タグの張り方から誰が残るかは
+ * CardFilter自身の試験（tests/world-codex/cardFiltersYaml.test.ts）が同梱の定義で見るので、ここで
+ * 見るのは「どのレーンに効くか」だけ。
+ */
+const filterMatching = (ids: readonly number[]): CardFilter =>
+  ({ matches: (object: WorldObject) => ids.includes(object.instanceId) }) as CardFilter;
+
 /** 束の先頭1個を子ウィンドウへ借りる（開くときの経路そのもの）。 */
 function borrow(shown: ShownCards, borrowed: ObjectCardStack): ObjectCardStack {
   const first = shown.firstOf(borrowed);
@@ -218,6 +226,40 @@ describe('画面に出ている札', () => {
       borrowed.objects.map((entry) => entry.instanceId),
       'ウィンドウへ移るのは先頭の1枚だけ',
     ).toEqual([1]);
+  });
+});
+
+describe('絞り込み（ScreenLayout.md 8.1.6節）', () => {
+  it('当たらない札は、設置物レーンとアイテムレーンから消える', () => {
+    const shown = screen(
+      {
+        fixtures: [stack(place('fixtures'), [1]), stack(place('fixtures'), [2])],
+        items: [stack(place('items'), [3]), stack(place('items'), [4])],
+      },
+      { filter: filterMatching([1, 3]) },
+    );
+
+    expect(shown.stacksAt(place('fixtures')).map((entry) => entry?.name)).toEqual(['#1']);
+    expect(shown.stacksAt(place('items')).map((entry) => entry?.name)).toEqual(['#3']);
+  });
+
+  it('手持ちは絞り込まない', () => {
+    // 手持ちは枠数が決まっていて左へ詰まっているので、隠しても短くならない。
+    const shown = screen(
+      { hand: [stack(place('hand'), [1]), stack(place('hand'), [2])] },
+      { filter: filterMatching([1]) },
+    );
+
+    expect(shown.stacksAt(place('hand')).map((entry) => entry?.name)).toEqual(['#1', '#2']);
+  });
+
+  it('子ウィンドウが出している札は絞り込まない', () => {
+    // 窓が映しているのは押した札そのもので、絞ると開けた意味が消える。
+    const shown = screen({ items: [stack(place('items'), [1])] }, { filter: filterMatching([]) });
+    const borrowed = borrow(shown, stack(place('items'), [1]));
+
+    expect(shown.stacksAt('windowCard'), '借りた1枚の枠').toEqual([borrowed]);
+    expect(shown.stacksAt(place('items')), '絞り込みが効くのは元のレーンのほう').toEqual([]);
   });
 });
 
