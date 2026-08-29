@@ -578,7 +578,7 @@ const SUPPLY_LABELS: ShownFields<SupplyRow> = {
   elapsedMinutes: shows('周期', (minutes, row) => (minutes === row.laborMinutes ? [] : [minutes])),
 
   spawns: shows('期待産出', (spawns) => spawns.flatMap(({ name, amount }) => [name, amount])),
-  actorDeltas: shows('値の増減', (deltas) => deltas.flatMap(({ name, amount }) => [name, amount])),
+  agentDeltas: shows('値の増減', (deltas) => deltas.flatMap(({ name, amount }) => [name, amount])),
   selfDeltas: shows('値の増減', (deltas) => deltas.flatMap(({ name, amount }) => [name, amount])),
 };
 
