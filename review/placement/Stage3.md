@@ -18,16 +18,16 @@
 「同じ id を2回渡す」10箇所は、組に名前が無いことの直接の帰結——
 
 ```ts
-owner.resolveEffectTargetOrAncestor(this.target, this.propertyGlobalId, actor, dragged)
+owner.resolveEffectTargetOrAncestor(this.target, this.propertyGlobalId, agent, instrument)
   ?.tryGetProperty(this.propertyGlobalId)
 ```
 
 `propertyGlobalId` が2回現れるのは、1回目が「どの祖先か」を決めるため、2回目が「何を読むか」を
 決めるためで、**同じものだと言う手立てが無い**から両方に渡している。
 
-**欠落2: `self`/`actor`/`dragged` の3つ組に名前が無い。**
+**欠落2: `self`/`agent`/`instrument` の3つ組に名前が無い。**
 
-`resolveReferenceRoot(root, self, actor, dragged)` を呼ぶ側は、`(root) => WorldObject | undefined` の
+`resolveReferenceRoot(root, self, agent, instrument)` を呼ぶ側は、`(root) => WorldObject | undefined` の
 クロージャを毎回その場で作っている（`InteractionDef` L98・`PassiveEffect` L60・`ConditionNode` の
 `resolveRoot` 引数）。**作られているクロージャは全部この3つ組そのもの**で、それ以外の中身は1つも無い。
 CLAUDE.md の「プログラミング上の都合だけで存在するオブジェクト」に当たる。
@@ -38,13 +38,13 @@ CLAUDE.md の「プログラミング上の都合だけで存在するオブジ�
 **H-3 が同じ設計に入る理由。** H-3 は「どの文脈でどの root が解決先を持つか」で、ロード時の話に見える。
 だが実行時と**必ず一致していなければならない**。例えば `PASSIVE_CONDITION_ROOTS` が
 `{self, parent, ancestor}` であることと、`PassiveEffect` L60 が `(slotBearer, undefined, undefined)` を
-渡す（＝actor/dragged が解決先を持たない）ことは同じ事実で、今は別ファイルに無関係に書かれている。
+渡す（＝agent/instrument が解決先を持たない）ことは同じ事実で、今は別ファイルに無関係に書かれている。
 片方だけ変えても何も壊れない。**この一致こそが持ち場を1つにすべきもの**で、H-10・H-11 と同じ
 「参照の文脈」という1つの概念に属する。
 
 なお `parseSubjectRoot` は既に `allowedRoots` を受け取る統一の口を持っているが、**使っているのは
 conditions だけ**。activeの対象・spawn.into・passiveのtarget はそれぞれ独自の switch を持ち、
-そちらは「なぜ使えないか」を文言で持っている（`'dragged'` は combinations の中だけ、`'child'` は
+そちらは「なぜ使えないか」を文言で持っている（`'instrument'` は combinations の中だけ、`'child'` は
 一度きりの命令では「どの子か」が決まらない、等）。単純な allowlist へ畳むとこの理由が消える。
 **理由は捨てずに、文脈と root の組に対して持たせる**必要がある。
 
@@ -112,7 +112,7 @@ resolver を要するものはほとんど無い:
 `src/domain/ReferenceRoot.ts` を中心に、`ActiveEffect` `ConditionNode` `PassiveEffect` `WeightSpec`
 `InteractionDef` `WorldObject` ＋ `loader/parseConditions` `parseActiveEffects` `parsePassives`。
 
-1. `(self, actor, dragged)` の3つ組に型を与え、クロージャの生成を全て畳む。
+1. `(self, agent, instrument)` の3つ組に型を与え、クロージャの生成を全て畳む。
 2. `PropertyPath` に解決の口を持たせる（`ancestor` を含む）。`WorldObject` の
    `resolveEffectTargetOrAncestor` はここへ移る。
 3. `SetEffect` `AddEffect` `TransferEffect` `PassiveEffect` のばらけた2フィールドを
@@ -150,8 +150,8 @@ resolver を要するものはほとんど無い:
 
 **着手前の前提のうち2つが、コードで確かめると崩れた。**
 
-- H-3 の「文脈ごとの許可」は、**一覧ではなく導出**で表せた。場所が持つもの（self・actor・
-  dragged・プロパティ名・相手が複数でよいか）を宣言し、rootの側が要るものを言うだけで、
+- H-3 の「文脈ごとの許可」は、**一覧ではなく導出**で表せた。場所が持つもの（self・agent・
+  instrument・プロパティ名・相手が複数でよいか）を宣言し、rootの側が要るものを言うだけで、
   既存10文脈のうち8つの許可集合が完全に一致した。
 - 残る2つ（rangeイベントの `selfOnly`、`move` の `subject` から `parent` を外していたこと）は
   「解決できない」ではなく「まだ受けていない」だった。**`move` の方はコメントの誤り**——
@@ -626,7 +626,7 @@ interactions:
 
 ### 実行時のクラスは分けたまま
 
-`Action` / `Combination`（`Interaction` の具象）は残した。`Combination` は dragged が必ず居ることを
+`Action` / `Combination`（`Interaction` の具象）は残した。`Combination` は instrument が必ず居ることを
 型引数で保証していて、統合すると「居るかもしれない」を実行時に見る形へ戻る。
 
 ### 残した宿題: `ActionDef` / `CombinationDef` という名前

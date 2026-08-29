@@ -58,7 +58,7 @@ object_defs:
       quench:
         trigger: {drag: {object: coconut_water}}
         duration: 5
-        destroy: [self, dragged]
+        destroy: [self, instrument]
         spawn:
           - {object: stone}
           - {object: warm_water}
@@ -79,7 +79,7 @@ object_defs:
         trigger: menu
         duration: 5
         destroy: self
-        add: {actor: {hydration: 96}}
+        add: {agent: {hydration: 96}}
 
   warm_water:
     tags: [item]
@@ -88,7 +88,7 @@ object_defs:
         trigger: menu
         duration: 5
         destroy: self
-        add: {actor: {hydration: 96}}
+        add: {agent: {hydration: 96}}
 `;
 
   const tables = buildBalanceTables(
@@ -190,7 +190,7 @@ object_defs:
       net_water:
         trigger: menu
         duration: 5
-        spawn: {object: gourd, into: actor}
+        spawn: {object: gourd, into: agent}
 
   # 海区に湧く土地。sea タグは持たない。
   offshore_islet:
@@ -210,7 +210,7 @@ object_defs:
         trigger: menu
         duration: 5
         destroy: self
-        add: {actor: {hydration: 96}}
+        add: {agent: {hydration: 96}}
 `;
 
   const tables = buildBalanceTables(
@@ -466,7 +466,7 @@ object_defs:
         trigger: menu
         duration: 5
         destroy: self
-        add: {actor: {hydration: 96}}
+        add: {agent: {hydration: 96}}
 
   # 塩を**材料**に取る工程。産物にも値段は付かないが、手に入らないわけではない。
   clay:
@@ -475,7 +475,7 @@ object_defs:
       knead:
         trigger: {drag: {object: salt}}
         duration: 10
-        destroy: [self, dragged]
+        destroy: [self, instrument]
         spawn: {object: salt_brick}
 
   salt_brick:
@@ -535,7 +535,7 @@ object_defs:
         trigger: menu
         duration: 5
         destroy: self
-        add: {actor: {hydration: 96}}
+        add: {agent: {hydration: 96}}
 `;
 
   const tables = buildBalanceTables(

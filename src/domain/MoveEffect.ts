@@ -6,7 +6,7 @@ import type { ReferenceContext } from './ReferenceRoot';
 /**
  * move の1命令。既に世界に存在するオブジェクト（subject）を、移動先のオブジェクトの中へ移動する。
  *
- * YAML: `move: {subject: actor, to_prop: destination_id}` / `move: {subject_prop: smash_target, to: self}`
+ * YAML: `move: {subject: agent, to_prop: destination_id}` / `move: {subject_prop: smash_target, to: self}`
  * （transfer と同じフラットフィールド規約）。動かす物も行き先も同じ指し方（ObjectRef）で、
  * 定義時点で決まっている相手（対象キー）と実行時に確定する個体（プロパティ）の二択になる。
  *

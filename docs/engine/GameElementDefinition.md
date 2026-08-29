@@ -26,8 +26,8 @@
 
 **次の 3 つは実装より先行しています**（実装と他の文書はまだ追いついていません）。
 
-- **操作の関係**（11.5 節）と役の名前（`agent`・`instrument`・`patient`）。今の名前は `actor`・`dragged` で、
-  `patient` にあたる役の名前はありません。
+- **操作の関係**（11.5 節）。役の名前は `agent`・`instrument` まで実装が追いついていて、`patient` にあたる
+  役の名前はまだありません。
 - **`base`・`modify` から役を指せること**（6.5 節・8.1 節）。
 - **`weight`・`duration` から積を落としたこと**（10.2 節・11.3 節）。**`times:` は実装・スキーマ・実データに
   まだ在ります**（`src/loader/parseActiveEffects.ts`・`docs/engine/WorldCodex.schema.json`・

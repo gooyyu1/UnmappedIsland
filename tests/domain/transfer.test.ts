@@ -44,21 +44,21 @@ object_defs:
         transfer:
           amount: 2000
           from_prop: water_amount
-          to: actor
+          to: agent
           to_prop: hydration
 `;
     const codex = load(yaml);
     const waterId = codex.propertyNames.getId('water_amount');
     const hydrationId = codex.propertyNames.getId('hydration');
 
-    const actor = spawn(codex, 'player');
+    const agent = spawn(codex, 'player');
     const canteen = spawn(codex, 'canteen');
 
-    const executed = canteen.tryGetAction('drink', actor)?.tryExecute() === true;
+    const executed = canteen.tryGetAction('drink', agent)?.tryExecute() === true;
 
     expect(executed).toBe(true);
     expect(canteen.tryGetProperty(waterId)?.number ?? 0, 'amount(2000)だけ減る').toBe(3000);
-    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, 'amount(2000)だけ増える').toBe(2000);
+    expect(agent.tryGetProperty(hydrationId)?.number ?? 0, 'amount(2000)だけ増える').toBe(2000);
   });
 
   it('sourceの在庫がamount未満なら在庫分だけにクランプされる', () => {
@@ -80,20 +80,20 @@ object_defs:
         transfer:
           amount: 2000
           from_prop: water_amount
-          to: actor
+          to: agent
           to_prop: hydration
 `;
     const codex = load(yaml);
     const waterId = codex.propertyNames.getId('water_amount');
     const hydrationId = codex.propertyNames.getId('hydration');
 
-    const actor = spawn(codex, 'player2');
+    const agent = spawn(codex, 'player2');
     const canteen = spawn(codex, 'canteen2');
 
-    canteen.tryGetAction('drink', actor)?.tryExecute();
+    canteen.tryGetAction('drink', agent)?.tryExecute();
 
     expect(canteen.tryGetProperty(waterId)?.number ?? 0, '容器に実際に入っていた分(500)しか出せない').toBe(0);
-    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '実際に出せた分(500)しか回復しない').toBe(500);
+    expect(agent.tryGetProperty(hydrationId)?.number ?? 0, '実際に出せた分(500)しか回復しない').toBe(500);
   });
 
   it('transferの配列で1回のアクションから複数の移送が適用される', () => {
@@ -121,11 +121,11 @@ object_defs:
         transfer:
           - amount: 2000
             from_prop: water_amount
-            to: actor
+            to: agent
             to_prop: hydration
           - amount: 1000
             from_prop: juice_amount
-            to: actor
+            to: agent
             to_prop: vitamin
 `;
     const codex = load(yaml);
@@ -134,16 +134,16 @@ object_defs:
     const hydrationId = codex.propertyNames.getId('hydration');
     const vitaminId = codex.propertyNames.getId('vitamin');
 
-    const actor = spawn(codex, 'player_multi');
+    const agent = spawn(codex, 'player_multi');
     const canteen = spawn(codex, 'canteen_multi');
 
-    const executed = canteen.tryGetAction('drink', actor)?.tryExecute() === true;
+    const executed = canteen.tryGetAction('drink', agent)?.tryExecute() === true;
 
     expect(executed).toBe(true);
     expect(canteen.tryGetProperty(waterId)?.number ?? 0).toBe(3000);
     expect(canteen.tryGetProperty(juiceId)?.number ?? 0).toBe(2000);
-    expect(actor.tryGetProperty(hydrationId)?.number ?? 0).toBe(2000);
-    expect(actor.tryGetProperty(vitaminId)?.number ?? 0).toBe(1000);
+    expect(agent.tryGetProperty(hydrationId)?.number ?? 0).toBe(2000);
+    expect(agent.tryGetProperty(vitaminId)?.number ?? 0).toBe(1000);
   });
 
   it('allow_overflowがfalseなら移送先の残容量にクランプされ、残りはsourceに残る', () => {
@@ -165,19 +165,19 @@ object_defs:
         transfer:
           amount: 2000
           from_prop: water_amount
-          to: actor
+          to: agent
           to_prop: hydration
 `;
     const codex = load(yaml);
     const waterId = codex.propertyNames.getId('water_amount');
     const hydrationId = codex.propertyNames.getId('hydration');
 
-    const actor = spawn(codex, 'player3');
+    const agent = spawn(codex, 'player3');
     const canteen = spawn(codex, 'canteen3');
 
-    canteen.tryGetAction('drink', actor)?.tryExecute();
+    canteen.tryGetAction('drink', agent)?.tryExecute();
 
-    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '残容量(100)分しか回復しない').toBe(28800);
+    expect(agent.tryGetProperty(hydrationId)?.number ?? 0, '残容量(100)分しか回復しない').toBe(28800);
     expect(
       canteen.tryGetProperty(waterId)?.number ?? 0,
       '収まらない分(1900)は容器に残る(水を無駄にしない)',
@@ -203,7 +203,7 @@ object_defs:
         transfer:
           amount: 2000
           from_prop: water_amount
-          to: actor
+          to: agent
           to_prop: hydration
           allow_overflow: true
 `;
@@ -211,16 +211,16 @@ object_defs:
     const waterId = codex.propertyNames.getId('water_amount');
     const hydrationId = codex.propertyNames.getId('hydration');
 
-    const actor = spawn(codex, 'player4');
+    const agent = spawn(codex, 'player4');
     const canteen = spawn(codex, 'canteen4');
 
-    canteen.tryGetAction('drink', actor)?.tryExecute();
+    canteen.tryGetAction('drink', agent)?.tryExecute();
 
     expect(canteen.tryGetProperty(waterId)?.number ?? 0, 'toの残容量を見ずにamount(2000)そのまま出す').toBe(
       3000,
     );
     expect(
-      actor.tryGetProperty(hydrationId)?.number ?? 0,
+      agent.tryGetProperty(hydrationId)?.number ?? 0,
       'range超過分はtoのon_max既定動作(range.maxへクランプ)で失われる(あふれた分は無駄になる)',
     ).toBe(28800);
   });
@@ -279,10 +279,10 @@ object_defs:
         transfer:
           amount: 1200
           from_prop: tea_amount
-          to: actor
+          to: agent
           to_prop: hydration
           linked_add:
-            actor:
+            agent:
               wakefulness: 200
 `;
     const codex = load(yaml);
@@ -290,14 +290,14 @@ object_defs:
     const hydrationId = codex.propertyNames.getId('hydration');
     const wakefulnessId = codex.propertyNames.getId('wakefulness');
 
-    const actor = spawn(codex, 'player5');
+    const agent = spawn(codex, 'player5');
     const canteen = spawn(codex, 'canteen5');
 
-    canteen.tryGetAction('drink', actor)?.tryExecute();
+    canteen.tryGetAction('drink', agent)?.tryExecute();
 
-    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, 'amount(1200)分を全量移送する').toBe(1200);
+    expect(agent.tryGetProperty(hydrationId)?.number ?? 0, 'amount(1200)分を全量移送する').toBe(1200);
     expect(
-      actor.tryGetProperty(wakefulnessId)?.number ?? 0,
+      agent.tryGetProperty(wakefulnessId)?.number ?? 0,
       '全量移送時はlinked_addも全量(200)適用される',
     ).toBe(200);
     expect(canteen.tryGetProperty(teaId)?.number ?? 0).toBe(3800);
@@ -325,10 +325,10 @@ object_defs:
         transfer:
           amount: 1200
           from_prop: tea_amount
-          to: actor
+          to: agent
           to_prop: hydration
           linked_add:
-            actor:
+            agent:
               wakefulness: 200
 `;
     const codex = load(yaml);
@@ -336,14 +336,14 @@ object_defs:
     const hydrationId = codex.propertyNames.getId('hydration');
     const wakefulnessId = codex.propertyNames.getId('wakefulness');
 
-    const actor = spawn(codex, 'player6');
+    const agent = spawn(codex, 'player6');
     const canteen = spawn(codex, 'canteen6');
 
-    canteen.tryGetAction('drink', actor)?.tryExecute();
+    canteen.tryGetAction('drink', agent)?.tryExecute();
 
-    expect(actor.tryGetProperty(hydrationId)?.number ?? 0, '在庫(600)の分しか移送されない').toBe(600);
+    expect(agent.tryGetProperty(hydrationId)?.number ?? 0, '在庫(600)の分しか移送されない').toBe(600);
     expect(
-      actor.tryGetProperty(wakefulnessId)?.number ?? 0,
+      agent.tryGetProperty(wakefulnessId)?.number ?? 0,
       '実際に移送された量(600)に比例してlinked_addもスケールされる(200 * 600 / 1200 = 100)',
     ).toBe(100);
     expect(canteen.tryGetProperty(teaId)?.number ?? 0).toBe(0);
@@ -371,21 +371,21 @@ object_defs:
           amount: 250
           to_amount: ${toAmount}
           from_prop: volume
-          to: actor
+          to: agent
           to_prop: hydration
 `;
     }
 
     function drink(yaml: string): { water: number; hydration: number } {
       const codex = load(yaml);
-      const actor = spawn(codex, 'drinker');
+      const agent = spawn(codex, 'drinker');
       const cup = spawn(codex, 'cup');
 
-      expect(cup.tryGetAction('drink', actor)?.tryExecute() === true).toBe(true);
+      expect(cup.tryGetAction('drink', agent)?.tryExecute() === true).toBe(true);
 
       return {
         water: cup.tryGetProperty(codex.propertyNames.getId('volume'))?.number ?? 0,
-        hydration: actor.tryGetProperty(codex.propertyNames.getId('hydration'))?.number ?? 0,
+        hydration: agent.tryGetProperty(codex.propertyNames.getId('hydration'))?.number ?? 0,
       };
     }
 

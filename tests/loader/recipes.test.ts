@@ -115,7 +115,7 @@ object_defs:
     expect(recipesOf(codex, 'stick')[0].unmetUnlockRequirement(undefined)).toBeUndefined();
   });
 
-  it('conditionsはactorのスキルの段で解放を判定する', () => {
+  it('conditionsはagentのスキルの段で解放を判定する', () => {
     const codex = load(`
 object_defs:
   fiber: {}
@@ -131,22 +131,22 @@ object_defs:
     recipes:
       woven:
         conditions:
-          - {subject: actor, prop: skill_cordage, in_stage: skilled}
+          - {subject: agent, prop: skill_cordage, in_stage: skilled}
         steps:
           - requires: [{object: fiber, count: 4, consume: true}]
             duration: 60
 `);
 
     const session = new WorldSession(codex);
-    const actor = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
+    const agent = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
 
     const recipe = recipesOf(codex, 'basket')[0];
     const skillId = codex.propertyNames.getId('skill_cordage');
 
-    expect(recipe.unmetUnlockRequirement(actor)).toBeDefined();
+    expect(recipe.unmetUnlockRequirement(agent)).toBeDefined();
 
-    actor.tryGetProperty(skillId)?.setNumber(60);
-    expect(recipe.unmetUnlockRequirement(actor)).toBeUndefined();
+    agent.tryGetProperty(skillId)?.setNumber(60);
+    expect(recipe.unmetUnlockRequirement(agent)).toBeUndefined();
   });
 
   it('満たしていない解放条件はreasonつきで取り出せる', () => {
@@ -164,21 +164,21 @@ object_defs:
     recipes:
       woven:
         conditions:
-          - {subject: actor, prop: skill_cordage, in_stage: skilled, reason: needs_cordage_skill}
+          - {subject: agent, prop: skill_cordage, in_stage: skilled, reason: needs_cordage_skill}
         steps:
           - requires: [{object: fiber, consume: true}]
             duration: 60
 `);
 
     const session = new WorldSession(codex);
-    const actor = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
+    const agent = new WorldObject(1, codex.objects.get(codex.objectNames.getId('character')), session);
 
-    const unmet = recipesOf(codex, 'basket')[0].unmetUnlockRequirement(actor);
+    const unmet = recipesOf(codex, 'basket')[0].unmetUnlockRequirement(agent);
 
     expect(unmet?.reasonName).toBe('needs_cordage_skill');
   });
 
-  it('conditionsのobjectにactor以外を使うとエラーになる', () => {
+  it('conditionsのobjectにagent以外を使うとエラーになる', () => {
     const yaml = `
 object_defs:
   fiber: {}

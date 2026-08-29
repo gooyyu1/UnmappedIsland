@@ -168,7 +168,7 @@ character:
           min: 60000
 ```
 
-移動可否は `{subject: actor, prop: load, lt: 60000}` のように、道の `travel` アクションの
+移動可否は `{subject: agent, prop: load, lt: 60000}` のように、道の `travel` アクションの
 `conditions` で直接書けます。
 
 ## 5. 負荷の効かせ方
@@ -181,7 +181,7 @@ character:
 （[`../world/Characters.md`](../world/Characters.md) 荷重の効き方節）。本節が決めるのは `load` が
 どう積み上がるかまでで、**段に何をぶら下げるかはキャラクタの側**です。
 
-書き方は、道の `travel` に `actor` の `load` を見る条件を足すだけです。
+書き方は、道の `travel` に `agent` の `load` を見る条件を足すだけです。
 
 ```yaml
 interactions:
@@ -189,7 +189,7 @@ interactions:
     trigger: menu
     conditions:
       - {in_slot: fixtures}
-      - not: {subject: actor, prop: load, in_stage: too_heavy}
+      - not: {subject: agent, prop: load, in_stage: too_heavy}
 ```
 
 閾値ではなく段の名前（`in_stage`）で見るのは、同じ境目を `stages` の `min` と条件の側に二重に書くと、
@@ -277,7 +277,7 @@ conditions:
 - キャラクターの `load` を modify で調整して個人差や怪我を表す場合、`stages` の閾値は型定義なので動かせない。
   怪我は「荷が重く感じる」向きの modify として表すことになる
 - 中身の入った入れ物が壊れたときの中身の扱い。`destroy` は親スロットからの切り離しなので（9.3 節）中身も
-  一緒に消え、`move` が動かせるのは `actor`/`dragged` だけなので（9.6 節）中身を親へ吐き出す書き方が無い。
+  一緒に消え、`move` が動かせるのは `agent`/`instrument` だけなので（9.6 節）中身を親へ吐き出す書き方が無い。
   「壊れるときに中身をどうするか」は入れ物自身の責務なので、エンジン側の不変条件として持たせるのが素直。
   それまでは `durability` を下限 0 で止めて `destroy` しない（ぼろぼろでも使える）ことで回避できる
 - `weight` を実効値として毎回導出する際の計算コスト（`load` はキャラクターの直接の子

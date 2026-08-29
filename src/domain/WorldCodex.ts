@@ -167,14 +167,14 @@ export class WorldCodex {
   }
 
   /**
-   * 製作の工程を進める条件のうち、actorが満たしていない最初の要件（満たしていればundefined）。
+   * 製作の工程を進める条件のうち、agentが満たしていない最初の要件（満たしていればundefined）。
    *
    * 可否と「なぜできないか」を同じ1回の評価から返すのは、レシピの解放条件
    * （`RecipeDef.unmetUnlockRequirement`）と同じ理由。成果物のインスタンスはまだ無いので、
-   * 参照できるのはactorだけ（13.4節）。
+   * 参照できるのはagentだけ（13.4節）。
    */
-  unmetCraftingRequirement(actor: WorldObject | undefined): Requirement | undefined {
-    return this.craftingConditions?.firstUnmet(ReferenceContext.acting(undefined, actor, undefined));
+  unmetCraftingRequirement(agent: WorldObject | undefined): Requirement | undefined {
+    return this.craftingConditions?.firstUnmet(ReferenceContext.acting(undefined, agent, undefined));
   }
 
   /**

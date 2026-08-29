@@ -14,7 +14,7 @@
 ## PR 1: 実害のあるもの ✅ 完了
 
 - [x] `ObjectWindow` のプロパティのタブが、ウィンドウを開いた時点の値を出す
-- [x] `unresolvable`・`minutesFor`・`unmetRequirement`・`tryExecute` の引数順が `(self, dragged, actor)` と `(self, actor, dragged)` に割れている
+- [x] `unresolvable`・`minutesFor`・`unmetRequirement`・`tryExecute` の引数順が `(self, instrument, agent)` と `(self, agent, instrument)` に割れている
 - [x] `ChainRoute.deviceCount` の中身が「1日あたりの労働（分）」で、名前が個数を指している
 - [x] `ShownCards.sameSpot` の2つの分岐が同じ式（何も見分けていない）
 
@@ -194,9 +194,9 @@ docコメントの取り残し 14件（全部直し、残り0を機械的に確�
 - **domain**: `ObjectDef.getPropertyDef`/`getSlotDef` → `tryGet*`（`WorldObject` 側の `get`=投げる、
   `tryGet`=undefined の規約に揃えた）／`Slot.trySetManualPosition` → `tryMoveStackToCell`／
   `WorldObject.artSuffix`・`exhaustedStage` をゲッターへ／`WorldCodex.symbolName` を足した／
-  `WorldSession.recordSignal(object, name)`／`PickEffect.selectWeighted(owner, session, actor, dragged)`／
+  `WorldSession.recordSignal(object, name)`／`PickEffect.selectWeighted(owner, session, agent, instrument)`／
   `crafting.advanceCrafting(inProgress, materialsSlotGlobalId, recipe, …)`／
-  `SlotDef.putInMinutes(owner, actor, item)`・`Slot.putInMinutes(actor, item)`（PR 1 の残り）／
+  `SlotDef.putInMinutes(owner, agent, item)`・`Slot.putInMinutes(agent, item)`（PR 1 の残り）／
   `TransferEffect.collectInfluences` → `collectTransferInfluences`
 - **game**: `ProgressRing.setProgress` → `setRatio`／`StatusBar.show(content, y)`／
   `PlayScene.cardsOf` → `stacksOf`／`theme.fillColorFor` → `statusFillColorFor`／
@@ -218,7 +218,7 @@ docコメントの取り残し 14件（全部直し、残り0を機械的に確�
 - `CardTable.carry` を `flyTo` へ（あふれた札の帰りも、ついてくる札と同じ1本の便で飛ぶ）
 - `Location.stacksOf`/`PlayerCharacter.stacksOf` の同一実装を `Slot.stacks` へ
 - 対象キーの解決3箇所（`resolveReferenceRoot`・`WorldObject.resolveEffectTarget`・
-  `PassiveEffectGate.resolve`）を1本へ。ゲートは actor/dragged を持たない文脈として同じ関数を通る
+  `PassiveEffectGate.resolve`）を1本へ。ゲートは agent/instrument を持たない文脈として同じ関数を通る
 - `WorldObject.clampToRange` を消して `PropertyRange.clamp` へ
 - `unmetRequirement` を基底の public 1本に（`ActionDef`/`CombinationDef` の派生2つを削除）
 - 呼び元ゼロ・素通しの削除: `statusChanges.allStatuses`・`PlayScreenView.contentsOf`・

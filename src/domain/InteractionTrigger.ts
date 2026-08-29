@@ -41,7 +41,7 @@ export abstract class InteractionTrigger {
 
 /**
  * 相手を伴わないきっかけ（11節）。1枚のカード（self）だけで完結し、名前で指して実行される。
- * actorは常に暗黙的に参加する。
+ * agentは常に暗黙的に参加する。
  */
 export abstract class ActionTrigger extends InteractionTrigger {
   constructor(interaction: InteractionDef) {
@@ -75,7 +75,7 @@ export class TickTrigger extends ActionTrigger {
 }
 
 /**
- * カードを重ねたときに起きる（12節）。宣言している側がself、相手がdraggedになる。
+ * カードを重ねたときに起きる（12節）。宣言している側がself、相手がinstrumentになる。
  * 宣言は**変化の本体**の側に1つだけ置く（12.3節）。
  */
 export class DragTrigger extends InteractionTrigger {
@@ -99,13 +99,13 @@ export class DragTrigger extends InteractionTrigger {
     groups.drag.push(this);
   }
 
-  /** draggedDefをこの組み合わせの相手にできるか（12.1節）。 */
-  acceptsDragged(draggedDef: ObjectDef): boolean {
-    return this.with.matches(draggedDef);
+  /** instrumentDefをこの組み合わせの相手にできるか（12.1節）。 */
+  acceptsInstrument(instrumentDef: ObjectDef): boolean {
+    return this.with.matches(instrumentDef);
   }
 
   /**
-   * draggedたちを先頭から順に重ねたとき、続けて実行できる個数。効果が数を答えられなければ1で、
+   * instrumentたちを先頭から順に重ねたとき、続けて実行できる個数。効果が数を答えられなければ1で、
    * まとめてよいと宣言していなければ（allow_multiple）、数えられても1までにする。
    *
    * **0は「重ねても何も起きない」ではなく「起こしてはいけない」。** 器へ入らないまま相手を消す効果

@@ -26,7 +26,7 @@
 | クラス/モジュール | 責務（1文） | 1文から漏れるメンバー |
 |---|---|---|
 | CraftingStep | 定義から読んだ「1回の工程」の形を定める | `UNCHANGED_OUTCOMES`, `scaleOutcomes`, `combineOutcomes`, `collectOutputs`, `mergeSpawns`（型ではなく確率分岐の代数演算） |
-| balanceTables | 定義から時間あたりの収支表を組み立てる**と**、全型の入手時間を解く**と**、コーデックスへの定義単位の問い合わせを提供する | 接続詞2つ＝責務3つ。`Acquisition`一族（求解器）、`allDefs`/`isLocation`/`isCharacter`/`explorableLocationsOf`/`allSteps`/`stepsAt`（コーデックス問い合わせ）、`ancestorContext`/`bestAncestorContext`/`withBestDragged`（解決器の組み立て）、`WHOLE_ISLAND`/`conditionLabel`（見せ方） |
+| balanceTables | 定義から時間あたりの収支表を組み立てる**と**、全型の入手時間を解く**と**、コーデックスへの定義単位の問い合わせを提供する | 接続詞2つ＝責務3つ。`Acquisition`一族（求解器）、`allDefs`/`isLocation`/`isCharacter`/`explorableLocationsOf`/`allSteps`/`stepsAt`（コーデックス問い合わせ）、`ancestorContext`/`bestAncestorContext`/`withBestInstrument`（解決器の組み立て）、`WHOLE_ISLAND`/`conditionLabel`（見せ方） |
 | Acquisition | 1つの文脈で各型を1個得るのに要する時間を解く | `prerequisites`（表示用ラベルの連結を含む）、`candidatesOf`（タグ→型の逆引き＝コーデックスの問い） |
 | craftingSteps | 型の宣言（操作・レシピ・周期）を工程の形へ読み直す | `totalMinutesOf`（レシピ自身の総所要時間） |
 | effectOutcomes | 効果の読み上げを確率つきの結果へ畳む | `Readable`（読み上げられるものの型そのもの） |
@@ -53,7 +53,7 @@
 | src/analysis/balanceTables.ts | `allDefs()` | 所属 | 4 | `WorldCodex` が自分の中で3回書いている全型走査（`symbolicProperties`・`objectDefNamesWithTag`・`singletonGlobalIds`）の4つ目 | `WorldCodex` / `ObjectDefTable` | `ObjectDefTable` が `count`/`get` だけを公開し反復を持たないため、利用側が毎回組み立てている | |
 | src/analysis/balanceTables.ts | `destroysWhenEmpty()` | 所属 | 4 | 「`on_min` が自分を消すか」は宣言そのもので、読み方の近似ではない | `PropertyDef` | `hasRangeEventMatching` はラベルを渡せず `on_min` に限定できず、効果の中身は `EffectReader` 越しにしか読めない | |
 | src/analysis/balanceTables.ts#Acquisition | `prerequisites()`, `RoutePrerequisite.label`, `Gap.label` | 所属 | 4 | 「宣言名 → 実際に使う型」の連結は見せ方で、解析の出力に文字列として焼き込まれている | `codex-viewer/balancePage` | 表側が宣言名と実際に使う型を別々に受ける口を持たず、1本の文字列で受けているため | |
-| src/analysis/balanceTables.ts | `ancestorContext()`, `bestAncestorContext()`, `withBestDragged()` | 配置 | 3 | どれも `StaticValueResolver` を作る関数で、`staticValue.ts` の「定義だけから値を解く手立てと、その周りの近似」がそのまま宛先 | `src/analysis/staticValue.ts` | | |
+| src/analysis/balanceTables.ts | `ancestorContext()`, `bestAncestorContext()`, `withBestInstrument()` | 配置 | 3 | どれも `StaticValueResolver` を作る関数で、`staticValue.ts` の「定義だけから値を解く手立てと、その周りの近似」がそのまま宛先 | `src/analysis/staticValue.ts` | | |
 | src/analysis/balanceTables.ts | `totalOf()`, `addCost()`, `scaleCost()`, `Cost`(export) | 所属/可視性 | 3 | `Cost` の演算が `Cost` の外に自由関数として散っており、`Cost` 自体は外部から参照されていない | `src/analysis/Cost.ts`（値オブジェクト化して非export） | | |
 | src/analysis/balanceTables.ts | `externalTickDeltasOn()`, `lifetimeOf()` | 配置 | 3 | 前者は `externalTickDeltasOf` の、後者は `RangeCycle[]` だけを見る関数で、どちらも rangeCycles の続き | `src/analysis/rangeCycles.ts` | | |
 | src/analysis/balanceTables.ts | `allSteps()`, `stepsAt()` | 配置 | 3 | 収支表ではなく「全型の工程を並べる」問いで、`craftingSteps`/`rangeCycles` を束ねる層 | `src/analysis/steps.ts`（新設） | | |
@@ -65,7 +65,7 @@
 | src/analysis/CraftingStep.ts | `UNCHANGED_OUTCOMES`, `scaleOutcomes()`, `combineOutcomes()`, `collectOutputs()`, `mergeSpawns()` | 配置 | 3 | 工程の**形**を定めるファイルに、確率分岐の代数演算が同居している | `src/analysis/outcomes.ts`（新設）または `effectOutcomes.ts` | | |
 | src/analysis/CraftingStep.ts#CraftingStep | `hasUnresolvedReferences` | 所属 | 2 | 工程の性質ではなく「この数値は定義だけからは確定しない」という計算側の印 | | | |
 | src/analysis/craftingSteps.ts | `totalMinutesOf()` | 所属 | 5 | 全工程の所要時間の和はレシピ自身の性質で、`domain/crafting.ts` が同じ和を2箇所で取っている | `RecipeDef`（総所要時間の口） | | |
-| src/analysis/craftingSteps.ts | `minutesOf()` | 所属 | 4 | `Math.trunc(duration.resolve(...))` は `InteractionDef.durationMinutesFor` と同じ計算 | `InteractionDef`（`durationReading` を数値へ解く口） | ドメイン版は self/actor/dragged の WorldObject を要求し、定義だけの文脈からは呼べない | |
+| src/analysis/craftingSteps.ts | `minutesOf()` | 所属 | 4 | `Math.trunc(duration.resolve(...))` は `InteractionDef.durationMinutesFor` と同じ計算 | `InteractionDef`（`durationReading` を数値へ解く口） | ドメイン版は self/agent/instrument の WorldObject を要求し、定義だけの文脈からは呼べない | |
 | src/analysis/effectOutcomes.ts | `Readable`, `Readable.read` | 所属 | 5 | `domain/EffectReader.ts` の `EffectDeclaration` と1文字も違わない再宣言 | `src/domain/EffectReader.ts#EffectDeclaration`（既存） | | |
 | src/analysis/effectOutcomes.ts#OutcomeReader | `move()`, `become()`, `signal()` | 所属 | 2 | 中身は空で、読み上げの動詞を取りこぼさないための実装義務（Layers.md 6節） | | | |
 | src/analysis/rangeEvents.ts | `rangeEventAt()` | 所属 | 4 | `value >= range.max` / `<= range.min` の端判定は `PropertyDef.checkRangeEvents` と同じ規則 | `PropertyDef`（値→ラベルの問い） | ドメイン側は判定と効果適用が一体（`owner.applyActiveEffect`）で、WorldObject 無しに「どちらの端か」だけを訊けない | |

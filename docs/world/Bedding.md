@@ -14,7 +14,7 @@
 （[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 1節の3スロット）、骨組みと詰め物を差し込む
 `structure` スロットを持ちます（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 7節）。
 部品は `passives` の `modify`（同 8.3節）で寝床のプロパティへ寄与し、寝床自身が `nap`/`sleep` アクションを
-持って `actor` の回復量を足します。導入する語彙は型 `bed` と、部品のタグ `bed_frame`・`stuffing` の3つです。
+持って `agent` の回復量を足します。導入する語彙は型 `bed` と、部品のタグ `bed_frame`・`stuffing` の3つです。
 **ただし、部品の寄与を回復量へ届かせる部分だけは今の文法では書けません**（4節）。
 
 **在処。** 定義は `src/assets/world-codex/bedding.yaml` を予定しています。材料はすべて既存で、編んだ葉は
@@ -124,11 +124,11 @@ object_defs:
       nap:
         trigger: menu
         duration: 180
-        add: {actor: {stamina: 48, wakefulness: 48}}
+        add: {agent: {stamina: 48, wakefulness: 48}}
       sleep:
         trigger: menu
         duration: 360
-        add: {actor: {stamina: 120, wakefulness: 96}}
+        add: {agent: {stamina: 120, wakefulness: 96}}
 ```
 
 **部品の寄与をこの回復量へ届かせる文法が足りません。** 部品は `modify` で寝床のプロパティを押し上げられ

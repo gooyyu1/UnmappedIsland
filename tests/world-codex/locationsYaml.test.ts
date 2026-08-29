@@ -9,7 +9,7 @@ import { pathsIn } from '../support/paths';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
-import { createBrightEnoughActor, makeBrightEnoughForAnyAction } from '../support/illumination';
+import { createBrightEnoughAgent, makeBrightEnoughForAnyAction } from '../support/illumination';
 import { seededRng } from '../../src/domain/Rng';
 
 /** locations.yamlが定義する全土地。 */
@@ -89,21 +89,21 @@ describe('locations.yamlの土地・道定義', () => {
     // 検証する。上限を超えた分はrangeの既定のクランプで吸収され、進捗はmaxに張り付く。
     const progressId = codex.propertyNames.getId('exploration_progress');
     const session = new WorldSession(codex, undefined, seededRng(1));
-    const actor = createBrightEnoughActor(session, codex);
+    const agent = createBrightEnoughAgent(session, codex);
 
     for (const name of LAND_NAMES) {
       const land = session.createObject(codex.objectNames.getId(name));
       const max = land.def.tryGetPropertyDef(progressId)?.range?.max ?? 0;
 
       land.getProperty(progressId).setNumberWithoutEvents(max - 1);
-      expect(land.tryGetAction('explore', actor)?.tryExecute() === true, `${name}: 探索できる`).toBe(true);
+      expect(land.tryGetAction('explore', agent)?.tryExecute() === true, `${name}: 探索できる`).toBe(true);
       expect(
         land.tryGetProperty(progressId)?.number ?? 0,
         `${name}: 探索1回で進捗が+1される（どの抽選候補でも）`,
       ).toBe(max);
 
       expect(
-        land.tryGetAction('explore', actor)?.tryExecute() === true,
+        land.tryGetAction('explore', agent)?.tryExecute() === true,
         `${name}: 探索率100%でも探索は続けられる`,
       ).toBe(true);
       expect(land.tryGetProperty(progressId)?.number ?? 0, `${name}: 100%を超えた進捗は上限に張り付く`).toBe(
@@ -118,10 +118,10 @@ describe('locations.yamlの土地・道定義', () => {
     const session = new WorldSession(codex, undefined, seededRng(7));
     const land = session.createObject(codex.objectNames.getId('grassland'));
     const view = new Location(land, codex);
-    const actor = createBrightEnoughActor(session, codex);
+    const agent = createBrightEnoughAgent(session, codex);
 
     // 100%到達後も探索は続けられるため、回数を数えて探索率100%で止める。
-    for (let i = 0; i < view.explorationProgressMax; i++) view.explore(actor);
+    for (let i = 0; i < view.explorationProgressMax; i++) view.explore(agent);
 
     expect(view.explorationProgress).toBe(view.explorationProgressMax);
     const itemTag = codex.tagNames.getId('item');
@@ -143,9 +143,9 @@ describe('locations.yamlの土地・道定義', () => {
     const land = session.createObject(codex.objectNames.getId('cliff_coast'));
     land.getProperty(codex.propertyNames.getId('chalice_find')).setNumberWithoutEvents(10000);
     const view = new Location(land, codex);
-    const actor = createBrightEnoughActor(session, codex);
+    const agent = createBrightEnoughAgent(session, codex);
 
-    for (let i = 0; i < 30; i++) view.explore(actor);
+    for (let i = 0; i < 30; i++) view.explore(agent);
 
     const chalice = codex.objectNames.getId('golden_chalice');
     expect(

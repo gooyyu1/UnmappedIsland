@@ -62,8 +62,8 @@ describe('浅い洞窟', () => {
     return spawned;
   }
 
-  function execute(target: WorldObject, actionName: string, actor: WorldObject): boolean {
-    return target.tryGetAction(actionName, actor)?.tryExecute() === true;
+  function execute(target: WorldObject, actionName: string, agent: WorldObject): boolean {
+    return target.tryGetAction(actionName, agent)?.tryExecute() === true;
   }
 
   function propertyOf(object: WorldObject, propertyName: string): number {

@@ -416,7 +416,7 @@ tests/diagnostics/balanceStatsReport.test.ts` を直に呼ぶ（気候表は `RU
 
 ## 司令塔の案
 
-- `duration` に `plus` を足して、`{prop: travel_minutes, plus: {subject: actor, prop: travel_delay}}`
+- `duration` に `plus` を足して、`{prop: travel_minutes, plus: {subject: agent, prop: travel_delay}}`
 - 遅れは +10 分／+25 分の2段
 ```
 

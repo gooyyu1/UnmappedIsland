@@ -51,9 +51,9 @@ object_defs:
         trigger: {drag: {tag: item}}
         pick:
           - weight: 60
-            destroy: dragged
+            destroy: instrument
           - weight: 40
-            move: {subject: dragged, to: self}
+            move: {subject: instrument, to: self}
 `;
 
   /** 壊す側（重み60）を引くrollと、取り上げる側（重み40）を引くroll。 */

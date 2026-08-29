@@ -69,7 +69,7 @@ object_defs:
           - reason: too_far
             prop: freshness
             gt: 0
-        add: {actor: {satiety: 20}}
+        add: {agent: {satiety: 20}}
         destroy: self
       cut:
         trigger: {drag: {tag: cutting_tool}}
@@ -110,7 +110,7 @@ object_defs:
     interactions:
       travel:
         trigger: menu
-        duration: {prop: travel_minutes, times: {subject: actor, prop: pace}}
+        duration: {prop: travel_minutes, times: {subject: agent, prop: pace}}
 
   sharp_stone:
     tags: [item, cutting_tool]
@@ -127,9 +127,9 @@ object_defs:
     interactions:
       drink:
         trigger: menu
-        transfer: {from: self, from_prop: water, to: actor, to_prop: hydration, amount: 200, to_amount: 4}
+        transfer: {from: self, from_prop: water, to: agent, to_prop: hydration, amount: 200, to_amount: 4}
         set: {self: {spilled: 1}}
-        signal: {actor: gulped}
+        signal: {agent: gulped}
       tip_over:
         trigger: menu
         transfer:
@@ -267,7 +267,7 @@ describe('定義の自己記述（describe）', () => {
     });
 
     expect(text).toContain('signal gulped');
-    expect(text).not.toContain('→ actor');
+    expect(text).not.toContain('→ agent');
     expect(text).not.toContain('あふれても移す');
     expect(text).not.toContain('→ same_slot');
   });

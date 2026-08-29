@@ -991,7 +991,7 @@ describe('筏と航海', () => {
    *
    * 銛は失うたびに持ち直し、群れは立ち去りまでの残りを毎回戻して留める。数えたいのは1回あたりの
    * 当たりなので、銛の在庫も群れの寿命も混ぜない。獲れた生肉はその場で捨てる——手も積荷も詰まると、
-   * 湧いた生肉が黙って手に入らなくなる（`into: actor`、9.4節）。
+   * 湧いた生肉が黙って手に入らなくなる（`into: agent`、9.4節）。
    */
   function spearRepeatedly(target: 'shoal' | 'sea', tries: number): { meat: number; lost: number } {
     const { game, raft } = ready();

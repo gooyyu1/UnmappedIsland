@@ -387,7 +387,7 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
       allSteps(
         codex,
         islandLocations.seaOnly,
-        withBestDragged([...codex.objects], highestDeclaredAncestorValueResolver(islandLocations.island)),
+        withBestInstrument([...codex.objects], highestDeclaredAncestorValueResolver(islandLocations.island)),
       ),
     ),
     places,
@@ -519,7 +519,7 @@ function supplyRows(codex: WorldCodex, steps: readonly StepRef[]): readonly Supp
   const rows: SupplyRow[] = [];
   for (const ref of steps) {
     const spawns = expectedSpawns(ref.step);
-    const actorDeltas = expectedDeltas(ref.step, 'actor');
+    const actorDeltas = expectedDeltas(ref.step, 'agent');
     const selfDeltas = expectedDeltas(ref.step, 'self');
     if (spawns.size === 0 && actorDeltas.size === 0 && selfDeltas.size === 0) continue;
 
@@ -560,14 +560,14 @@ function placeBalances(
   const defs = [...codex.objects];
 
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
-  const islandContext = withBestDragged(defs, highestDeclaredAncestorValueResolver(locations));
+  const islandContext = withBestInstrument(defs, highestDeclaredAncestorValueResolver(locations));
   const islandWide = new Acquisition(codex, allSteps(codex, seaOnly, islandContext));
 
   let islandRoutes: readonly ChainRoute[] = [];
   const places = [undefined, ...locations].map((location) => {
     // 罠が掛ける動物の重みは土地が宣言する（base）ので、土地を決めてから工程を組み立てる。
     const context =
-      location === undefined ? islandContext : withBestDragged(defs, ancestorValueResolver(location));
+      location === undefined ? islandContext : withBestInstrument(defs, ancestorValueResolver(location));
     const steps =
       location === undefined
         ? allSteps(codex, seaOnly, context)
@@ -700,13 +700,13 @@ function routeCandidates(
 
 /**
  * その工程がキャラクタへ返す値。**宣言元がキャラクタ自身なら `self` も数える**——休息
- * （`wait`/`rest`/`nap`/`sleep`）は自分の値を自分で戻す工程で、他の工程のように `actor` を持たない。
+ * （`wait`/`rest`/`nap`/`sleep`）は自分の値を自分で戻す工程で、他の工程のように `agent` を持たない。
  */
 function gainsOf(codex: WorldCodex, ref: StepRef): ReadonlyMap<number, number> {
-  const actor = expectedDeltas(ref.step, 'actor');
-  if (!isCharacter(codex, ref.def)) return actor;
+  const agent = expectedDeltas(ref.step, 'agent');
+  if (!isCharacter(codex, ref.def)) return agent;
 
-  const merged = new Map(actor);
+  const merged = new Map(agent);
   for (const [propertyGlobalId, amount] of expectedDeltas(ref.step, 'self'))
     merged.set(propertyGlobalId, (merged.get(propertyGlobalId) ?? 0) + amount);
   return merged;
@@ -1029,7 +1029,7 @@ function expectedSpawns(step: CraftingStep): ReadonlyMap<number, number> {
 }
 
 /** 1回の実行で、対象のプロパティが動く期待量（分岐の確率で重み付けした和）。 */
-function expectedDeltas(step: CraftingStep, target: 'actor' | 'self'): ReadonlyMap<number, number> {
+function expectedDeltas(step: CraftingStep, target: 'agent' | 'self'): ReadonlyMap<number, number> {
   const amounts = new Map<number, number>();
   for (const outcome of step.outcomes)
     for (const delta of outcome.deltas) {
@@ -1237,16 +1237,16 @@ function highestDeclaredAncestorValueResolver(locations: readonly ObjectDef[]): 
 }
 
 /**
- * ancestorに、重ねる相手（dragged）の値を足した文脈。**最も高く宣言している型を重ねたものとして
+ * ancestorに、重ねる相手（instrument）の値を足した文脈。**最も高く宣言している型を重ねたものとして
  * 扱う**（highestDeclaredAncestorValueResolverと同じ見方）。
  *
  * これが無いと、相手の値を見る重み——一撃がどう入るかは武器が決める（HuntingSystem.md 1.2節）——が
  * 全て0になり、宣言順で最初の候補だけが起こることになる（PickEffect.selectWeighted）。
  * 分岐ごとに最も良い武器を選べる前提の配分なので、**どれか1つの武器で出る配分ではない**。
  */
-function withBestDragged(defs: readonly ObjectDef[], ancestor: StaticValueResolver): StaticValueResolver {
+function withBestInstrument(defs: readonly ObjectDef[], ancestor: StaticValueResolver): StaticValueResolver {
   return (root, propertyGlobalId, end) => {
-    if (root !== 'dragged') return ancestor(root, propertyGlobalId, end);
+    if (root !== 'instrument') return ancestor(root, propertyGlobalId, end);
     const declared = defs
       .map((def) => staticValueOf(def, propertyGlobalId, end))
       .filter((value): value is number => value !== undefined);

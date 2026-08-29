@@ -125,14 +125,14 @@ object_defs:
     interactions:
       travel:
         trigger: menu
-        duration: {prop: travel_minutes, times: {subject: actor, prop: pace}}
+        duration: {prop: travel_minutes, times: {subject: agent, prop: pace}}
 `);
     const trail = session.createObject(codex.objectNames.getId('trail'));
     const hiker = session.createObject(codex.objectNames.getId('hiker'));
     trail.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(trail.tryGetAction('travel', hiker)?.tryExecute() === true).toBe(true);
-    expect(world.minute, 'self.travel_minutes × actor.pace だけ進む').toBe(40);
+    expect(world.minute, 'self.travel_minutes × agent.pace だけ進む').toBe(40);
   });
 
   it('積の片方が解決できなければ0分（等倍にはしない）', () => {
@@ -147,7 +147,7 @@ object_defs:
     interactions:
       travel:
         trigger: menu
-        duration: {prop: travel_minutes, times: {subject: actor, prop: pace}}
+        duration: {prop: travel_minutes, times: {subject: agent, prop: pace}}
 `);
     const trail = session.createObject(codex.objectNames.getId('trail'));
     const ghost = session.createObject(codex.objectNames.getId('ghost'));
@@ -157,7 +157,7 @@ object_defs:
     expect(world.minute, '解決できない参照を含む宣言は0（単一の参照と同じ扱い）').toBe(0);
   });
 
-  it('durationはactorのプロパティを単独でも読める', () => {
+  it('durationはagentのプロパティを単独でも読める', () => {
     const { codex, session, world } = buildWorldSession(`
 object_defs:
   hiker:
@@ -168,14 +168,14 @@ object_defs:
     interactions:
       nap:
         trigger: menu
-        duration: {subject: actor, prop: rest_minutes}
+        duration: {subject: agent, prop: rest_minutes}
 `);
     const hammock = session.createObject(codex.objectNames.getId('hammock'));
     const hiker = session.createObject(codex.objectNames.getId('hiker'));
     hammock.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(hammock.tryGetAction('nap', hiker)?.tryExecute() === true).toBe(true);
-    expect(world.minute, 'actor.rest_minutesの値だけ時間が進む').toBe(20);
+    expect(world.minute, 'agent.rest_minutesの値だけ時間が進む').toBe(20);
   });
 
   it('timesにリテラルは書けない（積を取れるのは参照2つだけ）', () => {
@@ -215,7 +215,7 @@ object_defs:
         trigger: menu
         duration:
           prop: travel_minutes
-          times: {subject: actor, prop: pace, times: {subject: actor, prop: haste}}
+          times: {subject: agent, prop: pace, times: {subject: agent, prop: haste}}
 `,
         )
         .buildAndReset(),
@@ -275,7 +275,7 @@ object_defs:
     expect(world.minute, 'duration分だけ時間が進む').toBe(20);
   });
 
-  it('combinationの参照durationはdraggedのプロパティも読める', () => {
+  it('combinationの参照durationはinstrumentのプロパティも読める', () => {
     const { codex, session, world } = buildWorldSession(`
 object_defs:
   blunt_hammer:
@@ -287,7 +287,7 @@ object_defs:
     interactions:
       crack:
         trigger: {drag: {tag: hammer}}
-        duration: {subject: dragged, prop: swing_minutes}
+        duration: {subject: instrument, prop: swing_minutes}
 `);
     const nut = session.createObject(codex.objectNames.getId('nut'));
     const hammer = session.createObject(codex.objectNames.getId('blunt_hammer'));
@@ -299,7 +299,7 @@ object_defs:
         .find((c) => c.name === 'crack')
         ?.tryExecute() === true,
     ).toBe(true);
-    expect(world.minute, 'dragged.swing_minutesの値だけ時間が進む').toBe(35);
+    expect(world.minute, 'instrument.swing_minutesの値だけ時間が進む').toBe(35);
   });
 
   it('生成物は自分の制作時間ぶんのtickを浴びない（時間が先に経つため）', () => {

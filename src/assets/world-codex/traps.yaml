@@ -192,12 +192,12 @@ object_defs:
           - {reason: trap_baited, prop: plant_bait, lt: 24}
         transfer:
           amount: 999
-          from: dragged
+          from: instrument
           from_prop: plant_bait
           to_prop: plant_bait
         # 中途半端に残った餌を作らない。入りきらなかった分は失われるが、満杯を拒む条件があるので
         # 失うのは高々1個ぶん。
-        destroy: dragged
+        destroy: instrument
       add_meat_bait:
         trigger: {drag: {tag: meat_bait}}
         duration: 1
@@ -205,10 +205,10 @@ object_defs:
           - {reason: trap_baited, prop: meat_bait, lt: 24}
         transfer:
           amount: 999
-          from: dragged
+          from: instrument
           from_prop: meat_bait
           to_prop: meat_bait
-        destroy: dragged
+        destroy: instrument
     # 解放条件（conditions、13.3節）はまだ置かない。狩猟スキルのプロパティと、それを伸ばす経路が
     # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
     recipes:
@@ -348,10 +348,10 @@ object_defs:
           - {reason: trap_baited, prop: plant_bait, lt: 24}
         transfer:
           amount: 999
-          from: dragged
+          from: instrument
           from_prop: plant_bait
           to_prop: plant_bait
-        destroy: dragged
+        destroy: instrument
       # 杭を打つ（TrapSystem.md 1.2節）。掘った穴へ棒を立てるドラッグ1つで、生かす罠が殺す罠になる。
       #
       # **穴は掘り直さない。** becomeは同じ個体のまま型を差し替える（9.9節）ので、耐久も餌も
@@ -366,7 +366,7 @@ object_defs:
           - reason: already_staked
             not: {subject: self, matches: {tag: staked}}
         become: {stake: staked}
-        destroy: dragged
+        destroy: instrument
     # 解放条件（conditions、13.3節）はまだ置かない（くくり罠と同じ理由）。
     recipes:
       # 掘るだけ。**掘削具はまだ無い**（TrapSystem.md 8節）ので、畑と同じく掘り棒にする太い枝を

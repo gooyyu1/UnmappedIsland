@@ -20,7 +20,7 @@ const DRAG_KEYS = ['drag', 'allow_multiple'] as const;
 /**
  * interactions_map（11節・12節）を読む。trait合成済みのノードを渡すこと。
  *
- * **きっかけ（`trigger`）が操作の種類を決める。** 相手を重ねて起こす操作（`drag`）だけがdraggedを
+ * **きっかけ（`trigger`）が操作の種類を決める。** 相手を重ねて起こす操作（`drag`）だけがinstrumentを
  * 指せるので、条件・効果・durationの起点に何を許すかもきっかけから決まる。
  */
 export function parseInteractions(

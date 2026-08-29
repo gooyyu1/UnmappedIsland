@@ -98,10 +98,10 @@ object_defs:
       new WorldSession(codex),
     );
 
-    const actor = new PlayerCharacter(instance, codex);
+    const agent = new PlayerCharacter(instance, codex);
 
-    expect(actor.hp).toBe(100);
-    expect(actor.satiety).toBe(50);
+    expect(agent.hp).toBe(100);
+    expect(agent.satiety).toBe(50);
   });
 
   it('PlayerCharacterのhandは固定枠の空きセルをundefinedとして並べる', () => {
@@ -121,9 +121,9 @@ object_defs:
     const stone = session.createObject(codex.objectNames.getId('stone'));
     stone.moveToSlotOrRejection(instance.getSlot(codex.slotNames.getId('hand')));
 
-    const actor = new PlayerCharacter(instance, codex);
+    const agent = new PlayerCharacter(instance, codex);
 
-    expect(actor.hand).toEqual([stone, undefined, undefined]);
+    expect(agent.hand).toEqual([stone, undefined, undefined]);
   });
 
   it('PlayerCharacterのhandはhandスロットを持たないCodexでも空配列を返す', () => {
@@ -155,13 +155,13 @@ object_defs:
     const session = new WorldSession(codex);
     const clearing = session.createObject(codex.objectNames.getId('clearing'));
     const instance = session.createObject(codex.objectNames.getId('character'));
-    const actor = new PlayerCharacter(instance, codex);
+    const agent = new PlayerCharacter(instance, codex);
 
-    expect(actor.location).toBeUndefined();
+    expect(agent.location).toBeUndefined();
 
     instance.moveToSlotOrRejection(clearing.getSlot(codex.slotNames.getId('characters')));
 
-    expect(actor.location?.instance).toBe(clearing);
+    expect(agent.location?.instance).toBe(clearing);
   });
 
   it('PlayerCharacterのexploreは今いる土地を探索する', () => {
@@ -188,13 +188,13 @@ object_defs:
     const session = new WorldSession(codex);
     const clearing = session.createObject(codex.objectNames.getId('clearing'));
     const instance = session.createObject(codex.objectNames.getId('character'));
-    const actor = new PlayerCharacter(instance, codex);
+    const agent = new PlayerCharacter(instance, codex);
 
-    expect(actor.explore(), '土地に居なければ探索できない').toBe(false);
+    expect(agent.explore(), '土地に居なければ探索できない').toBe(false);
 
     instance.moveToSlotOrRejection(clearing.getSlot(codex.slotNames.getId('characters')));
 
-    expect(actor.explore()).toBe(true);
+    expect(agent.explore()).toBe(true);
     expect(new Location(clearing, codex).explorationProgress, '今いる土地の進捗が進む').toBe(1);
   });
 

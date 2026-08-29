@@ -56,7 +56,7 @@ export abstract class ActiveEffect {
 
   /**
    * candidatesを先頭から順に、この効果を続けて何回適用できるか。undefinedは「答えられない」。
-   * 各candidateはdraggedの役で、器（repeatLimitingVesselCount）を持つ効果だけが答える。
+   * 各candidateはinstrumentの役で、器（repeatLimitingVesselCount）を持つ効果だけが答える。
    */
   acceptedCount(_context: ReferenceContext, _candidates: readonly WorldObject[]): number | undefined {
     return undefined;
@@ -226,7 +226,7 @@ export class AddEffect extends ActiveEffect {
 }
 
 /**
- * destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。`destroy: [self, dragged]`は
+ * destroy の1命令（対象オブジェクトそのものを削除する、9.3節）。`destroy: [self, instrument]`は
  * 要素2つのDestroyEffectとして表す。same_slot spawnとの連携はsameSlotSpawnSite（ActiveEffect参照）が担う。
  *
  * **消し方に名前を添えられる**（reason、9.3節）。名前は消された側に残り、後から「どう消されたか」を
@@ -270,7 +270,7 @@ export type SpawnTarget =
   /**
    * selfの子を順に走査し、最初に受け取れた子のスロットへ入れる。intoが既に持つ「宣言順に走査して最初に
    * 配置できた所へ」という決め方が、1階層下へ伸びるだけ（docs/engine/TrapSystem.md 5.3節）。
-   * 罠が自分の生んだ獲物へ怪我を渡す経路で、actorを持たないon_minからは他に手段が無い。
+   * 罠が自分の生んだ獲物へ怪我を渡す経路で、agentを持たないon_minからは他に手段が無い。
    */
   | 'child'
   /** 指した1つの個体が持つスロットを宣言順に走査する。 */
@@ -396,11 +396,11 @@ export class TransferEffect extends ActiveEffect {
   }
 
   /**
-   * 移送先が全candidatesで共通なら、その値が器になる（1つ）。移送先がdraggedなら、器はcandidateごとに
+   * 移送先が全candidatesで共通なら、その値が器になる（1つ）。移送先がinstrumentなら、器はcandidateごとに
    * 別なので回数の上限を決めない（0）。
    */
   override repeatLimitingVesselCount(): number | undefined {
-    return this.to.root === 'dragged' ? 0 : 1;
+    return this.to.root === 'instrument' ? 0 : 1;
   }
 
   /**
@@ -408,16 +408,16 @@ export class TransferEffect extends ActiveEffect {
    * 移送先・移送元が解決できなければ、そこで打ち切る。
    */
   override acceptedCount(context: ReferenceContext, candidates: readonly WorldObject[]): number | undefined {
-    if (this.to.root === 'dragged' || candidates.length === 0) return undefined;
+    if (this.to.root === 'instrument' || candidates.length === 0) return undefined;
 
-    const toValue = this.to.propertyValue(context.withDragged(candidates[0]));
+    const toValue = this.to.propertyValue(context.withInstrument(candidates[0]));
     if (toValue === undefined) return undefined;
 
     let room = toValue.remainingTransferCapacity();
     let count = 0;
     for (const candidate of candidates) {
       if (room <= 0) break;
-      const fromValue = this.from.propertyValue(context.withDragged(candidate));
+      const fromValue = this.from.propertyValue(context.withInstrument(candidate));
       if (fromValue === undefined) break;
 
       const taken = Math.min(this.amount, fromValue.availableToTransferOut());

@@ -39,14 +39,14 @@
 | balanceTables.ts | `isLocation()`, `isCharacter()`, `Acquisition.isAlwaysAtHand()`, `explorableLocationsOf()` | `WorldCodex` | 「**この型は土地か・キャラクタか・探索できるか**」。`vocabulary.world.locationTagId` は生の ID だけを出しており、判定は利用側が書く | 4つとも消える | `Location`／`PlayerCharacter` ビューは `WorldObject`（実行時インスタンス）を包む形で、**定義に同じ問いを立てる口が無い**。`isLocation` の「製作中オブジェクトは除く」という但し書きも、そのため他所へ写せず1箇所に閉じている |
 | balanceTables.ts | `allDefs()` | `ObjectDefTable` | 全型の反復。`count`/`get` しか無いので `for (globalId...)` を利用側が書く | 消える | `ObjectDefTable` が格納の形（添字と個数）だけを公開し、反復子を持たない |
 | balanceTables.ts#Acquisition | `candidatesOf()` | `WorldCodex` | 「そのタグを持つ型の globalId 一覧」。`objectDefNamesWithTag` は**名前**しか返さない | 消える | 既存の口が名前を返す形で固まっており、ID で引きたい利用側が走査を書き直している |
-| balanceTables.ts | `ancestorContext()`, `bestAncestorContext()`, `withBestDragged()` | `staticValue.ts`（`StaticValueResolver`） | 「祖先（土地）・重ねる相手（武器）が入れる値」を埋める resolver の作り方 | 消える（`staticValue.ts` へ移すだけ） | `staticValue.ts` が「埋め方はレポートの都合」と宣言して自分では持たず、埋め方の実体が利用者側に残った |
+| balanceTables.ts | `ancestorContext()`, `bestAncestorContext()`, `withBestInstrument()` | `staticValue.ts`（`StaticValueResolver`） | 「祖先（土地）・重ねる相手（武器）が入れる値」を埋める resolver の作り方 | 消える（`staticValue.ts` へ移すだけ） | `staticValue.ts` が「埋め方はレポートの都合」と宣言して自分では持たず、埋め方の実体が利用者側に残った |
 | balanceTables.ts | `expectedSpawns()`, `expectedDeltas()` | `CraftingStep`（同package別ファイル） | 「分岐の確率で重み付けした期待産出／期待増減」。`collectOutputs` は**型の一覧**だけを畳み、量は畳まない | 2つとも消える | 無し。`CraftingStep.ts` の `collectOutputs` の隣に置けるものが、利用者の居る側に置かれているだけ |
 | balanceTables.ts | `totalOf()`, `addCost()`, `scaleCost()` | `Cost`（同ファイルの interface） | 値オブジェクトとしての演算（合計・加算・スケール） | 3つとも消える | `Cost` がメソッドを持てない素の interface として宣言されている |
 | balanceTables.ts | `externalTickDeltasOn()` | `WorldCodex` | 「**どの型がどの型の隣に立てるか**」の逆引き（枠の受け入れ関係） | 消えない。`externalTickDeltasOf` の呼び分けは残る | `WorldCodex.admitsBroughtObjects(slotDef)` が「持ち込める物があるか」の真偽しか返さず、相手の型を返さない。`rangeCycles` は「誰の隣に立てるかは答えない」と明示的に降りている |
 | balanceTables.ts | `lifetimeOf()` | `rangeCycles.ts` | 「その型が朽ちるまでの時間」。`RangeCycle[]` だけを見る | 消える（`rangeCycles.ts` へ移すだけ） | 無し |
 | craftingSteps.ts | `selfMovesOf()` | `PropertyDef`／`PropertyValue` | 「**値を動かした先はいくつか**」。実行時は `PropertyValue.add`／`setNumber` が自分でやって `checkRangeEvents` まで呼ぶが、定義側には対応物が無い | 消えない。`withTriggeredRangeEvents` 側に「分岐の確率で畳む」部分が残る | 定義には実体値が無いので、`staticValueOf` に外部文脈（`outer`）を渡した「そう置いた場合の値」しか作れない。その文脈を受ける引数が `PropertyDef` に無い |
 | craftingSteps.ts | `totalMinutesOf()` | `RecipeDef` | 「全工程を通した所要時間」。`RecipeStepDef.durationMinutes` の和 | 消える | 無し。`domain/crafting.ts` が同じ和を別に取っている |
-| craftingSteps.ts | `minutesOf()` | `InteractionDef` | 「**定義だけの文脈での所要時間（分）**」。`durationMinutes(self, actor, dragged)` は WorldObject を3つ要求する | 消える（`durationReading` を resolver で解く口を足せば） | ドメイン版の口が `WorldObject` を3つ取る形で固まっており、定義だけの文脈から呼べない。`durationReading` を公開して利用側に `Math.trunc` まで書かせることで回避している |
+| craftingSteps.ts | `minutesOf()` | `InteractionDef` | 「**定義だけの文脈での所要時間（分）**」。`durationMinutes(self, agent, instrument)` は WorldObject を3つ要求する | 消える（`durationReading` を resolver で解く口を足せば） | ドメイン版の口が `WorldObject` を3つ取る形で固まっており、定義だけの文脈から呼べない。`durationReading` を公開して利用側に `Math.trunc` まで書かせることで回避している |
 | rangeCycles.ts | `tickAmountsOf()` | `tickDeltas.ts` | 「**そのプロパティのtick毎の速さ**（段は除く、条件つきは最遅／最速の幅）」。実行時の `PropertyValue.changePerTick()` に当たるもの | 消える | `tickDeltasOf(def)` が全プロパティぶんの列しか返さず、プロパティ単位で問えない。そのため呼ぶたびに全走査し直している |
 | rangeCycles.ts | `ticksWhileGateHolds()` | `tickDeltas.ts`（`TickGate`） | 「**このゲートが落ちるまで何tickか**」。実行時の `PropertyValue.ticksUntilMax()` に当たるもの | 消える | `TickGate` が `watchedSelfProperties`（IDの列）しか持たず、値も速さも自分で解けない。解くには定義に値を訊く口（`staticValueOf`）が要り、`tickDeltas.ts` はそれを import していない |
 | Scenario.ts | `objectIdOf()`, `slotIdOf()`, `propertyIdOf()` | `NameRegistry` | 「**解決できない名前を、読み手が決めた例外で返す**」。`getId` は自前の `Error` を投げ、`tryGetId` は undefined を返すだけ | 3つとも消える（`yamlMapping` に共通の包みを置けば） | `NameRegistry.getId` が投げる例外の型を利用側が選べない。loader 側も同じ包みを別に持っている |
@@ -66,13 +66,13 @@
 | balanceTables.ts | `destroysWhenEmpty` | `PropertyDef.checkRangeEvents(value, owner)` |
 | balanceTables.ts | `ancestorContext` | `PropertyDef.inheritedContribution(owner)` |
 | balanceTables.ts | `bestAncestorContext` | 同上 |
-| balanceTables.ts | `withBestDragged` | `WeightSpec.resolve(self, actor, dragged)` |
+| balanceTables.ts | `withBestInstrument` | `WeightSpec.resolve(self, agent, instrument)` |
 | balanceTables.ts | `isLocation` | `domain/views/Location`（`WorldObject` を包む） |
 | balanceTables.ts | `isCharacter` | `domain/views/PlayerCharacter`（同上） |
 | balanceTables.ts | `explorableLocationsOf` | `Location.explorationProgress` |
 | balanceTables.ts#Acquisition | `isAlwaysAtHand` | 上2つの合成 |
 | craftingSteps.ts | `selfMovesOf` | `PropertyValue.add` / `setNumber` |
-| craftingSteps.ts | `minutesOf` | `InteractionDef.durationMinutes(self, actor, dragged)` |
+| craftingSteps.ts | `minutesOf` | `InteractionDef.durationMinutes(self, agent, instrument)` |
 | rangeCycles.ts | `tickAmountsOf` | `PropertyValue.changePerTick()` |
 | rangeCycles.ts | `ticksWhileGateHolds` | `PropertyValue.ticksUntilMax()` |
 
@@ -88,7 +88,7 @@
   「解けなかった」という状態そのものが、**この不足があるからだけ**存在する印である。
 
 **打ち手の形**: B（`PropertyDef`・`InteractionDef`・`ObjectDef`）の既存メソッドは
-`WorldObject`／`(self, actor, dragged)` を受け取る。ここを「値を答える関数」1つを受け取る形
+`WorldObject`／`(self, agent, instrument)` を受け取る。ここを「値を答える関数」1つを受け取る形
 （`StaticValueResolver` 相当）へ**引数だけ**変え、実行時側は `WorldObject` から作った resolver を
 渡すようにすれば、定義側と実行時側が同じ口を通る。`checkRangeEvents` は判定と効果適用が一体なので、
 「どちらの端か」を返す部分を切り出す必要がある（CLAUDE.md の「1つの仕組みで100%」がそのまま当たる）。

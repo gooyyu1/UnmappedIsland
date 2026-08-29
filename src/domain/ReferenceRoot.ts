@@ -16,9 +16,9 @@ export type ReferenceRoot =
    * （それらの許可rootには含めない）。
    */
   | 'child'
-  | 'actor'
-  /** combinations内でのみ意味を持つ、ドラッグされてきたカード（12.2節）。 */
-  | 'dragged'
+  | 'agent'
+  /** combinations内でのみ意味を持つ、運ばれてきて働きかけに使われる相手（11.5節・12.2節）。 */
+  | 'instrument'
   /**
    * `among`（10.3節）が周りから選んだ相手。**候補ごとに束ね直される**ので、重みを解くときは
    * その候補、効果を当てるときは選ばれた1つを指す。amongを書いた候補の中でのみ意味を持つ。
@@ -31,7 +31,7 @@ export type ReferenceRoot =
   | 'ancestor';
 
 /**
- * 宣言に書かれたReferenceRootを実行時のオブジェクトへ解くための、**誰がself/actor/draggedか**という文脈。
+ * 宣言に書かれたReferenceRootを実行時のオブジェクトへ解くための、**誰がself/agent/instrumentか**という文脈。
  *
  * 参照を持つ側（条件・効果・重み）はこれを組み立てず、受け取ったものをそのまま下へ渡す。**組み立てるのは
  * 「誰がこの行動をしているか」を知っている一番外側だけ**で、途中の誰も3つ組をばらして持ち回らない。
@@ -44,56 +44,56 @@ export class ReferenceContext {
   readonly self: WorldObject | undefined;
 
   /** この操作をしている者。誰も操作していない文脈（tick・持続効果のゲート）ではundefined。 */
-  readonly actor: WorldObject | undefined;
+  readonly agent: WorldObject | undefined;
 
   /** 重ねられてきた相手。combinationsの中でのみ相手を持つ（12.2節）。 */
-  readonly dragged: WorldObject | undefined;
+  readonly instrument: WorldObject | undefined;
 
   /** `among`が周りから選んだ相手。amongを書いた候補の中でのみ居る（10.3節）。 */
   readonly picked: WorldObject | undefined;
 
   private constructor(
     self: WorldObject | undefined,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
+    agent: WorldObject | undefined,
+    instrument: WorldObject | undefined,
     picked: WorldObject | undefined,
   ) {
     this.self = self;
-    this.actor = actor;
-    this.dragged = dragged;
+    this.agent = agent;
+    this.instrument = instrument;
     this.picked = picked;
   }
 
   /**
-   * selfだけが決まっている文脈。actor/draggedは解決先を持たない——誰かが操作しているとは限らない
+   * selfだけが決まっている文脈。agent/instrumentは解決先を持たない——誰かが操作しているとは限らない
    * 場面（持続効果のゲート、影響の一覧）で使う。
    */
   static forSelf(self: WorldObject | undefined): ReferenceContext {
     return new ReferenceContext(self, undefined, undefined, undefined);
   }
 
-  /** 操作の文脈（誰が・何を重ねて）。draggedはcombinationsの中でのみ相手を持つ（12.2節）。 */
+  /** 操作の文脈（誰が・何を重ねて）。instrumentはcombinationsの中でのみ相手を持つ（12.2節）。 */
   static acting(
     self: WorldObject | undefined,
-    actor: WorldObject | undefined,
-    dragged: WorldObject | undefined,
+    agent: WorldObject | undefined,
+    instrument: WorldObject | undefined,
   ): ReferenceContext {
-    return new ReferenceContext(self, actor, dragged, undefined);
+    return new ReferenceContext(self, agent, instrument, undefined);
   }
 
   /** selfだけを差し替えた文脈。誰が操作しているかは変わらないまま、参照の起点が移る場面で使う。 */
   withSelf(self: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(self, this.actor, this.dragged, this.picked);
+    return new ReferenceContext(self, this.agent, this.instrument, this.picked);
   }
 
-  /** draggedだけを差し替えた文脈。同じ操作を候補ごとに引き直す場面で使う（TransferEffect.acceptedCount）。 */
-  withDragged(dragged: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(this.self, this.actor, dragged, this.picked);
+  /** instrumentだけを差し替えた文脈。同じ操作を候補ごとに引き直す場面で使う（TransferEffect.acceptedCount）。 */
+  withInstrument(instrument: WorldObject | undefined): ReferenceContext {
+    return new ReferenceContext(this.self, this.agent, instrument, this.picked);
   }
 
   /** pickedだけを差し替えた文脈。amongが候補ごとに重みを引き、選んだ1つへ効果を当てるときに使う。 */
   withPicked(picked: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(this.self, this.actor, this.dragged, picked);
+    return new ReferenceContext(this.self, this.agent, this.instrument, picked);
   }
 
   /**
@@ -106,10 +106,10 @@ export class ReferenceContext {
         return this.self;
       case 'parent':
         return this.self?.parent;
-      case 'actor':
-        return this.actor;
-      case 'dragged':
-        return this.dragged;
+      case 'agent':
+        return this.agent;
+      case 'instrument':
+        return this.instrument;
       case 'picked':
         return this.picked;
       default:
@@ -165,8 +165,8 @@ export class PropertyPath {
 /**
  * 宣言が置かれた場所が、参照の解決に何を用意できるか（GameElementDefinition.md 14.1節）。
  *
- * **ロード時に弾く根拠と、実行時に組む`ReferenceContext`は同じ1つの事実。** actorが居ない場所で
- * actorを指せてしまうと、書けたのに実行時は必ず空振りする。だから場所ごとに許すrootを数え上げるのでは
+ * **ロード時に弾く根拠と、実行時に組む`ReferenceContext`は同じ1つの事実。** agentが居ない場所で
+ * agentを指せてしまうと、書けたのに実行時は必ず空振りする。だから場所ごとに許すrootを数え上げるのでは
  * なく、**場所は自分が何を持つかだけを宣言し、rootの側が何を要るかを言う**。両者の食い違いは、
  * 一覧を書き写す代わりに導出で消える。
  */
@@ -174,11 +174,11 @@ export class ReferenceScope {
   /** 宣言元の個体（self）が居るか。parent・ancestorもここから辿るので、無ければ揃って解けない。 */
   private readonly hasSelf: boolean;
 
-  /** 操作している者（actor）が居るか。時間の側が起こす場面（rangeイベント・passives）には居ない。 */
-  private readonly hasActor: boolean;
+  /** 操作している者（agent）が居るか。時間の側が起こす場面（rangeイベント・passives）には居ない。 */
+  private readonly hasAgent: boolean;
 
-  /** 重ねられた相手（dragged）が居るか。combinationsの中だけ（12.2節）。 */
-  private readonly hasDragged: boolean;
+  /** 重ねられた相手（instrument）が居るか。combinationsの中だけ（12.2節）。 */
+  private readonly hasInstrument: boolean;
 
   /** amongが選んだ相手（picked）が居るか。amongを書いた候補の中だけ（10.3節）。 */
   private readonly hasPicked: boolean;
@@ -191,15 +191,15 @@ export class ReferenceScope {
 
   private constructor(
     hasSelf: boolean,
-    hasActor: boolean,
-    hasDragged: boolean,
+    hasAgent: boolean,
+    hasInstrument: boolean,
     hasPicked: boolean,
     namesProperty: boolean,
     broadcasts: boolean,
   ) {
     this.hasSelf = hasSelf;
-    this.hasActor = hasActor;
-    this.hasDragged = hasDragged;
+    this.hasAgent = hasAgent;
+    this.hasInstrument = hasInstrument;
     this.hasPicked = hasPicked;
     this.namesProperty = namesProperty;
     this.broadcasts = broadcasts;
@@ -224,8 +224,8 @@ export class ReferenceScope {
   get withoutPropertyName(): ReferenceScope {
     return new ReferenceScope(
       this.hasSelf,
-      this.hasActor,
-      this.hasDragged,
+      this.hasAgent,
+      this.hasInstrument,
       this.hasPicked,
       false,
       this.broadcasts,
@@ -236,8 +236,8 @@ export class ReferenceScope {
   get withPicked(): ReferenceScope {
     return new ReferenceScope(
       this.hasSelf,
-      this.hasActor,
-      this.hasDragged,
+      this.hasAgent,
+      this.hasInstrument,
       true,
       this.namesProperty,
       this.broadcasts,
@@ -248,8 +248,8 @@ export class ReferenceScope {
   get withBroadcast(): ReferenceScope {
     return new ReferenceScope(
       this.hasSelf,
-      this.hasActor,
-      this.hasDragged,
+      this.hasAgent,
+      this.hasInstrument,
       this.hasPicked,
       this.namesProperty,
       true,
@@ -265,10 +265,10 @@ export class ReferenceScope {
       case 'self':
       case 'parent':
         return this.hasSelf ? undefined : 'ここには宣言元の個体が居ません';
-      case 'actor':
-        return this.hasActor ? undefined : 'ここは誰かが操作している場面とは限りません';
-      case 'dragged':
-        return this.hasDragged ? undefined : "'dragged'はcombinationsの中でのみ使えます";
+      case 'agent':
+        return this.hasAgent ? undefined : 'ここは誰かが操作している場面とは限りません';
+      case 'instrument':
+        return this.hasInstrument ? undefined : "'instrument'はcombinationsの中でのみ使えます";
       case 'picked':
         return this.hasPicked ? undefined : "'picked'はamongを書いた候補の中でのみ使えます";
       case 'ancestor':

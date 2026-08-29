@@ -188,16 +188,16 @@ traits:
         duration: 1
         transfer:
           amount: 999
-          from: dragged
+          from: instrument
           from_prop: fuel
           to_prop: fuel
-        destroy: dragged
+        destroy: instrument
       # 火種を落として着火する。置くのは種火1つぶんだけで、そこから先は薪が育てる。
       ignite:
         trigger: {drag: {object: burning_tinder}}
         conditions:
           - {reason: no_fuel, prop: fuel, gt: 0}
-        destroy: dragged
+        destroy: instrument
         set: {self: {heat: 1}}
 
 object_defs:
@@ -290,7 +290,7 @@ object_defs:
       light:
         trigger: {drag: {object: burning_tinder}}
         duration: 1
-        destroy: dragged
+        destroy: instrument
         set: {self: {lit: 1}}
 
   # 焼け石。炉で熱を溜め切った石で、**炉から取り出せる唯一の産物**（docs/engine/FireSystem.md 9.1節）。
@@ -321,7 +321,7 @@ object_defs:
         conditions:
           - {reason: not_hot_enough, prop: heat_soak, in_stage: searing}
         duration: 5
-        become: {subject: dragged, content: hot_water_liquid}
+        become: {subject: instrument, content: hot_water_liquid}
         set: {self: {heat_soak: 0}}
 
   # 焚き火。枝を積んだだけの炉。器を載せる枠を持たず、種火は30分で死ぬ。
@@ -365,7 +365,7 @@ object_defs:
       add_stone:
         trigger: {drag: {object: stone}}
         duration: 5
-        destroy: dragged
+        destroy: instrument
         add: {self: {stones: 1}}
 
   # 三石のかまど。石が支点になって、初めて器を火にかけられる。
@@ -402,7 +402,7 @@ object_defs:
       add_stone:
         trigger: {drag: {object: stone}}
         duration: 5
-        destroy: dragged
+        destroy: instrument
         add: {self: {stones: 1}}
 
   # 石囲いの炉。料理の最上段。種火が翌朝まで生き、薪を多く積め、火床が広いので器を2つ置ける。

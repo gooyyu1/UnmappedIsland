@@ -39,7 +39,7 @@ export interface CraftingOutput {
 
 /**
  * 工程が動かすプロパティ1件（`add`・`transfer`）。targetは宣言どおりの参照ルートで、キャラクタが
- * 受け取る値は`actor`、工程の主自身の値は`self`に出る。
+ * 受け取る値は`agent`、工程の主自身の値は`self`に出る。
  */
 export interface PropertyDelta {
   readonly target: ReferenceRoot;

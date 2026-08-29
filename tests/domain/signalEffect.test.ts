@@ -50,12 +50,12 @@ object_defs:
       # 重ねてきた物の側について告げる（対象を書く形の検査）。
       shrug_off:
         trigger: {drag: {tag: item}}
-        signal: {dragged: bounced}
+        signal: {instrument: bounced}
       hit_me:
         trigger: {drag: {tag: item}}
         pick:
           - weight: 70
-            destroy: dragged
+            destroy: instrument
             signal: hit
           - weight: 30
             signal: missed
@@ -63,10 +63,10 @@ object_defs:
         trigger: menu
         add:
           self: {stamina: -1}
-      # actorを渡さずに実行すると、この対象は解決できない。
+      # agentを渡さずに実行すると、この対象は解決できない。
       roar:
         trigger: menu
-        signal: {actor: startled}
+        signal: {agent: startled}
 `;
 
   /** 当たる側（重み70）を引くrollと、外す側（重み30）を引くroll。 */
@@ -166,7 +166,7 @@ object_defs:
   });
 
   it('解決できない対象へは何も告げない', () => {
-    // 他の命令が対象を解決できないときと同じ扱い（actorを渡さずに実行している）。
+    // 他の命令が対象を解決できないときと同じ扱い（agentを渡さずに実行している）。
     const seen = observe(() => {
       expect(beast.tryGetAction('roar', undefined)?.tryExecute() === true).toBe(true);
     });
@@ -250,7 +250,7 @@ object_defs:
   });
 
   it('対象キーでない名前を書くとロードエラーになる', () => {
-    // mappingの形で書けるのは対象キー（self/parent/actor/dragged）だけ。他の命令と同じ綴りの
+    // mappingの形で書けるのは対象キー（self/parent/agent/instrument）だけ。他の命令と同じ綴りの
     // 間違いを、その場で捕まえる。
     const load = (signal: string): (() => unknown) => {
       const yaml = `
@@ -265,7 +265,7 @@ object_defs:
     };
 
     expect(load('{name: missed}'), '対象キーではない').toThrow(YamlLoadError);
-    expect(load('{dragged: missed}'), 'draggedはcombinationsの中だけ').toThrow(YamlLoadError);
+    expect(load('{instrument: missed}'), 'instrumentはcombinationsの中だけ').toThrow(YamlLoadError);
     expect(load('{ancestor: missed}'), 'オブジェクトそのものを指せない').toThrow(YamlLoadError);
   });
 });
