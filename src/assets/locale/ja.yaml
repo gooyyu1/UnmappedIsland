@@ -41,8 +41,9 @@ slot_texts:
   # 畑に実ったもの（farming.yaml）。撒くのは畑のカードへ重ねる操作なので、枠へ入れる口は持たない。
   crop:
     display_name: 実り
-  # 囲いの中の獣（farming.yaml）。
-  livestock:
+  # 罠に掛かった獣と、囲いの中の獣（traps.yaml・farming.yaml）。**檻と家畜の囲いは1つの型**
+  # （docs/engine/TrapSystem.md 1.2節）で、枠も1つなので見出しも1つ。死体も同じ枠に残る。
+  catch:
     display_name: 獣
 
 object_texts:
@@ -510,10 +511,16 @@ object_texts:
         display_name: 次の見込み
       fodder:
         display_name: 飼葉
+      drinking_water:
+        display_name: 飲み水
+        description: 桶に入れてある水。中の獣が飲む。切らせば3日半で渇いて死ぬ。頭数が多いほど速く尽きる。
     interactions:
       feed:
         display_name: 飼葉をやる
         description: 草の食べ物を入れておく。空なら獣を寄せ、居れば食われる。頭数が多いほど速く尽きる。
+      water:
+        display_name: 水をやる
+        description: 水の入った器を空ける。器は空になって戻る。入りきらない分は器に残る。
   # 治療具（treatments.yaml）。
   bandage:
     display_name: 包帯
@@ -1287,6 +1294,7 @@ reason_texts:
   trap_baited: 罠にはもう餌が仕掛けてある。これ以上は入らない。
   field_sown: この畑はもう植わっている。空くまでは撒けない。
   pen_fed: 囲いにはもう飼葉がある。これ以上は入らない。
+  pen_watered: 囲いの水は満ちている。これ以上は入らない。
   salt_pan_full: 塩田は海水で満ちている。干し上がるまでは足せない。
   no_seawater: 海に面していない土地では、汲む海水がない。
   already_cured: これはもう塩漬けにしてある。
