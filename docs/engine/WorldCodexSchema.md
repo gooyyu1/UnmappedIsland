@@ -47,8 +47,8 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
   中身は検証しない**（`true` スキーマ）。詳細スキーマ化は今後の課題。
 - **`covers`/`layer`（object_def直下）・`unit`（prop直下）**: 文法として文書化済みでスキーマにも
   含めているが、ローダーは現時点でこれらのキーを解釈しない（読み飛ばす）。
-- **文脈依存の制約**: rangeイベント内には操作者が居ないので操作の関係の役（`agent`/`instrument`/`patient`）を
-  指せない、参照の主語に `instrument` を書けるのは使う物が運ばれてくる場所（`drag` のinteractions 12節・
+- **文脈依存の制約**: rangeイベント内には操作者が居ないので `agent`・`instrument` を指せない、
+  参照の主語に `instrument` を書けるのは使う物が運ばれてくる場所（`drag` のinteractions 12節・
   `put_in` の `duration` 7.10節）だけ、passivesのゲートの `subject` は `self`/`parent`/`ancestor` のみ、といった
   「どの文脈で書かれたか」に依存する制約は、スキーマでは表現せずローダーのロード時チェックに委ねる
   （スキーマは全文脈の和集合を受理する）。
