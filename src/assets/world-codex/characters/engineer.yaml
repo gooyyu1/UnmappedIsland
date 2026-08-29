@@ -99,12 +99,31 @@ object_defs:
       # 机に向かう時間が長かったぶん、基準より1割少ない持てる量。持ち物の重さ（g）は中身から導出されるので、valueは0のまま
       # （ContainerSystem.md 2節）。増える側が悪いプロパティなので、段はmaxからの割合で刻む
       # （docs/world/Characters.md）。
+      #
+      # **段が駆動するのは移動の可否だけではない**——歩みの速さ（pace）と体力の削りも同じ段が持つ
+      # （docs/world/Characters.md 荷重の効き方節）。倍率と削りはキャラクタに依らず同じで、
+      # 個人差は段の境目だけに出る。
       load:
         tags: [status, health]
         value: 0
         range: {min: 0, max: 27000}
         stages:
           - {name: light}
-          - {name: laden, min: 6750, alert: watch}
-          - {name: heavy, min: 13500, alert: caution}
-          - {name: too_heavy, min: 22500, alert: danger}
+          - name: laden
+            min: 6750
+            alert: watch
+            passives:
+              - add: {self: {stamina: -0.3}}
+              - modify: {self: {pace: 0.15}}
+          - name: heavy
+            min: 13500
+            alert: caution
+            passives:
+              - add: {self: {stamina: -1}}
+              - modify: {self: {pace: 0.4}}
+          # 通れない段なので歩みの速さは押し上げない。立っているだけで削られる。
+          - name: too_heavy
+            min: 22500
+            alert: danger
+            passives:
+              - add: {self: {stamina: -2}}

@@ -75,7 +75,9 @@ object_defs:
           # 荷と同じく段の名前で見るので、境目はキャラクタのlooking_brightnessのstagesだけが持つ。
           - reason: too_dark
             not: {subject: actor, prop: looking_brightness, in_stage: pitch_dark}
-        duration: {prop: travel_minutes}
+        # 道ごとの所要時間へ、担ぎ手の遅れ（pace、素は1）を掛ける（Characters.md 荷重の効き方節）。
+        # 和ではなく積なので、長い道ほど遅れも大きくなり、遅れの量を道ごとに書かずに済む。
+        duration: {prop: travel_minutes, times: {subject: actor, prop: pace}}
         move:
           subject: actor
           to_prop: destination_id

@@ -199,8 +199,6 @@ interactions:
 実行できないアクションのボタンは押せない見た目になり、押している間だけ理由が出ます
 （`reason: too_heavy`、`GameElementDefinition.md` 14.6 節）。
 
-**疲労は段の `add` で書けますが、移動時間だけは文法が 1 つ足りません**（8 節）。
-
 ## 6. 環境からの保護は sheltered プロパティ1つで表す
 
 蓋のある入れ物に入れた物が天候から守られることは、`sheltered`（0/1）というプロパティ1つで表します。
@@ -273,11 +271,6 @@ conditions:
 
 ## 8. 未決事項・今後の検討課題
 
-- 重い荷が**移動時間**へ与える影響（移動できるかどうかだけが 5 節で実装済み。**疲労のほうは段の `add` で
-  書けると決まった**、[`../world/Characters.md`](../world/Characters.md) 荷重の効き方節）。道ごとの所要時間と
-  担ぎ手の遅れを合流させる文法（`duration` の参照 2 つの積、
-  [`GameElementDefinition.md`](./GameElementDefinition.md) 11.3 節）は入ったので、残っているのは
-  `pace` と段ごとの倍率を実データへ書くことだけ
 - **荷重の段ごとの倍率と `stamina` の削り**（[`../world/Characters.md`](../world/Characters.md)
   荷重の効き方節）。「1 日ぶんと一晩の回復が同じ桁」という置き方だけが決まっていて、`laden` と `heavy` の
   差をどれだけ開けるかは、**1 日にどれだけ往復するのが普通か**が見えてから決める

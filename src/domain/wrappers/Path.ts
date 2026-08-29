@@ -36,7 +36,10 @@ export class Path extends ObjectWrapper {
     return this.effectiveNumberOf(this.words.returnPathIdId);
   }
 
-  /** この道を通って移動する（YAML側のtravelアクション: 未発見なら不成立、成功ならactorが移動先へ移り、travel_minutes分の時間が進む）。 */
+  /**
+   * この道を通って移動する（YAML側のtravelアクション: 未発見なら不成立、成功ならactorが移動先へ移り、
+   * travel_minutesに担ぎ手の遅れ（pace）を掛けた時間が進む）。
+   */
   travel(actor: WorldObject | undefined): boolean {
     return this.instance.tryGetAction(this.words.travelAction, actor)?.tryExecute() === true;
   }
