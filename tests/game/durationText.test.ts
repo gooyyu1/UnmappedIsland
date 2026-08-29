@@ -1,5 +1,25 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { timeCostLine, elapsedText, hoursAndMinutesText } from '../../src/game/looks/timeTexts';
+import { parseLocale } from '../../src/locale/Localization';
+import { setUiTexts } from '../../src/locale/uiTexts';
+
+/**
+ * 長さの字面は画面そのものの語なので、対応表（`ui_texts`）から出る。**確かめたい形はここに書く**
+ * ——同梱の`ja.yaml`を読むと、語を1つ変えただけでこの層が赤くなる。
+ */
+beforeAll(() => {
+  setUiTexts(
+    parseLocale(
+      'ja.yaml',
+      `ui_texts:
+  duration_minutes: '{minutes}分'
+  duration_hours: '{hours}時間'
+  duration_hours_minutes: '{hours}時間{minutes}分'
+  time_cost: 'かかる時間 {duration}'
+`,
+    ),
+  );
+});
 
 describe('hoursAndMinutesText(ゲーム内時間の長さ)', () => {
   it('1時間に満たなければ分だけ、超えれば時間と分に分ける', () => {

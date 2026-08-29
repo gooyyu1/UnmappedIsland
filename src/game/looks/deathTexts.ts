@@ -8,5 +8,7 @@ import type { Localization } from '../../locale/Localization';
  * 尽きた値が居る段の名前とは別の名前空間（Localization.destroyReason）。
  */
 export function causeOfDeathSentence(cause: string | undefined, locale: Localization): string {
-  return cause === undefined ? '力尽きた。' : `${locale.destroyReason(cause)}で死んだ。`;
+  return cause === undefined
+    ? locale.uiText('death_exhausted')
+    : locale.uiText('death_by_cause', { cause: locale.destroyReason(cause) });
 }

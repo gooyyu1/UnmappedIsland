@@ -5,6 +5,7 @@ import type { Card } from './Card';
 import type { CardLane, LaneDropTarget } from './CardLane';
 import type { CarriedCard } from './CardTable';
 import { noteOperation } from '../errorReport';
+import { uiText } from '../../locale/uiTexts';
 import { HoldRepeat } from '../../ui/holdRepeat';
 import type { TooltipContent } from './Tooltip';
 import { Tooltip } from './Tooltip';
@@ -222,7 +223,7 @@ export class CardDragController {
 
   private startDragging(gesture: Gesture, pointer: Phaser.Input.Pointer): void {
     gesture.kind = 'dragging';
-    noteOperation(`カードを掴んだ: ${gesture.card.content.name}`);
+    noteOperation(uiText('log_card_grabbed', { name: gesture.card.content.name }));
     // 掴んで動かす操作になったので、掴んだカードの上で指を離してもタップにはしない（Card.cancelTap）。
     gesture.card.cancelTap();
 
@@ -370,7 +371,7 @@ export class CardDragController {
     if (found === undefined || gesture.carried === undefined) {
       // 落とさなかったので、運んでいた札は元の枠へ飛んで帰る（帰り着いた時点で元の束に合流する）。
       if (gesture.kind === 'dragging') {
-        noteOperation(`カードを離した: ${gesture.card.content.name}（落とし先なし）`);
+        noteOperation(uiText('log_card_released', { name: gesture.card.content.name }));
       }
       gesture.carried?.flyBackToSource();
       gesture.carried = undefined;

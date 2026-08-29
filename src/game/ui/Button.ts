@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { noteOperation } from '../errorReport';
+import { uiText } from '../../locale/uiTexts';
 import { addLabel } from '../../ui/labels';
 import type { BoxStyle } from '../../ui/shapes';
 import { drawBox } from '../../ui/shapes';
@@ -205,7 +206,7 @@ export function addTextButton(
     textButtonBoxStyle(metrics, style),
     () => {
       // ラベルがそのまま「何を押したか」になる（errorReport参照）。絵だけのボタンは押した結果の側で控える。
-      noteOperation(`ボタンを押した: ${label}`);
+      noteOperation(uiText('log_button_tapped', { label }));
       onTap();
     },
     hold,

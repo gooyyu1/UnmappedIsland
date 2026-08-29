@@ -12,6 +12,7 @@ import type { StartedGame } from '../domain/generation/NewGame';
 import { resolveCharacterDefNameOrFirst, startNewGame } from '../domain/generation/NewGame';
 import { seededRng } from '../domain/Rng';
 import type { Localization } from '../locale/Localization';
+import type { UiTextName } from '../locale/uiTexts';
 import type { SaveData } from '../save/SaveData';
 import { SAVE_SCHEMA_VERSION } from '../save/SaveData';
 import { SaveSlots } from '../save/SaveSlots';
@@ -153,11 +154,11 @@ const BRIGHTEN_MS = 320;
 const DARKEN_MS = BRIGHTEN_MS * 2;
 
 /** エラー報告に載せる、演出中の呼び名（errorReport参照）。 */
-const ACTIVITY_NAMES: Readonly<Record<Activity, string>> = {
-  idle: 'なし',
-  exploring: '探索の結果待ち',
-  elapsing: '時間の経過',
-  transiting: '場面転換',
+const ACTIVITY_TEXT_NAMES: Readonly<Record<Activity, UiTextName>> = {
+  idle: 'activity_idle',
+  exploring: 'activity_exploring',
+  elapsing: 'activity_elapsing',
+  transiting: 'activity_transiting',
 };
 
 /**
@@ -538,9 +539,9 @@ export class PlayScene extends ResponsiveScene {
     // エラー報告に載せる状態を、このシーンが居る間だけ答える（errorReport参照）。
     const from =
       data.scenario !== undefined
-        ? `シナリオ「${data.scenario.title}」`
-        : `セーブスロット${this.slotIndex + 1}`;
-    noteOperation(`プレイ画面を開いた: ${from} / シード ${data.save.seed}`);
+        ? this.locale.uiText('log_from_scenario', { title: data.scenario.title })
+        : this.locale.uiText('log_from_slot', { index: String(this.slotIndex + 1) });
+    noteOperation(this.locale.uiText('log_play_opened', { from, seed: String(data.save.seed) }));
     setStateReporter(() => this.stateLines());
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => setStateReporter(undefined));
   }
@@ -602,24 +603,39 @@ export class PlayScene extends ResponsiveScene {
 
   /** エラー報告に載せる、場所1つ。同じ型の入れ物が複数あっても見分けられるよう、持ち主も出す。 */
   private placeText(place: CardPlace): string {
-    return `${place.owner.def.name}#${place.owner.instanceId}の${this.view.slotViewOf(place).key}`;
+    return this.locale.uiText('state_place', {
+      owner: place.owner.def.name,
+      id: String(place.owner.instanceId),
+      slot: this.view.slotViewOf(place).key,
+    });
   }
 
   /** エラー報告に載せる、今の画面の状態（errorReport.setStateReporter）。 */
   private stateLines(): readonly string[] {
     return [
-      `ワールド時刻: ${this.clockText()}`,
-      `現在地: ${this.view.currentLocationCard.name}`,
-      `演出中: ${ACTIVITY_NAMES[this.activity]}`,
-      `子ウィンドウ: ${this.childWindowPlace === undefined ? 'なし' : this.placeText(this.childWindowPlace)}`,
-      `手持ち: ${this.view
-        .cardsIn(this.placeOfScreen('hand'))
-        .map((card) => card?.name ?? '空き')
-        .join(' / ')}`,
-      `アイテム: ${this.view
-        .cardsIn(this.placeOfScreen('items'))
-        .map((card) => card?.name)
-        .join(' / ')}`,
+      this.locale.uiText('state_world_time', { clock: this.clockText() }),
+      this.locale.uiText('state_location', { name: this.view.currentLocationCard.name }),
+      this.locale.uiText('state_activity', {
+        activity: this.locale.uiText(ACTIVITY_TEXT_NAMES[this.activity]),
+      }),
+      this.locale.uiText('state_child_window', {
+        place:
+          this.childWindowPlace === undefined
+            ? this.locale.uiText('state_no_child_window')
+            : this.placeText(this.childWindowPlace),
+      }),
+      this.locale.uiText('state_hand', {
+        cards: this.view
+          .cardsIn(this.placeOfScreen('hand'))
+          .map((card) => card?.name ?? this.locale.uiText('state_empty_cell'))
+          .join(' / '),
+      }),
+      this.locale.uiText('state_items', {
+        cards: this.view
+          .cardsIn(this.placeOfScreen('items'))
+          .map((card) => card?.name)
+          .join(' / '),
+      }),
     ];
   }
 
@@ -939,7 +955,11 @@ export class PlayScene extends ResponsiveScene {
     for (const direction of EDGE_DIRECTIONS) {
       const move = this.shown.edgeMoveAction(card, direction);
       if (move !== undefined) {
-        const label = `カードの端を押した: ${card.name}（${this.placeText(card.place)} の ${direction}）`;
+        const label = this.locale.uiText('log_card_edge_tapped', {
+          name: card.name,
+          place: this.placeText(card.place),
+          direction,
+        });
         edges.push({ direction, onTap: () => this.applyToWorld(label, move) });
       }
     }
@@ -971,7 +991,7 @@ export class PlayScene extends ResponsiveScene {
     if (this.busy || depth === this.shownDepth) return;
 
     this.shownLocationDepth = depth;
-    noteOperation(`設置物レーンの場所を切り替えた: ${this.shownLocation.window.card.name}`);
+    noteOperation(this.locale.uiText('log_fixtures_switched', { name: this.shownLocation.window.card.name }));
     this.rebuildFixtureLane();
   }
 
@@ -1151,17 +1171,18 @@ export class PlayScene extends ResponsiveScene {
 
   /** そのドロップを、再現手順として読める言葉にする（errorReport参照）。 */
   private dropLabel(drop: CardDrop): string {
-    const dragged = this.stacksOf(drop.from)[drop.fromIndex]?.name ?? '?';
+    const name = this.stacksOf(drop.from)[drop.fromIndex]?.name ?? '?';
     const count = drop.count > 1 ? ` ×${drop.count}` : '';
+    const dragged = `${name}${count}`;
     const dropped = this.dropOf(drop);
     const to = dropped === undefined || dropped.to === 'windowCard' ? '?' : this.placeText(dropped.to);
-    if (drop.target.kind !== 'combine') return `カードを落とした: ${dragged}${count} → ${to}`;
+    if (drop.target.kind !== 'combine') return this.locale.uiText('log_card_dropped', { dragged, to });
 
     const onto = this.stacksOf(drop.to)[drop.target.index]?.name ?? '?';
     const combination = dropped === undefined ? undefined : this.shown.dropCombination(dropped);
     return combination !== undefined
-      ? `カードを重ねた: ${dragged} → ${onto}（${combination.name}）`
-      : `カードを入れた: ${dragged}${count} → ${onto}の中`;
+      ? this.locale.uiText('log_card_combined', { dragged: name, onto, combination: combination.name })
+      : this.locale.uiText('log_card_put_in', { dragged, onto });
   }
 
   /**
@@ -1255,7 +1276,10 @@ export class PlayScene extends ResponsiveScene {
         action.key === EXPLORE_ACTION
           ? () => this.explore()
           : () => {
-              this.applyToWorld(`アクション: ${action.name}（${owner}）`, action.execute);
+              this.applyToWorld(
+                this.locale.uiText('log_action', { name: action.name, owner }),
+                action.execute,
+              );
             },
     }));
   }
@@ -1281,7 +1305,7 @@ export class PlayScene extends ResponsiveScene {
       readonly properties?: readonly PropertyTab[];
     },
   ): void {
-    noteOperation(`子ウィンドウを開いた: ${window.card.name}`);
+    noteOperation(this.locale.uiText('log_child_window_opened', { name: window.card.name }));
     // タブに並べるスロット。可視のスロット（visible_slots、7.11節）を宣言順に並べる。
     this.childWindowTabs = window.slots.map((slot) => ({
       key: this.view.slotViewOf(slot).key,
@@ -1437,7 +1461,7 @@ export class PlayScene extends ResponsiveScene {
     const startedAt = this.gameSession.world.totalMinutes;
 
     const explored = this.shownLocation;
-    noteOperation(`探索した: ${explored.window.card.name}（${this.clockText()}）`);
+    this.noteOperationAt(this.locale.uiText('log_explored', { name: explored.window.card.name }));
     // 結果待ちはここから。降ろすのは経過を見せ切った時点（passTime）。
     this.activity = 'exploring';
 
@@ -1671,10 +1695,21 @@ export class PlayScene extends ResponsiveScene {
     this.situationPanel.setTime(days, hour, minute);
   }
 
+  /**
+   * 起きた操作を、そのときのワールド時刻を添えて控える（errorReport参照）。**添え方はここだけが
+   * 決める**——操作ごとに書式を持つと、同じ「何をしたか＋いつか」の組み立てが対応表に並ぶ。
+   */
+  private noteOperationAt(label: string): void {
+    noteOperation(this.locale.uiText('log_at_clock', { label, clock: this.clockText() }));
+  }
+
   /** 今のワールド時刻（エラー報告と操作の記録に添える）。 */
   private clockText(): string {
     const { days, hour, minute } = clockParts(this.gameSession.world.totalMinutes);
-    return `${days}日 ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    return this.locale.uiText('state_clock', {
+      days: String(days),
+      time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+    });
   }
 
   /**
@@ -1705,7 +1740,7 @@ export class PlayScene extends ResponsiveScene {
       return;
     }
 
-    noteOperation(`${label}（${this.clockText()}）`);
+    this.noteOperationAt(label);
 
     // 掴んで離したカードは、経過し切るまで離した場所に置いたままにする（使っている道具はそこに在る）。
     if (released !== undefined) this.cardTable.confirmHeldIds(released);
@@ -2203,7 +2238,7 @@ export class PlayScene extends ResponsiveScene {
     const content = this.status.contentOf(key);
     if (content === undefined) return;
 
-    noteOperation('ステータスの詳細を開いた');
+    noteOperation(this.locale.uiText('log_status_detail_opened'));
     this.statusDetailWindow?.close();
     this.statusDetailKey = key;
     this.statusDetailWindow = new StatusDetailWindow(this, this.metrics, {
@@ -2213,7 +2248,7 @@ export class PlayScene extends ResponsiveScene {
       onOpenStatus: (target) => this.openStatusDetail(target),
       // 絵だけのボタンなので、押されたことはここで控える（Button.addTextButton参照）。
       onTogglePin: () => {
-        noteOperation('ステータスの固定表示を切り替えた');
+        noteOperation(this.locale.uiText('log_status_pin_toggled'));
         this.status.togglePin(key);
       },
       onClose: () => {
@@ -2262,15 +2297,15 @@ export class PlayScene extends ResponsiveScene {
 
   /** 何を作るかを選ぶ一覧を開く。選ぶと製作中オブジェクトが現在地に生まれる。 */
   private openRecipeWindow(): void {
-    noteOperation('レシピ一覧を開いた');
+    noteOperation(this.locale.uiText('log_recipe_window_opened'));
     this.recipeWindow?.close();
     this.recipeWindow = new RecipeWindow(this, this.metrics, {
-      title: '作るもの',
+      title: this.locale.uiText('recipe_title'),
       categories: recipeCategories(this.gameSession, this.codex, this.locale, (defGlobalId, origin) => {
         this.closeRecipeWindow();
         this.startCrafting(defGlobalId, origin);
       }),
-      emptyText: 'ここに並ぶものはまだ無い。',
+      emptyText: this.locale.uiText('recipe_empty'),
       onClose: () => this.closeRecipeWindow(),
     });
   }
@@ -2310,7 +2345,7 @@ export class PlayScene extends ResponsiveScene {
 
   /** 地図ボタンから開く地図ウィンドウ。既知の土地と発見済みの道を、ユーザが並べた位置で見せる。 */
   private openMapWindow(): void {
-    noteOperation('地図を開いた');
+    noteOperation(this.locale.uiText('log_map_opened'));
     this.mapWindow?.close();
     this.mapWindow = new MapWindow(this, this.metrics, {
       lands: this.view.mapLands,
@@ -2421,18 +2456,24 @@ export class PlayScene extends ResponsiveScene {
    */
   private showDeath(): void {
     const cause = this.gameSession.player.ending.causeOfDeath;
-    noteOperation(`死んだ: ${cause ?? '不明'}（${this.clockText()}）`);
+    this.noteOperationAt(this.locale.uiText('log_died', { cause: cause ?? this.locale.uiText('unknown') }));
 
     new ModalDialog(this, this.metrics, {
       card: this.view.characterCard,
-      title: `${this.view.characterCard.name}は息絶えた`,
+      title: this.locale.uiText('death_title', { name: this.view.characterCard.name }),
       // 死因を名乗るのはワールドの側（命を絶ったdestroy）で、画面は文言を引くだけ。
       body: [
-        `生存 ${this.view.elapsedDays} 日目`,
+        this.locale.uiText('survived_days', { days: String(this.view.elapsedDays) }),
         causeOfDeathSentence(cause, this.locale),
-        'この島の記録は残らない。',
+        this.locale.uiText('death_no_record'),
       ].join('\n'),
-      actions: [{ label: 'セーブ選択へ', style: 'primary', onTap: () => this.deleteSaveAndLeave() }],
+      actions: [
+        {
+          label: this.locale.uiText('death_to_slots'),
+          style: 'primary',
+          onTap: () => this.deleteSaveAndLeave(),
+        },
+      ],
     });
   }
 
@@ -2444,17 +2485,23 @@ export class PlayScene extends ResponsiveScene {
    */
   private showEscape(): void {
     const brought = this.gameSession.player.ending.broughtArtifacts;
-    noteOperation(`島を出た: 持ち帰り ${brought.length} 点（${this.clockText()}）`);
+    this.noteOperationAt(this.locale.uiText('log_escaped', { count: String(brought.length) }));
 
     new ModalDialog(this, this.metrics, {
       card: this.view.characterCard,
-      title: `${this.view.characterCard.name}は島を出た`,
+      title: this.locale.uiText('escape_title', { name: this.view.characterCard.name }),
       body: [
-        `島で ${this.view.elapsedDays} 日を過ごした`,
-        '潮に乗った筏は、ついに人の住む岸へ着いた。振り返っても、島はもう水平線の下にある。',
-        'この島の記録は残らない。棚に並ぶ物だけが残る。',
+        this.locale.uiText('escape_days', { days: String(this.view.elapsedDays) }),
+        this.locale.uiText('escape_body'),
+        this.locale.uiText('escape_no_record'),
       ].join('\n'),
-      actions: [{ label: '棚へ', style: 'primary', onTap: () => this.storeAndLeave(brought) }],
+      actions: [
+        {
+          label: this.locale.uiText('escape_to_shelf'),
+          style: 'primary',
+          onTap: () => this.storeAndLeave(brought),
+        },
+      ],
     });
   }
 
@@ -2481,11 +2528,15 @@ export class PlayScene extends ResponsiveScene {
 
   private confirmReturnToTitle(): void {
     new ModalDialog(this, this.metrics, {
-      title: 'タイトルへ戻りますか？',
-      body: 'ここまでの進行はセーブデータに残ります。',
+      title: this.locale.uiText('quit_title'),
+      body: this.locale.uiText('quit_body'),
       actions: [
-        { label: 'キャンセル' },
-        { label: 'タイトルへ', style: 'primary', onTap: () => this.scene.start('title') },
+        { label: this.locale.uiText('cancel') },
+        {
+          label: this.locale.uiText('quit_confirm'),
+          style: 'primary',
+          onTap: () => this.scene.start('title'),
+        },
       ],
     });
   }

@@ -50,6 +50,12 @@ const CHARACTER_DESCRIPTION_LINES = 3;
 const FIELD_LABEL_SIZE = 26;
 
 /**
+ * 行の高さを測るためだけに置く一文字。**画面には出ない**（測ったらすぐ壊す）ので、対応表は引かない
+ * ——測りたいのは書体の行の高さで、そこに何と書いてあるかは関わらない。
+ */
+const HEIGHT_SAMPLE = 'あ';
+
+/**
  * 左右に分けるときの列の間隔と、入力欄の列に要る最低幅（u単位）。
  * 札を原寸で並べたうえでこの幅が残らないなら、分けずに上から積む。
  */
@@ -104,7 +110,9 @@ export class NewGameScene extends ResponsiveScene {
   protected build(): void {
     const { width, height } = this.metrics;
     addInputBlockingPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
-    new ScreenHeader(this, this.metrics, width, '新規ゲーム作成', () => this.scene.start('slots'));
+    new ScreenHeader(this, this.metrics, width, this.locale.uiText('newgame_title'), () =>
+      this.scene.start('slots'),
+    );
 
     const paddingX = this.metrics.px(this.metrics.isLandscape ? BODY_PADDING_LANDSCAPE_X : BODY_PADDING);
     const contentWidth = width - paddingX * 2;
@@ -137,9 +145,9 @@ export class NewGameScene extends ResponsiveScene {
 
   /** 島の名前と乱数シードを縦に並べる。占有する高さはtextFieldsHeightが答える。 */
   private addTextFields(x: number, y: number, width: number): void {
-    this.addTextFieldReturningUsedHeight(x, y, width, '島の名前', {
+    this.addTextFieldReturningUsedHeight(x, y, width, this.locale.uiText('newgame_island_name'), {
       value: this.islandName,
-      placeholder: '例: 霧深い孤島',
+      placeholder: this.locale.uiText('newgame_island_name_placeholder'),
       maxLength: ISLAND_NAME_MAX_LENGTH,
       onChange: (value) => {
         this.islandName = value;
@@ -154,9 +162,9 @@ export class NewGameScene extends ResponsiveScene {
     });
 
     const seedY = y + this.textFieldHeight() + this.metrics.px(FIELD_GAP);
-    this.addTextFieldReturningUsedHeight(x, seedY, width, '乱数シード', {
+    this.addTextFieldReturningUsedHeight(x, seedY, width, this.locale.uiText('newgame_seed'), {
       value: this.seedText,
-      placeholder: '例: 1837462519',
+      placeholder: this.locale.uiText('newgame_seed_placeholder'),
       maxLength: String(SEED_MAX).length,
       numeric: true,
       onChange: (value) => {
@@ -216,7 +224,10 @@ export class NewGameScene extends ResponsiveScene {
 
   /** 項目名1行の高さ。組み立てる前に列の高さを見積もるために測る。 */
   private labelHeight(): number {
-    const sample = addLabel(this, this.metrics, 0, 0, 'あ', { size: FIELD_LABEL_SIZE, bold: true });
+    const sample = addLabel(this, this.metrics, 0, 0, HEIGHT_SAMPLE, {
+      size: FIELD_LABEL_SIZE,
+      bold: true,
+    });
     const height = sample.height;
     sample.destroy();
     return height;
@@ -281,7 +292,7 @@ export class NewGameScene extends ResponsiveScene {
 
   private addCharacterField(x: number, y: number, width: number): void {
     const buttonSize = this.metrics.px(RANDOM_BUTTON_SIZE);
-    const labelText = addLabel(this, this.metrics, x, 0, 'キャラクター選択', {
+    const labelText = addLabel(this, this.metrics, x, 0, this.locale.uiText('newgame_character'), {
       size: FIELD_LABEL_SIZE,
       bold: true,
     });
@@ -390,7 +401,9 @@ export class NewGameScene extends ResponsiveScene {
 
   /** 説明のために常に空けておく高さ（CHARACTER_DESCRIPTION_LINES行ぶん）。 */
   private characterDescriptionHeight(lineSpacing: number): number {
-    const sample = addLabel(this, this.metrics, 0, 0, 'あ', { size: CHARACTER_DESCRIPTION_SIZE });
+    const sample = addLabel(this, this.metrics, 0, 0, HEIGHT_SAMPLE, {
+      size: CHARACTER_DESCRIPTION_SIZE,
+    });
     const height =
       sample.height * CHARACTER_DESCRIPTION_LINES + lineSpacing * (CHARACTER_DESCRIPTION_LINES - 1);
     sample.destroy();
@@ -417,11 +430,23 @@ export class NewGameScene extends ResponsiveScene {
     const gap = this.metrics.px(16);
     const buttonWidth = (width - paddingX * 2 - gap) / 2;
     const y = height - footerHeight + paddingY;
-    this.addFooterButton(paddingX, y, buttonWidth, buttonHeight, 'もどる', false, () =>
-      this.scene.start('slots'),
+    this.addFooterButton(
+      paddingX,
+      y,
+      buttonWidth,
+      buttonHeight,
+      this.locale.uiText('newgame_back'),
+      false,
+      () => this.scene.start('slots'),
     );
-    this.addFooterButton(paddingX + buttonWidth + gap, y, buttonWidth, buttonHeight, 'はじめる', true, () =>
-      this.startGame(),
+    this.addFooterButton(
+      paddingX + buttonWidth + gap,
+      y,
+      buttonWidth,
+      buttonHeight,
+      this.locale.uiText('newgame_start'),
+      true,
+      () => this.startGame(),
     );
   }
 
@@ -451,18 +476,18 @@ export class NewGameScene extends ResponsiveScene {
   private startGame(): void {
     const islandName = normalizedIslandNameOrUndefined(this.islandName);
     if (islandName === undefined) {
-      this.showNotice('島の名前を入力してください（ランダムボタンでも入力できます）');
+      this.showNotice(this.locale.uiText('newgame_notice_island_name'));
       return;
     }
 
     const seed = parseSeed(this.seedText);
     if (seed === undefined) {
-      this.showNotice(`乱数シードは0〜${SEED_MAX}の数字で入力してください`);
+      this.showNotice(this.locale.uiText('newgame_notice_seed', { max: String(SEED_MAX) }));
       return;
     }
 
     if (this.characterDefName === undefined) {
-      this.showNotice('キャラクターを選択してください');
+      this.showNotice(this.locale.uiText('newgame_notice_character'));
       return;
     }
 
@@ -473,9 +498,9 @@ export class NewGameScene extends ResponsiveScene {
 
   private showNotice(body: string): void {
     new ModalDialog(this, this.metrics, {
-      title: '入力を確認してください',
+      title: this.locale.uiText('newgame_notice_title'),
       body,
-      actions: [{ label: 'OK', style: 'primary' }],
+      actions: [{ label: this.locale.uiText('ok'), style: 'primary' }],
     });
   }
 }

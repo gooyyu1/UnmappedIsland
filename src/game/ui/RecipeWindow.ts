@@ -224,18 +224,22 @@ export class RecipeWindow {
 
       const rowTop = top;
       category.entries.forEach((entry, position) => {
-        const locked = entry.lockedReason !== undefined;
+        const lockedReason = entry.lockedReason;
         const x = left + (position % this.columns) * (cardWidth + cardGap);
         const y = rowTop + Math.floor(position / this.columns) * (cardHeight + cardGap);
         viewport.add(
           new Card(scene, metrics, x, y, {
             ...entry.card,
             // 未解放のレシピも並べる。押せないことは名前の後ろの理由で伝える。
-            name: locked ? `${entry.card.name}（${entry.lockedReason}）` : entry.card.name,
+            name:
+              lockedReason === undefined
+                ? entry.card.name
+                : uiText('recipe_locked_name', { name: entry.card.name, reason: lockedReason }),
             // 送られていることがあるので、居場所は押した時点で測る（viewportの送り量を足す）。
-            onTap: locked
-              ? undefined
-              : () => entry.onSelect({ x, y: y + viewport.y, width: cardWidth, height: cardHeight }),
+            onTap:
+              lockedReason !== undefined
+                ? undefined
+                : () => entry.onSelect({ x, y: y + viewport.y, width: cardWidth, height: cardHeight }),
           }),
         );
       });

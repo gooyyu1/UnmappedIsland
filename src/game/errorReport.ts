@@ -11,6 +11,11 @@
  * 増える。
  */
 
+import { uiText } from '../locale/uiTexts';
+
+/** 文面の行の字下げ（幅は文面の見た目の都合なので、対応表ではなくこちらが持つ）。 */
+const INDENT = '  ';
+
 /**
  * 控えておく操作の数と、別々のものとして並べるエラーの数。どちらも古いものから捨てる。
  *
@@ -69,7 +74,7 @@ export function installErrorReport(): void {
     receive(event.error, event.message);
   });
   window.addEventListener('unhandledrejection', (event) => {
-    receive(event.reason, '(Promiseの拒否)');
+    receive(event.reason, uiText('report_promise_rejection'));
   });
 }
 
@@ -99,41 +104,58 @@ function receive(error: unknown, fallback: string): void {
 
 /** そのまま貼れる報告の全文。 */
 function buildReport(): string {
-  const lines: string[] = ['UnmappedIsland 実行時エラー', `発生時刻: ${new Date().toLocaleString()}`, ''];
+  const lines: string[] = [
+    uiText('report_title'),
+    uiText('report_time', { time: new Date().toLocaleString() }),
+    '',
+  ];
 
   [...reported.values()].forEach((entry, index) => {
-    lines.push(`【エラー ${index + 1}】${entry.message}`);
-    lines.push(
-      `  起動から ${secondsText(entry.at)} 秒${entry.count > 1 ? ` / 同じエラーが${entry.count}回` : ''}`,
-    );
+    lines.push(uiText('report_error', { index: String(index + 1), message: entry.message }));
+    const repeated = entry.count > 1 ? uiText('report_repeated', { count: String(entry.count) }) : '';
+    lines.push(INDENT + uiText('report_since_start', { seconds: secondsText(entry.at) }) + repeated);
     lines.push(entry.stack);
     lines.push('');
   });
 
-  lines.push('--- 直前の操作（古い順） ---');
-  if (operations.length === 0) lines.push('（記録なし）');
+  lines.push(uiText('report_operations'));
+  if (operations.length === 0) lines.push(uiText('report_no_operations'));
   for (const operation of operations)
-    lines.push(`  ${secondsText(operation.at).padStart(7)}秒  ${operation.text}`);
+    lines.push(
+      INDENT +
+        uiText('report_operation', {
+          seconds: secondsText(operation.at).padStart(7),
+          text: operation.text,
+        }),
+    );
   lines.push('');
 
-  lines.push('--- 画面の状態 ---');
+  lines.push(uiText('report_state'));
   lines.push(...describeState());
   lines.push('');
 
-  lines.push('--- 環境 ---');
-  lines.push(`  画面: ${window.innerWidth}x${window.innerHeight} / dpr ${window.devicePixelRatio}`);
-  lines.push(`  UA: ${navigator.userAgent}`);
+  lines.push(uiText('report_environment'));
+  lines.push(
+    INDENT +
+      uiText('report_screen', {
+        width: String(window.innerWidth),
+        height: String(window.innerHeight),
+        ratio: String(window.devicePixelRatio),
+      }),
+  );
+  lines.push(`${INDENT}UA: ${navigator.userAgent}`);
   return lines.join('\n');
 }
 
 /** 登録されている報告者に今の状態を訊く。壊れていればその旨を返す（報告自体は続ける）。 */
 function describeState(): readonly string[] {
-  if (stateReporter === undefined) return ['  （プレイ画面の外）'];
+  if (stateReporter === undefined) return [INDENT + uiText('report_outside_play')];
 
   try {
-    return stateReporter().map((line) => `  ${line}`);
+    return stateReporter().map((line) => INDENT + line);
   } catch (error) {
-    return [`  （状態を読めなかった: ${messageOf(error, '不明')}）`];
+    const message = messageOf(error, uiText('unknown'));
+    return [INDENT + uiText('report_state_failed', { message })];
   }
 }
 
@@ -144,7 +166,7 @@ function messageOf(error: unknown, fallback: string): string {
 
 function stackTraceOf(error: unknown): string {
   const stack = error instanceof Error ? error.stack : undefined;
-  return stack === undefined ? '  （スタックトレースなし）' : stack;
+  return stack === undefined ? INDENT + uiText('report_no_stack') : stack;
 }
 
 function secondsText(at: number): string {
@@ -180,13 +202,13 @@ class ErrorOverlay {
     const bar = document.createElement('div');
     bar.style.cssText = 'display:flex;gap:8px;align-items:center;padding:8px;background:#d9534f;color:#fff';
     const title = document.createElement('strong');
-    title.textContent = 'エラーが発生しました';
+    title.textContent = uiText('error_title');
     title.style.cssText = 'flex:1;font-size:13px';
 
     this.copyButton = document.createElement('button');
-    this.copyButton.textContent = 'コピー';
+    this.copyButton.textContent = uiText('error_copy');
     const closeButton = document.createElement('button');
-    closeButton.textContent = '閉じる';
+    closeButton.textContent = uiText('close');
     for (const button of [this.copyButton, closeButton]) {
       button.style.cssText = 'font:inherit;padding:6px 14px;border:0;border-radius:4px;cursor:pointer';
     }
@@ -227,7 +249,7 @@ class ErrorOverlay {
 
     try {
       await navigator.clipboard.writeText(text);
-      this.copyButton.textContent = 'コピーしました';
+      this.copyButton.textContent = uiText('error_copied');
       return;
     } catch {
       const range = document.createRange();
@@ -235,7 +257,7 @@ class ErrorOverlay {
       const selection = window.getSelection();
       selection?.removeAllRanges();
       selection?.addRange(range);
-      this.copyButton.textContent = '選択しました（手でコピー）';
+      this.copyButton.textContent = uiText('error_selected');
     }
   }
 }

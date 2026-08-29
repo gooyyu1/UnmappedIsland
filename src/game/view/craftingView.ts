@@ -59,8 +59,8 @@ export function craftingActions(
 
   return [
     {
-      name: '自動補充',
-      description: '手持ちと足元から、足りない素材を入れる。入れ物の中までは探さない。',
+      name: locale.uiText('crafting_autofill'),
+      description: locale.uiText('crafting_autofill_detail'),
       minutes: 0,
       enabled: true,
       reason: undefined,
@@ -80,8 +80,8 @@ export function craftingActions(
       },
     },
     {
-      name: '作業する',
-      description: '揃っている素材を使って、次の工程を進める。',
+      name: locale.uiText('crafting_work'),
+      description: locale.uiText('crafting_work_detail'),
       minutes: step?.durationMinutes ?? 0,
       enabled: supplied && unmetCrafting === undefined,
       reason: reasonNotToWork(unmetCrafting, supplied, locale),
@@ -90,8 +90,8 @@ export function craftingActions(
       },
     },
     {
-      name: '中断',
-      description: '作りかけをやめる。入れてある素材はその場へこぼれる。',
+      name: locale.uiText('crafting_abort'),
+      description: locale.uiText('crafting_abort_detail'),
       minutes: 0,
       enabled: true,
       reason: undefined,
@@ -144,5 +144,5 @@ function reasonNotToWork(
 ): string | undefined {
   if (unmetCrafting !== undefined)
     return unmetCrafting.reasonName === undefined ? undefined : locale.reason(unmetCrafting.reasonName);
-  return supplied ? undefined : '素材が足りない。';
+  return supplied ? undefined : locale.uiText('crafting_no_materials');
 }

@@ -44,7 +44,19 @@ object_defs:
     wip.tryGetSlot(mini.codex.vocabulary.engine.materialsSlotId)?.contents ?? [];
 
   // この世界はcrafting_conditions（13.4節）を宣言しないので、理由の文言は引かれない。
-  const locale = parseLocale('ja.yaml', 'object_texts:\n  leaf:\n    display_name: 葉\n');
+  // 操作の呼び名は画面そのものの語なので、ワールドではなくui_textsから出る（Localization.md）。
+  const locale = parseLocale(
+    'ja.yaml',
+    `object_texts:
+  leaf:
+    display_name: 葉
+ui_texts:
+  crafting_autofill: 自動補充
+  crafting_work: 作業する
+  crafting_abort: 中断
+  crafting_no_materials: 素材が足りない。
+`,
+  );
   const actionsOn = (mini: MiniGame, target: WorldObject) =>
     craftingActions(target, mini.codex, mini.game, locale);
 

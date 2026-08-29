@@ -341,9 +341,13 @@ export class Localization {
   /**
    * 画面の地の文（`ui_texts`）。**対応表に無ければ名前そのものが出る**——localeファイルの他の節と
    * 同じ扱いで（ja.yaml冒頭）、書き忘れても画面は壊れず、どの語が欠けているかがその場に出る。
+   *
+   * 差し込みのある語（「生存 {days} 日目」）はvaluesを添えて引く。書式の書き方は他の節と同じ
+   * （Localization.md「書式のプレースホルダは名前で書く」）。
    */
-  uiText(name: UiTextName): string {
-    return this.uiTexts.get(name) ?? name;
+  uiText(name: UiTextName, values?: Readonly<Record<string, string>>): string {
+    const text = this.uiTexts.get(name) ?? name;
+    return values === undefined ? text : format(text, values);
   }
 
   /** 1つの土地の型の表示文字列。未登録の型でも、識別子へフォールバックする窓口として必ず返る。 */

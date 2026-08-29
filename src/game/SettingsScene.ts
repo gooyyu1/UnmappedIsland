@@ -5,6 +5,7 @@ import { Button } from './ui/Button';
 import { ScreenHeader } from './ui/ScreenHeader';
 import { noteOperation } from './errorReport';
 import { addLabel } from '../ui/labels';
+import { uiText } from '../locale/uiTexts';
 import { addInputBlockingPanel, drawBox } from '../ui/shapes';
 import { COLOR, rowPlateStyle } from './looks/theme';
 import { LIST_ITEM_PADDING_X, LIST_PADDING } from './looks/listScreen';
@@ -32,7 +33,7 @@ export class SettingsScene extends ResponsiveScene {
   protected build(): void {
     const { width, height } = this.metrics;
     addInputBlockingPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
-    new ScreenHeader(this, this.metrics, width, '設定', () => this.returnToTitle());
+    new ScreenHeader(this, this.metrics, width, uiText('settings_title'), () => this.returnToTitle());
 
     const padding = this.metrics.px(LIST_PADDING);
     const itemHeight = this.metrics.px(ITEM_HEIGHT);
@@ -40,8 +41,8 @@ export class SettingsScene extends ResponsiveScene {
 
     this.addToggle(
       { x: padding, y: top, width: width - padding * 2, height: itemHeight },
-      'アセットパックを読み込む',
-      'サンプルパックの定義・絵・表示文字列を、同梱ぶんへ足す。',
+      uiText('settings_asset_pack'),
+      uiText('settings_asset_pack_detail'),
       this.settings.loadsAssetPack,
       (value) => {
         this.settings.loadsAssetPack = value;
@@ -51,7 +52,7 @@ export class SettingsScene extends ResponsiveScene {
 
     // 食い違っている間だけ出す。設定を変えたのに何も起きないまま画面が閉じる、を避ける。
     if (!assetPackInstallMatchesSetting(this.settings.loadsAssetPack)) {
-      addLabel(this, this.metrics, width / 2, top + itemHeight + padding, '「もどる」で読み込み直します。', {
+      addLabel(this, this.metrics, width / 2, top + itemHeight + padding, uiText('settings_reload_notice'), {
         size: 22,
         color: COLOR.textMuted,
       }).setOrigin(0.5, 0);
@@ -76,7 +77,7 @@ export class SettingsScene extends ResponsiveScene {
     onChange: (value: boolean) => void,
   ): void {
     const button = new Button(this, rect, rowPlateStyle(this.metrics), () => {
-      noteOperation(`設定を切り替えた: ${title} → ${onOffText(!value)}`);
+      noteOperation(uiText('log_settings_toggled', { title, value: onOffText(!value) }));
       onChange(!value);
     });
 
@@ -116,5 +117,5 @@ export class SettingsScene extends ResponsiveScene {
 }
 
 function onOffText(value: boolean): string {
-  return value ? 'オン' : 'オフ';
+  return uiText(value ? 'settings_on' : 'settings_off');
 }

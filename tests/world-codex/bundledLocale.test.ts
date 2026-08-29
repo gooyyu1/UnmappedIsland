@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { Localization } from '../../src/locale/Localization';
 import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
+import { UI_TEXT_NAMES } from '../../src/locale/uiTexts';
 import { typeDisplayName } from '../../src/locale/typeDisplayName';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexYamlPaths } from '../support/worldCodexFiles';
@@ -213,6 +214,20 @@ describe('同梱の表示文字列ファイル', () => {
         NAME_MAX_WIDTH,
       );
     }
+  });
+
+  it('画面が名指しする地の文（ui_texts）と、対応表の中身が過不足なく一致する', () => {
+    // 欠ければ名前（close等）がそのまま画面に出て、余っていれば誰も引かない語が残る。
+    // どちらもコードとYAMLの片方だけを直したときにできるので、両向きで見る。
+    const declared = declaredSectionKeys('ui_texts');
+    expect(
+      UI_TEXT_NAMES.filter((name) => !declared.includes(name)),
+      '対応表に無い',
+    ).toEqual([]);
+    expect(
+      declared.filter((name) => !(UI_TEXT_NAMES as readonly string[]).includes(name)),
+      'コードが名指ししていない',
+    ).toEqual([]);
   });
 
   it('存在しない識別子のエントリを持たない（WorldCodexの改名時の取り残しを防ぐ）', () => {

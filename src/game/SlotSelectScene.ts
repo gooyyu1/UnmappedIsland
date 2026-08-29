@@ -42,7 +42,9 @@ export class SlotSelectScene extends ResponsiveScene {
     const slots = new SaveSlots(localStorage).readAll();
 
     addInputBlockingPanel(this, { x: 0, y: 0, width, height }, COLOR.screenBackground);
-    new ScreenHeader(this, this.metrics, width, 'セーブデータを選択', () => this.scene.start('title'));
+    new ScreenHeader(this, this.metrics, width, this.locale.uiText('slots_title'), () =>
+      this.scene.start('title'),
+    );
 
     const headerHeight = ScreenHeader.height(this.metrics);
     const padding = this.metrics.px(GRID_PADDING);
@@ -94,7 +96,7 @@ export class SlotSelectScene extends ResponsiveScene {
       this.metrics,
       infoX,
       cell.height / 2 + this.metrics.px(8),
-      `生存 ${slot.elapsedDays} 日目`,
+      this.locale.uiText('survived_days', { days: String(slot.elapsedDays) }),
       { size: 24, color: COLOR.textMuted },
     ).setOrigin(0, 0);
 
@@ -121,12 +123,12 @@ export class SlotSelectScene extends ResponsiveScene {
 
   private confirmDelete(slotIndex: number, slot: SaveData): void {
     new ModalDialog(this, this.metrics, {
-      title: 'セーブデータを削除しますか？',
-      body: `「${slot.islandName}」を削除します。この操作は取り消せません。`,
+      title: this.locale.uiText('slots_delete_title'),
+      body: this.locale.uiText('slots_delete_body', { island: slot.islandName }),
       actions: [
-        { label: 'キャンセル' },
+        { label: this.locale.uiText('cancel') },
         {
-          label: '削除する',
+          label: this.locale.uiText('slots_delete_confirm'),
           style: 'danger',
           onTap: () => {
             new SaveSlots(localStorage).delete(slotIndex);
@@ -151,11 +153,18 @@ export class SlotSelectScene extends ResponsiveScene {
       size: 56,
       color: COLOR.textMuted,
     }).setOrigin(0.5, 1);
-    const label = addLabel(this, this.metrics, cell.width / 2, cell.height / 2 + iconGap, '新規作成', {
-      size: 28,
-      bold: true,
-      color: COLOR.textMuted,
-    }).setOrigin(0.5, 0);
+    const label = addLabel(
+      this,
+      this.metrics,
+      cell.width / 2,
+      cell.height / 2 + iconGap,
+      this.locale.uiText('slots_new'),
+      {
+        size: 28,
+        bold: true,
+        color: COLOR.textMuted,
+      },
+    ).setOrigin(0.5, 0);
     button.addContent(icon, label);
   }
 }

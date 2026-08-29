@@ -17,6 +17,11 @@ import { describe, expect, it } from 'vitest';
  *    **ファイル名は参照ではない。** `ClimateSystem.md` のような書き方が `docs/` の大半を占めるので、
  *    リポジトリに在るファイルの名前と一致するものを除く。拡張子の一覧では弾かない——一覧のほうが
  *    古びて、増えた拡張子に気づけないまま素通しになる。
+ *    **所有者がこのリポジトリのものでなければ、何も言わない**（ownedHere）。`Node.js` の `js` も
+ *    `Math.trunc` の `trunc` も、在るかどうかを決めているのはこのリポジトリではないので、
+ *    「メンバーがコードに無い」は何の証拠にもならない。所有者が偶然コードに出てくるかどうかで
+ *    判定が入れ替わるのを避ける——`ts.Node` を1箇所で使い始めた途端、文書の `Node.js` が
+ *    参照として読まれた。
  * 2. **ファイルと名前が並んでいる形**（下の「ファイルと並べて挙げた名前が、そのファイルに在る」）。
  *    1 は所有者の無い裸の名前（`start`・`build`）を見られない——`docs/` の散文にいくらでも出てくる
  *    普通の英単語なので、一律に見ると誤検知になる。ただし文書が `Foo.ts` とその中身を並べて書いて
@@ -93,6 +98,20 @@ const TRACKED_PATHS = execSync('git ls-files', { cwd: ROOT, encoding: 'utf-8' })
 
 /** git の管理下にあるファイルの名前（ディレクトリを除いた最後の部分）。 */
 const FILE_NAMES = new Set(TRACKED_PATHS.map((path) => basename(path)));
+
+/**
+ * その名前をこのリポジトリが持っているか——**宣言そのものか、モジュール**（`NewGame.startNewGame`
+ * のように、ファイル名で呼ぶ書き方）。持っていない名前（Phaser・JSの組み込み・文書の例の`Foo`）の
+ * メンバーが在るかは、このリポジトリが決めていないので答えられない。
+ */
+function ownedHere(name: string): boolean {
+  return (
+    FILE_NAMES.has(`${name}.ts`) ||
+    new RegExp(`\\b(?:class|interface|type|enum|function|namespace|const|let|var)\\s+${name}\\b`).test(
+      CODE,
+    )
+  );
+}
 
 /**
  * 文書に書かれたファイル参照から、実ファイルの相対パスへ。パス全体でも名前だけでも引ける。
@@ -201,7 +220,7 @@ describe('説明の参照', () => {
             if (match[0].endsWith('.')) continue;
             const [whole, owner, member] = match;
             if (FILE_NAMES.has(whole)) continue;
-            if (!appearsInCode(owner) || appearsInCode(member)) continue;
+            if (!ownedHere(owner) || appearsInCode(member)) continue;
             dangling.push(`${rel}:${line} ${whole}`);
           }
         }
