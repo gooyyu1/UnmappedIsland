@@ -537,7 +537,7 @@ const COST_LABELS: ShownFields<ObjectCost> = {
   missing: null,
 
   // 総コストの出ない行を2つの一覧へ振り分ける印で、表の列ではない。ここへ来る行では常に偽。
-  onlyFromEverlastingDevice: null,
+  obtainableWithoutCost: null,
 };
 
 /** 雨で溜まる水の表の列と、`RainWaterRow`のフィールドの対応。 */

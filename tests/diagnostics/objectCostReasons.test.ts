@@ -19,7 +19,7 @@ describe('総コストが出ない理由', () => {
   const costOf = (objectName: string) => tables.objectCosts.find((cost) => cost.objectName === objectName)!;
 
   it('塩は、総コストが出ないまま入手経路のあるものとして印が付く', () => {
-    expect(costOf('salt')).toMatchObject({ minutes: undefined, onlyFromEverlastingDevice: true });
+    expect(costOf('salt')).toMatchObject({ minutes: undefined, obtainableWithoutCost: true });
   });
 
   it('その印が指す先（待ち生産表）に、塩の周期とレートが在る', () => {
@@ -33,16 +33,16 @@ describe('総コストが出ない理由', () => {
 
   it('同じ朽ちない設備でも、他に作り方のある産物には印が付かない', () => {
     // 畑も囲いも朽ちないが、タロイモもヤケイも探索で採れるので総コストは出る。印が「朽ちない設備が
-    // 返すもの」ではなく「それでしか得られないもの」であることが、ここで分かれる。
-    expect(costOf('taro').onlyFromEverlastingDevice).toBe(false);
-    expect(costOf('junglefowl').onlyFromEverlastingDevice).toBe(false);
+    // 返すもの」ではなく「値段の付かないもの」であることが、ここで分かれる。
+    expect(costOf('taro').obtainableWithoutCost).toBe(false);
+    expect(costOf('junglefowl').obtainableWithoutCost).toBe(false);
     expect(costOf('taro').minutes).toBeGreaterThan(0);
   });
 
   it('総コストが出ないその他は、埋めるべき穴のまま残る', () => {
     // 印が全部の行へ付いてしまうと、内容の穴を数える側が空になる。
     const unreachable = tables.objectCosts.filter(
-      (cost) => cost.minutes === undefined && !cost.onlyFromEverlastingDevice,
+      (cost) => cost.minutes === undefined && !cost.obtainableWithoutCost,
     );
 
     expect(unreachable.map((cost) => cost.objectName)).toContain('spear');
