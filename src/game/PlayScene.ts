@@ -326,6 +326,7 @@ export class PlayScene extends ResponsiveScene {
     stacksIn: (...asked) => this.view.cardsIn(...asked),
     cardOfObjects: (...asked) => this.view.cardOfObjects(...asked),
     combinationOf: (...asked) => this.view.combinationOf(...asked),
+    visible: (...asked) => this.view.visible(...asked),
     windowPlace: () => this.childWindowPlace,
     places: (...asked) => this.placeOfScreen(...asked),
   });
@@ -692,26 +693,9 @@ export class PlayScene extends ResponsiveScene {
     this.fieldPanel = addInputBlockingPanel(this, layout.fieldArea, COLOR.fieldArea).setDepth(
       SCREEN_DEPTH.field,
     );
-    const [fixtures, items, hand] = layout.lanes;
+    const [, items, hand] = layout.lanes;
 
-    this.fixtureLane = new CardLane(
-      this,
-      this.metrics,
-      fixtures,
-      COLOR.fixtureLane,
-      this.cellsAt(this.placeOfScreen('fixtures')),
-      {
-        pinned: {
-          ...this.shownLocation.window.card,
-          // 映している場所そのものの子ウィンドウ。**中に入ると外の並びから札が消える**ので、探索する・
-          // 降りる・出航する・部品を差し替えるはここからしか辿れない。
-          onTap: this.whileIdle(() => this.openLocationWindow()),
-          edges: this.locationEdges(),
-        },
-        art: this.laneArt(this.placeOfScreen('fixtures')),
-        depth: SCREEN_DEPTH.field,
-      },
-    );
+    this.fixtureLane = this.buildFixtureLane(layout);
     this.itemLane = new CardLane(
       this,
       this.metrics,
@@ -735,15 +719,37 @@ export class PlayScene extends ResponsiveScene {
       },
     );
 
-    // 陽炎はフィールドエリアの3レーンすべてに立てる（LaneHaze参照）。
+    this.showHaze();
+    this.setDragLanes();
+  }
+
+  /**
+   * 設置物レーン。**ピン留めの札も敷く絵も、映している場所のもの**（ScreenLayout.md 7.1.1節）なので、
+   * 映す先が変われば作り直す相手はこのレーンだけになる（rebuildFixtureLane）。
+   */
+  private buildFixtureLane(layout: PlayScreenLayout): CardLane {
+    const place = this.placeOfScreen('fixtures');
+    return new CardLane(this, this.metrics, layout.lanes[0], COLOR.fixtureLane, this.cellsAt(place), {
+      pinned: {
+        ...this.shownLocation.window.card,
+        // 映している場所そのものの子ウィンドウ。**中に入ると外の並びから札が消える**ので、探索する・
+        // 降りる・出航する・部品を差し替えるはここからしか辿れない。
+        onTap: this.whileIdle(() => this.openLocationWindow()),
+        edges: this.locationEdges(),
+      },
+      art: this.laneArt(place),
+      depth: SCREEN_DEPTH.field,
+    });
+  }
+
+  /** 陽炎はフィールドエリアの3レーンすべてに立てる（LaneHaze参照）。レーンを作り直したら張り直す。 */
+  private showHaze(): void {
     this.haze.setSurfaces([
       this.fixtureLane.hazeSurface,
       this.itemLane.hazeSurface,
       this.handLane.hazeSurface,
     ]);
     this.haze.setHaze(heatHazeFor(this.view.ambientTemperature));
-
-    this.setDragLanes();
   }
 
   /** 今の空を画面へ映し直す（ScreenLayout.md 7.5節 空の演出）。 */
@@ -763,6 +769,22 @@ export class PlayScene extends ResponsiveScene {
     this.fieldPanel.destroy();
     for (const lane of [this.fixtureLane, this.itemLane, this.handLane]) lane.destroy();
     this.buildFieldArea(this.layout);
+    // レーンはカードを作らない（CardTable参照）。作り直した並びへ札を出し直す。
+    this.showView();
+  }
+
+  /**
+   * 設置物レーンだけを、今映している場所のものへ作り直す（ScreenLayout.md 7.1.1節）。
+   *
+   * **他の2レーンは作り直さない。** 映す先を切り替えても現在地から見える範囲は変わらないので、
+   * アイテムと手持ちに出ている札はそのまま同じ実体が残る（CardLane.reconcile）——3レーンとも
+   * 建て直すと、変わっていない札まで一度消えて出直すことになる。
+   */
+  private rebuildFixtureLane(): void {
+    this.fixtureLane.destroy();
+    this.fixtureLane = this.buildFixtureLane(this.layout);
+    this.showHaze();
+    this.setDragLanes();
     // レーンはカードを作らない（CardTable参照）。作り直した並びへ札を出し直す。
     this.showView();
   }
@@ -850,19 +872,19 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 設置物レーンが映す場所を切り替える。ピン留めの札もレーンに敷く絵も総取り替えになるので、
-   * 差し替え（showView）ではなくフィールドエリアの作り直しで見せる——移動で現在地が変わったときと
-   * 同じ扱い。**ワールドは何も変わらない**ので、時間は経たない。
+   * 設置物レーンが映す場所を切り替える。**変わるのはそのレーンだけ**——現在地から見える範囲は
+   * 切り替えても変わらないので、他のレーンに出ている札も開いている子ウィンドウもそのまま残る
+   * （rebuildFixtureLane）。**ワールドは何も変わらない**ので、時間は経たない。
    *
    * 端の操作は押し続けている間くり返し届く（Card.addEdge）ので、**既に映している段なら何もしない**
-   * ——同じ場所のままフィールドエリアを作り直し続けることになる。
+   * ——同じ場所のまま設置物レーンを作り直し続けることになる。
    */
   private showLocationAt(depth: number): void {
     if (this.busy || depth === this.shownDepth) return;
 
     this.shownLocationDepth = depth;
     noteOperation(`設置物レーンの場所を切り替えた: ${this.shownLocation.window.card.name}`);
-    this.rebuildFieldArea();
+    this.rebuildFixtureLane();
   }
 
   /**
@@ -1201,7 +1223,7 @@ export class PlayScene extends ResponsiveScene {
     });
     // 借りるのはタブによらない。**説明のタブでだけ描かれる**が、借りている間その札は元の枠に
     // 印だけを残す（Windows.md 1.1節）——タブを行き来するたびに札を飛ばさないため。
-    this.shown.borrow(window.card, opened?.stack);
+    this.shown.borrow(window.object, window.card, opened?.stack);
     // 開いたタブはウィンドウが決める（並んでいないタブは説明へ落ちる）。
     this.childWindowPlace = this.placeOfTab(this.childWindow.openedTab);
     this.rememberTab(this.childWindow.openedTab);
@@ -1567,18 +1589,6 @@ export class PlayScene extends ResponsiveScene {
     }
   }
 
-  /** 前の土地に紐づいていたものを手放す。移動先へ持ち越すと、そこには無いものを見せてしまうため。 */
-  private leaveLocation(): void {
-    this.shown.returnFound();
-    // **自分自身のスロット以外は、移った先には無い。** 置いてきた入れ物の中身も、現在地に紐づく場所
-    // （構造の部品）も開いたままにできない。手に持っている入れ物は持ち越せるが、開き直せば済むので
-    // 持ち主で一律に決める。
-    const place = this.childWindowPlace;
-    if (place !== undefined && place.owner !== this.gameSession.player.instance) {
-      this.closeChildWindow();
-    }
-  }
-
   /** 経過分を日数・時刻へ直して時計に出す。画面を作り直した直後はまだ時計が無いことがある。 */
   private showClock(totalMinutes: number): void {
     if (!isAlive(this.situationPanel)) return;
@@ -1669,10 +1679,14 @@ export class PlayScene extends ResponsiveScene {
    *
    * 明転し切るまでは演出中のままにして、ワールドを変える操作を止める（busy）。作り直した並びが
    * まだ見えていないため、そこへの操作を受け付けると見えているものと食い違う。
+   *
+   * **移った先には無いものを手放すのはここではない。** 開いていた子ウィンドウは、映しているものが
+   * 見えなくなった時点で自分から畳まれる（refreshChildWindowReturningOrigins）。ここで手放すのは、
+   * どの枠にも帰り先を持たない発見物だけ。
    */
   private transit(curtain: Curtain): void {
     this.activity = 'transiting';
-    this.leaveLocation();
+    this.shown.returnFound();
     // 移動先の絵がまだ届いていなければ、暗転のまま揃うのを待つ。普段は道の発見時に始めたロード
     // （requestLocationArt）が済んでいて、待ちは出ない。
     this.revealWhenLocationArtLoaded(curtain);
@@ -1739,11 +1753,12 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * 子ウィンドウが映している札を、今のワールドで引き直す。差し替えの前後で束は別物になっているので、
+   * 子ウィンドウが映しているものを、今のワールドで借り直す。差し替えの前後で束は別物になっているので、
    * そのまま使うと次のアクションが古いインスタンスに対して組まれる。
    *
    * **ウィンドウが閉じるのはここだけ**（プレイヤーが「閉じる」を押した場合を除く）。映していた1個が
-   * 世界から消えていれば、映すものもボタンが効く相手も無いので閉じる（食べた・打ち割った・中断した）。
+   * 現在地から見えなくなっていれば、映すものもボタンが効く相手も無いので閉じる——食べた・打ち割った
+   * 物も、別の土地へ移って置いてきた物（道）も同じ1つの基準（ShownCards.reborrowedWindow）。
    * ボタンを押しただけでは閉じない——何が起きたかは開いたままのウィンドウが見せる。
    * 返すのは、閉じたときに手放した札の出どころ。
    *
@@ -1751,8 +1766,8 @@ export class PlayScene extends ResponsiveScene {
    * 新しい姿が枠に出る。
    */
   private refreshChildWindowReturningOrigins(): ReadonlyMap<number, Rect> {
-    if (this.childWindow === undefined || this.shown.windowStack === undefined) return new Map();
-    return this.shown.reborrowedCard() === undefined ? this.closeChildWindowReturningOrigins() : new Map();
+    if (this.childWindow === undefined || this.shown.reborrowedWindow()) return new Map();
+    return this.closeChildWindowReturningOrigins();
   }
 
   /**
