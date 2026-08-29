@@ -1,0 +1,33 @@
+{
+  "_comment": [
+    "src/assets/objects/bite_wound_multiply.png（噛み傷）を作り直すためのレシピ。build.py が読む。",
+    "",
+    "作りは laceration_multiply.json と同じ3段（下絵→肌の上でQwenに描き直させる→同じ肌で割る）。",
+    "",
+    "**他の傷と見分ける手は、傷が2列に並ぶこと。** 歯が並んで食い込む傷なので（injuries.yaml の",
+    "bite_wound）、1つ1つは小さくても、向かい合う2つの弧という並びが札の上で読める。",
+    "",
+    "**歯は4本ずつに留める。** 実寸ではカードの1/3ほどに縮むので、本数を増やすと点が潰れて",
+    "1本の線に見え、裂傷と区別が付かなくなる。"
+  ],
+  "output": "src/assets/objects/bite_wound_multiply.png",
+  "ground": "src/assets/backgrounds/medic_injuries_card.png",
+  "stain": {
+    "size": "410x640",
+    "spots": [
+      "205,320,150,0.28,#dfb0aa",
+      "146,270,17,0.56,#8c463d",
+      "186,252,18,0.60,#833c35",
+      "226,252,18,0.60,#833c35",
+      "266,270,17,0.56,#8c463d",
+      "146,370,17,0.56,#8c463d",
+      "186,388,18,0.60,#833c35",
+      "226,388,18,0.60,#833c35",
+      "266,370,17,0.56,#8c463d"
+    ]
+  },
+  "edit": {
+    "prompt": "Keep this picture of bare skin exactly as it is: the same skin colour, the same skin texture, the same lighting, and every mark in exactly the same place at the same size. Repaint only the marks so that they look like a real animal bite on skin that has already stopped bleeding: eight small tooth punctures arranged as two facing arcs, four in the upper arc and four in the lower arc. Each puncture is a small uneven torn dot with a dark red brown clotted centre and a narrow band of bruised reddened skin around it. Between and around the punctures the skin is faintly bruised and fades softly into normal skin. Keep the punctures separate from each other; do not join them into a line or a single wound. No gaping wound, no visible flesh, no blood drops, no gore, no teeth and no animal in the picture. Matte skin, flat even lighting, no shine, no highlights. Nothing else in the picture changes. No text, no letters, no numbers.",
+    "seed": 1
+  }
+}

@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { describe, expect, it } from 'vitest';
 import type { Duration, ToolWear } from '../../src/analysis/durations';
 import { MINIMUM_DAYS, durationsOf, toolWearsOf } from '../../src/analysis/durations';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -109,3 +110,43 @@ describeYamlReportRegeneration(
 );
 
 describeReportFreshness(REPORT_PATH, 'npm run stats:durations', buildReportFromDefinitions);
+
+/**
+ * **同時には成立しない条件つきの増減で終わる長さが、列から落ちないこと。** どちらも打ち消し合って
+ * 周期そのものが立たず、丸ごと消えていた（issue #1155）。日をまたぐ長さの列は逆転を機械で見つける
+ * ための道具なので、死の期限が欠けたままだと何を見落としているかが分からない。
+ */
+describe('同時には成立しない増減で終わる長さ', () => {
+  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+
+  const daysOf = (propertyName: string) =>
+    durationsOf(codex).filter((duration) => duration.propertyName === propertyName);
+
+  it('凍死が、寒い所での長さと雨の野ざらしでの長さの幅として載る', () => {
+    // 気温を同じ境目の逆向きの演算子で見る3ブロック（-2・-6・+8）。4本目の死に方（VitalsSystem.md
+    // 8節）で、700 kcalを寒い所の-2/tickなら350 tick、雨に打たれる-6/tickなら116.7 tickで失う。
+    // -2と-6は屋根と雨の有無が裏返しなので重ならない——足して-8にすると、最短が0.9日まで縮む。
+    const warmth = daysOf('warmth');
+
+    expect(warmth.map((duration) => duration.objectName)).toEqual(['captain', 'engineer', 'farmer', 'medic']);
+    for (const duration of warmth) {
+      expect(duration.days).toBeCloseTo(700 / 2 / 96, 6);
+      expect(duration.shortestDays).toBeCloseTo(700 / 6 / 96, 6);
+      expect(duration.destroysSelf).toBe(true);
+    }
+  });
+
+  it('閉じ込めた獣の渇きが、飢えと並んで載る', () => {
+    // 渇く-1と、囲いの飲み水から飲む+1は同じゲートを持つが、飲めるのは水が残っている間だけ
+    // （TrapSystem.md 5.4節）。必ず重なるものとして足すと0になり、罠に掛かった獣の最も短い死の
+    // 期限——人が見回りに戻れる長さ——が列から消える。
+    const beasts = ['junglefowl', 'monkey', 'rat', 'wild_boar'];
+    const hydration = daysOf('hydration').filter((duration) => beasts.includes(duration.objectName));
+
+    expect(hydration.map((duration) => duration.objectName)).toEqual(beasts);
+    for (const duration of hydration) {
+      expect(duration.days).toBeCloseTo(336 / 96, 6);
+      expect(duration.destroysSelf).toBe(true);
+    }
+  });
+});
