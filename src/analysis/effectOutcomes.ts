@@ -62,6 +62,48 @@ export function readEffect(
   return reader;
 }
 
+/**
+ * その候補が**自分の重みに使っている値を、自分で減らしている**なら、その値は設備のつまみではなく
+ * **プレイヤーが仕込む在庫**（塩田の張った海水、畑の撒いた株）。在庫の宣言値は「まだ何も仕込んで
+ * いない状態」なので、そのまま重みにすると、設備が何を返すかを一度も数えないことになる
+ * ——**1回ぶん仕込んである**として読む。
+ *
+ * 減らさない重み（罠の掛かりやすさ、器に残った水、食べ物の傷み）は宣言値のまま。それらは仕込む物
+ * ではなく、宣言された値そのものが答えになるつまみで、初期値の外に読むべき状態を持たない。
+ */
+function stockedResolverOf(resolve: StaticValueResolver, reading: EffectReading): StaticValueResolver {
+  const stocks = spentAmountsOf(reading.outcomes);
+  if (stocks.size === 0) return resolve;
+
+  return (root, propertyGlobalId) => {
+    const value = resolve(root, propertyGlobalId);
+    const spent = stocks.get(stockKey(root, propertyGlobalId));
+    return value === undefined || spent === undefined ? value : Math.max(value, spent);
+  };
+}
+
+/**
+ * 分岐が減らす量を、対象のプロパティごとに1回の実行ぶんで集めたもの（増える側は持たない）。
+ * 分岐が複数あるときは最も多く減らす分岐の量——どの分岐が来ても足りる在庫が、1回ぶんの在庫。
+ */
+function spentAmountsOf(outcomes: readonly StepOutcome[]): ReadonlyMap<string, number> {
+  const spent = new Map<string, number>();
+  for (const outcome of outcomes) {
+    const inOutcome = new Map<string, number>();
+    for (const delta of outcome.deltas) {
+      if (delta.amount >= 0) continue;
+      const key = stockKey(delta.target, delta.propertyGlobalId);
+      inOutcome.set(key, (inOutcome.get(key) ?? 0) - delta.amount);
+    }
+    for (const [key, amount] of inOutcome) spent.set(key, Math.max(spent.get(key) ?? 0, amount));
+  }
+  return spent;
+}
+
+function stockKey(root: ReferenceRoot, propertyGlobalId: number): string {
+  return `${root}:${propertyGlobalId}`;
+}
+
 /** rootが指すオブジェクトを消す分岐があるか（`destroy`、9.3節）。 */
 export function destroysRoot(reading: EffectReading, root: ReferenceRoot): boolean {
   return reading.destroyed.some((ref) => ref.kind === 'root' && ref.root === root);
@@ -165,13 +207,16 @@ class OutcomeReader implements EffectReader {
   pick(candidates: readonly PickCandidateReading[]): void {
     if (candidates.length === 0) return;
 
-    const weights = candidates.map((candidate) =>
-      Math.max(0, resolveDeclaredNumber(candidate.weight, this.resolve) ?? 0),
-    );
-    const total = weights.reduce((sum, weight) => sum + weight, 0);
     const readings = candidates.map((candidate) =>
       readEffect(candidate.effect, this.resolve, this.resolveBecomeDestination),
     );
+    const weights = candidates.map((candidate, index) =>
+      Math.max(
+        0,
+        resolveDeclaredNumber(candidate.weight, stockedResolverOf(this.resolve, readings[index])) ?? 0,
+      ),
+    );
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
     // 消える物・変わる物は分岐をまたいで集める——「どれか1つの分岐でそうなるか」を問うものなので。
     for (const reading of readings) {
       this.destroyed.push(...reading.destroyed);
