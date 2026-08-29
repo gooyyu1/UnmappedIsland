@@ -34,7 +34,7 @@ import {
  * 終端の工程として数える）。ただし**条件（14節）が定義だけから偽と分かる操作は挙げない**
  * （conditionsNeverMet）。
  *
- * outerは、self以外の起点（祖先が入れる値・重ねる相手の値）を定義だけから解く手立て。省くと、
+ * outerは、self以外の起点（祖先が入れる値・使う物の値）を定義だけから解く手立て。省くと、
  * それらを参照する工程に「確定しない」印が付く（CraftingStep.hasUnresolvedReferences）。
  */
 export function craftingStepsOf(

@@ -1237,7 +1237,7 @@ function highestDeclaredAncestorValueResolver(locations: readonly ObjectDef[]): 
 }
 
 /**
- * ancestorに、重ねる相手（instrument）の値を足した文脈。**最も高く宣言している型を重ねたものとして
+ * ancestorに、使う物（instrument、11.5節）の値を足した文脈。**最も高く宣言している型を使ったものとして
  * 扱う**（highestDeclaredAncestorValueResolverと同じ見方）。
  *
  * これが無いと、相手の値を見る重み——一撃がどう入るかは武器が決める（HuntingSystem.md 1.2節）——が
