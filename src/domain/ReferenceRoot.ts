@@ -220,13 +220,6 @@ export class ReferenceScope {
    */
   static readonly recipeUnlock = new ReferenceScope(false, true, false, false, true, false);
 
-  /**
-   * **書ける相手を場所で絞らない場所**（`spawn`の配置先、9.4節）。指した相手が居なければ、生まれた物が
-   * どこにも置かれずに消えるだけ——配置は失敗しうることを既に織り込んでいるので、他の場所のように
-   * 「ここには居ない」をロード時に弾く理由が無い。
-   */
-  static readonly anyTarget = new ReferenceScope(true, true, true, true, true, false);
-
   /** プロパティ名を伴わず、オブジェクトそのものを指す場所（destroy・signal・move・in_slot判定）。 */
   get withoutPropertyName(): ReferenceScope {
     return new ReferenceScope(

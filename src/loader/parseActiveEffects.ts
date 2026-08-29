@@ -77,7 +77,7 @@ export function parseActiveEffectBody(
         operations.push(...parseDestroys(loader, keyContext, valueNode, scope));
         break;
       case 'spawn':
-        operations.push(...parseSpawns(loader, keyContext, valueNode));
+        operations.push(...parseSpawns(loader, keyContext, valueNode, scope));
         break;
       case 'become':
         operations.push(parseBecome(loader, keyContext, asMap(valueNode, keyContext), scope));
@@ -366,11 +366,21 @@ function parseAdds(
 /** spawn（9.4節）の1エントリが持てるキー。これ以外はロードエラー（綴り間違いをその場で捕まえる）。 */
 const SPAWN_KEYS = new Set(['object', 'into', 'into_prop', 'into_object', 'count']);
 
-function parseSpawns(loader: WorldCodexYamlLoader, context: string, node: YamlNode): SpawnEffect[] {
-  return oneOrMany(context, node, (itemContext, map) => parseSpawn(loader, itemContext, map));
+function parseSpawns(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  node: YamlNode,
+  scope: ReferenceScope,
+): SpawnEffect[] {
+  return oneOrMany(context, node, (itemContext, map) => parseSpawn(loader, itemContext, map, scope));
 }
 
-function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): SpawnEffect {
+function parseSpawn(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  map: YAMLMap,
+  scope: ReferenceScope,
+): SpawnEffect {
   requireKnownKeys(map, SPAWN_KEYS, context);
 
   const count = tryGetNumber(map, 'count', context) ?? 1;
@@ -380,7 +390,7 @@ function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap)
     () =>
       new SpawnEffect(
         loader.objectNames.intern(requireScalar(map, 'object', context)),
-        parseSpawnTarget(loader, context, map),
+        parseSpawnTarget(loader, context, map, scope),
         count,
       ),
   );
@@ -391,17 +401,21 @@ function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap)
  * `into`だけが個体ではないものも名乗れる——`same_slot`（selfが今占めている位置）と`child`
  * （selfの子を順に走査する）。どれも書かなければ`same_slot`。
  *
- * 書ける相手を場所で絞らない（`ReferenceScope.anyTarget`）。居ない相手を指したspawnは、生まれた物が
- * どこにも置かれずに消えるだけで済む——`on_max`/`on_min`の`into: agent`がそれ。
+ * 書ける相手も`move`の移動先と同じく、周囲のscopeが用意できるものだけ（9.4節）。
  */
-function parseSpawnTarget(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): SpawnTarget {
+function parseSpawnTarget(
+  loader: WorldCodexYamlLoader,
+  context: string,
+  map: YAMLMap,
+  scope: ReferenceScope,
+): SpawnTarget {
   const intoNode = tryGetNode(map, 'into');
   if (intoNode !== undefined && isScalar(intoNode)) {
     const raw = asScalarText(intoNode, context);
     if (raw === 'same_slot' || raw === 'child') return raw;
   }
 
-  return parseDestinationRef(loader, context, map, ReferenceScope.anyTarget, 'into') ?? 'same_slot';
+  return parseDestinationRef(loader, context, map, scope, 'into') ?? 'same_slot';
 }
 
 /**

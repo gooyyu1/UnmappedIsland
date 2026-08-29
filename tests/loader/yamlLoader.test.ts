@@ -747,6 +747,40 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/agent/);
   });
 
+  it('on_minのspawnの配置先にagentを指定するとエラーになる（配置先もmoveの移動先と同じ規則、9.4節）', () => {
+    const yaml = `
+object_defs:
+  berry: {}
+  bush:
+    props:
+      ripeness:
+        value: 0
+        range: {min: 0, max: 100}
+        on_min:
+          spawn: {object: berry, into: agent}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/agent/);
+  });
+
+  it('on_minのspawnでも、そこに居る相手を指す配置先は通る（selfとchild）', () => {
+    const yaml = `
+object_defs:
+  berry: {}
+  bush:
+    slots:
+      fruits: {}
+    props:
+      ripeness:
+        value: 0
+        range: {min: 0, max: 100}
+        on_min:
+          spawn:
+            - {object: berry, into: self}
+            - {object: berry, into: child}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).not.toThrow();
+  });
+
   it('on_minのweightにagentを指定するとエラーになる（rangeイベントに操作者は居ない）', () => {
     const yaml = `
 object_defs:
