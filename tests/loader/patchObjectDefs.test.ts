@@ -40,7 +40,9 @@ object_defs:
 
 function build(patchYaml: string, report?: LoadReport): WorldCodex {
   const loader = new WorldCodexYamlLoader().load('base.yaml', BASE);
-  return loader.load('pack.yaml', patchYaml, report).buildAndReset();
+  return loader
+    .load('pack.yaml', patchYaml, report === undefined ? undefined : { name: 'pack', report })
+    .buildAndReset();
 }
 
 function describeExplore(codex: WorldCodex): string {

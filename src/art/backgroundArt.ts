@@ -46,7 +46,13 @@ const MUTABLE_BACKGROUND_ART = new Map<string, string>(
 /** テクスチャキー → 画像のURL。 */
 export const BACKGROUND_ART: ReadonlyMap<string, string> = MUTABLE_BACKGROUND_ART;
 
-/** アセットパックの背景の絵を在庫表へ重ねる（起動時に1回、installAssetPackから）。 */
+/**
+ * アセットパックの背景の絵を在庫表へ重ねる（起動時に1回、installAssetPackから）。
+ *
+ * **型の絵と違い、パックごとに分けて持ちません**（AssetPack.md 5節）。背景の名前は持ち主の識別子で
+ * 始まり、識別子はCodex全体で1つの平らな名前空間（同6.3節）なので、名前だけでどのパックの絵かが
+ * 決まります——同じ名前を2つのパックが持つのは、宣言していない型の絵を配ったときだけです。
+ */
 export function installPackBackgroundArt(art: ReadonlyMap<string, string>, packName: string): void {
   addPackArt(
     MUTABLE_BACKGROUND_ART,

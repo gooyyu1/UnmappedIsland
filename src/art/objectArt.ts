@@ -1,4 +1,5 @@
-import { addPackArt } from './packArt';
+import { packQualifiedName } from '../asset-pack/packNames';
+import { addPackArt, artKeyIn } from './packArt';
 
 /**
  * object_defごとの絵の解決。
@@ -15,6 +16,10 @@ import { addPackArt } from './packArt';
  * 同梱ぶんの一覧はimport.meta.globがビルド時に作る。実行時に総当たりで読みに行くと、絵をまだ
  * 用意していないobject_defのぶんだけ404が出るため。アセットパックのぶんは起動時に重ねる
  * （installPackObjectArt、AssetPack.md 4節）。
+ *
+ * **パックの絵はパックの名前を添えた鍵で並ぶ**（`<パックのid>:<絵の名前>`、packNames）。型が名乗る
+ * 絵の名前にも出所のパックが同じ形で付く（ObjectDef.artName）ので、引けば必ずその型を宣言した
+ * パックの絵に当たり、そのパックに無ければ同梱ぶんへ落ちる（同5節）。
  */
 const FILES = import.meta.glob('../assets/objects/*.png', {
   eager: true,
@@ -39,7 +44,23 @@ export const ART_BY_NAME: ReadonlyMap<string, string> = MUTABLE_ART_BY_NAME;
 
 /** アセットパックの型の絵を在庫表へ重ねる（起動時に1回、installAssetPackから）。 */
 export function installPackObjectArt(art: ReadonlyMap<string, string>, packName: string): void {
-  addPackArt(MUTABLE_ART_BY_NAME, art, packName, '型の絵');
+  addPackArt(
+    MUTABLE_ART_BY_NAME,
+    new Map([...art].map(([name, url]) => [packQualifiedName(packName, name), url])),
+    packName,
+    '型の絵',
+  );
+}
+
+/** その絵の名前が在庫表で並んでいる鍵（用意されていなければundefined。artKeyIn）。 */
+function artKeyOf(artName: string): string | undefined {
+  return artKeyIn(ART_BY_NAME, artName);
+}
+
+/** その絵の名前に対応する画像のURL（用意されていなければundefined）。 */
+export function artUrl(artName: string): string | undefined {
+  const key = artKeyOf(artName);
+  return key === undefined ? undefined : ART_BY_NAME.get(key);
 }
 
 /**
@@ -62,12 +83,17 @@ export const CARD_ART_WIDTH = 410;
 export function artNameFor(artName: string, stageArtSuffix: string | undefined): string {
   if (stageArtSuffix === undefined) return artName;
   const stageArtName = `${artName}_${stageArtSuffix}`;
-  return ART_BY_NAME.has(stageArtName) ? stageArtName : artName;
+  return artKeyOf(stageArtName) === undefined ? artName : stageArtName;
 }
 
-/** 絵の名前に対応するテクスチャキー（他のテクスチャと名前が衝突しないよう前置きする）。 */
+/**
+ * 絵の名前に対応するテクスチャキー（他のテクスチャと名前が衝突しないよう前置きする）。
+ *
+ * **鍵にするのは在庫表で並んでいる名前**（artKeyOf）。同梱ぶんへ落ちた絵を落ちる前の名前で
+ * 呼ぶと、読み込んだ鍵（在庫表を辿って読む、artFiles）と食い違い、絵が出ないまま代役へ落ちる。
+ */
 export function objectTexture(artName: string): string {
-  return `object:${artName}`;
+  return `object:${artKeyOf(artName) ?? artName}`;
 }
 
 /**
@@ -88,5 +114,5 @@ const MULTIPLY_SUFFIX = '_multiply';
 /** 通常の絵に重ねる、乗算の絵のテクスチャキー（用意されていなければundefined）。 */
 export function objectMultiplyTexture(artName: string): string | undefined {
   const fileName = `${artName}${MULTIPLY_SUFFIX}`;
-  return ART_BY_NAME.has(fileName) ? objectTexture(fileName) : undefined;
+  return artKeyOf(fileName) === undefined ? undefined : objectTexture(fileName);
 }

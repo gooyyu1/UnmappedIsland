@@ -37,6 +37,19 @@ import type { Requirements } from '../domain/Requirement';
 import { ReferenceScope } from '../domain/ReferenceRoot';
 
 /**
+ * 読んでいるYAMLがどのアセットパックのものか（AssetPack.md）。同梱ぶんを読むときは渡さない。
+ *
+ * **報告先を持つのはパックだけ。** 同梱ぶんの誤りは外して続ける先が無いのでそのまま投げる（同6.1節）。
+ */
+export interface PackSource {
+  /** パックが名乗った識別子。型が名乗る絵の名前に添えて、絵の出所を決める（同5節）。 */
+  readonly name: string;
+
+  /** 行えなかったぶんの記録先（同6.1節）。 */
+  readonly report: LoadReport;
+}
+
+/**
  * YAMLファイル群からWorldCodexを組み立てるロード処理の入口（GameElementDefinition.md 3節）。
  *
  * パース全般をこのクラスが担い、名前空間ごとのNameRegistryを保持する（objectNames以下のゲッター参照）。「trait解決込みでobject_defを
@@ -144,8 +157,12 @@ export class WorldCodexYamlLoader {
   readonly generationLocationTypes: LocationTypeDef[] = [];
   readonly generationScopes = new Map<string, GenerationScopeDef>();
 
-  /** テキストとして渡された1つのYAMLを読み込む（labelはエラーメッセージ用の出所表示）。 */
-  load(label: string, yamlText: string, report?: LoadReport): this {
+  /**
+   * テキストとして渡された1つのYAMLを読み込む（labelはエラーメッセージ用の出所表示）。
+   * アセットパックのぶんは、どのパックのものかを`from`で渡す（PackSource）。
+   */
+  load(label: string, yamlText: string, from?: PackSource): this {
+    const report = from?.report;
     const doc = parseDocument(yamlText);
     if (doc.errors.length > 0) throw new YamlLoadError(`${label}: YAML構文エラー: ${doc.errors[0].message}`);
     if (doc.contents === null) return this;
@@ -227,7 +244,13 @@ export class WorldCodexYamlLoader {
         addUnique(
           this.globalObjectDefs,
           name,
-          new RawObjectDef(name, label, this.objectNames.intern(name), asMap(node, `object_defs.'${name}'`)),
+          new RawObjectDef(
+            name,
+            label,
+            this.objectNames.intern(name),
+            asMap(node, `object_defs.'${name}'`),
+            from?.name,
+          ),
           'object_defs',
         );
 

@@ -32,6 +32,16 @@ export class LoadReport {
   get problems(): readonly LoadProblem[] {
     return this.entries;
   }
+
+  /**
+   * 記録を、`problems.length`で印を付けた時点まで戻す。
+   *
+   * **通らなかった読み込みの記録は残さない。** 組み直せば同じ読み込みをもう一度行うので、
+   * 残すと同じ1件が二重に並ぶ（loadDefinitions）。
+   */
+  forgetAfter(problemCount: number): void {
+    this.entries.length = problemCount;
+  }
 }
 
 /**

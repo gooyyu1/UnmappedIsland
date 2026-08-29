@@ -21,7 +21,7 @@ import { cssColor } from '../util/cssColor';
 import { COLOR, FONT_FAMILY } from './looks/theme';
 import { loadDefinitions } from '../loader/loadDefinitions';
 import { LOAD_REPORT } from '../loader/LoadReport';
-import { installedAssetPack } from '../asset-pack/install';
+import { installedAssetPacks } from '../asset-pack/install';
 import { setUiTexts } from '../locale/uiTexts';
 
 /** 組み立て済みWorldCodex・表示文字列をレジストリへ置くときのキー。 */
@@ -64,7 +64,7 @@ export class BootScene extends Phaser.Scene {
     let codex: WorldCodex;
     let localization: Localization;
     try {
-      const definitions = loadDefinitions(installedAssetPack(), LOAD_REPORT);
+      const definitions = loadDefinitions(installedAssetPacks(), LOAD_REPORT);
       codex = definitions.codex;
       localization = definitions.localization;
     } catch (error) {
