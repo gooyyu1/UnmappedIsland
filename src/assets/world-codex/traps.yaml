@@ -1,14 +1,30 @@
 # 罠の定義。仕組みは docs/engine/TrapSystem.md、掛かる動物は animals.yaml、刺さる怪我は
-# injuries.yaml（snare_laceration）が持つ。
+# injuries.yaml（snare_laceration・fracture・puncture_wound）が持つ。
 #
 # 罠は「時間と運を払って、危険を払わずに獲物を得る」道で、直接戦う狩猟（HuntingSystem.md）との
 # 非対称が設計の芯（TrapSystem.md 7節）。
 #
-# このファイルにあるのはくくり罠1つだけ。サイズと生死の2軸（同1.2節）のうち「小型・殺す」の1マス。
+# このファイルにあるのはくくり罠と落とし穴。サイズと生死の2軸（同1.2節）のうち「小型・殺す」と、
+# 落とし穴が受け持つ「中型・大型」の列。
 #
 # **「大型・生かす」の檻は`farming.yaml`の`pen`（囲い）が兼ねる。** 捕らえた獣が
 # そのまま住み着く設備なので、罠と囲いを2つの型に分ける理由が無い（同1.2節）。残るマス
-# （かご罠・落とし穴）はまだ無い。
+# （かご罠）はまだ無い。
+
+traits:
+  # 杭を打った落とし穴（下のpitfallのstake軸、GameElementDefinition.md 3.5.1節）へ配られるもの。
+  #
+  # **杭が変えるのは、落ちた相手へ刺す怪我だけ**（TrapSystem.md 1.2節）。穴も掛かる候補も
+  # タイマーも素の落とし穴のままなので、配るのはその1点だけになる——骨折の重みを0にし、
+  # 刺し傷の重みを立てる。重み0の候補は抽選ごと落ちる（同3節の`<動物>_catch`と同じ形）ので、
+  # どちらの版でも刺さる怪我は1つに決まり、抽選にはならない。
+  staked:
+    tags: [staked]
+    passives:
+      - modify:
+          self:
+            fracture_weight: -10
+            puncture_weight: 10
 
 object_defs:
   # くくり罠。繊維だけで作れる最初の罠（docs/world/SurvivalItems.md 1.2節）。
@@ -201,3 +217,168 @@ object_defs:
           - requires:
               - {object: plant_fiber, count: 2, consume: true}
             duration: 30
+
+  # 落とし穴。掘った穴そのものなので、**据え置きの設置物（fixture）になる**（TrapSystem.md 1節）。
+  # 持ち歩ける罠が仕掛け直せる代わりに小さいのに対し、掘る罠は大きい代わりに仕掛けた土地が
+  # そのまま賭けになる——差は型ごとのタグ1つから出る。
+  #
+  # **杭を打てば殺す罠になる**（下のdrive_stake）。型は増やさず、stake軸の変種が刺す怪我だけを
+  # 入れ替えるので、中型・大型の「殺す」欄が穴1つで埋まる（同1.2節）。
+  pitfall:
+    tags: [fixture, trap]
+    # 押すと落ちた獲物が並ぶ（7.11節）。**落とし穴も何も告げない**ので、掛かったかどうかは
+    # 見に来て初めて分かる（TrapSystem.md 5節）。
+    visible_slots: [catch]
+    stackable: false
+    # 打った杭（3.5.1節）。値は`staked`ただ1つで、素の型（杭無し）と合わせて2座標になる。
+    variation_axes:
+      stake: {of: {tag: staked}}
+    slots:
+      # 落ちたもの。くくり罠と同じくcapacityは宣言しない（TrapSystem.md 1.1節）——上限を宣言すると
+      # 容量のバーが出て、比例するバーの長さが中身の体積を開ける前に漏らす。
+      catch:
+        cell_count: 1
+        cell: {accept: {tag: quarry}}
+    props:
+      # **掘り返した穴そのものなので、運べる目方を持たない**（畑と同じ、farming.yaml）。
+      # 0は宣言漏れではなく、そう決めた印（core.yamlのrequired_props）。
+      weight: {value: 0}
+      # 次の判定までの残り（TrapSystem.md 2節）。周期も位相の幅もくくり罠と同じ——罠の型で
+      # 待ち時間を変えない。
+      catch_remaining:
+        value: {min: 1, max: 16}
+        range: {min: 0, max: 16}
+        passives:
+          - conditions:
+              # 据えてある間だけ（TrapSystem.md 1節）。掘る罠の「地面」はfixtures枠で、
+              # 持ち歩ける罠のitems枠にあたる。
+              - {in_slot: fixtures}
+              # 空いている間だけ（同6節）。獲物も死体もquarryなので、両方をこれ1つで拾う。
+              - not: {slot: catch, matches: {tag: quarry}}
+            add:
+              self:
+                catch_remaining: -1
+        on_min:
+          add: {self: {catch_remaining: 16}}
+          pick:
+            # 何も寄って来なかった回。先頭に置く（3節）。
+            - weight: {prop: miss_weight}
+            - weight: {prop: herbivore_weight}
+              pick:
+                # 寄ってはきたが落ちなかった回（先頭に置く理由はくくり罠と同じ）。
+                - weight: 8
+                - weight: {prop: wild_boar_catch}
+                  spawn: {object: wild_boar, into: self}
+                  # 落ちた相手へ刺す怪我（TrapSystem.md 5.1節・5.2節）。**素の穴は骨折だけ、
+                  # 杭を打った版は刺し傷だけ**——重みの片方が必ず0なので、これは抽選ではなく
+                  # 杭の有無そのもの（上のstaked trait）。
+                  pick:
+                    - weight: {prop: fracture_weight}
+                      spawn: {object: fracture, into: child}
+                    - weight: {prop: puncture_weight}
+                      spawn: {object: puncture_wound, into: child}
+      # その土地でその動物が掛かる重み。素の値は0で、祖先（＝掘った土地、locations.yaml）が
+      # 宣言していればその実効値が土台になる（base、6.5節）。
+      #
+      # **並ぶのはイノシシだけ。** 候補の一覧が罠のサイズを持つ（TrapSystem.md 1.1節）ので、
+      # 上は穴から出られない大きさまで、下は穴から出ていく大きさで切れる——ヤケイは羽ばたいて出る。
+      # 中型のシカ・オオトカゲはまだ島に居らず、サルは罠を学習して避ける
+      # （docs/world/Animals.md 4節・10節）ので、今この島で穴に落ちるのはイノシシだけになる。
+      wild_boar_catch: {value: 0, base: {subject: ancestor}}
+      # 寄ってきた回の重み。素は囲いと同じで、餌が押し上げる（4節）。
+      #
+      # **肉の卓は持たない。** 掛かるイノシシは雑食（4.1節）なので卓1つとmeat_baitを足せば肉でも
+      # 寄せられるが、同じ相手を2通りの餌で呼べるようにする値打ちがあるかは、囲いと同じ未決事項
+      # （同8節）。片方だけ先に決めない。
+      herbivore_weight: {value: 10, range: {min: 0, max: 35}}
+      # 何も寄って来なかった回の重み。range.minが5で止めるので必中にはならない（8.3節）。
+      miss_weight: {value: 40, range: {min: 5, max: 40}}
+      # 仕掛けた餌。**時間では傷まない**（TrapSystem.md 4節）——時間で減るのは持ち歩ける罠だけで、
+      # 見回りの速さを代償にしていない据え置きの罠は、囲いの飼葉と同じく置いたまま待てる。
+      plant_bait:
+        value: 0
+        range: {min: 0, max: 24}
+      # 落ちた相手へ刺す怪我を選ぶ重み（上のon_min）。**素の穴は骨折だけ**で、杭を打った版が
+      # stake軸のtraitで入れ替える。
+      fracture_weight: {value: 10, range: {min: 0, max: 10}}
+      puncture_weight: {value: 0, range: {min: 0, max: 10}}
+      # 雨に縁を崩され、落ちた獣に壁を掘られて浅くなる。空のままなら30日、獣が入れば2.7日で
+      # 埋まって使えなくなる（TrapSystem.md 6.1節）。**丸太を組んだ檻と違って耐久を持つ**のは、
+      # 掘った穴が土に戻る物だから——放置の罰は罠を失うことに留まる。
+      #
+      # 壊れた罠の中身は道連れにならず土地へこぼれる（9.3節）。
+      durability:
+        # 尽きると使えなくなるので、満タン側がgood（CardView.md 8節）。
+        gauge: {min: bad, max: good}
+        value: 2880
+        range: {min: 0, max: 2880}
+        passives:
+          - conditions:
+              - {in_slot: fixtures}
+            add:
+              self:
+                durability: -1
+          - conditions:
+              - {slot: catch, matches: {tag: quarry}}
+            add:
+              self:
+                durability: -10
+        on_min:
+          destroy: self
+    passives:
+      # 落ちた獲物の拘束（TrapSystem.md 5節）。くくり罠・囲いとまったく同じ1ブロックで、
+      # 飛び出さない・その場で仕留められる・出せば暴れる、の3つが決まる。
+      - modify:
+          child:
+            wariness: -100
+            vulnerability: 200
+      # 餌は「草食の卓が引かれやすくなる」と「何も寄って来ない回が減る」を同時に言う（4節）。
+      - conditions:
+          - {prop: plant_bait, gte: 1}
+        modify:
+          self:
+            herbivore_weight: 25
+            miss_weight: -25
+    interactions:
+      # 餌を仕掛ける（くくり罠とまったく同じ形、TrapSystem.md 4節）。移る量は餌の側が1箇所で持つ。
+      add_plant_bait:
+        trigger: {drag: {tag: plant_bait}}
+        duration: 1
+        conditions:
+          - {reason: trap_baited, prop: plant_bait, lt: 24}
+        transfer:
+          amount: 999
+          from: dragged
+          from_prop: plant_bait
+          to_prop: plant_bait
+        destroy: dragged
+      # 杭を打つ（TrapSystem.md 1.2節）。掘った穴へ棒を立てるドラッグ1つで、生かす罠が殺す罠になる。
+      #
+      # **穴は掘り直さない。** becomeは同じ個体のまま型を差し替える（9.9節）ので、耐久も餌も
+      # 掛かるまでの残りもそのまま引き継ぐ。
+      #
+      # **杭は太い枝で代用している。** 立てるべき長い棒（docs/world/SurvivalItems.md 3節）は
+      # 若木を切って採る物で、それを採る手がまだ無い——畑の掘り棒（farming.yaml）と同じ仮置き。
+      drive_stake:
+        trigger: {drag: {object: thick_branch}}
+        duration: 60
+        conditions:
+          - reason: already_staked
+            not: {subject: self, matches: {tag: staked}}
+        become: {stake: staked}
+        destroy: dragged
+    # 解放条件（conditions、13.3節）はまだ置かない（くくり罠と同じ理由）。
+    recipes:
+      # 掘るだけ。**掘削具はまだ無い**（TrapSystem.md 8節）ので、畑と同じく掘り棒にする太い枝を
+      # 1本折り込む形で置いてある（farming.yamlのfield）。獣が落ちる深さまで掘るので、畑を均す
+      # 半日より長い。
+      dug:
+        steps:
+          - requires:
+              - {object: thick_branch, count: 1, consume: true}
+            duration: 480
+
+  # stake軸の値。**traitsだけを宣言する**（3.5.1節）——変種へ配られるのは上のtraitで、この型自身の
+  # インスタンスは作られない。
+  staked:
+    traits: [staked]
