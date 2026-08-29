@@ -17,7 +17,10 @@ export type ReferenceRoot =
    */
   | 'child'
   | 'agent'
-  /** combinations内でのみ意味を持つ、運ばれてきて働きかけに使われる相手（11.5節・12.2節）。 */
+  /**
+   * 運ばれてきて働きかけに使われる参加者。宣言が乗っていない側で、画面での操作の仕方では決まらない
+   * （11.5節）。**居る場所の一覧は11.5節の表が持つ**（ReferenceScope参照）。
+   */
   | 'instrument'
   /**
    * `among`（10.3節）が周りから選んだ相手。**候補ごとに束ね直される**ので、重みを解くときは
@@ -46,7 +49,7 @@ export class ReferenceContext {
   /** この操作をしている者。誰も操作していない文脈（tick・持続効果のゲート）ではundefined。 */
   readonly agent: WorldObject | undefined;
 
-  /** 重ねられてきた相手。combinationsの中でのみ相手を持つ（12.2節）。 */
+  /** この操作で働きかけに使われる物。それを伴わない操作ではundefined（11.5節）。 */
   readonly instrument: WorldObject | undefined;
 
   /** `among`が周りから選んだ相手。amongを書いた候補の中でのみ居る（10.3節）。 */
@@ -72,7 +75,7 @@ export class ReferenceContext {
     return new ReferenceContext(self, undefined, undefined, undefined);
   }
 
-  /** 操作の文脈（誰が・何を重ねて）。instrumentはcombinationsの中でのみ相手を持つ（12.2節）。 */
+  /** 操作の文脈（誰が・何を使って）。instrumentを伴わない操作ではundefinedを渡す（11.5節）。 */
   static acting(
     self: WorldObject | undefined,
     agent: WorldObject | undefined,
@@ -177,7 +180,7 @@ export class ReferenceScope {
   /** 操作している者（agent）が居るか。時間の側が起こす場面（rangeイベント・passives）には居ない。 */
   private readonly hasAgent: boolean;
 
-  /** 重ねられた相手（instrument）が居るか。combinationsの中だけ（12.2節）。 */
+  /** 働きかけに使われる物（instrument）が居るか。物が運ばれてこない場所（menu・tickの操作）には居ない。 */
   private readonly hasInstrument: boolean;
 
   /** amongが選んだ相手（picked）が居るか。amongを書いた候補の中だけ（10.3節）。 */
@@ -211,7 +214,7 @@ export class ReferenceScope {
   /** 誰かが操作している場所（actions、11節）。 */
   static readonly action = new ReferenceScope(true, true, false, false, true, false);
 
-  /** 相手を重ねている場所（combinations、12節）。 */
+  /** 使う物が運ばれてくる場所（`drag`のinteractions 12節・`put_in`の`duration` 7.10節）。 */
   static readonly combination = new ReferenceScope(true, true, true, false, true, false);
 
   /**
@@ -268,7 +271,9 @@ export class ReferenceScope {
       case 'agent':
         return this.hasAgent ? undefined : 'ここは誰かが操作している場面とは限りません';
       case 'instrument':
-        return this.hasInstrument ? undefined : "'instrument'はcombinationsの中でのみ使えます";
+        return this.hasInstrument
+          ? undefined
+          : "'instrument'は、物が運ばれてくる場所（dragのinteractionsとput_inのduration）でのみ使えます";
       case 'picked':
         return this.hasPicked ? undefined : "'picked'はamongを書いた候補の中でのみ使えます";
       case 'ancestor':
