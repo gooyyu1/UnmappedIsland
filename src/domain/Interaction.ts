@@ -11,17 +11,17 @@ import { ReferenceContext } from './ReferenceRoot';
  * 話かを知らない**。だから宣言へ直に頼むと、所要時間を訊くにも実行するにも「誰の」「誰に」を毎回
  * 渡し直すことになる。引いた時点で相手を結び付けておけば、以降は名前も相手も渡さない。
  *
- * **重ねる相手（instrument）を持つかどうかだけが具象の差**なので、持たない側（Action）はundefinedを
+ * **使う物（instrument、11.5節）を持つかどうかだけが具象の差**なので、持たない側（Action）はundefinedを
  * 1度だけここへ渡す。訊き方も実行の仕方も具象では変わらない。
  */
 abstract class Interaction<G extends InteractionTrigger, T extends WorldObject | undefined> {
   /** この操作を起こしたきっかけ。宣言はここからぶら下がる。 */
   protected readonly trigger: G;
 
-  /** 誰がこの操作をしていて、誰に、何を重ねているか。宣言へ問うときはこれを渡す。 */
+  /** 誰がこの操作をしていて、誰に、何を使っているか。宣言へ問うときはこれを渡す。 */
   protected readonly context: ReferenceContext;
 
-  /** 重ねられた相手。メニュー型の操作には居ない（型引数がundefinedになる）。 */
+  /** この操作で働きかけに使われる物（11.5節）。伴わない操作には居ない（型引数がundefinedになる）。 */
   protected readonly instrument: T;
 
   protected constructor(trigger: G, self: WorldObject, agent: WorldObject | undefined, instrument: T) {

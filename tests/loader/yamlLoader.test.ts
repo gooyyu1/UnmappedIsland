@@ -2020,7 +2020,7 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/range/);
   });
 
-  it('on_minの対象にinstrumentを指定するとエラーになる（rangeイベントに重ねる相手は居ない）', () => {
+  it('on_minの対象にinstrumentを指定するとエラーになる（rangeイベントに使う物は居ない）', () => {
     const yaml = `
 object_defs:
   clock:
