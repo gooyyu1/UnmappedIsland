@@ -195,9 +195,12 @@ describe('消化（かさ・栄養素・蓄え）', () => {
     /**
      * count tickぶん進める。13日ぶんを回すので、その間に渇きと飢えで死んでしまわないよう
      * （VitalsSystem.md 8節）、命を絶つ値だけは戻しておく。
+     *
+     * **脂の在庫も戻す。** 15時間で尽きて別の段が痛みを押し上げる（同7節）ので、そのままでは
+     * ここで見ている痛みが壊血病のものだけではなくなる。
      */
     function endure(count: number): void {
-      const vital = ['hydration', 'body_fat'].map((name) => codex.propertyNames.getId(name));
+      const vital = ['hydration', 'body_fat', 'lipid'].map((name) => codex.propertyNames.getId(name));
       const held = vital.map((id) => player.tryGetProperty(id)?.number ?? 0);
       for (let i = 0; i < count; i++) {
         player.tick();
@@ -270,6 +273,131 @@ describe('消化（かさ・栄養素・蓄え）', () => {
       expect(vitamin().number, '0で止まる').toBe(0);
       expect(player.parent, '尽きたまま置いても世界から外れない').toBeDefined();
       expect(vitamin().alert).toBe('danger');
+    });
+  });
+
+  /**
+   * 脂が尽きたまま肉ばかり食べ続ける道（DigestionSystem.md 7節）。壊血病と同じ形で、内側の不調を
+   * lipidの一番下の段が持つ——見るのは、絶てば段まで落ちること・水の保ちが半分になること・
+   * 食べたたんぱく質が身にならないこと・脂を摂れば全部止まることの4つ。
+   *
+   * **死に方は増えない。** 最後に死ぬのは既にある脱水で（VitalsSystem.md 8節）、名乗る死因も
+   * dehydratedのまま。
+   */
+  describe('脂が尽きた域', () => {
+    /** 開始時の30単位が0に着くまでのtick数（30 ÷ 0.5）。15時間。 */
+    const DEPLETION_TICKS = 60;
+    /** 肉を食べ続けている状態として置くたんぱく質の在庫（maxいっぱい）。 */
+    const MEAT_FED = 120;
+    /** ヤシの果肉1つぶんの脂質（coconut.yaml）。 */
+    const ONE_MEAT = 26;
+
+    function prop(name: string): PropertyValue {
+      return player.getProperty(codex.propertyNames.getId(name));
+    }
+
+    function painOf(): number {
+      return player.tryGetProperty(codex.propertyNames.getId('pain'))?.getEffectiveValue() ?? 0;
+    }
+
+    /** count tickぶん進める。**水分を戻さない**——ここで見たいのが水の減り方そのものなので。 */
+    function live(count: number): void {
+      for (let i = 0; i < count; i++) player.tick();
+    }
+
+    /** 肉だけを食べ続けながらcount tick進める（たんぱく質の在庫を切らさない）。 */
+    function liveOnMeat(count: number): void {
+      for (let i = 0; i < count; i++) {
+        prop('protein').setNumberWithoutEvents(MEAT_FED);
+        player.tick();
+      }
+    }
+
+    it('脂を絶つと15時間で在庫が尽き、その1 tick手前で段に入る', () => {
+      // 段の境目は1——15分ぶんも残っていなければ尽きたとみなす。0.5/tickで出ていくので、
+      // 割るのは59 tick目。
+      live(DEPLETION_TICKS - 2);
+      expect(prop('lipid').number).toBe(1);
+      expect(prop('lipid').stage?.name, '1はまだ在庫').toBe('stocked');
+
+      live(1);
+      expect(prop('lipid').number).toBe(0.5);
+      expect(prop('lipid').stage?.name).toBe('fat_starved');
+
+      live(1);
+      expect(prop('lipid').number, '15時間で空').toBe(0);
+    });
+
+    it('肉が在庫にある間だけ、水分の減りが倍になる', () => {
+      // 「食べれば凌げる」が裏返る唯一の場所（7節）。ゲートがたんぱく質の在庫なので、脂の無い肉を
+      // 食べ足すほど水が減る。
+      prop('lipid').setNumberWithoutEvents(0);
+
+      prop('protein').setNumberWithoutEvents(0);
+      const withoutMeat = prop('hydration').number;
+      live(1);
+      expect(withoutMeat - prop('hydration').number, '捨てる肉が無ければ-1/tickのまま').toBe(1);
+
+      prop('protein').setNumberWithoutEvents(MEAT_FED);
+      const withMeat = prop('hydration').number;
+      live(1);
+      expect(withMeat - prop('hydration').number, '尿素を捨てるのに水が要る').toBe(2);
+    });
+
+    it('肉は身にならない——在庫は3減るのに、蓄えへ届くのは1のまま', () => {
+      // 捨てられる2は行き先が無い（transferではなくadd）。だから食べても体脂肪は増えない。
+      const stocked = spendOneTick(30, MEAT_FED);
+      const starved = spendOneTick(0, MEAT_FED);
+      const noMeat = spendOneTick(0, 0);
+
+      expect(stocked.protein, '脂があれば体脂肪へ流れる1だけ').toBe(1);
+      expect(starved.protein, '脂が尽きると捨てる2が上乗せされる').toBe(3);
+      expect(starved.bodyFat - noMeat.bodyFat, '3減っても、蓄えへ届くのは1のまま').toBe(1);
+    });
+
+    /** 脂とたんぱく質の在庫を置いて1 tick進め、たんぱく質と体脂肪の動いた量を返す。 */
+    function spendOneTick(lipid: number, protein: number): { protein: number; bodyFat: number } {
+      prop('lipid').setNumberWithoutEvents(lipid);
+      prop('protein').setNumberWithoutEvents(protein);
+      const bodyFat = prop('body_fat').number;
+
+      live(1);
+
+      return {
+        protein: protein - prop('protein').number,
+        bodyFat: prop('body_fat').number - bodyFat,
+      };
+    }
+
+    it('ヤシの果肉を1つ食べれば段を抜け、痛みも水の減りもその場で戻る', () => {
+      prop('lipid').setNumberWithoutEvents(0);
+      prop('protein').setNumberWithoutEvents(MEAT_FED);
+      live(1);
+      expect(painOf(), '必須脂肪酸の欠乏で30（壊血病の半分）').toBe(30);
+
+      prop('lipid').add(ONE_MEAT);
+
+      expect(prop('lipid').stage?.name).toBe('stocked');
+      expect(painOf(), 'modifyは可逆なので、段を出た瞬間に消える（8.3節）').toBe(0);
+      const before = prop('hydration').number;
+      live(1);
+      expect(before - prop('hydration').number, '水の減りも元どおり').toBe(1);
+    });
+
+    it('肉だけで凌ごうとすると、渇いて死ぬまでが半分になる', () => {
+      // 死に方は増えない（VitalsSystem.md 8節）。増えるのは、そこへ至る速さだけ。
+      const max = prop('hydration').def.range?.max ?? 0;
+      expect(max, 'medicの満水（characters/medic.yaml）').toBe(288);
+      prop('hydration').setNumberWithoutEvents(max);
+      prop('lipid').setNumberWithoutEvents(0);
+
+      liveOnMeat(max / 2 - 1);
+      expect(prop('hydration').number).toBe(2);
+      expect(player.parent, '満水から36時間ではまだ生きている').toBeDefined();
+
+      liveOnMeat(1);
+      expect(player.parent, '本来3日保つ水が1日半で尽きる').toBeUndefined();
+      expect(player.destroyedReason, '終わり方は脱水のまま').toBe('dehydrated');
     });
   });
 

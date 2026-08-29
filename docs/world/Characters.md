@@ -68,10 +68,12 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   致命的域は持たない。個体差は無く `player_character` trait が配る。
 - **栄養素の在庫**（`carbohydrate` / `protein` / `lipid`）: **単位は tick**（体脂肪と同じ物差し）。
   在庫がある間は `body_fat` へ流れ続け、速さは栄養素ごとに違う（同 3 節）。個体差は持たず trait が配る。
+  **段を持つのは `lipid` だけ**で、一番下の **`fat_starved`**（脂が尽きた域）が `hydration` と
+  `protein` を削り、`pain` を押し上げる（同 7 節）。`status` タグは持たないので画面に行は増えない。
 - **`vitamin`（ビタミン）**: **単位は mg**（ビタミンC相当）。エネルギーにならないので在庫の3本とは
   物差しが違う（同 4 節）。同じく trait が配る。一番下の段 **`scurvy`**（壊血病）が `pain` を押し上げる
   ——**体調不良を怪我のカードにせず、原因となる値の段に持たせる**
-  （[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）唯一の実装例。
+  （[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）。
 - **`hydration`（水分）**: `-1/tick` 固定で、`max` が「満水から何 tick 保つか」。**減り方に個体差を
   持たせない**——キャラクタが違っても、飲んだ水1mLの意味が変わってはならないため。持ちの差は
   `max`（＝体が抱える水の量）で表す。液体の mL からの換算は飲用側の宣言が持つ（`transfer` の

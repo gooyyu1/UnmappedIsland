@@ -291,9 +291,11 @@ describe('coconut.yamlのヤシの実の加工', () => {
     const meat = spawnInto('coconut_meat', player, 'hand');
     const satietyId = codex.propertyNames.getId('satiety');
     const lipidId = codex.propertyNames.getId('lipid');
-    // 1 tickぶんの減りを載せた値から測る（0まで減ると尽きて死ぬので2から）。脂質は在庫が0だと輸送も動かない。
+    // 1 tickぶんの減りを載せた値から測る（0まで減ると尽きて死ぬので、その手前から）。脂質は在庫が
+    // 0だと輸送も動かないが、そのぶん脂の尽きた段に入るので水分は倍の-2/tickで減る
+    // （DigestionSystem.md 7節）。
     player.getProperty(satietyId).setNumberWithoutEvents(16);
-    player.getProperty(hydrationId).setNumberWithoutEvents(2);
+    player.getProperty(hydrationId).setNumberWithoutEvents(3);
     player.getProperty(lipidId).setNumberWithoutEvents(0);
 
     expect(meat.tryGetAction('eat', player)?.tryExecute() === true).toBe(true);

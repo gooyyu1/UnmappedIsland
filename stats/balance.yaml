@@ -416,6 +416,14 @@ consumption:
   - {property: protein, condition: 常時（輸送・在庫がある間）, character: engineer, per_tick: -1.00, per_day: -96}
   - {property: protein, condition: 常時（輸送・在庫がある間）, character: farmer, per_tick: -1.00, per_day: -96}
   - {property: protein, condition: 常時（輸送・在庫がある間）, character: medic, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 段 lipid=fat_starved, character: captain, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 段 lipid=fat_starved, character: engineer, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 段 lipid=fat_starved, character: farmer, per_tick: -1.00, per_day: -96}
+  - {property: hydration, condition: 段 lipid=fat_starved, character: medic, per_tick: -1.00, per_day: -96}
+  - {property: protein, condition: 段 lipid=fat_starved, character: captain, per_tick: -2.00, per_day: -192}
+  - {property: protein, condition: 段 lipid=fat_starved, character: engineer, per_tick: -2.00, per_day: -192}
+  - {property: protein, condition: 段 lipid=fat_starved, character: farmer, per_tick: -2.00, per_day: -192}
+  - {property: protein, condition: 段 lipid=fat_starved, character: medic, per_tick: -2.00, per_day: -192}
   - {property: lipid, condition: 常時（輸送・在庫がある間）, character: captain, per_tick: -0.50, per_day: -48}
   - {property: lipid, condition: 常時（輸送・在庫がある間）, character: engineer, per_tick: -0.50, per_day: -48}
   - {property: lipid, condition: 常時（輸送・在庫がある間）, character: farmer, per_tick: -0.50, per_day: -48}
