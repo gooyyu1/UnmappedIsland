@@ -7,6 +7,7 @@
 import type { CardContent } from './Card';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { SIZE } from '../looks/theme';
+import { uiText } from '../../locale/uiTexts';
 
 /** 頭打ちに掛かるときに覗かせる、次の枠の頭の幅。隙間ではなくカードの縁だと分かる幅を取る。 */
 const PEEK_WIDTH = 40;
@@ -61,6 +62,22 @@ export function foundCells(found: readonly CardContent[]): readonly LaneCell[] {
   const cells: LaneCell[] = found.map((card) => ({ card }));
   while (cells.length < FOUND_CELLS) cells.push({});
   return cells;
+}
+
+/**
+ * 絞り込みで1枚も残らなかったレーンの枠（ScreenLayout.md 8.1.7節）。**先頭の枠に隠れている枚数を
+ * 重ねる**ので、何も置いていないレーン（受け皿の空枠だけが出る）と見分けが付く。
+ *
+ * **印が付くのは1枚も残っていないときだけ。** 「なぜ空なのか」という問いは、札が見えているレーンには
+ * 立たない——絞り込みを選んでいることはボタンが言っている。
+ *
+ * 重ねるのは先頭の1枠。空枠が複数あっても、空になった理由は1度言えば足りる。
+ */
+export function hiddenOnlyCells(cells: readonly LaneCell[], hidden: number): readonly LaneCell[] {
+  if (hidden === 0 || cells.some((cell) => cell.card !== undefined)) return cells;
+
+  const overlay = uiText('lane_hidden_cards', { count: String(hidden) });
+  return cells.map((cell, index) => (index === 0 ? { ...cell, overlay } : cell));
 }
 
 /**
