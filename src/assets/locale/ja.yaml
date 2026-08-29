@@ -352,7 +352,7 @@ object_texts:
     interactions:
       ret:
         display_name: 叩いて繊維を採る
-        description: 水に漬けて柔らかくし、石で叩いて繊維を解す。時間はかかるが、刃物は要らない。
+        description: 水に漬けて柔らかくし、石で叩いて繊維を解す。漬けておくぶん、時間がかかる。
   husked_coconut:
     display_name: 皮を剥いだヤシの実
     description: 皮を落として殻がむき出しになった実。殻は硬いが、叩くかこじれば二つに割れる。

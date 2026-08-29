@@ -251,6 +251,10 @@ object_defs:
       # ヤシの木が1本だけ見つかる候補の重み。亜種が上書きする（terrain_generation.yaml）。
       palm_find:
         value: 13
+      # 打ち上げられた流木の幹が1本だけ見つかる候補の重み。**下の`driftwood_find`とは別のつまみ**
+      # ——あちらが出すのは枝ぶりの流木で、幹はこちら。亜種（流木の浜）は両方を増やす。
+      driftwood_trunk_find:
+        value: 6
       # ヤシガニが1匹だけ見つかる候補の重み。
       crab_find:
         value: 7
@@ -271,10 +275,8 @@ object_defs:
           # 1個
           - weight: {prop: palm_find}
             spawn: {object: palm_tree, into: self}
-          # 打ち上げられた流木の幹（timber.yaml）。海岸3種すべてに寄る。**下の`driftwood_find`とは
-          # 別の候補で、つまみも共有しない**——あちらが出すのは枝ぶりの流木で、亜種（流木の浜）が
-          # 増やすのはそちらだけ。幹まで亜種で増やすと、その砂浜を引いた島だけ筏が安くなる。
-          - weight: 6
+          # 打ち上げられた流木の幹（timber.yaml）。海岸3種すべてに寄る。
+          - weight: {prop: driftwood_trunk_find}
             spawn: {object: driftwood_trunk, into: self}
           - weight: 5
             spawn: {object: woven_basket, into: self}
@@ -331,6 +333,9 @@ object_defs:
       # ヤシガニが1匹だけ見つかる候補の重み。
       crab_find:
         value: 12
+      # 打ち上げられた流木の幹が1本だけ見つかる候補の重み。
+      driftwood_trunk_find:
+        value: 8
     interactions:
       explore:
         trigger: menu
@@ -348,7 +353,7 @@ object_defs:
           - weight: {prop: crab_find}
             spawn: {object: coconut_crab, into: self}
           # 打ち上げられた流木の幹（timber.yaml）。海岸3種すべてに寄る。
-          - weight: 8
+          - weight: {prop: driftwood_trunk_find}
             spawn: {object: driftwood_trunk, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
@@ -407,6 +412,9 @@ object_defs:
       # ——候補自身が自分の重みを0にする。島に幾つも転がっていては、持ち帰る意味が薄れる。
       chalice_find:
         value: 4
+      # 打ち上げられた流木の幹が1本だけ見つかる候補の重み。
+      driftwood_trunk_find:
+        value: 8
     interactions:
       explore:
         trigger: menu
@@ -427,7 +435,7 @@ object_defs:
           - weight: 30
             spawn: {object: stone, into: self}
           # 打ち上げられた流木の幹（timber.yaml）。海岸3種すべてに寄る。
-          - weight: 8
+          - weight: {prop: driftwood_trunk_find}
             spawn: {object: driftwood_trunk, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
           - weight: {prop: rat_find}
