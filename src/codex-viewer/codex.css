@@ -543,11 +543,6 @@ ol.routes {
   border-bottom: 1px solid var(--border);
 }
 
-/* 前提が揃わない経路。数字は出すが、辿れないことが一目で分かるように薄くする。 */
-.route-blocked {
-  opacity: 0.55;
-}
-
 .route > details > summary {
   display: flex;
   align-items: center;

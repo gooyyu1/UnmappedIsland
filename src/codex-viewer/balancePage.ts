@@ -105,8 +105,7 @@ function measurementMethodHtml(): string {
     `として読む。1本の武器では出ない配分で、仕留めの確率は実際より低く出る。</li>` +
     `<li>資源は土地をまたいで分かれている（木は砂浜、石は岩場）ので、渡り歩ける前提の` +
     `<b>${WHOLE_ISLAND}</b>を先頭に置く。土地の間の移動時間は数えていない。</li>` +
-    `<li>† は素材を所要時間0分の工程で得ている経路（時間を数えられていない）。` +
-    `前提に入手経路が無い経路は末尾へ回す。</li>` +
+    `<li>† は素材を所要時間0分の工程で得ている経路（時間を数えられていない）。</li>` +
     `</ul></details>`
   );
 }
@@ -162,7 +161,6 @@ function placeHtml(view: CodexView, place: PlaceBalance): string {
     .map((chains) => {
       const counted = chains.routes.filter((entry) => !entry.route.untimed);
       const uncounted = chains.routes.filter((entry) => entry.route.untimed);
-      if (counted.length === 0 && uncounted.length === 0) return '';
 
       return (
         `<h4>${escapeHtml(chains.propertyName)}` +
@@ -210,7 +208,7 @@ function menuHtml(view: CodexView, place: PlaceBalance): string {
     .map((chains) => {
       const preferred = place.menu.chosen.get(chains.propertyGlobalId);
       const options = chains.routes
-        .filter((entry) => !entry.route.untimed && !entry.route.blocked)
+        .filter((entry) => !entry.route.untimed)
         .map((entry, index) => {
           const selected =
             preferred === undefined
@@ -267,8 +265,7 @@ function routeHtml(view: CodexView, entry: PropertyRoute): string {
     .join('<span class="route-arrow">›</span>');
 
   return (
-    `<li class="route${route.blocked ? ' route-blocked' : ''}` +
-    `${route.needsImport ? ' route-import' : ''}"><details><summary>` +
+    `<li class="route${route.needsImport ? ' route-import' : ''}"><details><summary>` +
     `<span class="route-icons">${icons}</span>` +
     `<span class="route-daily">${formatNumber(entry.dailyMinutes, 0)}分` +
     `<span class="muted"> / 日 ${formatNumber(entry.dailyShare, 0)}%</span></span>` +
@@ -669,7 +666,7 @@ function wireBalanceMenu(tables: BalanceTables): void {
         const chains = place.properties.find((c) => c.propertyName === select.dataset.menuProperty);
         if (dailyNeed === undefined || chains === undefined) continue;
 
-        const usable = chains.routes.filter((entry) => !entry.route.untimed && !entry.route.blocked);
+        const usable = chains.routes.filter((entry) => !entry.route.untimed);
         // 選択の値はDOM由来なので、並びの中を指しているときだけ採る（.atは負やNaNを端の要素へ丸める）。
         const index = Number(select.value);
         const entry = index >= 0 && index < usable.length ? usable[index] : undefined;
