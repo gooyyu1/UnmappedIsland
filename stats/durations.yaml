@@ -4,9 +4,13 @@
 # 何を数えて何を数えていないかは docs/diagnostics/DurationStats.md。
 
 meta:
-  - {unit: days, minimum: 1, durations: 67, longest: 30.00, shortest: 1.00, tool_wears: 13}
+  - {unit: days, minimum: 1, durations: 71, longest: 67.00, shortest: 1.00, tool_wears: 13}
 
 durations:
+  - {object: junglefowl, property: body_fat, unit: days, days: 67.00, shortest_days: 67.00, repeats: false, destroys: true}
+  - {object: monkey, property: body_fat, unit: days, days: 67.00, shortest_days: 67.00, repeats: false, destroys: true}
+  - {object: rat, property: body_fat, unit: days, days: 67.00, shortest_days: 67.00, repeats: false, destroys: true}
+  - {object: wild_boar, property: body_fat, unit: days, days: 67.00, shortest_days: 67.00, repeats: false, destroys: true}
   - {object: world, property: season_remaining, unit: days, days: 30.00, shortest_days: 30.00, repeats: false, destroys: false}
   - {object: banana__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, repeats: false, destroys: true}
   - {object: bird_egg, property: durability, unit: days, days: 20.00, shortest_days: 6.67, repeats: false, destroys: true}

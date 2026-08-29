@@ -40,7 +40,7 @@ describe('待ち生産の条件（同梱の定義）', () => {
   it('ヤケイの繁殖が、囲いの枠と飼葉を名指しする', () => {
     const condition = conditionOf('junglefowl');
 
-    expect(condition, '囲いの枠に居ることが出ていない').toContain('livestock');
+    expect(condition, '囲いの枠に居ることが出ていない').toContain('catch');
     expect(condition, '飼葉が要ることが出ていない').toContain('fodder');
   });
 

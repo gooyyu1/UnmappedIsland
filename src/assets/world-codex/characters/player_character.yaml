@@ -139,7 +139,22 @@ traits:
         on_min:
           destroy: {subject: self, reason: exsanguinated}
         passives:
-          - add:
+          # **戻るのは水分と体脂肪がともに安全域にある間だけ**（VitalsSystem.md 3.1節）。深手を負った後の
+          # 5日は、水と食べ物を切らさずに過ごした5日でなければならない。
+          #
+          # 判定は段の名前で行い、**閾値を条件の側へ書き写さない**——域（alert）そのものを条件から読む術が
+          # 無いので、安全域の段をanyで束ねる。獣の側もまったく同じ形（animals.yaml）で、渇きと飢えを
+          # 人と獣の両方が持つことが、この1つの宣言を両方へ配れるようにしている（同節）。
+          - conditions:
+              - any:
+                  - {prop: hydration, in_stage: hydrated}
+                  - {prop: hydration, in_stage: full}
+              - any:
+                  - {prop: body_fat, in_stage: gaunt}
+                  - {prop: body_fat, in_stage: nourished}
+                  - {prop: body_fat, in_stage: stout}
+                  - {prop: body_fat, in_stage: obese}
+            add:
               self:
                 blood: 2
       # 満腹感（docs/engine/DigestionSystem.md 2節）。**単位はmL——胃に入っているかさそのもの**で、

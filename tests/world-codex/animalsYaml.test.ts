@@ -36,6 +36,8 @@ describe('animals.yamlの動物', () => {
   let shockId: number;
   let consciousnessId: number;
   let bloodId: number;
+  let hydrationId: number;
+  let bodyFatId: number;
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
@@ -44,6 +46,8 @@ describe('animals.yamlの動物', () => {
     shockId = codex.propertyNames.getId('shock');
     consciousnessId = codex.propertyNames.getId('consciousness');
     bloodId = codex.propertyNames.getId('blood');
+    hydrationId = codex.propertyNames.getId('hydration');
+    bodyFatId = codex.propertyNames.getId('body_fat');
   });
 
   beforeEach(() => {
@@ -705,6 +709,60 @@ describe('animals.yamlの動物', () => {
         false,
       );
       expect(monkey.parent, '手は持ち主なので、土地へこぼれる').toBe(jungle);
+    });
+  });
+
+  describe('渇きと飢え', () => {
+    /**
+     * くくり罠を1つ据えて、その枠へ入れる。掛かった個体は拘束が警戒を打ち消して暴れない
+     * （TrapSystem.md 5節）ので、ここでも警戒を落としてから入れる。
+     */
+    function snare(animal: WorldObject): WorldObject {
+      const trap = spawnInto('snare', jungle, 'items');
+      animal.tryGetProperty(warinessId)!.setNumber(0);
+      expect(animal.moveToSlotOrRejection(trap.getSlot(codex.slotNames.getId('catch')))).toBeUndefined();
+      return trap;
+    }
+
+    it('野生の個体は渇きも飢えもしない', () => {
+      // **これを落とすと島中の獣が3日半で死ぬ**（TrapSystem.md 5.4節）。獣が自分で水を探す仕組みは
+      // 無いので、`in_slot: catch`のゲート1つが「飲めない状況に置いたのは誰か」を言い分けている。
+      tick(400, jungle);
+
+      expect(monkey.tryGetProperty(hydrationId)!.number, '満たされたまま').toBe(336);
+      expect(monkey.tryGetProperty(bodyFatId)!.number, '蓄えも減らない').toBe(6432);
+    });
+
+    it('罠の枠に居る間だけ渇き、飢える', () => {
+      // **閉じ込めている側は1行も宣言しない**（TrapSystem.md 5.4節）。ゲートは罠の型を問わないので、
+      // 枠の名前がcatchであるくくり罠でも檻でも家畜の囲いでも、同じ1つの宣言で減る。
+      const trap = snare(monkey);
+
+      tick(10, trap);
+
+      expect(monkey.tryGetProperty(hydrationId)!.number, '1 tickに1ずつ渇く').toBe(326);
+      expect(monkey.tryGetProperty(bodyFatId)!.number, '蓄えも同じゲートで減る').toBe(6422);
+
+      expect(monkey.moveToSlotOrRejection(jungle.getSlot(codex.slotNames.getId('items')))).toBeUndefined();
+      tick(10, jungle);
+
+      expect(monkey.tryGetProperty(hydrationId)!.number, '出せば止まる').toBe(326);
+    });
+
+    it('水分が安全域を外れている間は、血が戻らない', () => {
+      // 判定は段の名前で行う（VitalsSystem.md 3.1節）ので、置くのは**その段に入る位置**であって、
+      // 条件の側の閾値ではない。192はdryish（留意域）の下端。
+      const blood = monkey.tryGetProperty(bloodId)!;
+      blood.setNumber(200);
+      monkey.tryGetProperty(hydrationId)!.setNumber(192);
+
+      tick(10, jungle);
+      expect(blood.number, '渇いている間は戻らない').toBe(200);
+
+      monkey.tryGetProperty(hydrationId)!.setNumber(336);
+      tick(10, jungle);
+
+      expect(blood.number, '満たせば戻り始める').toBeGreaterThan(200);
     });
   });
 
