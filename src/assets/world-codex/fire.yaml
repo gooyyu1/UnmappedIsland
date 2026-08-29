@@ -32,7 +32,7 @@ traits:
     tags: [tinder]
     props:
       # 1回の火起こしが成功する重み。失敗の重み（40）との比が成功率になる。
-      # 天気とスキルの段で動かすのは今後の課題（同3.1節）。
+      # スキルの段で動かすのは今後の課題（同3.1節）。天気はここではなく可否で効く（下のlight）。
       ignition_chance: {}
     interactions:
       # 火起こし具を重ねて火を移す。外した回も火口は失われる。
@@ -45,6 +45,19 @@ traits:
       light:
         trigger: {drag: {object: fire_drill}}
         duration: 30
+        conditions:
+          # 雨に打たれた火口は熾を受け止められないので、雨天の屋外では起こせない
+          # （docs/engine/FireSystem.md 3.1.1節）。確率ではなく可否なので、pickの重みではなく
+          # 条件で閉じる。屋根の下（浅い洞窟のsheltered）なら降っていても起こせる。
+          #
+          # **葉2つは炉の雨（下のhearth）と同じ**で、そちらが削るのは火力、こちらが閉じるのは可否。
+          # 束ねてnotで包むのは、祖先に天候の概念が無いときに閉じないため
+          # （GameElementDefinition.md 14.1節）。
+          - reason: raining
+            not:
+              all:
+                - {subject: ancestor, prop: sheltered, eq: 0}
+                - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
         pick:
           - weight: {prop: ignition_chance}
             destroy: self

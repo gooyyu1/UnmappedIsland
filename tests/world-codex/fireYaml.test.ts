@@ -199,6 +199,34 @@ describe('fire.yamlの火の連鎖', () => {
     return seen;
   }
 
+  it('雨の日は屋外で火が起こせない', () => {
+    // 確率が下がるのではなく、できない側に線が引かれる（docs/engine/FireSystem.md 3.1.1節）。
+    // 引きは成功する側（LIGHTS）のままなので、止めているのは天気だけ。
+    setWeather('heavy_rain');
+    const grass = spawnInto('dry_grass', land, 'items');
+    const drill = spawnInto('fire_drill', player, 'hand');
+
+    expect(grass.combinationsWith(drill, player), '候補にも挙がらない').toEqual([]);
+    expect(itemsOn(land), '外した回と違って火口も減らない').toEqual(['dry_grass']);
+  });
+
+  it('雨でも屋根の下なら火を起こせる', () => {
+    // 洞窟がsheltered: 1を宣言し、火口の祖先がそこで止まる（ContainerSystem.md 6節）。
+    // 「火を絶やさないための価値」が洞窟に付くのがここ。
+    const cave = spawnInto('shallow_cave', land, 'fixtures');
+    setWeather('heavy_rain');
+    const grass = spawnInto('dry_grass', cave, 'items');
+    const drill = spawnInto('fire_drill', player, 'hand');
+
+    expect(
+      grass
+        .combinationsWith(drill, player)
+        .find((c) => c.name === 'light')
+        ?.tryExecute() === true,
+    ).toBe(true);
+    expect(itemsOn(cave), '洞窟の中に火種ができる').toEqual(['burning_tinder']);
+  });
+
   it('枝は火口にならない（繊維状のものだけが火を受け止める）', () => {
     const twig = spawnInto('twig', land, 'items');
     const drill = spawnInto('fire_drill', player, 'hand');
