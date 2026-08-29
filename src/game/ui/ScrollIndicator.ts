@@ -21,10 +21,13 @@ const FADE_DELAY_MS = 800;
 const FADE_MS = 400;
 
 /**
- * 横スクロールできる帯の送り具合を示す、半透明のスクロールバー
- * （ScreenLayout.md 7.4節 フィールドエリア「スクロールバー」）。
+ * 送れる帯の送り具合を示す、半透明のスクロールバー（ScreenLayout.md 7.4節「スクロールバー」）。
  *
  * 呼び出し側は送り具合を渡すだけでよく、出す・出さないも濃さも気にしない。
+ *
+ * **横向きにだけ組み、縦に送る場所では呼び出し側が90度回して立てる**（PlayScene.addBarScrollIndicator）。
+ * 縦の区切りに横の帯の絵を回して敷くのと同じで（shapes.addTiledImageVertical）、縦向きの実装を
+ * 別に持たない。
  */
 export class ScrollIndicator extends Phaser.GameObjects.Container {
   private readonly thumb: Phaser.GameObjects.Graphics;
