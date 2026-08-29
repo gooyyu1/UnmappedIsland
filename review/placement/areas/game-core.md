@@ -162,7 +162,7 @@
 
 ## ファイル配置（層=配置）についての所見
 
-- `src/game/` 直下は当時「組み立て（`*Scene.ts` と `ui/*Window.ts`）」＋例外として `errorReport.ts` と定められていた。11ファイル中9つはシーンで、この定義に合っている。外れているのは `DeviceScreen.ts`（シーンでも横断の道具でもない起動側）と、抽象基底の `ResponsiveScene.ts`（シーンの土台なので許容範囲）。**現在の CodeStructure.md 1節は組み立ての置き場に `src/game/DeviceScreen.ts` を明記しており、外れているのは `ResponsiveScene.ts` だけになっている。**
+- `src/game/` 直下は当時「組み立て（`*Scene.ts` と `ui/*Window.ts`）」＋例外として `errorReport.ts` と定められていた。11ファイル中9つはシーンで、この定義に合っている。外れているのは `DeviceScreen.ts`（シーンでも横断の道具でもない起動側）と、抽象基底の `ResponsiveScene.ts`（シーンの土台なので許容範囲）。**現在の CodeStructure.md 1節は、組み立ての置き場に `src/game/DeviceScreen.ts` を、層の外に `src/game/launchSeed.ts` を明記している。`src/game/` 直下は表のどこかに全部入るようになった（`ResponsiveScene.ts` は `*Scene.ts` として組み立て。抽象基底なので許容範囲、という上の評価は変わらない）。**
 - ただし**中身の層は守れていない**。意匠（寸法・色・時間の見せ方）の定数が全10シーンに散っており、担当範囲の判定3の 84 件中 46 件がこれ。`looks/theme.ts` と `looks/PlayScreenLayout.ts` という受け皿が既にあるのに、`DISPLAY_PADDING` だけが looks 側、`STATUS_PADDING`/`BAR_PADDING` は PlayScene 側、という線の引かれ方になっている。
 - `BootScene.ts` の `preload()` は、`INFORMATION_ART`/`SEPARATOR_ART`/`ICON_ART`/`WEATHER_ART` を `src/art/` から引く一方、`card_frame.png`・`flip_digit.png`・`slot_button_paper.png`・`dust_puff.png` の4枚だけは URL を直に輸入している。「どのファイルがどの絵か」は素材（`src/art/`）の答えるべきこと（CodeStructure.md 3節）なので、この4枚だけが素材の棚を素通りしている。
 - `PlayScene.ts` は 2366 行・宣言 181 件で、判定1が 122 件（67%）＝大半は本当に結線。問題は残る 3〜5 の 55 件が「世界へ直に訊く」「映しの判断を持つ」「部品を組み立てる」の3方向へ散っていることで、`operationSteps` / `elapsePlayback` が示した「順序の判断を Phaser に触らない側へ出す」延長として、次に出せるのは `laneCards`（映し）・`foundSince`＋`shownInstanceIds`（映し）・`initialTab`（映し）・`slotButtonPaper`＋`buttonIcon`（部品）・`pathDestinationNames`（映し／世界）の5組。

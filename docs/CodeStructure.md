@@ -6,7 +6,8 @@
 
 ## 1. 構成要素と置き場
 
-**この表が置き場の唯一の記載場所です。** 層は7つで、**組み立てと層の外は層ではありません**（2節）。
+**この表が置き場の唯一の記載場所です。** 層は7つで、**組み立て・層の外・codex ビューアは層では
+ありません**（2節）。
 
 | 名前 | 答えること | 知ってはいけないもの | 置き場 |
 |---|---|---|---|
@@ -18,13 +19,22 @@
 | **部品** | Phaserの表示物を**作る・持ち続ける・触らせる** | 世界の語彙（レシピ・スロット名・プロパティ名）・解析 | `src/game/ui/` |
 | **解析** | 宣言を**どう読むか**。答えは必ず近似になる（5節） | 効果・条件の木そのもの（読み上げ口だけを使う） | `src/analysis/` |
 | **組み立て** | どの部品をどこへ置き、映しの答えを誰へ渡すか | 解析。**それ以外の層はすべて知ってよい唯一の場所**（2節） | `src/main.ts`・`src/game/DeviceScreen.ts`・`src/game/*Scene.ts`・`src/game/ui/*Window.ts` |
-| **層の外** | どこからでも使う横断の道具 | Phaser・解析 | `src/game/errorReport.ts`・`src/save/`・`src/scenario/`・`src/util/` |
+| **層の外** | **層のどれでもないコード** | Phaser・解析 | `src/asset-pack/`・`src/game/errorReport.ts`・`src/game/launchSeed.ts`・`src/save/`・`src/scenario/`・`src/util/` |
+| **codex ビューア** | 定義YAMLを型・プロパティ・操作の単位で辿って読ませる別ページ | Phaser（ゲームの画面を持たない） | `src/codex-viewer/` |
 
-**「知ってはいけないもの」は規約で、自動テストが見張っている範囲はその一部です**
-（`tests/architecture/layers.test.ts`）。Phaser への到達を検査しているのは世界・映し・意匠・素材と
-`src/save/`・`src/scenario/`・`src/util/`（`PHASER_FREE`）、解析への到達を検査しているのは
-`src/domain`・`src/loader`・`src/locale`・`src/game`・`src/ui`（`ANALYSIS_FREE`）です。**解析を知って
-よいのは codex ビューアだけ**で、表のどの行も知ってはいけません（5節）。
+**`src/` 直下と `src/game/` 直下がこの表に出そろっていることは、自動テストが数えます**
+（`tests/architecture/layers.test.ts`）。置き場を1つ足したのに表へ書き忘れると落ちます。唯一の
+例外は `src/assets/`（データファイルはコードではないので、どの行にも属しません）。
+
+**「知ってはいけないもの」は規約で、自動テストが見張っているのはその一部です。** どこを見張って
+いるかは同じテストの `PHASER_FREE`・`ANALYSIS_FREE` が持ちます——ここへ書き写すと、一致を誰も
+検査しない2つ目の一覧が増えるので置きません。**解析を知ってよいのは codex ビューアだけ**で、
+他の9行はどれも知ってはいけません（5節）。
+
+**層の外**は横断の道具（`src/util/`・`src/game/errorReport.ts`）、保存と起動時の入力
+（`src/save/`・`src/scenario/`・`src/game/launchSeed.ts`）、外から材料を受け取る口
+（`src/asset-pack/`。[`AssetPack.md`](./engine/AssetPack.md)）の集まりです。**層と呼ばないのは、
+どれも「何を知ってよいか」で位置が決まらないから**で、性質が同じだからではありません。
 
 **映し**は、世界を写した像です。行動のたびに作り直され、時間のかかる行動では tick ごとの断面として
 控えられます（`RecordedView`）。「何が出ていて、その上の操作が何を意味するか」を答え、**描きません**。
@@ -62,7 +72,8 @@ flowchart LR
     View["映し<br/>src/game/view/"]
     World["世界<br/>src/domain/・loader/・locale/"]
     Analysis["解析<br/>src/analysis/"]
-    Outside["層の外<br/>src/save/・src/scenario/・src/util/・errorReport.ts"]
+    Outside["層の外<br/>src/asset-pack/・src/save/・src/scenario/・src/util/<br/>errorReport.ts・launchSeed.ts"]
+    Codex["codex ビューア<br/>src/codex-viewer/"]
 
     Assembly --> Parts & Common & View & Looks & Art & World
     Parts --> Common & Looks & Art
@@ -71,9 +82,10 @@ flowchart LR
     Looks --> Art
     Analysis --> World
     Outside --> World
+    Codex --> World & Art & Analysis
 
     classDef notLayer stroke-dasharray: 5 4
-    class Assembly,Outside notLayer
+    class Assembly,Outside,Codex notLayer
 ```
 
 意匠は映しからも部品からも参照されます（札の色は映しが選び、その色で描くのは部品）。

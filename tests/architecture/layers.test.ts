@@ -179,4 +179,38 @@ describe('層の境界', () => {
     expect(sourcesIn('src/game/view').length).toBeGreaterThan(5);
     expect(sourcesIn('src/ui').length).toBeGreaterThan(5);
   });
+
+  it('src/ の置き場が、CodeStructure.md の表に出そろっている', () => {
+    // 表は「置き場の唯一の記載場所」を名乗る（CodeStructure.md 1節）。名乗るだけでは、置き場を
+    // 足したときに書き忘れても誰も気づかない——**数えるのはこちらの仕事**。
+    //
+    // 表が丸ごと受けている場所はそこで止め、受けていなければ1段降りて確かめる。`src/game/` は
+    // ディレクトリごとの行を持たず直下のファイルを列挙しているので、この降り方でだけ拾える。
+    const cells = readFileSync(join(ROOT, 'docs/CodeStructure.md'), 'utf-8')
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith('|'));
+    const listed = [...cells.join('\n').matchAll(/`(src\/[^`]+)`/g)].map((m) => m[1].replace(/\/$/, ''));
+    const covers = (path: string): boolean =>
+      listed.some((entry) =>
+        entry.includes('*')
+          ? new RegExp(`^${entry.replace(/[.]/g, '\\.').replace(/\*/g, '[^/]*')}$`).test(path)
+          : entry === path,
+      );
+
+    const missing: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(join(ROOT, dir))) {
+        const path = `${dir}/${entry}`;
+        // データファイルはコードではないので、どの行にも属さない（CodeStructure.md 1節）。
+        if (path === 'src/assets') continue;
+        if (covers(path)) continue;
+        if (statSync(join(ROOT, path)).isDirectory()) walk(path);
+        else missing.push(path);
+      }
+    };
+    walk('src');
+
+    expect(missing, 'この置き場が表のどの行にも載っていない').toEqual([]);
+    expect(listed.length).toBeGreaterThan(10);
+  });
 });
