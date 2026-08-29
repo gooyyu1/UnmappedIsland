@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { Rect } from '../ui/Rect';
 import type { BarIconRow } from './looks/PlayScreenLayout';
 import { CHARACTER_DISPLAY_PADDING, PlayScreenLayout } from './looks/PlayScreenLayout';
+import { ScreenMetrics } from './looks/ScreenMetrics';
 import { isAlive } from '../ui/lifetime';
 import { SCREEN_DEPTH } from './looks/screenDepth';
 import { causeOfDeathSentence } from './looks/deathTexts';
@@ -531,7 +532,7 @@ export class PlayScene extends ResponsiveScene {
     const character = resolveCharacterDefNameOrFirst(this.codex, data.save.characterId);
     this.gameSession = startNewGame(this.codex, character, data.save.seed, seededRng(data.save.seed));
     if (data.scenario !== undefined) applyScenario(this.gameSession, data.scenario, this.codex);
-    this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+    this.view = this.viewOfGame();
     this.sunlight = SunlightHours.of(this.codex, this.gameSession.player.instance.def);
     // 開いた時点の空を基準にする。開いた瞬間にまたいだことにはならない。
     this.shownDaylight = { elapsedDays: this.view.elapsedDays, hour: this.view.hour };
@@ -1483,7 +1484,7 @@ export class PlayScene extends ResponsiveScene {
       for (const step of afterPlaybackSteps({ moved: false, found: true })) {
         switch (step) {
           case 'refresh':
-            this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+            this.view = this.viewOfGame();
             break;
           case 'noteChanges':
             this.noteStatusChanges(statusesBefore, startedAt);
@@ -1527,7 +1528,33 @@ export class PlayScene extends ResponsiveScene {
 
   /** ワールドを変える操作を実行し、経過の控えを取る（runAndRecordChange）。実時間での再生はpassTime。 */
   private runAndRecord(change: () => void): Recording {
-    return runAndRecordChange(this.gameSession, this.codex, this.locale, this.childWindowPlace, change);
+    return runAndRecordChange(
+      this.gameSession,
+      this.codex,
+      this.locale,
+      this.childWindowPlace,
+      change,
+      this.handLaneCells(),
+    );
+  }
+
+  /**
+   * 今のワールドから表示内容を作る（fromGameSession）。**枠数を添えるのはここだけ**——手持ちの
+   * 前詰めは画面の都合による場当たりの割り切りで（ScreenLayout.md 7.3節）、そこに要る「レーンに
+   * 一度に見えている枠の数」は画面の側にしか無い。
+   */
+  private viewOfGame(): PlayScreenView {
+    return fromGameSession(this.gameSession, this.codex, this.locale, this.handLaneCells());
+  }
+
+  /**
+   * ハンドレーンに一度に見えている枠の数。**手持ちの前詰めにしか使わない**（viewOfGame）。
+   *
+   * `this.metrics`はbuildの中でしか今の画面を指さない（ResponsiveScene）が、写し取りはinitでも
+   * 起きるので、ここだけは画面寸法から測り直す。
+   */
+  private handLaneCells(): number {
+    return new PlayScreenLayout(new ScreenMetrics(this.scale.width, this.scale.height)).laneCells;
   }
 
   /**
@@ -1771,7 +1798,7 @@ export class PlayScene extends ResponsiveScene {
       for (const step of afterPlaybackSteps({ moved })) {
         switch (step) {
           case 'refresh':
-            this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+            this.view = this.viewOfGame();
             break;
           case 'noteChanges':
             this.noteStatusChanges(statusesBefore, startedAt);
@@ -2340,7 +2367,7 @@ export class PlayScene extends ResponsiveScene {
     if (location === undefined) return;
 
     const spawned = spawnInProgressObject(this.gameSession.session, location.instance, inProgressDefGlobalId);
-    this.view = fromGameSession(this.gameSession, this.codex, this.locale);
+    this.view = this.viewOfGame();
     this.showView({ origins: new Map([[spawned.instanceId, origin]]), born: [spawned.instanceId] });
 
     // 生まれたものが同じ型の束へ合流していることもあるので、束の中を見て探す。

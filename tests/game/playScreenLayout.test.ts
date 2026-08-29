@@ -225,6 +225,19 @@ describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
     }
   });
 
+  it('レーンに一度に見える枠の数は、画面比で5〜6になる', () => {
+    // 手持ちの前詰めは、この数を6枠が超えるときだけ起きる（ScreenLayout.md 7.3節）。基準の画面比では
+    // 6枠目だけが隠れ、正方形に近い縦型・横長の横型では6枠とも見える。
+    const cells = ([width, height]: readonly [number, number]) =>
+      new PlayScreenLayout(new ScreenMetrics(width, height)).laneCells;
+
+    expect(cells([1080, 1920]), '9:16（縦型の基準）').toBe(5);
+    expect(cells([540, 960]), '9:16の小さな端末').toBe(5);
+    expect(cells([1440, 1080]), '4:3（横型でいちばん狭い）').toBe(5);
+    expect(cells([1080, 1440]), '3:4（縦型で余裕がある）').toBe(6);
+    expect(cells([1920, 1080]), '16:9（横型の基準）').toBe(6);
+  });
+
   it('横型で高さが余ったら、レーンが背を伸ばしてフィールドエリアを埋める', () => {
     // 幅に合わせてuを縮めた横型（ScreenMetrics）では、3レーン分（1080u）より高さが余る。余りを
     // 外に残すと、区切りの帯で囲った枠が画面の端から離れて見える。

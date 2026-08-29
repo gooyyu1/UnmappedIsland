@@ -64,6 +64,9 @@ export interface Recording {
  * **画面が引きうる場所の並びは控えた時点のものへ焼き付ける**（withFrozenCards）。焼き付けないと、
  * 経過を見せている途中の画面に行動の結果が先に現れる。常に見えている場所はwithFrozenCards自身が
  * 焼き付けるので、ここが渡すのは開いている子ウィンドウだけでよい。
+ *
+ * handLaneCellsは手持ちの前詰めに要る枠数（fromGameSession）。**控えにも同じ値を渡す**——渡さないと、
+ * 経過を見せ終えた瞬間に手持ちだけが詰まって飛ぶ。
  */
 export function runAndRecordChange(
   game: StartedGame,
@@ -71,8 +74,9 @@ export function runAndRecordChange(
   locale: Localization,
   windowPlace: CardPlace | undefined,
   change: () => void,
+  handLaneCells?: number,
 ): Recording {
-  const before = fromGameSession(game, codex, locale);
+  const before = fromGameSession(game, codex, locale, handLaneCells);
   // 出ていない行の増減も取りこぼさないよう、比べる元は全ステータス（重複は先勝ち）。
   const statusesBefore = mergedStatuses(before.statuses, before.propertyCategories);
   const recorded: RecordedView[] = [];
@@ -90,7 +94,9 @@ export function runAndRecordChange(
             (signal) => signals.push(signal),
             () => {
               game.session.observeTicks(() => {
-                const view = withFrozenCards(fromGameSession(game, codex, locale), [windowPlace]);
+                const view = withFrozenCards(fromGameSession(game, codex, locale, handLaneCells), [
+                  windowPlace,
+                ]);
                 recorded.push({
                   minutes: game.world.totalMinutes,
                   view,

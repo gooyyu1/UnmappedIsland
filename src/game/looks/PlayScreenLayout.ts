@@ -345,6 +345,19 @@ export class PlayScreenLayout {
     };
   }
 
+  /**
+   * 1つのレーンに一度に見えている枠の数。**送らずに読める枚数**で、レーンの外周マージン（左）の
+   * 内側から数える——横型は左右とも区切りの帯がかぶるが、縦型の右端は画面の端そのもので、右の
+   * マージンへ届いたカードもそのまま見える（buildLanes・「どの画面比でもレーンにカードが5枚見える」）。
+   *
+   * 使うのは手持ちを前へ詰めるかどうかの判定だけ（ScreenLayout.md 7.3節）。
+   */
+  get laneCells(): number {
+    const hidden = this.metrics.px(this.metrics.isLandscape ? SIZE.margin * 2 : SIZE.margin);
+    const pitch = this.metrics.px(SIZE.cardWidth + SIZE.gap);
+    return Math.max(0, Math.floor((this.fieldArea.width - hidden + this.metrics.px(SIZE.gap)) / pitch));
+  }
+
   /** オプションバーに並ぶアイコンボタン。横型は高さいっぱいの中央へ、縦型は右端へ寄せる。 */
   optionsBarIcons(count: number): BarIconRow {
     return this.metrics.isLandscape
