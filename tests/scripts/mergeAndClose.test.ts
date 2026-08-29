@@ -29,6 +29,8 @@ interface World {
   readonly issues?: Record<number, string>;
   /** セッションIDごとの `session_status`。 */
   readonly sessions?: Record<string, string>;
+  /** `list_sessions` が返すセッションIDごとのタグ。既定は空（1件も返らない）。 */
+  readonly tags?: Record<string, string[]>;
   /** `archive_session` が失敗するか。 */
   readonly archiveFails?: boolean;
   /** 本体に未コミットの変更（追跡済み）があるか。 */
@@ -159,7 +161,16 @@ exit 0
     writeFileSync(
       meta,
       `#!/usr/bin/env bash
-id=$(node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).session_id))')
+id=$(node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).session_id || ""))')
+if [ "$1" = list_sessions ]; then
+  echo '<other-session>'
+  echo '${JSON.stringify({
+    ccr: {
+      data: Object.entries(world.tags ?? {}).map(([id, tags]) => ({ id, tags })),
+    },
+  })}'
+  exit 0
+fi
 if [ "$1" = archive_session ]; then
   echo "$id" >> '${dir}/archived'
   exit ${world.archiveFails === true ? 1 : 0}
@@ -278,9 +289,31 @@ describe('merge-and-close.sh', () => {
     expect(result.status).toBe(2);
   });
 
+  // 脚注は本文の一部なので書き手が消せるが、`task-<番号>` のタグは `dispatch-task.sh` が付ける。
+  it('脚注が落ちていても、Closes の issue とタグで畳む相手を引く', () => {
+    const result = run({
+      body: 'Closes #1033',
+      issues: { 1033: 'CLOSED' },
+      tags: {
+        session_01TAGGED0000000000000: ['task-1033'],
+        session_01OTHER00000000000000: ['task-1034'],
+      },
+      sessions: { session_01TAGGED0000000000000: 'SESSION_STATUS_RUNNING' },
+    });
+
+    expect(result.lines).toEqual([
+      'MERGED 1000',
+      'CLOSED 1033',
+      'ARCHIVED session_01TAGGED0000000000000',
+      'SYNCED deadbee',
+    ]);
+    expect(result.archived).toEqual(['session_01TAGGED0000000000000']);
+    expect(result.status).toBe(0);
+  });
+
   // 本文を書き直した拍子に脚注が落ちる（PR #1083 で実際に落ちた）。黙って畳まずに済ませると、
   // 走ったままのセッションが誰にも数えられずに残る。
-  it('本文に脚注が無ければ、畳む相手が分からなかったことを残りとして報せる', () => {
+  it('脚注もタグも無ければ、畳む相手が分からなかったことを残りとして報せる', () => {
     const result = run({ body: 'Closes #1033', issues: { 1033: 'CLOSED' } });
 
     expect(result.lines).toEqual(['MERGED 1000', 'CLOSED 1033', 'NOSESSION 1000', 'SYNCED deadbee']);

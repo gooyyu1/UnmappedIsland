@@ -31,3 +31,45 @@ object_defs:
         modify:
           ancestor:
             pain: -10
+
+  # 添え木。枝から削り出した副木2枚を紐で巻き留め、折れた骨を挟んで動かなくする
+  # （docs/engine/InjurySystem.md 3.1節）。
+  #
+  # **止血の口を持たない**（hemostaticタグが無く、bleedingへも書かない）。皮膚の下で折れる傷に
+  # 止める血は流れていないので、出血に効かないことは不足ではなく性格そのもの（同3.1節）。痛みも
+  # 和らげない——当てて得られるのは治りの速さと、骨折が押し上げる荷重の緩みの2つだけで、
+  # 血の流れる傷には包帯を選ぶ理由がここに残る。
+  splint:
+    # immobilizingは「固定する治療具」の印。**押し上げを緩める量はここではなく骨折が持つ**
+    # （injuries.yamlのfracture）——押し上げているのは骨折なので、緩んだ後の量も骨折が知っている。
+    # 出血のゲートをhemostaticで開け閉めするのと同じ形（同3.1節）。
+    tags: [item, treatment, immobilizing]
+    props:
+      # **材料より軽い**（tools.yamlの石斧と同じ）。太い枝2本（2,000g）から削り出した副木2枚に
+      # 紐200gを足した重さで、差の800gは削り落とした木屑。
+      weight: {value: 1400}
+      volume: {value: 1800}
+    passives:
+      # 包帯と同じく**当てている間だけ**に絞る（in_slot、8.6節）。
+      - conditions:
+          - {in_slot: treatment}
+        add:
+          parent:
+            # 固定していれば治りは速い。自然治癒の-1/tickと合わせて-1.6/tickで、包帯の-1.4/tickを
+            # 上回る。**倍（-1）にはしない**——骨折の別格さを支えているのは原因の少なさと、
+            # そのあいだずっと荷を運べないことの2つ（docs/engine/InjurySystem.md 5節）で、後者は
+            # 当てているだけで既に半分に緩んでいる（injuries.yamlのfracture）。長さまで半分にすると、
+            # 支えが原因の少なさだけになる。
+            severity: -0.6
+    # 解放条件（conditions、13.3節）はまだ置かない。医術のスキルのプロパティと、それを伸ばす経路が
+    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
+    recipes:
+      lashed:
+        steps:
+          # 拾った枝と撚った紐だけで、削る工程も組み立ての道具も要らない。骨折を出すのは重い罠と
+          # 大型の獣（docs/engine/InjurySystem.md 5節）——どちらもここより後ろにある段なので、
+          # 折れてから材料を集めに行くことにはならない（素材込みの手間はstats/balance.yaml）。
+          - requires:
+              - {object: thick_branch, count: 2, consume: true}
+              - {object: cord, count: 1, consume: true}
+            duration: 60

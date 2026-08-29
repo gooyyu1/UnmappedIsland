@@ -1,8 +1,8 @@
 /**
  * セーブデータの形式バージョン（SaveDataManagement.md セーブデータのスキーマ節）。
- * 2でpinnedStatuses、3でmapCardPositionsを足した（toSaveData参照）。
+ * 2でpinnedStatuses、3でmapCardPositions、4でassetPacksを足した（toSaveData参照）。
  */
-export const SAVE_SCHEMA_VERSION = 3;
+export const SAVE_SCHEMA_VERSION = 4;
 
 /** 島の名前の長さ制限。 */
 export const ISLAND_NAME_MAX_LENGTH = 20;
@@ -19,6 +19,15 @@ export interface MapCardPosition {
   readonly site: number;
   readonly x: number;
   readonly y: number;
+}
+
+/**
+ * セーブを作ったときに入っていたアセットパック1つ（AssetPack.md 6.4節）。`id`・`version` は
+ * パック自身の名乗り（`pack.yaml`）で、版まで見るのは、版が上がれば定義が変わりうるため。
+ */
+export interface SavedAssetPack {
+  readonly id: string;
+  readonly version: string;
 }
 
 /** 1スロット分のセーブデータ。 */
@@ -40,14 +49,21 @@ export interface SaveData {
 
   /** ユーザが地図画面で置いた土地カードの位置（Windows.md 7節 地図ウィンドウ）。 */
   readonly mapCardPositions: readonly MapCardPosition[];
+
+  /**
+   * 作ったときに入っていたアセットパック（読み込んだ順。同梱ぶんだけで作ったセーブは空）。
+   * 今入っているものと食い違うスロットは開かない（AssetPack.md 6.4節、savedAssetPacks.ts）。
+   */
+  readonly assetPacks: readonly SavedAssetPack[];
 }
 
 /**
  * 保存された任意の値をSaveDataとして読む（読めない値はundefined）。localStorageの中身は他のタブ・
  * 旧バージョン・手動編集で壊れうるため、読み出し側で必ず通す。
  *
- * pinnedStatuses・mapCardPositionsを持たない古いセーブ（形式バージョン1・2）は「無し」として読む。
- * 判定ではなく変換を返すのは、こうした欠けたフィールドの補完をここ1か所で済ませるため。
+ * pinnedStatuses・mapCardPositions・assetPacksを持たない古いセーブ（形式バージョン1〜3）は
+ * 「無し」として読む。判定ではなく変換を返すのは、こうした欠けたフィールドの補完をここ1か所で
+ * 済ませるため。
  */
 export function toSaveData(value: unknown): SaveData | undefined {
   if (typeof value !== 'object' || value === null) return undefined;
@@ -61,6 +77,7 @@ export function toSaveData(value: unknown): SaveData | undefined {
     elapsedDays,
     pinnedStatuses,
     mapCardPositions,
+    assetPacks,
   } = value as Record<string, unknown>;
   if (
     typeof schemaVersion !== 'number' ||
@@ -71,6 +88,9 @@ export function toSaveData(value: unknown): SaveData | undefined {
     typeof elapsedDays !== 'number'
   )
     return undefined;
+
+  const packs = toSavedAssetPacks(assetPacks);
+  if (packs === undefined) return undefined;
 
   return {
     schemaVersion,
@@ -83,7 +103,28 @@ export function toSaveData(value: unknown): SaveData | undefined {
       ? pinnedStatuses.filter((key): key is string => typeof key === 'string')
       : [],
     mapCardPositions: Array.isArray(mapCardPositions) ? mapCardPositions.filter(isMapCardPosition) : [],
+    assetPacks: packs,
   };
+}
+
+/**
+ * assetPacksを読む。欄が無い古いセーブ（形式バージョン3まで）は「同梱ぶんだけで作られた」＝空。
+ *
+ * **壊れた要素が1つでもあれば、そのセーブごと読めないものとして扱う**（undefined）。この欄だけは
+ * 開いてよいかの判定に使う（AssetPack.md 6.4節）ので、読めた分だけを残すと、実際とは違う並びと
+ * 一致して、別の島が出るスロットが開いてしまう。
+ */
+function toSavedAssetPacks(value: unknown): readonly SavedAssetPack[] | undefined {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) return undefined;
+  return value.every(isSavedAssetPack) ? (value as readonly SavedAssetPack[]) : undefined;
+}
+
+function isSavedAssetPack(value: unknown): value is SavedAssetPack {
+  if (typeof value !== 'object' || value === null) return false;
+
+  const { id, version } = value as Record<string, unknown>;
+  return typeof id === 'string' && typeof version === 'string';
 }
 
 function isMapCardPosition(value: unknown): value is MapCardPosition {

@@ -40,31 +40,36 @@ export class AssetPacks {
 /**
  * インストール済みのアセットパック。
  *
- * **起動時に入り、以後は変わらない**（AssetPack.md 4節）。絵の在庫表は入った時点で同梱ぶんと
- * 重なるので、以降は「この絵はあるか」を今まで通り在庫表へ聞ける。
+ * **起動時に入り、以後は変わらない**（AssetPack.md 4節）。ここに並ぶのは取得できたパックで、
+ * そのうち実際に載るのは読み込みを通ったぶんだけ（同6.1節、loadDefinitions）。
  */
 const installed = new AssetPacks();
 
-/** インストール済みのアセットパック（並べた順）。定義YAML・表示文字列はここから読む。 */
+/** インストール済みのアセットパック（並べた順）。定義YAML・表示文字列・絵はここから読む。 */
 export function installedAssetPacks(): readonly AssetPack[] {
   return installed.all;
 }
 
-/** アセットパックを入れる。絵は在庫表へ重ね、定義と表示文字列は読み込み側が起動時に読む。 */
-function installAssetPack(pack: AssetPack): void {
-  installed.add(pack);
-  installPackObjectArt(pack.objectArt(), pack.name);
-  installPackBackgroundArt(pack.backgroundArt(), pack.name);
+/**
+ * 載せるパックの絵で在庫表を組み直す（AssetPack.md 4節）。
+ *
+ * **渡すのは載せると決まったパックだけ**（loadDefinitions）。定義を外したパックの絵を残すと、その
+ * パックの背景が同梱の型に敷かれ、「同梱ぶん＋無事なパック」ではない世界になる（同6.1節）。
+ */
+export function installPackArt(packs: readonly AssetPack[]): void {
+  installPackObjectArt(packs.map((pack) => ({ packName: pack.name, art: pack.objectArt() })));
+  installPackBackgroundArt(packs.map((pack) => ({ packName: pack.name, art: pack.backgroundArt() })));
 }
 
 /**
- * サンプルアセットパックを取得して入れる。読むかどうかを決めるのは呼び出し側。
+ * サンプルアセットパックを取得して並びへ加える。読むかどうかを決めるのは呼び出し側で、定義も絵も
+ * ここでは載せない（載せられるパックを選ぶのはloadDefinitions）。
  *
- * 失敗はそのまま投げる——パックが入らないまま起動すると、あるはずの物が無い世界で遊ぶことになり、
- * 定義の欠落と同じく黙って進めてよい状態ではない。
+ * 取得の失敗はそのまま投げる——パックが入らないまま起動すると、あるはずの物が無い世界で遊ぶことに
+ * なり、定義の欠落と同じく黙って進めてよい状態ではない（AssetPack.md 2節）。
  */
 export async function installSampleAssetPack(): Promise<void> {
-  installAssetPack(await fetchAssetPack(SAMPLE_PACK_URL));
+  installed.add(await fetchAssetPack(SAMPLE_PACK_URL));
 }
 
 /**

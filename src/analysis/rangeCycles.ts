@@ -1,5 +1,6 @@
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { PropertyDef, RangeEventLabel } from '../domain/PropertyDef';
+import { ROLL_ENDS } from '../domain/PropertyDef';
 import type { TickDelta, TickGate } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { CraftingStep } from './CraftingStep';
@@ -86,7 +87,8 @@ export function rangeCyclesOf(
   const cycles: RangeCycle[] = [];
   for (const propertyDef of def.enumeratePropertyDefs()) {
     const own = tickAmountsOf(def, propertyDef.globalId);
-    const value = staticValueOf(def, propertyDef.globalId, outer);
+    // 生成時のロール（6.2節）は初期値を振らせるので、両端とも数える（ticksAcrossRoll）。
+    const initialValues = ROLL_ENDS.map((end) => staticValueOf(def, propertyDef.globalId, end, outer));
     const drivers: readonly (ExternalTickDelta | undefined)[] = [
       undefined,
       ...external.filter((delta) => delta.propertyGlobalId === propertyDef.globalId),
@@ -97,7 +99,7 @@ export function rangeCyclesOf(
 
       // 印はこの読み出し1回ぶんに閉じる（craftingStepsが操作1つに閉じているのと同じ）。関数全体で
       // 1つにすると、先に積んだ周期には付かず後の周期だけに付く——プロパティの宣言順で答えが変わる。
-      const tracking = trackingResolverOf(def, outer);
+      const tracking = trackingResolverOf(def, 'lowest', outer);
       for (const readout of rangeEventReadouts(propertyDef, tracking.resolve)) {
         // **どちらの端へ向かうかは、その端のイベント自身が決める。** 値が上下どちらへも動きうる
         // なら、下端の凍死も上端のクランプもそれぞれ自分の向きの場合だけを見る。
@@ -105,10 +107,10 @@ export function rangeCyclesOf(
         if (pace === undefined) continue;
 
         const { slowest, fastest } = pace;
-        const slowRoll = ticksAcrossRoll(propertyDef, value, slowest);
+        const slowRoll = ticksAcrossRoll(propertyDef, initialValues, slowest);
         const ticks = slowRoll.at(0);
         const longestTicks = slowRoll.at(-1);
-        const shortestTicks = ticksAcrossRoll(propertyDef, value, fastest).at(0);
+        const shortestTicks = ticksAcrossRoll(propertyDef, initialValues, fastest).at(0);
         if (ticks === undefined || longestTicks === undefined || shortestTicks === undefined) continue;
 
         // 外からの増減が止まる前に端へ届かないなら、その仕掛けは成立しない——小さな獲物は罠の傷でも
@@ -161,7 +163,8 @@ export function rangeCyclesOf(
 }
 
 /**
- * その速さで端へ届くまでのtick数を、**生成時のロール（6.2節）の両端で**測って短い順に並べたもの。
+ * その速さで端へ届くまでのtick数を、**生成時のロール（6.2節）の両端の初期値で**測って短い順に
+ * 並べたもの。
  *
  * **どちらのロールが遠いかは、向かう端で裏返る**——下端へ向かうなら重く出たほうが、上端へ向かう
  * なら軽く出たほうが遠い。片方だけ長さを見ると、向きによって幅のどちらの端を落とすかが変わる。
@@ -169,23 +172,13 @@ export function rangeCyclesOf(
  */
 function ticksAcrossRoll(
   propertyDef: PropertyDef,
-  value: number | undefined,
+  initialValues: readonly (number | undefined)[],
   perTick: number,
 ): readonly number[] {
-  return [value, valueAtHighestRoll(propertyDef, value)]
-    .map((rolled) => ticksToRangeEnd(propertyDef, rolled, perTick))
+  return initialValues
+    .map((value) => ticksToRangeEnd(propertyDef, value, perTick))
     .filter((ticks): ticks is number => ticks !== undefined)
     .sort((a, b) => a - b);
-}
-
-/**
- * 生成時のロール（6.2節）が上端に出た場合の初期値。staticValueOfが返すのは下端なので、振れ幅を
- * 足したものになる。ロールを持たない値ではvalueそのまま。
- */
-function valueAtHighestRoll(propertyDef: PropertyDef, value: number | undefined): number | undefined {
-  const reading = propertyDef.initialValueReading;
-  if (value === undefined || reading.kind !== 'roll') return value;
-  return value + (reading.max - reading.min);
 }
 
 /**
@@ -338,7 +331,8 @@ function totalsWithDriver(own: TickAmounts, driver: ExternalTickDelta | undefine
 function ticksWhileGateHolds(def: ObjectDef, gate: TickGate): number | undefined {
   let fewest: number | undefined;
   for (const propertyGlobalId of gate.watchedSelfProperties) {
-    const value = staticValueOf(def, propertyGlobalId);
+    // 尽きるまでを**最も短く**見る側（fastest・fewest）に合わせて、ロールも軽く出たほうを採る。
+    const value = staticValueOf(def, propertyGlobalId, 'lowest');
     const pace = paceTowards(tickAmountsOf(def, propertyGlobalId).possible, 'on_min');
     if (value === undefined || pace === undefined) continue;
 

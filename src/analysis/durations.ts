@@ -142,7 +142,7 @@ function toolWearsIn(codex: WorldCodex, step: CraftingStep): readonly ToolWear[]
       if (rangeCyclesOf(tool).some((cycle) => cycle.propertyGlobalId === propertyGlobalId)) continue;
 
       // 端までの距離を1回あたりの減りで割るのは、tick毎の増減で割るのと同じ計算。
-      const uses = ticksToRangeEnd(propertyDef, staticValueOf(tool, propertyGlobalId), perUse);
+      const uses = ticksToRangeEnd(propertyDef, staticValueOf(tool, propertyGlobalId, 'lowest'), perUse);
       if (uses === undefined) continue;
 
       found.push({

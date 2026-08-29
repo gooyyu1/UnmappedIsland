@@ -377,7 +377,10 @@ function gapLabel(view: CodexView, label: string): string {
  * 出ない**（issue #568）。作れないものは先に挙げる——そこが定義の穴になる。
  */
 function objectCostsHtml(view: CodexView, tables: BalanceTables): string {
-  const missing = tables.objectCosts.filter((cost) => cost.minutes === undefined);
+  const missing = tables.objectCosts.filter(
+    (cost) => cost.minutes === undefined && !cost.onlyFromEverlastingDevice,
+  );
+  const everlastingDevice = tables.objectCosts.filter((cost) => cost.onlyFromEverlastingDevice);
   const toolBlocked = tables.objectCosts.filter((cost) => cost.blockedByTool);
   const buildable = tables.objectCosts.filter((cost) => cost.minutes !== undefined);
 
@@ -390,6 +393,11 @@ function objectCostsHtml(view: CodexView, tables: BalanceTables): string {
       cost.missing.length === 0
         ? '作る工程が無い'
         : `足りない入力: ${escapeHtml(cost.missing.map((name) => gapLabel(view, name)).join('、'))}`,
+    ) +
+    // 入手経路が無いのとは別。朽ちない設備は1周期ぶんを按分できないので値段が付かないだけで、
+    // 周期とレートは待ち生産表に出ている。
+    blockedListHtml(view, '朽ちない設備の待ち生産でしか得られないもの', everlastingDevice, () =>
+      escapeHtml('総コストは出ない（周期とレートは待ち生産表）'),
     ) +
     blockedListHtml(
       view,

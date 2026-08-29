@@ -43,8 +43,10 @@
 # PRを実際に出したセッション。** タイトルの `(#1029)` で引くと、同じ issue へ2回投入したときに
 # 古いほうを畳む。`watch-prs.sh` の `STALLED` も同じ脚注を見ている。
 #
-# **脚注が無いPRがある。** 本文を書き直した拍子に落ちる（PR #1083 で実際に落ちた）。黙って畳まずに
-# 済ませると、走ったままのセッションが誰にも数えられず残るので、`NOSESSION` を出して残りとして扱う。
+# **脚注が無いPRがある。** 本文を書き直した拍子に落ちる（PR #1083・#1177 で実際に落ちた）。そのときは
+# `Closes #<番号>` と `task-<番号>` のタグで引き直す——**タグは `dispatch-task.sh` が必ず付ける**ので、
+# 書き手が消せる本文とは別の手掛かりになる。どちらでも引けなければ `NOSESSION` を出して残りとして
+# 扱う。黙って畳まずに済ませると、走ったままのセッションが誰にも数えられず残る。
 #
 # ## `--delete-branch` は worktree の警告を必ず出す
 #
@@ -123,6 +125,7 @@ echo "MERGED $PR"
 leftover=0
 
 # `Closes #123` だけを拾う。番号だけの参照（`#123`）では閉じないので、ここでも見ない。
+closes=$(grep -oiE 'closes[[:space:]]+#[0-9]+' <<<"$body" | grep -oE '[0-9]+' | sort -u || true)
 while read -r issue; do
   [ -n "$issue" ] || continue
   if [ "$(gh issue view "$issue" --json state --jq '.state')" = "CLOSED" ]; then
@@ -131,12 +134,20 @@ while read -r issue; do
     echo "OPEN $issue"
     leftover=1
   fi
-done < <(grep -oiE 'closes[[:space:]]+#[0-9]+' <<<"$body" | grep -oE '[0-9]+' | sort -u)
+done <<<"$closes"
 
 # IDの桁まで見る。本文が脚注の**書き方を説明している**ことがあり（`https://claude.ai/code/session_...`
 # のような引用）、`session_` までで拾うと存在しないIDを畳みに行く。
 # 見つからないときは `grep` が 1 を返す。`pipefail` があるので、ここで止めずに空として受ける。
 sessions=$(grep -oE 'session_[A-Za-z0-9]{16,}' <<<"$body" | sort -u || true)
+if [ -z "$sessions" ] && [ -n "$closes" ]; then
+  # 脚注が落ちていても、`Closes` の issue と `task-<番号>` のタグで引ける
+  # （タグは `dispatch-task.sh` が必ず付ける）。
+  tags=$(sed 's/^/task-/' <<<"$closes" | paste -sd'|' -)
+  sessions=$(bash "$CCR_META" list_sessions <<<'{"mine":true,"limit":100}' | grep -o '{"ccr".*' |
+    jq -r --arg re "^($tags)\$" '.ccr.data[] | select([.tags[]? | select(test($re))] | length > 0) | .id' |
+    sort -u || true)
+fi
 if [ -z "$sessions" ]; then
   echo "NOSESSION $PR"
   leftover=1

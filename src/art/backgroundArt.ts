@@ -1,4 +1,5 @@
-import { addPackArt } from './packArt';
+import type { PackArt } from './packArt';
+import { rebuildArtCatalog } from './packArt';
 
 /**
  * 背景の絵（レーンの全面に敷くもの・カードの地に敷くもの）の解決。
@@ -15,8 +16,8 @@ import { addPackArt } from './packArt';
  * （手はプレイヤー自身のものなので、キャラクタごとに描き分けていない）。
  *
  * 同梱ぶんの一覧はimport.meta.globがビルド時に作る。実行時に総当たりで読みに行くと、絵をまだ
- * 用意していないスロットのぶんだけ404が出るため。アセットパックのぶんは起動時に重ねる
- * （installPackBackgroundArt、AssetPack.md 4節）。
+ * 用意していないスロットのぶんだけ404が出るため。アセットパックのぶんは、載せるパックが決まった
+ * 時点で重ねる（installPackBackgroundArt、AssetPack.md 4節）。
  */
 const FILES = import.meta.glob('../assets/backgrounds/*.png', {
   eager: true,
@@ -35,29 +36,36 @@ export interface SlotRef {
 /** 敷く場所。そのままファイル名の末尾になる。 */
 type Use = 'lane' | 'card';
 
-/**
- * テクスチャキー → 画像のURL。用意されている絵だけが並ぶ。同梱ぶんを土台に、起動時に
- * アセットパックのぶんが重なる。重なった後は変わらない。
- */
-const MUTABLE_BACKGROUND_ART = new Map<string, string>(
+/** 同梱ぶんのテクスチャキー → 画像のURL。組み直しの土台なので、ここは変わらない。 */
+const BUNDLED_BACKGROUND_ART: ReadonlyMap<string, string> = new Map(
   Object.entries(FILES).map(([path, url]) => [path.replace(/^.*\/(.+)\.png$/, 'background:$1'), url]),
 );
+
+/**
+ * テクスチャキー → 画像のURL。用意されている絵だけが並ぶ。同梱ぶんを土台に、載せるパックが
+ * 決まった時点でそのぶんが重なる。重なった後は変わらない。
+ */
+const MUTABLE_BACKGROUND_ART = new Map<string, string>(BUNDLED_BACKGROUND_ART);
 
 /** テクスチャキー → 画像のURL。 */
 export const BACKGROUND_ART: ReadonlyMap<string, string> = MUTABLE_BACKGROUND_ART;
 
 /**
- * アセットパックの背景の絵を在庫表へ重ねる（起動時に1回、installAssetPackから）。
+ * 載せるパックの背景の絵で在庫表を組み直す（installPackArtから。AssetPack.md 4節）。
  *
  * **型の絵と違い、パックごとに分けて持ちません**（AssetPack.md 5節）。背景の名前は持ち主の識別子で
  * 始まり、識別子はCodex全体で1つの平らな名前空間（同6.3節）なので、名前だけでどのパックの絵かが
  * 決まります——同じ名前を2つのパックが持つのは、宣言していない型の絵を配ったときだけです。
+ * その1つが衝突すれば、そのパックは定義もろとも外れます（同6.1節、loadDefinitions）。
  */
-export function installPackBackgroundArt(art: ReadonlyMap<string, string>, packName: string): void {
-  addPackArt(
+export function installPackBackgroundArt(packs: readonly PackArt[]): void {
+  rebuildArtCatalog(
     MUTABLE_BACKGROUND_ART,
-    new Map([...art].map(([name, url]) => [`background:${name}`, url])),
-    packName,
+    BUNDLED_BACKGROUND_ART,
+    packs.map(({ packName, art }) => ({
+      packName,
+      art: new Map([...art].map(([name, url]) => [`background:${name}`, url])),
+    })),
     '背景の絵',
   );
 }

@@ -7,6 +7,7 @@
 #
 #   bash scripts/agent/watch-prs.sh                    # 開いている全PR
 #   bash scripts/agent/watch-prs.sh 731 733            # PRの番号を指定
+#   bash scripts/agent/watch-prs.sh 0 --issues 732     # CIの決着を見たいPRが1本も無いとき
 #   bash scripts/agent/watch-prs.sh --issues 732,759   # issue も見張る（下記）
 #   bash scripts/agent/watch-prs.sh --interval 5 --timeout-minutes 60
 #
@@ -16,7 +17,8 @@
 #   CONFLICT <番号>                … mainと衝突していて、解消するまでマージできない
 #                                    （`直し待ち` のPRを除く。差し戻し済みなので `FIXED` を待つ）
 #   GONE    <番号>                 … 見張っていた issue が閉じた（--issues のときだけ）
-#   FIXED   <番号>                 … 直し待ちのPRへ、新しいコミットが載った
+#   REVIEWED <番号> <結論>         … レビューの結論が付いたまま、司令塔がまだ動いていないPR
+#   FIXED   <番号>                 … 直し待ちのPRへ、差し戻した後の新しいコミットが載った
 #   COMMENT pr|issue <番号> <著者> … 起動より後に付いたコメント
 #   CHECKED <番号> <項目>          … 見張っている issue の本文で、起動より後にチェックが付いた項目
 #   TASK    <番号>                 … 着手できる open な task（--issues にもPRにも無く、依存も片付いている）
@@ -29,11 +31,36 @@
 # 付く。** 緑を受け取った側は必ず本文を引くので、往復を1つ減らすために同梱している。**判定は増えて
 # いない**——ここが担うのは促すことだけで、通すかどうかは受け取った側が差分を読んで決める。
 #
+# ## 手番は、時刻の窓ではなく状態で見る
+#
+# **`REVIEWED` と `FIXED` が答えるのは「今それは誰の手番か」**で、「この5分に何が起きたか」ではない。
+# どちらも、比べる相手をPR自身の状態から取る。
+#
+# - `REVIEWED` … 最後の `[レビュー]` コメントが、最後のコミットより新しい。＝結論が出たまま、
+#   まだ直しも入っていない。`直し待ち`・`判断待ち` が付いていれば既に手が動いた後なので黙る。
+# - `FIXED` … 最後のコミットが、`直し待ち` を**付けた時刻**より新しい。＝差し戻した先から戻ってきた。
+#
+# **見張りの起動時刻と比べてはいけない。** 起動より前に起きたことは永久に出なくなるので、見張りを
+# 立て直すたびに、その谷間で起きたことが丸ごと落ちる。2026-08-29 に PR #1183・#1182 の
+# `[レビュー] 通してよい` が2時間放置され、同じ谷間で #1187・#1184 の直しも落ちた。
+# `FIXED` の説明は前からこの節のとおりだったが、実装だけが起動時刻を代わりに使っていた。
+#
+# **番号（`$1`〜）で絞らない。** 絞ると、司令塔が渡し忘れた番号は出なくなる——取りこぼしを防ぐのが
+# この2つの役目なので、絞ると役目そのものが消える。手が動けば状態が変わって黙るので、放っておいても
+# 毎周返り続けることはない。番号が掛かるのは `GREEN`・`RED`・`CONFLICT` の3つだけ。
+#
+# **番号を1つも渡さないと「全部」の意味になる。** レビューへ出したPRは緑のまま置くので、渡さないと
+# `GREEN` が毎周返って見張りがその場で終わる。CIの決着を見たいPRが1本も無いときは `0` を渡す。
+#
 # ## COMMENT を見るのは、却下を受け取る唯一の経路だから
 #
 # **PRの作者はすべてユーザー自身になる**（セッションがユーザーの資格情報で push するため）ので、
 # GitHubは Approve も Request changes も出させない。**仮決めを却下する手段はコメントしか無い。**
 # 承認はマージがそのまま答えになるので、見張るのは却下の側だけでよい。
+#
+# レビューの結論は上の `REVIEWED` が状態として出すので、こちらは**それ以外のコメント**を拾う窓。
+# 比べる相手が無い（「読んだ」がどこにも残らない）ので窓のままだが、**立て直すときは `--since` に
+# 前回の起動時刻を渡す**と谷間が消える。
 #
 # `判断待ち` の付いたPRも**コメントだけは見る**。ラベルは「ユーザーの手元にある」という意味なので
 # CIの決着は出さないが、そこへコメントが付いたということは手元から戻ってきたということ。
@@ -106,10 +133,18 @@
 # 司令塔だけはユーザーが1行送って起こしていたので進み、子セッションは止まったままだった）。
 #
 # **判定は「PRを出したか」だけで見る。** セッションの状態だけでは、書き終えて報告した IDLE と、
-# 途中で落ちた IDLE が区別できない。**PRの本文には作ったセッションのIDが脚注として入る**ので、
-# 「動いていない × 自分のIDを載せた open なPRが無い」が、そのまま「まだ仕事が残っている」になる。
-# 枝の名前では引けない——ブリッジのセッションの `current_branches` は worktree のローカル枝で、
-# push する枝とは別物。
+# 途中で落ちた IDLE が区別できない。「動いていない × open なPRが無い」が、そのまま
+# 「まだ仕事が残っている」になる。枝の名前では引けない——ブリッジのセッションの `current_branches` は
+# worktree のローカル枝で、push する枝とは別物。
+#
+# **PRとセッションは2通りで結ぶ。片方だけでは足りない。**
+#
+# - PR本文の脚注 `https://claude.ai/code/session_...`。Claude Code が自動で付ける。
+# - PR本文の `Closes #<番号>` と、セッションの `task-<番号>` タグ（`dispatch-task.sh` が付ける）。
+#
+# 脚注だけで見ていたとき、**本文を書き直したPRで脚注ごと落ちた**（2026-08-29 の #1177・#1178）。
+# どちらもPRは出ているのに毎周 `STALLED` が出て、見張りがその場で終わっていた。脚注は本文の一部
+# なので書き手が消せるが、`Closes` は消せない——消すと issue が閉じない。
 #
 # マージ済みで畳み忘れたセッションもここに出る。**どちらも司令塔が手を入れるべき状態**なので、
 # 種類を分けない（起こすのか畳むのかは、受け取った側が `list_events` を見て決める）。
@@ -184,7 +219,7 @@ STALLED_FILTER='
   | select(.session_status != "SESSION_STATUS_ARCHIVED")
   | select(.status_bucket != "SESSION_STATUS_BUCKET_WORKING")
   | select(.updated_at < $grace)
-  | "\(.id) \(.title // "")"
+  | "\(.id)\t\([.tags[]? | select(startswith("task-")) | ltrimstr("task-")] | join(" "))\t\(.title // "")"
 '
 
 deadline=$(($(date +%s) + TIMEOUT_MINUTES * 60))
@@ -265,6 +300,18 @@ CHECKED_FILTER='
   | "\($number) \(.)"
 '
 
+# レビューの結論が付いたまま、司令塔がまだ動いていないPR（上の「手番は、時刻の窓ではなく状態で
+# 見る」）。結論の行は `[レビュー] 通してよい` か `[レビュー] 直しが要る`（`review-prompt.md`）。
+# 出すのは `<番号>\t<コメントの時刻>\t<結論>` で、コミットとの比較は呼び出し側で行う。
+REVIEWED_FILTER='
+  .[]
+  | . as $pr
+  | select([$pr.labels[].name] | index("直し待ち") == null and index("判断待ち") == null)
+  | ([$pr.comments[] | select(.body | startswith("[レビュー]"))] | last) as $review
+  | select($review != null)
+  | "\($pr.number)\t\($review.createdAt)\t\($review.body | split("\n")[0] | rtrimstr("\r") | ltrimstr("[レビュー]") | sub("^[[:space:]]+"; ""))"
+'
+
 # gh の --jq には --arg を渡せないので、時刻は文字列として埋め込む。
 comment_filter() {
   printf '
@@ -282,21 +329,38 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
     failures=0
     grace=$(date -u -d "-${NO_CHECK_GRACE} seconds" +%Y-%m-%dT%H:%M:%SZ)
     settled=$(jq -r "$(pr_settled_filter "$grace")" <<<"$prs")
+    # 差し戻し中のPRは**絞る前に**控える。`FIXED` は手番なので、番号を渡し忘れても出す。
+    mending=$(grep '^MENDING ' <<<"$settled" | awk '{print $2}')
     if [ ${#NUMBERS[@]} -gt 0 ]; then
       pattern=$(printf '%s\n' "${NUMBERS[@]}" | paste -sd'|' -)
-      settled=$(grep -E "^(GREEN|RED|MENDING|CONFLICT) (${pattern})( |$)" <<<"$settled")
+      settled=$(grep -E "^(GREEN|RED|CONFLICT) (${pattern})( |$)" <<<"$settled")
     fi
-    # `直し待ち` のPRだけ、コミットの日付を追加で引く。**一覧の `--json` へ `commits` を足しては
-    # いけない**——50本ぶんだとGraphQLのノード上限（50万）を超えて `gh` が丸ごと失敗し、**見張り全体が
-    # 黙る**（2026-08-25 に実測）。1本ずつ引けば、払うのは差し戻し中のPRがあるときだけで済む。
+    settled=$(grep -v '^MENDING ' <<<"$settled")
+    # 差し戻し中とレビュー済みのPRだけ、コミットの日付を追加で引く。**一覧の `--json` へ `commits`
+    # を足してはいけない**——50本ぶんだとGraphQLのノード上限（50万）を超えて `gh` が丸ごと失敗し、
+    # **見張り全体が黙る**（2026-08-25 に実測）。1本ずつ引けば、払うのはそのPRがあるときだけで済む。
     while read -r number; do
       [ -n "$number" ] || continue
-      pushed=$(gh pr view "$number" --json commits --jq '.commits | last | .committedDate' 2>/dev/null)
-      if [ -n "$pushed" ] && [[ "$pushed" > "$SINCE" ]]; then
+      pushed=$(gh pr view "$number" --json commits --jq '.commits | last | .committedDate' 2>/dev/null | tr -d '\r')
+      # 差し戻した時刻＝`直し待ち` を付けた時刻。ラベルの履歴はPRに残るので、見張りを立て直しても
+      # 変わらない。取れなかったときだけ起動時刻へ落ちる。
+      sent_back=$(gh api "repos/{owner}/{repo}/issues/$number/timeline" --paginate \
+        --jq '.[] | select(.event == "labeled" and .label.name == "直し待ち") | .created_at' 2>/dev/null |
+        tr -d '\r' | sort | tail -1)
+      [ -n "$sent_back" ] || sent_back="$SINCE"
+      if [ -n "$pushed" ] && [[ "$pushed" > "$sent_back" ]]; then
         settled=$(printf '%s\nFIXED %s' "$settled" "$number")
       fi
-    done < <(grep '^MENDING ' <<<"$settled" | awk '{print $2}')
-    settled=$(grep -v '^MENDING ' <<<"$settled")
+    done <<<"$mending"
+
+    # レビューの結論。**番号で絞った後に足す**——絞ると、渡し忘れた番号の結論が出なくなる。
+    while IFS=$'\t' read -r number at verdict; do
+      [ -n "$number" ] || continue
+      pushed=$(gh pr view "$number" --json commits --jq '.commits | last | .committedDate' 2>/dev/null | tr -d '\r')
+      # 結論より後にコミットが載っているなら、直しは既に入っている（司令塔の手番ではない）。
+      [ -n "$pushed" ] && [[ "$pushed" > "$at" ]] && continue
+      settled=$(printf '%s\nREVIEWED %s %s' "$settled" "$number" "$verdict")
+    done < <(jq -r "$REVIEWED_FILTER" <<<"$prs" | tr -d '\r')
 
     settled=$(printf '%s\n%s' "$settled" "$(jq -r "$(comment_filter pr)" <<<"$prs")")
 
@@ -354,11 +418,18 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
       if sessions=$(bash "$CCR_META" list_sessions <<<'{"mine":true,"limit":30}' 2>/dev/null |
         grep -o '{"ccr".*'); then
         session_grace=$(date -u -d "-${SESSION_GRACE} seconds" +%Y-%m-%dT%H:%M:%SZ)
-        # PR本文の脚注 `https://claude.ai/code/session_...` が、そのPRを出したセッション。
-        with_pr=$(jq -r '.[].body // ""' <<<"$prs" | grep -o 'session_[A-Za-z0-9]*' | sort -u)
-        while read -r id title; do
+        # PR本文の脚注 `https://claude.ai/code/session_...` と、`Closes #<番号>` が指す issue。
+        bodies=$(jq -r '.[].body // ""' <<<"$prs")
+        with_pr=$(grep -o 'session_[A-Za-z0-9]*' <<<"$bodies" | sort -u)
+        closed_issues=$(grep -oiE 'closes #[0-9]+' <<<"$bodies" | grep -o '[0-9]*' | sort -u)
+        while IFS=$'\t' read -r id issues title; do
           [ -n "$id" ] || continue
           grep -qx "$id" <<<"$with_pr" && continue
+          claimed=0
+          for issue in $issues; do
+            grep -qx "$issue" <<<"$closed_issues" && claimed=1 && break
+          done
+          [ "$claimed" -eq 1 ] && continue
           settled=$(printf '%s\nSTALLED %s %s' "$settled" "$id" "$title")
         done < <(jq -r --arg grace "$session_grace" "$STALLED_FILTER" <<<"$sessions" | tr -d '\r')
       else
