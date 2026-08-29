@@ -10,12 +10,14 @@
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
 #   ARCHIVED <セッションID>         … そのPRを出したCCRセッションを畳んだ
 #   NOSESSION <PR番号>              … 本文が脚注を持たず、畳む相手が分からなかった
+#   UNARCHIVED <セッションID>       … 畳もうとして失敗した
 #   SYNCED   <コミット>             … 本体のチェックアウトを新しい `main` へ進めた
 #   INSTALLED                       … 依存が変わったので本体で `npm install` した
 #   DIRTY    <本体のパス>           … 本体に未コミットの変更があるので触らなかった
 #   終了コード 0 … すべて片付いた
 #   終了コード 1 … マージできなかった（何もしていない）
-#   終了コード 2 … マージはしたが、後片付けに残りがある（上の `OPEN`・`NOSESSION`・`DIRTY`）
+#   終了コード 2 … マージはしたが、後片付けに残りがある
+#                  （上の `OPEN`・`NOSESSION`・`UNARCHIVED`・`DIRTY`）
 #
 # ## 畳んだのは、毎回同じ順で叩いていた5つ
 #
@@ -92,8 +94,10 @@ while read -r issue; do
   fi
 done < <(grep -oiE 'closes[[:space:]]+#[0-9]+' <<<"$body" | grep -oE '[0-9]+' | sort -u)
 
+# IDの桁まで見る。本文が脚注の**書き方を説明している**ことがあり（`https://claude.ai/code/session_...`
+# のような引用）、`session_` までで拾うと存在しないIDを畳みに行く。
 # 見つからないときは `grep` が 1 を返す。`pipefail` があるので、ここで止めずに空として受ける。
-sessions=$(grep -o 'session_[A-Za-z0-9]*' <<<"$body" | sort -u || true)
+sessions=$(grep -oE 'session_[A-Za-z0-9]{16,}' <<<"$body" | sort -u || true)
 if [ -z "$sessions" ]; then
   echo "NOSESSION $PR"
   leftover=1
@@ -101,11 +105,17 @@ fi
 # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
 while read -r session; do
   [ -n "$session" ] || continue
+  # 引けない・畳めないときは、そこで止めずに残りとして報せる。**マージは済んでいる**ので、
+  # ここで落ちると後片付け（`main` の追随）ごと落ちる。
   status=$(printf '{"session_id":"%s"}' "$session" |
-    bash "$CCR_META" get_session | grep -o '{"ccr".*' | jq -r '.ccr.session_status')
+    bash "$CCR_META" get_session | grep -o '{"ccr".*' | jq -r '.ccr.session_status' || true)
   [ "$status" != "SESSION_STATUS_ARCHIVED" ] || continue
-  printf '{"session_id":"%s"}' "$session" | bash "$CCR_META" archive_session >/dev/null
-  echo "ARCHIVED $session"
+  if printf '{"session_id":"%s"}' "$session" | bash "$CCR_META" archive_session >/dev/null; then
+    echo "ARCHIVED $session"
+  else
+    echo "UNARCHIVED $session"
+    leftover=1
+  fi
 done <<<"$sessions"
 
 # 本体は作業ツリーの共有先なので、進める前に汚れていないことを見る。未追跡は見ない——本体には
