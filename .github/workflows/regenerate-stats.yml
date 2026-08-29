@@ -52,6 +52,7 @@ jobs:
           npm run stats:balance
           npm run stats:terrain
           npm run stats:startup
+          npm run stats:escape
           npm run stats:climate
 
       - name: Check for drift
