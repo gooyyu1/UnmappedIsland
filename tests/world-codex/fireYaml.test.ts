@@ -245,6 +245,17 @@ describe('fire.yamlの火の連鎖', () => {
     expect(heatIs(hearth, 'out'), '火は消えたまま').toBe(true);
   });
 
+  it('薪の無い炉は、火種を断る理由を名乗る', () => {
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    const tinder = spawnInto('burning_tinder', land, 'items');
+
+    expect(hearth.combinationsWith(tinder, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      hearth.refusedCombinationsWith(tinder, player).map((c) => c.unmetRequirement()?.reasonName),
+      '断る理由まで辿り着ける（14.6節のreason）',
+    ).toEqual(['no_fuel']);
+  });
+
   it('着火が置くのは種火だけで、そこから薪が火を育てる', () => {
     const hearth = litCampfire();
 

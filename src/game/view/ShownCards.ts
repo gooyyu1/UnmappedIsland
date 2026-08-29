@@ -381,6 +381,9 @@ export class ShownCards {
    *
    * **どれも同じ1つの形（CardDrop）で返る。** 画面は「重ねた」と「入れた」を区別せず、名前と時間を
    * 吹き出しに出して実行するだけ（CardInteraction.md 2節）。
+   *
+   * **理由を告げて断る組み合わせ（enabledがfalse）は、入れ物としての受け入れに譲る。** 実際に起きる
+   * ことのほうが、起きない理由より先に見せるものだから。
    */
   dropEffect(drop: ShownDrop): CardDrop | undefined {
     const dragged = this.stacksAt(drop.from)[drop.fromIndex];
@@ -388,10 +391,11 @@ export class ShownCards {
 
     if (drop.target.kind === 'combine') {
       const combination = this.dropCombination(drop);
-      if (combination !== undefined) return combination;
+      if (combination?.enabled === true) return combination;
 
       const into = this.contentsUnder(drop);
-      return into === undefined ? undefined : dragged.dropInto?.(into, undefined, drop.count);
+      const putIn = into === undefined ? undefined : dragged.dropInto?.(into, undefined, drop.count);
+      return putIn ?? combination;
     }
 
     // 借りた札の枠はワールドの場所ではないので、そこへ「入れる」ことはできない（重ねるだけ）。
@@ -409,6 +413,8 @@ export class ShownCards {
             maxCount: 1,
             movedIds: dragged.movedIds(drop.count),
             execute,
+            enabled: true,
+            reason: undefined,
           };
     }
     return dragged.dropInto?.(drop.to, drop.target, drop.count);

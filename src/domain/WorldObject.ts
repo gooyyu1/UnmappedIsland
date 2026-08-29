@@ -10,6 +10,7 @@ import type { EngineVocabulary } from './WorldVocabulary';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
 import { PropertyValue } from './PropertyValue';
+import type { Requirement } from './Requirement';
 import { Slot } from './Slot';
 import type { SlotPosition } from './SlotPosition';
 import type { WorldSession } from './WorldSession';
@@ -762,13 +763,44 @@ export class WorldObject {
    */
   combinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
     const context = ReferenceContext.acting(this, agent, instrument);
+    return this.combinationsMatching(instrument, agent, context, (unmet) => unmet === undefined);
+  }
+
+  /**
+   * instrumentを重ねても要件（14節）で成立しないが、**断る理由を宣言している**組み合わせ
+   * （14.6節のreason、宣言順）。薪の無い炉へ火種を落とす、雨の日に火口へ火起こし具を当てる、が該当する。
+   *
+   * **`reason` を書いた要件は、落ちたときプレイヤーへ理由が届くという約束**（14.6節）。メニューの
+   * 操作は押せないボタンとして理由を出せるが、重ねる操作には候補から消えた先に理由を出す口が無い。
+   * 理由を宣言しているものだけをここから引けるようにして、その口を画面へ渡す
+   * （[`CardInteraction.md`](../../docs/ui/CardInteraction.md) 2節）。
+   *
+   * **理由を宣言していない要件は返さない**——黙って断ると決めた宣言なので、言うことが無い。
+   * 成立するものが1つでもあるなら、そちらが先（`combinationsWith`）。
+   */
+  refusedCombinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
+    const context = ReferenceContext.acting(this, agent, instrument);
+    return this.combinationsMatching(instrument, agent, context, (unmet) => unmet?.reasonName !== undefined);
+  }
+
+  /**
+   * 相手として受け入れ、行き先も詰まっていないドラッグの宣言のうち、満たしていない要件が
+   * acceptsに当てはまるもの。**要件以外の絞り込みを1箇所に持つ**——成立するものと断るものが
+   * 「要件を見た結果」だけで分かれるようにするため。
+   */
+  private combinationsMatching(
+    instrument: WorldObject,
+    agent: WorldObject | undefined,
+    context: ReferenceContext,
+    accepts: (unmet: Requirement | undefined) => boolean,
+  ): readonly Combination[] {
     return this.def.dragTriggers
       .filter(
         (trigger) =>
           trigger.acceptsInstrument(instrument.def) &&
-          trigger.interaction.unmetRequirement(context) === undefined &&
           trigger.acceptedCount(context, [instrument]) >= 1 &&
-          !trigger.interaction.blocksOperation(context),
+          !trigger.interaction.blocksOperation(context) &&
+          accepts(trigger.interaction.unmetRequirement(context)),
       )
       .map((trigger) => new Combination(trigger, this, instrument, agent));
   }

@@ -95,7 +95,8 @@ import { ScreenSkyTint } from './ui/ScreenSkyTint';
 import { DaybreakOverlay } from './ui/DaybreakOverlay';
 import { LaneHaze } from './ui/LaneHaze';
 import { heatHazeFor } from './looks/heatHaze';
-import { clockParts, timeCostLine } from './looks/timeTexts';
+import { clockParts } from './looks/timeTexts';
+import { interactionTooltip } from './ui/Tooltip';
 import { addLabel } from '../ui/labels';
 import type { BoxStyle } from '../ui/shapes';
 import { addInputBlockingPanel, addTiledImage, addTiledImageVertical, drawBox } from '../ui/shapes';
@@ -1028,10 +1029,11 @@ export class PlayScene extends ResponsiveScene {
     if (dropped === undefined || told === undefined) return undefined;
 
     const maxCount = this.shown.multiDropLimit(dropped);
-    if (told.name === undefined) return { maxCount };
+    if (told.name === undefined) return { maxCount, enabled: told.enabled };
     return {
       maxCount,
-      tooltip: { title: told.name, body: told.description, note: timeCostLine(told.minutes) },
+      enabled: told.enabled,
+      tooltip: interactionTooltip({ label: told.name, ...told }),
     };
   }
 

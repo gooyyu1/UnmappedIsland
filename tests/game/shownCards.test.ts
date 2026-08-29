@@ -79,6 +79,8 @@ function stack(
       execute: () => {
         options.moves?.push({ ids: ids.slice(0, count ?? 1), to, at });
       },
+      enabled: true,
+      reason: undefined,
     }),
     reorderActionAt: (at) => () => {
       options.moves?.push({ ids, to: place, at });
@@ -130,6 +132,8 @@ function screen(
             // 本物と同じく、運んできた枚数ぶんが動く（cardOperations.combinationWith）。
             movedIds: carried.slice(0, count).map((entry) => entry.instanceId),
             execute: () => {},
+            enabled: true,
+            reason: undefined,
           } as CardCombination);
     },
     // 現在地から見えるか（PlayScreenView.visible）。既定では全部見えていて、hiddenに挙げた個体だけが

@@ -57,6 +57,11 @@ export interface CardDropInfo {
    * 「これだけ入る」という約束**なので、入りきらないぶんは最初からついてこない。
    */
   readonly maxCount?: number;
+  /**
+   * 離せば実際に起きるか。falseは**理由を言うためだけの落とし先**——宣言が断る理由を持っている
+   * ので吹き出しには出すが、ふちは光らせず、離しても何も起きない（GameElementDefinition.md 14.6節）。
+   */
+  readonly enabled: boolean;
 }
 
 export interface CardDragHandlers {
@@ -252,7 +257,9 @@ export class CardDragController {
           target: { kind: 'combine', index } as const,
           count: 1,
         };
-        if (this.handlers.describeDrop(drop) === undefined) continue;
+        // 光らせるのは実際に何かが起きる相手だけ。理由を言うためだけの落とし先まで光ると、
+        // 「ここへ持っていけば何かが起きる」という合図が嘘になる。
+        if (this.handlers.describeDrop(drop)?.enabled !== true) continue;
 
         for (const layer of GLOW_LAYERS) {
           glow.lineStyle(this.metrics().px(layer.border), COLOR.cardDropAccept, layer.alpha);
@@ -287,10 +294,12 @@ export class CardDragController {
     } else {
       const { drop, info } = found;
       const rect = drop.to.dropIndicatorRect(drop.target);
+      // 理由を言うためだけの落とし先は、離しても何も起きないので緑では囲わない。
+      const color = info.enabled ? COLOR.cardDropTarget : COLOR.cardDropRefuse;
       drawBox(gesture.indicator, rect, {
-        fillColor: COLOR.cardDropTarget,
+        fillColor: color,
         fillAlpha: INDICATOR_FILL_ALPHA,
-        borderColor: COLOR.cardDropTarget,
+        borderColor: color,
         borderWidth: this.metrics().px(INDICATOR_BORDER),
         radius: this.metrics().px(SIZE.radius),
       });
@@ -367,7 +376,9 @@ export class CardDragController {
     const gesture = this.gesture;
     if (gesture === undefined) return;
 
-    const found = gesture.kind === 'dragging' ? this.dropCandidateAt(gesture, pointer) : undefined;
+    // 理由を言うためだけの落とし先（enabledがfalse）は、落とさなかったのと同じ扱い。
+    const candidate = gesture.kind === 'dragging' ? this.dropCandidateAt(gesture, pointer) : undefined;
+    const found = candidate?.info.enabled === true ? candidate : undefined;
     if (found === undefined || gesture.carried === undefined) {
       // 落とさなかったので、運んでいた札は元の枠へ飛んで帰る（帰り着いた時点で元の束に合流する）。
       if (gesture.kind === 'dragging') {
