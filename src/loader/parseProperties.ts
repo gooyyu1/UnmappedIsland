@@ -237,12 +237,15 @@ function parseStageAppendingPassives(
   // 段が宣言するart接尾辞（6.4節）。art_by_stageが指すプロパティの段だけがこれを持てるが、
   // その検証は object_def 全体を見渡せる RawObjectDef.resolve が行う（ここでは持たない）。
   const art = tryGetScalar(stageMap, 'art', context);
+  // 段が名乗る状況アイコンの識別子（6.4節）。artと違い名乗れるプロパティを絞らない——画面は
+  // プロパティの意味を知らずに並べるので、どれが名乗ってもよい（docs/ui/ScreenLayout.md 4.1.1節）。
+  const situation = tryGetScalar(stageMap, 'situation', context);
 
   // minはシンボル型でも読み取っておく。書いてはいけないことは PropertyDef が型と段の両方を見て言う。
   const min = tryGetNumber(stageMap, 'min', context);
   const stage = isSymbolProperty
-    ? new PropertyStage(stageName, min, loader.symbolNames.intern(stageName), alert, art)
-    : new PropertyStage(stageName, min, undefined, alert, art);
+    ? new PropertyStage(stageName, min, loader.symbolNames.intern(stageName), alert, art, situation)
+    : new PropertyStage(stageName, min, undefined, alert, art, situation);
 
   // stage内のpassivesは常に配列（条件違いの複数ブロックを書けるようにするため）。
   const stagePassives = tryGetSeq(stageMap, 'passives', context);

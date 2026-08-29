@@ -79,20 +79,34 @@ traits:
       # 2つが同じ3段の名前を持つのは、同じEVスケールを同じ底（-6）から測っているから。境目は
       # 別々で、片方を動かすとそのプロパティを見る行動だけが動く——bright が手元は+5、視界は+3
       # なのは、屋外で採るのに要る明るさが、縫うのに要る明るさより低いため。
+      #
+      # 段が名乗る situation は状況アイコン（docs/ui/ScreenLayout.md 4.1.1節）。**手元は2段で同じ絵**
+      # ——手元の作業に要るのは bright だけで、その下は「作れない」の一言に尽きる。視界は線が2本
+      # （dim で採れなくなり、pitch_dark で歩けなくなる）なので、そちらだけ絵が分かれる。
       hand_brightness:
         value: 0
         base: {subject: ancestor, prop: hand_brightness}
         stages:
-          - {name: pitch_dark}
-          - {name: dim, min: -5}
+          - {name: pitch_dark, situation: too_dark_for_handwork}
+          - {name: dim, min: -5, situation: too_dark_for_handwork}
           - {name: bright, min: 5}
       looking_brightness:
         value: 0
         base: {subject: ancestor, prop: ambient_brightness}
         stages:
-          - {name: pitch_dark}
-          - {name: dim, min: -5}
+          - {name: pitch_dark, situation: no_road}
+          - {name: dim, min: -5, situation: too_dark_outside}
           - {name: bright, min: 3}
+      # 雨や日差しから守られているか（docs/engine/ContainerSystem.md 6節）。**場所が持つ事実を映す**
+      # ので、値は祖先から継ぐだけで自分では動かさない（上の明るさと同じ形）。
+      #
+      # **段を持つのはキャラクタ側だけ。** 守る側（浅い洞窟・将来の屋根）は今までどおり sheltered: 1 を
+      # 宣言するだけでよく、状況アイコンを出すための宣言をそれぞれが覚えている必要が無い。
+      sheltered:
+        value: 0
+        base: {subject: ancestor, prop: sheltered}
+        stages:
+          - {name: sheltered, min: 1, situation: sheltered}
       # 体重（g）。**筏に乗れば積載として効く**（voyage.yaml）ので、担ぐ側も担がれる側になる。
       # 血液量が体重のおよそ1/13という下の関係から、5,000mLはちょうど65kgにあたる。個体差は
       # まだ持たせず、血と同じくこの trait が配る。

@@ -640,4 +640,61 @@ object_defs:
       ).toEqual([vessel, tree]);
     });
   });
+
+  describe('状況アイコン（ScreenLayout.md 4.1.1節）', () => {
+    /**
+     * 段が名乗った絵の識別子だけが出る。**画面はプロパティの意味も段の意味も知らない**ので、
+     * 同梱の宣言ではなく、確かめたい形をその場で宣言する。
+     *
+     * propsの宣言順が並び順になるので、手元の明るさ・雨よけの順に並べてある。
+     */
+    const SITUATIONS = `
+object_defs:
+  islander:
+    traits: [carrier]
+    props:
+      hand_brightness:
+        value: 10
+        stages:
+          - {name: pitch_dark, situation: too_dark_for_handwork}
+          - {name: dim, min: -5, situation: too_dark_for_handwork}
+          - {name: bright, min: 5}
+      sheltered:
+        value: 0
+        stages:
+          - {name: sheltered, min: 1, situation: sheltered}
+`;
+
+    const setUpIslander = (): MiniGame => miniGame(SITUATIONS, { player: 'islander' });
+
+    const setProperty = (mini: MiniGame, name: string, value: number): void => {
+      mini.player.getProperty(mini.codex.propertyNames.getId(name)).setNumber(value);
+    };
+
+    it('何も妨げていない間は、1つも出ない', () => {
+      // 出しても読み取るものが無いため（晴れた日中は行が空になる）。
+      const mini = setUpIslander();
+
+      expect(viewOf(mini).conditions).toEqual([]);
+    });
+
+    it('段が名乗った絵が、propsの宣言順に並ぶ', () => {
+      const mini = setUpIslander();
+      setProperty(mini, 'hand_brightness', 0);
+      setProperty(mini, 'sheltered', 1);
+
+      expect(viewOf(mini).conditions).toEqual(['too_dark_for_handwork', 'sheltered']);
+    });
+
+    it('同じ絵を名乗る段どうしでは、絵が変わらない', () => {
+      // 手元の作業に要るのはbrightだけで、その下は「作れない」の一言に尽きる（4.1.2節）。
+      const mini = setUpIslander();
+
+      setProperty(mini, 'hand_brightness', -3);
+      expect(viewOf(mini).conditions, 'dimの段').toEqual(['too_dark_for_handwork']);
+
+      setProperty(mini, 'hand_brightness', -20);
+      expect(viewOf(mini).conditions, 'pitch_darkの段').toEqual(['too_dark_for_handwork']);
+    });
+  });
 });
