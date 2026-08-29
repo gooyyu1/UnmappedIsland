@@ -1,7 +1,7 @@
 # game-view
 
 対象: `src/game/view/`（映し）と `src/game/looks/`（意匠）。28ファイル / 423宣言。
-判定は Layers.md 3節（「何が出ているか」なら映し／「どう見せるか」なら意匠／座標・ミリ秒・Phaser表示物なら部品）を全宣言へ一度ずつ当てたもの。
+判定は CodeStructure.md 3節（「何が出ているか」なら映し／「どう見せるか」なら意匠／座標・ミリ秒・Phaser表示物なら部品）を全宣言へ一度ずつ当てたもの。
 
 ## 集計
 
@@ -92,7 +92,7 @@
 | src/game/view/cardMotionPlan.ts | `PlannedFlight.delaySteps`, `PlannedFlight.puffs`, `MotionPlan.puffs` | 所属 | 2 | 何がどこへ飛ぶかの計画に、遅らせ方と土埃という見せ方の細目が混ざっている | `src/game/looks/cardFlight.ts`（遅延の刻み）／部品側（土埃） | | |
 | src/game/view/operationSteps.ts | `Activity`, `runsOperation()`, `isMidAction()` | 所属 | 2 | `PlayScene` が今何をしているかの状態の型で、操作の手順とは別（同じファイルに2つの塊がある） | `PlayScene.ts` に近い別モジュール | | |
 | src/game/looks/theme.ts | `mixColor()` | 配置 | 3 | 2色の線形補間は汎用の色演算で、このゲームの配色と無関係 | `src/util/` または `src/ui/` | | |
-| src/game/looks/theme.ts | `rowPlateStyle()` | 所属 | 2 | 意匠が部品の契約（`BoxStyle`）を組み立てて返している | （現状維持で可。Layers.md 2節どおり部品が意匠を引く形） | | |
+| src/game/looks/theme.ts | `rowPlateStyle()` | 所属 | 2 | 意匠が部品の契約（`BoxStyle`）を組み立てて返している | （現状維持で可。CodeStructure.md 2節どおり部品が意匠を引く形） | | |
 | src/game/looks/PlayScreenLayout.ts | `DISPLAY_PADDING` | 配置 | 3 | 寸法トークンはこれだけが `SIZE` の外に `export` されている | `src/game/looks/theme.ts` の `SIZE` | | |
 | src/game/looks/PlayScreenLayout.ts | `horizontalSeparatorAt()`, `verticalSeparatorAt()` | 配置 | 3 | 中心線と幅から矩形を作る汎用の幾何で、この画面の話ではない | `src/ui/Rect.ts` | | |
 | src/game/looks/PlayScreenLayout.ts | `metrics` | 可視性 | 2 | 計算に使った引数をそのまま公開し、40ファイルがここ経由で `ScreenMetrics` を読んでいる | （各所が `ScreenMetrics` を直に受け取る） | | |

@@ -8,7 +8,7 @@
 | `PropertyDef.inheritedContribution` (判定5) | `PropertyValue.ts:130` が `this.def.inheritedContribution(this.owner)` と自分の owner を渡し返す。読むのは public な `inherit`/`globalId` のみ＝Def に置く理由なし |
 | `WeightSpec` (判定5) | `SlotDef.putInDuration`・`ActionDef`/`InteractionDef`/`CombinationDef.duration` が使用。pick 専用ではない |
 | `Rng.ts → generation/Pcg32.ts` (判定5) | `Rng` は9ファイルから使われる汎用。`Pcg32` は `src/save/SaveData.ts` からも使われ、生成配下に居る理由なし |
-| `Button` の Layers.md 反例 | `SLOT_BUTTON_PAPER_TEXTURE` は Button.ts のモジュール定数。`Button` クラスは未参照（読むのは BootScene と PlayScene）。**ドキュメントの例が実装とずれている** |
+| `Button` の CodeStructure.md 反例 | `SLOT_BUTTON_PAPER_TEXTURE` は Button.ts のモジュール定数。`Button` クラスは未参照（読むのは BootScene と PlayScene）。**ドキュメントの例が実装とずれている** |
 | `RawObjectDef` / `RawTrait` 二重化 | 共通フィールド11個を確認（name, source, tags, props, slots, passives, stackOrder, visibleSlots, artByStage, actions, combinations）。`RawTrait.readFields` のコメント自身が「RawObjectDef.readFieldsと対」と書いている |
 | `Slot.tryInsertAtGap` / `tryInsertAtCell` / `tryMoveStackToGap`, `PropertyValue.changePerTick` (判定5) | `src` `tests` ともに参照ゼロ。完全な死んだ public |
 
