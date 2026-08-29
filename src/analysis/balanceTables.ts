@@ -7,8 +7,8 @@ import type { CraftingStep } from './CraftingStep';
 import { craftingStepsOf } from './craftingSteps';
 import type { IslandLocations } from './islandLocations';
 import { islandLocationsOf } from './islandLocations';
-import type { ExternalTickDelta, RangeCycle } from './rangeCycles';
-import { externalTickDeltasOf, rangeCyclesOf } from './rangeCycles';
+import type { RangeCycle } from './rangeCycles';
+import { externalTickDeltasOn, rangeCyclesOf } from './rangeCycles';
 import { rangeEventReadouts } from './rangeEvents';
 import type { RainWaterRow } from './seasonalRain';
 import { rainWaterRows } from './seasonalRain';
@@ -1132,23 +1132,6 @@ function allSteps(
         })),
     ];
   });
-}
-
-/**
- * その型のtick毎の値を外から動かす物（ExternalTickDelta参照）。**枠の受け入れが唯一の手掛かり**——
- * 炉の火の枠が`roastable`を受けるから炉は肉を焼けるし、獲物の怪我の枠が`injury`を受けるから
- * 刺さった傷は血を奪える。
- */
-function externalTickDeltasOn(def: ObjectDef, defs: readonly ObjectDef[]): readonly ExternalTickDelta[] {
-  const found: ExternalTickDelta[] = [];
-  for (const source of defs) {
-    if (source.globalId === def.globalId) continue;
-    if (source.slotDefs.some((slot) => slot.acceptsAnywhere(def)))
-      found.push(...externalTickDeltasOf(source, 'child'));
-    if (def.slotDefs.some((slot) => slot.acceptsAnywhere(source)))
-      found.push(...externalTickDeltasOf(source, 'parent'));
-  }
-  return found;
 }
 
 /**

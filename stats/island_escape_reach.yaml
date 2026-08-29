@@ -22,19 +22,17 @@ island_missing_location:
   - {location: mountain_peak, unit: percent, share: 0.00}
 
 island_unreached:
-  - {unit: percent, share: 0.50}
+  - {unit: percent, share: 0.30}
 
 island_goal_unreached:
   - {object: raft, goal_tag: boat, unit: percent, share: 0.30}
-  - {object: rawhide_sail, goal_tag: sail, unit: percent, share: 0.50}
+  - {object: rawhide_sail, goal_tag: sail, unit: percent, share: 0.30}
 
 island_goal_hops:
   - {object: raft, goal_tag: boat, measure: hops, unit: hops, mean: 9.00, min: 9.00, median: 9.00, p95: 9.00, max: 9.00, sd: 0.00, n: 1994}
-  - {object: rawhide_sail, goal_tag: sail, measure: hops, unit: hops, mean: 8.00, min: 8.00, median: 8.00, p95: 8.00, max: 8.00, sd: 0.00, n: 1990}
+  - {object: rawhide_sail, goal_tag: sail, measure: hops, unit: hops, mean: 8.00, min: 8.00, median: 8.00, p95: 8.00, max: 8.00, sd: 0.00, n: 1994}
 
 island_unreached_need:
-  - {object: jungle, unit: percent, share: 0.50}
-  - {object: rawhide_sail, unit: percent, share: 0.50}
   - {object: abaca, unit: percent, share: 0.30}
   - {object: banana_plant, unit: percent, share: 0.30}
   - {object: banana_stem, unit: percent, share: 0.30}
@@ -42,26 +40,23 @@ island_unreached_need:
   - {object: broadleaf_tree, unit: percent, share: 0.30}
   - {object: cord, unit: percent, share: 0.30}
   - {object: forest, unit: percent, share: 0.30}
+  - {object: jungle, unit: percent, share: 0.30}
   - {object: log, unit: percent, share: 0.30}
   - {object: plant_fiber, unit: percent, share: 0.30}
   - {object: raft, unit: percent, share: 0.30}
+  - {object: rawhide_sail, unit: percent, share: 0.30}
   - {object: reef_shallows, unit: percent, share: 0.30}
   - {object: rope, unit: percent, share: 0.30}
-  - {object: salt, unit: percent, share: 0.30}
   - {object: stone_axe, unit: percent, share: 0.30}
   - {object: wreck_waters, unit: percent, share: 0.30}
   - {object: yarn, unit: percent, share: 0.30}
-  - {object: bone_needle, unit: percent, share: 0.20}
-  - {object: grassland, unit: percent, share: 0.20}
-  - {object: junglefowl, unit: percent, share: 0.20}
-  - {object: junglefowl_carcass, unit: percent, share: 0.20}
-  - {object: junglefowl_carcass__cure_salted, unit: percent, share: 0.20}
-  - {object: roasted_rat, unit: percent, share: 0.20}
-  - {object: small_bone, unit: percent, share: 0.20}
+  - {object: gore_wound, unit: percent, share: 0.10}
   - {object: monkey, unit: percent, share: 0.10}
   - {object: monkey_carcass, unit: percent, share: 0.10}
   - {object: monkey_carcass__cure_salted, unit: percent, share: 0.10}
+  - {object: puncture_wound, unit: percent, share: 0.10}
   - {object: rawhide, unit: percent, share: 0.10}
+  - {object: salt, unit: percent, share: 0.10}
   - {object: sandy_beach, unit: percent, share: 0.10}
   - {object: wild_boar, unit: percent, share: 0.10}
   - {object: wild_boar_carcass, unit: percent, share: 0.10}
