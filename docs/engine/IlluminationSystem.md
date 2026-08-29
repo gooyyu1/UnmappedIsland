@@ -189,10 +189,10 @@ path:
       conditions:
         - {in_slot: fixtures}
         - reason: too_dark
-          not: {subject: actor, prop: looking_brightness, in_stage: pitch_dark}
+          not: {subject: agent, prop: looking_brightness, in_stage: pitch_dark}
 ```
 
-- **主語は `actor` です。** 行動が見るのはキャラクタ側の2つで、キャラクタは操作を実行している本人だから
+- **主語は `agent` です。** 行動が見るのはキャラクタ側の2つで、キャラクタは操作を実行している本人だから
   です（`GameElementDefinition.md` 14.1節）。
 - **`reason` を添えます**（同 14.6節）。暗くてできないことは、ボタンが押せないだけでは伝わりません。
 - **明るさの条件を書かない操作は、暗さに依らずできる**という意味になります（食べる・飲む・眠る・火を

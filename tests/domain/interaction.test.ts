@@ -26,10 +26,10 @@ describe('WorldObjectのactions/combinations実行', () => {
   }
 
   // ------------------------------------------------------------------
-  // actions: conditions / active（self・actor）
+  // actions: conditions / active（self・agent）
   // ------------------------------------------------------------------
 
-  it('アクションの実行でselfとactor両方にactiveが適用され、selfが消滅する', () => {
+  it('アクションの実行でselfとagent両方にactiveが適用され、selfが消滅する', () => {
     const yaml = `
 object_defs:
   player:
@@ -41,20 +41,20 @@ object_defs:
       eat:
         trigger: menu
         add:
-          actor:
+          agent:
             satiety: 10
         destroy: self
 `;
     const codex = load(yaml);
     const satietyId = codex.propertyNames.getId('satiety');
 
-    const actor = spawn(codex, 'player');
+    const agent = spawn(codex, 'player');
     const appleInstance = spawn(codex, 'apple');
 
-    const executed = appleInstance.tryGetAction('eat', actor)?.tryExecute() === true;
+    const executed = appleInstance.tryGetAction('eat', agent)?.tryExecute() === true;
 
     expect(executed).toBe(true);
-    expect(actor.tryGetProperty(satietyId)?.number ?? 0).toBe(10);
+    expect(agent.tryGetProperty(satietyId)?.number ?? 0).toBe(10);
     expect(appleInstance.parent, 'destroy: trueによりself(apple)は消滅する').toBeUndefined();
   });
 
@@ -70,21 +70,21 @@ object_defs:
       eat:
         trigger: menu
         conditions:
-          - {subject: actor, prop: satiety, lt: 100}
+          - {subject: agent, prop: satiety, lt: 100}
         add:
-          actor:
+          agent:
             satiety: 10
 `;
     const codex = load(yaml);
     const satietyId = codex.propertyNames.getId('satiety');
 
-    const actor = spawn(codex, 'player2');
+    const agent = spawn(codex, 'player2');
     const appleInstance = spawn(codex, 'apple2');
 
-    const executed = appleInstance.tryGetAction('eat', actor)?.tryExecute() === true;
+    const executed = appleInstance.tryGetAction('eat', agent)?.tryExecute() === true;
 
     expect(executed, 'satietyが既に100(<100を満たさない)のため実行されない').toBe(false);
-    expect(actor.tryGetProperty(satietyId)?.number ?? 0, '条件を満たさないため何も変化しない').toBe(100);
+    expect(agent.tryGetProperty(satietyId)?.number ?? 0, '条件を満たさないため何も変化しない').toBe(100);
   });
 
   it('spawnの配列で1回のアクションから複数のオブジェクトが生成される', () => {
@@ -230,11 +230,11 @@ object_defs:
         pick:
           - weight: 100
             add:
-              actor:
+              agent:
                 hp: -10
           - weight: 0
             add:
-              actor:
+              agent:
                 hp: -9999
 `;
     const codex = load(yaml);
@@ -242,15 +242,15 @@ object_defs:
 
     // weight比が100:0のため、nextDoubleが[0,1)のどんな値でも常に1番目(-10)だけが選ばれる。
     // 「どのpickが選ばれるか」に依存するシナリオなので、StubRngで20回分の値列を明示する。
-    const actor = spawn(codex, 'player3');
+    const agent = spawn(codex, 'player3');
     const swordInstance = spawn(codex, 'sword');
 
     for (let i = 0; i < 20; i++) {
-      swordInstance.tryGetAction('attack', actor)?.tryExecute();
+      swordInstance.tryGetAction('attack', agent)?.tryExecute();
     }
 
     expect(
-      actor.tryGetProperty(hpId)?.number ?? 0,
+      agent.tryGetProperty(hpId)?.number ?? 0,
       '重み100:0なので常に最初の候補(-10)だけが選ばれ続け、2番目(-9999)は一度も選ばれない',
     ).toBe(100 - 20 * 10);
   });
@@ -269,36 +269,36 @@ object_defs:
       shoot:
         trigger: menu
         pick:
-          - weight: {subject: actor, prop: luck}
+          - weight: {subject: agent, prop: luck}
             add:
-              actor:
+              agent:
                 hp: 1
           - weight: 0
             add:
-              actor:
+              agent:
                 hp: -1
 `;
     const codex = load(yaml);
     const hpId = codex.propertyNames.getId('hp');
     const luckId = codex.propertyNames.getId('luck');
 
-    const actor = spawn(codex, 'player4');
-    actor.getProperty(luckId).setNumberWithoutEvents(1000); // 2番目(重み0固定)を圧倒する
+    const agent = spawn(codex, 'player4');
+    agent.getProperty(luckId).setNumberWithoutEvents(1000); // 2番目(重み0固定)を圧倒する
     const bowInstance = spawn(codex, 'bow');
 
-    bowInstance.tryGetAction('shoot', actor)?.tryExecute();
+    bowInstance.tryGetAction('shoot', agent)?.tryExecute();
 
     expect(
-      actor.tryGetProperty(hpId)?.number ?? 0,
+      agent.tryGetProperty(hpId)?.number ?? 0,
       'luck(1000)がweightのpath参照先なので、ほぼ確実に1番目の候補が選ばれる',
     ).toBe(101);
   });
 
   // ------------------------------------------------------------------
-  // combinations: with（タグ）・dragged対象
+  // combinations: with（タグ）・instrument対象
   // ------------------------------------------------------------------
 
-  it('withがタグにマッチするとselfとdraggedの両方に効果が適用される', () => {
+  it('withがタグにマッチするとselfとinstrumentの両方に効果が適用される', () => {
     const yaml = `
 object_defs:
   wood:
@@ -306,7 +306,7 @@ object_defs:
       chop:
         trigger: {drag: {tag: axe_tool}}
         add:
-          dragged:
+          instrument:
             durability: -1
         destroy: self
   axe_tool:
@@ -332,7 +332,7 @@ object_defs:
     expect(axeInstance.tryGetProperty(durabilityId)?.number ?? 0).toBe(9);
   });
 
-  it('dragged_parentは対象キーとして使えない', () => {
+  it('instrument_parentは対象キーとして使えない', () => {
     const yaml = `
 object_defs:
   lever:
@@ -340,7 +340,7 @@ object_defs:
       operate:
         trigger: {drag: {tag: marker_tag}}
         add:
-          dragged_parent:
+          instrument_parent:
             power: 3
   marker:
     tags: [marker_tag]
@@ -348,7 +348,7 @@ object_defs:
     expect(() => load(yaml)).toThrowError(/未知の対象キー/);
   });
 
-  it('タグが一致しないdraggedに対してはfalseを返す', () => {
+  it('タグが一致しないinstrumentに対してはfalseを返す', () => {
     const yaml = `
 object_defs:
   wood2:
@@ -368,7 +368,7 @@ object_defs:
         .find((c) => c.name === 'chop')
         ?.tryExecute() === true;
 
-    expect(executed, 'draggedがwithのタグを持たないため実行されない').toBe(false);
+    expect(executed, 'instrumentがwithのタグを持たないため実行されない').toBe(false);
   });
 
   it('trait経由で得たタグでもwithにマッチして効果が適用される', () => {
@@ -406,7 +406,7 @@ object_defs:
     interactions:
       ignite:
         trigger: {drag: {object: burning_tinder2}}
-        destroy: dragged
+        destroy: instrument
   burning_tinder2:
     tags: [tinder2]
   dry_grass2:
@@ -430,10 +430,10 @@ object_defs:
         .find((c) => c.name === 'ignite')
         ?.tryExecute() === true,
     ).toBe(true);
-    expect(tinderInstance.parent, 'destroy: draggedが適用される').toBeUndefined();
+    expect(tinderInstance.parent, 'destroy: instrumentが適用される').toBeUndefined();
   });
 
-  it('マッチするcombination検索はdraggedにマッチするものだけを返す', () => {
+  it('マッチするcombination検索はinstrumentにマッチするものだけを返す', () => {
     const yaml = `
 object_defs:
   wood4:
@@ -454,7 +454,7 @@ object_defs:
     expect(matches.map((c) => c.name)).toEqual(['chop']);
   });
 
-  it('combinationのconditionsはdraggedを参照できる', () => {
+  it('combinationのconditionsはinstrumentを参照できる', () => {
     const yaml = `
 object_defs:
   wood5:
@@ -462,7 +462,7 @@ object_defs:
       chop:
         trigger: {drag: {tag: axe_tool5}}
         conditions:
-          - {subject: dragged, prop: durability, gt: 0}
+          - {subject: instrument, prop: durability, gt: 0}
         destroy: self
   axe_tool5:
     tags: [axe_tool5]

@@ -51,7 +51,7 @@ describe('なめし革の連鎖', () => {
     return spawned;
   }
 
-  /** 作業者が今手に持っている物の名前（剥いだ樹皮はここへ入る、11.4節のinto: actor）。 */
+  /** 作業者が今手に持っている物の名前（剥いだ樹皮はここへ入る、11.4節のinto: agent）。 */
   function carried(): string[] {
     return player.getSlot(codex.vocabulary.world.handSlotId).contents.map((object) => object.def.name);
   }

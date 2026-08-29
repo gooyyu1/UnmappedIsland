@@ -23,7 +23,7 @@ export function makeBrightEnoughForAnyAction(character: WorldObject, codex: Worl
  * 明るさの条件に引っかからないキャラクタを1体作る。**どのスロットへも入れない**ので、
  * 呼び手は置き場所を用意しなくてよく、居場所の明るさにも左右されない。
  */
-export function createBrightEnoughActor(session: WorldSession, codex: WorldCodex): WorldObject {
+export function createBrightEnoughAgent(session: WorldSession, codex: WorldCodex): WorldObject {
   const character = session.createObject(codex.objectNames.getId(SAMPLE_CHARACTER));
   makeBrightEnoughForAnyAction(character, codex);
   return character;

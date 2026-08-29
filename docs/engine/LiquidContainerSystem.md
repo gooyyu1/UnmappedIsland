@@ -84,16 +84,16 @@ water_liquid:
     pour_into_empty:
       trigger: {drag: {tag: liquid_container}}
       conditions:
-        - {reason: not_empty, not: {subject: dragged, prop: fill, gte: 1}}
-      become: {subject: dragged, content: water_liquid}
-      transfer: {amount: 999999, from: self, from_prop: fill, to: dragged, to_prop: fill}
+        - {reason: not_empty, not: {subject: instrument, prop: fill, gte: 1}}
+      become: {subject: instrument, content: water_liquid}
+      transfer: {amount: 999999, from: self, from_prop: fill, to: instrument, to_prop: fill}
     # 相手も水入りのとき。
     pour_into_filled:
       trigger: {drag: {tag: water}}
-      transfer: {amount: 999999, from: dragged, from_prop: fill, to: self, to_prop: fill}
+      transfer: {amount: 999999, from: instrument, from_prop: fill, to: self, to_prop: fill}
 ```
 
-**宣言を持つのは中身入りの側だけなので、どちらの札をどちらへ重ねても `self` は中身入り・`dragged` は
+**宣言を持つのは中身入りの側だけなので、どちらの札をどちらへ重ねても `self` は中身入り・`instrument` は
 相手になります**（[`GameElementDefinition.md`](./GameElementDefinition.md) 12.3 節）。汲む向きと注ぐ向きで別の宣言は要りません。
 
 **異種の混合は、混ぜる組み合わせが現れないことで阻まれます。** 種類ごとのタグ（`water`・`tea`・`oil`）に
@@ -138,14 +138,14 @@ water_liquid:
 同じ 1 口でも水より寄与の小さい液体（酒）は、この比を小さくするだけで表せます。
 
 飲用は液体トレイト側のメニュー型の操作。`transfer` で自分の `fill` から 1回 250（＝250mL）出し、
-`actor.hydration` を 10 増やします。`transfer` の在庫クランプにより、残量が 250mL 未満なら残っている分だけ
+`agent.hydration` を 10 増やします。`transfer` の在庫クランプにより、残量が 250mL 未満なら残っている分だけ
 飲みます（増える水分もその比で減ります）。逆に `hydration` 側の空きが 10 tick 分未満なら入る分だけ飲み、
 あふれる分は容器に残ります（`allow_overflow` 既定の受け側クランプ。空きは mL へ割り戻して比べられます）。
 
 - **満水のときは飲めません。** `hydration` が `full` 段（満水ちょうど、`Characters.md`）にある間は
   `conditions` が不成立になり、0mL の何も起きない飲用を実行させません（理由は `not_thirsty`）。
 - 効果が種類ごとに違う液体は `linked_add` で表します: 茶は実際に飲んだ量に比例して
-  `actor.wakefulness` を加算します。
+  `agent.wakefulness` を加算します。
 - 飲めない液体（油）は、単に `drink` を定義しません。
 
 ## 6. 蒸発

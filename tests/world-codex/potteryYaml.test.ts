@@ -10,7 +10,7 @@ import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
-import { createBrightEnoughActor } from '../support/illumination';
+import { createBrightEnoughAgent } from '../support/illumination';
 
 /**
  * pottery.yamlの土器の連鎖を、実ファイルの定義だけで検証する。
@@ -77,7 +77,7 @@ describe('pottery.yamlの土器の連鎖', () => {
   function craft(productName: string, recipeName: string, materials: readonly string[][]): void {
     // 工程を進めるには手元の明るさが要る（IlluminationSystem.md 5節）。ここで見たいのは土器の
     // 連鎖なので、時刻や光源を組み立てずに作り手の側で明るさを満たす。
-    const potter = createBrightEnoughActor(session, codex);
+    const potter = createBrightEnoughAgent(session, codex);
     const recipe = codex.objects.get(codex.objectNames.getId(productName)).recipesProducingThis[0];
     const materialsId = codex.vocabulary.engine.materialsSlotId;
     const wip = spawnInProgressObject(

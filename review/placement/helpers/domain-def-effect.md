@@ -38,7 +38,7 @@
 | src/domain/ConditionNode.ts#ConditionNode L285 | `evaluateObjectMatches(resolveRoot)` | `WorldObject` / `TypeMatchRule` | `WorldObject` が「この指定に当たるか」を答えられず、呼び手が必ず `.def` を開ける | 消える（`WorldObject.matches(rule)`） | なし |
 | src/domain/PassiveEffect.ts#PropertyPassiveEffect L242 | `unregister(targetOwner, declarer)` | `WorldObject` / `PropertyValue` | `targetOwner?.tryGetProperty(id)?.unregisterPassiveEffectsFrom(declarer)` の純粋な素通し。**自分のフィールドは `targetPropertyGlobalId` 1つしか触らない** | 消える（`WorldObject.unregisterPassiveEffectsFrom(propertyGlobalId, declarer)`） | なし |
 | src/domain/PassiveEffect.ts#PropertyPassiveEffect L229 | `register(targetOwner, declarer, slotBearer)` | `WorldObject` / `PropertyValue` | 同上（「そのプロパティを持っていれば渡す」の1段） | 半分消える。解決の1段は消え、`new RegisteredPassiveEffect(...)` の組み立てと `registerInto` の振り分けが残る | `registerInto` が modify/積分のどちらへ入れるかを決める**多態が A 側にある**（`ModifyEffect`/`AccumulateEffect`）。B からは呼べない。`unregister` にこれが無いので、対で見ると「B に足りないのは owner→property の1段だけ」と分かる |
-| src/domain/PickEffect.ts#PickEffect L49 | `selectWeighted(owner, session, actor, dragged)` | `pickWeighted`（`src/domain/Rng.ts`） | 「候補が非空なら必ず1つ返す」版が無く、`undefined` の後始末を呼び手が書いている | 消えない。`?? this.candidates[0]` が残る | もう1人の呼び手 `src/domain/views/Animal.ts` L79 は `undefined` を「狙わない」として使う。**B が複数の呼び手で違う答えを返す必要がある**ので、全0時の既定は pick 側の規約として残るのが正しい |
+| src/domain/PickEffect.ts#PickEffect L49 | `selectWeighted(owner, session, agent, instrument)` | `pickWeighted`（`src/domain/Rng.ts`） | 「候補が非空なら必ず1つ返す」版が無く、`undefined` の後始末を呼び手が書いている | 消えない。`?? this.candidates[0]` が残る | もう1人の呼び手 `src/domain/views/Animal.ts` L79 は `undefined` を「狙わない」として使う。**B が複数の呼び手で違う答えを返す必要がある**ので、全0時の既定は pick 側の規約として残るのが正しい |
 | src/domain/PropertyDef.ts#PropertyDef L279 | `deriveAlertDirection(stages)` (static) | 段の並び（`readonly PropertyStage[]`） | 段の列に主が居ない。「eq の段は数値の並びに乗らない」「min の昇順に並べる」を各所が各自で書いている | `PropertyStage` に述語を足すだけでは消えない（単調性の走査は**列**の問い）。列を持つ `PropertyStages` を作れば消える | `stages` が裸の配列で public。読み手（`src/codex-viewer/describe/describeProperty.ts`）も配列を直接舐めている |
 | src/domain/PropertyDef.ts#PropertyDef L414 | `stageBoundaries()` | 段の並び ＋ `PropertyRange` | 同上＋`PropertyRange` が `ratioOf` を持たない（第1波の判定4と同じ） | `PropertyStages` が range を同伴すれば消える | `range` が `undefined` になりうるため `ratioOf` を `PropertyRange` へ移せない（第1波で挙げた阻害要因と同一） |
 | src/domain/PropertyDef.ts#PropertyDef L431 | `spanOf(stage)` | 段の並び ＋ `PropertyRange` | 「その段の上端＝より上で最も近い段の min」は**隣を知る**問いで、`PropertyStage` は隣を知らない | 同上、消える | 同上 |
@@ -60,13 +60,13 @@
 | `PropertyDef.inheritedContribution` | src/domain/PropertyDef.ts L463-466（第1波の判定5） |
 | `WorldObject.resolveEffectTargetOrAncestor` | src/domain/WorldObject.ts L833-843（担当外。**唯一の名前付き実装**） |
 
-→ `PropertyPath` に `resolveOwner(self, actor, dragged)` / `resolveValue(...)` を足す（あるいは
+→ `PropertyPath` に `resolveOwner(self, agent, instrument)` / `resolveValue(...)` を足す（あるいは
 `resolveReferenceRoot` を propertyGlobalId 込みの1本にする）と、担当範囲の4箇所が消える。
 **優先度は最も高い。** `PropertyPath` は現在フィールド2つだけのデータクラスで、足す先が空いている。
 
 ### B2: `WorldObject` — 「解決してプロパティ値を取る」の2段
 
-`owner.resolveEffectTargetOrAncestor(root, id, actor, dragged)` の直後に `?.tryGetProperty(id)` を書き、
+`owner.resolveEffectTargetOrAncestor(root, id, agent, instrument)` の直後に `?.tryGetProperty(id)` を書き、
 **同じ `propertyGlobalId` を2回渡す**形が10箇所ある。
 
 - `src/domain/ActiveEffect.ts` — 6箇所（`SetEffect.apply` L157、`AddEffect.applyScaled` L202、
@@ -74,7 +74,7 @@
 - `src/domain/ConditionNode.ts` — 2箇所（`resolvePropertyEffectiveValue`・`evaluatePropertyStage`。private）
 - `src/domain/PassiveEffect.ts` — 2箇所（`register`・`unregister`。private）
 
-→ `WorldObject.tryResolveProperty(root, propertyGlobalId, actor, dragged): PropertyValue | undefined`
+→ `WorldObject.tryResolveProperty(root, propertyGlobalId, agent, instrument): PropertyValue | undefined`
 を1本足せば、10箇所すべてが1行になる。**解決できなかったときの既定（`?? 0` / `?? false` / 何もしない）は
 呼び手ごとに違うので B には持たせない**——B が返すのは `PropertyValue | undefined` まで。
 
@@ -98,7 +98,7 @@
 
 - `ConditionNode.evaluateObjectMatches`（private、担当内）
 - `ConditionNode.evaluateSlotContent`（private、担当内。加えて `slot.contents` も外へ出させている）
-- `CombinationDef.acceptsDragged` / `CombinationDef.execute`（担当内、public）
+- `CombinationDef.acceptsInstrument` / `CombinationDef.execute`（担当内、public）
 
 → `WorldObject.matches(rule)` と `Slot.containsMatching(rule)` の2本で3箇所が消える。
 
@@ -112,4 +112,4 @@
 | src/domain/ActiveEffect.ts#AddEffect | `applyScaled(...)` | `TransferEffect` | 唯一の呼び手は `TransferEffect.apply` の linked_add。**A（AddEffect）が B のために生やした口**で、向きが逆（B の不足を A が補うのではなく、B の都合で A が膨らんでいる） |
 | src/domain/PassiveEffect.ts#PropertyPassiveEffect | `activeAmount(declarer, slotBearer)` | `RegisteredPassiveEffect` | 登録1件が「今いくら効いているか」を自力で答えられず、自分の2フィールドを def へ渡し直している（`RegisteredPassiveEffect.activeAmount()` が完全な素通し） |
 | src/domain/WorldCodex.ts#WorldCodex | `singletonGlobalIds()`, `objectDefNamesWithTag()` | `ObjectDefTable` | 全型走査の口が `ObjectDefTable` に無いため、Codex が `this.objects` を舐めている |
-| src/domain/PickEffect.ts#WeightSpec | `resolve(self, actor, dragged)` | `WorldObject` | B1 と同じ。`self.resolveEffectTargetOrAncestor(...)` をそのまま呼べる位置にありながら、本体を書き直している |
+| src/domain/PickEffect.ts#WeightSpec | `resolve(self, agent, instrument)` | `WorldObject` | B1 と同じ。`self.resolveEffectTargetOrAncestor(...)` をそのまま呼べる位置にありながら、本体を書き直している |

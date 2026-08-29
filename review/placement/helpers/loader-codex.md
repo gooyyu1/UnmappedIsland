@@ -53,7 +53,7 @@
 | 現在地 | ヘルパー | 主語(B) | Bに足りない機能 | Bへ足せば消えるか | 阻害要因 |
 |---|---|---|---|---|---|
 | parseActiveEffects.ts | `parseActiveTargetRoot` `parseObjectTargetRoot` `parseSpawnTargetRoot` `parseMoveSubject` `parseMoveDestination` | `ReferenceRoot`（domain） | 「**この評価文脈でこのrootは解決先を持つか**」を問う口。5本とも switch か allowlist で同じ事実を書き分けている | **消える。** 判定の本体は全部消え、YAMLの文字列→rootの読み取りだけが残る | 無い。同じ形の述語 `ObjectRef.needsInteraction()` が既に domain に在り、`parseMove` はそれを呼んでいる——**domain に置けないという理屈は既に破れている** |
-| parsePassives.ts | `parsePassiveOperationInto` | 同上 | 同上（self/parent/child/ancestor を許し actor を黙って `continue` する switch） | 同上 | 同上。`actor` を例外送出ではなく読み飛ばしている点は、5本の中でここだけ挙動が違う |
+| parsePassives.ts | `parsePassiveOperationInto` | 同上 | 同上（self/parent/child/ancestor を許し agent を黙って `continue` する switch） | 同上 | 同上。`agent` を例外送出ではなく読み飛ばしている点は、5本の中でここだけ挙動が違う |
 | describe/effectQueries.ts | `writesTo` | 同上 | 「`target=self` の効果は宣言元自身のプロパティしか指さない」という root の意味論。**ビューア側にも同じ知識が出ている** | 消える | 無い（純粋な述語で表示の語彙を持たない） |
 | parseSlots.ts | `parsePlacement` | `Placement`（domain/SlotDef.ts） | union 型に対応する**値リスト**。`ALERT_LEVELS`・`GAUGE_ENDS` は domain が値リストを export していて loader の `oneOf` がそれを使うのに、`Placement` だけ loader が `PLACERS` を再宣言している | **消える。** `PLACEMENTS` を domain へ置けば `oneOf` 1行になる | 無い（既存の2例が反例） |
 | parseConditions.ts | `parseConditionValues` `parsePropertyComparison` | `ConditionOp`（domain/ConditionNode.ts） | 「この演算子は複数値を取るか」。`op === 'in' \|\| op === 'not_in'` が2本に**同じ形で二度**書かれている。加えて `PROPERTY_OPS` が値リストの再宣言 | 検査は消える。YAMLの値ノードの読み分けは残る | 無い |
@@ -62,7 +62,7 @@
 | parseProperties.ts | `parseGauge` `parseOptionalRangeEvent` `parseStage` | `PropertyDef` `PropertyStage` | 「gauge には range が要る」「on_max/on_min には range が要る」「シンボル型の段に min は書けない」。どれも B の成立条件で、B の外から `range` を引数で持ち回って確かめている | 検査は消える。`range` を引数に持ち回る必要も消える | 同上 |
 | parseProperties.ts | `parsePropertyTags` | `NameRegistry` | 「未宣言ならエラー」。`getId` が既に例外を投げるのに、文言を差し替えるために `tryGetId`＋自前 throw をしている | 消える（例外の文言を受け取れる `getId` があれば） | 例外型と文言（節番号つき）が loader のもの |
 | parseRecipes.ts | `parseRequirement` `parseStep` | `RecipeRequirementDef` `RecipeStepDef` | 不変条件（count≧1、requires≧1件、duration>0） | 検査は消える | 同上 |
-| parseActiveEffects.ts | `parsePickList` `parseTransfer` `parseSpawn` `parseMove` | `PickCandidateDef` `TransferEffect` `SpawnEffect` `MoveEffect` | 不変条件（weight必須、to_amount>0、count≧1の整数、rangeイベント内でactor/draggedを指せない） | 検査は消える | 同上。`parseMove` だけは既に `subject.needsInteraction()` を呼んでおり、**この形が可能なことを自分で示している** |
+| parseActiveEffects.ts | `parsePickList` `parseTransfer` `parseSpawn` `parseMove` | `PickCandidateDef` `TransferEffect` `SpawnEffect` `MoveEffect` | 不変条件（weight必須、to_amount>0、count≧1の整数、rangeイベント内でagent/instrumentを指せない） | 検査は消える | 同上。`parseMove` だけは既に `subject.needsInteraction()` を呼んでおり、**この形が可能なことを自分で示している** |
 | parsePassives.ts | `buildGate` | `PassiveEffectGate` | 「プロパティ名と段名は組で1つ」。片方だけを渡された場合に段を捨てる判断を外がしている | 消える（`PassiveEffectGate` が組で受ければ） | 同上 |
 | parseActionsAndCombinations.ts | `parseInteractionBody` | `InteractionDef` | `ActionDef`/`CombinationDef` が共有する中身（requirements・effect・duration）を組み立てる口。戻り値の `InteractionBody` は `InteractionDef` の3フィールドの写しで、**プログラム上の都合だけで在る型** | 消えない（YAMLの読み取りは残る）。中間の型は消える | `InteractionDef` の共通部分を表す型が domain に無い |
 | RawPatch.ts | `apply` `addValue` `setValue` `removeValue` `descendToKey` | `RawObjectDef` | 「自分の宣言ノードを patch で書き換え、書き換えたらフィールドを取り直す」。**取り直し（`def.readFields()`）を呼び出し側が覚えている**——クラスのコメントは「取り直しはこのクラス自身が引き受ける」と書いているのに | **消える。** `RawObjectDef.applyPatch(...)` があれば `node`・`readFields` を private に戻せる | patch のパス降下とマッチ判定が RawPatch.ts 側にあり、そこからノードへ直接触る構造 |
@@ -99,13 +99,13 @@
 |---|---|
 | `parseConditions.parseSubjectRoot`（export） | switch＋`allowedRoots` の照合 |
 | `parseConditions` の `ACTION_/COMBINATION_/RECIPE_/PASSIVE_CONDITION_ROOTS` | 集合の定数4本 |
-| `parseActiveEffects.parseActiveTargetRoot` | switch＋`allowDragged`/`selfOnly` の旗2つ |
+| `parseActiveEffects.parseActiveTargetRoot` | switch＋`allowInstrument`/`selfOnly` の旗2つ |
 | `parseActiveEffects.parseObjectTargetRoot` | 上を呼んで `ancestor` を後から弾く |
 | `parseActiveEffects.parseSpawnTargetRoot` | 別の union（`SpawnTargetRoot`）への switch |
-| `parseActiveEffects.parseMoveSubject` | `'self'/'actor'/'dragged'` の allowlist |
+| `parseActiveEffects.parseMoveSubject` | `'self'/'agent'/'instrument'` の allowlist |
 | `parseActiveEffects.parseMoveDestination` | `'self'/'parent'` の allowlist |
-| `parseActiveEffects.parsePassiveTransfers`（export） | `'actor'` だけを名指しで拒否 |
-| `parsePassives.parsePassiveOperationInto` | switch。`actor` は例外ではなく黙って読み飛ばす |
+| `parseActiveEffects.parsePassiveTransfers`（export） | `'agent'` だけを名指しで拒否 |
+| `parsePassives.parsePassiveOperationInto` | switch。`agent` は例外ではなく黙って読み飛ばす |
 | `describe/effectQueries.writesTo`（codex） | 「`self` は宣言元自身のプロパティしか指さない」 |
 
 第1波は `*_CONDITION_ROOTS` 4本だけを判定4とし、阻害要因を「評価文脈を表す型が domain に無い」と書いた。

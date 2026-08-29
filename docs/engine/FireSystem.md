@@ -93,10 +93,10 @@ interactions:
     allow_multiple: true     # 束ねた薪はまとめてくべられる（GameElementDefinition.md 12.4節）
     transfer:
       amount: 999            # 入るだけ入れる
-      from: dragged
+      from: instrument
       from_prop: fuel
       to_prop: fuel
-    destroy: dragged         # 入りきらなかった分は失われる
+    destroy: instrument         # 入りきらなかった分は失われる
 ```
 
 **満杯の炉を拒む条件は書きません。** 移送先の `fuel` は `range` を持つので、あと何本くべられるかは
@@ -113,7 +113,7 @@ props:
 `transfer`（`GameElementDefinition.md` 9.5 節）を使うのは、**`add` だと炉の種類 × 燃料の種類の数だけ
 固定値を書くことになる**ためです。移す量は燃料の側が 1 箇所で持ち、炉はそれを受けるだけになります。
 
-**`destroy: dragged` を併記して、中途半端に残った薪を作りません。** 効果は書いた順に適用される
+**`destroy: instrument` を併記して、中途半端に残った薪を作りません。** 効果は書いた順に適用される
 （`GameElementDefinition.md` 9.7 節）ので、`transfer` の後に `destroy` を書いて、移した後に消します。
 これを書かないと「燃料としては僅かしか残っていないが、他の用途には普通に 1 個として使える枝」という
 説明のつかない物が生まれます。入りきらなかった分は失われますが、満杯を拒む条件があるので、失うのは
@@ -293,7 +293,7 @@ interactions:
     trigger: {drag: {object: burning_tinder}}
     conditions:
       - {reason: no_fuel, prop: fuel, gt: 0}
-    destroy: dragged
+    destroy: instrument
     set: {self: {heat: 1}}      # 種火の段のいちばん下から始まる
 ```
 
@@ -359,7 +359,7 @@ interactions:
 interactions:
   add_stone:
     trigger: {drag: {object: stone}}
-    destroy: dragged
+    destroy: instrument
     add: {self: {stones: 1}}
 props:
   stones:

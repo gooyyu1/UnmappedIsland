@@ -63,7 +63,7 @@ object_defs:
       travel:
         trigger: menu
         move:
-          subject: actor
+          subject: agent
           to_prop: destination_id
       walk_away:
         trigger: menu
@@ -79,24 +79,24 @@ object_defs:
       shove:
         trigger: menu
         move:
-          subject: actor
+          subject: agent
           to_prop: destination_id
           to_slot: stuff
       # 型で行き先を指す（to_object）。singletonなので、生成時に確定するIDを知らなくても指せる。
       sail:
         trigger: menu
         move:
-          - {subject: actor, to: self}
+          - {subject: agent, to: self}
           - {subject: self, to_object: hilltop}
       # 同じ行き先を、型の名前ではなくプロパティから引く（6.9節）。探し方はsailと同じ。
       sail_by_prop:
         trigger: menu
-        move: {subject: actor, to_object: {prop: destination_type}}
+        move: {subject: agent, to_object: {prop: destination_type}}
       # **自分が持っていない**プロパティを引くと、解決できないので何も起きない（9.6節）。
       # 片側の隣を持たない海区（voyage.yamlの鎖の端）が、そのために卓を書き分けずに済む形。
       sail_nowhere:
         trigger: menu
-        move: {subject: actor, to_object: {prop: other_type}}
+        move: {subject: agent, to_object: {prop: other_type}}
 
   # 上のother_typeを型として宣言する側。pathは同じ名前のプロパティを持たない。
   signpost:
@@ -133,13 +133,13 @@ object_defs:
     return { codex, session, world, meadow, hilltop, character, path };
   }
 
-  it('actorを移動先のcharactersスロットへ移す', () => {
+  it('agentを移動先のcharactersスロットへ移す', () => {
     const { codex, meadow, hilltop, character, path } = build();
     path.getProperty(codex.propertyNames.getId('destination_id')).setNumberWithoutEvents(hilltop.instanceId);
 
     expect(path.tryGetAction('travel', character)?.tryExecute() === true).toBe(true);
 
-    expect(character.parent, 'actorは移動先ロケーションへ移る').toBe(hilltop);
+    expect(character.parent, 'agentは移動先ロケーションへ移る').toBe(hilltop);
     expect(
       character.parentSlot?.def.globalId,
       'acceptsのタグ判定により、宣言順走査でcharactersスロットへ振り分けられる',
@@ -164,11 +164,11 @@ object_defs:
 
   it('to_objectは、その型のインスタンスを行き先にする（moveを並べて2つ動かす）', () => {
     const { codex, hilltop, character, path } = build();
-    // pathはmeadowのstuffスロットに居る。sailはactorを自分の中へ入れ、続けて自分ごとhilltopへ移る
+    // pathはmeadowのstuffスロットに居る。sailはagentを自分の中へ入れ、続けて自分ごとhilltopへ移る
     // ——筏に乗り込んでから漕ぎ出す形（voyage.yamlのset_sail）と同じ2手。
     expect(path.tryGetAction('sail', character)?.tryExecute() === true).toBe(true);
 
-    expect(character.parent, 'actorはpathの中へ入る').toBe(path);
+    expect(character.parent, 'agentはpathの中へ入る').toBe(path);
     expect(path.parent, 'pathは型で指した行き先へ移る').toBe(hilltop);
     expect(
       character.findRoot().findSelfOrDescendantOfDef(codex.objectNames.getId('character')),
@@ -203,15 +203,15 @@ object_defs:
     expect(character.parent, '移動先が解決できなければ何も起きない').toBe(meadow);
   });
 
-  it('actorがいない場合は何もしない', () => {
+  it('agentがいない場合は何もしない', () => {
     const { codex, meadow, hilltop, character, path } = build();
     path.getProperty(codex.propertyNames.getId('destination_id')).setNumberWithoutEvents(hilltop.instanceId);
 
     expect(path.tryGetAction('travel', undefined)?.tryExecute() === true).toBe(true);
-    expect(character.parent, 'actorがいない文脈では何も起きない').toBe(meadow);
+    expect(character.parent, 'agentがいない文脈では何も起きない').toBe(meadow);
   });
 
-  it('draggedをselfの中へ移す（かごへ入れるcombination）', () => {
+  it('instrumentをselfの中へ移す（かごへ入れるcombination）', () => {
     const codex = new WorldCodexYamlLoader()
       .load(
         'containers.yaml',
@@ -231,7 +231,7 @@ object_defs:
     interactions:
       put_in:
         trigger: {drag: {tag: item}}
-        move: {subject: dragged, to: self}
+        move: {subject: instrument, to: self}
     slots:
       contents:
         cell: {accept: {tag: item}}
@@ -255,7 +255,7 @@ object_defs:
         ?.tryExecute() === true,
     ).toBe(true);
 
-    expect(stone.parent, 'draggedがかごの中へ移る').toBe(basket);
+    expect(stone.parent, 'instrumentがかごの中へ移る').toBe(basket);
     expect(stone.parentSlot?.def.globalId, '宣言順走査でcontentsスロットへ入る').toBe(
       codex.slotNames.getId('contents'),
     );
@@ -278,7 +278,7 @@ object_defs:
     interactions:
       put_in:
         trigger: {drag: {tag: item}}
-        move: {subject: dragged, to: self}
+        move: {subject: instrument, to: self}
     slots:
       contents:
         cell: {accept: {tag: item}}
@@ -403,7 +403,7 @@ object_defs:
       travel:
         trigger: menu
         move:
-          subject: actor
+          subject: agent
           subject_prop: loot_target
           to_prop: destination_id
 `,
@@ -429,7 +429,7 @@ object_defs:
       travel:
         trigger: menu
         move:
-          subject: actor
+          subject: agent
           to: self
           to_prop: destination_id
 `,
@@ -451,7 +451,7 @@ object_defs:
     interactions:
       travel:
         trigger: menu
-        move: {subject: actor, to: ancestor}
+        move: {subject: agent, to: ancestor}
 `,
         )
         .buildAndReset();
@@ -475,7 +475,7 @@ object_defs:
     interactions:
       pour_in:
         trigger: {drag: {tag: liquid}}
-        move: {subject: dragged, to: parent}
+        move: {subject: instrument, to: parent}
 `,
       )
       .buildAndReset();
@@ -512,7 +512,7 @@ object_defs:
       travel:
         trigger: menu
         move:
-          subject: actor
+          subject: agent
           to_prop: destination_id
           into: characters
 `,
@@ -537,7 +537,7 @@ object_defs:
         range: {min: 0, max: 10}
         on_min:
           move:
-            subject: actor
+            subject: agent
             to_prop: fuse
 `,
         )

@@ -28,7 +28,7 @@ traits:
     interactions:
       drink:
         trigger: menu
-        add: {actor: {hydration: 120}}
+        add: {agent: {hydration: 120}}
         set: {self: {fill: 0}}
 
 object_defs:
@@ -84,7 +84,7 @@ object_defs:
         trigger: menu
         duration: 15
         destroy: self
-        add: {actor: {satiety: 550, carbohydrate: 48}}
+        add: {agent: {satiety: 550, carbohydrate: 48}}
 
   bowl:
     tags: [item]

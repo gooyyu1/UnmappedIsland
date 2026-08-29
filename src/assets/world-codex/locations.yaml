@@ -68,18 +68,18 @@ object_defs:
           # 荷が重すぎると動けない。段の名前で見るので、境目はキャラクタのloadのstagesだけが持つ
           # （ContainerSystem.md 5節）。
           - reason: too_heavy
-            not: {subject: actor, prop: load, in_stage: too_heavy}
+            not: {subject: agent, prop: load, in_stage: too_heavy}
           # 暗ければ道は歩けない（IlluminationSystem.md 5節）。**出発する土地の明るさで決まる**
           # ——道は自分の明るさを持たず、条件から行き先の土地は辿れない。見るのは視界の側なので、
           # 持ち歩ける光源だけが効く（据えた焚き火のそばから夜の道へは出られない、同3節）。
           # 荷と同じく段の名前で見るので、境目はキャラクタのlooking_brightnessのstagesだけが持つ。
           - reason: too_dark
-            not: {subject: actor, prop: looking_brightness, in_stage: pitch_dark}
+            not: {subject: agent, prop: looking_brightness, in_stage: pitch_dark}
         # 道ごとの所要時間へ、担ぎ手の遅れ（pace、素は1）を掛ける（Characters.md 荷重の効き方節）。
         # 和ではなく積なので、長い道ほど遅れも大きくなり、遅れの量を道ごとに書かずに済む。
-        duration: {prop: travel_minutes, times: {subject: actor, prop: pace}}
+        duration: {prop: travel_minutes, times: {subject: agent, prop: pace}}
         move:
-          subject: actor
+          subject: agent
           to_prop: destination_id
 
   # ------------------------------------------------------------------
@@ -101,7 +101,7 @@ object_defs:
       fuel: {value: 20}
 
   # 石。石同士を打ち合わせると、片方が割れて尖った石（tools.yaml）になる。
-  # 打ち合わせる相手（dragged）は槌として残り、割られる側（self）だけが尖った石へ置き換わる。
+  # 打ち合わせる相手（instrument）は槌として残り、割られる側（self）だけが尖った石へ置き換わる。
   # 炉の火の中の枠へも入り、熱を溜め切ると焼け石（fire.yamlのhot_stone）になる
   # （docs/engine/FireSystem.md 9.1節）。**炉の札へ重ねると石を積む操作になる**ので、火の中へ
   # 入れるのは開いた枠へ落とす側（docs/ui/CardInteraction.md 2節）。
@@ -122,7 +122,7 @@ object_defs:
         # 焚き火のそばなら夜でも打てる。
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: hand_brightness
             in_stage: bright
         duration: 60
@@ -190,13 +190,13 @@ object_defs:
       enter:
         trigger: menu
         duration: 5
-        move: {subject: actor, to: self}
+        move: {subject: agent, to: self}
 
       # 出る。**明るさの条件は置かない**——置くと、夜に入った者が朝まで出られなくなる。
       leave:
         trigger: menu
         duration: 5
-        move: {subject: actor, to: parent}
+        move: {subject: agent, to: parent}
 
   # 湧き水。飲用・補水ポイントになる想定。
   spring:
@@ -266,7 +266,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 15
@@ -341,7 +341,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 15
@@ -420,7 +420,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 15
@@ -487,7 +487,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 15
@@ -564,7 +564,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 15
@@ -648,7 +648,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 15
@@ -731,7 +731,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 15
@@ -790,7 +790,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 15
@@ -850,7 +850,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 15
@@ -921,7 +921,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 15

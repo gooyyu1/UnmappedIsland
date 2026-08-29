@@ -102,7 +102,7 @@ function buildGate(
 }
 
 /**
- * passiveの1操作(modify/add)を読み、対象(self/parent/child/ancestor、actorは未対応のため
+ * passiveの1操作(modify/add)を読み、対象(self/parent/child/ancestor、agentは未対応のため
  * スキップ)ごとにPassiveEffectへ変換してpassivesへ追加する。具象型はmakeEffectファクトリで受け取り、
  * 同じpassiveブロック内のgateを全効果で共有する。
  */

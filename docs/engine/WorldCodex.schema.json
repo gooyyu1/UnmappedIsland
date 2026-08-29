@@ -292,7 +292,7 @@
         },
         "on_max": {
           "$ref": "#/$defs/range_event_def",
-          "description": "値がrange.maxへ達している間（>= max）、値の変更・tickのたびに適用される挙動（6.3節。時間の側が動かす場所なのでactor/draggedは指せない、14.1節）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。conditionsを書いた場合、満たさない回だけがその既定のクランプへ倒れる。rangeが無いと使えない。"
+          "description": "値がrange.maxへ達している間（>= max）、値の変更・tickのたびに適用される挙動（6.3節。時間の側が動かす場所なのでagent/instrumentは指せない、14.1節）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。conditionsを書いた場合、満たさない回だけがその既定のクランプへ倒れる。rangeが無いと使えない。"
         },
         "on_min": {
           "$ref": "#/$defs/range_event_def",
@@ -362,13 +362,13 @@
       ]
     },
     "subject_root": {
-      "description": "conditions/weightの`subject`（主語）の参照ルート（14.1節）。プロパティ名を伴う参照なのでancestorを書ける。draggedはcombinations内のみ（12.2節）、pickedはamongを書いた候補の中のみ（10.3節）、passivesのゲートはself/parent/ancestorのみ。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
+      "description": "conditions/weightの`subject`（主語）の参照ルート（14.1節）。プロパティ名を伴う参照なのでancestorを書ける。instrumentはcombinations内のみ（12.2節）、pickedはamongを書いた候補の中のみ（10.3節）、passivesのゲートはself/parent/ancestorのみ。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
       "enum": [
         "self",
         "parent",
         "ancestor",
-        "actor",
-        "dragged",
+        "agent",
+        "instrument",
         "picked"
       ]
     },
@@ -551,7 +551,7 @@
       "additionalProperties": false
     },
     "passive_operation_map": {
-      "description": "passiveの1操作(modify/add)が持つ、対象（self/parent/child/ancestor）をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。actorは持続的な関係に紐づかないためロード時エラー。combinations内のdraggedはactiveのみで意味を持ち、passiveには現れない。",
+      "description": "passiveの1操作(modify/add)が持つ、対象（self/parent/child/ancestor）をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。agentは持続的な関係に紐づかないためロード時エラー。combinations内のinstrumentはactiveのみで意味を持ち、passiveには現れない。",
       "type": "object",
       "properties": {
         "self": {
@@ -585,7 +585,7 @@
           "$ref": "#/$defs/passive_operation_map"
         },
         "transfer": {
-          "description": "条件が真であるtick毎に走る輸送（8.4.1節）。文法はactiveのtransfer（9.5節）と同一で、対象からactorだけが外れる。宣言順に適用され互いの結果を見るため、直列に繋いだ輸送の中間に在庫を持たせるのは速度の差。",
+          "description": "条件が真であるtick毎に走る輸送（8.4.1節）。文法はactiveのtransfer（9.5節）と同一で、対象からagentだけが外れる。宣言順に適用され互いの結果を見るため、直列に繋いだ輸送の中間に在庫を持たせるのは速度の差。",
           "$ref": "#/$defs/transfer_spec"
         }
       },
@@ -599,18 +599,18 @@
       }
     },
     "active_target_name": {
-      "description": "transferのfrom/toが指す対象キー（9.5節）。childは未対応（一度きりの命令に対して『どの子か』の意味が確定していないため、ロード時エラー）。draggedはcombinations内のみ。",
+      "description": "transferのfrom/toが指す対象キー（9.5節）。childは未対応（一度きりの命令に対して『どの子か』の意味が確定していないため、ロード時エラー）。instrumentはcombinations内のみ。",
       "enum": [
         "self",
         "parent",
         "ancestor",
-        "actor",
-        "dragged",
+        "agent",
+        "instrument",
         "picked"
       ]
     },
     "destroy_target_spec": {
-      "description": "削除する対象を直接指定する（9.3節）。単一の対象(`destroy: self` / `destroy: {subject: self, reason: dehydrated}`)か、そのリスト(`destroy: [self, dragged]`)のいずれか。",
+      "description": "削除する対象を直接指定する（9.3節）。単一の対象(`destroy: self` / `destroy: {subject: self, reason: dehydrated}`)か、そのリスト(`destroy: [self, instrument]`)のいずれか。",
       "oneOf": [
         {
           "$ref": "#/$defs/destroy_target"
@@ -706,7 +706,7 @@
           "description": "生む個数（9.4節）。省略時は1。同じ宣言を並べるのと同じ意味で、1個ずつ順に生んで配置する。"
         },
         "into": {
-          "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。個体を指す形はmoveの移動先と同じ（object_target）で、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。actorはアクション実行文脈でのみ、pickedはamongを書いた候補の中でのみ解決できる（10.3節）。childはselfの子を順に走査し、最初に受け取れた子のスロットへ入れる（罠が自分の生んだ獲物へ怪我を渡す経路、TrapSystem.md 5.3節）。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、枠の要件・capacityを無視して強制的に伝播する（childの場合の起点はself）。",
+          "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。個体を指す形はmoveの移動先と同じ（object_target）で、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。agentはアクション実行文脈でのみ、pickedはamongを書いた候補の中でのみ解決できる（10.3節）。childはselfの子を順に走査し、最初に受け取れた子のスロットへ入れる（罠が自分の生んだ獲物へ怪我を渡す経路、TrapSystem.md 5.3節）。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、枠の要件・capacityを無視して強制的に伝播する（childの場合の起点はself）。",
           "oneOf": [
             {
               "enum": [
@@ -736,7 +736,7 @@
       "description": "新規オブジェクトを1つ生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。配置先はinto・into_prop・into_objectのどれか1つで指す（どれも書かなければsame_slot）。destroyと同時に指定できる。"
     },
     "range_event_def": {
-      "description": "rangeイベント（on_max/on_min、6.3節）1つ。中身は一時的な命令（9節）で、文法は「操作(set/add/destroy/spawn/become/transfer/move/signal)が上位、対象が下位」。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_min: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。conditions（14節）を書くと、満たす回だけがこの中身へ、満たさない回は既定のクランプへ倒れる。rangeイベントには操作者が居ないので、対象にactor/draggedを指すとロード時エラーになる（14.1節。本スキーマでは場所ごとの制限までは表現しない）。interactions/pickは、命令の並びを専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（interaction_def/pick_candidate参照）。",
+      "description": "rangeイベント（on_max/on_min、6.3節）1つ。中身は一時的な命令（9節）で、文法は「操作(set/add/destroy/spawn/become/transfer/move/signal)が上位、対象が下位」。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_min: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。conditions（14節）を書くと、満たす回だけがこの中身へ、満たさない回は既定のクランプへ倒れる。rangeイベントには操作者が居ないので、対象にagent/instrumentを指すとロード時エラーになる（14.1節。本スキーマでは場所ごとの制限までは表現しない）。interactions/pickは、命令の並びを専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（interaction_def/pick_candidate参照）。",
       "type": "object",
       "properties": {
         "conditions": {
@@ -776,7 +776,7 @@
       "additionalProperties": false
     },
     "signal_spec": {
-      "description": "起きたことを告げる（GameElementDefinition.md 9.8節）。世界の形は何も変えず、出来事が起きたことだけを観測する側へ渡す。値は出来事の識別子で、表示文言はlocaleのsignal_textsが持つ。誰の身に起きたかは対象キー（self/parent/actor、combinations内はdraggedも）で指し、省略時はself。オブジェクトそのものを指すためancestorは使えない（destroyと同じ、ロード時エラー）。",
+      "description": "起きたことを告げる（GameElementDefinition.md 9.8節）。世界の形は何も変えず、出来事が起きたことだけを観測する側へ渡す。値は出来事の識別子で、表示文言はlocaleのsignal_textsが持つ。誰の身に起きたかは対象キー（self/parent/agent、combinations内はinstrumentも）で指し、省略時はself。オブジェクトそのものを指すためancestorは使えない（destroyと同じ、ロード時エラー）。",
       "oneOf": [
         {
           "$ref": "#/$defs/identifier"
@@ -790,10 +790,10 @@
             "parent": {
               "$ref": "#/$defs/identifier"
             },
-            "actor": {
+            "agent": {
               "$ref": "#/$defs/identifier"
             },
-            "dragged": {
+            "instrument": {
               "$ref": "#/$defs/identifier",
               "description": "combinationsの中でのみ意味を持つ（12.2節）。"
             },
@@ -915,7 +915,7 @@
               "properties": {
                 "drag": {
                   "$ref": "#/$defs/type_match_rule",
-                  "description": "重ねる相手のカード（dragged）に求める型。枠のacceptと同じ{tag}/{object}の二択（12.1節）。"
+                  "description": "重ねる相手のカード（instrument）に求める型。枠のacceptと同じ{tag}/{object}の二択（12.1節）。"
                 },
                 "allow_multiple": {
                   "type": "boolean",
@@ -934,7 +934,7 @@
         },
         "duration": {
           "$ref": "#/$defs/weight_spec",
-          "description": "実行にかかるゲーム内時間（分）。weightと同じ「リテラルか{subject, prop}参照か参照2つの積か」の三択（11.3節）。参照のsubjectにdraggedを使えるのは、きっかけがdragの操作だけ（12.2節）。省略時は時間を消費しない。"
+          "description": "実行にかかるゲーム内時間（分）。weightと同じ「リテラルか{subject, prop}参照か参照2つの積か」の三択（11.3節）。参照のsubjectにinstrumentを使えるのは、きっかけがdragの操作だけ（12.2節）。省略時は時間を消費しない。"
         },
         "set": {
           "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",
@@ -1040,7 +1040,7 @@
         },
         "conditions": {
           "$ref": "#/$defs/conditions_list",
-          "description": "このレシピを知っているかの解放条件（SkillSystem.md 4節）。objectはactorのみ使える（成果物のインスタンスがまだ存在しないため）。素材の充足はsteps.requiresが見るので別物。"
+          "description": "このレシピを知っているかの解放条件（SkillSystem.md 4節）。objectはagentのみ使える（成果物のインスタンスがまだ存在しないため）。素材の充足はsteps.requiresが見るので別物。"
         },
         "steps": {
           "type": "array",
@@ -1418,8 +1418,8 @@
       "enum": [
         "self",
         "parent",
-        "actor",
-        "dragged",
+        "agent",
+        "instrument",
         "picked"
       ]
     },
@@ -1514,7 +1514,7 @@
       "additionalProperties": false
     },
     "set_operation_map": {
-      "description": "setが持つ、対象（self/parent/ancestor/actor、combinations内はdraggedも、amongを書いた候補の中ではpickedも）をキーとする辞書。",
+      "description": "setが持つ、対象（self/parent/ancestor/agent、combinations内はinstrumentも、amongを書いた候補の中ではpickedも）をキーとする辞書。",
       "type": "object",
       "properties": {
         "self": {
@@ -1526,10 +1526,10 @@
         "ancestor": {
           "$ref": "#/$defs/set_target_amount_map"
         },
-        "actor": {
+        "agent": {
           "$ref": "#/$defs/set_target_amount_map"
         },
-        "dragged": {
+        "instrument": {
           "$ref": "#/$defs/set_target_amount_map",
           "description": "combinationsの中でのみ意味を持つ（12.2節）。"
         },
@@ -1541,7 +1541,7 @@
       "additionalProperties": false
     },
     "add_operation_map": {
-      "description": "addが持つ、対象（self/parent/ancestor/actor、combinations内はdraggedも、amongを書いた候補の中ではpickedも）をキーとする辞書。",
+      "description": "addが持つ、対象（self/parent/ancestor/agent、combinations内はinstrumentも、amongを書いた候補の中ではpickedも）をキーとする辞書。",
       "type": "object",
       "properties": {
         "self": {
@@ -1553,10 +1553,10 @@
         "ancestor": {
           "$ref": "#/$defs/add_target_amount_map"
         },
-        "actor": {
+        "agent": {
           "$ref": "#/$defs/add_target_amount_map"
         },
-        "dragged": {
+        "instrument": {
           "$ref": "#/$defs/add_target_amount_map",
           "description": "combinationsの中でのみ意味を持つ（12.2節）。"
         },
@@ -1638,7 +1638,7 @@
       ]
     },
     "move_map": {
-      "description": "move 1件（9.6節）: subjectのオブジェクトを、移動先のオブジェクトの中へ移動する。動かす物はsubject（対象キーか{subject, prop}）かsubject_prop（そのプロパティが保持するインスタンスID）のどちらか一方、移動先はto・to_prop・to_objectのどれか1つで指す。rangeイベント（on_max/on_min）で禁じられるのはactor/draggedを指す形だけで、selfと型で書いた移動は使える（Voyage.md 4節）。",
+      "description": "move 1件（9.6節）: subjectのオブジェクトを、移動先のオブジェクトの中へ移動する。動かす物はsubject（対象キーか{subject, prop}）かsubject_prop（そのプロパティが保持するインスタンスID）のどちらか一方、移動先はto・to_prop・to_objectのどれか1つで指す。rangeイベント（on_max/on_min）で禁じられるのはagent/instrumentを指す形だけで、selfと型で書いた移動は使える（Voyage.md 4節）。",
       "type": "object",
       "properties": {
         "subject": {

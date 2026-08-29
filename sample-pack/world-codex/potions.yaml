@@ -18,7 +18,7 @@ object_defs:
       drink:
         trigger: menu
         add:
-          actor:
+          agent:
             blood: -9999
         destroy: self
 
@@ -32,7 +32,7 @@ object_defs:
       drink:
         trigger: menu
         add:
-          actor:
+          agent:
             blood: 9999
         destroy: self
 

@@ -9,7 +9,7 @@ import { World } from '../../src/domain/wrappers/World';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
-import { createBrightEnoughActor } from '../support/illumination';
+import { createBrightEnoughAgent } from '../support/illumination';
 
 /**
  * tools.yamlの道具定義と、素材から道具を作るcombinationの自動テスト。石を石へドラッグして
@@ -144,7 +144,7 @@ describe('tools.yamlの道具定義', () => {
     expect(target.moveToSlotOrRejection(beach.getSlot(itemsSlotId))).toBeUndefined();
 
     // 打ち欠くのは手元の作業なので、明るさが要る（IlluminationSystem.md 5節）。
-    const knapper = createBrightEnoughActor(session, codex);
+    const knapper = createBrightEnoughAgent(session, codex);
     const combination = target.combinationsWith(hammer, knapper).at(0);
     expect(combination?.name, '石は石とのcombinationにマッチする').toBe('knap');
 
@@ -208,7 +208,7 @@ describe('石斧を作る', () => {
     const materialsId = codex.vocabulary.engine.materialsSlotId;
     const wip = startAxe(session, field);
     // 工程を進めるには手元の明るさが要る（IlluminationSystem.md 5節）。
-    const smith = createBrightEnoughActor(session, codex);
+    const smith = createBrightEnoughAgent(session, codex);
     const put = (name: string) =>
       expect(
         session.createObject(codex.objectNames.getId(name)).moveToSlotOrRejection(wip.getSlot(materialsId)),
@@ -239,7 +239,7 @@ describe('石斧を作る', () => {
 
     // 掻き取りは手元の明るさも要求する（IlluminationSystem.md 5節）。ここで見たいのは刃物かどうか
     // なので、明るさの側は満たしておく。
-    const stripper = createBrightEnoughActor(session, codex);
+    const stripper = createBrightEnoughAgent(session, codex);
     expect(stem.combinationsWith(wip, stripper), '作りかけは相手にならない').toEqual([]);
     expect(
       stem

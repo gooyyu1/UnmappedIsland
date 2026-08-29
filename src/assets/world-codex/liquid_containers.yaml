@@ -62,18 +62,18 @@ traits:
       color: {value: 0x2f86d8}
     interactions:
       # 空の容器へ注ぐ。**宣言はこちら側（中身入り）にしか無いので、どちらの札をどちらへ重ねても
-      # selfは中身入り・draggedは空になる**（12.3節）。相手を水入りの変種にしてから移すので、
+      # selfは中身入り・instrumentは空になる**（12.3節）。相手を水入りの変種にしてから移すので、
       # becomeをtransferより先に書く（transferは相手がfillを持たないと何もしない）。
       pour_into_empty:
         trigger: {drag: {tag: liquid_container}}
         conditions:
-          - {reason: not_empty, subject: dragged, prop: fill, eq: 0}
-        become: {subject: dragged, content: water_liquid}
+          - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
+        become: {subject: instrument, content: water_liquid}
         transfer:
           amount: 999999
           from: self
           from_prop: fill
-          to: dragged
+          to: instrument
           to_prop: fill
       # 水入りの容器同士。入るだけ入り、入りきらない分は注ぎ元に残る（transferの両側のクランプ）。
       # 異種の液体はこのタグに合致しないので、混ぜる組み合わせがそもそも現れない。
@@ -81,7 +81,7 @@ traits:
         trigger: {drag: {tag: water}}
         transfer:
           amount: 999999
-          from: dragged
+          from: instrument
           from_prop: fill
           to: self
           to_prop: fill
@@ -95,13 +95,13 @@ traits:
         trigger: menu
         conditions:
           - reason: not_thirsty
-            not: {subject: actor, prop: hydration, in_stage: full}
+            not: {subject: agent, prop: hydration, in_stage: full}
         duration: 3
         transfer:
           amount: 250
           to_amount: 10
           from_prop: fill
-          to: actor
+          to: agent
           to_prop: hydration
 
   # 沸かした湯。焼け石を落として作る（fire.yamlのhot_stone、docs/engine/FireSystem.md 9.1節）。
@@ -128,13 +128,13 @@ traits:
         trigger: menu
         conditions:
           - reason: not_thirsty
-            not: {subject: actor, prop: hydration, in_stage: full}
+            not: {subject: agent, prop: hydration, in_stage: full}
         duration: 3
         transfer:
           amount: 250
           to_amount: 10
           from_prop: fill
-          to: actor
+          to: agent
           to_prop: hydration
 
   tea_liquid:
@@ -145,19 +145,19 @@ traits:
       pour_into_empty:
         trigger: {drag: {tag: liquid_container}}
         conditions:
-          - {reason: not_empty, subject: dragged, prop: fill, eq: 0}
-        become: {subject: dragged, content: tea_liquid}
+          - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
+        become: {subject: instrument, content: tea_liquid}
         transfer:
           amount: 999999
           from: self
           from_prop: fill
-          to: dragged
+          to: instrument
           to_prop: fill
       pour_into_filled:
         trigger: {drag: {tag: tea}}
         transfer:
           amount: 999999
-          from: dragged
+          from: instrument
           from_prop: fill
           to: self
           to_prop: fill
@@ -165,16 +165,16 @@ traits:
         trigger: menu
         conditions:
           - reason: not_thirsty
-            not: {subject: actor, prop: hydration, in_stage: full}
+            not: {subject: agent, prop: hydration, in_stage: full}
         duration: 3
         transfer:
           amount: 250
           to_amount: 10
           from_prop: fill
-          to: actor
+          to: agent
           to_prop: hydration
           linked_add:
-            actor:
+            agent:
               wakefulness: 2
 
   # 飲めない液体はdrinkを定義しないだけでよい。
@@ -186,19 +186,19 @@ traits:
       pour_into_empty:
         trigger: {drag: {tag: liquid_container}}
         conditions:
-          - {reason: not_empty, subject: dragged, prop: fill, eq: 0}
-        become: {subject: dragged, content: oil_liquid}
+          - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
+        become: {subject: instrument, content: oil_liquid}
         transfer:
           amount: 999999
           from: self
           from_prop: fill
-          to: dragged
+          to: instrument
           to_prop: fill
       pour_into_filled:
         trigger: {drag: {tag: oil}}
         transfer:
           amount: 999999
-          from: dragged
+          from: instrument
           from_prop: fill
           to: self
           to_prop: fill

@@ -85,7 +85,7 @@ export class SlotDef {
    *
    * **時間を課すのは入れる側だけ**で、出すのは常に一瞬。当てるのに手間がかかっても外すのは一瞬、
    * という非対称の方が普通のため。値の解決はcombinationのdurationと同じ形で、`self`が枠の持ち主、
-   * `dragged`が入れる物（putInMinutes参照）。
+   * `instrument`が入れる物（putInMinutes参照）。
    */
   private readonly putInDuration: DeclaredNumber | undefined;
 
@@ -145,10 +145,10 @@ export class SlotDef {
   }
 
   /** itemをownerのこのスロットへ入れるのにかかる分数（宣言が無ければ0）。 */
-  putInMinutes(owner: WorldObject, actor: WorldObject | undefined, item: WorldObject): number {
+  putInMinutes(owner: WorldObject, agent: WorldObject | undefined, item: WorldObject): number {
     return this.putInDuration === undefined
       ? 0
-      : Math.trunc(this.putInDuration.resolveOrZero(ReferenceContext.acting(owner, actor, item)));
+      : Math.trunc(this.putInDuration.resolveOrZero(ReferenceContext.acting(owner, agent, item)));
   }
 
   /**

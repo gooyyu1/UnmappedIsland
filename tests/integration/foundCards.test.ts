@@ -20,7 +20,7 @@ import { seededRng } from '../../src/domain/Rng';
  * （`world-codex`）と実際の探索を通して見る試験。
  *
  * **海区の見張りは、拾ったものを手元へ直に入れる**（`voyage.yaml` の `explore` の `pick` の
- * `spawn: {into: actor}`）。アイテムレーンにも設置物レーンにも現れないので、レーンの並びの差分では
+ * `spawn: {into: agent}`）。アイテムレーンにも設置物レーンにも現れないので、レーンの並びの差分では
  * 数えられない——同じ見張りが立てる航路（設置物レーンへ出る）だけが枠に入る、という食い違いになる。
  */
 describe('発見物の枠（世界→映し 通し）', () => {
@@ -66,7 +66,7 @@ describe('発見物の枠（世界→映し 通し）', () => {
     return new ShownCards({
       stacksIn: (place) => view().cardsIn(place),
       cardOfObjects: (objects) => view().cardOfObjects(objects),
-      combinationOf: (dragged, target, count) => view().combinationOf(dragged, target, count),
+      combinationOf: (instrument, target, count) => view().combinationOf(instrument, target, count),
       visible: (object) => view().visible(object),
       windowPlace: () => undefined,
       places: (screen) => (screen === 'fixtures' ? exploredIn(view()).fixtures : view().places(screen)),

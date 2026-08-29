@@ -30,7 +30,7 @@ object_defs:
     interactions:
       craft:
         trigger: menu
-        spawn: {object: knife, into: actor}
+        spawn: {object: knife, into: agent}
 
   knife: {tags: [item]}
   stone: {tags: [item]}

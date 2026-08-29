@@ -47,15 +47,15 @@ object_defs:
         # （docs/engine/IlluminationSystem.md 5節）。
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 30
         pick:
           - weight: 90
-            spawn: {object: green_coconut, count: 2, into: actor}
+            spawn: {object: green_coconut, count: 2, into: agent}
           - weight: 10
-            spawn: {object: sprained_ankle, into: actor}
+            spawn: {object: sprained_ankle, into: agent}
 
       # 葉を採る。枯れた葉は落ちる前に幹へ垂れ下がるので、刃物が無くても引き落とせる。
       # 実採りと同じく幹を登るため、同じだけ踏み外す。葉はweaving.yamlが定義する。
@@ -63,15 +63,15 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 30
         pick:
           - weight: 90
-            spawn: {object: palm_frond, count: 3, into: actor}
+            spawn: {object: palm_frond, count: 3, into: agent}
           - weight: 10
-            spawn: {object: sprained_ankle, into: actor}
+            spawn: {object: sprained_ankle, into: agent}
 
   # 青いヤシの実。皮も殻も柔らかく、中に飲める水を抱えている。皮ごと刃先を通せるので、熟した実の
   # ように皮をはぐ工程を挟まない。
@@ -97,7 +97,7 @@ object_defs:
         trigger: {drag: {tag: cutting_tool}}
         duration: 15
         add:
-          actor:
+          agent:
             satiety: 60
             carbohydrate: 2
             vitamin: 5
@@ -137,10 +137,10 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage: full}
         duration: 15
         add:
-          actor:
+          agent:
             satiety: 150
             carbohydrate: 4
             lipid: 1
@@ -149,10 +149,10 @@ object_defs:
         pick:
           - weight: 100
           - weight: {prop: spoilage}
-            set: {actor: {satiety: 0}}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+            set: {agent: {satiety: 0}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
           - weight: {prop: spoilage}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # 熟したヤシの実。厚い繊維質の皮に覆われていて、このままでは食べられない。
@@ -170,7 +170,7 @@ object_defs:
         trigger: {drag: {tag: cutting_tool}}
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: hand_brightness
             in_stage: bright
         duration: 30
@@ -246,7 +246,7 @@ object_defs:
         trigger: {drag: {tag: cutting_tool}}
         conditions:
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: hand_brightness
             in_stage: bright
         duration: 30
@@ -270,10 +270,10 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage: full}
         duration: 15
         add:
-          actor:
+          agent:
             satiety: 200
             carbohydrate: 4
             protein: 3
@@ -283,8 +283,8 @@ object_defs:
         pick:
           - weight: 100
           - weight: {prop: spoilage}
-            set: {actor: {satiety: 0}}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+            set: {agent: {satiety: 0}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
           - weight: {prop: spoilage}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self

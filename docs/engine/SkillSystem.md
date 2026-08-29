@@ -25,7 +25,7 @@
 
 ## 2. スキルはキャラクターのプロパティ
 
-スキルはプレイヤーキャラクターの `props` として持たせます。`conditions` の `subject: actor`
+スキルはプレイヤーキャラクターの `props` として持たせます。`conditions` の `subject: agent`
 （14.1 節）から直接参照でき、`world` シングルトンを参照する迂回（同節、`subject: world` は未対応）が
 要りません。
 
@@ -56,7 +56,7 @@ object_defs:
 | 実行 | 関連する行動・製作を行う | 中 |
 | 集中 | 3.1 節の専用アクション | 大 |
 
-発見と実行は、契機となる操作の効果として `actor` のスキルへ `add` します。
+発見と実行は、契機となる操作の効果として `agent` のスキルへ `add` します。
 tick ごとの自然増加は持たせません（何もしていない時間に伸びると、プレイヤーの行動が進捗と無関係になるため）。
 
 ```yaml
@@ -65,7 +65,7 @@ interactions:
     trigger: menu
     duration: 30
     add:
-      actor:
+      agent:
         skill_cordage: 2
 ```
 
@@ -102,7 +102,7 @@ interactions:
 
 ## 4. 解放条件は段のしきい値
 
-レシピの解放は、`recipes` のエントリに `conditions`（14 節）を書き、`actor` のスキル段を判定する形で
+レシピの解放は、`recipes` のエントリに `conditions`（14 節）を書き、`agent` のスキル段を判定する形で
 表します。
 
 ```yaml
@@ -111,14 +111,14 @@ object_defs:
     recipes:
       basic:
         conditions:
-          - {subject: actor, prop: skill_cordage, in_stage: skilled}
+          - {subject: agent, prop: skill_cordage, in_stage: skilled}
         steps: ...
 ```
 
 `conditions` は既存の条件木をそのまま使います。`recipes` のエントリがこのキーを持てるようにする追加が、
 本システムが必要とする唯一の文法変更です（13.3 節）。
 
-**`subject` に使えるのは `actor` だけです。** 解放条件を評価する時点では成果物のインスタンスがまだ存在せず、
+**`subject` に使えるのは `agent` だけです。** 解放条件を評価する時点では成果物のインスタンスがまだ存在せず、
 `self`/`parent`/`ancestor` は解決先を持ちません。そのため、季節や天候のような世界側の状態を解放条件に
 することは現時点でできません（`ancestor` が `self` から遡る仕組みであるため、迂回もできません）。
 

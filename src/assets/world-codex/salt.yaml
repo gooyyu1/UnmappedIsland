@@ -48,19 +48,19 @@ object_defs:
         conditions:
           # 塩をすり込む手元の作業なので、見るのは手元の側（IlluminationSystem.md 5節）。
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: hand_brightness
             in_stage: bright
           # 二度漬けても保ちは変わらないので、塩を捨てさせない。
           - reason: already_cured
-            not: {subject: dragged, matches: {tag: cured}}
+            not: {subject: instrument, matches: {tag: cured}}
           # **無事な物しか漬からない。** 塩は腐敗を止めるだけで、進んだぶんは戻らない
           # （docs/engine/DigestionSystem.md 6節の段をそのまま読む）。
           - reason: too_spoiled
-            subject: dragged
+            subject: instrument
             prop: durability
             in_stage: sound
-        become: {subject: dragged, cure: salted}
+        become: {subject: instrument, cure: salted}
         destroy: self
 
   # cure軸の値。**traitsだけを宣言する**（3.5.1節）——変種へ配られるのは上のtraitで、この型自身の
@@ -147,7 +147,7 @@ object_defs:
           # 波打ち際まで下りて汲む屋外の行動なので、見るのは視界の側
           # （docs/engine/IlluminationSystem.md 5節）。
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
           - {reason: salt_pan_full, prop: brine, lt: 8}

@@ -99,14 +99,14 @@ object_defs:
         conditions:
           - {reason: field_sown, prop: taro_sown, lt: 8}
         add: {self: {taro_sown: 1}}
-        destroy: dragged
+        destroy: instrument
       sow_water_spinach:
         trigger: {drag: {object: water_spinach}}
         duration: 15
         conditions:
           - {reason: field_sown, prop: water_spinach_sown, lt: 8}
         add: {self: {water_spinach_sown: 1}}
-        destroy: dragged
+        destroy: instrument
     # 解放条件（conditions、13.3節）はまだ置かない。スキルのプロパティと、それを伸ばす経路が
     # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
     recipes:
@@ -283,12 +283,12 @@ object_defs:
           - {reason: pen_fed, prop: fodder, lt: 96}
         transfer:
           amount: 999
-          from: dragged
+          from: instrument
           from_prop: plant_bait
           to_prop: fodder
         # 中途半端に残った飼葉を作らない。入りきらなかった分は失われるが、満杯を拒む条件があるので
         # 失うのは高々1個ぶん（罠の餌と同じ）。
-        destroy: dragged
+        destroy: instrument
       # 水をやる（飼葉と同じドラッグ型）。**容器は返す**——液体は容器の変種として在る
       # （liquid_containers.yaml）ので、注いだぶんfillが減り、空になれば中身の軸が落ちて空の器に戻る。
       # 入りきらなかった分は器に残る（transferの既定のallow_overflow: false）ので、水は1mLも捨てない。
@@ -301,7 +301,7 @@ object_defs:
           - {reason: pen_watered, prop: drinking_water, lt: 4000}
         transfer:
           amount: 999999
-          from: dragged
+          from: instrument
           from_prop: fill
           to_prop: drinking_water
     recipes:

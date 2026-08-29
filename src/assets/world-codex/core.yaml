@@ -92,7 +92,7 @@ required_props:
 # （characters/player_character.yaml、IlluminationSystem.md 5節）。
 crafting_conditions:
   - reason: too_dark
-    subject: actor
+    subject: agent
     prop: hand_brightness
     in_stage: bright
 

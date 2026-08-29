@@ -211,7 +211,7 @@
 
 - 行動力（`stamina`）の消費増加のうち、荷重の段が持つ分（[`Characters.md`](../world/Characters.md)）以外。
   傷そのものが疲れを増す形にするか
-- 治療具ごとに手当ての時間を変えるか（`put_in` の `duration` は `{subject: dragged, prop: ...}` で書ける）
+- 治療具ごとに手当ての時間を変えるか（`put_in` の `duration` は `{subject: instrument, prop: ...}` で書ける）
 - 傷を洗う操作（`infection` を下げる手段）。何で洗えるか、どれだけ時間がかかるか。感染の進み方と
   釣り合わせて決める（[`VitalsSystem.md`](./VitalsSystem.md) 未決事項節）
 - `medic` の心得を治りの速さへ効かせる

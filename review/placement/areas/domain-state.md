@@ -39,7 +39,7 @@
 | EffectSite | same_slot spawnのために、効果の起点が占めていた位置を捕捉して置き換え先を決める。 | なし（`SameSlotPlacement` は捕捉の結果を1ホップ運ぶだけの入れ物） |
 | ObjectStack | 同じ型のWorldObjectを1つのまとまりとして保持し、宣言された並び順で出し入れする。 | なし |
 | ObjectRef | オブジェクトを1つ指す参照の宣言と、その解決。 | `needsInteraction`（ロード時検証のための問い） |
-| Interaction/Action/Combination | 相手の決まった操作1つとして、宣言（Def）と個体（self/actor/dragged）を結び付ける。 | なし |
+| Interaction/Action/Combination | 相手の決まった操作1つとして、宣言（Def）と個体（self/agent/instrument）を結び付ける。 | なし |
 | crafting.ts | 製作の進行（工程・要求・供給・前進）を、製作中オブジェクトとレシピから読む。 | `currentStep` `remainingRequirements` は製作中オブジェクトを見ておらず、RecipeDefとprogressだけで決まる |
 
 ## 明細（判定2以上）
@@ -53,7 +53,7 @@
 | src/domain/Interaction.ts#Interaction/Action | `name`, `showMenu` | 所属 | 4 | `this.def.name` / `this.def.showMenu` の素通しゲッター。Layers.md 3節は「宣言は`def`から直に読む」としており、素通しは線をぼやかす。 | 呼び出し側が`def`から直に読む | `def`をprotectedに閉じているため、呼び出し側から宣言へ届く口がこれしかない（`def`を公開すると「Defへ訊くかInteractionへ訊くか」の線が消える） | |
 | src/domain/LocalIndexMap.ts | `LocalIndexMap`（クラス）, `missing`, `empty` | 所属 | 2 | グローバルID⇔ローカル添字の変換表と番兵値・空値。概念としては自明でないが、密配列を持つ以上必要。 | (現状可) | | |
 | src/domain/ObjectRef.ts#ObjectRef | private ctor | 可視性 | 2 | 3通りの指し方をstatic factoryで作らせるための隠蔽。 | (現状可) | | |
-| src/domain/ObjectRef.ts#ObjectRef | `needsInteraction()` | 所属 | 4 | 「actor/draggedに依存する参照か」はロード時検証（`parseActiveEffects`）だけが訊く問いで、実行時の参照解決とは無関係。 | `src/loader/parseActiveEffects.ts` | `root`がprivateで、`reading`経由にすると呼び出し側がunionのkindを分解して同じ判定を書くことになる | |
+| src/domain/ObjectRef.ts#ObjectRef | `needsInteraction()` | 所属 | 4 | 「agent/instrumentに依存する参照か」はロード時検証（`parseActiveEffects`）だけが訊く問いで、実行時の参照解決とは無関係。 | `src/loader/parseActiveEffects.ts` | `root`がprivateで、`reading`経由にすると呼び出し側がunionのkindを分解して同じ判定を書くことになる | |
 | src/domain/ObjectStack.ts#ObjectStack | `computeInsertionIndex` | 所属 | 3 | クラス内からしか呼ばれないprivateヘルパー。 | (現状可) | | |
 | src/domain/PropertyGain.ts#InteractionGains | `source: readonly WorldObject[]` | 所属 | 2 | 中身は「出どころとその祖先の連なり」（`WorldSession.withInteractionEffect`が`chain`を詰めている）で、単数の出どころではない。 | (現状可・改名) | | **あり**（`source`という単数の名前で祖先チェーンを運んでいる。実装を読むまで単数のsourceだと読める） |
 | src/domain/PropertyInfluence.ts | `InfluenceCounterpart` | 可視性 | 3 | exportされているが、他ファイルからは1度も型名で参照されていない（構造型として消費されている）。 | (現状可・export外し) | | |

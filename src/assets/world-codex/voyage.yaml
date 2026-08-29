@@ -239,24 +239,24 @@ traits:
         # ここに並ぶのは拾えるものと、その場に湧くものだけ。
         #
         # **拾えるものは海面に置かず、見つけた時点で手に入る**（同12.7節）。手が塞がっていれば筏の
-        # 積荷へこぼれ、そこも塞がっていれば手に入らない（spawn の into: actor、9.4節）。
+        # 積荷へこぼれ、そこも塞がっていれば手に入らない（spawn の into: agent、9.4節）。
         pick:
           # 何も見つからない。この候補だけは効果を持たない。
           - weight: {prop: barren_find}
           - weight: {prop: driftwood_find}
-            spawn: {object: thick_branch, count: 2, into: actor}
+            spawn: {object: thick_branch, count: 2, into: agent}
           - weight: {prop: flotsam_find}
             spawn:
-              - {object: thick_branch, into: actor}
-              - {object: rope, into: actor}
+              - {object: thick_branch, into: agent}
+              - {object: rope, into: agent}
           - weight: {prop: seaweed_find}
-            spawn: {object: seaweed, count: 2, into: actor}
+            spawn: {object: seaweed, count: 2, into: agent}
           - weight: {prop: egg_find}
             spawn:
-              - {object: bird_egg, into: actor}
-              - {object: feather, into: actor}
+              - {object: bird_egg, into: agent}
+              - {object: feather, into: agent}
           - weight: {prop: wreck_find}
-            spawn: {object: golden_chalice, into: actor}
+            spawn: {object: golden_chalice, into: agent}
           # 湧くものは海区の設置物になる（12.7節）。居る間だけ実り、しばらくすると去る。
           - weight: {prop: shoal_find}
             spawn: {object: fish_shoal, into: self}
@@ -477,7 +477,7 @@ object_defs:
       board:
         trigger: menu
         duration: 5
-        move: {subject: actor, to: self}
+        move: {subject: agent, to: self}
 
       # 降りる。海の上では降りられない。**引き返しは泳ぐことではなく、来た航路を戻ること**
       # （GameEndings.md 12.5節）なので、海区から陸へ出る手はここではなく航路の側にある。
@@ -487,7 +487,7 @@ object_defs:
           - reason: at_sea
             not: {subject: parent, matches: {tag: sea}}
         duration: 5
-        move: {subject: actor, to: parent}
+        move: {subject: agent, to: parent}
 
       # 航海に出る。乗り込むところまでを1手に含める——岸から直に出せるほうが手数が少なく、
       # 既に乗っていれば移動が空振りするだけで結果は同じになる。
@@ -511,7 +511,7 @@ object_defs:
             matches: {tag: coast}
         duration: 60
         set: {self: {home_coast_id: {subject: parent}}}
-        move: {subject: actor, to: self}
+        move: {subject: agent, to: self}
         pick:
           - weight: {subject: parent, prop: offshore_coastal_waters}
             move: {subject: self, to_object: coastal_waters}
@@ -536,12 +536,12 @@ object_defs:
         duration: 60
         pick:
           - weight: 15
-            spawn: {object: raw_meat, into: actor}
+            spawn: {object: raw_meat, into: agent}
           # 突き損ね。この候補だけは効果を持たない。
           - weight: 83
           # 突いた魚に銛を持って行かれる（同3.9.4節）。群れを突くときと同じ確率で、失う理由は同じ。
           - weight: 2
-            destroy: dragged
+            destroy: instrument
 
   # 生皮の帆。筏の構造スロットへ組み込むと、風を捉える量が増える（sail_speed +2）。
   #
@@ -605,20 +605,20 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage: full}
         duration: 15
         add:
-          actor:
+          agent:
             satiety: 200
             carbohydrate: 1
             vitamin: 60
         pick:
           - weight: 100
           - weight: {prop: spoilage}
-            set: {actor: {satiety: 0}}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+            set: {agent: {satiety: 0}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
           - weight: {prop: spoilage}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # 海鳥の卵。岩の窪みに産み落とされたもので、殻を割ればそのまま飲める。
@@ -637,10 +637,10 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: actor, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage: full}
         duration: 15
         add:
-          actor:
+          agent:
             satiety: 150
             protein: 6
             lipid: 5
@@ -648,10 +648,10 @@ object_defs:
         pick:
           - weight: 100
           - weight: {prop: spoilage}
-            set: {actor: {satiety: 0}}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40}}
+            set: {agent: {satiety: 0}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
           - weight: {prop: spoilage}
-            add: {actor: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
         destroy: self
 
   # 魚の群れ。海面まで上がってきた群れで、**居る間だけ実る**（GameEndings.md 12.1節）。
@@ -683,13 +683,13 @@ object_defs:
         duration: 30
         pick:
           - weight: 78
-            spawn: {object: raw_meat, into: actor}
+            spawn: {object: raw_meat, into: agent}
           # 突き損ね。この候補だけは効果を持たない。
           - weight: 20
           # 突いた魚に銛を持って行かれる（同3.9.4節）。**穂先の予備と紐を積む理由がこれ**——柄になる
           # 太い枝は海が返すが、石と紐は返らない。
           - weight: 2
-            destroy: dragged
+            destroy: instrument
 
   # 海鳥の群れ。岩に集まって巣を作る鳥で、人を知らないので手が届く。
   seabird_flock:
@@ -710,8 +710,8 @@ object_defs:
         trigger: menu
         duration: 60
         spawn:
-          - {object: raw_meat, into: actor}
-          - {object: feather, into: actor}
+          - {object: raw_meat, into: agent}
+          - {object: feather, into: agent}
 
   # 小島。海区で見つかる、上陸して探索できる陸地（ContentSkeleton.md 7節）。**設置物でありながら
   # 場所でもある**——浅い洞窟（locations.yaml）と同じ形で、筏を寄せれば中の仕事ができる。
@@ -745,7 +745,7 @@ object_defs:
             slot: characters
             matches: {tag: character}
           - reason: too_dark
-            subject: actor
+            subject: agent
             prop: looking_brightness
             in_stage: bright
         duration: 15
@@ -795,7 +795,7 @@ object_defs:
           - weight: 1
             among: {slot: fixtures, matches: {object: raft}}
             move:
-              - {subject: actor, to: picked}
+              - {subject: agent, to: picked}
               - {subject: picked, to: parent}
 
   # 錫鉱石。小島の岩に混じる黒い塊で、**青銅の材料のうち、島では採れないほうの片割れ**

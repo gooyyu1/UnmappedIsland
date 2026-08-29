@@ -37,11 +37,11 @@ export function parseSubjectRoot(context: string, raw: string, scope: ReferenceS
     case 'ancestor':
       root = 'ancestor';
       break;
-    case 'actor':
-      root = 'actor';
+    case 'agent':
+      root = 'agent';
       break;
-    case 'dragged':
-      root = 'dragged';
+    case 'instrument':
+      root = 'instrument';
       break;
     case 'picked':
       root = 'picked';
