@@ -10,7 +10,7 @@ import {
   describeYamlReportRegeneration,
   formatYamlReport,
   shareRecord,
-  statRecordsWith,
+  statRecordWith,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -40,7 +40,7 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 const SEED_COUNT = 2000;
 
 /** このレポートの分布レコード。**真ん中の位置を見る**表なので、真ん中の列は`median`。 */
-const statRecord = statRecordsWith('median');
+const statRecord = statRecordWith('median');
 
 /** 島を出るのに要るもの1つ（目標そのもの）。 */
 interface Goal {

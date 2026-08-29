@@ -18,7 +18,7 @@ import {
   describeYamlReportRegeneration,
   formatYamlReport,
   rounded,
-  statRecordsWith,
+  statRecordWith,
   yieldToEventLoop,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
@@ -45,7 +45,7 @@ const SEED_COUNT = 20;
 const SIM_DAYS = 3600; // 約40周分/シード
 
 /** このレポートの分布レコード。**低い側の裾を見る**表なので、真ん中の列は`p5`。 */
-const statRecord = statRecordsWith('p5');
+const statRecord = statRecordWith('p5');
 
 const REPORT_PATH = join('stats', 'climate.yaml');
 const DOC_PATH = join('docs', 'diagnostics', 'ClimateSystemStats.md');

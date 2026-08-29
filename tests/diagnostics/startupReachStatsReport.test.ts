@@ -11,7 +11,7 @@ import {
   formatYamlReport,
   rounded,
   shareRecord,
-  statRecordsWith,
+  statRecordWith,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
 import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
@@ -40,7 +40,7 @@ const SEED_COUNT = 2000;
 const MAX_LISTED_HOPS = 5;
 
 /** このレポートの分布レコード。**真ん中の位置を見る**表なので、真ん中の列は`median`。 */
-const statRecord = statRecordsWith('median');
+const statRecord = statRecordWith('median');
 
 /** 要るもの1つに対する、サイトをまたいだ集計。 */
 interface NeedStats {
