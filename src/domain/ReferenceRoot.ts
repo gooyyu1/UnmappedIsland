@@ -19,7 +19,8 @@ export type ReferenceRoot =
   | 'agent'
   /**
    * 運ばれてきて働きかけに使われる参加者。宣言が乗っていない側で、画面での操作の仕方では決まらない
-   * （11.5節）。**居る場所の一覧は11.5節の表が持つ**（ReferenceScope参照）。
+   * （11.5節）。**今どこで書けるかを持つのはReferenceScope**——11.5節の表は未実装ぶんまで含む
+   * （`props`のinstrumentは表では○だが、ReferenceScope.declarationが弾く）。
    */
   | 'instrument'
   /**
@@ -180,7 +181,7 @@ export class ReferenceScope {
   /** 操作している者（agent）が居るか。時間の側が起こす場面（rangeイベント・passives）には居ない。 */
   private readonly hasAgent: boolean;
 
-  /** 働きかけに使われる物（instrument）が居るか。物が運ばれてこない場所（menu・tickの操作）には居ない。 */
+  /** 働きかけに使われる物（instrument）が居るか。真になるのは物が運ばれてくる場所だけ（下のcombination）。 */
   private readonly hasInstrument: boolean;
 
   /** amongが選んだ相手（picked）が居るか。amongを書いた候補の中だけ（10.3節）。 */
