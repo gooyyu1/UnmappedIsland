@@ -2419,7 +2419,11 @@ export class PlayScene extends ResponsiveScene {
     this.filterButtons.forEach((button, i) => {
       button.setBoxStyle(this.iconButtonStyle(i === this.selectedFilter, COLOR.filterButtonBorder));
     });
-    noteOperation(`絞り込みを選んだ: ${this.cardFilter?.id ?? 'すべて'}`);
+    noteOperation(
+      this.locale.uiText('log_filter_selected', {
+        name: this.cardFilter?.id ?? this.locale.uiText('log_filter_none'),
+      }),
+    );
     this.showView();
   }
 
