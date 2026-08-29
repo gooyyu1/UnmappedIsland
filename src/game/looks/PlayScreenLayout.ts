@@ -20,6 +20,23 @@ const INFORMATION_DIVIDER_THICKNESS = 4;
 /** バーに並ぶアイコンの、並ぶ向きの中での寄せ方。 */
 type BarAlign = 'start' | 'center' | 'end';
 
+/**
+ * バーに一列に並ぶアイコンボタンの置き方。
+ *
+ * **バーに収まらない数を渡されても、位置は縮めず並びを伸ばす**（アイコンボタンの88uは最小タップ
+ * 領域、ScreenLayout.md 2節）。はみ出した分を送って見せるのに要るものが、送る向き（axis）と
+ * バーの先頭から測った並び全体の長さ（length）。
+ */
+export interface BarIconRow {
+  readonly icons: readonly Rect[];
+
+  /** 送る向き（並ぶ向きはバーの向きが決める。barIcons参照）。 */
+  readonly axis: 'x' | 'y';
+
+  /** バーの先頭の辺から、並びの末尾の余白までの長さ。バーより長ければ、その差だけ送れる。 */
+  readonly length: number;
+}
+
 /** キャラクター表示エリアの内側余白（中身を置くPlaySceneと、高さを決めるここで共有する）。 */
 export const CHARACTER_DISPLAY_PADDING = 16;
 
@@ -328,38 +345,43 @@ export class PlayScreenLayout {
     };
   }
 
-  /** オプションバーに並ぶアイコンボタンの位置。横型は高さいっぱいの中央へ、縦型は右端へ寄せる。 */
-  optionsBarIcons(count: number): readonly Rect[] {
+  /** オプションバーに並ぶアイコンボタン。横型は高さいっぱいの中央へ、縦型は右端へ寄せる。 */
+  optionsBarIcons(count: number): BarIconRow {
     return this.metrics.isLandscape
       ? this.barIcons(this.optionsBar, count, 'center', 0)
       : this.barIcons(this.optionsBar, count, 'end', this.metrics.px(OPTIONS_BAR_PADDING_X));
   }
 
-  /** フィルターバーに並ぶアイコンボタンの位置。どちらの向きでも並びの先頭側へ寄せる。 */
-  filterBarIcons(count: number): readonly Rect[] {
+  /** フィルターバーに並ぶアイコンボタン。どちらの向きでも並びの先頭側へ寄せる。 */
+  filterBarIcons(count: number): BarIconRow {
     const padding = this.metrics.isLandscape ? BAR_PADDING : FILTER_BAR_PADDING_X;
     return this.barIcons(this.filterBar, count, 'start', this.metrics.px(padding));
   }
 
   /**
-   * バーの中に一列に並ぶアイコンボタンの位置。**並ぶ向きはバーの向きが決める**（横型は右サイドバーの
+   * バーの中に一列に並ぶアイコンボタン。**並ぶ向きはバーの向きが決める**（横型は右サイドバーの
    * 縦積み、縦型は帯の横並び）。交差する向きには常に中央へ置くので、バーごとの差は並ぶ向きの中での
    * 寄せ方と余白だけ。
+   *
+   * **寄せ方が効くのは余りがあるときだけ**で、収まらないなら常に先頭から並べる。中途半端な位置から
+   * 始めると、送り切っても先頭のボタンがバーの外に残る。
    */
-  private barIcons(bar: Rect, count: number, align: BarAlign, padding: number): readonly Rect[] {
+  private barIcons(bar: Rect, count: number, align: BarAlign, padding: number): BarIconRow {
     const size = this.metrics.px(SIZE.iconButton);
     const gap = this.metrics.px(SIZE.barGap);
     const span = count * size + (count - 1) * gap;
     const along = this.metrics.isLandscape ? bar.height : bar.width;
-    const head =
+    const aligned =
       align === 'center' ? (along - span) / 2 : align === 'start' ? padding : along - padding - span;
+    const head = Math.max(padding, aligned);
 
-    return Array.from({ length: count }, (_unused, index) => {
+    const icons = Array.from({ length: count }, (_unused, index) => {
       const at = head + index * (size + gap);
       return this.metrics.isLandscape
         ? { x: bar.x + (bar.width - size) / 2, y: bar.y + at, width: size, height: size }
         : { x: bar.x + at, y: bar.y + (bar.height - size) / 2, width: size, height: size };
     });
+    return { icons, axis: this.metrics.isLandscape ? 'y' : 'x', length: head + span + padding };
   }
 
   private buildLanes(): readonly Rect[] {

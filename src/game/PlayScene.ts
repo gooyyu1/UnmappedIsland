@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import type { Rect } from '../ui/Rect';
+import type { BarIconRow } from './looks/PlayScreenLayout';
 import { CHARACTER_DISPLAY_PADDING, PlayScreenLayout } from './looks/PlayScreenLayout';
 import { isAlive } from '../ui/lifetime';
 import { SCREEN_DEPTH } from './looks/screenDepth';
@@ -79,6 +80,8 @@ import { emitGainParticles } from './ui/GainParticles';
 import { ProgressRing } from './ui/ProgressRing';
 import type { PropertyCategory as PropertyTab } from './ui/PropertiesPane';
 import { ScreenAlertFrame } from './ui/ScreenAlertFrame';
+import { ScrollArea } from '../ui/scrollArea';
+import { ScrollIndicator } from './ui/ScrollIndicator';
 import type { StatusContent } from './ui/StatusBar';
 import { StatusBar } from './ui/StatusBar';
 import { StatusDetailWindow } from './ui/StatusDetailWindow';
@@ -2371,13 +2374,68 @@ export class PlayScene extends ResponsiveScene {
 
   /** 縦型は画面最上部の横長バー（右寄せ）、横型は右サイドバー上段の縦積み。 */
   private buildOptionsBar(area: Rect): void {
-    addInputBlockingPanel(this, area, COLOR.optionsBar);
+    this.buildIconBar(
+      area,
+      COLOR.optionsBar,
+      this.layout.optionsBarIcons(OPTION_ICONS.length),
+      (rect, index) => {
+        const spec = OPTION_ICONS[index];
+        return this.addIconButton(
+          rect,
+          spec,
+          false,
+          COLOR.paperButtonBorder,
+          spec === MENU_ICON ? () => this.confirmReturnToTitle() : undefined,
+        );
+      },
+    );
+  }
 
-    const rects = this.layout.optionsBarIcons(OPTION_ICONS.length);
-    OPTION_ICONS.forEach((spec, index) => {
-      const button = this.addIconButton(rects[index], spec, false, COLOR.paperButtonBorder);
-      if (spec === MENU_ICON) button.on('pointerup', () => this.confirmReturnToTitle());
+  /**
+   * バーに並ぶアイコンボタンを組む（オプション・フィルター共通）。**バーに収まらない数を渡されても
+   * 全部押せる**——並びを送れる面に載せ、はみ出した分をドラッグとホイールで送る
+   * （ScreenLayout.md 8節。収まっていれば送り先が無く、スクロールバーも出ない）。
+   *
+   * **ボタン自身も送る面に含める。** ボタンがバーの厚みいっぱいを占めるので、地の見えている隙間
+   * だけでは掴む所がほとんど残らない。
+   *
+   * 送った先は切り抜かない（CardLaneと同じ）——並びが伸びる先は画面の外か、この後に置く隣のバーの
+   * 背景板が覆う。
+   */
+  private buildIconBar(
+    bar: Rect,
+    barColor: number,
+    row: BarIconRow,
+    addButton: (rect: Rect, index: number) => Button,
+  ): Button[] {
+    const panel = addInputBlockingPanel(this, bar, barColor);
+    const strip = this.add.container(0, 0);
+    const buttons = row.icons.map(addButton);
+    strip.add(buttons);
+
+    const scroll = new ScrollArea(this, {
+      axis: row.axis,
+      content: strip,
+      viewport: bar,
+      inputSurfaces: [panel, ...buttons],
+      readout: this.addBarScrollIndicator(bar, row.axis),
+      clip: false,
     });
+    scroll.setContentLength(row.length);
+    return buttons;
+  }
+
+  /**
+   * バーの送り具合を映すスクロールバー。**縦に送るバーには同じ物を90度回して立てる**——横の帯の絵を
+   * 回して縦の区切りに敷くのと同じ（shapes.addTiledImageVertical）。回すと厚みは手前側へ伸びるので、
+   * 起点はバーの終わりの辺に置く。
+   */
+  private addBarScrollIndicator(bar: Rect, axis: 'x' | 'y'): ScrollIndicator {
+    const gap = this.metrics.px(SIZE.scrollBarGap);
+    const thickness = this.metrics.px(SIZE.scrollBar);
+    return axis === 'y'
+      ? new ScrollIndicator(this, this.metrics, bar.x + bar.width - gap, bar.y, bar.height).setAngle(90)
+      : new ScrollIndicator(this, this.metrics, bar.x, bar.y + bar.height - gap - thickness, bar.width);
   }
 
   /**
@@ -2387,23 +2445,19 @@ export class PlayScene extends ResponsiveScene {
    * 「すべて」だけ。絵も絵文字もその宣言が名乗るので、ここに対応表は無い。
    */
   private buildFilterBar(area: Rect): void {
-    addInputBlockingPanel(this, area, COLOR.filterBar);
-
     const specs: readonly BarIcon[] = [
       FILTER_ALL_ICON,
       ...this.codex.cardFilters.map((filter) => ({ art: filter.id, icon: filter.icon })),
     ];
-    const rects = this.layout.filterBarIcons(specs.length);
-    this.filterButtons = specs.map((spec, index) => {
-      const button = this.addIconButton(
-        rects[index],
-        spec,
-        index === this.selectedFilter,
-        COLOR.filterButtonBorder,
-      );
-      button.on('pointerup', () => this.selectFilter(index));
-      return button;
-    });
+    this.filterButtons = this.buildIconBar(
+      area,
+      COLOR.filterBar,
+      this.layout.filterBarIcons(specs.length),
+      (rect, index) =>
+        this.addIconButton(rect, specs[index], index === this.selectedFilter, COLOR.filterButtonBorder, () =>
+          this.selectFilter(index),
+        ),
+    );
   }
 
   /**
@@ -2431,10 +2485,19 @@ export class PlayScene extends ResponsiveScene {
    * バーのアイコンボタン。**枠線の色は置かれるバーが決める**（地の色に合わせるため。theme参照）。
    *
    * スロットボタンと同じく紙として置かれるので、同じ影を落とす（addSlotButton参照）。
+   *
+   * **押されたことにするのはButtonに任せる**（生のpointerupを繋がない）——バーは送れるので、
+   * よそで始めたドラッグを離した先がこのボタンでも、押されたことになってはいけない。
    */
-  private addIconButton(rect: Rect, spec: BarIcon, active: boolean, border: number): Button {
+  private addIconButton(
+    rect: Rect,
+    spec: BarIcon,
+    active: boolean,
+    border: number,
+    onTap?: () => void,
+  ): Button {
     // どの絵も同じ大きさで敷く。4つの役割に大小は無いので、物の大きさで差を付ける理由も無い。
-    const button = new Button(this, rect, this.iconButtonStyle(active, border));
+    const button = new Button(this, rect, this.iconButtonStyle(active, border), onTap);
     const art = SIZE.iconButtonArt;
     button.addCentered(this.buttonIcon(spec, { width: art, height: art }, ICON_BUTTON_GLYPH_SIZE));
     return button;
