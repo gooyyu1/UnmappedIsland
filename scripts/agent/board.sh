@@ -13,12 +13,26 @@
 # 同じ理由で、issue に**もう投入済みか**も出す。判断材料が1つの表に載っていないと、二重に投入する
 # （2つのセッションが同じ issue で別々のPRを出す）。
 #
-# 出るのは4つの節。
+# 出るのは5つの節。
 #
+#   ## 確定待ち <番号> <項目>
 #   ## PR      <番号> <CI> <マージ可否> <ラベル> <題>
 #   ## TASK    <番号> <着手できるか> <題>
 #   ## 未整理  <番号> <ラベル> <題>
 #   ## 走行    <セッションID> <状態> <最終更新> <題>
+#
+# ## `確定待ち` を盤面に出すのは、チェックが出来事ではなく状態だから
+#
+# ユーザーの答えは `meta` の issue の本文にチェックとして付く。**`watch-prs.sh` の `CHECKED` は
+# 増分だけを出す**ので、見張っていない間に付いたチェックは、そこからは二度と現れない（起動時の
+# 状態を基準として飲み込むため。基準を取らないと、見張りは起きるたびその場で終わって何も見張れない）。
+#
+# **チェックは拾われるまで残り続ける状態**なので、状態を出す側＝盤面が持つ。出来事の側（見張りの
+# `CHECKED`）は「今すぐ起きろ」の合図として残す。**2026-08-29 に、02:09 に付いたチェックが
+# どちらの経路にも乗らず、ユーザーの指摘まで誰にも見えなかった。**
+#
+# 拾ったら、該当節の見出しへ `【確定】` を付けてから issue の一覧から消す（CLAUDE.md）。消すまで
+# 毎回ここに出続けるのが正しい——**消し忘れは、次の司令塔にも見える。**
 #
 # `TASK` の状態は次のどれか。
 #   投入済み   … 走行中のセッションか、開いているPRの `Closes` に載っている
@@ -49,6 +63,20 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CCR_META="$HERE/../../.claude/ccr-meta.sh"
 
 prs=$(gh pr list --state open --limit 50 --json number,title,labels,statusCheckRollup,mergeable,body)
+
+# issue は1回だけ引いて、`task` の付いたもの・まだどこにも分類されていないもの・`meta` の本文の
+# チェックへ分ける。**依存も同じ呼び出しで返る**ので、issue 1件ずつ `gh api` を叩かなくてよい。
+issues=$(gh issue list --state open --limit 100 --json number,title,labels,blockedBy,body)
+
+echo "## 確定待ち"
+jq -r '.[]
+       | select([.labels[].name] | index("meta"))
+       | .number as $number
+       | (.body // "")
+       | split("\n")[]
+       | select(test("^[[:space:]]*[-*][[:space:]]+\\[[xX]\\][[:space:]]"))
+       | sub("^[[:space:]]*[-*][[:space:]]+\\[[xX]\\][[:space:]]+"; "")
+       | "確定待ち \($number) \(.)"' <<<"$issues" | tr -d '\r' | grep . || echo "（無し）"
 
 echo "## PR"
 jq -r '
@@ -86,10 +114,6 @@ dispatched=$( {
   grep -oE '\(#[0-9]+\)' <<<"$live" | grep -oE '[0-9]+' || true
   jq -r '.[].body // ""' <<<"$prs" | grep -oiE 'closes[[:space:]]+#[0-9]+' | grep -oE '[0-9]+' || true
 } | sort -u)
-
-# issue は1回だけ引いて、`task` の付いたものと、まだどこにも分類されていないものへ分ける。
-# **依存も同じ呼び出しで返る**ので、issue 1件ずつ `gh api` を叩かなくてよい。
-issues=$(gh issue list --state open --limit 100 --json number,title,labels,blockedBy)
 
 echo "## TASK"
 while read -r number blocker title; do
