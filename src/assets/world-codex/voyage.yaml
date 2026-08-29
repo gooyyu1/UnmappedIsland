@@ -521,6 +521,28 @@ object_defs:
             move: {subject: self, to_object: gull_rock}
         spawn: {object: route_to_shore, into: parent}
 
+      # 海へ突く。群れの居ない海面へ、筏の縁から真下を突く（Voyage.md 3.9.2節）。**皆無ではないのは
+      # 筏そのものが漁礁になるから**で、60分に0.15切れ——当てにできる量ではない、という違いがここに出る。
+      #
+      # **浮いている間だけ**（afloat）。帆の寄与と同じ形で、条件を落とすと浜に繋いだままの筏の下から
+      # 魚が獲れる。**群れへ突く手（fish_shoalのspear_shoal）はこの条件を持たない**——群れは海区に
+      # しか立たないので、群れが在ること自体が海の上に居ることの証になる。
+      spear_sea:
+        trigger: {drag: {tag: fishing_tool}}
+        conditions:
+          - reason: not_afloat
+            prop: afloat
+            gt: 0
+        duration: 60
+        pick:
+          - weight: 15
+            spawn: {object: raw_meat, into: actor}
+          # 突き損ね。この候補だけは効果を持たない。
+          - weight: 83
+          # 突いた魚に銛を持って行かれる（同3.9.4節）。群れを突くときと同じ確率で、失う理由は同じ。
+          - weight: 2
+            destroy: dragged
+
   # 生皮の帆。筏の構造スロットへ組み込むと、風を捉える量が増える（sail_speed +2）。
   #
   # **段をちょうど1つ上げる最小の値が2。** 素の筏は海流だけで `slow`、帆があれば `moderate` に届く。
@@ -633,7 +655,7 @@ object_defs:
         destroy: self
 
   # 魚の群れ。海面まで上がってきた群れで、**居る間だけ実る**（GameEndings.md 12.1節）。
-  # 銛も釣り具もまだ無いので、獲れるのは群れが水面に居る間だけ、という形にしてある。
+  # 突くには銛が要る（fishing_tool、tools.yaml）。手では獲れない。
   fish_shoal:
     tags: [fixture]
     # 海に浮かんでいるものなので、海区から外せない（7.9節）。
@@ -653,11 +675,21 @@ object_defs:
         on_min:
           destroy: self
     interactions:
-      # 掬う。1回で1切れぶん。
-      net_fish:
-        trigger: menu
+      # 群れへ突く。**当たりが違うのは突く相手**（Voyage.md 3.9.2節）——水面に立った群れは密なので、
+      # 30分に0.78切れが返る。群れの居ない海面（raftのspear_sea）との落差が、積むか釣るかの判断を
+      # 作っているので、どちらか一方だけを動かさない。
+      spear_shoal:
+        trigger: {drag: {tag: fishing_tool}}
         duration: 30
-        spawn: {object: raw_meat, into: actor}
+        pick:
+          - weight: 78
+            spawn: {object: raw_meat, into: actor}
+          # 突き損ね。この候補だけは効果を持たない。
+          - weight: 20
+          # 突いた魚に銛を持って行かれる（同3.9.4節）。**穂先の予備と紐を積む理由がこれ**——柄になる
+          # 太い枝は海が返すが、石と紐は返らない。
+          - weight: 2
+            destroy: dragged
 
   # 海鳥の群れ。岩に集まって巣を作る鳥で、人を知らないので手が届く。
   seabird_flock:
