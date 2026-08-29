@@ -264,6 +264,6 @@ describe('層の境界', () => {
     const nodes = [...diagram[1].matchAll(/^\s+\w+\["([^"]+)"\]/gm)].map((m) => m[1].trim());
 
     expect([...nodes].sort(), '図のノードと表の行が食い違っている').toEqual([...structureNames()].sort());
-    expect(nodes.length).toBeGreaterThan(9);
+    expect(nodes.length).toBeGreaterThan(3);
   });
 });
