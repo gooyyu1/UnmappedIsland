@@ -34,10 +34,9 @@ describe('カードの枠の色', () => {
     expect(new Set(faces).size).toBe(KINDS.length);
   });
 
-  it('タイトルの板のどの帯も桟より暗く、名前の文字はどの帯より明るい', () => {
-    // 強調したいのは絵であって、名前は枠の一部（CardView.md 1節 カードの枠）。金の板は帯が明暗に
-    // 振れる（同2.2節）が、**振れ幅は名前が読めるところまで**なので、帯ごとに見る。
-    for (const kind of KINDS) {
+  it('金以外は、タイトルの板のどの帯も桟より暗く、名前の文字はどの帯より明るい', () => {
+    // 強調したいのは絵であって、名前は枠の一部（CardView.md 1節 カードの枠）。
+    for (const kind of KINDS.filter((kind) => kind !== 'artifact')) {
       const colors = cardFrameColors(kind);
       for (const band of colors.plate) {
         expect(brightness(band), `${kind}: 板の帯は桟より暗い`).toBeLessThan(brightness(colors.face));
@@ -46,9 +45,25 @@ describe('カードの枠の色', () => {
     }
   });
 
-  it('縞になるのは金の板だけで、名前が載る中央の帯が最も暗い', () => {
+  it('金の板だけは逆に、桟より明るいところを持ち、名前の文字はどの帯より暗い', () => {
+    // アーティファクトは札そのものが目立つことが目的なので、板を暗くする規約から外れる
+    // （CardView.md 2.2節）。板が明るくなると紙の白の文字は読めないので、文字も一緒に反転する。
+    // 翳りまで桟より明るくは求めない——**振れ幅が金属の見え方を作る**ので、板全体を面より上へ
+    // 持ち上げると淡い黄色の帯にしかならない。
+    const colors = cardFrameColors('artifact');
+
+    expect(Math.max(...colors.plate.map(brightness)), '反射は桟より明るい').toBeGreaterThan(
+      brightness(colors.face),
+    );
+    for (const band of colors.plate) {
+      expect(brightness(colors.ink), '文字は板の帯より暗い').toBeLessThan(brightness(band));
+    }
+  });
+
+  it('斜めの筋を持つのは金の板だけで、その帯の並びは両端が同じ色', () => {
     // 板を帯の並びにしたのは金を金に見せるためで（CardView.md 2.2節）、他の枠は平らなまま。
-    // 帯を増やしたら名前が読めなくなった、を防ぐため、文字が載る中央が最も暗いことまで見る。
+    // 両端が同じ色であることは描き手が頼りにしている——角の丸みに筋が掛からないよう左右の端を
+    // 1本目の色で埋めるので、ここが崩れると板の右端だけ色が飛ぶ（Card.drawPlate）。
     for (const kind of KINDS) {
       const bands = cardFrameColors(kind).plate;
       if (kind !== 'artifact') {
@@ -57,8 +72,7 @@ describe('カードの枠の色', () => {
       }
 
       expect(bands.length).toBeGreaterThan(1);
-      const darkest = Math.min(...bands.map(brightness));
-      expect(brightness(bands[Math.floor(bands.length / 2)])).toBe(darkest);
+      expect(bands[bands.length - 1]).toBe(bands[0]);
     }
   });
 });

@@ -68,6 +68,12 @@ const FRAME_SIDE = 8;
 const FRAME_HEAD = 22;
 const WINDOW_RADIUS = 4;
 
+/**
+ * タイトルの板を走る光の筋の傾き（u単位）。板の上端と下端の間で横へずれる量で、**板の高さ
+ * （FRAME_HEAD）に対する比が筋の角度**になる（drawPlate）。
+ */
+const PLATE_SHEEN_SLANT = 14;
+
 /** タイトルの板に載せる名前の大きさ（u単位。板の高さの7割。これ以上大きくすると字が板の縁に触る）。 */
 const NAME_SIZE = 16;
 
@@ -1086,32 +1092,49 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   /**
-   * タイトルの板。窓の上端に乗せ、枠より暗くする（cardFrameColors）。**帯を上から順に等分して塗る**
-   * ので、1本なら今までどおりの平らな板、複数なら明暗の縞になる（金の板、CardView.md 2.2節）。
-   * ここは「渡された色を上から塗る」だけで、何本来るのかも何の枠なのかも知らない。
+   * タイトルの板。窓の上端に乗せる（cardFrameColors）。**帯を左から順に、上端を右へずらした斜めの筋
+   * として塗る**ので、1本なら平らな板、複数なら斜めに光の走る金属面になる（金の板、CardView.md
+   * 2.2節）。ここは「渡された色を左から塗る」だけで、何本来るのかも何の枠なのかも知らない。
    *
-   * **各帯は自分の下端までではなく板の下端まで塗り、次の帯が上から重ねて消す。** 角の丸みを持つのは
-   * 板の上端だけなので、こう塗ると丸みを描くのは1本目だけで済む（帯ごとに丸みの有無を場合分けせずに
-   * 済む）。2本目以降が角に掛からないよう、**帯の高さは角の半径（WINDOW_RADIUS）以上**にする
-   * ——板の高さ（FRAME_HEAD）から、帯は5本まで。
+   * **各帯は自分の右端までではなく板の右端まで塗り、次の帯が上から重ねて消す。** 板をまず1本目の色で
+   * 塗ってから重ねるので、角の丸みを描くのはこの下地だけで済む。
+   *
+   * **筋は左右を角の半径（WINDOW_RADIUS）のぶん内側で止める。** 丸めた角から筋が四角く飛び出さない
+   * ようにするためで、止めた分は下地——すなわち1本目の色——が出る。帯の並びは**両端が同じ色**なので
+   * （theme.ts）、右端も左端と同じ色で埋まる。
+   *
+   * 傾きは板の高さに対する横のずれ（PLATE_SHEEN_SLANT）で決めるので、**札の倍率が変わっても筋の角度は
+   * 変わらない**（板の角と角を結ぶと、棚や子ウィンドウで角度が変わってしまう）。
    */
   private drawPlate(colors: CardFrameColors, inner: Rect, head: number, radius: number): void {
-    const bandHeight = head / colors.plate.length;
-    colors.plate.forEach((band, index) => {
-      this.frame.fillStyle(band, 1);
-      if (index === 0) {
-        this.frame.fillRoundedRect(inner.x, inner.y, inner.width, head, {
-          tl: radius,
-          tr: radius,
-          bl: 0,
-          br: 0,
-        });
-        return;
-      }
-
-      const top = bandHeight * index;
-      this.frame.fillRect(inner.x, inner.y + top, inner.width, head - top);
+    this.frame.fillStyle(colors.plate[0], 1);
+    this.frame.fillRoundedRect(inner.x, inner.y, inner.width, head, {
+      tl: radius,
+      tr: radius,
+      bl: 0,
+      br: 0,
     });
+
+    // 筋は板の上下の中央を境に、上端を右へ・下端を左へ半分ずつずらす。
+    const halfSlant = this.metrics.px(PLATE_SHEEN_SLANT) / 2;
+    const left = inner.x + radius;
+    const right = inner.x + inner.width - radius;
+    const bottom = inner.y + head;
+    const clamp = (x: number): number => Math.min(right, Math.max(left, x));
+
+    for (let index = 1; index < colors.plate.length; index += 1) {
+      const center = inner.x + (inner.width * index) / colors.plate.length;
+      this.frame.fillStyle(colors.plate[index], 1);
+      this.frame.fillPoints(
+        [
+          [clamp(center + halfSlant), inner.y],
+          [right, inner.y],
+          [right, bottom],
+          [clamp(center - halfSlant), bottom],
+        ].map(([x, y]) => new Phaser.Math.Vector2(x, y)),
+        true,
+      );
+    }
   }
 
   /**
