@@ -35,12 +35,17 @@
 # ——[`policies.md`](../../.claude/policies.md)「**既に壊した実績のある操作は、取りこぼしが残っても
 # 機械で止める**」。促す仕組みではなく、止める仕組みなので機械が引く。
 #
-# ## 線を引いた4つ
+# ## 線を引いたのは「yaml に書ける形」を決めているファイル
 #
-# - **`src/loader/**`** — yaml を解釈する実装。ここが変わると yaml に書ける形が変わる。
+# - **`src/loader/Raw*.ts`・`parse*.ts`・`WorldCodexYamlLoader.ts`・`yamlMapping.ts`** — 生の yaml を
+#   受け取る側。ここが変わると yaml に書ける形が変わる。
 # - **`src/domain/DeclaredNumber.ts`** — `weight`/`duration` が受け取れる数の形。
 # - **`docs/engine/WorldCodex.schema.json`** — 書ける形の宣言そのもの。
 # - **`docs/engine/GameElementDefinition.md`** — 上の3つの仕様書。
+#
+# **`src/loader/` を丸ごとにはしない。** `loadDefinitions.ts`・`loadWorldCodex.ts`・`LoadReport.ts` は
+# 読んだ結果を組み立てて報告する側で、書ける形は決めていない。丸ごとにしていたとき、PR #1183
+# （絵の名前が重なるパックを、定義もろとも外して起動を続ける）が掛かった——文法には一切触っていない。
 #
 # `【確定】` は「覆すには人間の判断が要る」という宣言なので、その射程への変更も同じ扱い。
 # **見出しの行だけでなく、節の本文への変更も見る**——印は見出しに付くが、囲っているのは本文。
@@ -49,7 +54,7 @@ set -euo pipefail
 
 PR="${1:?PRの番号を渡す（例: 1152）}"
 
-GRAMMAR_PATHS='^src/loader/|^src/domain/DeclaredNumber\.ts$|^docs/engine/WorldCodex\.schema\.json$|^docs/engine/GameElementDefinition\.md$'
+GRAMMAR_PATHS='^src/loader/(Raw[A-Za-z]*|parse[A-Za-z]*|WorldCodexYamlLoader|yamlMapping)\.ts$|^src/domain/DeclaredNumber\.ts$|^docs/engine/WorldCodex\.schema\.json$|^docs/engine/GameElementDefinition\.md$'
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
