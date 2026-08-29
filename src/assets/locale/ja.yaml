@@ -545,6 +545,13 @@ object_texts:
   bandage:
     display_name: 包帯
     description: 細長く裂いた布。傷口に巻いて清潔に保つ。長く当てておける。
+  splint:
+    display_name: 添え木
+    description: 削った副木を紐で巻き留める固定具。折れた骨を挟んで支え、担いだ荷の重さを和らげる。
+    recipes:
+      lashed:
+        display_name: 副木を縛る
+        description: 枝を割って平らな木を2枚こしらえ、傷を挟んで紐で巻き留める。
 
   # 探索で見つかるアイテム（locations.yaml・foods.yaml）。
   thick_branch:
