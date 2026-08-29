@@ -16,7 +16,8 @@
 #   CONFLICT <番号>                … mainと衝突していて、解消するまでマージできない
 #                                    （`直し待ち` のPRを除く。差し戻し済みなので `FIXED` を待つ）
 #   GONE    <番号>                 … 見張っていた issue が閉じた（--issues のときだけ）
-#   FIXED   <番号>                 … 直し待ちのPRへ、新しいコミットが載った
+#   REVIEWED <番号> <結論>         … レビューの結論が付いたまま、司令塔がまだ動いていないPR
+#   FIXED   <番号>                 … 直し待ちのPRへ、差し戻した後の新しいコミットが載った
 #   COMMENT pr|issue <番号> <著者> … 起動より後に付いたコメント
 #   CHECKED <番号> <項目>          … 見張っている issue の本文で、起動より後にチェックが付いた項目
 #   TASK    <番号>                 … 着手できる open な task（--issues にもPRにも無く、依存も片付いている）
@@ -29,11 +30,33 @@
 # 付く。** 緑を受け取った側は必ず本文を引くので、往復を1つ減らすために同梱している。**判定は増えて
 # いない**——ここが担うのは促すことだけで、通すかどうかは受け取った側が差分を読んで決める。
 #
+# ## 手番は、時刻の窓ではなく状態で見る
+#
+# **`REVIEWED` と `FIXED` が答えるのは「今それは誰の手番か」**で、「この5分に何が起きたか」ではない。
+# どちらも、比べる相手をPR自身の状態から取る。
+#
+# - `REVIEWED` … 最後の `[レビュー]` コメントが、最後のコミットより新しい。＝結論が出たまま、
+#   まだ直しも入っていない。`直し待ち`・`判断待ち` が付いていれば既に手が動いた後なので黙る。
+# - `FIXED` … 最後のコミットが、`直し待ち` を**付けた時刻**より新しい。＝差し戻した先から戻ってきた。
+#
+# **見張りの起動時刻と比べてはいけない。** 起動より前に起きたことは永久に出なくなるので、見張りを
+# 立て直すたびに、その谷間で起きたことが丸ごと落ちる。2026-08-29 に PR #1183・#1182 の
+# `[レビュー] 通してよい` が2時間放置され、同じ谷間で #1187・#1184 の直しも落ちた。
+# `FIXED` の説明は前からこの節のとおりだったが、実装だけが起動時刻を代わりに使っていた。
+#
+# **番号（`$1`〜）で絞らない。** 絞ると、司令塔が渡し忘れた番号は出なくなる——取りこぼしを防ぐのが
+# この2つの役目なので、絞ると役目そのものが消える。手が動けば状態が変わって黙るので、放っておいても
+# 毎周返り続けることはない。
+#
 # ## COMMENT を見るのは、却下を受け取る唯一の経路だから
 #
 # **PRの作者はすべてユーザー自身になる**（セッションがユーザーの資格情報で push するため）ので、
 # GitHubは Approve も Request changes も出させない。**仮決めを却下する手段はコメントしか無い。**
 # 承認はマージがそのまま答えになるので、見張るのは却下の側だけでよい。
+#
+# レビューの結論は上の `REVIEWED` が状態として出すので、こちらは**それ以外のコメント**を拾う窓。
+# 比べる相手が無い（「読んだ」がどこにも残らない）ので窓のままだが、**立て直すときは `--since` に
+# 前回の起動時刻を渡す**と谷間が消える。
 #
 # `判断待ち` の付いたPRも**コメントだけは見る**。ラベルは「ユーザーの手元にある」という意味なので
 # CIの決着は出さないが、そこへコメントが付いたということは手元から戻ってきたということ。
@@ -273,6 +296,18 @@ CHECKED_FILTER='
   | "\($number) \(.)"
 '
 
+# レビューの結論が付いたまま、司令塔がまだ動いていないPR（上の「手番は、時刻の窓ではなく状態で
+# 見る」）。結論の行は `[レビュー] 通してよい` か `[レビュー] 直しが要る`（`review-prompt.md`）。
+# 出すのは `<番号>\t<コメントの時刻>\t<結論>` で、コミットとの比較は呼び出し側で行う。
+REVIEWED_FILTER='
+  .[]
+  | . as $pr
+  | select([$pr.labels[].name] | index("直し待ち") == null and index("判断待ち") == null)
+  | ([$pr.comments[] | select(.body | startswith("[レビュー]"))] | last) as $review
+  | select($review != null)
+  | "\($pr.number)\t\($review.createdAt)\t\($review.body | split("\n")[0] | rtrimstr("\r") | ltrimstr("[レビュー]") | sub("^[[:space:]]+"; ""))"
+'
+
 # gh の --jq には --arg を渡せないので、時刻は文字列として埋め込む。
 comment_filter() {
   printf '
@@ -294,17 +329,32 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
       pattern=$(printf '%s\n' "${NUMBERS[@]}" | paste -sd'|' -)
       settled=$(grep -E "^(GREEN|RED|MENDING|CONFLICT) (${pattern})( |$)" <<<"$settled")
     fi
-    # `直し待ち` のPRだけ、コミットの日付を追加で引く。**一覧の `--json` へ `commits` を足しては
-    # いけない**——50本ぶんだとGraphQLのノード上限（50万）を超えて `gh` が丸ごと失敗し、**見張り全体が
-    # 黙る**（2026-08-25 に実測）。1本ずつ引けば、払うのは差し戻し中のPRがあるときだけで済む。
+    # 差し戻し中とレビュー済みのPRだけ、コミットの日付を追加で引く。**一覧の `--json` へ `commits`
+    # を足してはいけない**——50本ぶんだとGraphQLのノード上限（50万）を超えて `gh` が丸ごと失敗し、
+    # **見張り全体が黙る**（2026-08-25 に実測）。1本ずつ引けば、払うのはそのPRがあるときだけで済む。
     while read -r number; do
       [ -n "$number" ] || continue
-      pushed=$(gh pr view "$number" --json commits --jq '.commits | last | .committedDate' 2>/dev/null)
-      if [ -n "$pushed" ] && [[ "$pushed" > "$SINCE" ]]; then
+      pushed=$(gh pr view "$number" --json commits --jq '.commits | last | .committedDate' 2>/dev/null | tr -d '\r')
+      # 差し戻した時刻＝`直し待ち` を付けた時刻。ラベルの履歴はPRに残るので、見張りを立て直しても
+      # 変わらない。取れなかったときだけ起動時刻へ落ちる。
+      sent_back=$(gh api "repos/{owner}/{repo}/issues/$number/timeline" --paginate \
+        --jq '.[] | select(.event == "labeled" and .label.name == "直し待ち") | .created_at' 2>/dev/null |
+        tr -d '\r' | sort | tail -1)
+      [ -n "$sent_back" ] || sent_back="$SINCE"
+      if [ -n "$pushed" ] && [[ "$pushed" > "$sent_back" ]]; then
         settled=$(printf '%s\nFIXED %s' "$settled" "$number")
       fi
     done < <(grep '^MENDING ' <<<"$settled" | awk '{print $2}')
     settled=$(grep -v '^MENDING ' <<<"$settled")
+
+    # レビューの結論。**番号で絞った後に足す**——絞ると、渡し忘れた番号の結論が出なくなる。
+    while IFS=$'\t' read -r number at verdict; do
+      [ -n "$number" ] || continue
+      pushed=$(gh pr view "$number" --json commits --jq '.commits | last | .committedDate' 2>/dev/null | tr -d '\r')
+      # 結論より後にコミットが載っているなら、直しは既に入っている（司令塔の手番ではない）。
+      [ -n "$pushed" ] && [[ "$pushed" > "$at" ]] && continue
+      settled=$(printf '%s\nREVIEWED %s %s' "$settled" "$number" "$verdict")
+    done < <(jq -r "$REVIEWED_FILTER" <<<"$prs" | tr -d '\r')
 
     settled=$(printf '%s\n%s' "$settled" "$(jq -r "$(comment_filter pr)" <<<"$prs")")
 

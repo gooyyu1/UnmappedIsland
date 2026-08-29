@@ -44,12 +44,13 @@ function pullRequest(
     { name: 'test', status: 'COMPLETED', conclusion: 'SUCCESS' },
   ],
   body = '',
+  comments: { body: string; createdAt: string }[] = [],
 ): unknown {
   return {
     number,
     labels: labels.map((name) => ({ name })),
     statusCheckRollup: checks,
-    comments: [],
+    comments: comments.map((comment) => ({ ...comment, author: { login: 'gooyyu1' } })),
     updatedAt: '2000-01-01T00:00:00Z',
     mergeable,
     body,
@@ -77,13 +78,15 @@ function session(
  * `gh` とセッション一覧を差し替えて見張りを走らせ、出た行を返す。
  *
  * `prRounds`・`issueRounds` は `gh pr list`・`gh issue list` が周ごとに返す一覧で、最後のものは
- * 以降ずっと返る。
+ * 以降ずっと返る。`times` はPR番号ごとの「最後のコミットの時刻」と「`直し待ち` を付けた時刻」で、
+ * `REVIEWED`・`FIXED` はこの2つと比べて手番を決める。
  */
 function watch(
   prRounds: unknown[][],
   issueRounds: unknown[][],
   watched: number[],
   sessions: unknown[] = [],
+  times: { pushed?: Record<number, string>; sentBack?: Record<number, string> } = {},
 ): string[] {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-watch-prs-'));
   try {
@@ -94,6 +97,12 @@ function watch(
     };
     prRounds.forEach((round, index) => write(`prs-${index}.json`, round));
     issueRounds.forEach((round, index) => write(`issues-${index}.json`, round));
+    // `gh pr view --json commits --jq ...` と `gh api .../timeline --jq ...` は、値を1行で返す。
+    const writeLine = (name: string, value: string): void => {
+      writeFileSync(join(work, name), `${value}\n`, 'utf-8');
+    };
+    Object.entries(times.pushed ?? {}).forEach(([number, at]) => writeLine(`commits-${number}`, at));
+    Object.entries(times.sentBack ?? {}).forEach(([number, at]) => writeLine(`labeled-${number}`, at));
     // `gh pr list` と `gh issue list` で返し分ける。どちらも呼ばれた回数で切り替える。
     const dir = work.replace(/\\/g, '/');
     const rounds = (kind: string, length: number): string =>
@@ -105,10 +114,15 @@ function watch(
     writeFileSync(
       stub,
       `#!/usr/bin/env bash\n` +
+        // ラベルを付けた時刻。無い番号では何も返さない（＝履歴が引けなかった場合）。
+        `if [ "$1" = api ]; then\n` +
+        `  cat "${dir}/labeled-$(echo "$2" | grep -o '[0-9]\\+')" 2>/dev/null\n  exit 0\nfi\n` +
         `if [ "$1" = issue ]; then\n${rounds('issue', issueRounds.length)}exit 0\nfi\n` +
         // 緑のPRに同梱する本文の引き直し。周を進めないよう、一覧より先に返す。
         `if [ "$2" = view ] && [[ "$*" == *title,body,files* ]]; then\n` +
         `  echo "本文 $3"\n  exit 0\nfi\n` +
+        `if [ "$2" = view ] && [[ "$*" == *commits* ]]; then\n` +
+        `  cat "${dir}/commits-$3" 2>/dev/null\n  exit 0\nfi\n` +
         rounds('pr', prRounds.length),
       'utf-8',
     );
@@ -190,8 +204,7 @@ describe('watch-prs.sh のマージ可否', () => {
       [],
     );
 
-    expect(lines).toContain('CONFLICT 803');
-    expect(lines).not.toContain('CONFLICT 802');
+    expect(lines).toEqual(['CONFLICT 803']);
   });
 
   it('マージ可否が計算中のPRは決着として出さず、確定した次の周で出す', () => {
@@ -219,6 +232,90 @@ describe('watch-prs.sh のマージ可否', () => {
     // 受け取った側が読むのは緑のPRだけ。赤やコンフリクトの本文まで付けると、差し戻す判断には
     // 要らないものが毎回載る。
     expect(watch([[pullRequest(822, 'CONFLICTING')]], [[]], [])).toEqual(['CONFLICT 822']);
+  });
+});
+
+describe('watch-prs.sh の手番（REVIEWED・FIXED）', () => {
+  /** レビューの結論のコメント。**見張りの起動より前**の時刻で置く。 */
+  const verdict = (
+    body: string,
+    createdAt = '2026-08-29T12:49:33Z',
+  ): { body: string; createdAt: string } => ({
+    body,
+    createdAt,
+  });
+
+  it('見張りの起動より前に付いた結論でも出す', () => {
+    // 起動時刻と比べていたとき、立て直した見張りの谷間で出た結論が誰にも届かなかった
+    // （2026-08-29 の PR #1183・#1182）。比べる相手はコミットなので、いつ起動しても同じ答えになる。
+    const lines = watch(
+      [[pullRequest(840, 'CONFLICTING', [], undefined, '', [verdict('[レビュー] 通してよい')])]],
+      [[]],
+      [],
+    );
+
+    expect(lines).toEqual(['CONFLICT 840', 'REVIEWED 840 通してよい']);
+  });
+
+  it('結論より後にコミットが載っていれば出さない', () => {
+    // 直しが既に入っている＝司令塔の手番ではない。隣の 842 は、見張りが黙っているのではなく
+    // 841 だけを外していることの確かめ。
+    const lines = watch(
+      [
+        [
+          pullRequest(841, 'CONFLICTING', [], undefined, '', [verdict('[レビュー] 直しが要る')]),
+          pullRequest(842, 'CONFLICTING', [], undefined, '', [verdict('[レビュー] 直しが要る')]),
+        ],
+      ],
+      [[]],
+      [],
+      [],
+      { pushed: { 841: '2026-08-29T13:00:00Z' } },
+    );
+
+    expect(lines).toEqual(['CONFLICT 841', 'CONFLICT 842', 'REVIEWED 842 直しが要る']);
+  });
+
+  it('ラベルの付いたPRは、結論が残っていても出さない', () => {
+    // `直し待ち`・`判断待ち` は「既に誰かの手元にある」の印。付いた時点で司令塔の手番は終わっている。
+    const lines = watch(
+      [
+        [
+          pullRequest(843, 'MERGEABLE', ['直し待ち'], undefined, '', [verdict('[レビュー] 直しが要る')]),
+          pullRequest(844, 'MERGEABLE', ['判断待ち'], undefined, '', [verdict('[レビュー] 通してよい')]),
+          pullRequest(845, 'CONFLICTING', [], undefined, '', [verdict('[レビュー] 通してよい')]),
+        ],
+      ],
+      [[]],
+      [],
+    );
+
+    expect(lines).toEqual(['CONFLICT 845', 'REVIEWED 845 通してよい']);
+  });
+
+  it('差し戻した後のコミットで FIXED を出す', () => {
+    // 比べる相手は `直し待ち` を付けた時刻。見張りの起動より前に上がった直しでも出る。
+    const lines = watch([[pullRequest(850, 'MERGEABLE', ['直し待ち'])]], [[]], [], [], {
+      pushed: { 850: '2026-08-29T12:55:00Z' },
+      sentBack: { 850: '2026-08-29T12:00:00Z' },
+    });
+
+    expect(lines).toEqual(['FIXED 850']);
+  });
+
+  it('差し戻す前のコミットしか無ければ FIXED を出さない', () => {
+    const lines = watch(
+      [[pullRequest(851, 'MERGEABLE', ['直し待ち']), pullRequest(852, 'MERGEABLE', ['直し待ち'])]],
+      [[]],
+      [],
+      [],
+      {
+        pushed: { 851: '2026-08-29T11:00:00Z', 852: '2026-08-29T12:55:00Z' },
+        sentBack: { 851: '2026-08-29T12:00:00Z', 852: '2026-08-29T12:00:00Z' },
+      },
+    );
+
+    expect(lines).toEqual(['FIXED 852']);
   });
 });
 
