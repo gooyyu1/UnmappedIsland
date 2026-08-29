@@ -18,6 +18,7 @@
 #                                    （`直し待ち` のPRを除く。差し戻し済みなので `FIXED` を待つ）
 #   GONE    <番号>                 … 見張っていた issue が閉じた（--issues のときだけ）
 #   REVIEWED <番号> <結論>         … レビューの結論が付いたまま、司令塔がまだ動いていないPR
+#   UNREVIEWED <番号>              … 最後のコミット以降、レビューへ出していないPR
 #   FIXED   <番号>                 … 直し待ちのPRへ、差し戻した後の新しいコミットが載った
 #   COMMENT pr|issue <番号> <著者> … 起動より後に付いたコメント
 #   CHECKED <番号> <項目>          … 見張っている issue の本文で、起動より後にチェックが付いた項目
@@ -33,11 +34,13 @@
 #
 # ## 手番は、時刻の窓ではなく状態で見る
 #
-# **`REVIEWED` と `FIXED` が答えるのは「今それは誰の手番か」**で、「この5分に何が起きたか」ではない。
-# どちらも、比べる相手をPR自身の状態から取る。
+# **`REVIEWED`・`UNREVIEWED`・`FIXED` が答えるのは「今それは誰の手番か」**で、「この5分に何が
+# 起きたか」ではない。どれも、比べる相手をPR自身の状態から取る。
 #
 # - `REVIEWED` … 最後の `[レビュー]` コメントが、最後のコミットより新しい。＝結論が出たまま、
 #   まだ直しも入っていない。`直し待ち`・`判断待ち` が付いていれば既に手が動いた後なので黙る。
+# - `UNREVIEWED` … その `REVIEWED` の裏返し。最後のコミット以降、結論も付いておらず、`review-<番号>`
+#   のセッションも立っていない。＝レビューへ出すのが司令塔の手番。
 # - `FIXED` … 最後のコミットが、`直し待ち` を**付けた時刻**より新しい。＝差し戻した先から戻ってきた。
 #
 # **見張りの起動時刻と比べてはいけない。** 起動より前に起きたことは永久に出なくなるので、見張りを
@@ -46,11 +49,26 @@
 # `FIXED` の説明は前からこの節のとおりだったが、実装だけが起動時刻を代わりに使っていた。
 #
 # **番号（`$1`〜）で絞らない。** 絞ると、司令塔が渡し忘れた番号は出なくなる——取りこぼしを防ぐのが
-# この2つの役目なので、絞ると役目そのものが消える。手が動けば状態が変わって黙るので、放っておいても
+# この3つの役目なので、絞ると役目そのものが消える。手が動けば状態が変わって黙るので、放っておいても
 # 毎周返り続けることはない。番号が掛かるのは `GREEN`・`RED`・`CONFLICT` の3つだけ。
 #
 # **番号を1つも渡さないと「全部」の意味になる。** レビューへ出したPRは緑のまま置くので、渡さないと
 # `GREEN` が毎周返って見張りがその場で終わる。CIの決着を見たいPRが1本も無いときは `0` を渡す。
+#
+# ## UNREVIEWED を見るのは、`0` を渡すと新しいPRがどこにも出ないから
+#
+# 上のとおり、レビュー中のPRを黙らせるために司令塔は `0` を渡す。すると `GREEN`・`RED`・`CONFLICT`
+# は全部の番号で外れるので、**新しく出たPRは、どの合図にも現れない**——`REVIEWED` は結論が要り、
+# `FIXED` は `直し待ち` が要る。2026-08-29 に PR #1195・#1198 が誰にも拾われないまま残った。
+#
+# **黙る条件をPRの外から取る。** レビューを手配してもPRの状態は何も変わらないので、コメントが付く
+# までの十数分、条件だけを見ていると毎周これが返って見張りがその場で終わる。`dispatch-review.sh` が
+# 付ける `review-<番号>` のタグを見て、**最後のコミットより後に立った**セッションがあれば黙る。
+# 「後に立った」で見るのは、直しが入った後に前回のレビューのセッションが残っていても、次の
+# レビューを手配し直させるため（畳み忘れがそのまま見落としになるのを避ける）。
+#
+# セッション一覧が引けないとき（`--no-sessions`・`SESSIONS-OFF`）は、この合図だけ出せない。
+# 判定に要る材料が無いので、黙るのではなく出さない側へ倒す——出し続けると見張りが機能しなくなる。
 #
 # ## COMMENT を見るのは、却下を受け取る唯一の経路だから
 #
@@ -312,6 +330,27 @@ REVIEWED_FILTER='
   | "\($pr.number)\t\($review.createdAt)\t\($review.body | split("\n")[0] | rtrimstr("\r") | ltrimstr("[レビュー]") | sub("^[[:space:]]+"; ""))"
 '
 
+# `REVIEWED` と同じ候補（`直し待ち`・`判断待ち` の付いていないPR）を、結論が付いていないものも含めて
+# 出す。添えるのは最後の `[レビュー]` コメントの時刻で、1つも無ければ空。コミットとセッションとの
+# 比較は呼び出し側で行う。
+REVIEW_CANDIDATE_FILTER='
+  .[]
+  | . as $pr
+  | select([$pr.labels[].name] | index("直し待ち") == null and index("判断待ち") == null)
+  | ([$pr.comments[] | select(.body | startswith("[レビュー]"))] | last) as $review
+  | "\($pr.number)\t\($review.createdAt // "")"
+'
+
+# 手配済みのレビュー。`review-<番号>` は `dispatch-review.sh` が付ける。畳んだセッションは数えない。
+REVIEWING_FILTER='
+  .ccr.data[]
+  | select(.session_status != "SESSION_STATUS_ARCHIVED")
+  | .created_at as $at
+  | .tags[]?
+  | select(startswith("review-"))
+  | "\(ltrimstr("review-"))\t\($at)"
+'
+
 # gh の --jq には --arg を渡せないので、時刻は文字列として埋め込む。
 comment_filter() {
   printf '
@@ -432,6 +471,20 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
           [ "$claimed" -eq 1 ] && continue
           settled=$(printf '%s\nSTALLED %s %s' "$settled" "$id" "$title")
         done < <(jq -r --arg grace "$session_grace" "$STALLED_FILTER" <<<"$sessions" | tr -d '\r')
+
+        # まだレビューへ出していないPR（上の「UNREVIEWED を見るのは」）。セッション一覧が要るので、
+        # ここで一緒に見る。引く間隔がPRより粗いぶん出るのは遅れるが、手配の遅れは分の単位でよい。
+        reviewing=$(jq -r "$REVIEWING_FILTER" <<<"$sessions" | tr -d '\r')
+        while IFS=$'\t' read -r number at; do
+          [ -n "$number" ] || continue
+          pushed=$(gh pr view "$number" --json commits --jq '.commits | last | .committedDate' 2>/dev/null | tr -d '\r')
+          # 結論が最後のコミットより新しければ、それは `REVIEWED` の手番。
+          if [ -n "$at" ] && { [ -z "$pushed" ] || [[ "$at" > "$pushed" ]]; }; then continue; fi
+          started=$(awk -F'\t' -v n="$number" '$1 == n { print $2 }' <<<"$reviewing" | sort | tail -1)
+          # 最後のコミットより後にレビューのセッションが立っていれば、手配は済んでいる。
+          if [ -n "$started" ] && { [ -z "$pushed" ] || [[ "$started" > "$pushed" ]]; }; then continue; fi
+          settled=$(printf '%s\nUNREVIEWED %s' "$settled" "$number")
+        done < <(jq -r "$REVIEW_CANDIDATE_FILTER" <<<"$prs" | tr -d '\r')
       else
         echo "SESSIONS-OFF セッションの状態を引けないので、以降はPRとissueだけを見る" >&2
         SESSIONS=0
