@@ -109,6 +109,12 @@ describe('salt.yamlの塩田と塩蔵', () => {
     return before - numberOf(object, durabilityId);
   }
 
+  /** その型を1つだけ野ざらしに置いたときの、1tickあたりのdurabilityの減り。 */
+  function spoilRateOfFresh(objectName: string): number {
+    const { session, land } = open();
+    return spoilRateOf(land, spawnInto(session, objectName, land, 'items'));
+  }
+
   it('海水を張るまで、塩田は何も採らない', () => {
     // 畑と同じ形（farming.yaml）。張っていない回は重み0の先頭の候補で拾われるので、日が照って
     // いても塩は出ない。
@@ -200,6 +206,25 @@ describe('salt.yamlの塩田と塩蔵', () => {
     expect(before.crab - numberOf(crab, durabilityId)).toBeCloseTo(
       before.taro - numberOf(taro, durabilityId),
     );
+  });
+
+  it('cure軸を持つ食べ物は、漬けると必ず遅くなる', () => {
+    // **軸を宣言すること自体が「この食べ物には塩が効く」という宣言。** 塩蔵が名乗るのは既にある3段の
+    // うち最も遅い段そのものなので、元からその段で腐る物が軸を持つと、塩ひと掴みと30分を払って1日も
+    // 延びない操作が現れる。軸は食べ物ごとに宣言するため、足すたびに同じ取り違えが起こりうる
+    // ——数が増えても気付けるよう、軸を持つ全型を検査する。
+    const useless: string[] = [];
+
+    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
+      const def = codex.objects.get(globalId);
+      const baseGlobalId = codex.generatedTypes.baseGlobalIdIfVariantOn(def, 'cure');
+      if (baseGlobalId === undefined) continue;
+
+      const base = codex.objects.get(baseGlobalId);
+      if (spoilRateOfFresh(def.name) >= spoilRateOfFresh(base.name)) useless.push(base.name);
+    }
+
+    expect(useless, '漬けても速さが変わらない食べ物は、軸を持たない').toEqual([]);
   });
 
   it('塩漬けにしても、傷み具合は引き継ぐ', () => {
