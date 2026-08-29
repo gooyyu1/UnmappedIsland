@@ -88,7 +88,7 @@ import { heatHazeFor } from './looks/heatHaze';
 import { clockParts, timeCostLine } from './looks/timeTexts';
 import { addLabel } from '../ui/labels';
 import type { BoxStyle } from '../ui/shapes';
-import { addInputBlockingPanel, addTiledImage, addTiledImageVertical } from '../ui/shapes';
+import { addInputBlockingPanel, addTiledImage, addTiledImageVertical, drawBox } from '../ui/shapes';
 import { COLOR, SIZE } from './looks/theme';
 
 /** 紙として置かれるボタン（スロットボタン・バーのアイコンボタン）が落とす影のずらし幅（u単位）。 */
@@ -172,6 +172,27 @@ const MENU_ICON: BarIcon = { icon: '☰' };
  * レシピだけ道具の絵を避けているのは、下のフィルターバーが道具の絞り込みに🔨を使っているため。
  */
 const SLOT_BUTTON_ICONS = { map: '🗺️', equipment: '👕', injuries: '🩹', recipe: '📜' } as const;
+
+/**
+ * 状況アイコンの代役。**絵（art）が届くまでの繋ぎ**で、スロットボタンと同じ扱い。
+ *
+ * ここに識別子が並んでいても、**何をいつ出すかを決めているのは世界の側の宣言**（段の`situation`、
+ * ScreenLayout.md 4.1.1節）で、ここが決めているのは絵が届くまでの見た目だけ。だから知らない識別子が
+ * 来ても落とさず、UNKNOWN_SITUATION_ICONを出す——出すと決めたものが黙って消えるほうが悪い。
+ */
+const SITUATION_ICONS: Readonly<Record<string, string>> = {
+  too_dark_for_handwork: '🕯️',
+  too_dark_outside: '🌘',
+  no_road: '🌑',
+  sheltered: '🛖',
+};
+
+/** 絵も代役も無い識別子の代役。 */
+const UNKNOWN_SITUATION_ICON = '❔';
+
+/** 状況アイコンに載せる絵のキャンバスと絵文字の大きさ（48uの枠の内側。オプションバーと同じ比）。 */
+const CONDITION_ICON_ART = 44;
+const CONDITION_GLYPH_SIZE = 28;
 
 /**
  * キャラクタの見えるスロット（`visible_slots`）1つにつき1つ並ぶボタンの姿。**どのスロットが並ぶかを
@@ -375,6 +396,13 @@ export class PlayScene extends ResponsiveScene {
 
   /** ポートレイトカードの枠。キャラクタ自身を映す札なので、回復の粒の行き先になる（showGains）。 */
   private portraitRect: Rect | undefined;
+
+  /**
+   * 状況アイコンの行。**中身は行動のたびに入れ替わる**（showConditions）ので、画面の組み立て時に器を
+   * 作っておき、以後はこの中だけを作り直す——あとから作った表示物は、開いている子ウィンドウの覆いより
+   * 手前へ出てしまう（buildStatusAreaと同じ理由）。
+   */
+  private conditionRow!: Phaser.GameObjects.Container;
 
   /** ステータスエリアの行の間隔（どのバーをどの行へ置くかは行動のたびに引き直す）。 */
   private statusRowGap = 0;
@@ -1777,6 +1805,7 @@ export class PlayScene extends ResponsiveScene {
   private showInformation(): void {
     this.situationPanel.setTime(this.view.elapsedDays, this.view.hour, this.view.minute);
     this.situationPanel.setWeather(this.view.weather, this.view.weatherLabel);
+    this.showConditions();
     this.showStatuses();
   }
 
@@ -1879,20 +1908,27 @@ export class PlayScene extends ResponsiveScene {
       height: portraitHeight + gap + conditionSize,
     });
 
-    this.addConditionRow(area.x + padding, area.y + padding + portraitHeight + gap);
+    // 中身は行動のたびに引き直す（showConditions）ので、ここで作るのは器だけ。
+    this.conditionRow = this.add.container(area.x + padding, area.y + padding + portraitHeight + gap);
   }
 
   /**
-   * 条件はラベルなしのアイコンボタン。ポートレイトの真下に1行で左詰めに並べる——キャラクターの
-   * 状態なので、カードの下に続けて置くと持ち主が読み取れる。
+   * 状況アイコンを並べ直す（ScreenLayout.md 4.1.1節）。ポートレイトの真下に1行で左詰めに並べる
+   * ——キャラクタの周りの事情なので、本人を映す札の下に続けて置くと誰の周りかが読み取れる。
+   *
+   * **押しても何も起きないので、押せる形（Button）にはしない。** 出しているのは場所と世界の事実で、
+   * そこから操作する対象が無い。何も妨げていない間は行ごと空になる。
    */
-  private addConditionRow(x: number, y: number): void {
+  private showConditions(): void {
+    this.conditionRow.removeAll(true);
     const size = this.metrics.px(SIZE.conditionButton);
     const gap = this.metrics.px(8);
-    this.view.conditions.forEach((icon, index) => {
-      const button = new Button(
-        this,
-        { x: x + index * (size + gap), y, width: size, height: size },
+    this.view.conditions.forEach((situation, index) => {
+      const x = index * (size + gap);
+      const box = this.add.graphics();
+      drawBox(
+        box,
+        { x, y: 0, width: size, height: size },
         {
           fillColor: COLOR.button,
           borderColor: COLOR.buttonBorder,
@@ -1900,7 +1936,13 @@ export class PlayScene extends ResponsiveScene {
           radius: this.metrics.px(SIZE.radius),
         },
       );
-      button.addCentered(addLabel(this, this.metrics, 0, 0, icon, { size: 28 }));
+      const icon = this.buttonIcon(
+        { art: situation, icon: SITUATION_ICONS[situation] ?? UNKNOWN_SITUATION_ICON },
+        { width: CONDITION_ICON_ART, height: CONDITION_ICON_ART },
+        CONDITION_GLYPH_SIZE,
+      );
+      icon.setPosition(x + size / 2, size / 2).setOrigin(0.5);
+      this.conditionRow.add([box, icon]);
     });
   }
 
@@ -2020,7 +2062,7 @@ export class PlayScene extends ResponsiveScene {
    * 揃えると、その差が消えてしまう。周りは透けているので、ボタンの地の色が下に出る。
    */
   private buttonIcon(
-    spec: { art?: IconName; icon: string },
+    spec: { art?: string; icon: string },
     canvas: { width: number; height: number },
     glyphSize: number,
   ): Phaser.GameObjects.Image | Phaser.GameObjects.Text {

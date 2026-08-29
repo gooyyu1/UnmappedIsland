@@ -243,7 +243,10 @@ export interface PlayScreenView {
    * 引き当て（ShownStatuses）が読む。子ウィンドウへ出るぶんはcharacterWindow.propertiesが持つ。
    */
   readonly propertyCategories: readonly PropertyTab[];
-  /** 条件アイコン。複数同時に付き得るので件数は可変。 */
+  /**
+   * 状況アイコンの絵の識別子（ScreenLayout.md 4.1.1節）。**今いる段が名乗ったものだけ**が並ぶので、
+   * 何も妨げていない間は空になる。並びはキャラクタのpropsの宣言順。
+   */
   readonly conditions: readonly string[];
   readonly elapsedDays: number;
   readonly hour: number;
@@ -563,6 +566,22 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
   const propertyCategories = propertiesOf(game.player.instance);
 
   /**
+   * 状況アイコン（ScreenLayout.md 4.1.1節）。**今いる段が名乗った識別子を、propsの宣言順に拾うだけ**
+   * で、どのプロパティが出す側かも、その段が何を意味するかも見ない。
+   *
+   * 見るのはキャラクタのプロパティだけ。周りの事情（手元の明るさ・屋根の下か）は、キャラクタが
+   * `base`で祖先から継いだうえで自分の段を持つ（player_character.yaml）。
+   */
+  const situationsOf = (object: WorldObject): readonly string[] => {
+    const situations: string[] = [];
+    for (const propertyDef of object.def.enumeratePropertyDefs()) {
+      const situation = object.tryGetProperty(propertyDef.globalId)?.stage?.situation;
+      if (situation !== undefined) situations.push(situation);
+    }
+    return situations;
+  };
+
+  /**
    * その物が今いる場所。**世界が答える**ので、札を作る側が「どこの札か」を言い添える必要は無い
    * ——言い添えられると、実際に居る場所と食い違った札を作れてしまう。
    *
@@ -754,7 +773,7 @@ export function fromGameSession(game: StartedGame, codex: WorldCodex, locale: Lo
     characterWindow,
     nestedLocations,
     windowOf,
-    conditions: ['💭', '🥶', '😪', '🍽️'],
+    conditions: situationsOf(game.player.instance),
     statuses: entriesWithTag(game.player.instance, codex.propertyTagNames.tryGetId(STATUS_TAG)),
     propertyCategories,
     // dayは1始まり（GameElementDefinition.md 17節）なので、生存日数は0始まりへ直す。

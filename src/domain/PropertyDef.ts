@@ -110,12 +110,27 @@ export class PropertyStage {
    */
   readonly art: string | undefined;
 
-  constructor(name: string, min: number | undefined, eq?: number, alert: AlertLevel = 'safe', art?: string) {
+  /**
+   * この段にいる間、状況アイコンとして出す絵の識別子（6.4節の`situation`）。
+   * `src/assets/icons/<この値>.png` を指す（docs/ui/ScreenLayout.md 4.1.1節）。宣言しない段では
+   * 何も出ない——**出すかとどの絵かを1つの宣言に畳んである**ので、undefinedは「出さない」と読む。
+   */
+  readonly situation: string | undefined;
+
+  constructor(
+    name: string,
+    min: number | undefined,
+    eq?: number,
+    alert: AlertLevel = 'safe',
+    art?: string,
+    situation?: string,
+  ) {
     this.name = name;
     this.min = min;
     this.eq = eq;
     this.alert = alert;
     this.art = art;
+    this.situation = situation;
   }
 
   /**
