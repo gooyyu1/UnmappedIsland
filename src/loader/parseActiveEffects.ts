@@ -391,8 +391,8 @@ function parseSpawn(loader: WorldCodexYamlLoader, context: string, map: YAMLMap)
  * `into`だけが個体ではないものも名乗れる——`same_slot`（selfが今占めている位置）と`child`
  * （selfの子を順に走査する）。どれも書かなければ`same_slot`。
  *
- * 書ける相手を場所で絞らない（`ReferenceScope.anyTarget`）。居ない相手を指したspawnは、生まれた物が
- * どこにも置かれずに消えるだけで済む——`on_max`/`on_min`の`into: actor`がそれ。
+ * 置き場所ごとの可否を見ずにどの役でも通す（`ReferenceScope.anyTarget`）。9.4節が定める絞り込みが
+ * 未実装なための状態で、`on_max`/`on_min`の`into: actor`が今は素通りする。
  */
 function parseSpawnTarget(loader: WorldCodexYamlLoader, context: string, map: YAMLMap): SpawnTarget {
   const intoNode = tryGetNode(map, 'into');
