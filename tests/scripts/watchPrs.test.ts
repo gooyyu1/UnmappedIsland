@@ -506,10 +506,12 @@ describe('watch-prs.sh の CHECKED', () => {
     expect(lines).toEqual(['CHECKED 656 海の色を決める', 'UNREVIEWED 871']);
   });
 
-  it('見張っていない issue のチェックは出さない', () => {
+  it('`--issues` に渡していない確定待ちのチェックも出す', () => {
+    // 渡し忘れた番号が出なくなると、「#656 を渡し忘れると答えが1件も出ない」が残る——この合図が
+    // 塞いだ穴と同じ形。`meta` で絞っているので、番号でも絞る必要は無い。
     const lines = watch([[]], [[asking(656, 'x 海の色を決める'), asking(657, 'x 別の問い')]], [656]);
 
-    expect(lines).toEqual(['CHECKED 656 海の色を決める']);
+    expect(lines).toEqual(['CHECKED 656 海の色を決める', 'CHECKED 657 別の問い']);
   });
 
   it('`meta` でない issue のチェックは出さない', () => {
