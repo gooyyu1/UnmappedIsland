@@ -271,9 +271,7 @@ export class ReferenceScope {
       case 'agent':
         return this.hasAgent ? undefined : 'ここは誰かが操作している場面とは限りません';
       case 'instrument':
-        return this.hasInstrument
-          ? undefined
-          : "'instrument'は、物が運ばれてくる場所（dragのinteractionsとput_inのduration）でのみ使えます";
+        return this.hasInstrument ? undefined : 'ここには働きかけに使われる物が運ばれてきません';
       case 'picked':
         return this.hasPicked ? undefined : "'picked'はamongを書いた候補の中でのみ使えます";
       case 'ancestor':
