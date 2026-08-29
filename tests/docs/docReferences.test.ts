@@ -66,11 +66,14 @@ const REF_FILES = [
 /**
  * コードフェンスの外の各行と、原文での行番号。`text` はインラインコードも除いた本文
  * （例示のリンク・参照・印を検査対象から外す）、`raw` は原文のまま。
+ *
+ * **改行を割るのはここだけで、`\r` は行に残さない。** 作業ツリーがCRLFのとき、行末の `\r` は
+ * `.` にも `$` にも一致しないので、行末を見る判定が**全部**空振りする（issue #867）。
  */
 function textLines(markdown: string): { line: number; text: string; raw: string }[] {
   const kept: { line: number; text: string; raw: string }[] = [];
   let inFence = false;
-  markdown.split('\n').forEach((raw, index) => {
+  markdown.split(/\r?\n/).forEach((raw, index) => {
     if (/^\s*```/.test(raw)) inFence = !inFence;
     else if (!inFence) kept.push({ line: index + 1, text: raw.replace(/`[^`]*`/g, ''), raw });
   });
@@ -403,6 +406,15 @@ describe('ドキュメントの参照', () => {
       found,
       `暫定は既定なので印を付けない（印が多数側に付くと背景になって読めない）:\n${found.join('\n')}`,
     ).toEqual([]);
+  });
+
+  it('見出しの解析が、CRLFの作業ツリーでも効く', () => {
+    // 行末に `\r` が残ると、見出しを見る検査（アンカー・節番号・印）が**揃って空振りし、
+    // 違反ゼロと同じ緑になる**。Linuxで走るCIでは気づけないので、既知の入力で確かめる。
+    expect(headingsOf('# 題名\r\n\r\n## 1. 節\r\n本文\r\n')).toEqual(['題名', '1. 節']);
+    const [section] = sectionsOf('## 1. 節\r\n本文\r\n### 1.1 枝\r\n');
+    expect(section.hasSubsections).toBe(true);
+    expect(section.body.map(({ text }) => text)).toEqual(['本文']);
   });
 
   it('確定節を1つ以上拾えている（下の6.1節の検査の土台）', () => {
