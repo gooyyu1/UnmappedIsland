@@ -271,17 +271,18 @@ describe('絵の在庫表への重ね方', () => {
   it('同梱に無い絵は足される', () => {
     const catalog = new Map([['coconut', '/bundled/coconut.png']]);
 
-    addPackArt(catalog, new Map([['driftwood_totem', 'blob:totem']]), 'sample', '型の絵');
+    addPackArt(catalog, new Map([['sample:driftwood_totem', 'blob:totem']]), 'sample', '型の絵');
 
-    expect(catalog.get('driftwood_totem')).toBe('blob:totem');
+    expect(catalog.get('sample:driftwood_totem')).toBe('blob:totem');
     expect(catalog.get('coconut')).toBe('/bundled/coconut.png');
   });
 
-  it('同じ名前の絵はエラーになる（後勝ちの上書きは持たない）', () => {
-    const catalog = new Map([['coconut', '/bundled/coconut.png']]);
+  it('同じ鍵の絵はエラーになる（在庫表は上書きしない）', () => {
+    // 衝突しうるのは前置きの付かない背景の絵だけ（型の絵は鍵に出所が付く。AssetPack.md 6節）。
+    const catalog = new Map([['background:hand_card', '/bundled/hand_card.png']]);
 
-    expect(() => addPackArt(catalog, new Map([['coconut', 'blob:other']]), 'sample', '型の絵')).toThrow(
-      /coconut/,
-    );
+    expect(() =>
+      addPackArt(catalog, new Map([['background:hand_card', 'blob:other']]), 'sample', '背景の絵'),
+    ).toThrow(/hand_card/);
   });
 });
