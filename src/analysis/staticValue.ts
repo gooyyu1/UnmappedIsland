@@ -25,22 +25,37 @@ import type { ReferenceRoot } from '../domain/ReferenceRoot';
  *
  * 解けないものはundefinedを返す——祖先が土台に入れる値（base）も、重ねる相手の値も、「どの文脈に
  * 置いた場合の数字か」を決めた側にしか答えられない。0を返すと「そう宣言されている」と区別が付かない。
+ *
+ * **生成時のロール（6.2節）のどちらの端かは、問いのほうが持つ**（endを受け取る）。ここで端を
+ * 固定すると、上端の問い合わせへ下端の答えが混ざったまま返る——PropertyDef.initialValueAtが
+ * 両端を答えるようになっても、この境界で片方へ畳めば同じことになる。
  */
-export type StaticValueResolver = (root: ReferenceRoot, propertyGlobalId: number) => number | undefined;
+export type StaticValueResolver = (
+  root: ReferenceRoot,
+  propertyGlobalId: number,
+  end: RollEnd,
+) => number | undefined;
+
+/**
+ * 端を1つに決めたStaticValueResolver（staticResolverOf）。効果や条件の宣言を読む側は、自分が
+ * どちらの端の話をしているかを知らないまま値を引ける。**端を選べるのは、問いを立てた側だけ。**
+ */
+export type EndBoundValueResolver = (root: ReferenceRoot, propertyGlobalId: number) => number | undefined;
 
 /**
  * defを起点として、定義だけから値を解く手立て。selfは自分のプロパティ宣言が答え、それ以外の起点は
- * outerへ委ねる。生成時のロール（6.2節）はendの端に出たものとして読む。
+ * outerへ委ねる。生成時のロール（6.2節）はendの端に出たものとして読む——**委ねる先にも同じ端を
+ * 渡す**ので、どの起点を辿っても答えは1つの端で揃う。
  */
 export function staticResolverOf(
   def: ObjectDef,
   end: RollEnd,
   outer: StaticValueResolver | undefined,
-): StaticValueResolver {
+): EndBoundValueResolver {
   return (root, propertyGlobalId) => {
     return root === 'self'
       ? staticValueOf(def, propertyGlobalId, end, outer)
-      : outer?.(root, propertyGlobalId);
+      : outer?.(root, propertyGlobalId, end);
   };
 }
 
@@ -97,14 +112,14 @@ export function trackingResolverOf(
 
 /** 解決器と、そこまでに解けない参照へ当たったかどうか（trackingResolverOf）。 */
 export interface TrackingResolver {
-  readonly resolve: StaticValueResolver;
+  readonly resolve: EndBoundValueResolver;
   readonly hitUnresolvedReference: boolean;
 }
 
 /** 宣言に書かれた1つの数値（重み・所要時間）を数値へ解く。参照が1つでも解けなければundefined。 */
 export function resolveDeclaredNumber(
   reading: DeclaredNumberReading,
-  resolve: StaticValueResolver,
+  resolve: EndBoundValueResolver,
 ): number | undefined {
   if (reading.kind === 'literal') return reading.value;
 

@@ -1166,16 +1166,16 @@ function decayLifetimeOf(cycles: readonly RangeCycle[]): DecayLifetime | undefin
 
 /** 祖先（置かれている土地）の宣言値を答える手立て。宣言していないプロパティは寄与0。 */
 function ancestorValueResolver(location: ObjectDef): StaticValueResolver {
-  return (root, propertyGlobalId) =>
-    root === 'ancestor' ? (staticValueOf(location, propertyGlobalId, 'lowest') ?? 0) : undefined;
+  return (root, propertyGlobalId, end) =>
+    root === 'ancestor' ? (staticValueOf(location, propertyGlobalId, end) ?? 0) : undefined;
 }
 
 /** どの土地に置いてもよい前提での祖先の値。最も高く宣言している土地に置いたものとして扱う。 */
 function highestDeclaredAncestorValueResolver(locations: readonly ObjectDef[]): StaticValueResolver {
-  return (root, propertyGlobalId) => {
+  return (root, propertyGlobalId, end) => {
     if (root !== 'ancestor') return undefined;
     const declared = locations
-      .map((location) => staticValueOf(location, propertyGlobalId, 'lowest'))
+      .map((location) => staticValueOf(location, propertyGlobalId, end))
       .filter((value): value is number => value !== undefined);
     return declared.length === 0 ? 0 : Math.max(...declared);
   };
@@ -1190,10 +1190,10 @@ function highestDeclaredAncestorValueResolver(locations: readonly ObjectDef[]): 
  * 分岐ごとに最も良い武器を選べる前提の配分なので、**どれか1つの武器で出る配分ではない**。
  */
 function withBestDragged(defs: readonly ObjectDef[], ancestor: StaticValueResolver): StaticValueResolver {
-  return (root, propertyGlobalId) => {
-    if (root !== 'dragged') return ancestor(root, propertyGlobalId);
+  return (root, propertyGlobalId, end) => {
+    if (root !== 'dragged') return ancestor(root, propertyGlobalId, end);
     const declared = defs
-      .map((def) => staticValueOf(def, propertyGlobalId, 'lowest'))
+      .map((def) => staticValueOf(def, propertyGlobalId, end))
       .filter((value): value is number => value !== undefined);
     return declared.length === 0 ? undefined : Math.max(...declared);
   };
