@@ -242,6 +242,58 @@ describe('PlayScreenLayout(ScreenLayout.md 9〜11節 エリア構成)', () => {
     expect(layout.lanes[0].height / u).toBeGreaterThan(320);
   });
 
+  it('横型のフィルターバーは9個を縮めずに並べ、はみ出した分を送れる長さとして返す', () => {
+    // ボタンは「すべて」＋card_filtersの8個で9個（ScreenLayout.md 8節）。横型のサイドバーは
+    // 設計の基準（1920×1080）でも636uしかなく、9個（952u）＋前後の余白は初めから収まらない。
+    const layout = new PlayScreenLayout(new ScreenMetrics(1920, 1080));
+    const row = layout.filterBarIcons(9);
+
+    expect(row.icons).toHaveLength(9);
+    for (const icon of row.icons) {
+      expect(icon.height, '収まらなくてもボタンは最小タップ領域のまま').toBe(88);
+      expect(icon.width).toBe(88);
+    }
+    // バーより長い分だけ送れる（PlayScene.buildIconBar → ScrollArea）。
+    expect(row.axis, '横型は縦積みなので縦に送る').toBe('y');
+    expect(row.length).toBe(16 + 88 * 9 + 20 * 8 + 16);
+    expect(row.length).toBeGreaterThan(layout.filterBar.height);
+
+    // 送り切った先で、最後のボタンが末尾の余白ぶんだけ内側に収まる。
+    const last = row.icons[8];
+    expect(last.y + last.height + 16).toBe(layout.filterBar.y + row.length);
+  });
+
+  it('収まる並びは送り先を持たない（オプションバーと、縦型のフィルターバー）', () => {
+    for (const [width, height] of [
+      [1080, 1920], // 9:16（縦型の基準）
+      [1920, 1080], // 16:9（横型の基準）
+      [1440, 1080], // 4:3
+    ]) {
+      const layout = new PlayScreenLayout(new ScreenMetrics(width, height));
+      const label = `${width}×${height}`;
+      const along = (bar: { width: number; height: number }): number =>
+        layout.metrics.isLandscape ? bar.height : bar.width;
+
+      expect(layout.optionsBarIcons(4).length, `${label}: オプション4個`).toBeLessThanOrEqual(
+        along(layout.optionsBar),
+      );
+      if (!layout.metrics.isLandscape) {
+        expect(layout.filterBarIcons(9).length, `${label}: フィルター9個`).toBeLessThanOrEqual(
+          along(layout.filterBar),
+        );
+      }
+    }
+  });
+
+  it('収まらない並びは、寄せ方によらずバーの先頭から始まる', () => {
+    // 中央寄せ・末尾寄せのまま溢れさせると、送り切っても先頭のボタンがバーの外に残る。
+    const landscape = new PlayScreenLayout(new ScreenMetrics(1920, 1080));
+    expect(landscape.optionsBarIcons(20).icons[0].y, '横型は中央寄せ').toBe(landscape.optionsBar.y);
+
+    const portrait = new PlayScreenLayout(new ScreenMetrics(1080, 1920));
+    expect(portrait.optionsBarIcons(20).icons[0].x, '縦型は右寄せ').toBe(portrait.optionsBar.x + 24);
+  });
+
   it('どの縦型でもフィールドエリアは3レーン分（1080u）を確保する', () => {
     // 3レーンが無いとプレイ自体が成り立たないため、9:16より正方形に近い画面では全体を縮めて
     // でも高さを取る（ScreenMetrics）。
