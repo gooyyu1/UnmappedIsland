@@ -1469,6 +1469,8 @@ ui_texts:
   time_cost: 'かかる時間 {duration}'
   # 積み下ろしの間に出す、今の積載での推定日数（GameEndings.md 9.3節）。幅は幅のまま出す。
   voyage_days: '本土まで {days}日'
+  # 日の出の演出に出る日数の見出し（ScreenLayout.md 7.5.6節）。後ろに生存日数が続く。
+  day: DAY
 
   # 死んだことを伝えるダイアログ（VitalsSystem.md 6節）。死因は消し方の対応表から引く。
   death_exhausted: 力尽きた。

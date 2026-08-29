@@ -88,6 +88,8 @@ export const UI_TEXT_NAMES = [
   'duration_hours_minutes',
   'time_cost',
   'voyage_days',
+  // 日の出の演出に出る日数の見出し（ScreenLayout.md 7.5.6節）。
+  'day',
   // 死亡・脱出・中断のダイアログ（VitalsSystem.md 6節、GameEndings.md 3節）。
   'death_exhausted',
   'death_by_cause',
