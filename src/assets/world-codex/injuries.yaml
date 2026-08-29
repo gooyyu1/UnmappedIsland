@@ -120,7 +120,8 @@ object_defs:
             blood: -15
 
   # 刺し傷。**穂先が深く突き通した傷**——槍で突かれたときに負う（tools.yamlのspear、
-  # animals.yamlのstrikeの刺突の候補）。
+  # animals.yamlのstrikeの刺突の候補）。杭を打った落とし穴（traps.yaml）に落ちた獣も同じ傷を負う
+  # ——上から落ちて杭に貫かれるのは、突かれるのと同じ深さの傷（docs/engine/TrapSystem.md 5.2節）。
   #
   # **裂傷との違いは血の流れる速さで、桁で書き分ける**（docs/engine/VitalsSystem.md 4節）。潰れた
   # 血管が縮んで塞がる裂傷（-15/tick）に対し、刺し傷は深部の血管を開いたまま残すので-250/tick。

@@ -70,7 +70,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 
 **1日未満で越えられる前提は、段ではなく幅です**（同「段は、実際に足止めしたものだけを数える」節）。
 実測では、刃物（72.2分<!-- stats: balance.yaml object_costs object=sharp_stone total_minutes -->）・焚き火（55.9分<!-- stats: balance.yaml object_costs object=campfire total_minutes -->）・くくり罠（103.3分<!-- stats: balance.yaml object_costs object=snare total_minutes -->）・覆い焼きの炉（303.8分<!-- stats: balance.yaml object_costs object=earth_kiln total_minutes -->）はいずれも
-0.04〜0.21日で、どれも段になりません。4桁の労働がかかるのは筏（4,305分<!-- stats: balance.yaml object_costs object=raft total_minutes -->）と帆（4,449分<!-- stats: balance.yaml object_costs object=rawhide_sail total_minutes -->）だけです。
+0.04〜0.21日で、どれも段になりません。4桁の労働がかかるのは筏（4,305分<!-- stats: balance.yaml object_costs object=raft total_minutes -->）と帆（3,774分<!-- stats: balance.yaml object_costs object=rawhide_sail total_minutes -->）だけです。
 
 **この物差しは道具が判定します。** `npm run stats:balance` の総コストがそのまま「段かどうか」を決めるので、
 幅出しで物が増えたときに数え直しが要りません。
@@ -218,9 +218,9 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 ## 4. 各系統の段
 
 **最初の段（2.1節）に入るものと、そのあとに来る「1日以上の山」を分けて並べます。山は合計28個、
-日数にして約76日ぶんです。**
+日数にして約75日ぶんです。**
 
-日数は自由時間（1日816分）に対する概算で、実測のあるものは印を付けました。**この76日は、明るさと
+日数は自由時間（1日816分）に対する概算で、実測のあるものは印を付けました。**この75日は、明るさと
 移動時間を無視した下限です**——どちらも入れると同じ山が約108日ぶんに広がり、島を開く17日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->を足すと
 1周回は約125日になります（8節）。
 
@@ -237,8 +237,8 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 9 | 寝床 | 敷物 | 高床の寝台（1.5）／詰め物（1） | 2 | 2.5 |
 | 10 | 住居 | 洞窟・雨よけ | 葉の小屋（3）／高床（4）／板の壁・床（5） | 3 | 12 |
 | 11 | 遠出 | 日帰りの探索 | —（8.3.1節） | 0 | 0 |
-| 12 | 船と海図 | — | **筏（5.3<!-- stats: balance.yaml object_costs object=raft days -->・実測）**／**帆（5.5<!-- stats: balance.yaml object_costs object=rawhide_sail days -->・実測）**／櫂と舵（2）／沿岸航海（3）／海図を仕上げる（5） | 5 | 20.8 |
-| | | | **合計** | **28** | **76.2** |
+| 12 | 船と海図 | — | **筏（5.3<!-- stats: balance.yaml object_costs object=raft days -->・実測）**／**帆（4.6<!-- stats: balance.yaml object_costs object=rawhide_sail days -->・実測）**／櫂と舵（2）／沿岸航海（3）／海図を仕上げる（5） | 5 | 19.9 |
+| | | | **合計** | **28** | **75.3** |
 
 **山が「量」で立っていることに注意してください**（2.4節）。石の斧も甕も1つでは0.33日で段になりません
 ——段になるのは家1軒ぶんの丸太であり、貯水に足りる数の甕です。**畑も1枚は0.32日<!-- stats: balance.yaml object_costs object=field days -->**で、段になるのは
@@ -375,7 +375,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 約125日です。1日816分という自由時間は上限であって、実際に使える時間ではありません。**
 
 1日を賄う最小労働は624分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->（[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum`）なので、差し引きの自由
-時間は1日816分。4節の山の合計は約62,000分なので、**そのまま割れば76日ぶん**です。しかしこの816分は、
+時間は1日816分。4節の山の合計は約61,000分なので、**そのまま割れば75日ぶん**です。しかしこの816分は、
 1日のどの時間でも何でもできる場合の数字で、**明るさと移動がこれを削ります**（8.1・8.2）。
 
 **山の数を増やしても日数は伸びません。** 日数は山の合計そのものなので、増やす道は「山を増やす」か
