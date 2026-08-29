@@ -53,6 +53,17 @@ describe('現在地から見える範囲（世界→映し 通し）', () => {
     );
   });
 
+  it('キャラクタ自身と現在地そのものも見える', () => {
+    // **札を借りない窓（装備・怪我・キャラクタ・現在地）の主**。これらの窓も同じ基準で畳むように
+    // なったので、ここが偽になると窓が操作のたびに閉じる。設置物だけを見る実装では通らない。
+    const game = startNewGame(codex, SAMPLE_CHARACTER, 11, seededRng(1234));
+
+    const view = fromGameSession(game, codex, locale);
+
+    expect(view.visible(game.player.instance), 'キャラクタは現在地の中に居る').toBe(true);
+    expect(view.visible(game.startLocation.instance), '現在地は見える範囲そのもの').toBe(true);
+  });
+
   it('筏の中に居ても、外側の場所に在る設置物は見えている', () => {
     const scenario = bundledScenario('voyage_ready');
     if (scenario === undefined) throw new Error('同梱シナリオ voyage_ready がありません。');
