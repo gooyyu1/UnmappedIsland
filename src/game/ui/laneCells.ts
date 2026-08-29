@@ -68,9 +68,7 @@ export function foundCells(found: readonly CardContent[]): readonly LaneCell[] {
  * 絞り込みが隠している枚数を重ねた枠（ScreenLayout.md 8.1.7節）。**残っている札の有無によらず、
  * 1枚でも隠していれば出す**——見えている札がレーンの全部なのかどうかは、そこを見ないと分からない。
  *
- * 重ねるのは**先頭の空き枠**の1つ。空き枠は札の後ろに出るので、「この先に隠れているものがN枚ある」と
- * 読める並びになる。空き枠が1つも無い並び（枠数の決まったスロットが埋まっている）では末尾の枠に
- * 重ねる——そこが並びの終わりで、続きがあることを言う場所として最も近い。
+ * 重ねるのは**先頭の空き枠**の1つで、空き枠が1つも無い並びでは末尾の枠（同 8.1.8節）。
  */
 export function hiddenCountCells(cells: readonly LaneCell[], hidden: number): readonly LaneCell[] {
   if (hidden === 0) return cells;

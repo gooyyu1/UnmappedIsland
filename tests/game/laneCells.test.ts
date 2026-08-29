@@ -23,8 +23,8 @@ const card = (name: string): CardContent => ({ icon: '🪵', name });
 const emptyLane: readonly LaneCell[] = [{}];
 
 /**
- * 絞り込みが隠している枚数の印（hiddenCountCells、ScreenLayout.md 8.1.7節）。**残っている札の有無に
- * よらず出す**ので、見えている札がレーンの全部かどうかがどのレーンでも読める。
+ * 絞り込みが隠している枚数の印（hiddenCountCells、ScreenLayout.md 8.1.7節・8.1.8節）。**残っている
+ * 札の有無によらず出す**ので、見えている札がレーンの全部かどうかがどのレーンでも読める。
  */
 describe('絞り込みが隠している枚数の印', () => {
   it('1枚も残らなければ、隠れている枚数が先頭の枠に出る', () => {
