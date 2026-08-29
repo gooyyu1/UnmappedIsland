@@ -84,7 +84,7 @@ A群12件のうち、**置き場所を決めるだけで実装が要らない**�
 | A-12 「起動」の区分 | `main.ts` / `DeviceScreen` の行き先 |
 | A-11 「宣言に対する見せ方の宣言」 | `RAIN_STYLES` の行き先 |
 
-あわせて [`Architecture.md`](./Architecture.md) の10件を `docs/engine/Layers.md` へ反映する。
+あわせて [`Architecture.md`](./Architecture.md) の10件を `docs/CodeStructure.md` へ反映する。
 特に **2-1（`Button` の判定例が実装とずれている）は事実の誤りなので、他の判断の根拠にする前に直す。**
 
 ## 4. 段1: 判定を動かさない変更（5レーン並列）

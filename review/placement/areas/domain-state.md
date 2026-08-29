@@ -50,7 +50,7 @@
 | src/domain/EffectSite.ts#EffectSite | `parent`, ctor | 所属 | 2 | 呼び出し側（WorldObject.captureEffectSite）が4値を組み立てて渡し、`parent`はspill先を決めるためだけに公開されている。 | (現状可) | | |
 | src/domain/EffectSite.ts | `SameSlotPlacement`（クラス） | 所属 | 3 | 2値を`EffectSite`→`WorldObject.insertSameSlot`→`Slot.placeSameSlot`の1ホップ運ぶだけで、受け手は即座に分解している（`placeSameSlot(obj, originCellIndex, kindRemains)`）。 | `EffectSite`内のprivate、または`Slot.placeSameSlot`の引数のまま | | |
 | src/domain/EffectSite.ts#EffectSite | `nextPlacement`, `originKindRemains`, `originCellIndex` | 所属 | 3 | クラス内からしか呼ばれないprivateヘルパー。 | (現状可) | | |
-| src/domain/Interaction.ts#Interaction/Action | `name`, `showMenu` | 所属 | 4 | `this.def.name` / `this.def.showMenu` の素通しゲッター。Layers.md 3節は「宣言は`def`から直に読む」としており、素通しは線をぼやかす。 | 呼び出し側が`def`から直に読む | `def`をprotectedに閉じているため、呼び出し側から宣言へ届く口がこれしかない（`def`を公開すると「Defへ訊くかInteractionへ訊くか」の線が消える） | |
+| src/domain/Interaction.ts#Interaction/Action | `name`, `showMenu` | 所属 | 4 | `this.def.name` / `this.def.showMenu` の素通しゲッター。CodeStructure.md 3節は「宣言は`def`から直に読む」としており、素通しは線をぼやかす。 | 呼び出し側が`def`から直に読む | `def`をprotectedに閉じているため、呼び出し側から宣言へ届く口がこれしかない（`def`を公開すると「Defへ訊くかInteractionへ訊くか」の線が消える） | |
 | src/domain/LocalIndexMap.ts | `LocalIndexMap`（クラス）, `missing`, `empty` | 所属 | 2 | グローバルID⇔ローカル添字の変換表と番兵値・空値。概念としては自明でないが、密配列を持つ以上必要。 | (現状可) | | |
 | src/domain/ObjectRef.ts#ObjectRef | private ctor | 可視性 | 2 | 3通りの指し方をstatic factoryで作らせるための隠蔽。 | (現状可) | | |
 | src/domain/ObjectRef.ts#ObjectRef | `needsInteraction()` | 所属 | 4 | 「agent/instrumentに依存する参照か」はロード時検証（`parseActiveEffects`）だけが訊く問いで、実行時の参照解決とは無関係。 | `src/loader/parseActiveEffects.ts` | `root`がprivateで、`reading`経由にすると呼び出し側がunionのkindを分解して同じ判定を書くことになる | |
@@ -58,17 +58,17 @@
 | src/domain/PropertyGain.ts#InteractionGains | `source: readonly WorldObject[]` | 所属 | 2 | 中身は「出どころとその祖先の連なり」（`WorldSession.withInteractionEffect`が`chain`を詰めている）で、単数の出どころではない。 | (現状可・改名) | | **あり**（`source`という単数の名前で祖先チェーンを運んでいる。実装を読むまで単数のsourceだと読める） |
 | src/domain/PropertyInfluence.ts | `InfluenceCounterpart` | 可視性 | 3 | exportされているが、他ファイルからは1度も型名で参照されていない（構造型として消費されている）。 | (現状可・export外し) | | |
 | src/domain/PropertyInfluence.ts#PropertyInfluences | `counterpartOfCause`, `counterpartOf`, `add` | 所属 | 3 | クラス内からしか呼ばれないprivateヘルパー。 | (現状可) | | |
-| src/domain/PropertyInfluence.ts | `PropertyInfluences`（クラス） | 所属 | 4 | 「視点で与える/受けるへ振り分ける」「相手も記号も同じ辺は1件へ畳む」は**見せ方の判断**（Layers.md 3節: 読んだ値から答えを組み立てるなら映しのもの）。ドメインが持つのは`InfluenceWriter`という読み上げ口までのはず（同6節の`EffectReader`と同じ形）。 | `src/game/view/`（`InfluenceWriter`実装として） | 辺を集めるのに祖先チェーン・子孫走査・`def.passives`が要り（`readInfluences`）、実装を映しへ出すとその走査を外へ開けることになる | |
+| src/domain/PropertyInfluence.ts | `PropertyInfluences`（クラス） | 所属 | 4 | 「視点で与える/受けるへ振り分ける」「相手も記号も同じ辺は1件へ畳む」は**見せ方の判断**（CodeStructure.md 3節: 読んだ値から答えを組み立てるなら映しのもの）。ドメインが持つのは`InfluenceWriter`という読み上げ口までのはず（同5節の`EffectReader`と同じ形）。 | `src/game/view/`（`InfluenceWriter`実装として） | 辺を集めるのに祖先チェーン・子孫走査・`def.passives`が要り（`readInfluences`）、実装を映しへ出すとその走査を外へ開けることになる | |
 | src/domain/PropertyValue.ts#PropertyValue | `isComputingEffectiveValue` | 所属 | 2 | 再入（循環参照）検出用のフラグ。概念ではなくプログラム上の防御。 | (現状可) | | |
 | src/domain/PropertyValue.ts#PropertyValue | `init(number)` | 可視性 | 2 | 「世界のルールを走らせずに値を置く」裏口。becomeType・IslandSpawner・シナリオの3者のためだけに公開されている。 | (現状可) | | **あり**（`init`はコンストラクタ相当に読めるが、実体は「rangeイベントもgainも起こさずに書く」特殊経路） |
 | src/domain/PropertyValue.ts#PropertyValue | `artSuffix` | 所属 | 3 | `this.stage?.art` の素通し。`stage`が既に公開されているので、呼び出し側（`WorldObject.artSuffix`）が同じ1行を書ける。 | 呼び出し側 | | |
-| src/domain/PropertyValue.ts#PropertyValue | `ticksUntilMax()` | 所属 | 4 | 「今の進み方が**続いたとき**」という仮定の上の予測。Layers.md 6節が「答えが必ず近似になるものは解析へ」と定めた種類の値で、宣言が言っていることではない。 | `src/analysis/`、または利用者の`src/game/view/cardLooks.ts` | `accumulateEffects`（登録済みの`add`効果）がprivateで、その和を外から取れない——ただし同じ和を返す`changePerTick`が既に公開されており、この防御は実際には破れている | |
+| src/domain/PropertyValue.ts#PropertyValue | `ticksUntilMax()` | 所属 | 4 | 「今の進み方が**続いたとき**」という仮定の上の予測。CodeStructure.md 5節が「答えが必ず近似になるものは解析へ」と定めた種類の値で、宣言が言っていることではない。 | `src/analysis/`、または利用者の`src/game/view/cardLooks.ts` | `accumulateEffects`（登録済みの`add`効果）がprivateで、その和を外から取れない——ただし同じ和を返す`changePerTick`が既に公開されており、この防御は実際には破れている | |
 | src/domain/PropertyValue.ts#PropertyValue | `changePerTick()` | 可視性 | 5 | public だが**クラス外から1箇所も呼ばれていない**（`ticksUntilMax`の内部でしか使われない）。 | (private化) | | |
 | src/domain/PropertyValue.ts#PropertyValue | `incoming` | 可視性 | 5 | public だが**プロダクションコードに呼び出し元が無い**（テストのみ）。さらに`RegisteredPassiveEffect`側が「`PropertyValue.incoming`のため公開する」と書いてメンバーを開けており、使われていない口のために2段の露出が続いている。 | (private化・`RegisteredPassiveEffect`の公開も見直し) | | |
-| src/domain/PropertyValue.ts#PropertyValue | `availableToTransferOut()`, `remainingTransferCapacity()` | 所属 | 2 | transfer効果（9.5節）の規則だが、実体値とrangeのどちらで判定するかを呼び出し側に決めさせないため値側にある（Layers.md 3節の`alert`と同じ形）。 | (現状可) | | |
+| src/domain/PropertyValue.ts#PropertyValue | `availableToTransferOut()`, `remainingTransferCapacity()` | 所属 | 2 | transfer効果（9.5節）の規則だが、実体値とrangeのどちらで判定するかを呼び出し側に決めさせないため値側にある（CodeStructure.md 3節の`alert`と同じ形）。 | (現状可) | | |
 | src/domain/PropertyValue.ts#PropertyValue | `toString()` | 所属 | 2 | デバッグ・エラー文面のための言語規約メンバー。 | (現状可) | | |
 | src/domain/ReferenceRoot.ts | `PropertyPath`（クラス） | 配置 | 3 | `ReferenceRoot`型のファイルに、別概念（root+propertyGlobalIdの組）のクラスが同居している。利用者は`PickEffect`/`ConditionNode`/`parseConditions`など5ファイル。 | `src/domain/PropertyPath.ts` | | |
-| src/domain/Rng.ts | `pickWeighted()` | 配置 | 4 | 重み付き抽選は完全に汎用のアルゴリズムで、ゲームの語彙を1つも含まない（Layers.md 4節の`src/util/`の定義に合致）。 | `src/util/` | `Rng`インターフェースがドメインに居るため、`src/util/`へ出すと util → domain の import が生まれる（`Rng`ごと出すなら成立する） | |
+| src/domain/Rng.ts | `pickWeighted()` | 配置 | 4 | 重み付き抽選は完全に汎用のアルゴリズムで、ゲームの語彙を1つも含まない（CodeStructure.md 1節の`src/util/`の定義に合致）。 | `src/util/` | `Rng`インターフェースがドメインに居るため、`src/util/`へ出すと util → domain の import が生まれる（`Rng`ごと出すなら成立する） | |
 | src/domain/Rng.ts | `randomRng()` | 所属 | 2 | 既定の非決定乱数源のファクトリ。 | (現状可) | | |
 | src/domain/Rng.ts | `seededRng()` | 配置 | 3 | 実体は`domain/generation/Pcg32`にあり、この1行のためだけに抽象の定義ファイルが具象実装へ依存している。 | `src/domain/generation/` | | |
 | src/domain/Slot.ts#Slot | `hasFixedCells` | 可視性 | 5 | public だが**クラス外に呼び出し元が無い**（`WorldObject`のコメントで言及されるのみ、テストにも無し）。 | (private化) | | |
@@ -79,10 +79,10 @@
 | src/domain/WorldObject.ts#WorldObject | `instanceId` | 所属 | 2 | 同一性比較・保存・参照解決のためのID。 | (現状可) | | |
 | src/domain/WorldObject.ts#WorldObject | `findDescendantByInstanceId()`, `findDescendantOfDef()` | 所属 | 2 | 「別途のインスタンス一覧を持たずツリー走査で引く」というプログラム上の都合の解決。 | (現状可) | | |
 | src/domain/WorldObject.ts#WorldObject | `insertSameSlot()` | 可視性 | 2 | `EffectSite`からのみ呼ばれるsame_slot専用の入口。 | (現状可) | | |
-| src/domain/WorldObject.ts#WorldObject | `readInfluences()`, `resolveInfluenceTargets()` | 所属 | 2 | 画面（Windows.md 8節）のための読み上げ口。Layers.md 6節が`EffectReader`について認めた形と同じで、口そのものはドメインに要る。`resolveInfluenceTargets`は名前に反して`PassiveEffect`の登録経路でも使われている。 | (現状可) | | |
+| src/domain/WorldObject.ts#WorldObject | `readInfluences()`, `resolveInfluenceTargets()` | 所属 | 2 | 画面（Windows.md 8節）のための読み上げ口。CodeStructure.md 5節が`EffectReader`について認めた形と同じで、口そのものはドメインに要る。`resolveInfluenceTargets`は名前に反して`PassiveEffect`の登録経路でも使われている。 | (現状可) | | |
 | src/domain/WorldObject.ts#WorldObject | `resolveEffectTargetOrAncestor()`, `executeSpawn()` | 所属 | 2 | 効果側から呼ばれる解決・実行の入口。 | (現状可) | | |
 | src/domain/WorldObject.ts#WorldObject | `engine`, `missing`, `artSuffix`, `exhaustedStage`, `rejectionForLoopOrDetach`, `attachToSlot`, `detachFromParent`, `setParent`, `registerEdgeWith`, `registerAncestorTargetedRecursively`, `spillContentsTo`, `becomeType`, `evict`, `effectiveWeight`, `collectContainerInfluence`, `collectInfluencesRecursively`, `place`, `tryFirstAcceptingChild` | 所属 | 3 | クラス内からしか呼ばれないprivateヘルパー（`artSuffix`/`exhaustedStage`はpublicだが`PropertyValue`側の同名ゲッターへの素通し）。 | (現状可) | | `missing`（**あり**: 名前からは「持っていないか」を返す述語に読めるが、実体はエラー**文面**を組み立てるメソッド。さらに`names: NameRegistry`を呼び出し側から受け取るが、`this.session.codex`から自分で辿れる） |
-| src/domain/WorldObject.ts#WorldObject | `storageFillRatio()` | 所属 | 4 | 「最も詰まっているスロットを返す」は`Slot.fillRatio`の集約ではなく**どのスロットを映すかという見せ方の判断**（Layers.md 3節）。唯一の利用者は`src/game/view/cardLooks.ts`。 | `src/game/view/cardLooks.ts` | `private get engine`（規約プロパティIDの束）と各スロットの`capacity`を外へ開けずに済ませるため | |
+| src/domain/WorldObject.ts#WorldObject | `storageFillRatio()` | 所属 | 4 | 「最も詰まっているスロットを返す」は`Slot.fillRatio`の集約ではなく**どのスロットを映すかという見せ方の判断**（CodeStructure.md 3節）。唯一の利用者は`src/game/view/cardLooks.ts`。 | `src/game/view/cardLooks.ts` | `private get engine`（規約プロパティIDの束）と各スロットの`capacity`を外へ開けずに済ませるため | |
 | src/domain/WorldObject.ts#WorldObject | `containerContributionTo()` | 所属 | 4 | `weight`/`load`という**特定のプロパティ名だけに効く算術**（fill×density、load_reduction_rate）が、あらゆる型の実体クラスに直書きされている。汎用のWorldObjectが2つのプロパティ名を知っている。 | `ContainerContribution`（ContainerSystem専用の小クラス／モジュール） | `PropertyValue.getEffectiveValue`が実効値の合成の途中でこれを呼ぶため、全スロットの中身と`effectiveWeight`（再帰）へ同期的に届く必要がある | |
 | src/domain/WorldObject.ts#WorldObject | `captureEffectSite()` | 所属 | 4 | `EffectSite`が要る4値（parent/slot/originStack/その添字）をWorldObject側が組み立てている。「自分のことは自分でする」に照らせば捕捉は`EffectSite`の仕事。 | `EffectSite.capture(owner)`（staticファクトリ） | `_parent`・`_parentSlot`がprivateで、捕捉をEffectSite側へ寄せると両方を渡すか公開することになる | |
 | src/domain/WorldSession.ts#WorldSession | `nextInstanceId` | 所属 | 2 | ID発行カウンタ。可変状態をロード後不変のWorldCodexに置けないための配置。 | (現状可) | | |
@@ -92,7 +92,7 @@
 | src/domain/WorldSession.ts#WorldSession | `advanceWorldTime()` | 所属 | 4 | 中身はすべて`world`のフィールド演算（`world.minute % world.minutesPerTick`でtick境界を割り出し、`world.addMinutes`を刻む）。Worldの不変条件をWorldSessionが代わりに守っている（CLAUDE.md「自分のことは自分でする」）。 | `World`（`src/domain/views/World.ts`） | `runTick`が`world.runAnimalTurns(this)`でセッションを渡し返すため、Worldへ移すとWorldがセッションを持つ循環になる | |
 | src/domain/actionTime.ts | `spendDuration()` | 所属 | 4 | 第2引数に`session`を取り、中身は`session.advanceWorldTime`と`world.instance.contains`だけ。`session.spendDuration(minutes, participants)`と書けるものを自由関数にしている。 | `WorldSession`のメソッド | ここに置くことで`WorldSession`が「行動」「関与オブジェクト」という語彙と、行動が成立しなかったときの打ち切り規約（ActionSystem.md 2節）を知らずに済んでいる | |
 | src/domain/autoFill.ts | `chooseCandidates()` | 所属 | 3 | ファイル内からしか呼ばれないモジュール private ヘルパー。 | (現状可) | | |
-| src/domain/crafting.ts | `currentStep()`, `remainingRequirements()` | 所属 | 4 | 引数が`(recipe, progress)`だけで、製作中オブジェクトもセッションも見ていない。「所要時間を積み上げた区間が工程を指す」はレシピの宣言の読み方そのもの。 | `RecipeDef`のメソッド | `RecipeDef`はロード後不変の宣言（Layers.md 3節「型だけで決まるなら定義へ訊く」）で、そこへ`progress`という実行時の値の読み方を持ち込まずに済ませている | |
+| src/domain/crafting.ts | `currentStep()`, `remainingRequirements()` | 所属 | 4 | 引数が`(recipe, progress)`だけで、製作中オブジェクトもセッションも見ていない。「所要時間を積み上げた区間が工程を指す」はレシピの宣言の読み方そのもの。 | `RecipeDef`のメソッド | `RecipeDef`はロード後不変の宣言（CodeStructure.md 3節「型だけで決まるなら定義へ訊く」）で、そこへ`progress`という実行時の値の読み方を持ち込まずに済ませている | |
 | src/domain/crafting.ts | `allocate()`, `spillUnneeded()` | 所属 | 3 | ファイル内からしか呼ばれないモジュール private ヘルパー。 | (現状可) | | |
 
 ## 移動先が書けなかったもの
@@ -106,7 +106,7 @@
 
 ## ファイル配置（層=配置）についての所見
 
-- **層としての配置は全21ファイルとも正しい。** どれも「見えていない土地・物も含めて何が在り何が起きるか」を扱っており、Layers.md 4節の`src/domain/`＝世界に合致する。Phaser・座標・ミリ秒への依存も無い。
-- ただし`src/domain/`直下は47ファイルの平置きで、**ロード後不変の宣言（Def）と実行時の状態（実体）が混ざっている**。担当範囲の中だけを見ても、宣言側（`ObjectRef` `ReferenceRoot`/`PropertyPath` `AlertLevel` `SlotPosition`）・実体側（`WorldObject` `Slot` `PropertyValue` `ObjectStack` `WorldSession` `EffectSite`）・出来事の記録（`WorldChange` `WorldSignal` `PropertyGain` `PropertyInfluence`）・手続きモジュール（`actionTime` `autoFill` `crafting` `slotEntry`）の4種が同じ階層に並ぶ。Layers.md 3節が「定義は読んでよい／インスタンスへ訊くか定義へ訊くか」という線を強く引いているのに、ディレクトリはその線を映していない。
+- **層としての配置は全21ファイルとも正しい。** どれも「見えていない土地・物も含めて何が在り何が起きるか」を扱っており、CodeStructure.md 1節の`src/domain/`＝世界に合致する。Phaser・座標・ミリ秒への依存も無い。
+- ただし`src/domain/`直下は47ファイルの平置きで、**ロード後不変の宣言（Def）と実行時の状態（実体）が混ざっている**。担当範囲の中だけを見ても、宣言側（`ObjectRef` `ReferenceRoot`/`PropertyPath` `AlertLevel` `SlotPosition`）・実体側（`WorldObject` `Slot` `PropertyValue` `ObjectStack` `WorldSession` `EffectSite`）・出来事の記録（`WorldChange` `WorldSignal` `PropertyGain` `PropertyInfluence`）・手続きモジュール（`actionTime` `autoFill` `crafting` `slotEntry`）の4種が同じ階層に並ぶ。CodeStructure.md 3節が「定義は読んでよい／インスタンスへ訊くか定義へ訊くか」という線を強く引いているのに、ディレクトリはその線を映していない。
 - `Rng.ts`が直下に居ながら唯一の実装（`Pcg32`）は`domain/generation/`にあり、抽象の定義ファイルが具象サブディレクトリへ依存している。`pickWeighted`はゲームの語彙を1つも持たない汎用アルゴリズムで、本来は`src/util/`。
 - `ReferenceRoot.ts`だけは1ファイルに2概念（`ReferenceRoot`型と`PropertyPath`クラス）が同居しており、他のファイルの粒度から外れている。

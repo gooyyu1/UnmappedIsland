@@ -63,7 +63,7 @@
 | src/domain/generation/NewGame.ts | `resolveCharacterDefName()` | 所属 | 4 | 「未知の識別子＝旧セーブ」の互換処理で、新規ゲームの組み立てではない | `src/save/`（`newGameInput.ts` の隣） | `characterDefNames` の並び順（先頭が既定）に依存しており、同じ場所に置かないと既定の決め方が2箇所に散るため | |
 | src/domain/generation/NewGame.ts#NewGameSession | `_startLocation`, `startAt()` | 所属 | 4 | 「開始直後のゲーム一式」を後から差し替えるための可変フィールドで、唯一の呼び出し元は `src/scenario/Scenario.ts` | `Scenario`（シナリオ適用の一手順として） | 開始地点の差し替えには `placePlayerAt` と `_startLocation` の同時更新が要り、Scenario へ出すと開始地点の可変性を公開することになるため | |
 | src/domain/generation/PathNetworkBuilder.ts | `WeightedEdge` | 所属 | 4 | `IslandEdge` から `travelMinutes` を抜いただけの型で、プログラミング上の都合だけで存在している | `IslandMap.ts`（`IslandEdge` の所要時間を後から決める形にする） | `IslandEdge` が `travelMinutes` を必須で持つため、所要時間がまだ決まっていない段階の辺を表せないため | |
-| src/domain/views/Location.ts#Location | `itemsSlotId`, `fixturesSlotId` | 所属 | 4 | `words.itemsSlotId` をそのまま返す素通し。Layers.md は定義への素通しを生やさない方針で、実際 `craftingView.ts` は `codex.vocabulary.world.itemsSlotId` を直に読んでおり、同じ値への経路が2本ある | 呼び出し側が `codex.vocabulary.world` から直に読む | ビューだけを受け取る UI（`cardPlaces.ts`）が codex を持たずにスロットを引けるようにするため | |
+| src/domain/views/Location.ts#Location | `itemsSlotId`, `fixturesSlotId` | 所属 | 4 | `words.itemsSlotId` をそのまま返す素通し。CodeStructure.md は定義への素通しを生やさない方針で、実際 `craftingView.ts` は `codex.vocabulary.world.itemsSlotId` を直に読んでおり、同じ値への経路が2本ある | 呼び出し側が `codex.vocabulary.world` から直に読む | ビューだけを受け取る UI（`cardPlaces.ts`）が codex を持たずにスロットを引けるようにするため | |
 | src/domain/views/PlayerCharacter.ts#PlayerCharacter | `handSlotId` | 所属 | 4 | 上と同じ素通し。`craftingView.ts` は語彙から直に、`cardPlaces.ts` はビュー経由で同じ値を読んでいる | 呼び出し側が `codex.vocabulary.world` から直に読む | ビューだけを受け取る UI が codex を持たずにスロットを引けるようにするため | |
 | src/domain/views/PlayerCharacter.ts#PlayerCharacter | `hasReachedMainland`, `broughtArtifacts`, `mainland` | 所属 | 4 | エンディング判定（GameEndings.md）。`broughtArtifacts` は本土の全子孫を数えており、プレイヤー本人とは無関係（キャラクタの状態ではなく決着の状態） | `Ending`（決着を判定するビュー） | 本土を親方向へ辿る起点がプレイヤー自身の位置で、`mainlandTagId`・`artifactTagId` の語彙をこのクラスが既に握っているため | `broughtArtifacts`（「持ち帰った」と言いながら本土に在る物すべてを数える） |
 | src/domain/views/World.ts#World | `rollTimeOfDay()` | 所属 | 4 | ドキュメントに「NewGame.start専用」と書かれた、開始時刻の抽選。世界の恒常的な操作ではない | `NewGame` | `hourId`/`minuteId` の書き込み口と `minutesPerTick` を World の外へ公開せずに開始時刻を決めるため | |
@@ -110,12 +110,12 @@
 
 ## ファイル配置（層=配置）についての所見
 
-- **`src/domain/views/` が `src/domain/` の下に居るのは妥当**。Layers.md の「映し」は `src/game/view/` で、
+- **`src/domain/views/` が `src/domain/` の下に居るのは妥当**。CodeStructure.md の「映し」は `src/game/view/` で、
   「今の断面を作り直し、何が出ていて操作が何を意味するかを答える」もの。`src/domain/views/` の5クラスは
   そうではなく、trait 合成モデルの `WorldObject` に**世界の語彙で名前を与えた型付きラッパ**で、
   `explore`・`travel`・`takeTurn` のように世界を書き換える。世界の側にあるべきものが世界の下に居る。
   ただし**名前が「映し」と衝突している**のは配置上の実害で、`src/domain/typed/` のように改名するか、
-  少なくとも Layers.md 4節の表に「`src/domain/views/` は映しではない」と書き添える価値がある。
+  少なくとも CodeStructure.md 1節の表に「`src/domain/views/` は映しではない」と書き添える価値がある。
   なお現状の唯一の漏れは、UI へ渡す都合で語彙IDの素通し（`itemsSlotId` 等）が生えている点。
 - **`src/domain/generation/` は概ね妥当**だが、2種類の異物がある。1つは**汎用の道具**
   （`Pcg32`・`shortestPathDistance`・`cross`・`shuffled`・座標正規化を除いた `noiseAt`）で、
