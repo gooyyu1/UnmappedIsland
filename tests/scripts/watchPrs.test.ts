@@ -476,51 +476,49 @@ describe('watch-prs.sh の UNREVIEWED', () => {
 });
 
 describe('watch-prs.sh の CHECKED', () => {
-  /** 項目を並べて確認の置き場の本文にする。`x ` で始まるものがチェック済み。 */
-  const asking = (number: number, ...items: string[]): unknown =>
+  /** 項目を並べて確認の置き場（`meta`）の本文にする。`x ` で始まるものがチェック済み。 */
+  const asking = (number: number, ...items: string[]): unknown => checklist(number, ['meta'], ...items);
+
+  /** `asking` と同じ本文を、任意のラベルで作る。 */
+  const checklist = (number: number, labels: string[], ...items: string[]): unknown =>
     issue(
       number,
-      [],
+      labels,
       [],
       items.map((item) => `- [${item.startsWith('x ') ? 'x' : ' '}] ${item.replace(/^x /, '')}`).join('\n'),
     );
 
-  it('起動より後に付いたチェックだけを出す', () => {
-    const lines = watch(
-      [[]],
-      [
-        [asking(656, 'x 海の色を決める', '島の名前を決める')],
-        [asking(656, 'x 海の色を決める', 'x 島の名前を決める')],
-      ],
-      [656],
-    );
+  it('付いているチェックを毎周出す。起動時に付いていたものも出す', () => {
+    // 起動時の状態を基準にすると、見張りを立て直すたびに、その谷間で付いたチェックが飲み込まれる。
+    // 隣の未チェックの項目が出ないことで、`[x]` だけを見ていることも見る。
+    const lines = watch([[]], [[asking(656, 'x 海の色を決める', '島の名前を決める')]], [656]);
 
-    expect(lines).toEqual(['CHECKED 656 島の名前を決める']);
+    expect(lines).toEqual(['CHECKED 656 海の色を決める']);
   });
 
-  it('外したチェックは出さない', () => {
-    // 何も出ないことは、時間切れと区別が付かない。同じ周に別の項目を付けて、そちらだけが出ることで
-    // 「外したほうは出ていない」を見る。
-    const lines = watch(
-      [[]],
-      [
-        [asking(656, 'x 海の色を決める', '島の名前を決める')],
-        [asking(656, '海の色を決める', 'x 島の名前を決める')],
-      ],
-      [656],
-    );
+  it('1周目に他の合図があっても、同じ周のチェックを出す', () => {
+    // 見張りは合図が1件でもあれば終わるので、増分の基準を1周目で取ると、他の合図が出た周の
+    // チェックは一度も出ないまま次の起動の基準に飲み込まれる。忙しい局面ほどそうなる。
+    const lines = watch([[pullRequest(871, 'MERGEABLE')]], [[asking(656, 'x 海の色を決める')]], [656], [], {
+      numbers: [0],
+    });
 
-    expect(lines).toEqual(['CHECKED 656 島の名前を決める']);
+    expect(lines).toEqual(['CHECKED 656 海の色を決める', 'UNREVIEWED 871']);
   });
 
   it('見張っていない issue のチェックは出さない', () => {
+    const lines = watch([[]], [[asking(656, 'x 海の色を決める'), asking(657, 'x 別の問い')]], [656]);
+
+    expect(lines).toEqual(['CHECKED 656 海の色を決める']);
+  });
+
+  it('`meta` でない issue のチェックは出さない', () => {
+    // チェックが答えになるのは確定待ちの盤の上だけ。task issue が本文に持つ手順の一覧まで拾うと、
+    // 拾いようのない項目で毎周起こされる。
     const lines = watch(
       [[]],
-      [
-        [asking(656, '海の色を決める'), asking(657, '別の問い')],
-        [asking(656, 'x 海の色を決める'), asking(657, 'x 別の問い')],
-      ],
-      [656],
+      [[asking(656, 'x 海の色を決める'), checklist(900, ['task'], 'x 手順1')]],
+      [656, 900],
     );
 
     expect(lines).toEqual(['CHECKED 656 海の色を決める']);
