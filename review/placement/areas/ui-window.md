@@ -2,7 +2,7 @@
 
 採点の基準（迷ったときの倒し方）:
 
-- 窓は層ではなく**組み立て**（Layers.md 2節）。「どの部品をどこへ置くか」「映しの答えを誰へ渡すか」は
+- 窓は層ではなく**組み立て**（CodeStructure.md 2節）。「どの部品をどこへ置くか」「映しの答えを誰へ渡すか」は
   判定1。**判断・世界の語彙・描画そのもの・配色の決定**が混じっていたら 3以上。
 - そのファイルからしか使わない**寸法定数**は 3 に留めた。`childWindowLayout.ts` に
   「個々のウィンドウ固有の寸法は各ウィンドウが持つ」と明示があり、寸法だけを理由に 4 にはしない。
@@ -51,13 +51,13 @@
 |---|---|---|---|---|---|---|---|
 | ExplorationPane.ts | `noteOf()` | 所属 | 5 | 探索率から「この土地に隠された道はすべて見つけた」と**世界の話を言い分けている**——部品は世界の語彙を知らない側 | `ExplorationContent` に文を持たせ、映し（PlayScreenView）が組み立てる | | |
 | MapWindow.ts | `CHART_PAPER`, `CHART_LINE`, `ROAD_INK` | 所属 | 4 | `src/game/ui/` で生の16進を持つ唯一の窓。配色を決めるのは意匠 | `looks/theme.ts` の `COLOR` | `COLOR` は docs/ui のモックのCSSと値を対応させる約束（theme.ts 冒頭）で、モックに無い地図窓の3色を足せない | |
-| MapWindow.ts#MapWindow | `zoom`, `panX`, `panY`, `pinchDistance`, `pinchMid`, `panLast`, `sceneListeners`, `addPan()`, `addZoom()`, `zoomAt()`, `listenScene()` / module `MAX_ZOOM`, `WHEEL_ZOOM_BASE`, `touchPointer()` | 配置 | 4 | ホイール・ピンチ・パンの受け口と倍率の保持は**ゲームを消しても1文字も変わらない**（`touchPointer` は「Phaserの型の嘘を受ける」と自称しており、Layers.md 5節が汎用と呼ぶそのもの） | `src/ui/panZoom.ts`（汎用） | 変換をコンテナに掛けず**カード1枚ずつへ書き戻している**（`applyTransform`）。札はドラッグ入力と `bringToTop` のためシーン直下に居る必要があり、汎用の入れ物に包めない | |
+| MapWindow.ts#MapWindow | `zoom`, `panX`, `panY`, `pinchDistance`, `pinchMid`, `panLast`, `sceneListeners`, `addPan()`, `addZoom()`, `zoomAt()`, `listenScene()` / module `MAX_ZOOM`, `WHEEL_ZOOM_BASE`, `touchPointer()` | 配置 | 4 | ホイール・ピンチ・パンの受け口と倍率の保持は**ゲームを消しても1文字も変わらない**（`touchPointer` は「Phaserの型の嘘を受ける」と自称しており、CodeStructure.md 4節が汎用と呼ぶそのもの） | `src/ui/panZoom.ts`（汎用） | 変換をコンテナに掛けず**カード1枚ずつへ書き戻している**（`applyTransform`）。札はドラッグ入力と `bringToTop` のためシーン直下に居る必要があり、汎用の入れ物に包めない | |
 | MapWindow.ts | `drawDottedArc()`, `drawIslandOutline()` | 所属 | 4 | ベジェ弧の等間隔打点と、正弦波で揺らした円——**地図の絵**であって組み立てではない | `src/game/ui/MapChart.ts`（新設）／弧の打点は `src/ui/shapes.ts` | ズーム・パンの値を持つのが窓だけで、変換のたびに描き直す必要がある | |
 | MapWindow.ts#MapWindow | `unplacedCount()` | 所属 | 3 | 名前は「置かれていない数」だが、実体は**この窓が今までに `placements` へ入れた**うち保存に無い件数＝待機列の次の番号 | `trayCell` 側へ番号を渡す形に畳む | | ○ |
 | MapWindow.ts#MapWindow | `applyTransform()`, `drawRoads()`, `centerPointOf()`, `clampTopLeft()`, `trayCell()` / `CARD_SCALE`, `ROAD_DOT_RADIUS`, `ROAD_DOT_SPACING`, `ROAD_BEND_RATIO`, `CURRENT_BORDER_WIDTH` | 所属 | 3 | 視野と海図の道具立て。上の2件が出れば一緒に動くが、単体では利用者が近い | 同上（`panZoom` / `MapChart`） | | |
 | ModalDialog.ts | `BUTTON_HEIGHT`, `BUTTON_GAP` | 所属 | 4 | 子ウィンドウの `ACTION_HEIGHT`(=88)/`ACTION_GAP`(=24) と**同じ意味で値だけ違う**（72/16）。同じことを2箇所が別々に決めている | `looks/childWindowLayout.ts` | モーダルは `centerWindow`/`closeRow` の枠組みに乗っておらず、子ウィンドウ専用と書かれた定数群を引けない | |
 | ModalDialog.ts | `PLATE_MAX_WIDTH`, `PLATE_PADDING`, `PLATE_GAP`, `PORTRAIT_HEIGHT`, `addPortrait()`, `addAction()` | 所属 | 3 | 板の寸法と生成ヘルパー。利用者がこのクラスだけ | 同上 | | |
-| ObjectWindow.ts#ObjectWindow | `properties`, `exploration`, `setProperties()`, `setExploration()` | 所属 | 4 | **今見せていない内容の控え**を窓が抱えている。「次に何を見せるか」は映しの答え（Layers.md 1節） | `ObjectWindowOptions` を `properties: () => …` の問い合わせ口にし、控えは映し側（PlayScreenView）が持つ | 面はタブを開くたび作り直されるので、面が居ない間に届いた内容を誰かが持っていないと落ちる | |
+| ObjectWindow.ts#ObjectWindow | `properties`, `exploration`, `setProperties()`, `setExploration()` | 所属 | 4 | **今見せていない内容の控え**を窓が抱えている。「次に何を見せるか」は映しの答え（CodeStructure.md 1節） | `ObjectWindowOptions` を `properties: () => …` の問い合わせ口にし、控えは映し側（PlayScreenView）が持つ | 面はタブを開くたび作り直されるので、面が居ない間に届いた内容を誰かが持っていないと落ちる | |
 | ObjectWindow.ts | `DESCRIPTION_TAB`, `PROPERTIES_TAB`, `EXPLORATION_TAB` | 所属 | 4 | タブ識別子の名前空間が**暗黙の規約**（`@` 印でスロットの `key` と衝突を避ける）で、片方の生成元は外（映し） | タブの識別子を型で表す（`{kind:'slot',key}` / `{kind:'description'}` …） | スロットの `key` を決めるのは映しなので、衝突しない印は文字列規約として窓側で足すしかない | |
 | ObjectWindow.ts | `CANNOT_DO_NOW` | 所属 | 4 | 「今はできない。」は**なぜ押せないか**の既定文＝映しの言い分 | 映しが `reason` を常に埋める | `ObjectWindowAction.reason` を `undefined` のままにできる契約を保つため | |
 | ObjectWindow.ts / DescriptionPane.ts / StatusDetailWindow.ts | `DESCRIPTION_LABEL`, `PROPERTIES_LABEL`, `EXPLORATION_LABEL`, `NO_DESCRIPTION`（2ファイルに同一文字列）, `NO_INFLUENCE` | 配置 | 4 | 画面のことばがファイルごとに散っている。`NO_DESCRIPTION` は2ファイルで**同じ文を二重に持つ** | (なし。末尾に記載) | 表示文字列の対応表（`src/locale/`）はワールド定義の語を引く仕組みで、UIの地の文を置く口が無い | |
@@ -72,7 +72,7 @@
 | StatusDetailWindow.ts#StatusDetailWindow | `buildSection()`, `buildTile()`, `addTileLabel()` | 所属 | 4 | 影響の枠（絵・記号・押せる領域）は再利用できる札の部品 | `src/game/ui/InfluenceTile.ts` | 寸法が決まるまで置けないため生成と配置を分けて `place` を返しており、後片付けも窓の `objects` に相乗りしている | |
 | StatusDetailWindow.ts | `markOf()` | 所属 | 3 | `reversible`/`increases` から記号を引く対応表。契約（`StatusInfluence`）の側が自然 | `src/game/ui/StatusBar.ts` | | |
 | StatusDetailWindow.ts | `HEADER_ICON_SIZE`, `TITLE_SIZE`, `DESCRIPTION_SIZE`, `DESCRIPTION_LINE_GAP`, `BAR_HEIGHT`, `STAGE_*`(9), `SECTION_*`(2), `TILE_*`(8), `INACTIVE_ALPHA`, `MIN_TILE_ROWS` | 所属 | 3 | 25個の寸法・濃さ。上の2部品が出れば大半は一緒に動く | `StageMarks` / `InfluenceTile` | | |
-| TextInput.ts | `class TextInput`（ファイルごと） | 配置 | 4 | ゲームの語彙を1つも持たず、**Phaserにキャンバス上の文字入力が無い**ことだけを埋めている＝Layers.md 5節の汎用部品そのもの | `src/ui/textInput.ts` | `COLOR`/`SIZE`/`FONT_FAMILY` をCSS文字列へ直に埋めており、汎用側へ出すには `setLabelDefaults` に相当する差し替え口が要る | |
+| TextInput.ts | `class TextInput`（ファイルごと） | 配置 | 4 | ゲームの語彙を1つも持たず、**Phaserにキャンバス上の文字入力が無い**ことだけを埋めている＝CodeStructure.md 4節の汎用部品そのもの | `src/ui/textInput.ts` | `COLOR`/`SIZE`/`FONT_FAMILY` をCSS文字列へ直に埋めており、汎用側へ出すには `setLabelDefaults` に相当する差し替え口が要る | |
 | Tooltip.ts#Tooltip | `bringToTop()` | 所属 | 4 | 「ボタンを作り直したら吹き出しを持ち上げ直す」手順を**呼び出し側に覚えさせている**（ObjectWindow.setActions） | `looks/screenDepth.ts` の `SCREEN_DEPTH` に吹き出しの層を足す | 子ウィンドウの中の重なりが `SCREEN_DEPTH` に載っておらず生成順だけで決まっているため、順序を自分で守る手段が無い | |
 | Tooltip.ts | `PADDING`, `LINE_GAP`, `CARD_GAP`, `TITLE_SIZE`, `BODY_SIZE`, `NOTE_SIZE`, `NOTE_ALPHA`, `MAX_WIDTH`, `addText()` | 所属 | 3 | 寸法と、`ui/labels.ts` の `addLabel` を折り返し・行間つきで書き直した private ヘルパー | `looks/` ／ `addText` は `src/ui/labels.ts` へ口を足す | | |
 | Tooltip.ts#Tooltip | `shown`, `width`, `height` | 所属 | 2 | 同じ文言なら作り直さない・置き場所を測るために要る控え | | | |
@@ -91,7 +91,7 @@
 
 ## ファイル配置（層=配置）についての所見
 
-- 12ファイルが `src/game/ui/` に居ることは Layers.md 4節の「ウィンドウは部品と同じ場所に置く」に
+- 12ファイルが `src/game/ui/` に居ることは CodeStructure.md 1節の「ウィンドウは部品と同じ場所に置く」に
   合っている。例外は **TextInput**（ゲームの語彙ゼロ・Phaserの欠落を埋めるだけ＝`src/ui/` の定義に一致）と、
   **MapWindow の中の視野操作**（同じ理由）。
 - 窓とペインが1ディレクトリに混在しているが、`*Window.ts` と `*Pane.ts` で読み分けられており、

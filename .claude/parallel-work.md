@@ -319,8 +319,8 @@ IDを載せた open なPRも無い** `task` のセッションを `STALLED <セ�
 | 5 | `src/game` 直下 ＋ `view` ＋ `looks` | 8,320 |
 | 6 | `src/analysis` ＋ `src/codex-viewer` ＋ ほか | 7,722 |
 
-**`src/game` は層ではない。** [`docs/engine/Layers.md`](../docs/engine/Layers.md) 4節のとおり
-映し・意匠・部品・組み立ての4層にまたがり、この地図では3・4・5に割れる。
+**`src/game` は層ではない。** [`docs/CodeStructure.md`](../docs/CodeStructure.md) 1節のとおり
+映し・意匠・部品の3層に加え、層ではない組み立てと層の外にまたがり、この地図では3・4・5に割れる。
 
 ### 縦のスライスは、この地図では割れない
 

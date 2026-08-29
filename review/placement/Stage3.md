@@ -462,7 +462,7 @@ observe*が行う）。**どれも4つ全部の性質**なのでクラスのコ�
 
 `tests/architecture/layers.test.ts` に1件足した——`src/analysis` と `src/codex-viewer` は
 `ActiveEffect.ts` / `ConditionNode.ts` を輸入しない。ここだけ**直接の輸入**を見る（読み手が輸入する
-定義クラスの先には木が居るので、到達可能性では見られない）。`docs/engine/Layers.md` 6節に
+定義クラスの先には木が居るので、到達可能性では見られない）。`docs/CodeStructure.md` 5節に
 「入れ子も、読み下せる宣言として渡す」を足し、規則はそこ1箇所に書いた。
 
 ## 15. 段4 レーンA-10（保存領域のキー名前空間）
