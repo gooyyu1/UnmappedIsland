@@ -97,6 +97,7 @@
 ## ファイル配置（層=配置）についての所見
 
 - `src/loader/` は CodeStructure.md 1節で「世界」の一部（`src/domain/` の定義を読む側）と位置づけられているが、実際には**世界の語彙を1つも知らない汎用YAML基盤**（`yamlMapping.ts` 21宣言・`YamlLoadError.ts`・`errorMessage.ts`）を抱えており、`src/locale/` と `src/scenario/` がそれを使うために loader へ import している。層の外の道具（`src/util/`）へ出せば、この2本の import は消える。担当範囲282宣言のうち23がこれに当たり、判定3の38件の大半を占める。
-- `src/asset-pack/` は CodeStructure.md の在処の表に載っていない。`AssetPack` が世界（`world-codex/`）・ことば（`locale/`）・素材（`objects/`・`backgrounds/`）3層ぶんのファイル規約を1クラスで抱えているのが、層の表に書けない理由そのもの。パックを「パス一覧＋パス→中身／URL」に絞り、規約は各層側へ戻せば、`src/asset-pack/` は `zip.ts` と同じ「層の外の道具」として置ける。
+- `src/asset-pack/` は当時、CodeStructure.md の在処の表に載っていなかった（**現在は1節の表の
+  `層の外` に「外から材料を受け取る口」として載っている**）。`AssetPack` が世界（`world-codex/`）・ことば（`locale/`）・素材（`objects/`・`backgrounds/`）3層ぶんのファイル規約を1クラスで抱えているのが、層の表に書けない理由そのもの。パックを「パス一覧＋パス→中身／URL」に絞り、規約は各層側へ戻せば、`src/asset-pack/` は `zip.ts` と同じ「層の外の道具」として置ける。
 - `RawPatch.ts` は patch宣言のデータ型（8宣言）と patch適用エンジン（11宣言）が同居している。`parseCommon.ts` も、型マッチ規則・数値リテラル・シンボル判定という互いに無関係な3つの主題を「Common」の名前で束ねている。どちらもファイル分割で片づく。
 - `src/loader/inProgressObjects.ts` と `axisVariants.ts`（生成器）は、`GeneratedObjectDefs` という1つの形で答えるところまで揃っており、配置としては妥当。問題は名前規約の export だけ。

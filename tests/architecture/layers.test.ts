@@ -122,6 +122,29 @@ function routesFrom(
     .map((route) => route.join(' → '));
 }
 
+/** 構造の文書。1節の表と2節の図が、どちらもここから読める。 */
+function structureDoc(): string {
+  return readFileSync(join(ROOT, 'docs/CodeStructure.md'), 'utf-8');
+}
+
+/**
+ * 1節の表の行。**他の節の表を混ぜない**——5節にもドメインと解析を比べる表があり、混ぜると
+ * 1節から行が消えてもそちらが拾ってしまう。「1節の表が唯一の記載場所」を検査するのだから、
+ * 見る範囲もその表だけ。
+ */
+function structureRows(): readonly string[] {
+  const section = structureDoc()
+    .split(/^## /m)
+    .find((part) => part.startsWith('1. '));
+  if (section === undefined) throw new Error('CodeStructure.md の1節が見つかりません');
+  return section.split(/\r?\n/).filter((line) => line.startsWith('| **'));
+}
+
+/** 1節の表が並べる構成要素の名前（1列目）。 */
+function structureNames(): readonly string[] {
+  return structureRows().map((line) => line.split('|')[1].replaceAll('*', '').trim());
+}
+
 describe('層の境界', () => {
   it.each(PHASER_FREE)('%s はPhaserへ到達しない', (dir) => {
     expect(
@@ -186,10 +209,11 @@ describe('層の境界', () => {
     //
     // 表が丸ごと受けている場所はそこで止め、受けていなければ1段降りて確かめる。`src/game/` は
     // ディレクトリごとの行を持たず直下のファイルを列挙しているので、この降り方でだけ拾える。
-    const cells = readFileSync(join(ROOT, 'docs/CodeStructure.md'), 'utf-8')
-      .split(/\r?\n/)
-      .filter((line) => line.startsWith('|'));
-    const listed = [...cells.join('\n').matchAll(/`(src\/[^`]+)`/g)].map((m) => m[1].replace(/\/$/, ''));
+    const listed = [
+      ...structureRows()
+        .join('\n')
+        .matchAll(/`(src\/[^`]+)`/g),
+    ].map((m) => m[1].replace(/\/$/, ''));
     const covers = (path: string): boolean =>
       listed.some((entry) =>
         entry.includes('*')
@@ -212,5 +236,16 @@ describe('層の境界', () => {
 
     expect(missing, 'この置き場が表のどの行にも載っていない').toEqual([]);
     expect(listed.length).toBeGreaterThan(10);
+  });
+
+  it('依存の図のノードが、1節の表の行と同じ', () => {
+    // 表と図は同じものを説明する2つの一覧なので、**並べた時点で行集合の一致を誰かが見る必要が
+    // ある**。図が網羅すると言っているのはノードで（CodeStructure.md 2節）、辺は主な向きの要約。
+    const diagram = structureDoc().match(/```mermaid\n([\s\S]*?)```/);
+    if (diagram === null) throw new Error('CodeStructure.md の依存の図が見つかりません');
+    const nodes = [...diagram[1].matchAll(/^\s+\w+\["([^"<]+)/gm)].map((m) => m[1].trim());
+
+    expect([...nodes].sort(), '図のノードと表の行が食い違っている').toEqual([...structureNames()].sort());
+    expect(nodes.length).toBeGreaterThan(9);
   });
 });
