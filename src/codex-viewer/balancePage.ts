@@ -489,11 +489,10 @@ function devicesHtml(view: CodexView, tables: BalanceTables): string {
           `${escapeHtml(view.propertyLabel(device.deviceName, device.lifetimeProperty))}</a>`,
       device.lifetimeDays === undefined ? '朽ちない' : `${formatNumber(device.lifetimeDays, 1)}日`,
       device.overLifetime === undefined ? '—' : formatNumber(device.overLifetime, 1),
-      // **この列は可否を答えない。** 出ないのは「この土地では作れない」ことで、島のどこかに
-      // 入手経路があるかは総コスト表（obtainableWithoutCost）が答える。
-      device.buildMinutes === undefined
-        ? '<span class="muted">この土地では作れない</span>'
-        : `${formatNumber(device.buildMinutes)}分`,
+      // **出ない理由はここでは言わない。** 理由（他の土地でなら作れる・どこでも値段が付かない・
+      // 入手経路が無い）はどれも島全体の事実で、土地ごとの行が答えるものではない。答えるのは
+      // 総コスト表のほう。
+      device.buildMinutes === undefined ? '—' : `${formatNumber(device.buildMinutes)}分`,
       device.laborPerUnit === undefined ? '—' : formatNumber(device.laborPerUnit, 2),
     ]),
   );
@@ -510,7 +509,10 @@ function devicesHtml(view: CodexView, tables: BalanceTables): string {
     `（識別子は定義のまま）。行の数字はすべて条件が成立し続けた場合のレート。` +
     `1つの設備が周期を複数持つことがあるので、どの周期の行かは「工程」で見分ける。` +
     `「出どころ」は尽きると設備が終わるプロパティで、` +
-    `その減る条件が周期の条件と別なら、「生涯」は同時には成立しない仮定の掛け算になる。</p>` +
+    `その減る条件が周期の条件と別なら、「生涯」は同時には成立しない仮定の掛け算になる。` +
+    `<b>「製作」はその場所を起点にした値段で、出ない理由はここでは言わない</b>` +
+    `——他の場所でなら作れるのか、どこでも値段が付かないのか、入手経路が無いのかは島全体の話なので、` +
+    `総コスト表のその設備の行が答える。</p>` +
     (rows.length === 0
       ? ''
       : tableHtml(

@@ -242,9 +242,13 @@ export interface DeviceRow extends Device {
   readonly lifetimeProperty: string | undefined;
 
   /**
-   * 設備1つを作るのに要る時間（分）と、産物1個あたりへ按分した時間。**undefinedは「その土地では
-   * 作れない」**——この行が答えるのはその土地を起点にした数字だけで、島のどこかに入手経路が
-   * あるかは答えない（ObjectCost.obtainableWithoutCostがそちらを答える）。
+   * 設備1つを作るのに要る時間（分）と、産物1個あたりへ按分した時間。**その土地の値段**（stepCostが
+   * 周期へ按分するのと同じ値なので、chain_routesの数字と対になる）。
+   *
+   * **undefinedが理由を持たないのは、理由が島全体の事実だから。** その土地では作れないのかもしれず、
+   * 島のどこでも値段が付かない（ObjectCost.obtainableWithoutCost）のかもしれず、入手経路が無いのかも
+   * しれない。土地ごとの行に島全体の答えを持たせると、1つの行の2つの値が別の問いに答えることになる
+   * （BalanceStats.md「土地ごとの行は可否を判定しない」）。理由を持つのはObjectCostのほう。
    */
   readonly buildMinutes: number | undefined;
   readonly laborPerUnit: number | undefined;

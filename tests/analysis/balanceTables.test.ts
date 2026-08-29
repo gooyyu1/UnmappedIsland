@@ -586,7 +586,8 @@ object_defs:
   });
 
   it('値段の付かない物から建てた設備も、値段が付かないまま手に入る側になる', () => {
-    // 待ち生産表は「その土地で何分か」しか答えないので、理由を持つのは総コスト表のほう。
+    // 待ち生産表が答えるのはその土地の値段だけで、出ない理由（島全体の事実）は持たない。
+    // **理由を持つのは総コスト表のほう**で、この2つが同じ設備について食い違わないことを見る。
     const wholeIsland = tables.places.find((place) => place.name === WHOLE_ISLAND)!;
 
     expect(costOf('brine_trap')).toMatchObject({ minutes: undefined, obtainableWithoutCost: true });
