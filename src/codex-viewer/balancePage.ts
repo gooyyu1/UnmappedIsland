@@ -327,16 +327,21 @@ function prerequisitesHtml(view: CodexView, route: ChainRoute): string {
 }
 
 /**
- * 前提1つを手に入れるまでの時間。**時間が出ない2つの理由を分ける**——穴（島のどこにも入手経路が
- * 無い）と、朽ちない設備の待ち生産でしか得られない（按分できないので値段が付かないだけ）は別のこと。
+ * 1つ手に入れるまでの労働。**時間が出ない2つの理由を分ける**——穴（島のどこにも入手経路が無い）と、
+ * 手に入るが値段を付けられない（待ち生産に行き着くので按分できない）は別のこと。**この表で総労働を
+ * 出す列はすべてここを通す**——前提の列と待ち生産表の「製作」が同じ言い方をしないと、片方だけが
+ * 古い読みのまま残る。
  */
-function prerequisiteCostHtml(prerequisite: RoutePrerequisite): string {
-  if (isGap(prerequisite)) return `<span class="warn">入手経路なし</span>`;
+function laborHtml(minutes: number | undefined, obtainableWithoutCost: boolean, suffix = ''): string {
+  if (minutes !== undefined) return `<span class="muted">${formatNumber(minutes)}分${suffix}</span>`;
+  return obtainableWithoutCost
+    ? `<span class="muted">値段が付かない</span>`
+    : `<span class="warn">入手経路なし</span>`;
+}
 
-  const { minutes, imported } = prerequisite;
-  return minutes === undefined
-    ? `<span class="muted">待ち生産（総コストなし）</span>`
-    : `<span class="muted">${formatNumber(minutes)}分${imported ? '・他の土地で' : ''}</span>`;
+/** 前提1つを手に入れるまでの労働。穴かどうかは`objectName`が答える（isGap）。 */
+function prerequisiteCostHtml(prerequisite: RoutePrerequisite): string {
+  return laborHtml(prerequisite.minutes, !isGap(prerequisite), prerequisite.imported ? '・他の土地で' : '');
 }
 
 /**
@@ -390,9 +395,9 @@ function gapLabel(view: CodexView, label: string): string {
  */
 function objectCostsHtml(view: CodexView, tables: BalanceTables): string {
   const missing = tables.objectCosts.filter(
-    (cost) => cost.minutes === undefined && !cost.onlyFromEverlastingDevice,
+    (cost) => cost.minutes === undefined && !cost.obtainableWithoutCost,
   );
-  const everlastingDevice = tables.objectCosts.filter((cost) => cost.onlyFromEverlastingDevice);
+  const unpriced = tables.objectCosts.filter((cost) => cost.obtainableWithoutCost);
   const toolBlocked = tables.objectCosts.filter((cost) => cost.blockedByTool);
   const buildable = tables.objectCosts.filter((cost) => cost.minutes !== undefined);
 
@@ -406,10 +411,11 @@ function objectCostsHtml(view: CodexView, tables: BalanceTables): string {
         ? '作る工程が無い'
         : `足りない入力: ${escapeHtml(cost.missing.map((name) => gapLabel(view, name)).join('、'))}`,
     ) +
-    // 入手経路が無いのとは別。朽ちない設備は1周期ぶんを按分できないので値段が付かないだけで、
-    // 周期とレートは待ち生産表に出ている。
-    blockedListHtml(view, '朽ちない設備の待ち生産でしか得られないもの', everlastingDevice, () =>
-      escapeHtml('総コストは出ない（周期とレートは待ち生産表）'),
+    // 入手経路が無いのとは別。朽ちない設備の待ち生産は1周期ぶんを按分できないので値段が付かない
+    // だけで、それを材料に取って作る物まで同じになる（値段の付かなさは連鎖を下流へ伝わる）。
+    // **待ち生産表に行が在るのは設備が直に返す物だけ**なので、そこは分けて書く。
+    blockedListHtml(view, '手に入るが値段が付かないもの', unpriced, () =>
+      escapeHtml('総コストは出ない——朽ちない設備の待ち生産に行き着くので按分できない'),
     ) +
     blockedListHtml(
       view,
@@ -488,9 +494,7 @@ function devicesHtml(view: CodexView, tables: BalanceTables): string {
           `${escapeHtml(view.propertyLabel(device.deviceName, device.lifetimeProperty))}</a>`,
       device.lifetimeDays === undefined ? '朽ちない' : `${formatNumber(device.lifetimeDays, 1)}日`,
       device.overLifetime === undefined ? '—' : formatNumber(device.overLifetime, 1),
-      device.buildMinutes === undefined
-        ? '<span class="warn">入手経路なし</span>'
-        : `${formatNumber(device.buildMinutes)}分`,
+      laborHtml(device.buildMinutes, device.obtainableWithoutCost),
       device.laborPerUnit === undefined ? '—' : formatNumber(device.laborPerUnit, 2),
     ]),
   );
