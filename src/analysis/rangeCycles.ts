@@ -198,15 +198,15 @@ export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): 
   // いない（速さ, 限度）の対ができる——止まる出血（-15/tickで合計60mL）と止まらない敗血症
   // （-40/tick）を1つにすると、「-15/tickで永久に流れ続ける傷」になる。炉の火力（heatの段で
   // 1/3/5）は3つとも止まらないので、今までどおり1つの幅に収まる。
-  const byLimit = new Map<string, ExternalTickDelta>();
+  const byPropertyAndLimit = new Map<string, ExternalTickDelta>();
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== root || delta.amount === 0) continue;
 
     const ticks = ticksWhileGateHolds(def, delta.gate);
     const maxTotal = ticks === undefined ? undefined : ticks * Math.abs(delta.amount);
     const key = `${delta.propertyGlobalId}:${maxTotal}`;
-    const known = byLimit.get(key);
-    byLimit.set(key, {
+    const known = byPropertyAndLimit.get(key);
+    byPropertyAndLimit.set(key, {
       sourceGlobalId: def.globalId,
       propertyGlobalId: delta.propertyGlobalId,
       // 段で切り替わる増減（炉の火力）は同時には効かないので、束ねずに幅として持つ。
@@ -221,7 +221,7 @@ export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): 
       maxTotal,
     });
   }
-  return [...byLimit.values()];
+  return [...byPropertyAndLimit.values()];
 }
 
 /**

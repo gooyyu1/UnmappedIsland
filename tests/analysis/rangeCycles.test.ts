@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { externalTickDeltasOf, externalTickDeltasOn, rangeCyclesOf } from '../../src/analysis/rangeCycles';
-import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
@@ -189,7 +188,7 @@ object_defs:
   }
 
   /** その型の、そのプロパティが持つ周期（1つだけのはず）。 */
-  function cycleOf(codex: WorldCodex, objectName: string, propertyName: string) {
+  function cycleOf(objectName: string, propertyName: string) {
     return rangeCyclesOf(defOf(objectName)).filter(
       (cycle) => codex.propertyNames.getName(cycle.propertyGlobalId) === propertyName,
     );
@@ -199,7 +198,7 @@ object_defs:
     // -2・-6・+8のどの2つも同時には成立しない。全部を1つの場合として足すと0になり、下端へ向かう
     // 周期が丸ごと消える（凍死が日をまたぐ長さの列から落ちていた）。
     // 最も遅いのは寒い所に居る-2で700/2=350 tick、最も速いのは雨の野ざらしの-6で116.67 tick。
-    expect(cycleOf(codex, 'camper', 'warmth')).toMatchObject([
+    expect(cycleOf('camper', 'warmth')).toMatchObject([
       { minutes: 350 * 15, shortestMinutes: (700 / 6) * 15, destroysSelf: true, repeats: false },
     ]);
   });
@@ -207,7 +206,7 @@ object_defs:
   it('常時効く増減が無く、条件つきが逆を向いていても、下端へ向かう場合が残る', () => {
     // -1と+2は同時にも起こりうるが、乾く-1だけが効く場合もある。合計（+1）の向きだけで見ると
     // 上端へ向かうものとして読まれ、塩を生むon_minが1つも立たなくなる。
-    const [cycle] = cycleOf(codex, 'salt_pan', 'drying_remaining');
+    const [cycle] = cycleOf('salt_pan', 'drying_remaining');
     expect(cycle).toMatchObject({ minutes: 24 * 15, repeats: true });
     expect(cycle.step.outputs).toHaveLength(1);
   });
@@ -215,7 +214,7 @@ object_defs:
   it('在庫から流れ込む輸送は、それが止まって渇く場合も数える', () => {
     // 渇く-1と飲む+1は同じゲートを持つが、飲めるのは囲いの水が残っている間だけ。両方を必ず
     // 重なるものとして足すと0になり、渇きの期限が消える。
-    expect(cycleOf(codex, 'beast', 'hydration')).toMatchObject([
+    expect(cycleOf('beast', 'hydration')).toMatchObject([
       { minutes: 336 * 15, shortestMinutes: 336 * 15, destroysSelf: true },
     ]);
   });
