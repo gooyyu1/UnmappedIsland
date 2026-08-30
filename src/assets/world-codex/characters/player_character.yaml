@@ -337,6 +337,10 @@ traits:
       # 境目を変えると、同じ`basic`が本ごとに違う遠さになり、連言で並べた条件（Skills.md 3節）を
       # 読み比べられなくなる。
       #
+      # **一番下の段も下端を名乗る**（`min: 0`）。他のプロパティの最下段は受け皿なので下端を書かないが、
+      # 腕前は0より下へ行かないうえ、**下端の無い段は段内進捗の区間が定まらずバーが出ない**
+      # （docs/ui/StatusArea.md 9節）——素人でいるあいだ、伸びているのに何も動かないことになる。
+      #
       # **個体差を持たせない。** 4人とも漂着した素人として始まるので、痛み・血と同じくこの trait が配る。
       #
       # **解放条件の「その段以上」は、段の名前をanyで束ねて書く**（上のbloodの安全域と同じ形）。
@@ -377,7 +381,7 @@ traits:
         tags: [skill]
         value: 0
         stages:
-          - {name: novice}
+          - {name: novice, min: 0}
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
@@ -386,7 +390,7 @@ traits:
         tags: [skill]
         value: 0
         stages:
-          - {name: novice}
+          - {name: novice, min: 0}
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
@@ -396,7 +400,7 @@ traits:
         tags: [skill]
         value: 0
         stages:
-          - {name: novice}
+          - {name: novice, min: 0}
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
@@ -405,7 +409,7 @@ traits:
         tags: [skill]
         value: 0
         stages:
-          - {name: novice}
+          - {name: novice, min: 0}
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
@@ -414,7 +418,7 @@ traits:
         tags: [skill]
         value: 0
         stages:
-          - {name: novice}
+          - {name: novice, min: 0}
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
@@ -423,7 +427,7 @@ traits:
         tags: [skill]
         value: 0
         stages:
-          - {name: novice}
+          - {name: novice, min: 0}
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
@@ -433,7 +437,7 @@ traits:
         tags: [skill]
         value: 0
         stages:
-          - {name: novice}
+          - {name: novice, min: 0}
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
@@ -442,7 +446,7 @@ traits:
         tags: [skill]
         value: 0
         stages:
-          - {name: novice}
+          - {name: novice, min: 0}
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
@@ -452,7 +456,7 @@ traits:
         tags: [skill]
         value: 0
         stages:
-          - {name: novice}
+          - {name: novice, min: 0}
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
@@ -462,7 +466,7 @@ traits:
         tags: [skill]
         value: 0
         stages:
-          - {name: novice}
+          - {name: novice, min: 0}
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
@@ -471,7 +475,7 @@ traits:
         tags: [skill]
         value: 0
         stages:
-          - {name: novice}
+          - {name: novice, min: 0}
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}

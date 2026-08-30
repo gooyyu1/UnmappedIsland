@@ -11,7 +11,8 @@ property_tags:
   health:
   nutrition:
   # 領域ごとの習熟度（docs/engine/SkillSystem.md 2節）。**statusは重ねない**——常時バーで出すものでは
-  # なく、rangeを持たないので満たされ具合も無い（同5節）。値と今いる段だけがタブに並ぶ。
+  # ないため。rangeを持たないので満たされ具合も無く、行が出すのは今いる段と、そこから次の段までの
+  # 進みになる（同5節、docs/ui/StatusArea.md 9節）。
   skill:
 
 # レシピ一覧の棚（docs/ui/Windows.md 9節）。完成品はこの並びで**最初に一致したタグ**の棚に
