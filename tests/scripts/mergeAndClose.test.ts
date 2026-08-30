@@ -44,6 +44,12 @@ interface World {
    * 区別が付かない。環境IDそのものは `ccr-env.sh` から環境変数で差し替える。
    */
   readonly onBridge?: readonly string[];
+  /**
+   * 走っている最中のセッション（`get_session` の `status_bucket` が `…_WORKING`）。
+   * `session_status` とは別に持つ——**「走っているか」と「畳まれているか」は別の問い**で、
+   * 畳む側が見るのは両方。
+   */
+  readonly working?: readonly string[];
   /** `archive_session` が失敗するか。 */
   readonly archiveFails?: boolean;
   /** 本体に未コミットの変更（追跡済み）があるか。 */
@@ -200,6 +206,9 @@ ${Object.entries({ session_01ZZZZZZZZZZZZZZZZZZZZZZ: 'SESSION_STATUS_ARCHIVED', 
       `  ${id}) echo '${JSON.stringify({
         ccr: {
           session_status: status,
+          status_bucket: (world.working ?? []).includes(id)
+            ? 'SESSION_STATUS_BUCKET_WORKING'
+            : 'SESSION_STATUS_BUCKET_READY',
           tags: world.tags?.[id] ?? ['task-1000'],
           environment_id: (world.onBridge ?? []).includes(id) ? BRIDGE : CLOUD,
         },
@@ -457,6 +466,44 @@ describe('merge-and-close.sh', () => {
 
     expect(result.archived).toEqual([]);
     expect(result.lines).toEqual(['MERGED 1000', 'SYNCED deadbee']);
+  });
+
+  // 畳み済みには何も言わない、は `archive-session.sh` が持つ出力の規約。issue を持たない相手を
+  // 選り分ける側（このスクリプト）だけがそれを知らないと、同じ相手に片方だけが口を利く。
+  it('畳み済みなら、issue を持たないセッションにも何も出さない', () => {
+    const result = run({
+      body: 'https://claude.ai/code/session_01ADVISER000000000000',
+      sessions: { session_01ADVISER000000000000: 'SESSION_STATUS_ARCHIVED' },
+      tags: { session_01ADVISER000000000000: ['adviser-parallel-agents'] },
+    });
+
+    expect(result.archived).toEqual([]);
+    expect(result.lines).toEqual(['MERGED 1000', 'SYNCED deadbee']);
+  });
+
+  // `archive_session` はコンテナを解放するので、判定を書いている最中のレビューを畳むと、その
+  // コメントは出ないまま消える。「読み終えたか」は状態では分からないが、「**今走っているか**」は
+  // 別の問いで、`status_bucket` が答える。次の出来事でもう一度渡されるので取りこぼしにはならない。
+  it('走っている最中のセッションは畳まない', () => {
+    const result = run({
+      sessions: {
+        session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING',
+        session_01REVIEWBBBBBBBBBBBBBB: 'SESSION_STATUS_IDLE',
+      },
+      tags: {
+        session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'],
+        session_01REVIEWBBBBBBBBBBBBBB: ['review-1000'],
+      },
+      working: ['session_01REVIEWAAAAAAAAAAAAAA'],
+    });
+
+    expect(result.lines).toEqual([
+      'MERGED 1000',
+      'KEPT session_01REVIEWAAAAAAAAAAAAAA',
+      'ARCHIVED session_01REVIEWBBBBBBBBBBBBBB',
+      'SYNCED deadbee',
+    ]);
+    expect(result.archived).toEqual(['session_01REVIEWBBBBBBBBBBBBBB']);
   });
 
   // 作業ツリーは本体の `node_modules` を共有するので、本体が古いままだと版が食い違う。

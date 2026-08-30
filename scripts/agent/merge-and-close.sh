@@ -154,6 +154,8 @@ while read -r session; do
   # 後片付け（`main` の追随）ごと落ちる。
   info=$(printf '{"session_id":"%s"}' "$session" |
     bash "$CCR_META" get_session | grep -o '{"ccr".*' || true)
+  # 既に畳まれているものには何も言わない（`archive-session.sh` の出力の規約に揃える）。
+  [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" != "SESSION_STATUS_ARCHIVED" ] || continue
   if jq -e '[.ccr.tags[]? | select(startswith("task-"))] | length > 0' <<<"$info" >/dev/null; then
     targets=$(printf '%s\n%s' "$targets" "$session")
   else

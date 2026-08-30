@@ -18,6 +18,13 @@
 # だから `get_session` はここが自分で引く。呼び手が引いたものを渡す形にすると、「どの口から引いた
 # 値のどのキーを見るか」が呼び手側の知識に戻り、規約がまた散る。
 #
+# ## 走っている最中のものは畳まない
+#
+# 「**読み終えたか**」は状態では分からない（[`archive-reviews.sh`](archive-reviews.sh)「状態では
+# 判定できない」）が、「**今走っているか**」は別の問いで、`status_bucket` が答える。`archive_session`
+# はコンテナを解放するので、判定を書いている最中のレビューを畳むと、そのコメントは出ないまま消える。
+# 次の出来事（新しいレビューの投入・次のマージ）でもう一度渡されるので、取りこぼしにはならない。
+#
 # ## ブリッジで立てたものは畳まない
 #
 # `--bridge` で立てたセッションはこのPCの環境を使うので、タグはクラウドのものと区別が付かない。
@@ -40,7 +47,8 @@ while read -r session; do
   info=$(printf '{"session_id":"%s"}' "$session" |
     bash "$CCR_META" get_session | grep -o '{"ccr".*' || true)
   [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" != "SESSION_STATUS_ARCHIVED" ] || continue
-  if [ "$(jq -r '.ccr.environment_id // ""' <<<"$info")" = "$BRIDGE_ENV" ]; then
+  if [ "$(jq -r '.ccr.status_bucket // ""' <<<"$info")" = "SESSION_STATUS_BUCKET_WORKING" ] ||
+    [ "$(jq -r '.ccr.environment_id // ""' <<<"$info")" = "$BRIDGE_ENV" ]; then
     echo "KEPT $session"
   elif printf '{"session_id":"%s"}' "$session" | bash "$CCR_META" archive_session >/dev/null; then
     echo "ARCHIVED $session"
