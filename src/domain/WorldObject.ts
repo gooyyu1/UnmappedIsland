@@ -96,7 +96,8 @@ export class WorldObject {
     this.properties = def.enumeratePropertyDefs().map((pd) => new PropertyValue(pd, this));
     this.slots = def.enumerateSlotDefs().map((sd) => new Slot(sd, this));
 
-    // 生成時はまだトポロジが無いため、Self関係のみ登録する。Parent/Child/Ancestorはmove_to_slot以降に登録される。
+    // 生成時はまだ木に繋がっていないので、解決先を持つのは自分自身だけ。残りの関係は、木が変わった契機に
+    // それぞれの持ち主が登録する（setEdgeRegistered・setAncestorTargetsRegistered）。
     def.passives.setRelationRegistered(this, 'self', true);
   }
 

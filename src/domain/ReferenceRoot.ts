@@ -11,9 +11,8 @@ export type ReferenceRoot =
   | 'self'
   | 'parent'
   /**
-   * passiveのtarget専用（8.1節）。親が宣言した効果を、そのスロットに入った各子へブロードキャスト登録する
-   * ために使う。単一の参照先へ解決されるconditions/active/weight/transferの文脈では意味を持たない
-   * （それらの許可rootには含めない）。
+   * 親が宣言した効果を、そのスロットに入った各子へブロードキャスト登録するために使う（8.1節）。
+   * **相手が1つに定まらない唯一のroot**で、書ける場所を決めるのはReferenceScope.broadcasts。
    */
   | 'child'
   | 'agent'
@@ -29,7 +28,8 @@ export type ReferenceRoot =
   | 'picked'
   /**
    * selfの直接の親から遡り、参照先のプロパティを定義している最初の祖先（WorldObject.findAncestorWithProperty
-   * 参照）。SlotPosition判定（{in_slot: ...}）では意味を持たないため未対応（ロード時エラー）。
+   * 参照）。**探すのにプロパティ名が要る唯一のroot**で、それが決まらない場所では解決先を持たない
+   * （ReferenceScope.namesProperty）。
    */
   | 'ancestor';
 
