@@ -23,5 +23,5 @@ player:
     - bite_wound
     - gore_wound
     - snare_laceration
-    - pen_bruise
+    - bruise
     - fracture
