@@ -37,6 +37,9 @@ const DOC_FILES = listFiles('docs', ['.md']);
 /** 確定度の印（DocumentStyle.md 6節）。付くのは節の見出しだけ。 */
 const CONFIRMED_LABEL = '【確定】';
 
+/** 文書まるごとが確定であることの宣言（DocumentStyle.md 6.2節）。射程はその文書の全行。 */
+const WHOLE_DOCUMENT_CONFIRMED = '**本書は全体が確定です。**';
+
 /** 既定である暫定の側に印を付ける語。使わない。 */
 const PROVISIONAL_LABELS = ['【未確定】', '【暫定】'];
 
@@ -148,6 +151,16 @@ const confirmedSections = [...docByPath].flatMap(([doc, text]) =>
   sectionsOf(text)
     .filter((section) => section.heading.includes(CONFIRMED_LABEL))
     .map((section) => ({ doc, ...section })),
+);
+
+/**
+ * 全体が確定であることを宣言した文書（DocumentStyle.md 6.2節の条件を課される対象）。
+ *
+ * 宣言はインラインコードを除いた本文から拾う——規約そのものが書式を例示するので、原文で拾うと
+ * `DocumentStyle.md` 自身が宣言した文書になる。
+ */
+const wholeDocumentConfirmed = [...docByPath].filter(([, text]) =>
+  textLines(text).some(({ text: body }) => body.startsWith(WHOLE_DOCUMENT_CONFIRMED)),
 );
 
 /** ファイル名（basename）→ docs内の候補パス。 */
@@ -471,6 +484,63 @@ describe.skip('【確定】を付けてよい節の条件（DocumentStyle.md 6.1
     expect(
       missing,
       `出どころの無い確定節（人間の判断の在処が節から読めない）:\n${missing.join('\n')}`,
+    ).toEqual([]);
+  });
+});
+
+/**
+ * 文書まるごとの確定宣言が満たす条件（DocumentStyle.md 6.2節）。
+ *
+ * 6.1節の検査（上）と違って今から走らせる——宣言の形は規約と同時に入るので、規約より先に書かれた
+ * 文書が無い。
+ */
+describe('文書まるごとの確定宣言（DocumentStyle.md 6.2節）', () => {
+  it('宣言のある文書を1つ以上拾えている（下の検査の土台）', () => {
+    // 拾えていないと、全部が規約どおりの状態と見分けが付かないまま緑になる。
+    expect(wholeDocumentConfirmed.length).toBeGreaterThan(0);
+  });
+
+  it('宣言の照合が、書式を例示しただけの文書を拾わない', () => {
+    const declaring = wholeDocumentConfirmed.map(([doc]) => doc);
+    expect(declaring).not.toContain(join('docs', 'DocumentStyle.md'));
+  });
+
+  it('宣言のある文書が、節ごとの【確定】を持たない（射程が重なる）', () => {
+    const overlapping = confirmedSections
+      .filter((section) => wholeDocumentConfirmed.some(([doc]) => doc === section.doc))
+      .map((section) => `${section.doc}:${section.line} ${section.heading}`);
+    expect(
+      overlapping,
+      `宣言のある文書に残った節の印（印の有る節と無い節の差が何も意味しなくなる）:\n` +
+        overlapping.join('\n'),
+    ).toEqual([]);
+  });
+
+  it('宣言のある文書の全行に、暫定を表す語が無い', () => {
+    const found: string[] = [];
+    for (const [doc, text] of wholeDocumentConfirmed) {
+      for (const { line, text: body } of textLines(text)) {
+        for (const match of body.matchAll(PROVISIONAL_WORD)) {
+          found.push(`${doc}:${line}: 「${match[0]}」`);
+        }
+      }
+    }
+    expect(
+      found,
+      `宣言のある文書に残った仮決め（文書の射程に外側は無いので、持つべき仕様書へ移す）:\n` +
+        found.join('\n'),
+    ).toEqual([]);
+  });
+
+  it('宣言のある文書が、出どころの1行を持つ', () => {
+    const missing = wholeDocumentConfirmed
+      .filter(
+        ([, text]) => !textLines(text).some(({ text: body }) => body.startsWith(SOURCE_LINE_PREFIX)),
+      )
+      .map(([doc]) => doc);
+    expect(
+      missing,
+      `出どころの無い宣言（人間の判断の在処が文書から読めない）:\n${missing.join('\n')}`,
     ).toEqual([]);
   });
 });
