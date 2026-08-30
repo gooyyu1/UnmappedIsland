@@ -209,10 +209,17 @@ object_defs:
           from_prop: meat_bait
           to_prop: meat_bait
         destroy: instrument
-    # 解放条件（conditions、13.3節）はまだ置かない。狩猟スキルのプロパティと、それを伸ばす経路が
-    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
     recipes:
       knotted:
+        # **開けるのは狩猟ではなく繊維・編み**（docs/world/Skills.md 2節がくくり罠を繊維・編みの欄に
+        # 置いている）。狩猟が広げるのは素材と機会であって、罠を結ぶ手ではない。編み籠と同じく
+        # 材料は植物繊維だけで、素材の側は初日から揃う（docs/engine/SkillSystem.md 4.2節）。
+        conditions:
+          - reason: needs_cordage
+            any:
+              - {subject: agent, prop: skill_cordage, in_stage: basic}
+              - {subject: agent, prop: skill_cordage, in_stage: skilled}
+              - {subject: agent, prop: skill_cordage, in_stage: expert}
         steps:
           - requires:
               - {object: plant_fiber, count: 2, consume: true}
@@ -367,7 +374,9 @@ object_defs:
             not: {subject: self, matches: {tag: staked}}
         become: {stake: staked}
         destroy: instrument
-    # 解放条件（conditions、13.3節）はまだ置かない（くくり罠と同じ理由）。
+    # **解放条件を持たない。** 掘るだけで結ぶ工程が無いので、くくり罠を開ける繊維・編みの腕
+    # （上）はここには効かない。半日を掘り続けること自体がゲートになっている
+    # （docs/engine/SkillSystem.md 4.2節）。
     recipes:
       # 掘るだけ。**掘削具はまだ無い**（TrapSystem.md 8節）ので、畑と同じく掘り棒にする太い枝を
       # 1本折り込む形で置いてある（farming.yamlのfield）。獣が落ちる深さまで掘るので、畑を均す

@@ -10,6 +10,9 @@ property_tags:
   status:
   health:
   nutrition:
+  # 領域ごとの習熟度（docs/engine/SkillSystem.md 2節）。**statusは重ねない**——常時バーで出すものでは
+  # なく、rangeを持たないので満たされ具合も無い（同5節）。値と今いる段だけがタブに並ぶ。
+  skill:
 
 # レシピ一覧の棚（docs/ui/Windows.md 9節）。完成品はこの並びで**最初に一致したタグ**の棚に
 # だけ載るので、並びは「粗い分類ほど後ろ」にする。どれにも当たらない完成品は「その他」へ落ちる

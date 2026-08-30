@@ -123,6 +123,9 @@ object_defs:
             prop: hand_brightness
             in_stage: bright
         duration: 30
+        # 繊維・編みの腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
+        # characters/player_character.yaml）。撚る・編むと同じ1本で、掻き取りもその腕を使う。
+        add: {agent: {skill_cordage: 2}}
         destroy: self
         spawn: {object: plant_fiber, count: 2}
 
@@ -146,6 +149,7 @@ object_defs:
             prop: hand_brightness
             in_stage: bright
         duration: 20
+        add: {agent: {skill_cordage: 2}}
         destroy: [self, instrument]
         spawn: {object: yarn}
 
@@ -165,6 +169,7 @@ object_defs:
             prop: hand_brightness
             in_stage: bright
         duration: 20
+        add: {agent: {skill_cordage: 2}}
         destroy: [self, instrument]
         spawn: {object: cord}
 
@@ -181,8 +186,8 @@ object_defs:
     props:
       weight: {value: 600}
       volume: {value: 800}
-    # 解放条件（conditions）はまだ置かない。繊維・編みスキルのプロパティと、それを伸ばす経路が
-    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
+    # 中間素材なので解放条件を持たない（docs/engine/SkillSystem.md 4.2節）。紐3本＝繊維12束を
+    # 撚る手間そのものがゲートで、そこへ腕を重ねても二重になる。
     recipes:
       twisted:
         steps:

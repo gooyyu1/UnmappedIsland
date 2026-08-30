@@ -73,11 +73,21 @@ object_defs:
       light_blow: {value: 15}
       thrust: {value: 0}
       whiff: {value: 25}
-    # 解放条件（conditions、13.3節）はまだ置かない。石器・繊維のスキルのプロパティと、それを
-    # 伸ばす経路が未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
-    # 何が揃えば作れるべきかはdocs/world/Skills.md 3節が持つ。
     recipes:
       hafted:
+        # 柄付けはスキルにしない（docs/world/Skills.md 3節）。「刃を作れて、紐も作れるようになったら
+        # 斧が作れる」を、そのまま2本の腕の連言で書く。段の並べ方は characters/player_character.yaml。
+        conditions:
+          - reason: needs_knapping
+            any:
+              - {subject: agent, prop: skill_knapping, in_stage: basic}
+              - {subject: agent, prop: skill_knapping, in_stage: skilled}
+              - {subject: agent, prop: skill_knapping, in_stage: expert}
+          - reason: needs_cordage
+            any:
+              - {subject: agent, prop: skill_cordage, in_stage: basic}
+              - {subject: agent, prop: skill_cordage, in_stage: skilled}
+              - {subject: agent, prop: skill_cordage, in_stage: expert}
         steps:
           # 柄をこしらえる。枝の先を割り、刃を落とし込む溝を作る。
           - requires:
@@ -137,9 +147,20 @@ object_defs:
     props:
       weight: {value: 1200}
       volume: {value: 1800}
-    # 解放条件（conditions、13.3節）はまだ置かない（石斧と同じ理由）。
     recipes:
       hafted:
+        # 材料も工程も石斧と同じ柄付けなので、解放条件も同じ2本の連言になる。
+        conditions:
+          - reason: needs_knapping
+            any:
+              - {subject: agent, prop: skill_knapping, in_stage: basic}
+              - {subject: agent, prop: skill_knapping, in_stage: skilled}
+              - {subject: agent, prop: skill_knapping, in_stage: expert}
+          - reason: needs_cordage
+            any:
+              - {subject: agent, prop: skill_cordage, in_stage: basic}
+              - {subject: agent, prop: skill_cordage, in_stage: skilled}
+              - {subject: agent, prop: skill_cordage, in_stage: expert}
         steps:
           # 柄をこしらえる。枝の先を割り、穂先を落とし込む溝を作る。
           - requires:

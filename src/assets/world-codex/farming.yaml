@@ -107,8 +107,8 @@ object_defs:
           - {reason: field_sown, prop: water_spinach_sown, lt: 8}
         add: {self: {water_spinach_sown: 1}}
         destroy: instrument
-    # 解放条件（conditions、13.3節）はまだ置かない。スキルのプロパティと、それを伸ばす経路が
-    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
+    # **解放条件を持たない。** 土を起こす腕を担うスキルが一覧（docs/world/Skills.md 2節）に無く、
+    # 半日を掘り返すこと自体がゲートになっている（docs/engine/SkillSystem.md 4.2節）。
     recipes:
       # 掘り返して均すだけで、土は元からそこにある。**掘削具はまだ無い**（TrapSystem.md 8節の
       # 落とし穴と同じ空白）ので、掘り棒にする太い枝を1本折り込む形で置いてある。
@@ -304,6 +304,8 @@ object_defs:
           from: instrument
           from_prop: fill
           to_prop: drinking_water
+    # **解放条件を持たない。** 丸太は斧でしか採れず（timber.yaml）、その斧が既に石器と繊維・編みの
+    # 腕を要求している（docs/engine/SkillSystem.md 4.2節、筏と同じ）。
     recipes:
       # 丸太を並べて縄で結ぶ。**生かして扱う設備は常に高くつく**（TrapSystem.md 1.2節）という線の
       # 上に乗っていて、大型で最も開く差がこれ。

@@ -9,9 +9,9 @@
 アイテムの内容は [`SurvivalItems.md`](./SurvivalItems.md)・[`Containers.md`](./Containers.md)・
 [`Dwellings.md`](./Dwellings.md) を参照してください。
 
-本ドキュメントは検討結果であり、確定仕様書ではありません（`【確定】` の付いた節を除く）。**一覧の
-スキルは 1 つも `src/assets/world-codex/` に投入されていません**（[`SkillSystem.md`](../engine/SkillSystem.md)
-概要）。未決事項は 5 節に整理しています。
+本ドキュメントは検討結果であり、確定仕様書ではありません（`【確定】` の付いた節を除く）。2 節の 11 本は
+`src/assets/world-codex/` に投入済みで、どこまで動くかは
+[`SkillSystem.md`](../engine/SkillSystem.md) 概要にあります。未決事項は 5 節に整理しています。
 
 ## 1. 分類の軸は素材ではなく技術
 

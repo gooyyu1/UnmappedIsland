@@ -23,10 +23,17 @@ object_defs:
       # 代わりに樹皮そのものは搾りかすとして捨てるので、材料の和にならない唯一の材料。
       weight: {value: 500}
       volume: {value: 1200}
-    # 解放条件（conditions、13.3節）はまだ置かない。皮革スキルとそれを伸ばす経路が未実装のため、
-    # 今条件を置くと永久に作れなくなる（この下の衣類3種と同じ）。
     recipes:
       tanned:
+        # 皮革が最初に開ける物（docs/world/Skills.md 2節）。腕は皮を剥ぐ操作（animals.yamlのbutcher）
+        # が配るので、なめしへ進めるのは獣を捌いてきた者だけになる。段の並べ方は
+        # characters/player_character.yaml。
+        conditions:
+          - reason: needs_leatherwork
+            any:
+              - {subject: agent, prop: skill_leatherwork, in_stage: basic}
+              - {subject: agent, prop: skill_leatherwork, in_stage: skilled}
+              - {subject: agent, prop: skill_leatherwork, in_stage: expert}
         # 合計480分は、同梱の世界で最も長い1つの作業（farming.yamlの畑を起こす480分）に並べた値。
         # 実際のなめしは日をまたぐ漬け込みだが、途中で止められない工程として持つ以上これ以上は
         # 伸ばさない（GameElementDefinition.md 11.3節）。工程を2つに割ってあるのも同じ理由。
@@ -52,9 +59,9 @@ object_defs:
       weight: {value: 900}
       # ばらけた葉は詰めても縮まないので、嵩そのままで見る。
       volume: {value: 4000}
-    # 解放条件（conditions、13.3節）はまだ置かない。繊維・編みスキルのプロパティと、それを
-    # 伸ばす経路が未実装のため、今条件を置くと永久に作れなくなる（編み籠・ロープと同じ）。
     recipes:
+      # **解放条件を持たない。** 束ねるだけで編む工程が無く、刃物も火も無いうちから作れることが
+      # この1着の存在意義（上のコメント）。腕を求めると、最初に着られる物が無くなる。
       bundled:
         steps:
           - requires:
@@ -72,6 +79,8 @@ object_defs:
       weight: {value: 1200}
       volume: {value: 3000}
     recipes:
+      # **解放条件を持たない。** 剥いだ皮を羽織るだけで縫わないので、皮革の腕が開ける物の一覧
+      # （docs/world/Skills.md 2節）にも入っていない——腕の要らない一着として残す。
       draped:
         steps:
           - requires:
@@ -89,6 +98,14 @@ object_defs:
       volume: {value: 4000}
     recipes:
       stitched:
+        # 編んだ葉の衣類は繊維・編みが開ける（docs/world/Skills.md 2節）。材料は葉と繊維だけで
+        # 素材の側は初日から揃うので、編み籠と同じ位置にある（SkillSystem.md 4.2節）。
+        conditions:
+          - reason: needs_cordage
+            any:
+              - {subject: agent, prop: skill_cordage, in_stage: basic}
+              - {subject: agent, prop: skill_cordage, in_stage: skilled}
+              - {subject: agent, prop: skill_cordage, in_stage: expert}
         steps:
           - requires:
               - {object: woven_leaf, count: 3, consume: true}
@@ -106,6 +123,18 @@ object_defs:
       volume: {value: 3000}
     recipes:
       sewn:
+        # 皮革の上位（docs/engine/SkillSystem.md 4.1節）。**スキルを積み上げず、同じ1本の上の段と
+        # 別の1本の連言で表す**——なめし革が作れるだけでは足りず、糸を撚れることも要る。
+        conditions:
+          - reason: needs_leatherwork
+            any:
+              - {subject: agent, prop: skill_leatherwork, in_stage: skilled}
+              - {subject: agent, prop: skill_leatherwork, in_stage: expert}
+          - reason: needs_cordage
+            any:
+              - {subject: agent, prop: skill_cordage, in_stage: basic}
+              - {subject: agent, prop: skill_cordage, in_stage: skilled}
+              - {subject: agent, prop: skill_cordage, in_stage: expert}
         steps:
           - requires:
               - {object: tanned_leather, count: 2, consume: true}

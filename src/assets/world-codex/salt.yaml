@@ -60,6 +60,10 @@ object_defs:
             subject: instrument
             prop: durability
             in_stage: sound
+        # 保存の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
+        # characters/player_character.yaml）。**今のところ保存を伸ばす唯一の操作**で、干す・燻すは
+        # まだ世界に無い（docs/world/Skills.md 2節）。
+        add: {agent: {skill_preserving: 2}}
         become: {subject: instrument, cure: salted}
         destroy: self
 
@@ -160,8 +164,9 @@ object_defs:
             subject: parent
             matches: {tag: coast}
         add: {self: {brine: 1}}
-    # 解放条件（conditions、13.3節）はまだ置かない。スキルのプロパティと、それを伸ばす経路が
-    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
+    # **解放条件を持たない。** 保存の腕を求めると循環する（docs/engine/SkillSystem.md 3.2節）——
+    # 今その腕を伸ばす唯一の操作は塩漬け（上のcure）で、塩はこの塩田からしか採れない。天日に干す
+    # 最初の一歩（docs/world/Skills.md 2節）が世界に入れば、そこが腕の入口になる。
     recipes:
       # 砂を掻き分け、平たい石を並べて底を張る。**掘削具は要らない**——畑（240分）と同じ手間で、
       # 掘り返すのではなく並べるだけなので、掘り棒にする太い枝も折り込んでいない。

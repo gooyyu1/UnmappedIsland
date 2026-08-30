@@ -329,3 +329,129 @@ traits:
           - add:
               self:
                 vitamin: -0.5
+      # ------------------------------------------------------------------
+      # 腕前（docs/engine/SkillSystem.md、粒度と一覧は docs/world/Skills.md 2節）。レシピの解放条件は
+      # 段の名前で読む（同4節）ので、境目を条件の側へ書き写さない。
+      #
+      # **段は11本で共通**（0/20/60/180。4段・比3で、SkillSystem.md 6節の目安そのまま）。本ごとに
+      # 境目を変えると、同じ`basic`が本ごとに違う遠さになり、連言で並べた条件（Skills.md 3節）を
+      # 読み比べられなくなる。
+      #
+      # **個体差を持たせない。** 4人とも漂着した素人として始まるので、痛み・血と同じくこの trait が配る。
+      #
+      # **解放条件の「その段以上」は、段の名前をanyで束ねて書く**（上のbloodの安全域と同じ形）。
+      # `in_stage`は今いる段ちょうどの判定なので（GameElementDefinition.md 14.1節）、1つだけ書くと
+      # 腕が上がった時点で条件が偽へ戻り、レシピが閉じ直す。境目の数を条件の側へ書き写さないための
+      # 形で、tests/world-codex/skillsYaml.test.tsが「上の段でも満たし続ける」ことを見張る。
+      #
+      # **伸ばすのは実行経路だけ**（同3節の3経路のうち中）。その腕を使う操作が自分の`add`で`agent`へ
+      # +2を配る。**量は作業の長さに依らず一律**で、繰り返しの稼ぎを抑えるのは時間のコストだけ
+      # （同7節）。発見・集中の2経路は、契機と対価が未決のため持たない（同8節）。
+      #
+      # **伸ばす行動をまだ持たない本がある**（指物・接合、建築、料理、採鉱・製錬）。開ける物が世界に
+      # 1つも無く、伸ばす操作の置き場も無いため。**それらは解放条件にも書かない**——書けば永久に
+      # 開かないレシピになる（同3.2節）。
+      # ------------------------------------------------------------------
+      # 石を打ち欠く（locations.yamlのknap）。柄付けの刃（tools.yaml）を開ける。
+      skill_knapping:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 掻き取る・撚る・編む（fiber.yaml・weaving.yaml）。編み籠・くくり罠・葉の衣類と、柄付けの紐を開ける。
+      skill_cordage:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 削る・伐る（timber.yamlのfell/buck、animals.yamlのwhittle）。開けるレシピはまだ無い
+      # ——木の箱・そり・板（Skills.md 2節）が世界に1つも無い。
+      skill_woodwork:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 削り合わせて組む。伸ばす行動も開ける物もまだ無い（スツール・テーブル・車輪が世界に無い）。
+      skill_joinery:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 住居を建てる。伸ばす行動も開ける物もまだ無い（住居は docs/world/Dwellings.md の検討段階）。
+      skill_building:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 皮を剥ぐ（animals.yamlのbutcher）。なめし革と、それを縫った物（clothing.yaml・voyage.yamlの帆）を開ける。
+      skill_leatherwork:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 調理する。伸ばす行動がまだ無い——焼くのは炉が子のcooking_progressを進めるだけで
+      # （docs/engine/FireSystem.md 7節）、人が行う操作になっていない。
+      skill_cooking:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 得た食を保たせる（salt.yamlのcure）。開けるレシピはまだ無い——干し場・燻し場が世界に無い。
+      skill_preserving:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 火を起こす（fire.yamlのlight）。**レシピは開けない**——効き先は着火の重みだけ
+      # （docs/engine/FireSystem.md 10節）。
+      skill_firecraft:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 獣を狩る（animals.yamlのstrike）。**レシピは開けない**——開けるのは素材と機会で（Skills.md 2節）、
+      # 罠を作るのは繊維・編みの腕（同節のくくり罠）。
+      skill_hunting:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 鉱石を採って製錬する。伸ばす行動も開ける物もまだ無い（青銅器が世界に無い）。
+      skill_smelting:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}

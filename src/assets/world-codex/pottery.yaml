@@ -90,8 +90,8 @@ object_defs:
               signal: fired
               destroy: self
               spawn: {object: jar}
-    # 解放条件（conditions、13.3節）はまだ置かない。土器のスキルのプロパティと、それを伸ばす経路が
-    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
+    # **解放条件を持たない。** 器を挽く腕を担うスキルが一覧（docs/world/Skills.md 2節）に無い。
+    # 火が担うのは本焼きの温度だけで、成形はどの本にも属していない。
     recipes:
       coiled:
         steps:
@@ -108,6 +108,9 @@ object_defs:
   # 新しい仕組みは要らない。覆って塞ぐぶん、逆にここでは焼き物も煮炊きもできない。
   earth_kiln:
     traits: [hearth]
+    # **解放条件を持たない。** 火の腕が効くのは着火の重みだけで、火力にも炉の作り方にも効かない
+    # （docs/engine/FireSystem.md 10節）。本焼きに要る高温を分けているのは、この型のheatとfireスロット
+    # そのもの（上）。
     recipes:
       heaped:
         steps:

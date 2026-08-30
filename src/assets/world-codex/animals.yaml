@@ -344,6 +344,10 @@ traits:
       strike:
         trigger: {drag: {tag: weapon}}
         duration: 15
+        # 狩猟の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
+        # characters/player_character.yaml）。**pickの外に置く**ので、外した回も同じだけ伸びる
+        # ——腕が上がるのは獲物が獲れたからではなく、その場に立って手を出したからなので。
+        add: {agent: {skill_hunting: 2}}
         pick:
           # 打ち砕いた回。柄の遠心力が乗る武器（石斧）だけが引く。当たれば中型はその場で崩れ落ちる
           # （VitalsSystem.md 5節 決着は死ではなく気絶で付く）。
@@ -513,6 +517,10 @@ object_defs:
             prop: hand_brightness
             in_stage: bright
         duration: 60
+        # 皮革の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
+        # characters/player_character.yaml）。**皮を剥ぐ手つきがなめしへ移る**（Skills.md 2節の
+        # 皮革の最初の一歩）ので、獣の大小によらずどの解体も同じだけ伸ばす。
+        add: {agent: {skill_leatherwork: 2}}
         destroy: self
         spawn:
           - {object: raw_meat, count: 4}
@@ -811,6 +819,7 @@ object_defs:
             prop: hand_brightness
             in_stage: bright
         duration: 240
+        add: {agent: {skill_leatherwork: 2}}
         destroy: self
         spawn:
           - {object: raw_meat, count: 40}
@@ -839,6 +848,7 @@ object_defs:
             prop: hand_brightness
             in_stage: bright
         duration: 20
+        add: {agent: {skill_leatherwork: 2}}
         destroy: self
         spawn:
           - {object: raw_meat}
@@ -935,6 +945,10 @@ object_defs:
             prop: hand_brightness
             in_stage: bright
         duration: 40
+        # **伸びるのは木材加工**（docs/engine/SkillSystem.md 3節の実行経路）。スキルを分ける軸は素材
+        # ではなく技術（docs/world/Skills.md 1節）で、刃を当てて削り出す手つきは、太い枝を削る
+        # 木材加工の最初の一歩と同じもの——骨であることは転移の向きを変えない。
+        add: {agent: {skill_woodwork: 2}}
         destroy: self
         spawn: {object: bone_needle}
 
