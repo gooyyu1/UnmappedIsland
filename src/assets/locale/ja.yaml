@@ -107,6 +107,10 @@ object_texts:
         display_name: 雨よけ
         icon: 🛖
         description: 屋根や岩陰に守られていて、雨に打たれず日も差さない場所に居るかどうか。
+      wind_speed:
+        display_name: 風雨
+        icon: 🌪️
+        description: その身に当たっている風の強さ。嵐になると屋外では採れなくなる。屋根の下では止む。
       pain:
         display_name: 痛み
         icon: 💢
@@ -1355,6 +1359,7 @@ reason_texts:
   raining: 雨に濡れて火が移らない。屋根の下でなければ起こせない。
   no_fuel: 燃やす物が入っていない。火種だけでは燃え続けない。
   too_dark: 暗すぎて手が付けられない。明かりが要る。
+  too_stormy: 風雨が強すぎて、屋外では手が付けられない。収まるのを待つしかない。
 
 # 段（GameElementDefinition.md 6.4節のstages）のうち、UIが名前を読んで画面に出すもの。カードの上へ
 # 覆いとして出る（CardView.md 9.1節）ほか、死亡ダイアログが死因として出し（VitalsSystem.md 6節）、

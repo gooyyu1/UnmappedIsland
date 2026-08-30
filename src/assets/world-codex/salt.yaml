@@ -145,11 +145,14 @@ object_defs:
         duration: 15
         conditions:
           # 波打ち際まで下りて汲む屋外の行動なので、見るのは視界の側
-          # （docs/engine/IlluminationSystem.md 5節）。
+          # （docs/engine/IlluminationSystem.md 5節）。嵐の日は明るさが足りていても汲めない
+          # （docs/world/ContentSkeleton.md 8.1.4節）。
           - reason: too_dark
             subject: agent
             prop: looking_brightness
             in_stage: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage: gale}
           - {reason: salt_pan_full, prop: brine, lt: 8}
           # 海に面した土地に据えた塩田だけが汲める（locations.yamlのcoastタグ）。**据える場所は
           # 縛らない**——海から離れた塩田は、この操作が出ないことで何もできないと分かる。

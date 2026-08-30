@@ -19,6 +19,12 @@ import { islandLocationsOf } from './islandLocations';
  * 据え付けの光源を数えない前提では、どちらも土地のambient_brightnessをそのまま土台にするだけなので
  * （同2節）、**同じ明るさを別々のしきい値で切ったもの**になる。
  *
+ * **「屋外で採れる」と「探索できる」も別々の列。** 明るさの要求は同じだが、**嵐が止めるのは採取だけ**
+ * （ContentSkeleton.md 8.1.4節）なので、採る側だけが嵐の時間を引く。嵐かどうかは天気の名前ではなく、
+ * `core.yaml`のweatherがwind_speedへ与える風速と、キャラクタが宣言する段の境目の比較で決める
+ * ——ここでも数字を書き写す箇所は無い。**屋根や岩陰に守られた場所（浅い洞窟）には風雨が届かない**
+ * ので、そこでは嵐を引かない（player_character.yamlのshelteredの段が風雨を落とす分）。
+ *
  * **浅い洞窟の土台は、生える先の土地から辿る**（`hostAmbientOf`）。岩陰の暗さ（-6）は土地との差
  * なので、生え先が非0の土地へ広がっても数え直しは要らない——ただし生え先どうしで明るさが違うと
  * 1行では出せないので、そのときは例外にする。
@@ -28,22 +34,53 @@ import { islandLocationsOf } from './islandLocations';
  */
 
 /**
- * 表の1列。行動のクラス（IlluminationSystem.md 5節）が見る明るさと、その行動ができる最も暗い段。
+ * 表の1列。行動のクラス（IlluminationSystem.md 5節）が見る明るさと、その行動ができる最も暗い段、
+ * そして風雨がその行動を止めるか（ContentSkeleton.md 8.1.4節）。
  * **列と行動のクラスは1対1**——1列に2つを畳むと、境目が別々に動いたときにその列の意味が消える。
  */
 interface ActivityColumn {
   readonly propertyName: string;
   readonly stageName: string;
+
+  /** 嵐の時間を引くか。引かない列は、明るさだけで切った時間になる。 */
+  readonly stoppedByWind: boolean;
 }
 
 /** 土地の間を移動する: 視界が `pitch_dark` でないこと（同 5節）＝ その次の段 `dim` 以上。 */
-const TRAVEL_COLUMN: ActivityColumn = { propertyName: 'looking_brightness', stageName: 'dim' };
+const TRAVEL_COLUMN: ActivityColumn = {
+  propertyName: 'looking_brightness',
+  stageName: 'dim',
+  stoppedByWind: false,
+};
 
-/** 屋外で採る・探索する（同 5節）。 */
-const GATHERING_COLUMN: ActivityColumn = { propertyName: 'looking_brightness', stageName: 'bright' };
+/** 屋外で採る（同 5節）。嵐の日は明るさが足りていても採れない。 */
+const GATHERING_COLUMN: ActivityColumn = {
+  propertyName: 'looking_brightness',
+  stageName: 'bright',
+  stoppedByWind: true,
+};
+
+/** 探索する（同 5節）。採取と同じ明るさを要求するが、嵐では止まらない。 */
+const EXPLORATION_COLUMN: ActivityColumn = {
+  propertyName: 'looking_brightness',
+  stageName: 'bright',
+  stoppedByWind: false,
+};
 
 /** 手元の細かい作業（同 5節）。 */
-const HANDWORK_COLUMN: ActivityColumn = { propertyName: 'hand_brightness', stageName: 'bright' };
+const HANDWORK_COLUMN: ActivityColumn = {
+  propertyName: 'hand_brightness',
+  stageName: 'bright',
+  stoppedByWind: false,
+};
+
+/** 風雨の強さ（`core.yaml`のworld・`characters/player_character.yaml`）と、嵐と呼ぶ段。 */
+const WIND_PROPERTY = 'wind_speed';
+const GALE_STAGE = 'gale';
+
+/** 屋根や岩陰に守られていること（ContainerSystem.md 6節）と、守られていると数える段。 */
+const SHELTERED_PROPERTY = 'sheltered';
+const SHELTERED_STAGE = 'sheltered';
 
 /** 季節1つぶんの、天候の出現時間の実測値（`stats/climate.yaml`の`weather_hours`）。 */
 export interface SeasonWeatherHours {
@@ -64,8 +101,11 @@ export interface ActivityHoursRow {
   /** 土地の間を移動できる時間（時間/日）。 */
   readonly travelHoursPerDay: number;
 
-  /** 屋外で採れる・探索できる時間（時間/日）。 */
+  /** 屋外で採れる時間（時間/日）。嵐の時間を引いたもの（ContentSkeleton.md 8.1.4節）。 */
   readonly gatheringHoursPerDay: number;
+
+  /** 探索できる時間（時間/日）。明るさは採取と同じ要求で、嵐では止まらない。 */
+  readonly explorationHoursPerDay: number;
 
   /** 手元の細かい作業ができる時間（時間/日）。 */
   readonly handworkHoursPerDay: number;
@@ -103,32 +143,61 @@ export function worldAmbientBrightnessOf(codex: WorldCodex): (hour: number, weat
   };
 }
 
+/**
+ * 世界の風雨（`wind_speed`）を天候から解く。`core.yaml` の `weather` の段が与える寄与そのもので、
+ * **時刻には依らない**（ContentSkeleton.md 8.1.5節）。
+ */
+function worldWindSpeedOf(codex: WorldCodex): (weatherName: string) => number {
+  const world = codex.objects.get(codex.objectNames.getId('world'));
+  const windId = codex.propertyNames.getId(WIND_PROPERTY);
+  const weatherId = codex.vocabulary.world.weatherId;
+
+  const windPropDef = world.tryGetPropertyDef(windId);
+  if (windPropDef === undefined) throw new Error(`world が ${WIND_PROPERTY} を宣言していません。`);
+
+  const weatherDeltas = stageModifyDeltasOf(world, windId, weatherId);
+
+  return (weatherName) => {
+    const raw = windPropDef.initialValueWithoutRoll + (weatherDeltas.get(weatherName) ?? 0);
+    return windPropDef.range === undefined ? raw : windPropDef.range.clamp(raw);
+  };
+}
+
 /** 土地×季節ごとの活動時間表を、定義と天候の実測値から組み立てる。 */
 export function activityHoursOf(
   codex: WorldCodex,
   seasons: readonly SeasonWeatherHours[],
 ): readonly ActivityHoursRow[] {
   const worldAmbientAt = worldAmbientBrightnessOf(codex);
+  const worldWindAt = worldWindSpeedOf(codex);
   const thresholdOf = (column: ActivityColumn): number =>
     characterStageMinimumOf(codex, column.propertyName, column.stageName);
   const travelThreshold = thresholdOf(TRAVEL_COLUMN);
   const gatheringThreshold = thresholdOf(GATHERING_COLUMN);
+  const explorationThreshold = thresholdOf(EXPLORATION_COLUMN);
   const handworkThreshold = thresholdOf(HANDWORK_COLUMN);
+  const galeThreshold = characterStageMinimumOf(codex, WIND_PROPERTY, GALE_STAGE);
 
   const rows: ActivityHoursRow[] = [];
   for (const place of activityPlacesOf(codex)) {
     for (const season of seasons) {
       let travelHoursPerDay = 0;
       let gatheringHoursPerDay = 0;
+      let explorationHoursPerDay = 0;
       let handworkHoursPerDay = 0;
 
       for (let hour = 0; hour < 24; hour++) {
         for (const [weatherName, hoursInSeason] of season.hoursByWeather) {
           const fraction = hoursInSeason / (season.durationDays * 24);
           const brightness = place.brightnessAt(worldAmbientAt(hour, weatherName));
-          if (brightness >= travelThreshold) travelHoursPerDay += fraction;
-          if (brightness >= gatheringThreshold) gatheringHoursPerDay += fraction;
-          if (brightness >= handworkThreshold) handworkHoursPerDay += fraction;
+          const gale = !place.sheltered && worldWindAt(weatherName) >= galeThreshold;
+          const opens = (column: ActivityColumn, threshold: number): boolean =>
+            brightness >= threshold && !(column.stoppedByWind && gale);
+
+          if (opens(TRAVEL_COLUMN, travelThreshold)) travelHoursPerDay += fraction;
+          if (opens(GATHERING_COLUMN, gatheringThreshold)) gatheringHoursPerDay += fraction;
+          if (opens(EXPLORATION_COLUMN, explorationThreshold)) explorationHoursPerDay += fraction;
+          if (opens(HANDWORK_COLUMN, handworkThreshold)) handworkHoursPerDay += fraction;
         }
       }
 
@@ -137,6 +206,7 @@ export function activityHoursOf(
         seasonName: season.seasonName,
         travelHoursPerDay,
         gatheringHoursPerDay,
+        explorationHoursPerDay,
         handworkHoursPerDay,
       });
     }
@@ -180,6 +250,9 @@ interface ActivityPlace {
 
   /** 世界の環境光（`worldAmbientBrightnessOf`）から、その場所の明るさ。 */
   brightnessAt(worldAmbient: number): number;
+
+  /** 屋根や岩陰に守られている場所か。守られていれば風雨は届かない（ContentSkeleton.md 8.1.4節）。 */
+  readonly sheltered: boolean;
 }
 
 /**
@@ -189,10 +262,15 @@ interface ActivityPlace {
  */
 function activityPlacesOf(codex: WorldCodex): readonly ActivityPlace[] {
   const ambientId = codex.vocabulary.world.ambientBrightnessId;
+  const shelteredId = codex.propertyNames.getId(SHELTERED_PROPERTY);
+  // 守られていると数える境目も、キャラクタの段の宣言から読む（境目を書き写す箇所を作らない）。
+  const shelteredMinimum = characterStageMinimumOf(codex, SHELTERED_PROPERTY, SHELTERED_STAGE);
+  const isSheltered = (def: ObjectDef): boolean =>
+    (def.tryGetPropertyDef(shelteredId)?.initialValueWithoutRoll ?? 0) >= shelteredMinimum;
 
   const places: ActivityPlace[] = [];
   for (const def of islandLocationsOf(codex).island) {
-    const place = placeOf(def, ambientId, 0);
+    const place = placeOf(def, ambientId, 0, isSheltered(def));
     if (place !== undefined) places.push(place);
   }
 
@@ -200,12 +278,22 @@ function activityPlacesOf(codex: WorldCodex): readonly ActivityPlace[] {
   const shallowCave = shallowCaveId === undefined ? undefined : codex.objects.tryGet(shallowCaveId);
   if (shallowCave === undefined) return places;
 
-  const cave = placeOf(shallowCave, ambientId, hostAmbientOf(codex, shallowCave, ambientId));
+  const cave = placeOf(
+    shallowCave,
+    ambientId,
+    hostAmbientOf(codex, shallowCave, ambientId),
+    isSheltered(shallowCave),
+  );
   return cave === undefined ? places : [...places, cave];
 }
 
 /** ambient_brightnessを宣言していれば、その場所。宣言していなければundefined（表に出さない）。 */
-function placeOf(def: ObjectDef, ambientId: number, hostAmbient: number): ActivityPlace | undefined {
+function placeOf(
+  def: ObjectDef,
+  ambientId: number,
+  hostAmbient: number,
+  sheltered: boolean,
+): ActivityPlace | undefined {
   const ambientDef = def.tryGetPropertyDef(ambientId);
   if (ambientDef === undefined) return undefined;
 
@@ -215,6 +303,7 @@ function placeOf(def: ObjectDef, ambientId: number, hostAmbient: number): Activi
     name: def.name,
     brightnessAt: (worldAmbient) =>
       range === undefined ? worldAmbient + offset : range.clamp(worldAmbient + offset),
+    sheltered,
   };
 }
 
