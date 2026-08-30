@@ -103,15 +103,15 @@ function run(world: World, entry: readonly string[] = [SCRIPT, '1000']): Run {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-merge-and-close-'));
   try {
     const dir = work.replace(/\\/g, '/');
-    // 本文は改行もバッククォートも含むので、シェルへ埋め込まずファイルで渡す。
-    writeFileSync(join(work, 'body.txt'), world.body ?? DEFAULT_BODY, 'utf-8');
-    // スクリプトが引くのは `[レビュー]` で始まるコメントだけなので、絞り込みまでここで済ませる
-    // （`--jq` の中身は本物の `gh` が解釈する部分で、スタブが真似る対象ではない）。**繋ぎ目の
-    // `---` はスクリプトの `--jq` が入れるもの**なので、ここでも同じ形で繋ぐ——これが無いと、
-    // 複数のコメントを跨いで節が伸びる形を試験が見られない。
+    // `gh pr view --json` が返すものを、そのままの形で持たせる（改行もバッククォートも含むので、
+    // シェルへ埋め込まずファイルで渡す）。**絞り込みも符号化もここでは真似ない**——`--jq` の式は下の
+    // スタブが本物の `jq` へ渡す。スタブが真似ると、式だけを変えても試験は緑のまま通る。
     writeFileSync(
-      join(work, 'comments.txt'),
-      (world.comments ?? []).filter((comment) => comment.startsWith('[レビュー]')).join('\n---\n'),
+      join(work, 'pr.json'),
+      JSON.stringify({
+        body: world.body ?? DEFAULT_BODY,
+        comments: (world.comments ?? []).map((body) => ({ body })),
+      }),
       'utf-8',
     );
 
@@ -127,7 +127,9 @@ function run(world: World, entry: readonly string[] = [SCRIPT, '1000']): Run {
         .map(([key, value]) => `    ${key}) printf '%s' '${value}' ;;`)
         .join('\n');
 
-    // PRの `state` は、マージが呼ばれたかで変わる。
+    // PRの `state` は、マージが呼ばれたかで変わる。`--json body`・`--json comments` は、`--jq` の式
+    // （最後の引数）を本物の `jq` へ渡して評価させる——本物の `gh` がするのと同じことなので、式を
+    // 変えればここも一緒に動く。`-r` は `gh --jq` の出力に合わせたもの。
     const stub = join(work, 'gh');
     writeFileSync(
       stub,
@@ -138,8 +140,7 @@ if [ "$1" = pr ] && [ "$2" = merge ]; then
 fi
 if [ "$1" = pr ] && [ "$2" = view ]; then
   case "$5" in
-    body) cat '${dir}/body.txt' ;;
-    comments) cat '${dir}/comments.txt' ;;
+    body|comments) jq -r "\${@: -1}" '${dir}/pr.json' ;;
     mergeable) printf '%s' '${world.mergeable ?? 'MERGEABLE'}' ;;
     state) ${
       world.stateFails === true
@@ -599,6 +600,16 @@ describe('merge-and-close.sh', () => {
     expect(result.labels).toContain('--add-label 司令塔へ');
   });
 
+  // 回す側はレビューだけ。司令塔自身の指示やユーザーの却下を拾うと、下ろす相手の居ない印が残る。
+  it('`[レビュー]` で始まらないコメントの節は拾わない', () => {
+    const result = run({
+      comments: ['[司令塔] 直し待ちにします。\n\n## 司令塔へ\n\n- これは回す側ではない\n'],
+    });
+
+    expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
+    expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+  });
+
   // `## 仮決め` は「なし」と書かせる規約なので、書く側は取り違える。中身の無い印が残ると `RELAY` が
   // 毎周出て、合図が1件でも出た見張りはそこで終わる（他の待ちに使えなくなる）。
   it('節はあっても中身が「なし」なら、ラベルも RELAY も出さない', () => {
@@ -633,6 +644,33 @@ describe('merge-and-close.sh', () => {
 
     expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
     expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+  });
+
+  // コメントどうしの境目も同じ。1本に繋いで読むと、末尾に節を置いたコメントの節が次のコメントへ
+  // 伸びる。繋ぎ目の綴りで塞ぐ形だと、綴りが片側だけずれてもここが緑のまま通ってしまう。
+  it('コメントの末尾の節が「なし」なら、後ろに別のコメントが続いてもラベルを付けない', () => {
+    const result = run({
+      comments: [
+        '[レビュー] 通してよい\n\n## 司令塔へ\n\nなし。\n',
+        '[レビュー] 通してよい\n\n差分を読み直したが、他に直すところは無い。\n',
+      ],
+    });
+
+    expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
+    expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+  });
+
+  // 1件ずつ読むので、読み落とせば**後ろのコメントだけ**が黙って落ちる。
+  it('2件目以降のレビューのコメントの `## 司令塔へ` も拾う', () => {
+    const result = run({
+      comments: [
+        '[レビュー] 通してよい\n\n## 司令塔へ\n\nなし。\n',
+        '[レビュー] 通してよい\n\n## 司令塔へ\n\n- #1353 を立てた（範囲外）\n',
+      ],
+    });
+
+    expect(result.lines).toContain('RELAY 1000');
+    expect(result.labels).toContain('--add-label 司令塔へ');
   });
 
   // マージは済んでいるので、印を置けなかっただけで後片付け（`main` の追随）ごと落としてはいけない。
