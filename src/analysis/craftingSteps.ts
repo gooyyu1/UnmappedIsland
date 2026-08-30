@@ -276,7 +276,7 @@ function withTriggeredRangeEvents(
       const readout = propertyDef === undefined ? undefined : rangeEventAt(propertyDef, value, resolve);
       if (readout === undefined) continue;
       // 分岐の確率は積で畳まれる（rangeイベントの分岐の和は1）ので、掛け直さなくてよい。
-      outcomes = combineOutcomes(outcomes, readout.outcomes);
+      outcomes = combineOutcomes(outcomes, readout.outcomes, 'triggered');
       destroysSelf ||= readout.destroysSelf;
       triggered = true;
     }
@@ -317,7 +317,8 @@ function selfPropertyValuesAfterOf(
     if (before !== undefined) moves.push([delta.propertyGlobalId, before + delta.amount]);
   }
   for (const assignment of outcome.assignments)
-    if (assignment.target === 'self') moves.push([assignment.propertyGlobalId, assignment.value]);
+    if (assignment.target === 'self' && assignment.value !== undefined)
+      moves.push([assignment.propertyGlobalId, assignment.value]);
   return moves;
 }
 
