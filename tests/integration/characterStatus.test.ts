@@ -50,7 +50,7 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
     const view = fromGameSession(game, codex, locale);
     const bodyFat = view.propertyCategories
       .flatMap((tab) => tab.entries)
-      .find((entry) => entry.key === 'body_fat')?.detail;
+      .find((entry) => entry.key === 'body_fat');
 
     expect(bodyFat?.stage?.name, '開始直後は標準の段（characters/）').toBe('nourished');
     // 段はrangeの中の区間で、上端は次の段のmin（nourished 480〜stout 2880、medic）。
@@ -58,12 +58,15 @@ describe('キャラクタのステータス（世界→映し 通し）', () => 
     expect(bodyFat?.stage?.span?.end).toBeCloseTo(2880 / 5760);
     // 目盛りは全部の段の境目（starved 0 は下限なので含まない。gaunt 96・nourished 480・stout 2880・obese 4320）。
     expect(bodyFat?.stage?.boundaries).toEqual([96, 480, 2880, 4320].map((value) => value / 5760));
+    // 段の中の進みは、その段の中だけを見た割合（開始値1440は nourished 480〜2880 の4割）。
+    expect(bodyFat?.stage?.progress?.nextName).toBe('stout');
+    expect(bodyFat?.stage?.progress?.ratio).toBeCloseTo((1440 - 480) / (2880 - 480));
     expect(
-      bodyFat?.received.map((influence) => `${influence.name}${influence.increases ? '+' : '-'}`),
+      bodyFat?.detail?.received.map((influence) => `${influence.name}${influence.increases ? '+' : '-'}`),
       '3大栄養素が流れ込み、自分の段の基礎代謝が削る',
     ).toEqual(['carbohydrate+', 'protein+', 'lipid+', 'body_fat-']);
     expect(
-      bodyFat?.received.every((influence) => !influence.reversible),
+      bodyFat?.detail?.received.every((influence) => !influence.reversible),
       'transferもaddも不可逆なので、記号は＋−になる',
     ).toBe(true);
   });

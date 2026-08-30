@@ -1436,6 +1436,13 @@ stage_texts:
   rotten: 腐った
   stale: 傷んだ
   sound: 無事
+  # 腕前の段＝レベル（SkillSystem.md 5節）。**11本の腕前すべてが同じ4段を使う**ので、どの腕前でも
+  # 同じ語が同じ習熟を指す。バーの両端に「今の段／次の段」として並ぶ（StatusArea.md 9節）ため、
+  # 隣り合う2つが一目で上下と分かる語にする。
+  novice: 見習い
+  basic: 一人前
+  skilled: 熟練
+  expert: 名人
 
 # 消し方の名乗り（GameElementDefinition.md 9.3節のdestroyのreason）。死亡ダイアログが「渇きで死んだ。」
 # のように死因として出す（VitalsSystem.md 6節）。
