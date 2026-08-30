@@ -177,7 +177,7 @@ export class ReferenceScope {
   /** 宣言元の個体（self）が居るか。parent・ancestorもここから辿るので、無ければ揃って解けない。 */
   private readonly hasSelf: boolean;
 
-  /** 操作している者（agent）が居るか。時間の側が起こす場面（rangeイベント・passives）には居ない。 */
+  /** 操作している者（agent）が居るか。誰かが操作しているとは限らない場所には居ない。 */
   private readonly hasAgent: boolean;
 
   /** 働きかけに使われる物（instrument）が居るか。真になるのは物が運ばれてくる場所だけ（下のcombination）。 */
