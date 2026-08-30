@@ -4,7 +4,7 @@ import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { ProgressBar } from './ProgressBar';
 import type { BarSpan } from './ProgressBar';
 import { onPressRelease } from '../../ui/tap';
-import { barFillOf, barNextStageTextOf, barValueTextOf } from '../view/statusBarLook';
+import { barFillOf, barKeepsAxis, barNextStageTextOf, barValueTextOf } from '../view/statusBarLook';
 import { cssColor } from '../../util/cssColor';
 import { COLOR, FONT_FAMILY } from '../looks/theme';
 
@@ -367,7 +367,8 @@ export class StatusBar extends Phaser.GameObjects.Container {
    */
   wouldShowChangeFor(content: StatusContent): boolean {
     const fill = barFillOf(content);
-    return this.visible && fill !== undefined && this.bar.isBehind(fill);
+    if (fill === undefined || !barKeepsAxis(this.content, content)) return false;
+    return this.visible && this.bar.isBehind(fill);
   }
 
   /** 並びから外れた行にする（変化を見せ終わった、固定表示を外した）。 */
@@ -385,11 +386,18 @@ export class StatusBar extends Phaser.GameObjects.Container {
     this.applyContent(content, true);
   }
 
-  /** showChangeがfalseなら、変化の帯を出さずに値を今の状態にする（show参照）。 */
+  /**
+   * showChangeがfalseなら、変化の帯を出さずに値を今の状態にする（show参照）。
+   *
+   * **段が上がった行も帯を出さない。** バーの軸が次の段へ移って0から始まるので（barKeepsAxis）、
+   * 前の段の位置との差は変化量ではない——帯にすると、腕が上がったのに「減った分」の赤が出る。
+   */
   private applyContent(content: StatusContent, showChange: boolean): void {
     const fill = barFillOf(content);
+    const keepsAxis = barKeepsAxis(this.content, content);
     this.bar.setVisible(fill !== undefined);
-    if (fill !== undefined) this.bar.setRatio(fill, { showChange, hold: content.midAction === true });
+    if (fill !== undefined)
+      this.bar.setRatio(fill, { showChange: showChange && keepsAxis, hold: content.midAction === true });
 
     shrinkToWidth(this.valueText.setText(barValueTextOf(content)), this.barTextWidth);
     shrinkToWidth(this.nextStageText.setText(barNextStageTextOf(content)), this.barTextWidth);

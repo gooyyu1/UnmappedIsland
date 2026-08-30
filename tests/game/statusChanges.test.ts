@@ -30,6 +30,26 @@ describe('statusChangesBetween(行動の前後でのステータスの増減)', 
 
     expect(changes.size).toBe(0);
   });
+
+  it('段が上がった行には行動前の値を添えない（バーの軸が次の段へ移るため）', () => {
+    // 段の中の進みを映すバーは、段が上がると0から始まる（StatusArea.md 9節）。前の段の位置を
+    // 起点にすると、腕が上がったのに「減った分」の赤い帯が出る。
+    const skill = (value: number, name: string, ratio: number): StatusContent => ({
+      key: 'skill_cordage',
+      name: 'skill_cordage',
+      value,
+      ratio: undefined,
+      stage: { name, span: undefined, boundaries: [], progress: { nextName: '次', ratio } },
+      alert: 'safe',
+    });
+
+    const crossed = statusChangesBetween([skill(19, '一人前', 0.95)], [skill(21, '熟練', 0.02)]);
+    expect(crossed.get('skill_cordage')?.change, '値そのものは増えている').toBe('increased');
+    expect(crossed.get('skill_cordage')?.ratioBefore).toBeUndefined();
+
+    const within = statusChangesBetween([skill(19, '一人前', 0.5)], [skill(21, '一人前', 0.6)]);
+    expect(within.get('skill_cordage')?.ratioBefore, '同じ段の中なら起点になる').toBe(0.5);
+  });
 });
 
 describe('statusChangesAfter(操作のあとの増減の記号)', () => {

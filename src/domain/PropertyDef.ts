@@ -600,6 +600,9 @@ export class PropertyDef {
    *
    * 下端を段と一緒に返すのは、**「今いる段の上端」と「次の段のmin」が同じ1つの値**だから——
    * 区間（spanOf）と進み（progressAt）で別々に探すと、片方だけが段の選び方を変えたときに食い違う。
+   *
+   * **rangeの上限より上に下端を置いた段は、上に無いものとして数える。** そこは値が取れない位置なので
+   * 到達できず、区間の上端にも進みの分母にもなれない。頭打ちを呼ぶ側でやると、その2つが別の値になる。
    */
   private stageAbove(start: number): { readonly stage: PropertyStage; readonly bound: number } | undefined {
     let above: { stage: PropertyStage; bound: number } | undefined;
@@ -607,6 +610,7 @@ export class PropertyDef {
     for (const stage of this.stages) {
       const bound = stage.lowerBound;
       if (bound === undefined || bound <= start) continue;
+      if (this.range !== undefined && bound > this.range.max) continue;
       if (above !== undefined && bound >= above.bound) continue;
       above = { stage, bound };
     }
@@ -639,8 +643,7 @@ export class PropertyDef {
     if (this.range === undefined || this.isSymbolic) return undefined;
 
     const start = stage.lowerBound ?? this.range.min;
-    // 上端はrangeの上限を超えない（範囲の外へminを置いた宣言でも、囲みがバーからはみ出さないように）。
-    const end = Math.min(this.stageAbove(start)?.bound ?? this.range.max, this.range.max);
+    const end = this.stageAbove(start)?.bound ?? this.range.max;
 
     const startRatio = this.ratioOf(start);
     const endRatio = this.ratioOf(end);

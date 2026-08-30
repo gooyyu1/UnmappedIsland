@@ -1,6 +1,6 @@
 import type { PropertyCategory as PropertyTab } from '../ui/PropertiesPane';
 import type { StatusChange, StatusContent } from '../ui/StatusBar';
-import { barFillOf } from './statusBarLook';
+import { barFillOf, barKeepsAxis } from './statusBarLook';
 
 /**
  * ステータスエリアの候補とプロパティの全カテゴリを、**重複は先勝ちで**1つの並びへ畳む。
@@ -23,9 +23,9 @@ export interface StatusDelta {
   readonly change: StatusChange;
 
   /**
-   * 行動を始める前にバーが映していた値（段の中の進みも含む、statusBarLook）。バーを持たない行では
-   * undefined。出ていなかった行を出すときに、この値から見せ始めて「この行動で変わった分」だけを
-   * 帯にするために使う（StatusBar.show）。
+   * 行動を始める前にバーが映していた値（段の中の進みも含む、statusBarLook）。バーを持たない行と、
+   * その間に段が上がってバーの軸が入れ替わった行（barKeepsAxis）ではundefined。出ていなかった行を
+   * 出すときに、この値から見せ始めて「この行動で変わった分」だけを帯にするために使う（StatusBar.show）。
    */
   readonly ratioBefore: number | undefined;
 }
@@ -46,7 +46,7 @@ export function statusChangesBetween(
     if (previous === undefined || previous.value === status.value) continue;
     changes.set(status.key, {
       change: status.value > previous.value ? 'increased' : 'decreased',
-      ratioBefore: barFillOf(previous),
+      ratioBefore: barKeepsAxis(previous, status) ? barFillOf(previous) : undefined,
     });
   }
   return changes;

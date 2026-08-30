@@ -82,6 +82,27 @@ object_defs:
     expect(stage?.progress?.ratio, 'range.minが下端（0〜25の10）').toBeCloseTo(0.4);
   });
 
+  it('rangeの外へminを置いた段は、区間の上端にも進みの分母にもならない', () => {
+    // 値が取れない位置なので到達できない。**上端と分母は同じ1つの値**（PropertyDef.stageAbove）
+    // なので、片方だけがその段を数えると区間と進みが食い違う。
+    const codex = load(`
+object_defs:
+  vessel:
+    props:
+      water:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: empty, min: 0}
+          - {name: unreachable, min: 150}
+`);
+
+    const stage = reading(codex, 'vessel', 'water', 50);
+    expect(stage?.name).toBe('empty');
+    expect(stage?.span?.end, '上端はrangeの上限').toBeCloseTo(1);
+    expect(stage?.progress, '分母も同じく決まらないので、進みを言わない').toBeUndefined();
+  });
+
   it('下端もrangeも無い最下段では進みを言わない', () => {
     const codex = load(`
 object_defs:
