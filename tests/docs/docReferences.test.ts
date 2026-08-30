@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { declaresWholeDocument, WHOLE_DOCUMENT_CONFIRMED } from '../../scripts/docStatus.mjs';
 import { githubSlugs } from '../../scripts/githubSlugs.mjs';
 
 /**
@@ -149,6 +150,14 @@ const confirmedSections = [...docByPath].flatMap(([doc, text]) =>
     .filter((section) => section.heading.includes(CONFIRMED_LABEL))
     .map((section) => ({ doc, ...section })),
 );
+
+/**
+ * 全体が確定であることを宣言した文書（DocumentStyle.md 6.2節の条件を課される対象）。
+ *
+ * 宣言の判定は `stats:docs` が確定欄を `全` と出すのに使うものと**同じ1つ**を呼ぶ。別々に持つと、
+ * 表では全体が確定と出るのに 6.2 節の条件は掛かっていない、が成立する。
+ */
+const wholeDocumentConfirmed = [...docByPath].filter(([, text]) => declaresWholeDocument(text));
 
 /** ファイル名（basename）→ docs内の候補パス。 */
 const docsByBasename = new Map<string, string[]>();
@@ -471,6 +480,71 @@ describe.skip('【確定】を付けてよい節の条件（DocumentStyle.md 6.1
     expect(
       missing,
       `出どころの無い確定節（人間の判断の在処が節から読めない）:\n${missing.join('\n')}`,
+    ).toEqual([]);
+  });
+});
+
+/**
+ * 文書まるごとの確定宣言が満たす条件（DocumentStyle.md 6.2節）。
+ *
+ * 6.1節の検査（上）と違って今から走らせる——宣言の形は規約と同時に入るので、規約より先に書かれた
+ * 文書が無い。
+ */
+describe('文書まるごとの確定宣言（DocumentStyle.md 6.2節）', () => {
+  it('宣言のある文書を1つ以上拾えている（下の検査の土台）', () => {
+    // 拾えていないと、全部が規約どおりの状態と見分けが付かないまま緑になる。
+    expect(wholeDocumentConfirmed.length).toBeGreaterThan(0);
+  });
+
+  it('宣言の照合が、書式を例示した行を拾わない', () => {
+    // 規約（DocumentStyle.md 6.2節）は書式そのものを本文に書くので、例示を宣言と読むと、規約を
+    // 書いた文書が全体確定になる。**文書の一覧では確かめられない**——今は例示が行頭に無いので、
+    // 拾い方を間違えていても一覧は同じ結果になる。既知の入力で照合の形を見る。
+    expect(declaresWholeDocument(`${WHOLE_DOCUMENT_CONFIRMED} 記述を覆すには人間の判断が要ります。`)).toBe(
+      true,
+    );
+    expect(declaresWholeDocument(`- **書式は \`${WHOLE_DOCUMENT_CONFIRMED}\` で始まる段落**です。`)).toBe(
+      false,
+    );
+    expect(declaresWholeDocument(`\`\`\`\n${WHOLE_DOCUMENT_CONFIRMED} 例示です。\n\`\`\`\n`)).toBe(false);
+  });
+
+  it('宣言のある文書が、節ごとの【確定】を持たない（射程が重なる）', () => {
+    const overlapping = confirmedSections
+      .filter((section) => wholeDocumentConfirmed.some(([doc]) => doc === section.doc))
+      .map((section) => `${section.doc}:${section.line} ${section.heading}`);
+    expect(
+      overlapping,
+      `宣言のある文書に残った節の印（印の有る節と無い節の差が何も意味しなくなる）:\n` +
+        overlapping.join('\n'),
+    ).toEqual([]);
+  });
+
+  it('宣言のある文書の全行に、暫定を表す語が無い', () => {
+    const found: string[] = [];
+    for (const [doc, text] of wholeDocumentConfirmed) {
+      for (const { line, text: body } of textLines(text)) {
+        for (const match of body.matchAll(PROVISIONAL_WORD)) {
+          found.push(`${doc}:${line}: 「${match[0]}」`);
+        }
+      }
+    }
+    expect(
+      found,
+      `宣言のある文書に残った仮決め（文書の射程に外側は無いので、持つべき仕様書へ移す）:\n` +
+        found.join('\n'),
+    ).toEqual([]);
+  });
+
+  it('宣言のある文書が、出どころの1行を持つ', () => {
+    const missing = wholeDocumentConfirmed
+      .filter(
+        ([, text]) => !textLines(text).some(({ text: body }) => body.startsWith(SOURCE_LINE_PREFIX)),
+      )
+      .map(([doc]) => doc);
+    expect(
+      missing,
+      `出どころの無い宣言（人間の判断の在処が文書から読めない）:\n${missing.join('\n')}`,
     ).toEqual([]);
   });
 });
