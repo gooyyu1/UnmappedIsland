@@ -212,7 +212,7 @@ export class PropertyValue {
    * 今まさに指定した名前のstage（6.4節）に該当しているか。`bound`が`or_above`なら、その段より上に
    * 居ても真（PropertyDef.isInStage）。
    */
-  isInStage(stageName: string, bound: StageBound = 'exact'): boolean {
+  isInStage(stageName: string, bound?: StageBound): boolean {
     return this.def.isInStage(this.getEffectiveValue(), stageName, bound);
   }
 

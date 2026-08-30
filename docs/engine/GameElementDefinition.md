@@ -2298,7 +2298,7 @@ object_defs:
       basic:
         icon: axe_wip.png
         conditions:
-          - {subject: agent, prop: skill_knapping, in_stage: basic}
+          - {subject: agent, prop: skill_knapping, in_stage_or_above: basic}
         steps:
           - requires:
               - {object: wood, count: 2, consume: true}
