@@ -730,8 +730,9 @@ export class WorldObject {
    * 持続効果の対象（8.1節）を、影響の一覧のために解決する。**childは今入っている子を全部**返す
    * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（setChildRegistered）。
    *
-   * 操作の関係の役（11.5節）はここへ来ない。弾いているのは`ReferenceScope.declaration`で、modify/add/transfer
-   * のどの対象も同じ1つのスコープを通る。狭いのは同節が`【未実装: 操作の関係】`である間だけ。
+   * 操作の関係の役（11.5節）はここへ来ない。役に解決先が無いのは`ReferenceScope.declaration`が持つ性質で、
+   * 上のchildのために派生させた`withBroadcast`もそこは引き継ぐ。狭いのは同節が`【未実装: 操作の関係】`
+   * である間だけ。
    */
   resolveInfluenceTargets(path: PropertyPath): readonly WorldObject[] {
     if (path.root === 'child') return [...this.children()];
