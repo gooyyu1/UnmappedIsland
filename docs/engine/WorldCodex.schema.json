@@ -362,7 +362,7 @@
       ]
     },
     "subject_root": {
-      "description": "conditions/weightの`subject`（主語）の参照ルート（14.1節）。プロパティ名を伴う参照なのでancestorを書ける。どのルートを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表。今どこで書けるかを持つのは実装のReferenceScopeで、11.5節の表は未実装ぶんを含むため一致しない）。居ない役を書くとロード時エラー。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
+      "description": "`subject`（主語）の参照ルート（14.1節）。プロパティ名を伴う参照なのでancestorを書ける。どのルートを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表。今どこで書けるかを持つのは実装のReferenceScopeで、11.5節の表は未実装ぶんを含むため一致しない）。居ない役を書くとロード時エラー。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
       "enum": [
         "self",
         "parent",
@@ -534,7 +534,7 @@
       ]
     },
     "conditions_list": {
-      "description": "conditionsの値（14節）。常に配列で、暗黙のall（論理積）として扱われる。actions/combinations・passivesのゲート（旧when）の両方がこの同じ形を使う。",
+      "description": "conditionsの値（14節）。常に配列で、暗黙のall（論理積）として扱われる。",
       "type": "array",
       "items": {
         "$ref": "#/$defs/condition_node"
@@ -915,7 +915,7 @@
               "properties": {
                 "drag": {
                   "$ref": "#/$defs/type_match_rule",
-                  "description": "重ねる相手のカード（instrument）に求める型。枠のacceptと同じ{tag}/{object}の二択（12.1節）。"
+                  "description": "重ねる相手のカード（instrument）に求める型（12.1節）。"
                 },
                 "allow_multiple": {
                   "type": "boolean",
@@ -973,7 +973,7 @@
       "additionalProperties": false
     },
     "recipe_step_requirement": {
-      "description": "工程ごとの素材・道具の要求（GameElementDefinition.md 13.1節）。何が当てはまるかは枠のacceptと同じ二択で、object（その型だけ）かtag（そのタグを持つ任意の型）のどちらか一方を書く。",
+      "description": "工程ごとの素材・道具の要求（GameElementDefinition.md 13.1節）。何が当てはまるかは、object（その型だけ）かtag（そのタグを持つ任意の型）のどちらか一方を書く（4.1節。ここだけはnotを書けない——型の指定がcount/consumeと同じマップに同居するため）。",
       "type": "object",
       "properties": {
         "object": {
@@ -1056,7 +1056,7 @@
       "additionalProperties": false
     },
     "type_match_rule": {
-      "description": "どの型が当てはまるかの指定（GameElementDefinition.md 4.1節）。枠のaccept（7.2節）・combinationsのwith（12.1節）・conditionsのmatches（14.3節・14.4節）が共有する。tag（タグを持つ任意のobject_def）・object（特定のobject_def）・not（当てはまらないこと）のうち、ちょうど1つを書く。",
+      "description": "どの型が当てはまるかの指定（GameElementDefinition.md 4.1節）。tag（タグを持つ任意のobject_def）・object（特定のobject_def）・not（当てはまらないこと）のうち、ちょうど1つを書く。",
       "oneOf": [
         {
           "type": "object",
@@ -1296,7 +1296,7 @@
           "description": "成立している間、土地以外の親へ移れなくなる条件（GameElementDefinition.md 7.13節）。見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面（tick・こぼれ落ち）でも同じ判定が走る。並び全体で1つの条件木なので、trait由来と連結せず、自分自身か1つのtraitのどちらかの宣言だけが効く。"
         },
         "tags": {
-          "description": "このobject_def/traitが持つタグのリスト（4節）。枠のaccept・combinationsのwith等のマッチングに使う。",
+          "description": "このobject_def/traitが持つタグのリスト（4節）。型の指定（4.1節）が{tag: ...}で見るのはこのタグ。",
           "type": "array",
           "items": {
             "$ref": "#/$defs/identifier"
@@ -1392,7 +1392,7 @@
           "description": "成立している間、土地以外の親へ移れなくなる条件（GameElementDefinition.md 7.13節）。見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面（tick・こぼれ落ち）でも同じ判定が走る。並び全体で1つの条件木なので、trait由来と連結せず、自分自身か1つのtraitのどちらかの宣言だけが効く。"
         },
         "tags": {
-          "description": "このobject_def/traitが持つタグのリスト（4節）。枠のaccept・combinationsのwith等のマッチングに使う。",
+          "description": "このobject_def/traitが持つタグのリスト（4節）。型の指定（4.1節）が{tag: ...}で見るのはこのタグ。",
           "type": "array",
           "items": {
             "$ref": "#/$defs/identifier"
@@ -1818,7 +1818,7 @@
       }
     },
     "condition_reason": {
-      "description": "この要件を満たさないときにプレイヤーへ出す理由の識別子（14.6節）。actions/combinationsのconditionsの要素にだけ書ける（文言はlocaleのreason_textsが持つ）。",
+      "description": "この要件を満たさないときにプレイヤーへ出す理由の識別子（14.6節）。プレイヤーが試みる操作の可否を決める条件の要素にだけ書ける（文言はlocaleのreason_textsが持つ）。",
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*$"
     },

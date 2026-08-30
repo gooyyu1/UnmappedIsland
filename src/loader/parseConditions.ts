@@ -73,7 +73,7 @@ export function requireResolvable(
   return root;
 }
 
-/** conditionsの要素にだけ書ける、満たさなかったときの理由の識別子（Requirement参照）。 */
+/** 条件の並びの要素にだけ書ける、満たさなかったときの理由の識別子（Requirement参照）。 */
 const REASON_KEY = 'reason';
 
 /**
@@ -99,7 +99,7 @@ export function parseConditionsField(
 }
 
 /**
- * 要素ごとに`reason`（満たさなかったときにプレイヤーへ出す理由の識別子）を持てるconditions。
+ * 要素ごとに`reason`（満たさなかったときにプレイヤーへ出す理由の識別子）を持てる条件の並び。
  * その点だけがparseConditionsFieldと違う。入れ子のall/any/notの中には書けない
  * （落ちた要件は配列の要素の単位で指すため、Requirement参照）。
  *

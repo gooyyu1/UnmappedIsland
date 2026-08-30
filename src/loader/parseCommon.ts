@@ -28,8 +28,7 @@ export function withYamlContext<T>(context: string, build: () => T): T {
 }
 
 /**
- * 「どの型が当てはまるか」の指定（`{tag: ...}`・`{object: ...}`・`{not: ...}`のいずれか1つ）を読む。
- * 枠の`accept`（7.2節）と重ねる操作の相手（12.1節）が同じ形を共有する。
+ * 「どの型が当てはまるか」の指定（`{tag: ...}`・`{object: ...}`・`{not: ...}`のいずれか1つ、4.1節）を読む。
  */
 export function parseTypeMatchRule(
   loader: WorldCodexYamlLoader,
