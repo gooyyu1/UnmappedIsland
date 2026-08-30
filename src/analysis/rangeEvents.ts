@@ -1,4 +1,4 @@
-import type { PropertyDef, RangeEventLabel } from '../domain/PropertyDef';
+import type { PropertyDef, PropertyRange, RangeEventLabel } from '../domain/PropertyDef';
 import type { StepOutcome } from './CraftingStep';
 import { destroysRoot, readEffect } from './effectOutcomes';
 import type { EndBoundValueResolver } from './staticValue';
@@ -28,17 +28,18 @@ export function rangeEventReadouts(
   resolve: EndBoundValueResolver,
 ): readonly RangeEventReadout[] {
   const range = propertyDef.range;
+  // 端が無ければ端のイベントも無い——rangeを持たないプロパティのon_max/on_minはPropertyDefが弾き、
+  // 既定のクランプもrangeから作られる。
+  if (range === undefined) return [];
+
   const readouts: RangeEventReadout[] = [];
   for (const [label, effect] of propertyDef.rangeEvents()) {
     const reading = readEffect(effect, resolve);
-    // 端の値が無ければ戻り量は測れない（rangeを持たないプロパティ）。
-    const end = range === undefined ? undefined : label === 'on_min' ? range.min : range.max;
+    const end = endValueOf(range, label);
     let expectedReturnToSelf = 0;
-    if (end !== undefined)
-      for (const outcome of reading.outcomes) {
-        const after = selfValueAfter(propertyDef, outcome, end);
-        expectedReturnToSelf += outcome.probability * (label === 'on_min' ? after - end : end - after);
-      }
+    for (const outcome of reading.outcomes)
+      expectedReturnToSelf +=
+        outcome.probability * inwardFromEnd(range, label, selfValueAfter(propertyDef, outcome, end));
 
     readouts.push({
       label,
@@ -50,13 +51,35 @@ export function rangeEventReadouts(
   return readouts;
 }
 
+/** そのイベントが発火する端の値。**`on_min`／`on_max`がrangeのどちらの端かを持つのはここだけ。** */
+function endValueOf(range: PropertyRange, label: RangeEventLabel): number {
+  return label === 'on_min' ? range.min : range.max;
+}
+
+/**
+ * その値が、labelの端からrangeの**内側**へどれだけ離れているか。端そのものなら0、端を越えていれば負。
+ *
+ * **端から戻った量も、端へ届くまでの距離も、この同じ1つの量。** 別々に測ると、どちらへ向かうのが
+ * 内側かが2箇所に分かれ、片方だけ向きが裏返っても気付けない。
+ */
+function inwardFromEnd(range: PropertyRange, label: RangeEventLabel, value: number): number {
+  const end = endValueOf(range, label);
+  return label === 'on_min' ? value - end : end - value;
+}
+
 /**
  * その分岐が終わったとき、端まで来ていた自分の値がいくつになっているか。**増減は端からの差、代入は
- * そのものが行き先**（craftingSteps.selfPropertyValuesAfterOfと同じ均し方）。
+ * そのものが行き先**——端は分岐が始まる時点の値そのものなので、`add`で足して戻すのも`set`で書き戻す
+ * のも1つの値に均せる。
  *
- * 代入と増減の宣言順は分岐に残らない（StepOutcome）ので、代入を土台にして増減を重ねる
- * ——端から戻す宣言は`set`で行き先を書いてから細かい増減を足す形になる。**静的に解けない代入は
- * 分岐に載らない**（PropertyAssignment）ので、その戻り量は端に留まったものとして数えられる。
+ * 代入と増減の宣言順は分岐に残らない（StepOutcome）ので、代入を土台にして増減を重ね、代入が複数
+ * あれば後のものを採る（SetEffect.applyと同じ後勝ち）。**静的に解けない代入は分岐に載らない**
+ * （PropertyAssignment）ので、その戻り量は端に留まったものとして数えられる。
+ *
+ * **条件つきのrangeイベント（6.3節）では、著者の代入と、条件を満たさない回へ倒れる既定のクランプが
+ * 1つの分岐に並ぶ**——ConditionalEffect.readが排他な2つを両方渡し、効果の読み下しがそれを順に
+ * 起こるものとして畳むため。後勝ちなのでクランプが残り、条件つきで`set`して戻す宣言は戻り0と
+ * 読まれる。排他だという事実は畳んだ時点で失われているので、ここでは分けられない。
  */
 function selfValueAfter(propertyDef: PropertyDef, outcome: StepOutcome, end: number): number {
   let value = end;
@@ -100,6 +123,7 @@ export function ticksToRangeEnd(
   const range = propertyDef.range;
   if (range === undefined || perTick === 0 || value === undefined) return undefined;
 
-  const distance = perTick < 0 ? value - range.min : range.max - value;
+  // 向かう先は、動く向きが決める——下がるなら下端、上がるなら上端。
+  const distance = inwardFromEnd(range, perTick < 0 ? 'on_min' : 'on_max', value);
   return distance <= 0 ? undefined : distance / Math.abs(perTick);
 }
