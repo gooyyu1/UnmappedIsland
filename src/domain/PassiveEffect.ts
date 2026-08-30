@@ -57,7 +57,7 @@ export class PassiveEffectGate {
 
     if (
       this.conditions !== undefined &&
-      // ゲートは宣言元しか居ない文脈で評価する（誰かが操作しているとは限らない）。
+      // ゲートは、操作の関係（11.5節）の役が解決先を持たない文脈で評価する（ReferenceScope.declaration）。
       !this.conditions.evaluate(ReferenceContext.forSelf(slotBearer))
     )
       return false;

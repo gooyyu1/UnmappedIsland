@@ -704,10 +704,9 @@ export class WorldObject {
   /**
    * 名指しした1つのプロパティが、他と交わしている影響（docs/ui/Windows.md 8節）。
    *
-   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果だけでよい。持続効果が届く先は、宣言元から
-   * 親子を辿って決まる縦の関係だけ（8.1節。何を指せるかは`ReferenceScope.declaration.withBroadcast`が
-   * 決める）なので、自分へ届く効果も自分が届かせる効果も、宣言元は必ず縦のどこかに居る——横に並んだ物
-   * どうしは互いに届かない。
+   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果だけでよい。効果が届く先は
+   * self/parent/child/ancestor のいずれか（8.1節）なので、自分へ届く効果も自分が届かせる効果も、
+   * 宣言元は必ずこの3方向のどれかに居る——横に並んだ物どうしは互いに届かない。
    */
   readInfluences(propertyGlobalId: number): PropertyInfluenceReading {
     const influences = new PropertyInfluences(this, propertyGlobalId);
@@ -726,7 +725,7 @@ export class WorldObject {
   /**
    * 持続効果の対象（8.1節）を、影響の一覧のために解決する。**childは今入っている子を全部**返す
    * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（setChildRegistered）。
-   * ほかは宣言元しか居ない文脈で解くので、そこに居ない役を指していれば空になる（ReferenceScope.declaration）。
+   * agent/instrumentはpassivesに現れない（parsePassiveTransfers）ため空になる。
    */
   resolveInfluenceTargets(path: PropertyPath): readonly WorldObject[] {
     if (path.root === 'child') return [...this.children()];
@@ -832,8 +831,7 @@ export class WorldObject {
    * 役を指している。ReferenceContext参照）は、その対象への適用のみ無視する。
    *
    * **命令の順序はここでは入れ替えない**——適用順はYAMLに書かれた順で、動詞ごとの優先順位は無い（9.7節）。
-   * 置き換えでdestroyがspawnより先に効くのは、著者がその順に書くからで（9.3節）、先に消えたselfの位置へ
-   * 置けるようにしているのが入口でのsameSlotSpawnSiteの捕捉。
+   * 置き換えでdestroyがspawnより先に効くのは、著者がその順に書くから（9.3節）。
    *
    * **ここが「誰の仕業か」の境界**でもある。この中で起きた物の出入りは、すべてselfを主体として記録される
    * （WorldChange.subject）。どの`pick`の候補が選ばれたかによらず1つに決まるので、観測する側は分岐を
