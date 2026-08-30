@@ -45,12 +45,20 @@ CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 # 1 を返す。`pipefail` があるので、ここで止めずに空として受ける。
 #
 # **`tr -d '\r'` が要るのは、複数行を出してそれを行ごとに使うから。** Windowsの外部 jq は標準出力を
-# テキストモードで開くので、行の区切りが CRLF になる。`$(…)` は**末尾の改行しか落とさない**ので、
+# テキストモードで開くので、行の区切りが CRLF になる。**`$(…)` が落とすのは末尾だけ**なので、
 # 2行目以降の頭に `\r` が残り、`archive_session` へ渡った先で JSON として壊れる
 # （`Bad control character in string literal`）。
 #
-# **1つの値しか出さない `$(jq …)` には要らない**——末尾の `\r\n` ごと落ちる。実測で切り分けてある
-# （`gh` の `--jq` は gh 内蔵なので、そもそも LF）。無条件に掛けると、要る理由が読めなくなる。
+#   $ y=$(jq -rn '"A","B"'); printf '%s' "$y" | od -c   →   A  \r  \n   B
+#
+# **1つの値しか出さない `$(jq …)` には要らない。** Windowsの bash（MSYS2）は、末尾の `\r\n` を
+# 丸ごと落とす。
+#
+#   $ x=$(jq -rn '"OPEN"'); printf '%s' "$x" | od -c   →   O   P   E   N
+#
+# **この「丸ごと落とす」はWindowsの bash だけ**で、Linuxでは末尾の `\r` が残る。ただしLinuxの jq は
+# `\r` を出さないので、どちらでも同じ結果になる。`gh` の `--jq` は gh 内蔵なので、Windowsでも LF。
+# 無条件に掛けると、要る理由が読めなくなる。
 sessions=$(bash "$CCR_META" list_sessions <<<'{"mine":true,"limit":100}' | grep -o '{"ccr".*' |
   jq -r --arg tag "review-$PR" --arg bridge "$BRIDGE_ENV" '.ccr.data[]?
     | select(.session_status != "SESSION_STATUS_ARCHIVED")
