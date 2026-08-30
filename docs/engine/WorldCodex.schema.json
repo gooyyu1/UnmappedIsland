@@ -292,7 +292,7 @@
         },
         "on_max": {
           "$ref": "#/$defs/range_event_def",
-          "description": "値がrange.maxへ達している間（>= max）、値の変更・tickのたびに適用される挙動（6.3節。時間の側が動かす場所なのでagent/instrumentは指せない、14.1節）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。conditionsを書いた場合、満たさない回だけがその既定のクランプへ倒れる。rangeが無いと使えない。"
+          "description": "値がrange.maxへ達している間（>= max）、値の変更・tickのたびに適用される挙動（6.3節。操作が直に動かした値でも宣言元は誰が動かしたかを知らないので、agent/instrumentは指せない、14.1節）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。conditionsを書いた場合、満たさない回だけがその既定のクランプへ倒れる。rangeが無いと使えない。"
         },
         "on_min": {
           "$ref": "#/$defs/range_event_def",
@@ -551,7 +551,7 @@
       "additionalProperties": false
     },
     "passive_operation_map": {
-      "description": "passiveの1操作(modify/add)が持つ、対象（self/parent/child/ancestor）をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。agentは持続的な関係に紐づかないためロード時エラー。combinations内のinstrumentはactiveのみで意味を持ち、passiveには現れない。",
+      "description": "passiveの1操作(modify/add)が持つ、対象（self/parent/child/ancestor）をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。agentは持続的な関係に紐づかないためロード時エラー。combinations内でもinstrumentを書けるのはactiveだけで、passiveに書くとロード時エラー。",
       "type": "object",
       "properties": {
         "self": {
@@ -706,7 +706,7 @@
           "description": "生む個数（9.4節）。省略時は1。同じ宣言を並べるのと同じ意味で、1個ずつ順に生んで配置する。"
         },
         "into": {
-          "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。個体を指す形はmoveの移動先と同じ（object_target）で、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。agentはアクション実行文脈でのみ、pickedはamongを書いた候補の中でのみ解決できる（10.3節）。childはselfの子を順に走査し、最初に受け取れた子のスロットへ入れる（罠が自分の生んだ獲物へ怪我を渡す経路、TrapSystem.md 5.3節）。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、枠の要件・capacityを無視して強制的に伝播する（childの場合の起点はself）。",
+          "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。個体を指す形はmoveの移動先と同じ（object_target）で、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。書ける役は宣言の置き場所で決まり、そこに居ない役を書くとロード時エラーになる（moveの移動先と同じ規則。どの置き場所から何を書けるかは11.5節の表が唯一の一覧）。childはselfの子を順に走査し、最初に受け取れた子のスロットへ入れる（罠が自分の生んだ獲物へ怪我を渡す経路、TrapSystem.md 5.3節）。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、枠の要件・capacityを無視して強制的に伝播する（childの場合の起点はself）。",
           "oneOf": [
             {
               "enum": [
@@ -795,11 +795,11 @@
             },
             "instrument": {
               "$ref": "#/$defs/identifier",
-              "description": "combinationsの中でのみ意味を持つ（12.2節）。"
+              "description": "combinationsの中でだけ書ける（外に書くとロード時エラー、12.2節）。"
             },
             "picked": {
               "$ref": "#/$defs/identifier",
-              "description": "amongを書いた候補の中でのみ意味を持つ（10.3節）。"
+              "description": "amongを書いた候補の中でだけ書ける（外に書くとロード時エラー、10.3節）。"
             }
           },
           "additionalProperties": false,
@@ -1414,7 +1414,7 @@
       "additionalProperties": false
     },
     "object_target_name": {
-      "description": "オブジェクトそのものを指す対象名（destroy・move・become）。ancestorは「どのプロパティを探すか」が無く解決できないため不可。childは相手が1つに決まらないため不可。pickedはamongを書いた候補の中でのみ解決できる（10.3節）。",
+      "description": "オブジェクトそのものを指す対象名（destroy・move・become）。ancestorは「どのプロパティを探すか」が無く解決できないため不可。childは相手が1つに決まらないため不可。pickedを書けるのはamongを書いた候補の中だけで、外に書くとロード時エラー（10.3節）。",
       "enum": [
         "self",
         "parent",
@@ -1531,11 +1531,11 @@
         },
         "instrument": {
           "$ref": "#/$defs/set_target_amount_map",
-          "description": "combinationsの中でのみ意味を持つ（12.2節）。"
+          "description": "combinationsの中でだけ書ける（外に書くとロード時エラー、12.2節）。"
         },
         "picked": {
           "$ref": "#/$defs/set_target_amount_map",
-          "description": "amongを書いた候補の中でのみ意味を持つ（10.3節）。"
+          "description": "amongを書いた候補の中でだけ書ける（外に書くとロード時エラー、10.3節）。"
         }
       },
       "additionalProperties": false
@@ -1558,11 +1558,11 @@
         },
         "instrument": {
           "$ref": "#/$defs/add_target_amount_map",
-          "description": "combinationsの中でのみ意味を持つ（12.2節）。"
+          "description": "combinationsの中でだけ書ける（外に書くとロード時エラー、12.2節）。"
         },
         "picked": {
           "$ref": "#/$defs/add_target_amount_map",
-          "description": "amongを書いた候補の中でのみ意味を持つ（10.3節）。"
+          "description": "amongを書いた候補の中でだけ書ける（外に書くとロード時エラー、10.3節）。"
         }
       },
       "additionalProperties": false
