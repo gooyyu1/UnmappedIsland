@@ -215,7 +215,7 @@ function parseConditionLeaf(
   if (propName !== undefined && slotName !== undefined)
     throw new YamlLoadError(`${context}: 'prop'と'slot'は同時に指定できません（主語は1つです）。`);
 
-  // propを伴わない葉（in_slot・slot・matches）は主語のオブジェクトそのものを見るので、
+  // propを伴わない葉は主語のオブジェクトそのものを見るので、
   // プロパティ名で祖先を探すancestorはそこでは解決先を持たない。
   const subjectName = tryGetScalar(map, 'subject', context);
   const leafScope = propName !== undefined ? scope : scope.withoutPropertyName;
