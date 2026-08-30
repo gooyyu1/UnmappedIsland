@@ -57,7 +57,7 @@ export class PassiveEffectGate {
 
     if (
       this.conditions !== undefined &&
-      // ゲートはagent/instrumentを持たない文脈で評価する（誰かが操作しているとは限らない）。
+      // ゲートは宣言元しか居ない文脈で評価する（誰かが操作しているとは限らない）。
       !this.conditions.evaluate(ReferenceContext.forSelf(slotBearer))
     )
       return false;
@@ -90,7 +90,7 @@ export abstract class PassiveEffect {
    */
   abstract collectInfluences(declarer: WorldObject, out: InfluenceWriter): void;
 
-  /** 関係（self/parent/ancestor）が変わった契機。登録を持たない効果は何もしない。 */
+  /** 相手がownerから一意に辿れる関係が変わった契機。登録を持たない効果は何もしない。 */
   setRelationRegistered(_owner: WorldObject, _relation: ReferenceRoot, _register: boolean): void {}
 
   /** 子が付く/離れる契機。登録を持たない効果は何もしない。 */
@@ -173,8 +173,8 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
   }
 
   /**
-   * 相手（related）がownerから直接辿れる関係（self/parent/ancestor）の登録/解除。相手はowner自身から
-   * 解決するため、呼び出し側がrelationとrelatedに矛盾した組を渡す余地が無い。
+   * 相手（related）がownerから直接辿れる関係の登録/解除。相手はowner自身から解決するため、
+   * 呼び出し側がrelationとrelatedに矛盾した組を渡す余地が無い。
    *
    * ancestorは、ツリー構造が変わる前に解除・変わった後に登録という順序を呼び出し側
    * （WorldObject.setAncestorTargetsRegistered）が守る前提で、「今この瞬間の祖先」を毎回辿るだけで

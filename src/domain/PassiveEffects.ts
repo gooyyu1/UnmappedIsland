@@ -31,8 +31,8 @@ export class PassiveEffects {
     for (const transfer of this.transfers) transfer.applyTick(owner);
   }
 
-  /** owner自身から辿れる関係（self/parent/ancestor）が変わった契機を全effectへ伝える
-   * （PassiveEffect.setRelationRegistered参照）。 */
+  /** 相手がownerから一意に辿れる関係が変わった契機を全effectへ伝える
+   * （PassiveEffect.setRelationRegistered参照。childだけは相手が定まらずsetChildRegisteredが持つ）。 */
   setRelationRegistered(owner: WorldObject, relation: ReferenceRoot, register: boolean): void {
     for (const effect of this.effects) effect.setRelationRegistered(owner, relation, register);
   }
