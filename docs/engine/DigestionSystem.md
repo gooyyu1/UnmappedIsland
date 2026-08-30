@@ -37,8 +37,10 @@
 減りは一定（−16/tick）。**1 日 1,536mL ＝ 3 食 × 512mL** が、ちょうど食べる量と釣り合います。
 
 **「これ以上食べられない」もここが持ちます。** 段 `full` を置き、`eat` を
-`not: {subject: agent, prop: satiety, in_stage: full}` で塞ぎます。水分の `full` と `not_thirsty` の
-対称形です（[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 5節）。
+`not: {subject: agent, prop: satiety, in_stage_or_above: full}` で塞ぎます。水分の `full` と
+`not_thirsty` の対称形です（[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 5節）。
+`full` ちょうどではなく**その段以上**で見るので（`GameElementDefinition.md` 14.1節）、`full` の上へ
+段を足しても塞ぎ続けます。
 
 | 段 | 下限 | 域 |
 | --- | --- | --- |

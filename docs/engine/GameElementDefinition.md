@@ -2415,7 +2415,7 @@ crafting_conditions:
 ```yaml
 conditions:
   - {subject: agent, prop: satiety, lt: 12}
-  - {subject: agent, prop: load, in_stage: too_heavy}
+  - {subject: agent, prop: looking_brightness, in_stage: pitch_dark}
   - {subject: agent, prop: skill_cordage, in_stage_or_above: basic}
 ```
 
@@ -2573,7 +2573,7 @@ interactions:
     conditions:
       - {in_slot: fixtures}
       - reason: too_heavy
-        not: {subject: agent, prop: load, in_stage: too_heavy}
+        not: {subject: agent, prop: load, in_stage_or_above: too_heavy}
 ```
 
 UI は、実行できないアクションのボタンを押せない見た目にし、宣言順で**最初に満たしていない要素**の文言を

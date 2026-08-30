@@ -116,7 +116,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
@@ -182,7 +182,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
@@ -248,7 +248,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:

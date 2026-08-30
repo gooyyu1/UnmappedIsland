@@ -50,7 +50,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
           # 二度漬けても保ちは変わらないので、塩を捨てさせない。
           - reason: already_cured
             not: {subject: instrument, matches: {tag: cured}}
@@ -59,7 +59,7 @@ object_defs:
           - reason: too_spoiled
             subject: instrument
             prop: durability
-            in_stage: sound
+            in_stage_or_above: sound
         # 保存の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。**今のところ保存を伸ばす唯一の操作**で、干す・燻すは
         # まだ世界に無い（docs/world/Skills.md 2節）。
@@ -154,9 +154,9 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
           - reason: too_stormy
-            not: {subject: agent, prop: wind_speed, in_stage: gale}
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
           - {reason: salt_pan_full, prop: brine, lt: 8}
           # 海に面した土地に据えた塩田だけが汲める（locations.yamlのcoastタグ）。**据える場所は
           # 縛らない**——海から離れた塩田は、この操作が出ないことで何もできないと分かる。

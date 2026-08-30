@@ -511,7 +511,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 60
         # 皮革の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。**皮を剥ぐ手つきがなめしへ移る**（Skills.md 2節の
@@ -801,7 +801,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 240
         add: {agent: {skill_leatherwork: 2}}
         destroy: self
@@ -830,7 +830,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 20
         add: {agent: {skill_leatherwork: 2}}
         destroy: self
@@ -880,7 +880,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
@@ -929,7 +929,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 40
         # **伸びるのは木材加工**（docs/engine/SkillSystem.md 3節の実行経路）。スキルを分ける軸は素材
         # ではなく技術（docs/world/Skills.md 1節）で、刃を当てて削り出す手つきは、太い枝を削る
@@ -971,7 +971,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
@@ -1017,7 +1017,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
@@ -1057,7 +1057,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:

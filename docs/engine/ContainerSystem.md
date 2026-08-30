@@ -189,12 +189,17 @@ interactions:
     trigger: menu
     conditions:
       - {in_slot: fixtures}
-      - not: {subject: agent, prop: load, in_stage: too_heavy}
+      - not: {subject: agent, prop: load, in_stage_or_above: too_heavy}
 ```
 
-閾値ではなく段の名前（`in_stage`）で見るのは、同じ境目を `stages` の `min` と条件の側に二重に書くと、
-片方だけ直したときに「バーは危険域なのに歩ける」が黙って成立するためです。段の名前は `too_heavy` で
-固定し、閾値だけをキャラクタごとに変えます（[`../world/Characters.md`](../world/Characters.md)）。
+閾値ではなく段の名前（`in_stage_or_above`）で見るのは、同じ境目を `stages` の `min` と条件の側に二重に
+書くと、片方だけ直したときに「バーは危険域なのに歩ける」が黙って成立するためです。段の名前は
+`too_heavy` で固定し、閾値だけをキャラクタごとに変えます
+（[`../world/Characters.md`](../world/Characters.md)）。
+
+**「ちょうど」ではなく「その段以上」で見ます**（`GameElementDefinition.md` 14.1 節）。止めたいのは
+`too_heavy` の下端を越えた荷なので、`too_heavy` の上へ段を足した日に、いちばん重い荷だけが素通りする
+書き方にはしません。
 
 実行できないアクションのボタンは押せない見た目になり、押している間だけ理由が出ます
 （`reason: too_heavy`、`GameElementDefinition.md` 14.6 節）。
