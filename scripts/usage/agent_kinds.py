@@ -17,6 +17,7 @@ cache_read + cache_write の比で行う。
 
 import json
 import os
+import re
 import sys
 from collections import defaultdict
 
@@ -27,8 +28,17 @@ FLOOR = 40_000  # 立ち上がり途中の小さな揺れを拾わないため�
 BACK = 0.9  # 直後3turnで元の9割まで戻ればキャッシュの失効
 
 # タグの接頭辞 -> 種別。左に無いタグしか付いていなければ環境で分ける。
-ALIAS = {"shirei": "commander", "parallel": "commander"}
-KNOWN = ("task", "review", "commander", "shirei", "parallel", "adviser", "grammar", "issue", "held")
+#
+# `parallel-work` はここに入れない。並列作業の枠組みで走った印であって種別ではなく、
+# 司令塔にも、司令塔が投入した個別のタスク（`issue-741` と併記される）にも付く。
+# 種別として読むと作業セッションが司令塔に化ける。
+ALIAS = {"shirei": "commander"}
+KNOWN = ("task", "review", "commander", "shirei", "adviser", "grammar", "issue", "held")
+
+# 司令塔は人がローカルから開くのでタグが付かない本がある。タグの無いものに限り、題名
+# （人が打った指示の1行目）で拾う。題名だけで判定すると、司令塔について書いたタスクや
+# レビューまで入るので、タグの付いたものはタグを優先する。
+COMMANDER = re.compile(r"司令塔|parallel-work\.md")
 
 
 def kind(s):
@@ -36,7 +46,9 @@ def kind(s):
     for name in KNOWN:
         if name in pre:
             return ALIAS.get(name, name)
-    return "bridge" if s.get("environment_kind") == "bridge" else "untagged"
+    if s.get("environment_kind") != "bridge":
+        return "untagged"
+    return "commander" if COMMANDER.search(s.get("title") or "") else "bridge"
 
 
 def drops(rows):
@@ -79,6 +91,8 @@ def main():
         tok_sub = sum(r["cache_read"] + r["cache_write"] for r in sub)
         fold, miss, _, n_main = drops(rows)
         a["with_events"] += 1
+        # $/turn は、turn を数えられたセッションのコストだけで割る（分母をそろえる）
+        a["cost_with_events"] += cost(s)
         a["turns"] += len(rows)
         a["turns_sub"] += len(sub)
         a["subagent_calls"] += len({r["parent_tool_use_id"] for r in sub})
@@ -90,7 +104,7 @@ def main():
         a["n_main"] += n_main
 
     cols = (
-        "sessions", "cost_usd", "with_events", "turns", "turns_sub",
+        "sessions", "cost_usd", "with_events", "cost_with_events_usd", "turns", "turns_sub",
         "subagent_calls", "cost_sub_usd", "folds", "cache_misses", "ctx_main_avg", "ctx_sub_avg",
     )
     order = sorted(agg.items(), key=lambda x: -x[1]["cost"])
@@ -98,29 +112,30 @@ def main():
         f.write("kind\t%s\n" % "\t".join(cols))
         for k, a in order:
             f.write(
-                "%s\t%d\t%.4f\t%d\t%d\t%d\t%d\t%.4f\t%d\t%d\t%.0f\t%.0f\n"
+                "%s\t%d\t%.4f\t%d\t%.4f\t%d\t%d\t%d\t%.4f\t%d\t%d\t%.0f\t%.0f\n"
                 % (
-                    k, a["sessions"], a["cost"], a["with_events"], a["turns"], a["turns_sub"],
+                    k, a["sessions"], a["cost"], a["with_events"], a["cost_with_events"],
+                    a["turns"], a["turns_sub"],
                     a["subagent_calls"], a["cost_sub"], a["folds"], a["misses"],
                     a["ctx_main"] / a["n_main"] if a["n_main"] else 0,
                     a["ctx_sub"] / a["turns_sub"] if a["turns_sub"] else 0,
                 )
             )
 
+    def row(k, a):
+        return (
+            "%-10s %5d $%10.2f %7d $%8.3f %8d $%8.2f %7d %7d"
+            % (k, a["sessions"], a["cost"], a["turns"],
+               a["cost_with_events"] / a["turns"] if a["turns"] else 0,
+               a["subagent_calls"], a["cost_sub"], a["folds"], a["misses"])
+        )
+
     print("期間 %s 〜 %s" % (since[:10], until[:10]))
     print("%-10s %5s %11s %7s %9s %8s %9s %7s %7s" % ("種別", "件数", "コスト", "turn", "$/turn", "sub起動", "sub按分", "畳み", "失効"))
     for k, a in order:
-        print(
-            "%-10s %5d $%10.2f %7d $%8.3f %8d $%8.2f %7d %7d"
-            % (k, a["sessions"], a["cost"], a["turns"], a["cost"] / a["turns"] if a["turns"] else 0,
-               a["subagent_calls"], a["cost_sub"], a["folds"], a["misses"])
-        )
+        print(row(k, a))
     t = lambda c: sum(a[c] for a in agg.values())
-    print(
-        "%-10s %5d $%10.2f %7d $%8.3f %8d $%8.2f %7d %7d"
-        % ("合計", t("sessions"), t("cost"), t("turns"), t("cost") / t("turns") if t("turns") else 0,
-           t("subagent_calls"), t("cost_sub"), t("folds"), t("misses"))
-    )
+    print(row("合計", {c: t(c) for c in ("sessions", "cost", "cost_with_events", "turns", "subagent_calls", "cost_sub", "folds", "misses")}))
     miss = t("sessions") - t("with_events")
     if miss:
         print("\n※ turn 以降の列は、イベントを取得済みの %d 本のみ（未取得 %d 本）" % (t("with_events"), miss))
