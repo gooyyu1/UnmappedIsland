@@ -1340,8 +1340,7 @@ object_defs:
 
 #### 8.4.1 passives の中の transfer
 
-`transfer`（9.5 節）を `passives` に置くと、条件が真である tick 毎に走る輸送になります。文法は置き場所で
-変わりません（9.5 節）。
+`transfer`（9.5 節）を `passives` に置くと、条件が真である tick 毎に走る輸送になります。
 
 ```yaml
 props:
