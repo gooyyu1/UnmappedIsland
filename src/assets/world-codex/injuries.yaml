@@ -34,6 +34,68 @@ traits:
         # 重ねても子ウィンドウの枠へ落としても30分。外すのは一瞬（枠は入る側にしか時間を課さない）。
         put_in: {duration: 30}
 
+  # 皮膚が破れた傷（docs/engine/InjurySystem.md 6節）。**bleedingを持つ傷にだけ配る**——捻挫・骨折・
+  # 打ち身は皮膚の下で起きるので、汚れの入る傷口も、洗う水の届く傷口も無い。
+  open_wound:
+    props:
+      # 膿み具合。増えるほど悪いのでseverityと同じ向き（CardView.md 8.1節）。
+      #
+      # **負った瞬間は清潔で、開いたままの時間が汚す**（InjurySystem.md 6節の未決事項に対する仮決め）。
+      # 1時間で1（0.25/tick）なので、放っておけば1.7日でfestering、3.3日でsepticへ届く——**最も短く
+      # 残る傷（bite_wound、360 tick）でも、治りきる前に敗血症へ入る**位置。洗う1杯（-25）はちょうど
+      # 1日ぶんの汚れを落とすので、**開いた傷1つにつき1日1杯**が保つための代償になる（同 6.2節）。
+      infection:
+        gauge: {min: good, max: bad}
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: clean}
+          - {name: festering, min: 40, alert: caution}
+          - {name: septic, min: 80, alert: danger}
+        passives:
+          - add:
+              self:
+                infection: 0.25
+    interactions:
+      # 水を掛けて洗う（docs/engine/InjurySystem.md 6.2節）。**下げる手立てはこれだけ**で、治療具が
+      # 効くのは上がり方の側。
+      #
+      # **宣言は傷の側**（12.3節）——水は自分が何を洗えるかを知らない。真水と湯の区別も持たない
+      # （落とすのは傷口に入った汚れなので、沸かしてあるかは効き目を変えない。liquid_containers.yaml）。
+      #
+      # **治療具を当てたままでも洗える。** 外させると1回ごとに付け直しの30分（InjurySystem.md 3節）が
+      # 乗り、手間の本体が水から時間へすり替わる。
+      wash:
+        trigger: {drag: {tag: cleansing}}
+        # 治療具を当てる30分の半分。**重さを時間ではなく水に持たせる**——時間の側を重くすると、
+        # 水の乏しさと関わりなく手間だけが増える（InjurySystem.md 6.2節）。
+        duration: 15
+        conditions:
+          - {reason: not_enough_water, subject: instrument, prop: fill, gte: 250}
+          - {reason: already_clean, subject: self, prop: infection, gte: 1}
+        # 250mLは飲用1回ぶん（liquid_containers.yamlのdrink）。**洗うとはその1杯を飲まずに捨てること**
+        # なので、器へ戻さず捨てる（水をやる操作のようなtransferではない）。
+        add:
+          instrument: {fill: -250}
+          self: {infection: -25}
+    passives:
+      # 膿が全身へ回る2つの経路（docs/engine/VitalsSystem.md 8.1節）。**対症療法の効く道と効かない道を
+      # 同時に持つ**——熱で余計に要る水は飲めば追いつくが、漏れ出た血は飲んでも循環へ戻らない。
+      #
+      # 宛先を持たない相手（水分を宣言していない動物）では、その寄与だけが効かない。
+      - conditions: [{prop: infection, in_stage: festering}]
+        add:
+          parent:
+            hydration: -1
+      # -40/tickは、5,000mLを助からない域（2,000を割る）まで75 tick＝18.75時間で削る速さ。
+      # **気づいてから原因を断つ時間はある**（2杯・30分で安全域へ戻る、InjurySystem.md 6.2節）が、
+      # そのあいだ水も余計に減るので、断つために飲み水を捨てることになる。
+      - conditions: [{prop: infection, in_stage: septic}]
+        add:
+          parent:
+            hydration: -2
+            blood: -40
+
 object_defs:
   # 足首の捻挫。ヤシの木から降りそこねたときに負う（coconut.yamlのpick_green_coconut）。
   sprained_ankle:
@@ -74,7 +136,7 @@ object_defs:
   # キャラクタと動物が同じ物を負う（docs/engine/HuntingSystem.md 3節）ので、負わせる側
   # （animals.yamlのstrike）は相手がどちらかを知らない。
   laceration:
-    traits: [injury, treatable]
+    traits: [injury, treatable, open_wound]
     props:
       # 自然に治るまで480 tick（5日）。捻挫より浅い傷なので、同じ-1/tickでも早く引く。
       severity:
@@ -135,7 +197,7 @@ object_defs:
   # 衝撃（shock）はほとんど生まれないので、**突かれた獲物はその場では倒れない**。深手を負ったまま
   # 逃げる相手を追うことになる。
   puncture_wound:
-    traits: [injury, treatable]
+    traits: [injury, treatable, open_wound]
     props:
       # 自然に治るまで720 tick（7.5日）。裂傷より深いぶん、捻挫と同じ桁まで長引く。
       severity:
@@ -179,7 +241,7 @@ object_defs:
   # どちらを引きやすいかだけが動物ごとに違う（重み配分）——武器の側が威力ではなく当たり所の配分だけを
   # 宣言するのと同じ形（同1.2節）。
   bite_wound:
-    traits: [injury, treatable]
+    traits: [injury, treatable, open_wound]
     props:
       # 自然に治るまで360 tick（3.75日）。裂傷（480）より浅い。
       severity:
@@ -221,7 +283,7 @@ object_defs:
   # 下から突き上げる牙が深部を裂くので、**刺し傷と同じ桁で血が流れる**（injuries.yamlの中で
   # puncture_woundと並ぶ2つだけ）。手当てが間に合わなければ、その場を離れても倒れる。
   gore_wound:
-    traits: [injury, treatable]
+    traits: [injury, treatable, open_wound]
     props:
       # 自然に治るまで720 tick（7.5日）。刺し傷と同じ深さの傷として扱う。
       severity:
@@ -264,7 +326,7 @@ object_defs:
   # **掛かり方の深さを生成時に1回だけロールする**（6.2節）。奪うのは30〜60mLで、生死が分かれるのは
   # 血がこの幅に収まる獣だけ——今の顔ぶれではネズミ（6mL）が必ず死に、ヤケイ（80mL）以上は生き残る。
   snare_laceration:
-    traits: [injury, treatable]
+    traits: [injury, treatable, open_wound]
     props:
       # 自然に治るまで240〜480 tick（2.5〜5日）。深く食い込んだ個体ほど長く残る。
       severity:

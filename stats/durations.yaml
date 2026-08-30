@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/DurationStats.md。
 
 meta:
-  - {unit: days, minimum: 1, durations: 81, longest: 67.00, shortest: 1.00, tool_wears: 14}
+  - {unit: days, minimum: 1, durations: 86, longest: 67.00, shortest: 1.00, tool_wears: 14}
 
 durations:
   - {object: junglefowl, property: body_fat, unit: days, days: 67.00, shortest_days: 67.00, longest_days: 67.00, repeats: false, destroys: true}
@@ -51,6 +51,11 @@ durations:
   - {object: junglefowl, property: breeding_remaining, unit: days, days: 5.00, shortest_days: 5.00, longest_days: 5.00, repeats: true, destroys: false}
   - {object: laceration, property: severity, unit: days, days: 5.00, shortest_days: 5.00, longest_days: 5.00, repeats: false, destroys: true}
   - {object: water_spinach, property: durability, unit: days, days: 5.00, shortest_days: 3.33, longest_days: 5.00, repeats: false, destroys: true}
+  - {object: bite_wound, property: infection, unit: days, days: 4.17, shortest_days: 4.17, longest_days: 4.17, repeats: false, destroys: false}
+  - {object: gore_wound, property: infection, unit: days, days: 4.17, shortest_days: 4.17, longest_days: 4.17, repeats: false, destroys: false}
+  - {object: laceration, property: infection, unit: days, days: 4.17, shortest_days: 4.17, longest_days: 4.17, repeats: false, destroys: false}
+  - {object: puncture_wound, property: infection, unit: days, days: 4.17, shortest_days: 4.17, longest_days: 4.17, repeats: false, destroys: false}
+  - {object: snare_laceration, property: infection, unit: days, days: 4.17, shortest_days: 4.17, longest_days: 4.17, repeats: false, destroys: false}
   - {object: bite_wound, property: severity, unit: days, days: 3.75, shortest_days: 3.75, longest_days: 3.75, repeats: false, destroys: true}
   - {object: captain, property: warmth, unit: days, days: 3.65, shortest_days: 1.22, longest_days: 3.65, repeats: false, destroys: true}
   - {object: engineer, property: warmth, unit: days, days: 3.65, shortest_days: 1.22, longest_days: 3.65, repeats: false, destroys: true}
