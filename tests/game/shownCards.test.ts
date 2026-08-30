@@ -684,6 +684,10 @@ describe('ドロップの意味', () => {
     expect(told?.enabled, '入れられるほうが選ばれる').toBe(true);
     told?.execute();
     expect(moves.at(-1), '中へ入る').toEqual({ ids: [1], to: inside, at: undefined });
+    expect(
+      refusing(shown, moves).dropCombination(combineDrop),
+      '実行しない組み合わせは「重ねた」と記録しない（PlayScene.dropLabel）',
+    ).toBeUndefined();
   });
 
   it('入れ物でない相手なら、断る組み合わせが理由ごと返る', () => {

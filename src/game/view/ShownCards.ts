@@ -368,10 +368,39 @@ export class ShownCards {
     return this.source.combinationOf(dragged, target, count);
   }
 
-  /** そのドロップが重ねる操作なら、成立する組み合わせ。 */
+  /**
+   * そのドロップが**実行する**組み合わせ（そうでなければundefined）。入れ物としての受け入れに譲ったものも、
+   * 理由を告げて断るものも含まない——**「重ねた」と記録してよいか**を見分けるのはここ（PlayScene.dropLabel）。
+   */
   dropCombination(drop: ShownDrop): CardCombination | undefined {
+    return this.combineEffect(drop)?.combination;
+  }
+
+  /**
+   * カードへ重ねたときに起きることと、それが組み合わせなのか。順は**成立する組み合わせ → 入れ物としての
+   * 受け入れ → 断る組み合わせ**（CardInteraction.md 2.1節）。
+   *
+   * **順を書くのはここだけ。** 起きることを問う側（dropEffect）と、何が起きたと記録する側
+   * （dropCombination）が別々に順を持つと、入れ物へ入れたのに「重ねた」と記録する、といった食い違いが
+   * 生まれる。
+   */
+  private combineEffect(
+    drop: ShownDrop,
+  ): { readonly told: CardDrop; readonly combination: CardCombination | undefined } | undefined {
     if (drop.target.kind !== 'combine') return undefined;
-    return this.combinationAt(drop.from, drop.fromIndex, drop.to, drop.target.index, drop.count);
+
+    const dragged = this.stacksAt(drop.from)[drop.fromIndex];
+    if (dragged === undefined) return undefined;
+
+    const combination = this.combinationAt(drop.from, drop.fromIndex, drop.to, drop.target.index, drop.count);
+    if (combination?.enabled === true) return { told: combination, combination };
+
+    const into = this.contentsUnder(drop);
+    const putIn = into === undefined ? undefined : dragged.dropInto?.(into, undefined, drop.count);
+    if (putIn !== undefined) return { told: putIn, combination: undefined };
+
+    // 残るのは断る組み合わせだけ。実行されないので、記録に残す組み合わせも無い。
+    return combination === undefined ? undefined : { told: combination, combination: undefined };
   }
 
   /**
@@ -382,21 +411,14 @@ export class ShownCards {
    * **どれも同じ1つの形（CardDrop）で返る。** 画面は「重ねた」と「入れた」を区別せず、名前と時間を
    * 吹き出しに出して実行するだけ（CardInteraction.md 2節）。
    *
-   * **理由を告げて断る組み合わせ（enabledがfalse）は、入れ物としての受け入れに譲る。** 実際に起きる
-   * ことのほうが、起きない理由より先に見せるものだから。
+   * **理由を告げて断る組み合わせ（enabledがfalse）は、入れ物としての受け入れに譲る**（順はcombineEffect）。
+   * 実際に起きることのほうが、起きない理由より先に見せるものだから。
    */
   dropEffect(drop: ShownDrop): CardDrop | undefined {
     const dragged = this.stacksAt(drop.from)[drop.fromIndex];
     if (dragged === undefined) return undefined;
 
-    if (drop.target.kind === 'combine') {
-      const combination = this.dropCombination(drop);
-      if (combination?.enabled === true) return combination;
-
-      const into = this.contentsUnder(drop);
-      const putIn = into === undefined ? undefined : dragged.dropInto?.(into, undefined, drop.count);
-      return putIn ?? combination;
-    }
+    if (drop.target.kind === 'combine') return this.combineEffect(drop)?.told;
 
     // 借りた札の枠はワールドの場所ではないので、そこへ「入れる」ことはできない（重ねるだけ）。
     if (drop.to === 'windowCard') return undefined;
