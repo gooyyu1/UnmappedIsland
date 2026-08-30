@@ -76,18 +76,11 @@ object_defs:
     recipes:
       hafted:
         # 柄付けはスキルにしない（docs/world/Skills.md 3節）。「刃を作れて、紐も作れるようになったら
-        # 斧が作れる」を、そのまま2本の腕の連言で書く。段の並べ方は characters/player_character.yaml。
+        # 斧が作れる」を、そのまま2本の腕の連言で書く。「その段以上」の書き方は
+        # characters/player_character.yaml。
         conditions:
-          - reason: needs_knapping
-            any:
-              - {subject: agent, prop: skill_knapping, in_stage: basic}
-              - {subject: agent, prop: skill_knapping, in_stage: skilled}
-              - {subject: agent, prop: skill_knapping, in_stage: expert}
-          - reason: needs_cordage
-            any:
-              - {subject: agent, prop: skill_cordage, in_stage: basic}
-              - {subject: agent, prop: skill_cordage, in_stage: skilled}
-              - {subject: agent, prop: skill_cordage, in_stage: expert}
+          - {reason: needs_knapping, subject: agent, prop: skill_knapping, in_stage_or_above: basic}
+          - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         steps:
           # 柄をこしらえる。枝の先を割り、刃を落とし込む溝を作る。
           - requires:
@@ -151,16 +144,8 @@ object_defs:
       hafted:
         # 材料も工程も石斧と同じ柄付けなので、解放条件も同じ2本の連言になる。
         conditions:
-          - reason: needs_knapping
-            any:
-              - {subject: agent, prop: skill_knapping, in_stage: basic}
-              - {subject: agent, prop: skill_knapping, in_stage: skilled}
-              - {subject: agent, prop: skill_knapping, in_stage: expert}
-          - reason: needs_cordage
-            any:
-              - {subject: agent, prop: skill_cordage, in_stage: basic}
-              - {subject: agent, prop: skill_cordage, in_stage: skilled}
-              - {subject: agent, prop: skill_cordage, in_stage: expert}
+          - {reason: needs_knapping, subject: agent, prop: skill_knapping, in_stage_or_above: basic}
+          - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         steps:
           # 柄をこしらえる。枝の先を割り、穂先を落とし込む溝を作る。
           - requires:

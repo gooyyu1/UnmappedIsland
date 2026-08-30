@@ -439,10 +439,10 @@ rain_water:
   - {container: coconut_bowl, season: dry, capacity_ml: 250, rain_ml_per_day: 22, evaporation_ml_per_day: 108, net_ml_per_day: -86}
 
 consumption:
-  - {property: blood, condition: （hydrationが段hydratedにある または hydrationが段fullにある） かつ （body_fatが段gauntにある または body_fatが段nourishedにある または body_fatが段stoutにある または body_fatが段obeseにある）, character: captain, per_tick: 2.00, per_day: 192}
-  - {property: blood, condition: （hydrationが段hydratedにある または hydrationが段fullにある） かつ （body_fatが段gauntにある または body_fatが段nourishedにある または body_fatが段stoutにある または body_fatが段obeseにある）, character: engineer, per_tick: 2.00, per_day: 192}
-  - {property: blood, condition: （hydrationが段hydratedにある または hydrationが段fullにある） かつ （body_fatが段gauntにある または body_fatが段nourishedにある または body_fatが段stoutにある または body_fatが段obeseにある）, character: farmer, per_tick: 2.00, per_day: 192}
-  - {property: blood, condition: （hydrationが段hydratedにある または hydrationが段fullにある） かつ （body_fatが段gauntにある または body_fatが段nourishedにある または body_fatが段stoutにある または body_fatが段obeseにある）, character: medic, per_tick: 2.00, per_day: 192}
+  - {property: blood, condition: hydrationが段hydrated以上にある かつ body_fatが段gaunt以上にある, character: captain, per_tick: 2.00, per_day: 192}
+  - {property: blood, condition: hydrationが段hydrated以上にある かつ body_fatが段gaunt以上にある, character: engineer, per_tick: 2.00, per_day: 192}
+  - {property: blood, condition: hydrationが段hydrated以上にある かつ body_fatが段gaunt以上にある, character: farmer, per_tick: 2.00, per_day: 192}
+  - {property: blood, condition: hydrationが段hydrated以上にある かつ body_fatが段gaunt以上にある, character: medic, per_tick: 2.00, per_day: 192}
   - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: captain, per_tick: -2.00, per_day: -192}
   - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: engineer, per_tick: -2.00, per_day: -192}
   - {property: warmth, condition: 祖先のambient_temperature < chill_point かつ （sheltered ≥ 1 または 祖先のweather ∉ light_rain・heavy_rain・storm）, character: farmer, per_tick: -2.00, per_day: -192}

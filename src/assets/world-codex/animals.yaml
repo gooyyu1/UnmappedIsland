@@ -467,18 +467,14 @@ object_defs:
         passives:
           # **戻るのは水分と体脂肪がともに安全域にある間だけ**（VitalsSystem.md 3.1節）。判定は段の
           # 名前で行い、**閾値を条件の側へ書き写さない**——域（alert）そのものを条件から読む術が無いので、
-          # 安全域の段をanyで束ねる。人の側もまったく同じ形（characters/player_character.yaml）で、
+          # 安全域の下端の段を名指す。人の側もまったく同じ形（characters/player_character.yaml）で、
           # ここが「渇きと飢えを人と獣の両方が持つ」ことの見返りにあたる。
           #
           # **野生の個体では水分も体脂肪も減らない**（beast trait）ので、条件は常に満たされる
           # ——手負いのまま逃げた個体は、追いつけなければ癒えてしまう。効くのは閉じ込めた獣にだけ。
           - conditions:
-              - any:
-                  - {prop: hydration, in_stage: hydrated}
-                  - {prop: hydration, in_stage: full}
-              - any:
-                  - {prop: body_fat, in_stage: gaunt}
-                  - {prop: body_fat, in_stage: nourished}
+              - {prop: hydration, in_stage_or_above: hydrated}
+              - {prop: body_fat, in_stage_or_above: gaunt}
             add:
               self:
                 blood: 0.16
@@ -595,12 +591,8 @@ object_defs:
           # 戻る条件もサルと同じ形（VitalsSystem.md 3.1節）。**囲いで水を切らせば、増えないだけでなく
           # 負った傷も癒えなくなる**——飲み水はこの獣の繁殖と回復の両方を止める。
           - conditions:
-              - any:
-                  - {prop: hydration, in_stage: hydrated}
-                  - {prop: hydration, in_stage: full}
-              - any:
-                  - {prop: body_fat, in_stage: gaunt}
-                  - {prop: body_fat, in_stage: nourished}
+              - {prop: hydration, in_stage_or_above: hydrated}
+              - {prop: body_fat, in_stage_or_above: gaunt}
             add:
               self:
                 blood: 0.032
@@ -701,12 +693,8 @@ object_defs:
         passives:
           # 戻る条件もサルと同じ形（VitalsSystem.md 3.1節）。
           - conditions:
-              - any:
-                  - {prop: hydration, in_stage: hydrated}
-                  - {prop: hydration, in_stage: full}
-              - any:
-                  - {prop: body_fat, in_stage: gaunt}
-                  - {prop: body_fat, in_stage: nourished}
+              - {prop: hydration, in_stage_or_above: hydrated}
+              - {prop: body_fat, in_stage_or_above: gaunt}
             add:
               self:
                 blood: 0.0024
@@ -784,12 +772,8 @@ object_defs:
         passives:
           # 戻る条件もサルと同じ形（VitalsSystem.md 3.1節）。
           - conditions:
-              - any:
-                  - {prop: hydration, in_stage: hydrated}
-                  - {prop: hydration, in_stage: full}
-              - any:
-                  - {prop: body_fat, in_stage: gaunt}
-                  - {prop: body_fat, in_stage: nourished}
+              - {prop: hydration, in_stage_or_above: hydrated}
+              - {prop: body_fat, in_stage_or_above: gaunt}
             add:
               self:
                 blood: 1.84

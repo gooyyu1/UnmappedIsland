@@ -150,6 +150,13 @@ export class PropertyStage {
   }
 }
 
+/**
+ * 段の判定（6.4節）が、名指しした段のどこまでを見るか（PropertyDef.isInStage）。
+ * `exact`は今いる段ちょうど（`in_stage`）、`or_above`はその段以上（`in_stage_or_above`、14.1節）。
+ * **上限側は無い**——段で読む値はどれも、境目より上を安全域として読む形しか無い。
+ */
+export type StageBound = 'exact' | 'or_above';
+
 /** 初期値の宣言（PropertyDef.initialValueReading参照）。 */
 export type InitialValueReading =
   | { readonly kind: 'fixed'; readonly value: number }
@@ -556,9 +563,23 @@ export class PropertyDef {
     return this.stageAt(effectiveValue)?.alert ?? 'safe';
   }
 
-  /** 実効値effectiveValueのとき、このプロパティが名前stageNameの段（6.4節）に該当しているか。 */
-  isInStage(effectiveValue: number, stageName: string): boolean {
-    return this.stageAt(effectiveValue)?.name === stageName;
+  /**
+   * 実効値effectiveValueのとき、このプロパティが名前stageNameの段（6.4節）に該当しているか。
+   * `bound`が`or_above`なら、その段より上の段に居ても真（14.1節）。
+   *
+   * **上下は段の下端の大小で決まる**（stageAtと同じ見方で、宣言順ではない）。段は下端だけを書く
+   * 半開区間なので、名指した段の下端を跨いでいることが、そのままその段以上に居ることになる。
+   * 下端を持たない受け皿（6.4節）はいちばん下なので、名指せば常に真。
+   *
+   * 宣言に無い名前（`in_stage`と同じく綴り間違いはここでしか出ない）と、値の並びの上に位置を持たない
+   * シンボル型（6.6節）は、上下を比べられないので偽。
+   */
+  isInStage(effectiveValue: number, stageName: string, bound: StageBound = 'exact'): boolean {
+    if (bound === 'exact') return this.stageAt(effectiveValue)?.name === stageName;
+
+    const named = this.stages.find((stage) => stage.name === stageName);
+    if (named === undefined || this.isSymbolic) return false;
+    return effectiveValue >= (named.lowerBound ?? Number.NEGATIVE_INFINITY);
   }
 
   /**

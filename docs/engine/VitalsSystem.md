@@ -246,9 +246,9 @@ blood:
   人と獣で別々の条件を持つことになる」でしたが、獣も `hydration`・`body_fat` を持ち、閉じ込められている
   間だけ減るようになった（[`TrapSystem.md`](./TrapSystem.md) 5.4 節）ので、その理由は消えました。
   **野生の個体では減らないので、条件は常に満たされます**——1 つの宣言のまま、罠の中の獣にだけ効きます。
-- **判定は段の名前で行います**（`in_stage`）。安全域の段を `any` で束ねる書き方になるのは、`conditions`
-  から域（`alert`）そのものを読む術が無いためです（[`GameElementDefinition.md`](./GameElementDefinition.md)
-  17 節）。**閾値を条件の側へ書き写すより、名前を並べるほうがずれません**（同じ理由で移動可否も
+- **判定は段の名前で行います**（`in_stage_or_above`）。`conditions` から域（`alert`）そのものを読む術が
+  無いので、安全域の**下端の段**を名指します（[`GameElementDefinition.md`](./GameElementDefinition.md)
+  14.1 節・17 節）。**閾値を条件の側へ書き写すより、名前で見るほうがずれません**（同じ理由で移動可否も
   `too_heavy` という名前で見ています、[`ContainerSystem.md`](./ContainerSystem.md) 5 節）。
 
 ## 4. 出血は、血を失う速さ

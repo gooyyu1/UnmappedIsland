@@ -1359,6 +1359,87 @@ object_defs:
     expect(heavy.tryGetAction('use', undefined)?.tryExecute() === true, '段に入ると実行できない').toBe(false);
   });
 
+  it('in_stage_or_aboveは、その段へ届いた後は上の段へ移っても真のままになる', () => {
+    // 段を宣言順ではなく下端の大小で見ることも、ここで一緒に押さえる（宣言はわざと降順）。
+    const yaml = `
+object_defs:
+  thing:
+    props:
+      skill:
+        value: 0
+        stages:
+          - {name: expert, min: 180}
+          - {name: skilled, min: 60}
+          - {name: basic, min: 20}
+          - {name: novice, min: 0}
+    interactions:
+      use:
+        trigger: menu
+        conditions:
+          - {prop: skill, in_stage_or_above: basic}
+        destroy: self
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const session = new WorldSession(codex);
+    const thingDef = codex.objects.get(codex.objectNames.getId('thing'));
+    const skill = codex.propertyNames.getId('skill');
+
+    const canUseAt = (value: number): boolean => {
+      const thing = new WorldObject(value + 1, thingDef, session);
+      thing.tryGetProperty(skill)?.setNumber(value);
+      return thing.tryGetAction('use', undefined)?.tryExecute() === true;
+    };
+
+    expect(canUseAt(19), '下の段では偽').toBe(false);
+    expect(canUseAt(20), '名指した段の下端で真').toBe(true);
+    expect(canUseAt(60), '1つ上の段でも真のまま').toBe(true);
+    expect(canUseAt(180), '最上段でも真のまま').toBe(true);
+  });
+
+  it('in_stage_or_aboveは、上下を比べられない段では偽になる', () => {
+    // シンボル型（6.6節）の段と、宣言に無い名前。どちらも値の並びの上に位置を持たないので、
+    // in_stageなら真になる値でも偽になる。
+    const yaml = `
+object_defs:
+  thing:
+    props:
+      weather:
+        value: clear
+        stages:
+          - {name: clear}
+          - {name: storm}
+    interactions:
+      use:
+        trigger: menu
+        conditions:
+          - {prop: weather, in_stage_or_above: clear}
+        destroy: self
+      check:
+        trigger: menu
+        conditions:
+          - {prop: weather, in_stage: clear}
+        destroy: self
+      typo:
+        trigger: menu
+        conditions:
+          - {prop: weather, in_stage_or_above: cler}
+        destroy: self
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const session = new WorldSession(codex);
+    const thingDef = codex.objects.get(codex.objectNames.getId('thing'));
+
+    expect(new WorldObject(1, thingDef, session).tryGetAction('check', undefined)?.tryExecute()).toBe(true);
+    expect(
+      new WorldObject(2, thingDef, session).tryGetAction('use', undefined)?.tryExecute() === true,
+      'シンボル型の段',
+    ).toBe(false);
+    expect(
+      new WorldObject(3, thingDef, session).tryGetAction('typo', undefined)?.tryExecute() === true,
+      '綴り違いは常に偽（in_stageと同じ）',
+    ).toBe(false);
+  });
+
   it('満たしていない要件のreasonを、実行前に引ける', () => {
     const yaml = `
 object_defs:

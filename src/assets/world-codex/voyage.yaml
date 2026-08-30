@@ -575,15 +575,8 @@ object_defs:
       sewn:
         # なめし革の衣類と同じ縫製の大物（clothing.yaml）なので、解放条件も同じ形にする。
         conditions:
-          - reason: needs_leatherwork
-            any:
-              - {subject: agent, prop: skill_leatherwork, in_stage: skilled}
-              - {subject: agent, prop: skill_leatherwork, in_stage: expert}
-          - reason: needs_cordage
-            any:
-              - {subject: agent, prop: skill_cordage, in_stage: basic}
-              - {subject: agent, prop: skill_cordage, in_stage: skilled}
-              - {subject: agent, prop: skill_cordage, in_stage: expert}
+          - {reason: needs_leatherwork, subject: agent, prop: skill_leatherwork, in_stage_or_above: skilled}
+          - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         steps:
           # 帆柱と帆桁を組んで縛る。
           - requires:

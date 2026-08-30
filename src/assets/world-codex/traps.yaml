@@ -215,11 +215,7 @@ object_defs:
         # 置いている）。狩猟が広げるのは素材と機会であって、罠を結ぶ手ではない。編み籠と同じく
         # 材料は植物繊維だけで、素材の側は初日から揃う（docs/engine/SkillSystem.md 4.2節）。
         conditions:
-          - reason: needs_cordage
-            any:
-              - {subject: agent, prop: skill_cordage, in_stage: basic}
-              - {subject: agent, prop: skill_cordage, in_stage: skilled}
-              - {subject: agent, prop: skill_cordage, in_stage: expert}
+          - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         steps:
           - requires:
               - {object: plant_fiber, count: 2, consume: true}

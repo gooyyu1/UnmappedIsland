@@ -19,6 +19,7 @@ import type { ReferenceRoot, ReferenceScope } from '../domain/ReferenceRoot';
 import { PropertyPath } from '../domain/ReferenceRoot';
 import { ConditionNode } from '../domain/ConditionNode';
 import type { ConditionOp } from '../domain/ConditionReader';
+import type { StageBound } from '../domain/PropertyDef';
 import { Requirement, Requirements } from '../domain/Requirement';
 
 /**
@@ -177,8 +178,15 @@ function parseCombinatorChildren(
 /** プロパティを主語にできる演算子キー。値が比較の相手になる。 */
 const PROPERTY_OPS: readonly ConditionOp[] = ['lt', 'lte', 'gt', 'gte', 'eq', 'neq', 'in', 'not_in'];
 
-/** 段の判定（6.4節）の演算子キー。値は段の名前。 */
-const IN_STAGE_KEY = 'in_stage';
+/**
+ * 段の判定（6.4節）の演算子キーと、それが見る範囲（PropertyDef.isInStage）。値はどちらも段の名前。
+ * **「その段以上」を別の演算子にしてあるのは、単調に増える値を段で読むため**——1つの段だけを書くと、
+ * 値が上の段へ移った瞬間に条件が偽へ戻る（14.1節）。
+ */
+const STAGE_KEYS: readonly (readonly [key: string, bound: StageBound])[] = [
+  ['in_stage', 'exact'],
+  ['in_stage_or_above', 'or_above'],
+];
 
 /** 型の判定（14.3節・14.4節）の演算子キー。値は`{tag}`か`{object}`（TypeMatchRule）。 */
 const MATCHES_KEY = 'matches';
@@ -189,7 +197,7 @@ const MATCHES_KEY = 'matches';
  *
  * | 主語 | 使える演算子キー |
  * | --- | --- |
- * | `prop`（subjectのそのプロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage` |
+ * | `prop`（subjectのそのプロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage`/`in_stage_or_above` |
  * | `slot`（subjectのそのスロットの中身） | `matches`（当てはまる中身が1つでもあるか） |
  * | 無し（subject自身） | `in_slot`（親の中での位置）/`matches`（subject自身が当てはまるか） |
  *
@@ -235,10 +243,11 @@ function parseConditionLeaf(
       nodes.push(parsePropertyComparison(loader, context, root, propertyGlobalId, op, valueNode, scope));
     }
 
-    const stageName = tryGetScalar(map, IN_STAGE_KEY, context);
-    if (stageName !== undefined) {
-      used.add(IN_STAGE_KEY);
-      nodes.push(ConditionNode.propertyStage(root, propertyGlobalId, stageName));
+    for (const [key, bound] of STAGE_KEYS) {
+      const stageName = tryGetScalar(map, key, context);
+      if (stageName === undefined) continue;
+      used.add(key);
+      nodes.push(ConditionNode.propertyStage(root, propertyGlobalId, stageName, bound));
     }
   } else if (slotName !== undefined) {
     const matchNode = tryGetMap(map, MATCHES_KEY, context);

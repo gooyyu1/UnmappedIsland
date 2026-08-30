@@ -104,7 +104,9 @@ interactions:
 ## 4. 解放条件は段のしきい値
 
 レシピの解放は、`recipes` のエントリに `conditions`（14 節）を書き、`agent` のスキル段を判定する形で
-表します。
+表します。**「その段以上」を表す `in_stage_or_above` で書きます**——腕前は単調に増えるので、今いる段
+ちょうどを見る `in_stage` で書くと、腕が上がった瞬間にレシピが閉じ直します
+（[`GameElementDefinition.md`](./GameElementDefinition.md) 14.1 節）。
 
 ```yaml
 object_defs:
@@ -112,7 +114,7 @@ object_defs:
     recipes:
       basic:
         conditions:
-          - {subject: agent, prop: skill_cordage, in_stage: skilled}
+          - {subject: agent, prop: skill_cordage, in_stage_or_above: skilled}
         steps: ...
 ```
 
