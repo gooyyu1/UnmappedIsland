@@ -74,6 +74,13 @@ interface World {
   readonly gateStatus?: number;
   /** `gh pr view --json state` が失敗するか（PRの状態を引けない日）。 */
   readonly stateFails?: boolean;
+  /**
+   * 開いているPRの番号（`gh pr list`）。既定はこのPR（1000）だけで、**マージすると外れる**。
+   * レビューを畳むかはPRごとにこれで決まる。
+   */
+  readonly openPrs?: readonly number[];
+  /** `gh pr list` が失敗するか（開いているPRの一覧を引けない日）。 */
+  readonly prListFails?: boolean;
   /** `--user-ok` を付けて叩くか。 */
   readonly userOk?: boolean;
 }
@@ -85,6 +92,8 @@ interface Run {
   readonly merged: boolean;
   /** `archive_session` を呼ばれたセッション。 */
   readonly archived: string[];
+  /** `get_session` で素性を引かれたセッション。 */
+  readonly probed: string[];
   /** 本体で `npm install` が走ったか。 */
   readonly installed: boolean;
   /** `git` に渡された引数。 */
@@ -148,6 +157,14 @@ if [ "$1" = pr ] && [ "$2" = view ]; then
         : `if [ -e '${dir}/merged' ]; then printf '%s' MERGED; else printf '%s' OPEN; fi`
     } ;;
   esac
+  exit 0
+fi
+if [ "$1" = pr ] && [ "$2" = list ]; then
+  ${world.prListFails === true ? 'exit 1' : ':'}
+  for n in $(printf '%s' '${(world.openPrs ?? [1000]).join(' ')}'); do
+    if [ "$n" = 1000 ] && [ -e '${dir}/merged' ]; then continue; fi
+    printf '%s\\n' "$n"
+  done
   exit 0
 fi
 if [ "$1" = pr ] && [ "$2" = edit ]; then
@@ -219,6 +236,7 @@ if [ "$1" = list_sessions ]; then
       data: Object.entries(world.tags ?? {}).map(([id, tags]) => ({
         id,
         tags,
+        session_status: world.sessions?.[id] ?? 'SESSION_STATUS_IDLE',
         environment_id: (world.onBridge ?? []).includes(id) ? BRIDGE : CLOUD,
       })),
     },
@@ -229,6 +247,7 @@ if [ "$1" = archive_session ]; then
   echo "$id" >> '${dir}/archived'
   exit ${world.archiveFails === true ? 1 : 0}
 fi
+echo "$id" >> '${dir}/probed'
 echo '<other-session>'
 case "$id" in
 ${(world.unknown ?? []).map((id) => `  ${id}) : ;;`).join('\n')}
@@ -289,6 +308,7 @@ esac
       status,
       merged: existsSync(join(work, 'merged')),
       archived: logged('archived'),
+      probed: logged('probed'),
       installed: logged('npm-calls').length > 0,
       git: logged('git-calls'),
       labels: logged('labels'),
@@ -405,14 +425,13 @@ describe('merge-and-close.sh', () => {
   });
 
   // レビューのセッションはPRを出さないので `session-of-pr.sh` では引けず、`review-` のタグで引く。
-  // PRが閉じれば読む相手が無くなるので、ここが最後の1本を畳む場所。
+  // PRが閉じれば読む相手が無くなるので、ここがこのPRの分を畳む最後の場所。
   it('マージしたら、そのPRのレビューのセッションも畳む', () => {
     const result = run({
       tags: {
         session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'],
         session_01REVIEWBBBBBBBBBBBBBB: ['review-1000'],
-        // 別のPRのレビューと、直す側。どちらもこのPRのマージでは畳まない。
-        session_01REVIEWCCCCCCCCCCCCCC: ['review-1001'],
+        // 直す側。こちらは `task-` のタグで引く別の経路が畳む（この試験では脚注が指していない）。
         session_01TASKAAAAAAAAAAAAAAAA: ['task-1000'],
       },
     });
@@ -424,6 +443,36 @@ describe('merge-and-close.sh', () => {
       'SYNCED deadbee',
     ]);
     expect(result.archived).toEqual(['session_01REVIEWAAAAAAAAAAAAAA', 'session_01REVIEWBBBBBBBBBBBBBB']);
+    expect(result.status).toBe(0);
+  });
+
+  // 掃く範囲がこのPRの分だけだと、`判断待ち`／`直し待ち` で止まったPR——次の投入もマージも来ない
+  // PR——のレビューが永久に残る（2026-08-30 に16本溜まった）。**畳める理由はPRごとに違わない**ので、
+  // マージのついでに全部を渡す。開いているPRのぶんは走行中なら守る。
+  it('マージのついでに、別のPRのレビューも畳む', () => {
+    const result = run({
+      // 1001 は開いたまま止まっているPR。1002 は投入もマージも通らずに閉じたPR。
+      openPrs: [1000, 1001],
+      sessions: {
+        session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_IDLE',
+        session_01REVIEWWORKING00000: 'SESSION_STATUS_RUNNING',
+        session_01REVIEWIDLE00000000: 'SESSION_STATUS_IDLE',
+      },
+      tags: {
+        session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'],
+        session_01REVIEWWORKING00000: ['review-1001'],
+        session_01REVIEWIDLE00000000: ['review-1002'],
+      },
+      working: ['session_01REVIEWWORKING00000'],
+    });
+
+    expect(result.lines).toEqual([
+      'MERGED 1000',
+      'KEPT session_01REVIEWWORKING00000',
+      'ARCHIVED session_01REVIEWAAAAAAAAAAAAAA',
+      'ARCHIVED session_01REVIEWIDLE00000000',
+      'SYNCED deadbee',
+    ]);
     expect(result.status).toBe(0);
   });
 
@@ -706,7 +755,7 @@ describe('archive-reviews.sh', () => {
         },
         working: ['session_01REVIEWAAAAAAAAAAAAAA'],
       },
-      [ARCHIVE_REVIEWS, '1000'],
+      [ARCHIVE_REVIEWS],
     );
 
     expect(result.lines).toEqual([
@@ -717,21 +766,64 @@ describe('archive-reviews.sh', () => {
     expect(result.status).toBe(0);
   });
 
-  // 状態を引けない日に「OPEN ではない」へ倒れると、書きかけの判定を畳んでしまう。畳んで消えた
-  // コメントは戻せないが、守って残ったものは手で畳める。畳むのは「閉じていると分かったとき」だけ。
-  it('PRの状態を引けなかったときも、走っている最中のレビューを守る', () => {
+  // 掃く範囲を「呼ばれた瞬間のPR1本」に絞ると、**次の投入もマージも来ないPR**のレビューが永久に
+  // 残る。開いていないPRのぶんは、走行中でも畳む——判定を書き終えても読む相手が無い。
+  it('開いていないPRのレビューは、走っている最中でも畳む', () => {
     const result = run(
       {
-        stateFails: true,
+        openPrs: [1000],
+        sessions: {
+          session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING',
+          session_01REVIEWCLOSED000000: 'SESSION_STATUS_RUNNING',
+        },
+        tags: {
+          session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'],
+          session_01REVIEWCLOSED000000: ['review-1001'],
+        },
+        working: ['session_01REVIEWAAAAAAAAAAAAAA', 'session_01REVIEWCLOSED000000'],
+      },
+      [ARCHIVE_REVIEWS],
+    );
+
+    expect(result.lines).toEqual([
+      'KEPT session_01REVIEWAAAAAAAAAAAAAA',
+      'ARCHIVED session_01REVIEWCLOSED000000',
+    ]);
+    expect(result.status).toBe(0);
+  });
+
+  // 状態を引けない日に「開いていない」へ倒れると、書きかけの判定を畳んでしまう。畳んで消えた
+  // コメントは戻せないが、守って残ったものは手で畳める。畳むのは「閉じていると分かったとき」だけ。
+  it('開いているPRの一覧を引けなかったときも、走っている最中のレビューを守る', () => {
+    const result = run(
+      {
+        prListFails: true,
         sessions: { session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING' },
         tags: { session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'] },
         working: ['session_01REVIEWAAAAAAAAAAAAAA'],
       },
-      [ARCHIVE_REVIEWS, '1000'],
+      [ARCHIVE_REVIEWS],
     );
 
     expect(result.lines).toEqual(['KEPT session_01REVIEWAAAAAAAAAAAAAA']);
     expect(result.archived).toEqual([]);
+    expect(result.status).toBe(0);
+  });
+
+  // 「引けなかった」と「1本も開いていない」を空かどうかで分けると、最後の1本をマージした直後が
+  // 引けなかった日と同じ扱いになり、そのPRのレビューが `KEPT` のまま残る。分けるのは終了コード。
+  it('開いているPRが1本も無いときは、引けなかった日とは違って畳む', () => {
+    const result = run(
+      {
+        openPrs: [],
+        sessions: { session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING' },
+        tags: { session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'] },
+        working: ['session_01REVIEWAAAAAAAAAAAAAA'],
+      },
+      [ARCHIVE_REVIEWS],
+    );
+
+    expect(result.lines).toEqual(['ARCHIVED session_01REVIEWAAAAAAAAAAAAAA']);
     expect(result.status).toBe(0);
   });
 
@@ -743,11 +835,33 @@ describe('archive-reviews.sh', () => {
         tags: { session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'] },
         unknown: ['session_01REVIEWAAAAAAAAAAAAAA'],
       },
-      [ARCHIVE_REVIEWS, '1000'],
+      [ARCHIVE_REVIEWS],
     );
 
     expect(result.lines).toEqual(['KEPT session_01REVIEWAAAAAAAAAAAAAA']);
     expect(result.archived).toEqual([]);
+    expect(result.status).toBe(0);
+  });
+
+  // 畳み済みも `list_sessions` に残る（実測で73件中59件）。渡すと `get_session` を打つだけ打って
+  // 何も出さないので、ここで外す。
+  it('畳み済みのレビューには `get_session` を打たない', () => {
+    const result = run(
+      {
+        sessions: {
+          session_01REVIEWDONE00000000: 'SESSION_STATUS_ARCHIVED',
+          session_01REVIEWBBBBBBBBBBBBBB: 'SESSION_STATUS_IDLE',
+        },
+        tags: {
+          session_01REVIEWDONE00000000: ['review-1000'],
+          session_01REVIEWBBBBBBBBBBBBBB: ['review-1000'],
+        },
+      },
+      [ARCHIVE_REVIEWS],
+    );
+
+    expect(result.lines).toEqual(['ARCHIVED session_01REVIEWBBBBBBBBBBBBBB']);
+    expect(result.probed).toEqual(['session_01REVIEWBBBBBBBBBBBBBB']);
     expect(result.status).toBe(0);
   });
 });
