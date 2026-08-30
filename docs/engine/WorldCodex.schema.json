@@ -292,7 +292,7 @@
         },
         "on_max": {
           "$ref": "#/$defs/range_event_def",
-          "description": "値がrange.maxへ達している間（>= max）、値の変更・tickのたびに適用される挙動（6.3節。時間の側が動かす場所なのでagent/instrumentは指せない、14.1節）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。conditionsを書いた場合、満たさない回だけがその既定のクランプへ倒れる。rangeが無いと使えない。"
+          "description": "値がrange.maxへ達している間（>= max）、値の変更・tickのたびに適用される挙動（6.3節。操作が直に動かした値でも宣言元は誰が動かしたかを知らないので、agent/instrumentは指せない、14.1節）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。conditionsを書いた場合、満たさない回だけがその既定のクランプへ倒れる。rangeが無いと使えない。"
         },
         "on_min": {
           "$ref": "#/$defs/range_event_def",
