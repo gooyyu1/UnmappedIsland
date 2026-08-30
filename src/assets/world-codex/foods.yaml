@@ -4,6 +4,10 @@
 # 両者は別の数（docs/engine/DigestionSystem.md）。水気の多い物はかさだけ大きく、生肉はかさの割に
 # 身にならない。値はいずれも仮のもの。
 #
+# **かさ・中身とは別に、口にした喜び（happiness）も名乗る。** どの食べ物がどの値を名乗るかは
+# docs/world/Characters.md 幸福度節の表が持ち、書き忘れは tests/world-codex/foodsYaml.test.ts が
+# 全数で見張る。
+#
 # このファイルの操作は食べることだけなので、**明るさの条件はどれも持たない**——口へ運ぶのは手が
 # 覚えている動作（docs/engine/IlluminationSystem.md 5節）。
 #
@@ -119,6 +123,7 @@ object_defs:
             satiety: 300
             carbohydrate: 1
             vitamin: 83
+            happiness: 2
         pick:
           - weight: 100
           - weight: {prop: spoilage}
@@ -185,6 +190,7 @@ object_defs:
             protein: 28
             lipid: 9
             vitamin: 1
+            happiness: 6
         pick:
           - weight: 100
           - weight: {prop: spoilage}
@@ -251,6 +257,7 @@ object_defs:
             carbohydrate: 48
             protein: 2
             vitamin: 24
+            happiness: 6
         pick:
           - weight: 100
           - weight: {prop: spoilage}

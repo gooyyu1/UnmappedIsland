@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { isMap, isScalar, parseDocument } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { PropertyDef } from '../../src/domain/PropertyDef';
@@ -7,7 +9,12 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import {
+  loadYamlDirectory,
+  SAMPLE_CHARACTER,
+  WORLD_CODEX_DIR,
+  worldCodexYamlPaths,
+} from '../support/worldCodexFiles';
 
 describe('foods.yamlの食料定義', () => {
   let codex: WorldCodex;
@@ -270,3 +277,112 @@ describe('食べ物の腐敗', () => {
     expect(imperishable, '水も栄養素も残らない炭（animals.yaml）だけが腐らない').toEqual(['charred_lump']);
   });
 });
+
+/**
+ * 食べた物が配る幸福度（docs/world/Characters.md 幸福度節）。**主目的は書き忘れの見張り**で、食べ物を
+ * 1つ足したときにベース値を落とすと、それだけが心に何も残さない食事になる。腐敗の全数検査と同じ形。
+ */
+describe('食べ物が配る幸福度', () => {
+  let codex: WorldCodex;
+  let happinessId: number;
+
+  beforeAll(() => {
+    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    happinessId = codex.propertyNames.getId('happiness');
+  });
+
+  /** `eat`をメニューに出す型の名前（自動生成された塩漬けの版を除く）。 */
+  function eatableObjectNames(): string[] {
+    const found: string[] = [];
+    for (let globalId = 0; globalId < codex.objects.count; globalId++) {
+      const def = codex.objects.get(globalId);
+      if (codex.isGenerated(def)) continue;
+      if (def.menuTriggers.some((trigger) => trigger.interaction.name === 'eat')) found.push(def.name);
+    }
+    return found;
+  }
+
+  it('eatを持つ型はすべて、幸福度のベース値を宣言している', () => {
+    const declared = declaredEatHappiness();
+    const eatable = eatableObjectNames();
+
+    expect(eatable.length, '口に入れる操作が1つも無ければ、この見張りは何も見ていない').toBeGreaterThan(0);
+    expect(
+      eatable.filter((name) => declared.get(name) === undefined),
+      'eatのadd.agentにhappinessが無い（traitがeatを配るようになったら、拾う側も直す）',
+    ).toEqual([]);
+    expect(
+      [...declared].filter(([, value]) => value === undefined).map(([name]) => name),
+      '定義ファイルの側から見ても、幸福度を配らないeatは無い',
+    ).toEqual([]);
+  });
+
+  it('火を通した食事はどれも同じだけ戻す（戻すのは量ではなく質）', () => {
+    // 小さなネズミ1匹でも、火の通った1食であることは焼いた肉と変わらない（Characters.md 幸福度節）。
+    const declared = declaredEatHappiness();
+    const roasted = ['roasted_meat', 'roasted_rat', 'roasted_taro', 'roasted_coconut_crab'];
+
+    expect(roasted.map((name) => declared.get(name))).toEqual([6, 6, 6, 6]);
+  });
+
+  it.each([
+    // 焼いた肉と生肉の開きが、生で食べない理由を1本増やす（Characters.md 幸福度節）。
+    ['roasted_meat', 6],
+    ['raw_meat', 1],
+    // 炭は腹の嵩しか返さない終端なので、喜びも残っていない。
+    ['charred_lump', 0],
+  ])('%sを食べると、幸福度が%d戻る', (foodName, expectedGain) => {
+    const session = new WorldSession(codex);
+    const character = new WorldObject(
+      1,
+      codex.objects.get(codex.objectNames.getId(SAMPLE_CHARACTER)),
+      session,
+    );
+    const food = new WorldObject(2, codex.objects.get(codex.objectNames.getId(foodName)), session);
+    character.getProperty(happinessId).setNumberWithoutEvents(0);
+
+    expect(food.tryGetAction('eat', character)?.tryExecute() === true).toBe(true);
+
+    expect(character.getProperty(happinessId).number).toBe(expectedGain);
+  });
+});
+
+/**
+ * 定義ファイルが書いた「`eat` が `agent` へ配る幸福度」を、型の名前ごとに集める。ロード後の効果は木に
+ * 畳まれていて列挙できない（bundledLocale.test.tsのreasonと同じ事情）ため、構文木から拾う。
+ *
+ * 書いていなければ`undefined`。**0と書いてあることとは区別する**——炭のように0が正しい食べ物があるので、
+ * 効果として測ると書き忘れと見分けが付かない。
+ */
+function declaredEatHappiness(): ReadonlyMap<string, number | undefined> {
+  const found = new Map<string, number | undefined>();
+  for (const path of worldCodexYamlPaths()) {
+    const root = parseDocument(readFileSync(path, 'utf8')).contents;
+    if (!isMap(root)) continue;
+    // interactionsが書けるのは型とtraitの直下だけ（GameElementDefinition.md 9節）。
+    for (const sectionName of ['traits', 'object_defs']) {
+      const section = root.get(sectionName, true);
+      if (!isMap(section)) continue;
+      for (const pair of section.items) {
+        const eat = tryGetPath(pair.value, ['interactions', 'eat']);
+        if (eat === undefined) continue;
+        const happiness = tryGetPath(eat, ['add', 'agent', 'happiness']);
+        found.set(
+          isScalar(pair.key) ? String(pair.key.value) : '',
+          isScalar(happiness) ? Number(happiness.value) : undefined,
+        );
+      }
+    }
+  }
+  return found;
+}
+
+/** YAMLの構文木をキーの並びで辿る（途中で辿れなくなればundefined）。 */
+function tryGetPath(node: unknown, keys: readonly string[]): unknown {
+  let current = node;
+  for (const key of keys) {
+    if (!isMap(current)) return undefined;
+    current = current.get(key, true);
+  }
+  return current;
+}
