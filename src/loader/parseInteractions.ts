@@ -4,7 +4,7 @@ import { asMap, entriesInOrder, keysOf, tryGetBool, tryGetMap, tryGetNode, tryGe
 import { YamlLoadError } from './YamlLoadError';
 import { parseTypeMatchRule } from './parseCommon';
 import { parseActiveEffectBody, parseWeight } from './parseActiveEffects';
-import { parseRequirementsField } from './parseConditions';
+import { parseRequirementList } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { InteractionDef } from '../domain/InteractionDef';
 import type { InteractionTrigger } from '../domain/InteractionTrigger';
@@ -53,7 +53,7 @@ function parseInteraction(
   const drag = isMap(triggerNode) ? parseDragTrigger(loader, context, triggerNode) : undefined;
   const scope = drag !== undefined ? ReferenceScope.acting.withInstrument : ReferenceScope.acting;
 
-  const requirements = parseRequirementsField(
+  const requirements = parseRequirementList(
     loader,
     context,
     tryGetSeq(map, 'conditions', context),

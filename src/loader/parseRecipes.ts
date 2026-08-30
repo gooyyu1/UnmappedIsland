@@ -11,7 +11,7 @@ import {
   tryGetSeq,
 } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseRequirementsField } from './parseConditions';
+import { parseRequirementList } from './parseConditions';
 import { withYamlContext, parseTypeMatchRule } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../domain/RecipeDef';
@@ -80,7 +80,7 @@ export function parseRecipes(
       parseStep(loader, `${context}.steps[${index}]`, item),
     );
 
-    const unlock = parseRequirementsField(
+    const unlock = parseRequirementList(
       loader,
       context,
       tryGetSeq(map, 'conditions', context),

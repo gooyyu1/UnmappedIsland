@@ -73,7 +73,7 @@ export function requireResolvable(
   return root;
 }
 
-/** conditionsの要素にだけ書ける、満たさなかったときの理由の識別子（Requirement参照）。 */
+/** 要件の並びの要素にだけ書ける、満たさなかったときの理由の識別子（14.6節、Requirement参照）。 */
 const REASON_KEY = 'reason';
 
 /**
@@ -106,7 +106,7 @@ export function parseConditionList(
  * `fieldName`は、この並びが載っているキーの名前（エラーメッセージ用）。`conditions`とは限らない
  * ——ルートキーの`crafting_conditions`（13.4節）も同じ形を共有するので、呼び出し側が答える。
  */
-export function parseRequirementsField(
+export function parseRequirementList(
   loader: WorldCodexYamlLoader,
   context: string,
   listNode: YAMLSeq | undefined,
@@ -128,7 +128,7 @@ export function parseRequirementsField(
 }
 
 /** 条件木の1ノードを読む。all/any/notのいずれかのキーを持てば複合ノード、それ以外は葉として読む。
- * extraKeyは、そのノードでだけ条件式の一部ではないキー（conditionsの要素のreason）。 */
+ * extraKeyは、そのノードでだけ条件式の一部ではないキー（要件の並びの要素のreason）。 */
 function parseConditionNode(
   loader: WorldCodexYamlLoader,
   context: string,
