@@ -57,15 +57,31 @@ traits:
       # 今感じている痛み。自分では動かず、外から負った怪我（injuries.yaml）と、内側の不調を表す段
       # （ビタミンのscurvy段）がmodifyで押し上げるので、valueは0のまま。増える側が悪いプロパティ
       # なので、段はmaxからの割合で刻む（docs/world/Characters.md）。
+      #
+      # **幸福度を削るのはこの段だけ**（docs/world/Characters.md 幸福度節）。怪我・壊血病・脂の欠乏は
+      # どれも痛みへ合流しているので、ここから1本引くだけで内側の不調が残らず心へ届く。
+      # 1段上がるごとに倍で、1日（96 tick）あたり-12・-24・-48。
       pain:
         tags: [status, health]
         value: 0
         range: {min: 0, max: 100}
         stages:
           - {name: painless}
-          - {name: sore, min: 25, alert: watch}
-          - {name: hurting, min: 50, alert: caution}
-          - {name: unbearable, min: 83, alert: danger}
+          - name: sore
+            min: 25
+            alert: watch
+            passives:
+              - add: {self: {happiness: -0.125}}
+          - name: hurting
+            min: 50
+            alert: caution
+            passives:
+              - add: {self: {happiness: -0.25}}
+          - name: unbearable
+            min: 83
+            alert: danger
+            passives:
+              - add: {self: {happiness: -0.5}}
       # 行動の可否を決める2つの明るさ（docs/engine/IlluminationSystem.md 2節）。身体の仕組みでは
       # ないが、どのキャラクタでも同じなので、痛み・血と同じくこの trait が配る。
       #
@@ -329,6 +345,28 @@ traits:
           - add:
               self:
                 vitamin: -0.5
+      # 幸福度（docs/world/Characters.md 幸福度節）。**メンタルの不調を代表する1本**で、ストレス・退屈・
+      # 孤独をそれぞれ値にはしない（docs/concept/DesignPrinciples.md）。**現実の単位が無い**ので
+      # （痛み・体力と同じ抽象の0〜100）、確かめられるのは大小の関係だけ。
+      #
+      # **押し引きはすべてadd。** modifyを1本も刺さないので実効値が実体値と一致し、0に達したときの
+      # 強制休息をon_minで書ける（まだ入っていない）。意味の面でも、効くのは「快適な寝床で寝た今夜」で
+      # あって寝床を持っていること自体ではない。
+      #
+      # **上げるのは口にした物だけ**（各eatのベース値）で、**下げるのは痛みの段だけ**（上のpain）。
+      # 時間そのものから生える圧（ホームシック）・寝床や住居からの寄与・免疫への寄与は、まだ入って
+      # いない。増える側が良い値なので、段は下から上へ深刻さが下がる並び（血・熱と同じ形）。
+      #
+      # 感じ方の個体差はまだ持たせず、痛み・血と同じくこの trait が配る。
+      happiness:
+        tags: [status, health]
+        value: 75
+        range: {min: 0, max: 100}
+        stages:
+          - {name: miserable, alert: danger}
+          - {name: dejected, min: 20, alert: caution}
+          - {name: glum, min: 50, alert: watch}
+          - {name: content, min: 80}
       # ------------------------------------------------------------------
       # 腕前（docs/engine/SkillSystem.md、粒度と一覧は docs/world/Skills.md 2節）。レシピの解放条件は
       # 段の名前で読む（同4節）ので、境目を条件の側へ書き写さない。

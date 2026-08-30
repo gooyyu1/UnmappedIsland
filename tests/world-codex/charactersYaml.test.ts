@@ -43,6 +43,23 @@ function decayPerTick(character: string, propertyName: string): number {
 }
 
 /**
+ * 痛みをその段へ置いて1 tick進めたときの、幸福度の減り幅（docs/world/Characters.md 幸福度節）。
+ * **置くのは段の下限**で、条件の側へ閾値を書き写さないため。
+ */
+function happinessDrainInStage(character: string, stageName: string): number {
+  const instance = new WorldObject(1, def(character), new WorldSession(codex));
+  const happinessId = codex.propertyNames.getId('happiness');
+  const stage = propOf(def(character), 'pain').stages.find((one) => one.name === stageName);
+  if (stage === undefined) throw new Error(`痛みに段'${stageName}'がありません。`);
+  instance.getProperty(codex.propertyNames.getId('pain')).setNumber(stage.min ?? 0);
+  const before = instance.getProperty(happinessId).number;
+
+  instance.tick();
+
+  return before - instance.getProperty(happinessId).number;
+}
+
+/**
  * 砂浜に立たせたキャラクタ。死ぬと世界から外れる（VitalsSystem.md 6節）ので、それを見るには
  * 居場所を持たせて始める必要がある。
  */
@@ -238,6 +255,9 @@ describe('プレイヤーキャラクタの定義', () => {
       // ビタミンだけは在庫の3本と違い、尽きた先（壊血病）を段が持つのでステータスエリアに出す
       // （DigestionSystem.md 4節）。
       ['vitamin', ['status', 'nutrition']],
+      // メンタルの不調を代表する1本（Characters.md 幸福度節）。心も健康のうちなので、専用のタブは
+      // 作らずhealthへ入れる。
+      ['happiness', ['status', 'health']],
     ])('%sを持ち、期待されるプロパティタグが付いている', (propertyName, expectedTags) => {
       const tagNames = propOf(def(character), propertyName).tags.map((id) =>
         codex.propertyTagNames.getName(id),
@@ -246,7 +266,7 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(tagNames.sort()).toEqual([...expectedTags].sort());
     });
 
-    it('ステータスエリアに出るのは9件で、並び順も揃っている', () => {
+    it('ステータスエリアに出るのは10件で、並び順も揃っている', () => {
       // propertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（StatusArea.md 3節）。
       const instance = new WorldSession(codex).createObject(def(character).globalId);
       const status = instance.propertiesWithTag(codex.propertyTagNames.getId('status'));
@@ -257,6 +277,7 @@ describe('プレイヤーキャラクタの定義', () => {
         'warmth',
         'satiety',
         'vitamin',
+        'happiness',
         'hydration',
         'wakefulness',
         'stamina',
@@ -274,6 +295,7 @@ describe('プレイヤーキャラクタの定義', () => {
       'wakefulness',
       'stamina',
       'load',
+      'happiness',
     ])('%sは0を下限とするrangeを持つ', (propertyName) => {
       expect(propOf(def(character), propertyName).range?.min).toBe(0);
     });
@@ -292,20 +314,23 @@ describe('プレイヤーキャラクタの定義', () => {
       ['pain', 0],
       // 血は自分で戻る唯一のステータスだが、満タンで始まるので上限で頭打ちになる（次のテスト）。
       ['blood', 0],
+      // 幸福度は時間では動かない。削るのは痛みの段だけで、痛みが無ければ1も減らない（下のテスト）。
+      ['happiness', 0],
       // 満腹感はかさ（mL）なので、1 tickあたり16mLずつ空いていく（DigestionSystem.md 2節）。
       // ビタミンはmgで、代謝回転が1日48mg（同4節）。栄養素の在庫は減るのではなく体脂肪へ移る。
     ])('%sはtickごとに%iずつ減る', (propertyName, expectedDecay) => {
       expect(decayPerTick(character, propertyName)).toBe(expectedDecay);
     });
 
-    it('水分は安全域のやや下、覚醒度と体力は満タン、体脂肪は最大値の1/4から始まる', () => {
+    it('水分と幸福度は安全域のやや下、覚醒度と体力は満タン、体脂肪は最大値の1/4から始まる', () => {
       const instance = new WorldSession(codex).createObject(def(character).globalId);
 
       // 開始直後からステータスバーに出るよう、安全域の境目（80%）のやや下の75%から始める（Characters.md）。
-      expect(
-        instance.tryGetProperty(codex.propertyNames.getId('hydration'))?.number ?? 0,
-        'hydration は最大値の3/4で始まる',
-      ).toBe((maxOf(character, 'hydration') * 3) / 4);
+      for (const propertyName of ['hydration', 'happiness'])
+        expect(
+          instance.tryGetProperty(codex.propertyNames.getId(propertyName))?.number ?? 0,
+          `${propertyName} は最大値の3/4で始まる`,
+        ).toBe((maxOf(character, propertyName) * 3) / 4);
 
       for (const propertyName of ['wakefulness', 'stamina'])
         expect(
@@ -321,7 +346,7 @@ describe('プレイヤーキャラクタの定義', () => {
 
     // 満腹感はここに含めない。maxが容量ではなく感じ方の頂点で、実際に取る値の分布から刻むため
     // （DigestionSystem.md 2節）。
-    it.each(['hydration', 'wakefulness', 'stamina', 'blood', 'vitamin'])(
+    it.each(['hydration', 'wakefulness', 'stamina', 'blood', 'vitamin', 'happiness'])(
       '%sは最大値の80%%を下回ると安全域から外れる',
       (propertyName) => {
         // 最大値だけ変えてstagesを直し忘れると、ステータスエリアに出始める位置がずれる。
@@ -401,6 +426,30 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(prop.alertOf(Math.trunc(max * 0.6) - 1)).toBe('caution');
       expect(prop.alertOf(Math.trunc(max * 0.2))).toBe('caution');
       expect(prop.alertOf(Math.trunc(max * 0.2) - 1)).toBe('danger');
+    });
+
+    it('幸福度の域は最大値に対する割合で切られ、致命的域は持たない', () => {
+      // 減る速さが今の痛みで変わるので、残り時間では切れない（Characters.md 域の区分節）。尽きても
+      // 死なない——0に達したとき何が起きるかはまだ決めていない（同 幸福度節）。
+      const prop = propOf(def(character), 'happiness');
+      const max = maxOf(character, 'happiness');
+
+      expect(prop.alertOf(Math.trunc(max * 0.5))).toBe('watch');
+      expect(prop.alertOf(Math.trunc(max * 0.5) - 1)).toBe('caution');
+      expect(prop.alertOf(Math.trunc(max * 0.2))).toBe('caution');
+      expect(prop.alertOf(Math.trunc(max * 0.2) - 1)).toBe('danger');
+      expect(prop.alertOf(0)).toBe('danger');
+    });
+
+    // 幸福度を削るのは痛みの段だけで、1段上がるごとに倍（Characters.md 幸福度節）。怪我・壊血病・脂の
+    // 欠乏はどれも痛みへ合流するので、この1本が内側の不調すべての届き先になる。
+    it.each([
+      ['painless', 0],
+      ['sore', 0.125],
+      ['hurting', 0.25],
+      ['unbearable', 0.5],
+    ])('痛みが%sの間、幸福度は1 tickあたり%dずつ削られる', (stageName, perTick) => {
+      expect(happinessDrainInStage(character, stageName)).toBe(perTick);
     });
 
     it('血は自分で戻り、満タンで頭打ちになる', () => {

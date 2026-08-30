@@ -151,6 +151,7 @@ object_defs:
             lipid: 1
             vitamin: 5
             hydration: 5.2
+            happiness: 4
         pick:
           - weight: 100
           - weight: {prop: spoilage}
@@ -289,6 +290,7 @@ object_defs:
             lipid: 26
             vitamin: 7
             hydration: 6
+            happiness: 4
         pick:
           - weight: 100
           - weight: {prop: spoilage}

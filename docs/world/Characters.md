@@ -30,13 +30,13 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | `singleton` | `true`（同時に存在するプレイヤーキャラクタは1体） |
 | タグ | `character` |
 | スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
-| プロパティ | `weight` / `pace` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` と、腕前の11本（[`Skills.md`](./Skills.md) 2 節。個体差を持たず `player_character` trait が配る） |
+| プロパティ | `weight` / `pace` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `happiness` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` と、腕前の11本（[`Skills.md`](./Skills.md) 2 節。個体差を持たず `player_character` trait が配る） |
 | アクション | 休息の4つ（`wait` / `rest` / `nap` / `sleep`。下の[休息](#休息)節。`player_character` trait が配る） |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterCard.ts`。絵が入るまでの繋ぎ） |
 
-`status` タグが付くのは `pain` / `blood` / `warmth` / `satiety` / `vitamin` / `hydration` / `wakefulness` /
-`stamina` / `load` の9つで、宣言順もこの順に揃える（`propertiesWithTag` の戻り順がそのままステータスエリアの
-並びになる、[`StatusArea.md`](../ui/StatusArea.md)）。先頭の5つが trait 由来なのは、trait の props が
+`status` タグが付くのは `pain` / `blood` / `warmth` / `satiety` / `vitamin` / `happiness` / `hydration` /
+`wakefulness` / `stamina` / `load` の10で、宣言順もこの順に揃える（`propertiesWithTag` の戻り順がそのままステータスエリアの
+並びになる、[`StatusArea.md`](../ui/StatusArea.md)）。先頭の6つが trait 由来なのは、trait の props が
 キャラクタ自身の props より前に並ぶため（`RawObjectDef.resolve`）。**`chill_point` は `status` を持たない**
 ——見せるのは残っている熱だけで、境目そのものは衣服・寝床が押し下げる裏の値。**栄養素の在庫（`carbohydrate` ほか3つ）は
 `status` を持たない**——常に見せるのは腹が満ちているかどうかだけで、在庫は開いて見るもの
@@ -73,6 +73,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   物差しが違う（同 4 節）。同じく trait が配る。一番下の段 **`scurvy`**（壊血病）が `pain` を押し上げる
   ——**体調不良を怪我のカードにせず、原因となる値の段に持たせる**
   （[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）。
+- **`happiness`（幸福度）**: **メンタルの不調を代表する1本**で、単位を持たない 0〜100。自分では動かず、
+  口にした物が上げ、`pain` の段が下げる（下の[幸福度](#幸福度)節）。個体差は持たせず trait が配る。
 - **`hydration`（水分）**: `-1/tick` 固定で、`max` が「満水から何 tick 保つか」。**減り方に個体差を
   持たせない**——キャラクタが違っても、飲んだ水1mLの意味が変わってはならないため。持ちの差は
   `max`（＝体が抱える水の量）で表す。液体の mL からの換算は飲用側の宣言が持つ（`transfer` の
@@ -131,7 +133,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **安全域から外れるのは `max` の80%**（＝ステータスエリアに出始める位置）。この境界だけは
   全ステータス・全キャラクタで共通でなければ「まだ大丈夫」の感覚が崩れる。端数は丸める——段のしきい値は
   人が読む数字なので、小数が書けても整数に留める。
-- **`hydration` の初期値は `max` の75%**（安全域のやや下）。満腹感も同じ狙いで留意域（300mL）から
+- **`hydration` と `happiness` の初期値は `max` の75%**（安全域のやや下）。満腹感も同じ狙いで留意域（300mL）から
   始める（[`DigestionSystem.md`](../engine/DigestionSystem.md) 2 節）。満タンで始めると alert が
   `safe` でステータスバーに出ず（[`StatusArea.md`](../ui/StatusArea.md)）、
   飲食の操作も最初は試せないため。**空身では減らない `stamina`** と、序盤に眠らせたくない
@@ -143,6 +145,9 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **`stamina` は割合で切る**: `max` の60%未満で `caution`、20%未満で `danger`。**減る速さが担いでいる
   荷で変わる**（下の荷重の効き方節）ので、残り時間で切ると**荷を持ち替えるたびに段の意味が変わります**。
   割合なら、境目は常に「体力があと何割か」を指したままです。
+- **`happiness` も割合で切る**: `max` の80%で安全域を外れ、50%未満で `caution`、20%未満で `danger`
+  （下の[幸福度](#幸福度)節）。**減る速さが今の痛みで変わる**ので、`stamina` と同じ理由で残り時間では
+  切れない。
 - `vitamin` の80%より下は現実の量で切る: 300mg 未満が壊血病（`danger`）で、その上の `caution` の
   境目は 600mg（残り12.5日）。**発症の境目だけは残り時間ではなく実際の血中量**で、外から検算できる
   （[`DesignPrinciples.md`](../concept/DesignPrinciples.md) 「現実に単位があるものは、その単位で持つ」）。
@@ -197,6 +202,67 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 決まって初めて釣り合いが見えます（未決事項は
 [`ContainerSystem.md`](../engine/ContainerSystem.md) 8 節）。動かないのは、**削るのが時間であること**と、
 **1 日ぶんと一晩の回復が同じ桁であること**の 2 つだけです。
+
+## 幸福度
+
+**`happiness` は、メンタルの不調を代表する1本です。** ストレス・退屈・孤独をそれぞれ値にはせず、心の
+不調はすべてここへ集めます（[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）。
+
+**押し引きはすべて `add` で、`modify` は1本も刺しません。** 刺すと実効値が実体値とずれて `on_min` が
+書けなくなり（`WorldCodex.requireRangeEventsOnUnmodifiedProperties`）、「0になったら強制的に休む」という
+道が閉じます。意味の面でも、効くのは「快適な寝床で寝た今夜」であって、寝床を所有していること自体では
+ありません。
+
+**現実の単位を持ちません**（`pain`・`stamina` と同じ抽象の 0〜100）。**値そのものは外から検算できず、
+確かめられるのは大小の関係だけ**です。初期値は水分と同じ 75（安全域のやや下）——漂着した直後から
+ステータスエリアに出ていて、食べれば戻ることが最初の1食で分かります。
+
+| 段 | 下限 | 域 |
+| --- | --- | --- |
+| `miserable` | 0 | 危険 |
+| `dejected` | 20 | 要注意 |
+| `glum` | 50 | 留意 |
+| `content` | 80 | 安全 |
+
+**致命的域は持ちません。** 尽きても死なず、0 に達したとき何が起きるか（強制的な時間経過）はまだ決めて
+いません。
+
+### 上げるのは、口にした物のベース値
+
+食べ物は `eat` の `add` に定数を1つ持ちます（`foods.yaml`・`coconut.yaml`・`animals.yaml`・
+`voyage.yaml`・`fiber.yaml`）。**量ではなく質で決まります**——かさは `satiety` が、身になる量は栄養素が
+既に持っているので、ここが数えるのは口に入れた喜びだけです。同じ「火の通った1食」なら、丸焼きのネズミも
+焼いた肉と同じだけ戻します。
+
+| 値 | 何を食べたか |
+| --- | --- |
+| 6 | 火を通した食事（焼いた肉・ヤシガニ・タロイモ・ネズミ） |
+| 4 | 生でうまい果実（バナナ・ヤシの果肉・青い実のゼリー） |
+| 2 | 生で食べられるだけの物（空心菜・海藻・海鳥の卵） |
+| 1 | 本来は火を通すもの（生肉） |
+| 0 | 炭（腹の嵩しか残っていない） |
+
+**焼いた肉は生肉の6倍です。** エネルギーの 24 対 31（1.29倍）よりずっと開きが大きいので、
+[`DigestionSystem.md`](../engine/DigestionSystem.md) 6節の当たりと併せて、生で食べない理由が1本増えます。
+1日3食を火の通った物で通せば **+18/日**、生肉だけなら +3/日です。
+
+**値そのものは検算できません**（幸福度に現実の単位が無いため）。動かないのは、火を通した物が最も戻す
+ことと、量が効かないことの2つだけです。書き忘れると、その食べ物だけが心に何も残さない食事になるので、
+`eat` を持つ型がすべてベース値を宣言していることを `tests/world-codex/foodsYaml.test.ts` が全数で
+見張ります。
+
+### 下げるのは、痛みの段だけ
+
+`pain` の段が `add` で削ります——`sore` で −0.125/tick、`hurting` で −0.25/tick、`unbearable` で
+−0.5/tick（1日あたり −12・−24・−48）。**怪我も壊血病も脂の欠乏も痛みへ合流している**ので、削る宣言を
+1箇所に置くだけで、内側の不調が残らず心へ届きます。**疼く程度なら食事で取り返せ、激痛のまま1日を
+過ごすと最良の食事3食（+18）でも追いつきません。**
+
+**寒さと雨はここへ引きません。** どちらも熱（`warmth`）が受け持っていて、対抗手段（火・屋根）もそちらに
+付いています。両方へ効かせると、火を焚くことがうまい物を食べることの代わりになります。
+
+**時間そのものから生える圧はまだありません**（ホームシック）。寝床・住居からの寄与も未実装で、
+[`Dwellings.md`](./Dwellings.md) 6節と [`Bedding.md`](./Bedding.md) 8節がこの節を待っています。
 
 ## 休息
 

@@ -903,6 +903,8 @@ object_defs:
             satiety: 60
             protein: 3
             lipid: 1
+            # 小さくても火の通った1食（docs/world/Characters.md 幸福度節の表）。
+            happiness: 6
         pick:
           - weight: 100
           - weight: {prop: spoilage}
@@ -993,6 +995,9 @@ object_defs:
             protein: 20
             lipid: 4
             vitamin: 2
+            # 本来は火を通すもの（docs/world/Characters.md 幸福度節の表）。下のpickの当たりと併せて、
+            # 生で食べない理由になる。
+            happiness: 1
         pick:
           - weight: 100
           - weight: {prop: spoilage}
@@ -1035,6 +1040,7 @@ object_defs:
             satiety: 450
             protein: 24
             lipid: 7
+            happiness: 6
         pick:
           - weight: 100
           - weight: {prop: spoilage}
@@ -1072,6 +1078,9 @@ object_defs:
         add:
           agent:
             satiety: 200
+            # **喜びも残っていない。** 栄養素と同じ理由で、炭になった物から得られるのは腹の嵩だけ。
+            # 焦がした罰は既に「身になるものが消える」ことで付いているので、負の値は入れない。
+            happiness: 0
         destroy: self
 
   # 獣骨。1頭ぶんの骨をまとめた1枚。
