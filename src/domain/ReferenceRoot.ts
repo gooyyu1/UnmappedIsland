@@ -209,22 +209,25 @@ export class ReferenceScope {
     this.broadcasts = broadcasts;
   }
 
-  /** 宣言元の個体だけが居る場所（rangeイベント6.3節、passivesの8節）。誰かが操作しているとは限らない。 */
+  /** 宣言元の個体だけが居る場所。誰かが操作しているとは限らないので、操作の側の役は解決先を持たない。 */
   static readonly declaration = new ReferenceScope(true, false, false, false, true, false);
 
-  /** 誰かが操作している場所（actions、11節）。 */
+  /** 誰かが操作している場所（interactions、11節）。 */
   static readonly action = new ReferenceScope(true, true, false, false, true, false);
 
   /** 使う物が運ばれてくる場所（`drag`のinteractions 12節・`put_in`の`duration` 7.10節）。 */
   static readonly combination = new ReferenceScope(true, true, true, false, true, false);
 
   /**
-   * 成果物のインスタンスがまだ無い場所（レシピの解放条件、SkillSystem.md 4節）。
-   * 「このレシピを知っているか」の判定なので、居るのは操作者だけ。
+   * 作られる物のインスタンスがまだ無い場所（レシピについての判定）。問うのは「誰にとって解放されて
+   * いるか」であって操作ではないので、居るのは操作者だけ（11.5節）。
    */
   static readonly recipeUnlock = new ReferenceScope(false, true, false, false, true, false);
 
-  /** プロパティ名を伴わず、オブジェクトそのものを指す場所（destroy・signal・move・in_slot判定）。 */
+  /**
+   * プロパティ名を伴わず、オブジェクトそのものを指す場所。プロパティ名で祖先を探すancestorが、
+   * ここでは解決先を持たなくなる。
+   */
   get withoutPropertyName(): ReferenceScope {
     return new ReferenceScope(
       this.hasSelf,
@@ -236,7 +239,7 @@ export class ReferenceScope {
     );
   }
 
-  /** amongが選んだ相手を指せる場所（10.3節）。amongを書いた候補の重みと効果だけがこれになる。 */
+  /** amongが選んだ相手を指せる場所。amongを書いた候補の中だけがこれになる（10.3節）。 */
   get withPicked(): ReferenceScope {
     return new ReferenceScope(
       this.hasSelf,
