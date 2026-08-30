@@ -6,9 +6,11 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 /**
  * tick毎に動く値がrangeの端へ届くまでの周期（`src/analysis/rangeCycles.ts`）の検証。
  *
- * 見るのは**条件つきの増減（`GameElementDefinition.md` 8.2節）をどう組み合わせるか**——問いは
+ * 見るのは2つ。**条件つきの増減（`GameElementDefinition.md` 8.2節）をどう組み合わせるか**——問いは
  * 「合算するか」ではなく「どの組み合わせが同時に成立しうるか」で、成立しえない組み合わせを1つの
- * 場合として数えると、増減が打ち消し合って周期そのものが消える。
+ * 場合として数えると、増減が打ち消し合って周期そのものが消える。そして**端から戻る量をどう測るか**
+ * （`RangeEventReadout`）——`add`で足して戻すのも`set`で書き戻すのも、上端から戻るのも下端から
+ * 戻るのも、同じ1つの向き（端からrangeの内側へ）で測らないと、周期が端によって別の意味になる。
  *
  * 形はどれも同梱の定義から採っているが、宣言はここに置く（tests/architecture/testKinds.test.ts）。
  */
@@ -100,6 +102,46 @@ object_defs:
               to_prop: hydration
               amount: 25
               to_amount: 1
+
+  # 海区（voyage.yaml）。荒天にさらされた時間が上端へ届くと、押し流して0から数え直す。折り返しに
+  # addではなくsetを使うのは、上端が海区ごとに違うから——引く量を書くと、折り返す点も海区ごとに
+  # 書き写すことになる。
+  sea_zone:
+    tags: [fixture]
+    props:
+      storm_drift:
+        value: 0
+        range: {min: 0, max: 16}
+        on_max:
+          set: {self: {storm_drift: 0}}
+        passives:
+          - add: {self: {storm_drift: 1}}
+
+  # 山頂（locations.yaml）。on_maxを書くと補われるはずの既定のクランプ（自分を上端へset、6.3節）が
+  # 消えるので、著者がそれを自分で書き写している。端に置き直すだけで、戻ってはいない。
+  peak:
+    tags: [fixture]
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 10}
+        on_max:
+          set: {self: {exploration_progress: 10}}
+        passives:
+          - add: {self: {exploration_progress: 1}}
+
+  # 時計の分（core.yamlのminute）と同じ、上端で引いて折り返す形。実際の時計は毎tickの繰り上げを
+  # ゲーム側（WorldSession）が持つので、ここでは進む分を宣言に置いてある。
+  clock:
+    tags: [fixture]
+    props:
+      minute:
+        value: 0
+        range: {min: 0, max: 60}
+        on_max:
+          add: {self: {minute: -60}}
+        passives:
+          - add: {self: {minute: 15}}
 `;
 
   const codex = new WorldCodexYamlLoader().load('rangeCycles.yaml', YAML).buildAndReset();
@@ -135,5 +177,25 @@ object_defs:
     expect(cycleOf(codex, 'beast', 'hydration')).toMatchObject([
       { minutes: 336 * 15, shortestMinutes: 336 * 15, destroysSelf: true },
     ]);
+  });
+
+  it('上端からsetで書き戻す仕掛けが、繰り返す仕掛けとして数えられる', () => {
+    // 増減しか数えないと戻り0と読まれ、押し流しが「一度きり」になる。戻り量は上端16から書き戻し先の
+    // 0までの16で、+1/tickなので16 tickごとに回る。
+    expect(cycleOf(codex, 'sea_zone', 'storm_drift')).toMatchObject([{ minutes: 16 * 15, repeats: true }]);
+  });
+
+  it('端へ置き直すだけのsetは、戻っていない', () => {
+    // 書き戻し先が上端そのものなので戻り量は0。ここを「上端ぶん戻った」と読むと、既定のクランプを
+    // 持つ全プロパティが繰り返す仕掛けになる。周期は初期値0から上端10までの10 tick。
+    expect(cycleOf(codex, 'peak', 'exploration_progress')).toMatchObject([
+      { minutes: 10 * 15, repeats: false },
+    ]);
+  });
+
+  it('上端から引いて戻る仕掛けも、下端から足して戻るものと同じ向きで数える', () => {
+    // 戻り量を符号つきの増減のまま見ると、上端から戻るものだけが負になって数から漏れる。
+    // 60を引いて0へ戻るので戻り量は60、+15/tickなので4 tickごと。
+    expect(cycleOf(codex, 'clock', 'minute')).toMatchObject([{ minutes: 4 * 15, repeats: true }]);
   });
 });

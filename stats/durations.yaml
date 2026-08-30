@@ -13,7 +13,7 @@ durations:
   - {object: wild_boar, property: body_fat, unit: days, days: 67.00, shortest_days: 67.00, longest_days: 67.00, repeats: false, destroys: true}
   - {object: pitfall, property: durability, unit: days, days: 30.00, shortest_days: 2.73, longest_days: 30.00, repeats: false, destroys: true}
   - {object: pitfall__stake_staked, property: durability, unit: days, days: 30.00, shortest_days: 2.73, longest_days: 30.00, repeats: false, destroys: true}
-  - {object: world, property: season_remaining, unit: days, days: 30.00, shortest_days: 30.00, longest_days: 30.00, repeats: false, destroys: false}
+  - {object: world, property: season_remaining, unit: days, days: 30.00, shortest_days: 30.00, longest_days: 30.00, repeats: true, destroys: false}
   - {object: banana__cure_salted, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: bird_egg, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
   - {object: coconut, property: durability, unit: days, days: 20.00, shortest_days: 6.67, longest_days: 20.00, repeats: false, destroys: true}
