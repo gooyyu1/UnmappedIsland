@@ -268,8 +268,8 @@ function parseSetEffect(
 
 /**
  * transfer（9.5節）。from/toの参照はフラットな2フィールド（from/from_prop, to/to_prop）で表し、
- * from/toは省略時self。対象ルートはset/add/destroyと同じ読み手（parseActiveTargetRoot）で、
- * 何を書けるかは受け取ったscopeが決める。linked_add（省略可）はaddと同じ構造で、
+ * from/toは省略時self。対象ルートに何を書けるかは、受け取ったscopeが決める
+ * （parseActiveTargetRoot）。linked_add（省略可）はaddと同じ構造で、
  * 実際の移動量に比例してスケールされる副効果。to_amount（省略可）は、移送元と移送先で単位が違うときに
  * 「amount分を出すと移送先がどれだけ増えるか」を持つ。
  */
