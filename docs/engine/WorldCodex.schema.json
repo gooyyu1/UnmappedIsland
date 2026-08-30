@@ -1741,7 +1741,7 @@
       "additionalProperties": false
     },
     "object_target": {
-      "description": "命令が指すオブジェクトそのもの1つ（9.6節）。対象名で直接指すか、マップ（{subject} / {subject, prop}、subject省略時はself）で指す。ancestorを書けるのは、指す先のプロパティ名を決めている{subject, prop}の形だけ——祖先はその名前で探すため。",
+      "description": "命令が指すオブジェクトそのもの1つ（9.6節）。対象名で直接指すか、マップ（{subject} / {subject, prop}、subject省略時はself）で指す。ancestorは指す先のプロパティ名で祖先を探すので、プロパティ名を決めていない形（propを伴わない指し方）では書けない（ロード時エラー）。",
       "oneOf": [
         {
           "$ref": "#/$defs/object_target_name"
