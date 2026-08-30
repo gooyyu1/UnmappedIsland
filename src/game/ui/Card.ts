@@ -353,8 +353,8 @@ export interface CardContent {
   readonly gauges?: readonly CardGauge[];
 
   /**
-   * そのカードが映しているものの状態を表す絵文字の印（手当て済みの怪我の🩹など）。紙の左下へ小さく
-   * 重ねる。持たないカードには何も出ない。
+   * その札について、**絵を描き替えずに言うこと**を表す絵文字の印（手当て済みの怪我の🩹、未解放の
+   * レシピの🔒。CardView.md 9節）。紙の左下へ小さく重ねる。持たないカードには何も出ない。
    */
   readonly mark?: string;
 
@@ -526,9 +526,13 @@ export class Card extends Phaser.GameObjects.Container {
   /** 押下中だけ出す黒枠（makeTappable参照）。押しても離しても何も起きないカードは持たない。 */
   private pressHighlight: Phaser.GameObjects.Graphics | undefined;
 
-  /** 押している間だけ出すもの（CardContent.hold）の計時と、既に出したか（Buttonと同じ持ち方）。 */
+  /**
+   * 押している間だけ出すもの（CardContent.hold）の計時と、**今出している受け口そのもの**。
+   * 引っ込めるのは出したのと同じ受け口——押している最中に内容が差し替わっても、出したものが
+   * 出たまま残らない。
+   */
   private holdTimer: Phaser.Time.TimerEvent | undefined;
-  private holding = false;
+  private holding: HoldHandlers | undefined;
 
   /**
    * ここで組み立てるのは**殻**——重なりの順序と、中身を入れる器だけ。何がどう見えるかは
@@ -1313,9 +1317,7 @@ export class Card extends Phaser.GameObjects.Container {
       },
       onRelease: () => {
         highlight.setVisible(false);
-        const held = this.holding;
-        this.endHold();
-        if (held || this.tapCancelled || !this.holdsCard) return;
+        if (this.endHold() || this.tapCancelled || !this.holdsCard) return;
 
         noteOperation(uiText('log_card_tapped', { name: this._content.name }));
         this._content.onTap?.();
@@ -1323,28 +1325,28 @@ export class Card extends Phaser.GameObjects.Container {
     });
   }
 
-  /**
-   * 押している間だけ出すものの計時を始める。**何を出すかは押した時点の内容から読む**ので、
-   * 差し替えで変わっても古い受け口は残らない（onTapと同じ）。
-   */
+  /** 押している間だけ出すものの計時を始める。**何を出すかは押した時点の内容から読む**（onTapと同じ）。 */
   private startHold(): void {
     const hold = this._content.hold;
     if (hold === undefined) return;
 
     this.holdTimer = this.scene.time.delayedCall(hold.delayMs ?? HOLD_MS, () => {
-      this.holding = true;
+      this.holding = hold;
       hold.onStart();
     });
   }
 
-  /** 出しているものを引っ込め、計時も止める。押下が終わるどの経路（離す・外れる・破棄）も通る。 */
-  private endHold(): void {
+  /**
+   * 出しているものを引っ込め、計時も止める。押下が終わるどの経路（離す・外れる・破棄）も通る。
+   * 返すのは**この押下が長押しになっていたか**——なっていたならタップとしては成立しない。
+   */
+  private endHold(): boolean {
     this.holdTimer?.remove();
     this.holdTimer = undefined;
-    if (!this.holding) return;
-
-    this.holding = false;
-    this._content.hold?.onEnd();
+    const held = this.holding;
+    this.holding = undefined;
+    held?.onEnd();
+    return held !== undefined;
   }
 
   /**

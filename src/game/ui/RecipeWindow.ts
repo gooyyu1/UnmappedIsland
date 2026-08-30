@@ -205,6 +205,7 @@ export class RecipeWindow {
     const { scene, metrics } = this;
 
     // ドラッグとホイールを受ける面は、**中身より先に**敷く（後に敷くとカードを押せなくなる）。
+    // 面だけでは札に覆われて指が届かないので、札も一緒に送りへ渡す（ScrollArea.inputSurfaces）。
     const area = { x: left, y: this.bodyTop, width: innerWidth, height: viewHeight };
     const surface = addInputBlockingPanel(scene, area, COLOR.cardFace, 0);
     this.ownedObjects.push(surface);
@@ -212,17 +213,13 @@ export class RecipeWindow {
     // 中身は1つのコンテナへ入れて、窓の中だけに切り抜く。スクロールはこのコンテナを上下へ送る。
     const viewport = scene.add.container(0, 0);
     this.ownedObjects.push(viewport);
-    this.scroll = new ScrollArea(scene, {
-      axis: 'y',
-      content: viewport,
-      viewport: area,
-      inputSurfaces: [surface],
-    });
 
     const cardWidth = metrics.px(SIZE.cardWidth);
     const cardHeight = metrics.px(SIZE.cardHeight);
     const cardGap = metrics.px(CARD_GAP);
 
+    /** 送りも受ける札（ScrollArea.inputSurfaces）。札は面を覆うので、札の上から送れないと窓が動かない。 */
+    const cards: Card[] = [];
     let top = this.bodyTop;
     this.options.categories.forEach((category, index) => {
       if (index > 0) top += metrics.px(CONTENT_GAP);
@@ -236,26 +233,32 @@ export class RecipeWindow {
         const y = rowTop + Math.floor(position / this.columns) * (cardHeight + cardGap);
         // 送られていることがあるので、居場所は押した時点で測る（viewportの送り量を足す）。
         const rect = (): Rect => ({ x, y: y + viewport.y, width: cardWidth, height: cardHeight });
-        viewport.add(
-          new Card(scene, metrics, x, y, {
-            ...entry.card,
-            onTap: lockedReason === undefined ? () => entry.onSelect(rect()) : undefined,
-            // 未解放のレシピは押しても選べない。なぜ作れないかは、押している間の吹き出しで言う。
-            hold:
-              lockedReason === undefined
-                ? undefined
-                : {
-                    onStart: () => this.tooltip.show({ title: entry.card.name, body: lockedReason }, rect()),
-                    onEnd: () => this.tooltip.hide(),
-                    // 押せない札を待たせる理由が無い（ObjectWindowの押せないボタンと同じ）。
-                    delayMs: 0,
-                  },
-          }),
-        );
+        const card = new Card(scene, metrics, x, y, {
+          ...entry.card,
+          onTap: lockedReason === undefined ? () => entry.onSelect(rect()) : undefined,
+          // 未解放のレシピは押しても選べない。なぜ作れないかは、押している間の吹き出しで言う。
+          hold:
+            lockedReason === undefined
+              ? undefined
+              : {
+                  onStart: () => this.tooltip.show({ title: entry.card.name, body: lockedReason }, rect()),
+                  onEnd: () => this.tooltip.hide(),
+                  // 押せない札を待たせる理由が無い（ObjectWindowの押せないボタンと同じ）。
+                  delayMs: 0,
+                },
+        });
+        cards.push(card);
+        viewport.add(card);
       });
       top += Math.ceil(category.entries.length / this.columns) * (cardHeight + cardGap) - cardGap;
     });
 
+    this.scroll = new ScrollArea(scene, {
+      axis: 'y',
+      content: viewport,
+      viewport: area,
+      inputSurfaces: [surface, ...cards],
+    });
     this.scroll.setContentLength(top - this.bodyTop);
   }
 

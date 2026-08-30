@@ -112,7 +112,7 @@ export class RecipeDef {
   /**
    * 解放条件を満たしていない場合、最初に落ちた要件。満たしていればundefined。
    *
-   * 未解放のレシピも解放条件とともに一覧へ出すため、可否と理由を1回の評価から得る
+   * 未解放のレシピも一覧へ出し、そこでなぜ作れないかを言うため、可否と理由を1回の評価から得る
    * （Requirements.firstUnmet と同じ理由）。
    */
   unmetUnlockRequirement(agent: WorldObject | undefined): Requirement | undefined {
