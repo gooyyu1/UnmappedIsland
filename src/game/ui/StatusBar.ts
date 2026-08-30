@@ -163,8 +163,8 @@ export interface StatusContent {
   readonly change?: StatusChange;
 
   /**
-   * 直前の行動を始める前の満たされ具合。出ていなかった行を出すときに、この値から見せ始めることで
-   * 「その行動で変わった分」だけが帯になる（show参照）。増減が無ければundefined。
+   * 直前の行動を始める前にバーが映していた値（barFillOf）。出ていなかった行を出すときに、この値から
+   * 見せ始めることで「その行動で変わった分」だけが帯になる（show参照）。増減が無ければundefined。
    */
   readonly ratioBefore?: number;
 
