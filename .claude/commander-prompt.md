@@ -61,6 +61,9 @@
 - `CHECKED <issue>` … ユーザーが答えた項目。答えの行き先を `## 下ろした項目` へ書いてから一覧
   から消す。
 - `TASK <issue>` … `dispatch-task.sh <issue> <補足ファイル>` で投入する（補足は空でよい）。
+- `UNTRIAGED <番号> …` … 棚卸しがまだの issue。追う issue を1件立てて `meta` を付け、そこへ
+  `dispatch-task.sh` で投入する（渡す本文は `.claude/triage-prompt.md`。**ブリッジで走らせる**）。
+  **他に捌くものが1つも無い周にしか出ません**——出たら盤面は空いています。
 
 ## 道具（`scripts/agent/`。使い方は各ファイルの冒頭にあります）
 

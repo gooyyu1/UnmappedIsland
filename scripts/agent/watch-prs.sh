@@ -27,6 +27,8 @@
 #                                    （`司令塔へ` ラベルが残っている）
 #   TASK    <番号>                 … 着手できる open な task（投入も済んでおらず、--issues にもPRにも
 #                                    無く、依存も片付いている）
+#   UNTRIAGED <番号> <番号> …      … 棚卸しがまだの issue（`task` も `meta` も無い）。**他に捌くものが
+#                                    1つも無い周にだけ出る**
 #   STALLED <セッションID> <題>    … 動いておらず、PRも出していないタスクのセッション
 #   終了コード 0 … 動きが1件以上ある（上の行が出ている）
 #   終了コード 3 … TIMEOUT（制限時間まで、何も動かなかった）
@@ -190,6 +192,30 @@
 #
 # 依存に書いてよいのは**順序に理由がある依存だけ**。「同じファイルを触る」は依存ではない
 # （`parallel-work.md` の「1ファイル重なることは、直列にする理由にはしない」）。
+#
+# ## UNTRIAGED は、他に捌くものが1つも無い周にだけ出す
+#
+# 人間が立てた issue は、`task` へ翻訳してからでないと投入できない（`parallel-work.md`「人間が立てた
+# issue は、投入する前に棚卸しで task へ翻訳する」）。やり方は書いてあったが**始める条件がどこにも
+# 無く**、`board.sh` の `## 未整理` を打つ引き継ぎ直後にしか目に入らなかった。2026-08-30 の時点で
+# 15件が滞留し、うち2件はその日にセッションが立てたばかりのもの——**セッションが issue を立てる
+# たびに増えるのに、減らす側に引き金が無い。**
+#
+# **件数のしきい値は置かない。** しきい値は「そこまでは残っていてよい」と宣言することになり、滞留を
+# 仕様にしてしまう（[`policies.md`](../../.claude/policies.md)「仕組みの作り方」）。抑えたいのは合図の
+# 頻度であって残す件数ではないので、**抑えるのは順位**——他の合図が1件でもあれば出さない。1件でも
+# あるなら、盤面が空いた周にいつか必ず出る。
+#
+# **出すのは全件を1行で。** 棚卸しは未整理の全件をまとめて1セッションに渡す仕事なので、1件ずつ
+# 出しても司令塔の手番は増えない。
+#
+# **黙るのは、`meta` の issue へ投入したセッションが生きている間**（棚卸しを追う issue がこれ。
+# `dispatch-task.sh` が `task-<番号>` を付ける）。走っている間も出し続けると、司令塔は同じ棚卸しを
+# 何度も投入する（`TASK` が #1271 で踏んだのと同じ形）。**`task` ラベルが付くのは棚卸しが終わって
+# 司令塔が報告を読んだ後**なので、それまで未整理の一覧は縮まない。終わったことは `STALLED` が出す。
+#
+# `--issues` を1つも渡さないと issue の一覧そのものを引かないので、そのときだけは出ない（`CHECKED`
+# と同じ）。
 #
 # ## STALLED を見るのは、止まったセッションが誰にも見えないから
 #
@@ -476,6 +502,10 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
       fi
     fi
 
+    # 棚卸しの待ち行列。出すかどうかは、他の合図が1つも無いことが分かってから決める（下）。
+    untriaged=''
+    triaging=0
+
     # 見張っている issue を1回引いて、閉じたもの（開いている一覧に居ないもの）と、起動より後に
     # 付いたコメントを拾う。issue の本数が増えても gh の呼び出しは1周につき1回のまま。
     if [ ${#ISSUES[@]} -gt 0 ]; then
@@ -523,6 +553,20 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
             settled=$(printf '%s\nTASK %s' "$settled" "$issue")
           fi
         done
+        # 棚卸しがまだの issue（上の UNTRIAGED の節）。`board.sh` の `## 未整理` と同じ選び方で、
+        # 全件を1行にまとめる。`dispatched` と同じ材料を使うので、ここで一緒に出す。
+        untriaged=$(jq -r '.[]
+            | select([.labels[].name] | (index("task") // index("meta")) | not)
+            | .number' \
+          <<<"$open_issues" | tr -d '\r' | paste -sd' ' -)
+        # 棚卸しを追う issue は `meta`。それへ投入したセッションが生きている間は黙る。
+        for issue in $(jq -r '.[] | select([.labels[].name] | index("meta")) | .number' \
+          <<<"$open_issues" | tr -d '\r'); do
+          if grep -qx "$issue" <<<"$dispatched"; then
+            triaging=1
+            break
+          fi
+        done
       fi
     fi
 
@@ -558,6 +602,12 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
         if [ -n "$started" ] && { [ -z "$pushed" ] || [[ "$started" > "$pushed" ]]; }; then continue; fi
         settled=$(printf '%s\nUNREVIEWED %s' "$settled" "$number")
       done < <(jq -r "$REVIEW_CANDIDATE_FILTER" <<<"$prs" | tr -d '\r')
+    fi
+
+    # **他の合図が1つも無い周にだけ**出す（上の UNTRIAGED の節）。しきい値は置かない——抑えるのは
+    # 件数ではなく順位で、1件でも、盤面が空けばいつか必ず出る。
+    if [ -z "${settled//[[:space:]]/}" ] && [ -n "$untriaged" ] && [ "$triaging" -eq 0 ]; then
+      settled="UNTRIAGED $untriaged"
     fi
 
     if [ -n "${settled//[[:space:]]/}" ]; then
