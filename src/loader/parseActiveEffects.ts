@@ -40,8 +40,9 @@ import { DeclaredNumber } from '../domain/DeclaredNumber';
 import { SignalEffect } from '../domain/SignalEffect';
 
 /**
- * 効果の中身（9節の命令と、10節の`pick`）を読む。文法は「操作(set/add)が上位、
- * 対象(self/parent/agent/instrument)が下位」（例: `add: {self: {hour: 1}}`）。spawnは常にselfが実行する
+ * 効果の中身（9節の命令と、10節の`pick`）を読む。文法は「操作(set/add)が上位、対象が下位」
+ * （例: `add: {self: {hour: 1}}`）。**どの対象キーを書けるかは、受け取ったscopeが決める**
+ * （parseActiveTargetRoot。一覧は9.1節が指す14.1節の表）。spawnは常にselfが実行する
  * ものとみなすため対象キーを持たない。signalは対象を省ける（`signal: missed`＝selfへ告げる、9.8節）。
  *
  * **適用順はYAMLに書かれた順**で、動詞ごとの優先順位は無い（9.7節）。bodyNodeには効果以外の兄弟キーも
@@ -267,8 +268,8 @@ function parseSetEffect(
 
 /**
  * transfer（9.5節）。from/toの参照はフラットな2フィールド（from/from_prop, to/to_prop）で表し、
- * from/toは省略時self。対象ルートはset/add/destroyと
- * 同じ制約（selfOnly・allowInstrument）を共有する。linked_add（省略可）はaddと同じ構造で、
+ * from/toは省略時self。対象ルートに何を書けるかは、受け取ったscopeが決める
+ * （parseActiveTargetRoot）。linked_add（省略可）はaddと同じ構造で、
  * 実際の移動量に比例してスケールされる副効果。to_amount（省略可）は、移送元と移送先で単位が違うときに
  * 「amount分を出すと移送先がどれだけ増えるか」を持つ。
  */
@@ -472,9 +473,9 @@ function oneOrMany<T>(context: string, node: YamlNode, parseOne: (context: strin
  * （複数・どれも無しはエラー）。移動先の三択は`spawn`の配置先と同じ読み手（parseDestinationRef）。
  * `to_slot`は行き先の中のどの枠へ入れるかで、省けば宣言順で最初に受け入れた枠になる。
  *
- * selfOnly文脈（rangeイベント）で禁じるのは**agent/instrumentを指す形だけ**。そこに実行者が居ないのは
- * 対象キーの解決先が無いという理由なので、`self`と型で書いた移動（本土への到達、Voyage.md 4節）は
- * 同じ理由に当たらない。
+ * **その場所で禁じられるのは、解決先を持たない対象キーを指す形だけ**（どれがそうかはscopeが答える。
+ * ReferenceScope）。型で書いた移動先（本土への到達、Voyage.md 4節）は対象キーではないので、
+ * 操作者の居ない場所（rangeイベント）でも同じ理由には当たらない。
  */
 function parseMove(
   loader: WorldCodexYamlLoader,
