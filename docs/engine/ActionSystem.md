@@ -101,13 +101,19 @@ actions/combinations の一度きりの判定と、passives（8節）の持続�
 `conditions` の `subject`、効果の対象キー、`{subject, prop}` 参照はすべて共通の起点
 `ReferenceRoot` を使う。`self.prop` のような1階層の参照のみで、パス連結はない。
 
-| 起点 | 解決先 | 使える文脈 |
+| 起点 | 解決先 | 解決先を持つ場所 |
 | --- | --- | --- |
-| `self` | 操作対象のカード自身 | すべて |
-| `parent` | self の直接の親 | すべて |
-| `agent` | プレイヤーキャラクター | actions / combinations（rangeイベントには存在しない） |
-| `instrument` | 組み合わせる相手のカード | combinations のみ |
-| `ancestor` | self の親から遡り、参照プロパティを定義する最初の祖先 | プロパティ参照のみ（位置判定では不可） |
+| `self` | 宣言元の個体自身 | 宣言元の個体が居る場所（rangeイベント・passives も含む） |
+| `parent` | self の直接の親 | 同上 |
+| `agent` | その操作で動いている個体 | 操作の関係の役（11.5節）なので、書ける場所は同節「役を書ける場所」の表が決める |
+| `instrument` | 運ばれてきて働きかけに使われる参加者。宣言が乗っていない側 | 同上 |
+| `picked` | `among`（10.3節）が周りから選んだ相手 | `among` を書いた候補の中（重みと効果）だけ |
+| `ancestor` | self の親から遡り、参照プロパティを定義する最初の祖先 | **その参照がプロパティ名を伴うときだけ**——祖先はそのプロパティ名で探すので、`prop` を書かずに個体そのものを指す形では相手が決まらない |
+
+**どの起点が書けるかは、場所ごとに数え上げるのではなく、宣言が置かれた場所が何を持つかから導く**
+（`ReferenceScope`）。**ロード時に弾く根拠と、実行時に組む `ReferenceContext` は同じ1つの事実**なので、
+書けたのに実行時は必ず空振りする、という宣言が作れない。11.5節の表は未実装ぶんまで含むので、
+**今どこで書けるかを持っているのは `ReferenceScope` の側**。
 
 `world` は起点として未対応（ロード時エラー）。すべてのオブジェクトは world の下にぶら下がるため、
 world 固有プロパティの参照は `ancestor` で代替できる。`child` は passives の target 専用で、
@@ -126,23 +132,32 @@ world 固有プロパティの参照は `ancestor` で代替できる。`child` 
 設計上の要点:
 
 - `set`/`add` の値・`pick` の `weight` は「リテラルか `{subject, prop}` 参照か」の二択で統一されている。
-- `spawn` の配置先は `same_slot`（既定）/ `self` / `agent`。`same_slot` は、適用の入口で捕捉した
+- `spawn` の配置先（`into`、9.4節）は、**個体を指す形が `move` の移動先とまったく同じ**で、書ける起点は
+  4節の表のとおり。個体でないものを名乗れるのは `into` だけで、`same_slot`（既定）と `child` の2つ。
+  `same_slot` は、適用の入口で捕捉した
   「self が占めていた位置」のスナップショット（`WorldObject.SameSlotSpawnSite`）を使い、destroy で self が
   消えた後でもその位置を引き継げる。配置に失敗した場合は起点の親、さらにその親…とこぼれ落ち、
   どこにも入らなければ世界から消える（9.4 節）。どの段でも枠の宣言はそのまま効く。
 - `transfer`（9.5節）は「出せる量」と（`allow_overflow: false` なら）「受け取れる量」で実移動量を決め、
   `linked_add` を実移動量に比例スケールして適用する。
-- `move` は、`self` のプロパティ（`to_prop`）が保持する **インスタンスID** のオブジェクトの中へ
-  `agent` を移動する。移動先が定義時点で決まらず生成時に確定する（道の移動アクション）ため、
-  `object_def` 参照ではなくインスタンスIDで指す。
+- `move` は、動かす物（`subject`／`subject_prop`）と行き先（`to`／`to_prop`／`to_object`）を別々に指し、
+  行き先の指し方は `spawn` の `into` と共通。**行き先が定義時点で決まらず生成時に確定する**場合
+  （道の移動アクション）は、`object_def` 参照ではなく `self` のプロパティが保持する
+  **インスタンスID**（`to_prop`）で指す。
 - プロパティの rangeイベント（`on_max`/`on_min`、6.3節）も**同じ**
-  `ActiveEffect` と適用経路（`WorldObject.ApplyActiveEffect`）を使う。その文脈では
-  agent/instrument が null で、対象は `self` のみ（ロード時に強制）。
+  `ActiveEffect` と適用経路（`WorldObject.ApplyActiveEffect`）を使う。書ける動詞に差は無く、
+  `pick` も `move` も並べて書ける（海区の `storm_drift` の `on_max` が、`among` で選んだ筏を `move` で
+  隣の海区へ流す。`voyage.yaml`）。**この場所に無いのは操作している者だけ**なので、rangeイベントで
+  あることを理由に落ちる起点は操作の関係の役（`agent`・`instrument`、11.5節）だけ。ほかの起点の可否は
+  4節の表のとおりで、rangeイベントだからという上乗せの制限は無い。
 
 ## 6. 時間の経過（duration）
 
 - `interactions` の `duration` はゲーム内の**分**。リテラルか `{subject, prop}` 参照か参照 2 つの積
-  （`weight` と同じ三択。ドラッグ型では `instrument` も指せる）で、省略時は時間を消費しない。
+  （`weight` と同じ三択）で、省略時は時間を消費しない。`subject` にどの役を書けるかは、きっかけの
+  名前ではなく 11.5節「役を書ける場所」の表が決める。**枠へ入れるのにかかる時間（`put_in` の
+  `duration`、7.10節）も同じ形の宣言**で、そこでも入れる物を `instrument` として指せる
+  （`SlotDef.putInMinutes`）。
 - 時間進行は `InteractionDef` 自身が `WorldSession.AdvanceWorldTime(minutes)` を呼んで完結させる。
   呼び出し側（UI層）が実行後に別途時間を進める必要はない。解決した分数は実行前にも引ける
   （`MinutesFor`。UI層が実行前に所要時間を見せるため、[`CardInteraction.md`](../ui/CardInteraction.md) 2 節）。
