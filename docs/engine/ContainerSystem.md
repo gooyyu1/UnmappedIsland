@@ -216,11 +216,12 @@ conditions:
 文法なしで正しく出ます。将来の屋根・小屋も同じプロパティを定義するだけで同じように働きます。
 
 **守るのは入れ物だけではありません。** 浅い洞窟（[`../world/Dwellings.md`](../world/Dwellings.md) 5.1 節）は
-場所として `sheltered: 1` を宣言し、中に置いた物・据えた炉が同じ1行で守られます。読む側は
-屋外劣化（`DurabilitySystem.md` 2 節）・炉の火力（[`FireSystem.md`](./FireSystem.md) 8 節）・火起こしの
-可否（同 3.1.1 節）・雨受けの容器（[`LiquidContainerSystem.md`](./LiquidContainerSystem.md) 7 節）・雨に
-打たれて熱を失う体（[`VitalsSystem.md`](./VitalsSystem.md) 8.3 節）・製塩の乾き
-（[`../world/SurvivalItems.md`](../world/SurvivalItems.md) 9 節）の6つで、いずれも上の1行だけを見ます。
+場所として `sheltered: 1` を宣言し、中に置いた物・据えた炉が同じ1行で守られます。**守られているかを知る道は
+このプロパティ1つだけで、それをどこでどう読むかは読む側が決めます**——たとえば屋外劣化
+（`DurabilitySystem.md` 2 節）は上の条件でそのまま止め、キャラクタは `base`（[`GameElementDefinition.md`](./GameElementDefinition.md)
+6.5 節）で値を自分へ写してから、体温の削り（[`VitalsSystem.md`](./VitalsSystem.md) 8.3 節）と状況アイコン
+（[`../ui/ScreenLayout.md`](../ui/ScreenLayout.md) 4.1.2 節）で読みます。**守る側は誰がどう読むかを
+知りません**——読み手が増えても、増えるのは読む側の宣言だけです。
 
 **雨をしのぐことを `weather` の宣言で表すことはしません。** 洞窟が自分の `weather` を宣言すれば雨を見ている
 条件は確かに止まりますが、それは「そこでは天気そのものが違う」という宣言になり、天気を読む先（明るさ・
