@@ -213,6 +213,27 @@ describe('腕前とレシピの解放条件', () => {
     }
   });
 
+  it('11本とも、段が下端を名乗っている（受け皿にして進みを消さない）', () => {
+    // 腕前はrangeを持たないので、下端を書かない段（受け皿、GameElementDefinition.md 6.4節）は
+    // 下端が決まらず、段の中の進みが計算できない。UIは進みの無い段でバーを出さない
+    // （StatusArea.md 9節）ので、最下段を受け皿で書くと**全員が通る見習いの間だけ**バーが消える。
+    const character = characterWithSkills(0);
+
+    // 最上段には満ちる先が無く、そこで進みを言わないのはエンジンの決まり（stageProgress.test.ts）。
+    for (const [index, stage] of STAGES.slice(0, -1).entries()) {
+      const next = STAGES[index + 1];
+      const middle = (stage.min + next.min) / 2;
+      for (const id of skillIds) {
+        const property = character.getProperty(id);
+        property.setNumberWithoutEvents(middle);
+        const progress = property.stageReading?.progress;
+
+        expect(progress?.nextName, `${property.def.name} の ${middle}`).toBe(next.name);
+        expect(progress?.ratio, `${property.def.name} の ${middle}: 段の中ほど`).toBeCloseTo(0.5);
+      }
+    }
+  });
+
   it('解放条件は、腕が上がった後も満たされ続ける（上の段で閉じ直さない）', () => {
     // `in_stage`は今いる段ちょうどの判定なので、要求を1つの段だけで書くと、腕が伸びた瞬間に
     // レシピが消える。段の名前をanyで束ねる形（characters/player_character.yaml）がそれを防ぐ。

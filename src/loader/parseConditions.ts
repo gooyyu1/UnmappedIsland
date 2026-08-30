@@ -22,7 +22,8 @@ import type { ConditionOp } from '../domain/ConditionReader';
 import { Requirement, Requirements } from '../domain/Requirement';
 
 /**
- * conditions（14節）・passivesのゲート（8節）が共通で使う`subject`（主語）の参照キー。
+ * `subject`（主語）の参照キー。**どのrootを書けるかは、受け取ったscopeが答える**（ReferenceScope。
+ * 書ける場所の一覧はGameElementDefinition.md 14.1節の表、操作の関係の役は11.5節「役を書ける場所」）。
  * worldはシングルトンインスタンスの実行時追跡が無いため未対応（ancestorで代替できる）。
  */
 export function parseSubjectRoot(context: string, raw: string, scope: ReferenceScope): ReferenceRoot {
@@ -98,8 +99,8 @@ export function parseConditionsField(
 }
 
 /**
- * actions/combinationsのconditions。要素ごとに`reason`（満たさなかったときにプレイヤーへ出す理由の
- * 識別子）を持てる点だけがparseConditionsFieldと違う。入れ子のall/any/notの中には書けない
+ * 要素ごとに`reason`（満たさなかったときにプレイヤーへ出す理由の識別子）を持てるconditions。
+ * その点だけがparseConditionsFieldと違う。入れ子のall/any/notの中には書けない
  * （落ちた要件は配列の要素の単位で指すため、Requirement参照）。
  *
  * `fieldName`は、この並びが載っているキーの名前（エラーメッセージ用）。`conditions`以外の名前で
