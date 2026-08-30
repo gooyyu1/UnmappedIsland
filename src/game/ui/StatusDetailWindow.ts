@@ -15,6 +15,7 @@ import { objectTexture } from '../../art/objectArt';
 import { ProgressBar } from './ProgressBar';
 import { addInputBlockingPanel, drawBox } from '../../ui/shapes';
 import { onPressRelease } from '../../ui/tap';
+import { barFillOf, barNextStageTextOf } from '../view/statusBarLook';
 import { PIN_MARK } from './StatusBar';
 import type { StatusContent, StatusInfluence } from './StatusBar';
 import { COLOR, SIZE } from '../looks/theme';
@@ -51,6 +52,10 @@ const STAGE_PLATE_PADDING_X = 30;
 const STAGE_PLATE_PADDING_Y = 12;
 const STAGE_TAIL_WIDTH = 26;
 const STAGE_TAIL_HEIGHT = 16;
+
+/** 段の中の進みを映すバーの右端に重ねる、次の段の名前（行と同じ寸法、StatusBar）。 */
+const NEXT_STAGE_SIZE = 26;
+const NEXT_STAGE_PADDING = 12;
 
 /** 影響の一覧の見出しと、そこに並ぶ枠。 */
 const SECTION_SIZE = 24;
@@ -140,7 +145,12 @@ export class StatusDetailWindow {
     const padding = metrics.px(WINDOW_PADDING);
     const gap = metrics.px(CONTENT_GAP);
     const actionHeight = metrics.px(ACTION_HEIGHT);
-    const barHeight = metrics.px(BAR_HEIGHT);
+
+    // バーが映すのは、rangeの中での位置か、それを持たないなら今いる段の中での進み（行と同じ決め方、
+    // statusBarLook.barFillOf）。どちらも言えなければバーを出さない——値そのものは出さない画面なので
+    // （8節）、代わりに数字を置くこともしない。
+    const fill = barFillOf(content);
+    const barHeight = fill === undefined ? 0 : metrics.px(BAR_HEIGHT);
 
     const { width, height } = metrics;
     this.ownedObjects.push(
@@ -166,7 +176,9 @@ export class StatusDetailWindow {
         ? undefined
         : addLabel(scene, metrics, 0, 0, content.stage.name, { size: STAGE_SIZE, bold: true }).setOrigin(0.5);
     const plateHeight = stage === undefined ? 0 : stage.height + metrics.px(STAGE_PLATE_PADDING_Y) * 2;
-    const stageHeight = stage === undefined ? 0 : plateHeight + metrics.px(STAGE_TAIL_HEIGHT);
+    // しっぽはバーの上の1点を指すためのものなので、バーが無ければ高さも取らない。
+    const stageHeight =
+      plateHeight + (stage === undefined || fill === undefined ? 0 : metrics.px(STAGE_TAIL_HEIGHT));
 
     const description = addLabel(scene, metrics, 0, 0, detail?.description ?? uiText('no_description'), {
       size: DESCRIPTION_SIZE,
@@ -192,15 +204,16 @@ export class StatusDetailWindow {
 
     const pinSize = metrics.px(PIN_BUTTON_SIZE);
     const headerHeight = Math.max(metrics.px(HEADER_ICON_SIZE), title.height, pinSize);
+
+    /** 名札とバーが要る高さ（下の間隔まで込み）。どちらも無いプロパティでは、その場所ごと空けない。 */
+    const stageBlock = stageHeight + barHeight === 0 ? 0 : stageHeight + barHeight + gap;
     const windowHeight =
       padding * 2 +
       headerHeight +
       gap +
       description.height +
       gap +
-      stageHeight +
-      barHeight +
-      gap +
+      stageBlock +
       given.height +
       gap +
       received.height +
@@ -240,47 +253,54 @@ export class StatusDetailWindow {
     description.setPosition(left, y);
     this.ownedObjects.push(description);
 
-    y += description.height + gap + stageHeight;
-    // 名札の中央と、しっぽが指す先。囲みがあればその中央、無ければバーの左端に揃える。
-    let plateCenterX = left + (stage?.width ?? 0) / 2;
-    let tailX = plateCenterX;
-    if (content.ratio !== undefined) {
-      const bar = new ProgressBar(scene, metrics, left, y, contentWidth, barHeight, content.ratio, {
+    y += description.height + gap;
+    const barTop = y + stageHeight;
+
+    /** しっぽが指す先。バーが無ければ指せる場所も無いので、しっぽを出さない。 */
+    let tailX: number | undefined;
+    if (fill !== undefined) {
+      const bar = new ProgressBar(scene, metrics, left, barTop, contentWidth, barHeight, fill, {
         worsensUpward: content.worsensUpward,
       });
       bar.setAlert(content.alert);
       this.ownedObjects.push(bar);
 
+      // 目盛りも囲みもrangeの中での位置なので、段の中の進みを映すバーには引かない（rangeを持たない
+      // プロパティでは、境目も区間も空で返る）。
       const span = content.stage?.span;
       bar.markStages(content.stage?.boundaries ?? [], span);
 
-      if (span !== undefined) {
-        // 名札は囲みの中央へ。端の段では囲みからはみ出しても、ウィンドウの中には収める。
-        const half = stage === undefined ? 0 : plateWidth(metrics, stage) / 2;
-        tailX = bar.xAt((span.start + span.end) / 2);
-        plateCenterX = Math.min(Math.max(tailX, left + half), left + contentWidth - half);
-      }
-    } else {
-      this.ownedObjects.push(
-        addLabel(scene, metrics, left, y + barHeight / 2, String(content.value), {
-          size: 30,
-        }).setOrigin(0, 0.5),
-      );
+      // 囲みがあればその中央、無ければバーの左端——段1つぶんしか映さないバーでは、左端がその段の
+      // 下端そのものだから（8.1節）。
+      tailX = span === undefined ? left : bar.xAt((span.start + span.end) / 2);
+
+      // 段の中の進みを映すバーだけ、満ちる先として次の段の名前を右端へ重ねる（行と同じ、
+      // StatusArea.md 9節）。バーより後に作る（表示順は生成順で決まるため）。
+      const nextStage = barNextStageTextOf(content);
+      if (nextStage !== '')
+        this.ownedObjects.push(
+          addLabel(
+            scene,
+            metrics,
+            left + contentWidth - metrics.px(NEXT_STAGE_PADDING),
+            barTop + barHeight / 2,
+            nextStage,
+            { size: NEXT_STAGE_SIZE, color: COLOR.textMuted },
+          ).setOrigin(1, 0.5),
+        );
     }
 
     // 名札の板としっぽは、文字より先に作ってある（板が文字を覆わないように）。
     if (stage !== undefined) {
-      drawStagePlate(plate, metrics, stage, {
-        centerX: plateCenterX,
-        tailX,
-        top: y - stageHeight,
-        height: plateHeight,
-      });
-      stage.setPosition(plateCenterX, y - stageHeight + plateHeight / 2);
+      // 名札は指す先の上へ。端の段では囲みからはみ出しても、ウィンドウの中には収める。
+      const half = plateWidth(metrics, stage) / 2;
+      const centerX = Math.min(Math.max(tailX ?? left, left + half), left + contentWidth - half);
+      drawStagePlate(plate, metrics, stage, { centerX, tailX, top: y, height: plateHeight });
+      stage.setPosition(centerX, y + plateHeight / 2);
       this.ownedObjects.push(stage);
     }
 
-    y += barHeight + gap;
+    y += stageBlock;
     given.place(left, y);
     y += given.height + gap;
     received.place(left, y);
@@ -497,14 +517,14 @@ function markOf(influence: StatusInfluence): string {
 
 /**
  * 段の名札（紙の板と、下向きのしっぽ）。板は名前の幅に合わせ、**しっぽは板の中央ではなく指す先
- * （囲みの中央）から降ります**——端の段では板をウィンドウの中へ寄せるので、板の中央から降ろすと
- * 指している場所がずれます。
+ * （囲みの中央、またはバーの左端）から降ります**——端の段では板をウィンドウの中へ寄せるので、板の
+ * 中央から降ろすと指している場所がずれます。指す先を持たない（バーが無い）ときはしっぽを出しません。
  */
 function drawStagePlate(
   plate: Phaser.GameObjects.Graphics,
   metrics: ScreenMetrics,
   label: Phaser.GameObjects.Text,
-  at: { centerX: number; tailX: number; top: number; height: number },
+  at: { centerX: number; tailX: number | undefined; top: number; height: number },
 ): void {
   const width = plateWidth(metrics, label);
   const bottom = at.top + at.height;
@@ -518,6 +538,8 @@ function drawStagePlate(
       radius: metrics.px(SIZE.radius),
     },
   );
+
+  if (at.tailX === undefined) return;
 
   const tailWidth = metrics.px(STAGE_TAIL_WIDTH);
   const tailHeight = metrics.px(STAGE_TAIL_HEIGHT);
