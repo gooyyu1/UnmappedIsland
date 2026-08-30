@@ -38,9 +38,19 @@
 //
 // GitHubにしか無いので `gh` へ訊く。`gh` が無い環境（CIなど）では `-` を出す——他の列は git
 // だけで出るので、issue が引けないことを理由に全部を止めない。
+//
+// ## コストの数え方
+//
+// [`stats/usage/`](../stats/usage) を読む（作り方と限界は
+// [`scripts/usage/README.md`](usage/README.md)）。**Claude はクラウドと手元の両方**が入っており、
+// 1時間ごとの記録を日本時間の日へ束ね直してから区間へ足す。**Copilot は日単位の記録しか無い**ので
+// UTCの日付をそのまま使う——区間の端が最大9時間ずれるが、Copilot が動いた日は区間の端に無い。
+//
+// **記録の無い区間は0**。両方とも最初のセッションから通して記録があるので、空欄は「使っていない」
+// を意味する。
 
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { lineChart } from './lineChart.mjs';
 
@@ -54,6 +64,9 @@ const LINE_COLUMNS = [
     pathspecs: ['Assets/StreamingAssets/**/*.yaml', 'public/**/*.yaml', 'src/assets/**/*.yaml'],
   },
 ];
+
+/** 使用量の置き場。手元とクラウドを合わせて集めたもの。 */
+const USAGE_DIRECTORY = new URL('../stats/usage/', import.meta.url);
 
 const TIMEZONE = 'Asia/Tokyo';
 const OFFSET = '+0900';
@@ -114,6 +127,29 @@ function mergedPullRequests() {
     })
     .filter(({ subject }) => /^Merge pull request #\d+/.test(subject) || /\(#\d+\)$/.test(subject))
     .reverse();
+}
+
+/** 見出しの行を持つTSVを、1行1レコードの配列にする。 */
+function readTable(name) {
+  const [header, ...lines] = readFileSync(new URL(name, USAGE_DIRECTORY), 'utf8').trim().split('\n');
+  const keys = header.split('\t');
+  return lines.map((line) => Object.fromEntries(line.split('\t').map((cell, index) => [keys[index], cell])));
+}
+
+/** 日（日本時間）ごとに払った額。Claude と Copilot で、元の記録の細かさが違う（冒頭の「コストの数え方」）。 */
+function costByDay() {
+  const sum = (rows, dayOf) => {
+    const total = new Map();
+    for (const row of rows) {
+      const day = dayOf(row);
+      total.set(day, (total.get(day) ?? 0) + Number(row.cost_usd));
+    }
+    return total;
+  };
+  return {
+    claude: sum(readTable('by_hour.tsv'), (row) => formatDay(new Date(row.hour_utc))),
+    copilot: sum(readTable('copilot_by_day.tsv'), (row) => row.day_utc),
+  };
 }
 
 /** 文書の置き場。C#期の `Documents/` とTS期の `docs/`。 */
@@ -198,6 +234,7 @@ function formatTable(rows) {
     'issue',
     'PR',
     '1PRあたり',
+    'Claudeのコスト',
     '文書と実装が同じPR',
   ];
   const aligns = ['---', ...headers.slice(1).map(() => '--:')];
@@ -206,7 +243,7 @@ function formatTable(rows) {
 }
 
 /** その日の実測。表もグラフもここから作る。 */
-function measureAt(day, previousDay, pullRequests) {
+function measureAt(day, previousDay, pullRequests, costs) {
   const revision = revisionAt(day);
   if (revision === '') {
     console.error(`${day} までのコミットが履歴に無い。浅いクローンなら 'git fetch --unshallow' が要る。`);
@@ -216,12 +253,18 @@ function measureAt(day, previousDay, pullRequests) {
   const merged = pullRequests.filter(({ day: at }) => at <= day);
   const diffs = merged.filter(({ day: at }) => at > previousDay).map(({ sha }) => diffOf(sha));
   const mean = (pick) => diffs.reduce((sum, diff) => sum + pick(diff), 0) / diffs.length;
+  const spent = (total) =>
+    [...total].reduce((sum, [at, cost]) => (at > previousDay && at <= day ? sum + cost : sum), 0);
+  const claudeCost = spent(costs.claude);
   return {
     day,
     counts: LINE_COLUMNS.map((column) => lineCount(revision, column.pathspecs)),
     issues: issueCountAt(day),
     pullRequests: merged.length,
+    claudeCost,
+    copilotCost: spent(costs.copilot),
     // 区間にPRが1本も無い日は平均が定義できない。0で埋めると「小さいPRが並んだ」と読めてしまう。
+    claudeCostPerPullRequest: diffs.length === 0 ? null : claudeCost / diffs.length,
     filesPerPullRequest: diffs.length === 0 ? null : mean((diff) => diff.files),
     linesPerPullRequest: diffs.length === 0 ? null : mean((diff) => diff.lines),
     bothSidesShare: diffs.length === 0 ? null : mean((diff) => (diff.bothSides ? 1 : 0)),
@@ -233,12 +276,18 @@ function toRow(measurement) {
     measurement.linesPerPullRequest === null
       ? '-'
       : `${measurement.filesPerPullRequest.toFixed(1)}ファイル / ${Math.round(measurement.linesPerPullRequest).toLocaleString('en-US')}行`;
+  const dollars = (value) => `$${Math.round(value).toLocaleString('en-US')}`;
+  const cost =
+    measurement.claudeCostPerPullRequest === null
+      ? dollars(measurement.claudeCost)
+      : `${dollars(measurement.claudeCost)}（1本 $${measurement.claudeCostPerPullRequest.toFixed(1)}）`;
   return [
     measurement.day.slice(5),
     ...measurement.counts.map((count) => count.toLocaleString('en-US')),
     measurement.issues === null ? '-' : measurement.issues.toLocaleString('en-US'),
     measurement.pullRequests.toLocaleString('en-US'),
     size,
+    cost,
     measurement.bothSidesShare === null ? '-' : `${Math.round(100 * measurement.bothSidesShare)}%`,
   ];
 }
@@ -274,6 +323,18 @@ function chartsOf(measurements) {
       ],
     },
   ];
+
+  // 桁が2つ違うので、Claude と Copilot は同じ枠へ重ねずに段を分ける。
+  charts.push({
+    file: 'HowWeGotHere_cost.svg',
+    title: 'AIに払った額（ドル）',
+    days,
+    panels: [
+      { label: 'Claude（区間）', series: [series('コスト', (m) => m.claudeCost)] },
+      { label: 'Copilot（区間）', series: [series('コスト', (m) => m.copilotCost)] },
+      { label: 'Claude・PR1本あたり', series: [series('コスト', (m) => m.claudeCostPerPullRequest ?? 0)] },
+    ],
+  });
 
   // issue が引けなかった実行では、PRだけの図にならないよう1枚まるごと落とす。
   if (measurements.every((measurement) => measurement.issues !== null)) {
@@ -315,10 +376,11 @@ for (const day of targets) {
 }
 
 const pullRequests = mergedPullRequests();
+const costs = costByDay();
 const measurements = [];
 let previousDay = '';
 for (const day of targets) {
-  measurements.push(measureAt(day, previousDay, pullRequests));
+  measurements.push(measureAt(day, previousDay, pullRequests, costs));
   previousDay = day;
 }
 
