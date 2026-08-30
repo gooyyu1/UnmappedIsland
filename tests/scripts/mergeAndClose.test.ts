@@ -334,6 +334,29 @@ describe('merge-and-close.sh', () => {
     expect(result.status).toBe(0);
   });
 
+  // レビューのセッションはPRを出さないので `session-of-pr.sh` では引けず、`review-` のタグで引く。
+  // PRが閉じれば読む相手が無くなるので、ここが最後の1本を畳む場所。
+  it('マージしたら、そのPRのレビューのセッションも畳む', () => {
+    const result = run({
+      tags: {
+        session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'],
+        session_01REVIEWBBBBBBBBBBBBBB: ['review-1000'],
+        // 別のPRのレビューと、直す側。どちらもこのPRのマージでは畳まない。
+        session_01REVIEWCCCCCCCCCCCCCC: ['review-1001'],
+        session_01TASKAAAAAAAAAAAAAAAA: ['task-1000'],
+      },
+    });
+
+    expect(result.lines).toEqual([
+      'MERGED 1000',
+      'ARCHIVED session_01REVIEWAAAAAAAAAAAAAA',
+      'ARCHIVED session_01REVIEWBBBBBBBBBBBBBB',
+      'SYNCED deadbee',
+    ]);
+    expect(result.archived).toEqual(['session_01REVIEWAAAAAAAAAAAAAA', 'session_01REVIEWBBBBBBBBBBBBBB']);
+    expect(result.status).toBe(0);
+  });
+
   // 本文を書き直した拍子に脚注が落ちる（PR #1083 で実際に落ちた）。黙って畳まずに済ませると、
   // 走ったままのセッションが誰にも数えられずに残る。
   it('脚注もタグも無ければ、畳む相手が分からなかったことを残りとして報せる', () => {

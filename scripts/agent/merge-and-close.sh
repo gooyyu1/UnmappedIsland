@@ -44,6 +44,10 @@
 # `NOSESSION` を出して残りとして扱う。黙って畳まずに済ませると、走ったままのセッションが誰にも
 # 数えられず残る。
 #
+# **レビューのセッションは別に畳む**（[`archive-reviews.sh`](archive-reviews.sh)）。あちらはPRを
+# 出さないので `session-of-pr.sh` では引けず、`review-<PR番号>` のタグで引く。PRが閉じれば読む相手が
+# 無くなるので、ここが最後の1本を畳む場所。
+#
 # ## `--delete-branch` は worktree の警告を必ず出す
 #
 # ローカルに `main` の worktree があると `fatal: 'main' is already used by worktree at ...` を吐くが、
@@ -160,6 +164,13 @@ while read -r session; do
     leftover=1
   fi
 done <<<"$sessions"
+
+# レビューのセッション（上の「畳む相手は…」）。畳めなければ `UNARCHIVED` が出るので残りに数える。
+reviews=$(CCR_META="$CCR_META" bash "$HERE/archive-reviews.sh" "$PR")
+[ -z "$reviews" ] || printf '%s\n' "$reviews"
+if grep -q '^UNARCHIVED ' <<<"$reviews"; then
+  leftover=1
+fi
 
 # 本体は作業ツリーの共有先なので、進める前に汚れていないことを見る。未追跡は見ない——本体には
 # `claude_rc.bat` のような、追跡していない持ち物が置いてある。
