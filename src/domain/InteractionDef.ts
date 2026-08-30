@@ -109,9 +109,7 @@ export class InteractionDef {
 
     // 時間を進め終えてから囲うので、経過中のtickが動かした値は「操作が増やしたもの」に入らない
     // （PropertyGain参照）。
-    session.withInteractionEffect(self, () =>
-      self.applyActiveEffect(this.effect, context.agent, context.instrument),
-    );
+    session.withInteractionEffect(self, () => self.applyActiveEffect(this.effect, context));
     return true;
   }
 }

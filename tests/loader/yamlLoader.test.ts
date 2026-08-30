@@ -651,14 +651,14 @@ object_defs:
   });
 
   it('baseのsubjectに、宣言元から辿れない相手は書けない', () => {
-    // propsの宣言は「誰かが操作している場面」とは限らない（ReferenceScope.declaration）。
+    // propsは参加者の宣言なので操作の3役は書けるが（11.5節）、amongの候補はここには居ない。
     const yaml = `
 object_defs:
   thing:
     props:
-      warmth: {value: 0, base: {subject: agent, prop: warmth}}
+      warmth: {value: 0, base: {subject: picked, prop: warmth}}
 `;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/agent/);
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/picked/);
   });
 
   it('fillを宣言する型がweightを持たないとエラーになる', () => {

@@ -2,7 +2,7 @@ import type { InteractionDef } from './InteractionDef';
 import type { ActionTrigger, DragTrigger, InteractionTrigger } from './InteractionTrigger';
 import type { Requirement } from './Requirement';
 import type { WorldObject } from './WorldObject';
-import { ReferenceContext } from './ReferenceRoot';
+import { InteractionRelation } from './ReferenceRoot';
 
 /**
  * 起こす相手が決まった操作1つ（ActionSystem.md 1節）。
@@ -18,15 +18,19 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
   /** この操作を起こしたきっかけ。宣言はここからぶら下がる。 */
   protected readonly trigger: G;
 
-  /** 誰がこの操作をしていて、誰に、何を使っているか。宣言へ問うときはこれを渡す。 */
-  protected readonly context: ReferenceContext;
+  /**
+   * 誰がこの操作をしていて、誰に、何を使っているか（11.5節）。**問い合わせも実行も、これを張った
+   * 状態で行う**——押す前に見せる分数と実際に進む分数を同じ数にするため（同節）。
+   */
+  protected readonly relation: InteractionRelation;
 
   /** この操作で働きかけに使われる物（11.5節）。伴わない操作には居ない（型引数がundefinedになる）。 */
   protected readonly instrument: T;
 
   protected constructor(trigger: G, self: WorldObject, agent: WorldObject | undefined, instrument: T) {
     this.trigger = trigger;
-    this.context = ReferenceContext.acting(self, agent, instrument);
+    // 宣言が乗っている側がpatient（11.5節）。引いた時点で相手が決まっているので、以降は誰も渡さない。
+    this.relation = new InteractionRelation(self, agent, instrument);
     this.instrument = instrument;
   }
 
@@ -34,9 +38,9 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
     return this.trigger.interaction;
   }
 
-  /** この操作を宣言している側の個体（self）。**引いた時点で必ず居る**ので、文脈のselfは空にならない。 */
+  /** この操作を宣言している側の個体（self＝patient）。**引いた時点で必ず居る**ので空にならない。 */
   protected get self(): WorldObject {
-    return this.context.self!;
+    return this.relation.patient!;
   }
 
   get name(): string {
@@ -45,16 +49,16 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
 
   /** 実行にかかるゲーム内時間（分）。durationを省いていれば0。実行前に見せる用途にも使う。 */
   executionMinutes(): number {
-    return this.def.minutesFor(this.context);
+    return this.relation.during((context) => this.def.minutesFor(context));
   }
 
   /** 今実行できない理由（最初に落ちた要件、14節）。実行できるならundefined。 */
   unmetRequirement(): Requirement | undefined {
-    return this.def.unmetRequirement(this.context);
+    return this.relation.during((context) => this.def.unmetRequirement(context));
   }
 
   tryExecute(): boolean {
-    return this.def.tryExecute(this.context, this.self.session);
+    return this.relation.whileActing((context) => this.def.tryExecute(context, this.self.session));
   }
 }
 
@@ -89,7 +93,22 @@ export class Combination extends Interaction<DragTrigger, WorldObject> {
    * WorldObject.acceptedCountForMoveToIncludingSelfと同じ形。
    */
   acceptedCountIncludingSelf(followers: readonly WorldObject[]): number {
-    return this.trigger.acceptedCount(this.context, [this.instrument, ...followers]);
+    return this.relation.during((context) =>
+      this.trigger.acceptedCount(context, [this.instrument, ...followers]),
+    );
+  }
+
+  /**
+   * **今**この組み合わせが成立するか（WorldObject.combinationsWith）。相手として受け入れるかは
+   * 型だけで決まるので、ここで見るのはそれ以外——要件（14節）・受け取れる個数・効果の行き先。
+   */
+  isAvailableNow(): boolean {
+    return this.relation.during(
+      (context) =>
+        this.def.unmetRequirement(context) === undefined &&
+        this.trigger.acceptedCount(context, [this.instrument]) >= 1 &&
+        !this.def.blocksOperation(context),
+    );
   }
 
   /**
@@ -104,7 +123,7 @@ export class Combination extends Interaction<DragTrigger, WorldObject> {
     let done = 0;
     for (const instrument of [this.instrument, ...followers]) {
       const now = this.self
-        .combinationsWith(instrument, this.context.agent)
+        .combinationsWith(instrument, this.relation.agent)
         .find((candidate) => candidate.trigger === this.trigger);
       if (now === undefined || !now.tryExecute()) break;
       done++;

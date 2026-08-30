@@ -4,8 +4,8 @@ import { SameSlotSpawnSite } from './SameSlotSpawnSite';
 import type { SameSlotPlacement } from './SameSlotSpawnSite';
 import { LocalIndexByGlobalId } from './LocalIndexByGlobalId';
 import type { ObjectDef } from './ObjectDef';
-import type { PropertyPath } from './ReferenceRoot';
-import { ReferenceContext } from './ReferenceRoot';
+import type { InteractionRelation, PropertyPath } from './ReferenceRoot';
+import { INTERACTION_ROLES, ReferenceContext } from './ReferenceRoot';
 import type { EngineVocabulary } from './WorldVocabulary';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
@@ -503,6 +503,62 @@ export class WorldObject {
     this._parentSlot = parentSlot;
   }
 
+  // ---- 操作の関係（11.5節） ----
+
+  /**
+   * 今この物が参加している操作の関係（11.5節）。参加していなければundefined。**役を指せるのは
+   * 参加者からだけ**なので、この物のprops（`base`・`passives`）が役を解くのもここから
+   * （ReferenceContext.forParticipant）。
+   */
+  private _participation: InteractionRelation | undefined;
+  get participation(): InteractionRelation | undefined {
+    return this._participation;
+  }
+
+  /**
+   * この物をagentとして張られている関係。**同じ物が2つの操作のagentになることはない**（11.5節の
+   * 不変条件）ので、これが埋まっている間に2つ目を張ろうとすれば止まる。参加しているだけの関係
+   * （instrument・patient）は複数あってよいので、_participationとは別に持つ。
+   */
+  private _actingIn: InteractionRelation | undefined;
+
+  /**
+   * 関係へ参加者として加わり、**外し方**を返す（11.5節）。張る/外すの段取りを持つのは
+   * `InteractionRelation`だけで、ここは頼まれた側が自分の不変条件を見る。
+   *
+   * `claimingAgent`は「この関係でこの物が実際に動く」（問い合わせではなく実行）。既に別の操作で
+   * 動いていれば例外で止める——動作主は一度に1つの動作しかできない。進行中の操作を中断して別の操作を
+   * 始めさせる仕組みはまだ無い（17節）。
+   */
+  joinInteraction(relation: InteractionRelation, claimingAgent: boolean): () => void {
+    if (claimingAgent && this._actingIn !== undefined)
+      throw new Error(
+        `'${this.def.name}' は既に別の操作のagentです（同じ物が2つの操作のagentになることはありません、11.5節）。`,
+      );
+
+    const previousParticipation = this._participation;
+    const previousActing = this._actingIn;
+    this.setParticipation(relation);
+    if (claimingAgent) this._actingIn = relation;
+
+    return () => {
+      this.setParticipation(previousParticipation);
+      this._actingIn = previousActing;
+    };
+  }
+
+  /** 参加している関係を差し替える。役を対象にした持続効果（8節）の登録先も、ここで移す。 */
+  private setParticipation(relation: InteractionRelation | undefined): void {
+    if (this._participation !== undefined) this.setRoleTargetsRegistered(false);
+    this._participation = relation;
+    if (relation !== undefined) this.setRoleTargetsRegistered(true);
+  }
+
+  /** 役を対象にしたpassives（8.1節）を、今参加している関係の相手へ登録/解除する。 */
+  private setRoleTargetsRegistered(register: boolean): void {
+    for (const role of INTERACTION_ROLES) this.def.passives.setRelationRegistered(this, role, register);
+  }
+
   /**
    * 親子のエッジが形成/解消された契機を、双方の効果（modify/add、8節）へ伝える（register=trueで登録、
    * falseで解除）。親側だけ子thisを明示的に渡すのは、親からどの子かを一意に辿れないため。target=selfは
@@ -726,11 +782,11 @@ export class WorldObject {
   /**
    * 持続効果の対象（8.1節）を、影響の一覧のために解決する。**childは今入っている子を全部**返す
    * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（setChildRegistered）。
-   * agent/instrumentはpassivesに現れない（parsePassiveTransfers）ため空になる。
+   * 操作の役（11.5節）は、今この物が操作に参加していなければ空になる。
    */
   resolveInfluenceTargets(path: PropertyPath): readonly WorldObject[] {
     if (path.root === 'child') return [...this.children()];
-    const target = path.owner(ReferenceContext.forSelf(this));
+    const target = path.owner(ReferenceContext.forParticipant(this));
     return target === undefined ? [] : [target];
   }
 
@@ -762,16 +818,10 @@ export class WorldObject {
    * （`become`、9.9節）も同じ理由で候補にならない。
    */
   combinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
-    const context = ReferenceContext.acting(this, agent, instrument);
     return this.def.dragTriggers
-      .filter(
-        (trigger) =>
-          trigger.acceptsInstrument(instrument.def) &&
-          trigger.interaction.unmetRequirement(context) === undefined &&
-          trigger.acceptedCount(context, [instrument]) >= 1 &&
-          !trigger.interaction.blocksOperation(context),
-      )
-      .map((trigger) => new Combination(trigger, this, instrument, agent));
+      .filter((trigger) => trigger.acceptsInstrument(instrument.def))
+      .map((trigger) => new Combination(trigger, this, instrument, agent))
+      .filter((combination) => combination.isAvailableNow());
   }
 
   // ---- 時間の経過（8.4節） ----
@@ -812,7 +862,9 @@ export class WorldObject {
     for (const agent of pending) {
       // 手番の途中で消えた個体は飛ばす——世界から外れると、辿り着く根が変わる。
       if (agent.findRoot() !== this) continue;
-      for (const trigger of agent.def.tickTriggers) new Action(trigger, agent, undefined).tryExecute();
+      // **時間が配るのは手番で、動くのはその物自身**（11.1節）。自分に対する行動なので、agentも
+      // patientも同じ個体になる（11.5節「再帰的な操作」）。
+      for (const trigger of agent.def.tickTriggers) new Action(trigger, agent, agent).tryExecute();
     }
   }
 
@@ -827,9 +879,10 @@ export class WorldObject {
 
   /**
    * このオブジェクトをselfとして、渡された効果が持つ命令を実行する（9節。何が走るかはActiveEffectSequence）。
-   * rangeイベント（6節）とactions/combinations（11節・12節）の両方から呼ばれる（rangeイベント経由では
-   * agent・instrumentともにundefined）。対象が解決できない場合（例えばparentが無い、この実行文脈に居ない
-   * 役を指している。ReferenceContext参照）は、その対象への適用のみ無視する。
+   * rangeイベント（6節）とactions/combinations（11節・12節）の両方から呼ばれる。**文脈は呼び出し側が
+   * 持っているものをそのまま渡す**——操作からは張られている関係の文脈が、rangeイベントからは役の居ない
+   * 文脈（11.5節）が来る。対象が解決できない場合（例えばparentが無い、この実行文脈に居ない役を指している。
+   * ReferenceContext参照）は、その対象への適用のみ無視する。
    *
    * **命令の順序はここでは入れ替えない**——適用順はYAMLに書かれた順で、動詞ごとの優先順位は無い（9.7節）。
    * 置き換えでdestroyがspawnより先に効くのは、著者がその順に書くから（9.3節）。
@@ -838,17 +891,12 @@ export class WorldObject {
    * （WorldChange.subject）。どの`pick`の候補が選ばれたかによらず1つに決まるので、観測する側は分岐を
    * 知らずに「このオブジェクトが何をしたか」を読める。
    */
-  applyActiveEffect(
-    effect: ActiveEffect,
-    agent: WorldObject | undefined,
-    instrument: WorldObject | undefined,
-  ): void {
+  applyActiveEffect(effect: ActiveEffect, context: ReferenceContext): void {
     // same_slot spawnのために「selfが今占めている位置」を、まだ何も起きていないこの入口で捕捉する。destroyが
     // selfを消した後でも、spawnはこのアンカーと配置時のスロットの状態から置き換え位置を決められる（SameSlotSpawnSite
     // 参照）。
     const sameSlotSpawnSite = this.captureSameSlotSpawnSite();
     const session = this.session;
-    const context = ReferenceContext.acting(this, agent, instrument);
     session.withSubject(this, () => effect.apply(context, session, sameSlotSpawnSite));
   }
 

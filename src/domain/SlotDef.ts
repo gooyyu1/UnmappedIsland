@@ -2,7 +2,7 @@ import type { WorldObject } from './WorldObject';
 import type { ObjectDef } from './ObjectDef';
 import type { DeclaredNumberReading } from './EffectReader';
 import type { DeclaredNumber } from './DeclaredNumber';
-import { ReferenceContext } from './ReferenceRoot';
+import { InteractionRelation } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
 
 /**
@@ -144,11 +144,17 @@ export class SlotDef {
     return this.cellCount === 1 && this.cellDefs.every((cell) => cell.max === 1);
   }
 
-  /** itemをownerのこのスロットへ入れるのにかかる分数（宣言が無ければ0）。 */
+  /**
+   * itemをownerのこのスロットへ入れるのにかかる分数（宣言が無ければ0）。入れる物がinstrument、
+   * 入れられる側がpatientの操作（11.5節）なので、問い合わせも関係を張った状態で行う。
+   */
   putInMinutes(owner: WorldObject, agent: WorldObject | undefined, item: WorldObject): number {
-    return this.putInDuration === undefined
-      ? 0
-      : Math.trunc(this.putInDuration.resolveOrZero(ReferenceContext.acting(owner, agent, item)));
+    const duration = this.putInDuration;
+    if (duration === undefined) return 0;
+
+    return new InteractionRelation(owner, agent, item).during((context) =>
+      Math.trunc(duration.resolveOrZero(context)),
+    );
   }
 
   /**

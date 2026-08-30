@@ -29,6 +29,14 @@ export class RegisteredPassiveEffect {
     this.def = def;
   }
 
+  /**
+   * この登録が、declarerの宣言したdefそのものか。**解除は1件ずつ同定する**——同じ宣言元が同じ
+   * プロパティへ2件登録していることがある（操作の役が宣言元自身へ解決したとき、11.5節）。
+   */
+  declaredBy(declarer: WorldObject, def: PropertyPassiveEffect): boolean {
+    return this.declarer === declarer && this.def === def;
+  }
+
   /** この効果が現在寄与している量。ゲート（8.2節）が有効ならAmount、無効なら0。 */
   activeAmount(): number {
     return this.def.activeAmount(this.declarer, this.slotBearer);

@@ -20,7 +20,7 @@ import { withYamlContext, parseNumberLiteral, parseNumberOrSymbol, parseTypeMatc
 import { parseSubjectRoot, requireResolvable } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
-import { ReferenceScope } from '../domain/ReferenceRoot';
+import type { ReferenceScope } from '../domain/ReferenceRoot';
 import { PropertyPath } from '../domain/ReferenceRoot';
 import {
   ActiveEffectSequence,
@@ -419,19 +419,8 @@ function parseSpawnTarget(
   return parseDestinationRef(loader, context, map, scope, 'into') ?? 'same_slot';
 }
 
-/**
- * passivesの中の transfer（8.4節）。文法はactiveのものと同一で、対象から `agent` だけを外す
- * ——持続的な関係に紐づかないため（modify/addのpassiveが `agent` を持たないのと同じ理由）。
- */
-export function parsePassiveTransfers(
-  loader: WorldCodexYamlLoader,
-  context: string,
-  node: YamlNode,
-): TransferEffect[] {
-  return parseTransfers(loader, context, node, ReferenceScope.declaration);
-}
-
-function parseTransfers(
+/** transfer（1つ、またはその配列）。activeでもpassives（8.4節）でも文法は同一で、違うのは場所だけ。 */
+export function parseTransfers(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YamlNode,
@@ -550,6 +539,7 @@ function parseActiveTargetRoot(context: string, key: string, scope: ReferenceSco
     case 'ancestor':
     case 'agent':
     case 'instrument':
+    case 'patient':
     case 'picked':
     case 'child':
       return requireResolvable(context, key, scope);

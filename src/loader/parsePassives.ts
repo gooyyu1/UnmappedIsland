@@ -10,7 +10,7 @@ import {
 } from './yamlMapping';
 import { parseNumberLiteral } from './parseCommon';
 import { parseConditionsField, parseSubjectRoot } from './parseConditions';
-import { parsePassiveTransfers } from './parseActiveEffects';
+import { parseTransfers } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { PropertyPath, ReferenceScope } from '../domain/ReferenceRoot';
 import type { PassiveAmount } from '../domain/PassiveAmount';
@@ -46,9 +46,13 @@ export function parsePassiveInto(
     loader,
     `${context}.conditions`,
     conditionsNode,
-    ReferenceScope.declaration,
+    ReferenceScope.participantProps,
   );
   const gate = buildGate(loader, conditions, forcedStageProperty, forcedStageName);
+
+  // 対象は付いている子ごとに登録を配れるので、childを指せる唯一の場所（8.1節）。可逆な寄与（modify）だけは
+  // さらに狭く、複数の操作へ同時に就きうる役へは押せない（8.3節。scopeがその理由を答える）。
+  const targets = ReferenceScope.participantProps.withBroadcast;
 
   parsePassiveOperationInto(
     loader,
@@ -56,6 +60,7 @@ export function parsePassiveInto(
     context,
     passiveMap,
     'modify',
+    targets.pushingReversibly,
     (target, amount, g) => new ModifyEffect(target, amount, g),
     gate,
   );
@@ -65,6 +70,7 @@ export function parsePassiveInto(
     context,
     passiveMap,
     'add',
+    targets,
     (target, amount, g) => new AccumulateEffect(target, amount, g),
     gate,
   );
@@ -73,7 +79,12 @@ export function parsePassiveInto(
   // TransferPassiveEffectとして持つ。文法はactiveのtransferと同一（8.4節）。
   const transferNode = tryGetNode(passiveMap, 'transfer');
   if (transferNode !== undefined)
-    for (const transfer of parsePassiveTransfers(loader, `${context}.transfer`, transferNode))
+    for (const transfer of parseTransfers(
+      loader,
+      `${context}.transfer`,
+      transferNode,
+      ReferenceScope.participantProps,
+    ))
       passives.push(new TransferPassiveEffect(transfer, gate));
 
   const knownKeys = new Set<string>(['conditions', 'modify', 'add', 'transfer']);
@@ -102,8 +113,8 @@ function buildGate(
 }
 
 /**
- * passiveの1操作(modify/add)を読み、対象(self/parent/child/ancestor、agentは未対応のため
- * スキップ)ごとにPassiveEffectへ変換してpassivesへ追加する。具象型はmakeEffectファクトリで受け取り、
+ * passiveの1操作(modify/add)を読み、対象ごとにPassiveEffectへ変換してpassivesへ追加する。何を対象に
+ * 書けるかはこの場所（ReferenceScope.participantProps）が答える。具象型はmakeEffectファクトリで受け取り、
  * 同じpassiveブロック内のgateを全効果で共有する。
  */
 function parsePassiveOperationInto(
@@ -112,14 +123,12 @@ function parsePassiveOperationInto(
   context: string,
   passiveMap: YAMLMap,
   operationKey: string,
+  scope: ReferenceScope,
   makeEffect: (target: PropertyPath, amount: PassiveAmount, gate: PassiveEffectGate) => PassiveEffect,
   gate: PassiveEffectGate,
 ): void {
   const operationMap = tryGetMap(passiveMap, operationKey, context);
   if (operationMap === undefined) return;
-
-  // 対象は付いている子ごとに登録を配れるので、childを指せる唯一の場所（8.1節）。
-  const scope = ReferenceScope.declaration.withBroadcast;
 
   for (const [targetName, bodyNode] of entriesInOrder(operationMap)) {
     const target = parseSubjectRoot(`${context}.${operationKey}`, targetName, scope);

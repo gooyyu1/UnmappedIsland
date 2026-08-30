@@ -151,6 +151,9 @@ export function parsePropAppendingPassives(
  * 同名のプロパティを指す（祖先の同じ値を土台にする、いちばん多い形）。
  *
  * `subject: self`で`prop`を省くと自分自身が土台になってしまうので、そこだけ`prop`を必須にする。
+ *
+ * 参加者のprops（11.5節）なので、操作の3役も土台に指せる——道の所要時間が、今歩いている人の遅れを
+ * 継ぐのがこれ（同節の例）。
  */
 function parseBase(
   loader: WorldCodexYamlLoader,
@@ -168,7 +171,7 @@ function parseBase(
   const root =
     subjectName === undefined
       ? 'self'
-      : parseSubjectRoot(baseContext, subjectName, ReferenceScope.declaration);
+      : parseSubjectRoot(baseContext, subjectName, ReferenceScope.participantProps);
 
   const basePropName = tryGetScalar(baseNode, 'prop', baseContext);
   if (basePropName === undefined) {
@@ -262,8 +265,9 @@ const RANGE_EVENT_RESERVED_KEYS = ['conditions'] as const;
 /**
  * labelのrangeイベント（on_max・on_min、6.3節）が書かれていればその中身。書かれていなければundefined。
  *
- * 誰かが操作しているとは限らないので、この場に居るのは宣言元の個体だけ（`ReferenceScope.declaration`）
- * で、pick候補の中の効果にも引き継ぐ。空のmapping（`on_min: {}`）は「宣言だけして
+ * **操作ではなく、値が端に着いた瞬間への反応**なので、この場に居るのは宣言元の個体だけで、操作の3役は
+ * どれも書けない（11.5節・`ReferenceScope.declaration`）。pick候補の中の効果にも引き継ぐ。
+ * 空のmapping（`on_min: {}`）は「宣言だけして
  * 何もしない」（既定のクランプを打ち消す）を意味し、空のActiveEffectSequenceになる。`conditions`
  * （14節）を書くと、満たす回だけがこの中身へ、満たさない回は既定のクランプへ倒れる（RangeEventDef）。
  */
