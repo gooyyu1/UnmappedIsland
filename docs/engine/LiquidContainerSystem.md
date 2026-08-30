@@ -84,7 +84,7 @@ water_liquid:
     pour_into_empty:
       trigger: {drag: {tag: liquid_container}}
       conditions:
-        - {reason: not_empty, not: {subject: instrument, prop: fill, gte: 1}}
+        - {reason: not_empty, subject: instrument, prop: fill, eq: 0}
       become: {subject: instrument, content: water_liquid}
       transfer: {amount: 999999, from: self, from_prop: fill, to: instrument, to_prop: fill}
     # 相手も水入りのとき。
@@ -124,9 +124,9 @@ water_liquid:
 別々に選べません。`weight` は容器の自重に `fill × density` を足したもので、`density` は g/mL そのもの（水は 1）なので、水は「量の数値が
 そのまま重さの数値」になります。水 1L = 1kg を保つ以上、量の単位を 1mL にすると重さの単位は 1g に決まります。
 
-**3 つの単位が噛み合っているので、換算定数は要りません**（mL × g/mL = g）。油は `density: 0.92` と
-実際の比重をそのまま書きます。容器の `capacity` は 1L = 1000、`ContainerSystem.md` の `weight` は
-1kg = 1000 です。
+**3 つの単位が噛み合っているので、換算定数は要りません**（mL × g/mL = g）。油のように水より軽い液体は
+`density: 0.92` と実際の比重をそのまま書けます（いまはどの液体も 1 のまま。9 節）。容器の `capacity` は
+1L = 1000、`ContainerSystem.md` の `weight` は 1kg = 1000 です。
 
 **`hydration`（`characters/`）は mL には載せません。**「あと何 tick 保つか」を値がそのまま表す側
 （`GameElementDefinition.md` 6.0 節の時間を数えるクラス）に置き、`-1/tick` で減ります。飲んだ水が体重に
@@ -280,7 +280,7 @@ water_liquid:
 ## 9. 未決事項・今後の検討課題
 
 - 異種液体の混合（水＋茶）は表現できない（軸が1本しかない、が現状の仕様）
-- `density` の差（油は 0.92）を実際に効かせるか、全液体を水と同じ 1 に揃えるか
+- `density` の差（油なら 0.92）を実際に効かせるか、いまのまま全液体を 1 で揃えておくか
 - 空の容器同士を重ねたときに何も起きないことを、UI 側でどう見せるか
 - 蒸発量は現実（口径 10cm の器で炎天下 40〜60mL/日程度）の 4〜5 倍に置いている。「開けっ放しの器は
   数日で干上がる」という体感を優先した値で、現実に寄せるかは未決
