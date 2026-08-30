@@ -35,6 +35,8 @@ describe('traps.yamlのくくり罠', () => {
   let catchRemainingId: number;
   let missWeightId: number;
   let herbivoreWeightId: number;
+  let plantBaitId: number;
+  let meatBaitId: number;
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
@@ -45,6 +47,8 @@ describe('traps.yamlのくくり罠', () => {
     catchRemainingId = codex.propertyNames.getId('catch_remaining');
     missWeightId = codex.propertyNames.getId('miss_weight');
     herbivoreWeightId = codex.propertyNames.getId('herbivore_weight');
+    plantBaitId = codex.propertyNames.getId('plant_bait');
+    meatBaitId = codex.propertyNames.getId('meat_bait');
   });
 
   /** 草原に立つプレイヤーと、その足元へ仕掛けた罠から始める。rollがpickの引きを決める。 */
@@ -97,6 +101,21 @@ describe('traps.yamlのくくり罠', () => {
       if (first !== undefined) return first;
     }
     throw new Error('罠に何も掛からなかった');
+  }
+
+  /** 上限まで餌を仕掛ける。返すのは、そのうえでもう1つ重ねる餌。 */
+  function baitUntilFull(foodName: string, interactionName: string, times: number): WorldObject {
+    for (let i = 0; i < times; i++) {
+      const food = spawnInto(foodName, player, 'hand');
+      expect(
+        snare
+          .combinationsWith(food, player)
+          .find((c) => c.name === interactionName)
+          ?.tryExecute() === true,
+        '満ちるまでは仕掛けられる',
+      ).toBe(true);
+    }
+    return spawnInto(foodName, player, 'hand');
   }
 
   it('地面に置いた罠だけが動く', () => {
@@ -221,6 +240,34 @@ describe('traps.yamlのくくり罠', () => {
     expect(itemsOnGround(), '仕掛けた餌は物として残らない').toEqual(['snare']);
   });
 
+  it('餌が満杯の罠は、重ねた餌を断る理由を名乗る', () => {
+    // 上限に達したことは `conditions` にも書いてある（trap_baited）ので、落ちるその瞬間に容量と
+    // 条件が同時に落ちる。**容量を候補選びの足切りにすると候補ごと消えて理由が届かない**——
+    // 断る理由を宣言しているものは落とし先として残す（14.6節・CardInteraction.md 2.1節）。
+    open(NOTHING_CAME);
+    const more = baitUntilFull('taro', 'add_plant_bait', 2);
+    expect(snare.tryGetProperty(plantBaitId)!.number, '上限まで仕掛けてある').toBe(24);
+
+    expect(snare.combinationsWith(more, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      snare.refusedCombinationsWith(more, player).map((c) => c.unmetRequirement()?.reasonName),
+      '断る理由まで辿り着ける',
+    ).toEqual(['trap_baited']);
+  });
+
+  it('肉の餌でも同じで、満杯なら断る理由を名乗る', () => {
+    // 草の餌と肉の餌は同じ形の宣言が2つ（4節）。片方だけ理由が届く、が起きないことを見る。
+    open(NOTHING_CAME);
+    const more = baitUntilFull('coconut_crab', 'add_meat_bait', 2);
+    expect(snare.tryGetProperty(meatBaitId)!.number, '上限まで仕掛けてある').toBe(24);
+
+    expect(snare.combinationsWith(more, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      snare.refusedCombinationsWith(more, player).map((c) => c.unmetRequirement()?.reasonName),
+      '断る理由まで辿り着ける',
+    ).toEqual(['trap_baited']);
+  });
+
   it('獲物が入っている間は速く傷み、壊れれば中身は土地へこぼれる', () => {
     // 放置の罰は獲物と罠の両方を失うこと（6.1節）。壊れた罠の中身は道連れにならず親へこぼれ、
     // 拘束のmodifyが消えるので警戒が戻る。
@@ -327,12 +374,14 @@ describe('traps.yamlの落とし穴', () => {
   let catchRemainingId: number;
   let durabilityId: number;
   let bloodId: number;
+  let plantBaitId: number;
 
   beforeAll(() => {
     codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
     catchRemainingId = codex.propertyNames.getId('catch_remaining');
     durabilityId = codex.propertyNames.getId('durability');
     bloodId = codex.propertyNames.getId('blood');
+    plantBaitId = codex.propertyNames.getId('plant_bait');
   });
 
   /** 森に掘った落とし穴から始める。イノシシを宣言している土地は森と密林だけ（locations.yaml）。 */
@@ -452,6 +501,31 @@ describe('traps.yamlの落とし穴', () => {
       before.durability - STAKING_TICKS,
     );
     expect(tickUntilCaught().def.name, '掛かる相手も変わらない').toBe('wild_boar');
+  });
+
+  it('餌が満杯の穴も、重ねた餌を断る理由を名乗る', () => {
+    // くくり罠とまったく同じ宣言（4節）なので、理由の届き方も同じでなければならない。
+    open(CATCHES_BOAR);
+    for (let i = 0; i < 2; i++) {
+      const taro = spawnInto('taro', forest, 'items');
+      expect(
+        pitfall
+          .combinationsWith(taro, undefined)
+          .find((combination) => combination.name === 'add_plant_bait')
+          ?.tryExecute() === true,
+        '満ちるまでは仕掛けられる',
+      ).toBe(true);
+    }
+    expect(pitfall.tryGetProperty(plantBaitId)!.number, '上限まで仕掛けてある').toBe(24);
+
+    const more = spawnInto('taro', forest, 'items');
+    expect(pitfall.combinationsWith(more, undefined), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      pitfall
+        .refusedCombinationsWith(more, undefined)
+        .map((combination) => combination.unmetRequirement()?.reasonName),
+      '断る理由まで辿り着ける',
+    ).toEqual(['trap_baited']);
   });
 
   it('杭は二度打てない', () => {
