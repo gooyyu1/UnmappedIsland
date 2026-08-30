@@ -986,6 +986,11 @@ object_defs:
             add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
           - weight: {prop: spoilage}
             add: {agent: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
+          # 生であること自体が引く枝。腐敗とは独立した固定の重みで、傷んでいない生肉でも当たる
+          # （docs/engine/DigestionSystem.md 6節）。
+          - weight: 12
+            set: {agent: {satiety: 0}}
+            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
         destroy: self
 
   # 焼けた肉。生より腹に残り、栄養も出る。焼き上がっても火の中の枠に居続けるので、
