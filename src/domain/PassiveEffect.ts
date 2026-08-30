@@ -142,7 +142,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    */
   override collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {
     for (const target of declarer.resolveInfluenceTargets(this.target)) {
-      // ゲートのself（＝slotBearer）はエッジの子側（registerResolvedRelationと同じ決まり）。
+      // ゲートのself（＝slotBearer）はエッジの子側（setResolvedRelationRegisteredと同じ決まり）。
       const slotBearer = this.target.root === 'child' ? target : declarer;
       out.write({
         causeObject: declarer,
@@ -180,7 +180,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * （WorldObject.setAncestorTargetsRegistered）が守る前提で、「今この瞬間の祖先」を毎回辿るだけで
    * よく、前回の登録先を憶えない。
    *
-   * childは相手（どの子か）がownerから一意に辿れないため、ここでは扱わずregisterChildを使う。
+   * childは相手（どの子か）がownerから一意に辿れないため、ここでは扱わずsetChildRegisteredを使う。
    */
   override setRelationRegistered(owner: WorldObject, relation: ReferenceRoot, register: boolean): void {
     if (this.target.root !== relation) return;
