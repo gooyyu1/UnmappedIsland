@@ -53,7 +53,10 @@ const STAGE_PLATE_PADDING_Y = 12;
 const STAGE_TAIL_WIDTH = 26;
 const STAGE_TAIL_HEIGHT = 16;
 
-/** 段の中の進みを映すバーの右端に重ねる、次の段の名前（行と同じ寸法、StatusBar）。 */
+/**
+ * 段の中の進みを映すバーの右端に重ねる、次の段の名前。**今いる段の名札より小さく**する——この画面が
+ * 返す答えは今どの段にいるかで、次の段はその向かう先を言うだけ。
+ */
 const NEXT_STAGE_SIZE = 26;
 const NEXT_STAGE_PADDING = 12;
 
