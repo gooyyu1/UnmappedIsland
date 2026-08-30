@@ -22,7 +22,25 @@ const DOCS = 'docs';
 const SHALLOWEST_SECTION_DEPTH = 2;
 
 /** 文書まるごとが確定であることの宣言（docs/DocumentStyle.md 6.2節）。射程はその文書の全行。 */
-const WHOLE_DOCUMENT_CONFIRMED = '**本書は全体が確定です。**';
+export const WHOLE_DOCUMENT_CONFIRMED = '**本書は全体が確定です。**';
+
+/**
+ * 文書まるごとの確定を宣言しているか（docs/DocumentStyle.md 6.2節）。
+ *
+ * 見るのは**コードフェンスの外の行頭**だけ。規約そのものが書式を例示するので、フェンスの中まで
+ * 見ると、書式を説明した文書が宣言した文書になる。
+ *
+ * **判定はここにしか無い。** 表を出す側と 6.2 節の条件を検査する側が別々に判定すると、条件が
+ * 食い違ったとき——確定欄は `全` と出るのに条件は掛かっていない、が成立する。
+ */
+export function declaresWholeDocument(markdown) {
+  let inFence = false;
+  for (const line of markdown.split(/\r?\n/)) {
+    if (/^\s*```/.test(line)) inFence = !inFence;
+    else if (!inFence && line.startsWith(WHOLE_DOCUMENT_CONFIRMED)) return true;
+  }
+  return false;
+}
 
 function markdownFilesIn(dir) {
   const found = [];
@@ -64,7 +82,7 @@ export function statusOfMarkdown(markdown) {
     lines: lines.length,
     sections: headings.length,
     confirmed: headings.filter((heading) => heading.includes('【確定】')).length,
-    wholeDocumentConfirmed: lines.some((line) => line.startsWith(WHOLE_DOCUMENT_CONFIRMED)),
+    wholeDocumentConfirmed: declaresWholeDocument(markdown),
     unimplemented: headings.filter((heading) => heading.includes('【未実装')).length,
     hasOpenQuestions: headings.some((heading) => heading.includes('未決事項')),
   };

@@ -1,3 +1,7 @@
+export const WHOLE_DOCUMENT_CONFIRMED: string;
+
+export function declaresWholeDocument(markdown: string): boolean;
+
 export function statusOfMarkdown(markdown: string): {
   lines: number;
   sections: number;

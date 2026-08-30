@@ -91,12 +91,18 @@ describe('docs/ の確定度と実装状況の表', () => {
 
   it('文書まるごとの確定宣言を、数え落としていない（DocumentStyle.md 6.2節）', () => {
     // 落ちると、その文書は確定欄が0の暫定な文書として並ぶ——表の上では、印を1つも持たない
-    // 文書と見分けが付かない。
+    // 文書と見分けが付かない。**`docStatus.mjs` の判定は呼ばない**（上の見出しと同じ理由）ので、
+    // フェンスの外を採る形だけを変えて書く——あちらは行を1本ずつ状態機械で追い、こちらは
+    // フェンスの行で割って偶数番の断片を採る。
     const declaring = listMarkdown('docs')
       .filter((rel) =>
         readFileSync(join(ROOT, rel), 'utf-8')
-          .split(/\r?\n/)
-          .some((line) => line.startsWith('**本書は全体が確定です。**')),
+          .replace(/\r\n/g, '\n')
+          .split(/^\s*```.*$/m)
+          .filter((_, index) => index % 2 === 0)
+          .some((outsideFence) =>
+            outsideFence.split('\n').some((line) => line.startsWith('**本書は全体が確定です。**')),
+          ),
       )
       .map((rel) => rel.split(/[\\/]/).join('/'))
       .sort();

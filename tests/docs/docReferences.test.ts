@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { declaresWholeDocument, WHOLE_DOCUMENT_CONFIRMED } from '../../scripts/docStatus.mjs';
 import { githubSlugs } from '../../scripts/githubSlugs.mjs';
 
 /**
@@ -36,9 +37,6 @@ const DOC_FILES = listFiles('docs', ['.md']);
 
 /** 確定度の印（DocumentStyle.md 6節）。付くのは節の見出しだけ。 */
 const CONFIRMED_LABEL = '【確定】';
-
-/** 文書まるごとが確定であることの宣言（DocumentStyle.md 6.2節）。射程はその文書の全行。 */
-const WHOLE_DOCUMENT_CONFIRMED = '**本書は全体が確定です。**';
 
 /** 既定である暫定の側に印を付ける語。使わない。 */
 const PROVISIONAL_LABELS = ['【未確定】', '【暫定】'];
@@ -156,12 +154,10 @@ const confirmedSections = [...docByPath].flatMap(([doc, text]) =>
 /**
  * 全体が確定であることを宣言した文書（DocumentStyle.md 6.2節の条件を課される対象）。
  *
- * 宣言はインラインコードを除いた本文から拾う——規約そのものが書式を例示するので、原文で拾うと
- * `DocumentStyle.md` 自身が宣言した文書になる。
+ * 宣言の判定は `stats:docs` が確定欄を `全` と出すのに使うものと**同じ1つ**を呼ぶ。別々に持つと、
+ * 表では全体が確定と出るのに 6.2 節の条件は掛かっていない、が成立する。
  */
-const wholeDocumentConfirmed = [...docByPath].filter(([, text]) =>
-  textLines(text).some(({ text: body }) => body.startsWith(WHOLE_DOCUMENT_CONFIRMED)),
-);
+const wholeDocumentConfirmed = [...docByPath].filter(([, text]) => declaresWholeDocument(text));
 
 /** ファイル名（basename）→ docs内の候補パス。 */
 const docsByBasename = new Map<string, string[]>();
@@ -500,9 +496,17 @@ describe('文書まるごとの確定宣言（DocumentStyle.md 6.2節）', () =>
     expect(wholeDocumentConfirmed.length).toBeGreaterThan(0);
   });
 
-  it('宣言の照合が、書式を例示しただけの文書を拾わない', () => {
-    const declaring = wholeDocumentConfirmed.map(([doc]) => doc);
-    expect(declaring).not.toContain(join('docs', 'DocumentStyle.md'));
+  it('宣言の照合が、書式を例示した行を拾わない', () => {
+    // 規約（DocumentStyle.md 6.2節）は書式そのものを本文に書くので、例示を宣言と読むと、規約を
+    // 書いた文書が全体確定になる。**文書の一覧では確かめられない**——今は例示が行頭に無いので、
+    // 拾い方を間違えていても一覧は同じ結果になる。既知の入力で照合の形を見る。
+    expect(declaresWholeDocument(`${WHOLE_DOCUMENT_CONFIRMED} 記述を覆すには人間の判断が要ります。`)).toBe(
+      true,
+    );
+    expect(declaresWholeDocument(`- **書式は \`${WHOLE_DOCUMENT_CONFIRMED}\` で始まる段落**です。`)).toBe(
+      false,
+    );
+    expect(declaresWholeDocument(`\`\`\`\n${WHOLE_DOCUMENT_CONFIRMED} 例示です。\n\`\`\`\n`)).toBe(false);
   });
 
   it('宣言のある文書が、節ごとの【確定】を持たない（射程が重なる）', () => {
