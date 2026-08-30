@@ -292,7 +292,7 @@
         },
         "on_max": {
           "$ref": "#/$defs/range_event_def",
-          "description": "値がrange.maxへ達している間（>= max）、値の変更・tickのたびに適用される挙動（6.3節。操作が直に動かした値でも、宣言元は誰が動かしたかを知らない——ここに居るのは宣言元の個体だけで、何を指せるかはそこから導く。ActionSystem.md 4節の表）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。conditionsを書いた場合、満たさない回だけがその既定のクランプへ倒れる。rangeが無いと使えない。"
+          "description": "値がrange.maxへ達している間（>= max）、値の変更・tickのたびに適用される挙動（6.3節）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。conditionsを書いた場合、満たさない回だけがその既定のクランプへ倒れる。rangeが無いと使えない。"
         },
         "on_min": {
           "$ref": "#/$defs/range_event_def",
@@ -736,7 +736,7 @@
       "description": "新規オブジェクトを1つ生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。配置先はinto・into_prop・into_objectのどれか1つで指す（どれも書かなければsame_slot）。destroyと同時に指定できる。"
     },
     "range_event_def": {
-      "description": "rangeイベント（on_max/on_min、6.3節）1つ。中身は一時的な命令（9節）で、文法は「操作(set/add/destroy/spawn/become/transfer/move/signal)が上位、対象が下位」。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_min: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。conditions（14節）を書くと、満たす回だけがこの中身へ、満たさない回は既定のクランプへ倒れる。rangeイベントには操作者が居ないので、対象にagent/instrumentを指すとロード時エラーになる（14.1節。本スキーマでは場所ごとの制限までは表現しない）。interactions/pickは、命令の並びを専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（interaction_def/pick_candidate参照）。",
+      "description": "rangeイベント（on_max/on_min、6.3節）1つ。中身は一時的な命令（9節）で、文法は「操作(set/add/destroy/spawn/become/transfer/move/signal)が上位、対象が下位」。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_min: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。conditions（14節）を書くと、満たす回だけがこの中身へ、満たさない回は既定のクランプへ倒れる。rangeイベントには操作者が居ない——操作が直に動かした値でも、宣言元は誰が動かしたかを知らないため。対象に何を書けるかはそこから導く（ActionSystem.md 4節の表。ここに居ない相手を書くとロード時エラーで、本スキーマでは場所ごとの制限までは表現しない）。interactions/pickは、命令の並びを専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（interaction_def/pick_candidate参照）。",
       "type": "object",
       "properties": {
         "conditions": {
