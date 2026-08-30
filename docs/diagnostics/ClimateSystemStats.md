@@ -30,7 +30,7 @@ YAMLとずれます）。
 | `rain_weather_moisture_decrement` | 降雨の天気ごとの、推定した自己減算（1tickあたり） |
 | `rain_weather_net_moisture_delta` | 同じものの素の実測（天気×季節ごとの正味変化量） |
 | `season_duration` | 季節1インスタンスの持続日数 |
-| `activity_hours` | 土地×季節ごとの、移動できる時間・屋外で採れる時間・手元の作業ができる時間 |
+| `activity_hours` | 土地×季節ごとの、移動できる時間・屋外で採れる時間・探索できる時間・手元の作業ができる時間 |
 | `excluded_locations` | 活動時間表が数えなかった土地と、外した根拠のタグ |
 | `temperature` | 季節×区間ごとの気温（内部値） |
 | `weather_hours` | 季節×天気×区間ごとの発生時間 |
@@ -84,10 +84,13 @@ ambient_brightnessへ与える寄与）・土地ごとのambient_brightness・�
 数える（[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 5節のしきい値: 移動 −5・
 屋外の採取 +3・手元の作業 +5）。据え付けの光源（松明・炉）は含まない。
 
-列は行動のクラスと1対1で、`travel`（土地の間を移動する）・`gathering`（屋外で採る・探索する）・
-`handwork`（手元の細かい作業）。**`gathering`が`handwork`より長いのは、しきい値だけの差**——見る値は
-違う（採る側はlooking_brightness、作る側はhand_brightness）が、据え付けの光源が無ければどちらも
-土地のambient_brightnessをそのまま土台にするので、同じ明るさを別々のしきい値で切ったものになる。
+列は行動のクラスと1対1で、`travel`（土地の間を移動する）・`gathering`（屋外で採る）・`exploration`
+（探索する）・`handwork`（手元の細かい作業）。**`gathering`が`handwork`より長いのは、しきい値だけの差**
+——見る値は違う（採る側はlooking_brightness、作る側はhand_brightness）が、据え付けの光源が無ければ
+どちらも土地のambient_brightnessをそのまま土台にするので、同じ明るさを別々のしきい値で切ったものになる。
+**`gathering`だけが`exploration`より短くなるのは、嵐が採取だけを止めるため**
+（[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1.4節）。森・密林では嵐の時間帯がもともと
+明るさで落ちており、浅い洞窟は岩陰に守られているので、そこでは2つが一致する。
 
 **数えるのは島の土地だけ**で、海区（`voyage.yaml`の島影の海・潮目・空の海）は行にしない。海区は
 探索でき、寝られ、雨も貯まるので集め方の条件（`location`タグ＋`exploration_progress`）をそのまま
