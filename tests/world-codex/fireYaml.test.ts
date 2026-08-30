@@ -135,7 +135,8 @@ describe('fire.yamlの火の連鎖', () => {
     expect(step.requirements).toHaveLength(2);
     expect(requires('thick_branch')).toBe(true);
     expect(requires('twig')).toBe(true);
-    // 火スキルが未実装なので、今は誰でも作れる（きりもみ式は道具も紐も要らない）。
+    // **誰でも作れる。** これが作れないと火の腕を伸ばす操作に手が届かず、きりもみ式が道具も紐も
+    // 要求しないことで保証されている立ち上がり（SkillSystem.md 3.2節）が崩れる。
     expect(drill.recipesProducingThis[0].unmetUnlockRequirement(undefined)).toBeUndefined();
   });
 

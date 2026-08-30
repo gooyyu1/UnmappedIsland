@@ -38,7 +38,13 @@ object_defs:
           # 嵐の日は明るさが足りていても採れない（docs/world/ContentSkeleton.md 8.1.4節）。
           - reason: too_stormy
             not: {subject: agent, prop: wind_speed, in_stage: gale}
+        # 木材加工の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
+        # characters/player_character.yaml）。**この口は斧を要求するが、立ち上がりはここではない**
+        # ——刃物1本で回る削り出し（animals.yamlのwhittle）が石器の先にあるので、木材加工は斧より
+        # 手前から伸び始める。どちらも循環しない（同3.2節）。
         add:
+          agent:
+            skill_woodwork: 2
           instrument:
             durability: -120
         # 倒した場所に落ちる。木は中に物を持てないので、`into: self`は必ず親（土地）のアイテム
@@ -101,6 +107,8 @@ object_defs:
             not: {subject: agent, prop: wind_speed, in_stage: gale}
         duration: 120
         add:
+          agent:
+            skill_woodwork: 2
           instrument:
             durability: -60
         # **spawnを先に書く**（broadleaf_treeのfellと同じ理由）。

@@ -455,9 +455,10 @@ object_defs:
             min: 4
             passives:
               - modify: {parent: {crossing_minutes: -60}}
-    # 解放条件（conditions、13.3節）はまだ置かない。建築スキルのプロパティと、それを伸ばす経路が
-    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
     recipes:
+      # **解放条件を持たない。** 丸太は斧でしか採れず（timber.yaml）、その斧が既に石器と繊維・編みの
+      # 腕を要求している——素材チェーンが自分でゲートしている場所には置かない
+      # （docs/engine/SkillSystem.md 4.2節）。
       lashed:
         steps:
           # 丸太を並べて桁を渡す。
@@ -534,12 +535,17 @@ object_defs:
             prop: afloat
             gt: 0
         duration: 60
+        # 狩猟の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
+        # characters/player_character.yaml）。**獲物を獲る手は海でも同じ1本**——狩猟が広げるのは
+        # 肉・生皮・獣骨へのアクセス（docs/world/Skills.md 2節）で、獲れる身は獣と同じ生肉。
+        # 獣を殴るとき（animals.yamlのstrike）と同じく**pickの外**なので、突き損ねた回も伸びる。
+        add: {agent: {skill_hunting: 2}}
         pick:
           - weight: 15
             spawn: {object: raw_meat, into: agent}
           # 突き損ね。この候補だけは効果を持たない。
           - weight: 83
-          # 突いた魚に銛を持って行かれる（同3.9.4節）。群れを突くときと同じ確率で、失う理由は同じ。
+          # 突いた魚に銛を持って行かれる（Voyage.md 3.9.4節）。群れを突くときと同じ確率で、失う理由は同じ。
           - weight: 2
             destroy: instrument
 
@@ -565,9 +571,19 @@ object_defs:
       - conditions:
           - {subject: parent, prop: afloat, gt: 0}
         modify: {parent: {sail_speed: 2}}
-    # 解放条件（conditions、13.3節）はまだ置かない（筏・編み籠と同じ理由）。
     recipes:
       sewn:
+        # なめし革の衣類と同じ縫製の大物（clothing.yaml）なので、解放条件も同じ形にする。
+        conditions:
+          - reason: needs_leatherwork
+            any:
+              - {subject: agent, prop: skill_leatherwork, in_stage: skilled}
+              - {subject: agent, prop: skill_leatherwork, in_stage: expert}
+          - reason: needs_cordage
+            any:
+              - {subject: agent, prop: skill_cordage, in_stage: basic}
+              - {subject: agent, prop: skill_cordage, in_stage: skilled}
+              - {subject: agent, prop: skill_cordage, in_stage: expert}
         steps:
           # 帆柱と帆桁を組んで縛る。
           - requires:
@@ -681,6 +697,7 @@ object_defs:
       spear_shoal:
         trigger: {drag: {tag: fishing_tool}}
         duration: 30
+        add: {agent: {skill_hunting: 2}}
         pick:
           - weight: 78
             spawn: {object: raw_meat, into: agent}
@@ -709,6 +726,7 @@ object_defs:
       catch_seabird:
         trigger: menu
         duration: 60
+        add: {agent: {skill_hunting: 2}}
         spawn:
           - {object: raw_meat, into: agent}
           - {object: feather, into: agent}
