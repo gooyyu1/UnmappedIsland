@@ -551,7 +551,7 @@
       "additionalProperties": false
     },
     "passive_operation_map": {
-      "description": "passiveの1操作(modify/add)が持つ、対象（self/parent/child/ancestor）をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。agentは持続的な関係に紐づかないためロード時エラー。combinations内でもinstrumentを書けるのはactiveだけで、passiveに書くとロード時エラー。",
+      "description": "passiveの1操作(modify/add)が持つ、対象をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。何を対象に書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。ここに居ない相手を書くとロード時エラー。",
       "type": "object",
       "properties": {
         "self": {
@@ -1414,7 +1414,7 @@
       "additionalProperties": false
     },
     "object_target_name": {
-      "description": "オブジェクトそのものを指す対象名（destroy・move・become）。ancestorは「どのプロパティを探すか」が無く解決できないため不可。childは相手が1つに決まらないため不可。pickedを書けるのはamongを書いた候補の中だけで、外に書くとロード時エラー（10.3節）。",
+      "description": "オブジェクトそのものを指す対象名（9.3節・9.6節）。何を書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。ここに居ない相手を書くとロード時エラー。",
       "enum": [
         "self",
         "parent",
