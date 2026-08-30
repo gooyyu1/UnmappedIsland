@@ -5,6 +5,8 @@ import { COLOR, SIZE } from '../looks/theme';
 import { SCREEN_DEPTH } from '../looks/screenDepth';
 import { drawBox } from '../../ui/shapes';
 import { addLabel } from '../../ui/labels';
+import { uiText } from '../../locale/uiTexts';
+import { timeCostLine } from '../looks/timeTexts';
 
 /** 内側の余白と、行間・カードとの間隔（u単位）。 */
 const PADDING = 24;
@@ -34,8 +36,29 @@ export interface TooltipContent {
 }
 
 /**
- * これから何が起きるかを出す吹き出し。ドラッグ中のカードを重ねたとき（CardDragController）と、
- * アクションのボタンを長押ししたとき（ObjectWindow）に出す。
+ * 操作1つを説明する吹き出しの中身。実行できるものは**何が起きるか・どれだけ時間を取られるか**、
+ * 実行できないものは**なぜできないか**（GameElementDefinition.md 14.6節のreason）。
+ *
+ * **ボタンの操作も重ねる操作も同じ形で出す。** 押せないボタン（ObjectWindow）と、重ねても何も
+ * 起きない組み合わせ（CardDragController）は、プレイヤーから見て同じ「できない」なので、
+ * 言い方を2通り持たない。理由の宣言が無い要件で落ちているときだけ、決まり文句で断る。
+ */
+export function interactionTooltip(operation: {
+  readonly label: string;
+  readonly description?: string | undefined;
+  readonly minutes: number;
+  readonly enabled: boolean;
+  readonly reason?: string | undefined;
+}): TooltipContent {
+  return operation.enabled
+    ? { title: operation.label, body: operation.description, note: timeCostLine(operation.minutes) }
+    : { title: operation.label, body: operation.reason ?? uiText('cannot_do_now') };
+}
+
+/**
+ * その操作について言うことを出す吹き出し。ドラッグ中のカードを重ねたとき（CardDragController）と、
+ * アクションのボタンを長押ししたとき（ObjectWindow）に出す。**これから起きることとは限らない**
+ * ——できない操作では、なぜできないかを出す（interactionTooltip）。
  *
  * 置き場所は基準にした矩形（掴んでいるカード・押しているボタン）の真上。指はその中心にあるので、
  * 上へ逃がせば隠れない。上に入り切らない場合だけ下へ回す。

@@ -101,7 +101,8 @@ function reviewSession(
  * `prRounds`・`issueRounds` は `gh pr list`・`gh issue list` が周ごとに返す一覧で、最後のものは
  * 以降ずっと返る。`options.pushed`・`options.sentBack` はPR番号ごとの「最後のコミットの時刻」と
  * 「`直し待ち` を付けた時刻」で、`REVIEWED`・`FIXED` はこの2つと比べて手番を決める。
- * `options.numbers` は見張るPRの番号（渡さなければ全部）。
+ * `options.numbers` は見張るPRの番号（渡さなければ全部）。`options.relayed` は `司令塔へ` ラベルの
+ * 付いたマージ済みPRの番号で、`gh pr list --state merged --label 司令塔へ` が返す。
  */
 function watch(
   prRounds: unknown[][],
@@ -113,6 +114,7 @@ function watch(
     sentBack?: Record<number, string>;
     numbers?: number[];
     noSessions?: boolean;
+    relayed?: number[];
   } = {},
 ): string[] {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-watch-prs-'));
@@ -137,6 +139,12 @@ function watch(
       `echo $((round + 1)) > '${dir}/${kind}-round'\n` +
       `[ "$round" -lt ${length} ] || round=$((${length} - 1))\n` +
       `cat "${dir}/${kind}s-$round.json"\n`;
+    // 回されたまま下ろされていないPR。**周を進めない**——`gh pr list` の一覧とは別の呼び出しなので、
+    // ここで進めると開いているPRの一覧が1周ぶん飛ぶ。
+    const relayed = write(
+      'relayed.json',
+      (options.relayed ?? []).map((number) => ({ number })),
+    );
     const stub = join(work, 'gh');
     writeFileSync(
       stub,
@@ -145,6 +153,7 @@ function watch(
         `if [ "$1" = api ]; then\n` +
         `  cat "${dir}/labeled-$(echo "$2" | grep -o '[0-9]\\+')" 2>/dev/null\n  exit 0\nfi\n` +
         `if [ "$1" = issue ]; then\n${rounds('issue', issueRounds.length)}exit 0\nfi\n` +
+        `if [[ "$*" == *"--state merged"* ]]; then\n  cat '${relayed}'\n  exit 0\nfi\n` +
         // 緑のPRに同梱する本文の引き直し。周を進めないよう、一覧より先に返す。
         `if [ "$2" = view ] && [[ "$*" == *title,body,files* ]]; then\n` +
         `  echo "本文 $3"\n  exit 0\nfi\n` +
@@ -286,6 +295,17 @@ describe('watch-prs.sh のマージ可否', () => {
     );
 
     expect(lines).toEqual(['CONFLICT 803']);
+  });
+
+  // 番号で絞ってよいのは「今その結果を待っているか」で選べるものだけ。コンフリクトは待っているかに
+  // 関わらず前へ進めないので、司令塔が `0` を渡す既定の使い方でも出る。ここを絞りに入れていたせいで、
+  // `判断待ち` の #1272・#1361 が衝突したまま一度も報告されなかった。
+  it('見張るPRの番号から外れていても、コンフリクトは出る', () => {
+    const lines = watch([[pullRequest(804, 'CONFLICTING')]], [[]], [], [reviewSession(804)], {
+      numbers: [0],
+    });
+
+    expect(lines).toEqual(['CONFLICT 804']);
   });
 
   it('マージ可否が計算中のPRは決着として出さず、確定した次の周で出す', () => {
@@ -435,7 +455,7 @@ describe('watch-prs.sh の手番（REVIEWED・FIXED）', () => {
 
 describe('watch-prs.sh の UNREVIEWED', () => {
   // どれも `0` を渡して走らせる。司令塔がレビュー中のPRを黙らせるために普段そうしていて、そのとき
-  // `GREEN`・`RED`・`CONFLICT` が全部外れることが、この合図を要る理由そのものだから。
+  // `GREEN`・`RED` が全部外れることが、この合図を要る理由そのものだから。
 
   it('結論もレビューのセッションも無いPRを出す', () => {
     const lines = watch([[pullRequest(860, 'MERGEABLE')]], [[]], [], [], { numbers: [0] });
@@ -572,6 +592,23 @@ describe('watch-prs.sh の CHECKED', () => {
     );
 
     expect(lines).toEqual(['CHECKED 656 海の色を決める']);
+  });
+});
+
+describe('watch-prs.sh の RELAY', () => {
+  it('`司令塔へ` ラベルの残っているマージ済みPRを毎周出す', () => {
+    // 印はマージのときに `merge-and-close.sh` が置く。**黙るのは司令塔がラベルを外したとき**で、
+    // マージからの経過時間では黙らない——一発勝負にすると、読み落とした1件が誰にも届かなくなる
+    // （PR #1240 で7件中1件が落ちた）。
+    expect(watch([[]], [[]], [], [], { relayed: [1240, 1062] })).toEqual(['RELAY 1240', 'RELAY 1062']);
+  });
+
+  it('ラベルの付いたマージ済みPRが無ければ、開いているPRは `RELAY` にならない', () => {
+    // 開いているPRの一覧を流用していると、開いているPR全部が `RELAY` になる。別の呼び出しである
+    // ことをここで押さえる。
+    expect(watch([[pullRequest(871, 'MERGEABLE')]], [[]], [], [], { numbers: [0] })).toEqual([
+      'UNREVIEWED 871',
+    ]);
   });
 });
 

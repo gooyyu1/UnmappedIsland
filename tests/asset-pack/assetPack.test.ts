@@ -263,7 +263,7 @@ describe('複数のアセットパックを並べた順に読む', () => {
     expect(report.problems.map((problem) => problem.source)).toEqual(['broken']);
   });
 
-  it('同じ識別子のパックは2つ入れられない（AssetPack.md 3.2節）', async () => {
+  it('同じ識別子のパックは2つ入れられない（AssetPack.md 3.4節）', async () => {
     const packs = new AssetPacks();
     packs.receive(await pack('twin', []));
     const again = await pack('twin', []);

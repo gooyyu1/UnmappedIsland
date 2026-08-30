@@ -35,6 +35,9 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage: bright
+          # 嵐の日は明るさが足りていても採れない（docs/world/ContentSkeleton.md 8.1.4節）。
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage: gale}
         add:
           instrument:
             durability: -120
@@ -61,6 +64,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage: gale}
         duration: 30
         spawn: {object: tree_bark, count: 3, into: agent}
 
@@ -92,6 +97,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage: gale}
         duration: 120
         add:
           instrument:

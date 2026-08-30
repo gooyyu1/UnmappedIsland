@@ -72,8 +72,9 @@ export class Action extends Interaction<ActionTrigger, undefined> {
 /**
  * 相手（instrument）まで決まった組み合わせ1つ（GameElementDefinition.md 12節）。
  *
- * **今成立するものしか作られない**（WorldObject.combinationsWith）ので、持っているだけで「重ねれば
- * 何かが起きる」と言える。
+ * **型は合っている**（相手として受け入れ、行き先も詰まっていない）ものしか作られない。要件（14節）まで
+ * 満たしているかは引き方が分ける——`WorldObject.combinationsWith` は今成立するもの、
+ * `refusedCombinationsWith` は理由を告げて断るもの（14.6節）。どちらなのかは `unmetRequirement` が答える。
  */
 export class Combination extends Interaction<DragTrigger, WorldObject> {
   constructor(
@@ -99,15 +100,18 @@ export class Combination extends Interaction<DragTrigger, WorldObject> {
   }
 
   /**
-   * **今**この組み合わせが成立するか（WorldObject.combinationsWith）。相手として受け入れるかは
-   * 型だけで決まるので、ここで見るのはそれ以外——要件（14節）・受け取れる個数・効果の行き先。
+   * **今**この組み合わせを出してよいか（WorldObject.combinationsMatching）。相手として受け入れるかは
+   * 型だけで決まるので、ここで見るのはそれ以外——受け取れる個数・効果の行き先・要件（14節）。
+   * 満たしていない要件をどう扱うかだけが呼び手ごとに違うので、そこはacceptsが決める。
+   *
+   * **問いは関係を張った状態で立てる**（11.5節）。候補ごとに1つずつ張って外すので、重ならない。
    */
-  isAvailableNow(): boolean {
+  matches(accepts: (unmet: Requirement | undefined) => boolean): boolean {
     return this.relation.during(
       (context) =>
-        this.def.unmetRequirement(context) === undefined &&
         this.trigger.acceptedCount(context, [this.instrument]) >= 1 &&
-        !this.def.blocksOperation(context),
+        !this.def.blocksOperation(context) &&
+        accepts(this.def.unmetRequirement(context)),
     );
   }
 

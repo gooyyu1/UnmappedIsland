@@ -309,7 +309,7 @@ export class ReferenceScope {
   /** 操作している者（agent）が居るか。誰かが操作しているとは限らない場所には居ない。 */
   private readonly hasAgent: boolean;
 
-  /** 働きかけに使われる物（instrument）が居るか。真になるのは物が運ばれてくる場所だけ（下のcombination）。 */
+  /** 働きかけに使われる物（instrument）が居るか。真になるのは物が運ばれてくる場所だけ（下のwithInstrument）。 */
   private readonly hasInstrument: boolean;
 
   /** 働きかけられる物（patient）が居るか。操作の場と、その参加者のpropsだけ（11.5節）。 */
@@ -379,24 +379,17 @@ export class ReferenceScope {
     broadcasts: false,
   });
 
-  /** 誰かが操作している場所（interactions、11節）。宣言が乗っている側がpatientになる。 */
-  static readonly action = new ReferenceScope({
+  /**
+   * 宣言元の個体に加えて、操作している者が居る場所（誰かが押した・引いた結果として起きる、11節）。
+   *
+   * **操作の宣言はpatientに乗る**（11.5節）ので、patientが居るのはここから。ただし`self`と同じ物を
+   * 指すので名前としては書けない（selfIsPatient）。使う物が運ばれてくるかは場所ごとに違うので、
+   * そちらだけを`withInstrument`が足す。
+   */
+  static readonly acting = new ReferenceScope({
     hasSelf: true,
     hasAgent: true,
     hasInstrument: false,
-    hasPatient: true,
-    selfIsPatient: true,
-    pushesReversibly: false,
-    hasPicked: false,
-    namesProperty: true,
-    broadcasts: false,
-  });
-
-  /** 使う物が運ばれてくる場所（`drag`のinteractions 12節・`put_in`の`duration` 7.10節）。 */
-  static readonly combination = new ReferenceScope({
-    hasSelf: true,
-    hasAgent: true,
-    hasInstrument: true,
     hasPatient: true,
     selfIsPatient: true,
     pushesReversibly: false,
@@ -438,6 +431,11 @@ export class ReferenceScope {
     return new ReferenceScope({ ...this, pushesReversibly: true });
   }
 
+  /** 働きかけに使われる物が運ばれてくる場所（`drag`のinteractions 12節・`put_in`の`duration` 7.10節）。 */
+  get withInstrument(): ReferenceScope {
+    return new ReferenceScope({ ...this, hasInstrument: true });
+  }
+
   /** amongが選んだ相手を指せる場所（10.3節）。amongを書いた候補の重みと効果だけがこれになる。 */
   get withPicked(): ReferenceScope {
     return new ReferenceScope({ ...this, hasPicked: true });
@@ -469,7 +467,7 @@ export class ReferenceScope {
           return "'patient'は操作の宣言が乗っている側なので、ここでは'self'と同じ物を指します（'self'と書いてください）";
         return this.sharedRoleReason;
       case 'picked':
-        return this.hasPicked ? undefined : "'picked'はamongを書いた候補の中でのみ使えます";
+        return this.hasPicked ? undefined : 'ここには候補の中から選ばれた相手が居ません';
       case 'ancestor':
         if (!this.hasSelf) return 'ここには遡る起点になる個体が居ません';
         return this.namesProperty

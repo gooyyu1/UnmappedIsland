@@ -10,6 +10,7 @@ import type { EngineVocabulary } from './WorldVocabulary';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
 import { PropertyValue } from './PropertyValue';
+import type { Requirement } from './Requirement';
 import { Slot } from './Slot';
 import type { SlotPosition } from './SlotPosition';
 import type { WorldSession } from './WorldSession';
@@ -761,9 +762,13 @@ export class WorldObject {
   /**
    * 名指しした1つのプロパティが、他と交わしている影響（docs/ui/Windows.md 8節）。
    *
-   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果だけでよい。効果が届く先は
-   * self/parent/child/ancestor のいずれか（8.1節）なので、自分へ届く効果も自分が届かせる効果も、
-   * 宣言元は必ずこの3方向のどれかに居る——横に並んだ物どうしは互いに届かない。
+   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果だけでよい。**持続効果の対象に今書けるのは、
+   * 宣言元から木を辿るものだけ**（何を書けるかは宣言が置かれた場所が決める。一覧はGameElementDefinition.md
+   * 14.1節の表）なので、自分へ届く効果も自分が届かせる効果も、宣言元は必ずこの3方向のどれかに居る
+   * ——横に並んだ物どうしは互いに届かない。
+   *
+   * **3方向で足りるのは、操作が関係を張っていない間だけ**（11.5節）。役を対象に書いた効果は、その操作が
+   * 進んでいる間だけ木の上に居ない相手へ届く（resolveInfluenceTargets）。
    */
   readInfluences(propertyGlobalId: number): PropertyInfluenceReading {
     const influences = new PropertyInfluences(this, propertyGlobalId);
@@ -813,15 +818,50 @@ export class WorldObject {
    * instrumentを重ねたときに**今**成立する組み合わせ（12節、宣言順）。相手として受け入れるかだけでなく、
    * 要件（14節）を満たしているかまで見る——満杯の炉に薪をくべる組み合わせは、候補にならない。
    *
-   * **要件まで見るのは、候補を選ぶ側と実行できる側を食い違わせないため。** 型だけで選ぶと、選んだ
+   * **要件まで見るのは、実行できないものを黙って落とし先にしないため。** 型だけで選ぶと、選んだ
    * 先が実行できない場合に「落とせるのに何も起きない」になる。**行き先の座標に型が居ない組み合わせ**
    * （`become`、9.9節）も同じ理由で候補にならない。
+   *
+   * **掛かるのは「黙って」のほう。** 断る理由を宣言していれば、実行できない落とし先として出してよい
+   * ——それを引くのが下のrefusedCombinationsWith（ActionSystem.md 1.1節）。
    */
   combinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
+    return this.combinationsMatching(instrument, agent, (unmet) => unmet === undefined);
+  }
+
+  /**
+   * instrumentを重ねても要件（14節）で成立しないが、**断る理由を宣言している**組み合わせ
+   * （14.6節のreason、宣言順）。薪の無い炉へ火種を落とす、暗い中で石を打ち割る、が該当する。
+   *
+   * **`reason` を書いた要件は、落ちたときプレイヤーへ理由が届くという約束**（14.6節）。メニューの
+   * 操作は押せないボタンとして理由を出せるが、重ねる操作には候補から消えた先に理由を出す口が無い。
+   * 理由を宣言しているものだけをここから引けるようにして、その口を画面へ渡す
+   * （[`CardInteraction.md`](../../docs/ui/CardInteraction.md) 2.1節）。
+   *
+   * **理由を宣言していない要件は返さない**——黙って断ると決めた宣言なので、言うことが無い。
+   * 成立するものが1つでもあるなら、そちらが先（`combinationsWith`）。
+   */
+  refusedCombinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
+    return this.combinationsMatching(instrument, agent, (unmet) => unmet?.reasonName !== undefined);
+  }
+
+  /**
+   * 相手として受け入れ、行き先も詰まっていないドラッグの宣言のうち、満たしていない要件が
+   * acceptsに当てはまるもの。**要件以外の絞り込みを1箇所に持つ**——成立するものと断るものが
+   * 「要件を見た結果」だけで分かれるようにするため。
+   *
+   * **問うのは組み合わせ自身。** 候補ごとに関係を1つずつ張って外すので（11.5節）、呼び手が
+   * 「self・agent・instrumentがこの3つでないと壊れる」という一致の規約を覚える余地が無い。
+   */
+  private combinationsMatching(
+    instrument: WorldObject,
+    agent: WorldObject | undefined,
+    accepts: (unmet: Requirement | undefined) => boolean,
+  ): readonly Combination[] {
     return this.def.dragTriggers
       .filter((trigger) => trigger.acceptsInstrument(instrument.def))
       .map((trigger) => new Combination(trigger, this, instrument, agent))
-      .filter((combination) => combination.isAvailableNow());
+      .filter((combination) => combination.matches(accepts));
   }
 
   // ---- 時間の経過（8.4節） ----

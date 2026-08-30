@@ -3,6 +3,7 @@ import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { TabButtons, addTextButton } from './Button';
 import { ScrollArea } from '../../ui/scrollArea';
+import { stackedLength } from '../../ui/scroll';
 import type { ObjectWindowLane, ObjectWindowPane } from './ObjectWindowPane';
 import type { StatusContent } from './StatusBar';
 import { StatusBar } from './StatusBar';
@@ -42,7 +43,7 @@ export interface PropertyCategory {
 export class PropertiesPane implements ObjectWindowPane {
   /** この面が要る高さ。窓の中段の高さは、最も高いタブに合わせて決まる（ObjectWindow）。 */
   static height(metrics: ScreenMetrics): number {
-    return ROWS_SHOWN * StatusBar.height(metrics) + (ROWS_SHOWN - 1) * metrics.px(ROW_GAP);
+    return stackedLength(StatusBar.height(metrics), metrics.px(ROW_GAP), ROWS_SHOWN);
   }
 
   /** バーはレーンではないので、この面はレーンを持たない。 */
@@ -142,12 +143,6 @@ export class PropertiesPane implements ObjectWindowPane {
 
     const viewport = scene.add.container(0, 0);
     this.viewport = viewport;
-    this.scroll = new ScrollArea(scene, {
-      axis: 'y',
-      content: viewport,
-      viewport: viewportRect,
-      inputSurfaces: [this.surface],
-    });
 
     const entries = this.categories[this.selected]?.entries ?? [];
     this.rows = entries.map((entry, index) => {
@@ -158,7 +153,15 @@ export class PropertiesPane implements ObjectWindowPane {
       return row;
     });
 
-    this.scroll.setContentLength(entries.length * (rowHeight + rowGap) - rowGap);
+    // **行も送りを受ける面に含める**（送りを組むのが行を並べた後なのはこのため）。行は可視域の幅
+    // いっぱいを占めるので、地に敷いた面には指が1点も届かない（ScrollArea.inputSurfaces）。
+    this.scroll = new ScrollArea(scene, {
+      axis: 'y',
+      content: viewport,
+      viewport: viewportRect,
+      inputSurfaces: [this.surface, ...this.rows.map((row) => row.inputSurface)],
+    });
+    this.scroll.setContentLength(stackedLength(rowHeight, rowGap, entries.length));
   }
 
   destroy(): void {

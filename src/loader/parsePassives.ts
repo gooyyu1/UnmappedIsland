@@ -25,8 +25,8 @@ import {
 import type { PassiveEffect } from '../domain/PassiveEffect';
 
 /**
- * passivesの1ブロック（"passives:"配列の1要素。conditions/modify/add/transferのみを持つ）を読み、
- * PassiveEffectへ変換してpassivesへ追加する。forcedStageProperty（非undefinedならstage内）と
+ * passivesの1ブロック（"passives:"配列の1要素）を読み、PassiveEffectへ変換して
+ * passivesへ追加する。forcedStageProperty（非undefinedならstage内）と
  * "conditions"は独立に併用できる（例:「装備している間、かつ耐久値がintactステージの間だけ」）。
  * conditionsはブロック全体で1つ（対象ごとには持たない。RegisteredPassiveEffect参照）。
  * RawObjectDef.resolveから（object/trait直下・props内・stages内のいずれからも）呼ばれる。
@@ -113,9 +113,10 @@ function buildGate(
 }
 
 /**
- * passiveの1操作(modify/add)を読み、対象ごとにPassiveEffectへ変換してpassivesへ追加する。何を対象に
- * 書けるかはこの場所（ReferenceScope.participantProps）が答える。具象型はmakeEffectファクトリで受け取り、
- * 同じpassiveブロック内のgateを全効果で共有する。
+ * passiveの1操作(modify/add)を読み、対象ごとにPassiveEffectへ変換してpassivesへ追加する。**何を対象に
+ * 書けるかを答えるのはscope**で、答えられないものはparseSubjectRootが`YamlLoadError`にする——読み飛ばさない。
+ * `modify`だけscopeが狭いのは、可逆な寄与を押せる役が限られるため（8.3節、呼び出し元）。具象型は
+ * makeEffectファクトリで受け取り、同じpassiveブロック内のgateを全効果で共有する。
  */
 function parsePassiveOperationInto(
   loader: WorldCodexYamlLoader,

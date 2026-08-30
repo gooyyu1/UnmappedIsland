@@ -12,6 +12,14 @@ import type { RecipeCategory, RecipeEntry } from '../ui/RecipeWindow';
 const PRODUCT_ICON = '📦';
 
 /**
+ * まだ解放されていないレシピの札に出す印（CardView.md 9節 カードの印）。
+ *
+ * **押せないことは一目で分かる必要がある。** なぜ作れないかは押している間の吹き出しが言う
+ * （Windows.md 9.3節）ので、押す前に分かるのは印だけになる。
+ */
+const LOCKED_MARK = '🔒';
+
+/**
  * その製作中オブジェクトが従っているレシピ（製作中オブジェクトでなければundefined）。
  *
  * 製作中オブジェクトは完成品の変種で、**どのレシピから生まれたかは軸`recipe`の値**
@@ -59,6 +67,7 @@ export function recipeCategories(
           icon: PRODUCT_ICON,
           name: locale.object(product.name).displayName,
           art: product.artName,
+          mark: unmet === undefined ? undefined : LOCKED_MARK,
         },
         lockedReason:
           unmet === undefined
