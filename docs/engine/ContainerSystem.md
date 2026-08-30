@@ -217,8 +217,8 @@ conditions:
 
 **守るのは入れ物だけではありません。** 浅い洞窟（[`../world/Dwellings.md`](../world/Dwellings.md) 5.1 節）は
 場所として `sheltered: 1` を宣言し、中に置いた物・据えた炉が同じ1行で守られます。**守られているかを知る道は
-このプロパティ1つだけで、それをどこでどう読むかは読む側が決めます**——屋外劣化（`DurabilitySystem.md`
-2 節）は上の条件でそのまま止め、キャラクタは `base`（[`GameElementDefinition.md`](./GameElementDefinition.md)
+このプロパティ1つだけで、それをどこでどう読むかは読む側が決めます**——たとえば屋外劣化
+（`DurabilitySystem.md` 2 節）は上の条件でそのまま止め、キャラクタは `base`（[`GameElementDefinition.md`](./GameElementDefinition.md)
 6.5 節）で値を自分へ写してから、体温の削り（[`VitalsSystem.md`](./VitalsSystem.md) 8.3 節）と状況アイコン
 （[`../ui/ScreenLayout.md`](../ui/ScreenLayout.md) 4.1.2 節）で読みます。**守る側は誰がどう読むかを
 知りません**——読み手が増えても、増えるのは読む側の宣言だけです。
