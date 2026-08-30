@@ -42,9 +42,8 @@ export abstract class ActiveEffect {
   }
 
   /**
-   * 今この文脈で、この効果が行き先を持たないために、宣言している操作そのものが成立しないか
-   * （`become` の座標が空、9.9節）。成立しない操作は候補に出さない——落とせるのに何も起きない、を
-   * 作らないため。
+   * 今この文脈で、この効果が行き先を持たないために、宣言している操作そのものが成立しないか（9.9節）。
+   * 成立しない操作は候補に出さない——落とせるのに何も起きない、を作らないため。
    *
    * **既定はfalse＝妨げない。** repeatLimitingVesselCountと同じく、取りこぼしても安全側（操作は出る）に
    * 倒れるので抽象にしない。
@@ -64,8 +63,8 @@ export abstract class ActiveEffect {
 
 /**
  * 同じ場所に並べて書かれた効果を、書かれた順にまとめた合成効果。**何を並べて書けるか・どの順で走るかは
- * GameElementDefinition.md 9.7節**（`pick`（10節）も、そこに並ぶ1つ）。on_max・on_min（6節）、
- * actions/combinations/pickの中身（11・12・10節）が共用する。どの起点を書けるかは、共用する各場所が渡す
+ * GameElementDefinition.md 9.7節**。on_max・on_min（6節）、actions/combinations/pickの中身
+ * （11・12・10節）が共用する。どの起点を書けるかは、共用する各場所が渡す
  * `ReferenceScope`が決める（一覧は同14.1節の表。操作の関係の役は11.5節「役を書ける場所」）。
  * 空（効果が1つも無い）なら、適用しても何も起きない。
  */
@@ -96,7 +95,7 @@ export class ActiveEffectSequence extends ActiveEffect {
     return this.effectsInDeclarationOrder.some((operation) => operation.blocksOperation(context));
   }
 
-  /** 子の合計。1つでも数えられない子（pick）があれば、合成も数えられない。 */
+  /** 子の合計。1つでも数えられない子があれば、合成も数えられない。 */
   override repeatLimitingVesselCount(): number | undefined {
     let total = 0;
     for (const operation of this.effectsInDeclarationOrder) {
