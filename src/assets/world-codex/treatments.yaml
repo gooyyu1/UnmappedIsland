@@ -67,9 +67,9 @@ object_defs:
     recipes:
       lashed:
         steps:
-          # 拾った枝と撚った紐だけで、削る工程も組み立ての道具も要らない。骨折を出すのは重い罠と
-          # 大型の獣（docs/engine/InjurySystem.md 5節）——どちらもここより後ろにある段なので、
-          # 折れてから材料を集めに行くことにはならない（素材込みの手間はstats/balance.yaml）。
+          # 拾った枝と撚った紐だけで、削る工程も組み立ての道具も要らない。骨折を出すのは大型の獣
+          # （docs/engine/InjurySystem.md 5節）——ここより後ろにある段なので、折れてから材料を
+          # 集めに行くことにはならない（素材込みの手間はstats/balance.yaml）。
           - requires:
               - {object: thick_branch, count: 2, consume: true}
               - {object: cord, count: 1, consume: true}

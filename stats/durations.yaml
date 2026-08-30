@@ -87,7 +87,7 @@ durations:
   - {object: farmer, property: wakefulness, unit: days, days: 2.00, shortest_days: 2.00, longest_days: 2.00, repeats: false, destroys: false}
   - {object: field, property: growth_remaining, unit: days, days: 2.00, shortest_days: 2.00, longest_days: 2.00, repeats: true, destroys: false}
   - {object: medic, property: wakefulness, unit: days, days: 2.00, shortest_days: 2.00, longest_days: 2.00, repeats: false, destroys: false}
-  - {object: pen_bruise, property: severity, unit: days, days: 1.25, shortest_days: 1.25, longest_days: 2.50, repeats: false, destroys: true}
+  - {object: bruise, property: severity, unit: days, days: 1.25, shortest_days: 1.25, longest_days: 2.50, repeats: false, destroys: true}
   - {object: junglefowl, property: stay_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: true}
   - {object: monkey, property: stay_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: true}
   - {object: rat, property: stay_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: true}

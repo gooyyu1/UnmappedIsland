@@ -131,7 +131,7 @@ object_defs:
   # |---|---|
   # | 据え置きで、仕掛け直せない | `fixture`（TrapSystem.md 1節の落とし穴と同じ） |
   # | 大型まで掛かり、ネズミは掛からない | 下のpickに並べた候補の一覧（同1.1節） |
-  # | 掛けても殺さない | 刺す怪我（injuries.yamlの`pen_bruise`、同5.1・5.2節） |
+  # | 掛けても殺さない | 刺す怪我（injuries.yamlの`bruise`、同5.1・5.2節） |
   # | 何頭まで置けるか | `cell_count` |
   #
   # **囲いは何が中に居るかを知らない。** 増えるかどうかは獣自身が名乗る（animals.yamlのヤケイ）ので、
@@ -202,11 +202,11 @@ object_defs:
                     - {object: junglefowl, into: self}
                     # 直前に生んだ獲物のinjuriesスロットへ（into: child、9.4節）。**囲いの子は
                     # このとき1つだけ**——空でなければタイマーが減らないので、掛かった個体しか居ない。
-                    - {object: pen_bruise, into: child}
+                    - {object: bruise, into: child}
                 - weight: {prop: wild_boar_catch}
                   spawn:
                     - {object: wild_boar, into: self}
-                    - {object: pen_bruise, into: child}
+                    - {object: bruise, into: child}
       # その土地でその動物が掛かる重み。素の値は0で、祖先（＝据えた土地、locations.yaml）が宣言して
       # いればその実効値が土台になる（base、6.5節）。**宣言していない土地ではその候補が抽選から
       # 外れる**ので、囲いの側は1行も書き換えずに、どこに建てたかだけで掛かる相手が決まる。
