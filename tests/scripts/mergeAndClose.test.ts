@@ -206,6 +206,16 @@ ${Object.entries({ session_01ZZZZZZZZZZZZZZZZZZZZZZ: 'SESSION_STATUS_ARCHIVED', 
       })}' ;;`,
   )
   .join('\n')}
+${(world.onBridge ?? [])
+  .filter((id) => !(id in { ...world.sessions }))
+  .map(
+    (id) =>
+      `  ${id}) echo '${JSON.stringify({
+        ccr: { tags: world.tags?.[id] ?? ['task-1000'], environment_id: BRIDGE },
+      })}' ;;`,
+  )
+  .join('\n')}
+  *) echo '${JSON.stringify({ ccr: { tags: ['task-1000'], environment_id: CLOUD } })}' ;;
 esac
 `,
       'utf-8',

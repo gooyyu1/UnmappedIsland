@@ -74,8 +74,6 @@ USER_OK=0
 [ "${2:-}" != "--user-ok" ] || USER_OK=1
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=scripts/agent/ccr-env.sh
-source "$HERE/ccr-env.sh"
 # 試験は差し替える（`gh` は PATH で差し替わるが、これはパスで呼ぶため）。
 CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 NEEDS_USER_REVIEW="${NEEDS_USER_REVIEW:-$HERE/needs-user-review.sh}"
@@ -145,32 +143,28 @@ if [ -z "$sessions" ]; then
   leftover=1
 fi
 # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
+# **畳んでよいのは、1つの issue のために立てたセッションだけ**（`task-<番号>` タグを持つ。
+# `dispatch-task.sh` が必ず付ける）。相談役のように issue を持たない相手は、PR1本がマージされても
+# 仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。**ここが選ぶのはこれだけ**で、
+# 畳んでよいかの判定と出力は [`archive-session.sh`](archive-session.sh) が持つ。
+targets=''
 while read -r session; do
   [ -n "$session" ] || continue
-  # 引けない・畳めないときは、そこで止めずに残りとして報せる。**マージは済んでいる**ので、
-  # ここで落ちると後片付け（`main` の追随）ごと落ちる。
+  # 引けないときは、そこで止めずに残りとして報せる。**マージは済んでいる**ので、ここで落ちると
+  # 後片付け（`main` の追随）ごと落ちる。
   info=$(printf '{"session_id":"%s"}' "$session" |
     bash "$CCR_META" get_session | grep -o '{"ccr".*' || true)
-  [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" != "SESSION_STATUS_ARCHIVED" ] || continue
-  # **畳んでよいのは、1つの issue のために立てたセッションだけ**（`task-<番号>` タグを持つ。
-  # `dispatch-task.sh` が必ず付ける）。相談役のように issue を持たない相手は、PR1本が
-  # マージされても仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。
-  if ! jq -e '[.ccr.tags[]? | select(startswith("task-"))] | length > 0' <<<"$info" >/dev/null; then
-    echo "KEPT $session"
-    continue
-  fi
-  # ブリッジのものは触らない（`archive-reviews.sh`「ブリッジで立てたレビューは畳まない」と同じ理由）。
-  if [ "$(jq -r '.ccr.environment_id // ""' <<<"$info")" = "$BRIDGE_ENV" ]; then
-    echo "KEPT $session"
-    continue
-  fi
-  if printf '{"session_id":"%s"}' "$session" | bash "$CCR_META" archive_session >/dev/null; then
-    echo "ARCHIVED $session"
+  if jq -e '[.ccr.tags[]? | select(startswith("task-"))] | length > 0' <<<"$info" >/dev/null; then
+    targets=$(printf '%s\n%s' "$targets" "$session")
   else
-    echo "UNARCHIVED $session"
-    leftover=1
+    echo "KEPT $session"
   fi
 done <<<"$sessions"
+archived=$(CCR_META="$CCR_META" bash "$HERE/archive-session.sh" <<<"$targets")
+[ -z "$archived" ] || printf '%s\n' "$archived"
+if grep -q '^UNARCHIVED ' <<<"$archived"; then
+  leftover=1
+fi
 
 # レビューのセッション（上の「畳む相手は…」）。畳めなければ `UNARCHIVED` が出るので残りに数える。
 reviews=$(CCR_META="$CCR_META" bash "$HERE/archive-reviews.sh" "$PR")
