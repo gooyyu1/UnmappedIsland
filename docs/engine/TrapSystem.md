@@ -297,7 +297,7 @@ interactions:
 raw_meat:
   tags: [item, food, meat_bait]
   props:
-    meat_bait: {value: 8}
+    meat_bait: {value: 12}
 ```
 
 `transfer` を使うのは、`add` だと罠の種類 × 餌の種類の数だけ固定値を書くことになるためです。移る量は
@@ -418,10 +418,7 @@ passives:
 ```yaml
 # くくり罠の怪我。縄が食い込んで裂ける傷で、laceration（injuries.yaml）より浅い。
 snare_laceration:
-  tags: [injury]
-  traits: [treatable]
-  bound_to_owner: true
-  stackable: false
+  traits: [injury, treatable]
   props:
     severity:
       value: {min: 240, max: 480}
@@ -450,7 +447,7 @@ snare_laceration:
 | 海鳥（400 g） | 32 | 全部〜ほぼ全部 | **ロール次第**（浅ければ 2 mL 残る） |
 | ヤケイ（1 kg） | 80 | 4〜8 割 | 生き残るが、次の傷は耐えない |
 | サル（5 kg） | 400 | 1 割前後 | 生き残る |
-| イノシシ（60 kg） | 4,800 | 1 % 未満 | 応えない |
+| イノシシ（60 kg） | 4,600 | 1 % 前後 | 応えない |
 
 - **「小動物にとってはほとんどが致命的」が、レートを分けずに出ます。** 1 kg あたりに線が引かれるのは、
   怪我の側が奪う量を宣言し、体格の側が持ちこたえる量を宣言しているからです。

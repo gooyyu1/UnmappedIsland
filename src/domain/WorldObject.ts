@@ -27,7 +27,7 @@ type MemberKind = 'プロパティ' | 'スロット';
  * （旧親からの離脱・新親への合流・weight伝播・passive effect edgeの登録）にも専念し、枠の要件・capacityの
  * 検証は対象Slot自身へ委ねる。持続効果（modify/add）の登録・解除は、生成・エッジ形成/解消・トポロジ変化の
  * 契機で、Defが宣言する効果一式（PassiveEffects）へ「登録/解除してほしい」と依頼するだけで、どのtargetが
- * どこへ紐付くかは効果自身が知る。能動効果（set/add/destroy/spawn/transfer・actions/combinations・tick）は、
+ * どこへ紐付くかは効果自身が知る。能動効果（9節の命令。actions/combinations・tickやrangeイベントから走る）は、
  * 適用の入口（applyActiveEffect）と対象解決、same_slot spawnの位置捕捉（SameSlotSpawnSite）・配置（place）を持つが、
  * 値の変更そのものは対象のPropertyValueへ、条件判定・抽選はDef側の効果へ委ねる。抵抗（`resists`、7.13節）が
  * 成立したときに持ち主から離れるのも自分で行う——値を変えた側は、その後に何を確かめるべきかを知らない。
@@ -815,7 +815,7 @@ export class WorldObject {
    * （すべてのスロットの中身）へ再帰する。すべてのオブジェクトはworldの下にぶら下がるため、worldへ1回呼ぶだけで
    * ツリー全体が処理される。
    *
-   * rangeイベントのdestroy/spawnは処理中に自分自身や兄弟をツリーから切り離しうるため、各スロットの中身は
+   * rangeイベントが走らせる命令は、処理中に自分自身や兄弟をツリーから切り離しうるため、各スロットの中身は
    * 列挙前にスナップショットを取る。
    */
   tick(): void {
@@ -857,15 +857,16 @@ export class WorldObject {
     }
   }
 
-  // ---- 能動効果とspawn（9.2〜9.4節） ----
+  // ---- 能動効果とspawn（9節） ----
 
   /**
-   * このオブジェクトをselfとして、set/add/destroy/spawnを実行する（9.2〜9.4節）。rangeイベント（6節）と
-   * actions/combinations（11節・12節）の両方から呼ばれる（rangeイベント経由ではagent/instrumentはundefined）。
-   * 対象が解決できない場合（parentが無い、agent/instrumentがこの実行文脈に無い）は、その対象への適用のみ無視する。
+   * このオブジェクトをselfとして、渡された効果が持つ命令を実行する（9節。何が走るかはActiveEffectSequence）。
+   * rangeイベント（6節）とactions/combinations（11節・12節）の両方から呼ばれる（rangeイベント経由では
+   * agent・instrumentともにundefined）。対象が解決できない場合（例えばparentが無い、この実行文脈に居ない
+   * 役を指している。ReferenceContext参照）は、その対象への適用のみ無視する。
    *
-   * destroyをspawnより先に行う（9.3節・9.4節）: 置き換え後のオブジェクトが破棄されるオブジェクトの位置を
-   * 引き継げるよう、destroyで実際に位置が空いてから配置を行う。
+   * **命令の順序はここでは入れ替えない**——適用順はYAMLに書かれた順で、動詞ごとの優先順位は無い（9.7節）。
+   * 置き換えでdestroyがspawnより先に効くのは、著者がその順に書くから（9.3節）。
    *
    * **ここが「誰の仕業か」の境界**でもある。この中で起きた物の出入りは、すべてselfを主体として記録される
    * （WorldChange.subject）。どの`pick`の候補が選ばれたかによらず1つに決まるので、観測する側は分岐を
