@@ -6,6 +6,7 @@ import type { CardContent } from './Card';
 import { Card } from './Card';
 import { addLabel } from '../../ui/labels';
 import { ScrollArea } from '../../ui/scrollArea';
+import { Tooltip } from './Tooltip';
 import { addInputBlockingPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
 import { uiText } from '../../locale/uiTexts';
@@ -68,8 +69,9 @@ export interface RecipeWindowOptions {
  * **棚は見出しとして1ページに積み、タブでは分けない**（Windows.md 9節）。タブは横幅を等分するので、
  * 棚が増えるほど文字が収まらなくなる——縦に積めば伸びるだけで、送る仕組みは既にある。
  *
- * 解放条件を満たしていないレシピも**理由つきで並べる**——作れないものが見えないと、必要な
- * レシピに辿り着けないまま詰むため（SkillSystem.md 4節）。
+ * 解放条件を満たしていないレシピも**並べる**——作れないものが見えないと、必要なレシピに辿り着けない
+ * まま詰むため（SkillSystem.md 4節）。押せないことは札の鍵の印が、なぜ作れないかは押している間の
+ * 吹き出しが言う（Windows.md 9.3節）。
  */
 export class RecipeWindow {
   private readonly scene: Phaser.Scene;
@@ -88,10 +90,15 @@ export class RecipeWindow {
   /** 窓に収まらない分の送り（作れるものが1つも無ければ持たない）。 */
   private scroll: ScrollArea | undefined;
 
+  /** 未解放の札を押している間だけ出す吹き出し（ObjectWindowと同じ持ち方で、窓が閉じるときに捨てる）。 */
+  private readonly tooltip: Tooltip;
+
   constructor(scene: Phaser.Scene, metrics: ScreenMetrics, options: RecipeWindowOptions) {
     this.scene = scene;
     this.metrics = metrics;
     this.options = options;
+    // 札より先に作ってよい。手前に出ることは吹き出し自身が層で保つ（SCREEN_DEPTH.tooltip）。
+    this.tooltip = new Tooltip(scene, metrics);
 
     // 覆いも他の表示物と同じ後片付けに載せる（closeで一括して捨てる）。
     this.ownedObjects.push(
@@ -227,19 +234,22 @@ export class RecipeWindow {
         const lockedReason = entry.lockedReason;
         const x = left + (position % this.columns) * (cardWidth + cardGap);
         const y = rowTop + Math.floor(position / this.columns) * (cardHeight + cardGap);
+        // 送られていることがあるので、居場所は押した時点で測る（viewportの送り量を足す）。
+        const rect = (): Rect => ({ x, y: y + viewport.y, width: cardWidth, height: cardHeight });
         viewport.add(
           new Card(scene, metrics, x, y, {
             ...entry.card,
-            // 未解放のレシピも並べる。押せないことは名前の後ろの理由で伝える。
-            name:
+            onTap: lockedReason === undefined ? () => entry.onSelect(rect()) : undefined,
+            // 未解放のレシピは押しても選べない。なぜ作れないかは、押している間の吹き出しで言う。
+            hold:
               lockedReason === undefined
-                ? entry.card.name
-                : uiText('recipe_locked_name', { name: entry.card.name, reason: lockedReason }),
-            // 送られていることがあるので、居場所は押した時点で測る（viewportの送り量を足す）。
-            onTap:
-              lockedReason !== undefined
                 ? undefined
-                : () => entry.onSelect({ x, y: y + viewport.y, width: cardWidth, height: cardHeight }),
+                : {
+                    onStart: () => this.tooltip.show({ title: entry.card.name, body: lockedReason }, rect()),
+                    onEnd: () => this.tooltip.hide(),
+                    // 押せない札を待たせる理由が無い（ObjectWindowの押せないボタンと同じ）。
+                    delayMs: 0,
+                  },
           }),
         );
       });
@@ -252,6 +262,7 @@ export class RecipeWindow {
   /** 窓を畳む。**2度呼ばれても壊れない**——「閉じる」ボタンからと、呼び元の後片付けからの2回通る。 */
   close(): void {
     this.scroll?.destroy();
+    this.tooltip.destroy();
     for (const object of this.ownedObjects) object.destroy();
     this.ownedObjects.length = 0;
   }
