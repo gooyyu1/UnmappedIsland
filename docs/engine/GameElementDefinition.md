@@ -213,7 +213,7 @@ object_defs:
   stone:
     props:
       weight:
-        value: 10
+        value: 1000
 ```
 
 ### 4.1 tags
@@ -2583,21 +2583,25 @@ object_defs:
       day:
         value: 1
       hour:
-        value: 0
+        value: 12
         range: {min: 0, max: 24}
         on_max:
-          self:
-            add: {hour: -24, day: 1}
+          add:
+            self:
+              hour: -24
+              day: 1
       minute:
         value: 0
         range: {min: 0, max: 60}
         on_max:
-          self:
-            add: {minute: -60, hour: 1}
+          add:
+            self:
+              minute: -60
+              hour: 1
 ```
 
-（実際の定義は `src/assets/world-codex/core.yaml` 参照。`day`/`hour`/`minute` に加え、累積 tick 数を表す
-`tick` も持つ。）
+（実際の定義は `src/assets/world-codex/core.yaml` 参照。ここに挙げたのは日時だけで、累積 tick 数・
+天候・季節なども同じ `world` が持つ。）
 
 **「1つだけ存在すべき」は「世界を作った時点で在る」と読みます。** ただし湧かせるのは、`world` が直に
 受け入れられる型だけです（`NewGame.spawnSingletonsAcceptedByWorld`）——海区・本土（[`Voyage.md`](../world/Voyage.md) 4 節）は
