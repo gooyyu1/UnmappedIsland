@@ -48,18 +48,26 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 渡し直すことになる。そこで `WorldObject` から引いた時点で相手を結び付け、`Action`・`Combination`
 （`Interaction.ts`）として返す。以降は名前も相手も渡さない。
 
-引く口は3つ。
+引く口は4つ。
 
 - `MenuActionsFor(agent)` — このカードへ起こせる、**画面のボタンに出る**操作を宣言順に
   （`menuTriggers`。絞り込みは要らない）。
 - `TryGetAction(actionName, agent)` — 名指しで1つ。土地の `explore`、道の `travel`、動物の1手が使う。
   探すのは相手を伴わないきっかけ（`menu`・`tick`）だけ。
 - `CombinationsWith(instrument, agent)` — ドラッグ中のハイライト等のために、**今成立する**重ねる操作を
-  宣言順に列挙する。相手のマッチング（1）だけでなく `conditions`（2）まで見る——候補を選ぶ側と実行
-  できる側が食い違うと、満杯の炉に薪を落とせるのに何も起きない、という形になるため。**どちらの札を
-  `self` として引くか**（落とされた側が先、次に掴んだ側）と、
-  複数マッチした場合にどれを実行するかの解決はUI層に委ねる
-  （[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節、`PlayScreenView.combinationOf`）。
+  宣言順に列挙する。相手のマッチング（1）だけでなく `conditions`（2）まで見る——**実行できないものを
+  黙って落とし先にすると、落とせるのに何も起きない**という形になるため。
+- `RefusedCombinationsWith(instrument, agent)` — 逆に、`conditions` で成立せず、**断る理由**
+  （`reason`、14.6節）を宣言しているものだけを列挙する。画面は成立するものが1つも無いときだけこちらを
+  引き、**理由を言うためだけの落とし先**として出す（[`../ui/CardInteraction.md`](../ui/CardInteraction.md)
+  2.1 節）。上の「黙って」がここに掛かる——**理由が出るなら、実行できない落とし先を出してよい。**
+
+どちらの列挙も、相手のマッチングと**容量の門**（`AcceptedCount` が0の相手。満杯の炉）で先に絞る。
+分かれるのは `conditions` を見た結果だけで、容量で落ちたものはどちらにも入らない。
+
+**どちらの札を `self` として引くか**（落とされた側が先、次に掴んだ側）と、複数マッチした場合に
+どれを実行するかの解決はUI層に委ねる（[`../ui/CardInteraction.md`](../ui/CardInteraction.md) 2 節、
+`PlayScreenView.combinationOf`）。
 
 まとめて重ねる操作（`allow_multiple`、12.4節）も `Combination` が持つ。`AcceptedCount(followers)` が
 落とす前に何枚ついてくるかを答え、`ExecuteWithFollowers(followers)` がその繰り返しを行う——**1つ

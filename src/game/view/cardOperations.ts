@@ -117,9 +117,12 @@ export interface CardOperationsFactory {
   readonly actionsOf: (instance: WorldObject) => readonly CardAction[];
 
   /**
-   * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭を実行する手段
-   * （無ければundefined）。candidatesは`instrument`の役になる個体を運んできた順に並べたもの、movedは
-   * 指が運んできた個体（演出で追う札）で、countはまとめて実行する個数。
+   * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭（無ければundefined）。
+   * candidatesは`instrument`の役になる個体を運んできた順に並べたもの、movedは指が運んできた個体
+   * （演出で追う札）で、countはまとめて実行する個数。
+   *
+   * **実行する手段とは限らない**——成立するものが無く、宣言が断る理由を持っていればそれを
+   * `enabled: false` で返す（CardInteraction.md 2.1節）。
    *
    * **candidatesとmovedは別物**——逆向きに成立した組み合わせでは、指が運んできた札のほうが`self`に
    * なるため、相手として渡す個体と画面上で動く個体が入れ替わる。

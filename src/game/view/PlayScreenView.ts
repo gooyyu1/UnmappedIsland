@@ -330,13 +330,15 @@ export interface PlayScreenView {
   readonly cardOfObjects: (objects: readonly WorldObject[]) => ObjectCardStack;
 
   /**
-   * draggedをtargetへ重ねたときに実行できるcombination（GameElementDefinition.md 12節）。
-   * 実行できる組み合わせが無ければundefined。draggedとtargetが同じ束（その束の上の1枚を元の位置へ
-   * 重ねた）なら、束の中の2つを組み合わせる。
+   * draggedをtargetへ重ねたときのcombination（GameElementDefinition.md 12節）。返すものが無ければ
+   * undefined。draggedとtargetが同じ束（その束の上の1枚を元の位置へ重ねた）なら、束の中の2つを
+   * 組み合わせる。
+   *
+   * **実行できるとは限らない**——成立するものが無く、宣言が断る理由を持っていれば、それを
+   * `enabled: false` で返す（CardInteraction.md 2.1節）。どちらなのかは受け取った側がenabledで見分ける。
    *
    * **落とされた側が受け入れる組み合わせを先に、無ければ掴んだ側が受け入れる組み合わせを探す**
-   * （CardInteraction.md 2節）。どちらも宣言順の先頭を採る。マッチはwithタグだけで判定するので、
-   * conditionsを満たさず実行が空振りすることはある。
+   * （同2節）。どちらも宣言順の先頭を採る。
    */
   readonly combinationOf: (
     dragged: ObjectCardStack,

@@ -20,7 +20,10 @@ export interface CardSource {
   readonly stacksIn: (place: CardPlace) => readonly (ObjectCardStack | undefined)[];
   /** 挙げた個体だけを映すカード（PlayScreenView.cardOfObjects）。 */
   readonly cardOfObjects: (objects: readonly WorldObject[]) => ObjectCardStack;
-  /** 重ねたときに成立する組み合わせ（PlayScreenView.combinationOf）。countはまとめて実行する個数。 */
+  /**
+   * 重ねたときの組み合わせ（PlayScreenView.combinationOf）。countはまとめて実行する個数。
+   * **成立するとは限らない**——理由を告げて断るものはenabledがfalseで返る（CardInteraction.md 2.1節）。
+   */
   readonly combinationOf: (
     dragged: ObjectCardStack,
     target: ObjectCardStack,
@@ -348,7 +351,10 @@ export class ShownCards {
   // ---- 操作の意味 ----
 
   /**
-   * fromのfromIndexの札をtoのtoIndexの札へ重ねたときに成立する組み合わせ（無ければundefined）。
+   * fromのfromIndexの札をtoのtoIndexの札へ重ねたときの組み合わせ（返すものが無ければundefined）。
+   * **成立するとは限らない**——理由を告げて断るものもenabledがfalseで返る（CardInteraction.md 2.1節）。
+   * 実行されるものだけが要るならdropCombinationを使う。
+   *
    * 同じ場所を2度引かないのは、**同じ束へ重ねたことを参照の一致で見分ける**ため（combinationOf）。
    */
   combinationAt(
