@@ -188,6 +188,10 @@ issue が閉じた時点で `GONE <番号>` が出る。**PRの決着と、PRが
   worktree がロックされたまま残る。タグはクラウドとブリッジで同じなので、`--bridge` で投入した
   ものは `environment_id`（[`ccr-env.sh`](../scripts/agent/ccr-env.sh) の `BRIDGE_ENV`）で除き、
   `KEPT` として出す。ユーザーが立てたものは `task-` のタグを持たないので、同じ `KEPT` に落ちる。
+- **素性を引けなかったものも `KEPT`。** `get_session` が引けないと、走行中かもブリッジかも分からない。
+  **知らないことを「違う」として読まない**——畳んで消えたコメントも、ロックされたまま残る worktree も
+  戻せないので、引けなかったものは残す。マージ後の `KEPT` は渡す出来事がもう無いので、司令塔が
+  引き直して手で畳む。
 
 **状態で判定しない。** 走行中かどうかは分かる（`status_bucket` が
 `SESSION_STATUS_BUCKET_WORKING`。[`watch-prs.sh`](../scripts/agent/watch-prs.sh) の `STALLED` は
@@ -219,8 +223,8 @@ issue が閉じた時点で `GONE <番号>` が出る。**PRの決着と、PRが
 - `merge-and-close.sh` が**マージした後**。PRが閉じれば、最後の1本も読む相手が無くなる。**ここが渡す
   最後の機会**なので、走行中でも畳む。
 
-**ブリッジで立てたレビューを除くのは、上の `task-` と同じ。** タグはクラウドとブリッジで同じなので、
-`environment_id` で見て `KEPT` として出す。
+**ブリッジで立てたレビューと、素性を引けなかったものを除くのは、上の `task-` と同じ。** タグは
+クラウドとブリッジで同じなので、`environment_id` で見て `KEPT` として出す。
 
 どちらも通らないまま閉じたPR（`gh pr close`）のレビューだけが残るので、気づいたら
 `bash scripts/agent/archive-reviews.sh <PR番号>` を手で叩く。
