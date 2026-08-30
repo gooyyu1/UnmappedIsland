@@ -555,6 +555,22 @@ describe('merge-and-close.sh', () => {
     expect(result.installed).toBe(false);
     expect(result.status).toBe(2);
   });
+
+  // 印を置くだけで、下ろすのは司令塔の手番。`watch-prs.sh` がこのラベルを見て `RELAY` を毎周出す。
+  it('本文に `## 司令塔へ` があれば、司令塔へ ラベルを付けて RELAY を出す', () => {
+    const result = run({ body: `${DEFAULT_BODY}\n\n## 司令塔へ\n\n- #1353 を立てた（範囲外）\n` });
+
+    expect(result.lines).toContain('RELAY 1000');
+    expect(result.labels).toContain('--add-label 司令塔へ');
+  });
+
+  // 「回されたものが無い」と「読み落とした」を、司令塔が区別できなくなる。
+  it('節が無ければ、ラベルも RELAY も出さない', () => {
+    const result = run({ body: `${DEFAULT_BODY}\n\n## 司令塔の案\n\n- 積ではなく加算で表す\n` });
+
+    expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
+    expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+  });
 });
 
 /**

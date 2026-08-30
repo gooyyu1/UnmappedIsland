@@ -8,6 +8,7 @@
 # 出力は1行1件。
 #   HELD     <PR番号>              … 関門に掛かった。マージしていない（理由が続けて出る）
 #   MERGED   <PR番号>
+#   RELAY    <PR番号>              … 本文に `## 司令塔へ` があるので `司令塔へ` ラベルを付けた
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
 #   ARCHIVED <セッションID>         … そのPRを出したセッションと、そのPRのレビューのセッションを畳んだ
@@ -125,6 +126,17 @@ fi
 echo "MERGED $PR"
 
 leftover=0
+
+# `## 司令塔へ` を持つPRには `司令塔へ` ラベルを付ける。**下ろすのはこの後の司令塔の手番**なので、
+# ここでは印を置くだけ。[`watch-prs.sh`](watch-prs.sh) がこのラベルを見て `RELAY` を毎周出し、
+# 司令塔が中身を下ろしてラベルを外すまで黙らない（`parallel-work.md`「下ろすまで黙らない」）。
+#
+# **本文ではなくラベルで持つのは、引くのが安いから。** マージ済みPRは本数が多く、本文を毎周読むと
+# 窓を切ることになる——切った窓から出たものは永久に出なくなる。
+if grep -qE '^##[[:space:]]+司令塔へ[[:space:]]*$' <<<"$body"; then
+  gh pr edit "$PR" --add-label 司令塔へ >/dev/null
+  echo "RELAY $PR"
+fi
 
 # `Closes #123` だけを拾う。番号だけの参照（`#123`）では閉じないので、ここでも見ない。
 closes=$(grep -oiE 'closes[[:space:]]+#[0-9]+' <<<"$body" | grep -oE '[0-9]+' | sort -u || true)
