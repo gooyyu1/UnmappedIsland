@@ -1020,8 +1020,11 @@ export class PlayScene extends ResponsiveScene {
   }
 
   /**
-   * そのドロップで何が起きるか（何も起きないならundefined）。何が起きるかの判断はShownCards、
+   * そのドロップについて言うこと（何も言うことが無ければundefined）。何が起きるかの判断はShownCards、
    * ここは吹き出しの文字列に直すだけ。ただ位置を変えるだけの移動には説明が要らないので中身は空。
+   *
+   * **離せば起きるとは限らない**——理由を言うためだけの落とし先はenabledをfalseで返す
+   * （CardInteraction.md 2.1節）。
    */
   private describeDrop(drop: CardDrop): CardDropInfo | undefined {
     const dropped = this.dropOf(drop);

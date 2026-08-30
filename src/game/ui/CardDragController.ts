@@ -66,8 +66,11 @@ export interface CardDropInfo {
 
 export interface CardDragHandlers {
   /**
-   * そのドロップで何が起きるか（何も起きないならundefined）。ドロップ先の枠・受け入れ側のふちの光・
+   * そのドロップに**言うことがあるか**（何も無ければundefined）。ドロップ先の枠・受け入れ側のふちの光・
    * 説明の吹き出しは、いずれもこの答えだけを見て決める。
+   *
+   * **答えが返ることは「離せば何かが起きる」を意味しない。** 理由を言うためだけの落とし先も返る
+   * （enabledがfalse、CardInteraction.md 2.1節）ので、実際に起こす側はenabledで絞る。
    */
   readonly describeDrop: (drop: CardDrop) => CardDropInfo | undefined;
   /** releasedRectは手を離した時点で札が居た矩形。落とした後の動きの出発点になる（CardTable参照）。 */
@@ -278,7 +281,10 @@ export class CardDragController {
     });
   }
 
-  /** 運んでいる札をポインタの中心へ置き、今の位置で成立するドロップ先を枠で示す。 */
+  /**
+   * 運んでいる札をポインタの中心へ置き、今の位置で言うことのあるドロップ先を枠で示す。**枠が出ることは
+   * 「離せば起きる」を意味しない**——理由を言うためだけの落とし先には灰色の枠が出る（2.1節）。
+   */
   private follow(gesture: Gesture, pointer: Phaser.Input.Pointer): void {
     if (gesture.carried === undefined || gesture.indicator === undefined) return;
 
@@ -309,7 +315,14 @@ export class CardDragController {
     }
   }
 
-  /** 今のポインタ位置で成立するドロップと、そこで起きること（何も起きないものはundefined）。 */
+  /**
+   * 今のポインタ位置で**言うことのある**ドロップと、その中身（何も言うことが無ければundefined）。
+   *
+   * **返ったからといって、離せば起きるとは限らない。** 理由を言うためだけの落とし先も返る
+   * （`info.enabled` がfalse、CardInteraction.md 2.1節）ので、**実際に起こす側（end）は必ずenabledで
+   * 絞る**——絞りを外すと、何も起きない落とし先へonDropが走り、操作ログが「入れた」と嘘の再現手順を
+   * 残す（PlayScene.dropLabel）。見せる側（follow）は絞らない。それが理由を出すための落とし先だから。
+   */
   private dropCandidateAt(
     gesture: Gesture,
     pointer: Phaser.Input.Pointer,
