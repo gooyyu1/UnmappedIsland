@@ -10,21 +10,9 @@ import { parse } from 'yaml';
  * `describeReportFreshness`）が、**そこから文書へ書き写した数値は誰も見ていない**——再生成すると
  * 文書だけが古い値を持ったまま緑になる（issue #860）。
  *
- * 文書側は、書き写した数値の直後に出どころの印を置く。
- *
- * ```text
- * **片道の平均は86.43分**<!-- stats: terrain.yaml base_one_way base=shortest_mean mean -->
- * ```
- *
- * 印の形は `<!-- stats: <ファイル> <節> [<列>=<値> …] <読む列> -->` で、`<列>=<値>` はレコードを
- * 選ぶ条件。**1件に絞れなければ赤くする**ので、選ぶ鍵が増えた（節に別の `base` が入った等）ことも
- * 見つかる。
- *
- * **見るのは「YAMLの1つのセルを、丸めだけを挟んで書き写した数値」だけ。** 文書が書いた桁数へ
- * 丸めた値と突き合わせるので、`170.45` を「170分」と書いてよい。**複数のセルや仮置きから導いた
- * 数値（158日・176日・48,700分など）は対象外**——導出は書き写しではなく文書の主張で、式を印に
- * 書けるようにすると同じ計算が文書と生成器の2箇所に立つ。対象は生成物だけで、人が書く定義
- * （`src/assets/world-codex/*.yaml`）は再生成でずれる問題を持たないので見ない。
+ * 文書側は、書き写した数値の直後に出どころの印を置く。**印の形・粗さの書き方・何を印で書いてよいかは
+ * [`docs/diagnostics/README.md`](../../docs/diagnostics/README.md)「文書へ書き写した数値には、
+ * 出どころの印を置く」。**
  */
 
 const ROOT = resolve(__dirname, '../..');
@@ -40,6 +28,9 @@ const MARK_PATTERN = /<!--\s*stats:\s*([^>]*?)\s*-->/g;
  */
 const WRITTEN_NUMBER_PATTERN = /(\d[\d,]*(?:\.\d+)?)[^\d|]{0,8}$/;
 
+/** 印の末尾に置く粗さ。`±100` は出どころと同じ単位、`±5%` は書いた数に対する割合。 */
+const COARSENESS_PATTERN = /^±(\d+(?:\.\d+)?)(%?)$/;
+
 /** 印が指す、レポートの1つのセル。 */
 interface Source {
   readonly file: string;
@@ -48,12 +39,26 @@ interface Source {
   readonly column: string;
 }
 
+/** 印が許す粗さ。 */
+interface Coarseness {
+  /** 幅の大きさ。`relative` なら書いた数に対する百分率、そうでなければ出どころと同じ単位。 */
+  readonly width: number;
+  readonly relative: boolean;
+}
+
+/** 印の中身。 */
+interface Mark {
+  readonly source: Source;
+  /** 粗さ。書かれていなければ null（書いた桁へ丸めた厳密一致）。 */
+  readonly coarseness: Coarseness | null;
+}
+
 /** 文書の1つの印。 */
 interface Citation {
   readonly doc: string;
   readonly line: number;
   readonly body: string;
-  readonly source: Source | null;
+  readonly mark: Mark | null;
   /** 印の直前に書かれている数（桁区切りのカンマを除いたもの）。無ければ null。 */
   readonly written: string | null;
 }
@@ -68,8 +73,18 @@ function listMarkdown(dir: string): string[] {
   return found;
 }
 
-function parseSource(body: string): Source | null {
+function parseMark(body: string): Mark | null {
   const tokens = body.split(/\s+/).filter((token) => token !== '');
+
+  let coarseness: Coarseness | null = null;
+  const last = tokens[tokens.length - 1];
+  if (last !== undefined && last.startsWith('±')) {
+    const matched = COARSENESS_PATTERN.exec(last);
+    if (matched === null) return null;
+    coarseness = { width: Number(matched[1]), relative: matched[2] === '%' };
+    tokens.pop();
+  }
+
   if (tokens.length < 3) return null;
 
   const [file, section, ...rest] = tokens;
@@ -77,14 +92,37 @@ function parseSource(body: string): Source | null {
   const selectors = rest.map((token) => token.split('='));
   if (selectors.some((pair) => pair.length !== 2 || pair[0] === '' || pair[1] === '')) return null;
 
-  return { file, section, selectors: selectors as [string, string][], column };
+  return { source: { file, section, selectors: selectors as [string, string][], column }, coarseness };
+}
+
+/**
+ * 書いた数と出どころのずれ。粗さの中に収まっていれば null、外れていれば「どこまでなら良かったか」を
+ * 返す。粗さを書かない印は、書いた桁へ丸めた値との厳密一致で見る（`170.45` を「170分」と書ける、
+ * その丸めのぶんだけの幅）。
+ */
+function disagreement(written: string, cell: number, coarseness: Coarseness | null): string | null {
+  if (coarseness === null) {
+    const decimals = written.split('.')[1]?.length ?? 0;
+    const rounded = cell.toFixed(decimals);
+    return rounded === written ? null : `同じ桁で ${rounded}`;
+  }
+
+  const value = Number(written);
+  const width = coarseness.relative ? (Math.abs(value) * coarseness.width) / 100 : coarseness.width;
+  if (Math.abs(cell - value) <= width) return null;
+  return `許す幅は ${value - width}〜${value + width}`;
 }
 
 function citationsIn(rel: string): Citation[] {
   const found: Citation[] = [];
+  let inFence = false;
   readFileSync(join(ROOT, rel), 'utf-8')
     .split('\n')
     .forEach((raw, index) => {
+      // 印は本文の数値に付く。コードブロックの中にあるのは書式の例なので、出どころを持たない。
+      if (raw.trimStart().startsWith('```')) inFence = !inFence;
+      if (inFence) return;
+
       for (const match of raw.matchAll(MARK_PATTERN)) {
         // 先に置かれた印の中身は数として読まない（印の本文に数字が入りうる）。
         const before = raw.slice(0, match.index).replace(/<!--[\s\S]*?-->/g, '');
@@ -93,7 +131,7 @@ function citationsIn(rel: string): Citation[] {
           doc: rel,
           line: index + 1,
           body: match[1],
-          source: parseSource(match[1]),
+          mark: parseMark(match[1]),
           written: written === null ? null : written[1].replace(/,/g, ''),
         });
       }
@@ -144,35 +182,79 @@ describe('文書が stats/*.yaml から書き写した数値', () => {
     const broken: string[] = [];
     for (const citation of CITATIONS) {
       const where = `${citation.doc}:${citation.line}: ${citation.body}`;
-      if (citation.source === null) {
+      if (citation.mark === null) {
         broken.push(`${where} → 印の形が読めない`);
         continue;
       }
       if (citation.written === null) broken.push(`${where} → 印の直前に数値が無い`);
 
-      const cell = cellOf(citation.source);
+      const cell = cellOf(citation.mark.source);
       if (typeof cell === 'string') broken.push(`${where} → ${cell}`);
     }
     expect(broken, `出どころへ解決しない印:\n${broken.join('\n')}`).toEqual([]);
   });
 
-  it('書いた桁へ丸めた値が、出どころのセルと一致する', () => {
+  it('書いた数が、印の許す粗さの中で出どころのセルと一致する', () => {
     const stale: string[] = [];
     for (const citation of CITATIONS) {
-      if (citation.source === null || citation.written === null) continue;
+      if (citation.mark === null || citation.written === null) continue;
 
-      const cell = cellOf(citation.source);
+      const cell = cellOf(citation.mark.source);
       if (typeof cell === 'string') continue; // 解決しないことは前の試験が見る
 
-      const decimals = citation.written.split('.')[1]?.length ?? 0;
-      const rounded = cell.toFixed(decimals);
-      if (rounded !== citation.written) {
+      const gap = disagreement(citation.written, cell, citation.mark.coarseness);
+      if (gap !== null) {
         stale.push(
           `${citation.doc}:${citation.line}: ${citation.written} と書いてあるが` +
-            ` ${citation.body} は ${cell}（同じ桁で ${rounded}）`,
+            ` ${citation.body} は ${cell}（${gap}）`,
         );
       }
     }
     expect(stale, `出どころとずれた数値。文書を書き直す:\n${stale.join('\n')}`).toEqual([]);
+  });
+});
+
+/** 粗さの部分だけを読む。印の他の部分は「粗さを足しても…」の試験が見る。 */
+function coarsenessOf(token: string): Coarseness | null {
+  return parseMark(`balance.yaml object_costs object=raft total_minutes ${token}`)?.coarseness ?? null;
+}
+
+describe('印の粗さ', () => {
+  it('粗さを書かない印は、書いた桁へ丸めた値との厳密一致で見る', () => {
+    expect(disagreement('170', 170.45, null)).toBeNull();
+    expect(disagreement('170.5', 170.46, null)).toBeNull();
+    expect(disagreement('4200', 4207, null)).toBe('同じ桁で 4207');
+  });
+
+  it('出どころと同じ単位の粗さは、書いた数からその幅まで離れてよい', () => {
+    const coarseness = coarsenessOf('±100');
+    expect(coarseness).toEqual({ width: 100, relative: false });
+    expect(disagreement('4200', 4300, coarseness)).toBeNull();
+    expect(disagreement('4200', 4301, coarseness)).toBe('許す幅は 4100〜4300');
+  });
+
+  it('割合の粗さは、書いた数に対する百分率で幅を決める', () => {
+    const coarseness = coarsenessOf('±5%');
+    expect(coarseness).toEqual({ width: 5, relative: true });
+    expect(disagreement('4200', 4410, coarseness)).toBeNull();
+    expect(disagreement('4200', 3989, coarseness)).toBe('許す幅は 3990〜4410');
+  });
+
+  it('粗さを足しても、指すセルの読み方は変わらない', () => {
+    const source = { file: 'balance.yaml', section: 'object_costs', column: 'total_minutes' };
+    expect(parseMark('balance.yaml object_costs object=raft total_minutes ±5%')?.source).toEqual({
+      ...source,
+      selectors: [['object', 'raft']],
+    });
+    expect(parseMark('balance.yaml object_costs total_minutes')).toEqual({
+      source: { ...source, selectors: [] },
+      coarseness: null,
+    });
+  });
+
+  it('読めない粗さは、印ごと読めないものとして赤くする', () => {
+    for (const token of ['±', '±5％', '±5%%', '±-5', '±5分']) {
+      expect(parseMark(`balance.yaml object_costs object=raft total_minutes ${token}`)).toBeNull();
+    }
   });
 });
