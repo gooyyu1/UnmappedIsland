@@ -270,6 +270,25 @@ object_defs:
           self:
             herbivore_weight: 25
             miss_weight: -25
+      # 慣れた獣は、その土地の連れになる（docs/world/Characters.md ホームシック節）。**囲いの中に
+      # 生きた獣が居ることが、飼いならしたことそのもの**——中の個体は上のmodifyで警戒が引き切れて
+      # いる。死体は数えない（quarryではあるがanimalではない、animals.yaml）。
+      #
+      # **飼葉を切らせば慰めも切れる。** 増えるのを止めるゲート（animals.yamlのbreeding_remaining）と
+      # 同じ1つの量に乗せているので、世話をやめた囲いは何も返さない。
+      #
+      # 押し上げるのは据えられた土地のほう（ancestor、8.6節）で、キャラクタはそこから継ぐだけ
+      # （characters/player_character.yamlのcompany）。**だから遠征に出れば効かない。**
+      #
+      # **名乗るのは1**——囲いを並べても効き目が増えないのは、受ける側の段が1つだけだから
+      # （同）。囲いは何頭居るかを数えられない（条件は存在判定だけ、14.3節）ので、ここで言えるのも
+      # 「居るか居ないか」に留まる。
+      - conditions:
+          - {slot: catch, matches: {tag: animal}}
+          - {prop: fodder, gte: 1}
+        modify:
+          ancestor:
+            company: 1
     interactions:
       # 飼葉を与える（罠へ餌を仕掛けるのとまったく同じ、TrapSystem.md 4節）。移る量は食べ物の側が
       # 1箇所で持つ（FireSystem.md 2節の燃料と同じ形）。

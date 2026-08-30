@@ -30,15 +30,16 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | `singleton` | `true`（同時に存在するプレイヤーキャラクタは1体） |
 | タグ | `character` |
 | スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
-| プロパティ | `weight` / `pace` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `happiness` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` と、腕前の11本（[`Skills.md`](./Skills.md) 2 節。個体差を持たず `player_character` trait が配る） |
+| プロパティ | `weight` / `pace` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `loneliness` / `homesickness` / `comfort` / `company` / `happiness` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` と、腕前の11本（[`Skills.md`](./Skills.md) 2 節。個体差を持たず `player_character` trait が配る） |
 | アクション | 休息の4つ（`wait` / `rest` / `nap` / `sleep`。下の[休息](#休息)節）と、限界の3つ（`collapse` / `fall_asleep` / `despair`。下の[限界](#限界)節）。どちらも `player_character` trait が配る |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterCard.ts`。絵が入るまでの繋ぎ） |
 
-`status` タグが付くのは `pain` / `blood` / `warmth` / `satiety` / `vitamin` / `happiness` / `hydration` /
-`wakefulness` / `stamina` / `load` の10で、宣言順もこの順に揃える（`propertiesWithTag` の戻り順がそのままステータスエリアの
-並びになる、[`StatusArea.md`](../ui/StatusArea.md)）。先頭の6つが trait 由来なのは、trait の props が
+`status` タグが付くのは `pain` / `blood` / `warmth` / `satiety` / `vitamin` / `homesickness` / `happiness` /
+`hydration` / `wakefulness` / `stamina` / `load` の11で、宣言順もこの順に揃える（`propertiesWithTag` の戻り順がそのままステータスエリアの
+並びになる、[`StatusArea.md`](../ui/StatusArea.md)）。先頭の7つが trait 由来なのは、trait の props が
 キャラクタ自身の props より前に並ぶため（`RawObjectDef.resolve`）。**`chill_point` は `status` を持たない**
-——見せるのは残っている熱だけで、境目そのものは衣服・寝床が押し下げる裏の値。**栄養素の在庫（`carbohydrate` ほか3つ）は
+——見せるのは残っている熱だけで、境目そのものは衣服・寝床が押し下げる裏の値。**`loneliness` と `comfort` と
+`company` も同じく裏の値**——読ませるのは間の `homesickness` だけ（下の[ホームシック](#ホームシック)節）。**栄養素の在庫（`carbohydrate` ほか3つ）は
 `status` を持たない**——常に見せるのは腹が満ちているかどうかだけで、在庫は開いて見るもの
 （[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節）。**ビタミンだけが在庫と別扱いなのは、
 尽きた先の弊害を段が持つ**ため（同 4 節）。
@@ -74,7 +75,11 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   ——**体調不良を怪我のカードにせず、原因となる値の段に持たせる**
   （[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）。
 - **`happiness`（幸福度）**: **メンタルの不調を代表する1本**で、単位を持たない 0〜100。自分では動かず、
-  口にした物が上げ、`pain` の段が下げる（下の[幸福度](#幸福度)節）。個体差は持たせず trait が配る。
+  口にした物が上げ、`pain` と `homesickness` の段が下げる（下の[幸福度](#幸福度)節）。個体差は持たせず trait が配る。
+- **`loneliness`（孤独、日）／`homesickness`（ホームシック）／`comfort`（居心地）／`company`（連れ）**:
+  時間の経過そのものから生える圧（下の[ホームシック](#ホームシック)節）。溜める側と抑える側の3つは自分では
+  動かず `base` で継ぐだけで、間の `homesickness`（0〜100、増える側が悪い）だけが溜まって `happiness` を
+  削る。個体差は持たせず trait が配る。
 - **`hydration`（水分）**: `-1/tick` 固定で、`max` が「満水から何 tick 保つか」。**減り方に個体差を
   持たせない**——キャラクタが違っても、飲んだ水1mLの意味が変わってはならないため。持ちの差は
   `max`（＝体が抱える水の量）で表す。液体の mL からの換算は飲用側の宣言が持つ（`transfer` の
@@ -158,7 +163,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   上の80%は安全域の境目ではなく `caution` の境目になる（560 ＝ 34.6℃ ＝ 軽度低体温症の入口）。
   **安全域は `max` ちょうど**（37℃）で、満タンから始まり、そこから 560 までが `watch`——体温は満タンが
   常態なので、失った熱はそれだけで留意に値する。
-- **`load` と `pain` は増える側が悪い**ので、上の「80%で安全域を外れる」は当てはまらない。`max` からの
+- **`load` と `pain` と `homesickness` は増える側が悪い**ので、上の「80%で安全域を外れる」は当てはまらない。`max` からの
   割合で刻む: 1/4 で `watch`、1/2 で `caution`、5/6 で `danger`。0 から始まって荷造り・怪我の最中に
   現れるよう、最初の境目は低めに置く。`load` の危険域の段の名前は **`too_heavy`** で固定する——道の
   `travel` がこの名前で移動可否を見る（[`ContainerSystem.md`](../engine/ContainerSystem.md) 5節）。
@@ -205,8 +210,9 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 
 ## 幸福度
 
-**`happiness` は、メンタルの不調を代表する1本です。** ストレス・退屈・孤独をそれぞれ値にはせず、心の
-不調はすべてここへ集めます（[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）。
+**`happiness` は、メンタルの不調を代表する1本です。** ストレス・退屈・里心が行き着く先を分けず、心の不調は
+すべてここへ集めます（[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）。**分かれるのは原因の側
+だけ**で、`pain` と `homesickness` がそれぞれ値を持ってここを削ります。
 
 **押し引きはすべて `add` で、`modify` は1本も刺しません。** 刺すと実効値が実体値とずれて `on_min` が
 書けなくなります（`WorldCodex.requireRangeEventsOnUnmodifiedProperties`）——尽きたことへ反応する道を
@@ -251,18 +257,108 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 `eat` を持つ型がすべてベース値を宣言していることを `tests/world-codex/foodsYaml.test.ts` が全数で
 見張ります。
 
-### 下げるのは、痛みの段だけ
+### 下げるのは、痛みとホームシックの段
 
 `pain` の段が `add` で削ります——`sore` で −0.125/tick、`hurting` で −0.25/tick、`unbearable` で
 −0.5/tick（1日あたり −12・−24・−48）。**怪我も壊血病も脂の欠乏も痛みへ合流している**ので、削る宣言を
 1箇所に置くだけで、内側の不調が残らず心へ届きます。**疼く程度なら食事で取り返せ、激痛のまま1日を
 過ごすと最良の食事3食（+18）でも追いつきません。**
 
+**内側の不調が痛みへ合流するのに対し、外から時間が掛ける圧は `homesickness` が受け持ちます**（下の
+[ホームシック](#ホームシック)節）。削る量は痛みと同じ目盛りで、削る側はこの2本で全部です。
+
 **寒さと雨はここへ引きません。** どちらも熱（`warmth`）が受け持っていて、対抗手段（火・屋根）もそちらに
 付いています。両方へ効かせると、火を焚くことがうまい物を食べることの代わりになります。
 
-**時間そのものから生える圧はまだありません**（ホームシック）。寝床・住居からの寄与も未実装で、
-[`Dwellings.md`](./Dwellings.md) 6節と [`Bedding.md`](./Bedding.md) 8節がこの節を待っています。
+**時間そのものから生える圧は、下の[ホームシック](#ホームシック)節が持ちます。** 寝床からの寄与は未実装で、
+[`Bedding.md`](./Bedding.md) 8節がこの節を待っています。
+
+## ホームシック
+
+**サバイバルは知識と設備が積み上がるぶん、後半ほど易しくなります。** 危機が最初の数日だけになって残りが
+作業になるのを埋める圧を、時間の経過そのものから生やします
+（[`DesignPrinciples.md`](../concept/DesignPrinciples.md) 「後半には、時間の経過そのものから生える圧を置く」）。
+
+```
+経過日数 ──▶ loneliness ──▶ homesickness ──▶ happiness を削る
+                          ▲抑える
+                       comfort（住居の設え） ／ company（世話をしている獣）
+```
+
+**プレイヤーが読むのは `homesickness` だけです。** 溜める側の `loneliness` も、抑える側の `comfort`・
+`company` も `status` タグを持たないので、常時のバーには出ません——見えない値が結果だけを変える形には
+ならず、増減の理由は「里心が募っている」の1本に集まります。
+
+### 孤独は、経過日数そのもの
+
+`loneliness` は**独立した値としては溜めません**。`base: {subject: ancestor, prop: day}` で world の日数を
+場所ごしに継ぐだけです（`ambient_brightness`・`sheltered` と同じ形）。時間の単調増加関数でしかないものを
+別に持つと、同じ数が2箇所に立ちます。`base` にしてあるので、将来「他の生存者に会う」で `modify` して
+下げる余地は追加のコストなしに残ります。
+
+段の境目は最初の季節の変わり目に置きます（初回は `calm`→`wet`→`dry` の各30日固定、
+[`ClimateSystem.md`](../engine/ClimateSystem.md) 2.3 節）。**最初の凪の季節は溜まりません**——生き延びる
+だけで手一杯のあいだに里心は付きません。
+
+| 段 | 日 | `homesickness` を溜める速さ |
+| --- | --- | --- |
+| `occupied` | 〜29 | — |
+| `restless` | 30〜 | +0.96/日（`+0.01/tick`） |
+| `lonely` | 60〜 | +1.92/日 |
+| `forsaken` | 90〜 | +3.84/日 |
+
+### ホームシックが幸福度を削る
+
+`homesickness` は 0〜100 で、**増える側が悪い**ので段は `max` からの割合で刻みます（`pain`・`load` と同じ
+25/50/83、上の[域の区分](#域の区分stages-の不変条件)節）。削り方も `pain` と同じ形で、1段上がるごとに倍です。
+
+| 段 | 下限 | 域 | `happiness` |
+| --- | --- | --- | --- |
+| `settled` | 0 | 安全 | — |
+| `wistful` | 25 | 留意 | −12/日（`-0.125/tick`） |
+| `yearning` | 50 | 要注意 | −24/日 |
+| `despondent` | 83 | 危険 | −48/日 |
+
+**何も打たなければ、56日目に留意域へ入って削られ始め、86日目に幸福度が 0 へ届きます**（火を通した3食
+＝ +18/日 を通した場合。`tests/world-codex/homesickness.test.ts`）。最初の雨季が明けるころに表へ出て、
+1周回 115 日（[`ContentSkeleton.md`](./ContentSkeleton.md) 8.3 節）の3/4で心が尽きる位置です。
+**追いつくのは最初の段まで**——`yearning` の −24/日 は最良の食事でも埋まりません。
+
+### 抑えるのは、今いる場所
+
+抑える手は2つあり、**どちらも場所が持つ値**（`location` trait）です。キャラクタは
+`base: {subject: ancestor}` で継ぐだけなので、**遠征に出れば、どちらも効きません。**
+
+**`comfort`（居心地）は住居の部品が押し上げます**（[`Dwellings.md`](./Dwellings.md) 2 節。据えれば効き続け、
+手入れは要りません）。
+
+| 段 | 下限 | `homesickness` |
+| --- | --- | --- |
+| `bare` | 0 | — |
+| `homely` | 20 | −1.92/日（`-0.02/tick`） |
+| `snug` | 50 | −3.84/日 |
+
+**`company`（連れ）は、飼葉の残っている囲いが押し上げます**（`farming.yaml`）。囲いの中に生きた獣が居ることが
+飼いならしたことそのもので、**世話をやめれば慰めも切れます**。
+
+| 段 | 下限 | `homesickness` |
+| --- | --- | --- |
+| `alone` | 0 | — |
+| `kept` | 1 | −1.92/日 |
+
+**分けているのは、積み上がり方が違うからです。** 住居の部品は枠の数で頭打ちになります
+（[`Dwellings.md`](./Dwellings.md) 1 節の `structure` スロットは1種類につき1枠）が、**囲いは同じ土地へ
+いくつでも据えられます**。1本に合流させると、囲いを3つ並べるだけで `snug` に届き、最後の段まで打ち消せて
+しまいます。`company` の段を1つだけにしてあるので、**頭数でも囲いの数でも効き目は増えません。**
+
+**囲い1つが、60日目からの増え（+1.92/日）をちょうど止めます。** 90日目からの増え（+3.84/日）を止めるには
+`snug` まで設えた住居か、**家と家畜の両方**が要るので、**家畜だけでは最後まで持ちません**。逆に、家を
+建てただけでも `homely` 止まりで、そこから先は家具・娯楽の系統（未実装）が担います
+——**「どうせ建てる家」を1つ置けば済む圧にはしていません。**
+
+**遠征は心を削るものとして割り切ります。** 持ち運べる慰めの席は開けません（開ければ、拠点を離れない選択と
+離れる選択の差が消えます）。設えのある場所へ帰れば `homesickness` は減るので、**遠出で増やしたぶんは
+帰ってから戻す**、が押し引きの形になります。
 
 ## 休息
 

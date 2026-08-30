@@ -154,6 +154,19 @@ traits:
       ambient_temperature:
         value: 0
         base: {subject: ancestor}
+      # その場の居心地（docs/world/Characters.md ホームシック節）。**持つのは場所で、キャラクタは
+      # baseで継ぐだけ**——住居の部品（docs/world/Dwellings.md 2節）が、据えられた住居のここを
+      # modifyで押し上げる。素は0（何も無い土地）。
+      #
+      # **気温と違って親から継がない。** 洞窟に入れば外の設えは届かないし、外に居れば洞窟の中の
+      # 設えは効かない——居心地は、今その場に在る物だけが作る。下のcompanyも同じ。
+      comfort:
+        value: 0
+      # その場に居る、世話をしている獣の数（同節）。**上の居心地と分けてあるのは、積み上がり方が
+      # 違うから**——住居の部品は枠の数で頭打ちになる（Dwellings.md 1節）が、囲いは同じ土地へ
+      # いくつでも据えられる。**受ける側の段を1つだけにして**、頭数では効き目が増えないようにする。
+      company:
+        value: 0
 
 object_defs:
   world:
