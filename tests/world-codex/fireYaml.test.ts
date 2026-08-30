@@ -199,6 +199,61 @@ describe('fire.yamlの火の連鎖', () => {
     return seen;
   }
 
+  it('雨の日は屋外で火が起こせない', () => {
+    // 確率が下がるのではなく、できない側に線が引かれる（docs/engine/FireSystem.md 3.1.1節）。
+    // 引きは成功する側（LIGHTS）のままなので、止めているのは天気だけ。
+    setWeather('heavy_rain');
+    const grass = spawnInto('dry_grass', land, 'items');
+    const drill = spawnInto('fire_drill', player, 'hand');
+
+    expect(grass.combinationsWith(drill, player), '候補にも挙がらない').toEqual([]);
+    expect(itemsOn(land), '外した回と違って火口も減らない').toEqual(['dry_grass']);
+  });
+
+  it('雨でも屋根の下なら火を起こせる', () => {
+    // 洞窟がsheltered: 1を宣言し、火口の祖先がそこで止まる（ContainerSystem.md 6節）。
+    const cave = spawnInto('shallow_cave', land, 'fixtures');
+    setWeather('heavy_rain');
+    expect(cave.tryGetAction('enter', player)?.tryExecute(), '屋根の下へ入る').toBe(true);
+    const grass = spawnInto('dry_grass', cave, 'items');
+    const drill = spawnInto('fire_drill', player, 'hand');
+
+    const light = grass.combinationsWith(drill, player).find((c) => c.name === 'light');
+    expect(light, '大雨でも候補に挙がる').toBeDefined();
+    expect(light?.tryExecute(), '起こせる').toBe(true);
+    expect(itemsOn(cave), '洞窟の中に火種ができる').toEqual(['burning_tinder']);
+  });
+
+  it('雨の日でも、洞窟で起こした火種を外の炉へ運んで灯せる', () => {
+    // 洞窟と外は同じ土地の中なので、1tickで燃え尽きる火種でも届く（3.1節）。この道は塞がない
+    // ——「雨の日に火を戻すには洞窟が要る」という形が、そのまま洞窟の価値になっている。
+    const cave = spawnInto('shallow_cave', land, 'fixtures');
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    stoke(hearth, 'thick_branch');
+    setWeather('heavy_rain');
+
+    expect(cave.tryGetAction('enter', player)?.tryExecute(), '洞窟へ入る').toBe(true);
+    const grass = spawnInto('dry_grass', cave, 'items');
+    const drill = spawnInto('fire_drill', cave, 'items');
+    expect(
+      grass
+        .combinationsWith(drill, player)
+        .find((c) => c.name === 'light')
+        ?.tryExecute(),
+      '中では起こせる',
+    ).toBe(true);
+
+    const tinder = new Location(cave, codex).items.find((o) => o.def.name === 'burning_tinder');
+    expect(tinder, '火種ができている').toBeDefined();
+    expect(tinder!.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+    expect(cave.tryGetAction('leave', player)?.tryExecute(), '火種を持って外へ出る').toBe(true);
+
+    const ignite = hearth.combinationsWith(tinder!, player).find((c) => c.name === 'ignite');
+    expect(ignite, '屋外の炉へ落とせる').toBeDefined();
+    expect(ignite?.tryExecute()).toBe(true);
+    expect(heatIs(hearth, 'ember'), '雨の中の炉にも種火が立つ').toBe(true);
+  });
+
   it('枝は火口にならない（繊維状のものだけが火を受け止める）', () => {
     const twig = spawnInto('twig', land, 'items');
     const drill = spawnInto('fire_drill', player, 'hand');
@@ -243,6 +298,17 @@ describe('fire.yamlの火の連鎖', () => {
         ?.tryExecute() === true,
     ).toBe(false);
     expect(heatIs(hearth, 'out'), '火は消えたまま').toBe(true);
+  });
+
+  it('薪の無い炉は、火種を断る理由を名乗る', () => {
+    const hearth = spawnInto('campfire', land, 'fixtures');
+    const tinder = spawnInto('burning_tinder', land, 'items');
+
+    expect(hearth.combinationsWith(tinder, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      hearth.refusedCombinationsWith(tinder, player).map((c) => c.unmetRequirement()?.reasonName),
+      '断る理由まで辿り着ける（14.6節のreason）',
+    ).toEqual(['no_fuel']);
   });
 
   it('着火が置くのは種火だけで、そこから薪が火を育てる', () => {

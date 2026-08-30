@@ -40,7 +40,8 @@
 `consciousness` はまだ配っていません（7 節）。**血が戻る条件（3.1 節）は人にも獣にも配り終えています**
 （検証は `tests/world-codex/charactersYaml.test.ts` と `animalsYaml.test.ts`）。8 節が挙げる**新しい死因を
 既存の死に方へ流す道**のうち、**食の偏りは実装済み**（[`DigestionSystem.md`](./DigestionSystem.md) 7 節）で、
-感染と発熱は未実装です。**寒さを防ぐ側のうち入っているのは火と洞窟だけで、衣服・寝床が `chill_point` を
+**感染も 8.1 節の 2 経路が入っています**（皮膚が破れた傷が持つ `infection`。膿む速さは仮決めで、
+[`InjurySystem.md`](./InjurySystem.md) 6 節）。**寒さを防ぐ側のうち入っているのは火と洞窟だけで、衣服・寝床が `chill_point` を
 押し下げる側はまだありません**（8.3 節）。
 未決事項は末尾に整理しています。
 
@@ -410,8 +411,12 @@ laceration:
 | 発熱・下痢 | `hydration`・`satiety` を余計に食う | **効く**。水をがぶ飲みすれば延命できる |
 | 敗血症 | `blood` を直接削る | **効かない**。傷の側を断つ以外に止まらない |
 
+**書くのは傷の側です**——`infection` を持つのが傷なので、そこから先の 2 経路も同じ trait
+（`injuries.yaml` の `open_wound`、[`InjurySystem.md`](./InjurySystem.md) 6 節）が持ちます。宿主は
+`parent` で、水分を宣言していない相手（動物）ではその寄与だけが効きません。
+
 ```yaml
-laceration:
+open_wound:
   passives:
     # 熱で水が余計に要る。飲めば追いつくので、ここだけなら水で凌げる。
     - conditions: [{prop: infection, in_stage: festering}]
@@ -420,6 +425,9 @@ laceration:
     - conditions: [{prop: infection, in_stage: septic}]
       add: {parent: {hydration: -2, blood: -40}}
 ```
+
+`hydration` は素で -1/tick 減る（[`Characters.md`](../world/Characters.md)）ので、`festering` は水の
+保ちを半分に、`septic` は 3 分の 1 にします。
 
 **敗血症が血を削るのは、辻褄合わせではありません。** 敗血症性ショックでは血管が漏れ、血漿が循環の外へ
 抜けます。**傷口から流れ出るのと、体内で循環から失われるのは同じこと**（4 節）なので、外傷と同じ量へ
@@ -526,8 +534,8 @@ laceration:
   安定してから見る
 - `shock` の配分（2.1 節）は、武器3種と獲物4種が並んだ時点の釣り合いで置いてある。**気絶している間に
   動物が何をするか**（襲い続けるのか、興味を失うのか）が決まれば、覚めるまでの長さを見直すことになる
-- 感染の値の配分（8.1 節）——熱が水をどれだけ余計に食うか、敗血症がどれだけ速く命を削るか。
-  **傷を洗う操作を入れて初めて釣り合いが決まる**ので、洗浄の手間と一緒に決める
+- 感染が上がる速さ（[`InjurySystem.md`](./InjurySystem.md) 6.2 節）。**8.1 節の削りはその速さと対で
+  効く**ので、上がり方が仮決めのうちは、こちらの配分（-1/-2/-40）も仮のまま
 - `warmth` の配分（8.3 節）——`chill_point` の素の 16℃、削る `-2`/`-6`、戻る `+8`。**衣服と寝床が
   どれだけ境目を下げるか**が決まって初めて、裸で一晩を越せるかが決まる
 - 熱中症を、凍死と対称の位置に置くか（8.3 節）。灼熱（[`ClimateSystem.md`](./ClimateSystem.md) 4.3 節）は

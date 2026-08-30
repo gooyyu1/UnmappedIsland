@@ -106,7 +106,30 @@ traits:
         value: 0
         base: {subject: ancestor, prop: sheltered}
         stages:
-          - {name: sheltered, min: 1, situation: sheltered}
+          - name: sheltered
+            min: 1
+            situation: sheltered
+            passives:
+              # 屋根の下では風雨が当たらない（docs/world/ContentSkeleton.md 8.1.4節）。**採取の側は
+              # 屋外かどうかを知らなくてよい**——止めているのは風雨そのものなので、屋根はその値を
+              # 落とすだけでよい。引く量はいちばん強い嵐の風速で、下のrangeの底が余りを切る。
+              - modify:
+                  self:
+                    wind_speed: -20
+      # その身に当たっている風の強さ（m/s。docs/world/ContentSkeleton.md 8.1.5節）。**嵐の日に屋外の
+      # 採取を止めているのはこの値**で、暗さではない（同8.1節）。値は上の明るさ・shelteredと同じく
+      # 祖先から継ぐだけで、自分では動かさない——動かすのは屋根（上のstages）だけ。
+      #
+      # **境目を持つのはこのstagesだけ**で、条件の側は段の名前で見る（明るさと同じ形）。galeの
+      # 17.2 m/sは台風の風速の定義（ビューフォート風力階級8の下限）そのもので、weatherの7段のうち
+      # これを超えるのは嵐だけ。
+      wind_speed:
+        value: 0
+        base: {subject: ancestor}
+        range: {min: 0, max: 20}
+        stages:
+          - {name: calm}
+          - {name: gale, min: 17.2}
       # 体重（g）。**筏に乗れば積載として効く**（voyage.yaml）ので、担ぐ側も担がれる側になる。
       # 血液量が体重のおよそ1/13という下の関係から、5,000mLはちょうど65kgにあたる。個体差は
       # まだ持たせず、血と同じくこの trait が配る。

@@ -34,11 +34,15 @@ object_defs:
       fell:
         trigger: {drag: {tag: cutting_tool}}
         # 屋外で採る行動なので、見るのは視界の側（docs/engine/IlluminationSystem.md 5節）。
+        # 嵐の日は明るさが足りていても採れない（docs/world/ContentSkeleton.md 8.1.4節）。屋根の下なら
+        # 風雨は当たらないので、**この条件は屋外かどうかを問わない**——風雨そのものだけを見る。
         conditions:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
             in_stage: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage: gale}
         duration: 20
         destroy: self
         spawn: {object: banana_stem, count: 5, into: agent}
@@ -57,6 +61,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage: gale}
         duration: 20
         destroy: self
         spawn:

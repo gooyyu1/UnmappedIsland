@@ -4,8 +4,14 @@ import type { PassiveEffect, TransferPassiveEffect } from './PassiveEffect';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
- * 1つの ObjectDef が宣言する持続効果（8節）の一式。target・kindを問わず1つにまとめて持ち、
- * 要素リストは公開せず、登録/解除の一括依頼（setRelationRegistered/setChildRegistered）だけを受ける。
+ * 1つの ObjectDef が宣言する持続効果（8節）の一式。target・kindを問わず宣言順に1つへまとめて持つ。
+ *
+ * **受け取った契機はそのまま全effectへ配り、どれが反応するかは効果自身が決める。** だから契機を伝える
+ * 側は、宣言のtargetもkindも見ずに「こうなった」とだけ言えばよい。
+ *
+ * **別なのは、輸送を走らせる口（applyTickTransfers）だけ。** 輸送は寄与として登録できない（8.4節）
+ * のでこちらが走らせるしかなく、走らせる時点（積分の後、WorldObject.tick）が意味を持つ。そこだけは
+ * 「こうなった」ではなく「いま走らせろ」を受け、呼ぶ側がその時点を知っている。
  */
 export class PassiveEffects {
   private readonly effects: readonly PassiveEffect[];
@@ -31,8 +37,8 @@ export class PassiveEffects {
     for (const transfer of this.transfers) transfer.applyTick(owner);
   }
 
-  /** owner自身から辿れる関係（self/parent/ancestor）が変わった契機を全effectへ伝える
-   * （PassiveEffect.setRelationRegistered参照）。 */
+  /** 相手がownerから一意に辿れる関係が変わった契機を全effectへ伝える
+   * （PassiveEffect.setRelationRegistered参照。childだけは相手が定まらずsetChildRegisteredが持つ）。 */
   setRelationRegistered(owner: WorldObject, relation: ReferenceRoot, register: boolean): void {
     for (const effect of this.effects) effect.setRelationRegistered(owner, relation, register);
   }

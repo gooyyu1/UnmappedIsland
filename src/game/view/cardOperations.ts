@@ -1,6 +1,7 @@
 import type { WorldCodex } from '../../domain/WorldCodex';
 import type { StartedGame } from '../../domain/generation/NewGame';
 import type { WorldObject } from '../../domain/WorldObject';
+import type { Requirement } from '../../domain/Requirement';
 import { putIntoSlot } from '../../domain/slotEntry';
 import type { Localization } from '../../locale/Localization';
 import { craftingActions } from './craftingView';
@@ -34,8 +35,12 @@ export interface CardAction {
 }
 
 /**
- * 札を落としたときに起きること1件。**画面は、宣言された組み合わせと枠へ入れる操作を区別しない**
- * ——どちらも名前と時間を吹き出しに出し、実行するだけ（CardInteraction.md 2節）。
+ * 札を落とす先について言うこと1件。**画面は、宣言された組み合わせと枠へ入れる操作を区別しない**
+ * ——どちらも名前と時間を吹き出しに出し、実行するだけ（CardInteraction.md 2節）。**起きることとは
+ * 限らない**——離しても何も起きない落とし先（enabledがfalse）もこの形で返る（同2.1節）。
+ *
+ * **実行できるかと、できない理由の持ち方はCardActionと同じ。** ボタンで押せない操作も、重ねても
+ * 起きない組み合わせも、宣言が書いた1行（14.6節のreason）を同じ形で画面へ渡す。
  */
 export interface CardDrop {
   /**
@@ -59,11 +64,18 @@ export interface CardDrop {
   readonly movedIds: readonly number[];
   /** 実行する。ワールドを変えるだけで、画面への反映は呼び出し側の責務。 */
   readonly execute: () => void;
+
+  /** 今この操作の要件（14節）を満たしているか。falseなら落としても何も起きない。 */
+  readonly enabled: boolean;
+
+  /** 満たしていない要件が宣言している理由の文言（14.6節）。宣言が無ければundefined。 */
+  readonly reason: string | undefined;
 }
 
 /**
- * カードを重ねたときに実行できるcombination（GameElementDefinition.md 12節）。宣言されている操作なので
- * 名前が必ずある。
+ * カードを重ねたときのcombination（GameElementDefinition.md 12節）。宣言されている操作なので
+ * 名前が必ずある。**実行できるとは限らない**——理由を宣言している要件で落ちているものは、その理由を
+ * 見せて断るために返る（enabled・reason）。
  */
 export interface CardCombination extends CardDrop {
   readonly name: string;
@@ -106,9 +118,12 @@ export interface CardOperationsFactory {
   readonly actionsOf: (instance: WorldObject) => readonly CardAction[];
 
   /**
-   * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭を実行する手段
-   * （無ければundefined）。candidatesは`instrument`の役になる個体を運んできた順に並べたもの、movedは
-   * 指が運んできた個体（演出で追う札）で、countはまとめて実行する個数。
+   * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭（無ければundefined）。
+   * candidatesは`instrument`の役になる個体を運んできた順に並べたもの、movedは指が運んできた個体
+   * （演出で追う札）で、countはまとめて実行する個数。
+   *
+   * **実行する手段とは限らない**——成立するものが無く、宣言が断る理由を持っていればそれを
+   * `enabled: false` で返す（CardInteraction.md 2.1節）。
    *
    * **candidatesとmovedは別物**——逆向きに成立した組み合わせでは、指が運んできた札のほうが`self`に
    * なるため、相手として渡す個体と画面上で動く個体が入れ替わる。
@@ -128,6 +143,17 @@ export function cardOperationsOf(
   locale: Localization,
 ): CardOperationsFactory {
   /**
+   * 実行できるかと、できないなら宣言された理由（14.6節）。**ボタンの操作も重ねる操作も同じ答え方**を
+   * するので、locale を引く手順は1箇所に置く。
+   */
+  const permissionOf = (
+    unmet: Requirement | undefined,
+  ): { enabled: boolean; reason: string | undefined } => ({
+    enabled: unmet === undefined,
+    reason: unmet?.reasonName === undefined ? undefined : locale.reason(unmet.reasonName),
+  });
+
+  /**
    * そのカードで実行できるアクション（ActionSystem.md 1節）。
    *
    * **ボタンにするのは`trigger: menu`だけ**（GameElementDefinition.md 11.1節）。時間の側が起こす
@@ -140,7 +166,6 @@ export function cardOperationsOf(
     const texts = locale.object(instance.def.name);
     const fromDefinition = instance.menuActionsFor(game.player.instance).map((action) => {
       const declared = texts.interaction(action.name);
-      const unmet = action.unmetRequirement();
       return {
         key: action.name,
         name: declared.displayName,
@@ -149,8 +174,7 @@ export function cardOperationsOf(
         execute: () => {
           action.tryExecute();
         },
-        enabled: unmet === undefined,
-        reason: unmet?.reasonName === undefined ? undefined : locale.reason(unmet.reasonName),
+        ...permissionOf(action.unmetRequirement()),
       };
     });
     return [...craftingActions(instance, codex, game, locale), ...fromDefinition];
@@ -205,15 +229,23 @@ export function cardOperationsOf(
             putIntoSlot(item, place, game.player.instance, game.session, () => put(item, index === 0)),
           );
         },
+        // 入れられない相手にはそもそもこの答えを返さない（rejectionForMoveTo）ので、断る理由は無い。
+        enabled: true,
+        reason: undefined,
       };
     };
 
   /**
-   * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭を実行する手段
-   * （無ければundefined）。candidatesは`instrument`の役になる個体、movedは指が運んできた個体。
+   * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭（無ければundefined）。
+   * **実行する手段とは限らない**——下のとおり、断る組み合わせも同じ形で返る。
+   * candidatesは`instrument`の役になる個体、movedは指が運んできた個体。
    *
    * 複数の組み合わせがマッチしたときにどれを実行するかの解決はUI層に委ねられている
    * （ActionSystem.md 1節）ため、宣言順の先頭を採る。
+   *
+   * **成立するものが1つも無いときだけ、理由を告げて断る組み合わせを返す**（14.6節のreason）。
+   * 候補から消すと、プレイヤーには「重ねても何も起きない」としか見えない。実行できないことは
+   * enabledが言い、離しても何も起きないのは呼び出し側が守る（CardDragController）。
    *
    * **まとめて実行するのは、宣言が数を約束できる場合だけ**（`allow_multiple`、
    * GameElementDefinition.md 12.4節）。時間も個数ぶんかかる。
@@ -227,20 +259,25 @@ export function cardOperationsOf(
     const instrument = candidates.at(0);
     if (instrument === undefined) return undefined;
 
-    const combination = self.combinationsWith(instrument, game.player.instance).at(0);
+    const agent = game.player.instance;
+    const combination =
+      self.combinationsWith(instrument, agent).at(0) ?? self.refusedCombinationsWith(instrument, agent).at(0);
     if (combination === undefined) return undefined;
 
+    const permission = permissionOf(combination.unmetRequirement());
     const texts = locale.object(self.def.name).interaction(combination.name);
     const carried = carriedOf(candidates, count);
     return {
       name: texts.displayName,
       description: texts.description,
       minutes: carried.length * combination.executionMinutes(),
-      maxCount: combination.acceptedCountIncludingSelf(candidates.slice(1)),
+      // 断る組み合わせは何も起こさないので、2枚目を連れてこない。
+      maxCount: permission.enabled ? combination.acceptedCountIncludingSelf(candidates.slice(1)) : 1,
       movedIds: carriedOf(moved, count).map((instance) => instance.instanceId),
       execute: () => {
         combination.executeWithFollowers(carried.slice(1));
       },
+      ...permission,
     };
   };
 

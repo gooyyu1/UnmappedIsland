@@ -20,7 +20,10 @@ export interface CardSource {
   readonly stacksIn: (place: CardPlace) => readonly (ObjectCardStack | undefined)[];
   /** 挙げた個体だけを映すカード（PlayScreenView.cardOfObjects）。 */
   readonly cardOfObjects: (objects: readonly WorldObject[]) => ObjectCardStack;
-  /** 重ねたときに成立する組み合わせ（PlayScreenView.combinationOf）。countはまとめて実行する個数。 */
+  /**
+   * 重ねたときの組み合わせ（PlayScreenView.combinationOf）。countはまとめて実行する個数。
+   * **成立するとは限らない**——理由を告げて断るものはenabledがfalseで返る（CardInteraction.md 2.1節）。
+   */
   readonly combinationOf: (
     dragged: ObjectCardStack,
     target: ObjectCardStack,
@@ -348,7 +351,10 @@ export class ShownCards {
   // ---- 操作の意味 ----
 
   /**
-   * fromのfromIndexの札をtoのtoIndexの札へ重ねたときに成立する組み合わせ（無ければundefined）。
+   * fromのfromIndexの札をtoのtoIndexの札へ重ねたときの組み合わせ（返すものが無ければundefined）。
+   * **成立するとは限らない**——理由を告げて断るものもenabledがfalseで返る（CardInteraction.md 2.1節）。
+   * 実行されるものだけが要るならdropCombinationを使う。
+   *
    * 同じ場所を2度引かないのは、**同じ束へ重ねたことを参照の一致で見分ける**ため（combinationOf）。
    */
   combinationAt(
@@ -368,31 +374,59 @@ export class ShownCards {
     return this.source.combinationOf(dragged, target, count);
   }
 
-  /** そのドロップが重ねる操作なら、成立する組み合わせ。 */
+  /**
+   * そのドロップが**実行する**組み合わせ（そうでなければundefined）。入れ物としての受け入れに譲ったものも、
+   * 理由を告げて断るものも含まない——**「重ねた」と記録してよいか**を見分けるのはここ（PlayScene.dropLabel）。
+   */
   dropCombination(drop: ShownDrop): CardCombination | undefined {
-    if (drop.target.kind !== 'combine') return undefined;
-    return this.combinationAt(drop.from, drop.fromIndex, drop.to, drop.target.index, drop.count);
+    return this.combineEffect(drop)?.combination;
   }
 
   /**
-   * そのドロップで起きること（何も起きないならundefined）。カードに重ねたらcombination、相手が入れ物なら
-   * その中へ入れる、隙間・空き枠へ落としたら位置を変える。同じ場所の中ならスタックごとの並び替え、
-   * 場所をまたぐならカード1枚の移動。
+   * カードへ重ねたときに言うことと、それが**実行される**組み合わせなのか。順は**成立する組み合わせ →
+   * 入れ物としての受け入れ → 断る組み合わせ**（CardInteraction.md 2.1節）で、最後のものが返ったときは
+   * 何も起きない（combinationはundefined）。
+   *
+   * **順を書くのはここだけ。** 起きることを問う側（dropEffect）と、何が起きたと記録する側
+   * （dropCombination）が別々に順を持つと、入れ物へ入れたのに「重ねた」と記録する、といった食い違いが
+   * 生まれる。
+   */
+  private combineEffect(
+    drop: ShownDrop,
+  ): { readonly told: CardDrop; readonly combination: CardCombination | undefined } | undefined {
+    if (drop.target.kind !== 'combine') return undefined;
+
+    const dragged = this.stacksAt(drop.from)[drop.fromIndex];
+    if (dragged === undefined) return undefined;
+
+    const combination = this.combinationAt(drop.from, drop.fromIndex, drop.to, drop.target.index, drop.count);
+    if (combination?.enabled === true) return { told: combination, combination };
+
+    const into = this.contentsUnder(drop);
+    const putIn = into === undefined ? undefined : dragged.dropInto?.(into, undefined, drop.count);
+    if (putIn !== undefined) return { told: putIn, combination: undefined };
+
+    // 残るのは断る組み合わせだけ。実行されないので、記録に残す組み合わせも無い。
+    return combination === undefined ? undefined : { told: combination, combination: undefined };
+  }
+
+  /**
+   * そのドロップについて言うこと（何も言うことが無ければundefined）。カードに重ねたらcombination、
+   * 相手が入れ物ならその中へ入れる、隙間・空き枠へ落としたら位置を変える。同じ場所の中ならスタックごとの
+   * 並び替え、場所をまたぐならカード1枚の移動。**起きることとは限らない**——下のとおり、離しても何も
+   * 起きない断る組み合わせもこの形で返る（enabledがfalse）。
    *
    * **どれも同じ1つの形（CardDrop）で返る。** 画面は「重ねた」と「入れた」を区別せず、名前と時間を
    * 吹き出しに出して実行するだけ（CardInteraction.md 2節）。
+   *
+   * **理由を告げて断る組み合わせ（enabledがfalse）は、入れ物としての受け入れに譲る**（順はcombineEffect）。
+   * 実際に起きることのほうが、起きない理由より先に見せるものだから。
    */
   dropEffect(drop: ShownDrop): CardDrop | undefined {
     const dragged = this.stacksAt(drop.from)[drop.fromIndex];
     if (dragged === undefined) return undefined;
 
-    if (drop.target.kind === 'combine') {
-      const combination = this.dropCombination(drop);
-      if (combination !== undefined) return combination;
-
-      const into = this.contentsUnder(drop);
-      return into === undefined ? undefined : dragged.dropInto?.(into, undefined, drop.count);
-    }
+    if (drop.target.kind === 'combine') return this.combineEffect(drop)?.told;
 
     // 借りた札の枠はワールドの場所ではないので、そこへ「入れる」ことはできない（重ねるだけ）。
     if (drop.to === 'windowCard') return undefined;
@@ -409,6 +443,8 @@ export class ShownCards {
             maxCount: 1,
             movedIds: dragged.movedIds(drop.count),
             execute,
+            enabled: true,
+            reason: undefined,
           };
     }
     return dragged.dropInto?.(drop.to, drop.target, drop.count);

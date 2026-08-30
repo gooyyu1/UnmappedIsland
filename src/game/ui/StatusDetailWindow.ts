@@ -162,9 +162,9 @@ export class StatusDetailWindow {
     // 今いる段の名前は、バーの上へ名札として置き、しっぽでその段を指す（8.1節）。見出しの端ではなく
     // バーの上に置くのは、「今ここ」を名前と目盛りの位置関係そのもので言うため。
     const stage =
-      detail?.stage === undefined
+      content.stage === undefined
         ? undefined
-        : addLabel(scene, metrics, 0, 0, detail.stage.name, { size: STAGE_SIZE, bold: true }).setOrigin(0.5);
+        : addLabel(scene, metrics, 0, 0, content.stage.name, { size: STAGE_SIZE, bold: true }).setOrigin(0.5);
     const plateHeight = stage === undefined ? 0 : stage.height + metrics.px(STAGE_PLATE_PADDING_Y) * 2;
     const stageHeight = stage === undefined ? 0 : plateHeight + metrics.px(STAGE_TAIL_HEIGHT);
 
@@ -251,8 +251,8 @@ export class StatusDetailWindow {
       bar.setAlert(content.alert);
       this.ownedObjects.push(bar);
 
-      const span = detail?.stage?.span;
-      bar.markStages(detail?.stage?.boundaries ?? [], span);
+      const span = content.stage?.span;
+      bar.markStages(content.stage?.boundaries ?? [], span);
 
       if (span !== undefined) {
         // 名札は囲みの中央へ。端の段では囲みからはみ出しても、ウィンドウの中には収める。
