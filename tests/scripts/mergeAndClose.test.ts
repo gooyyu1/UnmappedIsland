@@ -42,6 +42,11 @@ interface World {
    */
   readonly tags?: Record<string, string[]>;
   /**
+   * `list_sessions` の**2ページ目**（`after_id` を渡したときだけ返る）。挙げると1ページ目に
+   * `has_more` が付く。`limit` の上限は100なので、繰らないとここへは届かない。
+   */
+  readonly olderTags?: Record<string, string[]>;
+  /**
    * ブリッジ（このPC）の環境で立ったセッション。**タグはクラウドと同じ**なので、これでしか
    * 区別が付かない。環境IDそのものは `ccr-env.sh` から環境変数で差し替える。
    */
@@ -223,24 +228,40 @@ exit 0
       'utf-8',
     );
 
+    /** `list_sessions` の1ページぶん。 */
+    const listed = (tags: Record<string, readonly string[]>): unknown[] =>
+      Object.entries(tags).map(([id, value]) => ({
+        id,
+        tags: value,
+        session_status: world.sessions?.[id] ?? 'SESSION_STATUS_IDLE',
+        environment_id: (world.onBridge ?? []).includes(id) ? BRIDGE : CLOUD,
+      }));
+
     // 引数は標準入力のJSON。`ccr-meta.sh` と同じ包み（`<other-session>`）を付けて返す。
     const meta = join(work, 'ccr-meta.sh');
     writeFileSync(
       meta,
       `#!/usr/bin/env bash
-id=$(node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).session_id || ""))')
+payload=$(cat)
+id=$(printf '%s' "$payload" | jq -r '.session_id // ""')
+after=$(printf '%s' "$payload" | jq -r '.after_id // ""')
 if [ "$1" = list_sessions ]; then
   echo '<other-session>'
-  echo '${JSON.stringify({
-    ccr: {
-      data: Object.entries(world.tags ?? {}).map(([id, tags]) => ({
-        id,
-        tags,
-        session_status: world.sessions?.[id] ?? 'SESSION_STATUS_IDLE',
-        environment_id: (world.onBridge ?? []).includes(id) ? BRIDGE : CLOUD,
-      })),
-    },
-  })}'
+  if [ -n "$after" ]; then
+    echo '${JSON.stringify({ ccr: { data: listed(world.olderTags ?? {}) } })}'
+  else
+    echo '${JSON.stringify({
+      ccr: {
+        data: listed(world.tags ?? {}),
+        ...(Object.keys(world.olderTags ?? {}).length > 0
+          ? {
+              has_more: true,
+              last_id: Object.keys(world.tags ?? {}).slice(-1)[0] ?? 'session_01PAGE1END0000000000',
+            }
+          : {}),
+      },
+    })}'
+  fi
   exit 0
 fi
 if [ "$1" = archive_session ]; then
@@ -840,6 +861,29 @@ describe('archive-reviews.sh', () => {
 
     expect(result.lines).toEqual(['KEPT session_01REVIEWAAAAAAAAAAAAAA']);
     expect(result.archived).toEqual([]);
+    expect(result.status).toBe(0);
+  });
+
+  // `list_sessions` の `limit` は上限100なので、それより古いものは `has_more`／`last_id` を繰らないと
+  // 届かない。1ページで済ませると**古いものほど掃かれない**——実測（2026-08-30）で全715件・8ページ、
+  // 1ページ目に見えた生きたレビューは4本、繰った先に35本残っていた。
+  it('1ページ目に収まらない古いレビューも畳む', () => {
+    const result = run(
+      {
+        sessions: {
+          session_01REVIEWNEW000000000: 'SESSION_STATUS_IDLE',
+          session_01REVIEWOLD000000000: 'SESSION_STATUS_IDLE',
+        },
+        tags: { session_01REVIEWNEW000000000: ['review-1000'] },
+        olderTags: { session_01REVIEWOLD000000000: ['review-1000'] },
+      },
+      [ARCHIVE_REVIEWS],
+    );
+
+    expect(result.lines).toEqual([
+      'ARCHIVED session_01REVIEWNEW000000000',
+      'ARCHIVED session_01REVIEWOLD000000000',
+    ]);
     expect(result.status).toBe(0);
   });
 

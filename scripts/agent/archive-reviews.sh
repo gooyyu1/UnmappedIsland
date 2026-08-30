@@ -72,17 +72,37 @@ CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 #
 # 1行が `<PR番号> <セッションID>`。番号は下で開いているPRと突き合わせる。
 #
+# **`list_sessions` は直近の1ページしか返さない。** `limit` の上限は100で、それを超える分は
+# `has_more` と `last_id` を使って繰らないと届かない。**1ページで済ませると、古いものほど掃かれない**
+# ——2026-08-30 の時点で全715件・8ページあり、1ページ目（その日の午前2時まで）に見えていた生きた
+# レビューは4本、繰った先に35本残っていた。1本ずつ掃いていた頃は、掃く相手が直近に居るのが普通
+# だったので露見しなかった。
+#
 # **畳み済みをここで外すのは、渡す数を減らすためだけ。** 畳んでよいかの判定は
 # `archive-session.sh` が持つ（あちらも畳み済みには何も出さない）ので、外さなくても結果は同じ。
-# ただし掃く範囲を全部へ広げた以上、**畳み終えたものは減らずに溜まる**——2026-08-30 の時点で
-# `review-*` は73件あり、うち59件が畳み済みだった。全部渡すと `get_session` を毎回73回打つ。
-sessions=$(bash "$CCR_META" list_sessions <<<'{"mine":true,"limit":100}' | grep -o '{"ccr".*' |
-  jq -r '.ccr.data[]?
+# ただし掃く範囲を全部へ広げた以上、**畳み終えたものは減らずに溜まる**——同じ時点で `review-*` は
+# 全体の1割強あり、その大半が畳み済みだった。全部渡すと、その数だけ `get_session` を打つ。
+sessions=''
+after=''
+while :; do
+  if [ -z "$after" ]; then
+    req='{"mine":true,"limit":100}'
+  else
+    req=$(printf '{"mine":true,"limit":100,"after_id":"%s"}' "$after")
+  fi
+  page=$(bash "$CCR_META" list_sessions <<<"$req" | grep -o '{"ccr".*' || true)
+  [ -n "$page" ] || break
+  found=$(jq -r '.ccr.data[]?
     | select(.session_status != "SESSION_STATUS_ARCHIVED")
     | . as $s
     | .tags[]?
     | select(startswith("review-"))
-    | "\(ltrimstr("review-")) \($s.id)"' | tr -d '\r' || true)
+    | "\(ltrimstr("review-")) \($s.id)"' <<<"$page" | tr -d '\r' || true)
+  [ -z "$found" ] || sessions=$(printf '%s\n%s' "$sessions" "$found")
+  [ "$(jq -r '.ccr.has_more // false' <<<"$page")" = true ] || break
+  after=$(jq -r '.ccr.last_id // ""' <<<"$page" | tr -d '\r')
+  [ -n "$after" ] || break
+done
 
 # 畳んでよいかの判定は [`archive-session.sh`](archive-session.sh) が持つ。ここが選ぶのはタグと、
 # **走行中を守るかどうか**だけ。
