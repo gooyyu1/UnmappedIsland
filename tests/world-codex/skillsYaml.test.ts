@@ -82,6 +82,81 @@ function declaredSkillGains(): ReadonlyMap<string, ReadonlySet<number>> {
   return gains;
 }
 
+/** 操作1つ分の、出す物と配る腕。 */
+interface InteractionGains {
+  readonly name: string;
+  /** その操作が`spawn`で出す型の名前（`pick`の候補の中のものも含む）。 */
+  readonly products: readonly string[];
+  readonly skills: readonly string[];
+}
+
+/** ノードの下にある`spawn`が出す型の名前を、入れ子の`pick`ごと集める。 */
+function productsUnder(node: unknown, found: Set<string>): void {
+  if (isSeq(node)) {
+    for (const item of node.items) productsUnder(item, found);
+    return;
+  }
+  if (!isMap(node)) return;
+
+  for (const pair of node.items) {
+    const key = isScalar(pair.key) ? String(pair.key.value) : '';
+    if (key !== 'spawn') {
+      productsUnder(pair.value, found);
+      continue;
+    }
+    const spawned = isSeq(pair.value) ? pair.value.items : [pair.value];
+    for (const entry of spawned) {
+      if (!isMap(entry)) continue;
+      const object = entry.get('object', true);
+      if (isScalar(object)) found.add(String(object.value));
+    }
+  }
+}
+
+/** `interactions`の下の操作を、出す物と配る腕の組にして集める。 */
+function declaredInteractions(): readonly InteractionGains[] {
+  const found: InteractionGains[] = [];
+
+  const walk = (node: unknown): void => {
+    if (isSeq(node)) {
+      for (const item of node.items) walk(item);
+      return;
+    }
+    if (!isMap(node)) return;
+
+    for (const pair of node.items) {
+      const key = isScalar(pair.key) ? String(pair.key.value) : '';
+      if (key !== 'interactions' || !isMap(pair.value)) {
+        walk(pair.value);
+        continue;
+      }
+      for (const entry of pair.value.items) {
+        const body = entry.value;
+        if (!isMap(body)) continue;
+        const products = new Set<string>();
+        productsUnder(body, products);
+
+        const add = body.get('add', true);
+        const agent = isMap(add) ? add.get('agent', true) : undefined;
+        const skills = isMap(agent)
+          ? agent.items
+              .map((item) => (isScalar(item.key) ? String(item.key.value) : ''))
+              .filter((name) => name.startsWith(SKILL_PREFIX))
+          : [];
+
+        found.push({
+          name: isScalar(entry.key) ? String(entry.key.value) : '',
+          products: [...products].sort(),
+          skills: skills.sort(),
+        });
+      }
+    }
+  };
+
+  for (const path of worldCodexYamlPaths()) walk(parseDocument(readFileSync(path, 'utf8')).contents);
+  return found;
+}
+
 describe('腕前とレシピの解放条件', () => {
   let codex: WorldCodex;
   let skillIds: readonly number[];
@@ -187,6 +262,29 @@ describe('腕前とレシピの解放条件', () => {
     // 抑えるのは時間のコストだけ（SkillSystem.md 7節）。
     for (const [skillName, amounts] of declaredSkillGains())
       expect([...amounts], `${skillName} が配る量`).toEqual([GAIN_PER_ACTION]);
+  });
+
+  it('同じ物を出す操作は、同じ腕を配る（入口が2つある素材で片方が抜けない）', () => {
+    // 同じ素材へ2つの入口があるのは、島の当たり外れを吸収するための作り（植物繊維はバショウ属の草と
+    // ヤシの実の皮、生肉は解体と漁）。片方だけが腕を配ると、**どの島に流れ着いたかが腕の伸びに
+    // 化ける**。出す物が同じ操作を束ねて、配る腕が揃っているかを見る。
+    const byProduct = new Map<string, InteractionGains[]>();
+    for (const interaction of declaredInteractions()) {
+      if (interaction.products.length === 0) continue;
+      const key = interaction.products.join('+');
+      const group = byProduct.get(key);
+      if (group === undefined) byProduct.set(key, [interaction]);
+      else group.push(interaction);
+    }
+
+    const shared = [...byProduct].filter(([, group]) => group.length > 1);
+    expect(shared.length, '出す物が同じ操作の組が1つも無い').toBeGreaterThan(0);
+
+    for (const [products, group] of shared)
+      expect(
+        new Set(group.map((interaction) => interaction.skills.join(','))).size,
+        `'${products}' を出す ${group.map((i) => i.name).join('・')} で、配る腕が食い違う`,
+      ).toBe(1);
   });
 
   it('伸ばす操作をまだ持たない腕は、開ける物が世界に無い4本だけ', () => {

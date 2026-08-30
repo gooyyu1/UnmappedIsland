@@ -535,12 +535,17 @@ object_defs:
             prop: afloat
             gt: 0
         duration: 60
+        # 狩猟の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
+        # characters/player_character.yaml）。**獲物を獲る手は海でも同じ1本**——狩猟が広げるのは
+        # 肉・生皮・獣骨へのアクセス（docs/world/Skills.md 2節）で、獲れる身は獣と同じ生肉。
+        # 獣を殴るとき（animals.yamlのstrike）と同じく**pickの外**なので、突き損ねた回も伸びる。
+        add: {agent: {skill_hunting: 2}}
         pick:
           - weight: 15
             spawn: {object: raw_meat, into: agent}
           # 突き損ね。この候補だけは効果を持たない。
           - weight: 83
-          # 突いた魚に銛を持って行かれる（同3.9.4節）。群れを突くときと同じ確率で、失う理由は同じ。
+          # 突いた魚に銛を持って行かれる（Voyage.md 3.9.4節）。群れを突くときと同じ確率で、失う理由は同じ。
           - weight: 2
             destroy: instrument
 
@@ -692,6 +697,7 @@ object_defs:
       spear_shoal:
         trigger: {drag: {tag: fishing_tool}}
         duration: 30
+        add: {agent: {skill_hunting: 2}}
         pick:
           - weight: 78
             spawn: {object: raw_meat, into: agent}
@@ -720,6 +726,7 @@ object_defs:
       catch_seabird:
         trigger: menu
         duration: 60
+        add: {agent: {skill_hunting: 2}}
         spawn:
           - {object: raw_meat, into: agent}
           - {object: feather, into: agent}
