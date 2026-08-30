@@ -22,7 +22,8 @@ import type { ConditionOp } from '../domain/ConditionReader';
 import { Requirement, Requirements } from '../domain/Requirement';
 
 /**
- * conditions（14節）・passivesのゲート（8節）が共通で使う`subject`（主語）の参照キー。
+ * `subject`（主語）の参照キー。**どのrootを書けるかは、受け取ったscopeが答える**（ReferenceScope。
+ * 書ける場所の一覧はGameElementDefinition.md 14.1節の表）。
  * worldはシングルトンインスタンスの実行時追跡が無いため未対応（ancestorで代替できる）。
  */
 export function parseSubjectRoot(context: string, raw: string, scope: ReferenceScope): ReferenceRoot {
