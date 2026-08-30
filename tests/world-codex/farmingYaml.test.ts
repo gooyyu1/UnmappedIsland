@@ -465,7 +465,7 @@ describe('farming.yamlの畑と囲い', () => {
     ).not.toContain('water');
   });
 
-  it('空の囲いは罠として働き、掛かった獣に檻の傷が刺さる', () => {
+  it('空の囲いは罠として働き、掛かった獣に打ち身が刺さる', () => {
     // **檻と家畜の囲いは1つの型**（TrapSystem.md 1.2節）。空いている間は大型を生かして捕らえる罠で、
     // spawnの配列が順に生むので獲物を生んでからその中へ怪我を生む（into: child、同5.3節）。
     open();
@@ -473,11 +473,11 @@ describe('farming.yamlの畑と囲い', () => {
 
     const prey = tickUntilCaught(pen);
     expect(prey.def.name).toBe('junglefowl');
-    expect(injuriesOf(prey), '檻の傷が刺さる').toEqual(['pen_bruise']);
+    expect(injuriesOf(prey), '檻の打ち身が刺さる').toEqual(['bruise']);
     expect(contentsOf(land, 'items'), 'レーンに出ない——獲物は囲いの中に居る').toEqual([]);
   });
 
-  it('檻の傷は血を奪わないので、掛かった獣は死なない', () => {
+  it('檻の打ち身は血を奪わないので、掛かった獣は死なない', () => {
     // **生かす罠の性格は、bleedingを書かなかったことでできている**（TrapSystem.md 5.2節）。
     // くくり罠の傷なら80mLのヤケイは血を失うが、打ち身では1mLも減らない。
     open();
@@ -498,13 +498,13 @@ describe('farming.yamlの畑と囲い', () => {
       const prey = tickUntilCaught(buildPen());
 
       expect(prey.def.name, `${locationName}はイノシシを宣言している`).toBe('wild_boar');
-      expect(injuriesOf(prey), '檻の傷が刺さる').toEqual(['pen_bruise']);
+      expect(injuriesOf(prey), '檻の打ち身が刺さる').toEqual(['bruise']);
       expect(contentsOf(land, 'items'), 'レーンに出ない——獲物は檻の中に居る').toEqual([]);
     }
   });
 
   it('檻に掛かったイノシシは、血を失わずに生きたまま残る', () => {
-    // **檻が体格によらず生かせるのは、pen_bruiseがbleedingを書いていないこと1つ**
+    // **檻が体格によらず生かせるのは、bruiseがbleedingを書いていないこと1つ**
     // （TrapSystem.md 5.2節）。くくり罠の傷は体格との比で意味が変わる（同5.1節）が、比を持たない
     // 打ち身は60kgのイノシシからも1kgのヤケイからも1mLも奪わない。
     open(ROLL, 'forest');
@@ -514,7 +514,7 @@ describe('farming.yamlの畑と囲い', () => {
     tick(40);
     expect(prey.def.name, '死体になっていない').toBe('wild_boar');
     expect(prey.tryGetProperty(bloodId)!.getEffectiveValue(), '血は減らない').toBeGreaterThanOrEqual(blood);
-    expect(injuriesOf(prey), '傷は残ったまま').toEqual(['pen_bruise']);
+    expect(injuriesOf(prey), '傷は残ったまま').toEqual(['bruise']);
     expect(prey.tryGetProperty(warinessId)!.getEffectiveValue(), '牙を持つ相手でも暴れない').toBe(0);
   });
 

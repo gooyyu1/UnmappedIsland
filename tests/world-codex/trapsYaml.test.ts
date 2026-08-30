@@ -439,17 +439,18 @@ describe('traps.yamlの落とし穴', () => {
     );
   }
 
-  it('落ちたイノシシへ骨折が刺さる', () => {
-    // 骨折を刺すのは落とし穴だけ（TrapSystem.md 5.2節・InjurySystem.md 5節）。獣の1手（crush）と
-    // 並ぶ2つ目の口で、獲物を生んでからその中へ怪我を生む（into: child、TrapSystem.md 5.3節）。
+  it('落ちたイノシシへ打ち身が刺さる', () => {
+    // **骨折は刺さない**（TrapSystem.md 5.2節・InjurySystem.md 5節）——骨折が奪う動きを駆動するのは
+    // loadで、それを持つのはキャラクタだけ（ContainerSystem.md 2節）。落ちるのは獣なので、檻と同じ
+    // 打ち身になる。獲物を生んでからその中へ怪我を生む（into: child、TrapSystem.md 5.3節）。
     open(CATCHES_BOAR);
     const prey = tickUntilCaught();
 
     expect(prey.def.name).toBe('wild_boar');
-    expect(injuriesOf(prey), '落とし穴の傷が刺さる').toEqual(['fracture']);
+    expect(injuriesOf(prey), '落とし穴の傷が刺さる').toEqual(['bruise']);
   });
 
-  it('骨折は血を奪わないので、落ちた獣は生きて残る', () => {
+  it('打ち身は血を奪わないので、落ちた獣は生きて残る', () => {
     // 生かす罠が刺すのは血を奪わない怪我（TrapSystem.md 5.2節）。体格で意味が変わらないので、
     // 60kgのイノシシは痛みを抱えたまま穴の中に残る。
     open(CATCHES_BOAR);
@@ -464,14 +465,14 @@ describe('traps.yamlの落とし穴', () => {
     expect(prey.tryGetProperty(bloodId)!.getEffectiveValue(), '血は1滴も減らない').toBe(blood);
   });
 
-  it('杭を打つと、刺さるのは骨折ではなく刺し傷になる', () => {
-    // 罠が刺すのは1つだけ（TrapSystem.md 5.1節）なので、杭は「落ちて折れる」を「落ちて貫かれる」に
-    // 置き換える。生かす側だけが骨折を残し、殺す側は血で決着する（同5.2節）。
+  it('杭を打つと、刺さるのは打ち身ではなく刺し傷になる', () => {
+    // 罠が刺すのは1つだけ（TrapSystem.md 5.1節）なので、杭は「落ちて打ちつける」を「落ちて貫かれる」に
+    // 置き換える。生かす側は血を奪わず、殺す側は血で決着する（同5.2節）。
     open(CATCHES_BOAR);
     expect(driveStake(), '掘った穴へ杭を打てる').toBe(true);
 
     const prey = tickUntilCaught();
-    expect(injuriesOf(prey), '骨折は刺さらない').toEqual(['puncture_wound']);
+    expect(injuriesOf(prey), '打ち身は刺さらない').toEqual(['puncture_wound']);
 
     const blood = prey.tryGetProperty(bloodId)!.getEffectiveValue();
     tick(4);
