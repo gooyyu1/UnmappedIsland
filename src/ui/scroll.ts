@@ -55,3 +55,13 @@ export function minScrollFor(viewportLength: number, contentLength: number): num
 export function clampScroll(offset: number, minOffset: number): number {
   return Math.min(0, Math.max(minOffset, offset));
 }
+
+/**
+ * 同じ寸法のものを等間隔に積んだときの、全体の長さ（ScrollArea.setContentLengthへ渡す値）。
+ *
+ * **間隔は物の間にしか無い**ので、0件の長さは0——引き算だけで出すと間隔1つぶん負になり、
+ * 何も無いのに送れることになる。
+ */
+export function stackedLength(itemLength: number, gap: number, count: number): number {
+  return count === 0 ? 0 : count * (itemLength + gap) - gap;
+}
