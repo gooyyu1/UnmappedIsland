@@ -201,6 +201,13 @@ export class StatusBar extends Phaser.GameObjects.Container {
   private readonly bar: ProgressBar | undefined;
   private readonly valueText: Phaser.GameObjects.Text | undefined;
 
+  /**
+   * この行のポインタ操作を受ける面（行の矩形いっぱい）。**行を並べる側は、はみ出した分を送るときに
+   * これを面として渡す**——行が可視域の幅いっぱいを占めるので、地に敷いた面には指が届かない
+   * （ScrollArea.inputSurfaces）。
+   */
+  readonly inputSurface: Phaser.GameObjects.Zone;
+
   /** 増減の記号と固定表示の印。出ていないときは空文字にする（作り直すと表示順が変わるため消さない）。 */
   private readonly changeMark: Phaser.GameObjects.Text;
   private readonly pinMark: Phaser.GameObjects.Text;
@@ -267,15 +274,14 @@ export class StatusBar extends Phaser.GameObjects.Container {
     // 行はどこをタップしても詳細が開く（StatusArea.md 3節）。
     //
     // 呼ぶのは**今の**内容の入口。行は作り直さず中身だけ差し替わる（setContent）ので、作った時点の
-    // 入口を捕まえると、開いた詳細だけが行動する前の状態のままになる。
-    if (content.onOpenDetail !== undefined) {
-      const hitArea = scene.add
-        .zone(0, 0, width, height)
-        .setOrigin(0)
-        .setInteractive({ useHandCursor: true });
-      this.add(hitArea);
-      onPressRelease(hitArea, { onRelease: () => this.content.onOpenDetail?.() });
-    }
+    // 入口を捕まえると、開いた詳細だけが行動する前の状態のままになる。入口を持つかも中身とともに
+    // 差し替わるため、面は常に持つ。
+    this.inputSurface = scene.add
+      .zone(0, 0, width, height)
+      .setOrigin(0)
+      .setInteractive({ useHandCursor: true });
+    this.add(this.inputSurface);
+    onPressRelease(this.inputSurface, { onRelease: () => this.content.onOpenDetail?.() });
 
     this.changeMark = scene.add
       .text(width - changeWidth / 2, height / 2, '', {
