@@ -35,7 +35,7 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
   }
 
   /** この操作を宣言している側の個体（self）。**引いた時点で必ず居る**ので、文脈のselfは空にならない。 */
-  protected get self(): WorldObject {
+  get self(): WorldObject {
     return this.context.self!;
   }
 
@@ -62,6 +62,21 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
 export class Action extends Interaction<ActionTrigger, undefined> {
   constructor(trigger: ActionTrigger, self: WorldObject, agent: WorldObject | undefined) {
     super(trigger, self, agent, undefined);
+  }
+
+  /**
+   * 時間が配った手番として起こす（`trigger: tick`、WorldObject.runTickActions）。
+   *
+   * **時間を要する手番は、その場では起こさず操作の切れ目まで待たせる**（WorldSession.runAsOperation）
+   * ——手番が配られるのは時間を進めている最中で、その中で時間は進められない。待たせるのは今の要件を
+   * 満たしているものだけで、切れ目でもう一度引き直される。
+   */
+  takeTurn(): void {
+    if (this.executionMinutes() <= 0) {
+      this.tryExecute();
+      return;
+    }
+    if (this.unmetRequirement() === undefined) this.self.session.deferTurn(this);
   }
 }
 

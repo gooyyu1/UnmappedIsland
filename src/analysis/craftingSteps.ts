@@ -43,13 +43,17 @@ export function craftingStepsOf(
   outer?: StaticValueResolver,
 ): readonly CraftingStep[] {
   const steps: CraftingStep[] = [];
-  for (const trigger of def.triggers)
+  for (const trigger of def.triggers) {
+    // 見るのはプレイヤーが起こす操作だけ（CraftingStep.kind）。時間が配る手番
+    // （`trigger: tick`、11.1節）は押して選べないので、経路として並べると選べない道が献立に載る。
+    if (!trigger.startedByPlayer) continue;
     for (const instrument of instrumentTypesOf(codex, trigger)) {
       if (conditionsNeverMet(codex, def, instrument, trigger.interaction, outer)) continue;
       steps.push(
         withTriggeredRangeEvents(def, interactionStep(codex, def, trigger, instrument, outer), outer),
       );
     }
+  }
   for (const recipe of def.recipesProducingThis) steps.push(recipeStep(def, recipe));
   return steps;
 }

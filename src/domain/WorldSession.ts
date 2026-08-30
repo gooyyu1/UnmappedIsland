@@ -7,6 +7,7 @@ import type { InteractionGains, PropertyGain } from './PropertyGain';
 import type { Slot } from './Slot';
 import type { WorldChange } from './WorldChange';
 import type { WorldSignal } from './WorldSignal';
+import type { Action } from './Interaction';
 import { WorldObject } from './WorldObject';
 import { Scoped } from '../util/scoped';
 
@@ -53,6 +54,19 @@ export class WorldSession {
 
   /** 今どのオブジェクトの効果を適用しているか（withSubject）。記録する変化の主体になる。 */
   private readonly subject = new Scoped<WorldObject>();
+
+  /** 実行中の操作の深さ（runAsOperation）。0へ戻ったところが操作の切れ目。 */
+  private operationDepth = 0;
+
+  /**
+   * 時間の中では起こせず、操作の切れ目を待っている手番（`trigger: tick`、11.1節）。**時間を要する
+   * 手番は、配られたその場では起こせない**——手番を配るのは時間を進めている最中で、そのとき動作主は
+   * 時間を進めている操作にまだ就いている（GameElementDefinition.md 11.5節の不変条件）。
+   */
+  private waitingTurns: Action[] = [];
+
+  /** 待っていた手番を起こしている最中か。この間に挙がった待ちは受け取らない（takeWaitingTurns）。 */
+  private takingWaitingTurns = false;
 
   constructor(codex: WorldCodex, world?: World, rng?: Rng) {
     this.codex = codex;
@@ -184,6 +198,62 @@ export class WorldSession {
    */
   recordSignal(object: WorldObject, name: string): void {
     this.signalObserver.current?.({ name, object });
+  }
+
+  /**
+   * bodyを操作1つの実行として囲う（ActionSystem.md 2節。actions/combinations・製作の1工程・枠へ
+   * 入れる、の3つが操作）。**抜けたところが操作の切れ目**で、時間の中では起こせなかった手番を
+   * ここで起こす。
+   *
+   * 入れ子の内側では起こさない——外側の操作がまだ続いていて、動作主はそちらに就いたままだから
+   * （GameElementDefinition.md 11.5節）。
+   */
+  runAsOperation<T>(body: () => T): T {
+    this.operationDepth++;
+    try {
+      return body();
+    } finally {
+      this.operationDepth--;
+      if (this.operationDepth === 0) this.takeWaitingTurns();
+    }
+  }
+
+  /**
+   * 時間を要する手番を、操作の切れ目まで待たせる（Action.takeTurn）。
+   *
+   * **同じ物の同じ手番は1つしか待たせない。** 限界に居る間は毎tick同じ手番が挙がるが、起こすのは
+   * 切れ目に1度でよい。
+   */
+  deferTurn(turn: Action): void {
+    if (this.takingWaitingTurns) return;
+    if (this.waitingTurns.some((waiting) => waiting.self === turn.self && waiting.name === turn.name)) return;
+    this.waitingTurns.push(turn);
+  }
+
+  /**
+   * 待っていた手番を、宣言の順に起こす。要件（14節）は起こす時点で引き直されるので、待っている間に
+   * 限界を抜けた手番はそこで落ちる。
+   *
+   * **同じ切れ目で二度は起こさない。** 起こした手番自身も時間を進めるので、その間にまた同じ手番が
+   * 挙がりうる（一度の強制では限界を抜けられなかった場合）。二度目をここで受け取ると切れ目から
+   * 抜けられないので、次に時間が動いたときの待ちとして拾い直す。
+   */
+  private takeWaitingTurns(): void {
+    if (this.waitingTurns.length === 0) return;
+
+    const turns = this.waitingTurns;
+    this.waitingTurns = [];
+    this.takingWaitingTurns = true;
+    try {
+      for (const turn of turns) {
+        // 待っている間に世界から出た物（渇きで死んだキャラクタ）の手番は起こさない。居ないものの
+        // 手番で時間だけが進むことになる。
+        if (this._world !== undefined && !this._world.instance.containsOrIs(turn.self)) continue;
+        turn.tryExecute();
+      }
+    } finally {
+      this.takingWaitingTurns = false;
+    }
   }
 
   /**
