@@ -24,11 +24,10 @@ import {
   WINDOW_PADDING,
   centeredWindowRect,
 } from '../looks/childWindowLayout';
-import { timeCostLine } from '../looks/timeTexts';
 import { addLabel } from '../../ui/labels';
 import { addInputBlockingPanel, drawBox } from '../../ui/shapes';
 import { COLOR, SIZE } from '../looks/theme';
-import { Tooltip } from './Tooltip';
+import { interactionTooltip, Tooltip } from './Tooltip';
 import type { TooltipContent } from './Tooltip';
 import { uiText } from '../../locale/uiTexts';
 
@@ -499,9 +498,7 @@ export class ObjectWindow {
    * 取られるか」を、実行できないアクションは押した瞬間に「なぜできないか」を出す（待たせる理由が無いため）。
    */
   private tooltipHandlers(action: ObjectWindowAction, rect: Rect, disabled: boolean): HoldHandlers {
-    const content: TooltipContent = disabled
-      ? { title: action.label, body: action.reason ?? uiText('cannot_do_now') }
-      : { title: action.label, body: action.description, note: timeCostLine(action.minutes) };
+    const content: TooltipContent = interactionTooltip({ ...action, enabled: !disabled });
 
     return {
       onStart: () => this.tooltip.show(content, rect),

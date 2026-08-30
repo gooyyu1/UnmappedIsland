@@ -79,6 +79,8 @@ function stack(
       execute: () => {
         options.moves?.push({ ids: ids.slice(0, count ?? 1), to, at });
       },
+      enabled: true,
+      reason: undefined,
     }),
     reorderActionAt: (at) => () => {
       options.moves?.push({ ids, to: place, at });
@@ -130,6 +132,8 @@ function screen(
             // 本物と同じく、運んできた枚数ぶんが動く（cardOperations.combinationWith）。
             movedIds: carried.slice(0, count).map((entry) => entry.instanceId),
             execute: () => {},
+            enabled: true,
+            reason: undefined,
           } as CardCombination);
     },
     // 現在地から見えるか（PlayScreenView.visible）。既定では全部見えていて、hiddenに挙げた個体だけが
@@ -626,6 +630,78 @@ describe('ドロップの意味', () => {
 
     expect(moves.at(-1), '2枚まとめて中へ').toEqual({ ids: [1, 2], to: inside, at: undefined });
     expect(noCombination.multiDropLimit(drop), '入る枚数は枠の宣言（CardDrop.maxCount）').toBe(2);
+  });
+
+  /**
+   * 理由を告げて断る組み合わせ（CardInteraction.md 2.1節）だけを返す画面。入れ物としての受け入れと
+   * どちらが選ばれるかを見る。
+   */
+  const refusing = (shown: ShownCards, moves: Moved[]): ShownCards =>
+    new ShownCards({
+      stacksIn: (asked) => shown.stacksAt(asked),
+      cardOfObjects: (objects) =>
+        stack(
+          place('hand'),
+          objects.map((entry) => entry.instanceId),
+          { moves },
+        ),
+      combinationOf: () =>
+        ({
+          name: '断る組み合わせ',
+          description: undefined,
+          minutes: 0,
+          maxCount: 1,
+          movedIds: [1],
+          execute: () => moves.push({ ids: [1], to: place('items'), at: undefined }),
+          enabled: false,
+          reason: '今はできない理由。',
+        }) as CardCombination,
+      visible: () => true,
+      windowPlace: () => undefined,
+      places: place,
+      filter: () => undefined,
+    });
+
+  const combineDrop = {
+    from: place('hand'),
+    fromIndex: 0,
+    to: place('items'),
+    target: { kind: 'combine', index: 0 },
+    count: 1,
+  } as const;
+
+  it('断る組み合わせは、入れ物としての受け入れに譲る', () => {
+    // 実際に起きることのほうが、起きない理由より先（ShownCards.dropEffect）。
+    const moves: Moved[] = [];
+    const inside = somewhere();
+    const shown = screen({
+      hand: [stack(place('hand'), [1], { moves })],
+      items: [stack(place('items'), [9], { contents: inside })],
+    });
+
+    const told = refusing(shown, moves).dropEffect(combineDrop);
+
+    expect(told?.enabled, '入れられるほうが選ばれる').toBe(true);
+    told?.execute();
+    expect(moves.at(-1), '中へ入る').toEqual({ ids: [1], to: inside, at: undefined });
+    expect(
+      refusing(shown, moves).dropCombination(combineDrop),
+      '実行しない組み合わせは「重ねた」と記録しない（PlayScene.dropLabel）',
+    ).toBeUndefined();
+  });
+
+  it('入れ物でない相手なら、断る組み合わせが理由ごと返る', () => {
+    const moves: Moved[] = [];
+    const shown = screen({
+      hand: [stack(place('hand'), [1], { moves })],
+      items: [stack(place('items'), [9])],
+    });
+
+    expect(refusing(shown, moves).dropEffect(combineDrop)).toMatchObject({
+      name: '断る組み合わせ',
+      enabled: false,
+      reason: '今はできない理由。',
+    });
   });
 });
 

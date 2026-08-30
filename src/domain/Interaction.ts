@@ -68,8 +68,9 @@ export class Action extends Interaction<ActionTrigger, undefined> {
 /**
  * 相手（instrument）まで決まった組み合わせ1つ（GameElementDefinition.md 12節）。
  *
- * **今成立するものしか作られない**（WorldObject.combinationsWith）ので、持っているだけで「重ねれば
- * 何かが起きる」と言える。
+ * **型は合っている**（相手として受け入れ、行き先も詰まっていない）ものしか作られない。要件（14節）まで
+ * 満たしているかは引き方が分ける——`WorldObject.combinationsWith` は今成立するもの、
+ * `refusedCombinationsWith` は理由を告げて断るもの（14.6節）。どちらなのかは `unmetRequirement` が答える。
  */
 export class Combination extends Interaction<DragTrigger, WorldObject> {
   constructor(
