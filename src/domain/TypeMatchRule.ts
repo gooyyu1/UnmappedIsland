@@ -20,8 +20,7 @@ export type AcceptSpec =
   { readonly tag: string } | { readonly object: string } | { readonly not: AcceptSpec };
 
 /**
- * 「どの型が当てはまるか」の指定（GameElementDefinition.md 4.1節）。枠のaccept（7.2節）と
- * 重ねる操作の相手（12.1節）が共通で使う。
+ * 「どの型が当てはまるか」の指定（GameElementDefinition.md 4.1節）。
  *
  * タグで指せば、そのタグを持つあらゆる型（MOD追加分も含む）が当てはまる。object_defのidで指せば
  * まさにその型だけが当てはまり、そのためだけの単発タグを新設せずに済む。trait名では直接
