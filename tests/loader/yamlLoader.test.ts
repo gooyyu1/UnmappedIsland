@@ -2165,6 +2165,30 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).not.toThrow();
   });
 
+  it('プロパティ名がどのキーで決まってもancestorは書ける（baseのprop省略・modifyの対象キー・transferのfrom）', () => {
+    const yaml = `
+object_defs:
+  room:
+    props:
+      ambient_temperature: {value: 0}
+    slots:
+      contents: {}
+  stove:
+    props:
+      warmth: {value: 0, base: {subject: ancestor}}
+      fuel: {value: 10}
+    passives:
+      - modify:
+          ancestor:
+            ambient_temperature: 5
+    interactions:
+      burn:
+        trigger: menu
+        transfer: {from: ancestor, from_prop: ambient_temperature, to_prop: fuel, amount: 1}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).not.toThrow();
+  });
+
   it('in_slot判定でobjectにancestorを指定するとエラーになる', () => {
     const yaml = `
 object_defs:
