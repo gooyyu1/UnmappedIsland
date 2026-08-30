@@ -15,6 +15,12 @@ import { describe, expect, it } from 'vitest';
  */
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/merge-and-close.sh');
+/** 同じ世界で叩ける後片付けの片割れ。こちらはPRが**開いている**ときの経路を持つ。 */
+const ARCHIVE_REVIEWS = resolve(__dirname, '../../scripts/agent/archive-reviews.sh');
+
+/** `ccr-env.sh` へ環境変数で渡す身代わり。実物のIDは試験に書き写さない。 */
+const CLOUD = 'env_TEST_CLOUD';
+const BRIDGE = 'env_TEST_BRIDGE';
 
 /**
  * 脚注の無い本文は `NOSESSION` を出すので、脚注の話でない試験には既定でこれを持たせる。
@@ -35,6 +41,21 @@ interface World {
    * タグの話でない試験がそこで止まらないようにする。
    */
   readonly tags?: Record<string, string[]>;
+  /**
+   * ブリッジ（このPC）の環境で立ったセッション。**タグはクラウドと同じ**なので、これでしか
+   * 区別が付かない。環境IDそのものは `ccr-env.sh` から環境変数で差し替える。
+   */
+  readonly onBridge?: readonly string[];
+  /**
+   * 走っている最中のセッション（`get_session` の `status_bucket` が `…_WORKING`）。
+   * `session_status` とは別に持つ——**「走っているか」と「畳まれているか」は別の問い**で、
+   * 畳む側が見るのは両方。
+   */
+  readonly working?: readonly string[];
+  /**
+   * `get_session` の応答にJSONが入らないセッション（引けない日）。タグも状態も環境も分からない。
+   */
+  readonly unknown?: readonly string[];
   /** `archive_session` が失敗するか。 */
   readonly archiveFails?: boolean;
   /** 本体に未コミットの変更（追跡済み）があるか。 */
@@ -47,6 +68,8 @@ interface World {
   readonly gate?: readonly string[];
   /** 関門の終了コード。既定は理由の有無から決まる（あれば 0、無ければ 1）。 */
   readonly gateStatus?: number;
+  /** `gh pr view --json state` が失敗するか（PRの状態を引けない日）。 */
+  readonly stateFails?: boolean;
   /** `--user-ok` を付けて叩くか。 */
   readonly userOk?: boolean;
 }
@@ -68,7 +91,11 @@ interface Run {
   readonly comments: string;
 }
 
-function run(world: World): Run {
+/**
+ * 世界を組んで叩く。`entry` を渡すと `merge-and-close.sh` 以外を同じ世界で叩ける——`gh` のスタブは
+ * `gh pr merge` が呼ばれるまで `state` に `OPEN` を返すので、**PRが開いている経路**はこれでしか試せない。
+ */
+function run(world: World, entry: readonly string[] = [SCRIPT, '1000']): Run {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-merge-and-close-'));
   try {
     const dir = work.replace(/\\/g, '/');
@@ -100,7 +127,11 @@ if [ "$1" = pr ] && [ "$2" = view ]; then
   case "$5" in
     body) cat '${dir}/body.txt' ;;
     mergeable) printf '%s' '${world.mergeable ?? 'MERGEABLE'}' ;;
-    state) if [ -e '${dir}/merged' ]; then printf '%s' MERGED; else printf '%s' OPEN; fi ;;
+    state) ${
+      world.stateFails === true
+        ? 'exit 1'
+        : `if [ -e '${dir}/merged' ]; then printf '%s' MERGED; else printf '%s' OPEN; fi`
+    } ;;
   esac
   exit 0
 fi
@@ -170,7 +201,11 @@ if [ "$1" = list_sessions ]; then
   echo '<other-session>'
   echo '${JSON.stringify({
     ccr: {
-      data: Object.entries(world.tags ?? {}).map(([id, tags]) => ({ id, tags })),
+      data: Object.entries(world.tags ?? {}).map(([id, tags]) => ({
+        id,
+        tags,
+        environment_id: (world.onBridge ?? []).includes(id) ? BRIDGE : CLOUD,
+      })),
     },
   })}'
   exit 0
@@ -181,14 +216,32 @@ if [ "$1" = archive_session ]; then
 fi
 echo '<other-session>'
 case "$id" in
+${(world.unknown ?? []).map((id) => `  ${id}) : ;;`).join('\n')}
 ${Object.entries({ session_01ZZZZZZZZZZZZZZZZZZZZZZ: 'SESSION_STATUS_ARCHIVED', ...world.sessions })
   .map(
     ([id, status]) =>
       `  ${id}) echo '${JSON.stringify({
-        ccr: { session_status: status, tags: world.tags?.[id] ?? ['task-1000'] },
+        ccr: {
+          session_status: status,
+          status_bucket: (world.working ?? []).includes(id)
+            ? 'SESSION_STATUS_BUCKET_WORKING'
+            : 'SESSION_STATUS_BUCKET_READY',
+          tags: world.tags?.[id] ?? ['task-1000'],
+          environment_id: (world.onBridge ?? []).includes(id) ? BRIDGE : CLOUD,
+        },
       })}' ;;`,
   )
   .join('\n')}
+${(world.onBridge ?? [])
+  .filter((id) => !(id in { ...world.sessions }))
+  .map(
+    (id) =>
+      `  ${id}) echo '${JSON.stringify({
+        ccr: { tags: world.tags?.[id] ?? ['task-1000'], environment_id: BRIDGE },
+      })}' ;;`,
+  )
+  .join('\n')}
+  *) echo '${JSON.stringify({ ccr: { tags: ['task-1000'], environment_id: CLOUD } })}' ;;
 esac
 `,
       'utf-8',
@@ -197,13 +250,15 @@ esac
     let status = 0;
     let out = '';
     try {
-      out = execFileSync('bash', [SCRIPT, '1000', ...(world.userOk === true ? ['--user-ok'] : [])], {
+      out = execFileSync('bash', [...entry, ...(world.userOk === true ? ['--user-ok'] : [])], {
         encoding: 'utf-8',
         env: {
           ...process.env,
           PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
           CCR_META: meta,
           NEEDS_USER_REVIEW: gate,
+          CLOUD_ENV: CLOUD,
+          BRIDGE_ENV: BRIDGE,
         },
       });
     } catch (error) {
@@ -334,6 +389,56 @@ describe('merge-and-close.sh', () => {
     expect(result.status).toBe(0);
   });
 
+  // レビューのセッションはPRを出さないので `session-of-pr.sh` では引けず、`review-` のタグで引く。
+  // PRが閉じれば読む相手が無くなるので、ここが最後の1本を畳む場所。
+  it('マージしたら、そのPRのレビューのセッションも畳む', () => {
+    const result = run({
+      tags: {
+        session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'],
+        session_01REVIEWBBBBBBBBBBBBBB: ['review-1000'],
+        // 別のPRのレビューと、直す側。どちらもこのPRのマージでは畳まない。
+        session_01REVIEWCCCCCCCCCCCCCC: ['review-1001'],
+        session_01TASKAAAAAAAAAAAAAAAA: ['task-1000'],
+      },
+    });
+
+    expect(result.lines).toEqual([
+      'MERGED 1000',
+      'ARCHIVED session_01REVIEWAAAAAAAAAAAAAA',
+      'ARCHIVED session_01REVIEWBBBBBBBBBBBBBB',
+      'SYNCED deadbee',
+    ]);
+    expect(result.archived).toEqual(['session_01REVIEWAAAAAAAAAAAAAA', 'session_01REVIEWBBBBBBBBBBBBBB']);
+    expect(result.status).toBe(0);
+  });
+
+  // `claude remote-control` が落ちている間にブリッジのセッションを畳むと、worktree がロックされた
+  // まま残る。タグはクラウドと同じなので、環境IDでしか区別が付かない。
+  it('ブリッジで立てたセッションは、レビューも直す側も畳まない', () => {
+    const result = run({
+      body: 'Closes #1033\n\n_[Claude Code](https://claude.ai/code/session_01BRIDGETASK00000000)_',
+      issues: { 1033: 'CLOSED' },
+      sessions: { session_01BRIDGETASK00000000: 'SESSION_STATUS_IDLE' },
+      tags: {
+        session_01BRIDGETASK00000000: ['task-1033'],
+        session_01BRIDGEREVIEW000000: ['review-1000'],
+        session_01CLOUDREVIEW0000000: ['review-1000'],
+      },
+      onBridge: ['session_01BRIDGETASK00000000', 'session_01BRIDGEREVIEW000000'],
+    });
+
+    expect(result.lines).toEqual([
+      'MERGED 1000',
+      'CLOSED 1033',
+      'KEPT session_01BRIDGETASK00000000',
+      'KEPT session_01BRIDGEREVIEW000000',
+      'ARCHIVED session_01CLOUDREVIEW0000000',
+      'SYNCED deadbee',
+    ]);
+    expect(result.archived).toEqual(['session_01CLOUDREVIEW0000000']);
+    expect(result.status).toBe(0);
+  });
+
   // 本文を書き直した拍子に脚注が落ちる（PR #1083 で実際に落ちた）。黙って畳まずに済ませると、
   // 走ったままのセッションが誰にも数えられずに残る。
   it('脚注もタグも無ければ、畳む相手が分からなかったことを残りとして報せる', () => {
@@ -380,6 +485,47 @@ describe('merge-and-close.sh', () => {
     expect(result.lines).toEqual(['MERGED 1000', 'SYNCED deadbee']);
   });
 
+  // 畳み済みには何も言わない、は `archive-session.sh` が持つ出力の規約。issue を持たない相手を
+  // 選り分ける側（このスクリプト）だけがそれを知らないと、同じ相手に片方だけが口を利く。
+  it('畳み済みなら、issue を持たないセッションにも何も出さない', () => {
+    const result = run({
+      body: 'https://claude.ai/code/session_01ADVISER000000000000',
+      sessions: { session_01ADVISER000000000000: 'SESSION_STATUS_ARCHIVED' },
+      tags: { session_01ADVISER000000000000: ['adviser-parallel-agents'] },
+    });
+
+    expect(result.archived).toEqual([]);
+    expect(result.lines).toEqual(['MERGED 1000', 'SYNCED deadbee']);
+  });
+
+  // 走行中を守ると `KEPT` として残るだけで、誰かがもう一度渡さない限り二度と畳まれない。**マージ済みの
+  // PRへは、レビューの投入も次のマージも二度と来ない**——ここが渡す最後の機会なので、走行中でも畳む。
+  // 判定を書き終えても読む相手（開いているPR）が無い、というのが守らない理由。
+  it('マージのときは、走っている最中のセッションも畳む', () => {
+    const result = run({
+      body: 'Closes #1033\n\n_[Claude Code](https://claude.ai/code/session_01TASKAAAAAAAAAAAAAAAA)_',
+      issues: { 1033: 'CLOSED' },
+      sessions: {
+        session_01TASKAAAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING',
+        session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING',
+      },
+      tags: {
+        session_01TASKAAAAAAAAAAAAAAAA: ['task-1033'],
+        session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'],
+      },
+      working: ['session_01TASKAAAAAAAAAAAAAAAA', 'session_01REVIEWAAAAAAAAAAAAAA'],
+    });
+
+    expect(result.lines).toEqual([
+      'MERGED 1000',
+      'CLOSED 1033',
+      'ARCHIVED session_01TASKAAAAAAAAAAAAAAAA',
+      'ARCHIVED session_01REVIEWAAAAAAAAAAAAAA',
+      'SYNCED deadbee',
+    ]);
+    expect(result.archived).toEqual(['session_01TASKAAAAAAAAAAAAAAAA', 'session_01REVIEWAAAAAAAAAAAAAA']);
+  });
+
   // 作業ツリーは本体の `node_modules` を共有するので、本体が古いままだと版が食い違う。
   // `main` を動かしているのはこのスクリプトなので、ここで一緒に進める。
   it('マージしたら、本体のチェックアウトをブランチを持たせずに新しい main へ進める', () => {
@@ -408,5 +554,71 @@ describe('merge-and-close.sh', () => {
     expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
     expect(result.installed).toBe(false);
     expect(result.status).toBe(2);
+  });
+});
+
+/**
+ * マージのときと対になる、**PRが開いているとき**の経路（`dispatch-review.sh` が次を立てる直前に呼ぶ）。
+ * 上の `describe` と同じ世界を使う——`gh pr merge` を呼ばないので `state` は `OPEN` のまま。
+ */
+describe('archive-reviews.sh', () => {
+  // ここで畳むと、書きかけの判定はコメントに出ないまま消える。守っても、次の投入かマージで
+  // もう一度渡されるので取りこぼしにはならない——**これが成り立つのはPRが開いている間だけ**。
+  it('PRが開いている間は、走っている最中のレビューを守る', () => {
+    const result = run(
+      {
+        sessions: {
+          session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING',
+          session_01REVIEWBBBBBBBBBBBBBB: 'SESSION_STATUS_IDLE',
+        },
+        tags: {
+          session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'],
+          session_01REVIEWBBBBBBBBBBBBBB: ['review-1000'],
+        },
+        working: ['session_01REVIEWAAAAAAAAAAAAAA'],
+      },
+      [ARCHIVE_REVIEWS, '1000'],
+    );
+
+    expect(result.lines).toEqual([
+      'KEPT session_01REVIEWAAAAAAAAAAAAAA',
+      'ARCHIVED session_01REVIEWBBBBBBBBBBBBBB',
+    ]);
+    expect(result.archived).toEqual(['session_01REVIEWBBBBBBBBBBBBBB']);
+    expect(result.status).toBe(0);
+  });
+
+  // 状態を引けない日に「OPEN ではない」へ倒れると、書きかけの判定を畳んでしまう。畳んで消えた
+  // コメントは戻せないが、守って残ったものは手で畳める。畳むのは「閉じていると分かったとき」だけ。
+  it('PRの状態を引けなかったときも、走っている最中のレビューを守る', () => {
+    const result = run(
+      {
+        stateFails: true,
+        sessions: { session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING' },
+        tags: { session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'] },
+        working: ['session_01REVIEWAAAAAAAAAAAAAA'],
+      },
+      [ARCHIVE_REVIEWS, '1000'],
+    );
+
+    expect(result.lines).toEqual(['KEPT session_01REVIEWAAAAAAAAAAAAAA']);
+    expect(result.archived).toEqual([]);
+    expect(result.status).toBe(0);
+  });
+
+  // 引けなければ、走行中かもブリッジかも分からない。空の応答から全部のキーが `""` に落ちるので、
+  // 何も書かなければ「走行中でもブリッジでもない」＝畳む側へ倒れる。上と同じ理由で守る側にする。
+  it('セッションを引けなかったときは畳まない', () => {
+    const result = run(
+      {
+        tags: { session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'] },
+        unknown: ['session_01REVIEWAAAAAAAAAAAAAA'],
+      },
+      [ARCHIVE_REVIEWS, '1000'],
+    );
+
+    expect(result.lines).toEqual(['KEPT session_01REVIEWAAAAAAAAAAAAAA']);
+    expect(result.archived).toEqual([]);
+    expect(result.status).toBe(0);
   });
 });
