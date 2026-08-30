@@ -233,6 +233,10 @@ object_texts:
         display_name: ビタミン
         icon: 🥬
         description: 体に残っているビタミン。力にはならないが、尽きると壊血病になり、古傷が開き歯が抜ける。葉物を口にすれば戻る。
+      happiness:
+        display_name: 幸福度
+        icon: 😊
+        description: 心の張り。痛みを抱えている間は落ちていき、うまい物を口にすれば戻る。火を通した食事ほど大きく戻す。
       # 腕前（docs/engine/SkillSystem.md、一覧は docs/world/Skills.md 2節）。**説明にはその腕を伸ばす
       # 行動を書く**——伸ばす行動を持たない本では、どうにもならないことがそこで分かる。
       skill_knapping:
@@ -1498,6 +1502,11 @@ stage_texts:
   tired: 疲れ
   winded: 息切れ
   fresh: 元気
+  # 幸福度。
+  miserable: 惨め
+  dejected: 落胆
+  glum: 塞ぐ
+  content: 平静
   # 荷重。
   light: 身軽
   laden: 荷持ち

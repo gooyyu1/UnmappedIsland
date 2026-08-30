@@ -95,6 +95,7 @@ object_defs:
             satiety: 350
             carbohydrate: 10
             vitamin: 35
+            happiness: 4
         pick:
           - weight: 100
           - weight: {prop: spoilage}
