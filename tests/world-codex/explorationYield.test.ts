@@ -169,10 +169,10 @@ describe('探索で見つかる物', () => {
         0,
       );
 
-    expect(rats(3, 180), '熟達すれば素人より出くわす').toBeGreaterThan(rats(3, 0));
+    expect(rats(3, 180), 'expertはnoviceより出くわす').toBeGreaterThan(rats(3, 0));
     // **同じ重みなら同じ卓**なので、引きまでそっくり一致する。腕が増やしているのが獣ではなく
     // 気づく確率であることが、これでそのまま言える。
-    expect(rats(3, 180), '熟達×素の3は、素人×つまみ9と同じ卓').toBe(rats(9, 0));
+    expect(rats(3, 180), 'expert×素の3は、novice×つまみ9と同じ卓').toBe(rats(9, 0));
     // 掛ける相手が0なら0のまま。**居ない土地では、腕がいくら高くても出くわさない**
     // （土地が宣言していない候補は抽選から外れる、ExplorationSystem.md 2.1節）。
     expect(rats(0, 180), '居ない獣には気づきようがない').toBe(0);

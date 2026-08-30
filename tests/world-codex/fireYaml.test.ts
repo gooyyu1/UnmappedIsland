@@ -200,18 +200,18 @@ describe('fire.yamlの火の連鎖', () => {
     return seen;
   }
 
-  it('火の腕が上がると火が付きやすくなる（素人が外す引きでも、熟達者は火を得る）', () => {
-    // 枯れ草の素の重みは60対40で素人は6割、熟達は倍率3が掛かって180対40（docs/world/Skills.md 5節）。
-    // 引きは両方とも0.7で、動かしているのは腕だけ。
+  it('火の腕が上がると火が付きやすくなる（noviceが外す引きでも、expertは火を得る）', () => {
+    // 枯れ草の素の重みは60対40でnoviceは6割、expertは倍率3が掛かって180対40
+    // （docs/world/Skills.md 5節）。引きは両方とも0.7で、動かしているのは腕だけ。
     const BETWEEN = 0.7;
     const firecraftId = codex.propertyNames.getId('skill_firecraft');
 
     open(BETWEEN);
-    expect(signalsOf(lightDryGrass), '素人は外す').toEqual(['dry_grass: not_lit']);
+    expect(signalsOf(lightDryGrass), 'noviceは外す').toEqual(['dry_grass: not_lit']);
 
     open(BETWEEN);
     player.getProperty(firecraftId).setNumberWithoutEvents(180);
-    expect(signalsOf(lightDryGrass), '熟達者は同じ引きで火を得る').toEqual(['dry_grass: lit']);
+    expect(signalsOf(lightDryGrass), 'expertは同じ引きで火を得る').toEqual(['dry_grass: lit']);
   });
 
   it('雨の日は屋外で火が起こせない', () => {

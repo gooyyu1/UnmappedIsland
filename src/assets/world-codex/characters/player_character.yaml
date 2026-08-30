@@ -537,7 +537,8 @@ traits:
       # 土地の<動物>_find（探索で出くわす機会）へ掛かる。
       #
       # **罠には効かない。** 罠の抽選は誰も操作していない場面で走るので、罠から腕の持ち主が見えない
-      # （docs/engine/TrapSystem.md 8節）。
+      # （docs/engine/TrapSystem.md 8節）。**直接突く3つの手（strike・spear_sea・spear_shoal）にも
+      # まだ掛かっていない**——当てる腕を同じ倍率で表せるかが未決（issue #1488）。
       skill_hunting:
         tags: [skill]
         value: 0

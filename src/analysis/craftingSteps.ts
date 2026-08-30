@@ -57,24 +57,26 @@ export function craftingStepsOf(
 }
 
 /**
- * 起点を解く手立てに、**行っている人**（agent、11.5節）を足したもの。答えるのはプレイヤー
- * キャラクタが宣言している素の値で、腕前の段が押し上げる倍率（docs/world/Skills.md 5節）は素人で
- * 等倍の1だから、**ここから出るのは素人が行った場合の数字**になる。
+ * 起点を解く手立てに、**行っている人**（agent、11.5節）を足したもの。答えるのはキャラクタが
+ * 宣言している素の値なので、腕前の段が押し上げる倍率（docs/world/Skills.md 5節）も荷重の段が
+ * 押し上げるpaceも1のまま——**ここから出るのは、素の身の1人が行った場合の数字**になる。
+ * 祖先を「最も高く宣言している土地」、使う物を「最も良い型」と見るのと同じ埋め方
+ * （balanceTables）で、**宣言が個体で分かれるプロパティは最も高い1人に合わせる**
+ * （水分は体格ぶんだけ違う、characters/*.yaml）。
  *
  * **これだけは呼び出し側の文脈にしない。** 使う物（どの武器か）や祖先（どの土地か）と違って、
- * 誰が行うかは問いによって変わらない——操作するのは常にプレイヤーキャラクタで、4人とも同じ trait が
- * 同じ値を配る（characters/player_character.yaml）。足さないと、腕が掛かる重み——着火の成否・探索で
- * 獣に出くわす確率——が全て0になり、その候補は起こらないものとして数えられる。
+ * 誰が行うかは問いによって変わらない——操作するのは常にプレイヤーキャラクタだから。足さないと、
+ * 腕が掛かる重み——着火の成否・探索で獣に出くわす確率——が全て0になり、その候補は起こらないものと
+ * して数えられる。
  */
 function withNoviceAgent(codex: WorldCodex, outer: StaticValueResolver | undefined): StaticValueResolver {
   const characters = [...codex.objects].filter((def) => def.hasTag(codex.vocabulary.world.characterTagId));
   return (root, propertyGlobalId, end) => {
     if (root !== 'agent') return outer?.(root, propertyGlobalId, end);
-    for (const character of characters) {
-      const value = staticValueOf(character, propertyGlobalId, end);
-      if (value !== undefined) return value;
-    }
-    return outer?.(root, propertyGlobalId, end);
+    const declared = characters
+      .map((character) => staticValueOf(character, propertyGlobalId, end))
+      .filter((value): value is number => value !== undefined);
+    return declared.length === 0 ? outer?.(root, propertyGlobalId, end) : Math.max(...declared);
   };
 }
 
