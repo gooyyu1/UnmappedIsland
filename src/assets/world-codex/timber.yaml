@@ -39,8 +39,9 @@ object_defs:
           - reason: too_stormy
             not: {subject: agent, prop: wind_speed, in_stage: gale}
         # 木材加工の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
-        # characters/player_character.yaml）。斧を要さない最初の一歩はまだ無いので、この腕は
-        # 石器・繊維（＝斧）の先からしか立ち上がらない。循環はしない（同3.2節）。
+        # characters/player_character.yaml）。**この口は斧を要求するが、立ち上がりはここではない**
+        # ——刃物1本で回る削り出し（animals.yamlのwhittle）が石器の先にあるので、木材加工は斧より
+        # 手前から伸び始める。どちらも循環しない（同3.2節）。
         add:
           agent:
             skill_woodwork: 2

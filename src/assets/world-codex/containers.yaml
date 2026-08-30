@@ -46,8 +46,8 @@ object_defs:
     recipes:
       woven:
         # **解放条件が効く典型がここ**（docs/engine/SkillSystem.md 4.2節）——材料はヤシの葉だけで、
-        # 素材の側は初日から揃ってしまう。腕は葉を編む操作（weaving.yamlのweave）が配るので、
-        # 開けるのは「編んだ数」であって、他の何かを先に作れることではない。
+        # 素材の側は初日から揃ってしまう。**腕は道具を1つも要らない葉編み（weaving.yamlのweave）だけでも
+        # 立つ**ので、開けるのは繊維を扱った回数であって、他の何かを先に作れることではない。
         #
         # 「basic以上」を段の名前の並びで書く形は characters/player_character.yaml が持つ。
         conditions:
