@@ -215,6 +215,14 @@ export class ReferenceContext {
     return new ReferenceContext(self, agent, instrument, patient, undefined);
   }
 
+  /**
+   * selfだけを差し替えた文脈。**役の出どころは変えずに、起点だけを移す**場面で使う——passivesのゲートは
+   * selfが辺の子側（slotBearer）、役は宣言元（11.5節。PassiveEffectGate.isSatisfied）。
+   */
+  withSelf(self: WorldObject | undefined): ReferenceContext {
+    return new ReferenceContext(self, this.agent, this.instrument, this.patient, this.picked);
+  }
+
   /** instrumentだけを差し替えた文脈。同じ操作を候補ごとに引き直す場面で使う（TransferEffect.acceptedCount）。 */
   withInstrument(instrument: WorldObject | undefined): ReferenceContext {
     return new ReferenceContext(this.self, this.agent, instrument, this.patient, this.picked);

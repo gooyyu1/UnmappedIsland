@@ -55,10 +55,12 @@ export class PassiveEffectGate {
     )
       return false;
 
+    // ゲートのselfは辺の子側（slotBearer）だが、**役は宣言元から解く**——役を指せるのは参加者からだけで、
+    // ここでの参加者はこのpropsを宣言した個体（declarer）だから（11.5節）。child対象では両者が
+    // 食い違うので、まとめて片方から引くと「宣言元は操作に参加しているのに解決しない」が起きる。
     if (
       this.conditions !== undefined &&
-      // ゲートは参加者のpropsの一部（11.5節）。slotBearerが今操作に参加していれば、そこから役を指せる。
-      !this.conditions.evaluate(ReferenceContext.forParticipant(slotBearer))
+      !this.conditions.evaluate(ReferenceContext.forParticipant(declarer).withSelf(slotBearer))
     )
       return false;
 

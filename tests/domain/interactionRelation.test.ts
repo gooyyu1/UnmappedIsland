@@ -162,6 +162,45 @@ object_defs:
     expect(stamina(), '手番を終えても、常時の寄与は残っている').toBe(9);
   });
 
+  it('ゲートの役は、辺の子側ではなく宣言元から解ける（child対象と併せて書いたとき）', () => {
+    // ゲートのselfは辺の子側（child対象なら子）だが、役を指せるのは参加者からだけで、ここでの
+    // 参加者は宣言を持つ側（11.5節）。まとめて子から引くと、宣言元が操作に参加していても解決しない。
+    const { codex, session, world } = buildWorldSession(`
+object_defs:
+  hauler:
+    props:
+      strength: {value: 5}
+  crate:
+    slots:
+      contents: {}
+    passives:
+      # 担ぎ手が居る間だけ、中身が擦れて減る。宣言は箱にあり、辺の子側は中身。
+      - conditions: [{subject: agent, prop: strength, gt: 0}]
+        add: {child: {wear: 1}}
+    interactions:
+      lift:
+        trigger: menu
+        duration: 15
+  stone:
+    props:
+      wear: {value: 0, range: {min: 0, max: 100}}
+`);
+    const crate = placeInWorld(codex, world, session.createObject(codex.objectNames.getId('crate')));
+    const stone = session.createObject(codex.objectNames.getId('stone'));
+    const hauler = session.createObject(codex.objectNames.getId('hauler'));
+    expect(stone.moveToSlotOrRejection(crate.getSlot(codex.slotNames.getId('contents')))).toBeUndefined();
+
+    const wear = () => stone.tryGetProperty(codex.propertyNames.getId('wear'))?.number;
+
+    session.advanceWorldTime(15);
+    expect(wear(), '誰も担いでいない1tickでは、agentが解決しないのでゲートは閉じている').toBe(0);
+
+    // 持ち上げの15分（＝1tick）は関係を張ったまま進む。石（辺の子側）は参加していないので、
+    // 役を子から引くとここでもゲートが開かない。
+    expect(crate.tryGetAction('lift', hauler)?.tryExecute()).toBe(true);
+    expect(wear(), '宣言元（箱）が参加していれば、担ぎ手をagentとしてゲートが開く').toBe(1);
+  });
+
   it('trigger: tick の操作にもagentが居て、それは自分自身', () => {
     const { codex, session, world } = buildWorldSession(`
 object_defs:

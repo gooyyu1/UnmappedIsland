@@ -602,7 +602,7 @@
       "additionalProperties": false
     },
     "passive_def": {
-      "description": "持続する影響の1ブロック（8節）。文法は「操作(conditions/modify/add)が上位、対象が下位」。関係とゲート（常時／conditions／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。conditionsを書かなければ常時（無条件）を意味する。装備状態などによって異なるconditionsで効果を切り替えたい場合、passivesの配列に複数ブロックを並べる（8.5節）。ブロック全体で1つのconditionsを持ち、対象ごとには持たない（同じブロックの対象はいずれも同じ1つの場面を見るため）。",
+      "description": "持続する影響の1ブロック（8節）。文法は「操作(conditions/modify/add)が上位、対象が下位」。関係とゲート（常時／conditions／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。conditionsを書かなければ常時（無条件）を意味する。装備状態などによって異なるconditionsで効果を切り替えたい場合、passivesの配列に複数ブロックを並べる（8.5節）。ブロック全体で1つのconditionsを持ち、対象ごとには持たない（書かれた条件は1つ。child対象では付いている子ごとに評価されるが、条件そのものは共通）。",
       "type": "object",
       "properties": {
         "conditions": {
