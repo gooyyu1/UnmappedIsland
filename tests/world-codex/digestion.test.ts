@@ -1,4 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { spawnsObject } from '../../src/codex-viewer/describe/effectQueries';
+import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { PropertyValue } from '../../src/domain/PropertyValue';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
@@ -415,6 +417,9 @@ describe('消化（かさ・栄養素・蓄え）', () => {
     // どれを引くかになる。傷んだ段では吐き下しの重みが1/4なので、同じrollでも無事な側へ寄る。
     const VOMITS = 0.5;
     const HAS_DIARRHEA = 0.9;
+    // 傷んでいない物の抽選は「無事100 : 生の枝」の2択（腐敗の重みが0なので、吐き下しの2本は引けない）。
+    // 生の枝は末尾なので、末端へ寄せたrollがそのまま「生であることで当たる」を指す。
+    const RAW = 0.99;
 
     /** 3本の在庫を同じ量だけ置く（減った分を割合で読みたいので、0に張り付かせない）。 */
     const STOCKED = 60;
@@ -541,6 +546,55 @@ describe('消化（かさ・栄養素・蓄え）', () => {
       expect(unaffected, '水も栄養素も残らない炭（animals.yaml）だけが腐らないので当たらない').toEqual([
         'charred_lump',
       ]);
+    });
+
+    it('生でも食べられる物は、傷んでいなくても当たる', () => {
+      // 生の枝を書き忘れると、それだけが焼かずに食べても平気な食料になる。数が増えても気付けるよう、
+      // 「焼くと何になるか」を実データから引いて、eatを持つ食べ物を全数、**傷ませずに**食べさせる。
+      // 新鮮なら腐敗の重みは0なので、ここで当たるのは生の枝を持つ物だけ。
+      const foodTagId = codex.tagNames.getId('food');
+      const cookingProgressId = codex.propertyNames.getId('cooking_progress');
+      const defs = [...codex.objects].filter((def) => !codex.isGenerated(def));
+
+      /** fromを焼くとtoになるか（cooking_progressのon_max、FireSystem.md 7節）。 */
+      const roastsInto = (from: ObjectDef, to: ObjectDef): boolean =>
+        from
+          .tryGetPropertyDef(cookingProgressId)
+          ?.rangeEvents()
+          .some(([label, effect]) => label === 'on_max' && spawnsObject(effect, to.globalId)) === true;
+
+      // 規則は「焼いた先を持つ食べ物のうち、生でも食べられる物」（DigestionSystem.md 6節）。
+      // **生であることは、丸焼きの鎖の先頭に居ること**として引く——焼いた先を持つかどうかだけでは、
+      // 焦げる手前の焼けた肉も当てはまってしまう。焼いて生まれた物は既に火が通っている。
+      const raw = defs.filter(
+        (def) =>
+          def.tags.includes(foodTagId) &&
+          defs.some((roasted) => roastsInto(def, roasted)) &&
+          !defs.some((source) => roastsInto(source, def)),
+      );
+      expect(
+        raw.map((def) => def.name),
+        '生の枝を持つべきなのは、いまは生肉だけ。増えたらDigestionSystem.md 6節の数え上げも直す',
+      ).toEqual(['raw_meat']);
+
+      const affected: string[] = [];
+      for (const def of defs) {
+        if (!def.tags.includes(foodTagId)) continue;
+
+        open(RAW);
+        const food = spawn(def.name);
+        expect(food.moveToSlotOrRejection(player.getSlot(codex.slotNames.getId('hand')))).toBeUndefined();
+        // 飲む物（青いヤシの実）はfoodタグを持つがeatを持たない（foods.yaml冒頭）。
+        if (food.tryGetAction('eat', player) === undefined) continue;
+        player.getProperty(satietyId).setNumberWithoutEvents(0);
+
+        expect(food.tryGetAction('eat', player)?.tryExecute() === true, def.name).toBe(true);
+        if (valueOf(satietyId) === 0) affected.push(def.name);
+      }
+
+      expect(affected.sort(), '傷んでいない物で当たるのは、生の枝を持つ物だけ').toEqual(
+        raw.map((def) => def.name),
+      );
     });
 
     it('下痢の脱水は、既にある渇きの死に方へ流れる', () => {
