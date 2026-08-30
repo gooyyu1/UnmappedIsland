@@ -210,6 +210,10 @@ object_defs:
       ret:
         trigger: {drag: {object: stone}}
         duration: 120
+        # 繊維・編みの腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
+        # characters/player_character.yaml）。**掻き取り（fiber.yamlのstrip）と同じだけ配る**
+        # ——同じ植物繊維を出す2つの入口で、違うのは採れる土地だけ（上のコメント）。
+        add: {agent: {skill_cordage: 2}}
         destroy: self
         spawn: {object: plant_fiber, count: 2}
 

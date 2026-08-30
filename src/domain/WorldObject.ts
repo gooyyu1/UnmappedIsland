@@ -10,7 +10,6 @@ import type { EngineVocabulary } from './WorldVocabulary';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
 import { PropertyValue } from './PropertyValue';
-import type { Requirement } from './Requirement';
 import { Slot } from './Slot';
 import type { SlotPosition } from './SlotPosition';
 import type { WorldSession } from './WorldSession';
@@ -816,9 +815,10 @@ export class WorldObject {
 
   /**
    * instrumentを重ねたときに**今**成立する組み合わせ（12節、宣言順）。相手として受け入れるかだけでなく、
-   * 要件（14節）を満たしているかまで見る——満杯の炉に薪をくべる組み合わせは、候補にならない。
+   * 今そのまま実行してよいか（`Combination.canExecute`）まで見る——満杯の炉に薪をくべる組み合わせは、
+   * 候補にならない。
    *
-   * **要件まで見るのは、実行できないものを黙って落とし先にしないため。** 型だけで選ぶと、選んだ
+   * **そこまで見るのは、実行できないものを黙って落とし先にしないため。** 型だけで選ぶと、選んだ
    * 先が実行できない場合に「落とせるのに何も起きない」になる。**行き先の座標に型が居ない組み合わせ**
    * （`become`、9.9節）も同じ理由で候補にならない。
    *
@@ -826,12 +826,15 @@ export class WorldObject {
    * ——それを引くのが下のrefusedCombinationsWith（ActionSystem.md 1.1節）。
    */
   combinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
-    return this.combinationsMatching(instrument, agent, (unmet) => unmet === undefined);
+    return this.candidateCombinationsWith(instrument, agent).filter((combination) =>
+      combination.canExecute(),
+    );
   }
 
   /**
    * instrumentを重ねても要件（14節）で成立しないが、**断る理由を宣言している**組み合わせ
-   * （14.6節のreason、宣言順）。薪の無い炉へ火種を落とす、暗い中で石を打ち割る、が該当する。
+   * （14.6節のreason、宣言順）。薪の無い炉へ火種を落とす、暗い中で石を打ち割る、餌が満杯の罠へ餌を
+   * 重ねる、が該当する。
    *
    * **`reason` を書いた要件は、落ちたときプレイヤーへ理由が届くという約束**（14.6節）。メニューの
    * 操作は押せないボタンとして理由を出せるが、重ねる操作には候補から消えた先に理由を出す口が無い。
@@ -842,26 +845,27 @@ export class WorldObject {
    * 成立するものが1つでもあるなら、そちらが先（`combinationsWith`）。
    */
   refusedCombinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
-    return this.combinationsMatching(instrument, agent, (unmet) => unmet?.reasonName !== undefined);
+    return this.candidateCombinationsWith(instrument, agent).filter(
+      (combination) => combination.unmetRequirement()?.reasonName !== undefined,
+    );
   }
 
   /**
-   * 相手として受け入れ、行き先も詰まっていないドラッグの宣言のうち、満たしていない要件が
-   * acceptsに当てはまるもの。**要件以外の絞り込みを1箇所に持つ**——成立するものと断るものが
-   * 「要件を見た結果」だけで分かれるようにするため。
+   * 相手として受け入れ、**起きることが在る**（`become` の行き先に型が居る、9.9節）ドラッグの宣言。
+   * どちらの列挙もここから絞るので、**成立するものと断るものは「その組み合わせに訊いた結果」だけで
+   * 分かれる**。
    *
    * **問うのは組み合わせ自身。** 候補ごとに関係を1つずつ張って外すので（11.5節）、呼び手が
    * 「self・agent・instrumentがこの3つでないと壊れる」という一致の規約を覚える余地が無い。
    */
-  private combinationsMatching(
+  private candidateCombinationsWith(
     instrument: WorldObject,
     agent: WorldObject | undefined,
-    accepts: (unmet: Requirement | undefined) => boolean,
   ): readonly Combination[] {
     return this.def.dragTriggers
       .filter((trigger) => trigger.acceptsInstrument(instrument.def))
       .map((trigger) => new Combination(trigger, this, instrument, agent))
-      .filter((combination) => combination.matches(accepts));
+      .filter((combination) => combination.hasSomethingToHappen());
   }
 
   // ---- 時間の経過（8.4節） ----

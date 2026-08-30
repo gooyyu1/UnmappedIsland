@@ -225,6 +225,52 @@ object_texts:
         display_name: ビタミン
         icon: 🥬
         description: 体に残っているビタミン。力にはならないが、尽きると壊血病になり、古傷が開き歯が抜ける。葉物を口にすれば戻る。
+      # 腕前（docs/engine/SkillSystem.md、一覧は docs/world/Skills.md 2節）。**説明にはその腕を伸ばす
+      # 行動を書く**——伸ばす行動を持たない本では、どうにもならないことがそこで分かる。
+      skill_knapping:
+        display_name: 石器
+        icon: 🪨
+        description: 石を打ち欠いて刃を作る腕。石へ石を重ねて打つほど上がる。
+      skill_cordage:
+        display_name: 繊維・編み
+        icon: 🧶
+        description: 繊維を撚り、葉を編む腕。掻き取り・撚り・編みのどれでも上がる。
+      skill_woodwork:
+        display_name: 木材加工
+        icon: 🪵
+        description: 木を伐り、刃を当てて削り出す腕。木を倒し、流木を玉切りし、骨を削るほど上がる。
+      skill_joinery:
+        display_name: 指物・接合
+        icon: 🪑
+        description: 材を削り合わせて組む腕。今のこの島には、伸ばす手立ても使い道もまだ無い。
+      skill_building:
+        display_name: 建築
+        icon: 🏠
+        description: 住まいを建てる腕。今のこの島には、伸ばす手立ても使い道もまだ無い。
+      skill_leatherwork:
+        display_name: 皮革
+        icon: 🧥
+        description: 皮を剥ぎ、なめし、縫う腕。獣を捌くほど上がる。
+      skill_cooking:
+        display_name: 料理
+        icon: 🍳
+        description: 食材を調理する腕。今のこの島には、伸ばす手立てがまだ無い（焼くのは火が進める）。
+      skill_preserving:
+        display_name: 保存
+        icon: 🧂
+        description: 得た食を乾季まで保たせる腕。塩を打つほど上がる。
+      skill_firecraft:
+        display_name: 火
+        icon: ♨️
+        description: 火を起こし、保つ腕。きりもみ式で火口に向かうほど上がる。
+      skill_hunting:
+        display_name: 狩猟
+        icon: 🏹
+        description: 獣を狩る腕。武器を手に打ちかかるほど上がる。
+      skill_smelting:
+        display_name: 採鉱・製錬
+        icon: ⛏️
+        description: 鉱石を見つけ、金属を取り出す腕。今のこの島には、伸ばす手立ても使い道もまだ無い。
       afloat:
         display_name: 浮いている
         description: 水に浮かんでいるか。帆のような部品は、浮いている間だけ効く。
@@ -1173,6 +1219,8 @@ property_tag_texts:
     display_name: 健康
   nutrition:
     display_name: 栄養
+  skill:
+    display_name: 腕前
 
 # object_defのタグ（GameElementDefinition.md 4.1節）の文言。タグの大半は判定にしか使われず画面へ
 # 出ないので、ここに並ぶのはレシピ一覧の棚の見出し（core.yamlのrecipe_categories）だけ。
@@ -1368,6 +1416,13 @@ reason_texts:
   no_fuel: 燃やす物が入っていない。火種だけでは燃え続けない。
   too_dark: 暗すぎて手が付けられない。明かりが要る。
   too_stormy: 風雨が強すぎて、屋外では手が付けられない。収まるのを待つしかない。
+  # レシピの解放条件（docs/engine/SkillSystem.md 4節）。**ここだけ文ではなく名詞句で書く**
+  # ——出る先が吹き出しではなくカードのタイトルの中（ui_textsのrecipe_locked_name）で、完成品の
+  # 名前と合わせて全角10文字に収める必要がある（CardView.md 1節）。どの段が足りないかも書かない
+  # ——今いる段はプロパティのウィンドウの腕前のタブが持つ。
+  needs_knapping: 石器の腕
+  needs_cordage: 繊維の腕
+  needs_leatherwork: 皮革の腕
 
 # 段（GameElementDefinition.md 6.4節のstages）のうち、UIが名前を読んで画面に出すもの。カードの上へ
 # 覆いとして出る（CardView.md 9.1節）ほか、死亡ダイアログが死因として出し（VitalsSystem.md 6節）、

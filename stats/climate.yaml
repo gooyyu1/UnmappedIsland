@@ -6,7 +6,7 @@ meta:
   - {seeds: 20, days: 3600}
 
 input_fingerprint:
-  - {sources: [core.yaml], sha256_prefix: d6d1f04882d7ffc0}
+  - {sources: [core.yaml], sha256_prefix: '9f5fad68fe171835'}
 
 season_moisture_rate:
   - {season: calm, unit: per_tick, mean: 0.10, min: 0.10, p5: 0.10, p95: 0.10, max: 0.10, sd: 0.00, n: 2053695}

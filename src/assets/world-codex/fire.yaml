@@ -60,6 +60,13 @@ traits:
               all:
                 - {subject: ancestor, prop: sheltered, eq: 0}
                 - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
+        # **火の腕はここから立ち上がる**（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
+        # characters/player_character.yaml）。**この口は火起こし具を要求する**が、その火起こし具が
+        # 拾った木だけから作れる（docs/world/SurvivalItems.md 1.1節）ので、他のどの腕も先に要らない
+        # ——立ち上がりに要るのは循環しないことで、道具が要らないことではない（SkillSystem.md 3.2節）。
+        # **pickの外に置く**ので、火が移らなかった回も同じだけ伸びる——外した回も火口は失われており、
+        # 払った手間は変わらない。
+        add: {agent: {skill_firecraft: 2}}
         pick:
           - weight: {prop: ignition_chance}
             destroy: self
@@ -224,8 +231,9 @@ object_defs:
       weight: {value: 900}
       volume: {value: 1200}
     recipes:
-      # 解放条件はまだ置かない。火スキルのプロパティと、それを伸ばす経路が未実装のため
-      # （containers.yamlの編み籠と同じ）。
+      # **解放条件を持たない。** これが作れないと火の腕を伸ばす操作（上のlight）に手が届かず、
+      # きりもみ式が道具も紐も要求しないことで保証されている立ち上がり
+      # （docs/world/SurvivalItems.md 1.1節、docs/engine/SkillSystem.md 3.2節）が崩れる。
       carved:
         steps:
           - requires:

@@ -129,9 +129,8 @@ describe('farming.yamlの畑と囲い', () => {
     throw new Error('畑に何も実らなかった');
   }
 
-  /** 囲いを1つ据えて、飼葉を芋で満たす。 */
-  function buildPen(taroCount = 3): WorldObject {
-    const pen = spawnInto('pen', land, 'fixtures');
+  /** 囲いへ芋を与える。1つで飼葉が12増える（farming.yamlのfodderは上限96）。 */
+  function feed(pen: WorldObject, taroCount: number): void {
     for (let i = 0; i < taroCount; i++) {
       const taro = spawnInto('taro', player, 'hand');
       expect(
@@ -142,6 +141,12 @@ describe('farming.yamlの畑と囲い', () => {
         '飼葉をやれる',
       ).toBe(true);
     }
+  }
+
+  /** 囲いを1つ据えて、飼葉を芋で満たす。 */
+  function buildPen(taroCount = 3): WorldObject {
+    const pen = spawnInto('pen', land, 'fixtures');
+    feed(pen, taroCount);
     return pen;
   }
 
@@ -405,6 +410,40 @@ describe('farming.yamlの畑と囲い', () => {
     tick(1);
 
     expect(beforeTwo - pen.tryGetProperty(drinkingWaterId)!.number, '2羽なら2倍').toBeCloseTo(oneRate * 2);
+  });
+
+  it('満ちた囲いは、重ねた飼葉と水を断る理由を名乗る', () => {
+    // 上限に達したことは `conditions` にも書いてある（pen_fed・pen_watered）ので、落ちるその瞬間に
+    // 容量と条件が同時に落ちる。**容量を候補選びの足切りにすると候補ごと消えて理由が届かない**
+    // ——断る理由を宣言しているものは落とし先として残す（14.6節・CardInteraction.md 2.1節）。
+    //
+    // **水を先に注ぐ。** 口の開いた甕は持っている間に蒸発する（liquid_containers.yaml）ので、
+    // 芋を8つ与える40分を挟むと甕1杯では満たなくなる。
+    open();
+    const pen = spawnInto('pen', land, 'fixtures');
+    pourWater(pen, 4000);
+    feed(pen, 8);
+    expect(pen.tryGetProperty(fodderId)!.number, '芋12を8つで上限まで').toBe(96);
+    expect(pen.tryGetProperty(drinkingWaterId)!.number, '甕1杯で上限まで').toBe(4000);
+
+    const taro = spawnInto('taro', player, 'hand');
+    expect(pen.combinationsWith(taro, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      pen
+        .refusedCombinationsWith(taro, player)
+        .map((combination) => combination.unmetRequirement()?.reasonName),
+      '飼葉を断る理由まで辿り着ける',
+    ).toEqual(['pen_fed']);
+
+    const jar = spawnInto('jar__content_water_liquid', player, 'hand');
+    jar.tryGetProperty(fillId)!.setNumber(4000);
+    expect(pen.combinationsWith(jar, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      pen
+        .refusedCombinationsWith(jar, player)
+        .map((combination) => combination.unmetRequirement()?.reasonName),
+      '水を断る理由まで辿り着ける',
+    ).toEqual(['pen_watered']);
   });
 
   it('水をやった器は、空になって手元に残る', () => {

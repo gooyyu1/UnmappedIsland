@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -21,13 +21,30 @@ interface Result {
   readonly code: number;
 }
 
+/** `git show <ref>:<パス>` が返す中身。`base`・`head` を省いたら「そのファイルは無い」。 */
+interface Doc {
+  readonly base?: string;
+  readonly head?: string;
+}
+
 /** 差し替えた `gh`・`git` で判定を1回走らせる。`files` は差分のファイル、`diff` は `gh pr diff` の出力。 */
-function judge(files: readonly string[], diff: string): Result {
+function judge(files: readonly string[], diff: string, docs: Readonly<Record<string, Doc>> = {}): Result {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-needs-user-review-'));
   try {
     const dir = work.replace(/\\/g, '/');
     writeFileSync(join(work, 'files'), `${files.join('\n')}\n`, 'utf-8');
     writeFileSync(join(work, 'diff'), diff, 'utf-8');
+
+    mkdirSync(join(work, 'show'));
+    for (const [path, doc] of Object.entries(docs)) {
+      for (const [ref, text] of [
+        ['base0000', doc.base],
+        ['head0000', doc.head],
+      ] as const) {
+        if (text === undefined) continue;
+        writeFileSync(join(work, 'show', `${ref}:${path}`.replace(/[/:]/g, '_')), text, 'utf-8');
+      }
+    }
 
     const gh = join(work, 'gh');
     writeFileSync(
@@ -41,10 +58,21 @@ function judge(files: readonly string[], diff: string): Result {
     );
     chmodSync(gh, 0o755);
 
-    // `git fetch` は通し、`git show` は「そのファイルは無い」として返す。`【確定】` の射程の判定は
-    // ここでは見ていないので、docs の中身は要らない。
+    // `git fetch` は通し、`git show <ref>:<パス>` は `docs` に置いたものだけを返す（無ければ失敗）。
     const git = join(work, 'git');
-    writeFileSync(git, `#!/usr/bin/env bash\n[ "$1" = fetch ] && exit 0\nexit 1\n`, 'utf-8');
+    writeFileSync(
+      git,
+      `#!/usr/bin/env bash\n` +
+        `[ "$1" = fetch ] && exit 0\n` +
+        `if [ "$1" = show ]; then\n` +
+        `  f="${dir}/show/$(printf '%s' "$2" | tr '/:' '__')"\n` +
+        `  [ -f "$f" ] || exit 1\n` +
+        `  cat "$f"\n` +
+        `  exit 0\n` +
+        `fi\n` +
+        `exit 1\n`,
+      'utf-8',
+    );
     chmodSync(git, 0o755);
 
     const out = spawnSync('bash', [SCRIPT, '900'], {
@@ -150,5 +178,61 @@ describe('needs-user-review.sh の GRAMMAR', () => {
 
     expect(result.lines).toEqual(['GRAMMAR src/loader/parseSlots.ts']);
     expect(result.code).toBe(0);
+  });
+});
+
+/**
+ * 印を足したPRを止めるかどうか。**同じ答えに二度目のタップを求めない**ための緩めなので、
+ * 緩みすぎれば「誰が決めたのか分からない確定」がそのまま `main` へ入る。
+ */
+describe('needs-user-review.sh の MARK と SOURCED', () => {
+  const PATH = 'docs/ui/Windows.md';
+  const HEADING = '## 9.3 未解放レシピの理由は押している間だけ出す';
+  const doc = (heading: string, body: readonly string[]): string => `${heading}\n\n${body.join('\n')}\n`;
+
+  it('出どころの1行があるなら、印が増えても止めない', () => {
+    const result = judge(
+      [PATH],
+      hunk(PATH, ['-## 9.3 未解放レシピの理由は押している間だけ出す', `+${HEADING}【確定】`]),
+      {
+        [PATH]: {
+          base: doc(HEADING, ['押している間だけ吹き出しで出す。']),
+          head: doc(`${HEADING}【確定】`, ['**出どころ**: #656 の 21', '', '押している間だけ出す。']),
+        },
+      },
+    );
+
+    expect(result.lines).toEqual([`SOURCED ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】`]);
+    expect(result.code).toBe(1);
+  });
+
+  it('出どころの1行が無い印は、今までどおり止める', () => {
+    const result = judge(
+      [PATH],
+      hunk(PATH, ['-## 9.3 未解放レシピの理由は押している間だけ出す', `+${HEADING}【確定】`]),
+      {
+        [PATH]: {
+          base: doc(HEADING, ['押している間だけ吹き出しで出す。']),
+          head: doc(`${HEADING}【確定】`, ['押している間だけ出す。', '', '札には出さない。']),
+        },
+      },
+    );
+
+    expect(result.lines).toEqual([`MARK ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】`]);
+    expect(result.code).toBe(0);
+  });
+
+  // 出どころの行は、そのPRが決めたことの申告。前から在った確定節に書いてあっても、緩める理由には
+  // ならない（印が動いていないので、そもそも `CONFIRMED`）。
+  it('前から確定していた節は、出どころがあっても CONFIRMED のまま', () => {
+    const result = judge([PATH], hunk(PATH, ['-押している間だけ出す。', '+押している間に出す。']), {
+      [PATH]: {
+        base: doc(`${HEADING}【確定】`, ['**出どころ**: #656 の 21', '', '押している間だけ出す。']),
+        head: doc(`${HEADING}【確定】`, ['**出どころ**: #656 の 21', '', '押している間に出す。']),
+      },
+    });
+
+    expect(result.lines).toEqual([`CONFIRMED ${PATH} 9.3 未解放レシピの理由は押している間だけ出す【確定】`]);
+    expect(result.code).toBe(1);
   });
 });

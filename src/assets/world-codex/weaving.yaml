@@ -30,6 +30,11 @@ object_defs:
             prop: hand_brightness
             in_stage: bright
         duration: 90
+        # **繊維・編みの腕はここから立ち上がる**（docs/engine/SkillSystem.md 3節の実行経路、量の
+        # 置き方は characters/player_character.yaml）。**繊維を伸ばす口のうち、道具を1つも要求しない
+        # のはここだけ**（掻き取り・葉割りは刃物、叩き解しは殻を出す刃物が先に要る）なので、この1つが
+        # 編み籠・くくり罠の解放条件の立ち上がり（同3.2節）を支えている。
+        add: {agent: {skill_cordage: 2}}
         destroy: self
         spawn: {object: woven_leaf}
       # 中軸で割ってから左右をそれぞれ編む。細長いパネルが2枚とれる。屋根を葺くときは
@@ -42,6 +47,7 @@ object_defs:
             prop: hand_brightness
             in_stage: bright
         duration: 60
+        add: {agent: {skill_cordage: 2}}
         destroy: self
         spawn: {object: woven_leaf, count: 2}
 

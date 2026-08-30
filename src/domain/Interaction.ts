@@ -87,6 +87,18 @@ export class Combination extends Interaction<DragTrigger, WorldObject> {
   }
 
   /**
+   * 今このまま実行してよいか。要件（14節）を満たしているだけでなく、**1個は受け取れる**こと
+   * ——器へ入らないまま相手を消す操作（満杯の炉へ薪をくべる）が、黙って薪だけ失う結果になるのを
+   * 防ぐ（`DragTrigger.acceptedCount`）。
+   *
+   * **受け取れる個数が0なのは断る理由であって、候補から外す条件ではない。** 理由を宣言した要件が
+   * 同時に落ちているなら、落とし先としては残る（`WorldObject.refusedCombinationsWith`）。
+   */
+  canExecute(): boolean {
+    return this.unmetRequirement() === undefined && this.acceptedCountIncludingSelf([]) >= 1;
+  }
+
+  /**
    * 自分の相手に続けてfollowers（同じ束の仲間）を重ねるとき、続けて実行できる個数（自分を含む）。
    * `allow_multiple`（12.4節）を宣言していなければ1までになる。
    *
@@ -100,19 +112,14 @@ export class Combination extends Interaction<DragTrigger, WorldObject> {
   }
 
   /**
-   * **今**この組み合わせを出してよいか（WorldObject.combinationsMatching）。相手として受け入れるかは
-   * 型だけで決まるので、ここで見るのはそれ以外——受け取れる個数・効果の行き先・要件（14節）。
-   * 満たしていない要件をどう扱うかだけが呼び手ごとに違うので、そこはacceptsが決める。
+   * この宣言が今**起こすことが在る**か（`become` の行き先に型が居る、9.9節）。無いものは候補にすら
+   * ならない——落とせるのに何も起きない、にならないため（`WorldObject.candidateCombinationsWith`）。
    *
-   * **問いは関係を張った状態で立てる**（11.5節）。候補ごとに1つずつ張って外すので、重ならない。
+   * **要件（14節）も受け取れる個数も見ない。** どちらも「断る理由」になりうるので、ここで落とすと
+   * 理由が届かなくなる（ActionSystem.md 1.1節）。
    */
-  matches(accepts: (unmet: Requirement | undefined) => boolean): boolean {
-    return this.relation.during(
-      (context) =>
-        this.trigger.acceptedCount(context, [this.instrument]) >= 1 &&
-        !this.def.blocksOperation(context) &&
-        accepts(this.def.unmetRequirement(context)),
-    );
+  hasSomethingToHappen(): boolean {
+    return this.relation.during((context) => !this.def.blocksOperation(context));
   }
 
   /**
