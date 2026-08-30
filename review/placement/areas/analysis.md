@@ -58,7 +58,7 @@
 | src/analysis/balanceTables.ts | `externalTickDeltasOn()`, `lifetimeOf()` | 配置 | 3 | 前者は `externalTickDeltasOf` の、後者は `RangeCycle[]` だけを見る関数で、どちらも rangeCycles の続き | `src/analysis/rangeCycles.ts` | | |
 | src/analysis/balanceTables.ts | `allSteps()`, `stepsAt()` | 配置 | 3 | 収支表ではなく「全型の工程を並べる」問いで、`craftingSteps`/`rangeCycles` を束ねる層 | `src/analysis/steps.ts`（新設） | | |
 | src/analysis/balanceTables.ts | `Acquisition`(class) | 配置 | 3 | 241行の求解器が収支表の組み立てと同居し、1328行の主因になっている | `src/analysis/Acquisition.ts` | | |
-| src/analysis/balanceTables.ts#Acquisition | `costByObject`, `producedObjects` | 可視性 | 3 | 可変の `Map`/`Set` をそのまま公開しており、Layers.md の「格納の形ではなく問いの形で足す」に反する | 同クラスに `costOf(id)` / `produces(id)` を置く | | |
+| src/analysis/balanceTables.ts#Acquisition | `costByObject`, `producedObjects` | 可視性 | 3 | 可変の `Map`/`Set` をそのまま公開しており、CodeStructure.md の「格納の形ではなく問いの形で足す」に反する | 同クラスに `costOf(id)` / `produces(id)` を置く | | |
 | src/analysis/balanceTables.ts | `KEY_SEPARATOR`, `splitKey()` | 所属 | 2 | 組（プロパティ名, 条件）を文字列で連結して後で割り直す、表を畳むためだけの都合 | （同ファイル内。組をそのまま持てば消える） | | |
 | src/analysis/balanceTables.ts | `menuFor()` | 可視性 | 2 | 表の組み立て関数のうちこれだけ公開だが、ビューアが経路を差し替えて再計算するのに要る | | | |
 | src/analysis/balanceTables.ts | `EPSILON`, `SupplyRow.unresolved`, `Acquisition.islandWide` | 所属 | 2 | 浮動小数の比較・確定しない参照の印・親文脈への参照で、いずれも計算を成り立たせるための都合 | | | |
@@ -67,7 +67,7 @@
 | src/analysis/craftingSteps.ts | `totalMinutesOf()` | 所属 | 5 | 全工程の所要時間の和はレシピ自身の性質で、`domain/crafting.ts` が同じ和を2箇所で取っている | `RecipeDef`（総所要時間の口） | | |
 | src/analysis/craftingSteps.ts | `minutesOf()` | 所属 | 4 | `Math.trunc(duration.resolve(...))` は `InteractionDef.durationMinutesFor` と同じ計算 | `InteractionDef`（`durationReading` を数値へ解く口） | ドメイン版は self/agent/instrument の WorldObject を要求し、定義だけの文脈からは呼べない | |
 | src/analysis/effectOutcomes.ts | `Readable`, `Readable.read` | 所属 | 5 | `domain/EffectReader.ts` の `EffectDeclaration` と1文字も違わない再宣言 | `src/domain/EffectReader.ts#EffectDeclaration`（既存） | | |
-| src/analysis/effectOutcomes.ts#OutcomeReader | `move()`, `become()`, `signal()` | 所属 | 2 | 中身は空で、読み上げの動詞を取りこぼさないための実装義務（Layers.md 6節） | | | |
+| src/analysis/effectOutcomes.ts#OutcomeReader | `move()`, `become()`, `signal()` | 所属 | 2 | 中身は空で、読み上げの動詞を取りこぼさないための実装義務（CodeStructure.md 5節） | | | |
 | src/analysis/rangeEvents.ts | `rangeEventAt()` | 所属 | 4 | `value >= range.max` / `<= range.min` の端判定は `PropertyDef.checkRangeEvents` と同じ規則 | `PropertyDef`（値→ラベルの問い） | ドメイン側は判定と効果適用が一体（`owner.applyActiveEffect`）で、WorldObject 無しに「どちらの端か」だけを訊けない | |
 | src/analysis/rangeEvents.ts | `ticksToRangeEnd()` | 所属 | 4 | 距離÷速度で端までのtick数を出す計算は `PropertyValue.ticksUntilMax` と同じ | `PropertyDef` | ドメイン版は実体値と `changePerTick()` を実行時オブジェクトから取るため、定義だけでは呼べない | |
 | src/analysis/staticValue.ts | `staticValueOf()` | 所属 | 4 | 「inherit なら祖先の値を足す」は `PropertyDef.inheritedContribution` と同じ規則 | `PropertyDef`（祖先の値を引数で受ける形） | ドメイン版は `owner.findAncestorWithProperty` を通るので WorldObject が要る | |
@@ -79,8 +79,8 @@
 | src/save/SaveSlots.ts | `SLOT_COUNT`(export), `keyOf()` | 可視性/所属 | 2 | 前者は一覧UIが枠数を要るため公開、後者は鍵を作るついでに添字の範囲検査もする（名前は鍵のことしか言っていない） | | | 〇（`keyOf`） |
 | src/save/Settings.ts | `loadsAssetPack`(get/set), `openedTab()`, `rememberOpenedTab()` | 所属 | 3 | 保存先の薄い包みに、アセットパックとタブという機能ごとの語彙が直接生えている | 各機能側（`asset-pack` / `game/ui`）が鍵を持ち、Settings は汎用の読み書きだけを担う | | |
 | src/save/Shelf.ts | `contents`(壊れたJSONの扱い) | 所属 | (3に計上済) | 「壊れた値は無かったことにする」規則が `SaveSlots.read` と2箇所に同じ形である | 共通の読み出しヘルパ | | |
-| src/save/newGameInput.ts | `NAME_ADJECTIVES`, `NAME_NOUNS` | 配置 | 5 | 日本語の語彙はデータで、Layers.md 4節が「データファイルはどの層にも属さず `src/assets/`」と決めている | `src/assets/` | | |
-| src/save/newGameInput.ts | `randomIslandName()`, `randomSeed()`, `randomCharacter()`, `parseSeed()`, `normalizeIslandName()` | 配置 | 4 | 島名の抽選と入力欄の解釈は新規ゲーム**画面**の話で、セーブ形式の知識ではない（利用者は NewGameScene だけ） | `src/game/newGameInput.ts` | NewGameScene は Phaser 側でテストできないため、純関数だけを層の外へ出している（Layers.md 2節と同じ形） | |
+| src/save/newGameInput.ts | `NAME_ADJECTIVES`, `NAME_NOUNS` | 配置 | 5 | 日本語の語彙はデータで、CodeStructure.md 1節が「データファイルはどの層にも属さず `src/assets/`」と決めている | `src/assets/` | | |
+| src/save/newGameInput.ts | `randomIslandName()`, `randomSeed()`, `randomCharacter()`, `parseSeed()`, `normalizeIslandName()` | 配置 | 4 | 島名の抽選と入力欄の解釈は新規ゲーム**画面**の話で、セーブ形式の知識ではない（利用者は NewGameScene だけ） | `src/game/newGameInput.ts` | NewGameScene は Phaser 側でテストできないため、純関数だけを層の外へ出している（CodeStructure.md 2節と同じ形） | |
 | src/scenario/Scenario.ts | `PLAYER_SLOTS` | 所属 | 5 | 「hand/equipment/injuries はキャラクタ自身の枠」は `WorldVocabulary.handSlotId`ほかが既に宣言している | `WorldVocabulary` / `PlayerCharacter` | | |
 | src/scenario/Scenario.ts | `resolveValue()` | 所属 | 4 | 「整数か、さもなくばシンボル名」の解釈は `loader/parseCommon.ts` の `SYMBOL_PATTERN` と同じ規則 | `src/loader/parseCommon.ts` | loader 版は未知の名前を `intern` して作ってしまい、誤記を弾きたいシナリオでは使えない | |
 | src/scenario/Scenario.ts | `FILES`, `SCENARIO_TEXTS`, `scenarioNames()`, `bundledScenario()` | 配置 | 3 | 同梱ファイルの索引で、YAMLの読み方とも適用とも別の話 | `src/scenario/bundledScenarios.ts` | | |
@@ -99,6 +99,6 @@
 ## ファイル配置（層=配置）についての所見
 
 - `src/analysis/` の8ファイルのうち7つは粒度が揃っているが、`balanceTables.ts`（190宣言・1328行）だけが**収支表・入手時間の求解器（`Acquisition`）・コーデックスへの定義単位の問い合わせ・解決器の組み立て**の4つを抱えている。判定3の大半はこの1ファイルの分割で解ける。
-- 解析→ドメインの一方通行は守られており、`EffectReader`/`PassiveReader` 経由の読み上げという設計（Layers.md 6節）も概ね機能している。破れているのは**近似ではない規則の写し**の側で、`MINUTES_PER_TICK`（core.yaml の宣言）、`Readable`（`EffectDeclaration` の再宣言）、`candidatesOf`（タグ走査）、`PLAYER_SLOTS`（語彙）が代表。
+- 解析→ドメインの一方通行は守られており、`EffectReader`/`PassiveReader` 経由の読み上げという設計（CodeStructure.md 5節）も概ね機能している。破れているのは**近似ではない規則の写し**の側で、`MINUTES_PER_TICK`（core.yaml の宣言）、`Readable`（`EffectDeclaration` の再宣言）、`candidatesOf`（タグ走査）、`PLAYER_SLOTS`（語彙）が代表。
 - `src/save/` は「セーブ形式の知識」と「復元される domain の型の知識」の境界がよく保たれている（`toSaveData` は domain の型を一切知らない）。はみ出しているのは逆向きの2つ——domain の都合（`SEED_MAX`＝Pcg32 の値域）と、映しの都合（`MapCardPosition` の正規化座標）が save 側に置かれている点。
 - `src/save/newGameInput.ts` はファイルごと配置の問題で、セーブ形式ではなく新規ゲーム画面の入力を扱っている。`src/scenario/Scenario.ts` も索引・パース・適用の3責務が1ファイルにあり、パース部分だけを見れば `src/loader/` の同類（`yamlMapping` を使う YAML 読み取り）である。

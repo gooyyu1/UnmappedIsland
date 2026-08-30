@@ -26,8 +26,8 @@
 
 同じ「そこに居る」でも打ち手が違うため、各指摘がどの層の話かを明示している。
 
-- **配置** — ディレクトリ／ファイルの位置。判定は [`docs/engine/Layers.md`](../../docs/engine/Layers.md)
-  の4層（世界・映し・意匠・部品）を基準にした。
+- **配置** — ディレクトリ／ファイルの位置。判定は [`docs/CodeStructure.md`](../../docs/CodeStructure.md)
+  の4層（世界・映し・意匠・部品）を基準にした（この文書を書いた時点の数え方）。
 - **所属** — クラス／モジュールへの所属。
 - **可視性** — `public` / `export` である必要があるか。クラス外から呼ばれていない `public` は、
   内部を開けてしまっている＝判定4の兆候として扱う。
@@ -70,7 +70,7 @@
 | [`Candidates.md`](./Candidates.md) | **リファクタリングに使うのはこれ。** 判定4・5を打ち手の単位でまとめ直したもの |
 | [`PickAmong.md`](./PickAmong.md) | **A-13 の設計。実施済み。** 周りの物を候補にする `pick`（`among`） |
 | [`InteractionTrigger.md`](./InteractionTrigger.md) | **設計。実施済み。** 操作のきっかけを宣言し、`actions` と `combinations` を1つにした |
-| [`Architecture.md`](./Architecture.md) | `docs/engine/Layers.md` との突き合わせ。方針を優先して捨てた指摘と、方針側へ返すべき指摘 |
+| [`Architecture.md`](./Architecture.md) | `docs/CodeStructure.md` との突き合わせ。方針を優先して捨てた指摘と、方針側へ返すべき指摘 |
 | [`Helpers.md`](./Helpers.md) | 判定3の再点検。「B の機能が足りないから A が private ヘルパーで補っている」もの。private ヘルパー671本のうち **320本は主語が自クラスではなかった** |
 | [`CrossCutting.md`](./CrossCutting.md) | 横断チェック。テスト専用の公開、未参照の export、同じ概念の分散、名前の衝突 |
 | [`Calibration.md`](./Calibration.md) | 判定4・5の裏付けと、再判定で変更した判定 |
