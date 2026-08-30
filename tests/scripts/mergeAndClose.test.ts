@@ -56,8 +56,12 @@ interface World {
    * `get_session` の応答にJSONが入らないセッション（引けない日）。タグも状態も環境も分からない。
    */
   readonly unknown?: readonly string[];
+  /** PRに付いているコメント。`## 司令塔へ` をレビューから拾えるかを見るために使う。 */
+  readonly comments?: readonly string[];
   /** `archive_session` が失敗するか。 */
   readonly archiveFails?: boolean;
+  /** `gh pr edit` が失敗するか。 */
+  readonly labelFails?: boolean;
   /** 本体に未コミットの変更（追跡済み）があるか。 */
   readonly mainDirty?: boolean;
   /** マージで `package-lock.json` が変わったか。 */
@@ -101,6 +105,13 @@ function run(world: World, entry: readonly string[] = [SCRIPT, '1000']): Run {
     const dir = work.replace(/\\/g, '/');
     // 本文は改行もバッククォートも含むので、シェルへ埋め込まずファイルで渡す。
     writeFileSync(join(work, 'body.txt'), world.body ?? DEFAULT_BODY, 'utf-8');
+    // スクリプトが引くのは `[レビュー]` で始まるコメントだけなので、絞り込みまでここで済ませる
+    // （`--jq` の中身は本物の `gh` が解釈する部分で、スタブが真似る対象ではない）。
+    writeFileSync(
+      join(work, 'comments.txt'),
+      (world.comments ?? []).filter((comment) => comment.startsWith('[レビュー]')).join('\n'),
+      'utf-8',
+    );
 
     // 本体の身代わり。`.git` があることでスクリプトの `--git-common-dir` からの辿りが成り立つ。
     mkdirSync(join(work, 'main', '.git'), { recursive: true });
@@ -126,6 +137,7 @@ fi
 if [ "$1" = pr ] && [ "$2" = view ]; then
   case "$5" in
     body) cat '${dir}/body.txt' ;;
+    comments) cat '${dir}/comments.txt' ;;
     mergeable) printf '%s' '${world.mergeable ?? 'MERGEABLE'}' ;;
     state) ${
       world.stateFails === true
@@ -138,7 +150,7 @@ fi
 if [ "$1" = pr ] && [ "$2" = edit ]; then
   shift 3
   echo "$*" >> '${dir}/labels'
-  exit 0
+  exit ${world.labelFails ? 1 : 0}
 fi
 if [ "$1" = pr ] && [ "$2" = comment ]; then
   cat "$5" >> '${dir}/comments'
@@ -570,6 +582,42 @@ describe('merge-and-close.sh', () => {
 
     expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
     expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+  });
+
+  // 書く口はPR本文とレビューのコメントの2つある（`review-prompt.md`）。読む口が1つだと、
+  // レビューが回したものだけが黙って落ちる。**本文には節が無い世界で見る。**
+  it('レビューのコメントの `## 司令塔へ` も拾う', () => {
+    const result = run({
+      comments: [
+        '[レビュー] 通してよい\n\n## 司令塔へ\n\n- `parseActiveEffects.ts` の doc に同じ誤りが残っている\n',
+      ],
+    });
+
+    expect(result.lines).toContain('RELAY 1000');
+    expect(result.labels).toContain('--add-label 司令塔へ');
+  });
+
+  // `## 仮決め` は「なし」と書かせる規約なので、書く側は取り違える。中身の無い印が残ると `RELAY` が
+  // 毎周出て、合図が1件でも出た見張りはそこで終わる（他の待ちに使えなくなる）。
+  it('節はあっても中身が「なし」なら、ラベルも RELAY も出さない', () => {
+    const result = run({
+      body: `${DEFAULT_BODY}\n\n## 司令塔へ\n\nなし（この変更自体が司令塔の道具への直し）。\n`,
+    });
+
+    expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
+    expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+  });
+
+  // マージは済んでいるので、印を置けなかっただけで後片付け（`main` の追随）ごと落としてはいけない。
+  it('印を置けなくても止まらず、後片付けを済ませてから残りとして報せる', () => {
+    const result = run({
+      body: `${DEFAULT_BODY}\n\n## 司令塔へ\n\n- #1353 を立てた（範囲外）\n`,
+      labelFails: true,
+    });
+
+    expect(result.lines).toContain('UNRELAYED 1000');
+    expect(result.lines.some((line) => line.startsWith('SYNCED '))).toBe(true);
+    expect(result.status).toBe(2);
   });
 });
 
