@@ -91,9 +91,10 @@
 
 ## ファイル配置（層=配置）についての所見
 
-- `src/codex-viewer/` は `docs/engine/Layers.md` 4節の在処の表に**載っていない**。
-  層の外の道具（`src/save/` などと同列）として扱うなら、表に1行足すのが筋。境界は
-  `tests/architecture/layers.test.ts` の VIEWER_FREE だけが見張っている状態。
+- `src/codex-viewer/` は当時、`docs/CodeStructure.md` の在処の表に**載っていなかった**。境界は
+  `tests/architecture/layers.test.ts` の VIEWER_FREE だけが見張っている状態だった。
+  **現在は1節の表に `codex ビューア` の行がある**——層の外へは畳めなかった（解析を知ってよい
+  唯一の場所で、層の外は解析を知ってはいけない）ので、独立した1行になっている。
 - 逆向きの参照は無い。`src/game/`・`src/analysis/`・`src/domain/` から `src/codex-viewer/` への
   import は1件も無く（`grep` で確認）、ビューア側からの参照も `domain`／`locale`／`art`／`analysis`／
   `loader` への一方通行。ただし **`describe/` はテストからビューア外の用途で使われている**

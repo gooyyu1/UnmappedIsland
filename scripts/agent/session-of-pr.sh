@@ -35,9 +35,12 @@ if [ -z "$sessions" ]; then
   closes=$(grep -oiE 'closes[[:space:]]+#[0-9]+' <<<"$body" | grep -oE '[0-9]+' | sort -u || true)
   if [ -n "$closes" ]; then
     tags=$(sed 's/^/task-/' <<<"$closes" | paste -sd'|' -)
+    # **`tr -d '\r'` は要る。** Windowsの jq は標準出力をテキストモードで開くので、行の区切りが
+    # CRLF になる。落とさないと ID の末尾に `\r` が付いたまま呼び手（畳む・差し戻す）へ渡り、
+    # 向こうで JSON として壊れる（`Bad control character in string literal`）。
     sessions=$(bash "$CCR_META" list_sessions <<<'{"mine":true,"limit":100}' | grep -o '{"ccr".*' |
       jq -r --arg re "^($tags)\$" '.ccr.data[] | select([.tags[]? | select(test($re))] | length > 0) | .id' |
-      sort -u || true)
+      tr -d '\r' | sort -u || true)
   fi
 fi
 

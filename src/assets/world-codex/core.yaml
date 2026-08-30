@@ -274,6 +274,8 @@ object_defs:
       # hour側。シンボル型のstagesはステージ名がそのまま比較対象）。値は雲のまったく無い空
       # （scorching、正午125,000 lx）を0として、そこから何段暗いか。ContentSkeleton.md 8.1.3節の
       # 正午の照度に合わせてある（曇り5,000 lx=-5・小雨2,000=-6・大雨749=-8・嵐187=-10）。
+      # **同じstagesがwind_speedへ風速（m/s）も与える**（ContentSkeleton.md 8.1.5節）。嵐の日に屋外の
+      # 採取を止めているのはそちらで、暗さではない（同8.1節）。
       # 雨系stageは毎tick atmospheric_moistureを自己減算し、雨が水分を使い尽くすと乾いた候補が
       # 選ばれやすくなる貯水池の循環を作る（ClimateSystem.md 3節）。減算量と雨季の季節レートの
       # 大小関係が雨季の降雨の止み方を決める（4.3節）。
@@ -285,6 +287,7 @@ object_defs:
               - modify:
                   self:
                     ambient_brightness: -10
+                    wind_speed: 20
               - add:
                   self:
                     atmospheric_moisture: -2
@@ -293,6 +296,7 @@ object_defs:
               - modify:
                   self:
                     ambient_brightness: -8
+                    wind_speed: 12
               - add:
                   self:
                     atmospheric_moisture: -1.3
@@ -301,6 +305,7 @@ object_defs:
               - modify:
                   self:
                     ambient_brightness: -6
+                    wind_speed: 7
               - add:
                   self:
                     atmospheric_moisture: -1.1
@@ -309,23 +314,34 @@ object_defs:
               - modify:
                   self:
                     ambient_brightness: -5
+                    wind_speed: 5
           - name: clear
             passives:
               - modify:
                   self:
                     ambient_brightness: -2
+                    wind_speed: 3
           - name: sunny
             passives:
               - modify:
                   self:
                     ambient_brightness: -1
-          - name: scorching  # 雲のまったく無い空が基準（0）なので、寄与を持たない
+                    wind_speed: 2
+          - name: scorching  # 雲のまったく無い空（明るさ0）で、風も凪いでいる（風速0）ので寄与を持たない
       # 環境から守られているか（0/1。ContainerSystem.md 6節）。雨を見ている条件は、天気の前に
       # これを見る（fire.yamlの炉・liquid_containers.yamlの雨受け）。
       # **worldが0を宣言するのは、守る物が間に無いときもancestorがここまで解けるようにするため。**
       # 守る側（浅い洞窟・蓋のある入れ物・将来の屋根）だけが1を宣言し、守らない物は宣言しない。
       sheltered:
         value: 0
+      # 吹いている風の強さ（m/s。ContentSkeleton.md 8.1.5節）。**嵐の日に屋外の採取を止めているのは
+      # この値**で、暗さではない（同8.1節）——暗さで表すと、松明を持てば嵐の中でも採れることになる。
+      # 上のweatherのstagesがmodifyで与える寄与そのもので、rangeの上限20はいちばん強い嵐の風速。
+      # **どこから上が嵐かの境目は持たない**——境目を持つのは見る側の段だけ
+      # （characters/player_character.yaml）。
+      wind_speed:
+        value: 0
+        range: {min: 0, max: 20}
       # 樹冠も地面の反射も無い場所の明るさ（IlluminationSystem.md 2節）。EVスケール
       # （EV = log2(照度 / 2.5 lx)、同1節）で、hourとweather両方のmodifyが加算的に重なる、
       # 都度導出される実効値（8.3節）。

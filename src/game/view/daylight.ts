@@ -97,7 +97,7 @@ function litHoursOf(codex: WorldCodex, character: ObjectDef): ReadonlySet<number
  * 太陽高度の値をこちらは持たない。
  *
  * **解析層（`src/analysis`）にある同じ読み取りとは共有しない。** 遊びの本体はあちらの存在を知らない
- * 決まりで（Layers.md 6節、`tests/architecture/layers.test.ts`）、定義から数値を導く近似がこちらの
+ * 決まりで（CodeStructure.md 5節、`tests/architecture/layers.test.ts`）、定義から数値を導く近似がこちらの
  * 契約へ混ざらないよう境界が引いてある。
  */
 function sunDeltasOf(world: ObjectDef, ambientId: number, hourId: number): ReadonlyMap<string, number> {

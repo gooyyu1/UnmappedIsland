@@ -8,10 +8,14 @@
 # 出力は1行1件。
 #   HELD     <PR番号>              … 関門に掛かった。マージしていない（理由が続けて出る）
 #   MERGED   <PR番号>
+#   RELAY    <PR番号>              … 本文かレビューの `## 司令塔へ` に中身があるので `司令塔へ` を付けた
+#   UNRELAYED <PR番号>              … その印を付けようとして失敗した
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
-#   ARCHIVED <セッションID>         … そのPRを出したCCRセッションを畳んだ
-#   KEPT     <セッションID>         … issue を持たないセッションなので畳まなかった（相談役など）
+#   ARCHIVED <セッションID>         … そのPRを出したセッションと、そのPRのレビューのセッションを畳んだ
+#   KEPT     <セッションID>         … 畳まなかった。issue を持たない（相談役など）か、ブリッジのものか、
+#                                     `get_session` を引けなくて素性が分からなかったもの（最後のものは
+#                                     **もう渡す出来事が無い**ので、司令塔が引き直して手で畳む）
 #   NOSESSION <PR番号>              … 本文が脚注を持たず、畳む相手が分からなかった
 #   UNARCHIVED <セッションID>       … 畳もうとして失敗した
 #   SYNCED   <コミット>             … 本体のチェックアウトを新しい `main` へ進めた
@@ -20,7 +24,7 @@
 #   終了コード 0 … すべて片付いた
 #   終了コード 1 … マージできなかった（何もしていない。関門を含む）
 #   終了コード 2 … マージはしたが、後片付けに残りがある
-#                  （上の `OPEN`・`NOSESSION`・`UNARCHIVED`・`DIRTY`）
+#                  （上の `OPEN`・`NOSESSION`・`UNARCHIVED`・`UNRELAYED`・`DIRTY`）
 #
 # ## 関門（`needs-user-review.sh`）は、司令塔が越えられない
 #
@@ -43,6 +47,12 @@
 # 引き方はそちらに書いてある（差し戻す `send-back.sh` と同じ相手なので、1箇所に置く）。引けなければ
 # `NOSESSION` を出して残りとして扱う。黙って畳まずに済ませると、走ったままのセッションが誰にも
 # 数えられず残る。
+#
+# **レビューのセッションは別に畳む**（[`archive-reviews.sh`](archive-reviews.sh)）。あちらはPRを
+# 出さないので `session-of-pr.sh` では引けず、`review-<PR番号>` のタグで引く。PRが閉じれば読む相手が
+# 無くなるので、ここがこのPRの分を畳む最後の場所。**あちらが掃くのはこのPRの分だけではない**
+# （残っている `review-*` 全部。理由はあちらの「1本のPRだけを掃くと…」）ので、`直し待ち` や
+# `判断待ち` で止まったPRのレビューも、1件マージするたびに一緒に片付く。
 #
 # ## `--delete-branch` は worktree の警告を必ず出す
 #
@@ -76,6 +86,16 @@ NEEDS_USER_REVIEW="${NEEDS_USER_REVIEW:-$HERE/needs-user-review.sh}"
 
 body=$(gh pr view "$PR" --json body --jq '.body // ""' | tr -d '\r')
 state=$(gh pr view "$PR" --json state --jq '.state')
+# `## 司令塔へ` は、PR本文とレビューのコメントの**両方**に書かれる（`review-prompt.md`）。回す口が
+# 2つあるのに読む口が1つだと、**レビューが回したものだけが黙って落ちる**。拾うのは `[レビュー]` で
+# 始まるコメントだけで、司令塔自身の指示やユーザーの却下は回す側ではない。
+#
+# **1件を1行の base64 で受ける。** 節を閉じるのは `##` の見出しなので、複数の文書を1本に繋いで読むと
+# **末尾に `## 司令塔へ` を置いた文書の節が、次の文書へそのまま伸びる**（`review-prompt.md` はレビュー
+# 側にこの節を**末尾**へ置かせるので、常に起きる）。繋ぎ目へ切れ目の印を挟んでも塞げるが、その綴りは
+# 挟む側と閉じる側で一致していないと黙って壊れる。繋がずに1件ずつ読めば、印そのものが要らない。
+review_comments=$(gh pr view "$PR" --json comments \
+  --jq '.comments[] | select(.body | startswith("[レビュー]")) | .body | @base64')
 
 if [ "$state" = "OPEN" ]; then
   # 関門。**マージの前に見る**——通した後では、印が付いた状態が `main` に入ってしまう。
@@ -120,6 +140,45 @@ echo "MERGED $PR"
 
 leftover=0
 
+# `## 司令塔へ` に**中身がある**PRには `司令塔へ` ラベルを付ける。**下ろすのはこの後の司令塔の手番**
+# なので、ここでは印を置くだけ。[`watch-prs.sh`](watch-prs.sh) がこのラベルを見て `RELAY` を毎周出し、
+# 司令塔が中身を下ろしてラベルを外すまで黙らない（`parallel-work.md`「下ろすまで黙らない」）。
+#
+# **本文ではなくラベルで持つのは、引くのが安いから。** マージ済みPRは本数が多く、本文を毎周読むと
+# 窓を切ることになる——切った窓から出たものは永久に出なくなる。
+#
+# **見出しの有無では決めない。** `## 仮決め` は「なし」と書かせる規約、こちらは「無ければ節ごと省く」
+# 規約なので、書く側は取り違える。中身の無い印が1つ残るだけで `RELAY` が毎周出て、**見張りは合図が
+# 1件でも出た時点で終わる**ので、手でラベルを外すまで他の待ちに使えなくなる。
+#
+# **失敗しても止めない。** マージは済んでいるので、ここで落ちると後片付け（`main` の追随）ごと落ちる。
+#
+# **節を閉じるのは `##` の見出しと、水平線（`---`）。** 水平線は、レビューのコメントに必ず付く
+# Claude Code の署名の頭。閉じないと、レビューが節を末尾へ置いたとき署名の行が中身として残り、
+# 「なし」と書いても非空になる。**文書をまたぐ側は閉じるまでもない**——1件ずつ渡すので、文書が
+# 終われば節も終わる。
+relay_section() {
+  awk '/^##[[:space:]]+司令塔へ[[:space:]]*$/ { inside = 1; next }
+    /^##[[:space:]]/ || /^---[[:space:]]*$/ { inside = 0 }
+    inside'
+}
+relay=$({
+  relay_section <<<"$body"
+  while read -r encoded; do
+    [ -n "$encoded" ] || continue
+    base64 -d <<<"$encoded" | tr -d '\r' | relay_section
+  done <<<"$review_comments"
+} | sed -e 's/^[-*[:space:]]*//' -e 's/[[:space:]]*$//' |
+  grep -v '^$' | grep -v '^なし' || true)
+if [ -n "$relay" ]; then
+  if gh pr edit "$PR" --add-label 司令塔へ >/dev/null; then
+    echo "RELAY $PR"
+  else
+    echo "UNRELAYED $PR"
+    leftover=1
+  fi
+fi
+
 # `Closes #123` だけを拾う。番号だけの参照（`#123`）では閉じないので、ここでも見ない。
 closes=$(grep -oiE 'closes[[:space:]]+#[0-9]+' <<<"$body" | grep -oE '[0-9]+' | sort -u || true)
 while read -r issue; do
@@ -138,28 +197,26 @@ if [ -z "$sessions" ]; then
   echo "NOSESSION $PR"
   leftover=1
 fi
-# 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
-while read -r session; do
-  [ -n "$session" ] || continue
-  # 引けない・畳めないときは、そこで止めずに残りとして報せる。**マージは済んでいる**ので、
-  # ここで落ちると後片付け（`main` の追随）ごと落ちる。
-  info=$(printf '{"session_id":"%s"}' "$session" |
-    bash "$CCR_META" get_session | grep -o '{"ccr".*' || true)
-  [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" != "SESSION_STATUS_ARCHIVED" ] || continue
-  # **畳んでよいのは、1つの issue のために立てたセッションだけ**（`task-<番号>` タグを持つ。
-  # `dispatch-task.sh` が必ず付ける）。相談役のように issue を持たない相手は、PR1本が
-  # マージされても仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。
-  if ! jq -e '[.ccr.tags[]? | select(startswith("task-"))] | length > 0' <<<"$info" >/dev/null; then
-    echo "KEPT $session"
-    continue
-  fi
-  if printf '{"session_id":"%s"}' "$session" | bash "$CCR_META" archive_session >/dev/null; then
-    echo "ARCHIVED $session"
-  else
-    echo "UNARCHIVED $session"
-    leftover=1
-  fi
-done <<<"$sessions"
+# 畳んでよいかの判定と出力は [`archive-session.sh`](archive-session.sh) が持つ。**ここが渡すのは
+# 守る条件だけ。**
+#
+# - `--keep-untagged task-` … 畳んでよいのは、1つの issue のために立てたセッションだけ
+#   （`dispatch-task.sh` が必ず付けるタグ）。相談役のように issue を持たない相手は、PR1本が
+#   マージされても仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。
+# - `--keep-working` は**付けない**。走行中でも畳む——PRはもうマージされていて、ここが渡す最後の
+#   機会だから。
+archived=$(CCR_META="$CCR_META" bash "$HERE/archive-session.sh" --keep-untagged task- <<<"$sessions")
+[ -z "$archived" ] || printf '%s\n' "$archived"
+if grep -q '^UNARCHIVED ' <<<"$archived"; then
+  leftover=1
+fi
+
+# レビューのセッション（上の「畳む相手は…」）。畳めなければ `UNARCHIVED` が出るので残りに数える。
+reviews=$(CCR_META="$CCR_META" bash "$HERE/archive-reviews.sh")
+[ -z "$reviews" ] || printf '%s\n' "$reviews"
+if grep -q '^UNARCHIVED ' <<<"$reviews"; then
+  leftover=1
+fi
 
 # 本体は作業ツリーの共有先なので、進める前に汚れていないことを見る。未追跡は見ない——本体には
 # `claude_rc.bat` のような、追跡していない持ち物が置いてある。

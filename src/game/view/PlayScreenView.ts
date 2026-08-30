@@ -18,7 +18,7 @@ import type { CardContent } from '../ui/Card';
 import type { ExplorationContent } from '../ui/ExplorationPane';
 import type { CardKind } from '../looks/theme';
 import type { PropertyCategory as PropertyTab } from '../ui/PropertiesPane';
-import type { StatusContent, StatusDetail, StatusInfluence } from '../ui/StatusBar';
+import type { StatusContent, StatusDetail, StatusInfluence, StatusStage } from '../ui/StatusBar';
 
 /**
  * 積み重なったカードの束（ドメインのObjectStackに対応する画面側の1まとまり）。
@@ -330,13 +330,15 @@ export interface PlayScreenView {
   readonly cardOfObjects: (objects: readonly WorldObject[]) => ObjectCardStack;
 
   /**
-   * draggedをtargetへ重ねたときに実行できるcombination（GameElementDefinition.md 12節）。
-   * 実行できる組み合わせが無ければundefined。draggedとtargetが同じ束（その束の上の1枚を元の位置へ
-   * 重ねた）なら、束の中の2つを組み合わせる。
+   * draggedをtargetへ重ねたときのcombination（GameElementDefinition.md 12節）。返すものが無ければ
+   * undefined。draggedとtargetが同じ束（その束の上の1枚を元の位置へ重ねた）なら、束の中の2つを
+   * 組み合わせる。
+   *
+   * **実行できるとは限らない**——成立するものが無く、宣言が断る理由を持っていれば、それを
+   * `enabled: false` で返す（CardInteraction.md 2.1節）。どちらなのかは受け取った側がenabledで見分ける。
    *
    * **落とされた側が受け入れる組み合わせを先に、無ければ掴んだ側が受け入れる組み合わせを探す**
-   * （CardInteraction.md 2節）。どちらも宣言順の先頭を採る。マッチはwithタグだけで判定するので、
-   * conditionsを満たさず実行が空振りすることはある。
+   * （同2節）。どちらも宣言順の先頭を採る。
    */
   readonly combinationOf: (
     dragged: ObjectCardStack,
@@ -561,21 +563,34 @@ export function fromGameSession(
     };
   };
 
-  /** バーへ刻む段の読みに、表示名を入れたもの。段を宣言していないプロパティではundefined。 */
-  const stageReadingOf = (property: PropertyValue): StatusDetail['stage'] => {
+  /**
+   * 今いる段の読みに、表示名を入れたもの。段を宣言していないプロパティではundefined。
+   * **識別子は捨てずに残す**——同じ段かどうかを見る側（statusBarLook）は表示名では判定できない。
+   */
+  const stageReadingOf = (property: PropertyValue): StatusStage | undefined => {
     const stage = property.stageReading;
-    return stage === undefined ? undefined : { ...stage, name: locale.stage(stage.name) };
+    if (stage === undefined) return undefined;
+
+    const progress = stage.progress;
+    return {
+      ...stage,
+      key: stage.name,
+      name: locale.stage(stage.name),
+      progress:
+        progress === undefined
+          ? undefined
+          : { ratio: progress.ratio, nextName: locale.stage(progress.nextName) },
+    };
   };
 
   /**
-   * そのプロパティ1件の詳細（意味・今いる段・影響の出入り）。**持ち主から読む**——同じ名前の
+   * そのプロパティ1件の詳細（意味・影響の出入り）。**持ち主から読む**——同じ名前の
    * プロパティを別の物が持っていても、値も影響もその物のもの。
    */
   const detailOf = (object: WorldObject, property: PropertyValue): StatusDetail => {
     const influences = object.readInfluences(codex.propertyNames.getId(property.def.name));
     return {
       description: locale.object(object.def.name).prop(property.def.name).description,
-      stage: stageReadingOf(property),
       // 与えている影響で動くのは相手、受けている影響で動くのは自分（influenceOfのmoved）。
       given: collapsed(
         influences.given.map((influence) => influenceOf(object, influence, movedByGiven(object, influence))),
@@ -602,6 +617,7 @@ export function fromGameSession(
             icon: texts.icon,
             value: property.getEffectiveValue(),
             ratio: property.ratio,
+            stage: stageReadingOf(property),
             alert: property.alert,
             worsensUpward: property.def.worsensUpward,
             detail: detailOf(object, property),

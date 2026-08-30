@@ -76,6 +76,9 @@ object_defs:
     props:
       fuel: {value: 20}
 
+  ember:
+    tags: [item]
+
   # 束ねた薪はまとめてくべられる（allow_multiple）。何本入るかはfuelのrangeの残りが決める。
   hearth:
     tags: [fixture]
@@ -86,6 +89,12 @@ object_defs:
         trigger: {drag: {object: branch}, allow_multiple: true}
         duration: 1
         transfer: {amount: 999, from: instrument, from_prop: fuel, to_prop: fuel}
+        destroy: instrument
+      # 薪が無ければ着火しない。断る理由を宣言している（fire.yamlのigniteと同じ形）。
+      ignite:
+        trigger: {drag: {object: ember}}
+        duration: 2
+        conditions: [{reason: no_fuel, prop: fuel, gt: 0}]
         destroy: instrument
 
   fruit:
@@ -275,6 +284,53 @@ object_defs:
       name: '打ち割る',
       description: '石を打ち合わせて割る。',
     });
+  });
+
+  it('条件で成立しない組み合わせは、断る理由を添えて返る', () => {
+    // 薪の無い炉へ火種を重ねる。**候補から消さない**——消すとプレイヤーには「重ねても何も起きない」
+    // としか見えず、宣言したreason（14.6節）が誰にも届かない。
+    const texts = parseLocale(
+      'ja.yaml',
+      `object_texts:
+  hearth:
+    display_name: 炉
+    interactions:
+      ignite:
+        display_name: 着火する
+reason_texts:
+  no_fuel: 薪が組まれていない。
+`,
+    );
+    const mini = setUp();
+    const hearth = mini.createObject('hearth', mini.slot('fixtures', mini.land));
+    const ember = mini.createObject('ember', mini.slot('hand'));
+
+    const view = viewOf(mini, texts);
+    const refused = view.combinationOf(cardOf(view, ember), cardOf(view, hearth));
+
+    expect(refused).toMatchObject({ name: '着火する', enabled: false, reason: '薪が組まれていない。' });
+    expect(refused?.maxCount, 'まとめて運んでも何も起きないので、ついてこない').toBe(1);
+
+    refused?.execute();
+    expect(ember.parent, '離しても何も起きない').toBeDefined();
+  });
+
+  it('成立する組み合わせがあるなら、断る宣言より先に選ぶ', () => {
+    // 中身入りどうしを重ねると、pour_into_empty（reason付き）は落ちるがpour_into_filledは成立する。
+    const mini = setUp();
+    const filled = [0, 1].map(() => {
+      const bowl = mini.createObject('bowl', mini.slot('hand'));
+      bowl.becomeAlong(new Map([['content', 'water_liquid']]));
+      bowl.tryGetProperty(mini.codex.propertyNames.getId('fill'))?.setNumber(100);
+      return bowl;
+    });
+
+    const view = viewOf(mini);
+    // 同じ型なので1枚の札にまとまる。そこへ重ねると束の中の2つが組み合わさる。
+    const bowls = cardOf(view, filled[0]);
+    const poured = view.combinationOf(bowls, bowls);
+
+    expect(poured?.enabled, '実行できる側が選ばれる').toBe(true);
   });
 
   it('combinationもかかる時間を持つ', () => {

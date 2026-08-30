@@ -2124,7 +2124,7 @@ object_defs:
     expect(foodInstance.tryGetAction('check', undefined)?.tryExecute() === true).toBe(true); // characterはweatherを持たないため素通りし、roomのweather(1)と比較して真になる
   });
 
-  it('destroyの対象にancestorを指定するとエラーになる', () => {
+  it('propを伴わないdestroyの対象にancestorを指定するとエラーになる', () => {
     const yaml = `
 object_defs:
   thing:
@@ -2134,6 +2134,59 @@ object_defs:
         destroy: ancestor
 `;
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/ancestor/);
+  });
+
+  it('propを伴わないmoveの動かす物にancestorを指定するとエラーになる', () => {
+    const yaml = `
+object_defs:
+  thing:
+    interactions:
+      use:
+        trigger: menu
+        move: {subject: ancestor, to: parent}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/ancestor/);
+  });
+
+  it('destroy・moveの対象でも、propを伴えばancestorを書ける', () => {
+    const yaml = `
+object_defs:
+  sailor:
+    props:
+      raft_id: {value: 0}
+    interactions:
+      leave:
+        trigger: menu
+        destroy: {subject: ancestor, prop: raft_id}
+      board:
+        trigger: menu
+        move: {subject: {subject: ancestor, prop: raft_id}, to: parent}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).not.toThrow();
+  });
+
+  it('プロパティ名がどのキーで決まってもancestorは書ける（baseのprop省略・modifyの対象キー・transferのfrom）', () => {
+    const yaml = `
+object_defs:
+  room:
+    props:
+      ambient_temperature: {value: 0}
+    slots:
+      contents: {}
+  stove:
+    props:
+      warmth: {value: 0, base: {subject: ancestor}}
+      fuel: {value: 10}
+    passives:
+      - modify:
+          ancestor:
+            ambient_temperature: 5
+    interactions:
+      burn:
+        trigger: menu
+        transfer: {from: ancestor, from_prop: ambient_temperature, to_prop: fuel, amount: 1}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).not.toThrow();
   });
 
   it('in_slot判定でobjectにancestorを指定するとエラーになる', () => {

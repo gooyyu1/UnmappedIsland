@@ -9,10 +9,9 @@ import type { AddReading, EffectReader, SetValueReading, TransferReading } from 
 import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
 
 /**
- * 「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。対象の解決と適用まで自分で行う。
- * 具象は、単一の命令（Set/Add/Destroy/Spawn/Transfer、9節）、その宣言順合成（ActiveEffectSequence）、
- * weightで1候補を選ぶpick（PickEffect、10節。候補もActiveEffectなので再帰しうる）の3種。
- * pickは9節の命令と対等な1つの効果なので、合成の中に他の命令と並べて置ける。
+ * 「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。**対象の解決と適用まで自分で
+ * 行う**ので、呼び手は起こすことだけを頼み、何をどこへ適用するかは知らない。子として他の効果を持つ具象が
+ * あるため、apply・readは1つの効果から再帰しうる。
  *
  * sameSlotSpawnSiteは、適用の入口（WorldObject.applyActiveEffect）で捕捉した「selfが今占めている位置」の
  * スナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ同種を保持しているか」を
@@ -33,19 +32,18 @@ export abstract class ActiveEffect {
 
   /**
    * まとめて実行するとき、回数の上限を決める器がいくつあるか（`allow_multiple`、12.4節）。
-   * undefinedは「繰り返すと意味が変わるので数えられない」（pick）。
+   * undefinedは「繰り返すと意味が変わるので数えられない」。
    *
    * **既定は0＝数に影響しない。** 取りこぼしても「まとめられない」に倒れるだけで安全側なので、readと
-   * 違い抽象にしない。数を決められるのは、単調に埋まる器へ入れる効果（transfer）だけ。
+   * 違い抽象にしない。数を決められるのは、単調に埋まる器へ入れる効果だけ。
    */
   repeatLimitingVesselCount(): number | undefined {
     return 0;
   }
 
   /**
-   * 今この文脈で、この効果が行き先を持たないために、宣言している操作そのものが成立しないか
-   * （`become` の座標が空、9.9節）。成立しない操作は候補に出さない——落とせるのに何も起きない、を
-   * 作らないため。
+   * 今この文脈で、この効果が行き先を持たないために、宣言している操作そのものが成立しないか（9.9節）。
+   * 成立しない操作は候補に出さない——落とせるのに何も起きない、を作らないため。
    *
    * **既定はfalse＝妨げない。** repeatLimitingVesselCountと同じく、取りこぼしても安全側（操作は出る）に
    * 倒れるので抽象にしない。
@@ -64,10 +62,11 @@ export abstract class ActiveEffect {
 }
 
 /**
- * 一時的な命令（`set`/`add`/`destroy`/`spawn`/`transfer`、9節）と`pick`（10節）を、書かれた順に
- * まとめた合成効果。on_max・on_min（6節）、actions/combinations/pickの中身（11・12・10節）が
- * 共用する。on_max/on_minはselfのみが有効な対象（パーサ側で強制する）。
- * 空（命令が1つも無い）なら、適用しても何も起きない。
+ * 同じ場所に並べて書かれた効果を、書かれた順にまとめた合成効果。**何を並べて書けるか・どの順で走るかは
+ * GameElementDefinition.md 9.7節**。on_max・on_min（6節）、actions/combinations/pickの中身
+ * （11・12・10節）が共用する。どの起点を書けるかは、共用する各場所が渡す
+ * `ReferenceScope`が決める（一覧は同14.1節の表。操作の関係の役は11.5節「役を書ける場所」）。
+ * 空（効果が1つも無い）なら、適用しても何も起きない。
  */
 export class ActiveEffectSequence extends ActiveEffect {
   /** 効果の宣言順リスト。適用順はリスト順で、パーサはYAMLに書かれた順のまま渡す（9.7節）。 */
@@ -96,7 +95,7 @@ export class ActiveEffectSequence extends ActiveEffect {
     return this.effectsInDeclarationOrder.some((operation) => operation.blocksOperation(context));
   }
 
-  /** 子の合計。1つでも数えられない子（pick）があれば、合成も数えられない。 */
+  /** 子の合計。1つでも数えられない子があれば、合成も数えられない。 */
   override repeatLimitingVesselCount(): number | undefined {
     let total = 0;
     for (const operation of this.effectsInDeclarationOrder) {

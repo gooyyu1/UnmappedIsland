@@ -22,7 +22,7 @@
 2 節が述べる「動物の 6 手」がそのまま現れます（`WorldObject.runTickActions`、検証は
 `tests/world-codex/animalTurn.test.ts`）。4 節の `resists` も実装済みで、4 種とも `beast` trait で宣言しているため、警戒している間は手にも
 入れ物にも入りません（[`GameElementDefinition.md`](./GameElementDefinition.md) 7.13 節、検証は
-`tests/domain/resists.test.ts`）。新設が必要なエンジン拡張は 7 節、未決事項は 8 節にまとめています。
+`tests/domain/resists.test.ts`）。狩猟を支えるエンジンの拡張は 7 節、未決事項は 8 節にまとめています。
 
 ## 1. 既存の操作に載せる
 
@@ -39,7 +39,7 @@
 持ち込みません。
 
 ```yaml
-wild_boar:
+beast:
   interactions:
     strike:
       trigger: {drag: {tag: weapon}}
@@ -224,8 +224,8 @@ monkey_carcass:
 | `resists: [条件]` | 条件が成立している間、**持ち主を持てない**（土地以外の親へ移れない） |
 
 ```yaml
-wild_boar:
-  tags: [item]
+beast:
+  tags: [item, animal, quarry]
   resists: [{prop: wariness, gte: 1}]
 ```
 
@@ -357,7 +357,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 - **かさ（`volume`）で重み付けする。** 大きい物にぶつかりやすい＝地面に大きな物を広げていると危ない、という
   読める判断になります。かさ0の物は選ばれません——そこに嵩が無いという宣言だからです
 - **壊れうる物だけを候補にする。** `durability` を持つ物すべてにすると大事な道具まで一撃で消えるため、
-  `fragile` タグで著者が明示的に選びます（編み籠・くくり罠・編んだ葉・ヤシの器）
+  `fragile` タグで著者が明示的に選びます（編み籠・くくり罠・編んだ葉・ヤシの器・甕）
 
 `destroy` は中身を親へこぼす（`GameElementDefinition.md` 9.3 節）ので、**壊された編み籠の中身は地面に散らばります**。追加のルールは
 要りません。
@@ -482,10 +482,10 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 ```yaml
 strike:
   pick:
-    - weight: 70
+    - weight: {subject: instrument, prop: heavy_blow}
       spawn: {object: laceration, into: self}
       signal: hit
-    - weight: 30
+    - weight: {subject: instrument, prop: whiff}
       signal: missed
 ```
 
@@ -496,15 +496,15 @@ strike:
 
 5 節の動物の1手が回避や威嚇を持つようになっても、告げる語を足すだけで UI 側は変わりません。
 
-## 7. 新設が必要なエンジン拡張
+## 7. 狩猟を支えるエンジンの拡張
 
 狩猟専用の文法は導入しません。次の5つはいずれも汎用の拡張で、すべて実装済みです。
 
 | 拡張 | 内容 |
 | --- | --- |
 | `resists`（4 節） | `bound_to_owner` の対称形。条件が成立する間、土地以外の親へ移れない。成立した瞬間に土地へこぼれ出る（[`GameElementDefinition.md`](./GameElementDefinition.md) 7.13 節） |
-| オブジェクトを指す参照（`ObjectRef`） | 対象キー（`self`/`parent`/`agent`/`instrument`）と、インスタンスIDを保持するプロパティ（`{prop: ...}`）の二択。`destroy` の対象と `move` の `subject`・移動先が共有する（`GameElementDefinition.md` 9.3 節・9.6 節）。**動かす物と行き先を別々の仕組みで指さない**——どちらも「1つのオブジェクトを指す」という同じ役目だから |
-| `move` の `subject: self` | 現在は `agent`/`instrument` のみでロード時エラーだった（同 9.6 節）。`child` と違い `self` は一意なので曖昧さが無い |
+| オブジェクトを指す参照（`ObjectRef`） | 対象キーと、インスタンスIDを保持するプロパティ（`{prop: ...}`）の二択。`destroy` の対象と `move` の `subject`・移動先が共有する（`GameElementDefinition.md` 9.3 節・9.6 節）。**どの対象キーを書けるかは、その宣言が置かれた場所が何を持つかで決まる**（同 14.1 節の表。操作の関係の役は 11.5 節「役を書ける場所」が唯一の一覧）。**動かす物と行き先を別々の仕組みで指さない**——どちらも「1つのオブジェクトを指す」という同じ役目だから |
+| `move` の `subject: self` | 動かす物に宣言元自身を指せる（同 9.6 節）。動物が自分で逃げる一手（5.1 節）が使う |
 | `trigger: tick`（同 11.1 節） | 画面のボタンには出さない操作。起こすのはプレイヤーではなく時間の側になる |
 | `signal`（6.3 節） | 世界の形を変えず、出来事が起きたことだけを告げる。当たり外れに限らず、出入りを伴わない出来事すべてが使う |
 
@@ -538,7 +538,7 @@ strike:
   無いのが直接の理由で、素材と工程は [`SurvivalItems.md`](../world/SurvivalItems.md) 3 節が持つ
 - **リーチと待ち受け**（1.2 節）: 槍が斧と違うのは、今は当たり外れの配分と傷の種類だけ。動物の手番が
   入ったので、間合いを取れることを配分へどう効かせるかを見直せる
-- **`fragile` を付ける範囲**（5.4 節）: 今は編み籠・くくり罠・編んだ葉・ヤシの器だけで、序盤の土地には
+- **`fragile` を付ける範囲**（5.4 節）: 今は編み籠・くくり罠・編んだ葉・ヤシの器・甕だけで、序盤の土地には
   壊れる物がほとんど無い。壊される痛手が実際に効くのは、拠点に物を並べ始めてからになる
 - **1手の重みに、体格と体調をどこまで効かせるか**（5 節）: 今は素の配分と痛みの段だけが動かす。失血・
   衝撃・空腹（餌をやる仕組みが無い）は配分に触れていない

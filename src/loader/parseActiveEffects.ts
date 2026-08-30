@@ -40,9 +40,11 @@ import { DeclaredNumber } from '../domain/DeclaredNumber';
 import { SignalEffect } from '../domain/SignalEffect';
 
 /**
- * 効果の中身（9節の命令と、10節の`pick`）を読む。文法は「操作(set/add)が上位、
- * 対象(self/parent/agent/instrument)が下位」（例: `add: {self: {hour: 1}}`）。spawnは常にselfが実行する
- * ものとみなすため対象キーを持たない。signalは対象を省ける（`signal: missed`＝selfへ告げる、9.8節）。
+ * 効果の中身（9節の命令と、10節の`pick`）を読む。文法は「操作が上位、対象が下位」（9.1節。例:
+ * `add: {self: {hour: 1}}`）で、**対象に何を書けるかはその宣言が置かれた場所が決める**
+ * （parseActiveTargetRoot。書ける対象の一覧はGameElementDefinition.md 14.1節の表、操作の関係の役は
+ * 11.5節「役を書ける場所」）。spawnは常にselfが実行するものとみなすため対象キーを持たない。
+ * signalは対象を省ける（`signal: missed`＝selfへ告げる、9.8節）。
  *
  * **適用順はYAMLに書かれた順**で、動詞ごとの優先順位は無い（9.7節）。bodyNodeには効果以外の兄弟キーも
  * 同居しうるため、reservedKeysに「呼び出し側がすでに読み終えている兄弟キー」を渡して未知キー判定から
@@ -163,7 +165,7 @@ function parseAmong(
   const root =
     subjectName === undefined
       ? 'self'
-      : parseSubjectRoot(amongContext, subjectName, scope.withoutPropertyName.withPicked);
+      : parseSubjectRoot(amongContext, subjectName, scope.withoutPropertyName);
 
   const slotName = tryGetScalar(node, 'slot', amongContext);
   if (slotName === undefined) throw new YamlLoadError(`${amongContext}: 'slot'は必須です。`);
@@ -267,8 +269,8 @@ function parseSetEffect(
 
 /**
  * transfer（9.5節）。from/toの参照はフラットな2フィールド（from/from_prop, to/to_prop）で表し、
- * from/toは省略時self。対象ルートはset/add/destroyと
- * 同じ制約（selfOnly・allowInstrument）を共有する。linked_add（省略可）はaddと同じ構造で、
+ * from/toは省略時self。対象ルートに何を書けるかは、受け取ったscopeが決める
+ * （parseActiveTargetRoot）。linked_add（省略可）はaddと同じ構造で、
  * 実際の移動量に比例してスケールされる副効果。to_amount（省略可）は、移送元と移送先で単位が違うときに
  * 「amount分を出すと移送先がどれだけ増えるか」を持つ。
  */
@@ -419,8 +421,9 @@ function parseSpawnTarget(
 }
 
 /**
- * passivesの中の transfer（8.4節）。文法はactiveのものと同一で、対象から `agent` だけを外す
- * ——持続的な関係に紐づかないため（modify/addのpassiveが `agent` を持たないのと同じ理由）。
+ * passivesの中の transfer（8.4節）。文法はactiveのものと同一で、違うのは渡すscopeだけ
+ * （ReferenceScope.declaration。どの起点を書けるかはそれが決める）。操作の関係の役は仕様のうえでは
+ * ここへ書けるが（8.4.1節）、11.5節の【未実装: 操作の関係】が外れるまで解決先を持たない。
  */
 export function parsePassiveTransfers(
   loader: WorldCodexYamlLoader,
@@ -472,9 +475,9 @@ function oneOrMany<T>(context: string, node: YamlNode, parseOne: (context: strin
  * （複数・どれも無しはエラー）。移動先の三択は`spawn`の配置先と同じ読み手（parseDestinationRef）。
  * `to_slot`は行き先の中のどの枠へ入れるかで、省けば宣言順で最初に受け入れた枠になる。
  *
- * selfOnly文脈（rangeイベント）で禁じるのは**agent/instrumentを指す形だけ**。そこに実行者が居ないのは
- * 対象キーの解決先が無いという理由なので、`self`と型で書いた移動（本土への到達、Voyage.md 4節）は
- * 同じ理由に当たらない。
+ * **その場所で禁じられるのは、解決先を持たない対象キーを指す形だけ**（どれがそうかはscopeが答える。
+ * ReferenceScope）。型で書いた移動先（本土への到達、Voyage.md 4節）は対象キーではないので、
+ * 操作者の居ない場所（rangeイベント）でも同じ理由には当たらない。
  */
 function parseMove(
   loader: WorldCodexYamlLoader,
@@ -604,8 +607,8 @@ function parseDestroy(
 }
 
 /**
- * オブジェクトそのものを1つ指す参照（ObjectRef）を読む。**個体を1つ指す口はすべてここを通る**
- * ——`destroy`の対象、`move`の動かす物と移動先、`spawn`の配置先、`set`が書き込む個体。
+ * オブジェクトそのものを1つ指す参照（ObjectRef）を読む。**ここを通るのは`{subject, prop}`の形まで
+ * 許す口**で、対象キーしか取らない口はparseObjectTargetRootを直に呼ぶ。
  *
  * 対象キー（`self`）か、`{subject, prop}`のマップ——`prop`を書けばその実効値がインスタンスIDとして
  * 指す相手、書かなければ`subject`（省略時はself）そのもの。reservedKeysは、呼び出し側が別に読む
@@ -726,7 +729,7 @@ function parseBecome(
   return new BecomeEffect(subject ?? ObjectRef.ofRoot('self'), axisValues);
 }
 
-/** オブジェクトそのものを指す対象（destroy・signal・move）。プロパティ名を伴わない場所になる。 */
+/** プロパティ名を伴わず、オブジェクトそのものを指す対象。何を書けるかはその場所が決める（ReferenceScope）。 */
 function parseObjectTargetRoot(context: string, key: string, scope: ReferenceScope): ReferenceRoot {
   return parseActiveTargetRoot(context, key, scope.withoutPropertyName);
 }

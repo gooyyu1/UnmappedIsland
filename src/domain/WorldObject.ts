@@ -10,6 +10,7 @@ import type { EngineVocabulary } from './WorldVocabulary';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
 import { PropertyValue } from './PropertyValue';
+import type { Requirement } from './Requirement';
 import { Slot } from './Slot';
 import type { SlotPosition } from './SlotPosition';
 import type { WorldSession } from './WorldSession';
@@ -26,7 +27,7 @@ type MemberKind = 'プロパティ' | 'スロット';
  * （旧親からの離脱・新親への合流・weight伝播・passive effect edgeの登録）にも専念し、枠の要件・capacityの
  * 検証は対象Slot自身へ委ねる。持続効果（modify/add）の登録・解除は、生成・エッジ形成/解消・トポロジ変化の
  * 契機で、Defが宣言する効果一式（PassiveEffects）へ「登録/解除してほしい」と依頼するだけで、どのtargetが
- * どこへ紐付くかは効果自身が知る。能動効果（set/add/destroy/spawn/transfer・actions/combinations・tick）は、
+ * どこへ紐付くかは効果自身が知る。能動効果（9節の命令。actions/combinations・tickやrangeイベントから走る）は、
  * 適用の入口（applyActiveEffect）と対象解決、same_slot spawnの位置捕捉（SameSlotSpawnSite）・配置（place）を持つが、
  * 値の変更そのものは対象のPropertyValueへ、条件判定・抽選はDef側の効果へ委ねる。抵抗（`resists`、7.13節）が
  * 成立したときに持ち主から離れるのも自分で行う——値を変えた側は、その後に何を確かめるべきかを知らない。
@@ -96,7 +97,8 @@ export class WorldObject {
     this.properties = def.enumeratePropertyDefs().map((pd) => new PropertyValue(pd, this));
     this.slots = def.enumerateSlotDefs().map((sd) => new Slot(sd, this));
 
-    // 生成時はまだトポロジが無いため、Self関係のみ登録する。Parent/Child/Ancestorはmove_to_slot以降に登録される。
+    // 生成時はまだ木に繋がっていないので、解決先を持つのは自分自身だけ。残りの関係は、木が変わった契機に
+    // それぞれの持ち主が登録する（setEdgeRegistered・setAncestorTargetsRegistered）。
     def.passives.setRelationRegistered(this, 'self', true);
   }
 
@@ -704,9 +706,13 @@ export class WorldObject {
   /**
    * 名指しした1つのプロパティが、他と交わしている影響（docs/ui/Windows.md 8節）。
    *
-   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果だけでよい。効果が届く先は
-   * self/parent/child/ancestor のいずれか（8.1節）なので、自分へ届く効果も自分が届かせる効果も、
-   * 宣言元は必ずこの3方向のどれかに居る——横に並んだ物どうしは互いに届かない。
+   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果だけでよい。**持続効果の対象に今書けるのは、
+   * 宣言元から木を辿るものだけ**（何を書けるかは宣言が置かれた場所が決める。一覧はGameElementDefinition.md
+   * 14.1節の表）なので、自分へ届く効果も自分が届かせる効果も、宣言元は必ずこの3方向のどれかに居る
+   * ——横に並んだ物どうしは互いに届かない。
+   *
+   * **3方向で足りるのは、同11.5節が`【未実装: 操作の関係】`である間だけ。** 操作の関係の役を対象に書ける
+   * ようになると、木の上に居ない相手へも効果が届く。
    */
   readInfluences(propertyGlobalId: number): PropertyInfluenceReading {
     const influences = new PropertyInfluences(this, propertyGlobalId);
@@ -725,7 +731,10 @@ export class WorldObject {
   /**
    * 持続効果の対象（8.1節）を、影響の一覧のために解決する。**childは今入っている子を全部**返す
    * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（setChildRegistered）。
-   * agent/instrumentはpassivesに現れない（parsePassiveTransfers）ため空になる。
+   *
+   * 操作の関係の役（11.5節）はここへ来ない。役に解決先が無いのは`ReferenceScope.declaration`が持つ性質で、
+   * 上のchildのために派生させた`withBroadcast`もそこは引き継ぐ。狭いのは同節が`【未実装: 操作の関係】`
+   * である間だけ。
    */
   resolveInfluenceTargets(path: PropertyPath): readonly WorldObject[] {
     if (path.root === 'child') return [...this.children()];
@@ -756,19 +765,54 @@ export class WorldObject {
    * instrumentを重ねたときに**今**成立する組み合わせ（12節、宣言順）。相手として受け入れるかだけでなく、
    * 要件（14節）を満たしているかまで見る——満杯の炉に薪をくべる組み合わせは、候補にならない。
    *
-   * **要件まで見るのは、候補を選ぶ側と実行できる側を食い違わせないため。** 型だけで選ぶと、選んだ
+   * **要件まで見るのは、実行できないものを黙って落とし先にしないため。** 型だけで選ぶと、選んだ
    * 先が実行できない場合に「落とせるのに何も起きない」になる。**行き先の座標に型が居ない組み合わせ**
    * （`become`、9.9節）も同じ理由で候補にならない。
+   *
+   * **掛かるのは「黙って」のほう。** 断る理由を宣言していれば、実行できない落とし先として出してよい
+   * ——それを引くのが下のrefusedCombinationsWith（ActionSystem.md 1.1節）。
    */
   combinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
+    return this.combinationsMatching(instrument, agent, (unmet) => unmet === undefined);
+  }
+
+  /**
+   * instrumentを重ねても要件（14節）で成立しないが、**断る理由を宣言している**組み合わせ
+   * （14.6節のreason、宣言順）。薪の無い炉へ火種を落とす、暗い中で石を打ち割る、が該当する。
+   *
+   * **`reason` を書いた要件は、落ちたときプレイヤーへ理由が届くという約束**（14.6節）。メニューの
+   * 操作は押せないボタンとして理由を出せるが、重ねる操作には候補から消えた先に理由を出す口が無い。
+   * 理由を宣言しているものだけをここから引けるようにして、その口を画面へ渡す
+   * （[`CardInteraction.md`](../../docs/ui/CardInteraction.md) 2.1節）。
+   *
+   * **理由を宣言していない要件は返さない**——黙って断ると決めた宣言なので、言うことが無い。
+   * 成立するものが1つでもあるなら、そちらが先（`combinationsWith`）。
+   */
+  refusedCombinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
+    return this.combinationsMatching(instrument, agent, (unmet) => unmet?.reasonName !== undefined);
+  }
+
+  /**
+   * 相手として受け入れ、行き先も詰まっていないドラッグの宣言のうち、満たしていない要件が
+   * acceptsに当てはまるもの。**要件以外の絞り込みを1箇所に持つ**——成立するものと断るものが
+   * 「要件を見た結果」だけで分かれるようにするため。
+   *
+   * **問うための文脈もここで組み立てる。** 呼び手に作らせると、「self・agent・instrumentがこの3つで
+   * ないと壊れる」という一致の規約を呼び手の数だけ覚えることになる（型は通ってしまう）。
+   */
+  private combinationsMatching(
+    instrument: WorldObject,
+    agent: WorldObject | undefined,
+    accepts: (unmet: Requirement | undefined) => boolean,
+  ): readonly Combination[] {
     const context = ReferenceContext.acting(this, agent, instrument);
     return this.def.dragTriggers
       .filter(
         (trigger) =>
           trigger.acceptsInstrument(instrument.def) &&
-          trigger.interaction.unmetRequirement(context) === undefined &&
           trigger.acceptedCount(context, [instrument]) >= 1 &&
-          !trigger.interaction.blocksOperation(context),
+          !trigger.interaction.blocksOperation(context) &&
+          accepts(trigger.interaction.unmetRequirement(context)),
       )
       .map((trigger) => new Combination(trigger, this, instrument, agent));
   }
@@ -780,7 +824,7 @@ export class WorldObject {
    * （すべてのスロットの中身）へ再帰する。すべてのオブジェクトはworldの下にぶら下がるため、worldへ1回呼ぶだけで
    * ツリー全体が処理される。
    *
-   * rangeイベントのdestroy/spawnは処理中に自分自身や兄弟をツリーから切り離しうるため、各スロットの中身は
+   * rangeイベントが走らせる命令は、処理中に自分自身や兄弟をツリーから切り離しうるため、各スロットの中身は
    * 列挙前にスナップショットを取る。
    */
   tick(): void {
@@ -822,15 +866,16 @@ export class WorldObject {
     }
   }
 
-  // ---- 能動効果とspawn（9.2〜9.4節） ----
+  // ---- 能動効果とspawn（9節） ----
 
   /**
-   * このオブジェクトをselfとして、set/add/destroy/spawnを実行する（9.2〜9.4節）。rangeイベント（6節）と
-   * actions/combinations（11節・12節）の両方から呼ばれる（rangeイベント経由ではagent/instrumentはundefined）。
-   * 対象が解決できない場合（parentが無い、agent/instrumentがこの実行文脈に無い）は、その対象への適用のみ無視する。
+   * このオブジェクトをselfとして、渡された効果が持つ命令を実行する（9節。何が走るかはActiveEffectSequence）。
+   * rangeイベント（6節）とactions/combinations（11節・12節）の両方から呼ばれる（rangeイベント経由では
+   * agent・instrumentともにundefined）。対象が解決できない場合（例えばparentが無い、この実行文脈に居ない
+   * 役を指している。ReferenceContext参照）は、その対象への適用のみ無視する。
    *
-   * destroyをspawnより先に行う（9.3節・9.4節）: 置き換え後のオブジェクトが破棄されるオブジェクトの位置を
-   * 引き継げるよう、destroyで実際に位置が空いてから配置を行う。
+   * **命令の順序はここでは入れ替えない**——適用順はYAMLに書かれた順で、動詞ごとの優先順位は無い（9.7節）。
+   * 置き換えでdestroyがspawnより先に効くのは、著者がその順に書くから（9.3節）。
    *
    * **ここが「誰の仕業か」の境界**でもある。この中で起きた物の出入りは、すべてselfを主体として記録される
    * （WorldChange.subject）。どの`pick`の候補が選ばれたかによらず1つに決まるので、観測する側は分岐を

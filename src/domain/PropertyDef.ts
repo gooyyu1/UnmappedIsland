@@ -173,6 +173,18 @@ export interface StageSpan {
 }
 
 /**
+ * 今いる段の中でどこまで来たか（PropertyDef.stageReadingAt）。段が上がるたび0へ戻るので、値が
+ * 指数的に増えるプロパティ——腕前（docs/engine/SkillSystem.md 5節）——でも序盤が潰れない。
+ */
+export interface StageProgress {
+  /** 次の段の名前（識別子であり表示名ではない）。 */
+  readonly nextName: string;
+
+  /** `(実効値 - 今の段の下端) ÷ (次の段の下端 - 今の段の下端)`。 */
+  readonly ratio: number;
+}
+
+/**
  * 段（6.4節）の刻みと、その中で今どこにいるか（PropertyDef.stageReadingAt）。
  * nameは識別子であり表示名ではない（表示名はLocalization.stageが引く）。
  */
@@ -185,6 +197,9 @@ export interface CurrentStageReading {
 
   /** 段の境目（rangeの中での位置、昇順）。両端（range自身の上下限）は含まない。 */
   readonly boundaries: readonly number[];
+
+  /** 今いる段の中での進み。**区間が定まらない段ではundefined**（progressAt参照）。 */
+  readonly progress: StageProgress | undefined;
 }
 
 /**
@@ -554,7 +569,53 @@ export class PropertyDef {
   stageReadingAt(effectiveValue: number): CurrentStageReading | undefined {
     const stage = this.stageAt(effectiveValue);
     if (stage === undefined) return undefined;
-    return { name: stage.name, span: this.spanOf(stage), boundaries: this.stageBoundaries() };
+    return {
+      name: stage.name,
+      span: this.spanOf(stage),
+      boundaries: this.stageBoundaries(),
+      progress: this.progressAt(stage, effectiveValue),
+    };
+  }
+
+  /**
+   * 今いる段の中での進み（docs/engine/SkillSystem.md 5節）。**区間が定まらない段ではundefined**
+   * ——次の段が無い最上段と、下端を持たない受け皿（rangeも持たない場合、6.4節）、そして値の並びの
+   * 上に位置を持たないシンボル型（6.6節）。
+   */
+  private progressAt(stage: PropertyStage, effectiveValue: number): StageProgress | undefined {
+    if (this.isSymbolic) return undefined;
+
+    const start = stage.lowerBound ?? this.range?.min;
+    if (start === undefined) return undefined;
+
+    const next = this.stageAbove(start);
+    return next === undefined
+      ? undefined
+      : { nextName: next.stage.name, ratio: (effectiveValue - start) / (next.bound - start) };
+  }
+
+  /**
+   * 値の並びの上で、startのすぐ上に来る段とその下端。**段の宣言順ではなくminの大小だけで決まる**
+   * （stageAtと同じ見方）。上に段が無ければundefined。
+   *
+   * 下端を段と一緒に返すのは、**「今いる段の上端」と「次の段のmin」が同じ1つの値**だから——
+   * 区間（spanOf）と進み（progressAt）で別々に探すと、片方だけが段の選び方を変えたときに食い違う。
+   *
+   * **rangeの上限より上に下端を置いた段は、上に無いものとして数える。** そこは値が取れない位置なので
+   * 到達できず、区間の上端にも進みの分母にもなれない。頭打ちを呼ぶ側でやると、その2つが別の値になる。
+   */
+  private stageAbove(start: number): { readonly stage: PropertyStage; readonly bound: number } | undefined {
+    let above: { stage: PropertyStage; bound: number } | undefined;
+
+    for (const stage of this.stages) {
+      const bound = stage.lowerBound;
+      if (bound === undefined || bound <= start) continue;
+      if (this.range !== undefined && bound > this.range.max) continue;
+      if (above !== undefined && bound >= above.bound) continue;
+      above = { stage, bound };
+    }
+
+    return above;
   }
 
   /**
@@ -582,11 +643,7 @@ export class PropertyDef {
     if (this.range === undefined || this.isSymbolic) return undefined;
 
     const start = stage.lowerBound ?? this.range.min;
-    let end = this.range.max;
-    for (const other of this.stages) {
-      const bound = other.lowerBound;
-      if (bound !== undefined && bound > start && bound < end) end = bound;
-    }
+    const end = this.stageAbove(start)?.bound ?? this.range.max;
 
     const startRatio = this.ratioOf(start);
     const endRatio = this.ratioOf(end);

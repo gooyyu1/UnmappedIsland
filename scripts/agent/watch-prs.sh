@@ -23,21 +23,24 @@
 #   COMMENT pr|issue <番号> <著者> … 起動より後に付いたコメント
 #   CHECKED <番号> <項目>          … 確定待ち（`meta`）の本文でチェックが付いたまま、司令塔がまだ
 #                                    下ろしていない項目
-#   TASK    <番号>                 … 着手できる open な task（--issues にもPRにも無く、依存も片付いている）
+#   RELAY   <番号>                 … マージ済みPRの `## 司令塔へ` が、まだ下ろされていない
+#                                    （`司令塔へ` ラベルが残っている）
+#   TASK    <番号>                 … 着手できる open な task（投入も済んでおらず、--issues にもPRにも
+#                                    無く、依存も片付いている）
 #   STALLED <セッションID> <題>    … 動いておらず、PRも出していないタスクのセッション
 #   終了コード 0 … 動きが1件以上ある（上の行が出ている）
 #   終了コード 3 … TIMEOUT（制限時間まで、何も動かなかった）
 #   終了コード 1 … ERROR（gh が続けて失敗した）
 #
 # **`GREEN` があるときは、行の後ろにそのPRの題・本文・ファイル一覧が `--- PR <番号> ---` に続いて
-# 付く。** 緑を受け取った側は `## 仮決め` と触ったファイルの一覧を必ず見るので、往復を1つ減らすために
+# 付く。** 緑を受け取った側は司令塔宛ての節と触ったファイルの一覧を必ず見るので、往復を1つ減らすために
 # 同梱している。**判定は増えていない**——ここが担うのは促すことだけで、通すかどうかは受け取った側が
 # レビューを手配して決める。
 #
 # ## 手番は、時刻の窓ではなく状態で見る
 #
-# **`REVIEWED`・`UNREVIEWED`・`FIXED`・`CHECKED` が答えるのは「今それは誰の手番か」**で、「この5分に
-# 何が起きたか」ではない。どれも、比べる相手を対象自身の状態から取る。
+# **`REVIEWED`・`UNREVIEWED`・`FIXED`・`CHECKED`・`RELAY` が答えるのは「今それは誰の手番か」**で、
+# 「この5分に何が起きたか」ではない。どれも、比べる相手を対象自身の状態から取る。
 #
 # - `REVIEWED` … 最後の `[レビュー]` コメントが、最後のコミットより新しい。＝結論が出たまま、
 #   まだ直しも入っていない。`直し待ち`・`判断待ち` が付いていれば既に手が動いた後なので黙る。
@@ -46,6 +49,8 @@
 # - `FIXED` … 最後のコミットが、`直し待ち` を**付けた時刻**より新しい。＝差し戻した先から戻ってきた。
 # - `CHECKED` … 確定待ちの本文に `[x]` の箇条書きとして残っている。＝答えが来たまま、司令塔が
 #   まだ拾っていない。
+# - `RELAY` … マージ済みPRに `司令塔へ` ラベルが残っている。＝回されたものを、司令塔がまだ
+#   下ろしていない。
 #
 # **見張りの起動時刻と比べてはいけない。** 起動より前に起きたことは永久に出なくなるので、見張りを
 # 立て直すたびに、その谷間で起きたことが丸ごと落ちる。2026-08-29 に PR #1183・#1182 の
@@ -110,6 +115,18 @@
 # 拾った司令塔は答えの行き先を書いてから一覧から消す（CLAUDE.md）ので、**`【確定】` の印は待たない。**
 # 起き直すたびに同じ行が返るのは、答えがまだ拾われていないからで、正しい。
 #
+# ## RELAY を見るのは、マージした後にしか読む機会が無いから
+#
+# PR本文の `## 司令塔へ` には、**このPRの中では終わらないもの**が入る（立てた issue・順序・仕組みへの
+# 直しの依頼。`parallel-work.md`「司令塔に手を動かしてほしいことは、`## 司令塔へ` の1節に集める」）。
+# マージのときに司令塔が手で読む一発勝負しか無かったので、**PR #1240 は7件のうち1件が落ちた。**
+#
+# 印は [`merge-and-close.sh`](merge-and-close.sh) が `司令塔へ` ラベルとして置き、ここはそれを毎周
+# 出すだけ。**黙るのは司令塔がラベルを外したとき**で、`CHECKED` と同じ形（下ろすまで黙らない）。
+#
+# **`--state merged` で引くのは、これがマージ後の合図だから。** 他の合図が見ている `--state open` の
+# 一覧には、もう載っていない。ラベルで絞るので、引くのは常に数本。
+#
 # ## --issues を付けるのは、PRが出ないまま終わる場合があるから
 #
 # この見張りの本体はPRなので、投入した先が「閉じた issue だった」「セッションが落ちた」といった
@@ -131,16 +148,27 @@
 # こと」ではなく「やることが無いこと」**だから——投入した全部が `判断待ち` で止まると、前者では
 # 何も起こらなくなり、その間にセッションが立てた issue も誰の目にも触れない。
 #
-# だから、**投入していないが意図して置いてある `task`**（判断待ちの範囲に含まれるもの）も
-# `--issues` へ渡す。渡さないと毎周 `TASK` で起こされる。**出すか出さないかは機械が決め、拾うか
-# どうかは受け取った側が決める。**
+# **投入したものは渡さなくてよい**——`task-<番号>` のタグを見れば機械が知れる（下）。渡すのは、
+# **投入していないが意図して置いてある `task`**（判断待ちのPRの後ろに並べているものなど）だけ。
+# **出すか出さないかは機械が決め、拾うかどうかは受け取った側が決める。**
 #
 # ## 着手できるかは、印ではなく issue の依存から出す
 #
-# `TASK` に出るのは**`task` ラベルの付いた issue のうち、依存が片付いていて、open なPRが `Closes` で
-# 指していないものだけ**（GitHub の `blockedBy` に open なものが無い）。`task` が1件のセッションの
-# 仕事の単位なので、確認の置き場やユーザーの答え待ちのように**投入する先が無い issue** は、依存が
-# 空でも仕事ではない。PRの出ている issue は、既にそのセッションの手元にある。
+# `TASK` に出るのは**`task` ラベルの付いた issue のうち、依存が片付いていて、投入もされておらず、
+# open なPRが `Closes` で指していないものだけ**（GitHub の `blockedBy` に open なものが無い）。
+# `task` が1件のセッションの仕事の単位なので、確認の置き場やユーザーの答え待ちのように**投入する先が
+# 無い issue** は、依存が空でも仕事ではない。PRの出ている issue は、既にそのセッションの手元にある。
+#
+# **投入済みかどうかは、PRではなくセッションから見る**（`UNREVIEWED` が `review-<番号>` を見るのと
+# 同じ形）。`dispatch-task.sh` が付ける `task-<番号>` のタグを持つセッションが生きていれば黙る。
+# 投入してからPRが出るまでは十数分あり、その間PRの側には何も現れないので、ここを見ないと**投入済みの
+# 番号が毎周返って見張りがその場で終わる**（2026-08-30 に #1271 で実測）。畳んだセッションは数えない
+# ので、PRを出さないまま畳まれた issue は次の周からまた出る。止まったまま畳まれていないセッションは
+# `STALLED` の側が出す。
+#
+# **セッション一覧が引けないとき（`--no-sessions`・`SESSIONS-OFF`）は、投入済みでも出す。** `UNREVIEWED`
+# とは逆に倒す——あちらは出さないと何も起きないだけだが、`TASK` を止めると「やることが無い」が
+# 二度と出せなくなり、待ちが終わらない。そのときは `--issues` へ渡して黙らせる（上）。
 # 「今着手してよいか」は実装の進み具合で**真偽が変わる述語**なので、ラベルのような印で持たせると
 # 必ず古くなり、貼り直す仕事が永久に残る。「A は B の後」は変わらない事実なので、一度書けば
 # 正しいままで、着手できるかは毎周そこから計算すればよい。`task` は**それが作業単位かどうか**
@@ -258,6 +286,7 @@ STALLED_FILTER='
 
 deadline=$(($(date +%s) + TIMEOUT_MINUTES * 60))
 session_next=0
+sessions=''
 failures=0
 
 # 1周につき gh を1回だけ呼ぶ。見張る本数が増えても呼び出し回数は増えない。
@@ -341,6 +370,15 @@ REVIEW_CANDIDATE_FILTER='
   | "\($pr.number)\t\($review.createdAt // "")"
 '
 
+# 投入済みの task。`task-<番号>` は `dispatch-task.sh` が付ける。畳んだセッションは数えない。
+DISPATCHED_FILTER='
+  .ccr.data[]
+  | select(.session_status != "SESSION_STATUS_ARCHIVED")
+  | .tags[]?
+  | select(startswith("task-"))
+  | ltrimstr("task-")
+'
+
 # 手配済みのレビュー。`review-<番号>` は `dispatch-review.sh` が付ける。畳んだセッションは数えない。
 REVIEWING_FILTER='
   .ccr.data[]
@@ -403,6 +441,30 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
 
     settled=$(printf '%s\n%s' "$settled" "$(jq -r "$(comment_filter pr)" <<<"$prs")")
 
+    # 回されたまま下ろされていないもの（上の `RELAY` の節）。**マージ済みを別に引く**——上の一覧は
+    # `--state open` なので、マージした瞬間に消える。ラベルで絞るので数本しか返らない。
+    # 引けなかった周は黙る（次の周でまた出る。ラベルは残っている）。
+    if relayed=$(gh pr list --state merged --label 司令塔へ --limit 30 --json number 2>/dev/null); then
+      settled=$(printf '%s\n%s' "$settled" "$(jq -r '.[] | "RELAY \(.number)"' <<<"$relayed" | tr -d '\r')")
+    fi
+
+    # セッションの一覧。**issue より先に引く**——下の `TASK` が、投入済みかどうかをここから見る。
+    # 引く間隔はPRより粗いので、間の周は前回のものを使う（投入済みのタグも止まったセッションも、
+    # 1分では変わらない）。`STALLED`・`UNREVIEWED` は、引き直した周にだけ見る（下）。
+    fetched_sessions=0
+    if [ "$SESSIONS" -eq 1 ] && [ "$(date +%s)" -ge "$session_next" ]; then
+      session_next=$(($(date +%s) + SESSION_INTERVAL))
+      # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
+      if sessions=$(bash "$CCR_META" list_sessions <<<'{"mine":true,"limit":30}' 2>/dev/null |
+        grep -o '{"ccr".*'); then
+        fetched_sessions=1
+      else
+        echo "SESSIONS-OFF セッションの状態を引けないので、以降はPRとissueだけを見る" >&2
+        SESSIONS=0
+        sessions=''
+      fi
+    fi
+
     # 見張っている issue を1回引いて、閉じたもの（開いている一覧に居ないもの）と、起動より後に
     # 付いたコメントを拾う。issue の本数が増えても gh の呼び出しは1周につき1回のまま。
     if [ ${#ISSUES[@]} -gt 0 ]; then
@@ -424,74 +486,74 @@ while [ "$(date +%s)" -lt "$deadline" ]; do
         if [ -n "$checked" ]; then
           settled=$(printf '%s\n%s' "$settled" "$(sed -E 's/^/CHECKED /' <<<"$checked")")
         fi
-        # 渡された番号に無く、依存も片付いていて、PRも出ていない `task` は、今すぐ着手できる仕事。
-        # **待ちを終える条件は「動いているものが終わること」ではなく「やることが無いこと」**なので、
-        # これを出す。出さない3つは、どれも**その issue が今どこにあるか**を別の角度から見たもの。
+        # 渡された番号に無く、依存も片付いていて、投入もされておらず、PRも出ていない `task` は、
+        # 今すぐ着手できる仕事。**待ちを終える条件は「動いているものが終わること」ではなく「やることが
+        # 無いこと」**なので、これを出す。出さない4つは、どれも**その issue が今どこにあるか**を
+        # 別の角度から見たもの。
         #
         # - `task` の無い issue（確認の置き場・答え待ち）… 投入する先が無いので、そもそも仕事ではない。
         # - open な `blockedBy` が残っている … 投入しても着手できず、受け取った側が毎周突き返す。
+        # - `task-<番号>` のセッションが生きている … 投入済み。PRが出るまでの十数分、PRの側には
+        #   何も現れない（上の「着手できるかは」）。
         # - open なPRが `Closes` で指している … 既に誰かが持っている。二重に投入すると、2つの
         #   セッションが同じ担当ファイルを触って衝突する（2026-08-27 に #885 と PR #890 で実際に出た）。
         claimed=$(jq -r '.[].body // "" | [scan("(?i)\\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\\s+#([0-9]+)")] | .[][]' \
           <<<"$prs" | tr -d '\r')
+        dispatched=''
+        [ -n "$sessions" ] && dispatched=$(jq -r "$DISPATCHED_FILTER" <<<"$sessions" | tr -d '\r')
         ready=$(jq -r '.[]
             | select([.labels[].name] | index("task"))
             | select([.blockedBy.nodes[] | select(.state == "OPEN")] | length == 0)
             | .number' \
           <<<"$open_issues" | tr -d '\r')
         for issue in $ready; do
-          if ! grep -qxE "$watched" <<<"$issue" && ! grep -qx "$issue" <<<"$claimed"; then
+          if ! grep -qxE "$watched" <<<"$issue" && ! grep -qx "$issue" <<<"$claimed" &&
+            ! grep -qx "$issue" <<<"$dispatched"; then
             settled=$(printf '%s\nTASK %s' "$settled" "$issue")
           fi
         done
       fi
     fi
 
-    if [ "$SESSIONS" -eq 1 ] && [ "$(date +%s)" -ge "$session_next" ]; then
-      session_next=$(($(date +%s) + SESSION_INTERVAL))
-      # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
-      if sessions=$(bash "$CCR_META" list_sessions <<<'{"mine":true,"limit":30}' 2>/dev/null |
-        grep -o '{"ccr".*'); then
-        session_grace=$(date -u -d "-${SESSION_GRACE} seconds" +%Y-%m-%dT%H:%M:%SZ)
-        # PR本文の脚注 `https://claude.ai/code/session_...` と、`Closes #<番号>` が指す issue。
-        bodies=$(jq -r '.[].body // ""' <<<"$prs")
-        with_pr=$(grep -o 'session_[A-Za-z0-9]*' <<<"$bodies" | sort -u)
-        closed_issues=$(grep -oiE 'closes #[0-9]+' <<<"$bodies" | grep -o '[0-9]*' | sort -u)
-        while IFS=$'\t' read -r id issues title; do
-          [ -n "$id" ] || continue
-          grep -qx "$id" <<<"$with_pr" && continue
-          claimed=0
-          for issue in $issues; do
-            grep -qx "$issue" <<<"$closed_issues" && claimed=1 && break
-          done
-          [ "$claimed" -eq 1 ] && continue
-          settled=$(printf '%s\nSTALLED %s %s' "$settled" "$id" "$title")
-        done < <(jq -r --arg grace "$session_grace" "$STALLED_FILTER" <<<"$sessions" | tr -d '\r')
+    # 引き直した周にだけ見る。前回のものを使い回すと、`UNREVIEWED` が候補ごとに `gh pr view` を
+    # 呼ぶぶんだけ、同じ答えのために毎周払うことになる。
+    if [ "$fetched_sessions" -eq 1 ]; then
+      session_grace=$(date -u -d "-${SESSION_GRACE} seconds" +%Y-%m-%dT%H:%M:%SZ)
+      # PR本文の脚注 `https://claude.ai/code/session_...` と、`Closes #<番号>` が指す issue。
+      bodies=$(jq -r '.[].body // ""' <<<"$prs")
+      with_pr=$(grep -o 'session_[A-Za-z0-9]*' <<<"$bodies" | sort -u)
+      closed_issues=$(grep -oiE 'closes #[0-9]+' <<<"$bodies" | grep -o '[0-9]*' | sort -u)
+      while IFS=$'\t' read -r id issues title; do
+        [ -n "$id" ] || continue
+        grep -qx "$id" <<<"$with_pr" && continue
+        claimed=0
+        for issue in $issues; do
+          grep -qx "$issue" <<<"$closed_issues" && claimed=1 && break
+        done
+        [ "$claimed" -eq 1 ] && continue
+        settled=$(printf '%s\nSTALLED %s %s' "$settled" "$id" "$title")
+      done < <(jq -r --arg grace "$session_grace" "$STALLED_FILTER" <<<"$sessions" | tr -d '\r')
 
-        # まだレビューへ出していないPR（上の「UNREVIEWED を見るのは」）。セッション一覧が要るので、
-        # ここで一緒に見る。引く間隔がPRより粗いぶん出るのは遅れるが、手配の遅れは分の単位でよい。
-        reviewing=$(jq -r "$REVIEWING_FILTER" <<<"$sessions" | tr -d '\r')
-        while IFS=$'\t' read -r number at; do
-          [ -n "$number" ] || continue
-          pushed=$(gh pr view "$number" --json commits --jq '.commits | last | .committedDate' 2>/dev/null | tr -d '\r')
-          # 結論が最後のコミットより新しければ、それは `REVIEWED` の手番。
-          if [ -n "$at" ] && { [ -z "$pushed" ] || [[ "$at" > "$pushed" ]]; }; then continue; fi
-          started=$(awk -F'\t' -v n="$number" '$1 == n { print $2 }' <<<"$reviewing" | sort | tail -1)
-          # 最後のコミットより後にレビューのセッションが立っていれば、手配は済んでいる。
-          if [ -n "$started" ] && { [ -z "$pushed" ] || [[ "$started" > "$pushed" ]]; }; then continue; fi
-          settled=$(printf '%s\nUNREVIEWED %s' "$settled" "$number")
-        done < <(jq -r "$REVIEW_CANDIDATE_FILTER" <<<"$prs" | tr -d '\r')
-      else
-        echo "SESSIONS-OFF セッションの状態を引けないので、以降はPRとissueだけを見る" >&2
-        SESSIONS=0
-      fi
+      # まだレビューへ出していないPR（上の「UNREVIEWED を見るのは」）。セッション一覧が要るので、
+      # ここで一緒に見る。引く間隔がPRより粗いぶん出るのは遅れるが、手配の遅れは分の単位でよい。
+      reviewing=$(jq -r "$REVIEWING_FILTER" <<<"$sessions" | tr -d '\r')
+      while IFS=$'\t' read -r number at; do
+        [ -n "$number" ] || continue
+        pushed=$(gh pr view "$number" --json commits --jq '.commits | last | .committedDate' 2>/dev/null | tr -d '\r')
+        # 結論が最後のコミットより新しければ、それは `REVIEWED` の手番。
+        if [ -n "$at" ] && { [ -z "$pushed" ] || [[ "$at" > "$pushed" ]]; }; then continue; fi
+        started=$(awk -F'\t' -v n="$number" '$1 == n { print $2 }' <<<"$reviewing" | sort | tail -1)
+        # 最後のコミットより後にレビューのセッションが立っていれば、手配は済んでいる。
+        if [ -n "$started" ] && { [ -z "$pushed" ] || [[ "$started" > "$pushed" ]]; }; then continue; fi
+        settled=$(printf '%s\nUNREVIEWED %s' "$settled" "$number")
+      done < <(jq -r "$REVIEW_CANDIDATE_FILTER" <<<"$prs" | tr -d '\r')
     fi
 
     if [ -n "${settled//[[:space:]]/}" ]; then
       settled=$(grep -v '^[[:space:]]*$' <<<"$settled")
       printf '%s\n' "$settled"
       # 緑のPRは、この後かならず本文とファイル一覧を引くことになる。ここで出しておけば、起こされた
-      # 側は `## 仮決め` とファイルの一覧を見るところから始められる。
+      # 側は司令塔宛ての節とファイルの一覧を見るところから始められる。
       while read -r number; do
         [ -n "$number" ] || continue
         printf -- '--- PR %s ---\n' "$number"

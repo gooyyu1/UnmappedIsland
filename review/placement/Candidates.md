@@ -67,7 +67,7 @@ tick・変化・signal・gain の4種が**同じ形を4回コピー**してい�
 
 ### A-5. 入れ子を読み上げる語彙
 
-`docs/engine/Layers.md` 6節の「効果の木を外へ出さない」方針が、**再帰する3箇所でだけ破れている**
+`docs/CodeStructure.md` 5節の「効果の木を外へ出さない」方針が、**再帰する3箇所でだけ破れている**
 （`ConditionReader.all` / `any` / `not`、`GateReading.conditions`、`PickCandidateReading.effect`）。
 現在の Reader は「1回の呼び出し＝1つの葉の宣言」を前提にしており、入れ子を表す語彙が無い。
 これが入れば、方針が例外なしで成立する。
@@ -110,9 +110,11 @@ loader に住み続けている**。
 
 ### A-12. 「起動」という区分
 
-`docs/engine/Layers.md` 4節の在処の表に「起動」の行が無い。`Phaser.Game` を作って端末の解像度に追従させる
-`src/main.ts` と `DeviceScreen` は、世界・映し・意匠・部品・組み立てのどれでもない。
-**表に区分が無いことが、置き場所が決まらない原因**になっている。
+`Phaser.Game` を作って端末の解像度に追従させる `src/main.ts` と `DeviceScreen` を、世界・映し・意匠・
+部品・組み立てのどれとして扱うか。**表に区分が無いことが、置き場所が決まらない原因**になっていた。
+
+現在は `docs/CodeStructure.md` 1節の表が両方を**組み立て**の置き場として名指ししており、
+起動を別区分にするかどうかだけが残っている（同 2節は「起動は組み立ての一番外側」と答えている）。
 
 ### A-13. 周りの物を候補にする `pick`
 
@@ -190,7 +192,7 @@ A-3 と同じもの。阻害要因は「世界の中の物（`WorldObject`・`Pr
 `Button` / `Curtain` / `ScrollIndicator` は中身が汎用で、`src/ui/` へ出せない理由は
 **意匠の色トークンを直に引いている1点ずつだけ**。A-2 の「差し込む口」が入れば同時に解ける。
 
-あわせて: `docs/engine/Layers.md` が「`Button` は汎用に見えてスロットボタンの紙のテクスチャキーを持つ」を
+あわせて: `docs/CodeStructure.md` が「`Button` は汎用に見えてスロットボタンの紙のテクスチャキーを持つ」を
 汎用/固有の判定例に挙げているが、**`SLOT_BUTTON_PAPER_TEXTURE` は `Button.ts` のモジュール定数で、
 `Button` クラス自身は一度も参照していない**（読むのは BootScene と PlayScene）。ドキュメントの例が
 実装とずれているので、直すときに例も更新が要る。

@@ -308,7 +308,7 @@ looking_brightness:
 | 手元が暗い | `hand_brightness`（キャラクタ） | `pitch_dark`・`dim`（どちらも `too_dark_for_handwork`） | レシピの工程と、暗いと形を損なう手作業が通らない（[`IlluminationSystem.md`](../engine/IlluminationSystem.md) 5 節） |
 | 外が暗い | `looking_brightness`（キャラクタ） | `dim`（`too_dark_outside`） | 探索と屋外の採取が通らない（同 5 節） |
 | 道が見えない | `looking_brightness` | `pitch_dark`（`no_road`） | 上に加えて、陸の道を歩けない（同 5 節） |
-| 屋根の下 | `sheltered`（キャラクタが場所から継ぐ） | 1 の側（`sheltered`） | 雨が当たらない: 雨受けが溜まらず（`liquid_containers.yaml`）、炉が雨に削られず（`fire.yaml`）、屋外に置いたぶんの傷みも乗らない（`foods.yaml`） |
+| 屋根の下 | `sheltered`（キャラクタが場所から継ぐ） | 1 の側（`sheltered`） | 雨が当たらない。雨の日でも火を起こせ、雨に打たれて体温を失わない——**何が変わるかを決めるのは読む側それぞれ**なので、ここに挙げるのは代表だけ（[`ContainerSystem.md`](../engine/ContainerSystem.md) 6 節） |
 
 - **手元の 2 段が同じ絵なのは、線が 1 本しかないからです。** 手元の作業に要るのは `bright` で、
   `dim` と `pitch_dark` はどちらも「作れない」の一言に尽きます。視界の側は 2 本
