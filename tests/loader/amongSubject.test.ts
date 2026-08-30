@@ -32,7 +32,7 @@ ${pickBody}
             destroy: picked
 `),
       ),
-    ).toThrow(/subject 'picked' は使えません（'picked'はamongを書いた候補の中でのみ使えます）/);
+    ).toThrow(/subject 'picked' は使えません（ここには候補の中から選ばれた相手が居ません）/);
   });
 
   it('候補の重みと効果では指せる（選んだ後の相手）', () => {

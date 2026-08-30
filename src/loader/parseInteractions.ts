@@ -51,7 +51,7 @@ function parseInteraction(
     throw new YamlLoadError(`${context}: 必須フィールド 'trigger' がありません（menu・tick・{drag: ...}）。`);
 
   const drag = isMap(triggerNode) ? parseDragTrigger(loader, context, triggerNode) : undefined;
-  const scope = drag !== undefined ? ReferenceScope.combination : ReferenceScope.action;
+  const scope = drag !== undefined ? ReferenceScope.acting.withInstrument : ReferenceScope.acting;
 
   const requirements = parseRequirementsField(loader, context, tryGetSeq(map, 'conditions', context), scope);
   const effect = parseActiveEffectBody(loader, context, map, scope, RESERVED_KEYS);
