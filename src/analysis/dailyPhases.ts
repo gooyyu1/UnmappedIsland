@@ -43,7 +43,7 @@ export const SLEEP_MINUTES_PER_DAY = 360;
  * **収支表から書き写した値**なので、崩れていないかは`tests/diagnostics/dailyPhaseAssumptions.test.ts`
  * が突き合わせる。
  */
-export const SURVIVAL_GATHERING_MINUTES = 247;
+export const SURVIVAL_GATHERING_MINUTES = 266;
 
 /** 探索できる土地の型1つの、局面の勘定に要るぶん。 */
 export interface LocationTypeDay {
