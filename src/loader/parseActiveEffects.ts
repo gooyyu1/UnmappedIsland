@@ -607,8 +607,8 @@ function parseDestroy(
 }
 
 /**
- * オブジェクトそのものを1つ指す参照（ObjectRef）を読む。**個体を1つ指す口が共有する読み手**で、
- * 指し方はどの命令から来ても変わらない。
+ * オブジェクトそのものを1つ指す参照（ObjectRef）を読む。**ここを通るのは`{subject, prop}`の形まで
+ * 許す口**で、対象キーしか取らない口はparseObjectTargetRootを直に呼ぶ。
  *
  * 対象キー（`self`）か、`{subject, prop}`のマップ——`prop`を書けばその実効値がインスタンスIDとして
  * 指す相手、書かなければ`subject`（省略時はself）そのもの。reservedKeysは、呼び出し側が別に読む
