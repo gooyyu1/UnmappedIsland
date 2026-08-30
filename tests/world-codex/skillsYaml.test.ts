@@ -213,29 +213,23 @@ describe('腕前とレシピの解放条件', () => {
     }
   });
 
-  it('最上段より下は、どの段でも段の中の進みが出る（最下段も下端を名乗る）', () => {
+  it('11本とも、段が下端を名乗っている（受け皿にして進みを消さない）', () => {
     // 腕前はrangeを持たないので、下端を書かない段（受け皿、GameElementDefinition.md 6.4節）は
-    // 下端が決まらず、進みが計算できない。UIは進みの無い段でバーを出さない（StatusArea.md 9節）ので、
-    // 最下段を受け皿で書くと**全員が通る見習いの間だけ**バーが消える。
+    // 下端が決まらず、段の中の進みが計算できない。UIは進みの無い段でバーを出さない
+    // （StatusArea.md 9節）ので、最下段を受け皿で書くと**全員が通る見習いの間だけ**バーが消える。
     const character = characterWithSkills(0);
 
-    for (const [index, stage] of STAGES.entries()) {
-      const next = index + 1 < STAGES.length ? STAGES[index + 1] : undefined;
-      // 段の中ほど。上端の段は満ちる先が無いので、十分に大きい値で進みを言わないことを見る。
-      const value = next === undefined ? stage.min * 10 : (stage.min + next.min) / 2;
+    // 最上段には満ちる先が無く、そこで進みを言わないのはエンジンの決まり（stageProgress.test.ts）。
+    for (const [index, stage] of STAGES.slice(0, -1).entries()) {
+      const next = STAGES[index + 1];
+      const middle = (stage.min + next.min) / 2;
       for (const id of skillIds) {
         const property = character.getProperty(id);
-        property.setNumberWithoutEvents(value);
+        property.setNumberWithoutEvents(middle);
         const progress = property.stageReading?.progress;
 
-        if (next === undefined) {
-          expect(progress, `${property.def.name} の ${value}: 最上段の先`).toBeUndefined();
-          continue;
-        }
-        expect(progress?.nextName, `${property.def.name} の ${value}`).toBe(next.name);
-        expect(progress?.ratio, `${property.def.name} の ${value}`).toBeCloseTo(
-          (value - stage.min) / (next.min - stage.min),
-        );
+        expect(progress?.nextName, `${property.def.name} の ${middle}`).toBe(next.name);
+        expect(progress?.ratio, `${property.def.name} の ${middle}: 段の中ほど`).toBeCloseTo(0.5);
       }
     }
   });
