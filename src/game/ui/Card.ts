@@ -15,7 +15,8 @@ import type { GaugeEnd } from '../../domain/PropertyDef';
 import { noteOperation } from '../errorReport';
 import { uiText } from '../../locale/uiTexts';
 import { hoursAndMinutesText } from '../looks/timeTexts';
-import { HoldRepeat } from '../../ui/holdRepeat';
+import type { HoldHandlers } from '../../ui/holdRepeat';
+import { Hold, HoldRepeat } from '../../ui/holdRepeat';
 import { onPressRelease } from '../../ui/tap';
 import { isAlive } from '../../ui/lifetime';
 import { cardFace } from './cardFace';
@@ -307,8 +308,17 @@ export interface CardContent {
    * 土地の`fixtures`、怪我なら負った本人の`injuries`——を、地として絵の下に敷く。絵が無ければ紙のまま。
    */
   readonly backgroundSlot?: SlotRef;
-  /** カード全体を押したときの動作。持たないカードは押せない（押すと子ウィンドウを開くロケーションカード等）。 */
+  /**
+   * カード全体を押して離したときの動作（押すと子ウィンドウを開くロケーションカード等）。持たない
+   * 札は離しても何も起きない——**押下そのものを受けないとは限らない**（holdだけを持つ札は押せる）。
+   */
   readonly onTap?: () => void;
+  /**
+   * 押している間だけ出すものの受け口（Hold）。ボタンの長押しと同じ形で、**押しても何も起きない札が
+   * なぜ何も起きないかを言う**のに使う（未解放のレシピ、Windows.md 9.3節）。長押しになった押下は
+   * タップとして成立しない。
+   */
+  readonly hold?: HoldHandlers;
   /**
    * 端だけを押したときの動作（向きごとに1つ、最大2つ）。端ではカード全体の動作より優先される。
    * 上下の押せる範囲は重ならないので、両方向へ送れるカードは両方の端を持てる。
@@ -346,8 +356,8 @@ export interface CardContent {
   readonly gauges?: readonly CardGauge[];
 
   /**
-   * そのカードが映しているものの状態を表す絵文字の印（手当て済みの怪我の🩹など）。紙の左下へ小さく
-   * 重ねる。持たないカードには何も出ない。
+   * その札について、**絵を描き替えずに言うこと**を表す絵文字の印（手当て済みの怪我の🩹、未解放の
+   * レシピの🔒。CardView.md 9節）。紙の左下へ小さく重ねる。持たないカードには何も出ない。
    */
   readonly mark?: string;
 
@@ -516,8 +526,11 @@ export class Card extends Phaser.GameObjects.Container {
   /** 0枚になったとき、帰ってくる場所の印を残す枠か（setPresence）。 */
   private emptied = false;
 
-  /** 押下中だけ出す黒枠（makeTappable参照）。押せないカードは持たない。 */
+  /** 押下中だけ出す黒枠（makeTappable参照）。押しても離しても何も起きないカードは持たない。 */
   private pressHighlight: Phaser.GameObjects.Graphics | undefined;
+
+  /** 押している間だけ出すもの（CardContent.hold）の計時。ボタンの長押しと同じ仕組み（Hold）。 */
+  private readonly hold: Hold;
 
   /**
    * ここで組み立てるのは**殻**——重なりの順序と、中身を入れる器だけ。何がどう見えるかは
@@ -534,6 +547,7 @@ export class Card extends Phaser.GameObjects.Container {
     this.cardHeight = height;
     this.metrics = metrics;
     this.edgeRepeat = new HoldRepeat(scene);
+    this.hold = new Hold(scene);
 
     const paper = createPaper(scene, metrics, width, height, false);
     // 地は絵より先に敷く。用意されていなければ紙がそのまま地になる。
@@ -587,9 +601,10 @@ export class Card extends Phaser.GameObjects.Container {
     this.add(this.edgeLayer);
 
     // 入力の配線だけは構築時に一度きり。押したときに何が起きるかは実行時に_contentから読む
-    // （onTap・edges[].onTap）ので、差し替えで変わりうるのは「押せるかどうか」だけになる。
-    if (content.onTap !== undefined || content.draggable === true) this.makeInteractive(width, height);
-    if (content.onTap !== undefined) this.makeTappable(width, height);
+    // （押下の受け口はどれも同じ）ので、差し替えで変わりうるのは「押せるかどうか」だけになる。
+    if (content.onTap !== undefined || content.hold !== undefined || content.draggable === true)
+      this.makeInteractive(width, height);
+    if (content.onTap !== undefined || content.hold !== undefined) this.makeTappable(width, height);
     // ドラッグはレーンの横スクロールと同じPhaserのdrag機構で受ける。重なった対象は最前面の1つだけが
     // 入力を受け取る（Phaserの入力の既定、topOnly）ため、カードを掴んでいる間レーンはスクロールしない。
     // 端の操作エリア（addEdge）はカードより手前にあってドラッグ対象ではないので、そこからは始まらない。
@@ -601,6 +616,7 @@ export class Card extends Phaser.GameObjects.Container {
     scene.input.on(Phaser.Input.Events.POINTER_UP, stopEdgeRepeat);
     this.once(Phaser.GameObjects.Events.DESTROY, () => {
       this.cancelEdgeRepeat();
+      this.hold.end();
       this.alertBlink?.stop();
       scene.input.off(Phaser.Input.Events.POINTER_UP, stopEdgeRepeat);
     });
@@ -1269,7 +1285,12 @@ export class Card extends Phaser.GameObjects.Container {
     this.setInteractive(new Phaser.Geom.Rectangle(0, 0, width, height), Phaser.Geom.Rectangle.Contains);
   }
 
-  /** 押下中は紙の縁を黒枠でなぞる。枠は紙の内側へ収める（paperStroke参照）。 */
+  /**
+   * 押下中は紙の縁を黒枠でなぞる。枠は紙の内側へ収める（paperStroke参照）。
+   *
+   * 押している間だけ出すもの（`CardContent.hold`）の計時もここで持つ。**出ている間の押下はタップに
+   * ならない**——ボタンの長押し（Button）と同じで、説明を読むために押したことが操作にならないため。
+   */
   private makeTappable(width: number, height: number): void {
     const { metrics } = this;
     const highlight = this.scene.add.graphics().setVisible(false);
@@ -1287,11 +1308,16 @@ export class Card extends Phaser.GameObjects.Container {
       onPress: () => {
         this.tapCancelled = false;
         highlight.setVisible(true);
+        // 何を出すかは押した時点の内容から読む（onTapと同じ）。
+        this.hold.begin(this._content.hold);
       },
-      onCancel: () => highlight.setVisible(false),
+      onCancel: () => {
+        highlight.setVisible(false);
+        this.hold.end();
+      },
       onRelease: () => {
         highlight.setVisible(false);
-        if (this.tapCancelled || !this.holdsCard) return;
+        if (this.hold.end() || this.tapCancelled || !this.holdsCard) return;
 
         noteOperation(uiText('log_card_tapped', { name: this._content.name }));
         this._content.onTap?.();
@@ -1301,8 +1327,8 @@ export class Card extends Phaser.GameObjects.Container {
 
   /**
    * 今の押下をタップとして扱わない。掴んで動かす操作（カードのドラッグ・レーンの横スクロール）に
-   * なったと分かった時点でCardDragControllerが呼ぶ。押下中の黒枠もここで引っ込める——押されている
-   * ことを示す表示は、掴んだ時点で指が運ぶ札に役目を譲る。
+   * なったと分かった時点でCardDragControllerが呼ぶ。押下中の黒枠と、押している間だけ出していたもの
+   * （hold）もここで引っ込める——押されていることを示す表示は、掴んだ時点で指が運ぶ札に役目を譲る。
    *
    * 押し始めたカードの上で指を離すと、動かしていてもタップとして成立してしまう（tap.ts）。
    * スタックの上の1枚を自分の位置へ重ねる操作（石と石の組み合わせ）や、カードを掴んだままの
@@ -1311,6 +1337,7 @@ export class Card extends Phaser.GameObjects.Container {
   cancelTap(): void {
     this.tapCancelled = true;
     this.pressHighlight?.setVisible(false);
+    this.hold.end();
   }
 
   /**
