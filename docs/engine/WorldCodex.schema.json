@@ -534,7 +534,7 @@
       ]
     },
     "conditions_list": {
-      "description": "conditionsの値（14節）。常に配列で、暗黙のall（論理積）として扱われる。",
+      "description": "条件の並び（14節）。常に配列で、暗黙のall（論理積）として扱われる。",
       "type": "array",
       "items": {
         "$ref": "#/$defs/condition_node"
@@ -808,7 +808,7 @@
       ]
     },
     "weight_spec": {
-      "description": "pick候補のweight（10.2節）・actions/combinationsのduration（11.3節）・slotsのput_inのduration（7.10節）。リテラル数値、既存propsへの参照（{subject, prop}）、または参照2つの積（timesで掛ける相手を書く）。subjectは省略可（既定値self）。",
+      "description": "重み・時間として書ける値（10.2節）。リテラル数値、既存propsへの参照（{subject, prop}）、または参照2つの積（timesで掛ける相手を書く）。subjectは省略可（既定値self）。",
       "oneOf": [
         {
           "type": "number"
@@ -1818,7 +1818,7 @@
       }
     },
     "condition_reason": {
-      "description": "この要件を満たさないときにプレイヤーへ出す理由の識別子（14.6節）。プレイヤーが試みる操作の可否を決める条件の要素にだけ書ける（文言はlocaleのreason_textsが持つ）。",
+      "description": "この要件を満たさないときにプレイヤーへ出す理由の識別子（14.6節）。誰かが試みた操作の可否を判定する条件の要素にだけ書ける——試みた者が居るとは限らない場面でも走る条件（passivesのゲート・resists・on_max/on_min）には書けない（文言はlocaleのreason_textsが持つ）。",
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*$"
     },
