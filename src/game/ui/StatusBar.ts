@@ -4,6 +4,7 @@ import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { ProgressBar } from './ProgressBar';
 import type { BarSpan } from './ProgressBar';
 import { onPressRelease } from '../../ui/tap';
+import { barFillOf, barKeepsAxis, barNextStageTextOf, barValueTextOf } from '../view/statusBarLook';
 import { cssColor } from '../../util/cssColor';
 import { COLOR, FONT_FAMILY } from '../looks/theme';
 
@@ -27,6 +28,10 @@ const CHANGE_GAP = 8;
 /** 増減の記号と固定表示の印の大きさ。 */
 const CHANGE_SIZE = 34;
 const PIN_SIZE = 26;
+
+/** バーに重ねる文字（値の読みと次の段）の大きさと、バーの端との間隔。 */
+const BAR_TEXT_SIZE = 26;
+const BAR_TEXT_PADDING = 12;
 
 /** 固定表示の印。行の左と、付け外しのボタン（StatusDetailWindow）で同じものを出す。 */
 export const PIN_MARK = '📌';
@@ -84,11 +89,27 @@ export interface StatusInfluence {
   readonly count: number;
 }
 
+/** 次の段と、そこへ向けての進み（[`StatusArea.md`](../../../docs/ui/StatusArea.md) 9節）。 */
+export interface StatusStageProgress {
+  /** 次の段の表示名。 */
+  readonly nextName: string;
+
+  /** 今いる段の中での進み（0〜1）。段が上がるたび0へ戻る。 */
+  readonly ratio: number;
+}
+
 /**
- * バーに重ねる、段の刻みと今いる段（[`Windows.md`](../../../docs/ui/Windows.md) 8.1節）。
+ * 今いる段（[`Windows.md`](../../../docs/ui/Windows.md) 8.1節・
+ * [`StatusArea.md`](../../../docs/ui/StatusArea.md) 9節）。
  */
 export interface StatusStage {
-  /** 今いる段の表示名。 */
+  /**
+   * 段の識別子（表示名ではない）。**同じ段かどうかはこれで見る**——表示名は同じ文言を別々の段が
+   * 持てるので（stage_textsは平らな対応表）、同一性の判定に使うと隣り合う2段が同じに見える。
+   */
+  readonly key: string;
+
+  /** 今いる段の表示名。画面に出すのはこちら。 */
   readonly name: string;
 
   /** 今いる段がバーの中で占める区間。持たない段では囲みも名札も出さない。 */
@@ -96,15 +117,15 @@ export interface StatusStage {
 
   /** 段の境目（0〜1、昇順）。バーに刻む目盛りになる。 */
   readonly boundaries: readonly number[];
+
+  /** 次の段までの進み。区間が定まらない段（最上段・下端を持たない受け皿）ではundefined。 */
+  readonly progress: StatusStageProgress | undefined;
 }
 
 /** ステータス詳細ウィンドウ（[`Windows.md`](../../../docs/ui/Windows.md) 8節）に出す内容。 */
 export interface StatusDetail {
   /** そのステータスが何を表すか（対応表の`description`）。まだ書かれていなければundefined。 */
   readonly description: string | undefined;
-
-  /** 段の刻みと今いる段。段を宣言していないプロパティはundefined。 */
-  readonly stage: StatusStage | undefined;
 
   /** このステータスが与えている影響。 */
   readonly given: readonly StatusInfluence[];
@@ -126,11 +147,17 @@ export interface StatusContent {
    */
   readonly icon?: string;
 
-  /** 実効値。ratioを持たないプロパティを数値で見せるために使う。 */
+  /** 実効値。段も割合も持たないプロパティは、これを数値のまま見せる（barValueTextOf）。 */
   readonly value: number;
 
   /** 満たされ具合（0〜1）。rangeを持たず割合を定義できないプロパティはundefined。 */
   readonly ratio: number | undefined;
+
+  /**
+   * 今いる段。段を宣言していないプロパティはundefined。**詳細ウィンドウ（8.1節）だけのものではなく、
+   * 行自身も読む**——割合を持たない行は、段の名前と段内進捗がバーの中身になる（StatusArea.md 9節）。
+   */
+  readonly stage?: StatusStage;
 
   /** 値がどの域にあるか（GameElementDefinition.md 6.4節のalert）。 */
   readonly alert: AlertLevel;
@@ -142,8 +169,8 @@ export interface StatusContent {
   readonly change?: StatusChange;
 
   /**
-   * 直前の行動を始める前の満たされ具合。出ていなかった行を出すときに、この値から見せ始めることで
-   * 「その行動で変わった分」だけが帯になる（show参照）。増減が無ければundefined。
+   * 直前の行動を始める前にバーが映していた値（barFillOf）。出ていなかった行を出すときに、この値から
+   * 見せ始めることで「その行動で変わった分」だけが帯になる（show参照）。増減が無ければundefined。
    */
   readonly ratioBefore?: number;
 
@@ -187,7 +214,8 @@ export interface StatusBarOptions {
 
 /**
  * ステータス1件分の「固定表示の印＋見出し＋バー＋増減」。行の高さはバーの高さと等しい。
- * 割合を定義できないプロパティは、バーの代わりに実効値そのものを出す。
+ * 満たされ具合を持たないプロパティは、今いる段の中での進みをバーにし、その両端に今の段と次の段の
+ * 名前を重ねる（StatusArea.md 9節）。段も持たなければ、バーの代わりに実効値そのものを出す。
  *
  * 危険域・致命的域のバーは枠を明滅させる（StatusArea.md）。行はどこをタップしても、その
  * ステータスの詳細が開く。
@@ -197,9 +225,17 @@ export class StatusBar extends Phaser.GameObjects.Container {
     return metrics.px(BAR_HEIGHT);
   }
 
-  /** 割合を持つ項目のバー。持たない項目（valueText）はどちらか一方だけを作る。 */
-  private readonly bar: ProgressBar | undefined;
-  private readonly valueText: Phaser.GameObjects.Text | undefined;
+  /**
+   * バーと、その上に重ねる文字（左＝値の読み、右＝次の段）。**どちらも作っておいて出し分ける**
+   * ——段が上がると満たされ具合を言えなくなる（最上段には次が無い）ので、どちらを出すかは行の
+   * 一生を通じて固定ではない。出さない文字は空にする（作り直すと表示順が変わるため消さない）。
+   */
+  private readonly bar: ProgressBar;
+  private readonly valueText: Phaser.GameObjects.Text;
+  private readonly nextStageText: Phaser.GameObjects.Text;
+
+  /** バーに重ねる文字1つが使える幅（両端の文字がぶつからないよう、それぞれ半分まで）。 */
+  private readonly barTextWidth: number;
 
   /**
    * この行のポインタ操作を受ける面（行の矩形いっぱい）。**行を並べる側は、はみ出した分を送るときに
@@ -254,22 +290,31 @@ export class StatusBar extends Phaser.GameObjects.Container {
 
     for (const text of createLabel(scene, metrics, content, label)) this.add(text);
 
-    if (content.ratio !== undefined) {
-      this.bar = new ProgressBar(scene, metrics, barX, 0, barWidth, height, content.ratio, {
-        worsensUpward: this.worsensUpward,
-        onCaughtUp: options.onCaughtUp,
-      });
-      this.add(this.bar);
-    } else {
-      this.valueText = scene.add
-        .text(barX, height / 2, String(content.value), {
-          fontFamily: FONT_FAMILY,
-          fontSize: `${metrics.fontPx(30)}px`,
-          color: cssColor(COLOR.text),
-        })
-        .setOrigin(0, 0.5);
-      this.add(this.valueText);
-    }
+    // バーは重ねる文字より先に作る（表示順は生成順で決まるので、後から作ると文字が塗りに沈む）。
+    this.bar = new ProgressBar(scene, metrics, barX, 0, barWidth, height, barFillOf(content) ?? 0, {
+      worsensUpward: this.worsensUpward,
+      onCaughtUp: options.onCaughtUp,
+    });
+    this.add(this.bar);
+
+    const textPadding = metrics.px(BAR_TEXT_PADDING);
+    this.barTextWidth = Math.max(0, barWidth / 2 - textPadding);
+    this.valueText = scene.add
+      .text(barX + textPadding, height / 2, '', {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(BAR_TEXT_SIZE)}px`,
+        color: cssColor(COLOR.text),
+      })
+      .setOrigin(0, 0.5);
+    this.add(this.valueText);
+    this.nextStageText = scene.add
+      .text(barX + barWidth - textPadding, height / 2, '', {
+        fontFamily: FONT_FAMILY,
+        fontSize: `${metrics.fontPx(BAR_TEXT_SIZE)}px`,
+        color: cssColor(COLOR.textMuted),
+      })
+      .setOrigin(1, 0.5);
+    this.add(this.nextStageText);
 
     // 行はどこをタップしても詳細が開く（StatusArea.md 3節）。
     //
@@ -290,7 +335,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
       })
       .setOrigin(0.5);
     this.add(this.changeMark);
-    this.showAlertAndMarks(content);
+    this.applyContent(content, false);
 
     this.once(Phaser.GameObjects.Events.DESTROY, () => this.moveTween?.stop());
     scene.add.existing(this);
@@ -312,7 +357,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
       this.slideTo(y);
     } else {
       const before = content.ratioBefore;
-      if (before !== undefined) this.bar?.setRatio(before);
+      if (before !== undefined) this.bar.setRatio(before);
       this.applyContent(content, before !== undefined);
       this.stopMoving();
       this.setVisible(true).setY(y);
@@ -327,7 +372,9 @@ export class StatusBar extends Phaser.GameObjects.Container {
    * 見せない変化なので、バーが持っている値との差を変化として数えてはいけない。
    */
   wouldShowChangeFor(content: StatusContent): boolean {
-    return this.visible && content.ratio !== undefined && this.bar?.isBehind(content.ratio) === true;
+    const fill = barFillOf(content);
+    if (fill === undefined || !barKeepsAxis(this.content, content)) return false;
+    return this.visible && this.bar.isBehind(fill);
   }
 
   /** 並びから外れた行にする（変化を見せ終わった、固定表示を外した）。 */
@@ -345,12 +392,21 @@ export class StatusBar extends Phaser.GameObjects.Container {
     this.applyContent(content, true);
   }
 
-  /** showChangeがfalseなら、変化の帯を出さずに値を今の状態にする（show参照）。 */
+  /**
+   * showChangeがfalseなら、変化の帯を出さずに値を今の状態にする（show参照）。
+   *
+   * **段が上がった行も帯を出さない。** バーの軸が次の段へ移って0から始まるので（barKeepsAxis）、
+   * 前の段の位置との差は変化量ではない——帯にすると、腕が上がったのに「減った分」の赤が出る。
+   */
   private applyContent(content: StatusContent, showChange: boolean): void {
-    if (content.ratio !== undefined) {
-      this.bar?.setRatio(content.ratio, { showChange, hold: content.midAction === true });
-    }
-    this.valueText?.setText(String(content.value));
+    const fill = barFillOf(content);
+    const keepsAxis = barKeepsAxis(this.content, content);
+    this.bar.setVisible(fill !== undefined);
+    if (fill !== undefined)
+      this.bar.setRatio(fill, { showChange: showChange && keepsAxis, hold: content.midAction === true });
+
+    shrinkToWidth(this.valueText.setText(barValueTextOf(content)), this.barTextWidth);
+    shrinkToWidth(this.nextStageText.setText(barNextStageTextOf(content)), this.barTextWidth);
     this.showAlertAndMarks(content);
   }
 
@@ -374,7 +430,7 @@ export class StatusBar extends Phaser.GameObjects.Container {
 
   private showAlertAndMarks(content: StatusContent): void {
     this.content = content;
-    this.bar?.setAlert(content.alert);
+    this.bar.setAlert(content.alert);
     this.pinMark.setText(content.pinned === true ? PIN_MARK : '');
     this.showChange(content.change);
   }
@@ -437,8 +493,11 @@ function createLabel(
   return texts;
 }
 
-/** 欄に収まらないものは縮めて収める（はみ出すとバーに重なって読めなくなるため）。 */
+/**
+ * 欄に収まらないものは縮めて収める（はみ出すとバーに重なって読めなくなるため）。**縮尺は毎回
+ * 引き直す**——中身が差し替わる文字（valueText）は、長い文字で縮めた縮尺を次の短い文字へ持ち越すと
+ * 読めない大きさのまま残る。
+ */
 function shrinkToWidth(text: Phaser.GameObjects.Text, width: number): Phaser.GameObjects.Text {
-  if (text.width > width) text.setScale(width / text.width);
-  return text;
+  return text.setScale(text.width > width ? width / text.width : 1);
 }
