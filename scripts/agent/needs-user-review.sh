@@ -7,9 +7,10 @@
 #   GRAMMAR   <パス>              … 宣言文法・スキーマ・文法リファレンスに触っている
 #                                    （`.ts` は、注釈でない行が変わったものだけ。下記）
 #   MARK      <パス> <見出し>     … `【確定】` の印そのものを足した／消した
+#   SOURCED   <パス> <見出し>     … 印を足したが、その節が `**出どころ**: #656 の N` を持っている
 #   CONFIRMED <パス> <見出し>     … 印は動いていないが、確定節の射程に変更が掛かっている
 #   終了コード 0 … `GRAMMAR` か `MARK` がある（**ユーザーの判断が要る**。`判断待ち` にする）
-#   終了コード 1 … 該当なし、または `CONFIRMED` だけ（司令塔が振り分けてよい）
+#   終了コード 1 … 該当なし、または `CONFIRMED`・`SOURCED` だけ（司令塔が振り分けてよい）
 #   終了コード 2 … 調べられなかった（`gh` が失敗した等。**該当ありとして扱う**）
 #
 # **`CONFIRMED` だけのときに止めないのは、実測で大半が良性だったから。** 直近25本（2026-08-29）で
@@ -62,6 +63,21 @@
 #
 # `【確定】` は「覆すには人間の判断が要る」という宣言なので、その射程への変更も同じ扱い。
 # **見出しの行だけでなく、節の本文への変更も見る**——印は見出しに付くが、囲っているのは本文。
+#
+# ### 出どころが書いてある印は止めない
+#
+# **止めたいのは「誰が決めたのか分からないまま増える確定」だけ。** 新しく印が付いた節が
+# `**出どころ**: #656 の N` の1行を持つなら、決めたのはユーザー本人で、答えは既に出ている。
+# それを止めると、**同じ答えに二度目のタップを求める**ことになる——実測（2026-08-30）で
+# `判断待ち` に積まれていた3本（#1364・#1266・#1262）がこれだった。
+#
+# **緩めるのは、印がそのPRで増えた節に限る。** base に既に在った確定節は、そのPRが決めたもの
+# ではないので、出どころの行があっても今までどおり `CONFIRMED` として扱う。
+# 出どころの行が無い印は `MARK` のまま止める（[#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)
+# の項目19）。
+#
+# **出どころは申告なので、嘘は書ける。** `SOURCED` が出たら、司令塔はその項目が #656 で本当に
+# チェック済みかを見てからマージする——読むのは差分ではなく issue の1行なので、関門にはならない。
 
 set -euo pipefail
 
@@ -156,20 +172,32 @@ while IFS= read -r path; do
   # 見出しの同一性は、印を全部落とした残りで見る。印は見出しの末尾に並ぶので、**最初の `【` から
   # 行末まで**を落とす。`【[^】]*】` は使えない——`[^】]` はバイト単位の否定になり、`】`（E3 80 91）と
   # 先頭バイトを共有する `の`（E3 81 AE）等で止まる。
-  strip_marks() { sed -n 's/^#\+ //p' "$1" | sed 's/【.*//' | sed 's/[[:space:]]*$//'; }
+  strip_marks() { sed -n 's/^#\+ //p' | sed 's/【.*//' | sed 's/[[:space:]]*$//'; }
   git show "$head_sha:$path" 2>/dev/null | grep '【確定】' >"$WORK/head-marked" || true
   git show "$base_sha:$path" 2>/dev/null | grep '【確定】' >"$WORK/base-marked" || true
-  strip_marks "$WORK/head-marked" | sort >"$WORK/head-set"
-  strip_marks "$WORK/base-marked" | sort >"$WORK/base-set"
+  strip_marks <"$WORK/head-marked" | sort >"$WORK/head-set"
+  strip_marks <"$WORK/base-marked" | sort >"$WORK/base-set"
   mark_moved=$(comm -3 "$WORK/base-set" "$WORK/head-set")
+  # そのPRで新しく印が付いた見出しだけ。出どころを見て緩めるのはこれに限る（上の「出どころが
+  # 書いてある印は止めない」）。
+  comm -13 "$WORK/base-set" "$WORK/head-set" >"$WORK/new-marks"
+
+  # 新しく印が付いた節が、答えの出どころを1行で書いているか。番号は生（`#656 の 21`）とリンク
+  # （`[#656](…) の 9・10`）の両方が実在する（[`DocumentStyle.md`](../../docs/DocumentStyle.md) 6節）。
+  sourced() {
+    printf '%s\n' "$3" | strip_marks | grep -qxFf "$WORK/new-marks" - || return 1
+    sed -n "$1,$2p" "$WORK/doc.md" | grep -qE '^\*\*出どころ\*\*:.*#656.* の [0-9]'
+  }
 
   while IFS=$'\t' read -r from to heading; do
     if awk -v a="$from" -v b="$to" '$1 >= a && $1 <= b { hit = 1; exit } END { exit hit ? 0 : 1 }' "$WORK/touched"; then
-      if [ -n "$mark_moved" ]; then
+      if [ -z "$mark_moved" ]; then
+        echo "CONFIRMED $path ${heading#\#* }"
+      elif sourced "$from" "$to" "$heading"; then
+        echo "SOURCED $path ${heading#\#* }"
+      else
         echo "MARK $path ${heading#\#* }"
         blocking=1
-      else
-        echo "CONFIRMED $path ${heading#\#* }"
       fi
     fi
   done <"$WORK/ranges"
