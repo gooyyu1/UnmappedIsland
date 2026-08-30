@@ -236,8 +236,9 @@ export function cardOperationsOf(
     };
 
   /**
-   * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭を実行する手段
-   * （無ければundefined）。candidatesは`instrument`の役になる個体、movedは指が運んできた個体。
+   * selfが宣言しているcombinationsのうち、candidatesの先頭にマッチする先頭（無ければundefined）。
+   * **実行する手段とは限らない**——下のとおり、断る組み合わせも同じ形で返る。
+   * candidatesは`instrument`の役になる個体、movedは指が運んできた個体。
    *
    * 複数の組み合わせがマッチしたときにどれを実行するかの解決はUI層に委ねられている
    * （ActionSystem.md 1節）ため、宣言順の先頭を採る。
