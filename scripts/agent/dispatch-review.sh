@@ -9,6 +9,11 @@
 # 見どころはPRごとに変わらないので、司令塔が書き足すものが無い（`dispatch-task.sh` との違いはここ）。
 #
 # 出力は1行1件。
+#   ARCHIVED <セッションID>                  … 走り終えていたレビューを畳んだ（下の節）
+#   KEPT <セッションID>                      … 畳まなかった。ブリッジのものか、まだ走っているか
+#                                              （PRが開いている間は、書きかけの判定を守る）、
+#                                              `get_session` を引けなくて素性が分からなかったもの
+#   UNARCHIVED <セッションID>                … 畳めなかった。投入は続ける
 #   SESSION <セッションID>
 #   SOURCES <リポジトリのURL>@<リビジョン>   … PRのブランチで起動していることの確認
 #   一致 / 不一致                            … 送った指示が化けずに届いたか
@@ -31,6 +36,12 @@
 # 新しく壊したものが誰にも読まれない**——2026-08-29 の PR #1191 で、2回目のレビューが前回の3件を
 # 確かめたうえで前回は見ていなかった箇所の嘘を見つけた。読み直しの費用は、この読み直しそのもの。
 #
+# ## 立てる前に、前のレビューを畳む
+#
+# 使い回さない以上、**次を立てた時点で前の分は終わっている**——`review-<このPR>` を持つ既存の
+# セッションは、もう誰も起こさない。[`archive-reviews.sh`](archive-reviews.sh) へ渡す。畳むのを
+# **立てる前**に済ませるのは、これから立てるセッションが対象に入る余地を無くすため。
+#
 # ## 結果は `send_message` ではなくPRのコメント
 #
 # コメントなら `watch-prs.sh` の `REVIEWED` が拾うので、**司令塔は今までどおり見張るだけでよい。**
@@ -43,12 +54,11 @@ set -euo pipefail
 PR="${1:?PRの番号を渡す（例: 1152）}"
 WHERE="${2:-}"
 
-# クラウドが既定。ブリッジ（このPC）はリポジトリを既に持っているので `source_url` を渡さない。
-CLOUD_ENV='env_01JEqw2RUbL6EFo4p8EgRLSC'
-BRIDGE_ENV='env_018uF5fo4jU3HVotrg51gqLe'
 REPO_URL="https://github.com/$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/agent/ccr-env.sh
+source "$HERE/ccr-env.sh"
 CCR_META="$HERE/../../.claude/ccr-meta.sh"
 CHECK_PROMPT="$HERE/../../.claude/ccr-check-prompt.sh"
 TEMPLATE="$HERE/../../.claude/review-prompt.md"
@@ -98,6 +108,8 @@ if [ -n "${DRY_RUN:-}" ]; then
   jq '.prompt |= (split("\n") | .[0:3] | join("\n") + "\n…")' "$WORK/args.json"
   exit 0
 fi
+
+CCR_META="$CCR_META" bash "$HERE/archive-reviews.sh" "$PR"
 
 # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
 session=$(bash "$CCR_META" create_session <"$WORK/args.json" | grep -o '{"ccr".*' | jq -r '.ccr.id')
