@@ -34,7 +34,7 @@
 
 | 現在地 | 名前 | 層 | 判定 | 根拠 | 移動先候補 | 阻害要因(判定4のみ) | 名前不一致 |
 |---|---|---|---|---|---|---|---|
-| Card.ts | `EMPTY_FRAME_ALPHA` `EMPTIED_ALPHA` `PAPER_INSET` `PAPER_RADIUS` `BORDER_WIDTH` `ALERT_OUTLINE_WIDTH` `ALERT_BLINK_DURATION_MS` `ALERT_BLINK_MIN_ALPHA` `FRAME_SIDE` `FRAME_HEAD` `WINDOW_RADIUS` `NAME_SIZE` `ROAD_ARROW_*`(3) `PRESSED_BORDER_WIDTH` `EDGE_OVERLAY_ALPHA` `EDGE_ARROW_SIZE` `STACK_BADGE_*`(3) `MARK_SIZE` `MARK_MARGIN` `OVERLAY_*`(5) `STACK_COUNT_SIZE` `CELL_*`(5) `IN_PROGRESS_VEIL_ALPHA` `COOKING_*`(6) `RAIL_*`(3) | 配置 | 3 | 色・寸法・不透明度・アニメ時間は意匠（Layers.md 4節）だが、唯一の利用者が同ファイルなので置かれている（計44件） | `looks/theme.ts`（または部品1つぶんの意匠 `looks/cardLook.ts`） | | |
+| Card.ts | `EMPTY_FRAME_ALPHA` `EMPTIED_ALPHA` `PAPER_INSET` `PAPER_RADIUS` `BORDER_WIDTH` `ALERT_OUTLINE_WIDTH` `ALERT_BLINK_DURATION_MS` `ALERT_BLINK_MIN_ALPHA` `FRAME_SIDE` `FRAME_HEAD` `WINDOW_RADIUS` `NAME_SIZE` `ROAD_ARROW_*`(3) `PRESSED_BORDER_WIDTH` `EDGE_OVERLAY_ALPHA` `EDGE_ARROW_SIZE` `STACK_BADGE_*`(3) `MARK_SIZE` `MARK_MARGIN` `OVERLAY_*`(5) `STACK_COUNT_SIZE` `CELL_*`(5) `IN_PROGRESS_VEIL_ALPHA` `COOKING_*`(6) `RAIL_*`(3) | 配置 | 3 | 色・寸法・不透明度・アニメ時間は意匠（CodeStructure.md 1節）だが、唯一の利用者が同ファイルなので置かれている（計44件） | `looks/theme.ts`（または部品1つぶんの意匠 `looks/cardLook.ts`） | | |
 | Card.ts | `EDGE_RATIO` | 所属 | 3 | 「札のどこを押したら端か」は操作の規則で、寸法ではない。CardLaneの`CARD_EDGE_RATIO`（左右1/4）と対の規約が2ファイルに分かれている | `CardLane.ts`（左右の規則と同居）か映し側 | | |
 | Card.ts | `CARD_FRAME_TEXTURE` | 配置 | 2 | 素材のキーだが、BootSceneが読むための口として部品側に置く既存の統一規約（DustPuff・Button・FlipCalendarも同型） | （現状維持でよい） | | |
 | Card.ts | `EDGE_DIRECTIONS` | 可視性 | 2 | 型の全列挙を回すためだけの配列。PlaySceneが回す用途に限る | （現状維持でよい） | | |
@@ -44,7 +44,7 @@
 | Card.ts#CardContent | `art` `background` | 所属 | 4 | object_def識別子とスロット（owner+slot名）という**世界の語彙**を部品が持ち、テクスチャの解決（`objectTexture`/`cardBackgroundTexture`）まで部品が行っている | 映しがテクスチャキー（string）まで解決して渡す | 絵は後から届く（アセットパック・LocationArtLoader）。届いた時点で貼り替える`swapArtWhenLoaded`が部品側にあるため、識別子のまま持たないと貼り替え対象を引き直せない | |
 | Card.ts#CardContent | `identity` `awaited` | 所属 | 2 | インスタンスIDは映しの語彙だが、差し替え時の同一視（reconcile・absorb）にプログラム上必要 | — | | |
 | Card.ts#CardContent | `road` `midAction` | 所属 | 2 | 世界の概念（pathタグ・行動の途中）を真偽値1つに落とした表示フラグ。部品は矢印を出すか・帯を止めるかしか見ない | — | | |
-| Card.ts#Card | `setPresence` `presentIds` `absorb` `holdsCard` | 所属 | 2 | 「今この枠に在るインスタンス」は部品が持ってよい状態（Layers.md 1節）。CardTableが台帳を二重に持たないための唯一の在処 | — | | |
+| Card.ts#Card | `setPresence` `presentIds` `absorb` `holdsCard` | 所属 | 2 | 「今この枠に在るインスタンス」は部品が持ってよい状態（CodeStructure.md 1節）。CardTableが台帳を二重に持たないための唯一の在処 | — | | |
 | Card.ts#Card | `cancelTap` | 可視性 | 2 | ドラッグに転じた指でタップを起こさせないための、CardDragControllerからの1点の口 | — | | |
 | Card.ts#Card | `overlayText` `overlayTween` `alertBlink` `shownArt` `shownIcon` `shownBackground` `shownEdgeDirections` `shownGauges` `gaugeBars` | 所属 | 2 | 「前回何を出したか」の控え。差分更新とtweenの後始末というプログラム上の都合 | — | | |
 | Card.ts#Card | `edgeRepeated` `tapCancelled` `present` `emptied` | 所属 | 2 | 入力の状態と在籍の控え。いずれも一般概念ではないが実装上要る | — | | |
@@ -83,7 +83,7 @@
 |---|---|---|---|---|---|---|---|
 | CardDragController.ts | `INDICATOR_BORDER` `INDICATOR_FILL_ALPHA` `GLOW_LAYERS` `GLOW_PULSE_MS` `GLOW_PULSE_ALPHA` | 配置 | 3 | 落とし先の枠とグローの太さ・不透明度・脈動の時間＝意匠 | `looks/theme.ts`（または`looks/dragLook.ts`） | | |
 | CardDragController.ts | `sameTarget` | 所属 | 3 | 比べているのは`LaneDropTarget`の等価性。型の定義側が答えるのが自然 | `CardLane.ts`（`LaneDropTarget`と同じ場所） | | |
-| CardDragController.ts | `MOVE_THRESHOLD` `CARRY_REST_SLOP` | 所属 | 2 | 「掴んだとみなす距離」「止まったとみなす距離」は部品が抱える規則としてLayers.md 5節が認めているもの | — | | |
+| CardDragController.ts | `MOVE_THRESHOLD` `CARRY_REST_SLOP` | 所属 | 2 | 「掴んだとみなす距離」「止まったとみなす距離」は部品が抱える規則としてCodeStructure.md 4節が認めているもの | — | | |
 | CardDragController.ts | `CardDropInfo`(+`tooltip` `maxCount`) `CardDragHandlers` | 配置 | 2 | 組み立て（PlayScene）へ問い返すための形。ドラッグ以外からは使わない | — | | |
 
 ### src/game/ui/LaneHaze.ts / cardFace.ts / laneCells.ts
@@ -105,5 +105,5 @@
 7ファイルすべて `src/game/ui/`（このゲームの部品）に居るのは妥当で、ディレクトリ違いは無い。問題は**ファイル内の同居**に集中している。
 
 - `Card.ts` は (1) 契約4つ（CardContent一式、15ファイルが輸入）、(2) 札の実装、(3) 別の表示物3クラス（EmptyCard・CellHighlight・CellOverlay）、(4) 幾何の関数群、(5) 意匠の定数44個——の5つを1ファイルに抱えている。1586行の内訳はほぼこれで説明でき、(1)(3)(5) を出すだけで半分近くが減る。
-- 世界の語彙の持ち込みは、`CardContent.art`（object_def識別子）と `background: SlotRef`（owner+スロット名）の2つに絞られている。どちらも部品の中で `src/art/` に解決させており、レシピ・プロパティ名は入っていない。Layers.md の線としては薄い越境だが、越えているのはこの2点だけ。
+- 世界の語彙の持ち込みは、`CardContent.art`（object_def識別子）と `background: SlotRef`（owner+スロット名）の2つに絞られている。どちらも部品の中で `src/art/` に解決させており、レシピ・プロパティ名は入っていない。CodeStructure.md の線としては薄い越境だが、越えているのはこの2点だけ。
 - 層をまたいで対で決まっている値が3組ある（`SLIDE_MS`↔`FLY_MS`、`GAP_MS`↔`REPEAT_MIN_MS`、`EDGE_RATIO`↔`CARD_EDGE_RATIO`）。うち2組はコメントで「揃えている」と書かれているだけで、置き場所が離れている。
