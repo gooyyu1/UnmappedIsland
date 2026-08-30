@@ -986,9 +986,8 @@ object_defs:
             add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
           - weight: {prop: spoilage}
             add: {agent: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
-          # **生であること自体が引く枝**（docs/engine/DigestionSystem.md 6節）。腐敗とは独立した
-          # 固定の重みなので、傷んでいない生肉でも当たる——spoilageに掛けると「新鮮な生肉は安全」に
-          # なり、焼く理由がエネルギー差だけに戻る。焼けばこの枝ごと無くなる（roasted_meatは持たない）。
+          # 生であること自体が引く枝。腐敗とは独立した固定の重みで、傷んでいない生肉でも当たる
+          # （docs/engine/DigestionSystem.md 6節）。
           - weight: 12
             set: {agent: {satiety: 0}}
             add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
