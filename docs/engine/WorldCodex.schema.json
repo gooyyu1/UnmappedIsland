@@ -292,7 +292,7 @@
         },
         "on_max": {
           "$ref": "#/$defs/range_event_def",
-          "description": "値がrange.maxへ達している間（>= max）、値の変更・tickのたびに適用される挙動（6.3節。操作が直に動かした値でも宣言元は誰が動かしたかを知らないので、agent/instrumentは指せない、14.1節）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。conditionsを書いた場合、満たさない回だけがその既定のクランプへ倒れる。rangeが無いと使えない。"
+          "description": "値がrange.maxへ達している間（>= max）、値の変更・tickのたびに適用される挙動（6.3節。操作が直に動かした値でも、宣言元は誰が動かしたかを知らない——ここに居るのは宣言元の個体だけで、何を指せるかはそこから導く。ActionSystem.md 4節の表）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。conditionsを書いた場合、満たさない回だけがその既定のクランプへ倒れる。rangeが無いと使えない。"
         },
         "on_min": {
           "$ref": "#/$defs/range_event_def",
@@ -570,7 +570,7 @@
       "additionalProperties": false
     },
     "passive_def": {
-      "description": "持続する影響の1ブロック（8節）。文法は「操作(conditions/modify/add)が上位、対象(self/parent/child)が下位」。関係とゲート（常時／conditions／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。conditionsを書かなければ常時（無条件）を意味する。装備状態などによって異なるconditionsで効果を切り替えたい場合、passivesの配列に複数ブロックを並べる（8.5節）。ブロック全体で1つのconditionsを持ち、対象(self/parent/child)ごとには持たない（self/parent対象は常に同じ実体を指すため）。",
+      "description": "持続する影響の1ブロック（8節）。文法は「操作(conditions/modify/add)が上位、対象が下位」。関係とゲート（常時／conditions／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。conditionsを書かなければ常時（無条件）を意味する。装備状態などによって異なるconditionsで効果を切り替えたい場合、passivesの配列に複数ブロックを並べる（8.5節）。ブロック全体で1つのconditionsを持ち、対象ごとには持たない（8.2節）。",
       "type": "object",
       "properties": {
         "conditions": {
@@ -585,7 +585,7 @@
           "$ref": "#/$defs/passive_operation_map"
         },
         "transfer": {
-          "description": "条件が真であるtick毎に走る輸送（8.4.1節）。文法はactiveのtransfer（9.5節）と同一で、対象からagentだけが外れる。宣言順に適用され互いの結果を見るため、直列に繋いだ輸送の中間に在庫を持たせるのは速度の差。",
+          "description": "条件が真であるtick毎に走る輸送（8.4.1節）。文法はactiveのtransfer（9.5節）と同一で、違うのは置かれた場所——対象に何を書けるかは、その場所に誰が居るかから導く（ActionSystem.md 4節の表）。宣言順に適用され互いの結果を見るため、直列に繋いだ輸送の中間に在庫を持たせるのは速度の差。",
           "$ref": "#/$defs/transfer_spec"
         }
       },
@@ -599,7 +599,7 @@
       }
     },
     "active_target_name": {
-      "description": "transferのfrom/toが指す対象キー（9.5節）。childは未対応（一度きりの命令に対して『どの子か』の意味が確定していないため、ロード時エラー）。instrumentはcombinations内のみ。",
+      "description": "transferのfrom/toが指す対象キー（9.5節）。childは未対応（一度きりの命令に対して『どの子か』の意味が確定していないため、ロード時エラー）。残りのどれを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。ここに居ない相手を書くとロード時エラー。",
       "enum": [
         "self",
         "parent",
@@ -794,12 +794,10 @@
               "$ref": "#/$defs/identifier"
             },
             "instrument": {
-              "$ref": "#/$defs/identifier",
-              "description": "combinationsの中でだけ書ける（外に書くとロード時エラー、12.2節）。"
+              "$ref": "#/$defs/identifier"
             },
             "picked": {
-              "$ref": "#/$defs/identifier",
-              "description": "amongを書いた候補の中でだけ書ける（外に書くとロード時エラー、10.3節）。"
+              "$ref": "#/$defs/identifier"
             }
           },
           "additionalProperties": false,
@@ -934,7 +932,7 @@
         },
         "duration": {
           "$ref": "#/$defs/weight_spec",
-          "description": "実行にかかるゲーム内時間（分）。weightと同じ「リテラルか{subject, prop}参照か参照2つの積か」の三択（11.3節）。参照のsubjectにinstrumentを使えるのは、きっかけがdragの操作だけ（12.2節）。省略時は時間を消費しない。"
+          "description": "実行にかかるゲーム内時間（分）。weightと同じ「リテラルか{subject, prop}参照か参照2つの積か」の三択（11.3節）。参照のsubjectに何を書けるかは数え上げず、この宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表。この操作の他のキーと同じ場所なので、durationにだけ効く制限は無い）。省略時は時間を消費しない。"
         },
         "set": {
           "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",
@@ -1040,7 +1038,7 @@
         },
         "conditions": {
           "$ref": "#/$defs/conditions_list",
-          "description": "このレシピを知っているかの解放条件（SkillSystem.md 4節）。objectはagentのみ使える（成果物のインスタンスがまだ存在しないため）。素材の充足はsteps.requiresが見るので別物。"
+          "description": "このレシピを知っているかの解放条件（SkillSystem.md 4節）。ここには成果物のインスタンスがまだ無いので、宣言元の個体が居ない（13.3節）。何を主語に書けるかは数え上げず、この宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。素材の充足はsteps.requiresが見るので別物。"
         },
         "steps": {
           "type": "array",
@@ -1514,7 +1512,7 @@
       "additionalProperties": false
     },
     "set_operation_map": {
-      "description": "setが持つ、対象（self/parent/ancestor/agent、combinations内はinstrumentも、amongを書いた候補の中ではpickedも）をキーとする辞書。",
+      "description": "setが持つ、対象をキーとする辞書。何を対象に書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。ここに居ない相手を書くとロード時エラー。",
       "type": "object",
       "properties": {
         "self": {
@@ -1530,18 +1528,16 @@
           "$ref": "#/$defs/set_target_amount_map"
         },
         "instrument": {
-          "$ref": "#/$defs/set_target_amount_map",
-          "description": "combinationsの中でだけ書ける（外に書くとロード時エラー、12.2節）。"
+          "$ref": "#/$defs/set_target_amount_map"
         },
         "picked": {
-          "$ref": "#/$defs/set_target_amount_map",
-          "description": "amongを書いた候補の中でだけ書ける（外に書くとロード時エラー、10.3節）。"
+          "$ref": "#/$defs/set_target_amount_map"
         }
       },
       "additionalProperties": false
     },
     "add_operation_map": {
-      "description": "addが持つ、対象（self/parent/ancestor/agent、combinations内はinstrumentも、amongを書いた候補の中ではpickedも）をキーとする辞書。",
+      "description": "addが持つ、対象をキーとする辞書。何を対象に書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。ここに居ない相手を書くとロード時エラー。",
       "type": "object",
       "properties": {
         "self": {
@@ -1557,12 +1553,10 @@
           "$ref": "#/$defs/add_target_amount_map"
         },
         "instrument": {
-          "$ref": "#/$defs/add_target_amount_map",
-          "description": "combinationsの中でだけ書ける（外に書くとロード時エラー、12.2節）。"
+          "$ref": "#/$defs/add_target_amount_map"
         },
         "picked": {
-          "$ref": "#/$defs/add_target_amount_map",
-          "description": "amongを書いた候補の中でだけ書ける（外に書くとロード時エラー、10.3節）。"
+          "$ref": "#/$defs/add_target_amount_map"
         }
       },
       "additionalProperties": false
