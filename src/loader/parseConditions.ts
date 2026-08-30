@@ -78,7 +78,7 @@ const REASON_KEY = 'reason';
 
 /**
  * 条件の並び（14節）。常にYAML配列（暗黙のall）。要素は葉か、入れ子のall/any/notのいずれか。
- * conditionsNodeがundefinedなら省略（常に真）。
+ * listNodeがundefinedなら省略（常に真）。
  *
  * **contextはその配列自身を指す**（要素には添字だけを足す）。並びが書かれるキーは`conditions`とは
  * 限らない——`resists`（7.13節）も同じ形を共有するので、キー名は呼び出し側が答える。
@@ -86,13 +86,13 @@ const REASON_KEY = 'reason';
 export function parseConditionList(
   loader: WorldCodexYamlLoader,
   context: string,
-  conditionsNode: YAMLSeq | undefined,
+  listNode: YAMLSeq | undefined,
   scope: ReferenceScope,
 ): ConditionNode | undefined {
-  if (conditionsNode === undefined) return undefined;
+  if (listNode === undefined) return undefined;
 
   const children: ConditionNode[] = [];
-  for (const node of conditionsNode.items as YamlNode[])
+  for (const node of listNode.items as YamlNode[])
     children.push(parseConditionNode(loader, `${context}[${children.length}]`, node, scope));
 
   return ConditionNode.all(children);
@@ -109,14 +109,14 @@ export function parseConditionList(
 export function parseRequirementsField(
   loader: WorldCodexYamlLoader,
   context: string,
-  conditionsNode: YAMLSeq | undefined,
+  listNode: YAMLSeq | undefined,
   scope: ReferenceScope,
   fieldName: string,
 ): Requirements | undefined {
-  if (conditionsNode === undefined) return undefined;
+  if (listNode === undefined) return undefined;
 
   const entries: Requirement[] = [];
-  for (const node of conditionsNode.items as YamlNode[]) {
+  for (const node of listNode.items as YamlNode[]) {
     const entryContext = `${context}.${fieldName}[${entries.length}]`;
     const reasonName = tryGetScalar(asMap(node, entryContext), REASON_KEY, entryContext);
     entries.push(
