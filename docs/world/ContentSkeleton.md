@@ -249,8 +249,8 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 ——段になるのは家1軒ぶんの丸太であり、貯水に足りる数の甕です。**畑も1枚は0.33日<!-- stats: balance.yaml object_costs object=field days -->**で、段になるのは
 拓いた枚数と、撒いて収穫しに戻る往復の回数のほうです。**塩田も1枚は0.35日<!-- stats: balance.yaml object_costs object=salt_pan days -->**で、段になるのは据えた枚数と、
 海水を汲みに戻る往復の回数です。**囲いは1つで段に届きます**——丸太4本と縄2本が要るためです。
-**干し場も1基で段に届きます**——縄が1本要るためで、開けるのは腐敗の速い食べ物（生肉・生魚）を
-干物にできることです（[`SurvivalItems.md`](./SurvivalItems.md) 10節）。
+**干し場も1基で段に届きます**——縄が1本要るためで、開けるのは腐敗の最も速い段の食べ物（生肉・
+獣の死体・ヤシガニ・海藻）を干物にできることです（[`SurvivalItems.md`](./SurvivalItems.md) 10節）。
 
 **表の中身は既存のカタログのままです。** 9は [`Bedding.md`](./Bedding.md) 2節、10は
 [`Dwellings.md`](./Dwellings.md) 3節、7は [`Containers.md`](./Containers.md) 2節、4・5・6は
