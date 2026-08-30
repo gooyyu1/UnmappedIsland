@@ -1,9 +1,8 @@
-import type { StatusContent } from '../ui/StatusBar';
-
 /**
  * ステータス1行が、バーとその上の文字で何を映すか（[`StatusArea.md`](../../../docs/ui/StatusArea.md)
  * 9節）。画面を持たない決め方だけを置き、描くのは`StatusBar`。
  */
+import type { StatusContent } from '../ui/StatusBar';
 
 /**
  * バーが映す満たされ具合。**`range`を持つならその中での位置、持たずに段だけを持つなら今いる段の中での
