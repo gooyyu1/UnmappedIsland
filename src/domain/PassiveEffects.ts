@@ -6,8 +6,12 @@ import type { ReferenceRoot } from './ReferenceRoot';
 /**
  * 1つの ObjectDef が宣言する持続効果（8節）の一式。target・kindを問わず宣言順に1つへまとめて持つ。
  *
- * **受け取った契機はそのまま全effectへ配り、どれが反応するかは効果自身が決める。** だから頼む側は、
- * 宣言のtargetもkindも見ずに「こうなった」とだけ言えばよい。
+ * **受け取った契機はそのまま全effectへ配り、どれが反応するかは効果自身が決める。** だから契機を伝える
+ * 側は、宣言のtargetもkindも見ずに「こうなった」とだけ言えばよい。
+ *
+ * **寄与として登録できない輸送（8.4節）だけが別。** 登録が無い以上こちらが走らせるしかなく、走らせる
+ * 時点（積分の後、WorldObject.tick）が意味を持つので、そこは「こうなった」ではなく「いま走らせろ」を
+ * 受ける——呼ぶ側がその時点を知っている。
  */
 export class PassiveEffects {
   private readonly effects: readonly PassiveEffect[];
