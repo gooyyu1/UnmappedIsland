@@ -44,12 +44,15 @@ object_defs:
       pick_green_coconut:
         trigger: menu
         # 頂部の房を見上げて、採れる実を選びながら切り落とす屋外の行動なので、見るのは視界の側
-        # （docs/engine/IlluminationSystem.md 5節）。
+        # （docs/engine/IlluminationSystem.md 5節）。嵐の日は明るさが足りていても採れない
+        # （docs/world/ContentSkeleton.md 8.1.4節）。
         conditions:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
             in_stage: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage: gale}
         duration: 30
         pick:
           - weight: 90
@@ -66,6 +69,8 @@ object_defs:
             subject: agent
             prop: looking_brightness
             in_stage: bright
+          - reason: too_stormy
+            not: {subject: agent, prop: wind_speed, in_stage: gale}
         duration: 30
         pick:
           - weight: 90

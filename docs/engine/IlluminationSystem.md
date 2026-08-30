@@ -9,9 +9,10 @@
 **境界**: 天気そのものの駆動は [`ClimateSystem.md`](./ClimateSystem.md)、土地と道は
 [`ExplorationSystem.md`](./ExplorationSystem.md)、火の維持と燃料は [`FireSystem.md`](./FireSystem.md)。
 **どの値をいくつにするか**（照度とEVの換算・しきい値・土地ごとの樹冠と反射・その結果1日に何時間
-行動できるか）は [`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1節〜8.1.3節が持ち、本書は
-繰り返しません。風雨で屋外の採取ができないことは明るさでは表さないので（同 8.1節）、それを何の値で
-表すかも本書の外です。**火の暖房効果も本書の外です**——炉は明るさと同じ1つの `modify` で気温も上げますが、
+行動できるか）は [`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1節〜8.1.5節が持ち、本書は
+繰り返しません。風雨で屋外の採取ができないことは明るさでは表さないので（同 8.1節）、それを表す値
+（風速）としきい値も本書の外です（同 8.1.5節）。**火の暖房効果も本書の外です**——炉は明るさと同じ
+1つの `modify` で気温も上げますが、
 暖まることを表すのは別のプロパティ（`ambient_temperature`）なので、その値は
 [`FireSystem.md`](./FireSystem.md) 9.2節が持ちます。
 
@@ -366,7 +367,6 @@ character:
 
 ## 未決事項・今後の検討課題
 
-- **風雨で行動が止まることを、どの値で表すか**（`ContentSkeleton.md` 8.1節）。明るさとは別の値です。
 - **樹冠と地面の反射が、定義の上では1つの `value` に潰れています。** 内訳は
   `ContentSkeleton.md` 8.1.2節の表が持ちます。分けて持ちたくなったら、反射のほうを土地の `passives`
   から自分の `ambient_brightness` へ `modify` する形にできます。
