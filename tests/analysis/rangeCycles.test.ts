@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rangeCyclesOf } from '../../src/analysis/rangeCycles';
+import { externalTickDeltasOf, externalTickDeltasOn, rangeCyclesOf } from '../../src/analysis/rangeCycles';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
@@ -142,14 +142,55 @@ object_defs:
           add: {self: {minute: -60}}
         passives:
           - add: {self: {minute: 15}}
+
+  # 血を奪う傷（injuries.yamlのlaceration）。**奪う経路が2つあり、止まるまでが違う**——出血は
+  # 自分のbleedingが尽きる4 tickで止まり、膿が全身へ回る敗血症は止まらない。
+  gash:
+    tags: [injury]
+    props:
+      bleeding:
+        value: 100
+        range: {min: 0, max: 100}
+        passives:
+          - add: {self: {bleeding: -25}}
+      infection:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: clean}
+          - {name: septic, min: 80}
+        passives:
+          - add: {self: {infection: 0.25}}
+    passives:
+      - conditions: [{prop: bleeding, gte: 1}]
+        add: {parent: {blood: -15}}
+      - conditions: [{prop: infection, in_stage: septic}]
+        add: {parent: {blood: -40}}
+
+  # 血の多い獣（animals.yamlのwild_boar）。上の傷を負い、血が尽きれば倒れる。
+  boar:
+    tags: [item]
+    props:
+      blood:
+        value: 4600
+        range: {min: 0, max: 4600}
+        on_min: {destroy: self}
+    slots:
+      injuries:
+        cell_count: 4
+        cell: {accept: {tag: injury}}
 `;
 
   const codex = new WorldCodexYamlLoader().load('rangeCycles.yaml', YAML).buildAndReset();
 
+  /** 宣言した型のうち、その名前のもの。 */
+  function defOf(objectName: string) {
+    return [...codex.objects].find((candidate) => candidate.name === objectName)!;
+  }
+
   /** その型の、そのプロパティが持つ周期（1つだけのはず）。 */
   function cycleOf(codex: WorldCodex, objectName: string, propertyName: string) {
-    const def = [...codex.objects].find((candidate) => candidate.name === objectName);
-    return rangeCyclesOf(def!).filter(
+    return rangeCyclesOf(defOf(objectName)).filter(
       (cycle) => codex.propertyNames.getName(cycle.propertyGlobalId) === propertyName,
     );
   }
@@ -197,5 +238,31 @@ object_defs:
     // 戻り量を符号つきの増減のまま見ると、上端から戻るものだけが負になって数から漏れる。
     // 60を引いて0へ戻るので戻り量は60、+15/tickなので4 tickごと。
     expect(cycleOf(codex, 'clock', 'minute')).toMatchObject([{ minutes: 4 * 15, repeats: true }]);
+  });
+
+  it('止まるまでの違う押し手は、束ねずに別々に並べる', () => {
+    // 速さは幅として持てるが、止まるまでは幅を持てない。1つに束ねると最も遅い-15と「止まらない」が
+    // ひと組になり、どちらの経路も持っていない押し手ができる。
+    const bloodId = codex.propertyNames.getId('blood');
+    const deltas = externalTickDeltasOf(defOf('gash'), 'parent').filter(
+      (delta) => delta.propertyGlobalId === bloodId,
+    );
+
+    expect(deltas.map(({ slowest, fastest, maxTotal }) => ({ slowest, fastest, maxTotal }))).toEqual([
+      { slowest: -15, fastest: -15, maxTotal: 60 },
+      { slowest: -40, fastest: -40, maxTotal: undefined },
+    ]);
+  });
+
+  it('止まる押し手で端へ届かないなら、止まらない押し手だけが周期として残る', () => {
+    // 固まるまでの60mLでは4,600mLは尽きないので、失血死は敗血症の-40/tickだけが起こす。束ねて
+    // いたときは「-15/tickで永久に流れ続ける傷」として306.67 tickの周期が立っていた。
+    const external = externalTickDeltasOn(defOf('boar'), [...codex.objects]);
+
+    expect(
+      rangeCyclesOf(defOf('boar'), undefined, external).filter(
+        (cycle) => codex.propertyNames.getName(cycle.propertyGlobalId) === 'blood',
+      ),
+    ).toMatchObject([{ minutes: 115 * 15, destroysSelf: true, drivenBy: defOf('gash').globalId }]);
   });
 });
