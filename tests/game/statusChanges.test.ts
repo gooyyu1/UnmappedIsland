@@ -34,12 +34,18 @@ describe('statusChangesBetween(行動の前後でのステータスの増減)', 
   it('段が上がった行には行動前の値を添えない（バーの軸が次の段へ移るため）', () => {
     // 段の中の進みを映すバーは、段が上がると0から始まる（StatusArea.md 9節）。前の段の位置を
     // 起点にすると、腕が上がったのに「減った分」の赤い帯が出る。
-    const skill = (value: number, name: string, ratio: number): StatusContent => ({
+    const skill = (value: number, stage: string, ratio: number): StatusContent => ({
       key: 'skill_cordage',
       name: 'skill_cordage',
       value,
       ratio: undefined,
-      stage: { name, span: undefined, boundaries: [], progress: { nextName: '次', ratio } },
+      stage: {
+        key: stage,
+        name: stage,
+        span: undefined,
+        boundaries: [],
+        progress: { nextName: '次', ratio },
+      },
       alert: 'safe',
     });
 

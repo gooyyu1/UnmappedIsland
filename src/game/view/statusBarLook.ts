@@ -20,7 +20,7 @@ export function barFillOf(content: StatusContent): number | undefined {
  * 値が増えているのに「減った分」の赤い帯が出る。
  */
 export function barKeepsAxis(before: StatusContent, after: StatusContent): boolean {
-  return after.ratio !== undefined || before.stage?.name === after.stage?.name;
+  return after.ratio !== undefined || before.stage?.key === after.stage?.key;
 }
 
 /**

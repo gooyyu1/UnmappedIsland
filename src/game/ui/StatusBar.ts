@@ -103,7 +103,13 @@ export interface StatusStageProgress {
  * [`StatusArea.md`](../../../docs/ui/StatusArea.md) 9節）。
  */
 export interface StatusStage {
-  /** 今いる段の表示名。 */
+  /**
+   * 段の識別子（表示名ではない）。**同じ段かどうかはこれで見る**——表示名は同じ文言を別々の段が
+   * 持てるので（stage_textsは平らな対応表）、同一性の判定に使うと隣り合う2段が同じに見える。
+   */
+  readonly key: string;
+
+  /** 今いる段の表示名。画面に出すのはこちら。 */
   readonly name: string;
 
   /** 今いる段がバーの中で占める区間。持たない段では囲みも名札も出さない。 */

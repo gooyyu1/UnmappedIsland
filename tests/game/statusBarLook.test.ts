@@ -21,7 +21,9 @@ describe('ステータス行が映すもの', () => {
     alert: 'safe',
   });
 
-  const stage = (name: string, progress?: { nextName: string; ratio: number }): StatusStage => ({
+  /** 段1つ。**識別子と表示名は別物**なので、同じ文言を持つ2段も作れるようにしておく。 */
+  const stage = (key: string, progress?: { nextName: string; ratio: number }, name = key): StatusStage => ({
+    key,
     name,
     span: undefined,
     boundaries: [],
@@ -66,6 +68,15 @@ describe('ステータス行が映すもの', () => {
 
     expect(barKeepsAxis(before, after), '0.95→0.02は「減った」ではない').toBe(false);
     expect(barKeepsAxis(before, before), '同じ段の中なら比べられる').toBe(true);
+  });
+
+  it('表示名が同じでも、別の段なら軸が入れ替わったと見る', () => {
+    // 段の文言は平らな対応表（stage_texts）なので、別々の段が同じ語を持てる。表示名で見比べると、
+    // 段が上がったのに「同じ軸」と読まれて赤い帯が戻る。
+    const before = status(undefined, stage('basic', { nextName: '熟練', ratio: 0.95 }, '一人前'));
+    const after = status(undefined, stage('skilled', { nextName: '名人', ratio: 0.02 }, '一人前'));
+
+    expect(barKeepsAxis(before, after)).toBe(false);
   });
 
   it('満たされ具合のバーは、段をまたいでも軸が変わらない', () => {

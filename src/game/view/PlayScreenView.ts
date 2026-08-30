@@ -563,7 +563,10 @@ export function fromGameSession(
     };
   };
 
-  /** 今いる段の読みに、表示名を入れたもの。段を宣言していないプロパティではundefined。 */
+  /**
+   * 今いる段の読みに、表示名を入れたもの。段を宣言していないプロパティではundefined。
+   * **識別子は捨てずに残す**——同じ段かどうかを見る側（statusBarLook）は表示名では判定できない。
+   */
   const stageReadingOf = (property: PropertyValue): StatusStage | undefined => {
     const stage = property.stageReading;
     if (stage === undefined) return undefined;
@@ -571,6 +574,7 @@ export function fromGameSession(
     const progress = stage.progress;
     return {
       ...stage,
+      key: stage.name,
       name: locale.stage(stage.name),
       progress:
         progress === undefined
