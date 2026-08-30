@@ -182,9 +182,10 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
   「島のどこかで採れる」を条件にします。**どの型がそれを担うかは島ごとに変わり**——火口を草原が持つ島も、
   荒野が持つ島もありえます——型を名指ししないぶん、島の個性は削れません。**山を必ず1つ置く既存の保証は
   そのままです**（あれは島の顔を決めるもので、2.3節の切り分けの向こう側にあります）。
-- **開始地点になりうるサイトの行き止まりを減らす。** 今は道の平均次数が2.5で行き止まりが15%
-  （`terrain_generation.yaml` の `extra_edge_detour_factor`）。行き止まりの砂浜から始まると、
-  次の一手が1つしかありません。
+- **開始地点になりうるサイトの行き止まりを減らす。** 今の配り方（`terrain_generation.yaml` の
+  `extra_edge_detour_factor`）では行き止まりの土地が残ります（次数の分布は
+  [`stats/terrain.yaml`](../../stats/terrain.yaml) の `site_degree_histogram`）。行き止まりの砂浜から
+  始まると、次の一手が1つしかありません。
 
 どちらも「必ずこの型をここへ置く」ではなく、**満たすべき性質を配り方の条件に足す**形なので、
 2.3節の選抜と同じ考え方に乗ります。
@@ -254,7 +255,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 | 12 | 船と海図 | — | **筏（5.2<!-- stats: terrain.yaml work_piles pile=筏 days -->・実測）**／**帆（3.8<!-- stats: terrain.yaml work_piles pile=帆 days -->・実測）**／櫂と舵（2<!-- stats: terrain.yaml work_piles pile=櫂と舵 days -->）／沿岸航海（3<!-- stats: terrain.yaml work_piles pile=沿岸航海 days -->）／海図を仕上げる（5<!-- stats: terrain.yaml work_piles pile=海図を仕上げる days -->） | 5<!-- stats: terrain.yaml work_piles_by_system system=12 piles --> | 18.9<!-- stats: terrain.yaml work_piles_by_system system=12 days --> |
 | | | | **合計** | **26**<!-- stats: terrain.yaml work_piles_total piles --> | **68.8**<!-- stats: terrain.yaml work_piles_total days --> |
 
-**山が「量」で立っていることに注意してください**（2.4節）。石の斧も甕も1つでは0.6日ほどで段になりません
+**山が「量」で立っていることに注意してください**（2.4節）。石の斧も甕も1つでは段になりません
 ——段になるのは家1軒ぶんの丸太であり、貯水に足りる数の甕です。**畑も塩田も1枚では1日に届きません**
 （[`stats/balance.yaml`](../../stats/balance.yaml) の `object_costs`）——段になるのは拓いた枚数・据えた
 枚数と、撒いて収穫しに戻る往復・海水を汲みに戻る往復の回数のほうです。**囲いは1つで段に届きます**
@@ -670,8 +671,8 @@ EVでは引き算・足し算の項になります。名前のある単位なの
 **土地×季節ごとに1日何時間動けるかは、手で計算せず定義から数えます。**
 [`activityHoursOf`](../../src/analysis/activityHours.ts)が、`core.yaml`の`hour`・`weather`の段
 （この節の透過率と太陽高度がambient_brightnessへ与える寄与そのもの）・土地ごとのambient_brightness
-（8.1.2節）・天気の出現時間（[`stats/climate.yaml`](../../stats/climate.yaml)の`weather_hours`、
-20シード×3,600日の実測）から、しきい値（8.1.1節の −5・+3・+5）を満たす時間を積算し、**採る列から
+（8.1.2節）・天気の出現時間（[`stats/climate.yaml`](../../stats/climate.yaml)の`weather_hours`の実測）
+から、しきい値（8.1.1節の −5・+3・+5）を満たす時間を積算し、**採る列から
 さらに嵐の時間を引きます**（8.1.4節・8.1.5節）。据え付けの光源は含みません
 （含めると「焚き火があれば24時間活動できる」になり、表の意味が消えます）。
 **表そのものは同じYAMLの`activity_hours`に1本だけ持ち、ここでは繰り返しません。**
@@ -755,8 +756,9 @@ ambient_brightnessをそのまま土台にするためです
 **嵐を引くのは後者だけ**です（8.1.4節）。720分<!-- stats: terrain.yaml daily_budget outdoor_window -->は屋外の枠、266分<!-- stats: terrain.yaml daily_budget survival_gathering -->は1日を賄う生存の採取
 （[`stats/balance.yaml`](../../stats/balance.yaml) の `daily_minimum` の626分<!-- stats: balance.yaml daily_minimum place=島全体 total_minutes -->から睡眠360分<!-- stats: terrain.yaml daily_budget sleep -->を引いた分）です。
 
-**生存の採取は、暗い土地でも払える形にしています。** 密林で1日に働ける時間は最も短い（8.3節）の
-ですが、その日の残りの明るい時間は拠点の周りにあります。頭打ちに掛ける前に引くことで、
+**生存の採取は、暗い土地でも払える形にしています。** 密林で1日に働ける時間は土地の組の中でいちばん
+短い（[`stats/terrain.yaml`](../../stats/terrain.yaml) の `steady_phase_by_work_share`）のですが、
+その日の残りの明るい時間は拠点の周りにあります。頭打ちに掛ける前に引くことで、
 「密林へ行った日は食べられない」
 にならずに済みます。
 
@@ -797,8 +799,8 @@ ambient_brightnessをそのまま土台にするためです
 
 **探索の局面で移動が重いのは、行き先が選べないからです。** 未踏の土地は拠点から近い順に開いていく
 ので、前線が遠ざかるほど往復が滞在時間を食います（上の表の1日の移動は、定常の2倍以上）。それでも
-**1日に進む探索が屋外の枠を使い切らない**のは、遠さではなく**土地を1つ開き切るまでその土地に居る
-必要がある**ためです——道は `[2, max−1]` に均等配置されるので、最後の道はほぼ探索し切る直前に出ます
+**1日に進む探索が、往復と生存の採取を引いた残りの枠にも届かない**のは、遠さではなく**土地を1つ
+開き切るまでその土地に居る必要がある**ためです——道は `[2, max−1]` に均等配置されるので、最後の道はほぼ探索し切る直前に出ます
 （[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 3.2節）。
 
 **定常の局面では、行き先を選べます。** 山の配分を開けた土地1/2・森1/4・密林1/4と置き、その組の
@@ -807,10 +809,9 @@ ambient_brightnessをそのまま土台にするためです
 日数の割合・その組を持つ島の割合は、[`stats/terrain.yaml`](../../stats/terrain.yaml) の
 `steady_phase_by_work_share` に1本だけ持ちます。**
 
-**いちばん高く付くのは密林です。** 1日に進む山が開けた土地の6割ほどなので、**仕事の4分の1が、密林の
-ある島では日数の3分の1を持っていきます**（3つの組の割合の合計が100%を超えるのは、密林の行だけが
-密林のある島の中の割合で、残りの島ではその配分が他の組へ回るためです）。しかも足止めしているのは
-距離ではなく暗さなので、道を短くしても縮みません。配分を動かすには「どの材料がどの土地で採れるか」
+**いちばん高く付くのは密林です。** 3つの組のうち1日に進む山がいちばん少ないので、**仕事の4分の1が、
+密林のある島では日数の3分の1を持っていきます**。しかも足止めしているのは距離ではなく暗さなので、
+道を短くしても縮みません。配分を動かすには「どの材料がどの土地で採れるか」
 （2.3節）から決め直すことになるので、本節では触っていません。
 
 **夜**は、睡眠360分<!-- stats: terrain.yaml daily_budget sleep -->と、焚き火のそばでの加工360分<!-- stats: terrain.yaml daily_budget night_craft -->。
