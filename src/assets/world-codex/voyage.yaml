@@ -662,7 +662,8 @@ object_defs:
             protein: 6
             lipid: 5
             vitamin: 10
-            # 殻を割ってそのまますすれば食べられるが、火を通した食事ではない（foods.yaml）。
+            # 殻を割ってそのまますすれば食べられるが、火を通した食事ではない
+            # （docs/world/Characters.md 幸福度節の表）。
             happiness: 2
         pick:
           - weight: 100

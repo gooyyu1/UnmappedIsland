@@ -4,10 +4,9 @@
 # 両者は別の数（docs/engine/DigestionSystem.md）。水気の多い物はかさだけ大きく、生肉はかさの割に
 # 身にならない。値はいずれも仮のもの。
 #
-# **かさ・中身とは別に、口にした喜び（happiness）も名乗る**（docs/world/Characters.md 幸福度節）。
-# **量ではなく質で決まる**ので、大きさは効かない——火を通した食事6・生でうまい果実4・生で食べられる
-# だけの物2・本来は火を通す生肉1・炭0の5段で、どの食べ物もこのどれかを名乗る（書き忘れは
-# tests/world-codex/foodsYaml.test.tsが全数で見張る）。
+# **かさ・中身とは別に、口にした喜び（happiness）も名乗る。** どの食べ物がどの値を名乗るかは
+# docs/world/Characters.md 幸福度節の表が持ち、書き忘れは tests/world-codex/foodsYaml.test.ts が
+# 全数で見張る。
 #
 # このファイルの操作は食べることだけなので、**明るさの条件はどれも持たない**——口へ運ぶのは手が
 # 覚えている動作（docs/engine/IlluminationSystem.md 5節）。

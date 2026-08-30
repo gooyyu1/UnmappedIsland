@@ -318,8 +318,7 @@ describe('食べ物が配る幸福度', () => {
   });
 
   it('火を通した食事はどれも同じだけ戻す（戻すのは量ではなく質）', () => {
-    // かさはsatietyが、身になる量は栄養素が持つので、ここが数えるのは口に入れた喜びだけ。小さな
-    // ネズミ1匹でも、火の通った1食であることは焼いた肉と変わらない（Characters.md 幸福度節）。
+    // 小さなネズミ1匹でも、火の通った1食であることは焼いた肉と変わらない（Characters.md 幸福度節）。
     const declared = declaredEatHappiness();
     const roasted = ['roasted_meat', 'roasted_rat', 'roasted_taro', 'roasted_coconut_crab'];
 
@@ -327,8 +326,7 @@ describe('食べ物が配る幸福度', () => {
   });
 
   it.each([
-    // 焼いた肉と生肉の開き（6倍）は、エネルギーの24対31（1.29倍）よりずっと大きい。生で食べない
-    // 理由がここで1本増える（Characters.md 幸福度節）。
+    // 焼いた肉と生肉の開きが、生で食べない理由を1本増やす（Characters.md 幸福度節）。
     ['roasted_meat', 6],
     ['raw_meat', 1],
     // 炭は腹の嵩しか返さない終端なので、喜びも残っていない。
