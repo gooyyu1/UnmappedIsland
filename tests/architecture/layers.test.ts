@@ -127,9 +127,17 @@ function routesFrom(
     .map((route) => route.join(' → '));
 }
 
-/** 構造の文書。1節の表と2節の図が、どちらもここから読める。 */
-function structureDoc(): string {
-  return readFileSync(join(ROOT, 'docs/CodeStructure.md'), 'utf-8');
+const STRUCTURE_DOC = 'docs/CodeStructure.md';
+
+/**
+ * 構造の文書。1節の表と2節の図が、どちらもここから読める。
+ *
+ * **改行はここで均す。** 表も図も字面で拾うので、CRLFの作業ツリー——`.prettierrc` の
+ * `endOfLine: auto` が想定している状態（CLAUDE.md）——では ```` ```mermaid ```` に当たらず、図が
+ * 在るのに「見つかりません」で落ちる。呼び手に均させると、呼び手が増えるたびに同じ穴が空く。
+ */
+function structureDoc(raw = readFileSync(join(ROOT, STRUCTURE_DOC), 'utf-8')): string {
+  return raw.replace(/\r\n/g, '\n');
 }
 
 /**
@@ -137,17 +145,27 @@ function structureDoc(): string {
  * 1節から行が消えてもそちらが拾ってしまう。「1節の表が唯一の記載場所」を検査するのだから、
  * 見る範囲もその表だけ。
  */
-function structureRows(): readonly string[] {
-  const section = structureDoc()
-    .split(/^## /m)
-    .find((part) => part.startsWith('1. '));
+function structureRows(doc = structureDoc()): readonly string[] {
+  const section = doc.split(/^## /m).find((part) => part.startsWith('1. '));
   if (section === undefined) throw new Error('CodeStructure.md の1節が見つかりません');
-  return section.split(/\r?\n/).filter((line) => line.startsWith('| **'));
+  return section.split('\n').filter((line) => line.startsWith('| **'));
 }
 
 /** 1節の表が並べる構成要素の名前（1列目）。 */
-function structureNames(): readonly string[] {
-  return structureRows().map((line) => line.split('|')[1].replaceAll('*', '').trim());
+function structureNames(doc = structureDoc()): readonly string[] {
+  return structureRows(doc).map((line) => line.split('|')[1].replaceAll('*', '').trim());
+}
+
+/**
+ * 2節の依存の図が並べるノードのラベル。
+ *
+ * ラベルは**丸ごと**取る。`<br/>` の手前で切ると、ノードに置き場を書き足しても検査の外に出て
+ * しまい、1節の表だけが唯一の記載場所だという宣言がそこで破れる。
+ */
+function diagramNodes(doc = structureDoc()): readonly string[] {
+  const diagram = doc.match(/```mermaid\n([\s\S]*?)```/);
+  if (diagram === null) throw new Error('CodeStructure.md の依存の図が見つかりません');
+  return [...diagram[1].matchAll(/^\s+\w+\["([^"]+)"\]/gm)].map((m) => m[1].trim());
 }
 
 describe('層の境界', () => {
@@ -256,14 +274,18 @@ describe('層の境界', () => {
   it('依存の図のノードが、1節の表の行と同じ', () => {
     // 表と図は同じものを説明する2つの一覧なので、**並べた時点で行集合の一致を誰かが見る必要が
     // ある**。図が網羅すると言っているのはノードで（CodeStructure.md 2節）、辺は主な向きの要約。
-    //
-    // ラベルは**丸ごと**取る。`<br/>` の手前で切ると、ノードに置き場を書き足しても検査の外に
-    // 出てしまい、1節の表だけが唯一の記載場所だという宣言がそこで破れる。
-    const diagram = structureDoc().match(/```mermaid\n([\s\S]*?)```/);
-    if (diagram === null) throw new Error('CodeStructure.md の依存の図が見つかりません');
-    const nodes = [...diagram[1].matchAll(/^\s+\w+\["([^"]+)"\]/gm)].map((m) => m[1].trim());
+    const nodes = diagramNodes();
 
     expect([...nodes].sort(), '図のノードと表の行が食い違っている').toEqual([...structureNames()].sort());
     expect(nodes.length).toBeGreaterThan(3);
+  });
+
+  it('CRLFの作業ツリーでも、表の行と図のノードを同じに読む', () => {
+    // CIはLFでしか走らないので、字面で拾う処理に改行を直書きしても向こうでは気づけない。**CRLFに
+    // した同じ文書を通して**、読み口が改行の種類を吸収していることをLFの側から見る。
+    const crlf = structureDoc(readFileSync(join(ROOT, STRUCTURE_DOC), 'utf-8').replace(/\r?\n/g, '\r\n'));
+
+    expect(diagramNodes(crlf), '図がCRLFで読めていない').toEqual(diagramNodes());
+    expect(structureRows(crlf), '1節の表がCRLFで読めていない').toEqual(structureRows());
   });
 });
