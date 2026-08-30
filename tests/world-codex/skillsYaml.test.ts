@@ -213,6 +213,33 @@ describe('腕前とレシピの解放条件', () => {
     }
   });
 
+  it('最上段より下は、どの段でも段の中の進みが出る（最下段も下端を名乗る）', () => {
+    // 腕前はrangeを持たないので、下端を書かない段（受け皿、GameElementDefinition.md 6.4節）は
+    // 下端が決まらず、進みが計算できない。UIは進みの無い段でバーを出さない（StatusArea.md 9節）ので、
+    // 最下段を受け皿で書くと**全員が通る見習いの間だけ**バーが消える。
+    const character = characterWithSkills(0);
+
+    for (const [index, stage] of STAGES.entries()) {
+      const next = index + 1 < STAGES.length ? STAGES[index + 1] : undefined;
+      // 段の中ほど。上端の段は満ちる先が無いので、十分に大きい値で進みを言わないことを見る。
+      const value = next === undefined ? stage.min * 10 : (stage.min + next.min) / 2;
+      for (const id of skillIds) {
+        const property = character.getProperty(id);
+        property.setNumberWithoutEvents(value);
+        const progress = property.stageReading?.progress;
+
+        if (next === undefined) {
+          expect(progress, `${property.def.name} の ${value}: 最上段の先`).toBeUndefined();
+          continue;
+        }
+        expect(progress?.nextName, `${property.def.name} の ${value}`).toBe(next.name);
+        expect(progress?.ratio, `${property.def.name} の ${value}`).toBeCloseTo(
+          (value - stage.min) / (next.min - stage.min),
+        );
+      }
+    }
+  });
+
   it('解放条件は、腕が上がった後も満たされ続ける（上の段で閉じ直さない）', () => {
     // `in_stage`は今いる段ちょうどの判定なので、要求を1つの段だけで書くと、腕が伸びた瞬間に
     // レシピが消える。段の名前をanyで束ねる形（characters/player_character.yaml）がそれを防ぐ。
