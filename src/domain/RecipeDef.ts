@@ -71,8 +71,8 @@ export class RecipeStepDef {
  * レシピ1つ（13節）。成果物のObjectDefが持つ。
  *
  * `conditions`は**このレシピを知っているか**を判定するもので、素材が揃っているかとは別物
- * （素材の充足は`steps.requires`が持つ）。判定できる対象はagentだけで、まだ存在しない成果物を
- * 指すself/parent/ancestorは使えない（ReferenceScope.recipeUnlock参照）。
+ * （素材の充足は`steps.requires`が持つ）。判定する時点では成果物のインスタンスがまだ無いので、そこを
+ * 起点に辿る参照は解決先を持たない（何を書けるかはReferenceScope.recipeUnlockが決める）。
  */
 export class RecipeDef {
   readonly name: string;
@@ -116,8 +116,8 @@ export class RecipeDef {
    * （Requirements.firstUnmet と同じ理由）。
    */
   unmetUnlockRequirement(agent: WorldObject | undefined): Requirement | undefined {
-    // 参照できるのはagentだけ（13.3節）。まだ成果物のインスタンスが無いので、selfを持たない文脈で
-    // 評価する——self・parent・ancestorはそのまま解決先を持たない。
+    // まだ成果物のインスタンスが無いので、selfを持たない文脈で評価する（13.3節）——selfを起点に辿る
+    // 参照はそのまま解決先を持たない。
     return this.unlock?.firstUnmet(ReferenceContext.acting(undefined, agent, undefined));
   }
 }

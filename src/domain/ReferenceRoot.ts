@@ -34,10 +34,11 @@ export type ReferenceRoot =
   | 'ancestor';
 
 /**
- * 宣言に書かれたReferenceRootを実行時のオブジェクトへ解くための、**誰がself/agent/instrumentか**という文脈。
+ * 宣言に書かれたReferenceRootを実行時のオブジェクトへ解くための、**どの役に誰が居るか**という文脈
+ * （その場所がどの役を用意できるかはReferenceScopeが持つ）。
  *
  * 参照を持つ側（条件・効果・重み）はこれを組み立てず、受け取ったものをそのまま下へ渡す。**組み立てるのは
- * 「誰がこの行動をしているか」を知っている一番外側だけ**で、途中の誰も3つ組をばらして持ち回らない。
+ * 「誰がこの行動をしているか」を知っている一番外側だけ**で、途中の誰も中身をばらして持ち回らない。
  *
  * ancestorはここでは解けない——「参照先のプロパティを定義している最初の祖先」なので、探すプロパティを
  * 知っている側（PropertyPath）でしか決まらない。
@@ -68,8 +69,8 @@ export class ReferenceContext {
   }
 
   /**
-   * selfだけが決まっている文脈。agent/instrumentは解決先を持たない——誰かが操作しているとは限らない
-   * 場面（持続効果のゲート、影響の一覧）で使う。
+   * selfだけが決まっている文脈（ReferenceScope.declaration）。ほかの役は解決先を持たない——誰かが
+   * 操作しているとは限らない場面（持続効果のゲート、影響の一覧）で使う。
    */
   static forSelf(self: WorldObject | undefined): ReferenceContext {
     return new ReferenceContext(self, undefined, undefined, undefined);
