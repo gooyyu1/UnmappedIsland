@@ -383,7 +383,8 @@
 （`home_coast_id`。`set` が個体を書ける、
 [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 9.2 節）、航路はその個体へ帰します。
 出航は `{tag: coast}` なので岩の海岸からもでき、**着くのは出たその海岸**です。砂浜が 1 つも無い島
-（60 シードに 1 つ）でも戻れます。
+（[`stats/island_escape_reach.yaml`](../../stats/island_escape_reach.yaml) の
+`island_missing_location`）でも戻れます。
 
 ### 3.6 出航地点が、鎖のどこへ繋がるかを決める
 
@@ -534,7 +535,7 @@
 #### 3.9.1 航海は 4〜6 日で、30 日ではない
 
 **3 節の網から出る所要時間は、素の速さで 4〜6 日です。** 各海区で航路が現れるまでの見張り（3 節の表）と、
-素の横断 360 分（3.2 節）の合計を、島と同じ物差し（自由時間 1 日 816 分、
+素の横断 360 分（3.2 節）の合計を、島と同じ物差し（1 日ぶんの自由時間。
 [`ContentSkeleton.md`](./ContentSkeleton.md) 4 節）で割ったものです。
 
 | 出航地点 | 区間 | 見張り | 横断 | 合計 | 日数 |
