@@ -660,11 +660,12 @@ object_defs:
         duration: 5
         destroy: self
         add: {agent: {hydration: 96}}
-      # 飲み干さずにひと口だけ。かかる時間は飲む人の渇き具合で決まるので、定義だけでは決まらない
+      # 繊維を噛ませて漉しながら、飲み干さずにひと口だけ。かかる時間は漉す繊維の目の細かさで
+      # 決まるが、**その値を宣言している型が世界に1つも無い**ので、定義だけでは決まらない
       # （SupplyRow.hasUnresolvedReferences）。
       sip:
-        trigger: menu
-        duration: {subject: agent, prop: hydration}
+        trigger: {drag: {object: fiber}}
+        duration: {subject: instrument, prop: mesh}
         add: {agent: {hydration: 8}}
 
   # 入手経路が無い道具。これを要るレシピが「道具が無くて作れないもの」になる（ObjectCost.blockedByTool）。

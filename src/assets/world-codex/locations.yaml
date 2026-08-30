@@ -219,6 +219,9 @@ object_defs:
   #   1回に1つまでにし、数で増えるのはアイテムだけにする。
   # - 生きた獣（animals.yaml）は**単独の候補**にする。収穫ではなく出くわすものなので、他の物と一緒に
   #   見つかると「実り」に混ざってしまう（docs/engine/ExplorationSystem.md 2.1節）。
+  # - 獣の候補の重みには、**探索する人の狩猟の腕（quarry_sense）を掛ける**
+  #   （docs/world/Skills.md 5節）。土地が持つのは素の重みで、腕は倍率だけを持つ——**獣が増える
+  #   のではなく、居る獣に気づけるようになる**。掛けるのは獣の候補だけで、実りの候補には掛けない。
   # - ambient_brightnessは樹冠と地面の反射の合計（core.yamlのlocation traitが土台と底を持つ）。
   #   内訳はContentSkeleton.md 8.1.2節の表で、ここに書くのは合計だけ。
   # - exploreは視界の明るさを要求する（IlluminationSystem.md 5節）。据え付けの光源は視界に効かない
@@ -286,9 +289,9 @@ object_defs:
           - weight: {prop: crab_find}
             spawn: {object: coconut_crab, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
-          - weight: {prop: rat_find}
+          - weight: {prop: rat_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: rat, into: self}
-          - weight: {prop: monkey_find}
+          - weight: {prop: monkey_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: monkey, into: self}
           # 2個
           - weight: 20
@@ -359,9 +362,9 @@ object_defs:
           - weight: {prop: driftwood_trunk_find}
             spawn: {object: driftwood_trunk, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
-          - weight: {prop: rat_find}
+          - weight: {prop: rat_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: rat, into: self}
-          - weight: {prop: monkey_find}
+          - weight: {prop: monkey_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: monkey, into: self}
           # 2個
           # 漂着物。ヤシの実は海を渡って流れ着くので、ヤシの生えない岩場にも寄る。
@@ -441,9 +444,9 @@ object_defs:
           - weight: {prop: driftwood_trunk_find}
             spawn: {object: driftwood_trunk, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
-          - weight: {prop: rat_find}
+          - weight: {prop: rat_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: rat, into: self}
-          - weight: {prop: monkey_find}
+          - weight: {prop: monkey_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: monkey, into: self}
           # 2個
           # 漂着物。ヤシの実は海を渡って流れ着くので、ヤシの生えない崖下にも寄る。
@@ -502,9 +505,9 @@ object_defs:
           - weight: {prop: spring_find}
             spawn: {object: spring, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
-          - weight: {prop: rat_find}
+          - weight: {prop: rat_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: rat, into: self}
-          - weight: {prop: junglefowl_find}
+          - weight: {prop: junglefowl_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: junglefowl, into: self}
           # 2個
           - weight: 18
@@ -579,11 +582,11 @@ object_defs:
           - weight: {prop: spring_find}
             spawn: {object: spring, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
-          - weight: {prop: rat_find}
+          - weight: {prop: rat_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: rat, into: self}
-          - weight: {prop: monkey_find}
+          - weight: {prop: monkey_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: monkey, into: self}
-          - weight: {prop: wild_boar_find}
+          - weight: {prop: wild_boar_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: wild_boar, into: self}
           # 2個
           - weight: {prop: tree_find}
@@ -663,13 +666,13 @@ object_defs:
           - weight: {prop: taro_find}
             spawn: {object: taro, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
-          - weight: {prop: rat_find}
+          - weight: {prop: rat_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: rat, into: self}
-          - weight: {prop: junglefowl_find}
+          - weight: {prop: junglefowl_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: junglefowl, into: self}
-          - weight: {prop: monkey_find}
+          - weight: {prop: monkey_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: monkey, into: self}
-          - weight: {prop: wild_boar_find}
+          - weight: {prop: wild_boar_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: wild_boar, into: self}
           # 2個
           - weight: {prop: tree_find}
@@ -749,7 +752,7 @@ object_defs:
           - weight: 7
             spawn: {object: twig, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
-          - weight: {prop: rat_find}
+          - weight: {prop: rat_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: rat, into: self}
           # 2個
           - weight: 22
@@ -805,7 +808,7 @@ object_defs:
           - weight: {prop: wood_find}
             spawn: {object: twig, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
-          - weight: {prop: rat_find}
+          - weight: {prop: rat_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: rat, into: self}
           # 2個
           - weight: 25
@@ -868,7 +871,7 @@ object_defs:
           - weight: {prop: berry_find}
             spawn: {object: berry_bush, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
-          - weight: {prop: rat_find}
+          - weight: {prop: rat_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: rat, into: self}
           # 2個
           - weight: 20
@@ -936,7 +939,7 @@ object_defs:
           - weight: 25
             spawn: {object: stone, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
-          - weight: {prop: rat_find}
+          - weight: {prop: rat_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: rat, into: self}
           # 2個
           - weight: 30

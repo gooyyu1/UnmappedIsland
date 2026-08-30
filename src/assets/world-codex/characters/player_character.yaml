@@ -513,25 +513,48 @@ traits:
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
       # 火を起こす（fire.yamlのlight）。**レシピは開けない**——効き先は着火の重みだけ
-      # （docs/engine/FireSystem.md 10節）。
+      # （docs/engine/FireSystem.md 10節）。段が押し上げるのは下のignition_easeで、それが火口の
+      # ignition_chanceへ掛かる。
       skill_firecraft:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {ignition_ease: 0.5}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {ignition_ease: 1}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {ignition_ease: 2}}
       # 獣を狩る（animals.yamlのstrike）。**レシピは開けない**——開けるのは素材と機会で（Skills.md 2節）、
-      # 罠を作るのは繊維・編みの腕（同節のくくり罠）。
+      # 罠を作るのは繊維・編みの腕（同節のくくり罠）。段が押し上げるのは下のquarry_senseで、それが
+      # 土地の<動物>_find（探索で出くわす機会）へ掛かる。
+      #
+      # **罠には効かない。** 罠の抽選は誰も操作していない場面で走るので、罠から腕の持ち主が見えない
+      # （docs/engine/TrapSystem.md 8節）。
       skill_hunting:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {quarry_sense: 0.5}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {quarry_sense: 1}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {quarry_sense: 2}}
       # 鉱石を採って製錬する。伸ばす行動も開ける物もまだ無い（青銅器が世界に無い）。
       skill_smelting:
         tags: [skill]
@@ -541,3 +564,18 @@ traits:
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
+      # ------------------------------------------------------------------
+      # アクセス系の腕が押し上げる倍率（docs/world/Skills.md 5節）。**素は1（等倍）で、自分では
+      # 動かず、上の腕前の段がmodifyで押し上げる。**使う側は`pick`の重みへ`times`で掛ける
+      # ——荷重の段が押し上げるpaceを、道が所要時間へ掛けるのとまったく同じ形。
+      #
+      # **刻みは2本で同じ**（basic 1.5・skilled 2・expert 3）。腕ごとに変えると、同じ`basic`が腕ごとに
+      # 違う効きになり、11本で段の境目を揃えている意味が消える。
+      #
+      # **statusタグを持たないので画面には出ない**（paceと同じ）。見せるのは腕前そのもので、
+      # 効きの大きさは段から読む（docs/world/Skills.md 5節）。
+      # ------------------------------------------------------------------
+      # 火の移りやすさ。火口のignition_chance（fire.yamlのlight）へ掛かる。
+      ignition_ease: {value: 1}
+      # 獣の気配に気づく目。土地の<動物>_find（locations.yamlのexplore）へ掛かる。
+      quarry_sense: {value: 1}

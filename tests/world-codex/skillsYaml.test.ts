@@ -50,6 +50,18 @@ const STAGES = [
 const GAIN_PER_ACTION = 2;
 
 /**
+ * アクセス系の腕（Skills.md 2節）と、その段が押し上げる倍率（同5節）。レシピを開けない腕なので、
+ * 効き先はここにしか無い——**この対応が切れると、伸びるだけで何にも効かない腕に戻る**。
+ */
+const ACCESS_MULTIPLIERS = [
+  { skill: 'skill_firecraft', multiplier: 'ignition_ease' },
+  { skill: 'skill_hunting', multiplier: 'quarry_sense' },
+] as const;
+
+/** 段ごとの倍率（Skills.md 5節）。素は等倍で、2本とも同じ刻み。 */
+const MULTIPLIER_BY_STAGE = [1, 1.5, 2, 3] as const;
+
+/**
  * 定義ファイルが `add` で `agent` の腕前へ配っている量を、腕ごとに集める。効果はロード後には木へ
  * 畳まれていて列挙できないため、理由（reason）を集める bundledLocale.test.ts と同じく構文木を辿る。
  */
@@ -230,6 +242,25 @@ describe('腕前とレシピの解放条件', () => {
 
         expect(progress?.nextName, `${property.def.name} の ${middle}`).toBe(next.name);
         expect(progress?.ratio, `${property.def.name} の ${middle}: 段の中ほど`).toBeCloseTo(0.5);
+      }
+    }
+  });
+
+  it('アクセス系の腕は、段が上がるほど倍率を押し上げる', () => {
+    // 火と狩猟はレシピを開けない（Skills.md 2節）ので、段が動かすのはこの倍率だけ。素人のうちは
+    // 等倍で、上の段ほど大きくなる——2本で同じ刻みにしてあるのは、11本で段の境目を揃えている
+    // のと同じ理由（同5節）。
+    for (const { skill, multiplier } of ACCESS_MULTIPLIERS) {
+      const character = characterWithSkills(0);
+      const skillProperty = character.getProperty(codex.propertyNames.getId(skill));
+      const multiplierProperty = character.getProperty(codex.propertyNames.getId(multiplier));
+
+      for (const [index, stage] of STAGES.entries()) {
+        skillProperty.setNumberWithoutEvents(stage.min);
+        expect(
+          multiplierProperty.getEffectiveValue(),
+          `${skill} が ${stage.name} のときの ${multiplier}`,
+        ).toBe(MULTIPLIER_BY_STAGE[index]);
       }
     }
   });

@@ -75,6 +75,7 @@ describe('探索で見つかる物', () => {
 
   /**
    * その土地を1つ作り（propsを渡せばつまみを上書きして）、trials回探索して、1回ごとの発見物を返す。
+   * huntingSkillは探索する人の狩猟の腕で、獣の候補の重みへ倍率として掛かる（Skills.md 5節）。
    *
    * 進捗は探索のたびに増えるが、rangeの上限に張り付いた後も発見物の抽選は続く（ExplorationSystem.md
    * 2節）ため、試行回数が進捗の上限を超えても数え方は変わらない。
@@ -83,6 +84,7 @@ describe('探索で見つかる物', () => {
     landName: string,
     props: ReadonlyMap<number, number> = new Map(),
     trials: number = TRIALS,
+    huntingSkill = 0,
   ): Finding[] {
     const session = new WorldSession(codex);
     const worldInstance = new WorldObject(1, codex.objects.get(codex.objectNames.getId('world')), session);
@@ -99,6 +101,7 @@ describe('探索で見つかる物', () => {
     // 探索には視界の明るさが要る（IlluminationSystem.md 5節）。ここで見たいのは抽選卓なので、
     // 時刻を作らずに探索者の側で明るさを満たす。
     const agent = createBrightEnoughAgent(explorer, codex);
+    agent.getProperty(codex.propertyNames.getId('skill_hunting')).setNumberWithoutEvents(huntingSkill);
 
     // **見つかった物は、個数の差ではなく個体で数える**——置かれた物は腐って消える（食べ物の
     // durability、DurabilitySystem.md 3節）ので、消えた数と見つかった数が打ち消し合うと、
@@ -154,6 +157,25 @@ describe('探索で見つかる物', () => {
 
     expect(palmsWith(0), '重み0なら出ない').toBe(0);
     expect(palmsWith(10000), '重みが他を圧倒すればほぼ毎回出る').toBeGreaterThan(TRIALS * 0.9);
+  });
+
+  it('狩猟の腕は、獣の候補の重みへ倍率として掛かる', () => {
+    // 腕が動かすのは獣の候補の重みだけで、卓そのものは変わらない（docs/world/Skills.md 5節）。
+    // ネズミしか居ない荒野で、つまみと腕の両側から同じ重みを作って確かめる。
+    const ratFindId = codex.propertyNames.getId('rat_find');
+    const rats = (ratFind: number, huntingSkill: number): number =>
+      findingsOf('wasteland', new Map([[ratFindId, ratFind]]), BEAST_TRIALS, huntingSkill).reduce(
+        (sum, finding) => sum + (finding.get('rat') ?? 0),
+        0,
+      );
+
+    expect(rats(3, 180), '熟達すれば素人より出くわす').toBeGreaterThan(rats(3, 0));
+    // **同じ重みなら同じ卓**なので、引きまでそっくり一致する。腕が増やしているのが獣ではなく
+    // 気づく確率であることが、これでそのまま言える。
+    expect(rats(3, 180), '熟達×素の3は、素人×つまみ9と同じ卓').toBe(rats(9, 0));
+    // 掛ける相手が0なら0のまま。**居ない土地では、腕がいくら高くても出くわさない**
+    // （土地が宣言していない候補は抽選から外れる、ExplorationSystem.md 2.1節）。
+    expect(rats(0, 180), '居ない獣には気づきようがない').toBe(0);
   });
 
   it.each(BEAST_FINDS)('%s の %s は、獣1匹だけを湧かせる', (landName, findProp, beastName) => {
