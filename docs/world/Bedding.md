@@ -133,7 +133,7 @@ object_defs:
 
 **部品の寄与をこの回復量へ届かせる文法が足りません。** 部品は `modify` で寝床のプロパティを押し上げられ
 ますが、`add` の量はリテラル数値しか受け付けません（`src/loader/parseActiveEffects.ts` の `parseAdds`）。
-`weight` と `duration` は既に `{subject, prop}` を受け取れる（同 `parseWeight`、
+`weight` と `duration` は既に `{subject, prop}` を受け取れる（同 `parseDeclaredNumber`、
 [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 10.2節）ので、**`add` の量に同じ読み手を
 使えるようにするのが最小の変更**です。これが無いと、骨組みを差しても回復量が動きません。
 
