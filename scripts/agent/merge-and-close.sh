@@ -146,7 +146,8 @@ fi
 # **畳んでよいのは、1つの issue のために立てたセッションだけ**（`task-<番号>` タグを持つ。
 # `dispatch-task.sh` が必ず付ける）。相談役のように issue を持たない相手は、PR1本がマージされても
 # 仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。**ここが選ぶのはこれだけ**で、
-# 畳んでよいかの判定と出力は [`archive-session.sh`](archive-session.sh) が持つ。
+# 畳んでよいかの判定と出力は [`archive-session.sh`](archive-session.sh) が持つ。**走行中は守らない**
+# （`--keep-working` を付けない）——PRはもうマージされていて、ここが渡す最後の機会だから。
 targets=''
 while read -r session; do
   [ -n "$session" ] || continue

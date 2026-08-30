@@ -15,6 +15,8 @@ import { describe, expect, it } from 'vitest';
  */
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/merge-and-close.sh');
+/** 同じ世界で叩ける後片付けの片割れ。こちらはPRが**開いている**ときの経路を持つ。 */
+const ARCHIVE_REVIEWS = resolve(__dirname, '../../scripts/agent/archive-reviews.sh');
 
 /** `ccr-env.sh` へ環境変数で渡す身代わり。実物のIDは試験に書き写さない。 */
 const CLOUD = 'env_TEST_CLOUD';
@@ -83,7 +85,11 @@ interface Run {
   readonly comments: string;
 }
 
-function run(world: World): Run {
+/**
+ * 世界を組んで叩く。`entry` を渡すと `merge-and-close.sh` 以外を同じ世界で叩ける——`gh` のスタブは
+ * `gh pr merge` が呼ばれるまで `state` に `OPEN` を返すので、**PRが開いている経路**はこれでしか試せない。
+ */
+function run(world: World, entry: readonly string[] = [SCRIPT, '1000']): Run {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-merge-and-close-'));
   try {
     const dir = work.replace(/\\/g, '/');
@@ -233,7 +239,7 @@ esac
     let status = 0;
     let out = '';
     try {
-      out = execFileSync('bash', [SCRIPT, '1000', ...(world.userOk === true ? ['--user-ok'] : [])], {
+      out = execFileSync('bash', [...entry, ...(world.userOk === true ? ['--user-ok'] : [])], {
         encoding: 'utf-8',
         env: {
           ...process.env,
@@ -481,29 +487,32 @@ describe('merge-and-close.sh', () => {
     expect(result.lines).toEqual(['MERGED 1000', 'SYNCED deadbee']);
   });
 
-  // `archive_session` はコンテナを解放するので、判定を書いている最中のレビューを畳むと、その
-  // コメントは出ないまま消える。「読み終えたか」は状態では分からないが、「**今走っているか**」は
-  // 別の問いで、`status_bucket` が答える。次の出来事でもう一度渡されるので取りこぼしにはならない。
-  it('走っている最中のセッションは畳まない', () => {
+  // 走行中を守ると `KEPT` として残るだけで、誰かがもう一度渡さない限り二度と畳まれない。**マージ済みの
+  // PRへは、レビューの投入も次のマージも二度と来ない**——ここが渡す最後の機会なので、走行中でも畳む。
+  // 判定を書き終えても読む相手（開いているPR）が無い、というのが守らない理由。
+  it('マージのときは、走っている最中のセッションも畳む', () => {
     const result = run({
+      body: 'Closes #1033\n\n_[Claude Code](https://claude.ai/code/session_01TASKAAAAAAAAAAAAAAAA)_',
+      issues: { 1033: 'CLOSED' },
       sessions: {
+        session_01TASKAAAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING',
         session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING',
-        session_01REVIEWBBBBBBBBBBBBBB: 'SESSION_STATUS_IDLE',
       },
       tags: {
+        session_01TASKAAAAAAAAAAAAAAAA: ['task-1033'],
         session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'],
-        session_01REVIEWBBBBBBBBBBBBBB: ['review-1000'],
       },
-      working: ['session_01REVIEWAAAAAAAAAAAAAA'],
+      working: ['session_01TASKAAAAAAAAAAAAAAAA', 'session_01REVIEWAAAAAAAAAAAAAA'],
     });
 
     expect(result.lines).toEqual([
       'MERGED 1000',
-      'KEPT session_01REVIEWAAAAAAAAAAAAAA',
-      'ARCHIVED session_01REVIEWBBBBBBBBBBBBBB',
+      'CLOSED 1033',
+      'ARCHIVED session_01TASKAAAAAAAAAAAAAAAA',
+      'ARCHIVED session_01REVIEWAAAAAAAAAAAAAA',
       'SYNCED deadbee',
     ]);
-    expect(result.archived).toEqual(['session_01REVIEWBBBBBBBBBBBBBB']);
+    expect(result.archived).toEqual(['session_01TASKAAAAAAAAAAAAAAAA', 'session_01REVIEWAAAAAAAAAAAAAA']);
   });
 
   // 作業ツリーは本体の `node_modules` を共有するので、本体が古いままだと版が食い違う。
@@ -534,5 +543,37 @@ describe('merge-and-close.sh', () => {
     expect(result.git.some((call) => call.includes('checkout'))).toBe(false);
     expect(result.installed).toBe(false);
     expect(result.status).toBe(2);
+  });
+});
+
+/**
+ * マージのときと対になる、**PRが開いているとき**の経路（`dispatch-review.sh` が次を立てる直前に呼ぶ）。
+ * 上の `describe` と同じ世界を使う——`gh pr merge` を呼ばないので `state` は `OPEN` のまま。
+ */
+describe('archive-reviews.sh', () => {
+  // ここで畳むと、書きかけの判定はコメントに出ないまま消える。守っても、次の投入かマージで
+  // もう一度渡されるので取りこぼしにはならない——**これが成り立つのはPRが開いている間だけ**。
+  it('PRが開いている間は、走っている最中のレビューを守る', () => {
+    const result = run(
+      {
+        sessions: {
+          session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING',
+          session_01REVIEWBBBBBBBBBBBBBB: 'SESSION_STATUS_IDLE',
+        },
+        tags: {
+          session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'],
+          session_01REVIEWBBBBBBBBBBBBBB: ['review-1000'],
+        },
+        working: ['session_01REVIEWAAAAAAAAAAAAAA'],
+      },
+      [ARCHIVE_REVIEWS, '1000'],
+    );
+
+    expect(result.lines).toEqual([
+      'KEPT session_01REVIEWAAAAAAAAAAAAAA',
+      'ARCHIVED session_01REVIEWBBBBBBBBBBBBBB',
+    ]);
+    expect(result.archived).toEqual(['session_01REVIEWBBBBBBBBBBBBBB']);
+    expect(result.status).toBe(0);
   });
 });

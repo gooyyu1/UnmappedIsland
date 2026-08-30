@@ -3,6 +3,7 @@
 # 標準入力へ1行1件で渡すだけでよい。
 #
 #   printf '%s\n' session_A session_B | bash scripts/agent/archive-session.sh
+#   printf '%s\n' session_A | bash scripts/agent/archive-session.sh --keep-working
 #
 # 出力は1行1件。`ARCHIVED <ID>`、触らないと決めたものは `KEPT <ID>`、打って失敗したものは
 # `UNARCHIVED <ID>`。既に畳まれているものは何も出さない。**終了コードは常に0**——呼び手
@@ -18,12 +19,16 @@
 # だから `get_session` はここが自分で引く。呼び手が引いたものを渡す形にすると、「どの口から引いた
 # 値のどのキーを見るか」が呼び手側の知識に戻り、規約がまた散る。
 #
-# ## 走っている最中のものは畳まない
+# ## 走行中を守るかは呼び手が決める（`--keep-working`）
 #
 # 「**読み終えたか**」は状態では分からない（[`archive-reviews.sh`](archive-reviews.sh)「状態では
 # 判定できない」）が、「**今走っているか**」は別の問いで、`status_bucket` が答える。`archive_session`
 # はコンテナを解放するので、判定を書いている最中のレビューを畳むと、そのコメントは出ないまま消える。
-# 次の出来事（新しいレビューの投入・次のマージ）でもう一度渡されるので、取りこぼしにはならない。
+#
+# **ただし除いたものは `KEPT` として残るだけで、誰かがもう一度渡さない限り二度と畳まれない。**
+# だから守るのは、**その出力を読む相手がまだ居るとき**だけ——開いているPRのレビューがこれで、次の
+# レビューの投入かマージのときにもう一度渡される。**マージ済みのPRのセッションは、判定を書き終えても
+# 読む相手が無く、渡す出来事も二度と起きない**ので、走行中でも畳む。どちらかは呼び手が知っている。
 #
 # ## ブリッジで立てたものは畳まない
 #
@@ -33,6 +38,9 @@
 # `environment_id`（[`ccr-env.sh`](ccr-env.sh) の `BRIDGE_ENV`）で除いて `KEPT` として出す。
 
 set -euo pipefail
+
+KEEP_WORKING=0
+[ "${1:-}" != "--keep-working" ] || KEEP_WORKING=1
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/agent/ccr-env.sh
@@ -47,7 +55,8 @@ while read -r session; do
   info=$(printf '{"session_id":"%s"}' "$session" |
     bash "$CCR_META" get_session | grep -o '{"ccr".*' || true)
   [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" != "SESSION_STATUS_ARCHIVED" ] || continue
-  if [ "$(jq -r '.ccr.status_bucket // ""' <<<"$info")" = "SESSION_STATUS_BUCKET_WORKING" ] ||
+  if { [ "$KEEP_WORKING" -eq 1 ] &&
+    [ "$(jq -r '.ccr.status_bucket // ""' <<<"$info")" = "SESSION_STATUS_BUCKET_WORKING" ]; } ||
     [ "$(jq -r '.ccr.environment_id // ""' <<<"$info")" = "$BRIDGE_ENV" ]; then
     echo "KEPT $session"
   elif printf '{"session_id":"%s"}' "$session" | bash "$CCR_META" archive_session >/dev/null; then

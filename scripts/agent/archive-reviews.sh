@@ -3,7 +3,7 @@
 #
 #   bash scripts/agent/archive-reviews.sh 1152
 #
-# **ここが決めるのは「どれがそのPRのレビューか」だけ**で、畳んでよいかの判定と出力は
+# **ここが決めるのは「どれがそのPRのレビューか」と「走行中を守るか」**で、畳んでよいかの判定と出力は
 # [`archive-session.sh`](archive-session.sh) が持つ。対象が無ければ何も出さない。
 # **引けなくても畳めなくても終了コードは0**——呼び手（投入・マージ）の本題は別にあるので、
 # 後片付けで落とさない。
@@ -18,7 +18,8 @@
 #
 # - `dispatch-review.sh` が**次を立てる直前**。レビューは使い回さない設計（あちらの「再レビューでも、
 #   前のセッションを起こさずに新しく立てる」）なので、次を立てる時点で前の分は終わっている。
-# - `merge-and-close.sh` が**マージした後**。PRが閉じれば、最後の1本も読む相手が無くなる。
+# - `merge-and-close.sh` が**マージした後**。PRが閉じれば、最後の1本も読む相手が無くなる。**ここが
+#   最後の機会**なので、走行中でも畳む（下の `--keep-working`）。
 #
 # ## 「読み終えたか」は状態では判定できない
 #
@@ -63,9 +64,16 @@ CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 # 無条件に掛けると、要る理由が読めなくなる。
 sessions=$(bash "$CCR_META" list_sessions <<<'{"mine":true,"limit":100}' | grep -o '{"ccr".*' |
   jq -r --arg tag "review-$PR" '.ccr.data[]?
-    | select(.session_status != "SESSION_STATUS_ARCHIVED")
     | select([.tags[]? | select(. == $tag)] | length > 0)
     | .id' | tr -d '\r' || true)
 
-# 畳んでよいかの判定は [`archive-session.sh`](archive-session.sh) が持つ。ここが選ぶのはタグだけ。
-CCR_META="$CCR_META" bash "$HERE/archive-session.sh" <<<"$sessions"
+# 畳んでよいかの判定は [`archive-session.sh`](archive-session.sh) が持つ。ここが選ぶのはタグと、
+# **走行中を守るかどうか**だけ。
+#
+# 守るのは**PRがまだ開いているとき**。閉じた（マージされた）PRのレビューは、判定を書き終えても読む
+# 相手が無いうえ、**上の2つの出来事はどちらも二度と起きない**——次のレビューは投入されず、次のマージも
+# 無い。守ると `KEPT` のまま誰にも渡されずに残り、`archive-reviews.sh` を入れる前の状態（72本）へ
+# 戻る（`watch-prs.sh` が見張るタグは `task` で始まるものだけなので、合図も出ない）。
+keep=()
+[ "$(gh pr view "$PR" --json state --jq '.state')" != "OPEN" ] || keep=(--keep-working)
+CCR_META="$CCR_META" bash "$HERE/archive-session.sh" "${keep[@]}" <<<"$sessions"
