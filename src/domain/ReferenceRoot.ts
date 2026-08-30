@@ -219,8 +219,8 @@ export class ReferenceScope {
   static readonly combination = new ReferenceScope(true, true, true, false, true, false);
 
   /**
-   * 作られる物のインスタンスがまだ無い場所（レシピについての判定）。問うのは「誰にとって解放されて
-   * いるか」であって操作ではないので、居るのは操作者だけ（11.5節）。
+   * 操作者だけが居る場所（レシピの条件）。宣言元が居ない理由は書ける場所ごとに違うので、
+   * 13.3・13.4節が各々で述べる。
    */
   static readonly recipeUnlock = new ReferenceScope(false, true, false, false, true, false);
 
