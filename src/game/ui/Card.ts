@@ -601,7 +601,7 @@ export class Card extends Phaser.GameObjects.Container {
     this.add(this.edgeLayer);
 
     // 入力の配線だけは構築時に一度きり。押したときに何が起きるかは実行時に_contentから読む
-    // （onTap・edges[].onTap）ので、差し替えで変わりうるのは「押せるかどうか」だけになる。
+    // （押下の受け口はどれも同じ）ので、差し替えで変わりうるのは「押せるかどうか」だけになる。
     if (content.onTap !== undefined || content.hold !== undefined || content.draggable === true)
       this.makeInteractive(width, height);
     if (content.onTap !== undefined || content.hold !== undefined) this.makeTappable(width, height);

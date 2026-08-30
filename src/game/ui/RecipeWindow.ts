@@ -20,7 +20,7 @@ import {
 
 /** 一覧の寸法（モーダルとして画面の中央に置く。余白・間隔・最下段は他の子ウィンドウと同じ）。 */
 const TITLE_SIZE = 28;
-/** 棚の見出しと、作れるものが無いときの1行の文字の大きさ。 */
+/** 棚の見出しと、並ぶものが無いときの1行の文字の大きさ。 */
 const HEADING_SIZE = 24;
 /** 折り返しで並べるカードの間隔。 */
 const CARD_GAP = 12;
@@ -32,10 +32,13 @@ const WINDOW_MAX_WIDTH =
 
 /** 一覧に並ぶレシピ1つ。完成品のカードとして出す。 */
 export interface RecipeEntry {
-  /** 完成品のカード（絵と名前）。押すとそのレシピを選ぶ。 */
+  /** 完成品のカード（絵と名前と、未解放なら鍵の印）。押して選べるのは解放済みのものだけ。 */
   readonly card: CardContent;
 
-  /** 満たしていない解放条件の理由（SkillSystem.md 4節）。解放済みならundefined。 */
+  /**
+   * 満たしていない解放条件の理由（SkillSystem.md 4節）。解放済みならundefined。
+   * 持つ札は押しても選べず、押している間この理由を吹き出しで出す（Windows.md 9.3節）。
+   */
   readonly lockedReason: string | undefined;
 
   /**
@@ -57,7 +60,7 @@ export interface RecipeWindowOptions {
   /** 棚は空でないものだけを、見せたい順に渡す（見出しだけが並ぶ行を作らない）。 */
   readonly categories: readonly RecipeCategory[];
 
-  /** 作れるものが1つも無いときに出す1行。 */
+  /** 並ぶものが1つも無いときに出す1行（未解放のレシピも並ぶので、作れないことでは空にならない）。 */
   readonly emptyText: string;
 
   readonly onClose: () => void;
@@ -87,7 +90,7 @@ export class RecipeWindow {
   /** 1列に並ぶカードの枚数。窓の内寸から決まるので、狭い画面ではWINDOW_COLUMNSより少ない。 */
   private readonly columns: number;
 
-  /** 窓に収まらない分の送り（作れるものが1つも無ければ持たない）。 */
+  /** 窓に収まらない分の送り（並ぶものが1つも無ければ持たない）。 */
   private scroll: ScrollArea | undefined;
 
   /** 未解放の札を押している間だけ出す吹き出し（ObjectWindowと同じ持ち方で、窓が閉じるときに捨てる）。 */
