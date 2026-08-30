@@ -39,6 +39,14 @@ python agent_kinds.py 2026-08-25 2026-09-01   # -> stats/usage/by_agent_kind.tsv
 ローカルから開くのでタグの付かない本がある**ので、タグの無い bridge に限り題名（人が打った指示の
 1行目）でも拾う。
 
+### Copilot の分は、この道具では作らない
+
+`stats/usage/copilot_by_day.tsv` だけは**GitHub の使用レポート**（Settings → Billing の
+AI usage report の CSV）を書き写したもの。取りに行く先が違うので自動では作れない。列は Claude 側と
+揃えてあり、`cost_usd` は**割引前の額**（`gross_amount`。枠で相殺された分も含む＝使った量の値段）、
+`billed_usd` が**実際に請求された分**（`net_amount`。枠を超えた分だけ）。`credits` が Copilot の
+生の単位で、$0.01 が1クレジット。
+
 ## 数字の限界
 
 - **ローカル分は換算値。** ローカルの transcript は `cost_usd` を持たないので、公称単価に
