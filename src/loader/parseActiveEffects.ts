@@ -164,7 +164,7 @@ function parseAmong(
   const root =
     subjectName === undefined
       ? 'self'
-      : parseSubjectRoot(amongContext, subjectName, scope.withoutPropertyName.withPicked);
+      : parseSubjectRoot(amongContext, subjectName, scope.withoutPropertyName);
 
   const slotName = tryGetScalar(node, 'slot', amongContext);
   if (slotName === undefined) throw new YamlLoadError(`${amongContext}: 'slot'は必須です。`);
