@@ -343,6 +343,16 @@ export class PropertyDef {
         `プロパティ'${name}'はシンボル型なので、段に'min'は書けません（段の'name'自体がそのまま比較対象になります）。`,
       );
 
+    // 段を外から指す術は名前しか無い（in_stage・in_stage_or_above、14.1節）ので、同じ名前が2つあると
+    // どちらを指しているかが決まらない。
+    const duplicated = stages.find(
+      (stage, index) => stages.findIndex((s) => s.name === stage.name) !== index,
+    );
+    if (duplicated !== undefined)
+      throw new Error(
+        `プロパティ'${name}': 段の名前'${duplicated.name}'が重複しています（段は名前で指すので、一意である必要があります）。`,
+      );
+
     if (range === undefined) {
       // 割合が定義できないとバーにできず、端が無ければ端のイベントも起こりえない（6.3・6.8節）。
       if (gauge !== undefined) throw new Error(`プロパティ'${name}': gaugeを使うにはrangeが必要です。`);
@@ -571,14 +581,15 @@ export class PropertyDef {
    * 半開区間なので、名指した段の下端を跨いでいることが、そのままその段以上に居ることになる。
    * 下端を持たない受け皿（6.4節）はいちばん下なので、名指せば常に真。
    *
-   * 宣言に無い名前（`in_stage`と同じく綴り間違いはここでしか出ない）と、値の並びの上に位置を持たない
-   * シンボル型（6.6節）は、上下を比べられないので偽。
+   * 宣言に無い名前（`in_stage`と同じく綴り間違いはここでしか出ない）と、完全一致で決まる段
+   * （シンボル型、6.6節）は、値の並びの上に位置を持たないので偽。**持ち主の型ではなく段の形で見る**
+   * ので、位置を持たない段が他の型に増えてもここは変わらない。
    */
   isInStage(effectiveValue: number, stageName: string, bound: StageBound = 'exact'): boolean {
     if (bound === 'exact') return this.stageAt(effectiveValue)?.name === stageName;
 
     const named = this.stages.find((stage) => stage.name === stageName);
-    if (named === undefined || this.isSymbolic) return false;
+    if (named === undefined || named.eq !== undefined) return false;
     return effectiveValue >= (named.lowerBound ?? Number.NEGATIVE_INFINITY);
   }
 
