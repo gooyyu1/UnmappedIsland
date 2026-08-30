@@ -274,6 +274,10 @@ describe('プレイヤーキャラクタの定義', () => {
       // メンタルの不調を代表する1本（Characters.md 幸福度節）。心も健康のうちなので、専用のタブは
       // 作らずhealthへ入れる。
       ['happiness', ['status', 'health']],
+      // 全身の菌（DigestionSystem.md 6節）。発症したときだけステータスエリアに出る。
+      ['pathogen', ['status', 'health']],
+      // 免疫はステータスエリアには出さず、カードを開いたときだけ見える（body_fatと同じ扱い）。
+      ['immunity', ['health']],
     ])('%sを持ち、期待されるプロパティタグが付いている', (propertyName, expectedTags) => {
       const tagNames = propOf(def(character), propertyName).tags.map((id) =>
         codex.propertyTagNames.getName(id),
@@ -282,7 +286,7 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(tagNames.sort()).toEqual([...expectedTags].sort());
     });
 
-    it('ステータスエリアに出るのは10件で、並び順も揃っている', () => {
+    it('ステータスエリアに出るのは11件で、並び順も揃っている', () => {
       // propertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（StatusArea.md 3節）。
       const instance = new WorldSession(codex).createObject(def(character).globalId);
       const status = instance.propertiesWithTag(codex.propertyTagNames.getId('status'));
@@ -294,6 +298,7 @@ describe('プレイヤーキャラクタの定義', () => {
         'satiety',
         'vitamin',
         'happiness',
+        'pathogen',
         'hydration',
         'wakefulness',
         'stamina',

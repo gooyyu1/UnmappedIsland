@@ -235,6 +235,43 @@ traits:
             add:
               self:
                 body_fat: -1
+      # 全身の菌（docs/engine/DigestionSystem.md 6節）。**人とまったく同じ物差し**（log₁₀ CFU）で、
+      # 増える速さも段の境目も同じ——同じ菌が獣では別の意味を持つ、ということにしない。
+      #
+      # 削る先も人と同じ水と血で、死に方は増えない（VitalsSystem.md 8節）。**カードに出すバーは
+      # 意識1本のまま**（同9節）なので、gaugeは宣言しない。
+      pathogen:
+        value: 0
+        range: {min: 0, max: 9}
+        stages:
+          - {name: sterile}
+          - {name: latent, min: 0.1}
+          - name: feverish
+            min: 5
+            alert: caution
+            passives:
+              - add: {self: {hydration: -1}}
+          - name: septicemic
+            min: 7
+            alert: danger
+            passives:
+              - add: {self: {hydration: -2, blood: -40}}
+        passives:
+          # **免疫は上げない**——下のimmunityが動かないので、獣には獲得免疫が無い。
+          - conditions: [{not: {prop: pathogen, in_stage: sterile}}]
+            add: {self: {pathogen: 0.15}}
+      # 免疫（同6節）。**獣では固定値**で、生活では上下しない——ビタミンも睡眠も幸福度も獣は持たず、
+      # 持たせる当てもないため。動かないので段は1つで足り、人の健康時と同じ高さ（robust、除去0.2が
+      # 増殖0.15を上回る）に置く。
+      #
+      # **野生の獣の免疫が実際どの程度かは分からない**ので、これは仮決め。人と同じ高さにするのは、
+      # 自分では手当てのできない獣が、負った傷から菌を回されて自壊しない最低条件がこれだから。
+      immunity:
+        value: 60
+        stages:
+          - name: robust
+            passives:
+              - add: {self: {pathogen: -0.2}}
     # 1手の重み配分（上のprops）を、その場の状況で押し引きする（HuntingSystem.md 5.5節）。
     #
     # **打ち消しは重みが0でクランプされること（10節）を使う。** 素の配分より桁の大きい負の寄与を
@@ -979,9 +1016,16 @@ object_defs:
             protein: 20
             lipid: 4
             vitamin: 2
-            # 本来は火を通すもの（docs/world/Characters.md 幸福度節の表）。下のpickの当たりと併せて、
-            # 生で食べない理由になる。
+            # 本来は火を通すもの（docs/world/Characters.md 幸福度節の表）。下の菌と併せて、生で
+            # 食べない理由になる。
             happiness: 1
+            # **火を通していない身が抱えている菌**（docs/engine/DigestionSystem.md 6節）。腐敗とは
+            # 独立していて、採れたての1切れでも入る——**当たるかどうかは、入った菌と食べた側の免疫で
+            # 決まる**ので、ここでは抽選を引かない。
+            #
+            # 3は生の食肉の表面菌数（10³ CFU/g の桁）から。焼けば菌は死ぬので、焼いた肉（roasted_meat）
+            # は名乗らない。
+            pathogen: 3
         pick:
           - weight: 100
           - weight: {prop: spoilage}
@@ -989,11 +1033,6 @@ object_defs:
             add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
           - weight: {prop: spoilage}
             add: {agent: {carbohydrate: -40, protein: -40, lipid: -40, hydration: -48}}
-          # 生であること自体が引く枝。腐敗とは独立した固定の重みで、傷んでいない生肉でも当たる
-          # （docs/engine/DigestionSystem.md 6節）。
-          - weight: 12
-            set: {agent: {satiety: 0}}
-            add: {agent: {carbohydrate: -40, protein: -40, lipid: -40}}
         destroy: self
 
   # 焼けた肉。生より腹に残り、栄養も出る。焼き上がっても火の中の枠に居続けるので、

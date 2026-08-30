@@ -237,6 +237,14 @@ object_texts:
         display_name: 幸福度
         icon: 😊
         description: 心の張り。痛みを抱えている間は落ちていき、うまい物を口にすれば戻る。火を通した食事ほど大きく戻す。
+      pathogen:
+        display_name: 体内の菌
+        icon: 🦠
+        description: 体の中で増えている菌。生の物を口にすると入り、免疫が増える速さを上回れば消えていく。増えれば熱が出て水が余計に要り、回れば血が漏れ出す。
+      immunity:
+        display_name: 免疫
+        icon: 🛡️
+        description: 菌を抑え込む力。壊血病・空腹・寝不足・気の塞ぎで落ち、感染しているあいだに上がる。多く摂っても強くはならない。
       # 腕前（docs/engine/SkillSystem.md、一覧は docs/world/Skills.md 2節）。**説明にはその腕を伸ばす
       # 行動を書く**——伸ばす行動を持たない本では、どうにもならないことがそこで分かる。
       skill_knapping:
@@ -1507,6 +1515,16 @@ stage_texts:
   dejected: 落胆
   glum: 塞ぐ
   content: 平静
+  # 体内の菌（DigestionSystem.md 6節）。下2段は潜伏期で、alertが無いのでステータスエリアには出ない。
+  sterile: 無菌
+  latent: 潜伏
+  feverish: 発熱
+  septicemic: 敗血
+  # 免疫（同節）。増える側が良い値なので、下から上へ強くなる並び。
+  failing: 衰え
+  weakened: 弱り
+  robust: 丈夫
+  primed: 高まり
   # 荷重。
   light: 身軽
   laden: 荷持ち

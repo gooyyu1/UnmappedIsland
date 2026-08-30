@@ -285,7 +285,12 @@ traits:
         value: 300
         range: {min: 0, max: 1500}
         stages:
-          - {name: starving, alert: danger}
+          # 腹に何も無い間は免疫が落ちる（docs/engine/DigestionSystem.md 6節）。**押し下げる4つのうち
+          # 2番目に重い**——ビタミンより軽く、寝不足より重い。modifyなので、食べれば その場で戻る。
+          - name: starving
+            alert: danger
+            passives:
+              - modify: {self: {immunity: -20}}
           - {name: hungry, min: 50, alert: caution}
           - {name: peckish, min: 200, alert: watch}
           - {name: fed, min: 400}
@@ -356,13 +361,23 @@ traits:
         stages:
           # 壊血病。古傷が開き、歯が抜ける。痛みは刺し傷・牙の傷と並ぶ60で、この島で最も重い段。
           # modifyなので可逆——葉物を食べて段を抜ければ、その場で引く。
+          # 免疫も押し下げる（docs/engine/DigestionSystem.md 6節）。**押し下げる4つのうち最も重い**
+          # のは、壊血病の創傷治癒不全が現実で最も確かめられているから。上の「古傷が開く」と同じ
+          # 現象を、傷ではなく菌の側から見たものにあたる。
           - name: scurvy
             alert: danger
             passives:
               - modify:
                   self:
                     pain: 60
-          - {name: deficient, min: 300, alert: caution}
+                    immunity: -40
+          # 発症前から免疫だけは落ち始める。**多く摂っても強くはならない**（過剰側に寄与は無い）
+          # ので、押すのは下の2段だけ。
+          - name: deficient
+            min: 300
+            alert: caution
+            passives:
+              - modify: {self: {immunity: -15}}
           - {name: waning, min: 600, alert: watch}
           - {name: replete, min: 1200}
         passives:
@@ -378,8 +393,8 @@ traits:
       # あって寝床を持っていること自体ではない。
       #
       # **上げるのは口にした物だけ**（各eatのベース値）で、**下げるのは痛みの段だけ**（上のpain）。
-      # 時間そのものから生える圧（ホームシック）・寝床や住居からの寄与・免疫への寄与は、まだ入って
-      # いない。増える側が良い値なので、段は下から上へ深刻さが下がる並び（血・熱と同じ形）。
+      # 時間そのものから生える圧（ホームシック）・寝床や住居からの寄与は、まだ入っていない。
+      # 増える側が良い値なので、段は下から上へ深刻さが下がる並び（血・熱と同じ形）。
       #
       # 感じ方の個体差はまだ持たせず、痛み・血と同じくこの trait が配る。
       happiness:
@@ -387,10 +402,103 @@ traits:
         value: 75
         range: {min: 0, max: 100}
         stages:
-          - {name: miserable, alert: danger}
+          # 心が折れている間は免疫も落ちる（docs/engine/DigestionSystem.md 6節）。**押し下げる4つの
+          # うち最も軽い**——現実で最も裏付けの弱い経路なので、順位の一番下に置く。
+          - name: miserable
+            alert: danger
+            passives:
+              - modify: {self: {immunity: -10}}
           - {name: dejected, min: 20, alert: caution}
           - {name: glum, min: 50, alert: watch}
           - {name: content, min: 80}
+      # 全身の菌（docs/engine/DigestionSystem.md 6節）。**単位は log₁₀ CFU**——菌の数そのものではなく、
+      # その常用対数で持つ。対数目盛では指数増殖が定数のaddになるので、「細菌が自分で自分を押し上げる」を
+      # 近似せずに書ける（明るさをEVで持っているのと同じ形、IlluminationSystem.md 2節）。
+      #
+      # **0は菌ゼロではなく菌1個**なので、増殖を無条件に置くと感染していない体でも菌が増える。
+      # 最下段sterileには置かず、そこを抜けている間だけ増やす。
+      #
+      # **増殖は定数1つ（+0.15/tick）。** 倍加あたりの上昇は log₁₀2 ≒ 0.30 なので、これは倍加時間30分に
+      # あたる。引くのは免疫の段（下のimmunity）で、**除去が増殖を上回れば0へ着地して止まり、下回れば
+      # 上限へ暴走する**——分かれ目は2つの定数の大小1つに畳まれている。
+      #
+      # **対数上の足し算は線形では掛け算**なので、続けて食べた分は過大に見える。向き（続けて食べるほど
+      # 危ない）は正しいので、罰としてそのまま許容する（docs/concept/DesignPrinciples.md）。
+      #
+      # **死に方は増えない**（VitalsSystem.md 8節）。上の2段が水と血を削り、既存の脱水・失血へ流す
+      # ——傷のfestering・septic段（injuries.yaml）とまったく同じ形。潜伏期のうちは下2段がalertを
+      # 持たないので、ステータスエリアには行が出ない（StatusArea.md 3節）。
+      pathogen:
+        tags: [status, health]
+        value: 0
+        range: {min: 0, max: 9}
+        stages:
+          - {name: sterile}
+          - {name: latent, min: 0.1}
+          - name: feverish
+            min: 5
+            alert: caution
+            passives:
+              # 熱で水が余計に要る。飲めば追いつくので、ここだけなら水で凌げる（VitalsSystem.md 8.1節）。
+              - add: {self: {hydration: -1}}
+          - name: septicemic
+            min: 7
+            alert: danger
+            passives:
+              # 菌が血へ回れば血漿が循環の外へ漏れ出す。**飲んでも循環へは戻らない**ので、免疫が
+              # 追いつく以外に止まらない。量は傷のseptic段と揃える。
+              - add: {self: {hydration: -2, blood: -40}}
+        passives:
+          # 菌が居る間だけ増え、同じ間だけ免疫が上がる（獲得免疫）。**潜伏期は、免疫が段を1つ上げるのに
+          # 要る時間そのもの**——0.25/tickなので、段の幅20を80 tick（20時間）で登る。
+          - conditions: [{not: {prop: pathogen, in_stage: sterile}}]
+            add: {self: {pathogen: 0.15, immunity: 0.25}}
+      # 免疫（同6節）。**現実の単位を持たない**抽象の目盛り（痛み・幸福度と同じ）なので、確かめられるのは
+      # 上の菌の増殖（+0.15/tick）との大小だけ。段ごとの定数で菌を引く。
+      #
+      # **押し下げるのは生活の4つだけ**で、どれもmodify（可逆）。重い順に、壊血病 -40／ビタミン不足 -15
+      # （上のvitamin）・空腹 -20（上のsatiety）・寝不足 -15（キャラクタごとのwakefulness）・惨め -10
+      # （上のhappiness）。宣言は原因の段の側が持つ（壊血病が痛みを押し上げるのと同じ形）。
+      # **過剰側に寄与は無い**——ビタミンを多く摂れば感染に強くなる、は現実で否定されている。
+      # **体温も入れない**——寒さそのものが感染を増やすという裏付けは弱い。
+      #
+      # **段の境目は「いくつ重なったか」で置く。** 生来の60から、押し下げが1つまでならrobustに留まり
+      # （最も重い空腹の-20でちょうど40）、2つ重なるとweakened、3つ重なるか壊血病1つでfailingへ落ちる。
+      # こう置かないと、いちばん軽い-10でも段が落ちて、重い順に並べた意味が消える。
+      #
+      # **range.minが生来の免疫。** 生活の押し下げを全部重ねても（-85）ここより下へは行かないので、
+      # 生まれ持った守りは残る。
+      #
+      # **上がるのは感染している間だけ**（上のpathogenが+0.25/tick）。いちばん上の段だけが自分を引き
+      # 戻すので、**罹って治った体は生来より高い所（70の少し下）で止まる**——それが獲得免疫そのもので、
+      # 2つ重なっても崩れない余力になる。
+      #
+      # 身体の仕組みなので個体差を持たせず、痛み・血と同じくこの trait が配る。
+      #
+      # **statusは持たない**——常時見せるのは症状（上のpathogen）のほうで、免疫そのものは開いて見る値。
+      # 体脂肪と同じ扱いで、分類のタグだけを持ってカードのタブには並ぶ（docs/world/Characters.md）。
+      immunity:
+        tags: [health]
+        value: 60
+        range: {min: 20, max: 100}
+        stages:
+          - name: failing
+            passives:
+              - add: {self: {pathogen: -0.05}}
+          - name: weakened
+            min: 25
+            passives:
+              - add: {self: {pathogen: -0.1}}
+          # ここから上が増殖（+0.15）を上回る。健康な体はこの段の中から始まるので、生肉1食ぶんの菌は
+          # 症状が出ないまま引いていく。
+          - name: robust
+            min: 40
+            passives:
+              - add: {self: {pathogen: -0.2}}
+          - name: primed
+            min: 70
+            passives:
+              - add: {self: {pathogen: -0.3, immunity: -0.05}}
       # ------------------------------------------------------------------
       # 腕前（docs/engine/SkillSystem.md、粒度と一覧は docs/world/Skills.md 2節）。レシピの解放条件は
       # 段の名前で読む（同4節）ので、境目を条件の側へ書き写さない。

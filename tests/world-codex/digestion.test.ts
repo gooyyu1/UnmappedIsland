@@ -404,9 +404,12 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   });
 
   /**
-   * 食べたときの吐き下し（DigestionSystem.md 6節）。引き金は2つあり、腐敗（durabilityの段が押し上げる
-   * spoilage）と、生であること（腐敗と独立した固定の重み）。見るのは、無事な物では当たらないこと・
-   * 吐けば腹が空くこと・下せば水が余計に減ること・引き金を持つべき食べ物が全部持っていること。
+   * 傷んだ物を食べたときの吐き下し（DigestionSystem.md 6.1節）。引き金は腐敗だけ（durabilityの段が
+   * 押し上げるspoilage）で、見るのは、無事な物では当たらないこと・吐けば腹が空くこと・下せば水が
+   * 余計に減ること・引き金を持つべき食べ物が全部持っていること。
+   *
+   * **生であることはここでは引かない。** 生の物が運ぶ菌は抽選ではなく蓄積する値で持つので、
+   * そちらは tests/world-codex/pathogen.test.ts が見る（同6節）。
    */
   describe('吐き下し', () => {
     /** 腐った段（durability 240未満）に居る焼きイモの残り。 */
@@ -418,9 +421,6 @@ describe('消化（かさ・栄養素・蓄え）', () => {
     // どれを引くかになる。傷んだ段では吐き下しの重みが1/4なので、同じrollでも無事な側へ寄る。
     const VOMITS = 0.5;
     const HAS_DIARRHEA = 0.9;
-    // 傷んでいない物では腐敗の重みが0なので、抽選は「無事100 : 生の枝」の2択に落ちる。無事の100を
-    // 超える位置ならどこでも生の枝なので、候補の並び順には依らない。
-    const RAW = 0.99;
 
     /** 3本の在庫を同じ量だけ置く（減った分を割合で読みたいので、0に張り付かせない）。 */
     const STOCKED = 60;
@@ -460,12 +460,14 @@ describe('消化（かさ・栄養素・蓄え）', () => {
     }
 
     /**
-     * 食べ物を全数、1つずつ真新しい世界で食べさせて、吐き下しに当たったかどうかで名前を振り分ける。
+     * 食べ物を全数、1つずつ真新しい世界で食べさせて、食べた後の体を見て名前を振り分ける。
      * prepareは口へ運ぶ前の仕込み（腐らせる等）で、書かなければ採れたてのまま食べさせる。
+     * hitは「当たった」の見分け方で、既定は吐き下し（腹が空になったか）。
      */
     function eatEveryFood(
       roll: number,
       prepare: (food: WorldObject) => void = () => {},
+      hit: () => boolean = () => valueOf(satietyId) === 0,
     ): { affected: string[]; unaffected: string[] } {
       const affected: string[] = [];
       const unaffected: string[] = [];
@@ -479,7 +481,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
         stockAll(STOCKED);
 
         expect(food.tryGetAction('eat', player)?.tryExecute() === true, def.name).toBe(true);
-        (valueOf(satietyId) === 0 ? affected : unaffected).push(def.name);
+        (hit() ? affected : unaffected).push(def.name);
       }
 
       return { affected: affected.sort(), unaffected: unaffected.sort() };
@@ -567,10 +569,9 @@ describe('消化（かさ・栄養素・蓄え）', () => {
       ]);
     });
 
-    it('生でも食べられる物は、傷んでいなくても当たる', () => {
-      // 生の枝を書き忘れると、それだけが焼かずに食べても平気な食料になる。数が増えても気付けるよう、
+    it('生でも食べられる物は、傷んでいなくても菌を入れる', () => {
+      // 菌を書き忘れると、それだけが焼かずに食べても平気な食料になる。数が増えても気付けるよう、
       // 「焼くと何になるか」を実データから引いて、eatを持つ食べ物を全数、**傷ませずに**食べさせる。
-      // 新鮮なら腐敗の重みは0なので、ここで当たるのは生の枝を持つ物だけ。
       const cookingProgressId = codex.propertyNames.getId('cooking_progress');
       const defs = [...codex.objects].filter((def) => !codex.isGenerated(def));
 
@@ -594,12 +595,15 @@ describe('消化（かさ・栄養素・蓄え）', () => {
         .sort();
       expect(
         raw,
-        '生の枝を持つべきなのは、いまは生肉だけ。増えたらDigestionSystem.md 6節の数え上げも直す',
+        '菌を名乗るべきなのは、いまは生肉だけ。増えたらDigestionSystem.md 6節の数え上げも直す',
       ).toEqual(['raw_meat']);
 
-      const { affected } = eatEveryFood(RAW);
+      // 当たるかどうかは食べた側の免疫が決めるので、ここで見るのは入ったかどうかだけ
+      // （その先は tests/world-codex/pathogen.test.ts）。抽選を引かないのでrollは何でもよい。
+      const pathogenId = codex.propertyNames.getId('pathogen');
+      const { affected } = eatEveryFood(0, undefined, () => valueOf(pathogenId) > 0);
 
-      expect(affected, '傷んでいない物で当たるのは、生の枝を持つ物だけ').toEqual(raw);
+      expect(affected, '傷んでいない物で菌が入るのは、生のまま食べた物だけ').toEqual(raw);
     });
 
     it('下痢の脱水は、既にある渇きの死に方へ流れる', () => {

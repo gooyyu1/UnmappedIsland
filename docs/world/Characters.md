@@ -30,18 +30,19 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | `singleton` | `true`（同時に存在するプレイヤーキャラクタは1体） |
 | タグ | `character` |
 | スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
-| プロパティ | `weight` / `pace` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `happiness` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` と、腕前の11本（[`Skills.md`](./Skills.md) 2 節。個体差を持たず `player_character` trait が配る） |
+| プロパティ | `weight` / `pace` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `happiness` / `pathogen` / `immunity` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` と、腕前の11本（[`Skills.md`](./Skills.md) 2 節。個体差を持たず `player_character` trait が配る） |
 | アクション | 休息の4つ（`wait` / `rest` / `nap` / `sleep`。下の[休息](#休息)節）と、限界の3つ（`collapse` / `fall_asleep` / `despair`。下の[限界](#限界)節）。どちらも `player_character` trait が配る |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterCard.ts`。絵が入るまでの繋ぎ） |
 
-`status` タグが付くのは `pain` / `blood` / `warmth` / `satiety` / `vitamin` / `happiness` / `hydration` /
-`wakefulness` / `stamina` / `load` の10で、宣言順もこの順に揃える（`propertiesWithTag` の戻り順がそのままステータスエリアの
-並びになる、[`StatusArea.md`](../ui/StatusArea.md)）。先頭の6つが trait 由来なのは、trait の props が
+`status` タグが付くのは `pain` / `blood` / `warmth` / `satiety` / `vitamin` / `happiness` / `pathogen` /
+`hydration` / `wakefulness` / `stamina` / `load` の11で、宣言順もこの順に揃える（`propertiesWithTag` の戻り順がそのままステータスエリアの
+並びになる、[`StatusArea.md`](../ui/StatusArea.md)）。先頭の7つが trait 由来なのは、trait の props が
 キャラクタ自身の props より前に並ぶため（`RawObjectDef.resolve`）。**`chill_point` は `status` を持たない**
 ——見せるのは残っている熱だけで、境目そのものは衣服・寝床が押し下げる裏の値。**栄養素の在庫（`carbohydrate` ほか3つ）は
 `status` を持たない**——常に見せるのは腹が満ちているかどうかだけで、在庫は開いて見るもの
 （[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節）。**ビタミンだけが在庫と別扱いなのは、
-尽きた先の弊害を段が持つ**ため（同 4 節）。
+尽きた先の弊害を段が持つ**ため（同 4 節）。**`immunity` も `status` を持たない**——常時見せるのは症状
+（`pathogen` の段）のほうで、免疫そのものは体脂肪と同じく開いて見る値（同 6.2 節）。
 
 気絶を決める `consciousness` は、`pain` と同じくキャラクタ間で共通の値としてここへ加わる予定である
 （押し下げる側は [`VitalsSystem.md`](../engine/VitalsSystem.md) 2 節。気を失った手番の飛ばし方が
@@ -50,7 +51,8 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 ### 値の刻み方（キャラクタ間で共通の規約）
 
 数値のスケールは [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.0節に従い、
-`range.min` は常に0。1 tick = 15分、1時間 = 4 tick。
+`range.min` は常に0——**唯一の例外が `immunity`** で、そこだけは生来の免疫の高さ（20）を底に置く
+（[`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節）。1 tick = 15分、1時間 = 4 tick。
 
 **尽きると死ぬのは `hydration` / `body_fat` / `blood` / `warmth` の4つ**
 （[`VitalsSystem.md`](../engine/VitalsSystem.md) 8 節・8.3 節）。
@@ -75,6 +77,11 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   （[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）。
 - **`happiness`（幸福度）**: **メンタルの不調を代表する1本**で、単位を持たない 0〜100。自分では動かず、
   口にした物が上げ、`pain` の段が下げる（下の[幸福度](#幸福度)節）。個体差は持たせず trait が配る。
+- **`pathogen`（全身の菌）／`immunity`（免疫）**: 菌は **log₁₀ CFU**（0〜9）で持ち、`sterile` を抜けている
+  間だけ定数で増える。免疫は段ごとの定数でそれを引き、**除去と増殖の大小 1 つ**で着地するか暴走するかが
+  決まる（[`DigestionSystem.md`](../engine/DigestionSystem.md) 6 節）。菌の上2段が `hydration` と `blood` を
+  削るので**死に方は増えない**。免疫を押し下げるのは生活の4つ（壊血病・空腹・寝不足・気の塞ぎ）で、
+  宣言はそれぞれの段の側が持つ。どちらも個体差は持たせず trait が配る。
 - **`hydration`（水分）**: `-1/tick` 固定で、`max` が「満水から何 tick 保つか」。**減り方に個体差を
   持たせない**——キャラクタが違っても、飲んだ水1mLの意味が変わってはならないため。持ちの差は
   `max`（＝体が抱える水の量）で表す。液体の mL からの換算は飲用側の宣言が持つ（`transfer` の

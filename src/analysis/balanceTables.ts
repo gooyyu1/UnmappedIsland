@@ -433,6 +433,9 @@ export interface DailyNeed {
  *
  * 段で減る速さが変わる値（体脂肪）は、**初期値が入る段**の速さを採る。段ごとに違う数字を足すと、
  * どの段にも当てはまらない量になる。
+ *
+ * **増える側が悪い値（`pathogen`）は、減っても賄う対象ではない。** そこが減るのは体が菌を片付けて
+ * いるからで、外から集めてくる量ではない（docs/engine/DigestionSystem.md 6節）。
  */
 function dailyNeedsOf(codex: WorldCodex, character: ObjectDef): readonly DailyNeed[] {
   const deltas = tickDeltasOf(character).filter((delta) => delta.target === 'self');
@@ -444,6 +447,7 @@ function dailyNeedsOf(codex: WorldCodex, character: ObjectDef): readonly DailyNe
   const perTick = new Map<number, number>();
   for (const delta of deltas) {
     if (delta.capped || delta.gate.conditional || delta.amount >= 0) continue;
+    if (character.tryGetPropertyDef(delta.propertyGlobalId)?.worsensUpward === true) continue;
     if (delta.gate.stage !== undefined && !inInitialStage(character, delta)) continue;
     perTick.set(delta.propertyGlobalId, (perTick.get(delta.propertyGlobalId) ?? 0) + delta.amount);
   }

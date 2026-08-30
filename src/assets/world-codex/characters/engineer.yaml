@@ -78,7 +78,12 @@ object_defs:
         value: 216
         range: {min: 0, max: 216}
         stages:
-          - {name: overtired, alert: danger}
+          # 限界まで起きていると免疫が落ちる（docs/engine/DigestionSystem.md 6節）。**押し下げる4つの
+          # うち3番目**で、量はキャラクタに依らず同じ——寝ずにいられる長さの個体差は段の境目に出る。
+          - name: overtired
+            alert: danger
+            passives:
+              - modify: {self: {immunity: -15}}
           - {name: sleepy, min: 12, alert: caution}
           - {name: yawning, min: 48, alert: watch}
           - {name: rested, min: 173}
