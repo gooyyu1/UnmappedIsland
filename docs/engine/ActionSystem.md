@@ -127,8 +127,10 @@ actions/combinations の一度きりの判定と、passives（8節）の持続�
 
 **どの起点が書けるかは、場所ごとに数え上げるのではなく、宣言が置かれた場所が何を持つかから導く**
 （`ReferenceScope`）。**ロード時に弾く根拠と、実行時に組む `ReferenceContext` は同じ1つの事実**なので、
-書けたのに実行時は必ず空振りする、という宣言が作れない。11.5節「役を書ける場所」の表がそのまま
-`ReferenceScope` の `static` の並びになっている。
+書けたのに実行時は必ず空振りする、という宣言が作れない。11.5節「役を書ける場所」の表の各行は、
+`ReferenceScope` の `static`（と `withInstrument` のような派生）のどれかへ対応する——**行と `static` は
+1対1ではない。** `drag` と `put_in` は同じ `acting.withInstrument` を共有し、`declaration` は表に無い
+`resists`（7.13節）も担う。**表に無い場所が現れたら、持つものが同じ `static` を使う。**
 
 `world` は起点として未対応（ロード時エラー）。すべてのオブジェクトは world の下にぶら下がるため、
 world 固有プロパティの参照は `ancestor` で代替できる。起点としての `child` は passives の target 専用で、

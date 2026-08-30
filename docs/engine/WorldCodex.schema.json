@@ -551,8 +551,30 @@
       },
       "additionalProperties": false
     },
-    "passive_operation_map": {
-      "description": "passiveの1操作(modify/add)が持つ、対象をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。参加者のpropsなので操作の3役（agent/instrument/patient）も指せる（11.5節）——宣言元がどの役に就くかは静的には決まらず、その物が操作に参加している間だけ相手が決まる。",
+    "passive_modify_map": {
+      "description": "passiveのmodifyが持つ、対象をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。参加者のpropsなので操作の役も指せるが、**可逆な寄与を押せるのはagentだけ**（8.3節）——instrument・patientは複数の操作に同時に就きうるので、押した寄与が混ざって誰の分か見分けられなくなる。書くとロード時エラー。",
+      "type": "object",
+      "properties": {
+        "self": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "parent": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "child": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "ancestor": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "agent": {
+          "$ref": "#/$defs/target_amount_map"
+        }
+      },
+      "additionalProperties": false
+    },
+    "passive_add_map": {
+      "description": "passiveのaddが持つ、対象をキーとする辞書（8.1節・8.6節）。modifyの対象（passive_modify_map）に加えて、操作の3役すべてを指せる（8.4節・11.5節）——積むのは実体値で、積まれた結果は世界に起きた事実なので、後から「誰の操作の分か」を問う必要がない。宣言元がどの役に就くかは静的には決まらず、その物が操作に参加している間だけ相手が決まる。",
       "type": "object",
       "properties": {
         "self": {
@@ -588,11 +610,11 @@
         },
         "modify": {
           "description": "可逆的な修飾子。同一プロパティへの複数modifyは単純加算で合成される。",
-          "$ref": "#/$defs/passive_operation_map"
+          "$ref": "#/$defs/passive_modify_map"
         },
         "add": {
           "description": "条件が真であるtick毎に、対象プロパティの実体値へ直接・不可逆に加減算する（activeのaddと同じ動詞。一度きりかtick毎かは置き場所が決める、8.4節）。",
-          "$ref": "#/$defs/passive_operation_map"
+          "$ref": "#/$defs/passive_add_map"
         },
         "transfer": {
           "description": "条件が真であるtick毎に走る輸送（8.4.1節）。文法はactiveのtransfer（9.5節）と同一。宣言順に適用され互いの結果を見るため、直列に繋いだ輸送の中間に在庫を持たせるのは速度の差。",

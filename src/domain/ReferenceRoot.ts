@@ -295,12 +295,16 @@ export class PropertyPath {
 
 /**
  * 宣言が置かれた場所が、参照の解決に何を用意できるか（GameElementDefinition.md 14.1節。操作の3役に
- * ついては同11.5節「役を書ける場所」の表がそのまま下のstaticの並びになる）。
+ * ついては同11.5節「役を書ける場所」）。
  *
  * **ロード時に弾く根拠と、実行時に組む`ReferenceContext`は同じ1つの事実。** agentが居ない場所で
  * agentを指せてしまうと、書けたのに実行時は必ず空振りする。だから場所ごとに許すrootを数え上げるのでは
  * なく、**場所は自分が何を持つかだけを宣言し、rootの側が何を要るかを言う**。両者の食い違いは、
  * 一覧を書き写す代わりに導出で消える。
+ *
+ * **下のstaticは11.5節の表の行と1対1ではない。** 持つものが同じ場所は同じstaticを使う——`drag`と
+ * `put_in`は`acting.withInstrument`を共有し、`declaration`は表に無い`resists`（7.13節）も担う。
+ * 表の行ごとにstaticを立てると、数え上げをこちら側で作り直すことになる。
  */
 export class ReferenceScope {
   /** 宣言元の個体（self）が居るか。parent・ancestorもここから辿るので、無ければ揃って解けない。 */
