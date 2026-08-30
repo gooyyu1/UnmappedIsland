@@ -757,9 +757,12 @@ export class WorldObject {
    * instrumentを重ねたときに**今**成立する組み合わせ（12節、宣言順）。相手として受け入れるかだけでなく、
    * 要件（14節）を満たしているかまで見る——満杯の炉に薪をくべる組み合わせは、候補にならない。
    *
-   * **要件まで見るのは、候補を選ぶ側と実行できる側を食い違わせないため。** 型だけで選ぶと、選んだ
+   * **要件まで見るのは、実行できないものを黙って落とし先にしないため。** 型だけで選ぶと、選んだ
    * 先が実行できない場合に「落とせるのに何も起きない」になる。**行き先の座標に型が居ない組み合わせ**
    * （`become`、9.9節）も同じ理由で候補にならない。
+   *
+   * **掛かるのは「黙って」のほう。** 断る理由を宣言していれば、実行できない落とし先として出してよい
+   * ——それを引くのが下のrefusedCombinationsWith（ActionSystem.md 1.1節）。
    */
   combinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
     const context = ReferenceContext.acting(this, agent, instrument);

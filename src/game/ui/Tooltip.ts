@@ -56,8 +56,9 @@ export function interactionTooltip(operation: {
 }
 
 /**
- * これから何が起きるかを出す吹き出し。ドラッグ中のカードを重ねたとき（CardDragController）と、
- * アクションのボタンを長押ししたとき（ObjectWindow）に出す。
+ * その操作について言うことを出す吹き出し。ドラッグ中のカードを重ねたとき（CardDragController）と、
+ * アクションのボタンを長押ししたとき（ObjectWindow）に出す。**これから起きることとは限らない**
+ * ——できない操作では、なぜできないかを出す（interactionTooltip）。
  *
  * 置き場所は基準にした矩形（掴んでいるカード・押しているボタン）の真上。指はその中心にあるので、
  * 上へ逃がせば隠れない。上に入り切らない場合だけ下へ回す。

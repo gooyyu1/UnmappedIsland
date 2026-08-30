@@ -48,9 +48,15 @@ export interface CardDrop {
   readonly count: number;
 }
 
-/** そのドロップで何が起きるか。 */
+/**
+ * そのドロップについて言うこと。**「起きること」ではない**——離しても何も起きない落とし先
+ * （理由を言うためだけのもの、enabledがfalse）にもこれが返る。
+ */
 export interface CardDropInfo {
-  /** 重ねたときに何が起きるかの説明（combinationのときだけ持つ）。 */
+  /**
+   * 重ねている間に出す吹き出し（何も言うことが無い移動では持たない）。実行できるものは何が起きるか、
+   * できないものはなぜできないか（interactionTooltip）。
+   */
   readonly tooltip?: TooltipContent;
   /**
    * その落とし先へまとめて動かせる最大枚数（省略時は1＝ついてこない）。**ついてきた枚数はそのまま
