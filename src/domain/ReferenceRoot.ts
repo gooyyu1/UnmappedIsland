@@ -47,7 +47,7 @@ export class ReferenceContext {
   /** この文脈のself。効果の宣言元であり、parent・ancestorはここから辿る。 */
   readonly self: WorldObject | undefined;
 
-  /** この操作をしている者。誰も操作していない文脈（tick・持続効果のゲート）ではundefined。 */
+  /** この操作をしている者。誰かが操作しているとは限らない文脈（forSelf）ではundefined。 */
   readonly agent: WorldObject | undefined;
 
   /** この操作で働きかけに使われる物。それを伴わない操作ではundefined（11.5節）。 */
