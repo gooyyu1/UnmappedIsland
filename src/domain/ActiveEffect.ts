@@ -9,11 +9,10 @@ import type { AddReading, EffectReader, SetValueReading, TransferReading } from 
 import type { PropertyPath, ReferenceContext } from './ReferenceRoot';
 
 /**
- * 「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。**対象の解決と適用まで自分で
- * 行う**ので、呼び出し側は何を起こす効果かを知らないままapplyを呼べる。
- *
- * **効果は効果を持てる。** 中に他のActiveEffectを抱える具象があるため（宣言順の合成やpickの候補がそう）、
- * applyは再帰しうる。だから9節の命令もpick（10節）も対等な1つの効果として、同じ並びへ混ぜて置ける。
+ * 「条件成立時に何を起こすか」を表すポリモーフィックな効果1つ（9・10節）。対象の解決と適用まで自分で行う。
+ * 具象は、単一の命令（Set/Add/Destroy/Spawn/Transfer、9節）、その宣言順合成（ActiveEffectSequence）、
+ * weightで1候補を選ぶpick（PickEffect、10節。候補もActiveEffectなので再帰しうる）の3種。
+ * pickは9節の命令と対等な1つの効果なので、合成の中に他の命令と並べて置ける。
  *
  * sameSlotSpawnSiteは、適用の入口（WorldObject.applyActiveEffect）で捕捉した「selfが今占めている位置」の
  * スナップショット。same_slot spawnだけがこれを使い、self破棄後でも「その位置がまだ同種を保持しているか」を
@@ -65,10 +64,9 @@ export abstract class ActiveEffect {
 }
 
 /**
- * 一時的な命令（9節）と`pick`（10節）を、書かれた順にまとめた合成効果。**持っているものを順に流すだけ**で、
- * 何を並べられるかを決めるのはここではなく読み手（parseActiveEffects）。on_max・on_min（6節）、
- * actions/combinations/pickの中身（11・12・10節）が共用する。on_max/on_minはselfのみが有効な対象
- * （パーサ側で強制する）。
+ * 一時的な命令（`set`/`add`/`destroy`/`spawn`/`transfer`、9節）と`pick`（10節）を、書かれた順に
+ * まとめた合成効果。on_max・on_min（6節）、actions/combinations/pickの中身（11・12・10節）が
+ * 共用する。on_max/on_minはselfのみが有効な対象（パーサ側で強制する）。
  * 空（命令が1つも無い）なら、適用しても何も起きない。
  */
 export class ActiveEffectSequence extends ActiveEffect {
