@@ -562,7 +562,7 @@
       "additionalProperties": false
     },
     "passive_modify_map": {
-      "description": "passiveのmodifyが持つ、対象をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。参加者のpropsなので操作の役も指せるが、**可逆な寄与を押せるのはagentだけ**（8.3節）——instrument・patientは複数の操作に同時に就きうるので、押した寄与が混ざって誰の分か見分けられなくなる。書くとロード時エラー。",
+      "description": "passiveのmodifyが持つ、対象をキーとする辞書（8.1節・8.6節）。寄与する先のプロパティ名を決めているのでancestorを書ける。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。参加者のpropsなので操作の役も指せるが、**可逆な寄与を押せるのはagentだけ**（8.3節）——instrument・patientは複数の操作に同時に就きうるので、押した寄与が混ざって誰の分か見分けられなくなる。書くとロード時エラー。",
       "type": "object",
       "properties": {
         "self": {
@@ -641,7 +641,7 @@
       }
     },
     "active_target_name": {
-      "description": "transferのfrom/toが指す対象キー（9.5節）。childは未対応（一度きりの命令に対して『どの子か』の意味が確定していないため、ロード時エラー）。残りのどれを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。操作の3役を書ける場所は11.5節の表が唯一の一覧で、patientを書けるのは参加者のprops（passivesのtransfer）だけ。ここに居ない相手を書くとロード時エラー。",
+      "description": "transferのfrom/toが指す対象キー（9.5節）。from_prop/to_propでプロパティ名を決めているのでancestorを書ける。childは未対応（一度きりの命令に対して『どの子か』の意味が確定していないため、ロード時エラー）。残りのどれを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。操作の3役を書ける場所は11.5節の表が唯一の一覧で、patientを書けるのは参加者のprops（passivesのtransfer）だけ。ここに居ない相手を書くとロード時エラー。",
       "enum": [
         "self",
         "parent",
@@ -1455,7 +1455,7 @@
       "additionalProperties": false
     },
     "object_target_name": {
-      "description": "オブジェクトそのものを指す対象名。どの命令が引くかは、これを使う側（destroy_target・object_target）が述べる。何を書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。ここに居ない相手を書くとロード時エラー。",
+      "description": "オブジェクトそのものを指す対象名。どの命令が引くかは、これを使う側（destroy_target・object_target）が述べる。指す先のプロパティ名を決めていないので、その名前で祖先を探すancestorは書けない。childは相手が1つに決まらないため不可。pickedを書けるのはamongを書いた候補の中だけで、外に書くとロード時エラー（10.3節）。残りのどれを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。",
       "enum": [
         "self",
         "parent",
@@ -1741,7 +1741,7 @@
       "additionalProperties": false
     },
     "object_target": {
-      "description": "命令が指すオブジェクトそのもの1つ（9.6節）。対象名で直接指すか、マップ（{subject} / {subject, prop}、subject省略時はself）で指す。move（9.6節）・become（9.9節）・spawnの配置先（9.4節）・setが書き込む個体（9.2節）が共有する。対象名だけを書く形ではancestorを使えない——プロパティ名が無いと辿る先が決まらないため。",
+      "description": "命令が指すオブジェクトそのもの1つ（9.6節）。対象名で直接指すか、マップ（{subject} / {subject, prop}、subject省略時はself）で指す。ancestorを書けるのは、指す先のプロパティ名を決めている{subject, prop}の形だけ——祖先はその名前で探すため。",
       "oneOf": [
         {
           "$ref": "#/$defs/object_target_name"
