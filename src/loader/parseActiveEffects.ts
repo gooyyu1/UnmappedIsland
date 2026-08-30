@@ -269,8 +269,8 @@ function parseSetEffect(
 
 /**
  * transfer（9.5節）。from/toの参照はフラットな2フィールド（from/from_prop, to/to_prop）で表し、
- * from/toは省略時self。対象ルートの読み手は他の命令と同じ（parseActiveTargetRoot）で、何を書けるかは
- * その宣言が置かれた場所が決める。linked_add（省略可）はaddと同じ構造で、
+ * from/toは省略時self。対象ルートはset/add/destroyと
+ * 同じ制約（selfOnly・allowInstrument）を共有する。linked_add（省略可）はaddと同じ構造で、
  * 実際の移動量に比例してスケールされる副効果。to_amount（省略可）は、移送元と移送先で単位が違うときに
  * 「amount分を出すと移送先がどれだけ増えるか」を持つ。
  */
@@ -475,9 +475,9 @@ function oneOrMany<T>(context: string, node: YamlNode, parseOne: (context: strin
  * （複数・どれも無しはエラー）。移動先の三択は`spawn`の配置先と同じ読み手（parseDestinationRef）。
  * `to_slot`は行き先の中のどの枠へ入れるかで、省けば宣言順で最初に受け入れた枠になる。
  *
- * **moveそのものを禁じる場所は無い。** 宣言元しか居ない場所（rangeイベント）で書けないのは、そこに
- * 居ない相手を指す形だけ（ReferenceScope）なので、`self`と型で書いた移動（本土への到達、Voyage.md
- * 4節）はどこでも書ける。
+ * selfOnly文脈（rangeイベント）で禁じるのは**agent/instrumentを指す形だけ**。そこに実行者が居ないのは
+ * 対象キーの解決先が無いという理由なので、`self`と型で書いた移動（本土への到達、Voyage.md 4節）は
+ * 同じ理由に当たらない。
  */
 function parseMove(
   loader: WorldCodexYamlLoader,
@@ -729,7 +729,7 @@ function parseBecome(
   return new BecomeEffect(subject ?? ObjectRef.ofRoot('self'), axisValues);
 }
 
-/** オブジェクトそのものを指す対象（destroy・signal・move）。プロパティ名を伴わない場所になる。 */
+/** プロパティ名を伴わず、オブジェクトそのものを指す対象。何を書けるかはその場所が決める（ReferenceScope）。 */
 function parseObjectTargetRoot(context: string, key: string, scope: ReferenceScope): ReferenceRoot {
   return parseActiveTargetRoot(context, key, scope.withoutPropertyName);
 }
