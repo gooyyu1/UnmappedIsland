@@ -72,7 +72,7 @@ export class RecipeStepDef {
  *
  * `conditions`は**このレシピを知っているか**を判定するもので、素材が揃っているかとは別物
  * （素材の充足は`steps.requires`が持つ）。判定する時点では成果物のインスタンスがまだ無いので、そこを
- * 起点に辿る参照は解決先を持たない（何を書けるかはReferenceScope.recipeUnlockが決める）。
+ * 起点に辿る参照は解決先を持たない（何を書けるかはReferenceScope.acting.withoutSelfが決める）。
  */
 export class RecipeDef {
   readonly name: string;
