@@ -297,7 +297,7 @@ interactions:
 raw_meat:
   tags: [item, food, meat_bait]
   props:
-    meat_bait: {value: 8}
+    meat_bait: {value: 12}
 ```
 
 `transfer` を使うのは、`add` だと罠の種類 × 餌の種類の数だけ固定値を書くことになるためです。移る量は
@@ -418,10 +418,7 @@ passives:
 ```yaml
 # くくり罠の怪我。縄が食い込んで裂ける傷で、laceration（injuries.yaml）より浅い。
 snare_laceration:
-  tags: [injury]
-  traits: [treatable]
-  bound_to_owner: true
-  stackable: false
+  traits: [injury, treatable]
   props:
     severity:
       value: {min: 240, max: 480}
