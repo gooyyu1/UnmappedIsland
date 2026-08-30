@@ -28,7 +28,8 @@ export type ReferenceRoot =
   | 'picked'
   /**
    * selfの直接の親から遡り、参照先のプロパティを定義している最初の祖先（WorldObject.findAncestorWithProperty
-   * 参照）。SlotPosition判定（{in_slot: ...}）では意味を持たないため未対応（ロード時エラー）。
+   * 参照）。**探すのにプロパティ名が要る唯一のroot**で、それが決まらない場所では解決先を持たない
+   * （ReferenceScope.namesProperty）。
    */
   | 'ancestor';
 
