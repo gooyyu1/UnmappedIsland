@@ -24,7 +24,7 @@ export type ReferenceRoot =
   | 'instrument'
   /**
    * `among`（10.3節）が周りから選んだ相手。**候補ごとに束ね直される**ので、重みを解くときは
-   * その候補、効果を当てるときは選ばれた1つを指す。**どこで書けるかを持つのはReferenceScope**。
+   * その候補、効果を当てるときは選ばれた1つを指す。amongを書いた候補の中でのみ意味を持つ。
    */
   | 'picked'
   /**
@@ -53,7 +53,7 @@ export class ReferenceContext {
   /** この操作で働きかけに使われる物。それを伴わない操作ではundefined（11.5節）。 */
   readonly instrument: WorldObject | undefined;
 
-  /** `among`が周りから選んだ相手。amongを解いていない文脈ではundefined（10.3節）。 */
+  /** `among`が周りから選んだ相手。amongを書いた候補の中でのみ居る（10.3節）。 */
   readonly picked: WorldObject | undefined;
 
   private constructor(
@@ -184,7 +184,7 @@ export class ReferenceScope {
   /** 働きかけに使われる物（instrument）が居るか。真になるのは物が運ばれてくる場所だけ（下のcombination）。 */
   private readonly hasInstrument: boolean;
 
-  /** amongが選んだ相手（picked）が居るか。真になるのは`among`を書いた候補だけ（下のwithPicked、10.3節）。 */
+  /** amongが選んだ相手（picked）が居るか。amongを書いた候補の中だけ（10.3節）。 */
   private readonly hasPicked: boolean;
 
   /** 参照先のプロパティ名が決まっているか。ancestorはそれで祖先を探すので、無ければ解けない。 */
@@ -239,7 +239,7 @@ export class ReferenceScope {
     );
   }
 
-  /** amongが選んだ相手を指せる場所（10.3節）。 */
+  /** amongが選んだ相手を指せる場所（10.3節）。amongを書いた候補の重みと効果だけがこれになる。 */
   get withPicked(): ReferenceScope {
     return new ReferenceScope(
       this.hasSelf,
@@ -277,7 +277,7 @@ export class ReferenceScope {
       case 'instrument':
         return this.hasInstrument ? undefined : 'ここには働きかけに使われる物が運ばれてきません';
       case 'picked':
-        return this.hasPicked ? undefined : "'picked'はamongを書いた候補でのみ使えます";
+        return this.hasPicked ? undefined : "'picked'はamongを書いた候補の中でのみ使えます";
       case 'ancestor':
         if (!this.hasSelf) return 'ここには遡る起点になる個体が居ません';
         return this.namesProperty
