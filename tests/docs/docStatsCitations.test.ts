@@ -77,7 +77,7 @@ function parseMark(body: string): Mark | null {
   const tokens = body.split(/\s+/).filter((token) => token !== '');
 
   let coarseness: Coarseness | null = null;
-  const last = tokens[tokens.length - 1];
+  const last = tokens.at(-1);
   if (last !== undefined && last.startsWith('±')) {
     const matched = COARSENESS_PATTERN.exec(last);
     if (matched === null) return null;
@@ -119,13 +119,14 @@ function citationsIn(rel: string): Citation[] {
   readFileSync(join(ROOT, rel), 'utf-8')
     .split('\n')
     .forEach((raw, index) => {
-      // 印は本文の数値に付く。コードブロックの中にあるのは書式の例なので、出どころを持たない。
+      // 印は本文の数値に付く。コードの中にあるのは書式の例なので、出どころを持たない。
       if (raw.trimStart().startsWith('```')) inFence = !inFence;
       if (inFence) return;
+      const line = raw.replace(/`[^`]*`/g, '');
 
-      for (const match of raw.matchAll(MARK_PATTERN)) {
+      for (const match of line.matchAll(MARK_PATTERN)) {
         // 先に置かれた印の中身は数として読まない（印の本文に数字が入りうる）。
-        const before = raw.slice(0, match.index).replace(/<!--[\s\S]*?-->/g, '');
+        const before = line.slice(0, match.index).replace(/<!--[\s\S]*?-->/g, '');
         const written = WRITTEN_NUMBER_PATTERN.exec(before);
         found.push({
           doc: rel,
