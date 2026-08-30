@@ -24,11 +24,12 @@ YAML ファイルの形式的なスキーマ定義（[JSON Schema](https://json-
   ロードしているままの内容でスキーマを満たすこと（ローダーで読み込めるファイルはスキーマも通る、
   が維持基準）。赤＝**スキーマがまだ知らない文法がある**ので、直すのはスキーマの側。
 - **不正な記述の拒否**: identifier の命名規則に反するキーを使う、未定義の比較演算子を使う、
-  `set`/`add` に未対応の対象キー（`child`）を使う、`destroy` の対象に `ancestor` を使う、枠の `accept` に
-  `tag` と `object` を同時指定する（またはどちらも省略する）、操作に `trigger` を書き忘れる、廃止済みの
-  `auto_placement` を使う、`passives` を配列でなく単一マッピングで書く、`conditions` の葉に `slot` と `prop` を
-  同時指定する、`conditions` の `value` に未対応の `max`/`min` を使う、`in`/`not_in` に配列でない `value` を
-  渡す、といった記述が拒否されること。赤＝**スキーマが緩んで何も見なくなった**。
+  `set`/`add` に未対応の対象キー（`child`）を使う、指す先のプロパティ名を決めない形で `ancestor` を使う
+  （`destroy: ancestor`）、枠の `accept` に `tag` と `object` を同時指定する（またはどちらも省略する）、
+  操作に `trigger` を書き忘れる、廃止済みの `auto_placement` を使う、`passives` を配列でなく単一マッピング
+  で書く、`conditions` の葉に `slot` と `prop` を同時指定する、`conditions` の `value` に未対応の
+  `max`/`min` を使う、`in`/`not_in` に配列でない `value` を渡す、といった記述が拒否されること。
+  赤＝**スキーマが緩んで何も見なくなった**。
 
 受理だけを見ると、スキーマを緩めれば緑になってしまうので、拒否も併せて見ます。
 
