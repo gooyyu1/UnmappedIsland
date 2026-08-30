@@ -297,6 +297,17 @@ describe('watch-prs.sh のマージ可否', () => {
     expect(lines).toEqual(['CONFLICT 803']);
   });
 
+  // 番号で絞ってよいのは「今その結果を待っているか」で選べるものだけ。コンフリクトは待っているかに
+  // 関わらず前へ進めないので、司令塔が `0` を渡す既定の使い方でも出る。ここを絞りに入れていたせいで、
+  // `判断待ち` の #1272・#1361 が衝突したまま一度も報告されなかった。
+  it('見張るPRの番号から外れていても、コンフリクトは出る', () => {
+    const lines = watch([[pullRequest(804, 'CONFLICTING')]], [[]], [], [reviewSession(804)], {
+      numbers: [0],
+    });
+
+    expect(lines).toEqual(['CONFLICT 804']);
+  });
+
   it('マージ可否が計算中のPRは決着として出さず、確定した次の周で出す', () => {
     const lines = watch(
       [[pullRequest(810, 'UNKNOWN')], [pullRequest(810, 'CONFLICTING')]],
@@ -444,7 +455,7 @@ describe('watch-prs.sh の手番（REVIEWED・FIXED）', () => {
 
 describe('watch-prs.sh の UNREVIEWED', () => {
   // どれも `0` を渡して走らせる。司令塔がレビュー中のPRを黙らせるために普段そうしていて、そのとき
-  // `GREEN`・`RED`・`CONFLICT` が全部外れることが、この合図を要る理由そのものだから。
+  // `GREEN`・`RED` が全部外れることが、この合図を要る理由そのものだから。
 
   it('結論もレビューのセッションも無いPRを出す', () => {
     const lines = watch([[pullRequest(860, 'MERGEABLE')]], [[]], [], [], { numbers: [0] });
