@@ -39,7 +39,7 @@
 持ち込みません。
 
 ```yaml
-wild_boar:
+beast:
   interactions:
     strike:
       trigger: {drag: {tag: weapon}}
@@ -224,8 +224,8 @@ monkey_carcass:
 | `resists: [条件]` | 条件が成立している間、**持ち主を持てない**（土地以外の親へ移れない） |
 
 ```yaml
-wild_boar:
-  tags: [item]
+beast:
+  tags: [item, animal, quarry]
   resists: [{prop: wariness, gte: 1}]
 ```
 
@@ -357,7 +357,7 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 - **かさ（`volume`）で重み付けする。** 大きい物にぶつかりやすい＝地面に大きな物を広げていると危ない、という
   読める判断になります。かさ0の物は選ばれません——そこに嵩が無いという宣言だからです
 - **壊れうる物だけを候補にする。** `durability` を持つ物すべてにすると大事な道具まで一撃で消えるため、
-  `fragile` タグで著者が明示的に選びます（編み籠・くくり罠・編んだ葉・ヤシの器）
+  `fragile` タグで著者が明示的に選びます（編み籠・くくり罠・編んだ葉・ヤシの器・甕）
 
 `destroy` は中身を親へこぼす（`GameElementDefinition.md` 9.3 節）ので、**壊された編み籠の中身は地面に散らばります**。追加のルールは
 要りません。
@@ -482,10 +482,10 @@ tick の後処理として、**世界のどこに居るものでも、`trigger: 
 ```yaml
 strike:
   pick:
-    - weight: 70
+    - weight: {subject: instrument, prop: heavy_blow}
       spawn: {object: laceration, into: self}
       signal: hit
-    - weight: 30
+    - weight: {subject: instrument, prop: whiff}
       signal: missed
 ```
 
@@ -538,7 +538,7 @@ strike:
   無いのが直接の理由で、素材と工程は [`SurvivalItems.md`](../world/SurvivalItems.md) 3 節が持つ
 - **リーチと待ち受け**（1.2 節）: 槍が斧と違うのは、今は当たり外れの配分と傷の種類だけ。動物の手番が
   入ったので、間合いを取れることを配分へどう効かせるかを見直せる
-- **`fragile` を付ける範囲**（5.4 節）: 今は編み籠・くくり罠・編んだ葉・ヤシの器だけで、序盤の土地には
+- **`fragile` を付ける範囲**（5.4 節）: 今は編み籠・くくり罠・編んだ葉・ヤシの器・甕だけで、序盤の土地には
   壊れる物がほとんど無い。壊される痛手が実際に効くのは、拠点に物を並べ始めてからになる
 - **1手の重みに、体格と体調をどこまで効かせるか**（5 節）: 今は素の配分と痛みの段だけが動かす。失血・
   衝撃・空腹（餌をやる仕組みが無い）は配分に触れていない
