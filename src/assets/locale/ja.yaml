@@ -135,6 +135,9 @@ object_texts:
       bleeding:
         display_name: 出血
         description: この傷から流れている血の勢い。押さえれば早く、放っておいてもいずれ固まって止まる。
+      infection:
+        display_name: 化膿
+        description: 開いた傷口に入った汚れ。放っておくほど進み、熱で水が余計に要るようになり、回れば血が漏れ出す。水を掛けて洗えば落ちる。
       blood:
         display_name: 血液量
         icon: 🩸
@@ -295,6 +298,9 @@ object_texts:
       strike:
         display_name: 殴る
         description: 手にした武器で打ちかかる。一撃がどう入るかは武器の性格が決め、外しても相手は気を立てる。
+      wash:
+        display_name: 傷を洗う
+        description: 水を1杯（250mL）掛けて傷口の汚れを流す。掛けた水は戻らない。手当てを当てたままでも洗える。
   # プレイヤーキャラクタ（characters/）。プロパティの表示名は全員共通なのでdefaultへ置く。
   # 表示名は肖像の札に載る名前。どういう人物かは説明の頭の肩書きで示す（選択画面の吹き出しに出る）。
   farmer:
@@ -1344,6 +1350,8 @@ reason_texts:
   too_spoiled: もう傷んでいる。塩を打っても、進んだぶんは戻らない。
   too_heavy: 荷が重すぎて歩けない。まず何かを置いていく必要がある。
   not_thirsty: 喉はまったく渇いていない。これ以上は飲めない。
+  not_enough_water: 洗うには水が1杯（250mL）要る。器の残りが足りない。
+  already_clean: この傷口は汚れていない。洗っても落とすものがない。
   not_raining: 雨は降っていない。溜められる雨がない。
   sheltered: ここには雨が当たらない。溜めるなら外へ出す必要がある。
   not_empty: 中身が入っている。まず空にする必要がある。

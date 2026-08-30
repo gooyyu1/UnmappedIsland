@@ -384,6 +384,201 @@ describe('injuries.yamlの怪我', () => {
     });
   });
 
+  /**
+   * 膿んだ傷を洗う（docs/engine/InjurySystem.md 6節）。**上げる側と下げる側の両方**を通す
+   * ——下げる手立てだけがあっても、上がる道が無ければ数字は動かない。
+   */
+  describe('傷を洗う', () => {
+    /** infectionが1段上がるのにかかるtick数（0.25/tick で 40）。 */
+    const TO_FESTERING = 160;
+    /** cleanからsepticへ届くまでのtick数。 */
+    const TO_SEPTIC = 320;
+
+    const infectionId = () => codex.propertyNames.getId('infection');
+
+    /** 皮膚の破れた傷を1つ負う。刺す口は動物の1手と罠（animals.yaml・traps.yaml）。 */
+    function openWound(name = 'laceration'): WorldObject {
+      return spawnInto(name, player, 'injuries');
+    }
+
+    /** 中身を満たした器を手持ちに用意する。 */
+    function filledJar(content = 'water', milliliters = 4000): WorldObject {
+      const jar = spawnInto(`jar__content_${content}_liquid`, player, 'hand');
+      jar.tryGetProperty(codex.propertyNames.getId('fill'))!.setNumber(milliliters);
+      return jar;
+    }
+
+    /** 器を傷へ重ねる操作（成立していなければ、断る側の組み合わせが返る）。 */
+    function washing(injury: WorldObject, vessel: WorldObject) {
+      return (
+        injury.combinationsWith(vessel, player).find((one) => one.name === 'wash') ??
+        injury.refusedCombinationsWith(vessel, player).find((one) => one.name === 'wash')
+      );
+    }
+
+    function infectionOf(injury: WorldObject): number {
+      return injury.tryGetProperty(infectionId())?.number ?? 0;
+    }
+
+    it('膿むのは皮膚が破れた傷だけで、洗えるのもその傷だけ', () => {
+      // bleedingを持つ傷とinfectionを持つ傷が一致していること（InjurySystem.md 6節）。皮膚の下で
+      // 起きる傷には、汚れの入る傷口も水の届く傷口も無い。**傷が増えるたびに配り忘れる**ので、
+      // 一覧を数え上げずに、2つのプロパティの有無が揃っていることで見る。
+      const bleedingId = codex.propertyNames.getId('bleeding');
+      const injuries = codex.objectDefNamesWithTag(codex.tagNames.getId('injury'));
+      expect(injuries.length, '検査対象が無い（injuryタグが変わっていないか）').toBeGreaterThan(1);
+
+      const mismatched = injuries.filter((name) => {
+        const def = codex.objects.get(codex.objectNames.getId(name));
+        return (
+          (def.tryGetPropertyDef(bleedingId) !== undefined) !==
+          (def.tryGetPropertyDef(infectionId()) !== undefined)
+        );
+      });
+
+      expect(mismatched, 'bleedingとinfectionの配りが食い違っている').toEqual([]);
+      expect(washing(breakBone(), filledJar()), '皮膚の下の傷には水を掛けられない').toBeUndefined();
+    });
+
+    it('開いた傷のカードには、傷の重さと膿み具合の2本が並ぶ', () => {
+      // gaugeを2つ宣言した物は2本出る（CardView.md 8節）。**画面側に対応表は無い**ので、
+      // 増えた宣言がそのままカードの見た目になる。並ぶ順は宣言順で、traitが配るinfectionが
+      // 傷ごとのseverityより先に来る。
+      expect(
+        openWound()
+          .gaugeProperties()
+          .map((property) => property.def.name),
+      ).toEqual(['infection', 'severity']);
+      expect(
+        breakBone()
+          .gaugeProperties()
+          .map((property) => property.def.name),
+        '骨折は1本のまま',
+      ).toEqual(['severity']);
+    });
+
+    it('開いたままの傷は、放っておくと膿んでいく', () => {
+      const injury = openWound();
+      expect(infectionOf(injury), '負った瞬間は清潔').toBe(0);
+
+      tick(4);
+      expect(infectionOf(injury), '1時間で1').toBeCloseTo(1, 10);
+
+      tick(TO_FESTERING - 4);
+      expect(injury.tryGetProperty(infectionId())?.stage?.name).toBe('festering');
+
+      tick(TO_SEPTIC - TO_FESTERING);
+      expect(injury.tryGetProperty(infectionId())?.stage?.name).toBe('septic');
+    });
+
+    it('水を1杯掛けると25落ち、その1杯は器から消える', () => {
+      const injury = openWound();
+      tick(TO_SEPTIC);
+      const jar = filledJar();
+      // 開けた器は置いておくだけでも蒸発する（liquid_containers.yaml）ので、掛けた量は
+      // 洗わなかった器との差で見る。
+      const idle = filledJar();
+      const fillId = codex.propertyNames.getId('fill');
+      const before = { infection: infectionOf(injury), minutes: session.world!.totalMinutes };
+
+      expect(washing(injury, jar)?.tryExecute()).toBe(true);
+
+      // 洗っている15分（＝1 tick）ぶんは汚れも進むので、正味で落ちるのは25から0.25引いた分。
+      expect(before.infection - infectionOf(injury), '1杯で25').toBeCloseTo(25 - 0.25, 10);
+      expect(
+        idle.tryGetProperty(fillId)!.number - jar.tryGetProperty(fillId)!.number,
+        '掛けた1杯は器へ戻らない',
+      ).toBe(250);
+      expect(session.world!.totalMinutes - before.minutes, '治療具を当てる30分の半分').toBe(15);
+    });
+
+    it('沸かした湯でも同じだけ落ちる', () => {
+      // 落とすのは傷口に入った汚れなので、沸かしてあるかどうかは効き目を変えない
+      // （両方がcleansingを名乗る、liquid_containers.yaml）。
+      const injury = openWound();
+      tick(TO_SEPTIC);
+      const before = infectionOf(injury);
+
+      expect(washing(injury, filledJar('hot_water'))?.tryExecute()).toBe(true);
+
+      expect(before - infectionOf(injury)).toBeCloseTo(25 - 0.25, 10);
+    });
+
+    it('最も膿んだ状態からでも4杯で落とし切れる', () => {
+      const injury = openWound();
+      injury.tryGetProperty(infectionId())!.setNumber(100);
+      const jar = filledJar();
+
+      for (let i = 0; i < 4; i++) expect(washing(injury, jar)?.tryExecute(), `${i + 1}杯目`).toBe(true);
+
+      // 1L・1時間で落ち切る。残るのは洗っている4 tickのあいだに進んだ汚れだけで、1にも満たない。
+      expect(injury.tryGetProperty(infectionId())?.stage?.name).toBe('clean');
+      expect(infectionOf(injury)).toBeLessThan(1);
+    });
+
+    it('汚れていない傷は洗えない', () => {
+      expect(washing(openWound(), filledJar())?.unmetRequirement()?.reasonName).toBe('already_clean');
+    });
+
+    it('1杯に足りない水では洗えない', () => {
+      const injury = openWound();
+      tick(TO_SEPTIC);
+
+      expect(washing(injury, filledJar('water', 249))?.unmetRequirement()?.reasonName).toBe(
+        'not_enough_water',
+      );
+    });
+
+    it('治療具を当てたままでも洗える', () => {
+      // 外させると1回ごとに付け直しの30分が乗り、手間の本体が水から時間へすり替わる
+      // （InjurySystem.md 6.2節）。
+      const injury = openWound();
+      tick(TO_SEPTIC);
+      treat(injury, spawnInto('bandage', player, 'hand'));
+      const before = infectionOf(injury);
+
+      expect(washing(injury, filledJar())?.tryExecute()).toBe(true);
+
+      expect(before - infectionOf(injury)).toBeCloseTo(25 - 0.25, 10);
+      expect(treatmentOn(injury), '当てたまま').toEqual(['bandage']);
+    });
+
+    it('膿めば水が余計に要り、回れば血が漏れ出す', () => {
+      // 対症療法の効く道と効かない道を同時に持つ（VitalsSystem.md 8.1節）。
+      const injury = openWound();
+      const hydrationId = codex.propertyNames.getId('hydration');
+      const bloodId = codex.propertyNames.getId('blood');
+
+      const lostOver = (count: number): { water: number; blood: number } => {
+        const before = {
+          water: player.tryGetProperty(hydrationId)!.number,
+          blood: player.tryGetProperty(bloodId)!.number,
+        };
+        for (let i = 0; i < count; i++) player.tick();
+        return {
+          water: before.water - player.tryGetProperty(hydrationId)!.number,
+          blood: before.blood - player.tryGetProperty(bloodId)!.number,
+        };
+      };
+
+      // 血が固まるまで（4 tick）は傷そのものが血を奪うので、そこを過ぎてから数える。
+      lostOver(4);
+      expect(lostOver(1), '清潔なうちは素の-1/tickだけ').toEqual({ water: 1, blood: 0 });
+
+      lostOver(TO_FESTERING);
+      expect(lostOver(1), '熱で水の保ちが半分になる').toEqual({ water: 2, blood: 0 });
+
+      lostOver(TO_SEPTIC - TO_FESTERING);
+      expect(lostOver(1), '3分の1になり、血が漏れ出す').toEqual({ water: 3, blood: 40 });
+
+      // 洗って原因を断てば、どちらも止まる（対症療法では買えないものが、そこで戻る）。
+      expect(washing(injury, filledJar())?.tryExecute()).toBe(true);
+      expect(washing(injury, filledJar())?.tryExecute()).toBe(true);
+
+      expect(lostOver(1), '2杯で安全域へ戻る').toEqual({ water: 1, blood: 0 });
+    });
+  });
+
   it('怪我は荷重にならない', () => {
     pickCoconut();
 
