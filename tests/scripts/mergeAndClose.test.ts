@@ -106,12 +106,14 @@ function run(world: World, entry: readonly string[] = [SCRIPT, '1000']): Run {
     // 本文は改行もバッククォートも含むので、シェルへ埋め込まずファイルで渡す。
     writeFileSync(join(work, 'body.txt'), world.body ?? DEFAULT_BODY, 'utf-8');
     // スクリプトが引くのは `[レビュー]` で始まるコメントだけなので、絞り込みまでここで済ませる
-    // （`--jq` の中身は本物の `gh` が解釈する部分で、スタブが真似る対象ではない）。**繋ぎ目の
-    // `---` はスクリプトの `--jq` が入れるもの**なので、ここでも同じ形で繋ぐ——これが無いと、
-    // 複数のコメントを跨いで節が伸びる形を試験が見られない。
+    // （`--jq` の中身は本物の `gh` が解釈する部分で、スタブが真似る対象ではない）。**1件が1行の
+    // base64**——文書の切れ目をスタブが綴らないので、綴りの食い違いを試験が見落とす形にならない。
     writeFileSync(
       join(work, 'comments.txt'),
-      (world.comments ?? []).filter((comment) => comment.startsWith('[レビュー]')).join('\n---\n'),
+      (world.comments ?? [])
+        .filter((comment) => comment.startsWith('[レビュー]'))
+        .map((comment) => Buffer.from(comment, 'utf-8').toString('base64'))
+        .join('\n'),
       'utf-8',
     );
 
@@ -633,6 +635,33 @@ describe('merge-and-close.sh', () => {
 
     expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
     expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+  });
+
+  // コメントどうしの境目も同じ。1本に繋いで読むと、末尾に節を置いたコメントの節が次のコメントへ
+  // 伸びる。繋ぎ目の綴りで塞ぐ形だと、綴りが片側だけずれてもここが緑のまま通ってしまう。
+  it('コメントの末尾の節が「なし」なら、後ろに別のコメントが続いてもラベルを付けない', () => {
+    const result = run({
+      comments: [
+        '[レビュー] 通してよい\n\n## 司令塔へ\n\nなし。\n',
+        '[レビュー] 通してよい\n\n差分を読み直したが、他に直すところは無い。\n',
+      ],
+    });
+
+    expect(result.lines.some((line) => line.startsWith('RELAY '))).toBe(false);
+    expect(result.labels.some((label) => label.includes('司令塔へ'))).toBe(false);
+  });
+
+  // 1件ずつ読むので、読み落とせば**後ろのコメントだけ**が黙って落ちる。
+  it('2件目以降のレビューのコメントの `## 司令塔へ` も拾う', () => {
+    const result = run({
+      comments: [
+        '[レビュー] 通してよい\n\n## 司令塔へ\n\nなし。\n',
+        '[レビュー] 通してよい\n\n## 司令塔へ\n\n- #1353 を立てた（範囲外）\n',
+      ],
+    });
+
+    expect(result.lines).toContain('RELAY 1000');
+    expect(result.labels).toContain('--add-label 司令塔へ');
   });
 
   // マージは済んでいるので、印を置けなかっただけで後片付け（`main` の追随）ごと落としてはいけない。
