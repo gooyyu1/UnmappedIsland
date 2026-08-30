@@ -222,21 +222,19 @@ object_defs:
   it('上端からsetで書き戻す仕掛けが、繰り返す仕掛けとして数えられる', () => {
     // 増減しか数えないと戻り0と読まれ、押し流しが「一度きり」になる。戻り量は上端16から書き戻し先の
     // 0までの16で、+1/tickなので16 tickごとに回る。
-    expect(cycleOf(codex, 'sea_zone', 'storm_drift')).toMatchObject([{ minutes: 16 * 15, repeats: true }]);
+    expect(cycleOf('sea_zone', 'storm_drift')).toMatchObject([{ minutes: 16 * 15, repeats: true }]);
   });
 
   it('端へ置き直すだけのsetは、戻っていない', () => {
     // 書き戻し先が上端そのものなので戻り量は0。ここを「上端ぶん戻った」と読むと、既定のクランプを
     // 持つ全プロパティが繰り返す仕掛けになる。周期は初期値0から上端10までの10 tick。
-    expect(cycleOf(codex, 'peak', 'exploration_progress')).toMatchObject([
-      { minutes: 10 * 15, repeats: false },
-    ]);
+    expect(cycleOf('peak', 'exploration_progress')).toMatchObject([{ minutes: 10 * 15, repeats: false }]);
   });
 
   it('上端から引いて戻る仕掛けも、下端から足して戻るものと同じ向きで数える', () => {
     // 戻り量を符号つきの増減のまま見ると、上端から戻るものだけが負になって数から漏れる。
     // 60を引いて0へ戻るので戻り量は60、+15/tickなので4 tickごと。
-    expect(cycleOf(codex, 'clock', 'minute')).toMatchObject([{ minutes: 4 * 15, repeats: true }]);
+    expect(cycleOf('clock', 'minute')).toMatchObject([{ minutes: 4 * 15, repeats: true }]);
   });
 
   it('止まるまでの違う押し手は、束ねずに別々に並べる', () => {
