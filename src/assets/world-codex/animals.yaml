@@ -558,8 +558,8 @@ object_defs:
                 shock: -0.8
       # maxが体格（体重のおよそ1/13＝80mL）。段のしきい値も戻る速さも、サルと同じ割合で刻む。
       #
-      # **くくり罠の傷（injuries.yamlのsnare_laceration）が奪うのは30〜60mL**なので、浅く掛かれば
-      # 生き延び、深く食い込めば死ぬ。ロールが分かれ目になる唯一の大きさ（TrapSystem.md 5.1節）。
+      # **くくり罠の傷（injuries.yamlのsnare_laceration）が奪うのは30〜60mL**なので血は尽きないが、
+      # 最も深く掛かると残り20mLで、下のexsanguinated（32mL未満）に入る（TrapSystem.md 5.1節）。
       blood:
         value: 80
         range: {min: 0, max: 80}
