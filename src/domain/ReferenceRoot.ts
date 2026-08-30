@@ -11,9 +11,8 @@ export type ReferenceRoot =
   | 'self'
   | 'parent'
   /**
-   * passiveのtarget専用（8.1節）。親が宣言した効果を、そのスロットに入った各子へブロードキャスト登録する
-   * ために使う。単一の参照先へ解決されるconditions/active/weight/transferの文脈では意味を持たない
-   * （それらの許可rootには含めない）。
+   * 親が宣言した効果を、そのスロットに入った各子へブロードキャスト登録するために使う（8.1節）。
+   * **相手が1つに定まらない唯一のroot**で、書ける場所を決めるのはReferenceScope.broadcasts。
    */
   | 'child'
   | 'agent'

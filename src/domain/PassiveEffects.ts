@@ -4,8 +4,10 @@ import type { PassiveEffect, TransferPassiveEffect } from './PassiveEffect';
 import type { ReferenceRoot } from './ReferenceRoot';
 
 /**
- * 1つの ObjectDef が宣言する持続効果（8節）の一式。target・kindを問わず1つにまとめて持ち、
- * 要素リストは公開せず、登録/解除の一括依頼（setRelationRegistered/setChildRegistered）だけを受ける。
+ * 1つの ObjectDef が宣言する持続効果（8節）の一式。target・kindを問わず宣言順に1つへまとめて持つ。
+ *
+ * **受け取った契機はそのまま全effectへ配り、どれが反応するかは効果自身が決める。** だから頼む側は、
+ * 宣言のtargetもkindも見ずに「こうなった」とだけ言えばよい。
  */
 export class PassiveEffects {
   private readonly effects: readonly PassiveEffect[];
