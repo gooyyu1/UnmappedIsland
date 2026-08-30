@@ -64,6 +64,8 @@ interface World {
   readonly gate?: readonly string[];
   /** 関門の終了コード。既定は理由の有無から決まる（あれば 0、無ければ 1）。 */
   readonly gateStatus?: number;
+  /** `gh pr view --json state` が失敗するか（PRの状態を引けない日）。 */
+  readonly stateFails?: boolean;
   /** `--user-ok` を付けて叩くか。 */
   readonly userOk?: boolean;
 }
@@ -121,7 +123,11 @@ if [ "$1" = pr ] && [ "$2" = view ]; then
   case "$5" in
     body) cat '${dir}/body.txt' ;;
     mergeable) printf '%s' '${world.mergeable ?? 'MERGEABLE'}' ;;
-    state) if [ -e '${dir}/merged' ]; then printf '%s' MERGED; else printf '%s' OPEN; fi ;;
+    state) ${
+      world.stateFails === true
+        ? 'exit 1'
+        : `if [ -e '${dir}/merged' ]; then printf '%s' MERGED; else printf '%s' OPEN; fi`
+    } ;;
   esac
   exit 0
 fi
@@ -574,6 +580,24 @@ describe('archive-reviews.sh', () => {
       'ARCHIVED session_01REVIEWBBBBBBBBBBBBBB',
     ]);
     expect(result.archived).toEqual(['session_01REVIEWBBBBBBBBBBBBBB']);
+    expect(result.status).toBe(0);
+  });
+
+  // 状態を引けない日に「OPEN ではない」へ倒れると、書きかけの判定を畳んでしまう。畳んで消えた
+  // コメントは戻せないが、守って残ったものは手で畳める。畳むのは「閉じていると分かったとき」だけ。
+  it('PRの状態を引けなかったときも、走っている最中のレビューを守る', () => {
+    const result = run(
+      {
+        stateFails: true,
+        sessions: { session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING' },
+        tags: { session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'] },
+        working: ['session_01REVIEWAAAAAAAAAAAAAA'],
+      },
+      [ARCHIVE_REVIEWS, '1000'],
+    );
+
+    expect(result.lines).toEqual(['KEPT session_01REVIEWAAAAAAAAAAAAAA']);
+    expect(result.archived).toEqual([]);
     expect(result.status).toBe(0);
   });
 });

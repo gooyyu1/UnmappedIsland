@@ -142,28 +142,15 @@ if [ -z "$sessions" ]; then
   echo "NOSESSION $PR"
   leftover=1
 fi
-# 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
-# **畳んでよいのは、1つの issue のために立てたセッションだけ**（`task-<番号>` タグを持つ。
-# `dispatch-task.sh` が必ず付ける）。相談役のように issue を持たない相手は、PR1本がマージされても
-# 仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。**ここが選ぶのはこれだけ**で、
-# 畳んでよいかの判定と出力は [`archive-session.sh`](archive-session.sh) が持つ。**走行中は守らない**
-# （`--keep-working` を付けない）——PRはもうマージされていて、ここが渡す最後の機会だから。
-targets=''
-while read -r session; do
-  [ -n "$session" ] || continue
-  # 引けないときは、そこで止めずに残りとして報せる。**マージは済んでいる**ので、ここで落ちると
-  # 後片付け（`main` の追随）ごと落ちる。
-  info=$(printf '{"session_id":"%s"}' "$session" |
-    bash "$CCR_META" get_session | grep -o '{"ccr".*' || true)
-  # 既に畳まれているものには何も言わない（`archive-session.sh` の出力の規約に揃える）。
-  [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" != "SESSION_STATUS_ARCHIVED" ] || continue
-  if jq -e '[.ccr.tags[]? | select(startswith("task-"))] | length > 0' <<<"$info" >/dev/null; then
-    targets=$(printf '%s\n%s' "$targets" "$session")
-  else
-    echo "KEPT $session"
-  fi
-done <<<"$sessions"
-archived=$(CCR_META="$CCR_META" bash "$HERE/archive-session.sh" <<<"$targets")
+# 畳んでよいかの判定と出力は [`archive-session.sh`](archive-session.sh) が持つ。**ここが渡すのは
+# 守る条件だけ。**
+#
+# - `--keep-untagged task-` … 畳んでよいのは、1つの issue のために立てたセッションだけ
+#   （`dispatch-task.sh` が必ず付けるタグ）。相談役のように issue を持たない相手は、PR1本が
+#   マージされても仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。
+# - `--keep-working` は**付けない**。走行中でも畳む——PRはもうマージされていて、ここが渡す最後の
+#   機会だから。
+archived=$(CCR_META="$CCR_META" bash "$HERE/archive-session.sh" --keep-untagged task- <<<"$sessions")
 [ -z "$archived" ] || printf '%s\n' "$archived"
 if grep -q '^UNARCHIVED ' <<<"$archived"; then
   leftover=1

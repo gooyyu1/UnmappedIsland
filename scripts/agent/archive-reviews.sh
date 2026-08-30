@@ -74,6 +74,13 @@ sessions=$(bash "$CCR_META" list_sessions <<<'{"mine":true,"limit":100}' | grep 
 # 相手が無いうえ、**上の2つの出来事はどちらも二度と起きない**——次のレビューは投入されず、次のマージも
 # 無い。守ると `KEPT` のまま誰にも渡されずに残り、`archive-reviews.sh` を入れる前の状態（72本）へ
 # 戻る（`watch-prs.sh` が見張るタグは `task` で始まるものだけなので、合図も出ない）。
-keep=()
-[ "$(gh pr view "$PR" --json state --jq '.state')" != "OPEN" ] || keep=(--keep-working)
+#
+# **状態を引けなかったときは守る側へ倒す。** 畳んで消えた判定は戻せないが、守って残ったものは手で
+# 畳める。畳むのは「閉じていると分かったとき」だけにする。
+state=$(gh pr view "$PR" --json state --jq '.state' || true)
+if [ -n "$state" ] && [ "$state" != "OPEN" ]; then
+  keep=()
+else
+  keep=(--keep-working)
+fi
 CCR_META="$CCR_META" bash "$HERE/archive-session.sh" "${keep[@]}" <<<"$sessions"

@@ -4,6 +4,7 @@
 #
 #   printf '%s\n' session_A session_B | bash scripts/agent/archive-session.sh
 #   printf '%s\n' session_A | bash scripts/agent/archive-session.sh --keep-working
+#   printf '%s\n' session_A | bash scripts/agent/archive-session.sh --keep-untagged task-
 #
 # 出力は1行1件。`ARCHIVED <ID>`、触らないと決めたものは `KEPT <ID>`、打って失敗したものは
 # `UNARCHIVED <ID>`。既に畳まれているものは何も出さない。**終了コードは常に0**——呼び手
@@ -30,6 +31,16 @@
 # レビューの投入かマージのときにもう一度渡される。**マージ済みのPRのセッションは、判定を書き終えても
 # 読む相手が無く、渡す出来事も二度と起きない**ので、走行中でも畳む。どちらかは呼び手が知っている。
 #
+# ## その仕事のために立てたものだけを畳む（`--keep-untagged <接頭辞>`）
+#
+# マージの後片付けで畳んでよいのは、**1つの issue のために立てたセッションだけ**（`task-<番号>` の
+# タグを持つ。[`dispatch-task.sh`](dispatch-task.sh) が必ず付ける）。相談役のように issue を持たない
+# 相手は、PR1本がマージされても仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。
+# 接頭辞で始まるタグを1つも持たないものを `KEPT` として出す。
+#
+# **タグで絞ってから渡す経路には要らない**（`archive-reviews.sh` は `review-<PR番号>` で引く）。
+# 渡すかどうかを呼び手が決めるのは、`--keep-working` と同じ形。
+#
 # ## ブリッジで立てたものは畳まない
 #
 # `--bridge` で立てたセッションはこのPCの環境を使うので、タグはクラウドのものと区別が付かない。
@@ -40,7 +51,21 @@
 set -euo pipefail
 
 KEEP_WORKING=0
-[ "${1:-}" != "--keep-working" ] || KEEP_WORKING=1
+KEEP_UNTAGGED=''
+while [ $# -gt 0 ]; do
+  case "$1" in
+  --keep-working) KEEP_WORKING=1 ;;
+  --keep-untagged)
+    KEEP_UNTAGGED="${2:?タグの接頭辞を渡す（例: task-）}"
+    shift
+    ;;
+  *)
+    echo "知らない引数: $1" >&2
+    exit 1
+    ;;
+  esac
+  shift
+done
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/agent/ccr-env.sh
@@ -57,6 +82,8 @@ while read -r session; do
   [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" != "SESSION_STATUS_ARCHIVED" ] || continue
   if { [ "$KEEP_WORKING" -eq 1 ] &&
     [ "$(jq -r '.ccr.status_bucket // ""' <<<"$info")" = "SESSION_STATUS_BUCKET_WORKING" ]; } ||
+    { [ -n "$KEEP_UNTAGGED" ] && ! jq -e --arg prefix "$KEEP_UNTAGGED" \
+      '[.ccr.tags[]? | select(startswith($prefix))] | length > 0' <<<"$info" >/dev/null; } ||
     [ "$(jq -r '.ccr.environment_id // ""' <<<"$info")" = "$BRIDGE_ENV" ]; then
     echo "KEPT $session"
   elif printf '{"session_id":"%s"}' "$session" | bash "$CCR_META" archive_session >/dev/null; then
