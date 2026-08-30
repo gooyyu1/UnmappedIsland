@@ -10,8 +10,8 @@
 #   MERGED   <PR番号>
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
-#   ARCHIVED <セッションID>         … そのPRを出したCCRセッションを畳んだ
-#   KEPT     <セッションID>         … issue を持たないセッションなので畳まなかった（相談役など）
+#   ARCHIVED <セッションID>         … そのPRを出したセッションと、そのPRのレビューのセッションを畳んだ
+#   KEPT     <セッションID>         … 畳まなかった。issue を持たない（相談役など）か、ブリッジのもの
 #   NOSESSION <PR番号>              … 本文が脚注を持たず、畳む相手が分からなかった
 #   UNARCHIVED <セッションID>       … 畳もうとして失敗した
 #   SYNCED   <コミット>             … 本体のチェックアウトを新しい `main` へ進めた
@@ -74,6 +74,8 @@ USER_OK=0
 [ "${2:-}" != "--user-ok" ] || USER_OK=1
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/agent/ccr-env.sh
+source "$HERE/ccr-env.sh"
 # 試験は差し替える（`gh` は PATH で差し替わるが、これはパスで呼ぶため）。
 CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 NEEDS_USER_REVIEW="${NEEDS_USER_REVIEW:-$HERE/needs-user-review.sh}"
@@ -154,6 +156,11 @@ while read -r session; do
   # `dispatch-task.sh` が必ず付ける）。相談役のように issue を持たない相手は、PR1本が
   # マージされても仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。
   if ! jq -e '[.ccr.tags[]? | select(startswith("task-"))] | length > 0' <<<"$info" >/dev/null; then
+    echo "KEPT $session"
+    continue
+  fi
+  # ブリッジのものは触らない（`archive-reviews.sh`「ブリッジで立てたレビューは畳まない」と同じ理由）。
+  if [ "$(jq -r '.ccr.environment_id // ""' <<<"$info")" = "$BRIDGE_ENV" ]; then
     echo "KEPT $session"
     continue
   fi

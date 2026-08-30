@@ -51,12 +51,11 @@ set -euo pipefail
 PR="${1:?PRの番号を渡す（例: 1152）}"
 WHERE="${2:-}"
 
-# クラウドが既定。ブリッジ（このPC）はリポジトリを既に持っているので `source_url` を渡さない。
-CLOUD_ENV='env_01JEqw2RUbL6EFo4p8EgRLSC'
-BRIDGE_ENV='env_018uF5fo4jU3HVotrg51gqLe'
 REPO_URL="https://github.com/$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/agent/ccr-env.sh
+source "$HERE/ccr-env.sh"
 CCR_META="$HERE/../../.claude/ccr-meta.sh"
 CHECK_PROMPT="$HERE/../../.claude/ccr-check-prompt.sh"
 TEMPLATE="$HERE/../../.claude/review-prompt.md"

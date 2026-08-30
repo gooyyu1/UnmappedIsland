@@ -16,6 +16,10 @@ import { describe, expect, it } from 'vitest';
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/merge-and-close.sh');
 
+/** `ccr-env.sh` へ環境変数で渡す身代わり。実物のIDは試験に書き写さない。 */
+const CLOUD = 'env_TEST_CLOUD';
+const BRIDGE = 'env_TEST_BRIDGE';
+
 /**
  * 脚注の無い本文は `NOSESSION` を出すので、脚注の話でない試験には既定でこれを持たせる。
  * 指す先は畳み済みなので、`ARCHIVED` の行も増えない。
@@ -35,6 +39,11 @@ interface World {
    * タグの話でない試験がそこで止まらないようにする。
    */
   readonly tags?: Record<string, string[]>;
+  /**
+   * ブリッジ（このPC）の環境で立ったセッション。**タグはクラウドと同じ**なので、これでしか
+   * 区別が付かない。環境IDそのものは `ccr-env.sh` から環境変数で差し替える。
+   */
+  readonly onBridge?: readonly string[];
   /** `archive_session` が失敗するか。 */
   readonly archiveFails?: boolean;
   /** 本体に未コミットの変更（追跡済み）があるか。 */
@@ -170,7 +179,11 @@ if [ "$1" = list_sessions ]; then
   echo '<other-session>'
   echo '${JSON.stringify({
     ccr: {
-      data: Object.entries(world.tags ?? {}).map(([id, tags]) => ({ id, tags })),
+      data: Object.entries(world.tags ?? {}).map(([id, tags]) => ({
+        id,
+        tags,
+        environment_id: (world.onBridge ?? []).includes(id) ? BRIDGE : CLOUD,
+      })),
     },
   })}'
   exit 0
@@ -185,7 +198,11 @@ ${Object.entries({ session_01ZZZZZZZZZZZZZZZZZZZZZZ: 'SESSION_STATUS_ARCHIVED', 
   .map(
     ([id, status]) =>
       `  ${id}) echo '${JSON.stringify({
-        ccr: { session_status: status, tags: world.tags?.[id] ?? ['task-1000'] },
+        ccr: {
+          session_status: status,
+          tags: world.tags?.[id] ?? ['task-1000'],
+          environment_id: (world.onBridge ?? []).includes(id) ? BRIDGE : CLOUD,
+        },
       })}' ;;`,
   )
   .join('\n')}
@@ -204,6 +221,8 @@ esac
           PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
           CCR_META: meta,
           NEEDS_USER_REVIEW: gate,
+          CLOUD_ENV: CLOUD,
+          BRIDGE_ENV: BRIDGE,
         },
       });
     } catch (error) {
@@ -354,6 +373,33 @@ describe('merge-and-close.sh', () => {
       'SYNCED deadbee',
     ]);
     expect(result.archived).toEqual(['session_01REVIEWAAAAAAAAAAAAAA', 'session_01REVIEWBBBBBBBBBBBBBB']);
+    expect(result.status).toBe(0);
+  });
+
+  // `claude remote-control` が落ちている間にブリッジのセッションを畳むと、worktree がロックされた
+  // まま残る。タグはクラウドと同じなので、環境IDでしか区別が付かない。
+  it('ブリッジで立てたセッションは、レビューも直す側も畳まない', () => {
+    const result = run({
+      body: 'Closes #1033\n\n_[Claude Code](https://claude.ai/code/session_01BRIDGETASK00000000)_',
+      issues: { 1033: 'CLOSED' },
+      sessions: { session_01BRIDGETASK00000000: 'SESSION_STATUS_IDLE' },
+      tags: {
+        session_01BRIDGETASK00000000: ['task-1033'],
+        session_01BRIDGEREVIEW000000: ['review-1000'],
+        session_01CLOUDREVIEW0000000: ['review-1000'],
+      },
+      onBridge: ['session_01BRIDGETASK00000000', 'session_01BRIDGEREVIEW000000'],
+    });
+
+    expect(result.lines).toEqual([
+      'MERGED 1000',
+      'CLOSED 1033',
+      'KEPT session_01BRIDGETASK00000000',
+      'KEPT session_01BRIDGEREVIEW000000',
+      'ARCHIVED session_01CLOUDREVIEW0000000',
+      'SYNCED deadbee',
+    ]);
+    expect(result.archived).toEqual(['session_01CLOUDREVIEW0000000']);
     expect(result.status).toBe(0);
   });
 
