@@ -1,0 +1,113 @@
+# 天日干しと干し場（docs/world/ContentSkeleton.md 4節の保存の段2、docs/world/SurvivalItems.md 10節）。
+#
+# **干すのは日差しで、干し場が変えるのはその速さ1つだけ。** 日の当たる地面へ並べた食べ物は乾きが
+# 進み、干し上がると塩漬けと同じ最も遅い段（foods.yamlのcured）へ移る。罠・畑・塩田とまったく同じ
+# 「仕掛けて待つ」形で、新しい文法は1つも足していない。
+#
+# **線を引いているのは速さではなく腐敗のほう。** 干している間も食べ物は屋外の上乗せ（-1）を受けた
+# まま乾きと競走するので、最も速い段（spoils_fast、屋外2日）は地面では間に合わず、干し場に掛けた
+# ときだけ干し上がる——強い日差しは1日に24tickしか当たらない（salt.yamlのdrying_remaining）ので、
+# 地面の72tickは腐り切るまでに貯まらない。tests/world-codex/dryingYaml.test.tsが全数を検査する。
+#
+# **残りを持つのは食べ物のほうで、干し場は何も持たない。** 途中で掛け替えても進んだぶんが残るのは
+# そのため。干し場が名乗るのは、掛けてある間の減りが3倍になること1つだけになる。
+
+traits:
+  # 干せる物。**宣言するのは生のままの食べ物だけ**——焼いた物は焼くのが食べるための工程なので
+  # 干さない（foods.yamlのcure軸と同じ切り分け）。殻や皮に隔てられて既に最も遅い段に居る物
+  # （ヤシの実・卵・タロイモ）も、干す仕事が済んでいるので持たない。
+  #
+  # **cure軸（3.5.1節）を併せて宣言している型にだけ付く。** 干し上がりが軸の値へ移る形なので、
+  # 軸の無い型に付けるとロードで落ちる。
+  dryable:
+    # 干し場の枠はこのタグだけを受け入れる（下のdrying_rack）。
+    tags: [dryable]
+    props:
+      # 干し上がるまでの残り。罠のcatch_remaining・塩田のdrying_remainingと同じ見えないタイマー
+      # （docs/engine/TrapSystem.md 2節）で、**強い日差しの当たったtickの数だけを数える**。
+      #
+      # 72は「開けた土地の晴れで3日ぶん」。塩田と同じく1日に貯まるのは24tickなので、地面に並べた
+      # 生肉（屋外2日＝192tick）は、晴れが完璧に続いても48tickしか貯められないまま腐る。干し場に
+      # 掛ければ24tickで済むので1日で干し上がり、野菜（屋外3.3日）は地面でも3日晴れれば届く。
+      #
+      # **初期値に幅を持たせない。** 塩田・罠の幅は複数の設備が同じtickに一斉に動くのを防ぐ位相で、
+      # 食べ物は自分が干され始めたところから数え始めるので要らない。
+      drying_remaining:
+        value: 72
+        range: {min: 0, max: 72}
+        passives:
+          # 日の当たる地面に並べているあいだ。境目は塩田のdrying_remainingと同じ+14
+          # （docs/engine/IlluminationSystem.md 1節のEV）。**天気を見る必要はない**——曇りの正午
+          # （-5）でも雨天でもこの境目には届かないので、日が陰れば止まる。
+          #
+          # **持ち歩いている間は乾かない**（親が土地でも干し場でもない）。籠や甕の中も同じで、
+          # 並べるか掛けるかしなければ干し始まらない。
+          - conditions:
+              - not: {subject: self, matches: {tag: cured}}
+              - {subject: parent, matches: {tag: location}}
+              - {subject: ancestor, prop: ambient_brightness, gte: 14}
+            add: {self: {drying_remaining: -1}}
+          # 干し場に掛けているあいだ。同じ日差しで3倍進むので、砂浜の晴れなら24tick＝1日ぶんで
+          # 干し上がる（塩田が1杯を干し上げるのと同じ長さ）。**これが干し場の全部**で、干し場は
+          # 乾きの残りも干し上がりも持たない。
+          - conditions:
+              - not: {subject: self, matches: {tag: cured}}
+              - {subject: parent, matches: {object: drying_rack}}
+              - {subject: ancestor, prop: ambient_brightness, gte: 14}
+            add: {self: {drying_remaining: -3}}
+          # 雨は濡らす。**乾きかけは元へ戻る**（rangeの上限で止まる）ので、雨季に干物を作るには
+          # 晴れ間が続かなければならない。守られた場所なら効かない（sheltered、
+          # docs/engine/ContainerSystem.md 6節）が、そこは日も差さない——塩田と同じ判断。
+          - conditions:
+              - not: {subject: self, matches: {tag: cured}}
+              - {subject: ancestor, prop: sheltered, eq: 0}
+              - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
+            add: {self: {drying_remaining: 2}}
+        # 干し上がる。**別の型は作らず**、塩漬けと同じcure軸の値になる（become、9.9節）ので、
+        # 傷み具合はそのまま引き継がれる。塩漬けの側の二度漬けを止める条件（salt.yamlの
+        # already_cured）は、cureタグを見ているのでそのまま効く。
+        on_min:
+          become: {cure: dried}
+
+object_defs:
+  # cure軸の値。**traitsだけを宣言する**（3.5.1節）——変種へ配られるのはfoods.yamlのcuredで、
+  # この型自身のインスタンスは作られない。塩漬けと同じ行き先を名乗るのは、どちらも腐敗の段の端へ
+  # 移す加工だから（foods.yamlのcured）。
+  dried:
+    traits: [cured]
+
+  # 干し場。太い枝を立てて縄を1本張り、切り分けた食べ物を掛ける棚。
+  #
+  # **開けるのは「腐敗の最も速い段の食べ物を干物にできること」だけ**（docs/world/SurvivalItems.md
+  # 10節）。**据える場所は縛らない**——樹冠の深い森では境目を超える時間がほとんど無いので、
+  # 干せないことは乾きが進まないことで分かる（塩田を海から離して据えられるのと同じ）。
+  drying_rack:
+    tags: [fixture]
+    # 押すと掛けてある物が並ぶ（7.11節）。**干し場は何も告げない**ので、見に来なければ干し上がった
+    # ことは分からない——罠・畑・塩田と同じ沈黙（docs/engine/TrapSystem.md 5節）。
+    visible_slots: [drying]
+    # 中身が個体ごとに違うので束ねない（SlotSystem.md 4節）。
+    stackable: false
+    slots:
+      # 掛けてある食べ物。**受けるのはdryableだけ**——焼いた物も腐らない物も掛けられないので、
+      # 干せないことは操作の側で分かる。
+      #
+      # **枠ごとに1つ**（maxを置く、7.2節）——食べ物は束ねられるので、maxが無いと1つの枠に何個でも
+      # 積まれて、棚の広さが何も意味しなくなる（囲いのcatchと同じ理由、farming.yaml）。
+      drying:
+        cell_count: 6
+        cell: {accept: {tag: dryable}, max: 1}
+    props:
+      # 太い枝6本（1,000×6）＋縄1本（600）。**据えた物も目方を名乗る**（core.yaml）。
+      weight: {value: 6600}
+    # **解放条件を持たない。** 保存の腕を求めると循環する（docs/engine/SkillSystem.md 3.2節）——
+    # 天日に干す最初の一歩は素手で足りる（docs/world/Skills.md 2節）ので、腕はそこから始まる。
+    recipes:
+      # 枝を立てて縄を張るだけ。**掘削具も刃物も要らない**——太い枝は拾える物なので、保存の系統の
+      # 最初の山が前半に届く（docs/world/Skills.md 4節）。
+      lashed:
+        steps:
+          - requires:
+              - {object: thick_branch, count: 6, consume: true}
+              - {object: rope, count: 1, consume: true}
+            duration: 120

@@ -13,20 +13,6 @@
 # （become、GameElementDefinition.md 9.9節）——**別の型を作らないので、傷み具合は引き継がれる**。
 # 腐りかけを塩漬けにしても新品には戻らない（そもそも下のcureが無事な物しか受け付けない）。
 
-traits:
-  # 塩蔵された物。foods.yamlのcure軸が、このtraitを丸ごと食べ物へ配る。
-  #
-  # **腐敗の速さは既にある3段（docs/engine/DurabilitySystem.md 3節）のうち最も遅い段（芋と同じ
-  # -0.5＝通常温度で20日）で、新しいレートは持ち込まない。** 生の速さのほうは塩蔵されている間だけ
-  # 効かない（foods.yamlのspoils_*）ので、ここが名乗る1つだけが残る。
-  #
-  # 屋外の上乗せ（分類によらず-1）はperishableが持ったままなので、塩漬けでも外へ置けば6.7日に
-  # 落ちる（docs/engine/DurabilitySystem.md 3節）。**塩は温度と湿りの代わりにはならない。**
-  salted:
-    tags: [cured]
-    passives:
-      - add: {self: {durability: -0.5}}
-
 object_defs:
   # 塩。掻き取った粗塩ひと掴みで、1つで食べ物1つを塩蔵できる。
   #
@@ -61,16 +47,18 @@ object_defs:
             prop: durability
             in_stage: sound
         # 保存の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
-        # characters/player_character.yaml）。**今のところ保存を伸ばす唯一の操作**で、干す・燻すは
-        # まだ世界に無い（docs/world/Skills.md 2節）。
+        # characters/player_character.yaml）。**今のところ保存を伸ばす唯一の操作。** 天日干しは
+        # 入ったが（drying.yaml）、並べて待つだけで操作を持たないので腕は伸びない
+        # （docs/world/Skills.md 2節）。
         add: {agent: {skill_preserving: 2}}
         become: {subject: instrument, cure: salted}
         destroy: self
 
-  # cure軸の値。**traitsだけを宣言する**（3.5.1節）——変種へ配られるのは上のtraitで、この型自身の
-  # インスタンスは作られない。
+  # cure軸の値。**traitsだけを宣言する**（3.5.1節）——変種へ配られるのはfoods.yamlのcuredで、
+  # この型自身のインスタンスは作られない。保たせる速さは天日干し（drying.yamlのdried）と同じ1つで、
+  # ここが名乗るのは名前だけになる。
   salted:
-    traits: [salted]
+    traits: [cured]
 
   # 塩田。海に面した土地へ据える浅い盤で、張った海水が日に干されると塩が残る。
   #
@@ -165,8 +153,8 @@ object_defs:
             matches: {tag: coast}
         add: {self: {brine: 1}}
     # **解放条件を持たない。** 保存の腕を求めると循環する（docs/engine/SkillSystem.md 3.2節）——
-    # 今その腕を伸ばす唯一の操作は塩漬け（上のcure）で、塩はこの塩田からしか採れない。天日に干す
-    # 最初の一歩（docs/world/Skills.md 2節）が世界に入れば、そこが腕の入口になる。
+    # 今その腕を伸ばす唯一の操作は塩漬け（上のcure）で、塩はこの塩田からしか採れない。天日干し
+    # （drying.yaml）は操作を持たないので、腕の入口はまだこちらにしか無い。
     recipes:
       # 砂を掻き分け、平たい石を並べて底を張る。**掘削具は要らない**——畑（240分）と同じ手間で、
       # 掘り返すのではなく並べるだけなので、掘り棒にする太い枝も折り込んでいない。

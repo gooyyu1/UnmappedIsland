@@ -74,7 +74,7 @@ object_defs:
     tags: [item, food]
     # 腐敗（foods.yamlのtrait）。**このファイルで腐るのは実だけ**——茎から先は素材で、素材の劣化は
     # まだ入っていない（docs/engine/DurabilitySystem.md 2節・5節）。
-    traits: [perishable, spoils_normal]
+    traits: [perishable, spoils_normal, dryable]
     props:
       weight: {value: 400}
       volume: {value: 500}
