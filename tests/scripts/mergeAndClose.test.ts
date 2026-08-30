@@ -52,6 +52,10 @@ interface World {
    * 畳む側が見るのは両方。
    */
   readonly working?: readonly string[];
+  /**
+   * `get_session` の応答にJSONが入らないセッション（引けない日）。タグも状態も環境も分からない。
+   */
+  readonly unknown?: readonly string[];
   /** `archive_session` が失敗するか。 */
   readonly archiveFails?: boolean;
   /** 本体に未コミットの変更（追跡済み）があるか。 */
@@ -212,6 +216,7 @@ if [ "$1" = archive_session ]; then
 fi
 echo '<other-session>'
 case "$id" in
+${(world.unknown ?? []).map((id) => `  ${id}) : ;;`).join('\n')}
 ${Object.entries({ session_01ZZZZZZZZZZZZZZZZZZZZZZ: 'SESSION_STATUS_ARCHIVED', ...world.sessions })
   .map(
     ([id, status]) =>
@@ -592,6 +597,22 @@ describe('archive-reviews.sh', () => {
         sessions: { session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING' },
         tags: { session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'] },
         working: ['session_01REVIEWAAAAAAAAAAAAAA'],
+      },
+      [ARCHIVE_REVIEWS, '1000'],
+    );
+
+    expect(result.lines).toEqual(['KEPT session_01REVIEWAAAAAAAAAAAAAA']);
+    expect(result.archived).toEqual([]);
+    expect(result.status).toBe(0);
+  });
+
+  // 引けなければ、走行中かもブリッジかも分からない。空の応答から全部のキーが `""` に落ちるので、
+  // 何も書かなければ「走行中でもブリッジでもない」＝畳む側へ倒れる。上と同じ理由で守る側にする。
+  it('セッションを引けなかったときは畳まない', () => {
+    const result = run(
+      {
+        tags: { session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'] },
+        unknown: ['session_01REVIEWAAAAAAAAAAAAAA'],
       },
       [ARCHIVE_REVIEWS, '1000'],
     );

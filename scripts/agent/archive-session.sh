@@ -47,6 +47,13 @@
 # `claude remote-control` が落ちている間にブリッジのセッションを畳むと、worktree がロックされた
 # まま残る（`.claude/parallel-work.md`「終わったセッションは、issue を鍵にして畳む」）。
 # `environment_id`（[`ccr-env.sh`](ccr-env.sh) の `BRIDGE_ENV`）で除いて `KEPT` として出す。
+#
+# ## 引けなかったものは畳まない
+#
+# 上の3つの「守る」条件は、どれも**引けた値**で判定する。`get_session` が引けないと全部のキーが
+# 空に落ち、走行中でもブリッジでもないものとして畳む側へ倒れる——**知らないことを、否定として
+# 読んでいる。** 畳んで消えたコメントも、ロックされたまま残る worktree も戻せないので、引けなかった
+# ものは `KEPT` として出す。守って残ったものは手で畳める。
 
 set -euo pipefail
 
@@ -80,7 +87,8 @@ while read -r session; do
   info=$(printf '{"session_id":"%s"}' "$session" |
     bash "$CCR_META" get_session | grep -o '{"ccr".*' || true)
   [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" != "SESSION_STATUS_ARCHIVED" ] || continue
-  if { [ "$KEEP_WORKING" -eq 1 ] &&
+  if [ -z "$info" ] ||
+    { [ "$KEEP_WORKING" -eq 1 ] &&
     [ "$(jq -r '.ccr.status_bucket // ""' <<<"$info")" = "SESSION_STATUS_BUCKET_WORKING" ]; } ||
     { [ -n "$KEEP_UNTAGGED" ] && ! jq -e --arg prefix "$KEEP_UNTAGGED" \
       '[.ccr.tags[]? | select(startswith($prefix))] | length > 0' <<<"$info" >/dev/null; } ||
