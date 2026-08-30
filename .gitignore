@@ -12,6 +12,9 @@ __pycache__/
 # 生データの置き場の既定（別リポジトリ UnmappedIsland-art-raw から取ってくる。raw_store.py）。
 .art-raw/
 
+# トークン使用量の生データの置き場の既定（セッションIDと指示の原文が入る。scripts/usage）。
+.usage-data/
+
 # Editor/OS
 .vscode/
 .idea/
