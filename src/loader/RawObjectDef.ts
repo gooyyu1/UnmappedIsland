@@ -8,7 +8,7 @@ import { parseSlot } from './parseSlots';
 import { parsePassiveInto } from './parsePassives';
 import { parseInteractions } from './parseInteractions';
 import { parseRecipes } from './parseRecipes';
-import { parseConditionsField } from './parseConditions';
+import { parseConditionList } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import type { RawTrait } from './RawTrait';
 import { RawDeclarationBody, namesIn } from './RawDeclarationBody';
@@ -173,7 +173,7 @@ export class RawObjectDef {
 
     // resists（7.13節）が見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面
     // （tick・こぼれ落ち）でも同じ判定が走る。
-    const resists = parseConditionsField(
+    const resists = parseConditionList(
       loader,
       `'${this.name}'.resists`,
       merged.resists,

@@ -53,7 +53,13 @@ function parseInteraction(
   const drag = isMap(triggerNode) ? parseDragTrigger(loader, context, triggerNode) : undefined;
   const scope = drag !== undefined ? ReferenceScope.acting.withInstrument : ReferenceScope.acting;
 
-  const requirements = parseRequirementsField(loader, context, tryGetSeq(map, 'conditions', context), scope);
+  const requirements = parseRequirementsField(
+    loader,
+    context,
+    tryGetSeq(map, 'conditions', context),
+    scope,
+    'conditions',
+  );
   const effect = parseActiveEffectBody(loader, context, map, scope, RESERVED_KEYS);
 
   // duration: 実行にかかるゲーム内時間（分）。省略時は時間を消費しない。

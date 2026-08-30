@@ -85,6 +85,7 @@ export function parseRecipes(
       context,
       tryGetSeq(map, 'conditions', context),
       ReferenceScope.recipeUnlock,
+      'conditions',
     );
 
     result.push(new RecipeDef(name, steps, tryGetScalar(map, 'icon', context), unlock));
