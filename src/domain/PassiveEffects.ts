@@ -9,9 +9,9 @@ import type { ReferenceRoot } from './ReferenceRoot';
  * **受け取った契機はそのまま全effectへ配り、どれが反応するかは効果自身が決める。** だから契機を伝える
  * 側は、宣言のtargetもkindも見ずに「こうなった」とだけ言えばよい。
  *
- * **寄与として登録できない輸送（8.4節）だけが別。** 登録が無い以上こちらが走らせるしかなく、走らせる
- * 時点（積分の後、WorldObject.tick）が意味を持つので、そこは「こうなった」ではなく「いま走らせろ」を
- * 受ける——呼ぶ側がその時点を知っている。
+ * **別なのは、輸送を走らせる口（applyTickTransfers）だけ。** 輸送は寄与として登録できない（8.4節）
+ * のでこちらが走らせるしかなく、走らせる時点（積分の後、WorldObject.tick）が意味を持つ。そこだけは
+ * 「こうなった」ではなく「いま走らせろ」を受け、呼ぶ側がその時点を知っている。
  */
 export class PassiveEffects {
   private readonly effects: readonly PassiveEffect[];
