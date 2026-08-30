@@ -57,7 +57,11 @@ traits:
 
   water_liquid:
     # この液体を保持していることを表すタグ。注ぎ移しの相手を種類ごとに指す（pour_in）。
-    tags: [water]
+    #
+    # cleansingは傷を洗える液体の印（injuries.yamlのopen_wound、docs/engine/InjurySystem.md 6.2節）。
+    # **海水は名乗らない**——海に囲まれた島で無尽蔵の水源を認めると、洗う代償（1杯を飲まずに捨てる）が
+    # まるごと消える。
+    tags: [water, cleansing]
     props:
       color: {value: 0x2f86d8}
     interactions:
@@ -107,7 +111,9 @@ traits:
   # 沸かした湯。焼け石を落として作る（fire.yamlのhot_stone、docs/engine/FireSystem.md 9.1節）。
   # **水とは別のタグを持つ**ので、湯へさらに焼け石は落とせず、水と混ぜて薄まることもない。
   hot_water_liquid:
-    tags: [hot_water]
+    # **真水と同じcleansingを名乗る。** 落とすのは傷口に入った汚れなので、沸かしてあるかどうかは
+    # 効き目を変えない——洗う宣言が傷の側に1つで済むのはこのため（InjurySystem.md 6.2節）。
+    tags: [hot_water, cleansing]
     props:
       color: {value: 0x8fc4ea}
       # 器の中に残っている熱。抜け切れば普通の水に戻る。石の蓄熱（fire.yaml）と同じ名前だが、
