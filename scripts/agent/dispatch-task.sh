@@ -32,6 +32,11 @@
 # - `environment_id` は必須（この経路には呼び元が無いので継げない）。`permission_mode` は逆に
 #   渡してはいけない（親セッションを要求されて撥ねられる）。
 # - **閉じた issue へ立てると、空待ちになる。** 題を引くのと同じ `gh issue view` で `state` も見る。
+# - **`## 担当` に、セッションが触れない領域が挙がっていないかを見る。** ひな形・司令塔の道具・運用の
+#   文書は司令塔が `main` へ直接入れる領域で、セッションからは編集ツールが拒否される。気づかずに
+#   投入すると壁に当たり、往復が1回まるごと無駄になる（2026-08-30・#1398。担当に
+#   `.claude/parallel-work.md` が載ったまま投入し、セッションは拒否された経路を回避して書き込む
+#   ところまで行った）。**同じ `gh issue view` で `body` も引く**ので、往復は増えない。
 
 set -euo pipefail
 
@@ -71,13 +76,27 @@ cat "$SUPPLEMENT" >>"$INSTRUCTION"
 
 # **日本語はシェル変数に載せない。** Windowsのnodeは argv も環境変数もANSIで受け取るので、題を
 # `$(...)` で渡すと黙って化ける。題も本文もファイル経由で node へ渡す。
-gh issue view "$ISSUE" --json title,state >"$WORK/issue.json"
+gh issue view "$ISSUE" --json title,state,body >"$WORK/issue.json"
 
 # 閉じた issue へ立てると、セッションは「仕事は無い」と正しく判断して即終了する。PRが出ないので
 # `watch-prs.sh` には何も届かず、タイムアウトまでの空待ちになる。
 state=$(jq -r '.state' "$WORK/issue.json")
 [ "$state" = "OPEN" ] || {
   echo "issue #$ISSUE は開いていない（state=$state）。投入しない。" >&2
+  exit 1
+}
+
+# `## 担当` に、セッションが書けない領域が挙がっていないか。`.claude/**` はクラウドセッションからの
+# 書き込みが必ずユーザー承認を求められ、そこで止まる。`scripts/agent/**` と `CLAUDE.md` は司令塔が
+# `main` へ直接入れる領域。どれも投入した時点で往復が1回無駄になる。
+owned=$(jq -r '.body' "$WORK/issue.json" | tr -d '\r' |
+  awk '/^##[[:space:]]/ { inside = /^##[[:space:]]+担当[[:space:]]*$/; next } inside' |
+  grep -oE '(\.claude/[^`)[:space:]]*|scripts/agent/[^`)[:space:]]*|CLAUDE\.md)' | sort -u || true)
+[ -z "$owned" ] || {
+  echo "issue #$ISSUE の「担当」に、セッションが書けない領域が挙がっている。投入しない。" >&2
+  echo "$owned" | sed 's/^/  /' >&2
+  echo '  司令塔が `main` へ直接入れる領域（.claude/parallel-work.md「司令塔の手入れは main へ直接 push する」）。' >&2
+  echo '  司令塔が先に入れて担当から外すか、issue を割ってから投入する。' >&2
   exit 1
 }
 
