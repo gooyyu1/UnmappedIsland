@@ -38,36 +38,50 @@ traits:
         value: 72
         range: {min: 0, max: 72}
         passives:
-          # 日の当たる地面に並べているあいだ。境目は塩田のdrying_remainingと同じ+14
+          # 日差しに晒しているあいだ。境目は塩田のdrying_remainingと同じ+14
           # （docs/engine/IlluminationSystem.md 1節のEV）。**天気を見る必要はない**——曇りの正午
           # （-5）でも雨天でもこの境目には届かないので、日が陰れば止まる。
           #
-          # **持ち歩いている間は乾かない**（親が土地でも干し場でもない）。籠や甕の中も同じで、
-          # 並べるか掛けるかしなければ干し始まらない。
+          # **晒しているのは、地面に並べたときと干し場に掛けたときだけ。** 持ち歩いている間も籠や
+          # 甕の中も乾かない（親が土地でも干し場でもない）。**この「晒しているか」は下の雨と同じ
+          # もの**で、進む側だけに掛けると、手に持ったまま雨に降られて振り出しへ戻る。
           - conditions:
               - not: {subject: self, matches: {tag: cured}}
-              - {subject: parent, matches: {tag: location}}
+              - any:
+                  - {subject: parent, matches: {tag: location}}
+                  - {subject: parent, matches: {object: drying_rack}}
               - {subject: ancestor, prop: ambient_brightness, gte: 14}
             add: {self: {drying_remaining: -1}}
-          # 干し場に掛けているあいだ。同じ日差しで3倍進むので、砂浜の晴れなら24tick＝1日ぶんで
-          # 干し上がる（塩田が1杯を干し上げるのと同じ長さ）。**これが干し場の全部**で、干し場は
-          # 乾きの残りも干し上がりも持たない。
+          # 干し場に掛けているあいだの上乗せ。地面は片面にしか日と風が当たらないぶん遅い、という差を
+          # **基礎＋上乗せ**で置く（液体の蒸発・屋外の腐敗と同じ形、liquid_containers.yaml・
+          # foods.yaml）。合わせて-3なので、砂浜の晴れなら24tick＝1日ぶんで干し上がる（塩田が1杯を
+          # 干し上げるのと同じ長さ）。**これが干し場の全部**で、干し場は乾きの残りも干し上がりも
+          # 持たない。
           - conditions:
               - not: {subject: self, matches: {tag: cured}}
               - {subject: parent, matches: {object: drying_rack}}
               - {subject: ancestor, prop: ambient_brightness, gte: 14}
-            add: {self: {drying_remaining: -3}}
+            add: {self: {drying_remaining: -2}}
           # 雨は濡らす。**乾きかけは元へ戻る**（rangeの上限で止まる）ので、雨季に干物を作るには
           # 晴れ間が続かなければならない。守られた場所なら効かない（sheltered、
           # docs/engine/ContainerSystem.md 6節）が、そこは日も差さない——塩田と同じ判断。
+          #
+          # **晒している物だけが濡れる。** 上の乾く側と同じ門を通す——通さないと、鞄の中の干しかけが
+          # 雨のたびに戻る。
           - conditions:
               - not: {subject: self, matches: {tag: cured}}
+              - any:
+                  - {subject: parent, matches: {tag: location}}
+                  - {subject: parent, matches: {object: drying_rack}}
               - {subject: ancestor, prop: sheltered, eq: 0}
               - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
             add: {self: {drying_remaining: 2}}
         # 干し上がる。**別の型は作らず**、塩漬けと同じcure軸の値になる（become、9.9節）ので、
-        # 傷み具合はそのまま引き継がれる。塩漬けの側の二度漬けを止める条件（salt.yamlの
-        # already_cured）は、cureタグを見ているのでそのまま効く。
+        # 傷み具合はそのまま引き継がれる。
+        #
+        # **干した物へ塩は打てない。** 止めているのは条件ではなく軸のほうで、**変種の変種は
+        # 作らない**（3.5.1節）ため干物にはもう行き先が無く、塩漬けの操作そのものが現れない
+        # （塩漬けを二度漬けられないのも同じ理由）。
         on_min:
           become: {cure: dried}
 
@@ -83,6 +97,11 @@ object_defs:
   # **開けるのは「腐敗の最も速い段の食べ物を干物にできること」だけ**（docs/world/SurvivalItems.md
   # 10節）。**据える場所は縛らない**——樹冠の深い森では境目を超える時間がほとんど無いので、
   # 干せないことは乾きが進まないことで分かる（塩田を海から離して据えられるのと同じ）。
+  #
+  # **速くする宣言は、ここではなく上のdryableが持つ**（掛かっている物の側の上乗せ）。炉が
+  # `add: {child: {cooking_progress: N}}`で子を進めるのとは向きが逆だが、乾きは**保存済みの物では
+  # 止めなければならない**（塩漬けを掛けたまま放つと、干し上がりが塩漬けを日干しへ塗り替える）。
+  # その「保存済みか」は個体ごとの判定で、枠の側からは1つずつ見分けられない。
   drying_rack:
     tags: [fixture]
     # 押すと掛けてある物が並ぶ（7.11節）。**干し場は何も告げない**ので、見に来なければ干し上がった
@@ -92,7 +111,9 @@ object_defs:
     stackable: false
     slots:
       # 掛けてある食べ物。**受けるのはdryableだけ**——焼いた物も腐らない物も掛けられないので、
-      # 干せないことは操作の側で分かる。
+      # 干す軸を持たないことは掛ける口が無いことで分かる。**既に保存済みの物（塩漬け・干物）は
+      # 掛かる**が、上のdryableが止めるので何も起きない——枠は型で受けるので、同じ型の保存済みの
+      # 個体だけを弾く書き方が無い。
       #
       # **枠ごとに1つ**（maxを置く、7.2節）——食べ物は束ねられるので、maxが無いと1つの枠に何個でも
       # 積まれて、棚の広さが何も意味しなくなる（囲いのcatchと同じ理由、farming.yaml）。

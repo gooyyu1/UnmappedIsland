@@ -228,14 +228,31 @@ describe('drying.yamlの天日干しと干し場', () => {
     expect(numberOf(meat, dryingRemainingId), 'タイマーは1つも進まない').toBe(before);
   });
 
-  it('雨は乾きを押し戻す', () => {
+  it('雨は、並べた物も掛けた物も押し戻す', () => {
     // 雨天は日差しの境目に届かない（進まない）うえ、濡れて乾きかけが戻る。
     const { session, land } = open(SUNRISE_HOUR, 'heavy_rain');
-    const meat = spawnInto(session, 'raw_meat', land, 'items');
-    meat.getProperty(dryingRemainingId).setNumberWithoutEvents(10);
+    const rack = spawnInto(session, 'drying_rack', land, 'fixtures');
+    const onGround = spawnInto(session, 'raw_meat', land, 'items');
+    const onRack = spawnInto(session, 'raw_meat', rack, 'drying');
+    for (const meat of [onGround, onRack]) meat.getProperty(dryingRemainingId).setNumberWithoutEvents(10);
 
     advance(session, 1);
-    expect(numberOf(meat, dryingRemainingId), '残りが増える＝干し上がりが遠のく').toBe(12);
+    expect(numberOf(onGround, dryingRemainingId), '並べた物は戻る').toBe(12);
+    expect(numberOf(onRack, dryingRemainingId), '掛けた物も戻る').toBe(12);
+  });
+
+  it('しまってある物は、雨に降られても戻らない', () => {
+    // **乾く側と戻る側は同じ門を通る**（並べたか掛けたか）。戻る側だけ門を外すと、干し場で乾かした
+    // 物を手に持って雨の中を歩くだけで振り出しへ戻り、しかも持ったままでは取り返せない。
+    const { session, land, player } = open(SUNRISE_HOUR, 'heavy_rain');
+    const basket = spawnInto(session, 'woven_basket', land, 'items');
+    const carried = spawnInto(session, 'raw_meat', player, 'hand');
+    const stored = spawnInto(session, 'raw_meat', basket, 'contents');
+    for (const meat of [carried, stored]) meat.getProperty(dryingRemainingId).setNumberWithoutEvents(10);
+
+    advance(session, 24);
+    expect(numberOf(carried, dryingRemainingId), '手に持った物は動かない').toBe(10);
+    expect(numberOf(stored, dryingRemainingId), '籠の中の物も動かない').toBe(10);
   });
 
   it('干し場に掛けられるのは、干せる物だけ', () => {
@@ -252,14 +269,17 @@ describe('drying.yamlの天日干しと干し場', () => {
   });
 
   it('干した物は、もう塩漬けにできない', () => {
-    // 塩の側の二度漬けを止める条件（salt.yamlのalready_cured）はcuredタグを見ているので、干物にも
-    // そのまま効く。**保存を重ねても行き先は同じ段の端**なので、塩を捨てさせない。
+    // **止めているのは条件ではなく軸のほう。** 変種の変種は作らない（3.5.1節）ので、干物には
+    // cureの行き先が無く、塩漬けの操作そのものが現れない——保存を重ねても行き先は同じ段の端なので、
+    // 出しても塩を捨てさせるだけになる。
     const { session, land, player } = open();
     const dried = spawnInto(session, 'raw_meat__cure_dried', land, 'items');
     const salt = spawnInto(session, 'salt', player, 'hand');
 
-    const combination = salt.combinationsWith(dried, player).find((c) => c.name === 'cure');
-    expect(combination?.tryExecute(), '塩を無駄にしない').not.toBe(true);
+    expect(
+      salt.combinationsWith(dried, player).map((c) => c.name),
+      '塩漬けの操作が現れない',
+    ).not.toContain('cure');
   });
 
   it('干せる食べ物は、干すと必ず遅くなる', () => {
