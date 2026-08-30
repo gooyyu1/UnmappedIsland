@@ -592,7 +592,7 @@ describe('watch-prs.sh の RELAY', () => {
     expect(watch([[]], [[]], [], [], { relayed: [1240, 1062] })).toEqual(['RELAY 1240', 'RELAY 1062']);
   });
 
-  it('ラベルの付いたマージ済みPRが無ければ、何も出さない', () => {
+  it('ラベルの付いたマージ済みPRが無ければ、開いているPRは `RELAY` にならない', () => {
     // 開いているPRの一覧を流用していると、開いているPR全部が `RELAY` になる。別の呼び出しである
     // ことをここで押さえる。
     expect(watch([[pullRequest(871, 'MERGEABLE')]], [[]], [], [], { numbers: [0] })).toEqual([
