@@ -1502,7 +1502,7 @@ ui_texts:
   # 名前の付いていない土地（IslandMapが個体名を持たない場合）。
   unnamed_location: 名もなき土地
   # レシピ一覧（Windows.md 9節）。未解放の理由が宣言されていない場合と、棚に載らないレシピの見出し。
-  recipe_locked: まだ作り方が分からない
+  recipe_locked: まだ作り方が分からない。
   recipe_other: その他
 
   # タイトル画面（StartScreen.md 画面構成 1）。**画面の名前は、開くボタンと見出しで同じ語**——
@@ -1573,8 +1573,6 @@ ui_texts:
   # レシピ一覧（Windows.md 9節）の見出しと、1つも並ばないときの文。
   recipe_title: 作るもの
   recipe_empty: ここに並ぶものはまだ無い。
-  # 未解放のレシピの札。押せないことを、名前の後ろの理由で伝える。
-  recipe_locked_name: '{name}（{reason}）'
 
   # ゲーム内時間の長さ（timeTexts.ts）。時・分のどちらが立つかで3通り。
   duration_minutes: '{minutes}分'

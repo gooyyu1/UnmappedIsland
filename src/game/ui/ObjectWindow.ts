@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import type { Rect } from '../../ui/Rect';
 import type { ScreenMetrics } from '../looks/ScreenMetrics';
 import { TabButtons, addTextButton } from './Button';
-import type { HoldHandlers } from './Button';
+import type { HoldHandlers } from '../../ui/holdRepeat';
 import type { CardContent } from './Card';
 import type { CardLane } from './CardLane';
 import { DescriptionPane } from './DescriptionPane';

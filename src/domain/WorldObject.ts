@@ -706,9 +706,13 @@ export class WorldObject {
   /**
    * 名指しした1つのプロパティが、他と交わしている影響（docs/ui/Windows.md 8節）。
    *
-   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果だけでよい。効果が届く先は
-   * self/parent/child/ancestor のいずれか（8.1節）なので、自分へ届く効果も自分が届かせる効果も、
-   * 宣言元は必ずこの3方向のどれかに居る——横に並んだ物どうしは互いに届かない。
+   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果だけでよい。**持続効果の対象に今書けるのは、
+   * 宣言元から木を辿るものだけ**（何を書けるかは宣言が置かれた場所が決める。一覧はGameElementDefinition.md
+   * 14.1節の表）なので、自分へ届く効果も自分が届かせる効果も、宣言元は必ずこの3方向のどれかに居る
+   * ——横に並んだ物どうしは互いに届かない。
+   *
+   * **3方向で足りるのは、同11.5節が`【未実装: 操作の関係】`である間だけ。** 操作の関係の役を対象に書ける
+   * ようになると、木の上に居ない相手へも効果が届く。
    */
   readInfluences(propertyGlobalId: number): PropertyInfluenceReading {
     const influences = new PropertyInfluences(this, propertyGlobalId);
@@ -727,7 +731,10 @@ export class WorldObject {
   /**
    * 持続効果の対象（8.1節）を、影響の一覧のために解決する。**childは今入っている子を全部**返す
    * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（setChildRegistered）。
-   * agent/instrumentはpassivesに現れない（parsePassiveTransfers）ため空になる。
+   *
+   * 操作の関係の役（11.5節）はここへ来ない。役に解決先が無いのは`ReferenceScope.declaration`が持つ性質で、
+   * 上のchildのために派生させた`withBroadcast`もそこは引き継ぐ。狭いのは同節が`【未実装: 操作の関係】`
+   * である間だけ。
    */
   resolveInfluenceTargets(path: PropertyPath): readonly WorldObject[] {
     if (path.root === 'child') return [...this.children()];
