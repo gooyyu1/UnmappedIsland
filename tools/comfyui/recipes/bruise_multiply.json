@@ -1,9 +1,9 @@
 {
   "_comment": [
-    "src/assets/objects/pen_bruise_multiply.png（檻の打ち身）を作り直すためのレシピ。build.py が読む。",
+    "src/assets/objects/bruise_multiply.png（生かす罠の打ち身）を作り直すためのレシピ。build.py が読む。",
     "",
-    "**面は破れていないので、乗算の層だけを持つ**（laceration.json 参照）。閉じ込められた獣が丸太へ",
-    "体を打ちつけて負う打ち身で、bleeding を持たない（injuries.yaml の pen_bruise）。",
+    "**面は破れていないので、乗算の層だけを持つ**（laceration.json 参照）。閉じ込められた獣が丸太へ、",
+    "落ちた獣が穴の底へ体を打ちつけて負う打ち身で、bleeding を持たない（injuries.yaml の bruise）。",
     "",
     "**捻挫・骨折と見分ける手は形。** 何度もぶつかって負う傷なので、1つの塊ではなく小さい痣が散る。",
     "捻挫は1つの丸、骨折は縦長の帯、ここは散らばり——実寸で1/3に縮んでも、この差は残る。",
@@ -12,7 +12,7 @@
     "消える（0.4前後では地の肌のむらと区別が付かなかった）。捻挫と同じ濃さで置き、赤みの側へ寄せた",
     "明るい色で「浅い」を出す。芯は作らず、暈しだけを重ねる。"
   ],
-  "output": "src/assets/objects/pen_bruise_multiply.png",
+  "output": "src/assets/objects/bruise_multiply.png",
   "stain": {
     "size": "410x640",
     "spots": [

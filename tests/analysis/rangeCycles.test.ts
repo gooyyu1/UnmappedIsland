@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { rangeCyclesOf } from '../../src/analysis/rangeCycles';
-import type { WorldCodex } from '../../src/domain/WorldCodex';
+import { externalTickDeltasOf, externalTickDeltasOn, rangeCyclesOf } from '../../src/analysis/rangeCycles';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
  * tick毎に動く値がrangeの端へ届くまでの周期（`src/analysis/rangeCycles.ts`）の検証。
  *
- * 見るのは**条件つきの増減（`GameElementDefinition.md` 8.2節）をどう組み合わせるか**——問いは
+ * 見るのは2つ。**条件つきの増減（`GameElementDefinition.md` 8.2節）をどう組み合わせるか**——問いは
  * 「合算するか」ではなく「どの組み合わせが同時に成立しうるか」で、成立しえない組み合わせを1つの
- * 場合として数えると、増減が打ち消し合って周期そのものが消える。
+ * 場合として数えると、増減が打ち消し合って周期そのものが消える。そして**端から戻る量をどう測るか**
+ * （`RangeEventReadout`）——`add`で足して戻すのも`set`で書き戻すのも、上端から戻るのも下端から
+ * 戻るのも、同じ1つの向き（端からrangeの内側へ）で測らないと、周期が端によって別の意味になる。
  *
  * 形はどれも同梱の定義から採っているが、宣言はここに置く（tests/architecture/testKinds.test.ts）。
  */
@@ -100,14 +101,95 @@ object_defs:
               to_prop: hydration
               amount: 25
               to_amount: 1
+
+  # 海区（voyage.yaml）。荒天にさらされた時間が上端へ届くと、押し流して0から数え直す。折り返しに
+  # addではなくsetを使うのは、上端が海区ごとに違うから——引く量を書くと、折り返す点も海区ごとに
+  # 書き写すことになる。
+  sea_zone:
+    tags: [fixture]
+    props:
+      storm_drift:
+        value: 0
+        range: {min: 0, max: 16}
+        on_max:
+          set: {self: {storm_drift: 0}}
+        passives:
+          - add: {self: {storm_drift: 1}}
+
+  # 山頂（locations.yaml）。on_maxを書くと補われるはずの既定のクランプ（自分を上端へset、6.3節）が
+  # 消えるので、著者がそれを自分で書き写している。端に置き直すだけで、戻ってはいない。
+  peak:
+    tags: [fixture]
+    props:
+      exploration_progress:
+        value: 0
+        range: {min: 0, max: 10}
+        on_max:
+          set: {self: {exploration_progress: 10}}
+        passives:
+          - add: {self: {exploration_progress: 1}}
+
+  # 時計の分（core.yamlのminute）と同じ、上端で引いて折り返す形。実際の時計は毎tickの繰り上げを
+  # ゲーム側（WorldSession）が持つので、ここでは進む分を宣言に置いてある。
+  clock:
+    tags: [fixture]
+    props:
+      minute:
+        value: 0
+        range: {min: 0, max: 60}
+        on_max:
+          add: {self: {minute: -60}}
+        passives:
+          - add: {self: {minute: 15}}
+
+  # 血を奪う傷（injuries.yamlのlaceration）。**奪う経路が2つあり、止まるまでが違う**——出血は
+  # 自分のbleedingが尽きる4 tickで止まり、膿が全身へ回る敗血症は止まらない。
+  gash:
+    tags: [injury]
+    props:
+      bleeding:
+        value: 100
+        range: {min: 0, max: 100}
+        passives:
+          - add: {self: {bleeding: -25}}
+      infection:
+        value: 0
+        range: {min: 0, max: 100}
+        stages:
+          - {name: clean}
+          - {name: septic, min: 80}
+        passives:
+          - add: {self: {infection: 0.25}}
+    passives:
+      - conditions: [{prop: bleeding, gte: 1}]
+        add: {parent: {blood: -15}}
+      - conditions: [{prop: infection, in_stage: septic}]
+        add: {parent: {blood: -40}}
+
+  # 血の多い獣（animals.yamlのwild_boar）。上の傷を負い、血が尽きれば倒れる。
+  boar:
+    tags: [item]
+    props:
+      blood:
+        value: 4600
+        range: {min: 0, max: 4600}
+        on_min: {destroy: self}
+    slots:
+      injuries:
+        cell_count: 4
+        cell: {accept: {tag: injury}}
 `;
 
   const codex = new WorldCodexYamlLoader().load('rangeCycles.yaml', YAML).buildAndReset();
 
+  /** 宣言した型のうち、その名前のもの。 */
+  function defOf(objectName: string) {
+    return [...codex.objects].find((candidate) => candidate.name === objectName)!;
+  }
+
   /** その型の、そのプロパティが持つ周期（1つだけのはず）。 */
-  function cycleOf(codex: WorldCodex, objectName: string, propertyName: string) {
-    const def = [...codex.objects].find((candidate) => candidate.name === objectName);
-    return rangeCyclesOf(def!).filter(
+  function cycleOf(objectName: string, propertyName: string) {
+    return rangeCyclesOf(defOf(objectName)).filter(
       (cycle) => codex.propertyNames.getName(cycle.propertyGlobalId) === propertyName,
     );
   }
@@ -116,7 +198,7 @@ object_defs:
     // -2・-6・+8のどの2つも同時には成立しない。全部を1つの場合として足すと0になり、下端へ向かう
     // 周期が丸ごと消える（凍死が日をまたぐ長さの列から落ちていた）。
     // 最も遅いのは寒い所に居る-2で700/2=350 tick、最も速いのは雨の野ざらしの-6で116.67 tick。
-    expect(cycleOf(codex, 'camper', 'warmth')).toMatchObject([
+    expect(cycleOf('camper', 'warmth')).toMatchObject([
       { minutes: 350 * 15, shortestMinutes: (700 / 6) * 15, destroysSelf: true, repeats: false },
     ]);
   });
@@ -124,7 +206,7 @@ object_defs:
   it('常時効く増減が無く、条件つきが逆を向いていても、下端へ向かう場合が残る', () => {
     // -1と+2は同時にも起こりうるが、乾く-1だけが効く場合もある。合計（+1）の向きだけで見ると
     // 上端へ向かうものとして読まれ、塩を生むon_minが1つも立たなくなる。
-    const [cycle] = cycleOf(codex, 'salt_pan', 'drying_remaining');
+    const [cycle] = cycleOf('salt_pan', 'drying_remaining');
     expect(cycle).toMatchObject({ minutes: 24 * 15, repeats: true });
     expect(cycle.step.outputs).toHaveLength(1);
   });
@@ -132,8 +214,52 @@ object_defs:
   it('在庫から流れ込む輸送は、それが止まって渇く場合も数える', () => {
     // 渇く-1と飲む+1は同じゲートを持つが、飲めるのは囲いの水が残っている間だけ。両方を必ず
     // 重なるものとして足すと0になり、渇きの期限が消える。
-    expect(cycleOf(codex, 'beast', 'hydration')).toMatchObject([
+    expect(cycleOf('beast', 'hydration')).toMatchObject([
       { minutes: 336 * 15, shortestMinutes: 336 * 15, destroysSelf: true },
     ]);
+  });
+
+  it('上端からsetで書き戻す仕掛けが、繰り返す仕掛けとして数えられる', () => {
+    // 増減しか数えないと戻り0と読まれ、押し流しが「一度きり」になる。戻り量は上端16から書き戻し先の
+    // 0までの16で、+1/tickなので16 tickごとに回る。
+    expect(cycleOf('sea_zone', 'storm_drift')).toMatchObject([{ minutes: 16 * 15, repeats: true }]);
+  });
+
+  it('端へ置き直すだけのsetは、戻っていない', () => {
+    // 書き戻し先が上端そのものなので戻り量は0。ここを「上端ぶん戻った」と読むと、既定のクランプを
+    // 持つ全プロパティが繰り返す仕掛けになる。周期は初期値0から上端10までの10 tick。
+    expect(cycleOf('peak', 'exploration_progress')).toMatchObject([{ minutes: 10 * 15, repeats: false }]);
+  });
+
+  it('上端から引いて戻る仕掛けも、下端から足して戻るものと同じ向きで数える', () => {
+    // 戻り量を符号つきの増減のまま見ると、上端から戻るものだけが負になって数から漏れる。
+    // 60を引いて0へ戻るので戻り量は60、+15/tickなので4 tickごと。
+    expect(cycleOf('clock', 'minute')).toMatchObject([{ minutes: 4 * 15, repeats: true }]);
+  });
+
+  it('止まるまでの違う押し手は、束ねずに別々に並べる', () => {
+    // 速さは幅として持てるが、止まるまでは幅を持てない。1つに束ねると最も遅い-15と「止まらない」が
+    // ひと組になり、どちらの経路も持っていない押し手ができる。
+    const bloodId = codex.propertyNames.getId('blood');
+    const deltas = externalTickDeltasOf(defOf('gash'), 'parent').filter(
+      (delta) => delta.propertyGlobalId === bloodId,
+    );
+
+    expect(deltas.map(({ slowest, fastest, maxTotal }) => ({ slowest, fastest, maxTotal }))).toEqual([
+      { slowest: -15, fastest: -15, maxTotal: 60 },
+      { slowest: -40, fastest: -40, maxTotal: undefined },
+    ]);
+  });
+
+  it('止まる押し手で端へ届かないなら、止まらない押し手だけが周期として残る', () => {
+    // 固まるまでの60mLでは4,600mLは尽きないので、失血死は敗血症の-40/tickだけが起こす。束ねて
+    // いたときは「-15/tickで永久に流れ続ける傷」として306.67 tickの周期が立っていた。
+    const external = externalTickDeltasOn(defOf('boar'), [...codex.objects]);
+
+    expect(
+      rangeCyclesOf(defOf('boar'), undefined, external).filter(
+        (cycle) => codex.propertyNames.getName(cycle.propertyGlobalId) === 'blood',
+      ),
+    ).toMatchObject([{ minutes: 115 * 15, destroysSelf: true, drivenBy: defOf('gash').globalId }]);
   });
 });

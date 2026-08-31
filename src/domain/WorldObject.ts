@@ -238,7 +238,8 @@ export class WorldObject {
 
   /**
    * 自分の直接の親から遡り、指定したプロパティを定義している最初の祖先を探す（無ければundefined）。
-   * base・Target=Ancestor・conditions/weightのAncestor起点が共有する、唯一の祖先探索ロジック。
+   * 呼び手はReferenceContext.ownerOfPropertyだけで、`ancestor`起点の参照はどこに書かれたものも
+   * そこを通る（どの文法から来たかは、この時点で区別されていない）。
    */
   findAncestorWithProperty(propertyGlobalId: number): WorldObject | undefined {
     let current = this._parent;

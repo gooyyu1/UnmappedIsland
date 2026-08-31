@@ -444,9 +444,9 @@ object_texts:
   snare_laceration:
     display_name: 縄の傷
     description: 締まった縄が食い込んで裂けた傷。浅く掛かれば血はすぐ止まり、深ければそうもいかない。
-  pen_bruise:
+  bruise:
     display_name: 打ち身
-    description: 囲いの丸太へ体を打ちつけて負った傷。血は流れないので、どんなに大きな獣も生きたまま残る。
+    description: 丸太や穴の底へ体を打ちつけて負った傷。血は流れないので、どんなに大きな獣も生きたまま残る。
   puncture_wound:
     display_name: 刺し傷
     description: 穂先が深く突き通した傷。開いたままの深部から、裂傷とは桁違いの速さで血が流れる。

@@ -19,7 +19,7 @@ export const IN_PROGRESS_TAG = 'wip';
 /**
  * 工程が要求する素材または道具1件（GameElementDefinition.md 13.1節）。
  *
- * **要求はタグでも書ける**（枠の`accept`・combinationsの`with`と同じTypeMatchRule）。道具は
+ * **要求はタグでも書ける**（4.1節）。道具は
  * 「その用途に使える物」であって特定の型ではないので、刃物を`cutting_tool`で求められる。
  */
 export class RecipeRequirementDef {

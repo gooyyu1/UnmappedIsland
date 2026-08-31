@@ -41,9 +41,9 @@ interface ConditionNodeFields {
 }
 
 /**
- * conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲートが
- * 同じ木を共用する。葉はproperty・property_stage・slot_position・slot_content・object_matchesの5種、
- * 複合はall/any/notの3種で、kindに応じて使うフィールドが変わる（単一クラス+kindで判別）。
+ * conditions（14節）の1ノード。葉はproperty・property_stage・slot_position・slot_content・
+ * object_matchesの5種、複合はall/any/notの3種で、kindに応じて使うフィールドが変わる
+ * （単一クラス+kindで判別）。
  */
 export class ConditionNode {
   private readonly kind: ConditionNodeKind;
