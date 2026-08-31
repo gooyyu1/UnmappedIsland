@@ -561,17 +561,18 @@ function placeBalances(
 
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
   const islandContext = withBestInstrument(defs, highestDeclaredAncestorValueResolver(locations));
-  const islandWide = new Acquisition(codex, allSteps(codex, seaOnly, islandContext));
+  const islandWide = new Acquisition(codex, reachableSteps(allSteps(codex, seaOnly, islandContext)));
 
   let islandRoutes: readonly ChainRoute[] = [];
   const places = [undefined, ...locations].map((location) => {
     // 罠が掛ける動物の重みは土地が宣言する（base）ので、土地を決めてから工程を組み立てる。
     const context =
       location === undefined ? islandContext : withBestInstrument(defs, ancestorValueResolver(location));
-    const steps =
+    const steps = reachableSteps(
       location === undefined
         ? allSteps(codex, seaOnly, context)
-        : stepsAt(codex, allSteps(codex, seaOnly, context), location);
+        : stepsAt(codex, allSteps(codex, seaOnly, context), location),
+    );
     const acquisition = location === undefined ? islandWide : new Acquisition(codex, steps, islandWide);
     const routes = routeCandidates(codex, character, acquisition, steps, dailyNeeds, location);
 
@@ -1157,6 +1158,19 @@ function axisValueGlobalIds(codex: WorldCodex): ReadonlySet<number> {
       if (globalId !== undefined && codex.objects.tryGet(globalId) !== undefined) ids.add(globalId);
     }
   return ids;
+}
+
+/**
+ * 経路として辿れる工程だけを残す（`CraftingStep.startedByPlayer`）。**時間が配る手番**——動物の1手と、
+ * 限界に達した値が起こす強制的な時間経過（[`Characters.md`](../../docs/world/Characters.md) 限界節）
+ * ——は押して選べないので、経路に並べると**選べない道が献立に載る**（強制の睡眠が「眠気を戻す手立て」
+ * として睡眠の隣に並ぶ）。
+ *
+ * **落とすのは経路を組む側だけ。** 供給表（`supplyRows`）は工程の一覧なので、押せない工程も数える。
+ * 時間で回る工程（periodic）もここでは落とさない——押し手が要るものだけを`allSteps`が既に選んでいる。
+ */
+function reachableSteps(steps: readonly StepRef[]): readonly StepRef[] {
+  return steps.filter((ref) => ref.step.kind !== 'interaction' || ref.step.startedByPlayer);
 }
 
 /**

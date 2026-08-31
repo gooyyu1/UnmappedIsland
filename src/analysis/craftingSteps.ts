@@ -43,17 +43,13 @@ export function craftingStepsOf(
   outer?: StaticValueResolver,
 ): readonly CraftingStep[] {
   const steps: CraftingStep[] = [];
-  for (const trigger of def.triggers) {
-    // 見るのはプレイヤーが起こす操作だけ（CraftingStep.kind）。時間が配る手番
-    // （`trigger: tick`、11.1節）は押して選べないので、経路として並べると選べない道が献立に載る。
-    if (!trigger.startedByPlayer) continue;
+  for (const trigger of def.triggers)
     for (const instrument of instrumentTypesOf(codex, trigger)) {
       if (conditionsNeverMet(codex, def, instrument, trigger.interaction, outer)) continue;
       steps.push(
         withTriggeredRangeEvents(def, interactionStep(codex, def, trigger, instrument, outer), outer),
       );
     }
-  }
   for (const recipe of def.recipesProducingThis) steps.push(recipeStep(def, recipe));
   return steps;
 }
@@ -203,6 +199,7 @@ function interactionStep(
   const minutes = minutesOf(interaction, tracking.resolve);
   return {
     kind: 'interaction',
+    startedByPlayer: trigger.startedByPlayer,
     name: interaction.name,
     ownerGlobalId: def.globalId,
     inputs: [
@@ -240,6 +237,8 @@ function recipeStep(def: ObjectDef, recipe: RecipeDef): CraftingStep {
   ];
   return {
     kind: 'recipe',
+    // レシピは工程を進める操作でしか進まない（RecipeSystem.md 2節）ので、常にプレイヤーが起こす。
+    startedByPlayer: true,
     name: recipe.name,
     ownerGlobalId: def.globalId,
     inputs: recipe.steps.flatMap((step) =>

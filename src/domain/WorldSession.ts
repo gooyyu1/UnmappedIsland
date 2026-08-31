@@ -55,8 +55,8 @@ export class WorldSession {
   /** 今どのオブジェクトの効果を適用しているか（withSubject）。記録する変化の主体になる。 */
   private readonly subject = new Scoped<WorldObject>();
 
-  /** 実行中の操作の深さ（runAsOperation）。0へ戻ったところが操作の切れ目。 */
-  private operationDepth = 0;
+  /** 実行中のまとまりの深さ（runToSeam）。0へ戻ったところが操作の切れ目。 */
+  private seamDepth = 0;
 
   /**
    * 時間の中では起こせず、操作の切れ目を待っている手番（`trigger: tick`、11.1節）。**時間を要する
@@ -201,20 +201,23 @@ export class WorldSession {
   }
 
   /**
-   * bodyを操作1つの実行として囲う（ActionSystem.md 2節。actions/combinations・製作の1工程・枠へ
-   * 入れる、の3つが操作）。**抜けたところが操作の切れ目**で、時間の中では起こせなかった手番を
-   * ここで起こす。
+   * bodyを、**抜けたところを操作の切れ目にする1つのまとまり**として走らせる（ActionSystem.md 2節）。
+   * 時間の中では起こせなかった手番（deferTurn）を、抜けたところで起こす。
    *
-   * 入れ子の内側では起こさない——外側の操作がまだ続いていて、動作主はそちらに就いたままだから
+   * まとまりを名乗るのは、操作3つ（actions/combinations・製作の1工程・枠へ入れる）と、**操作の外で
+   * 起きる時間の進行**（advanceWorldTime）。後者も囲うのは、待たせた手番を無関係な次の操作まで
+   * 持ち越さないため——切れ目を操作だけに置くと、囲い忘れた経路の手番が別の操作のせいに見える。
+   *
+   * 入れ子の内側では起こさない——外側のまとまりがまだ続いていて、動作主はそちらに就いたままだから
    * （GameElementDefinition.md 11.5節）。
    */
-  runAsOperation<T>(body: () => T): T {
-    this.operationDepth++;
+  runToSeam<T>(body: () => T): T {
+    this.seamDepth++;
     try {
       return body();
     } finally {
-      this.operationDepth--;
-      if (this.operationDepth === 0) this.takeWaitingTurns();
+      this.seamDepth--;
+      if (this.seamDepth === 0) this.takeWaitingTurns();
     }
   }
 
@@ -226,7 +229,7 @@ export class WorldSession {
    */
   deferTurn(turn: Action): void {
     if (this.takingWaitingTurns) return;
-    if (this.waitingTurns.some((waiting) => waiting.self === turn.self && waiting.name === turn.name)) return;
+    if (this.waitingTurns.some((waiting) => waiting.isSameTurnAs(turn))) return;
     this.waitingTurns.push(turn);
   }
 
@@ -245,12 +248,7 @@ export class WorldSession {
     this.waitingTurns = [];
     this.takingWaitingTurns = true;
     try {
-      for (const turn of turns) {
-        // 待っている間に世界から出た物（渇きで死んだキャラクタ）の手番は起こさない。居ないものの
-        // 手番で時間だけが進むことになる。
-        if (this._world !== undefined && !this._world.instance.containsOrIs(turn.self)) continue;
-        turn.tryExecute();
-      }
+      for (const turn of turns) if (turn.actorIsInWorld) turn.tryExecute();
     } finally {
       this.takingWaitingTurns = false;
     }
@@ -262,6 +260,9 @@ export class WorldSession {
    *
    * 呼び出しを刻んでも結果は変わらない（次の境界までを時計から読み直すため）。UI層はこれを利用して、
    * 一括で進めた経過をあとから刻んで見せる。
+   *
+   * **これ自身も1つのまとまりとして囲う**（runToSeam）。操作の中から呼ばれたぶんは入れ子になるので
+   * 切れ目にならず、操作の外で時間が動いた場合だけ、進め終えたところが切れ目になる。
    */
   advanceWorldTime(amount: number): void {
     if (this.world === undefined) {
@@ -269,24 +270,26 @@ export class WorldSession {
     }
 
     const world = this.world;
-    const minutesPerTick = world.rawMinutesPerTick;
-    const untilFirstTick = world.minutesUntilTick(1);
+    this.runToSeam(() => {
+      const minutesPerTick = world.rawMinutesPerTick;
+      const untilFirstTick = world.minutesUntilTick(1);
 
-    if (amount < untilFirstTick) {
-      world.addMinutes(amount);
-      return;
-    }
+      if (amount < untilFirstTick) {
+        world.addMinutes(amount);
+        return;
+      }
 
-    const ticksToRun = 1 + Math.trunc((amount - untilFirstTick) / minutesPerTick);
-    world.addMinutes(untilFirstTick);
-    this.runTick(world);
-
-    for (let i = 1; i < ticksToRun; i++) {
-      world.addMinutes(minutesPerTick);
+      const ticksToRun = 1 + Math.trunc((amount - untilFirstTick) / minutesPerTick);
+      world.addMinutes(untilFirstTick);
       this.runTick(world);
-    }
 
-    world.addMinutes(amount - untilFirstTick - (ticksToRun - 1) * minutesPerTick);
+      for (let i = 1; i < ticksToRun; i++) {
+        world.addMinutes(minutesPerTick);
+        this.runTick(world);
+      }
+
+      world.addMinutes(amount - untilFirstTick - (ticksToRun - 1) * minutesPerTick);
+    });
   }
 
   /**

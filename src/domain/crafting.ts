@@ -147,9 +147,9 @@ export function tryAdvanceCrafting(
   session: WorldSession,
   agent: WorldObject | undefined,
 ): boolean {
-  // これも操作1つなので、まるごと囲う（WorldSession.runAsOperation）。経過中に配られて待たされた
+  // これも操作1つなので、まるごと囲う（WorldSession.runToSeam）。経過中に配られて待たされた
   // 手番は、工程を進め終えたこの切れ目で起きる。
-  return session.runAsOperation(() => {
+  return session.runToSeam(() => {
     // 世界が全レシピへ一律に課している条件（GameElementDefinition.md 13.4節）。画面も同じ問いで
     // ボタンの可否と理由を出すが、**止めるのはここ**——画面を通らない経路から進められては困る。
     if (codex.unmetCraftingRequirement(agent) !== undefined) return false;

@@ -89,11 +89,19 @@ export interface StepOutcome {
  */
 export interface CraftingStep {
   /**
-   * interactionはプレイヤーが起こす操作（メニュー型・ドラッグ型の別は持たない——入口の違いでしかなく、
-   * 工程としては同じ）。periodicは、プレイヤーが起こすのではなく**時間で回る**工程（罠の判定）で、
-   * tick毎に動く値がrangeの端へ届くたびに起こる（周期はrangeCyclesが定義から導く）。
+   * interactionは操作（メニュー型・ドラッグ型・時間が配る手番の別は持たない——入口の違いでしかなく、
+   * 工程としては同じ。押して起こせるかは下のstartedByPlayerが答える）。periodicは、操作ではなく
+   * **時間で回る**工程（罠の判定）で、tick毎に動く値がrangeの端へ届くたびに起こる
+   * （周期はrangeCyclesが定義から導く）。
    */
   readonly kind: 'interaction' | 'recipe' | 'periodic';
+
+  /**
+   * プレイヤーが押して起こせる工程か（InteractionTrigger.startedByPlayer）。**経路として並べてよいのは
+   * これだけ**——時間が配る手番（動物の1手、限界に達した値が起こす強制的な時間経過）は選べないので、
+   * 経路に並べると選べない道が献立に載る。**工程の一覧としては数える**ので、落とすのは経路を組む側。
+   */
+  readonly startedByPlayer: boolean;
   readonly name: string;
   readonly ownerGlobalId: number;
   readonly inputs: readonly CraftingInput[];

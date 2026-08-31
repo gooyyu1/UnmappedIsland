@@ -126,6 +126,20 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
     expect(valueOf('happiness')).toBe(20);
   });
 
+  it('強制の最中に別の限界へ落ちても、同じ切れ目では続けない', () => {
+    // 強制の時間経過そのものが時間を進めるので、その最中にまた手番が挙がりうる。ここで受け取ると
+    // 切れ目から抜けられないので、次に時間が動いたときの待ちとして拾い直す。
+    //
+    // 眠気は歩く4 tickでは尽きず（5→1）、倒れ込む8 tickの途中で尽きる。
+    drain('stamina');
+    player.getProperty(codex.propertyNames.getId('wakefulness')).setNumber(5);
+
+    expect(travel(), '倒れ込む120分だけで、眠り込む360分は続かない').toBe(TRAVEL_MINUTES + 120);
+    expect(valueOf('wakefulness'), '眠気は尽きたまま').toBe(0);
+
+    expect(travel(), '次に時間が動いたときに眠り込む').toBe(TRAVEL_MINUTES + 360);
+  });
+
   it('戻り切らずにまた尽きれば、次に時間が動いたときにまた起きる', () => {
     drain('happiness');
     expect(travel()).toBe(TRAVEL_MINUTES + 120);

@@ -100,11 +100,11 @@ export class InteractionDef {
    * **要件は選んだ時点ではなく実行の時点で引き直す**（候補を作ってから落とすまでに世界は変わる）。
    * 相手の型も変わりうるので、そちらの引き直しは`Combination`が足す。
    *
-   * 1つの操作としてまるごと囲う（runAsOperation）ので、経過中に配られて待たされた手番は、効果を
+   * 1つの操作としてまるごと囲う（runToSeam）ので、経過中に配られて待たされた手番は、効果を
    * 適用し終えたこの操作の切れ目で起きる。
    */
   tryExecute(context: ReferenceContext, session: WorldSession): boolean {
-    return session.runAsOperation(() => {
+    return session.runToSeam(() => {
       const self = context.self!;
       if (this.unmetRequirement(context) !== undefined) return false;
 

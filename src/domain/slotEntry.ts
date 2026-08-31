@@ -22,9 +22,9 @@ export function putIntoSlot(
   session: WorldSession,
   place: () => void,
 ): void {
-  // これも操作1つなので、まるごと囲う（WorldSession.runAsOperation）。経過中に配られて待たされた
+  // これも操作1つなので、まるごと囲う（WorldSession.runToSeam）。経過中に配られて待たされた
   // 手番は、入れ終えたこの切れ目で起きる。
-  session.runAsOperation(() => {
+  session.runToSeam(() => {
     // 入らないと分かっているなら時間も取らない。時間だけ取られて何も入らない、が起きないようにする。
     if (item.rejectionForMoveTo(slot) !== undefined) return;
 
