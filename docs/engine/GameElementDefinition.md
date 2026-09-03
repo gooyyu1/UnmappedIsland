@@ -1342,9 +1342,7 @@ object_defs:
 
 #### 8.4.1 passives の中の transfer
 
-`transfer`（9.5 節）を `passives` に置くと、条件が真である tick 毎に走る輸送になります。文法は `active`
-のものと同一で、対象に操作の関係の役（`agent`/`instrument`/`patient`、11.5 節）を書けるのは、その `passives`
-を宣言した個体が今その操作の参加者である間だけです（`add` と同じ、8.4 節）。
+`transfer`（9.5 節）を `passives` に置くと、条件が真である tick 毎に走る輸送になります。
 
 ```yaml
 props:
