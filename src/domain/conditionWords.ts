@@ -4,6 +4,7 @@ import type {
   ConditionReader,
   PropertyConditionReading,
 } from './ConditionReader';
+import type { StageBound } from './PropertyDef';
 import type { ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchReading } from './TypeMatchRule';
 import type { WorldCodex } from './WorldCodex';
@@ -131,13 +132,13 @@ class ConditionWordWriter<T> implements ConditionReader, ConditionPhrase<T> {
     ];
   }
 
-  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string): void {
+  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string, bound: StageBound): void {
     this.words = [
       ...this.subject(root, 'の'),
       this.make.property(propertyGlobalId, root),
       this.make.text('が段'),
       this.make.stage(stageName),
-      this.make.text(this.negated ? 'にない' : 'にある'),
+      this.make.text(`${bound === 'or_above' ? '以上' : ''}${this.negated ? 'にない' : 'にある'}`),
     ];
   }
 

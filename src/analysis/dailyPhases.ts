@@ -147,7 +147,7 @@ export const WORK_PILES: readonly WorkPile[] = [
   { system: 2, label: '畑を拓いて回す', amount: 4 },
   { system: 2, label: '家畜の囲い', amount: 'pen' },
   { system: 2, label: '大型の狩り', amount: 2 },
-  { system: 3, label: '干し場', amount: 1 },
+  { system: 3, label: '干し場', amount: 'drying_rack' },
   { system: 3, label: '燻し小屋', amount: 2 },
   { system: 3, label: '製塩', amount: 3 },
   { system: 3, label: '航海ぶんを塩漬けにする', amount: 1 },

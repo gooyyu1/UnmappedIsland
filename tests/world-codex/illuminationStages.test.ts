@@ -7,7 +7,8 @@ import { worldCodexYamlPaths } from '../support/worldCodexFiles';
  * 行動の可否を決める2つの明るさ（`docs/engine/IlluminationSystem.md` 2節）のしきい値が、段の宣言の
  * 外へ散らないことの検査（同 8節）。
  *
- * **境目を持ってよいのは `stages` だけ**で、条件の側は段の名前（`in_stage`）で見る。条件は行動の数だけ
+ * **境目を持ってよいのは `stages` だけ**で、条件の側は段の名前（`in_stage`／`in_stage_or_above`）で
+ * 見る。条件は行動の数だけ
  * 増えるので、そこへ数字を書き写すと、揃っているかを見るものが1つも無くなる——1箇所だけ境目のずれた
  * 条件を書いても、他のどのテストも通ってしまう。
  *
@@ -82,7 +83,7 @@ describe('明るさのしきい値は段の宣言にしかない', () => {
         .map(
           (condition) =>
             `${condition.where}: ${condition.propertyName} を ${condition.comparisonKeys.join('・')} で` +
-            `直接比べている（段の名前で見る: in_stage）`,
+            `直接比べている（段の名前で見る: in_stage／in_stage_or_above）`,
         ),
     ).toEqual([]);
   });

@@ -199,6 +199,7 @@ function interactionStep(
   const minutes = minutesOf(interaction, tracking.resolve);
   return {
     kind: 'interaction',
+    startedByPlayer: trigger.startedByPlayer,
     name: interaction.name,
     ownerGlobalId: def.globalId,
     inputs: [
@@ -236,6 +237,8 @@ function recipeStep(def: ObjectDef, recipe: RecipeDef): CraftingStep {
   ];
   return {
     kind: 'recipe',
+    // レシピは工程を進める操作でしか進まない（RecipeSystem.md 2節）ので、常にプレイヤーが起こす。
+    startedByPlayer: true,
     name: recipe.name,
     ownerGlobalId: def.globalId,
     inputs: recipe.steps.flatMap((step) =>

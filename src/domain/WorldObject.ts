@@ -849,6 +849,8 @@ export class WorldObject {
    *
    * **配る前に集める。** 手番は物を増減させ、逃げれば別の枝へ移るので、走査しながら配ると同じ個体へ
    * 二度回りうる。集めてから配れば、1 tickに1手だけになる。
+   *
+   * 配られた手番をその場で起こすか、操作の切れ目まで待たせるかは手番自身が決める（Action.takeTurn）。
    */
   runTickActions(): void {
     const pending: WorldObject[] = [];
@@ -857,7 +859,7 @@ export class WorldObject {
     for (const agent of pending) {
       // 手番の途中で消えた個体は飛ばす——世界から外れると、辿り着く根が変わる。
       if (agent.findRoot() !== this) continue;
-      for (const trigger of agent.def.tickTriggers) new Action(trigger, agent, undefined).tryExecute();
+      for (const trigger of agent.def.tickTriggers) new Action(trigger, agent, undefined).takeTurn();
     }
   }
 

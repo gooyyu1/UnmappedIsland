@@ -34,10 +34,10 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
           # 嵐の日は明るさが足りていても採れない（docs/world/ContentSkeleton.md 8.1.4節）。
           - reason: too_stormy
-            not: {subject: agent, prop: wind_speed, in_stage: gale}
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         # 木材加工の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。**この口は斧を要求するが、立ち上がりはここではない**
         # ——刃物1本で回る削り出し（animals.yamlのwhittle）が石器の先にあるので、木材加工は斧より
@@ -69,9 +69,9 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
           - reason: too_stormy
-            not: {subject: agent, prop: wind_speed, in_stage: gale}
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 30
         spawn: {object: tree_bark, count: 3, into: agent}
 
@@ -102,9 +102,9 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
           - reason: too_stormy
-            not: {subject: agent, prop: wind_speed, in_stage: gale}
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 120
         add:
           agent:

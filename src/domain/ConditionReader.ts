@@ -1,3 +1,4 @@
+import type { StageBound } from './PropertyDef';
 import type { PropertyPath, ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchReading } from './TypeMatchRule';
 
@@ -18,8 +19,11 @@ export interface ConditionReader {
   /** `{subject, prop, <比較演算子>: value}`。値はリテラルの並びか、別のプロパティへの参照。 */
   property(reading: PropertyConditionReading): void;
 
-  /** `{subject, prop, in_stage}`。propの実効値がその名前の段（6.4節）に該当しているか。 */
-  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string): void;
+  /**
+   * `{subject, prop, in_stage}`・`{subject, prop, in_stage_or_above}`。propの実効値がその名前の段
+   * （6.4節）に該当しているか。boundはちょうどその段か、その段以上か（14.1節）。
+   */
+  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string, bound: StageBound): void;
 
   /** `{subject, in_slot}`。subjectが今まさに親のそのスロットに入っているか。 */
   slotPosition(root: ReferenceRoot, slotGlobalId: number): void;

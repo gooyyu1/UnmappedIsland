@@ -99,19 +99,24 @@ export class InteractionDef {
    *
    * **要件は選んだ時点ではなく実行の時点で引き直す**（候補を作ってから落とすまでに世界は変わる）。
    * 相手の型も変わりうるので、そちらの引き直しは`Combination`が足す。
+   *
+   * 1つの操作としてまるごと囲う（runToSeam）ので、経過中に配られて待たされた手番は、効果を
+   * 適用し終えたこの操作の切れ目で起きる。
    */
   tryExecute(context: ReferenceContext, session: WorldSession): boolean {
-    const self = context.self!;
-    if (this.unmetRequirement(context) !== undefined) return false;
+    return session.runToSeam(() => {
+      const self = context.self!;
+      if (this.unmetRequirement(context) !== undefined) return false;
 
-    const involved = [self, context.agent, context.instrument];
-    if (!spendDurationAndReportParticipantsAlive(this.minutesFor(context), session, involved)) return false;
+      const involved = [self, context.agent, context.instrument];
+      if (!spendDurationAndReportParticipantsAlive(this.minutesFor(context), session, involved)) return false;
 
-    // 時間を進め終えてから囲うので、経過中のtickが動かした値は「操作が増やしたもの」に入らない
-    // （PropertyGain参照）。
-    session.withInteractionEffect(self, () =>
-      self.applyActiveEffect(this.effect, context.agent, context.instrument),
-    );
-    return true;
+      // 時間を進め終えてから囲うので、経過中のtickが動かした値は「操作が増やしたもの」に入らない
+      // （PropertyGain参照）。
+      session.withInteractionEffect(self, () =>
+        self.applyActiveEffect(this.effect, context.agent, context.instrument),
+      );
+      return true;
+    });
   }
 }

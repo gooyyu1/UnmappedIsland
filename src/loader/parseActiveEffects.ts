@@ -426,7 +426,7 @@ function parseSpawnTarget(
 /**
  * passivesの中の transfer（8.4節）。文法はactiveのものと同一で、違うのは渡すscopeだけ
  * （ReferenceScope.declaration。どの起点を書けるかはそれが決める）。操作の関係の役は仕様のうえでは
- * ここへ書けるが（8.4.1節）、11.5節の【未実装: 操作の関係】が外れるまで解決先を持たない。
+ * ここへ書けるが（11.5節「役を書ける場所」）、その【未実装: 操作の関係】が外れるまで解決先を持たない。
  */
 export function parsePassiveTransfers(
   loader: WorldCodexYamlLoader,
