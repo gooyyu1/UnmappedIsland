@@ -2371,7 +2371,7 @@ crafting_conditions:
   - reason: too_dark
     subject: agent
     prop: hand_brightness
-    gte: 5
+    in_stage_or_above: bright
 ```
 
 - **工程を進める操作は、レシピから自動生成されます**（`RecipeSystem.md` 4 節）。条件の書き手が成果物も
@@ -2415,7 +2415,7 @@ crafting_conditions:
 ```yaml
 conditions:
   - {subject: agent, prop: satiety, lt: 12}
-  - {subject: agent, prop: load, in_stage: too_heavy}
+  - {prop: heat, in_stage: ember}
   - {subject: agent, prop: skill_cordage, in_stage_or_above: basic}
 ```
 
@@ -2573,7 +2573,7 @@ interactions:
     conditions:
       - {in_slot: fixtures}
       - reason: too_heavy
-        not: {subject: agent, prop: load, in_stage: too_heavy}
+        not: {subject: agent, prop: load, in_stage_or_above: too_heavy}
 ```
 
 UI は、実行できないアクションのボタンを押せない見た目にし、宣言順で**最初に満たしていない要素**の文言を

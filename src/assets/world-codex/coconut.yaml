@@ -50,9 +50,9 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
           - reason: too_stormy
-            not: {subject: agent, prop: wind_speed, in_stage: gale}
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 30
         pick:
           - weight: 90
@@ -68,9 +68,9 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
           - reason: too_stormy
-            not: {subject: agent, prop: wind_speed, in_stage: gale}
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 30
         pick:
           - weight: 90
@@ -142,7 +142,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
@@ -178,7 +178,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 30
         destroy: self
         spawn:
@@ -258,7 +258,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 30
         destroy: self
         spawn:
@@ -280,7 +280,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:

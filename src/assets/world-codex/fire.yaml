@@ -342,7 +342,7 @@ object_defs:
       boil:
         trigger: {drag: {tag: water}}
         conditions:
-          - {reason: not_hot_enough, prop: heat_soak, in_stage: searing}
+          - {reason: not_hot_enough, prop: heat_soak, in_stage_or_above: searing}
         duration: 5
         become: {subject: instrument, content: hot_water_liquid}
         set: {self: {heat_soak: 0}}
