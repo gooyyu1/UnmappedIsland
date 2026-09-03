@@ -1,5 +1,5 @@
 import type { AlertLevel } from './AlertLevel';
-import type { PropertyDef, PropertyStage, CurrentStageReading } from './PropertyDef';
+import type { PropertyDef, PropertyStage, CurrentStageReading, StageBound } from './PropertyDef';
 import { INT32_MAX } from '../util/int32';
 import { removeWhere } from '../util/arrays';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
@@ -208,9 +208,12 @@ export class PropertyValue {
     return Math.max(1, Math.ceil((range.max - this._number) / perTick));
   }
 
-  /** 今まさに指定した名前のstage（6.4節）に該当しているか（WhenOwnStageゲート専用、8節）。 */
-  isInStage(stageName: string): boolean {
-    return this.stage?.name === stageName;
+  /**
+   * 今まさに指定した名前のstage（6.4節）に該当しているか。`bound`が`or_above`なら、その段より上に
+   * 居ても真（PropertyDef.isInStage）。
+   */
+  isInStage(stageName: string, bound?: StageBound): boolean {
+    return this.def.isInStage(this.getEffectiveValue(), stageName, bound);
   }
 
   /**

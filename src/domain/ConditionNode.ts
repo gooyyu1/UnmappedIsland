@@ -1,11 +1,15 @@
 import type { ConditionOp, ConditionReader } from './ConditionReader';
+import type { StageBound } from './PropertyDef';
 import type { PropertyPath, ReferenceContext, ReferenceRoot } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
 
 type ConditionNodeKind =
   /** {subject, prop, <比較演算子>: value}形式のプロパティ比較。 */
   | 'property'
-  /** {subject, prop, in_stage}形式。propの実効値が、その名前の段（6.4節）に該当しているか。 */
+  /**
+   * {subject, prop, in_stage}・{subject, prop, in_stage_or_above}形式。propの実効値が、その名前の段
+   * （6.4節）に該当しているか。ちょうどその段かその段以上かはstageBoundが持つ。
+   */
   | 'property_stage'
   /**
    * {subject, in_slot}形式。subjectが今まさに親のin_slotに入っているか（等価判定のみ。
@@ -34,6 +38,7 @@ interface ConditionNodeFields {
   readonly values?: readonly number[];
   readonly valueRef?: PropertyPath;
   readonly stageName?: string;
+  readonly stageBound?: StageBound;
   readonly containerSlotGlobalId?: number;
   readonly ownedSlotGlobalId?: number;
   readonly matchRule?: TypeMatchRule;
@@ -41,9 +46,9 @@ interface ConditionNodeFields {
 }
 
 /**
- * conditions（14節）の1ノード。actions/combinationsの一度きりの判定と、passivesの持続的なゲートが
- * 同じ木を共用する。葉はproperty・property_stage・slot_position・slot_content・object_matchesの5種、
- * 複合はall/any/notの3種で、kindに応じて使うフィールドが変わる（単一クラス+kindで判別）。
+ * conditions（14節）の1ノード。葉はproperty・property_stage・slot_position・slot_content・
+ * object_matchesの5種、複合はall/any/notの3種で、kindに応じて使うフィールドが変わる
+ * （単一クラス+kindで判別）。
  */
 export class ConditionNode {
   private readonly kind: ConditionNodeKind;
@@ -69,6 +74,9 @@ export class ConditionNode {
   /** property_stage葉のみ有効。段は宣言したPropertyDefごとの名前なので、internせず文字列で持つ。 */
   private readonly stageName: string | undefined;
 
+  /** property_stage葉のみ有効。名指した段ちょうどか、その段以上か（PropertyDef.isInStage）。 */
+  private readonly stageBound: StageBound | undefined;
+
   /** slot_position葉のみ有効。subjectがその枠に入っているかを見る、subjectの親の側のスロット。 */
   private readonly containerSlotGlobalId: number | undefined;
 
@@ -89,6 +97,7 @@ export class ConditionNode {
     this.values = fields.values;
     this.valueRef = fields.valueRef;
     this.stageName = fields.stageName;
+    this.stageBound = fields.stageBound;
     this.containerSlotGlobalId = fields.containerSlotGlobalId;
     this.ownedSlotGlobalId = fields.ownedSlotGlobalId;
     this.matchRule = fields.matchRule;
@@ -105,8 +114,13 @@ export class ConditionNode {
     return new ConditionNode('property', { root, propertyGlobalId, op, values, valueRef });
   }
 
-  static propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string): ConditionNode {
-    return new ConditionNode('property_stage', { root, propertyGlobalId, stageName });
+  static propertyStage(
+    root: ReferenceRoot,
+    propertyGlobalId: number,
+    stageName: string,
+    stageBound: StageBound,
+  ): ConditionNode {
+    return new ConditionNode('property_stage', { root, propertyGlobalId, stageName, stageBound });
   }
 
   static slotPosition(root: ReferenceRoot, containerSlotGlobalId: number): ConditionNode {
@@ -152,7 +166,7 @@ export class ConditionNode {
           valueRef: this.valueRef,
         });
       case 'property_stage':
-        return reader.propertyStage(this.root!, this.propertyGlobalId!, this.stageName!);
+        return reader.propertyStage(this.root!, this.propertyGlobalId!, this.stageName!, this.stageBound!);
       case 'slot_position':
         return reader.slotPosition(this.root!, this.containerSlotGlobalId!);
       case 'slot_content':
@@ -234,7 +248,7 @@ export class ConditionNode {
     const owner = context.ownerOfProperty(this.root!, this.propertyGlobalId!);
     return (
       owner !== undefined &&
-      (owner.tryGetProperty(this.propertyGlobalId!)?.isInStage(this.stageName!) ?? false)
+      (owner.tryGetProperty(this.propertyGlobalId!)?.isInStage(this.stageName!, this.stageBound!) ?? false)
     );
   }
 

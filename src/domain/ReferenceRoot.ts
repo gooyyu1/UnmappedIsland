@@ -2,8 +2,9 @@ import type { PropertyValue } from './PropertyValue';
 import type { WorldObject } from './WorldObject';
 
 /**
- * conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）・active効果の
- * 対象/参照が共通で参照する起点。self.prop/parent.propのような1階層の参照のみ対応。
+ * 宣言が**誰を見るか**を指す起点。self.prop/parent.propのような1階層の参照のみ対応。
+ * **どれをどこに書けるかは、その宣言が置かれた場所が決める**（ReferenceScope。一覧は
+ * GameElementDefinition.md 14.1節の表）。
  * worldは起点として未対応（ロード時エラー、14.1節）。Ancestorは見つからなければworldまで遡るため、
  * 世界固有の概念の参照はAncestorで代替できる。
  */
@@ -130,7 +131,6 @@ export class ReferenceContext {
 
 /**
  * {subject, prop}が指す、1階層のプロパティ参照（ReferenceRoot＋プロパティのグローバルID）。
- * weightのpath参照（10.2節）・conditionsのvalueRef（14節）・activeの対象・passivesの対象が共有する。
  *
  * **どのプロパティを指すかとどう辿るかを1つにまとめて持つ**ので、解決するときにプロパティIDを
  * 渡し直す必要が無い（ancestor探索と読み出しが同じIDを使う）。

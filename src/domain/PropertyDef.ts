@@ -150,6 +150,13 @@ export class PropertyStage {
   }
 }
 
+/**
+ * 段の判定（6.4節）が、名指しした段のどこまでを見るか（PropertyDef.isInStage）。
+ * `exact`は今いる段ちょうど（`in_stage`）、`or_above`はその段以上（`in_stage_or_above`、14.1節）。
+ * **上限側は無い**——段で読む値はどれも、境目より上を安全域として読む形しか無い。
+ */
+export type StageBound = 'exact' | 'or_above';
+
 /** 初期値の宣言（PropertyDef.initialValueReading参照）。 */
 export type InitialValueReading =
   | { readonly kind: 'fixed'; readonly value: number }
@@ -334,6 +341,16 @@ export class PropertyDef {
     if (isSymbolic && stages.some((stage) => stage.min !== undefined))
       throw new Error(
         `プロパティ'${name}'はシンボル型なので、段に'min'は書けません（段の'name'自体がそのまま比較対象になります）。`,
+      );
+
+    // 段を外から指す術は名前しか無い（in_stage・in_stage_or_above、14.1節）ので、同じ名前が2つあると
+    // どちらを指しているかが決まらない。
+    const duplicated = stages.find(
+      (stage, index) => stages.findIndex((s) => s.name === stage.name) !== index,
+    );
+    if (duplicated !== undefined)
+      throw new Error(
+        `プロパティ'${name}': 段の名前'${duplicated.name}'が重複しています（段は名前で指すので、一意である必要があります）。`,
       );
 
     if (range === undefined) {
@@ -556,9 +573,24 @@ export class PropertyDef {
     return this.stageAt(effectiveValue)?.alert ?? 'safe';
   }
 
-  /** 実効値effectiveValueのとき、このプロパティが名前stageNameの段（6.4節）に該当しているか。 */
-  isInStage(effectiveValue: number, stageName: string): boolean {
-    return this.stageAt(effectiveValue)?.name === stageName;
+  /**
+   * 実効値effectiveValueのとき、このプロパティが名前stageNameの段（6.4節）に該当しているか。
+   * `bound`が`or_above`なら、その段より上の段に居ても真（14.1節）。
+   *
+   * **上下は段の下端の大小で決まる**（stageAtと同じ見方で、宣言順ではない）。段は下端だけを書く
+   * 半開区間なので、名指した段の下端を跨いでいることが、そのままその段以上に居ることになる。
+   * 下端を持たない受け皿（6.4節）はいちばん下なので、名指せば常に真。
+   *
+   * 宣言に無い名前（`in_stage`と同じく綴り間違いはここでしか出ない）と、完全一致で決まる段
+   * （シンボル型、6.6節）は、値の並びの上に位置を持たないので偽。**持ち主の型ではなく段の形で見る**
+   * ので、位置を持たない段が他の型に増えてもここは変わらない。
+   */
+  isInStage(effectiveValue: number, stageName: string, bound: StageBound = 'exact'): boolean {
+    if (bound === 'exact') return this.stageAt(effectiveValue)?.name === stageName;
+
+    const named = this.stages.find((stage) => stage.name === stageName);
+    if (named === undefined || named.eq !== undefined) return false;
+    return effectiveValue >= (named.lowerBound ?? Number.NEGATIVE_INFINITY);
   }
 
   /**

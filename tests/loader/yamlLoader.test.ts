@@ -183,6 +183,22 @@ object_defs:
     );
   });
 
+  it('同じ名前の段を2つ宣言するとエラーになる', () => {
+    // 段を外から指す術は名前しか無い（in_stage・in_stage_or_above、14.1節）。
+    const yaml = `
+object_defs:
+  thing:
+    props:
+      load:
+        value: 0
+        stages:
+          - {name: light}
+          - {name: heavy, min: 100}
+          - {name: heavy, min: 200}
+`;
+    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/重複/);
+  });
+
   it('stagesのalertは、その段にいる間に値がどの域にあるかとして読み込まれる', () => {
     const yaml = `
 object_defs:
@@ -1357,6 +1373,96 @@ object_defs:
     const heavy = new WorldObject(2, thingDef, session);
     heavy.tryGetProperty(load)?.setNumber(100);
     expect(heavy.tryGetAction('use', undefined)?.tryExecute() === true, '段に入ると実行できない').toBe(false);
+  });
+
+  it('in_stage_or_aboveは、その段へ届いた後は上の段へ移っても真のままになる', () => {
+    // 段を宣言順ではなく下端の大小で見ることも、ここで一緒に押さえる（宣言はわざと降順）。
+    const yaml = `
+object_defs:
+  thing:
+    props:
+      skill:
+        value: 0
+        stages:
+          - {name: expert, min: 180}
+          - {name: skilled, min: 60}
+          - {name: basic, min: 20}
+          - {name: novice, min: 0}
+    interactions:
+      use:
+        trigger: menu
+        conditions:
+          - {prop: skill, in_stage_or_above: basic}
+        destroy: self
+      typo:
+        trigger: menu
+        conditions:
+          - {prop: skill, in_stage_or_above: bacis}
+        destroy: self
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const session = new WorldSession(codex);
+    const thingDef = codex.objects.get(codex.objectNames.getId('thing'));
+    const skill = codex.propertyNames.getId('skill');
+
+    const canAt = (name: string, value: number): boolean => {
+      const thing = new WorldObject(value + 1, thingDef, session);
+      thing.tryGetProperty(skill)?.setNumber(value);
+      return thing.tryGetAction(name, undefined)?.tryExecute() === true;
+    };
+
+    expect(canAt('use', 19), '下の段では偽').toBe(false);
+    expect(canAt('use', 20), '名指した段の下端で真').toBe(true);
+    expect(canAt('use', 60), '1つ上の段でも真のまま').toBe(true);
+    expect(canAt('use', 180), '最上段でも真のまま').toBe(true);
+
+    // 宣言に無い名前は、in_stageと同じく常に偽（綴り間違いはロード時には捕まらない）。
+    expect(canAt('typo', 180), '綴り違いは最上段でも偽').toBe(false);
+  });
+
+  it('in_stage_or_aboveは、下端を持たない段では常に真、完全一致で決まる段では常に偽になる', () => {
+    // 受け皿（6.4節）はいちばん下なので、名指せばどの値でも満たす。シンボル型（6.6節）の段は
+    // 値の並びの上に位置を持たないので、in_stageなら真になる値でも偽。
+    const yaml = `
+object_defs:
+  thing:
+    props:
+      load:
+        value: 500
+        stages:
+          - {name: light}
+          - {name: too_heavy, min: 100}
+      weather:
+        value: clear
+        stages:
+          - {name: clear}
+          - {name: storm}
+    interactions:
+      fallback:
+        trigger: menu
+        conditions:
+          - {prop: load, in_stage_or_above: light}
+        destroy: self
+      symbolic:
+        trigger: menu
+        conditions:
+          - {prop: weather, in_stage_or_above: clear}
+        destroy: self
+      symbolic_exact:
+        trigger: menu
+        conditions:
+          - {prop: weather, in_stage: clear}
+        destroy: self
+`;
+    const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+    const session = new WorldSession(codex);
+    const thingDef = codex.objects.get(codex.objectNames.getId('thing'));
+    const can = (id: number, name: string): boolean =>
+      new WorldObject(id, thingDef, session).tryGetAction(name, undefined)?.tryExecute() === true;
+
+    expect(can(1, 'fallback'), '受け皿より上の段に居ても真').toBe(true);
+    expect(can(2, 'symbolic_exact'), 'in_stageなら真になる値').toBe(true);
+    expect(can(3, 'symbolic'), '同じ値でもin_stage_or_aboveは偽').toBe(false);
   });
 
   it('満たしていない要件のreasonを、実行前に引ける', () => {

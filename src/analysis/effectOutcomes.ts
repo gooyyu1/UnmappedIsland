@@ -141,12 +141,13 @@ class OutcomeReader implements EffectReader {
   }
 
   /**
-   * 個体を指す代入（9.2節）は書き込む値が実行時にしか決まらないので、割り当てには載せない
+   * 個体を指す代入（9.2節）は書き込む値が実行時にしか決まらないので、値を持たない代入として載せる
    * ——静的に言えるのは「そのプロパティが書き換わる」までで、いくつになるかは言えない。
+   * **書き換わること自体は載せる**ので、それより前の増減が残らないことは数え方に効く。
    */
   set(target: ReferenceRoot, propertyGlobalId: number, value: SetValueReading): void {
-    const assignments = typeof value === 'number' ? [{ target, propertyGlobalId, value }] : [];
-    this.combine([{ probability: 1, spawns: [], deltas: [], assignments }]);
+    const assignment = { target, propertyGlobalId, value: typeof value === 'number' ? value : undefined };
+    this.combine([{ probability: 1, spawns: [], deltas: [], assignments: [assignment] }]);
   }
 
   add(reading: AddReading): void {
@@ -233,6 +234,6 @@ class OutcomeReader implements EffectReader {
   }
 
   private combine(outcomes: readonly StepOutcome[]): void {
-    this.outcomes = combineOutcomes(this.outcomes, outcomes);
+    this.outcomes = combineOutcomes(this.outcomes, outcomes, 'declared');
   }
 }

@@ -40,6 +40,9 @@ export interface CraftingOutput {
 /**
  * 工程が動かすプロパティ1件（`add`・`transfer`）。targetは宣言どおりの参照ルートで、キャラクタが
  * 受け取る値は`agent`、工程の主自身の値は`self`に出る。
+ *
+ * **同じ分岐の中で、宣言の続きとして後から代入されたぶんは、ここに残らない**（OutcomeSequel）。
+ * rangeイベントのクランプで端へ戻されたぶんは残る——足した量が起きなかったわけではないため。
  */
 export interface PropertyDelta {
   readonly target: ReferenceRoot;
@@ -57,7 +60,12 @@ export interface PropertyDelta {
 export interface PropertyAssignment {
   readonly target: ReferenceRoot;
   readonly propertyGlobalId: number;
-  readonly value: number;
+
+  /**
+   * 代入する値。個体を指す代入（9.2節）はどの個体かが実行時にしか決まらないのでundefined
+   * ——**代入が起きること自体は言える**ので、それより前の増減が残らないことはこちらでも問える。
+   */
+  readonly value: number | undefined;
 }
 
 /** 1つの分岐で生まれる型と個数。同じ型を複数回spawnする分岐では合算済み。 */
@@ -89,11 +97,19 @@ export interface StepOutcome {
  */
 export interface CraftingStep {
   /**
-   * interactionはプレイヤーが起こす操作（メニュー型・ドラッグ型の別は持たない——入口の違いでしかなく、
-   * 工程としては同じ）。periodicは、プレイヤーが起こすのではなく**時間で回る**工程（罠の判定）で、
-   * tick毎に動く値がrangeの端へ届くたびに起こる（周期はrangeCyclesが定義から導く）。
+   * interactionは操作（メニュー型・ドラッグ型・時間が配る手番の別は持たない——入口の違いでしかなく、
+   * 工程としては同じ。押して起こせるかは下のstartedByPlayerが答える）。periodicは、操作ではなく
+   * **時間で回る**工程（罠の判定）で、tick毎に動く値がrangeの端へ届くたびに起こる
+   * （周期はrangeCyclesが定義から導く）。
    */
   readonly kind: 'interaction' | 'recipe' | 'periodic';
+
+  /**
+   * プレイヤーが押して起こせる工程か（InteractionTrigger.startedByPlayer）。**経路として並べてよいのは
+   * これだけ**——時間が配る手番（動物の1手、限界に達した値が起こす強制的な時間経過）は選べないので、
+   * 経路に並べると選べない道が献立に載る。**工程の一覧としては数える**ので、落とすのは経路を組む側。
+   */
+  readonly startedByPlayer: boolean;
   readonly name: string;
   readonly ownerGlobalId: number;
   readonly inputs: readonly CraftingInput[];
@@ -134,12 +150,25 @@ export function scaleOutcomes(outcomes: readonly StepOutcome[], factor: number):
 }
 
 /**
- * 2つの分岐の一覧を直積にする（宣言順の合成＝両方が順に起こる）。同じ型のspawnは1件へ合算し、
- * プロパティの増減は宣言順のまま並べる。
+ * 右の一覧が、左に対してどういう続きか。**右の代入をどう読むかがこれで決まる。**
+ *
+ * - `declared` — 宣言に並べて書いてある続き。**後の代入は、前に足した量を消す**——代入はそのものが
+ *   行き先なので、生肉を食べて満腹が500増えても、食中毒の枝が満腹を0にすれば、その枝の取り分は0。
+ * - `triggered` — 左が動かした値が端へ届いて起きたこと（rangeイベント）。**代入は端で止まったことを
+ *   言うだけ**で、足した量が起きなかったとは言っていない——既定のクランプで消すと、6時間の睡眠が
+ *   眠気を1つも戻さないことになる。
+ */
+export type OutcomeSequel = 'declared' | 'triggered';
+
+/**
+ * 2つの分岐の一覧を直積にする（両方が順に起こる）。同じ型のspawnは1件へ合算し、プロパティの増減は
+ * 宣言順のまま並べる。`sequel`が`declared`なら、右が代入するプロパティの増減を左から落とす
+ * （OutcomeSequel参照）ので、`deltas`は「最後の代入より後に起きた増減」になる。
  */
 export function combineOutcomes(
   left: readonly StepOutcome[],
   right: readonly StepOutcome[],
+  sequel: OutcomeSequel,
 ): readonly StepOutcome[] {
   const combined: StepOutcome[] = [];
   for (const a of left)
@@ -147,10 +176,28 @@ export function combineOutcomes(
       combined.push({
         probability: a.probability * b.probability,
         spawns: mergeSpawns(a.spawns, b.spawns),
-        deltas: [...a.deltas, ...b.deltas],
+        deltas: [
+          ...(sequel === 'declared' ? survivingDeltas(a.deltas, b.assignments) : a.deltas),
+          ...b.deltas,
+        ],
         assignments: [...a.assignments, ...b.assignments],
       });
   return combined;
+}
+
+/** 後から代入されるプロパティのぶんを落とした増減（OutcomeSequel参照）。 */
+function survivingDeltas(
+  deltas: readonly PropertyDelta[],
+  assignments: readonly PropertyAssignment[],
+): readonly PropertyDelta[] {
+  if (assignments.length === 0 || deltas.length === 0) return deltas;
+
+  const assigned = new Set(assignments.map(propertyKey));
+  return deltas.filter((delta) => !assigned.has(propertyKey(delta)));
+}
+
+function propertyKey(entry: PropertyDelta | PropertyAssignment): string {
+  return `${entry.target}:${entry.propertyGlobalId}`;
 }
 
 /** 分岐ごとの産出から、型ごとに出現した個数をまとめた出力の列を作る（出力の線1本＝1つの型）。 */

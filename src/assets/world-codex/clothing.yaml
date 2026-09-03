@@ -26,14 +26,10 @@ object_defs:
     recipes:
       tanned:
         # 皮革が最初に開ける物（docs/world/Skills.md 2節）。腕は皮を剥ぐ操作（animals.yamlのbutcher）
-        # が配るので、なめしへ進めるのは獣を捌いてきた者だけになる。段の並べ方は
+        # が配るので、なめしへ進めるのは獣を捌いてきた者だけになる。「その段以上」の書き方は
         # characters/player_character.yaml。
         conditions:
-          - reason: needs_leatherwork
-            any:
-              - {subject: agent, prop: skill_leatherwork, in_stage: basic}
-              - {subject: agent, prop: skill_leatherwork, in_stage: skilled}
-              - {subject: agent, prop: skill_leatherwork, in_stage: expert}
+          - {reason: needs_leatherwork, subject: agent, prop: skill_leatherwork, in_stage_or_above: basic}
         # 合計480分は、同梱の世界で最も長い1つの作業（farming.yamlの畑を起こす480分）に並べた値。
         # 実際のなめしは日をまたぐ漬け込みだが、途中で止められない工程として持つ以上これ以上は
         # 伸ばさない（GameElementDefinition.md 11.3節）。工程を2つに割ってあるのも同じ理由。
@@ -101,11 +97,7 @@ object_defs:
         # 編んだ葉の衣類は繊維・編みが開ける（docs/world/Skills.md 2節）。材料は葉と繊維だけで
         # 素材の側は初日から揃うので、編み籠と同じ位置にある（SkillSystem.md 4.2節）。
         conditions:
-          - reason: needs_cordage
-            any:
-              - {subject: agent, prop: skill_cordage, in_stage: basic}
-              - {subject: agent, prop: skill_cordage, in_stage: skilled}
-              - {subject: agent, prop: skill_cordage, in_stage: expert}
+          - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         steps:
           - requires:
               - {object: woven_leaf, count: 3, consume: true}
@@ -126,15 +118,8 @@ object_defs:
         # 皮革の上位（docs/engine/SkillSystem.md 4.1節）。**スキルを積み上げず、同じ1本の上の段と
         # 別の1本の連言で表す**——なめし革が作れるだけでは足りず、糸を撚れることも要る。
         conditions:
-          - reason: needs_leatherwork
-            any:
-              - {subject: agent, prop: skill_leatherwork, in_stage: skilled}
-              - {subject: agent, prop: skill_leatherwork, in_stage: expert}
-          - reason: needs_cordage
-            any:
-              - {subject: agent, prop: skill_cordage, in_stage: basic}
-              - {subject: agent, prop: skill_cordage, in_stage: skilled}
-              - {subject: agent, prop: skill_cordage, in_stage: expert}
+          - {reason: needs_leatherwork, subject: agent, prop: skill_leatherwork, in_stage_or_above: skilled}
+          - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         steps:
           - requires:
               - {object: tanned_leather, count: 2, consume: true}

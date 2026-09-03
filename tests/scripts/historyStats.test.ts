@@ -104,20 +104,23 @@ describe.skipIf(IS_SHALLOW)('育ち方の推移の図', () => {
     expect(files.filter((name) => name.endsWith('.svg')).length).toBeGreaterThan(0);
   });
 
-  it.each(['HowWeGotHere_lines.svg', 'HowWeGotHere_pr_size.svg'])('%s の点が枠の中に在る', (name) => {
-    const svg = readFileSync(join(directory, name), 'utf-8');
-    const height = Number(/height="(\d+)"/.exec(svg)?.[1]);
-    const centers = [...svg.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)"/g)];
+  it.each(['HowWeGotHere_lines.svg', 'HowWeGotHere_pr_size.svg', 'HowWeGotHere_cost.svg'])(
+    '%s の点が枠の中に在る',
+    (name) => {
+      const svg = readFileSync(join(directory, name), 'utf-8');
+      const height = Number(/height="(\d+)"/.exec(svg)?.[1]);
+      const centers = [...svg.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)"/g)];
 
-    expect(centers.length, `点が1つも無い:\n${svg.slice(0, 200)}`).toBeGreaterThan(0);
-    for (const [, cx, cy] of centers) {
-      expect(
-        Number.isFinite(Number(cx)) && Number.isFinite(Number(cy)),
-        `座標が数値でない: ${cx},${cy}`,
-      ).toBe(true);
-      // 枠からはみ出した点は、目盛りの上限が値を覆えていないということ。
-      expect(Number(cy)).toBeGreaterThanOrEqual(0);
-      expect(Number(cy)).toBeLessThanOrEqual(height);
-    }
-  });
+      expect(centers.length, `点が1つも無い:\n${svg.slice(0, 200)}`).toBeGreaterThan(0);
+      for (const [, cx, cy] of centers) {
+        expect(
+          Number.isFinite(Number(cx)) && Number.isFinite(Number(cy)),
+          `座標が数値でない: ${cx},${cy}`,
+        ).toBe(true);
+        // 枠からはみ出した点は、目盛りの上限が値を覆えていないということ。
+        expect(Number(cy)).toBeGreaterThanOrEqual(0);
+        expect(Number(cy)).toBeLessThanOrEqual(height);
+      }
+    },
+  );
 });
