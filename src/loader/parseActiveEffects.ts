@@ -119,7 +119,7 @@ function parsePickList(
 
     const weightNode = tryGetNode(map, 'weight');
     if (weightNode === undefined) throw new YamlLoadError(`${candidateContext}: 'weight'は必須です。`);
-    const weight = parseWeight(loader, candidateContext, weightNode, scope);
+    const weight = parseDeclaredNumber(loader, candidateContext, weightNode, scope, 'weight');
 
     // amongを書いた候補の中だけがpickedを指せる（10.3節）。重みも効果も同じ場所として読む。
     const amongNode = tryGetMap(map, 'among', candidateContext);
@@ -178,22 +178,25 @@ function parseAmong(
   const weight =
     weightNode === undefined
       ? undefined
-      : parseWeight(loader, amongContext, weightNode, scope.withPicked, 'weight');
+      : parseDeclaredNumber(loader, amongContext, weightNode, scope.withPicked, 'weight');
 
   return new AmongSpec(root, loader.slotNames.intern(slotName), match, weight);
 }
 
 /**
  * リテラル数値か`{subject, prop}`参照、またはその参照2つの積（GameElementDefinition.md 10.2節）を読む。
- * durationもこの形で、「今の状態から見ていくらか」を書けるようにするため（切れ味の悪い刃物ほど
- * 時間がかかる、荷が重いほど道は遠い）。
+ * pickのweightもdurationもこの形で、「今の状態から見ていくらか」を書けるようにするため（切れ味の
+ * 悪い刃物ほど時間がかかる、荷が重いほど道は遠い）。何を表す数値かは持ち主が決める（DeclaredNumber）。
+ *
+ * `fieldName`はエラー文が名乗るYAMLのキー名。**常に呼び出し側が言う**——既定を持たせると、
+ * この読み手が最初に読んだキーの名前が、他のキーを読むときにも既定として残る。
  */
-export function parseWeight(
+export function parseDeclaredNumber(
   loader: WorldCodexYamlLoader,
   context: string,
   node: YamlNode,
   scope: ReferenceScope,
-  fieldName = 'weight',
+  fieldName: string,
 ): DeclaredNumber {
   if (isScalar(node)) {
     const raw = asScalarText(node, context);

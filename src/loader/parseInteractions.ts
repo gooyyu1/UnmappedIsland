@@ -3,7 +3,7 @@ import { isMap, isScalar } from 'yaml';
 import { asMap, entriesInOrder, keysOf, tryGetBool, tryGetMap, tryGetNode, tryGetSeq } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { parseTypeMatchRule } from './parseCommon';
-import { parseActiveEffectBody, parseWeight } from './parseActiveEffects';
+import { parseActiveEffectBody, parseDeclaredNumber } from './parseActiveEffects';
 import { parseRequirementList } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { InteractionDef } from '../domain/InteractionDef';
@@ -66,7 +66,7 @@ function parseInteraction(
   const durationNode = tryGetNode(map, 'duration');
   const duration =
     durationNode !== undefined
-      ? parseWeight(loader, `${context}.duration`, durationNode, scope, 'duration')
+      ? parseDeclaredNumber(loader, `${context}.duration`, durationNode, scope, 'duration')
       : undefined;
 
   const interaction = new InteractionDef(name, requirements, effect, duration);

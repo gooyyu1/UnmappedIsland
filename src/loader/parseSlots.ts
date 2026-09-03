@@ -12,7 +12,7 @@ import {
 import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { parseTypeMatchRule } from './parseCommon';
-import { parseWeight } from './parseActiveEffects';
+import { parseDeclaredNumber } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { CellDef, SlotDef } from '../domain/SlotDef';
 import type { DeclaredNumber } from '../domain/DeclaredNumber';
@@ -107,7 +107,7 @@ function parsePutIn(loader: WorldCodexYamlLoader, context: string, node: YAMLMap
 
   const durationNode = tryGetNode(node, 'duration');
   if (durationNode === undefined) throw new YamlLoadError(`${context}: 'duration'が必要です。`);
-  return parseWeight(
+  return parseDeclaredNumber(
     loader,
     `${context}.duration`,
     durationNode,
