@@ -33,6 +33,36 @@ traits:
         trigger: menu
         duration: 360
         add: {self: {stamina: 90, wakefulness: 96}}
+      # 限界に達した値が起こす、強制的な時間経過（docs/world/Characters.md 限界節）。3つとも上の休息と
+      # 同じ形で、**違うのは見る値・長さ・戻る量だけ**。プレイヤーが押す機会は無い
+      # （trigger: tick、11.1節）ので、手が出せないまま時間だけが過ぎる。
+      #
+      # **見るのは「下限に居る間」で、達した瞬間ではない。** 一度で限界を抜けられなければ、次に
+      # 時間が動いたときにまた起きる。
+      #
+      # 起きるのは操作の切れ目で、進行中の操作は中断しない（11.5節）——歩き終わってから倒れる。
+      #
+      # 戻る量は、その値を戻せる自発の操作に合わせる。眠気を戻せるのは睡眠だけなので、眠り込むのは
+      # sleep と同じ中身。体力と幸福度は rest と同じ割（10/時間）で2時間ぶん——倒れ込むのは休み方を
+      # 選んだことにならないので、まとめて休んだ割増し（nap・sleep）は付かない。
+      collapse:
+        trigger: tick
+        conditions:
+          - {prop: stamina, lte: 0}
+        duration: 120
+        add: {self: {stamina: 20}}
+      fall_asleep:
+        trigger: tick
+        conditions:
+          - {prop: wakefulness, lte: 0}
+        duration: 360
+        add: {self: {stamina: 90, wakefulness: 96}}
+      despair:
+        trigger: tick
+        conditions:
+          - {prop: happiness, lte: 0}
+        duration: 120
+        add: {self: {happiness: 20}}
     # 外から見えるもの（7.11節）。**手持ちは入れない**——レーンに出ているので、タブにも出すと
     # 同じ札が画面に2枚出る（Windows.md 1.1節）。
     visible_slots: [equipment, injuries]

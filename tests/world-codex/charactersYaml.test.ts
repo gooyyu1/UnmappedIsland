@@ -165,16 +165,32 @@ const RESTS = [
 ] as const;
 
 /**
+ * 限界に達した値が起こす、強制的な時間経過（docs/world/Characters.md 限界節）。見る値と、それが
+ * 尽きたときに起きる手番の名前。**起きることそのものは
+ * tests/world-codex/forcedTimePassage.test.ts** が通す。
+ */
+const LIMITS = [
+  ['stamina', 'collapse'],
+  ['wakefulness', 'fall_asleep'],
+  ['happiness', 'despair'],
+] as const;
+
+/**
  * 休息を1回取ったときの、実際に戻った量。眠っている間も覚醒度は減り続けるので、覚醒度のほうは
  * 経過ぶんを差し引いた実質の回復になる。
  *
  * 頭打ちに掛かると回復量そのものを測れないため、体力は空から、覚醒度は経過ぶん（1/tick）だけ
  * 残した位置から始める。この位置なら下限でも上限でも切られない。
+ *
+ * **覚醒度だけは、そこから更に1だけ上へ置く**（SPARE）。経過し切って下限へ着くと、休息を終えた
+ * 切れ目で強制的な睡眠が挟まり（docs/world/Characters.md 限界節）、休息そのものの回復量を
+ * 測れなくなる。体力は空から測ってよい——どの休息も体力を戻すので、切れ目では限界を抜けている。
  */
 function takeRest(
   character: string,
   actionName: string,
 ): { minutes: number; stamina: number; wakefulness: number } {
+  const SPARE = 1;
   const { player } = stand(character);
   const staminaId = codex.propertyNames.getId('stamina');
   const wakefulnessId = codex.propertyNames.getId('wakefulness');
@@ -182,14 +198,14 @@ function takeRest(
   const spent = minutes / 15;
 
   player.instance.tryGetProperty(staminaId)?.setNumber(0);
-  player.instance.tryGetProperty(wakefulnessId)?.setNumber(spent);
+  player.instance.tryGetProperty(wakefulnessId)?.setNumber(spent + SPARE);
 
   expect(player.instance.tryGetAction(actionName, player.instance)?.tryExecute() === true).toBe(true);
 
   return {
     minutes,
     stamina: player.instance.tryGetProperty(staminaId)?.number ?? 0,
-    wakefulness: (player.instance.tryGetProperty(wakefulnessId)?.number ?? 0) - spent,
+    wakefulness: (player.instance.tryGetProperty(wakefulnessId)?.number ?? 0) - spent - SPARE,
   };
 }
 
@@ -616,6 +632,19 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(player.instance.tryGetAction(actionName, player.instance)?.executionMinutes() ?? 0).toBe(
         minutes,
       );
+    });
+
+    it.each(LIMITS)('%s の限界が「%s」を起こし、それは押せない', (propertyName, turnName) => {
+      const { player } = stand(character);
+
+      expect(propOf(def(character), propertyName).range?.min, '限界は下限（0）').toBe(0);
+      expect(player.instance.tryGetAction(turnName, player.instance), '手番を持つ').toBeDefined();
+      // 押す機会を持たない（trigger: tick、GameElementDefinition.md 11.1節）。ボタンに出ると
+      // 「強制的に」ではなく、いつでも取れる休息が3つ増えたことになる。
+      expect(
+        player.instance.menuActionsFor(player.instance).map((action) => action.name),
+        'ボタンには出ない',
+      ).not.toContain(turnName);
     });
 
     it('眠る休息だけが眠気を戻す', () => {

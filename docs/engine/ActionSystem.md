@@ -94,6 +94,11 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 5. 関与オブジェクトの生存確認（6節）: 経過中に失われていたら、その行動は成立しなかったものとして
    `false` を返し、効果を適用せずに終える。
 6. 効果の適用: `self.ApplyActiveEffect(effect, session, agent, instrument)`（4節）。
+7. 待たされていた手番（`trigger: tick` で `duration` を持つもの、
+   [`GameElementDefinition.md`](./GameElementDefinition.md) 11.5 節）を起こす。**ここが操作の切れ目**で、
+   4 の経過中に配られた手番はその場では起きずにここまで待つ（`WorldSession.RunToSeam`）。
+   時間を進める操作は他にもある（製作の 1 工程・枠へ入れる）ので、切れ目もその 3 つが名乗る
+   ——操作の外で時間だけが動いた場合は、その進行そのものが切れ目になる。
 
 ## 3. 実行可能条件（conditions）
 

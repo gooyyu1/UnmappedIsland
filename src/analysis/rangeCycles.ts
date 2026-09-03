@@ -135,6 +135,9 @@ export function rangeCyclesOf(
           drivenBy: driver?.sourceGlobalId,
           step: {
             kind: 'periodic',
+            // 時間で回る工程なので押せない。経路に並ぶのは、押し手が要るもの（火にかけた肉）だけで、
+            // その絞り込みはdrivenBy・repeatsが受け持つ（balanceTables.allSteps）。
+            startedByPlayer: false,
             name: `${propertyDef.name}.${readout.label}`,
             ownerGlobalId: def.globalId,
             inputs: [

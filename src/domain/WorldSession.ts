@@ -7,6 +7,7 @@ import type { InteractionGains, PropertyGain } from './PropertyGain';
 import type { Slot } from './Slot';
 import type { WorldChange } from './WorldChange';
 import type { WorldSignal } from './WorldSignal';
+import type { Action } from './Interaction';
 import { WorldObject } from './WorldObject';
 import { Scoped } from '../util/scoped';
 
@@ -53,6 +54,19 @@ export class WorldSession {
 
   /** 今どのオブジェクトの効果を適用しているか（withSubject）。記録する変化の主体になる。 */
   private readonly subject = new Scoped<WorldObject>();
+
+  /** 実行中のまとまりの深さ（runToSeam）。0へ戻ったところが操作の切れ目。 */
+  private seamDepth = 0;
+
+  /**
+   * 時間の中では起こせず、操作の切れ目を待っている手番（`trigger: tick`、11.1節）。**時間を要する
+   * 手番は、配られたその場では起こせない**——手番を配るのは時間を進めている最中で、そのとき動作主は
+   * 時間を進めている操作にまだ就いている（GameElementDefinition.md 11.5節の不変条件）。
+   */
+  private waitingTurns: Action[] = [];
+
+  /** 待っていた手番を起こしている最中か。この間に挙がった待ちは受け取らない（takeWaitingTurns）。 */
+  private takingWaitingTurns = false;
 
   constructor(codex: WorldCodex, world?: World, rng?: Rng) {
     this.codex = codex;
@@ -187,11 +201,68 @@ export class WorldSession {
   }
 
   /**
+   * bodyを、**抜けたところを操作の切れ目にする1つのまとまり**として走らせる（ActionSystem.md 2節）。
+   * 時間の中では起こせなかった手番（deferTurn）を、抜けたところで起こす。
+   *
+   * まとまりを名乗るのは、操作3つ（actions/combinations・製作の1工程・枠へ入れる）と、**操作の外で
+   * 起きる時間の進行**（advanceWorldTime）。後者も囲うのは、待たせた手番を無関係な次の操作まで
+   * 持ち越さないため——切れ目を操作だけに置くと、囲い忘れた経路の手番が別の操作のせいに見える。
+   *
+   * 入れ子の内側では起こさない——外側のまとまりがまだ続いていて、動作主はそちらに就いたままだから
+   * （GameElementDefinition.md 11.5節）。
+   */
+  runToSeam<T>(body: () => T): T {
+    this.seamDepth++;
+    try {
+      return body();
+    } finally {
+      this.seamDepth--;
+      if (this.seamDepth === 0) this.takeWaitingTurns();
+    }
+  }
+
+  /**
+   * 時間を要する手番を、操作の切れ目まで待たせる（Action.takeTurn）。
+   *
+   * **同じ物の同じ手番は1つしか待たせない。** 限界に居る間は毎tick同じ手番が挙がるが、起こすのは
+   * 切れ目に1度でよい。
+   */
+  deferTurn(turn: Action): void {
+    if (this.takingWaitingTurns) return;
+    if (this.waitingTurns.some((waiting) => waiting.isSameTurnAs(turn))) return;
+    this.waitingTurns.push(turn);
+  }
+
+  /**
+   * 待っていた手番を、宣言の順に起こす。要件（14節）は起こす時点で引き直されるので、待っている間に
+   * 限界を抜けた手番はそこで落ちる。
+   *
+   * **同じ切れ目で二度は起こさない。** 起こした手番自身も時間を進めるので、その間にまた同じ手番が
+   * 挙がりうる（一度の強制では限界を抜けられなかった場合）。二度目をここで受け取ると切れ目から
+   * 抜けられないので、次に時間が動いたときの待ちとして拾い直す。
+   */
+  private takeWaitingTurns(): void {
+    if (this.waitingTurns.length === 0) return;
+
+    const turns = this.waitingTurns;
+    this.waitingTurns = [];
+    this.takingWaitingTurns = true;
+    try {
+      for (const turn of turns) if (turn.actorIsInWorld) turn.tryExecute();
+    } finally {
+      this.takingWaitingTurns = false;
+    }
+  }
+
+  /**
    * ゲーム内時間をamount分だけ進める。tick境界（World.minutesUntilTick）を跨ぐたびに、その境界まで
    * 時計を進めてtick()を1回実行する。
    *
    * 呼び出しを刻んでも結果は変わらない（次の境界までを時計から読み直すため）。UI層はこれを利用して、
    * 一括で進めた経過をあとから刻んで見せる。
+   *
+   * **これ自身も1つのまとまりとして囲う**（runToSeam）。操作の中から呼ばれたぶんは入れ子になるので
+   * 切れ目にならず、操作の外で時間が動いた場合だけ、進め終えたところが切れ目になる。
    */
   advanceWorldTime(amount: number): void {
     if (this.world === undefined) {
@@ -199,24 +270,26 @@ export class WorldSession {
     }
 
     const world = this.world;
-    const minutesPerTick = world.rawMinutesPerTick;
-    const untilFirstTick = world.minutesUntilTick(1);
+    this.runToSeam(() => {
+      const minutesPerTick = world.rawMinutesPerTick;
+      const untilFirstTick = world.minutesUntilTick(1);
 
-    if (amount < untilFirstTick) {
-      world.addMinutes(amount);
-      return;
-    }
+      if (amount < untilFirstTick) {
+        world.addMinutes(amount);
+        return;
+      }
 
-    const ticksToRun = 1 + Math.trunc((amount - untilFirstTick) / minutesPerTick);
-    world.addMinutes(untilFirstTick);
-    this.runTick(world);
-
-    for (let i = 1; i < ticksToRun; i++) {
-      world.addMinutes(minutesPerTick);
+      const ticksToRun = 1 + Math.trunc((amount - untilFirstTick) / minutesPerTick);
+      world.addMinutes(untilFirstTick);
       this.runTick(world);
-    }
 
-    world.addMinutes(amount - untilFirstTick - (ticksToRun - 1) * minutesPerTick);
+      for (let i = 1; i < ticksToRun; i++) {
+        world.addMinutes(minutesPerTick);
+        this.runTick(world);
+      }
+
+      world.addMinutes(amount - untilFirstTick - (ticksToRun - 1) * minutesPerTick);
+    });
   }
 
   /**
