@@ -33,6 +33,36 @@ traits:
         trigger: menu
         duration: 360
         add: {self: {stamina: 90, wakefulness: 96}}
+      # 限界に達した値が起こす、強制的な時間経過（docs/world/Characters.md 限界節）。3つとも上の休息と
+      # 同じ形で、**違うのは見る値・長さ・戻る量だけ**。プレイヤーが押す機会は無い
+      # （trigger: tick、11.1節）ので、手が出せないまま時間だけが過ぎる。
+      #
+      # **見るのは「下限に居る間」で、達した瞬間ではない。** 一度で限界を抜けられなければ、次に
+      # 時間が動いたときにまた起きる。
+      #
+      # 起きるのは操作の切れ目で、進行中の操作は中断しない（11.5節）——歩き終わってから倒れる。
+      #
+      # 戻る量は、その値を戻せる自発の操作に合わせる。眠気を戻せるのは睡眠だけなので、眠り込むのは
+      # sleep と同じ中身。体力と幸福度は rest と同じ割（10/時間）で2時間ぶん——倒れ込むのは休み方を
+      # 選んだことにならないので、まとめて休んだ割増し（nap・sleep）は付かない。
+      collapse:
+        trigger: tick
+        conditions:
+          - {prop: stamina, lte: 0}
+        duration: 120
+        add: {self: {stamina: 20}}
+      fall_asleep:
+        trigger: tick
+        conditions:
+          - {prop: wakefulness, lte: 0}
+        duration: 360
+        add: {self: {stamina: 90, wakefulness: 96}}
+      despair:
+        trigger: tick
+        conditions:
+          - {prop: happiness, lte: 0}
+        duration: 120
+        add: {self: {happiness: 20}}
     # 外から見えるもの（7.11節）。**手持ちは入れない**——レーンに出ているので、タブにも出すと
     # 同じ札が画面に2枚出る（Windows.md 1.1節）。
     visible_slots: [equipment, injuries]
@@ -189,17 +219,11 @@ traits:
           # 5日は、水と食べ物を切らさずに過ごした5日でなければならない。
           #
           # 判定は段の名前で行い、**閾値を条件の側へ書き写さない**——域（alert）そのものを条件から読む術が
-          # 無いので、安全域の段をanyで束ねる。獣の側もまったく同じ形（animals.yaml）で、渇きと飢えを
+          # 無いので、安全域の下端の段を名指す。獣の側もまったく同じ形（animals.yaml）で、渇きと飢えを
           # 人と獣の両方が持つことが、この1つの宣言を両方へ配れるようにしている（同節）。
           - conditions:
-              - any:
-                  - {prop: hydration, in_stage: hydrated}
-                  - {prop: hydration, in_stage: full}
-              - any:
-                  - {prop: body_fat, in_stage: gaunt}
-                  - {prop: body_fat, in_stage: nourished}
-                  - {prop: body_fat, in_stage: stout}
-                  - {prop: body_fat, in_stage: obese}
+              - {prop: hydration, in_stage_or_above: hydrated}
+              - {prop: body_fat, in_stage_or_above: gaunt}
             add:
               self:
                 blood: 2
@@ -381,10 +405,10 @@ traits:
       #
       # **個体差を持たせない。** 4人とも漂着した素人として始まるので、痛み・血と同じくこの trait が配る。
       #
-      # **解放条件の「その段以上」は、段の名前をanyで束ねて書く**（上のbloodの安全域と同じ形）。
-      # `in_stage`は今いる段ちょうどの判定なので（GameElementDefinition.md 14.1節）、1つだけ書くと
-      # 腕が上がった時点で条件が偽へ戻り、レシピが閉じ直す。境目の数を条件の側へ書き写さないための
-      # 形で、tests/world-codex/skillsYaml.test.tsが「上の段でも満たし続ける」ことを見張る。
+      # **解放条件の「その段以上」は`in_stage_or_above`で書く**（上のbloodの安全域と同じ形）。
+      # `in_stage`は今いる段ちょうどの判定なので（GameElementDefinition.md 14.1節）、そちらで書くと
+      # 腕が上がった時点で条件が偽へ戻り、レシピが閉じ直す。
+      # tests/world-codex/skillsYaml.test.tsが「上の段でも満たし続ける」ことを見張る。
       #
       # **伸ばすのは実行経路だけ**（同3節の3経路のうち中）。その腕を使う操作が自分の`add`で`agent`へ
       # +2を配る。**量は作業の長さに依らず一律**で、繰り返しの稼ぎを抑えるのは時間のコストだけ

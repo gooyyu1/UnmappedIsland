@@ -373,7 +373,7 @@
       ]
     },
     "condition_property_leaf": {
-      "description": "propを主語にした葉（14.1節）。演算子キー（lt/lte/gt/gte/eq/neq/in/not_in/in_stage）の値が比較の相手で、**複数書けば暗黙のAND**（範囲は{prop: x, gte: 100, lt: 200}）。最低1つ必要。subjectは省略可（既定値self）。",
+      "description": "propを主語にした葉（14.1節）。演算子キー（lt/lte/gt/gte/eq/neq/in/not_in/in_stage/in_stage_or_above）の値が比較の相手で、**複数書けば暗黙のAND**（範囲は{prop: x, gte: 100, lt: 200}）。最低1つ必要。subjectは省略可（既定値self）。",
       "type": "object",
       "properties": {
         "subject": {
@@ -410,7 +410,12 @@
         "in_stage": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$",
-          "description": "propの実効値が、その名前の段（6.4節）に該当しているか。"
+          "description": "propの実効値が、今ちょうどその名前の段（6.4節）に居るか。"
+        },
+        "in_stage_or_above": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "propの実効値が、その名前の段（6.4節）かそれより上の段に居るか。単調に増える値（腕前）や、境目より上を安全域として読む値（血・水分）はこちらで書く——in_stageは今いる段ちょうどの判定なので、上の段へ移った瞬間に偽へ戻る。上下は段の下端の大小で決まり、宣言順ではない。"
         },
         "reason": {
           "$ref": "#/$defs/condition_reason"
@@ -464,6 +469,11 @@
         {
           "required": [
             "in_stage"
+          ]
+        },
+        {
+          "required": [
+            "in_stage_or_above"
           ]
         }
       ]
@@ -551,7 +561,7 @@
       "additionalProperties": false
     },
     "passive_operation_map": {
-      "description": "passiveの1操作(modify/add)が持つ、対象（self/parent/child/ancestor）をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。agentは持続的な関係に紐づかないためロード時エラー。combinations内でもinstrumentを書けるのはactiveだけで、passiveに書くとロード時エラー。",
+      "description": "passiveの1操作(modify/add)が持つ、対象をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。何を対象に書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。ここに居ない相手を書くとロード時エラー。",
       "type": "object",
       "properties": {
         "self": {
@@ -585,7 +595,7 @@
           "$ref": "#/$defs/passive_operation_map"
         },
         "transfer": {
-          "description": "条件が真であるtick毎に走る輸送（8.4.1節）。文法はactiveのtransfer（9.5節）と同一で、違うのは置かれた場所——対象に何を書けるかは、その場所に誰が居るかから導く（ActionSystem.md 4節の表）。宣言順に適用され互いの結果を見るため、直列に繋いだ輸送の中間に在庫を持たせるのは速度の差。",
+          "description": "条件が真であるtick毎に走る輸送（8.4.1節）。文法はactiveのtransfer（9.5節）と同一で、対象に何を書けるかはその宣言が置かれた場所が決める（一覧は14.1節の表。操作の関係の役は11.5節「役を書ける場所」）。宣言順に適用され互いの結果を見るため、直列に繋いだ輸送の中間に在庫を持たせるのは速度の差。",
           "$ref": "#/$defs/transfer_spec"
         }
       },
@@ -1412,7 +1422,7 @@
       "additionalProperties": false
     },
     "object_target_name": {
-      "description": "オブジェクトそのものを指す対象名（destroy・move・become）。ancestorは「どのプロパティを探すか」が無く解決できないため不可。childは相手が1つに決まらないため不可。pickedを書けるのはamongを書いた候補の中だけで、外に書くとロード時エラー（10.3節）。",
+      "description": "オブジェクトそのものを指す対象名。どの命令が引くかは、これを使う側（destroy_target・object_target）が述べる。何を書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。ここに居ない相手を書くとロード時エラー。",
       "enum": [
         "self",
         "parent",

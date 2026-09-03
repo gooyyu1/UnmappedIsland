@@ -17,7 +17,7 @@ import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { withYamlContext, parseNumberOrSymbol } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
-import { parseConditionsField, parseSubjectRoot } from './parseConditions';
+import { parseConditionList, parseSubjectRoot } from './parseConditions';
 import { parsePassiveInto } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { ALERT_LEVELS } from '../domain/AlertLevel';
@@ -146,9 +146,9 @@ export function parsePropAppendingPassives(
 }
 
 /**
- * props.'name'.base（6.5節）を読む。土台は`{subject, prop}`——`conditions`（14.1節）・`weight`
- * （10.2節）・`duration`（11.3節）と同じ参照で、`subject`の既定も`self`で同じ。`prop`を省くと
- * 同名のプロパティを指す（祖先の同じ値を土台にする、いちばん多い形）。
+ * props.'name'.base（6.5節）を読む。土台は`{subject, prop}`の1階層のプロパティ参照（PropertyPath）で、
+ * `subject`の既定は`self`。`prop`を省くと同名のプロパティを指す（祖先の同じ値を土台にする、
+ * いちばん多い形）。
  *
  * `subject: self`で`prop`を省くと自分自身が土台になってしまうので、そこだけ`prop`を必須にする。
  */
@@ -278,7 +278,7 @@ function parseOptionalRangeEvent(
 
   const eventContext = `${context}.${label}`;
   return {
-    condition: parseConditionsField(
+    condition: parseConditionList(
       loader,
       `${eventContext}.conditions`,
       tryGetSeq(eventNode, 'conditions', eventContext),

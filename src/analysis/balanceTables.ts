@@ -342,6 +342,16 @@ export interface ObjectCost {
 export interface BalanceTables {
   readonly characterNames: readonly string[];
 
+  /**
+   * 1日を賄う最小労働（分）と、それを払って残る自由時間（分）。**分の整数へ丸めて持つ**
+   * ——BalanceStats.mdが載せるのと同じ桁で、端数を残すと、これを分母にした日数（`ObjectCost.days`・
+   * 山の量。ContentSkeleton.md 4節）が桁の下で揺れる。
+   *
+   * **日数の分母はこの1つだけ。** 同じ量を読み手ごとに引き算し直すと、生成物ごとに換算が変わる。
+   */
+  readonly minimumLabourMinutes: number;
+  readonly surplusMinutes: number;
+
   /** 全オブジェクトの総コスト（宣言順）。 */
   readonly objectCosts: readonly ObjectCost[];
 
@@ -370,16 +380,17 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
   const islandLocations = islandLocationsOf(codex);
   const { places, gaps, islandWide } = placeBalances(codex, character, dailyNeeds, islandLocations);
 
+  // 島全体の献立が最小労働（places[0]は島全体）。
+  const minimumLabourMinutes = Math.round(places[0].menu.totalMinutes);
+  const surplusMinutes = MINUTES_PER_DAY - minimumLabourMinutes;
+
   return {
     characterNames,
+    minimumLabourMinutes,
+    surplusMinutes,
     dailyNeeds,
     gaps,
-    objectCosts: objectCosts(
-      codex,
-      islandWide,
-      MINUTES_PER_DAY - places[0].menu.totalMinutes,
-      islandLocations.seaOnly,
-    ),
+    objectCosts: objectCosts(codex, islandWide, surplusMinutes, islandLocations.seaOnly),
     consumption: consumptionRows(codex, characterNames),
     // 供給表は島全体の文脈で出す。罠の重みは土地が入れるので、土地を決めないと候補が全部0になる。
     supply: supplyRows(
@@ -561,17 +572,18 @@ function placeBalances(
 
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
   const islandContext = withBestInstrument(defs, highestDeclaredAncestorValueResolver(locations));
-  const islandWide = new Acquisition(codex, allSteps(codex, seaOnly, islandContext));
+  const islandWide = new Acquisition(codex, reachableSteps(allSteps(codex, seaOnly, islandContext)));
 
   let islandRoutes: readonly ChainRoute[] = [];
   const places = [undefined, ...locations].map((location) => {
     // 罠が掛ける動物の重みは土地が宣言する（base）ので、土地を決めてから工程を組み立てる。
     const context =
       location === undefined ? islandContext : withBestInstrument(defs, ancestorValueResolver(location));
-    const steps =
+    const steps = reachableSteps(
       location === undefined
         ? allSteps(codex, seaOnly, context)
-        : stepsAt(codex, allSteps(codex, seaOnly, context), location);
+        : stepsAt(codex, allSteps(codex, seaOnly, context), location),
+    );
     const acquisition = location === undefined ? islandWide : new Acquisition(codex, steps, islandWide);
     const routes = routeCandidates(codex, character, acquisition, steps, dailyNeeds, location);
 
@@ -1157,6 +1169,19 @@ function axisValueGlobalIds(codex: WorldCodex): ReadonlySet<number> {
       if (globalId !== undefined && codex.objects.tryGet(globalId) !== undefined) ids.add(globalId);
     }
   return ids;
+}
+
+/**
+ * 経路として辿れる工程だけを残す（`CraftingStep.startedByPlayer`）。**時間が配る手番**——動物の1手と、
+ * 限界に達した値が起こす強制的な時間経過（[`Characters.md`](../../docs/world/Characters.md) 限界節）
+ * ——は押して選べないので、経路に並べると**選べない道が献立に載る**（強制の睡眠が「眠気を戻す手立て」
+ * として睡眠の隣に並ぶ）。
+ *
+ * **落とすのは経路を組む側だけ。** 供給表（`supplyRows`）は工程の一覧なので、押せない工程も数える。
+ * 時間で回る工程（periodic）もここでは落とさない——押し手が要るものだけを`allSteps`が既に選んでいる。
+ */
+function reachableSteps(steps: readonly StepRef[]): readonly StepRef[] {
+  return steps.filter((ref) => ref.step.kind !== 'interaction' || ref.step.startedByPlayer);
 }
 
 /**

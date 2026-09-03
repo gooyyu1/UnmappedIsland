@@ -49,13 +49,9 @@ object_defs:
         # 素材の側は初日から揃ってしまう。**腕は道具を1つも要らない葉編み（weaving.yamlのweave）だけでも
         # 立つ**ので、開けるのは繊維を扱った回数であって、他の何かを先に作れることではない。
         #
-        # 「basic以上」を段の名前の並びで書く形は characters/player_character.yaml が持つ。
+        # 「basic以上」を`in_stage_or_above`で書く形は characters/player_character.yaml が持つ。
         conditions:
-          - reason: needs_cordage
-            any:
-              - {subject: agent, prop: skill_cordage, in_stage: basic}
-              - {subject: agent, prop: skill_cordage, in_stage: skilled}
-              - {subject: agent, prop: skill_cordage, in_stage: expert}
+          - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         steps:
           - requires:
               - {object: woven_leaf, count: 6, consume: true}

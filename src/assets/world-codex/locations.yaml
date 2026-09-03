@@ -68,7 +68,7 @@ object_defs:
           # 荷が重すぎると動けない。段の名前で見るので、境目はキャラクタのloadのstagesだけが持つ
           # （ContainerSystem.md 5節）。
           - reason: too_heavy
-            not: {subject: agent, prop: load, in_stage: too_heavy}
+            not: {subject: agent, prop: load, in_stage_or_above: too_heavy}
           # 暗ければ道は歩けない（IlluminationSystem.md 5節）。**出発する土地の明るさで決まる**
           # ——道は自分の明るさを持たず、条件から行き先の土地は辿れない。見るのは視界の側なので、
           # 持ち歩ける光源だけが効く（据えた焚き火のそばから夜の道へは出られない、同3節）。
@@ -124,7 +124,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 60
         # 石器の腕はここから立ち上がる（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。道具を要求しないので、何も持たない状態から回る。
@@ -271,7 +271,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -346,7 +346,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -425,7 +425,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -492,7 +492,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -569,7 +569,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -653,7 +653,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -736,7 +736,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -795,7 +795,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -855,7 +855,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
@@ -926,7 +926,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:

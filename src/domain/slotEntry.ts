@@ -22,11 +22,15 @@ export function putIntoSlot(
   session: WorldSession,
   place: () => void,
 ): void {
-  // 入らないと分かっているなら時間も取らない。時間だけ取られて何も入らない、が起きないようにする。
-  if (item.rejectionForMoveTo(slot) !== undefined) return;
+  // これも操作1つなので、まるごと囲う（WorldSession.runToSeam）。経過中に配られて待たされた
+  // 手番は、入れ終えたこの切れ目で起きる。
+  session.runToSeam(() => {
+    // 入らないと分かっているなら時間も取らない。時間だけ取られて何も入らない、が起きないようにする。
+    if (item.rejectionForMoveTo(slot) !== undefined) return;
 
-  if (!spendDurationAndReportParticipantsAlive(slot.putInMinutes(agent, item), session, [item, slot.owner]))
-    return;
+    if (!spendDurationAndReportParticipantsAlive(slot.putInMinutes(agent, item), session, [item, slot.owner]))
+      return;
 
-  place();
+    place();
+  });
 }

@@ -200,8 +200,8 @@ function outdoorInteractions(): readonly OutdoorInteraction[] {
 }
 
 /**
- * `conditions` が段（`in_stage`）で見ているプロパティを `プロパティ名/段名` として集める。
- * `not` や `any` の中も辿る。
+ * `conditions` が段（`in_stage`・`in_stage_or_above`）で見ているプロパティを `プロパティ名/段名` として
+ * 集める。`not` や `any` の中も辿る。
  */
 function requiredStages(node: unknown): ReadonlySet<string> {
   const names = new Set<string>();
@@ -214,9 +214,11 @@ function requiredStages(node: unknown): ReadonlySet<string> {
     if (!isMap(current)) return;
 
     const propertyName = current.get('prop');
-    const stageName = current.get('in_stage');
-    if (typeof propertyName === 'string' && typeof stageName === 'string')
-      names.add(`${propertyName}/${stageName}`);
+    for (const key of ['in_stage', 'in_stage_or_above']) {
+      const stageName = current.get(key);
+      if (typeof propertyName === 'string' && typeof stageName === 'string')
+        names.add(`${propertyName}/${stageName}`);
+    }
     for (const pair of current.items) walk(pair.value);
   };
 
