@@ -32,12 +32,16 @@ YAMLとずれます）。
 | `site_degree_histogram` | 同じものの割合（`or_more: true` の行は「その本数以上」） |
 | `edge` | 道1本あたりの距離・両端の高低差・移動時間 |
 | `base_one_way` | 拠点から他の土地への片道 |
-| `daily_budget` | 局面ごとの1日が使う、屋外の枠と生存の採取 |
+| `daily_budget` | 1日の割り付け（屋外の枠・夜の加工・生存の採取・自由時間） |
+| `work_piles` | 1周回に積む山1つずつの量 |
+| `work_piles_by_system` | 同じものを系統ごとにまとめた合計 |
+| `work_piles_total` | 山の合計と、屋外・拠点への割り |
 | `exploration_phase` | 探索の局面（島を開き切るまで）の分布 |
 | `exploration_day_trip_islands` | 日帰りだけで開き切れる島の割合 |
 | `steady_phase` | 定常の局面（開き切った後）の1日の分布 |
 | `steady_phase_islands` | 定常の局面が日帰りで成立する島の割合 |
 | `steady_phase_by_work_share` | 山の配分ごとの内訳 |
+| `cycle` | 局面を積んだ1周回の日数 |
 
 **この表とYAMLが食い違うと `npm test` が赤くなります。** 表に挙げた節がYAMLに在って空でないことと、
 表に無い節がYAMLに無いことの両方を、生成元のテストが見ます。
@@ -71,6 +75,20 @@ YAMLとずれます）。
 拠点を選べるので、1周回で実際に払うのは `base: shortest_mean`（他の土地への片道が平均で最も短い
 土地）のほうで、`base: any` はどの土地を拠点にしてもよいときの分布。
 
+## 1周回に積む山
+
+`work_piles` は、ContentSkeleton.md 4節が「1日以上の山」として数えているもの1つずつ。**何を山と
+数えるかは宣言**（`src/analysis/dailyPhases.ts` の `WORK_PILES`）で、量の大小からは決まらない
+——磨いた石器のように、労働は要るのに開けるものが無いものは山に立たない（同節）。
+
+`object` が量の出どころ。**型の名前**ならその型を1つ手に入れる総労働（BalanceStats.md の
+`object_costs`）、**`null`** なら置いた日数（仮置き）。`days` と `minutes` は同じ量の別の書き方で、
+換算は `daily_budget.surplus`（`object_costs` の `days` と同じ分母）。
+
+`work_piles_total` は合計と、それを屋外（採取・伐採・運搬）と拠点（加工）へ割ったもの。割合は
+ContentSkeleton.md 8.3節の仮置きで、`base_days` は拠点の加工が `daily_budget.night_craft` の枠で
+何日ぶんかを示す（律速が屋外であることの確認用で、1周回の日数には足さない）。
+
 ## 局面ごとの1日
 
 拠点を出て仕事をして帰る1日を、局面ごとに数える（ContentSkeleton.md 8.2節・8.3節）。
@@ -99,7 +117,9 @@ YAMLとずれます）。
 - **`daily_budget.outdoor_window`** = 屋外の枠。太陽が出ている12時間で、移動のしきい値を
   満たす時間そのもの。
 - **`daily_budget.survival_gathering`** = 1日を賄う生存の採取（BalanceStats.mdの最小労働から
-  睡眠を引いた分）。
+  `sleep` を引いた分）。`surplus` はその最小労働を払って残る自由時間で、**山の量を日数へ直す分母**は
+  こちら。`outdoor_window`・`night_craft`・`sleep` が1日の割り付け（ContentSkeleton.md 8.3節）で、
+  拠点での加工が当たっているのは `night_craft` の枠。
 - **その土地でその仕事ができる時間** = ClimateSystemStats.md「土地×季節ごとの活動時間」の季節平均で、
   **局面ごとに見る列が違う**——探索の局面は `exploration`、定常の局面は `gathering`。2つが違うのは
   嵐が採取だけを止めるためで（ContentSkeleton.md 8.1.4節）、**局面の違いはこの頭打ちにしか現れない。**
@@ -118,6 +138,11 @@ YAMLとずれます）。
 **泊まりがけは、滞在中の生存の採取を現地で払わない**（補給を持ち込む行程、
 GameEndings.md 9.2節）。1日に進む探索がその土地で探索できる時間を超えられないことと、往復の移動も
 屋外の枠から出ることの2つだけで縛る。
+
+`day_trip_window_per_day` は、その行程の1日に探索へ使える枠（`outdoor_window` − 往復 −
+`survival_gathering`）を日数で重み付けした平均で、`day_trip_spare_per_day` はそこから実際に進んだ
+探索（`day_trip_exploration_per_day`）を引いた余り。**探索の局面には山を1分も乗せていない**ので、
+この余りがそのまま「1周回が下へ振れる材料」になる。
 
 `day_trip_` で始まる項目は日帰りだけで開き切る行程のもので、**成立しない島は標本に入らない**
 ——その島数の割合が `exploration_day_trip_islands`。成立しない島は、往復で枠が尽きる土地を
@@ -150,6 +175,13 @@ GameEndings.md 9.2節）。1日に進む探索がその土地で探索できる�
 「その拠点から日帰りで回す1日」であって島そのものではないので、`steady_phase` の標本から落ちるのは
 **最も条件の良い拠点（`base: shortest_mean`）でさえ届かない島だけ**。
 
-**日数を出すのは `days_per_1000_work_minutes` だけ。** 1周回の山の量はどの島でも同じなので、
-島ごとの日数を平均するには率ではなくその逆数を平均する——`work_per_day` の平均で割ると、日数は
-短く出る。
+**この節から日数を出さない。** 日数は `cycle` が持つ。
+
+### 1周回（`cycle`）
+
+`work_piles_total.outdoor_minutes` を定常の局面で消化し、そこへ探索の局面
+（`exploration_phase.day_trip_days`）を足したもの。**両方の局面が成立する島だけ**を数えるので、`n` が
+その島数。
+
+**島ごとに日数を出してから平均する。** 1周回の山の量はどの島でも同じなので、`steady_phase` の
+`work_per_day` の平均で割ると**日数は短く出る**（平均の逆数と逆数の平均は違う）。

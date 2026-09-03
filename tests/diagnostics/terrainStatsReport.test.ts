@@ -1,11 +1,23 @@
 import { join } from 'node:path';
 import { activityHoursOf } from '../../src/analysis/activityHours';
-import type { BaseDailyPhases, LocationTypeDay } from '../../src/analysis/dailyPhases';
+import { buildBalanceTables } from '../../src/analysis/balanceTables';
+import type {
+  BaseDailyPhases,
+  DailyBudget,
+  LocationTypeDay,
+  WorkPileAmount,
+  WorkTotal,
+} from '../../src/analysis/dailyPhases';
 import {
+  cycleDaysOf,
+  dailyBudgetOf,
   dailyPhasesOf,
   locationTypeDaysOf,
+  NIGHT_CRAFT_MINUTES_PER_DAY,
   OUTDOOR_WINDOW_MINUTES,
-  SURVIVAL_GATHERING_MINUTES,
+  SLEEP_MINUTES_PER_DAY,
+  workPileAmountsOf,
+  workTotalOf,
   WORK_SHARES,
 } from '../../src/analysis/dailyPhases';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
@@ -24,7 +36,7 @@ import {
   statRecordWith,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
 
 /**
  * パスネットワーク（TerrainGeneration.md 3.5節）の現在の実装について、土地1つあたりの道の本数
@@ -82,6 +94,9 @@ interface TerrainStats {
   /** 島1つあたり: 最も条件の良い拠点から見た、局面ごとの1日。 */
   readonly exploration: ExplorationPhaseStats;
   readonly steady: SteadyPhaseStats;
+
+  /** 島1つあたり: 局面を積んだ1周回の日数。 */
+  readonly cycle: CyclePhaseStats;
 }
 
 /** 探索の局面（島を開き切るまで）の分布。 */
@@ -92,6 +107,9 @@ interface ExplorationPhaseStats {
   readonly dayTripDays: Stat;
   readonly dayTripTravelMinutesPerDay: Stat;
   readonly dayTripExplorationMinutesPerDay: Stat;
+  /** 探索へ使える1日の枠と、そのうち探索が進まずに余る分。 */
+  readonly dayTripWindowMinutesPerDay: Stat;
+  readonly dayTripSpareMinutesPerDay: Stat;
   /** 土地ごとに安いほうを採ったときの日数と、そのうち泊まりを選んだ土地の数。 */
   readonly mixedDays: Stat;
   readonly stayOverSiteCount: Stat;
@@ -106,13 +124,18 @@ interface ExplorationPhaseStats {
 interface SteadyPhaseStats {
   readonly travelMinutesPerDay: Stat;
   readonly workMinutesPerDay: Stat;
-  /**
-   * 屋外の山1,000分あたりに要る日数。**日数を出すのはこちら**——1周回の山の量はどの島でも同じなので、
-   * 島ごとの日数を平均するには、率ではなくその逆数を平均する。
-   */
-  readonly daysPerThousandWorkMinutes: Stat;
   /** 山の配分の呼び名 → その組の行き先。**その組の土地がある島だけ**を数えるので、nが出現数になる。 */
   readonly byShare: ReadonlyMap<string, ShareStats>;
+}
+
+/**
+ * 1周回の日数の分布。**島ごとに積んでから平均する**——山の量はどの島でも同じなので、島をまたいで
+ * 平均した実入りで割ると日数は短く出る（TerrainStats.md「定常の局面」）。**両方の局面が成立する
+ * 島だけ**を数えるので、nがその島数になる。
+ */
+interface CyclePhaseStats {
+  readonly steadyDays: Stat;
+  readonly totalDays: Stat;
 }
 
 /** 山の配分1つの分布。`dayShare`は、その組へ費やす日数が定常の局面に占める割合。 */
@@ -122,7 +145,7 @@ interface ShareStats {
   readonly dayShare: Stat;
 }
 
-function addDailyPhases(stats: TerrainStats, base: BaseDailyPhases): void {
+function addDailyPhases(stats: TerrainStats, base: BaseDailyPhases, outdoorWorkMinutes: number): void {
   const exploration = stats.exploration;
   exploration.explorationMinutes.add(base.exploration.explorationMinutes);
   exploration.mixedDays.add(base.exploration.mixedDays);
@@ -132,12 +155,19 @@ function addDailyPhases(stats: TerrainStats, base: BaseDailyPhases): void {
     exploration.dayTripDays.add(base.exploration.dayTripDays);
     exploration.dayTripTravelMinutesPerDay.add(base.exploration.dayTripTravelMinutesPerDay!);
     exploration.dayTripExplorationMinutesPerDay.add(base.exploration.dayTripExplorationMinutesPerDay!);
+    exploration.dayTripWindowMinutesPerDay.add(base.exploration.dayTripWindowMinutesPerDay!);
+    exploration.dayTripSpareMinutesPerDay.add(base.exploration.dayTripSpareMinutesPerDay!);
+  }
+
+  const cycle = cycleDaysOf(base, outdoorWorkMinutes);
+  if (cycle !== undefined) {
+    stats.cycle.steadyDays.add(cycle.steadyDays);
+    stats.cycle.totalDays.add(cycle.totalDays);
   }
 
   if (base.steady === undefined) return;
   stats.steady.travelMinutesPerDay.add(base.steady.travelMinutesPerDay);
   stats.steady.workMinutesPerDay.add(base.steady.workMinutesPerDay);
-  stats.steady.daysPerThousandWorkMinutes.add(1000 / base.steady.workMinutesPerDay);
   for (const share of base.steady.shares) {
     const stat = stats.steady.byShare.get(share.label)!;
     stat.roundTripMinutes.add(share.roundTripMinutes);
@@ -167,6 +197,8 @@ function createStats(typeNames: readonly string[]): TerrainStats {
       dayTripDays: new Stat(),
       dayTripTravelMinutesPerDay: new Stat(),
       dayTripExplorationMinutesPerDay: new Stat(),
+      dayTripWindowMinutesPerDay: new Stat(),
+      dayTripSpareMinutesPerDay: new Stat(),
       mixedDays: new Stat(),
       stayOverSiteCount: new Stat(),
       dayTripImpossibleSiteCount: new Stat(),
@@ -174,7 +206,6 @@ function createStats(typeNames: readonly string[]): TerrainStats {
     steady: {
       travelMinutesPerDay: new Stat(),
       workMinutesPerDay: new Stat(),
-      daysPerThousandWorkMinutes: new Stat(),
       byShare: new Map(
         WORK_SHARES.map((share) => [
           share.label,
@@ -182,6 +213,7 @@ function createStats(typeNames: readonly string[]): TerrainStats {
         ]),
       ),
     },
+    cycle: { steadyDays: new Stat(), totalDays: new Stat() },
   };
 }
 
@@ -191,6 +223,8 @@ function collect(
   scope: GenerationScopeDef,
   elevationSpan: number,
   locationDays: ReadonlyMap<number, LocationTypeDay>,
+  budget: DailyBudget,
+  outdoorWorkMinutes: number,
 ): void {
   const metersPerElevationUnit = scope.metersPerElevationUnit(elevationSpan);
   const elevationOf = (site: number): number => map.sites[site].axisValues.get(scope.elevationAxis)!;
@@ -224,10 +258,10 @@ function collect(
   stats.typesPerIsland.add(counts.size);
   for (const [name, stat] of stats.countByType) stat.add(counts.get(name) ?? 0);
 
-  const phases = dailyPhasesOf(map, locationDays);
+  const phases = dailyPhasesOf(map, locationDays, budget);
   stats.chosenBaseOneWayMinutes.add(phases.bestBase.oneWayMinutes);
   for (const base of phases.bases) stats.anyBaseOneWayMinutes.add(base.oneWayMinutes);
-  addDailyPhases(stats, phases.bestBase);
+  addDailyPhases(stats, phases.bestBase, outdoorWorkMinutes);
 }
 
 /** 測った項目1つぶんの、名前と単位と分布。 */
@@ -250,7 +284,27 @@ function degreeHistogramRecords(degree: Stat): YamlRecord[] {
   return records;
 }
 
-function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
+/** 山の一覧を、系統ごとにまとめたレコード。並びは`WORK_PILES`に現れる順。 */
+function workPilesBySystemRecords(amounts: readonly WorkPileAmount[], budget: DailyBudget): YamlRecord[] {
+  const systems = [...new Set(amounts.map((amount) => amount.pile.system))];
+  return systems.map((system) => {
+    const inSystem = amounts.filter((amount) => amount.pile.system === system);
+    const minutes = inSystem.reduce((sum, amount) => sum + amount.minutes, 0);
+    return {
+      system,
+      piles: inSystem.length,
+      days: rounded(minutes / budget.surplusMinutes, 2),
+      minutes: rounded(minutes, 1),
+    };
+  });
+}
+
+function buildSections(
+  stats: TerrainStats,
+  budget: DailyBudget,
+  amounts: readonly WorkPileAmount[],
+  work: WorkTotal,
+): readonly YamlReportSection[] {
   return [
     { key: 'meta', records: [{ seeds: SEED_COUNT }] },
     {
@@ -301,7 +355,35 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
         {
           unit: 'minutes',
           outdoor_window: OUTDOOR_WINDOW_MINUTES,
-          survival_gathering: SURVIVAL_GATHERING_MINUTES,
+          night_craft: NIGHT_CRAFT_MINUTES_PER_DAY,
+          sleep: SLEEP_MINUTES_PER_DAY,
+          survival_gathering: budget.survivalGatheringMinutes,
+          surplus: budget.surplusMinutes,
+        },
+      ],
+    },
+    {
+      key: 'work_piles',
+      records: amounts.map(({ pile, minutes, days }) => ({
+        system: pile.system,
+        pile: pile.label,
+        // 量をその値段から採った型。置いた日数の山ではnull（型の名前と取り違えようが無い）。
+        object: typeof pile.amount === 'number' ? null : pile.amount,
+        days: rounded(days, 2),
+        minutes: rounded(minutes, 1),
+      })),
+    },
+    { key: 'work_piles_by_system', records: workPilesBySystemRecords(amounts, budget) },
+    {
+      key: 'work_piles_total',
+      records: [
+        {
+          piles: work.pileCount,
+          days: rounded(work.days, 2),
+          minutes: rounded(work.minutes, 1),
+          outdoor_minutes: rounded(work.outdoorMinutes, 1),
+          base_minutes: rounded(work.baseMinutes, 1),
+          base_days: rounded(work.baseDays, 2),
         },
       ],
     },
@@ -313,6 +395,8 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
           ['day_trip_days', 'days', stats.exploration.dayTripDays],
           ['day_trip_travel_per_day', 'minutes', stats.exploration.dayTripTravelMinutesPerDay],
           ['day_trip_exploration_per_day', 'minutes', stats.exploration.dayTripExplorationMinutesPerDay],
+          ['day_trip_window_per_day', 'minutes', stats.exploration.dayTripWindowMinutesPerDay],
+          ['day_trip_spare_per_day', 'minutes', stats.exploration.dayTripSpareMinutesPerDay],
           ['mixed_days', 'days', stats.exploration.mixedDays],
           ['stay_over_sites', 'sites', stats.exploration.stayOverSiteCount],
           ['day_trip_impossible_sites', 'sites', stats.exploration.dayTripImpossibleSiteCount],
@@ -338,7 +422,6 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
         [
           ['travel_per_day', 'minutes', stats.steady.travelMinutesPerDay],
           ['work_per_day', 'minutes', stats.steady.workMinutesPerDay],
-          ['days_per_1000_work_minutes', 'days', stats.steady.daysPerThousandWorkMinutes],
         ],
         { base: SHORTEST_MEAN_BASE },
       ),
@@ -370,6 +453,16 @@ function buildSections(stats: TerrainStats): readonly YamlReportSection[] {
         };
       }),
     },
+    {
+      key: 'cycle',
+      records: metricRecords(
+        [
+          ['steady_days', 'days', stats.cycle.steadyDays],
+          ['total_days', 'days', stats.cycle.totalDays],
+        ],
+        { base: SHORTEST_MEAN_BASE },
+      ),
+    },
   ];
 }
 
@@ -379,6 +472,12 @@ const DOC_PATH = join('docs', 'diagnostics', 'TerrainStats.md');
 /** 定義から島を生成して測り、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
 function buildReportFromDefinitions(): string {
   const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+
+  // 1日の枠も山の量も収支表から出る（ContentSkeleton.md 8.3節）ので、先に1度だけ解く。
+  const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
+  const budget = dailyBudgetOf(balance);
+  const amounts = workPileAmountsOf(balance, budget);
+  const work = workTotalOf(amounts, budget);
 
   const scope = codex.generation!.scopes.get('island')!;
   const elevationRange = codex.generation!.axes.get(scope.elevationAxis)!.range;
@@ -398,7 +497,8 @@ function buildReportFromDefinitions(): string {
 
   const stats = createStats(codex.generation!.locationTypes.map((type) => type.name));
   for (let seed = 0; seed < SEED_COUNT; seed++) {
-    collect(stats, generateIsland(codex.generation, 'island', seed), scope, elevationSpan, locationDays);
+    const map = generateIsland(codex.generation, 'island', seed);
+    collect(stats, map, scope, elevationSpan, locationDays, budget, work.outdoorMinutes);
   }
 
   return formatYamlReport(
@@ -407,7 +507,7 @@ function buildReportFromDefinitions(): string {
       '生成物。手で書き換えず、npm run stats:terrain で作り直す。',
       '何を測ったか・引いた線・数えていないものは docs/diagnostics/TerrainStats.md。',
     ],
-    buildSections(stats),
+    buildSections(stats, budget, amounts, work),
   );
 }
 
