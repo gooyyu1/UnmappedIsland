@@ -17,7 +17,7 @@ import type { YamlNode } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { withYamlContext, parseNumberOrSymbol } from './parseCommon';
 import { parseActiveEffectBody } from './parseActiveEffects';
-import { parseConditionsField, parseSubjectRoot } from './parseConditions';
+import { parseConditionList, parseSubjectRoot } from './parseConditions';
 import { parsePassiveInto } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { ALERT_LEVELS } from '../domain/AlertLevel';
@@ -278,7 +278,7 @@ function parseOptionalRangeEvent(
 
   const eventContext = `${context}.${label}`;
   return {
-    condition: parseConditionsField(
+    condition: parseConditionList(
       loader,
       `${eventContext}.conditions`,
       tryGetSeq(eventNode, 'conditions', eventContext),

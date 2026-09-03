@@ -74,50 +74,50 @@ export function requireResolvable(
   return root;
 }
 
-/** conditionsの要素にだけ書ける、満たさなかったときの理由の識別子（Requirement参照）。 */
+/** 要件の並びの要素にだけ書ける、満たさなかったときの理由の識別子（14.6節、Requirement参照）。 */
 const REASON_KEY = 'reason';
 
 /**
  * 条件の並び（14節）。常にYAML配列（暗黙のall）。要素は葉か、入れ子のall/any/notのいずれか。
- * conditionsNodeがundefinedなら省略（常に真）。
+ * listNodeがundefinedなら省略（常に真）。
  *
  * **contextはその配列自身を指す**（要素には添字だけを足す）。並びが書かれるキーは`conditions`とは
  * 限らない——`resists`（7.13節）も同じ形を共有するので、キー名は呼び出し側が答える。
  */
-export function parseConditionsField(
+export function parseConditionList(
   loader: WorldCodexYamlLoader,
   context: string,
-  conditionsNode: YAMLSeq | undefined,
+  listNode: YAMLSeq | undefined,
   scope: ReferenceScope,
 ): ConditionNode | undefined {
-  if (conditionsNode === undefined) return undefined;
+  if (listNode === undefined) return undefined;
 
   const children: ConditionNode[] = [];
-  for (const node of conditionsNode.items as YamlNode[])
+  for (const node of listNode.items as YamlNode[])
     children.push(parseConditionNode(loader, `${context}[${children.length}]`, node, scope));
 
   return ConditionNode.all(children);
 }
 
 /**
- * 要素ごとに`reason`（満たさなかったときにプレイヤーへ出す理由の識別子）を持てるconditions。
- * その点だけがparseConditionsFieldと違う。入れ子のall/any/notの中には書けない
- * （落ちた要件は配列の要素の単位で指すため、Requirement参照）。
+ * 要件の並び。要素ごとに`reason`（満たさなかったときにプレイヤーへ出す理由の識別子）を持てる点だけが
+ * parseConditionListと違う。入れ子のall/any/notの中には書けない（落ちた要件は配列の要素の単位で
+ * 指すため、Requirement参照）。
  *
- * `fieldName`は、この並びが載っているキーの名前（エラーメッセージ用）。`conditions`以外の名前で
- * 同じ形を書ける場所（ルートキーの`crafting_conditions`、13.4節）のためだけに在る。
+ * `fieldName`は、この並びが載っているキーの名前（エラーメッセージ用）。`conditions`とは限らない
+ * ——ルートキーの`crafting_conditions`（13.4節）も同じ形を共有するので、呼び出し側が答える。
  */
-export function parseRequirementsField(
+export function parseRequirementList(
   loader: WorldCodexYamlLoader,
   context: string,
-  conditionsNode: YAMLSeq | undefined,
+  listNode: YAMLSeq | undefined,
   scope: ReferenceScope,
-  fieldName: string = 'conditions',
+  fieldName: string,
 ): Requirements | undefined {
-  if (conditionsNode === undefined) return undefined;
+  if (listNode === undefined) return undefined;
 
   const entries: Requirement[] = [];
-  for (const node of conditionsNode.items as YamlNode[]) {
+  for (const node of listNode.items as YamlNode[]) {
     const entryContext = `${context}.${fieldName}[${entries.length}]`;
     const reasonName = tryGetScalar(asMap(node, entryContext), REASON_KEY, entryContext);
     entries.push(
@@ -129,7 +129,7 @@ export function parseRequirementsField(
 }
 
 /** 条件木の1ノードを読む。all/any/notのいずれかのキーを持てば複合ノード、それ以外は葉として読む。
- * extraKeyは、そのノードでだけ条件式の一部ではないキー（conditionsの要素のreason）。 */
+ * extraKeyは、そのノードでだけ条件式の一部ではないキー（要件の並びの要素のreason）。 */
 function parseConditionNode(
   loader: WorldCodexYamlLoader,
   context: string,

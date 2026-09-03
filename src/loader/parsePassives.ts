@@ -9,7 +9,7 @@ import {
   tryGetSeq,
 } from './yamlMapping';
 import { parseNumberLiteral } from './parseCommon';
-import { parseConditionsField, parseSubjectRoot } from './parseConditions';
+import { parseConditionList, parseSubjectRoot } from './parseConditions';
 import { parsePassiveTransfers } from './parseActiveEffects';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { PropertyPath, ReferenceScope } from '../domain/ReferenceRoot';
@@ -42,7 +42,7 @@ export function parsePassiveInto(
   const context = `'${objectDefName}'.passives`;
 
   const conditionsNode = tryGetSeq(passiveMap, 'conditions', context);
-  const conditions = parseConditionsField(
+  const conditions = parseConditionList(
     loader,
     `${context}.conditions`,
     conditionsNode,
