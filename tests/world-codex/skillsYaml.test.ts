@@ -235,8 +235,8 @@ describe('腕前とレシピの解放条件', () => {
   });
 
   it('解放条件は、腕が上がった後も満たされ続ける（上の段で閉じ直さない）', () => {
-    // `in_stage`は今いる段ちょうどの判定なので、要求を1つの段だけで書くと、腕が伸びた瞬間に
-    // レシピが消える。段の名前をanyで束ねる形（characters/player_character.yaml）がそれを防ぐ。
+    // `in_stage`は今いる段ちょうどの判定なので、そちらで要求を書くと、腕が伸びた瞬間にレシピが
+    // 消える。`in_stage_or_above`で書く形（characters/player_character.yaml）がそれを防ぐ。
     const recipes = gatedRecipes();
     expect(recipes.length, '解放条件を持つレシピが1つも無い').toBeGreaterThan(0);
 

@@ -28,7 +28,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 90
         # **繊維・編みの腕はここから立ち上がる**（docs/engine/SkillSystem.md 3節の実行経路、量の
         # 置き方は characters/player_character.yaml）。**繊維を伸ばす口のうち、道具を1つも要求しない
@@ -45,7 +45,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 60
         add: {agent: {skill_cordage: 2}}
         destroy: self
