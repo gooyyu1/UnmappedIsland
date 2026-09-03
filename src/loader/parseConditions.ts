@@ -181,7 +181,7 @@ const PROPERTY_OPS: readonly ConditionOp[] = ['lt', 'lte', 'gt', 'gte', 'eq', 'n
 /** 段の判定（6.4節）の演算子キー。値は段の名前。 */
 const IN_STAGE_KEY = 'in_stage';
 
-/** 型の判定（14.3節・14.4節）の演算子キー。値は`{tag}`か`{object}`（TypeMatchRule）。 */
+/** 型の判定（14.3節・14.4節）の演算子キー。値は型の指定（TypeMatchRule）。 */
 const MATCHES_KEY = 'matches';
 
 /**
