@@ -234,7 +234,7 @@ export class WorldCodexYamlLoader {
         this,
         label,
         craftingConditions,
-        ReferenceScope.recipeUnlock,
+        ReferenceScope.acting.withoutSelf,
         'crafting_conditions',
       );
 

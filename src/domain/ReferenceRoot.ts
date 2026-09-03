@@ -213,10 +213,19 @@ export class ReferenceScope {
   static readonly acting = new ReferenceScope(true, true, false, false, true, false);
 
   /**
-   * 操作者だけが居る場所（レシピの条件）。宣言元が居ない理由は書ける場所ごとに違うので、
-   * 13.3・13.4節が各々で述べる。
+   * 宣言元の個体が居ない場所（レシピの解放条件13.3節・`crafting_conditions` 13.4節）。
+   * 居ない理由は場所ごとに違うので、13.3・13.4節が各々で述べる。
    */
-  static readonly recipeUnlock = new ReferenceScope(false, true, false, false, true, false);
+  get withoutSelf(): ReferenceScope {
+    return new ReferenceScope(
+      false,
+      this.hasAgent,
+      this.hasInstrument,
+      this.hasPicked,
+      this.namesProperty,
+      this.broadcasts,
+    );
+  }
 
   /**
    * プロパティ名を伴わず、オブジェクトそのものを指す場所。プロパティ名で祖先を探すancestorが、
