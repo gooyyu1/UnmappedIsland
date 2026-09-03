@@ -342,6 +342,16 @@ export interface ObjectCost {
 export interface BalanceTables {
   readonly characterNames: readonly string[];
 
+  /**
+   * 1日を賄う最小労働（分）と、それを払って残る自由時間（分）。**分の整数へ丸めて持つ**
+   * ——BalanceStats.mdが載せるのと同じ桁で、端数を残すと、これを分母にした日数（`ObjectCost.days`・
+   * 山の量。ContentSkeleton.md 4節）が桁の下で揺れる。
+   *
+   * **日数の分母はこの1つだけ。** 同じ量を読み手ごとに引き算し直すと、生成物ごとに換算が変わる。
+   */
+  readonly minimumLabourMinutes: number;
+  readonly surplusMinutes: number;
+
   /** 全オブジェクトの総コスト（宣言順）。 */
   readonly objectCosts: readonly ObjectCost[];
 
@@ -370,16 +380,17 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
   const islandLocations = islandLocationsOf(codex);
   const { places, gaps, islandWide } = placeBalances(codex, character, dailyNeeds, islandLocations);
 
+  // 島全体の献立が最小労働（places[0]は島全体）。
+  const minimumLabourMinutes = Math.round(places[0].menu.totalMinutes);
+  const surplusMinutes = MINUTES_PER_DAY - minimumLabourMinutes;
+
   return {
     characterNames,
+    minimumLabourMinutes,
+    surplusMinutes,
     dailyNeeds,
     gaps,
-    objectCosts: objectCosts(
-      codex,
-      islandWide,
-      MINUTES_PER_DAY - places[0].menu.totalMinutes,
-      islandLocations.seaOnly,
-    ),
+    objectCosts: objectCosts(codex, islandWide, surplusMinutes, islandLocations.seaOnly),
     consumption: consumptionRows(codex, characterNames),
     // 供給表は島全体の文脈で出す。罠の重みは土地が入れるので、土地を決めないと候補が全部0になる。
     supply: supplyRows(

@@ -255,7 +255,7 @@ YAMLとずれます）。
   そのまま書き出したものです（識別子は定義のまま）。**その行の数字は、条件が成立し続けた場合の
   レート**——罠の判定は `items枠にある かつ catch枠にquarryが無い`、囲いの判定は
   `catch枠にquarryが無い`、ヤケイの繁殖は `catch枠にある かつ 親のfodder ≥ 1` で、
-  囲い（`build_minutes` 2617分）と飼葉が要ることが行から読めます。否定は葉まで押し下げて
+  囲い（`build_minutes`）と飼葉が要ることが行から読めます。否定は葉まで押し下げて
   書きます（`not: {slot: catch, matches: {tag: quarry}}` は「catch枠にquarryが無い」）。
 - **`per_day`（個/日）**: 1日は24時間まるごと回る。眠っている間も進むのが待ち生産の取り柄。
 - **`lifetime_property` / `lifetime_days`**: 設備を終わらせるプロパティと、それが尽きるまでの日数。
