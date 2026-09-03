@@ -666,8 +666,8 @@ props:
 
 ## 8. 未決事項・今後の検討課題
 
-- **檻に掛かる大型の重み。** 森と密林が `wild_boar_catch: 2` を宣言し、檻には森で 0.24 頭/日<!-- stats: balance.yaml devices place=forest device=pen product=wild_boar per_day -->・
-  密林で 0.13 頭/日<!-- stats: balance.yaml devices place=jungle device=pen product=wild_boar per_day --> のイノシシが掛かります。**探索の `wild_boar_find`（両方 3）より低く置いた**のは、
+- **檻に掛かる大型の重み。** 森と密林が `wild_boar_catch: 2` を宣言します（掛かる頻度は
+  [`stats/balance.yaml`](../../stats/balance.yaml) の `devices`）。**探索の `wild_boar_find`（両方 3）より低く置いた**のは、
   姿を見かけるのと自分から檻へ入るのが別の頻度だからですが（3 節）、この差が 3 対 2 で足りるかは
   実際に回してみるまで分かりません
 - **檻に肉の卓を持たせるか。** 今の檻は草の餌だけを受けます（4.1 節の 2 つの卓のうち片方）。掛かる
