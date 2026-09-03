@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 /**
  * `scripts/agent/watch-prs.sh` が出す行の検査。
@@ -16,6 +16,11 @@ import { describe, expect, it } from 'vitest';
  * **セッション一覧も差し替える**——差し替えないと、走らせた人のそのときのセッションが `STALLED`
  * として混ざり、検査の結果が手元の状況で変わる。
  */
+
+// 全件が実プロセス（bash + gh のスタブ）を起こすため、既定の5秒だと `npm test` 全体を並行実行した
+// ときのCPU競合だけで時間切れになりうる（単体では1〜3.5秒）。この重さは検査の価値と引き換えなので
+// スキップはせず、余裕を広げるだけにする。
+vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/watch-prs.sh');
 
