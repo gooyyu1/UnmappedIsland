@@ -77,7 +77,8 @@ export interface RangeCycle {
  * 段で切り替わる増減（8.2節）は数えない——段ごとに周期が変わるものは、1つの周期で言い表せない。
  *
  * externalは、隣の物が与えるtick毎の増減（ExternalTickDelta参照）。同じプロパティを動かすものが
- * 複数あれば、**与え手ごとに別の周期**を返す——炉で焼くのと傷で失血するのは、要る物も速さも違う。
+ * 複数あれば、**押し手ごとに別の周期**を返す——炉で焼くのと傷で失血するのは、要る物も速さも違うし、
+ * 同じ傷でも止まる出血と止まらない敗血症は別の仕掛けになる。
  */
 export function rangeCyclesOf(
   def: ObjectDef,
@@ -188,16 +189,24 @@ function sortedTicksToRangeEnd(
  *
  * **誰の隣に立てるかは答えない**（枠の受け入れを見る側の仕事）。答えるのは、隣に立てたとして
  * どれだけ速く、いつまで動かせるか。
+ *
+ * 1つの型が同じプロパティへ**複数の押し手**を並べることがある——裂傷は止まる出血と止まらない
+ * 敗血症の2つで血を奪う。束ねる単位は限度で、速さだけが幅になる。
  */
 export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): readonly ExternalTickDelta[] {
-  const byProperty = new Map<number, ExternalTickDelta>();
+  // **束ねてよいのは限度の同じものどうしだけ。** 限度の違うものを束ねると、どの仕掛けも持って
+  // いない（速さ, 限度）の対ができる——止まる出血（-15/tickで合計60mL）と止まらない敗血症
+  // （-40/tick）を1つにすると、「-15/tickで永久に流れ続ける傷」になる。炉の火力（heatの段で
+  // 1/3/5）は3つとも止まらないので、今までどおり1つの幅に収まる。
+  const byPropertyAndLimit = new Map<string, ExternalTickDelta>();
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== root || delta.amount === 0) continue;
 
     const ticks = ticksWhileGateHolds(def, delta.gate);
-    const limit = ticks === undefined ? undefined : ticks * Math.abs(delta.amount);
-    const known = byProperty.get(delta.propertyGlobalId);
-    byProperty.set(delta.propertyGlobalId, {
+    const maxTotal = ticks === undefined ? undefined : ticks * Math.abs(delta.amount);
+    const key = `${delta.propertyGlobalId}:${maxTotal}`;
+    const known = byPropertyAndLimit.get(key);
+    byPropertyAndLimit.set(key, {
       sourceGlobalId: def.globalId,
       propertyGlobalId: delta.propertyGlobalId,
       // 段で切り替わる増減（炉の火力）は同時には効かないので、束ねずに幅として持つ。
@@ -209,15 +218,10 @@ export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): 
         known === undefined || Math.abs(delta.amount) > Math.abs(known.fastest)
           ? delta.amount
           : known.fastest,
-      maxTotal:
-        known === undefined
-          ? limit
-          : known.maxTotal === undefined || limit === undefined
-            ? undefined
-            : Math.max(known.maxTotal, limit),
+      maxTotal,
     });
   }
-  return [...byProperty.values()];
+  return [...byPropertyAndLimit.values()];
 }
 
 /**
