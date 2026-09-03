@@ -131,7 +131,7 @@ object_defs:
   # 青い実のゼリー状の果肉。ほとんどが水分で、熟した果肉ほどのカロリーは無い。
   coconut_jelly:
     tags: [item, food]
-    traits: [perishable, spoils_normal]
+    traits: [perishable, spoils_normal, dryable]
     props:
       weight: {value: 150}
       volume: {value: 250}
@@ -269,7 +269,7 @@ object_defs:
   # （熟した果肉の水分は半分ほどで、まとまった水が飲めるのは青い実だけ）。
   coconut_meat:
     tags: [item, food]
-    traits: [perishable, spoils_normal]
+    traits: [perishable, spoils_normal, dryable]
     props:
       weight: {value: 200}
       volume: {value: 400}

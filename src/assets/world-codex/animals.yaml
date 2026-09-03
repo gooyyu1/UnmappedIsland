@@ -487,7 +487,7 @@ object_defs:
   # （HuntingSystem.md 1.5節）。他の獣の死体も同じ（rat_carcassまで）。
   monkey_carcass:
     tags: [item, quarry]
-    traits: [perishable, spoils_fast]
+    traits: [perishable, spoils_fast, dryable]
     props:
       weight: {value: 5000}
       volume: {value: 12000}
@@ -786,7 +786,7 @@ object_defs:
   # 一度に持ち帰れない。肉だけの20kgなら4人とも運べるが、全員heavyの段に入る。
   wild_boar_carcass:
     tags: [item, quarry]
-    traits: [perishable, spoils_fast]
+    traits: [perishable, spoils_fast, dryable]
     props:
       weight: {value: 60000}
       volume: {value: 144000}
@@ -817,7 +817,7 @@ object_defs:
   # なるまでは、獲物の種類で肉を分けない——分けると、それを使う側（料理）が獲物の数だけ分岐する。
   junglefowl_carcass:
     tags: [item, quarry]
-    traits: [perishable, spoils_fast]
+    traits: [perishable, spoils_fast, dryable]
     props:
       weight: {value: 1000}
       volume: {value: 2400}
@@ -847,7 +847,7 @@ object_defs:
   # 刻みを増やさない）。
   rat_carcass:
     tags: [item, quarry, roastable]
-    traits: [perishable, spoils_fast]
+    traits: [perishable, spoils_fast, dryable]
     props:
       weight: {value: 80}
       volume: {value: 200}
@@ -948,7 +948,7 @@ object_defs:
   # 加熱の進み（cooking_progress）を持つだけで、進めるのは炉の側。
   raw_meat:
     tags: [item, food, meat_bait, roastable]
-    traits: [perishable, spoils_fast]
+    traits: [perishable, spoils_fast, dryable]
     props:
       weight: {value: 500}
       # 罠へ仕掛けると肉食の卓が引かれやすくなる（docs/engine/TrapSystem.md 4節）。

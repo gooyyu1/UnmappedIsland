@@ -21,9 +21,9 @@
 #
 # 食べ物は他のファイル（coconut.yaml・fiber.yaml・animals.yaml）にも居るので、そこからも参照する。
 #
-# 塩蔵（保存の段4、salt.yaml）は`cure`軸として食べ物の側が名乗る。軸を宣言した型にだけ塩を重ねられ、
-# 重ねると同じ個体が塩漬けの版になる（3.5.1節）。**軸を持つのは生のままの物だけ**——焼くのは食べる
-# ための工程なので、焼いた物を保たせる形（塩漬けの焼き芋）は作らない。
+# 保存（塩蔵はsalt.yaml、天日干しはdrying.yaml）は`cure`軸として食べ物の側が名乗る。軸を宣言した型に
+# だけ加工を重ねられ、重ねると同じ個体が保存された版になる（3.5.1節）。**軸を持つのは生のままの物
+# だけ**——焼くのは食べるための工程なので、焼いた物を保たせる形（塩漬けの焼き芋）は作らない。
 #
 # 傷んだ物を食べたときの吐き下しは、各eatの末尾のpickが引く（docs/engine/DigestionSystem.md 6節）。
 # 重みは「無事100 : 吐く spoilage : 下す spoilage」の3つで、**pickはaddより後ろに置く**——腹に
@@ -70,8 +70,22 @@ traits:
           self:
             durability: -1
 
-  # 生のままの速さ。3つとも**塩蔵されていない間だけ**効く（curedタグ、salt.yaml）——塩蔵した物が
-  # どれだけ保つかは加工の側が1箇所で名乗るので、ここで打ち消す量を書くことにはならない。
+  # 保存された物の速さ。**腐敗の速さは既にある3段（docs/engine/DurabilitySystem.md 3節）のうち
+  # 最も遅い段（芋と同じ-0.5＝通常温度で20日）で、新しいレートは持ち込まない。** 生の速さのほうは
+  # 保存されている間だけ効かない（下のspoils_*）ので、ここが名乗る1つだけが残る。
+  #
+  # 屋外の上乗せ（分類によらず-1）は上のperishableが持ったままなので、保存しても外へ置けば6.7日に
+  # 落ちる。**塩も日差しも温度と湿りの代わりにはならない。**
+  #
+  # **保存の仕方が増えても行き先はここ1つ。** cure軸の値がこのtraitを配るので、加工の側
+  # （salt.yamlのsalted・drying.yamlのdried）が名乗るのは名前だけになる。
+  cured:
+    tags: [cured]
+    passives:
+      - add: {self: {durability: -0.5}}
+
+  # 生のままの速さ。3つとも**保存されていない間だけ**効く（上のcured）——保存した物がどれだけ保つかは
+  # 1箇所で名乗るので、ここで打ち消す量を書くことにはならない。
   #
   # 調理済み料理・生魚など。通常温度で2.5日（屋外なら2日）。
   spoils_fast:
@@ -101,7 +115,7 @@ object_defs:
   # なく育った水のほう（寄生虫）なので、物としては生食に向く。ヤシガニとタロイモは違う（各項参照）。
   water_spinach:
     tags: [item, food, plant_bait]
-    traits: [perishable, spoils_normal]
+    traits: [perishable, spoils_normal, dryable]
     props:
       weight: {value: 150}
       # 罠へ仕掛けると草食の卓が引かれやすくなる（docs/engine/TrapSystem.md 4節）。
@@ -145,7 +159,7 @@ object_defs:
   coconut_crab:
     tags: [item, meat_bait, roastable]
     # 生の甲殻類。食べられなくても傷むのは同じなので、foodタグの有無とは関わりなく腐る。
-    traits: [perishable, spoils_fast]
+    traits: [perishable, spoils_fast, dryable]
     props:
       weight: {value: 2000}
       meat_bait: {value: 12}

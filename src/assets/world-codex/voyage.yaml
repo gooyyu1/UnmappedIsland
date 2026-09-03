@@ -600,7 +600,7 @@ object_defs:
   seaweed:
     tags: [item, food]
     # 水を抱えたまま剥き出しの葉体なので、葉物野菜より速く傷む（foods.yaml・DurabilitySystem.md 3節）。
-    traits: [perishable, spoils_fast]
+    traits: [perishable, spoils_fast, dryable]
     props:
       weight: {value: 200}
       # 濡れた葉体は詰めても縮まないので、嵩そのままで見る（plant_fiberと同じ扱い）。
