@@ -174,7 +174,7 @@ export class WorldCodex {
    * 参照できるのはagentだけ（13.4節）。
    */
   unmetCraftingRequirement(agent: WorldObject | undefined): Requirement | undefined {
-    return this.craftingConditions?.firstUnmet(ReferenceContext.acting(undefined, agent, undefined));
+    return this.craftingConditions?.firstUnmet(ReferenceContext.asking(agent));
   }
 
   /**

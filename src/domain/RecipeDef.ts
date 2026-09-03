@@ -118,6 +118,6 @@ export class RecipeDef {
   unmetUnlockRequirement(agent: WorldObject | undefined): Requirement | undefined {
     // まだ成果物のインスタンスが無いので、selfを持たない文脈で評価する（13.3節）——selfを起点に辿る
     // 参照はそのまま解決先を持たない。
-    return this.unlock?.firstUnmet(ReferenceContext.acting(undefined, agent, undefined));
+    return this.unlock?.firstUnmet(ReferenceContext.asking(agent));
   }
 }

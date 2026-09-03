@@ -55,10 +55,12 @@ export class PassiveEffectGate {
     )
       return false;
 
+    // ゲートのselfは辺の子側（slotBearer）だが、**役は宣言元から解く**——役を指せるのは参加者からだけで、
+    // ここでの参加者はこのpropsを宣言した個体（declarer）だから（11.5節）。child対象では両者が
+    // 食い違うので、まとめて片方から引くと「宣言元は操作に参加しているのに解決しない」が起きる。
     if (
       this.conditions !== undefined &&
-      // ゲートは、操作の関係（11.5節）の役が解決先を持たない文脈で評価する（ReferenceScope.declaration）。
-      !this.conditions.evaluate(ReferenceContext.forSelf(slotBearer))
+      !this.conditions.evaluate(ReferenceContext.forParticipant(declarer).withSelf(slotBearer))
     )
       return false;
 
@@ -180,11 +182,18 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
    * （WorldObject.setAncestorTargetsRegistered）が守る前提で、「今この瞬間の祖先」を毎回辿るだけで
    * よく、前回の登録先を憶えない。
    *
+   * 操作の役（11.5節）も、ownerが今参加している関係から辿れるので同じ経路に乗る（登録/解除を頼むのは
+   * 関係を張った/外した契機、WorldObject.joinInteraction）。
+   *
    * childは相手（どの子か）がownerから一意に辿れないため、ここでは扱わずsetChildRegisteredを使う。
    */
   override setRelationRegistered(owner: WorldObject, relation: ReferenceRoot, register: boolean): void {
     if (this.target.root !== relation) return;
-    this.setResolvedRelationRegistered(owner, this.target.owner(ReferenceContext.forSelf(owner)), register);
+    this.setResolvedRelationRegistered(
+      owner,
+      this.target.owner(ReferenceContext.forParticipant(owner)),
+      register,
+    );
   }
 
   /**
@@ -226,7 +235,7 @@ export abstract class PropertyPassiveEffect extends PassiveEffect {
 
   /** targetOwnerの対象プロパティから、declarerが宣言した登録を解除する。 */
   private unregister(targetOwner: WorldObject | undefined, declarer: WorldObject): void {
-    targetOwner?.tryGetProperty(this.target.propertyGlobalId)?.unregisterPassiveEffectsFrom(declarer);
+    targetOwner?.tryGetProperty(this.target.propertyGlobalId)?.unregisterPassiveEffect(declarer, this);
   }
 }
 
@@ -290,7 +299,7 @@ export class TransferPassiveEffect extends PassiveEffect {
   /** ゲートが開いている間、1 tick分の輸送を走らせる（activeの輸送と同じ経路をそのまま通る）。 */
   applyTick(owner: WorldObject): void {
     if (!this.gate.isSatisfied(owner, owner)) return;
-    this.transfer.apply(ReferenceContext.forSelf(owner));
+    this.transfer.apply(ReferenceContext.forParticipant(owner));
   }
 
   override collectInfluences(declarer: WorldObject, out: InfluenceWriter): void {

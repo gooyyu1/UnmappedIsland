@@ -45,6 +45,9 @@ export function parseSubjectRoot(context: string, raw: string, scope: ReferenceS
     case 'instrument':
       root = 'instrument';
       break;
+    case 'patient':
+      root = 'patient';
+      break;
     case 'picked':
       root = 'picked';
       break;

@@ -4,7 +4,7 @@ import { INT32_MAX } from '../util/int32';
 import type { ActiveEffect } from './ActiveEffect';
 import { ActiveEffectSequence, ConditionalEffect, SetEffect } from './ActiveEffect';
 import type { ConditionNode } from './ConditionNode';
-import { PropertyPath } from './ReferenceRoot';
+import { PropertyPath, ReferenceContext } from './ReferenceRoot';
 import type { EffectDeclaration } from './EffectReader';
 import type { AlertLevel } from './AlertLevel';
 import { ALERT_LEVELS } from './AlertLevel';
@@ -538,8 +538,10 @@ export class PropertyDef {
    * 複数span分の溢れや繰り上げ先自身のさらなる溢れ（分→時→日の連鎖）が解決される。
    */
   applyRangeEventsAt(number: number, owner: WorldObject): void {
+    // rangeイベントは操作ではなく、値が端に着いた瞬間への反応（11.5節）。ownerが今どれかの操作に
+    // 参加していても、そこに役は居ない。
     for (const [, effect] of this.rangeEventsAt(number))
-      owner.applyActiveEffect(effect, undefined, undefined);
+      owner.applyActiveEffect(effect, ReferenceContext.forSelf(owner));
   }
 
   /**

@@ -87,6 +87,7 @@ const SUBJECT_WORDS: Readonly<Record<ReferenceRoot, string>> = {
   child: '子',
   agent: '操作者',
   instrument: '使う物',
+  patient: '働きかけられる物',
   picked: '選ばれた相手',
   ancestor: '祖先',
 };

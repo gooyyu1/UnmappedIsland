@@ -19,9 +19,14 @@ export type ReferenceRoot =
   | 'agent'
   /**
    * 運ばれてきて働きかけに使われる参加者。宣言が乗っていない側で、画面での操作の仕方では決まらない
-   * （11.5節）。**今どこで書けるかを持つのはReferenceScope**——11.5節の表は未実装ぶんまで含む。
+   * （11.5節）。
    */
   | 'instrument'
+  /**
+   * 働きかけられる参加者。**操作の宣言が乗っている側**なので、操作の宣言の中では`self`と同じ物になり、
+   * そこでは書けない（11.5節。どこで書けるかはReferenceScope）。
+   */
+  | 'patient'
   /**
    * `among`（10.3節）が周りから選んだ相手。**候補ごとに束ね直される**ので、重みを解くときは
    * その候補、効果を当てるときは選ばれた1つを指す。amongを書いた候補の中でのみ意味を持つ。
@@ -33,6 +38,105 @@ export type ReferenceRoot =
    * （ReferenceScope.namesProperty）。
    */
   | 'ancestor';
+
+/** 操作の関係が持つ3つの役（11.5節）。**役の名前の唯一の一覧**で、数え上げる側はここから引く。 */
+export const INTERACTION_ROLES = ['agent', 'instrument', 'patient'] as const;
+
+/** 操作の関係が用意する役（INTERACTION_ROLESの要素）。 */
+export type InteractionRole = (typeof INTERACTION_ROLES)[number];
+
+/**
+ * 1つの操作が結んでいる、参加者どうしの関係（GameElementDefinition.md 11.5節）。
+ *
+ * **関係は世界に刻む。** 張っている間、参加者は自分がどの操作に参加しているかを知り、その`props`
+ * （`base`・`passives`）から役を指せる——道の所要時間が「今歩いている人の遅れ」を土台にできるのは、
+ * 条件の判定も所要時間の問い合わせも効果の適用も、同じ関係を張った状態で行うからで、片方だけで
+ * 張ると押す前に見せる分数と実際に進む分数がずれる。
+ *
+ * **張るのも外すのもここだけ**（`during`）。呼び出し側は「この関係の下で読む／実行する」と頼むだけで、
+ * 張り忘れ・外し忘れを覚えておく必要がない。
+ */
+export class InteractionRelation {
+  /** 働きかけられる物（11.5節）。操作の宣言が乗っている側で、宣言の中では`self`と同じ物を指す。 */
+  readonly patient: WorldObject | undefined;
+
+  /** この操作で動いている個体。誰かが動いているとは限らない場面（レシピの解放条件）では居ない。 */
+  readonly agent: WorldObject | undefined;
+
+  /** 運ばれてきて働きかけに使われる物。それを伴わない操作では居ない（11.5節）。 */
+  readonly instrument: WorldObject | undefined;
+
+  constructor(
+    patient: WorldObject | undefined,
+    agent: WorldObject | undefined,
+    instrument: WorldObject | undefined,
+  ) {
+    this.patient = patient;
+    this.agent = agent;
+    this.instrument = instrument;
+  }
+
+  /** roleに就いている物。就いている物が居なければundefined。 */
+  objectAt(role: InteractionRole): WorldObject | undefined {
+    switch (role) {
+      case 'agent':
+        return this.agent;
+      case 'instrument':
+        return this.instrument;
+      case 'patient':
+        return this.patient;
+    }
+  }
+
+  /** selfを起点に、この関係の役を解決する文脈。 */
+  contextFor(self: WorldObject | undefined): ReferenceContext {
+    return ReferenceContext.withRoles(self, this.agent, this.instrument, this.patient);
+  }
+
+  /**
+   * この関係を張った状態でbodyを実行し、**必ず外してから**返す（11.5節「1つずつ張って外す」）。
+   * bodyへ渡す文脈の起点は`patient`——操作の宣言が乗っている側がそのままselfになる。
+   *
+   * 押す前に見せるための問い合わせ（条件・所要時間）がこれ。**動作そのものではない**ので、
+   * agentが動いていると主張しない——実行中の操作の傍らで別の候補の分数を引くことは起こる。
+   */
+  during<T>(body: (context: ReferenceContext) => T): T {
+    return this.bound(false, body);
+  }
+
+  /**
+   * 実行として関係を張る。**同じ物が2つの操作のagentになることはない**（11.5節の不変条件。動作主は
+   * 一度に1つの動作しかできない）ので、既に動いている個体をagentにしようとすればその場で止まる。
+   */
+  whileActing<T>(body: (context: ReferenceContext) => T): T {
+    return this.bound(true, body);
+  }
+
+  private bound<T>(claimsAgent: boolean, body: (context: ReferenceContext) => T): T {
+    const leaves: (() => void)[] = [];
+    try {
+      for (const [participant, isAgent] of this.participants())
+        leaves.push(participant.joinInteraction(this, claimsAgent && isAgent));
+      return body(this.contextFor(this.patient));
+    } finally {
+      while (leaves.length > 0) leaves.pop()!();
+    }
+  }
+
+  /**
+   * 関係を刻む相手を1つずつ（同じ物が2つの役に就く再帰的な操作、11.5節では1回だけ）。
+   * **agentを先頭に置く**ので、一意性が破れているときは他の誰も加わらないうちに止まる。
+   */
+  private participants(): readonly (readonly [WorldObject, boolean])[] {
+    const joined: (readonly [WorldObject, boolean])[] = [];
+    for (const role of INTERACTION_ROLES) {
+      const participant = this.objectAt(role);
+      if (participant === undefined || joined.some(([already]) => already === participant)) continue;
+      joined.push([participant, participant === this.agent]);
+    }
+    return joined;
+  }
+}
 
 /**
  * 宣言に書かれたReferenceRootを実行時のオブジェクトへ解くための、**どの役に誰が居るか**という文脈
@@ -54,6 +158,9 @@ export class ReferenceContext {
   /** この操作で働きかけに使われる物。それを伴わない操作ではundefined（11.5節）。 */
   readonly instrument: WorldObject | undefined;
 
+  /** この操作で働きかけられる物。操作の外（rangeイベント等）ではundefined（11.5節）。 */
+  readonly patient: WorldObject | undefined;
+
   /** `among`が周りから選んだ相手。amongを書いた候補の中でのみ居る（10.3節）。 */
   readonly picked: WorldObject | undefined;
 
@@ -61,41 +168,70 @@ export class ReferenceContext {
     self: WorldObject | undefined,
     agent: WorldObject | undefined,
     instrument: WorldObject | undefined,
+    patient: WorldObject | undefined,
     picked: WorldObject | undefined,
   ) {
     this.self = self;
     this.agent = agent;
     this.instrument = instrument;
+    this.patient = patient;
     this.picked = picked;
   }
 
-  /** selfだけが決まっている文脈（ReferenceScope.declaration）。ほかの役は解決先を持たない。 */
+  /**
+   * selfだけが決まっている文脈（ReferenceScope.declaration）。操作の役は解決先を持たない——
+   * rangeイベント（6.3節）は操作ではなく値が端に着いた瞬間への反応なので、selfが今どれかの操作に
+   * 参加していても役は見えない（11.5節）。
+   */
   static forSelf(self: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(self, undefined, undefined, undefined);
+    return new ReferenceContext(self, undefined, undefined, undefined, undefined);
   }
 
-  /** 操作の文脈（誰が・何を使って）。instrumentを伴わない操作ではundefinedを渡す（11.5節）。 */
-  static acting(
+  /**
+   * 参加者のprops（`base`・`passives`、ReferenceScope.participantProps）を読む文脈。役は、selfが今
+   * 参加している関係（世界に刻まれている、InteractionRelation）から解ける。参加していなければ
+   * forSelfと同じで、役はどれも解決先を持たない。
+   */
+  static forParticipant(self: WorldObject | undefined): ReferenceContext {
+    const relation = self?.participation;
+    return relation === undefined ? ReferenceContext.forSelf(self) : relation.contextFor(self);
+  }
+
+  /**
+   * 操作ではないが、問う側がagentを渡す場所（レシピの解放条件・`crafting_conditions`、13.3・13.4節）。
+   * **関係は張らない**——「誰にとって解放されているか」を問う判定であって、誰も何にも働きかけていない
+   * （11.5節）。成果物のインスタンスがまだ無いのでselfも居ない。
+   */
+  static asking(agent: WorldObject | undefined): ReferenceContext {
+    return new ReferenceContext(undefined, agent, undefined, undefined, undefined);
+  }
+
+  /** 3役が揃った文脈。組み立てられるのは関係を持っている側だけ（InteractionRelation.contextFor）。 */
+  static withRoles(
     self: WorldObject | undefined,
     agent: WorldObject | undefined,
     instrument: WorldObject | undefined,
+    patient: WorldObject | undefined,
   ): ReferenceContext {
-    return new ReferenceContext(self, agent, instrument, undefined);
+    return new ReferenceContext(self, agent, instrument, patient, undefined);
   }
 
-  /** selfだけを差し替えた文脈。誰が操作しているかは変わらないまま、参照の起点が移る場面で使う。 */
+  /**
+   * selfだけを差し替えた文脈。**役の出どころは変えずに、起点だけを移す**場面で使う——passivesのゲートは
+   * selfが辺の子側（slotBearer）、役は宣言元（11.5節。PassiveEffectGate.isSatisfied）。
+   */
   withSelf(self: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(self, this.agent, this.instrument, this.picked);
+    return new ReferenceContext(self, this.agent, this.instrument, this.patient, this.picked);
   }
 
   /** instrumentだけを差し替えた文脈。同じ操作を候補ごとに引き直す場面で使う（TransferEffect.acceptedCount）。 */
   withInstrument(instrument: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(this.self, this.agent, instrument, this.picked);
+    return new ReferenceContext(this.self, this.agent, instrument, this.patient, this.picked);
   }
 
   /** pickedだけを差し替えた文脈。amongが候補ごとに重みを引き、選んだ1つへ効果を当てるときに使う。 */
   withPicked(picked: WorldObject | undefined): ReferenceContext {
-    return new ReferenceContext(this.self, this.agent, this.instrument, picked);
+    return new ReferenceContext(this.self, this.agent, this.instrument, this.patient, picked);
   }
 
   /**
@@ -112,6 +248,8 @@ export class ReferenceContext {
         return this.agent;
       case 'instrument':
         return this.instrument;
+      case 'patient':
+        return this.patient;
       case 'picked':
         return this.picked;
       default:
@@ -164,12 +302,17 @@ export class PropertyPath {
 }
 
 /**
- * 宣言が置かれた場所が、参照の解決に何を用意できるか（GameElementDefinition.md 14.1節）。
+ * 宣言が置かれた場所が、参照の解決に何を用意できるか（GameElementDefinition.md 14.1節。操作の3役に
+ * ついては同11.5節「役を書ける場所」）。
  *
  * **ロード時に弾く根拠と、実行時に組む`ReferenceContext`は同じ1つの事実。** agentが居ない場所で
  * agentを指せてしまうと、書けたのに実行時は必ず空振りする。だから場所ごとに許すrootを数え上げるのでは
  * なく、**場所は自分が何を持つかだけを宣言し、rootの側が何を要るかを言う**。両者の食い違いは、
  * 一覧を書き写す代わりに導出で消える。
+ *
+ * **下のstaticは11.5節の表の行と1対1ではない。** 持つものが同じ場所は同じstaticを使う——`drag`と
+ * `put_in`は`acting.withInstrument`を共有し、`declaration`は表に無い`resists`（7.13節）も担う。
+ * 表の行ごとにstaticを立てると、数え上げをこちら側で作り直すことになる。
  */
 export class ReferenceScope {
   /** 宣言元の個体（self）が居るか。parent・ancestorもここから辿るので、無ければ揃って解けない。 */
@@ -181,6 +324,23 @@ export class ReferenceScope {
   /** 働きかけに使われる物（instrument）が居るか。真になるのは物が運ばれてくる場所だけ（下のwithInstrument）。 */
   private readonly hasInstrument: boolean;
 
+  /** 働きかけられる物（patient）が居るか。操作の場と、その参加者のpropsだけ（11.5節）。 */
+  private readonly hasPatient: boolean;
+
+  /**
+   * その patient が宣言元（self）と同じ物か。**操作の宣言はpatientに乗る**（11.5節）ので、操作の宣言の
+   * 中では必ず真になり、そこでは`patient`と書けない——同じ物に2つの名前が付くと、読む側は毎回どちらが
+   * 正かを考えることになる。参加者のpropsでは宣言元がどの役に就くかが静的に決まらないので偽。
+   */
+  private readonly selfIsPatient: boolean;
+
+  /**
+   * 押すのが可逆な寄与か（`modify`、8.3節）。寄与は相手の上で合計されて誰の分か見分けられなくなるので、
+   * **同時に2つの操作へ就きうる役**（`instrument`・`patient`）へは押せない。`agent`は1つの操作に1人しか
+   * 居ないので混ざらない。
+   */
+  private readonly pushesReversibly: boolean;
+
   /** amongが選んだ相手（picked）が居るか。amongを書いた候補の中だけ（10.3節）。 */
   private readonly hasPicked: boolean;
 
@@ -190,41 +350,80 @@ export class ReferenceScope {
   /** 相手が1つに定まらなくてよいか。childを指せるのはここが真の場所だけ（8.1節のブロードキャスト登録）。 */
   private readonly broadcasts: boolean;
 
-  private constructor(
-    hasSelf: boolean,
-    hasAgent: boolean,
-    hasInstrument: boolean,
-    hasPicked: boolean,
-    namesProperty: boolean,
-    broadcasts: boolean,
-  ) {
-    this.hasSelf = hasSelf;
-    this.hasAgent = hasAgent;
-    this.hasInstrument = hasInstrument;
-    this.hasPicked = hasPicked;
-    this.namesProperty = namesProperty;
-    this.broadcasts = broadcasts;
+  private constructor(available: ScopeFacts) {
+    this.hasSelf = available.hasSelf;
+    this.hasAgent = available.hasAgent;
+    this.hasInstrument = available.hasInstrument;
+    this.hasPatient = available.hasPatient;
+    this.selfIsPatient = available.selfIsPatient;
+    this.pushesReversibly = available.pushesReversibly;
+    this.hasPicked = available.hasPicked;
+    this.namesProperty = available.namesProperty;
+    this.broadcasts = available.broadcasts;
   }
 
-  /** 宣言元の個体だけが居る場所。誰かが操作しているとは限らないので、操作の側の役は解決先を持たない。 */
-  static readonly declaration = new ReferenceScope(true, false, false, false, true, false);
-
-  /** 宣言元の個体に加えて、操作している者が居る場所（誰かが押した・引いた結果として起きる、11節）。 */
-  static readonly acting = new ReferenceScope(true, true, false, false, true, false);
+  /** 宣言元の個体だけが居る場所（`on_max`/`on_min` 6.3節・`resists` 7.13節）。操作ではないので役は居ない。 */
+  static readonly declaration = new ReferenceScope({
+    hasSelf: true,
+    hasAgent: false,
+    hasInstrument: false,
+    hasPatient: false,
+    selfIsPatient: false,
+    pushesReversibly: false,
+    hasPicked: false,
+    namesProperty: true,
+    broadcasts: false,
+  });
 
   /**
-   * 宣言元の個体が居ない場所（レシピの解放条件13.3節・`crafting_conditions` 13.4節）。
-   * 居ない理由は場所ごとに違うので、13.3・13.4節が各々で述べる。
+   * 参加者のprops（`base` 6.5節・`passives` 8節）。**3役とも書ける**——そこには「宣言元がどの役に就くか」
+   * を静的に決めるものが無いので、`patient`も`self`の言い換えにはならない（11.5節）。
+   */
+  static readonly participantProps = new ReferenceScope({
+    hasSelf: true,
+    hasAgent: true,
+    hasInstrument: true,
+    hasPatient: true,
+    selfIsPatient: false,
+    pushesReversibly: false,
+    hasPicked: false,
+    namesProperty: true,
+    broadcasts: false,
+  });
+
+  /**
+   * 宣言元の個体に加えて、操作している者が居る場所（誰かが押した・引いた結果として起きる、11節）。
+   *
+   * **操作の宣言はpatientに乗る**（11.5節）ので、patientが居るのはここから。ただし`self`と同じ物を
+   * 指すので名前としては書けない（selfIsPatient）。使う物が運ばれてくるかは場所ごとに違うので、
+   * そちらだけを`withInstrument`が足す。
+   */
+  static readonly acting = new ReferenceScope({
+    hasSelf: true,
+    hasAgent: true,
+    hasInstrument: false,
+    hasPatient: true,
+    selfIsPatient: true,
+    pushesReversibly: false,
+    hasPicked: false,
+    namesProperty: true,
+    broadcasts: false,
+  });
+
+  /**
+   * 宣言元の個体が居ない場所（レシピの解放条件13.3節・`crafting_conditions` 13.4節）。居ない理由は
+   * 場所ごとに違うので、13.3・13.4節が各々で述べる。
+   *
+   * **selfを外すと、それだけを指していたpatientも道連れで外れる**——`selfIsPatient`な場所（`acting`）
+   * では`patient`に独立した名前が無く、`self`の言い換えでしかないため（11.5節）。
    */
   get withoutSelf(): ReferenceScope {
-    return new ReferenceScope(
-      false,
-      this.hasAgent,
-      this.hasInstrument,
-      this.hasPicked,
-      this.namesProperty,
-      this.broadcasts,
-    );
+    return new ReferenceScope({
+      ...this,
+      hasSelf: false,
+      hasPatient: this.selfIsPatient ? false : this.hasPatient,
+      selfIsPatient: false,
+    });
   }
 
   /**
@@ -232,50 +431,30 @@ export class ReferenceScope {
    * ここでは解決先を持たなくなる。
    */
   get withoutPropertyName(): ReferenceScope {
-    return new ReferenceScope(
-      this.hasSelf,
-      this.hasAgent,
-      this.hasInstrument,
-      this.hasPicked,
-      false,
-      this.broadcasts,
-    );
+    return new ReferenceScope({ ...this, namesProperty: false });
+  }
+
+  /**
+   * 可逆な寄与（`modify`、8.3節）を押す場所。**同時に2つの操作へ就きうる役へは押せない**——寄与は
+   * 相手の上で合計され、読んだ側は誰の寄与かを見分けられないので、混ざると戻せなくなる。
+   */
+  get pushingReversibly(): ReferenceScope {
+    return new ReferenceScope({ ...this, pushesReversibly: true });
   }
 
   /** 働きかけに使われる物が運ばれてくる場所（`drag`のinteractions 12節・`put_in`の`duration` 7.10節）。 */
   get withInstrument(): ReferenceScope {
-    return new ReferenceScope(
-      this.hasSelf,
-      this.hasAgent,
-      true,
-      this.hasPicked,
-      this.namesProperty,
-      this.broadcasts,
-    );
+    return new ReferenceScope({ ...this, hasInstrument: true });
   }
 
   /** amongが選んだ相手を指せる場所（10.3節）。amongを書いた候補の重みと効果だけがこれになる。 */
   get withPicked(): ReferenceScope {
-    return new ReferenceScope(
-      this.hasSelf,
-      this.hasAgent,
-      this.hasInstrument,
-      true,
-      this.namesProperty,
-      this.broadcasts,
-    );
+    return new ReferenceScope({ ...this, hasPicked: true });
   }
 
   /** 相手が1つに定まらなくてよい場所（passivesの対象。付いている子ごとに登録を配る、8.1節）。 */
   get withBroadcast(): ReferenceScope {
-    return new ReferenceScope(
-      this.hasSelf,
-      this.hasAgent,
-      this.hasInstrument,
-      this.hasPicked,
-      this.namesProperty,
-      true,
-    );
+    return new ReferenceScope({ ...this, broadcasts: true });
   }
 
   /**
@@ -290,7 +469,14 @@ export class ReferenceScope {
       case 'agent':
         return this.hasAgent ? undefined : 'ここは誰かが操作している場面とは限りません';
       case 'instrument':
-        return this.hasInstrument ? undefined : 'ここには働きかけに使われる物が運ばれてきません';
+        if (!this.hasInstrument) return 'ここには働きかけに使われる物が運ばれてきません';
+        return this.sharedRoleReason;
+      case 'patient':
+        if (!this.hasPatient) return 'ここには働きかけられる物が居ません';
+        // 居るが書けない側（11.5節の表の`✕`）。理由が「居ないから」ではないので、文面を分ける。
+        if (this.selfIsPatient)
+          return "'patient'は操作の宣言が乗っている側なので、ここでは'self'と同じ物を指します（'self'と書いてください）";
+        return this.sharedRoleReason;
       case 'picked':
         return this.hasPicked ? undefined : 'ここには候補の中から選ばれた相手が居ません';
       case 'ancestor':
@@ -304,4 +490,27 @@ export class ReferenceScope {
           : "ここは相手が1つに決まる場所なので、どの子かが定まらない'child'は使えません";
     }
   }
+
+  /**
+   * 複数の操作に同時に就きうる役（`instrument`・`patient`）を、この場所が拒む理由。拒まないならundefined。
+   * 拒むのは可逆な寄与を押す場所だけ（8.3節）。
+   */
+  private get sharedRoleReason(): string | undefined {
+    return this.pushesReversibly
+      ? '可逆な寄与は、複数の操作に同時に就きうる役へは押せません（8.3節。誰の寄与かを見分けられなくなります）'
+      : undefined;
+  }
+}
+
+/** ReferenceScopeが持つ事実の一式。増やしたら全ての場所が答えることになる（数え上げの逆）。 */
+interface ScopeFacts {
+  readonly hasSelf: boolean;
+  readonly hasAgent: boolean;
+  readonly hasInstrument: boolean;
+  readonly hasPatient: boolean;
+  readonly selfIsPatient: boolean;
+  readonly pushesReversibly: boolean;
+  readonly hasPicked: boolean;
+  readonly namesProperty: boolean;
+  readonly broadcasts: boolean;
 }

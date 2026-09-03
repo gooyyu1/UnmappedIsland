@@ -2,6 +2,7 @@ import type { AlertLevel } from './AlertLevel';
 import type { PropertyDef, PropertyStage, CurrentStageReading, StageBound } from './PropertyDef';
 import { INT32_MAX } from '../util/int32';
 import { removeWhere } from '../util/arrays';
+import type { PropertyPassiveEffect } from './PassiveEffect';
 import type { RegisteredPassiveEffect } from './RegisteredPassiveEffect';
 import { ReferenceContext } from './ReferenceRoot';
 import type { WorldObject } from './WorldObject';
@@ -124,9 +125,13 @@ export class PropertyValue {
     this.accumulateEffects.push(effect);
   }
 
-  unregisterPassiveEffectsFrom(declarer: WorldObject): void {
-    removeWhere(this.modifyEffects, (c) => c.declarer === declarer);
-    removeWhere(this.accumulateEffects, (c) => c.declarer === declarer);
+  /**
+   * declarerが宣言したdefの登録を外す。**外すのは1件ずつ**——同じ宣言元が同じプロパティへ2件登録して
+   * いることがある（操作の役が宣言元自身へ解決したとき、11.5節）ので、宣言元だけで消すと巻き添えになる。
+   */
+  unregisterPassiveEffect(declarer: WorldObject, def: PropertyPassiveEffect): void {
+    removeWhere(this.modifyEffects, (c) => c.declaredBy(declarer, def));
+    removeWhere(this.accumulateEffects, (c) => c.declaredBy(declarer, def));
   }
 
   /** 現在登録されている全寄与（modify/add両方）。UI表示用。 */
@@ -165,7 +170,9 @@ export class PropertyValue {
   private baseContribution(): number {
     const base = this.def.base;
     if (base === undefined) return 0;
-    return base.effectiveNumber(ReferenceContext.forSelf(this.owner)) ?? 0;
+    // 土台は参加者のprops（11.5節）。この物が今操作に参加していれば、そこから役を指せる
+    // （道の所要時間が、今歩いている人の遅れを継ぐ）。
+    return base.effectiveNumber(ReferenceContext.forParticipant(this.owner)) ?? 0;
   }
 
   /**

@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { YamlLoadError } from '../../src/loader/YamlLoadError';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 
@@ -293,16 +292,24 @@ object_defs:
     ]);
   });
 
-  it('対象にagentは書けない（持続的な関係に紐づかないため）', () => {
-    expect(() =>
-      load(`
+  it('対象に操作の役を書ける。誰も操作していないtickでは、その輸送だけが動かない', () => {
+    const codex = load(`
 object_defs:
   body:
     props:
-      stomach: {value: 1, range: {min: 0, max: 32}}
+      stomach: {value: 4, range: {min: 0, max: 32}}
+      digesting: {value: 0, range: {min: 0, max: 64}}
     passives:
       - transfer: {from_prop: stomach, to: agent, to_prop: satiety, amount: 1}
-`),
-    ).toThrow(YamlLoadError);
+      - transfer: {from_prop: stomach, to_prop: digesting, amount: 1}
+`);
+    const body = spawn(codex, 'body');
+
+    body.tick();
+
+    expect(
+      ['stomach', 'digesting'].map((name) => body.tryGetProperty(codex.propertyNames.getId(name))?.number),
+      'agentが居ないので1本目は空振りし、2本目だけが動く',
+    ).toEqual([3, 1]);
   });
 });
