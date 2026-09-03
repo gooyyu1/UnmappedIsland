@@ -42,6 +42,11 @@ interface World {
    */
   readonly tags?: Record<string, string[]>;
   /**
+   * `list_sessions` の**2ページ目**（`after_id` を渡したときだけ返る）。挙げると1ページ目に
+   * `has_more` が付く。`limit` の上限は100なので、繰らないとここへは届かない。
+   */
+  readonly olderTags?: Record<string, string[]>;
+  /**
    * ブリッジ（このPC）の環境で立ったセッション。**タグはクラウドと同じ**なので、これでしか
    * 区別が付かない。環境IDそのものは `ccr-env.sh` から環境変数で差し替える。
    */
@@ -74,6 +79,13 @@ interface World {
   readonly gateStatus?: number;
   /** `gh pr view --json state` が失敗するか（PRの状態を引けない日）。 */
   readonly stateFails?: boolean;
+  /**
+   * 開いているPRの番号（`gh pr list`）。既定はこのPR（1000）だけで、**マージすると外れる**。
+   * レビューを畳むかはPRごとにこれで決まる。
+   */
+  readonly openPrs?: readonly number[];
+  /** `gh pr list` が失敗するか（開いているPRの一覧を引けない日）。 */
+  readonly prListFails?: boolean;
   /** `--user-ok` を付けて叩くか。 */
   readonly userOk?: boolean;
 }
@@ -85,6 +97,8 @@ interface Run {
   readonly merged: boolean;
   /** `archive_session` を呼ばれたセッション。 */
   readonly archived: string[];
+  /** `get_session` で素性を引かれたセッション。 */
+  readonly probed: string[];
   /** 本体で `npm install` が走ったか。 */
   readonly installed: boolean;
   /** `git` に渡された引数。 */
@@ -150,6 +164,14 @@ if [ "$1" = pr ] && [ "$2" = view ]; then
   esac
   exit 0
 fi
+if [ "$1" = pr ] && [ "$2" = list ]; then
+  ${world.prListFails === true ? 'exit 1' : ':'}
+  for n in $(printf '%s' '${(world.openPrs ?? [1000]).join(' ')}'); do
+    if [ "$n" = 1000 ] && [ -e '${dir}/merged' ]; then continue; fi
+    printf '%s\\n' "$n"
+  done
+  exit 0
+fi
 if [ "$1" = pr ] && [ "$2" = edit ]; then
   shift 3
   echo "$*" >> '${dir}/labels'
@@ -206,29 +228,47 @@ exit 0
       'utf-8',
     );
 
+    /** `list_sessions` の1ページぶん。 */
+    const listed = (tags: Record<string, readonly string[]>): unknown[] =>
+      Object.entries(tags).map(([id, value]) => ({
+        id,
+        tags: value,
+        session_status: world.sessions?.[id] ?? 'SESSION_STATUS_IDLE',
+        environment_id: (world.onBridge ?? []).includes(id) ? BRIDGE : CLOUD,
+      }));
+
     // 引数は標準入力のJSON。`ccr-meta.sh` と同じ包み（`<other-session>`）を付けて返す。
     const meta = join(work, 'ccr-meta.sh');
     writeFileSync(
       meta,
       `#!/usr/bin/env bash
-id=$(node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.parse(s).session_id || ""))')
+payload=$(cat)
+id=$(printf '%s' "$payload" | jq -r '.session_id // ""')
+after=$(printf '%s' "$payload" | jq -r '.after_id // ""')
 if [ "$1" = list_sessions ]; then
   echo '<other-session>'
-  echo '${JSON.stringify({
-    ccr: {
-      data: Object.entries(world.tags ?? {}).map(([id, tags]) => ({
-        id,
-        tags,
-        environment_id: (world.onBridge ?? []).includes(id) ? BRIDGE : CLOUD,
-      })),
-    },
-  })}'
+  if [ -n "$after" ]; then
+    echo '${JSON.stringify({ ccr: { data: listed(world.olderTags ?? {}) } })}'
+  else
+    echo '${JSON.stringify({
+      ccr: {
+        data: listed(world.tags ?? {}),
+        ...(Object.keys(world.olderTags ?? {}).length > 0
+          ? {
+              has_more: true,
+              last_id: Object.keys(world.tags ?? {}).slice(-1)[0] ?? 'session_01PAGE1END0000000000',
+            }
+          : {}),
+      },
+    })}'
+  fi
   exit 0
 fi
 if [ "$1" = archive_session ]; then
   echo "$id" >> '${dir}/archived'
   exit ${world.archiveFails === true ? 1 : 0}
 fi
+echo "$id" >> '${dir}/probed'
 echo '<other-session>'
 case "$id" in
 ${(world.unknown ?? []).map((id) => `  ${id}) : ;;`).join('\n')}
@@ -289,6 +329,7 @@ esac
       status,
       merged: existsSync(join(work, 'merged')),
       archived: logged('archived'),
+      probed: logged('probed'),
       installed: logged('npm-calls').length > 0,
       git: logged('git-calls'),
       labels: logged('labels'),
@@ -405,14 +446,13 @@ describe('merge-and-close.sh', () => {
   });
 
   // レビューのセッションはPRを出さないので `session-of-pr.sh` では引けず、`review-` のタグで引く。
-  // PRが閉じれば読む相手が無くなるので、ここが最後の1本を畳む場所。
+  // PRが閉じれば読む相手が無くなるので、ここがこのPRの分を畳む最後の場所。
   it('マージしたら、そのPRのレビューのセッションも畳む', () => {
     const result = run({
       tags: {
         session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'],
         session_01REVIEWBBBBBBBBBBBBBB: ['review-1000'],
-        // 別のPRのレビューと、直す側。どちらもこのPRのマージでは畳まない。
-        session_01REVIEWCCCCCCCCCCCCCC: ['review-1001'],
+        // 直す側。こちらは `task-` のタグで引く別の経路が畳む（この試験では脚注が指していない）。
         session_01TASKAAAAAAAAAAAAAAAA: ['task-1000'],
       },
     });
@@ -424,6 +464,36 @@ describe('merge-and-close.sh', () => {
       'SYNCED deadbee',
     ]);
     expect(result.archived).toEqual(['session_01REVIEWAAAAAAAAAAAAAA', 'session_01REVIEWBBBBBBBBBBBBBB']);
+    expect(result.status).toBe(0);
+  });
+
+  // 掃く範囲がこのPRの分だけだと、`判断待ち`／`直し待ち` で止まったPR——次の投入もマージも来ない
+  // PR——のレビューが永久に残る（2026-08-30 に16本溜まった）。**畳める理由はPRごとに違わない**ので、
+  // マージのついでに全部を渡す。開いているPRのぶんは走行中なら守る。
+  it('マージのついでに、別のPRのレビューも畳む', () => {
+    const result = run({
+      // 1001 は開いたまま止まっているPR。1002 は投入もマージも通らずに閉じたPR。
+      openPrs: [1000, 1001],
+      sessions: {
+        session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_IDLE',
+        session_01REVIEWWORKING00000: 'SESSION_STATUS_RUNNING',
+        session_01REVIEWIDLE00000000: 'SESSION_STATUS_IDLE',
+      },
+      tags: {
+        session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'],
+        session_01REVIEWWORKING00000: ['review-1001'],
+        session_01REVIEWIDLE00000000: ['review-1002'],
+      },
+      working: ['session_01REVIEWWORKING00000'],
+    });
+
+    expect(result.lines).toEqual([
+      'MERGED 1000',
+      'KEPT session_01REVIEWWORKING00000',
+      'ARCHIVED session_01REVIEWAAAAAAAAAAAAAA',
+      'ARCHIVED session_01REVIEWIDLE00000000',
+      'SYNCED deadbee',
+    ]);
     expect(result.status).toBe(0);
   });
 
@@ -706,7 +776,7 @@ describe('archive-reviews.sh', () => {
         },
         working: ['session_01REVIEWAAAAAAAAAAAAAA'],
       },
-      [ARCHIVE_REVIEWS, '1000'],
+      [ARCHIVE_REVIEWS],
     );
 
     expect(result.lines).toEqual([
@@ -717,21 +787,64 @@ describe('archive-reviews.sh', () => {
     expect(result.status).toBe(0);
   });
 
-  // 状態を引けない日に「OPEN ではない」へ倒れると、書きかけの判定を畳んでしまう。畳んで消えた
-  // コメントは戻せないが、守って残ったものは手で畳める。畳むのは「閉じていると分かったとき」だけ。
-  it('PRの状態を引けなかったときも、走っている最中のレビューを守る', () => {
+  // 掃く範囲を「呼ばれた瞬間のPR1本」に絞ると、**次の投入もマージも来ないPR**のレビューが永久に
+  // 残る。開いていないPRのぶんは、走行中でも畳む——判定を書き終えても読む相手が無い。
+  it('開いていないPRのレビューは、走っている最中でも畳む', () => {
     const result = run(
       {
-        stateFails: true,
+        openPrs: [1000],
+        sessions: {
+          session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING',
+          session_01REVIEWCLOSED000000: 'SESSION_STATUS_RUNNING',
+        },
+        tags: {
+          session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'],
+          session_01REVIEWCLOSED000000: ['review-1001'],
+        },
+        working: ['session_01REVIEWAAAAAAAAAAAAAA', 'session_01REVIEWCLOSED000000'],
+      },
+      [ARCHIVE_REVIEWS],
+    );
+
+    expect(result.lines).toEqual([
+      'KEPT session_01REVIEWAAAAAAAAAAAAAA',
+      'ARCHIVED session_01REVIEWCLOSED000000',
+    ]);
+    expect(result.status).toBe(0);
+  });
+
+  // 状態を引けない日に「開いていない」へ倒れると、書きかけの判定を畳んでしまう。畳んで消えた
+  // コメントは戻せないが、守って残ったものは手で畳める。畳むのは「閉じていると分かったとき」だけ。
+  it('開いているPRの一覧を引けなかったときも、走っている最中のレビューを守る', () => {
+    const result = run(
+      {
+        prListFails: true,
         sessions: { session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING' },
         tags: { session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'] },
         working: ['session_01REVIEWAAAAAAAAAAAAAA'],
       },
-      [ARCHIVE_REVIEWS, '1000'],
+      [ARCHIVE_REVIEWS],
     );
 
     expect(result.lines).toEqual(['KEPT session_01REVIEWAAAAAAAAAAAAAA']);
     expect(result.archived).toEqual([]);
+    expect(result.status).toBe(0);
+  });
+
+  // 「引けなかった」と「1本も開いていない」を空かどうかで分けると、最後の1本をマージした直後が
+  // 引けなかった日と同じ扱いになり、そのPRのレビューが `KEPT` のまま残る。分けるのは終了コード。
+  it('開いているPRが1本も無いときは、引けなかった日とは違って畳む', () => {
+    const result = run(
+      {
+        openPrs: [],
+        sessions: { session_01REVIEWAAAAAAAAAAAAAA: 'SESSION_STATUS_RUNNING' },
+        tags: { session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'] },
+        working: ['session_01REVIEWAAAAAAAAAAAAAA'],
+      },
+      [ARCHIVE_REVIEWS],
+    );
+
+    expect(result.lines).toEqual(['ARCHIVED session_01REVIEWAAAAAAAAAAAAAA']);
     expect(result.status).toBe(0);
   });
 
@@ -743,11 +856,56 @@ describe('archive-reviews.sh', () => {
         tags: { session_01REVIEWAAAAAAAAAAAAAA: ['review-1000'] },
         unknown: ['session_01REVIEWAAAAAAAAAAAAAA'],
       },
-      [ARCHIVE_REVIEWS, '1000'],
+      [ARCHIVE_REVIEWS],
     );
 
     expect(result.lines).toEqual(['KEPT session_01REVIEWAAAAAAAAAAAAAA']);
     expect(result.archived).toEqual([]);
+    expect(result.status).toBe(0);
+  });
+
+  // `list_sessions` の `limit` は上限100なので、それより古いものは `has_more`／`last_id` を繰らないと
+  // 届かない。1ページで済ませると**古いものほど掃かれない**——実測（2026-08-30）で全715件・8ページ、
+  // 1ページ目に見えた生きたレビューは4本、繰った先に35本残っていた。
+  it('1ページ目に収まらない古いレビューも畳む', () => {
+    const result = run(
+      {
+        sessions: {
+          session_01REVIEWNEW000000000: 'SESSION_STATUS_IDLE',
+          session_01REVIEWOLD000000000: 'SESSION_STATUS_IDLE',
+        },
+        tags: { session_01REVIEWNEW000000000: ['review-1000'] },
+        olderTags: { session_01REVIEWOLD000000000: ['review-1000'] },
+      },
+      [ARCHIVE_REVIEWS],
+    );
+
+    expect(result.lines).toEqual([
+      'ARCHIVED session_01REVIEWNEW000000000',
+      'ARCHIVED session_01REVIEWOLD000000000',
+    ]);
+    expect(result.status).toBe(0);
+  });
+
+  // 畳み済みも `list_sessions` に残る（実測で73件中59件）。渡すと `get_session` を打つだけ打って
+  // 何も出さないので、ここで外す。
+  it('畳み済みのレビューには `get_session` を打たない', () => {
+    const result = run(
+      {
+        sessions: {
+          session_01REVIEWDONE00000000: 'SESSION_STATUS_ARCHIVED',
+          session_01REVIEWBBBBBBBBBBBBBB: 'SESSION_STATUS_IDLE',
+        },
+        tags: {
+          session_01REVIEWDONE00000000: ['review-1000'],
+          session_01REVIEWBBBBBBBBBBBBBB: ['review-1000'],
+        },
+      },
+      [ARCHIVE_REVIEWS],
+    );
+
+    expect(result.lines).toEqual(['ARCHIVED session_01REVIEWBBBBBBBBBBBBBB']);
+    expect(result.probed).toEqual(['session_01REVIEWBBBBBBBBBBBBBB']);
     expect(result.status).toBe(0);
   });
 });

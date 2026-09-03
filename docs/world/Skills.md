@@ -9,9 +9,9 @@
 アイテムの内容は [`SurvivalItems.md`](./SurvivalItems.md)・[`Containers.md`](./Containers.md)・
 [`Dwellings.md`](./Dwellings.md) を参照してください。
 
-本ドキュメントは検討結果であり、確定仕様書ではありません（`【確定】` の付いた節を除く）。**一覧の
-スキルは 1 つも `src/assets/world-codex/` に投入されていません**（[`SkillSystem.md`](../engine/SkillSystem.md)
-概要）。未決事項は 5 節に整理しています。
+本ドキュメントは検討結果であり、確定仕様書ではありません（`【確定】` の付いた節を除く）。2 節の 11 本は
+`src/assets/world-codex/` に投入済みで、どこまで動くかは
+[`SkillSystem.md`](../engine/SkillSystem.md) 概要にあります。未決事項は 5 節に整理しています。
 
 ## 1. 分類の軸は素材ではなく技術
 
@@ -101,4 +101,6 @@
   （[`SkillSystem.md`](../engine/SkillSystem.md) 8 節と共通）
 - 各スキルのしきい値の具体値と、1回あたりの獲得量
 - 建築の部品と、指物・木材加工・繊維の要求の割り振り（[`Dwellings.md`](./Dwellings.md) 5 節）
-- 料理がメンタルへ効く度合いと、その仕組み（栄養とは別の軸を持たせるか）
+- 料理がメンタルへ効く度合い。**仕組みは決まりました**——栄養とは別の軸として、食べ物が `eat` の
+  `add` に幸福度のベース値を1つ持ちます（[`Characters.md`](./Characters.md) 幸福度節）。残るのは、
+  料理の腕がそのベース値をどう動かすか（「料理の出来」という概念はまだありません）

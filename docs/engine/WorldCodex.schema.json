@@ -362,7 +362,7 @@
       ]
     },
     "subject_root": {
-      "description": "conditions/weightの`subject`（主語）の参照ルート（14.1節）。プロパティ名を伴う参照なのでancestorを書ける。instrumentはcombinations内のみ（12.2節）、pickedはamongを書いた候補の中のみ（10.3節）、passivesのゲートはself/parent/ancestorのみ。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
+      "description": "conditions/weightの`subject`（主語）の参照ルート（14.1節）。プロパティ名を伴う参照なのでancestorを書ける。どのルートを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表。今どこで書けるかを持つのは実装のReferenceScopeで、11.5節の表は未実装ぶんを含むため一致しない）。居ない役を書くとロード時エラー。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
       "enum": [
         "self",
         "parent",
@@ -706,7 +706,7 @@
           "description": "生む個数（9.4節）。省略時は1。同じ宣言を並べるのと同じ意味で、1個ずつ順に生んで配置する。"
         },
         "into": {
-          "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。個体を指す形はmoveの移動先と同じ（object_target）で、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。書ける役は宣言の置き場所で決まり、そこに居ない役を書くとロード時エラーになる（moveの移動先と同じ規則。どの置き場所から何を書けるかは11.5節の表が唯一の一覧）。childはselfの子を順に走査し、最初に受け取れた子のスロットへ入れる（罠が自分の生んだ獲物へ怪我を渡す経路、TrapSystem.md 5.3節）。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、枠の要件・capacityを無視して強制的に伝播する（childの場合の起点はself）。",
+          "description": "配置先の起点（9.4節）。省略時はsame_slotと同じ意味で、selfが今いる場所（親+スロット）へ動的に配置する。個体を指す形はmoveの移動先と同じ（object_target）で、その対象が持つスロットを宣言順に走査し最初に配置できたスロットへ入れる（スロット名は書かない）。書ける役は宣言の置き場所で決まり、そこに居ない役を書くとロード時エラーになる（moveの移動先と同じ規則。どの置き場所から何を書けるかはActionSystem.md 4節の表）。childはselfの子を順に走査し、最初に受け取れた子のスロットへ入れる（罠が自分の生んだ獲物へ怪我を渡す経路、TrapSystem.md 5.3節）。fallbackはYAML上に存在せず、intoへの配置に失敗した場合は必ずその起点自身の親へ、枠の要件・capacityを無視して強制的に伝播する（childの場合の起点はself）。",
           "oneOf": [
             {
               "enum": [
@@ -776,7 +776,7 @@
       "additionalProperties": false
     },
     "signal_spec": {
-      "description": "起きたことを告げる（GameElementDefinition.md 9.8節）。世界の形は何も変えず、出来事が起きたことだけを観測する側へ渡す。値は出来事の識別子で、表示文言はlocaleのsignal_textsが持つ。誰の身に起きたかは対象キー（self/parent/agent、combinations内はinstrumentも）で指し、省略時はself。オブジェクトそのものを指すためancestorは使えない（destroyと同じ、ロード時エラー）。",
+      "description": "起きたことを告げる（GameElementDefinition.md 9.8節）。世界の形は何も変えず、出来事が起きたことだけを観測する側へ渡す。値は出来事の識別子で、表示文言はlocaleのsignal_textsが持つ。誰の身に起きたかは対象キーで指し（どれを書けるかは宣言の置き場所で決まる。ActionSystem.md 4節の表）、省略時はself。ancestorは指す先のプロパティ名で祖先を探すが、ここは{subject, prop}の形を持たずプロパティ名を決めていないため書けない（ロード時エラー）。",
       "oneOf": [
         {
           "$ref": "#/$defs/identifier"
@@ -808,7 +808,7 @@
       ]
     },
     "weight_spec": {
-      "description": "pick候補のweight（10.2節）・actions/combinationsのduration（11.3節）。リテラル数値、既存propsへの参照（{subject, prop}）、または参照2つの積（timesで掛ける相手を書く）。subjectは省略可（既定値self）。",
+      "description": "pick候補のweight（10.2節）・actions/combinationsのduration（11.3節）・slotsのput_inのduration（7.10節）。リテラル数値、既存propsへの参照（{subject, prop}）、または参照2つの積（timesで掛ける相手を書く）。subjectは省略可（既定値self）。",
       "oneOf": [
         {
           "type": "number"

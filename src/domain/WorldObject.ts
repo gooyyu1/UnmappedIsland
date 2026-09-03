@@ -10,7 +10,6 @@ import type { EngineVocabulary } from './WorldVocabulary';
 import type { InfluenceWriter, PropertyInfluenceReading } from './PropertyInfluence';
 import { PropertyInfluences } from './PropertyInfluence';
 import { PropertyValue } from './PropertyValue';
-import type { Requirement } from './Requirement';
 import { Slot } from './Slot';
 import type { SlotPosition } from './SlotPosition';
 import type { WorldSession } from './WorldSession';
@@ -239,7 +238,8 @@ export class WorldObject {
 
   /**
    * 自分の直接の親から遡り、指定したプロパティを定義している最初の祖先を探す（無ければundefined）。
-   * base・Target=Ancestor・conditions/weightのAncestor起点が共有する、唯一の祖先探索ロジック。
+   * 呼び手はReferenceContext.ownerOfPropertyだけで、`ancestor`起点の参照はどこに書かれたものも
+   * そこを通る（どの文法から来たかは、この時点で区別されていない）。
    */
   findAncestorWithProperty(propertyGlobalId: number): WorldObject | undefined {
     let current = this._parent;
@@ -706,9 +706,13 @@ export class WorldObject {
   /**
    * 名指しした1つのプロパティが、他と交わしている影響（docs/ui/Windows.md 8節）。
    *
-   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果だけでよい。効果が届く先は
-   * self/parent/child/ancestor のいずれか（8.1節）なので、自分へ届く効果も自分が届かせる効果も、
-   * 宣言元は必ずこの3方向のどれかに居る——横に並んだ物どうしは互いに届かない。
+   * 集めるのは**自分・自分の祖先・自分の子孫**が宣言する持続効果だけでよい。**持続効果の対象に今書けるのは、
+   * 宣言元から木を辿るものだけ**（何を書けるかは宣言が置かれた場所が決める。一覧はGameElementDefinition.md
+   * 14.1節の表）なので、自分へ届く効果も自分が届かせる効果も、宣言元は必ずこの3方向のどれかに居る
+   * ——横に並んだ物どうしは互いに届かない。
+   *
+   * **3方向で足りるのは、同11.5節が`【未実装: 操作の関係】`である間だけ。** 操作の関係の役を対象に書ける
+   * ようになると、木の上に居ない相手へも効果が届く。
    */
   readInfluences(propertyGlobalId: number): PropertyInfluenceReading {
     const influences = new PropertyInfluences(this, propertyGlobalId);
@@ -727,7 +731,10 @@ export class WorldObject {
   /**
    * 持続効果の対象（8.1節）を、影響の一覧のために解決する。**childは今入っている子を全部**返す
    * ——相手が1つに定まらない唯一の対象で、寄与も子ごとに1件ずつ登録される（setChildRegistered）。
-   * agent/instrumentはpassivesに現れない（parsePassiveTransfers）ため空になる。
+   *
+   * 操作の関係の役（11.5節）はここへ来ない。役に解決先が無いのは`ReferenceScope.declaration`が持つ性質で、
+   * 上のchildのために派生させた`withBroadcast`もそこは引き継ぐ。狭いのは同節が`【未実装: 操作の関係】`
+   * である間だけ。
    */
   resolveInfluenceTargets(path: PropertyPath): readonly WorldObject[] {
     if (path.root === 'child') return [...this.children()];
@@ -756,9 +763,10 @@ export class WorldObject {
 
   /**
    * instrumentを重ねたときに**今**成立する組み合わせ（12節、宣言順）。相手として受け入れるかだけでなく、
-   * 要件（14節）を満たしているかまで見る——満杯の炉に薪をくべる組み合わせは、候補にならない。
+   * 今そのまま実行してよいか（`Combination.canExecute`）まで見る——満杯の炉に薪をくべる組み合わせは、
+   * 候補にならない。
    *
-   * **要件まで見るのは、実行できないものを黙って落とし先にしないため。** 型だけで選ぶと、選んだ
+   * **そこまで見るのは、実行できないものを黙って落とし先にしないため。** 型だけで選ぶと、選んだ
    * 先が実行できない場合に「落とせるのに何も起きない」になる。**行き先の座標に型が居ない組み合わせ**
    * （`become`、9.9節）も同じ理由で候補にならない。
    *
@@ -766,12 +774,15 @@ export class WorldObject {
    * ——それを引くのが下のrefusedCombinationsWith（ActionSystem.md 1.1節）。
    */
   combinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
-    return this.combinationsMatching(instrument, agent, (unmet) => unmet === undefined);
+    return this.candidateCombinationsWith(instrument, agent).filter((combination) =>
+      combination.canExecute(),
+    );
   }
 
   /**
    * instrumentを重ねても要件（14節）で成立しないが、**断る理由を宣言している**組み合わせ
-   * （14.6節のreason、宣言順）。薪の無い炉へ火種を落とす、暗い中で石を打ち割る、が該当する。
+   * （14.6節のreason、宣言順）。薪の無い炉へ火種を落とす、暗い中で石を打ち割る、餌が満杯の罠へ餌を
+   * 重ねる、が該当する。
    *
    * **`reason` を書いた要件は、落ちたときプレイヤーへ理由が届くという約束**（14.6節）。メニューの
    * 操作は押せないボタンとして理由を出せるが、重ねる操作には候補から消えた先に理由を出す口が無い。
@@ -782,30 +793,28 @@ export class WorldObject {
    * 成立するものが1つでもあるなら、そちらが先（`combinationsWith`）。
    */
   refusedCombinationsWith(instrument: WorldObject, agent: WorldObject | undefined): readonly Combination[] {
-    return this.combinationsMatching(instrument, agent, (unmet) => unmet?.reasonName !== undefined);
+    return this.candidateCombinationsWith(instrument, agent).filter(
+      (combination) => combination.unmetRequirement()?.reasonName !== undefined,
+    );
   }
 
   /**
-   * 相手として受け入れ、行き先も詰まっていないドラッグの宣言のうち、満たしていない要件が
-   * acceptsに当てはまるもの。**要件以外の絞り込みを1箇所に持つ**——成立するものと断るものが
-   * 「要件を見た結果」だけで分かれるようにするため。
+   * 相手として受け入れ、**起きることが在る**（`become` の行き先に型が居る、9.9節）ドラッグの宣言。
+   * どちらの列挙もここから絞るので、**成立するものと断るものは「その組み合わせに訊いた結果」だけで
+   * 分かれる**。
    *
    * **問うための文脈もここで組み立てる。** 呼び手に作らせると、「self・agent・instrumentがこの3つで
    * ないと壊れる」という一致の規約を呼び手の数だけ覚えることになる（型は通ってしまう）。
    */
-  private combinationsMatching(
+  private candidateCombinationsWith(
     instrument: WorldObject,
     agent: WorldObject | undefined,
-    accepts: (unmet: Requirement | undefined) => boolean,
   ): readonly Combination[] {
     const context = ReferenceContext.acting(this, agent, instrument);
     return this.def.dragTriggers
       .filter(
         (trigger) =>
-          trigger.acceptsInstrument(instrument.def) &&
-          trigger.acceptedCount(context, [instrument]) >= 1 &&
-          !trigger.interaction.blocksOperation(context) &&
-          accepts(trigger.interaction.unmetRequirement(context)),
+          trigger.acceptsInstrument(instrument.def) && !trigger.interaction.blocksOperation(context),
       )
       .map((trigger) => new Combination(trigger, this, instrument, agent));
   }

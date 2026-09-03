@@ -19,7 +19,7 @@ export const IN_PROGRESS_TAG = 'wip';
 /**
  * 工程が要求する素材または道具1件（GameElementDefinition.md 13.1節）。
  *
- * **要求はタグでも書ける**（枠の`accept`・combinationsの`with`と同じTypeMatchRule）。道具は
+ * **要求はタグでも書ける**（4.1節）。道具は
  * 「その用途に使える物」であって特定の型ではないので、刃物を`cutting_tool`で求められる。
  */
 export class RecipeRequirementDef {
@@ -112,7 +112,7 @@ export class RecipeDef {
   /**
    * 解放条件を満たしていない場合、最初に落ちた要件。満たしていればundefined。
    *
-   * 未解放のレシピも解放条件とともに一覧へ出すため、可否と理由を1回の評価から得る
+   * 未解放のレシピも一覧へ出し、そこでなぜ作れないかを言うため、可否と理由を1回の評価から得る
    * （Requirements.firstUnmet と同じ理由）。
    */
   unmetUnlockRequirement(agent: WorldObject | undefined): Requirement | undefined {

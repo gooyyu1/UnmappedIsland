@@ -28,7 +28,8 @@
 #
 # ## 関門（`needs-user-review.sh`）は、司令塔が越えられない
 #
-# 宣言文法・スキーマ・`【確定】` の印に触るPRは、**司令塔の判断ではマージしない**。
+# 宣言文法・スキーマ・確定の宣言（節の `【確定】` と、文書単位の `**本書は全体が確定です。**`）に
+# 触るPRは、**司令塔の判断ではマージしない**。
 # [`needs-user-review.sh`](needs-user-review.sh) が該当を出したら `判断待ち` を付けて `HELD` で止め、
 # ユーザーへ回す。越えるにはユーザーの許可を引いて `--user-ok` を付けて叩き直す——**そのとき許可を
 # 受けたことをPRへコメントとして残す**ので、後からどのPRが誰の許可で通ったのかを辿れる。
@@ -50,7 +51,9 @@
 #
 # **レビューのセッションは別に畳む**（[`archive-reviews.sh`](archive-reviews.sh)）。あちらはPRを
 # 出さないので `session-of-pr.sh` では引けず、`review-<PR番号>` のタグで引く。PRが閉じれば読む相手が
-# 無くなるので、ここが最後の1本を畳む場所。
+# 無くなるので、ここがこのPRの分を畳む最後の場所。**あちらが掃くのはこのPRの分だけではない**
+# （残っている `review-*` 全部。理由はあちらの「1本のPRだけを掃くと…」）ので、`直し待ち` や
+# `判断待ち` で止まったPRのレビューも、1件マージするたびに一緒に片付く。
 #
 # ## `--delete-branch` は worktree の警告を必ず出す
 #
@@ -210,7 +213,7 @@ if grep -q '^UNARCHIVED ' <<<"$archived"; then
 fi
 
 # レビューのセッション（上の「畳む相手は…」）。畳めなければ `UNARCHIVED` が出るので残りに数える。
-reviews=$(CCR_META="$CCR_META" bash "$HERE/archive-reviews.sh" "$PR")
+reviews=$(CCR_META="$CCR_META" bash "$HERE/archive-reviews.sh")
 [ -z "$reviews" ] || printf '%s\n' "$reviews"
 if grep -q '^UNARCHIVED ' <<<"$reviews"; then
   leftover=1

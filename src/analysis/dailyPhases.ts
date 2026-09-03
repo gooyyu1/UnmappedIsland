@@ -2,6 +2,8 @@ import type { IslandMap } from '../domain/generation/IslandMap';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { ActivityHoursRow } from './activityHours';
+import type { BalanceTables } from './balanceTables';
+import { MINUTES_PER_DAY } from './balanceTables';
 import { craftingStepsOf } from './craftingSteps';
 
 /**
@@ -37,13 +39,31 @@ export const OUTDOOR_WINDOW_MINUTES = 720;
 /** 夜の睡眠（分）。1日の割り付け（屋外720・夜の加工360・睡眠360）はContentSkeleton.md 8.3節。 */
 export const SLEEP_MINUTES_PER_DAY = 360;
 
+/** 焚き火のそばでの加工（分/日）。1日の割り付けの残りで、屋外にも睡眠にも入らない分。 */
+export const NIGHT_CRAFT_MINUTES_PER_DAY = MINUTES_PER_DAY - OUTDOOR_WINDOW_MINUTES - SLEEP_MINUTES_PER_DAY;
+
 /**
- * 1日を賄う生存の採取（分）。最小労働（BalanceStats.md）から睡眠を引いた、昼に払うぶん。
- *
- * **収支表から書き写した値**なので、崩れていないかは`tests/diagnostics/dailyPhaseAssumptions.test.ts`
- * が突き合わせる。
+ * 1日の枠のうち、収支表の最小労働（BalanceStats.md）から出る2つ。**どちらも書き写さない**
+ * ——最小労働が動けば、生存の採取も自由時間も一緒に動く。
  */
-export const SURVIVAL_GATHERING_MINUTES = 247;
+export interface DailyBudget {
+  /** 1日を賄う生存の採取（分）。最小労働から睡眠を引いた、昼に払うぶん。 */
+  readonly survivalGatheringMinutes: number;
+
+  /** 最小労働を払って残る自由時間（分）。山の量を日数へ直すときの分母。 */
+  readonly surplusMinutes: number;
+}
+
+/**
+ * 収支表の最小労働を、1日の割り付けへ当てはめる。**引き算は最小労働から睡眠を落とす1回だけ**
+ * ——自由時間そのものは収支表が持っている（`BalanceTables.surplusMinutes`）ので、ここでは組み直さない。
+ */
+export function dailyBudgetOf(balance: BalanceTables): DailyBudget {
+  return {
+    survivalGatheringMinutes: balance.minimumLabourMinutes - SLEEP_MINUTES_PER_DAY,
+    surplusMinutes: balance.surplusMinutes,
+  };
+}
 
 /** 探索できる土地の型1つの、局面の勘定に要るぶん。 */
 export interface LocationTypeDay {
@@ -96,6 +116,121 @@ export const WORK_SHARES: readonly WorkShare[] = [
   { label: '密林', locationDefNames: ['jungle'], share: 0.25 },
 ];
 
+/**
+ * 1周回に積む山1つ（ContentSkeleton.md 4節）。
+ *
+ * **何を山と数えるかは宣言する。** 量の大小からは決められない——磨いた石器も恒久窯も労働は要るのに
+ * 山に立たない（開けるものを持たないため。同節）。**逆に、立つと決めた山の量は数える**。
+ */
+export interface WorkPile {
+  /** 系統の番号（ContentSkeleton.md 3節）。 */
+  readonly system: number;
+
+  readonly label: string;
+
+  /**
+   * その山の量。**型の名前**なら収支表に出るその型の総労働、**数**なら置いた日数（仮置き）。
+   * 置いた値になるのは、まだ宣言が無い山と、量が個数や往復の回数で決まっていて型1つでは立たない山
+   * （畑・塩田・甕。同節）。
+   */
+  readonly amount: string | number;
+}
+
+/**
+ * 1周回に積む山の全部（ContentSkeleton.md 4節の表）。**この一覧が1周回の日数の出どころ**で、
+ * 山を1つ足すことは、ここへ1行足すことと同じ。
+ */
+export const WORK_PILES: readonly WorkPile[] = [
+  { system: 1, label: '雨受けと貯水を据える', amount: 2 },
+  { system: 1, label: '甕を10個焼く', amount: 3.2 },
+  { system: 1, label: '航海ぶんの水を積む', amount: 1 },
+  { system: 2, label: '畑を拓いて回す', amount: 4 },
+  { system: 2, label: '家畜の囲い', amount: 'pen' },
+  { system: 2, label: '大型の狩り', amount: 2 },
+  { system: 3, label: '干し場', amount: 1 },
+  { system: 3, label: '燻し小屋', amount: 2 },
+  { system: 3, label: '製塩', amount: 3 },
+  { system: 3, label: '航海ぶんを塩漬けにする', amount: 1 },
+  { system: 4, label: '鉱石を掘って製錬', amount: 5 },
+  { system: 6, label: '石鏃の槍', amount: 1 },
+  { system: 6, label: '青銅の穂先', amount: 2 },
+  { system: 7, label: 'なめし革の背負い袋', amount: 1 },
+  { system: 7, label: 'そり', amount: 2 },
+  { system: 8, label: 'なめし革の一式', amount: 'tanned_leather_clothing' },
+  { system: 9, label: '高床の寝台', amount: 1.5 },
+  { system: 9, label: '詰め物', amount: 1 },
+  { system: 10, label: '葉の小屋', amount: 3 },
+  { system: 10, label: '高床', amount: 4 },
+  { system: 10, label: '板の壁・床', amount: 5 },
+  { system: 12, label: '筏', amount: 'raft' },
+  { system: 12, label: '帆', amount: 'rawhide_sail' },
+  { system: 12, label: '櫂と舵', amount: 2 },
+  { system: 12, label: '沿岸航海', amount: 3 },
+  { system: 12, label: '海図を仕上げる', amount: 5 },
+];
+
+/**
+ * 屋外での採取・伐採・運搬が山に占める割合（ContentSkeleton.md 8.3節の仮置き）。残りが拠点での加工で、
+ * **律速は屋外のほう**——拠点での加工は夜の枠に収まる。
+ */
+const OUTDOOR_WORK_SHARE = 2 / 3;
+
+/** 山1つの量。 */
+export interface WorkPileAmount {
+  readonly pile: WorkPile;
+  readonly minutes: number;
+  readonly days: number;
+}
+
+/**
+ * 山の一覧を量へ直す。置いた日数の山は自由時間を掛けて分へ、型で立つ山は収支表の総労働をそのまま採る。
+ * **型が収支表に出ていなければ投げる**——0分の山として黙って通すと、1周回の日数だけが静かに縮む。
+ */
+export function workPileAmountsOf(balance: BalanceTables, budget: DailyBudget): readonly WorkPileAmount[] {
+  return WORK_PILES.map((pile) => {
+    const minutes =
+      typeof pile.amount === 'number'
+        ? pile.amount * budget.surplusMinutes
+        : objectCostMinutesOf(balance, pile.amount);
+    return { pile, minutes, days: minutes / budget.surplusMinutes };
+  });
+}
+
+function objectCostMinutesOf(balance: BalanceTables, objectName: string): number {
+  const cost = balance.objectCosts.find((row) => row.objectName === objectName);
+  if (cost?.minutes === undefined)
+    throw new Error(`山が名乗る型 '${objectName}' の総労働が、収支表に出ていません。`);
+  return cost.minutes;
+}
+
+/** 山の合計を、屋外と拠点へ割ったもの（ContentSkeleton.md 8.3節）。 */
+export interface WorkTotal {
+  readonly pileCount: number;
+  readonly minutes: number;
+  readonly days: number;
+
+  /** 屋外での採取・伐採・運搬と、拠点での加工。定常の局面が消化するのは前者だけ。 */
+  readonly outdoorMinutes: number;
+  readonly baseMinutes: number;
+
+  /** 拠点での加工が、夜の加工の枠で何日ぶんか。 */
+  readonly baseDays: number;
+}
+
+export function workTotalOf(amounts: readonly WorkPileAmount[], budget: DailyBudget): WorkTotal {
+  const minutes = amounts.reduce((sum, amount) => sum + amount.minutes, 0);
+  const baseMinutes = minutes * (1 - OUTDOOR_WORK_SHARE);
+
+  return {
+    pileCount: amounts.length,
+    minutes,
+    days: minutes / budget.surplusMinutes,
+    outdoorMinutes: minutes * OUTDOOR_WORK_SHARE,
+    baseMinutes,
+    baseDays: baseMinutes / NIGHT_CRAFT_MINUTES_PER_DAY,
+  };
+}
+
 /** 探索の局面（島を開き切るまで）を、拠点1つから見たもの。 */
 export interface ExplorationPhase {
   /** 島の全土地を探索率100%まで開くのに要る探索時間の合計（分）。移動を含まない。 */
@@ -112,6 +247,15 @@ export interface ExplorationPhase {
 
   /** 上の日数のうち、1日あたりに進む探索時間（分）。 */
   readonly dayTripExplorationMinutesPerDay: number | undefined;
+
+  /** 同じく、1日あたりに探索へ使える枠（分）＝ 屋外の枠 − 往復の移動 − 生存の採取。 */
+  readonly dayTripWindowMinutesPerDay: number | undefined;
+
+  /**
+   * その枠のうち、探索が進まずに余る分（分/日）。**探索の局面に山を1分も乗せていない**ので、
+   * この余りがそのまま「1周回が下へ振れる材料」になる（ContentSkeleton.md 8.3節）。
+   */
+  readonly dayTripSpareMinutesPerDay: number | undefined;
 
   /** 土地ごとに日帰りと泊まりの安いほうを採ったときの日数。日帰りだけの日数との差が、泊まりで浮く分。 */
   readonly mixedDays: number;
@@ -179,6 +323,30 @@ export interface IslandDailyPhases {
   readonly bestBase: BaseDailyPhases;
 }
 
+/** 1周回を、拠点1つから見たもの（ContentSkeleton.md 8.3節）。 */
+export interface CycleDays {
+  readonly explorationDays: number;
+  readonly steadyDays: number;
+  readonly totalDays: number;
+}
+
+/**
+ * 局面を積んだ1周回の日数。**探索の局面には山を1分も乗せない**（ContentSkeleton.md 8.3節）ので、
+ * 屋外の山は全部が定常の局面に乗る。
+ *
+ * **日数はこの拠点1つの実入りで割って出す。** 島ごとの日数を平均するのと、島をまたいで平均した
+ * 実入りで割るのは別物で、後者は日数を短く出す（TerrainStats.md「定常の局面」）。
+ *
+ * 日帰りで開き切れない島と、定常の局面を持たない拠点ではundefined。
+ */
+export function cycleDaysOf(base: BaseDailyPhases, outdoorWorkMinutes: number): CycleDays | undefined {
+  const explorationDays = base.exploration.dayTripDays;
+  if (explorationDays === undefined || base.steady === undefined) return undefined;
+
+  const steadyDays = outdoorWorkMinutes / base.steady.workMinutesPerDay;
+  return { explorationDays, steadyDays, totalDays: explorationDays + steadyDays };
+}
+
 /**
  * 探索できる土地の型ごとに、局面の勘定に要る値を実測する。定義は島をまたいで変わらないので、
  * 島ごとの算出はこれを使い回す。
@@ -224,10 +392,11 @@ export function locationTypeDaysOf(
 export function dailyPhasesOf(
   map: IslandMap,
   locationDays: ReadonlyMap<number, LocationTypeDay>,
+  budget: DailyBudget,
 ): IslandDailyPhases {
   const distances = shortestPathMinutes(map);
   const days = map.sites.map((site) => locationTypeDayOf(locationDays, map, site.index));
-  const bases = map.sites.map((site) => baseDailyPhasesOf(distances, days, site.index));
+  const bases = map.sites.map((site) => baseDailyPhasesOf(distances, days, site.index, budget));
 
   return {
     seed: map.seed,
@@ -240,14 +409,15 @@ function baseDailyPhasesOf(
   distances: readonly number[][],
   days: readonly LocationTypeDay[],
   base: number,
+  budget: DailyBudget,
 ): BaseDailyPhases {
   const others = days.map((_, site) => site).filter((site) => site !== base);
 
   return {
     siteIndex: base,
     oneWayMinutes: others.reduce((sum, site) => sum + distances[base][site], 0) / others.length,
-    exploration: explorationPhaseOf(distances, days, base),
-    steady: steadyPhaseOf(distances, days, base),
+    exploration: explorationPhaseOf(distances, days, base, budget),
+    steady: steadyPhaseOf(distances, days, base, budget),
   };
 }
 
@@ -261,10 +431,12 @@ function explorationPhaseOf(
   distances: readonly number[][],
   days: readonly LocationTypeDay[],
   base: number,
+  budget: DailyBudget,
 ): ExplorationPhase {
   let explorationMinutes = 0;
   let dayTripDays: number | undefined = 0;
   let dayTripTravelMinutes = 0;
+  let dayTripWindowMinutes = 0;
   let mixedDays = 0;
   let stayOverSiteCount = 0;
   let dayTripImpossibleSiteCount = 0;
@@ -273,7 +445,7 @@ function explorationPhaseOf(
     const roundTripMinutes = 2 * distances[base][site];
     explorationMinutes += day.explorationMinutes;
 
-    const perDayMinutes = workMinutesPerDayOf(day.exploringMinutesPerDay, roundTripMinutes);
+    const perDayMinutes = workMinutesPerDayOf(day.exploringMinutesPerDay, roundTripMinutes, budget);
     const tripDays = perDayMinutes > 0 ? Math.ceil(day.explorationMinutes / perDayMinutes) : undefined;
     const stayDays = stayOverDaysOf(day, roundTripMinutes);
 
@@ -283,6 +455,7 @@ function explorationPhaseOf(
     } else if (dayTripDays !== undefined) {
       dayTripDays += tripDays;
       dayTripTravelMinutes += tripDays * roundTripMinutes;
+      dayTripWindowMinutes += tripDays * windowMinutesOf(roundTripMinutes, budget);
     }
 
     if (tripDays === undefined || stayDays < tripDays) stayOverSiteCount++;
@@ -294,6 +467,9 @@ function explorationPhaseOf(
     dayTripDays,
     dayTripTravelMinutesPerDay: dayTripDays === undefined ? undefined : dayTripTravelMinutes / dayTripDays,
     dayTripExplorationMinutesPerDay: dayTripDays === undefined ? undefined : explorationMinutes / dayTripDays,
+    dayTripWindowMinutesPerDay: dayTripDays === undefined ? undefined : dayTripWindowMinutes / dayTripDays,
+    dayTripSpareMinutesPerDay:
+      dayTripDays === undefined ? undefined : (dayTripWindowMinutes - explorationMinutes) / dayTripDays,
     mixedDays,
     stayOverSiteCount,
     dayTripImpossibleSiteCount,
@@ -331,11 +507,12 @@ function steadyPhaseOf(
   distances: readonly number[][],
   days: readonly LocationTypeDay[],
   base: number,
+  budget: DailyBudget,
 ): SteadyPhase | undefined {
   const found: { label: string; roundTripMinutes: number; workMinutesPerDay: number; share: number }[] = [];
 
   for (const workShare of WORK_SHARES) {
-    const best = bestDestinationOf(distances, days, base, workShare);
+    const best = bestDestinationOf(distances, days, base, workShare, budget);
     if (best === undefined) continue;
     if (best.workMinutesPerDay === 0) return undefined;
 
@@ -368,6 +545,7 @@ function bestDestinationOf(
   days: readonly LocationTypeDay[],
   base: number,
   workShare: WorkShare,
+  budget: DailyBudget,
 ): { roundTripMinutes: number; workMinutesPerDay: number } | undefined {
   let best: { roundTripMinutes: number; workMinutesPerDay: number } | undefined;
 
@@ -377,7 +555,7 @@ function bestDestinationOf(
     const roundTripMinutes = 2 * distances[base][site];
     const candidate = {
       roundTripMinutes,
-      workMinutesPerDay: workMinutesPerDayOf(day.gatheringMinutesPerDay, roundTripMinutes),
+      workMinutesPerDay: workMinutesPerDayOf(day.gatheringMinutesPerDay, roundTripMinutes, budget),
     };
     if (best === undefined || isBetterDestination(candidate, best)) best = candidate;
   }
@@ -398,9 +576,13 @@ function isBetterDestination(
  * 変わるのは頭打ち（`capMinutes`）だけ**——そこで何をするかは、その土地でその仕事ができる時間として
  * しか式に現れない。
  */
-function workMinutesPerDayOf(capMinutes: number, roundTripMinutes: number): number {
-  const outdoor = OUTDOOR_WINDOW_MINUTES - roundTripMinutes - SURVIVAL_GATHERING_MINUTES;
-  return Math.max(0, Math.min(outdoor, capMinutes));
+function workMinutesPerDayOf(capMinutes: number, roundTripMinutes: number, budget: DailyBudget): number {
+  return Math.max(0, Math.min(windowMinutesOf(roundTripMinutes, budget), capMinutes));
+}
+
+/** 頭打ちに掛ける前の、その日その土地で使える枠（分）。**往復で尽きれば負**で、その日は行けない。 */
+function windowMinutesOf(roundTripMinutes: number, budget: DailyBudget): number {
+  return OUTDOOR_WINDOW_MINUTES - roundTripMinutes - budget.survivalGatheringMinutes;
 }
 
 function locationTypeDayOf(

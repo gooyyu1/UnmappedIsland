@@ -43,10 +43,19 @@ object_defs:
         cell_count: 10
         # 中身のかさの合計の上限（7.3節）。手に提げる籠の内容積そのままで20L。
         capacity: 20000
-    # 解放条件（conditions、GameElementDefinition.md 13.3節）はまだ置かない。繊維・編みスキルの
-    # プロパティと、それを伸ばす経路が未実装のため、今条件を置くと永久に作れなくなる。
     recipes:
       woven:
+        # **解放条件が効く典型がここ**（docs/engine/SkillSystem.md 4.2節）——材料はヤシの葉だけで、
+        # 素材の側は初日から揃ってしまう。**腕は道具を1つも要らない葉編み（weaving.yamlのweave）だけでも
+        # 立つ**ので、開けるのは繊維を扱った回数であって、他の何かを先に作れることではない。
+        #
+        # 「basic以上」を段の名前の並びで書く形は characters/player_character.yaml が持つ。
+        conditions:
+          - reason: needs_cordage
+            any:
+              - {subject: agent, prop: skill_cordage, in_stage: basic}
+              - {subject: agent, prop: skill_cordage, in_stage: skilled}
+              - {subject: agent, prop: skill_cordage, in_stage: expert}
         steps:
           - requires:
               - {object: woven_leaf, count: 6, consume: true}

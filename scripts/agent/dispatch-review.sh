@@ -39,8 +39,10 @@
 # ## 立てる前に、前のレビューを畳む
 #
 # 使い回さない以上、**次を立てた時点で前の分は終わっている**——`review-<このPR>` を持つ既存の
-# セッションは、もう誰も起こさない。[`archive-reviews.sh`](archive-reviews.sh) へ渡す。畳むのを
+# セッションは、もう誰も起こさない。[`archive-reviews.sh`](archive-reviews.sh) を呼ぶ。畳むのを
 # **立てる前**に済ませるのは、これから立てるセッションが対象に入る余地を無くすため。
+# **あちらが掃くのはこのPRの分だけではない**（残っている `review-*` 全部）。理由はあちらの
+# 「1本のPRだけを掃くと、行き止まりのPRのぶんが永久に残る」。
 #
 # ## 結果は `send_message` ではなくPRのコメント
 #
@@ -109,7 +111,7 @@ if [ -n "${DRY_RUN:-}" ]; then
   exit 0
 fi
 
-CCR_META="$CCR_META" bash "$HERE/archive-reviews.sh" "$PR"
+CCR_META="$CCR_META" bash "$HERE/archive-reviews.sh"
 
 # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
 session=$(bash "$CCR_META" create_session <"$WORK/args.json" | grep -o '{"ccr".*' | jq -r '.ccr.id')

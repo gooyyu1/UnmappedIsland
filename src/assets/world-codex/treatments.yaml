@@ -61,14 +61,15 @@ object_defs:
             # 当てているだけで既に半分に緩んでいる（injuries.yamlのfracture）。長さまで半分にすると、
             # 支えが原因の少なさだけになる。
             severity: -0.6
-    # 解放条件（conditions、13.3節）はまだ置かない。医術のスキルのプロパティと、それを伸ばす経路が
-    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
+    # **解放条件を持たない。** 手当てを担うスキルは一覧（docs/world/Skills.md 2節）に無く、木材加工の
+    # 腕を求めると、折れてから作れないことがある——上の「折れてから材料を集めに行くことにはならない」を
+    # 腕の側から崩すことになる。
     recipes:
       lashed:
         steps:
-          # 拾った枝と撚った紐だけで、削る工程も組み立ての道具も要らない。骨折を出すのは重い罠と
-          # 大型の獣（docs/engine/InjurySystem.md 5節）——どちらもここより後ろにある段なので、
-          # 折れてから材料を集めに行くことにはならない（素材込みの手間はstats/balance.yaml）。
+          # 拾った枝と撚った紐だけで、削る工程も組み立ての道具も要らない。骨折を出すのは大型の獣
+          # （docs/engine/InjurySystem.md 5節）——ここより後ろにある段なので、折れてから材料を
+          # 集めに行くことにはならない（素材込みの手間はstats/balance.yaml）。
           - requires:
               - {object: thick_branch, count: 2, consume: true}
               - {object: cord, count: 1, consume: true}

@@ -21,6 +21,27 @@ const DOCS = 'docs';
 /** 節とみなす見出しの最も浅い深さ。`#`は文書題名なので数えない。 */
 const SHALLOWEST_SECTION_DEPTH = 2;
 
+/** 文書まるごとが確定であることの宣言（docs/DocumentStyle.md 6.2節）。射程はその文書の全行。 */
+export const WHOLE_DOCUMENT_CONFIRMED = '**本書は全体が確定です。**';
+
+/**
+ * 文書まるごとの確定を宣言しているか（docs/DocumentStyle.md 6.2節）。
+ *
+ * 見るのは**コードフェンスの外の行頭**だけ。規約そのものが書式を例示するので、フェンスの中まで
+ * 見ると、書式を説明した文書が宣言した文書になる。
+ *
+ * **判定はここにしか無い。** 表を出す側と 6.2 節の条件を検査する側が別々に判定すると、条件が
+ * 食い違ったとき——確定欄は `全` と出るのに条件は掛かっていない、が成立する。
+ */
+export function declaresWholeDocument(markdown) {
+  let inFence = false;
+  for (const line of markdown.split(/\r?\n/)) {
+    if (/^\s*```/.test(line)) inFence = !inFence;
+    else if (!inFence && line.startsWith(WHOLE_DOCUMENT_CONFIRMED)) return true;
+  }
+  return false;
+}
+
 function markdownFilesIn(dir) {
   const found = [];
   for (const entry of readdirSync(path.join(ROOT, dir))) {
@@ -61,6 +82,7 @@ export function statusOfMarkdown(markdown) {
     lines: lines.length,
     sections: headings.length,
     confirmed: headings.filter((heading) => heading.includes('【確定】')).length,
+    wholeDocumentConfirmed: declaresWholeDocument(markdown),
     unimplemented: headings.filter((heading) => heading.includes('【未実装')).length,
     hasOpenQuestions: headings.some((heading) => heading.includes('未決事項')),
   };
@@ -93,17 +115,21 @@ function printDocuments() {
     { lines: 0, sections: 0, confirmed: 0, unimplemented: 0 },
   );
 
+  const wholeDocuments = documents.filter((doc) => doc.wholeDocumentConfirmed).length;
+
   console.log('# ドキュメントの確定度と実装状況\n');
   console.log(
     `全 ${documents.length} 文書 / ${total.lines} 行 / ${total.sections} 節。` +
       `**確定 ${total.confirmed} 節**、未実装 ${total.unimplemented} 節。` +
-      '印の無い節は暫定（docs/DocumentStyle.md 6節）。\n',
+      '印の無い節は暫定（docs/DocumentStyle.md 6節）。' +
+      `ほかに全体が確定の文書が ${wholeDocuments} 件あり、確定欄を \`全\` と出す（同 6.2節）。\n`,
   );
   console.log('| 文書 | 節 | 確定 | 未実装 | 未決事項節 | 行 |');
   console.log('| --- | --: | --: | --: | :-: | --: |');
   for (const doc of documents) {
     console.log(
-      `| ${doc.path} | ${doc.sections} | ${doc.confirmed} | ${doc.unimplemented} | ` +
+      `| ${doc.path} | ${doc.sections} | ${doc.wholeDocumentConfirmed ? '全' : doc.confirmed} | ` +
+        `${doc.unimplemented} | ` +
         `${doc.hasOpenQuestions ? 'あり' : ''} | ${doc.lines} |`,
     );
   }

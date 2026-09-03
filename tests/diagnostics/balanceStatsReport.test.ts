@@ -336,3 +336,23 @@ describe('値段の付かない道具', () => {
     ).toEqual([]);
   }, 600_000);
 });
+
+/**
+ * 代入（`set`）で消える増減が、期待値から落ちていること（issue #1337）。
+ *
+ * 生肉を食べる枝のうち、食中毒の枝（重み12）は満腹を0へ代入するので、その枝では直前に足した500が
+ * 残らない。**表は経路の比較に使うもの**なので、これを数えないと生の満腹が実際より安く出る。
+ */
+describe('代入で打ち消される増減', () => {
+  it('生肉を食べたときの満腹が、食中毒の枝を引いた期待値になっている', () => {
+    const { tables } = balanceFromDefinitions();
+    const satietyOf = (ownerName: string): number | undefined =>
+      tables.supply
+        .find((row) => row.ownerName === ownerName && row.stepName === 'eat')
+        ?.agentDeltas.find((delta) => delta.name === 'satiety')?.amount;
+
+    // 重みは 100 : {prop: spoilage}=0 : {prop: spoilage}=0 : 12。
+    expect(satietyOf('raw_meat')).toBeCloseTo((500 * 100) / 112, 2);
+    expect(satietyOf('raw_meat__cure_salted')).toBeCloseTo((500 * 100) / 112, 2);
+  }, 600_000);
+});

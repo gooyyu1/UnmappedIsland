@@ -57,15 +57,31 @@ traits:
       # 今感じている痛み。自分では動かず、外から負った怪我（injuries.yaml）と、内側の不調を表す段
       # （ビタミンのscurvy段）がmodifyで押し上げるので、valueは0のまま。増える側が悪いプロパティ
       # なので、段はmaxからの割合で刻む（docs/world/Characters.md）。
+      #
+      # **幸福度を削るのはこの段だけ**（docs/world/Characters.md 幸福度節）。怪我・壊血病・脂の欠乏は
+      # どれも痛みへ合流しているので、ここから1本引くだけで内側の不調が残らず心へ届く。
+      # 1段上がるごとに倍で、1日（96 tick）あたり-12・-24・-48。
       pain:
         tags: [status, health]
         value: 0
         range: {min: 0, max: 100}
         stages:
           - {name: painless}
-          - {name: sore, min: 25, alert: watch}
-          - {name: hurting, min: 50, alert: caution}
-          - {name: unbearable, min: 83, alert: danger}
+          - name: sore
+            min: 25
+            alert: watch
+            passives:
+              - add: {self: {happiness: -0.125}}
+          - name: hurting
+            min: 50
+            alert: caution
+            passives:
+              - add: {self: {happiness: -0.25}}
+          - name: unbearable
+            min: 83
+            alert: danger
+            passives:
+              - add: {self: {happiness: -0.5}}
       # 行動の可否を決める2つの明るさ（docs/engine/IlluminationSystem.md 2節）。身体の仕組みでは
       # ないが、どのキャラクタでも同じなので、痛み・血と同じくこの trait が配る。
       #
@@ -329,3 +345,175 @@ traits:
           - add:
               self:
                 vitamin: -0.5
+      # 幸福度（docs/world/Characters.md 幸福度節）。**メンタルの不調を代表する1本**で、ストレス・退屈・
+      # 孤独をそれぞれ値にはしない（docs/concept/DesignPrinciples.md）。**現実の単位が無い**ので
+      # （痛み・体力と同じ抽象の0〜100）、確かめられるのは大小の関係だけ。
+      #
+      # **押し引きはすべてadd。** modifyを1本も刺さないので実効値が実体値と一致し、0に達したときの
+      # 強制休息をon_minで書ける（まだ入っていない）。意味の面でも、効くのは「快適な寝床で寝た今夜」で
+      # あって寝床を持っていること自体ではない。
+      #
+      # **上げるのは口にした物だけ**（各eatのベース値）で、**下げるのは痛みの段だけ**（上のpain）。
+      # 時間そのものから生える圧（ホームシック）・寝床や住居からの寄与・免疫への寄与は、まだ入って
+      # いない。増える側が良い値なので、段は下から上へ深刻さが下がる並び（血・熱と同じ形）。
+      #
+      # 感じ方の個体差はまだ持たせず、痛み・血と同じくこの trait が配る。
+      happiness:
+        tags: [status, health]
+        value: 75
+        range: {min: 0, max: 100}
+        stages:
+          - {name: miserable, alert: danger}
+          - {name: dejected, min: 20, alert: caution}
+          - {name: glum, min: 50, alert: watch}
+          - {name: content, min: 80}
+      # ------------------------------------------------------------------
+      # 腕前（docs/engine/SkillSystem.md、粒度と一覧は docs/world/Skills.md 2節）。レシピの解放条件は
+      # 段の名前で読む（同4節）ので、境目を条件の側へ書き写さない。
+      #
+      # **段は11本で共通**（0/20/60/180。4段・比3で、SkillSystem.md 6節の目安そのまま）。本ごとに
+      # 境目を変えると、同じ`basic`が本ごとに違う遠さになり、連言で並べた条件（Skills.md 3節）を
+      # 読み比べられなくなる。
+      #
+      # **一番下の段も下端を名乗る**（`min: 0`）。他のプロパティの最下段は受け皿なので下端を書かないが、
+      # 腕前は0より下へ行かないうえ、**下端の無い段は段内進捗の区間が定まらずバーが出ない**
+      # （docs/ui/StatusArea.md 9節）——素人でいるあいだ、伸びているのに何も動かないことになる。
+      #
+      # **個体差を持たせない。** 4人とも漂着した素人として始まるので、痛み・血と同じくこの trait が配る。
+      #
+      # **解放条件の「その段以上」は、段の名前をanyで束ねて書く**（上のbloodの安全域と同じ形）。
+      # `in_stage`は今いる段ちょうどの判定なので（GameElementDefinition.md 14.1節）、1つだけ書くと
+      # 腕が上がった時点で条件が偽へ戻り、レシピが閉じ直す。境目の数を条件の側へ書き写さないための
+      # 形で、tests/world-codex/skillsYaml.test.tsが「上の段でも満たし続ける」ことを見張る。
+      #
+      # **伸ばすのは実行経路だけ**（同3節の3経路のうち中）。その腕を使う操作が自分の`add`で`agent`へ
+      # +2を配る。**量は作業の長さに依らず一律**で、繰り返しの稼ぎを抑えるのは時間のコストだけ
+      # （同7節）。発見・集中の2経路は、契機と対価が未決のため持たない（同8節）。
+      #
+      # **配るのは、Skills.md 2節がその腕の技術として挙げている作業だけ。** 打ち欠く（knap）、繊維を
+      # 採って撚って編む（strip・ret・spin・ply・weave）、刃で木を断って削り出す（fell・buck・whittle）、
+      # 皮を剥ぐ（butcher）、獲物を獲る（strike・spear_*・catch_seabird）、火を起こす（light）、
+      # 保たせる加工（cure）の7組で全部。
+      #
+      # **出す物がそっくり同じ操作は、同じ腕を同じだけ配る。** 同じ仕事に入口が2つあるということなので
+      # （植物繊維はfiber.yamlのstripとcoconut.yamlのret、編んだ葉はweaveとsplit_and_weave）、片方だけに
+      # 配ると、**どの島に流れ着いたかが腕の伸びに化ける**。tests/world-codex/skillsYaml.test.tsが、
+      # 出す物がそっくり同じ組で揃っていることを見張る。
+      #
+      # **出す物が重なるだけでは同じ仕事ではない。** 解体（animals.yamlのbutcher、皮革）と漁
+      # （voyage.yamlのspear_*、狩猟）はどちらも生肉を出すが、剥ぐ手と突く手は別の腕で、配る腕も違う
+      # ——この2つは上の検査の同じ組に入らないし、入れてはいけない。
+      #
+      # **配らないもの。** 食べる・歩く・休む（身体の動きで、腕は関わらない）。くべる・入れる・据える・
+      # 汲む・移す（1手の受け渡し。**量が一律なので、ここへ配ると最も速い伸ばし方になる**——1分の
+      # `add_fuel`が1時間の`knap`と同じだけ伸びる）。素材を採るだけの操作（草を刈るfell・葉を採る
+      # pick_frond・樹皮を剥ぐstrip_bark・実を割るcrack）。土地を調べるexplore（発見経路そのもので、
+      # 未決のまま置いてある）。
+      #
+      # **伸ばす行動をまだ持たない本がある**（指物・接合、建築、料理、採鉱・製錬）。開ける物が世界に
+      # 1つも無く、伸ばす操作の置き場も無いため。**それらは解放条件にも書かない**——書けば永久に
+      # 開かないレシピになる（SkillSystem.md 3.2節）。
+      # ------------------------------------------------------------------
+      # 石を打ち欠く（locations.yamlのknap）。柄付けの刃（tools.yaml）を開ける。
+      skill_knapping:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 掻き取る・撚る・編む（fiber.yaml・weaving.yaml）。編み籠・くくり罠・葉の衣類と、柄付けの紐を開ける。
+      skill_cordage:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 削る・伐る（timber.yamlのfell/buck、animals.yamlのwhittle）。開けるレシピはまだ無い
+      # ——木の箱・そり・板（Skills.md 2節）が世界に1つも無い。
+      skill_woodwork:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 削り合わせて組む。伸ばす行動も開ける物もまだ無い（スツール・テーブル・車輪が世界に無い）。
+      skill_joinery:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 住居を建てる。伸ばす行動も開ける物もまだ無い（住居は docs/world/Dwellings.md の検討段階）。
+      skill_building:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 皮を剥ぐ（animals.yamlのbutcher）。なめし革と、それを縫った物（clothing.yaml・voyage.yamlの帆）を開ける。
+      skill_leatherwork:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 調理する。伸ばす行動がまだ無い——焼くのは炉が子のcooking_progressを進めるだけで
+      # （docs/engine/FireSystem.md 7節）、人が行う操作になっていない。
+      skill_cooking:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 得た食を保たせる（salt.yamlのcure）。開けるレシピはまだ無い——干し場・燻し場が世界に無い。
+      skill_preserving:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 火を起こす（fire.yamlのlight）。**レシピは開けない**——効き先は着火の重みだけ
+      # （docs/engine/FireSystem.md 10節）。
+      skill_firecraft:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 獣を狩る（animals.yamlのstrike）。**レシピは開けない**——開けるのは素材と機会で（Skills.md 2節）、
+      # 罠を作るのは繊維・編みの腕（同節のくくり罠）。
+      skill_hunting:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}
+      # 鉱石を採って製錬する。伸ばす行動も開ける物もまだ無い（青銅器が世界に無い）。
+      skill_smelting:
+        tags: [skill]
+        value: 0
+        stages:
+          - {name: novice, min: 0}
+          - {name: basic, min: 20}
+          - {name: skilled, min: 60}
+          - {name: expert, min: 180}

@@ -176,7 +176,8 @@ describe('fiber.yamlの繊維を撚る連鎖', () => {
     expect(requirement.count).toBe(3);
     expect(requirement.consume).toBe(true);
 
-    // 繊維・編みスキルが未実装なので、今は誰でも作れる（fiber.yamlのコメント参照）。
+    // **中間素材なので誰でも作れる**（SkillSystem.md 4.2節）。紐3本を撚る手間がゲートで、
+    // そこへ腕を重ねると二重になる。
     expect(recipe.unmetUnlockRequirement(undefined)).toBeUndefined();
   });
 });

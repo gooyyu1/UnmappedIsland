@@ -110,7 +110,7 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
     expect(elapsedMinutes(), '割って編むほうが1枚あたりは速い（60分で2枚）').toBe(60);
   });
 
-  it('編み籠のレシピは編んだ葉を6枚要求し、解放条件を持たない', () => {
+  it('編み籠のレシピは編んだ葉を6枚要求し、繊維・編みの腕を要求する', () => {
     const basket = codex.objects.get(codex.objectNames.getId('woven_basket'));
 
     expect(basket.recipesProducingThis).toHaveLength(1);
@@ -123,7 +123,8 @@ describe('weaving.yamlのヤシの葉を編む連鎖', () => {
     expect(requirement.count).toBe(6);
     expect(requirement.consume).toBe(true);
 
-    // 繊維・編みスキルが未実装なので、今は誰でも作れる（containers.yamlのコメント参照）。
-    expect(recipe.unmetUnlockRequirement(undefined)).toBeUndefined();
+    // 素材はヤシの葉だけで初日から揃うので、開けるのは編んだ数のほう（SkillSystem.md 4.2節）。
+    // 腕を持たない者では落ちる——段ごとの通り抜けは tests/world-codex/skillsYaml.test.ts が見る。
+    expect(recipe.unmetUnlockRequirement(undefined)?.reasonName).toBe('needs_cordage');
   });
 });

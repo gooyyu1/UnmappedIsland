@@ -83,6 +83,18 @@ export class Combination extends Interaction<DragTrigger, WorldObject> {
   }
 
   /**
+   * 今このまま実行してよいか。要件（14節）を満たしているだけでなく、**1個は受け取れる**こと
+   * ——器へ入らないまま相手を消す操作（満杯の炉へ薪をくべる）が、黙って薪だけ失う結果になるのを
+   * 防ぐ（`DragTrigger.acceptedCount`）。
+   *
+   * **受け取れる個数が0なのは断る理由であって、候補から外す条件ではない。** 理由を宣言した要件が
+   * 同時に落ちているなら、落とし先としては残る（`WorldObject.refusedCombinationsWith`）。
+   */
+  canExecute(): boolean {
+    return this.unmetRequirement() === undefined && this.acceptedCountIncludingSelf([]) >= 1;
+  }
+
+  /**
    * 自分の相手に続けてfollowers（同じ束の仲間）を重ねるとき、続けて実行できる個数（自分を含む）。
    * `allow_multiple`（12.4節）を宣言していなければ1までになる。
    *

@@ -297,6 +297,17 @@ describe('watch-prs.sh のマージ可否', () => {
     expect(lines).toEqual(['CONFLICT 803']);
   });
 
+  // 番号で絞ってよいのは「今その結果を待っているか」で選べるものだけ。コンフリクトは待っているかに
+  // 関わらず前へ進めないので、司令塔が `0` を渡す既定の使い方でも出る。ここを絞りに入れていたせいで、
+  // `判断待ち` の #1272・#1361 が衝突したまま一度も報告されなかった。
+  it('見張るPRの番号から外れていても、コンフリクトは出る', () => {
+    const lines = watch([[pullRequest(804, 'CONFLICTING')]], [[]], [], [reviewSession(804)], {
+      numbers: [0],
+    });
+
+    expect(lines).toEqual(['CONFLICT 804']);
+  });
+
   it('マージ可否が計算中のPRは決着として出さず、確定した次の周で出す', () => {
     const lines = watch(
       [[pullRequest(810, 'UNKNOWN')], [pullRequest(810, 'CONFLICTING')]],
@@ -444,7 +455,7 @@ describe('watch-prs.sh の手番（REVIEWED・FIXED）', () => {
 
 describe('watch-prs.sh の UNREVIEWED', () => {
   // どれも `0` を渡して走らせる。司令塔がレビュー中のPRを黙らせるために普段そうしていて、そのとき
-  // `GREEN`・`RED`・`CONFLICT` が全部外れることが、この合図を要る理由そのものだから。
+  // `GREEN`・`RED` が全部外れることが、この合図を要る理由そのものだから。
 
   it('結論もレビューのセッションも無いPRを出す', () => {
     const lines = watch([[pullRequest(860, 'MERGEABLE')]], [[]], [], [], { numbers: [0] });
@@ -598,6 +609,46 @@ describe('watch-prs.sh の RELAY', () => {
     expect(watch([[pullRequest(871, 'MERGEABLE')]], [[]], [], [], { numbers: [0] })).toEqual([
       'UNREVIEWED 871',
     ]);
+  });
+});
+
+describe('watch-prs.sh の UNTRIAGED', () => {
+  it('`task` も `meta` も無い issue を、全件1行で出す', () => {
+    const lines = watch(
+      [[]],
+      [[issue(940, []), issue(941, []), issue(942, ['task']), issue(943, ['meta'])]],
+      // #942 は渡して黙らせる。渡さないと `TASK` が出て、そちらが先に立つ（下）。
+      [942],
+    );
+
+    expect(lines).toEqual(['UNTRIAGED 940 941']);
+  });
+
+  // **抑えるのは件数ではなく順位。** しきい値を置くと「そこまでは残っていてよい」を宣言することに
+  // なるので、1件でも出す代わりに、他に捌くものがある間だけ黙る。
+  it('他の合図が1件でもあれば出さない', () => {
+    const lines = watch([[]], [[issue(940, []), issue(944, ['task'])]], [940]);
+
+    expect(lines).toEqual(['TASK 944']);
+  });
+
+  // 走っている間も出し続けると、司令塔は同じ棚卸しを何度も投入する。`task` ラベルが付くのは棚卸しが
+  // 終わって報告を読んだ後なので、それまで未整理の一覧は縮まない。
+  //
+  // **何も出ない周があったことを、次の周の `GONE` で見る。** 出ていれば1周目で終わるので、
+  // 2周目の合図が返ることが「1周目は黙った」の証明になる。
+  it('`meta` の issue へ投入したセッションが生きている間は黙る', () => {
+    const lines = watch(
+      [[]],
+      [
+        [issue(940, []), issue(945, ['meta']), issue(946, [])],
+        [issue(940, []), issue(945, ['meta'])],
+      ],
+      [945, 946],
+      [session('session_01TRIAGE', '棚卸し', 'SESSION_STATUS_BUCKET_WORKING', ['task-945'])],
+    );
+
+    expect(lines).toEqual(['GONE 946']);
   });
 });
 

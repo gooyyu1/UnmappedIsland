@@ -107,7 +107,13 @@ function parsePutIn(loader: WorldCodexYamlLoader, context: string, node: YAMLMap
 
   const durationNode = tryGetNode(node, 'duration');
   if (durationNode === undefined) throw new YamlLoadError(`${context}: 'duration'が必要です。`);
-  return parseWeight(loader, `${context}.duration`, durationNode, ReferenceScope.combination, 'duration');
+  return parseWeight(
+    loader,
+    `${context}.duration`,
+    durationNode,
+    ReferenceScope.acting.withInstrument,
+    'duration',
+  );
 }
 
 /** 1つの枠の定義（`{accept: {tag|object}, max: N}`）を読む。 */

@@ -129,9 +129,8 @@ describe('farming.yamlの畑と囲い', () => {
     throw new Error('畑に何も実らなかった');
   }
 
-  /** 囲いを1つ据えて、飼葉を芋で満たす。 */
-  function buildPen(taroCount = 3): WorldObject {
-    const pen = spawnInto('pen', land, 'fixtures');
+  /** 囲いへ芋を与える。1つで飼葉が12増える（farming.yamlのfodderは上限96）。 */
+  function feed(pen: WorldObject, taroCount: number): void {
     for (let i = 0; i < taroCount; i++) {
       const taro = spawnInto('taro', player, 'hand');
       expect(
@@ -142,6 +141,12 @@ describe('farming.yamlの畑と囲い', () => {
         '飼葉をやれる',
       ).toBe(true);
     }
+  }
+
+  /** 囲いを1つ据えて、飼葉を芋で満たす。 */
+  function buildPen(taroCount = 3): WorldObject {
+    const pen = spawnInto('pen', land, 'fixtures');
+    feed(pen, taroCount);
     return pen;
   }
 
@@ -407,6 +412,40 @@ describe('farming.yamlの畑と囲い', () => {
     expect(beforeTwo - pen.tryGetProperty(drinkingWaterId)!.number, '2羽なら2倍').toBeCloseTo(oneRate * 2);
   });
 
+  it('満ちた囲いは、重ねた飼葉と水を断る理由を名乗る', () => {
+    // 上限に達したことは `conditions` にも書いてある（pen_fed・pen_watered）ので、落ちるその瞬間に
+    // 容量と条件が同時に落ちる。**容量を候補選びの足切りにすると候補ごと消えて理由が届かない**
+    // ——断る理由を宣言しているものは落とし先として残す（14.6節・CardInteraction.md 2.1節）。
+    //
+    // **水を先に注ぐ。** 口の開いた甕は持っている間に蒸発する（liquid_containers.yaml）ので、
+    // 芋を8つ与える40分を挟むと甕1杯では満たなくなる。
+    open();
+    const pen = spawnInto('pen', land, 'fixtures');
+    pourWater(pen, 4000);
+    feed(pen, 8);
+    expect(pen.tryGetProperty(fodderId)!.number, '芋12を8つで上限まで').toBe(96);
+    expect(pen.tryGetProperty(drinkingWaterId)!.number, '甕1杯で上限まで').toBe(4000);
+
+    const taro = spawnInto('taro', player, 'hand');
+    expect(pen.combinationsWith(taro, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      pen
+        .refusedCombinationsWith(taro, player)
+        .map((combination) => combination.unmetRequirement()?.reasonName),
+      '飼葉を断る理由まで辿り着ける',
+    ).toEqual(['pen_fed']);
+
+    const jar = spawnInto('jar__content_water_liquid', player, 'hand');
+    jar.tryGetProperty(fillId)!.setNumber(4000);
+    expect(pen.combinationsWith(jar, player), '成立する組み合わせは無い').toEqual([]);
+    expect(
+      pen
+        .refusedCombinationsWith(jar, player)
+        .map((combination) => combination.unmetRequirement()?.reasonName),
+      '水を断る理由まで辿り着ける',
+    ).toEqual(['pen_watered']);
+  });
+
   it('水をやった器は、空になって手元に残る', () => {
     // 飼葉は器ごと消える（食べ物そのものが餌になる）が、水は容器の変種として在る
     // （liquid_containers.yaml）ので、注いだぶんfillが減り、空になれば素の甕へ戻る。
@@ -426,7 +465,7 @@ describe('farming.yamlの畑と囲い', () => {
     ).not.toContain('water');
   });
 
-  it('空の囲いは罠として働き、掛かった獣に檻の傷が刺さる', () => {
+  it('空の囲いは罠として働き、掛かった獣に打ち身が刺さる', () => {
     // **檻と家畜の囲いは1つの型**（TrapSystem.md 1.2節）。空いている間は大型を生かして捕らえる罠で、
     // spawnの配列が順に生むので獲物を生んでからその中へ怪我を生む（into: child、同5.3節）。
     open();
@@ -434,11 +473,11 @@ describe('farming.yamlの畑と囲い', () => {
 
     const prey = tickUntilCaught(pen);
     expect(prey.def.name).toBe('junglefowl');
-    expect(injuriesOf(prey), '檻の傷が刺さる').toEqual(['pen_bruise']);
+    expect(injuriesOf(prey), '檻の打ち身が刺さる').toEqual(['bruise']);
     expect(contentsOf(land, 'items'), 'レーンに出ない——獲物は囲いの中に居る').toEqual([]);
   });
 
-  it('檻の傷は血を奪わないので、掛かった獣は死なない', () => {
+  it('檻の打ち身は血を奪わないので、掛かった獣は死なない', () => {
     // **生かす罠の性格は、bleedingを書かなかったことでできている**（TrapSystem.md 5.2節）。
     // くくり罠の傷なら80mLのヤケイは血を失うが、打ち身では1mLも減らない。
     open();
@@ -459,13 +498,13 @@ describe('farming.yamlの畑と囲い', () => {
       const prey = tickUntilCaught(buildPen());
 
       expect(prey.def.name, `${locationName}はイノシシを宣言している`).toBe('wild_boar');
-      expect(injuriesOf(prey), '檻の傷が刺さる').toEqual(['pen_bruise']);
+      expect(injuriesOf(prey), '檻の打ち身が刺さる').toEqual(['bruise']);
       expect(contentsOf(land, 'items'), 'レーンに出ない——獲物は檻の中に居る').toEqual([]);
     }
   });
 
   it('檻に掛かったイノシシは、血を失わずに生きたまま残る', () => {
-    // **檻が体格によらず生かせるのは、pen_bruiseがbleedingを書いていないこと1つ**
+    // **檻が体格によらず生かせるのは、bruiseがbleedingを書いていないこと1つ**
     // （TrapSystem.md 5.2節）。くくり罠の傷は体格との比で意味が変わる（同5.1節）が、比を持たない
     // 打ち身は60kgのイノシシからも1kgのヤケイからも1mLも奪わない。
     open(ROLL, 'forest');
@@ -475,7 +514,7 @@ describe('farming.yamlの畑と囲い', () => {
     tick(40);
     expect(prey.def.name, '死体になっていない').toBe('wild_boar');
     expect(prey.tryGetProperty(bloodId)!.getEffectiveValue(), '血は減らない').toBeGreaterThanOrEqual(blood);
-    expect(injuriesOf(prey), '傷は残ったまま').toEqual(['pen_bruise']);
+    expect(injuriesOf(prey), '傷は残ったまま').toEqual(['bruise']);
     expect(prey.tryGetProperty(warinessId)!.getEffectiveValue(), '牙を持つ相手でも暴れない').toBe(0);
   });
 

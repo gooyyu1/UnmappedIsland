@@ -1,5 +1,5 @@
 # 罠の定義。仕組みは docs/engine/TrapSystem.md、掛かる動物は animals.yaml、刺さる怪我は
-# injuries.yaml（snare_laceration・fracture・puncture_wound）が持つ。
+# injuries.yaml（snare_laceration・bruise・puncture_wound）が持つ。
 #
 # 罠は「時間と運を払って、危険を払わずに獲物を得る」道で、直接戦う狩猟（HuntingSystem.md）との
 # 非対称が設計の芯（TrapSystem.md 7節）。
@@ -15,7 +15,7 @@ traits:
   # 杭を打った落とし穴（下のpitfallのstake軸、GameElementDefinition.md 3.5.1節）へ配られるもの。
   #
   # **杭が変えるのは、落ちた相手へ刺す怪我だけ**（TrapSystem.md 1.2節）。穴も掛かる候補も
-  # タイマーも素の落とし穴のままなので、配るのはその1点だけになる——骨折の重みを0にし、
+  # タイマーも素の落とし穴のままなので、配るのはその1点だけになる——打ち身の重みを0にし、
   # 刺し傷の重みを立てる。重み0の候補は抽選ごと落ちる（同3節の`<動物>_catch`と同じ形）ので、
   # どちらの版でも刺さる怪我は1つに決まり、抽選にはならない。
   staked:
@@ -23,7 +23,7 @@ traits:
     passives:
       - modify:
           self:
-            fracture_weight: -10
+            bruise_weight: -10
             puncture_weight: 10
 
 object_defs:
@@ -209,10 +209,17 @@ object_defs:
           from_prop: meat_bait
           to_prop: meat_bait
         destroy: instrument
-    # 解放条件（conditions、13.3節）はまだ置かない。狩猟スキルのプロパティと、それを伸ばす経路が
-    # 未実装のため、今条件を置くと永久に作れなくなる（containers.yamlの編み籠と同じ）。
     recipes:
       knotted:
+        # **開けるのは狩猟ではなく繊維・編み**（docs/world/Skills.md 2節がくくり罠を繊維・編みの欄に
+        # 置いている）。狩猟が広げるのは素材と機会であって、罠を結ぶ手ではない。編み籠と同じく
+        # 材料は植物繊維だけで、素材の側は初日から揃う（docs/engine/SkillSystem.md 4.2節）。
+        conditions:
+          - reason: needs_cordage
+            any:
+              - {subject: agent, prop: skill_cordage, in_stage: basic}
+              - {subject: agent, prop: skill_cordage, in_stage: skilled}
+              - {subject: agent, prop: skill_cordage, in_stage: expert}
         steps:
           - requires:
               - {object: plant_fiber, count: 2, consume: true}
@@ -269,12 +276,16 @@ object_defs:
                 - weight: 8
                 - weight: {prop: wild_boar_catch}
                   spawn: {object: wild_boar, into: self}
-                  # 落ちた相手へ刺す怪我（TrapSystem.md 5.1節・5.2節）。**素の穴は骨折だけ、
+                  # 落ちた相手へ刺す怪我（TrapSystem.md 5.1節・5.2節）。**素の穴は打ち身だけ、
                   # 杭を打った版は刺し傷だけ**——重みの片方が必ず0なので、これは抽選ではなく
                   # 杭の有無そのもの（上のstaked trait）。
+                  #
+                  # **骨折は刺さない。** 骨折が奪う動きはloadが駆動し、loadを持つのはキャラクタ
+                  # だけ（ContainerSystem.md 2節）で、穴に落ちるのは獣だけ——刺しても痛みしか
+                  # 動かない（injuries.yamlのfracture、InjurySystem.md 5節）。
                   pick:
-                    - weight: {prop: fracture_weight}
-                      spawn: {object: fracture, into: child}
+                    - weight: {prop: bruise_weight}
+                      spawn: {object: bruise, into: child}
                     - weight: {prop: puncture_weight}
                       spawn: {object: puncture_wound, into: child}
       # その土地でその動物が掛かる重み。素の値は0で、祖先（＝掘った土地、locations.yaml）が
@@ -298,9 +309,9 @@ object_defs:
       plant_bait:
         value: 0
         range: {min: 0, max: 24}
-      # 落ちた相手へ刺す怪我を選ぶ重み（上のon_min）。**素の穴は骨折だけ**で、杭を打った版が
+      # 落ちた相手へ刺す怪我を選ぶ重み（上のon_min）。**素の穴は打ち身だけ**で、杭を打った版が
       # stake軸のtraitで入れ替える。
-      fracture_weight: {value: 10, range: {min: 0, max: 10}}
+      bruise_weight: {value: 10, range: {min: 0, max: 10}}
       puncture_weight: {value: 0, range: {min: 0, max: 10}}
       # 雨に縁を崩され、落ちた獣に壁を掘られて浅くなる。空のままなら30日、獣が入れば2.7日で
       # 埋まって使えなくなる（TrapSystem.md 6.1節）。**丸太を組んだ檻と違って耐久を持つ**のは、
@@ -367,7 +378,9 @@ object_defs:
             not: {subject: self, matches: {tag: staked}}
         become: {stake: staked}
         destroy: instrument
-    # 解放条件（conditions、13.3節）はまだ置かない（くくり罠と同じ理由）。
+    # **解放条件を持たない。** 掘るだけで結ぶ工程が無いので、くくり罠を開ける繊維・編みの腕
+    # （上）はここには効かない。半日を掘り続けること自体がゲートになっている
+    # （docs/engine/SkillSystem.md 4.2節）。
     recipes:
       # 掘るだけ。**掘削具はまだ無い**（TrapSystem.md 8節）ので、畑と同じく掘り棒にする太い枝を
       # 1本折り込む形で置いてある（farming.yamlのfield）。獣が落ちる深さまで掘るので、畑を均す

@@ -2,8 +2,9 @@ import type { PropertyValue } from './PropertyValue';
 import type { WorldObject } from './WorldObject';
 
 /**
- * conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）・active効果の
- * 対象/参照が共通で参照する起点。self.prop/parent.propのような1階層の参照のみ対応。
+ * 宣言が**誰を見るか**を指す起点。self.prop/parent.propのような1階層の参照のみ対応。
+ * **どれをどこに書けるかは、その宣言が置かれた場所が決める**（ReferenceScope。一覧は
+ * GameElementDefinition.md 14.1節の表）。
  * worldは起点として未対応（ロード時エラー、14.1節）。Ancestorは見つからなければworldまで遡るため、
  * 世界固有の概念の参照はAncestorで代替できる。
  */
@@ -130,7 +131,6 @@ export class ReferenceContext {
 
 /**
  * {subject, prop}が指す、1階層のプロパティ参照（ReferenceRoot＋プロパティのグローバルID）。
- * weightのpath参照（10.2節）・conditionsのvalueRef（14節）・activeの対象・passivesの対象が共有する。
  *
  * **どのプロパティを指すかとどう辿るかを1つにまとめて持つ**ので、解決するときにプロパティIDを
  * 渡し直す必要が無い（ancestor探索と読み出しが同じIDを使う）。
@@ -178,7 +178,7 @@ export class ReferenceScope {
   /** 操作している者（agent）が居るか。誰かが操作しているとは限らない場所には居ない。 */
   private readonly hasAgent: boolean;
 
-  /** 働きかけに使われる物（instrument）が居るか。真になるのは物が運ばれてくる場所だけ（下のcombination）。 */
+  /** 働きかけに使われる物（instrument）が居るか。真になるのは物が運ばれてくる場所だけ（下のwithInstrument）。 */
   private readonly hasInstrument: boolean;
 
   /** amongが選んだ相手（picked）が居るか。amongを書いた候補の中だけ（10.3節）。 */
@@ -209,11 +209,8 @@ export class ReferenceScope {
   /** 宣言元の個体だけが居る場所。誰かが操作しているとは限らないので、操作の側の役は解決先を持たない。 */
   static readonly declaration = new ReferenceScope(true, false, false, false, true, false);
 
-  /** 誰かが操作している場所（interactions、11節）。 */
-  static readonly action = new ReferenceScope(true, true, false, false, true, false);
-
-  /** 使う物が運ばれてくる場所（`drag`のinteractions 12節・`put_in`の`duration` 7.10節）。 */
-  static readonly combination = new ReferenceScope(true, true, true, false, true, false);
+  /** 宣言元の個体に加えて、操作している者が居る場所（誰かが押した・引いた結果として起きる、11節）。 */
+  static readonly acting = new ReferenceScope(true, true, false, false, true, false);
 
   /**
    * 操作者だけが居る場所（レシピの条件）。宣言元が居ない理由は書ける場所ごとに違うので、
@@ -232,6 +229,18 @@ export class ReferenceScope {
       this.hasInstrument,
       this.hasPicked,
       false,
+      this.broadcasts,
+    );
+  }
+
+  /** 働きかけに使われる物が運ばれてくる場所（`drag`のinteractions 12節・`put_in`の`duration` 7.10節）。 */
+  get withInstrument(): ReferenceScope {
+    return new ReferenceScope(
+      this.hasSelf,
+      this.hasAgent,
+      true,
+      this.hasPicked,
+      this.namesProperty,
       this.broadcasts,
     );
   }
@@ -274,7 +283,7 @@ export class ReferenceScope {
       case 'instrument':
         return this.hasInstrument ? undefined : 'ここには働きかけに使われる物が運ばれてきません';
       case 'picked':
-        return this.hasPicked ? undefined : "'picked'はamongを書いた候補の中でのみ使えます";
+        return this.hasPicked ? undefined : 'ここには候補の中から選ばれた相手が居ません';
       case 'ancestor':
         if (!this.hasSelf) return 'ここには遡る起点になる個体が居ません';
         return this.namesProperty

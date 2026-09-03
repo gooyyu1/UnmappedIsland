@@ -92,7 +92,6 @@ export const UI_TEXT_NAMES = [
   // レシピ一覧（Windows.md 9節）。
   'recipe_title',
   'recipe_empty',
-  'recipe_locked_name',
   // 時間の長さ（CardInteraction.md 7節、GameEndings.md 9.3節）。
   'duration_minutes',
   'duration_hours',

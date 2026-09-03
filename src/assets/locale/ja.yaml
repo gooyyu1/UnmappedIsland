@@ -225,6 +225,56 @@ object_texts:
         display_name: ビタミン
         icon: 🥬
         description: 体に残っているビタミン。力にはならないが、尽きると壊血病になり、古傷が開き歯が抜ける。葉物を口にすれば戻る。
+      happiness:
+        display_name: 幸福度
+        icon: 😊
+        description: 心の張り。痛みを抱えている間は落ちていき、うまい物を口にすれば戻る。火を通した食事ほど大きく戻す。
+      # 腕前（docs/engine/SkillSystem.md、一覧は docs/world/Skills.md 2節）。**説明にはその腕を伸ばす
+      # 行動を書く**——伸ばす行動を持たない本では、どうにもならないことがそこで分かる。
+      skill_knapping:
+        display_name: 石器
+        icon: 🪨
+        description: 石を打ち欠いて刃を作る腕。石へ石を重ねて打つほど上がる。
+      skill_cordage:
+        display_name: 繊維・編み
+        icon: 🧶
+        description: 繊維を撚り、葉を編む腕。掻き取り・撚り・編みのどれでも上がる。
+      skill_woodwork:
+        display_name: 木材加工
+        icon: 🪵
+        description: 木を伐り、刃を当てて削り出す腕。木を倒し、流木を玉切りし、骨を削るほど上がる。
+      skill_joinery:
+        display_name: 指物・接合
+        icon: 🪑
+        description: 材を削り合わせて組む腕。今のこの島には、伸ばす手立ても使い道もまだ無い。
+      skill_building:
+        display_name: 建築
+        icon: 🏠
+        description: 住まいを建てる腕。今のこの島には、伸ばす手立ても使い道もまだ無い。
+      skill_leatherwork:
+        display_name: 皮革
+        icon: 🧥
+        description: 皮を剥ぎ、なめし、縫う腕。獣を捌くほど上がる。
+      skill_cooking:
+        display_name: 料理
+        icon: 🍳
+        description: 食材を調理する腕。今のこの島には、伸ばす手立てがまだ無い（焼くのは火が進める）。
+      skill_preserving:
+        display_name: 保存
+        icon: 🧂
+        description: 得た食を乾季まで保たせる腕。塩を打つほど上がる。
+      skill_firecraft:
+        display_name: 火
+        icon: ♨️
+        description: 火を起こし、保つ腕。きりもみ式で火口に向かうほど上がる。
+      skill_hunting:
+        display_name: 狩猟
+        icon: 🏹
+        description: 獣を狩る腕。武器を手に打ちかかるほど上がる。
+      skill_smelting:
+        display_name: 採鉱・製錬
+        icon: ⛏️
+        description: 鉱石を見つけ、金属を取り出す腕。今のこの島には、伸ばす手立ても使い道もまだ無い。
       afloat:
         display_name: 浮いている
         description: 水に浮かんでいるか。帆のような部品は、浮いている間だけ効く。
@@ -394,9 +444,9 @@ object_texts:
   snare_laceration:
     display_name: 縄の傷
     description: 締まった縄が食い込んで裂けた傷。浅く掛かれば血はすぐ止まり、深ければそうもいかない。
-  pen_bruise:
+  bruise:
     display_name: 打ち身
-    description: 囲いの丸太へ体を打ちつけて負った傷。血は流れないので、どんなに大きな獣も生きたまま残る。
+    description: 丸太や穴の底へ体を打ちつけて負った傷。血は流れないので、どんなに大きな獣も生きたまま残る。
   puncture_wound:
     display_name: 刺し傷
     description: 穂先が深く突き通した傷。開いたままの深部から、裂傷とは桁違いの速さで血が流れる。
@@ -1173,6 +1223,8 @@ property_tag_texts:
     display_name: 健康
   nutrition:
     display_name: 栄養
+  skill:
+    display_name: 腕前
 
 # object_defのタグ（GameElementDefinition.md 4.1節）の文言。タグの大半は判定にしか使われず画面へ
 # 出ないので、ここに並ぶのはレシピ一覧の棚の見出し（core.yamlのrecipe_categories）だけ。
@@ -1368,6 +1420,13 @@ reason_texts:
   no_fuel: 燃やす物が入っていない。火種だけでは燃え続けない。
   too_dark: 暗すぎて手が付けられない。明かりが要る。
   too_stormy: 風雨が強すぎて、屋外では手が付けられない。収まるのを待つしかない。
+  # レシピの解放条件（docs/engine/SkillSystem.md 4節）。**ここだけ文ではなく名詞句で書く**
+  # ——出る先が吹き出しではなくカードのタイトルの中（ui_textsのrecipe_locked_name）で、完成品の
+  # 名前と合わせて全角10文字に収める必要がある（CardView.md 1節）。どの段が足りないかも書かない
+  # ——今いる段はプロパティのウィンドウの腕前のタブが持つ。
+  needs_knapping: 石器の腕
+  needs_cordage: 繊維の腕
+  needs_leatherwork: 皮革の腕
 
 # 段（GameElementDefinition.md 6.4節のstages）のうち、UIが名前を読んで画面に出すもの。カードの上へ
 # 覆いとして出る（CardView.md 9.1節）ほか、死亡ダイアログが死因として出し（VitalsSystem.md 6節）、
@@ -1423,6 +1482,11 @@ stage_texts:
   tired: 疲れ
   winded: 息切れ
   fresh: 元気
+  # 幸福度。
+  miserable: 惨め
+  dejected: 落胆
+  glum: 塞ぐ
+  content: 平静
   # 荷重。
   light: 身軽
   laden: 荷持ち
@@ -1436,6 +1500,13 @@ stage_texts:
   rotten: 腐った
   stale: 傷んだ
   sound: 無事
+  # 腕前の段＝レベル（SkillSystem.md 5節）。**11本の腕前すべてが同じ4段を使う**ので、どの腕前でも
+  # 同じ語が同じ習熟を指す。バーの両端に「今の段／次の段」として並ぶ（StatusArea.md 9節）ため、
+  # 隣り合う2つが一目で上下と分かる語にする。
+  novice: 見習い
+  basic: 一人前
+  skilled: 熟練
+  expert: 名人
 
 # 消し方の名乗り（GameElementDefinition.md 9.3節のdestroyのreason）。死亡ダイアログが「渇きで死んだ。」
 # のように死因として出す（VitalsSystem.md 6節）。
@@ -1495,7 +1566,7 @@ ui_texts:
   # 名前の付いていない土地（IslandMapが個体名を持たない場合）。
   unnamed_location: 名もなき土地
   # レシピ一覧（Windows.md 9節）。未解放の理由が宣言されていない場合と、棚に載らないレシピの見出し。
-  recipe_locked: まだ作り方が分からない
+  recipe_locked: まだ作り方が分からない。
   recipe_other: その他
 
   # タイトル画面（StartScreen.md 画面構成 1）。**画面の名前は、開くボタンと見出しで同じ語**——
@@ -1566,8 +1637,6 @@ ui_texts:
   # レシピ一覧（Windows.md 9節）の見出しと、1つも並ばないときの文。
   recipe_title: 作るもの
   recipe_empty: ここに並ぶものはまだ無い。
-  # 未解放のレシピの札。押せないことを、名前の後ろの理由で伝える。
-  recipe_locked_name: '{name}（{reason}）'
 
   # ゲーム内時間の長さ（timeTexts.ts）。時・分のどちらが立つかで3通り。
   duration_minutes: '{minutes}分'
