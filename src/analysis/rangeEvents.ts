@@ -72,20 +72,20 @@ function inwardFromEnd(range: PropertyRange, label: RangeEventLabel, value: numb
  * そのものが行き先**——端は分岐が始まる時点の値そのものなので、`add`で足して戻すのも`set`で書き戻す
  * のも1つの値に均せる。
  *
- * 代入と増減の宣言順は分岐に残らない（StepOutcome）ので、代入を土台にして増減を重ね、代入が複数
- * あれば後のものを採る（SetEffect.applyと同じ後勝ち）。**静的に解けない代入は分岐に載らない**
- * （PropertyAssignment）ので、その戻り量は端に留まったものとして数えられる。
+ * **分岐に残る増減は、最後の代入より後のものだけ**（StepOutcome）なので、代入を土台にしてそれを
+ * 重ねればよい。代入が複数あれば後のものを採る（SetEffect.applyと同じ後勝ち）。**静的に解けない代入は
+ * 行き先を持たない**（PropertyAssignment）ので、端に留まったものとして数える。
  *
- * **条件つきのrangeイベント（6.3節）では、著者の代入と、条件を満たさない回へ倒れる既定のクランプが
+ * **条件つきのrangeイベント（6.3節）では、著者の効果と、条件を満たさない回へ倒れる既定のクランプが
  * 1つの分岐に並ぶ**——ConditionalEffect.readが排他な2つを両方渡し、効果の読み下しがそれを順に
- * 起こるものとして畳むため。後勝ちなのでクランプが残り、条件つきで`set`して戻す宣言は戻り0と
+ * 起こるものとして畳むため。クランプが後に来るので、条件つきで戻す宣言は`set`でも`add`でも戻り0と
  * 読まれる。排他だという事実は畳んだ時点で失われているので、ここでは分けられない。
  */
 function selfValueAfter(propertyDef: PropertyDef, outcome: StepOutcome, end: number): number {
   let value = end;
   for (const assignment of outcome.assignments)
     if (assignment.target === 'self' && assignment.propertyGlobalId === propertyDef.globalId)
-      value = assignment.value;
+      value = assignment.value ?? end;
   for (const delta of outcome.deltas)
     if (delta.target === 'self' && delta.propertyGlobalId === propertyDef.globalId) value += delta.amount;
   return value;
