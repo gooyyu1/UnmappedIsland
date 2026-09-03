@@ -45,6 +45,9 @@ slot_texts:
   # （docs/engine/TrapSystem.md 1.2節）で、枠も1つなので見出しも1つ。死体も同じ枠に残る。
   catch:
     display_name: 獣
+  # 干し場に掛けてある食べ物（drying.yaml）。
+  drying:
+    display_name: 干している物
 
 object_texts:
   # 全オブジェクト共通のメンバー。ここにdisplay_name/descriptionを書いても、
@@ -70,6 +73,11 @@ object_texts:
         description: この土地をどれだけ調べ尽くしたか。100%に達しても探索は続けられるが、隠された道はもう見つからない。
       size:
         display_name: 量
+      # 干し上がるまでの残り（drying.yaml）。**食べ物11種が同じ名前で持つ**ので既定に置く。
+      # 塩田は同じ名前で別のもの（次の1杯が塩になるまで）を数えるので、自分のエントリで上書きする。
+      drying_remaining:
+        display_name: 干し上がるまで
+        description: 干物になるまでに、あとどれだけ強い日差しが要るか。日の当たる地面に並べるか、干し場に掛けている間だけ減る。
       travel_minutes:
         display_name: 移動時間
       crossing_minutes:
@@ -225,6 +233,10 @@ object_texts:
         display_name: ビタミン
         icon: 🥬
         description: 体に残っているビタミン。力にはならないが、尽きると壊血病になり、古傷が開き歯が抜ける。葉物を口にすれば戻る。
+      happiness:
+        display_name: 幸福度
+        icon: 😊
+        description: 心の張り。痛みを抱えている間は落ちていき、うまい物を口にすれば戻る。火を通した食事ほど大きく戻す。
       # 腕前（docs/engine/SkillSystem.md、一覧は docs/world/Skills.md 2節）。**説明にはその腕を伸ばす
       # 行動を書く**——伸ばす行動を持たない本では、どうにもならないことがそこで分かる。
       skill_knapping:
@@ -440,9 +452,9 @@ object_texts:
   snare_laceration:
     display_name: 縄の傷
     description: 締まった縄が食い込んで裂けた傷。浅く掛かれば血はすぐ止まり、深ければそうもいかない。
-  pen_bruise:
+  bruise:
     display_name: 打ち身
-    description: 囲いの丸太へ体を打ちつけて負った傷。血は流れないので、どんなに大きな獣も生きたまま残る。
+    description: 丸太や穴の底へ体を打ちつけて負った傷。血は流れないので、どんなに大きな獣も生きたまま残る。
   puncture_wound:
     display_name: 刺し傷
     description: 穂先が深く突き通した傷。開いたままの深部から、裂傷とは桁違いの速さで血が流れる。
@@ -662,6 +674,18 @@ object_texts:
       draw_seawater:
         display_name: 海水を汲む
         description: 波打ち際から1杯ぶんを汲んで張る。干し上がれば塩1つになる。
+
+  # 天日干しと干し場（drying.yaml）。
+  # cure軸の値。塩漬けと同じ書式（上のvariation_names）に乗るので、名前だけを持つ。
+  dried:
+    display_name: 日干し
+  drying_rack:
+    display_name: 干し場
+    description: 立てた枝に縄を張った棚。掛けた食べ物は日差しだけで干上がり、地面に並べるより速い。雨に降られると戻る。
+    recipes:
+      lashed:
+        display_name: 組んで張る
+        description: 太い枝を立て、渡した縄で結わえる。刃物も掘る物も要らない。
 
   # 道具（tools.yaml）。
   sharp_stone:
@@ -1478,6 +1502,11 @@ stage_texts:
   tired: 疲れ
   winded: 息切れ
   fresh: 元気
+  # 幸福度。
+  miserable: 惨め
+  dejected: 落胆
+  glum: 塞ぐ
+  content: 平静
   # 荷重。
   light: 身軽
   laden: 荷持ち

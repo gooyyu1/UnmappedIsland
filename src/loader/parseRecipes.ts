@@ -11,7 +11,7 @@ import {
   tryGetSeq,
 } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
-import { parseRequirementsField } from './parseConditions';
+import { parseRequirementList } from './parseConditions';
 import { withYamlContext, parseTypeMatchRule } from './parseCommon';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { RecipeDef, RecipeRequirementDef, RecipeStepDef } from '../domain/RecipeDef';
@@ -61,7 +61,7 @@ function parseStep(loader: WorldCodexYamlLoader, context: string, node: YamlNode
  * recipes_map（13節）を読む。trait合成の対象ではないため、object_def自身の宣言だけを渡す。
  *
  * `conditions`（SkillSystem.md 4節）は**このレシピを知っているか**の判定で、素材の充足を見る
- * `steps.requires`とは別物。agentしか参照できない（ReferenceScope.recipeUnlock参照）。
+ * `steps.requires`とは別物。agentしか参照できない（下のReferenceScope.acting.withoutSelf）。
  */
 export function parseRecipes(
   loader: WorldCodexYamlLoader,
@@ -80,11 +80,12 @@ export function parseRecipes(
       parseStep(loader, `${context}.steps[${index}]`, item),
     );
 
-    const unlock = parseRequirementsField(
+    const unlock = parseRequirementList(
       loader,
       context,
       tryGetSeq(map, 'conditions', context),
-      ReferenceScope.recipeUnlock,
+      ReferenceScope.acting.withoutSelf,
+      'conditions',
     );
 
     result.push(new RecipeDef(name, steps, tryGetScalar(map, 'icon', context), unlock));

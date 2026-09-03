@@ -112,9 +112,14 @@ describe('injuries.yamlの怪我', () => {
    *
    * **脂の在庫も戻す。** 15時間で尽きて段が痛みを押し上げる（DigestionSystem.md 7節）ので、
    * そのままでは怪我の痛みだけを見ていられなくなる。
+   *
+   * **眠気と幸福度も同じ理由で戻す。** 尽きると次の操作の切れ目で強制的に時間が進む
+   * （docs/world/Characters.md 限界節）ので、そのままでは洗った1杯ぶんの効き目が測れない。
    */
   function tick(count: number): void {
-    const vital = ['hydration', 'body_fat', 'lipid'].map((name) => codex.propertyNames.getId(name));
+    const vital = ['hydration', 'body_fat', 'lipid', 'wakefulness', 'happiness'].map((name) =>
+      codex.propertyNames.getId(name),
+    );
     const held = vital.map((id) => player.tryGetProperty(id)?.number ?? 0);
     for (let i = 0; i < count; i++) {
       player.tick();

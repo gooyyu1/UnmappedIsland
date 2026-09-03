@@ -40,9 +40,9 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
           - reason: too_stormy
-            not: {subject: agent, prop: wind_speed, in_stage: gale}
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 20
         destroy: self
         spawn: {object: banana_stem, count: 5, into: agent}
@@ -60,9 +60,9 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
           - reason: too_stormy
-            not: {subject: agent, prop: wind_speed, in_stage: gale}
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 20
         destroy: self
         spawn:
@@ -74,7 +74,7 @@ object_defs:
     tags: [item, food]
     # 腐敗（foods.yamlのtrait）。**このファイルで腐るのは実だけ**——茎から先は素材で、素材の劣化は
     # まだ入っていない（docs/engine/DurabilitySystem.md 2節・5節）。
-    traits: [perishable, spoils_normal]
+    traits: [perishable, spoils_normal, dryable]
     props:
       weight: {value: 400}
       volume: {value: 500}
@@ -88,13 +88,14 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
             satiety: 350
             carbohydrate: 10
             vitamin: 35
+            happiness: 4
         pick:
           - weight: 100
           - weight: {prop: spoilage}
@@ -121,7 +122,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 30
         # 繊維・編みの腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。撚る・編むと同じ1本で、掻き取りもその腕を使う。
@@ -147,7 +148,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 20
         add: {agent: {skill_cordage: 2}}
         destroy: [self, instrument]
@@ -167,7 +168,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 20
         add: {agent: {skill_cordage: 2}}
         destroy: [self, instrument]

@@ -50,9 +50,9 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
           - reason: too_stormy
-            not: {subject: agent, prop: wind_speed, in_stage: gale}
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 30
         pick:
           - weight: 90
@@ -68,9 +68,9 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
           - reason: too_stormy
-            not: {subject: agent, prop: wind_speed, in_stage: gale}
+            not: {subject: agent, prop: wind_speed, in_stage_or_above: gale}
         duration: 30
         pick:
           - weight: 90
@@ -131,7 +131,7 @@ object_defs:
   # 青い実のゼリー状の果肉。ほとんどが水分で、熟した果肉ほどのカロリーは無い。
   coconut_jelly:
     tags: [item, food]
-    traits: [perishable, spoils_normal]
+    traits: [perishable, spoils_normal, dryable]
     props:
       weight: {value: 150}
       volume: {value: 250}
@@ -142,7 +142,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
@@ -151,6 +151,7 @@ object_defs:
             lipid: 1
             vitamin: 5
             hydration: 5.2
+            happiness: 4
         pick:
           - weight: 100
           - weight: {prop: spoilage}
@@ -177,7 +178,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 30
         destroy: self
         spawn:
@@ -257,7 +258,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 30
         destroy: self
         spawn:
@@ -268,7 +269,7 @@ object_defs:
   # （熟した果肉の水分は半分ほどで、まとまった水が飲めるのは青い実だけ）。
   coconut_meat:
     tags: [item, food]
-    traits: [perishable, spoils_normal]
+    traits: [perishable, spoils_normal, dryable]
     props:
       weight: {value: 200}
       volume: {value: 400}
@@ -279,7 +280,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
@@ -289,6 +290,7 @@ object_defs:
             lipid: 26
             vitamin: 7
             hydration: 6
+            happiness: 4
         pick:
           - weight: 100
           - weight: {prop: spoilage}

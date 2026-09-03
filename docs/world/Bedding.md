@@ -13,9 +13,9 @@
 **実現方法。** **文法の新設はありません。** 寝床は土地の `fixtures` スロットに立つ `fixture` 1種で
 （[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 1節の3スロット）、骨組みと詰め物を差し込む
 `structure` スロットを持ちます（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 7節）。
-部品は `passives` の `modify`（同 8.3節）で寝床のプロパティへ寄与し、寝床自身が `nap`/`sleep` アクションを
-持って `agent` の回復量を足します。導入する語彙は型 `bed` と、部品のタグ `bed_frame`・`stuffing` の3つです。
-**ただし、部品の寄与を回復量へ届かせる部分だけは今の文法では書けません**（4節）。
+寝床自身が `nap`/`sleep` アクションを持ち、眠っている間の回復は寝床の `passives` が毎 tick `agent` へ積みます
+（同 8.4節）。部品の寄与は、その段のブロックを1つ足すことで届きます（4節）。導入する語彙は型 `bed` と、
+部品のタグ `bed_frame`・`stuffing` の3つです。
 
 **在処。** 定義は `src/assets/world-codex/bedding.yaml` を予定しています。材料はすべて既存で、編んだ葉は
 `weaving.yaml`、紐は `fiber.yaml`、太い枝は `locations.yaml` にあります。
@@ -100,8 +100,8 @@ object_defs:
 ```
 
 素材まで遡った手間は次のとおりです。**段2は刃物なしでは通せない**ので（この節の末尾）、**段1から
-通した合計は680分**（刃物ありの140分＋540分）——1日ぶんの自由時間（814分。
-[`ContentSkeleton.md`](./ContentSkeleton.md) 8節）の8割強です。
+通した合計は680分**（刃物ありの140分＋540分）——1日ぶんの自由時間
+（[`ContentSkeleton.md`](./ContentSkeleton.md) 8節）の大半を使う量です。
 
 | 完成品 | 直接の材料 | 工程 | 素材から通した時間 |
 | ------ | ---------- | ---- | ------------------ |
@@ -117,28 +117,69 @@ object_defs:
 
 ## 4. 休息へどう効かせるか
 
-**寝床が自分で `nap`/`sleep` を持ち、キャラクタ側の同名アクションが基準線になります。**
+**寝床が自分で `nap`/`sleep` を持ち、キャラクタ側の同名アクションが基準線になります**
+（[`Characters.md`](./Characters.md) 休息節）。**回復は一発の `add` ではなく、寝床の `passives` が毎 tick
+（15分）積みます**（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 8.4節）。
 
 ```yaml
+object_defs:
+  bed:
     interactions:
       nap:
         trigger: menu
         duration: 180
-        add: {agent: {stamina: 48, wakefulness: 48}}
       sleep:
         trigger: menu
         duration: 360
-        add: {agent: {stamina: 120, wakefulness: 96}}
+    passives:
+      # 敷物だけの段
+      - add: {agent: {stamina: 5, wakefulness: 4}}
+      # 骨組みが入っている間の上積み
+      - conditions:
+          - {slot: structure, matches: {tag: bed_frame}}
+        add: {agent: {stamina: 2}}
+      # 詰め物が入っている間の上積み
+      - conditions:
+          - {slot: structure, matches: {tag: stuffing}}
+        add: {agent: {stamina: 1}}
 ```
 
-**部品の寄与をこの回復量へ届かせる文法が足りません。** 部品は `modify` で寝床のプロパティを押し上げられ
-ますが、`add` の量はリテラル数値しか受け付けません（`src/loader/parseActiveEffects.ts` の `parseAdds`）。
-`weight` と `duration` は既に `{subject, prop}` を受け取れる（同 `parseWeight`、
-[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 10.2節）ので、**`add` の量に同じ読み手を
-使えるようにするのが最小の変更**です。これが無いと、骨組みを差しても回復量が動きません。
+**`agent` が解決するのは、寝床が操作の相手になっている間だけ**なので（同 11.5節）、誰も寝ていない寝床では
+どのブロックも空振りします（解決できない対象への適用はその命令だけ無視されます。
+[`ActionSystem.md`](../engine/ActionSystem.md) 4節）。「眠っている間か」を問うゲートは要りません。
+アクションの側に効果は要らず、持つのは長さだけです。**`passives` の対象に `agent` を書けることは 11.5節の
+規定で、ローダとスキーマはまだ受けません**（操作の関係ごと未実装）。
 
-**寝床が持つプロパティの名前と本数は未決です**（8節）。快適性1本にまとめると、骨組みは「同じ数字が少し
-大きい」だけになり、地面から離れることの意味が消えます。少なくとも乾きと虫は分ける必要があります。
+**`add` の量はリテラル数値しか受け付けません**
+（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 9.2節、
+`src/loader/parseActiveEffects.ts` の `parseAdds`）。それでも部品の寄与が届くのは、**量を1箇所へ集めず、
+段ごとのブロックへ散らしている**ためです。有効なブロックはすべて重なるので（同 8.5節）、段が増えても
+ブロックは1つずつしか増えません。
+
+| 段 | 毎tick | `nap`（12 tick） | `sleep`（24 tick） |
+| -- | ------ | ---------------- | ------------------ |
+| 0 地面 | （キャラクタ側の一発の `add`） | 36 / 36 | 90 / 96 |
+| 1 敷物 | 5 / 4 | 60 / 48 | 120 / 96 |
+| 2 ＋骨組み | 7 / 4 | 84 / 48 | 168 / 96 |
+| 3 ＋詰め物 | 8 / 4 | 96 / 48 | 192 / 96 |
+
+`stamina` / `wakefulness`。**数は仮です。** 置き方を2つだけ決めてあります。**寝床の段のうち跳躍が最も
+大きいのは段2**（2節。骨組みで +2、詰め物で +1）。**覚醒度は骨組みと詰め物では動きません**——`sleep` で
+戻るのは段によらず +96 で、18時間起きて6時間眠るとちょうど元へ戻るという釣り合い
+（[`Characters.md`](./Characters.md) 休息節）を、寝床の上でも保ちます。
+
+**毎 tick の定数なので、寝床のぶんは長さに正比例します。** キャラクタ側の一発の `add` が持つ「まとめて休む
+ほど1時間あたり得」（同節）が効くのは段0だけで、**寝床の上では `nap` 2回と `sleep` 1回がちょうど同じだけ
+戻ります**（どちらも24 tick）。細切れに休むほど損、は地面の上にしかありません。
+
+**詰め物の種類ごとの差**（5節の羽毛と植物繊維）は、`matches` を `{object: ...}` にしてブロックを分けるか、
+部品が `modify` で押し上げた寝床のプロパティを段
+（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 6.4節）で刻むかで書けます。後者は
+詰め物を1種類足しても寝床の宣言が変わりませんが、**寝床が持つプロパティが決まってからでないと書けません**（8節）。
+
+**それでも、どの段も積む先は同じ `stamina` です。** 骨組みが持つ「湿気・虫・浸水から一度に離れる」（2節）
+は、数字の大小では表せません。乾きと虫を寝床のプロパティとして持ち、それをブロックのゲートに使えば別の
+効き方になりますが、**名前と本数は未決です**（8節）。
 
 ## 5. 詰め物は羽毛と植物繊維の2択にする
 
@@ -188,8 +229,8 @@ object_defs:
 ## 8. 未決事項
 
 - **寝床が持つプロパティの名前と本数**（4節）。快適性1本か、乾き・虫・圧迫へ分けるか。分けるほど工法の
-  違いは出ますが、その数だけ部品の宣言が増えます
-- **`add` の量にプロパティ参照を許すか**（4節）。許さないなら、部品の寄与を回復量へ届かせる別の道が要ります
+  違いは出ますが、その数だけ部品の宣言が増えます。**寄与の届け先は `happiness` に決まりました**
+  （[`Characters.md`](./Characters.md) 幸福度節）が、寝床からの寄与はまだ1本も入っていません
 - **雨。** 屋根の無い寝床は雨季にほぼ無価値です。雨から守られていることは `sheltered`
   （[`ContainerSystem.md`](../engine/ContainerSystem.md) 6節）が既に表していますが、それを宣言する場所は
   浅い洞窟だけで（[`Dwellings.md`](./Dwellings.md) 5.1節）、屋根を持つ住居は未実装です。今これを寝床へ

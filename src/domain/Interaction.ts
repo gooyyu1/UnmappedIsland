@@ -58,7 +58,12 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
   }
 
   tryExecute(): boolean {
-    return this.relation.whileActing((context) => this.def.tryExecute(context, this.self.session));
+    // クレーム（whileActing）の外側でseamを閉じる。内側で閉じると、seamが配る待たせた手番が
+    // 自分自身の操作（例: 強制的な時間経過、11.5節「再帰的な操作」）だったとき、外側のクレームが
+    // まだ外れていない状態で同じagentへの再クレームが走り、排他違反になる。
+    return this.self.session.runToSeam(() =>
+      this.relation.whileActing((context) => this.def.tryExecute(context, this.self.session)),
+    );
   }
 }
 
@@ -66,6 +71,38 @@ abstract class Interaction<G extends InteractionTrigger, T extends WorldObject |
 export class Action extends Interaction<ActionTrigger, undefined> {
   constructor(trigger: ActionTrigger, self: WorldObject, agent: WorldObject | undefined) {
     super(trigger, self, agent, undefined);
+  }
+
+  /**
+   * 時間が配った手番として起こす（`trigger: tick`、WorldObject.runTickActions）。
+   *
+   * **時間を要する手番は、その場では起こさず操作の切れ目まで待たせる**（WorldSession.runToSeam）
+   * ——手番が配られるのは時間を進めている最中で、その中で時間は進められない。待たせるのは今の要件を
+   * 満たしているものだけで、切れ目でもう一度引き直される。
+   */
+  takeTurn(): void {
+    if (this.executionMinutes() <= 0) {
+      this.tryExecute();
+      return;
+    }
+    if (this.unmetRequirement() === undefined) this.self.session.deferTurn(this);
+  }
+
+  /**
+   * 待たせた手番が同じものか（WorldSession.deferTurn）。限界に居る間は毎tick同じ手番が挙がるので、
+   * 待ちを1つに保つために引く。
+   */
+  isSameTurnAs(other: Action): boolean {
+    return this.self === other.self && this.name === other.name;
+  }
+
+  /**
+   * この手番を今から起こしてよいか——**動く物がまだ世界に居るか**（WorldSession.takeWaitingTurns）。
+   * 待っている間に渇きで死んだキャラクタの手番を起こすと、居ないものの手番で時間だけが進む。
+   */
+  get actorIsInWorld(): boolean {
+    const world = this.self.session.world;
+    return world === undefined || world.instance.containsOrIs(this.self);
   }
 }
 

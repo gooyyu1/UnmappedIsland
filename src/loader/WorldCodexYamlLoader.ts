@@ -32,7 +32,7 @@ import type { AxisDef } from '../domain/generation/AxisDef';
 import type { GenerationScopeDef } from '../domain/generation/GenerationScopeDef';
 import type { LocationTypeDef } from '../domain/generation/LocationTypeDef';
 import { withYamlContext } from './parseCommon';
-import { parseRequirementsField } from './parseConditions';
+import { parseRequirementList } from './parseConditions';
 import type { Requirements } from '../domain/Requirement';
 import { ReferenceScope } from '../domain/ReferenceRoot';
 
@@ -230,11 +230,11 @@ export class WorldCodexYamlLoader {
     // 合流させず置き換える（同じ約束が2つあると、どちらが効いているのか読めなくなる）。
     const craftingConditions = tryGetSeq(root, 'crafting_conditions', label);
     if (craftingConditions !== undefined)
-      this.craftingConditions = parseRequirementsField(
+      this.craftingConditions = parseRequirementList(
         this,
         label,
         craftingConditions,
-        ReferenceScope.recipeUnlock,
+        ReferenceScope.acting.withoutSelf,
         'crafting_conditions',
       );
 

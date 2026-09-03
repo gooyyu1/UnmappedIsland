@@ -2,8 +2,9 @@ import type { PropertyValue } from './PropertyValue';
 import type { WorldObject } from './WorldObject';
 
 /**
- * conditions（GameElementDefinition.md 14節）・weight（10.2節）・passivesのゲート（8節）・active効果の
- * 対象/参照が共通で参照する起点。self.prop/parent.propのような1階層の参照のみ対応。
+ * 宣言が**誰を見るか**を指す起点。self.prop/parent.propのような1階層の参照のみ対応。
+ * **どれをどこに書けるかは、その宣言が置かれた場所が決める**（ReferenceScope。一覧は
+ * GameElementDefinition.md 14.1節の表）。
  * worldは起点として未対応（ロード時エラー、14.1節）。Ancestorは見つからなければworldまで遡るため、
  * 世界固有の概念の参照はAncestorで代替できる。
  */
@@ -268,7 +269,6 @@ export class ReferenceContext {
 
 /**
  * {subject, prop}が指す、1階層のプロパティ参照（ReferenceRoot＋プロパティのグローバルID）。
- * weightのpath参照（10.2節）・conditionsのvalueRef（14節）・activeの対象・passivesの対象が共有する。
  *
  * **どのプロパティを指すかとどう辿るかを1つにまとめて持つ**ので、解決するときにプロパティIDを
  * 渡し直す必要が無い（ancestor探索と読み出しが同じIDを使う）。
@@ -411,21 +411,20 @@ export class ReferenceScope {
   });
 
   /**
-   * 操作者だけが居る場所（レシピの条件）。操作ではなく「誰にとって解放されているか」を問う判定なので、
-   * 問う側が渡すのはagentだけ（11.5節・13.3節）。宣言元が居ない理由は書ける場所ごとに違うので、
-   * 13.3・13.4節が各々で述べる。
+   * 宣言元の個体が居ない場所（レシピの解放条件13.3節・`crafting_conditions` 13.4節）。居ない理由は
+   * 場所ごとに違うので、13.3・13.4節が各々で述べる。
+   *
+   * **selfを外すと、それだけを指していたpatientも道連れで外れる**——`selfIsPatient`な場所（`acting`）
+   * では`patient`に独立した名前が無く、`self`の言い換えでしかないため（11.5節）。
    */
-  static readonly recipeUnlock = new ReferenceScope({
-    hasSelf: false,
-    hasAgent: true,
-    hasInstrument: false,
-    hasPatient: false,
-    selfIsPatient: false,
-    pushesReversibly: false,
-    hasPicked: false,
-    namesProperty: true,
-    broadcasts: false,
-  });
+  get withoutSelf(): ReferenceScope {
+    return new ReferenceScope({
+      ...this,
+      hasSelf: false,
+      hasPatient: this.selfIsPatient ? false : this.hasPatient,
+      selfIsPatient: false,
+    });
+  }
 
   /**
    * プロパティ名を伴わず、オブジェクトそのものを指す場所。プロパティ名で祖先を探すancestorが、

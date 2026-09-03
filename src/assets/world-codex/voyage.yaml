@@ -575,15 +575,8 @@ object_defs:
       sewn:
         # なめし革の衣類と同じ縫製の大物（clothing.yaml）なので、解放条件も同じ形にする。
         conditions:
-          - reason: needs_leatherwork
-            any:
-              - {subject: agent, prop: skill_leatherwork, in_stage: skilled}
-              - {subject: agent, prop: skill_leatherwork, in_stage: expert}
-          - reason: needs_cordage
-            any:
-              - {subject: agent, prop: skill_cordage, in_stage: basic}
-              - {subject: agent, prop: skill_cordage, in_stage: skilled}
-              - {subject: agent, prop: skill_cordage, in_stage: expert}
+          - {reason: needs_leatherwork, subject: agent, prop: skill_leatherwork, in_stage_or_above: skilled}
+          - {reason: needs_cordage, subject: agent, prop: skill_cordage, in_stage_or_above: basic}
         steps:
           # 帆柱と帆桁を組んで縛る。
           - requires:
@@ -607,7 +600,7 @@ object_defs:
   seaweed:
     tags: [item, food]
     # 水を抱えたまま剥き出しの葉体なので、葉物野菜より速く傷む（foods.yaml・DurabilitySystem.md 3節）。
-    traits: [perishable, spoils_fast]
+    traits: [perishable, spoils_fast, dryable]
     props:
       weight: {value: 200}
       # 濡れた葉体は詰めても縮まないので、嵩そのままで見る（plant_fiberと同じ扱い）。
@@ -621,13 +614,14 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
             satiety: 200
             carbohydrate: 1
             vitamin: 60
+            happiness: 2
         pick:
           - weight: 100
           - weight: {prop: spoilage}
@@ -653,7 +647,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
@@ -661,6 +655,9 @@ object_defs:
             protein: 6
             lipid: 5
             vitamin: 10
+            # 殻を割ってそのまますすれば食べられるが、火を通した食事ではない
+            # （docs/world/Characters.md 幸福度節の表）。
+            happiness: 2
         pick:
           - weight: 100
           - weight: {prop: spoilage}
@@ -765,7 +762,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: looking_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 15
         add: {self: {exploration_progress: 1}}
         pick:
