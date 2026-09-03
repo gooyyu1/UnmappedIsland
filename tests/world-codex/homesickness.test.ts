@@ -26,7 +26,7 @@ function propertyId(name: string): number {
 
 /**
  * 火の通った1食が戻す幸福度（docs/world/Characters.md 幸福度節）。**書き写さずに1回食べて測る**
- * ——食べ物側の値が動いたら、下の「86日目に0へ届く」もその場で動くべきなので。
+ * ——食べ物側の値が動いたら、下の「91日目に0へ届く」もその場で動くべきなので。
  */
 const COOKED_MEAL = ((): number => {
   const session = new WorldSession(codex);
@@ -193,8 +193,8 @@ function firstDayReaching(values: readonly number[], threshold: number): number 
 }
 
 describe('ホームシック(docs/world/Characters.md ホームシック節)', () => {
-  it('最初の凪の季節は溜まらない', () => {
-    // 生き延びるだけで手一杯の30日は、孤独がoccupied段に留まる。
+  it('漂着した最初のひと月は溜まらない', () => {
+    // 生き延びるだけで手一杯の29日は、孤独がoccupied段に留まる。
     const trace = live(29);
 
     expect(trace.homesickness[28]).toBe(0);
@@ -210,8 +210,8 @@ describe('ホームシック(docs/world/Characters.md ホームシック節)', (
   });
 
   it('60日目に表へ出て、そこから幸福度が削られ始める', () => {
-    // 最初の雨季が明ける日ちょうど（issue #1412 で確定）。留意域（max の1/4）へ入った時点で
-    // ステータスエリアに行が出る（docs/ui/StatusArea.md 1節）。**maxはこの日に合わせて選んである**
+    // 初回の雨季が明けるころ（issue #1412 で確定した日）。留意域（max の1/4）へ入った時点で
+    // ステータスエリアに行が出る（docs/ui/StatusArea.md 2節）。**maxはこの日に合わせて選んである**
     // ので、ここがずれたらmaxのほうを直す（characters/player_character.yaml）。
     const trace = live(60, { cookedMeals: 3 });
 
