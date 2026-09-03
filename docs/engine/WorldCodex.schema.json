@@ -592,7 +592,7 @@
       "additionalProperties": false
     },
     "passives_list": {
-      "description": "passive_defの配列。オブジェクトレベル・プロパティレベル・stage内のいずれでも常に配列であり、単一マッピングでの省略記法は許可しない（conditions/stages/cells/pick等、複数形キーは常に配列という規約に合わせる）。",
+      "description": "passive_defの配列。書ける場所がどこであれ常に配列であり、単一マッピングでの省略記法は許可しない（conditions/stages/cells/pick等、複数形キーは常に配列という規約に合わせる）。",
       "type": "array",
       "items": {
         "$ref": "#/$defs/passive_def"
@@ -890,7 +890,7 @@
       "additionalProperties": false
     },
     "pick_list": {
-      "description": "重み付き確率分岐（GameElementDefinition.md 10節）。set/add/destroy/spawnを書く場所であれば、それらと並べて書ける。候補が1つなら重みに関わらず必ず選ばれる。",
+      "description": "重み付き確率分岐（GameElementDefinition.md 10節）。効果を書く場所であれば、それらと並べて書ける。候補が1つなら重みに関わらず必ず選ばれる。",
       "type": "array",
       "items": {
         "$ref": "#/$defs/pick_candidate"
@@ -1414,7 +1414,7 @@
       "additionalProperties": false
     },
     "object_target_name": {
-      "description": "オブジェクトそのものを指す対象名（destroy・move・become）。ancestorは「どのプロパティを探すか」が無く解決できないため不可。childは相手が1つに決まらないため不可。pickedを書けるのはamongを書いた候補の中だけで、外に書くとロード時エラー（10.3節）。",
+      "description": "オブジェクトそのものを指す対象名。ancestorは「どのプロパティを探すか」が無く解決できないため不可。childは相手が1つに決まらないため不可。pickedを書けるのはamongを書いた候補の中だけで、外に書くとロード時エラー（10.3節）。",
       "enum": [
         "self",
         "parent",
