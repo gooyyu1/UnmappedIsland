@@ -74,6 +74,19 @@ function buildPen(island: Island, land: WorldObject, penned = 'junglefowl'): Wor
   return pen;
 }
 
+/**
+ * その土地へ浅い洞窟を見つけ、中へ入る。**場所の中の場所**（locations.yamlのshallow_caveは
+ * fixtureでありlocationでもある）へ移るので、居心地と連れが土地から継がれるかがここで出る。
+ */
+function enterCave(island: Island): WorldObject {
+  const cave = island.session.createObject(codex.objectNames.getId('shallow_cave'));
+  expect(cave.moveToSlotOrRejection(island.land.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+  expect(
+    island.player.moveToSlotOrRejection(cave.getSlot(codex.slotNames.getId('characters'))),
+  ).toBeUndefined();
+  return cave;
+}
+
 /** 囲いの飼葉と飲み水を満たす（世話を続けている状態）。 */
 function feedPen(pen: WorldObject): void {
   pen.getProperty(propertyId('fodder')).setNumber(96);
@@ -114,6 +127,8 @@ interface Plan {
   readonly neglectFromDay?: number;
   /** この日の朝、隣の砂浜へ発つ。 */
   readonly leaveFromDay?: number;
+  /** この日の朝、同じ砂浜の浅い洞窟へ入る（入れ子の場所へ移る）。 */
+  readonly enterCaveFromDay?: number;
   /**
    * 土地の居心地を直に置く。**住居の部品はまだ世界に1つも無い**（docs/world/Dwellings.md）ので、
    * 建て終えた住居の代わりに置く。押し上げ方（部品のmodify）ではなく、受け取る側の段を見る。
@@ -150,6 +165,7 @@ function live(days: number, plan: Plan = {}): Trace {
       expect(
         island.player.moveToSlotOrRejection(island.elsewhere.getSlot(codex.slotNames.getId('characters'))),
       ).toBeUndefined();
+    if (day === plan.enterCaveFromDay) enterCave(island);
 
     island.world.getProperty(propertyId('day')).setNumber(day);
     tendBody(island.player);
@@ -193,22 +209,23 @@ describe('ホームシック(docs/world/Characters.md ホームシック節)', (
     expect(perDay(91), '90日目からはさらに倍').toBeCloseTo(3.84, 6);
   });
 
-  it('56日目に表へ出て、そこから幸福度が削られ始める', () => {
-    // 留意域（max の1/4）へ入った時点でステータスエリアに行が出る（docs/ui/StatusArea.md 1節）。
-    // 最初の雨季が明ける60日目より少し前で、1周回115日の半分にも届いていない。
+  it('60日目に表へ出て、そこから幸福度が削られ始める', () => {
+    // 最初の雨季が明ける日ちょうど（issue #1412 で確定）。留意域（max の1/4）へ入った時点で
+    // ステータスエリアに行が出る（docs/ui/StatusArea.md 1節）。**maxはこの日に合わせて選んである**
+    // ので、ここがずれたらmaxのほうを直す（characters/player_character.yaml）。
     const trace = live(60, { cookedMeals: 3 });
 
-    expect(firstDayReaching(trace.homesickness, 25)).toBe(56);
-    expect(trace.lowestHappiness[54], '55日目までは1も削られない').toBe(100);
-    expect(trace.lowestHappiness[55], '56日目から削られ始める').toBeLessThan(100);
+    expect(firstDayReaching(trace.homesickness, 30)).toBe(60);
+    expect(trace.lowestHappiness[58], '59日目までは1も削られない').toBe(100);
+    expect(trace.lowestHappiness[59], '60日目から削られ始める').toBeLessThan(100);
   });
 
-  it('対策を何も打たなければ、最良の食事を通しても86日目に幸福度が0へ届く', () => {
+  it('対策を何も打たなければ、最良の食事を通しても91日目に幸福度が0へ届く', () => {
     // 火を通した3食で+18/日。**追いつくのは最初の段まで**で、里心が深まれば-24/日・-48/日になり、
-    // 食事では埋まらない。1周回115日（ContentSkeleton.md 8.3節）の3/4で心が尽きる。
+    // 食事では埋まらない。1周回115日（ContentSkeleton.md 8.3節）の残り25日ほどで心が尽きる。
     const trace = live(115, { cookedMeals: 3 });
 
-    expect(trace.lowestHappiness.findIndex((value) => value === 0) + 1).toBe(86);
+    expect(trace.lowestHappiness.findIndex((value) => value === 0) + 1).toBe(91);
   });
 
   it('飼葉を切らさない囲いに獣が1頭居れば、その土地が連れになる', () => {
@@ -258,6 +275,17 @@ describe('ホームシック(docs/world/Characters.md ホームシック節)', (
     expect(bare.homesickness[94], '家だけでは90日目から募る').toBeGreaterThan(bare.homesickness[88]);
     expect(both.homesickness[94], '家と家畜なら止まる').toBe(0);
     expect(snug.homesickness[94], 'snugの住居だけでも止まる').toBe(0);
+  });
+
+  it('場所の中の場所へ入っても、外の設えは届く', () => {
+    // **住居も洞窟も筏も、土地のfixturesに据わる「場所の中の場所」**（locations.yamlのshallow_cave・
+    // Dwellings.md 1節）。継がないと、浜に建てた囲いのすぐ隣の洞窟へ入った瞬間に慰めが消える
+    // ——そして「家と家畜の両方」は、家が場所である以上どこにも成立しなくなる。
+    const outside = live(95, { landComfort: 20, penFromDay: 1 });
+    const inside = live(95, { landComfort: 20, penFromDay: 1, enterCaveFromDay: 40 });
+
+    expect(inside.company[94], '洞窟の中でも、外の囲いの連れは効いている').toBe(1);
+    expect(inside.homesickness[94], '外に立っていたときと同じ').toBeCloseTo(outside.homesickness[94], 6);
   });
 
   it('世話を切らせば、慰めも切れる', () => {
