@@ -137,7 +137,7 @@ describe('生成時にロールする長さの幅', () => {
 
   it('同じロールを持つ他の傷も、上端まで載る', () => {
     expect(severityOf('snare_laceration')).toMatchObject({ days: 240 / 96, longestDays: 480 / 96 });
-    expect(severityOf('pen_bruise')).toMatchObject({ days: 120 / 96, longestDays: 240 / 96 });
+    expect(severityOf('bruise')).toMatchObject({ days: 120 / 96, longestDays: 240 / 96 });
   });
 
   it('位相をロールする周期は、幅を持たない', () => {

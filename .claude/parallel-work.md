@@ -148,6 +148,17 @@ GitHubが Request changes を出させない。`watch-prs.sh` 冒頭「COMMENT �
 まま `CLAUDE.md` の手入れをして、再開時に26件（レビュー待ち6本・直しが戻ったPR1本・マージできるPR
 1本・配れる task 18件）が一度に出た。
 
+**投入しないと決めた `task` は、`--issues` へ渡して黙らせる。** 合図は対象の状態から出るので、投入
+しないかぎり毎周そのまま返り、**見張りは立てた次の瞬間に終わる**——立て直すだけで手番が尽きて、
+盤面は止まっていないのに何も進まなくなる。`--issues` は「こちらが把握している task の全部」を
+渡す口なので（`watch-prs.sh` 冒頭）、意図して置いてあるものはここへ入れるのが本来の使い方。
+
+```
+bash scripts/agent/watch-prs.sh 0 --issues 656,732,<止めている task の番号...> --timeout-minutes 55 --since <前回の起動時刻>
+```
+
+止める場面は [`policies.md`](policies.md)「無人で進むことは、目的であってコストではない」。
+
 ### 前のタスクの完了は、シェルで待つ
 
 直列に並べたタスクは、[`wait-for-issues.sh`](../scripts/agent/wait-for-issues.sh) をバックグラウンドで起動して

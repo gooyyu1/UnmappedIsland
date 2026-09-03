@@ -1,0 +1,64 @@
+# トークン使用量の集計
+
+エージェントが何にトークンを使ったかを、CCR（クラウドのセッション）とローカルの transcript の
+両方から集めて数える。結果は [`stats/usage/`](../../stats/usage) に置く。
+
+## 走らせ方
+
+`ccr_meta` の MCP 設定（`~/.claude.json` の `mcpServers.ccr_meta`）と `python`・`curl` が要る。
+シェルは bash（PowerShell は UTF-8 を ANSI として読むので使わない）。
+
+```bash
+cd scripts/usage
+python sweep_sessions.py 2026-07-01   # セッション一覧を、この日まで遡って落とす
+python local_usage.py                 # ローカルの transcript から usage を抜く
+python calibrate.py                   # ローカル分の換算係数を実測する
+python timeline.py                    # 時間・日・週ごと -> stats/usage/by_{hour,day,week}.tsv
+
+python sweep_events.py 2026-08-25     # 種別ごとの内訳に要る（セッション1本につき数十回のHTTP）
+python agent_kinds.py 2026-08-25 2026-09-01   # -> stats/usage/by_agent_kind.tsv
+```
+
+生データ（セッション一覧の生JSON・イベント・ローカルの usage）は `.usage-data/` へ置く。
+**リポジトリへは入れない**——セッションIDと環境ID、それにタイトルとして残る指示の原文が入るため。
+置き場は `USAGE_DATA_DIR` で移せる。
+
+## 出るもの
+
+| ファイル | 中身 |
+|---|---|
+| `by_hour.tsv` | 1時間ごとのコストと4種のトークン |
+| `by_day.tsv` | 1日ごと（UTC） |
+| `by_week.tsv` | 1週ごと。木曜16:00 UTC 始まり（`seven_day` のリセット時刻に合わせた） |
+| `by_agent_kind.tsv` | 種別ごとのコスト・turn・サブエージェント按分・文脈の畳み |
+
+種別はセッションのタグの接頭辞で決める（`task-1234` なら task）。ただし `parallel-work` は種別では
+ない——並列作業の枠組みで走った印で、司令塔にも、司令塔が投入した個別のタスクにも付く。
+
+タグの無いものは実行環境で `bridge`（ローカル実行）と `untagged` に分ける。**司令塔だけは、人が
+ローカルから開くのでタグの付かない本がある**ので、タグの無い bridge に限り題名（人が打った指示の
+1行目）でも拾う。
+
+### Copilot の分は、この道具では作らない
+
+`stats/usage/copilot_by_day.tsv` だけは**GitHub の使用レポート**（Settings → Billing の
+AI usage report の CSV）を書き写したもの。取りに行く先が違うので自動では作れない。列は Claude 側と
+揃えてあり、`cost_usd` は**割引前の額**（`gross_amount`。枠で相殺された分も含む＝使った量の値段）、
+`billed_usd` が**実際に請求された分**（`net_amount`。枠を超えた分だけ）。`credits` が Copilot の
+生の単位で、$0.01 が1クレジット。
+
+## 数字の限界
+
+- **ローカル分は換算値。** ローカルの transcript は `cost_usd` を持たないので、公称単価に
+  `calibrate.py` が実測した係数を掛けている。両方に現れる38本での比は 2.34〜3.09 とばらつくので、
+  ローカルが支配的な時期は ±15% ほどの幅がある。CCR 側は実額。
+- **時間ごとの分解は按分。** CCR 側は `created_at`〜`updated_at` の区間へ均等に割っており、
+  消費が偏っていればその通りには出ない。セッションが再開されて `updated_at` が数日後まで伸びると、
+  実際は数時間で使った分が薄く広がる。ローカル分はメッセージ単位の時刻なので正確。
+- **古いセッションはトークンの内訳を持たない。** `cost_usd` だけあってトークンが空のものが4本ある
+  （$53.93。うち $51.49 が最初のセッション）。コストは正しく入るが、トークンの列だけ欠ける。
+- **イベントの `output_tokens` は使えない。** 同じメッセージのどのイベントでも一桁〜数十の固定値が
+  入っていてメタデータと合わない。主エージェントとサブエージェントの按分は cache 系の比で行っている。
+- **畳みの検出は推定。** イベントにコンパクションの印は無いので、主エージェントの `cache_read` の
+  急落から拾い、直後3turnで元の水準へ戻るものを「キャッシュの失効」として分けている。
+  境界付近は取り違えうる。
