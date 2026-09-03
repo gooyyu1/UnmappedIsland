@@ -576,7 +576,7 @@ object_defs:
   });
 
   /**
-   * 行っている人（agent）を指す参照（craftingStepsのwithNoviceAgent）。**呼び出し側が文脈を
+   * 行っている人（agent）を指す参照（craftingStepsのwithHighestDeclaredAgent）。**呼び出し側が文脈を
    * 渡さなくても解ける唯一の起点**で、これが無いと腕前が掛かる重み（docs/world/Skills.md 5節）が
    * 0になり、その候補は起こらないものとして数えられる。
    */

@@ -93,6 +93,125 @@ function declaredSkillGains(): ReadonlyMap<string, ReadonlySet<number>> {
   return gains;
 }
 
+/** その節の下のどこかに `add: {agent: {<腕>: n}}` があるか。 */
+function grantsSkillUnder(node: unknown, skillName: string): boolean {
+  const walk = (current: unknown, state: 'none' | 'add' | 'add_agent'): boolean => {
+    if (isSeq(current)) return current.items.some((item) => walk(item, state));
+    if (!isMap(current)) return false;
+
+    return current.items.some((pair) => {
+      const key = isScalar(pair.key) ? String(pair.key.value) : '';
+      if (state === 'add_agent' && key === skillName) return true;
+      return walk(
+        pair.value,
+        state === 'add' && key === 'agent' ? 'add_agent' : key === 'add' ? 'add' : 'none',
+      );
+    });
+  };
+  return walk(node, 'none');
+}
+
+/**
+ * 狩猟の腕を配る型の名前。**trait 経由も数える**——獣を殴る手（`strike`）は `beast` trait が配って
+ * いて、獣の型そのものには書かれていない。海の群れは逆に、型が直接持っている。
+ */
+function huntingQuarryTypes(): ReadonlySet<string> {
+  const grantingNames = new Set<string>();
+  const traitsOfType = new Map<string, readonly string[]>();
+  const typeNames: string[] = [];
+
+  for (const path of worldCodexYamlPaths()) {
+    const root = parseDocument(readFileSync(path, 'utf8')).contents;
+    if (!isMap(root)) continue;
+    for (const section of root.items) {
+      const sectionKey = isScalar(section.key) ? String(section.key.value) : '';
+      if ((sectionKey !== 'traits' && sectionKey !== 'object_defs') || !isMap(section.value)) continue;
+
+      for (const entry of section.value.items) {
+        const name = isScalar(entry.key) ? String(entry.key.value) : '';
+        if (grantsSkillUnder(entry.value, 'skill_hunting')) grantingNames.add(name);
+        if (sectionKey !== 'object_defs') continue;
+
+        typeNames.push(name);
+        const declared = isMap(entry.value) ? entry.value.get('traits', true) : undefined;
+        traitsOfType.set(
+          name,
+          isSeq(declared) ? declared.items.map((item) => (isScalar(item) ? String(item.value) : '')) : [],
+        );
+      }
+    }
+  }
+
+  return new Set(
+    typeNames.filter(
+      (name) => grantingNames.has(name) || traitsOfType.get(name)!.some((trait) => grantingNames.has(trait)),
+    ),
+  );
+}
+
+/**
+ * 操作の `pick` が湧かせる相手のうち、狩猟の腕を配る型を出す候補を「どこで・何を」の形で並べる。
+ * 倍率（`times`）が掛かっているかを添える。
+ *
+ * **見るのは `interactions` の下だけ。** 罠の抽選（`catch_remaining` の `on_min`）も獣を湧かせるが、
+ * あちらは誰も操作していない場面なので `agent` を書けない（docs/engine/TrapSystem.md 8節）。
+ */
+function beastSpawningCandidates(): readonly { where: string; multiplied: boolean }[] {
+  const quarryTypes = huntingQuarryTypes();
+  const found: { where: string; multiplied: boolean }[] = [];
+
+  /** 候補1つ（weightを持つmap）が湧かせる型の名前。入れ子のpickは各候補が自分で見る。 */
+  const spawnedTypesIn = (candidate: unknown): readonly string[] => {
+    if (!isMap(candidate)) return [];
+    const spawn = candidate.get('spawn', true);
+    const entries = isSeq(spawn) ? spawn.items : [spawn];
+    return entries.flatMap((entry) => {
+      const object = isMap(entry) ? entry.get('object', true) : undefined;
+      return isScalar(object) ? [String(object.value)] : [];
+    });
+  };
+
+  /** その候補の重みが、狩猟の倍率を掛けているか。 */
+  const multiplies = (candidate: unknown): boolean => {
+    const weight = isMap(candidate) ? candidate.get('weight', true) : undefined;
+    const times = isMap(weight) ? weight.get('times', true) : undefined;
+    if (!isMap(times)) return false;
+    const subject = times.get('subject', true);
+    const prop = times.get('prop', true);
+    return (
+      isScalar(subject) &&
+      String(subject.value) === 'agent' &&
+      isScalar(prop) &&
+      String(prop.value) === 'quarry_sense'
+    );
+  };
+
+  let file = '';
+  const walk = (node: unknown, owner: string, inInteractions: boolean): void => {
+    if (isSeq(node)) {
+      for (const item of node.items) walk(item, owner, inInteractions);
+      return;
+    }
+    if (!isMap(node)) return;
+
+    for (const pair of node.items) {
+      const key = isScalar(pair.key) ? String(pair.key.value) : '';
+      if (inInteractions && key === 'pick' && isSeq(pair.value))
+        for (const candidate of pair.value.items)
+          for (const spawned of spawnedTypesIn(candidate))
+            if (quarryTypes.has(spawned))
+              found.push({ where: `${file} の ${owner}: ${spawned}`, multiplied: multiplies(candidate) });
+      walk(pair.value, key === 'pick' ? owner : key, inInteractions || key === 'interactions');
+    }
+  };
+
+  for (const path of worldCodexYamlPaths()) {
+    file = path.slice(path.lastIndexOf('/') + 1);
+    walk(parseDocument(readFileSync(path, 'utf8')).contents, '', false);
+  }
+  return found;
+}
+
 /** 操作1つ分の、出す物と配る腕。 */
 interface InteractionGains {
   readonly name: string;
@@ -263,6 +382,16 @@ describe('腕前とレシピの解放条件', () => {
         ).toBe(MULTIPLIER_BY_STAGE[index]);
       }
     }
+  });
+
+  it('狩猟の腕を配る相手を湧かせる候補には、狩猟の倍率が掛かっている', () => {
+    // 「出くわす機会」は探索の`pick`が湧かせる（Skills.md 5節）。**宣言の場所が散らばっているので、
+    // 目視では揃っているか分からない**——地上の獣は`beast` traitの`strike`が腕を配り、海の群れは
+    // 型自身の`spear_shoal`・`catch_seabird`が配る。掛け忘れた候補は、腕を上げても増えない相手になる。
+    const candidates = beastSpawningCandidates();
+
+    expect(candidates.length, '狩猟の相手を湧かせる候補が1つも無い').toBeGreaterThan(0);
+    expect(candidates.filter((candidate) => !candidate.multiplied).map((c) => c.where)).toEqual([]);
   });
 
   it('解放条件は、腕が上がった後も満たされ続ける（上の段で閉じ直さない）', () => {

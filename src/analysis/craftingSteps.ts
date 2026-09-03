@@ -36,14 +36,14 @@ import {
  *
  * outerは、self以外の起点（祖先が入れる値・使う物の値）を定義だけから解く手立て。省くと、
  * それらを参照する工程に「確定しない」印が付く（CraftingStep.hasUnresolvedReferences）。
- * **行っている人（agent）だけはouterに要らない**——下のwithNoviceAgentがここで足す。
+ * **行っている人（agent）だけはouterに要らない**——下のwithHighestDeclaredAgentがここで足す。
  */
 export function craftingStepsOf(
   codex: WorldCodex,
   def: ObjectDef,
   outer?: StaticValueResolver,
 ): readonly CraftingStep[] {
-  const context = withNoviceAgent(codex, outer);
+  const context = withHighestDeclaredAgent(codex, outer);
   const steps: CraftingStep[] = [];
   for (const trigger of def.triggers)
     for (const instrument of instrumentTypesOf(codex, trigger)) {
@@ -57,19 +57,23 @@ export function craftingStepsOf(
 }
 
 /**
- * 起点を解く手立てに、**行っている人**（agent、11.5節）を足したもの。答えるのはキャラクタが
- * 宣言している素の値なので、腕前の段が押し上げる倍率（docs/world/Skills.md 5節）も荷重の段が
- * 押し上げるpaceも1のまま——**ここから出るのは、素の身の1人が行った場合の数字**になる。
- * 祖先を「最も高く宣言している土地」、使う物を「最も良い型」と見るのと同じ埋め方
- * （balanceTables）で、**宣言が個体で分かれるプロパティは最も高い1人に合わせる**
- * （水分は体格ぶんだけ違う、characters/*.yaml）。
+ * 起点を解く手立てに、**行っている人**（agent、11.5節）を足したもの。**最も高く宣言している
+ * キャラクタに合わせる**——祖先を「最も高く宣言している土地」、使う物を「最も良い型」と見るのと
+ * 同じ埋め方（balanceTables）で、水分のように個体で分かれる値もこれで1つに決まる。
+ *
+ * 答えるのは宣言値なので、**段が押し上げる分は入らない**——腕前の倍率（docs/world/Skills.md 5節）も
+ * 荷重が押し上げるpaceも素の1のまま出る。段は実行時にしか決まらないので、ここで埋められるのは
+ * そこまで。
  *
  * **これだけは呼び出し側の文脈にしない。** 使う物（どの武器か）や祖先（どの土地か）と違って、
  * 誰が行うかは問いによって変わらない——操作するのは常にプレイヤーキャラクタだから。足さないと、
  * 腕が掛かる重み——着火の成否・探索で獣に出くわす確率——が全て0になり、その候補は起こらないものと
  * して数えられる。
  */
-function withNoviceAgent(codex: WorldCodex, outer: StaticValueResolver | undefined): StaticValueResolver {
+function withHighestDeclaredAgent(
+  codex: WorldCodex,
+  outer: StaticValueResolver | undefined,
+): StaticValueResolver {
   const characters = [...codex.objects].filter((def) => def.hasTag(codex.vocabulary.world.characterTagId));
   return (root, propertyGlobalId, end) => {
     if (root !== 'agent') return outer?.(root, propertyGlobalId, end);

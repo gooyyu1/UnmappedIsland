@@ -258,9 +258,14 @@ traits:
           - weight: {prop: wreck_find}
             spawn: {object: golden_chalice, into: agent}
           # 湧くものは海区の設置物になる（12.7節）。居る間だけ実り、しばらくすると去る。
-          - weight: {prop: shoal_find}
+          #
+          # **この2つには狩猟の腕（quarry_sense）が掛かる**（docs/world/Skills.md 5節）。地上で
+          # 獣の候補へ掛けているのとまったく同じ「出くわす機会」で、獲る手（下のspear_shoal・
+          # catch_seabird）はどちらも狩猟の腕を配る。**拾えるもの（上）には掛からない**
+          # ——流木も海藻も卵も、居合わせるかどうかではなく海が返す実りだから。
+          - weight: {prop: shoal_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: fish_shoal, into: self}
-          - weight: {prop: seabird_find}
+          - weight: {prop: seabird_find, times: {subject: agent, prop: quarry_sense}}
             spawn: {object: seabird_flock, into: self}
 
   # 航路。海区から海区への繋がり1本で、見張りの成果として現れる設置物。
