@@ -216,7 +216,7 @@ object_defs:
         value: 1000
 ```
 
-### 4.1 tags
+### 4.1 tags と型の指定
 
 `tags` に文字列の配列を書くと、その `object_def` にタグを付けられます。`traits`（5節）も同じ `tags` フィールドを
 持て、その trait を参照するあらゆる `object_def` へタグが合成されます。tags は単純な集合なので、trait 間・
@@ -2546,8 +2546,9 @@ conditions:
 
 ### 14.6 reason（満たさなかったときに出す理由）
 
-条件の並びの要素には、**満たさなかったときにプレイヤーへ出す理由**を `reason`（識別子）で添えられます。
-文言は locale の `reason_texts` が持ちます（[`Localization.md`](./Localization.md)）。
+誰かが試みた操作の可否を判定する条件では、その並びの要素に**満たさなかったときにプレイヤーへ出す理由**を
+`reason`（識別子）で添えられます。文言は locale の `reason_texts` が持ちます
+（[`Localization.md`](./Localization.md)）。
 
 ```yaml
 interactions:

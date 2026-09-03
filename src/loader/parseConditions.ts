@@ -128,7 +128,7 @@ export function parseRequirementsField(
 }
 
 /** 条件木の1ノードを読む。all/any/notのいずれかのキーを持てば複合ノード、それ以外は葉として読む。
- * extraKeyは、そのノードでだけ条件式の一部ではないキー（conditionsの要素のreason）。 */
+ * extraKeyは、そのノードでだけ条件式の一部ではないキー（条件の並びの要素のreason）。 */
 function parseConditionNode(
   loader: WorldCodexYamlLoader,
   context: string,
@@ -197,7 +197,7 @@ const MATCHES_KEY = 'matches';
  * **量化は主語が決める。** 同じ`matches`でも、`slot`があれば中身に対する存在判定、無ければ
  * subject自身への判定になる（14.3節・14.4節）。
  *
- * **演算子キーは複数書ける（暗黙のAND）。** conditionsの配列と同じ規則で、範囲判定
+ * **演算子キーは複数書ける（暗黙のAND）。** 条件の並びと同じ規則で、範囲判定
  * （`{prop: x, gte: 100, lt: 200}`）のために同じ`prop`を2度書かなくて済む。
  *
  * 比較の相手はリテラルか{subject, prop}参照（10.2節と同じ二択）。参照はlt/lte/gt/gte/eq/neqのみで
