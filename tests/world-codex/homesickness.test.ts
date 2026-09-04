@@ -278,16 +278,31 @@ describe('ホームシック(docs/world/Characters.md ホームシック節)', (
     expect(trace.despairMinutes.findIndex((minutes) => minutes > 0) + 1).toBe(91);
   });
 
-  it('打ちひしがれ始めると、以後は繰り返し時間を奪われる', () => {
-    // despairが戻すのは+20で、最も深い段（despondent）の-48/日はそれをおよそ10時間で削り切る。
-    // **止まらないのではなく、1日のうち何時間かが手から離れる**という形の圧になる。
-    const trace = live(115, { cookedMeals: 3 });
+  /** 終盤10日の、1日あたり打ちひしがれていた時間（時間）。 */
+  function despairHoursPerDay(trace: Trace): number {
     const lastTen = trace.despairMinutes.slice(-10);
-    const hoursPerDay = lastTen.reduce((total, minutes) => total + minutes, 0) / 10 / 60;
-
     expect(Math.min(...lastTen), '終盤はどの日も奪われる').toBeGreaterThan(0);
-    expect(hoursPerDay, '1日あたり2時間半ほど').toBeGreaterThan(2);
-    expect(hoursPerDay, '1日あたり2時間半ほど').toBeLessThan(3);
+    return lastTen.reduce((total, minutes) => total + minutes, 0) / 10 / 60;
+  }
+
+  /**
+   * 打ちひしがれる周期を決めるのは、**despairの戻し（+20）を正味の削りで割った時間＋強制の2時間**。
+   * 正味の削りは口にした物で変わるので、**食べているかどうかで奪われる時間も変わる**
+   * （docs/world/Characters.md ホームシック節）。
+   *
+   * | 食事 | 正味の削り | +20が保つ | 周期 | 1日あたり |
+   * | --- | --- | --- | --- | --- |
+   * | 火を通した3食（+18/日） | -30/日 | 16時間 | 18時間 | 2時間半ほど |
+   * | 何も食べない | -48/日 | 10時間 | 12時間 | 4時間 |
+   */
+  it.each([
+    ['火を通した3食を通しても', 3, 2, 3],
+    ['何も食べなければ', 0, 3.5, 4.5],
+  ])('打ちひしがれ始めると、以後は繰り返し時間を奪われる（%s）', (situation, cookedMeals, least, most) => {
+    const hoursPerDay = despairHoursPerDay(live(115, { cookedMeals }));
+
+    expect(hoursPerDay, situation).toBeGreaterThan(least);
+    expect(hoursPerDay, situation).toBeLessThan(most);
   });
 
   it('飼葉を切らさない囲いに獣が1頭居れば、その土地が連れになる', () => {
