@@ -25,7 +25,7 @@
 # だけ加工を重ねられ、重ねると同じ個体が保存された版になる（3.5.1節）。**軸を持つのは生のままの物
 # だけ**——焼くのは食べるための工程なので、焼いた物を保たせる形（塩漬けの焼き芋）は作らない。
 #
-# 傷んだ物を食べたときの吐き下しは、各eatの末尾のpickが引く（docs/engine/DigestionSystem.md 6節）。
+# 傷んだ物を食べたときの吐き下しは、各eatの末尾のpickが引く（docs/engine/DigestionSystem.md 6.3節）。
 # 重みは「無事100 : 吐く spoilage : 下す spoilage」の3つで、**pickはaddより後ろに置く**——腹に
 # 収めてから吐くので、順が逆だと吐いた後に食べたことになる（GameElementDefinition.md 9.7節）。
 traits:
@@ -43,7 +43,7 @@ traits:
         # 腐りきった食べ物は残らない。**名乗らずに消す**——消え方の名前（9.3節）を出す先がまだ無い。
         on_min:
           destroy: self
-        # 傷み具合（docs/engine/DigestionSystem.md 6節）。**境目は残りの割合で置く**——腐る速さは
+        # 傷み具合（docs/engine/DigestionSystem.md 6.3節）。**境目は残りの割合で置く**——腐る速さは
         # 分類で違うが、durabilityは種類によらず960から始まるので、同じ数が全部の食べ物で
         # 「残り半分」「残り4分の1」を指す。
         stages:
@@ -57,7 +57,7 @@ traits:
             passives:
               - modify: {self: {spoilage: 25}}
           - {name: sound, min: 480}
-      # 食べたときに吐き下しを引く重み（同6節）。自分では動かず、上のdurabilityの段だけがmodifyで
+      # 食べたときに吐き下しを引く重み（同6.3節）。自分では動かず、上のdurabilityの段だけがmodifyで
       # 押し上げるのでvalueは0のまま——無事な物を食べても当たらない。
       spoilage: {value: 0}
     passives:
@@ -154,8 +154,9 @@ object_defs:
   # 現実の食べ方でもある。
   #
   # **現実には、加熱しても抜けない危険が別にある。** ヤシガニは食べたものの毒を身に溜め、ミフクラギ
-  # （海マンゴー）などを食べた個体は肉ごと有毒になる。食あたりは腐敗と生食が引くが、**調理で
-  # 避けられない当たり**はまだ書けないので入れていない（docs/world/Animals.md 1節）。
+  # （海マンゴー）などを食べた個体は肉ごと有毒になる。体調を崩す道は、腐敗の抽選（DigestionSystem.md
+  # 6.3節）と生の物が抱えている菌（同6節）の2つだが、**調理で避けられない当たり**はどちらでもまだ
+  # 書けないので入れていない（docs/world/Animals.md 1節）。
   coconut_crab:
     tags: [item, meat_bait, roastable]
     # 生の甲殻類。食べられなくても傷むのは同じなので、foodタグの有無とは関わりなく腐る。

@@ -285,7 +285,12 @@ traits:
         value: 300
         range: {min: 0, max: 1500}
         stages:
-          - {name: starving, alert: danger}
+          # 腹に何も無い間は免疫が落ちる（docs/engine/DigestionSystem.md 6.2節）。押し下げるのはビタミン・
+          # 空腹・寝不足・気の塞ぎの4つで、**空腹はビタミンに次いで重い**。modifyなので、食べればその場で戻る。
+          - name: starving
+            alert: danger
+            passives:
+              - modify: {self: {immunity: -20}}
           - {name: hungry, min: 50, alert: caution}
           - {name: peckish, min: 200, alert: watch}
           - {name: fed, min: 400}
@@ -356,30 +361,138 @@ traits:
         stages:
           # 壊血病。古傷が開き、歯が抜ける。痛みは刺し傷・牙の傷と並ぶ60で、この島で最も重い段。
           # modifyなので可逆——葉物を食べて段を抜ければ、その場で引く。
+          # 免疫も押し下げる（docs/engine/DigestionSystem.md 6.2節）。**押し下げる4つのうちビタミンが
+          # 最も重く、しかもここと下のdeficientの2段で押す**——壊血病の創傷治癒不全が現実で最も確かめ
+          # られているから。上の「古傷が開く」と同じ現象を、傷ではなく菌の側から見たものにあたる。
           - name: scurvy
             alert: danger
             passives:
               - modify:
                   self:
                     pain: 60
-          - {name: deficient, min: 300, alert: caution}
+                    immunity: -40
+          # ビタミンが押す2段のうち浅いほう。発症前から免疫だけは落ち始める。**多く摂っても強くは
+          # ならない**（過剰側に寄与は無い）ので、押すのはこの段と上のscurvyだけ。
+          - name: deficient
+            min: 300
+            alert: caution
+            passives:
+              - modify: {self: {immunity: -15}}
           - {name: waning, min: 600, alert: watch}
           - {name: replete, min: 1200}
         passives:
           - add:
               self:
                 vitamin: -0.5
-      # 幸福度（docs/world/Characters.md 幸福度節）。**メンタルの不調を代表する1本**で、ストレス・退屈・
-      # 孤独をそれぞれ値にはしない（docs/concept/DesignPrinciples.md）。**現実の単位が無い**ので
+      # 孤独（docs/world/Characters.md ホームシック節）。**漂着してからの日数そのもの**で、世界の日数を
+      # 場所ごしに継ぐだけ（ambient_brightness・shelteredと同じ形のbase）。**独立した値としては溜めない**
+      # ——時間の単調増加関数でしかないものを別に持つと、同じ数が2箇所に立つ。将来「他の生存者に会う」で
+      # 下げる余地は、baseにしてあるぶんmodifyで開いている。
+      #
+      # **画面には出さない**（statusタグを持たない）。プレイヤーが読むのは下のホームシックのほうなので、
+      # 見えない値が結果だけを変える形にはならない。
+      #
+      # 段が持つのはホームシックの溜まる速さで、境目は**日数**で置く（初回の季節がちょうど各30日
+      # なので、雨季と乾季の入口に重なる。docs/engine/ClimateSystem.md 2.3節）。**漂着した最初の
+      # ひと月は溜まらない**——生き延びるだけで手一杯のあいだに里心は付かない。
+      # 速さは段ごとに倍で、1日（96 tick）あたり+0.96・+1.92・+3.84。
+      loneliness:
+        value: 0
+        base: {subject: ancestor, prop: day}
+        stages:
+          - {name: occupied}
+          - name: restless
+            min: 30
+            passives:
+              - add: {self: {homesickness: 0.01}}
+          - name: lonely
+            min: 60
+            passives:
+              - add: {self: {homesickness: 0.02}}
+          - name: forsaken
+            min: 90
+            passives:
+              - add: {self: {homesickness: 0.04}}
+      # ホームシック（docs/world/Characters.md ホームシック節）。**後半の難度を担う1本**で、上の孤独が
+      # 溜め、下の居心地と連れが引く。増える側が悪いプロパティなので、段はmaxからの割合で刻む
+      # （痛み・荷重と同じ1/4・1/2・5/6）。
+      #
+      # **maxが120なのは、顕在化する日のほう先に決まっているから**（同節）。目盛りに現実の単位が無く、
+      # 決まっているのは「60日目に表へ出る」——1日0.96で30日ぶん溜めた28.8が、60日目のうちに留意域
+      # （max の1/4 ＝ 30）を越える位置がここ。100に置くと4日早まる。
+      #
+      # **幸福度を削るのは痛みとここの2本だけ。** 1段上がるごとに倍で、1日あたり-12・-24・-48
+      # ——火を通した3食（+18/日）で追いつくのは最初の段までで、里心が深まれば食事では埋まらない。
+      #
+      # 対策を何も打たなければ、最良の食事を通しても91日目に初めて打ちひしがれ、以後は繰り返す
+      # （同節・限界節）。**0は終点ではない**ので、削り続けた先に出るのは死ではなく、手から離れる時間。
+      homesickness:
+        tags: [status, health]
+        value: 0
+        range: {min: 0, max: 120}
+        stages:
+          - {name: settled}
+          - name: wistful
+            min: 30
+            alert: watch
+            passives:
+              - add: {self: {happiness: -0.125}}
+          - name: yearning
+            min: 60
+            alert: caution
+            passives:
+              - add: {self: {happiness: -0.25}}
+          - name: despondent
+            min: 100
+            alert: danger
+            passives:
+              - add: {self: {happiness: -0.5}}
+      # 今いる場所の居心地（docs/world/Characters.md ホームシック節）。**場所が持つ事実を映す**ので、
+      # 値は祖先から継ぐだけで自分では動かさない（明るさ・shelteredと同じ形）。押し上げるのは住居の部品
+      # （docs/world/Dwellings.md 2節）。
+      #
+      # **段が持つのはホームシックの引き**で、1日あたり-1.92・-3.84。60日目からの増えを止めるには
+      # homely（20）、90日目からの増えを止めるにはsnug（50）が要る。
+      # **継ぐのは今居る場所の居心地だけなので、遠征に出れば何も効かない。**
+      comfort:
+        value: 0
+        base: {subject: ancestor}
+        stages:
+          - {name: bare}
+          - name: homely
+            min: 20
+            passives:
+              - add: {self: {homesickness: -0.02}}
+          - name: snug
+            min: 50
+            passives:
+              - add: {self: {homesickness: -0.04}}
+      # 今いる場所に在る、世話をしている獣の居る囲いの数（同節）。上のcomfortと同じく祖先から継ぐだけで、
+      # 押し上げるのは飼葉の残っている囲い（farming.yaml）が1つにつき1。
+      #
+      # **段は1つだけ**で、囲いをいくつ並べても効き目は増えない（理由は同節）。**引くのは1日-1.92で、
+      # 60日目からの増えをちょうど止める**が、90日目からは家畜だけでは足りない。
+      company:
+        value: 0
+        base: {subject: ancestor}
+        stages:
+          - {name: alone}
+          - name: kept
+            min: 1
+            passives:
+              - add: {self: {homesickness: -0.02}}
+      # 幸福度（docs/world/Characters.md 幸福度節）。**メンタルの不調を代表する1本**で、心の不調が
+      # 行き着く先はここへ集める——分けるのは原因の側だけ（docs/concept/DesignPrinciples.md）。
+      # **現実の単位が無い**ので
       # （痛み・体力と同じ抽象の0〜100）、確かめられるのは大小の関係だけ。
       #
       # **押し引きはすべてadd。** modifyを1本も刺さないので実効値が実体値と一致し、0に達したときの
       # 強制休息をon_minで書ける（まだ入っていない）。意味の面でも、効くのは「快適な寝床で寝た今夜」で
       # あって寝床を持っていること自体ではない。
       #
-      # **上げるのは口にした物だけ**（各eatのベース値）で、**下げるのは痛みの段だけ**（上のpain）。
-      # 時間そのものから生える圧（ホームシック）・寝床や住居からの寄与・免疫への寄与は、まだ入って
-      # いない。増える側が良い値なので、段は下から上へ深刻さが下がる並び（血・熱と同じ形）。
+      # **上げるのは口にした物だけ**（各eatのベース値）で、**下げるのは痛みとホームシックの段の2本**
+      # （上のpain・homesickness）。寝床や住居からの寄与は、まだ入っていない。
+      # 増える側が良い値なので、段は下から上へ深刻さが下がる並び（血・熱と同じ形）。
       #
       # 感じ方の個体差はまだ持たせず、痛み・血と同じくこの trait が配る。
       happiness:
@@ -387,10 +500,105 @@ traits:
         value: 75
         range: {min: 0, max: 100}
         stages:
-          - {name: miserable, alert: danger}
+          # 心が折れている間は免疫も落ちる（docs/engine/DigestionSystem.md 6.2節）。**押し下げる4つのうち
+          # 気の塞ぎが最も軽い**——現実で最も裏付けの弱い経路なので、順位の一番下に置く。
+          - name: miserable
+            alert: danger
+            passives:
+              - modify: {self: {immunity: -10}}
           - {name: dejected, min: 20, alert: caution}
           - {name: glum, min: 50, alert: watch}
           - {name: content, min: 80}
+      # 全身の菌（docs/engine/DigestionSystem.md 6節）。**単位は log₁₀ CFU**——菌の数そのものではなく、
+      # その常用対数で持つ。対数目盛では指数増殖が定数のaddになるので、「細菌が自分で自分を押し上げる」を
+      # 近似せずに書ける（明るさをEVで持っているのと同じ形、IlluminationSystem.md 2節）。
+      #
+      # **0は菌ゼロではなく菌1個**なので、増殖を無条件に置くと感染していない体でも菌が増える。
+      # 最下段sterileには置かず、そこを抜けている間だけ増やす。
+      #
+      # **増殖は定数1つ（+0.15/tick）。** 倍加あたりの上昇は log₁₀2 ≒ 0.30 なので、これは倍加時間30分に
+      # あたる。引くのは免疫の段（下のimmunity）で、**除去が増殖を上回れば0へ着地して止まり、下回れば
+      # 上限へ暴走する**——分かれ目は2つの定数の大小1つに畳まれている。
+      #
+      # **対数上の足し算は線形では掛け算**なので、続けて食べた分は過大に見える。向き（続けて食べるほど
+      # 危ない）は正しいので、罰としてそのまま許容する（docs/concept/DesignPrinciples.md）。
+      #
+      # **死に方は増えない**（VitalsSystem.md 8節）。上の2段が水と血を削り、既存の脱水・失血へ流す
+      # ——傷のfestering・septic段（injuries.yaml）とまったく同じ形。潜伏期のうちは下2段がalertを
+      # 持たないので、ステータスエリアには行が出ない（StatusArea.md 3節）。
+      pathogen:
+        tags: [status, health]
+        value: 0
+        range: {min: 0, max: 9}
+        stages:
+          - {name: sterile}
+          - {name: latent, min: 0.1}
+          - name: feverish
+            min: 5
+            alert: caution
+            passives:
+              # 熱で水が余計に要る。飲めば追いつくので、ここだけなら水で凌げる（VitalsSystem.md 8.1節）。
+              - add: {self: {hydration: -1}}
+          - name: septicemic
+            min: 7
+            alert: danger
+            passives:
+              # 菌が血へ回れば血漿が循環の外へ漏れ出す。**飲んでも循環へは戻らない**ので、免疫が
+              # 追いつく以外に止まらない。量は傷のseptic段と揃える。
+              - add: {self: {hydration: -2, blood: -40}}
+        passives:
+          # 菌が居る間だけ増え、同じ間だけ免疫が上がる（獲得免疫）。**潜伏期は、免疫が段を1つ上げるのに
+          # 要る時間そのもの**——0.25/tickなので、weakenedの下端25からrobustの40までを60 tick（15時間）で
+          # 登る。
+          - conditions: [{not: {prop: pathogen, in_stage: sterile}}]
+            add: {self: {pathogen: 0.15, immunity: 0.25}}
+      # 免疫（同6節）。**現実の単位を持たない**抽象の目盛り（痛み・幸福度と同じ）なので、確かめられるのは
+      # 上の菌の増殖（+0.15/tick）との大小だけ。段ごとの定数で菌を引く。
+      #
+      # **押し下げるのは生活の4つだけ**で、どれもmodify（可逆）。重い順に、壊血病 -40（上のvitamin）・
+      # 空腹 -20（上のsatiety）・ビタミン不足 -15（同）・寝不足 -15（キャラクタごとのwakefulness）・
+      # 惨め -10（上のhappiness）。宣言は原因の段の側が持つ（壊血病が痛みを押し上げるのと同じ形）。
+      # **過剰側に寄与は無い**——ビタミンを多く摂れば感染に強くなる、は現実で否定されている。
+      # **体温も入れない**——寒さそのものが感染を増やすという裏付けは弱い。
+      #
+      # **段の境目は「いくつ重なったか」で置く。** 素の60から、押し下げが1つまでならrobustに留まり
+      # （壊血病を除けばいちばん重い空腹の-20でちょうど40）、2つ重なるとweakened、3つ重なるか壊血病1つで
+      # failingへ落ちる。こう置かないと、いちばん軽い-10でも段が落ちて、重い順に並べた意味が消える。
+      #
+      # **range.minは、押し下げが重なっても残る守りの底。** 全部重ねても（-85）ここより下へは行かない。
+      # **素の60（value）とは別の数**で、こちらは「何も抱えていない体の高さ」、20は「どこまで落ちても
+      # 残る高さ」。
+      #
+      # **上がるのは感染している間だけ**（上のpathogenが+0.25/tick）。いちばん上の段だけが自分を引き
+      # 戻すので、**罹って治った体は素の60より高い所（70の少し下）で止まる**——それが獲得免疫そのもので、
+      # 押し下げ-30までは段を保てる余力になる（素のままなら-20まで）。
+      #
+      # 身体の仕組みなので個体差を持たせず、痛み・血と同じくこの trait が配る。
+      #
+      # **statusは持たない**——常時見せるのは症状（上のpathogen）のほうで、免疫そのものは開いて見る値。
+      # 体脂肪と同じ扱いで、分類のタグだけを持ってカードのタブには並ぶ（docs/world/Characters.md）。
+      immunity:
+        tags: [health]
+        value: 60
+        range: {min: 20, max: 100}
+        stages:
+          - name: failing
+            passives:
+              - add: {self: {pathogen: -0.05}}
+          - name: weakened
+            min: 25
+            passives:
+              - add: {self: {pathogen: -0.1}}
+          # ここから上が増殖（+0.15）を上回る。健康な体はこの段の中から始まるので、生肉1食ぶんの菌は
+          # 症状が出ないまま引いていく。
+          - name: robust
+            min: 40
+            passives:
+              - add: {self: {pathogen: -0.2}}
+          - name: primed
+            min: 70
+            passives:
+              - add: {self: {pathogen: -0.3, immunity: -0.05}}
       # ------------------------------------------------------------------
       # 腕前（docs/engine/SkillSystem.md、粒度と一覧は docs/world/Skills.md 2節）。レシピの解放条件は
       # 段の名前で読む（同4節）ので、境目を条件の側へ書き写さない。

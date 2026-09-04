@@ -111,6 +111,12 @@ if [ -n "${DRY_RUN:-}" ]; then
   exit 0
 fi
 
+# 手綱と占有。**畳む前に見る。** `archive-reviews.sh` が走った後では走行中のレビューも畳まれて
+# いるので、占有は必ず「無い」になる（判定が何も止めない）。**再レビューは止まらない**——判定に
+# 使うのは走行中かどうかで、判定を書き終えたレビューは占有していない
+# （[`board-design.md`](../../.claude/board-design.md) 1.2）。
+CCR_META="$CCR_META" bash "$HERE/may-dispatch.sh" review "review-$PR"
+
 CCR_META="$CCR_META" bash "$HERE/archive-reviews.sh"
 
 # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。

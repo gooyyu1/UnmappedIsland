@@ -154,6 +154,21 @@ traits:
       ambient_temperature:
         value: 0
         base: {subject: ancestor}
+      # その場の居心地（docs/world/Characters.md ホームシック節）。**持つのは場所で、キャラクタは
+      # baseで継ぐだけ**——住居の部品（docs/world/Dwellings.md 2節）が、据えられた住居のここを
+      # modifyで押し上げる。素は0（何も無い土地）。
+      #
+      # **気温と同じく、囲っている場所から継ぐ**（場所は入れ子になるので、継がないと内側に入った
+      # 瞬間に外の設えが消える。同節）。下のcompanyも同じ。
+      comfort:
+        value: 0
+        base: {subject: ancestor}
+      # その場に在る、世話をしている獣が居る囲いの数（同節）。**数えるのは囲いで、頭数ではない**
+      # ——囲いは中に何頭居るかを知らない（条件は存在判定だけ、14.3節）ので、名乗れるのは1つにつき1。
+      # 上の居心地と分けてある理由（積み上がってよいかどうかが違う）は同節。
+      company:
+        value: 0
+        base: {subject: ancestor}
 
 object_defs:
   world:

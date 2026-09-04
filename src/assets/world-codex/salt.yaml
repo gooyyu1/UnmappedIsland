@@ -41,7 +41,7 @@ object_defs:
           - reason: already_cured
             not: {subject: instrument, matches: {tag: cured}}
           # **無事な物しか漬からない。** 塩は腐敗を止めるだけで、進んだぶんは戻らない
-          # （docs/engine/DigestionSystem.md 6節の段をそのまま読む）。
+          # （docs/engine/DigestionSystem.md 6.3節の段をそのまま読む）。
           - reason: too_spoiled
             subject: instrument
             prop: durability

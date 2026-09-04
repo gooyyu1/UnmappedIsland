@@ -4,7 +4,7 @@
 # 何を数えて何を数えていないかは docs/diagnostics/DurationStats.md。
 
 meta:
-  - {unit: days, minimum: 1, durations: 97, longest: 67.00, shortest: 1.00, tool_wears: 14}
+  - {unit: days, minimum: 1, durations: 101, longest: 67.00, shortest: 1.00, tool_wears: 14}
 
 durations:
   - {object: junglefowl, property: body_fat, unit: days, days: 67.00, shortest_days: 67.00, longest_days: 67.00, repeats: false, destroys: true}
@@ -98,6 +98,10 @@ durations:
   - {object: farmer, property: wakefulness, unit: days, days: 2.00, shortest_days: 2.00, longest_days: 2.00, repeats: false, destroys: false}
   - {object: field, property: growth_remaining, unit: days, days: 2.00, shortest_days: 2.00, longest_days: 2.00, repeats: true, destroys: false}
   - {object: medic, property: wakefulness, unit: days, days: 2.00, shortest_days: 2.00, longest_days: 2.00, repeats: false, destroys: false}
+  - {object: captain, property: immunity, unit: days, days: 1.67, shortest_days: 1.67, longest_days: 1.67, repeats: false, destroys: false}
+  - {object: engineer, property: immunity, unit: days, days: 1.67, shortest_days: 1.67, longest_days: 1.67, repeats: false, destroys: false}
+  - {object: farmer, property: immunity, unit: days, days: 1.67, shortest_days: 1.67, longest_days: 1.67, repeats: false, destroys: false}
+  - {object: medic, property: immunity, unit: days, days: 1.67, shortest_days: 1.67, longest_days: 1.67, repeats: false, destroys: false}
   - {object: bruise, property: severity, unit: days, days: 1.25, shortest_days: 1.25, longest_days: 2.50, repeats: false, destroys: true}
   - {object: junglefowl, property: stay_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: true}
   - {object: monkey, property: stay_remaining, unit: days, days: 1.00, shortest_days: 1.00, longest_days: 1.00, repeats: false, destroys: true}
