@@ -340,19 +340,23 @@ describe('値段の付かない道具', () => {
 /**
  * 代入（`set`）で消える増減が、期待値から落ちていること（issue #1337）。
  *
- * 生肉を食べる枝のうち、食中毒の枝（重み12）は満腹を0へ代入するので、その枝では直前に足した500が
- * 残らない。**表は経路の比較に使うもの**なので、これを数えないと生の満腹が実際より安く出る。
+ * 吐く枝は満腹を0へ代入するので、その枝では直前に足した500が残らない。**表は経路の比較に使うもの**
+ * なので、これを数えないと生の満腹が実際より安く出る。
+ *
+ * **いま重みの立っている代入の枝はありません**——腐敗の重み（`spoilage`）は無事な物では0で、生肉が
+ * 持っていた固定の重みは全身の菌へ移った（docs/engine/DigestionSystem.md 6節）。したがってここが
+ * 見張るのは、裏返しの「**重み0の枝は期待値を下げない**」のほうになる。
  */
 describe('代入で打ち消される増減', () => {
-  it('生肉を食べたときの満腹が、食中毒の枝を引いた期待値になっている', () => {
+  it('重み0の代入の枝は、期待値を下げない', () => {
     const { tables } = balanceFromDefinitions();
     const satietyOf = (ownerName: string): number | undefined =>
       tables.supply
         .find((row) => row.ownerName === ownerName && row.stepName === 'eat')
         ?.agentDeltas.find((delta) => delta.name === 'satiety')?.amount;
 
-    // 重みは 100 : {prop: spoilage}=0 : {prop: spoilage}=0 : 12。
-    expect(satietyOf('raw_meat')).toBeCloseTo((500 * 100) / 112, 2);
-    expect(satietyOf('raw_meat__cure_salted')).toBeCloseTo((500 * 100) / 112, 2);
+    // 重みは 100 : {prop: spoilage}=0 : {prop: spoilage}=0。
+    expect(satietyOf('raw_meat')).toBeCloseTo(500, 2);
+    expect(satietyOf('raw_meat__cure_salted')).toBeCloseTo(500, 2);
   }, 600_000);
 });
