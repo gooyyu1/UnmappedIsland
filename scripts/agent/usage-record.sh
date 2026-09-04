@@ -6,8 +6,11 @@
 #
 # 畳まれたセッションが在った周だけ、その消費を1行1件で出す。**引けなければ何もせず終了コード1。**
 #
-# 割り当ての中身は [`usage-attribute.mjs`](usage-attribute.mjs)、生きている一覧は
+# 割り当ての中身は [`usage-attribute.mjs`](usage-attribute.mjs)、一覧は
 # [`live-sessions.sh`](live-sessions.sh)。ここは2つを繋ぐだけ。
+#
+# **`status_bucket` から `working` を立てるのはここ。** 一覧は畳まれていないセッションを全部出し
+# （占有の側がそれを要る）、消費を積むのは動いていたものだけ、という違いを呼び手が引き受ける。
 #
 # ## 置き場をリポジトリの外にする
 #
@@ -42,6 +45,10 @@ printf '%s' "$live" | jq -R -s --arg u "$utilization" --arg r "$resets_at" \
     utilization: ($u | tonumber),
     resetsAt: $r,
     now: $now,
-    live: (split("\n") | map(select(length > 0)) | map(split("\t") | {id: .[0], tags: (.[2] // "" | split(",") | map(select(length > 0)))}))
+    live: (split("\n") | map(select(length > 0)) | map(split("\t") | {
+      id: .[0],
+      working: (.[1] == "SESSION_STATUS_BUCKET_WORKING"),
+      tags: (.[2] // "" | split(",") | map(select(length > 0)))
+    }))
   }' |
   node "$HERE/usage-attribute.mjs" "$STATE_DIR/usage.json" "$STATE_DIR/spent.tsv"

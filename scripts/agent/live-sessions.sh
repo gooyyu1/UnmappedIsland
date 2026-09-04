@@ -1,21 +1,30 @@
 #!/usr/bin/env bash
-# **生きているセッション**を1行1件で出す。「生きている」の定義はここ1箇所だけが持つ。
+# **畳まれていないセッション**を1行1件で出す。「畳まれていない」の定義はここ1箇所だけが持つ。
 #
 #   $ bash scripts/agent/live-sessions.sh
 #   cse_abc123<TAB>SESSION_STATUS_BUCKET_WORKING<TAB>task-1234
 #
-# 1行が `<セッションID>\t<status_bucket>\t<タグをカンマで繋いだもの>`。1本も生きていなければ
+# 1行が `<セッションID>\t<status_bucket>\t<タグをカンマで繋いだもの>`。1本も無ければ
 # **何も出さずに終了コード0**。**引けなかったときは終了コード1**で、呼び手は止まる側へ倒せる。
 #
 # ## なぜ切り出したか
 #
-# 「生きている」を要るのは2つある——**占有の判定**（[`occupancy.sh`](occupancy.sh)）と、
-# **使用量の割り当て**（[`usage-record.sh`](usage-record.sh)。増分を生きている本数で等分する。
-# [`board-design.md`](../../.claude/board-design.md) 2.5）。**2箇所に同じ条件を書くと、片方だけが
-# 直る。**
+# 一覧を要るのは2つある——**占有の判定**（[`occupancy.sh`](occupancy.sh)）と、**使用量の割り当て**
+# （[`usage-record.sh`](usage-record.sh)。[`board-design.md`](../../.claude/board-design.md) 2.5）。
+# **2箇所に同じ条件を書くと、片方だけが直る。**
 #
-# 判定は `session_status` と `status_bucket` だけで、**`updated_at` は使わない**（1.2）——走行中でも
-# 動かないことを 2026-09-05 に実測している。
+# ## 絞るのは `SESSION_STATUS_ARCHIVED` だけ
+#
+# **手が空いていることは、仕事が終わったことではない。** `status_bucket` が
+# `..._COMPLETED` / `..._BLOCKED` / `..._FAILED` でも、そのセッションは仕事を持ったまま次の指示を
+# 待っている——**畳まれたセッションでさえ、`unarchive_session` → `send_message` で文脈ごと再開
+# できる**（1.2 の実測）。ここで落とすと、占有の側が「空いている」と読んで二重に立てる。
+#
+# **`status_bucket` は落とさずに出す。** 使用量の割り当ては「そのとき動いていたか」で選ぶので
+# （2.5）、選び方の違いは**呼び手が列を見て決める**。条件をこちらへ2つ持つと、どちらの呼び手にも
+# 合わない定義が1つできる。
+#
+# 判定に **`updated_at` は使わない**（1.2）——走行中でも動かないことを 2026-09-05 に実測している。
 #
 # ## 一覧は最後まで繰る
 #
@@ -47,8 +56,6 @@ while :; do
 
   jq -r '.ccr.data[]?
     | select(.session_status != "SESSION_STATUS_ARCHIVED")
-    | select(.status_bucket != "SESSION_STATUS_BUCKET_COMPLETED")
-    | select(.status_bucket != "SESSION_STATUS_BUCKET_FAILED")
     | [.id, (.status_bucket // "-"), ([.tags[]?] | join(","))]
     | @tsv' <<<"$page" | tr -d '\r'
 

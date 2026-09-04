@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
  *
  * ここが守るのは**積んだ値が消費として読めること**。APIはセッション単位の消費を返さないので
  * （`.claude/board-design.md` 2.8）、割り当てを間違えると 2.5 の自動の手綱がしきい値ごと狂う。
- * 負の消費が積まれないこと（枠が変わった周）と、分母にユーザー自身の対話が入ることを見る。
+ * 負の消費が積まれないこと（枠が変わった周）と、手が空いているセッションが分母に入らないことを見る。
  */
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/usage-attribute.mjs');
@@ -17,6 +17,7 @@ const SCRIPT = resolve(__dirname, '../../scripts/agent/usage-attribute.mjs');
 interface Live {
   readonly id: string;
   readonly tags: readonly string[];
+  readonly working: boolean;
 }
 
 interface State {
@@ -65,7 +66,7 @@ describe('usage-attribute.mjs', () => {
         utilization: 30,
         resetsAt: WINDOW,
         now: '2026-09-05T01:00:00Z',
-        live: [{ id: 'cse_a', tags: ['task-1'] }],
+        live: [{ id: 'cse_a', tags: ['task-1'], working: true }],
       });
 
       expect(result.state.utilization).toBe(30);
@@ -73,12 +74,11 @@ describe('usage-attribute.mjs', () => {
     });
   });
 
-  // 分母の `+ 1` はユーザー自身の対話（board-design 2.5）。含めないと投入したぶんが過大に出る。
-  it('増分は、生きているセッションとユーザー自身の対話で等分する', () => {
+  it('増分は、動いていたセッションで等分する', () => {
     withWork((work) => {
       const live = [
-        { id: 'cse_a', tags: ['task-1'] },
-        { id: 'cse_b', tags: ['review-2'] },
+        { id: 'cse_a', tags: ['task-1'], working: true },
+        { id: 'cse_b', tags: ['review-2'], working: true },
       ];
       attribute(work, { utilization: 10, resetsAt: WINDOW, now: '2026-09-05T01:00:00Z', live });
       const result = attribute(work, {
@@ -88,20 +88,57 @@ describe('usage-attribute.mjs', () => {
         live,
       });
 
-      expect(result.state.sessions.cse_a.spent).toBe(2);
-      expect(result.state.sessions.cse_b.spent).toBe(2);
+      expect(result.state.sessions.cse_a.spent).toBe(3);
+      expect(result.state.sessions.cse_b.spent).toBe(3);
       expect(result.state.sessions.cse_a.kind).toBe('new-task');
       expect(result.state.sessions.cse_b.kind).toBe('review');
     });
   });
 
-  it('生きている一覧から消えたら、積み上がった値を記録へ出す', () => {
+  // 畳まれていないセッションには、手が空いて次の指示を待っているものが混ざる（board-design 1.2）。
+  it('手が空いているセッションは、分母にも入らず積まれもしない', () => {
     withWork((work) => {
-      const live = [{ id: 'cse_a', tags: ['task-1'] }];
+      const live = [
+        { id: 'cse_a', tags: ['task-1'], working: true },
+        { id: 'cse_b', tags: ['task-2'], working: false },
+      ];
       attribute(work, { utilization: 10, resetsAt: WINDOW, now: '2026-09-05T01:00:00Z', live });
-      attribute(work, { utilization: 14, resetsAt: WINDOW, now: '2026-09-05T01:05:00Z', live });
       const result = attribute(work, {
-        utilization: 14,
+        utilization: 16,
+        resetsAt: WINDOW,
+        now: '2026-09-05T01:05:00Z',
+        live,
+      });
+
+      expect(result.state.sessions.cse_a.spent).toBe(6);
+      expect(result.state.sessions.cse_b.spent).toBe(0);
+    });
+  });
+
+  // 一覧に載らない手元の Claude Code が食ったぶん。投入したセッションのせいにはしない。
+  it('1本も動いていない周の増分は、誰にも積まない', () => {
+    withWork((work) => {
+      const live = [{ id: 'cse_a', tags: ['task-1'], working: false }];
+      attribute(work, { utilization: 10, resetsAt: WINDOW, now: '2026-09-05T01:00:00Z', live });
+      const result = attribute(work, {
+        utilization: 40,
+        resetsAt: WINDOW,
+        now: '2026-09-05T01:05:00Z',
+        live,
+      });
+
+      expect(result.state.sessions.cse_a.spent).toBe(0);
+      expect(result.state.utilization).toBe(40);
+    });
+  });
+
+  it('畳まれて一覧から消えたら、積み上がった値を記録へ出す', () => {
+    withWork((work) => {
+      const live = [{ id: 'cse_a', tags: ['task-1'], working: true }];
+      attribute(work, { utilization: 10, resetsAt: WINDOW, now: '2026-09-05T01:00:00Z', live });
+      attribute(work, { utilization: 12, resetsAt: WINDOW, now: '2026-09-05T01:05:00Z', live });
+      const result = attribute(work, {
+        utilization: 12,
         resetsAt: WINDOW,
         now: '2026-09-05T01:10:00Z',
         live: [],
@@ -115,7 +152,7 @@ describe('usage-attribute.mjs', () => {
   // `resets_at` が変われば `utilization` は下がる。引き算をそのまま使うと負の消費が積まれる。
   it('枠が変わった周は、増分を0にする', () => {
     withWork((work) => {
-      const live = [{ id: 'cse_a', tags: ['task-1'] }];
+      const live = [{ id: 'cse_a', tags: ['task-1'], working: true }];
       attribute(work, { utilization: 80, resetsAt: WINDOW, now: '2026-09-05T04:55:00Z', live });
       const result = attribute(work, {
         utilization: 3,
@@ -131,7 +168,7 @@ describe('usage-attribute.mjs', () => {
 
   it('枠が同じでも utilization が下がった周は、増分を0にする', () => {
     withWork((work) => {
-      const live = [{ id: 'cse_a', tags: ['task-1'] }];
+      const live = [{ id: 'cse_a', tags: ['task-1'], working: true }];
       attribute(work, { utilization: 40, resetsAt: WINDOW, now: '2026-09-05T01:00:00Z', live });
       const result = attribute(work, {
         utilization: 39,
@@ -146,7 +183,7 @@ describe('usage-attribute.mjs', () => {
 
   it('タグの無いセッションは、投入したものと分けて数える', () => {
     withWork((work) => {
-      const live = [{ id: 'cse_x', tags: [] }];
+      const live = [{ id: 'cse_x', tags: [], working: true }];
       const result = attribute(work, {
         utilization: 5,
         resetsAt: WINDOW,

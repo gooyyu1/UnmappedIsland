@@ -1,6 +1,6 @@
-// 使用量の増分を、生きているセッションへ割り当てる（`.claude/board-design.md` 2.5）。
+// 使用量の増分を、そのとき動いていたセッションへ割り当てる（`.claude/board-design.md` 2.5）。
 //
-//   echo '{"utilization":12,"resetsAt":"...","now":"...","live":[{"id":"cse_a","tags":["task-1"]}]}' \
+//   echo '{"utilization":12,"resetsAt":"...","now":"...","live":[{"id":"cse_a","tags":["task-1"],"working":true}]}' \
 //     | node scripts/agent/usage-attribute.mjs <状態のファイル> <記録のファイル>
 //
 // 状態のファイルを読み書きし、**畳まれたセッションぶんだけ**を記録のファイルへ1行1件で足す。
@@ -9,12 +9,17 @@
 //
 // ## セッション単位の消費は引けないので、割り当てる
 //
-// APIが返すのは全体の `utilization` だけ（2.8）。**前回からの増分を、そのとき生きているセッション
-// 全部で等分する。**
+// APIが返すのは全体の `utilization` だけ（2.8）。**前回からの増分を、そのとき動いていたセッション
+// で等分する。**
 //
-// **分母に1を足す。** 割る相手はタグの付いたセッションだけではなく、**ユーザー自身の対話も含めた
-// 全部**（2.5）。同じ5時間枠を食っているので、含めないと投入したセッションの消費が過大に出る。
-// ブリッジで Claude Code が走っていることはデーモンの前提なので（2.8）、その1本は常に居る。
+// **分母は「動いていたもの」だけ。** 畳まれていないセッションには、手が空いて次の指示を待っている
+// ものが混ざる（1.2）。待っている本数で割ると、待っているほど消費したことになる。
+//
+// **ユーザー自身の対話も分母に入る**（2.5）。ブリッジの Claude Code もCCRのセッションなので
+// 一覧に載り、動いていれば `working` が立つ——**別枠で1を足すと二重に数える**。
+//
+// **1本も動いていない周の増分は、誰にも割り当てない。** 一覧に載らない手元の Claude Code が
+// 食ったぶんなので、投入したセッションのせいにすると過大に出る。
 //
 // ## 枠が変わった周は、増分を0にする
 //
@@ -51,13 +56,17 @@ const sameWindow = previous.resetsAt === input.resetsAt && typeof previous.utili
 const rose = sameWindow && input.utilization >= previous.utilization;
 const delta = rose ? input.utilization - previous.utilization : 0;
 
-// 分母の `+ 1` はブリッジの Claude Code 本体。上の「分母に1を足す」。
-const share = delta / (input.live.length + 1);
+// 上の「分母は『動いていたもの』だけ」。1本も動いていなければ、この周の増分は誰にも積まない。
+const working = input.live.filter((session) => session.working);
+const share = working.length > 0 ? delta / working.length : 0;
 
 const sessions = {};
 for (const session of input.live) {
   const carried = previous.sessions?.[session.id]?.spent ?? 0;
-  sessions[session.id] = { kind: kindOf(session.tags), spent: carried + share };
+  sessions[session.id] = {
+    kind: kindOf(session.tags),
+    spent: carried + (session.working ? share : 0),
+  };
 }
 
 // 生きている一覧から消えたセッション＝畳まれた。積み上がった値がそのセッションの消費。
