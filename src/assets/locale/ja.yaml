@@ -278,7 +278,7 @@ object_texts:
       skill_hunting:
         display_name: 狩猟
         icon: 🏹
-        description: 獣を狩る腕。武器を手に打ちかかるほど上がる。上がるほど探索で獣に出くわす。
+        description: 獣を狩る腕。武器を手に打ちかかるほど上がる。上がるほど、探索や見張りで獲物に出くわす。
       skill_smelting:
         display_name: 採鉱・製錬
         icon: ⛏️
@@ -288,9 +288,9 @@ object_texts:
         icon: ✨
         description: 火口に火が移る重みの倍率。火の腕が上がるほど大きくなる。
       quarry_sense:
-        display_name: 獣に気づく目
+        display_name: 獲物に気づく目
         icon: 🐾
-        description: 探索で獣に出くわす重みの倍率。狩猟の腕が上がるほど大きくなる。
+        description: 探索や見張りで獲物に出くわす重みの倍率。狩猟の腕が上がるほど大きくなる。
       afloat:
         display_name: 浮いている
         description: 水に浮かんでいるか。帆のような部品は、浮いている間だけ効く。

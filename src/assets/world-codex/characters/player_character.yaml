@@ -579,5 +579,6 @@ traits:
       # ------------------------------------------------------------------
       # 火の移りやすさ。火口のignition_chance（fire.yamlのlight）へ掛かる。
       ignition_ease: {value: 1}
-      # 獣の気配に気づく目。土地の<動物>_find（locations.yamlのexplore）へ掛かる。
+      # 獲物の気配に気づく目。土地の<動物>_findと、海区のshoal_find・seabird_find（locations.yaml・
+      # voyage.yamlのexplore）へ掛かる。
       quarry_sense: {value: 1}
