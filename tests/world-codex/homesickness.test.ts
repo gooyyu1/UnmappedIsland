@@ -10,15 +10,18 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * 時間の経過そのものから生える圧（docs/world/Characters.md ホームシック節）を、同梱のYAMLに対して
  * 通しで確かめる。見るのは「日数 → 孤独 → ホームシック → 幸福度」の鎖1本と、それを抑える2つの手。
  *
- * **1日ぶんを96 tick回して日付を1つ進める**、を必要な日数だけ繰り返す。日付（worldのday）が
- * tickでは進まない（hourを進めるのはWorldSession）ので、ここで直接置く。
+ * **時間はWorldSession.advanceWorldTimeで進める**（1 tickずつ、日付が要る日数に届くまで）。
+ * worldのdayを直に置いてWorldObject.tickを回すと速いが、**限界の手番（trigger: tick、
+ * docs/world/Characters.md 限界節）が一度も配られない**——配るのはWorldSessionのほうなので、
+ * 幸福度が尽きた先を測れなくなる。**日付は世界の時計から読む**ので、打ちひしがれて過ぎた時間も
+ * そのぶん日を進める。
  *
  * **1人で測れば足りる。** 3つのプロパティはどれも個体差を持たず player_character trait が配るので、
  * 全キャラクタを走査するのはcharactersYaml.test.tsの受け持ち（そちらが宣言の欠落を見る）。
  */
 const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
 
-const TICKS_PER_DAY = 96;
+const MINUTES_PER_TICK = 15;
 
 function propertyId(name: string): number {
   return codex.propertyNames.getId(name);
@@ -144,6 +147,11 @@ interface Trace {
   readonly lowestHappiness: readonly number[];
   /** その日の終わりの、今いる場所の連れ（世話をしている獣が居るか）。 */
   readonly company: readonly number[];
+  /**
+   * その日、打ちひしがれて奪われた時間（分）。**幸福度が 0 は終点ではない**
+   * （docs/world/Characters.md 限界節）ので、尽きた先はここに出る。
+   */
+  readonly despairMinutes: readonly number[];
 }
 
 /** 1日目から数えてdays日ぶん暮らす。 */
@@ -152,13 +160,21 @@ function live(days: number, plan: Plan = {}): Trace {
   const homesickness: number[] = [];
   const lowestHappiness: number[] = [];
   const company: number[] = [];
+  const despairMinutes: number[] = [];
   const happiness = island.player.getProperty(propertyId('happiness'));
+  const dayProperty = island.world.getProperty(propertyId('day'));
+  const hourProperty = island.world.getProperty(propertyId('hour'));
   const meals = plan.cookedMeals ?? 0;
+  /** 食事を置く時刻。1日のうちへ等間隔に置く（まとめて1回にすると、食べる直前の底が深くなる）。 */
+  const mealHours = Array.from({ length: meals }, (unused, index) => (24 / meals) * index);
   let pens: WorldObject[] = [];
+  let lowest = happiness.number;
+  let forced = 0;
+  let lastMeal = -1;
   if (plan.landComfort !== undefined)
     island.land.getProperty(propertyId('comfort')).setNumber(plan.landComfort);
 
-  for (let day = 1; day <= days; day++) {
+  function startDay(day: number): void {
     if (day === plan.penFromDay)
       pens = Array.from({ length: plan.pens ?? 1 }, () => buildPen(island, island.land));
     if (day === plan.leaveFromDay)
@@ -167,24 +183,58 @@ function live(days: number, plan: Plan = {}): Trace {
       ).toBeUndefined();
     if (day === plan.enterCaveFromDay) enterCave(island);
 
-    island.world.getProperty(propertyId('day')).setNumber(day);
     tendBody(island.player);
     if (plan.neglectFromDay === undefined || day < plan.neglectFromDay) pens.forEach(feedPen);
-
-    let lowest = happiness.number;
-    for (let tick = 0; tick < TICKS_PER_DAY; tick++) {
-      // 食事は1日のうちへ等間隔に置く。まとめて1回にすると、食べる直前の底が実際より深くなる。
-      if (meals > 0 && tick % (TICKS_PER_DAY / meals) === 0) happiness.add(COOKED_MEAL);
-      island.world.tick();
-      lowest = Math.min(lowest, happiness.number);
-    }
-
-    homesickness.push(island.player.getProperty(propertyId('homesickness')).number);
-    lowestHappiness.push(lowest);
-    company.push(island.player.getProperty(propertyId('company')).getEffectiveValue());
   }
 
-  return { homesickness, lowestHappiness, company };
+  /**
+   * 日をまたぐ手前の値。**日付が変わったと気づくのは1 tick進めた後**なので、その前の値を毎回
+   * 控えておかないと、記録に新しい日のぶんが1 tick混ざる。
+   */
+  let atDayEnd = { homesickness: 0, company: 0 };
+  let lastDay = dayProperty.number;
+  startDay(lastDay);
+
+  while (dayProperty.number <= days) {
+    // **日が変わった後の始末は、その日の最初の1 tickより前に置く。** 囲いを建てる日にも丸1日ぶん
+    // 効くようにするため。
+    if (dayProperty.number !== lastDay) {
+      homesickness.push(atDayEnd.homesickness);
+      lowestHappiness.push(lowest);
+      company.push(atDayEnd.company);
+      despairMinutes.push(forced);
+      lowest = happiness.number;
+      forced = 0;
+      lastDay = dayProperty.number;
+      startDay(lastDay);
+    }
+
+    const hour = hourProperty.number;
+    if (mealHours.includes(hour) && lastMeal !== hour) {
+      happiness.add(COOKED_MEAL);
+      lastMeal = hour;
+    }
+
+    const before = island.session.world!.totalMinutes;
+    atDayEnd = {
+      homesickness: island.player.getProperty(propertyId('homesickness')).number,
+      company: island.player.getProperty(propertyId('company')).getEffectiveValue(),
+    };
+
+    island.session.advanceWorldTime(MINUTES_PER_TICK);
+    // **1 tickぶんより長く進んだら、限界の手番が挟まった**（docs/world/Characters.md 限界節）。
+    // ここで尽きうるのは幸福度だけなので、伸びた分はそのまま打ちひしがれていた時間になる。
+    forced += island.session.world!.totalMinutes - before - MINUTES_PER_TICK;
+    lowest = Math.min(lowest, happiness.number);
+  }
+
+  // 最後の1日ぶん。上の始末は次の日の頭で走るので、抜けた時点の1日は自分で閉じる。
+  homesickness.push(atDayEnd.homesickness);
+  lowestHappiness.push(lowest);
+  company.push(atDayEnd.company);
+  despairMinutes.push(forced);
+
+  return { homesickness, lowestHappiness, company, despairMinutes };
 }
 
 /** その値が初めてしきい値へ届いた日（1始まり）。届かなければ0。 */
@@ -220,12 +270,24 @@ describe('ホームシック(docs/world/Characters.md ホームシック節)', (
     expect(trace.lowestHappiness[59], '60日目から削られ始める').toBeLessThan(100);
   });
 
-  it('対策を何も打たなければ、最良の食事を通しても91日目に幸福度が0へ届く', () => {
+  it('対策を何も打たなければ、最良の食事を通しても91日目に打ちひしがれる', () => {
     // 火を通した3食で+18/日。**追いつくのは最初の段まで**で、里心が深まれば-24/日・-48/日になり、
-    // 食事では埋まらない。1周回115日（ContentSkeleton.md 8.3節）の残り25日ほどで心が尽きる。
+    // 食事では埋まらない。0 は終点ではなく、打ちひしがれる入口（Characters.md 限界節）。
     const trace = live(115, { cookedMeals: 3 });
 
-    expect(trace.lowestHappiness.findIndex((value) => value === 0) + 1).toBe(91);
+    expect(trace.despairMinutes.findIndex((minutes) => minutes > 0) + 1).toBe(91);
+  });
+
+  it('打ちひしがれ始めると、以後は繰り返し時間を奪われる', () => {
+    // despairが戻すのは+20で、最も深い段（despondent）の-48/日はそれをおよそ10時間で削り切る。
+    // **止まらないのではなく、1日のうち何時間かが手から離れる**という形の圧になる。
+    const trace = live(115, { cookedMeals: 3 });
+    const lastTen = trace.despairMinutes.slice(-10);
+    const hoursPerDay = lastTen.reduce((total, minutes) => total + minutes, 0) / 10 / 60;
+
+    expect(Math.min(...lastTen), '終盤はどの日も奪われる').toBeGreaterThan(0);
+    expect(hoursPerDay, '1日あたり2時間半ほど').toBeGreaterThan(2);
+    expect(hoursPerDay, '1日あたり2時間半ほど').toBeLessThan(3);
   });
 
   it('飼葉を切らさない囲いに獣が1頭居れば、その土地が連れになる', () => {
@@ -246,11 +308,12 @@ describe('ホームシック(docs/world/Characters.md ホームシック節)', (
 
   it('その囲いが、60日目から90日目までの増えをちょうど止める', () => {
     // 連れの引き（-1.92/日）が、lonely段の溜め（+1.92/日）と釣り合う。里心が募ってから
-    // 囲いを建てても、そこで止まる。
-    const trace = live(89, { penFromDay: 65 });
+    // 囲いを建てても、そこで止まる。**食べさせるのは、打ちひしがれる時間を挟ませないため**
+    // ——強制の時間経過が入ると1日の刻みがずれ、止まっているかどうかを1 tickの精度で見られない。
+    const trace = live(89, { penFromDay: 65, cookedMeals: 3 });
 
-    expect(trace.homesickness[63], '65日目の朝までに溜まった分').toBeGreaterThan(30);
-    expect(trace.homesickness[88], '89日目まで1つも増えない').toBeCloseTo(trace.homesickness[63], 6);
+    expect(trace.homesickness[64], '囲いが立った65日目の終わりに溜まっていた分').toBeGreaterThan(30);
+    expect(trace.homesickness[88], '89日目まで1つも増えない').toBeCloseTo(trace.homesickness[64], 6);
   });
 
   it('囲いを並べても、慰めは増えない', () => {
