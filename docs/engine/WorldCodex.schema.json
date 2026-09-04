@@ -88,7 +88,7 @@
     },
     "crafting_conditions": {
       "$ref": "#/$defs/conditions_list",
-      "description": "全レシピの工程を進めるのに一律で掛かる条件（GameElementDefinition.md 13.4節）。conditionsと同じ形で、要素ごとにreasonを書ける。"
+      "description": "全レシピの工程を進めるのに一律で掛かる条件（GameElementDefinition.md 13.4節）。要件の並びなので、要素ごとにreasonを書ける（14.6節）。"
     },
     "patch_object_defs": {
       "description": "既にあるobject_defへの変更（GameElementDefinition.md 3.4節）。",
@@ -362,7 +362,7 @@
       ]
     },
     "subject_root": {
-      "description": "conditions/weightの`subject`（主語）の参照ルート（14.1節）。プロパティ名を伴う参照なのでancestorを書ける。どのルートを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表。操作の3役（agent/instrument/patient）の可否は11.5節「役を書ける場所」の表が唯一の一覧で、pickedはamongを書いた候補の中のみ（10.3節））。居ない役を書くとロード時エラー。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
+      "description": "`subject`（主語）の参照ルート（14.1節）。プロパティ名を伴う参照なのでancestorを書ける。どのルートを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表。操作の3役（agent/instrument/patient）の可否は11.5節「役を書ける場所」の表が唯一の一覧で、pickedはamongを書いた候補の中のみ（10.3節））。居ない役を書くとロード時エラー。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
       "enum": [
         "self",
         "parent",
@@ -545,7 +545,7 @@
       ]
     },
     "conditions_list": {
-      "description": "conditionsの値（14節）。常に配列で、暗黙のall（論理積）として扱われる。actions/combinations・passivesのゲート（旧when）の両方がこの同じ形を使う。",
+      "description": "条件の並び（14節）。常に配列で、暗黙のall（論理積）として扱われる。要件の並びとして読まれるか——つまり要素にreasonを書けるか（14.6節）——は、これを$refしている側が述べる。",
       "type": "array",
       "items": {
         "$ref": "#/$defs/condition_node"
@@ -616,7 +616,8 @@
       "type": "object",
       "properties": {
         "conditions": {
-          "$ref": "#/$defs/conditions_list"
+          "$ref": "#/$defs/conditions_list",
+          "description": "このブロックが効いている間を決めるゲート（8.2節）。条件の並びなので、要素にreasonは書けない（14.6節）。"
         },
         "modify": {
           "description": "可逆的な修飾子。同一プロパティへの複数modifyは単純加算で合成される。",
@@ -634,7 +635,7 @@
       "additionalProperties": false
     },
     "passives_list": {
-      "description": "passive_defの配列。オブジェクトレベル・プロパティレベル・stage内のいずれでも常に配列であり、単一マッピングでの省略記法は許可しない（conditions/stages/cells/pick等、複数形キーは常に配列という規約に合わせる）。",
+      "description": "passive_defの配列。書ける場所がどこであれ常に配列であり、単一マッピングでの省略記法は許可しない（conditions/stages/cells/pick等、複数形キーは常に配列という規約に合わせる）。",
       "type": "array",
       "items": {
         "$ref": "#/$defs/passive_def"
@@ -783,7 +784,8 @@
       "type": "object",
       "properties": {
         "conditions": {
-          "$ref": "#/$defs/conditions_list"
+          "$ref": "#/$defs/conditions_list",
+          "description": "この回に中身を走らせるかの判定（6.3節）。条件の並びなので、要素にreasonは書けない（14.6節）。"
         },
         "set": {
           "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",
@@ -849,7 +851,7 @@
       ]
     },
     "weight_spec": {
-      "description": "pick候補のweight（10.2節）・actions/combinationsのduration（11.3節）・slotsのput_inのduration（7.10節）。リテラル数値、既存propsへの参照（{subject, prop}）、または参照2つの積（timesで掛ける相手を書く）。subjectは省略可（既定値self）。",
+      "description": "重み・時間として書ける値（10.2節）。リテラル数値、既存propsへの参照（{subject, prop}）、または参照2つの積（timesで掛ける相手を書く）。subjectは省略可（既定値self）。",
       "oneOf": [
         {
           "type": "number"
@@ -931,7 +933,7 @@
       "additionalProperties": false
     },
     "pick_list": {
-      "description": "重み付き確率分岐（GameElementDefinition.md 10節）。set/add/destroy/spawnを書く場所であれば、それらと並べて書ける。候補が1つなら重みに関わらず必ず選ばれる。",
+      "description": "重み付き確率分岐（GameElementDefinition.md 10節）。効果（9節の命令）を書く場所であれば、その兄弟キーとして並べて書ける。候補が1つなら重みに関わらず必ず選ばれる。",
       "type": "array",
       "items": {
         "$ref": "#/$defs/pick_candidate"
@@ -956,7 +958,7 @@
               "properties": {
                 "drag": {
                   "$ref": "#/$defs/type_match_rule",
-                  "description": "重ねる相手のカード（instrument）に求める型。枠のacceptと同じ{tag}/{object}の二択（12.1節）。"
+                  "description": "重ねる相手のカード（instrument）に求める型（12.1節）。"
                 },
                 "allow_multiple": {
                   "type": "boolean",
@@ -971,7 +973,8 @@
           ]
         },
         "conditions": {
-          "$ref": "#/$defs/conditions_list"
+          "$ref": "#/$defs/conditions_list",
+          "description": "この操作を実行できるかの判定（14節）。要件の並びなので、要素ごとにreasonを書ける（14.6節）。"
         },
         "duration": {
           "$ref": "#/$defs/weight_spec",
@@ -1014,7 +1017,7 @@
       "additionalProperties": false
     },
     "recipe_step_requirement": {
-      "description": "工程ごとの素材・道具の要求（GameElementDefinition.md 13.1節）。何が当てはまるかは枠のacceptと同じ二択で、object（その型だけ）かtag（そのタグを持つ任意の型）のどちらか一方を書く。",
+      "description": "工程ごとの素材・道具の要求（GameElementDefinition.md 13.1節）。何が当てはまるかは、object（その型だけ）かtag（そのタグを持つ任意の型）のどちらか一方を書く（4.1節。ここだけはnotを書けない——型の指定がcount/consumeと同じマップに同居するため）。",
       "type": "object",
       "properties": {
         "object": {
@@ -1081,7 +1084,7 @@
         },
         "conditions": {
           "$ref": "#/$defs/conditions_list",
-          "description": "このレシピを知っているかの解放条件（SkillSystem.md 4節）。ここには成果物のインスタンスがまだ無いので、宣言元の個体が居ない（13.3節）。何を主語に書けるかは数え上げず、この宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。素材の充足はsteps.requiresが見るので別物。"
+          "description": "このレシピを知っているかの解放条件（SkillSystem.md 4節）。ここには成果物のインスタンスがまだ無いので、宣言元の個体が居ない（13.3節）。何を主語に書けるかは数え上げず、この宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。要件の並びなので、要素ごとにreasonを書ける（14.6節）。素材の充足はsteps.requiresが見るので別物。"
         },
         "steps": {
           "type": "array",
@@ -1097,7 +1100,7 @@
       "additionalProperties": false
     },
     "type_match_rule": {
-      "description": "どの型が当てはまるかの指定（GameElementDefinition.md 4.1節）。枠のaccept（7.2節）・combinationsのwith（12.1節）・conditionsのmatches（14.3節・14.4節）が共有する。tag（タグを持つ任意のobject_def）・object（特定のobject_def）・not（当てはまらないこと）のうち、ちょうど1つを書く。",
+      "description": "どの型が当てはまるかの指定（GameElementDefinition.md 4.1節）。tag（タグを持つ任意のobject_def）・object（特定のobject_def）・not（当てはまらないこと）のうち、ちょうど1つを書く。",
       "oneOf": [
         {
           "type": "object",
@@ -1193,7 +1196,7 @@
           }
         },
         "put_in": {
-          "description": "ここへ物を入れるのにかかるゲーム内時間（分）。出す側に時間は課さない。",
+          "description": "ここへ物を入れるのにかかるゲーム内時間（分、7.10節）。出す側に時間は課さない。",
           "type": "object",
           "properties": {
             "duration": {
@@ -1334,10 +1337,10 @@
         },
         "resists": {
           "$ref": "#/$defs/conditions_list",
-          "description": "成立している間、土地以外の親へ移れなくなる条件（GameElementDefinition.md 7.13節）。見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面（tick・こぼれ落ち）でも同じ判定が走る。並び全体で1つの条件木なので、trait由来と連結せず、自分自身か1つのtraitのどちらかの宣言だけが効く。"
+          "description": "成立している間、土地以外の親へ移れなくなる条件（GameElementDefinition.md 7.13節）。見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面（tick・こぼれ落ち）でも同じ判定が走る。並び全体で1つの条件木なので、trait由来と連結せず、自分自身か1つのtraitのどちらかの宣言だけが効く。条件の並びなので、要素にreasonは書けない（14.6節）。"
         },
         "tags": {
-          "description": "このobject_def/traitが持つタグのリスト（4節）。枠のaccept・combinationsのwith等のマッチングに使う。",
+          "description": "このobject_def/traitが持つタグのリスト（4節）。型の指定（4.1節）が{tag: ...}で見るのはこのタグ。",
           "type": "array",
           "items": {
             "$ref": "#/$defs/identifier"
@@ -1430,10 +1433,10 @@
         },
         "resists": {
           "$ref": "#/$defs/conditions_list",
-          "description": "成立している間、土地以外の親へ移れなくなる条件（GameElementDefinition.md 7.13節）。見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面（tick・こぼれ落ち）でも同じ判定が走る。並び全体で1つの条件木なので、trait由来と連結せず、自分自身か1つのtraitのどちらかの宣言だけが効く。"
+          "description": "成立している間、土地以外の親へ移れなくなる条件（GameElementDefinition.md 7.13節）。見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面（tick・こぼれ落ち）でも同じ判定が走る。並び全体で1つの条件木なので、trait由来と連結せず、自分自身か1つのtraitのどちらかの宣言だけが効く。条件の並びなので、要素にreasonは書けない（14.6節）。"
         },
         "tags": {
-          "description": "このobject_def/traitが持つタグのリスト（4節）。枠のaccept・combinationsのwith等のマッチングに使う。",
+          "description": "このobject_def/traitが持つタグのリスト（4節）。型の指定（4.1節）が{tag: ...}で見るのはこのタグ。",
           "type": "array",
           "items": {
             "$ref": "#/$defs/identifier"
@@ -1855,7 +1858,7 @@
       }
     },
     "condition_reason": {
-      "description": "この要件を満たさないときにプレイヤーへ出す理由の識別子（14.6節）。actions/combinationsのconditionsの要素にだけ書ける（文言はlocaleのreason_textsが持つ）。",
+      "description": "この要件を満たさないときにプレイヤーへ出す理由の識別子（14.6節）。要件の並びの要素にだけ書ける——プレイヤーへ差し出す選択肢の可否を答える条件がそれで、試みた者が居るとは限らない場面でも走る条件は条件の並びとして読まれるので書けない。どちらであるかはconditions_listを$refしている側が述べる（文言はlocaleのreason_textsが持つ）。",
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*$"
     },
