@@ -277,6 +277,10 @@ describe('プレイヤーキャラクタの定義', () => {
       // 時間の経過から生える圧（同 ホームシック節）。**プレイヤーが読むのはこちら**なので、
       // 溜める側の孤独と抑える側の居心地はstatusを持たない（下のテスト）。
       ['homesickness', ['status', 'health']],
+      // 全身の菌（DigestionSystem.md 6節）。発症したときだけステータスエリアに出る。
+      ['pathogen', ['status', 'health']],
+      // 免疫はステータスエリアには出さず、カードを開いたときだけ見える（body_fatと同じ扱い）。
+      ['immunity', ['health']],
     ])('%sを持ち、期待されるプロパティタグが付いている', (propertyName, expectedTags) => {
       const tagNames = propOf(def(character), propertyName).tags.map((id) =>
         codex.propertyTagNames.getName(id),
@@ -292,7 +296,7 @@ describe('プレイヤーキャラクタの定義', () => {
         expect(propOf(def(character), propertyName).tags, `${propertyName} はstatusを持たない`).toEqual([]);
     });
 
-    it('ステータスエリアに出るのは11件で、並び順も揃っている', () => {
+    it('ステータスエリアに出るのは12件で、並び順も揃っている', () => {
       // propertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（StatusArea.md 3節）。
       const instance = new WorldSession(codex).createObject(def(character).globalId);
       const status = instance.propertiesWithTag(codex.propertyTagNames.getId('status'));
@@ -305,6 +309,7 @@ describe('プレイヤーキャラクタの定義', () => {
         'vitamin',
         'homesickness',
         'happiness',
+        'pathogen',
         'hydration',
         'wakefulness',
         'stamina',

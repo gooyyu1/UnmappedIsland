@@ -277,7 +277,9 @@ export class PropertyDef {
    * `up`（負荷など）、単調に下がるなら`down`（満腹度など）。上下どちらの端も悪い山なり・谷なりの並びは
    * `mixed`で、バーの向きを決められない（rangeを持つプロパティでは、ロード時にこれを拒む）。
    *
-   * 見せ方（帯の向き・増減の記号の色）だけがこれを見る（StatusArea.md）。
+   * 見せ方（帯の向き・増減の記号の色、StatusArea.md）のほかに、**収支表がこれを見る**
+   * ——増える側が悪い値は1日に賄う量に数えない（下の`worsensUpward`と`analysis/balanceTables.ts`の
+   * `dailyNeedsOf`、docs/diagnostics/BalanceStats.md「何を「1日に要る量」と数えるか」）。
    */
   readonly alertDirection: AlertDirection;
 
