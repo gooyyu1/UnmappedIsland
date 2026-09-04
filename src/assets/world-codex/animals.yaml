@@ -467,18 +467,14 @@ object_defs:
         passives:
           # **戻るのは水分と体脂肪がともに安全域にある間だけ**（VitalsSystem.md 3.1節）。判定は段の
           # 名前で行い、**閾値を条件の側へ書き写さない**——域（alert）そのものを条件から読む術が無いので、
-          # 安全域の段をanyで束ねる。人の側もまったく同じ形（characters/player_character.yaml）で、
+          # 安全域の下端の段を名指す。人の側もまったく同じ形（characters/player_character.yaml）で、
           # ここが「渇きと飢えを人と獣の両方が持つ」ことの見返りにあたる。
           #
           # **野生の個体では水分も体脂肪も減らない**（beast trait）ので、条件は常に満たされる
           # ——手負いのまま逃げた個体は、追いつけなければ癒えてしまう。効くのは閉じ込めた獣にだけ。
           - conditions:
-              - any:
-                  - {prop: hydration, in_stage: hydrated}
-                  - {prop: hydration, in_stage: full}
-              - any:
-                  - {prop: body_fat, in_stage: gaunt}
-                  - {prop: body_fat, in_stage: nourished}
+              - {prop: hydration, in_stage_or_above: hydrated}
+              - {prop: body_fat, in_stage_or_above: gaunt}
             add:
               self:
                 blood: 0.16
@@ -491,7 +487,7 @@ object_defs:
   # （HuntingSystem.md 1.5節）。他の獣の死体も同じ（rat_carcassまで）。
   monkey_carcass:
     tags: [item, quarry]
-    traits: [perishable, spoils_fast]
+    traits: [perishable, spoils_fast, dryable]
     props:
       weight: {value: 5000}
       volume: {value: 12000}
@@ -515,7 +511,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 60
         # 皮革の腕（docs/engine/SkillSystem.md 3節の実行経路、量の置き方は
         # characters/player_character.yaml）。**皮を剥ぐ手つきがなめしへ移る**（Skills.md 2節の
@@ -595,12 +591,8 @@ object_defs:
           # 戻る条件もサルと同じ形（VitalsSystem.md 3.1節）。**囲いで水を切らせば、増えないだけでなく
           # 負った傷も癒えなくなる**——飲み水はこの獣の繁殖と回復の両方を止める。
           - conditions:
-              - any:
-                  - {prop: hydration, in_stage: hydrated}
-                  - {prop: hydration, in_stage: full}
-              - any:
-                  - {prop: body_fat, in_stage: gaunt}
-                  - {prop: body_fat, in_stage: nourished}
+              - {prop: hydration, in_stage_or_above: hydrated}
+              - {prop: body_fat, in_stage_or_above: gaunt}
             add:
               self:
                 blood: 0.032
@@ -701,12 +693,8 @@ object_defs:
         passives:
           # 戻る条件もサルと同じ形（VitalsSystem.md 3.1節）。
           - conditions:
-              - any:
-                  - {prop: hydration, in_stage: hydrated}
-                  - {prop: hydration, in_stage: full}
-              - any:
-                  - {prop: body_fat, in_stage: gaunt}
-                  - {prop: body_fat, in_stage: nourished}
+              - {prop: hydration, in_stage_or_above: hydrated}
+              - {prop: body_fat, in_stage_or_above: gaunt}
             add:
               self:
                 blood: 0.0024
@@ -784,12 +772,8 @@ object_defs:
         passives:
           # 戻る条件もサルと同じ形（VitalsSystem.md 3.1節）。
           - conditions:
-              - any:
-                  - {prop: hydration, in_stage: hydrated}
-                  - {prop: hydration, in_stage: full}
-              - any:
-                  - {prop: body_fat, in_stage: gaunt}
-                  - {prop: body_fat, in_stage: nourished}
+              - {prop: hydration, in_stage_or_above: hydrated}
+              - {prop: body_fat, in_stage_or_above: gaunt}
             add:
               self:
                 blood: 1.84
@@ -802,7 +786,7 @@ object_defs:
   # 一度に持ち帰れない。肉だけの20kgなら4人とも運べるが、全員heavyの段に入る。
   wild_boar_carcass:
     tags: [item, quarry]
-    traits: [perishable, spoils_fast]
+    traits: [perishable, spoils_fast, dryable]
     props:
       weight: {value: 60000}
       volume: {value: 144000}
@@ -817,7 +801,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 240
         add: {agent: {skill_leatherwork: 2}}
         destroy: self
@@ -833,7 +817,7 @@ object_defs:
   # なるまでは、獲物の種類で肉を分けない——分けると、それを使う側（料理）が獲物の数だけ分岐する。
   junglefowl_carcass:
     tags: [item, quarry]
-    traits: [perishable, spoils_fast]
+    traits: [perishable, spoils_fast, dryable]
     props:
       weight: {value: 1000}
       volume: {value: 2400}
@@ -846,7 +830,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 20
         add: {agent: {skill_leatherwork: 2}}
         destroy: self
@@ -863,7 +847,7 @@ object_defs:
   # 刻みを増やさない）。
   rat_carcass:
     tags: [item, quarry, roastable]
-    traits: [perishable, spoils_fast]
+    traits: [perishable, spoils_fast, dryable]
     props:
       weight: {value: 80}
       volume: {value: 200}
@@ -896,7 +880,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
@@ -945,7 +929,7 @@ object_defs:
           - reason: too_dark
             subject: agent
             prop: hand_brightness
-            in_stage: bright
+            in_stage_or_above: bright
         duration: 40
         # **伸びるのは木材加工**（docs/engine/SkillSystem.md 3節の実行経路）。スキルを分ける軸は素材
         # ではなく技術（docs/world/Skills.md 1節）で、刃を当てて削り出す手つきは、太い枝を削る
@@ -964,7 +948,7 @@ object_defs:
   # 加熱の進み（cooking_progress）を持つだけで、進めるのは炉の側。
   raw_meat:
     tags: [item, food, meat_bait, roastable]
-    traits: [perishable, spoils_fast]
+    traits: [perishable, spoils_fast, dryable]
     props:
       weight: {value: 500}
       # 罠へ仕掛けると肉食の卓が引かれやすくなる（docs/engine/TrapSystem.md 4節）。
@@ -987,7 +971,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
@@ -1033,7 +1017,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:
@@ -1073,7 +1057,7 @@ object_defs:
         trigger: menu
         conditions:
           - reason: too_full
-            not: {subject: agent, prop: satiety, in_stage: full}
+            not: {subject: agent, prop: satiety, in_stage_or_above: full}
         duration: 15
         add:
           agent:

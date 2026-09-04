@@ -35,6 +35,13 @@ export abstract class InteractionTrigger {
   /** 自分がどの束に入るかは自分が知っている。**種類を足したら実装しないとコンパイルが通らない。** */
   abstract addTo(groups: TriggerGroups): void;
 
+  /**
+   * プレイヤーが起こすきっかけか。**押して選べる道だけを数えたい側**（収支表・クラフトの網、
+   * src/analysis）が見る——時間が配る手番は選べないので、経路として並べると選べない道が
+   * 献立に載る。
+   */
+  abstract get startedByPlayer(): boolean;
+
   /** このきっかけの宣言そのもの（InteractionTriggerReading参照）。 */
   abstract get reading(): InteractionTriggerReading;
 }
@@ -55,6 +62,10 @@ export class MenuTrigger extends ActionTrigger {
     groups.menu.push(this);
   }
 
+  get startedByPlayer(): boolean {
+    return true;
+  }
+
   get reading(): InteractionTriggerReading {
     return { kind: 'menu' };
   }
@@ -67,6 +78,10 @@ export class MenuTrigger extends ActionTrigger {
 export class TickTrigger extends ActionTrigger {
   addTo(groups: TriggerGroups): void {
     groups.tick.push(this);
+  }
+
+  get startedByPlayer(): boolean {
+    return false;
   }
 
   get reading(): InteractionTriggerReading {
@@ -97,6 +112,10 @@ export class DragTrigger extends InteractionTrigger {
 
   addTo(groups: TriggerGroups): void {
     groups.drag.push(this);
+  }
+
+  get startedByPlayer(): boolean {
+    return true;
   }
 
   /** instrumentDefをこの組み合わせの相手にできるか（12.1節）。 */

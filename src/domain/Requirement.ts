@@ -3,7 +3,7 @@ import type { ConditionDeclaration } from './ConditionReader';
 import type { ReferenceContext } from './ReferenceRoot';
 
 /**
- * 要件1件——条件の並び（14節）の要素1つ。
+ * 要件の並び（14節）の要素1つ。
  *
  * 満たさなかったときにプレイヤーへ出す理由を`reason`（識別子）で指せる。条件木の形から文を組み立てず、
  * 「この要件を満たしていない」という単位で著者が書いた1行を出すのは、否定・入れ子の入った木を

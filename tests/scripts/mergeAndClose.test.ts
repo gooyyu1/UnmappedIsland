@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 /**
  * `scripts/agent/merge-and-close.sh` が出す行の検査。
@@ -13,6 +13,10 @@ import { describe, expect, it } from 'vitest';
  * `gh`・`git`・`npm` を PATH の先頭に、`ccr-meta.sh` を `CCR_META` で差し替えて、実際にスクリプトを
  * 走らせる。本体（`git` が差す先）も作業用の一時ディレクトリに作るので、手元のリポジトリは動かない。
  */
+
+// 全件が実プロセス（bash + git + gh のスタブ）を起こすため、既定の5秒だと `npm test` 全体を並行実行
+// したときのCPU競合だけで時間切れになりうる（watchPrs.test.tsと同じ理由）。
+vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/merge-and-close.sh');
 /** 同じ世界で叩ける後片付けの片割れ。こちらはPRが**開いている**ときの経路を持つ。 */

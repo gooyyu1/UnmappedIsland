@@ -19,6 +19,7 @@ import type { ReferenceRoot, ReferenceScope } from '../domain/ReferenceRoot';
 import { PropertyPath } from '../domain/ReferenceRoot';
 import { ConditionNode } from '../domain/ConditionNode';
 import type { ConditionOp } from '../domain/ConditionReader';
+import type { StageBound } from '../domain/PropertyDef';
 import { Requirement, Requirements } from '../domain/Requirement';
 
 /**
@@ -43,6 +44,9 @@ export function parseSubjectRoot(context: string, raw: string, scope: ReferenceS
       break;
     case 'instrument':
       root = 'instrument';
+      break;
+    case 'patient':
+      root = 'patient';
       break;
     case 'picked':
       root = 'picked';
@@ -73,50 +77,50 @@ export function requireResolvable(
   return root;
 }
 
-/** 条件の並びの要素にだけ書ける、満たさなかったときの理由の識別子（Requirement参照）。 */
+/** 要件の並びの要素にだけ書ける、満たさなかったときの理由の識別子（14.6節、Requirement参照）。 */
 const REASON_KEY = 'reason';
 
 /**
  * 条件の並び（14節）。常にYAML配列（暗黙のall）。要素は葉か、入れ子のall/any/notのいずれか。
- * conditionsNodeがundefinedなら省略（常に真）。
+ * listNodeがundefinedなら省略（常に真）。
  *
  * **contextはその配列自身を指す**（要素には添字だけを足す）。並びが書かれるキーは`conditions`とは
  * 限らない——`resists`（7.13節）も同じ形を共有するので、キー名は呼び出し側が答える。
  */
-export function parseConditionsField(
+export function parseConditionList(
   loader: WorldCodexYamlLoader,
   context: string,
-  conditionsNode: YAMLSeq | undefined,
+  listNode: YAMLSeq | undefined,
   scope: ReferenceScope,
 ): ConditionNode | undefined {
-  if (conditionsNode === undefined) return undefined;
+  if (listNode === undefined) return undefined;
 
   const children: ConditionNode[] = [];
-  for (const node of conditionsNode.items as YamlNode[])
+  for (const node of listNode.items as YamlNode[])
     children.push(parseConditionNode(loader, `${context}[${children.length}]`, node, scope));
 
   return ConditionNode.all(children);
 }
 
 /**
- * 要素ごとに`reason`（満たさなかったときにプレイヤーへ出す理由の識別子）を持てる条件の並び。
- * その点だけがparseConditionsFieldと違う。入れ子のall/any/notの中には書けない
- * （落ちた要件は配列の要素の単位で指すため、Requirement参照）。
+ * 要件の並び。要素ごとに`reason`（満たさなかったときにプレイヤーへ出す理由の識別子）を持てる点だけが
+ * parseConditionListと違う。入れ子のall/any/notの中には書けない（落ちた要件は配列の要素の単位で
+ * 指すため、Requirement参照）。
  *
- * `fieldName`は、この並びが載っているキーの名前（エラーメッセージ用）。`conditions`以外の名前で
- * 同じ形を書ける場所（ルートキーの`crafting_conditions`、13.4節）のためだけに在る。
+ * `fieldName`は、この並びが載っているキーの名前（エラーメッセージ用）。`conditions`とは限らない
+ * ——ルートキーの`crafting_conditions`（13.4節）も同じ形を共有するので、呼び出し側が答える。
  */
-export function parseRequirementsField(
+export function parseRequirementList(
   loader: WorldCodexYamlLoader,
   context: string,
-  conditionsNode: YAMLSeq | undefined,
+  listNode: YAMLSeq | undefined,
   scope: ReferenceScope,
-  fieldName: string = 'conditions',
+  fieldName: string,
 ): Requirements | undefined {
-  if (conditionsNode === undefined) return undefined;
+  if (listNode === undefined) return undefined;
 
   const entries: Requirement[] = [];
-  for (const node of conditionsNode.items as YamlNode[]) {
+  for (const node of listNode.items as YamlNode[]) {
     const entryContext = `${context}.${fieldName}[${entries.length}]`;
     const reasonName = tryGetScalar(asMap(node, entryContext), REASON_KEY, entryContext);
     entries.push(
@@ -128,7 +132,7 @@ export function parseRequirementsField(
 }
 
 /** 条件木の1ノードを読む。all/any/notのいずれかのキーを持てば複合ノード、それ以外は葉として読む。
- * extraKeyは、そのノードでだけ条件式の一部ではないキー（条件の並びの要素のreason）。 */
+ * extraKeyは、そのノードでだけ条件式の一部ではないキー（要件の並びの要素のreason）。 */
 function parseConditionNode(
   loader: WorldCodexYamlLoader,
   context: string,
@@ -178,8 +182,15 @@ function parseCombinatorChildren(
 /** プロパティを主語にできる演算子キー。値が比較の相手になる。 */
 const PROPERTY_OPS: readonly ConditionOp[] = ['lt', 'lte', 'gt', 'gte', 'eq', 'neq', 'in', 'not_in'];
 
-/** 段の判定（6.4節）の演算子キー。値は段の名前。 */
-const IN_STAGE_KEY = 'in_stage';
+/**
+ * 段の判定（6.4節）の演算子キーと、それが見る範囲（PropertyDef.isInStage）。値はどちらも段の名前。
+ * **「その段以上」を別の演算子にしてあるのは、単調に増える値を段で読むため**——1つの段だけを書くと、
+ * 値が上の段へ移った瞬間に条件が偽へ戻る（14.1節）。
+ */
+const STAGE_KEYS: readonly (readonly [key: string, bound: StageBound])[] = [
+  ['in_stage', 'exact'],
+  ['in_stage_or_above', 'or_above'],
+];
 
 /** 型の判定（14.3節・14.4節）の演算子キー。値は型の指定（TypeMatchRule）。 */
 const MATCHES_KEY = 'matches';
@@ -190,7 +201,7 @@ const MATCHES_KEY = 'matches';
  *
  * | 主語 | 使える演算子キー |
  * | --- | --- |
- * | `prop`（subjectのそのプロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage` |
+ * | `prop`（subjectのそのプロパティの実効値） | `lt`/`lte`/`gt`/`gte`/`eq`/`neq`/`in`/`not_in`/`in_stage`/`in_stage_or_above` |
  * | `slot`（subjectのそのスロットの中身） | `matches`（当てはまる中身が1つでもあるか） |
  * | 無し（subject自身） | `in_slot`（親の中での位置）/`matches`（subject自身が当てはまるか） |
  *
@@ -236,10 +247,11 @@ function parseConditionLeaf(
       nodes.push(parsePropertyComparison(loader, context, root, propertyGlobalId, op, valueNode, scope));
     }
 
-    const stageName = tryGetScalar(map, IN_STAGE_KEY, context);
-    if (stageName !== undefined) {
-      used.add(IN_STAGE_KEY);
-      nodes.push(ConditionNode.propertyStage(root, propertyGlobalId, stageName));
+    for (const [key, bound] of STAGE_KEYS) {
+      const stageName = tryGetScalar(map, key, context);
+      if (stageName === undefined) continue;
+      used.add(key);
+      nodes.push(ConditionNode.propertyStage(root, propertyGlobalId, stageName, bound));
     }
   } else if (slotName !== undefined) {
     const matchNode = tryGetMap(map, MATCHES_KEY, context);

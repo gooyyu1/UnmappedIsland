@@ -98,7 +98,7 @@ crafting_conditions:
   - reason: too_dark
     subject: agent
     prop: hand_brightness
-    in_stage: bright
+    in_stage_or_above: bright
 
 # 製作中オブジェクトが完成品から引き継ぐタグ（docs/engine/RecipeSystem.md 5節）。挙げてよいのは
 # **どこに置けるかを言うタグ**だけで、何ができるかを言うタグ（tool・weapon・sail・pottery）は

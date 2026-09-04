@@ -88,7 +88,7 @@
     },
     "crafting_conditions": {
       "$ref": "#/$defs/conditions_list",
-      "description": "全レシピの工程を進めるのに一律で掛かる条件（GameElementDefinition.md 13.4節）。conditionsと同じ形で、要素ごとにreasonを書ける。"
+      "description": "全レシピの工程を進めるのに一律で掛かる条件（GameElementDefinition.md 13.4節）。要件の並びなので、要素ごとにreasonを書ける（14.6節）。"
     },
     "patch_object_defs": {
       "description": "既にあるobject_defへの変更（GameElementDefinition.md 3.4節）。",
@@ -292,7 +292,7 @@
         },
         "on_max": {
           "$ref": "#/$defs/range_event_def",
-          "description": "値がrange.maxへ達している間（>= max）、値の変更・tickのたびに適用される挙動（6.3節。操作が直に動かした値でも宣言元は誰が動かしたかを知らないので、agent/instrumentは指せない、14.1節）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。conditionsを書いた場合、満たさない回だけがその既定のクランプへ倒れる。rangeが無いと使えない。"
+          "description": "値がrange.maxへ達している間（>= max）、値の変更・tickのたびに適用される挙動（6.3節。操作ではなく値が端に着いた瞬間への反応なので、操作の3役はどれも指せない、11.5節）。addで自分自身を折り返し・繰り上げ先へ加算するのが基本形。rangeが定義されていて省略した場合、'自分自身をrange.maxへset'という既定の挙動が自動的に補われる（単純な上限クランプ）。conditionsを書いた場合、満たさない回だけがその既定のクランプへ倒れる。rangeが無いと使えない。"
         },
         "on_min": {
           "$ref": "#/$defs/range_event_def",
@@ -362,18 +362,19 @@
       ]
     },
     "subject_root": {
-      "description": "`subject`（主語）の参照ルート（14.1節）。プロパティ名を伴う参照なのでancestorを書ける。どのルートを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表。今どこで書けるかを持つのは実装のReferenceScopeで、11.5節の表は未実装ぶんを含むため一致しない）。居ない役を書くとロード時エラー。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
+      "description": "`subject`（主語）の参照ルート（14.1節）。プロパティ名を伴う参照なのでancestorを書ける。どのルートを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表。操作の3役（agent/instrument/patient）の可否は11.5節「役を書ける場所」の表が唯一の一覧で、pickedはamongを書いた候補の中のみ（10.3節））。居ない役を書くとロード時エラー。worldは実行時追跡が未実装のため未対応（ロード時エラー。本スキーマでは対象文脈ごとの制限までは表現しない）。",
       "enum": [
         "self",
         "parent",
         "ancestor",
         "agent",
         "instrument",
+        "patient",
         "picked"
       ]
     },
     "condition_property_leaf": {
-      "description": "propを主語にした葉（14.1節）。演算子キー（lt/lte/gt/gte/eq/neq/in/not_in/in_stage）の値が比較の相手で、**複数書けば暗黙のAND**（範囲は{prop: x, gte: 100, lt: 200}）。最低1つ必要。subjectは省略可（既定値self）。",
+      "description": "propを主語にした葉（14.1節）。演算子キー（lt/lte/gt/gte/eq/neq/in/not_in/in_stage/in_stage_or_above）の値が比較の相手で、**複数書けば暗黙のAND**（範囲は{prop: x, gte: 100, lt: 200}）。最低1つ必要。subjectは省略可（既定値self）。",
       "type": "object",
       "properties": {
         "subject": {
@@ -410,7 +411,12 @@
         "in_stage": {
           "type": "string",
           "pattern": "^[a-z][a-z0-9_]*$",
-          "description": "propの実効値が、その名前の段（6.4節）に該当しているか。"
+          "description": "propの実効値が、今ちょうどその名前の段（6.4節）に居るか。"
+        },
+        "in_stage_or_above": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "description": "propの実効値が、その名前の段（6.4節）かそれより上の段に居るか。単調に増える値（腕前）や、境目より上を安全域として読む値（血・水分）はこちらで書く——in_stageは今いる段ちょうどの判定なので、上の段へ移った瞬間に偽へ戻る。上下は段の下端の大小で決まり、宣言順ではない。"
         },
         "reason": {
           "$ref": "#/$defs/condition_reason"
@@ -464,6 +470,11 @@
         {
           "required": [
             "in_stage"
+          ]
+        },
+        {
+          "required": [
+            "in_stage_or_above"
           ]
         }
       ]
@@ -550,8 +561,8 @@
       },
       "additionalProperties": false
     },
-    "passive_operation_map": {
-      "description": "passiveの1操作(modify/add)が持つ、対象（self/parent/child/ancestor）をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。agentは持続的な関係に紐づかないためロード時エラー。combinations内でもinstrumentを書けるのはactiveだけで、passiveに書くとロード時エラー。",
+    "passive_modify_map": {
+      "description": "passiveのmodifyが持つ、対象をキーとする辞書（8.1節・8.6節）。**childを指せるのはここだけ**——付いている子ごとに登録を配れる場所だから（8.1節）。参加者のpropsなので操作の役も指せるが、**可逆な寄与を押せるのはagentだけ**（8.3節）——instrument・patientは複数の操作に同時に就きうるので、押した寄与が混ざって誰の分か見分けられなくなる。書くとロード時エラー。",
       "type": "object",
       "properties": {
         "self": {
@@ -565,12 +576,43 @@
         },
         "ancestor": {
           "$ref": "#/$defs/target_amount_map"
+        },
+        "agent": {
+          "$ref": "#/$defs/target_amount_map"
+        }
+      },
+      "additionalProperties": false
+    },
+    "passive_add_map": {
+      "description": "passiveのaddが持つ、対象をキーとする辞書（8.1節・8.6節）。modifyの対象（passive_modify_map）に加えて、操作の3役すべてを指せる（8.4節・11.5節）——積むのは実体値で、積まれた結果は世界に起きた事実なので、後から「誰の操作の分か」を問う必要がない。宣言元がどの役に就くかは静的には決まらず、その物が操作に参加している間だけ相手が決まる。",
+      "type": "object",
+      "properties": {
+        "self": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "parent": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "child": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "ancestor": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "agent": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "instrument": {
+          "$ref": "#/$defs/target_amount_map"
+        },
+        "patient": {
+          "$ref": "#/$defs/target_amount_map"
         }
       },
       "additionalProperties": false
     },
     "passive_def": {
-      "description": "持続する影響の1ブロック（8節）。文法は「操作(conditions/modify/add)が上位、対象(self/parent/child)が下位」。関係とゲート（常時／conditions／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。conditionsを書かなければ常時（無条件）を意味する。装備状態などによって異なるconditionsで効果を切り替えたい場合、passivesの配列に複数ブロックを並べる（8.5節）。ブロック全体で1つのconditionsを持ち、対象(self/parent/child)ごとには持たない（self/parent対象は常に同じ実体を指すため）。",
+      "description": "持続する影響の1ブロック（8節）。文法は「操作(conditions/modify/add)が上位、対象が下位」。関係とゲート（常時／conditions／プロパティのstage）に紐づいて登録され、その関係が続く限り評価され続ける。conditionsを書かなければ常時（無条件）を意味する。装備状態などによって異なるconditionsで効果を切り替えたい場合、passivesの配列に複数ブロックを並べる（8.5節）。ブロック全体で1つのconditionsを持ち、対象ごとには持たない（8.2節）。",
       "type": "object",
       "properties": {
         "conditions": {
@@ -578,14 +620,14 @@
         },
         "modify": {
           "description": "可逆的な修飾子。同一プロパティへの複数modifyは単純加算で合成される。",
-          "$ref": "#/$defs/passive_operation_map"
+          "$ref": "#/$defs/passive_modify_map"
         },
         "add": {
           "description": "条件が真であるtick毎に、対象プロパティの実体値へ直接・不可逆に加減算する（activeのaddと同じ動詞。一度きりかtick毎かは置き場所が決める、8.4節）。",
-          "$ref": "#/$defs/passive_operation_map"
+          "$ref": "#/$defs/passive_add_map"
         },
         "transfer": {
-          "description": "条件が真であるtick毎に走る輸送（8.4.1節）。文法はactiveのtransfer（9.5節）と同一で、対象からagentだけが外れる。宣言順に適用され互いの結果を見るため、直列に繋いだ輸送の中間に在庫を持たせるのは速度の差。",
+          "description": "条件が真であるtick毎に走る輸送（8.4.1節）。文法はactiveのtransfer（9.5節）と同一で、対象に何を書けるかはその宣言が置かれた場所が決める（一覧は14.1節の表。操作の関係の役は11.5節「役を書ける場所」）。宣言順に適用され互いの結果を見るため、直列に繋いだ輸送の中間に在庫を持たせるのは速度の差。",
           "$ref": "#/$defs/transfer_spec"
         }
       },
@@ -599,13 +641,14 @@
       }
     },
     "active_target_name": {
-      "description": "transferのfrom/toが指す対象キー（9.5節）。childは未対応（一度きりの命令に対して『どの子か』の意味が確定していないため、ロード時エラー）。instrumentはcombinations内のみ。",
+      "description": "transferのfrom/toが指す対象キー（9.5節）。childは未対応（一度きりの命令に対して『どの子か』の意味が確定していないため、ロード時エラー）。残りのどれを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。操作の3役を書ける場所は11.5節の表が唯一の一覧で、patientを書けるのは参加者のprops（passivesのtransfer）だけ。ここに居ない相手を書くとロード時エラー。",
       "enum": [
         "self",
         "parent",
         "ancestor",
         "agent",
         "instrument",
+        "patient",
         "picked"
       ]
     },
@@ -736,7 +779,7 @@
       "description": "新規オブジェクトを1つ生成し、指定した場所へ配置する。常にselfが実行するものとみなすため対象キーのラップを持たない。配置先はinto・into_prop・into_objectのどれか1つで指す（どれも書かなければsame_slot）。destroyと同時に指定できる。"
     },
     "range_event_def": {
-      "description": "rangeイベント（on_max/on_min、6.3節）1つ。中身は一時的な命令（9節）で、文法は「操作(set/add/destroy/spawn/become/transfer/move/signal)が上位、対象が下位」。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_min: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。conditions（14節）を書くと、満たす回だけがこの中身へ、満たさない回は既定のクランプへ倒れる。rangeイベントには操作者が居ないので、対象にagent/instrumentを指すとロード時エラーになる（14.1節。本スキーマでは場所ごとの制限までは表現しない）。interactions/pickは、命令の並びを専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（interaction_def/pick_candidate参照）。",
+      "description": "rangeイベント（on_max/on_min、6.3節）1つ。中身は一時的な命令（9節）で、文法は「操作(set/add/destroy/spawn/become/transfer/move/signal)が上位、対象が下位」。pick（10節）は9節の動詞と対等な兄弟キーで、並べて書ける。適用順は書かれた順（9.7節）。空のmapping（on_min: {}）は「宣言だけして何もしない」（既定のクランプを打ち消す）を意味する。conditions（14節）を書くと、満たす回だけがこの中身へ、満たさない回は既定のクランプへ倒れる。rangeイベントは操作ではないので、対象に操作の3役（agent/instrument/patient）を指すとロード時エラーになる（11.5節）。ほかの起点の可否はActionSystem.md 4節の表のとおりで、本スキーマでは場所ごとの制限までは表現しない。interactions/pickは、命令の並びを専用の`active:`ラップに包まず、他の兄弟キーと対等な位置へ直接展開する（interaction_def/pick_candidate参照）。",
       "type": "object",
       "properties": {
         "conditions": {
@@ -794,12 +837,10 @@
               "$ref": "#/$defs/identifier"
             },
             "instrument": {
-              "$ref": "#/$defs/identifier",
-              "description": "combinationsの中でだけ書ける（外に書くとロード時エラー、12.2節）。"
+              "$ref": "#/$defs/identifier"
             },
             "picked": {
-              "$ref": "#/$defs/identifier",
-              "description": "amongを書いた候補の中でだけ書ける（外に書くとロード時エラー、10.3節）。"
+              "$ref": "#/$defs/identifier"
             }
           },
           "additionalProperties": false,
@@ -934,7 +975,7 @@
         },
         "duration": {
           "$ref": "#/$defs/weight_spec",
-          "description": "実行にかかるゲーム内時間（分）。weightと同じ「リテラルか{subject, prop}参照か参照2つの積か」の三択（11.3節）。参照のsubjectにinstrumentを使えるのは、きっかけがdragの操作だけ（12.2節）。省略時は時間を消費しない。"
+          "description": "実行にかかるゲーム内時間（分）。weightと同じ「リテラルか{subject, prop}参照か参照2つの積か」の三択（11.3節）。参照のsubjectに何を書けるかは数え上げず、この宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表。この操作の他のキーと同じ場所なので、durationにだけ効く制限は無い）。省略時は時間を消費しない。"
         },
         "set": {
           "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",
@@ -1040,7 +1081,7 @@
         },
         "conditions": {
           "$ref": "#/$defs/conditions_list",
-          "description": "このレシピを知っているかの解放条件（SkillSystem.md 4節）。objectはagentのみ使える（成果物のインスタンスがまだ存在しないため）。素材の充足はsteps.requiresが見るので別物。"
+          "description": "このレシピを知っているかの解放条件（SkillSystem.md 4節）。ここには成果物のインスタンスがまだ無いので、宣言元の個体が居ない（13.3節）。何を主語に書けるかは数え上げず、この宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。素材の充足はsteps.requiresが見るので別物。"
         },
         "steps": {
           "type": "array",
@@ -1414,7 +1455,7 @@
       "additionalProperties": false
     },
     "object_target_name": {
-      "description": "オブジェクトそのものを指す対象名。ancestorは「どのプロパティを探すか」が無く解決できないため不可。childは相手が1つに決まらないため不可。pickedを書けるのはamongを書いた候補の中だけで、外に書くとロード時エラー（10.3節）。",
+      "description": "オブジェクトそのものを指す対象名。どの命令が引くかは、これを使う側（destroy_target・object_target）が述べる。何を書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。ここに居ない相手を書くとロード時エラー。",
       "enum": [
         "self",
         "parent",
@@ -1514,7 +1555,7 @@
       "additionalProperties": false
     },
     "set_operation_map": {
-      "description": "setが持つ、対象（self/parent/ancestor/agent、combinations内はinstrumentも、amongを書いた候補の中ではpickedも）をキーとする辞書。",
+      "description": "setが持つ、対象をキーとする辞書。何を対象に書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。ここに居ない相手を書くとロード時エラー。",
       "type": "object",
       "properties": {
         "self": {
@@ -1530,18 +1571,16 @@
           "$ref": "#/$defs/set_target_amount_map"
         },
         "instrument": {
-          "$ref": "#/$defs/set_target_amount_map",
-          "description": "combinationsの中でだけ書ける（外に書くとロード時エラー、12.2節）。"
+          "$ref": "#/$defs/set_target_amount_map"
         },
         "picked": {
-          "$ref": "#/$defs/set_target_amount_map",
-          "description": "amongを書いた候補の中でだけ書ける（外に書くとロード時エラー、10.3節）。"
+          "$ref": "#/$defs/set_target_amount_map"
         }
       },
       "additionalProperties": false
     },
     "add_operation_map": {
-      "description": "addが持つ、対象（self/parent/ancestor/agent、combinations内はinstrumentも、amongを書いた候補の中ではpickedも）をキーとする辞書。",
+      "description": "addが持つ、対象をキーとする辞書。何を対象に書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。ここに居ない相手を書くとロード時エラー。",
       "type": "object",
       "properties": {
         "self": {
@@ -1557,12 +1596,10 @@
           "$ref": "#/$defs/add_target_amount_map"
         },
         "instrument": {
-          "$ref": "#/$defs/add_target_amount_map",
-          "description": "combinationsの中でだけ書ける（外に書くとロード時エラー、12.2節）。"
+          "$ref": "#/$defs/add_target_amount_map"
         },
         "picked": {
-          "$ref": "#/$defs/add_target_amount_map",
-          "description": "amongを書いた候補の中でだけ書ける（外に書くとロード時エラー、10.3節）。"
+          "$ref": "#/$defs/add_target_amount_map"
         }
       },
       "additionalProperties": false
@@ -1818,7 +1855,7 @@
       }
     },
     "condition_reason": {
-      "description": "この要件を満たさないときにプレイヤーへ出す理由の識別子（14.6節）。プレイヤーへ差し出す選択肢の可否を答える条件の要素にだけ書ける——試みた者が居るとは限らない場面でも走る条件（passivesのゲート・resists・on_max/on_min）には書けない（文言はlocaleのreason_textsが持つ）。",
+      "description": "この要件を満たさないときにプレイヤーへ出す理由の識別子（14.6節）。要件の並びの要素にだけ書ける——プレイヤーへ差し出す選択肢の可否を答える条件がそれで、試みた者が居るとは限らない場面でも走る条件（passivesのゲート・resists・on_max/on_min）は条件の並びとして読まれるので書けない（文言はlocaleのreason_textsが持つ）。",
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*$"
     },

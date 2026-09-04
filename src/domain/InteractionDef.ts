@@ -99,6 +99,9 @@ export class InteractionDef {
    *
    * **要件は選んだ時点ではなく実行の時点で引き直す**（候補を作ってから落とすまでに世界は変わる）。
    * 相手の型も変わりうるので、そちらの引き直しは`Combination`が足す。
+   *
+   * 1つの操作としてまるごと囲う（runToSeam）のは呼び手の`Interaction.tryExecute()`の責務。
+   * ここは囲まれた中身だけを持つ。
    */
   tryExecute(context: ReferenceContext, session: WorldSession): boolean {
     const self = context.self!;
@@ -109,9 +112,7 @@ export class InteractionDef {
 
     // 時間を進め終えてから囲うので、経過中のtickが動かした値は「操作が増やしたもの」に入らない
     // （PropertyGain参照）。
-    session.withInteractionEffect(self, () =>
-      self.applyActiveEffect(this.effect, context.agent, context.instrument),
-    );
+    session.withInteractionEffect(self, () => self.applyActiveEffect(this.effect, context));
     return true;
   }
 }
