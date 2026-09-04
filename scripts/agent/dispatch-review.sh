@@ -9,6 +9,7 @@
 # 見どころはPRごとに変わらないので、司令塔が書き足すものが無い（`dispatch-task.sh` との違いはここ）。
 #
 # 出力は1行1件。
+#   NOT_READY <理由>                         … 投入せずに終わった（下の「投入する前に見るもの」）
 #   ARCHIVED <セッションID>                  … 走り終えていたレビューを畳んだ（下の節）
 #   KEPT <セッションID>                      … 畳まなかった。ブリッジのものか、まだ走っているか
 #                                              （PRが開いている間は、書きかけの判定を守る）、
@@ -19,6 +20,25 @@
 #   一致 / 不一致                            … 送った指示が化けずに届いたか
 #   終了コード 0 … 投入できて、指示も一致した
 #   終了コード 1 … どこかで失敗した（上の行がどこまで出たかで分かる）
+#
+# ## 投入する前に見るもの
+#
+# **1本 $13 前後掛かる**ので、読ませても無駄になると分かっている状態では投入しない。2026-09-04 に
+# レビューを17本回し、そのうち次の3つで数本が無駄になった。
+#
+# - **同じ頭をもう一度読ませた。** PR #1512 は `43d7008` のまま2本読み、2本目は1本目と同じ3点を
+#   挙げた。**最後の判定より新しいコミットが無いなら、判定は既に出ている。**
+# - **マージできないPRを読ませた。** PR #1493 の4周目は「`main` と衝突している」だけが止める理由
+#   だった。これは `watch-prs.sh` が `CONFLICT` として無料で出している。
+# - **CIが赤・保留のまま読ませた。** 落ちているものは直しが入って頭が変わるので、読んだ内容が古くなる。
+#
+# どれも `gh` で引けるので、ここで見て `NOT_READY` を出して終わる。**司令塔は理由を見て、直させるか
+# 待つかを決める。** 落ちるのは投入だけで、盤面には何も起きない。
+#
+# **塞げていない穴が1つある**——**判定がまだ1本も出ていない状態で2回続けて投入する**と、どちらも
+# 通る。PR #1493 で実際に起きて（39秒差で2本が判定を出し、後から出たほうが自分の「通してよい」を
+# 取り下げた）、いまは走っているセッションをタグで引く手段が無い（`list_sessions` の `tags` は
+# 「not currently available」を返す）。**同じPRへ続けて2回打たないこと。**
 #
 # ## `main` ではなくPRのブランチで起動する
 #
@@ -77,7 +97,8 @@ awk '/^```$/ { inside = !inside; next } inside' "$TEMPLATE" |
 
 # **日本語はシェル変数に載せない。** Windowsのnodeは argv も環境変数もANSIで受け取るので、題を
 # `$(...)` で渡すと黙って化ける。題も本文もファイル経由で node へ渡す。
-gh pr view "$PR" --json title,state,headRefName >"$WORK/pr.json"
+gh pr view "$PR" \
+  --json title,state,headRefName,mergeable,statusCheckRollup,comments,commits >"$WORK/pr.json"
 
 # 閉じた・マージ済みのPRへ立てると、読むものが在るだけに**それらしいコメントが付いて**しまう。
 state=$(jq -r '.state' "$WORK/pr.json")
@@ -85,6 +106,33 @@ state=$(jq -r '.state' "$WORK/pr.json")
   echo "PR #$PR は開いていない（state=$state）。投入しない。" >&2
   exit 1
 }
+
+# 上の「投入する前に見るもの」。**理由は標準出力へ出す**——司令塔が読んで次の手を決めるので、
+# 落ちたこと自体ではなく、どれで落ちたかが要る。`FORCE=1` で飛ばせる。
+not_ready() {
+  echo "NOT_READY $1"
+  exit 1
+}
+
+if [ -z "${FORCE:-}" ]; then
+  mergeable=$(jq -r '.mergeable' "$WORK/pr.json")
+  [ "$mergeable" = MERGEABLE ] ||
+    not_ready "マージできない（mergeable=$mergeable）。衝突を解かせるか、GitHubの再計算を待つ。"
+
+  # `conclusion` が入るのは走り終えたものだけ。走っている最中は `null` なので `PENDING` として扱う。
+  checks=$(jq -r '[.statusCheckRollup[]?] | length' "$WORK/pr.json")
+  [ "$checks" != 0 ] || not_ready "CIがまだ1件も出ていない。"
+  bad=$(jq -r '[.statusCheckRollup[]? | (.conclusion // "PENDING")
+    | select(. != "SUCCESS" and . != "NEUTRAL" and . != "SKIPPED")] | join(",")' "$WORK/pr.json")
+  [ -z "$bad" ] || not_ready "CIが緑でない（$bad）。"
+
+  # 最後の判定より新しいコミットが無いなら、この頭はもう読まれている。
+  head_at=$(jq -r '.commits | last | .committedDate' "$WORK/pr.json")
+  judged_at=$(jq -r '[.comments[]? | select(.body | startswith("[レビュー]")) | .createdAt]
+    | last // ""' "$WORK/pr.json")
+  [ -z "$judged_at" ] || [ "$judged_at" \< "$head_at" ] ||
+    not_ready "この頭は判定済み（最後のコミット $head_at、最後の判定 $judged_at）。"
+fi
 
 node -e '
   const fs = require("node:fs");
