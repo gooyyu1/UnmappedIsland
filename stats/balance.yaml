@@ -500,6 +500,42 @@ consumption:
   - {property: vitamin, condition: 常時, character: engineer, per_tick: -0.50, per_day: -48}
   - {property: vitamin, condition: 常時, character: farmer, per_tick: -0.50, per_day: -48}
   - {property: vitamin, condition: 常時, character: medic, per_tick: -0.50, per_day: -48}
+  - {property: homesickness, condition: 段 loneliness=restless, character: captain, per_tick: 0.01, per_day: 1}
+  - {property: homesickness, condition: 段 loneliness=restless, character: engineer, per_tick: 0.01, per_day: 1}
+  - {property: homesickness, condition: 段 loneliness=restless, character: farmer, per_tick: 0.01, per_day: 1}
+  - {property: homesickness, condition: 段 loneliness=restless, character: medic, per_tick: 0.01, per_day: 1}
+  - {property: homesickness, condition: 段 loneliness=lonely, character: captain, per_tick: 0.02, per_day: 2}
+  - {property: homesickness, condition: 段 loneliness=lonely, character: engineer, per_tick: 0.02, per_day: 2}
+  - {property: homesickness, condition: 段 loneliness=lonely, character: farmer, per_tick: 0.02, per_day: 2}
+  - {property: homesickness, condition: 段 loneliness=lonely, character: medic, per_tick: 0.02, per_day: 2}
+  - {property: homesickness, condition: 段 loneliness=forsaken, character: captain, per_tick: 0.04, per_day: 4}
+  - {property: homesickness, condition: 段 loneliness=forsaken, character: engineer, per_tick: 0.04, per_day: 4}
+  - {property: homesickness, condition: 段 loneliness=forsaken, character: farmer, per_tick: 0.04, per_day: 4}
+  - {property: homesickness, condition: 段 loneliness=forsaken, character: medic, per_tick: 0.04, per_day: 4}
+  - {property: happiness, condition: 段 homesickness=wistful, character: captain, per_tick: -0.13, per_day: -12}
+  - {property: happiness, condition: 段 homesickness=wistful, character: engineer, per_tick: -0.13, per_day: -12}
+  - {property: happiness, condition: 段 homesickness=wistful, character: farmer, per_tick: -0.13, per_day: -12}
+  - {property: happiness, condition: 段 homesickness=wistful, character: medic, per_tick: -0.13, per_day: -12}
+  - {property: happiness, condition: 段 homesickness=yearning, character: captain, per_tick: -0.25, per_day: -24}
+  - {property: happiness, condition: 段 homesickness=yearning, character: engineer, per_tick: -0.25, per_day: -24}
+  - {property: happiness, condition: 段 homesickness=yearning, character: farmer, per_tick: -0.25, per_day: -24}
+  - {property: happiness, condition: 段 homesickness=yearning, character: medic, per_tick: -0.25, per_day: -24}
+  - {property: happiness, condition: 段 homesickness=despondent, character: captain, per_tick: -0.50, per_day: -48}
+  - {property: happiness, condition: 段 homesickness=despondent, character: engineer, per_tick: -0.50, per_day: -48}
+  - {property: happiness, condition: 段 homesickness=despondent, character: farmer, per_tick: -0.50, per_day: -48}
+  - {property: happiness, condition: 段 homesickness=despondent, character: medic, per_tick: -0.50, per_day: -48}
+  - {property: homesickness, condition: 段 comfort=homely, character: captain, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 段 comfort=homely, character: engineer, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 段 comfort=homely, character: farmer, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 段 comfort=homely, character: medic, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 段 comfort=snug, character: captain, per_tick: -0.04, per_day: -4}
+  - {property: homesickness, condition: 段 comfort=snug, character: engineer, per_tick: -0.04, per_day: -4}
+  - {property: homesickness, condition: 段 comfort=snug, character: farmer, per_tick: -0.04, per_day: -4}
+  - {property: homesickness, condition: 段 comfort=snug, character: medic, per_tick: -0.04, per_day: -4}
+  - {property: homesickness, condition: 段 company=kept, character: captain, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 段 company=kept, character: engineer, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 段 company=kept, character: farmer, per_tick: -0.02, per_day: -2}
+  - {property: homesickness, condition: 段 company=kept, character: medic, per_tick: -0.02, per_day: -2}
   - {property: hydration, condition: 段 pathogen=feverish, character: captain, per_tick: -1.00, per_day: -96}
   - {property: hydration, condition: 段 pathogen=feverish, character: engineer, per_tick: -1.00, per_day: -96}
   - {property: hydration, condition: 段 pathogen=feverish, character: farmer, per_tick: -1.00, per_day: -96}

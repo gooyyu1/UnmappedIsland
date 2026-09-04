@@ -384,16 +384,114 @@ traits:
           - add:
               self:
                 vitamin: -0.5
-      # 幸福度（docs/world/Characters.md 幸福度節）。**メンタルの不調を代表する1本**で、ストレス・退屈・
-      # 孤独をそれぞれ値にはしない（docs/concept/DesignPrinciples.md）。**現実の単位が無い**ので
+      # 孤独（docs/world/Characters.md ホームシック節）。**漂着してからの日数そのもの**で、世界の日数を
+      # 場所ごしに継ぐだけ（ambient_brightness・shelteredと同じ形のbase）。**独立した値としては溜めない**
+      # ——時間の単調増加関数でしかないものを別に持つと、同じ数が2箇所に立つ。将来「他の生存者に会う」で
+      # 下げる余地は、baseにしてあるぶんmodifyで開いている。
+      #
+      # **画面には出さない**（statusタグを持たない）。プレイヤーが読むのは下のホームシックのほうなので、
+      # 見えない値が結果だけを変える形にはならない。
+      #
+      # 段が持つのはホームシックの溜まる速さで、境目は**日数**で置く（初回の季節がちょうど各30日
+      # なので、雨季と乾季の入口に重なる。docs/engine/ClimateSystem.md 2.3節）。**漂着した最初の
+      # ひと月は溜まらない**——生き延びるだけで手一杯のあいだに里心は付かない。
+      # 速さは段ごとに倍で、1日（96 tick）あたり+0.96・+1.92・+3.84。
+      loneliness:
+        value: 0
+        base: {subject: ancestor, prop: day}
+        stages:
+          - {name: occupied}
+          - name: restless
+            min: 30
+            passives:
+              - add: {self: {homesickness: 0.01}}
+          - name: lonely
+            min: 60
+            passives:
+              - add: {self: {homesickness: 0.02}}
+          - name: forsaken
+            min: 90
+            passives:
+              - add: {self: {homesickness: 0.04}}
+      # ホームシック（docs/world/Characters.md ホームシック節）。**後半の難度を担う1本**で、上の孤独が
+      # 溜め、下の居心地と連れが引く。増える側が悪いプロパティなので、段はmaxからの割合で刻む
+      # （痛み・荷重と同じ1/4・1/2・5/6）。
+      #
+      # **maxが120なのは、顕在化する日のほう先に決まっているから**（同節）。目盛りに現実の単位が無く、
+      # 決まっているのは「60日目に表へ出る」——1日0.96で30日ぶん溜めた28.8が、60日目のうちに留意域
+      # （max の1/4 ＝ 30）を越える位置がここ。100に置くと4日早まる。
+      #
+      # **幸福度を削るのは痛みとここの2本だけ。** 1段上がるごとに倍で、1日あたり-12・-24・-48
+      # ——火を通した3食（+18/日）で追いつくのは最初の段までで、里心が深まれば食事では埋まらない。
+      #
+      # 対策を何も打たなければ、最良の食事を通しても91日目に初めて打ちひしがれ、以後は繰り返す
+      # （同節・限界節）。**0は終点ではない**ので、削り続けた先に出るのは死ではなく、手から離れる時間。
+      homesickness:
+        tags: [status, health]
+        value: 0
+        range: {min: 0, max: 120}
+        stages:
+          - {name: settled}
+          - name: wistful
+            min: 30
+            alert: watch
+            passives:
+              - add: {self: {happiness: -0.125}}
+          - name: yearning
+            min: 60
+            alert: caution
+            passives:
+              - add: {self: {happiness: -0.25}}
+          - name: despondent
+            min: 100
+            alert: danger
+            passives:
+              - add: {self: {happiness: -0.5}}
+      # 今いる場所の居心地（docs/world/Characters.md ホームシック節）。**場所が持つ事実を映す**ので、
+      # 値は祖先から継ぐだけで自分では動かさない（明るさ・shelteredと同じ形）。押し上げるのは住居の部品
+      # （docs/world/Dwellings.md 2節）。
+      #
+      # **段が持つのはホームシックの引き**で、1日あたり-1.92・-3.84。60日目からの増えを止めるには
+      # homely（20）、90日目からの増えを止めるにはsnug（50）が要る。
+      # **継ぐのは今居る場所の居心地だけなので、遠征に出れば何も効かない。**
+      comfort:
+        value: 0
+        base: {subject: ancestor}
+        stages:
+          - {name: bare}
+          - name: homely
+            min: 20
+            passives:
+              - add: {self: {homesickness: -0.02}}
+          - name: snug
+            min: 50
+            passives:
+              - add: {self: {homesickness: -0.04}}
+      # 今いる場所に在る、世話をしている獣の居る囲いの数（同節）。上のcomfortと同じく祖先から継ぐだけで、
+      # 押し上げるのは飼葉の残っている囲い（farming.yaml）が1つにつき1。
+      #
+      # **段は1つだけ**で、囲いをいくつ並べても効き目は増えない（理由は同節）。**引くのは1日-1.92で、
+      # 60日目からの増えをちょうど止める**が、90日目からは家畜だけでは足りない。
+      company:
+        value: 0
+        base: {subject: ancestor}
+        stages:
+          - {name: alone}
+          - name: kept
+            min: 1
+            passives:
+              - add: {self: {homesickness: -0.02}}
+      # 幸福度（docs/world/Characters.md 幸福度節）。**メンタルの不調を代表する1本**で、心の不調が
+      # 行き着く先はここへ集める——分けるのは原因の側だけ（docs/concept/DesignPrinciples.md）。
+      # **現実の単位が無い**ので
       # （痛み・体力と同じ抽象の0〜100）、確かめられるのは大小の関係だけ。
       #
       # **押し引きはすべてadd。** modifyを1本も刺さないので実効値が実体値と一致し、0に達したときの
       # 強制休息をon_minで書ける（まだ入っていない）。意味の面でも、効くのは「快適な寝床で寝た今夜」で
       # あって寝床を持っていること自体ではない。
       #
-      # **上げるのは口にした物だけ**（各eatのベース値）で、**下げるのは痛みの段だけ**（上のpain）。
-      # 時間そのものから生える圧（ホームシック）・寝床や住居からの寄与は、まだ入っていない。
+      # **上げるのは口にした物だけ**（各eatのベース値）で、**下げるのは痛みとホームシックの段の2本**
+      # （上のpain・homesickness）。寝床や住居からの寄与は、まだ入っていない。
       # 増える側が良い値なので、段は下から上へ深刻さが下がる並び（血・熱と同じ形）。
       #
       # 感じ方の個体差はまだ持たせず、痛み・血と同じくこの trait が配る。

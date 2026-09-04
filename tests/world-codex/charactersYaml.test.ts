@@ -274,6 +274,9 @@ describe('プレイヤーキャラクタの定義', () => {
       // メンタルの不調を代表する1本（Characters.md 幸福度節）。心も健康のうちなので、専用のタブは
       // 作らずhealthへ入れる。
       ['happiness', ['status', 'health']],
+      // 時間の経過から生える圧（同 ホームシック節）。**プレイヤーが読むのはこちら**なので、
+      // 溜める側の孤独と抑える側の居心地はstatusを持たない（下のテスト）。
+      ['homesickness', ['status', 'health']],
       // 全身の菌（DigestionSystem.md 6節）。発症したときだけステータスエリアに出る。
       ['pathogen', ['status', 'health']],
       // 免疫はステータスエリアには出さず、カードを開いたときだけ見える（body_fatと同じ扱い）。
@@ -286,7 +289,14 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(tagNames.sort()).toEqual([...expectedTags].sort());
     });
 
-    it('ステータスエリアに出るのは11件で、並び順も揃っている', () => {
+    it('孤独と、抑える側の2つは画面に出ない', () => {
+      // 見えない値が結果だけを変える形にしないため、読ませるのは間のホームシックだけにする
+      // （Characters.md ホームシック節）。
+      for (const propertyName of ['loneliness', 'comfort', 'company'])
+        expect(propOf(def(character), propertyName).tags, `${propertyName} はstatusを持たない`).toEqual([]);
+    });
+
+    it('ステータスエリアに出るのは12件で、並び順も揃っている', () => {
       // propertiesWithTagの戻り順＝宣言順がそのまま画面の並びになる（StatusArea.md 3節）。
       const instance = new WorldSession(codex).createObject(def(character).globalId);
       const status = instance.propertiesWithTag(codex.propertyTagNames.getId('status'));
@@ -297,6 +307,7 @@ describe('プレイヤーキャラクタの定義', () => {
         'warmth',
         'satiety',
         'vitamin',
+        'homesickness',
         'happiness',
         'pathogen',
         'hydration',
@@ -317,6 +328,7 @@ describe('プレイヤーキャラクタの定義', () => {
       'stamina',
       'load',
       'happiness',
+      'homesickness',
     ])('%sは0を下限とするrangeを持つ', (propertyName) => {
       expect(propOf(def(character), propertyName).range?.min).toBe(0);
     });
@@ -335,8 +347,12 @@ describe('プレイヤーキャラクタの定義', () => {
       ['pain', 0],
       // 血は自分で戻る唯一のステータスだが、満タンで始まるので上限で頭打ちになる（次のテスト）。
       ['blood', 0],
-      // 幸福度は時間では動かない。削るのは痛みの段だけで、痛みが無ければ1も減らない（下のテスト）。
+      // 幸福度は時間では動かない。削るのは痛みとホームシックの段で、どちらも無ければ1も減らない
+      // （下のテスト）。
       ['happiness', 0],
+      // ホームシックも時間では動かない。溜めるのは孤独の段で、漂着した初日には1も溜まらない
+      // （tests/world-codex/homesickness.test.ts）。
+      ['homesickness', 0],
       // 満腹感はかさ（mL）なので、1 tickあたり16mLずつ空いていく（DigestionSystem.md 2節）。
       // ビタミンはmgで、代謝回転が1日48mg（同4節）。栄養素の在庫は減るのではなく体脂肪へ移る。
     ])('%sはtickごとに%iずつ減る', (propertyName, expectedDecay) => {
@@ -389,8 +405,8 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(prop.isInStage(max - 1, 'full')).toBe(false);
     });
 
-    // 荷重と痛みは増える側が悪いので、境目は最大値からの割合で刻む（Characters.md）。
-    it.each(['load', 'pain'])('%sの域は最大値からの割合で切られる', (propertyName) => {
+    // 荷重・痛み・ホームシックは増える側が悪いので、境目は最大値からの割合で刻む（Characters.md）。
+    it.each(['load', 'pain', 'homesickness'])('%sの域は最大値からの割合で切られる', (propertyName) => {
       const prop = propOf(def(character), propertyName);
       const max = maxOf(character, propertyName);
 
@@ -409,7 +425,7 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(prop.isInStage(threshold - 1, 'too_heavy')).toBe(false);
     });
 
-    it.each(['load', 'pain'])('%sは増えるほど悪い値として扱われる', (propertyName) => {
+    it.each(['load', 'pain', 'homesickness'])('%sは増えるほど悪い値として扱われる', (propertyName) => {
       // バーの向きと増減の記号の色が反転する（StatusArea.md）。
       expect(propOf(def(character), propertyName).worsensUpward).toBe(true);
       expect(propOf(def(character), 'stamina').worsensUpward).toBe(false);
@@ -462,8 +478,9 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(prop.alertOf(0)).toBe('danger');
     });
 
-    // 幸福度を削るのは痛みの段だけで、1段上がるごとに倍（Characters.md 幸福度節）。怪我・壊血病・脂の
-    // 欠乏はどれも痛みへ合流するので、この1本が内側の不調すべての届き先になる。
+    // 内側の不調が幸福度を削る経路は痛みの段で、1段上がるごとに倍（Characters.md 幸福度節）。
+    // 怪我・壊血病・脂の欠乏はどれも痛みへ合流するので、この1本が内側の不調すべての届き先になる。
+    // 外から時間が掛ける圧はホームシックが受け持つ（tests/world-codex/homesickness.test.ts）。
     it.each([
       ['painless', 0],
       ['sore', 0.125],
