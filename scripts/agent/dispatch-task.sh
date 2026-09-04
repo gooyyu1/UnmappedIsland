@@ -124,6 +124,11 @@ if [ -n "${DRY_RUN:-}" ]; then
   exit 0
 fi
 
+# 手綱と占有。**立ててよいかの判定は [`may-dispatch.sh`](may-dispatch.sh) が持つ**ので、ここは
+# 種類とタグを渡すだけ。タグは下の `create_session` へ渡すものと同じ文字列であること——**別の
+# 文字列を見に行くと、判定は通るのに二重に立つ。**
+CCR_META="$CCR_META" bash "$HERE/may-dispatch.sh" new-task "task-$ISSUE"
+
 # 応答は `<other-session>` の包みに入って返るので、中のJSONだけ取り出す。
 session=$(bash "$CCR_META" create_session <"$WORK/args.json" | grep -o '{"ccr".*' | jq -r '.ccr.id')
 [ -n "$session" ] && [ "$session" != "null" ] || {
