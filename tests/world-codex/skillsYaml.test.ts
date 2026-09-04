@@ -549,17 +549,34 @@ describe('腕前とレシピの解放条件', () => {
     ).toEqual([]);
   });
 
-  it('打ちかかる手が読む重みは、狙いを土台にする（外れには積まない）', () => {
+  it('打ちかかる手の卓は、最も太い当たり方1つだけが狙いを土台にする', () => {
     // 当たり所は武器ごと（tools.yaml）、突き漁の釣果は筏と群れ（voyage.yaml）が名乗るので、宣言は
-    // 散らばっている。積み忘れた当たり方は、腕を上げても出やすくならない一撃になる。
+    // 散らばっている。**積むのを1つに限るのは、卓の合計をどの武器でも同じだけ伸ばすため**
+    // ——当たり方の数だけ積むと、2つ名乗る石斧だけが倍受け取り、仕留めの重みと並ぶ目盛りが武器で
+    // 変わる（docs/engine/HuntingSystem.md 1.2節）。積み忘れれば、腕を上げても当たらない手になる。
     const AIMED_WEIGHTS = ['heavy_blow', 'light_blow', 'thrust', 'catch_chance'];
-    const hits = declaredProps().filter(
-      (prop) => AIMED_WEIGHTS.includes(prop.name) && declaredValueOf(prop.body) > 0,
-    );
+    const tables = new Map<string, { name: string; value: number; stands: boolean }[]>();
+    for (const prop of declaredProps()) {
+      if (!AIMED_WEIGHTS.includes(prop.name) || declaredValueOf(prop.body) <= 0) continue;
+      const hits = tables.get(prop.where) ?? [];
+      hits.push({
+        name: prop.name,
+        value: declaredValueOf(prop.body),
+        stands: standsOnBonus(prop.body, 'hunting_aim'),
+      });
+      tables.set(prop.where, hits);
+    }
 
-    expect(hits.length, '当たり方を名乗る宣言が1つも無い').toBeGreaterThan(0);
+    expect(tables.size, '当たり方を名乗る型が1つも無い').toBeGreaterThan(0);
     expect(
-      hits.filter((hit) => !standsOnBonus(hit.body, 'hunting_aim')).map((hit) => `${hit.where}.${hit.name}`),
+      [...tables].flatMap(([where, hits]) => {
+        const standing = hits.filter((hit) => hit.stands);
+        const widest = hits.reduce((best, hit) => (hit.value > best.value ? hit : best));
+        return standing.length === 1 && standing[0].name === widest.name
+          ? []
+          : [`${where}: ${standing.map((hit) => hit.name).join('・') || 'どれも積んでいない'}`];
+      }),
+      '最も太い当たり方1つが積んでいる型だけが並ぶ',
     ).toEqual([]);
     // **外れへは積まない**——押すのは当たる側だけにして、卓が増えるぶんで外れの割合が落ちる形に
     // している（Skills.md 5節）。積むと腕が上がるほど空を切る。

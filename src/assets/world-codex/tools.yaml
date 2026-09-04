@@ -20,8 +20,13 @@ traits:
   weapon:
     tags: [weapon]
     props:
-      # 当たり所の重み。**値を名乗るのは武器の側**で、その武器が実際に持つ当たり方だけが、素の値と
-      # 一緒に殴る人の狙い（hunting_aim）をbaseの土台として積む（docs/world/Skills.md 5節）。
+      # 当たり所の重み。**値を名乗るのは武器の側**で、その武器が最も太く名乗る当たり方1つだけが、
+      # 殴る人の狙い（hunting_aim）をbaseの土台として積む（docs/world/Skills.md 5節）。
+      #
+      # **積むのを1つに限るのは、下の「合計100」を実効値でも保つため。** 当たり方の数だけ積むと、
+      # 2つ名乗る石斧だけが倍受け取り、仕留めの重みと並ぶ目盛りが武器ごとに変わる。1つに限れば
+      # どの武器も同じだけ伸びる（105 → 145）。
+      #
       # **ここには土台を置かない**——0を宣言した当たり方（尖った石の強打）にまで積むと、腕が上がる
       # だけでその武器に無いはずの一撃が出る。火口のignition_chanceと同じ置き方（fire.yaml）。
       #
@@ -75,8 +80,9 @@ object_defs:
     props:
       weight: {value: 1200}
       volume: {value: 1800}
+      # 積むのは強打だけ（trait の注記）。**腕が上がるほど、この武器が得意な当たり方へ寄る。**
       heavy_blow: {value: 60, base: {subject: agent, prop: hunting_aim}}
-      light_blow: {value: 15, base: {subject: agent, prop: hunting_aim}}
+      light_blow: {value: 15}
       thrust: {value: 0}
       whiff: {value: 25}
     recipes:
