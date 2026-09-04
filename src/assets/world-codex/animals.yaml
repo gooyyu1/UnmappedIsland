@@ -1094,7 +1094,7 @@ object_defs:
   # 置き換えが土地のアイテムへこぼれる（docs/engine/FireSystem.md 7.2節）。
   #
   # **腐らない。** 水も栄養素も残っていない炭なので、腐敗のtrait（foods.yaml）を持たない。
-  # したがって**吐き下しのpick（docs/engine/DigestionSystem.md 6節）も持たない**——他の食べ物が
+  # したがって**吐き下しのpick（docs/engine/DigestionSystem.md 6.3節）も持たない**——他の食べ物が
   # 全部持っているのに、ここだけ書かない理由がこれ。引く重みは腐敗の段が押し上げるspoilageなので、
   # 腐らない物には常に0の抽選しか書けない。
   charred_lump:

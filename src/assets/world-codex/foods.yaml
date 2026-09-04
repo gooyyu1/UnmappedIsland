@@ -25,7 +25,7 @@
 # だけ加工を重ねられ、重ねると同じ個体が保存された版になる（3.5.1節）。**軸を持つのは生のままの物
 # だけ**——焼くのは食べるための工程なので、焼いた物を保たせる形（塩漬けの焼き芋）は作らない。
 #
-# 傷んだ物を食べたときの吐き下しは、各eatの末尾のpickが引く（docs/engine/DigestionSystem.md 6節）。
+# 傷んだ物を食べたときの吐き下しは、各eatの末尾のpickが引く（docs/engine/DigestionSystem.md 6.3節）。
 # 重みは「無事100 : 吐く spoilage : 下す spoilage」の3つで、**pickはaddより後ろに置く**——腹に
 # 収めてから吐くので、順が逆だと吐いた後に食べたことになる（GameElementDefinition.md 9.7節）。
 traits:
@@ -43,7 +43,7 @@ traits:
         # 腐りきった食べ物は残らない。**名乗らずに消す**——消え方の名前（9.3節）を出す先がまだ無い。
         on_min:
           destroy: self
-        # 傷み具合（docs/engine/DigestionSystem.md 6節）。**境目は残りの割合で置く**——腐る速さは
+        # 傷み具合（docs/engine/DigestionSystem.md 6.3節）。**境目は残りの割合で置く**——腐る速さは
         # 分類で違うが、durabilityは種類によらず960から始まるので、同じ数が全部の食べ物で
         # 「残り半分」「残り4分の1」を指す。
         stages:
