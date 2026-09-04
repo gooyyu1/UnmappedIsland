@@ -15,7 +15,7 @@ import { describe, expect, it, vi } from 'vitest';
  */
 
 // 実プロセス（bash + gh のスタブ）を起こすため、`npm test` 全体を並行実行したときのCPU競合だけで
-// 既定の5秒を超えうる（watchPrs.test.ts と同じ理由）。
+// 既定の5秒を超えうる。
 vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/may-dispatch.sh');
@@ -176,14 +176,39 @@ describe('may-dispatch.sh', () => {
     expect(run('new-task', 'task-1234', { sessions: [working('task-5678')] }).code).toBe(0);
   });
 
-  // 再レビューが止まらないことの確認。手番を終えたセッションは占有していない（board-design 1.2）。
-  it('同じタグでも、手番を終えたセッションは占有していない', () => {
+  // 再レビューが止まらないことの確認。手番を終えたセッションは手が動いていない（board-design 1.2）。
+  it('レビューでは、手番を終えたセッションは占有していない', () => {
     const done = ['SESSION_STATUS_BUCKET_COMPLETED', 'SESSION_STATUS_BUCKET_FAILED'];
     for (const bucket of done) {
       const sessions = [{ id: 'cse_DONE', status: 'SESSION_STATUS_IDLE', bucket, tags: ['review-1500'] }];
 
       expect(run('review', 'review-1500', { sessions }).code, bucket).toBe(0);
     }
+  });
+
+  // **種類ごとに訊く問いが違う**（1.2）。新しいタスクが訊くのは「もう配ったか」なので、手が空いて
+  // いても配り直さない。同じ issue へ2本立つと、別々のPRが出る（1.5）。
+  it('新しいタスクでは、手番を終えたセッションも占有している', () => {
+    const done = ['SESSION_STATUS_BUCKET_COMPLETED', 'SESSION_STATUS_BUCKET_FAILED'];
+    for (const bucket of done) {
+      const sessions = [{ id: 'cse_DONE', status: 'SESSION_STATUS_IDLE', bucket, tags: ['task-1234'] }];
+
+      expect(run('new-task', 'task-1234', { sessions }).code, bucket).toBe(1);
+    }
+  });
+
+  // 承認待ちで止まっているセッションは、許可が下りれば書き始めるので手が動いている側。
+  it('BLOCKED のセッションは、手が動いている側として占有している', () => {
+    const sessions = [
+      {
+        id: 'cse_BLOCKED',
+        status: 'SESSION_STATUS_IDLE',
+        bucket: 'SESSION_STATUS_BUCKET_BLOCKED',
+        tags: ['review-1500'],
+      },
+    ];
+
+    expect(run('review', 'review-1500', { sessions }).code).toBe(1);
   });
 
   it('畳まれたセッションは占有していない', () => {

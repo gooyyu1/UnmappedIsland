@@ -13,7 +13,7 @@ import { describe, expect, it, vi } from 'vitest';
  */
 
 // 実際にgitでworktreeまで作る重いテストなので、`npm test` 全体を並行実行したときのCPU競合だけで
-// 既定の5秒を超えうる（watchPrs.test.tsと同じ理由）。
+// 既定の5秒を超えうる。
 vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/archive-session.sh');

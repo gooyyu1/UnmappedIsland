@@ -43,7 +43,16 @@ if ! brake=$(bash "$HERE/brake.sh" "$KIND"); then
   exit 1
 fi
 
-if ! held=$(CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}" bash "$HERE/occupancy.sh" "$@"); then
+# **種類ごとに、占有へ訊く問いが違う**（[`occupancy.sh`](occupancy.sh)・`board-design.md` 1.2）。
+# 新しいタスクは**もう配ったか**を訊く——手が空いたセッションが持っていても、その issue は配られて
+# いる。残りは**今その差分へ手が動いているか**で、書き終えたセッションは通す（通さないと、再レビューも
+# 直しの再開も二度と出ない）。
+case "$KIND" in
+new-task) question=--live ;;
+*) question=--busy ;;
+esac
+
+if ! held=$(CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}" bash "$HERE/occupancy.sh" "$question" "$@"); then
   echo "立てない: $held" >&2
   exit 1
 fi

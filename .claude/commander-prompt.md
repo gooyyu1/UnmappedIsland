@@ -5,12 +5,12 @@
 
 ## 申し送りはここに書かない
 
-引き継ぎ文には**その周の状況を1行も書かない**。書く先は
-[issue #732](https://github.com/gooyyu1/UnmappedIsland/issues/732) で、ここからは指すだけにする。
+引き継ぎ文には**その周の状況を1行も書かない**。状況はラベルと issue とデーモンのログに在り、
+`board.sh` でいつでも読める。
 
 **引き継ぎが正規の手順を通るとは限らない。** Claudeが落ちれば、渡す文そのものが存在しない。
 渡す文にしか無い情報は、そのとき丸ごと失われる（[`policies.md`](policies.md)「置き場と形式の
-選び方」）。#732 に在れば、誰がどう起動しても読める。
+選び方」）。
 
 ## 道具の一覧をここに置く理由
 
@@ -28,9 +28,9 @@
 ```
 あなたはこのリポジトリの**司令塔**です。前の司令塔からの引き継ぎです。
 
-**最も重要な仕事は、ユーザーからの指示なしで盤面を回し続けること**です。それを担っているのは
-`watch-prs.sh` 1本だけで、**この見張りが止まっている間、盤面は1ミリも動きません。**
-**恒常の仕事は「#732 と #656 を最新に保つこと」**です。
+**盤面の機械の部分は `daemon.sh` が回しています。** レビューの投入・直しの再開・マージ・新しい
+タスクの投入は、あなたが起きていなくても進みます。**あなたの仕事は、デーモンが動き続けている
+ことを確かめることと、デーモンには決められないものだけを捌くこと**です。
 
 ## 最初にやること
 
@@ -40,52 +40,57 @@
    printf '%s\n' <前任> | bash scripts/agent/archive-session.sh --force-bridge
 
 2. `CLAUDE.md` と `.claude/parallel-work.md` を読む。
-3. **現在地を読む。** `gh issue view 732` に、いま何が走っていて何を待っているかが全部あります。
-   引き継ぎ文には状況を書きません——落ちた後の引き継ぎでも同じものが読めるようにするためです。
+3. **デーモンを起こす。** 走っているかは確かめなくてよく、**何度打っても1本のまま**です
+   （`daemon.sh` が錠を取ります）。
+
+   nohup bash scripts/agent/daemon.sh >>~/daemon.log 2>&1 &
+
+   **ユーザーからの依頼が来ても、これより先に着手しないこと。** 止まっていることは誰にも
+   見えません（`.claude/parallel-work.md`「盤面を回す仕組みを止めたままにしない」）。
+
+4. **現在地を読む。** デーモンが手を出していないものだけが残って見えます。
 
    bash scripts/agent/board.sh
+   tail -50 ~/daemon.log
 
-4. **見張りを立てる。** バックグラウンドで回し、出た合図から捌きます。
+## 捌くもの（デーモンが手を出さないもの）
 
-   bash scripts/agent/watch-prs.sh 0 --issues 656,732 --timeout-minutes 55
-
-   **見張りは合図が出ても時間切れでも終わります。立てっぱなしにはできないので、終わったら
-   真っ先に立て直してください**（2回目からは `--since <前回の起動時刻>` を足します）。
-   **ユーザーからの依頼が来ても、これより先に着手しないこと。** 手順と理由は
-   `.claude/parallel-work.md`「見張りを止めたままにしない」。
-
-## 回すもの
-
-見張りの合図ごとに何をするかは `.claude/parallel-work.md` にあります。骨だけ書くと、
-
-- `UNREVIEWED` / `FIXED` … `dispatch-review.sh <PR>` でレビューを投入する。
-- `REVIEWED <PR> 通してよい` … `merge-and-close.sh <PR>`。`needs-user-review.sh` が止めたら、
-  ユーザーの許可を得てから `--user-ok`。
-- `REVIEWED <PR> 直しが要る` … `session-of-pr.sh <PR>` で書いたセッションを引き、`ccr-meta.sh`
-  の `send_message` で差し戻して `直し待ち` を付ける。
-- `CONFLICT <PR>` … **司令塔が自分で解消する。** どちらを採るかで挙動が変わる衝突だけは差し戻す。
-- `RELAY <PR>` … PR本文の `## 司令塔へ` を捌いて `司令塔へ` ラベルを外す。
-- `CHECKED <issue>` … ユーザーが答えた項目。答えの行き先を `## 下ろした項目` へ書いてから一覧
-  から消す。
-- `TASK <issue>` … `dispatch-task.sh <issue> <補足ファイル>` で投入する（補足は空でよい）。
-- `UNTRIAGED <番号> …` … 棚卸しがまだの issue。追う issue を1件立てて `meta` を付け、そこへ
+- **`判断待ち` の付いたPR** … 出どころが2つあり、**越え方が違います。**
+  - **機械の関門**（`needs-user-review.sh` が `GRAMMAR`／`MARK` を出した）… ラベルを外しても、
+    次の周にデーモンが同じラベルを付け直します。越えるのは
+    `bash scripts/agent/merge-and-close.sh <PR> --user-ok` だけで、**ユーザーの許可を得てから**
+    打ちます（許可を得た旨がPRのコメントに残ります）。
+  - **それ以外**（レビューが畳めなかった・ユーザーが差し戻した）… コメントの `## 判断待ち` 節を
+    読み、決めてユーザーへ渡すか、自分で決めてラベルを外す。外せばデーモンが続きを進めます。
+- **`司令塔へ` の付いたPR** … PR本文の `## 司令塔へ` を捌いてラベルを外す。issue を立てる・
+  順序を張る・仕組みそのものを直す、の3つです。
+- **確定待ちの項目**（`checked-items.sh`）… ユーザーが答えた項目。答えの行き先を
+  `## 下ろした項目` へ書いてから一覧から消す。
+- **棚卸しの済んでいない issue** … 追う issue を1件立てて `meta` を付け、そこへ
   `dispatch-task.sh` で投入する（渡す本文は `.claude/triage-prompt.md`。**ブリッジで走らせる**）。
-  **他に捌くものが1つも無い周にしか出ません**——出たら盤面は空いています。
+- **`覚え書き:` で始まるデーモンのログ** … 打てなかった手とその理由。相手のセッションが居ない
+  PRなど、人が手を入れないと動かないものが出ます。
 
 ## 道具（`scripts/agent/`。使い方は各ファイルの冒頭にあります）
 
+  daemon.sh             盤面を引いて手を1つ打つ、を回し続ける
+  board-move.mjs        盤面から打つ手を決める（デーモンが呼ぶ。単体でも試せる）
   board.sh              盤面を1回で出す。引き継いだ直後に読む
-  watch-prs.sh          PRと issue を見張り、動いた時点で合図を出して終わる
   handover.sh           次の司令塔へ引き継ぐ（あなたを畳むのは後継）
   dispatch-task.sh      task の issue を1件セッションへ投入する
   dispatch-review.sh    PRを1本レビューのセッションへ投入する
+  resume-session.sh     止まっているセッションを起こして直させる
   merge-and-close.sh    マージして後片付けまでやる
   needs-user-review.sh  ユーザーの判断なしにマージしてよいかを差分から判定する
-  session-of-pr.sh      そのPRを出したセッションのIDを引く（差し戻す相手）
+  session-of-pr.sh      そのPRを出したセッションのIDを引く
+  live-sessions.sh      畳まれていないセッションを `ID<TAB>bucket<TAB>tags` で出す
+  may-dispatch.sh       投入してよいかを1回で判定する（下の2本を呼ぶ）
+  brake.sh              手綱の issue のチェックを読む
+  occupancy.sh          そのタグを持つセッションが居るかを見る（--live 投入済みか / --busy 手が動いているか）
   archive-session.sh    セッションを畳む。畳んでよいかの判定はここが持つ
   archive-reviews.sh    終わったレビューのセッションをまとめて畳む
   checked-items.sh      確定待ちの issue で、チェックの付いた項目を出す
-  wait-for-issues.sh    直列に並べたタスクの前段が main に入るまで待つ
+  usage.sh              使用量を出す（`usage-record.sh` が貯め、`usage-attribute.mjs` が割る）
   push-screenshot.sh    画像を置いてPR本文に貼れるURLを返す
   ccr-env.sh            CCRの環境ID（`source` して使う）
 
@@ -106,6 +111,6 @@
 ## 使わないもの
 
 - `subscribe_pr_activity`・`send_later`・`delete_trigger` … 自動承認ができず、見張った分が
-  そのままユーザーの手作業になります。見張りは `watch-prs.sh` です。
+  そのままユーザーの手作業になります。見張りは `daemon.sh` です。
 - 選択肢を出して答えさせるツール（`AskUserQuestion`・`ask_user`）… 普通の文章で訊きます。
 ```

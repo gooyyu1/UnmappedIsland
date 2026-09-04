@@ -8,7 +8,7 @@
 # 指示は [`.claude/commander-prompt.md`](../../.claude/commander-prompt.md) から読む。
 #
 # 出力は1行1件。
-#   BOARD <ISO時刻>       … #732 の最終更新。**ここが古いなら、先に #732 を直してから引き継ぐ**
+#   DAEMON <生死>         … 盤面を回している [`daemon.sh`](daemon.sh) が走っているか
 #   PREDECESSOR <ID>      … 後継に畳ませる前任
 #   SESSION <ID>
 #   一致 / 不一致          … 送った指示が化けずに届いたか
@@ -17,14 +17,15 @@
 #
 # ## 申し送りは渡さない
 #
-# 状況は [issue #732](https://github.com/gooyyu1/UnmappedIsland/issues/732) にあり、ひな形はそこを
-# 指すだけ。**引き継ぎが正規の手順を通るとは限らない**——Claudeが落ちれば、渡す文そのものが存在
-# しない。渡す文にしか無い情報は、そのとき丸ごと失われる（[`policies.md`](../../.claude/policies.md)
+# 状況はラベルと issue とデーモンのログに在り、後継は [`board.sh`](board.sh) でいつでも引ける。
+# **引き継ぎが正規の手順を通るとは限らない**——Claudeが落ちれば、渡す文そのものが存在しない。
+# 渡す文にしか無い情報は、そのとき丸ごと失われる（[`policies.md`](../../.claude/policies.md)
 # 「置き場と形式の選び方」）。
 #
-# だから `BOARD` を先頭に出す。**引き継ぎ文を書かない代わりに、#732 が古くないことが条件になる。**
-# 補足ファイルは、#732 に書けない私信（次の司令塔だけに伝わればよいこと）のためにだけ在る。
-# **既定は渡さない。**
+# だから `DAEMON` を先頭に出す。**引き継ぎで確かめる価値があるのは、盤面を回す側が生きているか
+# だけ**——止まっていることは他のどこにも現れない（[`parallel-work.md`](../../.claude/parallel-work.md)
+# 「盤面を回す仕組みを止めたままにしない」）。補足ファイルは、次の司令塔だけに伝わればよい私信の
+# ためにだけ在る。**既定は渡さない。**
 #
 # ## 前任を畳むのは後継
 #
@@ -56,7 +57,8 @@ TEMPLATE="$HERE/../../.claude/commander-prompt.md"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-echo "BOARD $(gh issue view 732 --json updatedAt --jq '.updatedAt')"
+# 生死の判定は [`daemon.sh`](daemon.sh) 自身が持つ（心拍の鮮度は `INTERVAL` から決まる）。
+echo "DAEMON $(bash "$HERE/daemon.sh" --status || true)"
 
 # `commander` タグの、まだ畳まれていないセッション。**この時点では後継がまだ居ない**ので、
 # 出てくるのは前任だけ。
