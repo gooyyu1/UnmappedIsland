@@ -63,7 +63,8 @@ interface Run {
   readonly stderr: string;
 }
 
-function run(kind: string, tag: string, world: World = {}): Run {
+function run(kind: string, tag: string | readonly string[], world: World = {}): Run {
+  const tags = typeof tag === 'string' ? [tag] : tag;
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-may-dispatch-'));
   try {
     const gh = join(work, 'gh');
@@ -104,7 +105,7 @@ echo '${JSON.stringify(page)}'
     chmodSync(meta, 0o755);
 
     try {
-      execFileSync('bash', [SCRIPT, kind, tag], {
+      execFileSync('bash', [SCRIPT, kind, ...tags], {
         encoding: 'utf-8',
         stdio: 'pipe',
         env: {
@@ -196,6 +197,25 @@ describe('may-dispatch.sh', () => {
     ];
 
     expect(run('new-task', 'task-1234', { sessions }).code).toBe(0);
+  });
+
+  // レビューは「前のレビュー」と「そのPRを直しているセッション」の両方を見る（board-design 1.3）。
+  // `直し待ち` のラベルからは、直している最中か誰も居ないかが読めない。
+  it('タグを複数渡すと、どれか1つでも占有されていれば止まる', () => {
+    const result = run('review', ['review-1500', 'task-1415'], { sessions: [working('task-1415')] });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('task-1415');
+  });
+
+  it('タグを複数渡しても、どれも占有されていなければ通す', () => {
+    const sessions = [working('task-9999')];
+
+    expect(run('review', ['review-1500', 'task-1415'], { sessions }).code).toBe(0);
+  });
+
+  it('タグを1つも渡さなければ止まる', () => {
+    expect(run('review', []).code).toBe(1);
   });
 
   it('セッションの一覧を引けなければ止まる', () => {

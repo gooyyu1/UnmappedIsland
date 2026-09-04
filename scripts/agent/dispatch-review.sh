@@ -77,7 +77,7 @@ awk '/^```$/ { inside = !inside; next } inside' "$TEMPLATE" |
 
 # **日本語はシェル変数に載せない。** Windowsのnodeは argv も環境変数もANSIで受け取るので、題を
 # `$(...)` で渡すと黙って化ける。題も本文もファイル経由で node へ渡す。
-gh pr view "$PR" --json title,state,headRefName >"$WORK/pr.json"
+gh pr view "$PR" --json title,state,headRefName,body >"$WORK/pr.json"
 
 # 閉じた・マージ済みのPRへ立てると、読むものが在るだけに**それらしいコメントが付いて**しまう。
 state=$(jq -r '.state' "$WORK/pr.json")
@@ -111,11 +111,23 @@ if [ -n "${DRY_RUN:-}" ]; then
   exit 0
 fi
 
+# 見るのは前のレビューだけではない。**そのPRを直しているセッションが走っていたら立てない。**
+# `直し待ち` のラベルは「直しが要る」しか言わず、**直している最中か誰も居ないかを区別しない**
+# （[`board-design.md`](../../.claude/board-design.md) 1.3）。区別は占有の側にしか無いので、
+# `Closes #N` から直す側のタグ（`task-N`）を起こして一緒に渡す。
+# 脚注のセッションIDではなくタグで引くのは、**同じ issue へ2回投入されていても両方が同じタグを
+# 持つ**ため。生きているほうを取り逃がさない。
+review_tags=("review-$PR")
+while read -r issue; do
+  [ -n "$issue" ] && review_tags+=("task-$issue")
+done < <(jq -r '.body // ""' "$WORK/pr.json" | tr -d '\r' |
+  grep -oiE 'closes[[:space:]]+#[0-9]+' | grep -oE '[0-9]+' | sort -u || true)
+
 # 手綱と占有。**畳む前に見る。** `archive-reviews.sh` が走った後では走行中のレビューも畳まれて
 # いるので、占有は必ず「無い」になる（判定が何も止めない）。**再レビューは止まらない**——判定に
 # 使うのは走行中かどうかで、判定を書き終えたレビューは占有していない
 # （[`board-design.md`](../../.claude/board-design.md) 1.2）。
-CCR_META="$CCR_META" bash "$HERE/may-dispatch.sh" review "review-$PR"
+CCR_META="$CCR_META" bash "$HERE/may-dispatch.sh" review "${review_tags[@]}"
 
 CCR_META="$CCR_META" bash "$HERE/archive-reviews.sh"
 

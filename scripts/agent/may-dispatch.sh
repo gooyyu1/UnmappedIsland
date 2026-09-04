@@ -2,9 +2,12 @@
 # **セッションを1本立ててよいかを、ここ1つで答える。**
 #
 #   bash scripts/agent/may-dispatch.sh new-task task-1234
-#   bash scripts/agent/may-dispatch.sh review   review-1500
+#   bash scripts/agent/may-dispatch.sh review   review-1500 task-1415
 #
 # 終了コードが0なら立ててよい。**立ててはいけないときは理由を標準エラーへ出して非0**で終わる。
+#
+# **タグは複数渡せる**（[`occupancy.sh`](occupancy.sh)）。1つの仕事に、占有を持ちうるセッションが
+# 2種類あることがある——レビューなら「前のレビュー」と「そのPRを直しているセッション」。
 #
 # ## 呼び手に条件を数えさせない
 #
@@ -27,7 +30,11 @@
 set -euo pipefail
 
 KIND="${1:?種類を渡す（new-task / review / resume / other）}"
-TAG="${2:?タグを渡す（例: task-1234 / review-1500）}"
+shift
+[ "$#" -gt 0 ] || {
+  echo "タグを1つ以上渡す（例: task-1234 / review-1500）" >&2
+  exit 1
+}
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -36,7 +43,7 @@ if ! brake=$(bash "$HERE/brake.sh" "$KIND"); then
   exit 1
 fi
 
-if ! held=$(CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}" bash "$HERE/occupancy.sh" "$TAG"); then
-  echo "$TAG は既に占有されている: $held" >&2
+if ! held=$(CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}" bash "$HERE/occupancy.sh" "$@"); then
+  echo "立てない: $held" >&2
   exit 1
 fi

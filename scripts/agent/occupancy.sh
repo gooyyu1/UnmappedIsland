@@ -2,12 +2,16 @@
 # タグの指す仕事が、今セッションに占有されていないかを見る。**答えるのは「立ててよいか」。**
 #
 #   bash scripts/agent/occupancy.sh task-1234
-#   bash scripts/agent/occupancy.sh review-1500
+#   bash scripts/agent/occupancy.sh review-1500 task-1415
+#
+# **タグは複数渡せる。1つでも占有されていれば立ててはいけない。** レビューを立てる前に見るのは
+# 「前のレビューが走っていないか」だけではなく「**そのPRを直しているセッションが居ないか**」でもある
+# （[`board-design.md`](../../.claude/board-design.md) 1.3）。1回の一覧の走査で全部を見る。
 #
 # 出力は次のどれか。**終了コードが0なのは `FREE` のときだけ**で、他は全部「立ててはいけない」。
 #
 #   FREE
-#   HELD <セッションID> <status_bucket>
+#   HELD <セッションID> <status_bucket> <タグ>
 #   UNKNOWN <理由>
 #
 # ## 読めなかったときに止まる側へ倒すのを、ここが引き受ける
@@ -41,7 +45,11 @@
 
 set -euo pipefail
 
-TAG="${1:?タグを渡す（例: task-1234 / review-1500）}"
+[ "$#" -gt 0 ] || {
+  echo "UNKNOWN タグを1つ以上渡す（例: task-1234 / review-1500）"
+  exit 1
+}
+TAGS="$(printf '%s\n' "$@")"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 試験は差し替える（パスで呼ぶため PATH では差し替わらない）。
@@ -61,12 +69,15 @@ while :; do
     exit 1
   fi
 
-  held=$(jq -r --arg tag "$TAG" '.ccr.data[]?
+  held=$(jq -r --arg tags "$TAGS" '($tags | split("\n") | map(select(length > 0))) as $want
+    | .ccr.data[]?
     | select(.session_status != "SESSION_STATUS_ARCHIVED")
     | select(.status_bucket != "SESSION_STATUS_BUCKET_COMPLETED")
     | select(.status_bucket != "SESSION_STATUS_BUCKET_FAILED")
-    | select([.tags[]?] | index($tag))
-    | "HELD \(.id) \(.status_bucket // "-")"' <<<"$page" | tr -d '\r')
+    | . as $s
+    | ($want | map(select(. as $w | [$s.tags[]?] | index($w))) | first) as $hit
+    | select($hit != null)
+    | "HELD \($s.id) \($s.status_bucket // "-") \($hit)"' <<<"$page" | tr -d '\r')
   if [ -n "$held" ]; then
     printf '%s\n' "$held"
     exit 1
