@@ -248,7 +248,7 @@ object_texts:
       company:
         display_name: 連れ
         icon: 🐾
-        description: 今いる場所で世話をしている獣が居るかどうか。何頭居ても慰めは変わらない。
+        description: 今いる場所に、世話をしている獣の居る囲いがいくつあるか。いくつ並べても、何頭居ても慰めは変わらない。
       happiness:
         display_name: 幸福度
         icon: 😊
