@@ -32,12 +32,10 @@ traits:
   ignitable:
     tags: [tinder]
     props:
-      # 1回の火起こしが成功する重み。失敗の重み（40）との比が成功率になる。**素の値は火口ごと**
-      # （継承先で必須）で、そこへ**起こす人の腕が土台として積まれる**——baseの土台には操作の役を
-      # 書けるので（GameElementDefinition.md 6.5節）、火口は自分の値だけを持ったまま、火を起こして
-      # いる人のignition_easeを継ぐ。天気はここではなく可否で効く（下のlight）。
-      ignition_chance:
-        base: {subject: agent, prop: ignition_ease}
+      # 1回の火起こしが成功する重み。失敗の重み（40）との比が成功率になる。**値を名乗るのは火口の側**
+      # で、素の値と一緒に起こす人の腕（ignition_ease）をbaseの土台として積む。**ここには書かない**
+      # ——traitに土台だけ置くと、素の値を書き忘れた火口が0＋腕で火が付いてしまう。
+      ignition_chance: {}
     interactions:
       # 火起こし具を重ねて火を移す。外した回も火口は失われる。
       #
@@ -257,7 +255,7 @@ object_defs:
       weight: {value: 100}
       # ふわりと束ねた枯れ草。詰めても縮まないので嵩そのままで見る。
       volume: {value: 2000}
-      ignition_chance: {value: 60}
+      ignition_chance: {value: 60, base: {subject: agent, prop: ignition_ease}}
 
   # 火のついた火口。炉へ運ぶためだけに在る（docs/engine/FireSystem.md 3.1節）。
   # 炉に残る種火とは別のもので、こちらは持ち運べる物。

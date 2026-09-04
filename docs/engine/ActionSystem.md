@@ -94,6 +94,11 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 5. 関与オブジェクトの生存確認（6節）: 経過中に失われていたら、その行動は成立しなかったものとして
    `false` を返し、効果を適用せずに終える。
 6. 効果の適用: `self.ApplyActiveEffect(effect, session, agent, instrument)`（4節）。
+7. 待たされていた手番（`trigger: tick` で `duration` を持つもの、
+   [`GameElementDefinition.md`](./GameElementDefinition.md) 11.5 節）を起こす。**ここが操作の切れ目**で、
+   4 の経過中に配られた手番はその場では起きずにここまで待つ（`WorldSession.RunToSeam`）。
+   時間を進める操作は他にもある（製作の 1 工程・枠へ入れる）ので、切れ目もその 3 つが名乗る
+   ——操作の外で時間だけが動いた場合は、その進行そのものが切れ目になる。
 
 ## 3. 実行可能条件（conditions）
 
@@ -121,13 +126,16 @@ actions/combinations の一度きりの判定と、passives（8節）の持続�
 | `parent` | self の直接の親 | 同上 |
 | `agent` | その操作で動いている個体 | 操作の関係の役（11.5節）。書ける場所を持つのは `ReferenceScope`（下の段落） |
 | `instrument` | 運ばれてきて働きかけに使われる参加者。宣言が乗っていない側 | 同上 |
+| `patient` | 働きかけられる参加者。操作の宣言が乗っている側 | 同上（操作の宣言の中では `self` と同じ物になるので書けない、11.5節） |
 | `picked` | `among`（10.3節）が周りから選んだ相手 | `among` を書いた候補の中（重みと効果）だけ |
-| `ancestor` | self の親から遡り、参照プロパティを定義する最初の祖先 | **その参照がプロパティ名を伴うときだけ**——祖先はそのプロパティ名で探すので、`prop` を書かずに個体そのものを指す形では相手が決まらない |
+| `ancestor` | self の親から遡り、参照プロパティを定義する最初の祖先 | **その場所が、指す先のプロパティ名を決めているときだけ**——祖先はその名前で探すので、プロパティ名が関わらない場所（オブジェクトそのものを指す場所）では相手が決まらない |
 
 **どの起点が書けるかは、場所ごとに数え上げるのではなく、宣言が置かれた場所が何を持つかから導く**
 （`ReferenceScope`）。**ロード時に弾く根拠と、実行時に組む `ReferenceContext` は同じ1つの事実**なので、
-書けたのに実行時は必ず空振りする、という宣言が作れない。11.5節の表は未実装ぶんまで含むので、
-**今どこで書けるかを持っているのは `ReferenceScope` の側**。
+書けたのに実行時は必ず空振りする、という宣言が作れない。11.5節「役を書ける場所」の表の各行は、
+`ReferenceScope` の `static`（と `withInstrument` のような派生）のどれかへ対応する——**行と `static` は
+1対1ではない。** `drag` と `put_in` は同じ `acting.withInstrument` を共有し、`declaration` は表に無い
+`resists`（7.13節）も担う。**表に無い場所が現れたら、持つものが同じ `static` を使う。**
 
 `world` は起点として未対応（ロード時エラー）。すべてのオブジェクトは world の下にぶら下がるため、
 world 固有プロパティの参照は `ancestor` で代替できる。起点としての `child` は passives の target 専用で、
@@ -162,8 +170,8 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
 - プロパティの rangeイベント（`on_max`/`on_min`、6.3節）も**同じ**
   `ActiveEffect` と適用経路（`WorldObject.ApplyActiveEffect`）を使う。書ける動詞に差は無く、
   `pick` も `move` も並べて書ける（海区の `storm_drift` の `on_max` が、`among` で選んだ筏を `move` で
-  隣の海区へ流す。`voyage.yaml`）。**この場所に無いのは操作している者だけ**なので、rangeイベントで
-  あることを理由に落ちる起点は操作の関係の役（`agent`・`instrument`、11.5節）だけ。ほかの起点の可否は
+  隣の海区へ流す。`voyage.yaml`）。**ここは操作ではなく、値が端に着いた瞬間への反応**なので、rangeイベントで
+  あることを理由に落ちる起点は操作の関係の 3 役（`agent`・`instrument`・`patient`、11.5節）だけ。ほかの起点の可否は
   4節の表のとおりで、rangeイベントだからという上乗せの制限は無い。
 
 ## 6. 時間の経過（duration）

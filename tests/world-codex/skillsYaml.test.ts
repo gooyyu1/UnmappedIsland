@@ -165,8 +165,8 @@ function huntingGrantingTypes(): ReadonlySet<string> {
   );
 }
 
-/** そのpropの宣言が、狩猟の腕（`quarry_sense`）を `base` の土台にしているか。 */
-function standsOnQuarrySense(propBody: unknown): boolean {
+/** そのpropの宣言が、その上乗せを `base` の土台にしているか（土台は操作をしている人＝`agent`）。 */
+function standsOnBonus(propBody: unknown, bonusName: string): boolean {
   const base = isMap(propBody) ? propBody.get('base', true) : undefined;
   if (!isMap(base)) return false;
   const subject = base.get('subject', true);
@@ -175,8 +175,37 @@ function standsOnQuarrySense(propBody: unknown): boolean {
     isScalar(subject) &&
     String(subject.value) === 'agent' &&
     isScalar(prop) &&
-    String(prop.value) === 'quarry_sense'
+    String(prop.value) === bonusName
   );
+}
+
+/** 世界じゅうのプロパティ宣言を「どこの・どの名前の」の形で並べる（traitのpropsも型のpropsも）。 */
+function declaredProps(): readonly { where: string; name: string; body: unknown }[] {
+  const found: { where: string; name: string; body: unknown }[] = [];
+
+  for (const path of worldCodexYamlPaths()) {
+    const file = path.slice(path.lastIndexOf('/') + 1);
+    const root = parseDocument(readFileSync(path, 'utf8')).contents;
+    if (!isMap(root)) continue;
+
+    for (const section of root.items) {
+      const sectionKey = isScalar(section.key) ? String(section.key.value) : '';
+      if ((sectionKey !== 'traits' && sectionKey !== 'object_defs') || !isMap(section.value)) continue;
+
+      for (const entry of section.value.items) {
+        const defName = isScalar(entry.key) ? String(entry.key.value) : '';
+        const props = isMap(entry.value) ? entry.value.get('props', true) : undefined;
+        if (!isMap(props)) continue;
+        for (const prop of props.items)
+          found.push({
+            where: `${file} の ${defName}`,
+            name: isScalar(prop.key) ? String(prop.key.value) : '',
+            body: prop.value,
+          });
+      }
+    }
+  }
+  return found;
 }
 
 /** そのpropの宣言が持つ素の値（書いていなければ0）。 */
@@ -272,7 +301,7 @@ function beastSpawningCandidates(): readonly { where: string; missingSkill: bool
               const declared = knob === undefined ? undefined : propBodyOf(defName, knob);
               found.push({
                 where: `${fileOf.get(defName)} の ${defName}.${name}: ${spawned}`,
-                missingSkill: declaredValueOf(declared) > 0 && !standsOnQuarrySense(declared),
+                missingSkill: declaredValueOf(declared) > 0 && !standsOnBonus(declared, 'quarry_sense'),
               });
             }
       }
@@ -456,6 +485,37 @@ describe('腕前とレシピの解放条件', () => {
 
     expect(candidates.length, '狩猟の相手を湧かせる候補が1つも無い').toBeGreaterThan(0);
     expect(candidates.filter((candidate) => candidate.missingSkill).map((c) => c.where)).toEqual([]);
+  });
+
+  it('着火の重みを名乗る火口は、火の腕を土台にする', () => {
+    // 火口は3つのファイルに散らばっている（fire.yaml・fiber.yaml・coconut.yaml）ので、目視では
+    // 揃っているか分からない。積み忘れた火口は、腕を上げても付きやすくならない相手になる。
+    const tinders = declaredProps().filter((prop) => prop.name === 'ignition_chance');
+
+    expect(
+      tinders.some((tinder) => declaredValueOf(tinder.body) > 0),
+      '火口が1つも無い',
+    ).toBe(true);
+    expect(
+      tinders
+        .filter((tinder) => declaredValueOf(tinder.body) > 0 && !standsOnBonus(tinder.body, 'ignition_ease'))
+        .map((tinder) => tinder.where),
+    ).toEqual([]);
+  });
+
+  it('腕を土台にしたつまみは、素の値も名乗る（土台だけをtraitへ置かない）', () => {
+    // **土台を書いてよいのは、値を名乗った側だけ。** trait に土台だけ置くと、素の値を書き忘れた
+    // 継承先が0＋腕で立ってしまう——火口なら書き忘れたまま火が付き、海区なら「名乗らなかった候補は
+    // その海に無い」（docs/world/Voyage.md 3.3節）が破れて群れが立つ。
+    const bonuses = ACCESS_BONUSES.map((entry) => entry.bonus);
+    const standing = declaredProps().filter((prop) =>
+      bonuses.some((bonus) => standsOnBonus(prop.body, bonus)),
+    );
+
+    expect(standing.length, '腕を土台にしたつまみが1つも無い').toBeGreaterThan(0);
+    expect(
+      standing.filter((prop) => declaredValueOf(prop.body) <= 0).map((prop) => `${prop.where}.${prop.name}`),
+    ).toEqual([]);
   });
 
   it('解放条件は、腕が上がった後も満たされ続ける（上の段で閉じ直さない）', () => {

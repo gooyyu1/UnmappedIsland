@@ -192,7 +192,7 @@ object_defs:
     traits: [burnable, ignitable]
     props:
       # よく燃える繊維で、火口としては最良の部類。
-      ignition_chance: {value: 100}
+      ignition_chance: {value: 100, base: {subject: agent, prop: ignition_ease}}
       # 塊のままくべると、熾火を1時間ほど保てる。
       fuel: {value: 2}
       # 実の各部で一番重いのは皮（丸ごとの4割強）。
