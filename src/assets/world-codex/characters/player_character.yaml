@@ -745,9 +745,11 @@ traits:
       # 土地の<動物>_find・海区のshoal_find/seabird_find（探索で出くわす機会）がそれをbaseの
       # 土台にする（locations.yaml・voyage.yaml）。
       #
+      # **上乗せは2本**——出くわす側のquarry_senseと、当てる側のhunting_aim（下）。**桁が違うので
+      # 分けている**（獣のつまみは2〜4、武器の当たりは55〜70）。
+      #
       # **罠には効かない。** 罠の抽選は誰も操作していない場面で走るので、罠から腕の持ち主が見えない
-      # （docs/engine/TrapSystem.md 8節）。**直接突く3つの手（strike・spear_sea・spear_shoal）にも
-      # まだ効かない**——当てる腕をどう表すかが未決（issue #1488）。
+      # （docs/engine/TrapSystem.md 8節）。
       skill_hunting:
         tags: [skill]
         value: 0
@@ -756,15 +758,15 @@ traits:
           - name: basic
             min: 20
             passives:
-              - modify: {self: {quarry_sense: 1}}
+              - modify: {self: {quarry_sense: 1, hunting_aim: 10}}
           - name: skilled
             min: 60
             passives:
-              - modify: {self: {quarry_sense: 2}}
+              - modify: {self: {quarry_sense: 2, hunting_aim: 20}}
           - name: expert
             min: 180
             passives:
-              - modify: {self: {quarry_sense: 4}}
+              - modify: {self: {quarry_sense: 4, hunting_aim: 40}}
       # 鉱石を採って製錬する。伸ばす行動も開ける物もまだ無い（青銅器が世界に無い）。
       skill_smelting:
         tags: [skill]
@@ -779,8 +781,10 @@ traits:
       # 自分では動かず、上の腕前の段がmodifyで押し上げる。**使う側はこれを`base`の土台にする
       # ——痛みが怪我を土台にするのと同じで、合成はどちらも加算。
       #
-      # **刻みが2本で違うのは、上乗せする先の桁が違うから**（着火の重みは60前後、獣のつまみは2〜4）。
-      # 倍率なら1本の刻みで済むが、掛け算はこの世界の文法に無い（GameElementDefinition.md 10.2節）。
+      # **刻みが3本で違うのは、上乗せする先の桁が違うから**（着火の重みは60前後、獣のつまみは2〜4、
+      # 武器の当たりは55〜70）。倍率なら1本の刻みで済むが、掛け算はこの世界の文法に無い
+      # （GameElementDefinition.md 10.2節）。**桁の合わない先へ同じ上乗せを積むと、片方は効かず
+      # もう片方は塗り潰す。**
       #
       # **statusタグを持たないので、ステータスの行にはならない**（paceと同じ）。見せるのは腕前
       # そのもので、効きの大きさは段から読む（docs/world/Skills.md 5.1節）。
@@ -790,3 +794,6 @@ traits:
       # 獲物の気配に気づく目。土地の<動物>_findと、海区のshoal_find・seabird_find（locations.yaml・
       # voyage.yaml）が、探索している間これを土台にする。
       quarry_sense: {value: 0}
+      # 狙いの確かさ。武器の当たり所の重み（tools.yaml）と、突き漁のcatch_chance（voyage.yaml）が、
+      # 打ちかかっている間これを土台にする。**上と分けているのは桁が違うから**（上の注記）。
+      hunting_aim: {value: 0}

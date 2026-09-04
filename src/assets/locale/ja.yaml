@@ -302,7 +302,7 @@ object_texts:
       skill_hunting:
         display_name: 狩猟
         icon: 🏹
-        description: 獣を狩る腕。武器を手に打ちかかるほど上がる。上がるほど、探索や見張りで獲物に出くわす。
+        description: 獣を狩る腕。武器を手に打ちかかるほど上がる。上がるほど獲物に出くわし、打った一撃が当たる。
       skill_smelting:
         display_name: 採鉱・製錬
         icon: ⛏️
@@ -315,6 +315,10 @@ object_texts:
         display_name: 獲物に気づく目
         icon: 🐾
         description: 探索や見張りで獲物に出くわす重みへの上乗せ。狩猟の腕が上がるほど大きくなる。
+      hunting_aim:
+        display_name: 狙いの確かさ
+        icon: 🎯
+        description: 打ちかかった一撃が当たる重みと、突き漁で獲れる重みへの上乗せ。狩猟の腕が上がるほど大きくなる。
       afloat:
         display_name: 浮いている
         description: 水に浮かんでいるか。帆のような部品は、浮いている間だけ効く。

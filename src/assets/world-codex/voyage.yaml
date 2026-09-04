@@ -441,6 +441,15 @@ object_defs:
       # **帆のような部品が「陸では効かない」と言うための足場。** 筏自身なら親の型（`parent` が
       # `sea` タグを持つか）で絞れるが、部品から見た海は親の親で、条件では指せない。
       afloat: {value: 0}
+      # 1回の突きが当たる重み。**漁場ごとの素の値**で、突く人の狙い（hunting_aim）をbaseの土台として
+      # 積む（下のspear_sea。火口のignition_chanceと同じ形、docs/world/Skills.md 5節）。群れの居ない
+      # 海面は筏そのものが漁礁になっているだけなので、群れ（fish_shoalの78）の5分の1あまり
+      # （docs/world/Voyage.md 3.9.2節）。
+      #
+      # **筏が持つのは、突く相手が筏の下だから。** 群れは自分で持つ（fish_shoal）が、群れの居ない
+      # 海面には持ち主になる物が無く、漁礁になっているのは筏そのもの。**海区ごとに変えたくなっても
+      # 置き場は動かない**——罠の<動物>_catchと同じくbase: {subject: ancestor}で海区から継げばよい。
+      catch_chance: {value: 15, base: {subject: agent, prop: hunting_aim}}
       # 航海の速さ（実効値）。素の値は0で、寄与は3つ——海区の海流（海区の modify）、積載の重さ
       # （weight の段）、組み込んだ帆（rawhide_sail）。陸に居る間はどれも効かないので0になる。
       #
@@ -551,11 +560,14 @@ object_defs:
         # 獣を殴るとき（animals.yamlのstrike）と同じく**pickの外**なので、突き損ねた回も伸びる。
         add: {agent: {skill_hunting: 2}}
         pick:
-          - weight: 15
+          # **当たる回。** 狙いは重みの式ではなく、catch_chanceのbaseとして既に積まれている（上）。
+          - weight: {prop: catch_chance}
             spawn: {object: raw_meat, into: agent}
-          # 突き損ね。この候補だけは効果を持たない。
+          # 突き損ね。この候補だけは効果を持たない。**ここへは積まない**——押すのは当たる側だけで、
+          # 卓が増えるぶんで外れの割合が落ちる（docs/world/Skills.md 5節）。
           - weight: 83
           # 突いた魚に銛を持って行かれる（Voyage.md 3.9.4節）。群れを突くときと同じ確率で、失う理由は同じ。
+          # **腕によらない回**なので、ここも素のまま——上手いほど銛を失いにくくなる。
           - weight: 2
             destroy: instrument
 
@@ -688,6 +700,9 @@ object_defs:
     props:
       # 群れは海そのものと同じく目方を持たない（航路と同じ、ContainerSystem.md 1節）。
       weight: {value: 0}
+      # 1回の突きが当たる重み。**漁場ごとの素の値**で、突く人の狙い（hunting_aim）をbaseの土台として
+      # 積む（下のspear_shoal）。水面に立った群れは密なので、群れの居ない海面（raftの15）の5倍あまり。
+      catch_chance: {value: 78, base: {subject: agent, prop: hunting_aim}}
       # 立ち去りまでの残り。獣と同じ形（HuntingSystem.md 5.6節）だが、**人が居ても止まらない**
       # ——獣が目の前で消えないのは同じ土地に立っているからで、海では乗り手は筏の中に居る。
       stay_remaining:
@@ -706,7 +721,8 @@ object_defs:
         duration: 30
         add: {agent: {skill_hunting: 2}}
         pick:
-          - weight: 78
+          # 当たる回。狙いはcatch_chanceのbaseとして積まれている（上）ので、ここは素の参照のまま。
+          - weight: {prop: catch_chance}
             spawn: {object: raw_meat, into: agent}
           # 突き損ね。この候補だけは効果を持たない。
           - weight: 20

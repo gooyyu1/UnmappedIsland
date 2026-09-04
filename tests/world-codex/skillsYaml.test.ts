@@ -54,12 +54,14 @@ const GAIN_PER_ACTION = 2;
  * アクセス系の腕（Skills.md 2節）と、その段が押し上げる上乗せ（同5節）。レシピを開けない腕なので、
  * 効き先はここにしか無い——**この対応が切れると、伸びるだけで何にも効かない腕に戻る**。
  *
- * **段ごとの量は腕で違う**——上乗せする先の桁が違うため（着火の重みは60前後、獣のつまみは2〜4）。
- * 見張るのは値そのものではなく、**素が0で、段が上がるほど大きくなる**こと。
+ * **段ごとの量は上乗せで違う**——押す先の桁が違うため（着火の重みは60前後、獣のつまみは2〜4、
+ * 武器の当たりは55〜70）。狩猟だけ2本あるのはそのため。見張るのは値そのものではなく、
+ * **素が0で、段が上がるほど大きくなる**こと。
  */
 const ACCESS_BONUSES = [
   { skill: 'skill_firecraft', bonus: 'ignition_ease', byStage: [0, 20, 50, 120] },
   { skill: 'skill_hunting', bonus: 'quarry_sense', byStage: [0, 1, 2, 4] },
+  { skill: 'skill_hunting', bonus: 'hunting_aim', byStage: [0, 10, 20, 40] },
 ] as const;
 
 /**
@@ -544,6 +546,27 @@ describe('腕前とレシピの解放条件', () => {
       tinders
         .filter((tinder) => declaredValueOf(tinder.body) > 0 && !standsOnBonus(tinder.body, 'ignition_ease'))
         .map((tinder) => tinder.where),
+    ).toEqual([]);
+  });
+
+  it('打ちかかる手が読む重みは、狙いを土台にする（外れには積まない）', () => {
+    // 当たり所は武器ごと（tools.yaml）、突き漁の釣果は筏と群れ（voyage.yaml）が名乗るので、宣言は
+    // 散らばっている。積み忘れた当たり方は、腕を上げても出やすくならない一撃になる。
+    const AIMED_WEIGHTS = ['heavy_blow', 'light_blow', 'thrust', 'catch_chance'];
+    const hits = declaredProps().filter(
+      (prop) => AIMED_WEIGHTS.includes(prop.name) && declaredValueOf(prop.body) > 0,
+    );
+
+    expect(hits.length, '当たり方を名乗る宣言が1つも無い').toBeGreaterThan(0);
+    expect(
+      hits.filter((hit) => !standsOnBonus(hit.body, 'hunting_aim')).map((hit) => `${hit.where}.${hit.name}`),
+    ).toEqual([]);
+    // **外れへは積まない**——押すのは当たる側だけにして、卓が増えるぶんで外れの割合が落ちる形に
+    // している（Skills.md 5節）。積むと腕が上がるほど空を切る。
+    expect(
+      declaredProps()
+        .filter((prop) => prop.name === 'whiff' && standsOnBonus(prop.body, 'hunting_aim'))
+        .map((prop) => prop.where),
     ).toEqual([]);
   });
 

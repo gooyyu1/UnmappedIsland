@@ -4,7 +4,7 @@ import type { TickDelta } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
-import { craftingStepsOf } from './craftingSteps';
+import { craftingStepsOf, highestDeclaredAgentLayer } from './craftingSteps';
 import type { IslandLocations } from './islandLocations';
 import { islandLocationsOf } from './islandLocations';
 import type { RangeCycle } from './rangeCycles';
@@ -12,8 +12,8 @@ import { externalTickDeltasOn, rangeCyclesOf } from './rangeCycles';
 import { rangeEventReadouts } from './rangeEvents';
 import type { RainWaterRow } from './seasonalRain';
 import { rainWaterRows } from './seasonalRain';
-import type { StaticValueResolver } from './staticValue';
-import { staticValueOf } from './staticValue';
+import type { StaticValueLayer, StaticValueResolver } from './staticValue';
+import { layeredResolver, staticValueOf } from './staticValue';
 
 /**
  * 定義（`src/assets/world-codex/*.yaml`）だけから「時間あたりの収支」を計算する。
@@ -398,7 +398,7 @@ export function buildBalanceTables(codex: WorldCodex, sampleCharacter: string): 
       allSteps(
         codex,
         islandLocations.seaOnly,
-        withBestInstrument([...codex.objects], highestDeclaredAncestorValueResolver(islandLocations.island)),
+        analysisContext(codex, [...codex.objects], highestDeclaredAncestorLayer(islandLocations.island)),
       ),
     ),
     places,
@@ -575,14 +575,14 @@ function placeBalances(
   const defs = [...codex.objects];
 
   // 持ち運べる道具は島のどこかで作れれば持ち込めるので、先に島全体を解いて各土地へ渡す。
-  const islandContext = withBestInstrument(defs, highestDeclaredAncestorValueResolver(locations));
+  const islandContext = analysisContext(codex, defs, highestDeclaredAncestorLayer(locations));
   const islandWide = new Acquisition(codex, reachableSteps(allSteps(codex, seaOnly, islandContext)));
 
   let islandRoutes: readonly ChainRoute[] = [];
   const places = [undefined, ...locations].map((location) => {
     // 罠が掛ける動物の重みは土地が宣言する（base）ので、土地を決めてから工程を組み立てる。
     const context =
-      location === undefined ? islandContext : withBestInstrument(defs, ancestorValueResolver(location));
+      location === undefined ? islandContext : analysisContext(codex, defs, ancestorValueLayer(location));
     const steps = reachableSteps(
       location === undefined
         ? allSteps(codex, seaOnly, context)
@@ -1248,36 +1248,48 @@ function decayLifetimeOf(cycles: readonly RangeCycle[]): DecayLifetime | undefin
   return earliest;
 }
 
-/** 祖先（置かれている土地）の宣言値を答える手立て。宣言していないプロパティは寄与0。 */
-function ancestorValueResolver(location: ObjectDef): StaticValueResolver {
-  return (root, propertyGlobalId, end) =>
-    root === 'ancestor' ? (staticValueOf(location, propertyGlobalId, end) ?? 0) : undefined;
+/**
+ * この表が使う文脈。**行っている人・使う物・祖先の3層**（11.5節）を1つに畳む
+ * （layeredResolver）——`base` が層をまたいで別の起点を指すので、層どうしを直に繋がない。
+ */
+function analysisContext(
+  codex: WorldCodex,
+  defs: readonly ObjectDef[],
+  ancestor: StaticValueLayer,
+): StaticValueResolver {
+  return layeredResolver([highestDeclaredAgentLayer(codex), bestInstrumentLayer(defs), ancestor]);
+}
+
+/** 祖先（置かれている土地）の宣言値を答える層。宣言していないプロパティは寄与0。 */
+function ancestorValueLayer(location: ObjectDef): StaticValueLayer {
+  return (context) => (root, propertyGlobalId, end) =>
+    root === 'ancestor' ? (staticValueOf(location, propertyGlobalId, end, context) ?? 0) : undefined;
 }
 
 /** どの土地に置いてもよい前提での祖先の値。最も高く宣言している土地に置いたものとして扱う。 */
-function highestDeclaredAncestorValueResolver(locations: readonly ObjectDef[]): StaticValueResolver {
-  return (root, propertyGlobalId, end) => {
+function highestDeclaredAncestorLayer(locations: readonly ObjectDef[]): StaticValueLayer {
+  return (context) => (root, propertyGlobalId, end) => {
     if (root !== 'ancestor') return undefined;
     const declared = locations
-      .map((location) => staticValueOf(location, propertyGlobalId, end))
+      .map((location) => staticValueOf(location, propertyGlobalId, end, context))
       .filter((value): value is number => value !== undefined);
     return declared.length === 0 ? 0 : Math.max(...declared);
   };
 }
 
 /**
- * ancestorに、使う物（instrument、11.5節）の値を足した文脈。**最も高く宣言している型を使ったものとして
- * 扱う**（highestDeclaredAncestorValueResolverと同じ見方）。
+ * 使う物（instrument、11.5節）の値を答える層。**最も高く宣言している型を使ったものとして扱う**
+ * （highestDeclaredAncestorLayerと同じ見方）。
  *
  * これが無いと、相手の値を見る重み——一撃がどう入るかは武器が決める（HuntingSystem.md 1.2節）——が
- * 全て0になり、宣言順で最初の候補だけが起こることになる（PickEffect.selectWeighted）。
+ * 全て解けず、宣言順で最初の候補だけが起こることになる（PickEffect.selectWeighted）。
  * 分岐ごとに最も良い武器を選べる前提の配分なので、**どれか1つの武器で出る配分ではない**。
  */
-function withBestInstrument(defs: readonly ObjectDef[], ancestor: StaticValueResolver): StaticValueResolver {
-  return (root, propertyGlobalId, end) => {
-    if (root !== 'instrument') return ancestor(root, propertyGlobalId, end);
+function bestInstrumentLayer(defs: readonly ObjectDef[]): StaticValueLayer {
+  return (context) => (root, propertyGlobalId, end) => {
+    if (root !== 'instrument') return undefined;
     const declared = defs
-      .map((def) => staticValueOf(def, propertyGlobalId, end))
+      .map((def) => staticValueOf(def, propertyGlobalId, end, context))
       .filter((value): value is number => value !== undefined);
     return declared.length === 0 ? undefined : Math.max(...declared);
   };

@@ -93,12 +93,17 @@ describe('animals.yamlの動物', () => {
     return slot === undefined ? [] : slot.contents.map((object) => object.def.name);
   }
 
-  /** 武器を手に持たせ、それを相手のカードへ重ねて殴る。返すのは使った武器。 */
+  /**
+   * 武器を手に持たせ、それを相手のカードへ重ねて殴る。返すのは使った武器。
+   *
+   * **殴る当人を渡す。** 当たり所の重みは殴る人の狙い（hunting_aim）を`base`の土台に積む
+   * （docs/world/Skills.md 5節）ので、誰も殴っていないことにすると腕が効かない卓になる。
+   */
   function strikeWith(weaponName: string, target: WorldObject = monkey): WorldObject {
     const weapon = spawnInto(weaponName, player, 'hand');
     expect(
       target
-        .combinationsWith(weapon, undefined)
+        .combinationsWith(weapon, player)
         .find((c) => c.name === 'strike')
         ?.tryExecute() === true,
     ).toBe(true);
@@ -200,6 +205,30 @@ describe('animals.yamlの動物', () => {
     // （時間を進めてから効果を適用する、ActionSystem.md 2節）ので、告げられる順も1手が先になる。
     open(WHIFFS);
     expect(signalsOf(() => strikeWith('sharp_stone'))).toEqual(['monkey: bit', 'monkey: missed']);
+  });
+
+  it('狩猟の腕が上がると、同じ引きでも空を切らない', () => {
+    // 当たり所の重みが狙い（hunting_aim）を土台に積む（docs/world/Skills.md 5節）。尖った石は
+    // 浅打70・空振り30・無防備さ5なので、素人の卓は105で0.7の引きが空振りに落ちる。expertでは
+    // 浅打が110へ伸びて卓が145になり、同じ引きが浅打の中に入る——**武器が宣言する70と30は
+    // 1つも動いていない。**
+    const LANDS_ONLY_WHEN_SKILLED = 0.7;
+
+    // 殴るのに15分＝1tickかかるので、どちらの回もサルの1手（噛みつき）が先に入る。
+    open(LANDS_ONLY_WHEN_SKILLED);
+    expect(
+      signalsOf(() => strikeWith('sharp_stone')),
+      '素人は空を切る',
+    ).toEqual(['monkey: bit', 'monkey: missed']);
+
+    open(LANDS_ONLY_WHEN_SKILLED);
+    player.getProperty(codex.propertyNames.getId('skill_hunting')).setNumber(180);
+
+    expect(
+      signalsOf(() => strikeWith('sharp_stone')),
+      '熟達すれば当たる',
+    ).toEqual(['monkey: bit', 'monkey: grazed']);
+    expect(injuriesOf(monkey), '当たったので傷が刺さる').toEqual(['laceration']);
   });
 
   describe('体格と武器', () => {
