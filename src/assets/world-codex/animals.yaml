@@ -240,6 +240,10 @@ traits:
       #
       # 削る先も人と同じ水と血で、死に方は増えない（VitalsSystem.md 8節）。**カードに出すバーは
       # 意識1本のまま**（同9節）なので、gaugeは宣言しない。
+      #
+      # **熱のぶんの水は、渇きと同じゲートの中でしか削らない**（上のhydration）。野生の個体は自分で
+      # 飲んでいて水分が動かないので、ゲートの外から削ると「飲めない状況に置いたのは誰か」の言い分けが
+      # 崩れ、島中の獣が熱で渇いていくことになる。**血のほうは無条件**——こちらは野生でも失われる。
       pathogen:
         value: 0
         range: {min: 0, max: 9}
@@ -250,12 +254,15 @@ traits:
             min: 5
             alert: caution
             passives:
-              - add: {self: {hydration: -1}}
+              - conditions: [{in_slot: catch}]
+                add: {self: {hydration: -1}}
           - name: septicemic
             min: 7
             alert: danger
             passives:
-              - add: {self: {hydration: -2, blood: -40}}
+              - conditions: [{in_slot: catch}]
+                add: {self: {hydration: -2}}
+              - add: {self: {blood: -40}}
         passives:
           # **免疫は上げない**——下のimmunityが動かないので、獣には獲得免疫が無い。
           - conditions: [{not: {prop: pathogen, in_stage: sterile}}]
