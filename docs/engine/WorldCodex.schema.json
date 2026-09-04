@@ -545,7 +545,7 @@
       ]
     },
     "conditions_list": {
-      "description": "条件の並び（14節）。常に配列で、暗黙のall（論理積）として扱われる。",
+      "description": "条件の並び（14節）。常に配列で、暗黙のall（論理積）として扱われる。要件の並びとして読まれるか——つまり要素にreasonを書けるか（14.6節）——は、これを$refしている側が述べる。",
       "type": "array",
       "items": {
         "$ref": "#/$defs/condition_node"
