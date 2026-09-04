@@ -215,9 +215,46 @@ function declaredValueOf(propBody: unknown): number {
 }
 
 /**
+ * 島の生成が亜種へ配る個体差（terrain_generation.yaml の `location_types`）を、型ごと・prop ごとの
+ * 最大値で並べる。**素の宣言が0でも、亜種が値を配ればその土地はその候補を名乗っている**——実体化の
+ * ときに土地のプロパティへ書き込まれる（`IslandSpawner`、docs/world/TerrainGeneration.md 3.6節）。
+ *
+ * 書き込むのは素の値だけで、`base` の土台は消えない。亜種の側に土台は要らない。
+ */
+function variantValues(): ReadonlyMap<string, ReadonlyMap<string, number>> {
+  const byDef = new Map<string, Map<string, number>>();
+
+  for (const path of worldCodexYamlPaths()) {
+    const root = parseDocument(readFileSync(path, 'utf8')).contents;
+    if (!isMap(root)) continue;
+    const types = root.get('location_types', true);
+    if (!isMap(types)) continue;
+
+    for (const entry of types.items) {
+      const objectDef = isMap(entry.value) ? entry.value.get('object_def', true) : undefined;
+      const variants = isMap(entry.value) ? entry.value.get('variants', true) : undefined;
+      if (!isScalar(objectDef) || !isSeq(variants)) continue;
+
+      const values = byDef.get(String(objectDef.value)) ?? new Map<string, number>();
+      byDef.set(String(objectDef.value), values);
+      for (const variant of variants.items) {
+        const props = isMap(variant) ? variant.get('props', true) : undefined;
+        if (!isMap(props)) continue;
+        for (const prop of props.items) {
+          if (!isScalar(prop.key) || !isScalar(prop.value)) continue;
+          const name = String(prop.key.value);
+          values.set(name, Math.max(values.get(name) ?? 0, Number(prop.value.value)));
+        }
+      }
+    }
+  }
+  return byDef;
+}
+
+/**
  * 操作の `pick` が湧かせる相手のうち、狩猟の腕を配る型を出す候補を「どこで・何を」の形で並べる。
- * その候補の重みが読むつまみが、**名乗られていて**（素の値が0より大きい）、なお狩猟の腕を `base` の
- * 土台にしていないものを `missingSkill` として立てる。
+ * その候補の重みが読むつまみが、**名乗られていて**（素の値か亜種の配る値が0より大きい）、なお狩猟の腕を
+ * `base` の土台にしていないものを `missingSkill` として立てる。
  *
  * **素の値が0のつまみには積まない。** 「その場所が名乗らなかった候補は、そこには無い」を素の0で
  * 表しているので（docs/world/Voyage.md 3.3節）、積むと名乗っていない海区にも群れが立つ。
@@ -283,11 +320,13 @@ function beastSpawningCandidates(): readonly { where: string; missingSkill: bool
     return undefined;
   };
 
-  for (const [defName, body] of bodies) {
+  const fromVariants = variantValues();
+
+  for (const defName of bodies.keys()) {
     // 操作は自分かtraitのどちらかに在る。どちらの`pick`も、読むつまみは型ごとに解く。
     for (const owner of [defName, ...(traitNamesOf.get(defName) ?? [])]) {
       const interactions = bodies.get(owner)?.get('interactions', true);
-      if (!isMap(interactions) || (owner !== defName && bodies.get(owner) === body)) continue;
+      if (!isMap(interactions)) continue;
 
       for (const interaction of interactions.items) {
         const name = isScalar(interaction.key) ? String(interaction.key.value) : '';
@@ -299,9 +338,14 @@ function beastSpawningCandidates(): readonly { where: string; missingSkill: bool
             if (grantingTypes.has(spawned)) {
               const knob = weightPropOf(candidate);
               const declared = knob === undefined ? undefined : propBodyOf(defName, knob);
+              // 素の宣言が0でも、亜種が値を配っていればその土地は候補を名乗っている。
+              const value = Math.max(
+                declaredValueOf(declared),
+                (knob === undefined ? undefined : fromVariants.get(defName)?.get(knob)) ?? 0,
+              );
               found.push({
                 where: `${fileOf.get(defName)} の ${defName}.${name}: ${spawned}`,
-                missingSkill: declaredValueOf(declared) > 0 && !standsOnBonus(declared, 'quarry_sense'),
+                missingSkill: value > 0 && !standsOnBonus(declared, 'quarry_sense'),
               });
             }
       }

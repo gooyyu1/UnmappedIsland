@@ -298,7 +298,7 @@ object_texts:
       skill_firecraft:
         display_name: 火
         icon: ♨️
-        description: 火を起こし、保つ腕。きりもみ式で火口に向かうほど上がる。上がるほど火が付きやすい。
+        description: 火を起こす腕。きりもみ式で火口に向かうほど上がる。上がるほど火が付きやすい。
       skill_hunting:
         display_name: 狩猟
         icon: 🏹
