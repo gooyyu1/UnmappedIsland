@@ -582,7 +582,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
           ?.rangeEvents()
           .some(([label, effect]) => label === 'on_max' && spawnsObject(effect, to.globalId)) === true;
 
-      // 規則は「焼いた先を持つ食べ物のうち、生でも食べられる物」（DigestionSystem.md 6節）。
+      // 規則は「焼いた先を持つ食べ物のうち、生でも食べられる物」（DigestionSystem.md 6.1節）。
       // **生であることは、丸焼きの鎖の先頭に居ること**として引く——焼いた先を持つかどうかだけでは、
       // 焦げる手前の焼けた肉も当てはまってしまう。焼いて生まれた物は既に火が通っている。
       const raw = edibleDefs()
@@ -595,7 +595,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
         .sort();
       expect(
         raw,
-        '菌を名乗るべきなのは、いまは生肉だけ。増えたらDigestionSystem.md 6節の数え上げも直す',
+        '菌を名乗るべきなのは、いまは生肉だけ。増えたらDigestionSystem.md 6.1節の数え上げも直す',
       ).toEqual(['raw_meat']);
 
       // 当たるかどうかは食べた側の免疫が決めるので、ここで見るのは入ったかどうかだけ

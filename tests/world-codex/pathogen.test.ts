@@ -184,7 +184,7 @@ describe('全身の菌と免疫', () => {
 
     prop('happiness').setNumberWithoutEvents(0);
     prop('wakefulness').setNumberWithoutEvents(0);
-    expect(prop('immunity').stage?.name, '同じ2つを抱えても、今度は落ちない').toBe('robust');
+    expect(prop('immunity').stage?.name, '同じ-25を抱えても、今度は段を保てる').toBe('robust');
   });
 
   it('免疫が届かないまま放置すれば、既存の死に方で死ぬ', () => {
