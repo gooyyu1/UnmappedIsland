@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { StaticValueResolver } from '../../src/analysis/staticValue';
-import { staticValueOf } from '../../src/analysis/staticValue';
+import type { StaticValueLayer, StaticValueResolver } from '../../src/analysis/staticValue';
+import { layeredResolver, staticValueOf } from '../../src/analysis/staticValue';
+import type { ReferenceRoot } from '../../src/domain/ReferenceRoot';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
@@ -94,5 +95,58 @@ object_defs:
 
     expect(staticValueOf(defOf('kite'), lift, 'lowest', ancestor)).toBe(11);
     expect(staticValueOf(defOf('kite'), lift, 'highest', ancestor)).toBe(33);
+  });
+});
+
+/**
+ * **層をまたぐ土台**（`base`）が解けることの検査（layeredResolver）。
+ *
+ * 武器の当たり所の重みは、その武器を振る人の狙いを土台にする（docs/world/Skills.md 5節）ので、
+ * 「使う物」の層は「行っている人」の層の答えを要る。層どうしを直に繋ぐと、繋いだ先より外側は
+ * 入れ子の参照から見えず、その重みだけが解けないまま残る。
+ */
+describe('層を畳んだ文脈', () => {
+  const yaml = `
+object_defs:
+  hunter:
+    tags: [character]
+    props:
+      aim: {value: 7}
+
+  club:
+    tags: [item]
+    props:
+      hit: {value: 60, base: {subject: agent, prop: aim}}
+
+  meadow:
+    props:
+      warmth: {value: 2, base: {subject: ancestor}}
+`;
+
+  const codex = new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
+
+  function defOf(name: string): ObjectDef {
+    return codex.objects.get(codex.objectNames.getId(name));
+  }
+
+  /** 起点1つを、その型の宣言から答える層（balanceTablesの3層と同じ形）。 */
+  function layerOf(root: ReferenceRoot, def: ObjectDef): StaticValueLayer {
+    return (context) => (asked, propertyGlobalId, end) =>
+      asked === root ? staticValueOf(def, propertyGlobalId, end, context) : undefined;
+  }
+
+  it('使う物の土台が、行っている人の層へ届く', () => {
+    const context = layeredResolver([
+      layerOf('agent', defOf('hunter')),
+      layerOf('instrument', defOf('club')),
+    ]);
+
+    expect(context('instrument', codex.propertyNames.getId('hit'), 'lowest')).toBe(67);
+  });
+
+  it('自分を土台にする土台は、解けないものとして返る（辿り直さない）', () => {
+    const context = layeredResolver([layerOf('ancestor', defOf('meadow'))]);
+
+    expect(context('ancestor', codex.propertyNames.getId('warmth'), 'lowest')).toBeUndefined();
   });
 });

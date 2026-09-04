@@ -11,8 +11,14 @@ import { collectOutputs, combineOutcomes } from './CraftingStep';
 import type { BecomeDestinationResolver, EffectReading } from './effectOutcomes';
 import { consumesRoot, destroysRoot, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
-import type { EndBoundValueResolver, StaticValueRange, StaticValueResolver } from './staticValue';
+import type {
+  EndBoundValueResolver,
+  StaticValueLayer,
+  StaticValueRange,
+  StaticValueResolver,
+} from './staticValue';
 import {
+  layeredResolver,
   resolveDeclaredNumber,
   staticConditionTruth,
   staticResolverOf,
@@ -36,14 +42,14 @@ import {
  *
  * outerは、self以外の起点（祖先が入れる値・使う物の値）を定義だけから解く手立て。省くと、
  * それらを参照する工程に「確定しない」印が付く（CraftingStep.hasUnresolvedReferences）。
- * **行っている人（agent）だけはouterに要らない**——下のwithHighestDeclaredAgentがここで足す。
+ * **作るのはanalysisContextOfだけ**なので、渡された文脈には必ず行っている人（agent）の層が入る。
  */
 export function craftingStepsOf(
   codex: WorldCodex,
   def: ObjectDef,
   outer?: StaticValueResolver,
 ): readonly CraftingStep[] {
-  const context = withHighestDeclaredAgent(codex, outer);
+  const context = outer ?? analysisContextOf(codex, []);
   const steps: CraftingStep[] = [];
   for (const trigger of def.triggers)
     for (const instrument of instrumentTypesOf(codex, trigger)) {
@@ -57,30 +63,39 @@ export function craftingStepsOf(
 }
 
 /**
- * 起点を解く手立てに、**行っている人**（agent、11.5節）を足したもの。**最も高く宣言している
- * キャラクタに合わせる**——祖先を「最も高く宣言している土地」、使う物を「最も良い型」と見るのと
- * 同じ埋め方（balanceTables）で、水分のように個体で分かれる値もこれで1つに決まる。
+ * 定義だけから値を解く文脈を作る唯一の入口。**行っている人（agent）の層は必ず入る**——足し忘れると、
+ * 腕を土台にした重みが解けず、その候補は起こらないものとして数えられる。**呼び出し側が覚えておく
+ * 手順にしない**ため、層を渡す口をここ1つに絞ってある（下のhighestDeclaredAgentLayerは外へ出さない）。
+ */
+export function analysisContextOf(
+  codex: WorldCodex,
+  layers: readonly StaticValueLayer[],
+): StaticValueResolver {
+  return layeredResolver([highestDeclaredAgentLayer(codex), ...layers]);
+}
+
+/**
+ * **行っている人**（agent、11.5節）を答える層。**最も高く宣言しているキャラクタに合わせる**
+ * ——祖先を「最も高く宣言している土地」、使う物を「最も良い型」と見るのと同じ埋め方
+ * （balanceTables）で、水分のように個体で分かれる値もこれで1つに決まる。
  *
  * 答えるのは宣言値なので、**段が押し上げる分は入らない**——腕前の上乗せ（docs/world/Skills.md 5節）は
  * 素の0、荷重が押し上げるpaceは素の1のまま出る。段は実行時にしか決まらないので、ここで埋められるのは
  * そこまで。
  *
- * **これだけは呼び出し側の文脈にしない。** 使う物（どの武器か）や祖先（どの土地か）と違って、
- * 誰が行うかは問いによって変わらない——操作するのは常にプレイヤーキャラクタだから。足さないと、
- * 腕を土台にした重み——着火の成否・探索で獣に出くわす確率——が全て0になり、その候補は起こらない
+ * **どの文脈にもこの層が要る。** 使う物（どの武器か）や祖先（どの土地か）と違って、誰が行うかは
+ * 問いによって変わらない——操作するのは常にプレイヤーキャラクタだから。無いと、腕を土台にした
+ * 重み——着火の成否・探索で獣に出くわす確率・打った一撃の当たり所——が解けず、その候補は起こらない
  * ものとして数えられる。
  */
-function withHighestDeclaredAgent(
-  codex: WorldCodex,
-  outer: StaticValueResolver | undefined,
-): StaticValueResolver {
+function highestDeclaredAgentLayer(codex: WorldCodex): StaticValueLayer {
   const characters = [...codex.objects].filter((def) => def.hasTag(codex.vocabulary.world.characterTagId));
-  return (root, propertyGlobalId, end) => {
-    if (root !== 'agent') return outer?.(root, propertyGlobalId, end);
+  return (context) => (root, propertyGlobalId, end) => {
+    if (root !== 'agent') return undefined;
     const declared = characters
-      .map((character) => staticValueOf(character, propertyGlobalId, end))
+      .map((character) => staticValueOf(character, propertyGlobalId, end, context))
       .filter((value): value is number => value !== undefined);
-    return declared.length === 0 ? outer?.(root, propertyGlobalId, end) : Math.max(...declared);
+    return declared.length === 0 ? undefined : Math.max(...declared);
   };
 }
 

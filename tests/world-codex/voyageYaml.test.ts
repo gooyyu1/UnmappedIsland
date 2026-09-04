@@ -993,7 +993,11 @@ describe('筏と航海', () => {
    * 当たりなので、銛の在庫も群れの寿命も混ぜない。獲れた生肉はその場で捨てる——手も積荷も詰まると、
    * 湧いた生肉が黙って手に入らなくなる（`into: agent`、9.4節）。
    */
-  function spearRepeatedly(target: 'shoal' | 'sea', tries: number): { meat: number; lost: number } {
+  function spearRepeatedly(
+    target: 'shoal' | 'sea',
+    tries: number,
+    hunting = 0,
+  ): { meat: number; lost: number } {
     const { game, raft } = ready();
     // 荒天で押し流されると、立てた群れと筏の居る海区がずれる。見たいのは卓だけなので天気を止める。
     holdWeather(game, 'clear', 'crosswind');
@@ -1010,6 +1014,9 @@ describe('筏と航海', () => {
 
     for (let i = 0; i < tries; i++) {
       keepAlive(game);
+      // 突くたびに狩猟の腕が+2伸び、段が上がるとcatch_chanceへ狙いが積まれる（docs/world/Skills.md
+      // 5節）。数えるのを卓だけにしたいので、群れの立ち去りと同じく毎回この段へ戻す。
+      game.player.instance.getProperty(codex.propertyNames.getId('skill_hunting')).setNumber(hunting);
       if (harpoon.parent === undefined) harpoon = giveHarpoon(game);
       if (target === 'shoal') {
         shoal ??= raiseShoal(game, raft.parent!);
@@ -1066,6 +1073,18 @@ describe('筏と航海', () => {
     // より広く、卓の差（0.78/0.15）より狭く取る。
     expect(shoal.meat / tries, '群れは30分に0.78切れ').toBeGreaterThan(0.6);
     expect(sea.meat / tries, '群れの居ない海面は60分に0.15切れ').toBeLessThan(0.3);
+  });
+
+  it('狩猟の腕が上がると、同じ海面でもよく獲れる', () => {
+    // 当たる回の重み（catch_chance）が狙い（hunting_aim）を土台に積む（docs/world/Skills.md 5節）
+    // ので、群れの居ない海面は素人の15対85から、expertの55対85へ動く。**突き損ねと、銛を持って
+    // 行かれる回は素のまま**なので、伸びたぶんだけ獲れない回の割合が落ちる。
+    const tries = 120;
+    const novice = spearRepeatedly('sea', tries);
+    const expert = spearRepeatedly('sea', tries, 180);
+
+    expect(expert.meat, '熟達したほうがよく獲れる').toBeGreaterThan(novice.meat);
+    expect(expert.meat / tries, '60分に0.39切れ').toBeGreaterThan(0.25);
   });
 
   it('突いた魚に銛を持って行かれることがある', () => {

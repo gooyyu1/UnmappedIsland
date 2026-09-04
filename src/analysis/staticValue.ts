@@ -37,6 +37,43 @@ export type StaticValueResolver = (
 ) => number | undefined;
 
 /**
+ * 文脈を組み立てる1つの層。**受け取るのは、畳んだ後の文脈**——自分が答える値が `base`（6.5節）で
+ * 別の起点を指していることがあり、それに答えられるのは層ではなく文脈全体だから（武器の当たり所の
+ * 重みは、殴る人の狙いを土台にする。docs/world/Skills.md 5節）。
+ */
+export type StaticValueLayer = (context: StaticValueResolver) => StaticValueResolver;
+
+/**
+ * 層を1つの文脈へ畳む。挙げた順に訊き、最初に答えた層の値を返す（どの層も答えなければundefined）。
+ *
+ * **層どうしを直に繋がない**——繋ぐと、繋いだ先より外側の層は入れ子の `base` から見えなくなり、
+ * その参照だけが解けないまま残る（解けない重みを持つ候補は、起こらないものとして数えられる）。
+ *
+ * **自分の答えを待っている問いは、解けないものとして返す。** `base` は巡ることがある——場所の気温は
+ * 囲っている場所の気温を土台にし（core.yaml）、場所は入れ子になるので、辿り直すと止まらない。
+ */
+export function layeredResolver(layers: readonly StaticValueLayer[]): StaticValueResolver {
+  const resolvers: StaticValueResolver[] = [];
+  const asking = new Set<string>();
+  const context: StaticValueResolver = (root, propertyGlobalId, end) => {
+    const question = `${root}:${propertyGlobalId}:${end}`;
+    if (asking.has(question)) return undefined;
+    asking.add(question);
+    try {
+      for (const resolve of resolvers) {
+        const value = resolve(root, propertyGlobalId, end);
+        if (value !== undefined) return value;
+      }
+      return undefined;
+    } finally {
+      asking.delete(question);
+    }
+  };
+  for (const layer of layers) resolvers.push(layer(context));
+  return context;
+}
+
+/**
  * 端を1つに決めたStaticValueResolver（staticResolverOf）。効果や条件の宣言を読む側は、自分が
  * どちらの端の話をしているかを知らないまま値を引ける。**端を選べるのは、問いを立てた側だけ。**
  */
