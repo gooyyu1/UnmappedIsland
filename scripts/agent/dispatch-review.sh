@@ -19,7 +19,8 @@
 #   SOURCES <リポジトリのURL>@<リビジョン>   … PRのブランチで起動していることの確認
 #   一致 / 不一致                            … 送った指示が化けずに届いたか
 #   終了コード 0 … 投入できて、指示も一致した
-#   終了コード 1 … どこかで失敗した（上の行がどこまで出たかで分かる）
+#   終了コード 1 … 投入しなかった（`NOT_READY`）か、どこかで失敗した。**どちらかは1行目で分かる**
+#                  ——`NOT_READY` が出ていれば投入していないだけで、盤面には何も起きていない
 #
 # ## 投入する前に見るもの
 #
@@ -32,8 +33,18 @@
 #   だった。これは `watch-prs.sh` が `CONFLICT` として無料で出している。
 # - **CIが赤・保留のまま読ませた。** 落ちているものは直しが入って頭が変わるので、読んだ内容が古くなる。
 #
-# どれも `gh` で引けるので、ここで見て `NOT_READY` を出して終わる。**司令塔は理由を見て、直させるか
-# 待つかを決める。** 落ちるのは投入だけで、盤面には何も起きない。
+# どれも `gh` で引けるので、ここで見て `NOT_READY` を出して終わる。**司令塔は理由を見て次の手を
+# 決める。**
+#
+#   マージできない        … 書いたセッションを起こして解かせる
+#   CIが落ちている        … 同上
+#   CIが走っている最中    … 待つ。何もしない
+#   CIがまだ1件も出ていない … 同上
+#   この頭は判定済み      … 待つ（`REVIEWED` を取りこぼしていないか、判定コメントを直接見る）
+#
+# **落ちるのは投入だけで、盤面には何も起きない。`直し待ち` も外れない**（外すのは投入できたときだけ）
+# ので、**見張りは次の周も同じ `FIXED` を出す。** それが再試行の合図で、**この空振りは `gh` 1回ぶん**
+# ——セッションを立てていた頃と違って、繰り返しても費用は増えない。
 #
 # **塞げていない穴が1つある**——**判定がまだ1本も出ていない状態で2回続けて投入する**と、どちらも
 # 通る。PR #1493 で実際に起きて（39秒差で2本が判定を出し、後から出たほうが自分の「通してよい」を
@@ -119,12 +130,17 @@ if [ -z "${FORCE:-}" ]; then
   [ "$mergeable" = MERGEABLE ] ||
     not_ready "マージできない（mergeable=$mergeable）。衝突を解かせるか、GitHubの再計算を待つ。"
 
-  # `conclusion` が入るのは走り終えたものだけ。走っている最中は `null` なので `PENDING` として扱う。
+  # **走っている最中と落ちたのを混ぜない。** 司令塔の手が別（待つ／起こす）なので、理由の文面で
+  # 分ける。`conclusion` が入るのは走り終えたものだけなので、走行中は `.status != "COMPLETED"`。
   checks=$(jq -r '[.statusCheckRollup[]?] | length' "$WORK/pr.json")
-  [ "$checks" != 0 ] || not_ready "CIがまだ1件も出ていない。"
-  bad=$(jq -r '[.statusCheckRollup[]? | (.conclusion // "PENDING")
-    | select(. != "SUCCESS" and . != "NEUTRAL" and . != "SKIPPED")] | join(",")' "$WORK/pr.json")
-  [ -z "$bad" ] || not_ready "CIが緑でない（$bad）。"
+  [ "$checks" != 0 ] || not_ready "CIがまだ1件も出ていない。待つ。"
+  failed=$(jq -r '[.statusCheckRollup[]? | select((.status // "COMPLETED") == "COMPLETED")
+    | (.conclusion // "") | select(. != "SUCCESS" and . != "NEUTRAL" and . != "SKIPPED")]
+    | join(",")' "$WORK/pr.json")
+  [ -z "$failed" ] || not_ready "CIが落ちている（$failed）。書いたセッションを起こして直させる。"
+  running=$(jq -r '[.statusCheckRollup[]? | select((.status // "COMPLETED") != "COMPLETED")]
+    | length' "$WORK/pr.json")
+  [ "$running" = 0 ] || not_ready "CIが走っている最中（$running件）。待つ。"
 
   # 最後の判定より新しいコミットが無いなら、この頭はもう読まれている。
   head_at=$(jq -r '.commits | last | .committedDate' "$WORK/pr.json")

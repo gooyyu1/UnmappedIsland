@@ -58,7 +58,9 @@
 
 見張りの合図ごとに何をするかは `.claude/parallel-work.md` にあります。骨だけ書くと、
 
-- `UNREVIEWED` / `FIXED` … `dispatch-review.sh <PR>` でレビューを投入する。
+- `UNREVIEWED` / `FIXED` … `dispatch-review.sh <PR>` でレビューを投入する。**`NOT_READY` で戻ったら
+  投入されていない**——1行目の理由に従う（待つか、書いたセッションを起こす）。ラベルは動かないので、
+  見張りは次の周も同じ合図を出す。
 - `REVIEWED <PR> 通してよい` … `merge-and-close.sh <PR>`。`needs-user-review.sh` が止めたら、
   ユーザーの許可を得てから `--user-ok`。
 - `REVIEWED <PR> 直しが要る` … `session-of-pr.sh <PR>` で書いたセッションを引き、`ccr-meta.sh`
