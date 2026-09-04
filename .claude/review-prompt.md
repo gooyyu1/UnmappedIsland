@@ -59,9 +59,13 @@
 
 ## 見る観点
 
-**`.claude/review-criteria.md` を読んでください。挙げ方もそちらです。**
-（このPRのブランチが古くて無いときは
-`git fetch origin main && git show origin/main:.claude/review-criteria.md`。）
+**観点の一覧は、必ず `main` の版を読んでください。挙げ方もそちらです。**
+
+    git fetch origin main && git show origin/main:.claude/review-criteria.md
+
+**作業ディレクトリの `.claude/review-criteria.md` を読まないこと。** このセッションはPRのブランチで
+起動するので、そこに在るのは**そのPRが切られた時点の版**です。観点は絞られる方向へ動くので、古い版を
+読むと**もう止めないことになったもので止めます**。`gh` が無くてもこれは `git` だけで通ります。
 
 **同じファイルを、PRを書いた側も手前で読んでいます。** **誰が出すPRでも**、PRを作る前に
 サブエージェントへ差分を渡して読ませることになっています（`CLAUDE.md`「PRを出す前に、サブエージェント
