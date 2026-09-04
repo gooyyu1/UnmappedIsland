@@ -4,7 +4,7 @@ import type { TickDelta } from './tickDeltas';
 import { tickDeltasOf } from './tickDeltas';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingStep } from './CraftingStep';
-import { craftingStepsOf, highestDeclaredAgentLayer } from './craftingSteps';
+import { analysisContextOf, craftingStepsOf } from './craftingSteps';
 import type { IslandLocations } from './islandLocations';
 import { islandLocationsOf } from './islandLocations';
 import type { RangeCycle } from './rangeCycles';
@@ -13,7 +13,7 @@ import { rangeEventReadouts } from './rangeEvents';
 import type { RainWaterRow } from './seasonalRain';
 import { rainWaterRows } from './seasonalRain';
 import type { StaticValueLayer, StaticValueResolver } from './staticValue';
-import { layeredResolver, staticValueOf } from './staticValue';
+import { staticValueOf } from './staticValue';
 
 /**
  * 定義（`src/assets/world-codex/*.yaml`）だけから「時間あたりの収支」を計算する。
@@ -1249,15 +1249,15 @@ function decayLifetimeOf(cycles: readonly RangeCycle[]): DecayLifetime | undefin
 }
 
 /**
- * この表が使う文脈。**行っている人・使う物・祖先の3層**（11.5節）を1つに畳む
- * （layeredResolver）——`base` が層をまたいで別の起点を指すので、層どうしを直に繋がない。
+ * この表が使う文脈。**使う物と祖先の層**（11.5節）を足す——行っている人の層はanalysisContextOfが
+ * 必ず入れる。`base` が層をまたいで別の起点を指すので、層どうしを直に繋がない（layeredResolver）。
  */
 function analysisContext(
   codex: WorldCodex,
   defs: readonly ObjectDef[],
   ancestor: StaticValueLayer,
 ): StaticValueResolver {
-  return layeredResolver([highestDeclaredAgentLayer(codex), bestInstrumentLayer(defs), ancestor]);
+  return analysisContextOf(codex, [bestInstrumentLayer(defs), ancestor]);
 }
 
 /** 祖先（置かれている土地）の宣言値を答える層。宣言していないプロパティは寄与0。 */

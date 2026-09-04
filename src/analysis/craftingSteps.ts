@@ -42,15 +42,14 @@ import {
  *
  * outerは、self以外の起点（祖先が入れる値・使う物の値）を定義だけから解く手立て。省くと、
  * それらを参照する工程に「確定しない」印が付く（CraftingStep.hasUnresolvedReferences）。
- * **渡すなら、行っている人（agent）の層を含んでいること**（highestDeclaredAgentLayer）——省いた
- * 文脈では、腕を土台にした重みが解けない。渡さなければ、その層だけの文脈をここで作る。
+ * **作るのはanalysisContextOfだけ**なので、渡された文脈には必ず行っている人（agent）の層が入る。
  */
 export function craftingStepsOf(
   codex: WorldCodex,
   def: ObjectDef,
   outer?: StaticValueResolver,
 ): readonly CraftingStep[] {
-  const context = outer ?? layeredResolver([highestDeclaredAgentLayer(codex)]);
+  const context = outer ?? analysisContextOf(codex, []);
   const steps: CraftingStep[] = [];
   for (const trigger of def.triggers)
     for (const instrument of instrumentTypesOf(codex, trigger)) {
@@ -61,6 +60,18 @@ export function craftingStepsOf(
     }
   for (const recipe of def.recipesProducingThis) steps.push(recipeStep(def, recipe));
   return steps;
+}
+
+/**
+ * 定義だけから値を解く文脈を作る唯一の入口。**行っている人（agent）の層は必ず入る**——足し忘れると、
+ * 腕を土台にした重みが解けず、その候補は起こらないものとして数えられる。**呼び出し側が覚えておく
+ * 手順にしない**ため、層を渡す口をここ1つに絞ってある（下のhighestDeclaredAgentLayerは外へ出さない）。
+ */
+export function analysisContextOf(
+  codex: WorldCodex,
+  layers: readonly StaticValueLayer[],
+): StaticValueResolver {
+  return layeredResolver([highestDeclaredAgentLayer(codex), ...layers]);
 }
 
 /**
@@ -77,7 +88,7 @@ export function craftingStepsOf(
  * 重み——着火の成否・探索で獣に出くわす確率・打った一撃の当たり所——が解けず、その候補は起こらない
  * ものとして数えられる。
  */
-export function highestDeclaredAgentLayer(codex: WorldCodex): StaticValueLayer {
+function highestDeclaredAgentLayer(codex: WorldCodex): StaticValueLayer {
   const characters = [...codex.objects].filter((def) => def.hasTag(codex.vocabulary.world.characterTagId));
   return (context) => (root, propertyGlobalId, end) => {
     if (root !== 'agent') return undefined;
