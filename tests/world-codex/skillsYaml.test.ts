@@ -124,10 +124,13 @@ function grantsSkillUnder(node: unknown, skillName: string): boolean {
 }
 
 /**
- * 狩猟の腕を配る型の名前。**trait 経由も数える**——獣を殴る手（`strike`）は `beast` trait が配って
- * いて、獣の型そのものには書かれていない。海の群れは逆に、型が直接持っている。
+ * 狩猟の腕を配る操作を持つ型の名前。**trait 経由も数える**——獣を殴る手（`strike`）は `beast` trait が
+ * 配っていて、獣の型そのものには書かれていない。海の群れは逆に、型が直接持っている。
+ *
+ * **獲物そのものの一覧ではありません。** 突く手を持つ筏（`voyage.yaml` の `spear_sea`）も入ります
+ * ——今はどの `pick` も筏を湧かせないので、下の検査には出てきません。
  */
-function huntingQuarryTypes(): ReadonlySet<string> {
+function huntingGrantingTypes(): ReadonlySet<string> {
   const grantingNames = new Set<string>();
   const traitsOfType = new Map<string, readonly string[]>();
   const typeNames: string[] = [];
@@ -169,7 +172,7 @@ function huntingQuarryTypes(): ReadonlySet<string> {
  * あちらは誰も操作していない場面なので `agent` を書けない（docs/engine/TrapSystem.md 8節）。
  */
 function beastSpawningCandidates(): readonly { where: string; multiplied: boolean }[] {
-  const quarryTypes = huntingQuarryTypes();
+  const grantingTypes = huntingGrantingTypes();
   const found: { where: string; multiplied: boolean }[] = [];
 
   /** 候補1つ（weightを持つmap）が湧かせる型の名前。入れ子のpickは各候補が自分で見る。 */
@@ -204,7 +207,7 @@ function beastSpawningCandidates(): readonly { where: string; multiplied: boolea
       if (inInteractions && key === 'pick' && isSeq(pair.value))
         for (const candidate of pair.value.items)
           for (const spawned of spawnedTypesIn(candidate))
-            if (quarryTypes.has(spawned))
+            if (grantingTypes.has(spawned))
               found.push({ where: `${file} の ${owner}: ${spawned}`, multiplied: multiplies(candidate) });
       walk(pair.value, key === 'pick' ? owner : key, inInteractions || key === 'interactions');
     }

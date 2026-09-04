@@ -68,10 +68,8 @@ traits:
         # 払った手間は変わらない。
         add: {agent: {skill_firecraft: 2}}
         pick:
-          # **成功の重みは、火口の素の値に起こす人の腕を掛けたもの**（docs/world/Skills.md 5節）。
-          # 火口の側は素材の差だけを持ち、腕の差は倍率が持つ——枯れ草（60）ならnoviceで6割、
-          # expert（×3）で8割強。**外れの重みは動かさない**：外した回に失われるのは火口1つで、その損は
-          # 腕によらないから、動かすのは当たる側だけでよい。
+          # **成功の重みは、火口の素の値に起こす人の腕を掛けたもの**（段ごとの確率と、外れの重みを
+          # 動かさない理由は docs/engine/FireSystem.md 10節）。火口の側は素材の差だけを持つ。
           - weight: {prop: ignition_chance, times: {subject: agent, prop: ignition_ease}}
             destroy: self
             spawn: {object: burning_tinder}
