@@ -154,7 +154,8 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
 
 設計上の要点:
 
-- `set`/`add` の値・`pick` の `weight` は「リテラルか `{subject, prop}` 参照か」の二択で統一されている。
+- `set`/`add` の値・`pick` の `weight` は「リテラルか `{subject, prop}` 参照か」で統一されている
+  （`weight` だけは参照 2 つの積も取る、`GameElementDefinition.md` 10.2 節）。
 - `spawn` の配置先（`into`、9.4節）は、**個体を指す形が `move` の移動先とまったく同じ**で、書ける起点は
   4節の表のとおり。個体でないものを名乗れるのは `into` だけで、`same_slot`（既定）と `child` の2つ。
   `same_slot` は、適用の入口で捕捉した

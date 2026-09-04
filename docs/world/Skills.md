@@ -103,12 +103,14 @@
 アクセス系（火・狩猟・採鉱）はレシピを開けません（2 節）。段の効き方は、**`pick` の重みへ掛かる
 倍率**です。倍率は腕の持ち主が持ち（素は 1 ＝ 等倍）、自分では動かず、腕の段の `passives` が
 `modify` で押し上げます。使う側は `weight` の `times`
-（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 10.2 節）で掛けます。
+（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 10.2 節）で掛けます——**掛ける側
+（腕前は行為者のもの）と掛けられる側（素の重みは相手のもの）が別のオブジェクトなので、`modify` では
+届きません。** 積が要るのはこの形のときだけ、というのが同節の定めです。
 
 | 腕 | 掛ける先 | 素の重みを持つのは |
 | -- | -------- | ------------------ |
 | **火** | 着火が成功する重み（[`FireSystem.md`](../engine/FireSystem.md) 3.1 節） | 火口（`ignition_chance`） |
-| **狩猟** | 探索で獣に出くわす重み（[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 2.1 節） | 土地（`<動物>_find`）と海区（`shoal_find`・`seabird_find`） |
+| **狩猟** | 探索と見張りで獲物に出くわす重み（[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 2.1 節） | 土地（`<動物>_find`）と海区（`shoal_find`・`seabird_find`） |
 
 倍率の刻みは 2 本で同じです（novice 1 → basic 1.5 → skilled 2 → expert 3）。腕ごとに変えると、同じ
 `basic` が腕ごとに違う効きになり、11 本で段の境目を揃えている意味が消えます。

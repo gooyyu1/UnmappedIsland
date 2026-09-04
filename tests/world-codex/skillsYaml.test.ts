@@ -62,53 +62,65 @@ const ACCESS_MULTIPLIERS = [
 const MULTIPLIER_BY_STAGE = [1, 1.5, 2, 3] as const;
 
 /**
- * 定義ファイルが `add` で `agent` の腕前へ配っている量を、腕ごとに集める。効果はロード後には木へ
- * 畳まれていて列挙できないため、理由（reason）を集める bundledLocale.test.ts と同じく構文木を辿る。
+ * その節の下にある `add: {agent: {<腕>: n}}` を、腕の名前と量の組で1件ずつ渡す。効果はロード後には
+ * 木へ畳まれていて列挙できないため、理由（reason）を集める bundledLocale.test.ts と同じく構文木を辿る。
+ *
+ * **配っている量を集めるのも、配っているかを問うのも、この1本を通す。** 同じ状態機械
+ * （`add` の何段目に居るか）を2つ持つと、片方だけが `agent` 以外の役を数え始めても気付けない。
  */
-function declaredSkillGains(): ReadonlyMap<string, ReadonlySet<number>> {
-  const gains = new Map<string, Set<number>>();
-
+function walkAgentSkillGains(node: unknown, visit: (skillName: string, amount: number) => void): void {
   /** stateは、この節の直下のキーが `add` の何段目に居るか。 */
-  const walk = (node: unknown, state: 'none' | 'add' | 'add_agent'): void => {
-    if (isSeq(node)) {
-      for (const item of node.items) walk(item, state);
+  const walk = (current: unknown, state: 'none' | 'add' | 'add_agent'): void => {
+    if (isSeq(current)) {
+      for (const item of current.items) walk(item, state);
       return;
     }
-    if (!isMap(node)) return;
+    if (!isMap(current)) return;
 
-    for (const pair of node.items) {
+    for (const pair of current.items) {
       const key = isScalar(pair.key) ? String(pair.key.value) : '';
       if (state === 'add_agent' && key.startsWith(SKILL_PREFIX)) {
-        const amount = isScalar(pair.value) ? Number(pair.value.value) : Number.NaN;
-        const amounts = gains.get(key);
-        if (amounts === undefined) gains.set(key, new Set([amount]));
-        else amounts.add(amount);
+        visit(key, isScalar(pair.value) ? Number(pair.value.value) : Number.NaN);
         continue;
       }
       walk(pair.value, state === 'add' && key === 'agent' ? 'add_agent' : key === 'add' ? 'add' : 'none');
     }
   };
+  walk(node, 'none');
+}
 
-  for (const path of worldCodexYamlPaths()) walk(parseDocument(readFileSync(path, 'utf8')).contents, 'none');
+/** 定義ファイルが `add` で `agent` の腕前へ配っている量を、腕ごとに集める。 */
+function declaredSkillGains(): ReadonlyMap<string, ReadonlySet<number>> {
+  const gains = new Map<string, Set<number>>();
+  for (const path of worldCodexYamlPaths())
+    walkAgentSkillGains(parseDocument(readFileSync(path, 'utf8')).contents, (skillName, amount) => {
+      const amounts = gains.get(skillName);
+      if (amounts === undefined) gains.set(skillName, new Set([amount]));
+      else amounts.add(amount);
+    });
   return gains;
+}
+
+/**
+ * `spawn:` の節（1件でも並びでも）が出す型の名前。**`spawn` の綴りを読むのはここ1箇所**で、候補の
+ * 直下だけを見る側（beastSpawningCandidates）も、入れ子ごと集める側（productsUnder）もここを通す。
+ */
+function spawnedTypesOf(spawnNode: unknown): readonly string[] {
+  if (spawnNode === undefined || spawnNode === null) return [];
+  const entries = isSeq(spawnNode) ? spawnNode.items : [spawnNode];
+  return entries.flatMap((entry) => {
+    const object = isMap(entry) ? entry.get('object', true) : undefined;
+    return isScalar(object) ? [String(object.value)] : [];
+  });
 }
 
 /** その節の下のどこかに `add: {agent: {<腕>: n}}` があるか。 */
 function grantsSkillUnder(node: unknown, skillName: string): boolean {
-  const walk = (current: unknown, state: 'none' | 'add' | 'add_agent'): boolean => {
-    if (isSeq(current)) return current.items.some((item) => walk(item, state));
-    if (!isMap(current)) return false;
-
-    return current.items.some((pair) => {
-      const key = isScalar(pair.key) ? String(pair.key.value) : '';
-      if (state === 'add_agent' && key === skillName) return true;
-      return walk(
-        pair.value,
-        state === 'add' && key === 'agent' ? 'add_agent' : key === 'add' ? 'add' : 'none',
-      );
-    });
-  };
-  return walk(node, 'none');
+  let found = false;
+  walkAgentSkillGains(node, (name) => {
+    if (name === skillName) found = true;
+  });
+  return found;
 }
 
 /**
@@ -161,15 +173,8 @@ function beastSpawningCandidates(): readonly { where: string; multiplied: boolea
   const found: { where: string; multiplied: boolean }[] = [];
 
   /** 候補1つ（weightを持つmap）が湧かせる型の名前。入れ子のpickは各候補が自分で見る。 */
-  const spawnedTypesIn = (candidate: unknown): readonly string[] => {
-    if (!isMap(candidate)) return [];
-    const spawn = candidate.get('spawn', true);
-    const entries = isSeq(spawn) ? spawn.items : [spawn];
-    return entries.flatMap((entry) => {
-      const object = isMap(entry) ? entry.get('object', true) : undefined;
-      return isScalar(object) ? [String(object.value)] : [];
-    });
-  };
+  const spawnedTypesIn = (candidate: unknown): readonly string[] =>
+    isMap(candidate) ? spawnedTypesOf(candidate.get('spawn', true)) : [];
 
   /** その候補の重みが、狩猟の倍率を掛けているか。 */
   const multiplies = (candidate: unknown): boolean => {
@@ -234,12 +239,7 @@ function productsUnder(node: unknown, found: Set<string>): void {
       productsUnder(pair.value, found);
       continue;
     }
-    const spawned = isSeq(pair.value) ? pair.value.items : [pair.value];
-    for (const entry of spawned) {
-      if (!isMap(entry)) continue;
-      const object = entry.get('object', true);
-      if (isScalar(object)) found.add(String(object.value));
-    }
+    for (const name of spawnedTypesOf(pair.value)) found.add(name);
   }
 }
 
