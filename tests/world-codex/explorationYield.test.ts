@@ -75,7 +75,7 @@ describe('探索で見つかる物', () => {
 
   /**
    * その土地を1つ作り（propsを渡せばつまみを上書きして）、trials回探索して、1回ごとの発見物を返す。
-   * huntingSkillは探索する人の狩猟の腕で、獣の候補の重みへ倍率として掛かる（Skills.md 5節）。
+   * huntingSkillは探索する人の狩猟の腕で、獣のつまみが`base`の土台にする（Skills.md 5節）。
    *
    * 進捗は探索のたびに増えるが、rangeの上限に張り付いた後も発見物の抽選は続く（ExplorationSystem.md
    * 2節）ため、試行回数が進捗の上限を超えても数え方は変わらない。
@@ -159,8 +159,8 @@ describe('探索で見つかる物', () => {
     expect(palmsWith(10000), '重みが他を圧倒すればほぼ毎回出る').toBeGreaterThan(TRIALS * 0.9);
   });
 
-  it('狩猟の腕は、獣の候補の重みへ倍率として掛かる', () => {
-    // 腕が動かすのは獣の候補の重みだけで、卓そのものは変わらない（docs/world/Skills.md 5節）。
+  it('狩猟の腕は、獣のつまみへ上乗せとして積まれる', () => {
+    // 腕が動かすのは獣のつまみだけで、卓そのものは変わらない（docs/world/Skills.md 5節）。
     // ネズミしか居ない荒野で、つまみと腕の両側から同じ重みを作って確かめる。
     const ratFindId = codex.propertyNames.getId('rat_find');
     const rats = (ratFind: number, huntingSkill: number): number =>
@@ -170,12 +170,20 @@ describe('探索で見つかる物', () => {
       );
 
     expect(rats(3, 180), 'expertはnoviceより出くわす').toBeGreaterThan(rats(3, 0));
-    // **同じ重みなら同じ卓**なので、引きまでそっくり一致する。腕が増やしているのが獣ではなく
-    // 気づく確率であることが、これでそのまま言える。
-    expect(rats(3, 180), 'expert×素の3は、novice×つまみ9と同じ卓').toBe(rats(9, 0));
-    // 掛ける相手が0なら0のまま。**居ない土地では、腕がいくら高くても出くわさない**
-    // （土地が宣言していない候補は抽選から外れる、ExplorationSystem.md 2.1節）。
-    expect(rats(0, 180), '居ない獣には気づきようがない').toBe(0);
+    // **同じ重みなら同じ卓**なので、引きまでそっくり一致する。expertの上乗せは+4（Skills.md 5節）
+    // なので、素の3に積んだものは、素で7のつまみと変わらない。
+    expect(rats(3, 180), 'expertの素3＋4は、noviceのつまみ7と同じ卓').toBe(rats(7, 0));
+  });
+
+  it('宣言していない獣は、腕を上げても湧かない', () => {
+    // 上乗せが積まれるのは**その土地が名乗ったつまみ**だけ。草地はサルを名乗っていないので、
+    // 候補そのものが卓に無い（docs/engine/ExplorationSystem.md 2.1節）。
+    const monkeys = findingsOf('grassland', new Map(), BEAST_TRIALS, 180).reduce(
+      (sum, finding) => sum + (finding.get('monkey') ?? 0),
+      0,
+    );
+
+    expect(monkeys, '草地にサルは居ない').toBe(0);
   });
 
   it.each(BEAST_FINDS)('%s の %s は、獣1匹だけを湧かせる', (landName, findProp, beastName) => {

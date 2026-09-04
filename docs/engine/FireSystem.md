@@ -280,7 +280,8 @@ interactions:
             - {subject: ancestor, prop: sheltered, eq: 0}
             - {subject: ancestor, prop: weather, in: [light_rain, heavy_rain, storm]}
     pick:
-      - weight: {prop: ignition_chance, times: {subject: agent, prop: ignition_ease}}
+      # ignition_chanceは火口ごとの素の値に、起こす人の腕を base で積んだもの（10 節）
+      - weight: {prop: ignition_chance}
         destroy: self
         spawn: {object: burning_tinder}
         signal: lit
@@ -656,10 +657,10 @@ passives:
 冷める速さ（6 節）、高温は石で囲うこと（5 節）が決めます。**どちらも腕を要求しません**（石を運べば
 誰でも囲えます）。腕が届くのは、その炉に火を入れられるかどうかまでです。
 
-**効かせ方は、成功の重みへ掛かる倍率です**（[`../world/Skills.md`](../world/Skills.md) 5 節）。火口が
-持つのは素の `ignition_chance` だけで、腕は倍率（`ignition_ease`）だけを持ちます——枯れ草（60）なら
-`novice` で 6 割、`expert`（×3）で 8 割強になります。**外れの重み（40）は動かしません**：外した回に
-失われるのは火口 1 つで、その損は腕によらないからです。
+**効かせ方は、成功の重みへ積む上乗せです**（[`../world/Skills.md`](../world/Skills.md) 5 節）。火口が
+持つのは素の `ignition_chance` だけで、そこへ腕（`ignition_ease`）が `base` の土台として積まれます
+——枯れ草（60）なら `novice` で 6 割、`expert`（+120）で 8 割強になります。**外れの重み（40）は
+動かしません**：外した回に失われるのは火口 1 つで、その損は腕によらないからです。
 
 ## 11. 未決事項・今後の検討課題
 

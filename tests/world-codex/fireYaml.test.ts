@@ -201,7 +201,7 @@ describe('fire.yamlの火の連鎖', () => {
   }
 
   it('火の腕が上がると火が付きやすくなる（noviceが外す引きでも、expertは火を得る）', () => {
-    // 枯れ草の素の重みは60対40でnoviceは6割、expertは倍率3が掛かって180対40
+    // 枯れ草の素の重みは60対40でnoviceは6割、expertは上乗せ+120が積まれて180対40
     // （docs/world/Skills.md 5節）。引きは両方とも0.7で、動かしているのは腕だけ。
     const BETWEEN = 0.7;
     const firecraftId = codex.propertyNames.getId('skill_firecraft');

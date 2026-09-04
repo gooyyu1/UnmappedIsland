@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import type { YAMLMap } from 'yaml';
 import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { RecipeDef } from '../../src/domain/RecipeDef';
@@ -50,16 +51,16 @@ const STAGES = [
 const GAIN_PER_ACTION = 2;
 
 /**
- * アクセス系の腕（Skills.md 2節）と、その段が押し上げる倍率（同5節）。レシピを開けない腕なので、
+ * アクセス系の腕（Skills.md 2節）と、その段が押し上げる上乗せ（同5節）。レシピを開けない腕なので、
  * 効き先はここにしか無い——**この対応が切れると、伸びるだけで何にも効かない腕に戻る**。
+ *
+ * **段ごとの量は腕で違う**——上乗せする先の桁が違うため（着火の重みは60前後、獣のつまみは2〜4）。
+ * 見張るのは値そのものではなく、**素が0で、段が上がるほど大きくなる**こと。
  */
-const ACCESS_MULTIPLIERS = [
-  { skill: 'skill_firecraft', multiplier: 'ignition_ease' },
-  { skill: 'skill_hunting', multiplier: 'quarry_sense' },
+const ACCESS_BONUSES = [
+  { skill: 'skill_firecraft', bonus: 'ignition_ease', byStage: [0, 20, 50, 120] },
+  { skill: 'skill_hunting', bonus: 'quarry_sense', byStage: [0, 1, 2, 4] },
 ] as const;
-
-/** 段ごとの倍率（Skills.md 5節）。素は等倍で、2本とも同じ刻み。 */
-const MULTIPLIER_BY_STAGE = [1, 1.5, 2, 3] as const;
 
 /**
  * その節の下にある `add: {agent: {<腕>: n}}` を、腕の名前と量の組で1件ずつ渡す。効果はロード後には
@@ -164,58 +165,118 @@ function huntingGrantingTypes(): ReadonlySet<string> {
   );
 }
 
+/** そのpropの宣言が、狩猟の腕（`quarry_sense`）を `base` の土台にしているか。 */
+function standsOnQuarrySense(propBody: unknown): boolean {
+  const base = isMap(propBody) ? propBody.get('base', true) : undefined;
+  if (!isMap(base)) return false;
+  const subject = base.get('subject', true);
+  const prop = base.get('prop', true);
+  return (
+    isScalar(subject) &&
+    String(subject.value) === 'agent' &&
+    isScalar(prop) &&
+    String(prop.value) === 'quarry_sense'
+  );
+}
+
+/** そのpropの宣言が持つ素の値（書いていなければ0）。 */
+function declaredValueOf(propBody: unknown): number {
+  const value = isMap(propBody) ? propBody.get('value', true) : undefined;
+  return isScalar(value) ? Number(value.value) : 0;
+}
+
 /**
  * 操作の `pick` が湧かせる相手のうち、狩猟の腕を配る型を出す候補を「どこで・何を」の形で並べる。
- * 倍率（`times`）が掛かっているかを添える。
+ * その候補の重みが読むつまみが、**名乗られていて**（素の値が0より大きい）、なお狩猟の腕を `base` の
+ * 土台にしていないものを `missingSkill` として立てる。
+ *
+ * **素の値が0のつまみには積まない。** 「その場所が名乗らなかった候補は、そこには無い」を素の0で
+ * 表しているので（docs/world/Voyage.md 3.3節）、積むと名乗っていない海区にも群れが立つ。
  *
  * **見るのは `interactions` の下だけ。** 罠の抽選（`catch_remaining` の `on_min`）も獣を湧かせるが、
- * あちらは誰も操作していない場面なので `agent` を書けない（docs/engine/TrapSystem.md 8節）。
+ * あちらは誰も操作していない場面なので、つまみが `agent` を土台にしても解けない
+ * （docs/engine/TrapSystem.md 8節）。
  */
-function beastSpawningCandidates(): readonly { where: string; multiplied: boolean }[] {
+function beastSpawningCandidates(): readonly { where: string; missingSkill: boolean }[] {
   const grantingTypes = huntingGrantingTypes();
-  const found: { where: string; multiplied: boolean }[] = [];
+  const found: { where: string; missingSkill: boolean }[] = [];
 
   /** 候補1つ（weightを持つmap）が湧かせる型の名前。入れ子のpickは各候補が自分で見る。 */
   const spawnedTypesIn = (candidate: unknown): readonly string[] =>
     isMap(candidate) ? spawnedTypesOf(candidate.get('spawn', true)) : [];
 
-  /** その候補の重みが、狩猟の倍率を掛けているか。 */
-  const multiplies = (candidate: unknown): boolean => {
+  /** その候補の重みが読むプロパティ名（リテラルの重みならundefined）。 */
+  const weightPropOf = (candidate: unknown): string | undefined => {
     const weight = isMap(candidate) ? candidate.get('weight', true) : undefined;
-    const times = isMap(weight) ? weight.get('times', true) : undefined;
-    if (!isMap(times)) return false;
-    const subject = times.get('subject', true);
-    const prop = times.get('prop', true);
-    return (
-      isScalar(subject) &&
-      String(subject.value) === 'agent' &&
-      isScalar(prop) &&
-      String(prop.value) === 'quarry_sense'
-    );
+    const prop = isMap(weight) ? weight.get('prop', true) : undefined;
+    return isScalar(prop) ? String(prop.value) : undefined;
   };
 
-  let file = '';
-  const walk = (node: unknown, owner: string, inInteractions: boolean): void => {
-    if (isSeq(node)) {
-      for (const item of node.items) walk(item, owner, inInteractions);
-      return;
-    }
-    if (!isMap(node)) return;
+  // **宣言はtraitと型に分かれて置かれる**——海区は`sea_zone` traitがexploreを、各海区がつまみを持つ。
+  // 型ごとに、自分とtraitのpropsを1つの表へ畳んでから引く（自分の宣言が勝つ）。
+  const bodies = new Map<string, YAMLMap>();
+  const traitNamesOf = new Map<string, readonly string[]>();
+  const fileOf = new Map<string, string>();
+  const documents: { file: string; root: unknown }[] = [];
 
-    for (const pair of node.items) {
-      const key = isScalar(pair.key) ? String(pair.key.value) : '';
-      if (inInteractions && key === 'pick' && isSeq(pair.value))
-        for (const candidate of pair.value.items)
+  for (const path of worldCodexYamlPaths())
+    documents.push({
+      file: path.slice(path.lastIndexOf('/') + 1),
+      root: parseDocument(readFileSync(path, 'utf8')).contents,
+    });
+
+  for (const { file, root } of documents) {
+    if (!isMap(root)) continue;
+    for (const section of root.items) {
+      const sectionKey = isScalar(section.key) ? String(section.key.value) : '';
+      if ((sectionKey !== 'traits' && sectionKey !== 'object_defs') || !isMap(section.value)) continue;
+      for (const entry of section.value.items) {
+        const defName = isScalar(entry.key) ? String(entry.key.value) : '';
+        if (!isMap(entry.value)) continue;
+        bodies.set(defName, entry.value);
+        fileOf.set(defName, file);
+        const declared = entry.value.get('traits', true);
+        traitNamesOf.set(
+          defName,
+          isSeq(declared) ? declared.items.map((item) => (isScalar(item) ? String(item.value) : '')) : [],
+        );
+      }
+    }
+  }
+
+  /** その型が使うpropの宣言（自分に無ければtraitから）。 */
+  const propBodyOf = (defName: string, propName: string): unknown => {
+    for (const name of [defName, ...(traitNamesOf.get(defName) ?? [])]) {
+      const props = bodies.get(name)?.get('props', true);
+      const declared = isMap(props) ? props.get(propName, true) : undefined;
+      if (declared !== undefined) return declared;
+    }
+    return undefined;
+  };
+
+  for (const [defName, body] of bodies) {
+    // 操作は自分かtraitのどちらかに在る。どちらの`pick`も、読むつまみは型ごとに解く。
+    for (const owner of [defName, ...(traitNamesOf.get(defName) ?? [])]) {
+      const interactions = bodies.get(owner)?.get('interactions', true);
+      if (!isMap(interactions) || (owner !== defName && bodies.get(owner) === body)) continue;
+
+      for (const interaction of interactions.items) {
+        const name = isScalar(interaction.key) ? String(interaction.key.value) : '';
+        const picks = isMap(interaction.value) ? interaction.value.get('pick', true) : undefined;
+        if (!isSeq(picks)) continue;
+
+        for (const candidate of picks.items)
           for (const spawned of spawnedTypesIn(candidate))
-            if (grantingTypes.has(spawned))
-              found.push({ where: `${file} の ${owner}: ${spawned}`, multiplied: multiplies(candidate) });
-      walk(pair.value, key === 'pick' ? owner : key, inInteractions || key === 'interactions');
+            if (grantingTypes.has(spawned)) {
+              const knob = weightPropOf(candidate);
+              const declared = knob === undefined ? undefined : propBodyOf(defName, knob);
+              found.push({
+                where: `${fileOf.get(defName)} の ${defName}.${name}: ${spawned}`,
+                missingSkill: declaredValueOf(declared) > 0 && !standsOnQuarrySense(declared),
+              });
+            }
+      }
     }
-  };
-
-  for (const path of worldCodexYamlPaths()) {
-    file = path.slice(path.lastIndexOf('/') + 1);
-    walk(parseDocument(readFileSync(path, 'utf8')).contents, '', false);
   }
   return found;
 }
@@ -368,33 +429,33 @@ describe('腕前とレシピの解放条件', () => {
     }
   });
 
-  it('アクセス系の腕は、段が上がるほど倍率を押し上げる', () => {
-    // 火と狩猟はレシピを開けない（Skills.md 2節）ので、段が動かすのはこの倍率だけ。素人のうちは
-    // 等倍で、上の段ほど大きくなる——2本で同じ刻みにしてあるのは、11本で段の境目を揃えている
-    // のと同じ理由（同5節）。
-    for (const { skill, multiplier } of ACCESS_MULTIPLIERS) {
+  it('アクセス系の腕は、段が上がるほど上乗せを押し上げる', () => {
+    // 火と狩猟はレシピを開けない（Skills.md 2節）ので、段が動かすのはこの上乗せだけ。**素は0**で、
+    // 上の段ほど大きくなる。量が2本で違うのは、上乗せする先の桁が違うから（同5節）。
+    for (const { skill, bonus, byStage } of ACCESS_BONUSES) {
       const character = characterWithSkills(0);
       const skillProperty = character.getProperty(codex.propertyNames.getId(skill));
-      const multiplierProperty = character.getProperty(codex.propertyNames.getId(multiplier));
+      const bonusProperty = character.getProperty(codex.propertyNames.getId(bonus));
 
       for (const [index, stage] of STAGES.entries()) {
         skillProperty.setNumberWithoutEvents(stage.min);
-        expect(
-          multiplierProperty.getEffectiveValue(),
-          `${skill} が ${stage.name} のときの ${multiplier}`,
-        ).toBe(MULTIPLIER_BY_STAGE[index]);
+        expect(bonusProperty.getEffectiveValue(), `${skill} が ${stage.name} のときの ${bonus}`).toBe(
+          byStage[index],
+        );
       }
+      expect(byStage[0], `${bonus} の素`).toBe(0);
+      expect([...byStage], `${bonus} は段が上がるほど大きい`).toEqual([...byStage].sort((a, b) => a - b));
     }
   });
 
-  it('狩猟の腕を配る相手を湧かせる候補には、狩猟の倍率が掛かっている', () => {
+  it('狩猟の腕を配る相手を湧かせる候補は、腕を土台にしたつまみを読む', () => {
     // 「出くわす機会」は探索の`pick`が湧かせる（Skills.md 5節）。**宣言の場所が散らばっているので、
     // 目視では揃っているか分からない**——地上の獣は`beast` traitの`strike`が腕を配り、海の群れは
-    // 型自身の`spear_shoal`・`catch_seabird`が配る。掛け忘れた候補は、腕を上げても増えない相手になる。
+    // 型自身の`spear_shoal`・`catch_seabird`が配る。積み忘れた候補は、腕を上げても増えない相手になる。
     const candidates = beastSpawningCandidates();
 
     expect(candidates.length, '狩猟の相手を湧かせる候補が1つも無い').toBeGreaterThan(0);
-    expect(candidates.filter((candidate) => !candidate.multiplied).map((c) => c.where)).toEqual([]);
+    expect(candidates.filter((candidate) => candidate.missingSkill).map((c) => c.where)).toEqual([]);
   });
 
   it('解放条件は、腕が上がった後も満たされ続ける（上の段で閉じ直さない）', () => {

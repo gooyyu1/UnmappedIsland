@@ -32,9 +32,12 @@ traits:
   ignitable:
     tags: [tinder]
     props:
-      # 1回の火起こしが成功する重み。失敗の重み（40）との比が成功率になる。**火口ごとの素の値**で、
-      # 起こす人の腕が倍率を掛ける（下のlight）。天気はここではなく可否で効く（同）。
-      ignition_chance: {}
+      # 1回の火起こしが成功する重み。失敗の重み（40）との比が成功率になる。**素の値は火口ごと**
+      # （継承先で必須）で、そこへ**起こす人の腕が土台として積まれる**——baseの土台には操作の役を
+      # 書けるので（GameElementDefinition.md 6.5節）、火口は自分の値だけを持ったまま、火を起こして
+      # いる人のignition_easeを継ぐ。天気はここではなく可否で効く（下のlight）。
+      ignition_chance:
+        base: {subject: agent, prop: ignition_ease}
     interactions:
       # 火起こし具を重ねて火を移す。外した回も火口は失われる。
       #
@@ -68,9 +71,10 @@ traits:
         # 払った手間は変わらない。
         add: {agent: {skill_firecraft: 2}}
         pick:
-          # **成功の重みは、火口の素の値に起こす人の腕を掛けたもの**（段ごとの確率と、外れの重みを
-          # 動かさない理由は docs/engine/FireSystem.md 10節）。火口の側は素材の差だけを持つ。
-          - weight: {prop: ignition_chance, times: {subject: agent, prop: ignition_ease}}
+          # **成功の重み。** 腕は重みの式ではなく、ignition_chanceのbaseとして既に積まれている（上）
+          # ——ここは素の参照のまま（段ごとの確率と、外れの重みを動かさない理由は
+          # docs/engine/FireSystem.md 10節）。
+          - weight: {prop: ignition_chance}
             destroy: self
             spawn: {object: burning_tinder}
             signal: lit

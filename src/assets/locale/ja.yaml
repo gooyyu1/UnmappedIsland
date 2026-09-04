@@ -286,11 +286,11 @@ object_texts:
       ignition_ease:
         display_name: 火の移りやすさ
         icon: ✨
-        description: 火口に火が移る重みの倍率。火の腕が上がるほど大きくなる。
+        description: 火口に火が移る重みへの上乗せ。火の腕が上がるほど大きくなる。
       quarry_sense:
         display_name: 獲物に気づく目
         icon: 🐾
-        description: 探索や見張りで獲物に出くわす重みの倍率。狩猟の腕が上がるほど大きくなる。
+        description: 探索や見張りで獲物に出くわす重みへの上乗せ。狩猟の腕が上がるほど大きくなる。
       afloat:
         display_name: 浮いている
         description: 水に浮かんでいるか。帆のような部品は、浮いている間だけ効く。
