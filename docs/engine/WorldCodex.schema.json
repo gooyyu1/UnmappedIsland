@@ -616,7 +616,8 @@
       "type": "object",
       "properties": {
         "conditions": {
-          "$ref": "#/$defs/conditions_list"
+          "$ref": "#/$defs/conditions_list",
+          "description": "このブロックが効いている間を決めるゲート（8.2節）。条件の並びなので、要素にreasonは書けない（14.6節）。"
         },
         "modify": {
           "description": "可逆的な修飾子。同一プロパティへの複数modifyは単純加算で合成される。",
@@ -783,7 +784,8 @@
       "type": "object",
       "properties": {
         "conditions": {
-          "$ref": "#/$defs/conditions_list"
+          "$ref": "#/$defs/conditions_list",
+          "description": "この回に中身を走らせるかの判定（6.3節）。条件の並びなので、要素にreasonは書けない（14.6節）。"
         },
         "set": {
           "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",
@@ -931,7 +933,7 @@
       "additionalProperties": false
     },
     "pick_list": {
-      "description": "重み付き確率分岐（GameElementDefinition.md 10節）。効果を書く場所であれば、それらと並べて書ける。候補が1つなら重みに関わらず必ず選ばれる。",
+      "description": "重み付き確率分岐（GameElementDefinition.md 10節）。効果（9節の命令）を書く場所であれば、その兄弟キーとして並べて書ける。候補が1つなら重みに関わらず必ず選ばれる。",
       "type": "array",
       "items": {
         "$ref": "#/$defs/pick_candidate"
@@ -971,7 +973,8 @@
           ]
         },
         "conditions": {
-          "$ref": "#/$defs/conditions_list"
+          "$ref": "#/$defs/conditions_list",
+          "description": "この操作を実行できるかの判定（14節）。要件の並びなので、要素ごとにreasonを書ける（14.6節）。"
         },
         "duration": {
           "$ref": "#/$defs/weight_spec",
@@ -1081,7 +1084,7 @@
         },
         "conditions": {
           "$ref": "#/$defs/conditions_list",
-          "description": "このレシピを知っているかの解放条件（SkillSystem.md 4節）。ここには成果物のインスタンスがまだ無いので、宣言元の個体が居ない（13.3節）。何を主語に書けるかは数え上げず、この宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。素材の充足はsteps.requiresが見るので別物。"
+          "description": "このレシピを知っているかの解放条件（SkillSystem.md 4節）。ここには成果物のインスタンスがまだ無いので、宣言元の個体が居ない（13.3節）。何を主語に書けるかは数え上げず、この宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。要件の並びなので、要素ごとにreasonを書ける（14.6節）。素材の充足はsteps.requiresが見るので別物。"
         },
         "steps": {
           "type": "array",
@@ -1334,7 +1337,7 @@
         },
         "resists": {
           "$ref": "#/$defs/conditions_list",
-          "description": "成立している間、土地以外の親へ移れなくなる条件（GameElementDefinition.md 7.13節）。見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面（tick・こぼれ落ち）でも同じ判定が走る。並び全体で1つの条件木なので、trait由来と連結せず、自分自身か1つのtraitのどちらかの宣言だけが効く。"
+          "description": "成立している間、土地以外の親へ移れなくなる条件（GameElementDefinition.md 7.13節）。見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面（tick・こぼれ落ち）でも同じ判定が走る。並び全体で1つの条件木なので、trait由来と連結せず、自分自身か1つのtraitのどちらかの宣言だけが効く。条件の並びなので、要素にreasonは書けない（14.6節）。"
         },
         "tags": {
           "description": "このobject_def/traitが持つタグのリスト（4節）。型の指定（4.1節）が{tag: ...}で見るのはこのタグ。",
@@ -1430,7 +1433,7 @@
         },
         "resists": {
           "$ref": "#/$defs/conditions_list",
-          "description": "成立している間、土地以外の親へ移れなくなる条件（GameElementDefinition.md 7.13節）。見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面（tick・こぼれ落ち）でも同じ判定が走る。並び全体で1つの条件木なので、trait由来と連結せず、自分自身か1つのtraitのどちらかの宣言だけが効く。"
+          "description": "成立している間、土地以外の親へ移れなくなる条件（GameElementDefinition.md 7.13節）。見るのは宣言元の個体だけ——移そうとしている者が居るとは限らない場面（tick・こぼれ落ち）でも同じ判定が走る。並び全体で1つの条件木なので、trait由来と連結せず、自分自身か1つのtraitのどちらかの宣言だけが効く。条件の並びなので、要素にreasonは書けない（14.6節）。"
         },
         "tags": {
           "description": "このobject_def/traitが持つタグのリスト（4節）。型の指定（4.1節）が{tag: ...}で見るのはこのタグ。",
