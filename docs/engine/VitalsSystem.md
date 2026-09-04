@@ -386,11 +386,13 @@ laceration:
 渇き（`hydration`）・飢え（`body_fat`）・失血（`blood`）・凍え（`warmth`、8.3 節）で、**4つとも
 実装済みです**（検証は `tests/world-codex/charactersYaml.test.ts`）。感染・発熱・下痢・毒・**食の偏り**
 （[`DigestionSystem.md`](./DigestionSystem.md) 7 節）はいずれも**死に方ではなく、そこへ至る道**です。
+新しい原因を足すたびにプレイヤーが見張るバーが増えるのでは、原因を見抜く判断は生まれず、ただ計器盤を
+眺めることになります。
 
 **全身の菌（`pathogen`、[`DigestionSystem.md`](./DigestionSystem.md) 6 節）もその 1 つです。** 上の 2 段が
 削るのは `hydration` と `blood` で、8.1 節が傷について書いた 2 経路をそのまま全身で持ちます。
-新しい原因を足すたびにプレイヤーが見張るバーが増えるのでは、原因を見抜く判断は生まれず、ただ計器盤を
-眺めることになります。
+**行が増えるのは発症している間だけ**です——潜伏期のうちは `alert` が `safe` で、安全域の行はステータス
+エリアに出ません（[`StatusArea.md`](../ui/StatusArea.md) 3 節）。
 
 飢えの道は既に通っています——食べた物は胃と腸を経て `body_fat` へ積み上がり、基礎代謝で減ります
 （[`DigestionSystem.md`](./DigestionSystem.md)）。

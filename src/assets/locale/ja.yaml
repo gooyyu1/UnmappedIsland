@@ -1534,7 +1534,7 @@ stage_texts:
   bone_dry: 乾いた
   leather_hard: 半乾き
   wet: 生乾き
-  # 食べ物の傷み具合（foods.yaml）。食べて当たるのはこの段（DigestionSystem.md 6節）。
+  # 食べ物の傷み具合（foods.yaml）。食べて当たるのはこの段（DigestionSystem.md 6.3節）。
   rotten: 腐った
   stale: 傷んだ
   sound: 無事

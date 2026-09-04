@@ -57,7 +57,7 @@ traits:
             passives:
               - modify: {self: {spoilage: 25}}
           - {name: sound, min: 480}
-      # 食べたときに吐き下しを引く重み（同6節）。自分では動かず、上のdurabilityの段だけがmodifyで
+      # 食べたときに吐き下しを引く重み（同6.3節）。自分では動かず、上のdurabilityの段だけがmodifyで
       # 押し上げるのでvalueは0のまま——無事な物を食べても当たらない。
       spoilage: {value: 0}
     passives:
