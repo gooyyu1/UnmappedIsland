@@ -1455,7 +1455,7 @@
       "additionalProperties": false
     },
     "object_target_name": {
-      "description": "オブジェクトそのものを指す対象名。どの命令が引くかは、これを使う側（destroy_target・object_target）が述べる。指す先のプロパティ名を決めていないので、その名前で祖先を探すancestorは書けない。childは相手が1つに決まらないため不可。pickedを書けるのはamongを書いた候補の中だけで、外に書くとロード時エラー（10.3節）。残りのどれを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。",
+      "description": "オブジェクトそのものを指す対象名。指す先のプロパティ名を決めていないので、その名前で祖先を探すancestorは書けない。childは相手が1つに決まらないため不可。pickedを書けるのはamongを書いた候補の中だけで、外に書くとロード時エラー（10.3節）。残りのどれを書けるかは場所ごとに数え上げず、その宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表）。",
       "enum": [
         "self",
         "parent",
@@ -1741,7 +1741,7 @@
       "additionalProperties": false
     },
     "object_target": {
-      "description": "命令が指すオブジェクトそのもの1つ（9.6節）。対象名で直接指すか、マップ（{subject} / {subject, prop}、subject省略時はself）で指す。ancestorは指す先のプロパティ名で祖先を探すので、プロパティ名を決めていない形（propを伴わない指し方）では書けない（ロード時エラー）。",
+      "description": "命令が指すオブジェクトそのもの1つ。対象名で直接指すか、マップ（{subject} / {subject, prop}、subject省略時はself）で指す。ancestorは指す先のプロパティ名で祖先を探すので、プロパティ名を決めていない形（propを伴わない指し方）では書けない（ロード時エラー）。",
       "oneOf": [
         {
           "$ref": "#/$defs/object_target_name"
