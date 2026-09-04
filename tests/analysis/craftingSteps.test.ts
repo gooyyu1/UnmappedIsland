@@ -574,4 +574,70 @@ object_defs:
       expect(shell?.probability).toBeCloseTo(3 / 4);
     });
   });
+
+  /**
+   * 行っている人（agent）を土台にした重み（craftingStepsのwithHighestDeclaredAgent）。**呼び出し側が
+   * 文脈を渡さなくても解ける唯一の起点**で、これが無いと腕前を土台にしたつまみ
+   * （docs/world/Skills.md 5節）が解けず、その候補は起こらないものとして数えられる。
+   */
+  describe('行っている人を土台にした重み', () => {
+    const YAML_AGENT = `
+object_defs:
+  medic:
+    tags: [character]
+    props:
+      quarry_sense: {value: 2}
+
+  captain:
+    tags: [character]
+    props:
+      quarry_sense: {value: 3}
+
+  grassland:
+    tags: [location]
+    props:
+      rat_find: {value: 2, base: {subject: agent, prop: quarry_sense}}
+      bird_find: {value: 2, base: {subject: agent, prop: keen_ear}}
+    interactions:
+      explore:
+        trigger: menu
+        duration: 15
+        pick:
+          - weight: 8
+          - weight: {prop: rat_find}
+            spawn: {object: rat, into: self}
+      listen:
+        trigger: menu
+        duration: 15
+        pick:
+          - weight: 8
+          - weight: {prop: bird_find}
+            spawn: {object: rat, into: self}
+
+  rat: {tags: [item]}
+`;
+    const agentCodex = new WorldCodexYamlLoader().load('agent.yaml', YAML_AGENT).buildAndReset();
+    const ratId = agentCodex.objectNames.getId('rat');
+    const stepNamed = (name: string): CraftingStep =>
+      craftingStepsOf(agentCodex, agentCodex.objects.get(agentCodex.objectNames.getId('grassland'))).find(
+        (step) => step.name === name,
+      )!;
+    const ratChance = (step: CraftingStep): number | undefined =>
+      step.outcomes.find((outcome) => outcome.spawns.some((spawn) => spawn.objectGlobalId === ratId))
+        ?.probability;
+
+    it('キャラクタが宣言している値で解ける（候補が消えない）', () => {
+      // 宣言が個体で分かれるときは最も高い1人に合わせる（船長の3）ので、重みは素の2＋3＝5、
+      // 何も起きない回の8と合わせて13。
+      expect(ratChance(stepNamed('explore'))).toBeCloseTo(5 / 13);
+      expect(stepNamed('explore').hasUnresolvedReferences).toBe(false);
+    });
+
+    it('どのキャラクタも宣言していない値は解けないまま、印が立つ', () => {
+      // 埋められるのは宣言されているものだけ。解けない参照は0として数え、そのぶん配分が歪むことを
+      // 読み手へ告げる（CraftingStep.hasUnresolvedReferences）。
+      expect(ratChance(stepNamed('listen'))).toBe(0);
+      expect(stepNamed('listen').hasUnresolvedReferences).toBe(true);
+    });
+  });
 });

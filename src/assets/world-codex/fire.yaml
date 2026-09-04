@@ -32,8 +32,9 @@ traits:
   ignitable:
     tags: [tinder]
     props:
-      # 1回の火起こしが成功する重み。失敗の重み（40）との比が成功率になる。
-      # スキルの段で動かすのは今後の課題（同3.1節）。天気はここではなく可否で効く（下のlight）。
+      # 1回の火起こしが成功する重み。失敗の重み（40）との比が成功率になる。**値を名乗るのは火口の側**
+      # で、素の値と一緒に起こす人の腕（ignition_ease）をbaseの土台として積む。**ここには書かない**
+      # ——traitに土台だけ置くと、素の値を書き忘れた火口が0＋腕で火が付いてしまう。
       ignition_chance: {}
     interactions:
       # 火起こし具を重ねて火を移す。外した回も火口は失われる。
@@ -68,6 +69,9 @@ traits:
         # 払った手間は変わらない。
         add: {agent: {skill_firecraft: 2}}
         pick:
+          # **成功の重み。** 腕は重みの式ではなく、ignition_chanceのbaseとして既に積まれている（上）
+          # ——ここは素の参照のまま（段ごとの確率と、外れの重みを動かさない理由は
+          # docs/engine/FireSystem.md 10節）。
           - weight: {prop: ignition_chance}
             destroy: self
             spawn: {object: burning_tinder}
@@ -251,7 +255,7 @@ object_defs:
       weight: {value: 100}
       # ふわりと束ねた枯れ草。詰めても縮まないので嵩そのままで見る。
       volume: {value: 2000}
-      ignition_chance: {value: 60}
+      ignition_chance: {value: 60, base: {subject: agent, prop: ignition_ease}}
 
   # 火のついた火口。炉へ運ぶためだけに在る（docs/engine/FireSystem.md 3.1節）。
   # 炉に残る種火とは別のもので、こちらは持ち運べる物。

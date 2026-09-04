@@ -219,6 +219,13 @@ object_defs:
   #   1回に1つまでにし、数で増えるのはアイテムだけにする。
   # - 生きた獣（animals.yaml）は**単独の候補**にする。収穫ではなく出くわすものなので、他の物と一緒に
   #   見つかると「実り」に混ざってしまう（docs/engine/ExplorationSystem.md 2.1節）。
+  # - 獣のつまみは、**探索する人の狩猟の腕（quarry_sense）をbaseの土台にする**
+  #   （docs/world/Skills.md 5節）。土地が持つのは素の重みで、腕は上乗せだけを持つ——**獣が増える
+  #   のではなく、居る獣に気づけるようになる**。積むのは獣のつまみだけで、実りの候補には積まない。
+  #   **ヤシガニ（crab_find）は実りの側**——動くものだが定義はitemで（foods.yaml）、警戒も手番も
+  #   持たず、獲るのに狩猟の腕を配る操作も無い。拾う物なので、腕が気づく相手にはならない。
+  #   **卓の合計が増えるぶん、実りの出る割合は下がる**（数字はdocs/engine/ExplorationSystem.md 2.1節）。
+  #   **腕を上げた探索は、獣へ寄る**。
   # - ambient_brightnessは樹冠と地面の反射の合計（core.yamlのlocation traitが土台と底を持つ）。
   #   内訳はContentSkeleton.md 8.1.2節の表で、ここに書くのは合計だけ。
   # - exploreは視界の明るさを要求する（IlluminationSystem.md 5節）。据え付けの光源は視界に効かない
@@ -249,8 +256,8 @@ object_defs:
       # 罠の候補に載る。どの型の罠に載るかは、罠の側が並べた候補の一覧が決める（同1.1節）。
       rat_catch: {value: 4}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
-      rat_find: {value: 2}
-      monkey_find: {value: 4}
+      rat_find: {value: 2, base: {subject: agent, prop: quarry_sense}}
+      monkey_find: {value: 4, base: {subject: agent, prop: quarry_sense}}
       # ヤシの木が1本だけ見つかる候補の重み。亜種が上書きする（terrain_generation.yaml）。
       palm_find:
         value: 13
@@ -328,8 +335,8 @@ object_defs:
       # 罠の候補に載る。どの型の罠に載るかは、罠の側が並べた候補の一覧が決める（同1.1節）。
       rat_catch: {value: 4}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
-      rat_find: {value: 2}
-      monkey_find: {value: 4}
+      rat_find: {value: 2, base: {subject: agent, prop: quarry_sense}}
+      monkey_find: {value: 4, base: {subject: agent, prop: quarry_sense}}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 13
@@ -406,8 +413,8 @@ object_defs:
       # 罠の候補に載る。どの型の罠に載るかは、罠の側が並べた候補の一覧が決める（同1.1節）。
       rat_catch: {value: 4}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
-      rat_find: {value: 2}
-      monkey_find: {value: 4}
+      rat_find: {value: 2, base: {subject: agent, prop: quarry_sense}}
+      monkey_find: {value: 4, base: {subject: agent, prop: quarry_sense}}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 20
@@ -477,8 +484,8 @@ object_defs:
       rat_catch: {value: 6}
       junglefowl_catch: {value: 10}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
-      rat_find: {value: 3}
-      junglefowl_find: {value: 4}
+      rat_find: {value: 3, base: {subject: agent, prop: quarry_sense}}
+      junglefowl_find: {value: 4, base: {subject: agent, prop: quarry_sense}}
       # 木苺の茂みが見つかる候補の重み。
       berry_find:
         value: 15
@@ -550,9 +557,9 @@ object_defs:
       # 自分から檻へ入るのは別の頻度で、探索の`_find`とは別のつまみになっている（同3節）。
       wild_boar_catch: {value: 2}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
-      rat_find: {value: 3}
-      monkey_find: {value: 4}
-      wild_boar_find: {value: 3}
+      rat_find: {value: 3, base: {subject: agent, prop: quarry_sense}}
+      monkey_find: {value: 4, base: {subject: agent, prop: quarry_sense}}
+      wild_boar_find: {value: 3, base: {subject: agent, prop: quarry_sense}}
       # 木苺の茂みが見つかる候補の重み。
       berry_find:
         value: 15
@@ -633,10 +640,10 @@ object_defs:
       # `wild_boar_find`が両方3で並んでいるとおりで、檻の側で差を付ける理由が無い。
       wild_boar_catch: {value: 2}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
-      rat_find: {value: 3}
-      junglefowl_find: {value: 3}
-      monkey_find: {value: 4}
-      wild_boar_find: {value: 3}
+      rat_find: {value: 3, base: {subject: agent, prop: quarry_sense}}
+      junglefowl_find: {value: 3, base: {subject: agent, prop: quarry_sense}}
+      monkey_find: {value: 4, base: {subject: agent, prop: quarry_sense}}
+      wild_boar_find: {value: 3, base: {subject: agent, prop: quarry_sense}}
       # ヤシの木が1本だけ見つかる候補の重み。
       palm_find:
         value: 15
@@ -721,7 +728,7 @@ object_defs:
       # 罠の候補に載る。どの型の罠に載るかは、罠の側が並べた候補の一覧が決める（同1.1節）。
       rat_catch: {value: 4}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
-      rat_find: {value: 2}
+      rat_find: {value: 2, base: {subject: agent, prop: quarry_sense}}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 18
@@ -781,7 +788,7 @@ object_defs:
       # 罠の候補に載る。どの型の罠に載るかは、罠の側が並べた候補の一覧が決める（同1.1節）。
       rat_catch: {value: 4}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
-      rat_find: {value: 2}
+      rat_find: {value: 2, base: {subject: agent, prop: quarry_sense}}
       # 石が1つだけ見つかる候補の重み。
       stone_find:
         value: 30
@@ -837,7 +844,7 @@ object_defs:
       # 罠の候補に載る。どの型の罠に載るかは、罠の側が並べた候補の一覧が決める（同1.1節）。
       rat_catch: {value: 4}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
-      rat_find: {value: 2}
+      rat_find: {value: 2, base: {subject: agent, prop: quarry_sense}}
       # 洞窟の入口が見つかる候補の重み。
       cave_find:
         value: 15
@@ -918,7 +925,7 @@ object_defs:
       # 罠の候補に載る。どの型の罠に載るかは、罠の側が並べた候補の一覧が決める（同1.1節）。
       rat_catch: {value: 4}
       # 探索で出くわす獣の重み（docs/world/Animals.md 8節）。
-      rat_find: {value: 2}
+      rat_find: {value: 2, base: {subject: agent, prop: quarry_sense}}
     interactions:
       explore:
         trigger: menu

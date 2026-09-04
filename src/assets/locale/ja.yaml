@@ -298,15 +298,23 @@ object_texts:
       skill_firecraft:
         display_name: 火
         icon: ♨️
-        description: 火を起こし、保つ腕。きりもみ式で火口に向かうほど上がる。
+        description: 火を起こす腕。きりもみ式で火口に向かうほど上がる。上がるほど火が付きやすい。
       skill_hunting:
         display_name: 狩猟
         icon: 🏹
-        description: 獣を狩る腕。武器を手に打ちかかるほど上がる。
+        description: 獣を狩る腕。武器を手に打ちかかるほど上がる。上がるほど、探索や見張りで獲物に出くわす。
       skill_smelting:
         display_name: 採鉱・製錬
         icon: ⛏️
         description: 鉱石を見つけ、金属を取り出す腕。今のこの島には、伸ばす手立ても使い道もまだ無い。
+      ignition_ease:
+        display_name: 火の移りやすさ
+        icon: ✨
+        description: 火口に火が移る重みへの上乗せ。火の腕が上がるほど大きくなる。
+      quarry_sense:
+        display_name: 獲物に気づく目
+        icon: 🐾
+        description: 探索や見張りで獲物に出くわす重みへの上乗せ。狩猟の腕が上がるほど大きくなる。
       afloat:
         display_name: 浮いている
         description: 水に浮かんでいるか。帆のような部品は、浮いている間だけ効く。

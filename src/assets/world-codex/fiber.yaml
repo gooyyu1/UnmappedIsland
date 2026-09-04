@@ -136,7 +136,7 @@ object_defs:
     # ほぐした繊維は火口になる（docs/engine/FireSystem.md 3.2節）。
     traits: [ignitable]
     props:
-      ignition_chance: {value: 80}
+      ignition_chance: {value: 80, base: {subject: agent, prop: ignition_ease}}
       weight: {value: 60}
       # ばらけた繊維は詰めても縮まないので、嵩そのままで見る。
       volume: {value: 800}

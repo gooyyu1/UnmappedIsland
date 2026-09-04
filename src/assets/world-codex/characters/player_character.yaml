@@ -721,25 +721,50 @@ traits:
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
       # 火を起こす（fire.yamlのlight）。**レシピは開けない**——効き先は着火の重みだけ
-      # （docs/engine/FireSystem.md 10節）。
+      # （docs/engine/FireSystem.md 10節）。段が押し上げるのは下のignition_easeで、火口の
+      # ignition_chanceがそれをbaseの土台にする（fire.yaml）。
       skill_firecraft:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {ignition_ease: 20}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {ignition_ease: 50}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {ignition_ease: 120}}
       # 獣を狩る（animals.yamlのstrike）。**レシピは開けない**——開けるのは素材と機会で（Skills.md 2節）、
-      # 罠を作るのは繊維・編みの腕（同節のくくり罠）。
+      # 罠を作るのは繊維・編みの腕（同節のくくり罠）。段が押し上げるのは下のquarry_senseで、
+      # 土地の<動物>_find・海区のshoal_find/seabird_find（探索で出くわす機会）がそれをbaseの
+      # 土台にする（locations.yaml・voyage.yaml）。
+      #
+      # **罠には効かない。** 罠の抽選は誰も操作していない場面で走るので、罠から腕の持ち主が見えない
+      # （docs/engine/TrapSystem.md 8節）。**直接突く3つの手（strike・spear_sea・spear_shoal）にも
+      # まだ効かない**——当てる腕をどう表すかが未決（issue #1488）。
       skill_hunting:
         tags: [skill]
         value: 0
         stages:
           - {name: novice, min: 0}
-          - {name: basic, min: 20}
-          - {name: skilled, min: 60}
-          - {name: expert, min: 180}
+          - name: basic
+            min: 20
+            passives:
+              - modify: {self: {quarry_sense: 1}}
+          - name: skilled
+            min: 60
+            passives:
+              - modify: {self: {quarry_sense: 2}}
+          - name: expert
+            min: 180
+            passives:
+              - modify: {self: {quarry_sense: 4}}
       # 鉱石を採って製錬する。伸ばす行動も開ける物もまだ無い（青銅器が世界に無い）。
       skill_smelting:
         tags: [skill]
@@ -749,3 +774,19 @@ traits:
           - {name: basic, min: 20}
           - {name: skilled, min: 60}
           - {name: expert, min: 180}
+      # ------------------------------------------------------------------
+      # アクセス系の腕が押し上げる上乗せ（刻みとその理由は docs/world/Skills.md 5節）。**素は0で、
+      # 自分では動かず、上の腕前の段がmodifyで押し上げる。**使う側はこれを`base`の土台にする
+      # ——痛みが怪我を土台にするのと同じで、合成はどちらも加算。
+      #
+      # **刻みが2本で違うのは、上乗せする先の桁が違うから**（着火の重みは60前後、獣のつまみは2〜4）。
+      # 倍率なら1本の刻みで済むが、掛け算はこの世界の文法に無い（GameElementDefinition.md 10.2節）。
+      #
+      # **statusタグを持たないので、ステータスの行にはならない**（paceと同じ）。見せるのは腕前
+      # そのもので、効きの大きさは段から読む（docs/world/Skills.md 5.1節）。
+      # ------------------------------------------------------------------
+      # 火の移りやすさ。火口のignition_chance（fire.yaml）が、火を起こしている間これを土台にする。
+      ignition_ease: {value: 0}
+      # 獲物の気配に気づく目。土地の<動物>_findと、海区のshoal_find・seabird_find（locations.yaml・
+      # voyage.yaml）が、探索している間これを土台にする。
+      quarry_sense: {value: 0}

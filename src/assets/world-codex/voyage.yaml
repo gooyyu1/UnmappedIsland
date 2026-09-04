@@ -143,6 +143,11 @@ traits:
       # 沈んだ船から浮いてきた物。
       wreck_find: {value: 0}
       # 魚の群れ。**拾い物と違って海区へ湧く**（12.1節の「その場に湧くもの」）。
+      #
+      # **湧くものの2つだけが、見張る人の狩猟の腕を土台にする**（docs/world/Skills.md 5節）。ただし
+      # **土台を書くのは海区の側**——ここに書くと、名乗っていない海区（素の0のまま）にも腕が積まれて
+      # 群れが立つ。「海区が名乗らなかった候補は、その海には無い」（docs/world/Voyage.md 3.3節）は
+      # 素の0で表しているので、腕を積むのは名乗った海区だけにする。
       shoal_find: {value: 0}
       # 海鳥の群れ。同じく海区へ湧く。
       seabird_find: {value: 0}
@@ -258,6 +263,11 @@ traits:
           - weight: {prop: wreck_find}
             spawn: {object: golden_chalice, into: agent}
           # 湧くものは海区の設置物になる（12.7節）。居る間だけ実り、しばらくすると去る。
+          #
+          # **この2つには狩猟の腕（quarry_sense）が積まれる**（docs/world/Skills.md 5節）。地上で
+          # 獣の候補へ積んでいるのとまったく同じ「出くわす機会」で、獲る手（下のspear_shoal・
+          # catch_seabird）はどちらも狩猟の腕を配る。**拾えるもの（上）には積まない**
+          # ——流木も海藻も卵も、居合わせるかどうかではなく海が返す実りだから。
           - weight: {prop: shoal_find}
             spawn: {object: fish_shoal, into: self}
           - weight: {prop: seabird_find}
@@ -890,7 +900,7 @@ object_defs:
       zones_to_mainland: {value: 12}
       driftwood_find: {value: 30}
       seaweed_find: {value: 25}
-      shoal_find: {value: 25}
+      shoal_find: {value: 25, base: {subject: agent, prop: quarry_sense}}
       barren_find: {value: 20}
       # 島側の端なので、島の側の隣は無い。**荒天が岸へ乗り上げさせることはない**（zone_toward_island を
       # 持たないので、その風下を引いた回は何も起きない）。
@@ -933,7 +943,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       zones_to_mainland: {value: 10}
-      shoal_find: {value: 80}
+      shoal_find: {value: 80, base: {subject: agent, prop: quarry_sense}}
       barren_find: {value: 20}
       zone_toward_mainland: {value: {object: reef_shallows}}
       zone_toward_island: {value: {object: kelp_belt}}
@@ -955,7 +965,7 @@ object_defs:
       ambient_brightness: {value: 0}
       zones_to_mainland: {value: 9}
       flotsam_find: {value: 35}
-      shoal_find: {value: 20}
+      shoal_find: {value: 20, base: {subject: agent, prop: quarry_sense}}
       barren_find: {value: 45}
       zone_toward_mainland: {value: {object: gull_rock}}
       zone_toward_island: {value: {object: tide_rip}}
@@ -981,7 +991,7 @@ object_defs:
       ambient_brightness: {value: 0}
       zones_to_mainland: {value: 8}
       egg_find: {value: 35}
-      seabird_find: {value: 20}
+      seabird_find: {value: 20, base: {subject: agent, prop: quarry_sense}}
       barren_find: {value: 45}
       zone_toward_mainland: {value: {object: islet_waters}}
       zone_toward_island: {value: {object: reef_shallows}}
@@ -1116,7 +1126,7 @@ object_defs:
     props:
       ambient_brightness: {value: 0}
       zones_to_mainland: {value: 5}
-      shoal_find: {value: 80}
+      shoal_find: {value: 80, base: {subject: agent, prop: quarry_sense}}
       barren_find: {value: 20}
       zone_toward_mainland: {value: {object: black_reef}}
       zone_toward_island: {value: {object: long_swell}}
@@ -1138,7 +1148,7 @@ object_defs:
       ambient_brightness: {value: 0}
       zones_to_mainland: {value: 4}
       flotsam_find: {value: 35}
-      shoal_find: {value: 20}
+      shoal_find: {value: 20, base: {subject: agent, prop: quarry_sense}}
       barren_find: {value: 45}
       zone_toward_mainland: {value: {object: drifting_kelp}}
       zone_toward_island: {value: {object: outer_tide_rip}}
@@ -1205,7 +1215,7 @@ object_defs:
       ambient_brightness: {value: 0}
       zones_to_mainland: {value: 2}
       egg_find: {value: 35}
-      seabird_find: {value: 20}
+      seabird_find: {value: 20, base: {subject: agent, prop: quarry_sense}}
       barren_find: {value: 45}
       zone_toward_mainland: {value: {object: mainland_shallows}}
       zone_toward_island: {value: {object: drifting_kelp}}
@@ -1229,7 +1239,7 @@ object_defs:
       zones_to_mainland: {value: 1}
       driftwood_find: {value: 30}
       seaweed_find: {value: 25}
-      shoal_find: {value: 25}
+      shoal_find: {value: 25, base: {subject: agent, prop: quarry_sense}}
       barren_find: {value: 20}
       # 本土側の端なので、本土の側に**海区は**無い（zone_toward_mainland を持たない）。**到達は本土へ
       # 移ることそのもの**（Voyage.md 4節）で、そこへ渡らせるのは航路であって荒天ではない。
