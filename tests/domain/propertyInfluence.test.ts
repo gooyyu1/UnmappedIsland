@@ -3,6 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { PropertyInfluence } from '../../src/domain/PropertyInfluence';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
+import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
@@ -267,6 +268,73 @@ object_defs:
       'stone▲',
       'stone▲',
     ]);
+  });
+
+  it('役を対象にした影響は、その操作が続いている間だけ相手の一覧に並ぶ', () => {
+    // 道が「今歩いている人の速さを下げる」を持つ形（GameElementDefinition.md 11.5節）。宣言元（道）は
+    // 歩く人から見て木の上に居ないので、集める範囲が木だけだと歩いている最中でも一覧に出ない。
+    const codex = new WorldCodexYamlLoader()
+      .load(
+        'world.yaml',
+        `
+object_defs:
+  world:
+    singleton: true
+    props:
+      minutes_per_tick: {value: 15}
+      minute:
+        value: 0
+        range: {min: 0, max: 60}
+        on_max:
+          add: {self: {minute: -60, hour: 1}}
+      hour: {value: 0, range: {min: 0, max: 24}}
+      day: {value: 1}
+    slots:
+      stuff: {}
+`,
+      )
+      .load(
+        'extra.yaml',
+        `
+object_defs:
+  walker:
+    props:
+      speed: {value: 100, range: {min: 0, max: 100}}
+  path:
+    passives:
+      - modify: {agent: {speed: -30}}
+    interactions:
+      travel:
+        trigger: menu
+        duration: 30
+`,
+      )
+      .buildAndReset();
+    const worldDef = codex.objects.get(codex.objectNames.getId('world'));
+    const world = new World(new WorldObject(nextInstanceId++, worldDef, new WorldSession(codex)), codex);
+    const session = new WorldSession(codex, world);
+    const stuff = world.instance.getSlot(codex.slotNames.getId('stuff'));
+    const path = spawn(codex, 'path', session);
+    const walker = spawn(codex, 'walker', session);
+    for (const object of [path, walker]) expect(object.moveToSlotOrRejection(stuff)).toBeUndefined();
+
+    const speedId = codex.propertyNames.getId('speed');
+    const receivedSpeed = () => shown(codex, walker.readInfluences(speedId).received);
+    expect(receivedSpeed(), '歩いていない間は、道は速さへ届いていない').toEqual([]);
+
+    // 歩く30分の途中（tick）を覗く。関係が張られているのはこの間だけ。
+    let whileWalking: readonly string[] = [];
+    session.observeTicks(
+      () => {
+        whileWalking = receivedSpeed();
+      },
+      () => {
+        expect(path.tryGetAction('travel', walker)?.tryExecute()).toBe(true);
+      },
+    );
+
+    expect(whileWalking, '歩いている間は、道を影響元として並ぶ').toEqual(['path▼']);
+    expect(receivedSpeed(), '歩き終えれば消える').toEqual([]);
   });
 
   it('怪我が外れれば、その影響も一覧から消える', () => {
