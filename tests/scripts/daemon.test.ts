@@ -35,7 +35,7 @@ const PLAYS = ['merge-and-close.sh', 'dispatch-review.sh', 'dispatch-task.sh', '
 interface World {
   readonly prs?: readonly unknown[];
   readonly issues?: readonly unknown[];
-  /** `live-sessions.sh` が返す `ID<TAB>bucket<TAB>tags` の行。 */
+  /** `live-sessions.sh` が返す `ID<TAB>session_status<TAB>bucket<TAB>tags` の行。 */
   readonly sessions?: readonly string[];
   readonly ledger?: Record<string, string>;
   /** 非0で終わらせる打ち手（`PLAYS` の名前）。 */
@@ -183,7 +183,7 @@ describe('daemon.sh', () => {
   it('台帳に記録が入っていても、盤面を引ける', () => {
     const result = daemon({
       prs: [pr(10)],
-      sessions: ['session_a\tSESSION_STATUS_BUCKET_WORKING\ttask-9'],
+      sessions: ['session_a\tSESSION_STATUS_RUNNING\tSESSION_STATUS_BUCKET_WORKING\ttask-9'],
       ledger: { 'review:10': 'aaa111', 'review:99': 'zzz999', 'resume:session_gone': 'stall:5' },
     });
 

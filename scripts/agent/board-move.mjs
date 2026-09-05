@@ -17,7 +17,8 @@
 //   { "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body ],
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
-//     "sessions": [ { "id": "session_…", "bucket": "SESSION_STATUS_BUCKET_…", "tags": ["task-1"] } ],
+//     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
+//                     "bucket": "SESSION_STATUS_BUCKET_…", "tags": ["task-1"] } ],
 //     "taken":    { "<手のキー>": "<前に打ったときの指紋>" } }
 //
 // ## 同じ手を、同じ盤面へ二度打たない
@@ -32,14 +33,23 @@
 //
 // ## セッションへの問いは2つある（1.2）
 //
-// **投入済みか**は「畳まれていないか」、**今その差分へ手が動いているか**は `status_bucket`。
-// ここは両方を使う——`task-<番号>` が生きていれば新しく投入しないが、手が空いていればレビューへ
-// 出してよい。**片方だけで書くと、再レビューが永久に止まるか、手が空いた上へ2本目が立つ。**
+// **投入済みか**（畳まれていないか）と、**今その差分へ手が動いているか**。ここは両方を使う
+// ——`task-<番号>` が生きていれば新しく投入しないが、手が空いていればレビューへ出してよい。
+// **片方だけで書くと、再レビューが永久に止まるか、手が空いた上へ2本目が立つ。**
+// どの値がどちらに答えるかは 1.6。
 
 import { readFileSync } from 'node:fs';
 
-/** 今その差分へ手が動いているセッション（1.2）。承認待ちも、許可が下りれば書き始める側。 */
-const BUSY = new Set(['SESSION_STATUS_BUCKET_WORKING', 'SESSION_STATUS_BUCKET_BLOCKED']);
+/**
+ * 今その差分へ手が動いているか（1.6）。**言うのは `session_status`**——`status_bucket` は手が
+ * 空いても `..._WORKING` のまま固まることがあり、そうなったPRのレビューが永久に出なくなる。
+ *
+ * **`..._BLOCKED` を足しているのは仮説で、実測していない。** 承認待ちのセッションが
+ * `SESSION_STATUS_RUNNING` を保つのか `..._IDLE` へ落ちるのかを見ていないので、落ちる場合に備えて
+ * or で残してある。**実測が付いたら、要らない側を消すこと。**
+ */
+const busySession = (session) =>
+  session.status === 'SESSION_STATUS_RUNNING' || session.bucket === 'SESSION_STATUS_BUCKET_BLOCKED';
 
 const input = JSON.parse(readFileSync(0, 'utf8'));
 const taken = input.taken ?? {};
@@ -52,7 +62,7 @@ function closes(body) {
 }
 
 const alive = (tag) => input.sessions.filter((session) => session.tags.includes(tag));
-const busy = (tag) => alive(tag).some((session) => BUSY.has(session.bucket));
+const busy = (tag) => alive(tag).some(busySession);
 
 /**
  * CIの色。**チェックが1つも登録されないPRがある**（`tests.yml` の `paths` に当たらない差分）ので、
@@ -109,7 +119,7 @@ for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
       continue;
     }
     for (const holder of holders) {
-      if (BUSY.has(holder.bucket)) continue;
+      if (busySession(holder)) continue;
       const mark = `mend:${pr.number}:${pr.headRefOid}`;
       if (taken[`resume:${holder.id}`] === mark) continue;
       mends.push(`RESUME ${holder.id} mend ${pr.number} ${mark}`);
@@ -138,7 +148,7 @@ for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
 
 // PRを出さないまま手が空いたセッション。**1回だけ起こす**（指紋が issue 番号だけなので、次は無い）。
 for (const session of input.sessions) {
-  if (BUSY.has(session.bucket)) continue;
+  if (busySession(session)) continue;
   for (const tag of session.tags) {
     if (!tag.startsWith('task-')) continue;
     const issue = Number(tag.slice('task-'.length));

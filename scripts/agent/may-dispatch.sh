@@ -18,7 +18,7 @@
 # - **手綱**（[`brake.sh`](brake.sh)。人間が issue のチェックで止める）
 # - **占有**（[`occupancy.sh`](occupancy.sh)。同じ仕事に既にセッションが立っている）
 #
-# **使用量による自動の停止**（[`board-design.md`](../../.claude/board-design.md) 2.5）もここへ足す。
+# **使用量による自動の停止**（[`board-design.md`](../../.claude/board-design.md) 2.5.1）もここへ足す。
 # 1本あたりの消費の計測が溜まってからなので、まだ入っていない。
 #
 # ## 呼ぶ場所は「立てる直前」

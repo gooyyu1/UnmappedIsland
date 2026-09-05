@@ -20,7 +20,7 @@ interface Board {
   settledBefore?: string;
   prs?: readonly unknown[];
   issues?: readonly unknown[];
-  sessions?: readonly { id: string; bucket: string; tags: readonly string[] }[];
+  sessions?: readonly { id: string; status: string; bucket: string; tags: readonly string[] }[];
   taken?: Record<string, string>;
 }
 
@@ -50,12 +50,17 @@ function pr(number: number, over: Record<string, unknown> = {}) {
 const label = (...names: string[]) => ({ labels: names.map((name) => ({ name })) });
 const working = (id: string, ...tags: string[]) => ({
   id,
+  status: 'SESSION_STATUS_RUNNING',
   bucket: 'SESSION_STATUS_BUCKET_WORKING',
   tags,
 });
+// **手が空いても `status_bucket` は `..._WORKING` のまま固まることがある**（board-design 1.6）ので、
+// 手が空いている側はそちらを `..._WORKING` にして作る。ここを `..._COMPLETED` にすると、判定が
+// bucket を見ていても試験が通ってしまう。
 const idle = (id: string, ...tags: string[]) => ({
   id,
-  bucket: 'SESSION_STATUS_BUCKET_COMPLETED',
+  status: 'SESSION_STATUS_IDLE',
+  bucket: 'SESSION_STATUS_BUCKET_WORKING',
   tags,
 });
 

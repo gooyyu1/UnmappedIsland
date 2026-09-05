@@ -210,7 +210,23 @@ describe('may-dispatch.sh', () => {
     }
   });
 
+  // 2026-09-05 に実測。task-1180 のセッションが `IDLE` のまま `..._WORKING` で1時間半固まり、
+  // PR #1524 のレビューが出なくなった。`status_bucket` は手が空いても戻らないことがある。
+  it('IDLE なら、status_bucket が WORKING でも占有していない', () => {
+    const sessions = [
+      {
+        id: 'cse_STUCK',
+        status: 'SESSION_STATUS_IDLE',
+        bucket: 'SESSION_STATUS_BUCKET_WORKING',
+        tags: ['review-1500'],
+      },
+    ];
+
+    expect(run('review', 'review-1500', { sessions }).code).toBe(0);
+  });
+
   // 承認待ちで止まっているセッションは、許可が下りれば書き始めるので手が動いている側。
+  // **`IDLE` に落ちるかは未実測**（`occupancy.sh` の仮説の注記）。落ちても止まる形にしてある。
   it('BLOCKED のセッションは、手が動いている側として占有している', () => {
     const sessions = [
       {

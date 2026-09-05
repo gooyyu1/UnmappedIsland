@@ -31,6 +31,8 @@ interface World {
   readonly onBridge?: boolean;
   /** 既に畳まれているか。 */
   readonly archived?: boolean;
+  /** `session_status` と `status_bucket`。既定は手が空いている。 */
+  readonly state?: readonly [string, string];
   /** worktree を作るか。既定は作る。 */
   readonly worktree?: boolean;
   /** worktree に未追跡のファイルを置くか。 */
@@ -84,8 +86,9 @@ fi
 echo '<other-session>'
 echo '${JSON.stringify({
         ccr: {
-          session_status: world.archived === true ? 'SESSION_STATUS_ARCHIVED' : 'SESSION_STATUS_IDLE',
-          status_bucket: 'SESSION_STATUS_BUCKET_READY',
+          session_status:
+            world.archived === true ? 'SESSION_STATUS_ARCHIVED' : (world.state?.[0] ?? 'SESSION_STATUS_IDLE'),
+          status_bucket: world.state?.[1] ?? 'SESSION_STATUS_BUCKET_READY',
           tags: ['commander'],
           environment_id: (world.onBridge ?? true) ? BRIDGE : CLOUD,
         },
@@ -154,6 +157,24 @@ describe('archive-session.sh', () => {
 
     expect(result.lines).toEqual([`REMOVED ${WORKTREE}`]);
     expect(result.archived).toBe(false);
+  });
+
+  // 判定を書いている最中のレビューを畳むと、そのコメントは出ないまま消える。
+  it('`--keep-working` は、走っているセッションを畳まない', () => {
+    const state = ['SESSION_STATUS_RUNNING', 'SESSION_STATUS_BUCKET_WORKING'] as const;
+    const result = run({ args: ['--force-bridge', '--keep-working'], state });
+
+    expect(result.lines).toEqual([`KEPT ${SESSION}`]);
+    expect(result.archived).toBe(false);
+  });
+
+  // **見るのは `session_status`。** `status_bucket` は手が空いても `..._WORKING` のまま固まることが
+  // あり（board-design 1.6）、そちらで見ると畳めないセッションが溜まり続ける。
+  it('`--keep-working` でも、手が空いていれば status_bucket が WORKING でも畳む', () => {
+    const state = ['SESSION_STATUS_IDLE', 'SESSION_STATUS_BUCKET_WORKING'] as const;
+    const result = run({ args: ['--force-bridge', '--keep-working'], state });
+
+    expect(result.archived).toBe(true);
   });
 
   it('クラウドのセッションには worktree が無いので、畳むだけで終わる', () => {

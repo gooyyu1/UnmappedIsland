@@ -127,8 +127,9 @@ gather() {
       sessions: ($live | gsub("\r"; "") | split("\n") | map(select(length > 0))
         | map(split("\t") | {
             id: .[0],
-            bucket: (.[1] // "-"),
-            tags: (.[2] // "" | split(",") | map(select(length > 0)))
+            status: (.[1] // "-"),
+            bucket: (.[2] // "-"),
+            tags: (.[3] // "" | split(",") | map(select(length > 0)))
           }))
     }' >"$WORK/board.json" || return 1
 

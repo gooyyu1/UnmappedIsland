@@ -9,12 +9,14 @@
 # 割り当ての中身は [`usage-attribute.mjs`](usage-attribute.mjs)、一覧は
 # [`live-sessions.sh`](live-sessions.sh)。ここは2つを繋ぐだけ。
 #
-# **`status_bucket` から `working` を立てるのはここ。** 一覧は畳まれていないセッションを全部出し
-# （占有の側がそれを要る）、消費を積むのは動いていたものだけ、という違いを呼び手が引き受ける。
+# **`working` を立てるのはここ。** 一覧は畳まれていないセッションを全部出し（占有の側がそれを
+# 要る）、消費を積むのは動いていたものだけ、という違いを呼び手が引き受ける。走行中かの見方は
+# [`board-design.md`](../../.claude/board-design.md) 1.6——**`status_bucket` ではなく
+# `session_status`**（あちらは手が空いても `..._WORKING` のまま固まることがある）。
 #
 # ## 置き場をリポジトリの外にする
 #
-# 蓄積はデーモンの手元のファイルへ置く（[`board-design.md`](../../.claude/board-design.md) 2.5）。
+# 蓄積はデーモンの手元のファイルへ置く（[`board-design.md`](../../.claude/board-design.md) 2.5.3）。
 # リポジトリへ入れると毎周がコミットになる。**これは過去の記録なのでデーモンが死んでも嘘にならず、
 # 消えない場所に置いてよい**（1.1）。
 #
@@ -46,8 +48,8 @@ printf '%s' "$live" | jq -R -s --arg u "$utilization" \
     now: $now,
     live: (split("\n") | map(select(length > 0)) | map(split("\t") | {
       id: .[0],
-      working: (.[1] == "SESSION_STATUS_BUCKET_WORKING"),
-      tags: (.[2] // "" | split(",") | map(select(length > 0)))
+      working: (.[1] == "SESSION_STATUS_RUNNING"),
+      tags: (.[3] // "" | split(",") | map(select(length > 0)))
     }))
   }' |
   node "$HERE/usage-attribute.mjs" "$STATE_DIR/usage.json" "$STATE_DIR/spent.tsv"

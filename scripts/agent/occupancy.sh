@@ -11,7 +11,7 @@
 # 出力は次のどれか。**終了コードが0なのは `FREE` のときだけ**で、他は全部「立ててはいけない」。
 #
 #   FREE
-#   HELD <セッションID> <status_bucket> <タグ>
+#   HELD <セッションID> <session_status> <タグ>
 #   UNKNOWN <理由>
 #
 # ## 読めなかったときに止まる側へ倒すのを、ここが引き受ける
@@ -26,17 +26,16 @@
 # ## 答える問いは、呼び手が選ぶ
 #
 # 一覧は [`live-sessions.sh`](live-sessions.sh) が持ち、**畳まれていないセッションを全部**返す。
-# `--busy` のときだけ、そこから **`..._WORKING` と `..._BLOCKED`** に絞る（`..._BLOCKED` は
-# 承認待ちで、許可が下りれば書き始めるので同じ側）。
+# `--busy` のときだけ、そこから**手が動いているもの**に絞る（絞り方は
+# [`board-design.md`](../../.claude/board-design.md) 1.6）。
 #
 # **問いは2つあり、答えが違う**（[`board-design.md`](../../.claude/board-design.md) 1.2）。
 # どちらを訊くかは呼び手が渡す。
 #
 #   --live … **もう投入したか。** 畳まれていないセッション全部。手が空いていても、その仕事は
 #            既に配られている。これを訊かずに投入すると、同じ issue へ2本目が立つ（1.5）。
-#   --busy … **今その差分へ手が動いているか。** `..._WORKING` と `..._BLOCKED` だけ。
-#            これを `--live` で訊くと、判定を書き終えたレビューが占有し続けて**再レビューが永久に
-#            止まる**。
+#   --busy … **今その差分へ手が動いているか。** 走行中のものだけ。これを `--live` で訊くと、
+#            判定を書き終えたレビューが占有し続けて**再レビューが永久に止まる**。
 #
 # 種類ごとにどちらを訊くかは [`may-dispatch.sh`](may-dispatch.sh) が持つ。ここは訊かれた問いに
 # 答えるだけで、投入の種類を知らない。
@@ -64,18 +63,24 @@ if ! live=$(CCR_META="$CCR_META" bash "$HERE/live-sessions.sh" 2>/dev/null); the
   exit 1
 fi
 
-while IFS=$'\t' read -r id bucket tags; do
+while IFS=$'\t' read -r id status bucket tags; do
   [ -n "$id" ] || continue
   if [ "$MODE" = --busy ]; then
-    case "$bucket" in
-    SESSION_STATUS_BUCKET_WORKING | SESSION_STATUS_BUCKET_BLOCKED) ;;
+    # **手が動いているかを言うのは `session_status`。** `status_bucket` は手が空いても
+    # `..._WORKING` のまま固まることがある（1.6 の実測）。
+    #
+    # **`..._BLOCKED` を足しているのは仮説で、実測していない。** 承認待ちのセッションが
+    # `SESSION_STATUS_RUNNING` を保つのか `..._IDLE` へ落ちるのかを見ていないので、落ちる場合に
+    # 備えて or で残してある。**実測が付いたら、要らない側を消すこと。**
+    case "$status|$bucket" in
+    SESSION_STATUS_RUNNING\|* | *\|SESSION_STATUS_BUCKET_BLOCKED) ;;
     *) continue ;;
     esac
   fi
   for want in "$@"; do
     case ",$tags," in
     *",$want,"*)
-      echo "HELD $id $bucket $want"
+      echo "HELD $id $status $want"
       exit 1
       ;;
     esac

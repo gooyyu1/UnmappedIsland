@@ -25,8 +25,9 @@
 # ## 走行中を守るかは呼び手が決める（`--keep-working`）
 #
 # 「**読み終えたか**」は状態では分からない（[`archive-reviews.sh`](archive-reviews.sh)「状態では
-# 判定できない」）が、「**今走っているか**」は別の問いで、`status_bucket` が答える。`archive_session`
-# はコンテナを解放するので、判定を書いている最中のレビューを畳むと、そのコメントは出ないまま消える。
+# 判定できない」）が、「**今走っているか**」は別の問いで、`session_status` が答える（見方は
+# [`board-design.md`](../../.claude/board-design.md) 1.6）。`archive_session` はコンテナを解放するので、
+# 判定を書いている最中のレビューを畳むと、そのコメントは出ないまま消える。
 #
 # **ただし除いたものは `KEPT` として残るだけで、誰かがもう一度渡さない限り二度と畳まれない。**
 # だから守るのは、**その出力を読む相手がまだ居るとき**だけ——開いているPRのレビューがこれで、次の
@@ -131,9 +132,13 @@ while read -r session; do
     if [ "$FORCE_BRIDGE" -eq 1 ]; then remove_worktree "$session"; fi
     continue
   fi
+  # 走行中の見方は 1.6。**`..._BLOCKED` を足しているのは仮説で、実測していない**（承認待ちが
+  # `RUNNING` を保つのか `IDLE` へ落ちるのかを見ていない）。落ちる場合に備えて or で残してある
+  # ——外れていても `KEPT` が1本増えるだけで、書きかけのコメントは消えない。
   if [ -z "$info" ] ||
     { [ "$KEEP_WORKING" -eq 1 ] &&
-    [ "$(jq -r '.ccr.status_bucket // ""' <<<"$info")" = "SESSION_STATUS_BUCKET_WORKING" ]; } ||
+    { [ "$(jq -r '.ccr.session_status // ""' <<<"$info")" = "SESSION_STATUS_RUNNING" ] ||
+    [ "$(jq -r '.ccr.status_bucket // ""' <<<"$info")" = "SESSION_STATUS_BUCKET_BLOCKED" ]; }; } ||
     { [ -n "$KEEP_UNTAGGED" ] && ! jq -e --arg prefix "$KEEP_UNTAGGED" \
       '[.ccr.tags[]? | select(startswith($prefix))] | length > 0' <<<"$info" >/dev/null; } ||
     { [ "$FORCE_BRIDGE" -eq 0 ] &&

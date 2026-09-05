@@ -82,7 +82,7 @@
   merge-and-close.sh    マージして後片付けまでやる
   needs-user-review.sh  ユーザーの判断なしにマージしてよいかを差分から判定する
   session-of-pr.sh      そのPRを出したセッションのIDを引く
-  live-sessions.sh      畳まれていないセッションを `ID<TAB>bucket<TAB>tags` で出す
+  live-sessions.sh      畳まれていないセッションを `ID<TAB>session_status<TAB>bucket<TAB>tags` で出す
   may-dispatch.sh       投入してよいかを1回で判定する（下の2本を呼ぶ）
   brake.sh              手綱の issue のチェックを読む
   occupancy.sh          そのタグを持つセッションが居るかを見る（--live 投入済みか / --busy 手が動いているか）
