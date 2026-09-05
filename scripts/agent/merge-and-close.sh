@@ -234,8 +234,8 @@ while read -r issue; do
   fi
 done <<<"$closes"
 
-# 本体は作業ツリーの共有先なので、進める前に汚れていないことを見る。未追跡は見ない——本体には
-# `claude_rc.bat` のような、追跡していない持ち物が置いてある。
+# 本体は作業ツリーの共有先なので、進める前に汚れていないことを見る。未追跡は見ない——手で置いた
+# ものが本体を進める妨げになるなら、その場で `git merge --ff-only` が失敗して分かる。
 main_dir="$(cd "$HERE" && cd "$(git rev-parse --git-common-dir)/.." && pwd)"
 if [ -n "$(git -C "$main_dir" status --porcelain --untracked-files=no)" ]; then
   echo "DIRTY $main_dir"
