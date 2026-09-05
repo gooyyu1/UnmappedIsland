@@ -50,6 +50,17 @@ export class TickGate {
   readonly watchedSelfProperties: readonly number[];
 
   /**
+   * 増減が効くために、宣言元自身が入っていなければならない段（6.4節）。**その増減がいつから効き
+   * 始めるか**の手掛かりで、敗血症で血を奪う増減なら `infection` の `septic`——そこへ届くまでは
+   * 効かない。{@link watchedSelfProperties} の裏側。
+   *
+   * 段の宣言の下に置かれた増減（8.2節）と、条件が名指した段（`in_stage`・`in_stage_or_above`、
+   * 14.1節）のどちらもここへ来る。**ちょうどその段かその段以上かは分けない**——どちらも同じ下端を
+   * 下から跨いだ時点で成立するので、そこへ届くまでの時間は変わらない。
+   */
+  readonly requiredSelfStages: readonly SelfStageRequirement[];
+
+  /**
    * 条件が祖先（＝置かれている場所）に課している比較のうち、**成立していなければ効かない**もの。
    * 外の状態でしか決まらない増減——雨で溜まる水は `ancestor.weather` が雨の間だけ増える——を、
    * その状態が続く時間から数えられるようにする。
@@ -69,6 +80,12 @@ export class TickGate {
     this.stage = gate.stage;
     this.conditions = gate.conditions;
     this.watchedSelfProperties = collector.selfProperties;
+    this.requiredSelfStages = [
+      ...(gate.stage === undefined
+        ? []
+        : [{ propertyGlobalId: gate.stage.propertyGlobalId, stageName: gate.stage.name }]),
+      ...collector.requiredSelfStages,
+    ];
     this.ancestorConditions = collector.ancestorConditions;
     this.selfTypeMatches = collector.selfTypeMatches;
     this.hasRuntimeConditions = collector.hasRuntimeConditions;
@@ -94,6 +111,12 @@ export class TickGate {
   possibleFor(def: ObjectDef): boolean {
     return this.selfTypeMatches.every((match) => matchesType(def, match));
   }
+}
+
+/** 増減が効くために、宣言元自身が入っていなければならない段1つ（TickGate.requiredSelfStages）。 */
+export interface SelfStageRequirement {
+  readonly propertyGlobalId: number;
+  readonly stageName: string;
 }
 
 /** 祖先のプロパティに課された比較1つ。 */
@@ -182,11 +205,12 @@ function matchesType(def: ObjectDef, match: TypeMatchReading): boolean {
 
 /**
  * 条件の木から、増減がいつ効くかの手掛かりを集める——宣言元自身（self）の見られているプロパティ
- * （出血は `bleeding` が尽きるまでしか効かない）、祖先に課された比較（雨は降っている間だけ効く）、
+ * （出血は `bleeding` が尽きるまでしか効かない）、名指された自身の段（敗血症で血が減るのは
+ * `infection` が `septic` へ届いてから）、祖先に課された比較（雨は降っている間だけ効く）、
  * そして宣言元自身の型に課された指定（口径ごとに分かれた蒸発・雨の宣言）。
  *
  * selfのプロパティは比較の相手（valueRef）を数えない——尽きて条件が外れるのは、見ている側の値が
- * 動いたときだから。祖先と型の指定は**論理積の枝にあるものだけ**を採る（下のreadAlternative）。
+ * 動いたときだから。自身の段・祖先・型の指定は**論理積の枝にあるものだけ**を採る（下のreadAlternative）。
  *
  * **ここが集めるのは上の問いへの答えだけで、条件そのものではない。** 枠を見る葉
  * （`{in_slot}`・`{slot, matches}`）はどれにも答えない——枠に入っているかは、尽きる値でも
@@ -195,6 +219,7 @@ function matchesType(def: ObjectDef, match: TypeMatchReading): boolean {
  */
 class GateConditionCollector implements ConditionReader {
   readonly selfProperties: number[] = [];
+  readonly requiredSelfStages: SelfStageRequirement[] = [];
   readonly ancestorConditions: AncestorCondition[] = [];
   readonly selfTypeMatches: TypeMatchReading[] = [];
 
@@ -218,9 +243,11 @@ class GateConditionCollector implements ConditionReader {
     });
   }
 
-  propertyStage(root: ReferenceRoot, propertyGlobalId: number): void {
+  propertyStage(root: ReferenceRoot, propertyGlobalId: number, stageName: string): void {
     this.hasRuntimeConditions = true;
-    if (root === 'self') this.selfProperties.push(propertyGlobalId);
+    if (root !== 'self') return;
+    this.selfProperties.push(propertyGlobalId);
+    if (this.required && !this.negated) this.requiredSelfStages.push({ propertyGlobalId, stageName });
   }
 
   slotPosition(): void {
@@ -249,9 +276,10 @@ class GateConditionCollector implements ConditionReader {
   }
 
   /**
-   * 論理和の下の枝。**祖先の比較も型の指定も集めない**——「どれかが成り立てばよい」は、その比較が
-   * 成立していることそのものではない。集めてしまうと、外の状態が続く時間を数え違え、効く型を
-   * 取り違える。どれが成り立って増減が効いたのかも、定義だけでは決まらない。
+   * 論理和の下の枝。**自身の段も祖先の比較も型の指定も集めない**——「どれかが成り立てばよい」は、
+   * その比較が成立していることそのものではない。集めてしまうと、効き始めまでの時間も外の状態が
+   * 続く時間も数え違え、効く型を取り違える。どれが成り立って増減が効いたのかも、定義だけでは
+   * 決まらない。
    */
   any(children: readonly ConditionDeclaration[]): void {
     this.hasRuntimeConditions = true;
@@ -264,8 +292,9 @@ class GateConditionCollector implements ConditionReader {
 
   /**
    * 否定の下の枝。**型の指定だけは裏返して集める**——「`cured`でないこと」はその型を見れば決まる
-   * ので、成立するかどうかが分かれる条件ではない。祖先の比較は集めない：「成り立たないこと」は、
-   * その比較が成立していることそのものではなく、集めると外の状態が続く時間を数え違える。
+   * ので、成立するかどうかが分かれる条件ではない。自身の段と祖先の比較は集めない：「成り立たない
+   * こと」は、その比較が成立していることそのものではなく、集めると効き始めまでの時間と外の状態が
+   * 続く時間を数え違える。
    */
   not(child: ConditionDeclaration): void {
     const outer = this.negated;
