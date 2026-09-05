@@ -4,7 +4,7 @@
 
 本ドキュメントは、プレイヤーが拠点とする住居の内容と、その組み立て方をまとめたものです。仕組みとして使う
 `slots`・`passives` の文法は [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 7 節・8 節、
-場所としての構造（`location` trait の3スロット）は
+場所としての構造（`location` trait のスロット）は
 [`ExplorationSystem.md`](../engine/ExplorationSystem.md) 1 節を参照してください。
 
 本ドキュメントは検討結果であり、確定仕様書ではありません。未決事項は 6 節に整理しています。
@@ -142,7 +142,7 @@ interactions:
 この表のうち洞窟の列を担うのが**浅い洞窟**で、岩がちな土地の探索で見つかります
 （`locations.yaml`）。**設置物でありながら場所でもある**——筏（[`Voyage.md`](./Voyage.md) 2.1 節）と
 同じ形で、`tags: [fixture]` ＋ `traits: [location]` に出入りの操作を足しただけです。中へ入れば
-`location` trait の3スロットがそのまま拠点の枠になり、物を置くことも火を焚くこともできます。
+`location` trait のスロットがそのまま拠点の枠になり、物を置くことも火を焚くこともできます。
 **枠数もかさの上限も置きません**——置ける量で洞窟を絞ると、上の表の「拡張できない」が二重になります。
 
 表の「暗い」と「湿る」は、それぞれ次の1行が担っています。

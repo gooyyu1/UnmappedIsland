@@ -11,7 +11,7 @@
 [`Skills.md`](./Skills.md) 2節。
 
 **実現方法。** **文法の新設はありません。** 寝床は土地の `fixtures` スロットに立つ `fixture` 1種で
-（[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 1節の3スロット）、骨組みと詰め物を差し込む
+（[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 1.1 節のスロット）、骨組みと詰め物を差し込む
 `structure` スロットを持ちます（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 7節）。
 寝床自身が `nap`/`sleep` アクションを持ち、眠っている間の回復は寝床の `passives` が毎 tick `agent` へ積みます
 （同 8.4節）。部品の寄与は、その段のブロックを1つ足すことで届きます（4節）。導入する語彙は型 `bed` と、
