@@ -32,8 +32,8 @@ export default tseslint.config(
     rules: { '@typescript-eslint/no-unnecessary-condition': 'error' },
   },
   {
-    // ビルド用・skill付属のNode.js CLIスクリプト。ブラウザ向けdomain/gameコードとは実行環境が異なる。
-    files: ['.claude/skills/**/*.mjs', 'scripts/**/*.mjs'],
+    // ビルド用・盤面用のNode.js CLIスクリプト。ブラウザ向けdomain/gameコードとは実行環境が異なる。
+    files: ['.claude/**/*.mjs', 'scripts/**/*.mjs'],
     languageOptions: { globals: globals.node },
   },
 );
