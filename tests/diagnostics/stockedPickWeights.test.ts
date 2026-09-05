@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { StepOutcome } from '../../src/analysis/CraftingStep';
 import { rangeCyclesOf } from '../../src/analysis/rangeCycles';
 import type { StaticValueResolver } from '../../src/analysis/staticValue';
-import { staticValueOf } from '../../src/analysis/staticValue';
+import { highestDeclaredLayer, layeredResolver } from '../../src/analysis/staticValue';
 import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
@@ -31,14 +31,10 @@ describe('仕込んだ在庫を重みにした抽選（同梱の定義）', () =
     return expectedSpawnsOf(step?.outcomes ?? []);
   }
 
-  /**
-   * その土地に置いたものとして、祖先の宣言値を答える手立て（balanceTablesの
-   * ancestorValueResolverと同じ読み方——**ロールのどちらの端かは、訊かれたとおりに通す**）。
-   */
+  /** その土地に置いたものとして、祖先の宣言値を答える手立て（balanceTablesが土地1つを渡すときと同じ）。 */
   function ancestorOf(placeName: string): StaticValueResolver {
     const place = codex.objects.get(codex.objectNames.getId(placeName));
-    return (root, propertyGlobalId, end) =>
-      root === 'ancestor' ? (staticValueOf(place, propertyGlobalId, end) ?? 0) : undefined;
+    return layeredResolver([highestDeclaredLayer('ancestor', [place], 'zero')]);
   }
 
   function expectedSpawnsOf(outcomes: readonly StepOutcome[]): Map<string, number> {

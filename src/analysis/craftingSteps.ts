@@ -18,6 +18,7 @@ import type {
   StaticValueResolver,
 } from './staticValue';
 import {
+  highestDeclaredLayer,
   layeredResolver,
   resolveDeclaredNumber,
   staticConditionTruth,
@@ -63,40 +64,25 @@ export function craftingStepsOf(
 }
 
 /**
- * 定義だけから値を解く文脈を作る唯一の入口。**行っている人（agent）の層は必ず入る**——足し忘れると、
- * 腕を土台にした重みが解けず、その候補は起こらないものとして数えられる。**呼び出し側が覚えておく
- * 手順にしない**ため、層を渡す口をここ1つに絞ってある（下のhighestDeclaredAgentLayerは外へ出さない）。
- */
-export function analysisContextOf(
-  codex: WorldCodex,
-  layers: readonly StaticValueLayer[],
-): StaticValueResolver {
-  return layeredResolver([highestDeclaredAgentLayer(codex), ...layers]);
-}
-
-/**
- * **行っている人**（agent、11.5節）を答える層。**最も高く宣言しているキャラクタに合わせる**
- * ——祖先を「最も高く宣言している土地」、使う物を「最も良い型」と見るのと同じ埋め方
- * （balanceTables）で、水分のように個体で分かれる値もこれで1つに決まる。
+ * 定義だけから値を解く文脈を作る唯一の入口。**行っている人（agent、11.5節）の層は必ずここが入れる**
+ * ——足し忘れると、腕を土台にした重みが解けず、その候補は起こらないものとして数えられる。
+ * **呼び出し側が覚えておく手順にしない**ため、層を渡す口をここ1つに絞ってある。
  *
- * 答えるのは宣言値なので、**段が押し上げる分は入らない**——腕前の上乗せ（docs/world/Skills.md 5節）は
- * 素の0、荷重が押し上げるtravel_delayも素の0のまま出る。段は実行時にしか決まらないので、ここで埋められるのは
- * そこまで。
+ * 行っている人の候補は全キャラクタ（highestDeclaredLayer）なので、水分のように個体で分かれる値も
+ * 最も高く宣言している1人に決まる。**段が押し上げる分は入らない**——腕前の上乗せ
+ * （docs/world/Skills.md 5節）は素の0、荷重が押し上げるtravel_delayも素の0のまま出る。
  *
  * **どの文脈にもこの層が要る。** 使う物（どの武器か）や祖先（どの土地か）と違って、誰が行うかは
  * 問いによって変わらない——操作するのは常にプレイヤーキャラクタだから。無いと、腕を土台にした
  * 重み——着火の成否・探索で獣に出くわす確率・打った一撃の当たり所——が解けず、その候補は起こらない
  * ものとして数えられる。
  */
-function highestDeclaredAgentLayer(codex: WorldCodex): StaticValueLayer {
+export function analysisContextOf(
+  codex: WorldCodex,
+  layers: readonly StaticValueLayer[],
+): StaticValueResolver {
   const characters = [...codex.objects].filter((def) => def.hasTag(codex.vocabulary.world.characterTagId));
-  return (context) => (root, propertyGlobalId, end) => {
-    if (root !== 'agent') return undefined;
-    const declared = characters
-      .map((character) => staticValueOf(character, propertyGlobalId, end, context))
-      .filter((value): value is number => value !== undefined);
-    return declared.length === 0 ? undefined : Math.max(...declared);
-  };
+  return layeredResolver([highestDeclaredLayer('agent', characters, 'unresolved'), ...layers]);
 }
 
 /**
