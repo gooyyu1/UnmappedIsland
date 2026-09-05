@@ -918,6 +918,8 @@ object_defs:
     layer: base
 ```
 
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)
+
 ### 7.6 スタック表示
 
 同種オブジェクトをまとめて1つの視覚的なまとまり（スタック）として表示するための設定です。世界の実体
@@ -2401,6 +2403,8 @@ crafting_conditions:
 `conditions` に書きます。
 
 レシピの内部設計（製作中オブジェクトの自動生成、枠の要件との連携など）は `RecipeSystem.md` を参照してください。
+
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（`crafting_conditions`）
 
 ## 14. conditions（条件式）
 

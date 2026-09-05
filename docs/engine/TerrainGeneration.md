@@ -207,6 +207,8 @@ generation_scopes:
 （[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「現実に単位があるものは、その単位で持つ」
 「1つの原因に、複数の結果を兼ねさせない」）。
 
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 14
+
 #### 3.5.1 座標配置（海岸に囲まれ、かつ海岸過多にならない配置）
 
 島は単純な円盤（半径 `SitePlacer.IslandRadius`）とみなします。**抽象座標系の直径（`IslandRadius` の
