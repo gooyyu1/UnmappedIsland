@@ -641,4 +641,52 @@ object_defs:
       expect(stepNamed('listen').hasUnresolvedReferences).toBe(true);
     });
   });
+
+  /**
+   * 相手の型そのものを見る条件（`{subject: instrument, matches}`、14節）の検証。相手をタグで指した
+   * 操作は候補ごとに工程が割れる（instrumentTypesOf）ので、**軸の値が増えるほど、既にその軸の値を
+   * 持つ変種が候補に混ざる**——漬けた肉もcuredタグを持ち、漬け直す行き先も解けてしまう。
+   */
+  describe('相手の型を見る条件', () => {
+    const YAML_INSTRUMENT_TYPE = `
+traits:
+  cured:
+    tags: [cured]
+
+object_defs:
+  salt:
+    tags: [item]
+    interactions:
+      cure:
+        trigger: {drag: {tag: perishable}}
+        conditions:
+          - reason: already_cured
+            not: {subject: instrument, matches: {tag: cured}}
+        become: {subject: instrument, cure: salted}
+        destroy: self
+
+  raw_meat:
+    tags: [item, perishable]
+    variation_axes:
+      cure: {of: {tag: cured}}
+
+  salted:
+    traits: [cured]
+
+  dried:
+    traits: [cured]
+`;
+    const instrumentCodex = new WorldCodexYamlLoader()
+      .load('instrument.yaml', YAML_INSTRUMENT_TYPE)
+      .buildAndReset();
+    const instrumentId = (name: string) => instrumentCodex.objectNames.getId(name);
+
+    it('その指定に当てはまる相手では立たない', () => {
+      const steps = craftingStepsOf(instrumentCodex, instrumentCodex.objects.get(instrumentId('salt')));
+
+      expect(steps.map((step) => step.inputs[1])).toEqual([
+        { kind: 'object', objectGlobalId: instrumentId('raw_meat'), consumed: true, count: 1 },
+      ]);
+    });
+  });
 });
