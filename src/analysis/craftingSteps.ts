@@ -5,6 +5,7 @@ import type { ObjectDef } from '../domain/ObjectDef';
 import type { RecipeDef } from '../domain/RecipeDef';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
 import type { TypeMatchReading } from '../domain/TypeMatchRule';
+import { TypeMatchRule } from '../domain/TypeMatchRule';
 import type { WorldCodex } from '../domain/WorldCodex';
 import type { CraftingInput, CraftingStep, StepOutcome } from './CraftingStep';
 import { collectOutputs, combineOutcomes } from './CraftingStep';
@@ -13,6 +14,7 @@ import { consumesRoot, destroysRoot, readEffect } from './effectOutcomes';
 import { rangeEventAt } from './rangeEvents';
 import type {
   EndBoundValueResolver,
+  StaticSubjectReader,
   StaticValueLayer,
   StaticValueRange,
   StaticValueResolver,
@@ -139,7 +141,9 @@ function instrumentBecomeAxesOf(interaction: InteractionDef): ReadonlyMap<string
  * 目的が壊れる（BalanceStats.md「この表が数えていないもの」）。
  *
  * 相手の型が定まっているなら、相手に課された条件も同じように読む——**空の容器へ注ぐ操作は、中身の
- * ある容器を相手には起こせない**（`{subject: instrument, prop: fill, eq: 0}`）。
+ * ある容器を相手には起こせない**（`{subject: instrument, prop: fill, eq: 0}`）。**型そのものへの
+ * 指定も同じ**（`{subject: instrument, matches: {tag: cured}}`）——既に塩漬けの変種は、塩蔵の相手に
+ * ならない。
  */
 function conditionsNeverMet(
   codex: WorldCodex,
@@ -148,19 +152,25 @@ function conditionsNeverMet(
   interaction: InteractionDef,
   outer: StaticValueResolver | undefined,
 ): boolean {
-  const rangeOf = (root: ReferenceRoot, propertyGlobalId: number): StaticValueRange | undefined => {
-    const subjectDef = rootTypeOf(def, instrument, root);
-    return subjectDef === undefined
-      ? undefined
-      : staticValueRangeOf(
-          codex,
-          subjectDef,
-          propertyGlobalId,
-          staticResolverOf(subjectDef, 'lowest', outer),
-        );
+  const subject: StaticSubjectReader = {
+    rangeOf: (root, propertyGlobalId) => {
+      const subjectDef = rootTypeOf(def, instrument, root);
+      return subjectDef === undefined
+        ? undefined
+        : staticValueRangeOf(
+            codex,
+            subjectDef,
+            propertyGlobalId,
+            staticResolverOf(subjectDef, 'lowest', outer),
+          );
+    },
+    matchesType: (root, match) => {
+      const subjectDef = rootTypeOf(def, instrument, root);
+      return subjectDef === undefined ? undefined : TypeMatchRule.readingMatches(match, subjectDef);
+    },
   };
   return interaction.requirementDeclarations.some(
-    (requirement) => staticConditionTruth(requirement.condition, rangeOf) === false,
+    (requirement) => staticConditionTruth(requirement.condition, subject) === false,
   );
 }
 

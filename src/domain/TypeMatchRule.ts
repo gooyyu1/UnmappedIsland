@@ -58,8 +58,23 @@ export class TypeMatchRule {
 
   /** タグならcandidateがそのタグを持てば真、object_defならまさにその型であれば真。 */
   matches(candidateDef: ObjectDef): boolean {
-    if (this.kind === 'not') return !this.inner!.matches(candidateDef);
-    return this.kind === 'tag' ? candidateDef.hasTag(this.target) : candidateDef.globalId === this.target;
+    return TypeMatchRule.readingMatches(this.reading, candidateDef);
+  }
+
+  /**
+   * 読み上げた指定（TypeMatchReading）が、その型に当てはまるか。判定はmatchesそのもので、
+   * **宣言を読み下す側**——条件の木（ConditionReader）のように、規則そのものではなく読み上げだけを
+   * 受け取る読み手——から同じ問いを立てられるようにここへ置いてある。
+   */
+  static readingMatches(reading: TypeMatchReading, candidateDef: ObjectDef): boolean {
+    switch (reading.kind) {
+      case 'tag':
+        return candidateDef.hasTag(reading.tagGlobalId);
+      case 'object':
+        return candidateDef.globalId === reading.objectGlobalId;
+      case 'not':
+        return !TypeMatchRule.readingMatches(reading.inner, candidateDef);
+    }
   }
 
   /**
