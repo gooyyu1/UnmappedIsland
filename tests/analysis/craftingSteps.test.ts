@@ -577,7 +577,7 @@ object_defs:
   });
 
   /**
-   * 行っている人（agent）を土台にした重み（craftingStepsのwithHighestDeclaredAgent）。**呼び出し側が
+   * 行っている人（agent）を土台にした重み（craftingStepsのanalysisContextOf）。**呼び出し側が
    * 文脈を渡さなくても解ける唯一の起点**で、これが無いと腕前を土台にしたつまみ
    * （docs/world/Skills.md 5節）が解けず、その候補は起こらないものとして数えられる。
    */
