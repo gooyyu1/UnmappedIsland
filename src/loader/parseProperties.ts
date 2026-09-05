@@ -21,8 +21,15 @@ import { parseConditionList, parseSubjectRoot } from './parseConditions';
 import { parsePassiveInto } from './parsePassives';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { ALERT_LEVELS } from '../domain/AlertLevel';
-import type { RangeEventDef } from '../domain/PropertyDef';
-import { GAUGE_ENDS, GaugeDef, PropertyDef, PropertyRange, PropertyStage } from '../domain/PropertyDef';
+import type { RangeEventDef, WorseningDirection } from '../domain/PropertyDef';
+import {
+  GAUGE_ENDS,
+  GaugeDef,
+  PropertyDef,
+  PropertyRange,
+  PropertyStage,
+  WORSENING_DIRECTIONS,
+} from '../domain/PropertyDef';
 import type { PassiveEffect } from '../domain/PassiveEffect';
 import { PropertyPath, ReferenceScope } from '../domain/ReferenceRoot';
 
@@ -39,6 +46,7 @@ const KNOWN_PROP_KEYS = new Set<string>([
   'base',
   'tags',
   'gauge',
+  'worsens',
 ]);
 
 /** props.'propName'エントリを1つ読む（GameElementDefinition.md 6節）。
@@ -123,6 +131,7 @@ export function parsePropAppendingPassives(
   const base = parseBase(loader, context, node, propertyGlobalId);
   const tags = parsePropertyTags(loader, context, node);
   const gauge = parseGauge(context, node);
+  const worsens = parseWorsens(context, node);
 
   return withYamlContext(
     context,
@@ -140,9 +149,20 @@ export function parsePropAppendingPassives(
         tags,
         isSymbolProperty,
         gauge,
+        worsens,
         isObjectProperty,
       ),
   );
+}
+
+/**
+ * props.'name'.worsens（6.8節）を読む。どちらへ動くと悪いかを直に宣言する口で、書いていなければ
+ * undefined——向きは`gauge`の両端か段のalertから導く（PropertyDef.worsensUpward）。
+ */
+function parseWorsens(context: string, node: YAMLMap): WorseningDirection | undefined {
+  // 既定を持たない選択肢なので、在るかどうかを先に見る（oneOfはfallbackを省くと必須キーになる）。
+  if (tryGetScalar(node, 'worsens', context) === undefined) return undefined;
+  return oneOf(node, 'worsens', context, WORSENING_DIRECTIONS);
 }
 
 /**

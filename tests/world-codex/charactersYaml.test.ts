@@ -432,11 +432,15 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(prop.isInStage(threshold - 1, 'too_heavy')).toBe(false);
     });
 
-    it.each(['load', 'pain', 'homesickness'])('%sは増えるほど悪い値として扱われる', (propertyName) => {
-      // バーの向きと増減の記号の色が反転する（StatusArea.md）。
-      expect(propOf(def(character), propertyName).worsensUpward).toBe(true);
-      expect(propOf(def(character), 'stamina').worsensUpward).toBe(false);
-    });
+    // travel_delayとchill_pointはバーにも段にもしないので、worsensで自分から名乗るしかない（6.8節）。
+    it.each(['load', 'pain', 'homesickness', 'travel_delay', 'chill_point'])(
+      '%sは増えるほど悪い値として扱われる',
+      (propertyName) => {
+        // バーの向きと増減の記号の色が反転する（StatusArea.md）。
+        expect(propOf(def(character), propertyName).worsensUpward).toBe(true);
+        expect(propOf(def(character), 'stamina').worsensUpward).toBe(false);
+      },
+    );
 
     // 最大値が違っても「あと何時間で赤くなるか」は揃える（Characters.md）。1時間 = 4 tick。
     it.each(['wakefulness'])('%sの域は残り時間で切られる', (propertyName) => {

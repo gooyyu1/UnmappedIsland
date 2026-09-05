@@ -87,6 +87,7 @@ const REJECTED: ReadonlyArray<readonly [string, unknown]> = [
     'レシピの要求にconsumeが無い',
     { object_defs: { o: { recipes: { r: { steps: [{ requires: [{ object: 'twig' }], duration: 1 }] } } } } },
   ],
+  ['worsensに未定義の向き', { object_defs: { o: { props: { x: { value: 0, worsens: 'sideways' } } } } }],
   ['未知のルートキー', { object_defs_typo: {} }],
 ];
 

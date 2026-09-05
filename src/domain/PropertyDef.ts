@@ -16,6 +16,15 @@ import { ALERT_LEVELS } from './AlertLevel';
 export type AlertDirection = 'up' | 'down' | 'mixed';
 
 /**
+ * 値がどちらへ動くと悪いかを、著者が直に書く宣言（6.8節の`worsens`）。**バーにも段にもしない量の
+ * ための口**——向きを述べる宣言は他にもあるが（`gauge`の両端・`stages`のalert）、どちらも
+ * `range`か段を要るので、そのどちらも持たない量は向きを言えない。
+ */
+export type WorseningDirection = 'up' | 'down';
+
+export const WORSENING_DIRECTIONS: readonly WorseningDirection[] = ['up', 'down'];
+
+/**
  * ゲージ（6.8節）の端の見せ方。`good`は満ち足りている端、`bad`は尽きている・行き過ぎている端、
  * `neutral`は良し悪しを言わない端。**色は両端だけで決まる**ので、UI側は何のプロパティかを
  * 知らずに塗れる。
@@ -53,8 +62,10 @@ export class GaugeDef {
   }
 
   /**
-   * 値が増えるほど悪いか（変化の帯をどちら向きに出すか）。**両端の宣言から決まる**ので、
-   * stagesのalertから導く`alertDirection`とは別に書かせない（両者の食い違いはロード時に弾く）。
+   * 値が増えるほど悪いか（変化の帯をどちら向きに出すか）。**両端の宣言だけから決まる**——同じ事実を
+   * 述べる他の宣言（`worsens`・stagesのalert）と突き合わせるのは持ち主の側で、食い違いはロード時に
+   * 弾く（PropertyDef.worsensUpward）。**向きを持たない両端neutralでは意味を持たない**ので、
+   * 訊く前に`hasDirection`を見る。
    */
   get worsensUpward(): boolean {
     return this.atMax === 'bad';
@@ -272,25 +283,26 @@ export class PropertyDef {
   readonly hasStageArt: boolean;
 
   /**
-   * 値がどちらへ動くと悪いか。**専用の宣言は持たず、`stages`のalertから導く**——「どちらが危ないか」は
-   * 既にalertが宣言しているので、同じことを二度書かせない。段を下から上へ見て、深刻さが単調に上がるなら
+   * `stages`のalertが述べている、値がどちらへ動くと悪いか。段を下から上へ見て、深刻さが単調に上がるなら
    * `up`（負荷など）、単調に下がるなら`down`（満腹度など）。上下どちらの端も悪い山なり・谷なりの並びは
    * `mixed`で、バーの向きを決められない（rangeを持つプロパティでは、ロード時にこれを拒む）。
    *
-   * 見せ方（帯の向き・増減の記号の色、StatusArea.md）のほかに、**収支表がこれを見る**
-   * ——増える側が悪い値は1日に賄う量に数えない（下の`worsensUpward`と`analysis/balanceTables.ts`の
-   * `dailyNeedsOf`、docs/diagnostics/BalanceStats.md「何を「1日に要る量」と数えるか」）。
+   * **alertが向きを何も述べていなければundefined**——段が無い・全段が同じ域・値の並びを持たない
+   * シンボル型（6.6節）。既定へ倒すのはここではなく`worsensUpward`の仕事で、ここが「述べていない」と
+   * 「減ると悪い」を1つの値にすると、他の宣言と突き合わせる側がその2つを見分けられなくなる。
    */
-  readonly alertDirection: AlertDirection;
+  readonly alertDirection: AlertDirection | undefined;
 
   /**
-   * 値が増えるほど悪いか。ゲージを宣言していれば、その両端の見せ方（6.8節）が向きを決める——段の
-   * alertと食い違う宣言はロード時に弾くので、両方あるときは必ず同じ答えになる。ゲージが無ければ
-   * 段のalertの向きから決まり、`mixed`は向きを決められないので既定の「減ると悪い」として扱う。
+   * 値が増えるほど悪いか。**向きは複数の宣言が述べうる**（`worsens`・ゲージの両端・段のalert）が、
+   * どれも同じ1つの事実を言うので、2つ以上が述べていれば同じ答えでなければならない
+   * （食い違いはロード時に弾く、6.8節）。どれも述べていなければ既定の「減ると悪い」。
+   *
+   * 見せ方（帯の向き・増減の記号の色、StatusArea.md）のほかに、**収支表がこれを見る**
+   * ——増える側が悪い値は1日に賄う量に数えない（`analysis/balanceTables.ts`の`dailyNeedsOf`、
+   * docs/diagnostics/BalanceStats.md「何を「1日に要る量」と数えるか」）。
    */
-  get worsensUpward(): boolean {
-    return this.gauge?.worsensUpward ?? this.alertDirection === 'up';
-  }
+  readonly worsensUpward: boolean;
 
   /**
    * base（6.5節）: 実効値の土台にする、他のプロパティへの参照。その実効値へ自分の値を加算する。
@@ -335,6 +347,7 @@ export class PropertyDef {
     tags: readonly number[] = [],
     isSymbolic = false,
     gauge: GaugeDef | undefined = undefined,
+    worsens: WorseningDirection | undefined = undefined,
     isObjectDef = false,
   ) {
     // シンボル型の段は名前そのものが比較対象なので、下限を持てない（6.6・6.4節）。**型と段の両方を
@@ -383,15 +396,7 @@ export class PropertyDef {
     this.fallbackStage = isSymbolic ? undefined : stages.find((stage) => stage.min === undefined);
     this.alertDirection = PropertyDef.deriveAlertDirection(stages, isSymbolic);
     this.hasStageArt = stages.some((stage) => stage.art !== undefined);
-
-    // ゲージの向きとstagesのalertの向きは、同じ「どちらが危ないか」を二度言うことになる。食い違って
-    // いると片方だけが正しく見えて原因が分からなくなる（6.8節）。
-    if (gauge?.hasDirection === true && this.alertDirection !== 'mixed' && stages.length > 0)
-      if ((this.alertDirection === 'up') !== gauge.worsensUpward)
-        throw new Error(
-          `プロパティ'${name}': gaugeの向き（max: ${gauge.atMax}）とstagesのalertの向きが食い違っています。` +
-            'どちらの端が危ないかは1つに揃えてください。',
-        );
+    this.worsensUpward = PropertyDef.resolveWorsensUpward(name, worsens, gauge, this.alertDirection);
 
     // rangeを持つプロパティはバーとして描かれる（6.4節）。上下どちらの端も悪い並びでは、塗りの向きが
     // 「良い方へ伸びる」とも「悪い方へ伸びる」とも決められない。両側が悪い量（体温など）は、値そのもの
@@ -404,12 +409,15 @@ export class PropertyDef {
   }
 
   /**
-   * 数値の段を下から上へ並べ、alertの深刻さがどちらへ動くかを見る（シンボル型の段は大小関係を持たない
-   * ため除く）。単調に上がるならup、単調に下がるならdown、どちらでもなければmixed。
-   * 深刻さが動かない（段が無い・全段が同じ域）場合は、満タンが良いという既定に合わせてdown。
+   * 数値の段を下から上へ並べ、alertの深刻さがどちらへ動くかを見る（シンボル型は値の並びを持たない
+   * ため、何も述べていない）。単調に上がるならup、単調に下がるならdown、どちらでもなければmixed。
+   * **深刻さが動かない（段が無い・全段が同じ域）なら、alertは向きを何も述べていない**（undefined）。
    */
-  private static deriveAlertDirection(stages: readonly PropertyStage[], isSymbolic: boolean): AlertDirection {
-    if (isSymbolic) return 'down';
+  private static deriveAlertDirection(
+    stages: readonly PropertyStage[],
+    isSymbolic: boolean,
+  ): AlertDirection | undefined {
+    if (isSymbolic) return undefined;
 
     const severities = [...stages]
       .sort((a, b) => (a.lowerBound ?? Number.NEGATIVE_INFINITY) - (b.lowerBound ?? Number.NEGATIVE_INFINITY))
@@ -423,7 +431,42 @@ export class PropertyDef {
     }
 
     if (rises && falls) return 'mixed';
-    return rises ? 'up' : 'down';
+    if (rises) return 'up';
+    return falls ? 'down' : undefined;
+  }
+
+  /**
+   * 「増えるほど悪いか」を述べている宣言を突き合わせて1つの答えにする（6.8節）。**述べている宣言が
+   * 2つ以上あって食い違えばロード時に弾く**——片方だけが正しく見えて、どちらを直すべきかが分からなく
+   * なる。どれも述べていなければ、満タンが良いという既定に合わせて「減ると悪い」。
+   *
+   * `mixed`（両端が悪い並び）は向きを決められないので、何も述べていないものとして扱う。
+   */
+  private static resolveWorsensUpward(
+    name: string,
+    declared: WorseningDirection | undefined,
+    gauge: GaugeDef | undefined,
+    stagesAlertDirection: AlertDirection | undefined,
+  ): boolean {
+    const stated: { readonly source: string; readonly worsensUpward: boolean }[] = [];
+    if (declared !== undefined)
+      stated.push({ source: `worsensの向き（${declared}）`, worsensUpward: declared === 'up' });
+    if (gauge?.hasDirection === true)
+      stated.push({ source: `gaugeの向き（max: ${gauge.atMax}）`, worsensUpward: gauge.worsensUpward });
+    if (stagesAlertDirection === 'up' || stagesAlertDirection === 'down')
+      stated.push({ source: 'stagesのalertの向き', worsensUpward: stagesAlertDirection === 'up' });
+
+    if (stated.length === 0) return false;
+
+    const first = stated[0];
+    const conflicting = stated.find((one) => one.worsensUpward !== first.worsensUpward);
+    if (conflicting !== undefined)
+      throw new Error(
+        `プロパティ'${name}': ${first.source}と${conflicting.source}が食い違っています。` +
+          'どちらの端が危ないかは1つに揃えてください。',
+      );
+
+    return first.worsensUpward;
   }
 
   /**
