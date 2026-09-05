@@ -156,8 +156,10 @@ export function round({
   const taken = readLedger(stateDir);
   let board;
   try {
-    board = readBoard({ gh, sessions, log, warn, now: now(), settleMinutes, taken });
+    board = readBoard({ gh, sessions, log, now: now(), settleMinutes, taken });
   } catch (error) {
+    // 一覧を引けなかった周（`live-sessions.mjs`）。**理由を言えるのは投げた側だけ**なので、
+    // その言葉をそのまま出す。
     warn(error instanceof Error ? error.message : String(error));
     return false;
   }
@@ -195,5 +197,12 @@ export function round({
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exit(round() ? 0 : 1);
+  try {
+    process.exit(round() ? 0 : 1);
+  } catch (error) {
+    // 呼び手（`daemon.sh`）が終了コードから言えるのは「引けなかった」だけ。**引けなかった以外で
+    // 落ちたことは、ここで言わないと誰も言わない**——引き続き諦める側へ倒すが、手掛かりは残す。
+    defaultWarn(error instanceof Error ? (error.stack ?? error.message) : String(error));
+    process.exit(1);
+  }
 }

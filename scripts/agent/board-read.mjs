@@ -2,7 +2,7 @@
 // 決めるのは [`board-move.mjs`](board-move.mjs)（`.claude/board-design.md` 2.3）。
 //
 //   import { readBoard } from './board-read.mjs';
-//   readBoard({ log, warn })   // → 盤面（引けなければ undefined）
+//   readBoard({ log })   // → 盤面（`gh` が引けなければ undefined）
 //
 // 出す形は `board-move.mjs` の冒頭にある。
 //
@@ -11,6 +11,8 @@
 // `gh` が失敗した周は盤面が欠けているので、**欠けたまま手を決めない**（消えたPRを「無い」と読むと、
 // レビューを二重に立てる）。返すのは `undefined` で、呼び手はその周を捨てる。**例外にしないのは、
 // 引けないことが普通に起きるから**——認証切れも通信断も、手を打たない理由としては同じ。
+// 一覧（[`live-sessions.mjs`](live-sessions.mjs)）だけは投げてくるので、**受けるのは呼び手**
+// ——理由を言える者が向こうにしか居ないぶん、言葉を持ったまま上がる。
 //
 // ## 外から渡すのは、外部を触る手だけ
 //
@@ -90,8 +92,8 @@ function issueStates(gh, sessions, issues) {
   return states;
 }
 
-/** 盤面を1つ組み立てる。引けなければ `undefined`。 */
-export function readBoard({ gh = runGh, sessions = liveSessions, log, warn, now, settleMinutes, taken }) {
+/** 盤面を1つ組み立てる。`gh` が引けなければ `undefined`、一覧が引けなければ投げる。 */
+export function readBoard({ gh = runGh, sessions = liveSessions, log, now, settleMinutes, taken }) {
   const prs = gh(['pr', 'list', '--state', 'open', '--limit', '50', '--json', PR_FIELDS]);
   if (prs === undefined) return undefined;
   const issues = gh([
@@ -117,13 +119,9 @@ export function readBoard({ gh = runGh, sessions = liveSessions, log, warn, now,
   );
   if (raw === undefined) log('差し戻す相手を引けなかった（この周の「名乗っていない」は当てにならない）');
 
-  let live;
-  try {
-    live = sessions();
-  } catch (error) {
-    warn(error instanceof Error ? error.message : String(error));
-    return undefined;
-  }
+  // **一覧を引けなかったら投げる**（[`live-sessions.mjs`](live-sessions.mjs)）。受けるのは呼び手で、
+  // ここでも受けると、次に足す失敗をどちらへ載せるかが決まらなくなる。
+  const live = sessions();
 
   const openIssues = JSON.parse(issues);
   return {

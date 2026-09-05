@@ -10,8 +10,8 @@
 //
 // ## なぜ切り出したか
 //
-// 一覧を要る側は複数ある（盤面・占有の判定・使用量の割り当て。
-// [`board-design.md`](../../.claude/board-design.md) 2.5.3）。**同じ条件を複数箇所に書くと、
+// 一覧を要る側は1つではない（呼び手は `live-sessions` で検索すれば出る。
+// [`board-design.md`](../../.claude/board-design.md) 2.5.3）。**同じ条件を複数箇所へ書くと、
 // 片方だけが直る。**
 //
 // ## 絞るのは `SESSION_STATUS_ARCHIVED` だけ

@@ -7,8 +7,7 @@
 # **中身は隣の [`live-sessions.mjs`](live-sessions.mjs)。ここは入口だけ。** 出す形・何を落とすか・
 # ページの繰り方は、すべてそちらの冒頭にある。**盤面はこの入口を通らず、あちらを関数として呼ぶ**
 # （[`board-read.mjs`](board-read.mjs)）——1周ごとにプロセスを起こす費用がそのまま常時の固定費に
-# なるため。ここが残っているのは、シェルの呼び手（[`occupancy.sh`](occupancy.sh)・
-# [`resume-session.sh`](resume-session.sh)・[`usage-record.sh`](usage-record.sh)）のため。
+# なるため。ここが残っているのは、シェルから叩く呼び手のため。
 
 set -euo pipefail
 
