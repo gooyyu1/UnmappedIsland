@@ -1,8 +1,6 @@
-import type { WorldObject } from './WorldObject';
 import type { ObjectDef } from './ObjectDef';
 import type { DeclaredNumberReading } from './EffectReader';
 import type { DeclaredNumber } from './DeclaredNumber';
-import { InteractionRelation } from './ReferenceRoot';
 import type { ReferenceContext } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
 
@@ -146,17 +144,8 @@ export class SlotDef {
   }
 
   /**
-   * itemをownerのこのスロットへ入れる操作が結ぶ関係（11.5節）。**枠の持ち主がpatient、入れる物が
-   * instrument**——どの物がどの役に就くかを決めるのはここだけで、分数の問い合わせも、時間の経過と
-   * 入れることそのものも、この関係を張った状態で行う（slotEntry.putIntoSlot）。
-   */
-  putInRelation(owner: WorldObject, agent: WorldObject | undefined, item: WorldObject): InteractionRelation {
-    return new InteractionRelation(owner, agent, item);
-  }
-
-  /**
    * このスロットへ入れるのにかかる分数（宣言が無ければ0）。**関係を張るのは呼び出し側**
-   * （putInRelation）——押す前の問い合わせは張るだけ、入れる実行は動作主も主張する、と張り方が
+   * （Slot.putInRelation）——押す前の問い合わせは張るだけ、入れる実行は動作主も主張する、と張り方が
    * 分かれるので、ここでは決められない。
    */
   putInMinutes(context: ReferenceContext): number {

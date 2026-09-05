@@ -351,6 +351,70 @@ object_defs:
       expect(counted(), '入れ終えれば関係は外れている').toEqual({ dust: 2, scuff: 2, fatigue: 2 });
     });
 
+    it('入れている間に配られた、時間を要する手番は、入れ終えた切れ目で起きる', () => {
+      // プレイヤーの限界（collapse・fall_asleep・despair、player_character.yaml）と同じ形の手番。
+      // **クレームの外側で切れ目を閉じる**ので、入れている者を動作主とする手番でも排他に触れない。
+      const { codex, world, hauler, stone, crate, put } = buildPutInWorld(`
+object_defs:
+  hauler:
+    props:
+      stamina: {value: 0}
+    interactions:
+      collapse:
+        trigger: tick
+        conditions:
+          - {prop: stamina, lte: 0}
+        duration: 120
+        add: {self: {stamina: 20}}
+  crate:
+    slots:
+      contents:
+        put_in: {duration: 30}
+  stone:
+    props:
+      weight: {value: 3}
+`);
+
+      put();
+
+      expect(stone.parent, '入れ終えている').toBe(crate);
+      expect(
+        hauler.tryGetProperty(codex.propertyNames.getId('stamina'))?.number,
+        '待たされた手番も起きている',
+      ).toBe(20);
+      expect(world.minute + world.hour * 60, '入れる30分の後に、手番の120分が続く').toBe(150);
+    });
+
+    it('入れている間に、入れている者が世界から失われたら入らない', () => {
+      // 関与オブジェクトが1つでも失われたら打ち切る（ActionSystem.md 6.1節）。動作主も関与の1つで、
+      // actions/combinationsが見ているのと同じ顔ぶれ。
+      const { world, hauler, stone, crate, put } = buildPutInWorld(`
+object_defs:
+  hauler:
+    props:
+      water:
+        value: 1
+        range: {min: 0, max: 10}
+        on_min:
+          destroy: {subject: self, reason: dehydrated}
+    passives:
+      - add: {self: {water: -1}}
+  crate:
+    slots:
+      contents:
+        put_in: {duration: 30}
+  stone:
+    props:
+      weight: {value: 3}
+`);
+
+      put();
+
+      expect(hauler.parent, '入れ終える前に尽きる').toBeUndefined();
+      expect(stone.parent, '入れる側が居なくなったので入らない').not.toBe(crate);
+      expect(world.minute + world.hour * 60, '時間だけは経過している').toBe(30);
+    });
+
     it('入れている間、入れている者は別の操作のagentになれない', () => {
       // 30分かけて入れる間にtickが回り、同じ個体の手番が始まる（眠るのと同じ形、11.5節の不変条件）。
       const { codex, hauler, put } = buildPutInWorld(`

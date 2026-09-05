@@ -28,12 +28,12 @@ export function putIntoSlot(
   session.runToSeam(() =>
     // 11.5節の表に並ぶ操作の1つなので、判定も分数の問い合わせも時間の経過も入れることそのものも、
     // 同じ関係を張った状態で行う。実行なので動作主も主張する（whileActing）。
-    slot.def.putInRelation(slot.owner, agent, item).whileActing((context) => {
+    slot.putInRelation(agent, item).whileActing((context) => {
       // 入らないと分かっているなら時間も取らない。時間だけ取られて何も入らない、が起きないようにする。
       if (item.rejectionForMoveTo(slot) !== undefined) return;
 
       const minutes = slot.def.putInMinutes(context);
-      if (!spendDurationAndReportParticipantsAlive(minutes, session, [item, slot.owner])) return;
+      if (!spendDurationAndReportParticipantsAlive(minutes, session, [item, slot.owner, agent])) return;
 
       place();
     }),
