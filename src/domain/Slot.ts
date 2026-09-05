@@ -78,9 +78,13 @@ export class Slot {
   /**
    * この枠へitemを入れるのにかかるゲーム内時間（分、SlotDef.putInMinutes）。宣言が無ければ0。
    * 値段は枠が決めるので、どの経路で入れても同じだけかかる（slotEntry参照）。
+   *
+   * **押す前に見せるための問い合わせ**なので、関係は張るだけで動作主は主張しない（during）。
    */
   putInMinutes(agent: WorldObject | undefined, item: WorldObject): number {
-    return this.def.putInMinutes(this.owner, agent, item);
+    return this.def
+      .putInRelation(this.owner, agent, item)
+      .during((context) => this.def.putInMinutes(context));
   }
 
   /**

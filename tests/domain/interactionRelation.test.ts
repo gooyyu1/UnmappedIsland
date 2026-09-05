@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
+import { putIntoSlot } from '../../src/domain/slotEntry';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
@@ -272,5 +273,109 @@ object_defs:
 
     expect(executed).toBe(true);
     expect(restMinutesDuringTravel, '移動中に別の候補の分数を引いても、それは動作ではない').toBe(0);
+  });
+
+  /**
+   * 枠へ入れる操作（`put_in`、7.10節）も11.5節の表に並ぶ操作の1つ。**時間の経過も入れることそのものも
+   * 同じ関係の内側**で、`interactions`と挙動が分かれない（slotEntry.putIntoSlot）。
+   */
+  describe('枠へ入れる操作', () => {
+    /** 30分（＝2 tick）かけて入る枠を持つ箱と、それを運ぶ者・入れる物を世界へ置く。 */
+    function buildPutInWorld(extraYaml: string) {
+      const built = buildWorldSession(extraYaml);
+      const { codex, session, world } = built;
+      const crate = placeInWorld(codex, world, session.createObject(codex.objectNames.getId('crate')));
+      const stone = placeInWorld(codex, world, session.createObject(codex.objectNames.getId('stone')));
+      const hauler = placeInWorld(codex, world, session.createObject(codex.objectNames.getId('hauler')));
+      const slot = crate.getSlot(codex.slotNames.getId('contents'));
+      const put = (): void => {
+        putIntoSlot(stone, slot, hauler, session, () => {
+          expect(stone.moveToSlotOrRejection(slot)).toBeUndefined();
+        });
+      };
+      return { ...built, crate, stone, hauler, put };
+    }
+
+    it('入れている間の tick でも、参加者のpropsから3役とも解ける', () => {
+      // 入れている30分のあいだ、参加者はそれぞれ自分以外の役を見て数える。関係を張らずに時間を
+      // 進めると、どの役も解決先を持たないままtickだけが過ぎる。
+      const { codex, session, crate, stone, hauler, put } = buildPutInWorld(`
+object_defs:
+  hauler:
+    props:
+      strength: {value: 5}
+      # 運んでいる物の重さで疲れる（instrumentを見る）。
+      fatigue: {value: 0, range: {min: 0, max: 100}}
+    passives:
+      - conditions: [{subject: instrument, prop: weight, gt: 0}]
+        add: {self: {fatigue: 1}}
+  crate:
+    props:
+      hardness: {value: 7}
+      # 入れている者が居る間だけ埃が立つ（agentを見る）。
+      dust: {value: 0, range: {min: 0, max: 100}}
+    passives:
+      - conditions: [{subject: agent, prop: strength, gt: 0}]
+        add: {self: {dust: 1}}
+    slots:
+      contents:
+        put_in: {duration: 30}
+  stone:
+    props:
+      weight: {value: 3}
+      # 入れられる先の硬さで擦れる（patientを見る）。
+      scuff: {value: 0, range: {min: 0, max: 100}}
+    passives:
+      - conditions: [{subject: patient, prop: hardness, gt: 0}]
+        add: {self: {scuff: 1}}
+`);
+      const counted = () => ({
+        dust: crate.tryGetProperty(codex.propertyNames.getId('dust'))?.number,
+        scuff: stone.tryGetProperty(codex.propertyNames.getId('scuff'))?.number,
+        fatigue: hauler.tryGetProperty(codex.propertyNames.getId('fatigue'))?.number,
+      });
+
+      session.advanceWorldTime(15);
+      expect(counted(), '入れる前の1 tickでは、どの役も解決しない').toEqual({
+        dust: 0,
+        scuff: 0,
+        fatigue: 0,
+      });
+
+      put();
+
+      expect(stone.parent, '入れ終えている').toBe(crate);
+      expect(counted(), '30分＝2 tickぶん、3役とも解ける').toEqual({ dust: 2, scuff: 2, fatigue: 2 });
+
+      session.advanceWorldTime(15);
+      expect(counted(), '入れ終えれば関係は外れている').toEqual({ dust: 2, scuff: 2, fatigue: 2 });
+    });
+
+    it('入れている間、入れている者は別の操作のagentになれない', () => {
+      // 30分かけて入れる間にtickが回り、同じ個体の手番が始まる（眠るのと同じ形、11.5節の不変条件）。
+      const { codex, hauler, put } = buildPutInWorld(`
+object_defs:
+  hauler:
+    props:
+      steps: {value: 0}
+    interactions:
+      turn:
+        trigger: tick
+        add: {agent: {steps: 1}}
+  crate:
+    slots:
+      contents:
+        put_in: {duration: 30}
+  stone:
+    props:
+      weight: {value: 3}
+`);
+
+      expect(put).toThrowError(/2つの操作のagent/);
+      expect(
+        hauler.tryGetProperty(codex.propertyNames.getId('steps'))?.number,
+        '止まるので手番も起きない',
+      ).toBe(0);
+    });
   });
 });

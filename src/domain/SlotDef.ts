@@ -3,6 +3,7 @@ import type { ObjectDef } from './ObjectDef';
 import type { DeclaredNumberReading } from './EffectReader';
 import type { DeclaredNumber } from './DeclaredNumber';
 import { InteractionRelation } from './ReferenceRoot';
+import type { ReferenceContext } from './ReferenceRoot';
 import type { TypeMatchRule } from './TypeMatchRule';
 
 /**
@@ -85,7 +86,7 @@ export class SlotDef {
    *
    * **時間を課すのは入れる側だけ**で、出すのは常に一瞬。当てるのに手間がかかっても外すのは一瞬、
    * という非対称の方が普通のため。値の解決はcombinationのdurationと同じ形で、`self`が枠の持ち主、
-   * `instrument`が入れる物（putInMinutes参照）。
+   * `instrument`が入れる物（putInRelation参照）。
    */
   private readonly putInDuration: DeclaredNumber | undefined;
 
@@ -145,16 +146,22 @@ export class SlotDef {
   }
 
   /**
-   * itemをownerのこのスロットへ入れるのにかかる分数（宣言が無ければ0）。入れる物がinstrument、
-   * 入れられる側がpatientの操作（11.5節）なので、問い合わせも関係を張った状態で行う。
+   * itemをownerのこのスロットへ入れる操作が結ぶ関係（11.5節）。**枠の持ち主がpatient、入れる物が
+   * instrument**——どの物がどの役に就くかを決めるのはここだけで、分数の問い合わせも、時間の経過と
+   * 入れることそのものも、この関係を張った状態で行う（slotEntry.putIntoSlot）。
    */
-  putInMinutes(owner: WorldObject, agent: WorldObject | undefined, item: WorldObject): number {
-    const duration = this.putInDuration;
-    if (duration === undefined) return 0;
+  putInRelation(owner: WorldObject, agent: WorldObject | undefined, item: WorldObject): InteractionRelation {
+    return new InteractionRelation(owner, agent, item);
+  }
 
-    return new InteractionRelation(owner, agent, item).during((context) =>
-      Math.trunc(duration.resolveOrZero(context)),
-    );
+  /**
+   * このスロットへ入れるのにかかる分数（宣言が無ければ0）。**関係を張るのは呼び出し側**
+   * （putInRelation）——押す前の問い合わせは張るだけ、入れる実行は動作主も主張する、と張り方が
+   * 分かれるので、ここでは決められない。
+   */
+  putInMinutes(context: ReferenceContext): number {
+    const duration = this.putInDuration;
+    return duration === undefined ? 0 : Math.trunc(duration.resolveOrZero(context));
   }
 
   /**
