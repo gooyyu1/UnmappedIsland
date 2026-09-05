@@ -51,7 +51,7 @@ object_defs:
         destroy: self
         spawn: {object: woven_leaf, count: 2}
 
-  # 編んだ葉。籠・壁・屋根に共通で使う中間素材。
+  # 編んだ葉。面が要るところなら、どの連鎖でも共通で使う中間素材。
   # 中間素材なので解放条件を持たない（docs/engine/SkillSystem.md 4.2節）。
   woven_leaf:
     # fragileは、動物がぶつかって壊しうる物（docs/engine/HuntingSystem.md 5.4節）。

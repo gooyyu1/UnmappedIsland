@@ -1,0 +1,23 @@
+# 寝床（docs/world/Bedding.md）。**入っているのは敷物（同2節の段1）だけ**で、骨組み・詰め物・
+# ハンモックはまだ無い。段ごとの回復の上積み（同4節）も、passives が agent を対象にできるように
+# なるまで書けない。
+#
+# 今この1種が担っているのは**眠れる場所であること**で、寝床の在る場所でしか睡眠（sleep）は
+# 押せない（characters/player_character.yaml の休息）。
+
+object_defs:
+  # 編んだ葉を広げただけの敷物。**敷物は部品ではなく寝床そのもの**なので、差し替える枠を持たない
+  # （docs/world/Bedding.md 1.1節）。骨組みと詰め物を差し込む structure スロットは、上積みを
+  # 書けるようになってから足す。
+  bed:
+    tags: [fixture, bed]
+    props:
+      # 編んだ葉3枚ぶん（weaving.yaml）。据えた寝床も、筏に載せれば積荷として効く。
+      weight: {value: 1200}
+    recipes:
+      # 編んだ葉を3枚、端を重ねて広げる。道具も紐も要らない。
+      spread:
+        steps:
+          - requires:
+              - {object: woven_leaf, count: 3, consume: true}
+            duration: 20
