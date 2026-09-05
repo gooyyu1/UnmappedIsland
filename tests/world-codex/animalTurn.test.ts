@@ -3,9 +3,8 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
  * 動物の1手（docs/engine/HuntingSystem.md 5節）を、実ファイルの定義だけで検証する。
@@ -29,7 +28,7 @@ describe('動物の1手', () => {
   let biteId: number;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     warinessId = codex.propertyNames.getId('wariness');
     fleeId = codex.propertyNames.getId('flee');
     biteId = codex.propertyNames.getId('bite');

@@ -3,8 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { worldAmbientBrightnessOf } from '../../src/analysis/activityHours';
 import { tickDeltasOf } from '../../src/analysis/tickDeltas';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, worldCodexPath, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, worldCodexPath } from '../support/worldCodexFiles';
 
 /**
  * 塩田が干し上がる時間帯の検査（issue #1207）。
@@ -18,7 +17,7 @@ import { loadYamlDirectory, worldCodexPath, WORLD_CODEX_DIR } from '../support/w
  * その字面を実測と突き合わせる（`docs/world/SurvivalItems.md` 9節はそこへの参照だけを持つ）。
  */
 describe('塩田が干し上がる時間帯（同梱の定義）', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
 
   /** 塩田を据える土地。**島で最も明るい地面**なので、日差しの届く時間が最も長い。 */
   const LOCATION = 'sandy_beach';

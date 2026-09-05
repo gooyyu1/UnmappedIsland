@@ -3,8 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { startNewGame } from '../../src/domain/generation/NewGame';
 import { heatHazeFor } from '../../src/game/looks/heatHaze';
 import { applyScenario, bundledScenario, parseScenario, scenarioNames } from '../../src/scenario/Scenario';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 
 /**
@@ -18,7 +17,7 @@ describe('テスト用シナリオ', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   function load(name: string) {

@@ -3,8 +3,7 @@ import type { CardFilter } from '../../src/domain/CardFilter';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldSession } from '../../src/domain/WorldSession';
 import type { WorldObject } from '../../src/domain/WorldObject';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * フィルターバーのボタン（`card_filters`、docs/ui/ScreenLayout.md 8.1節）が、**同梱の定義で
@@ -18,7 +17,7 @@ describe('フィルターバーの絞り込み', () => {
   let session: WorldSession;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     session = new WorldSession(codex);
   });
 

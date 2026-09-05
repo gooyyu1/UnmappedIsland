@@ -7,10 +7,9 @@ import { Path } from '../../src/domain/wrappers/Path';
 import { fromGameSession } from '../../src/game/view/PlayScreenView';
 import type { Localization } from '../../src/locale/Localization';
 import { parseLocale } from '../../src/locale/Localization';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { applyScenario, bundledScenario } from '../../src/scenario/Scenario';
 import { pathsIn } from '../support/paths';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 
 /**
@@ -26,7 +25,7 @@ describe('現在地から見える範囲（世界→映し 通し）', () => {
   let locale: Localization;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     locale = parseLocale('ja.yaml', 'object_texts:\n  stone:\n    display_name: 石\n');
   });
 

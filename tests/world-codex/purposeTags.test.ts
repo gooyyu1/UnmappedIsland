@@ -2,8 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { writesToProperty } from '../../src/codex-viewer/describe/effectQueries';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 用途のタグ（food・container・liquid_container・tool）が、物の現実と食い違っていないかの自動テスト。
@@ -17,7 +16,7 @@ describe('用途のタグ', () => {
 
   beforeAll(() => {
     // 用途のタグはファイルをまたいで付くので、ディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     defs = Array.from({ length: codex.objects.count }, (_, globalId) => codex.objects.get(globalId));
   });
 

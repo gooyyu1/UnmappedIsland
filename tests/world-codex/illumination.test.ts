@@ -7,9 +7,8 @@ import { Path } from '../../src/domain/wrappers/Path';
 import { World } from '../../src/domain/wrappers/World';
 import { spawnInProgressObject, tryAdvanceCrafting } from '../../src/domain/crafting';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
  * 明るさが行動を制限することを、実ファイルの定義だけで検証する
@@ -30,7 +29,7 @@ describe('明るさが行動を制限する', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   /** 土地の上にプレイヤーが1人立っている世界。時刻だけを引数で変える（天気は既定のclear）。 */

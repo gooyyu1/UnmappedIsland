@@ -6,8 +6,7 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import { fromGameSession } from '../../src/game/view/PlayScreenView';
 import type { Localization } from '../../src/locale/Localization';
 import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 
 /**
@@ -22,7 +21,7 @@ describe('探索のタブの文言（世界→映し→対応表 通し）', () 
   let locale: Localization;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     locale = parseLocale(LOCALE_FILE, bundledLocaleText());
   });
 

@@ -6,8 +6,7 @@ import type { Localization } from '../../src/locale/Localization';
 import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
 import { UI_TEXT_NAMES } from '../../src/locale/uiTexts';
 import { typeDisplayName } from '../../src/locale/typeDisplayName';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexYamlPaths } from '../support/worldCodexFiles';
+import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
 
 /**
  * 同梱の表示文字列（`ja.yaml`）が、同梱のWorldCodexと噛み合っているかの検査。
@@ -91,7 +90,7 @@ describe('同梱の表示文字列ファイル', () => {
   let locale: Localization;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     locale = parseLocale(LOCALE_FILE, bundledLocaleText());
   });
 

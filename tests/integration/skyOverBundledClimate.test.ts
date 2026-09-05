@@ -3,8 +3,7 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { startNewGame } from '../../src/domain/generation/NewGame';
 import { heatHazeFor } from '../../src/game/looks/heatHaze';
 import { skyTintFor } from '../../src/game/looks/skyTint';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 
 /**
@@ -34,7 +33,7 @@ describe('空の演出（世界→意匠 通し）', () => {
   const HOT = 1920;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   it('夜は天気によらず底へ均され、真夜中の快晴も明るくならない', () => {

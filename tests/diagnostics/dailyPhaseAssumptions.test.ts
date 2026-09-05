@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildBalanceTables } from '../../src/analysis/balanceTables';
 import { dailyBudgetOf, workPileAmountsOf, WORK_SHARES } from '../../src/analysis/dailyPhases';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
  * 局面ごとの1日（`src/analysis/dailyPhases.ts`）が置いている前提の検査。
@@ -12,7 +11,7 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
  */
 describe('局面ごとの1日の前提', () => {
   it('収支表の最小労働が、睡眠と自由時間の両方を残す幅に収まっている', () => {
-    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    const codex = bundledCodex();
     const budget = dailyBudgetOf(buildBalanceTables(codex, SAMPLE_CHARACTER));
 
     // 最小労働が睡眠を割ると生存の採取が負になり、1日の実入りが全土地で水増しされる。
@@ -28,7 +27,7 @@ describe('局面ごとの1日の前提', () => {
   });
 
   it('山が名乗る型が、すべて収支表に値段を持つ', () => {
-    const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    const codex = bundledCodex();
     const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);
 
     // 値段が出ない型を名乗っていれば workPileAmountsOf が投げる。

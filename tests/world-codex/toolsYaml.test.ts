@@ -7,8 +7,7 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { World } from '../../src/domain/wrappers/World';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent } from '../support/illumination';
 
 /**
@@ -21,7 +20,7 @@ describe('tools.yamlの道具定義', () => {
   beforeAll(() => {
     // stoneはlocations.yaml、成果物のsharp_stoneはtools.yamlと、ファイルをまたぐ参照があるため
     // ディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   it('尖った石は、ものを切る道具のタグと武器のタグを持つ', () => {
@@ -173,7 +172,7 @@ describe('石斧を作る', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   /** 岩場を1つ置いた世界。時間を進めるのでWorldを持つセッションを使う。 */

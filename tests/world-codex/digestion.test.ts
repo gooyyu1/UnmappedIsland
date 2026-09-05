@@ -6,9 +6,8 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { PlayerCharacter } from '../../src/domain/wrappers/PlayerCharacter';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
  * 胃→腸→蓄えの配管（docs/engine/DigestionSystem.md）を、実ファイルの定義だけで検証する。
@@ -29,7 +28,7 @@ describe('消化（かさ・栄養素・蓄え）', () => {
   let hydrationId: number;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     satietyId = codex.propertyNames.getId('satiety');
     carbohydrateId = codex.propertyNames.getId('carbohydrate');
     bodyFatId = codex.propertyNames.getId('body_fat');

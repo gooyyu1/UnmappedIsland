@@ -5,8 +5,7 @@ import { conditionTokens } from '../../src/codex-viewer/describe/conditionTokens
 import type { ConditionDeclaration } from '../../src/domain/ConditionReader';
 import { conditionText } from '../../src/domain/conditionWords';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
  * 待ち生産表（`stats/balance.yaml`の`devices`）の`condition`が、**同梱の定義に対して行どうしを
@@ -20,7 +19,7 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
  * プロパティの識別子が出ていることと、行どうしが違う語になること。
  */
 
-const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+const codex = bundledCodex();
 
 describe('待ち生産の条件（同梱の定義）', () => {
   const devices = buildBalanceTables(codex, SAMPLE_CHARACTER).places.find(

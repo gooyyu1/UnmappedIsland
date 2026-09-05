@@ -3,8 +3,7 @@ import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 固形物のかさ（volume）と入れ物の容量（capacity）を、実ファイルの定義だけで検証する
@@ -16,7 +15,7 @@ describe('固形物のかさと入れ物の容量', () => {
   let itemTagId: number;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     volumeId = codex.propertyNames.getId('volume');
     itemTagId = codex.tagNames.getId('item');
   });

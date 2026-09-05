@@ -1,8 +1,7 @@
 import { readdirSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /** 背景画像の置き場所（src/art/backgroundArt.ts の規約）。 */
 const ART_DIR = 'src/assets/backgrounds';
@@ -20,7 +19,7 @@ describe('背景画像', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   function artNames(): string[] {

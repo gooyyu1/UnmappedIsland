@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
-import type { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
+import type { WorldCodex } from '../../src/domain/WorldCodex';
+import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 
 /**
  * ゲーム本体に同梱されるWorldCodex定義YAMLの置き場所（テストはリポジトリルートで実行される前提）。
@@ -32,6 +33,22 @@ export function loadYamlDirectory(loader: WorldCodexYamlLoader, directory: strin
   for (const path of findYamlFiles(directory)) loadYamlFile(loader, path);
   return loader;
 }
+
+/**
+ * 同梱ぶんだけを読んで組み上げたWorldCodex。**何度呼んでも同じものが返る。**
+ *
+ * WorldCodexはロードが済めば不変（src/domain/WorldCodex.ts）なので、読み手どうしは互いに影響しない。
+ * 1回の組み上げに200msかかり、`npm test` はこれを80回超え払っていた（テスト全体のCPU時間の1/4）。
+ *
+ * **返ったcodexを書き換えてはいけない。** 同じワーカーで走る後続のテストが同じものを受け取る。
+ * 定義を足したり差し替えたりして試したいテストは、ここを通さず自分でloaderを組む。
+ */
+export function bundledCodex(): WorldCodex {
+  bundled ??= loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  return bundled;
+}
+
+let bundled: WorldCodex | undefined;
 
 /** WORLD_CODEX_DIR以下のYAMLファイルのパス一覧（定義ファイルの字面を検査するテスト向け）。 */
 export function worldCodexYamlPaths(): readonly string[] {

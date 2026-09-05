@@ -24,7 +24,6 @@ import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
 import type { GenerationScopeDef } from '../../src/domain/generation/GenerationScopeDef';
 import type { IslandMap } from '../../src/domain/generation/IslandMap';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
   describeDocumentedSections,
@@ -36,7 +35,7 @@ import {
   statRecordWith,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
  * パスネットワーク（TerrainGeneration.md 3.5節）の現在の実装について、土地1つあたりの道の本数
@@ -471,7 +470,7 @@ const DOC_PATH = join('docs', 'diagnostics', 'TerrainStats.md');
 
 /** 定義から島を生成して測り、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
 function buildReportFromDefinitions(): string {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
 
   // 1日の枠も山の量も収支表から出る（ContentSkeleton.md 8.3節）ので、先に1度だけ解く。
   const balance = buildBalanceTables(codex, SAMPLE_CHARACTER);

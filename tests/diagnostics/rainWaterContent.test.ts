@@ -3,8 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { RainWaterRow, SeasonName } from '../../src/analysis/seasonalRain';
 import { rainWaterRows, SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 同梱の定義に対する、雨で溜まる水の結論の検査。数え方そのものは`tests/analysis/rainWater.test.ts`。
@@ -14,7 +13,7 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * 2箇所にあると、片方だけが更新されても誰も気づかない（issue #775）。
  */
 describe('雨で溜まる水（同梱の定義）', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
   const rows = rainWaterRows(codex);
 
   it('雨だけで水を賄えるのは雨季だけ', () => {

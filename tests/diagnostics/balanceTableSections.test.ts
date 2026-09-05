@@ -3,9 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { BalanceTables } from '../../src/analysis/balanceTables';
 import { buildBalanceTables, WHOLE_ISLAND } from '../../src/analysis/balanceTables';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { yamlSectionKeys } from '../support/generatedReport';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
  * 収支レポート（`stats/balance.yaml`）の各節が、同梱の定義に対して**中身を持つ**ことの検査。
@@ -58,7 +57,7 @@ const SECTIONS: readonly ReportSection[] = [
 ];
 
 describe('収支レポートの節', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
   const tables = buildBalanceTables(codex, SAMPLE_CHARACTER);
 
   it('同梱の定義に対して、どの節も行を持つ', () => {

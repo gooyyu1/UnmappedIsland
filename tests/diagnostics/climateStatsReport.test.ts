@@ -11,7 +11,6 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
   describeDocumentedSections,
@@ -22,7 +21,7 @@ import {
   yieldToEventLoop,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
-import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexPath } from '../support/worldCodexFiles';
+import { bundledCodex, worldCodexPath } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 
 /**
@@ -377,7 +376,7 @@ function buildSections(
 async function buildReportFromDefinitions(): Promise<string> {
   // world-codex全体を読む——土地の一覧が要る活動時間表（activityHoursOf）にはlocations.yaml等が
   // 要るため。worldの定義はcore.yamlにしか無いので、シミュレーション自体への影響は無い。
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
 
   const calmId = codex.symbolNames.intern('calm');
   const wetId = codex.symbolNames.intern('wet');
@@ -485,8 +484,7 @@ describe('climate.yamlの鮮度', () => {
   const storedReport = (): Record<string, YamlRecord[]> =>
     parse(readFileSync(REPORT_PATH, 'utf8')) as Record<string, YamlRecord[]>;
 
-  const loadCodex = (): WorldCodex =>
-    loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const loadCodex = (): WorldCodex => bundledCodex();
 
   it('レポートの指紋が、今の入力と一致する', () => {
     const recorded = storedReport().input_fingerprint[0].sha256_prefix;

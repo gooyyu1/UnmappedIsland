@@ -9,7 +9,7 @@ import {
   locationCardArtFiles,
   locationNamesWithBackgroundArt,
 } from '../../src/art/artFiles';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 遅延ロードの単位分け（artFiles）の検査。土地の絵と起動時の絵は、重複せず・漏れなく全アセットを
@@ -20,7 +20,7 @@ describe('土地の絵の単位分け', () => {
   let locations: readonly string[];
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     locations = locationNamesWithBackgroundArt(codex);
   });
 

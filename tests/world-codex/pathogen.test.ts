@@ -3,8 +3,7 @@ import type { PropertyValue } from '../../src/domain/PropertyValue';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
  * 食中毒（docs/engine/DigestionSystem.md 6節）を、実ファイルの定義だけで検証する。
@@ -24,7 +23,7 @@ describe('全身の菌と免疫', () => {
   let player: WorldObject;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   beforeEach(() => {

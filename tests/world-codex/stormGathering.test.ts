@@ -6,14 +6,8 @@ import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { World } from '../../src/domain/wrappers/World';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
-import {
-  loadYamlDirectory,
-  SAMPLE_CHARACTER,
-  WORLD_CODEX_DIR,
-  worldCodexYamlPaths,
-} from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
 
 /**
  * 嵐の日に屋外の採取が止まることを、実ファイルの定義だけで検証する
@@ -34,7 +28,7 @@ describe('嵐の日は屋外の採取ができない', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   /** 草原にプレイヤーが1人立っている正午の世界。天気だけを引数で変える。 */

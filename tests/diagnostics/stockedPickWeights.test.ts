@@ -3,8 +3,7 @@ import type { StepOutcome } from '../../src/analysis/CraftingStep';
 import { rangeCyclesOf } from '../../src/analysis/rangeCycles';
 import type { StaticValueResolver } from '../../src/analysis/staticValue';
 import { staticValueOf } from '../../src/analysis/staticValue';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * **プレイヤーが仕込む在庫を重みにした抽選**（塩田の`brine`、畑の`*_sown`）が、在庫の初期値
@@ -16,7 +15,7 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * `stats/balance.yaml`から消えるという形で壊れていた。
  */
 describe('仕込んだ在庫を重みにした抽選（同梱の定義）', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
 
   /**
    * 周期1つ（`<プロパティ>.<端>`）の、1回あたりに生まれる型ごとの期待個数。

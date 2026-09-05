@@ -1,8 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 時間のかかる枠（`put_in`、GameElementDefinition.md 7.10節）の見張り。
@@ -19,7 +18,7 @@ describe('時間のかかる枠', () => {
   let defs: readonly ObjectDef[];
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     defs = Array.from({ length: codex.objects.count }, (_, globalId) => codex.objects.get(globalId));
   });
 
