@@ -110,7 +110,7 @@ remember() {
 
 gather() {
   gh pr list --state open --limit 50 \
-    --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,body \
+    --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body \
     >"$WORK/prs.json" || return 1
   gh issue list --state open --limit 100 --json number,labels,blockedBy \
     >"$WORK/issues.json" || return 1

@@ -166,6 +166,15 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual([]);
   });
 
+  // 積まれたPRのCIは古い base の上で緑になり、レビューの差分にも下のPRの変更が混ざる。下が入れば
+  // `merge-and-close.sh` が `main` へ張り替える（#1493 → #1508）。
+  it('他のPRの上に積まれたPRは、緑でも触らない', () => {
+    const board = { prs: [pr(10, { ...label('通してよい'), baseRefName: 'claude/issue-9' })] };
+    expect(moves(board)).toEqual([
+      'NOTE PR #10 は claude/issue-9 の上に積まれている（下が入るまで触らない）',
+    ]);
+  });
+
   it('下書きのPRには手を出さない', () => {
     expect(moves({ prs: [pr(10, { isDraft: true })] })).toEqual([]);
   });

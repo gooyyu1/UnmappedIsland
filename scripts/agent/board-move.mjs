@@ -15,7 +15,7 @@
 // 入力は次の形。
 //
 //   { "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
-//     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,body ],
+//     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body ],
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
 //     "sessions": [ { "id": "session_…", "bucket": "SESSION_STATUS_BUCKET_…", "tags": ["task-1"] } ],
 //     "taken":    { "<手のキー>": "<前に打ったときの指紋>" } }
@@ -78,6 +78,15 @@ for (const pr of input.prs) {
   const labels = names(pr);
   // 人間の手元。仮決めへの返事を待っているので、機械は触らない（1.3）。
   if (labels.includes('判断待ち')) continue;
+
+  // **他のPRの上に積まれたPRは、盤面では捌けない。** CIは古い base の上で緑になり、レビューが読む
+  // 差分にも下のPRの変更が混ざる（#1508 はこれで2周ぶん無駄にしている）。触らずに書き残すだけに
+  // する。下が入ると `merge-and-close.sh` が `main` へ張り替えるが、**それで直るのは自動クローズ
+  // だけ**で、差分もCIも載せ直すまで古いまま（あちらの「積まれたPRは…」）。
+  if ((pr.baseRefName ?? 'main') !== 'main') {
+    notes.push(`PR #${pr.number} は ${pr.baseRefName} の上に積まれている（下が入るまで触らない）`);
+    continue;
+  }
 
   const check = checks(pr);
   // **コンフリクトはラベルより先に見る。** 誰の手元にあろうと、解消するまで前へ進めない。
