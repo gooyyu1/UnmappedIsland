@@ -17,7 +17,7 @@ const POLICIES = join(ROOT, '.claude', 'policies.md');
 const DECISIONS = join(ROOT, '.claude', 'decisions');
 
 /** `policies.md` の総量の上限（SKILL.md「棚卸しの手順」）。超えたら畳むか捨てる。 */
-const MAX_LINES = 240;
+const MAX_LINES = 220;
 
 /** 1項目に置くフィールドと、その順序。 */
 const FIELDS = ['場面', '選ぶ方', '重視'] as const;
