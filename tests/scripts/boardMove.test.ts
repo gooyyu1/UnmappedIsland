@@ -184,6 +184,15 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['TASK 9']);
   });
 
+  // 打つのは1周に1手なので、新しい順のまま回すと後から出たPRが毎周先に拾われる。
+  it('捌く順は、古いPRから', () => {
+    expect(moves({ prs: [pr(30), pr(9), pr(20)] })).toEqual([
+      'REVIEW 9 aaa111',
+      'REVIEW 20 aaa111',
+      'REVIEW 30 aaa111',
+    ]);
+  });
+
   // 一覧は新しい順に返る。そのまま使うと、古い issue が永久に後回しになる。
   it('投入する順は、古い issue から', () => {
     const ready = (number: number) => ({ number, ...label('task'), blockedBy: { nodes: [] } });

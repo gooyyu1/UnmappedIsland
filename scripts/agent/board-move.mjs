@@ -73,7 +73,9 @@ const reviews = [];
 const tasks = [];
 const notes = [];
 
-for (const pr of input.prs) {
+// **古いものから捌く。** 一覧は新しい順に返るので、そのまま回すと**打つのは1周に1手**（`daemon.sh`）
+// なぶん、後から出たPRが毎周先に拾われて古いものが後回しになる。issue 側（下の `ready`）と同じ向き。
+for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
   if (pr.isDraft === true) continue;
   const labels = names(pr);
   // 人間の手元。仮決めへの返事を待っているので、機械は触らない（1.3）。
