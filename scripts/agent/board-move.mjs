@@ -302,10 +302,15 @@ export function moves(input) {
     if (busy(`review-${pr.number}`)) continue;
     // 著者が書いている最中に読ませない（動く的を読むことになる）。
     if (closes(pr.body).some((issue) => busy(`task-${issue}`))) continue;
-    if (taken[`review:${pr.number}`] === pr.headRefOid) {
-      notes.push(`PR #${pr.number} はレビューへ出したが、結論のラベルが付いていない`);
+    // **指紋が言えるのは「この差分を出した」までで、「読まれた」ではない。** 読み手がもう居ない
+    // のに出したことを読まれたことと読むと、判定を書かずに終わったレビューがそのPRを永久に止める
+    // （issue #1569。畳まれた理由が何であれ同じ）。**居るなら読んでいる最中**——畳むのは 2.10.3 の側。
+    const sent = taken[`review:${pr.number}`] === pr.headRefOid;
+    if (sent && alive(`review-${pr.number}`).length > 0) {
+      notes.push(`PR #${pr.number} はレビューが読んでいる最中で、結論のラベルはまだ無い`);
       continue;
     }
+    if (sent) notes.push(`PR #${pr.number} のレビューは判定を書かずに終わったので、もう一度出す`);
     reviews.push(`REVIEW ${pr.number} ${pr.headRefOid}`);
   }
 

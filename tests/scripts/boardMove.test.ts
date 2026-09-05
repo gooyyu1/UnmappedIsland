@@ -421,9 +421,24 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual([]);
   });
 
-  it('同じ差分をレビューへ出したのに結論が付いていなければ、書き残すだけにする', () => {
+  // 読み手が手を止めているだけの間（道具の承認待ちなど）は、まだ読んでいる最中。
+  it('出した差分を読み手がまだ持っているなら、二度出さない', () => {
+    const board = {
+      prs: [pr(10)],
+      sessions: [idle('session_r', 'review-10')],
+      taken: { 'review:10': 'aaa111', 'idle:session_r': '2026-09-05T01:59:00Z' },
+    };
+    expect(moves(board)).toEqual(['NOTE PR #10 はレビューが読んでいる最中で、結論のラベルはまだ無い']);
+  });
+
+  // 指紋だけを見て「出した＝読まれた」と読むと、判定を書かずに終わったレビューがそのPRを永久に
+  // 止める（issue #1569）。読み手が居なくなっていることが、その読みが終わった印。
+  it('出した差分の読み手が居なくなっていれば、もう一度出す', () => {
     const board = { prs: [pr(10)], taken: { 'review:10': 'aaa111' } };
-    expect(moves(board)).toEqual(['NOTE PR #10 はレビューへ出したが、結論のラベルが付いていない']);
+    expect(moves(board)).toEqual([
+      'REVIEW 10 aaa111',
+      'NOTE PR #10 のレビューは判定を書かずに終わったので、もう一度出す',
+    ]);
   });
 
   it('チェックが1つも登録されていないPRは、落ち着くまで緑と読まない', () => {
