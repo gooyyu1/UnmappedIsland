@@ -255,6 +255,24 @@ describe('board-round.mjs', () => {
 
   // 返すのはコメントで、ラベルは `board-labels.yml` が付ける（2.15.3）。**盤面がラベルを直に
   // 触ると、返る道が2つに割れる**——ワーカーが自分で返す道と食い違っても、誰も気づけない。
+  // **どの `env:` がどこを指すかは盤面が持つ**（2.16.1）ので、こちらは受け取った引数をそのまま
+  // `dispatch-task.sh` の後ろへ足す。補足のファイルは一時的なもので、名前は毎回変わる。
+  it('投入先を寄越された手は、その引数を付けて投入する', () => {
+    const result = playRound({
+      issues: [{ number: 9, labels: [{ name: 'task' }, { name: 'env:bridge' }], blockedBy: { nodes: [] } }],
+    });
+
+    expect(result.calls[0]).toMatch(/^dispatch-task\.sh 9 \S+ --bridge$/);
+  });
+
+  it('投入先が無ければ、引数を足さない', () => {
+    const result = playRound({
+      issues: [{ number: 9, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }],
+    });
+
+    expect(result.calls[0]).toMatch(/^dispatch-task\.sh 9 \S+$/);
+  });
+
   it('起こしても動かないワーカーの仕事を、コメントで人へ返す', () => {
     const result = playRound({
       issues: [{ number: 8, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }],

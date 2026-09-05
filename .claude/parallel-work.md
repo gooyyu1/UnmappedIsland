@@ -102,6 +102,9 @@ bash scripts/agent/dispatch-task.sh 1029 <指示ファイル> --bridge   # 画�
 DRY_RUN=1 bash scripts/agent/dispatch-task.sh 1029 <指示ファイル>  # 渡す引数を見るだけ
 ```
 
+**盤面が配るときは、投入先を issue の `env:` から決める**（[`board-design.md`](board-design.md)
+2.16）。手で叩くときだけ、上のように直に指定する。
+
 **引数は標準入力で渡す**（argvではない）。**呼ぶたびに `~/.claude/.credentials.json` から読み直す**ので
 切れない。**道具も引数も普段と同じで、23個すべてが使える**——MCPサーバもただのHTTPで、しかも
 ステートレスに応じるため、`tools/call` を1発投げるだけでよい。

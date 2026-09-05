@@ -146,11 +146,15 @@ export function play(kind, args, { runScript, gh, remember, log, echo }) {
     case 'TASK': {
       // **補足は無い。** 書けるのはモデルだけで、デーモンには書くものが無い——issue 本文が全部を持つ
       // （`dispatch-task.sh`「重なりが無くて書くことが無いなら、空のファイルでよい」）。
+      //
+      // 投入先は盤面が決めて引数の形で寄越す（2.16）。**どの `env:` がどこを指すかはここには無い**
+      // ——知っているのは盤面だけで、こちらはそれをそのまま渡す。
       const work = mkdtempSync(join(tmpdir(), 'board-round-'));
       try {
         const supplement = join(work, 'supplement.md');
         writeFileSync(supplement, '');
-        return runScript('dispatch-task.sh', [a, posix(supplement)]).status === 0;
+        const where = b === '' ? [] : [b];
+        return runScript('dispatch-task.sh', [a, posix(supplement), ...where]).status === 0;
       } finally {
         rmSync(work, { recursive: true, force: true });
       }
