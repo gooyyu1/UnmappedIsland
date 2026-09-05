@@ -5,7 +5,6 @@ import type {
   PropertyConditionReading,
 } from '../domain/ConditionReader';
 import type { DeclaredNumberReading } from '../domain/EffectReader';
-import { multipliedRefs } from '../domain/EffectReader';
 import type { ObjectDef } from '../domain/ObjectDef';
 import type { RollEnd } from '../domain/PropertyDef';
 import type { ReferenceRoot } from '../domain/ReferenceRoot';
@@ -153,20 +152,12 @@ export interface TrackingResolver {
   readonly hitUnresolvedReference: boolean;
 }
 
-/** 宣言に書かれた1つの数値（重み・所要時間）を数値へ解く。参照が1つでも解けなければundefined。 */
+/** 宣言に書かれた1つの数値（重み・所要時間）を数値へ解く。参照が解けなければundefined。 */
 export function resolveDeclaredNumber(
   reading: DeclaredNumberReading,
   resolve: EndBoundValueResolver,
 ): number | undefined {
-  if (reading.kind === 'literal') return reading.value;
-
-  let product = 1;
-  for (const ref of multipliedRefs(reading)) {
-    const value = resolve(ref.subject, ref.propertyGlobalId);
-    if (value === undefined) return undefined;
-    product *= value;
-  }
-  return product;
+  return reading.kind === 'literal' ? reading.value : resolve(reading.subject, reading.propertyGlobalId);
 }
 
 /**

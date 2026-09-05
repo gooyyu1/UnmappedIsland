@@ -28,6 +28,13 @@ export interface ExternalTickDelta {
 
   /** その増減が止まるまでに動かせる総量。止まらない増減（薪をくべ続ける炉）ではundefined。 */
   readonly maxTotal: number | undefined;
+
+  /**
+   * その増減が効き始めるまでのtick数。**段に入って初めて効く増減**——膿んだ傷が血を奪うのは
+   * `infection` が `septic` へ届いてから——では、そこまでの時間が周期の前に丸ごと要る。最初のtickから
+   * 効くなら0。
+   */
+  readonly ticksUntilStart: number;
 }
 
 /**
@@ -121,15 +128,21 @@ export function rangeCyclesOf(
         // 失血で死ぬが、血の多い獲物は傷が固まるほうが先になる。
         if (driver?.maxTotal !== undefined && ticks * Math.abs(driver.slowest) > driver.maxTotal) continue;
 
+        // 押し手が段に入って初めて効き始めるなら、そこへ届くまでの時間が端まで数えたtickの前に
+        // 丸ごと要る（膿んでから血が減り始める）。**繰り返す周期には乗せない**——立ち上がりが
+        // 効くのは初回だけで、次の発火までの間隔は変わらない。
+        const untilStart = driver?.ticksUntilStart ?? 0;
+
         // 値が戻るなら、次の発火までは戻った量ぶん——初回だけが初期値からの距離になる。
         const repeats = readout.expectedReturnToSelf > 0;
-        const period = repeats ? readout.expectedReturnToSelf / Math.abs(slowest) : ticks;
+        const period = repeats ? readout.expectedReturnToSelf / Math.abs(slowest) : ticks + untilStart;
         cycles.push({
           propertyGlobalId: propertyDef.globalId,
           minutes: period * MINUTES_PER_TICK,
           shortestMinutes:
-            (repeats ? readout.expectedReturnToSelf / Math.abs(fastest) : shortestTicks) * MINUTES_PER_TICK,
-          longestMinutes: (repeats ? period : longestTicks) * MINUTES_PER_TICK,
+            (repeats ? readout.expectedReturnToSelf / Math.abs(fastest) : shortestTicks + untilStart) *
+            MINUTES_PER_TICK,
+          longestMinutes: (repeats ? period : longestTicks + untilStart) * MINUTES_PER_TICK,
           repeats,
           destroysSelf: readout.destroysSelf,
           drivenBy: driver?.sourceGlobalId,
@@ -194,22 +207,25 @@ function sortedTicksToRangeEnd(
  * どれだけ速く、いつまで動かせるか。
  *
  * 1つの型が同じプロパティへ**複数の押し手**を並べることがある——裂傷は止まる出血と止まらない
- * 敗血症の2つで血を奪う。束ねる単位は限度で、速さだけが幅になる。
+ * 敗血症の2つで血を奪う。束ねる単位は限度と立ち上がりで、速さだけが幅になる。
  */
 export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): readonly ExternalTickDelta[] {
-  // **束ねてよいのは限度の同じものどうしだけ。** 限度の違うものを束ねると、どの仕掛けも持って
-  // いない（速さ, 限度）の対ができる——止まる出血（-15/tickで合計60mL）と止まらない敗血症
-  // （-40/tick）を1つにすると、「-15/tickで永久に流れ続ける傷」になる。炉の火力（heatの段で
-  // 1/3/5）はどれも止まらないので、今までどおり1つの幅に収まる。
-  const byPropertyAndLimit = new Map<string, ExternalTickDelta>();
+  // **束ねてよいのは限度も立ち上がりも同じものどうしだけ。** 違うものを束ねると、どの仕掛けも
+  // 持っていない（速さ, 限度, 立ち上がり）の組ができる——止まる出血（-15/tickで合計60mL）と
+  // 止まらない敗血症（-40/tick）を1つにすれば「-15/tickで永久に流れ続ける傷」になり、膿んだ傷が
+  // 奪う水（festeringから-1、septicから-2）を1つにすれば「膿み始めた時点で-2」になる。炉の火力
+  // （heatの段で1/3/5）はどれも止まらず、立ち上がりも読めない（ticksUntilGateRises）ので、今まで
+  // どおり1つの幅に収まる。
+  const byPropertyLimitAndStart = new Map<string, ExternalTickDelta>();
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== root || delta.amount === 0) continue;
 
     const ticks = ticksWhileGateHolds(def, delta.gate);
     const maxTotal = ticks === undefined ? undefined : ticks * Math.abs(delta.amount);
-    const key = `${delta.propertyGlobalId}:${maxTotal}`;
-    const known = byPropertyAndLimit.get(key);
-    byPropertyAndLimit.set(key, {
+    const ticksUntilStart = ticksUntilGateRises(def, delta.gate);
+    const key = `${delta.propertyGlobalId}:${maxTotal}:${ticksUntilStart}`;
+    const known = byPropertyLimitAndStart.get(key);
+    byPropertyLimitAndStart.set(key, {
       sourceGlobalId: def.globalId,
       propertyGlobalId: delta.propertyGlobalId,
       // 段で切り替わる増減（炉の火力）は同時には効かないので、束ねずに幅として持つ。
@@ -222,9 +238,10 @@ export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): 
           ? delta.amount
           : known.fastest,
       maxTotal,
+      ticksUntilStart,
     });
   }
-  return [...byPropertyAndLimit.values()];
+  return [...byPropertyLimitAndStart.values()];
 }
 
 /**
@@ -348,4 +365,31 @@ function ticksWhileGateHolds(def: ObjectDef, gate: TickGate): number | undefined
     if (fewest === undefined || ticks < fewest) fewest = ticks;
   }
   return fewest;
+}
+
+/**
+ * ゲートが自分の段を見ているなら、そこへ自分の増減だけで届くまでのtick数（TickGate参照）。
+ * 段を見ていない、届くまでが読めない段なら0＝最初のtickから効く。**炉の火力がこれ**——火は段の
+ * 下に置かれた増減（8.2節）で育つが、そこはtickAmountsOfが数から外している。
+ *
+ * **要る段が複数あれば最も遅いものに合わせる**——どれか1つでも跨いでいなければ増減は効かない。
+ * ゲートが落ちるのは見ている値のどれかが尽きた時点なので、ticksWhileGateHoldsとは向きが逆になる。
+ */
+function ticksUntilGateRises(def: ObjectDef, gate: TickGate): number {
+  let longest = 0;
+  for (const { propertyGlobalId, stageName } of gate.requiredSelfStages) {
+    // 届くまでを**最も長く**見る側（slowest）に合わせて、ロールも段から遠いほうを採る。止まるまでを
+    // 最も短く見るのと同じで、押し手を控えめに数える側へ揃える。
+    const bound = def
+      .tryGetPropertyDef(propertyGlobalId)
+      ?.stages.find((stage) => stage.name === stageName)?.lowerBound;
+    const value = staticValueOf(def, propertyGlobalId, 'lowest');
+    const pace = paceTowards(tickAmountsOf(def, propertyGlobalId).possible, 'on_max');
+    if (bound === undefined || value === undefined || pace === undefined) continue;
+
+    // 生まれた時点でその段に居るなら待ちは無い（届くまでが0以下になる）。
+    const ticks = Math.ceil((bound - value) / pace.slowest);
+    if (ticks > longest) longest = ticks;
+  }
+  return longest;
 }

@@ -813,22 +813,6 @@ object_defs:
     expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/agent/);
   });
 
-  it('on_minのweightの積にagentを混ぜてもエラーになる（積の因子も同じ場所の参照）', () => {
-    const yaml = `
-object_defs:
-  log:
-    props:
-      life:
-        value: 0
-        range: {min: 0, max: 100}
-        on_min:
-          pick:
-            - weight: {prop: life, times: {subject: agent, prop: luck}}
-              destroy: self
-`;
-    expect(() => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset()).toThrowError(/agent/);
-  });
-
   it('propの未知のキーはエラーになる', () => {
     const yaml = `
 object_defs:

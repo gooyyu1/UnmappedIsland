@@ -114,6 +114,12 @@ gather() {
     >"$WORK/prs.json" || return 1
   gh issue list --state open --limit 100 --json number,labels,blockedBy \
     >"$WORK/issues.json" || return 1
+  # **列がずれていたら、その周ごと捨てる**（下の `error`）。デーモンは動き出したときの
+  # [`daemon.sh`](daemon.sh) を握ったまま回るので、**走っている最中に
+  # [`live-sessions.sh`](live-sessions.sh) の列を足すと、こちらだけが古いまま噛み合う。**
+  # 黙って読み違えると `tags` が空になり、**占有が全部「無い」に見えて投入が止まらない**
+  # ——2026-09-05 に、書くセッションが6本立った。**引けなかったのと同じ扱い**にすれば、止まる側へ
+  # 倒れる（`FAILURE_LIMIT` 周でデーモンごと落ちるので、気づける）。
   CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}" bash "$HERE/live-sessions.sh" \
     >"$WORK/live.tsv" || return 1
 
@@ -125,11 +131,13 @@ gather() {
       issues: $issues[0],
       taken: $taken[0],
       sessions: ($live | gsub("\r"; "") | split("\n") | map(select(length > 0))
-        | map(split("\t") | {
+        | map(split("\t")
+          | if length != 4 then error("live-sessions.sh の列数が合わない") else . end
+          | {
             id: .[0],
-            status: (.[1] // "-"),
-            bucket: (.[2] // "-"),
-            tags: (.[3] // "" | split(",") | map(select(length > 0)))
+            status: .[1],
+            bucket: .[2],
+            tags: (.[3] | split(",") | map(select(length > 0)))
           }))
     }' >"$WORK/board.json" || return 1
 

@@ -12,10 +12,13 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
 
 /**
  * 荷重の効き方（docs/world/Characters.md 荷重の効き方節）に対する自動テスト。**効かせ方は1箇所**
- * ——キャラクタの `load` の段が、移動の可否・歩みの速さ・体力の削りの3つをまとめて駆動する。
+ * ——キャラクタの `load` の段が、移動の可否・歩みの遅れ・体力の削りの3つをまとめて駆動する。
+ *
+ * 遅れは道の `travel_minutes` が `base` で担ぎ手の `travel_delay` を継いで**足される**
+ * （GameElementDefinition.md 6.5節）。ここが見ているのは、その足し算が実データを通して効くこと。
  *
  * 率を下げる道具（そり）はまだ実データに無いので、ここだけで足す。担ぎ手・道・積み荷は実データの
- * ものを使う——段の境目も倍率も削りも、確かめたいのは定義ファイルに書いた値そのもの。
+ * ものを使う——段の境目も遅れも削りも、確かめたいのは定義ファイルに書いた値そのもの。
  */
 const SLED_YAML = `
 object_defs:
@@ -34,10 +37,10 @@ object_defs:
         cell: {accept: {tag: item}}
 `;
 
-/** 道の長さ。段ごとの倍率（1.15倍・1.4倍）が分の単位で割り切れる長さにする。 */
+/** 道の長さ。実データの素の道（locations.yaml）と同じ長さにする。 */
 const TRAVEL_MINUTES = 60;
 
-describe('荷重が歩みの速さと体力に効く', () => {
+describe('荷重が歩みの遅れと体力に効く', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
@@ -140,7 +143,7 @@ describe('荷重が歩みの速さと体力に効く', () => {
     };
   }
 
-  it('空身なら等倍で渡り、体力は1も減らない', () => {
+  it('空身なら遅れずに渡り、体力は1も減らない', () => {
     const trip = trek(0);
 
     expect(trip.stage).toBe('light');
@@ -149,23 +152,23 @@ describe('荷重が歩みの速さと体力に効く', () => {
     expect(trip.staminaLost, '担いでいない間はtickで減らない').toBe(0);
   });
 
-  it('担ぐと遅くなり、担いだ時間ぶん体力が削られる', () => {
+  it('担ぐと遅れが足され、担いだ時間ぶん体力が削られる', () => {
     // medicのladenは8250gから（characters/medic.yaml）。
     const trip = trek(9);
 
     expect(trip.stage).toBe('laden');
-    expect(trip.minutes, '60分 × 1.15').toBe(69);
+    expect(trip.minutes, '60分 + 遅れ10分').toBe(TRAVEL_MINUTES + 10);
     expect(trip.staminaLost, '-0.3/tick').toBeCloseTo(0.3 * trip.ticks, 6);
     expect(trip.ticks, '削られる量は渡っている時間で決まる').toBeGreaterThan(0);
   });
 
-  it('重い荷ほど遅くなり、削りも大きい', () => {
-    // medicのheavyは16500gから。同じ道が84分に伸び、削りは3倍以上になる。
+  it('重い荷ほど遅れが大きく、削りも大きい', () => {
+    // medicのheavyは16500gから。同じ道の遅れが25分に開き、削りは3倍以上になる。
     const laden = trek(9);
     const heavy = trek(17);
 
     expect(heavy.stage).toBe('heavy');
-    expect(heavy.minutes, '60分 × 1.4').toBe(84);
+    expect(heavy.minutes, '60分 + 遅れ25分').toBe(TRAVEL_MINUTES + 25);
     expect(heavy.minutes).toBeGreaterThan(laden.minutes);
     expect(heavy.staminaLost, '-1/tick').toBeCloseTo(heavy.ticks, 6);
     expect(heavy.staminaLost).toBeGreaterThan(laden.staminaLost);
@@ -188,7 +191,7 @@ describe('荷重が歩みの速さと体力に効く', () => {
     expect(carried.stage, '担げば動けない').toBe('too_heavy');
     expect(instrument.stage, '引けば空身と同じ段').toBe('light');
     expect(instrument.moved, '通れる').toBe(true);
-    expect(instrument.minutes, '速さも等倍に戻る').toBe(TRAVEL_MINUTES);
+    expect(instrument.minutes, '遅れも消える').toBe(TRAVEL_MINUTES);
     expect(instrument.staminaLost, '疲れもしない').toBe(0);
   });
 });

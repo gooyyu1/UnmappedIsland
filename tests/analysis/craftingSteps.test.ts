@@ -349,6 +349,7 @@ object_defs:
           slowest: -15,
           fastest: -15,
           maxTotal: 60,
+          ticksUntilStart: 0,
         },
       ]);
 

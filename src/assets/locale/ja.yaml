@@ -96,10 +96,10 @@ object_texts:
         display_name: 荷重
         icon: 🎒
         description: 今の担ぎ方で感じている、持ち物と装備の重さ。重すぎると歩けなくなる。
-      pace:
-        display_name: 歩みの遅さ
+      travel_delay:
+        display_name: 歩みの遅れ
         icon: 👣
-        description: 道を渡るのにかかる時間の倍率。荷が重いほど大きくなり、長い道ほど遅れも開く。
+        description: 道を渡るのに余計にかかる時間。荷が重いほど大きくなり、道の長さに足される。
       ambient_brightness:
         display_name: 明るさ
         description: その場を満たしている明るさ。空の明るさに、樹冠と地面の照り返しが効く。

@@ -146,8 +146,8 @@ done < <(grep -E "$GRAMMAR_PATHS" "$WORK/files" || true)
 
 # `【確定】` の節は、**PRの側の版**で射程を数える。main の版で数えると、そのPRが足した確定節を
 # 見落とす（印を付ける変更こそ、ユーザーの判断が要るもの）。
-head_sha=$(gh pr view "$PR" --json headRefOid --jq '.headRefOid') || exit 2
-base_sha=$(gh pr view "$PR" --json baseRefOid --jq '.baseRefOid') || exit 2
+shas=$(gh pr view "$PR" --json headRefOid,baseRefOid --jq '"\(.headRefOid) \(.baseRefOid)"') || exit 2
+read -r head_sha base_sha <<<"$shas"
 git fetch -q origin "pull/$PR/head" || exit 2
 
 while IFS= read -r path; do
