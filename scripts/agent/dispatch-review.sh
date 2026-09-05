@@ -46,10 +46,10 @@
 #
 # ## 結果は `send_message` ではなくPRのコメント
 #
-# コメントなら `watch-prs.sh` の `REVIEWED` が拾うので、**司令塔は今までどおり見張るだけでよい。**
-# レビューのセッションを覚えておく必要も、返事を待つ必要も無い。**タグは `review-` で始める**——
-# `task` で始めると `STALLED` の対象になり、PRを出さないレビューのセッションが毎周「止まっている」
-# として出続ける。
+# コメントの1行目から `board-labels.yml` が結論のラベルを付けるので、**投入した側は返事を待たない。**
+# レビューのセッションを覚えておく必要も無い。**タグは `review-` で始める**——`task-` で始めると
+# デーモンが「PRを出さないまま止まっている」と読み、レビューのセッションを毎周起こしに行く
+# （[`board-move.mjs`](board-move.mjs)）。
 
 set -euo pipefail
 
@@ -138,11 +138,6 @@ session=$(bash "$CCR_META" create_session <"$WORK/args.json" | grep -o '{"ccr".*
   exit 1
 }
 echo "SESSION $session"
-
-# 再レビューへ回した時点で、直しの待ちは終わっている。外さないと `watch-prs.sh` の `FIXED` 判定
-# （`直し待ち` を**付けた時刻**より新しいコミットがある）が毎周そのPRで鳴り続け、司令塔が同じ
-# 再投入を何周も繰り返すことになる。付いていないPRでは何も起きない。
-gh pr edit "$PR" --remove-label 直し待ち >/dev/null 2>&1 || true
 
 if [ "$WHERE" != "--bridge" ]; then
   printf '{"session_id":"%s"}' "$session" >"$WORK/get.json"

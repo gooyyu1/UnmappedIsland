@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # タグの指す仕事が、今セッションに占有されていないかを見る。**答えるのは「立ててよいか」。**
 #
-#   bash scripts/agent/occupancy.sh task-1234
-#   bash scripts/agent/occupancy.sh review-1500 task-1415
+#   bash scripts/agent/occupancy.sh --live task-1234
+#   bash scripts/agent/occupancy.sh --busy review-1500 task-1415
 #
 # **タグは複数渡せる。1つでも占有されていれば立ててはいけない。** レビューを立てる前に見るのは
 # 「前のレビューが走っていないか」だけではなく「**そのPRを直しているセッションが居ないか**」でもある
@@ -23,16 +23,33 @@
 # 溢れるより止まるほうが軽い、という向きは [`board-design.md`](../../.claude/board-design.md) 2.4 と
 # 同じ。余分に立ったセッションは、同じPRへ食い違う判定を残す（1.5）。
 #
-# ## 占有しているのは、畳まれていないセッション全部
+# ## 答える問いは、呼び手が選ぶ
 #
-# 一覧は [`live-sessions.sh`](live-sessions.sh) が持つ。ここがするのは、その一覧に渡されたタグが
-# 在るかを見ることだけ。**同じ一覧を要る場所が他にもある**（使用量の割り当て。2.5）ので、
-# 条件をこちらへ写さない。
+# 一覧は [`live-sessions.sh`](live-sessions.sh) が持ち、**畳まれていないセッションを全部**返す。
+# `--busy` のときだけ、そこから **`..._WORKING` と `..._BLOCKED`** に絞る（`..._BLOCKED` は
+# 承認待ちで、許可が下りれば書き始めるので同じ側）。
 #
-# **`status_bucket` では絞らない。** 手が空いている（`..._COMPLETED`）セッションも仕事を持った
-# ままで、次の指示を待っている。ここで空きと読むと、同じ仕事へ2本目が立つ（1.2・1.5）。
+# **問いは2つあり、答えが違う**（[`board-design.md`](../../.claude/board-design.md) 1.2）。
+# どちらを訊くかは呼び手が渡す。
+#
+#   --live … **もう投入したか。** 畳まれていないセッション全部。手が空いていても、その仕事は
+#            既に配られている。これを訊かずに投入すると、同じ issue へ2本目が立つ（1.5）。
+#   --busy … **今その差分へ手が動いているか。** `..._WORKING` と `..._BLOCKED` だけ。
+#            これを `--live` で訊くと、判定を書き終えたレビューが占有し続けて**再レビューが永久に
+#            止まる**。
+#
+# 種類ごとにどちらを訊くかは [`may-dispatch.sh`](may-dispatch.sh) が持つ。ここは訊かれた問いに
+# 答えるだけで、投入の種類を知らない。
 
 set -euo pipefail
+
+case "${1:-}" in
+--live | --busy) MODE="$1" && shift ;;
+*)
+  echo "UNKNOWN 問いを渡す（--live / --busy）"
+  exit 1
+  ;;
+esac
 
 [ "$#" -gt 0 ] || {
   echo "UNKNOWN タグを1つ以上渡す（例: task-1234 / review-1500）"
@@ -49,6 +66,12 @@ fi
 
 while IFS=$'\t' read -r id bucket tags; do
   [ -n "$id" ] || continue
+  if [ "$MODE" = --busy ]; then
+    case "$bucket" in
+    SESSION_STATUS_BUCKET_WORKING | SESSION_STATUS_BUCKET_BLOCKED) ;;
+    *) continue ;;
+    esac
+  fi
   for want in "$@"; do
     case ",$tags," in
     *",$want,"*)

@@ -15,7 +15,7 @@ import { describe, expect, it, vi } from 'vitest';
  */
 
 // 全件が実プロセス（bash + git + gh のスタブ）を起こすため、既定の5秒だと `npm test` 全体を並行実行
-// したときのCPU競合だけで時間切れになりうる（watchPrs.test.tsと同じ理由）。
+// したときのCPU競合だけで時間切れになりうる。
 vi.setConfig({ testTimeout: 20000 });
 
 const SCRIPT = resolve(__dirname, '../../scripts/agent/merge-and-close.sh');
@@ -645,7 +645,7 @@ describe('merge-and-close.sh', () => {
     expect(result.status).toBe(2);
   });
 
-  // 印を置くだけで、下ろすのは司令塔の手番。`watch-prs.sh` がこのラベルを見て `RELAY` を毎周出す。
+  // 印を置くだけ。下ろす側はまだ無いので、ラベルが滞留を見せ続ける（board-design 3.2）。
   it('本文に `## 司令塔へ` があれば、司令塔へ ラベルを付けて RELAY を出す', () => {
     const result = run({ body: `${DEFAULT_BODY}\n\n## 司令塔へ\n\n- #1353 を立てた（範囲外）\n` });
 

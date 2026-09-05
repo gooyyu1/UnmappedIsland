@@ -15,7 +15,7 @@ import { describe, expect, it, vi } from 'vitest';
  */
 
 // 実際にworktreeまで作る重いテストなので、`npm test` 全体を並行実行したときのCPU競合だけで
-// 既定の5秒を超えうる（watchPrs.test.tsと同じ理由）。
+// 既定の5秒を超えうる。
 vi.setConfig({ testTimeout: 20000 });
 
 const HOOK = resolve(__dirname, '../../.claude/hooks/session-start.sh');
