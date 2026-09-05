@@ -3,6 +3,7 @@ import type { SlotPosition } from './SlotPosition';
 import type { ObjectStack } from './ObjectStack';
 import type { WorldObject } from './WorldObject';
 import { CellLayout, type SlotCell } from './CellLayout';
+import { InteractionRelation } from './ReferenceRoot';
 import type { WornCoverage } from './WornCoverage';
 
 /**
@@ -76,11 +77,22 @@ export class Slot {
   }
 
   /**
+   * この枠へitemを入れる操作が結ぶ関係（11.5節）。**枠の持ち主がpatient、入れる物がinstrument**
+   * ——どの物がどの役に就くかを決めるのはここだけで、分数の問い合わせも、時間の経過と入れること
+   * そのものも、この関係を張った状態で行う（slotEntry.putIntoSlot）。
+   */
+  putInRelation(agent: WorldObject | undefined, item: WorldObject): InteractionRelation {
+    return new InteractionRelation(this.owner, agent, item);
+  }
+
+  /**
    * この枠へitemを入れるのにかかるゲーム内時間（分、SlotDef.putInMinutes）。宣言が無ければ0。
    * 値段は枠が決めるので、どの経路で入れても同じだけかかる（slotEntry参照）。
+   *
+   * **押す前に見せるための問い合わせ**なので、関係は張るだけで動作主は主張しない（during）。
    */
   putInMinutes(agent: WorldObject | undefined, item: WorldObject): number {
-    return this.def.putInMinutes(this.owner, agent, item);
+    return this.putInRelation(agent, item).during((context) => this.def.putInMinutes(context));
   }
 
   /**

@@ -23,14 +23,19 @@ export function putIntoSlot(
   place: () => void,
 ): void {
   // これも操作1つなので、まるごと囲う（WorldSession.runToSeam）。経過中に配られて待たされた
-  // 手番は、入れ終えたこの切れ目で起きる。
-  session.runToSeam(() => {
-    // 入らないと分かっているなら時間も取らない。時間だけ取られて何も入らない、が起きないようにする。
-    if (item.rejectionForMoveTo(slot) !== undefined) return;
+  // 手番は、入れ終えたこの切れ目で起きる。クレーム（whileActing）の外側で閉じるのは
+  // Interaction.tryExecuteと同じ理由。
+  session.runToSeam(() =>
+    // 11.5節の表に並ぶ操作の1つなので、判定も分数の問い合わせも時間の経過も入れることそのものも、
+    // 同じ関係を張った状態で行う。実行なので動作主も主張する（whileActing）。
+    slot.putInRelation(agent, item).whileActing((context) => {
+      // 入らないと分かっているなら時間も取らない。時間だけ取られて何も入らない、が起きないようにする。
+      if (item.rejectionForMoveTo(slot) !== undefined) return;
 
-    if (!spendDurationAndReportParticipantsAlive(slot.putInMinutes(agent, item), session, [item, slot.owner]))
-      return;
+      const minutes = slot.def.putInMinutes(context);
+      if (!spendDurationAndReportParticipantsAlive(minutes, session, [item, slot.owner, agent])) return;
 
-    place();
-  });
+      place();
+    }),
+  );
 }
