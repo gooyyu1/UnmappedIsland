@@ -385,8 +385,8 @@ export function moves(input) {
 
   /**
    * その issue をどこへ投入するか（`dispatch-task.sh` の引数）。**知らない `env:*` は配らない**
-   * ——既定のクラウドへ落とすと、ブリッジで走らせるはずの仕事が承認待ちで止まり、**止まった理由が
-   * ラベルの側に残らない**。返す `undefined` は「配れない」。
+   * ——既定のクラウドへ落とすと、**そこでしかできないから宛先を書いた仕事が黙って別の場所で走り、
+   * 指定が無視されたことが誰にも残らない**。返す `undefined` は「配れない」。
    */
   function destination(issue) {
     const where = wantedEnv(issue);

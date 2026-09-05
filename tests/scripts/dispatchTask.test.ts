@@ -25,8 +25,6 @@ const SCRIPT = resolve(__dirname, '../../scripts/agent/dispatch-task.sh');
 interface World {
   /** issue の `state`。既定は開いている。 */
   readonly state?: string;
-  /** issue の本文。 */
-  readonly body?: string;
   /** issue に付いているラベル。 */
   readonly labels?: readonly string[];
   /** 開いているPR。 */
@@ -51,7 +49,6 @@ function run(issue: number, world: World = {}): Run {
       JSON.stringify({
         title: '題',
         state: world.state ?? 'OPEN',
-        body: world.body ?? '## 担当\n\nsrc/x.ts\n',
         labels: (world.labels ?? ['task']).map((name) => ({ name })),
       }),
       'utf-8',
@@ -100,9 +97,21 @@ esac
 
 /** 組み立てて渡す指示の本文。 */
 function prompt(issue: number, world: World = {}): string {
+  return args(issue, world).prompt;
+}
+
+/** `create_session` へ渡るはずの引数。 */
+function args(
+  issue: number,
+  world: World = {},
+): { prompt: string; environment_id: string; permission_mode?: string } {
   const result = run(issue, world);
   expect(result.code).toBe(0);
-  return (JSON.parse(result.stdout) as { prompt: string }).prompt;
+  return JSON.parse(result.stdout) as {
+    prompt: string;
+    environment_id: string;
+    permission_mode?: string;
+  };
 }
 
 describe('dispatch-task.sh', () => {
@@ -143,39 +152,34 @@ describe('dispatch-task.sh', () => {
     expect(result.stderr).toContain('判断待ち');
   });
 
-  // 盤面の道具そのものを直す仕事は、担当がここにしか無い。**止まる理由（書き込みのたびの承認）は
-  // クラウドにしか無い**ので、関門もクラウドへ投入するときだけ見る。
-  it('クラウドへは、担当にユーザーの領域が挙がっていれば投入しない', () => {
-    const result = run(1551, { body: '## 担当\n\n- `.claude/ccr-meta.sh`\n' });
-
-    expect(result.code).toBe(1);
-    expect(result.stderr).toContain('.claude/ccr-meta.sh');
-  });
-
-  it('ブリッジへなら、同じ担当でも投入する', () => {
-    expect(run(1551, { body: '## 担当\n\n- `.claude/ccr-meta.sh`\n', onBridge: true }).code).toBe(0);
-  });
-
-  // **受け取る側は、自分がどちらで走っているかを知らない。** 本体へ無条件に書くと、当たらない
-  // ほうのセッションにもそのまま渡り、`.claude/**` を直すために立てたブリッジのセッションが
-  // 着手した時点で仕事をせずに返す（PR #1567 のレビュー指摘）。
-  it('クラウドへは、ユーザーの領域を触らずブリッジへ回せと渡す', () => {
-    const body = prompt(1415);
-
-    expect(body).toContain('[ブリッジ]');
-    expect(body).not.toContain('ユーザーのPCで走っています');
-  });
-
-  it('ブリッジへは、担当に挙がっていれば書き換えてよいと渡す', () => {
-    const body = prompt(1415, { onBridge: true });
-
-    expect(body).toContain('ユーザーのPCで走っています');
-    expect(body).not.toContain('[ブリッジ]');
+  // **受け取る側は、自分がどちらで走っているかを知らない。** 場所で切った制約を混ぜると、当たら
+  // ないほうのセッションにもそのまま渡る（`.claude/**` を触るなと書いた行が、そこを直すために
+  // 立てたブリッジのセッションへ届き、着手した時点で仕事をせずに返した。PR #1567 のレビュー指摘）。
+  it('渡す文面は、投入先で変わらない', () => {
+    expect(prompt(1415, { onBridge: true })).toBe(prompt(1415));
   });
 
   // 差し替えそのものが落ちたときは、目印の行が本文に残る。**渡す相手には読めない行**なので、
   // 落ちたことがここで分かるようにする。
-  it('走る場所の目印は、本文に残さない', () => {
-    expect(prompt(1415)).not.toContain('<走る場所で変わる制約');
+  it('補足の置き場の目印は、本文に残さない', () => {
+    expect(prompt(1415)).not.toContain('<このタスク固有の補足');
+  });
+
+  // **モードは環境が決める**（`board-design.md` 2.16.3）。渡さないと未設定のまま立ち、`.claude/**`
+  // を読むだけの `bash` が「機微なファイルの編集」と判定されて承認を待つ。その承認は降りない。
+  it('クラウドへは auto を渡す', () => {
+    const built = args(1415);
+
+    expect(built.environment_id).toBe('env_TEST_CLOUD');
+    expect(built.permission_mode).toBe('auto');
+  });
+
+  // **ブリッジは渡さない**（`ccr-env.sh`）。渡さずに立てたセッションは `.claude/**` の読み書きを
+  // 承認なしで通すことを実測してある。どのモードが入っているかは名指しできない。
+  it('ブリッジへはモードを渡さない', () => {
+    const built = args(1415, { onBridge: true });
+
+    expect(built.environment_id).toBe('env_TEST_BRIDGE');
+    expect(built).not.toHaveProperty('permission_mode');
   });
 });

@@ -25,10 +25,20 @@ interface World {
   readonly state?: string;
   /** PRに付いているコメントの本文。 */
   readonly comments?: readonly string[];
+  /** `--bridge` を付けて叩くか。 */
+  readonly onBridge?: boolean;
+}
+
+interface Args {
+  readonly title: string;
+  readonly tags: string[];
+  readonly prompt: string;
+  readonly environment_id: string;
+  readonly permission_mode?: string;
 }
 
 /** `DRY_RUN=1` で組み立てさせて、`create_session` へ渡るはずの引数を返す。 */
-function args(pr: number, world: World = {}): { title: string; tags: string[]; prompt: string } {
+function args(pr: number, world: World = {}): Args {
   const work = mkdtempSync(join(tmpdir(), 'unmapped-island-dispatch-review-'));
   const dir = work.replace(/\\/g, '/');
   try {
@@ -58,7 +68,8 @@ esac
     );
     chmodSync(gh, 0o755);
 
-    const stdout = execFileSync('bash', [SCRIPT, String(pr)], {
+    const where = world.onBridge === true ? ['--bridge'] : [];
+    const stdout = execFileSync('bash', [SCRIPT, String(pr), ...where], {
       encoding: 'utf-8',
       stdio: 'pipe',
       env: {
@@ -69,7 +80,7 @@ esac
         BRIDGE_ENV: 'env_TEST_BRIDGE',
       },
     });
-    return JSON.parse(stdout) as { title: string; tags: string[]; prompt: string };
+    return JSON.parse(stdout) as Args;
   } finally {
     rmSync(work, { recursive: true, force: true });
   }
@@ -132,5 +143,23 @@ describe('dispatch-review.sh', () => {
     const comments = ['[レビュー] 直しが要る\n本文だけ'];
 
     expect(args(1524, { comments }).prompt).toContain('それは `なし` です');
+  });
+
+  // **モードは環境が決める**（`board-design.md` 2.16.3）。渡さないと未設定のまま立ち、差分に
+  // `.claude/**` が含まれるPRを読もうとした時点で承認を待って止まる（#1567、2026-09-05）。
+  it('クラウドへは auto を渡す', () => {
+    const built = args(1524);
+
+    expect(built.environment_id).toBe('env_TEST_CLOUD');
+    expect(built.permission_mode).toBe('auto');
+  });
+
+  // **ブリッジは渡さない**（`ccr-env.sh`）。渡さずに立てたセッションは `.claude/**` の読み書きを
+  // 承認なしで通すことを実測してある。どのモードが入っているかは名指しできない。
+  it('ブリッジへはモードを渡さない', () => {
+    const built = args(1524, { onBridge: true });
+
+    expect(built.environment_id).toBe('env_TEST_BRIDGE');
+    expect(built).not.toHaveProperty('permission_mode');
   });
 });

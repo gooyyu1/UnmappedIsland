@@ -507,8 +507,8 @@ describe('board-move.mjs', () => {
     expect(moves(board)).toEqual(['TASK 9 --bridge']);
   });
 
-  // **既定へ落とさない。** 落とすと、ブリッジで走らせるはずの仕事がクラウドで承認待ちになり、
-  // 止まった理由がラベルの側に残らない（2.16.1）。
+  // **既定へ落とさない。** 落とすと、そこでしかできないから宛先を書いた仕事が黙って別の場所で
+  // 走り、指定が無視されたことが誰にも残らない（2.16.1）。
   it('知らない env: の issue は配らず、覚え書きを出す', () => {
     const board = { issues: [{ number: 9, ...label('task', 'env:mars'), blockedBy: { nodes: [] } }] };
     expect(moves(board)).toEqual(['NOTE issue #9 の `env:mars` は知らない宛先']);
