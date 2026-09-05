@@ -3,10 +3,11 @@ name: Board labels
 # 盤面のラベルを付け外しする。**司令塔のモデルセッションが手で付けていたぶん**を引き取る
 # （[`.claude/board-design.md`](../../.claude/board-design.md) 2.2・段3）。
 #
-# ラベルは**事実**しか持たない（1.3）。ここが動かすのは2つ。
+# ラベルは**事実**しか持たない（1.3）。ここが動かすのは次。
 #
 # - レビューの結論 … `直し待ち` / `通してよい`
 # - 新しいコミットが載ったこと … どちらも外す
+# - 3周目の判定が「直しが要る」だったこと … `判断待ち`（4.6）
 #
 # **司令塔が止まると盤面が嘘になる**ことが、これを移す理由。2026-09-04 の時点で PR #1512 は
 # レビューが3周「直しが要る」を出しているのに `直し待ち` が付いていなかった——付けていたのが
@@ -68,8 +69,31 @@ jobs:
           esac
           gh pr edit "$PR" --repo "$REPO" --add-label "$add" --remove-label "$remove"
 
+          # **3周目の判定が「直しが要る」なら、そこで人へ上げる**（`.claude/board-design.md` 4.6）。
+          # **上限を持つのはここ。** レビュアーへの指示にしか書いていなかったので、書き忘れれば
+          # 誰も止めず、実際に PR #1527 で4周目が走った。
+          #
+          # 数えるのは**結論のコメント**で、状態は持たない（2.9）。数え方も見分け方も上の `verdict`
+          # と同じ——1行目が結論の文そのもの。緩めると、ラベルが付かなかったコメントで数が進む。
+          #
+          # `判断待ち` は push では外れない（下の `synchronized`）。**下ろすのは人だけ。**
+          [ "$add" = 直し待ち ] || exit 0
+          rounds=$(gh pr view "$PR" --repo "$REPO" --json comments --jq '
+            [ .comments[]
+              | select(.authorAssociation == "OWNER" or .authorAssociation == "MEMBER"
+                       or .authorAssociation == "COLLABORATOR")
+              | .body | split("\n")[0] | sub("[ \t\r]+$"; "")
+              | select(test("^\\[レビュー\\] (通してよい|直しが要る)$")) ] | length')
+          echo "結論のコメント: $rounds 件"
+          if [ "$rounds" -ge 3 ]; then
+            gh pr edit "$PR" --repo "$REPO" --add-label 判断待ち
+          fi
+
   # 新しいコミットが載ったら、前の差分に対する結論はどちらも嘘になる。**`通してよい` も外す**
   # ——残すと、レビューを受けていないコミットが段5のマージに拾われる。
+  #
+  # **`判断待ち` は外さない。** あれは差分への結論ではなく「人の手番に入った」という事実で、
+  # 直しを push しても人の手番は終わらない（外すと4周目以降が走り出す）。
   synchronized:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
