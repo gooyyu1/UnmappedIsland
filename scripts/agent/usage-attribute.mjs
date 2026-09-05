@@ -25,6 +25,10 @@
 //
 // `resets_at` が変われば `utilization` は下がる。**引き算をそのまま使うと負の消費が積まれる**ので、
 // 枠が変わった周と `utilization` が下がった周は基準を置き直すだけにする。取りこぼすのはその1周分。
+//
+// **同じ枠かは秒までで見る。** APIの返す `resets_at` は、同じ枠でも呼び出しごとに秒未満が変わる
+// （実測: 2026-09-05。`07:20:00.939340` と `07:20:00.358630` が続けて返った）。丸ごと比べると
+// 一致する周が一度も来ず、**増分が永久に0になって計測が溜まらない。**
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -43,6 +47,9 @@ function readState(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
 
+/** 枠の見分け。秒未満は呼び出しごとに揺れるので落とす（上の「同じ枠かは秒までで見る」）。 */
+const windowKey = (resetsAt) => (resetsAt ?? '').slice(0, 19);
+
 const [statePath, spentPath] = process.argv.slice(2);
 if (statePath === undefined || spentPath === undefined) {
   process.stderr.write('状態のファイルと記録のファイルのパスを渡す\n');
@@ -52,7 +59,8 @@ if (statePath === undefined || spentPath === undefined) {
 const input = JSON.parse(readFileSync(0, 'utf8'));
 const previous = readState(statePath);
 
-const sameWindow = previous.resetsAt === input.resetsAt && typeof previous.utilization === 'number';
+const sameWindow =
+  windowKey(previous.resetsAt) === windowKey(input.resetsAt) && typeof previous.utilization === 'number';
 const rose = sameWindow && input.utilization >= previous.utilization;
 const delta = rose ? input.utilization - previous.utilization : 0;
 

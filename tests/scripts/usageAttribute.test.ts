@@ -166,6 +166,28 @@ describe('usage-attribute.mjs', () => {
     });
   });
 
+  // APIは同じ枠でも呼び出しごとに違う秒未満を返す。丸ごと比べると一致する周が一度も来ず、
+  // 増分が永久に0になって計測が溜まらない（2026-09-05 に実測）。
+  it('秒未満だけが違う resets_at は、同じ枠として増分を積む', () => {
+    withWork((work) => {
+      const live = [{ id: 'cse_a', tags: ['task-1'], working: true }];
+      attribute(work, {
+        utilization: 10,
+        resetsAt: '2026-09-05T07:20:00.939340+00:00',
+        now: '2026-09-05T01:00:00Z',
+        live,
+      });
+      const result = attribute(work, {
+        utilization: 16,
+        resetsAt: '2026-09-05T07:20:00.358630+00:00',
+        now: '2026-09-05T01:05:00Z',
+        live,
+      });
+
+      expect(result.state.sessions.cse_a.spent).toBe(6);
+    });
+  });
+
   it('枠が同じでも utilization が下がった周は、増分を0にする', () => {
     withWork((work) => {
       const live = [{ id: 'cse_a', tags: ['task-1'], working: true }];
