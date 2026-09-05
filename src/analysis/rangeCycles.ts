@@ -214,7 +214,8 @@ export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): 
   // 持っていない（速さ, 限度, 立ち上がり）の組ができる——止まる出血（-15/tickで合計60mL）と
   // 止まらない敗血症（-40/tick）を1つにすれば「-15/tickで永久に流れ続ける傷」になり、膿んだ傷が
   // 奪う水（festeringから-1、septicから-2）を1つにすれば「膿み始めた時点で-2」になる。炉の火力
-  // （heatの段で1/3/5）はどれも止まらず、火を点けるのはプレイヤーなので、今までどおり1つの幅に収まる。
+  // （heatの段で1/3/5）はどれも止まらず、立ち上がりも読めない（ticksUntilGateRises）ので、今まで
+  // どおり1つの幅に収まる。
   const byPropertyLimitAndStart = new Map<string, ExternalTickDelta>();
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== root || delta.amount === 0) continue;
@@ -368,7 +369,8 @@ function ticksWhileGateHolds(def: ObjectDef, gate: TickGate): number | undefined
 
 /**
  * ゲートが自分の段を見ているなら、そこへ自分の増減だけで届くまでのtick数（TickGate参照）。
- * 段を見ていない、自分では届かない段（火を点けるのはプレイヤー）なら0＝最初のtickから効く。
+ * 段を見ていない、届くまでが読めない段なら0＝最初のtickから効く。**炉の火力がこれ**——火は段の
+ * 下に置かれた増減（8.2節）で育つが、そこはtickAmountsOfが数から外している。
  *
  * **要る段が複数あれば最も遅いものに合わせる**——どれか1つでも跨いでいなければ増減は効かない。
  * ゲートが落ちるのは見ている値のどれかが尽きた時点なので、ticksWhileGateHoldsとは向きが逆になる。
