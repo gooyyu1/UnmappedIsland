@@ -166,7 +166,7 @@ export class PlayScreenLayout {
 
   /**
    * フィールドエリアと右サイドバー（オプション／フィルター）の境目に敷く、縦向きの帯（横型のみ）。
-   * 縦型はこの2つが接していないためundefined。
+   * 縦型はこれらが接していないためundefined。
    */
   readonly sidebarSeparator: Rect | undefined;
 

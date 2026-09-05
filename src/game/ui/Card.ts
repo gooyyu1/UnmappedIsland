@@ -652,7 +652,7 @@ export class Card extends Phaser.GameObjects.Container {
       .setStroke(cssColor(COLOR.cardFace), metrics.px(OVERLAY_STROKE));
     this.add(this.overlay);
 
-    // 加熱の残り時間と進み具合。覆いは絵の層に置くが、この2つは印・覆いと同じく最前面に置いて、
+    // 加熱の残り時間と進み具合。覆いは絵の層に置くが、これらは印・覆いと同じく最前面に置いて、
     // 端の操作エリアやスタック数の下へ沈まないようにする。バーの左右は変わらないので、
     // 縦の位置だけを差し替えのたびに決め直す（showCooking）。
     const cookingSpan = windowSpan(metrics, width, height);
