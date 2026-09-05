@@ -5,13 +5,9 @@
 
 import { readFileSync } from 'node:fs';
 
-/**
- * MCPサーバはステートレスに応じる（`initialize` で session id を持たされない）ので、直に投げてよい。
- * 環境変数は試験が身代わりのサーバへ向けるための差し替え口（`tests/scripts/ccrMeta.test.ts`）。
- */
+/** 環境変数は、試験が身代わりのサーバへ向けるための差し替え口（`tests/scripts/ccrMeta.test.ts`）。 */
 const ENDPOINT = process.env.CCR_META_ENDPOINT ?? 'https://api.anthropic.com/v1/code/mcp/meta';
 
-/** **呼ぶたびに読み直す。** 掴んだままにすると、走っている最中に切れたときそのまま使えなくなる。 */
 function readAccessToken() {
   const home = process.env.USERPROFILE ?? process.env.HOME;
   const credentials = JSON.parse(readFileSync(`${home}/.claude/.credentials.json`, 'utf8'));
@@ -49,14 +45,14 @@ const response = await fetch(ENDPOINT, {
 
 const raw = await response.text();
 
-let parsed;
-try {
-  parsed = JSON.parse(raw);
-} catch {
-  // 認証が通らないときなどはJSONで返らない。素の SyntaxError にすると、何が返ったのかが消える。
+// 道具の側の失敗は 200 に `error` を載せて返る。HTTPが落ちているのは認証などその手前の失敗で、
+// **本文はJSONとも限らない**ので、状態と本文をそのまま出す。
+if (!response.ok) {
   console.error(`失敗: HTTP ${response.status} ${raw}`);
   process.exit(1);
 }
+
+const parsed = JSON.parse(raw);
 
 if (parsed.error) {
   console.error('失敗:', JSON.stringify(parsed.error));

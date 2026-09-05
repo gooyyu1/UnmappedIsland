@@ -9,9 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 /**
  * `.claude/ccr-meta.mjs` が、標準入力で受けた引数をそのままMCPへ渡すことの検査。
  *
- * **見るのは、多バイト文字がチャンクの境目で割れないこと。** 受けたチャンクを文字列へ足しながら
- * 繋ぐと、64KiBの境目に跨った1文字だけが U+FFFD になり、**その前後は読めるまま**なので、届いた本文を
- * 目で見ても気づけない。セッションへ渡す指示の本文はここを通るので、境目は現に踏む。
+ * **見るのは、多バイト文字がチャンクの境目で割れないこと**（理由は `readStdinAsUtf8` の説明）。
  *
  * 通信先は `CCR_META_ENDPOINT` で身代わりのHTTPサーバへ向ける。トークンの置き場は `USERPROFILE` /
  * `HOME` を差し替えて用意する——本物の `~/.claude/.credentials.json` はCIには無い。
