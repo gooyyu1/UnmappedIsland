@@ -311,9 +311,19 @@
         },
         "gauge": {
           "$ref": "#/$defs/gauge_def"
+        },
+        "worsens": {
+          "$ref": "#/$defs/worsening_direction"
         }
       },
       "additionalProperties": false
+    },
+    "worsening_direction": {
+      "description": "どちらへ動くと悪いか（GameElementDefinition.md 6.8節）。gaugeの両端とstagesのalertも同じ向きを述べるので、2つ以上が述べていて食い違えばロード時エラー。書かないとdownと同じに扱われる。",
+      "enum": [
+        "up",
+        "down"
+      ]
     },
     "gauge_def": {
       "description": "そのプロパティをカードのバーとして見せる宣言（GameElementDefinition.md 6.8節・docs/ui/CardView.md 8節）。両端がどちらへ寄ると良いのかだけを持つ。rangeが無いと割合を出せないためロード時エラー。",
