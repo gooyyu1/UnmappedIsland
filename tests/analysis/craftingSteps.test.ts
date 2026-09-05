@@ -341,15 +341,15 @@ object_defs:
     });
 
     it('出血で死ぬのは、傷が固まるまでに奪える血の量が足りる獲物だけ', () => {
-      // 100 ÷ 25 = 4 tick で固まるので、奪えるのは合計60mL。
+      // 100 ÷ 25 = 4 tick で固まるので、奪えるのは -15/tick で4 tickぶんの60mL。
       expect(drivers('wound', 'parent')).toEqual([
         {
           sourceGlobalId: huntId('wound'),
           propertyGlobalId: expect.any(Number),
           slowest: -15,
           fastest: -15,
-          maxTotal: 60,
           ticksUntilStart: 0,
+          ticksUntilStop: 4,
         },
       ]);
 
