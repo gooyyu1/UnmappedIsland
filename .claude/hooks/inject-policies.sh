@@ -36,5 +36,9 @@ fi
 
 [ -n "$context" ] || exit 0
 
-jq -n --arg c "$context" \
-  '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $c}}'
+# **本文を `--arg` で渡さない。** 記録は伸びる一方で、argvの単一引数の上限（Windowsのほうが
+# ずっと低い）を越えると jq が `Argument list too long` で落ちる。**落ちてもセッションは普通に
+# 起動する**ので、価値観が1文字も入らないまま走り出したことに誰も気づけない。
+# builtin の printf は exec しないため、標準入力へ流すこの形なら長さに縛られない。
+printf '%s' "$context" |
+  jq -Rs '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: .}}'
