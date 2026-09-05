@@ -61,6 +61,19 @@ TEMPLATE="$HERE/../../.claude/dispatch-prompt.md"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+# **立てる先が決まれば、渡すものは全部決まる**（`ccr-env.sh`）。ブリッジはリポジトリを既に持って
+# いるので `source_url` を渡さず、承認モードも無指定——**無指定が `bypassPermissions` になる**ので、
+# `.claude/**` を担当に持つ仕事はここでしか進まない。
+if [ "$WHERE" = "--bridge" ]; then
+  ENV_ID="$BRIDGE_ENV"
+  MODE="$BRIDGE_MODE"
+  SOURCE=""
+else
+  ENV_ID="$CLOUD_ENV"
+  MODE="$CLOUD_MODE"
+  SOURCE="$REPO_URL"
+fi
+
 # ひな形は手で書き写さない。**書き写すと必ず何かが落ちる**——2026-08-27 に「PRを見張らない」の
 # 一文が3本すべてから抜け、3セッションが承認待ちで止まった。ここで `dispatch-prompt.md` の
 # ``` の中を読み、`<番号>` を埋めて、渡された補足を末尾へ足す。投入する側が書くのは補足だけ。
@@ -167,7 +180,7 @@ fi
 
 node -e '
   const fs = require("node:fs");
-  const [issuePath, promptPath, issue, envId, repoUrl] = process.argv.slice(1);
+  const [issuePath, promptPath, issue, envId, repoUrl, mode] = process.argv.slice(1);
   const args = {
     environment_id: envId,
     // 頭の語で種類が分かる形（`board-design.md` 2.9）。
@@ -179,10 +192,10 @@ node -e '
     args.source_url = repoUrl;
     args.source_revision = "main";
   }
+  // **空なら渡さない。** 渡さないことが `bypassPermissions` を選ぶ唯一の方法（`ccr-env.sh`）。
+  if (mode) args.permission_mode = mode;
   process.stdout.write(JSON.stringify(args));
-' "$WORK/issue.json" "$INSTRUCTION" "$ISSUE" \
-  "$([ "$WHERE" = "--bridge" ] && echo "$BRIDGE_ENV" || echo "$CLOUD_ENV")" \
-  "$([ "$WHERE" = "--bridge" ] || echo "$REPO_URL")" >"$WORK/args.json"
+' "$WORK/issue.json" "$INSTRUCTION" "$ISSUE" "$ENV_ID" "$SOURCE" "$MODE" >"$WORK/args.json"
 
 # 立てずに、渡す引数だけを見る（`DRY_RUN=1 bash …`）。指示ファイルを差し替えたときの確認用。
 # **本文は頭だけに切る**——目で見たいのは引数の形（環境ID・タグ・`source_url`）で、指示の全文は

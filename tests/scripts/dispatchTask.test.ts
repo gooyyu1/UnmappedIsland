@@ -100,9 +100,21 @@ esac
 
 /** 組み立てて渡す指示の本文。 */
 function prompt(issue: number, world: World = {}): string {
+  return args(issue, world).prompt;
+}
+
+/** `create_session` へ渡るはずの引数。 */
+function args(
+  issue: number,
+  world: World = {},
+): { prompt: string; environment_id: string; permission_mode?: string } {
   const result = run(issue, world);
   expect(result.code).toBe(0);
-  return (JSON.parse(result.stdout) as { prompt: string }).prompt;
+  return JSON.parse(result.stdout) as {
+    prompt: string;
+    environment_id: string;
+    permission_mode?: string;
+  };
 }
 
 describe('dispatch-task.sh', () => {
@@ -177,5 +189,23 @@ describe('dispatch-task.sh', () => {
   // 落ちたことがここで分かるようにする。
   it('走る場所の目印は、本文に残さない', () => {
     expect(prompt(1415)).not.toContain('<走る場所で変わる制約');
+  });
+
+  // **モードは環境が決める**（`board-design.md` 2.16.3）。渡さないと未設定のまま立ち、`.claude/**`
+  // を読むだけの `bash` が「機微なファイルの編集」と判定されて承認を待つ。その承認は降りない。
+  it('クラウドへは auto を渡す', () => {
+    const built = args(1415);
+
+    expect(built.environment_id).toBe('env_TEST_CLOUD');
+    expect(built.permission_mode).toBe('auto');
+  });
+
+  // **無指定が `bypassPermissions` になる**（明示すると撥ねられる）ので、`.claude/**` を書き換える
+  // 仕事はこれが要る。`auto` へ落とすと、担当の仕事ができないセッションが立つ。
+  it('ブリッジへはモードを渡さない', () => {
+    const built = args(1415, { onBridge: true });
+
+    expect(built.environment_id).toBe('env_TEST_BRIDGE');
+    expect(built).not.toHaveProperty('permission_mode');
   });
 });

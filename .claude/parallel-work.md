@@ -73,8 +73,9 @@ bash .claude/ccr-meta.sh list_environments <<<'{}'   # kind が bridge のIDを�
 bash .claude/ccr-meta.sh create_session < args.json
 ```
 
-セッションはエージェントが立てられるので、ユーザーの手数は「issue に答える」だけ。ローカルから
-呼ぶときは `permission_mode` を渡せないため、既定のまま作る。
+セッションはエージェントが立てられるので、ユーザーの手数は「issue に答える」だけ。**ブリッジへ
+立てるときは `permission_mode` を渡さない**——無指定が `bypassPermissions` になるので、
+`.claude/**` を書き換える仕事はそれが要る（[`ccr-env.sh`](../scripts/agent/ccr-env.sh)）。
 
 **`title` は定型に従う**（[`board-design.md`](board-design.md) 2.9 の表）。一覧を読むのは人間で、
 タグは機械の見分けなので読めない。手で立てる1本——ユーザーに頼まれて立てる盤面の外のもの——は
@@ -995,9 +996,10 @@ PR本文へ「記録してほしい価値観」として書くこともしない
 prompt・`send_message` の本文・PRへのコメントの全部。GitHubへは**ユーザーと同じアカウントで**
 書き込むので、印が無いと受け取る側から区別できない。
 
-書かせない理由は出どころだけではない。**`.claude/**` の編集は「機微なファイル」として許可を
-求められ、そこで止まる**（2026-08-26 に3つのセッションが同時に `REQUIRES_ACTION` で停止した。
-`bypassPermissions` は [`ccr-meta.sh`](./ccr-meta.sh) の経路では渡せない）。
+書かせない理由は出どころだけではない。**クラウドのセッションからは `.claude/**` を書き換えられない**
+——「機微なファイル」として許可を求められ、そこで止まる（2026-08-26 に3つのセッションが同時に
+`REQUIRES_ACTION` で停止した）。**その許可は降りない**ので、待っても変わらない。ブリッジのセッション
+だけがここを書き換えられる（[`ccr-env.sh`](../scripts/agent/ccr-env.sh)）。
 
 止まったセッションは `send_message` の `priority: now` で起きる。**割り込ませないと、仕上げに
 入っているセッションには届かない**（`next` はターンの区切りまで待つ——2026-08-26 に、差し戻しが

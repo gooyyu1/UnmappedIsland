@@ -88,8 +88,10 @@
 #
 # - **`environment_id` は必須。** 省くと候補を並べたエラーが返る。クラウドは「デフォルト」のほう
 #   （もう一方はこのPCのブリッジ環境で、`source_url` を渡す使い方と噛み合わない）。
-# - **`permission_mode` は渡さない。** `bypassPermissions` は親セッションを要求して撥ねられる。
-#   省けば既定で走る。
+# - **`permission_mode` は `bypassPermissions` だけが撥ねられる**
+#   （`requires a CCR parent session; this caller path has none`）。`auto` などは通る。**省くと
+#   `bypassPermissions` で走る**ので、`.claude/**` を書き換えさせたいときは渡さないほうを選ぶ。
+#   どちらを渡すかは環境で決まる（[`ccr-env.sh`](../scripts/agent/ccr-env.sh)）。
 
 set -euo pipefail
 

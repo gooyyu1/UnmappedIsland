@@ -55,6 +55,19 @@ TEMPLATE="$HERE/../../.claude/review-prompt.md"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+# **立てる先が決まれば、渡すものは全部決まる**（`ccr-env.sh`）。ブリッジはリポジトリを既に持って
+# いるので `source_url` を渡さず、承認モードも無指定。**クラウドで `auto` を渡さないと、差分に
+# `.claude/**` が含まれるPRのレビューが、そこを読もうとした時点で承認を待って止まる**（#1567）。
+if [ "$WHERE" = "--bridge" ]; then
+  ENV_ID="$BRIDGE_ENV"
+  MODE="$BRIDGE_MODE"
+  SOURCE=""
+else
+  ENV_ID="$CLOUD_ENV"
+  MODE="$CLOUD_MODE"
+  SOURCE="$REPO_URL"
+fi
+
 RAW="$WORK/template.md"
 awk '/^```$/ { inside = !inside; next } inside' "$TEMPLATE" >"$RAW"
 [ -s "$RAW" ] || {
@@ -76,7 +89,7 @@ state=$(jq -r '.state' "$WORK/pr.json")
 
 node -e '
   const fs = require("node:fs");
-  const [prPath, rawPath, promptPath, pr, envId, repoUrl] = process.argv.slice(1);
+  const [prPath, rawPath, promptPath, pr, envId, repoUrl, mode] = process.argv.slice(1);
   const info = JSON.parse(fs.readFileSync(prPath, "utf8"));
   // 判定のコメント（`board-design.md` 2.9）。**見分け方は `board-labels.yml` の `verdict` と同じ**
   // ——1行目が結論の文そのもの。緩めると、ラベルが付かなかったコメントで番号だけが進む。
@@ -108,10 +121,10 @@ node -e '
     args.source_url = repoUrl;
     args.source_revision = info.headRefName;
   }
+  // **空なら渡さない。** 渡さないことが `bypassPermissions` を選ぶ唯一の方法（`ccr-env.sh`）。
+  if (mode) args.permission_mode = mode;
   process.stdout.write(JSON.stringify(args));
-' "$WORK/pr.json" "$RAW" "$INSTRUCTION" "$PR" \
-  "$([ "$WHERE" = "--bridge" ] && echo "$BRIDGE_ENV" || echo "$CLOUD_ENV")" \
-  "$([ "$WHERE" = "--bridge" ] || echo "$REPO_URL")" >"$WORK/args.json"
+' "$WORK/pr.json" "$RAW" "$INSTRUCTION" "$PR" "$ENV_ID" "$SOURCE" "$MODE" >"$WORK/args.json"
 
 # 立てずに、渡す引数だけを見る（`DRY_RUN=1 bash …`）。指示ファイルを差し替えたときの確認用なので、
 # **指示は切らずに出す**——埋めた値（`<番号>`・`<前の版>`）は本文の途中に出るので、頭だけ見せると
