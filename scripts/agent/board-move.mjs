@@ -12,6 +12,7 @@
 //   RESUME  <セッションID> reject <PR番号>    <指紋>  … 通らなかった仮決めを取り下げさせる
 //   RESUME  <セッションID> look   <PR番号>    <指紋>  … 画面を撮って本文へ貼らせる
 //   RESUME  <セッションID> stall  <issue番号> <指紋>
+//   RETURN  <issue番号> <セッションID> <指紋>  … 起こしても動かないワーカーの仕事を人へ返す
 //   REVIEW  <PR番号> <指紋>
 //   TASK    <issue番号>
 //   NOTE    <人へ向けた1行>                  … 打つ手が無いことの説明。呼び手は記録するだけ
@@ -130,6 +131,7 @@ export function moves(input) {
   const archives = [];
   const mends = [];
   const stalls = [];
+  const returns = [];
   const reviews = [];
   const tasks = [];
   const notes = [];
@@ -204,7 +206,7 @@ export function moves(input) {
     }
 
     if (labels.includes('通してよい')) {
-      // `判断待ち` が止めるのはマージだけ（2.13）。越えるのは `merge-and-close.sh <PR> --user-ok`。
+      // PRの `判断待ち` が止めるのはマージだけ（2.13）。越えるのは `merge-and-close.sh <PR> --user-ok`。
       if (labels.includes('判断待ち')) continue;
       if (check === 'green' && pr.mergeable === 'MERGEABLE') merges.push(`MERGE ${pr.number}`);
       continue;
@@ -252,22 +254,35 @@ export function moves(input) {
       if (!tag.startsWith('task-')) continue;
       const held = tag.slice('task-'.length);
       const issue = Number(held);
+      const open = input.issues.find((item) => item.number === issue);
 
-      // **仕事が終わったかは issue の側にある**（2.10）。**PRがマージされたかでは決めない**——手で
-      // マージされたPRの後片付けは走らないので、条件をそちらに繋ぐとワーカーが永久に残る。
-      if (issueStates[held] === 'CLOSED') {
-        const mark = `closed:${issue}`;
-        if (taken[`archive:${session.id}`] === mark) break;
-        archives.push(`ARCHIVE ${session.id} ${mark}`);
+      // **その issue がまだこのワーカーの仕事かは issue の側にある**（2.10）。**PRがマージされたか
+      // では決めない**——手でマージされたPRの後片付けは走らないので、条件をそちらに繋ぐとワーカーが
+      // 永久に残る。仕事でなくなる形は2つあり、**畳んだ理由が読めるように指紋で分ける。**
+      const done =
+        issueStates[held] === 'CLOSED'
+          ? `closed:${issue}`
+          : open !== undefined && names(open).includes('判断待ち')
+            ? `returned:${issue}`
+            : undefined;
+      if (done !== undefined) {
+        if (taken[`archive:${session.id}`] === done) break;
+        archives.push(`ARCHIVE ${session.id} ${done}`);
         break;
       }
 
-      // PRを出さないまま手が空いたセッション。**1回だけ起こす**（指紋が issue 番号だけなので、次は無い）。
-      if (!input.issues.some((item) => item.number === issue)) continue;
+      // PRを出さないまま手が空いたセッション。**まず1回起こし、それでも何も出てこなければ人へ返す**
+      // （2.15）。セッションが持つ指紋の枠は1つなので、`stall:` → `returned:` と進めば、どちらの手も
+      // 二度は出ない。
+      if (open === undefined) continue;
       if (input.prs.some((pr) => closes(pr.body).includes(issue))) continue;
-      const mark = `stall:${issue}`;
-      if (taken[`resume:${session.id}`] === mark) continue;
-      stalls.push(`RESUME ${session.id} stall ${issue} ${mark}`);
+      const woke = taken[`resume:${session.id}`];
+      if (woke === `returned:${issue}`) continue;
+      if (woke === `stall:${issue}`) {
+        returns.push(`RETURN ${issue} ${session.id} returned:${issue}`);
+        continue;
+      }
+      stalls.push(`RESUME ${session.id} stall ${issue} stall:${issue}`);
     }
   }
 
@@ -280,6 +295,9 @@ export function moves(input) {
   const ready = [...input.issues]
     .sort((a, b) => a.number - b.number)
     .filter((issue) => names(issue).includes('task'))
+    // 返ってきたものは、人が `判断待ち` を外すまで配らない（2.15）。**`task` は付いたまま**なので、
+    // 人の手番は1タップで済む。**不変条件を持つのは投入する側**（1.4）で、ここはその写し。
+    .filter((issue) => !names(issue).includes('判断待ち'))
     .filter((issue) => !(issue.blockedBy?.nodes ?? []).some((node) => node.state === 'OPEN'))
     .filter((issue) => !input.prs.some((pr) => closes(pr.body).includes(issue.number)))
     // 既にセッションが持っている issue は配り直さない（「投入済みか」は生死で見る。1.2）。
@@ -305,6 +323,7 @@ export function moves(input) {
     ...archives,
     ...mends,
     ...stalls,
+    ...returns,
     ...reviews,
     ...tasks,
     ...notes.map((note) => `NOTE ${note}`),

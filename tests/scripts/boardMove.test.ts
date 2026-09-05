@@ -479,7 +479,37 @@ describe('board-move.mjs', () => {
       sessions: [idle('session_a', 'task-8')],
     };
     expect(moves(board)).toEqual(['RESUME session_a stall 8 stall:8']);
-    expect(moves({ ...board, taken: { 'resume:session_a': 'stall:8' } })).toEqual([]);
+  });
+
+  // 起こしても何も出てこなければ、そこで人へ返す（2.15.3）。返した後は、同じセッションへも
+  // その issue へも手を出さない——指紋の枠は1つなので、`stall:` を `returned:` が上書きする。
+  it('起こしても動かないセッションの仕事を、人へ返す', () => {
+    const board = {
+      issues: [{ number: 8, ...label('task'), blockedBy: { nodes: [] } }],
+      sessions: [idle('session_a', 'task-8')],
+      taken: { 'resume:session_a': 'stall:8' },
+    };
+    expect(moves(board)).toEqual(['RETURN 8 session_a returned:8']);
+    expect(moves({ ...board, taken: { 'resume:session_a': 'returned:8' } })).toEqual([]);
+  });
+
+  // 返ってきた issue は、人が `判断待ち` を外すまで誰にも配らない（2.15.2）。**`task` は
+  // 付いたまま**なので、この判定が抜けると次の周にそのまま投入し直される。
+  it('`判断待ち` の付いた task issue は配らない', () => {
+    expect(
+      moves({ issues: [{ number: 8, ...label('task', '判断待ち'), blockedBy: { nodes: [] } }] }),
+    ).toEqual([]);
+  });
+
+  // 返した issue を担当していたワーカーは、畳んでよい（2.10）。閉じたときと指紋を分けるのは、
+  // ログから畳んだ理由が読めるようにするため。
+  it('返された issue を担当していたワーカーを畳む', () => {
+    const board = {
+      issues: [{ number: 8, ...label('task', '判断待ち'), blockedBy: { nodes: [] } }],
+      sessions: [idle('session_a', 'task-8')],
+    };
+    expect(moves(board)).toEqual(['ARCHIVE session_a returned:8']);
+    expect(moves({ ...board, taken: { 'archive:session_a': 'returned:8' } })).toEqual([]);
   });
 
   it('issue が閉じていれば、手が空いていても起こさない', () => {

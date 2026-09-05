@@ -76,7 +76,7 @@ cat "$SUPPLEMENT" >>"$INSTRUCTION"
 
 # **日本語はシェル変数に載せない。** Windowsのnodeは argv も環境変数もANSIで受け取るので、題を
 # `$(...)` で渡すと黙って化ける。題も本文もファイル経由で node へ渡す。
-gh issue view "$ISSUE" --json title,state,body >"$WORK/issue.json"
+gh issue view "$ISSUE" --json title,state,body,labels >"$WORK/issue.json"
 
 # 閉じた issue へ立てると、セッションは「仕事は無い」と正しく判断して即終了する。PRが出ないまま
 # 生き続けるので、盤面からは「投入済みで、まだ書いている」と見える。
@@ -85,6 +85,14 @@ state=$(jq -r '.state' "$WORK/issue.json")
   echo "issue #$ISSUE は開いていない（state=$state）。投入しない。" >&2
   exit 1
 }
+
+# 人へ返された issue は、人が答えるまで配らない（2.15）。**`task` は付いたままなので、この判定が
+# 無ければ次の周にそのまま投入し直される**——返した意味が消えて、同じところで止まる相手が増える。
+# 不変条件は投入する側が持つ（1.4）ので、盤面だけでなくここでも見る。
+if jq -r '[.labels[].name] | join("\n")' "$WORK/issue.json" | grep -qxF 判断待ち; then
+  echo "issue #$ISSUE は人へ返されている（判断待ち）。投入しない。" >&2
+  exit 1
+fi
 
 # その issue を閉じるPRが既に開いていないか。**生きているセッションは下の `may-dispatch.sh` が
 # 塞ぐが、畳まれた後にPRだけ残っている場合は素通りする**——#1415 は同じ issue が2本へ渡り、

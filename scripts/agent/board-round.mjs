@@ -29,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 
 import { moves } from './board-move.mjs';
 import { readBoard } from './board-read.mjs';
-import { posix, runBash } from './spawn.mjs';
+import { gh as runGh, posix, runBash } from './spawn.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -77,8 +77,22 @@ export function pruneTaken(taken, board) {
   return kept;
 }
 
+/**
+ * 人へ返すときに issue へ置くコメント。**1行目が返却の宣言**で、ここを読んでラベルを動かすのは
+ * [`board-labels.yml`](../../.github/workflows/board-labels.yml)——**ワーカーが自分で返すときと同じ道**
+ * （`.claude/board-design.md` 2.15）。ラベルを盤面から直に触らないので、返す経路が2つに割れない。
+ */
+const returnBody = (session, issue) =>
+  `[返却] 起こしても手が動かなかった
+
+担当していたセッション（\`${session}\`）は、PRを出さないまま手が空いた状態が続き、盤面が一度
+起こしても何も出てきませんでした。**返却の宣言は届いていません**——止まった理由はここには書けません。
+
+同じ内容でもう一度投入するなら、この issue（#${issue}）から \`判断待ち\` を外してください。
+`;
+
 /** 1手打つ。打てたら `true`、打たなかったら `false`（呼び手は次の手へ進む）。 */
-export function play(kind, args, { runScript, remember, log, echo }) {
+export function play(kind, args, { runScript, gh, remember, log, echo }) {
   const [a = '', b = '', c = '', d = ''] = args;
   switch (kind) {
     case 'MERGE': {
@@ -89,6 +103,20 @@ export function play(kind, args, { runScript, remember, log, echo }) {
     case 'RESUME': {
       if (runScript('resume-session.sh', [a, b, c]).status !== 0) return false;
       remember(`resume:${a}`, d);
+      return true;
+    }
+    case 'RETURN': {
+      // 本文は複数行なので、引数ではなくファイルで渡す。**`gh` は Windows のバイナリ**なので、
+      // そのパスは `posix()` を通さない生のまま（あれはシェルへ渡すときの作法）。
+      const work = mkdtempSync(join(tmpdir(), 'board-round-'));
+      try {
+        const body = join(work, 'return.md');
+        writeFileSync(body, returnBody(b, a));
+        if (gh(['issue', 'comment', a, '--body-file', body]) === undefined) return false;
+      } finally {
+        rmSync(work, { recursive: true, force: true });
+      }
+      remember(`resume:${b}`, c);
       return true;
     }
     case 'REVIEW': {
@@ -136,7 +164,7 @@ export function play(kind, args, { runScript, remember, log, echo }) {
 /** 1周。盤面を引けたら `true`、引けなかったら `false`（呼び手はその周を捨てる）。 */
 export function round({
   runScript = defaultRunScript,
-  gh,
+  gh = runGh,
   sessions,
   log = defaultLog,
   echo = defaultEcho,
@@ -187,7 +215,7 @@ export function round({
     const [kind, ...args] = line.split(' ');
     const [a = '', b = '', c = ''] = args;
     log(`打つ: ${kind} ${a} ${b} ${c}`);
-    if (play(kind, args, { runScript, remember, log, echo })) {
+    if (play(kind, args, { runScript, gh, remember, log, echo })) {
       log(`打てた: ${kind} ${a}`);
       return true;
     }

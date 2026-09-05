@@ -135,6 +135,16 @@ describe('board.mjs', () => {
     expect(lines).toContain('TASK 8 待ち:#9 後');
   });
 
+  // 返された issue は `task` が付いたまま残る（`.claude/board-design.md` 2.15.2）ので、状態で
+  // 見分けが付かないと、人は列に並んでいるものと区別できない。
+  it('人へ返された issue は、返却として出す', () => {
+    const { lines } = show({
+      issues: [issue(8, '決められない', { labels: [{ name: 'task' }, { name: '判断待ち' }] })],
+    });
+
+    expect(lines).toContain('TASK 8 返却 決められない');
+  });
+
   it('依存が閉じていれば、着手可として出す', () => {
     const { lines } = show({
       issues: [issue(8, '後', { blockedBy: { nodes: [{ number: 7, state: 'CLOSED' }] } })],

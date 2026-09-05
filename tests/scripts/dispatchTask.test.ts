@@ -27,6 +27,8 @@ interface World {
   readonly state?: string;
   /** issue の本文。 */
   readonly body?: string;
+  /** issue に付いているラベル。 */
+  readonly labels?: readonly string[];
   /** 開いているPR。 */
   readonly prs?: readonly { number: number; body: string }[];
   /** `--bridge` を付けて叩くか。 */
@@ -48,6 +50,7 @@ function run(issue: number, world: World = {}): Run {
         title: '題',
         state: world.state ?? 'OPEN',
         body: world.body ?? '## 担当\n\nsrc/x.ts\n',
+        labels: (world.labels ?? ['task']).map((name) => ({ name })),
       }),
       'utf-8',
     );
@@ -116,6 +119,15 @@ describe('dispatch-task.sh', () => {
 
   it('閉じた issue へは投入しない', () => {
     expect(run(1415, { state: 'CLOSED' }).code).toBe(1);
+  });
+
+  // 返された issue は `task` が付いたまま残る（`.claude/board-design.md` 2.15.2）ので、**ここで
+  // 見なければ次の周にそのまま投入し直される。** 不変条件を持つのは投入する側（1.4）。
+  it('人へ返された issue へは投入しない', () => {
+    const result = run(1376, { labels: ['task', '判断待ち'] });
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('判断待ち');
   });
 
   // 盤面の道具そのものを直す仕事は、担当がここにしか無い。**止まる理由（書き込みのたびの承認）は

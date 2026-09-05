@@ -8,6 +8,7 @@ name: Board labels
 # - レビューの結論 … `直し待ち` / `通してよい`
 # - 新しいコミットが載ったこと … 前の差分に付いていた印を全部外す
 # - 3周目の判定が「直しが要る」だったこと … `収束せず`（4.6）
+# - ワーカーが仕事を人へ返したこと … `判断待ち`（2.15）
 #
 # **司令塔が止まると盤面が嘘になる**ことが、これを移す理由。2026-09-04 の時点で PR #1512 は
 # レビューが3周「直しが要る」を出しているのに `直し待ち` が付いていなかった——付けていたのが
@@ -25,6 +26,7 @@ on:
 
 permissions:
   pull-requests: write
+  issues: write
 
 # 同じPRへの操作を直列に並べる。結論のコメントと push が近い時刻に来ると、片方が読んだラベルの
 # 集合がもう片方の書き込みで置き換わる。
@@ -95,6 +97,43 @@ jobs:
           if [ "$rounds" -ge 3 ]; then
             gh pr edit "$PR" --repo "$REPO" --add-label 収束せず --remove-label 直し待ち
           fi
+
+  # ワーカーが仕事を人へ返したことを、issue のコメントの1行目から読む
+  # （[`.claude/board-design.md`](../../.claude/board-design.md) 2.15）。**PRではなく issue の側**
+  # ——返すのはPRを出す手前で詰まったときなので、そこにはまだPRが無い。
+  #
+  # **`task` は外さない。** 外すと戻すのに2タップ要る（付け直す・`判断待ち` を外す）。配らない
+  # 判定は投入する側が持つので（1.4、[`dispatch-task.sh`](../../scripts/agent/dispatch-task.sh)）、
+  # ここは事実を1つ置くだけでよい。人は `判断待ち` を外せば列へ戻せる。
+  #
+  # **1行目は前方一致で見る。** レビューの結論は選択肢が閉じているので綴りちょうどで見分けられるが、
+  # 返す理由は閉じていない——1行目の残りがそのまま要約になる。
+  returned:
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request == null &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 返却の行をラベルへ
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          BODY: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          # 1行目の取り方は上の `verdict` と同じ（`head` へ流さない理由もあちら）。
+          head=${BODY%%$'\n'*}
+          head=$(printf '%s' "$head" | tr -d '\r' | sed 's/[[:space:]]*$//')
+          case "$head" in
+          '[返却]'*) ;;
+          *)
+            echo "返却の行ではない: $head"
+            exit 0
+            ;;
+          esac
+          gh issue edit "$ISSUE" --repo "$REPO" --add-label 判断待ち
 
   # 新しいコミットが載ったら、前の差分に付いていた印はどれも嘘になる。**`通してよい` も外す**
   # ——残すと、レビューを受けていないコミットが段5のマージに拾われる。

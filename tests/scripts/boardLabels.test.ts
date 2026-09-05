@@ -199,6 +199,83 @@ describe('board-labels.yml の verdict', () => {
 });
 
 /**
+ * ワーカーが仕事を人へ返す段（`.claude/board-design.md` 2.15.2）。**ここが動かないと、返したことが
+ * ラベルにならない**——issue は `task` が付いたままなので、盤面はそのまま次のセッションへ配り直し、
+ * 返した意味が消える。
+ */
+describe('board-labels.yml の returned', () => {
+  const ISSUE = '1376';
+
+  function runReturned(body: string): string[] {
+    const work = mkdtempSync(join(tmpdir(), 'unmapped-island-returned-'));
+    const dir = work.replace(/\\/g, '/');
+    try {
+      const gh = join(work, 'gh');
+      writeFileSync(
+        gh,
+        `${STUB_SHEBANG}
+case "$1 $2" in
+"issue edit")
+  shift 2
+  echo "$*" >>'${dir}/edits.txt'
+  ;;
+*) exit 1 ;;
+esac
+`,
+        'utf-8',
+      );
+      chmodSync(gh, 0o755);
+      writeFileSync(join(work, 'edits.txt'), '', 'utf-8');
+
+      const workflow = parse(readFileSync(WORKFLOW, 'utf-8')) as {
+        jobs: Record<string, { steps: { run?: string }[] }>;
+      };
+      const run = workflow.jobs.returned.steps.find((s) => s.run !== undefined)?.run;
+      if (run === undefined) throw new Error('returned ジョブに run: が無い');
+      const step = join(work, 'step.sh');
+      writeFileSync(step, run, 'utf-8');
+
+      execFileSync('bash', [step], {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        env: {
+          ...process.env,
+          PATH: `${work}${delimiter}${process.env.PATH ?? ''}`,
+          GH_TOKEN: 'x',
+          REPO: 'gooyyu1/UnmappedIsland',
+          ISSUE,
+          BODY: body,
+        },
+      });
+
+      return readFileSync(join(work, 'edits.txt'), 'utf-8')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+    } finally {
+      rmSync(work, { recursive: true, force: true });
+    }
+  }
+
+  // 返す理由は選択肢が閉じていないので、1行目は前方一致で見る（2.15.2）。
+  it('1行目が [返却] で始まっていれば、判断待ち を付ける', () => {
+    expect(runReturned('[返却] 仕様が決まっておらず、仮決めもできない\n\n詳細')).toEqual([
+      `${ISSUE} --repo gooyyu1/UnmappedIsland --add-label 判断待ち`,
+    ]);
+  });
+
+  // **`task` は外さない**（2.15.2）。外すと、人が列へ戻すのに2タップ要る。
+  it('task は外さない', () => {
+    expect(runReturned('[返却] 決められない').join('\n')).not.toContain('--remove-label task');
+  });
+
+  it('返却の行でないコメントには何もしない', () => {
+    expect(runReturned('進捗です。あと少しで出せます。')).toEqual([]);
+    expect(runReturned('前置き\n[返却] 決められない')).toEqual([]);
+  });
+});
+
+/**
  * push で前の差分の印を落とす段。**人が外す作業を作らないための要**（`board-design.md` 2.13.1）
  * なので、落とす対象が欠けると、人の手番の印が付いたまま残って盤面が止まる。
  */

@@ -317,6 +317,10 @@ Claude-Session: https://claude.ai/code/session_<自分のID>
   手作業になる。
 - 決まっていない箇所に当たったら仮決めして進み、[issue #656](https://github.com/gooyyu1/UnmappedIsland/issues/656)
   へ積む（止まらない）。**確定の宣言に反する変更が要るときだけ**、進めずに issue へ書く。
+- **ユーザーへ問いかけて答えを待たない。** ユーザーはタスクのセッションを見ないので、訊いた側が
+  無限に待つ。**仮決めすらできないときは、担当の issue へコメントを1つ置いて終わる**——1行目を
+  `[返却] <なぜ返すか。1行で>` にすると `判断待ち` が付き、ユーザーが答えるまで誰にも配られない
+  （[`.claude/board-design.md`](.claude/board-design.md) 2.15）。**PRは作らない。**
 
 タスクの割り方・所有権の地図・段の分け方は [`.claude/parallel-work.md`](.claude/parallel-work.md)。
 
