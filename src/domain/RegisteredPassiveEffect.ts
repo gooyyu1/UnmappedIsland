@@ -10,7 +10,7 @@ import type { WorldObject } from './WorldObject';
  *
  * self対象ならdeclarer === slotBearer === 登録先の自分自身、parent対象（子→親）なら両方とも子、
  * ancestor対象（子孫→祖先、8.6節）なら両方とも子孫、child対象（親→子）ならdeclarerが親・slotBearerが子。
- * この2つを登録時に確定させることで、読み取り側(PropertyValue.getEffectiveValue/tick)はtargetの種類を
+ * これらを登録時に確定させることで、読み取り側(PropertyValue.getEffectiveValue/tick)はtargetの種類を
  * 区別せずに済む。
  */
 export class RegisteredPassiveEffect {

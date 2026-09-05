@@ -17,7 +17,7 @@ export type AlertDirection = 'up' | 'down' | 'mixed';
 
 /**
  * ゲージ（6.8節）の端の見せ方。`good`は満ち足りている端、`bad`は尽きている・行き過ぎている端、
- * `neutral`は良し悪しを言わない端。**色はこの2つの端だけで決まる**ので、UI側は何のプロパティかを
+ * `neutral`は良し悪しを言わない端。**色は両端だけで決まる**ので、UI側は何のプロパティかを
  * 知らずに塗れる。
  */
 export type GaugeEnd = 'good' | 'bad' | 'neutral';

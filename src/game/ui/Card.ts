@@ -257,7 +257,7 @@ export interface CardGauge {
    */
   readonly color?: number;
 
-  /** rangeの下限・上限に居るときの見せ方（GaugeDef）。塗りの色はこの2つだけで決まる。 */
+  /** rangeの下限・上限に居るときの見せ方（GaugeDef）。塗りの色は両端だけで決まる。 */
   readonly atMin: GaugeEnd;
   readonly atMax: GaugeEnd;
 
@@ -485,7 +485,7 @@ export class Card extends Phaser.GameObjects.Container {
 
   /**
    * 加熱されているカードにかぶせる覆いと、その上の残り時間・進み具合（CardContent.cooking）。
-   * 3つは常に揃って現れ、揃って消える（showCooking）。
+   * どれも常に揃って現れ、揃って消える（showCooking）。
    */
   private readonly cookingVeil: Phaser.GameObjects.Graphics;
   private readonly cookingText: Phaser.GameObjects.Text;
@@ -652,7 +652,7 @@ export class Card extends Phaser.GameObjects.Container {
       .setStroke(cssColor(COLOR.cardFace), metrics.px(OVERLAY_STROKE));
     this.add(this.overlay);
 
-    // 加熱の残り時間と進み具合。覆いは絵の層に置くが、この2つは印・覆いと同じく最前面に置いて、
+    // 加熱の残り時間と進み具合。覆いは絵の層に置くが、これらは印・覆いと同じく最前面に置いて、
     // 端の操作エリアやスタック数の下へ沈まないようにする。バーの左右は変わらないので、
     // 縦の位置だけを差し替えのたびに決め直す（showCooking）。
     const cookingSpan = windowSpan(metrics, width, height);
@@ -797,7 +797,7 @@ export class Card extends Phaser.GameObjects.Container {
 
   /**
    * 加熱が進んでいることを、絵の上の覆いと、残り時間・進み具合で言う（CardView.md 15節）。
-   * 進んでいないカードでは3つとも消える。
+   * 進んでいないカードではどれも消える。
    *
    * 残り時間とバーは窓の中央へ縦に積む。**桟の高さで窓の下端が動く**ので、置き場所は印（showMark）と
    * 同じく差し替えのたびに決め直す。入り切らない文字は幅に合わせて縮める（showOverlayと同じ）。

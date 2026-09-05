@@ -141,7 +141,7 @@ export class PlayScreenLayout {
   /** 上から設置物・アイテム・ハンドの3レーン。 */
   readonly lanes: readonly Rect[];
 
-  /** レーンの区切りに敷く帯。上から順に、設置物レーンの上・レーン間×2・ハンドレーンの下の4本。 */
+  /** レーンの区切りに敷く帯。上から順に、設置物レーンの上・レーン間×2・ハンドレーンの下。 */
   readonly laneSeparators: readonly Rect[];
 
   /**
@@ -166,7 +166,7 @@ export class PlayScreenLayout {
 
   /**
    * フィールドエリアと右サイドバー（オプション／フィルター）の境目に敷く、縦向きの帯（横型のみ）。
-   * 縦型はこの2つが接していないためundefined。
+   * 縦型はこれらが接していないためundefined。
    */
   readonly sidebarSeparator: Rect | undefined;
 

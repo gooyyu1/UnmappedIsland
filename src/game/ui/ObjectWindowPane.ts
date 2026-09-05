@@ -21,7 +21,7 @@ export interface ObjectWindowLane {
 /**
  * オブジェクトウィンドウのタブ1つぶんの中身（ObjectWindow）。
  *
- * **窓が呼ぶのはここに在る3つだけ**で、何をどう描くかは面が決める。窓は中身を知らないので、
+ * **窓が呼ぶのはここに在るものだけ**で、何をどう描くかは面が決める。窓は中身を知らないので、
  * タブの種類が増えても窓は変わらない。
  */
 export interface ObjectWindowPane {

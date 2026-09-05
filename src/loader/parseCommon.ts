@@ -15,7 +15,7 @@ import { TypeMatchRule } from '../domain/TypeMatchRule';
  * 定義を組み立てるあいだに投げられた誤りへ、**YAML上のどこに書いてあったか**を添えて投げ直す。
  *
  * 成立条件（gaugeにはrangeが要る、minとeqは同時に持てない、など）は定義自身が持ち、
- * loaderは文脈だけを足す。定義はYAMLの語彙を知らないので、この2つはここで初めて出会う。
+ * loaderは文脈だけを足す。定義はYAMLの語彙を知らないので、これらはここで初めて出会う。
  */
 export function withYamlContext<T>(context: string, build: () => T): T {
   try {

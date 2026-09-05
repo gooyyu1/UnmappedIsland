@@ -17,7 +17,7 @@
 
 ## 1. 全体の呼び出し関係
 
-地形生成は大きく2つの入口を持ちます。**ロード**（YAML → `WorldCodex.generation`、ゲーム起動時に1回）と、
+地形生成は大きく分けて次の入口を持ちます。**ロード**（YAML → `WorldCodex.generation`、ゲーム起動時に1回）と、
 **生成・実体化**（`WorldCodex.generation` → 実際の `WorldObject` の島、ゲーム開始時に1回）です。
 
 ```
@@ -211,7 +211,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 
 ## 7. エンジン拡張との接点
 
-地形生成の実装にあわせて `GameElementDefinition.md` へ追加した2つの汎用エンジン拡張（`duration`/`move`、
+地形生成の実装にあわせて `GameElementDefinition.md` へ追加した汎用エンジン拡張（`duration`/`move`、
 `ExplorationSystem.md` 4節）は、以下のコードに対応します。
 
 - **`duration`**: `InteractionDef`（操作の中身）が `DeclaredNumber | undefined` 型の
@@ -236,7 +236,7 @@ Bowyer-Watson 法によるDelaunay三角形分割です。すべての `Site` �
 | `src/domain/generation/AxisDef.ts` | `AxisDef`・`GeneratorLayer`・`GeneratorLayerType`（層の種類の文字列リテラルユニオン） |
 | `src/domain/generation/LocationTypeDef.ts` | `LocationTypeDef`・`LocationVariantDef`・`AxisPreference`・`AxisLimit` |
 | `src/domain/generation/GenerationScopeDef.ts` | `GenerationScopeDef`・`GenerationScopeParams`・`CoverageGuaranteeDef`・`GuaranteePick` |
-| `src/domain/generation/GenerationDefs.ts` | `GenerationDefs`（上記3つの束、`WorldCodex.generation` の中身） |
+| `src/domain/generation/GenerationDefs.ts` | `GenerationDefs`（上記の束、`WorldCodex.generation` の中身） |
 | `src/loader/parseGeneration.ts` | YAML → 上記Defsのパース（2節） |
 | `src/domain/Pcg32.ts` | 用途ごとの列を作る決定的RNG（`Pcg32`・`RandomPurpose`） |
 | `src/domain/generation/ValueNoise.ts` | シード付き格子値ノイズ |

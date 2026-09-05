@@ -200,7 +200,7 @@ export function externalTickDeltasOf(def: ObjectDef, root: 'parent' | 'child'): 
   // **束ねてよいのは限度の同じものどうしだけ。** 限度の違うものを束ねると、どの仕掛けも持って
   // いない（速さ, 限度）の対ができる——止まる出血（-15/tickで合計60mL）と止まらない敗血症
   // （-40/tick）を1つにすると、「-15/tickで永久に流れ続ける傷」になる。炉の火力（heatの段で
-  // 1/3/5）は3つとも止まらないので、今までどおり1つの幅に収まる。
+  // 1/3/5）はどれも止まらないので、今までどおり1つの幅に収まる。
   const byPropertyAndLimit = new Map<string, ExternalTickDelta>();
   for (const delta of tickDeltasOf(def)) {
     if (delta.target !== root || delta.amount === 0) continue;

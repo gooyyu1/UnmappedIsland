@@ -285,7 +285,7 @@ object_defs:
           # 1個
           - weight: {prop: palm_find}
             spawn: {object: palm_tree, into: self}
-          # 打ち上げられた流木の幹（timber.yaml）。海岸3種すべてに寄る。
+          # 打ち上げられた流木の幹（timber.yaml）。どの海岸にも寄る。
           - weight: {prop: driftwood_trunk_find}
             spawn: {object: driftwood_trunk, into: self}
           - weight: 5
@@ -362,7 +362,7 @@ object_defs:
             spawn: {object: shallow_cave, into: self}
           - weight: {prop: crab_find}
             spawn: {object: coconut_crab, into: self}
-          # 打ち上げられた流木の幹（timber.yaml）。海岸3種すべてに寄る。
+          # 打ち上げられた流木の幹（timber.yaml）。どの海岸にも寄る。
           - weight: {prop: driftwood_trunk_find}
             spawn: {object: driftwood_trunk, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）
@@ -444,7 +444,7 @@ object_defs:
             spawn: {object: golden_chalice, into: self}
           - weight: 30
             spawn: {object: stone, into: self}
-          # 打ち上げられた流木の幹（timber.yaml）。海岸3種すべてに寄る。
+          # 打ち上げられた流木の幹（timber.yaml）。どの海岸にも寄る。
           - weight: {prop: driftwood_trunk_find}
             spawn: {object: driftwood_trunk, into: self}
           # 出くわす獣（収穫ではないので、単独で出る）

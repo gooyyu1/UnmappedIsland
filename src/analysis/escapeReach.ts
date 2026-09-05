@@ -15,7 +15,7 @@ import { externalTickDeltasOn, rangeCyclesOf } from './rangeCycles';
  * 決めるのはこの数字が出てからで、道具の側が先に決めてしまうと、決める材料が道具の判定に汚染される
  * （`startupReach.ts` 冒頭と同じ理由）。
  *
- * 引く線は4つ。
+ * 引く線は次のとおり。
  *
  * **出発集合は島の土地そのもの。** 探索も他と同じ1つの工程として回す（`craftingStepsOf`）ので、
  * `explore`が何を配るかを読み直さない。島に湧く動物も探索が配るので、同じ道を通って出てくる。海区は

@@ -72,10 +72,10 @@ export class PassiveEffectGate {
  * 1つの ObjectDef が宣言する、1つの持続効果（8節）。ObjectDef.passives の要素。
  *
  * **動詞が名乗るのは可逆性だけで、一度きりかtick毎かは置き場所（active／passives）が決める**（8.4節）。
- * そのため passives に書ける動詞は3つ——可逆な `modify`、不可逆な `add`、そして輸送の `transfer`——で、
- * 後の2つは active と同じ語のまま、tick毎に効く側になる。
+ * そのため passives に書ける動詞は、可逆な `modify`、不可逆な `add`、そして輸送の `transfer`。
+ * `add` と `transfer` は active と同じ語のまま、tick毎に効く側になる。
  *
- * 効き方は2通りに分かれる。`modify`/`add` は**対象プロパティへ寄与として登録**され（PropertyPassiveEffect）、
+ * 効き方は分かれる。`modify`/`add` は**対象プロパティへ寄与として登録**され（PropertyPassiveEffect）、
  * `transfer` は登録を持たず**宣言したオブジェクトのtickで走る**（TransferPassiveEffect）——2つのプロパティを
  * 同時に動かす操作は、どちらか一方への寄与としては表せないため。
  */

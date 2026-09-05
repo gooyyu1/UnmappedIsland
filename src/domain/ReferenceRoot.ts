@@ -39,7 +39,7 @@ export type ReferenceRoot =
    */
   | 'ancestor';
 
-/** 操作の関係が持つ3つの役（11.5節）。**役の名前の唯一の一覧**で、数え上げる側はここから引く。 */
+/** 操作の関係が持つ役（11.5節）。**役の名前の唯一の一覧**で、参照する側はここから引く。 */
 export const INTERACTION_ROLES = ['agent', 'instrument', 'patient'] as const;
 
 /** 操作の関係が用意する役（INTERACTION_ROLESの要素）。 */

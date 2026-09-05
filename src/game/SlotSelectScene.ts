@@ -150,7 +150,7 @@ export class SlotSelectScene extends ResponsiveScene {
   private explainAssetPacks(slot: SaveData, installedPacks: readonly SavedAssetPack[]): void {
     new ModalDialog(this, this.metrics, {
       title: this.locale.uiText('slots_packs_title', { island: slot.islandName }),
-      // 空行で3つに区切る。理由・食い違い・直し方が続けて流れると、並びの2行が本文に埋もれる。
+      // 空行で区切る。理由・食い違い・直し方が続けて流れると、並びの2行が本文に埋もれる。
       body: [
         this.locale.uiText('slots_packs_reason'),
         '',

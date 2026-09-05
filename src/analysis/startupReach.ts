@@ -12,7 +12,7 @@ import { craftingStepsOf } from './craftingSteps';
  * しきい値を決めるのはこの数字が出てからで（同2.3.2節・2.3.3節）、道具の側が先に決めてしまうと、
  * 決める材料が道具の判定に汚染される。
  *
- * 引く線は2つ。**道は未発見でも数える**——判定するのは島の作りであってプレイヤーの進み具合では
+ * 引く線は次のとおり。**道は未発見でも数える**——判定するのは島の作りであってプレイヤーの進み具合では
  * ないので、道を見つけるのに要る探索時間は別の数として添える。**実行時にしか決まらないものは
  * 解かない**——探索の抽選は`pick`の期待値まで読み、どの回に何を引くかは数えない。
  */
@@ -215,7 +215,7 @@ function supplyOf(sources: StartupNeedSources, site: Site): LocationNeedSupply {
   return supply;
 }
 
-/** サイト1つから見た、要るもの6つそれぞれへの最短。 */
+/** サイト1つから見た、要るものそれぞれへの最短。 */
 function siteReachOf(
   from: number,
   locationDefName: string,

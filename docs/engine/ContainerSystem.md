@@ -10,7 +10,7 @@
 7 節）そのもので表します。** `item_container` trait が `container` タグと中身のスロット `contents` を
 与え、そのスロットを `visible_slots`（同 7.11 節）に並べることで、カードを押すと中身が並び、
 カードへ重ねた物はそこへ入ります（投入用の `combination` は要りません）。入れ物ごとに決めるのは、
-何種類入るか（`cell_count`）と、どれだけのかさが入るか（`capacity`）の 2 つだけです。液体の容器は
+何種類入るか（`cell_count`）と、どれだけのかさが入るか（`capacity`）だけです。液体の容器は
 「中身が容器の変種になり、量は容器自身が `fill` として持つ」別の構造なので、trait もタグも分けています
 （スロットを持つのは固形物側だけです）。定義は `src/assets/world-codex/containers.yaml`、検証は
 `tests/world-codex/containersYaml.test.ts` です。
@@ -55,7 +55,7 @@ weight の実効値 = weight.value + 通常の modify + Σ( 子の weight実効�
 
 中身入りの容器は、抱えている量ぶんだけ自分が重くなります——`fill × density` を自分の重さへ足します
 （`density` は単位量あたりの重さ = g/mL、`LiquidContainerSystem.md` 8 節）。**換算定数は要りません**——mL × g/mL = g が
-そのまま成立するよう、3 つの単位を噛み合わせて選んでいます。
+そのまま成立するよう、単位を噛み合わせて選んでいます。
 
 **`weight` の単位は g です（1 = 1g、1kg = 1000）。** 液体の量の単位（1 = 1mL）と対になっていて別々には
 選べません（`LiquidContainerSystem.md` 5 節）。
@@ -68,7 +68,7 @@ weight の実効値 = weight.value + 通常の modify + Σ( 子の weight実効�
 
 そこで、**この世界に実体として在る物は目方を名乗る**という約束を `required_props`
 （[`GameElementDefinition.md`](./GameElementDefinition.md) 4.2 節、`core.yaml`）に置いています——
-`item`・`fixture`・`character`・`injury` の 4 つです。**「持ち運べるか」ではありません**——`fixture` も
+`item`・`fixture`・`character`・`injury` です。**「持ち運べるか」ではありません**——`fixture` も
 `not(item)` も「動かせない物」の印にはならず（編み籠は両方を名乗り、椅子もそうなります）、動くかどうかと
 目方があるかどうかは別の話だからです。
 
@@ -266,7 +266,7 @@ conditions:
   規則は要りません。
 - **重い物とかさばる物で、先に効く上限が違います。** 石を担げば `load` が先に尽き、ヤシの葉のような
   嵩のある物は `capacity` が先に尽きます。**種類を少しずつ持ち歩けば、枠数（`cell_count`）が先に尽きます**
-  ——入れ物は「重さ・かさ・種類」の3つの理由で満杯になり、どれが先に来るかは荷の中身が決めます。
+  ——入れ物は「重さ・かさ・種類」の理由で満杯になり、どれが先に来るかは荷の中身が決めます。
   何種類入るかは [`../world/Containers.md`](../world/Containers.md) 1節が決めます（編み籠は10枠）。
 - **重ねられる物は、1個ぶんの外寸より小さく見ます。** ヤシの殻の器（200）は半球の外寸（450）より小さい
   値です。重ねて入る物のかさは「1個目の外寸」ではなく「1個増やすたびに増える分」なので、そちらを採ります。

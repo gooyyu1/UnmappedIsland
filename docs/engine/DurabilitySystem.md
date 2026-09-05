@@ -54,8 +54,8 @@ tick あたりの減少量 = 10 ÷ L（寿命の日数）
 置き場（穴・洞窟の奥）がまだ無く、置き場の側から作ることになるためです。
 
 レートは `src/assets/world-codex/foods.yaml` の trait が持ちます。分類の違いは通常温度で減る速さ
-1つだけなので、そこだけを `spoils_fast`/`spoils_normal`/`spoils_slow` の3つに分け、`durability`
-本体と屋外の上乗せ（分類によらず -1）は `perishable` が持ちます。食べ物は2つを名乗ります
+1つだけなので、そこだけを `spoils_fast`/`spoils_normal`/`spoils_slow` に分け、`durability`
+本体と屋外の上乗せ（分類によらず -1）は `perishable` が持ちます。食べ物は両方を名乗ります
 （`traits: [perishable, spoils_fast]`）。屋外かどうかを見るのは `sheltered`（0/1）1つで、蓋つきの
 入れ物・浅い洞窟に入れれば上乗せだけが止まります（[`ContainerSystem.md`](./ContainerSystem.md) 6 節）。
 

@@ -5,7 +5,7 @@ import type { ObjectWindowLane, ObjectWindowLaneRole, ObjectWindowPane } from '.
 /**
  * 子ウィンドウが今開いている面と、そこから借りた札が居た枠（ObjectWindow）。
  *
- * **面を捨てられるのはここからだけ。** 捨て方が2つある（タブの切り替えと窓を閉じる）ので、
+ * **面を捨てられるのはここからだけ。** 捨て方が分かれる（タブの切り替えと窓を閉じる）ので、
  * 「捨てる前に枠を控える」を捨てる側それぞれに書くと、片方だけ書き忘れる。
  */
 export class OpenPane {
