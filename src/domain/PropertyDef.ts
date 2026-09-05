@@ -257,11 +257,28 @@ export class PropertyDef {
   /** on_min（6.3節）: on_maxの下限側の鏡像。値がrange.minに達したときにselfへ一度だけ適用する。 */
   private readonly onMin: ActiveEffect | undefined;
 
+  /**
+   * onMax/onMinを、適用できる形に並べたもの（適用するのはこのクラス自身だけ、applyRangeEventsAt）。
+   *
+   * **一度だけ組み立てて持つ。** 中身は読み込み後に動かないのに、値が動くたびに読まれる
+   * （applyRangeEventsAt）ので、読むたびに組み直すと、端のイベントを1つも宣言していない
+   * プロパティまで毎回配列を作ることになる。
+   */
+  private readonly rangeEventEffects: readonly (readonly [RangeEventLabel, ActiveEffect])[];
+
   /** 宣言されている段（6.4節）を宣言順に。1つも宣言していなければ空。 */
   readonly stages: readonly PropertyStage[];
 
   /** stages中のフォールバック段（min:undefined・eq:undefined）。stagesは不変のため一度だけ求める。該当が無ければundefined。 */
   private readonly fallbackStage: PropertyStage | undefined;
+
+  /**
+   * 直前にstageAtが答えた値と、その答え。**同じ値には必ず同じ段**（stagesは不変）なので、続けて
+   * 同じ値を訊かれたら走査せずに返す。1件しか持たないのは、続けて訊く側——1つのプロパティの段で
+   * 縛られた寄与が並ぶゲート（8.2節）の判定——が、同じ値を続けて訊くから。
+   */
+  private lastStageValue: number | undefined;
+  private lastStage: PropertyStage | undefined;
 
   /** stagesを1つでも持つか（art_by_stageの検証、6.4節）。 */
   get hasStages(): boolean {
@@ -372,6 +389,10 @@ export class PropertyDef {
     this.onMax = rangeEventEffect(onMax, defaultClampEffect(range, globalId, true));
     this.stages = stages;
     this.onMin = rangeEventEffect(onMin, defaultClampEffect(range, globalId, false));
+    const rangeEventEffects: (readonly [RangeEventLabel, ActiveEffect])[] = [];
+    if (this.onMax !== undefined) rangeEventEffects.push(['on_max', this.onMax]);
+    if (this.onMin !== undefined) rangeEventEffects.push(['on_min', this.onMin]);
+    this.rangeEventEffects = rangeEventEffects;
     this.base = base;
     this.tags = tags;
     this.isSymbolic = isSymbolic;
@@ -437,15 +458,7 @@ export class PropertyDef {
 
   /** 宣言されているrange系イベントとその名前（6.3節）。 */
   rangeEvents(): readonly (readonly [RangeEventLabel, EffectDeclaration])[] {
-    return this.rangeEventEffects();
-  }
-
-  /** rangeEventsの、適用できる形。適用するのはこのクラス自身だけ（applyRangeEventsAt）。 */
-  private rangeEventEffects(): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
-    const events: (readonly [RangeEventLabel, ActiveEffect])[] = [];
-    if (this.onMax !== undefined) events.push(['on_max', this.onMax]);
-    if (this.onMin !== undefined) events.push(['on_min', this.onMin]);
-    return events;
+    return this.rangeEventEffects;
   }
 
   /**
@@ -521,16 +534,20 @@ export class PropertyDef {
    * 実行時のオブジェクトを持たずに読む側（analysis/rangeEvents）が、同じ判定をここから引く。
    */
   rangeEventLabelsAt(value: number): readonly RangeEventLabel[] {
-    return this.rangeEventsAt(value).map(([label]) => label);
+    return this.rangeEventEffects
+      .filter(([label]) => this.hasReachedEnd(label, value))
+      .map(([label]) => label);
   }
 
-  private rangeEventsAt(value: number): readonly (readonly [RangeEventLabel, ActiveEffect])[] {
+  /**
+   * その値が、そのイベントの見ている端へ達しているか。**どちらの端を見るかを決めるのはここだけ**
+   * （rangeEventLabelsAtとapplyRangeEventsAtが同じ判定をここから引く）。rangeを持たないプロパティは
+   * 端を持たないので、どのイベントも起きない。
+   */
+  private hasReachedEnd(label: RangeEventLabel, value: number): boolean {
     const range = this.range;
-    if (range === undefined) return [];
-
-    return this.rangeEventEffects().filter(([label]) =>
-      label === 'on_max' ? value >= range.max : value <= range.min,
-    );
+    if (range === undefined) return false;
+    return label === 'on_max' ? value >= range.max : value <= range.min;
   }
 
   /**
@@ -542,8 +559,10 @@ export class PropertyDef {
   applyRangeEventsAt(number: number, owner: WorldObject): void {
     // rangeイベントは操作ではなく、値が端に着いた瞬間への反応（11.5節）。ownerが今どれかの操作に
     // 参加していても、そこに役は居ない。
-    for (const [, effect] of this.rangeEventsAt(number))
+    for (const [label, effect] of this.rangeEventEffects) {
+      if (!this.hasReachedEnd(label, number)) continue;
       owner.applyActiveEffect(effect, ReferenceContext.forSelf(owner));
+    }
   }
 
   /**
@@ -555,6 +574,8 @@ export class PropertyDef {
    * どれにも該当しなければfallbackStage。段の判定はリスト中の位置に依存しない。
    */
   stageAt(currentValue: number): PropertyStage | undefined {
+    if (currentValue === this.lastStageValue) return this.lastStage;
+
     let best: PropertyStage | undefined;
     let bestBound = Number.NEGATIVE_INFINITY;
 
@@ -566,7 +587,9 @@ export class PropertyDef {
       bestBound = bound;
     }
 
-    return best ?? this.fallbackStage;
+    this.lastStageValue = currentValue;
+    this.lastStage = best ?? this.fallbackStage;
+    return this.lastStage;
   }
 
   /**
