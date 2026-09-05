@@ -15,7 +15,8 @@
 ## 1. 住居は「部品を差し替える場所」
 
 住居は、レシピで作り直して置き換える**物**ではなく、構造部品を出し入れできる**場所**として扱います。
-`location` trait が持つ `items`/`fixtures`/`characters` の3スロットに加えて、構造部品用のスロットを持たせます。
+`location` trait が持つスロット（[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 1.1 節）に加えて、
+構造部品用のスロットを持たせます。
 
 ```yaml
 object_defs:
@@ -138,7 +139,7 @@ interactions:
 
 ### 5.1 浅い洞窟（`shallow_cave`）
 
-この表のうち洞窟の列を担うのが**浅い洞窟**で、岩石地・岸壁・山腹・荒野・山頂の探索で見つかります
+この表のうち洞窟の列を担うのが**浅い洞窟**で、岩がちな土地の探索で見つかります
 （`locations.yaml`）。**設置物でありながら場所でもある**——筏（[`Voyage.md`](./Voyage.md) 2.1 節）と
 同じ形で、`tags: [fixture]` ＋ `traits: [location]` に出入りの操作を足しただけです。中へ入れば
 `location` trait の3スロットがそのまま拠点の枠になり、物を置くことも火を焚くこともできます。

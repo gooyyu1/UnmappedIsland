@@ -1,5 +1,5 @@
 # 罠の定義。仕組みは docs/engine/TrapSystem.md、掛かる動物は animals.yaml、刺さる怪我は
-# injuries.yaml（snare_laceration・bruise・puncture_wound）が持つ。
+# injuries.yamlが持つ。
 #
 # 罠は「時間と運を払って、危険を払わずに獲物を得る」道で、直接戦う狩猟（HuntingSystem.md）との
 # 非対称が設計の芯（TrapSystem.md 7節）。

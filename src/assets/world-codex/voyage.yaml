@@ -366,7 +366,7 @@ object_defs:
   # 筏。丸太を並べて縛った、島を出るための乗り物。
   #
   # **設置物（fixture）でありながら場所（location）でもある。** 中に積荷を載せ、プレイヤー自身も
-  # 乗り込むため、土地と同じ items/fixtures/characters の3スロットを持つ。札へ重ねれば積める
+  # 乗り込むため、土地と同じスロット（docs/engine/ExplorationSystem.md 1.1節）を持つ。札へ重ねれば積める
   # （7.8節）——編み籠（containers.yaml）と同じ操作でよい。
   # boatは「海を渡る乗り物である」ことを言うタグ（ContentSkeleton.md 3節の系統12）。帆や航路と違って
   # 船そのものを指す語が無いと、遠出の絞り込みから船が消える（ScreenLayout.md 8.1.2節）。
@@ -376,7 +376,7 @@ object_defs:
     # 積荷が個体ごとに違うので束ねない（SlotSystem.md 4節）。
     stackable: false
     # **外から見えるのは帆だけ**（7.11節）。積荷は重ねれば積めるが、何を積んだかは乗り込まないと
-    # 分からない——中に入れば items がレーンに出る。土地から受け継いだ items/fixtures/characters を
+    # 分からない——中に入れば items がレーンに出る。土地から受け継いだスロットを
     # 外から覗ける場所にすると、筏が「開けば中身が並ぶ箱」になってしまう。
     visible_slots: [structure]
     # 物を溜める入れ物（7.12節）。積荷の枠の詰まり具合をカードのバーに出す。

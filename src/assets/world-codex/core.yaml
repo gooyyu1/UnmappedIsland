@@ -101,7 +101,7 @@ crafting_conditions:
     in_stage_or_above: bright
 
 # 製作中オブジェクトが完成品から引き継ぐタグ（docs/engine/RecipeSystem.md 5節）。挙げてよいのは
-# **どこに置けるかを言うタグ**だけで、何ができるかを言うタグ（tool・weapon・sail・pottery）は
+# **どこに置けるかを言うタグ**だけで、何ができるかを言うタグ（tool・weaponなど）は
 # 挙げない——作りかけはまだその物ではないので、道具の枠にも操作の相手にも当てはまってはいけない。
 in_progress_tags: [item, fixture]
 
@@ -285,8 +285,8 @@ object_defs:
       # 現在の日（1始まり、上限なし。GameElementDefinition.md 17節）。
       day:
         value: 1
-      # 現在の天気。シンボル型プロパティ（6.6節）。storm/heavy_rain/light_rain/cloudy/clear/sunny/
-      # scorchingの7段階で、clear（普通の晴れ）がこの島の標準的な天気。
+      # 現在の天気。シンボル型プロパティ（6.6節）。下のstagesが悪天から順に並び、
+      # clear（普通の晴れ）がこの島の標準的な天気。
       # 遷移はClimateSystem.md参照: weather_remainingが0になるたび、atmospheric_moistureのstages
       # （scorchingのみthermal_levelのhot stage）が駆動する*_weightを重みとするpickで次が選ばれる。
       # stagesはambient_brightnessへ**雲がどれだけ陽を遮るか**をmodifyで与える（太陽高度の寄与は

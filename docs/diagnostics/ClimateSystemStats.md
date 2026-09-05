@@ -92,6 +92,6 @@ ambient_brightnessへ与える寄与）・土地ごとのambient_brightness・�
 （[`ContentSkeleton.md`](../world/ContentSkeleton.md) 8.1.4節）。森・密林では嵐の時間帯がもともと
 明るさで落ちており、浅い洞窟は岩陰に守られているので、そこでは2つが一致する。
 
-**数えるのは島の土地だけ**で、海区（`voyage.yaml`の島影の海・潮目・空の海）は行にしない。海区は
+**数えるのは島の土地だけ**で、海区（`voyage.yaml`）は行にしない。海区は
 探索でき、寝られ、雨も貯まるので集め方の条件（`location`タグ＋`exploration_progress`）をそのまま
 満たすが、この表が答えたいのは島の1日。外した場所は`excluded_locations`に出る。

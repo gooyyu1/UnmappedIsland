@@ -6,7 +6,7 @@
 組み合わせ、休息の回復へどう効かせるかまでです。
 
 **境界。** 屋根・壁・住居そのものは [`Dwellings.md`](./Dwellings.md)。休息アクションそのもの
-（`wait`/`rest`/`nap`/`sleep` の長さと回復量）は [`Characters.md`](./Characters.md) 休息節。葉を編む連鎖と
+（長さと回復量）は [`Characters.md`](./Characters.md) 休息節。葉を編む連鎖と
 繊維から紐までの連鎖は既にあり、本書はその出口を1つ足すだけです。スキルの粒度は
 [`Skills.md`](./Skills.md) 2節。
 
