@@ -123,13 +123,33 @@ gather() {
   CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}" bash "$HERE/live-sessions.sh" \
     >"$WORK/live.tsv" || return 1
 
+  # ワーカーを畳んでよいかは、担当の issue が閉じたかで決まる（2.10）。**探すのはセッションの側から**
+  # ——閉じた issue の一覧は増える一方で、畳む相手はそこには居ない。開いている一覧に載っている
+  # ぶんは引かないので、打つのは**行き先が消えたタグの数**だけ（普通は0）。
+  #
+  # 引けなかったものは書かない。**知らないことを「閉じた」として読まない**——畳んだ判定は戻せる
+  # とはいえ、次の周にもう一度引ける。
+  : >"$WORK/issue-states.tsv"
+  while IFS= read -r number; do
+    [ -n "$number" ] || continue
+    if jq -e --argjson n "$number" 'any(.[]; .number == $n)' "$WORK/issues.json" >/dev/null; then
+      continue
+    fi
+    state=$(gh issue view "$number" --json state --jq '.state' 2>/dev/null) || continue
+    printf '%s\t%s\n' "$number" "$state" >>"$WORK/issue-states.tsv"
+  done < <(cut -f4 "$WORK/live.tsv" | tr -d '\r' | tr ',' '\n' |
+    sed -n 's/^task-\([0-9][0-9]*\)$/\1/p' | sort -u)
+
   jq -n --slurpfile prs "$WORK/prs.json" --slurpfile issues "$WORK/issues.json" \
     --slurpfile taken "$LEDGER" --rawfile live "$WORK/live.tsv" \
+    --rawfile states "$WORK/issue-states.tsv" \
     --arg settled "$(date -u -d "-$SETTLE_MINUTES minutes" +%Y-%m-%dT%H:%M:%SZ)" '{
       settledBefore: $settled,
       prs: $prs[0],
       issues: $issues[0],
       taken: $taken[0],
+      issueStates: ($states | gsub("\r"; "") | split("\n") | map(select(length > 0))
+        | map(split("\t") | {key: .[0], value: .[1]}) | from_entries),
       sessions: ($live | gsub("\r"; "") | split("\n") | map(select(length > 0))
         | map(split("\t")
           | if length != 4 then error("live-sessions.sh の列数が合わない") else . end
@@ -151,12 +171,13 @@ gather() {
     | $taken | with_entries(. as $entry | select(
         (($entry.key | startswith("resume:")) and ($ids | index($entry.key[7:]) != null))
         or (($entry.key | startswith("review:")) and ($numbers | index($entry.key[7:]) != null))
+        or (($entry.key | startswith("archive:")) and ($ids | index($entry.key[8:]) != null))
       ))' "$LEDGER" "$WORK/board.json" >"$WORK/pruned.json" && mv "$WORK/pruned.json" "$LEDGER"
 }
 
 # 1手打つ。打てたら0、打たなかったら非0（呼び手は次の手へ進む）。
 play() {
-  local kind="$1" a="${2:-}" b="${3:-}" c="${4:-}" rc=0
+  local kind="$1" a="${2:-}" b="${3:-}" c="${4:-}" rc=0 out=''
   case "$kind" in
   MERGE)
     # 終了コード2は「マージはできたが後始末が残った」。手は打てているので、次の周は別の手へ進む。
@@ -170,6 +191,19 @@ play() {
   REVIEW)
     bash "$HERE/dispatch-review.sh" "$a" || return 1
     remember "review:$a" "$b"
+    ;;
+  ARCHIVE)
+    # 畳んでよいかの判定は [`archive-session.sh`](archive-session.sh) が持つ。**終了コードは見ない**
+    # ——あちらは1件ずつの結果を行で返す。`--keep-untagged task-` は、ここへ来る相手が必ずワーカーで
+    # あること（盤面の側の約束）を、畳む手前でもう一度確かめるため。
+    out=$(printf '%s\n' "$a" | bash "$HERE/archive-session.sh" --keep-untagged task-) || return 1
+    printf '%s\n' "$out"
+    if grep -q "^ARCHIVED $a\$" <<<"$out"; then return 0; fi
+    # `KEPT` は「畳んではいけない」という**安定した答え**（ブリッジのもの・素性を引けなかったもの）。
+    # 指紋を残さないと、**1周1手のうちの1手がこれで埋まり続ける。** `UNARCHIVED` は失敗なので残さず、
+    # 次の周にもう一度試す。
+    if grep -q "^KEPT $a\$" <<<"$out"; then remember "archive:$a" "$b"; fi
+    return 1
     ;;
   TASK)
     # **補足は無い。** 書けるのはモデルだけで、デーモンには書くものが無い——issue 本文が全部を持つ

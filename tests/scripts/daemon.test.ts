@@ -38,6 +38,10 @@ interface World {
   /** `live-sessions.sh` が返す `ID<TAB>session_status<TAB>bucket<TAB>tags` の行。 */
   readonly sessions?: readonly string[];
   readonly ledger?: Record<string, string>;
+  /** `gh issue view <番号> --json state` が返す `state`。挙がっていない番号は引けない。 */
+  readonly issueStates?: Record<number, string>;
+  /** `archive-session.sh` が渡された相手について返す行の頭。既定は畳めた。 */
+  readonly archiveVerdict?: 'ARCHIVED' | 'KEPT' | 'UNARCHIVED';
   /** 非0で終わらせる打ち手（`PLAYS` の名前）。 */
   readonly fails?: readonly string[];
   readonly ghFails?: boolean;
@@ -51,6 +55,8 @@ interface Result {
   readonly code: number;
   readonly log: string;
   readonly calls: readonly string[];
+  /** `gh` に渡された引数。閉じた issue を引きに行った回数を見るのに使う。 */
+  readonly gh: readonly string[];
   readonly ledger: Record<string, string>;
 }
 
@@ -77,17 +83,34 @@ function daemon(world: World = {}): Result {
     }
     stub('usage-record.sh', ':');
     stub('live-sessions.sh', `cat <<'TSV'\n${(world.sessions ?? []).join('\n')}\nTSV`);
+    // 畳んでよいかの判定は持たない（それは `archive-session.sh` の仕事）。渡された相手について、
+    // 決めた行を1本返すだけ。
+    stub(
+      'archive-session.sh',
+      `echo "archive-session.sh $*" >>'${posix(calls)}'\nread -r id\necho "${world.archiveVerdict ?? 'ARCHIVED'} $id"`,
+    );
 
     writeFileSync(join(work, 'prs.json'), JSON.stringify(world.prs ?? []), 'utf-8');
     writeFileSync(join(work, 'issues.json'), JSON.stringify(world.issues ?? []), 'utf-8');
+    const ghCalls = join(work, 'gh-calls.txt');
+    writeFileSync(ghCalls, '', 'utf-8');
     const gh = join(work, 'gh');
     writeFileSync(
       gh,
       `#!/usr/bin/env bash
+echo "$*" >>'${posix(ghCalls)}'
 ${world.ghFails === true ? 'exit 1' : ''}
-case "$1" in
-pr) cat '${posix(join(work, 'prs.json'))}' ;;
-issue) cat '${posix(join(work, 'issues.json'))}' ;;
+case "$1 $2" in
+'issue view')
+  case "$3" in
+${Object.entries(world.issueStates ?? {})
+  .map(([number, state]) => `    ${number}) printf '%s' '${state}' ;;`)
+  .join('\n')}
+    *) exit 1 ;;
+  esac
+  ;;
+'pr list') cat '${posix(join(work, 'prs.json'))}' ;;
+'issue list') cat '${posix(join(work, 'issues.json'))}' ;;
 *) exit 1 ;;
 esac
 `,
@@ -130,6 +153,10 @@ esac
       code,
       log,
       calls: readFileSync(calls, 'utf-8')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0),
+      gh: readFileSync(ghCalls, 'utf-8')
         .split('\n')
         .map((line) => line.trim())
         .filter((line) => line.length > 0),
@@ -190,6 +217,55 @@ describe('daemon.sh', () => {
     expect(result.log).not.toContain('盤面を引けなかった');
     // 消えたPRと畳まれたセッションの記録は捨てる。残すと、番号が回り込んだときに古い指紋が効く。
     expect(result.ledger).toEqual({ 'review:10': 'aaa111' });
+  });
+
+  // 畳む条件は担当の issue が閉じたこと（2.10）。**PRがマージされたかでは決めない**ので、PRが
+  // 1本も無くても畳む。
+  it('担当の issue が閉じたワーカーを畳む', () => {
+    const result = daemon({
+      sessions: ['session_a\tSESSION_STATUS_IDLE\tSESSION_STATUS_BUCKET_WORKING\ttask-8'],
+      issueStates: { 8: 'CLOSED' },
+    });
+
+    expect(result.calls).toEqual(['archive-session.sh --keep-untagged task-']);
+    expect(result.log).toContain('ARCHIVED session_a');
+    // 畳めたので、台帳へは残さない（相手も次の周には消える）。
+    expect(result.ledger).toEqual({});
+  });
+
+  // `KEPT` は「畳んではいけない」という安定した答え。残さないと、1周1手のうちの1手がこれで埋まり続ける。
+  it('畳めない相手だと分かったら、指紋を残して次の周は打たない', () => {
+    const result = daemon({
+      sessions: ['session_a\tSESSION_STATUS_IDLE\tSESSION_STATUS_BUCKET_WORKING\ttask-8'],
+      issueStates: { 8: 'CLOSED' },
+      archiveVerdict: 'KEPT',
+    });
+
+    expect(result.log).toContain('KEPT session_a');
+    expect(result.ledger).toEqual({ 'archive:session_a': 'closed:8' });
+  });
+
+  // 失敗は答えではないので、次の周にもう一度試す。
+  it('畳もうとして失敗したら、指紋を残さない', () => {
+    const result = daemon({
+      sessions: ['session_a\tSESSION_STATUS_IDLE\tSESSION_STATUS_BUCKET_WORKING\ttask-8'],
+      issueStates: { 8: 'CLOSED' },
+      archiveVerdict: 'UNARCHIVED',
+    });
+
+    expect(result.calls).toEqual(['archive-session.sh --keep-untagged task-']);
+    expect(result.ledger).toEqual({});
+  });
+
+  // 探すのはワーカーの側から（2.10）。開いている一覧に載っているぶんは既に盤面が持っているので、
+  // 引き直さない。
+  it('開いている issue を担当しているワーカーのぶんは、issue を引き直さない', () => {
+    const result = daemon({
+      issues: [{ number: 8, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }],
+      sessions: ['session_a\tSESSION_STATUS_RUNNING\tSESSION_STATUS_BUCKET_WORKING\ttask-8'],
+    });
+
+    expect(result.gh.filter((call) => call.startsWith('issue view'))).toEqual([]);
   });
 
   // デーモンは起動時の `daemon.sh` を握ったまま回るので、走っている最中に `live-sessions.sh` の
