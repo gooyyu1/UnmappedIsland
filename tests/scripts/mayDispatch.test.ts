@@ -3,6 +3,7 @@ import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
  * `scripts/agent/may-dispatch.sh`（と、その下の `brake.sh` / `occupancy.sh`）の検査。
@@ -71,7 +72,7 @@ function run(kind: string, tag: string | readonly string[], world: World = {}): 
     const gh = join(work, 'gh');
     writeFileSync(
       gh,
-      `#!/usr/bin/env bash
+      `${STUB_SHEBANG}
 ${world.ghFails === true ? 'exit 1' : ''}
 cat <<'BODY'
 ${world.brake ?? ALL_ON}
@@ -95,7 +96,7 @@ BODY
     const meta = join(work, 'ccr-meta.sh');
     writeFileSync(
       meta,
-      `#!/usr/bin/env bash
+      `${STUB_SHEBANG}
 cat > /dev/null
 ${world.ccrFails === true ? 'exit 1' : ''}
 echo '<other-session>'

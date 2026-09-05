@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { parse } from 'yaml';
+import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
  * `.github/workflows/board-labels.yml` の、結論をラベルへ変える段の検査。
@@ -63,7 +64,7 @@ function run(body: string, comments: readonly Comment[] = []): Run {
     const gh = join(work, 'gh');
     writeFileSync(
       gh,
-      `#!/usr/bin/env bash
+      `${STUB_SHEBANG}
 case "$1 $2" in
 "pr view")
   filter=''

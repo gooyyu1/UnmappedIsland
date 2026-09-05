@@ -3,6 +3,7 @@ import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { STUB_SHEBANG } from '../support/stubShebang';
 
 /**
  * `.claude/hooks/session-start.sh` が、手元の作業ツリーで出す警告の検査。
@@ -61,7 +62,7 @@ function run(world: World): string {
     }
 
     const git = join(work, 'git');
-    writeFileSync(git, `#!/usr/bin/env bash\nprintf '%s' '${dir}/main/.git'\n`, 'utf-8');
+    writeFileSync(git, `${STUB_SHEBANG}\nprintf '%s' '${dir}/main/.git'\n`, 'utf-8');
     chmodSync(git, 0o755);
 
     return execFileSync('bash', [HOOK], {
