@@ -53,10 +53,10 @@ card_filters:
   - id: filter_wear
     icon: 👕
     tags: [equippable]
-  # 寝床（系統9）と住居（系統10）。**寝床を名乗る物はまだ世界に無い**ので、指すのは住居だけ。
+  # 寝床（系統9）と住居（系統10）。
   - id: filter_shelter
     icon: 🏠
-    tags: [shelter]
+    tags: [bed, shelter]
   # 遠出（系統11）と船と海図（系統12）。道も他の設置物と同じにここでだけ残る。
   - id: filter_travel
     icon: 🧭

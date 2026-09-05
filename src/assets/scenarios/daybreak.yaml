@@ -2,6 +2,7 @@
 #
 # 日の入りの15分前から始める。「待つ」で18時をまたぐと日の入り、そこから「眠る」を2回で
 # 6時をまたぎ、日の出と `DAY 1` が出る。どれも暗さの条件を持たない操作なので、夜のまま通せる。
+# **眠るには寝床が要る**（docs/world/Bedding.md 4.1節）ので、下で据えておく。
 #
 # 書式はsrc/scenario/Scenario.ts、位置づけはSaveDataManagement.md「テスト用シナリオ」節を参照。
 
@@ -16,3 +17,6 @@ world:
     minute: 45
     # 空の演出が重ならないよう、雨の降らない天気から始める。
     weather: clear
+
+location:
+  fixtures: [bed]

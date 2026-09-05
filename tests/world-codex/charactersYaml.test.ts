@@ -95,6 +95,12 @@ function chillTheWorld(world: WorldObject, weatherName: string): void {
     .setNumberWithoutEvents(codex.symbolNames.getId(weatherName));
 }
 
+/** その土地へ、敷いた寝床を1つ据える（bedding.yamlのbed。睡眠はこれが在る場所でしか押せない）。 */
+function spreadBed(session: WorldSession, land: WorldObject): void {
+  const bed = session.createObject(codex.objectNames.getId('bed'));
+  expect(bed.moveToSlotOrRejection(land.getSlot(codex.slotNames.getId('fixtures')))).toBeUndefined();
+}
+
 /** その土地へ、火の点いた炉を1つ据える（fire.yamlのcampfire。暖は親の気温を+8する）。 */
 function setHearth(session: WorldSession, land: WorldObject): void {
   const hearth = session.createObject(codex.objectNames.getId('campfire'));
@@ -190,7 +196,9 @@ function takeRest(
   actionName: string,
 ): { minutes: number; stamina: number; wakefulness: number } {
   const SPARE = 1;
-  const { player } = stand(character);
+  const { player, session, land } = stand(character);
+  // 睡眠だけが寝床を要る（Bedding.md 2節）。ここで測るのは回復量なので、どの休息でも据えておく。
+  spreadBed(session, land);
   const staminaId = codex.propertyNames.getId('stamina');
   const wakefulnessId = codex.propertyNames.getId('wakefulness');
   const minutes = player.instance.tryGetAction(actionName, player.instance)?.executionMinutes() ?? 0;
@@ -694,6 +702,59 @@ describe('プレイヤーキャラクタの定義', () => {
       expect(nap.minutes * 2).toBe(sleep.minutes);
       expect(nap.stamina * 2, '体力').toBeLessThan(sleep.stamina);
       expect(nap.wakefulness * 2, '眠気').toBeLessThan(sleep.wakefulness);
+    });
+
+    it('寝床の無い場所では、睡眠だけが押せない', () => {
+      // 野宿の代償（Bedding.md 2節の段0）。**押せなくなるのは睡眠だけ**で、仮眠までは地面でも
+      // 取れる——仮眠を重ねて夜を越す道が閉じると、寝床を持たない周回が詰む。
+      const { player, session, land } = stand(character);
+      const blocker = (actionName: string): string | undefined =>
+        player.instance.tryGetAction(actionName, player.instance)?.unmetRequirement()?.reasonName;
+
+      expect(blocker('sleep'), '寝床が無い').toBe('no_bed');
+      for (const [actionName] of RESTS.filter(([name]) => name !== 'sleep')) {
+        expect(blocker(actionName), actionName).toBeUndefined();
+      }
+
+      spreadBed(session, land);
+      expect(blocker('sleep'), '寝床を敷いた').toBeUndefined();
+    });
+
+    it('眠り込みは寝床を要らず、まとめて休んだ割増しも付かない', () => {
+      // 寝床を要らないのは、限界が逃げ場であって線ではないため（Characters.md 限界節）。睡眠と同じ
+      // 要件を写すと、寝床の無い場所で眠気が尽きた時点で、覚醒度を戻す手が世界から消える。
+      //
+      // **割増しを付けないほうが要。** 割増しの付いた sleep の割で戻すと、倒れるまで起きているのが
+      // 最良の手になり、寝床を敷く理由が消える。倒れ込み・打ちひしがれが rest の割に揃えているのと
+      // 同じ線で、眠り込みも寝床を要らない休息の割で抑える。
+      //
+      // **見るのは戻す値すべて。** 眠気だけを見ると、体力の側が sleep の割のまま残っていても気付けない
+      // （実際そうなっていた）。比べる先は、寝床の要らない休息のうち**その値をいちばん割よく戻すもの**。
+      const staminaId = codex.propertyNames.getId('stamina');
+      const wakefulnessId = codex.propertyNames.getId('wakefulness');
+      const { player } = stand(character);
+      player.instance.getProperty(staminaId).setNumber(0);
+      player.instance.getProperty(wakefulnessId).setNumber(0);
+
+      expect(player.instance.tryGetAction('fall_asleep', player.instance)?.tryExecute()).toBe(true);
+
+      const hours =
+        (player.instance.tryGetAction('fall_asleep', player.instance)?.executionMinutes() ?? 0) / 60;
+      const perHour = (
+        rest: { minutes: number; stamina: number; wakefulness: number },
+        of: 'stamina' | 'wakefulness',
+      ) => rest[of] / (rest.minutes / 60);
+      // 寝床を要らない休息のうち、体力も眠気も nap がいちばん割がよい（休息節の表）。
+      const nap = takeRest(character, 'nap');
+
+      expect(
+        (player.instance.tryGetProperty(wakefulnessId)?.number ?? 0) / hours,
+        '眠気の1時間あたり',
+      ).toBeLessThanOrEqual(perHour(nap, 'wakefulness'));
+      expect(
+        (player.instance.tryGetProperty(staminaId)?.number ?? 0) / hours,
+        '体力の1時間あたり',
+      ).toBeLessThanOrEqual(perHour(nap, 'stamina'));
     });
 
     it('睡眠1回では、覚醒度は満タンに届かない', () => {

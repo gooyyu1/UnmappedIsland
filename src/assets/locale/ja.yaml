@@ -761,7 +761,16 @@ object_texts:
         description: 中軸を縦に割り、左右をそれぞれ編む。同じ葉から2枚とれる。
   woven_leaf:
     display_name: 編んだ葉
-    description: ヤシの葉を編んだ平たいパネル。籠にも壁にも屋根にも使える。
+    description: ヤシの葉を編んだ平たいパネル。面が要るところなら、どこにでも使える。
+
+  # 寝床（bedding.yaml）。
+  bed:
+    display_name: 寝床
+    description: 編んだ葉を広げただけの寝床。地面の湿りと硬さを断つ。ここでなら通しで眠れる。
+    recipes:
+      spread:
+        display_name: 敷く
+        description: 編んだ葉を3枚、端を重ねて広げる。道具も紐も要らない。
 
   # 繊維を撚る連鎖（fiber.yaml）。
   abaca:
@@ -1476,6 +1485,7 @@ reason_texts:
   no_fuel: 燃やす物が入っていない。火種だけでは燃え続けない。
   too_dark: 暗すぎて手が付けられない。明かりが要る。
   too_stormy: 風雨が強すぎて、屋外では手が付けられない。収まるのを待つしかない。
+  no_bed: 地面に直に寝ても、まとまっては眠れない。ここには寝床がない。
   # レシピの解放条件（docs/engine/SkillSystem.md 4節）。**ここだけ文ではなく名詞句で書く**
   # ——出る先が吹き出しではなくカードのタイトルの中（ui_textsのrecipe_locked_name）で、完成品の
   # 名前と合わせて全角10文字に収める必要がある（CardView.md 1節）。どの段が足りないかも書かない
