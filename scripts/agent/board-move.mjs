@@ -5,12 +5,13 @@
 // 標準入力は盤面のJSON、標準出力は1行1手。**打つのは呼び手**（[`daemon.sh`](daemon.sh)）で、
 // ここは決めるだけ。決める材料が全部引数に載っているので、実物を触らずに検査できる。
 //
-//   MERGE  <PR番号>
-//   RESUME <セッションID> mend  <PR番号>    <指紋>
-//   RESUME <セッションID> stall <issue番号> <指紋>
-//   REVIEW <PR番号> <指紋>
-//   TASK   <issue番号>
-//   NOTE   <人へ向けた1行>                  … 打つ手が無いことの説明。呼び手は記録するだけ
+//   MERGE   <PR番号>
+//   ARCHIVE <セッションID> <指紋>            … 担当の issue が閉じたワーカーを畳む
+//   RESUME  <セッションID> mend  <PR番号>    <指紋>
+//   RESUME  <セッションID> stall <issue番号> <指紋>
+//   REVIEW  <PR番号> <指紋>
+//   TASK    <issue番号>
+//   NOTE    <人へ向けた1行>                  … 打つ手が無いことの説明。呼び手は記録するだけ
 //
 // 入力は次の形。
 //
@@ -19,6 +20,7 @@
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
 //                     "bucket": "SESSION_STATUS_BUCKET_…", "tags": ["task-1"] } ],
+//     "issueStates": { "<issue番号>": "OPEN | CLOSED" },
 //     "taken":    { "<手のキー>": "<前に打ったときの指紋>" } }
 //
 // ## 同じ手を、同じ盤面へ二度打たない
@@ -53,6 +55,8 @@ const busySession = (session) =>
 
 const input = JSON.parse(readFileSync(0, 'utf8'));
 const taken = input.taken ?? {};
+/** 生きているワーカーの担当 issue のうち、**開いている一覧に載っていなかったもの**の状態（2.10）。 */
+const issueStates = input.issueStates ?? {};
 
 const names = (item) => (item.labels ?? []).map((label) => label.name);
 
@@ -77,6 +81,7 @@ function checks(pr) {
 }
 
 const merges = [];
+const archives = [];
 const mends = [];
 const stalls = [];
 const reviews = [];
@@ -146,12 +151,25 @@ for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
   reviews.push(`REVIEW ${pr.number} ${pr.headRefOid}`);
 }
 
-// PRを出さないまま手が空いたセッション。**1回だけ起こす**（指紋が issue 番号だけなので、次は無い）。
+// 手が空いたワーカーの行き先は2つ。**担当の issue が閉じていれば畳み**、開いているのにPRが出て
+// いなければ起こす。どちらも「手が空いている」ことが入口なので、1つの走査で決める。
 for (const session of input.sessions) {
   if (busySession(session)) continue;
   for (const tag of session.tags) {
     if (!tag.startsWith('task-')) continue;
-    const issue = Number(tag.slice('task-'.length));
+    const held = tag.slice('task-'.length);
+    const issue = Number(held);
+
+    // **仕事が終わったかは issue の側にある**（2.10）。**PRがマージされたかでは決めない**——手で
+    // マージされたPRの後片付けは走らないので、条件をそちらに繋ぐとワーカーが永久に残る。
+    if (issueStates[held] === 'CLOSED') {
+      const mark = `closed:${issue}`;
+      if (taken[`archive:${session.id}`] === mark) break;
+      archives.push(`ARCHIVE ${session.id} ${mark}`);
+      break;
+    }
+
+    // PRを出さないまま手が空いたセッション。**1回だけ起こす**（指紋が issue 番号だけなので、次は無い）。
     if (!input.issues.some((item) => item.number === issue)) continue;
     if (input.prs.some((pr) => closes(pr.body).includes(issue))) continue;
     const mark = `stall:${issue}`;
@@ -187,6 +205,8 @@ if (writing.length > 1) {
   notes.push(`書くセッションが${writing.length}本走っている（並列度1のはず）`);
 }
 
-const moves = [...merges, ...mends, ...stalls, ...reviews, ...tasks];
+// 畳むのをマージの次に置くのは、**書くセッションの枠が空くから**（3.1 の並列度）。後ろへ回すと、
+// 終わったワーカーが枠を握ったまま、待っている task が投入されない周が続く。
+const moves = [...merges, ...archives, ...mends, ...stalls, ...reviews, ...tasks];
 process.stdout.write([...moves, ...notes.map((note) => `NOTE ${note}`)].join('\n'));
 if (moves.length > 0 || notes.length > 0) process.stdout.write('\n');

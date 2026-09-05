@@ -103,8 +103,8 @@ object_defs:
       # （ContainerSystem.md 2節）。増える側が悪いプロパティなので、段はmaxからの割合で刻む
       # （docs/world/Characters.md）。
       #
-      # **段が駆動するのは移動の可否だけではない**——歩みの速さ（pace）と体力の削りも同じ段が持つ
-      # （docs/world/Characters.md 荷重の効き方節）。倍率と削りはキャラクタに依らず同じで、
+      # **段が駆動するのは移動の可否だけではない**——歩みの遅れ（travel_delay）と体力の削りも同じ段が
+      # 持つ（docs/world/Characters.md 荷重の効き方節）。遅れと削りはキャラクタに依らず同じで、
       # 個人差は段の境目だけに出る。
       load:
         tags: [status, health]
@@ -117,14 +117,14 @@ object_defs:
             alert: watch
             passives:
               - add: {self: {stamina: -0.3}}
-              - modify: {self: {pace: 0.15}}
+              - modify: {self: {travel_delay: 10}}
           - name: heavy
             min: 18000
             alert: caution
             passives:
               - add: {self: {stamina: -1}}
-              - modify: {self: {pace: 0.4}}
-          # 通れない段なので歩みの速さは押し上げない。立っているだけで削られる。
+              - modify: {self: {travel_delay: 25}}
+          # 通れない段なので歩みの遅れは押し上げない。立っているだけで削られる。
           - name: too_heavy
             min: 30000
             alert: danger

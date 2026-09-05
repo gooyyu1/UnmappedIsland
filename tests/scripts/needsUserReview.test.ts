@@ -52,8 +52,11 @@ function judge(files: readonly string[], diff: string, docs: Readonly<Record<str
       gh,
       `${STUB_SHEBANG}\n` +
         `if [ "$2" = diff ]; then\n  cat '${dir}/diff'\n  exit 0\nfi\n` +
-        `if [[ "$*" == *headRefOid* ]]; then\n  echo head0000\n  exit 0\nfi\n` +
-        `if [[ "$*" == *baseRefOid* ]]; then\n  echo base0000\n  exit 0\nfi\n` +
+        // `--jq` の式（最後の引数）は本物の `jq` へ渡す——本物の `gh` がするのと同じことなので、
+        // 式を変えればここも一緒に動く。スタブが取り出し方を真似ると、式だけ変えても緑のまま通る。
+        `if [[ "$*" == *RefOid* ]]; then\n` +
+        `  printf '%s' '{"headRefOid":"head0000","baseRefOid":"base0000"}' | jq -r "\${@: -1}"\n` +
+        `  exit 0\nfi\n` +
         `cat '${dir}/files'\n`,
       'utf-8',
     );

@@ -15,11 +15,10 @@
 #   UNRELAYED <PR番号>              … その印を付けようとして失敗した
 #   CLOSED   <issue番号>            … PR本文の `Closes #N` が閉じたことの確認
 #   OPEN     <issue番号>            … 閉じるはずが開いたまま（`Closes` の書き方を疑う）
-#   ARCHIVED <セッションID>         … そのPRを出したセッションと、そのPRのレビューのセッションを畳んだ
-#   KEPT     <セッションID>         … 畳まなかった。issue を持たない（相談役など）か、ブリッジのものか、
+#   ARCHIVED <セッションID>         … 残っていたレビューのセッションを畳んだ（下の「ワーカーを畳むのは…」）
+#   KEPT     <セッションID>         … 畳まなかった。まだ読んでいる最中か、ブリッジのものか、
 #                                     `get_session` を引けなくて素性が分からなかったもの（最後のものは
 #                                     **もう渡す出来事が無い**ので、ユーザーが引き直して手で畳む）
-#   NOSESSION <PR番号>              … 本文が脚注を持たず、畳む相手が分からなかった
 #   UNARCHIVED <セッションID>       … 畳もうとして失敗した
 #   SYNCED   <コミット>             … 本体のチェックアウトを新しい `main` へ進めた
 #   INSTALLED                       … 依存が変わったので本体で `npm install` した
@@ -27,8 +26,7 @@
 #   終了コード 0 … すべて片付いた
 #   終了コード 1 … マージできなかった（何もしていない。関門を含む）
 #   終了コード 2 … マージはしたが、後片付けに残りがある
-#                  （上の `UNRETARGETED`・`UNDELETED`・`OPEN`・`NOSESSION`・`UNARCHIVED`・
-#                  `UNRELAYED`・`DIRTY`）
+#                  （上の `UNRETARGETED`・`UNDELETED`・`OPEN`・`UNARCHIVED`・`UNRELAYED`・`DIRTY`）
 #
 # ## 積まれたPRは、ブランチを消す前に `main` へ下ろす
 #
@@ -58,20 +56,21 @@
 # **自動では越えられない関門にしてあるのは、越えられる関門は越えるから。** 直近25本で
 # `## 仮決め` に中身のあったPRが22本、`判断待ち` が付いたのは0本だった。
 #
-# ## 畳んだのは、毎回同じ順で叩いていた5つ
+# ## 畳んだのは、毎回同じ順で叩いていた手順
 #
-# `gh pr merge` → PRが `MERGED` か確認 → `Closes` の issue が `CLOSED` か確認 → PRを出した
-# セッションを `archive_session` → 結果の報告。**どれも判断が無いのに、叩く側の文脈を1往復ずつ
-# 食う。** レビューは既に済んでいるので、ここから先を1回にまとめる。
+# `gh pr merge` → PRが `MERGED` か確認 → `Closes` の issue が `CLOSED` か確認 → 結果の報告。
+# **どれも判断が無いのに、叩く側の文脈を1往復ずつ食う。** レビューは既に済んでいるので、ここから
+# 先を1回にまとめる。
 #
-# ## 畳む相手は [`session-of-pr.sh`](session-of-pr.sh) が引く
+# ## ワーカーを畳むのは、ここではない
 #
-# 引き方はそちらに書いてある（差し戻す `send-back.sh` と同じ相手なので、1箇所に置く）。引けなければ
-# `NOSESSION` を出して残りとして扱う。黙って畳まずに済ませると、走ったままのセッションが誰にも
-# 数えられず残る。
+# **PRをマージしたかと、書いたワーカーを畳んでよいかは別の問い**（出どころ: ユーザーの指示・
+# 2026-09-05。[`board-design.md`](../../.claude/board-design.md) 2.10）。畳む条件は**担当の issue が
+# 閉じたこと**で、盤面が毎周見る。ここに繋いでいたときは、**人が画面からマージすると後片付けが
+# 一度も走らず**、ワーカーが枠を握ったまま残った（PR #1524）。
 #
-# **レビューのセッションは別に畳む**（[`archive-reviews.sh`](archive-reviews.sh)）。あちらはPRを
-# 出さないので `session-of-pr.sh` では引けず、`review-<PR番号>` のタグで引く。PRが閉じれば読む相手が
+# **レビューのセッションはここで畳む**（[`archive-reviews.sh`](archive-reviews.sh)）。あちらは issue を
+# 持たないので issue では引けず、`review-<PR番号>` のタグで引く。PRが閉じれば読む相手が
 # 無くなるので、ここがこのPRの分を畳む最後の場所。**あちらが掃くのはこのPRの分だけではない**
 # （残っている `review-*` 全部。理由はあちらの「1本のPRだけを掃くと…」）ので、`直し待ち` や
 # `判断待ち` で止まったPRのレビューも、1件マージするたびに一緒に片付く。
@@ -101,8 +100,14 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 NEEDS_USER_REVIEW="${NEEDS_USER_REVIEW:-$HERE/needs-user-review.sh}"
 
-body=$(gh pr view "$PR" --json body --jq '.body // ""' | tr -d '\r')
-state=$(gh pr view "$PR" --json state --jq '.state')
+# **PRは1回だけ引く。** 項目ごとに `gh pr view` を打つと、その数だけ往復が増えるうえ、**項目ごとに
+# 見ている時点がずれる**。引き直すのは、**この後の操作で変わるもの**だけ——マージ後の `state` と、
+# 打つ直前に見たい `mergeable`。
+pr=$(gh pr view "$PR" --json body,state,comments,headRefName)
+body=$(jq -r '.body // ""' <<<"$pr" | tr -d '\r')
+state=$(jq -r '.state' <<<"$pr")
+# ブランチ名はマージでは変わらないので、ここで一緒に受けておく（使うのは後片付けの段）。
+head=$(jq -r '.headRefName' <<<"$pr")
 # `## ユーザーへ` は、PR本文とレビューのコメントの**両方**に書かれる（`review-prompt.md`）。回す口が
 # 2つあるのに読む口が1つだと、**レビューが回したものだけが黙って落ちる**。拾うのは `[レビュー]` で
 # 始まるコメントだけで、デーモンの指示やユーザー自身の書き込みは回す側ではない。
@@ -112,8 +117,12 @@ state=$(gh pr view "$PR" --json state --jq '.state')
 # **末尾**へ置く。`review-prompt.md` がそう指示しているので、常に起きる）。繋ぎ目へ切れ目の印を
 # 挟んでも塞げるが、その綴りは
 # 挟む側と閉じる側で一致していないと黙って壊れる。繋がずに1件ずつ読めば、印そのものが要らない。
-review_comments=$(gh pr view "$PR" --json comments \
-  --jq '.comments[] | select(.body | startswith("[レビュー]")) | .body | @base64')
+#
+# **`tr -d '\r'` が要るのは、複数行を出して、その行をシェルが受け取るから**（理由は
+# [`archive-reviews.sh`](archive-reviews.sh) の同じ注記）。下の `read` が拾うので、残ると
+# `base64 -d` が壊れる。
+review_comments=$(jq -r '.comments[] | select(.body | startswith("[レビュー]")) | .body | @base64' \
+  <<<"$pr" | tr -d '\r')
 
 if [ "$state" = "OPEN" ]; then
   # 関門。**マージの前に見る**——通した後では、印が付いた状態が `main` に入ってしまう。
@@ -161,7 +170,6 @@ leftover=0
 # 上に積まれたPRを `main` へ下ろしてから、マージ済みのブランチを消す（上の「積まれたPRは…」）。
 # **1本でも下ろせなければ、ブランチを残す。** 引けなかったときも同じ——積まれたPRが在るかどうかが
 # 分からないまま消すと、閉じられたPRは機械では戻せない。
-head=$(gh pr view "$PR" --json headRefName --jq '.headRefName')
 retargeted=1
 if stacked=$(gh pr list --state open --base "$head" --json number --jq '.[].number'); then
   while read -r other; do
@@ -238,27 +246,7 @@ while read -r issue; do
   fi
 done <<<"$closes"
 
-# 引けないときは 1 を返す。`pipefail` があるので、ここで止めずに空として受ける。
-sessions=$(CCR_META="$CCR_META" bash "$HERE/session-of-pr.sh" "$PR" || true)
-if [ -z "$sessions" ]; then
-  echo "NOSESSION $PR"
-  leftover=1
-fi
-# 畳んでよいかの判定と出力は [`archive-session.sh`](archive-session.sh) が持つ。**ここが渡すのは
-# 守る条件だけ。**
-#
-# - `--keep-untagged task-` … 畳んでよいのは、1つの issue のために立てたセッションだけ
-#   （`dispatch-task.sh` が必ず付けるタグ）。相談役のように issue を持たない相手は、PR1本が
-#   マージされても仕事が終わっていない——畳むと、ユーザーが話している窓口ごと閉じる。
-# - `--keep-working` は**付けない**。走行中でも畳む——PRはもうマージされていて、ここが渡す最後の
-#   機会だから。
-archived=$(CCR_META="$CCR_META" bash "$HERE/archive-session.sh" --keep-untagged task- <<<"$sessions")
-[ -z "$archived" ] || printf '%s\n' "$archived"
-if grep -q '^UNARCHIVED ' <<<"$archived"; then
-  leftover=1
-fi
-
-# レビューのセッション（上の「畳む相手は…」）。畳めなければ `UNARCHIVED` が出るので残りに数える。
+# レビューのセッション（上の「ワーカーを畳むのは…」）。畳めなければ `UNARCHIVED` が出るので残りに数える。
 reviews=$(CCR_META="$CCR_META" bash "$HERE/archive-reviews.sh")
 [ -z "$reviews" ] || printf '%s\n' "$reviews"
 if grep -q '^UNARCHIVED ' <<<"$reviews"; then

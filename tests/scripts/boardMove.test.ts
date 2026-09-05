@@ -21,6 +21,8 @@ interface Board {
   prs?: readonly unknown[];
   issues?: readonly unknown[];
   sessions?: readonly { id: string; status: string; bucket: string; tags: readonly string[] }[];
+  /** 生きたワーカーの担当 issue のうち、開いている一覧に載っていなかったものの `state`。 */
+  issueStates?: Record<number, string>;
   taken?: Record<string, string>;
 }
 
@@ -251,5 +253,39 @@ describe('board-move.mjs', () => {
 
   it('issue が閉じていれば、手が空いていても起こさない', () => {
     expect(moves({ sessions: [idle('session_a', 'task-8')] })).toEqual([]);
+  });
+
+  // 畳む条件は担当の issue が閉じたことで、PRがマージされたかとは別（2.10）。畳まなかったという
+  // 答えは issue が閉じているかぎり変わらないので、指紋を打った後は出さない。
+  it('担当の issue が閉じたワーカーを畳む', () => {
+    const board = {
+      sessions: [idle('session_a', 'task-8')],
+      issueStates: { 8: 'CLOSED' },
+    };
+    expect(moves(board)).toEqual(['ARCHIVE session_a closed:8']);
+    expect(moves({ ...board, taken: { 'archive:session_a': 'closed:8' } })).toEqual([]);
+  });
+
+  it('まだ手が動いているワーカーは、issue が閉じていても畳まない', () => {
+    const board = {
+      sessions: [working('session_a', 'task-8')],
+      issueStates: { 8: 'CLOSED' },
+    };
+    expect(moves(board)).toEqual([]);
+  });
+
+  // 畳むのはマージの次。後ろへ回すと、終わったワーカーが枠を握ったまま TASK が出ない周が続く。
+  it('畳む手は、マージの次・投入の前に打つ', () => {
+    const board = {
+      prs: [pr(10, label('通してよい'))],
+      issues: [{ number: 20, ...label('task'), blockedBy: { nodes: [] } }],
+      sessions: [idle('session_a', 'task-8')],
+      issueStates: { 8: 'CLOSED' },
+    };
+    expect(moves(board)).toEqual([
+      'MERGE 10',
+      'ARCHIVE session_a closed:8',
+      'NOTE 1件の task が、書くセッション（session_a）の空きを待っている',
+    ]);
   });
 });

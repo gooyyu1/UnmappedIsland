@@ -3,6 +3,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, wr
 import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { vi } from 'vitest';
+
 import { STUB_SHEBANG } from './stubShebang';
 
 /**
@@ -34,8 +35,8 @@ const CLOUD = 'env_TEST_CLOUD';
 const BRIDGE = 'env_TEST_BRIDGE';
 
 /**
- * 脚注の無い本文は `NOSESSION` を出すので、脚注の話でない試験には既定でこれを持たせる。
- * 指す先は畳み済みなので、`ARCHIVED` の行も増えない。
+ * 実物のPR本文の末尾に Claude Code が付ける脚注。**畳む相手の判定には使わない**（`board-design.md`
+ * 2.10）ので、`## ユーザーへ` の節より前に置く中身としてだけ要る。
  */
 export const DEFAULT_BODY = '_[Claude Code](https://claude.ai/code/session_01ZZZZZZZZZZZZZZZZZZZZZZ)_';
 
@@ -88,8 +89,6 @@ export interface World {
   readonly gate?: readonly string[];
   /** 関門の終了コード。既定は理由の有無から決まる（あれば 0、無ければ 1）。 */
   readonly gateStatus?: number;
-  /** `gh pr view --json state` が失敗するか（PRの状態を引けない日）。 */
-  readonly stateFails?: boolean;
   /**
    * 開いているPRの番号（`gh pr list`）。既定はこのPR（1000）だけで、**マージすると外れる**。
    * レビューを畳むかはPRごとにこれで決まる。
@@ -162,9 +161,9 @@ export function run(world: World, entry: readonly string[] = [SCRIPT, '1000']): 
         .map(([key, value]) => `    ${key}) printf '%s' '${value}' ;;`)
         .join('\n');
 
-    // PRの `state` は、マージが呼ばれたかで変わる。`--json body`・`--json comments` は、`--jq` の式
-    // （最後の引数）を本物の `jq` へ渡して評価させる——本物の `gh` がするのと同じことなので、式を
-    // 変えればここも一緒に動く。`-r` は `gh --jq` の出力に合わせたもの。
+    // PRの `state` は、マージが呼ばれたかで変わる。**束ねて引かれたときは、絞り込まずに丸ごと返す**
+    // ——本物の `gh` と同じで、選ぶのも符号化するのも呼び手の `jq`。ここが真似ると、式だけを変えても
+    // 試験は緑のまま通る。
     const stub = join(work, 'gh');
     writeFileSync(
       stub,
@@ -174,15 +173,11 @@ if [ "$1" = pr ] && [ "$2" = merge ]; then
   exit 0
 fi
 if [ "$1" = pr ] && [ "$2" = view ]; then
+  if [ -e '${dir}/merged' ]; then state=MERGED; else state=OPEN; fi
   case "$5" in
-    body|comments) jq -r "\${@: -1}" '${dir}/pr.json' ;;
     mergeable) printf '%s' '${world.mergeable ?? 'MERGEABLE'}' ;;
-    headRefName) printf '%s' 'claude/issue-999' ;;
-    state) ${
-      world.stateFails === true
-        ? 'exit 1'
-        : `if [ -e '${dir}/merged' ]; then printf '%s' MERGED; else printf '%s' OPEN; fi`
-    } ;;
+    state) printf '%s' "$state" ;;
+    *) jq --arg state "$state" '. + {state: $state, headRefName: "claude/issue-999"}' '${dir}/pr.json' ;;
   esac
   exit 0
 fi

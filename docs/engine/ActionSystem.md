@@ -134,8 +134,8 @@ actions/combinations の一度きりの判定と、passives（8節）の持続�
 （`ReferenceScope`）。**ロード時に弾く根拠と、実行時に組む `ReferenceContext` は同じ1つの事実**なので、
 書けたのに実行時は必ず空振りする、という宣言が作れない。11.5節「役を書ける場所」の表の各行は、
 `ReferenceScope` の `static`（と `withInstrument` のような派生）のどれかへ対応する——**行と `static` は
-1対1ではない。** `drag` と `put_in` は同じ `acting.withInstrument` を共有し、`declaration` は表に無い
-`resists`（7.13節）も担う。**表に無い場所が現れたら、持つものが同じ `static` を使う。**
+1対1ではない。** `drag` と `put_in` は同じ `acting.withInstrument` を、`on_max`/`on_min` と `resists`
+（7.13節）は同じ `declaration` を共有する。**表に無い場所が現れたら、持つものが同じ `static` を使う。**
 
 `world` は起点として未対応（ロード時エラー）。すべてのオブジェクトは world の下にぶら下がるため、
 world 固有プロパティの参照は `ancestor` で代替できる。起点としての `child` は passives の target 専用で、
@@ -176,8 +176,8 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
 
 ## 6. 時間の経過（duration）
 
-- `interactions` の `duration` はゲーム内の**分**。リテラルか `{subject, prop}` 参照か参照 2 つの積
-  （`weight` と同じ三択）で、省略時は時間を消費しない。`subject` にどの役を書けるかは、4節の表と同じく
+- `interactions` の `duration` はゲーム内の**分**。リテラルか `{subject, prop}` 参照
+  （`weight` と同じ二択）で、省略時は時間を消費しない。`subject` にどの役を書けるかは、4節の表と同じく
   **その宣言が置かれた場所に何が居るか**で決まる（`ReferenceScope`）。きっかけによって連れてくるものが
   違うので、同じ `interactions` でも書ける役は一様ではない。**枠へ入れるのにかかる時間（`put_in` の
   `duration`、7.10節）も同じ形の宣言**で、そこでも入れる物を `instrument` として指せる
