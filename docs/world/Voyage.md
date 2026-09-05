@@ -618,7 +618,7 @@
 [`DigestionSystem.md`](../engine/DigestionSystem.md) 6 節）。**塩漬けにしても消えません**——`cure` を
 通した先も同じ `eat` を継ぐので、**製塩が前提であること**（3.9.2 節）**は、菌を避ける手にはなりません。**
 
-**それでも 1 日 3 つは、症状の段へ届きません。** 入るのは 1 日 9 ですが、感染している間は免疫が上がり
+**それでも 1 日 3 つは、症状の段へ届きません。** 入る菌は 1 日 9 ですが、感染している間は免疫が上がり
 続け（+0.25/tick<!-- stats: balance.yaml consumption property=immunity condition=pathogenが段sterileにない character=medic per_tick -->）、
 素の 60 から 10 時間で最上段（`primed`）へ届きます。そこから先は、菌自身の増殖
 （+0.15/tick<!-- stats: balance.yaml consumption property=pathogen condition=pathogenが段sterileにない character=medic per_tick -->）を
@@ -640,9 +640,10 @@
 あります（3 節の表）。**群れの出ない日に効くのはこちら**で、釣りを入れたことで潰れてはいません。
 
 **ビタミンを運ぶのは、そのうち海藻です**——1 つ 60 に対し、卵は 10、生肉は 1 切れ 2 しかありません。
-1 日に回るのは 48<!-- stats: balance.yaml daily_needs property=vitamin daily_need --> なので、**生肉だけの
-航海はビタミンを削り続けます。** 4〜6 日なら出航時の蓄えで足りますが、**伸びたぶんをここで埋めないと、
-上の押し下げが航海の途中から入ります**——予定が狂ったときに要るのは、満腹を埋める釣りだけではありません。
+1 日に回るのは 48<!-- stats: balance.yaml daily_needs property=vitamin daily_need --> なので、**生肉 3 つでは
+42 ずつ削れていきます。** 4〜6 日なら、素の蓄え（900）から押し下げの段（600 未満）へは届きませんが、
+**削ったまま出るか、荒天と引き返しで伸びれば入ります**——予定が狂ったときに要るのは、満腹を埋める釣り
+だけではありません。
 
 #### 3.9.4 道具は突き銛で、失っても海の上で作り直せる
 
