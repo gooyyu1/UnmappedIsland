@@ -174,6 +174,8 @@ object_defs:
     props:
       travel_minutes:
         value: 60          # 生成時にインスタンスごと上書きされる
+        # 道の長さに、今歩いている人の遅れを継ぐ（world/Characters.md 荷重の効き方節）
+        base: {subject: agent, prop: travel_delay}
       required_progress:
         value: 1           # 同上
       destination_id:
@@ -185,8 +187,8 @@ object_defs:
         trigger: menu
         conditions:
           - {in_slot: fixtures}   # 発見済み（fixturesスロット）の間だけ実行できる
-        # 道の長さ × 担ぎ手の遅れ（world/Characters.md 荷重の効き方節）
-        duration: {prop: travel_minutes, times: {subject: agent, prop: pace}}
+        # 担ぎ手の遅れはtravel_minutesのbaseが継いでいるので、ここはその1つを読むだけ
+        duration: {prop: travel_minutes}
         move:
           subject: agent
           to_prop: destination_id

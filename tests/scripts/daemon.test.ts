@@ -192,6 +192,19 @@ describe('daemon.sh', () => {
     expect(result.ledger).toEqual({ 'review:10': 'aaa111' });
   });
 
+  // デーモンは起動時の `daemon.sh` を握ったまま回るので、走っている最中に `live-sessions.sh` の
+  // 列を足すと、こちらだけが古いまま噛み合う。黙って読み違えると `tags` が空になり、**占有が全部
+  // 「無い」に見えて投入が止まらない**——2026-09-05 に、書くセッションが6本立った。
+  it('セッションの列がずれていたら、引けなかったのと同じに扱う', () => {
+    const result = daemon({
+      prs: [pr(10, passed)],
+      sessions: ['session_a\tSESSION_STATUS_BUCKET_WORKING\ttask-9'],
+    });
+
+    expect(result.calls).toEqual([]);
+    expect(result.log).toContain('盤面を引けなかった');
+  });
+
   it('盤面を引けなかった周は、手を1つも打たない', () => {
     const result = daemon({ prs: [pr(10, passed)], ghFails: true });
 

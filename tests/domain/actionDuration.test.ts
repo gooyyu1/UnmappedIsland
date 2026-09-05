@@ -111,50 +111,53 @@ object_defs:
     expect(world.minute, 'self.travel_minutesの値だけ時間が進む').toBe(45);
   });
 
-  it('参照2つの積は、掛け合わせた時間だけ進む（道の長さ×担ぎ手の遅れ）', () => {
+  it('参照先がbaseで担ぎ手の遅れを継いでいれば、足された時間だけ進む', () => {
+    // 合成はduration側ではなく参照先のプロパティで済ませる（GameElementDefinition.md 11.3節）。
     const { codex, session, world } = buildWorldSession(`
 object_defs:
   hiker:
     props:
-      pace:
-        value: 2
+      travel_delay:
+        value: 20
   trail:
     props:
       travel_minutes:
         value: 20
+        base: {subject: agent, prop: travel_delay}
     interactions:
       travel:
         trigger: menu
-        duration: {prop: travel_minutes, times: {subject: agent, prop: pace}}
+        duration: {prop: travel_minutes}
 `);
     const trail = session.createObject(codex.objectNames.getId('trail'));
     const hiker = session.createObject(codex.objectNames.getId('hiker'));
     trail.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(trail.tryGetAction('travel', hiker)?.tryExecute() === true).toBe(true);
-    expect(world.minute, 'self.travel_minutes × agent.pace だけ進む').toBe(40);
+    expect(world.minute, 'self.travel_minutes + agent.travel_delay だけ進む').toBe(40);
   });
 
-  it('積の片方が解決できなければ0分（等倍にはしない）', () => {
+  it('土台が辿り着かなければ、道は素の長さのまま', () => {
     const { codex, session, world } = buildWorldSession(`
 object_defs:
-  # paceを持たない担ぎ手。掛ける相手が居ない。
+  # travel_delayを持たない担ぎ手。土台が辿り着かない。
   ghost: {}
   trail:
     props:
       travel_minutes:
         value: 45
+        base: {subject: agent, prop: travel_delay}
     interactions:
       travel:
         trigger: menu
-        duration: {prop: travel_minutes, times: {subject: agent, prop: pace}}
+        duration: {prop: travel_minutes}
 `);
     const trail = session.createObject(codex.objectNames.getId('trail'));
     const ghost = session.createObject(codex.objectNames.getId('ghost'));
     trail.moveToSlotOrRejection(world.instance.getSlot(codex.slotNames.getId('stuff')));
 
     expect(trail.tryGetAction('travel', ghost)?.tryExecute() === true).toBe(true);
-    expect(world.minute, '解決できない参照を含む宣言は0（単一の参照と同じ扱い）').toBe(0);
+    expect(world.minute, '土台の寄与は0で、自分の値だけが残る（6.5節）').toBe(45);
   });
 
   it('durationはagentのプロパティを単独でも読める', () => {
@@ -178,7 +181,7 @@ object_defs:
     expect(world.minute, 'agent.rest_minutesの値だけ時間が進む').toBe(20);
   });
 
-  it('timesにリテラルは書けない（積を取れるのは参照2つだけ）', () => {
+  it('durationに掛ける相手は書けない（リテラルか{subject, prop}参照かの二択）', () => {
     expect(() =>
       new WorldCodexYamlLoader()
         .load(
@@ -192,34 +195,11 @@ object_defs:
     interactions:
       travel:
         trigger: menu
-        duration: {prop: travel_minutes, times: 2}
+        duration: {prop: travel_minutes, times: {subject: agent, prop: travel_delay}}
 `,
         )
         .buildAndReset(),
-    ).toThrowError(/times/);
-  });
-
-  it('timesの中にtimesは書けない（積は2つで打ち止め）', () => {
-    expect(() =>
-      new WorldCodexYamlLoader()
-        .load(
-          'extra.yaml',
-          `
-object_defs:
-  trail:
-    props:
-      travel_minutes:
-        value: 45
-    interactions:
-      travel:
-        trigger: menu
-        duration:
-          prop: travel_minutes
-          times: {subject: agent, prop: pace, times: {subject: agent, prop: haste}}
-`,
-        )
-        .buildAndReset(),
-    ).toThrowError(/times/);
+    ).toThrowError(/未知のキー 'times'/);
   });
 
   it('条件不成立の場合は時間を消費しない', () => {

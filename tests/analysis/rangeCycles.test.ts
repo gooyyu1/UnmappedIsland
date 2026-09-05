@@ -5,11 +5,13 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 /**
  * tick毎に動く値がrangeの端へ届くまでの周期（`src/analysis/rangeCycles.ts`）の検証。
  *
- * 見るのは2つ。**条件つきの増減（`GameElementDefinition.md` 8.2節）をどう組み合わせるか**——問いは
- * 「合算するか」ではなく「どの組み合わせが同時に成立しうるか」で、成立しえない組み合わせを1つの
- * 場合として数えると、増減が打ち消し合って周期そのものが消える。そして**端から戻る量をどう測るか**
+ * 見るのは次のところ。**条件つきの増減（`GameElementDefinition.md` 8.2節）をどう組み合わせるか**
+ * ——問いは「合算するか」ではなく「どの組み合わせが同時に成立しうるか」で、成立しえない組み合わせを
+ * 1つの場合として数えると、増減が打ち消し合って周期そのものが消える。**端から戻る量をどう測るか**
  * （`RangeEventReadout`）——`add`で足して戻すのも`set`で書き戻すのも、上端から戻るのも下端から
  * 戻るのも、同じ1つの向き（端からrangeの内側へ）で測らないと、周期が端によって別の意味になる。
+ * そして**外からの押し手をどう束ねるか**——速さは幅にできるが、止まるまでと効き始めはできない。
+ * 限度や立ち上がりの違うものを束ねると、どの仕掛けも持っていない押し手ができる。
  *
  * 形はどれも同梱の定義から採っているが、宣言はここに置く（tests/architecture/testKinds.test.ts）。
  */
@@ -142,8 +144,9 @@ object_defs:
         passives:
           - add: {self: {minute: 15}}
 
-  # 血を奪う傷。**奪う経路が2つあり、止まるまでが違う**——出血は自分のbleedingが尽きる4 tickで
-  # 止まり、膿み続ける傷が奪う分は止まらない。
+  # 血と水を奪う傷。**奪う経路が2つあり、止まるまでも効き始めも違う**——出血は負った瞬間から効いて
+  # 自分のbleedingが尽きる4 tickで止まり、膿み続ける傷が奪う分はinfectionがsepticへ届く320 tick後から
+  # 効いて止まらない。膿が奪う水の速さは段で変わる。
   gash:
     tags: [injury]
     props:
@@ -157,14 +160,17 @@ object_defs:
         range: {min: 0, max: 100}
         stages:
           - {name: clean}
+          - {name: festering, min: 40}
           - {name: septic, min: 80}
         passives:
           - add: {self: {infection: 0.25}}
     passives:
       - conditions: [{prop: bleeding, gte: 1}]
         add: {parent: {blood: -15}}
+      - conditions: [{prop: infection, in_stage: festering}]
+        add: {parent: {hydration: -1}}
       - conditions: [{prop: infection, in_stage: septic}]
-        add: {parent: {blood: -40}}
+        add: {parent: {blood: -40, hydration: -2}}
 
   # 血の多い獣（animals.yamlのwild_boar）。上の傷を負い、血が尽きれば倒れる。
   boar:
@@ -237,29 +243,48 @@ object_defs:
     expect(cycleOf('clock', 'minute')).toMatchObject([{ minutes: 4 * 15, repeats: true }]);
   });
 
+  /** その型が親へ与える押し手のうち、そのプロパティを動かすもの。 */
+  function externalDeltasOf(objectName: string, propertyName: string) {
+    const propertyGlobalId = codex.propertyNames.getId(propertyName);
+    return externalTickDeltasOf(defOf(objectName), 'parent')
+      .filter((delta) => delta.propertyGlobalId === propertyGlobalId)
+      .map(({ slowest, fastest, maxTotal, ticksUntilStart }) => ({
+        slowest,
+        fastest,
+        maxTotal,
+        ticksUntilStart,
+      }));
+  }
+
   it('止まるまでの違う押し手は、束ねずに別々に並べる', () => {
     // 速さは幅として持てるが、止まるまでは幅を持てない。1つに束ねると最も遅い-15と「止まらない」が
     // ひと組になり、どちらの経路も持っていない押し手ができる。
-    const bloodId = codex.propertyNames.getId('blood');
-    const deltas = externalTickDeltasOf(defOf('gash'), 'parent').filter(
-      (delta) => delta.propertyGlobalId === bloodId,
-    );
-
-    expect(deltas.map(({ slowest, fastest, maxTotal }) => ({ slowest, fastest, maxTotal }))).toEqual([
-      { slowest: -15, fastest: -15, maxTotal: 60 },
-      { slowest: -40, fastest: -40, maxTotal: undefined },
+    expect(externalDeltasOf('gash', 'blood')).toEqual([
+      { slowest: -15, fastest: -15, maxTotal: 60, ticksUntilStart: 0 },
+      { slowest: -40, fastest: -40, maxTotal: undefined, ticksUntilStart: 320 },
     ]);
   });
 
-  it('止まる押し手で端へ届かないなら、止まらない押し手だけが周期として残る', () => {
-    // 固まるまでの60mLでは4,600mLは尽きないので、失血死は止まらない-40/tickだけが起こす。束ねて
-    // いたときは「-15/tickで永久に流れ続ける傷」として306.67 tickの周期が立っていた。
+  it('効き始めの違う押し手も、束ねずに別々に並べる', () => {
+    // 段が上がるほど速く奪うが、速い側は遅い側より後からしか効かない。1つの幅に束ねると
+    // 「膿み始めた時点で-2」という、どちらの段も持っていない押し手ができる。
+    // 0から+0.25/tickなので、festering（40）へは160 tick、septic（80）へは320 tick。
+    expect(externalDeltasOf('gash', 'hydration')).toEqual([
+      { slowest: -1, fastest: -1, maxTotal: undefined, ticksUntilStart: 160 },
+      { slowest: -2, fastest: -2, maxTotal: undefined, ticksUntilStart: 320 },
+    ]);
+  });
+
+  it('段に入って初めて効く押し手では、その段へ届くまでの時間も周期に入る', () => {
+    // 固まるまでの60mLでは4,600mLは尽きないので、失血死は敗血症の-40/tickだけが起こす。その-40は
+    // 傷が膿み切ってから効き始めるので、倒れるまでは320 + 115＝435 tick。立ち上がりを数えないと、
+    // 負った瞬間から血が減るものとして115 tickになっていた。
     const external = externalTickDeltasOn(defOf('boar'), [...codex.objects]);
 
     expect(
       rangeCyclesOf(defOf('boar'), undefined, external).filter(
         (cycle) => codex.propertyNames.getName(cycle.propertyGlobalId) === 'blood',
       ),
-    ).toMatchObject([{ minutes: 115 * 15, destroysSelf: true, drivenBy: defOf('gash').globalId }]);
+    ).toMatchObject([{ minutes: (320 + 115) * 15, destroysSelf: true, drivenBy: defOf('gash').globalId }]);
   });
 });

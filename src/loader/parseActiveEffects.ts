@@ -184,7 +184,7 @@ function parseAmong(
 }
 
 /**
- * リテラル数値か`{subject, prop}`参照、またはその参照2つの積（GameElementDefinition.md 10.2節）を読む。
+ * リテラル数値か`{subject, prop}`参照（GameElementDefinition.md 10.2節）を読む。
  * pickのweightもdurationもこの形で、「今の状態から見ていくらか」を書けるようにするため（切れ味の
  * 悪い刃物ほど時間がかかる、荷が重いほど道は遠い）。何を表す数値かは持ち主が決める（DeclaredNumber）。
  *
@@ -207,21 +207,8 @@ export function parseDeclaredNumber(
   }
 
   if (isMap(node)) {
-    requireKnownKeys(node, ['subject', 'prop', 'times'], context);
-    const path = parsePropertyRef(loader, context, node, scope);
-
-    // times: 掛ける相手（10.2節）。**参照しか書けない形**——リテラルはスカラーで書く綴りなので、
-    // ここがマップである限り「参照2つの積」から外れようがない。
-    const timesNode = tryGetNode(node, 'times');
-    if (timesNode === undefined) return DeclaredNumber.ofPath(path);
-    if (!isMap(timesNode))
-      throw new YamlLoadError(
-        `${context}: ${fieldName}の'times'は{subject, prop}参照である必要があります（積を取れるのは参照2つだけです）。`,
-      );
-
-    const timesContext = `${context}.times`;
-    requireKnownKeys(timesNode, ['subject', 'prop'], timesContext);
-    return DeclaredNumber.ofProduct(path, parsePropertyRef(loader, timesContext, timesNode, scope));
+    requireKnownKeys(node, ['subject', 'prop'], context);
+    return DeclaredNumber.ofPath(parsePropertyRef(loader, context, node, scope));
   }
 
   throw new YamlLoadError(

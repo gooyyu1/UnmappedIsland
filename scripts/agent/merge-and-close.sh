@@ -101,8 +101,14 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}"
 NEEDS_USER_REVIEW="${NEEDS_USER_REVIEW:-$HERE/needs-user-review.sh}"
 
-body=$(gh pr view "$PR" --json body --jq '.body // ""' | tr -d '\r')
-state=$(gh pr view "$PR" --json state --jq '.state')
+# **PRは1回だけ引く。** 項目ごとに `gh pr view` を打つと、その数だけ往復が増えるうえ、**項目ごとに
+# 見ている時点がずれる**。引き直すのは、**この後の操作で変わるもの**だけ——マージ後の `state` と、
+# 打つ直前に見たい `mergeable`。
+pr=$(gh pr view "$PR" --json body,state,comments,headRefName)
+body=$(jq -r '.body // ""' <<<"$pr" | tr -d '\r')
+state=$(jq -r '.state' <<<"$pr")
+# ブランチ名はマージでは変わらないので、ここで一緒に受けておく（使うのは後片付けの段）。
+head=$(jq -r '.headRefName' <<<"$pr")
 # `## ユーザーへ` は、PR本文とレビューのコメントの**両方**に書かれる（`review-prompt.md`）。回す口が
 # 2つあるのに読む口が1つだと、**レビューが回したものだけが黙って落ちる**。拾うのは `[レビュー]` で
 # 始まるコメントだけで、デーモンの指示やユーザー自身の書き込みは回す側ではない。
@@ -112,8 +118,12 @@ state=$(gh pr view "$PR" --json state --jq '.state')
 # **末尾**へ置く。`review-prompt.md` がそう指示しているので、常に起きる）。繋ぎ目へ切れ目の印を
 # 挟んでも塞げるが、その綴りは
 # 挟む側と閉じる側で一致していないと黙って壊れる。繋がずに1件ずつ読めば、印そのものが要らない。
-review_comments=$(gh pr view "$PR" --json comments \
-  --jq '.comments[] | select(.body | startswith("[レビュー]")) | .body | @base64')
+#
+# **`tr -d '\r'` が要るのは、複数行を出して、その行をシェルが受け取るから**（理由は
+# [`archive-reviews.sh`](archive-reviews.sh) の同じ注記）。下の `read` が拾うので、残ると
+# `base64 -d` が壊れる。
+review_comments=$(jq -r '.comments[] | select(.body | startswith("[レビュー]")) | .body | @base64' \
+  <<<"$pr" | tr -d '\r')
 
 if [ "$state" = "OPEN" ]; then
   # 関門。**マージの前に見る**——通した後では、印が付いた状態が `main` に入ってしまう。
@@ -161,7 +171,6 @@ leftover=0
 # 上に積まれたPRを `main` へ下ろしてから、マージ済みのブランチを消す（上の「積まれたPRは…」）。
 # **1本でも下ろせなければ、ブランチを残す。** 引けなかったときも同じ——積まれたPRが在るかどうかが
 # 分からないまま消すと、閉じられたPRは機械では戻せない。
-head=$(gh pr view "$PR" --json headRefName --jq '.headRefName')
 retargeted=1
 if stacked=$(gh pr list --state open --base "$head" --json number --jq '.[].number'); then
   while read -r other; do
