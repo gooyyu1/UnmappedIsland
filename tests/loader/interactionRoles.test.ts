@@ -5,9 +5,10 @@ import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
  * 操作の3役（`agent`・`instrument`・`patient`）を書ける場所（GameElementDefinition.md 11.5節
  * 「役を書ける場所」）に対する自動テスト。
  *
- * **表の行×3役をそのまま並べる。** 表は「唯一の一覧」なので、可否がずれたらどの行のどの役かが
- * ここで分かる。`✕`（居るが書けない）と`—`（そもそも居ない）はどちらもロード時エラーだが、理由が
- * 違うので文面まで見る——`patient`の`✕`は「居ないから」ではない。
+ * **表のどのマスも、実際に書いて確かめる。** 1つの行が複数の書き方をまとめているところ（`base`と
+ * `passives`、`menu`と`tick`など）は、書き方ごとに並べる。表は「唯一の一覧」なので、可否がずれたら
+ * どの置き場所のどの役かがここで分かる。`✕`（居るが書けない）と`—`（そもそも居ない）はどちらも
+ * ロード時エラーだが、理由が違うので文面まで見る——`patient`の`✕`は「居ないから」ではない。
  */
 describe('役を書ける場所（11.5節の表）', () => {
   const load = (yaml: string) => new WorldCodexYamlLoader().load('core.yaml', yaml).buildAndReset();
