@@ -59,7 +59,7 @@ export class PassiveEffects {
   }
 
   /** 相手がownerから一意に辿れる関係が変わった契機を、その関係を宣言している効果へ伝える
-   * （PassiveEffect.setRelationRegistered参照。childだけは相手が定まらずsetChildRegisteredが持つ）。 */
+   * （PropertyPassiveEffect.setRelationRegistered参照。childだけは相手が定まらずsetChildRegisteredが持つ）。 */
   setRelationRegistered(owner: WorldObject, relation: ReferenceRoot, register: boolean): void {
     for (const effect of this.registrationsByRelation.get(relation) ?? NO_REGISTRATIONS)
       effect.setRelationRegistered(owner, register);
