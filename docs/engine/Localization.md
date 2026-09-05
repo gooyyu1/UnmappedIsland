@@ -201,9 +201,9 @@ symbol_texts:
 天気の名前は状況エリアの空の窓に出ます（[`ScreenLayout.md`](../ui/ScreenLayout.md) 5 節）。絵だけでは
 晴天どうしを見分けられないため、名前が区別を引き受けます。
 
-## reason_texts: 操作を実行できない理由
+## reason_texts: 選択肢を選べない理由
 
-`conditions` の要素が宣言する `reason`（[GameElementDefinition.md](./GameElementDefinition.md) 14.6節）も、
+要件の並びの要素が宣言する `reason`（[GameElementDefinition.md](./GameElementDefinition.md) 14.6節）も、
 どのオブジェクトにも属さない独立した識別子なので、独立した節に書きます。値は説明文だけなので、
 `display_name` を持たず**1行の文字列そのもの**を書きます。
 

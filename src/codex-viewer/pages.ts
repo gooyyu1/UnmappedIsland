@@ -196,7 +196,7 @@ function renderTagListPage(view: CodexView): string {
     `<p class="breadcrumb"><a href="#/">← オブジェクト一覧</a></p>` +
     `<h1>タグ一覧</h1>` +
     `<p class="muted">object_defのタグ（4.1節）。型のグループを指す唯一の手段で、` +
-    `スロットの受け入れ条件やcombinationsの相手もこれで書かれる。` +
+    `型の指定を書ける場所はどこもこれで書ける。` +
     `型そのものは<a href="#/by-tag">タグ別の一覧</a>で見られる。</p>` +
     `<div class="object-grid">${cards}</div>`
   );

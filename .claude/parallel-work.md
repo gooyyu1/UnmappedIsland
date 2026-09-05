@@ -130,11 +130,18 @@ DRY_RUN=1 bash scripts/agent/dispatch-task.sh 1029 <指示ファイル>  # 渡�
 PCが落ちたときだけ。**
 
 ```
-nohup bash scripts/agent/daemon.sh >>~/daemon.log 2>&1 &
+bash scripts/agent/daemon.sh start     # 背景で立てる。ログは ~/daemon.log へ追記
+bash scripts/agent/daemon.sh status    # 生死だけを見る（生きていれば0）
+bash scripts/agent/daemon.sh stop
+bash scripts/agent/daemon.sh restart   # 版を入れ替えたとき
 ```
 
-**走っているかを確かめてから打つ必要は無い。** 二本目は自分で引き返す（`daemon.sh`「二重に
-起こさない」）。生死だけを見たいときは `bash scripts/agent/daemon.sh --status`。
+**走っているかを確かめてから `start` を打ってよい。** 二本目は自分で引き返す（`daemon.sh`「二重に
+起こさない」）。**プロセスを探して撃たない**——`stop` が錠に置かれたPIDを撃つ（同「止めるのも
+自分の仕事」）。
+
+**`main` へ入れた変更は `restart` するまで効かない。** デーモンは起動時の `daemon.sh` を握ったまま
+回る。
 
 **ユーザーからの依頼が来ても、これより先に着手しない。** 依頼が数分遅れることは目に見えるが、
 **盤面が止まっていることは誰にも見えない**。2026-08-30 に前身の見張りを止めたまま `CLAUDE.md` の

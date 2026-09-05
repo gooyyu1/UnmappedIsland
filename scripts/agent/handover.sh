@@ -57,7 +57,7 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 # 生死の判定は [`daemon.sh`](daemon.sh) 自身が持つ（心拍の鮮度は `INTERVAL` から決まる）。
-echo "DAEMON $(bash "$HERE/daemon.sh" --status || true)"
+echo "DAEMON $(bash "$HERE/daemon.sh" status || true)"
 
 # `commander` タグの、まだ畳まれていないセッション。**この時点では後継がまだ居ない**ので、
 # 出てくるのは前任だけ。

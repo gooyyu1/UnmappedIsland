@@ -31,8 +31,7 @@ stats:balance` の生成物）・[`stats/climate.yaml`](../../stats/climate.yaml
 （[`DocumentStyle.md`](../DocumentStyle.md) 7節）。判断の根拠でしかない数値は書かず、`stats/` のどの節か
 だけを指します。書き写した数値には出どころのキーを名乗る印（HTMLコメント）が付いていて、
 [`tests/docs/docStatsCitations.test.ts`](../../tests/docs/docStatsCitations.test.ts) が印の指す先と
-突き合わせます。**印が付くのは書き写した数値だけ**で、複数のセルから導いた数値（探索が山の合計に占める5%など）は
-対象外です。
+突き合わせます。**印が付くのは書き写した数値だけ**で、複数のセルから導いた数値は対象外です。
 
 **確定しているのは 2.3.2 節（難易度は歩数で切る）・5.1 節（望遠鏡を置かず山頂が担う）・6 節
 （アーティファクトの数）・8.1.1.1 節（夜の空は月あかりを項として持たない）・8.1.4 節（嵐の日は屋外の
@@ -758,7 +757,7 @@ ambient_brightnessをそのまま土台にするためです
 **数え方は局面をまたいで1つです。**
 
 ```
-その日その土地で進む仕事（分） = min(720 − 往復の移動 − 266, その土地でその仕事ができる時間)
+その日その土地で進む仕事（分） = min(屋外の枠 − 往復の移動 − 生存の採取, その土地でその仕事ができる時間)
 ```
 
 **遠さは移動の項として、暗さと風雨は頭打ちとして、同じ1行に入ります。** 局面の違いは**どこへ行くか**と
@@ -845,14 +844,14 @@ ambient_brightnessをそのまま土台にするためです
 #### 8.3.1 泊まりがけは入れない【確定】
 
 **拠点へ戻らずに泊まる行程は、骨格に入れません。今の島は端から端まで日帰りで届くので、入れても
-浮くのは1.5日だけです。**
+日数はほとんど浮きません。**
 
-土地ごとに日帰りと泊まりの安いほうを採っても15.14日<!-- stats: terrain.yaml exploration_phase metric=mixed_days mean -->で、**日帰りだけの16.67日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->との差は1.5日**です。
+土地ごとに日帰りと泊まりの安いほうを採っても15.14日<!-- stats: terrain.yaml exploration_phase metric=mixed_days mean -->で、**日帰りだけの16.67日<!-- stats: terrain.yaml exploration_phase metric=day_trip_days mean -->とほとんど変わりません**。
 500島<!-- stats: terrain.yaml exploration_day_trip_islands islands -->のうち100.0%<!-- stats: terrain.yaml exploration_day_trip_islands share -->が、日帰りだけで全土地を開き切ります。縮尺（#797）が入って、往復が屋外の枠720分<!-- stats: terrain.yaml daily_budget outdoor_window -->から
 生存の採取264分<!-- stats: terrain.yaml daily_budget survival_gathering -->を引いた残りを使い切らなくなったためです。
 
 **退けたのは「島を広くして成立させる」ほうです。** 泊まりを選ぶ理由を作るには島の広さから変える
-ことになり、そのために動く量に対して、返ってくるのは1日半の短縮しかありません。
+ことになり、そのために動く量に対して、返ってくる短縮はごくわずかです。
 
 **これで遠出（11番）の段が2つ落ちます**——泊まりの行程（2日）と、遠い場所へ置く前線（4日）です。
 そりは落ちません。積む量が4〜6日ぶんへ縮んでも、浜までの陸の運搬は1度で担げる重さを超えます

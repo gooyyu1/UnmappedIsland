@@ -42,7 +42,7 @@
 3. **デーモンを起こす。** 走っているかは確かめなくてよく、**何度打っても1本のまま**です
    （`daemon.sh` が錠を取ります）。
 
-   nohup bash scripts/agent/daemon.sh >>~/daemon.log 2>&1 &
+   bash scripts/agent/daemon.sh start
 
    **ユーザーからの依頼が来ても、これより先に着手しないこと。** 止まっていることは誰にも
    見えません（`.claude/parallel-work.md`「盤面を回す仕組みを止めたままにしない」）。

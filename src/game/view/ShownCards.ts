@@ -451,9 +451,11 @@ export class ShownCards {
   }
 
   /**
-   * そのドロップでまとめて動かせる最大枚数（1ならついてこない）。**combinationは常に1**——
-   * 条件は世界のどこでも見られ、1回実行するたびに世界が変わるので、2回目が成立するかは
-   * やってみるまで分からない。ついてきた枚数を約束にできるのは、枠が空きを答えられる「入れる」だけ。
+   * そのドロップでまとめて動かせる最大枚数（1ならついてこない）。約束できるのは、受け取る側が
+   * 何枚まで受け取れるかを実行前に答えられるときだけ——枠は空きから、combinationは`allow_multiple`
+   * （GameElementDefinition.md 12.4節）を宣言していれば`acceptedCountIncludingSelf`から答える。
+   * 宣言が無いcombinationが1に留まるのは、条件が世界のどこでも見られ、1回実行するたびに世界が
+   * 変わるので、2回目が成立するかはやってみるまで分からないため。
    */
   multiDropLimit(drop: ShownDrop): number {
     return this.dropEffect({ ...drop, count: 1 })?.maxCount ?? 1;
