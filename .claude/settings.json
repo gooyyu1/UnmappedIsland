@@ -45,6 +45,15 @@
             "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/require-bash-description.sh\""
           }
         ]
+      },
+      {
+        "matcher": "mcp__ccr_meta__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/deny-ccr-meta-mcp.sh\""
+          }
+        ]
       }
     ],
     "PostToolUse": [

@@ -78,9 +78,10 @@ bash .claude/ccr-meta.sh create_session < args.json
 
 #### 立てる・確かめる・畳むは [`ccr-meta.sh`](./ccr-meta.sh)
 
-**`mcp__ccr_meta__*` の登録は消した**（`~/.claude.json`）ので、入口はこれ1つ。あれは**起動時のヘッダを
-掴んだまま**で、走っている最中にトークンが切れると、登録を直しても**そのセッションからは二度と
-使えなかった**（2026-08-25 に2回起きた）。
+**入口はこれ1つ。** `mcp__ccr_meta__*` は**起動時のヘッダを掴んだまま**で、走っている最中に
+トークンが切れると、登録を直しても**そのセッションからは二度と使えなかった**（2026-08-25 に2回
+起きた）。登録は道具の一覧に残っているが、呼ぶと
+[`hooks/deny-ccr-meta-mcp.sh`](hooks/deny-ccr-meta-mcp.sh) が拒否してここへ案内する。
 
 ```bash
 bash .claude/ccr-meta.sh create_session < args.json

@@ -455,3 +455,18 @@ PowerShell は **UTF-8 のファイルを ANSI として読む**ので、`Get-Co
 ```
 bash -lc 'cd /tmp && pwd -W 2>/dev/null || pwd'
 ```
+
+## CCRのセッションを操作するときは `.claude/ccr-meta.sh`
+
+セッションを立てる・様子を見る・畳むといったメタMCPの操作は、
+[`.claude/ccr-meta.sh`](.claude/ccr-meta.sh) が入口。**普段の `mcp__ccr_meta__*` と同じ道具・同じ引数が
+そのまま通る**が、引数はargvではなく標準入力のJSONで渡す。
+
+```
+bash .claude/ccr-meta.sh list_sessions <<<'{"limit": 5}'
+bash .claude/ccr-meta.sh create_session < args.json
+```
+
+`mcp__ccr_meta__*` の登録は道具の一覧に残っているが、**呼ぶとフックが拒否してここへ案内する。**
+消していないのは、消すと「そもそも手が無い」と読んで諦めるから。落とし穴（日本語の化け・
+リポジトリの渡し方・届いた本文の確かめ方）は `ccr-meta.sh` の冒頭に書いてある。
