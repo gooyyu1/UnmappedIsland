@@ -22,7 +22,6 @@ interface Live {
 
 interface State {
   readonly utilization: number;
-  readonly resetsAt: string;
   readonly sessions: Record<string, { readonly kind: string; readonly spent: number }>;
 }
 
@@ -32,10 +31,7 @@ interface Result {
 }
 
 /** 状態のファイルを引き継ぎながら、割り当てを1回走らせる。 */
-function attribute(
-  work: string,
-  input: { utilization: number; resetsAt: string; now: string; live: readonly Live[] },
-): Result {
+function attribute(work: string, input: { utilization: number; now: string; live: readonly Live[] }): Result {
   const statePath = join(work, 'usage.json');
   const spentPath = join(work, 'spent.tsv');
   execFileSync('node', [SCRIPT, statePath, spentPath], {
@@ -57,14 +53,11 @@ function withWork<T>(body: (work: string) => T): T {
   }
 }
 
-const WINDOW = '2026-09-05T05:00:00Z';
-
 describe('usage-attribute.mjs', () => {
   it('初回は基準を置くだけで、消費を積まない', () => {
     withWork((work) => {
       const result = attribute(work, {
         utilization: 30,
-        resetsAt: WINDOW,
         now: '2026-09-05T01:00:00Z',
         live: [{ id: 'cse_a', tags: ['task-1'], working: true }],
       });
@@ -80,10 +73,9 @@ describe('usage-attribute.mjs', () => {
         { id: 'cse_a', tags: ['task-1'], working: true },
         { id: 'cse_b', tags: ['review-2'], working: true },
       ];
-      attribute(work, { utilization: 10, resetsAt: WINDOW, now: '2026-09-05T01:00:00Z', live });
+      attribute(work, { utilization: 10, now: '2026-09-05T01:00:00Z', live });
       const result = attribute(work, {
         utilization: 16,
-        resetsAt: WINDOW,
         now: '2026-09-05T01:05:00Z',
         live,
       });
@@ -102,10 +94,9 @@ describe('usage-attribute.mjs', () => {
         { id: 'cse_a', tags: ['task-1'], working: true },
         { id: 'cse_b', tags: ['task-2'], working: false },
       ];
-      attribute(work, { utilization: 10, resetsAt: WINDOW, now: '2026-09-05T01:00:00Z', live });
+      attribute(work, { utilization: 10, now: '2026-09-05T01:00:00Z', live });
       const result = attribute(work, {
         utilization: 16,
-        resetsAt: WINDOW,
         now: '2026-09-05T01:05:00Z',
         live,
       });
@@ -119,10 +110,9 @@ describe('usage-attribute.mjs', () => {
   it('1本も動いていない周の増分は、誰にも積まない', () => {
     withWork((work) => {
       const live = [{ id: 'cse_a', tags: ['task-1'], working: false }];
-      attribute(work, { utilization: 10, resetsAt: WINDOW, now: '2026-09-05T01:00:00Z', live });
+      attribute(work, { utilization: 10, now: '2026-09-05T01:00:00Z', live });
       const result = attribute(work, {
         utilization: 40,
-        resetsAt: WINDOW,
         now: '2026-09-05T01:05:00Z',
         live,
       });
@@ -135,11 +125,10 @@ describe('usage-attribute.mjs', () => {
   it('畳まれて一覧から消えたら、積み上がった値を記録へ出す', () => {
     withWork((work) => {
       const live = [{ id: 'cse_a', tags: ['task-1'], working: true }];
-      attribute(work, { utilization: 10, resetsAt: WINDOW, now: '2026-09-05T01:00:00Z', live });
-      attribute(work, { utilization: 12, resetsAt: WINDOW, now: '2026-09-05T01:05:00Z', live });
+      attribute(work, { utilization: 10, now: '2026-09-05T01:00:00Z', live });
+      attribute(work, { utilization: 12, now: '2026-09-05T01:05:00Z', live });
       const result = attribute(work, {
         utilization: 12,
-        resetsAt: WINDOW,
         now: '2026-09-05T01:10:00Z',
         live: [],
       });
@@ -149,14 +138,14 @@ describe('usage-attribute.mjs', () => {
     });
   });
 
-  // `resets_at` が変われば `utilization` は下がる。引き算をそのまま使うと負の消費が積まれる。
-  it('枠が変わった周は、増分を0にする', () => {
+  // 枠が明けたことは、この下がりで見る（`resets_at` は揺れるので使わない）。引き算をそのまま
+  // 使うと負の消費が積まれる。
+  it('utilization が下がった周は、増分を0にする', () => {
     withWork((work) => {
       const live = [{ id: 'cse_a', tags: ['task-1'], working: true }];
-      attribute(work, { utilization: 80, resetsAt: WINDOW, now: '2026-09-05T04:55:00Z', live });
+      attribute(work, { utilization: 80, now: '2026-09-05T04:55:00Z', live });
       const result = attribute(work, {
         utilization: 3,
-        resetsAt: '2026-09-05T10:00:00Z',
         now: '2026-09-05T05:05:00Z',
         live,
       });
@@ -166,49 +155,11 @@ describe('usage-attribute.mjs', () => {
     });
   });
 
-  // APIは同じ枠でも呼び出しごとに違う秒未満を返す。丸ごと比べると一致する周が一度も来ず、
-  // 増分が永久に0になって計測が溜まらない（2026-09-05 に実測）。
-  it('秒未満だけが違う resets_at は、同じ枠として増分を積む', () => {
-    withWork((work) => {
-      const live = [{ id: 'cse_a', tags: ['task-1'], working: true }];
-      attribute(work, {
-        utilization: 10,
-        resetsAt: '2026-09-05T07:20:00.939340+00:00',
-        now: '2026-09-05T01:00:00Z',
-        live,
-      });
-      const result = attribute(work, {
-        utilization: 16,
-        resetsAt: '2026-09-05T07:20:00.358630+00:00',
-        now: '2026-09-05T01:05:00Z',
-        live,
-      });
-
-      expect(result.state.sessions.cse_a.spent).toBe(6);
-    });
-  });
-
-  it('枠が同じでも utilization が下がった周は、増分を0にする', () => {
-    withWork((work) => {
-      const live = [{ id: 'cse_a', tags: ['task-1'], working: true }];
-      attribute(work, { utilization: 40, resetsAt: WINDOW, now: '2026-09-05T01:00:00Z', live });
-      const result = attribute(work, {
-        utilization: 39,
-        resetsAt: WINDOW,
-        now: '2026-09-05T01:05:00Z',
-        live,
-      });
-
-      expect(result.state.sessions.cse_a.spent).toBe(0);
-    });
-  });
-
   it('タグの無いセッションは、投入したものと分けて数える', () => {
     withWork((work) => {
       const live = [{ id: 'cse_x', tags: [], working: true }];
       const result = attribute(work, {
         utilization: 5,
-        resetsAt: WINDOW,
         now: '2026-09-05T01:00:00Z',
         live,
       });

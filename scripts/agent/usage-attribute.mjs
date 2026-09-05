@@ -1,6 +1,6 @@
 // 使用量の増分を、そのとき動いていたセッションへ割り当てる（`.claude/board-design.md` 2.5）。
 //
-//   echo '{"utilization":12,"resetsAt":"...","now":"...","live":[{"id":"cse_a","tags":["task-1"],"working":true}]}' \
+//   echo '{"utilization":12,"now":"...","live":[{"id":"cse_a","tags":["task-1"],"working":true}]}' \
 //     | node scripts/agent/usage-attribute.mjs <状態のファイル> <記録のファイル>
 //
 // 状態のファイルを読み書きし、**畳まれたセッションぶんだけ**を記録のファイルへ1行1件で足す。
@@ -21,14 +21,16 @@
 // **1本も動いていない周の増分は、誰にも割り当てない。** 一覧に載らない手元の Claude Code が
 // 食ったぶんなので、投入したセッションのせいにすると過大に出る。
 //
-// ## 枠が変わった周は、増分を0にする
+// ## 下がった周は、増分を0にする
 //
-// `resets_at` が変われば `utilization` は下がる。**引き算をそのまま使うと負の消費が積まれる**ので、
-// 枠が変わった周と `utilization` が下がった周は基準を置き直すだけにする。取りこぼすのはその1周分。
+// **引き算をそのまま使うと負の消費が積まれる**ので、`utilization` が前の周より下がった周は基準を
+// 置き直すだけにする。取りこぼすのはその1周分。
 //
-// **同じ枠かは秒までで見る。** APIの返す `resets_at` は、同じ枠でも呼び出しごとに秒未満が変わる
-// （実測: 2026-09-05。`07:20:00.939340` と `07:20:00.358630` が続けて返った）。丸ごと比べると
-// 一致する周が一度も来ず、**増分が永久に0になって計測が溜まらない。**
+// **枠が変わったことは、この下がりで見る。`resets_at` は使わない。** APIの返す `resets_at` は同じ枠
+// でも呼び出しごとに揺れ（実測: 2026-09-05。`07:19:59.015` 〜 `07:20:00.994`）、**揺れの中心が
+// きりのよい境界に乗るのでどの粒度で丸めても境界をまたぐ。** 見比べると一致する周が来ず、増分が
+// 永久に0になる。枠が明けた直後は必ず低い値から始まるので、下がりで足りる——取り違えるのは前の枠を
+// 数%しか使わずに終えたときだけで、狂うのはその数%。
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -43,12 +45,9 @@ function kindOf(tags) {
 }
 
 function readState(path) {
-  if (!existsSync(path)) return { utilization: null, resetsAt: null, sessions: {} };
+  if (!existsSync(path)) return { utilization: null, sessions: {} };
   return JSON.parse(readFileSync(path, 'utf8'));
 }
-
-/** 枠の見分け。秒未満は呼び出しごとに揺れるので落とす（上の「同じ枠かは秒までで見る」）。 */
-const windowKey = (resetsAt) => (resetsAt ?? '').slice(0, 19);
 
 const [statePath, spentPath] = process.argv.slice(2);
 if (statePath === undefined || spentPath === undefined) {
@@ -59,9 +58,7 @@ if (statePath === undefined || spentPath === undefined) {
 const input = JSON.parse(readFileSync(0, 'utf8'));
 const previous = readState(statePath);
 
-const sameWindow =
-  windowKey(previous.resetsAt) === windowKey(input.resetsAt) && typeof previous.utilization === 'number';
-const rose = sameWindow && input.utilization >= previous.utilization;
+const rose = typeof previous.utilization === 'number' && input.utilization >= previous.utilization;
 const delta = rose ? input.utilization - previous.utilization : 0;
 
 // 上の「分母は『動いていたもの』だけ」。1本も動いていなければ、この周の増分は誰にも積まない。
@@ -85,7 +82,7 @@ const finished = Object.entries(previous.sessions ?? {})
 mkdirSync(dirname(statePath), { recursive: true });
 writeFileSync(
   statePath,
-  `${JSON.stringify({ utilization: input.utilization, resetsAt: input.resetsAt, sessions }, null, 2)}\n`,
+  `${JSON.stringify({ utilization: input.utilization, sessions }, null, 2)}\n`,
   'utf8',
 );
 if (finished.length > 0) {

@@ -307,6 +307,10 @@
   アクセストークンを付けて 200。`five_hour` / `seven_day` の `utilization`・`resets_at`・
   `locked_reason` と、`limits[]` の `kind` / `percent` / `severity` / `is_active` が返る。
   → 2.5 が成り立つ。
+- **`resets_at` は、枠が同じかの判定には使えない**（2026-09-05 に実測）。同じ枠のまま、続けて呼ぶ
+  たびに `07:19:59.015` 〜 `07:20:00.994` と揺れる。**揺れの中心がきりのよい境界に乗るので、どの
+  粒度で丸めても境界をまたぐ。** → 枠が明けたことは `utilization` の下がりで見る
+  （[`usage-attribute.mjs`](../scripts/agent/usage-attribute.mjs)）。
 - **ただしセッション単位の消費は引けない。** `list_sessions` にトークンの項目は無く、`get_session` の
   `external_metadata.context_usage`（`used_tokens` / `max_tokens`）は**コンテキスト窓の埋まり具合**で
   あって累計の消費ではない。→ 2.5 の割り当てが必要になる。

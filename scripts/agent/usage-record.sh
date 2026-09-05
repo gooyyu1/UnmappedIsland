@@ -32,7 +32,7 @@ usage=$(bash "$HERE/usage.sh" | grep '^five_hour ' | tr -d '\r') || {
   echo "使用量を引けなかった" >&2
   exit 1
 }
-read -r _ utilization resets_at _ <<<"$usage"
+read -r _ utilization _ <<<"$usage"
 
 live=$(CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}" bash "$HERE/live-sessions.sh") || {
   echo "セッションの一覧を引けなかった" >&2
@@ -40,10 +40,9 @@ live=$(CCR_META="${CCR_META:-$HERE/../../.claude/ccr-meta.sh}" bash "$HERE/live-
 }
 
 # TSVをそのままJSONへ。**日本語は載らない**（IDとタグだけ）ので、ここは変数で通してよい。
-printf '%s' "$live" | jq -R -s --arg u "$utilization" --arg r "$resets_at" \
+printf '%s' "$live" | jq -R -s --arg u "$utilization" \
   --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{
     utilization: ($u | tonumber),
-    resetsAt: $r,
     now: $now,
     live: (split("\n") | map(select(length > 0)) | map(split("\t") | {
       id: .[0],
