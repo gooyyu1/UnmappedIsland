@@ -18,6 +18,7 @@
 // 入力は次の形。
 //
 //   { "settledBefore": "<この時刻より前に止まっているPRは、チェック0本でも緑と読む>",
+//     "mainChecks": [ { "status": "COMPLETED", "conclusion": "SUCCESS" } ],   … `main` の先頭のCI
 //     "prs":      [ gh pr list --json number,isDraft,labels,mergeable,statusCheckRollup,updatedAt,headRefOid,baseRefName,body,files ],
 //     "issues":   [ gh issue list --json number,labels,blockedBy ],
 //     "sessions": [ { "id": "session_…", "status": "SESSION_STATUS_…",
@@ -98,6 +99,13 @@ function missingLook(pr) {
   return (end < 0 ? rest : rest.slice(0, end)).join('\n').trim() === '';
 }
 
+/** チェックの一覧の色。**1つでも終わっていなければ `running`**（読むのはPRと `main` の両方）。 */
+function color(roll) {
+  if (roll.some((check) => check.status !== 'COMPLETED')) return 'running';
+  const ok = new Set(['SUCCESS', 'NEUTRAL', 'SKIPPED']);
+  return roll.every((check) => ok.has(check.conclusion)) ? 'green' : 'red';
+}
+
 /**
  * CIの色。**チェックが1つも登録されないPRがある**（`tests.yml` の `paths` に当たらない差分）ので、
  * 落ち着いてから緑と読む。まだ登録中なだけの場合と区別が付かないため。
@@ -105,10 +113,15 @@ function missingLook(pr) {
 function checks(pr) {
   const roll = pr.statusCheckRollup ?? [];
   if (roll.length === 0) return pr.updatedAt < input.settledBefore ? 'green' : 'running';
-  if (roll.some((check) => check.status !== 'COMPLETED')) return 'running';
-  const ok = new Set(['SUCCESS', 'NEUTRAL', 'SKIPPED']);
-  return roll.every((check) => ok.has(check.conclusion)) ? 'green' : 'red';
+  return color(roll);
 }
+
+/**
+ * `main` の先頭のCIの色（2.14）。**赤い間は `mend` を打たない**——`main` の赤はそれを取り込んだ
+ * PRを全部赤くするので、作業者が何をしても緑にならない。指紋は push のたびに変わるから、
+ * 差し戻しは押し返されるたびに新しい手として通り、止まらない。
+ */
+const mainCheck = color(input.mainChecks ?? []);
 
 const merges = [];
 const archives = [];
@@ -156,6 +169,13 @@ for (const pr of [...input.prs].sort((a, b) => a.number - b.number)) {
             : [null, null];
 
   if (kind !== null) {
+    // **`main` が赤い間は直しを頼まない**（2.14）。頼む先が居るかを調べる手前で止める——相手が
+    // 誰であっても、直せないことは変わらない。`reject` と `look` は `main` の色と関わらない作業
+    // （仮決めの取り下げ・画面の証跡）なので、そのまま出す。
+    if (kind === 'mend' && mainCheck === 'red') {
+      notes.push(`PR #${pr.number} は${reason}が、\`main\` が赤いので直しを頼まない`);
+      continue;
+    }
     // 直す相手は、そのPRを書いたセッション。**畳まれていれば起こせない**——畳むのは
     // 「この仕事は終わった」と判断した側の明示の操作なので、機械では戻さない（1.2）。
     const holders = menders(pr);

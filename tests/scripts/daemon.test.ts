@@ -46,6 +46,8 @@ interface World {
   readonly prSessions?: Record<number, string>;
   /** そのトレーラを引く `gh api graphql` が失敗するか。 */
   readonly prSessionsFail?: boolean;
+  /** `main` の先頭のCI。既定は緑。 */
+  readonly mainChecks?: readonly { readonly status: string; readonly conclusion: string }[];
   /** `archive-session.sh` が渡された相手について返す行の頭。既定は畳めた。 */
   readonly archiveVerdict?: 'ARCHIVED' | 'KEPT' | 'UNARCHIVED';
   /** 非0で終わらせる打ち手（`PLAYS` の名前）。 */
@@ -120,6 +122,9 @@ ${world.prSessionsFail === true ? '  exit 1' : ''}
 ${Object.entries(world.prSessions ?? {})
   .map(([number, session]) => `  printf '%s\\t%s\\n' '${number}' '${session}'`)
   .join('\n')}
+  ;;
+'api '*check-runs)
+  printf '%s' '${JSON.stringify(world.mainChecks ?? [{ status: 'COMPLETED', conclusion: 'SUCCESS' }])}'
   ;;
 'pr list') cat '${posix(join(work, 'prs.json'))}' ;;
 'issue list') cat '${posix(join(work, 'issues.json'))}' ;;
@@ -293,6 +298,19 @@ describe('daemon.sh', () => {
     });
 
     expect(result.calls).toEqual(['resume-session.sh session_writer mend 10']);
+  });
+
+  // `main` の色が盤面へ載っていなければ、判定の側は緑と読んで差し戻してしまう（2.14）。
+  // **止まることを見るのは、載っていることを見ること。**
+  it('main が赤い周は、直しの手を打たない', () => {
+    const result = daemon({
+      mainChecks: [{ status: 'COMPLETED', conclusion: 'FAILURE' }],
+      prs: [pr(10, { statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }] })],
+      prSessions: { 10: 'session_writer' },
+      sessions: ['session_writer\tSESSION_STATUS_IDLE\tSESSION_STATUS_BUCKET_WORKING\t'],
+    });
+
+    expect(result.calls).toEqual([]);
   });
 
   // 引けない日に盤面ごと落とすと、差し戻し以外の手まで止まる。

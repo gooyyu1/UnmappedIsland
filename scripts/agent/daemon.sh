@@ -115,6 +115,14 @@ gather() {
   gh issue list --state open --limit 100 --json number,labels,blockedBy \
     >"$WORK/issues.json" || return 1
 
+  # `main` の先頭のCI。**赤い間は差し戻しを打たない**（`board-move.mjs`、`board-design.md` 2.14）。
+  # 語彙をPRの `statusCheckRollup` に合わせて渡すので、向こうは1つの判定で両方を読める。
+  gh api 'repos/{owner}/{repo}/commits/main/check-runs' \
+    --jq '[.check_runs[] | {
+      status: (.status | ascii_upcase),
+      conclusion: ((.conclusion // "") | ascii_upcase)
+    }]' >"$WORK/main-checks.json" || return 1
+
   # 差し戻す相手は、そのPRのコミットの `Claude-Session:` トレーラで引く（2.11）。**上の一覧には
   # 混ぜられない**——`gh pr list --json commits` はPRごとに全コミットを取りに行き、GraphQL の
   # ノード数の上限（50万）を超えて何も返らなくなる。末尾の何本かだけを指名すれば1回で足りる。
@@ -166,8 +174,10 @@ gather() {
     --slurpfile taken "$LEDGER" --rawfile live "$WORK/live.tsv" \
     --rawfile states "$WORK/issue-states.tsv" \
     --rawfile prsessions "$WORK/pr-sessions.tsv" \
+    --slurpfile mainchecks "$WORK/main-checks.json" \
     --arg settled "$(date -u -d "-$SETTLE_MINUTES minutes" +%Y-%m-%dT%H:%M:%SZ)" '{
       settledBefore: $settled,
+      mainChecks: $mainchecks[0],
       prs: $prs[0],
       issues: $issues[0],
       taken: $taken[0],

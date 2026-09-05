@@ -19,6 +19,8 @@ const SETTLED = '2026-09-05T01:00:00Z';
 
 interface Board {
   settledBefore?: string;
+  /** `main` の先頭のCI。省くと緑（既存の盤面はどれも `main` が緑のときの話）。 */
+  mainChecks?: readonly unknown[];
   prs?: readonly unknown[];
   issues?: readonly unknown[];
   sessions?: readonly { id: string; status: string; bucket: string; tags: readonly string[] }[];
@@ -227,6 +229,57 @@ describe('board-move.mjs', () => {
   it('CIが赤いPRも、書いたセッションを起こす', () => {
     const board = {
       prs: [pr(10, { statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }] })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
+  });
+
+  const RED_MAIN = [{ status: 'COMPLETED', conclusion: 'FAILURE' }];
+  const redPr = (number: number, over: Record<string, unknown> = {}) =>
+    pr(number, { statusCheckRollup: RED_MAIN, ...over });
+
+  // **`main` が赤いと、それを取り込んだPRは作業者が何をしても緑にならない**（2.14）。指紋は push の
+  // たびに変わるので、止めないと押し返されるたびに新しい手として通り、差し戻しが終わらない。
+  // 2026-09-05 に `main` の試験が Linux でだけ落ち、開いていたPRがこれで回りかけた。
+  it('main が赤い間は、直しを頼まない', () => {
+    const board = {
+      mainChecks: RED_MAIN,
+      prs: [redPr(10)],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['NOTE PR #10 はCIが赤いが、`main` が赤いので直しを頼まない']);
+  });
+
+  // 止めるのは `mend` だけ。**仮決めの取り下げも画面の証跡も、`main` の色と関わらない作業**なので、
+  // ここまで止めると `main` の赤が長引いた分だけ関係の無い手が遅れる。
+  it('main が赤くても、却下は差し戻す', () => {
+    const board = {
+      mainChecks: RED_MAIN,
+      prs: [redPr(10, label('却下'))],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa111']);
+  });
+
+  it('main が赤くても、見た目 の欠けは差し戻す', () => {
+    const board = {
+      mainChecks: RED_MAIN,
+      prs: [redPr(10, { files: [{ path: 'src/game/ui/Card.ts' }] })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a look 10 look:10:aaa111']);
+  });
+
+  // **止めるのは赤と分かったときだけ。** 走っている最中を赤に含めると、`main` へ push が入るたびに
+  // 差し戻しが数分止まる。
+  it('main のCIが走っている間は、直しを頼む', () => {
+    const board = {
+      mainChecks: [{ status: 'IN_PROGRESS', conclusion: '' }],
+      prs: [redPr(10)],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
