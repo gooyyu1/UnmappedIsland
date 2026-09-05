@@ -209,7 +209,7 @@ export function voyageForecastOf(
    * その海区へ浮かべたときの筏の速さ（同3.2節）。**風は入れない**——日ごとに変わるものを入れると、
    * 「積載の側に不確かさは無い」（GameEndings.md 12.6節）が崩れ、幅が海図の粗さを表さなくなる。
    *
-   * 足すのは3つ。海が配るもの（海流）、組み込んだ部品が配るもの（帆）、そして積載の段が削るもの。
+   * 足すのは、海が配るもの（海流）、組み込んだ部品が配るもの（帆）、そして積載の段が削るもの。
    */
   const sailSpeedAtSea = (raft: WorldObject, zone: WorldObject): number => {
     const speed = raft.getProperty(sailSpeedId);

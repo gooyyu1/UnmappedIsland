@@ -258,7 +258,7 @@ export class DestroyEffect extends ActiveEffect {
  * 自身の親へ伝播する（WorldObject.place参照）。
  *
  * **個体を指す形は `move` の移動先と同じ ObjectRef**（対象キー・プロパティが持つインスタンスID・型）。
- * 残る2つは個体ではないものを名乗るためにある——`same_slot` は位置、`child` は走査。
+ * 残るのは個体ではないものを名乗るため——`same_slot` は位置、`child` は走査。
  */
 export type SpawnTarget =
   /**

@@ -266,7 +266,7 @@ traits:
             fill: -2
 
   # 開いた容器に置かれている間、降っている雨のぶんだけ増える（LiquidContainerSystem.md 7節）。
-  # ゲートは「容器の開き方」「天候」「雨が届く場所か（sheltered、ContainerSystem.md 6節）」の3つ。
+  # ゲートは「容器の開き方」「天候」「雨が届く場所か（sheltered、ContainerSystem.md 6節）」。
   # 雨の強さは3段しかないので、蒸発のような基礎＋上乗せの形は取らず、1行が1つの降り方の量そのものを
   # 表す。満杯を超えた分はrangeが受け止める（fillの上限は容器のcapacity）。
   rain_filled_liquid:

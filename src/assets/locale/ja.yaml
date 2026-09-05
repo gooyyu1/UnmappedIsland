@@ -1050,7 +1050,7 @@ object_texts:
     display_name: 錫鉱石
     description: 小島の岩に混じっていた黒い塊。銅と合わせれば青銅になる。
 
-  # 海区と、海区どうしを繋ぐ航路（GameEndings.md 12節）。海区は8種類の顔ぶれから配った14個で、
+  # 海区と、海区どうしを繋ぐ航路（GameEndings.md 12節）。海区は顔ぶれから配ったもので、
   # **名前はそこから何が見えるかで付ける**（同12.2節）——見分けが付かないと、進んでいるのか
   # 戻っているのかも読めなくなる。
   #
@@ -1721,7 +1721,7 @@ ui_texts:
   recipe_title: 作るもの
   recipe_empty: ここに並ぶものはまだ無い。
 
-  # ゲーム内時間の長さ（timeTexts.ts）。時・分のどちらが立つかで3通り。
+  # ゲーム内時間の長さ（timeTexts.ts）。時・分のどちらが立つかで変わる。
   duration_minutes: '{minutes}分'
   duration_hours: '{hours}時間'
   duration_hours_minutes: '{hours}時間{minutes}分'

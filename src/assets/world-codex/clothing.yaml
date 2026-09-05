@@ -1,7 +1,7 @@
-# 身につける衣類（docs/world/SurvivalItems.md 5節）。素材の系統ごとに4種を置く。
+# 身につける衣類（docs/world/SurvivalItems.md 5節）。素材の系統ごとに置く。
 #
-# 4種は「素材が何か」だけで分かれていて、どれも1着で全身を覆う。**覆う部位（body）も重ね着の階層
-# （base）も4種で共通**なので、身につけられるのは同時に1着だけになる（排他制御、covers / layer、
+# どれも「素材が何か」だけで分かれていて、1着で全身を覆う。**覆う部位（body）も重ね着の階層
+# （base）も共通**なので、身につけられるのは同時に1着だけになる（排他制御、covers / layer、
 # docs/engine/GameElementDefinition.md 7.5節）。部位を分けるのも重ね着も、衣類が増えてからでよい。
 #
 # **身につけられることはequippableタグが言う。** 着る先のequipmentスロット

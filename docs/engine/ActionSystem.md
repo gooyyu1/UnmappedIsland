@@ -7,7 +7,7 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 入口（アクションの行・ドラッグ＆ドロップ）は [`../ui/Windows.md`](../ui/Windows.md) 4 節・
 [`../ui/CardInteraction.md`](../ui/CardInteraction.md) が扱います。
 
-**入口は3種でも、実行は1本です。** きっかけ（`trigger: menu` / `tick` / `{drag: ...}`）が違うだけで、
+**入口が分かれていても、実行は1本です。** きっかけ（`trigger: menu` / `tick` / `{drag: ...}`）が違うだけで、
 中身は同じ `InteractionDef` 1つ。どれも同じ実行パイプライン
 （マッチング → `conditions` → `duration` の解決 → 時間進行 → 生存確認 → 効果の適用、2 節）を通ります。
 起きたことは分岐名ではなく世界に起きた変化として観測します（7 節）。操作専用の新しい文法はありません。
@@ -17,7 +17,7 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 `actionDuration.test.ts`・`worldChanges.test.ts` です。本書は実装済みの仕組みの記述で、
 未決事項は 8 節に整理しています。
 
-## 1. 3つの入口: menu・tick・drag
+## 1. 入口: menu・tick・drag
 
 操作の入口はきっかけの数だけで、どれも `object_def` に宣言的に定義される。
 
@@ -48,7 +48,7 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 渡し直すことになる。そこで `WorldObject` から引いた時点で相手を結び付け、`Action`・`Combination`
 （`Interaction.ts`）として返す。以降は名前も相手も渡さない。
 
-引く口は4つ。
+引く口は次のとおり。
 
 - `MenuActionsFor(agent)` — このカードへ起こせる、**画面のボタンに出る**操作を宣言順に
   （`menuTriggers`。絞り込みは要らない）。
@@ -97,12 +97,12 @@ YAML上の文法そのものは [`GameElementDefinition.md`](./GameElementDefini
 7. 待たされていた手番（`trigger: tick` で `duration` を持つもの、
    [`GameElementDefinition.md`](./GameElementDefinition.md) 11.5 節）を起こす。**ここが操作の切れ目**で、
    4 の経過中に配られた手番はその場では起きずにここまで待つ（`WorldSession.RunToSeam`）。
-   時間を進める操作は他にもある（製作の 1 工程・枠へ入れる）ので、切れ目もその 3 つが名乗る
+   時間を進める操作は他にもある（製作の 1 工程・枠へ入れる）ので、切れ目もそれぞれが名乗る
    ——操作の外で時間だけが動いた場合は、その進行そのものが切れ目になる。
 
 ## 3. 実行可能条件（conditions）
 
-`ConditionNode` の木。葉は4種、複合は `all` / `any` / `not` の3種で、
+`ConditionNode` の木。葉と、複合の `all` / `any` / `not` からなり、
 actions/combinations の一度きりの判定と、passives（8節）の持続的なゲートが同じ木を共用する。
 
 | 葉 | 形 | 判定 |
@@ -156,7 +156,7 @@ world 固有プロパティの参照は `ancestor` で代替できる。起点�
 
 - `set`/`add` の値・`pick` の `weight` は「リテラルか `{subject, prop}` 参照か」の二択で統一されている。
 - `spawn` の配置先（`into`、9.4節）は、**個体を指す形が `move` の移動先とまったく同じ**で、書ける起点は
-  4節の表のとおり。個体でないものを名乗れるのは `into` だけで、`same_slot`（既定）と `child` の2つ。
+  4節の表のとおり。個体でないものを名乗れるのは `into` だけで、`same_slot`（既定）と `child`。
   `same_slot` は、適用の入口で捕捉した
   「self が占めていた位置」のスナップショット（`WorldObject.SameSlotSpawnSite`）を使い、destroy で self が
   消えた後でもその位置を引き継げる。配置に失敗した場合は起点の親、さらにその親…とこぼれ落ち、
@@ -258,7 +258,7 @@ UI が演出のために「誰が何をしたか」を要る（[`HuntingSystem.m
 出来事で、同じログに混ぜると受け取る側が毎回どちらかを選り分けることになります。
 
 **誰の身に起きたかは、主体（7.3 節）ではなく効果が指した対象です**（`WorldSignal.object`）。出入りは
-「動いた物」と「動かした者」の 2 つを要しますが、告げられた出来事はどこから見ても 1 つの札の上のこと
+「動いた物」と「動かした者」を要しますが、告げられた出来事はどこから見ても 1 つの札の上のこと
 でしかありません——殴って外した出来事は、殴った側ではなく殴られた側に起きています。
 
 ## 8. 未決事項・今後の検討課題

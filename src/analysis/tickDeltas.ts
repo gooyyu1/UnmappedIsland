@@ -188,7 +188,7 @@ function matchesType(def: ObjectDef, match: TypeMatchReading): boolean {
  * selfのプロパティは比較の相手（valueRef）を数えない——尽きて条件が外れるのは、見ている側の値が
  * 動いたときだから。祖先と型の指定は**論理積の枝にあるものだけ**を採る（下のreadAlternative）。
  *
- * **ここが集めるのは上の3つの問いへの答えだけで、条件そのものではない。** 枠を見る葉
+ * **ここが集めるのは上の問いへの答えだけで、条件そのものではない。** 枠を見る葉
  * （`{in_slot}`・`{slot, matches}`）はどれにも答えない——枠に入っているかは、尽きる値でも
  * 祖先の状態でも型でもない——ので空のまま。何が書かれているかは `TickGate.conditions` が
  * 宣言のまま持つ。

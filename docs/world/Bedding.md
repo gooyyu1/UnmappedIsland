@@ -15,7 +15,7 @@
 `structure` スロットを持ちます（[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 7節）。
 寝床自身が `nap`/`sleep` アクションを持ち、眠っている間の回復は寝床の `passives` が毎 tick `agent` へ積みます
 （同 8.4節）。部品の寄与は、その段のブロックを1つ足すことで届きます（4節）。導入する語彙は型 `bed` と、
-部品のタグ `bed_frame`・`stuffing` の3つです。
+部品のタグ `bed_frame`・`stuffing` です。
 
 **在処。** 定義は `src/assets/world-codex/bedding.yaml` を予定しています。材料はすべて既存で、編んだ葉は
 `weaving.yaml`、紐は `fiber.yaml`、太い枝は `locations.yaml` にあります。
@@ -163,7 +163,7 @@ object_defs:
 | 2 ＋骨組み | 7 / 4 | 84 / 48 | 168 / 96 |
 | 3 ＋詰め物 | 8 / 4 | 96 / 48 | 192 / 96 |
 
-`stamina` / `wakefulness`。**数は仮です。** 置き方を2つだけ決めてあります。**寝床の段のうち跳躍が最も
+`stamina` / `wakefulness`。**数は仮です。** 置き方だけを決めてあります。**寝床の段のうち跳躍が最も
 大きいのは段2**（2節。骨組みで +2、詰め物で +1）。**覚醒度は骨組みと詰め物では動きません**——`sleep` で
 戻るのは段によらず +96 で、18時間起きて6時間眠るとちょうど元へ戻るという釣り合い
 （[`Characters.md`](./Characters.md) 休息節）を、寝床の上でも保ちます。

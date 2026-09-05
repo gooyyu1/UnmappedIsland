@@ -21,7 +21,7 @@ property_tags:
 recipe_categories: [tool, container, fixture, item]
 
 # フィルターバーのボタン（docs/ui/ScreenLayout.md 8.1節）。**繰り返し払う支出の系統**
-# （docs/world/ContentSkeleton.md 3節の12本）に対応させ、同じ札の集まりを指す系統は1つへ畳む。
+# （docs/world/ContentSkeleton.md 3節の系統）に対応させ、同じ札の集まりを指す系統は1つへ畳む。
 # 並べる順にそのまま並ぶ。絞り込みを解除する「すべて」はここに入れない（UIが常に先頭へ置く）。
 #
 # **フィルター専用のタグは作らない**（docs/ui/ScreenLayout.md 8.1.5節）。指すのは既にあるタグだけで、1枚の札が複数の

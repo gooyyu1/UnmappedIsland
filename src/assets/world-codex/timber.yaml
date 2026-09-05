@@ -75,7 +75,7 @@ object_defs:
         duration: 30
         spawn: {object: tree_bark, count: 3, into: agent}
 
-  # 打ち上げられた流木の幹。海岸3種すべての探索で見つかる（locations.yaml）。**丸太の2つ目の入口**で、
+  # 打ち上げられた流木の幹。どの海岸の探索でも見つかる（locations.yaml）。**丸太の2つ目の入口**で、
   # 森も密林も無い島で筏の材料が絶えないようにする（docs/concept/DesignPrinciples.md「要るものは、
   # 名指しの鍵ではなく、部分的に代替できる資源で作る」節）。
   #

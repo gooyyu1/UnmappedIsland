@@ -7,7 +7,7 @@ import type { ReferenceRoot } from './ReferenceRoot';
  * 持続効果（8節）が**何を宣言しているか**を読み上げる相手（PassiveEffect.read）。
  *
  * 一時的な効果の読み上げ口（EffectReader）と別なのは、**ゲートを必ず伴う**ため——tick毎に効く宣言は
- * 「いつ効くか」と切り離せない。動詞が3つしかないのも持続効果の性質そのもので、可逆な寄与（`modify`）・
+ * 「いつ効くか」と切り離せない。動詞がわずかしかないのも持続効果の性質そのもので、可逆な寄与（`modify`）・
  * 不可逆な積み上げ（`add`）・輸送（`transfer`）に閉じている（8.4節）。
  */
 export interface PassiveReader {

@@ -31,15 +31,15 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | タグ | `character` |
 | スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
 | プロパティ | `weight` / `pace` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `loneliness` / `homesickness` / `comfort` / `company` / `happiness` / `pathogen` / `immunity` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` と、腕前の11本（[`Skills.md`](./Skills.md) 2 節）、その段が押し上げる上乗せ `ignition_ease` / `quarry_sense` / `hunting_aim`（同 5 節。重みの `base` の土台になる）（いずれも個体差を持たず `player_character` trait が配る） |
-| アクション | 休息の4つ（`wait` / `rest` / `nap` / `sleep`。下の[休息](#休息)節）と、限界の3つ（`collapse` / `fall_asleep` / `despair`。下の[限界](#限界)節）。どちらも `player_character` trait が配る |
+| アクション | 休息（`wait` / `rest` / `nap` / `sleep`。下の[休息](#休息)節）と、限界（`collapse` / `fall_asleep` / `despair`。下の[限界](#限界)節）。どちらも `player_character` trait が配る |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterCard.ts`。絵が入るまでの繋ぎ） |
 
 `status` タグが付くのは `pain` / `blood` / `warmth` / `satiety` / `vitamin` / `homesickness` / `happiness` / `pathogen` /
-`hydration` / `wakefulness` / `stamina` / `load` の12で、宣言順もこの順に揃える（`propertiesWithTag` の戻り順がそのままステータスエリアの
-並びになる、[`StatusArea.md`](../ui/StatusArea.md)）。先頭の8つが trait 由来なのは、trait の props が
+`hydration` / `wakefulness` / `stamina` / `load` で、宣言順もこの順に揃える（`propertiesWithTag` の戻り順がそのままステータスエリアの
+並びになる、[`StatusArea.md`](../ui/StatusArea.md)）。trait 由来のものが先頭に並ぶのは、trait の props が
 キャラクタ自身の props より前に並ぶため（`RawObjectDef.resolve`）。**`chill_point` は `status` を持たない**
 ——見せるのは残っている熱だけで、境目そのものは衣服・寝床が押し下げる裏の値。**`loneliness` と `comfort` と
-`company` も同じく裏の値**——読ませるのは間の `homesickness` だけ（下の[ホームシック](#ホームシック)節）。**栄養素の在庫（`carbohydrate` ほか3つ）は
+`company` も同じく裏の値**——読ませるのは間の `homesickness` だけ（下の[ホームシック](#ホームシック)節）。**栄養素の在庫（`carbohydrate` ほか）は
 `status` を持たない**——常に見せるのは腹が満ちているかどうかだけで、在庫は開いて見るもの
 （[`DigestionSystem.md`](../engine/DigestionSystem.md) 3 節）。**ビタミンだけが在庫と別扱いなのは、
 尽きた先の弊害を段が持つ**ため（同 4 節）。**`immunity` も `status` を持たない**——常時見せるのは症状
@@ -55,7 +55,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 `range.min` は常に0——**唯一の例外が `immunity`** で、そこだけは押し下げが重なっても残る守りの底（20）を置く
 （[`DigestionSystem.md`](../engine/DigestionSystem.md) 6.2 節）。1 tick = 15分、1時間 = 4 tick。
 
-**尽きると死ぬのは `hydration` / `body_fat` / `blood` / `warmth` の4つ**
+**尽きると死ぬのは `hydration` / `body_fat` / `blood` / `warmth`**
 （[`VitalsSystem.md`](../engine/VitalsSystem.md) 8 節・8.3 節）。
 いずれも `range.min`（＝0）へ達した時点で `on_min` が自分を `destroy` する、同じ形で書く。
 **死因を名乗るのはその `destroy` で**、添えた `reason`（`dehydrated` / `starved` / `exsanguinated` /
@@ -72,20 +72,20 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   在庫がある間は `body_fat` へ流れ続け、速さは栄養素ごとに違う（同 3 節）。個体差は持たず trait が配る。
   **段を持つのは `lipid` だけ**で、一番下の **`fat_starved`**（脂が尽きた域）が `hydration` と
   `protein` を削り、`pain` を押し上げる（同 7 節）。`status` タグは持たないので画面に行は増えない。
-- **`vitamin`（ビタミン）**: **単位は mg**（ビタミンC相当）。エネルギーにならないので在庫の3本とは
+- **`vitamin`（ビタミン）**: **単位は mg**（ビタミンC相当）。エネルギーにならないので、ほかの在庫とは
   物差しが違う（同 4 節）。同じく trait が配る。一番下の段 **`scurvy`**（壊血病）が `pain` を押し上げる
   ——**体調不良を怪我のカードにせず、原因となる値の段に持たせる**
   （[`DesignPrinciples.md`](../concept/DesignPrinciples.md)）。
 - **`happiness`（幸福度）**: **メンタルの不調を代表する1本**で、単位を持たない 0〜100。自分では動かず、
   口にした物が上げ、`pain` と `homesickness` の段が下げる（下の[幸福度](#幸福度)節）。個体差は持たせず trait が配る。
 - **`loneliness`（孤独、日）／`homesickness`（ホームシック）／`comfort`（居心地）／`company`（連れ）**:
-  時間の経過そのものから生える圧（下の[ホームシック](#ホームシック)節）。溜める側と抑える側の3つは自分では
+  時間の経過そのものから生える圧（下の[ホームシック](#ホームシック)節）。溜める側と抑える側は自分では
   動かず `base` で継ぐだけで、間の `homesickness`（0〜120、増える側が悪い）だけが溜まって `happiness` を
   削る。個体差は持たせず trait が配る。
 - **`pathogen`（全身の菌）／`immunity`（免疫）**: 菌は **log₁₀ CFU**（0〜9）で持ち、`sterile` を抜けている
   間だけ定数で増える。免疫は段ごとの定数でそれを引き、**除去と増殖の大小 1 つ**で着地するか暴走するかが
   決まる（[`DigestionSystem.md`](../engine/DigestionSystem.md) 6 節）。菌の上2段が `hydration` と `blood` を
-  削るので**死に方は増えない**。免疫を押し下げるのは生活の4つ（ビタミン・空腹・寝不足・気の塞ぎ）で、
+  削るので**死に方は増えない**。免疫を押し下げるのは生活の側（ビタミン・空腹・寝不足・気の塞ぎ）で、
   **ビタミンだけが2段で押す**（壊血病 `-40` と、その手前の不足 `-15`）。宣言はそれぞれの段の側が持つ。
   どちらも個体差は持たせず trait が配る。
 - **`hydration`（水分）**: `-1/tick` 固定で、`max` が「満水から何 tick 保つか」。**減り方に個体差を
@@ -202,7 +202,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   `pace` は素が 1 で、`load` の段が `modify` で押し上げる倍率です。和ではなく積にするのは、**長い道ほど
   遅れも大きい**からで、遅れの量を道ごとに書かずに済みます。
 - **軽くする道具の値打ちは損なわれません。** そりのような率を下げる道具は `load` そのものを下げるので、
-  **移動の可否・速さ・疲れの 3 つに同時に効きます**（[`ContainerSystem.md`](../engine/ContainerSystem.md)
+  **移動の可否・速さ・疲れに同時に効きます**（[`ContainerSystem.md`](../engine/ContainerSystem.md)
   2 節）。移動が重くなる方向の変更ですが、[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の
   「コストは、それを軽くする道具の値打ちそのもの」に沿って、**重くなった分がそのまま、そりを作る理由と
   前線を近づける理由**になります。
@@ -214,7 +214,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 **上の表の数値は目安です。** 段ごとの倍率と削りをどこに置くかは、**1 日にどれだけ往復するのが普通か**が
 決まって初めて釣り合いが見えます（未決事項は
 [`ContainerSystem.md`](../engine/ContainerSystem.md) 8 節）。動かないのは、**削るのが時間であること**と、
-**1 日ぶんと一晩の回復が同じ桁であること**の 2 つだけです。
+**1 日ぶんと一晩の回復が同じ桁であること**だけです。
 
 ## 幸福度
 
@@ -261,7 +261,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 1日3食を火の通った物で通せば **+18/日**、生肉だけなら +3/日です。
 
 **値そのものは検算できません**（幸福度に現実の単位が無いため）。動かないのは、火を通した物が最も戻す
-ことと、量が効かないことの2つだけです。書き忘れると、その食べ物だけが心に何も残さない食事になるので、
+ことと、量が効かないことだけです。書き忘れると、その食べ物だけが心に何も残さない食事になるので、
 `eat` を持つ型がすべてベース値を宣言していることを `tests/world-codex/foodsYaml.test.ts` が全数で
 見張ります。
 
@@ -273,7 +273,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 過ごすと最良の食事3食（+18）でも追いつきません。**
 
 **内側の不調が痛みへ合流するのに対し、外から時間が掛ける圧は `homesickness` が受け持ちます**（下の
-[ホームシック](#ホームシック)節）。削る量は痛みと同じ目盛りで、削る側はこの2本で全部です。
+[ホームシック](#ホームシック)節）。削る量は痛みと同じ目盛りで、削る側はこれで全部です。
 
 **寒さと雨はここへ引きません。** どちらも熱（`warmth`）が受け持っていて、対抗手段（火・屋根）もそちらに
 付いています。両方へ効かせると、火を焚くことがうまい物を食べることの代わりになります。
@@ -352,12 +352,11 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | 火を通した3食（+18/日） | −30/日 | 16時間 | 18時間 | **2時間半ほど** |
 | 何も食べない | −48/日 | 10時間 | 12時間 | **4時間** |
 
-**打ちひしがれている間も日が進むので、里心そのものはそこでは止まりません**——止められるのは、下の
-2つ（設えと連れ）だけです。
+**打ちひしがれている間も日が進むので、里心そのものはそこでは止まりません**——止められるのは、下の設えと連れだけです。
 
 ### 抑えるのは、今いる場所
 
-抑える手は2つあり、**どちらも場所が持つ値**（`location` trait）です。キャラクタは
+抑える手は**どちらも場所が持つ値**（`location` trait）です。キャラクタは
 `base: {subject: ancestor}` で継ぐだけなので、**遠征に出れば、どちらも効きません。**
 
 **場所は入れ子になるので、どちらも `ambient_temperature` と同じく囲っている場所から継ぎます**
@@ -414,10 +413,10 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 
 ## 休息
 
-**時間を進める操作は、キャラクタ自身のアクションです。** 4つとも同じ形（`duration` と `add` だけ）で
+**時間を進める操作は、キャラクタ自身のアクションです。** どれも同じ形（`duration` と `add` だけ）で
 `player_character` trait に並び、[`ActionSystem.md`](../engine/ActionSystem.md) 2 節の実行パイプラインを
 そのまま通ります。**違うのは長さと回復量だけ**で、眠るものだけが `wakefulness` も戻します。
-時間を進める専用の仕組みは持ちません——プレイヤーが押せない[限界](#限界)の3つも同じ形です。
+時間を進める専用の仕組みは持ちません——プレイヤーが押せない[限界](#限界)の操作も同じ形です。
 
 入口は日時のフリップカードで、押すとキャラクタ自身の子ウィンドウが開きます
 （[`Windows.md`](../ui/Windows.md) 4 節）。
@@ -443,13 +442,13 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 ## 限界
 
 **尽きた値は、強制的に時間を進めます。** 0 に達すると何も手につかなくなり、一定の時間が過ぎ、その間に
-少し戻ります。対象は `stamina`（体力）・`wakefulness`（覚醒度）・`happiness`（幸福度）の3つで、
-**尽きても死にません**——死ぬのは `hydration` / `body_fat` / `blood` / `warmth` の4つだけ
-（[`VitalsSystem.md`](../engine/VitalsSystem.md) 8 節）で、この3つは動きを止めるだけです。
+少し戻ります。対象は `stamina`（体力）・`wakefulness`（覚醒度）・`happiness`（幸福度）で、
+**尽きても死にません**——死ぬのは `hydration` / `body_fat` / `blood` / `warmth` だけ
+（[`VitalsSystem.md`](../engine/VitalsSystem.md) 8 節）で、これらは動きを止めるだけです。
 
-**3つとも同じ1つの形で書きます。** 押す機会の無い操作（`trigger: tick`、
+**どれも同じ1つの形で書きます。** 押す機会の無い操作（`trigger: tick`、
 [`GameElementDefinition.md`](../engine/GameElementDefinition.md) 11.1 節）が、下限に居ることを
-`conditions` で見て、`duration` ぶん時間を進め、`add` が戻す——上の[休息](#休息)の4つと同じ形で、
+`conditions` で見て、`duration` ぶん時間を進め、`add` が戻す——上の[休息](#休息)と同じ形で、
 `player_character` trait が並べて配ります。**違うのは見る値・長さ・戻る量だけです。**
 
 | 手番 | 見る値 | 長さ | 戻るもの | 1時間あたり |
@@ -461,7 +460,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **戻る量は、その値を戻せる自発の操作に合わせます。** 眠気を戻せるのは睡眠だけなので、眠り込むのは
   `sleep` と同じ中身。体力と幸福度は `rest` と同じ割（10/時間）で2時間ぶんです——倒れ込むのは休み方を
   選んだことにならないので、**まとめて休んだ割増し**（`nap`・`sleep`、上の休息節）**は付きません。**
-- **戻る量は個体差を持ちません**（休息の4つと同じく trait が配ります）。`stamina` の `max` が大きい
+- **戻る量は個体差を持ちません**（休息と同じく trait が配ります）。`stamina` の `max` が大きい
   キャラクタほど1回で戻る割合は小さく、倒れる回数の重みは体格の側に出ます——`max` が 100 の船長は
   倒れれば要注意域（`tired`、20）まで戻りますが、120 の農夫は危険域（`exhausted`）に居たまま起き上がります。
 - **強制の間の減りは、下限のクランプが吸います。** 自発の睡眠は経過ぶん（`-1/tick`）を引いた実質の回復に

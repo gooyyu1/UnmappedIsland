@@ -92,7 +92,7 @@ object_texts:
 
 ## 書式のプレースホルダは名前で書く
 
-差し込みのある書式（次の 2 つ）は、`{container}` のように**名前で**書きます。TypeScript には組み込みの
+差し込みのある書式（次のもの）は、`{container}` のように**名前で**書きます。TypeScript には組み込みの
 書式規約が無いので、JS で広く使われている ICU MessageFormat 系の書き方に倣っています。位置で書く
 `%1`/`%2` は、翻訳する側が「2 番目は何だったか」を調べないと語順を変えられないため採りません。
 
@@ -314,10 +314,10 @@ ui_texts:
   survived_days: '生存 {days} 日目'
 ```
 
-**引き方が2つあります。**
+**引き方が分かれます。**
 
 - `Localization` を持っている側（映し・組み立て）は `locale.uiText('close')` を直に呼びます。
-- **窓（`src/game/ui/`）は `Localization` を持ちません。** 持たせると12ファイルのコンストラクタ引数が
+- **窓（`src/game/ui/`）は `Localization` を持ちません。** 持たせると窓のクラスすべてのコンストラクタ引数が
   増え、組み立てが全部へ配ることになります。そこで、書体と文字色（`setLabelDefaults`）と同じく
   起動時に1度だけ入れ（`setUiTexts`）、`uiText('close')` を呼びます。答えを決めるのは
   どちらも `Localization.uiText` の1箇所です。

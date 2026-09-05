@@ -2131,7 +2131,7 @@ export class PlayScene extends ResponsiveScene {
   /**
    * 地図・装備・怪我・レシピのボタン。**絵を中央に1つ置くだけで、文字は載せない**（ScreenLayout.md 4.2節）。
    *
-   * 4つとも役割が固定なので、絵だけで区別が付く。文字を持たなければ、言語ごとに変わる文字数を
+   * どれも役割が固定なので、絵だけで区別が付く。文字を持たなければ、言語ごとに変わる文字数を
    * ボタンの内側へ収める必要も無い（日時のフリップカードと同じ考え方）。
    *
    * **紙として置かれるので影を落とす**（drawBoxのshadow）。カードは絵に影が焼いてあり（card_frame.json）、
@@ -2177,7 +2177,7 @@ export class PlayScene extends ResponsiveScene {
   ): Phaser.GameObjects.GameObject[] {
     if (!this.textures.exists(SLOT_BUTTON_PAPER_TEXTURE)) return [];
 
-    // ボタンごとに別の1枚を敷く。同じ絵だと4つに同じ染みが並び、模様として目に付く。
+    // ボタンごとに別の1枚を敷く。同じ絵だと同じ染みが並び、模様として目に付く。
     const sheet = this.textures.get(SLOT_BUTTON_PAPER_TEXTURE);
     const paper = this.add
       .image(0, 0, SLOT_BUTTON_PAPER_TEXTURE, index % sheet.frameTotal)
@@ -2195,7 +2195,7 @@ export class PlayScene extends ResponsiveScene {
    * glyphSizeは絵文字の大きさで、**スロットのボタンと桟のアイコンの違いはこの2値だけ**なので仕組みは
    * 分けない。
    *
-   * **どの絵も同じ大きさで敷く。** 3枚とも同じ寸法のキャンバスに、物だけが実物の大小——開いた地図 >
+   * **どの絵も同じ大きさで敷く。** どれも同じ寸法のキャンバスに、物だけが実物の大小——開いた地図 >
    * Tシャツ > 巻いた包帯——のとおり描き分けてある（card_art.pyの--canvas）。UIが物の大きさを測って
    * 揃えると、その差が消えてしまう。周りは透けているので、ボタンの地の色が下に出る。
    */
@@ -2535,7 +2535,7 @@ export class PlayScene extends ResponsiveScene {
     border: number,
     onTap?: () => void,
   ): Button {
-    // どの絵も同じ大きさで敷く。4つの役割に大小は無いので、物の大きさで差を付ける理由も無い。
+    // どの絵も同じ大きさで敷く。役割に大小は無いので、物の大きさで差を付ける理由も無い。
     const button = new Button(this, rect, this.iconButtonStyle(active, border), onTap);
     const art = SIZE.iconButtonArt;
     button.addCentered(this.buttonIcon(spec, { width: art, height: art }, ICON_BUTTON_GLYPH_SIZE));

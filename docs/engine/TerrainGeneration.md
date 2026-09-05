@@ -68,7 +68,7 @@ Axis は汎用プリミティブの重み合成（`generator.blend`）で値を�
 （`GameElementDefinition.md` 6 節「数値プロパティの値は 32bit 整数」という規約に合わせ、YAML に小数を
 登場させません。ジェネレータの内部計算には実数を使い、`AxisDef.Range` へ量子化する時点で整数に丸めます）。
 
-現在実装済みのプリミティブは2種です。
+実装済みのプリミティブは次のとおりです。
 
 - `distance_field`（`reference: edge`）: 島の縁からの距離場（縁 = 0、中心 = 1）
 - `layered_noise`: シード付きの格子値ノイズ（`octaves`/`frequency`/`seed_offset` を持つ）。座標を
@@ -202,7 +202,7 @@ generation_scopes:
   30 km² で 727 m）。
 - **道の無い熱帯の地面を歩く速さは 4 km/h**（`move_cost` が 1.0 の土地）。
 
-この3つは `generation_scopes.island` の `diameter_meters`・`elevation_top_meters`・
+これらは `generation_scopes.island` の `diameter_meters`・`elevation_top_meters`・
 `walk_meters_per_hour` として、**それぞれ現実の単位で別々に宣言**します。1つの値に縮尺と速さを
 兼ねさせると、どちらも外の知識と突き合わせて検算できなくなるためです
 （[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の「現実に単位があるものは、その単位で持つ」
@@ -215,7 +215,7 @@ generation_scopes:
 `IslandRadius` で正規化しているので、縮尺を変えても地形の見た目は変わりません。要求「海岸に囲まれた島を、海岸が多くなり
 すぎないように生成する」を、次の2段階の**配置枠の分離**によって実現しています（円盤へ一様に散布すると、
 面積比の関係で外周付近のサイトが多数を占めてしまい、単純な後処理だけでは制御しづらいため、配置そのものを
-2種類に分けています）。
+分けています）。
 
 1. **外周リング**: 島を囲む海岸候補を、半径85%〜95%の円環上へ、等間隔+ジッタで配置します。個数は
    `generation_scopes.island` の想定サイト数の約35%（ただし4〜7個にクランプ）です。この個数の上限・下限が、

@@ -4,7 +4,7 @@ import type { Localization } from './Localization';
  * 画面の地の文（`ui_texts`、Localization.md）。**ワールド定義に由来しない、画面そのものの語**
  * ——「閉じる」「地図」「今はできない。」のように、どんなYAMLを載せ替えても画面が言うことば。
  *
- * 窓（`src/game/ui/`）は`Localization`を持たない。持たせると12ファイルのコンストラクタ引数が増え、
+ * 窓（`src/game/ui/`）は`Localization`を持たない。持たせると窓のクラスすべてのコンストラクタ引数が増え、
  * 組み立てが全部へ配ることになるので、**書体と文字色と同じく起動時に1度だけ入れる**
  * （`src/ui/labels.ts`の`setLabelDefaults`と同じ形）。
  */

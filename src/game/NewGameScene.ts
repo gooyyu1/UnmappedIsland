@@ -69,7 +69,7 @@ export interface NewGameSceneData {
 
 /**
  * 新規ゲーム作成画面（StartScreen.md 画面構成 3）。
- * 島の名前・乱数シード・キャラクターの3項目を入力し、ランダム入力ボタンは値を埋めるだけで
+ * 島の名前・乱数シード・キャラクターを入力し、ランダム入力ボタンは値を埋めるだけで
  * 手直しを妨げない。入力内容は画面の作り直し（向きの変更）をまたいで保持する。
  */
 export class NewGameScene extends ResponsiveScene {

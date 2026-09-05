@@ -121,7 +121,7 @@ export class WorldCodexYamlLoader {
     return this._engine;
   }
 
-  /** 6種の名前空間（object/property/slot/tag/property_tag/symbol）のNameRegistry。 */
+  /** 名前空間（object/property/slot/tag/property_tag/symbol）のNameRegistry。 */
   get objectNames(): NameRegistry {
     return this._objectNames;
   }

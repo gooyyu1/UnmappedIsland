@@ -288,7 +288,7 @@ export interface PlayScreenView {
   readonly currentLocationCard: CardContent;
   /**
    * 常に見えている3つのレーンが、**現在地について**映しているスロット。**画面が自分で名指しするのは
-   * この3つだけ**で、それ以外の場所はカードや現在地が名乗る`visible_slots`から来る（cardPlaces参照）。
+   * これだけ**で、それ以外の場所はカードや現在地が名乗る`visible_slots`から来る（cardPlaces参照）。
    *
    * 設置物レーンが実際に映しているのはここではなく`nestedLocations`のどれか1件。
    */
@@ -379,7 +379,7 @@ export function withFrozenCards(
  * スロットの規定ではない（ScreenLayout.md 7.3節）。**画面に入り切らない札が在るときにしか詰めない**
  * ので、固定枠スロットの枠の位置は原則として動かないまま（SlotSystem.md 3節）。
  *
- * visibleCellsは、その場所を映すレーンに**一度に見えている枠の数**。詰めるのは次の3つが揃うときだけ。
+ * visibleCellsは、その場所を映すレーンに**一度に見えている枠の数**。詰めるのは次のすべてが揃うときだけ。
  *
  * - レーンに枠が全部は表示できていない
  * - 入り切らない枠に札が在る
@@ -463,7 +463,7 @@ function collapsed(looks: readonly InfluenceLook[]): readonly StatusInfluence[] 
  * handLaneCellsは、ハンドレーンに一度に見えている枠の数。**画面にしか無い値**なので、知らない
  * 呼び出し側（枠が全部見えているのと同じ扱い）は詰めない。
  *
- * カードの語彙は3つに分かれている。場所とスロットの対応（cardPlaces）・札の見た目（cardLooks）・
+ * カードの語彙は分かれている。場所とスロットの対応（cardPlaces）・札の見た目（cardLooks）・
  * 札の上の操作（cardOperations）で、ここはそれを束ねて画面の区画へ配る。
  */
 export function fromGameSession(
