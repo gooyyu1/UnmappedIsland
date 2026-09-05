@@ -32,6 +32,8 @@ interface World {
   /** 一覧そのものを引けない周。 */
   readonly sessionsFail?: boolean;
   readonly ledger?: Record<string, string>;
+  /** 手が空いたばかり（覚えがまだ無い）の形。既定は十分に空いたまま。 */
+  readonly justIdle?: boolean;
   /** `gh issue view <番号> --json state` が返す `state`。挙がっていない番号は引けない。 */
   readonly issueStates?: Readonly<Record<number, string | undefined>>;
   /** PRごとの、コミットの `Claude-Session:` トレーラが指すセッション。 */
@@ -61,7 +63,10 @@ interface Result {
   readonly gh: readonly string[];
   /** `gh issue comment` が渡したファイルの中身。**消される前に読む**（打ち手が後片付けする）。 */
   readonly comments: readonly string[];
+  /** 打った手の指紋。**手が空いた時刻の覚え（`idle:`）は含めない**——見るのは別の検査。 */
   readonly ledger: Record<string, string>;
+  /** 手が空いた時刻の覚え。 */
+  readonly idleMarks: Record<string, string>;
   /** 叩いたスクリプトへ足された環境変数（この周の一覧の在り処）。 */
   readonly envs: readonly (Record<string, string> | undefined)[];
   /** この周が書いた一覧。 */
@@ -75,12 +80,33 @@ function commits(session: string) {
   return { nodes: [{ commit: { message: `題\n\nClaude-Session: https://claude.ai/code/${session}` } }] };
 }
 
+/**
+ * 手が空いているセッションは、既定で**十分に空いたまま**として台帳へ置く（`board-move.mjs` の
+ * `STALL_MINUTES`）。停滞を入口にする手はどれもそこを通るので、世界ごとに書くと書き忘れた世界
+ * だけが黙って手を出さなくなる。空いたばかりの形を見たい検査は `justIdle` を立てる。
+ */
+const LONG_IDLE = '2026-09-04T02:00:00Z';
+
+/** 台帳を、打った手の指紋と、手が空いた時刻の覚えに分ける。 */
+function split(ledger: Record<string, string>) {
+  const marks: Record<string, string> = {};
+  const idleMarks: Record<string, string> = {};
+  for (const [key, value] of Object.entries(ledger)) {
+    (key.startsWith('idle:') ? idleMarks : marks)[key] = value;
+  }
+  return { ledger: marks, idleMarks };
+}
+
 function playRound(world: World = {}): Result {
   const stateDir = mkdtempSync(join(tmpdir(), 'unmapped-island-round-'));
   try {
-    if (world.ledger !== undefined) {
-      writeFileSync(join(stateDir, 'taken.json'), JSON.stringify(world.ledger), 'utf-8');
+    const idled: Record<string, string> = {};
+    for (const session of world.sessions ?? []) {
+      if (world.justIdle !== true && session.status !== 'SESSION_STATUS_RUNNING') {
+        idled[`idle:${session.id}`] = LONG_IDLE;
+      }
     }
+    writeFileSync(join(stateDir, 'taken.json'), JSON.stringify({ ...idled, ...world.ledger }), 'utf-8');
 
     const out: string[] = [];
     const calls: string[] = [];
@@ -157,7 +183,7 @@ function playRound(world: World = {}): Result {
       calls,
       gh: ghCalls,
       comments,
-      ledger: existsSync(ledgerPath) ? JSON.parse(readFileSync(ledgerPath, 'utf-8')) : {},
+      ...split(existsSync(ledgerPath) ? JSON.parse(readFileSync(ledgerPath, 'utf-8')) : {}),
       envs,
       liveTsv: existsSync(livePath) ? readFileSync(livePath, 'utf-8') : undefined,
     };
@@ -413,6 +439,56 @@ describe('board-round.mjs', () => {
       playRound({ prs: [pr(10, passed)] });
 
       expect(process.env.LIVE_SESSIONS_TSV).toBeUndefined();
+    });
+  });
+
+  /**
+   * **手が空いたのはいつからか**を覚える（`board-move.mjs` の `STALL_MINUTES`）。停滞を「空いて
+   * いること」だけで読むと、手番の切れ目ごとに空くワーカーを毎回停滞と読む。
+   */
+  describe('手が空いた時刻を覚える', () => {
+    const worker = (status: string) => ({
+      id: 'session_a',
+      status,
+      bucket: 'SESSION_STATUS_BUCKET_WORKING',
+      tags: ['task-8'],
+    });
+    const openTask = [{ number: 8, labels: [{ name: 'task' }], blockedBy: { nodes: [] } }];
+
+    it('空いているセッションの、空いた時刻を残す', () => {
+      const result = playRound({
+        issues: openTask,
+        sessions: [worker('SESSION_STATUS_IDLE')],
+        justIdle: true,
+      });
+
+      expect(result.idleMarks['idle:session_a']).toBe(NOW.toISOString());
+      // 覚えたばかりなので、まだ起こさない。
+      expect(result.calls).toEqual([]);
+    });
+
+    // **動き出したら、覚えも「起こしたが動かなかった」の記録も嘘になる。** 残すと、次に空いた
+    // 瞬間に起こす手順を飛ばして人へ返す。
+    it('動き出したら、覚えと起こした記録を捨てる', () => {
+      const result = playRound({
+        issues: openTask,
+        sessions: [worker('SESSION_STATUS_RUNNING')],
+        ledger: { 'idle:session_a': LONG_IDLE, 'resume:session_a': 'stall:8' },
+      });
+
+      expect(result.idleMarks).toEqual({});
+      expect(result.ledger['resume:session_a']).toBeUndefined();
+    });
+
+    // 人へ返した記録は、動き出しても消さない——返した issue は人が `判断待ち` を外すまで戻らない。
+    it('人へ返した記録は、動き出しても残す', () => {
+      const result = playRound({
+        issues: openTask,
+        sessions: [worker('SESSION_STATUS_RUNNING')],
+        ledger: { 'resume:session_a': 'returned:8' },
+      });
+
+      expect(result.ledger['resume:session_a']).toBe('returned:8');
     });
   });
 });

@@ -27,7 +27,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { moves } from './board-move.mjs';
+import { busySession, moves } from './board-move.mjs';
 import { readBoard } from './board-read.mjs';
 import { formatLive, liveSessions } from './live-sessions.mjs';
 import { gh as runGh, posix, runBash } from './spawn.mjs';
@@ -72,10 +72,34 @@ export function pruneTaken(taken, board) {
     const lives =
       (key.startsWith('resume:') && ids.has(key.slice('resume:'.length))) ||
       (key.startsWith('review:') && numbers.has(key.slice('review:'.length))) ||
-      (key.startsWith('archive:') && ids.has(key.slice('archive:'.length)));
+      (key.startsWith('archive:') && ids.has(key.slice('archive:'.length))) ||
+      (key.startsWith('idle:') && ids.has(key.slice('idle:'.length)));
     if (lives) kept[key] = mark;
   }
   return kept;
+}
+
+/**
+ * **手が空いたのはいつからか**を覚える（`board-move.mjs` の `STALL_MINUTES`）。停滞を「空いて
+ * いること」で読むと、手番の切れ目ごとに空くワーカーを毎回停滞と読む——盤面はそれで、押し切る
+ * 寸前の作業を人へ返して畳んだ（2026-09-06、issue #1506）。
+ *
+ * **動き出したら、覚えも「起こしたが動かなかった」の記録も消す。** 動いた時点でどちらも嘘に
+ * なるので、残すと**次に空いた瞬間に、起こす手順を飛ばして人へ返す**ことになる。
+ */
+export function trackIdle(taken, board, now) {
+  const marked = { ...taken };
+  for (const session of board.sessions) {
+    const idle = `idle:${session.id}`;
+    const resume = `resume:${session.id}`;
+    if (busySession(session)) {
+      delete marked[idle];
+      if ((marked[resume] ?? '').startsWith('stall:')) delete marked[resume];
+      continue;
+    }
+    marked[idle] ??= now;
+  }
+  return marked;
 }
 
 /**
@@ -206,11 +230,13 @@ export function round({
   }
 
   const taken = readLedger(stateDir);
-  const board = readBoard({ gh, sessions: () => live, log, now: now(), settleMinutes, taken });
+  const at = now();
+  const board = readBoard({ gh, sessions: () => live, log, now: at, settleMinutes, taken });
   if (board === undefined) return false;
 
-  const remaining = pruneTaken(taken, board);
+  const remaining = trackIdle(pruneTaken(taken, board), board, at.toISOString());
   writeLedger(stateDir, remaining);
+  board.taken = remaining;
   const remember = (key, mark) => {
     remaining[key] = mark;
     writeLedger(stateDir, remaining);

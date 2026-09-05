@@ -39,3 +39,9 @@ export function pruneTaken(
   taken: Readonly<Record<string, string>>,
   board: { sessions: readonly { id: string }[]; prs: readonly { number: number }[] },
 ): Record<string, string>;
+
+export function trackIdle(
+  taken: Readonly<Record<string, string>>,
+  board: { sessions: readonly { id: string; status: string }[] },
+  now: string,
+): Record<string, string>;
