@@ -724,23 +724,37 @@ describe('プレイヤーキャラクタの定義', () => {
       // 寝床を要らないのは、限界が逃げ場であって線ではないため（Characters.md 限界節）。睡眠と同じ
       // 要件を写すと、寝床の無い場所で眠気が尽きた時点で、覚醒度を戻す手が世界から消える。
       //
-      // **割増しを付けないほうが要。** 下限のクランプが経過ぶんを吸うので、眠り込みは宣言した量が
-      // そのまま残る。割増しの付いた sleep の割で戻すと、倒れるまで起きているほうが寝床の上と同じか
-      // それ以上に眠気を戻せてしまい、寝床を敷く理由が消える。倒れ込み・打ちひしがれが rest の割に
-      // 揃えているのと同じ線で、眠気はいちばん短い nap の割に揃える。
+      // **割増しを付けないほうが要。** 割増しの付いた sleep の割で戻すと、倒れるまで起きているのが
+      // 最良の手になり、寝床を敷く理由が消える。倒れ込み・打ちひしがれが rest の割に揃えているのと
+      // 同じ線で、眠り込みも寝床を要らない休息の割で抑える。
+      //
+      // **見るのは戻す値すべて。** 眠気だけを見ると、体力の側が sleep の割のまま残っていても気付けない
+      // （実際そうなっていた）。比べる先は、寝床の要らない休息のうち**その値をいちばん割よく戻すもの**。
+      const staminaId = codex.propertyNames.getId('stamina');
       const wakefulnessId = codex.propertyNames.getId('wakefulness');
       const { player } = stand(character);
+      player.instance.getProperty(staminaId).setNumber(0);
       player.instance.getProperty(wakefulnessId).setNumber(0);
 
       expect(player.instance.tryGetAction('fall_asleep', player.instance)?.tryExecute()).toBe(true);
 
-      const forced = player.instance.tryGetProperty(wakefulnessId)?.number ?? 0;
+      const hours =
+        (player.instance.tryGetAction('fall_asleep', player.instance)?.executionMinutes() ?? 0) / 60;
+      const perHour = (
+        rest: { minutes: number; stamina: number; wakefulness: number },
+        of: 'stamina' | 'wakefulness',
+      ) => rest[of] / (rest.minutes / 60);
+      // 寝床を要らない休息のうち、体力も眠気も nap がいちばん割がよい（休息節の表）。
       const nap = takeRest(character, 'nap');
-      const minutes = player.instance.tryGetAction('fall_asleep', player.instance)?.executionMinutes() ?? 0;
 
-      expect(forced / (minutes / 60), '眠り込みの1時間あたり').toBeLessThanOrEqual(
-        nap.wakefulness / (nap.minutes / 60),
-      );
+      expect(
+        (player.instance.tryGetProperty(wakefulnessId)?.number ?? 0) / hours,
+        '眠気の1時間あたり',
+      ).toBeLessThanOrEqual(perHour(nap, 'wakefulness'));
+      expect(
+        (player.instance.tryGetProperty(staminaId)?.number ?? 0) / hours,
+        '体力の1時間あたり',
+      ).toBeLessThanOrEqual(perHour(nap, 'stamina'));
     });
 
     it('睡眠1回では、覚醒度は満タンに届かない', () => {
