@@ -215,6 +215,9 @@ export interface CurrentStageReading {
  * range/stages/デフォルト値が異なりうるため、定義はObjectDefごとに個別に持つ。
  * range系イベント（on_*）の発火判定・stages判定・初期値決定はこのPropertyDef自身の責務で、
  * PropertyValueは値の変更を通知するだけ。
+ *
+ * **宣言そのものは読み込み後に動かないが、直前に出した答えは持つ**（stageAt）。同じ値には必ず同じ
+ * 答えになるので、持ち主が何体居ても答えは変わらない——1つの定義を全個体で共有したままでよい。
  */
 export class PropertyDef {
   readonly globalId: number;

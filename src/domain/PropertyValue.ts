@@ -33,7 +33,7 @@ export class PropertyValue {
   private readonly accumulateEffects: RegisteredPassiveEffect[] = [];
 
   /**
-   * getEffectiveValueの再入検出用。modifyのconditions（14節）が実効値を読むため、自分自身の実効値へ
+   * computeEffectiveValueの再入検出用。modifyのconditions（14節）が実効値を読むため、自分自身の実効値へ
    * （直接・間接に）依存する循環参照が起こりうる。放置すると制御不能なスタックオーバーフローになるため、
    * 再入検出時点で分かりやすいエラーを投げる。
    */

@@ -24,7 +24,12 @@ export class EffectiveValueReading {
     return this.id;
   }
 
-  /** bodyを1回の読み取りとして走らせる。入れ子で呼んでよく、そのあいだは同じ番号のまま。 */
+  /**
+   * bodyを1回の読み取りとして走らせる。入れ子で呼んでよく、そのあいだは同じ番号のまま。
+   *
+   * **bodyは世界を書き換えないこと。** 番号が変わらない間、各PropertyValueは前に出した答えを
+   * そのまま返す。書き換えても無効化は走らないので、古い答えが黙って返り続ける。
+   */
   during(body: () => number): number {
     this.depth++;
     try {
