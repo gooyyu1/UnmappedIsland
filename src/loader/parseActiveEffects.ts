@@ -545,8 +545,11 @@ function parseActiveTargetRoot(context: string, key: string, scope: ReferenceSco
  *
  * 省略形を持つのは、告げる相手が効果を宣言した側そのものである場合が大半だから（動物のカードへ
  * 武器を重ねる、9.8節）。対象を書くのは、宣言した側と起きた側が違うときだけになる。
+ *
+ * **`announce`（11.6節）も同じ形で書く。** 告げることは同じで、違うのは告げる時点だけなので、
+ * 書き手が2つの書式を覚えることにならないよう、読む側もここ1つで済ませる。
  */
-function parseSignals(context: string, node: YamlNode, scope: ReferenceScope): SignalEffect[] {
+export function parseSignals(context: string, node: YamlNode, scope: ReferenceScope): SignalEffect[] {
   if (isSeq(node))
     throw new YamlLoadError(`${context}: 出来事の識別子か、対象ごとの識別子である必要があります。`);
 

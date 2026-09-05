@@ -3,7 +3,7 @@ import { isMap, isScalar } from 'yaml';
 import { asMap, entriesInOrder, keysOf, tryGetBool, tryGetMap, tryGetNode, tryGetSeq } from './yamlMapping';
 import { YamlLoadError } from './YamlLoadError';
 import { parseTypeMatchRule } from './parseCommon';
-import { parseActiveEffectBody, parseDeclaredNumber } from './parseActiveEffects';
+import { parseActiveEffectBody, parseDeclaredNumber, parseSignals } from './parseActiveEffects';
 import { parseRequirementList } from './parseConditions';
 import type { WorldCodexYamlLoader } from './WorldCodexYamlLoader';
 import { InteractionDef } from '../domain/InteractionDef';
@@ -12,7 +12,7 @@ import { DragTrigger, MenuTrigger, TickTrigger } from '../domain/InteractionTrig
 import { ReferenceScope } from '../domain/ReferenceRoot';
 
 /** 操作のエントリが持つ、効果以外の兄弟キー。 */
-const RESERVED_KEYS = ['trigger', 'conditions', 'duration'] as const;
+const RESERVED_KEYS = ['trigger', 'conditions', 'announce', 'duration'] as const;
 
 /** `trigger`のマップ形（ドラッグ）が持てるキー。 */
 const DRAG_KEYS = ['drag', 'allow_multiple'] as const;
@@ -62,6 +62,11 @@ function parseInteraction(
   );
   const effect = parseActiveEffectBody(loader, context, map, scope, RESERVED_KEYS);
 
+  // announce: 時間を進める前に告げる出来事（11.6節）。省略時は何も告げない。
+  const announceNode = tryGetNode(map, 'announce');
+  const announcements =
+    announceNode !== undefined ? parseSignals(`${context}.announce`, announceNode, scope) : [];
+
   // duration: 実行にかかるゲーム内時間（分）。省略時は時間を消費しない。
   const durationNode = tryGetNode(map, 'duration');
   const duration =
@@ -69,7 +74,7 @@ function parseInteraction(
       ? parseDeclaredNumber(loader, `${context}.duration`, durationNode, scope, 'duration')
       : undefined;
 
-  const interaction = new InteractionDef(name, requirements, effect, duration);
+  const interaction = new InteractionDef(name, requirements, announcements, effect, duration);
 
   if (drag !== undefined) {
     // 何個受け取れるかを答えられる形かは、宣言だけで決まる。許可したのに答えられない宣言は、

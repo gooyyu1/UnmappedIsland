@@ -374,6 +374,15 @@ object_texts:
       sleep:
         display_name: 睡眠
         description: 通しで眠る。最も効率よく体力と眠気が戻るが、それでも一晩では眠気は戻り切らない。
+      collapse:
+        display_name: 倒れ込む
+        description: 体力が尽きて倒れ込む。プレイヤーが起こすものではなく、手が出せないまま2時間が過ぎる。
+      fall_asleep:
+        display_name: 眠り込む
+        description: 眠気に負けて眠り込む。プレイヤーが起こすものではなく、寝床の有無によらず6時間が過ぎる。
+      despair:
+        display_name: 打ちひしがれる
+        description: 幸福度が尽きて手につかなくなる。プレイヤーが起こすものではなく、手が出せないまま2時間が過ぎる。
       pour_in:
         display_name: 注ぎ移す
         description: 中身を相手の容器へ移す。入る分だけ移り、あふれる分は元の容器に残る。
@@ -1619,6 +1628,9 @@ signal_texts:
   cracked: 割れた
   crushed: 押し潰し
   devoured: 食べた
+  disheartened: 心折れた
+  dozed_off: 眠り込む
+  exhausted: 力尽きた
   fired: 焼けた
   fled: 逃げた
   gored: 突き上げ
@@ -1631,7 +1643,7 @@ signal_texts:
   pierced: 深手
   smashed: 踏み壊し
   snatched: 持ち去り
-  swept: 押し流された
+  swept: 流された
 
 # 画面の地の文（src/locale/uiTexts.ts）。**ワールド定義に由来しない、画面そのものの語**なので、
 # キーはWorldCodexの識別子ではなく画面側の名前。ここに無いキーは、そのままキーが表示される。

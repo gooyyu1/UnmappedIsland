@@ -98,6 +98,51 @@ object_defs:
       ).toBe(true);
   });
 
+  it('時間を進める前に告げた出来事は、その時間が過ぎる前の控えに乗る', () => {
+    // 強制的な時間経過（docs/world/Characters.md 限界節）と同じ形——`trigger: tick`の手番が切れ目で
+    // 起きて、押した覚えの無い時間が続く。**告げるのが控えの側に乗らないと、飛んだ理由は経過を
+    // 見せ終わってからしか出せない**（signalsAtEnd）。
+    const mini = miniGame(
+      `
+object_defs:
+  stone:
+    tags: [item]
+  faint_player:
+    traits: [carrier]
+    props:
+      stamina: {value: 0, range: {min: 0, max: 100}}
+    interactions:
+      collapse:
+        trigger: tick
+        conditions:
+          - {prop: stamina, lte: 0}
+        announce: exhausted
+        duration: 120
+        add: {self: {stamina: 20}}
+`,
+      { player: 'faint_player' },
+    );
+
+    const startedAt = mini.game.world.totalMinutes;
+    const recording = runAndRecordChange(mini.game, mini.codex, locale, undefined, () => {
+      mini.game.session.advanceWorldTime(60);
+    });
+
+    expect(mini.game.world.totalMinutes - startedAt, '60分に、倒れ込む120分が続く').toBe(180);
+
+    const announced = recording.ticks.filter((tick) =>
+      tick.signals.some((signal) => signal.name === 'exhausted'),
+    );
+    expect(
+      announced.map((tick) => tick.minutes - startedAt),
+      '強制の120分が始まった直後の控えに1度だけ',
+    ).toEqual([75]);
+    expect(
+      recording.signalsAtEnd.map((signal) => signal.name),
+      '経過し切った時点には残らない',
+    ).toEqual([]);
+  });
+
   it('時間を消費しない変更は、控えを持たずに出入りだけを返す', () => {
     const mini = setUp();
 
