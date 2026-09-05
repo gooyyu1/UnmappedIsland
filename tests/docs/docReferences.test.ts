@@ -68,10 +68,16 @@ const REF_FILES = [
   ...DOC_FILES,
   'CLAUDE.md',
   ...listFiles('.claude', ['.md', '.sh']),
+  ...listFiles('scripts', ['.sh', '.mjs']),
   ...listFiles('src', ['.ts', '.yaml']),
   ...listFiles('tests', ['.ts']),
   ...listFiles('tools', ['.md', '.json']),
-].filter((rel) => !rel.startsWith(join('tests', 'docs'))); // 本テスト自身の例・正規表現は対象外
+].filter(
+  (rel) =>
+    !rel.startsWith(join('tests', 'docs')) && // 本テスト自身の例・正規表現は対象外
+    // 判断の履歴は、当時の発言と当時の文脈を原文のまま残す場所。後から直すものではない。
+    !rel.startsWith(join('.claude', 'decisions')),
+);
 
 /**
  * コードフェンスの外の各行と、原文での行番号。`text` はインラインコードも除いた本文
@@ -190,9 +196,17 @@ function hasNumberedSection(docRel: string, num: string): boolean {
   });
 }
 
-/** その文書が、名前 `name`（空白除去済み）を含む見出しを持つか。 */
+/**
+ * 見出しと参照を突き合わせる形へ揃える。**引用の記号と強調は、引く側と引かれる側で揃わない**
+ * ——見出しの `` `main` `` を、引く側は素の `main` と書く。
+ */
+function normalizeName(name: string): string {
+  return name.replace(/[\s「」`*]/g, '');
+}
+
+/** その文書が、名前 `name`（`normalizeName` 済み）を含む見出しを持つか。 */
 function hasNamedSection(docRel: string, name: string): boolean {
-  return (headingsByPath.get(docRel) ?? []).some((h) => h.replace(/[\s「」]/g, '').includes(name));
+  return (headingsByPath.get(docRel) ?? []).some((h) => normalizeName(h).includes(name));
 }
 
 /**
@@ -325,12 +339,40 @@ describe('ドキュメントの参照', () => {
       )) {
         const [, base, rawName] = match;
         if (/^の?\d/.test(rawName.trim())) continue; // 番号・範囲指しは前のテストが見る
-        const name = rawName.replace(/[\s「」]/g, '');
+        const name = normalizeName(rawName);
         const candidates = docsByBasename.get(base);
         if (candidates === undefined) {
           broken.push(`${rel}: ${base}（そのファイルが無い）`);
         } else if (!candidates.some((doc) => hasNamedSection(doc, name))) {
           broken.push(`${rel}: ${base} ${rawName}節`);
+        }
+      }
+    }
+    expect(broken, `節名の参照切れ:\n${broken.join('\n')}`).toEqual([]);
+  });
+
+  /**
+   * `Foo.md`「〇〇」の形（末尾に「節」を伴わない）。**指し先が `.claude/**` のときだけ見る。**
+   *
+   * この形は節の参照にも本文の引用にも使われていて、字面では見分けられない（`Characters.md`
+   * 「`max` の80%で安全域を外れる」は仕様の1文の引用）。**`.claude/**` を指すものは節の参照しかない**
+   * ので、そこだけ確かめられる——そして、畳んだ節を引いたまま残るのがここ。
+   */
+  it('`.claude/**` を指す鉤括弧が、実在の見出しに解決する', () => {
+    const broken: string[] = [];
+    for (const rel of REF_FILES) {
+      const text = read(rel).replace(/\n[\s*/#-]*/g, ' ');
+      for (const match of text.matchAll(
+        /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?[ ]*(?:の)?[ ]*「([^「」]{1,40})」/g,
+      )) {
+        const [whole, base, rawName] = match;
+        if (whole.endsWith('節')) continue; // 「〇〇節」は上のテストが見る
+        const candidates = (docsByBasename.get(base) ?? []).filter((doc: string) =>
+          doc.startsWith(`.claude${sep}`),
+        );
+        if (candidates.length === 0) continue;
+        if (!candidates.some((doc) => hasNamedSection(doc, normalizeName(rawName)))) {
+          broken.push(`${rel}: ${base}「${rawName}」`);
         }
       }
     }

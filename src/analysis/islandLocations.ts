@@ -23,9 +23,8 @@ export interface IslandLocations {
   readonly island: readonly ObjectDef[];
 
   /**
-   * 海として外した場所。**外したものも返す**のは、線を引いた位置をレポートへ書くため
-   * （`.claude/policies.md`「道具が引く線」）——海区は集め方の条件をそのまま満たすので、外したことが
-   * 数字の側には現れない。
+   * 海として外した場所。**外したものも返す**のは、線を引いた位置をレポートへ書くため——海区は
+   * 集め方の条件をそのまま満たすので、外したことが数字の側には現れない。
    */
   readonly excludedSea: readonly ExcludedLocation[];
 
