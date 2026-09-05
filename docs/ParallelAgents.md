@@ -231,7 +231,7 @@ sequenceDiagram
 
 **直すのは、レビュアーではなく元を書いた作業者です。** 文脈を持っているのはそちらで、レビュアーが push すると1つのPRを2つのセッションが握ることになります。
 
-**マージから後片付けまでは1回で済ませます**（[`merge-and-close.sh`](../scripts/agent/merge-and-close.sh)）——マージ → `Closes` の issue が閉じたかの確認 → 書いたセッションを畳む → そのPRのレビューのセッションを畳む → 本体のチェックアウトを新しい `main` へ進める。**どれにも判断が無いので、盤面を回す側からは1手に見えます。**
+**マージから後片付けまでは1回で済ませます**（[`merge-and-close.sh`](../scripts/agent/merge-and-close.sh)）——マージ → `Closes` の issue が閉じたかの確認 → 残っているレビューのセッションを畳む → 本体のチェックアウトを新しい `main` へ進める。**どれにも判断が無いので、盤面を回す側からは1手に見えます。** **書いたセッションを畳むのはここではありません**——畳んでよいかは担当の issue が閉じたかで決まり、マージしたかとは別の問いなので、盤面が別の手（`ARCHIVE`）として打ちます。
 
 ### 盤面が管理しているのは、セッションではなく開いているPR
 
@@ -239,11 +239,11 @@ sequenceDiagram
 
 - **デーモンはそのPRに気づきます。** 引いてくるのは**開いている全PR**で、誰がどう立てたかは見ません（8節）。
 - **レビューが立ちます。** [`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) はPR番号だけで立ち、誰が書いたかを見ません。
-- **差し戻す相手が分かります。** PR本文の末尾にセッションのURL（`https://claude.ai/code/session_…`）が自動で入り、[`merge-and-close.sh`](../scripts/agent/merge-and-close.sh) はまずそこから引きます。**タイトルでは引きません**——同じ issue へ2回投入したとき、古いほうを畳んでしまうからです。
+- **差し戻す相手が分かります。** PR本文の `Closes #<番号>` と、投入のときに付く `task-<番号>` のタグが対応するので、そこから引けます。
 
 **だから、立てる前に申告する必要はありません。** PRを出す前のセッションに対して盤面がすることは、投入も畳みも衝突判定も含めて何もないからです。**申告を要求すると、思いついたときに立てる気楽さがそこで消えます**——そして申告し忘れた分は静かに落ちます。
 
-穴は1つだけ残ります。**本文を書き直した拍子に脚注が落ちると、宛先が消えます**（PR #1083・#1177 で実際に落ちました）。脚注が無いとき `merge-and-close.sh` は `Closes #N` から `task-<番号>` のタグを組んで引き直しますが、**そのタグを付けるのは [`dispatch-task.sh`](../scripts/agent/dispatch-task.sh) なので、人間が直接立てたセッションには付いていません。** どちらでも引けなければ、デーモンは `覚え書き:` の行をログへ残して手を出しません——**直す相手が居ないことは判断なので、司令塔が読んで決めます。**
+穴は1つだけ残ります。**`task-<番号>` のタグを付けるのは [`dispatch-task.sh`](../scripts/agent/dispatch-task.sh) なので、人間が直接立てたセッションには付いていません。** 引けなければ、デーモンは `覚え書き:` の行をログへ残して手を出しません——**直す相手が居ないことは判断なので、ログを読む人間が決めます。**
 
 **人間が直接立てたセッションを、機械は畳みません。** 話している最中かもしれないからです。**ただし差し戻しの `send_message` は割り込ませます**——それは判断の取り消しではなく、中身が正しいかの話で、`[デーモン]` の印が付くので出どころを取り違えません。
 
@@ -305,7 +305,8 @@ flowchart LR
 
 | 手 | いつ打つか | 何をするか |
 | --- | --- | --- |
-| `MERGE` | `通してよい` があり、緑で、コンフリクトも無く、`判断待ち` も無い | [`merge-and-close.sh`](../scripts/agent/merge-and-close.sh)。マージ → issue が閉じたかの確認 → セッションを畳む → 本体を新しい `main` へ進める |
+| `MERGE` | `通してよい` があり、緑で、コンフリクトも無く、`判断待ち` も無い | [`merge-and-close.sh`](../scripts/agent/merge-and-close.sh)。マージ → issue が閉じたかの確認 → レビューのセッションを畳む → 本体を新しい `main` へ進める |
+| `ARCHIVE` | 担当の issue が閉じ、手が空いた `task-*` のセッション | **書いたセッションを畳む**（[`archive-session.sh`](../scripts/agent/archive-session.sh)） |
 | `RESUME … mend` | `直し待ち`・CIが赤・`main` と衝突 | **書いたセッションを起こして直させる**（[`resume-session.sh`](../scripts/agent/resume-session.sh)） |
 | `RESUME … stall` | PRを出さないまま手が空いた `task-*` のセッション | **1回だけ**起こす |
 | `REVIEW` | 判定のラベルが無く、緑 | [`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) |
@@ -440,7 +441,7 @@ flowchart TB
 | 盤面を見る | [`board.sh`](../scripts/agent/board.sh) | 依存（`blockedBy`）と、もう投入したか |
 | 投入する | [`dispatch-task.sh`](../scripts/agent/dispatch-task.sh) / [`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) | issue（PR）が開いているか・空の箱で起動していないか・**指示が化けずに届いたか** |
 | 盤面を回す | [`daemon.sh`](../scripts/agent/daemon.sh) | 8節の手・手綱・**同じ盤面へ二度打たないこと** |
-| マージして片付ける | [`merge-and-close.sh`](../scripts/agent/merge-and-close.sh) | 機械の関門・issue が閉じたか・セッションを畳んだか・本体の追随 |
+| マージして片付ける | [`merge-and-close.sh`](../scripts/agent/merge-and-close.sh) | 機械の関門・issue が閉じたか・レビューのセッションを畳んだか・本体の追随 |
 | 画面を貼る | [`push-screenshot.sh`](../scripts/agent/push-screenshot.sh) | 証跡を `main` にも消える枝にも置かないこと |
 
 **畳んだのは往復だけではありません。** 1サイクル10〜14回だった `gh` の呼び出しが5〜7回になったのは結果で、狙いは**省かれていた確認が必ず通ること**です。判断が要るのは**差分を読むところ**と**指示文を書くところ**だけなので、そこは畳んでいません。
