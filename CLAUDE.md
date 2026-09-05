@@ -322,7 +322,8 @@ Claude-Session: https://claude.ai/code/session_<自分のID>
   `[返却] <なぜ返すか。1行で>` にすると `判断待ち` が付き、ユーザーが答えるまで誰にも配られない
   （[`.claude/board-design.md`](.claude/board-design.md) 2.15）。**PRは作らない。**
 
-タスクの割り方・所有権の地図・段の分け方は [`.claude/parallel-work.md`](.claude/parallel-work.md)。
+タスクの割り方・同時に走らせてよいかの見方・段の分け方は
+[`.claude/parallel-work.md`](.claude/parallel-work.md)。
 
 ## 「検討して」と言われたら、実装ではなく設計案を返す
 
