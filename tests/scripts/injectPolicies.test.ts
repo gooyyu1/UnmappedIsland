@@ -7,9 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 /**
  * `.claude/hooks/inject-policies.sh` が、記録済みの価値観をセッションへ流し込めることの検査。
  *
- * このフックが落ちても**セッションは普通に起動する**——価値観が1文字も入らないまま走り出すだけで、
- * 気づく手立てが無い。実際に `policies.md` が伸びた結果、`jq` へargvで渡していた本文が
- * Windowsのargv長制限を越え、`Argument list too long` で落ちていた。
+ * **落ちても気づけない**フックなので（理由はフックのコメント）、ここが鳴らないことだけが手立て。
  */
 
 // 実際に bash と jq のプロセスを起こすので、`npm test` 全体を並行実行したときのCPU競合だけで
@@ -59,9 +57,8 @@ describe('inject-policies.sh', () => {
     expect(contextOf({ policies: '## 場面\n\n本文。' })).toContain('## 場面\n\n本文。');
   });
 
-  // 実際にこの形で壊れた: `policies.md` が伸びてargvの上限を越え、jq が exit 126 で落ちて
-  // 価値観が入らないまま全セッションが走っていた。上限は Git Bash のほうが Linux よりずっと低い
-  // ので、**Linuxの上限（単一引数で128KB）も越える大きさ**にして、CIでも同じ形を踏ませる。
+  // 上限は Git Bash のほうが Linux よりずっと低い。低いほうに合わせるとCI（Linux）では踏まないので、
+  // **Linuxの上限（単一引数で128KB）も越える大きさ**にする。
   it('argvの上限を越える大きさでも落ちない', () => {
     const huge = '## 場面\n\n' + 'あ'.repeat(200_000) + '\n';
 
