@@ -15,7 +15,7 @@ import { githubSlugs } from '../../scripts/githubSlugs.mjs';
  * - 見出しの【未実装: 識別子】ラベルが、実装後に剥がし忘れられていないこと
  * - 【いつか: 識別子】の印と docs/Someday.md の項目が1対1で対応すること（DocumentStyle.md 4.1節）
  * - 確定度の印が、印として働く形で付いていること（DocumentStyle.md 6節）
- * - 確定節が射程・中身・出どころの条件を満たすこと（同 6.1節。有効化は issue #1186）
+ * - 確定節が射程・中身・出どころの条件を満たすこと（同 6.1節）
  *
  * アンカーの照合には、公開サイトが実際にIDを振るのと同じ {@link githubSlugs} を使う。
  */
@@ -500,14 +500,8 @@ describe('ドキュメントの参照', () => {
   });
 });
 
-/**
- * `【確定】` を付けてよい節の条件（DocumentStyle.md 6.1節）。
- *
- * **既存の確定節が規約より先にあるので、有効化は文書を合わせる issue #1186 で行う**——`.skip` を
- * 外すだけで済むように、検査そのものはここで完成させてある。捕獲側（確定節を拾えているか・
- * 語の照合が効くか）は既存の文書でも成り立つので、上の describe に置いて今から走らせている。
- */
-describe.skip('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節）', () => {
+/** `【確定】` を付けてよい節の条件（DocumentStyle.md 6.1節）。 */
+describe('【確定】を付けてよい節の条件（DocumentStyle.md 6.1節）', () => {
   it('確定節が下位節を抱えていない（射程はその節の本文だけ）', () => {
     const nested = confirmedSections
       .filter((section) => section.hasSubsections)

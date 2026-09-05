@@ -242,7 +242,7 @@ path:
 既にある炉へ石を積んで大きくすること（`add_stone`）は、粗い動作なので夜でもできます。**新しく炉を
 作ることはできない**ので、上の要求は崩れません。
 
-**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 2（雨が閉じる範囲）
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 15（火起こし具・火口・炉を日暮れ前に用意させる）・2（雨が閉じる範囲）
 
 ## 6. 値の土台は `base` で明示する【確定】
 
@@ -271,6 +271,8 @@ looking_brightness: {value: 0, base: {subject: ancestor, prop: ambient_brightnes
   だけで書けます**が、反射が土地ごとに行動クラスの数だけ複製され、加えて「砂浜では移動に要る明るさが
   低い」という、現実には無い意味の値になります——明るいのは地面であって、必要な明るさが変わるわけでは
   ありません。
+
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（`base: {subject, prop}`）
 
 ## 7. 空を継がない場所は、光源だけで決まる
 

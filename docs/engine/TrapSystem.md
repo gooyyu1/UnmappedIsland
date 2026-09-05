@@ -588,6 +588,8 @@ hydration:
   足りていること」を**同じ形のまま両方へ配れます**（[`VitalsSystem.md`](./VitalsSystem.md) 3.1 節）。
   野生の個体では値が減らないので、条件は常に満たされます。
 
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（閉じ込めた獣だけが渇く）
+
 ## 6. 回収するまで、次は掛からない
 
 **タイマーが減る条件には「`catch` が空であること」が入っています**（2 節の

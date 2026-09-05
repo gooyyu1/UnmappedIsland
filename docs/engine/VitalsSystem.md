@@ -251,6 +251,8 @@ blood:
   14.1 節・17 節）。**閾値を条件の側へ書き写すより、名前で見るほうがずれません**（同じ理由で移動可否も
   `too_heavy` という名前で見ています、[`ContainerSystem.md`](./ContainerSystem.md) 5 節）。
 
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（閉じ込めた獣だけが渇く）
+
 ## 4. 出血は、血を失う速さ
 
 **出血する傷とは「宿主の `blood` を毎 tick 削る傷」のこと**で、勢いの違いはレートの違いとして表れます。
@@ -358,6 +360,8 @@ laceration:
 `become`（[`GameElementDefinition.md`](./GameElementDefinition.md) 9.9節）は**インスタンスがそのまま続く**
 ので、最初から死に方ではありません。だから `become` は死因を持ちません——他の終わり方へ名前を配れる
 ようにしておく必要もありません。
+
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656) の 16
 
 ## 7. 体の値は、人にも獣にも配る
 
@@ -510,6 +514,8 @@ pathogen:
   響く」ではなく、**「一晩をどう越すか」**の死に方になります。
 - **死因は `frozen`** で、名乗るのは `on_min` の `destroy` です（6 節）。既存のものと同じ形なので、
   画面は名前から文言を引くだけです。
+
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（凍死を足す）
 
 ## 9. 画面に出すのは、意識のバーと出血の印
 

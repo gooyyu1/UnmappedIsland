@@ -54,11 +54,10 @@
 丸太は1本20kgで、担ぐと荷重（`load`）の段が1つ上がります。**2本目は担げません。** 筏1つに6本要るので、
 どこで伐ってどこへ運ぶかが島側の仕事として残ります（[`GameEndings.md`](../concept/GameEndings.md) 3.1 節）。
 
-## 2. 筏は設置物であり、場所でもある【確定】
+## 2. 筏は設置物であり、場所でもある
 
-**筏（`raft`）は `fixture` タグを持ちながら `location` trait を実装します。** 土地と同じ
-スロット（[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 1.1 節）を持つので、積荷も乗り手も
-筏の**中**に入ります。
+**筏が設置物と場所を兼ねることは 2.3 節が決めます。** この節と枝番の節が書くのは、そう決めたことから
+何が出るかです。
 
 この形にすると、出航も海区の横断も「筏を1つ動かす」だけになります。積荷もプレイヤーも子として
 付いてくるので、「何を一緒に運ぶか」を数える処理はどこにも要りません。
@@ -98,6 +97,16 @@
 **だから浸水も沈没もありません。** 海の上で起きるのは風向きの変化（3.1 節）と荒天の押し流し（3.8 節）
 だけで、筏が水を被る・傷むといった事故は、専用の仕組みごと持ちません。**航海の緊張は筏の状態ではなく、
 残量と両側の海区数の差し引きが持ちます**（[`GameEndings.md`](../concept/GameEndings.md) 12.5 節）。
+
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)（#1111 筏は壊れない）
+
+### 2.3 筏は、設置物でありながら場所として振る舞う【確定】
+
+**筏（`raft`）は `fixture` タグを持ちながら `location` trait を実装します。** 土地と同じ
+スロット（[`ExplorationSystem.md`](../engine/ExplorationSystem.md) 1.1 節）を持つので、積荷も乗り手も
+筏の**中**に入ります。
+
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)
 
 ## 3. 海は海区の連なりで、進むのは見張って渡ったときだけ
 
@@ -214,7 +223,7 @@
 **海区は素の横断時間（`crossing_minutes`）を持ち、筏の `sail_speed` の段がそこから引きます。**
 海流・積載・帆はすべて `sail_speed` へ集まるので、**筏の側の事情**を書く場所は 1 つで済みます。
 
-**風だけは筏ではなく航路が持ちます**（[`GameEndings.md`](../concept/GameEndings.md) 12.3 節、確定）。
+**風だけは筏ではなく航路が持ちます**（[`GameEndings.md`](../concept/GameEndings.md) 12.3 節）。
 風向きは速さの係数ではなく、どの航路が今いくらで渡れるかを決めるものなので、航路が自分の
 `crossing_minutes`（土台は今いる海区の値）へ受け方を乗せ、渡る手はそこを読みます。**筏へ集めると、
 同じ海区から出る 2 本の航路が必ず同じ時間になり、分かれ道が「今なら短く渡れる航路」を出せません**
@@ -700,6 +709,8 @@
 [`docs/ui/`](../ui/README.md) の担当で、まだ入っていません
 （[`GameEndings.md`](../concept/GameEndings.md) 9.3 節）。
 
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)
+
 ## 5. 棚の枠は、アーティファクトの型そのもの【確定】
 
 **`artifact` タグを持つ型がそのまま棚の枠になります。** 種類を増やすことは、
@@ -712,6 +723,8 @@
 （[`SaveDataManagement.md`](../engine/SaveDataManagement.md) 棚節）。同じ物を2度持ち帰っても枠は
 増えません。棚はタイトル画面からも開けます——空きが見えていることが次の周回へ向かう動機だからです
 （[`GameEndings.md`](../concept/GameEndings.md) 6 節）。
+
+**出どころ**: [#656](https://github.com/gooyyu1/UnmappedIsland/issues/656)
 
 ## 未決事項・今後の検討課題
 
