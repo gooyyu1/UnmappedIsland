@@ -6,8 +6,12 @@
 #   DRY_RUN=1 bash scripts/agent/resume-session.sh cse_012ABC mend 1512   # 送る本文を見るだけ
 #
 # 本文は [`.claude/resume-prompt.md`](../../.claude/resume-prompt.md) の `## <理由>` 節から読む。
-# **司令塔が書き足すものは無い**——理由は盤面から機械的に決まり（[`board-move.mjs`](board-move.mjs)）、
+# **書き足すものは無い**——理由は盤面から機械的に決まり（[`board-move.mjs`](board-move.mjs)）、
 # そのPRで何が起きているかは、起こされた本人がPRを見れば分かる。
+#
+# **理由は、起こされた側がやることで割ってある**（`board-design.md` 1.3）。指摘・コンフリクト・
+# CIの赤は同じ `mend`（どれも「PRを見て直す」）だが、却下された仮決めの取り下げと画面の証跡は
+# 作業が違うので別の節を持つ。**節を足せば、盤面が出す語をそのまま新しい理由にできる。**
 #
 # 出力は1行1件。
 #   SENT <セッションID>
@@ -25,7 +29,7 @@
 set -euo pipefail
 
 SESSION="${1:?セッションIDを渡す}"
-KIND="${2:?理由を渡す（mend / stall）}"
+KIND="${2:?理由を渡す（resume-prompt.md の節の名前）}"
 NUMBER="${3:?対象の番号を渡す}"
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

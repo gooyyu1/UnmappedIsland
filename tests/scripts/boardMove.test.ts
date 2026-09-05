@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -101,13 +102,14 @@ describe('board-move.mjs', () => {
     expect(moves({ prs: [pr(10, { mergeable: 'UNKNOWN' })] })).toEqual([]);
   });
 
+  // **`mend` ではなく `look`。** 撮って貼る作業は差分を直す作業と違うので、渡す文面を分ける（1.3）。
   it('画面が変わるのに 見た目 が無ければ、レビューへ出さずに書いた本人へ差し戻す', () => {
     const board = {
       prs: [pr(10, { files: [{ path: 'src/game/ui/Card.ts' }] })],
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
-    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
+    expect(moves(board)).toEqual(['RESUME session_a look 10 look:10:aaa111']);
   });
 
   it('画面が変わらないPRには、見た目 を求めない', () => {
@@ -140,11 +142,74 @@ describe('board-move.mjs', () => {
       prSessions: { 10: 'session_a' },
       sessions: [idle('session_a')],
     };
+    expect(moves(board)).toEqual(['RESUME session_a look 10 look:10:aaa111']);
+  });
+
+  // 人の手番の印は、効き目を1つずつ持つ（2.13.2）。**どちらの下でも差し戻しは出る。**
+  it('判断待ちのPRは、マージしない', () => {
+    expect(moves({ prs: [pr(10, label('通してよい', '判断待ち'))] })).toEqual([]);
+  });
+
+  it('判断待ちでも、コンフリクトは差し戻す', () => {
+    const board = {
+      prs: [pr(10, { ...label('判断待ち'), mergeable: 'CONFLICTING' })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
     expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
   });
 
-  it('判断待ちのPRには手を出さない', () => {
-    expect(moves({ prs: [pr(10, label('判断待ち'))] })).toEqual([]);
+  it('収束せずのPRは、レビューへ出さない', () => {
+    expect(moves({ prs: [pr(10, label('収束せず'))] })).toEqual([]);
+  });
+
+  it('収束せずでも、CIが赤ければ差し戻す', () => {
+    const board = {
+      prs: [
+        pr(10, {
+          ...label('収束せず'),
+          statusCheckRollup: [{ status: 'COMPLETED', conclusion: 'FAILURE' }],
+        }),
+      ],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
+  });
+
+  it('収束せずのPRに人が通してよいを付けたら、マージする', () => {
+    expect(moves({ prs: [pr(10, label('収束せず', '通してよい'))] })).toEqual(['MERGE 10']);
+  });
+
+  // **`mend` ではなく `reject`。** 指摘に答えるのではなく、通らなかった仮決めを取り下げる作業。
+  it('却下のPRは、仮決めを取り下げさせる形で差し戻す', () => {
+    const board = {
+      prs: [pr(10, label('却下'))],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa111']);
+  });
+
+  // **却下は判断待ちの出口。** 外す手間を人に負わせないので、両方付いたまま届く（2.13.1）。
+  it('判断待ちが付いたままでも、却下は差し戻す', () => {
+    const board = {
+      prs: [pr(10, label('判断待ち', '却下'))],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa111']);
+  });
+
+  // 枠は1つしか無いので、種類を指紋に入れないと後から来たほうが黙って落ちる。
+  it('同じ差分でも、直しの後の却下は落とさない', () => {
+    const board = {
+      prs: [pr(10, label('却下'))],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+      taken: { 'resume:session_a': 'mend:10:aaa111' },
+    };
+    expect(moves(board)).toEqual(['RESUME session_a reject 10 reject:10:aaa111']);
   });
 
   // 差し戻す相手は、そのPRを書いたセッション（2.11）。**`Closes` では引かない**——あれは
@@ -305,7 +370,8 @@ describe('board-move.mjs', () => {
   it('PRの出ている issue は投入しない', () => {
     const board = {
       issues: [{ number: 9, ...label('task'), blockedBy: { nodes: [] } }],
-      prs: [pr(10, label('判断待ち'))],
+      // レビューへ出る側の手は別の試験で見ているので、ここでは投入が出ないことだけを見る。
+      prs: [pr(10, label('収束せず'))],
     };
     expect(moves(board)).toEqual([]);
   });
@@ -376,5 +442,32 @@ describe('board-move.mjs', () => {
       'ARCHIVE session_a closed:8',
       'NOTE 1件の task が、書くセッション（session_a）の空きを待っている',
     ]);
+  });
+
+  // **盤面が出す語が、そのまま起こす文面の節名になる**（`resume-session.sh`）。2箇所が暗黙に
+  // 一致すべき規約なので、片方だけ足したときにここで落とす——足りないと `resume-session.sh` が
+  // 「ひな形に節が無い」で失敗し、**起こす手だけが毎周打てないまま残る。**
+  it('起こす手の種類には、渡す文面の節がある', () => {
+    const boards: Board[] = [
+      { prs: [pr(10, label('直し待ち'))], prSessions: { 10: 'a' }, sessions: [idle('a')] },
+      { prs: [pr(10, label('却下'))], prSessions: { 10: 'a' }, sessions: [idle('a')] },
+      {
+        prs: [pr(10, { files: [{ path: 'src/game/ui/Card.ts' }] })],
+        prSessions: { 10: 'a' },
+        sessions: [idle('a')],
+      },
+      {
+        issues: [{ number: 9, ...label('task'), blockedBy: { nodes: [] } }],
+        sessions: [idle('a', 'task-9')],
+      },
+    ];
+    const kinds = boards
+      .flatMap(moves)
+      .filter((move) => move.startsWith('RESUME '))
+      .map((move) => move.split(' ')[2]);
+    expect(kinds).toEqual(['mend', 'reject', 'look', 'stall']);
+
+    const template = readFileSync(resolve(__dirname, '../../.claude/resume-prompt.md'), 'utf-8');
+    for (const kind of kinds) expect(template).toContain(`\n## ${kind} `);
   });
 });
