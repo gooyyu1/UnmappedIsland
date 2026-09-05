@@ -73,6 +73,42 @@ export function layeredResolver(layers: readonly StaticValueLayer[]): StaticValu
 }
 
 /**
+ * 候補の型が1つもそのプロパティを宣言していないときの読み方（highestDeclaredLayer）。**実行時の値は
+ * どちらでも0**——解けない参照は0として読まれる（DeclaredNumber.resolveOrZero）——ので、差は読み手へ
+ * 何を渡すか。
+ *
+ * - `zero`: 宣言が無いこと自体が答え。**宣言していない土地ではその候補が抽選から外れる**
+ *   （[`TrapSystem.md`](../../docs/engine/TrapSystem.md) 3節）ので、確定した値として読む。
+ * - `unresolved`: 定義が答えを持っていない。その値を宣言している型が世界に1つも無いのは書き手の
+ *   取りこぼしでありうるので、確定しない参照として印を立てる（CraftingStep.hasUnresolvedReferences）。
+ */
+export type UndeclaredReading = 'zero' | 'unresolved';
+
+/**
+ * 実行時にしか就く相手が決まらない起点を、候補の型が宣言している値で埋める層。**最も高く宣言して
+ * いる型に合わせる**ので、どれが就いても届く上限が出る——分岐ごとに最も良い相手を選べる前提の値で、
+ * **どれか1つの相手で出る値ではない。**
+ *
+ * 答えるのは宣言値なので、**段が押し上げる分は入らない**（段は実行時にしか決まらない）。
+ *
+ * 起点ごとに違うのは、候補の集まりと、誰も宣言していないときの読み方（UndeclaredReading）だけ。
+ */
+export function highestDeclaredLayer(
+  root: ReferenceRoot,
+  candidates: readonly ObjectDef[],
+  undeclared: UndeclaredReading,
+): StaticValueLayer {
+  return (context) => (asked, propertyGlobalId, end) => {
+    if (asked !== root) return undefined;
+    const declared = candidates
+      .map((candidate) => staticValueOf(candidate, propertyGlobalId, end, context))
+      .filter((value): value is number => value !== undefined);
+    if (declared.length > 0) return Math.max(...declared);
+    return undeclared === 'zero' ? 0 : undefined;
+  };
+}
+
+/**
  * 端を1つに決めたStaticValueResolver（staticResolverOf）。効果や条件の宣言を読む側は、自分が
  * どちらの端の話をしているかを知らないまま値を引ける。**端を選べるのは、問いを立てた側だけ。**
  */
