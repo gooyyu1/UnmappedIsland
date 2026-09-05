@@ -403,7 +403,7 @@ export function moves(input) {
 
   // **並べてよいかは、錠と本数で決める**（3.1・`parallel-work.md` 2節）。レビューは書かないので
   // 数えない。
-  const holders = input.sessions
+  const workers = input.sessions
     .map((session) => ({ session, number: heldIssue(session) }))
     .filter((holder) => holder.number !== undefined)
     .map((holder) => ({
@@ -416,7 +416,7 @@ export function moves(input) {
   //
   // **錠の側では外さない**——閉じていても、走っている限り資源は掴んだまま。担当が読めないので
   // 錠も引けず、下の `waitingFor` が「読めない」として止める。
-  const held = holders.filter(
+  const held = workers.filter(
     (holder) => holder.issue !== undefined || issueStates[String(holder.number)] !== 'CLOSED',
   );
 
@@ -453,7 +453,7 @@ export function moves(input) {
   function waitingFor(issue) {
     const mine = locks(issue);
     if (mine.length === 0) return undefined;
-    for (const holder of holders) {
+    for (const holder of workers) {
       // **素性を引けなかった相手の後ろでは、錠を持つ issue を出さない。** 相手が同じ錠を持って
       // いないことを確かめられないので、資源を2本で取り合う形が通ってしまう。
       if (holder.issue === undefined) return `${holder.session.id} の担当（#${holder.number}）が読めない`;

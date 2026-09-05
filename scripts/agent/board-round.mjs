@@ -44,7 +44,7 @@ const ledgerPath = (stateDir) => join(stateDir, 'taken.json');
  */
 const conflictsPath = (stateDir) => join(stateDir, 'conflicts.jsonl');
 
-const stamp = (date = new Date()) => date.toISOString().replace(/\.\d{3}Z$/, 'Z');
+const stamp = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
 
 /**
  * ログは1行1件で、頭に時刻が付く（`daemon.sh` と同じ形）。**書き込みは同期で行う**——叩いた
@@ -319,7 +319,7 @@ export function round({
     board.prs,
     writtenConflicts(stateDir),
     (number) => describeConflict(runScript, number),
-    stamp(now()),
+    board.now,
   )) {
     appendFileSync(conflictsPath(stateDir), `${JSON.stringify(record)}\n`);
     if (record.files.length === 0) {

@@ -433,9 +433,10 @@ describe('board-round.mjs', () => {
       conflict: { files: ['docs/engine/GameElementDefinition.md'], with: [7] },
     });
 
+    // 時刻は**この周のもの**（`board.now`）。台帳の `idle:` と同じ値なので、後から並べて読める。
     expect(result.conflicts).toEqual([
       {
-        at: '2026-09-05T02:00:00Z',
+        at: NOW.toISOString(),
         pr: 10,
         head: 'aaa111',
         files: ['docs/engine/GameElementDefinition.md'],
@@ -468,7 +469,7 @@ describe('board-round.mjs', () => {
     });
 
     expect(result.conflicts).toEqual([
-      { at: '2026-09-05T02:00:00Z', pr: 10, head: 'aaa111', files: [], with: [] },
+      { at: NOW.toISOString(), pr: 10, head: 'aaa111', files: [], with: [] },
     ]);
     expect(result.log).toContain('PR #10 は手元では併合できた');
   });
