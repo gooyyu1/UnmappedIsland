@@ -45,7 +45,7 @@ fi
 
 if [ -d "$DECISIONS" ]; then
   # 直下の .md だけを数える。archive/ に在るのは棚卸し済み。
-  pending=$(find "$DECISIONS" -maxdepth 1 -name '*.md' -type f | wc -l)
+  pending=$(find "$DECISIONS" -maxdepth 1 -name '*.md' -type f | wc -l | tr -d '[:space:]')
   if [ "$pending" -ge "$DECISIONS_THRESHOLD" ]; then
     context+=$'\n'
     context+="棚卸ししていない判断の履歴が $pending 件ある。ユーザーと会話できるセッションなら、"
