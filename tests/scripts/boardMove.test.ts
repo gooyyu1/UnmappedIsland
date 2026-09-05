@@ -95,6 +95,54 @@ describe('board-move.mjs', () => {
     expect(moves({ prs: [pr(10, { ...label('通してよい'), mergeable: 'UNKNOWN' })] })).toEqual([]);
   });
 
+  // `main` が動くたびに全部のPRがここへ落ちる。`CONFLICTING` だけを弾く形にすると、その隙間の周が
+  // コンフリクトしたままレビューへ出す（#1538 で実際に出た。board-design 2.12.2）。
+  it('mergeable が引けていない周は、レビューへも出さない', () => {
+    expect(moves({ prs: [pr(10, { mergeable: 'UNKNOWN' })] })).toEqual([]);
+  });
+
+  it('画面が変わるのに 見た目 が無ければ、レビューへ出さずに書いた本人へ差し戻す', () => {
+    const board = {
+      prs: [pr(10, { files: [{ path: 'src/game/ui/Card.ts' }] })],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
+  });
+
+  it('画面が変わらないPRには、見た目 を求めない', () => {
+    expect(moves({ prs: [pr(10, { files: [{ path: 'src/domain/Slot.ts' }] })] })).toEqual([
+      'REVIEW 10 aaa111',
+    ]);
+  });
+
+  it('見た目 が書いてあればレビューへ出す', () => {
+    const board = {
+      prs: [
+        pr(10, {
+          files: [{ path: 'src/assets/cards/axe.webp' }],
+          body: 'Closes #9\n\n## 見た目\n\n不要（絵の差し替えだけ）\n',
+        }),
+      ],
+    };
+    expect(moves(board)).toEqual(['REVIEW 10 aaa111']);
+  });
+
+  // 節だけ置いて中身を書かない形。画像も「不要」＋理由も無いので、後から補えるものが差分に残らない。
+  it('見た目 の節が空なら、無いのと同じに扱う', () => {
+    const board = {
+      prs: [
+        pr(10, {
+          files: [{ path: 'src/game/ui/Card.ts' }],
+          body: 'Closes #9\n\n## 見た目\n\n## 自己点検\n\n0件。\n',
+        }),
+      ],
+      prSessions: { 10: 'session_a' },
+      sessions: [idle('session_a')],
+    };
+    expect(moves(board)).toEqual(['RESUME session_a mend 10 mend:10:aaa111']);
+  });
+
   it('判断待ちのPRには手を出さない', () => {
     expect(moves({ prs: [pr(10, label('判断待ち'))] })).toEqual([]);
   });
@@ -160,6 +208,15 @@ describe('board-move.mjs', () => {
   it('名乗っていないPRは、そうと分かる形で書き残す', () => {
     expect(moves({ prs: [pr(10, label('直し待ち'))] })).toEqual([
       'NOTE PR #10 は差し戻されたが、書いたセッションが名乗っていない',
+    ]);
+  });
+
+  // 手元のブリッジはCCRのセッションではないので `send_message` が届かない（2.11.1）。名乗って
+  // いないのとも畳まれたのとも違う——直すのはその場に居る人。
+  it('手元のセッションが書いたPRは、起こせないと書き残す', () => {
+    const board = { prs: [pr(10, label('直し待ち'))], prSessions: { 10: 'bridge-cse_012ABC' } };
+    expect(moves(board)).toEqual([
+      'NOTE PR #10 は差し戻されたが、書いたのが手元のセッションなので、起こせない',
     ]);
   });
 

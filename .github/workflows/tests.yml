@@ -81,5 +81,5 @@ jobs:
             exit 0
           fi
           # **1行で出す。** `::error::` は行ごとに別の注記になるので、分けると読む側で散らばる。
-          echo "::error::このPRのコミットに Claude-Session: のトレーラがありません。コミットメッセージの末尾（Co-Authored-By: と同じ段）へ 'Claude-Session: https://claude.ai/code/<セッションID>' を入れて push し直してください（自分のIDは作業ツリーの名前 .claude/worktrees/bridge-cse_<ID> から分かります）。盤面はこの行で差し戻す相手を引くので、無いPRは直しが要るときに誰にも回りません。"
+          echo "::error::このPRのコミットに Claude-Session: のトレーラがありません。コミットメッセージの末尾（Co-Authored-By: と同じ段）へ入れて push し直してください。クラウドのセッションは 'Claude-Session: https://claude.ai/code/session_<ID>'（自分がPR本文へ書くURLと同じもの）、手元のブリッジは 'Claude-Session: bridge-cse_<ID>'（作業ツリーの名前そのまま）。盤面はこの行で差し戻す相手を引くので、無いPRは直しが要るときに誰にも回りません。"
           exit 1

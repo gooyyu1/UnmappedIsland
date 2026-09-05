@@ -214,7 +214,7 @@ sequenceDiagram
     R->>G: [レビュー] 通してよい／直しが要る（コメント）
     G->>G: board-labels.yml が1行目をラベルへ変える
 
-    alt 直し待ち／CIが赤／コンフリクト
+    alt 直し待ち／CIが赤／コンフリクト／見た目が無い
         D->>W: 書いたセッションを起こして直させる
         W->>G: 直しを push（ラベルは push で外れる）
     else 通してよい かつ 緑
@@ -307,11 +307,13 @@ flowchart LR
 | --- | --- | --- |
 | `MERGE` | `通してよい` があり、緑で、コンフリクトも無く、`判断待ち` も無い | [`merge-and-close.sh`](../scripts/agent/merge-and-close.sh)。マージ → issue が閉じたかの確認 → レビューのセッションを畳む → 本体を新しい `main` へ進める |
 | `ARCHIVE` | 担当の issue が閉じ、手が空いた `task-*` のセッション | **書いたセッションを畳む**（[`archive-session.sh`](../scripts/agent/archive-session.sh)） |
-| `RESUME … mend` | `直し待ち`・CIが赤・`main` と衝突 | **書いたセッションを起こして直させる**（[`resume-session.sh`](../scripts/agent/resume-session.sh)） |
+| `RESUME … mend` | `直し待ち`・CIが赤・`main` と衝突・画面が変わるのに `## 見た目` が無い | **書いたセッションを起こして直させる**（[`resume-session.sh`](../scripts/agent/resume-session.sh)） |
 | `RESUME … stall` | PRを出さないまま手が空いた `task-*` のセッション | **1回だけ**起こす |
-| `REVIEW` | 判定のラベルが無く、緑 | [`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) |
+| `REVIEW` | 判定のラベルが無く、緑で、マージできると分かっている | [`dispatch-review.sh`](../scripts/agent/dispatch-review.sh) |
 | `TASK` | 書くセッションが1本も居ない | 一番古い `task` を1件投入する（**並列度1**） |
-| `NOTE` | 手を打てない事情がある | `覚え書き:` の行をログへ残す。**司令塔が読みます** |
+| `NOTE` | 手を打てない事情がある | `覚え書き:` の行をログへ残す。**読むのは人です** |
+
+**機械で判定できることは、レビュアーを立てる手前で弾きます。** コンフリクトと、画面が変わるのに `## 見た目` 節が無いこと——どちらも差分と本文から機械で読めるので、**レビュアーのセッションを1本使ってから差し戻すのは無駄**です。弾いたぶんは[レビューの観点](../.claude/review-criteria.md)からも消してあります。両方に置くと、レビュアーが読む番には既に直っているものを挙げることになります。
 
 **コンフリクトも書いた本人へ差し戻します。** 以前は司令塔が自分で `main` を取り込んで解消していましたが、**デーモンには解消できません**（判断が要ります）。取り込みは書いた本人にもできるので、赤と同じ `mend` に畳んであります——**理由の違いは渡す文の中の1行**で、仕組みを分ける理由になりません。
 
