@@ -7,6 +7,9 @@ import { githubSlugs } from '../../scripts/githubSlugs.mjs';
 /**
  * ドキュメントの参照が実在の対象へ解決するかの検査（docs/DocumentStyle.md 5節）。
  *
+ * **見るのは `docs/` だけではない。** `.claude/**` は互いを節名で引き合っており、そちらの節を畳んだ
+ * ときに嘘になる。指し先も `docs/` の外（`CLAUDE.md`・`.claude/**`）まで広げてある。
+ *
  * - Markdownリンク（ファイル・アンカー）が実在すること
  * - コード・YAML・ドキュメント中の「Foo.md N節」「Foo.md 〇〇節」が実在の節を指すこと
  * - 見出しの【未実装: 識別子】ラベルが、実装後に剥がし忘れられていないこと
@@ -19,11 +22,16 @@ import { githubSlugs } from '../../scripts/githubSlugs.mjs';
 
 const ROOT = resolve(__dirname, '../..');
 
+/**
+ * 降りない場所。`worktrees` には各セッションのリポジトリが丸ごと入っていて、追跡もされていない。
+ */
+const SKIP_DIRS = new Set(['node_modules', 'worktrees']);
+
 function listFiles(dir: string, exts: readonly string[]): string[] {
   const result: string[] = [];
   for (const entry of readdirSync(join(ROOT, dir))) {
     const rel = join(dir, entry);
-    if (entry === 'node_modules' || entry.startsWith('.')) continue;
+    if (SKIP_DIRS.has(entry) || entry.startsWith('.')) continue;
     if (statSync(join(ROOT, rel)).isDirectory()) {
       result.push(...listFiles(rel, exts));
     } else if (exts.some((ext) => entry.endsWith(ext))) {
@@ -59,6 +67,7 @@ const SOMEDAY_DOC = join('docs', 'Someday.md');
 const REF_FILES = [
   ...DOC_FILES,
   'CLAUDE.md',
+  ...listFiles('.claude', ['.md', '.sh']),
   ...listFiles('src', ['.ts', '.yaml']),
   ...listFiles('tests', ['.ts']),
   ...listFiles('tools', ['.md', '.json']),
@@ -142,7 +151,14 @@ function slugsOf(headings: readonly string[]): Set<string> {
 }
 
 const docByPath = new Map(DOC_FILES.map((rel) => [rel, read(rel)]));
-const headingsByPath = new Map([...docByPath].map(([rel, text]) => [rel, headingsOf(text)]));
+
+/**
+ * 参照の指し先になりうる文書。**`docs/` の外にも在る**（`CLAUDE.md`・`.claude/**`）ので、
+ * `DocumentStyle.md` の規約を課す対象（`docByPath`）とは別に持つ。
+ */
+const REF_TARGETS = [...DOC_FILES, 'CLAUDE.md', ...listFiles('.claude', ['.md'])];
+
+const headingsByPath = new Map(REF_TARGETS.map((rel) => [rel, headingsOf(read(rel))]));
 
 /** `【確定】` の付いた節（DocumentStyle.md 6.1節の4条件を課される対象）。 */
 const confirmedSections = [...docByPath].flatMap(([doc, text]) =>
@@ -159,9 +175,9 @@ const confirmedSections = [...docByPath].flatMap(([doc, text]) =>
  */
 const wholeDocumentConfirmed = [...docByPath].filter(([, text]) => declaresWholeDocument(text));
 
-/** ファイル名（basename）→ docs内の候補パス。 */
+/** ファイル名（basename）→ 指し先の候補パス。 */
 const docsByBasename = new Map<string, string[]>();
-for (const rel of DOC_FILES) {
+for (const rel of REF_TARGETS) {
   const base = rel.split(sep).pop() as string;
   docsByBasename.set(base, [...(docsByBasename.get(base) ?? []), rel]);
 }
@@ -251,7 +267,7 @@ describe('ドキュメントの参照', () => {
     // - 「・」「、」で続く番号の列挙は、直前の参照と同じ文書
     const broken: string[] = [];
     const tokenPattern =
-      /([A-Za-z][\w.]*\.md)`?(?:\]\([^)]*\))?|(同\s*)?(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g;
+      /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?|(同\s*)?(\d+(?:\.\d+)*)(?:\s*[〜～]\s*(\d+(?:\.\d+)*))?\s*節/g;
     const resolves = (base: string, nums: readonly string[]): boolean => {
       const candidates = docsByBasename.get(base);
       return (
@@ -305,14 +321,14 @@ describe('ドキュメントの参照', () => {
     for (const rel of REF_FILES) {
       const text = read(rel).replace(/\n[\s*/#-]*/g, ' ');
       for (const match of text.matchAll(
-        /([A-Za-z][\w.]*\.md)`?(?:\]\([^)]*\))?[ ]*(?:の)?[ ]*「?([^\s\d「」、。：:（）()*`・—〜～-][^「」、。：:（）()*`・—〜～]{0,30}?)」?[ ]*節/g,
+        /([A-Za-z][\w.-]*\.md)`?(?:\]\([^)]*\))?[ ]*(?:の)?[ ]*「?([^\s\d「」、。：:（）()*`・—〜～-][^「」、。：:（）()*`・—〜～]{0,30}?)」?[ ]*節/g,
       )) {
         const [, base, rawName] = match;
         if (/^の?\d/.test(rawName.trim())) continue; // 番号・範囲指しは前のテストが見る
         const name = rawName.replace(/[\s「」]/g, '');
         const candidates = docsByBasename.get(base);
         if (candidates === undefined) {
-          broken.push(`${rel}: ${base}（docsに無い）`);
+          broken.push(`${rel}: ${base}（そのファイルが無い）`);
         } else if (!candidates.some((doc) => hasNamedSection(doc, name))) {
           broken.push(`${rel}: ${base} ${rawName}節`);
         }
