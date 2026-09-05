@@ -311,7 +311,7 @@ export class PropertyPath {
  * 一覧を書き写す代わりに導出で消える。
  *
  * **下のstaticは11.5節の表の行と1対1ではない。** 持つものが同じ場所は同じstaticを使う——`drag`と
- * `put_in`は`acting.withInstrument`を共有し、`declaration`は表に無い`resists`（7.13節）も担う。
+ * `put_in`は`acting.withInstrument`を、`on_max`/`on_min`と`resists`（7.13節）は`declaration`を共有する。
  * 表の行ごとにstaticを立てると、数え上げをこちら側で作り直すことになる。
  */
 export class ReferenceScope {
