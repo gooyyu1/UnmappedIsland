@@ -2,7 +2,6 @@ import { join } from 'node:path';
 import type { EscapeReachSources, EscapeReach } from '../../src/analysis/escapeReach';
 import { escapeReachSourcesOf, islandEscapeReachOf } from '../../src/analysis/escapeReach';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { YamlReportSection } from '../support/generatedReport';
 import {
   describeDocumentedSections,
@@ -13,7 +12,7 @@ import {
   statRecordWith,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 島を出るのに要るものの鎖が、**生成された島ごとに閉じているか**を多数の種で数え
@@ -169,7 +168,7 @@ const DOC_PATH = join('docs', 'diagnostics', 'IslandEscapeReachStats.md');
 
 /** 定義から島を生成して数え、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
 function buildReportFromDefinitions(): string {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
   const sources = escapeReachSourcesOf(codex);
   const goals: readonly Goal[] = [...sources.goals].map(([objectGlobalId, tagName]) => ({
     objectName: codex.objects.get(objectGlobalId).name,

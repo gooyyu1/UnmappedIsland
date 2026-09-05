@@ -3,8 +3,7 @@ import { activityHoursOf } from '../../src/analysis/activityHours';
 import { buildBalanceTables, WHOLE_ISLAND } from '../../src/analysis/balanceTables';
 import { islandLocationsOf } from '../../src/analysis/islandLocations';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
  * 診断レポートが数える土地の検査（`src/analysis/islandLocations.ts`）。
@@ -17,7 +16,7 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
  * レポートの差分が持つ。
  */
 describe('診断レポートが数える土地', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
   const { island, excludedSea } = islandLocationsOf(codex);
 
   // **海かどうかは定義から直に引く**——外した一覧から作ると、線が何も外さなくなったときに

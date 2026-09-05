@@ -2,9 +2,8 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import type { IslandEdge, IslandMap } from '../../src/domain/generation/IslandMap';
 import type { GenerationScopeDef } from '../../src/domain/generation/GenerationScopeDef';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 import { placeSites } from '../../src/domain/generation/SitePlacer';
 import { Pcg32 } from '../../src/domain/Pcg32';
 
@@ -21,7 +20,7 @@ describe('地形生成パイプライン(TerrainGenerator)', () => {
   let islands: ReadonlyMap<number, IslandMap>;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     islands = new Map(SEEDS.map((seed) => [seed, generate(seed)]));
   });
 

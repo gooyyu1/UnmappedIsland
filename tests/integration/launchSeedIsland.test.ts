@@ -4,8 +4,7 @@ import type { StartedGame } from '../../src/domain/generation/NewGame';
 import { startNewGame } from '../../src/domain/generation/NewGame';
 import { randomRng, seededRng } from '../../src/domain/Rng';
 import { initialSeed, parseLaunchSeed, setLaunchSeed } from '../../src/game/launchSeed';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
  * 起動URL（`?seed=`）から島が決まるまでの通し試験。
@@ -18,7 +17,7 @@ describe('起動URLで固定した種から始めるゲーム（通し）', () =
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   /** 新規ゲーム作成画面と同じ経路（初期値の種をそのまま使う）で1ゲーム始める。 */

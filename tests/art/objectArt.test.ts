@@ -1,9 +1,8 @@
 import { readdirSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { artNameFor } from '../../src/art/objectArt';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /** object_defごとの絵の置き場所（src/art/objectArt.ts の規約）。 */
 const ART_DIR = 'src/assets/objects';
@@ -21,7 +20,7 @@ describe('object_defごとの絵', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   function artNames(): string[] {

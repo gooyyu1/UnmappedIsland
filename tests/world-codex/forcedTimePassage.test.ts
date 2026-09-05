@@ -3,9 +3,8 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 
 /**
  * 限界に達した値が起こす、強制的な時間経過（docs/world/Characters.md 限界節）を、実ファイルの
@@ -39,7 +38,7 @@ describe('限界に達した値が起こす、強制的な時間経過', () => {
   let player: WorldObject;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   beforeEach(() => {

@@ -7,14 +7,8 @@ import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
-import {
-  loadYamlDirectory,
-  SAMPLE_CHARACTER,
-  WORLD_CODEX_DIR,
-  worldCodexYamlPaths,
-} from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
 
 describe('foods.yamlの食料定義', () => {
   let codex: WorldCodex;
@@ -22,7 +16,7 @@ describe('foods.yamlの食料定義', () => {
   beforeAll(() => {
     // 焼き上がりの焦げた先（animals.yamlのcharred_lump）へファイルをまたぐ参照があるため、
     // ディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   function spawn(objectName: string, instanceId: number): WorldObject {
@@ -185,7 +179,7 @@ describe('食べ物の腐敗', () => {
   let durabilityId: number;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     durabilityId = codex.propertyNames.getId('durability');
   });
 
@@ -287,7 +281,7 @@ describe('食べ物が配る幸福度', () => {
   let happinessId: number;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     happinessId = codex.propertyNames.getId('happiness');
   });
 

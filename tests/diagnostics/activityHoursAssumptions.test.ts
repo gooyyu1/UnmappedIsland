@@ -3,8 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { activityHoursOf, characterStageMinimumOf } from '../../src/analysis/activityHours';
 import { SEASON_CLIMATE } from '../../src/analysis/seasonalRain';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 活動時間表（`src/analysis/activityHours.ts`）が置いている前提の検査。
@@ -29,7 +28,7 @@ const ACTION_CLASSES = [
 ] as const;
 
 describe('活動時間表の前提', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
 
   it('IlluminationSystem.md 5節の表が、キャラクタの段の境目と一致する', () => {
     const documented = documentedThresholds();

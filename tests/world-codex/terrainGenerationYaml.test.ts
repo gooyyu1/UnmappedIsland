@@ -2,8 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { GenerationDefs } from '../../src/domain/generation/GenerationDefs';
 import type { GenerationScopeDef } from '../../src/domain/generation/GenerationScopeDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /** LINQのSingleOrDefault相当: 条件に一致する要素が2つ以上あれば例外、0または1ならその要素(無ければundefined)。 */
 function singleOrUndefined<T>(items: readonly T[], predicate: (item: T) => boolean): T | undefined {
@@ -17,7 +16,7 @@ describe('terrain_generation.yamlの地形生成定義', () => {
   let generation: GenerationDefs;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     if (codex.generation === undefined) throw new Error('地形生成定義が読み込まれていません。');
     generation = codex.generation;
   });

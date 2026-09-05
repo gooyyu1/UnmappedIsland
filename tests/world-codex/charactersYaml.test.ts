@@ -7,11 +7,10 @@ import { World } from '../../src/domain/wrappers/World';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { characterIcon } from '../../src/game/view/characterCard';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 // describe.eachへ渡すため、beforeAllではなく読み込み時にCodexを組み立てる。
-const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+const codex = bundledCodex();
 const characters = characterDefNames(codex);
 
 function def(name: string): ObjectDef {

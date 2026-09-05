@@ -1,7 +1,6 @@
 import { join } from 'node:path';
 import type { EscapeNeed, EscapeReach } from '../../src/analysis/escapeReach';
 import { escapeReachSourcesOf, escapeReachOf } from '../../src/analysis/escapeReach';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
   describeDocumentedSections,
@@ -9,7 +8,7 @@ import {
   describeYamlReportRegeneration,
   formatYamlReport,
 } from '../support/generatedReport';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 島を出るのに要るものが、島の産物から**何工程先にあるか**を並べ（`src/analysis/escapeReach.ts`）、
@@ -80,7 +79,7 @@ const DOC_PATH = join('docs', 'diagnostics', 'EscapeReachStats.md');
 
 /** 定義から数えて、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
 function buildReportFromDefinitions(): string {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
 
   return formatYamlReport(
     [

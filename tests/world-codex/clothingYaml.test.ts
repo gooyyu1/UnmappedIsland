@@ -4,8 +4,7 @@ import { spawnInProgressObject, tryAdvanceCrafting } from '../../src/domain/craf
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 
 /**
@@ -48,7 +47,7 @@ describe('clothing.yamlの衣類', () => {
   beforeAll(() => {
     // 素材がweaving.yaml・fiber.yaml・animals.yaml・tools.yamlに散っているため、ディレクトリ全体を
     // 一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   beforeEach(() => {

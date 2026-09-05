@@ -9,8 +9,7 @@ import {
 import type { IslandMap } from '../../src/domain/generation/IslandMap';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * **島の産物だけで島を出るものが作れる**ことの検査（`src/analysis/escapeReach.ts`）。
@@ -22,7 +21,7 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * `islandEscapeReachOf`が島ごとに数える（`stats/island_escape_reach.yaml`）。
  */
 describe('島を出るのに要るもの（同梱の定義）', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
   const sources = escapeReachSourcesOf(codex);
   const reach = escapeReachOf(sources);
 
@@ -74,7 +73,7 @@ describe('島を出るのに要るもの（同梱の定義）', () => {
  * 出発集合の差し替えそのもの。
  */
 describe('島を出るのに要るもの（生成された島）', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
   const sources = escapeReachSourcesOf(codex);
   const defined = escapeReachOf(sources);
 

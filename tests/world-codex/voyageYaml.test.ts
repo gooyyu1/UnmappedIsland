@@ -7,13 +7,7 @@ import type { StartedGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { Location } from '../../src/domain/wrappers/Location';
 import { applyScenario, bundledScenario } from '../../src/scenario/Scenario';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import {
-  loadYamlDirectory,
-  SAMPLE_CHARACTER,
-  WORLD_CODEX_DIR,
-  worldCodexYamlPaths,
-} from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER, worldCodexYamlPaths } from '../support/worldCodexFiles';
 import { makeBrightEnoughForAnyAction } from '../support/illumination';
 import { namedEntries, nodeAt, objectValueAt, readSeaChart } from '../support/seaChain';
 import { seededRng } from '../../src/domain/Rng';
@@ -120,7 +114,7 @@ describe('筏と航海', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   /** 出航のしたくシナリオの状態から始める（砂浜に積荷入りの筏があり、聖杯も積んである）。 */

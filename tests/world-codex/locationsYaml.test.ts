@@ -7,8 +7,7 @@ import { Location } from '../../src/domain/wrappers/Location';
 import { Path } from '../../src/domain/wrappers/Path';
 import { pathsIn } from '../support/paths';
 import { World } from '../../src/domain/wrappers/World';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent, makeBrightEnoughForAnyAction } from '../support/illumination';
 import { seededRng } from '../../src/domain/Rng';
 
@@ -32,7 +31,7 @@ describe('locations.yamlの土地・道定義', () => {
   beforeAll(() => {
     // 土地の発見物（foods.yamlの食料等）・キャラクタ（characters/）への参照があるため、
     // 単体ファイルではなくディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   function def(name: string): ObjectDef {

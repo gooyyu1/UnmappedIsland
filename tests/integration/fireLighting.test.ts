@@ -5,10 +5,9 @@ import type { WorldObject } from '../../src/domain/WorldObject';
 import { startNewGame } from '../../src/domain/generation/NewGame';
 import type { Localization } from '../../src/locale/Localization';
 import { parseLocale } from '../../src/locale/Localization';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { cardPlacesOf } from '../../src/game/view/cardPlaces';
 import { runAndRecordChange } from '../../src/game/view/recording';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { fixedRng } from '../support/rng';
 
 /**
@@ -23,7 +22,7 @@ describe('火起こし（世界→映し 通し）', () => {
   let locale: Localization;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     locale = parseLocale('ja.yaml', 'object_texts:\n  dry_grass:\n    display_name: 枯れ草\n');
   });
 

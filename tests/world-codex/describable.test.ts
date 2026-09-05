@@ -16,8 +16,7 @@ import type { ObjectDef } from '../../src/domain/ObjectDef';
 import type { ReferenceRoot } from '../../src/domain/ReferenceRoot';
 import type { DefNames } from '../../src/codex-viewer/describe/Description';
 import { bundledLocaleText, LOCALE_FILE, parseLocale } from '../../src/locale/Localization';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 同梱の宣言が、1つ残らず読める形へ書き出せるか・その参照が正しい先を指すかの検査。
@@ -58,7 +57,7 @@ function conditionPropertyRoots(
 }
 
 describe('同梱のWorldCodex', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
   const names = defNamesOf(codex);
 
   it('すべての型・プロパティ・スロット・操作・レシピが書き出せる', () => {

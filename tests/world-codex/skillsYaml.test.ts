@@ -6,8 +6,7 @@ import type { RecipeDef } from '../../src/domain/RecipeDef';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR, worldCodexYamlPaths } from '../support/worldCodexFiles';
+import { bundledCodex, worldCodexYamlPaths } from '../support/worldCodexFiles';
 
 /**
  * 腕前（characters/player_character.yaml）と、レシピの解放条件（docs/engine/SkillSystem.md 4節）の
@@ -431,7 +430,7 @@ describe('腕前とレシピの解放条件', () => {
   let skillIds: readonly number[];
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     skillIds = SKILLS.map((name) => codex.propertyNames.getId(name));
   });
 

@@ -72,6 +72,17 @@ function sourcesIn(dir: string): string[] {
  * それを型として輸入する（CodeStructure.md 1節）——型はビルドで消えるので、Phaserは付いてこない。
  */
 function importsOf(rel: string, includeTypes = false): readonly string[] {
+  const cached = imports.get(`${rel}\0${includeTypes}`);
+  return cached ?? scanImportsOf(rel, includeTypes);
+}
+
+/**
+ * {@link importsOf} の答えの控え。**走らせている間、`src/` は変わらない。** 検査は同じ import グラフを
+ * 何度も辿り直すので、控えが無いと1ファイルを何十回も読んで正規表現に掛けることになる。
+ */
+const imports = new Map<string, readonly string[]>();
+
+function scanImportsOf(rel: string, includeTypes: boolean): readonly string[] {
   const source = readFileSync(join(ROOT, rel), 'utf-8');
   const specifiers = [
     // import ... from '…' / export ... from '…'（先頭が type のものは除く）
@@ -83,11 +94,14 @@ function importsOf(rel: string, includeTypes = false): readonly string[] {
     ...[...source.matchAll(/import\s*\(\s*['"]([^'"]+)['"]/g)].map((m) => m[1]),
   ];
 
-  return specifiers.map((specifier) => {
+  const resolved = specifiers.map((specifier) => {
     if (!specifier.startsWith('.')) return specifier;
-    const resolved = join(dirname(rel), specifier).replaceAll('\\', '/');
-    return existsSync(join(ROOT, `${resolved}.ts`)) ? `${resolved}.ts` : resolved;
+    const path = join(dirname(rel), specifier).replaceAll('\\', '/');
+    return existsSync(join(ROOT, `${path}.ts`)) ? `${path}.ts` : path;
   });
+
+  imports.set(`${rel}\0${includeTypes}`, resolved);
+  return resolved;
 }
 
 /**

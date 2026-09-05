@@ -2,7 +2,6 @@ import { join } from 'node:path';
 import type { IslandReach, NeedReach, StartupNeedSources } from '../../src/analysis/startupReach';
 import { islandReachOf, STARTUP_NEEDS, startupNeedSourcesOf } from '../../src/analysis/startupReach';
 import { generateIsland } from '../../src/domain/generation/TerrainGenerator';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
   describeDocumentedSections,
@@ -14,7 +13,7 @@ import {
   statRecordWith,
 } from '../support/generatedReport';
 import { Stat } from '../support/Stat';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 開始地点ごとの「立ち上がりやすさ」（`src/analysis/startupReach.ts`）を多数の種で測り、
@@ -272,7 +271,7 @@ const DOC_PATH = join('docs', 'diagnostics', 'StartupReachStats.md');
 
 /** 定義から島を生成して測り、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
 function buildReportFromDefinitions(): string {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
   const sources = startupNeedSourcesOf(codex);
 
   const stats = createStats();

@@ -2,7 +2,6 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Duration, ToolWear } from '../../src/analysis/durations';
 import { MINIMUM_DAYS, durationsOf, toolWearsOf } from '../../src/analysis/durations';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import type { YamlRecord, YamlReportSection } from '../support/generatedReport';
 import {
   RoundedNumber,
@@ -11,7 +10,7 @@ import {
   describeYamlReportRegeneration,
   formatYamlReport,
 } from '../support/generatedReport';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 定義全体の**日をまたぐ長さ**を、種類を問わず1本の列に並べ（`src/analysis/durations.ts`）、
@@ -88,7 +87,7 @@ const DOC_PATH = join('docs', 'diagnostics', 'DurationStats.md');
 
 /** 定義から数えて、レポートの中身を作る。再生成と鮮度の確認が同じものを見るための1箇所。 */
 function buildReportFromDefinitions(): string {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
 
   return formatYamlReport(
     [
@@ -118,7 +117,7 @@ describeReportFreshness(REPORT_PATH, 'npm run stats:durations', buildReportFromD
  * 「上端でだけ起こる逆転」を緑のまま通す。
  */
 describe('生成時にロールする長さの幅', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
 
   const severityOf = (objectName: string) =>
     durationsOf(codex).find(
@@ -156,7 +155,7 @@ describe('生成時にロールする長さの幅', () => {
  * ための道具なので、死の期限が欠けたままだと何を見落としているかが分からない。
  */
 describe('同時には成立しない増減で終わる長さ', () => {
-  const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+  const codex = bundledCodex();
 
   const daysOf = (propertyName: string) =>
     durationsOf(codex).filter((duration) => duration.propertyName === propertyName);

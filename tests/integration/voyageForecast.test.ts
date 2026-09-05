@@ -4,8 +4,7 @@ import { startNewGame } from '../../src/domain/generation/NewGame';
 import type { StartedGame } from '../../src/domain/generation/NewGame';
 import type { WorldObject } from '../../src/domain/WorldObject';
 import { applyScenario, bundledScenario } from '../../src/scenario/Scenario';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex, SAMPLE_CHARACTER } from '../support/worldCodexFiles';
 import { seededRng } from '../../src/domain/Rng';
 import { voyageForecastOf } from '../../src/game/view/voyageForecast';
 import { cardLooksOf } from '../../src/game/view/cardLooks';
@@ -30,7 +29,7 @@ describe('推定日数', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
     // 日数の字面は画面そのものの語（ui_texts）から出るので、同梱の対応表を入れておく。
     setUiTexts(parseLocale(LOCALE_FILE, bundledLocaleText()));
   });

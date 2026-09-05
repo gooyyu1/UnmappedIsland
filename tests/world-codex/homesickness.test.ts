@@ -1,10 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { WorldObject } from '../../src/domain/WorldObject';
 import { WorldSession } from '../../src/domain/WorldSession';
 import { World } from '../../src/domain/wrappers/World';
 import { seededRng } from '../../src/domain/Rng';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /**
  * 時間の経過そのものから生える圧（docs/world/Characters.md ホームシック節）を、同梱のYAMLに対して
@@ -19,7 +18,11 @@ import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
  * **1人で測れば足りる。** 3つのプロパティはどれも個体差を持たず player_character trait が配るので、
  * 全キャラクタを走査するのはcharactersYaml.test.tsの受け持ち（そちらが宣言の欠落を見る）。
  */
-const codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+const codex = bundledCodex();
+
+// 1件で95日ぶんの暮らしを3本まで生きるものがあり、単独で走らせても3.5秒かかる。既定の5秒だと
+// `npm test` 全体を並行実行したときのCPU競合だけで時間切れになる（mergeAndClose.test.tsと同じ）。
+vi.setConfig({ testTimeout: 20000 });
 
 const MINUTES_PER_TICK = 15;
 
@@ -156,6 +159,22 @@ interface Trace {
 
 /** 1日目から数えてdays日ぶん暮らす。 */
 function live(days: number, plan: Plan = {}): Trace {
+  const key = JSON.stringify(Object.entries(plan).sort());
+  const life = lives.get(key) ?? startLife(plan);
+  lives.set(key, life);
+  return life(days);
+}
+
+/**
+ * planごとの、生きている暮らし。**同じplanの暮らしは一度しか生きない。**
+ *
+ * 種は固定なので、同じplanなら短い日数の記録は長い日数の記録の頭とそのまま同じものになる。足りない
+ * ぶんだけ世界を先へ進めれば足りるので、日数の違う求めのたびに漂着からやり直す理由が無い。
+ */
+const lives = new Map<string, (days: number) => Trace>();
+
+/** planに従う暮らしを1つ始める。返る関数は、求められた日数まで進めて、そこまでの記録を渡す。 */
+function startLife(plan: Plan): (days: number) => Trace {
   const island = settle();
   const homesickness: number[] = [];
   const lowestHappiness: number[] = [];
@@ -195,46 +214,50 @@ function live(days: number, plan: Plan = {}): Trace {
   let lastDay = dayProperty.number;
   startDay(lastDay);
 
-  while (dayProperty.number <= days) {
-    // **日が変わった後の始末は、その日の最初の1 tickより前に置く。** 囲いを建てる日にも丸1日ぶん
-    // 効くようにするため。
-    if (dayProperty.number !== lastDay) {
-      homesickness.push(atDayEnd.homesickness);
-      lowestHappiness.push(lowest);
-      company.push(atDayEnd.company);
-      despairMinutes.push(forced);
-      lowest = happiness.number;
-      forced = 0;
-      lastDay = dayProperty.number;
-      startDay(lastDay);
+  return (days) => {
+    // 日が閉じるのは次の日の頭なので、記録がdays日ぶんに届くまで進めれば、days日目まで閉じている。
+    while (homesickness.length < days) {
+      // **日が変わった後の始末は、その日の最初の1 tickより前に置く。** 囲いを建てる日にも丸1日ぶん
+      // 効くようにするため。
+      if (dayProperty.number !== lastDay) {
+        homesickness.push(atDayEnd.homesickness);
+        lowestHappiness.push(lowest);
+        company.push(atDayEnd.company);
+        despairMinutes.push(forced);
+        lowest = happiness.number;
+        forced = 0;
+        lastDay = dayProperty.number;
+        startDay(lastDay);
+        continue;
+      }
+
+      const hour = hourProperty.number;
+      if (mealHours.includes(hour) && lastMeal !== hour) {
+        happiness.add(COOKED_MEAL);
+        lastMeal = hour;
+      }
+
+      const before = island.session.world!.totalMinutes;
+      atDayEnd = {
+        homesickness: island.player.getProperty(propertyId('homesickness')).number,
+        company: island.player.getProperty(propertyId('company')).getEffectiveValue(),
+      };
+
+      island.session.advanceWorldTime(MINUTES_PER_TICK);
+      // **1 tickぶんより長く進んだら、限界の手番が挟まった**（docs/world/Characters.md 限界節）。
+      // ここで尽きうるのは幸福度だけなので、伸びた分はそのまま打ちひしがれていた時間になる。
+      forced += island.session.world!.totalMinutes - before - MINUTES_PER_TICK;
+      lowest = Math.min(lowest, happiness.number);
     }
 
-    const hour = hourProperty.number;
-    if (mealHours.includes(hour) && lastMeal !== hour) {
-      happiness.add(COOKED_MEAL);
-      lastMeal = hour;
-    }
-
-    const before = island.session.world!.totalMinutes;
-    atDayEnd = {
-      homesickness: island.player.getProperty(propertyId('homesickness')).number,
-      company: island.player.getProperty(propertyId('company')).getEffectiveValue(),
+    // 先まで生きているかもしれないので、求められたぶんだけ切って渡す（控えは書き換えさせない）。
+    return {
+      homesickness: homesickness.slice(0, days),
+      lowestHappiness: lowestHappiness.slice(0, days),
+      company: company.slice(0, days),
+      despairMinutes: despairMinutes.slice(0, days),
     };
-
-    island.session.advanceWorldTime(MINUTES_PER_TICK);
-    // **1 tickぶんより長く進んだら、限界の手番が挟まった**（docs/world/Characters.md 限界節）。
-    // ここで尽きうるのは幸福度だけなので、伸びた分はそのまま打ちひしがれていた時間になる。
-    forced += island.session.world!.totalMinutes - before - MINUTES_PER_TICK;
-    lowest = Math.min(lowest, happiness.number);
-  }
-
-  // 最後の1日ぶん。上の始末は次の日の頭で走るので、抜けた時点の1日は自分で閉じる。
-  homesickness.push(atDayEnd.homesickness);
-  lowestHappiness.push(lowest);
-  company.push(atDayEnd.company);
-  despairMinutes.push(forced);
-
-  return { homesickness, lowestHappiness, company, despairMinutes };
+  };
 }
 
 /** その値が初めてしきい値へ届いた日（1始まり）。届かなければ0。 */

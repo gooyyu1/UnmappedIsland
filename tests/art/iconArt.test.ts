@@ -2,8 +2,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { WorldCodex } from '../../src/domain/WorldCodex';
 import { ICON_NAMES } from '../../src/art/iconArt';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 
 /** アイコンの絵の置き場所（src/art/iconArt.ts の規約）。 */
 const ART_DIR = 'src/assets/icons';
@@ -21,7 +20,7 @@ describe('アイコンの絵', () => {
   let codex: WorldCodex;
 
   beforeAll(() => {
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   /** 絵はまだ1枚も無いことがある（ディレクトリごと存在しない）。 */

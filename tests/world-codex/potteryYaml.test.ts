@@ -7,9 +7,8 @@ import { WorldSession } from '../../src/domain/WorldSession';
 import { Location } from '../../src/domain/wrappers/Location';
 import { World } from '../../src/domain/wrappers/World';
 import { inProgressObjectName } from '../../src/loader/inProgressObjects';
-import { WorldCodexYamlLoader } from '../../src/loader/WorldCodexYamlLoader';
 import { fixedRng } from '../support/rng';
-import { loadYamlDirectory, WORLD_CODEX_DIR } from '../support/worldCodexFiles';
+import { bundledCodex } from '../support/worldCodexFiles';
 import { createBrightEnoughAgent } from '../support/illumination';
 
 /**
@@ -31,7 +30,7 @@ describe('pottery.yamlの土器の連鎖', () => {
   beforeAll(() => {
     // 粘土の湧き先（locations.yaml）・燃料（timber.yaml）・成果物の甕（liquid_containers.yaml）へ
     // ファイルをまたぐ参照があるため、ディレクトリ全体を一括ロードする。
-    codex = loadYamlDirectory(new WorldCodexYamlLoader(), WORLD_CODEX_DIR).buildAndReset();
+    codex = bundledCodex();
   });
 
   beforeEach(() => {
