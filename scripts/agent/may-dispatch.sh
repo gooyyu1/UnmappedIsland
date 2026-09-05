@@ -29,7 +29,7 @@
 
 set -euo pipefail
 
-KIND="${1:?種類を渡す（new-task / review / resume / other）}"
+KIND="${1:?種類を渡す（new-task / review / review-untasked / resume / other）}"
 shift
 [ "$#" -gt 0 ] || {
   echo "タグを1つ以上渡す（例: task-1234 / review-1500）" >&2

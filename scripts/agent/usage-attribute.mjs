@@ -35,7 +35,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-/** タグから投入の種類を決める（2.3 の4つ）。タグの無いセッションはユーザー自身の対話。 */
+/** タグから投入の種類を決める（2.3）。タグの無いセッションはユーザー自身の対話。 */
 function kindOf(tags) {
   for (const tag of tags) {
     if (tag.startsWith('task-')) return 'new-task';

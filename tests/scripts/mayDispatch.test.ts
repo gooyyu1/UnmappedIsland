@@ -32,6 +32,7 @@ const ALL_ON = [
   '- [x] 投入する（これを外すと下は全部止まる）',
   '  - [x] 新しいタスク',
   '  - [x] レビュー',
+  '    - [x] task を持たないPRも読む',
   '  - [x] 直しの再開',
   '  - [x] その他のエージェント（棚卸し・傾向分析）',
   '',
@@ -154,6 +155,18 @@ describe('may-dispatch.sh', () => {
 
     expect(run('review', 'review-1500', { brake }).code).toBe(1);
     expect(run('new-task', 'task-1234', { brake }).code).toBe(0);
+  });
+
+  // 種類は根から自分までの鎖に対応する（board-design 2.4）。子だけを外して、親のレビューは流す。
+  it('子だけ外れていれば、その子の種類だけが止まる', () => {
+    const brake = off('task を持たないPRも読む');
+
+    expect(run('review-untasked', 'review-1526', { brake }).code).toBe(1);
+    expect(run('review', 'review-1500', { brake }).code).toBe(0);
+  });
+
+  it('親のレビューが外れていれば、子の種類も止まる', () => {
+    expect(run('review-untasked', 'review-1526', { brake: off('レビュー') }).code).toBe(1);
   });
 
   // 手綱を読む側と書く側が食い違ったときに、通す側へ倒れないこと。

@@ -117,9 +117,20 @@ fi
 # `Closes #N` から直す側のタグ（`task-N`）を起こして一緒に渡す。
 # 脚注のセッションIDではなくタグで引くのは、**同じ issue へ2回投入されていても両方が同じタグを
 # 持つ**ため。生きているほうを取り逃がさない。
+#
+# **同じ `Closes` から、手綱に訊く種類も決まる。** `task` ラベルの issue を閉じるPRはデーモンが
+# 配った仕事で、そうでないPR（人と直接話した結果のもの）は別の系統。**読ませるかを別々に
+# 切り替えられるようにする**ため、種類を分けて渡す（`board-design.md` 2.4）。
+# `Closes` を書き忘れたPRも「task を持たない」側に入る——**盤面には出るが誰も読まない**ので、
+# 子の手綱を外すなら本文の `Closes` が要る。
 review_tags=("review-$PR")
+kind=review-untasked
 while read -r issue; do
-  [ -n "$issue" ] && review_tags+=("task-$issue")
+  [ -n "$issue" ] || continue
+  review_tags+=("task-$issue")
+  if gh issue view "$issue" --json labels -q '.labels[].name' 2>/dev/null | grep -qx task; then
+    kind=review
+  fi
 done < <(jq -r '.body // ""' "$WORK/pr.json" | tr -d '\r' |
   grep -oiE 'closes[[:space:]]+#[0-9]+' | grep -oE '[0-9]+' | sort -u || true)
 
@@ -127,7 +138,7 @@ done < <(jq -r '.body // ""' "$WORK/pr.json" | tr -d '\r' |
 # いるので、占有は必ず「無い」になる（判定が何も止めない）。**再レビューは止まらない**——判定に
 # 使うのは走行中かどうかで、判定を書き終えたレビューは占有していない
 # （[`board-design.md`](../../.claude/board-design.md) 1.2）。
-CCR_META="$CCR_META" bash "$HERE/may-dispatch.sh" review "${review_tags[@]}"
+CCR_META="$CCR_META" bash "$HERE/may-dispatch.sh" "$kind" "${review_tags[@]}"
 
 CCR_META="$CCR_META" bash "$HERE/archive-reviews.sh"
 
