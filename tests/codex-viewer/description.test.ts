@@ -103,14 +103,14 @@ object_defs:
     resists:
       - {prop: wariness, gte: 1}
 
-  # 所要時間が参照2つの積になる型（10.2節）。道の長さ × 担ぎ手の遅れ。
+  # 所要時間が参照になる型（10.2節）。合成はbaseが済ませているので、durationは1つを読むだけ。
   trail:
     props:
-      travel_minutes: {value: 30}
+      travel_minutes: {value: 30, base: {subject: agent, prop: travel_delay}}
     interactions:
       travel:
         trigger: menu
-        duration: {prop: travel_minutes, times: {subject: agent, prop: pace}}
+        duration: {prop: travel_minutes}
 
   sharp_stone:
     tags: [item, cutting_tool]
@@ -218,11 +218,11 @@ describe('定義の自己記述（describe）', () => {
     expect(lines).toContain('destroy self');
   });
 
-  it('所要時間が積なら、掛け合わせる2つとも書き出す', () => {
+  it('所要時間が参照なら、指しているプロパティを書き出す', () => {
     const travel = objectDef('trail').menuTriggers[0];
     const lines = describeToText(codex, (out) => describeInteraction(travel, names, out)).split('\n');
 
-    expect(lines).toContain('所要時間: travel_minutes × pace分');
+    expect(lines).toContain('所要時間: travel_minutes分');
   });
 
   it('効果の動詞は、対象と量を書き出す', () => {

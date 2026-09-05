@@ -49,8 +49,12 @@ object_defs:
       # 道は地形そのものなので目方を持たない（浅い洞窟と同じ、ContainerSystem.md 1節）。
       # 筏から岸への道のように、重さを持つ物へ繋ぐ道もありうるため、0を明示する。
       weight: {value: 0}
+      # 道の長さに、今歩いている人の遅れを継ぐ（Characters.md 荷重の効き方節）。**道が知っているのは
+      # 「自分の所要時間は歩く人の遅れで伸びる」ことだけ**で、遅れの内訳（荷・怪我）は知らない。
+      # 誰も歩いていなければ土台は辿り着かず、素の値のまま（GameElementDefinition.md 6.5節）。
       travel_minutes:
         value: 60
+        base: {subject: agent, prop: travel_delay}
       required_progress:
         value: 1
       destination_id:
@@ -75,9 +79,8 @@ object_defs:
           # 荷と同じく段の名前で見るので、境目はキャラクタのlooking_brightnessのstagesだけが持つ。
           - reason: too_dark
             not: {subject: agent, prop: looking_brightness, in_stage: pitch_dark}
-        # 道ごとの所要時間へ、担ぎ手の遅れ（pace、素は1）を掛ける（Characters.md 荷重の効き方節）。
-        # 和ではなく積なので、長い道ほど遅れも大きくなり、遅れの量を道ごとに書かずに済む。
-        duration: {prop: travel_minutes, times: {subject: agent, prop: pace}}
+        # 担ぎ手の遅れはtravel_minutesのbaseが継いでいるので、ここはその1つを読むだけ。
+        duration: {prop: travel_minutes}
         move:
           subject: agent
           to_prop: destination_id

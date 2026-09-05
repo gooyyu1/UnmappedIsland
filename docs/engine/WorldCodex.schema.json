@@ -851,16 +851,13 @@
       ]
     },
     "weight_spec": {
-      "description": "重み・時間として書ける値（10.2節）。リテラル数値、既存propsへの参照（{subject, prop}）、または参照2つの積（timesで掛ける相手を書く）。subjectは省略可（既定値self）。",
+      "description": "重み・時間として書ける値（10.2節）。リテラル数値か、既存propsへの参照（{subject, prop}）の二択。subjectは省略可（既定値self）。2つの値を合わせたいときは、合わせた結果を持つプロパティをbase・modifyで作ってそこを参照する（式を書ける場所は作らない）。",
       "oneOf": [
         {
           "type": "number"
         },
         {
           "$ref": "#/$defs/prop_ref"
-        },
-        {
-          "$ref": "#/$defs/prop_ref_product"
         }
       ]
     },
@@ -978,7 +975,7 @@
         },
         "duration": {
           "$ref": "#/$defs/weight_spec",
-          "description": "実行にかかるゲーム内時間（分）。weightと同じ「リテラルか{subject, prop}参照か参照2つの積か」の三択（11.3節）。参照のsubjectに何を書けるかは数え上げず、この宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表。この操作の他のキーと同じ場所なので、durationにだけ効く制限は無い）。省略時は時間を消費しない。"
+          "description": "実行にかかるゲーム内時間（分）。weightと同じ「リテラルか{subject, prop}参照か」の二択（11.3節）。参照のsubjectに何を書けるかは数え上げず、この宣言が置かれた場所に誰が居るかから導く（ActionSystem.md 4節の表。この操作の他のキーと同じ場所なので、durationにだけ効く制限は無い）。省略時は時間を消費しない。"
         },
         "set": {
           "description": "対象プロパティへ、その場で一度だけ絶対値を代入する。",
@@ -1495,27 +1492,6 @@
       },
       "required": [
         "prop"
-      ],
-      "additionalProperties": false
-    },
-    "prop_ref_product": {
-      "description": "参照2つの積（10.2節）。掛ける相手（times）に書けるのは参照だけで、リテラルはスカラーで書く綴りなので混ぜない。timesの中にtimesは書けない（積は2つで打ち止め）。",
-      "type": "object",
-      "properties": {
-        "subject": {
-          "$ref": "#/$defs/subject_root"
-        },
-        "prop": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9_]*$"
-        },
-        "times": {
-          "$ref": "#/$defs/prop_ref"
-        }
-      },
-      "required": [
-        "prop",
-        "times"
       ],
       "additionalProperties": false
     },

@@ -275,7 +275,7 @@ conditions:
 
 ## 8. 未決事項・今後の検討課題
 
-- **荷重の段ごとの倍率と `stamina` の削り**（[`../world/Characters.md`](../world/Characters.md)
+- **荷重の段ごとの遅れと `stamina` の削り**（[`../world/Characters.md`](../world/Characters.md)
   荷重の効き方節）。「1 日ぶんと一晩の回復が同じ桁」という置き方だけが決まっていて、`laden` と `heavy` の
   差をどれだけ開けるかは、**1 日にどれだけ往復するのが普通か**が見えてから決める
 - キャラクターの `load` を modify で調整して個人差や怪我を表す場合、`stages` の閾値は型定義なので動かせない。

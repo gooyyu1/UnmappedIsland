@@ -30,7 +30,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 | `singleton` | `true`（同時に存在するプレイヤーキャラクタは1体） |
 | タグ | `character` |
 | スロット | `hand`（`item` を受け入れる枠が4〜8個）、`equipment`、`injuries` |
-| プロパティ | `weight` / `pace` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `loneliness` / `homesickness` / `comfort` / `company` / `happiness` / `pathogen` / `immunity` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` と、腕前の11本（[`Skills.md`](./Skills.md) 2 節）、その段が押し上げる上乗せ `ignition_ease` / `quarry_sense` / `hunting_aim`（同 5 節。重みの `base` の土台になる）（いずれも個体差を持たず `player_character` trait が配る） |
+| プロパティ | `weight` / `travel_delay` / `pain` / `blood` / `warmth` / `chill_point` / `satiety` / `carbohydrate` / `protein` / `lipid` / `vitamin` / `loneliness` / `homesickness` / `comfort` / `company` / `happiness` / `pathogen` / `immunity` / `hydration` / `body_fat` / `wakefulness` / `stamina` / `load` と、腕前の11本（[`Skills.md`](./Skills.md) 2 節）、その段が押し上げる上乗せ `ignition_ease` / `quarry_sense` / `hunting_aim`（同 5 節。重みの `base` の土台になる）（いずれも個体差を持たず `player_character` trait が配る） |
 | アクション | 休息（`wait` / `rest` / `nap` / `sleep`。下の[休息](#休息)節）と、限界（`collapse` / `fall_asleep` / `despair`。下の[限界](#限界)節）。どちらも `player_character` trait が配る |
 | 表示 | `ja.yaml` の表示名、代替アイコン（`characterCard.ts`。絵が入るまでの繋ぎ） |
 
@@ -115,9 +115,9 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **`weight`（体重、g）**: 65,000（下の `blood` が体重のおよそ1/13という関係から、5,000mLがちょうど
   65kg）。**担ぐ側も担がれる側になる**——筏に乗れば自分と手持ちが積載として効く
   （[`ContainerSystem.md`](../engine/ContainerSystem.md) 1.1 節）。個体差はまだ持たせず trait が配る。
-- **`pace`（歩みの遅さ、倍率）**: 素は 1（等倍）で、自分では動かず `load` の段が `modify` で押し上げる
-  （下の荷重の効き方節）。道の `travel` が所要時間へ掛ける。`status` タグは持たない——見せるのは
-  荷重そのもので、遅れはその段から読める。個体差は持たせず trait が配る。
+- **`travel_delay`（歩みの遅れ、分）**: 素は 0 で、自分では動かず `load` の段が `modify` で押し上げる
+  （下の荷重の効き方節）。道の `travel_minutes` が `base` でここを土台にする。`status` タグは持たない
+  ——見せるのは荷重そのもので、遅れはその段から読める。個体差は持たせず trait が配る。
 - **`blood`（血液量、mL）**: `max` が体格そのもの（体重のおよそ1/13）で、満タンから始まる。**唯一、
   自分で戻るステータス**（`+2/tick` ＝ 1日およそ200mL、赤血球が作られる実際の速さ）。削るのは出血する
   怪我だけなので、**削られるのは一瞬でも戻るのは桁違いに遅い**——失った1,000mLに5日かかる。尽きた段の
@@ -181,11 +181,11 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 **荷は、担げるかどうかだけでなく、歩みの速さと疲れにも効きます。** 効かせ方は 1 箇所——`load` の段
 （[`ContainerSystem.md`](../engine/ContainerSystem.md) 5 節）で、閾値を別に持つ量は 1 つも足しません。
 
-| 段 | 移動 | 歩みの速さ | `stamina` |
+| 段 | 移動 | 歩みの遅れ | `stamina` |
 | --- | --- | --- | --- |
-| `light` | 通る | 等倍 | 減らない |
-| `laden` | 通る | ×1.15 | `-0.3/tick` |
-| `heavy` | 通る | ×1.4 | `-1/tick` |
+| `light` | 通る | 遅れない | 減らない |
+| `laden` | 通る | `+10` 分 | `-0.3/tick` |
+| `heavy` | 通る | `+25` 分 | `-1/tick` |
 | `too_heavy` | **通れない** | — | `-2/tick` |
 
 - **疲れる側は、今の文法でそのまま書けます。** 段の `passives` が `add` で `stamina` を削るだけです
@@ -197,10 +197,15 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
   **重い荷の 1 日ぶんと、一晩の回復がちょうど釣り合う**位置です。これより 1 桁小さいと、何往復しても
   一晩で必ず取り返せてしまい、**削っているのに何も決まりません**。**日をまたいで借金が積み上がる形にも
   しません**——寝れば戻るからこそ、判断は「今日あと何往復できるか」に収まります。
-- **遅くなる側は、所要時間を掛け合わせて書きます。** 道の所要時間は道自身が持つので、担ぎ手の遅れを
-  そこへ掛けます——`duration: {prop: travel_minutes, times: {subject: agent, prop: pace}}`（同 11.3 節）。
-  `pace` は素が 1 で、`load` の段が `modify` で押し上げる倍率です。和ではなく積にするのは、**長い道ほど
-  遅れも大きい**からで、遅れの量を道ごとに書かずに済みます。
+- **遅くなる側は、道が担ぎ手の遅れを土台に継ぎます。** 道の所要時間は道自身が持つので、そこへ
+  `base: {subject: agent, prop: travel_delay}`（同 6.5 節）を書き、`duration` は `{prop: travel_minutes}`
+  の 1 つを読むだけにします。`travel_delay` は素が 0 で、`load` の段が `modify` で押し上げる**分**です。
+  **道が知っているのは「自分の所要時間は歩く人の遅れで伸びる」ことだけ**で、遅れの内訳（荷・怪我）は
+  知りません——遅くするものが増えても押す先は人の `travel_delay` なので、道の宣言は変わりません。
+- **一律の加算なので、短い道ほど割合として重く効きます。** `+25` 分は 10 分の道では 3.5 倍、120 分の
+  道では 1.2 倍です。**式（積）を書ける場所を作らないことを優先した結果として承知のうえ**なので
+  （[`GameElementDefinition.md`](../engine/GameElementDefinition.md) 10.2 節）、この点は積へ戻す理由に
+  なりません。釣り合いを動かすなら、動かすのは段ごとの分数です。
 - **軽くする道具の値打ちは損なわれません。** そりのような率を下げる道具は `load` そのものを下げるので、
   **移動の可否・速さ・疲れに同時に効きます**（[`ContainerSystem.md`](../engine/ContainerSystem.md)
   2 節）。移動が重くなる方向の変更ですが、[`DesignPrinciples.md`](../concept/DesignPrinciples.md) の
@@ -211,7 +216,7 @@ trait は「何を持つべきか」ではなく「省略したらこの値」�
 - **画面は変わりません。** `load` は既にステータスエリアへ「増えると悪い」バーとして並んでいます
   （[`StatusArea.md`](../ui/StatusArea.md) 6 節）。段が増えたわけでも、新しい行が増えたわけでもありません。
 
-**上の表の数値は目安です。** 段ごとの倍率と削りをどこに置くかは、**1 日にどれだけ往復するのが普通か**が
+**上の表の数値は目安です。** 段ごとの遅れと削りをどこに置くかは、**1 日にどれだけ往復するのが普通か**が
 決まって初めて釣り合いが見えます（未決事項は
 [`ContainerSystem.md`](../engine/ContainerSystem.md) 8 節）。動かないのは、**削るのが時間であること**と、
 **1 日ぶんと一晩の回復が同じ桁であること**だけです。

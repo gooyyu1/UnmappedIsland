@@ -16,7 +16,7 @@ import { loadYamlDirectory, SAMPLE_CHARACTER, WORLD_CODEX_DIR } from '../support
  * 値を0に置いて眺めるだけでは1つも動かない。
  */
 describe('限界に達した値が起こす、強制的な時間経過', () => {
-  /** 道1本を歩く時間（locations.yamlのtravel_minutes×pace。素の歩みは等倍）。 */
+  /** 道1本を歩く時間（locations.yamlのtravel_minutes。空身なので遅れは足されない）。 */
   const TRAVEL_MINUTES = 60;
 
   /**
