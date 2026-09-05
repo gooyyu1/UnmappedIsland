@@ -12,7 +12,7 @@ object_defs:
   bed:
     tags: [fixture, bed]
     props:
-      # 編んだ葉3枚ぶん（weaving.yaml）。据えた寝床も、筏に載せれば積荷として効く。
+      # 編んだ葉3枚ぶん（weaving.yaml）。
       weight: {value: 1200}
     recipes:
       # 編んだ葉を3枚、端を重ねて広げる。道具も紐も要らない。

@@ -19,5 +19,4 @@ world:
     weather: clear
 
 location:
-  type: sandy_beach
   fixtures: [bed]

@@ -1298,7 +1298,6 @@ tag_texts:
   container: 入れ物
   fixture: 設備
   item: 持ち物
-  bed: 寝床
 
 # シンボル型プロパティの値（GameElementDefinition.md 6.6節）。天気は状況エリアの空の窓に名前として
 # 出るので、絵だけでは見分けられない晴天どうし（晴れ・快晴・灼熱）を名前が区別する。
