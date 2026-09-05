@@ -474,6 +474,18 @@ describe('board-round.mjs', () => {
     expect(result.log).toContain('PR #10 は手元では併合できた');
   });
 
+  // **見るだけのつもりで測定を消さない。** 指紋を埋めると、その組は本番の周でも二度と記録されない。
+  it('DRY_RUN の周は、ぶつかった実績を控えない', () => {
+    const result = playRound({
+      prs: [pr(10, { mergeable: 'CONFLICTING' })],
+      conflict: { files: ['docs/x.md'], with: [7] },
+      dryRun: true,
+    });
+
+    expect(result.conflicts).toEqual([]);
+    expect(result.calls).toEqual([]);
+  });
+
   // **調べられなかったものは書かない。** 指紋を埋めずに残して、次の周に調べ直す。
   it('ぶつかった中身を調べられなかった周は、帳面へ書かない', () => {
     const result = playRound({

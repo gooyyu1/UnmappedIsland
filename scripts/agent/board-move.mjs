@@ -469,7 +469,10 @@ export function moves(input) {
   const waiting = [];
   if (held.length >= WRITERS) {
     if (ready.length > 0) {
-      notes.push(`${ready.length}件の task が、書くセッション${WRITERS}本の空きを待っている`);
+      // **枠を握っている相手を並べる。** この覚え書きを毎周書く理由は、起こしても動かないセッションが
+      // 1本残ったときに人が見つけられること——名前が出ていないと、詰まっている1本を特定できない。
+      const who = held.map((holder) => holder.session.id).join(' ');
+      notes.push(`${ready.length}件の task が、書くセッション（${who}）の空きを待っている`);
     }
   } else {
     for (const issue of ready) {

@@ -581,7 +581,9 @@ describe('board-move.mjs', () => {
         working('session_c', 'task-8'),
       ],
     };
-    expect(moves(board)).toEqual(['NOTE 1件の task が、書くセッション3本の空きを待っている']);
+    expect(moves(board)).toEqual([
+      'NOTE 1件の task が、書くセッション（session_a session_b session_c）の空きを待っている',
+    ]);
   });
 
   // 走らせる先は issue のラベルにある（2.16）。盤面は投入先を引数の形で寄越し、`board-round.mjs`

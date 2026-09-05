@@ -112,7 +112,9 @@ function describeConflict(runScript, number) {
  *
  * `describe` は「そのPRが何のファイルで・どのPRとぶつかったか」を返す
  * （[`describe-conflict.sh`](describe-conflict.sh)）。**調べられなかったものは書かない**——次の周に
- * 調べ直せるよう、指紋を埋めずに残す。
+ * 調べ直せるよう、指紋を埋めずに残す。**恒久的に調べられないPRは、開いている限り毎周 `git fetch` を
+ * 払い続ける**（枝の消えた fork など）。失敗の大半は一時的（認証・通信）なので、回数を数える台帳を
+ * 増やすより安いと見た。
  *
  * **併合し直せてしまったものは、空のまま書く。** GitHub の `mergeable` は `main` が動くたびに
  * 古くなるので、`CONFLICTING` と言われた差分が手元では綺麗に併合できることがある。**これは調べた
@@ -313,23 +315,6 @@ export function round({
     writeLedger(stateDir, remaining);
   };
 
-  // **ぶつかった実績を控える**（3.1）。手を決める前に置くのは、**打った手で周が終わっても
-  // 書き終わっているようにする**ため——記録は手ではないので、1周1手の勘定には入らない。
-  for (const record of newConflicts(
-    board.prs,
-    writtenConflicts(stateDir),
-    (number) => describeConflict(runScript, number),
-    board.now,
-  )) {
-    appendFileSync(conflictsPath(stateDir), `${JSON.stringify(record)}\n`);
-    if (record.files.length === 0) {
-      log(`PR #${record.pr} は手元では併合できた（GitHub の \`mergeable\` が古い）`);
-      continue;
-    }
-    const rivals = record.with.map((number) => `#${number}`).join(' ');
-    log(`ぶつかった: PR #${record.pr} ${record.files.join(' ')}${rivals === '' ? '' : ` … ${rivals}`}`);
-  }
-
   const lines = moves(board);
   for (const line of lines) {
     if (line.startsWith('NOTE ')) log(`覚え書き: ${line.slice('NOTE '.length)}`);
@@ -339,6 +324,24 @@ export function round({
   if (dryRun) {
     for (const line of played) log(`打たない手: ${line}`);
     return true;
+  }
+
+  // **ぶつかった実績を控える**（3.1）。**記録は手ではない**ので、下で打つ手が何であっても、その手前で
+  // 書き終わる。**`DRY_RUN` の周では書かない**——指紋を埋めると、その組は本番の周でも二度と記録
+  // されない（見るだけのつもりで測定を消すことになる）。
+  for (const record of newConflicts(
+    board.prs,
+    writtenConflicts(stateDir),
+    (number) => describeConflict(runScriptHere, number),
+    board.now,
+  )) {
+    appendFileSync(conflictsPath(stateDir), `${JSON.stringify(record)}\n`);
+    if (record.files.length === 0) {
+      log(`PR #${record.pr} は手元では併合できた（GitHub の \`mergeable\` が古い）`);
+      continue;
+    }
+    const rivals = record.with.map((number) => `#${number}`).join(' ');
+    log(`ぶつかった: PR #${record.pr} ${record.files.join(' ')}${rivals === '' ? '' : ` … ${rivals}`}`);
   }
 
   for (const line of played) {
